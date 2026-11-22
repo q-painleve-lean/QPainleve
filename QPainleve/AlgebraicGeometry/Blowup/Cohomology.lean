@@ -8,17 +8,24 @@ module
 public import QPainleve.RingTheory.ReesAlgebra.Cech
 public import TauCeti.AlgebraicGeometry.Cohomology.MayerVietoris
 public import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.BaseChange
-import TauCeti.AlgebraicGeometry.Blowup.AffineCharts
+import Mathlib.RingTheory.LocalProperties.Exactness
+import Mathlib.RingTheory.Localization.BaseChange
+import TauCeti.AlgebraicGeometry.Blowup.BaseChange
+import TauCeti.AlgebraicGeometry.Blowup.ExceptionalDivisor
+import TauCeti.AlgebraicGeometry.Cohomology.FlatBaseChange
 import TauCeti.AlgebraicGeometry.Cohomology.SectionsQuotient.Basic
 import TauCeti.AlgebraicGeometry.Modules.Tensor.Product
 
 /-!
-# Structure-sheaf cohomology of a two-chart affine blowup
+# Structure-sheaf cohomology of affine blowups
 
 The blowup of an affine scheme in a two-generated ideal has vanishing structure-sheaf
 cohomology in positive degrees. For a weakly regular generating pair with regular second
 element, the base ring also maps isomorphically to the global functions. This is the affine
 calculation used for the structure sheaf of a point blowup of a smooth surface.
+
+Flat base change extends the comparison to finitely generated ideals whose prime
+localizations are the unit ideal or admit such a generating pair.
 
 The passage from the two-chart section sequence to cohomology uses the Mayer–Vietoris
 comparison of Tau Ceti's `projectiveLine` cohomology. The regular local surface case is part of
@@ -34,6 +41,8 @@ open TauCeti.AlgebraicGeometry TauCeti.AlgebraicGeometry.Scheme.Modules
 namespace QPainleve
 
 universe u
+
+section TwoChart
 
 variable {R : Type u} [CommRing R] {I : Ideal R} {a b : R}
 
@@ -181,5 +190,186 @@ theorem subsingleton_cohomology_unit_proj_reesAlgebra (hI : Ideal.span {a, b} = 
           (monomialDegreeOne_mem_grade hb)) two_pos
     exact Scheme.Modules.subsingleton_cohomology_of_two_le_of_isAffineOpen M
       (hU ha) (hU hb) hW hcov n (by omega)
+
+end TwoChart
+
+section Affine
+
+open Limits TopologicalSpace
+open scoped TensorProduct nonZeroDivisors
+
+private theorem local_blowup_cohomology {A : Type u} [CommRing A] (J : Ideal A)
+    (hJ : J = ⊤ ∨ ∃ a b : A, Ideal.span {a, b} = J ∧ IsWeaklyRegular A [a, b] ∧
+      b ∈ nonZeroDivisors A) :
+    Function.Bijective (Proj.toSpecCoeff (grade J)).appTop ∧
+      ∀ n : ℕ, 0 < n → Subsingleton
+        (Cohomology (SheafOfModules.unit (Proj (grade J)).ringCatSheaf) n) := by
+  rcases hJ with rfl | ⟨a, b, hab, hreg, hb⟩
+  · have hspan : Ideal.span {(1 : A)} = ⊤ := by simp
+    have : IsIso (Proj.toSpecCoeff (grade (⊤ : Ideal A))) := by
+      rw [← hspan, toSpecCoeff_reesAlgebra]
+      exact isIso_toSpecZero_reesAlgebra_span_singleton (IsSMulRegular.one A)
+    have : IsIso (Proj.toSpecCoeff (grade (⊤ : Ideal A))).appTop :=
+      Scheme.Γ.map_isIso (Proj.toSpecCoeff (grade (⊤ : Ideal A))).op
+    refine ⟨ConcreteCategory.bijective_of_isIso _, fun n hn ↦ ?_⟩
+    have : IsAffine (Proj (grade (⊤ : Ideal A))) :=
+      IsAffine.of_isIso (Proj.toSpecCoeff (grade (⊤ : Ideal A)))
+    have := isQuasicoherent_structureSheaf (Proj (grade (⊤ : Ideal A)))
+    obtain ⟨q, rfl⟩ := Nat.exists_eq_succ_of_ne_zero hn.ne'
+    exact subsingleton_cohomology_succ_of_isAffine _ q
+  · exact ⟨bijective_appTop_toSpecCoeff_reesAlgebra hab hreg hb,
+      subsingleton_cohomology_unit_proj_reesAlgebra hab⟩
+
+variable {R : Type u} [CommRing R] (I : Ideal R)
+  (A : PrimeSpectrum R → Type u) [∀ P, CommRing (A P)] [∀ P, Algebra R (A P)]
+  [loc : ∀ P, IsLocalization P.asIdeal.primeCompl (A P)]
+
+local notation "Bl" => Proj (grade I)
+local notation "f" => Proj.toSpecCoeff (grade I)
+
+private theorem isProper_affineBlowup (hI : I.FG) : IsProper f := by
+  rw [toSpecCoeff_reesAlgebra]
+  exact isProper_toSpecZero_reesAlgebra hI
+
+private theorem subsingleton_baseChange_cohomology_affineBlowup
+    {S : Type u} [CommRing S] [Algebra R S] [Module.Flat R S]
+    [CompactSpace (Bl)] [QuasiSeparatedSpace (Bl)]
+    (h : I.map (algebraMap R S) = ⊤ ∨
+      ∃ a b : S, Ideal.span {a, b} = I.map (algebraMap R S) ∧
+        IsWeaklyRegular S [a, b] ∧ b ∈ nonZeroDivisors S)
+    (n : ℕ) (hn : 0 < n) :
+    let : (Bl).Over (Spec (.of R)) := ⟨f⟩
+    let M : (Bl).Modules := SheafOfModules.unit (Bl).ringCatSheaf
+    let : Module R (Cohomology M n) := cohomologyBaseModule R (Bl) M n
+    Subsingleton (S ⊗[R] Cohomology M n) := by
+  let : (Bl).Over (Spec (.of R)) := ⟨f⟩
+  let M : (Bl).Modules := SheafOfModules.unit (Bl).ringCatSheaf
+  have : M.IsQuasicoherent := isQuasicoherent_structureSheaf (Bl)
+  let J := I.map (algebraMap R S)
+  let Z := Proj (grade J)
+  let : Z.Over (Spec (.of S)) := ⟨Proj.toSpecCoeff (grade J)⟩
+  let g : Z ⟶ Bl := affineBlowupBaseChangeHom I S ≫
+    pullback.fst f (Spec.map (CommRingCat.ofHom (algebraMap R S)))
+  have H : IsPullback g (Z ↘ Spec (.of S)) (Bl ↘ Spec (.of R))
+      (Spec.map (CommRingCat.ofHom (algebraMap R S))) := isPullback_affineBlowup_of_flat I S
+  let e := cohomologyBaseChangeLinearEquiv H M n
+  let e' := (cohomologyFunctor Z n).mapIso (pullbackObjUnitIso g)
+  have hZ := (local_blowup_cohomology J h).2 n hn
+  have hpull : Subsingleton (Cohomology ((Scheme.Modules.pullback g).obj M) n) :=
+    @Equiv.subsingleton _ _ e'.addCommGroupIsoToAddEquiv.toEquiv hZ
+  exact @Equiv.subsingleton _ _ e.toEquiv hpull
+
+/-- The structure sheaf of an affine blowup has no positive-degree cohomology if the
+finitely generated center ideal is locally the unit ideal or is generated by a weakly
+regular pair with regular second element. -/
+theorem subsingleton_cohomology_affineBlowup (hI : I.FG)
+    (h : ∀ P, (I.map (algebraMap R (A P))) = ⊤ ∨
+      ∃ a b : A P, Ideal.span {a, b} = I.map (algebraMap R (A P)) ∧
+        IsWeaklyRegular (A P) [a, b] ∧ b ∈ nonZeroDivisors (A P))
+    (n : ℕ) (hn : 0 < n) :
+    Subsingleton (Cohomology (SheafOfModules.unit (Bl).ringCatSheaf) n) := by
+  let : (Bl).Over (Spec (.of R)) := ⟨f⟩
+  let M : (Bl).Modules := SheafOfModules.unit (Bl).ringCatSheaf
+  let : Module R (Cohomology M n) := cohomologyBaseModule R (Bl) M n
+  have := isProper_affineBlowup I hI
+  have : CompactSpace (Bl) := QuasiCompact.compactSpace_of_compactSpace f
+  have : QuasiSeparatedSpace (Bl) := quasiSeparatedSpace_of_quasiSeparated f
+  have hlocal (P : Ideal R) [hP : P.IsMaximal] :
+      IsLocalizedModule P.primeCompl
+        (TensorProduct.mk R (A ⟨P, hP.isPrime⟩) (Cohomology M n) 1) := by
+    have := loc ⟨P, hP.isPrime⟩
+    exact IsLocalization.tensorProduct_isLocalizedModule P.primeCompl (A ⟨P, hP.isPrime⟩)
+  refine @Module.subsingleton_of_localization_maximal R (Cohomology M n) _ _ _
+    (fun P hP ↦ A ⟨P, hP.isPrime⟩ ⊗[R] Cohomology M n) _ _
+    (fun P hP ↦ TensorProduct.mk R (A ⟨P, hP.isPrime⟩) (Cohomology M n) 1) hlocal ?_
+  intro P hP
+  have : IsLocalization P.primeCompl (A ⟨P, hP.isPrime⟩) := loc ⟨P, hP.isPrime⟩
+  have : Module.Flat R (A ⟨P, hP.isPrime⟩) := IsLocalization.flat _ P.primeCompl
+  exact subsingleton_baseChange_cohomology_affineBlowup I (h ⟨P, hP.isPrime⟩) n hn
+
+/-- Pullback along an affine blowup preserves global functions if the finitely generated
+center ideal is locally the unit ideal or is generated by a weakly regular pair with
+regular second element. -/
+theorem bijective_appTop_affineBlowup (hI : I.FG)
+    (h : ∀ P, (I.map (algebraMap R (A P))) = ⊤ ∨
+      ∃ a b : A P, Ideal.span {a, b} = I.map (algebraMap R (A P)) ∧
+        IsWeaklyRegular (A P) [a, b] ∧ b ∈ nonZeroDivisors (A P)) :
+    Function.Bijective (f).appTop := by
+  let : (Bl).Over (Spec (.of R)) := ⟨f⟩
+  have := isProper_affineBlowup I hI
+  have : CompactSpace (Bl) := QuasiCompact.compactSpace_of_compactSpace f
+  have : QuasiSeparatedSpace (Bl) := quasiSeparatedSpace_of_quasiSeparated f
+  let g (P : PrimeSpectrum R) := Proj.toSpecCoeff (grade (I.map (algebraMap R (A P))))
+  let Z (P : PrimeSpectrum R) := Proj (grade (I.map (algebraMap R (A P))))
+  let (P : PrimeSpectrum R) : (Z P).Over (Spec (.of (A P))) := ⟨g P⟩
+  have (P : PrimeSpectrum R) : Module.Flat R (A P) := IsLocalization.flat _ P.asIdeal.primeCompl
+  let G (P : PrimeSpectrum R) : Z P ⟶ Bl := affineBlowupBaseChangeHom I (A P) ≫
+    pullback.fst f (Spec.map (CommRingCat.ofHom (algebraMap R (A P))))
+  let H (P : PrimeSpectrum R) :
+      IsPullback (G P) (Z P ↘ Spec (.of (A P))) (Bl ↘ Spec (.of R))
+        (Spec.map (CommRingCat.ofHom (algebraMap R (A P)))) :=
+    isPullback_affineBlowup_of_flat I (A P)
+  let : Algebra R Γ(Bl, ⊤) :=
+    ((Bl).baseRingToStructurePresheaf R).app (Opposite.op ⊤) |>.hom.toAlgebra
+  let (P : PrimeSpectrum R) : Algebra (A P) Γ(Z P, ⊤) :=
+    ((Z P).baseRingToStructurePresheaf (A P)).app (Opposite.op ⊤) |>.hom.toAlgebra
+  let (P : PrimeSpectrum R) : Module R Γ(Z P, ⊤) := Module.compHom _ (algebraMap R (A P))
+  let htop (P : PrimeSpectrum R) : (⊤ : (Z P).Opens) = G P ⁻¹ᵁ ⊤ :=
+    (Scheme.Hom.preimage_top _).symm
+  -- Pullback of functions to the base-changed blowup localizes the section module.
+  let σ (P : PrimeSpectrum R) : Γ(Bl, ⊤) →ₗ[R] Γ(Z P, ⊤) :=
+    sectionsBaseChange (H P) (htop P).le
+  have (P : PrimeSpectrum R) : IsScalarTower R (A P) Γ(Z P, ⊤) :=
+    IsScalarTower.of_algebraMap_smul fun _ _ ↦ rfl
+  have hlocal (P : PrimeSpectrum R) : IsLocalizedModule P.asIdeal.primeCompl (σ P) :=
+    (isLocalizedModule_iff_isBaseChange _ (A P) _).mpr
+      (isBaseChange_sectionsBaseChange (H P) isCompact_univ isQuasiSeparated_univ
+        (htop P))
+  suffices hb : Function.Bijective (algebraMap R Γ(Bl, ⊤)) by
+    refine (Function.Bijective.of_comp_iff (f).appTop
+      (ConcreteCategory.bijective_of_isIso (Scheme.ΓSpecIso (.of R)).inv)).mp ?_
+    have heq : ⇑(algebraMap R Γ(Bl, ⊤)) =
+        (f).appTop ∘ (Scheme.ΓSpecIso (.of R)).inv := by
+      funext r
+      exact (ConcreteCategory.congr_hom (Scheme.baseRingToStructurePresheaf_app_top R (Bl)) r).trans
+        (baseRingToGlobalSections_apply R (Bl) r)
+    rwa [← heq]
+  have hsource (P : Ideal R) [hP : P.IsMaximal] :
+      IsLocalizedModule.AtPrime P (Algebra.linearMap R (A ⟨P, hP.isPrime⟩)) :=
+    (isLocalizedModule_iff_isLocalization' P.primeCompl _).2 (loc ⟨P, hP.isPrime⟩)
+  refine @bijective_of_isLocalized_maximal R R Γ(Bl, ⊤) _ _ _ _ _
+    (fun P hP ↦ A ⟨P, hP.isPrime⟩) _ _ (fun _ _ ↦ Algebra.linearMap R _) hsource
+    (fun P hP ↦ Γ(Z ⟨P, hP.isPrime⟩, ⊤)) _ _ (fun P hP ↦ σ ⟨P, hP.isPrime⟩)
+    (fun P hP ↦ hlocal ⟨P, hP.isPrime⟩) (Algebra.linearMap R Γ(Bl, ⊤)) ?_
+  intro P hP
+  let q : PrimeSpectrum R := ⟨P, hP.isPrime⟩
+  have : IsLocalizedModule P.primeCompl (Algebra.linearMap R (A q)) := hsource P
+  have : IsLocalizedModule P.primeCompl (σ q) := hlocal q
+  -- After localization the structural map is the one for the blowup over the local ring.
+  have heq : IsLocalizedModule.map P.primeCompl (Algebra.linearMap R (A q)) (σ q)
+      (Algebra.linearMap R Γ(Bl, ⊤)) = (Algebra.linearMap (A q) Γ(Z q, ⊤)).restrictScalars R := by
+    apply IsLocalizedModule.linearMap_ext P.primeCompl (Algebra.linearMap R (A q)) (σ q)
+    apply LinearMap.ext
+    intro r
+    rw [LinearMap.comp_apply, IsLocalizedModule.map_apply, LinearMap.comp_apply]
+    refine (sectionsBaseChange_apply (H q) (htop q).le _).trans ?_
+    have hbase := ConcreteCategory.congr_hom
+      (baseRingToStructurePresheaf_app_comp_appLE_of_isPullback
+        (R := R) (R' := A q) (X := Bl) (Y := Z q) (H q) (htop q).le) r
+    have hBl : algebraMap R Γ(Bl, ⊤) r =
+        ((Bl).baseRingToStructurePresheaf R).app (Opposite.op ⊤) r := rfl
+    have hZ (s : A q) : algebraMap (A q) Γ(Z q, ⊤) s =
+        ((Z q).baseRingToStructurePresheaf (A q)).app (Opposite.op ⊤) s := rfl
+    simp only [Algebra.linearMap_apply, LinearMap.restrictScalars_apply, hBl, hZ]
+    exact hbase
+  rw [heq]
+  have hmap (r : A q) : algebraMap (A q) Γ(Z q, ⊤) r =
+      (g q).appTop ((Scheme.ΓSpecIso (.of (A q))).inv r) := by
+    exact (ConcreteCategory.congr_hom (Scheme.baseRingToStructurePresheaf_app_top (A q) (Z q))
+      r).trans (baseRingToGlobalSections_apply (A q) (Z q) r)
+  exact (funext hmap).symm ▸ ((local_blowup_cohomology _ (h q)).1.comp
+    (ConcreteCategory.bijective_of_isIso (Scheme.ΓSpecIso (.of (A q))).inv))
+
+end Affine
 
 end QPainleve
