@@ -76,7 +76,7 @@ variable [Module.Finite ℤ B]
 realize, the algebra homomorphisms of their character fields. -/
 def rationalPullbackEquiv :
     { f : (scheme k C) ⤏ (scheme k B) //
-      f.IsDominant ∧ f.IsOver (Spec (CommRingCat.of k)) } ≃
+      f.IsDominant ∧ f.IsOver (scheme k C ↘ Spec (.of k)) (scheme k B ↘ Spec (.of k)) } ≃
       (FunctionField k B →ₐ[k] FunctionField k C) :=
   (Scheme.RationalMap.equivFunctionFieldAlgHom k).trans
     (AlgEquiv.arrowCongr (fractionRingAlgEquiv k B).symm (fractionRingAlgEquiv k C).symm)
@@ -84,7 +84,7 @@ def rationalPullbackEquiv :
 /-- The correspondence on character fields agrees with the pullback on rational functions. -/
 @[simp]
 theorem rationalPullbackEquiv_apply (f : (scheme k C) ⤏ (scheme k B)) [f.IsDominant]
-    [f.IsOver (Spec (CommRingCat.of k))] :
+    [f.IsOver (scheme k C ↘ Spec (.of k)) (scheme k B ↘ Spec (.of k))] :
     ↑(rationalPullbackEquiv k ⟨f, inferInstance, inferInstance⟩) =
       rationalPullback k f := by
   ext a
@@ -97,12 +97,12 @@ theorem rationalPullbackEquiv_apply (f : (scheme k C) ⤏ (scheme k B)) [f.IsDom
 theorem rationalPullback_rationalPullbackEquiv_symm
     (φ : FunctionField k B →ₐ[k] FunctionField k C) :
     let f := (rationalPullbackEquiv k).symm φ
-    letI := f.2.1
-    rationalPullback k f.1 = φ.toRingHom := by
+    letI := f.property.left
+    rationalPullback k f.val = φ.toRingHom := by
   let f := (rationalPullbackEquiv k).symm φ
-  have := f.2.1
-  have := f.2.2
-  exact (rationalPullbackEquiv_apply k f.1).symm.trans
+  have := f.property.left
+  have := f.property.right
+  exact (rationalPullbackEquiv_apply k f.val).symm.trans
     (congrArg AlgHom.toRingHom ((rationalPullbackEquiv k).apply_symm_apply φ))
 
 /-- The composition of the rational maps induced by a character field equivalence and its
@@ -112,12 +112,12 @@ theorem rationalPullbackEquiv_symm_comp_symm [Module.Finite ℤ C]
     (e : FunctionField k B ≃ₐ[k] FunctionField k C) :
     let f := (rationalPullbackEquiv k).symm e.toAlgHom
     let g := (rationalPullbackEquiv k).symm e.symm.toAlgHom
-    letI := f.2.1
-    f.1.comp g.1 = Scheme.RationalMap.id (scheme k C) := by
+    letI := f.property.left
+    f.val.comp g.val = Scheme.RationalMap.id (scheme k C) := by
   let f := (rationalPullbackEquiv k).symm e.toAlgHom
   let g := (rationalPullbackEquiv k).symm e.symm.toAlgHom
-  have := f.2.1
-  have := g.2.1
+  have := f.property.left
+  have := g.property.left
   apply (rationalPullback_eq_iff _ _).mp
   rw [rationalPullback_comp, rationalPullback_id]
   rw [rationalPullback_rationalPullbackEquiv_symm, rationalPullback_rationalPullbackEquiv_symm]
