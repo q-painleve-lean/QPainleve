@@ -27,7 +27,34 @@ namespace QPainleve.CharacterTorus
 
 universe u
 
-variable {A N : Type u} [AddCommGroup A] [AddCommGroup N] [IsAddFG A] [IsAddFG N]
+variable {A N : Type u} [AddCommGroup A] [AddCommGroup N]
+
+/-- Evaluation in additive coordinates, also for character groups that are not finitely
+generated. -/
+def affineEvaluation (k : Type u) [CommRing k] (v : A →+ N) :
+    scheme k (A × N) ⟶ scheme k A :=
+  map k ((AddMonoidHom.id A).prod v)
+
+instance isDominant_affineEvaluation (k : Type u) [CommRing k] (v : A →+ N) :
+    IsDominant (affineEvaluation k v) := by
+  have : IsDominant (map k (AddMonoidHom.fst A N) ≫ affineEvaluation k v) := by
+    rw [affineEvaluation, ← map_comp, AddMonoidHom.fst_comp_prod, map_id]
+    infer_instance
+  exact IsDominant.of_comp (map k (AddMonoidHom.fst A N)) _
+
+/-- Evaluation in additive coordinates pulls a monomial back along the graph of the charge map. -/
+@[simp]
+theorem affineRationalPullback_affineEvaluation_monomial (k : Type u) [Field k]
+    [Module.Free ℤ A] [Module.Free ℤ N] (v : A →+ N) (a : A) :
+    affineRationalPullback k (affineEvaluation k v).toRationalMap
+        (monomial k (Multiplicative.ofAdd a)) =
+      monomial k (Multiplicative.ofAdd (a, v a)) := by
+  unfold affineEvaluation
+  rw [affineRationalPullback_map ((AddMonoidHom.id A).prod v)
+    (fun _ _ h ↦ congrArg Prod.fst h)]
+  exact functionFieldMap_monomial k _ _ a
+
+variable [IsAddFG A] [IsAddFG N]
 
 section CommRing
 
