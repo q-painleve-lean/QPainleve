@@ -6,17 +6,22 @@ Authors: The QPainleve contributors
 module
 
 public import Mathlib.Algebra.MonoidAlgebra.Basic
+public import Mathlib.Algebra.MonoidAlgebra.NoZeroDivisors
+public import Mathlib.LinearAlgebra.FreeModule.Basic
 public import Mathlib.RingTheory.Localization.FractionRing
-public import QPainleve.Algebra.MonoidAlgebra.NoZeroDivisors
+public import TauCeti.Algebra.Group.UniqueProds.TorsionFree
 import TauCeti.Algebra.AlgebraicGroup.SplitTorus.Basic
 
 /-!
 # Character tori and their function fields
 
 The additive group algebra of the character lattice is the coordinate ring of a split torus.
-A lattice basis identifies it with a Laurent polynomial algebra. Tau Ceti's
-`SplitTorus.pointsMulEquiv` describes its points in these coordinates.
+A lattice basis identifies it with a Laurent polynomial algebra, with exponents given by the
+basis coordinates. Tau Ceti's `SplitTorus.pointsMulEquiv` describes its points in these coordinates.
 Monomials and pullbacks on the function field are defined intrinsically.
+For free lattices, the domain instance uses Tau Ceti's `HasUniqueDiv.to_twoUniqueSums`.
+For a lattice equivalence, `AddMonoidAlgebra.domCongr` and
+`IsFractionRing.algEquivOfAlgEquiv` give the corresponding function field equivalence.
 -/
 
 public noncomputable section
@@ -146,7 +151,12 @@ theorem functionField_hom_ext_basis {ι K : Type*} [CommSemiring K] [Algebra k K
     simp [e]
   simpa [← hsingle, Algebra.algHom, monomial_ofAdd] using h i
 
+section Free
+
 variable (k) [Module.Free ℤ B] [AddCommGroup C] [Module ℤ C] [Module.Free ℤ C]
+
+local instance {G : Type*} [AddCommGroup G] [Module ℤ G] [Module.Free ℤ G] : HasUniqueDiv G :=
+  .of_isTorsionFree ℤ G
 
 omit [Module ℤ B] [Module.Free ℤ B] [Module ℤ C] [Module.Free ℤ C] in
 private theorem injective_monomialLift (f : B →+ C) (hf : Function.Injective f) :
@@ -188,23 +198,19 @@ theorem functionFieldMap_comp {D : Type*} [AddCommGroup D] [Module ℤ D] [Modul
   apply functionField_hom_ext
   simp
 
-/-- A lattice equivalence gives an equivalence of torus function fields. -/
-def functionFieldEquiv (e : B ≃+ C) : FunctionField k B ≃ₐ[k] FunctionField k C :=
-  IsFractionRing.algEquivOfAlgEquiv (AddMonoidAlgebra.domCongr k k e)
-
+/-- The fraction ring equivalence induced by a lattice equivalence acts by the pullback
+along its underlying additive homomorphism. -/
 @[simp]
-theorem functionFieldEquiv_toAlgHom (e : B ≃+ C) :
-    (functionFieldEquiv k e).toAlgHom =
+theorem algEquivOfAlgEquiv_domCongr_toAlgHom (e : B ≃+ C) :
+    (IsFractionRing.algEquivOfAlgEquiv (AddMonoidAlgebra.domCongr k k e) :
+      FunctionField k B ≃ₐ[k] FunctionField k C).toAlgHom =
       functionFieldMap k e.toAddMonoidHom
         (by simpa only [AddEquiv.coe_toAddMonoidHom] using e.injective) := by
   apply functionField_hom_ext
   intro x
   rw [AlgEquiv.toAlgHom_apply, functionFieldMap_monomial]
-  simp [monomial_ofAdd, functionFieldEquiv, IsFractionRing.algEquivOfAlgEquiv_algebraMap]
+  simp [monomial_ofAdd]
 
-omit [Module ℤ B] [Module.Free ℤ B] [Module ℤ C] [Module.Free ℤ C] in
-@[simp]
-theorem functionFieldEquiv_symm (e : B ≃+ C) :
-    (functionFieldEquiv k e).symm = functionFieldEquiv k e.symm := (rfl)
+end Free
 
 end QPainleve.CharacterTorus

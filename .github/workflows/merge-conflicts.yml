@@ -112,10 +112,10 @@ jobs:
           sparse-checkout: scripts/pr_status
           persist-credentials: false
       - name: Prepare pinned shared tools
-        uses: q-painleve-lean/TauCetiTools/.github/actions/setup@7a2bb28c001cb8fca346d2d2fb164514a82674a9
+        uses: q-painleve-lean/TauCetiTools/.github/actions/setup@6e8ad3a6699266829a4b87fac2b0a385451e445c
         with:
           tools-repository: q-painleve-lean/TauCetiTools
-          tools-ref: 7a2bb28c001cb8fca346d2d2fb164514a82674a9
+          tools-ref: 6e8ad3a6699266829a4b87fac2b0a385451e445c
           project-directory: .
       - name: Label conflicting PRs
         env:
