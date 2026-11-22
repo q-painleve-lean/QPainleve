@@ -7,165 +7,147 @@ module
 
 public import QPainleve.AlgebraicGeometry.RationalMap.FunctionField
 public import QPainleve.Geometry.Toric.CharacterTorus.Basic
-public import TauCeti.Algebra.AlgebraicGroup.DiagonalizableGroup.Scheme.Basic
+public import TauCeti.Algebra.AlgebraicGroup.DiagonalizableGroup.Scheme.Points
 
 /-!
-# Split tori from character lattices
+# Function fields of character tori
 
-The spectrum of the character algebra has points given by multiplicative characters.
-A map on lattices gives a contravariant morphism of these schemes. The generic stalk identifies
-with the algebraic fraction field, so dominance and rational pullbacks can be checked in
-the algebra of monomials. The additive presentation is related to TauCeti's
-`DiagonalizableGroup.groupScheme`, and its points use `DiagonalizableGroup.pointEquiv`.
+TauCeti's `DiagonalizableGroup.groupScheme` gives the torus of a finite free character
+lattice. Its generic stalk identifies with the fraction field of the character algebra,
+and the pullback of a lattice map transports monomial exponents.
 -/
 
 public noncomputable section
 
-open AlgebraicGeometry CategoryTheory TauCeti
+open AlgebraicGeometry CategoryTheory TauCeti DiagonalizableGroup
 
 namespace QPainleve.CharacterTorus
 
 universe u
 
-variable (k B : Type u) [CommRing k] [AddCommGroup B]
+variable (k : Type u) [CommRing k] {G H : FGCommGrpCat.{u}}
 
-/-- The spectrum of the character algebra. A finite free character lattice gives a split torus. -/
-abbrev scheme : Scheme := Spec (CommRingCat.of (AddMonoidAlgebra k B))
+/-- In the group-algebra presentation, the structure morphism is induced by the coefficient
+map. -/
+@[reassoc]
+theorem groupScheme_X_hom (G : FGCommGrpCat.{u}) :
+    (groupScheme k G).X.hom =
+      eqToHom (groupScheme_X_left k G) ≫ Spec.algebraMap k (MonoidAlgebra k G) := by
+  have h : (groupScheme k G).X =
+      (Spec (CommRingCat.of (MonoidAlgebra k G))).asOver (Spec (CommRingCat.of k)) :=
+    (congrArg (fun X ↦ X.X) (groupScheme_def k G)).trans
+      (congrArg (fun X ↦ X.X) (hopfSpec_obj_eq_asOver k (coordinateRing k G).obj))
+  have hw := Over.w (eqToHom h)
+  rw [Over.eqToHom_left] at hw
+  exact hw.symm
 
-/-- The underlying scheme of a diagonalizable group is the spectrum in additive coordinates. -/
-def diagonalizableGroupSchemeIso (G : FGCommGrpCat.{u}) :
-    (DiagonalizableGroup.groupScheme k G).X.left ≅ scheme k (Additive G) :=
-  eqToIso (DiagonalizableGroup.groupScheme_X_left k G) ≪≫
-    Scheme.Spec.mapIso
-      (AddMonoidAlgebra.toMultiplicativeAlgEquiv k k (Additive G)).toRingEquiv.toCommRingCatIso.op
+/-- The pullback on group algebras of a diagonalizable group morphism transports exponents
+along the character-group homomorphism. -/
+@[reassoc]
+theorem groupSchemeMap_comp_toSpec (f : G ⟶ H) :
+    (groupSchemeMap k f).hom.hom.left ≫ eqToHom (groupScheme_X_left k G) =
+      eqToHom (groupScheme_X_left k H) ≫ Spec.map
+        (CommRingCat.ofHom (MonoidAlgebra.mapDomainAlgHom k k f.hom.hom).toRingHom) := by
+  rw [groupSchemeMap_def]
+  simp only [Grp.comp_hom_hom, Over.comp_left,
+    DiagonalizableGroup.eqToHom_hom_hom_left, Category.assoc, eqToHom_trans]
+  rfl
 
-/-- The structure morphism of the character scheme over its coefficient ring. -/
-abbrev structureMap : scheme k B ⟶ Spec (CommRingCat.of k) :=
-  Spec.algebraMap k (AddMonoidAlgebra k B)
+/-- An injective homomorphism of character groups induces a dominant morphism of schemes. -/
+theorem isDominant_groupSchemeMap (f : G ⟶ H) (hf : Function.Injective f.hom.hom) :
+    IsDominant (groupSchemeMap k f).hom.hom.left := by
+  apply IsDominant.of_comp_of_isOpenImmersion _ (eqToHom (groupScheme_X_left k G)) (H := ?_)
+  rw [groupSchemeMap_comp_toSpec]
+  have : IsDominant (Spec.map
+      (CommRingCat.ofHom (MonoidAlgebra.mapDomainAlgHom k k f.hom.hom).toRingHom)) := by
+    rw [isDominant_iff]
+    -- On affine spectra the underlying map is contraction of prime ideals.
+    change DenseRange (PrimeSpectrum.comap
+      (MonoidAlgebra.mapDomainAlgHom k k f.hom.hom).toRingHom)
+    rw [PrimeSpectrum.denseRange_comap_iff_ker_le_nilRadical,
+      (RingHom.injective_iff_ker_eq_bot _).mp (MonoidAlgebra.mapDomain_injective hf)]
+    exact bot_le
+  infer_instance
 
-/-- Points of the character scheme over the coefficient ring. -/
-abbrev Points :=
-  {p : Spec (CommRingCat.of k) ⟶ scheme k B //
-    p ≫ structureMap k B = 𝟙 (Spec (CommRingCat.of k))}
+section Field
 
-/-- Points over the coefficient ring are multiplicative characters of the lattice. -/
-def pointsEquiv : Points k B ≃ (Multiplicative B →* kˣ) := by
-  have h : Spec.algebraMap k k = 𝟙 (Spec (CommRingCat.of k)) := Spec.map_id _
-  exact (Equiv.subtypeEquivProp (by rw [h])).trans <|
-    Spec.homEquivAlgHom.trans <|
-      (AlgEquiv.arrowCongr (AddMonoidAlgebra.toMultiplicativeAlgEquiv k k B)
-        (AlgEquiv.refl : k ≃ₐ[k] k)).trans
-        DiagonalizableGroup.pointEquiv
+variable {k : Type u} [Field k]
 
-/-- The point attached to a character is evaluation of each monomial at that character. -/
-theorem pointsEquiv_symm_apply_val (c : Multiplicative B →* kˣ) :
-    ((pointsEquiv k B).symm c).val =
-      Spec.map (CommRingCat.ofHom
-        ((DiagonalizableGroup.point c).comp
-          (AddMonoidAlgebra.toMultiplicativeAlgEquiv k k B).toAlgHom).toRingHom) := (rfl)
+variable {B C : Type u} [AddCommGroup B] [AddCommGroup C] [IsAddFG B] [IsAddFG C]
 
-variable {B} {C : Type u} [AddCommGroup C]
+local notation "L" B => FGCommGrpCat.of (Multiplicative B)
+local notation "D" B => groupScheme k (L B)
+local notation "Dmap" f => groupSchemeMap k (FGCommGrpCat.ofHom (AddMonoidHom.toMultiplicative f))
 
-/-- A map on character lattices induces a contravariant morphism of their character schemes. -/
-def map (f : B →+ C) : scheme k C ⟶ scheme k B :=
-  Spec.map (CommRingCat.ofHom (AddMonoidAlgebra.mapDomainAlgHom k k f).toRingHom)
+private theorem isDomain_characterRing (B : Type u) [AddCommGroup B] [Module.Free ℤ B] :
+    IsDomain (MonoidAlgebra k (Multiplicative B)) :=
+  (AddMonoidAlgebra.toMultiplicativeAlgEquiv k k B).symm.injective.isDomain _
 
-/-- The affine ring map sends a character monomial to the monomial of the transported exponent. -/
-@[simp]
-theorem preimage_map (f : B →+ C) :
-    (Spec.preimage (map k f)).hom = (AddMonoidAlgebra.mapDomainAlgHom k k f).toRingHom := by
-  exact congrArg CommRingCat.Hom.hom
-    (Spec.preimage_map (CommRingCat.ofHom (AddMonoidAlgebra.mapDomainAlgHom k k f).toRingHom))
+/-- The group scheme of a finite free character lattice over a field is integral. -/
+instance isIntegral_groupScheme [Module.Free ℤ B] : IsIntegral (D B).X.left := by
+  rw [groupScheme_X_left]
+  let : IsDomain (MonoidAlgebra k (Multiplicative B)) := isDomain_characterRing B
+  infer_instance
 
-@[reassoc (attr := simp)]
-theorem map_structureMap (f : B →+ C) : map k f ≫ structureMap k B = structureMap k C := by
-  dsimp only [map, structureMap, Spec.algebraMap]
-  rw [← Spec.map_comp]
-  congr 1
-  ext r : 2
-  exact (AddMonoidAlgebra.mapDomainAlgHom k k f).commutes r
-
-@[simp]
-theorem map_id : map k (AddMonoidHom.id B) = 𝟙 (scheme k B) := by
-  rw [map, AddMonoidAlgebra.mapDomainAlgHom_id]
-  exact Spec.map_id _
-
-theorem map_comp {D : Type u} [AddCommGroup D] (f : B →+ C) (g : C →+ D) :
-    map k (g.comp f) = map k g ≫ map k f := by
-  rw [map, map, map, AddMonoidAlgebra.mapDomainAlgHom_comp, ← Spec.map_comp]
-  congr 1
-
-/-- The map of character schemes restricts a point character along the lattice map. -/
-theorem pointsEquiv_symm_comp_map (f : B →+ C) (c : Multiplicative C →* kˣ) :
-    ((pointsEquiv k C).symm c).val ≫ map k f =
-      ((pointsEquiv k B).symm (c.comp f.toMultiplicative)).val := by
-  rw [pointsEquiv_symm_apply_val, pointsEquiv_symm_apply_val, map, ← Spec.map_comp]
-  congr 1
-  apply CommRingCat.hom_ext
-  apply RingHom.ext
-  intro x
-  have h : ((DiagonalizableGroup.point c).comp
-        (AddMonoidAlgebra.toMultiplicativeAlgEquiv k k C).toAlgHom).comp
-          (AddMonoidAlgebra.mapDomainAlgHom k k f) =
-      (DiagonalizableGroup.point (c.comp f.toMultiplicative)).comp
-        (AddMonoidAlgebra.toMultiplicativeAlgEquiv k k B).toAlgHom := by
-    apply (AddMonoidAlgebra.lift k k B).symm.injective
-    apply MonoidHom.ext
-    intro y
-    simp [AddMonoidAlgebra.mapDomainAlgHom]
-  exact AlgHom.congr_fun h x
-
-/-- The isomorphism of character schemes induced by a lattice equivalence. -/
-def mapIso (e : B ≃+ C) : scheme k C ≅ scheme k B where
-  hom := map k e.toAddMonoidHom
-  inv := map k e.symm.toAddMonoidHom
-  hom_inv_id := by rw [← map_comp]; simp
-  inv_hom_id := by rw [← map_comp]; simp
-
-@[simp]
-theorem mapIso_hom (e : B ≃+ C) : (mapIso k e).hom = map k e.toAddMonoidHom := (rfl)
-
-@[simp]
-theorem mapIso_inv (e : B ≃+ C) : (mapIso k e).inv = map k e.symm.toAddMonoidHom := (rfl)
-
-end QPainleve.CharacterTorus
-
-namespace QPainleve.CharacterTorus
-
-universe u
-
-variable {k B C : Type u} [Field k] [AddCommGroup B] [AddCommGroup C]
-  [Module ℤ B] [Module.Free ℤ B] [Module ℤ C] [Module.Free ℤ C]
-
-omit [Module ℤ C] [Module.Free ℤ C] in
-/-- Injective lattice maps give dominant morphisms of character tori. -/
-theorem isDominant_map (f : B →+ C) (hf : Function.Injective f) : IsDominant (map k f) := by
-  rw [isDominant_iff]
-  -- The underlying map of an affine morphism is contraction of prime ideals.
-  change DenseRange (PrimeSpectrum.comap (AddMonoidAlgebra.mapDomainAlgHom k k f).toRingHom)
-  rw [PrimeSpectrum.denseRange_comap_iff_ker_le_nilRadical, nilradical_eq_zero]
-  exact ((RingHom.injective_iff_ker_eq_bot _).mp (AddMonoidAlgebra.mapDomain_injective hf)).le
-
-variable (k B) in
-/-- The fraction field of the group algebra identifies with the generic stalk of the torus. -/
-def fractionRingEquiv :
-    FunctionField k B ≃+* (scheme k B).functionField := by
-  let R := CommRingCat.of (AddMonoidAlgebra k B)
-  letI : IsDomain R := inferInstanceAs (IsDomain (AddMonoidAlgebra k B))
+private def specFractionRingEquiv {X : Scheme.{u}} [IrreducibleSpace X]
+    (R : CommRingCat.{u}) [IsDomain R] (h : X = Spec R) :
+    FractionRing R ≃+* X.functionField := by
+  subst X
   letI : Algebra R (Spec R).functionField :=
     (StructureSheaf.toStalk R (genericPoint (Spec R))).hom.toAlgebra
   letI : IsFractionRing R (Spec R).functionField := functionField_isFractionRing_of_affine R
   exact (FractionRing.algEquiv R (Spec R).functionField).toRingEquiv
 
+private theorem preimage_fromSpecStalk_comp {X : Scheme.{u}} [IrreducibleSpace X]
+    (R : CommRingCat.{u}) [IsDomain R] (h : X = Spec R) :
+    (Spec.preimage (X.fromSpecStalk (genericPoint X) ≫ eqToHom h)).hom =
+      (specFractionRingEquiv R h).toRingHom.comp (algebraMap R (FractionRing R)) := by
+  subst X
+  let s : R ⟶ (Spec R).functionField :=
+    StructureSheaf.toStalk R (genericPoint (Spec R))
+  have hs : (Spec R).fromSpecStalk (genericPoint (Spec R)) = Spec.map s :=
+    Spec.fromSpecStalk_eq' R _
+  rw [eqToHom_refl, Category.comp_id, hs, Spec.preimage_map]
+  let : Algebra R (Spec R).functionField := s.hom.toAlgebra
+  let : IsFractionRing R (Spec R).functionField := functionField_isFractionRing_of_affine R
+  exact RingHom.ext fun x ↦ ((FractionRing.algEquiv R (Spec R).functionField).commutes x).symm
+
 variable (k) in
-/-- The pullback of a dominant rational map between character tori on the fraction-field models. -/
-def rationalPullback (f : (scheme k C) ⤏ (scheme k B)) [f.IsDominant] :
+/-- The fraction field of the additive character algebra identifies with the generic stalk
+of the diagonalizable group scheme. -/
+def fractionRingEquiv (B : Type u) [AddCommGroup B] [IsAddFG B] [Module.Free ℤ B] :
+    FunctionField k B ≃+* (groupScheme k (L B)).X.left.functionField :=
+  let R := CommRingCat.of (MonoidAlgebra k (Multiplicative B))
+  letI : IsDomain R := isDomain_characterRing B
+  let e := (AddMonoidAlgebra.toMultiplicativeAlgEquiv k k B).toRingEquiv
+  (IsFractionRing.ringEquivOfRingEquiv e).trans
+    (specFractionRingEquiv R (groupScheme_X_left k (L B)))
+
+private theorem preimage_groupScheme_fromSpecStalk [Module.Free ℤ B] :
+    (Spec.preimage ((D B).X.left.fromSpecStalk (genericPoint (D B).X.left) ≫
+      eqToHom (groupScheme_X_left k (L B)))).hom.comp
+      (AddMonoidAlgebra.toMultiplicativeAlgEquiv k k B).toRingHom =
+        (fractionRingEquiv k B).toRingHom.comp (algebraMap (AddMonoidAlgebra k B)
+          (FunctionField k B)) := by
+  let R := CommRingCat.of (MonoidAlgebra k (Multiplicative B))
+  let : IsDomain R := isDomain_characterRing B
+  rw [preimage_fromSpecStalk_comp R]
+  apply RingHom.ext
+  intro x
+  simp [fractionRingEquiv, R]
+
+variable [Module.Free ℤ B] [Module.Free ℤ C]
+
+variable (k) in
+/-- The pullback of a dominant rational map of character tori on the fraction-field models. -/
+def rationalPullback (f : (D C).X.left ⤏ (D B).X.left) [f.IsDominant] :
     FunctionField k B →+* FunctionField k C :=
   ((fractionRingEquiv k C).symm.toRingHom.comp f.functionFieldMap.hom).comp
     (fractionRingEquiv k B).toRingHom
 
-/-- Equality of dominant rational maps is detected on the fraction fields of the character rings. -/
-theorem rationalPullback_eq_iff (f g : (scheme k C) ⤏ (scheme k B))
+/-- Equality of dominant rational maps of character tori is detected on the fraction fields
+of their character algebras. -/
+theorem rationalPullback_eq_iff (f g : (D C).X.left ⤏ (D B).X.left)
     [f.IsDominant] [g.IsDominant] : rationalPullback k f = rationalPullback k g ↔ f = g := by
   rw [← f.functionFieldMap_eq_iff g]
   refine ⟨fun h ↦ ?_, fun h ↦ by simp only [rationalPullback, h]⟩
@@ -174,53 +156,64 @@ theorem rationalPullback_eq_iff (f g : (scheme k C) ⤏ (scheme k B))
   obtain ⟨a, rfl⟩ := (fractionRingEquiv k B).surjective x
   exact (fractionRingEquiv k C).symm.injective (DFunLike.congr_fun h a)
 
-private theorem preimage_fromSpecStalk (k B : Type u) [Field k] [AddCommGroup B]
-    [Module ℤ B] [Module.Free ℤ B] :
-    (Spec.preimage ((scheme k B).fromSpecStalk (genericPoint (scheme k B)))).hom =
-      (fractionRingEquiv k B).toRingHom.comp
-        (algebraMap (AddMonoidAlgebra k B) (FunctionField k B)) := by
-  let R := CommRingCat.of (AddMonoidAlgebra k B)
-  let : IsDomain R := inferInstanceAs (IsDomain (AddMonoidAlgebra k B))
-  let : Algebra R (Spec R).functionField :=
-    (StructureSheaf.toStalk R (genericPoint (Spec R))).hom.toAlgebra
-  let : IsFractionRing R (Spec R).functionField := functionField_isFractionRing_of_affine R
-  have h : Spec.preimage ((Spec R).fromSpecStalk (genericPoint (Spec R))) =
-      StructureSheaf.toStalk R (genericPoint (Spec R)) :=
-    congrArg Spec.preimage (Spec.fromSpecStalk_eq' R _) |>.trans (Spec.preimage_map _)
-  apply RingHom.ext
-  intro x
-  exact (congrArg (fun ψ : R ⟶ (Spec R).functionField ↦ ψ x) h).trans
-    ((FractionRing.algEquiv R (Spec R).functionField).commutes x).symm
-
-/-- Restricting the fraction-field pullback to regular functions gives the map on the generic
-point of the source. -/
-theorem rationalPullback_comp_algebraMap (f : (scheme k C) ⤏ (scheme k B)) [f.IsDominant] :
-    (rationalPullback k f).comp (algebraMap (AddMonoidAlgebra k B) (FunctionField k B)) =
-      (fractionRingEquiv k C).symm.toRingHom.comp (Spec.preimage f.fromFunctionField).hom := by
-  have h := congrArg Spec.preimage f.specMap_functionFieldMap
-  rw [Spec.preimage_comp, Spec.preimage_map] at h
-  rw [← h, CommRingCat.hom_comp, preimage_fromSpecStalk]
+/-- Restricting the fraction-field pullback to the character algebra gives the map from the
+generic point of the source, in additive coordinates. -/
+theorem rationalPullback_comp_algebraMap
+    (f : (D C).X.left ⤏ (D B).X.left) [f.IsDominant] :
+    (rationalPullback k f).comp
+        (algebraMap (AddMonoidAlgebra k B) (FunctionField k B)) =
+      (fractionRingEquiv k C).symm.toRingHom.comp
+        ((Spec.preimage (f.fromFunctionField ≫ eqToHom (groupScheme_X_left k (L B)))).hom.comp
+          (AddMonoidAlgebra.toMultiplicativeAlgEquiv k k B).toRingHom) := by
+  rw [← f.specMap_functionFieldMap_assoc, Spec.preimage_comp, CommRingCat.hom_comp,
+    Spec.preimage_map, RingHom.comp_assoc,
+    preimage_groupScheme_fromSpecStalk]
   simp only [rationalPullback, RingHom.comp_assoc]
 
-/-- A lattice map's algebraic and scheme-theoretic pullbacks agree on the fraction fields. -/
-theorem rationalPullback_map (f : B →+ C) (hf : Function.Injective f) :
-    let : IsDominant (map k f) := isDominant_map f hf
-    rationalPullback k (map k f).toRationalMap = (functionFieldMap k f hf).toRingHom := by
-  let : IsDominant (map k f) := isDominant_map f hf
-  apply IsFractionRing.ringHom_ext (A := AddMonoidAlgebra k B)
-  have h : (map k f).toRationalMap.fromFunctionField =
-      (scheme k C).fromSpecStalk (genericPoint (scheme k C)) ≫ map k f := by
+/-- On fraction fields, the native group-scheme morphism agrees with transport of exponents
+along the injective character-group map. -/
+theorem rationalPullback_groupSchemeMap (f : B →+ C) (hf : Function.Injective f) :
+    let : IsDominant (Dmap f).hom.hom.left :=
+      isDominant_groupSchemeMap k _ hf
+    rationalPullback k (Dmap f).hom.hom.left.toRationalMap =
+      (functionFieldMap k f hf).toRingHom := by
+  let : IsDominant (Dmap f).hom.hom.left :=
+      isDominant_groupSchemeMap k _ hf
+  let g := (Dmap f).hom.hom.left
+  have hg : g.toRationalMap.fromFunctionField =
+      (D C).X.left.fromSpecStalk (genericPoint (D C).X.left) ≫ g := by
     rw [Scheme.Hom.toRationalMap, Scheme.RationalMap.fromFunctionField_toRationalMap]
     exact Scheme.PartialMap.fromSpecStalkOfMem_toPartialMap _ _
-  intro p
-  have eqOnCoordinates := DFunLike.congr_fun
-    (rationalPullback_comp_algebraMap (map k f).toRationalMap) p
-  rw [h, Spec.preimage_comp, CommRingCat.hom_comp, preimage_fromSpecStalk,
-    preimage_map] at eqOnCoordinates
-  simp only [RingHom.comp_apply] at eqOnCoordinates
-  rw [eqOnCoordinates]
-  calc
-    _ = _ := (fractionRingEquiv k C).symm_apply_apply _
-    _ = _ := (functionFieldMap_algebraMap k f hf p).symm
+  have h : (rationalPullback k g.toRationalMap).comp
+      (algebraMap (AddMonoidAlgebra k B) (FunctionField k B)) =
+        (functionFieldMap k f hf).toRingHom.comp
+          (algebraMap (AddMonoidAlgebra k B) (FunctionField k B)) := by
+    rw [rationalPullback_comp_algebraMap, hg, Category.assoc, groupSchemeMap_comp_toSpec,
+      ← Category.assoc, Spec.preimage_comp, Spec.preimage_map, CommRingCat.hom_comp]
+    have hcoord :
+        (MonoidAlgebra.mapDomainAlgHom k k f.toMultiplicative).comp
+            (AddMonoidAlgebra.toMultiplicativeAlgEquiv k k B).toAlgHom =
+          (AddMonoidAlgebra.toMultiplicativeAlgEquiv k k C).toAlgHom.comp
+            (AddMonoidAlgebra.mapDomainAlgHom k k f) := by
+      apply AddMonoidAlgebra.algHom_ext
+      · intro x
+        simp
+      · exact Subsingleton.elim _ _
+    have hrings :
+        (MonoidAlgebra.mapDomainAlgHom k k f.toMultiplicative).toRingHom.comp
+            (AddMonoidAlgebra.toMultiplicativeAlgEquiv k k B).toRingHom =
+          (AddMonoidAlgebra.toMultiplicativeAlgEquiv k k C).toRingHom.comp
+            (AddMonoidAlgebra.mapDomainAlgHom k k f).toRingHom :=
+      congrArg AlgHom.toRingHom hcoord
+    rw [RingHom.comp_assoc, CommRingCat.hom_ofHom, FGCommGrpCat.hom_hom_ofHom,
+      hrings, ← RingHom.comp_assoc (AddMonoidAlgebra.mapDomainAlgHom k k f).toRingHom,
+      preimage_groupScheme_fromSpecStalk]
+    apply RingHom.ext
+    intro x
+    exact ((fractionRingEquiv k C).symm_apply_apply _).trans
+      (functionFieldMap_algebraMap k f hf x).symm
+  exact IsFractionRing.ringHom_ext (fun x ↦ DFunLike.congr_fun h x)
+
+end Field
 
 end QPainleve.CharacterTorus
