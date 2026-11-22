@@ -173,9 +173,10 @@ torus evaluation morphism after identifying the respective exponent lattices. -/
 @[simp]
 theorem xEvaluationPullback_monomial (a : ι →₀ ℤ) :
     xEvaluationPullback v k (monomial k (ofAdd a)) =
-      rationalPullback k (CharacterTorus.evaluation k v.toAddMonoidHom).toRationalMap
+      affineRationalPullback k (affineEvaluation k v.toAddMonoidHom).toRationalMap
         (monomial k (ofAdd (r a))) := by
-  rw [xEvaluationPullback, functionFieldMap_monomial, rationalPullback_evaluation_monomial]
+  rw [xEvaluationPullback, functionFieldMap_monomial,
+    affineRationalPullback_affineEvaluation_monomial]
   rfl
 
 /-- Evaluation of an independent X coordinate is the product of the matching center
