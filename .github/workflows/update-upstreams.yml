@@ -43,10 +43,10 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           persist-credentials: false
-      - uses: q-painleve-lean/TauCetiTools/.github/actions/setup@26f54d65db5123b86e73111ab74e9cb6dc70877f
+      - uses: q-painleve-lean/TauCetiTools/.github/actions/setup@c29ec7f1efa50437562b88e448d94d5fd668db5f
         with:
           tools-repository: q-painleve-lean/TauCetiTools
-          tools-ref: 26f54d65db5123b86e73111ab74e9cb6dc70877f
+          tools-ref: c29ec7f1efa50437562b88e448d94d5fd668db5f
       - name: Install elan (trusted, pinned + checksum)
         env:
           ELAN_SHA256: df0b2b3a439961ffcbb3985214365ffe40f49bc871df04dff268c7d8e21ca8b2
