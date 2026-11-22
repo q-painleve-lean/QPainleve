@@ -6,8 +6,8 @@ Authors: Yuma Mizuno
 module
 
 public import Mathlib.GroupTheory.GroupExtension.Basic
+public import QPainleve.SignedClusterModularGroup.BoundaryReflection
 public import TauCeti.LinearAlgebra.BilinearForm.Isometry
-public import Mathlib.Data.ZMod.Basic
 
 /-!
 # Signed boundary isometries
@@ -17,6 +17,9 @@ A signed boundary isometry of a cyclic family `D` is an isometry together with a
 The positive-sign kernel consists of rotations. A reversing involution splits the sign
 extension, so Mathlib's `GroupExtension.Splitting.semidirectProductMulEquiv` gives the
 semidirect product with conjugation by that involution.
+For a unimodular symmetric cycle lattice with primitive characteristic total class,
+`SignedBoundaryIsometryGroup.exists_semidirectProductMulEquiv` obtains this splitting from
+`exists_cycle_reversing_involution`.
 
 For an injectively indexed family of length at least three, the underlying isometry determines
 the sign. For lengths one and two, both signs give the same index action and the signed group
@@ -195,6 +198,40 @@ theorem coe_signSplitting_conjAct_neg_one (s : signedBoundaryIsometryGroup B D)
       (e := signSplitting B D s hs hss (-1)) (n := g))
   have hinv : s⁻¹ = s := inv_eq_of_mul_eq_one_right hss
   simpa [GroupExtension.Splitting.conjAct, hinv] using h
+
+/-- The reflection of a unimodular symmetric boundary cycle with primitive characteristic
+total class gives an order-two section of the sign projection. The signed isometry group is
+the corresponding semidirect product, with the negative sign acting by conjugation. -/
+theorem exists_semidirectProductMulEquiv [Module.Free ℤ L] [Module.Finite ℤ L] [NeZero n]
+    (hSymm : B.IsSymm)
+    (hUnimodular : Function.Bijective (B : L → (L →ₗ[ℤ] ℤ)))
+    (hIntersection : ∀ i j : ZMod n,
+      B (D i) (D j) = (-2 : ℤ) * (if i = j then 1 else 0) +
+        (if j = i + 1 then 1 else 0) + (if j = i - 1 then 1 else 0))
+    (hPrimitive : ∃ ℓ : L →ₗ[ℤ] ℤ, ℓ (∑ i : ZMod n, D i) = 1)
+    (hCharacteristic : ∀ x : L, Even (B x x - B x (∑ i : ZMod n, D i))) :
+    ∃ (s : signedBoundaryIsometryGroup B D) (hs : sign B D s = -1) (hss : s * s = 1),
+      (∃ j₀ : ZMod n, ∀ j, (toIsometry B D s).val (D j) = D (2 * j₀ - j)) ∧
+      orderOf s = 2 ∧
+      ∃ e : (boundaryRotationGroup B D ⋊[(signSplitting B D s hs hss).conjAct] ℤˣ) ≃*
+          signedBoundaryIsometryGroup B D,
+        e (SemidirectProduct.inr (-1)) = s := by
+  obtain ⟨j₀, f, g, _, _, hinv, _, _, hg, _⟩ :=
+    exists_cycle_reversing_involution L B hSymm hUnimodular n D hIntersection hPrimitive
+      hCharacteristic
+  have hrev : ∃ k : ZMod n, ∀ j, g (D j) = D (-j + k) :=
+    ⟨2 * j₀, fun j ↦ by simpa only [sub_eq_neg_add] using hg j⟩
+  let s := reversal g hrev
+  have hs : sign B D s = -1 := by simp [s]
+  have hss : s * s = 1 := reversal_mul_self g hrev hinv
+  let splitting := signSplitting B D s hs hss
+  refine ⟨s, hs, hss, ⟨j₀, ?_⟩, orderOf_eq_two_of_sign_eq_neg_one B D s hs hss,
+    splitting.semidirectProductMulEquiv, ?_⟩
+  · intro j
+    simpa only [s, toIsometry_apply, coe_reversal,
+      LinearMap.BilinForm.coe_isometryGroupEquivIsometryEquiv_symm] using hg j
+  · change rotationInclusion B D 1 * splitting (-1) = s
+    simp [splitting]
 
 /-- On an injectively indexed boundary of length at least three, the underlying isometry
 determines the sign. -/
