@@ -7,10 +7,9 @@ module
 
 public import Mathlib.LinearAlgebra.FreeModule.Finite.Quotient
 public import Mathlib.LinearAlgebra.Matrix.BilinearForm
-public import TauCeti.Algebra.Cluster.ExchangeMatrix.Factorization
+public import QPainleve.Algebra.Cluster.XMutation.Monomial
 
 import Mathlib.GroupTheory.IndexNSmul
-import TauCeti.Algebra.BigOperators.ZPow
 
 /-!
 # Charge kernels under cluster mutation
@@ -18,11 +17,9 @@ import TauCeti.Algebra.BigOperators.ZPow
 An integer charge map from the exponent lattice pulls an alternating form back to the
 exchange matrix. Equal exchange matrices identify finite-index charge images when the
 forms are right-separating. Mutating the charges changes the form by congruence
-and induces an integral equivalence of the charge kernels. The binomial factor in
-cluster X mutation cancels on the mutated exchange-matrix kernel, which contains the
-mutated charge kernel.
+and induces an integral equivalence of the charge kernels.
 
-The basis change and the X coordinate formulas follow Fock and Goncharov,
+The basis change follows Fock and Goncharov,
 *Cluster ensembles, quantization and the dilogarithm*, §1.2.2 and §1.2.4.
 The charge pairing gives the geometric matrix `ε`. Tau Ceti's exchange convention is
 `B = -ε`, so the change of basis uses `matrixMutationRight` on `-ε` at sign `1`.
@@ -34,7 +31,7 @@ namespace QPainleve.Cluster
 
 open LinearMap (BilinForm)
 open Matrix TauCeti
-open scoped BigOperators Int
+open scoped Int
 
 variable {ι N : Type*} [Fintype ι] [DecidableEq ι] [AddCommGroup N]
 
@@ -137,36 +134,6 @@ theorem exists_charge_range_equiv {N₁ N₂ : Type*} [AddCommGroup N₁] [AddCo
   rw [he, he]
   exact (congr($hform x y)).symm
 
-/-- The integral change from mutated exponents to original exponents. Its matrix is the
-positive-sign right mutation factor of the native exchange matrix `-ε`. -/
-def chargeMutationEquiv (ε : Matrix ι ι ℤ) (k : ι) : (ι → ℤ) ≃ₗ[ℤ] (ι → ℤ) :=
-  LinearEquiv.ofInvolutive (matrixMutationRight (Function.Embedding.refl ι) (-ε) k 1).toLin'
-    fun x ↦ by
-      simp only [Matrix.toLin'_apply, Matrix.mulVec_mulVec, matrixMutationRight_mul_self,
-        Matrix.one_mulVec]
-
-/-- The basis change acts by the native right mutation factor at sign `1`. -/
-theorem chargeMutationEquiv_apply (ε : Matrix ι ι ℤ) (k : ι) (x : ι → ℤ) :
-    chargeMutationEquiv ε k x = matrixMutationRight (Function.Embedding.refl ι) (-ε) k 1 *ᵥ x :=
-  Matrix.toLin'_apply _ _
-
-/-- The pivot exponent is negated and receives the weighted sum of the other exponents. -/
-theorem chargeMutationEquiv_apply_self (B : Matrix ι ι ℤ) (k : ι) (x : ι → ℤ) :
-    chargeMutationEquiv B k x k = -x k + ∑ i ∈ Finset.univ.erase k, (-B k i)⁺ * x i := by
-  rw [chargeMutationEquiv_apply, Matrix.mulVec, dotProduct,
-    ← Finset.sum_erase_add _ _ (Finset.mem_univ k)]
-  simp only [matrixMutationRight_apply_row, ↓reduceIte, neg_one_mul]
-  rw [add_comm]
-  refine congrArg (-x k + ·) (Finset.sum_congr rfl fun i hi ↦ ?_)
-  simp [Finset.ne_of_mem_erase hi]
-
-/-- The basis change fixes each nonpivot exponent coordinate. -/
-@[simp]
-theorem chargeMutationEquiv_apply_of_ne (B : Matrix ι ι ℤ) {k i : ι} (hi : i ≠ k) (x : ι → ℤ) :
-    chargeMutationEquiv B k x i = x i := by
-  rw [chargeMutationEquiv_apply, Matrix.mulVec, dotProduct]
-  simp [matrixMutationRight_apply_of_ne _ _ _ _ hi, Matrix.one_apply]
-
 /-- Mutation of the charge map by precomposition with the integral basis change. -/
 def chargeMutation (ω : BilinForm ℤ N) (v : (ι → ℤ) →ₗ[ℤ] N) (k : ι) :
     (ι → ℤ) →ₗ[ℤ] N :=
@@ -253,48 +220,5 @@ theorem coe_chargeKernelMutation_symm_apply (ω : BilinForm ℤ N) (v : (ι → 
     ((chargeKernelMutation ω v k).symm x : ι → ℤ) =
       chargeMutationEquiv (chargeExchangeMatrix ω v) k (x : ι → ℤ) :=
   (rfl)
-
-/-- The binomial exponent in an X mutation vanishes on the mutated exchange-matrix kernel. -/
-theorem sum_neg_mul_eq_zero_of_mem_ker_mutation (B : ExchangeMatrix (Function.Embedding.refl ι))
-    (k : ι) {x : ι → ℤ} (hx : x ∈ (B.mutation k).matrix.mulVecLin.ker) :
-    ∑ i ∈ Finset.univ.erase k, -B.matrix k i * x i = 0 := by
-  have h := congrFun (LinearMap.mem_ker.mp hx) k
-  have hdiag : B.matrix k k = 0 := B.matrix_row_self k
-  rw [ExchangeMatrix.mutation_matrix, Matrix.mulVecLin_apply, Matrix.mulVec, dotProduct] at h
-  simp only [matrixMutation_refl_apply_row] at h
-  rwa [← Finset.sum_erase_add _ _ (Finset.mem_univ k),
-    hdiag, neg_zero, zero_mul, add_zero, Pi.zero_apply] at h
-
-/-- A monomial in the mutated exchange-matrix kernel pulls back under X mutation to the
-monomial with the transported exponent. In the native convention the coefficient is
-`B.matrix k i`, which equals `ε i k` when `B.matrix = -ε` is skew-symmetric.
-Only the pivot coordinate and its binomial need to be nonzero. -/
-theorem prod_zpow_xMutation_eq {F : Type*} [CommGroupWithZero F] [Add F]
-    (B : ExchangeMatrix (Function.Embedding.refl ι)) (k : ι) {x : ι → ℤ}
-    (hx : x ∈ (B.mutation k).matrix.mulVecLin.ker)
-    (X : ι → F) (hX : X k ≠ 0) (hbin : 1 + X k ≠ 0) :
-    (∏ i, (if i = k then (X k)⁻¹ else
-      X i * X k ^ (B.matrix k i)⁺ * (1 + X k) ^ (-B.matrix k i)) ^ x i) =
-      ∏ i, X i ^ chargeMutationEquiv (-B.matrix) k x i := by
-  have hprod :
-      (∏ i ∈ Finset.univ.erase k, (if i = k then (X k)⁻¹ else
-        X i * X k ^ (B.matrix k i)⁺ * (1 + X k) ^ (-B.matrix k i)) ^ x i) =
-      ∏ i ∈ Finset.univ.erase k,
-        X i ^ x i * X k ^ ((B.matrix k i)⁺ * x i) * (1 + X k) ^ (-B.matrix k i * x i) := by
-    refine Finset.prod_congr rfl fun i hi ↦ ?_
-    simp only [ite_eq_right (Finset.ne_of_mem_erase hi), mul_zpow, zpow_mul]
-  rw [← Finset.mul_prod_erase _ _ (Finset.mem_univ k),
-    ← Finset.mul_prod_erase _ _ (Finset.mem_univ k), hprod]
-  simp only [ite_true, inv_zpow, ← zpow_neg, chargeMutationEquiv_apply_self, Matrix.neg_apply,
-    neg_neg]
-  rw [Finset.prod_mul_distrib, Finset.prod_mul_distrib,
-    Finset.prod_zpow_eq_zpow_sum_of_isUnit _ (isUnit_iff_ne_zero.mpr hX),
-    Finset.prod_zpow_eq_zpow_sum_of_isUnit _ (isUnit_iff_ne_zero.mpr hbin),
-    sum_neg_mul_eq_zero_of_mem_ker_mutation B k hx, zpow_zero, mul_one, zpow_add₀ hX]
-  have hfixed (i : ι) (hi : i ∈ Finset.univ.erase k) :
-      X i ^ chargeMutationEquiv (-B.matrix) k x i = X i ^ x i := by
-    rw [chargeMutationEquiv_apply_of_ne _ (Finset.ne_of_mem_erase hi)]
-  rw [Finset.prod_congr rfl hfixed]
-  ac_rfl
 
 end QPainleve.Cluster
