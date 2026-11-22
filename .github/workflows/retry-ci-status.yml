@@ -20,12 +20,12 @@ permissions:
 
 jobs:
   publish:
-    uses: q-painleve-lean/TauCetiTools/.github/workflows/retry-ci-status.yml@0330ae3c374cf332fe9bb4e4af5e9abf79bf9f71
+    uses: q-painleve-lean/TauCetiTools/.github/workflows/retry-ci-status.yml@bf49319f27d910443b1f8eb26b017b054fe2aa5b
     with:
       source_run_id: ${{ inputs.source_run_id || '' }}
       source_attempt: ${{ inputs.source_attempt || '1' }}
       tools_repository: q-painleve-lean/TauCetiTools
-      tools_ref: 0330ae3c374cf332fe9bb4e4af5e9abf79bf9f71
+      tools_ref: bf49319f27d910443b1f8eb26b017b054fe2aa5b
       project_ref: ${{ github.workflow_sha }}
     secrets:
       CI_READ_APP_ID: ${{ secrets.CI_READ_APP_ID }}

@@ -28,7 +28,7 @@ completed_dir = "Completed"
 # branch is upstream main plus the fixes listed in its DOWNSTREAM.md.
 [tools.tools]
 repo = "q-painleve-lean/TauCetiTools"
-ref = "0330ae3c374cf332fe9bb4e4af5e9abf79bf9f71"
+ref = "bf49319f27d910443b1f8eb26b017b054fe2aa5b"
 [tools.review]
 repo = "TauCetiProject/TauCetiReview"
 ref = "60472b78568d274587971787276e9009f957217c"
