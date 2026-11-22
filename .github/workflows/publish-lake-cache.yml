@@ -74,10 +74,10 @@ jobs:
           persist-credentials: false
 
       - name: Prepare pinned shared tools
-        uses: TauCetiProject/TauCetiTools/.github/actions/setup@dc0b554a7af5ca4a933492ee5e879c5fdde93b09
+        uses: q-painleve-lean/TauCetiTools/.github/actions/setup@7a2bb28c001cb8fca346d2d2fb164514a82674a9
         with:
-          tools-repository: TauCetiProject/TauCetiTools
-          tools-ref: dc0b554a7af5ca4a933492ee5e879c5fdde93b09
+          tools-repository: q-painleve-lean/TauCetiTools
+          tools-ref: 7a2bb28c001cb8fca346d2d2fb164514a82674a9
           project-directory: .
           source-mirror-enabled: false
       - name: Check out workflow-pinned publication planning tools

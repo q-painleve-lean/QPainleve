@@ -109,8 +109,8 @@ jobs:
     uses: TauCetiProject/TauCetiReview/.github/workflows/merge-only.yml@60472b78568d274587971787276e9009f957217c
     with:
       review_ref: 60472b78568d274587971787276e9009f957217c
-      tools_repository: TauCetiProject/TauCetiTools
-      tools_ref: dc0b554a7af5ca4a933492ee5e879c5fdde93b09
+      tools_repository: q-painleve-lean/TauCetiTools
+      tools_ref: 7a2bb28c001cb8fca346d2d2fb164514a82674a9
       pr: ${{ needs.resolve.outputs.pr }}
       merge_backend: ${{ vars.MERGE_BACKEND || 'queue' }}
     # Pass only the App credentials merge-only needs, not all of QPainleve's secrets.
