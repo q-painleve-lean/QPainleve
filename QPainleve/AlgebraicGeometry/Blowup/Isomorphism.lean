@@ -34,13 +34,27 @@ def blowupIso (J : Y.IdealSheafData) (e : X ≅ Y) {I : X.IdealSheafData}
   letI := (J.isPullback_blowupMap_of_flat e.hom).isIso_snd_of_isIso
   eqToIso (congrArg blowup h.symm) ≪≫ asIso (J.blowupMap e.hom)
 
+/-- Over the inverse-image center, the lift is the native map of blowups. -/
+@[simp]
+theorem blowupIso_hom_comap (J : Y.IdealSheafData) (e : X ≅ Y) :
+    (J.blowupIso e rfl).hom = J.blowupMap e.hom := by
+  simp [blowupIso]
+
 /-- The lifted isomorphism lies over the given base isomorphism. -/
 @[reassoc (attr := simp)]
 theorem blowupIso_hom_blowupToBase (J : Y.IdealSheafData) (e : X ≅ Y)
     {I : X.IdealSheafData} (h : J.comap e.hom = I) :
     (J.blowupIso e h).hom ≫ J.blowupToBase = I.blowupToBase ≫ e.hom := by
   subst I
-  simp [blowupIso]
+  simp
+
+/-- The projection square determines the forward morphism of the lift. -/
+theorem eq_blowupIso_hom (J : Y.IdealSheafData) (e : X ≅ Y)
+    {I : X.IdealSheafData} (h : J.comap e.hom = I) {f : I.blowup ⟶ J.blowup}
+    (hf : f ≫ J.blowupToBase = I.blowupToBase ≫ e.hom) : f = (J.blowupIso e h).hom := by
+  subst I
+  rw [blowupIso_hom_comap]
+  exact J.eq_blowupMap e.hom hf
 
 /-- The projection square determines the isomorphism of blowups. -/
 theorem blowupIso_unique (J : Y.IdealSheafData) (e : X ≅ Y)
@@ -48,8 +62,7 @@ theorem blowupIso_unique (J : Y.IdealSheafData) (e : X ≅ Y)
     (hg : g.hom ≫ J.blowupToBase = I.blowupToBase ≫ e.hom) :
     g = J.blowupIso e h := by
   apply Iso.ext
-  subst I
-  simpa [blowupIso] using J.eq_blowupMap e.hom hg
+  exact J.eq_blowupIso_hom e h hg
 
 /-- The lifted isomorphism pulls back the target exceptional ideal to the source exceptional
 ideal. -/
@@ -58,7 +71,7 @@ theorem comap_blowupIso_hom (J : Y.IdealSheafData) (e : X ≅ Y)
     {I : X.IdealSheafData} (h : J.comap e.hom = I) :
     (J.comap J.blowupToBase).comap (J.blowupIso e h).hom = I.comap I.blowupToBase := by
   subst I
-  simpa [blowupIso] using J.comap_comap_blowupMap e.hom
+  simpa only [blowupIso_hom_comap] using J.comap_comap_blowupMap e.hom
 
 /-- The identity lifts to the identity. -/
 @[simp]

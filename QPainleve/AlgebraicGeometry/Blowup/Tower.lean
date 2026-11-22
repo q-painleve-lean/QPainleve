@@ -5,12 +5,7 @@ Authors: The QPainleve contributors
 -/
 module
 
-public import QPainleve.AlgebraicGeometry.Blowup.Isomorphism
-public import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.Invertible
-public import TauCeti.AlgebraicGeometry.LineBundle.Functoriality
-
-import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.Pullback
-import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.TensorProduct
+public import QPainleve.AlgebraicGeometry.Blowup.Exceptional.Class
 
 /-!
 # Ordered towers of blowups
@@ -20,8 +15,7 @@ through two towers matches these ideals by scheme-theoretic inverse image at eve
 The lifted isomorphism respects the projection to the base and pulls back each ordered
 exceptional class to its counterpart. Exceptional classes from earlier stages are taken
 with their full pullbacks, as needed when a later center lies on an earlier exceptional
-divisor. The class comparison uses Tau Ceti's
-`IsEffectiveCartier.pullback_mk_toInvertibleSheaf` for the newly formed exceptional divisor.
+divisor.
 -/
 
 public section
@@ -87,7 +81,7 @@ def exceptionalClass :
     {n : ℕ} → {Y : Scheme.{u}} → BlowupTower X n Y → Fin n → LineBundleClass Y
   | _, _, .nil => Fin.elim0
   | _, _, .snoc T I => Fin.lastCases
-      (LineBundleClass.mk I.isEffectiveCartier_comap_blowupToBase.toInvertibleSheaf)⁻¹
+      I.blowupExceptionalClass
       (fun i ↦ LineBundleClass.pullback I.blowupToBase (T.exceptionalClass i))
 
 /-- At the last index, the marking is the class of the new exceptional divisor. -/
@@ -95,7 +89,7 @@ def exceptionalClass :
 theorem exceptionalClass_snoc_last (T : BlowupTower X n Y) (I : Y.IdealSheafData) :
     (T.snoc I).exceptionalClass (Fin.last n) =
       (LineBundleClass.mk I.isEffectiveCartier_comap_blowupToBase.toInvertibleSheaf)⁻¹ := by
-  simp [exceptionalClass]
+  simp [exceptionalClass, Scheme.IdealSheafData.blowupExceptionalClass_def]
 
 /-- At each earlier index, the marking pulls back along the last projection. -/
 @[simp]
@@ -249,29 +243,91 @@ theorem pullback_exceptionalClass (h : IsLift e T T' g) (i : Fin n) :
     cases T' with
     | snoc T' I' =>
       obtain ⟨f, hf, hI, rfl⟩ := snoc_iff.mp h
-      let k := I'.blowupIso f hI
       refine Fin.lastCases ?_ (fun j ↦ ?_) i
-      · have hE := I'.comap_blowupIso_hom f hI
-        have hF := I'.isEffectiveCartier_comap_blowupToBase
-        simp only [exceptionalClass_snoc_last, LineBundleClass.pullback_inv]
-        rw [hF.pullback_mk_toInvertibleSheaf (hF.comap k.hom)]
-        exact congrArg Inv.inv (LineBundleClass.mk_toInvertibleSheaf_congr _ _ hE)
+      · simpa only [exceptionalClass_snoc_last, Scheme.IdealSheafData.blowupExceptionalClass_def]
+          using I'.pullback_blowupExceptionalClass f hI
       · rw [exceptionalClass_snoc_castSucc, exceptionalClass_snoc_castSucc,
           LineBundleClass.pullback_comp, Scheme.IdealSheafData.blowupIso_hom_blowupToBase,
           ← LineBundleClass.pullback_comp, ih hf j]
 
 end IsLift
 
-/-- Pulling back each center along the isomorphism at its stage transports a tower along any
-base isomorphism. The resulting tower and the lift retain the order of all centers. -/
-theorem exists_isLift (T : BlowupTower X' n Y') (e : X ≅ X') :
-    ∃ (Y : Scheme.{u}) (U : BlowupTower X n Y) (g : Y ≅ Y'), IsLift e U T g := by
+/-- A target tower equipped with a lift of the base isomorphism from the source tower. -/
+structure Transport (T : BlowupTower X n Y) (e : X ≅ X') where
+  /-- The final scheme of the target tower. -/
+  top : Scheme.{u}
+  /-- The target tower with its original order of centers. -/
+  tower : BlowupTower X' n top
+  /-- The isomorphism of the final schemes. -/
+  iso : Y ≅ top
+  /-- The isomorphism lifts the base isomorphism through the two towers. -/
+  isLift : IsLift e T tower iso
+
+/-- Extend the transport by taking the inverse image of the next source center along the
+inverse of the preceding lift. -/
+def Transport.snoc {T : BlowupTower X n Y} {e : X ≅ X'}
+    (p : Transport T e) (I : Y.IdealSheafData) : Transport (T.snoc I) e :=
+  have hI : (I.comap p.iso.inv).comap p.iso.hom = I := by
+    rw [← Scheme.IdealSheafData.comap_comp, Iso.hom_inv_id, Scheme.IdealSheafData.comap_id]
+  ⟨_, p.tower.snoc (I.comap p.iso.inv), (I.comap p.iso.inv).blowupIso p.iso hI, p.isLift.snoc hI⟩
+
+/-- Transport the ordered centers along the successive lifts of the base isomorphism. -/
+def transport {n : ℕ} {Y : Scheme.{u}} (T : BlowupTower X n Y) (e : X ≅ X') : Transport T e :=
+  match T with
+  | .nil => ⟨X', .nil, e, IsLift.nil_iff.mpr rfl⟩
+  | .snoc T I => (T.transport e).snoc I
+termination_by structural T
+
+/-- The transport of an empty tower is empty. -/
+@[simp]
+theorem transport_nil (e : X ≅ X') :
+    (nil (X := X)).transport e = ⟨X', .nil, e, IsLift.nil_iff.mpr rfl⟩ := (rfl)
+
+/-- Transporting one more center extends the transport through the preceding stages. -/
+@[simp]
+theorem transport_snoc (T : BlowupTower X n Y) (e : X ≅ X') (I : Y.IdealSheafData) :
+    (T.snoc I).transport e = (T.transport e).snoc I := (rfl)
+
+/-- The base isomorphism and the source tower determine the transported tower and its lift. -/
+theorem Transport.eq_transport {T : BlowupTower X n Y} {e : X ≅ X'}
+    (p : Transport T e) : p = T.transport e := by
   induction T with
-  | nil => exact ⟨X, nil, e, by simp⟩
+  | nil =>
+    obtain ⟨_, U, g, hg⟩ := p
+    cases U
+    cases IsLift.nil_iff.mp hg
+    rfl
   | snoc T I ih =>
-    obtain ⟨Y, U, g, hg⟩ := ih
-    refine ⟨(I.comap g.hom).blowup, U.snoc (I.comap g.hom), I.blowupIso g rfl, ?_⟩
-    exact hg.snoc rfl
+    obtain ⟨_, U, g, hg⟩ := p
+    cases U with
+    | snoc U J =>
+      obtain ⟨f, hf, hJ, rfl⟩ := IsLift.snoc_iff.mp hg
+      have hcenter := congrArg (fun K ↦ Scheme.IdealSheafData.comap K f.inv) hJ
+      rw [← Scheme.IdealSheafData.comap_comp, Iso.inv_hom_id,
+        Scheme.IdealSheafData.comap_id] at hcenter
+      subst J
+      exact congrArg (fun p : Transport T e ↦ p.snoc I) (ih ⟨_, U, f, hf⟩)
+
+/-- Transport by the identity recovers the original tower and the identity on its final
+scheme. -/
+@[simp]
+theorem transport_refl (T : BlowupTower X n Y) :
+    T.transport (Iso.refl X) = ⟨Y, T, Iso.refl Y, IsLift.refl T⟩ :=
+  (Transport.eq_transport _).symm
+
+/-- Transport by a composite agrees with successive transport of the centers and composition
+of the induced lifts. -/
+theorem transport_trans (T : BlowupTower X n Y) (e : X ≅ X') (f : X' ≅ Z) :
+    let p := T.transport e
+    let q := p.tower.transport f
+    T.transport (e ≪≫ f) = ⟨q.top, q.tower, p.iso ≪≫ q.iso, p.isLift.trans q.isLift⟩ :=
+  (Transport.eq_transport _).symm
+
+/-- Every tower admits a lift with the given target tower and base isomorphism. -/
+theorem exists_isLift (T : BlowupTower X' n Y') (e : X ≅ X') :
+    ∃ (Y : Scheme.{u}) (U : BlowupTower X n Y) (g : Y ≅ Y'), IsLift e U T g :=
+  let p := T.transport e.symm
+  ⟨p.top, p.tower, p.iso.symm, p.isLift.symm⟩
 
 end BlowupTower
 end QPainleve

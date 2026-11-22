@@ -5,7 +5,7 @@ Authors: The QPainleve contributors
 -/
 module
 
-public import QPainleve.AlgebraicGeometry.Blowup.ExceptionalFiber
+public import QPainleve.AlgebraicGeometry.Blowup.Exceptional.Fiber
 public import TauCeti.AlgebraicGeometry.Blowup.ExceptionalDivisor
 public import TauCeti.AlgebraicGeometry.IntersectionNumber.ExceptionalCurve.Basic
 public import TauCeti.AlgebraicGeometry.Morphisms.Smooth.RelativeDimension
