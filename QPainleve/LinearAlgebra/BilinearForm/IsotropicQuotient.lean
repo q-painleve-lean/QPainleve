@@ -15,7 +15,9 @@ import Mathlib.LinearAlgebra.Matrix.Notation
 import Mathlib.Tactic.FinCases
 import Mathlib.Tactic.Ring
 import TauCeti.LinearAlgebra.BilinearForm.Isometry.Basic
-import TauCeti.LinearAlgebra.PerfectPairing.Basis
+import TauCeti.LinearAlgebra.BilinearForm.LinearIndependent
+import TauCeti.LinearAlgebra.BilinearForm.Modular
+import TauCeti.LinearAlgebra.QuadraticForm.Prod
 import TauCeti.LinearAlgebra.Submodule.Compl
 
 /-!
@@ -26,8 +28,9 @@ If `δ` pairs to one with a vector `f`, this quotient is isometric to the orthog
 complement of the plane spanned by `δ` and `f`. This gives the rank, unimodularity and
 signature of the quotient. A characteristic `δ` makes the quotient even.
 
-The quotient construction uses Mathlib's `LinearMap.IsRefl.liftQ₂` and the plane splitting
-uses Tau Ceti's `LinearMap.BilinForm.isCompl_orthogonal_of_restrict_bijective`.
+The quotient construction uses Mathlib's `LinearMap.IsRefl.liftQ₂`. The plane splitting
+uses Tau Ceti's Gram matrix criteria for linear independence and `1`-modularity, and
+`LinearMap.BilinForm.isCompl_orthogonal_of_restrict_bijective`.
 The quotient isometry uses `Submodule.isCompl_comap_subtype_iff` and
 `Submodule.quotientEquivOfIsCompl` on the orthogonal complement of `δ`.
 -/
@@ -80,46 +83,25 @@ variable {R M : Type*} [CommRing R] [AddCommGroup M] [Module R M]
 variable {B : LinearMap.BilinForm R M} (hB : B.IsSymm) {δ f : M}
 
 include hB in
-private theorem linearIndependent_pair_of_isotropic (hδ : B δ δ = 0) (hδf : B δ f = 1) :
-    LinearIndependent R ![δ, f] := by
-  rw [Fintype.linearIndependent_iff]
-  intro c hc
-  simp only [Fin.sum_univ_two, Matrix.cons_val_zero, Matrix.cons_val_one] at hc
-  have hb := congrArg (B δ) hc
-  simp [hδ, hδf] at hb
-  have ha := congrArg (B f) hc
-  simp [hb, ← hB.eq δ f, hδf] at ha
-  intro i
-  fin_cases i <;> assumption
+private theorem isotropicPlane_gram (hδ : B δ δ = 0) (hδf : B δ f = 1) (i j : Fin 2) :
+    B (![δ, f] i) (![δ, f] j) = (1 : R) * (!![0, 1; 1, B f f] : Matrix (Fin 2) (Fin 2) R) i j := by
+  fin_cases i <;> fin_cases j <;> simp [hδ, hδf, hB.eq f δ]
 
 private noncomputable def isotropicPlaneBasis (hδ : B δ δ = 0) (hδf : B δ f = 1) :
     Module.Basis (Fin 2) R (plane[R, δ, f]) :=
-  (Module.Basis.span (linearIndependent_pair_of_isotropic hB hδ hδf)).map
-    (LinearEquiv.ofEq _ _ (by simp [Matrix.range_cons, Set.pair_comm]))
-
-@[simp]
-private theorem coe_isotropicPlaneBasis (hδ : B δ δ = 0) (hδf : B δ f = 1) (i : Fin 2) :
-    (isotropicPlaneBasis hB hδ hδf i : M) = ![δ, f] i := by
-  simp [isotropicPlaneBasis]
-
-include hB in
-private theorem isPerfPair_restrict_isotropicPlane (hδ : B δ δ = 0) (hδf : B δ f = 1) :
-    (B.restrict (plane[R, δ, f])).IsPerfPair := by
-  let b := isotropicPlaneBasis hB hδ hδf
-  apply b.isPerfPair_of_isUnit_det b
-  have hmat : LinearMap.toMatrix₂ b b (B.restrict (plane[R, δ, f])) = !![0, 1; 1, B f f] := by
-    ext i j
-    fin_cases i <;> fin_cases j <;>
-      simp [b, LinearMap.toMatrix₂_apply, restrict_apply, hδ, hδf, ← hB.eq δ f]
-  simp [hmat, Matrix.det_fin_two_of]
+  (Module.Basis.span (linearIndependent_of_isUnit_det (nonZeroDivisors R).one_mem
+    (isotropicPlane_gram hB hδ hδf) (by simp [Matrix.det_fin_two_of]))).map
+    (LinearEquiv.ofEq _ _ (by rw [Matrix.range_cons_cons_empty]))
 
 /-- An isotropic vector and a vector pairing to one with it span a unimodular plane, which
 splits off orthogonally. -/
 theorem IsSymm.isCompl_span_pair_orthogonal_of_isotropic (hB : B.IsSymm)
     (hδ : B δ δ = 0) (hδf : B δ f = 1) :
-    IsCompl (plane[R, δ, f]) (B.orthogonal (plane[R, δ, f])) :=
-  B.isCompl_orthogonal_of_restrict_bijective (plane[R, δ, f]) (hB.restrict _)
-    (isPerfPair_restrict_isotropicPlane hB hδ hδf).bijective_left
+    IsCompl (plane[R, δ, f]) (B.orthogonal (plane[R, δ, f])) := by
+  have hperf := isModular_one_iff.mp (isModular_restrict_span_range (nonZeroDivisors R).one_mem
+    (isotropicPlane_gram hB hδ hδf) (by simp [Matrix.det_fin_two_of]))
+  rw [Matrix.range_cons_cons_empty] at hperf
+  exact B.isCompl_orthogonal_of_restrict_bijective _ (hB.restrict _) hperf.bijective_left
 
 private theorem orthogonal_plane_le_orthogonal_line :
     B.orthogonal (plane[R, δ, f]) ≤ B.orthogonal (R ∙ δ) :=
@@ -223,16 +205,9 @@ private theorem sig_isotropicPlane (hδ : B δ δ = 0) (hδf : B δ f = 1) :
   -- The vectors `(±1 - f²)δ + 2f` have squares `±4`.
   have hnorm (a : ℤ) :
       Q ((1 : K) ⊗ₜ[ℤ] ((a - B f f) • d + (2 : ℤ) • t)) = (4 : K) * a := by
-    have hdd : B.restrict P d d = 0 := hδ
-    have hdt : B.restrict P d t = 1 := hδf
-    have htd : B.restrict P t d = 1 := (hB.eq f δ).trans hδf
-    have htt : B.restrict P t t = B f f := rfl
-    have hZ : B.restrict P ((a - B f f) • d + (2 : ℤ) • t)
-        ((a - B f f) • d + (2 : ℤ) • t) = 4 * a := by
-      simp only [add_left, add_right, smul_left, smul_right, hdd, hdt, htd, htt]
-      ring
-    simp only [Q, BilinMap.toQuadraticMap_apply, baseChange_tmul, one_mul, hZ]
-    simp [Algebra.smul_def]
+    simp [Q, d, t, BilinMap.toQuadraticMap_apply, baseChange_tmul, restrict_apply,
+      LinearMap.domRestrict_apply, add_right, hδ, hδf, hB.eq f δ, Algebra.smul_def]
+    ring
   have hpos : 0 < sigPos Q := by
     refine Nat.pos_of_ne_zero fun h ↦ ?_
     have hh := (QuadraticForm.forall_nonpos_iff_sigPos_eq_zero Q).mpr h
@@ -249,16 +224,6 @@ private theorem sig_isotropicPlane (hδ : B δ δ = 0) (hδf : B δ f = 1) :
   have hsum := QuadraticForm.sigPos_add_sigNeg_add_radical (Q := Q)
   omega
 
-private noncomputable def isotropicPlaneProdIsometry (hδ : B δ δ = 0) (hδf : B δ f = 1) :
-    ((B.restrict (plane[ℤ, δ, f])).prod
-      (B.restrict (B.orthogonal (plane[ℤ, δ, f])))).IsometryEquiv B where
-  toLinearEquiv := Submodule.prodEquivOfIsCompl _ _
-    (hB.isCompl_span_pair_orthogonal_of_isotropic hδ hδf)
-  map_app' x y := by
-    have hxy := B.mem_orthogonal_iff.mp y.2.property x.1 x.1.property
-    have hyx := B.mem_orthogonal_iff.mp x.2.property y.1 y.1.property
-    simp [prod_apply, restrict_apply, add_right, hxy, hB.isRefl.eq_zero hyx]
-
 /-- Orthogonal reduction at an isotropic vector pairing to one removes one positive and
 one negative direction from the scalar-extended form. -/
 theorem IsSymm.sig_orthogonalQuotientForm (hB : B.IsSymm) [Module.Finite ℤ M]
@@ -268,12 +233,33 @@ theorem IsSymm.sig_orthogonalQuotientForm (hB : B.IsSymm) [Module.Finite ℤ M]
       sigNeg Q + 1 = sigNeg (B.baseChange K).toQuadraticMap := by
   let P := plane[ℤ, δ, f]
   let C := B.restrict (B.orthogonal P)
+  let Q : QuadraticForm ℤ M := B.toQuadraticMap
+  have horth : orthogonal Q.polarBilin P = B.orthogonal P := by
+    have hflip : LinearMap.flip B = B := LinearMap.ext₂ fun x y ↦ hB.eq y x
+    ext x
+    simp [Q, BilinMap.polarBilin_toQuadraticMap, hflip, mem_orthogonal_iff, ← two_mul]
+  have hsplit : IsCompl P (orthogonal Q.polarBilin P) :=
+    horth.symm ▸ hB.isCompl_span_pair_orthogonal_of_isotropic hδ hδf
   have he : ((B.baseChange K).toQuadraticMap).Equivalent
       (((B.restrict P).baseChange K).toQuadraticMap.prod (C.baseChange K).toQuadraticMap) := by
+    obtain ⟨e⟩ : (((B.restrict P).prod C).toQuadraticMap).Equivalent Q := by
+      rw [toQuadraticMap_prod]
+      -- The quadratic restrictions take the diagonals of the bilinear restrictions.
+      change ((Q.restrict P).prod (Q.restrict (B.orthogonal P))).Equivalent Q
+      rw [← horth]
+      exact ⟨QuadraticMap.IsometryEquiv.prodRestrictOrthogonal Q P hsplit⟩
+    have eB : ((B.restrict P).prod C).IsometryEquiv B := by
+      refine ⟨e.toLinearEquiv, fun x y ↦ ?_⟩
+      -- The stored linear map is `e`, which preserves twice the pairing by polarization.
+      change B (e x) (e y) = ((B.restrict P).prod C) x y
+      have h := e.polar_apply y x
+      simp only [Q, BilinMap.polar_toQuadraticMap, prod_apply, restrict_apply,
+        LinearMap.domRestrict_apply, C, hB.eq (e y) (e x), hB.eq (y.1 : M) x.1,
+        hB.eq (y.2 : M) x.2] at h ⊢
+      omega
     rw [← toQuadraticMap_prod]
     exact Equivalent.toQuadraticMap
-      ⟨((isotropicPlaneProdIsometry hB hδ hδf).baseChange K).symm.trans
-        (TauCeti.bilinFormBaseChangeProdIsometry K _ _)⟩
+      ⟨(eB.baseChange K).symm.trans (TauCeti.bilinFormBaseChangeProdIsometry K _ _)⟩
   have hq := Equivalent.toQuadraticMap (B₁ := C.baseChange K)
     ⟨(hB.isometryEquivOrthogonalQuotient hδ hδf).baseChange K⟩
   obtain ⟨hp, hn⟩ := sig_isotropicPlane hB K hδ hδf

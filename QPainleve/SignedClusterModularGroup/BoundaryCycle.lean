@@ -12,13 +12,15 @@ public import Mathlib.LinearAlgebra.BilinearForm.TensorProduct
 public import TauCeti.Algebra.Module.Primitive
 import Mathlib.Algebra.Ring.Periodic
 import Mathlib.LinearAlgebra.Dimension.Localization
-import Mathlib.RingTheory.Localization.BaseChange
+import Mathlib.RingTheory.Flat.Localization
 import Mathlib.Tactic.Abel
 import Mathlib.Tactic.LinearCombination
 import Mathlib.Tactic.Ring
 import TauCeti.LinearAlgebra.BilinearForm.BaseChange
+import TauCeti.LinearAlgebra.BilinearForm.Orthogonal
 import TauCeti.LinearAlgebra.IntegralLattice.Overlattice.Index
 import TauCeti.LinearAlgebra.IntegralLattice.RootLattice.TypeA.Basic
+import TauCeti.LinearAlgebra.TensorProduct.Kernel
 
 /-!
 # Boundary cycles in bilinear lattices
@@ -30,7 +32,8 @@ saturation quotient embeds into the additive group of `ZMod n` via the weighted 
 the component degrees.
 The boundary form makes the image square-zero. In the type-A discriminant group this gives an
 integral overlattice, whose index square divides `n` by the discriminant formula.
-The radical calculation also gives the rational orthogonal decomposition.
+The radical calculation gives the rational orthogonal decomposition via Tau Ceti's
+`LinearMap.BilinForm.orthogonal_inf` and `LinearMap.ker_baseChange_of_flat`.
 -/
 
 public section
@@ -165,17 +168,8 @@ include hGram in
 to the orthogonal complement of the total boundary class. -/
 theorem span_sup_orthogonal (hSymm : B.IsSymm) (hB : B.Nondegenerate) :
     M ⊔ B.orthogonal M = B.orthogonal (K ∙ δ) := by
-  have hrad := span_inf_orthogonal hGram hSymm
-  have hδM : K ∙ δ ≤ M := hrad ▸ inf_le_left
-  have hδorth : K ∙ δ ≤ B.orthogonal M := hrad ▸ inf_le_right
-  apply Submodule.eq_of_le_of_finrank_le
-  · refine sup_le (fun x hx ↦ ?_) (B.orthogonal_le hδM)
-    exact fun y hy ↦ (hSymm.eq _ _).trans (hδorth hy x hx)
-  have hsum := Submodule.finrank_sup_add_finrank_inf_eq M (B.orthogonal M)
-  have hdim := B.finrank_orthogonal hB M
-  rw [hrad, hdim] at hsum
-  rw [B.finrank_orthogonal hB]
-  omega
+  rw [← span_inf_orthogonal hGram hSymm, B.orthogonal_inf hB,
+    B.orthogonal_orthogonal hB hSymm.isRefl, sup_comm]
 
 end Field
 
@@ -499,30 +493,24 @@ theorem span_sup_orthogonal_rat [Module.Free ℤ L] [Module.Finite ℤ L]
   let W := Submodule.span ℚ (Set.range (u ∘ D))
   have hW : (M).baseChange ℚ = W := by
     rw [Submodule.baseChange_span, ← Set.range_comp]
+  -- Orthogonality is the kernel of the map of pairings with the boundary components.
+  let degrees := LinearMap.pi fun i ↦ B (D i)
+  let e := TensorProduct.piScalarRight ℤ ℚ ℚ (ZMod n)
+  have hdegrees : e.toLinearMap.comp (degrees.baseChange ℚ) =
+      LinearMap.pi fun i ↦ b (u (D i)) := by
+    apply TensorProduct.AlgebraTensorModule.ext
+    intro r x
+    ext i
+    simp [e, degrees, b, u, TensorProduct.mk_apply, Algebra.smul_def]
+  have hker : LinearMap.ker degrees = B.orthogonal M := by
+    ext x
+    simp [degrees, BilinForm.orthogonal, LinearMap.mem_ker, funext_iff]
   have horth : (B.orthogonal M).baseChange ℚ = b.orthogonal W := by
-    apply le_antisymm
-    · rw [Submodule.baseChange_le_iff_le_comap]
-      intro x hx
-      refine Submodule.mem_orthogonalBilin_span.mpr ?_
-      rintro _ ⟨i, rfl⟩
-      have hp := (BilinForm.mem_orthogonal_iff.mp hx) (D i)
-        (Submodule.subset_span (Set.mem_range_self i))
-      simp [b, u, TensorProduct.mk_apply, hp]
-    · intro z hz
-      -- Clear denominators in the ambient space. Orthogonality survives multiplication by s.
-      obtain ⟨⟨x, s⟩, hs⟩ := IsLocalizedModule.surj (nonZeroDivisors ℤ) u z
-      have hs' : ((s : ℤ) : ℚ) • z = u x := by
-        rw [Int.cast_smul_eq_zsmul]
-        exact hs
-      have hsq : ((s : ℤ) : ℚ) ≠ 0 := Int.cast_ne_zero.mpr (nonZeroDivisors.coe_ne_zero s)
-      apply (Submodule.smul_mem_iff _ hsq).mp
-      rw [hs', TensorProduct.mk_apply]
-      refine Submodule.tmul_mem_baseChange_of_mem _ (Submodule.mem_orthogonalBilin_span.mpr ?_)
-      rintro _ ⟨i, rfl⟩
-      have hp := (BilinForm.mem_orthogonal_iff.mp hz) (u (D i))
-        (Submodule.subset_span (Set.mem_range_self i))
-      have hx : b (u (D i)) (u x) = 0 := by rw [← hs', map_smul, hp, smul_zero]
-      simpa [b, u, TensorProduct.mk_apply, Int.smul_one_eq_cast] using hx
+    have : Module.Flat ℤ ℚ := IsLocalization.flat ℚ (nonZeroDivisors ℤ)
+    rw [← hker, ← LinearMap.ker_baseChange_of_flat,
+      ← LinearMap.ker_comp_of_ker_eq_bot _ e.ker, hdegrees]
+    ext x
+    simp [W, BilinForm.orthogonal, LinearMap.mem_ker, funext_iff]
   have hg (i j : ZMod n) : b (u (D i)) (u (D j)) =
       (-2 : ℚ) * (if i = j then 1 else 0) +
         (if j = i + 1 then 1 else 0) + (if j = i - 1 then 1 else 0) := by
