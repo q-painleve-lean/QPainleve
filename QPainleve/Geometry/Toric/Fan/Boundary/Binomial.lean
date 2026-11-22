@@ -5,9 +5,7 @@ Authors: The QPainleve contributors
 -/
 module
 
-public import QPainleve.AlgebraicGeometry.OrderOfVanishing.Base
 public import QPainleve.Geometry.Toric.Fan.Boundary.Basic
-public import TauCeti.Geometry.Toric.Algebraic.Fan.Over
 
 import TauCeti.AlgebraicGeometry.WeilDivisor.Scheme.Order
 
@@ -25,37 +23,6 @@ public noncomputable section
 open AlgebraicGeometry CategoryTheory Multiplicative
 
 namespace TauCeti.Toric
-
-variable {N V : Type*} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
-  {i : N →+ V} {σ : PointedCone ℝ V}
-
-/-- At an exponent of weight zero, the coefficient of every element of the ray ideal vanishes. -/
-theorem coeff_eq_zero_of_mem_rayIdeal (hi : IsIntegralLattice i) (hσ : IsToricCone i σ)
-    (hreg : IsRegularCone i σ) (ρ : ToricRay σ) {f : affineCoordinateRing hi σ}
-    (hf : f ∈ rayIdeal hi hσ ρ) (m : dualSemigroup hi σ)
-    (hm : (m : N →+ ℤ) (primitiveGenerator hi hσ ρ) = 0) : f.coeff (ofAdd m) = 0 := by
-  obtain ⟨l, b, hb⟩ := hreg.exists_basis_sum
-  let q := dualSemigroupCoord hi hσ hb (Sum.inl ρ)
-  rw [rayIdeal_eq_span hi hσ hb, Ideal.mem_span_singleton] at hf
-  obtain ⟨g, rfl⟩ := hf
-  rw [MonoidAlgebra.of_apply]
-  apply MonoidAlgebra.coeff_single_mul_of_forall_mul_ne
-  intro d hd
-  let u := primitiveGenerator hi hσ ρ
-  have hq : (q : N →+ ℤ) u = 1 := by
-    simp [q, u, ← (hb ρ).eq_primitiveGenerator hi hσ]
-  have hdu : (0 : ℤ) ≤ (d.toAdd : N →+ ℤ) u := by
-    have h := (mem_dualSemigroup hi _).mp d.toAdd.property
-      (ρ.val.isFaceOf.le (primitiveGenerator_mem hi hσ ρ))
-    exact_mod_cast (hi.realCharacter_apply _ u ▸ h)
-  have h := congrArg (fun x : Multiplicative (dualSemigroup hi σ) ↦
-    (x.toAdd : N →+ ℤ) u) hd
-  have heq : (q : N →+ ℤ) u + (d.toAdd : N →+ ℤ) u = (m : N →+ ℤ) u := by
-    simpa only [toAdd_mul, toAdd_ofAdd, AddSubmonoid.coe_add, AddMonoidHom.add_apply] using h
-  have hm' : (m : N →+ ℤ) u = 0 := hm
-  omega
-
-section Complex
 
 variable {N : Type} {V : Type*} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V}
@@ -116,15 +83,6 @@ private theorem one_add_mul_character_nonneg (hΦ : Φ.IsRegular) (ρ : Φ.Ray)
       exact hf
     exact X.ord_eq_zero_of_mem_basicOpen ⟨x.val, trivial⟩ hmem
 
-/-- A scalar multiple of a lattice character has the same boundary order as the character itself. -/
-theorem ord_rayBoundaryPoint_mul_character (hΦ : Φ.IsRegular) (ρ : Φ.Ray)
-    (c : ℂˣ) (m : N →+ ℤ) :
-    Φ.algebraicRealization.ord (C (c : ℂ) * Φ.character (ofAdd m))
-        (Φ.rayBoundaryPoint hΦ ρ).val = m ρ.primitiveGenerator := by
-  rw [Scheme.ord_mul ((map_ne_zero C).mpr c.ne_zero)
-      ((Group.isUnit (ofAdd m)).map Φ.character).ne_zero,
-    Scheme.ord_algebraMap_base_unit, zero_add, Φ.ord_rayBoundaryPoint_character]
-
 /-- A nontrivial character cannot cancel the constant term of a binomial at a boundary ray.
 The binomial is nonzero, and its order is the minimum of zero and the character's order. -/
 theorem ord_rayBoundaryPoint_one_add_mul_character (hΦ : Φ.IsRegular) (ρ : Φ.Ray)
@@ -149,7 +107,5 @@ theorem ord_rayBoundaryPoint_one_add_mul_character (hΦ : Φ.IsRegular) (ρ : Φ
     exact ⟨mul_ne_zero hc hne, rfl⟩
 
 end Fan
-
-end Complex
 
 end TauCeti.Toric
