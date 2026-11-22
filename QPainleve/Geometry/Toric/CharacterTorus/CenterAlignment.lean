@@ -19,8 +19,9 @@ group of the quotient by the charge image, with free unit coordinates and root-o
 coordinates in a Smith basis, as described in
 `QPainleve.LinearAlgebra.SmithQuotientCharacters`.
 
-The extension of characters uses Mathlib's Baer criterion and Tau Ceti's divisibility of
-units of algebraically closed fields.
+The ratio of two center characters agreeing on the charge kernel descends to the charge image
+by `AddMonoidHom.liftOfSurjective`. Mathlib's Baer criterion extends it to the ambient group,
+using Tau Ceti's divisibility of units for algebraically closed fields.
 -/
 
 public noncomputable section
@@ -75,39 +76,33 @@ theorem translationFiberEquiv_symm_apply (v : A →+ N) (z₀ : Multiplicative N
     ((translationFiberEquiv k v z₀).symm j).val (ofAdd x) =
       z₀ (ofAdd x) * j (ofAdd (x : N ⧸ v.range)) := (rfl)
 
-variable {k}
-
 /-- Two centers are related by a translation exactly when their characters agree on the
 charge kernel. The existence direction extends their ratio from the charge image to the
-ambient group and applies in every rank. -/
-theorem exists_center_translation_iff [RootableBy kˣ ℕ]
-    (v : A →+ N) (c₁ c₂ : Multiplicative A →* kˣ) :
-    (∃ z : Multiplicative N →* kˣ, c₁ * z.comp v.toMultiplicative = c₂) ↔
+ambient group for any rootable commutative group of character values. -/
+theorem exists_center_translation_iff {G : Type*} [CommGroup G] [RootableBy G ℕ]
+    (v : A →+ N) (c₁ c₂ : Multiplicative A →* G) :
+    (∃ z : Multiplicative N →* G, c₁ * z.comp v.toMultiplicative = c₂) ↔
       ∀ a ∈ v.ker, c₁ (ofAdd a) = c₂ (ofAdd a) := by
   constructor
   · rintro ⟨z, rfl⟩ a ha
     simp [AddMonoidHom.mem_ker.mp ha]
   · intro h
-    let d := (c₂ / c₁).toAdditiveRight
-    let q := QuotientAddGroup.lift v.ker d fun a ha ↦ by
-      simp [d, h a ha]
-    let e := QuotientAddGroup.quotientKerEquivRange v
-    let dH := q.comp e.symm.toAddMonoidHom
-    let : DivisibleBy (Additive kˣ) ℕ :=
-      ⟨RootableBy.root (A := kˣ), RootableBy.root_zero (A := kˣ),
-        fun a hn ↦ RootableBy.root_cancel (A := kˣ) a hn⟩
-    let : DivisibleBy (Additive kˣ) ℤ := AddGroup.divisibleByIntOfDivisibleByNat _
-    obtain ⟨u, hu⟩ := (Module.Baer.of_divisible (Additive kˣ)).extension_property_addMonoidHom
-      v.range.subtype Subtype.val_injective dH
+    let ratio := (c₂ / c₁).toAdditiveRight
+    have hker : v.rangeRestrict.ker ≤ ratio.ker := by
+      rw [AddMonoidHom.ker_rangeRestrict]
+      intro a ha
+      simp [ratio, h a ha]
+    let : DivisibleBy (Additive G) ℕ :=
+      ⟨RootableBy.root (A := G), RootableBy.root_zero (A := G),
+        fun a hn ↦ RootableBy.root_cancel (A := G) a hn⟩
+    let : DivisibleBy (Additive G) ℤ := AddGroup.divisibleByIntOfDivisibleByNat _
+    obtain ⟨u, hu⟩ := (Module.Baer.of_divisible (Additive G)).extension_property_addMonoidHom
+      v.range.subtype Subtype.val_injective
+      (v.rangeRestrict.liftOfSurjective v.rangeRestrict_surjective ⟨ratio, hker⟩)
     refine ⟨MonoidHom.toAdditiveRight.symm u, ?_⟩
-    have hq (a : A) : dH (v.rangeRestrict a) = d a := by
-      have he : e (QuotientAddGroup.mk' v.ker a) = v.rangeRestrict a := rfl
-      rw [← he, AddMonoidHom.comp_apply, AddEquiv.coe_toAddMonoidHom, AddEquiv.symm_apply_apply]
-      rfl
     apply MonoidHom.ext
     intro a
-    have hu' : MonoidHom.toAdditiveRight.symm u (v.toMultiplicative a) = c₂ a / c₁ a :=
-      congrArg Additive.toMul ((DFunLike.congr_fun hu (v.rangeRestrict a)).trans (hq a))
-    exact mul_eq_of_eq_div' hu'
+    apply mul_eq_of_eq_div'
+    simpa [ratio] using congrArg Additive.toMul (DFunLike.congr_fun hu (v.rangeRestrict a.toAdd))
 
 end QPainleve.CharacterTorus
