@@ -10,6 +10,7 @@ public import Mathlib.AlgebraicGeometry.Noetherian
 import Mathlib.RingTheory.KrullDimension.Regular
 import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.Stalk
 import TauCeti.AlgebraicGeometry.IdealSheaf.Stalk
+import TauCeti.Topology.KrullDimension.Basic
 
 /-!
 # Local dimension along an effective Cartier divisor
@@ -47,5 +48,18 @@ theorem IsEffectiveCartier.ringKrullDim_stalk_add_one (hI : I.IsEffectiveCartier
   let e := (Ideal.quotEquivOfEq hk.symm).trans (f.quotientKerEquivOfSurjective hf)
   rw [← ringKrullDim_eq_of_ringEquiv e]
   exact ringKrullDim_quotient_span_singleton_succ_eq_ringKrullDim ha hamem
+
+/-- An effective Cartier divisor in a scheme of dimension at most `d + 1`
+has dimension at most `d`. This includes the empty divisor. -/
+theorem IsEffectiveCartier.topologicalKrullDim_subscheme_le (hI : I.IsEffectiveCartier)
+    {d : ℕ} (hX : topologicalKrullDim X ≤ ((d + 1 : ℕ) : WithBot ℕ∞)) :
+    topologicalKrullDim I.subscheme ≤ d := by
+  rw [TauCeti.topologicalKrullDim_eq_iSup_coheight]
+  refine iSup_le fun x ↦ ?_
+  rw [← ringKrullDim_stalk_eq_coheight]
+  apply (ENat.WithBot.add_le_add_natCast_right_iff (c := 1)).mp
+  rw [Nat.cast_one, hI.ringKrullDim_stalk_add_one, ringKrullDim_stalk_eq_coheight]
+  exact (TauCeti.coheight_le_topologicalKrullDim (I.subschemeι x)).trans
+    (by simpa only [Nat.cast_add, Nat.cast_one] using hX)
 
 end AlgebraicGeometry.Scheme.IdealSheafData
