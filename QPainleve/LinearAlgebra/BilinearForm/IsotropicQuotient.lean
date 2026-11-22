@@ -6,6 +6,7 @@ Authors: Yuma Mizuno
 module
 
 public import Mathlib.LinearAlgebra.Quotient.Bilinear
+public import TauCeti.Algebra.Module.Primitive
 public import TauCeti.LinearAlgebra.BilinearForm.BaseChange
 public import TauCeti.LinearAlgebra.BilinearForm.Characteristic
 public import TauCeti.LinearAlgebra.BilinearForm.Orthogonal
@@ -17,6 +18,7 @@ import Mathlib.Tactic.Ring
 import TauCeti.LinearAlgebra.BilinearForm.Isometry.Basic
 import TauCeti.LinearAlgebra.BilinearForm.LinearIndependent
 import TauCeti.LinearAlgebra.BilinearForm.Modular
+import TauCeti.LinearAlgebra.QuadraticForm.Prod
 import TauCeti.LinearAlgebra.Submodule.Compl
 
 /-!
@@ -73,6 +75,49 @@ theorem isSymm_orthogonalQuotientForm (hB : B.IsSymm) (S : Submodule R M) :
   simpa only [mkQ_apply, orthogonalQuotientForm_mk] using hB.eq x.val y.val
 
 end Quotient
+
+section PairingOne
+
+variable {R M : Type*} [CommRing R] [AddCommGroup M] [Module R M]
+  (B : LinearMap.BilinForm R M) {δ f : M}
+
+local notation "W" => B.orthogonal (R ∙ δ)
+
+/-- The kernel of the form on the orthogonal complement of a vector consists of the
+multiples of that vector in the complement, provided the form separates vectors on the left
+and the vector pairs to one. -/
+theorem ker_restrict_orthogonal_span_singleton_of_apply_eq_one
+    (hsep : B.SeparatingLeft) (hδf : B δ f = 1) :
+    (B.restrict W).ker = (R ∙ δ).comap (W).subtype := by
+  ext x
+  rw [Submodule.mem_comap, Submodule.subtype_apply]
+  constructor
+  · intro hx
+    rw [Submodule.mem_span_singleton]
+    refine ⟨B x f, sub_eq_zero.mp (hsep (B x f • δ - x) fun y ↦ ?_)⟩
+    -- Subtracting the component along `f` gives a vector in the orthogonal complement.
+    have hy : y - B δ y • f ∈ W := by
+      rw [BilinForm.orthogonal, Submodule.orthogonalBilin_span_singleton, mem_ker]
+      simp [BilinForm.sub_right, hδf]
+    have hxy := LinearMap.congr_fun (mem_ker.mp hx) (⟨_, hy⟩ : W)
+    simp only [BilinForm.restrict_apply, LinearMap.domRestrict_apply, LinearMap.zero_apply,
+      BilinForm.sub_right, BilinForm.smul_right, sub_eq_zero] at hxy
+    rw [BilinForm.sub_left, BilinForm.smul_left, hxy, mul_comm (B x f), sub_self]
+  · intro hx
+    exact mem_ker.mpr (LinearMap.ext fun y ↦ B.mem_orthogonal_iff.mp y.property x hx)
+
+end PairingOne
+
+/-- A primitive vector for a perfect integer form determines the kernel of the
+form on its orthogonal complement. -/
+theorem ker_restrict_orthogonal_of_isPrimitive {M : Type*} [AddCommGroup M]
+    (B : LinearMap.BilinForm ℤ M) [hperf : B.IsPerfPair] {δ : M}
+    (hprim : TauCeti.IsPrimitive δ) :
+    (B.restrict (B.orthogonal (ℤ ∙ δ))).ker = (ℤ ∙ δ).comap (B.orthogonal (ℤ ∙ δ)).subtype := by
+  obtain ⟨ℓ, hℓ⟩ := TauCeti.isPrimitive_def.mp hprim
+  have hf : B δ ((LinearMap.flip B).toPerfPair.symm ℓ) = 1 :=
+    (B.apply_toPerfPair_flip ℓ δ).trans hℓ
+  exact B.ker_restrict_orthogonal_span_singleton_of_apply_eq_one hperf.separatingLeft hf
 
 local notation "plane[" R ", " δ ", " f "]" => span R ({δ, f} : Set _)
 
@@ -204,16 +249,9 @@ private theorem sig_isotropicPlane (hδ : B δ δ = 0) (hδf : B δ f = 1) :
   -- The vectors `(±1 - f²)δ + 2f` have squares `±4`.
   have hnorm (a : ℤ) :
       Q ((1 : K) ⊗ₜ[ℤ] ((a - B f f) • d + (2 : ℤ) • t)) = (4 : K) * a := by
-    have hdd : B.restrict P d d = 0 := hδ
-    have hdt : B.restrict P d t = 1 := hδf
-    have htd : B.restrict P t d = 1 := (hB.eq f δ).trans hδf
-    have htt : B.restrict P t t = B f f := rfl
-    have hZ : B.restrict P ((a - B f f) • d + (2 : ℤ) • t)
-        ((a - B f f) • d + (2 : ℤ) • t) = 4 * a := by
-      simp only [add_left, add_right, smul_left, smul_right, hdd, hdt, htd, htt]
-      ring
-    simp only [Q, BilinMap.toQuadraticMap_apply, baseChange_tmul, one_mul, hZ]
-    simp [Algebra.smul_def]
+    simp [Q, d, t, BilinMap.toQuadraticMap_apply, baseChange_tmul, restrict_apply,
+      LinearMap.domRestrict_apply, add_right, hδ, hδf, hB.eq f δ, Algebra.smul_def]
+    ring
   have hpos : 0 < sigPos Q := by
     refine Nat.pos_of_ne_zero fun h ↦ ?_
     have hh := (QuadraticForm.forall_nonpos_iff_sigPos_eq_zero Q).mpr h
@@ -230,16 +268,6 @@ private theorem sig_isotropicPlane (hδ : B δ δ = 0) (hδf : B δ f = 1) :
   have hsum := QuadraticForm.sigPos_add_sigNeg_add_radical (Q := Q)
   omega
 
-private noncomputable def isotropicPlaneProdIsometry (hδ : B δ δ = 0) (hδf : B δ f = 1) :
-    ((B.restrict (plane[ℤ, δ, f])).prod
-      (B.restrict (B.orthogonal (plane[ℤ, δ, f])))).IsometryEquiv B where
-  toLinearEquiv := Submodule.prodEquivOfIsCompl _ _
-    (hB.isCompl_span_pair_orthogonal_of_isotropic hδ hδf)
-  map_app' x y := by
-    have hxy := B.mem_orthogonal_iff.mp y.2.property x.1 x.1.property
-    have hyx := B.mem_orthogonal_iff.mp x.2.property y.1 y.1.property
-    simp [prod_apply, restrict_apply, add_right, hxy, hB.isRefl.eq_zero hyx]
-
 /-- Orthogonal reduction at an isotropic vector pairing to one removes one positive and
 one negative direction from the scalar-extended form. -/
 theorem IsSymm.sig_orthogonalQuotientForm (hB : B.IsSymm) [Module.Finite ℤ M]
@@ -249,12 +277,33 @@ theorem IsSymm.sig_orthogonalQuotientForm (hB : B.IsSymm) [Module.Finite ℤ M]
       sigNeg Q + 1 = sigNeg (B.baseChange K).toQuadraticMap := by
   let P := plane[ℤ, δ, f]
   let C := B.restrict (B.orthogonal P)
+  let Q : QuadraticForm ℤ M := B.toQuadraticMap
+  have horth : orthogonal Q.polarBilin P = B.orthogonal P := by
+    have hflip : LinearMap.flip B = B := LinearMap.ext₂ fun x y ↦ hB.eq y x
+    ext x
+    simp [Q, BilinMap.polarBilin_toQuadraticMap, hflip, mem_orthogonal_iff, ← two_mul]
+  have hsplit : IsCompl P (orthogonal Q.polarBilin P) :=
+    horth.symm ▸ hB.isCompl_span_pair_orthogonal_of_isotropic hδ hδf
   have he : ((B.baseChange K).toQuadraticMap).Equivalent
       (((B.restrict P).baseChange K).toQuadraticMap.prod (C.baseChange K).toQuadraticMap) := by
+    obtain ⟨e⟩ : (((B.restrict P).prod C).toQuadraticMap).Equivalent Q := by
+      rw [toQuadraticMap_prod]
+      -- The quadratic restrictions take the diagonals of the bilinear restrictions.
+      change ((Q.restrict P).prod (Q.restrict (B.orthogonal P))).Equivalent Q
+      rw [← horth]
+      exact ⟨QuadraticMap.IsometryEquiv.prodRestrictOrthogonal Q P hsplit⟩
+    have eB : ((B.restrict P).prod C).IsometryEquiv B := by
+      refine ⟨e.toLinearEquiv, fun x y ↦ ?_⟩
+      -- The stored linear map is `e`, which preserves twice the pairing by polarization.
+      change B (e x) (e y) = ((B.restrict P).prod C) x y
+      have h := e.polar_apply y x
+      simp only [Q, BilinMap.polar_toQuadraticMap, prod_apply, restrict_apply,
+        LinearMap.domRestrict_apply, C, hB.eq (e y) (e x), hB.eq (y.1 : M) x.1,
+        hB.eq (y.2 : M) x.2] at h ⊢
+      omega
     rw [← toQuadraticMap_prod]
     exact Equivalent.toQuadraticMap
-      ⟨((isotropicPlaneProdIsometry hB hδ hδf).baseChange K).symm.trans
-        (TauCeti.bilinFormBaseChangeProdIsometry K _ _)⟩
+      ⟨(eB.baseChange K).symm.trans (TauCeti.bilinFormBaseChangeProdIsometry K _ _)⟩
   have hq := Equivalent.toQuadraticMap (B₁ := C.baseChange K)
     ⟨(hB.isometryEquivOrthogonalQuotient hδ hδf).baseChange K⟩
   obtain ⟨hp, hn⟩ := sig_isotropicPlane hB K hδ hδf
