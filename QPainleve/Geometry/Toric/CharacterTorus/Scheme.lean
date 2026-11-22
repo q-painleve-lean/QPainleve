@@ -9,6 +9,7 @@ public import QPainleve.Algebra.AlgebraicGroup.DiagonalizableGroup.Scheme
 public import QPainleve.AlgebraicGeometry.RationalMap.FunctionField
 public import QPainleve.Geometry.Toric.CharacterTorus.Basic
 public import TauCeti.Algebra.AlgebraicGroup.DiagonalizableGroup.Scheme.Points
+public import TauCeti.AlgebraicGeometry.Scheme.BaseAlgebra
 
 /-!
 # Character schemes and their function fields
@@ -44,6 +45,15 @@ def diagonalizableGroupSchemeIso (G : FGCommGrpCat.{u}) :
 /-- The structure morphism of the character scheme over its coefficient ring. -/
 abbrev structureMap : scheme k B ⟶ Spec (CommRingCat.of k) :=
   Spec.algebraMap k (AddMonoidAlgebra k B)
+
+variable {k B} in
+/-- A finitely generated character lattice gives a scheme locally of finite type over the base. -/
+instance [Module ℤ B] [Module.Finite ℤ B] :
+    LocallyOfFiniteType (scheme k B ↘ Spec (CommRingCat.of k)) := by
+  have h : (inferInstance : Module ℤ B) = AddCommGroup.toIntModule B := Subsingleton.elim _ _
+  have : AddGroup.FG B := Module.Finite.iff_addGroup_fg.mp (h ▸ ‹Module.Finite ℤ B›)
+  have : AddMonoid.FG B := AddGroup.fg_iff_addMonoid_fg.mp inferInstance
+  exact AlgebraicGeometry.locallyOfFiniteType_specOverSpec
 
 /-- Points of the character scheme over the coefficient ring. -/
 abbrev Points :=
@@ -145,8 +155,7 @@ section AffineField
 variable {k B C : Type u} [Field k] [AddCommGroup B] [AddCommGroup C]
   [Module ℤ B] [Module.Free ℤ B] [Module ℤ C] [Module.Free ℤ C]
 
-local instance {G : Type*} [AddCommGroup G] [Module ℤ G] [Module.Free ℤ G] : HasUniqueDiv G :=
-  .of_isTorsionFree ℤ G
+attribute [local instance] hasUniqueDiv_of_free_int
 
 variable (k B) in
 /-- The fraction field of the group algebra identifies with the generic stalk of the torus. -/
@@ -163,6 +172,45 @@ def affineRationalPullback (f : (scheme k C) ⤏ (scheme k B)) [f.IsDominant] :
   ((affineFractionRingEquiv k C).symm.toRingHom.comp f.functionFieldMap.hom).comp
     (affineFractionRingEquiv k B).toRingHom
 
+/-- On the fraction-field models, the rational pullback is the map of generic stalks
+transported by the canonical fraction field identifications. -/
+theorem affineRationalPullback_apply (f : (scheme k C) ⤏ (scheme k B)) [f.IsDominant]
+    (a : FunctionField k B) :
+    affineRationalPullback k f a =
+      (affineFractionRingEquiv k C).symm (f.functionFieldMap (affineFractionRingEquiv k B a)) :=
+  (rfl)
+
+/-- The identity rational map of a character torus pulls back each rational function to itself. -/
+@[simp]
+theorem affineRationalPullback_id (k : Type u) [Field k] {B : Type u} [AddCommGroup B]
+    [Module ℤ B] [Module.Free ℤ B] :
+    affineRationalPullback k (Scheme.RationalMap.id (scheme k B)) = RingHom.id _ := by
+  ext a
+  simp [affineRationalPullback_apply]
+
+/-- Pullbacks of rational maps between character tori compose in the reverse order. -/
+@[simp]
+theorem affineRationalPullback_comp (k : Type u) [Field k] {B C D : Type u}
+    [AddCommGroup B] [AddCommGroup C] [AddCommGroup D]
+    [Module ℤ B] [Module.Free ℤ B] [Module ℤ C] [Module.Free ℤ C] [Module ℤ D] [Module.Free ℤ D]
+    (f : (scheme k D) ⤏ (scheme k C)) (g : (scheme k C) ⤏ (scheme k B))
+    [f.IsDominant] [g.IsDominant] :
+    affineRationalPullback k (f.comp g) =
+      (affineRationalPullback k f).comp (affineRationalPullback k g) := by
+  ext a
+  simp [affineRationalPullback_apply]
+
+/-- Equality of dominant rational maps is detected on the fraction fields of the character rings. -/
+theorem affineRationalPullback_eq_iff (f g : (scheme k C) ⤏ (scheme k B))
+    [f.IsDominant] [g.IsDominant] :
+    affineRationalPullback k f = affineRationalPullback k g ↔ f = g := by
+  rw [← f.functionFieldMap_eq_iff g]
+  refine ⟨fun h ↦ ?_, fun h ↦ by simp only [affineRationalPullback, h]⟩
+  apply CommRingCat.hom_ext
+  ext x : 1
+  obtain ⟨a, rfl⟩ := (affineFractionRingEquiv k B).surjective x
+  exact (affineFractionRingEquiv k C).symm.injective (DFunLike.congr_fun h a)
+
 private theorem preimage_fromSpecStalk (k B : Type u) [Field k] [AddCommGroup B]
     [Module ℤ B] [Module.Free ℤ B] :
     (Spec.preimage ((scheme k B).fromSpecStalk (genericPoint (scheme k B)))).hom =
@@ -175,7 +223,7 @@ private theorem preimage_fromSpecStalk (k B : Type u) [Field k] [AddCommGroup B]
 
 /-- Restricting the fraction-field pullback to regular functions gives the map on the generic
 point of the source. -/
-private theorem affineRationalPullback_comp_algebraMap
+theorem affineRationalPullback_comp_algebraMap
     (f : (scheme k C) ⤏ (scheme k B)) [f.IsDominant] :
     (affineRationalPullback k f).comp (algebraMap (AddMonoidAlgebra k B) (FunctionField k B)) =
       (affineFractionRingEquiv k C).symm.toRingHom.comp
@@ -184,6 +232,24 @@ private theorem affineRationalPullback_comp_algebraMap
   rw [Spec.preimage_comp, Spec.preimage_map] at h
   rw [← h, CommRingCat.hom_comp, preimage_fromSpecStalk]
   simp only [affineRationalPullback, RingHom.comp_assoc]
+
+/-- The character field and the generic stalk of the character scheme are canonically
+isomorphic over the base field. -/
+def affineFractionRingAlgEquiv (k : Type u) [Field k] (B : Type u) [AddCommGroup B]
+    [Module ℤ B] [Module.Free ℤ B] : FunctionField k B ≃ₐ[k] (scheme k B).functionField :=
+  AlgEquiv.ofRingEquiv (f := affineFractionRingEquiv k B) fun a ↦ by
+    have h := congrArg Spec.preimage
+      (Scheme.fromSpecStalk_genericPoint_comp_over k (scheme k B))
+    rw [specOverSpec_over, Spec.preimage_comp, Spec.preimage_map, Spec.preimage_map] at h
+    have hScalar := ConcreteCategory.congr_hom h a
+    change (Spec.preimage ((scheme k B).fromSpecStalk (genericPoint (scheme k B)))).hom
+      (algebraMap k (AddMonoidAlgebra k B) a) = algebraMap k (scheme k B).functionField a at hScalar
+    rwa [preimage_fromSpecStalk, RingHom.comp_apply, ← IsScalarTower.algebraMap_apply] at hScalar
+
+@[simp]
+theorem affineFractionRingAlgEquiv_toRingEquiv (k : Type u) [Field k] {B : Type u}
+    [AddCommGroup B] [Module ℤ B] [Module.Free ℤ B] :
+    (affineFractionRingAlgEquiv k B).toRingEquiv = affineFractionRingEquiv k B := (rfl)
 
 /-- A lattice map's algebraic and scheme-theoretic pullbacks agree on the fraction fields. -/
 theorem affineRationalPullback_map (f : B →+ C) (hf : Function.Injective f) :
@@ -214,8 +280,7 @@ variable {k : Type u} [Field k]
 
 variable {B C : Type u} [AddCommGroup B] [AddCommGroup C] [IsAddFG B] [IsAddFG C]
 
-local instance {G : Type*} [AddCommGroup G] [Module ℤ G] [Module.Free ℤ G] : HasUniqueDiv G :=
-  .of_isTorsionFree ℤ G
+attribute [local instance] hasUniqueDiv_of_free_int
 
 local notation "L" B => FGCommGrpCat.of (Multiplicative B)
 local notation "D" B => groupScheme k (L B)

@@ -76,6 +76,20 @@ instance [IrreducibleSpace X] (f : X ⤏ Y) [f.IsDominant] : IsDominant f.fromFu
   have := IsDominant.of_comp_of_isOpenImmersion _ _ (H := h)
   infer_instance
 
+/-- Dominance of the generic-point restriction detects dominance of a rational map. -/
+theorem isDominant_fromFunctionField_iff [IrreducibleSpace X] (f : X ⤏ Y) :
+    IsDominant f.fromFunctionField ↔ f.IsDominant := by
+  refine ⟨fun h ↦ ?_, fun _ ↦ inferInstance⟩
+  obtain ⟨p, rfl⟩ := f.exists_rep
+  rw [p.isDominant_toRationalMap_iff]
+  exact IsDominant.of_comp _ p.hom (H := h)
+
+/-- A dominant morphism defines a dominant rational map. -/
+instance (f : X ⟶ Y) [IsDominant f] : f.toRationalMap.IsDominant := by
+  rw [Hom.toRationalMap, PartialMap.isDominant_toRationalMap_iff, Hom.toPartialMap_hom]
+  have : IsDominant X.topIso.hom := inferInstance
+  exact (IsDominant.comp_iff X.topIso.hom f).mpr ‹IsDominant f›
+
 variable [IsIntegral X] [IrreducibleSpace Y]
 
 /-- Pullback on generic stalks along a dominant rational map with integral source. -/
@@ -96,6 +110,23 @@ theorem specMap_functionFieldMap (f : X ⤏ Y) [f.IsDominant] :
   simp only [functionFieldMap, Spec.map_comp_assoc, Hom.SpecMap_functionFieldMap_fromSpecStalk, h,
     ← Spec_stalkClosedPointIso]
   rw [← Spec.map_comp_assoc, Iso.inv_hom_id, Spec.map_id, Category.id_comp]
+
+/-- A ring homomorphism is the pullback of a dominant rational map exactly when its spectrum
+gives the restriction of the rational map to the generic point. -/
+theorem eq_functionFieldMap_iff (f : X ⤏ Y) [f.IsDominant]
+    (φ : Y.functionField ⟶ X.functionField) :
+    φ = f.functionFieldMap ↔
+      Spec.map φ ≫ Y.fromSpecStalk (genericPoint Y) = f.fromFunctionField := by
+  rw [← f.specMap_functionFieldMap, cancel_mono, Spec.map_inj]
+
+/-- A dominant morphism and its rational map induce the same pullback on function fields. -/
+@[simp]
+theorem _root_.AlgebraicGeometry.Scheme.Hom.functionFieldMap_toRationalMap
+    (f : X ⟶ Y) [IsDominant f] :
+    f.toRationalMap.functionFieldMap = f.functionFieldMap := by
+  symm
+  rw [eq_functionFieldMap_iff]
+  simp [fromFunctionField_toRationalMap]
 
 /-- Dominant rational maps from an integral scheme agree exactly when their pullbacks agree. -/
 theorem functionFieldMap_eq_iff (f g : X ⤏ Y) [f.IsDominant] [g.IsDominant] :
@@ -139,6 +170,15 @@ theorem fromFunctionField_comp (f : X ⤏ Y) [f.IsDominant] (g : Y ⤏ Z) :
       simp only [PartialMap.fromSpecStalkOfMem, PartialMap.comp_hom, Category.assoc]
       rfl
     _ = _ := by rw [h, Category.assoc]; rfl
+
+/-- Pullback along a composite of dominant rational maps composes in the reverse order. -/
+@[simp]
+theorem functionFieldMap_comp [IsIntegral Y] [IrreducibleSpace Z]
+    (f : X ⤏ Y) (g : Y ⤏ Z) [f.IsDominant] [g.IsDominant] :
+    (f.comp g).functionFieldMap = g.functionFieldMap ≫ f.functionFieldMap := by
+  symm
+  rw [eq_functionFieldMap_iff, Spec.map_comp_assoc, g.specMap_functionFieldMap,
+    fromFunctionField_comp]
 
 /-- A dominant rational map of integral schemes can be cancelled on the left of a
 composition. The two maps out of its target may be arbitrary rational maps. -/
