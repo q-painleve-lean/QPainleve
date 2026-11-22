@@ -6,7 +6,6 @@ Authors: The QPainleve contributors
 module
 
 public import Mathlib.Algebra.MonoidAlgebra.Basic
-public import Mathlib.Algebra.MonoidAlgebra.Module
 public import Mathlib.RingTheory.Localization.FractionRing
 public import QPainleve.Algebra.MonoidAlgebra.NoZeroDivisors
 
@@ -141,15 +140,12 @@ theorem functionField_hom_ext_basis {ι K : Type*} [Field K] [Algebra k K]
     (b : Module.Basis ι ℤ B) {f g : FunctionField k B →ₐ[k] K}
     (h : ∀ i, f (monomial k (Multiplicative.ofAdd (b i))) =
       g (monomial k (Multiplicative.ofAdd (b i)))) : f = g := by
+  obtain rfl : ‹Module ℤ B› = AddCommGroup.toIntModule B := Subsingleton.elim _ _
   let : Module.Free ℤ B := Module.Free.of_basis b
   apply functionField_hom_ext
   let pullCharacter (φ : FunctionField k B →ₐ[k] K) : B →ₗ[ℤ] Additive Kˣ :=
     let χ := ((φ : FunctionField k B →* K).comp (monomial k)).toHomUnits.toAdditiveRight
-    { toFun := χ
-      map_add' := χ.map_add
-      map_smul' := fun n x ↦ by
-        rw [RingHom.id_apply]
-        exact (congrArg χ (int_smul_eq_zsmul _ n x)).trans (map_zsmul χ n x) }
+    χ.toIntLinearMap
   have hBasis (i : ι) : pullCharacter f (b i) = pullCharacter g (b i) := Units.ext (h i)
   intro x
   exact congrArg (fun a : Additive Kˣ ↦ (a.toMul : K)) (LinearMap.congr_fun (b.ext hBasis) x)
