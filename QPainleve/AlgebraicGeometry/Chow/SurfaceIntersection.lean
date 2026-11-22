@@ -11,23 +11,27 @@ public import TauCeti.AlgebraicGeometry.IdealSheaf.Over
 public import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.ProjectiveOver
 public import Mathlib.LinearAlgebra.BilinearForm.Properties
 public import QPainleve.AlgebraicGeometry.EffectiveCartierDivisor.ClosedImmersion
-import TauCeti.AlgebraicGeometry.CartierDivisor.Excision
+public import TauCeti.AlgebraicGeometry.CartierDivisor.Excision
+import TauCeti.AlgebraicGeometry.Curves.Normalization
 import TauCeti.AlgebraicGeometry.LineBundle.BaseChange
-import TauCeti.AlgebraicGeometry.Chow.DivisorClass
 import QPainleve.AlgebraicGeometry.Cohomology.Support
 import QPainleve.AlgebraicGeometry.IdealSheaf.EulerCharacteristic
+import QPainleve.AlgebraicGeometry.Scheme.LocalDimension
 
 /-!
 # Surface intersection and restriction to a curve
 
 The surface intersection pairing with the class of a Cartier curve is the degree
 of the restricted line bundle. Twisting by the curve changes the pairing by that
-same degree, independently of the starting twist.
+same degree, independently of the starting twist. Distinct prime divisors meet
+nonnegatively, and intersection with a Weil divisor class is the sum over its components.
 
 ## References
 
 * O. Debarre, *Introduction to Mori Theory*, §3.2, Theorem 3.6 and formula (3.3).
 * The Stacks Project, Definition 33.45.3 (tag 0BEP).
+* Tau Ceti's `LineBundleClass.intersectionNumber_inv_mk_toInvertibleSheaf_nonneg`
+  for nonnegativity of proper intersections.
 -/
 
 open CategoryTheory AlgebraicGeometry TopologicalSpace
@@ -132,9 +136,9 @@ public theorem classIntersectionNumber_eq_intersectionNumber
       LineBundleClass.intersectionNumber k i a :=
   classIntersectionNumber_eq_intersectionNumber_of_isEffectiveCartier_ker k hX.le i hC _ a
 
-section Factorial
-
 open Scheme.IdealSheafData
+
+section Factorial
 
 variable [IsIntegral X] [∀ x : X, UniqueFactorizationMonoid (X.presheaf.stalk x)]
 
@@ -144,19 +148,41 @@ private theorem classIntersectionNumber_mul_primeDivisorClass [IsLocallyNoetheri
       classIntersectionNumber k X a b +
       LineBundleClass.intersectionNumber k
         (vanishingIdeal ⟨closure {(p : X)}, isClosed_closure⟩).subschemeι a := by
-  let I := vanishingIdeal (X := X) ⟨closure {(p : X)}, isClosed_closure⟩
-  have hrange : Set.range I.subschemeι = closure {(p : X)} := by
-    rw [I.range_subschemeι, coe_support_vanishingIdeal, Closeds.coe_mk]
-  obtain ⟨d, hheight, hd⟩ := mem_pointsOfDimension.mp
-    ((coheight_eq_one_iff_mem_pointsOfDimension k (n := 2) hX).mp p.property)
-  have hd₁ : d = 1 := by omega
-  have hC : topologicalKrullDim I.subscheme = 1 := by
-    rw [← topologicalKrullDim_range_of_isPreimmersion I.subschemeι, hrange,
-      ← height_eq_topologicalKrullDim_closure_singleton, hheight, hd₁]
-    rfl
   rw [LineBundleClass.primeDivisorClass_def]
   exact classIntersectionNumber_mul_inv_mk_toInvertibleSheaf k hX.le
-    (isEffectiveCartier_vanishingIdeal_closure_singleton p.property) hC a b
+    (isEffectiveCartier_vanishingIdeal_closure_singleton p.property)
+    (QPainleve.topologicalKrullDim_vanishingIdeal_subscheme k hX p) a b
+
+/-- Intersecting with a prime divisor class gives the degree on its reduced closed curve. -/
+public theorem classIntersectionNumber_primeDivisorClass_eq_intersectionNumber
+    [IsLocallyNoetherian X] (hX : topologicalKrullDim X = 2) (p : CodimensionOnePoint X)
+    (a : LineBundleClass X) :
+    classIntersectionNumber k X a (LineBundleClass.primeDivisorClass p) =
+      LineBundleClass.intersectionNumber k
+        (vanishingIdeal ⟨closure {(p : X)}, isClosed_closure⟩).subschemeι a := by
+  simpa only [one_mul, classIntersectionNumber_one_right, zero_add] using
+    classIntersectionNumber_mul_primeDivisorClass k hX p a 1
+
+/-- Distinct prime divisors on an integral locally factorial projective surface intersect
+nonnegatively in the surface pairing. -/
+public theorem classIntersectionNumber_primeDivisorClass_nonneg_of_ne
+    [IsLocallyNoetherian X] (hX : topologicalKrullDim X = 2)
+    {p q : CodimensionOnePoint X} (hpq : p ≠ q) :
+    0 ≤ classIntersectionNumber k X (LineBundleClass.primeDivisorClass p)
+      (LineBundleClass.primeDivisorClass q) := by
+  let I := vanishingIdeal (X := X) ⟨closure {(p : X)}, isClosed_closure⟩
+  let J := vanishingIdeal (X := X) ⟨closure {(q : X)}, isClosed_closure⟩
+  have hI : I.IsEffectiveCartier := isEffectiveCartier_vanishingIdeal_closure_singleton p.property
+  have hC := QPainleve.topologicalKrullDim_vanishingIdeal_subscheme k hX q
+  have : J.subscheme.IsProjectiveOver k :=
+    Scheme.IsProjectiveOver.of_isClosedImmersion k J.subschemeι
+  have : J.subscheme.IsCurveOver k := Scheme.isCurveOver_iff.mpr ⟨inferInstance, inferInstance, hC⟩
+  have : RelativeDimensionLE 1 (J.subscheme ↘ Spec (.of k)) :=
+    (relativeDimensionLE_iff_of_field _).mpr hC.le
+  rw [classIntersectionNumber_primeDivisorClass_eq_intersectionNumber k hX,
+    LineBundleClass.primeDivisorClass_def]
+  exact LineBundleClass.intersectionNumber_inv_mk_toInvertibleSheaf_nonneg k J.subschemeι hI
+    (hI.comap_subschemeι_vanishingIdeal_closure_singleton_of_ne hpq.symm)
 
 /-- The surface intersection pairing on an integral locally factorial projective surface
 is additive in the second class under tensor product. -/
@@ -182,9 +208,7 @@ public theorem classIntersectionNumber_mul_right (hX : topologicalKrullDim X = 2
         omega }
   have hprime (p : CodimensionOnePoint X) : LineBundleClass.primeDivisorClass p ∈ S := by
     intro e
-    have h := classIntersectionNumber_mul_primeDivisorClass k hX p a 1
-    rw [one_mul, classIntersectionNumber_one_right, zero_add] at h
-    rw [h]
+    rw [classIntersectionNumber_primeDivisorClass_eq_intersectionNumber k hX]
     exact classIntersectionNumber_mul_primeDivisorClass k hX p a e
   obtain ⟨D, hD⟩ := Scheme.CartierDivisor.weilToLineBundleClassHom_surjective (Additive.ofMul c)
   have hDc : (Scheme.CartierDivisor.weilToLineBundleClassHom X D).toMul = c :=
@@ -229,6 +253,26 @@ public theorem classIntersectionBilinForm_isSymm (hX : topologicalKrullDim X = 2
   constructor
   intro a b
   simpa only [classIntersectionBilinForm_apply] using classIntersectionNumber_comm a.toMul b.toMul
+
+/-- Intersection with the class of a Weil divisor is the sum of the intersections with
+its prime divisors weighted by their multiplicities. -/
+public theorem classIntersectionNumber_weilToLineBundleClassHom
+    [IsNoetherian X] (hX : topologicalKrullDim X = 2) (a : LineBundleClass X)
+    (D : SchemeWeilDivisor X) :
+    classIntersectionNumber k X a (Scheme.CartierDivisor.weilToLineBundleClassHom X D).toMul =
+      D.sum (fun p n ↦
+        n * classIntersectionNumber k X a (LineBundleClass.primeDivisorClass p)) := by
+  let f := classIntersectionBilinForm k hX (Additive.ofMul a)
+  calc
+    _ = f (Scheme.CartierDivisor.weilToLineBundleClassHom X D) :=
+      (classIntersectionBilinForm_apply k hX _ _).symm
+    _ = f (Scheme.CartierDivisor.weilToLineBundleClassHom X (D.sum Finsupp.single)) := by
+      rw [Finsupp.sum_single]
+    _ = _ := by
+      rw [map_finsuppSum, map_finsuppSum]
+      simp only [Scheme.CartierDivisor.weilToLineBundleClassHom_single, map_zsmul, f,
+        classIntersectionBilinForm_apply, LineBundleClass.primeDivisorClass_def, toMul_ofMul,
+        Int.zsmul_eq_mul]
 
 end Factorial
 
