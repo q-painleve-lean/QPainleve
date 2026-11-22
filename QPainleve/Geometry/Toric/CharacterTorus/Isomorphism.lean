@@ -8,7 +8,6 @@ module
 public import QPainleve.Algebra.MonoidAlgebra.Isomorphism
 import Mathlib.CategoryTheory.HomCongr
 public import TauCeti.Algebra.AlgebraicGroup.DiagonalizableGroup.Scheme.Points
-public import TauCeti.Algebra.Group.UniqueProds.TorsionFree
 public import TauCeti.CategoryTheory.Monoidal.Grp.Translation
 
 /-!
