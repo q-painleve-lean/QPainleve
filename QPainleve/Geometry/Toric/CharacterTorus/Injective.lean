@@ -5,10 +5,11 @@ Authors: The QPainleve contributors
 -/
 module
 
-public import QPainleve.NumberTheory.PadicVal.Units
+public import QPainleve.NumberTheory.Prime.Units
 public import Mathlib.LinearAlgebra.Basis.Defs
 public import Mathlib.LinearAlgebra.FreeModule.Finite.Basic
 public import Mathlib.Data.Rat.Cast.CharZero
+public import Mathlib.NumberTheory.Padics.PadicNumbers
 import Mathlib.Data.Fin.Embedding
 import Mathlib.Data.Nat.Prime.Nth
 import Mathlib.LinearAlgebra.Basis.SMul
@@ -18,8 +19,8 @@ import TauCeti.LinearAlgebra.Basis.Fin
 /-!
 # Injective characters of free lattices
 
-Send each basis vector to a distinct prime, viewed as a rational unit. The corresponding
-prime valuations recover all the integer coordinates, so the character is injective.
+Send each basis vector to a distinct prime, viewed as a rational unit. Mathlib's
+`Rat.padicValuation` recovers the integer coordinates, so the character is injective.
 Its values can be transported to any characteristic-zero field. With a distinguished
 primitive vector, the character can take the value `1/2` there and distinct odd primes
 on a complementary basis. The basis extension uses
@@ -42,26 +43,41 @@ theorem primeCharacter_apply_basis (b : Basis ι ℤ M) (p : ι → Nat.Primes) 
     b.primeCharacter p (Multiplicative.ofAdd (b i)) = (p i).ratUnit := by
   exact congrArg Additive.toMul (b.constr_basis ℤ (fun j ↦ Additive.ofMul (p j).ratUnit) i)
 
-/-- The valuation at the assigned prime recovers the corresponding basis coordinate
-when the prescribed primes are distinct. -/
-theorem ratUnitValuation_primeCharacter (b : Basis ι ℤ M) (p : ι ↪ Nat.Primes)
+/-- The multiplicative valuation at the assigned prime is the exponential of the negative
+basis coordinate when the primes are distinct. -/
+theorem padicValuation_primeCharacter (b : Basis ι ℤ M) (p : ι ↪ Nat.Primes)
     (i : ι) (x : M) :
-    ((p i).ratUnitValuation (b.primeCharacter p (Multiplicative.ofAdd x))).toAdd = b.repr x i := by
+    @Rat.padicValuation (p i) ⟨(p i).prop⟩ (b.primeCharacter p (Multiplicative.ofAdd x) : ℚ) =
+      WithZero.exp (-b.repr x i) := by
   classical
   obtain rfl : ‹Module ℤ M› = AddCommGroup.toIntModule M := Subsingleton.elim _ _
-  let g₀ : M →+ ℤ := ((p i).ratUnitValuation.comp (b.primeCharacter p)).toAdditive
-  let g : M →ₗ[ℤ] ℤ := g₀.toIntLinearMap
-  have hg : g = b.coord i := b.ext fun j ↦ by
-    have he : g (b j) = ((p i).ratUnitValuation
-        (b.primeCharacter p (Multiplicative.ofAdd (b j)))).toAdd := (rfl)
-    rw [he, primeCharacter_apply_basis]
-    by_cases hij : i = j
-    · subst j
-      rw [Nat.Primes.ratUnitValuation_ratUnit_self]
-      simp [Basis.coord_apply]
-    · rw [Nat.Primes.ratUnitValuation_ratUnit_of_ne (p.injective.ne hij)]
-      simp [Basis.coord_apply, hij]
-  exact LinearMap.congr_fun hg x
+  let : Fact (p i : ℕ).Prime := ⟨(p i).prop⟩
+  let v := Rat.padicValuation (p i)
+  have hprod : b.primeCharacter p (Multiplicative.ofAdd x) =
+      (b.repr x).prod fun j n ↦ (p j).ratUnit ^ n := by
+    conv_lhs => rw [← b.linearCombination_repr x]
+    simp only [Finsupp.linearCombination_apply, Finsupp.sum, Finsupp.prod, ofAdd_sum, map_prod,
+      ofAdd_zsmul, map_zpow, primeCharacter_apply_basis]
+  calc
+    _ = (v.toMonoidHom.comp (Units.coeHom ℚ)) (b.primeCharacter p (Multiplicative.ofAdd x)) :=
+      rfl
+    _ = (b.repr x).prod (fun j n ↦ v (↑((p j).ratUnit ^ n : ℚˣ))) := by
+      rw [hprod, map_finsuppProd]
+      rfl
+    _ = _ := by
+      rw [Finsupp.prod_eq_single i]
+      · rw [Units.val_zpow_eq_zpow_val, map_zpow₀, Nat.Primes.coe_ratUnit]
+        dsimp only [v]
+        rw [Rat.padicValuation_self, ← WithZero.exp_zsmul]
+        simp
+      · intro j _ hji
+        have hval : v ((p j).ratUnit : ℚ) = 1 := by
+          dsimp only [v]
+          rw [Nat.Primes.coe_ratUnit, Rat.padicValuation_natCast, Int.padicValuation_eq_one_iff,
+            Int.natCast_dvd_natCast, (p j).prop.dvd_iff_eq (p i).prop.ne_one]
+          exact Nat.Primes.coe_nat_injective.ne (p.injective.ne hji)
+        rw [Units.val_zpow_eq_zpow_val, map_zpow₀, hval, one_zpow]
+      · simp
 
 /-- The prime character of a basis with distinct assigned primes is injective. -/
 theorem primeCharacter_injective (b : Basis ι ℤ M) (p : ι ↪ Nat.Primes) :
@@ -70,9 +86,11 @@ theorem primeCharacter_injective (b : Basis ι ℤ M) (p : ι ↪ Nat.Primes) :
   apply Multiplicative.toAdd.injective
   apply b.repr.injective
   ext i
-  rw [← ratUnitValuation_primeCharacter b p i x.toAdd,
-    ← ratUnitValuation_primeCharacter b p i y.toAdd]
-  exact congrArg (fun z ↦ ((p i).ratUnitValuation z).toAdd) h
+  let : Fact (p i : ℕ).Prime := ⟨(p i).prop⟩
+  have hval := congrArg (fun z : ℚˣ ↦ Rat.padicValuation (p i) (z : ℚ)) h
+  exact neg_injective (WithZero.exp_injective
+    ((padicValuation_primeCharacter b p i x.toAdd).symm.trans
+      (hval.trans (padicValuation_primeCharacter b p i y.toAdd))))
 
 end Module.Basis
 
