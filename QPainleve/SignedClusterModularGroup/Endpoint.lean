@@ -5,7 +5,7 @@ Authors: Yuma Mizuno
 -/
 module
 
-public import QPainleve.Algebra.Cluster.ChargeKernel
+public import QPainleve.Algebra.Cluster.ChargeKernel.Basic
 
 import QPainleve.LinearAlgebra.BilinearForm.Index
 import QPainleve.LinearAlgebra.Submodule.FiniteIndex
