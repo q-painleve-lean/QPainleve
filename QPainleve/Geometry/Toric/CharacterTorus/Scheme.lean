@@ -137,6 +137,9 @@ universe u
 variable {k B C : Type u} [Field k] [AddCommGroup B] [AddCommGroup C]
   [Module ℤ B] [Module.Free ℤ B] [Module ℤ C] [Module.Free ℤ C]
 
+local instance {G : Type*} [AddCommGroup G] [Module ℤ G] [Module.Free ℤ G] : HasUniqueDiv G :=
+  .of_isTorsionFree ℤ G
+
 omit [Module ℤ C] [Module.Free ℤ C] in
 /-- Injective lattice maps give dominant morphisms of character tori. -/
 theorem isDominant_map (f : B →+ C) (hf : Function.Injective f) : IsDominant (map k f) := by
