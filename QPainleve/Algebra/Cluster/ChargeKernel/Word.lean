@@ -6,7 +6,7 @@ Authors: The QPainleve contributors
 module
 
 public import QPainleve.Algebra.Cluster.ChargeKernel.Basic
-public import QPainleve.Algebra.Cluster.Word
+public import QPainleve.Algebra.Cluster.Word.Basic
 
 /-!
 # Charge-kernel transport along signed cluster words
