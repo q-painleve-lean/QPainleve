@@ -13,11 +13,9 @@ import TauCeti.AlgebraicGeometry.Morphisms.Epi
 /-!
 # Function field pullback along dominant rational maps
 
-A dominant rational map of integral schemes restricts to a map from the generic point of the
-source into the generic point of the target. The resulting map on generic stalks determines
-the rational map. The construction uses Mathlib's generic-point restriction of rational maps
-and Tau Ceti's `Scheme.Hom.genericPoint_eq_of_isDominant`. Cancellation of a dominant first
-map uses Tau Ceti's `RingHom.epi_SpecMap_ofHom` on the induced function field homomorphism.
+A dominant rational map with integral source is determined by its pullback on generic stalks.
+The pullback applies Tau Ceti's `Scheme.Hom.functionFieldMap` to Mathlib's generic-point
+restriction. Cancellation uses Tau Ceti's `RingHom.epi_SpecMap_ofHom` on the resulting homomorphism.
 -/
 
 public noncomputable section
@@ -44,24 +42,24 @@ instance [IrreducibleSpace X] (f : X ⤏ Y) [f.IsDominant] : IsDominant f.fromFu
 
 variable [IsIntegral X] [IrreducibleSpace Y]
 
-/-- The restriction of a dominant rational map to the generic point lands at the generic point. -/
-theorem fromFunctionField_closedPoint (f : X ⤏ Y) [f.IsDominant] :
-    f.fromFunctionField (IsLocalRing.closedPoint X.functionField) = genericPoint Y := by
-  rw [← f.fromFunctionField.genericPoint_eq_of_isDominant]
-  congr 1
-  exact Subsingleton.elim (α := PrimeSpectrum X.functionField) _ _
-
-/-- Pullback from the generic stalk of the target along a dominant rational map. -/
+/-- Pullback on generic stalks along a dominant rational map with integral source. -/
 def functionFieldMap (f : X ⤏ Y) [f.IsDominant] : Y.functionField ⟶ X.functionField :=
-  Y.presheaf.stalkSpecializes (specializes_of_eq f.fromFunctionField_closedPoint) ≫
-    stalkClosedPointTo f.fromFunctionField
+  f.fromFunctionField.functionFieldMap ≫
+    (Spec X.functionField).presheaf.stalkSpecializes
+      (specializes_of_eq (Subsingleton.elim (α := PrimeSpectrum X.functionField) _ _)) ≫
+    (stalkClosedPointIso X.functionField).hom
 
 /-- The function field pullback recovers the restriction to the generic point. -/
 @[reassoc]
 theorem specMap_functionFieldMap (f : X ⤏ Y) [f.IsDominant] :
     Spec.map f.functionFieldMap ≫ Y.fromSpecStalk (genericPoint Y) = f.fromFunctionField := by
-  rw [functionFieldMap, Spec.map_comp_assoc, SpecMap_stalkSpecializes_fromSpecStalk,
-    Spec_stalkClosedPointTo_fromSpecStalk]
+  have h := SpecMap_stalkSpecializes_fromSpecStalk_assoc (X := Spec X.functionField)
+    (x := IsLocalRing.closedPoint X.functionField) (y := genericPoint (Spec X.functionField))
+    (specializes_of_eq (Subsingleton.elim (α := PrimeSpectrum X.functionField) _ _))
+    f.fromFunctionField
+  simp only [functionFieldMap, Spec.map_comp_assoc, Hom.SpecMap_functionFieldMap_fromSpecStalk, h,
+    ← Spec_stalkClosedPointIso]
+  rw [← Spec.map_comp_assoc, Iso.inv_hom_id, Spec.map_id, Category.id_comp]
 
 /-- Dominant rational maps from an integral scheme agree exactly when their pullbacks agree. -/
 theorem functionFieldMap_eq_iff (f g : X ⤏ Y) [f.IsDominant] [g.IsDominant] :
