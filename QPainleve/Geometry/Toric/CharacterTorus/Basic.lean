@@ -6,8 +6,10 @@ Authors: The QPainleve contributors
 module
 
 public import Mathlib.Algebra.MonoidAlgebra.Basic
+public import Mathlib.Algebra.MonoidAlgebra.NoZeroDivisors
+public import Mathlib.LinearAlgebra.FreeModule.Basic
 public import Mathlib.RingTheory.Localization.FractionRing
-public import QPainleve.Algebra.MonoidAlgebra.NoZeroDivisors
+public import TauCeti.Algebra.Group.UniqueProds.TorsionFree
 
 /-!
 # Character tori and their function fields
@@ -15,6 +17,7 @@ public import QPainleve.Algebra.MonoidAlgebra.NoZeroDivisors
 The additive group algebra of the character lattice is the coordinate ring of a split torus.
 A lattice basis identifies it with a Laurent polynomial algebra, with exponents given by the
 basis coordinates. Monomials and pullbacks on the function field are defined intrinsically.
+For free lattices, the domain instance uses Tau Ceti's `HasUniqueDiv.to_twoUniqueSums`.
 -/
 
 public noncomputable section
@@ -117,6 +120,9 @@ theorem one_add_monomial_ne_zero {x : B} (hx : x ≠ 0) :
 section Free
 
 variable {k} [Module ℤ B] [Module.Free ℤ B]
+
+local instance {G : Type*} [AddCommGroup G] [Module ℤ G] [Module.Free ℤ G] : HasUniqueDiv G :=
+  .of_isTorsionFree ℤ G
 
 /-- Algebra maps out of the torus function field are determined by their values on characters. -/
 theorem functionField_hom_ext {K : Type*} [Field K] [Algebra k K]
