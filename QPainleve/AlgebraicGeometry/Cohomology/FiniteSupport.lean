@@ -129,7 +129,7 @@ theorem eulerCharBelow_succ_eq_sum_length_of_finite_support [IsAlgClosed k]
         ((Module.length (X.presheaf.stalk (x : X)) (M.presheaf.stalk (x : X))).toNat : ℤ) := by
   rw [eulerCharBelow_succ_eq_sum_length_mul_of_finite_support k M h]
   refine finsum_congr fun x ↦ ?_
-  have hx := isClosed_singleton_of_finite_support k M h x.2
+  have hx := isClosed_singleton_of_finite_support k M h x.property
   have : IsClosedImmersion (X.fromSpecResidueField x) :=
     isClosed_singleton_iff_isClosedImmersion.mp hx
   have hf : LocallyOfFiniteType (X.fromSpecResidueField x ≫ (X ↘ Spec (.of k))) := inferInstance

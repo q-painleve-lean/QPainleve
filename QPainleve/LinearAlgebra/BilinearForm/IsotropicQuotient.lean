@@ -15,7 +15,8 @@ import Mathlib.LinearAlgebra.Matrix.Notation
 import Mathlib.Tactic.FinCases
 import Mathlib.Tactic.Ring
 import TauCeti.LinearAlgebra.BilinearForm.Isometry.Basic
-import TauCeti.LinearAlgebra.PerfectPairing.Basis
+import TauCeti.LinearAlgebra.BilinearForm.LinearIndependent
+import TauCeti.LinearAlgebra.BilinearForm.Modular
 import TauCeti.LinearAlgebra.Submodule.Compl
 
 /-!
@@ -26,8 +27,9 @@ If `δ` pairs to one with a vector `f`, this quotient is isometric to the orthog
 complement of the plane spanned by `δ` and `f`. This gives the rank, unimodularity and
 signature of the quotient. A characteristic `δ` makes the quotient even.
 
-The quotient construction uses Mathlib's `LinearMap.IsRefl.liftQ₂` and the plane splitting
-uses Tau Ceti's `LinearMap.BilinForm.isCompl_orthogonal_of_restrict_bijective`.
+The quotient construction uses Mathlib's `LinearMap.IsRefl.liftQ₂`. The plane splitting
+uses Tau Ceti's Gram matrix criteria for linear independence and `1`-modularity, and
+`LinearMap.BilinForm.isCompl_orthogonal_of_restrict_bijective`.
 The quotient isometry uses `Submodule.isCompl_comap_subtype_iff` and
 `Submodule.quotientEquivOfIsCompl` on the orthogonal complement of `δ`.
 -/
@@ -80,46 +82,25 @@ variable {R M : Type*} [CommRing R] [AddCommGroup M] [Module R M]
 variable {B : LinearMap.BilinForm R M} (hB : B.IsSymm) {δ f : M}
 
 include hB in
-private theorem linearIndependent_pair_of_isotropic (hδ : B δ δ = 0) (hδf : B δ f = 1) :
-    LinearIndependent R ![δ, f] := by
-  rw [Fintype.linearIndependent_iff]
-  intro c hc
-  simp only [Fin.sum_univ_two, Matrix.cons_val_zero, Matrix.cons_val_one] at hc
-  have hb := congrArg (B δ) hc
-  simp [hδ, hδf] at hb
-  have ha := congrArg (B f) hc
-  simp [hb, ← hB.eq δ f, hδf] at ha
-  intro i
-  fin_cases i <;> assumption
+private theorem isotropicPlane_gram (hδ : B δ δ = 0) (hδf : B δ f = 1) (i j : Fin 2) :
+    B (![δ, f] i) (![δ, f] j) = (1 : R) * (!![0, 1; 1, B f f] : Matrix (Fin 2) (Fin 2) R) i j := by
+  fin_cases i <;> fin_cases j <;> simp [hδ, hδf, hB.eq f δ]
 
 private noncomputable def isotropicPlaneBasis (hδ : B δ δ = 0) (hδf : B δ f = 1) :
     Module.Basis (Fin 2) R (plane[R, δ, f]) :=
-  (Module.Basis.span (linearIndependent_pair_of_isotropic hB hδ hδf)).map
-    (LinearEquiv.ofEq _ _ (by simp [Matrix.range_cons, Set.pair_comm]))
-
-@[simp]
-private theorem coe_isotropicPlaneBasis (hδ : B δ δ = 0) (hδf : B δ f = 1) (i : Fin 2) :
-    (isotropicPlaneBasis hB hδ hδf i : M) = ![δ, f] i := by
-  simp [isotropicPlaneBasis]
-
-include hB in
-private theorem isPerfPair_restrict_isotropicPlane (hδ : B δ δ = 0) (hδf : B δ f = 1) :
-    (B.restrict (plane[R, δ, f])).IsPerfPair := by
-  let b := isotropicPlaneBasis hB hδ hδf
-  apply b.isPerfPair_of_isUnit_det b
-  have hmat : LinearMap.toMatrix₂ b b (B.restrict (plane[R, δ, f])) = !![0, 1; 1, B f f] := by
-    ext i j
-    fin_cases i <;> fin_cases j <;>
-      simp [b, LinearMap.toMatrix₂_apply, restrict_apply, hδ, hδf, ← hB.eq δ f]
-  simp [hmat, Matrix.det_fin_two_of]
+  (Module.Basis.span (linearIndependent_of_isUnit_det (nonZeroDivisors R).one_mem
+    (isotropicPlane_gram hB hδ hδf) (by simp [Matrix.det_fin_two_of]))).map
+    (LinearEquiv.ofEq _ _ (by rw [Matrix.range_cons_cons_empty]))
 
 /-- An isotropic vector and a vector pairing to one with it span a unimodular plane, which
 splits off orthogonally. -/
 theorem IsSymm.isCompl_span_pair_orthogonal_of_isotropic (hB : B.IsSymm)
     (hδ : B δ δ = 0) (hδf : B δ f = 1) :
-    IsCompl (plane[R, δ, f]) (B.orthogonal (plane[R, δ, f])) :=
-  B.isCompl_orthogonal_of_restrict_bijective (plane[R, δ, f]) (hB.restrict _)
-    (isPerfPair_restrict_isotropicPlane hB hδ hδf).bijective_left
+    IsCompl (plane[R, δ, f]) (B.orthogonal (plane[R, δ, f])) := by
+  have hperf := isModular_one_iff.mp (isModular_restrict_span_range (nonZeroDivisors R).one_mem
+    (isotropicPlane_gram hB hδ hδf) (by simp [Matrix.det_fin_two_of]))
+  rw [Matrix.range_cons_cons_empty] at hperf
+  exact B.isCompl_orthogonal_of_restrict_bijective _ (hB.restrict _) hperf.bijective_left
 
 private theorem orthogonal_plane_le_orthogonal_line :
     B.orthogonal (plane[R, δ, f]) ≤ B.orthogonal (R ∙ δ) :=
