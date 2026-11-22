@@ -6,6 +6,8 @@ Authors: Yuma Mizuno
 module
 
 public import Mathlib.Algebra.Tropical.Basic
+public import Mathlib.CategoryTheory.PathCategory.Basic
+public import Mathlib.CategoryTheory.SingleObj
 public import QPainleve.Algebra.Cluster.Word
 public import TauCeti.Algebra.Cluster.YSeed.Basic
 
@@ -14,6 +16,7 @@ public import TauCeti.Algebra.Cluster.YSeed.Basic
 
 A signed cluster word transports an integer vector by the tropical cluster `X` formulas.
 Mutation and relabeling use Tau Ceti's `YSeed` operations over the min-tropical integers.
+Mathlib's `CategoryTheory.Paths.lift` composes the edge transformations in execution order.
 The resulting action respects concatenation, reversal and change of labels. It is the integer
 calculation used to track candidate boundary valuations through a word.
 
@@ -25,7 +28,7 @@ public section
 
 namespace QPainleve.Cluster
 
-open Quiver
+open CategoryTheory Quiver
 open scoped Int
 
 variable {ι κ : Type*}
@@ -146,57 +149,50 @@ theorem tropical_reverse {B C : SkewExchangeMatrix ι} (s : B ⟶ C) :
 
 end Step
 
-end QPainleve.Cluster
-
-namespace Quiver.Path
-
-open QPainleve.Cluster
-
-variable {ι κ : Type*} [DecidableEq ι] [DecidableEq κ] {B C D : SkewExchangeMatrix ι}
-
-/-- Evaluate a signed cluster word on integer coordinates by performing each operation in
-execution order. -/
-def tropical : ∀ {C : SkewExchangeMatrix ι}, Path B C → (ι → ℤ) ≃ (ι → ℤ)
-  | _, .nil => Equiv.refl _
-  | _, .cons w s => (tropical w).trans (Step.tropical s)
+/-- The tropical permutations on signed cluster edges. The path-category lift evaluates
+words by composing these permutations in execution order. -/
+def tropicalPrefunctor (ι : Type*) [DecidableEq ι] :
+    SkewExchangeMatrix ι ⥤q CategoryTheory.SingleObj (Equiv.Perm (ι → ℤ)) where
+  obj _ := CategoryTheory.SingleObj.star _
+  map := Step.tropical
 
 @[simp]
-theorem tropical_nil : (Path.nil : Word B B).tropical = Equiv.refl _ :=
-  (rfl)
+theorem tropicalPrefunctor_map {B C : SkewExchangeMatrix ι} (s : B ⟶ C) :
+    (tropicalPrefunctor ι).map s = Step.tropical s := (rfl)
 
-@[simp]
-theorem tropical_cons (w : Word B C) (s : C ⟶ D) :
-    (w.cons s).tropical = w.tropical.trans (Step.tropical s) :=
-  (rfl)
-
-@[simp]
-theorem tropical_toPath (s : B ⟶ C) : s.toPath.tropical = Step.tropical s := by
-  simp [Hom.toPath]
-
-/-- Evaluation of concatenated words is composition in execution order. -/
-@[simp]
-theorem tropical_comp (w : Word B C) (v : Word C D) :
-    (w.comp v).tropical = w.tropical.trans v.tropical := by
-  induction v with
-  | nil => simp
-  | cons _ _ ih => simp [ih, Equiv.trans_assoc]
+variable {B C : SkewExchangeMatrix ι}
 
 /-- Reversing the word inverts its integer transformation. -/
 @[simp]
 theorem tropical_reverse (w : Word B C) :
-    w.reverse.tropical = w.tropical.symm := by
+    (Paths.lift (tropicalPrefunctor ι)).map w.reverse =
+      CategoryTheory.inv ((Paths.lift (tropicalPrefunctor ι)).map w) := by
   induction w with
-  | nil => rfl
-  | cons _ _ ih =>
-    simp [ih, Equiv.symm_trans]
+  | nil =>
+    simp only [Path.reverse, Paths.lift_nil, SingleObj.inv_as_inv, SingleObj.id_as_one]
+    rfl
+  | cons w s ih =>
+    refine ((Paths.lift (tropicalPrefunctor ι)).map_comp (Quiver.reverse s).toPath
+      w.reverse).trans ?_
+    simp only [Paths.lift_toPath, tropicalPrefunctor_map, ih, Paths.lift_cons,
+      IsIso.inv_comp, SingleObj.inv_as_inv, Step.tropical_reverse]
+    rfl
 
 /-- Integer evaluation commutes with changing labels on the entire word. -/
 theorem tropical_reindex (e : ι ≃ κ) (w : Word B C) (b : ι → ℤ) :
-    ((SkewExchangeMatrix.reindexPrefunctor e).mapPath w).tropical (b ∘ e.symm) =
-      w.tropical b ∘ e.symm := by
+    Equiv.toFun ((Paths.lift (tropicalPrefunctor κ)).map
+        ((SkewExchangeMatrix.reindexPrefunctor e).mapPath w)) (b ∘ e.symm) =
+      Equiv.toFun ((Paths.lift (tropicalPrefunctor ι)).map w) b ∘ e.symm := by
   induction w with
-  | nil => simp
-  | cons _ s ih =>
-    simp [ih, Generator.tropical_reindex]
+  | nil => rfl
+  | cons w s ih =>
+    have hs (x : ι → ℤ) :
+        Step.tropical ((SkewExchangeMatrix.reindexPrefunctor e).map s) (x ∘ e.symm) =
+          Step.tropical s x ∘ e.symm := by
+      simpa using s.generator.tropical_reindex _ e x
+    simp only [Prefunctor.mapPath_cons, Paths.lift_cons, tropicalPrefunctor_map,
+      SingleObj.comp_as_mul]
+    exact (congrArg (Step.tropical ((SkewExchangeMatrix.reindexPrefunctor e).map s)) ih).trans
+      (hs _)
 
-end Quiver.Path
+end QPainleve.Cluster
