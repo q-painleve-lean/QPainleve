@@ -35,11 +35,10 @@ private instance : TauCeti.CoefficientSemifield (MinTropical ℤ) :=
     (inferInstance : AddCommSemigroup (MinTropical ℤ)),
     (inferInstance : Distrib (MinTropical ℤ)) with }
 
-/-- The `YSeed` formula takes the mutation entry from the row. Negating the skew exchange
-matrix puts the original column in that row. -/
+/-- The integer coordinates as tropical coefficients of the native exchange matrix. -/
 private def tropicalSeed (B : SkewExchangeMatrix ι) (b : ι → ℤ) :
     TauCeti.YSeed ι (MinTropical ℤ) :=
-  ⟨fun i ↦ MinTropical.trop (b i), (-B).toExchangeMatrix⟩
+  ⟨fun i ↦ MinTropical.trop (b i), B.toExchangeMatrix⟩
 
 namespace Generator
 
@@ -60,7 +59,7 @@ theorem tropical_mutate_of_ne (B : SkewExchangeMatrix ι) (b : ι → ℤ) {i k 
     (mutate k).tropical B b i =
       b i + (B.matrix i k)⁺ * b k - B.matrix i k * min 0 (b k) := by
   simp [tropical, tropicalSeed, TauCeti.YSeed.mutation_coefficient_of_ne _ hi,
-    B.apply_swap i k, sub_eq_add_neg, min_comm (b k) 0]
+    B.toExchangeMatrix_matrix_apply k i, sub_eq_add_neg, min_comm (b k) 0]
 
 @[simp]
 theorem tropical_permute_apply (B : SkewExchangeMatrix ι) (b : ι → ℤ) (σ : Equiv.Perm ι) (i : ι) :
@@ -78,7 +77,7 @@ private theorem tropicalSeed_mutation (B : SkewExchangeMatrix ι) (b : ι → �
   apply TauCeti.YSeed.ext
   · funext i
     simp [tropicalSeed, tropical]
-  · simp [tropicalSeed, ← SkewExchangeMatrix.mutate_neg]
+  · simp [tropicalSeed]
 
 /-- The reverse generator acts by the inverse transformation, using the original target matrix
 as the source of the reverse. -/

@@ -18,7 +18,9 @@ permutation of the labels, or simultaneous sign reversal. Mathlib's quiver paths
 the source and target of a word, including under concatenation, reversal, and changes of labels.
 Two generators with the same endpoints still record distinct operations.
 
-The matrix action uses Tau Ceti's `matrixMutation` and its invariance of skew-symmetrizers.
+The vertices use Tau Ceti's `ExchangeMatrix` with unit symmetrizer. Its entries are
+the negatives of the geometric exchange entries used in the cluster `X` formulas.
+Mutation and relabeling use `ExchangeMatrix.mutation` and `ExchangeMatrix.reindex`.
 For mutation and permutations see Fock and Goncharov, *Cluster ensembles, quantization and
 the dilogarithm*, §1.2.2. For the operation adjoining sign reversal see Bershtein, Gavrylenko
 and Marshakov, *Cluster integrable systems, q-Painlevé equations and their quantization*, §3.1.
@@ -33,26 +35,73 @@ open Quiver
 
 variable {ι κ ρ : Type*}
 
-/-- An integer exchange matrix whose skew-symmetrizer is identically one. -/
-@[ext]
+/-- A square Tau Ceti exchange matrix with unit symmetrizer, stored in the convention
+`B = -ε` for geometric exchange matrix `ε`. -/
 structure SkewExchangeMatrix (ι : Type*) where
-  /-- The entries, indexed by the same labels in both positions. -/
-  matrix : Matrix ι ι ℤ
-  /-- The unit skew-symmetrizer witnesses skew-symmetry. -/
-  isSkewSymmetrizer : matrix.IsSkewSymmetrizer (fun _ ↦ 1)
+  /-- The native exchange matrix, whose pivot row gives the geometric pivot column. -/
+  toExchangeMatrix : TauCeti.ExchangeMatrix (Function.Embedding.refl ι)
+  /-- The unit symmetrizer witnesses skew-symmetry. -/
+  toExchangeMatrix_symmetrizer : toExchangeMatrix.symmetrizer = fun _ ↦ 1
 
 namespace SkewExchangeMatrix
+
+attribute [simp] toExchangeMatrix_symmetrizer
+
+/-- The geometric exchange matrix `ε` governing the cluster `X` formulas. -/
+def matrix (B : SkewExchangeMatrix ι) : Matrix ι ι ℤ :=
+  -B.toExchangeMatrix.matrix
+
+/-- The native matrix is the negative of the geometric matrix. -/
+theorem toExchangeMatrix_matrix (B : SkewExchangeMatrix ι) :
+    B.toExchangeMatrix.matrix = -B.matrix := by
+  simp [matrix]
+
+/-- Construct a vertex from the exchange entries in the geometric convention. -/
+def ofMatrix (ε : Matrix ι ι ℤ) (hε : ε.IsSkewSymmetrizer (fun _ ↦ 1)) :
+    SkewExchangeMatrix ι :=
+  ⟨⟨-ε, fun _ ↦ 1, hε.neg.submatrix (Function.Embedding.refl ι)⟩, rfl⟩
+
+@[simp]
+theorem matrix_ofMatrix (ε : Matrix ι ι ℤ) (hε : ε.IsSkewSymmetrizer (fun _ ↦ 1)) :
+    (ofMatrix ε hε).matrix = ε := by
+  simp [ofMatrix, matrix]
+
+@[ext]
+theorem ext {B C : SkewExchangeMatrix ι} (h : B.matrix = C.matrix) : B = C := by
+  obtain ⟨B, hB⟩ := B
+  obtain ⟨C, hC⟩ := C
+  congr 1
+  apply TauCeti.ExchangeMatrix.ext
+  · exact neg_injective h
+  · exact hB.trans hC.symm
+
+/-- The geometric exchange matrix is skew-symmetrized by the unit vector. -/
+theorem isSkewSymmetrizer (B : SkewExchangeMatrix ι) : B.matrix.IsSkewSymmetrizer (fun _ ↦ 1) := by
+  simpa [matrix, Function.Embedding.coe_refl] using B.toExchangeMatrix.isSkewSymmetrizer.neg
+
+@[simp]
+theorem ofMatrix_matrix (B : SkewExchangeMatrix ι) : ofMatrix B.matrix B.isSkewSymmetrizer = B :=
+  ext (matrix_ofMatrix _ _)
 
 /-- Skew-symmetry interchanges the two entries with a sign change. -/
 theorem apply_swap (B : SkewExchangeMatrix ι) (i j : ι) : B.matrix j i = -B.matrix i j := by
   simpa using B.isSkewSymmetrizer.mul_apply j i
+
+/-- The native row entry used by coefficient mutation is the geometric column entry. -/
+theorem toExchangeMatrix_matrix_apply (B : SkewExchangeMatrix ι) (i j : ι) :
+    B.toExchangeMatrix.matrix i j = B.matrix j i := by
+  simp [toExchangeMatrix_matrix, B.apply_swap i j]
 
 @[simp]
 theorem apply_diag (B : SkewExchangeMatrix ι) (i : ι) : B.matrix i i = 0 :=
   B.isSkewSymmetrizer.apply_self i
 
 instance : Neg (SkewExchangeMatrix ι) where
-  neg B := ⟨-B.matrix, B.isSkewSymmetrizer.neg⟩
+  neg B :=
+    ⟨{ B.toExchangeMatrix with
+        matrix := -B.toExchangeMatrix.matrix
+        isSkewSymmetrizer := B.toExchangeMatrix.isSkewSymmetrizer.neg },
+      B.toExchangeMatrix_symmetrizer⟩
 
 @[simp]
 theorem neg_matrix (B : SkewExchangeMatrix ι) : (-B).matrix = -B.matrix :=
@@ -63,31 +112,20 @@ theorem neg_neg (B : SkewExchangeMatrix ι) : -(-B) = B := by
   ext i j
   simp
 
-/-- View a skew-symmetric matrix as a Tau Ceti exchange matrix with unit symmetrizer. -/
-def toExchangeMatrix (B : SkewExchangeMatrix ι) :
-    TauCeti.ExchangeMatrix (Function.Embedding.refl ι) where
-  matrix := B.matrix
-  symmetrizer := fun _ ↦ 1
-  isSkewSymmetrizer := B.isSkewSymmetrizer.submatrix (Function.Embedding.refl ι)
-
-@[simp]
-theorem toExchangeMatrix_matrix (B : SkewExchangeMatrix ι) :
-    B.toExchangeMatrix.matrix = B.matrix :=
-  (rfl)
-
-@[simp]
-theorem toExchangeMatrix_symmetrizer (B : SkewExchangeMatrix ι) :
-    B.toExchangeMatrix.symmetrizer = fun _ ↦ 1 :=
-  (rfl)
-
 /-- Transport a matrix to new labels using the same equivalence for rows and columns. -/
 def reindex (B : SkewExchangeMatrix ι) (e : ι ≃ κ) : SkewExchangeMatrix κ :=
-  ⟨B.matrix.submatrix e.symm e.symm, B.isSkewSymmetrizer.submatrix e.symm⟩
+  ⟨TauCeti.ExchangeMatrix.reindex e e (by simp) B.toExchangeMatrix, by simp [Function.comp_def]⟩
+
+@[simp]
+theorem toExchangeMatrix_reindex (B : SkewExchangeMatrix ι) (e : ι ≃ κ) :
+    (B.reindex e).toExchangeMatrix =
+      TauCeti.ExchangeMatrix.reindex e e (by simp) B.toExchangeMatrix :=
+  (rfl)
 
 @[simp]
 theorem reindex_matrix (B : SkewExchangeMatrix ι) (e : ι ≃ κ) :
-    (B.reindex e).matrix = B.matrix.submatrix e.symm e.symm :=
-  (rfl)
+    (B.reindex e).matrix = B.matrix.submatrix e.symm e.symm := by
+  simp [matrix, Matrix.submatrix_neg]
 
 @[simp]
 theorem reindex_refl (B : SkewExchangeMatrix ι) : B.reindex (Equiv.refl ι) = B := by
@@ -110,13 +148,18 @@ variable [DecidableEq ι] [DecidableEq κ]
 
 /-- Mutate the exchange matrix at label `k`. -/
 def mutate (B : SkewExchangeMatrix ι) (k : ι) : SkewExchangeMatrix ι :=
-  ⟨TauCeti.matrixMutation (Function.Embedding.refl ι) B.matrix k,
-    B.isSkewSymmetrizer.matrixMutation k⟩
+  ⟨B.toExchangeMatrix.mutation k, by simp⟩
+
+@[simp]
+theorem toExchangeMatrix_mutate (B : SkewExchangeMatrix ι) (k : ι) :
+    (B.mutate k).toExchangeMatrix = B.toExchangeMatrix.mutation k :=
+  (rfl)
 
 @[simp]
 theorem mutate_matrix (B : SkewExchangeMatrix ι) (k : ι) :
-    (B.mutate k).matrix = TauCeti.matrixMutation (Function.Embedding.refl ι) B.matrix k :=
-  (rfl)
+    (B.mutate k).matrix = TauCeti.matrixMutation (Function.Embedding.refl ι) B.matrix k := by
+  simp only [matrix, toExchangeMatrix_mutate, TauCeti.ExchangeMatrix.mutation_matrix,
+    TauCeti.matrixMutation_neg]
 
 /-- The exchange entry away from the mutation row and column, in the positive-part convention
 for cluster `X` mutation. -/
@@ -129,14 +172,9 @@ theorem mutate_matrix_apply_of_ne (B : SkewExchangeMatrix ι) {i j k : ι}
     (B.matrix k j)⁻ * posPart_sub_negPart (B.matrix i k)
 
 @[simp]
-theorem toExchangeMatrix_mutate (B : SkewExchangeMatrix ι) (k : ι) :
-    (B.mutate k).toExchangeMatrix = B.toExchangeMatrix.mutation k := by
-  ext : 1 <;> simp
-
-@[simp]
 theorem mutate_mutate (B : SkewExchangeMatrix ι) (k : ι) : (B.mutate k).mutate k = B := by
   apply SkewExchangeMatrix.ext
-  simp
+  simp only [matrix, toExchangeMatrix_mutate, TauCeti.ExchangeMatrix.mutation_mutation]
 
 @[simp]
 theorem mutate_neg (B : SkewExchangeMatrix ι) (k : ι) : (-B).mutate k = -(B.mutate k) := by
@@ -146,11 +184,9 @@ theorem mutate_neg (B : SkewExchangeMatrix ι) (k : ι) : (-B).mutate k = -(B.mu
 @[simp]
 theorem mutate_reindex (B : SkewExchangeMatrix ι) (e : ι ≃ κ) (k : ι) :
     (B.reindex e).mutate (e k) = (B.mutate k).reindex e := by
-  have h (j : κ) : e.symm (Function.Embedding.refl κ j) =
-      Function.Embedding.refl ι (e.symm j) := rfl
-  have he := TauCeti.matrixMutation_submatrix e.symm.injective e.symm.injective h B.matrix (e k)
   apply SkewExchangeMatrix.ext
-  simpa using he
+  simp only [matrix, toExchangeMatrix_mutate, toExchangeMatrix_reindex,
+    TauCeti.ExchangeMatrix.mutation_reindex]
 
 end SkewExchangeMatrix
 
