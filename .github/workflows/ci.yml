@@ -68,10 +68,10 @@ jobs:
           fetch-depth: 0
 
       - name: Prepare pinned shared tools
-        uses: q-painleve-lean/TauCetiTools/.github/actions/setup@c9b55545fc5f358d62e8c014eef362ef0ea40ad0
+        uses: q-painleve-lean/TauCetiTools/.github/actions/setup@6e8ad3a6699266829a4b87fac2b0a385451e445c
         with:
           tools-repository: q-painleve-lean/TauCetiTools
-          tools-ref: c9b55545fc5f358d62e8c014eef362ef0ea40ad0
+          tools-ref: 6e8ad3a6699266829a4b87fac2b0a385451e445c
           project-directory: .
           source-mirror-enabled: false
       - name: Import-boundary guard (QPainleve/ and QPainleve.lean ⊬ roadmap/review)
@@ -435,7 +435,7 @@ jobs:
     uses: ./.github/workflows/publish-lake-cache.yml
     with:
       tools_repository: q-painleve-lean/TauCetiTools
-      tools_ref: c9b55545fc5f358d62e8c014eef362ef0ea40ad0
+      tools_ref: 6e8ad3a6699266829a4b87fac2b0a385451e445c
       revision: ${{ github.sha }}
       artifact-name: lake-cache-staging
       reported-toolchain: ${{ needs.build.outputs.reported-toolchain }}

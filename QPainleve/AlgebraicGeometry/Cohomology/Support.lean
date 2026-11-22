@@ -18,11 +18,11 @@ import TauCeti.AlgebraicGeometry.Modules.SchemeTheoreticSupport
 # Cohomology above the dimension of the support
 
 On a projective scheme over an infinite field, a quasi-coherent sheaf of finite type
-has no cohomology in degrees above the dimension of its support. The sheaf is the
-direct image of its pullback to the closed subscheme defined by its annihilator.
-The projective affine-cover bound then applies on that subscheme, including when
+has no cohomology in degrees above the dimension of its support. The sheaf is a
+pushforward from the closed subscheme defined by its annihilator. The projective affine-cover
+bound on that subscheme applies to its quasi-coherent pullback, including when
 the annihilator defines a nonreduced structure. The proof uses Tau Ceti's
-`isIso_unit_app_of_ker_ideal_le_annihilator`, `cohomologyPushforwardIso`, and
+`exists_iso_pushforward_subschemeι_annihilator`, `cohomologyPushforwardIso`, and
 `subsingleton_cohomology_of_isAffineOpen_of_card_le`.
 
 ## References
@@ -80,20 +80,22 @@ theorem subsingleton_cohomology_of_support_dim_lt {k : Type u} [Field k] [Infini
   let : I.subscheme.Over (Spec (.of k)) := ⟨i ≫ X ↘ Spec (.of k)⟩
   let : i.IsOver (Spec (.of k)) := ⟨rfl⟩
   have : I.subscheme.IsProjectiveOver k := Scheme.IsProjectiveOver.of_isClosedImmersion k i
-  have hsupport : Set.range i = {x : X | Nontrivial (F.presheaf.stalk x)} := by
-    rw [I.range_subschemeι]
-    ext x
-    exact F.mem_support_annihilator_iff_nontrivial_stalk hfinite
-  let e := i.isClosedEmbedding.isEmbedding.toHomeomorph.trans (Homeomorph.setCongr hsupport)
-  have hdim' : topologicalKrullDim I.subscheme < q :=
-    e.isHomeomorph.topologicalKrullDim_eq _ |>.trans_lt hdim
-  have := isIso_unit_app_of_ker_ideal_le_annihilator i F fun U ↦ by
-    rw [I.ker_subschemeι, F.annihilator_ideal hfinite]
-  let G := (pullback i).obj F
-  have : Subsingleton (Cohomology G q) :=
-    subsingleton_cohomology_of_projective_dim_lt (k := k) G hdim'
-  let iso := (cohomologyFunctor X q).mapIso
-    (asIso ((pullbackPushforwardAdjunction i).unit.app F)) ≪≫ cohomologyPushforwardIso i G q
-  exact iso.addCommGroupIsoToAddEquiv.toEquiv.subsingleton
+  have hi (x : I.subscheme) : Nontrivial (F.presheaf.stalk (i x)) := by
+    have hx : I.subschemeι x ∈ (I.support : Set X) :=
+      I.range_subschemeι ▸ Set.mem_range_self x
+    exact (F.mem_support_annihilator_iff_nontrivial_stalk hfinite).mp hx
+  have hdim' := (i.isClosedEmbedding.isEmbedding.isInducing.codRestrict hi)
+    |>.topologicalKrullDim_le.trans_lt hdim
+  obtain ⟨G, ⟨e⟩⟩ := F.exists_iso_pushforward_subschemeι_annihilator hfinite
+  -- A sheaf in the image of pushforward is a retract of its pullback followed by pushforward.
+  let adj := pullbackPushforwardAdjunction i
+  let j : Retract F ((pushforward i).obj ((pullback i).obj F)) :=
+    ⟨adj.unit.app F, (pushforward i).map ((adj.homEquiv _ G).symm e.hom) ≫ e.inv, by
+      rw [← Category.assoc, ← adj.homEquiv_unit, Equiv.apply_symm_apply, e.hom_inv_id]⟩
+  have : Subsingleton (Cohomology ((pullback i).obj F) q) :=
+    subsingleton_cohomology_of_projective_dim_lt (k := k) _ hdim'
+  let eH := cohomologyPushforwardIso i ((pullback i).obj F) q
+  have hinj := (AddCommGrpCat.mono_iff_injective (j.map (cohomologyFunctor X q)).i).mp inferInstance
+  exact (eH.addCommGroupIsoToAddEquiv.injective.comp hinj).subsingleton
 
 end AlgebraicGeometry.Scheme.Modules
