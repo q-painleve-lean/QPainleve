@@ -17,7 +17,7 @@ import TauCeti.Algebra.BigOperators.ZPow
 An integer charge map from the exponent lattice pulls an alternating form back to the
 exchange matrix. Mutating the charges changes this form by congruence and induces an
 integral equivalence of the charge kernels. The binomial factor in cluster X mutation
-cancels on the kernel, so the same equivalence transports monomial exponents.
+cancels on the mutated exchange-matrix kernel, which contains the mutated charge kernel.
 
 The basis change and the X coordinate formulas follow Fock and Goncharov,
 *Cluster ensembles, quantization and the dilogarithm*, §1.2.2 and §1.2.4.
@@ -211,55 +211,47 @@ theorem coe_chargeKernelMutation_symm_apply (ω : BilinForm ℤ N) (v : (ι → 
       chargeMutationEquiv (chargeExchangeMatrix ω v) k (x : ι → ℤ) :=
   (rfl)
 
-/-- The binomial exponent vanishes on a mutated charge relation. -/
-theorem sum_mul_chargeExchangeMatrix_eq_zero (ω : BilinForm ℤ N) (hω : ω.IsAlt)
-    (v : (ι → ℤ) →ₗ[ℤ] N) (k : ι) (x : (chargeMutation ω v k).ker) :
-    ∑ i ∈ Finset.univ.erase k, chargeExchangeMatrix ω v i k * (x : ι → ℤ) i = 0 := by
-  have h := congrFun (LinearMap.mem_ker.mp
-    (ker_le_ker_chargeExchangeMatrix ω (chargeMutation ω v k) x.property)) k
-  rw [Matrix.mulVecLin_apply, chargeExchangeMatrix_chargeMutation ω hω,
-    Matrix.mulVec, dotProduct] at h
-  simp only [matrixMutation_refl_apply_row, chargeExchangeMatrix_apply, hω.neg_eq] at h
+/-- The binomial exponent in an X mutation vanishes on the mutated exchange-matrix kernel. -/
+theorem sum_neg_mul_eq_zero_of_mem_ker_mutation (B : ExchangeMatrix (Function.Embedding.refl ι))
+    (k : ι) {x : ι → ℤ} (hx : x ∈ (B.mutation k).matrix.mulVecLin.ker) :
+    ∑ i ∈ Finset.univ.erase k, -B.matrix k i * x i = 0 := by
+  have h := congrFun (LinearMap.mem_ker.mp hx) k
+  have hdiag : B.matrix k k = 0 := B.matrix_row_self k
+  rw [ExchangeMatrix.mutation_matrix, Matrix.mulVecLin_apply, Matrix.mulVec, dotProduct] at h
+  simp only [matrixMutation_refl_apply_row] at h
   rwa [← Finset.sum_erase_add _ _ (Finset.mem_univ k),
-    hω.self_eq_zero, zero_mul, add_zero, Pi.zero_apply] at h
+    hdiag, neg_zero, zero_mul, add_zero, Pi.zero_apply] at h
 
-/-- A monomial with exponent in the mutated charge kernel pulls back under X mutation to
-the monomial with the transported exponent. The only required nonvanishing conditions
-on the coordinates are at the pivot and its binomial. -/
-theorem prod_zpow_xMutation_eq {F : Type*} [Semifield F] (ω : BilinForm ℤ N) (hω : ω.IsAlt)
-    (v : (ι → ℤ) →ₗ[ℤ] N) (k : ι) (x : (chargeMutation ω v k).ker)
+/-- A monomial in the mutated exchange-matrix kernel pulls back under X mutation to the
+monomial with the transported exponent. In the native convention the coefficient is
+`B.matrix k i`, which equals `ε i k` when `B.matrix = -ε` is skew-symmetric.
+Only the pivot coordinate and its binomial need to be nonzero. -/
+theorem prod_zpow_xMutation_eq {F : Type*} [CommGroupWithZero F] [Add F]
+    (B : ExchangeMatrix (Function.Embedding.refl ι)) (k : ι) {x : ι → ℤ}
+    (hx : x ∈ (B.mutation k).matrix.mulVecLin.ker)
     (X : ι → F) (hX : X k ≠ 0) (hbin : 1 + X k ≠ 0) :
     (∏ i, (if i = k then (X k)⁻¹ else
-      X i * X k ^ (chargeExchangeMatrix ω v i k)⁺ *
-        (1 + X k) ^ (-chargeExchangeMatrix ω v i k)) ^ (x : ι → ℤ) i) =
-      ∏ i, X i ^ (chargeKernelMutation ω v k x : ι → ℤ) i := by
-  let B := chargeExchangeMatrix ω v
-  let a := (x : ι → ℤ)
-  have hswap (i : ι) : -B k i = B i k := by
-    simpa [B] using hω.neg_eq (v (Pi.single k 1)) (v (Pi.single i 1))
-  have hsum : ∑ i ∈ Finset.univ.erase k, (-B i k) * a i = 0 := by
-    simp only [neg_mul, Finset.sum_neg_distrib, B, a, sum_mul_chargeExchangeMatrix_eq_zero ω hω,
-      neg_zero]
+      X i * X k ^ (B.matrix k i)⁺ * (1 + X k) ^ (-B.matrix k i)) ^ x i) =
+      ∏ i, X i ^ chargeMutationEquiv (-B.matrix) k x i := by
   have hprod :
       (∏ i ∈ Finset.univ.erase k, (if i = k then (X k)⁻¹ else
-        X i * X k ^ (B i k)⁺ * (1 + X k) ^ (-B i k)) ^ a i) =
+        X i * X k ^ (B.matrix k i)⁺ * (1 + X k) ^ (-B.matrix k i)) ^ x i) =
       ∏ i ∈ Finset.univ.erase k,
-        X i ^ a i * X k ^ ((B i k)⁺ * a i) * (1 + X k) ^ ((-B i k) * a i) := by
+        X i ^ x i * X k ^ ((B.matrix k i)⁺ * x i) * (1 + X k) ^ (-B.matrix k i * x i) := by
     refine Finset.prod_congr rfl fun i hi ↦ ?_
     simp only [ite_eq_right (Finset.ne_of_mem_erase hi), mul_zpow, zpow_mul]
   rw [← Finset.mul_prod_erase _ _ (Finset.mem_univ k),
     ← Finset.mul_prod_erase _ _ (Finset.mem_univ k), hprod]
-  simp only [ite_true, inv_zpow, ← zpow_neg, coe_chargeKernelMutation_apply,
-    chargeMutationEquiv_apply_self, hswap, B, a]
+  simp only [ite_true, inv_zpow, ← zpow_neg, chargeMutationEquiv_apply_self, Matrix.neg_apply,
+    neg_neg]
   rw [Finset.prod_mul_distrib, Finset.prod_mul_distrib,
     Finset.prod_zpow_eq_zpow_sum_of_isUnit _ (isUnit_iff_ne_zero.mpr hX),
     Finset.prod_zpow_eq_zpow_sum_of_isUnit _ (isUnit_iff_ne_zero.mpr hbin),
-    hsum, zpow_zero, mul_one, zpow_add₀ hX]
-  have hrest : (∏ i ∈ Finset.univ.erase k, X i ^ chargeMutationEquiv B k a i) =
-      ∏ i ∈ Finset.univ.erase k, X i ^ a i := by
-    exact Finset.prod_congr rfl fun i hi ↦ by
-      rw [chargeMutationEquiv_apply_of_ne _ (Finset.ne_of_mem_erase hi)]
-  rw [hrest]
+    sum_neg_mul_eq_zero_of_mem_ker_mutation B k hx, zpow_zero, mul_one, zpow_add₀ hX]
+  have hfixed (i : ι) (hi : i ∈ Finset.univ.erase k) :
+      X i ^ chargeMutationEquiv (-B.matrix) k x i = X i ^ x i := by
+    rw [chargeMutationEquiv_apply_of_ne _ (Finset.ne_of_mem_erase hi)]
+  rw [Finset.prod_congr rfl hfixed]
   ac_rfl
 
 end QPainleve.Cluster
