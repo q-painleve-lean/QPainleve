@@ -120,30 +120,6 @@ theorem snocSection_eq_snoc (f : D ⟶ S) (s : S ⟶ D) [IsClosedImmersion s]
     T.snocSection f s hs U hU =
       T.snoc s.ker (Scheme.Hom.isEffectiveCartier_ker_of_comp_eq_id s hs U hU) := (rfl)
 
-@[simp]
-theorem toTower_snocSection (f : D ⟶ S) (s : S ⟶ D) [IsClosedImmersion s]
-    (hs : s ≫ f = 𝟙 S) (U : D.Opens) (hU : Set.range s ⊆ U)
-    [SmoothOfRelativeDimension 1 (U.ι ≫ f)] :
-    (T.snocSection f s hs U hU).toTower = T.toTower.snoc (s.ker.map T.boundaryι) := (rfl)
-
-/-- The projection carries the strict transform of the boundary back to the previous boundary. -/
-@[reassoc (attr := simp)]
-theorem boundaryι_snocSection_blowupToBase (f : D ⟶ S) (s : S ⟶ D) [IsClosedImmersion s]
-    (hs : s ≫ f = 𝟙 S) (U : D.Opens) (hU : Set.range s ⊆ U)
-    [SmoothOfRelativeDimension 1 (U.ι ≫ f)] :
-    (T.snocSection f s hs U hU).boundaryι ≫ (s.ker.map T.boundaryι).blowupToBase = T.boundaryι :=
-  T.boundaryι_snoc_blowupToBase _ _
-
-/-- The strict transform of the boundary meets the exceptional divisor in the section,
-including its scheme structure. -/
-@[simp]
-theorem comap_exceptional_boundaryι_snocSection (f : D ⟶ S) (s : S ⟶ D) [IsClosedImmersion s]
-    (hs : s ≫ f = 𝟙 S) (U : D.Opens) (hU : Set.range s ⊆ U)
-    [SmoothOfRelativeDimension 1 (U.ι ≫ f)] :
-    let I := s.ker.map T.boundaryι
-    (I.comap I.blowupToBase).comap (T.snocSection f s hs U hU).boundaryι = s.ker :=
-  T.comap_exceptional_boundaryι_snoc _ _
-
 /-- Isomorphisms matching the boundary embeddings and Cartier centers also match their
 ambient center ideals. -/
 theorem comap_center_eq {T' : WithBoundary i' n Y'} (g : Y ≅ Y') (d : D ≅ D')
