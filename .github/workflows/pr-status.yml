@@ -101,10 +101,10 @@ jobs:
             .github/actions/checkout-merge-policy
           persist-credentials: false
       - name: Prepare pinned shared tools
-        uses: q-painleve-lean/TauCetiTools/.github/actions/setup@c9b55545fc5f358d62e8c014eef362ef0ea40ad0
+        uses: q-painleve-lean/TauCetiTools/.github/actions/setup@6e8ad3a6699266829a4b87fac2b0a385451e445c
         with:
           tools-repository: q-painleve-lean/TauCetiTools
-          tools-ref: c9b55545fc5f358d62e8c014eef362ef0ea40ad0
+          tools-ref: 6e8ad3a6699266829a4b87fac2b0a385451e445c
           project-directory: .
           source-mirror-enabled: false
       - name: Checkout the pinned merge policy (read-only)

@@ -8,6 +8,8 @@ module
 public import QPainleve.LinearAlgebra.BilinearForm.Isometry
 public import TauCeti.LinearAlgebra.BilinearForm.BaseChange
 public import Mathlib.Data.ZMod.Basic
+import Mathlib.RingTheory.Flat.TorsionFree
+import TauCeti.LinearAlgebra.SesquilinearForm.TorsionFree
 
 /-!
 # Faithfulness of boundary isometries
@@ -58,14 +60,6 @@ theorem boundary_isometry_ext {g h : B.IsometryEquiv B}
   have hDspan : Set.EqOn g h M :=
     LinearMap.eqOn_span' (f := (g : L →ₗ[ℤ] L)) (g := (h : L →ₗ[ℤ] L))
       (by rintro _ ⟨i, rfl⟩; exact hD i)
-  have hbase (W : Submodule ℤ L) (hW : Set.EqOn g h W) :
-      Set.EqOn gQ hQ (W.baseChange ℚ) := by
-    rw [baseChange_eq_span]
-    refine LinearMap.eqOn_span'
-      (f := (gQ : (ℚ ⊗[ℤ] L) →ₗ[ℚ] (ℚ ⊗[ℤ] L)))
-      (g := (hQ : (ℚ ⊗[ℤ] L) →ₗ[ℚ] (ℚ ⊗[ℤ] L))) ?_
-    rintro _ ⟨x, hx, rfl⟩
-    simp [gQ, hQ, hW hx]
   have hδM : δ ∈ M := (M).sum_mem fun i _ ↦ subset_span (Set.mem_range_self i)
   have hline : (ℤ ∙ δ).baseChange ℚ = ℚ ∙ u δ := by simp [baseChange_span, u]
   have hδ : (B.baseChange ℚ) (u δ) (u δ) = 0 := by
@@ -78,14 +72,15 @@ theorem boundary_isometry_ext {g h : B.IsometryEquiv B}
       (BilinForm.isSymm_iff.mpr (BilinForm.IsSymm.baseChange ℚ (BilinForm.isSymm_iff.mp hSymm)))
       (hsep.baseChange_of_isLocalization ℚ (nonZeroDivisors ℤ)) hδ ?_
     intro x hx
-    rw [← hline, ← hspan] at hx
-    exact LinearMap.eqOn_sup (hbase M hDspan) (hbase _ horth) hx
-  refine DFunLike.ext _ _ fun x ↦ ?_
-  apply (ker_eq_bot.mp (separatingLeft_iff_ker_eq_bot.mp hsep))
-  refine LinearMap.ext fun y ↦ ?_
-  have hx := DFunLike.congr_fun heqQ (u x)
-  have hp := congrArg (fun z ↦ (B.baseChange ℚ) z (u y)) hx
-  simpa [gQ, hQ, u] using hp
+    rw [← hline, ← hspan, ← baseChange_sup, baseChange_eq_span] at hx
+    refine LinearMap.eqOn_span
+      (f := (gQ : (ℚ ⊗[ℤ] L) →ₗ[ℚ] (ℚ ⊗[ℤ] L))) (g := (hQ : _ →ₗ[ℚ] _)) ?_ hx
+    rintro _ ⟨y, hy, rfl⟩
+    simp [gQ, hQ, LinearMap.eqOn_sup hDspan horth hy]
+  have : Module.IsTorsionFree ℤ L := hsep.isTorsionFree
+  refine DFunLike.ext _ _ fun x ↦ Module.Flat.tensorProduct_mk_injective ℤ L ℚ ?_
+  simpa only [gQ, hQ, u, TensorProduct.mk_apply, BilinForm.IsometryEquiv.baseChange_tmul] using
+    DFunLike.congr_fun heqQ (u x)
 
 /-- Two signed boundary isometries are equal exactly when their signs, their sign-adjusted
 restrictions to the boundary orthogonal lattice, and the forward indices of component zero
