@@ -13,7 +13,7 @@ public import TauCeti.Algebra.Cluster.YSeed.Basic
 # Tropical action of signed cluster words
 
 A signed cluster word transports an integer vector by the tropical cluster `X` formulas.
-Mutation is computed using Tau Ceti's coefficient mutation over the min-tropical integers.
+Mutation and relabeling use Tau Ceti's `YSeed` operations over the min-tropical integers.
 The resulting action respects concatenation, reversal and change of labels. It is the integer
 calculation used to track candidate boundary valuations through a word.
 
@@ -28,18 +28,24 @@ namespace QPainleve.Cluster
 open Quiver
 open scoped Int
 
-variable {ι κ : Type*} [DecidableEq ι] [DecidableEq κ]
+variable {ι κ : Type*}
 
 private instance : TauCeti.CoefficientSemifield (MinTropical ℤ) :=
   { (inferInstance : CommGroup (MinTropical ℤ)),
     (inferInstance : AddCommSemigroup (MinTropical ℤ)),
     (inferInstance : Distrib (MinTropical ℤ)) with }
 
-/-- The `YSeed` formula takes the mutation entry from the row. Negating the skew exchange
-matrix puts the original column in that row. -/
+/-- Interpret a vector of integer coordinates as tropical coefficients on the native seed. -/
 private def tropicalSeed (B : SkewExchangeMatrix ι) (b : ι → ℤ) :
     TauCeti.YSeed ι (MinTropical ℤ) :=
-  ⟨fun i ↦ MinTropical.trop (b i), (-B).toExchangeMatrix⟩
+  ⟨fun i ↦ MinTropical.trop (b i), B.val⟩
+
+private theorem tropicalSeed_reindex (B : SkewExchangeMatrix ι) (b : ι → ℤ) (e : ι ≃ κ) :
+    tropicalSeed (B.reindex e) (b ∘ e.symm) = (tropicalSeed B b).reindex e := by
+  refine TauCeti.YSeed.ext (funext fun i ↦ ?_) (by simp [tropicalSeed])
+  simp [tropicalSeed]
+
+variable [DecidableEq ι] [DecidableEq κ]
 
 namespace Generator
 
@@ -47,7 +53,7 @@ namespace Generator
 def tropical (g : Generator ι) (B : SkewExchangeMatrix ι) (b : ι → ℤ) : ι → ℤ :=
   match g with
   | .mutate k => fun i ↦ MinTropical.untrop (((tropicalSeed B b).mutation k).coefficient i)
-  | .permute σ => b ∘ σ
+  | .permute σ => fun i ↦ MinTropical.untrop (((tropicalSeed B b).reindex σ.symm).coefficient i)
   | .invert => -b
 
 @[simp]
@@ -60,12 +66,12 @@ theorem tropical_mutate_of_ne (B : SkewExchangeMatrix ι) (b : ι → ℤ) {i k 
     (mutate k).tropical B b i =
       b i + (B.matrix i k)⁺ * b k - B.matrix i k * min 0 (b k) := by
   simp [tropical, tropicalSeed, TauCeti.YSeed.mutation_coefficient_of_ne _ hi,
-    B.apply_swap i k, sub_eq_add_neg, min_comm (b k) 0]
+    SkewExchangeMatrix.val_matrix_apply_swap, sub_eq_add_neg, min_comm (b k) 0]
 
 @[simp]
 theorem tropical_permute_apply (B : SkewExchangeMatrix ι) (b : ι → ℤ) (σ : Equiv.Perm ι) (i : ι) :
-    (permute σ).tropical B b i = b (σ i) :=
-  (rfl)
+    (permute σ).tropical B b i = b (σ i) := by
+  simp [tropical, tropicalSeed]
 
 @[simp]
 theorem tropical_invert_apply (B : SkewExchangeMatrix ι) (b : ι → ℤ) (i : ι) :
@@ -78,7 +84,7 @@ private theorem tropicalSeed_mutation (B : SkewExchangeMatrix ι) (b : ι → �
   apply TauCeti.YSeed.ext
   · funext i
     simp [tropicalSeed, tropical]
-  · simp [tropicalSeed, ← SkewExchangeMatrix.mutate_neg]
+  · simp [tropicalSeed]
 
 /-- The reverse generator acts by the inverse transformation, using the original target matrix
 as the source of the reverse. -/
@@ -88,12 +94,8 @@ theorem reverse_tropical_tropical (g : Generator ι) (B : SkewExchangeMatrix ι)
   funext i
   cases g with
   | mutate k =>
-    simp only [reverse_mutate]
-    calc
-      _ = MinTropical.untrop
-          ((((tropicalSeed B b).mutation k).mutation k).coefficient i) := by
-        rw [tropical, tropicalSeed_mutation]
-      _ = b i := by simp [tropicalSeed]
+    rw [reverse_mutate, tropical, tropicalSeed_mutation]
+    simp [tropicalSeed]
   | permute σ => simp
   | invert => simp
 
@@ -103,10 +105,8 @@ theorem tropical_reindex (g : Generator ι) (B : SkewExchangeMatrix ι) (e : ι 
   funext i
   cases g with
   | mutate k =>
-    obtain rfl | hi := eq_or_ne i (e k)
-    · simp
-    · have hi' : e.symm i ≠ k := fun h ↦ hi (e.symm_apply_eq.mp h)
-      simp [tropical_mutate_of_ne, hi, hi']
+    simp only [reindex_mutate, tropical, tropicalSeed_reindex, TauCeti.YSeed.mutation_reindex,
+      TauCeti.YSeed.reindex_coefficient, Function.comp_apply]
   | permute σ => simp
   | invert => simp
 

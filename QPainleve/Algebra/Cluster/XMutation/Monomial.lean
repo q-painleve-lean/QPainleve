@@ -36,19 +36,18 @@ theorem monomial_finsupp_single (i : ι) (n : ℤ) :
 theorem xReindex_apply_monomial (e : κ ≃ ι) (x : κ →₀ ℤ) :
     xReindex k e (monomial k (Multiplicative.ofAdd x)) =
       monomial k (Multiplicative.ofAdd (Finsupp.domCongr e x)) := by
-  change (functionFieldEquiv k (Finsupp.domCongr e)).toAlgHom
-    (monomial k (Multiplicative.ofAdd x)) = _
-  rw [functionFieldEquiv_toAlgHom, functionFieldMap_monomial, AddEquiv.coe_toAddMonoidHom]
+  change (xReindex k e).toAlgHom (monomial k (Multiplicative.ofAdd x)) = _
+  rw [xReindex, algEquivOfAlgEquiv_domCongr_toAlgHom, functionFieldMap_monomial,
+    AddEquiv.coe_toAddMonoidHom]
 
 /-- Simultaneous X inversion negates the exponent of every character. -/
 @[simp]
 theorem xInversion_apply_monomial (x : ι →₀ ℤ) :
     xInversion k ι (monomial k (Multiplicative.ofAdd x)) =
       monomial k (Multiplicative.ofAdd (-x)) := by
-  change (functionFieldEquiv k (AddEquiv.neg (ι →₀ ℤ))).toAlgHom
-    (monomial k (Multiplicative.ofAdd x)) = _
-  rw [functionFieldEquiv_toAlgHom, functionFieldMap_monomial, AddEquiv.coe_toAddMonoidHom,
-    AddEquiv.neg_apply]
+  change (xInversion k ι).toAlgHom (monomial k (Multiplicative.ofAdd x)) = _
+  rw [xInversion, algEquivOfAlgEquiv_domCongr_toAlgHom, functionFieldMap_monomial,
+    AddEquiv.coe_toAddMonoidHom, AddEquiv.neg_apply]
 
 variable [Fintype ι]
 
