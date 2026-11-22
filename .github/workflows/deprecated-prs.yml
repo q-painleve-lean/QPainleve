@@ -69,10 +69,10 @@ jobs:
             .github
           persist-credentials: false
       - name: Prepare pinned shared tools
-        uses: TauCetiProject/TauCetiTools/.github/actions/setup@6e8ad3a6699266829a4b87fac2b0a385451e445c
+        uses: TauCetiProject/TauCetiTools/.github/actions/setup@bf49319f27d910443b1f8eb26b017b054fe2aa5b
         with:
           tools-repository: TauCetiProject/TauCetiTools
-          tools-ref: 6e8ad3a6699266829a4b87fac2b0a385451e445c
+          tools-ref: bf49319f27d910443b1f8eb26b017b054fe2aa5b
           project-directory: .
       - name: Resolve immutable bump pins
         id: pins

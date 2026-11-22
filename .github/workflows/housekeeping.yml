@@ -67,10 +67,10 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
 
       - name: Prepare pinned shared tools
-        uses: q-painleve-lean/TauCetiTools/.github/actions/setup@6e8ad3a6699266829a4b87fac2b0a385451e445c
+        uses: q-painleve-lean/TauCetiTools/.github/actions/setup@bf49319f27d910443b1f8eb26b017b054fe2aa5b
         with:
           tools-repository: q-painleve-lean/TauCetiTools
-          tools-ref: 6e8ad3a6699266829a4b87fac2b0a385451e445c
+          tools-ref: bf49319f27d910443b1f8eb26b017b054fe2aa5b
           project-directory: .
       - name: Abandon stuck PRs and close duplicates
         env:
