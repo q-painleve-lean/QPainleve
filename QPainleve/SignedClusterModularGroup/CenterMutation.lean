@@ -183,7 +183,8 @@ coordinate and charge monomial. -/
 @[simp]
 theorem xEvaluationPullback_xCoordinate (i : ι) :
     xEvaluationPullback v k (xCoordinate k i) = monomial k (ofAdd (e i, v (e i))) := by
-  simp [xCoordinate_def, ← monomial_ofAdd]
+  rw [xCoordinate_def, ← monomial_ofAdd, xEvaluationPullback, functionFieldMap_monomial]
+  simp [xEvaluationGraph]
 
 private theorem centerMutationPullback_xEvaluation_of_ne (hω : ω.IsAlt) {i : ι} (hi : i ≠ p) :
     centerMutationPullback ω v p k hω

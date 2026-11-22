@@ -38,11 +38,18 @@ theorem xMutation_apply_chargeMonomial (P : ChargeSeed B N) (j : ι)
         (x : ι → ℤ)))) := by
   have hx : (x : ι → ℤ) ∈ (chargeMutation P.form P.charge j).ker := by
     simpa only [Step.chargeTarget_mutate_charge] using x.property
-  have h := prod_zpow_xMutation_eq P.form P.isAlt P.charge j ⟨x, hx⟩ (xCoordinate k)
+  have hx' : (x : ι → ℤ) ∈ (B.val.mutation j).matrix.mulVecLin.ker := by
+    rw [← SkewExchangeMatrix.val_mutate, SkewExchangeMatrix.val_matrix, LinearMap.mem_ker,
+      Matrix.mulVecLin_apply, Matrix.neg_mulVec, neg_eq_zero, ← Matrix.mulVecLin_apply,
+      ← LinearMap.mem_ker]
+    simpa only [chargeExchangeMatrix_chargeMutation _ P.isAlt, P.matrix_eq,
+      SkewExchangeMatrix.mutate_matrix] using
+        ker_le_ker_chargeExchangeMatrix P.form _ hx
+  have h := prod_zpow_xMutation_eq B.val j hx' (xCoordinate k)
     (xCoordinate_ne_zero k j) (one_add_xCoordinate_ne_zero k j)
   simp only [monomial_eq_prod_zpow_xCoordinate, map_prod, map_zpow₀, Step.exponentEquiv_mutate]
-  rw [← P.matrix_eq]
-  simp only [coe_chargeKernelMutation_apply] at h
+  simp only [B.val_matrix_apply_swap] at h
+  rw [B.val_matrix, neg_neg] at h
   refine .trans (Finset.prod_congr rfl fun i _ ↦ ?_) h
   by_cases hi : i = j
   · subst i
