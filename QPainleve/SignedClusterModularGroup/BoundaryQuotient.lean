@@ -6,6 +6,7 @@ Authors: Yuma Mizuno
 module
 
 public import TauCeti.LinearAlgebra.IntegralLattice.RootLattice.TypeA.Basic
+import QPainleve.SignedClusterModularGroup.BoundaryCycle
 
 import TauCeti.LinearAlgebra.BilinearForm.Isometry
 import TauCeti.LinearAlgebra.BilinearForm.LinearIndependent
@@ -82,11 +83,8 @@ private theorem total_mem_ker :
   rw [Submodule.span_singleton_le_iff_mem, LinearMap.mem_ker]
   apply LinearMap.ext_on (span_range_component D)
   rintro _ ⟨j, rfl⟩
-  have hnext (i : ZMod (n + 1)) : j = i + 1 ↔ i = j - 1 := by
-    rw [eq_sub_iff_add_eq, eq_comm]
-  have hprev (i : ZMod (n + 1)) : j = i - 1 ↔ i = j + 1 := by
-    rw [eq_comm, sub_eq_iff_eq_add]
-  simp [BilinForm.restrict_apply, hGram, hnext, hprev, Finset.sum_add_distrib]
+  simpa only [BilinForm.restrict_apply, LinearMap.domRestrict_apply, Submodule.coe_sum,
+    coe_component, LinearMap.zero_apply] using pairing_sum hGram j
 
 /-- The form induced by the intersection pairing on the boundary quotient. -/
 def quotientForm : LinearMap.BilinForm ℤ (BoundaryQuotient D) :=
