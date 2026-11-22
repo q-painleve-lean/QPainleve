@@ -25,26 +25,10 @@ namespace QPainleve.CharacterTorus
 universe u
 
 variable (k : Type u) [Field k]
-  {B C D : Type u} [AddCommGroup B] [AddCommGroup C] [AddCommGroup D]
+  {B C : Type u} [AddCommGroup B] [AddCommGroup C]
   [Module ℤ B] [Module.Free ℤ B] [Module ℤ C] [Module.Free ℤ C]
-  [Module ℤ D] [Module.Free ℤ D]
 
 attribute [local instance] hasUniqueDiv_of_free_int
-
-/-- The identity rational map of a character torus pulls back each rational function to itself. -/
-@[simp]
-theorem rationalPullback_id :
-    rationalPullback k (Scheme.RationalMap.id (scheme k B)) = RingHom.id _ := by
-  ext a
-  simp [rationalPullback_apply]
-
-/-- Pullbacks of rational maps between character tori compose in the reverse order. -/
-@[simp]
-theorem rationalPullback_comp (f : (scheme k D) ⤏ (scheme k C))
-    (g : (scheme k C) ⤏ (scheme k B)) [f.IsDominant] [g.IsDominant] :
-    rationalPullback k (f.comp g) = (rationalPullback k f).comp (rationalPullback k g) := by
-  ext a
-  simp [rationalPullback_apply]
 
 variable (B) in
 /-- The character field and the generic stalk of the character scheme are canonically

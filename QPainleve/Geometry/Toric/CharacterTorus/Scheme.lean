@@ -188,6 +188,25 @@ theorem rationalPullback_apply (f : (scheme k C) ⤏ (scheme k B)) [f.IsDominant
       (fractionRingEquiv k C).symm (f.functionFieldMap (fractionRingEquiv k B a)) :=
   (rfl)
 
+/-- The identity rational map of a character torus pulls back each rational function to itself. -/
+@[simp]
+theorem rationalPullback_id (k : Type u) [Field k] {B : Type u} [AddCommGroup B]
+    [Module ℤ B] [Module.Free ℤ B] :
+    rationalPullback k (Scheme.RationalMap.id (scheme k B)) = RingHom.id _ := by
+  ext a
+  simp [rationalPullback_apply]
+
+/-- Pullbacks of rational maps between character tori compose in the reverse order. -/
+@[simp]
+theorem rationalPullback_comp (k : Type u) [Field k] {B C D : Type u}
+    [AddCommGroup B] [AddCommGroup C] [AddCommGroup D]
+    [Module ℤ B] [Module.Free ℤ B] [Module ℤ C] [Module.Free ℤ C] [Module ℤ D] [Module.Free ℤ D]
+    (f : (scheme k D) ⤏ (scheme k C)) (g : (scheme k C) ⤏ (scheme k B))
+    [f.IsDominant] [g.IsDominant] :
+    rationalPullback k (f.comp g) = (rationalPullback k f).comp (rationalPullback k g) := by
+  ext a
+  simp [rationalPullback_apply]
+
 /-- Equality of dominant rational maps is detected on the fraction fields of the character rings. -/
 theorem rationalPullback_eq_iff (f g : (scheme k C) ⤏ (scheme k B))
     [f.IsDominant] [g.IsDominant] : rationalPullback k f = rationalPullback k g ↔ f = g := by
