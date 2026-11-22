@@ -179,6 +179,28 @@ end AxiomAudit
 
 namespace DuplicateDeclarations
 
+/-- Matchers and their alternative counts, read from each module's own entries. The audit imports
+with `loadExts := false`, which skips extension import hooks, so `isMatcherCore`, and with it
+Lean's reserved-name predicate for `<matcher>.congr_eq_<i>`, sees no imported matcher. -/
+def importedMatchers (env : Environment) : NameMap Nat := Id.run do
+  let mut matchers : NameMap Nat := {}
+  for i in [:env.header.moduleData.size] do
+    for entry in PersistentEnvExtension.getModuleEntries
+        (σ := List Meta.Match.Extension.Entry × Meta.Match.Extension.State)
+        Meta.Match.Extension.extension env i do
+      matchers := matchers.insert entry.name entry.info.numAlts
+  return matchers
+
+/-- Lean's `isMatchCongrEqName?` with its realization bound: `<matcher>.congr_eq_<i>` for
+`1 ≤ i ≤ numAlts`. Lean realizes these on demand in every module that needs one, so two modules
+can each own a copy. -/
+def isMatchCongrEqn (matchers : NameMap Nat) (name : Name) : Bool := Id.run do
+  let .str parent suffix := name | return false
+  let some idx := suffix.dropPrefix? Meta.Match.congrEqnThmSuffixBasePrefix | return false
+  let some idx := idx.toString.toNat? | return false
+  let some numAlts := matchers.find? parent | return false
+  return 0 < idx && idx ≤ numAlts
+
 /-- Inspect the per-module data, not `env.constants`, which has already merged equal theorems.
 All mmap-backed names stay inside `withImportModules`' callback. -/
 def check (env : Environment) (localModules : NameSet) : IO UInt32 := do
@@ -212,9 +234,11 @@ def check (env : Environment) (localModules : NameSet) : IO UInt32 := do
     for (name, _) in declRangeExt.getModuleEntries env i do
       if collisionNames.contains name then
         explicitNames := explicitNames.insert name
+  let matchers := if collisions.isEmpty then {} else importedMatchers env
   let mut bad := 0
   for (name, previous, mod) in collisions do
-    if !explicitNames.contains name && isReservedName env name then continue
+    if !explicitNames.contains name &&
+        (isReservedName env name || isMatchCongrEqn matchers name) then continue
     IO.eprintln s!"duplicate-declarations: {name} is declared in both {previous} and {mod}"
     bad := bad + 1
   if bad != 0 then
@@ -249,7 +273,10 @@ structure NameScan where
   owners : Std.HashMap Name Owner := {}
   explicitNames : Std.HashSet Name := {}
   parents : Std.HashSet Name := {}
-  collisions : Array Name := #[]
+  /-- Alternative counts of matchers that are local or the parent of a local name. -/
+  matchers : NameMap Nat := {}
+  /-- Each colliding name with its earlier and later owner. -/
+  collisions : Array (Name × Name × Name) := #[]
 
 /-- Same exact extension-name lookup, last-entry precedence and typed interpretation as Lean's importer. -/
 def moduleEntries {α β σ : Type} [Inhabited σ]
@@ -292,11 +319,17 @@ def scanModule (mod : Name) (localModule : Bool) (parts : Array (ModuleData × C
     if localModule then scan := { scan with parents := scan.parents.insert name.getPrefix }
     if let some previous := scan.owners[name]? then
       if previous.module != mod && (localModule || previous.localModule) then
-        scan := { scan with collisions := scan.collisions.push name }
+        scan := { scan with collisions := scan.collisions.push (name, previous.module, mod) }
       if previous.localModule && !localModule then continue
     scan := { scan with owners := scan.owners.insert name {
       module := mod, localModule,
       safeDefinition := data.constants[i]! matches .defnInfo { safety := .safe, .. } } }
+  for entry in moduleEntries (σ := List Meta.Match.Extension.Entry × Meta.Match.Extension.State)
+      Meta.Match.Extension.extension data do
+    if !localModule && !scan.parents.contains entry.name then continue
+    let (name, names) := (ownName entry.name).run scan.ownedNames
+    scan := { scan with ownedNames := names,
+                        matchers := scan.matchers.insert name entry.info.numAlts }
   for (name, _) in moduleEntries declRangeExt.toPersistentEnvExtension data do
     if !localModule && !scan.owners.contains name then continue
     let (name, names) := (ownName name).run scan.ownedNames
@@ -318,10 +351,11 @@ are destroyed before returning only owned metadata and region handles to the cal
 
 /-- Common reserved-name predicates whose answers depend only on the scanned metadata.
 Use Lean's suffix predicates. Other generated-name cases go through the existing checker.
-For equations we require the exact parent to be a safe definition and exclude matcher names:
+A matcher congruence equation is recognised from the scanned matcher entries. For equations we require the exact parent to be a safe definition and exclude matcher names:
 Lean.Meta.declFromEqLikeName then succeeds, and its body is exposed in the non-module audit
 so mkEqLikeNameFor returns this exact name. No dependency axiom summaries are involved. -/
 def commonReservedName (scan : NameScan) (name : Name) : Bool := Id.run do
+  if isMatchCongrEqn scan.matchers name then return true
   let .str parent suffix := name | return false
   let some info := scan.owners[parent]? | return false
   if Meta.isHCongrReservedNameSuffix suffix || suffix == Meta.congrSimpSuffix then return true
@@ -330,10 +364,8 @@ def commonReservedName (scan : NameScan) (name : Name) : Bool := Id.run do
     return !base.startsWith "match_"
   return false
 
-/-- Check declaration ownership after the kernel-checked build. Full audits also validate
-combined-import compatibility. An actual collision or an uncommon generated-name exception uses the existing checker, with
-its existing diagnostics and policy. This adds no new audit failure or persistent cache. -/
-def scanNames (modules : Array Name) : IO Bool := do
+/-- Scan the metadata of `modules` and their transitive imports without importing them. -/
+def scanAll (modules : Array Name) : IO NameScan := do
   let mut scan : NameScan := { pending := modules, seen := .ofArray modules }
   let mut i := 0
   while i < scan.pending.size do
@@ -342,11 +374,44 @@ def scanNames (modules : Array Name) : IO Bool := do
     for region in regions.reverse do unsafe region.free
     scan := next
     i := i + batch.size
-  for name in scan.collisions do
+  return scan
+
+/-- Check declaration ownership after the kernel-checked build. Full audits also validate
+combined-import compatibility. An actual collision or an uncommon generated-name exception uses the existing checker, with
+its existing diagnostics and policy. This adds no new audit failure or persistent cache. -/
+def scanNames (modules : Array Name) : IO Bool := do
+  let scan ← scanAll modules
+  for (name, _) in scan.collisions do
     if scan.explicitNames.contains name || !commonReservedName scan name then return false
   IO.println s!"duplicate-declarations: checked {modules.size} QPainleve modules and \
     {scan.pending.size - modules.size} dependency modules; no duplicate declarations."
   return true
+
+/-- Report every collision after the joint import stopped at the first one: Lean's importer
+names only the first incompatible constant, and the checker above never runs. The scan reads the
+same metadata as `scanNames`. A declaration without a source range whose prefix is itself a
+colliding name (a structure's recursors, auxiliaries of a reported theorem) is left to its parent's line. A
+common reserved name such as a lazily generated equation is listed only when nothing else is, so
+the failure always names a collision. Returns the number reported. -/
+def reportImportCollisions (modules : Array Name) : IO Nat := do
+  let scan ← scanAll modules
+  let names : NameSet := scan.collisions.foldl (fun s (name, _) => s.insert name) {}
+  let hasCollidingPrefix (name : Name) : Bool := Id.run do
+    let mut parent := name.getPrefix
+    while !parent.isAnonymous do
+      if names.contains parent then return true
+      parent := parent.getPrefix
+    return false
+  let roots := scan.collisions.filter fun (name, _) =>
+    scan.explicitNames.contains name || !hasCollidingPrefix name
+  let primary := roots.filter fun (name, _) =>
+    scan.explicitNames.contains name || !commonReservedName scan name
+  let reported := if primary.isEmpty then roots else primary
+  for (name, previous, mod) in reported do
+    IO.eprintln s!"duplicate-declarations: {name} is declared in both {previous} and {mod}"
+  if !reported.isEmpty then
+    IO.eprintln "Keep one canonical declaration and import its module from the other files."
+  return reported.size
 
 end DuplicateDeclarations
 
@@ -404,7 +469,9 @@ Byte integrity alone does not establish proof correctness.
 
 `withImportModules` keeps mmap-backed names alive through both checks and frees the
 regions before returning an exit code. Render every imported name inside the callback.
-A failed ownership check stops the axiom scan.
+The ownership and axiom checks both run and report, and the exit status fails if either fails.
+When the import itself fails on an incompatible duplicate, the metadata scan then reports every
+colliding declaration, not only the first; the axiom scan needs that environment, so it does not run.
 -/
 
 /-- Print a phase and write best-effort epoch timestamps to `AUDIT_PHASES_FILE`, if set. -/
@@ -420,7 +487,8 @@ def phase (name : String) : IO Unit := do
         file.putStr s!"{name}\t{timestamp.stdout.trimAscii}\n"
     catch _ => pure ()
 
-/-- Run ownership then axioms, or ownership alone with `--duplicates-only`.
+/-- Run ownership then axioms (both always, failing if either fails), or ownership alone with
+`--duplicates-only`.
 The research-only `--shadow-inventory` prints the complete JSON module inventory and returns 0.
 `--shadow-snapshot` runs full ownership/axiom checks and emits JSON results per owner;
 `--shadow-incremental` does the same with the axiom scope from `AXIOMS_ONLY_MODULES`
@@ -454,12 +522,21 @@ def main (args : List String) : IO UInt32 := do
         if args == ["--shadow-incremental"] then
           return ← ShadowAudit.snapshot env localModules false only
         phase "audit-duplicates"
-        let status ← DuplicateDeclarations.check env localModules
-        if status != 0 || args == ["--duplicates-only"] then return status
+        let ownership ← DuplicateDeclarations.check env localModules
+        if args == ["--duplicates-only"] then return ownership
+        -- The axiom scan is independent of ownership, so it runs and reports after a collision too.
         phase "audit-axioms"
         let (audited, messages, _) ← Prod.fst <$> Core.CoreM.toIO (AxiomAudit.auditResults only)
           { fileName := "<axioms>", fileMap := default } { env }
-        AxiomAudit.report only audited messages) (trustLevel := 1024)
+        let axioms ← AxiomAudit.report only audited messages
+        return max ownership axioms) (trustLevel := 1024)
   catch e =>
     IO.eprintln s!"audit-driver: {e}"
+    -- `Lean.throwAlreadyImported`. The scan only adds diagnostics; the status stays a failure.
+    if ((toString e).splitOn "environment already contains '").length > 1 then
+      try
+        discard <| DuplicateDeclarations.reportImportCollisions (← AxiomAudit.auditedModules)
+      catch scanError => IO.eprintln s!"audit-driver: {scanError}"
+    if args.isEmpty then
+      IO.eprintln "audit-driver: axioms were not checked: the QPainleve modules could not be imported."
     return 1
