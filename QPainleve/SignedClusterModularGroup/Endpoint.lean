@@ -18,8 +18,7 @@ Equality of exchange matrices identifies the images of two full-rank charge maps
 For primitive charges, the ambient rank-two lattices can be recovered from the images
 at index two, and at index three when a primitive three-term relation has square sum
 zero modulo three. The quotient characters of the images detect ambient divisibility
-by the common index. The charge-image comparison uses `ker_chargeExchangeMatrix`
-and Mathlib's first isomorphism theorem for linear maps.
+by the common index.
 -/
 
 public section
@@ -30,73 +29,6 @@ open LinearMap (BilinForm)
 
 variable {ι N₁ N₂ : Type*} [Fintype ι] [DecidableEq ι]
   [AddCommGroup N₁] [AddCommGroup N₂]
-
-private theorem det_toMatrix_chargeForm {N : Type*} [AddCommGroup N]
-    (b : Module.Basis (Fin 2) ℤ N) (ω : BilinForm ℤ N) (hω : ω.IsAlt)
-    (hb : ω (b 0) (b 1) = 1) : (ω.toMatrix b).det = 1 := by
-  have h₁₀ : ω (b 1) (b 0) = -1 := by rw [← hω.neg_eq, hb]
-  simp [Matrix.det_fin_two, BilinForm.toMatrix_apply, hω (b 0), hω (b 1), hb, h₁₀]
-
-private theorem exists_charge_range_equiv {ω₁ : BilinForm ℤ N₁} {ω₂ : BilinForm ℤ N₂}
-    {v₁ : (ι → ℤ) →ₗ[ℤ] N₁} {v₂ : (ι → ℤ) →ₗ[ℤ] N₂}
-    [Module.Free ℤ N₁] [Module.Free ℤ N₂] [Module.Finite ℤ N₁] [Module.Finite ℤ N₂]
-    (hω₁ : ω₁.SeparatingRight) (hω₂ : ω₂.SeparatingRight)
-    (h₁ : v₁.range.toAddSubgroup.index ≠ 0) (h₂ : v₂.range.toAddSubgroup.index ≠ 0)
-    (h : chargeExchangeMatrix ω₁ v₁ = chargeExchangeMatrix ω₂ v₂) :
-    ∃ e : v₁.range ≃ₗ[ℤ] v₂.range,
-      (∀ x, e (v₁.rangeRestrict x) = v₂.rangeRestrict x) ∧
-      ∀ x y : v₁.range, ω₂ (e x).val (e y).val = ω₁ x.val y.val := by
-  let : v₁.range.toAddSubgroup.FiniteIndex := AddSubgroup.finiteIndex_iff.mpr h₁
-  let : v₂.range.toAddSubgroup.FiniteIndex := AddSubgroup.finiteIndex_iff.mpr h₂
-  have hker : v₁.ker = v₂.ker := calc
-    _ = (chargeExchangeMatrix ω₁ v₁).mulVecLin.ker :=
-      (ker_chargeExchangeMatrix ω₁ v₁ hω₁
-        (AddSubgroup.finrank_eq_of_finiteIndex v₁.range.toAddSubgroup)).symm
-    _ = _ := h ▸ ker_chargeExchangeMatrix ω₂ v₂ hω₂
-      (AddSubgroup.finrank_eq_of_finiteIndex v₂.range.toAddSubgroup)
-  let e := v₁.quotKerEquivRange.symm.trans
-    ((Submodule.quotEquivOfEq _ _ hker).trans v₂.quotKerEquivRange)
-  have he (x) : e (v₁.rangeRestrict x) = v₂.rangeRestrict x := by
-    have h₁x : v₁.quotKerEquivRange (Submodule.Quotient.mk x) = v₁.rangeRestrict x :=
-      Subtype.ext (v₁.quotKerEquivRange_apply_mk x)
-    have h₂x : v₂.quotKerEquivRange (Submodule.Quotient.mk x) = v₂.rangeRestrict x :=
-      Subtype.ext (v₂.quotKerEquivRange_apply_mk x)
-    rw [← h₁x]
-    simp [e, h₂x]
-  refine ⟨e, he, ?_⟩
-  have hform : ω₁.comp v₁ v₁ = ω₂.comp v₂ v₂ := by
-    apply BilinForm.ext_basis (Pi.basisFun ℤ ι)
-    intro i j
-    simpa only [Pi.basisFun_apply, BilinForm.comp_apply, chargeExchangeMatrix_apply]
-      using congr($h i j)
-  intro x y
-  obtain ⟨x, rfl⟩ := v₁.surjective_rangeRestrict x
-  obtain ⟨y, rfl⟩ := v₁.surjective_rangeRestrict y
-  rw [he, he]
-  exact (congr($hform x y)).symm
-
-private theorem charge_index_eq {ω₁ : BilinForm ℤ N₁} {ω₂ : BilinForm ℤ N₂}
-    (b₁ : Module.Basis (Fin 2) ℤ N₁) (b₂ : Module.Basis (Fin 2) ℤ N₂)
-    (h₁ : (ω₁.toMatrix b₁).det = 1) (h₂ : (ω₂.toMatrix b₂).det = 1)
-    {H : Submodule ℤ N₁} {K : Submodule ℤ N₂}
-    (hf : H.toAddSubgroup.index ≠ 0) (e : H ≃ₗ[ℤ] K)
-    (he : ∀ x y : H, ω₂ (e x).val (e y).val = ω₁ x.val y.val) :
-    H.toAddSubgroup.index = K.toAddSubgroup.index := by
-  let : Module.Finite ℤ N₁ := Module.Finite.of_basis b₁
-  let : Module.Free ℤ N₁ := Module.Free.of_basis b₁
-  let : H.toAddSubgroup.FiniteIndex := AddSubgroup.finiteIndex_iff.mpr hf
-  have hr : Module.finrank ℤ H = Fintype.card (Fin 2) :=
-    (AddSubgroup.finrank_eq_of_finiteIndex H.toAddSubgroup).trans
-      (Module.finrank_eq_card_basis b₁)
-  let c : Module.Basis (Fin 2) ℤ H :=
-    (Module.finBasis ℤ H).reindex (Fintype.equivOfCardEq ((Fintype.card_fin _).trans hr))
-  have hmat : (ω₁.restrict H).toMatrix c = (ω₂.restrict K).toMatrix (c.map e) := by
-    ext i j
-    simpa [BilinForm.toMatrix_apply, BilinForm.restrict_apply] using (he (c i) (c j)).symm
-  have hsq := congrArg (fun M : Matrix (Fin 2) (Fin 2) ℤ ↦ M.det.natAbs) hmat
-  simp only [ω₁.natAbs_det_toMatrix_restrict H b₁ c,
-    ω₂.natAbs_det_toMatrix_restrict K b₂ (c.map e), h₁, h₂, Int.natAbs_one, one_mul] at hsq
-  exact (Nat.pow_left_inj (n := 2) (by decide)).mp hsq
 
 omit [Fintype ι] in
 private theorem charge_residue_ne_zero {N : Type*} [AddCommGroup N]
@@ -272,15 +204,15 @@ theorem exists_charge_lattice_equiv
   let := Module.Free.of_basis b₂
   let := Module.Finite.of_basis b₁
   let := Module.Finite.of_basis b₂
-  have hd₁ := det_toMatrix_chargeForm b₁ ω₁ hω₁ hb₁
-  have hd₂ := det_toMatrix_chargeForm b₂ ω₂ hω₂ hb₂
+  have hd₁ := ω₁.det_toMatrix_fin_two_of_apply_eq_one b₁ hω₁ hb₁
+  have hd₂ := ω₂.det_toMatrix_fin_two_of_apply_eq_one b₂ hω₂ hb₂
   have hnz₁ : v₁.range.toAddSubgroup.index ≠ 0 := by
     intro hz
     simp [hz, hn.ne'] at hindex₁
   obtain ⟨e, he, hpair⟩ := exists_charge_range_equiv
     (ω₁.nondegenerate_of_det_ne_zero b₁ (hd₁ ▸ one_ne_zero)).2
     (ω₂.nondegenerate_of_det_ne_zero b₂ (hd₂ ▸ one_ne_zero)).2 hnz₁ hnz₂ hmat
-  have hindex := charge_index_eq b₁ b₂ hd₁ hd₂ hnz₁ e hpair
+  have hindex := ω₁.index_eq_of_det_toMatrix_eq_one b₁ b₂ hd₁ hd₂ hnz₁ e hpair
   let s := v₁.range.toAddSubgroup.index
   have hs_le : s ≤ 3 := by
     by_contra! hs
