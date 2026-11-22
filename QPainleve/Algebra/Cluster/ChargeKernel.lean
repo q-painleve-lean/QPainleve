@@ -9,15 +9,17 @@ public import Mathlib.LinearAlgebra.FreeModule.Finite.Quotient
 public import Mathlib.LinearAlgebra.Matrix.BilinearForm
 public import TauCeti.Algebra.Cluster.ExchangeMatrix.Factorization
 
+import Mathlib.GroupTheory.IndexNSmul
 import TauCeti.Algebra.BigOperators.ZPow
 
 /-!
 # Charge kernels under cluster mutation
 
 An integer charge map from the exponent lattice pulls an alternating form back to the
-exchange matrix. Mutating the charges changes this form by congruence and induces an
-integral equivalence of the charge kernels. The binomial factor in cluster X mutation
-cancels on the kernel, so the same equivalence transports monomial exponents.
+exchange matrix. Equal exchange matrices identify finite-index charge images when the
+forms are right-separating. Mutating the charges changes the form by congruence
+and induces an integral equivalence of the charge kernels. The binomial factor in
+cluster X mutation cancels on the kernel, so the same equivalence transports monomial exponents.
 
 The basis change and the X coordinate formulas follow Fock and Goncharov,
 *Cluster ensembles, quantization and the dilogarithm*, §1.2.2 and §1.2.4.
@@ -92,6 +94,47 @@ theorem ker_chargeExchangeMatrix (ω : BilinForm ℤ N) (v : (ι → ℤ) →ₗ
       _ = 0 := hz ▸ hzero z
   rw [nsmul_eq_mul] at hy
   exact (mul_eq_zero.mp hy).resolve_left (Int.natCast_ne_zero.mpr hn.ne')
+
+/-- Equal exchange matrices identify the images of two finite-index charge maps
+for right-separating forms. The equivalence matches charges and preserves their pairings. -/
+theorem exists_charge_range_equiv {N₁ N₂ : Type*} [AddCommGroup N₁] [AddCommGroup N₂]
+    {ω₁ : BilinForm ℤ N₁} {ω₂ : BilinForm ℤ N₂}
+    {v₁ : (ι → ℤ) →ₗ[ℤ] N₁} {v₂ : (ι → ℤ) →ₗ[ℤ] N₂}
+    [Module.Free ℤ N₁] [Module.Free ℤ N₂] [Module.Finite ℤ N₁] [Module.Finite ℤ N₂]
+    (hω₁ : ω₁.SeparatingRight) (hω₂ : ω₂.SeparatingRight)
+    (h₁ : v₁.range.toAddSubgroup.index ≠ 0) (h₂ : v₂.range.toAddSubgroup.index ≠ 0)
+    (h : chargeExchangeMatrix ω₁ v₁ = chargeExchangeMatrix ω₂ v₂) :
+    ∃ e : v₁.range ≃ₗ[ℤ] v₂.range,
+      (∀ x, e (v₁.rangeRestrict x) = v₂.rangeRestrict x) ∧
+      ∀ x y : v₁.range, ω₂ (e x).val (e y).val = ω₁ x.val y.val := by
+  let : v₁.range.toAddSubgroup.FiniteIndex := AddSubgroup.finiteIndex_iff.mpr h₁
+  let : v₂.range.toAddSubgroup.FiniteIndex := AddSubgroup.finiteIndex_iff.mpr h₂
+  have hker : v₁.ker = v₂.ker := calc
+    _ = (chargeExchangeMatrix ω₁ v₁).mulVecLin.ker :=
+      (ker_chargeExchangeMatrix ω₁ v₁ hω₁
+        (AddSubgroup.finrank_eq_of_finiteIndex v₁.range.toAddSubgroup)).symm
+    _ = _ := h ▸ ker_chargeExchangeMatrix ω₂ v₂ hω₂
+      (AddSubgroup.finrank_eq_of_finiteIndex v₂.range.toAddSubgroup)
+  let e := v₁.quotKerEquivRange.symm.trans
+    ((Submodule.quotEquivOfEq _ _ hker).trans v₂.quotKerEquivRange)
+  have he (x) : e (v₁.rangeRestrict x) = v₂.rangeRestrict x := by
+    have h₁x : v₁.quotKerEquivRange (Submodule.Quotient.mk x) = v₁.rangeRestrict x :=
+      Subtype.ext (v₁.quotKerEquivRange_apply_mk x)
+    have h₂x : v₂.quotKerEquivRange (Submodule.Quotient.mk x) = v₂.rangeRestrict x :=
+      Subtype.ext (v₂.quotKerEquivRange_apply_mk x)
+    rw [← h₁x]
+    simp [e, h₂x]
+  refine ⟨e, he, ?_⟩
+  have hform : ω₁.comp v₁ v₁ = ω₂.comp v₂ v₂ := by
+    apply BilinForm.ext_basis (Pi.basisFun ℤ ι)
+    intro i j
+    simpa only [Pi.basisFun_apply, BilinForm.comp_apply, chargeExchangeMatrix_apply]
+      using congr($h i j)
+  intro x y
+  obtain ⟨x, rfl⟩ := v₁.surjective_rangeRestrict x
+  obtain ⟨y, rfl⟩ := v₁.surjective_rangeRestrict y
+  rw [he, he]
+  exact (congr($hform x y)).symm
 
 /-- The integral change from mutated exponents to original exponents. Its matrix is the
 positive-sign right mutation factor of the native exchange matrix `-ε`. -/
