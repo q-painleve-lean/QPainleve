@@ -9,7 +9,6 @@ public import QPainleve.NumberTheory.PadicVal.Units
 public import Mathlib.LinearAlgebra.Basis.Defs
 public import Mathlib.LinearAlgebra.FreeModule.Finite.Basic
 public import Mathlib.Data.Rat.Cast.CharZero
-public import TauCeti.Algebra.Group.FreeAbelianCharacter
 import Mathlib.Data.Fin.Embedding
 import Mathlib.Data.Nat.Prime.Nth
 import Mathlib.LinearAlgebra.Basis.SMul
@@ -33,36 +32,6 @@ public noncomputable section
 namespace QPainleve.CharacterTorus
 
 open TauCeti
-
-/-- For distinct assigned primes, the valuation at the prime assigned to an index recovers
-the exponent at that index. -/
-theorem ratUnitValuation_freeAbelianCharEquiv_symm {ι : Type*} (p : ι ↪ Nat.Primes)
-    (i : ι) (x : ι →₀ ℤ) :
-    ((p i).ratUnitValuation
-      (freeAbelianCharEquiv.symm (fun j ↦ (p j).ratUnit) (Multiplicative.ofAdd x))).toAdd =
-      x i := by
-  classical
-  have h : (p i).ratUnitValuation.comp (freeAbelianCharEquiv.symm (fun j ↦ (p j).ratUnit)) =
-      (Finsupp.applyAddHom i : (ι →₀ ℤ) →+ ℤ).toMultiplicative := by
-    apply freeAbelianCharEquiv.injective
-    funext j
-    rw [freeAbelianCharEquiv_comp, MulEquiv.apply_symm_apply, freeAbelianCharEquiv_apply]
-    by_cases hij : i = j
-    · subst j
-      simp
-    · simp [Finsupp.single_eq_of_ne hij,
-        Nat.Primes.ratUnitValuation_ratUnit_of_ne (p.injective.ne hij)]
-  exact congrArg Multiplicative.toAdd (DFunLike.congr_fun h (Multiplicative.ofAdd x))
-
-/-- The character determined by distinct rational prime units is injective. -/
-theorem freeAbelianCharEquiv_symm_ratUnit_injective {ι : Type*} (p : ι ↪ Nat.Primes) :
-    Function.Injective (freeAbelianCharEquiv.symm fun i ↦ (p i).ratUnit) := by
-  intro x y h
-  rw [← ofAdd_toAdd x, ← ofAdd_toAdd y] at h
-  apply Multiplicative.toAdd.injective
-  exact Finsupp.ext fun i ↦ by
-    simpa only [ratUnitValuation_freeAbelianCharEquiv_symm] using
-      congrArg (fun z ↦ ((p i).ratUnitValuation z).toAdd) h
 
 variable {M k : Type*} [AddCommGroup M] [Module ℤ M] [Module.Free ℤ M] [Module.Finite ℤ M]
   [Field k] [CharZero k]
