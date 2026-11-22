@@ -21,7 +21,8 @@ cancels on the kernel, so the same equivalence transports monomial exponents.
 
 The basis change and the X coordinate formulas follow Fock and Goncharov,
 *Cluster ensembles, quantization and the dilogarithm*, §1.2.2 and §1.2.4.
-The change of basis uses Tau Ceti's `matrixMutationRight` at sign `-1`.
+The charge pairing gives the geometric matrix `ε`. Tau Ceti's exchange convention is
+`B = -ε`, so the change of basis uses `matrixMutationRight` on `-ε` at sign `1`.
 -/
 
 public section
@@ -93,17 +94,17 @@ theorem ker_chargeExchangeMatrix (ω : BilinForm ℤ N) (v : (ι → ℤ) →ₗ
   exact (mul_eq_zero.mp hy).resolve_left (Int.natCast_ne_zero.mpr hn.ne')
 
 /-- The integral change from mutated exponents to original exponents. Its matrix is the
-negative-sign right factor of exchange matrix mutation. -/
-def chargeMutationEquiv (B : Matrix ι ι ℤ) (k : ι) : (ι → ℤ) ≃ₗ[ℤ] (ι → ℤ) :=
-  LinearEquiv.ofInvolutive (matrixMutationRight (Function.Embedding.refl ι) B k (-1)).mulVecLin
+positive-sign right mutation factor of the native exchange matrix `-ε`. -/
+def chargeMutationEquiv (ε : Matrix ι ι ℤ) (k : ι) : (ι → ℤ) ≃ₗ[ℤ] (ι → ℤ) :=
+  LinearEquiv.ofInvolutive (matrixMutationRight (Function.Embedding.refl ι) (-ε) k 1).toLin'
     fun x ↦ by
-      simp only [Matrix.mulVecLin_apply, Matrix.mulVec_mulVec, matrixMutationRight_mul_self,
+      simp only [Matrix.toLin'_apply, Matrix.mulVec_mulVec, matrixMutationRight_mul_self,
         Matrix.one_mulVec]
 
-/-- The basis change acts by multiplication by the right mutation factor. -/
-theorem chargeMutationEquiv_apply (B : Matrix ι ι ℤ) (k : ι) (x : ι → ℤ) :
-    chargeMutationEquiv B k x = matrixMutationRight (Function.Embedding.refl ι) B k (-1) *ᵥ x :=
-  (rfl)
+/-- The basis change acts by the native right mutation factor at sign `1`. -/
+theorem chargeMutationEquiv_apply (ε : Matrix ι ι ℤ) (k : ι) (x : ι → ℤ) :
+    chargeMutationEquiv ε k x = matrixMutationRight (Function.Embedding.refl ι) (-ε) k 1 *ᵥ x :=
+  Matrix.toLin'_apply _ _
 
 /-- The pivot exponent is negated and receives the weighted sum of the other exponents. -/
 theorem chargeMutationEquiv_apply_self (B : Matrix ι ι ℤ) (k : ι) (x : ι → ℤ) :
@@ -144,9 +145,8 @@ theorem chargeMutation_single_self (ω : BilinForm ℤ N) (v : (ι → ℤ) →�
     chargeMutation ω v k (Pi.single k 1) = -v (Pi.single k 1) := by
   have h : chargeMutationEquiv (chargeExchangeMatrix ω v) k (Pi.single k 1) = -Pi.single k 1 := by
     ext i
-    by_cases hi : i = k
-    · subst i
-      simp [chargeMutationEquiv_apply]
+    obtain rfl | hi := eq_or_ne i k
+    · simp [chargeMutationEquiv_apply, Matrix.col]
     · simp [hi]
   simp only [chargeMutation_apply, h, map_neg]
 
@@ -160,9 +160,8 @@ theorem chargeMutation_single_of_ne (ω : BilinForm ℤ N) (hω : ω.IsAlt)
   have h : chargeMutationEquiv (chargeExchangeMatrix ω v) k (Pi.single i 1) =
       Pi.single i 1 + (chargeExchangeMatrix ω v i k)⁺ • Pi.single k 1 := by
     ext j
-    by_cases hj : j = k
-    · subst j
-      simp [chargeMutationEquiv_apply, hi, Ne.symm hi, hω.neg_eq]
+    obtain rfl | hj := eq_or_ne j k
+    · simp [chargeMutationEquiv_apply, Matrix.col, hi, Ne.symm hi, hω.neg_eq]
     · simp [hj, Pi.single_apply]
   rw [chargeMutation_apply, h, map_add, LinearMap.map_smul]
 
@@ -171,23 +170,23 @@ theorem chargeExchangeMatrix_chargeMutation (ω : BilinForm ℤ N) (hω : ω.IsA
     (v : (ι → ℤ) →ₗ[ℤ] N) (k : ι) :
     chargeExchangeMatrix ω (chargeMutation ω v k) =
       matrixMutation (Function.Embedding.refl ι) (chargeExchangeMatrix ω v) k := by
-  let B := chargeExchangeMatrix ω v
+  let ε := chargeExchangeMatrix ω v
   let row := Function.Embedding.refl ι
-  let F := matrixMutationRight row B k (-1)
-  have hF : Fᵀ = matrixMutationLeft row B k (-1) := by
+  let F := matrixMutationRight row (-ε) k 1
+  have hF : Fᵀ = matrixMutationLeft row (-ε) k 1 := by
     ext i j
-    simp [F, row, B, matrixMutationRight_apply, matrixMutationLeft_apply, hω.neg_eq,
+    simp [F, row, ε, matrixMutationRight_apply, matrixMutationLeft_apply, hω.neg_eq,
       Matrix.one_apply, eq_comm]
-  have hkk : B k k = 0 := by simp [B, hω.self_eq_zero]
+  have hkk : (-ε) k k = 0 := by simp [ε, hω.self_eq_zero]
   calc
-    chargeExchangeMatrix ω (chargeMutation ω v k) = Fᵀ * B * F := by
-      have he : (chargeMutationEquiv B k).toLinearMap = F.toLin' :=
-        LinearMap.ext fun _ ↦ chargeMutationEquiv_apply _ _ _
-      rw [chargeExchangeMatrix, chargeMutation, he]
-      rw [← BilinForm.comp_comp, BilinForm.toMatrix'_comp, LinearMap.toMatrix'_toLin']
+    chargeExchangeMatrix ω (chargeMutation ω v k) = Fᵀ * ε * F := by
+      rw [chargeExchangeMatrix, chargeMutation, ← BilinForm.comp_comp, BilinForm.toMatrix'_comp]
+      simp only [chargeMutationEquiv, LinearEquiv.ofInvolutive, LinearMap.toMatrix'_toLin']
       rfl
-    _ = matrixMutation row B k := by
-      rw [hF, matrixMutation_eq_mul row B k (-1) hkk (Or.inr rfl)]
+    _ = -(matrixMutation row (-ε) k) := by
+      rw [matrixMutation_eq_mul row (-ε) k 1 hkk (Or.inl rfl), ← hF,
+        Matrix.mul_neg, Matrix.neg_mul, neg_neg]
+    _ = matrixMutation row ε k := by simp
 
 /-- Mutation restricts to an equivalence from the new charge kernel to the old one. -/
 def chargeKernelMutation (ω : BilinForm ℤ N) (v : (ι → ℤ) →ₗ[ℤ] N) (k : ι) :
