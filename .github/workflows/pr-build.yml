@@ -29,11 +29,11 @@ permissions:
   id-token: write  # reusable build job uses a telemetry-only OIDC audience
 jobs:
   validate:
-    uses: q-painleve-lean/TauCetiTools/.github/workflows/pr-build.yml@7a2bb28c001cb8fca346d2d2fb164514a82674a9
+    uses: q-painleve-lean/TauCetiTools/.github/workflows/pr-build.yml@6e8ad3a6699266829a4b87fac2b0a385451e445c
     with:
       pr: ${{ inputs.pr || '' }}
       tools_repository: q-painleve-lean/TauCetiTools
-      tools_ref: 7a2bb28c001cb8fca346d2d2fb164514a82674a9
+      tools_ref: 6e8ad3a6699266829a4b87fac2b0a385451e445c
       project_ref: ${{ github.workflow_sha }}
       lean_root: QPainleve
       roadmap_dir: QPainleveRoadmap

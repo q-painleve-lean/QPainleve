@@ -10,6 +10,7 @@ public import Mathlib.LinearAlgebra.Matrix.BilinearForm
 public import QPainleve.Algebra.Cluster.XMutation.Monomial
 
 import Mathlib.GroupTheory.IndexNSmul
+import TauCeti.LinearAlgebra.Submodule.Quotient
 
 /-!
 # Charge kernels under cluster mutation
@@ -23,6 +24,7 @@ The basis change follows Fock and Goncharov,
 *Cluster ensembles, quantization and the dilogarithm*, §1.2.2 and §1.2.4.
 The charge pairing gives the geometric matrix `ε`. Tau Ceti's exchange convention is
 `B = -ε`, so the change of basis uses `matrixMutationRight` on `-ε` at sign `1`.
+The charge-image comparison uses Tau Ceti's `LinearMap.equivOfSurjectiveOfKerEq`.
 -/
 
 public section
@@ -107,32 +109,22 @@ theorem exists_charge_range_equiv {N₁ N₂ : Type*} [AddCommGroup N₁] [AddCo
       ∀ x y : v₁.range, ω₂ (e x).val (e y).val = ω₁ x.val y.val := by
   let : v₁.range.toAddSubgroup.FiniteIndex := AddSubgroup.finiteIndex_iff.mpr h₁
   let : v₂.range.toAddSubgroup.FiniteIndex := AddSubgroup.finiteIndex_iff.mpr h₂
-  have hker : v₁.ker = v₂.ker := calc
-    _ = (chargeExchangeMatrix ω₁ v₁).mulVecLin.ker :=
-      (ker_chargeExchangeMatrix ω₁ v₁ hω₁
-        (AddSubgroup.finrank_eq_of_finiteIndex v₁.range.toAddSubgroup)).symm
-    _ = _ := h ▸ ker_chargeExchangeMatrix ω₂ v₂ hω₂
-      (AddSubgroup.finrank_eq_of_finiteIndex v₂.range.toAddSubgroup)
-  let e := v₁.quotKerEquivRange.symm.trans
-    ((Submodule.quotEquivOfEq _ _ hker).trans v₂.quotKerEquivRange)
-  have he (x) : e (v₁.rangeRestrict x) = v₂.rangeRestrict x := by
-    have h₁x : v₁.quotKerEquivRange (Submodule.Quotient.mk x) = v₁.rangeRestrict x :=
-      Subtype.ext (v₁.quotKerEquivRange_apply_mk x)
-    have h₂x : v₂.quotKerEquivRange (Submodule.Quotient.mk x) = v₂.rangeRestrict x :=
-      Subtype.ext (v₂.quotKerEquivRange_apply_mk x)
-    rw [← h₁x]
-    simp [e, h₂x]
-  refine ⟨e, he, ?_⟩
-  have hform : ω₁.comp v₁ v₁ = ω₂.comp v₂ v₂ := by
-    apply BilinForm.ext_basis (Pi.basisFun ℤ ι)
-    intro i j
-    simpa only [Pi.basisFun_apply, BilinForm.comp_apply, chargeExchangeMatrix_apply]
-      using congr($h i j)
+  have hker : v₁.rangeRestrict.ker = v₂.rangeRestrict.ker := by
+    rw [LinearMap.ker_rangeRestrict, LinearMap.ker_rangeRestrict]
+    calc
+      _ = (chargeExchangeMatrix ω₁ v₁).mulVecLin.ker :=
+        (ker_chargeExchangeMatrix ω₁ v₁ hω₁
+          (AddSubgroup.finrank_eq_of_finiteIndex v₁.range.toAddSubgroup)).symm
+      _ = _ := h ▸ ker_chargeExchangeMatrix ω₂ v₂ hω₂
+        (AddSubgroup.finrank_eq_of_finiteIndex v₂.range.toAddSubgroup)
+  refine ⟨v₁.rangeRestrict.equivOfSurjectiveOfKerEq v₂.rangeRestrict
+    v₁.surjective_rangeRestrict v₂.surjective_rangeRestrict hker, by simp, ?_⟩
+  have hform : ω₁.comp v₁ v₁ = ω₂.comp v₂ v₂ := BilinForm.toMatrix'.injective h
   intro x y
   obtain ⟨x, rfl⟩ := v₁.surjective_rangeRestrict x
   obtain ⟨y, rfl⟩ := v₁.surjective_rangeRestrict y
-  rw [he, he]
-  exact (congr($hform x y)).symm
+  simpa only [LinearMap.equivOfSurjectiveOfKerEq_apply, LinearMap.codRestrict_apply,
+    BilinForm.comp_apply] using (congr($hform x y)).symm
 
 /-- Mutation of the charge map by precomposition with the integral basis change. -/
 def chargeMutation (ω : BilinForm ℤ N) (v : (ι → ℤ) →ₗ[ℤ] N) (k : ι) :

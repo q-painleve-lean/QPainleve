@@ -18,6 +18,8 @@ The additive group algebra of the character lattice is the coordinate ring of a 
 A lattice basis identifies it with a Laurent polynomial algebra, with exponents given by the
 basis coordinates. Monomials and pullbacks on the function field are defined intrinsically.
 For free lattices, the domain instance uses Tau Ceti's `HasUniqueDiv.to_twoUniqueSums`.
+For a lattice equivalence, `AddMonoidAlgebra.domCongr` and
+`IsFractionRing.algEquivOfAlgEquiv` give the corresponding function field equivalence.
 -/
 
 public noncomputable section
@@ -198,24 +200,18 @@ theorem functionFieldMap_comp {D : Type*} [AddCommGroup D] [Module ℤ D] [Modul
   apply functionField_hom_ext
   simp
 
-/-- A lattice equivalence gives an equivalence of torus function fields. -/
-def functionFieldEquiv (e : B ≃+ C) : FunctionField k B ≃ₐ[k] FunctionField k C :=
-  IsFractionRing.algEquivOfAlgEquiv (AddMonoidAlgebra.domCongr k k e)
-
+/-- The fraction ring equivalence induced by a lattice equivalence acts by the pullback
+along its underlying additive homomorphism. -/
 @[simp]
-theorem functionFieldEquiv_toAlgHom (e : B ≃+ C) :
-    (functionFieldEquiv k e).toAlgHom =
+theorem algEquivOfAlgEquiv_domCongr_toAlgHom (e : B ≃+ C) :
+    (IsFractionRing.algEquivOfAlgEquiv (AddMonoidAlgebra.domCongr k k e) :
+      FunctionField k B ≃ₐ[k] FunctionField k C).toAlgHom =
       functionFieldMap k e.toAddMonoidHom
         (by simpa only [AddEquiv.coe_toAddMonoidHom] using e.injective) := by
   apply functionField_hom_ext
   intro x
   rw [AlgEquiv.toAlgHom_apply, functionFieldMap_monomial]
-  simp [monomial_ofAdd, functionFieldEquiv, IsFractionRing.algEquivOfAlgEquiv_algebraMap]
-
-omit [Module ℤ B] [Module.Free ℤ B] [Module ℤ C] [Module.Free ℤ C] in
-@[simp]
-theorem functionFieldEquiv_symm (e : B ≃+ C) :
-    (functionFieldEquiv k e).symm = functionFieldEquiv k e.symm := (rfl)
+  simp [monomial_ofAdd]
 
 end Free
 
