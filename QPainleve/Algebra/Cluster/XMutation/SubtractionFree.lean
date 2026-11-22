@@ -8,6 +8,8 @@ module
 public import QPainleve.Algebra.Cluster.XMutation.Word
 public import TauCeti.Algebra.Cluster.CoefficientSemifield.Universal
 public import TauCeti.Algebra.Cluster.YSeed.Word
+import Mathlib.LinearAlgebra.Finsupp.VectorSpace
+import QPainleve.Geometry.Toric.CharacterTorus.Basic
 import TauCeti.Algebra.MvPolynomial.Laurent.Polynomial
 
 /-!
@@ -124,5 +126,24 @@ theorem toXField_mutationWord_coefficient (B : ExchangeMatrix (Function.Embeddin
   simpa only [RingHom.comp_apply, QsfZero.toXField_X, QsfZero.eval_X,
     ← AlgEquiv.toAlgHom_toRingHom, AlgHom.coe_toRingHom, AlgEquiv.coe_toAlgHom]
     using (DFunLike.congr_fun (xMutationWord_comp_toXField k B w) (QsfZero.X i)).symm
+
+/-- Substitution of the final coefficients of a native mutation word extends uniquely to an
+automorphism of the field of independent X coordinates. -/
+theorem existsUnique_xPullback_mutationWord (B : ExchangeMatrix (Function.Embedding.refl ι))
+    (w : List ι) :
+    ∃! f : XField ≃ₐ[k] XField, ∀ a : QsfZero ι,
+      f (QsfZero.toXField k a) = QsfZero.toXField k
+        (QsfZero.eval ((⟨Qsf.X, B⟩ : YSeed ι (Qsf ι)).mutationWord w).coefficient a) := by
+  have hword (a : QsfZero ι) :=
+    DFunLike.congr_fun (xMutationWord_comp_toXField k B w) a
+  simp only [RingHom.comp_apply, ← AlgEquiv.toAlgHom_toRingHom, AlgHom.coe_toRingHom,
+    AlgEquiv.coe_toAlgHom] at hword
+  refine ⟨xMutationWord k B w, hword, fun f hf ↦ ?_⟩
+  apply AlgEquiv.coe_toAlgHom_injective
+  apply CharacterTorus.functionField_hom_ext_basis Finsupp.basisSingleOne
+  intro i
+  simpa only [Finsupp.coe_basisSingleOne, CharacterTorus.monomial_ofAdd, ← xCoordinate_def,
+    AlgEquiv.coe_toAlgHom, QsfZero.toXField_X] using
+      (hf (QsfZero.X i)).trans (hword (QsfZero.X i)).symm
 
 end QPainleve.Cluster
