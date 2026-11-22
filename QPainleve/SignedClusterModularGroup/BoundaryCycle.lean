@@ -9,6 +9,7 @@ public import Mathlib.GroupTheory.SpecificGroups.Cyclic
 public import Mathlib.GroupTheory.Torsion
 public import Mathlib.LinearAlgebra.BilinearForm.Orthogonal
 public import Mathlib.LinearAlgebra.BilinearForm.TensorProduct
+public import TauCeti.Algebra.Module.Primitive
 import Mathlib.Algebra.Ring.Periodic
 import Mathlib.LinearAlgebra.Dimension.Localization
 import Mathlib.RingTheory.Localization.BaseChange
@@ -24,8 +25,9 @@ import TauCeti.LinearAlgebra.IntegralLattice.RootLattice.TypeA.Basic
 
 A cycle of boundary classes has the negative cycle Laplacian as its Gram matrix, with
 both incidences counted when the cycle has length one or two. Its total class generates
-the radical of the boundary span. If this class is primitive, the saturation quotient
-embeds into the additive group of `ZMod n` via the weighted sum of the component degrees.
+the radical of the boundary span. If this class satisfies Tau Ceti's `IsPrimitive`, the
+saturation quotient embeds into the additive group of `ZMod n` via the weighted sum of
+the component degrees.
 The boundary form makes the image square-zero. In the type-A discriminant group this gives an
 integral overlattice, whose index square divides `n` by the discriminant formula.
 The radical calculation also gives the rational orthogonal decomposition.
@@ -302,7 +304,7 @@ private theorem dvd_coeff_sub_of_degreeMoment_eq_zero {x : L} {k : ℕ} (a : ZMo
 
 include hGram in
 private theorem mem_span_of_nsmul_mem_of_degreeMoment_eq_zero [IsAddTorsionFree L]
-    (ℓ : L →ₗ[ℤ] ℤ) (hℓ : ℓ δ = 1) {x : L} {k : ℕ} (hk : k ≠ 0) (hx : k • x ∈ M)
+    (hPrimitive : TauCeti.IsPrimitive δ) {x : L} {k : ℕ} (hk : k ≠ 0) (hx : k • x ∈ M)
     (hm : degreeMoment hGram ((M).mkQ x) = 0) : x ∈ M := by
   rw [← Fintype.range_linearCombination] at hx ⊢
   obtain ⟨a, ha⟩ := hx
@@ -315,30 +317,32 @@ private theorem mem_span_of_nsmul_mem_of_degreeMoment_eq_zero [IsAddTorsionFree 
   have ha' : a = k • b + a 0 • ones := by
     funext i
     simpa [ones, add_comm] using eq_add_of_sub_eq (hb i)
-  have hshift : k • (x - e b) = e (a 0 • ones) := calc
+  have hshift : k • (x - e b) = a 0 • δ := calc
     _ = e (a - k • b) := by rw [map_sub, map_nsmul, ha, nsmul_sub]
-    _ = _ := congrArg e (sub_eq_iff_eq_add.mpr (ha'.trans (add_comm _ _)))
+    _ = e (a 0 • ones) := congrArg e (sub_eq_iff_eq_add.mpr (ha'.trans (add_comm _ _)))
+    _ = _ := by rw [map_zsmul, hδ]
+  obtain ⟨ℓ, hℓ⟩ := TauCeti.isPrimitive_def.mp hPrimitive
   have hcoeff : (k : ℤ) * ℓ (x - e b) = a 0 := by
-    have h := congrArg ℓ hshift
-    rw [map_nsmul, map_zsmul, hδ, map_zsmul, hℓ] at h
-    simpa using h
+    simpa only [map_nsmul, map_zsmul, hℓ, nsmul_eq_mul, zsmul_eq_mul, Int.cast_id, mul_one] using
+      congrArg ℓ hshift
+  -- Primitivity recovers the coefficient of the total class integrally.
+  have hrestore : ℓ (x - e b) • δ = x - e b := by
+    apply eq_of_nsmul_eq_nsmul_of_addCommute hk (AddCommute.all _ _)
+    calc
+      _ = ((k : ℤ) * ℓ (x - e b)) • δ := by rw [mul_smul, natCast_zsmul]
+      _ = _ := by rw [hcoeff, hshift]
   refine ⟨b + ℓ (x - e b) • ones, ?_⟩
-  apply eq_of_nsmul_eq_nsmul_of_addCommute hk (AddCommute.all _ _)
-  have hscale : k • (ℓ (x - e b) • ones) = a 0 • ones := by
-    funext i
-    simpa [ones] using hcoeff
   calc
-    _ = k • e b + e (a 0 • ones) := by simp only [← map_nsmul, map_add, nsmul_add, hscale, e]
-    _ = k • x := by rw [← hshift, nsmul_sub]; abel
+    _ = e b + ℓ (x - e b) • δ := by rw [map_add, map_zsmul, hδ]
+    _ = x := by rw [hrestore, add_sub_cancel]
 
 include hGram in
 /-- On the saturation quotient (the torsion of the ambient quotient), the degree moment is
-injective if the total boundary class admits an integral functional taking it to one. -/
+injective if the total boundary class is primitive. -/
 theorem degreeMoment_injective_on_torsion [IsAddTorsionFree L]
-    (hPrimitive : ∃ ℓ : L →ₗ[ℤ] ℤ, ℓ δ = 1) :
+    (hPrimitive : TauCeti.IsPrimitive δ) :
     Function.Injective ((degreeMoment hGram).toAddMonoidHom.comp
       (AddCommGroup.torsion (L ⧸ M)).subtype) := by
-  obtain ⟨ℓ, hℓ⟩ := hPrimitive
   apply (AddMonoidHom.ker_eq_bot_iff _).mp
   rw [AddSubgroup.eq_bot_iff_forall]
   rintro ⟨q, hq⟩ hzero
@@ -347,13 +351,13 @@ theorem degreeMoment_injective_on_torsion [IsAddTorsionFree L]
     ((AddCommGroup.mem_torsion _).mp hq)
   apply Subtype.ext
   apply (Submodule.Quotient.mk_eq_zero M).mpr
-  exact mem_span_of_nsmul_mem_of_degreeMoment_eq_zero hGram ℓ hℓ hk.ne'
+  exact mem_span_of_nsmul_mem_of_degreeMoment_eq_zero hGram hPrimitive hk.ne'
     ((Submodule.Quotient.mk_eq_zero M).mp (by rwa [← Submodule.mkQ_apply, map_nsmul])) hzero
 
 include hGram in
 /-- The saturation quotient is a finite cyclic group of order dividing the cycle length. -/
 theorem torsion_quotient_cyclic [IsAddTorsionFree L]
-    (hPrimitive : ∃ ℓ : L →ₗ[ℤ] ℤ, ℓ δ = 1) :
+    (hPrimitive : TauCeti.IsPrimitive δ) :
     Finite (AddCommGroup.torsion (L ⧸ M)) ∧ IsAddCyclic (AddCommGroup.torsion (L ⧸ M)) ∧
       Nat.card (AddCommGroup.torsion (L ⧸ M)) ∣ n := by
   let f := (degreeMoment hGram).toAddMonoidHom.comp (AddCommGroup.torsion (L ⧸ M)).subtype
@@ -422,7 +426,7 @@ open TauCeti.IntegralLattice TauCeti.FiniteBilinearModule in
 include hGram in
 /-- The square of the saturation index divides the cycle length. -/
 theorem natCard_torsion_quotient_sq_dvd [IsAddTorsionFree L]
-    (hPrimitive : ∃ ℓ : L →ₗ[ℤ] ℤ, ℓ δ = 1) :
+    (hPrimitive : TauCeti.IsPrimitive δ) :
     Nat.card (AddCommGroup.torsion (L ⧸ M)) ^ 2 ∣ n := by
   obtain ⟨r, rfl⟩ := Nat.exists_eq_succ_of_ne_zero (NeZero.ne n)
   let T := AddCommGroup.torsion (L ⧸ Submodule.span ℤ (Set.range D))

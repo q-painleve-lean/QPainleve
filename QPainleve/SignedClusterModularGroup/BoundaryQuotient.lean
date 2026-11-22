@@ -7,6 +7,9 @@ module
 
 public import TauCeti.LinearAlgebra.IntegralLattice.RootLattice.TypeA.Basic
 
+import TauCeti.LinearAlgebra.BilinearForm.Isometry
+import TauCeti.LinearAlgebra.BilinearForm.LinearIndependent
+
 /-!
 # The type-A quotient of a boundary cycle
 
@@ -15,6 +18,9 @@ the span descends to the quotient by the sum of the classes. Choosing a componen
 identifies the other components, in cyclic order, with the simple roots of Tau Ceti's
 `IntegralLattice.typeARootLattice` with the opposite form. This includes cycles of length
 one and two, with both incidences counted in the Gram matrix.
+
+The determinant criterion for linear independence and the isometry between bases with the
+same Gram matrix come from Tau Ceti's bilinear-form API.
 -/
 
 public section
@@ -153,59 +159,59 @@ private theorem pairing_component_succ (k : ZMod (n + 1)) (i j : Fin n) :
   simp only [Fin.ext_iff]
   split_ifs <;> omega
 
-private noncomputable def typeAToBoundary (D : ZMod (n + 1) → L) (k : ZMod (n + 1)) :
-    typeARootLattice n →ₗ[ℤ] BoundaryQuotient D :=
-  (typeASimpleRootBasis n).constr ℤ (fun i ↦ componentClass D (cycleIndex k i.succ))
-
-@[simp] private theorem typeAToBoundary_apply_basis
-    (D : ZMod (n + 1) → L) (k : ZMod (n + 1)) (i : Fin n) :
-    typeAToBoundary D k (typeASimpleRootBasis n i) = componentClass D (cycleIndex k i.succ) := by
-  simp [typeAToBoundary]
+include hGram in
+private theorem gramMatrix_componentClass_succ (k : ZMod (n + 1)) :
+    (Matrix.of fun i j : Fin n ↦
+      quotientForm hGram (componentClass D (cycleIndex k i.succ))
+        (componentClass D (cycleIndex k j.succ))) = -CartanMatrix.A n := by
+  ext i j
+  simpa only [Matrix.of_apply, Matrix.neg_apply, quotientForm_componentClass] using
+    pairing_component_succ hGram k i j
 
 include hGram in
-private theorem typeAToBoundary_map_pairing (k : ZMod (n + 1))
-    (x y : typeARootLattice n) :
-    quotientForm hGram (typeAToBoundary D k x) (typeAToBoundary D k y) =
-      (-(typeARootLattice n).integralForm) x y := by
-  have h := BilinForm.ext_basis (b := typeASimpleRootBasis n)
-    (B := (quotientForm hGram).comp (typeAToBoundary D k) (typeAToBoundary D k))
-    (F₂ := -(typeARootLattice n).integralForm) (by
-      intro i j
-      simp only [BilinForm.comp_apply, typeAToBoundary_apply_basis, quotientForm_componentClass,
-        pairing_component_succ hGram, LinearMap.neg_apply, ← gramMatrix_apply,
-        gramMatrix_typeASimpleRootBasis])
-  exact LinearMap.congr_fun (LinearMap.congr_fun h x) y
+private theorem linearIndependent_componentClass_succ (k : ZMod (n + 1)) :
+    LinearIndependent ℤ (fun i : Fin n ↦ componentClass D (cycleIndex k i.succ)) := by
+  apply (quotientForm hGram).linearIndependent_of_det_ne_zero
+  rw [gramMatrix_componentClass_succ, Matrix.det_neg, CartanMatrix.A_det]
+  exact mul_ne_zero (pow_ne_zero _ (by decide)) (by positivity)
 
-include hGram in
-private theorem typeAToBoundary_bijective (k : ZMod (n + 1)) :
-    Function.Bijective (typeAToBoundary D k) := by
-  constructor
-  · refine LinearMap.ker_eq_bot.mp (LinearMap.ker_eq_bot'.mpr fun x hx ↦ ?_)
-    have hnondeg := (nondegenerate_integralForm_iff (typeARootLattice n)).mpr
-      (form_nondegenerate (typeARootLattice n))
-    refine hnondeg.1 x fun y ↦ ?_
-    simpa [hx] using (typeAToBoundary_map_pairing hGram k x y).symm
-  · rw [← LinearMap.range_eq_top, typeAToBoundary, Module.Basis.constr_range,
-      span_range_componentClass_succ]
+/-- The classes following the cut component, in cyclic order, form a basis of the quotient. -/
+noncomputable def boundaryQuotientBasis (k : ZMod (n + 1)) :
+    Module.Basis (Fin n) ℤ (BoundaryQuotient D) :=
+  Module.Basis.mk (linearIndependent_componentClass_succ hGram k)
+    (span_range_componentClass_succ D k).ge
+
+/-- The basis vector at index `i` is the component class at offset `i + 1` from the cut. -/
+@[simp] theorem boundaryQuotientBasis_apply (k : ZMod (n + 1)) (i : Fin n) :
+    boundaryQuotientBasis hGram k i = componentClass D ((i.val : ZMod (n + 1)) + 1 + k) := by
+  rw [boundaryQuotientBasis, Module.Basis.mk_apply, cycleIndex_apply, Fin.val_succ,
+    Nat.cast_add, Nat.cast_one]
+
+/-- The quotient pairing in the basis obtained by cutting the cycle is the negative
+type-`Aₙ` Cartan matrix. -/
+theorem toMatrix_quotientForm (k : ZMod (n + 1)) :
+    BilinForm.toMatrix (boundaryQuotientBasis hGram k) (quotientForm hGram) =
+      -CartanMatrix.A n := by
+  rw [← BilinForm.toMatrixAux_eq, boundaryQuotientBasis, Module.Basis.coe_mk,
+    ← gramMatrix_componentClass_succ hGram k]
+  ext i j
+  rw [BilinForm.toMatrixAux_apply, Matrix.of_apply]
 
 /-- Cutting the boundary cycle at `k` identifies its quotient form with the negative
 type-`Aₙ` form, where the cycle has `n + 1` components. The components immediately
 following `k` are sent to the simple roots in order. -/
 noncomputable def boundaryQuotientIsometryTypeA (k : ZMod (n + 1)) :
     (quotientForm hGram).IsometryEquiv (-(typeARootLattice n).integralForm) :=
-  (BilinForm.IsometryEquiv.mk (LinearEquiv.ofBijective _ (typeAToBoundary_bijective hGram k))
-    (typeAToBoundary_map_pairing hGram k)).symm
+  (boundaryQuotientBasis hGram k).isometryEquivOfToMatrixEq (typeASimpleRootBasis n) (by
+    rw [toMatrix_quotientForm, map_neg, ← gramMatrix_eq_toMatrix, gramMatrix_typeASimpleRootBasis])
 
 /-- The component at offset `i + 1` from the cut maps to the `i`-th simple root. -/
 @[simp] theorem boundaryQuotientIsometryTypeA_componentClass_succ
     (k : ZMod (n + 1)) (i : Fin n) :
     boundaryQuotientIsometryTypeA hGram k (componentClass D ((i.val : ZMod (n + 1)) + 1 + k)) =
       typeASimpleRootBasis n i := by
-  have h := typeAToBoundary_apply_basis D k i
-  rw [cycleIndex_apply, Fin.val_succ, Nat.cast_add, Nat.cast_one] at h
-  rw [← h]
-  -- The inverse of the constructed isometry is the linear equivalence extending the roots.
-  exact (LinearEquiv.ofBijective _ (typeAToBoundary_bijective hGram k)).symm_apply_apply _
+  rw [← boundaryQuotientBasis_apply hGram k i, boundaryQuotientIsometryTypeA]
+  exact Module.Basis.isometryEquivOfToMatrixEq_apply_basis _ _ _ i
 
 /-- The cut component maps to the negative sum of all the simple roots. -/
 @[simp] theorem boundaryQuotientIsometryTypeA_componentClass_cut (k : ZMod (n + 1)) :
@@ -215,37 +221,13 @@ noncomputable def boundaryQuotientIsometryTypeA (k : ZMod (n + 1)) :
   simp only [cycleIndex_apply, Fin.val_succ, Nat.cast_add, Nat.cast_one,
     boundaryQuotientIsometryTypeA_componentClass_succ]
 
-/-- The classes following the cut component, in cyclic order, form a basis of the quotient. -/
-noncomputable def boundaryQuotientBasis (k : ZMod (n + 1)) :
-    Module.Basis (Fin n) ℤ (BoundaryQuotient D) :=
-  (typeASimpleRootBasis n).map (boundaryQuotientIsometryTypeA hGram k).symm.toLinearEquiv
-
-/-- The basis vector at index `i` is the component class at offset `i + 1` from the cut. -/
-@[simp] theorem boundaryQuotientBasis_apply (k : ZMod (n + 1)) (i : Fin n) :
-    boundaryQuotientBasis hGram k i = componentClass D ((i.val : ZMod (n + 1)) + 1 + k) := by
-  apply (boundaryQuotientIsometryTypeA hGram k).toLinearEquiv.injective
-  simp only [BilinForm.IsometryEquiv.coe_toLinearEquiv]
-  rw [boundaryQuotientIsometryTypeA_componentClass_succ, boundaryQuotientBasis,
-    Module.Basis.map_apply]
-  exact (boundaryQuotientIsometryTypeA hGram k).toLinearEquiv.apply_symm_apply _
-
-/-- The quotient pairing in the basis obtained by cutting the cycle is the negative
-type-`Aₙ` Cartan matrix. -/
-theorem toMatrix_quotientForm (k : ZMod (n + 1)) :
-    BilinForm.toMatrix (boundaryQuotientBasis hGram k) (quotientForm hGram) =
-      -CartanMatrix.A n := by
-  ext i j
-  rw [BilinForm.toMatrix_apply, boundaryQuotientBasis_apply, boundaryQuotientBasis_apply,
-    quotientForm_componentClass]
-  simpa only [Matrix.neg_apply, cycleIndex_apply, Fin.val_succ, Nat.cast_add, Nat.cast_one] using
-    pairing_component_succ hGram k i j
-
 /-- The absolute Gram determinant of the boundary quotient is the cycle length. -/
 theorem natAbs_det_toMatrix_quotientForm (k : ZMod (n + 1)) :
     (BilinForm.toMatrix (boundaryQuotientBasis hGram k) (quotientForm hGram)).det.natAbs =
       n + 1 := by
-  rw [toMatrix_quotientForm, Matrix.det_neg, CartanMatrix.A_det]
-  simp only [Int.natAbs_mul, Int.natAbs_pow, Int.natAbs_neg, Int.natAbs_one, one_pow, one_mul,
-    ← Int.natCast_succ, Int.natAbs_natCast]
+  rw [toMatrix_quotientForm, Matrix.det_neg, ← gramMatrix_typeASimpleRootBasis, ← gramDet_def]
+  simp only [Int.natAbs_mul, Int.natAbs_pow, Int.natAbs_neg, Int.natAbs_one, one_pow, one_mul]
+  exact ((typeARootLattice n).discriminant_eq_natAbs_gramDet (typeASimpleRootBasis n)).symm.trans
+    (discriminant_typeARootLattice n)
 
 end QPainleve.BoundaryCycle
