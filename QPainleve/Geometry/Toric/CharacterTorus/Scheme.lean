@@ -32,18 +32,16 @@ variable {k : Type u} [Field k]
 
 variable {B C : Type u} [AddCommGroup B] [AddCommGroup C] [IsAddFG B] [IsAddFG C]
 
+local instance {G : Type*} [AddCommGroup G] [Module ℤ G] [Module.Free ℤ G] : HasUniqueDiv G :=
+  .of_isTorsionFree ℤ G
+
 local notation "L" B => FGCommGrpCat.of (Multiplicative B)
 local notation "D" B => groupScheme k (L B)
 local notation "Dmap" f => groupSchemeMap k (FGCommGrpCat.ofHom (AddMonoidHom.toMultiplicative f))
 
-private theorem isDomain_characterRing (B : Type u) [AddCommGroup B] [Module.Free ℤ B] :
-    IsDomain (MonoidAlgebra k (Multiplicative B)) :=
-  (AddMonoidAlgebra.toMultiplicativeAlgEquiv k k B).symm.injective.isDomain _
-
 /-- The group scheme of a finite free character lattice over a field is integral. -/
 instance isIntegral_groupScheme [Module.Free ℤ B] : IsIntegral (D B).X.left := by
   rw [groupScheme_X_left]
-  let : IsDomain (MonoidAlgebra k (Multiplicative B)) := isDomain_characterRing B
   infer_instance
 
 variable (k) in
@@ -52,7 +50,7 @@ of the diagonalizable group scheme. -/
 def fractionRingEquiv (B : Type u) [AddCommGroup B] [IsAddFG B] [Module.Free ℤ B] :
     FunctionField k B ≃+* (groupScheme k (L B)).X.left.functionField :=
   let R := CommRingCat.of (MonoidAlgebra k (Multiplicative B))
-  letI : IsDomain R := isDomain_characterRing B
+  letI : IsDomain R := inferInstanceAs (IsDomain (MonoidAlgebra k (Multiplicative B)))
   let e := (AddMonoidAlgebra.toMultiplicativeAlgEquiv k k B).toRingEquiv
   (IsFractionRing.ringEquivOfRingEquiv e).trans
     (Scheme.specFractionRingEquiv R (groupScheme_X_left k (L B)))
@@ -64,7 +62,7 @@ private theorem preimage_groupScheme_fromSpecStalk [Module.Free ℤ B] :
         (fractionRingEquiv k B).toRingHom.comp (algebraMap (AddMonoidAlgebra k B)
           (FunctionField k B)) := by
   let R := CommRingCat.of (MonoidAlgebra k (Multiplicative B))
-  let : IsDomain R := isDomain_characterRing B
+  let : IsDomain R := inferInstanceAs (IsDomain (MonoidAlgebra k (Multiplicative B)))
   rw [Scheme.preimage_fromSpecStalk_comp R]
   apply RingHom.ext
   intro x

@@ -9,9 +9,9 @@ public import Mathlib.Algebra.MonoidAlgebra.Basic
 public import Mathlib.Algebra.MonoidAlgebra.NoZeroDivisors
 public import Mathlib.RingTheory.Localization.FractionRing
 public import TauCeti.Algebra.Cluster.ExchangeMatrix.Mutation
-import Mathlib.LinearAlgebra.Finsupp.VectorSpace
 import Mathlib.RingTheory.Localization.Away.Basic
 import Mathlib.Tactic.Group
+import TauCeti.Algebra.Group.FreeAbelianCharacter
 import TauCeti.RingTheory.Localization.Away.FractionRing
 
 /-!
@@ -23,8 +23,10 @@ gives the inverse. The construction first inverts `1 + Xₚ` in the Laurent ring
 where mutation in direction `p` is already an isomorphism.
 
 The coordinate formula is that of Fock and Goncharov, *Cluster ensembles,
-quantization and the dilogarithm*, §1.2.2 (7) and §1.2.4 (13). The construction
-uses `Localization.Away.isFractionRing` to pass from the open chart to the field.
+quantization and the dilogarithm*, §1.2.2 (7) and §1.2.4 (13).
+Tau Ceti's `freeAbelianCharEquiv` extends the mutated units to a character of the
+exponent lattice, and `Localization.Away.isFractionRing` passes from the open chart
+to the field.
 -/
 
 public noncomputable section
@@ -113,15 +115,12 @@ private theorem mutatedCoordinate_of_ne (a : ι → ℤ) {i : ι} (hi : i ≠ p)
 
 private def mutationOnLaurent (a : ι → ℤ) : Laurent →ₐ[k] Chart :=
   AddMonoidAlgebra.lift k Chart (ι →₀ ℤ) <| (Units.coeHom Chart).comp
-    ((Finsupp.basisSingleOne.constr ℤ
-      (fun i ↦ Additive.ofMul (mutatedCoordinate k p a i))).toAddMonoidHom.toMultiplicativeLeft)
+    (TauCeti.freeAbelianCharEquiv.symm (mutatedCoordinate k p a))
 
 private theorem mutationOnLaurent_coordinate (a : ι → ℤ) (i : ι) :
     mutationOnLaurent k p a (coordinate k i) = (mutatedCoordinate k p a i : Chart) := by
   simp only [mutationOnLaurent, AddMonoidAlgebra.lift_single, one_smul, MonoidHom.comp_apply,
-    AddMonoidHom.coe_toMultiplicativeLeft, Function.comp_apply]
-  exact congrArg (fun x : Additive Chartˣ ↦ (x.toMul : Chart))
-    (Finsupp.basisSingleOne.constr_basis ℤ _ i)
+    TauCeti.freeAbelianCharEquiv_symm_apply_ofAdd_single, Units.coeHom_apply]
 
 private def mutationOnChart (a : ι → ℤ) : Chart →ₐ[k] Chart :=
   IsLocalization.Away.liftAlgHom (1 + coordinate k p)
@@ -168,27 +167,14 @@ private theorem mutationOnChart_comp_neg (a : ι → ℤ) :
   apply Localization.algHom_ext
   apply (AddMonoidAlgebra.lift k Chart (ι →₀ ℤ)).symm.injective
   apply MonoidHom.toHomUnitsMulEquiv.injective
-  apply MonoidHom.toAdditiveRight.injective
-  apply AddMonoidHom.toIntLinearMap_injective
-  apply Finsupp.basisSingleOne.ext
-  intro i
+  apply TauCeti.freeAbelianCharEquiv.injective
+  funext i
   apply Units.ext
-  simp only [MonoidHom.toHomUnitsMulEquiv_apply]
-  -- The basis vector in the additive type alias represents the corresponding monomial.
-  change
-    (((AddMonoidAlgebra.lift k Chart (ι →₀ ℤ)).symm _).toHomUnits
-      (Multiplicative.ofAdd (Finsupp.single i 1)) : Chart) =
-    (((AddMonoidAlgebra.lift k Chart (ι →₀ ℤ)).symm _).toHomUnits
-      (Multiplicative.ofAdd (Finsupp.single i 1)) : Chart)
-  simp only [MonoidHom.coe_toHomUnits, AddMonoidAlgebra.lift_symm_apply, AlgHom.comp_apply,
-    AlgHom.id_apply]
-  have h := congrArg (fun u : Chartˣ ↦ (u : Chart)) (map_mutatedCoordinate_neg k p a i)
-  rw [Units.coe_map] at h
-  -- The localization extensionality lemma presents the structural map as an algebra hom.
-  change mutationOnChart k p a (mutationOnChart k p (-a)
-    (algebraMap Laurent Chart (coordinate k i))) = algebraMap Laurent Chart (coordinate k i)
+  simp only [TauCeti.freeAbelianCharEquiv_apply, MonoidHom.toHomUnitsMulEquiv_apply,
+    MonoidHom.coe_toHomUnits, AddMonoidAlgebra.lift_symm_apply, toAdd_ofAdd,
+    AlgHom.comp_apply, AlgHom.id_apply, Algebra.algHom, IsScalarTower.toAlgHom_apply]
   rw [← coe_coordinateUnit k p i, mutationOnChart_coordinate]
-  exact h
+  exact congrArg (fun u : Chartˣ ↦ (u : Chart)) (map_mutatedCoordinate_neg k p a i)
 
 private def mutationChartEquiv (a : ι → ℤ) : Chart ≃ₐ[k] Chart :=
   AlgEquiv.ofAlgHom (mutationOnChart k p a) (mutationOnChart k p (-a))
