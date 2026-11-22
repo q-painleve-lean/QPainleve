@@ -181,14 +181,8 @@ theorem finiteDimensional_subgroupFractionAlgebra [Finite (G ⧸ H)] :
 
 variable [Finite (G ⧸ H)] [HasEnoughRootsOfUnity k (Monoid.exponent (G ⧸ H))]
 
-omit [HasUniqueRoots G] in
-private theorem finite_quotientCharacters : Finite ((G ⧸ H) →* kˣ) :=
-  Finite.of_equiv (G ⧸ H) (CommGroup.monoidHom_mulEquiv_of_hasEnoughRootsOfUnity
-    (G ⧸ H) k).some.symm.toEquiv
-
 private theorem isGaloisGroup_quotientCharacterFraction :
     IsGaloisGroup ((G ⧸ H) →* kˣ) BaseField CoverField := by
-  let := finite_quotientCharacters k H
   let := isGaloisGroup_quotientCharacterAction k H
   exact IsGaloisGroup.to_isFractionRing ((G ⧸ H) →* kˣ) BaseRing CoverRing BaseField CoverField
 
@@ -196,7 +190,6 @@ private theorem isGaloisGroup_quotientCharacterFraction :
 character. -/
 def quotientCharactersMulEquiv :
     ((G ⧸ H) →* kˣ) ≃* (CoverField ≃ₐ[BaseField] CoverField) := by
-  letI := finite_quotientCharacters k H
   letI := isGaloisGroup_quotientCharacterFraction k H
   exact IsGaloisGroup.mulEquivAlgEquiv ((G ⧸ H) →* kˣ) BaseField CoverField
 
@@ -249,7 +242,6 @@ theorem existsUnique_quotient_character_of_fixes_monomials
 
 /-- The function-field extension is Galois when the characters separate the quotient. -/
 theorem isGalois_subgroupFractionAlgebra : IsGalois BaseField CoverField := by
-  let := finite_quotientCharacters k H
   let := isGaloisGroup_quotientCharacterFraction k H
   exact IsGaloisGroup.isGalois ((G ⧸ H) →* kˣ) BaseField CoverField
 
