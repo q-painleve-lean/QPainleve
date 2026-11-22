@@ -67,7 +67,7 @@ private theorem exceptional_regular_and_dimension [IsLocallyNoetherian X]
     IsRegular E.subscheme ∧
       ∀ x : E.subscheme, IsClosed {x} → ringKrullDim (E.subscheme.presheaf.stalk x) = 1 := by
   dsimp only
-  obtain ⟨U, hpU, -, a, b, hspan, hab⟩ :=
+  obtain ⟨U, hpU, -, a, b, hspan, hab, -⟩ :=
     exists_mem_le_span_pair_vanishingIdeal_closure_singleton hdim (Opens.mem_top p)
   let I := (Iₚ)
   let J := I.ideal U
