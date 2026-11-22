@@ -6,7 +6,7 @@ Authors: Yuma Mizuno
 module
 
 public import Mathlib.GroupTheory.GroupExtension.Basic
-public import QPainleve.SignedClusterModularGroup.BoundaryReflection
+public import QPainleve.SignedClusterModularGroup.Boundary.Reflection
 public import TauCeti.LinearAlgebra.BilinearForm.Isometry
 
 /-!
