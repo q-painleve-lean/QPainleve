@@ -60,6 +60,15 @@ instance isLocallyNoetherian_algebraicRealization : IsLocallyNoetherian Φ.algeb
     have := (Φ.isToricCone cone.property).isNoetherianRing_affineCoordinateRing Φ.lattice
     exact isLocallyNoetherian_Spec.2 this
 
+/-- The algebraic realization of a finite toric fan is Noetherian. -/
+instance isNoetherian_algebraicRealization : IsNoetherian Φ.algebraicRealization := by
+  let : Finite Φ.affineToricOpenCover.I₀ := inferInstanceAs (Finite Φ.cones)
+  let : ∀ σ, CompactSpace (Φ.affineToricOpenCover.X σ) := fun σ ↦ by
+    rw [Φ.affineToricOpenCover_X σ]
+    infer_instance
+  exact { toIsLocallyNoetherian := inferInstance
+          toCompactSpace := Φ.affineToricOpenCover.compactSpace }
+
 variable [Nonempty Φ.cones]
 
 /-- A lattice character, viewed as a rational function on the toric scheme via the dense torus. -/
