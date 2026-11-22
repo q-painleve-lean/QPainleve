@@ -7,9 +7,10 @@ module
 
 public import QPainleve.Algebra.Cluster.ChargeKernel.Basic
 
+import Mathlib.Algebra.Field.ZMod
+import QPainleve.Algebra.Cluster.ChargeKernel.Index
 import QPainleve.LinearAlgebra.BilinearForm.Index
 import QPainleve.LinearAlgebra.Submodule.FiniteIndex
-import Mathlib.Algebra.Field.ZMod
 
 /-!
 # Integral identification of endpoint charge lattices
@@ -180,10 +181,10 @@ with primitive labeled charges and the same exchange matrix are related by an in
 isomorphism that takes each charge to its counterpart and preserves the determinant forms.
 
 The numerical inputs are the boundary length `n ≤ 9`, the label count `12 - n`,
-and the divisibility of `n` by the square of the first charge index. The second
-charge image has finite index, and the proof shows that the indices agree. At index
-three, the primitive isotropic boundary class gives a primitive charge relation
-with square sum zero modulo three. -/
+and the divisibility of `n` by the square of the first charge index. The equal
+exchange matrices give both charge images the same finite index. At index three,
+the primitive isotropic boundary class gives a primitive charge relation with
+square sum zero modulo three. -/
 theorem exists_charge_lattice_equiv
     (b₁ : Module.Basis (Fin 2) ℤ N₁) (b₂ : Module.Basis (Fin 2) ℤ N₂)
     {ω₁ : BilinForm ℤ N₁} {ω₂ : BilinForm ℤ N₂}
@@ -195,7 +196,6 @@ theorem exists_charge_lattice_equiv
     (hmat : chargeExchangeMatrix ω₁ v₁ = chargeExchangeMatrix ω₂ v₂)
     {n : ℕ} (hn : 0 < n) (hn' : n ≤ 9) (hc : Fintype.card ι + n = 12)
     (hindex₁ : v₁.range.toAddSubgroup.index ^ 2 ∣ n)
-    (hnz₂ : v₂.range.toAddSubgroup.index ≠ 0)
     (hrel : v₁.range.toAddSubgroup.index = 3 → ∃ x : v₁.ker,
       (∃ l : v₁.ker →ₗ[ℤ] ℤ, l x = 1) ∧ (3 : ℤ) ∣ ∑ i, x.val i ^ 2) :
     ∃ E : N₁ ≃ₗ[ℤ] N₂, (∀ x, E (v₁ x) = v₂ x) ∧
@@ -209,10 +209,13 @@ theorem exists_charge_lattice_equiv
   have hnz₁ : v₁.range.toAddSubgroup.index ≠ 0 := by
     intro hz
     simp [hz, hn.ne'] at hindex₁
+  have hindex : v₁.range.toAddSubgroup.index = v₂.range.toAddSubgroup.index := by
+    rw [v₁.index_range_eq_gcd_chargeExchangeMatrix b₁ hω₁ hb₁,
+      v₂.index_range_eq_gcd_chargeExchangeMatrix b₂ hω₂ hb₂, hmat]
+  have hnz₂ : v₂.range.toAddSubgroup.index ≠ 0 := hindex ▸ hnz₁
   obtain ⟨e, he, hpair⟩ := exists_charge_range_equiv
     (BilinForm.Nondegenerate.of_det_ne_zero ω₁ b₁ (hd₁ ▸ one_ne_zero)).2
     (BilinForm.Nondegenerate.of_det_ne_zero ω₂ b₂ (hd₂ ▸ one_ne_zero)).2 hnz₁ hnz₂ hmat
-  have hindex := ω₁.index_eq_of_det_toMatrix_eq_one b₁ b₂ hd₁ hd₂ hnz₁ e hpair
   let s := v₁.range.toAddSubgroup.index
   have hs_le : s ≤ 3 := by
     by_contra! hs
