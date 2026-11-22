@@ -5,7 +5,7 @@ Authors: Yuma Mizuno
 -/
 module
 
-public import QPainleve.Algebra.Cluster.ChargeKernel
+public import QPainleve.Algebra.Cluster.ChargeKernel.Basic
 
 import QPainleve.LinearAlgebra.BilinearForm.Index
 import QPainleve.LinearAlgebra.Submodule.FiniteIndex
@@ -210,8 +210,8 @@ theorem exists_charge_lattice_equiv
     intro hz
     simp [hz, hn.ne'] at hindex₁
   obtain ⟨e, he, hpair⟩ := exists_charge_range_equiv
-    (ω₁.nondegenerate_of_det_ne_zero b₁ (hd₁ ▸ one_ne_zero)).2
-    (ω₂.nondegenerate_of_det_ne_zero b₂ (hd₂ ▸ one_ne_zero)).2 hnz₁ hnz₂ hmat
+    (BilinForm.Nondegenerate.of_det_ne_zero ω₁ b₁ (hd₁ ▸ one_ne_zero)).2
+    (BilinForm.Nondegenerate.of_det_ne_zero ω₂ b₂ (hd₂ ▸ one_ne_zero)).2 hnz₁ hnz₂ hmat
   have hindex := ω₁.index_eq_of_det_toMatrix_eq_one b₁ b₂ hd₁ hd₂ hnz₁ e hpair
   let s := v₁.range.toAddSubgroup.index
   have hs_le : s ≤ 3 := by
