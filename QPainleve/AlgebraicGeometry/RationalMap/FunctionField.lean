@@ -35,7 +35,7 @@ instance [IrreducibleSpace X] (f : X ⤏ Y) [f.IsDominant] : IsDominant f.fromFu
   rw [fromFunctionField_toRationalMap]
   dsimp only [PartialMap.fromFunctionField, PartialMap.fromSpecStalkOfMem]
   have h : IsDominant (p.domain.fromSpecStalkOfMem (genericPoint X)
-      ((genericPoint_specializes _).mem_open p.domain.2 p.dense_domain.nonempty.choose_spec) ≫
+      ((genericPoint_specializes _).mem_open p.domain.isOpen p.dense_domain.nonempty.choose_spec) ≫
         p.domain.ι) := by
     rw [Opens.fromSpecStalkOfMem_ι]
     infer_instance
@@ -83,9 +83,9 @@ theorem fromFunctionField_comp (f : X ⤏ Y) [f.IsDominant] (g : Y ⤏ Z) :
   let p := f.representative
   let W := p.domain.ι ''ᵁ p.hom ⁻¹ᵁ q.domain
   have hx : genericPoint X ∈ W :=
-    (genericPoint_specializes _).mem_open W.2 (p.comp q).dense_domain.nonempty.choose_spec
+    (genericPoint_specializes _).mem_open W.isOpen (p.comp q).dense_domain.nonempty.choose_spec
   have hy : genericPoint Y ∈ q.domain :=
-    (genericPoint_specializes _).mem_open q.domain.2 q.dense_domain.nonempty.choose_spec
+    (genericPoint_specializes _).mem_open q.domain.isOpen q.dense_domain.nonempty.choose_spec
   have hWp : W ≤ p.domain := p.domain.ι_image_le _
   -- The composite domain and the first domain contain the same generic point.
   have hLift : W.fromSpecStalkOfMem _ hx ≫ X.homOfLE hWp =

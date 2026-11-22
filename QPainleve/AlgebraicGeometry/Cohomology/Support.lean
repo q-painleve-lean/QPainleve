@@ -11,7 +11,7 @@ public import Mathlib.Algebra.Category.ModuleCat.Sheaf.Quasicoherent
 import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.AffineCover
 import TauCeti.AlgebraicGeometry.Cohomology.ClosedImmersion.Basic
 import TauCeti.AlgebraicGeometry.Cohomology.FiniteCover
-import TauCeti.AlgebraicGeometry.Modules.FinitePresentation
+import TauCeti.AlgebraicGeometry.Modules.FinitePresentation.Basic
 import TauCeti.AlgebraicGeometry.Modules.SchemeTheoreticSupport
 
 /-!
@@ -74,7 +74,7 @@ theorem subsingleton_cohomology_of_support_dim_lt {k : Type u} [Field k] [Infini
     (F : X.Modules) [F.IsQuasicoherent] [F.IsFiniteType] {q : ℕ}
     (hdim : topologicalKrullDim ↥{x : X | Nontrivial (F.presheaf.stalk x)} < q) :
     Subsingleton (Cohomology F q) := by
-  let hfinite (U : X.affineOpens) := F.finite_sections_of_isAffineOpen U.1 U.2
+  let hfinite (U : X.affineOpens) := F.finite_sections_of_isAffineOpen U.val U.property
   let I := F.annihilator hfinite
   let i := I.subschemeι
   let : I.subscheme.Over (Spec (.of k)) := ⟨i ≫ X ↘ Spec (.of k)⟩

@@ -148,7 +148,7 @@ theorem mutate_reindex (B : SkewExchangeMatrix ι) (e : ι ≃ κ) (k : ι) :
     (B.reindex e).mutate (e k) = (B.mutate k).reindex e := by
   have h (j : κ) : e.symm (Function.Embedding.refl κ j) =
       Function.Embedding.refl ι (e.symm j) := rfl
-  have he := TauCeti.matrixMutation_submatrix e.symm.injective e.symm.injective h B.matrix (e k)
+  have he := TauCeti.matrixMutation_submatrix e.symm.injective h B.matrix (e k)
   apply SkewExchangeMatrix.ext
   simpa using he
 

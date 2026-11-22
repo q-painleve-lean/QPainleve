@@ -430,7 +430,8 @@ theorem natCard_torsion_quotient_sq_dvd [IsAddTorsionFree L]
     rw [addOrderOf_injective f (degreeMoment_injective_on_torsion hGram hPrimitive)]
     exact (addOrderOf_injective e.toAddMonoidHom e.injective 1).trans (ZMod.addOrderOf_one k)
   have hsquare : y ^ 2 = 0 :=
-    degreeMoment_sq_eq_zero_of_isOfFinAddOrder hGram ((AddCommGroup.mem_torsion _).mp (e 1).2)
+    degreeMoment_sq_eq_zero_of_isOfFinAddOrder hGram
+      ((AddCommGroup.mem_torsion _).mp (e 1).property)
   -- Since the integer representative kills a generator, it is divisible by the group order.
   obtain ⟨m, hm⟩ := ZMod.intCast_surjective y
   have hkm : (k : ℤ) ∣ m := by

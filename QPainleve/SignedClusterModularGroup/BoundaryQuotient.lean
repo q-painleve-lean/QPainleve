@@ -45,7 +45,7 @@ def componentClass (D : ZMod (n + 1) → L) (i : ZMod (n + 1)) : BoundaryQuotien
 
 private theorem span_range_component (D : ZMod (n + 1) → L) :
     Submodule.span ℤ (Set.range (component D)) = ⊤ :=
-  (Submodule.span_range_subtype_eq_top_iff _ fun i ↦ (component D i).2).2 rfl
+  (Submodule.span_range_subtype_eq_top_iff _ fun i ↦ (component D i).property).2 rfl
 
 /-- The boundary component classes sum to zero in the boundary quotient. -/
 @[simp] theorem sum_componentClass (D : ZMod (n + 1) → L) :
