@@ -8,7 +8,7 @@ module
 public import Mathlib.RingTheory.AdjoinRoot
 public import Mathlib.RingTheory.Regular.RegularSequence
 public import TauCeti.RingTheory.Ideal.AffineBlowup
-import TauCeti.RingTheory.Regular.RegularSequence
+import TauCeti.RingTheory.Regular.Pair
 
 /-!
 # Affine blowup algebras for a regular pair
