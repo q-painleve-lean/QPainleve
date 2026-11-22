@@ -6,109 +6,99 @@ Authors: The QPainleve contributors
 module
 
 public import TauCeti.AlgebraicGeometry.Blowup.Pullback
-public import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.Pullback
-import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.TensorProduct
 
 /-!
-# Blowups under isomorphisms
+# Isomorphisms of blowups
 
-An isomorphism identifying the center ideals lifts uniquely to an isomorphism of the blowups
-and identifies their exceptional divisors. The construction uses Tau Ceti's
-`Scheme.IdealSheafData.isPullback_blowupMap_of_flat` and the universal property of the blowup.
+An isomorphism that identifies two center ideals lifts to their blowups. The lift is
+characterized by the square with the blowup projections, and preserves the exceptional
+ideals. The construction uses Tau Ceti's `blowupMap` and its flat base change theorem.
 -/
 
 public section
 
 noncomputable section
 
-open CategoryTheory Limits TauCeti.AlgebraicGeometry
+open CategoryTheory
 
 universe u
 
 namespace AlgebraicGeometry.Scheme.IdealSheafData
 
-variable {X Y Z : Scheme.{u}} {I : X.IdealSheafData} {J : Y.IdealSheafData}
-  {K : Z.IdealSheafData}
+variable {X Y Z : Scheme.{u}}
 
-/-- A scheme isomorphism identifying two center ideals induces an isomorphism of their blowups. -/
-def blowupIso (J : Y.IdealSheafData) {I : X.IdealSheafData} (e : X ≅ Y)
-    (h : J.comap e.hom = I) :
-    I.blowup ≅ J.blowup :=
+/-- The lift of an isomorphism that pulls the target center ideal back to the source center
+ideal. -/
+def blowupIso (J : Y.IdealSheafData) (e : X ≅ Y) {I : X.IdealSheafData}
+    (h : J.comap e.hom = I) : I.blowup ≅ J.blowup :=
   letI := (J.isPullback_blowupMap_of_flat e.hom).isIso_snd_of_isIso
   eqToIso (congrArg blowup h.symm) ≪≫ asIso (J.blowupMap e.hom)
 
-/-- For the inverse-image center, the forward morphism of the isomorphism is the native
-morphism of blowups. -/
+/-- Over the inverse-image center, the lift is the native map of blowups. -/
 @[simp]
 theorem blowupIso_hom_comap (J : Y.IdealSheafData) (e : X ≅ Y) :
     (J.blowupIso e rfl).hom = J.blowupMap e.hom := by
   simp [blowupIso]
 
-/-- The lifted isomorphism commutes with the blowup projections. -/
+/-- The lifted isomorphism lies over the given base isomorphism. -/
 @[reassoc (attr := simp)]
-theorem blowupIso_hom_blowupToBase (e : X ≅ Y) (h : J.comap e.hom = I) :
+theorem blowupIso_hom_blowupToBase (J : Y.IdealSheafData) (e : X ≅ Y)
+    {I : X.IdealSheafData} (h : J.comap e.hom = I) :
     (J.blowupIso e h).hom ≫ J.blowupToBase = I.blowupToBase ≫ e.hom := by
   subst I
   simp
 
-/-- The lifted isomorphism is the unique morphism over the specified base isomorphism. -/
-theorem eq_blowupIso_hom (e : X ≅ Y) (h : J.comap e.hom = I) {f : I.blowup ⟶ J.blowup}
-    (hf : f ≫ J.blowupToBase = I.blowupToBase ≫ e.hom) :
-    f = (J.blowupIso e h).hom := by
+/-- The projection square determines the forward morphism of the lift. -/
+theorem eq_blowupIso_hom (J : Y.IdealSheafData) (e : X ≅ Y)
+    {I : X.IdealSheafData} (h : J.comap e.hom = I) {f : I.blowup ⟶ J.blowup}
+    (hf : f ≫ J.blowupToBase = I.blowupToBase ≫ e.hom) : f = (J.blowupIso e h).hom := by
   subst I
   rw [blowupIso_hom_comap]
   exact J.eq_blowupMap e.hom hf
 
-/-- The lifted identity is the identity. -/
+/-- The projection square determines the isomorphism of blowups. -/
+theorem blowupIso_unique (J : Y.IdealSheafData) (e : X ≅ Y)
+    {I : X.IdealSheafData} (h : J.comap e.hom = I) (g : I.blowup ≅ J.blowup)
+    (hg : g.hom ≫ J.blowupToBase = I.blowupToBase ≫ e.hom) :
+    g = J.blowupIso e h := by
+  apply Iso.ext
+  exact J.eq_blowupIso_hom e h hg
+
+/-- The lifted isomorphism pulls back the target exceptional ideal to the source exceptional
+ideal. -/
 @[simp]
-theorem blowupIso_refl (I : X.IdealSheafData) :
-    I.blowupIso (Iso.refl X) (comap_id I) = Iso.refl I.blowup := by
-  apply Iso.ext
-  exact (eq_blowupIso_hom _ _ (by simp)).symm
-
-/-- Lifting isomorphisms commutes with composition. -/
-theorem blowupIso_trans (e : X ≅ Y) (f : Y ≅ Z)
-    (h : J.comap e.hom = I) (k : K.comap f.hom = J) :
-    K.blowupIso (e ≪≫ f) (by simp [h, k]) = J.blowupIso e h ≪≫ K.blowupIso f k := by
-  apply Iso.ext
-  exact (eq_blowupIso_hom _ _ (by simp)).symm
-
-/-- Lifting the inverse base isomorphism gives the inverse of the lift. -/
-theorem blowupIso_symm (e : X ≅ Y) (h : J.comap e.hom = I) :
-    I.blowupIso e.symm (by rw [← h, ← comap_comp]; simp) = (J.blowupIso e h).symm := by
-  apply Iso.ext
-  apply Eq.symm
-  apply eq_blowupIso_hom
-  rw [Iso.symm_hom, ← cancel_epi (J.blowupIso e h).hom]
-  simp
-
-/-- The lift pulls the target exceptional ideal back to the source exceptional ideal. -/
-@[simp]
-theorem comap_exceptional_blowupIso_hom (e : X ≅ Y) (h : J.comap e.hom = I) :
+theorem comap_blowupIso_hom (J : Y.IdealSheafData) (e : X ≅ Y)
+    {I : X.IdealSheafData} (h : J.comap e.hom = I) :
     (J.comap J.blowupToBase).comap (J.blowupIso e h).hom = I.comap I.blowupToBase := by
   subst I
-  rw [blowupIso_hom_comap]
-  exact J.comap_comap_blowupMap e.hom
+  simpa only [blowupIso_hom_comap] using J.comap_comap_blowupMap e.hom
 
-/-- The Picard class of the exceptional divisor of a blowup. -/
-def blowupExceptionalClass (I : X.IdealSheafData) : LineBundleClass I.blowup :=
-  (LineBundleClass.mk I.isEffectiveCartier_comap_blowupToBase.toInvertibleSheaf)⁻¹
-
-/-- The exceptional class is the inverse of the class of the exceptional ideal sheaf. -/
-theorem blowupExceptionalClass_def (I : X.IdealSheafData) :
-    I.blowupExceptionalClass =
-      (LineBundleClass.mk I.isEffectiveCartier_comap_blowupToBase.toInvertibleSheaf)⁻¹ :=
-  (rfl)
-
-/-- The lift pulls the target exceptional class back to the source exceptional class. -/
+/-- The identity lifts to the identity. -/
 @[simp]
-theorem pullback_blowupExceptionalClass (e : X ≅ Y) (h : J.comap e.hom = I) :
-    LineBundleClass.pullback (J.blowupIso e h).hom J.blowupExceptionalClass =
-      I.blowupExceptionalClass := by
-  rw [J.blowupExceptionalClass_def, I.blowupExceptionalClass_def, LineBundleClass.pullback_inv,
-    J.isEffectiveCartier_comap_blowupToBase.pullback_mk_toInvertibleSheaf
-    (J.isEffectiveCartier_comap_blowupToBase.comap _)]
-  exact congrArg Inv.inv
-    (LineBundleClass.mk_toInvertibleSheaf_congr _ _ (comap_exceptional_blowupIso_hom e h))
+theorem blowupIso_refl (I : X.IdealSheafData) :
+    I.blowupIso (Iso.refl X) (I.comap_id) = Iso.refl I.blowup := by
+  symm
+  apply I.blowupIso_unique
+  simp
+
+/-- Lifting two composable center-preserving isomorphisms commutes with composition. -/
+@[simp]
+theorem blowupIso_trans (K : Z.IdealSheafData) (e : X ≅ Y) (f : Y ≅ Z)
+    {I : X.IdealSheafData} {J : Y.IdealSheafData}
+    (he : J.comap e.hom = I) (hf : K.comap f.hom = J) :
+    J.blowupIso e he ≪≫ K.blowupIso f hf =
+      K.blowupIso (e ≪≫ f) (by rw [Iso.trans_hom, comap_comp, hf, he]) := by
+  apply K.blowupIso_unique
+  simp [Category.assoc]
+
+/-- The inverse of a lift is the lift of the inverse. -/
+@[simp]
+theorem blowupIso_symm (J : Y.IdealSheafData) (e : X ≅ Y)
+    {I : X.IdealSheafData} (h : J.comap e.hom = I) :
+    (J.blowupIso e h).symm =
+      I.blowupIso e.symm (by rw [← h, ← comap_comp, Iso.symm_hom, e.inv_hom_id, comap_id]) := by
+  apply I.blowupIso_unique
+  rw [← cancel_epi (J.blowupIso e h).hom]
+  simp
 
 end AlgebraicGeometry.Scheme.IdealSheafData

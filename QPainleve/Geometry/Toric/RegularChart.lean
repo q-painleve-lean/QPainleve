@@ -9,6 +9,7 @@ public import QPainleve.Algebra.MonoidAlgebra.Smooth
 public import TauCeti.Geometry.Toric.Algebraic.AffineScheme
 public import TauCeti.Geometry.Toric.Algebraic.DualSemigroup.Regular
 
+import QPainleve.Algebra.MvPolynomial.Laurent.Factorial
 import TauCeti.Algebra.Bialgebra.MonoidAlgebra.Equiv
 
 /-!
@@ -16,8 +17,8 @@ import TauCeti.Algebra.Bialgebra.MonoidAlgebra.Equiv
 
 The primitive rays of a regular cone extend to a basis of the lattice. The corresponding
 affine chart has one polynomial coordinate for each ray and one Laurent coordinate for each
-remaining basis vector. The coordinate ring is standard smooth of relative dimension the rank
-of the lattice.
+remaining basis vector. The coordinate ring is factorial and is standard smooth of relative
+dimension the rank of the lattice.
 
 The construction uses Tau Ceti's `regularDualSemigroupEquiv` and Mathlib's
 `AddMonoidAlgebra.curryAlgEquiv`. See Fulton, *Introduction to Toric Varieties*, §2.1.
@@ -60,6 +61,13 @@ theorem affineCoordinateRingEquivMvPolynomial_single (m : dualSemigroup hi σ) (
   exact AddMonoidAlgebra.curryAlgEquiv_single (R := ℂ) _ _ _
 
 end Coordinates
+
+/-- The coordinate ring of a regular cone is factorial. -/
+theorem IsRegularCone.uniqueFactorizationMonoid_affineCoordinateRing (hσ : IsRegularCone i σ)
+    (hi : IsIntegralLattice i) : UniqueFactorizationMonoid (affineCoordinateRing hi σ) := by
+  obtain ⟨l, b, hb⟩ := hσ.exists_basis_sum
+  exact (affineCoordinateRingEquivMvPolynomial hi hσ.toIsToricCone hb).toMulEquiv.symm
+    |>.uniqueFactorizationMonoid inferInstance
 
 /-- The coordinate algebra of a regular cone is standard smooth over `ℂ`, of relative
 dimension the rank of the lattice. -/

@@ -166,20 +166,14 @@ theorem chargeExchangeMatrix_chargeMutation (ω : BilinForm ℤ N) (hω : ω.IsA
   let ε := chargeExchangeMatrix ω v
   let row := Function.Embedding.refl ι
   let F := matrixMutationRight row (-ε) k 1
-  have hF : Fᵀ = matrixMutationLeft row (-ε) k 1 := by
-    ext i j
-    simp [F, row, ε, matrixMutationRight_apply, matrixMutationLeft_apply, hω.neg_eq,
-      Matrix.one_apply, eq_comm]
-  have hkk : (-ε) k k = 0 := by simp [ε, hω.self_eq_zero]
   calc
     chargeExchangeMatrix ω (chargeMutation ω v k) = Fᵀ * ε * F := by
       rw [chargeExchangeMatrix, chargeMutation, ← BilinForm.comp_comp, BilinForm.toMatrix'_comp]
       simp only [chargeMutationEquiv, LinearEquiv.ofInvolutive, LinearMap.toMatrix'_toLin']
       rfl
-    _ = -(matrixMutation row (-ε) k) := by
-      rw [matrixMutation_eq_mul row (-ε) k 1 hkk (Or.inl rfl), ← hF,
-        Matrix.mul_neg, Matrix.neg_mul, neg_neg]
-    _ = matrixMutation row ε k := by simp
+    _ = matrixMutation row ε k :=
+      (ε.matrixMutation_eq_transpose_mul_right (isSkewSymmetrizer_chargeExchangeMatrix ω hω v)
+        k).symm
 
 /-- Mutation restricts to an equivalence from the new charge kernel to the old one. -/
 def chargeKernelMutation (ω : BilinForm ℤ N) (v : (ι → ℤ) →ₗ[ℤ] N) (k : ι) :
