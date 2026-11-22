@@ -11,6 +11,7 @@ public import TauCeti.AlgebraicGeometry.Modules.Dual
 public import TauCeti.AlgebraicGeometry.Modules.Pullback.Sections
 public import TauCeti.AlgebraicGeometry.Modules.Sections
 public import TauCeti.AlgebraicGeometry.VectorBundle.Dual.Basic
+import QPainleve.AlgebraicGeometry.IdealSheaf.Image.Basic
 import QPainleve.AlgebraicGeometry.IdealSheaf.Image.Pullback
 import QPainleve.AlgebraicGeometry.Modules.Pullback.Sections
 import TauCeti.AlgebraicGeometry.Modules.Pullback.InternalHom.Coherence
