@@ -39,26 +39,6 @@ variable {ι N : Type u} [Fintype ι] [DecidableEq ι] [AddCommGroup N]
 local notation "A" => (ι → ℤ)
 local notation "e" i:arg => (Pi.single i (1 : ℤ) : ι → ℤ)
 
-/-- The mutation basis change negates the pivot generator. -/
-@[simp]
-theorem chargeMutationEquiv_single_self (E : Matrix ι ι ℤ) (p : ι) :
-    chargeMutationEquiv E p (e p) = -(e p) := by
-  ext i
-  by_cases hi : i = p
-  · subst i
-    simp [chargeMutationEquiv_apply]
-  · simp [chargeMutationEquiv_apply_of_ne _ hi, hi]
-
-/-- Away from the pivot the basis change adds the positive part of the negated pivot row
-coefficient times the pivot generator. -/
-theorem chargeMutationEquiv_single_of_ne (E : Matrix ι ι ℤ) (p : ι) {i : ι} (hi : i ≠ p) :
-    chargeMutationEquiv E p (e i) = e i + (-E p i)⁺ • e p := by
-  ext j
-  by_cases hj : j = p
-  · subst j
-    simp [chargeMutationEquiv_apply, TauCeti.matrixMutationRight_apply_row, hi, Ne.symm hi]
-  · simp [chargeMutationEquiv_apply_of_ne _ hj, hj]
-
 variable (ω : BilinForm ℤ N) (v : (ι → ℤ) →ₗ[ℤ] N) (p : ι)
 
 local notation "ε" => chargeExchangeMatrix ω v
