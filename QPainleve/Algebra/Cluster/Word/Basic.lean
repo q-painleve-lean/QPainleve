@@ -5,6 +5,7 @@ Authors: Yuma Mizuno
 -/
 module
 
+public import Mathlib.Combinatorics.Quiver.Path.Weight
 public import Mathlib.Combinatorics.Quiver.Symmetric
 public import TauCeti.Algebra.Cluster.ExchangeMatrix.Mutation
 
@@ -426,18 +427,17 @@ open QPainleve.Cluster
 variable {ι : Type*} [DecidableEq ι] {B C D : SkewExchangeMatrix ι}
 
 /-- Count the global inversions in a signed cluster word. -/
-def inversionCount : ∀ {C : SkewExchangeMatrix ι}, Word B C → ℕ
-  | _, .nil => 0
-  | _, .cons w s => w.inversionCount + s.generator.inversionCount
+def inversionCount : ∀ {C : SkewExchangeMatrix ι}, Word B C → ℕ :=
+  addWeight (fun s ↦ (Step.generator s).inversionCount)
 
 @[simp]
 theorem inversionCount_nil : (Path.nil : Word B B).inversionCount = 0 :=
-  (rfl)
+  addWeight_nil _ B
 
 @[simp]
 theorem inversionCount_cons (w : Word B C) (s : C ⟶ D) :
     (w.cons s).inversionCount = w.inversionCount + (Step.generator s).inversionCount :=
-  (rfl)
+  addWeight_cons _ w s
 
 @[simp]
 theorem inversionCount_toPath (s : B ⟶ C) :
@@ -447,10 +447,8 @@ theorem inversionCount_toPath (s : B ⟶ C) :
 /-- Concatenating words adds their inversion counts. -/
 @[simp]
 theorem inversionCount_comp (w : Word B C) (v : Word C D) :
-    (w.comp v).inversionCount = w.inversionCount + v.inversionCount := by
-  induction v with
-  | nil => simp
-  | cons _ _ ih => simp [ih, add_assoc]
+    (w.comp v).inversionCount = w.inversionCount + v.inversionCount :=
+  addWeight_comp _ w v
 
 /-- Reversal preserves the number of global inversions. -/
 @[simp]
