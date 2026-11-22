@@ -1,0 +1,96 @@
+# Canonical, human-owned project configuration. No credentials belong here.
+schema_version = 1
+
+[project]
+name = "QPainleve"
+branch = "main"
+codeowners = ["@yuma-mizuno"]
+
+[repositories]
+content = "q-painleve-lean/QPainleve"
+roadmap = "q-painleve-lean/QPainleveRoadmap"
+# Same review engine and rubric source as Mei; [review] below selects the rubrics QPainleve runs.
+review = "yuma-mizuno-lean/TauCetiReview"
+# Enable and create these repositories when choosing the corresponding extras.
+# data = "q-painleve-lean/QPainleveData"
+# ci = "q-painleve-lean/QPainleveCI"
+# claims = "q-painleve-lean/QPainleve-claims"
+
+[lean]
+roots = ["QPainleve"]
+root_module = "empty"
+
+[roadmap]
+active_dir = "QPainleveRoadmap"
+completed_dir = "Completed"
+
+# Same pins as Mei (patched Tools fork: fork-PR checkout opt-in and renderer-safe bump routing).
+# Switch back to TauCetiProject/TauCetiTools once upstream carries the same fix.
+[tools.tools]
+repo = "yuma-mizuno-lean/TauCetiTools"
+ref = "1fd27ad5bc448c1d6e6f4d951fd015276021b479"
+[tools.review]
+repo = "yuma-mizuno-lean/TauCetiReview"
+ref = "b19c3618f1699feedc761d899b0459523da62aaa"
+[tools.progress]
+repo = "TauCetiProject/TauCetiProgress"
+ref = "5b0fb84dbeb36e9575b2205f9d2a5177671d3f33"
+
+# Workers submit finished PRs (`full_quality = true`); review checks only that the mathematics
+# is right and well placed. Every listed rubric must be green on the head before auto-merge.
+# Order matters: a block halts the round, so the block-capable angles run first.
+[review]
+rubrics = ["correctness", "reuse", "scope", "placement"]
+
+[merge]
+backend = "github-queue"
+checks = ["build", "bump-guard", "scope"]
+
+[[upstreams]]
+repo = "leanprover-community/mathlib4"
+package = "mathlib"
+branch = "master"
+# Mathlib is inherited through TauCeti; do not update it independently.
+update = false
+overlap = false
+upstream_destination = false
+
+# Nothing is sent upstream: TauCeti is only a dependency here.
+[[upstreams]]
+repo = "TauCetiProject/TauCeti"
+package = "TauCeti"
+cache_artifact_url = "https://cache.taucetiproject.org/artifacts"
+cache_revision_url = "https://cache.taucetiproject.org/revisions"
+branch = "main"
+update = true
+overlap = false
+upstream_destination = false
+
+# Everything below is optional. Use doctor --no-extras to report only core setup.
+[features]
+archives = false
+ci_archive = false
+claims = false
+docs = false
+progress = false
+zulip = false
+fleet = false
+security_audit = false
+roadmap_authoring = false
+
+[services.github_state]
+mode = "off"
+
+[services.bors]
+mode = "off"
+deployment = "docker"
+
+[services.cache]
+# As in Mei: CI restores one GitHub Actions bundle of QPainleve's own Lake outputs
+# (docs/ci-cache-bundle.md). Mathlib and TauCeti use their upstream caches.
+# No project R2 reader yet; workers build QPainleve modules locally.
+ci_bundle = true
+mode = "off"
+
+[publication]
+# docs_url = "https://q-painleve-lean.github.io/QPainleve/docs"

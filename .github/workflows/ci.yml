@@ -1,0 +1,298 @@
+name: CI
+
+on:
+  workflow_dispatch:
+  # PR builds moved to pr-build.yml, which sandboxes untrusted PR code under bwrap in a
+  # trusted (base-defined) workflow. This run is only the post-merge health check on main.
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  actions: read  # Check the repository storage budget before saving a bundle.
+  pull-requests: read  # scripts/lint-scope.sh reads the merged PRs' labels and branches
+
+# Keep the cache publisher live under a burst of main pushes. GitHub retains at
+# most one running and one pending run in this group: the running build is never
+# cancelled before it can publish, while superseded pending commits do not each
+# start an expensive cache-miss rebuild. In a burst, this deliberately coalesces
+# intermediate commits' post-merge checks too; the newest pending tip rechecks
+# the entire tree, though localizing a failure may then require bisection.
+# Dependency reconciliation uses conclusive runs as evidence for the current
+# pin, skipping coalesced commits without a completed build.
+concurrency:
+  group: main-ci-cache-publisher
+  cancel-in-progress: false
+
+env:
+  # Temporary escape hatch for `lake exe cache get`, kept only for an easy rollback
+  # during the transition to the cache tool's new default read endpoint. Set the
+  # variable to `1` to send cache reads back to the legacy storage endpoint. Clear it to
+  # return reads to the default endpoint on the next run: the cache tool treats unset,
+  # empty, `0`, and `false` alike as off.
+  MATHLIB_CACHE_DEBUG_USE_LEGACY: ${{ vars.MATHLIB_CACHE_DEBUG_USE_LEGACY }}
+
+jobs:
+  # Infrastructure regression suites run separately in infrastructure-tests.yml.
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      # We expect the 262k default to be relevant at around 10m LOC, and this raised limit to be relevant at around 40m LOC.
+      - name: Raise vm.max_map_count
+        run: |
+          target=1048576
+          if [ "$(cat /proc/sys/vm/max_map_count)" -lt "$target" ]; then
+            sudo -n sysctl -w vm.max_map_count="$target" >/dev/null 2>&1 \
+              || sysctl -w vm.max_map_count="$target" >/dev/null 2>&1 || true
+          fi
+          now="$(cat /proc/sys/vm/max_map_count)"
+          echo "vm.max_map_count=$now"
+          [ "$now" -ge "$target" ] || echo "::warning::vm.max_map_count is $now, below $target"
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          # This job elaborates every QPainleve module, and Lean runs code at elaboration time.
+          # Without this, checkout leaves an http.extraheader carrying GITHUB_TOKEN in the
+          # workspace .git/config for the whole job, within reach of that code. Nothing here
+          # needs it: no step calls the GitHub API or pushes, `lake exe cache get` talks to
+          # Mathlib's own server, scripts/lake-cache-get.sh does anonymous GETs, and
+          # `lake cache get` reads the local revision from .git without authenticating.
+          persist-credentials: false
+          # The immutable push base must be present for the complete local scope diff.
+          # Bors batches can contain 128 commits, already exceeding the old depth of
+          # 100. Full history also supports cache ancestor lookup without another fetch.
+          fetch-depth: 0
+
+      - name: Prepare pinned shared tools
+        uses: yuma-mizuno-lean/TauCetiTools/.github/actions/setup@1fd27ad5bc448c1d6e6f4d951fd015276021b479
+        with:
+          tools-repository: yuma-mizuno-lean/TauCetiTools
+          tools-ref: 1fd27ad5bc448c1d6e6f4d951fd015276021b479
+          project-directory: .
+      - name: Import-boundary guard (QPainleve/ and QPainleve.lean ⊬ roadmap/review)
+        run: |
+          if grep -rIn -E '^[[:space:]]*import[[:space:]]+(TauCetiRoadmap|TauCetiReview)\b' QPainleve/ QPainleve.lean; then
+            echo "::error::QPainleve/ and QPainleve.lean must not import TauCetiRoadmap or TauCetiReview"
+            exit 1
+          fi
+
+      # Option overrides, heartbeat instrumentation, and explicit metaprogramming are forbidden.
+      # This cheap scan ignores comments without double quotes, conservatively includes
+      # strings and names, and never elaborates code.
+      - name: Reject option overrides and metaprogramming (allow local macros)
+        run: |
+          python3 scripts/check_source_options.py QPainleve/ QPainleve.lean
+
+      # Restore only Mathlib's compressed, content-addressed `.ltar` download store. This is
+      # deliberately narrower than a cache of the whole multi-gigabyte `./.lake` tree: `lake exe
+      # cache get` remains authoritative, locally selects and unpacks the linked hashes, and
+      # downloads anything this best-effort snapshot does not contain. The exact key makes a
+      # repeated pin cheap; the same-toolchain prefix lets a new Mathlib pin reuse unchanged
+      # blobs. The local action credits the corresponding Mathlib design and owns the shared key
+      # namespace. Bump its `mathlib-ltar-v1` token if an incompatible or poisoned immutable entry
+      # must be abandoned.
+      - name: Restore Mathlib's compressed download cache
+        id: mathlib_ltar_restore
+        uses: ./.github/actions/restore-mathlib-ltars
+        with:
+          project-dir: .
+
+      # Install elan from a pinned leanprover/elan release, verified by SHA-256, then install the
+      # toolchain `lean-toolchain` names. This replaces leanprover/lean-action, which resolved
+      # from a floating major tag and installed elan by piping an unpinned installer to `sh`; with
+      # its build, test, lint and cache inputs all off, toolchain setup was all it did here. The
+      # Mathlib fetch stays an explicit step below so a failed normal fetch can be retried with
+      # `get!`, which force-downloads and unpacks every linked file instead of trusting a possibly
+      # malformed restored `.ltar`. scripts/test_elan_pin.py keeps the copies of the pin honest.
+      - name: Install elan (pinned + checksum) and the toolchain
+        env:
+          ELAN_SHA256: df0b2b3a439961ffcbb3985214365ffe40f49bc871df04dff268c7d8e21ca8b2
+          ELAN_VER: v4.2.3
+        run: |
+          if ! curl --fail --retry 3 --retry-all-errors --connect-timeout 15 --max-time 60 -sSL -H "Accept: application/octet-stream" \
+            "https://github.com/leanprover/elan/releases/download/${ELAN_VER}/elan-x86_64-unknown-linux-gnu.tar.gz?download=1" -o elan.tar.gz; then
+            curl --fail --retry 3 --retry-all-errors --connect-timeout 15 --max-time 60 -sSL -H "Accept: application/octet-stream" \
+              "https://api.github.com/repos/leanprover/elan/releases/assets/441516216" -o elan.tar.gz
+          fi
+          echo "${ELAN_SHA256}  elan.tar.gz" | sha256sum -c -
+          tar -xzf elan.tar.gz elan-init
+          ./elan-init -y --default-toolchain none
+          rm -f elan.tar.gz elan-init
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+          export PATH="$HOME/.elan/bin:$PATH"
+          elan toolchain install "$(cat lean-toolchain)"
+          lean --version
+          lake --version
+
+      - name: Fetch Mathlib oleans, retrying with a forced full refetch
+        run: |
+          if ! lake exe cache get; then
+            echo "::warning::lake exe cache get failed; forcing a full refetch"
+            lake exe cache get!
+          fi
+
+      # Publish only official Mathlib downloads before QPainleve source executes, so a cold
+      # root compilation cannot delay warming for other jobs. PR builds remain restore-only.
+      # GitHub cache keys are immutable; an exact restore needs no redundant save, while a
+      # prefix restore is extended with the newly downloaded hashes under the exact current key.
+      # Pruning is essential: without it, every prefix restore would carry all old pins forward
+      # and each immutable snapshot would grow monotonically. If pruning itself breaks, leave main
+      # green but skip publication rather than saving an unbounded snapshot.
+      - name: Prune Mathlib's download cache to the current pin
+        id: mathlib_ltar_prune
+        if: ${{ steps.mathlib_ltar_restore.outputs.cache-hit != 'true' }}
+        continue-on-error: true
+        run: lake exe cache clean
+
+      - name: Save Mathlib's compressed download cache
+        if: ${{ steps.mathlib_ltar_restore.outputs.cache-hit != 'true' && steps.mathlib_ltar_prune.outcome == 'success' }}
+        continue-on-error: true
+        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830
+        with:
+          path: ${{ steps.mathlib_ltar_restore.outputs.cache-dir }}/*.ltar
+          key: ${{ steps.mathlib_ltar_restore.outputs.cache-primary-key }}
+
+      # Main checks from fresh parsing; only PRs consume cached parsing context.
+      # Generate and publish before any candidate Lean code executes. Bump the v1 key
+      # in both workflows to abandon a bad cache snapshot.
+      - name: Dot-notation namespace lint (Mathlib type namespaces stay at root)
+        run: |
+          rm -rf .ci-dot-notation-context
+          python3 scripts/lint-dot-notation.py --context-cache ".ci-dot-notation-context/context.json"
+
+      - name: Save main's dot-notation parsing context
+        if: github.ref_name == github.event.repository.default_branch
+        continue-on-error: true
+        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830
+        with:
+          path: .ci-dot-notation-context
+          key: dot-notation-context-v1-${{ hashFiles('scripts/lean_source.py') }}-${{ github.sha }}
+
+      # CI uses one trusted GitHub bundle, including on a cache miss. It never
+      # downloads root-package objects or searches revision history on Cloudflare.
+      - name: Restore QPainleve cache in one GitHub bundle
+        id: lake_bundle
+        uses: ./.tauceti-tools/.github/actions/restore-lake-bundle
+        with:
+          project-dir: .
+          package: QPainleve
+          script: scripts/lake_cache_bundle.py
+
+      - name: Fetch configured upstream caches (QPainleve uses offline bundle)
+        run: python3 scripts/lake_dependency_cache.py .
+
+      - name: Save verified Lake archive records before building
+        run: python3 scripts/lake_cache_reuse.py snapshot . "$RUNNER_TEMP/lake-cache-reuse.json"
+
+      - name: Audit import headers against the complete source inventory
+        run: python3 scripts/check-imports.py
+
+      # No aggregator check: the root QPainleve.lean is intentionally empty and imports nothing.
+      # The build globs every QPainleve/ module directly, so nothing depends on a root that
+      # re-exports the library.
+      - name: Build
+        env:
+          # Restore only from the locally-populated $LAKE_CACHE_DIR the step above filled;
+          # never let the build itself reach a remote cache service. Same rule as the
+          # sandboxed build in pr-build.yml and as the publish step below.
+          LAKE_NO_CACHE: "true"
+        run: lake build
+
+      # The same shared checks as trusted PR builds, compiled from merged main's sources.
+      - name: Shared ownership and axiom audits
+        run: |
+          bash scripts/build-audit-driver.sh . scripts "$RUNNER_TEMP/audit-driver"
+          lake env "$RUNNER_TEMP/audit-driver/audit-driver"
+
+      # Read compiled module flags with the canonical direct-artifact checker.
+      - name: Module-system audit (every QPainleve file opts into module)
+        env:
+          LAKE_NO_CACHE: "true"
+        run: lake exe module-system
+
+      # Environment lint. A compiled driver (scripts/LintEnvDriver.lean) imports the QPainleve/
+      # modules in scope and runs Mathlib's default `#lint` set minus docBlame (simpNF,
+      # checkType, synTaut, ...) plus a module-system-reliable docstring scan (the
+      # docBlame linter is blind across module boundaries; see the script header),
+      # comparing linter-qualified violations against the grandfathered baseline in
+      # scripts/lint-baseline.txt: new violations fail, fixed baseline entries print
+      # a ratchet reminder. `@[nolint <linter>]` applications must be accounted for
+      # in scripts/lint-nolints-allowlist.txt, per (linter, declaration) pair.
+      # PR-time enforcement runs inside the
+      # bwrap sandbox in pr-build.yml (this lint executes the linted code); this
+      # post-merge run is the health check on main, like the audits above.
+      # Like PR builds and the merge queue, this lints only the QPainleve modules the push changed
+      # (the whole library if a merged PR was labelled full-lint or was a lint repair PR); the
+      # daily lint-full.yml run lints everything. Superseded runs of this workflow are cancelled,
+      # so a push's scope can be skipped here, but its merge group already linted it.
+      - name: Decide the environment-lint scope
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          EVENT: ${{ github.event_name }}
+          BASE: ${{ github.event.before }}
+          HEAD: ${{ github.sha }}
+          SCOPE_REPO: .
+        run: bash scripts/lint-scope.sh "$RUNNER_TEMP/lint-scope"
+
+      - name: Environment lint (default linters + docstring scan vs grandfathered baseline)
+        env:
+          LAKE_NO_CACHE: "true"
+        run: bash scripts/lint-env.sh
+
+      # Source style lint. The wrapper validates one complete QPainleve/** source list, applies
+      # Mathlib's copyright/Authors checks directly (the empty QPainleve.lean root is exempt), and
+      # generates an import-all module under .lake/ for lint-style's text-based checks. This is
+      # deliberately narrower than the command header linter's unrelated import and module-doc
+      # checks; the empty root makes that command linter skip every library module at this pin.
+      - name: Source style lint (copyright headers + text linters)
+        run: bash scripts/lint-style.sh
+
+      - name: Pack one bounded QPainleve bundle for subsequent CI runs
+        if: ${{ github.ref == 'refs/heads/main' }}
+        env:
+          LAKE_NO_CACHE: 'true'
+        run: |
+          python3 scripts/lake_cache_reuse.py reconnect . "$RUNNER_TEMP/lake-cache-reuse.json"
+          lake build --no-build --rehash -o .lake/outputs.jsonl
+          python3 scripts/lake_cache_bundle.py pack . "$RUNNER_TEMP/lake-bundle/cache.tar" --package QPainleve
+
+      - name: Check GitHub cache storage budget
+        id: bundle_budget
+        if: ${{ github.ref == 'refs/heads/main' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          used=$(gh api "repos/$GITHUB_REPOSITORY/actions/cache/usage" --jq .active_caches_size_in_bytes)
+          bytes=$(stat -c %s "$RUNNER_TEMP/lake-bundle/cache.tar")
+          if [ "$((used + bytes))" -lt 8589934592 ]; then
+            echo 'save=true' >> "$GITHUB_OUTPUT"
+          else
+            echo '::warning::Bundle save skipped: repository cache would exceed the 8 GiB safety budget'
+          fi
+
+      - name: Save one trusted QPainleve bundle
+        if: ${{ steps.bundle_budget.outputs.save == 'true' }}
+        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830
+        with:
+          path: ${{ steps.lake_bundle.outputs.archive }}
+          key: ${{ steps.lake_bundle.outputs.key }}
+
+  retain-lake-bundles:
+    needs: [build]
+    if: ${{ always() && github.ref == 'refs/heads/main' && needs.build.result == 'success' }}
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+    steps:
+      - name: Retain at most eight QPainleve bundles (64 MiB each)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python3 - <<'PY'
+          import json, os, subprocess
+          base = 'repos/' + os.environ['GITHUB_REPOSITORY'] + '/actions/caches'
+          pages = json.loads(subprocess.check_output(['gh','api','--paginate','--slurp',base+'?per_page=100']))
+          caches = [c for page in pages for c in page['actions_caches'] if c['key'].startswith('lake-bundle-v1-QPainleve-')]
+          for cache in sorted(caches, key=lambda c:c['created_at'], reverse=True)[8:]:
+              subprocess.run(['gh','api','--method','DELETE',base+'/'+str(cache['id'])],check=True)
+          PY
