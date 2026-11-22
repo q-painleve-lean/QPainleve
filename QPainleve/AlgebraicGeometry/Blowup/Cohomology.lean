@@ -10,7 +10,7 @@ public import TauCeti.AlgebraicGeometry.Cohomology.MayerVietoris
 public import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.BaseChange
 import TauCeti.AlgebraicGeometry.Blowup.AffineCharts
 import TauCeti.AlgebraicGeometry.Cohomology.SectionsQuotient.Basic
-import TauCeti.AlgebraicGeometry.Modules.TensorProduct
+import TauCeti.AlgebraicGeometry.Modules.Tensor.Product
 
 /-!
 # Structure-sheaf cohomology of a two-chart affine blowup
