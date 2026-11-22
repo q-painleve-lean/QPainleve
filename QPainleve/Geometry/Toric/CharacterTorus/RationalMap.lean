@@ -30,29 +30,6 @@ variable (k : Type u) [Field k]
 
 attribute [local instance] hasUniqueDiv_of_free_int
 
-variable (B) in
-/-- The character field and the generic stalk of the character scheme are canonically
-isomorphic over the base field. -/
-def fractionRingAlgEquiv : FunctionField k B ≃ₐ[k] (scheme k B).functionField :=
-  AlgEquiv.ofRingEquiv (f := fractionRingEquiv k B) fun a ↦ by
-    have h := DFunLike.congr_fun
-      (rationalPullback_comp_algebraMap (Scheme.RationalMap.id (scheme k B)))
-      (algebraMap k (AddMonoidAlgebra k B) a)
-    simp only [rationalPullback_id, RingHom.comp_apply, RingHom.id_apply,
-      Scheme.RationalMap.fromFunctionField_toRationalMap,
-      Scheme.PartialMap.fromSpecStalkOfMem_toPartialMap, Category.comp_id,
-      ← IsScalarTower.algebraMap_apply] at h
-    apply (fractionRingEquiv k B).symm.injective
-    rw [RingEquiv.symm_apply_apply, h]
-    have hBase := congrArg Spec.preimage
-      (Scheme.fromSpecStalk_genericPoint_comp_over k (scheme k B))
-    rw [specOverSpec_over, Spec.preimage_comp, Spec.preimage_map, Spec.preimage_map] at hBase
-    exact congrArg (fractionRingEquiv k B).symm (ConcreteCategory.congr_hom hBase a)
-
-@[simp]
-theorem fractionRingAlgEquiv_toRingEquiv :
-    (fractionRingAlgEquiv k B).toRingEquiv = fractionRingEquiv k B := (rfl)
-
 variable [Module.Finite ℤ B]
 
 /-- Dominant rational maps of split character tori over the base field are determined by, and
