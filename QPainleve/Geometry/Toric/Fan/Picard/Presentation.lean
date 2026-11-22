@@ -6,7 +6,7 @@ Authors: The QPainleve contributors
 module
 
 public import Mathlib.Algebra.Exact.Basic
-public import QPainleve.Geometry.Toric.Fan.Boundary
+public import QPainleve.Geometry.Toric.Fan.Boundary.Basic
 public import QPainleve.Geometry.Toric.Fan.Picard.Basic
 public import TauCeti.AlgebraicGeometry.CartierDivisor.Excision
 
