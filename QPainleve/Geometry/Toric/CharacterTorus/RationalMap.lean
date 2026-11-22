@@ -39,26 +39,27 @@ def rationalPullbackEquiv :
       f.IsDominant ∧ f.IsOver (scheme k C ↘ Spec (.of k)) (scheme k B ↘ Spec (.of k)) } ≃
       (FunctionField k B →ₐ[k] FunctionField k C) :=
   (Scheme.RationalMap.equivFunctionFieldAlgHom k).trans
-    (AlgEquiv.arrowCongr (fractionRingAlgEquiv k B).symm (fractionRingAlgEquiv k C).symm)
+    (AlgEquiv.arrowCongr (affineFractionRingAlgEquiv k B).symm
+      (affineFractionRingAlgEquiv k C).symm)
 
 /-- The correspondence on character fields agrees with the pullback on rational functions. -/
 @[simp]
 theorem rationalPullbackEquiv_apply (f : (scheme k C) ⤏ (scheme k B)) [f.IsDominant]
     [f.IsOver (scheme k C ↘ Spec (.of k)) (scheme k B ↘ Spec (.of k))] :
     ↑(rationalPullbackEquiv k ⟨f, inferInstance, inferInstance⟩) =
-      rationalPullback k f := by
+      affineRationalPullback k f := by
   ext a
   rw [rationalPullbackEquiv, Equiv.trans_apply, Scheme.RationalMap.equivFunctionFieldAlgHom_apply,
-    rationalPullback_apply]
+    affineRationalPullback_apply]
   simp [AlgEquiv.arrowCongr, ← AlgEquiv.coe_toRingEquiv]
 
 /-- The rational map associated with a homomorphism pulls back by that homomorphism. -/
 @[simp]
-theorem rationalPullback_rationalPullbackEquiv_symm
+theorem affineRationalPullback_rationalPullbackEquiv_symm
     (φ : FunctionField k B →ₐ[k] FunctionField k C) :
     let f := (rationalPullbackEquiv k).symm φ
     letI := f.property.left
-    rationalPullback k f.val = φ.toRingHom := by
+    affineRationalPullback k f.val = φ.toRingHom := by
   let f := (rationalPullbackEquiv k).symm φ
   have := f.property.left
   have := f.property.right
@@ -78,9 +79,10 @@ theorem rationalPullbackEquiv_symm_comp_symm [Module.Finite ℤ C]
   let g := (rationalPullbackEquiv k).symm e.symm.toAlgHom
   have := f.property.left
   have := g.property.left
-  apply (rationalPullback_eq_iff _ _).mp
-  rw [rationalPullback_comp, rationalPullback_id]
-  rw [rationalPullback_rationalPullbackEquiv_symm, rationalPullback_rationalPullbackEquiv_symm]
+  apply (affineRationalPullback_eq_iff _ _).mp
+  rw [affineRationalPullback_comp, affineRationalPullback_id]
+  rw [affineRationalPullback_rationalPullbackEquiv_symm,
+    affineRationalPullback_rationalPullbackEquiv_symm]
   ext a
   exact e.apply_symm_apply a
 

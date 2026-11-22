@@ -19,7 +19,7 @@ and Mathlib's `pullbackSpecIso`.
 
 public noncomputable section
 
-open AlgebraicGeometry CategoryTheory CategoryTheory.Limits
+open AlgebraicGeometry CategoryTheory CategoryTheory.Limits TauCeti DiagonalizableGroup
 open scoped TensorProduct
 
 namespace QPainleve.CharacterTorus
@@ -28,84 +28,87 @@ universe u
 
 variable (k A N : Type u) [CommRing k] [AddCommGroup A] [AddCommGroup N]
 
+local notation "L" B => FGCommGrpCat.of (Multiplicative B)
+local notation "D" B => groupScheme k (L B)
+local notation "Dmap" f => groupSchemeMap k (FGCommGrpCat.ofHom (AddMonoidHom.toMultiplicative f))
+
 private def prodCoordinates :
-    AddMonoidAlgebra k (A × N) ≃ₐ[k] AddMonoidAlgebra k A ⊗[k] AddMonoidAlgebra k N :=
-  ((AddMonoidAlgebra.toMultiplicativeAlgEquiv k k (A × N)).trans
-    (MonoidAlgebra.domCongr k k (MulEquiv.prodMultiplicative A N))).trans
-    ((TauCeti.MonoidAlgebra.prodTensorBialgEquiv k
-      (G := Multiplicative A) (H := Multiplicative N)).toAlgEquiv.trans
-      (Algebra.TensorProduct.congr (AddMonoidAlgebra.toMultiplicativeAlgEquiv k k A).symm
-        (AddMonoidAlgebra.toMultiplicativeAlgEquiv k k N).symm))
+    MonoidAlgebra k (Multiplicative (A × N)) ≃ₐ[k]
+      MonoidAlgebra k (Multiplicative A) ⊗[k] MonoidAlgebra k (Multiplicative N) :=
+  (MonoidAlgebra.domCongr k k (MulEquiv.prodMultiplicative A N)).trans
+    (TauCeti.MonoidAlgebra.prodTensorBialgEquiv k).toAlgEquiv
 
-private theorem prodCoordinates_single (a : A) (n : N) (r : k) :
-    prodCoordinates k A N (AddMonoidAlgebra.single (a, n) r) =
-      AddMonoidAlgebra.single a (1 : k) ⊗ₜ[k] AddMonoidAlgebra.single n r := by
-  simp [prodCoordinates]
-  simp only [← AddMonoidAlgebra.toMultiplicativeAlgEquiv_single (R := k) a (1 : k),
-    ← AddMonoidAlgebra.toMultiplicativeAlgEquiv_single (R := k) n r, AlgEquiv.symm_apply_apply]
+private theorem prodCoordinates_inl :
+    (prodCoordinates k A N).toAlgHom.comp
+      (MonoidAlgebra.mapDomainAlgHom k k (AddMonoidHom.inl A N).toMultiplicative) =
+        Algebra.TensorProduct.includeLeft := by
+  apply MonoidAlgebra.algHom_ext
+  · intro a
+    simp [prodCoordinates, TauCeti.MonoidAlgebra.prodTensorBialgEquiv_single, MonoidAlgebra.one_def]
+  · exact Subsingleton.elim _ _
 
-/-- The affine product over the base is the character scheme of the product lattice. -/
-def prodIso :
-    pullback (structureMap k A) (structureMap k N) ≅ scheme k (A × N) :=
-  pullbackSpecIso k (AddMonoidAlgebra k A) (AddMonoidAlgebra k N) ≪≫
+private theorem prodCoordinates_inr :
+    (prodCoordinates k A N).toAlgHom.comp
+      (MonoidAlgebra.mapDomainAlgHom k k (AddMonoidHom.inr A N).toMultiplicative) =
+        Algebra.TensorProduct.includeRight := by
+  apply MonoidAlgebra.algHom_ext
+  · intro a
+    simp [prodCoordinates, TauCeti.MonoidAlgebra.prodTensorBialgEquiv_single, MonoidAlgebra.one_def]
+  · exact Subsingleton.elim _ _
+
+variable [IsAddFG A] [IsAddFG N]
+
+private theorem isPullback_prod :
+    IsPullback (Dmap (AddMonoidHom.inl A N)).hom.hom.left (Dmap (AddMonoidHom.inr A N)).hom.hom.left
+      (D A).X.hom (D N).X.hom := by
+  let R := MonoidAlgebra k (Multiplicative A)
+  let S := MonoidAlgebra k (Multiplicative N)
+  let e := pullbackSpecIso k R S ≪≫
     Scheme.Spec.mapIso (prodCoordinates k A N).toRingEquiv.toCommRingCatIso.op
+  have he : e.hom = (pullbackSpecIso k R S).hom ≫
+      Spec.map (CommRingCat.ofHom (prodCoordinates k A N).toRingHom) := rfl
+  refine (IsPullback.of_hasPullback (Spec.algebraMap k R) (Spec.algebraMap k S)).of_iso'
+    (eqToIso (groupScheme_X_left k (L (A × N))) ≪≫ e.symm)
+    (eqToIso (groupScheme_X_left k (L A))) (eqToIso (groupScheme_X_left k (L N)))
+    (Iso.refl _) ?_ ?_ ?_ ?_
+  · simp only [Iso.trans_hom, Iso.symm_hom, eqToIso.hom, Category.assoc,
+      groupSchemeMap_comp_toSpec, FGCommGrpCat.hom_hom_ofHom]
+    congr 1
+    rw [Iso.inv_comp_eq, he, Category.assoc, ← Spec.map_comp, ← pullbackSpecIso_hom_fst]
+    congr 2
+    exact congrArg (fun f ↦ CommRingCat.ofHom f.toRingHom) (prodCoordinates_inl k A N).symm
+  · simp only [Iso.trans_hom, Iso.symm_hom, eqToIso.hom, Category.assoc,
+      groupSchemeMap_comp_toSpec, FGCommGrpCat.hom_hom_ofHom]
+    congr 1
+    rw [Iso.inv_comp_eq, he, Category.assoc, ← Spec.map_comp, ← pullbackSpecIso_hom_snd]
+    congr 2
+    exact congrArg (fun f ↦ CommRingCat.ofHom f.toRingHom) (prodCoordinates_inr k A N).symm
+  · simpa only [Iso.refl_hom, Category.comp_id, eqToIso.hom] using (groupScheme_X_hom k (L A)).symm
+  · simpa only [Iso.refl_hom, Category.comp_id, eqToIso.hom] using (groupScheme_X_hom k (L N)).symm
 
-private theorem prodIso_hom :
-    (prodIso k A N).hom =
-      (pullbackSpecIso k (AddMonoidAlgebra k A) (AddMonoidAlgebra k N)).hom ≫
-        Spec.map (CommRingCat.ofHom (prodCoordinates k A N).toRingHom) :=
-  rfl
+/-- The fiber product of two diagonalizable group schemes is the scheme for the product
+of the character lattices, with restrictions along the two inclusions as projections. -/
+def prodIso : pullback (D A).X.hom (D N).X.hom ≅ (D (A × N)).X.left :=
+  (isPullback_prod k A N).isoPullback.symm
 
-/-- The first projection of the product pulls back exponents along the first inclusion. -/
+/-- The first projection of the product pulls back along the first inclusion of lattices. -/
 @[reassoc (attr := simp)]
 theorem prodIso_hom_fst :
-    (prodIso k A N).hom ≫ map k (AddMonoidHom.inl A N) = pullback.fst _ _ := by
-  rw [← Spec.map_preimage (map k (AddMonoidHom.inl A N)),
-    ← CommRingCat.ofHom_hom (Spec.preimage _), preimage_map]
-  rw [prodIso_hom, Category.assoc, ← Spec.map_comp, ← pullbackSpecIso_hom_fst]
-  congr 2
-  have h :
-      (prodCoordinates k A N).toAlgHom.comp
-          (AddMonoidAlgebra.mapDomainAlgHom k k (AddMonoidHom.inl A N)) =
-        Algebra.TensorProduct.includeLeft := by
-    apply AddMonoidAlgebra.algHom_ext
-    · intro a
-      simp [prodCoordinates_single, AddMonoidAlgebra.one_def]
-    · exact Subsingleton.elim _ _
-  exact congrArg (fun f ↦ CommRingCat.ofHom f.toRingHom) h
+    (prodIso k A N).hom ≫ (Dmap (AddMonoidHom.inl A N)).hom.hom.left = pullback.fst _ _ :=
+  (isPullback_prod k A N).isoPullback_inv_fst
 
-/-- The second projection of the product pulls back exponents along the second inclusion. -/
+/-- The second projection of the product pulls back along the second inclusion of lattices. -/
 @[reassoc (attr := simp)]
 theorem prodIso_hom_snd :
-    (prodIso k A N).hom ≫ map k (AddMonoidHom.inr A N) = pullback.snd _ _ := by
-  rw [← Spec.map_preimage (map k (AddMonoidHom.inr A N)),
-    ← CommRingCat.ofHom_hom (Spec.preimage _), preimage_map]
-  rw [prodIso_hom, Category.assoc, ← Spec.map_comp, ← pullbackSpecIso_hom_snd]
-  congr 2
-  have h :
-      (prodCoordinates k A N).toAlgHom.comp
-          (AddMonoidAlgebra.mapDomainAlgHom k k (AddMonoidHom.inr A N)) =
-        Algebra.TensorProduct.includeRight := by
-    apply AddMonoidAlgebra.algHom_ext
-    · intro a
-      simp [prodCoordinates_single, AddMonoidAlgebra.one_def]
-    · exact Subsingleton.elim _ _
-  exact congrArg (fun f ↦ CommRingCat.ofHom f.toRingHom) h
+    (prodIso k A N).hom ≫ (Dmap (AddMonoidHom.inr A N)).hom.hom.left = pullback.snd _ _ :=
+  (isPullback_prod k A N).isoPullback_inv_snd
 
-/-- The first projection is dominant, with a section given by the identity of the second
-character scheme. -/
-instance isDominant_map_inl : IsDominant (map k (AddMonoidHom.inl A N)) := by
-  have : IsDominant (map k (AddMonoidHom.fst A N) ≫ map k (AddMonoidHom.inl A N)) := by
-    rw [← map_comp, AddMonoidHom.fst_comp_inl, map_id]
-    infer_instance
-  exact IsDominant.of_comp (map k (AddMonoidHom.fst A N)) _
+/-- The first projection is dominant. -/
+instance isDominant_map_inl : IsDominant (Dmap (AddMonoidHom.inl A N)).hom.hom.left :=
+  isDominant_groupSchemeMap k _ (fun _ _ h ↦ congrArg (fun x : A × N ↦ x.1) h)
 
-/-- The second projection is dominant, with a section given by the identity of the first
-character scheme. -/
-instance isDominant_map_inr : IsDominant (map k (AddMonoidHom.inr A N)) := by
-  have : IsDominant (map k (AddMonoidHom.snd A N) ≫ map k (AddMonoidHom.inr A N)) := by
-    rw [← map_comp, AddMonoidHom.snd_comp_inr, map_id]
-    infer_instance
-  exact IsDominant.of_comp (map k (AddMonoidHom.snd A N)) _
+/-- The second projection is dominant. -/
+instance isDominant_map_inr : IsDominant (Dmap (AddMonoidHom.inr A N)).hom.hom.left :=
+  isDominant_groupSchemeMap k _ (fun _ _ h ↦ congrArg (fun x : A × N ↦ x.2) h)
 
 end QPainleve.CharacterTorus

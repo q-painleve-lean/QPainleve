@@ -11,7 +11,10 @@ public import TauCeti.AlgebraicGeometry.Morphisms.Dominant
 import TauCeti.AlgebraicGeometry.Morphisms.Epi
 
 /-!
-# Function field pullback along dominant rational maps
+# Function fields and pullback along dominant rational maps
+
+For an affine scheme presented as the spectrum of a domain, the function field is
+identified with the fraction ring of that domain.
 
 A dominant rational map with integral source is determined by its pullback on generic stalks.
 The pullback applies Tau Ceti's `Scheme.Hom.functionFieldMap` to Mathlib's generic-point
@@ -21,6 +24,39 @@ restriction. Cancellation uses Tau Ceti's `RingHom.epi_SpecMap_ofHom` on the res
 public noncomputable section
 
 open AlgebraicGeometry CategoryTheory
+
+namespace AlgebraicGeometry.Scheme
+
+universe u
+
+/-- If a scheme is presented as the spectrum of a domain, its generic stalk is isomorphic
+to the fraction ring of that domain. -/
+def specFractionRingEquiv {X : Scheme.{u}} [IrreducibleSpace X]
+    (R : CommRingCat.{u}) [IsDomain R] (h : X = Spec R) :
+    FractionRing R ≃+* X.functionField := by
+  subst X
+  letI : Algebra R (Spec R).functionField :=
+    (StructureSheaf.toStalk R (genericPoint (Spec R))).hom.toAlgebra
+  letI : IsFractionRing R (Spec R).functionField := functionField_isFractionRing_of_affine R
+  exact (FractionRing.algEquiv R (Spec R).functionField).toRingEquiv
+
+/-- For a scheme presented as the spectrum of a domain, the generic-stalk morphism
+corresponds to the inclusion of the domain into its fraction ring. -/
+theorem preimage_fromSpecStalk_comp {X : Scheme.{u}} [IrreducibleSpace X]
+    (R : CommRingCat.{u}) [IsDomain R] (h : X = Spec R) :
+    (Spec.preimage (X.fromSpecStalk (genericPoint X) ≫ eqToHom h)).hom =
+      (specFractionRingEquiv R h).toRingHom.comp (algebraMap R (FractionRing R)) := by
+  subst X
+  let s : R ⟶ (Spec R).functionField :=
+    StructureSheaf.toStalk R (genericPoint (Spec R))
+  have hs : (Spec R).fromSpecStalk (genericPoint (Spec R)) = Spec.map s :=
+    Spec.fromSpecStalk_eq' R _
+  rw [eqToHom_refl, Category.comp_id, hs, Spec.preimage_map]
+  let : Algebra R (Spec R).functionField := s.hom.toAlgebra
+  let : IsFractionRing R (Spec R).functionField := functionField_isFractionRing_of_affine R
+  exact RingHom.ext fun x ↦ ((FractionRing.algEquiv R (Spec R).functionField).commutes x).symm
+
+end AlgebraicGeometry.Scheme
 
 namespace AlgebraicGeometry.Scheme.RationalMap
 
