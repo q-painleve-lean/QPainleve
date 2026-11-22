@@ -6,13 +6,14 @@ Authors: Yuma Mizuno
 module
 
 public import QPainleve.LinearAlgebra.BilinearForm.IsotropicQuotient
+public import TauCeti.Algebra.Module.Primitive
 import Mathlib.LinearAlgebra.FreeModule.PID
 
 /-!
 # The isotropic lattice quotient in signature `(1, 9)`
 
-The primitive characteristic isotropic class gives a rank-eight even unimodular
-quotient with negative definite form.
+A characteristic isotropic class satisfying Tau Ceti's `IsPrimitive` gives a
+rank-eight even unimodular quotient with negative definite form.
 -/
 
 public section
@@ -29,16 +30,16 @@ signature `(1, 9)`, the quotient is a free rank-eight even unimodular lattice wh
 scalar-extended form is negative definite. -/
 theorem IsSymm.orthogonalQuotientForm_of_signature_one_nine (hB : B.IsSymm)
     [Module.Free ℤ M] [Module.Finite ℤ M] [B.IsPerfPair] (hδ : B δ δ = 0)
-    (hprim : ∃ ℓ : M →ₗ[ℤ] ℤ, ℓ δ = 1) (hchar : B.IsCharacteristic δ)
+    (hprim : TauCeti.IsPrimitive δ) (hchar : B.IsCharacteristic δ)
     (hpos : sigPos (B.baseChange K).toQuadraticMap = 1)
     (hneg : sigNeg (B.baseChange K).toQuadraticMap = 9) :
     let F := B.orthogonalQuotientForm hB (ℤ ∙ δ)
     Module.Free ℤ (B.OrthogonalQuotient (ℤ ∙ δ)) ∧
       Module.finrank ℤ (B.OrthogonalQuotient (ℤ ∙ δ)) = 8 ∧
       F.IsPerfPair ∧ (∀ x, Even (F x x)) ∧ (-(F.baseChange K).toQuadraticMap).PosDef := by
-  obtain ⟨ℓ, hℓ⟩ := hprim
-  obtain ⟨f, rfl⟩ := (LinearMap.IsPerfPair.bijective_left B).surjective ℓ
-  have hδf : B δ f = 1 := (hB.eq δ f).trans hℓ
+  obtain ⟨ℓ, hℓ⟩ := TauCeti.isPrimitive_def.mp hprim
+  have hδf : B δ (B.toPerfPair.symm ℓ) = 1 := by
+    rw [hB.eq δ, B.apply_symm_toPerfPair_self, hℓ]
   let e := hB.isometryEquivOrthogonalQuotient hδ hδf
   have hfree := Module.Free.of_equiv e.toLinearEquiv
   have hperf := hB.isPerfPair_orthogonalQuotientForm hδ hδf
