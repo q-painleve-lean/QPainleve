@@ -107,6 +107,26 @@ theorem chargeMutationEquiv_apply_of_ne (B : Matrix ι ι ℤ) {k i : ι} (hi : 
   rw [chargeMutationEquiv_apply, Matrix.mulVec, dotProduct]
   simp [matrixMutationRight_apply_of_ne _ _ _ _ hi, Matrix.one_apply]
 
+/-- The mutation basis change negates the pivot generator. -/
+@[simp]
+theorem chargeMutationEquiv_single_self (E : Matrix ι ι ℤ) (p : ι) :
+    chargeMutationEquiv E p (Pi.single p 1) = -Pi.single p 1 := by
+  ext i
+  by_cases hi : i = p
+  · subst i
+    simp [chargeMutationEquiv_apply, Matrix.col]
+  · simp [hi]
+
+/-- Away from the pivot the basis change adds the positive part of the negated pivot row
+coefficient times the pivot generator. -/
+theorem chargeMutationEquiv_single_of_ne (E : Matrix ι ι ℤ) (p : ι) {i : ι} (hi : i ≠ p) :
+    chargeMutationEquiv E p (Pi.single i 1) = Pi.single i 1 + (-E p i)⁺ • Pi.single p 1 := by
+  ext j
+  by_cases hj : j = p
+  · subst j
+    simp [chargeMutationEquiv_apply, Matrix.col, hi, Ne.symm hi]
+  · simp [hj, Pi.single_apply]
+
 /-- The binomial exponent in an X mutation vanishes on the mutated exchange-matrix kernel. -/
 theorem sum_neg_mul_eq_zero_of_mem_ker_mutation (B : ExchangeMatrix (Function.Embedding.refl ι))
     (k : ι) {x : ι → ℤ} (hx : x ∈ (B.mutation k).matrix.mulVecLin.ker) :

@@ -146,12 +146,7 @@ theorem range_chargeMutation (ω : BilinForm ℤ N) (v : (ι → ℤ) →ₗ[ℤ
 @[simp]
 theorem chargeMutation_single_self (ω : BilinForm ℤ N) (v : (ι → ℤ) →ₗ[ℤ] N) (k : ι) :
     chargeMutation ω v k (Pi.single k 1) = -v (Pi.single k 1) := by
-  have h : chargeMutationEquiv (chargeExchangeMatrix ω v) k (Pi.single k 1) = -Pi.single k 1 := by
-    ext i
-    obtain rfl | hi := eq_or_ne i k
-    · simp [chargeMutationEquiv_apply, Matrix.col]
-    · simp [hi]
-  simp only [chargeMutation_apply, h, map_neg]
+  simp only [chargeMutation_apply, chargeMutationEquiv_single_self, map_neg]
 
 /-- Away from the pivot, mutation adds the positive part of the exchange coefficient times
 the pivot charge. -/
@@ -160,13 +155,8 @@ theorem chargeMutation_single_of_ne (ω : BilinForm ℤ N) (hω : ω.IsAlt)
     (v : (ι → ℤ) →ₗ[ℤ] N) {k i : ι} (hi : i ≠ k) :
     chargeMutation ω v k (Pi.single i 1) =
       v (Pi.single i 1) + (chargeExchangeMatrix ω v i k)⁺ • v (Pi.single k 1) := by
-  have h : chargeMutationEquiv (chargeExchangeMatrix ω v) k (Pi.single i 1) =
-      Pi.single i 1 + (chargeExchangeMatrix ω v i k)⁺ • Pi.single k 1 := by
-    ext j
-    obtain rfl | hj := eq_or_ne j k
-    · simp [chargeMutationEquiv_apply, Matrix.col, hi, Ne.symm hi, hω.neg_eq]
-    · simp [hj, Pi.single_apply]
-  rw [chargeMutation_apply, h, map_add, LinearMap.map_smul]
+  rw [chargeMutation_apply, chargeMutationEquiv_single_of_ne _ _ hi, map_add, LinearMap.map_smul]
+  simp only [chargeExchangeMatrix_apply, hω.neg_eq]
 
 /-- Computing the exchange matrix from mutated charges agrees with matrix mutation. -/
 theorem chargeExchangeMatrix_chargeMutation (ω : BilinForm ℤ N) (hω : ω.IsAlt)
