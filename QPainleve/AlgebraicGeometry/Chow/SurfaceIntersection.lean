@@ -12,11 +12,11 @@ public import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.ProjectiveOver
 public import Mathlib.LinearAlgebra.BilinearForm.Properties
 public import QPainleve.AlgebraicGeometry.EffectiveCartierDivisor.ClosedImmersion
 public import TauCeti.AlgebraicGeometry.CartierDivisor.Excision
-import TauCeti.AlgebraicGeometry.Chow.DivisorClass
 import TauCeti.AlgebraicGeometry.Curves.Normalization
 import TauCeti.AlgebraicGeometry.LineBundle.BaseChange
 import QPainleve.AlgebraicGeometry.Cohomology.Support
 import QPainleve.AlgebraicGeometry.IdealSheaf.EulerCharacteristic
+import QPainleve.AlgebraicGeometry.Scheme.LocalDimension
 
 /-!
 # Surface intersection and restriction to a curve
@@ -138,24 +138,6 @@ public theorem classIntersectionNumber_eq_intersectionNumber
 
 open Scheme.IdealSheafData
 
-omit [Infinite k] [X.IsProjectiveOver k] in
-/-- The reduced closure of a codimension-one point on an irreducible surface of finite type
-over a field is a curve. -/
-public theorem topologicalKrullDim_vanishingIdeal_subscheme [IrreducibleSpace X]
-    [LocallyOfFiniteType (X ↘ Spec (.of k))] (hX : topologicalKrullDim X = 2)
-    (p : CodimensionOnePoint X) :
-    topologicalKrullDim
-      (vanishingIdeal ⟨closure {(p : X)}, isClosed_closure⟩).subscheme = 1 := by
-  let I := vanishingIdeal (X := X) ⟨closure {(p : X)}, isClosed_closure⟩
-  have hrange : Set.range I.subschemeι = closure {(p : X)} := by
-    rw [I.range_subschemeι, coe_support_vanishingIdeal, Closeds.coe_mk]
-  obtain ⟨d, hheight, hd⟩ := mem_pointsOfDimension.mp
-    ((coheight_eq_one_iff_mem_pointsOfDimension k (n := 2) hX).mp p.property)
-  have hd₁ : d = 1 := by omega
-  rw [← topologicalKrullDim_range_of_isPreimmersion I.subschemeι, hrange,
-    ← height_eq_topologicalKrullDim_closure_singleton, hheight, hd₁]
-  rfl
-
 section Factorial
 
 variable [IsIntegral X] [∀ x : X, UniqueFactorizationMonoid (X.presheaf.stalk x)]
@@ -169,7 +151,7 @@ private theorem classIntersectionNumber_mul_primeDivisorClass [IsLocallyNoetheri
   rw [LineBundleClass.primeDivisorClass_def]
   exact classIntersectionNumber_mul_inv_mk_toInvertibleSheaf k hX.le
     (isEffectiveCartier_vanishingIdeal_closure_singleton p.property)
-    (topologicalKrullDim_vanishingIdeal_subscheme k hX p) a b
+    (QPainleve.topologicalKrullDim_vanishingIdeal_subscheme k hX p) a b
 
 /-- Intersecting with a prime divisor class gives the degree on its reduced closed curve. -/
 public theorem classIntersectionNumber_primeDivisorClass_eq_intersectionNumber
@@ -191,7 +173,7 @@ public theorem classIntersectionNumber_primeDivisorClass_nonneg_of_ne
   let I := vanishingIdeal (X := X) ⟨closure {(p : X)}, isClosed_closure⟩
   let J := vanishingIdeal (X := X) ⟨closure {(q : X)}, isClosed_closure⟩
   have hI : I.IsEffectiveCartier := isEffectiveCartier_vanishingIdeal_closure_singleton p.property
-  have hC := topologicalKrullDim_vanishingIdeal_subscheme k hX q
+  have hC := QPainleve.topologicalKrullDim_vanishingIdeal_subscheme k hX q
   have : J.subscheme.IsProjectiveOver k :=
     Scheme.IsProjectiveOver.of_isClosedImmersion k J.subschemeι
   have : J.subscheme.IsCurveOver k := Scheme.isCurveOver_iff.mpr ⟨inferInstance, inferInstance, hC⟩

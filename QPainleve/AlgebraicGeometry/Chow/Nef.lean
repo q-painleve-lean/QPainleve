@@ -7,6 +7,8 @@ module
 
 public import QPainleve.AlgebraicGeometry.Chow.SurfaceIntersection
 public import QPainleve.AlgebraicGeometry.IntersectionNumber.Nef
+import QPainleve.AlgebraicGeometry.IdealSheaf.ClosedImmersion
+import QPainleve.AlgebraicGeometry.Scheme.LocalDimension
 
 /-!
 # Intersection with effective divisors on surfaces
@@ -45,7 +47,7 @@ public theorem isNef_iff_classIntersectionNumber_nonneg [IsLocallyNoetherian X]
     have : I.subscheme.IsProjectiveOver k :=
       Scheme.IsProjectiveOver.of_isClosedImmersion k I.subschemeι
     have : I.subscheme.IsCurveOver k := Scheme.isCurveOver_iff.mpr
-      ⟨inferInstance, inferInstance, topologicalKrullDim_vanishingIdeal_subscheme k hX p⟩
+      ⟨inferInstance, inferInstance, QPainleve.topologicalKrullDim_vanishingIdeal_subscheme k hX p⟩
     rw [classIntersectionNumber_primeDivisorClass_eq_intersectionNumber k hX]
     exact ha.intersectionNumber_nonneg I.subschemeι (comp_over _ _).symm
   · intro ha
