@@ -46,8 +46,8 @@ theorem smoothOfRelativeDimension_algebraicRealizationStructureMap (Φ : Fan i) 
     CommRingCat.hom_ofHom]
   apply RingHom.locally_of (RingHom.isStandardSmoothOfRelativeDimension_respectsIso (n := n))
   rw [RingHom.isStandardSmoothOfRelativeDimension_algebraMap (n := n)]
-  exact (isRegular_iff.1 hΦ cone.1 cone.2).isStandardSmoothOfRelativeDimension_affineCoordinateRing
-    Φ.lattice
+  have hCone := isRegular_iff.1 hΦ cone.val cone.property
+  exact hCone.isStandardSmoothOfRelativeDimension_affineCoordinateRing Φ.lattice
 
 /-- The structure morphism of a regular toric fan scheme is smooth. -/
 theorem smooth_algebraicRealizationStructureMap (Φ : Fan i) (hΦ : Φ.IsRegular) :
