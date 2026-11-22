@@ -14,12 +14,13 @@ import Mathlib.Tactic.LinearCombination
 /-!
 # Signed cluster words
 
-The vertices are skew-symmetric integer exchange matrices. An edge records a mutation, a
-permutation of the labels, or simultaneous sign reversal. Mathlib's quiver paths then retain
-the source and target of a word, including under concatenation, reversal, and changes of labels.
+The vertices are the square, unit-symmetrizer subtype of `TauCeti.ExchangeMatrix`. Its native
+matrix is `-ε`, so its mutation row is the column used in the cluster `X` formulas. An edge
+records a mutation, a permutation of the labels, or simultaneous sign reversal. Mathlib's quiver
+paths retain the source and target of a word under concatenation, reversal, and changes of labels.
 Two generators with the same endpoints still record distinct operations.
 
-The matrix action uses Tau Ceti's `matrixMutation` and its invariance of skew-symmetrizers.
+The matrix action uses Tau Ceti's `ExchangeMatrix.mutation` and `ExchangeMatrix.reindex`.
 For mutation and permutations see Fock and Goncharov, *Cluster ensembles, quantization and
 the dilogarithm*, §1.2.2. For the operation adjoining sign reversal see Bershtein, Gavrylenko
 and Marshakov, *Cluster integrable systems, q-Painlevé equations and their quantization*, §3.1.
@@ -34,15 +35,54 @@ open Quiver
 
 variable {ι κ ρ : Type*}
 
-/-- An integer exchange matrix whose skew-symmetrizer is identically one. -/
-@[ext]
-structure SkewExchangeMatrix (ι : Type*) where
-  /-- The entries, indexed by the same labels in both positions. -/
-  matrix : Matrix ι ι ℤ
-  /-- The unit skew-symmetrizer witnesses skew-symmetry. -/
-  isSkewSymmetrizer : matrix.IsSkewSymmetrizer (fun _ ↦ 1)
+/-- A square Tau Ceti exchange matrix with constant symmetrizer one. Its underlying matrix
+is `-ε` in the cluster `X` convention. -/
+abbrev SkewExchangeMatrix (ι : Type*) :=
+  {B : TauCeti.ExchangeMatrix (Function.Embedding.refl ι) // B.symmetrizer = fun _ ↦ 1}
 
 namespace SkewExchangeMatrix
+
+/-- The cluster `X` exchange entries `ε`, the negative of the native matrix. -/
+def matrix (B : SkewExchangeMatrix ι) : Matrix ι ι ℤ := -B.val.matrix
+
+/-- The native exchange matrix is the negative of the cluster `X` exchange matrix. -/
+theorem val_matrix (B : SkewExchangeMatrix ι) : B.val.matrix = -B.matrix := by
+  simp [matrix]
+
+/-- The native mutation row agrees with the cluster `X` mutation column. -/
+theorem val_matrix_apply_swap (B : SkewExchangeMatrix ι) (i j : ι) :
+    B.val.matrix j i = B.matrix i j := by
+  simpa [B.property, matrix] using B.val.symmetrizer_mul_matrix j i
+
+/-- The cluster `X` entries have unit skew-symmetrizer. -/
+theorem isSkewSymmetrizer (B : SkewExchangeMatrix ι) : B.matrix.IsSkewSymmetrizer (fun _ ↦ 1) := by
+  simpa only [matrix, Function.Embedding.coe_refl, Matrix.submatrix_id_id, B.property]
+    using B.val.isSkewSymmetrizer.neg
+
+/-- Interpret skew-symmetric cluster `X` entries as a native exchange matrix. -/
+def ofMatrix (ε : Matrix ι ι ℤ) (h : ε.IsSkewSymmetrizer (fun _ ↦ 1)) : SkewExchangeMatrix ι :=
+  ⟨⟨-ε, fun _ ↦ 1, by
+    simpa only [Function.Embedding.coe_refl, Matrix.submatrix_id_id] using h.neg⟩, rfl⟩
+
+@[simp]
+theorem val_ofMatrix_matrix (ε : Matrix ι ι ℤ) (h : ε.IsSkewSymmetrizer (fun _ ↦ 1)) :
+    (ofMatrix ε h).val.matrix = -ε :=
+  (rfl)
+
+@[simp]
+theorem matrix_ofMatrix (ε : Matrix ι ι ℤ) (h : ε.IsSkewSymmetrizer (fun _ ↦ 1)) :
+    (ofMatrix ε h).matrix = ε := by
+  simp [matrix]
+
+/-- The cluster `X` entries determine a unit-symmetrizer exchange matrix. -/
+@[ext]
+theorem ext {B C : SkewExchangeMatrix ι} (h : B.matrix = C.matrix) : B = C :=
+  Subtype.ext <| TauCeti.ExchangeMatrix.ext
+    (by simpa only [val_matrix] using congrArg Neg.neg h) (B.property.trans C.property.symm)
+
+@[simp]
+theorem ofMatrix_matrix (B : SkewExchangeMatrix ι) : ofMatrix B.matrix B.isSkewSymmetrizer = B :=
+  ext (matrix_ofMatrix _ _)
 
 /-- Skew-symmetry interchanges the two entries with a sign change. -/
 theorem apply_swap (B : SkewExchangeMatrix ι) (i j : ι) : B.matrix j i = -B.matrix i j := by
@@ -53,7 +93,11 @@ theorem apply_diag (B : SkewExchangeMatrix ι) (i : ι) : B.matrix i i = 0 :=
   B.isSkewSymmetrizer.apply_self i
 
 instance : Neg (SkewExchangeMatrix ι) where
-  neg B := ⟨-B.matrix, B.isSkewSymmetrizer.neg⟩
+  neg B :=
+    ⟨{ B.val with
+        matrix := -B.val.matrix
+        isSkewSymmetrizer := B.val.isSkewSymmetrizer.neg },
+      B.property⟩
 
 @[simp]
 theorem neg_matrix (B : SkewExchangeMatrix ι) : (-B).matrix = -B.matrix :=
@@ -61,49 +105,44 @@ theorem neg_matrix (B : SkewExchangeMatrix ι) : (-B).matrix = -B.matrix :=
 
 @[simp]
 theorem neg_neg (B : SkewExchangeMatrix ι) : -(-B) = B := by
-  ext i j
+  apply ext
   simp
-
-/-- View a skew-symmetric matrix as a Tau Ceti exchange matrix with unit symmetrizer. -/
-def toExchangeMatrix (B : SkewExchangeMatrix ι) :
-    TauCeti.ExchangeMatrix (Function.Embedding.refl ι) where
-  matrix := B.matrix
-  symmetrizer := fun _ ↦ 1
-  isSkewSymmetrizer := B.isSkewSymmetrizer.submatrix (Function.Embedding.refl ι)
-
-@[simp]
-theorem toExchangeMatrix_matrix (B : SkewExchangeMatrix ι) :
-    B.toExchangeMatrix.matrix = B.matrix :=
-  (rfl)
-
-@[simp]
-theorem toExchangeMatrix_symmetrizer (B : SkewExchangeMatrix ι) :
-    B.toExchangeMatrix.symmetrizer = fun _ ↦ 1 :=
-  (rfl)
 
 /-- Transport a matrix to new labels using the same equivalence for rows and columns. -/
 def reindex (B : SkewExchangeMatrix ι) (e : ι ≃ κ) : SkewExchangeMatrix κ :=
-  ⟨B.matrix.submatrix e.symm e.symm, B.isSkewSymmetrizer.submatrix e.symm⟩
+  ⟨TauCeti.ExchangeMatrix.reindex (row' := Function.Embedding.refl κ) e e (by simp) B.val,
+    by simp [B.property, Function.comp_def]⟩
 
 @[simp]
-theorem reindex_matrix (B : SkewExchangeMatrix ι) (e : ι ≃ κ) :
-    (B.reindex e).matrix = B.matrix.submatrix e.symm e.symm :=
+theorem val_reindex (B : SkewExchangeMatrix ι) (e : ι ≃ κ) :
+    (B.reindex e).val =
+      TauCeti.ExchangeMatrix.reindex (row' := Function.Embedding.refl κ) e e (by simp) B.val :=
   (rfl)
 
 @[simp]
+theorem reindex_matrix (B : SkewExchangeMatrix ι) (e : ι ≃ κ) :
+    (B.reindex e).matrix = B.matrix.submatrix e.symm e.symm := by
+  simp only [matrix, val_reindex, TauCeti.ExchangeMatrix.reindex_matrix]
+  rfl
+
+@[simp]
 theorem reindex_refl (B : SkewExchangeMatrix ι) : B.reindex (Equiv.refl ι) = B := by
-  ext i j
+  apply Subtype.ext
   simp
 
 @[simp]
 theorem reindex_trans (B : SkewExchangeMatrix ι) (e : ι ≃ κ) (f : κ ≃ ρ) :
     (B.reindex e).reindex f = B.reindex (e.trans f) := by
-  ext i j
-  simp
+  apply Subtype.ext
+  simpa only [val_reindex, Equiv.trans_apply] using Equiv.congr_fun
+    (TauCeti.ExchangeMatrix.reindex_trans (row := Function.Embedding.refl ι)
+      (row' := Function.Embedding.refl κ) (row'' := Function.Embedding.refl ρ)
+      e e (by simp) f f (by simp)) B.val
 
 @[simp]
 theorem reindex_neg (B : SkewExchangeMatrix ι) (e : ι ≃ κ) :
     (-B).reindex e = -(B.reindex e) := by
+  apply ext
   ext i j
   simp
 
@@ -111,13 +150,17 @@ variable [DecidableEq ι] [DecidableEq κ]
 
 /-- Mutate the exchange matrix at label `k`. -/
 def mutate (B : SkewExchangeMatrix ι) (k : ι) : SkewExchangeMatrix ι :=
-  ⟨TauCeti.matrixMutation (Function.Embedding.refl ι) B.matrix k,
-    B.isSkewSymmetrizer.matrixMutation k⟩
+  ⟨B.val.mutation k, (TauCeti.ExchangeMatrix.mutation_symmetrizer B.val k).trans B.property⟩
+
+@[simp]
+theorem val_mutate (B : SkewExchangeMatrix ι) (k : ι) : (B.mutate k).val = B.val.mutation k :=
+  (rfl)
 
 @[simp]
 theorem mutate_matrix (B : SkewExchangeMatrix ι) (k : ι) :
-    (B.mutate k).matrix = TauCeti.matrixMutation (Function.Embedding.refl ι) B.matrix k :=
-  (rfl)
+    (B.mutate k).matrix = TauCeti.matrixMutation (Function.Embedding.refl ι) B.matrix k := by
+  simp only [matrix, val_mutate, TauCeti.ExchangeMatrix.mutation_matrix,
+    TauCeti.matrixMutation_neg]
 
 /-- The exchange entry away from the mutation row and column, in the positive-part convention
 for cluster `X` mutation. -/
@@ -130,13 +173,8 @@ theorem mutate_matrix_apply_of_ne (B : SkewExchangeMatrix ι) {i j k : ι}
     (B.matrix k j)⁻ * posPart_sub_negPart (B.matrix i k)
 
 @[simp]
-theorem toExchangeMatrix_mutate (B : SkewExchangeMatrix ι) (k : ι) :
-    (B.mutate k).toExchangeMatrix = B.toExchangeMatrix.mutation k := by
-  ext : 1 <;> simp
-
-@[simp]
 theorem mutate_mutate (B : SkewExchangeMatrix ι) (k : ι) : (B.mutate k).mutate k = B := by
-  apply SkewExchangeMatrix.ext
+  apply Subtype.ext
   simp
 
 @[simp]
@@ -147,11 +185,9 @@ theorem mutate_neg (B : SkewExchangeMatrix ι) (k : ι) : (-B).mutate k = -(B.mu
 @[simp]
 theorem mutate_reindex (B : SkewExchangeMatrix ι) (e : ι ≃ κ) (k : ι) :
     (B.reindex e).mutate (e k) = (B.mutate k).reindex e := by
-  have h (j : κ) : e.symm (Function.Embedding.refl κ j) =
-      Function.Embedding.refl ι (e.symm j) := rfl
-  have he := TauCeti.matrixMutation_submatrix e.symm.injective e.symm.injective h B.matrix (e k)
-  apply SkewExchangeMatrix.ext
-  simpa using he
+  apply Subtype.ext
+  simpa only [val_mutate, val_reindex] using
+    B.val.mutation_reindex (row' := Function.Embedding.refl κ) e e (by simp) k
 
 end SkewExchangeMatrix
 
