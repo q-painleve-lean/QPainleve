@@ -85,6 +85,23 @@ def chargeMutationEquiv (ε : Matrix ι ι ℤ) (k : ι) : (ι → ℤ) ≃ₗ[�
       simp only [Matrix.toLin'_apply, Matrix.mulVec_mulVec, matrixMutationRight_mul_self,
         Matrix.one_mulVec]
 
+/-- For a skew exchange matrix, mutation is congruence by the right factor
+that acts on the exponents of X monomials. -/
+theorem _root_.Matrix.matrixMutation_eq_transpose_mul_right (ε : Matrix ι ι ℤ)
+    (hε : ε.IsSkewSymmetrizer (fun _ ↦ 1)) (p : ι) :
+    let F := matrixMutationRight (Function.Embedding.refl ι) (-ε) p 1
+    matrixMutation (Function.Embedding.refl ι) ε p = Fᵀ * ε * F := by
+  let row := Function.Embedding.refl ι
+  let F := matrixMutationRight row (-ε) p 1
+  have hF : Fᵀ = matrixMutationLeft row (-ε) p 1 := by
+    ext i j
+    have hpi : ε p i = -ε i p := by simpa using hε.mul_apply p i
+    simp [F, row, matrixMutationRight_apply, matrixMutationLeft_apply, Matrix.one_apply,
+      hpi, eq_comm]
+  have h := matrixMutation_eq_mul row (-ε) p 1 (hε.neg.apply_self p) (Or.inl rfl)
+  rw [matrixMutation_neg, Matrix.mul_neg, Matrix.neg_mul, ← hF] at h
+  exact neg_injective h
+
 /-- The basis change acts by the native right mutation factor at sign `1`. -/
 theorem chargeMutationEquiv_apply (ε : Matrix ι ι ℤ) (k : ι) (x : ι → ℤ) :
     chargeMutationEquiv ε k x = matrixMutationRight (Function.Embedding.refl ι) (-ε) k 1 *ᵥ x :=
