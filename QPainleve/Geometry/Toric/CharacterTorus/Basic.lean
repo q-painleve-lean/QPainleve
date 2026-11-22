@@ -6,8 +6,10 @@ Authors: The QPainleve contributors
 module
 
 public import Mathlib.Algebra.MonoidAlgebra.Basic
+public import Mathlib.Algebra.MonoidAlgebra.NoZeroDivisors
+public import Mathlib.LinearAlgebra.FreeModule.Basic
 public import Mathlib.RingTheory.Localization.FractionRing
-public import QPainleve.Algebra.MonoidAlgebra.NoZeroDivisors
+public import TauCeti.Algebra.Group.UniqueProds.TorsionFree
 
 /-!
 # Character tori and their function fields
@@ -15,6 +17,9 @@ public import QPainleve.Algebra.MonoidAlgebra.NoZeroDivisors
 The additive group algebra of the character lattice is the coordinate ring of a split torus.
 A lattice basis identifies it with a Laurent polynomial algebra, with exponents given by the
 basis coordinates. Monomials and pullbacks on the function field are defined intrinsically.
+For free lattices, the domain instance uses Tau Ceti's `HasUniqueDiv.to_twoUniqueSums`.
+For a lattice equivalence, `AddMonoidAlgebra.domCongr` and
+`IsFractionRing.algEquivOfAlgEquiv` give the corresponding function field equivalence.
 -/
 
 public noncomputable section
@@ -118,6 +123,9 @@ section Free
 
 variable {k} [Module ℤ B] [Module.Free ℤ B]
 
+local instance {G : Type*} [AddCommGroup G] [Module ℤ G] [Module.Free ℤ G] : HasUniqueDiv G :=
+  .of_isTorsionFree ℤ G
+
 /-- Algebra maps out of the torus function field are determined by their values on characters. -/
 theorem functionField_hom_ext {K : Type*} [Field K] [Algebra k K]
     {f g : FunctionField k B →ₐ[k] K}
@@ -192,24 +200,18 @@ theorem functionFieldMap_comp {D : Type*} [AddCommGroup D] [Module ℤ D] [Modul
   apply functionField_hom_ext
   simp
 
-/-- A lattice equivalence gives an equivalence of torus function fields. -/
-def functionFieldEquiv (e : B ≃+ C) : FunctionField k B ≃ₐ[k] FunctionField k C :=
-  IsFractionRing.algEquivOfAlgEquiv (AddMonoidAlgebra.domCongr k k e)
-
+/-- The fraction ring equivalence induced by a lattice equivalence acts by the pullback
+along its underlying additive homomorphism. -/
 @[simp]
-theorem functionFieldEquiv_toAlgHom (e : B ≃+ C) :
-    (functionFieldEquiv k e).toAlgHom =
+theorem algEquivOfAlgEquiv_domCongr_toAlgHom (e : B ≃+ C) :
+    (IsFractionRing.algEquivOfAlgEquiv (AddMonoidAlgebra.domCongr k k e) :
+      FunctionField k B ≃ₐ[k] FunctionField k C).toAlgHom =
       functionFieldMap k e.toAddMonoidHom
         (by simpa only [AddEquiv.coe_toAddMonoidHom] using e.injective) := by
   apply functionField_hom_ext
   intro x
   rw [AlgEquiv.toAlgHom_apply, functionFieldMap_monomial]
-  simp [monomial_ofAdd, functionFieldEquiv, IsFractionRing.algEquivOfAlgEquiv_algebraMap]
-
-omit [Module ℤ B] [Module.Free ℤ B] [Module ℤ C] [Module.Free ℤ C] in
-@[simp]
-theorem functionFieldEquiv_symm (e : B ≃+ C) :
-    (functionFieldEquiv k e).symm = functionFieldEquiv k e.symm := (rfl)
+  simp [monomial_ofAdd]
 
 end Free
 

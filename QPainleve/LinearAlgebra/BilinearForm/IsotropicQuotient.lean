@@ -17,6 +17,7 @@ import Mathlib.Tactic.Ring
 import TauCeti.LinearAlgebra.BilinearForm.Isometry.Basic
 import TauCeti.LinearAlgebra.BilinearForm.LinearIndependent
 import TauCeti.LinearAlgebra.BilinearForm.Modular
+import TauCeti.LinearAlgebra.Submodule.Compl
 
 /-!
 # Orthogonal reduction at a primitive isotropic vector
@@ -29,6 +30,8 @@ signature of the quotient. A characteristic `δ` makes the quotient even.
 The quotient construction uses Mathlib's `LinearMap.IsRefl.liftQ₂`. The plane splitting
 uses Tau Ceti's Gram matrix criteria for linear independence and `1`-modularity, and
 `LinearMap.BilinForm.isCompl_orthogonal_of_restrict_bijective`.
+The quotient isometry uses `Submodule.isCompl_comap_subtype_iff` and
+`Submodule.quotientEquivOfIsCompl` on the orthogonal complement of `δ`.
 -/
 
 public section
@@ -103,33 +106,22 @@ private theorem orthogonal_plane_le_orthogonal_line :
     B.orthogonal (plane[R, δ, f]) ≤ B.orthogonal (R ∙ δ) :=
   B.orthogonal_le (span_mono (Set.singleton_subset_iff.mpr (by simp)))
 
-private def orthogonalPlaneToQuotient :
-    B.orthogonal (plane[R, δ, f]) →ₗ[R] B.OrthogonalQuotient (R ∙ δ) :=
-  ((R ∙ δ).comap (B.orthogonal (R ∙ δ)).subtype).mkQ.comp
-    (inclusion orthogonal_plane_le_orthogonal_line)
-
 include hB in
-private theorem bijective_orthogonalPlaneToQuotient (hδ : B δ δ = 0) (hδf : B δ f = 1) :
-    Function.Bijective (orthogonalPlaneToQuotient (B := B) (δ := δ) (f := f)) := by
-  constructor
-  · rw [← LinearMap.ker_eq_bot]
-    refine eq_bot_iff.mpr fun x hx ↦ ?_
-    have hx' := LinearMap.mem_ker.mp hx
-    rw [orthogonalPlaneToQuotient, LinearMap.comp_apply, mkQ_apply,
-      Submodule.Quotient.mk_eq_zero] at hx'
-    have hxδ : x.val ∈ (R ∙ δ) := hx'
-    have hxP : x.val ∈ (plane[R, δ, f]) := span_mono (Set.singleton_subset_iff.mpr (by simp)) hxδ
-    have hdis := (hB.isCompl_span_pair_orthogonal_of_isotropic hδ hδf).disjoint
-    exact (Submodule.mem_bot R).2 (Subtype.ext (disjoint_def.mp hdis _ hxP x.property))
-  · intro q
-    obtain ⟨x, rfl⟩ := ((R ∙ δ).comap (B.orthogonal (R ∙ δ)).subtype).mkQ_surjective q
-    have hδx : B δ x = 0 := B.mem_orthogonal_iff.mp x.property δ (mem_span_singleton_self δ)
-    have hmem : x.val - B f x • δ ∈ B.orthogonal (plane[R, δ, f]) := by
-      simp [orthogonal, sub_right, hδx, hδ, ← hB.eq δ f, hδf]
-    refine ⟨⟨_, hmem⟩, ?_⟩
-    rw [orthogonalPlaneToQuotient, LinearMap.comp_apply, mkQ_apply, mkQ_apply,
-      Submodule.Quotient.eq, mem_comap, map_sub, subtype_apply, subtype_apply, coe_inclusion]
-    simpa using smul_mem (R ∙ δ) (-B f x) (mem_span_singleton_self δ)
+private theorem isCompl_line_orthogonalPlane (hδ : B δ δ = 0) (hδf : B δ f = 1) :
+    IsCompl ((R ∙ δ).comap (B.orthogonal (R ∙ δ)).subtype)
+      ((B.orthogonal (plane[R, δ, f])).comap (B.orthogonal (R ∙ δ)).subtype) := by
+  have hline : R ∙ δ ≤ B.orthogonal (R ∙ δ) := by
+    simp [span_singleton_le_iff_mem, orthogonal, hδ]
+  rw [Submodule.isCompl_comap_subtype_iff, inf_eq_right.mpr hline,
+    inf_eq_right.mpr orthogonal_plane_le_orthogonal_line]
+  refine ⟨(hB.isCompl_span_pair_orthogonal_of_isotropic hδ hδf).disjoint.mono_left
+    (span_mono (by simp)), ?_⟩
+  intro x hx
+  have hδx := B.mem_orthogonal_iff.mp hx δ (mem_span_singleton_self δ)
+  have hmem : x - B f x • δ ∈ B.orthogonal (plane[R, δ, f]) := by
+    simp [orthogonal, sub_right, hδx, hδ, ← hB.eq δ f, hδf]
+  exact mem_sup.mpr ⟨B f x • δ, smul_mem _ _ (mem_span_singleton_self δ), _, hmem,
+    by rw [add_comm, sub_add_cancel]⟩
 
 /-- The orthogonal complement of `span {δ, f}` maps isometrically onto `δᗮ / Rδ` by taking
 quotient classes. -/
@@ -137,11 +129,11 @@ noncomputable def IsSymm.isometryEquivOrthogonalQuotient (hB : B.IsSymm)
     (hδ : B δ δ = 0) (hδf : B δ f = 1) :
     (B.restrict (B.orthogonal (plane[R, δ, f]))).IsometryEquiv
       (B.orthogonalQuotientForm hB (R ∙ δ)) where
-  toLinearEquiv := LinearEquiv.ofBijective orthogonalPlaneToQuotient
-    (bijective_orthogonalPlaneToQuotient hB hδ hδf)
+  toLinearEquiv := (comapSubtypeEquivOfLe orthogonal_plane_le_orthogonal_line).symm.trans
+    (quotientEquivOfIsCompl _ _ (isCompl_line_orthogonalPlane hB hδ hδf)).symm
   map_app' x y := orthogonalQuotientForm_mk B hB (R ∙ δ)
-    (inclusion orthogonal_plane_le_orthogonal_line x)
-    (inclusion orthogonal_plane_le_orthogonal_line y)
+    ⟨x.val, orthogonal_plane_le_orthogonal_line x.property⟩
+    ⟨y.val, orthogonal_plane_le_orthogonal_line y.property⟩
 
 /-- The plane-complement isometry sends a vector to its quotient class. -/
 @[simp]

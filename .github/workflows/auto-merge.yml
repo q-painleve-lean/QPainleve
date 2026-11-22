@@ -110,7 +110,7 @@ jobs:
     with:
       review_ref: 60472b78568d274587971787276e9009f957217c
       tools_repository: q-painleve-lean/TauCetiTools
-      tools_ref: c9b55545fc5f358d62e8c014eef362ef0ea40ad0
+      tools_ref: 6e8ad3a6699266829a4b87fac2b0a385451e445c
       pr: ${{ needs.resolve.outputs.pr }}
       merge_backend: ${{ vars.MERGE_BACKEND || 'queue' }}
     # Pass only the App credentials merge-only needs, not all of QPainleve's secrets.
