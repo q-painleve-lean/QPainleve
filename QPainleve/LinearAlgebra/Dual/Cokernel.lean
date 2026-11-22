@@ -44,23 +44,24 @@ variable {R M N : Type*} [CommRing R] [AddCommGroup M] [Module R M]
 
 variable (f : M →ₗ[R] N) {s : f.range →ₗ[R] M} (hs : f.rangeRestrict ∘ₗ s = .id)
 
-private theorem exact_ker_subtype_rangeRestrict :
-    Function.Exact f.ker.subtype f.rangeRestrict := by
-  rw [LinearMap.exact_iff, Submodule.range_subtype, ker_rangeRestrict]
-
 private noncomputable def kerProdSplitting :
-    M ≃ₗ[R] f.ker × f.range :=
-  ((f.exact_ker_subtype_rangeRestrict.splitSurjectiveEquiv f.ker.injective_subtype)
-    ⟨s, hs⟩).val
+    M ≃ₗ[R] f.ker × f.range := by
+  have h : Function.Exact f.ker.subtype f.rangeRestrict :=
+    f.ker_rangeRestrict ▸ exact_subtype_ker_map f.rangeRestrict
+  exact (h.splitSurjectiveEquiv f.ker.injective_subtype ⟨s, hs⟩).val
 
 private theorem kerProdSplitting_symm_inl (x : f.ker) :
-    (f.kerProdSplitting hs).symm (x, 0) = x.val :=
-  (LinearMap.congr_fun ((f.exact_ker_subtype_rangeRestrict.splitSurjectiveEquiv
-    f.ker.injective_subtype) ⟨s, hs⟩).property.1 x).symm
+    (f.kerProdSplitting hs).symm (x, 0) = x.val := by
+  have h : Function.Exact f.ker.subtype f.rangeRestrict :=
+    f.ker_rangeRestrict ▸ exact_subtype_ker_map f.rangeRestrict
+  exact (LinearMap.congr_fun (h.splitSurjectiveEquiv f.ker.injective_subtype
+    ⟨s, hs⟩).property.1 x).symm
 
 private theorem kerProdSplitting_symm_inr (y : f.range) :
     (f.kerProdSplitting hs).symm (0, y) = s y := by
-  let e := f.exact_ker_subtype_rangeRestrict.splitSurjectiveEquiv f.ker.injective_subtype
+  have h : Function.Exact f.ker.subtype f.rangeRestrict :=
+    f.ker_rangeRestrict ▸ exact_subtype_ker_map f.rangeRestrict
+  let e := h.splitSurjectiveEquiv f.ker.injective_subtype
   exact congrArg (fun t : { l : f.range →ₗ[R] M // f.rangeRestrict ∘ₗ l = .id } ↦ t.val y)
     (e.symm_apply_apply ⟨s, hs⟩)
 
