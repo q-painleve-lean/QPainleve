@@ -146,8 +146,12 @@ universe u
 variable {k B C : Type u} [Field k] [AddCommGroup B] [AddCommGroup C]
   [Module ℤ B] [Module.Free ℤ B] [Module ℤ C] [Module.Free ℤ C]
 
-local instance {G : Type*} [AddCommGroup G] [Module ℤ G] [Module.Free ℤ G] : HasUniqueDiv G :=
+/-- Multiplication by a nonzero natural number is injective on a free integer module. -/
+lemma hasUniqueDiv_of_free_int {G : Type*} [AddCommGroup G] [Module ℤ G] [Module.Free ℤ G] :
+    HasUniqueDiv G :=
   .of_isTorsionFree ℤ G
+
+attribute [local instance] hasUniqueDiv_of_free_int
 
 omit [Module ℤ C] [Module.Free ℤ C] in
 /-- Injective lattice maps give dominant morphisms of character tori. -/

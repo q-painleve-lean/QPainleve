@@ -29,8 +29,7 @@ variable (k : Type u) [Field k]
   [Module ℤ B] [Module.Free ℤ B] [Module ℤ C] [Module.Free ℤ C]
   [Module ℤ D] [Module.Free ℤ D]
 
-local instance {G : Type*} [AddCommGroup G] [Module ℤ G] [Module.Free ℤ G] : HasUniqueDiv G :=
-  .of_isTorsionFree ℤ G
+attribute [local instance] hasUniqueDiv_of_free_int
 
 /-- The identity rational map of a character torus pulls back each rational function to itself. -/
 @[simp]
