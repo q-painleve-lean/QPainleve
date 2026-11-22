@@ -7,6 +7,7 @@ module
 
 public import QPainleve.Algebra.Cluster.XMutation.Symmetry
 public import QPainleve.Geometry.Toric.CharacterTorus.Basic
+import Mathlib.LinearAlgebra.Finsupp.VectorSpace
 
 /-!
 # Character monomials in cluster X coordinates
@@ -35,26 +36,19 @@ theorem monomial_finsupp_single (i : ι) (n : ℤ) :
 theorem xReindex_apply_monomial (e : κ ≃ ι) (x : κ →₀ ℤ) :
     xReindex k e (monomial k (Multiplicative.ofAdd x)) =
       monomial k (Multiplicative.ofAdd (Finsupp.domCongr e x)) := by
-  let f := (xReindex k e).toAlgHom.toMonoidHom.comp (monomial k)
-  let g := (monomial k).comp ((Finsupp.domCongr (M := ℤ) e).toMultiplicative.toMonoidHom)
-  have h : f = g := by
-    apply Finsupp.mulHom_ext
-    intro i n
-    simp [f, g, Finsupp.domCongr_apply, Finsupp.equivMapDomain_single]
-  exact DFunLike.congr_fun h (Multiplicative.ofAdd x)
+  change (functionFieldEquiv k (Finsupp.domCongr e)).toAlgHom
+    (monomial k (Multiplicative.ofAdd x)) = _
+  rw [functionFieldEquiv_toAlgHom, functionFieldMap_monomial, AddEquiv.coe_toAddMonoidHom]
 
 /-- Simultaneous X inversion negates the exponent of every character. -/
 @[simp]
 theorem xInversion_apply_monomial (x : ι →₀ ℤ) :
     xInversion k ι (monomial k (Multiplicative.ofAdd x)) =
       monomial k (Multiplicative.ofAdd (-x)) := by
-  let f := (xInversion k ι).toAlgHom.toMonoidHom.comp (monomial k)
-  let g := (monomial k).comp ((AddEquiv.neg (ι →₀ ℤ)).toMultiplicative.toMonoidHom)
-  have h : f = g := by
-    apply Finsupp.mulHom_ext
-    intro i n
-    simp [f, g, ← Finsupp.single_neg, inv_zpow']
-  exact DFunLike.congr_fun h (Multiplicative.ofAdd x)
+  change (functionFieldEquiv k (AddEquiv.neg (ι →₀ ℤ))).toAlgHom
+    (monomial k (Multiplicative.ofAdd x)) = _
+  rw [functionFieldEquiv_toAlgHom, functionFieldMap_monomial, AddEquiv.coe_toAddMonoidHom,
+    AddEquiv.neg_apply]
 
 variable [Fintype ι]
 

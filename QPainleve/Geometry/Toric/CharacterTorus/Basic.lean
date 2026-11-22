@@ -193,6 +193,7 @@ theorem functionFieldMap_comp {D : Type*} [AddCommGroup D] [Module ℤ D] [Modul
   simp
 
 /-- A lattice equivalence gives an equivalence of torus function fields. -/
+@[expose]
 def functionFieldEquiv (e : B ≃+ C) : FunctionField k B ≃ₐ[k] FunctionField k C :=
   IsFractionRing.algEquivOfAlgEquiv (AddMonoidAlgebra.domCongr k k e)
 

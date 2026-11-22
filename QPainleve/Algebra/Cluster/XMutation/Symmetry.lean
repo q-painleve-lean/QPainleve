@@ -52,6 +52,7 @@ private theorem algEquiv_ext_xCoordinate
     IsScalarTower.toAlgHom_apply, AlgEquiv.coe_toAlgHom, xCoordinate_def] using h i
 
 /-- Pullback for simultaneous inversion of all independent cluster X coordinates. -/
+@[expose]
 def xInversion (ι : Type*) : Functions ι ≃ₐ[k] Functions ι :=
   IsFractionRing.algEquivOfAlgEquiv (AddMonoidAlgebra.domCongr k k (AddEquiv.neg (ι →₀ ℤ)))
 
@@ -74,6 +75,7 @@ def xInversion (ι : Type*) : Functions ι ≃ₐ[k] Functions ι :=
   simpa only [xInversion_symm] using AlgEquiv.self_trans_symm (xInversion k ι)
 
 /-- Pullback along relabeling, where `e` sends each new label to its old label. -/
+@[expose]
 def xReindex (e : κ ≃ ι) : Functions κ ≃ₐ[k] Functions ι :=
   IsFractionRing.algEquivOfAlgEquiv (AddMonoidAlgebra.domCongr k k (Finsupp.domCongr (M := ℤ) e))
 
