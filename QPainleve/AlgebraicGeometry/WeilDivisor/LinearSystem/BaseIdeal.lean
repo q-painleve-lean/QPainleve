@@ -5,8 +5,8 @@ Authors: The QPainleve contributors
 -/
 module
 
-public import QPainleve.AlgebraicGeometry.CartierDivisor.Support
 public import QPainleve.AlgebraicGeometry.CartierDivisor.ZeroDivisor
+public import QPainleve.AlgebraicGeometry.WeilDivisor.IdealSheaf
 public import QPainleve.AlgebraicGeometry.WeilDivisor.LinearSystem.FixedPart
 
 import QPainleve.AlgebraicGeometry.IdealSheaf.Stalk
