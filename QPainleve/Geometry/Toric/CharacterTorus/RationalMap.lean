@@ -24,14 +24,6 @@ namespace QPainleve.CharacterTorus
 
 universe u
 
-/-- A finitely generated character lattice gives a scheme locally of finite type over the base. -/
-instance {k B : Type u} [CommRing k] [AddCommGroup B] [Module ℤ B] [Module.Finite ℤ B] :
-    LocallyOfFiniteType (scheme k B ↘ Spec (CommRingCat.of k)) := by
-  have h : (inferInstance : Module ℤ B) = AddCommGroup.toIntModule B := Subsingleton.elim _ _
-  have : AddGroup.FG B := Module.Finite.iff_addGroup_fg.mp (h ▸ ‹Module.Finite ℤ B›)
-  have : AddMonoid.FG B := AddGroup.fg_iff_addMonoid_fg.mp inferInstance
-  exact AlgebraicGeometry.locallyOfFiniteType_specOverSpec
-
 variable (k : Type u) [Field k]
   {B C D : Type u} [AddCommGroup B] [AddCommGroup C] [AddCommGroup D]
   [Module ℤ B] [Module.Free ℤ B] [Module ℤ C] [Module.Free ℤ C]

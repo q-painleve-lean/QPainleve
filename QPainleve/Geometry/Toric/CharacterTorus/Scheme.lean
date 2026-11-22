@@ -43,6 +43,15 @@ def diagonalizableGroupSchemeIso (G : FGCommGrpCat.{u}) :
 abbrev structureMap : scheme k B ⟶ Spec (CommRingCat.of k) :=
   Spec.algebraMap k (AddMonoidAlgebra k B)
 
+variable {k B} in
+/-- A finitely generated character lattice gives a scheme locally of finite type over the base. -/
+instance [Module ℤ B] [Module.Finite ℤ B] :
+    LocallyOfFiniteType (scheme k B ↘ Spec (CommRingCat.of k)) := by
+  have h : (inferInstance : Module ℤ B) = AddCommGroup.toIntModule B := Subsingleton.elim _ _
+  have : AddGroup.FG B := Module.Finite.iff_addGroup_fg.mp (h ▸ ‹Module.Finite ℤ B›)
+  have : AddMonoid.FG B := AddGroup.fg_iff_addMonoid_fg.mp inferInstance
+  exact AlgebraicGeometry.locallyOfFiniteType_specOverSpec
+
 /-- Points of the character scheme over the coefficient ring. -/
 abbrev Points :=
   {p : Spec (CommRingCat.of k) ⟶ scheme k B //

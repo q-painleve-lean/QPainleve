@@ -29,52 +29,6 @@ variable {X Y Z : Scheme.{u}}
 
 namespace RationalMap
 
-/-- Dominance of the generic-point restriction detects dominance of a rational map. -/
-theorem isDominant_fromFunctionField_iff [IrreducibleSpace X] (f : X ⤏ Y) :
-    IsDominant f.fromFunctionField ↔ f.IsDominant := by
-  refine ⟨fun h ↦ ?_, fun _ ↦ inferInstance⟩
-  obtain ⟨p, rfl⟩ := f.exists_rep
-  rw [p.isDominant_toRationalMap_iff]
-  exact IsDominant.of_comp _ p.hom (H := h)
-
-/-- A dominant morphism defines a dominant rational map. -/
-instance (f : X ⟶ Y) [IsDominant f] : f.toRationalMap.IsDominant := by
-  rw [Hom.toRationalMap, PartialMap.isDominant_toRationalMap_iff, Hom.toPartialMap_hom]
-  have : IsDominant X.topIso.hom := inferInstance
-  exact (IsDominant.comp_iff X.topIso.hom f).mpr ‹IsDominant f›
-
-section RingHom
-
-variable [IsIntegral X] [IrreducibleSpace Y]
-
-/-- A ring homomorphism is the pullback of a dominant rational map exactly when its spectrum
-gives the restriction of the rational map to the generic point. -/
-theorem eq_functionFieldMap_iff (f : X ⤏ Y) [f.IsDominant]
-    (φ : Y.functionField ⟶ X.functionField) :
-    φ = f.functionFieldMap ↔
-      Spec.map φ ≫ Y.fromSpecStalk (genericPoint Y) = f.fromFunctionField := by
-  rw [← f.specMap_functionFieldMap, cancel_mono, Spec.map_inj]
-
-/-- A dominant morphism and its rational map induce the same pullback on function fields. -/
-@[simp]
-theorem _root_.AlgebraicGeometry.Scheme.Hom.functionFieldMap_toRationalMap
-    (f : X ⟶ Y) [IsDominant f] :
-    f.toRationalMap.functionFieldMap = f.functionFieldMap := by
-  symm
-  rw [eq_functionFieldMap_iff]
-  simp [fromFunctionField_toRationalMap]
-
-/-- Pullback along a composite of dominant rational maps composes in the reverse order. -/
-@[simp]
-theorem functionFieldMap_comp [IsIntegral Y] [IrreducibleSpace Z]
-    (f : X ⤏ Y) (g : Y ⤏ Z) [f.IsDominant] [g.IsDominant] :
-    (f.comp g).functionFieldMap = g.functionFieldMap ≫ f.functionFieldMap := by
-  symm
-  rw [eq_functionFieldMap_iff, Spec.map_comp_assoc, g.specMap_functionFieldMap,
-    fromFunctionField_comp]
-
-end RingHom
-
 section Algebra
 
 variable (k : Type u) [CommRing k] [X.Over (Spec (.of k))] [Y.Over (Spec (.of k))]
