@@ -9,6 +9,7 @@ public import Mathlib.GroupTheory.SpecificGroups.Cyclic
 public import Mathlib.GroupTheory.Torsion
 public import Mathlib.LinearAlgebra.BilinearForm.Orthogonal
 public import Mathlib.LinearAlgebra.BilinearForm.TensorProduct
+public import TauCeti.Algebra.Module.Primitive
 import Mathlib.Algebra.Ring.Periodic
 import Mathlib.LinearAlgebra.Dimension.Localization
 import Mathlib.RingTheory.Localization.BaseChange
@@ -16,15 +17,19 @@ import Mathlib.Tactic.Abel
 import Mathlib.Tactic.LinearCombination
 import Mathlib.Tactic.Ring
 import TauCeti.LinearAlgebra.BilinearForm.BaseChange
+import TauCeti.LinearAlgebra.IntegralLattice.Overlattice.Index
+import TauCeti.LinearAlgebra.IntegralLattice.RootLattice.TypeA.Basic
 
 /-!
 # Boundary cycles in bilinear lattices
 
 A cycle of boundary classes has the negative cycle Laplacian as its Gram matrix, with
 both incidences counted when the cycle has length one or two. Its total class generates
-the radical of the boundary span. If this class is primitive, the saturation quotient
-embeds into the additive group of `ZMod n` via the weighted sum of the component degrees.
-The boundary form makes the image square-zero, so the square of the saturation index divides `n`.
+the radical of the boundary span. If this class satisfies Tau Ceti's `IsPrimitive`, the
+saturation quotient embeds into the additive group of `ZMod n` via the weighted sum of
+the component degrees.
+The boundary form makes the image square-zero. In the type-A discriminant group this gives an
+integral overlattice, whose index square divides `n` by the discriminant formula.
 The radical calculation also gives the rational orthogonal decomposition.
 -/
 
@@ -299,7 +304,7 @@ private theorem dvd_coeff_sub_of_degreeMoment_eq_zero {x : L} {k : ℕ} (a : ZMo
 
 include hGram in
 private theorem mem_span_of_nsmul_mem_of_degreeMoment_eq_zero [IsAddTorsionFree L]
-    (ℓ : L →ₗ[ℤ] ℤ) (hℓ : ℓ δ = 1) {x : L} {k : ℕ} (hk : k ≠ 0) (hx : k • x ∈ M)
+    (hPrimitive : TauCeti.IsPrimitive δ) {x : L} {k : ℕ} (hk : k ≠ 0) (hx : k • x ∈ M)
     (hm : degreeMoment hGram ((M).mkQ x) = 0) : x ∈ M := by
   rw [← Fintype.range_linearCombination] at hx ⊢
   obtain ⟨a, ha⟩ := hx
@@ -312,30 +317,32 @@ private theorem mem_span_of_nsmul_mem_of_degreeMoment_eq_zero [IsAddTorsionFree 
   have ha' : a = k • b + a 0 • ones := by
     funext i
     simpa [ones, add_comm] using eq_add_of_sub_eq (hb i)
-  have hshift : k • (x - e b) = e (a 0 • ones) := calc
+  have hshift : k • (x - e b) = a 0 • δ := calc
     _ = e (a - k • b) := by rw [map_sub, map_nsmul, ha, nsmul_sub]
-    _ = _ := congrArg e (sub_eq_iff_eq_add.mpr (ha'.trans (add_comm _ _)))
+    _ = e (a 0 • ones) := congrArg e (sub_eq_iff_eq_add.mpr (ha'.trans (add_comm _ _)))
+    _ = _ := by rw [map_zsmul, hδ]
+  obtain ⟨ℓ, hℓ⟩ := TauCeti.isPrimitive_def.mp hPrimitive
   have hcoeff : (k : ℤ) * ℓ (x - e b) = a 0 := by
-    have h := congrArg ℓ hshift
-    rw [map_nsmul, map_zsmul, hδ, map_zsmul, hℓ] at h
-    simpa using h
+    simpa only [map_nsmul, map_zsmul, hℓ, nsmul_eq_mul, zsmul_eq_mul, Int.cast_id, mul_one] using
+      congrArg ℓ hshift
+  -- Primitivity recovers the coefficient of the total class integrally.
+  have hrestore : ℓ (x - e b) • δ = x - e b := by
+    apply eq_of_nsmul_eq_nsmul_of_addCommute hk (AddCommute.all _ _)
+    calc
+      _ = ((k : ℤ) * ℓ (x - e b)) • δ := by rw [mul_smul, natCast_zsmul]
+      _ = _ := by rw [hcoeff, hshift]
   refine ⟨b + ℓ (x - e b) • ones, ?_⟩
-  apply eq_of_nsmul_eq_nsmul_of_addCommute hk (AddCommute.all _ _)
-  have hscale : k • (ℓ (x - e b) • ones) = a 0 • ones := by
-    funext i
-    simpa [ones] using hcoeff
   calc
-    _ = k • e b + e (a 0 • ones) := by simp only [← map_nsmul, map_add, nsmul_add, hscale, e]
-    _ = k • x := by rw [← hshift, nsmul_sub]; abel
+    _ = e b + ℓ (x - e b) • δ := by rw [map_add, map_zsmul, hδ]
+    _ = x := by rw [hrestore, add_sub_cancel]
 
 include hGram in
 /-- On the saturation quotient (the torsion of the ambient quotient), the degree moment is
-injective if the total boundary class admits an integral functional taking it to one. -/
+injective if the total boundary class is primitive. -/
 theorem degreeMoment_injective_on_torsion [IsAddTorsionFree L]
-    (hPrimitive : ∃ ℓ : L →ₗ[ℤ] ℤ, ℓ δ = 1) :
+    (hPrimitive : TauCeti.IsPrimitive δ) :
     Function.Injective ((degreeMoment hGram).toAddMonoidHom.comp
       (AddCommGroup.torsion (L ⧸ M)).subtype) := by
-  obtain ⟨ℓ, hℓ⟩ := hPrimitive
   apply (AddMonoidHom.ker_eq_bot_iff _).mp
   rw [AddSubgroup.eq_bot_iff_forall]
   rintro ⟨q, hq⟩ hzero
@@ -344,13 +351,13 @@ theorem degreeMoment_injective_on_torsion [IsAddTorsionFree L]
     ((AddCommGroup.mem_torsion _).mp hq)
   apply Subtype.ext
   apply (Submodule.Quotient.mk_eq_zero M).mpr
-  exact mem_span_of_nsmul_mem_of_degreeMoment_eq_zero hGram ℓ hℓ hk.ne'
+  exact mem_span_of_nsmul_mem_of_degreeMoment_eq_zero hGram hPrimitive hk.ne'
     ((Submodule.Quotient.mk_eq_zero M).mp (by rwa [← Submodule.mkQ_apply, map_nsmul])) hzero
 
 include hGram in
 /-- The saturation quotient is a finite cyclic group of order dividing the cycle length. -/
 theorem torsion_quotient_cyclic [IsAddTorsionFree L]
-    (hPrimitive : ∃ ℓ : L →ₗ[ℤ] ℤ, ℓ δ = 1) :
+    (hPrimitive : TauCeti.IsPrimitive δ) :
     Finite (AddCommGroup.torsion (L ⧸ M)) ∧ IsAddCyclic (AddCommGroup.torsion (L ⧸ M)) ∧
       Nat.card (AddCommGroup.torsion (L ⧸ M)) ∣ n := by
   let f := (degreeMoment hGram).toAddMonoidHom.comp (AddCommGroup.torsion (L ⧸ M)).subtype
@@ -415,36 +422,47 @@ theorem degreeMoment_sq_eq_zero_of_isOfFinAddOrder {q : L ⧸ M} (hq : IsOfFinAd
     _ = (n : ℤ) * ((n : ℤ) * (a 0 - a (0 - 1)) ^ 2) := by rw [hmul]; ring
     _ = (k : ℤ) ^ 2 * ((n : ℤ) * b) := by rw [hb]; ring
 
+open TauCeti.IntegralLattice TauCeti.FiniteBilinearModule in
 include hGram in
 /-- The square of the saturation index divides the cycle length. -/
 theorem natCard_torsion_quotient_sq_dvd [IsAddTorsionFree L]
-    (hPrimitive : ∃ ℓ : L →ₗ[ℤ] ℤ, ℓ δ = 1) :
+    (hPrimitive : TauCeti.IsPrimitive δ) :
     Nat.card (AddCommGroup.torsion (L ⧸ M)) ^ 2 ∣ n := by
-  let T := AddCommGroup.torsion (L ⧸ M)
-  let k := Nat.card T
-  obtain ⟨_, hcyc, ⟨l, hl⟩⟩ := torsion_quotient_cyclic hGram hPrimitive
-  let e := zmodAddCyclicAddEquiv hcyc
+  obtain ⟨r, rfl⟩ := Nat.exists_eq_succ_of_ne_zero (NeZero.ne n)
+  let T := AddCommGroup.torsion (L ⧸ Submodule.span ℤ (Set.range D))
   let f := (degreeMoment hGram).toAddMonoidHom.comp T.subtype
-  let y := f (e 1)
-  have hy : addOrderOf y = k := by
-    rw [addOrderOf_injective f (degreeMoment_injective_on_torsion hGram hPrimitive)]
-    exact (addOrderOf_injective e.toAddMonoidHom e.injective 1).trans (ZMod.addOrderOf_one k)
-  have hsquare : y ^ 2 = 0 :=
-    degreeMoment_sq_eq_zero_of_isOfFinAddOrder hGram ((AddCommGroup.mem_torsion _).mp (e 1).2)
-  -- Since the integer representative kills a generator, it is divisible by the group order.
-  obtain ⟨m, hm⟩ := ZMod.intCast_surjective y
-  have hkm : (k : ℤ) ∣ m := by
-    rw [← hy, addOrderOf_dvd_iff_zsmul_eq_zero, zsmul_eq_mul, hm, ← pow_two]
-    exact hsquare
-  have hly : l • y = 0 := by
-    rw [nsmul_eq_mul, ← hm, ← Int.cast_natCast, ← Int.cast_mul,
-      ZMod.intCast_zmod_eq_zero_iff_dvd]
-    rw [hl, Nat.cast_mul, mul_comm (k : ℤ)]
-    exact mul_dvd_mul_left _ hkm
-  have hkl : k ∣ l := by rwa [← hy, addOrderOf_dvd_iff_nsmul_eq_zero]
-  calc
-    k ^ 2 ∣ k * l := by simpa only [pow_two] using Nat.mul_dvd_mul_left k hkl
-    _ = n := hl.symm
+  obtain ⟨t, ht⟩ :=
+    isAddCyclic_iff_exists_zmultiples_eq_top.mp (torsion_quotient_cyclic hGram hPrimitive).2.1
+  let e := typeADiscriminantGroupEquiv r
+  let A := typeARootLattice r
+  let g := e.toAddMonoidHom.comp f
+  let H := g.range
+  have hg : Function.Injective g :=
+    e.injective.comp (degreeMoment_injective_on_torsion hGram hPrimitive)
+  have hcard : Nat.card H = Nat.card T := (Nat.card_congr (Equiv.ofInjective g hg)).symm
+  have hgen : AddSubgroup.zmultiples (g t) = H := by
+    rw [← g.map_zmultiples, ht, AddSubgroup.map_top]
+  have hH : A.discriminantBilinearModule.IsIsotropic H := by
+    refine hgen ▸ (isIsotropic_zmultiples_iff A.discriminantBilinearModule (g t)).mpr ?_
+    refine (isIsotropicElem_def A.discriminantBilinearModule (g t)).mpr
+      ((A.discriminantBilinearModule_pairing _ _).trans ?_)
+    obtain ⟨m, hm⟩ := ZMod.intCast_surjective (f t)
+    have hsq : (m : ZMod (r + 1)) ^ 2 = 0 := hm ▸
+      degreeMoment_sq_eq_zero_of_isOfFinAddOrder hGram ((AddCommGroup.mem_torsion _).mp t.2)
+    have hzero : ((m ^ 2 * (r : ℤ) : ℤ) : ZMod (r + 1)) = 0 := by simp [hsq]
+    have he : g t = m • typeAFundamentalWeightClass r := calc
+      g t = e (f t) := rfl
+      _ = _ := by
+        rw [← hm, ← zsmul_one, map_zsmul]
+        exact congrArg (m • ·) (typeADiscriminantGroupEquiv_apply_one r)
+    rw [he, discriminantPairing_zsmul_typeAFundamentalWeightClass]
+    have h := congrArg (ZMod.toRatAddCircle (r + 1)) hzero
+    rw [ZMod.toRatAddCircle_intCast, map_zero] at h
+    simpa only [Int.cast_mul, Int.cast_pow, Int.cast_natCast, Nat.cast_add, Nat.cast_one,
+      pow_two] using h
+  have hIntegral := (A.isIntegral_intermediateCarrierOfDiscriminantSubgroup_iff H).mpr hH
+  simpa only [IntermediateCarrier.index_intermediateCarrierOfDiscriminantSubgroup,
+    hcard, A, discriminant_typeARootLattice] using hIntegral.index_sq_dvd_discriminant
 
 include hGram in
 /-- In a nondegenerate integral lattice with nonzero total boundary class, the cycle length is

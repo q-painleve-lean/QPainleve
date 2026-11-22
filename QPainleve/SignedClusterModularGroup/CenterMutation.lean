@@ -100,6 +100,10 @@ variable (k : Type u) [Field k]
 
 variable [Module.Free ℤ N]
 
+local instance centerMutationHasUniqueDiv {G : Type*} [AddCommGroup G] [Module ℤ G]
+    [Module.Free ℤ G] : HasUniqueDiv G :=
+  .of_isTorsionFree ℤ G
+
 local notation "Joint" => FunctionField k (A × N)
 
 private def pivotExponent : A × N :=
@@ -127,7 +131,9 @@ private theorem mutationFunctional_pivot (hω : ω.IsAlt) :
 /-- Joint pullback for the monomial center change and the binomial transformation of surface
 characters. Center and surface coordinates are both independent in the source field. -/
 def centerMutationPullback (hω : ω.IsAlt) : Joint ≃ₐ[k] Joint :=
-  (functionFieldEquiv k ((B).prodCongr (LinearEquiv.refl ℤ N)).toAddEquiv).trans
+  (IsFractionRing.algEquivOfAlgEquiv
+    (AddMonoidAlgebra.domCongr k k ((B).prodCongr (LinearEquiv.refl ℤ N)).toAddEquiv) :
+      Joint ≃ₐ[k] Joint).trans
     (binomialShear k (pivotExponent v p) (one_add_monomial_ne_zero k (pivotExponent_ne_zero v p))
       (mutationFunctional ω v p) (mutationFunctional_pivot ω v p hω))
 
@@ -139,9 +145,10 @@ theorem centerMutationPullback_monomial (hω : ω.IsAlt) (a : A) (h : N) :
       monomial k (ofAdd (B a, h)) *
         (1 + monomial k (ofAdd (e p, v (e p)))) ^ (-ω h (v (e p))) := by
   have he (r : (A × N) ≃+ (A × N)) :
-      functionFieldEquiv k r (monomial k (ofAdd (a, h))) = monomial k (ofAdd (r (a, h))) := by
-    rw [← AlgEquiv.toAlgHom_apply, functionFieldEquiv_toAlgHom, functionFieldMap_monomial,
-      AddEquiv.coe_toAddMonoidHom]
+      (IsFractionRing.algEquivOfAlgEquiv (AddMonoidAlgebra.domCongr k k r) : Joint ≃ₐ[k] Joint)
+        (monomial k (ofAdd (a, h))) = monomial k (ofAdd (r (a, h))) := by
+    rw [← AlgEquiv.toAlgHom_apply, algEquivOfAlgEquiv_domCongr_toAlgHom,
+      functionFieldMap_monomial, AddEquiv.coe_toAddMonoidHom]
   simp [centerMutationPullback, he, mutationFunctional_apply, pivotExponent]
 
 local notation "r" => Finsupp.linearEquivFunOnFinite ℤ ℤ ι
@@ -187,7 +194,7 @@ private theorem centerMutationPullback_xEvaluation_of_ne (hω : ω.IsAlt) {i : �
     simpa only [a, chargeExchangeMatrix_apply, hω.neg_eq] using
       chargeMutationEquiv_single_of_ne ε p hi
   have hv : chargeMutation ω v p (e i) = v (e i) + a • v (e p) := by
-    rw [chargeMutation_apply, hb, map_add, map_smul]
+    exact chargeMutation_single_of_ne ω hω v hi
   have hdet : ω (chargeMutation ω v p (e i)) (v (e p)) = ε i p := by
     rw [hv, BilinForm.add_left, BilinForm.smul_left, hω.self_eq_zero, mul_zero, add_zero,
       chargeExchangeMatrix_apply]

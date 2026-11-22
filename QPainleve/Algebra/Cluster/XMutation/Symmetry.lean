@@ -6,7 +6,7 @@ Authors: The QPainleve contributors
 module
 
 public import QPainleve.Algebra.Cluster.XMutation.Basic
-import Mathlib.LinearAlgebra.Finsupp.VectorSpace
+import TauCeti.Algebra.Group.FreeAbelianCharacter
 
 /-!
 # Inversion and relabeling of cluster X coordinates
@@ -34,20 +34,16 @@ local notation:max "Functions" ι:arg => FractionRing (AddMonoidAlgebra k (ι �
 private theorem algEquiv_ext_xCoordinate
     {f g : Functions ι ≃ₐ[k] Functions κ}
     (h : ∀ i : ι, f (xCoordinate k i) = g (xCoordinate k i)) : f = g := by
-  -- Restrict to Laurent polynomials, then compare the two exponent maps on the standard basis.
+  -- Restrict to Laurent polynomials and compare the characters on the standard generators.
   apply AlgEquiv.coe_toAlgHom_injective
   apply IsLocalization.algHom_ext (nonZeroDivisors (Laurent ι))
   apply (AddMonoidAlgebra.lift k (Functions κ) (ι →₀ ℤ)).symm.injective
   apply MonoidHom.toHomUnitsMulEquiv.injective
-  apply MonoidHom.toAdditiveRight.injective
-  apply AddMonoidHom.toIntLinearMap_injective
-  apply Finsupp.basisSingleOne.ext
-  intro i
-  apply Additive.toMul.injective
+  apply TauCeti.freeAbelianCharEquiv.injective
+  funext i
   apply Units.ext
-  simpa only [AddMonoidHom.coe_toIntLinearMap, MonoidHom.coe_toAdditiveRight,
-    Function.comp_apply, toMul_ofMul, Finsupp.coe_basisSingleOne,
-    MonoidHom.toHomUnitsMulEquiv_apply, MonoidHom.coe_toHomUnits,
+  simpa only [TauCeti.freeAbelianCharEquiv_apply, MonoidHom.toHomUnitsMulEquiv_apply,
+    MonoidHom.coe_toHomUnits,
     AddMonoidAlgebra.lift_symm_apply, toAdd_ofAdd, AlgHom.comp_apply, Algebra.algHom,
     IsScalarTower.toAlgHom_apply, AlgEquiv.coe_toAlgHom, xCoordinate_def] using h i
 

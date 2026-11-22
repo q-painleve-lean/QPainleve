@@ -114,6 +114,10 @@ private theorem binomial_ne_zero (hb : 1 + monomial k (ofAdd b) ≠ 0) : binomia
 
 variable [Module.Free ℤ B]
 
+local instance shearHasUniqueDiv {G : Type*} [AddCommGroup G] [Module ℤ G]
+    [Module.Free ℤ G] : HasUniqueDiv G :=
+  .of_isTorsionFree ℤ G
+
 section
 
 variable [Fact (1 + monomial k (ofAdd b) ≠ 0)]
