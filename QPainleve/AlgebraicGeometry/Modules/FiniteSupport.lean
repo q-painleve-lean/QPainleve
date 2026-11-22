@@ -8,7 +8,7 @@ module
 public import Mathlib.AlgebraicGeometry.Morphisms.QuasiFinite
 public import Mathlib.RingTheory.LocalRing.Length
 public import TauCeti.AlgebraicGeometry.Modules.BaseStalk
-public import TauCeti.AlgebraicGeometry.Modules.FinitePresentation
+public import TauCeti.AlgebraicGeometry.Modules.FinitePresentation.Basic
 public import TauCeti.AlgebraicGeometry.Modules.SchemeTheoreticSupport
 public import TauCeti.AlgebraicGeometry.VectorBundle.Affine.Semilocal
 public import TauCeti.AlgebraicGeometry.VectorBundle.ProjectionFormula
@@ -73,7 +73,7 @@ theorem exists_iso_pushforward_of_finite_support [LocallyOfFiniteType (X ↘ Spe
     ∃ (Z : Scheme.{u}) (i : Z ⟶ X) (_ : IsClosedImmersion i)
       (_ : IsFinite (i ≫ (X ↘ Spec (.of k)))),
       Nonempty (M ≅ (pushforward i).obj ((pullback i).obj M)) := by
-  let hM (U : X.affineOpens) := M.finite_sections_of_isAffineOpen U.1 U.2
+  let hM (U : X.affineOpens) := M.finite_sections_of_isAffineOpen U.val U.property
   let I := M.annihilator hM
   let i := I.subschemeι
   have hi : IsIso ((pullbackPushforwardAdjunction i).unit.app M) :=
@@ -88,7 +88,7 @@ of finite type over a field are closed. -/
 theorem isClosed_singleton_of_finite_support [LocallyOfFiniteType (X ↘ Spec (.of k))]
     (h : {x : X | Nontrivial (M.presheaf.stalk x)}.Finite)
     {x : X} (hx : Nontrivial (M.presheaf.stalk x)) : IsClosed ({x} : Set X) := by
-  let hM (U : X.affineOpens) := M.finite_sections_of_isAffineOpen U.1 U.2
+  let hM (U : X.affineOpens) := M.finite_sections_of_isAffineOpen U.val U.property
   let I := M.annihilator hM
   let f := I.subschemeι ≫ (X ↘ Spec (.of k))
   have : IsFinite f := isFinite_annihilator_subschemeι_comp k M hM h
@@ -178,7 +178,7 @@ theorem bijective_globalSections_germs
   refine ⟨g, funext fun x ↦ ?_⟩
   exact (M.presheaf.Γgerm_res_apply x (hxU x) g).symm.trans
     ((congrArg (M.presheaf.germ (U x) x (hxU x)) (hg x)).trans
-      ((ht x x (hxU x)).trans (dite_eq_left x.2)))
+      ((ht x x (hxU x)).trans (dite_eq_left x.property)))
 
 section BaseRing
 
