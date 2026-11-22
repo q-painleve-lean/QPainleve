@@ -8,16 +8,16 @@ module
 public import Mathlib.AlgebraicGeometry.FunctionField
 public import Mathlib.AlgebraicGeometry.Noetherian
 public import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.Basic
+import QPainleve.AlgebraicGeometry.IdealSheaf.Integral
 import Mathlib.RingTheory.Ideal.KrullsHeightTheorem
 import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.Stalk
-import TauCeti.AlgebraicGeometry.IdealSheaf.Reduced
 import TauCeti.AlgebraicGeometry.IdealSheaf.Stalk
 
 /-!
 # Integral effective Cartier divisors
 
 The generic point of an integral effective Cartier divisor is a codimension-one point
-of the ambient scheme. Its reduced closure recovers the actual divisor ideal.
+of the ambient scheme.
 The codimension calculation applies Mathlib's
 `Ideal.height_span_singleton_eq_one_of_mem_nonZeroDivisors` to the maximal ideal
 of the ambient stalk at that point.
@@ -29,24 +29,7 @@ open CategoryTheory Order TopologicalSpace
 
 namespace AlgebraicGeometry.Scheme.IdealSheafData
 
-variable {X : Scheme} (I : X.IdealSheafData)
-
-/-- An irreducible closed subscheme has support the closure of the image of its generic point. -/
-theorem support_eq_closure_subschemeι_genericPoint [IrreducibleSpace I.subscheme] :
-    (I.support : Set X) = closure {I.subschemeι (genericPoint I.subscheme)} := by
-  have h := (genericPoint_spec I.subscheme).image I.subschemeι.continuous
-  rw [Set.image_univ, I.range_subschemeι, I.support.isClosed.closure_eq] at h
-  exact h.def.symm
-
-/-- The vanishing ideal of the closure of the generic point of an integral closed subscheme is its
-ideal sheaf. -/
-theorem vanishingIdeal_closure_subschemeι_genericPoint [IsIntegral I.subscheme] :
-    vanishingIdeal ⟨closure {I.subschemeι (genericPoint I.subscheme)}, isClosed_closure⟩ = I := by
-  have h : (⟨closure {I.subschemeι (genericPoint I.subscheme)}, isClosed_closure⟩ :
-      Closeds X) = I.support :=
-    SetLike.coe_injective I.support_eq_closure_subschemeι_genericPoint.symm
-  rw [h, vanishingIdeal_support]
-  exact I.isReduced_subscheme_iff_radical_eq.mp inferInstance
+variable {X : Scheme}
 
 /-- The generic point of an integral effective Cartier divisor has codimension one in the
 ambient locally Noetherian scheme. -/

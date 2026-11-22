@@ -9,6 +9,7 @@ public import TauCeti.AlgebraicGeometry.Blowup.ExceptionalDivisor
 public import TauCeti.AlgebraicGeometry.IntersectionNumber.ExceptionalCurve.Basic
 import QPainleve.AlgebraicGeometry.Blowup.Integral
 import QPainleve.AlgebraicGeometry.EffectiveCartierDivisor.Integral
+import QPainleve.AlgebraicGeometry.IdealSheaf.Integral
 import TauCeti.AlgebraicGeometry.Blowup.Restriction
 import TauCeti.AlgebraicGeometry.CartierDivisor.Excision
 import TauCeti.AlgebraicGeometry.IdealSheaf.Comap
