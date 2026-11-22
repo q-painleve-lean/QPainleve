@@ -11,8 +11,6 @@ public import QPainleve.Geometry.Toric.Fan.Picard.Basic
 public import TauCeti.AlgebraicGeometry.CartierDivisor.Excision
 
 import Mathlib.Algebra.Group.Subgroup.Finsupp
-import TauCeti.Algebra.MonoidAlgebra.Units
-import TauCeti.Geometry.Toric.Algebraic.Fan.Over
 
 /-!
 # The Picard presentation of a regular toric fan
@@ -30,8 +28,7 @@ public noncomputable section
 
 open AlgebraicGeometry CategoryTheory Multiplicative
 open TauCeti.AlgebraicGeometry (CodimensionOnePoint LineBundleClass SchemeWeilDivisor WeilDivisor)
-open TauCeti.AlgebraicGeometry.Scheme
-  (exists_unit_germToFunctionField_eq_of_ord_eq_zero_of_isIntegrallyClosed ord_functionFieldMap)
+open TauCeti.AlgebraicGeometry.Scheme (ord_functionFieldMap)
 open TauCeti.AlgebraicGeometry.Scheme.CartierDivisor
 open TauCeti.AlgebraicGeometry.SchemeWeilDivisor (orderAt_apply)
 
@@ -133,24 +130,9 @@ section Principal
 
 local notation "𝒳" => Φ.algebraicRealization
 local notation "𝕋" => Φ.denseTorus
-local notation "R" => affineCoordinateRing Φ.lattice (⊥ : PointedCone ℝ V)
 
 local instance : IsLocallyNoetherian 𝕋 :=
   isLocallyNoetherian_of_isOpenImmersion (Φ.denseTorusι inferInstance)
-
-private theorem ord_character_eq_zero_of_mem_range_denseTorusι (m : N →+ ℤ)
-    {x : CodimensionOnePoint 𝒳} (hx : x.val ∈ Set.range (Φ.denseTorusι inferInstance)) :
-    (𝒳).ord (Φ.character (ofAdd m)) x.val = 0 := by
-  let j := Φ.denseTorusι inferInstance
-  obtain ⟨y, rfl⟩ := (CodimensionOnePoint.mem_range_mapOfIsOpenImmersion j).2 hx
-  rw [CodimensionOnePoint.coe_mapOfIsOpenImmersion,
-    ← ord_functionFieldMap j, functionFieldMap_character,
-    CommRingCat.comp_apply]
-  have hm : IsUnit (MonoidAlgebra.of ℂ _ (ofAdd ((denseTorusDualEquiv Φ.lattice).symm m))) := by
-    have hu := ((Group.isUnit (ofAdd m)).map (MonoidAlgebra.of ℂ _)).map
-      (denseTorusCoordinateRingEquiv Φ.lattice).symm.toRingHom
-    simpa [MonoidAlgebra.of_apply] using hu
-  exact (𝕋).ord_of_isUnit (hm.map (Scheme.ΓSpecIso (.of R)).inv.hom) trivial
 
 /-- The principal Weil divisor of a toric character has the prescribed ray coefficients. -/
 theorem rayDivisorToWeilDivisor_characterToRayDivisor (hΦ : Φ.IsRegular) (m : N →+ ℤ) :
@@ -168,58 +150,6 @@ theorem rayDivisorToWeilDivisor_characterToRayDivisor (hΦ : Φ.IsRegular) (m : 
   · rw [Φ.coeff_rayDivisorToWeilDivisor_of_notMem_range hΦ _ hx]
     apply (Φ.ord_character_eq_zero_of_mem_range_denseTorusι m ?_).symm
     simpa [Φ.range_rayBoundaryPoint hΦ inferInstance] using hx
-
-private theorem denseTorusι_comp_structureMap :
-    Φ.denseTorusι inferInstance ≫ Φ.algebraicRealizationStructureMap =
-      Spec.map (CommRingCat.ofHom (algebraMap ℂ R)) := by
-  have hbot := Φ.bot_mem (Classical.choice (inferInstance : Nonempty Φ.cones)).property
-  rw [Φ.denseTorusι_eq_affineToricChartι _ hbot,
-    Φ.affineToricChartι_comp_algebraicRealizationStructureMap]
-
-private theorem exists_eq_const_mul_character (f : (𝒳).functionFieldˣ)
-    (hf : ∀ y : CodimensionOnePoint 𝕋,
-      (𝕋).ord ((Φ.denseTorusι inferInstance).functionFieldMap (f : (𝒳).functionField)) y.val = 0) :
-    ∃ (s : Γ(𝒳, ⊤)ˣ) (m : N →+ ℤ),
-      (f : (𝒳).functionField) =
-        (𝒳).germToFunctionField ⊤ (s : Γ(𝒳, ⊤)) * Φ.character (ofAdd m) := by
-  let j := Φ.denseTorusι inferInstance
-  obtain ⟨u, hu⟩ :=
-    exists_unit_germToFunctionField_eq_of_ord_eq_zero_of_isIntegrallyClosed
-      (X := 𝕋) (U := ⊤) (f := Units.map j.functionFieldMap.hom.toMonoidHom f)
-      (fun _ _ ↦ inferInstance) (fun y _ ↦ hf y)
-  let τ := Scheme.ΓSpecIso (.of R)
-  let uR := Units.map τ.hom.hom.toMonoidHom u
-  have : TwoUniqueSums (dualSemigroup Φ.lattice (⊥ : PointedCone ℝ V)) :=
-    TwoUniqueSums.of_injective_addHom
-      ((AddMonoidHom.coeFn N ℤ).comp (dualSemigroup Φ.lattice ⊥).subtype).toAddHom
-      (DFunLike.coe_injective.comp Subtype.val_injective) inferInstance
-  let c := (MonoidAlgebra.unitsEquiv uR).1
-  let a := ((MonoidAlgebra.unitsEquiv uR).2 : Multiplicative (dualSemigroup Φ.lattice ⊥))
-  let m := denseTorusDualEquiv Φ.lattice a.toAdd
-  let k := (Scheme.ΓSpecIso (.of ℂ)).inv ≫ Φ.algebraicRealizationStructureMap.appTop
-  refine ⟨Units.map k.hom.toMonoidHom c, m, j.functionFieldMap.hom.injective ?_⟩
-  have hc : j.appTop (k (c : ℂ)) = τ.inv (algebraMap ℂ R (c : ℂ)) := by
-    have he : k ≫ j.appTop = CommRingCat.ofHom (algebraMap ℂ R) ≫ τ.inv := by
-      dsimp only [k, j, τ]
-      rw [Category.assoc, ← Scheme.Hom.comp_appTop, Φ.denseTorusι_comp_structureMap]
-      exact (Scheme.ΓSpecIso_inv_naturality _).symm
-    exact ConcreteCategory.congr_hom he (c : ℂ)
-  have hs : (uR : R) = algebraMap ℂ R (c : ℂ) * MonoidAlgebra.of ℂ _ a := by
-    simpa [c, a, MonoidAlgebra.algebraMap_def, MonoidAlgebra.of_apply,
-      MonoidAlgebra.single_mul_single] using MonoidAlgebra.val_eq_single_unitsEquiv uR
-  have hunit : τ.inv (uR : R) = (u : Γ(𝕋, ⊤)) := by
-    simpa only [uR, Units.coe_map, RingHom.toMonoidHom_eq_coe, MonoidHom.coe_ofClass,
-      CommRingCat.comp_apply, CommRingCat.id_apply] using
-      ConcreteCategory.congr_hom τ.hom_inv_id (u : Γ(𝕋, ⊤))
-  have hmono : ofAdd ((denseTorusDualEquiv Φ.lattice).symm m) = a := by simp [m]
-  rw [map_mul, functionFieldMap_character, toAdd_ofAdd, hmono, CommRingCat.comp_apply]
-  simp only [Units.coe_map, RingHom.toMonoidHom_eq_coe, MonoidHom.coe_ofClass] at hu ⊢
-  rw [← hu, ← hunit]
-  have htop : (𝒳).germToFunctionField ⊤ ≫ j.functionFieldMap =
-      j.appTop ≫ (𝕋).germToFunctionField ⊤ := j.germToFunctionField_functionFieldMap ⊤
-  have hcomm := ConcreteCategory.congr_hom htop (k (c : ℂ))
-  simp only [CommRingCat.comp_apply] at hcomm
-  rw [hcomm, hc, hs, map_mul, map_mul]
 
 /-- The character divisor map and the boundary class map are exact. -/
 theorem exact_characterToRayDivisor_rayDivisorToPicard (hΦ : Φ.IsRegular) :
