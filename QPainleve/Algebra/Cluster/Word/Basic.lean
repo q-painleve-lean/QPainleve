@@ -217,6 +217,36 @@ theorem reindex_reverse (g : Generator ι) (e : ι ≃ κ) :
     g.reverse.reindex e = (g.reindex e).reverse := by
   cases g <;> simp [Equiv.symm_trans, Equiv.trans_assoc]
 
+/-- The contribution of a generator to a word's inversion count. -/
+def inversionCount : Generator ι → ℕ
+  | .mutate _ | .permute _ => 0
+  | .invert => 1
+
+@[simp]
+theorem inversionCount_mutate (p : ι) : (mutate p).inversionCount = 0 :=
+  (rfl)
+
+@[simp]
+theorem inversionCount_permute (σ : Equiv.Perm ι) : (permute σ).inversionCount = 0 :=
+  (rfl)
+
+@[simp]
+theorem inversionCount_invert : (invert : Generator ι).inversionCount = 1 :=
+  (rfl)
+
+@[simp]
+theorem inversionCount_eq_zero (g : Generator ι) : g.inversionCount = 0 ↔ g ≠ .invert := by
+  cases g <;> simp
+
+@[simp]
+theorem inversionCount_reverse (g : Generator ι) : g.reverse.inversionCount = g.inversionCount := by
+  cases g <;> simp
+
+@[simp]
+theorem inversionCount_reindex {κ : Type*} (g : Generator ι) (e : ι ≃ κ) :
+    (g.reindex e).inversionCount = g.inversionCount := by
+  cases g <;> simp
+
 variable [DecidableEq ι] [DecidableEq κ]
 
 /-- Apply a generator to its source exchange matrix to compute the target. -/
@@ -236,6 +266,12 @@ def target (g : Generator ι) (B : SkewExchangeMatrix ι) : SkewExchangeMatrix �
 
 @[simp] theorem target_invert (B : SkewExchangeMatrix ι) : invert.target B = -B :=
   (rfl)
+
+/-- Applying a generator to the negated matrix negates its target as well. -/
+@[simp]
+theorem target_neg (g : Generator ι) (B : SkewExchangeMatrix ι) :
+    g.target (-B) = -(g.target B) := by
+  cases g <;> simp
 
 @[simp]
 theorem reverse_target_target (g : Generator ι) (B : SkewExchangeMatrix ι) :
@@ -305,6 +341,16 @@ theorem reverse_generator {B C : SkewExchangeMatrix ι} (s : B ⟶ C) :
     Step.generator (Quiver.reverse s) = s.generator.reverse :=
   (rfl)
 
+variable {B C : SkewExchangeMatrix ι}
+
+/-- Apply the same generator between the negated exchange matrices. -/
+def neg (s : Step B C) : Step (-B) (-C) :=
+  ⟨s.generator, by rw [Generator.target_neg, s.target_eq]⟩
+
+@[simp]
+theorem neg_generator (s : Step B C) : s.neg.generator = s.generator :=
+  (rfl)
+
 end Step
 
 namespace SkewExchangeMatrix
@@ -372,3 +418,54 @@ theorem reindexPrefunctor_mapPath_reverse (e : ι ≃ κ) {B C : SkewExchangeMat
 end SkewExchangeMatrix
 
 end QPainleve.Cluster
+
+namespace Quiver.Path
+
+open QPainleve.Cluster
+
+variable {ι : Type*} [DecidableEq ι] {B C D : SkewExchangeMatrix ι}
+
+/-- Count the global inversions in a signed cluster word. -/
+def inversionCount : ∀ {C : SkewExchangeMatrix ι}, Word B C → ℕ
+  | _, .nil => 0
+  | _, .cons w s => w.inversionCount + s.generator.inversionCount
+
+@[simp]
+theorem inversionCount_nil : (Path.nil : Word B B).inversionCount = 0 :=
+  (rfl)
+
+@[simp]
+theorem inversionCount_cons (w : Word B C) (s : C ⟶ D) :
+    (w.cons s).inversionCount = w.inversionCount + (Step.generator s).inversionCount :=
+  (rfl)
+
+@[simp]
+theorem inversionCount_toPath (s : B ⟶ C) :
+    s.toPath.inversionCount = (Step.generator s).inversionCount := by
+  simp [Hom.toPath]
+
+/-- Concatenating words adds their inversion counts. -/
+@[simp]
+theorem inversionCount_comp (w : Word B C) (v : Word C D) :
+    (w.comp v).inversionCount = w.inversionCount + v.inversionCount := by
+  induction v with
+  | nil => simp
+  | cons _ _ ih => simp [ih, add_assoc]
+
+/-- Reversal preserves the number of global inversions. -/
+@[simp]
+theorem inversionCount_reverse (w : Word B C) :
+    w.reverse.inversionCount = w.inversionCount := by
+  induction w with
+  | nil => simp [Path.reverse]
+  | cons _ _ ih => simp [Path.reverse, ih, add_comm]
+
+/-- Changing the labels of a signed word preserves its inversion count. -/
+@[simp]
+theorem inversionCount_reindex {κ : Type*} [DecidableEq κ] (e : ι ≃ κ) (w : Word B C) :
+    ((SkewExchangeMatrix.reindexPrefunctor e).mapPath w).inversionCount = w.inversionCount := by
+  induction w with
+  | nil => simp
+  | cons _ _ ih => simp [ih]
+
+end Quiver.Path
