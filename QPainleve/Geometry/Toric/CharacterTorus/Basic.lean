@@ -7,9 +7,8 @@ module
 
 public import Mathlib.Algebra.MonoidAlgebra.Basic
 public import Mathlib.Algebra.MonoidAlgebra.Module
-public import Mathlib.Algebra.MonoidAlgebra.NoZeroDivisors
-public import Mathlib.LinearAlgebra.FreeModule.Basic
 public import Mathlib.RingTheory.Localization.FractionRing
+public import QPainleve.Algebra.MonoidAlgebra.NoZeroDivisors
 
 /-!
 # Character tori and their function fields
@@ -64,21 +63,6 @@ theorem laurentPolynomialEquiv_map {C : Type*} [AddCommGroup C] [Module ℤ C]
   simp [Module.Basis.map_repr]
 
 end Module.Basis
-
-namespace AddMonoidAlgebra
-
-universe u v
-
-variable {k : Type u} {B : Type v} [CommRing k] [IsDomain k]
-  [AddCommGroup B] [Module ℤ B] [Module.Free ℤ B]
-
-/-- The group algebra of a free abelian group over a domain is a domain. -/
-instance instIsDomainOfFreeInt : IsDomain (AddMonoidAlgebra k B) := by
-  let b := Module.Free.chooseBasis ℤ B
-  let : UniqueSums B := b.repr.toAddEquiv.uniqueSums_iff.mpr inferInstance
-  infer_instance
-
-end AddMonoidAlgebra
 
 namespace QPainleve.CharacterTorus
 
@@ -159,19 +143,16 @@ theorem functionField_hom_ext_basis {ι K : Type*} [Field K] [Algebra k K]
       g (monomial k (Multiplicative.ofAdd (b i)))) : f = g := by
   let : Module.Free ℤ B := Module.Free.of_basis b
   apply functionField_hom_ext
-  let pullCharacter (φ : FunctionField k B →ₐ[k] K) : B →+ Additive Kˣ :=
-    ((φ : FunctionField k B →* K).comp (monomial k)).toHomUnits.toAdditiveRight
+  let pullCharacter (φ : FunctionField k B →ₐ[k] K) : B →ₗ[ℤ] Additive Kˣ :=
+    let χ := ((φ : FunctionField k B →* K).comp (monomial k)).toHomUnits.toAdditiveRight
+    { toFun := χ
+      map_add' := χ.map_add
+      map_smul' := fun n x ↦ by
+        rw [RingHom.id_apply]
+        exact (congrArg χ (int_smul_eq_zsmul _ n x)).trans (map_zsmul χ n x) }
   have hBasis (i : ι) : pullCharacter f (b i) = pullCharacter g (b i) := Units.ext (h i)
   intro x
-  have hx : (b.repr x).sum (fun i (n : ℤ) ↦ n • b i) = x := by
-    calc
-      _ = (b.repr x).sum (fun i n ↦ (inferInstance : Module ℤ B).smul n (b i)) := by
-        simp only [int_smul_eq_zsmul]
-      _ = x := b.linearCombination_repr x
-  have hAll : pullCharacter f x = pullCharacter g x := by
-    rw [← hx]
-    simp only [Finsupp.sum, map_sum, map_zsmul, hBasis]
-  exact congrArg (fun a : Additive Kˣ ↦ (a.toMul : K)) hAll
+  exact congrArg (fun a : Additive Kˣ ↦ (a.toMul : K)) (LinearMap.congr_fun (b.ext hBasis) x)
 
 variable (k) [AddCommGroup C] [Module ℤ C] [Module.Free ℤ C]
 
