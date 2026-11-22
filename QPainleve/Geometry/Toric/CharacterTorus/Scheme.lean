@@ -7,7 +7,9 @@ module
 
 public import QPainleve.AlgebraicGeometry.RationalMap.FunctionField
 public import QPainleve.Geometry.Toric.CharacterTorus.Basic
-public import TauCeti.Algebra.AlgebraicGroup.DiagonalizableGroup.Scheme.Basic
+public import TauCeti.Algebra.AlgebraicGroup.DiagonalizableGroup.Scheme.Points
+
+import QPainleve.Algebra.MonoidAlgebra.AdditiveCoordinates
 
 /-!
 # Split tori from character lattices
@@ -15,13 +17,14 @@ public import TauCeti.Algebra.AlgebraicGroup.DiagonalizableGroup.Scheme.Basic
 The spectrum of the character algebra has points given by multiplicative characters.
 A map on lattices gives a contravariant morphism of these schemes. The generic stalk identifies
 with the algebraic fraction field, so dominance and rational pullbacks can be checked in
-the algebra of monomials. The additive presentation is related to TauCeti's
-`DiagonalizableGroup.groupScheme`, and its points use `DiagonalizableGroup.pointEquiv`.
+the algebra of monomials. The isomorphism to Tau Ceti's `DiagonalizableGroup.groupScheme`
+identifies the additive presentation with its group-scheme morphisms and character points.
 -/
 
 public noncomputable section
 
 open AlgebraicGeometry CategoryTheory TauCeti
+open scoped CategoryTheory.MonObj
 
 namespace QPainleve.CharacterTorus
 
@@ -32,16 +35,40 @@ variable (k B : Type u) [CommRing k] [AddCommGroup B]
 /-- The spectrum of the character algebra. A finite free character lattice gives a split torus. -/
 abbrev scheme : Scheme := Spec (CommRingCat.of (AddMonoidAlgebra k B))
 
-/-- The underlying scheme of a diagonalizable group is the spectrum in additive coordinates. -/
-def diagonalizableGroupSchemeIso (G : FGCommGrpCat.{u}) :
-    (DiagonalizableGroup.groupScheme k G).X.left ≅ scheme k (Additive G) :=
-  eqToIso (DiagonalizableGroup.groupScheme_X_left k G) ≪≫
-    Scheme.Spec.mapIso
-      (AddMonoidAlgebra.toMultiplicativeAlgEquiv k k (Additive G)).toRingEquiv.toCommRingCatIso.op
-
 /-- The structure morphism of the character scheme over its coefficient ring. -/
 abbrev structureMap : scheme k B ⟶ Spec (CommRingCat.of k) :=
   Spec.algebraMap k (AddMonoidAlgebra k B)
+
+private theorem groupScheme_eq_asOver (G : FGCommGrpCat.{u}) :
+    (DiagonalizableGroup.groupScheme k G).X =
+      (Spec (CommRingCat.of (MonoidAlgebra k G))).asOver (Spec (CommRingCat.of k)) :=
+  (congrArg (fun H ↦ H.X) (DiagonalizableGroup.groupScheme_def k G)).trans
+    (congrArg (fun H ↦ H.X) (hopfSpec_obj_eq_asOver k (DiagonalizableGroup.coordinateRing k G).obj))
+
+/-- The underlying scheme of a diagonalizable group over the base, in additive coordinates. -/
+def diagonalizableGroupSchemeIso (G : FGCommGrpCat.{u}) :
+    (DiagonalizableGroup.groupScheme k G).X ≅ Over.mk (structureMap k (Additive G)) := by
+  let e : AddMonoidAlgebra k (Additive G) ≃ₐ[k] MonoidAlgebra k G :=
+    AddMonoidAlgebra.toMultiplicativeAlgEquiv k k (Additive G)
+  refine eqToIso (groupScheme_eq_asOver k G) ≪≫
+    Over.isoMk (Scheme.Spec.mapIso e.toRingEquiv.toCommRingCatIso.op) ?_
+  -- Expose the two structure morphisms and the algebra equivalence as spectrum maps.
+  change Spec.map (CommRingCat.ofHom e.toRingHom) ≫
+      Spec.algebraMap k (AddMonoidAlgebra k (Additive G)) = Spec.algebraMap k (MonoidAlgebra k G)
+  rw [Spec.algebraMap, Spec.algebraMap, ← Spec.map_comp]
+  congr 1
+  ext r : 2
+  exact e.commutes r
+
+/-- The isomorphism to additive coordinates is induced by the group-algebra equivalence. -/
+theorem diagonalizableGroupSchemeIso_hom_left (G : FGCommGrpCat.{u}) :
+    (diagonalizableGroupSchemeIso k G).hom.left =
+      eqToHom (DiagonalizableGroup.groupScheme_X_left k G) ≫
+        Spec.map (CommRingCat.ofHom
+          (AddMonoidAlgebra.toMultiplicativeAlgEquiv k k (Additive G)).toRingHom) := by
+  rw [diagonalizableGroupSchemeIso, Iso.trans_hom, Over.comp_left, eqToIso.hom,
+    Over.eqToHom_left]
+  rfl
 
 /-- Points of the character scheme over the coefficient ring. -/
 abbrev Points :=
@@ -63,6 +90,25 @@ theorem pointsEquiv_symm_apply_val (c : Multiplicative B →* kˣ) :
       Spec.map (CommRingCat.ofHom
         ((DiagonalizableGroup.point c).comp
           (AddMonoidAlgebra.toMultiplicativeAlgEquiv k k B).toAlgHom).toRingHom) := (rfl)
+
+/-- Under the additive coordinate isomorphism, the native point of a character is its
+character-torus point. -/
+@[reassoc (attr := simp)]
+theorem schemePointsMulEquiv_symm_comp_diagonalizableGroupSchemeIso (G : FGCommGrpCat.{u})
+    (c : G →* kˣ) :
+    ((DiagonalizableGroup.schemePointsMulEquiv (R := k) (A := k) G).symm c).left ≫
+        (diagonalizableGroupSchemeIso k G).hom.left =
+      ((pointsEquiv k (Additive G)).symm c).val := by
+  have hPoint := pointsEquiv_symm_apply_val k (Additive G) c
+  rw [DiagonalizableGroup.schemePointsMulEquiv_symm_apply,
+    DiagonalizableGroup.groupSchemePointsMulEquiv_symm_apply_left,
+    DiagonalizableGroup.pointsMulEquiv_symm_apply,
+    diagonalizableGroupSchemeIso_hom_left, hPoint]
+  -- Use the affine source explicitly to match the categorical composition lemmas.
+  change (Spec.map (CommRingCat.ofHom (DiagonalizableGroup.point c).toRingHom) ≫
+      eqToHom (DiagonalizableGroup.groupScheme_X_left k G).symm) ≫ _ = _
+  rw [Category.assoc, eqToHom_trans_assoc, eqToHom_refl, Category.id_comp, ← Spec.map_comp]
+  rfl
 
 variable {B} {C : Type u} [AddCommGroup C]
 
@@ -95,25 +141,49 @@ theorem map_comp {D : Type u} [AddCommGroup D] (f : B →+ C) (g : C →+ D) :
   rw [map, map, map, AddMonoidAlgebra.mapDomainAlgHom_comp, ← Spec.map_comp]
   congr 1
 
+/-- The native group-scheme morphism induced by a group homomorphism is the map of
+character schemes in additive coordinates. -/
+@[reassoc]
+theorem groupSchemeMap_comp_diagonalizableGroupSchemeIso {G H : FGCommGrpCat.{u}} (f : G ⟶ H) :
+    (DiagonalizableGroup.groupSchemeMap k f).hom.hom.left ≫
+        (diagonalizableGroupSchemeIso k G).hom.left =
+      (diagonalizableGroupSchemeIso k H).hom.left ≫ map k f.hom.hom.toAdditive := by
+  have hNative : (DiagonalizableGroup.groupSchemeMap k f).hom.hom.left ≫
+      eqToHom (DiagonalizableGroup.groupScheme_X_left k G) =
+    eqToHom (DiagonalizableGroup.groupScheme_X_left k H) ≫
+      Spec.map (CommRingCat.ofHom (MonoidAlgebra.mapDomainAlgHom k k f.hom.hom).toRingHom) := by
+    -- Remove the named group-scheme transports before reading the Hopf-spectrum map.
+    rw [DiagonalizableGroup.groupSchemeMap_def]
+    simp only [Grp.comp_hom_hom, Over.comp_left,
+      DiagonalizableGroup.eqToHom_hom_hom_left, Category.assoc, eqToHom_trans]
+    rfl
+  have hCoordinates := congrArg (fun g ↦ Spec.map (CommRingCat.ofHom g.toRingHom))
+    (AddMonoidAlgebra.toMultiplicativeAlgEquiv_comp_mapDomainAlgHom k k f.hom.hom.toAdditive)
+  rw [diagonalizableGroupSchemeIso_hom_left, diagonalizableGroupSchemeIso_hom_left,
+    ← Category.assoc, hNative]
+  simp only [map, Category.assoc, ← Spec.map_comp]
+  exact congrArg (eqToHom (DiagonalizableGroup.groupScheme_X_left k H) ≫ ·) hCoordinates.symm
+
 /-- The map of character schemes restricts a point character along the lattice map. -/
 theorem pointsEquiv_symm_comp_map (f : B →+ C) (c : Multiplicative C →* kˣ) :
     ((pointsEquiv k C).symm c).val ≫ map k f =
       ((pointsEquiv k B).symm (c.comp f.toMultiplicative)).val := by
   rw [pointsEquiv_symm_apply_val, pointsEquiv_symm_apply_val, map, ← Spec.map_comp]
   congr 1
-  apply CommRingCat.hom_ext
-  apply RingHom.ext
-  intro x
-  have h : ((DiagonalizableGroup.point c).comp
+  have h := congrArg WithConv.ofConv
+    (DiagonalizableGroup.pointsMap_pointsMulEquiv_symm_apply (R := k) f.toMultiplicative c)
+  simp only [DiagonalizableGroup.pointsMulEquiv_symm_apply,
+    DiagonalizableGroup.pointsMap_apply, WithConv.ofConv_toConv] at h
+  have hCoordinates : ((DiagonalizableGroup.point c).comp
         (AddMonoidAlgebra.toMultiplicativeAlgEquiv k k C).toAlgHom).comp
           (AddMonoidAlgebra.mapDomainAlgHom k k f) =
       (DiagonalizableGroup.point (c.comp f.toMultiplicative)).comp
         (AddMonoidAlgebra.toMultiplicativeAlgEquiv k k B).toAlgHom := by
-    apply (AddMonoidAlgebra.lift k k B).symm.injective
-    apply MonoidHom.ext
-    intro y
-    simp [AddMonoidAlgebra.mapDomainAlgHom]
-  exact AlgHom.congr_fun h x
+    rw [AlgHom.comp_assoc, AddMonoidAlgebra.toMultiplicativeAlgEquiv_comp_mapDomainAlgHom,
+      ← AlgHom.comp_assoc]
+    exact congrArg (fun g ↦ g.comp (AddMonoidAlgebra.toMultiplicativeAlgEquiv k k B).toAlgHom) h
+  apply CommRingCat.hom_ext
+  exact congrArg AlgHom.toRingHom hCoordinates
 
 /-- The isomorphism of character schemes induced by a lattice equivalence. -/
 def mapIso (e : B ≃+ C) : scheme k C ≅ scheme k B where
