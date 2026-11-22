@@ -18,6 +18,8 @@ fibers of restriction to the charge kernel. The translation stabilizer is the ch
 group of the quotient by the charge image, with free unit coordinates and root-of-unity
 coordinates in a Smith basis, as described in
 `QPainleve.LinearAlgebra.SmithQuotientCharacters`.
+Mathlib's `MonoidHom.domRestrictHomKerEquiv` identifies the stabilizer with these
+quotient characters.
 
 The extension of characters uses Mathlib's Baer criterion and Tau Ceti's divisibility of
 units of algebraically closed fields.
@@ -31,28 +33,15 @@ namespace QPainleve.CharacterTorus
 
 variable (k : Type*) {A N : Type*} [CommMonoid k] [AddCommGroup A] [AddCommGroup N]
 
-/-- A translation character acts trivially on the center coordinates precisely when it
-comes from the quotient by the charge image. -/
-def translationKernelEquiv (v : A →+ N) :
-    (v.toMultiplicative.compHom' (P := kˣ)).ker ≃* (Multiplicative (N ⧸ v.range) →* kˣ) :=
-  (MulEquiv.subgroupCongr (by
-    ext z
-    rw [MonoidHom.mem_ker, MonoidHom.mem_ker, MonoidHom.domRestrictHom_apply,
-      MonoidHom.domRestrict_eq_one_iff]
-    exact (MonoidHom.range_le_ker_iff v.toMultiplicative z).symm)).trans
-    (MonoidHom.domRestrictHomKerEquiv kˣ v.range.toSubgroup)
-
-@[simp]
-theorem translationKernelEquiv_apply (v : A →+ N)
-    (z : (v.toMultiplicative.compHom' (P := kˣ)).ker) (x : N) :
-    translationKernelEquiv k v z (ofAdd (x : N ⧸ v.range)) =
-      z.val (ofAdd x) := (rfl)
-
-@[simp]
-theorem translationKernelEquiv_symm_apply (v : A →+ N)
-    (j : Multiplicative (N ⧸ v.range) →* kˣ) (x : N) :
-    ((translationKernelEquiv k v).symm j).val (ofAdd x) =
-      j (ofAdd (x : N ⧸ v.range)) := (rfl)
+/-- The translations fixing the center coordinates are the characters trivial on the
+charge image. -/
+theorem translationKernel_eq (v : A →+ N) :
+    (v.toMultiplicative.compHom' (P := kˣ)).ker =
+      (MonoidHom.domRestrictHom v.range.toSubgroup kˣ).ker := by
+  ext z
+  rw [MonoidHom.mem_ker, MonoidHom.mem_ker, MonoidHom.domRestrictHom_apply,
+    MonoidHom.domRestrict_eq_one_iff]
+  exact (MonoidHom.range_le_ker_iff v.toMultiplicative z).symm
 
 /-- With a reference translation `z₀`, all translations having the same action on the centers
 form a torsor for the characters of the charge quotient. -/
@@ -60,7 +49,8 @@ def translationFiberEquiv (v : A →+ N) (z₀ : Multiplicative N →* kˣ) :
     {z : Multiplicative N →* kˣ // z.comp v.toMultiplicative = z₀.comp v.toMultiplicative} ≃
       (Multiplicative (N ⧸ v.range) →* kˣ) :=
   ((v.toMultiplicative.compHom' (P := kˣ)).fiberEquivKer z₀).trans
-    (translationKernelEquiv k v).toEquiv
+    ((MulEquiv.subgroupCongr (translationKernel_eq k v)).toEquiv.trans
+      (MonoidHom.domRestrictHomKerEquiv kˣ v.range.toSubgroup).toEquiv)
 
 @[simp]
 theorem translationFiberEquiv_apply (v : A →+ N) (z₀ : Multiplicative N →* kˣ)
