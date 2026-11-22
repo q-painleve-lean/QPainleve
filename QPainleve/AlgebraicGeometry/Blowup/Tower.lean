@@ -5,7 +5,7 @@ Authors: The QPainleve contributors
 -/
 module
 
-public import QPainleve.AlgebraicGeometry.Blowup.ExceptionalClass
+public import QPainleve.AlgebraicGeometry.Blowup.Exceptional.Class
 
 /-!
 # Ordered towers of blowups
