@@ -5,9 +5,9 @@ Authors: The QPainleve contributors
 -/
 module
 
+public import QPainleve.Algebra.Cluster.ExchangeMatrix.Factorization
 public import QPainleve.Algebra.Cluster.XMutation.Symmetry
 public import QPainleve.Geometry.Toric.CharacterTorus.Basic
-public import TauCeti.Algebra.Cluster.ExchangeMatrix.Factorization
 
 import Mathlib.LinearAlgebra.Finsupp.VectorSpace
 import TauCeti.Algebra.BigOperators.ZPow
