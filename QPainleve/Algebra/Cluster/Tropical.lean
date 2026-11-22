@@ -7,7 +7,7 @@ module
 
 public import Mathlib.CategoryTheory.PathCategory.Basic
 public import Mathlib.CategoryTheory.SingleObj
-public import QPainleve.Algebra.Cluster.Word
+public import QPainleve.Algebra.Cluster.Word.Basic
 public import TauCeti.Algebra.Cluster.CoefficientSemifield.Tropical
 public import TauCeti.Algebra.Cluster.YSeed.Basic
 
