@@ -5,7 +5,7 @@ Authors: The QPainleve contributors
 -/
 module
 
-public import QPainleve.Algebra.Cluster.Tropical
+public import QPainleve.Algebra.Cluster.Tropical.Basic
 public import TauCeti.Algebra.Cluster.YSeed.Geometric
 
 /-!
