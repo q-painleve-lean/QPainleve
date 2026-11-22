@@ -10,12 +10,14 @@ public import QPainleve.RingTheory.ReesAlgebra.AssociatedGraded
 public import TauCeti.AlgebraicGeometry.Blowup.Exceptional
 public import TauCeti.AlgebraicGeometry.Blowup.IdealSheaf
 public import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.ProjectiveLine
+public import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.TwistingSheaf.Basic
 public import TauCeti.RingTheory.Regular.AssociatedGraded
 
 import QPainleve.AlgebraicGeometry.Blowup.RegularPair
 import TauCeti.AlgebraicGeometry.Blowup.BaseChange
 import TauCeti.AlgebraicGeometry.IdealSheaf.BaseChange
 import TauCeti.AlgebraicGeometry.IdealSheaf.OfIdealTop
+import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.TwistingSheaf.Pullback
 import TauCeti.LinearAlgebra.SymmetricAlgebra.BasisComparison
 
 /-!
@@ -233,6 +235,45 @@ theorem isPullback_affineBlowupExceptionalIsoProjectiveLine :
     (by simp) ?_ (by simp) (by simp)
   rw [Iso.symm_hom, Iso.refl_hom, Category.comp_id,
     ← affineBlowupExceptionalIsoProjectiveLine_hom_toSpec h hI, Iso.inv_hom_id_assoc]
+
+/-- Under the Rees symbol map, a twisting sheaf on the affine blowup restricts to
+the same twist on the projectivized associated graded ring. -/
+def affineBlowupAssociatedGradedPullbackTwistingSheafIso (n : ℤ) :
+    (Scheme.Modules.pullback (affineBlowupAssociatedGradedι I)).obj
+      (Proj.twistingSheaf (grade I) n) ≅ Proj.twistingSheaf G n := by
+  rw [affineBlowupAssociatedGradedι]
+  let s (a : I) : reesAlgebra I := monomialDegreeOne a.property
+  have hcover : ⨆ a : I, Proj.basicOpen (grade I) (s a) = ⊤ := by
+    apply Proj.iSup_basicOpen_eq_top
+    exact (irrelevant_eq_span_monomialDegreeOne (s := fun a : I ↦ (a : R)) (by simp)).le
+  exact Proj.pullbackTwistingSheafIso (𝒜 := grade I) (ℬ := G) _ _
+    s (fun a ↦ monomialDegreeOne_mem_grade a.property) hcover n
+
+private def parameterProjIsoPullbackTwistingSheaf (n : ℤ) :
+    (Scheme.Modules.pullback (parameterProjIso h hI).hom).obj
+      (Proj.twistingSheaf 𝒜ₚ n) ≅ Proj.twistingSheaf G n := by
+  rw [parameterProjIso, Proj.mapIso_hom]
+  exact asIso (Proj.pullbackTwistingSheafMap _ _ n)
+
+/-- The Rees twisting sheaf restricts to the twisting sheaf of the exceptional projective
+line in every integer degree. The comparison uses the projective-line coordinates of the
+ordered regular pair. -/
+def affineBlowupExceptionalPullbackTwistingSheafIso (n : ℤ) :
+    (Scheme.Modules.pullback ((affineBlowupExceptionalIsoProjectiveLine h hI).inv ≫
+      (E).subschemeι)).obj (Proj.twistingSheaf (grade I) n) ≅ Proj.twistingSheaf 𝒜ₚ n := by
+  let e := parameterProjIso h hI
+  let L := Proj.twistingSheaf 𝒜ₚ n
+  let j := affineBlowupAssociatedGradedι I
+  have hcomp : (affineBlowupExceptionalIsoProjectiveLine h hI).inv ≫ (E).subschemeι = e.inv ≫ j :=
+    affineBlowupExceptionalIsoProjectiveLine_inv_ι h hI
+  exact (Scheme.Modules.pullbackCongr hcomp).app _ ≪≫
+    ((Scheme.Modules.pullbackComp e.inv j).app _).symm ≪≫
+    (Scheme.Modules.pullback e.inv).mapIso
+      (affineBlowupAssociatedGradedPullbackTwistingSheafIso (I := I) n ≪≫
+        (parameterProjIsoPullbackTwistingSheaf h hI n).symm) ≪≫
+    (Scheme.Modules.pullbackComp e.inv e.hom).app L ≪≫
+    (Scheme.Modules.pullbackCongr e.inv_hom_id).app L ≪≫
+    (Scheme.Modules.pullbackId _).app L
 
 /-- The blowup chart of each parameter restricts on the exceptional line to the standard
 open where its corresponding homogeneous coordinate is nonzero. -/

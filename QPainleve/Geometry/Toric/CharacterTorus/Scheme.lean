@@ -5,7 +5,7 @@ Authors: The QPainleve contributors
 -/
 module
 
-public import QPainleve.Algebra.AlgebraicGroup.DiagonalizableGroup.Scheme
+public import QPainleve.Algebra.AlgebraicGroup.DiagonalizableGroup.Scheme.Basic
 public import QPainleve.AlgebraicGeometry.RationalMap.FunctionField
 public import QPainleve.Geometry.Toric.CharacterTorus.Basic
 public import TauCeti.Algebra.AlgebraicGroup.DiagonalizableGroup.Scheme.Points

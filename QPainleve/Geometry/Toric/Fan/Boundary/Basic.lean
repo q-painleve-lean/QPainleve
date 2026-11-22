@@ -5,9 +5,10 @@ Authors: The QPainleve contributors
 -/
 module
 
-public import Mathlib.AlgebraicGeometry.OrderOfVanishing.Basic
+public import QPainleve.AlgebraicGeometry.OrderOfVanishing.Base
 public import QPainleve.Geometry.Toric.Fan.FunctionField
 public import TauCeti.AlgebraicGeometry.Scheme.CodimensionOnePoint
+public import TauCeti.Geometry.Toric.Algebraic.Fan.Over
 public import TauCeti.Geometry.Toric.Algebraic.Fan.Ray
 
 import Mathlib.Algebra.MvPolynomial.Division
@@ -122,6 +123,32 @@ theorem monomial_mem_rayIdeal_iff (hreg : IsRegularCone i σ) (ρ : ToricRay σ)
     rwa [coe_regularDualSemigroupEquiv_fst_apply, (hb ρ).eq_primitiveGenerator hi hσ] at hpos
   · intro hm
     simpa only [MonoidAlgebra.of_apply] using monomial_mem_rayIdeal hi hσ ρ m hm
+
+/-- At an exponent of weight zero, the coefficient of every element of the ray ideal vanishes. -/
+theorem coeff_eq_zero_of_mem_rayIdeal (hi : IsIntegralLattice i) (hσ : IsToricCone i σ)
+    (hreg : IsRegularCone i σ) (ρ : ToricRay σ) {f : affineCoordinateRing hi σ}
+    (hf : f ∈ rayIdeal hi hσ ρ) (m : dualSemigroup hi σ)
+    (hm : (m : N →+ ℤ) (primitiveGenerator hi hσ ρ) = 0) : f.coeff (ofAdd m) = 0 := by
+  obtain ⟨l, b, hb⟩ := hreg.exists_basis_sum
+  let q := dualSemigroupCoord hi hσ hb (Sum.inl ρ)
+  rw [rayIdeal_eq_span hi hσ hb, Ideal.mem_span_singleton] at hf
+  obtain ⟨g, rfl⟩ := hf
+  rw [MonoidAlgebra.of_apply]
+  apply MonoidAlgebra.coeff_single_mul_of_forall_mul_ne
+  intro d hd
+  let u := primitiveGenerator hi hσ ρ
+  have hq : (q : N →+ ℤ) u = 1 := by
+    simp [q, u, ← (hb ρ).eq_primitiveGenerator hi hσ]
+  have hdu : (0 : ℤ) ≤ (d.toAdd : N →+ ℤ) u := by
+    have h := (mem_dualSemigroup hi _).mp d.toAdd.property
+      (ρ.val.isFaceOf.le (primitiveGenerator_mem hi hσ ρ))
+    exact_mod_cast (hi.realCharacter_apply _ u ▸ h)
+  have h := congrArg (fun x : Multiplicative (dualSemigroup hi σ) ↦
+    (x.toAdd : N →+ ℤ) u) hd
+  have heq : (q : N →+ ℤ) u + (d.toAdd : N →+ ℤ) u = (m : N →+ ℤ) u := by
+    simpa only [toAdd_mul, toAdd_ofAdd, AddSubmonoid.coe_add, AddMonoidHom.add_apply] using h
+  have hm' : (m : N →+ ℤ) u = 0 := hm
+  omega
 
 /-- Ray ideals in regular cones are prime. -/
 theorem IsRegularCone.isPrime_rayIdeal (hreg : IsRegularCone i σ) (ρ : ToricRay σ) :
@@ -452,6 +479,24 @@ theorem ord_rayBoundaryPoint_character (hΦ : Φ.IsRegular) (ρ : Φ.Ray) (m : N
     exact neg_injective hn
 
 end Character
+
+section Complex
+
+variable {N : Type} {V : Type*} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
+  {i : N →+ V} (Φ : Fan i) [Nonempty Φ.cones]
+
+local notation "C" => algebraMap ℂ Φ.algebraicRealization.functionField
+
+/-- A scalar multiple of a lattice character has the same boundary order as the character itself. -/
+theorem ord_rayBoundaryPoint_mul_character (hΦ : Φ.IsRegular) (ρ : Φ.Ray)
+    (c : ℂˣ) (m : N →+ ℤ) :
+    Φ.algebraicRealization.ord (C (c : ℂ) * Φ.character (ofAdd m))
+        (Φ.rayBoundaryPoint hΦ ρ).val = m ρ.primitiveGenerator := by
+  rw [Scheme.ord_mul ((map_ne_zero C).mpr c.ne_zero)
+      ((Group.isUnit (ofAdd m)).map Φ.character).ne_zero,
+    Scheme.ord_algebraMap_base_unit, zero_add, Φ.ord_rayBoundaryPoint_character]
+
+end Complex
 
 /-- Distinct fan rays have distinct boundary points. -/
 theorem rayBoundaryPoint_injective (Φ : Fan i) (hΦ : Φ.IsRegular) :
