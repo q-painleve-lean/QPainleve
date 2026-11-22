@@ -8,7 +8,7 @@ module
 public import TauCeti.AlgebraicGeometry.Blowup.IdealSheaf
 public import TauCeti.AlgebraicGeometry.Scheme.Regular.Scheme
 public import TauCeti.AlgebraicGeometry.Morphisms.Smooth.RelativeDimension
-import QPainleve.AlgebraicGeometry.Blowup.ExceptionalFiber
+import QPainleve.AlgebraicGeometry.Blowup.Exceptional.Fiber
 import QPainleve.AlgebraicGeometry.EffectiveCartierDivisor.Dimension
 import QPainleve.AlgebraicGeometry.IdealSheaf.RegularPair
 import TauCeti.AlgebraicGeometry.Blowup.Restriction
