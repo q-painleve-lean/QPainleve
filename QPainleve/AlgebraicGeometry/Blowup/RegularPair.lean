@@ -6,7 +6,7 @@ Authors: The QPainleve contributors
 module
 
 public import Mathlib.RingTheory.RegularLocalRing.Defs
-public import QPainleve.RingTheory.Ideal.AffineBlowup
+public import QPainleve.RingTheory.Ideal.AffineBlowup.Basic
 public import TauCeti.AlgebraicGeometry.Blowup.Exceptional
 import Mathlib.Data.Bool.Set
 import TauCeti.RingTheory.RegularLocalRing.CohenMacaulay
