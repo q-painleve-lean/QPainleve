@@ -167,6 +167,14 @@ def rationalPullback (f : (scheme k C) ⤏ (scheme k B)) [f.IsDominant] :
   ((fractionRingEquiv k C).symm.toRingHom.comp f.functionFieldMap.hom).comp
     (fractionRingEquiv k B).toRingHom
 
+/-- On the fraction-field models, the rational pullback is the map of generic stalks
+transported by the canonical fraction field identifications. -/
+theorem rationalPullback_apply (f : (scheme k C) ⤏ (scheme k B)) [f.IsDominant]
+    (a : FunctionField k B) :
+    rationalPullback k f a =
+      (fractionRingEquiv k C).symm (f.functionFieldMap (fractionRingEquiv k B a)) :=
+  (rfl)
+
 /-- Equality of dominant rational maps is detected on the fraction fields of the character rings. -/
 theorem rationalPullback_eq_iff (f g : (scheme k C) ⤏ (scheme k B))
     [f.IsDominant] [g.IsDominant] : rationalPullback k f = rationalPullback k g ↔ f = g := by
