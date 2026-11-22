@@ -103,6 +103,13 @@ theorem pairing_sum (j : ZMod n) : B δ (D j) = 0 := by
   simpa using pairing_sum_smul hGram (fun _ ↦ 1) j
 
 include hGram in
+/-- The span of the boundary components is orthogonal to their sum. -/
+theorem span_le_orthogonal_total : M ≤ B.orthogonal (R ∙ δ) := by
+  rw [BilinForm.orthogonal, Submodule.orthogonalBilin_span_singleton, Submodule.span_le]
+  rintro _ ⟨i, rfl⟩
+  exact mem_ker.mpr (pairing_sum hGram i)
+
+include hGram in
 /-- The total boundary class has square zero. -/
 theorem pairing_sum_sum : B δ δ = 0 := by
   simp only [BilinForm.sum_right, pairing_sum hGram, Finset.sum_const_zero]
@@ -465,9 +472,8 @@ theorem length_lt_finrank [Module.Finite ℤ L] [Module.IsTorsionFree ℤ L]
     (hB : B.Nondegenerate) (hδ : δ ≠ 0) : n < Module.finrank ℤ L := by
   let f := B δ
   have hM : M ≤ LinearMap.ker f := by
-    rw [Submodule.span_le]
-    rintro _ ⟨i, rfl⟩
-    exact LinearMap.mem_ker.mpr (pairing_sum hGram i)
+    simpa only [f, BilinForm.orthogonal, Submodule.orthogonalBilin_span_singleton]
+      using span_le_orthogonal_total hGram
   have hn := Submodule.finrank_mono hM
   rw [finrank_span_eq_card (linearIndependent hGram hδ), ZMod.card] at hn
   have hnull := f.finrank_range_add_finrank_ker
