@@ -6,6 +6,7 @@ Authors: Yuma Mizuno
 module
 
 public import Mathlib.LinearAlgebra.Quotient.Bilinear
+public import TauCeti.Algebra.Module.Primitive
 public import TauCeti.LinearAlgebra.BilinearForm.BaseChange
 public import TauCeti.LinearAlgebra.BilinearForm.Characteristic
 public import TauCeti.LinearAlgebra.BilinearForm.Orthogonal
@@ -74,6 +75,49 @@ theorem isSymm_orthogonalQuotientForm (hB : B.IsSymm) (S : Submodule R M) :
   simpa only [mkQ_apply, orthogonalQuotientForm_mk] using hB.eq x.val y.val
 
 end Quotient
+
+section PairingOne
+
+variable {R M : Type*} [CommRing R] [AddCommGroup M] [Module R M]
+  (B : LinearMap.BilinForm R M) {δ f : M}
+
+local notation "W" => B.orthogonal (R ∙ δ)
+
+/-- The kernel of the form on the orthogonal complement of a vector consists of the
+multiples of that vector in the complement, provided the form separates vectors on the left
+and the vector pairs to one. -/
+theorem ker_restrict_orthogonal_span_singleton_of_apply_eq_one
+    (hsep : B.SeparatingLeft) (hδf : B δ f = 1) :
+    (B.restrict W).ker = (R ∙ δ).comap (W).subtype := by
+  ext x
+  rw [Submodule.mem_comap, Submodule.subtype_apply]
+  constructor
+  · intro hx
+    rw [Submodule.mem_span_singleton]
+    refine ⟨B x f, sub_eq_zero.mp (hsep (B x f • δ - x) fun y ↦ ?_)⟩
+    -- Subtracting the component along `f` gives a vector in the orthogonal complement.
+    have hy : y - B δ y • f ∈ W := by
+      rw [BilinForm.orthogonal, Submodule.orthogonalBilin_span_singleton, mem_ker]
+      simp [BilinForm.sub_right, hδf]
+    have hxy := LinearMap.congr_fun (mem_ker.mp hx) (⟨_, hy⟩ : W)
+    simp only [BilinForm.restrict_apply, LinearMap.domRestrict_apply, LinearMap.zero_apply,
+      BilinForm.sub_right, BilinForm.smul_right, sub_eq_zero] at hxy
+    rw [BilinForm.sub_left, BilinForm.smul_left, hxy, mul_comm (B x f), sub_self]
+  · intro hx
+    exact mem_ker.mpr (LinearMap.ext fun y ↦ B.mem_orthogonal_iff.mp y.property x hx)
+
+end PairingOne
+
+/-- A primitive vector for a perfect integer form determines the kernel of the
+form on its orthogonal complement. -/
+theorem ker_restrict_orthogonal_of_isPrimitive {M : Type*} [AddCommGroup M]
+    (B : LinearMap.BilinForm ℤ M) [hperf : B.IsPerfPair] {δ : M}
+    (hprim : TauCeti.IsPrimitive δ) :
+    (B.restrict (B.orthogonal (ℤ ∙ δ))).ker = (ℤ ∙ δ).comap (B.orthogonal (ℤ ∙ δ)).subtype := by
+  obtain ⟨ℓ, hℓ⟩ := TauCeti.isPrimitive_def.mp hprim
+  have hf : B δ ((LinearMap.flip B).toPerfPair.symm ℓ) = 1 :=
+    (B.apply_toPerfPair_flip ℓ δ).trans hℓ
+  exact B.ker_restrict_orthogonal_span_singleton_of_apply_eq_one hperf.separatingLeft hf
 
 local notation "plane[" R ", " δ ", " f "]" => span R ({δ, f} : Set _)
 
