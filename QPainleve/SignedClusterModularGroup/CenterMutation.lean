@@ -5,7 +5,7 @@ Authors: The QPainleve contributors
 -/
 module
 
-public import QPainleve.Algebra.Cluster.ChargeKernel
+public import QPainleve.Algebra.Cluster.ChargeKernel.Basic
 public import QPainleve.Algebra.Cluster.XMutation.Basic
 public import QPainleve.Geometry.Toric.CharacterTorus.BinomialShear
 public import QPainleve.Geometry.Toric.CharacterTorus.Evaluation

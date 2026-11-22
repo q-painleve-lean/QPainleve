@@ -69,7 +69,7 @@ theorem isDominant_evaluation_on_center_open [PreirreducibleSpace (scheme k (A �
     IsDominant ((map k (AddMonoidHom.inl A N) ⁻¹ᵁ U).ι ≫ evaluation k v) := by
   let V := map k (AddMonoidHom.inl A N) ⁻¹ᵁ U
   have hV : Nonempty V := inferInstanceAs (Nonempty (map k (AddMonoidHom.inl A N) ⁻¹ᵁ U))
-  have : IsDominant V.ι := Opens.isDominant_ι (V.2.dense (Set.nonempty_coe_sort.mp hV))
+  have : IsDominant V.ι := Opens.isDominant_ι (V.isOpen.dense (Set.nonempty_coe_sort.mp hV))
   exact inferInstanceAs (IsDominant (V.ι ≫ evaluation k v))
 
 /-- Equality after evaluating on a nonempty center open detects equality of the original
