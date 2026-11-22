@@ -1,0 +1,192 @@
+/-
+Copyright (c) 2026 The QPainleve contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: The QPainleve contributors
+-/
+module
+
+public import QPainleve.Algebra.Cluster.XMutation.Symmetry
+public import TauCeti.Algebra.Cluster.CoefficientSemifield.Universal
+public import TauCeti.Algebra.Cluster.YSeed.Word
+import TauCeti.Algebra.MvPolynomial.Laurent.Polynomial
+
+/-!
+# Subtraction-free comparison for cluster X mutation
+
+In characteristic zero, the universal subtraction-free semifield embeds in the field of
+independent X coordinates. Its variables become the unit-exponent Laurent monomials. Mutation
+in that field intertwines the universal coefficient substitution, so a finite mutation word
+acts on the independent X coordinates by the coefficients of Tau Ceti's `YSeed.mutationWord`.
+
+The comparison uses Tau Ceti's `QsfZero.toFractionRing`, `MvPolynomial.toLaurent` and
+`YSeed.mutation_coefficient_of_ne`. The X convention is that of Fock and Goncharov,
+*Cluster ensembles, quantization and the dilogarithm*, §1.2.2 (7) and §1.2.4 (13).
+-/
+
+public noncomputable section
+
+open TauCeti
+
+variable (k : Type*) [Field k] {ι : Type*}
+
+local notation "XField" => FractionRing (AddMonoidAlgebra k (ι →₀ ℤ))
+
+namespace TauCeti.QsfZero
+
+variable [CharZero k]
+
+private def intPolynomialToXField : MvPolynomial ι ℤ →+* XField :=
+  (algebraMap (LaurentRing k ι) XField).comp
+    ((MvPolynomial.toLaurent : MvPolynomial ι k →ₐ[k] LaurentRing k ι).toRingHom.comp
+      (MvPolynomial.map (Int.castRingHom k)))
+
+private theorem intPolynomialToXField_injective :
+    Function.Injective (intPolynomialToXField k (ι := ι)) :=
+  (IsFractionRing.injective (LaurentRing k ι) XField).comp
+    (MvPolynomial.toLaurent_injective.comp (MvPolynomial.map_injective _ Int.cast_injective))
+
+/-- Interpret subtraction-free rational functions with zero in the field of independent cluster
+X coordinates, using the unique coefficient map from the integers. -/
+def toXField : QsfZero ι →+* XField :=
+  (IsFractionRing.lift (K := FractionRing (MvPolynomial ι ℤ))
+    (intPolynomialToXField_injective k)).comp (toFractionRing ι)
+
+/-- The characteristic-zero interpretation is faithful. -/
+theorem toXField_injective : Function.Injective (toXField k (ι := ι)) := by
+  unfold toXField
+  exact (RingHom.injective (IsFractionRing.lift (K := FractionRing (MvPolynomial ι ℤ))
+    (intPolynomialToXField_injective k))).comp toFractionRing_injective
+
+/-- A universal variable maps to the corresponding independent X coordinate. -/
+@[simp]
+theorem toXField_X (i : ι) : toXField k (X i) = QPainleve.Cluster.xCoordinate k i := by
+  simp [toXField, intPolynomialToXField, IsFractionRing.lift_algebraMap,
+    QPainleve.Cluster.xCoordinate_def, LaurentRing.X_def]
+
+end TauCeti.QsfZero
+
+namespace QPainleve.Cluster
+
+variable [DecidableEq ι]
+
+/-- Pullback along a list of mutation directions for a native square exchange matrix. Each
+pullback uses the row of the current matrix and acts after the pullback of the tail. -/
+def xMutationWord (B : ExchangeMatrix (Function.Embedding.refl ι)) : List ι → XField ≃ₐ[k] XField
+  | [] => AlgEquiv.refl
+  | p :: w => (xMutationWord (B.mutation p) w).trans (xMutation k p (fun i ↦ B.matrix p i))
+
+@[simp]
+theorem xMutationWord_nil (B : ExchangeMatrix (Function.Embedding.refl ι)) :
+    xMutationWord k B [] = AlgEquiv.refl := (rfl)
+
+@[simp]
+theorem xMutationWord_cons (B : ExchangeMatrix (Function.Embedding.refl ι)) (p : ι) (w : List ι) :
+    xMutationWord k B (p :: w) =
+      (xMutationWord k (B.mutation p) w).trans (xMutation k p (fun i ↦ B.matrix p i)) := (rfl)
+
+/-- A singleton mutation word has the elementary mutation pullback. -/
+theorem xMutationWord_singleton (B : ExchangeMatrix (Function.Embedding.refl ι)) (p : ι) :
+    xMutationWord k B [p] = xMutation k p (fun i ↦ B.matrix p i) := by
+  ext x
+  simp
+
+/-- Pullback reverses the order of concatenation. The second word starts at the matrix
+obtained after the first word. -/
+theorem xMutationWord_append (B : ExchangeMatrix (Function.Embedding.refl ι)) (u v : List ι) :
+    xMutationWord k B (u ++ v) =
+      (xMutationWord k (B.mutationWord u) v).trans (xMutationWord k B u) := by
+  induction u generalizing B with
+  | nil => ext x; simp
+  | cons p u ih => ext x; simp [ih]
+
+/-- The pullback of a reversed word is the inverse pullback, based at the mutated matrix. -/
+theorem xMutationWord_reverse (B : ExchangeMatrix (Function.Embedding.refl ι)) (w : List ι) :
+    xMutationWord k (B.mutationWord w) w.reverse = (xMutationWord k B w).symm := by
+  induction w generalizing B with
+  | nil => simp
+  | cons p w ih =>
+    ext x
+    simp [xMutationWord_append, ih, Pi.neg_def]
+
+/-- Relabeling a native mutation word also relabels its pullback. The equivalence `e` sends
+old labels to new labels, so the coordinate pullback uses `e.symm`. -/
+theorem xMutationWord_trans_xReindex {κ : Type*} [DecidableEq κ] (e : ι ≃ κ)
+    (B : ExchangeMatrix (Function.Embedding.refl ι)) (w : List ι) :
+    (xMutationWord k (ExchangeMatrix.reindex (row' := Function.Embedding.refl κ)
+      e e (by simp) B) (w.map e)).trans (xReindex k e.symm) =
+      (xReindex k e.symm).trans (xMutationWord k B w) := by
+  induction w generalizing B with
+  | nil => ext x; simp
+  | cons p w ih =>
+    let B' := ExchangeMatrix.reindex (row' := Function.Embedding.refl κ) e e (by simp)
+      (B.mutation p)
+    have hstep := B.mutation_reindex (row' := Function.Embedding.refl κ) e e (by simp) p
+    have hrow := xMutation_trans_xReindex k e.symm (e p) (fun i ↦ B.matrix p i)
+    ext x
+    simp only [List.map_cons, xMutationWord_cons, hstep, ExchangeMatrix.reindex_matrix,
+      Matrix.submatrix_apply, Equiv.symm_apply_apply, AlgEquiv.trans_apply]
+    have htail := DFunLike.congr_fun (ih (B.mutation p)) x
+    simp only [AlgEquiv.trans_apply] at htail
+    rw [← htail]
+    simpa only [AlgEquiv.trans_apply, Equiv.symm_apply_apply, Function.comp_def] using
+      DFunLike.congr_fun hrow (xMutationWord k B' (w.map e) x)
+
+variable [CharZero k]
+
+/-- A native mutation with independent initial coefficients gives the pullback of each
+independent X coordinate. -/
+theorem toXField_mutation_coefficient (B : ExchangeMatrix (Function.Embedding.refl ι))
+    (p i : ι) :
+    QsfZero.toXField k (((⟨Qsf.X, B⟩ : YSeed ι (Qsf ι)).mutation p).coefficient i : QsfZero ι) =
+      xMutation k p (fun i ↦ B.matrix p i) (xCoordinate k i) := by
+  by_cases hi : i = p
+  · subst i
+    simp [Qsf.val_X]
+  · rw [YSeed.mutation_coefficient_of_ne _ hi, xMutation_apply_of_ne _ _ _ hi]
+    simp [Qsf.val_X, posPart_def, add_comm]
+
+/-- Applying the field pullback to any subtraction-free expression is the same as evaluating
+the expression at the mutated universal coefficients. -/
+theorem xMutation_comp_toXField (B : ExchangeMatrix (Function.Embedding.refl ι)) (p : ι) :
+    (xMutation k p (fun i ↦ B.matrix p i) : XField →+* XField).comp (QsfZero.toXField k) =
+      (QsfZero.toXField k).comp
+        (QsfZero.eval (((⟨Qsf.X, B⟩ : YSeed ι (Qsf ι)).mutation p).coefficient)) := by
+  apply QsfZero.hom_ext
+  intro i
+  simpa only [RingHom.comp_apply, QsfZero.toXField_X, QsfZero.eval_X,
+    ← AlgEquiv.toAlgHom_toRingHom, AlgHom.coe_toRingHom, AlgEquiv.coe_toAlgHom]
+    using (toXField_mutation_coefficient k B p i).symm
+
+/-- Substitution into an arbitrary subtraction-free expression along a native mutation word
+agrees with applying the composite X pullback to that expression. -/
+theorem xMutationWord_comp_toXField (B : ExchangeMatrix (Function.Embedding.refl ι))
+    (w : List ι) :
+    (xMutationWord k B w : XField →+* XField).comp (QsfZero.toXField k) =
+      (QsfZero.toXField k).comp
+        (QsfZero.eval (((⟨Qsf.X, B⟩ : YSeed ι (Qsf ι)).mutationWord w).coefficient)) := by
+  induction w generalizing B with
+  | nil => simp
+  | cons p w ih =>
+    simp only [xMutationWord_cons, AlgEquiv.toRingHom_trans, RingHom.comp_assoc, ih]
+    rw [← RingHom.comp_assoc, xMutation_comp_toXField, RingHom.comp_assoc]
+    congr 1
+    let s : YSeed ι (Qsf ι) := ⟨Qsf.X, B⟩
+    have h : (⟨Qsf.X, B.mutation p⟩ : YSeed ι (Qsf ι)).map
+        (Qsf.eval (s.mutation p).coefficient) = s.mutation p := by
+      ext i <;> simp [s]
+    apply QsfZero.hom_ext
+    intro i
+    simp only [RingHom.comp_apply, QsfZero.eval_X, YSeed.mutationWord_cons]
+    rw [← Qsf.val_eval, ← YSeed.map_coefficient, YSeed.map_mutationWord, h]
+
+/-- The coefficients of a native mutation word, started at the independent variables, are
+exactly the Laurent field pullbacks of those variables. -/
+theorem toXField_mutationWord_coefficient (B : ExchangeMatrix (Function.Embedding.refl ι))
+    (w : List ι) (i : ι) :
+    QsfZero.toXField k (((⟨Qsf.X, B⟩ : YSeed ι (Qsf ι)).mutationWord w).coefficient i :
+      QsfZero ι) = xMutationWord k B w (xCoordinate k i) := by
+  simpa only [RingHom.comp_apply, QsfZero.toXField_X, QsfZero.eval_X,
+    ← AlgEquiv.toAlgHom_toRingHom, AlgHom.coe_toRingHom, AlgEquiv.coe_toAlgHom]
+    using (DFunLike.congr_fun (xMutationWord_comp_toXField k B w) (QsfZero.X i)).symm
+
+end QPainleve.Cluster
