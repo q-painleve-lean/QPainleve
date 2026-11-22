@@ -7,7 +7,10 @@ on:
     types: [completed]
   schedule:
     - cron: '17 * * * *'
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      source_run_id: {description: "Completed original build run", type: string, default: ""}
+      source_attempt: {description: "Original run attempt", type: string, default: "1"}
 
 permissions:
   contents: read
@@ -17,10 +20,12 @@ permissions:
 
 jobs:
   publish:
-    uses: yuma-mizuno-lean/TauCetiTools/.github/workflows/retry-ci-status.yml@1fd27ad5bc448c1d6e6f4d951fd015276021b479
+    uses: q-painleve-lean/TauCetiTools/.github/workflows/retry-ci-status.yml@6e8ad3a6699266829a4b87fac2b0a385451e445c
     with:
-      tools_repository: yuma-mizuno-lean/TauCetiTools
-      tools_ref: 1fd27ad5bc448c1d6e6f4d951fd015276021b479
+      source_run_id: ${{ inputs.source_run_id || '' }}
+      source_attempt: ${{ inputs.source_attempt || '1' }}
+      tools_repository: q-painleve-lean/TauCetiTools
+      tools_ref: 6e8ad3a6699266829a4b87fac2b0a385451e445c
       project_ref: ${{ github.workflow_sha }}
     secrets:
       CI_READ_APP_ID: ${{ secrets.CI_READ_APP_ID }}

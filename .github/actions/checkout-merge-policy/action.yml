@@ -16,8 +16,8 @@ runs:
   steps:
     - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
       with:
-        repository: yuma-mizuno-lean/TauCetiReview
-        ref: b19c3618f1699feedc761d899b0459523da62aaa
+        repository: TauCetiProject/TauCetiReview
+        ref: 60472b78568d274587971787276e9009f957217c
         path: .tauceti-review
         sparse-checkout: runner
         persist-credentials: false

@@ -29,22 +29,21 @@ permissions:
   id-token: write  # reusable build job uses a telemetry-only OIDC audience
 jobs:
   validate:
-    uses: yuma-mizuno-lean/TauCetiTools/.github/workflows/pr-build.yml@1fd27ad5bc448c1d6e6f4d951fd015276021b479
+    uses: q-painleve-lean/TauCetiTools/.github/workflows/pr-build.yml@6e8ad3a6699266829a4b87fac2b0a385451e445c
     with:
       pr: ${{ inputs.pr || '' }}
-      tools_repository: yuma-mizuno-lean/TauCetiTools
-      tools_ref: 1fd27ad5bc448c1d6e6f4d951fd015276021b479
+      tools_repository: q-painleve-lean/TauCetiTools
+      tools_ref: 6e8ad3a6699266829a4b87fac2b0a385451e445c
       project_ref: ${{ github.workflow_sha }}
       lean_root: QPainleve
-      lake_cache_bundle: true
-      roadmap_dir: TauCetiRoadmap
+      roadmap_dir: QPainleveRoadmap
       source_candidate_enabled: ${{ vars.FORGEJO_SOURCE_CI_ENABLED == 'true' }}
     secrets:
       CI_SOURCE_READ_TOKEN: ${{ secrets.CI_SOURCE_READ_TOKEN }}
       APP_ID: ${{ secrets.APP_ID }}
       APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
       FLEET_READ_TOKEN: ${{ secrets.FLEET_READ_TOKEN }}
-      # PR and merge-group jobs only read the cache. Main CI is the sole writer.
+      LAKE_CACHE_KEY: ${{ secrets.LAKE_CACHE_KEY }}
       CI_READ_APP_ID: ${{ secrets.CI_READ_APP_ID }}
       CI_READ_APP_PRIVATE_KEY: ${{ secrets.CI_READ_APP_PRIVATE_KEY }}
       CI_STATUS_APP_ID: ${{ secrets.CI_STATUS_APP_ID }}
