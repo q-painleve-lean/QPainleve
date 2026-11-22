@@ -91,7 +91,7 @@ theorem isDominant_evaluation_on_center_open
     IsDominant (((π₁).hom.hom.left ⁻¹ᵁ U).ι ≫ (evaluation k v).hom.hom.left) := by
   let V := (π₁).hom.hom.left ⁻¹ᵁ U
   have hV : Nonempty V := inferInstanceAs (Nonempty ((π₁).hom.hom.left ⁻¹ᵁ U))
-  have : IsDominant V.ι := Opens.isDominant_ι (V.2.dense (Set.nonempty_coe_sort.mp hV))
+  have : IsDominant V.ι := Opens.isDominant_ι (V.isOpen.dense (Set.nonempty_coe_sort.mp hV))
   exact inferInstanceAs (IsDominant (V.ι ≫ (evaluation k v).hom.hom.left))
 
 /-- Equality after evaluating on a nonempty center open detects equality of the original

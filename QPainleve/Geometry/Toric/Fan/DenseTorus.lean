@@ -32,7 +32,7 @@ instance isDominant_denseTorusι (Φ : Fan i) (hΦ : Nonempty Φ.cones) :
     IsDominant (Φ.denseTorusι hΦ) := by
   refine ⟨fun x ↦ ?_⟩
   obtain ⟨σ, y, rfl⟩ := Φ.exists_affineToricChartι_apply_eq x
-  let hface := (Φ.isToricCone σ.2).salient.bot_isFaceOf
+  let hface := (Φ.isToricCone σ.property).salient.bot_isFaceOf
   have hdense := (isDominant_faceAffineToricSchemeMap Φ.lattice hface).denseRange
   have hclosure := (Φ.affineToricChartι σ).continuous.range_subset_closure_image_dense hdense
   have hcomp : ⇑(faceAffineToricSchemeMap Φ.lattice hface ≫ Φ.affineToricChartι σ) =

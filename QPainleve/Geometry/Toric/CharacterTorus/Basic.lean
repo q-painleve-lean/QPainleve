@@ -10,13 +10,15 @@ public import Mathlib.Algebra.MonoidAlgebra.NoZeroDivisors
 public import Mathlib.LinearAlgebra.FreeModule.Basic
 public import Mathlib.RingTheory.Localization.FractionRing
 public import TauCeti.Algebra.Group.UniqueProds.TorsionFree
+import TauCeti.Algebra.AlgebraicGroup.SplitTorus.Basic
 
 /-!
 # Character tori and their function fields
 
 The additive group algebra of the character lattice is the coordinate ring of a split torus.
 A lattice basis identifies it with a Laurent polynomial algebra, with exponents given by the
-basis coordinates. Monomials and pullbacks on the function field are defined intrinsically.
+basis coordinates. Tau Ceti's `SplitTorus.pointsMulEquiv` describes its points in these coordinates.
+Monomials and pullbacks on the function field are defined intrinsically.
 For free lattices, the domain instance uses Tau Ceti's `HasUniqueDiv.to_twoUniqueSums`.
 For a lattice equivalence, `AddMonoidAlgebra.domCongr` and
 `IsFractionRing.algEquivOfAlgEquiv` give the corresponding function field equivalence.
@@ -119,46 +121,42 @@ theorem one_add_monomial_ne_zero {x : B} (hx : x ≠ 0) :
     (IsFractionRing.injective (AddMonoidAlgebra k B) (FunctionField k B) h)
   simp [AddMonoidAlgebra.one_def, hx] at hcoeff
 
-section Free
-
-variable {k} [Module ℤ B] [Module.Free ℤ B]
-
-local instance {G : Type*} [AddCommGroup G] [Module ℤ G] [Module.Free ℤ G] : HasUniqueDiv G :=
-  .of_isTorsionFree ℤ G
+variable {k}
 
 /-- Algebra maps out of the torus function field are determined by their values on characters. -/
-theorem functionField_hom_ext {K : Type*} [Field K] [Algebra k K]
+theorem functionField_hom_ext {K : Type*} [Semiring K] [Algebra k K]
     {f g : FunctionField k B →ₐ[k] K}
     (h : ∀ x : B, f (monomial k (Multiplicative.ofAdd x)) =
       g (monomial k (Multiplicative.ofAdd x))) : f = g := by
-  apply AlgHom.toRingHom_injective
-  apply IsFractionRing.ringHom_ext (A := AddMonoidAlgebra k B)
-  have hAlg : f.comp (IsScalarTower.toAlgHom k (AddMonoidAlgebra k B) (FunctionField k B)) =
-      g.comp (IsScalarTower.toAlgHom k (AddMonoidAlgebra k B) (FunctionField k B)) := by
-    apply (AddMonoidAlgebra.lift k K B).symm.injective
-    apply MonoidHom.ext
-    intro x
-    simpa only [AddMonoidAlgebra.lift_symm_apply, AlgHom.comp_apply,
-      IsScalarTower.coe_toAlgHom', monomial_ofAdd] using h x.toAdd
-  exact fun z ↦ AlgHom.congr_fun hAlg z
+  apply Localization.algHom_ext
+  exact AddMonoidAlgebra.algHom_ext (fun x ↦ h x) (Subsingleton.elim _ _)
 
-omit [Module.Free ℤ B] in
+variable [Module ℤ B]
+
 /-- The monomials of any integral basis determine a map out of the torus function field. -/
-theorem functionField_hom_ext_basis {ι K : Type*} [Field K] [Algebra k K]
+theorem functionField_hom_ext_basis {ι K : Type*} [CommSemiring K] [Algebra k K]
     (b : Module.Basis ι ℤ B) {f g : FunctionField k B →ₐ[k] K}
     (h : ∀ i, f (monomial k (Multiplicative.ofAdd (b i))) =
       g (monomial k (Multiplicative.ofAdd (b i)))) : f = g := by
-  obtain rfl : ‹Module ℤ B› = AddCommGroup.toIntModule B := Subsingleton.elim _ _
-  let : Module.Free ℤ B := Module.Free.of_basis b
-  apply functionField_hom_ext
-  let pullCharacter (φ : FunctionField k B →ₐ[k] K) : B →ₗ[ℤ] Additive Kˣ :=
-    let χ := ((φ : FunctionField k B →* K).comp (monomial k)).toHomUnits.toAdditiveRight
-    χ.toIntLinearMap
-  have hBasis (i : ι) : pullCharacter f (b i) = pullCharacter g (b i) := Units.ext (h i)
-  intro x
-  exact congrArg (fun a : Additive Kˣ ↦ (a.toMul : K)) (LinearMap.congr_fun (b.ext hBasis) x)
+  let e := (b.laurentPolynomialEquiv (k := k)).trans
+    (AddMonoidAlgebra.toMultiplicativeAlgEquiv k k (ι →₀ ℤ))
+  apply Localization.algHom_ext
+  apply (AlgHom.cancel_right (f := e.symm.toAlgHom) e.symm.surjective).mp
+  apply WithConv.toConv_injective
+  apply (TauCeti.SplitTorus.pointsMulEquiv (R := k) (A := K) (σ := ι)).injective
+  funext i
+  apply Units.ext
+  have hsingle : e (AddMonoidAlgebra.single (b i) 1) =
+      MonoidAlgebra.single (Multiplicative.ofAdd (Finsupp.single i 1)) 1 := by
+    simp [e]
+  simpa [← hsingle, Algebra.algHom, monomial_ofAdd] using h i
 
-variable (k) [AddCommGroup C] [Module ℤ C] [Module.Free ℤ C]
+section Free
+
+variable (k) [Module.Free ℤ B] [AddCommGroup C] [Module ℤ C] [Module.Free ℤ C]
+
+local instance {G : Type*} [AddCommGroup G] [Module ℤ G] [Module.Free ℤ G] : HasUniqueDiv G :=
+  .of_isTorsionFree ℤ G
 
 omit [Module ℤ B] [Module.Free ℤ B] [Module ℤ C] [Module.Free ℤ C] in
 private theorem injective_monomialLift (f : B →+ C) (hf : Function.Injective f) :
