@@ -448,7 +448,7 @@ theorem natCard_torsion_quotient_sq_dvd [IsAddTorsionFree L]
       ((A.discriminantBilinearModule_pairing _ _).trans ?_)
     obtain ⟨m, hm⟩ := ZMod.intCast_surjective (f t)
     have hsq : (m : ZMod (r + 1)) ^ 2 = 0 := hm ▸
-      degreeMoment_sq_eq_zero_of_isOfFinAddOrder hGram ((AddCommGroup.mem_torsion _).mp t.2)
+      degreeMoment_sq_eq_zero_of_isOfFinAddOrder hGram ((AddCommGroup.mem_torsion _).mp t.property)
     have hzero : ((m ^ 2 * (r : ℤ) : ℤ) : ZMod (r + 1)) = 0 := by simp [hsq]
     have he : g t = m • typeAFundamentalWeightClass r := calc
       g t = e (f t) := rfl

@@ -13,8 +13,8 @@ import Mathlib.AlgebraicGeometry.Morphisms.QuasiFinite
 import QPainleve.AlgebraicGeometry.Cohomology.OverFiniteScheme
 import QPainleve.AlgebraicGeometry.Normalization.Finite
 import TauCeti.Algebra.Category.ModuleCat.Sheaf.TensorProduct.Presentation
-import TauCeti.AlgebraicGeometry.Cohomology.Cech.Basic
-import TauCeti.AlgebraicGeometry.Curves.Cohomology
+import TauCeti.AlgebraicGeometry.Cohomology.PushforwardAcyclic.Affine
+import TauCeti.AlgebraicGeometry.Curves.Cohomology.Basic
 import TauCeti.AlgebraicGeometry.Modules.Quasicoherent.Pushforward.Finite
 import TauCeti.AlgebraicGeometry.Modules.Restriction.FinitePresentation
 import TauCeti.AlgebraicGeometry.Modules.SchemeTheoreticSupport
@@ -33,7 +33,7 @@ base field. It contributes the same correction to the Euler characteristics of a
 bundle and of the structure sheaf. Thus the Euler degree of a line bundle on an integral
 proper curve can be computed on its normalization.
 
-The comparison uses Tau Ceti's affine-morphism Čech comparison
+The comparison uses Tau Ceti's affine pushforward comparison
 `Scheme.Hom.cohomologyPushforwardBaseLinearEquivOfIsAffineHom`, projection formula
 `FiniteLocallyFreeSheaf.tensorPushforwardUnitIso`, and the semilocal twist calculation
 `Scheme.Hom.eulerCharBelow_tensor_pushforward`.
@@ -128,9 +128,10 @@ private lemma isFinite_structureSheafCokernel_support (k : Type u) [Field k]
     intro heq
     have hη : genericPoint Y ∈ (I.support : Set Y) := heq.symm ▸ Set.mem_univ _
     exact notMem_support_annihilator_structureSheafCokernel f h hη
+  have hYdim := Scheme.IsCurveOver.topologicalKrullDim_eq_one (X := Y) k
   have hdim := I.support.isClosed.topologicalKrullDim_lt hproper
-    (by rw [Scheme.IsCurveOver.topologicalKrullDim_eq_one (X := Y) k]; decide)
-  rw [Scheme.IsCurveOver.topologicalKrullDim_eq_one (X := Y) k] at hdim
+    (ne_top_of_le_ne_top (by rw [hYdim]; decide) (topologicalKrullDim_subspace_le Y _))
+  rw [hYdim] at hdim
   let i := I.subschemeι
   let e := i.isClosedEmbedding.isEmbedding.toHomeomorph.trans
     (Homeomorph.setCongr (I.range_subschemeι))
@@ -156,7 +157,7 @@ private theorem exists_structureSheafCokernel_iso_pushforward (k : Type u) [Fiel
   let Q := structureSheafCokernel f
   have : Q.IsFinitePresentation := f.isFinitePresentation_structureSheafCokernel
   have : Q.IsFiniteType := SheafOfModules.instIsFiniteTypeOfIsFinitePresentation Q
-  let hQ (U : Y.affineOpens) := Q.finite_sections_of_isAffineOpen U.1 U.2
+  let hQ (U : Y.affineOpens) := Q.finite_sections_of_isAffineOpen U.val U.property
   let I := Q.annihilator hQ
   let i := I.subschemeι
   have : IsIso ((pullbackPushforwardAdjunction i).unit.app Q) :=
@@ -276,14 +277,8 @@ private theorem eulerCharBelow_pushforwardObjUnit_eq_add (k : Type u) [Field k]
       (Scheme.Modules.pushforward f).mapIso (eqToIso (by
         rw [FiniteLocallyFreeSheaf.pullback_obj_obj, pullback_obj_obj]
         rfl))
-  have : IsSeparated (terminal.from Y) := by
-    rw [← terminal.comp_from (Y ↘ Spec (.of k))]
-    infer_instance
-  let 𝒰 := Y.affineCover.finiteSubcover
   have hc (n : ℕ) := (cohomologyBaseLinearEquivOfIso k e₂ n).trans
-    (f.cohomologyPushforwardBaseLinearEquivOfIsAffineHom
-      (fun j : 𝒰.I₀ ↦ (𝒰.f j).opensRange) (fun j ↦ isAffineOpen_opensRange (𝒰.f j))
-      𝒰.iSup_opensRange k ((pullback f).obj L).obj n)
+    (f.cohomologyPushforwardBaseLinearEquivOfIsAffineHom k ((pullback f).obj L).obj n)
   have : ((pullback f).obj L).obj.IsFiniteType := by
     rw [pullback_obj_obj]
     exact isFiniteType_pullback f L.obj
