@@ -9,17 +9,15 @@ public import TauCeti.AlgebraicGeometry.LineBundle.Affine.Picard
 public import TauCeti.Geometry.Toric.Algebraic.Fan.DenseTorus
 
 import Mathlib.GroupTheory.MonoidLocalization.UniqueFactorization
-import Mathlib.RingTheory.Polynomial.UniqueFactorization
-import QPainleve.Algebra.MvPolynomial.Laurent.Factorial
 import QPainleve.Geometry.Toric.RegularChart
 import TauCeti.Geometry.Toric.Algebraic.Normal
 
 /-!
 # Factorial toric charts and the Picard group of the dense torus
 
-In the coordinates of `affineCoordinateRingEquivMvPolynomial`, a regular cone chart is
-polynomial over a Laurent polynomial ring. Its coordinate ring and all its localizations
-are factorial. The dense torus is the chart of the zero cone, so
+The coordinate ring of a regular cone chart is factorial by
+`IsRegularCone.uniqueFactorizationMonoid_affineCoordinateRing`, and so are its localizations.
+The dense torus is the chart of the zero cone, so
 `LineBundleClass.subsingleton_spec` gives the vanishing of its Picard group. These are
 inputs to Picard excision along the dense-torus inclusion.
 -/
@@ -34,13 +32,6 @@ open TauCeti.AlgebraicGeometry (LineBundleClass)
 
 variable {N V : Type*} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {σ : PointedCone ℝ V}
-
-/-- The coordinate ring of a regular cone is factorial. -/
-theorem IsRegularCone.uniqueFactorizationMonoid_affineCoordinateRing (hσ : IsRegularCone i σ)
-    (hi : IsIntegralLattice i) : UniqueFactorizationMonoid (affineCoordinateRing hi σ) := by
-  obtain ⟨l, b, hb⟩ := hσ.exists_basis_sum
-  exact (affineCoordinateRingEquivMvPolynomial hi hσ.toIsToricCone hb).toMulEquiv.symm
-    |>.uniqueFactorizationMonoid inferInstance
 
 /-- Every line bundle on a regular affine cone chart is trivial. -/
 theorem IsRegularCone.subsingleton_lineBundleClass_affineToricScheme (hσ : IsRegularCone i σ)
