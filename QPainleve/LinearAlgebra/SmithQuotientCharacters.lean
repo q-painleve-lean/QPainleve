@@ -17,7 +17,10 @@ import TauCeti.Algebra.Group.FreeAbelianCharacter
 
 A Smith basis identifies the characters of a lattice quotient with roots of unity on the
 paired basis indices and arbitrary units on the remaining indices. For a finite free
-lattice, the number of free unit coordinates is the rank difference.
+lattice, the number of free unit coordinates is the rank difference. Tau Ceti's
+`freeAbelianCharEquiv` supplies the basis coordinates. Mathlib's `Equiv.piEquivPiSubtypeProd`
+splits them into the paired and unpaired indices, and `Equiv.subtypePiEquivPi` imposes the
+root-of-unity conditions factor by factor.
 -/
 
 public noncomputable section
@@ -73,56 +76,49 @@ def quotientCharactersMulEquiv (snf : Basis.SmithNormalForm H ι r) :
     dsimp only [coord]
     rw [MulEquiv.trans_apply, TauCeti.freeAbelianCharEquiv_apply]
     exact congrArg (fun n : N ↦ χ (ofAdd n)) (snf.bM.repr_symm_single_one i)
-  let φ : (MonoidHom.domRestrictHom H.toAddSubgroup.toSubgroup kˣ).ker →*
-      (∀ i, rootsOfUnity (snf.a i).natAbs k) × (↥((Set.range snf.f)ᶜ : Set ι) → kˣ) :=
-    { toFun χ := (fun i ↦ ⟨χ.val (ofAdd (snf.bM (snf.f i))),
-        (snf.mem_domRestrictHom_ker_iff χ.val).mp χ.property i⟩,
-        fun j ↦ χ.val (ofAdd (snf.bM j)))
-      map_one' := rfl
-      map_mul' _ _ := rfl }
-  refine toKernel.trans (MulEquiv.ofBijective φ ⟨?_, ?_⟩)
-  · intro χ ψ hφ
-    apply Subtype.ext
-    apply coord.injective
-    funext j
-    simp only [hcoord]
-    by_cases hj : j ∈ Set.range snf.f
-    · obtain ⟨i, rfl⟩ := hj
-      exact congrArg (fun z ↦ (z.1 i : kˣ)) hφ
-    · exact congrArg (fun z ↦ z.2 ⟨j, hj⟩) hφ
-  · rintro ⟨a, b⟩
-    let e := Equiv.ofInjective snf.f snf.f.injective
-    let c := (Equiv.Set.sumCompl (Set.range snf.f)).symm
-    let x : ι → kˣ := Sum.elim (fun i ↦ (a (e.symm i) : kˣ)) b ∘ c
-    let χ := coord.symm x
-    have hx (j : ι) : χ (ofAdd (snf.bM j)) = x j := by
-      rw [← hcoord, MulEquiv.apply_symm_apply]
-    have ha (i : Fin r) : χ (ofAdd (snf.bM (snf.f i))) = (a i : kˣ) := by
-      rw [hx]
-      have hi : c (snf.f i) = Sum.inl (e i) := by
-        apply c.symm.injective
-        simp [c, e]
-      simp only [x, Function.comp_apply, hi, Sum.elim_inl]
-      exact congrArg (fun j ↦ (a j : kˣ)) (e.symm_apply_apply i)
-    refine ⟨⟨χ, (snf.mem_domRestrictHom_ker_iff χ).mpr fun i ↦
-      ha i ▸ (a i).property⟩, Prod.ext (funext fun i ↦ Subtype.ext (ha i)) ?_⟩
-    funext j
-    -- The second factor uses only the basis indices outside the Smith embedding.
-    change χ (ofAdd (snf.bM j)) = b j
-    rw [hx]
-    simp [x, c]
+  let paired := Equiv.ofInjective snf.f snf.f.injective
+  let split :=
+    (Equiv.piEquivPiSubtypeProd (· ∈ Set.range snf.f) (fun _ ↦ kˣ)).trans
+      (Equiv.prodCongr (Equiv.arrowCongr paired.symm (Equiv.refl _)) (Equiv.refl _))
+  have hroot (χ : Multiplicative N →* kˣ) :
+      χ ∈ (MonoidHom.domRestrictHom H.toAddSubgroup.toSubgroup kˣ).ker ↔
+        ∀ i, (split (coord χ)).1 i ∈ rootsOfUnity (snf.a i).natAbs k := by
+    exact (snf.mem_domRestrictHom_ker_iff χ).trans
+      (forall_congr' fun i ↦ (hcoord χ (snf.f i)).symm ▸ Iff.rfl)
+  let roots := Equiv.subtypePiEquivPi
+    (p := fun (i : Fin r) (u : kˣ) ↦ u ∈ rootsOfUnity (snf.a i).natAbs k)
+  refine toKernel.trans
+    { toEquiv := ((coord.toEquiv.trans split).subtypeEquiv hroot).trans
+        (Equiv.prodSubtypeFstEquivSubtypeProd.trans
+          (Equiv.prodCongr roots (Equiv.refl _)))
+      map_mul' := fun χ ψ ↦ ?_ }
+  have h := coord.map_mul χ.val ψ.val
+  exact Prod.ext (funext fun i ↦ Subtype.ext (congrFun h (snf.f i)))
+    (funext fun j ↦ congrFun h j.val)
 
 @[simp]
 theorem quotientCharactersMulEquiv_fst_apply (snf : Basis.SmithNormalForm H ι r)
     (χ : Multiplicative (N ⧸ H.toAddSubgroup) →* kˣ) (i : Fin r) :
     ((snf.quotientCharactersMulEquiv χ).1 i : kˣ) =
-      χ (ofAdd (snf.bM (snf.f i) : N ⧸ H.toAddSubgroup)) := (rfl)
+      χ (ofAdd (snf.bM (snf.f i) : N ⧸ H.toAddSubgroup)) := by
+  -- Compute the forward coordinate of the product equivalences before evaluating the character.
+  change TauCeti.freeAbelianCharEquiv
+    (snf.bM.repr.toAddEquiv.toMultiplicative.monoidHomCongrLeft
+      ((MonoidHom.domRestrictHomKerEquiv kˣ H.toAddSubgroup.toSubgroup).symm χ).val) (snf.f i) = _
+  rw [TauCeti.freeAbelianCharEquiv_apply]
+  exact congrArg (fun n : N ↦ χ (ofAdd (n : N ⧸ H.toAddSubgroup))) (snf.bM.repr_symm_single_one _)
 
 @[simp]
 theorem quotientCharactersMulEquiv_snd_apply (snf : Basis.SmithNormalForm H ι r)
     (χ : Multiplicative (N ⧸ H.toAddSubgroup) →* kˣ) (j : ↥((Set.range snf.f)ᶜ : Set ι)) :
     (snf.quotientCharactersMulEquiv χ).2 j =
-      χ (ofAdd (snf.bM j : N ⧸ H.toAddSubgroup)) := (rfl)
+      χ (ofAdd (snf.bM j : N ⧸ H.toAddSubgroup)) := by
+  -- Compute the forward coordinate of the product equivalences before evaluating the character.
+  change TauCeti.freeAbelianCharEquiv
+    (snf.bM.repr.toAddEquiv.toMultiplicative.monoidHomCongrLeft
+      ((MonoidHom.domRestrictHomKerEquiv kˣ H.toAddSubgroup.toSubgroup).symm χ).val) j.val = _
+  rw [TauCeti.freeAbelianCharEquiv_apply]
+  exact congrArg (fun n : N ↦ χ (ofAdd (n : N ⧸ H.toAddSubgroup))) (snf.bM.repr_symm_single_one _)
 
 end Module.Basis.SmithNormalForm
 
@@ -156,8 +152,6 @@ theorem exists_quotientCharactersMulEquiv (k : Type*) [CommMonoid k]
     simp [snf.snf, h]
   · let e := Fintype.equivFinOfCardEq hc
     exact snf.quotientCharactersMulEquiv.trans <|
-      MulEquiv.prodCongr (MulEquiv.refl _)
-        { toEquiv := Equiv.arrowCongr e (Equiv.refl kˣ)
-          map_mul' _ _ := rfl }
+      MulEquiv.prodCongr (MulEquiv.refl _) (MulEquiv.arrowCongr e (MulEquiv.refl kˣ))
 
 end QPainleve.CharacterTorus
