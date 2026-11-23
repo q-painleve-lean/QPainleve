@@ -13,6 +13,7 @@ public import TauCeti.AlgebraicGeometry.IntersectionNumber.ExceptionalCurve.Basi
 import QPainleve.AlgebraicGeometry.IntersectionNumber.ExceptionalCurve.Numerical
 import QPainleve.AlgebraicGeometry.LineBundle.Ample
 import QPainleve.AlgebraicGeometry.Scheme.LocalDimension
+import Mathlib.RingTheory.Flat.Basic
 import TauCeti.AlgebraicGeometry.WeilDivisor.FiniteSum
 
 /-!
@@ -184,6 +185,59 @@ theorem existsUnique_primeDivisorClass_of_effective_extremalRay {a : LineBundleC
 
 open Scheme.IdealSheafData in
 omit [Infinite k] in
+/-- A class of square and canonical degree `-1` spanning an extremal ray of the
+closed curve cone is effective. A prime on the ray is a positive real multiple of
+the given class. Its integral canonical degree and arithmetic genus force the
+multiple to be one. -/
+theorem exists_effectiveWeilDivisor_of_exceptional_extremalRay [IsAlgClosed k]
+    [Scheme.IsRationalOver f] [FiniteDimensional ℝ V(X)] [T2Space V(X)]
+    {a : LineBundleClass X}
+    (hface : (PointedCone.hull ℝ {ι (Additive.ofMul a)}).IsFaceOf (C).toPointedCone)
+    (hsq : classIntersectionNumber k X a a = -1)
+    (hcan : classIntersectionNumber k X a
+      (LineBundleClass.mk (QPainleve.canonicalBundle k X 2)) = -1) :
+    let : IsNoetherian X := isNoetherian_of_finiteType f
+    let : ∀ x : X, UniqueFactorizationMonoid (X.presheaf.stalk x) :=
+      (f).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two
+    ∃ D : SchemeWeilDivisor X, 0 ≤ D ∧ (cl D).toMul = a := by
+  intro _ _
+  let K := LineBundleClass.mk (QPainleve.canonicalBundle k X 2)
+  let P := LineBundleClass.primeDivisorClass (X := X)
+  let I := classIntersectionNumber k X
+  obtain ⟨p, r, hr, he⟩ := exists_realPrimeDivisorClass_eq_pos_smul_of_isFaceOf_hull_singleton
+    k hface (by simp [hsq])
+  have hdeg : (I (P p) K : ℝ) = -r := by
+    dsimp only [I, P]
+    rw [classIntersectionNumber_comm,
+      ← realIntersectionBilinForm_one_tmul_realPrimeDivisorClass k K p,
+      (isSymm_realIntersectionBilinForm k X).eq, he, map_smul, LinearMap.smul_apply]
+    simp [K, hcan]
+  have hself : (I (P p) (P p) : ℝ) = -(r ^ 2) := by
+    rw [← realIntersectionBilinForm_one_tmul_realPrimeDivisorClass k (P p) p,
+      ← realPrimeDivisorClass_def k p, he]
+    simp [hsq, pow_two, map_smul, LinearMap.smul_apply]
+  have hdeg₀ : I (P p) K < 0 := by exact_mod_cast hdeg.trans_lt (neg_neg_of_pos hr)
+  have hdeg₁ : I (P p) K ≤ -1 := by omega
+  have hdegℝ : (I (P p) K : ℝ) ≤ -1 := by exact_mod_cast hdeg₁
+  have hadj := two_mul_genus_sub_two_eq_intersection_primeDivisorClass k p
+  dsimp only at hadj
+  have hboundℤ : -2 ≤ I (P p) (P p) + I (P p) K := by
+    dsimp only [I, P, K]
+    omega
+  have hbound : (-2 : ℝ) ≤ (I (P p) (P p) : ℝ) + (I (P p) K : ℝ) := by
+    exact_mod_cast hboundℤ
+  have hr₁ : r = 1 := by nlinarith [sq_nonneg (r - 1)]
+  have : Module.Free ℤ (Additive (LineBundleClass X)) := X.free_picard_of_isRationalOver k
+  have he' : ι (Additive.ofMul (P p)) = ι (Additive.ofMul a) := by
+    simpa only [realPrimeDivisorClass_def, hr₁, one_smul] using he
+  have hc := congrArg Additive.toMul
+    (Module.Flat.tensorProduct_mk_injective ℤ (Additive (LineBundleClass X)) ℝ he')
+  refine ⟨Finsupp.single p 1, by simp, ?_⟩
+  simpa only [P, toMul_ofMul, weilToLineBundleClassHom_single, one_smul,
+    ← LineBundleClass.primeDivisorClass_def] using hc
+
+open Scheme.IdealSheafData in
+omit [Infinite k] in
 /-- An effective class of square `-1` and canonical degree `-1` on an extremal ray
 of a smooth projective rational surface is represented by a unique prime divisor,
 and its reduced closure is an exceptional curve of the first kind. -/
@@ -213,9 +267,13 @@ theorem existsUnique_exceptionalPrimeDivisor_of_effective_extremalRay [IsAlgClos
     Scheme.isCurveOver_iff.mpr ⟨inferInstance, inferInstance, hdim⟩
   have hclass : (LineBundleClass.mk hJ.toInvertibleSheaf)⁻¹ = a := by
     simpa only [LineBundleClass.primeDivisorClass_def] using hp
-  have hadj := J.subschemeι.two_mul_genus_sub_two_eq_intersection_of_isRationalOver k
-  dsimp only at hadj
-  rw [LineBundleClass.mk_toInvertibleSheaf_congr _ hJ (ker_subschemeι J), hclass, hsq, hcan] at hadj
+  have hadj : 2 * (J.subscheme.genus k : ℤ) - 2 =
+      classIntersectionNumber k X (LineBundleClass.primeDivisorClass p)
+        (LineBundleClass.primeDivisorClass p) +
+      classIntersectionNumber k X (LineBundleClass.primeDivisorClass p)
+        (LineBundleClass.mk (QPainleve.canonicalBundle k X 2)) :=
+    two_mul_genus_sub_two_eq_intersection_primeDivisorClass k p
+  rw [hp, hsq, hcan] at hadj
   have hex := hJ.isExceptionalCurveOfFirstKind_iff_genus_eq_zero_and_classIntersectionNumber
     (k := k) hX.le
   dsimp only at hex
