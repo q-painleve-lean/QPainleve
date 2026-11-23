@@ -149,7 +149,12 @@ theorem pullback_map_dualSectionEquiv_symm_eq_smul (L : InvertibleSheaf Y)
         congrArg ((P.map e.hom ≫ b) ≫ ·) (e'.inv_hom_id_assoc vx).symm
       _ = c ≫ (e'.hom ≫ vx) := (Category.assoc _ _ _).symm
       _ = _ := (congrArg (c ≫ ·) (K.dualSectionEquiv_symm_apply (pb r))).symm
-  have h' : pb s = a • pb t := f.pullbackSectionsLE_top_eq_smul a h
+  have ha : X.presheaf.map (f ⁻¹ᵁ (⊤ : Y.Opens)).leTop.op a = a :=
+    (congrArg (fun g : Γ(X, ⊤) ⟶ Γ(X, ⊤) ↦ g a)
+      (X.presheaf.map_id (Opposite.op ⊤))).trans (id_apply a)
+  have h' : pb s = a • pb t := by
+    simpa only [pb, Scheme.Hom.pullbackSectionsLE_top, ha] using!
+      h.trans (K.obj.sectionsGlobal_smul (f ⁻¹ᵁ (⊤ : Y.Opens)) a (f.pullbackSections L.obj ⊤ t))
   have hscalar : K.dualSectionEquiv.symm (pb s) =
       K.dualSectionEquiv.symm (pb t) ≫ globalSectionsSmul (𝟙_ X.Modules) a := by
     apply K.dualSectionEquiv.injective

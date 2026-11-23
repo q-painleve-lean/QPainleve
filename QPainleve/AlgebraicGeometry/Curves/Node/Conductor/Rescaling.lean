@@ -12,6 +12,7 @@ public import TauCeti.AlgebraicGeometry.IdealSheaf.Over
 
 import Mathlib.Algebra.Group.Pi.Units
 import Mathlib.AlgebraicGeometry.AlgClosed.Basic
+import QPainleve.AlgebraicGeometry.Curves.Node.NormalizationComponent
 import QPainleve.AlgebraicGeometry.Scheme.Sections
 import TauCeti.AlgebraicGeometry.Geometrically.GlobalSections
 
@@ -92,26 +93,6 @@ local notation "V" => irreducibleComponents N
 local notation "P" => X.branchScheme k
 local notation "j" => X.branchSchemeToBlowup k
 local notation "g" => X.branchSchemeToSingularLocus k
-
-/-- The normalization components form an open cover. -/
-theorem iSup_blowupComponent : ⨆ a : V, X.blowupComponent (K := k) a = ⊤ := by
-  have : IsRegular N := X.isRegular_blowup_singularLocus
-    (PrestableFamily.atWorstNodalOfRelativeDimensionOne (f := X ↘ Spec (.of k)))
-  apply top_unique
-  intro x _
-  exact TopologicalSpace.Opens.mem_iSup.mpr ⟨irreducibleComponentOf x,
-    (SetLike.mem_coe.mp (by rw [X.coe_blowupComponent]; exact mem_irreducibleComponentOf x))⟩
-
-/-- Distinct normalization components are disjoint opens. -/
-theorem pairwise_disjoint_blowupComponent :
-    Pairwise (Function.onFun Disjoint (X.blowupComponent (K := k))) := by
-  have : IsRegular N := X.isRegular_blowup_singularLocus
-    (PrestableFamily.atWorstNodalOfRelativeDimensionOne (f := X ↘ Spec (.of k)))
-  intro a b hab
-  apply TopologicalSpace.Opens.coe_disjoint.mp
-  simp only [X.coe_blowupComponent]
-  exact Set.disjoint_left.mpr fun _ ha hb ↦ hab
-    ((irreducibleComponentOf_eq_iff.mpr ha).symm.trans (irreducibleComponentOf_eq_iff.mpr hb))
 
 variable [IsAlgClosed k]
 

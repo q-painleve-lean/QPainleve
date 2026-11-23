@@ -11,7 +11,6 @@ public import QPainleve.Geometry.Toric.Fan.Boundary.InternalCenter
 
 import QPainleve.AlgebraicGeometry.CartierDivisor.Pullback
 import QPainleve.AlgebraicGeometry.CartierDivisor.Support
-import QPainleve.AlgebraicGeometry.Curves.Node.Conductor.Rescaling
 import QPainleve.AlgebraicGeometry.Modules.Clopen
 import QPainleve.AlgebraicGeometry.Modules.Pullback.Unit
 import QPainleve.Geometry.Toric.Fan.Boundary.DualGraph
