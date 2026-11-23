@@ -34,13 +34,6 @@ namespace TauCeti.Toric.Fan
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {Φ Ψ : Fan i}
 
-private theorem IsSubdivision.reduced_boundary_of_iso (h : Ψ.IsSubdivision Φ)
-    (hΦ : Nonempty Φ.cones) (hΨ : Nonempty Ψ.cones) {Y : Scheme}
-    (f : Y ⟶ Φ.algebraicRealization) (e : Ψ.algebraicRealization ≅ Y)
-    (he : e.hom ≫ f = h.toFanHom.algebraicMap) :
-    ((Φ.boundaryIdeal hΦ).comap f).radical.comap e.hom = Ψ.boundaryIdeal hΨ := by
-  rw [← radical_comap_of_isOpenImmersion, ← comap_comp, he, h.radical_comap_boundaryIdeal hΨ hΦ]
-
 private theorem IsSubdivision.isNodalBoundaryTower_snoc (h : Ψ.IsSubdivision Φ)
     (hΦ : Nonempty Φ.cones) (hΨ : Ψ.IsRegular) (σ : Ψ.cones)
     (hN : Module.finrank ℤ N = 2) (hc : Nat.card (ToricRay σ.val) = 2)
@@ -62,7 +55,7 @@ private theorem IsSubdivision.isNodalBoundaryTower_snoc (h : Ψ.IsSubdivision Φ
   have hn : D.IsNodeOfReducedBoundary (T.toBase ≫ s) (e.hom (q x)) := by
     have hD : (D.comap e.hom).radical = Ψ.boundaryIdeal ⟨σ⟩ := by
       rw [radical_comap_of_isOpenImmersion]
-      exact h.reduced_boundary_of_iso hΦ ⟨σ⟩ T.toBase e he
+      exact h.radical_comap_boundaryIdeal_of_iso ⟨σ⟩ hΦ T.toBase e he
     have hs : e.hom ≫ T.toBase ≫ s = Ψ.algebraicRealizationStructureMap := by
       rw [← Category.assoc, he, h.toFanHom.algebraicMap_comp_algebraicRealizationStructureMap]
     apply (D.isNodeOfReducedBoundary_comap_iff_of_isOpenImmersion (T.toBase ≫ s) e.hom _).mp
@@ -104,7 +97,7 @@ theorem IsSubdivision.exists_toric_subdivision_blowup_tower
     have he : (Iso.refl Φ.algebraicRealization).hom ≫ (nil (X := Φ.algebraicRealization)).toBase =
         h.toFanHom.algebraicMap := by simp
     exact ⟨0, _, .nil, Iso.refl _, .nil, he,
-      h.reduced_boundary_of_iso hΦ₀ _ _ _ he, fun j ↦ j.elim0⟩
+      h.radical_comap_boundaryIdeal_of_iso _ hΦ₀ _ _ he, fun j ↦ j.elim0⟩
   | @tail Δ Ψ hpre hstep ih =>
     intro h
     have hΔΦ := isSubdivision_of_starSubdivision_chain hpre
@@ -124,7 +117,7 @@ theorem IsSubdivision.exists_toric_subdivision_blowup_tower
         ← FanHom.algebraicMap_comp, ← IsSubdivision.toFanHom_trans F hΔΦ]
     have hnodal := hΔΦ.isNodalBoundaryTower_snoc hΦ₀ hΔ σ hN hc e he hT
     refine ⟨n + 1, _, T.snoc J, g, hnodal, hbase,
-      h.reduced_boundary_of_iso hΦ₀ _ _ g hbase, ?_⟩
+      h.radical_comap_boundaryIdeal_of_iso _ hΦ₀ _ g hbase, ?_⟩
     intro j
     refine Fin.lastCases ?_ (fun j ↦ ?_) j
     · refine ⟨Δ, hΔ, σ, h₀, hΔΦ, IsSubdivision.refl _, hc, ?_⟩
