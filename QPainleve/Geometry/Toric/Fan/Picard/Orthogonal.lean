@@ -11,6 +11,7 @@ public import QPainleve.Geometry.Toric.Fan.Picard.NodalDescent
 
 import Mathlib.Analysis.Complex.Polynomial.Basic
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Numerical
+import QPainleve.AlgebraicGeometry.Chow.Isomorphism
 import QPainleve.Geometry.Toric.Fan.Smooth
 import TauCeti.LinearAlgebra.Matrix.Dual
 
@@ -116,18 +117,34 @@ private theorem pairing_resolutionMarking (a b : Pic(X) × (Fin d → ℤ)) :
     classIntersectionNumber_picardEquivOfCommonResolution ℂ hT.isClosedPointTower hU e.symm he a b
 
 omit [Φ.algebraicRealization.IsProjectiveOver ℂ] in
-include hJ hT hD in
-private theorem resolutionMarking_mem_markedBoundary_iff
-    (a : Pic(X) × (Fin d → ℤ)) : E a ∈ S₁ ↔ a.1 ∈ M₀ := by
+include hΦ hJ e in
+private def internalMarking : Pic(Y) ≃ₗ[ℤ] (Pic(Z) × (Fin n → ℤ)) :=
   let : SmoothOfRelativeDimension 2 fZ := smoothZ
-  let : IsNoetherian Y := T.isNoetherian
+  ((pullbackEquiv e.symm).toAdditive.toIntLinearEquiv).trans ((U).picardMarking hU fZ).symm
+
+local notation "F" => internalMarking hΦ hdim s m hm hprim c J hJ e
+
+omit [Φ.algebraicRealization.IsProjectiveOver ℂ] in
+include hΦ hJ in
+private theorem internal_picardHom_internalMarking (a : Pic(Y)) :
+    (U).picardHom (F a) = Additive.ofMul (pullback e.inv a.toMul) := by
+  let : SmoothOfRelativeDimension 2 fZ := smoothZ
+  rw [← (U).picardMarking_apply hU fZ, internalMarking, LinearEquiv.trans_apply,
+    LinearEquiv.apply_symm_apply]
+  change Additive.ofMul (pullbackEquiv e.symm a.toMul) = _
+  rw [pullbackEquiv_apply]
+  rfl
+
+omit [Φ.algebraicRealization.IsProjectiveOver ℂ] [X.Over (Spec (.of ℂ))]
+  [X.IsProjectiveOver ℂ] [IsIntegral X] [SmoothOfRelativeDimension 2 fX] in
+include hJ hD in
+private theorem internalMarking_mem_markedBoundary_iff [IsNoetherian Y] [IsIntegral Y]
+    [∀ y : Y, UniqueFactorizationMonoid (Y.presheaf.stalk y)] (a : Pic(Y)) :
+    F a ∈ S₁ ↔ a ∈ Scheme.Opens.primeDivisorSpanCompl V₀ := by
+  let : SmoothOfRelativeDimension 2 fZ := smoothZ
   let : IsNoetherian W := (U).isNoetherian
-  let : IsIntegral Y := hT.isClosedPointTower.isIntegral fX
   let : IsIntegral W := (hU).isIntegral fZ
-  let : SmoothOfRelativeDimension 2 (T.toBase ≫ fX) :=
-    hT.isClosedPointTower.smoothOfRelativeDimension fX
   let : SmoothOfRelativeDimension 2 ((U).toBase ≫ fZ) := (hU).smoothOfRelativeDimension fZ
-  let := (T.toBase ≫ fX).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two
   let := ((U).toBase ≫ fZ).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two
   have hUopen : e.inv ⁻¹ᵁ V₀ = V₁ := by
     rw [← compl_support_comap, hD]
@@ -135,51 +152,55 @@ private theorem resolutionMarking_mem_markedBoundary_iff
   have hmap := Submodule.comap_map_eq_of_injective ((hU).bijective_picardHom fZ).injective S₁
   rw [← hmap, Submodule.mem_comap, hspan,
     ← primeDivisorSpanCompl_internalBlowup hΦ hdim s m hm hprim c J hJ,
-    internal_picardHom_resolutionMarking hΦ hdim s m hm hprim c J hJ hT e,
+    internal_picardHom_internalMarking hΦ hdim s m hm hprim c J hJ e,
     ← hUopen, ← Submodule.Quotient.mk_eq_zero,
     ← Scheme.Hom.quotientPrimeDivisorSpanComplEquiv_mk, LinearEquiv.map_eq_zero_iff,
-    Submodule.Quotient.mk_eq_zero]
-  exact hT.picardHom_mem_primeDivisorSpanCompl_iff a.1 a.2
-
-include hJ hT he hD in
-private theorem resolutionMarking_mem_orthogonal_iff
-    (a : Pic(X) × (Fin d → ℤ)) : E a ∈ (B₁).orthogonal S₁ ↔ a.1 ∈ (A₀).orthogonal M₀ ∧ a.2 = 0 := by
-  classical
-  have hmem := resolutionMarking_mem_markedBoundary_iff hΦ hdim s m hm hprim c J hJ hT e hD
-  have hpair := pairing_resolutionMarking hΦ hdim s m hm hprim c J hJ hT e he
-  constructor
-  · intro ha
-    refine ⟨mem_orthogonal_iff.mpr fun x hx ↦ ?_, funext fun j ↦ ?_⟩
-    · have hp := mem_orthogonal_iff.mp ha _ ((hmem (x, 0)).mpr hx)
-      simpa [hpair, LinearMap.BilinForm.prod_apply, dotProductBilin_apply_apply] using hp
-    · have hp := mem_orthogonal_iff.mp ha _
-        ((hmem (0, Pi.single j 1)).mpr (Submodule.zero_mem _))
-      simpa [hpair, LinearMap.BilinForm.prod_apply, dotProductBilin_apply_apply,
-        single_dotProduct] using hp
-  · rintro ⟨ha, hb⟩
-    refine mem_orthogonal_iff.mpr fun y hy ↦ ?_
-    obtain ⟨z, rfl⟩ := (E).surjective y
-    have hp := mem_orthogonal_iff.mp ha _ ((hmem z).mp hy)
-    simpa [hpair, LinearMap.BilinForm.prod_apply, dotProductBilin_apply_apply, hb] using hp
+    Submodule.Quotient.mk_eq_zero, ofMul_toMul]
 
 include hJ hT he hD in
 private def orthogonalMarking : (A₀).orthogonal M₀ ≃ₗ[ℤ] (B₁).orthogonal S₁ := by
-  let g := (LinearMap.comp (E).toLinearMap (LinearMap.inl ℤ (Pic(X)) (Fin d → ℤ))).domRestrict
-    ((A₀).orthogonal M₀)
-  have hmem := resolutionMarking_mem_orthogonal_iff hΦ hdim s m hm hprim c J hJ hT e he hD
-  refine LinearEquiv.ofBijective (g.codRestrict _ (fun x ↦
-    (hmem (x.val, 0)).mpr ⟨x.property, rfl⟩)) ⟨?_, ?_⟩
-  · intro x y h
-    exact Subtype.ext (congrArg Prod.fst ((E).injective (congrArg Subtype.val h)))
-  · intro z
-    obtain ⟨⟨a, b⟩, hab⟩ := (E).surjective z.val
-    obtain ⟨ha, rfl⟩ := (hmem (a, b)).mp (hab.symm ▸ z.property)
-    exact ⟨⟨a, ha⟩, Subtype.ext hab⟩
+  let : SmoothOfRelativeDimension 2 fZ := smoothZ
+  let : IsNoetherian Y := T.isNoetherian
+  let : Y.Over (Spec (.of ℂ)) := ⟨T.toBase ≫ fX⟩
+  let : Y.IsProjectiveOver ℂ := T.isProjectiveOver ℂ
+  let : IsIntegral Y := hT.isClosedPointTower.isIntegral fX
+  let : SmoothOfRelativeDimension 2 (Y ↘ Spec (.of ℂ)) :=
+    hT.isClosedPointTower.smoothOfRelativeDimension fX
+  let : ∀ y : Y, UniqueFactorizationMonoid (Y.presheaf.stalk y) :=
+    (Y ↘ Spec (.of ℂ)).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two
+  let : (W).Over (Spec (.of ℂ)) := ⟨(U).toBase ≫ fZ⟩
+  let : e.inv.IsOver (Spec (.of ℂ)) := ⟨he⟩
+  have hpair (a b : Pic(Y)) : B₁ (F a) (F b) = Chow.intersectionBilinForm ℂ Y a b := by
+    have hmark (x y : Pic(Z) × (Fin n → ℤ)) :
+        Chow.classIntersectionNumber ℂ W ((U).picardHom x).toMul ((U).picardHom y).toMul =
+          B₁ x y := by
+      simpa only [picardMarking_apply, LinearMap.BilinForm.prod_apply,
+        Chow.intersectionBilinForm_apply, LinearMap.neg_apply, dotProductBilin_apply_apply,
+        dotProduct, sub_eq_add_neg] using classIntersectionNumber_picardMarking ℂ hU x y
+    rw [← hmark, Chow.intersectionBilinForm_apply, internal_picardHom_internalMarking,
+      internal_picardHom_internalMarking, toMul_ofMul, toMul_ofMul]
+    exact Chow.classIntersectionNumber_pullback_of_isIso ℂ e.inv a.toMul b.toMul
+  have hmem (a : Pic(Y)) :
+      F a ∈ (B₁).orthogonal S₁ ↔
+        a ∈ (Chow.intersectionBilinForm ℂ Y).orthogonal
+          (Scheme.Opens.primeDivisorSpanCompl V₀) := by
+    simp only [mem_orthogonal_iff]
+    rw [(F).surjective.forall (p := fun z ↦ z ∈ S₁ → B₁ z (F a) = 0)]
+    simp only [internalMarking_mem_markedBoundary_iff hΦ hdim s m hm hprim c J hJ e hD, hpair]
+  refine (hT.boundaryOrthogonalIsometry ℂ).toLinearEquiv.trans ((F).ofSubmodules _ _ ?_)
+  ext z
+  obtain ⟨a, rfl⟩ := (F).surjective z
+  rw [Submodule.mem_map_equiv, LinearEquiv.symm_apply_apply, hmem]
 
 include hJ hT he hD in
 private theorem coe_orthogonalMarking (κ : (A₀).orthogonal M₀) :
     (orthogonalMarking hΦ hdim s m hm hprim c J hJ hT e he hD κ : Pic(Z) × (Fin n → ℤ)) =
-      E (κ.val, 0) := (rfl)
+      E (κ.val, 0) := by
+  let : SmoothOfRelativeDimension 2 fZ := smoothZ
+  change F (hT.boundaryOrthogonalIsometry ℂ κ : Pic(Y)) = _
+  apply ((hU).bijective_picardHom fZ).injective
+  rw [internal_picardHom_internalMarking, hT.boundaryOrthogonalIsometry_apply ℂ,
+    internal_picardHom_resolutionMarking, picardHom_apply_zero, toMul_ofMul]
 
 variable [LinearMap.IsPerfPair (Chow.intersectionBilinForm ℂ X)]
 
@@ -224,6 +245,7 @@ theorem exists_picardBoundaryOrthogonalEquivChargeKernel_symm_marking
   let := isPerfPair_internal_markedForm hΦ hdim s m hm hprim c J hJ hT e he
   let y := (boundaryOrthogonalEquivChargeKernel hΦ s B₁).symm x
   have hy : (y : Pic(Z) × (Fin n → ℤ)) = E (((q).symm x).val, 0) := by
+    rw [← coe_orthogonalMarking hΦ hdim s m hm hprim c J hJ hT e he hD]
     exact congrArg Subtype.val
       ((orthogonalMarking hΦ hdim s m hm hprim c J hJ hT e he hD).apply_symm_apply y).symm
   have hsecond := boundaryOrthogonalEquivChargeKernel_symm_snd hΦ s A₁ x
