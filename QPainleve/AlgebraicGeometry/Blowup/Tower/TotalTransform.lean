@@ -7,18 +7,30 @@ module
 
 public import QPainleve.AlgebraicGeometry.Blowup.Tower.Intersection
 public import QPainleve.AlgebraicGeometry.Chow.Nef
+import QPainleve.AlgebraicGeometry.Blowup.Tower.Contraction
+import QPainleve.AlgebraicGeometry.Blowup.Tower.Modification
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Projective
 import QPainleve.AlgebraicGeometry.CartierDivisor.Support
+import QPainleve.AlgebraicGeometry.Chow.BoundaryMultiplicity
+import QPainleve.AlgebraicGeometry.EffectiveCartierDivisor.Dimension
+import QPainleve.AlgebraicGeometry.IdealSheaf.Stalk
 import QPainleve.AlgebraicGeometry.IntersectionNumber.Nef.Pullback
+import QPainleve.AlgebraicGeometry.Morphisms.Modification.IsoLocus
+import QPainleve.AlgebraicGeometry.Morphisms.Smooth.Factorial
+import TauCeti.AlgebraicGeometry.Morphisms.Smooth.Regular
 import TauCeti.AlgebraicGeometry.Scheme.Regular.Scheme
 
 /-!
-# Orthogonality of a nef square-zero total transform
+# Total transforms of nef divisors of square zero
 
 Pullback along a closed-point blowup tower preserves the intersection pairing.
 Consequently, a nef effective Cartier divisor of square zero has zero intersection
 with each prime divisor in its total transform. This applies to nodal boundary
 towers, with the exceptional components included in the support.
+
+For a nonempty reduced divisor, a strict-transform component has multiplicity one.
+This normalizes the total transform of a connected nef divisor of square zero, so
+its support determines it among total transforms of such divisors.
 
 The comparison uses the established Picard marking of a point-blowup tower and
 the projection formula for degrees. See also the intersection calculation in
@@ -27,7 +39,7 @@ the projection formula for degrees. See also the intersection calculation in
 
 public section
 
-open AlgebraicGeometry CategoryTheory TauCeti.AlgebraicGeometry
+open AlgebraicGeometry CategoryTheory TopologicalSpace TauCeti.AlgebraicGeometry
 open LineBundleClass Scheme.IdealSheafData
 
 universe u
@@ -36,6 +48,44 @@ namespace QPainleve.BlowupTower.IsClosedPointTower
 
 variable {X Y : Scheme.{u}} {n : ℕ} {T : BlowupTower X n Y}
   {k : Type u} [Field k] [IsIntegral X]
+
+open Order in
+/-- The total transform of a nonempty reduced effective Cartier divisor has a
+prime component of multiplicity one. -/
+theorem exists_coeff_totalTransform_eq_one [PerfectField k] [IsNoetherian X]
+    (hT : IsClosedPointTower X T) (f : X ⟶ Spec (.of k)) [SmoothOfRelativeDimension 2 f]
+    {D : X.IdealSheafData} [IsReduced D.subscheme] (hD : D.IsEffectiveCartier)
+    (hne : (D.support : Set X).Nonempty) :
+    let := T.isNoetherian
+    let := hT.isIntegral f
+    ∃ q : CodimensionOnePoint Y,
+      (hT.isEffectiveCartier_totalTransform f hD).toCartierDivisor.toWeilDivisor q = 1 := by
+  intro _ _
+  obtain ⟨x, hx⟩ := hne
+  obtain ⟨p, hp, -⟩ := hD.mem_support_iff_exists_codimensionOnePoint.mp hx
+  have : Smooth f := SmoothOfRelativeDimension.smooth 2 f
+  have : IsRegular X := IsRegular.of_smooth f
+  have : IsModification T.toBase := hT.isModification_of_smoothOfRelativeDimension_two f
+  have hpIso := T.toBase.mem_isoLocus_of_coheight_eq_one p.property
+  obtain ⟨y, hy⟩ := T.toBase.surjective (p : X)
+  have hyIso : T.toBase y ∈ T.toBase.isoLocus := hy.symm ▸ hpIso
+  let q : CodimensionOnePoint Y :=
+    ⟨y, (T.toBase.coheight_eq_of_apply_mem_isoLocus hyIso).symm.trans
+      ((congrArg coheight hy).trans p.property)⟩
+  have : Smooth (T.toBase ≫ f) := (hT.smoothOfRelativeDimension f).smooth 2 _
+  have : IsRegular Y := IsRegular.of_smooth (T.toBase ≫ f)
+  have := IsNormalScheme.isDiscreteValuationRing_stalk (q : Y) q.property
+  have := IsNormalScheme.isDiscreteValuationRing_stalk (p : X) p.property
+  have := T.toBase.isIso_stalkMap_of_mem_isoLocus hyIso
+  have hpOrder : D.stalkOrder (p : X) = 1 :=
+    le_antisymm (hD.stalkOrder_le_one_of_isReduced _) ((D.one_le_stalkOrder_iff _).mpr hp)
+  use q
+  rw [← WeilDivisor.coeff,
+    (hT.isEffectiveCartier_totalTransform f hD).coeff_toWeilDivisor_eq_stalkOrder,
+    D.stalkOrder_comap_of_isIso_stalkMap, hy, hpOrder]
+  rfl
+
+section Nef
 
 variable (k) [IsAlgClosed k] [X.Over (Spec (.of k))] [X.IsProjectiveOver k]
   [SmoothOfRelativeDimension 2 (X ↘ Spec (.of k))]
@@ -94,5 +144,63 @@ theorem classIntersectionNumber_totalTransform_eq_zero (hT : IsClosedPointTower 
     Finsupp.mem_support_iff.mpr fun hzero ↦
       (htotal.coeff_toWeilDivisor_eq_zero_iff p).mp hzero (hsub hpE)
   simp only [← hclass, horth p hpTotal, mul_zero]
+
+/-- Two total transforms from smooth projective surfaces with a common blowup model
+are equal if their supports agree and the original divisors are nonempty, reduced, nef,
+and of square zero, with connected support on the first base. -/
+theorem totalTransform_eq_of_nef_square_zero {X' : Scheme.{u}}
+    [IsIntegral X'] [X'.Over (Spec (.of k))] [X'.IsProjectiveOver k]
+    [SmoothOfRelativeDimension 2 (X' ↘ Spec (.of k))]
+    {m : ℕ} {U : BlowupTower X' m Y} (hT : IsClosedPointTower X T)
+    (hU : IsClosedPointTower X' U)
+    (hover : T.toBase ≫ (X ↘ Spec (.of k)) = U.toBase ≫ (X' ↘ Spec (.of k)))
+    {D : X.IdealSheafData} {E : X'.IdealSheafData}
+    [IsReduced D.subscheme] [IsReduced E.subscheme]
+    (hD : D.IsEffectiveCartier) (hE : E.IsEffectiveCartier)
+    (hconn : _root_.IsConnected (D.support : Set X))
+    (hsupp : (D.comap T.toBase).support = (E.comap U.toBase).support)
+    (hnefD : IsNef k (X ↘ Spec (.of k)) (mk hD.toInvertibleSheaf)⁻¹)
+    (hnefE : IsNef k (X' ↘ Spec (.of k)) (mk hE.toInvertibleSheaf)⁻¹)
+    (hsqD : Chow.classIntersectionNumber k X (mk hD.toInvertibleSheaf)⁻¹
+      (mk hD.toInvertibleSheaf)⁻¹ = 0)
+    (hsqE : Chow.classIntersectionNumber k X' (mk hE.toInvertibleSheaf)⁻¹
+      (mk hE.toInvertibleSheaf)⁻¹ = 0) :
+    D.comap T.toBase = E.comap U.toBase := by
+  let f := X ↘ Spec (.of k)
+  let g := X' ↘ Spec (.of k)
+  let : Y.Over (Spec (.of k)) := ⟨T.toBase ≫ f⟩
+  have : IsNoetherian X := isNoetherian_of_finiteType f
+  have : IsNoetherian X' := isNoetherian_of_finiteType g
+  have : IsNoetherian Y := T.isNoetherian
+  have : IsIntegral Y := hT.isIntegral f
+  have : Y.IsProjectiveOver k := T.isProjectiveOver k
+  have : SmoothOfRelativeDimension 2 (T.toBase ≫ f) := hT.smoothOfRelativeDimension f
+  have (y : Y) : UniqueFactorizationMonoid (Y.presheaf.stalk y) :=
+    (T.toBase ≫ f).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two y
+  have : T.toBase.IsOver (Spec (.of k)) := ⟨rfl⟩
+  have : U.toBase.IsOver (Spec (.of k)) := ⟨hover.symm⟩
+  have hdim := topologicalKrullDim_eq_of_smoothOfRelativeDimension (T.toBase ≫ f) (n := 2)
+  have hDT := hT.isEffectiveCartier_totalTransform f hD
+  have hEU := hU.isEffectiveCartier_totalTransform g hE
+  have hconnT : _root_.IsConnected ((D.comap T.toBase).support : Set Y) := by
+    rw [support_comap, Closeds.coe_preimage]
+    exact hT.isConnected_preimage_of_isClosed f D.support.isClosed hconn
+  have hneE : (E.support : Set X').Nonempty := by
+    obtain ⟨q, hq⟩ := hconnT.nonempty
+    exact ⟨U.toBase q, by rwa [hsupp, support_comap, Closeds.coe_preimage] at hq⟩
+  obtain ⟨p, hp⟩ := hT.exists_coeff_totalTransform_eq_one f hD hconn.nonempty
+  obtain ⟨q, hq⟩ := hU.exists_coeff_totalTransform_eq_one g hE hneE
+  have hclD : pullback T.toBase (mk hD.toInvertibleSheaf)⁻¹ = (mk hDT.toInvertibleSheaf)⁻¹ := by
+    rw [pullback_inv, hD.pullback_mk_toInvertibleSheaf hDT]
+  have hclE : pullback U.toBase (mk hE.toInvertibleSheaf)⁻¹ = (mk hEU.toInvertibleSheaf)⁻¹ := by
+    rw [pullback_inv, hE.pullback_mk_toInvertibleSheaf hEU]
+  refine Chow.eq_of_nef_square_zero_of_support_eq k hdim hDT hEU hsupp hconnT.isPreconnected
+    (hclD ▸ hnefD.pullback T.toBase) (hclE ▸ hnefE.pullback U.toBase) ?_ ?_ hp hq
+  · rw [← hclD, hT.classIntersectionNumber_pullback k, hsqD]
+  · rw [← hclE]
+    have he := (hU.classIntersectionNumber_pullback k _ _).trans hsqE
+    rwa [← hover] at he
+
+end Nef
 
 end QPainleve.BlowupTower.IsClosedPointTower
