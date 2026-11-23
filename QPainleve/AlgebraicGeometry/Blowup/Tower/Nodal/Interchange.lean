@@ -12,8 +12,8 @@ public import TauCeti.AlgebraicGeometry.Morphisms.Smooth.RelativeDimension
 
 import QPainleve.AlgebraicGeometry.Blowup.Smooth
 import QPainleve.AlgebraicGeometry.Blowup.StrictTransform.Disjoint
+import QPainleve.AlgebraicGeometry.Blowup.StrictTransform.Node
 import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
-import QPainleve.AlgebraicGeometry.Morphisms.IsoLocus
 import TauCeti.AlgebraicGeometry.Blowup.Restriction
 import TauCeti.AlgebraicGeometry.Morphisms.Smooth.Regular
 
@@ -46,59 +46,9 @@ local notation "P[" p "]" => Scheme.Hom.ker (Scheme.fromSpecResidueField _ p)
 local notation "St[" I "," D "]" =>
   Scheme.Hom.ker (IdealSheafData.blowupMap I (IdealSheafData.subschemeι D))
 
-/-- Outside the center, the strict transform has a node exactly over a node of the
-original reduced boundary. -/
-theorem isNodeOfReducedBoundary_ker_blowupMap_iff_of_notMem_support
-    [IsLocallyNoetherian X] (I D : X.IdealSheafData) (s : X ⟶ S) {z : I.blowup}
-    (hz : I.blowupToBase z ∉ I.support) :
-    (St[I,D]).IsNodeOfReducedBoundary (I.blowupToBase ≫ s) z ↔
-      D.IsNodeOfReducedBoundary s (I.blowupToBase z) := by
-  let U : I.blowup.Opens := (I.comap I.blowupToBase).support.compl
-  have hz' : I.blowupToBase z ∈ I.support.compl := by
-    simpa only [← SetLike.mem_coe, Closeds.coe_compl, Set.mem_compl_iff] using hz
-  let w : U := ⟨z, by
-    simpa only [U, compl_support_comap, Scheme.Hom.mem_preimage] using hz'⟩
-  have : IsOpenImmersion (U.ι ≫ I.blowupToBase) := by
-    dsimp only [U]
-    rw [compl_support_comap, ← morphismRestrict_ι]
-    infer_instance
-  have hstrict := (St[I,D]).isNodeOfReducedBoundary_comap_iff_of_isOpenImmersion
-    (I.blowupToBase ≫ s) U.ι w
-  rw [comap_ker_blowupMap_subschemeι_exceptionalCompl I D, ← comap_comp] at hstrict
-  have htotal := D.isNodeOfReducedBoundary_comap_iff_of_isOpenImmersion
-    s (U.ι ≫ I.blowupToBase) w
-  have hleft : U.ι w = z := rfl
-  have hright : (U.ι ≫ I.blowupToBase) w = I.blowupToBase z :=
-    (Scheme.Hom.comp_apply _ _ _).trans (congrArg I.blowupToBase hleft)
-  have h := hstrict.symm.trans htotal
-  rwa [hleft, hright] at h
-
 section Point
 
 variable {k : Type u} [Field k] (s : X ⟶ Spec (.of k)) [SmoothOfRelativeDimension 2 s]
-
-include s in
-private theorem isReduced_exceptional_pair {Y : Scheme.{u}} (f : Y ⟶ X) [LocallyOfFiniteType f]
-    {q' : Y} (hq' : IsClosed ({q'} : Set Y)) (hq : IsClosed ({f q'} : Set X))
-    (hqU : f q' ∈ f.isoLocus) :
-    IsReduced (P[f q'].comap P[f q'].blowupToBase).subscheme ∧
-      IsReduced (P[q'].comap P[q'].blowupToBase).subscheme := by
-  have : Smooth s := SmoothOfRelativeDimension.smooth 2 s
-  have : IsLocallyNoetherian X := LocallyOfFiniteType.isLocallyNoetherian s
-  have : IsLocallyNoetherian Y := LocallyOfFiniteType.isLocallyNoetherian f
-  have : IsRegularLocalRing (X.presheaf.stalk (f q')) := isRegularLocalRing_stalk_of_smooth s _
-  have hdim := ((smoothOfRelativeDimension_iff_ringKrullDim_stalk_eq s 2).mp inferInstance).2 _ hq
-  have : IsIso (f.stalkMap q') := f.isIso_stalkMap_of_mem_isoLocus hqU
-  let e := (asIso (f.stalkMap q')).commRingCatIsoToRingEquiv
-  have : IsRegularLocalRing (Y.presheaf.stalk q') := .of_ringEquiv e
-  have hd := (ringKrullDim_eq_of_ringEquiv e).symm.trans hdim
-  have h₁ := isIntegral_exceptional_blowup_closed_point hdim hq
-  have h₂ := isIntegral_exceptional_blowup_closed_point hd hq'
-  constructor
-  · exact (congrArg (fun K : X.IdealSheafData ↦ IsReduced (K.comap K.blowupToBase).subscheme)
-      (Scheme.ker_fromSpecResidueField_eq_vanishingIdeal (f q'))).mpr inferInstance
-  · exact (congrArg (fun K : Y.IdealSheafData ↦ IsReduced (K.comap K.blowupToBase).subscheme)
-      (Scheme.ker_fromSpecResidueField_eq_vanishingIdeal q')).mpr inferInstance
 
 /-- Move a closed node of the strict boundary before a disjoint internal blowup at
 a smooth boundary point. Both orders use the actual residue-field center ideals. The
@@ -155,11 +105,19 @@ theorem exists_iso_internal_nodal_blowup_interchange
   have hsmooth := (D.mem_smoothBoundaryPoints_comap_iff_of_mem_isoLocus s _ hpIso).mpr (hp'π ▸ hpD)
   have hd : Disjoint (I.support : Set X) J.support := by
     simpa only [hIp, hJq, Set.disjoint_singleton] using haway.symm
-  obtain ⟨hred, hred'⟩ := isReduced_exceptional_pair s I.blowupToBase hq' hq hqIso
+  have hdim := ((smoothOfRelativeDimension_iff_ringKrullDim_stalk_eq s 2).mp inferInstance).2 q hq
+  have : IsRegularLocalRing (X.presheaf.stalk q) := isRegularLocalRing_stalk_of_smooth s q
+  have : IsReduced (J.comap J.blowupToBase).subscheme := by
+    dsimp only [J]
+    rw [Scheme.ker_fromSpecResidueField_eq_vanishingIdeal]
+    exact @isReduced_of_isIntegral _ (isIntegral_exceptional_blowup_closed_point hdim hq)
   let J' := J.comap I.blowupToBase
-  have : IsReduced (J'.comap J'.blowupToBase).subscheme :=
-    (congrArg (fun K : I.blowup.IdealSheafData ↦ IsReduced (K.comap K.blowupToBase).subscheme)
-      hJ').mpr hred'
+  have : IsLocallyNoetherian I.blowup := LocallyOfFiniteType.isLocallyNoetherian I.blowupToBase
+  have : IsReduced (J'.comap J'.blowupToBase).subscheme := by
+    dsimp only [J']
+    rw [hJ', Scheme.ker_fromSpecResidueField_eq_vanishingIdeal]
+    exact @isReduced_of_isIntegral _
+      (I.blowupToBase.isIntegral_exceptional_blowup_of_mem_isoLocus hdim hq' hqIso)
   let e := I.blowupCommOfDisjoint J hd
   refine ⟨p', e, hq, hqD', hJ', hp', hp'π, hI', ?_,
     I.blowupCommOfDisjoint_hom_blowupMap J hd, I.blowupCommOfDisjoint_hom_blowupToBase J hd,
