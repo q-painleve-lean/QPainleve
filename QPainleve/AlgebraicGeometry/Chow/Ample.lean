@@ -51,9 +51,8 @@ theorem classIntersectionNumber_primeDivisorClass_pos_of_isAmple
     Scheme.IsProjectiveOver.of_isClosedImmersion k I.subschemeι
   have : I.subscheme.IsCurveOver k := Scheme.isCurveOver_iff.mpr
     ⟨inferInstance, inferInstance, QPainleve.topologicalKrullDim_vanishingIdeal_subscheme k hX p⟩
-  rw [classIntersectionNumber_primeDivisorClass_eq_intersectionNumber k hX,
-    LineBundleClass.intersectionNumber_def]
-  exact (ha.pullback_of_isAffineHom I.subschemeι).eulerDegree_pos
+  rw [classIntersectionNumber_primeDivisorClass_eq_intersectionNumber k hX]
+  exact ha.intersectionNumber_pos I.subschemeι
 
 /-- Two ample classes on a locally factorial integral projective surface have positive
 intersection. Taking the same class twice gives positivity of its square. -/
