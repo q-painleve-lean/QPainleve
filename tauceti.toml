@@ -28,7 +28,7 @@ completed_dir = "Completed"
 # branch is upstream main plus the fixes listed in its DOWNSTREAM.md.
 [tools.tools]
 repo = "q-painleve-lean/TauCetiTools"
-ref = "79213262f3bc8fb99fc96f8a7d180ab3fb59c4d7"
+ref = "db9dced7850f8c1eb12496361045f6e9755feb5a"
 [tools.review]
 # Review runs from this org's fork: its `downstream` branch is upstream main plus the fixes
 # listed in its DOWNSTREAM.md.
@@ -77,7 +77,7 @@ docs = false
 progress = false
 zulip = false
 fleet = false
-security_audit = false
+security_audit = true
 roadmap_authoring = false
 
 [services.github_state]
