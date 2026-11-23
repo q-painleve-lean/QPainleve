@@ -9,8 +9,6 @@ public import QPainleve.Geometry.Toric.Fan.PiecewiseLinear
 public import QPainleve.Geometry.Toric.Fan.HalfPlane
 public import QPainleve.LinearAlgebra.Transvection.Piecewise
 
-import Mathlib.Tactic.FinCases
-
 /-!
 # Mutation of rank-two toric fans
 
@@ -35,16 +33,11 @@ private def mutationCharacter (b : Module.Basis (Fin 2) ℤ N) (v : N) : Module.
 
 private theorem mutationCharacter_apply (b : Module.Basis (Fin 2) ℤ N) (v u : N) :
     mutationCharacter b v u = b.det ![u, v] := by
-  have hswap : ![v, u] ∘ Equiv.swap (0 : Fin 2) 1 = ![u, v] := by
-    ext j
-    fin_cases j <;> rfl
-  simpa only [hswap, mutationCharacter, LinearMap.neg_apply, Module.Basis.detDualEquiv_apply] using
-    (b.det.map_swap ![v, u] (by decide : (0 : Fin 2) ≠ 1)).symm
+  rw [mutationCharacter, LinearMap.neg_apply, ← b.detDualEquiv_swap u v, b.detDualEquiv_apply]
 
 private theorem mutationCharacter_self (b : Module.Basis (Fin 2) ℤ N) (v : N) :
     mutationCharacter b v v = 0 := by
-  rw [mutationCharacter_apply]
-  exact b.det.map_eq_zero_of_eq _ (i := 0) (j := 1) rfl (by decide)
+  simp only [mutationCharacter, LinearMap.neg_apply, b.detDualEquiv_self, neg_zero]
 
 namespace IsIntegralLattice
 

@@ -6,6 +6,7 @@ Authors: The QPainleve contributors
 module
 
 public import Mathlib.LinearAlgebra.Determinant
+public import TauCeti.Algebra.Module.Primitive
 import Mathlib.Tactic.FinCases
 import TauCeti.LinearAlgebra.BilinearMap.Multilinear
 import TauCeti.LinearAlgebra.PerfectPairing.Basis
@@ -42,5 +43,36 @@ theorem detDualEquiv_apply (b : Basis (Fin 2) R N) (h u : N) :
     b.detDualEquiv h u = b.det ![h, u] := by
   simp only [detDualEquiv, LinearMap.toPerfPair_apply, MultilinearMap.toBilinMap_apply,
     AlternatingMap.coe_multilinearMap]
+
+/-- The determinant pairing is alternating. -/
+theorem detDualEquiv_self (b : Basis (Fin 2) R N) (v : N) : b.detDualEquiv v v = 0 := by
+  rw [detDualEquiv_apply]
+  exact b.det.map_eq_zero_of_eq _ (i := 0) (j := 1) rfl (by decide)
+
+/-- Interchanging the two inputs negates the determinant pairing. -/
+theorem detDualEquiv_swap (b : Basis (Fin 2) R N) (v w : N) :
+    b.detDualEquiv v w = -b.detDualEquiv w v := by
+  have h : ![w, v] ∘ Equiv.swap (0 : Fin 2) 1 = ![v, w] := by
+    ext j
+    fin_cases j <;> rfl
+  simpa only [h, detDualEquiv_apply] using
+    b.det.map_swap ![w, v] (by decide : (0 : Fin 2) ≠ 1)
+
+end Module.Basis
+
+namespace Module.Basis
+
+variable {N : Type*} [AddCommGroup N]
+
+/-- The determinant functional of a primitive vector takes every integral value. -/
+theorem surjective_detDualEquiv_of_isPrimitive (b : Basis (Fin 2) ℤ N) {v : N}
+    (hv : TauCeti.IsPrimitive v) : Function.Surjective (b.detDualEquiv v) := by
+  obtain ⟨f, hf⟩ := TauCeti.isPrimitive_def.mp hv
+  have h : b.detDualEquiv v (b.detDualEquiv.symm f) = -1 := by
+    rw [detDualEquiv_swap, b.detDualEquiv.apply_symm_apply, hf]
+  intro z
+  refine ⟨(-z) • b.detDualEquiv.symm f, ?_⟩
+  rw [map_smul, h]
+  simp
 
 end Module.Basis
