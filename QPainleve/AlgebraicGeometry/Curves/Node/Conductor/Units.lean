@@ -90,6 +90,30 @@ theorem branchSchemeGlobalUnitsEquiv_appTop (a : Γ(N, ⊤)ˣ) (b : B) :
   have : Etale π := X.etale_branchSchemeToSingularLocus hnodal
   exact Hom.finiteEtaleGlobalUnitsEquiv_appTop (π ≫ nodeMap) nodeMap π rfl a b
 
+/-- Pulling back a global unit along a map of branch schemes over the field evaluates it
+at the image branch. -/
+theorem branchSchemeGlobalUnitsEquiv_appTop_of_comp {Y : Scheme.{u}}
+    [Y.Over (Spec (.of k))] [SyntomicOfRelativeDimension 1 (Y ↘ Spec (.of k))]
+    [IsProper (Y ↘ Spec (.of k))]
+    (hY : AtWorstNodalOfRelativeDimensionOne (Y ↘ Spec (.of k)))
+    (f : B ⟶ Y.branchScheme k)
+    (hf : f ≫ Y.branchSchemeToSingularLocus k ≫ (Y.singularLocus k).subschemeι ≫
+      (Y ↘ Spec (.of k)) = π ≫ nodeMap)
+    (a : Γ(Y.branchScheme k, ⊤)ˣ) (q : B) :
+    X.branchSchemeGlobalUnitsEquiv hnodal (Units.map f.appTop.hom a) q =
+      Y.branchSchemeGlobalUnitsEquiv hY a (f q) := by
+  let πY := Y.branchSchemeToSingularLocus k
+  let nodeMapY := (Y.singularLocus k).subschemeι ≫ (Y ↘ Spec (.of k))
+  have : IsFinite nodeMap := X.isFinite_singularLocus_subschemeι_comp hnodal
+  have : IsFinite nodeMapY := Y.isFinite_singularLocus_subschemeι_comp hY
+  have : Etale nodeMap := X.etale_singularLocus_subschemeι_comp hnodal
+  have : Etale nodeMapY := Y.etale_singularLocus_subschemeι_comp hY
+  have : IsFinite π := X.isFinite_branchSchemeToSingularLocus hnodal
+  have : IsFinite πY := Y.isFinite_branchSchemeToSingularLocus hY
+  have : Etale π := X.etale_branchSchemeToSingularLocus hnodal
+  have : Etale πY := Y.etale_branchSchemeToSingularLocus hY
+  exact Hom.finiteEtaleGlobalUnitsEquiv_appTop (π ≫ nodeMap) (πY ≫ nodeMapY) f hf a q
+
 variable (order : ∀ z : (X.singularLocus k).subscheme,
   Fin 2 ≃ {b : X.branchScheme k // X.branchSchemeToSingularLocus k b = z})
 
