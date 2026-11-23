@@ -6,6 +6,9 @@ Authors: The QPainleve contributors
 module
 
 public import QPainleve.AlgebraicGeometry.Blowup.Boundary
+public import QPainleve.AlgebraicGeometry.Blowup.Tower.Picard
+
+import QPainleve.AlgebraicGeometry.Blowup.Exceptional.Class
 
 /-!
 # Splitting off the first blowup along a boundary
@@ -17,8 +20,8 @@ the projection to the original scheme and the final embedding of the boundary.
 
 public section
 
-open AlgebraicGeometry CategoryTheory
-open Scheme.IdealSheafData
+open AlgebraicGeometry CategoryTheory TauCeti.AlgebraicGeometry
+open Scheme.IdealSheafData LineBundleClass
 
 universe u
 
@@ -27,8 +30,9 @@ namespace QPainleve.BlowupTower
 variable {D X : Scheme.{u}} {i : D ⟶ X} [IsClosedImmersion i]
 
 /-- An ordered boundary tower with first center `A` is the tower of its remaining centers
-on the blowup of the image of `A`. The comparison is over the original scheme and
-identifies the embeddings of the fixed boundary. -/
+on the blowup of the image of `A`. The comparison preserves the projection, the
+fixed boundary embedding, and the Picard marking with its first exceptional
+coordinate assigned to the blowup of `I`. -/
 theorem exists_iso_alongBoundary_cons
     (A : {J : D.IdealSheafData // J.IsEffectiveCartier})
     {I : X.IdealSheafData} (hI : A.val.map i = I)
@@ -37,7 +41,11 @@ theorem exists_iso_alongBoundary_cons
     ∃ e : (alongBoundary i (Fin.cons A J)).1 ≅ (alongBoundary j J).1,
       e.hom ≫ (alongBoundary j J).2.toTower.toBase ≫ I.blowupToBase =
         (alongBoundary i (Fin.cons A J)).2.toTower.toBase ∧
-      (alongBoundary i (Fin.cons A J)).2.boundaryι ≫ e.hom = (alongBoundary j J).2.boundaryι := by
+      (alongBoundary i (Fin.cons A J)).2.boundaryι ≫ e.hom = (alongBoundary j J).2.boundaryι ∧
+      ∀ (a : Additive (LineBundleClass X)) (z : ℤ) (x : Fin n → ℤ),
+        pullback e.hom ((alongBoundary j J).2.toTower.picardHom
+          ((nil.snoc I).picardHom (a, fun _ ↦ z), x)).toMul =
+          ((alongBoundary i (Fin.cons A J)).2.toTower.picardHom (a, Fin.cons z x)).toMul := by
   induction n with
   | zero =>
     let T := WithBoundary.nil i
@@ -49,12 +57,17 @@ theorem exists_iso_alongBoundary_cons
       rw [he, WithBoundary.boundaryι_snoc_blowupToBase, WithBoundary.boundaryι_nil]
     rw [alongBoundary_succ i, alongBoundary_zero i, alongBoundary_zero j,
       Fin.last_zero, Fin.cons_zero]
-    simp only [WithBoundary.toTower_nil, WithBoundary.toTower_snoc,
-      toBase_snoc, toBase_nil, Category.id_comp, Category.comp_id]
-    refine ⟨e, he, I.blowup_hom_ext ?_ ?_⟩
+    simp only [WithBoundary.toTower_nil, WithBoundary.toTower_snoc, toBase_snoc, toBase_nil,
+      Category.id_comp, Category.comp_id, picardHom_nil]
+    refine ⟨e, he, I.blowup_hom_ext ?_ ?_, ?_⟩
     · simpa only [Category.assoc, WithBoundary.boundaryι_nil, hj] using hproj
     · rw [Category.assoc, hproj, ← hI, comap_map_of_isClosedImmersion]
       exact A.property
+    · intro a z x
+      simp only [picardHom_snoc_apply_toMul, picardHom_nil, Fin.last_zero, Fin.cons_zero,
+        pullback_mul, pullback_comp, he, pullback_zpow, e,
+        pullback_blowupExceptionalClass]
+      rfl
   | succ n ih =>
     let K := fun k : Fin n ↦ J k.castSucc
     have hprefix : (fun k : Fin (n + 1) ↦
@@ -64,7 +77,8 @@ theorem exists_iso_alongBoundary_cons
       refine Fin.cases ?_ (fun l ↦ ?_) k
       · simp
       · simp [K, Fin.castSucc_succ]
-    obtain ⟨e, he, hb⟩ := ih K
+    -- Lift the comparison on the prefixes through the matching last centers.
+    obtain ⟨e, he, hb, hpic⟩ := ih K
     rw [alongBoundary_succ i, alongBoundary_succ j, hprefix, Fin.cons_last]
     dsimp only
     let T := (alongBoundary i (Fin.cons A K)).2
@@ -72,11 +86,12 @@ theorem exists_iso_alongBoundary_cons
     let B := J (Fin.last n)
     have hb' : T.boundaryι ≫ e.hom = (Iso.refl D).hom ≫ U.boundaryι := by simpa using hb
     have hB : B.val.comap (Iso.refl D).hom = B.val := by simp
-    let e' := (B.val.map U.boundaryι).blowupIso e
-      (T.comap_center_eq B.val e (Iso.refl D) hb' B.val hB)
+    have hcenter : (B.val.map U.boundaryι).comap e.hom = B.val.map T.boundaryι :=
+      T.comap_center_eq B.val e (Iso.refl D) hb' B.val hB
+    let e' := (B.val.map U.boundaryι).blowupIso e hcenter
     have he' : e'.hom ≫ (B.val.map U.boundaryι).blowupToBase =
         (B.val.map T.boundaryι).blowupToBase ≫ e.hom := blowupIso_hom_blowupToBase _ _ _
-    refine ⟨e', ?_, ?_⟩
+    refine ⟨e', ?_, ?_, ?_⟩
     · simp only [WithBoundary.toTower_snoc, toBase_snoc]
       calc
         _ = (B.val.map T.boundaryι).blowupToBase ≫ e.hom ≫ U.toTower.toBase ≫
@@ -84,5 +99,17 @@ theorem exists_iso_alongBoundary_cons
         _ = _ := congrArg ((B.val.map T.boundaryι).blowupToBase ≫ ·) he
     · simpa only [Iso.refl_hom, Category.id_comp] using
         T.boundaryι_snoc_blowupIso_hom B.val e (Iso.refl D) hb' B.val hB B.property B.property
+    · -- The prefix classes pull back by induction, and the newest exceptional classes match.
+      intro a z x
+      have hx : (fun k : Fin (n + 1) ↦ Fin.cons (α := fun _ ↦ ℤ) z x k.castSucc) =
+          Fin.cons (α := fun _ ↦ ℤ) z (fun k : Fin n ↦ x k.castSucc) := by
+        funext k
+        refine Fin.cases ?_ (fun l ↦ ?_) k
+        · simp
+        · simp [Fin.castSucc_succ]
+      simp only [WithBoundary.toTower_snoc, picardHom_snoc_apply_toMul, Fin.cons_last,
+        pullback_mul, pullback_zpow, hx]
+      have hE := pullback_blowupExceptionalClass _ _ hcenter
+      rw [pullback_comp, he', ← pullback_comp, hpic, hE]
 
 end QPainleve.BlowupTower

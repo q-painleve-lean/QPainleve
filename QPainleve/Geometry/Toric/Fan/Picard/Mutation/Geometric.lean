@@ -255,12 +255,16 @@ theorem pullback_mutationBlowupIso_lift_picardHom (hOppₙ : oppositeMem) {X Y :
     (a : Additive (LineBundleClass (Ψₙ(hOppₙ)).algebraicRealization) × (Fin (1 + n) → ℤ)) :
     pullback e.hom (((P₁(hOppₙ)).append S).picardHom a).toMul =
       (((P₀).append T).picardHom ((Mₙ(hOppₙ)) a)).toMul := by
-  have hsplit := mutationPicardEquiv_pivot_split b hΦ s hOppₙ a
+  obtain ⟨hpivot, hrest⟩ := mutationPicardEquiv_pivot_split b s (k) hOppₙ hΦ a
+  have hfirst (j : Fin 1) : j.castAdd n = k := by rw [Subsingleton.elim j 0]
+  have hnext (j : Fin n) : j.natAdd 1 ≠ k := by
+    simp [Fin.ext_iff]
   rw [picardHom_append, he.pullback_picardHom,
     Ray.pullback_mutationBlowupIso_picardHom b (p) hOppₙ c hΦ, ofMul_toMul]
   rw [picardHom_append]
   exact congrArg (fun z ↦ (T.picardHom z).toMul)
-    (Prod.ext (congrArg (P₀).picardHom hsplit.1.symm) hsplit.2.symm)
+    (Prod.ext (congrArg (P₀).picardHom (by simpa only [hfirst] using hpivot.symm))
+      (funext fun j ↦ (hrest _ (hnext j)).symm))
 
 end Ordered
 
