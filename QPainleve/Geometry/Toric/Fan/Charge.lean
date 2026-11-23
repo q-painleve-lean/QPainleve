@@ -7,6 +7,7 @@ module
 
 public import QPainleve.Geometry.Toric.Fan.Ray
 
+import Mathlib.GroupTheory.IndexNSmul
 import Mathlib.LinearAlgebra.StdBasis
 
 /-!
@@ -33,5 +34,27 @@ def rayChargeMap [Finite ι] (s : ι → Φ.Ray) : (ι → ℤ) →ₗ[ℤ] N :=
 theorem rayChargeMap_single [Finite ι] [DecidableEq ι] (s : ι → Φ.Ray) (j : ι) :
     rayChargeMap s (Pi.single j 1) = (s j).primitiveGenerator := by
   rw [rayChargeMap, Module.piEquiv, ← Pi.basisFun_apply, Module.Basis.constr_basis]
+
+/-- The charge of each standard basis vector is primitive. -/
+theorem rayChargeMap_primitive [Finite ι] [DecidableEq ι] (s : ι → Φ.Ray) (j : ι) :
+    IsPrimitive (rayChargeMap s (Pi.single j 1)) := by
+  rw [rayChargeMap_single]
+  exact (s j).isPrimitiveGenerator.isPrimitive
+
+/-- If the charges span a finite-index sublattice, a lattice equivalence into a
+torsion-free group is determined by its values on the labeled ray generators. -/
+theorem rayChargeEquiv_ext {N' : Type*} [AddCommGroup N'] [Module.IsTorsionFree ℤ N']
+    [Finite ι] (s : ι → Φ.Ray) (hindex : (rayChargeMap s).range.toAddSubgroup.index ≠ 0)
+    {E F : N ≃ₗ[ℤ] N'} (h : ∀ j, E (s j).primitiveGenerator = F (s j).primitiveGenerator) :
+    E = F := by
+  classical
+  have hcomp : E.toLinearMap.comp (rayChargeMap s) = F.toLinearMap.comp (rayChargeMap s) := by
+    apply (Pi.basisFun ℤ ι).ext
+    simpa using h
+  ext x
+  apply AddSubgroup.nsmulAddMonoidHom_injective_of_isTorsionFree hindex
+  obtain ⟨a, ha⟩ := (rayChargeMap s).range.toAddSubgroup.nsmul_index_mem x
+  simpa only [LinearMap.comp_apply, LinearEquiv.coe_coe, ha, map_nsmul,
+    nsmulAddMonoidHom_apply] using LinearMap.congr_fun hcomp a
 
 end TauCeti.Toric.Fan

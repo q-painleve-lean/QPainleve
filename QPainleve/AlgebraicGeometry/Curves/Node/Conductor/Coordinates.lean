@@ -5,17 +5,14 @@ Authors: The QPainleve contributors
 -/
 module
 
+public import QPainleve.AlgebraicGeometry.Curves.Node.Conductor.Rescaling
 public import QPainleve.AlgebraicGeometry.Curves.Node.Conductor.Units
 public import TauCeti.AlgebraicGeometry.Curves.Node.DualGraph
 
 import Mathlib.Algebra.Group.Pi.Units
 import Mathlib.Algebra.Group.Units.Equiv
 import Mathlib.AlgebraicGeometry.AlgClosed.Basic
-import QPainleve.AlgebraicGeometry.Morphisms.Finite.Field
-import QPainleve.AlgebraicGeometry.Scheme.Sections
 import TauCeti.AlgebraicGeometry.Pullback.Carrier
-import TauCeti.AlgebraicGeometry.RationalPoint.Basic
-import TauCeti.AlgebraicGeometry.RationalPoint.Image
 
 /-!
 # Global functions in the nodal conductor square
@@ -160,45 +157,12 @@ theorem branchOrderOfDualGraph_apply_val (o : (X.dualGraph p).Edge → Equiv.Per
 
 end NodesAndBranches
 
-private theorem iSup_blowupComponent :
-    (⨆ c : irreducibleComponents (X.singularLocus k).blowup, X.blowupComponent c) = ⊤ := by
-  ext x
-  refine ⟨fun _ ↦ trivial, fun _ ↦ TopologicalSpace.Opens.mem_iSup.mpr ?_⟩
-  refine ⟨irreducibleComponentOf x, ?_⟩
-  rw [← SetLike.mem_coe, coe_blowupComponent]
-  exact irreducibleComponentOf_eq_iff.mp rfl
-
-private theorem pairwise_disjoint_blowupComponent :
-    _root_.Pairwise (fun c d : irreducibleComponents (X.singularLocus k).blowup ↦
-      Disjoint (X.blowupComponent c) (X.blowupComponent d)) := by
-  intro c d hcd
-  rw [disjoint_iff_inf_le]
-  intro x hx
-  have hc : x ∈ (c : Set (X.singularLocus k).blowup) := by
-    rw [← coe_blowupComponent]
-    exact hx.1
-  have hd : x ∈ (d : Set (X.singularLocus k).blowup) := by
-    rw [← coe_blowupComponent]
-    exact hx.2
-  exact (hcd ((irreducibleComponentOf_eq_iff.mpr hc).symm.trans
-    (irreducibleComponentOf_eq_iff.mpr hd))).elim
-
 variable [IsAlgClosed k]
-
-private def blowupComponentScalarEquiv (c : irreducibleComponents (X.singularLocus k).blowup) :
-    k ≃+* Γ(X.blowupComponent c, ⊤) :=
-  let f := (X.blowupComponent c).toScheme ↘ Spec (.of k)
-  RingEquiv.ofBijective ((Scheme.ΓSpecIso (.of k)).inv ≫ f.appTop).hom (by
-    obtain ⟨s, hs, -⟩ := isClosed_univ.isLocallyClosed.exists_rationalPoint_mem f Set.univ_nonempty
-    exact (appTop_bijective_of_section hs).comp
-      (ConcreteCategory.bijective_of_isIso (Scheme.ΓSpecIso (.of k)).inv))
 
 /-- Every global function on the normalization is a scalar on each component. -/
 def normalizationGlobalSectionsEquiv :
     Γ((X.singularLocus k).blowup, ⊤) ≃+* ((X.dualGraph p).Vertex → k) :=
-  ((globalSectionsEquivOfDisjointCover (X.blowupComponent)
-      (iSup_blowupComponent X) (pairwise_disjoint_blowupComponent X)).trans
-    (RingEquiv.piCongrRight fun c ↦ (blowupComponentScalarEquiv X c).symm)).trans
+  (X.blowupComponentGlobalSectionsEquiv (k := k)).trans
     (RingEquiv.piCongrLeft' (fun _ ↦ k) (X.dualGraphVertexEquiv p).symm)
 
 /-- A component restriction is the pullback of its corresponding scalar from the base field. -/
@@ -208,10 +172,9 @@ theorem appTop_blowupComponent_eq (a : Γ((X.singularLocus k).blowup, ⊤))
     U.ι.appTop a =
       ((Scheme.ΓSpecIso (.of k)).inv ≫ (U.toScheme ↘ Spec (.of k)).appTop)
         (X.normalizationGlobalSectionsEquiv p a v) := by
-  simp only [normalizationGlobalSectionsEquiv, RingEquiv.trans_apply,
-    RingEquiv.piCongrLeft'_apply, Equiv.symm_symm, RingEquiv.piCongrRight_apply,
-    globalSectionsEquivOfDisjointCover_apply]
-  exact ((blowupComponentScalarEquiv X (X.dualGraphVertexEquiv p v)).apply_symm_apply _).symm
+  dsimp only
+  rw [CommRingCat.comp_apply, ← Modules.baseRingToGlobalSections_apply]
+  exact X.appTop_blowupComponent a (X.dualGraphVertexEquiv p v)
 
 /-- Evaluation on a rational section of the normalization reads the scalar
 of the component containing the point. -/
@@ -222,25 +185,10 @@ theorem normalizationGlobalSectionsEquiv_eval (a : Γ((X.singularLocus k).blowup
     (hv : s (IsLocalRing.closedPoint k) ∈ (X.dualGraphVertexEquiv p v :
       Set (X.singularLocus k).blowup)) :
     (Scheme.ΓSpecIso (.of k)).hom (s.appTop a) = X.normalizationGlobalSectionsEquiv p a v := by
-  let U := X.blowupComponent (X.dualGraphVertexEquiv p v)
-  have hmem : Set.range s ⊆ Set.range U.ι := by
-    rw [Opens.range_ι, coe_blowupComponent]
-    rintro _ ⟨x, rfl⟩
-    rwa [Subsingleton.elim x (IsLocalRing.closedPoint k)]
-  let t := IsOpenImmersion.lift U.ι s hmem
-  have ht : t ≫ U.ι = s := IsOpenImmersion.lift_fac _ _ _
-  have hU : U.toScheme ↘ Spec (.of k) =
-      U.ι ≫ (X.singularLocus k).blowupToBase ≫ X ↘ Spec (.of k) :=
-    X.blowupComponent_over (X.dualGraphVertexEquiv p v)
-  have htbase : t ≫ (U.toScheme ↘ Spec (.of k)) = 𝟙 _ := by
-    rw [hU, ← Category.assoc, ht, hs]
-  have hta : t.appTop (U.ι.appTop a) = s.appTop a := by
-    rw [← CommRingCat.comp_apply, ← Hom.comp_appTop, ht]
-  have htconst (r : Γ(Spec (.of k), ⊤)) :
-      t.appTop ((U.toScheme ↘ Spec (.of k)).appTop r) = r := by
-    rw [← CommRingCat.comp_apply, ← Hom.comp_appTop, htbase, Hom.id_appTop, CommRingCat.id_apply]
-  rw [← hta, X.appTop_blowupComponent_eq p a v, CommRingCat.comp_apply, htconst]
-  simp
+  have hmem : s (IsLocalRing.closedPoint k) ∈ X.blowupComponent (X.dualGraphVertexEquiv p v) := by
+    rwa [← SetLike.mem_coe, coe_blowupComponent]
+  exact (blowupComponentGlobalSectionsEquiv_eq_evaluation a (X.dualGraphVertexEquiv p v)
+    s hs hmem).symm
 
 /-- The units on the normalization are the nonzero constants on its components. -/
 def normalizationGlobalUnitsEquiv :
@@ -270,15 +218,10 @@ theorem branchSchemeGlobalUnitsEquiv_appTop_normalization
     (hv : j b ∈ (X.dualGraphVertexEquiv p v : Set Y)) :
     X.branchSchemeGlobalUnitsEquiv PrestableFamily.atWorstNodalOfRelativeDimensionOne
       (Units.map (j).appTop.hom a) b = X.normalizationGlobalUnitsEquiv p a v := by
-  have : IsFinite nodeMap := X.isFinite_singularLocus_subschemeι_comp nodal
-  have : Etale nodeMap := X.etale_singularLocus_subschemeι_comp nodal
-  have : IsFinite π := X.isFinite_branchSchemeToSingularLocus nodal
-  have : Etale π := X.etale_branchSchemeToSingularLocus nodal
-  let f : B ⟶ Spec (.of k) := π ≫ nodeMap
-  let s := pointOfClosedPoint f b (f.isClosed_singleton_of_isFinite_toSpec b)
+  let s := X.branchRationalPoint nodal b
   let x : Spec (.of k) := IsLocalRing.closedPoint k
-  have hs : s ≫ f = 𝟙 _ := pointOfClosedPoint_comp ..
-  have hsval : s x = b := pointOfClosedPoint_apply ..
+  have hs : s ≫ π ≫ nodeMap = 𝟙 _ := X.branchRationalPoint_comp nodal b
+  have hsval : s x = b := X.branchRationalPoint_apply nodal b x
   have hsbase : (s ≫ j) ≫ ν ≫ X ↘ Spec (.of k) = 𝟙 _ := by
     rw [Category.assoc, ← X.branchSchemeToSingularLocus_subschemeι_assoc k]
     exact hs
