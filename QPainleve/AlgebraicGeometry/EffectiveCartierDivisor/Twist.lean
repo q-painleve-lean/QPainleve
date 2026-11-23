@@ -7,6 +7,7 @@ module
 
 public import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.Invertible
 public import TauCeti.AlgebraicGeometry.LineBundle.Dual
+public import TauCeti.AlgebraicGeometry.LineBundle.Power
 
 /-!
 # Twisting a line bundle by a Cartier divisor
@@ -35,6 +36,15 @@ def IsEffectiveCartier.tensorDualCancelIso (hI : I.IsEffectiveCartier) (W : Inve
     β_ L.dual.obj L.obj ≪≫ L.evaluationDualIso
   (tensorRight I.sheaf).mapIso (InvertibleSheaf.tensorProductObjIso W L.dual) ≪≫
     α_ W.obj L.dual.obj I.sheaf ≪≫ (tensorLeft W.obj).mapIso e ≪≫ ρ_ W.obj
+
+/-- Tensoring `𝒪_X(D)^{⊗(n + 1)}` with the Cartier ideal `𝒪_X(-D)` cancels one copy of
+`𝒪_X(D)`. -/
+def IsEffectiveCartier.tensorPowSuccIdealIso (hI : I.IsEffectiveCartier) (n : ℕ) :
+    (hI.toInvertibleSheaf.dual.tensorPow (n + 1)).obj ⊗ I.sheaf ≅
+      (hI.toInvertibleSheaf.dual.tensorPow n).obj :=
+  (tensorRight I.sheaf).mapIso (eqToIso
+    (congrArg (fun L : InvertibleSheaf X ↦ L.obj) (hI.toInvertibleSheaf.dual.tensorPow_succ n))) ≪≫
+    hI.tensorDualCancelIso _
 
 private def IsEffectiveCartier.tensorRightFullyFaithful (hI : I.IsEffectiveCartier) :
     (tensorRight I.sheaf).FullyFaithful := by

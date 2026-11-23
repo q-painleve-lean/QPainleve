@@ -89,6 +89,12 @@ lemma dualSectionEquiv_comp_globalSectionsSmul
 def zeroIdeal (s : Γ(L.obj, ⊤)) : X.IdealSheafData :=
   (L.dualSectionEquiv.symm s).imageIdealSheaf
 
+/-- The zero ideal of the section corresponding to a functional is its image ideal. -/
+@[simp]
+theorem zeroIdeal_dualSectionEquiv (φ : (dual L).obj ⟶ 𝟙_ X.Modules) :
+    L.zeroIdeal (L.dualSectionEquiv φ) = φ.imageIdealSheaf := by
+  rw [zeroIdeal, Equiv.symm_apply_apply]
+
 /-- The zero scheme is defined by the zero ideal exactly when the section is zero. -/
 @[simp]
 theorem zeroIdeal_eq_bot_iff (s : Γ(L.obj, ⊤)) : L.zeroIdeal s = ⊥ ↔ s = 0 := by
