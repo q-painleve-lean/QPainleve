@@ -6,7 +6,7 @@ Authors: The QPainleve contributors
 module
 
 public import QPainleve.Geometry.Toric.Fan.Boundary.Center
-public import QPainleve.Geometry.Toric.Fan.Ruling
+public import QPainleve.Geometry.Toric.Fan.Ruling.Basic
 
 /-!
 # Binomial centers in ruling fibers
