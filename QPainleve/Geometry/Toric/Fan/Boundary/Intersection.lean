@@ -154,13 +154,8 @@ private theorem comap_sup_rayBoundaryIdeal_eq_ker (hne : ρ ≠ τ) (σ : Φ.con
   let t := τ.toToricRay Φ σ hτ
   have hpair : ({r, t} : Set (ToricRay σ.val)) = Set.univ :=
     Φ.toricRays_eq_pair ((isRegular_iff.1 hΦ) _ σ.property) hN hne hρ hτ
-  have hrt : r ≠ t := by
-    intro h
-    have he : Φ.rayEquiv σ ⟨ρ, hρ⟩ = Φ.rayEquiv σ ⟨τ, hτ⟩ := by
-      simpa only [rayEquiv_apply] using h
-    exact hne (congrArg Subtype.val ((Φ.rayEquiv σ).injective he))
-  have hcard : Nat.card (ToricRay σ.val) = Module.finrank ℤ N := by
-    rw [hN, ← Set.ncard_univ, ← hpair, Set.ncard_pair hrt]
+  have hcard : Nat.card (ToricRay σ.val) = Module.finrank ℤ N :=
+    (Φ.card_toricRay_eq_two_of_ray_ne_of_le hΦ hN hne hρ hτ).trans hN.symm
   let I := rayIdeal Φ.lattice (Φ.isToricCone σ.property)
   have hsup : (⨆ u, I u) = I r ⊔ I t := by
     rw [← iSup_pair, hpair]
