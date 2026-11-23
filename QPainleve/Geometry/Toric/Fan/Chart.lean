@@ -41,6 +41,18 @@ theorem additiveAffineToricChartι_def :
       Spec.map (CommRingCat.ofHom (e).symm.toRingEquiv.toRingHom) ≫ Φ.affineToricChartι σ :=
   (rfl)
 
+/-- In native monoid algebra coordinates, the additive chart inclusion is the
+original affine toric chart inclusion. -/
+@[reassoc (attr := simp)]
+theorem specMap_toMultiplicativeAlgEquiv_comp_additiveAffineToricChartι :
+    Spec.map (CommRingCat.ofHom ↑(e)) ≫
+      Φ.additiveAffineToricChartι σ = Φ.affineToricChartι σ := by
+  rw [additiveAffineToricChartι_def, ← Spec.map_comp_assoc]
+  have h : CommRingCat.ofHom (e).symm.toRingEquiv.toRingHom ≫
+      CommRingCat.ofHom ↑(e) = 𝟙 _ :=
+    (e).toRingEquiv.toCommRingCatIso.inv_hom_id
+  rw [h, Spec.map_id, Category.id_comp]
+
 instance isOpenImmersion_additiveAffineToricChartι :
     IsOpenImmersion (Φ.additiveAffineToricChartι σ) := by
   unfold additiveAffineToricChartι
