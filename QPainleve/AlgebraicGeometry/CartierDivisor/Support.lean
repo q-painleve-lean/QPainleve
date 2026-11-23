@@ -8,6 +8,7 @@ module
 public import TauCeti.AlgebraicGeometry.CartierDivisor.Factorial
 public import TauCeti.AlgebraicGeometry.IdealSheaf.Stalk
 import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.Stalk
+import TauCeti.AlgebraicGeometry.Morphisms.Dominant
 
 /-!
 # Support of effective Cartier divisors
@@ -40,6 +41,12 @@ theorem genericPoint_notMem_support (hI : I.IsEffectiveCartier) : genericPoint X
   let : Field X.functionField := inferInstance
   exact (eq_bot_or_eq_top (I.stalkIdeal (genericPoint X))).resolve_left
     (hI.stalkIdeal_ne_bot (genericPoint X))
+
+/-- The pullback of an effective Cartier divisor along a dominant morphism of integral
+schemes is effective Cartier. -/
+theorem comap_of_isDominant {Y : Scheme.{u}} (hI : I.IsEffectiveCartier) (f : Y ⟶ X)
+    [IsIntegral Y] [IsDominant f] : (I.comap f).IsEffectiveCartier :=
+  hI.comap_of_isIntegral f (f.genericPoint_eq_of_isDominant.symm ▸ hI.genericPoint_notMem_support)
 
 open TauCeti.AlgebraicGeometry in
 /-- At a codimension-one point, the Weil coefficient of an effective Cartier divisor

@@ -43,10 +43,7 @@ theorem valuationRing_stalk (hJ : J.IsExceptionalCurveOfFirstKind) (y : J.subsch
   obtain ⟨k, _, e, -⟩ := hJ.exists_iso
   have := Scheme.IsCurveOver.valuationRing_stalk k (projectiveLine k) (e.inv y)
   let a := (asIso (e.inv.stalkMap y)).commRingCatIsoToRingEquiv
-  refine ValuationRing.iff_dvd_total.mpr ⟨fun b c ↦ ?_⟩
-  exact (ValuationRing.dvd_total (a.symm b) (a.symm c)).imp
-    (fun h ↦ by simpa only [a.apply_symm_apply] using map_dvd a h)
-    (fun h ↦ by simpa only [a.apply_symm_apply] using map_dvd a h)
+  exact Function.Surjective.valuationRing a.toRingHom a.surjective
 
 /-- A proper dominant morphism from an integral scheme to an exceptional curve is an
 isomorphism if it induces an isomorphism of function fields. -/

@@ -7,6 +7,7 @@ module
 
 public import QPainleve.AlgebraicGeometry.Blowup.Boundary
 public import TauCeti.AlgebraicGeometry.Morphisms.Smooth.RelativeDimension
+import QPainleve.AlgebraicGeometry.Blowup.Descent
 import QPainleve.AlgebraicGeometry.Blowup.Integral
 import QPainleve.AlgebraicGeometry.Blowup.Smooth
 import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
@@ -109,6 +110,28 @@ theorem isIntegral {k : Type u} [Field k] [PerfectField k] [IsIntegral X] [IsNoe
     rw [← SetLike.mem_coe, Closeds.coe_compl, Set.mem_compl_iff, Scheme.Hom.support_ker,
       Scheme.range_fromSpecResidueField, hp.closure_eq, Set.mem_singleton_iff]
     exact hne
+
+/-- The projection of a tower of closed point blowups of a smooth surface over a perfect field
+is surjective. -/
+theorem surjective {k : Type u} [Field k] [PerfectField k]
+    (hT : IsClosedPointTower X T) (f : X ⟶ Spec (.of k)) [SmoothOfRelativeDimension 2 f] :
+    Surjective T.toBase := by
+  induction hT with
+  | nil => simpa only [toBase_nil] using (inferInstance : Surjective (𝟙 X))
+  | @snoc _ W S I hS p hp hI ih =>
+    subst I
+    have := ih
+    let g := S.toBase ≫ f
+    have : SmoothOfRelativeDimension 2 g := hS.smoothOfRelativeDimension f
+    have : Smooth g := SmoothOfRelativeDimension.smooth 2 g
+    have : IsLocallyNoetherian W := LocallyOfFiniteType.isLocallyNoetherian g
+    have : IsRegularLocalRing (W.presheaf.stalk p) := isRegularLocalRing_stalk_of_smooth g p
+    have hdim := ((smoothOfRelativeDimension_iff_ringKrullDim_stalk_eq g 2).mp inferInstance).2 p hp
+    have : Surjective (W.fromSpecResidueField p).ker.blowupToBase := by
+      rw [W.ker_fromSpecResidueField_eq_vanishingIdeal]
+      exact Scheme.IdealSheafData.surjective_blowupToBase_point hp hdim
+    rw [toBase_snoc]
+    infer_instance
 
 end IsClosedPointTower
 

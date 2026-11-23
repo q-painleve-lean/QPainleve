@@ -11,6 +11,7 @@ import QPainleve.AlgebraicGeometry.Blowup.Exceptional.FirstKind
 import Mathlib.Algebra.BigOperators.Fin
 import Mathlib.LinearAlgebra.Pi
 import TauCeti.AlgebraicGeometry.Morphisms.RelativeDimension
+import TauCeti.LinearAlgebra.FreeModule.PID
 
 /-!
 # Picard markings of ordered point blowups
@@ -19,7 +20,8 @@ The base Picard group and one integer coordinate for each blowup give coordinate
 the Picard group of the final surface. The exceptional generators are the total
 transforms of the exceptional divisors at the stages where they were created. These
 coordinates are compatible with concatenation and with isomorphisms matching the
-ordered centers.
+ordered centers. A common resolution compares the stabilized Picard groups and transfers
+finite generation and freeness.
 
 The marking iterates `Scheme.IdealSheafData.picardBlowupEquiv`, the single-blowup
 decomposition in P. Hacking, *583C Lecture notes (Compact Complex Surfaces)*,
@@ -34,6 +36,8 @@ open LineBundleClass
 universe u
 
 namespace QPainleve.BlowupTower
+
+section Marking
 
 variable {X Y Z X' Y' : Scheme.{u}} {m n : ℕ}
 
@@ -203,5 +207,80 @@ def picardMarking : (Additive (LineBundleClass X) × (Fin n → ℤ)) ≃ₗ[ℤ
 @[simp]
 theorem picardMarking_apply (a : Additive (LineBundleClass X) × (Fin n → ℤ)) :
     T.picardMarking hT f a = T.picardHom a := (rfl)
+
+end Marking
+
+section CommonResolution
+
+local notation "Pic(" S ")" => Additive (LineBundleClass S)
+
+variable {X Y Z W : Scheme.{u}} {m n : ℕ}
+  {T : BlowupTower X m Y} {U : BlowupTower Z n W}
+  (k : Type u) [Field k] [X.Over (Spec (.of k))] [Z.Over (Spec (.of k))]
+  [SmoothOfRelativeDimension 2 (X ↘ Spec (.of k))]
+  [SmoothOfRelativeDimension 2 (Z ↘ Spec (.of k))]
+  [IsIntegral X] [IsIntegral Z]
+
+local notation "fX" => (X ↘ Spec (CommRingCat.of k))
+local notation "fZ" => (Z ↘ Spec (CommRingCat.of k))
+
+variable [PerfectField k] [IsNoetherian X] [IsNoetherian Z]
+
+/-- The two Picard markings on a common resolution identify the base Picard groups after
+adding one integral coordinate for each point blowup on the respective side. -/
+def picardEquivOfCommonResolution
+    (hT : IsClosedPointTower X T) (hU : IsClosedPointTower Z U) (e : W ≅ Y) :
+    (Pic(X) × (Fin m → ℤ)) ≃ₗ[ℤ] (Pic(Z) × (Fin n → ℤ)) :=
+  (T.picardMarking hT fX).trans
+    (((LineBundleClass.pullbackEquiv e).toAdditive.toIntLinearEquiv).trans
+      (U.picardMarking hU fZ).symm)
+
+/-- On the common resolution, the identification of Picard coordinates is pullback
+along the isomorphism of the final schemes. -/
+@[simp]
+theorem picardHom_picardEquivOfCommonResolution
+    (hT : IsClosedPointTower X T) (hU : IsClosedPointTower Z U) (e : W ≅ Y)
+    (a : Pic(X) × (Fin m → ℤ)) :
+    U.picardHom (picardEquivOfCommonResolution k hT hU e a) =
+      Additive.ofMul (LineBundleClass.pullback e.hom (T.picardHom a).toMul) := by
+  rw [← U.picardMarking_apply hU fZ, ← T.picardMarking_apply hT fX]
+  simp [picardEquivOfCommonResolution, LineBundleClass.pullbackEquiv_apply]
+
+include k in
+/-- Finite generation of the integral Picard group transfers across a common
+resolution by towers of closed point blowups. -/
+theorem finite_picard_iff_of_common_resolution
+    (hT : IsClosedPointTower X T) (hU : IsClosedPointTower Z U) (e : W ≅ Y) :
+    Module.Finite ℤ (Pic(X)) ↔ Module.Finite ℤ (Pic(Z)) := by
+  let E := picardEquivOfCommonResolution k hT hU e
+  exact ⟨fun _ ↦ Module.Finite.of_surjective ((LinearMap.fst ℤ _ _).comp E.toLinearMap)
+    ((LinearMap.fst_surjective (R := ℤ)).comp E.surjective),
+    fun _ ↦ Module.Finite.of_surjective ((LinearMap.fst ℤ _ _).comp E.symm.toLinearMap)
+      ((LinearMap.fst_surjective (R := ℤ)).comp E.symm.surjective)⟩
+
+include k in
+/-- Freeness of the integral Picard group transfers across a common resolution
+by towers of closed point blowups. -/
+theorem free_picard_iff_of_common_resolution
+    (hT : IsClosedPointTower X T) (hU : IsClosedPointTower Z U) (e : W ≅ Y) :
+    Module.Free ℤ (Pic(X)) ↔ Module.Free ℤ (Pic(Z)) := by
+  let E := picardEquivOfCommonResolution k hT hU e
+  exact ⟨fun _ ↦ Module.Free.of_injective_of_projective_of_isPrincipalIdealRing
+    (E.symm.toLinearMap.comp (LinearMap.inl ℤ _ _))
+    (E.symm.injective.comp LinearMap.inl_injective),
+    fun _ ↦ Module.Free.of_injective_of_projective_of_isPrincipalIdealRing
+      (E.toLinearMap.comp (LinearMap.inl ℤ _ _))
+      (E.injective.comp LinearMap.inl_injective)⟩
+
+include k in
+/-- For a finite free Picard group, its rank increases by the length of a tower
+of closed point blowups. -/
+theorem finrank_picard [Module.Finite ℤ (Pic(X))] [Module.Free ℤ (Pic(X))]
+    (hT : IsClosedPointTower X T) :
+    Module.finrank ℤ (Pic(Y)) = Module.finrank ℤ (Pic(X)) + m := by
+  rw [← (T.picardMarking hT fX).finrank_eq, Module.finrank_prod]
+  simp
+
+end CommonResolution
 
 end QPainleve.BlowupTower
