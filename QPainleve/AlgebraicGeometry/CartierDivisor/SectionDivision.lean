@@ -6,7 +6,7 @@ Authors: The QPainleve contributors
 module
 
 public import QPainleve.AlgebraicGeometry.CartierDivisor.ZeroDivisor
-import QPainleve.AlgebraicGeometry.IdealSheaf.TensorProduct
+import QPainleve.AlgebraicGeometry.IdealSheaf.Tensor.Product
 import QPainleve.AlgebraicGeometry.IdealSheaf.Image
 import TauCeti.AlgebraicGeometry.IdealSheaf.Colon
 
