@@ -8,6 +8,9 @@ module
 public import QPainleve.Geometry.Toric.Cone.TwoDimensional
 public import TauCeti.Geometry.Toric.Algebraic.Fan.StarSubdivision
 
+import Mathlib.LinearAlgebra.Transvection.Basic
+import TauCeti.Data.Fin.Rev
+
 /-!
 # Star subdivisions of two-dimensional regular cones
 
@@ -51,5 +54,51 @@ theorem starSubdivisionCone_pair_mem {σ : PointedCone ℝ V}
     simpa using e.injective.ne hne
 
 end IsRegularCone
+
+namespace Fan
+
+open PointedCone
+
+/-- A chart of the star subdivision of a two-dimensional basis cone has a basis
+obtained by adding one basis vector to the other. -/
+theorem exists_starSubdivisionAlong_basis (Φ : Fan i) (hΦ : Φ.IsRegular) {σ : PointedCone ℝ V}
+    (hσ : σ ∈ Φ.cones) (b : Module.Basis (Fin 2) ℤ N)
+    (hcone : σ = hull ℝ (Set.range (i ∘ b))) (j : Fin 2) :
+    ∃ c : Module.Basis (Fin 2) ℤ N, c j = b j + b j.rev ∧ c j.rev = b j.rev ∧
+      hull ℝ (Set.range (i ∘ c)) ∈ (Φ.starSubdivisionAlong hΦ hσ).cones := by
+  classical
+  have hne : j ≠ j.rev := by fin_cases j <;> decide
+  have hj : b.coord j (b j.rev) = 0 := by simp [hne]
+  let c := b.map (LinearEquiv.transvection hj)
+  have hc : c j = b j + b j.rev := by simp [c, LinearMap.transvection.apply]
+  have hc' : c j.rev = b j.rev := by
+    simp [c, LinearMap.transvection.apply, hj]
+  refine ⟨c, hc, hc', ?_⟩
+  apply (Φ.mem_starSubdivisionAlong_cones hΦ hσ).mpr
+  refine Or.inr ⟨σ, hσ, le_rfl, ?_⟩
+  let hreg := isRegular_iff.mp hΦ _ hσ
+  have hli := Φ.lattice.linearIndependent_basis b
+  let r := toricRayEquivOfLinearIndependent (i ∘ b) hli hcone
+  have hb' (k : Fin 2) : b k = primitiveGenerator Φ.lattice hreg.toIsToricCone (r.symm k) := by
+    have hm := (apply_mem_iff_toricRayEquivOfLinearIndependent _ hli hcone (r.symm k) k).mpr
+      (r.apply_symm_apply k).symm
+    exact (isPrimitiveGenerator_iff.mpr ⟨hm, b.isPrimitive k⟩).eq_primitiveGenerator
+      Φ.lattice hreg.toIsToricCone
+  have hchart := hreg.starSubdivisionCone_pair_mem Φ.lattice r.symm j.rev
+  dsimp only at hchart
+  rw [hreg.starSubdivisionCone_pair_eq_hull Φ.lattice b r.symm hb'] at hchart
+  have hsum : b 0 + b 1 = c j := by
+    rw [hc]
+    fin_cases j <;> simp [add_comm]
+  rw [hsum, ← hc'] at hchart
+  suffices Set.range (i ∘ c) = {i (c j), i (c j.rev)} by
+    rwa [this]
+  ext x
+  simp only [Set.mem_range, Function.comp_apply, Set.mem_insert_iff, Set.mem_singleton_iff]
+  exact ⟨fun ⟨k, hk⟩ ↦ (Fin.fin_two_eq_or_eq_rev j k).elim
+      (fun h ↦ Or.inl (h ▸ hk.symm)) (fun h ↦ Or.inr (h ▸ hk.symm)),
+    fun h ↦ h.elim (fun h ↦ ⟨j, h.symm⟩) (fun h ↦ ⟨j.rev, h.symm⟩)⟩
+
+end Fan
 
 end TauCeti.Toric

@@ -386,9 +386,7 @@ theorem chargeIndex_dvd_sum_sq_of_isotropic (x : (v).ker) (hx : Q x x = 0) :
   let b := Module.finBasisOfFinrankEq ℤ N hdim
   let ω : LinearMap.BilinForm ℤ N := b.detDualEquiv.toLinearMap
   have hω : ω.IsAlt := b.detDualEquiv_self
-  have hb : ω (b 0) (b 1) = 1 := by
-    have hbasis : ![b 0, b 1] = (b : Fin 2 → N) := FinVec.etaExpand_eq b
-    simpa only [ω, LinearEquiv.coe_coe, Module.Basis.detDualEquiv_apply, hbasis] using b.det_self
+  have hb : ω (b 0) (b 1) = 1 := b.detDualEquiv_apply_basis_zero_one
   have hindex := (v).index_range_eq_gcd_chargeExchangeMatrix b hω hb
   have hd (j k : Fin n) :
       ((v).range.toAddSubgroup.index : ℤ) ∣
