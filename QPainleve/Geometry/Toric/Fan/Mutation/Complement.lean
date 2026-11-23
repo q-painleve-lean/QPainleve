@@ -609,6 +609,57 @@ theorem mutationComplementIso_hom_comp_toBase :
     targetChart_toBase Φ b c hv hpos hneg a, sourceChart_toBase Φ b c hv hpos hneg a]
   exact localizedChartIso_hom_comp_toBase Φ b a.fst a.snd.val a.snd.property c hv hpos hneg
 
+include h in
+private theorem range_mutationComplementChartι :
+    Set.range (Φ.mutationComplementChartι b σ side hs c h) =
+      (U).ι ⁻¹' Set.range (Φ.additiveAffineToricChartι σ) := by
+  have hι : Function.Injective ((U).ι) := (U).ι.isOpenEmbedding.injective
+  apply hι.image_injective
+  rw [← Set.range_comp, ← TopCat.coe_comp, ← Scheme.Hom.comp_base,
+    mutationComplementChartι_comp_ι,
+    ← complementChartToFan, range_complementChartToFan,
+    Set.image_preimage_eq_inter_range, Scheme.Opens.range_ι]
+
+/-- The mutation isomorphism on the fiber complement identifies its intersections with
+the dense tori of the two fans. -/
+theorem mutationComplementIso_preimage_range_denseTorusι
+    (hΦ : Nonempty Φ.cones) (hΨ : Nonempty (Ψ).cones) :
+    ((Φ.mutationComplementIso b c hv hpos hneg).hom ≫ (U₁).ι) ⁻¹'
+        Set.range ((Ψ).denseTorusι hΨ) =
+      (U₀).ι ⁻¹' Set.range (Φ.denseTorusι hΦ) := by
+  let j := zeroChart Φ b hpos
+  have hzero : (τ(j.fst)).val = ⊥ := by
+    apply SetLike.coe_injective
+    rw [coe_mutationFanConeEquiv]
+    dsimp only [j, zeroChart]
+    -- The zero cone is the singleton at the origin in the ambient space.
+    change Φ.lattice.mutationRayEquiv b v '' ({0} : Set V) = {0}
+    rw [Set.image_singleton]
+    simp [IsIntegralLattice.mutationRayEquiv_apply]
+  have h₀ : Set.range (Φ.additiveAffineToricChartι j.fst) = Set.range (Φ.denseTorusι hΦ) := by
+    rw [range_additiveAffineToricChartι, Φ.denseTorusι_eq_affineToricChartι hΦ j.fst.property]
+    rfl
+  have h₁ : Set.range ((Ψ).additiveAffineToricChartι τ(j.fst)) =
+      Set.range ((Ψ).denseTorusι hΨ) := by
+    have hb : (⊥ : PointedCone ℝ V) ∈ (Ψ).cones := hzero ▸ (τ(j.fst)).property
+    have hj : τ(j.fst) = ⟨⊥, hb⟩ := Subtype.ext hzero
+    rw [range_additiveAffineToricChartι, (Ψ).denseTorusι_eq_affineToricChartι hΨ hb, hj]
+  let e := Φ.mutationComplementIso b c hv hpos hneg
+  let f := Φ.mutationComplementChartι b j.fst j.snd.val j.snd.property c hp₀
+  let g := (Ψ).mutationComplementChartι b τ(j.fst) j.snd.val ht(j) c hp₁
+  have hr₀ : Set.range f = (U₀).ι ⁻¹' Set.range (Φ.denseTorusι hΦ) :=
+    (range_mutationComplementChartι Φ b j.fst j.snd.val j.snd.property c hp₀).trans
+      (congrArg (Set.preimage (U₀).ι) h₀)
+  have hr₁ : Set.range g = (U₁).ι ⁻¹' Set.range ((Ψ).denseTorusι hΨ) :=
+    (range_mutationComplementChartι Ψ b τ(j.fst) j.snd.val ht(j) c hp₁).trans
+      (congrArg (Set.preimage (U₁).ι) h₁)
+  have he : Set.range (f ≫ e.hom) = Set.range g := by
+    rw [mutationComplementChartι_comp_mutationComplementIso_hom, ← localizedChartIso_hom]
+    simp only [← Scheme.Hom.coe_opensRange, Scheme.Hom.opensRange_comp_of_isIso, g]
+  rw [Scheme.Hom.comp_base, TopCat.coe_comp, Set.preimage_comp, ← hr₀, ← hr₁, ← he,
+    Scheme.Hom.comp_base, TopCat.coe_comp, Set.range_comp,
+    Set.preimage_image_eq _ e.hom.isOpenEmbedding.injective]
+
 end Torus
 
 end TauCeti.Toric.Fan
