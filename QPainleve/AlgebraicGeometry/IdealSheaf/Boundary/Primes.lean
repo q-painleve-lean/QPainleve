@@ -6,9 +6,11 @@ Authors: The QPainleve contributors
 module
 
 public import Mathlib.AlgebraicGeometry.IdealSheaf.Functorial
+public import TauCeti.AlgebraicGeometry.Morphisms.IsoLocus
 public import TauCeti.AlgebraicGeometry.Scheme.CodimensionOnePoint
 
 import Mathlib.Data.Set.Card
+import QPainleve.AlgebraicGeometry.Morphisms.IsoLocus
 
 /-!
 # Boundary primes of ideal sheaves
@@ -76,5 +78,33 @@ theorem ncard_boundaryPrimes_eq_of_iso (e : X ≅ Y) (D : Y.IdealSheafData) :
   intro y hy
   obtain ⟨x, rfl⟩ := e.hom.surjective y
   exact ⟨x, (h x).mp hy, rfl⟩
+
+/-- If a morphism is an isomorphism away from a point of coheight other than one,
+its point map bijects the pulled-back boundary primes away from that point with the
+original boundary primes. -/
+theorem bijOn_boundaryPrimes_comap_off_point (D : X.IdealSheafData) (π : Y ⟶ X)
+    {p : X} (hp : Order.coheight p ≠ 1) (hIso : ∀ x : X, x ≠ p → x ∈ π.isoLocus) :
+    Set.BijOn π ((D.comap π).boundaryPrimes ∩ {y | π y ≠ p}) D.boundaryPrimes := by
+  refine ⟨?_, π.injOn_preimage_isoLocus.mono (fun y hy ↦ hIso (π y) hy.2), ?_⟩
+  · intro y hy
+    obtain ⟨h, hc⟩ := mem_boundaryPrimes.mp hy.1
+    rw [support_comap] at h
+    exact mem_boundaryPrimes.mpr
+      ⟨h, (π.coheight_eq_of_apply_mem_isoLocus (hIso (π y) hy.2)).trans hc⟩
+  · intro x hx
+    obtain ⟨hxD, hxc⟩ := mem_boundaryPrimes.mp hx
+    have hne : x ≠ p := fun he ↦ hp (he ▸ hxc)
+    let U := π.isoLocus
+    obtain ⟨y, hy⟩ := (π ∣_ U).surjective ⟨x, hIso x hne⟩
+    have hxy : π ((π ⁻¹ᵁ U).ι y) = x := by
+      rw [← Scheme.Hom.comp_apply, ← morphismRestrict_ι, Scheme.Hom.comp_apply, hy]
+      rfl
+    exact ⟨_, ⟨mem_boundaryPrimes.mpr
+      ⟨by
+        rw [support_comap]
+        exact (show π ((π ⁻¹ᵁ U).ι y) ∈ D.support from hxy.symm ▸ hxD),
+        (π.coheight_eq_of_apply_mem_isoLocus (hxy.symm ▸ hIso x hne)).symm.trans
+          (hxy.symm ▸ hxc)⟩,
+      (show π ((π ⁻¹ᵁ U).ι y) ≠ p from hxy.symm ▸ hne)⟩, hxy⟩
 
 end AlgebraicGeometry.Scheme.IdealSheafData
