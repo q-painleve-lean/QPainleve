@@ -5,11 +5,15 @@ Authors: The QPainleve contributors
 -/
 module
 
+public import Mathlib.FieldTheory.IsSepClosed
 public import QPainleve.Algebra.AlgebraicGroup.DiagonalizableGroup.Scheme.Basic
 public import QPainleve.AlgebraicGeometry.RationalMap.FunctionField
 public import QPainleve.Geometry.Toric.CharacterTorus.Basic
 public import TauCeti.Algebra.AlgebraicGroup.DiagonalizableGroup.Scheme.Points
 public import TauCeti.AlgebraicGeometry.Scheme.BaseAlgebra
+
+import QPainleve.Algebra.MonoidAlgebra.Smooth
+import TauCeti.AlgebraicGeometry.Morphisms.Smooth.RationalPoint
 
 /-!
 # Character schemes and their function fields
@@ -75,6 +79,31 @@ theorem pointsEquiv_symm_apply_val (c : Multiplicative B →* kˣ) :
       Spec.map (CommRingCat.ofHom
         ((DiagonalizableGroup.point c).comp
           (AddMonoidAlgebra.toMultiplicativeAlgEquiv k k B).toAlgHom).toRingHom) := (rfl)
+
+/-- Over a separably closed field, the characters of the finite center lattice give a
+Zariski-dense family of points. -/
+theorem denseRange_centerPoints (K : Type u) [Field K] [IsSepClosed K] (ι : Type u)
+    [Finite ι] :
+    DenseRange (fun c : Multiplicative (ι → ℤ) →* Kˣ ↦
+      ((pointsEquiv K (ι → ℤ)).symm c).val default) := by
+  have hs : Smooth (structureMap K (ι → ℤ)) := by
+    rw [structureMap, Spec.algebraMap, HasRingHomProperty.Spec_iff (P := @Smooth),
+      CommRingCat.hom_ofHom, RingHom.smooth_algebraMap]
+    let e := (Finsupp.linearEquivFunOnFinite ℤ ℤ ι).toAddEquiv
+    let := AddMonoidAlgebra.isStandardSmoothOfRelativeDimension_finsupp_int K ι
+    let := Algebra.IsStandardSmoothOfRelativeDimension.of_algEquiv (Nat.card ι)
+      (AddMonoidAlgebra.domCongr K K e)
+    let : Algebra.IsStandardSmooth K (AddMonoidAlgebra K (ι → ℤ)) :=
+      Algebra.IsStandardSmoothOfRelativeDimension.isStandardSmooth (n := Nat.card ι)
+    exact inferInstanceAs (Algebra.Smooth K (AddMonoidAlgebra K (ι → ℤ)))
+  let f (c : Points K (ι → ℤ)) := c.val default
+  have hf : DenseRange f := (structureMap K (ι → ℤ)).denseRange_rationalSections
+  have hr : Set.range (f ∘ (pointsEquiv K (ι → ℤ)).symm) = Set.range f :=
+    (pointsEquiv K (ι → ℤ)).symm.surjective.range_comp f
+  -- Reindex the rational sections by their character values.
+  change Dense (Set.range (f ∘ (pointsEquiv K (ι → ℤ)).symm))
+  rw [hr]
+  exact hf
 
 variable {B} {C : Type u} [AddCommGroup C]
 

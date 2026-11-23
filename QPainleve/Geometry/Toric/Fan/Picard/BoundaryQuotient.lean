@@ -5,6 +5,7 @@ Authors: The QPainleve contributors
 -/
 module
 
+public import QPainleve.Geometry.Toric.Fan.Charge
 public import QPainleve.Geometry.Toric.Fan.Picard.Presentation
 public import Mathlib.GroupTheory.Index
 public import Mathlib.GroupTheory.Torsion
@@ -39,16 +40,6 @@ variable {N : Type} {V ι : Type*} [AddCommGroup N] [AddCommGroup V] [Module ℝ
   {i : N →+ V} {Φ : Fan i}
 
 local notation "Pic" => Additive (LineBundleClass (Fan.algebraicRealization Φ))
-
-/-- The charges of a finite family of centers on toric boundary rays. The charge of a
-basis vector is the primitive generator of its assigned ray. -/
-def rayChargeMap [Finite ι] (s : ι → Φ.Ray) : (ι → ℤ) →ₗ[ℤ] N :=
-  Module.piEquiv ι ℤ N fun j ↦ (s j).primitiveGenerator
-
-@[simp]
-theorem rayChargeMap_single [Finite ι] [DecidableEq ι] (s : ι → Φ.Ray) (j : ι) :
-    rayChargeMap s (Pi.single j 1) = (s j).primitiveGenerator := by
-  rw [rayChargeMap, Module.piEquiv, ← Pi.basisFun_apply, Basis.constr_basis]
 
 variable [Nonempty Φ.cones]
 
@@ -105,8 +96,9 @@ private theorem map_dualCharge_range (hΦ : Φ.IsRegular) (s : ι → Φ.Ray) :
         ).range := by
   have hcomp : (coords).toLinearMap ∘ₗ (rayChargeMap s).dualMap =
       LinearMap.funLeft ℤ ℤ s ∘ₗ rayDivisorMap Φ := by
+    classical
     ext m j
-    simp [rayChargeMap, rayDivisorMap, Module.piEquiv]
+    simp [rayDivisorMap, Module.piEquiv]
   rw [← LinearMap.range_comp, hcomp, LinearMap.range_comp, LinearMap.range_comp,
     range_rayDivisorMap hΦ, Submodule.range_subtype, Submodule.map_neg]
 

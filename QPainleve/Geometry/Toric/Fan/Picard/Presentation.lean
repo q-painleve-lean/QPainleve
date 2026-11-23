@@ -74,6 +74,13 @@ def rayDivisorToPicard (hΦ : Φ.IsRegular) :
   have := Φ.uniqueFactorizationMonoid_stalk_algebraicRealization hΦ
   (weilToLineBundleClassHom Φ.algebraicRealization).comp (Φ.rayDivisorToWeilDivisor hΦ)
 
+/-- The Picard class map on ray coefficients sends the corresponding Weil divisor to its class. -/
+theorem rayDivisorToPicard_def (hΦ : Φ.IsRegular) (a : Φ.Ray → ℤ) :
+    letI := Φ.uniqueFactorizationMonoid_stalk_algebraicRealization hΦ
+    Φ.rayDivisorToPicard hΦ a =
+      weilToLineBundleClassHom Φ.algebraicRealization (Φ.rayDivisorToWeilDivisor hΦ a) :=
+  (rfl)
+
 /-- A divisor concentrated on one ray maps to the corresponding multiple of its prime class. -/
 @[simp]
 theorem rayDivisorToPicard_single (hΦ : Φ.IsRegular) [DecidableEq Φ.Ray] (ρ : Φ.Ray) (n : ℤ) :
@@ -169,14 +176,12 @@ theorem exact_characterToRayDivisor_rayDivisorToPicard (hΦ : Φ.IsRegular) :
       apply Φ.coeff_rayDivisorToWeilDivisor_of_notMem_range hΦ
       rw [Φ.range_rayBoundaryPoint hΦ inferInstance]
       exact fun hy ↦ hy ⟨y, CodimensionOnePoint.coe_mapOfIsOpenImmersion j y |>.symm⟩
-    obtain ⟨s, m, hfm⟩ := Φ.exists_eq_const_mul_character f.toMul hzero
+    obtain ⟨c, m, hfm⟩ := Φ.exists_eq_const_mul_character f.toMul hzero
     refine ⟨m, funext fun ρ ↦ ?_⟩
     have hρ := congrArg (fun D ↦ WeilDivisor.coeff D (Φ.rayBoundaryPoint hΦ ρ)) hf
     rw [WeilDivisor.OrderSystem.coeff_principalDivisor, WeilDivisor.OrderSystem.ofScheme_ord,
       orderAt_apply, Φ.coeff_rayDivisorToWeilDivisor,
-      hfm, Scheme.ord_mul (s.isUnit.map ((𝒳).germToFunctionField ⊤).hom).ne_zero
-        ((Group.isUnit (ofAdd m)).map Φ.character).ne_zero,
-      (𝒳).ord_of_isUnit s.isUnit trivial, zero_add, Φ.ord_rayBoundaryPoint_character hΦ] at hρ
+      hfm, Φ.ord_rayBoundaryPoint_mul_character hΦ ρ c m] at hρ
     exact hρ
   · rintro ⟨m, rfl⟩
     exact ⟨Additive.ofMul (Φ.character.toHomUnits (ofAdd m)),

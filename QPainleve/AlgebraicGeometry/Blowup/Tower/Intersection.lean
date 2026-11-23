@@ -165,6 +165,17 @@ theorem classIntersectionNumber_picardMarking (hT : IsClosedPointTower X T)
     zero_mul, Finset.sum_const_zero] at hzero ha hb hab
   omega
 
+/-- The pullback of two Picard classes along a closed-point blowup tower preserves their
+surface intersection number. -/
+theorem IsClosedPointTower.classIntersectionNumber_pullback (hT : IsClosedPointTower X T)
+    (a b : LineBundleClass X) :
+    let : Y.Over (Spec (.of k)) := ⟨T.toBase ≫ f⟩
+    Chow.classIntersectionNumber k Y (pullback T.toBase a) (pullback T.toBase b) =
+      Chow.classIntersectionNumber k X a b := by
+  simpa only [picardMarking_apply, picardHom_apply_zero, toMul_ofMul, Pi.zero_apply,
+    zero_mul, Finset.sum_const_zero, sub_zero] using
+    (classIntersectionNumber_picardMarking k hT (Additive.ofMul a, 0) (Additive.ofMul b, 0))
+
 end EulerCharacteristic
 
 section CanonicalClass

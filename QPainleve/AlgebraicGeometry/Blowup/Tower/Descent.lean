@@ -41,16 +41,14 @@ variable (hT : IsClosedPointTower X T) (f : X ⟶ Spec (.of k)) [SmoothOfRelativ
 
 include hT f
 
-private theorem contraction_properties :
-    IsProper T.toBase ∧ Surjective T.toBase ∧ ∀ U, IsIso (T.toBase.app U) := by
+/-- Pullback along a closed point blowup tower of a smooth surface identifies sections
+of the structure sheaf on any open with sections on its inverse image. -/
+theorem isIso_app_toBase (U : X.Opens) : IsIso (T.toBase.app U) := by
   induction hT with
   | nil =>
-    simp only [toBase_nil]
-    refine ⟨inferInstance, inferInstance, fun U ↦ ?_⟩
     rw [toBase_nil, Scheme.Hom.id_app]
     exact (inferInstance : IsIso (𝟙 Γ(X, U)))
   | @snoc _ W R I hR p hp hI ih =>
-    obtain ⟨hproper, hsurjective, happ⟩ := ih
     subst I
     rw [toBase_snoc, Scheme.ker_fromSpecResidueField_eq_vanishingIdeal]
     have := hR.smoothOfRelativeDimension f
@@ -58,22 +56,25 @@ private theorem contraction_properties :
       (smoothOfRelativeDimension_iff_ringKrullDim_stalk_eq (R.toBase ≫ f) 2).mp inferInstance
     have := LocallyOfFiniteType.isLocallyNoetherian (R.toBase ≫ f)
     have := isRegularLocalRing_stalk_of_smooth (R.toBase ≫ f) p
-    have := Scheme.IdealSheafData.surjective_blowupToBase_point hp (hdim p hp)
-    refine ⟨inferInstance, inferInstance, fun U ↦ ?_⟩
     rw [Scheme.Hom.comp_app]
-    exact IsIso.comp_isIso' (happ U)
+    exact IsIso.comp_isIso' ih
       (Scheme.IdealSheafData.isIso_app_pointBlowup hp (hdim p hp) (R.toBase ⁻¹ᵁ U))
 
-/-- Pullback along a closed point blowup tower of a smooth surface identifies sections
-of the structure sheaf on any open with sections on its inverse image. -/
-theorem isIso_app_toBase (U : X.Opens) : IsIso (T.toBase.app U) :=
-  (hT.contraction_properties f).2.2 U
+/-- The projection of a closed point blowup tower of a smooth surface is an epimorphism. -/
+theorem epi_toBase : Epi T.toBase := by
+  have := hT.surjective f
+  exact T.toBase.epi_of_surjective_of_app_injective fun U ↦ by
+    have := hT.isIso_app_toBase f U
+    exact (ConcreteCategory.bijective_of_isIso (T.toBase.app U)).1
 
 /-- A morphism constant on the fibers of a closed point blowup tower of a smooth surface
 descends uniquely to the base of the tower. -/
 theorem existsUnique_comp_eq_toBase (g : Y ⟶ Z) (hg : Function.FactorsThrough g T.toBase) :
     ∃! h : X ⟶ Z, T.toBase ≫ h = g := by
-  obtain ⟨hproper, hsurjective, _⟩ := hT.contraction_properties f
+  have : Smooth f := SmoothOfRelativeDimension.smooth 2 f
+  have := LocallyOfFiniteType.isLocallyNoetherian f
+  have := T.isProper_toBase
+  have := hT.surjective f
   exact T.toBase.existsUnique_comp_eq_of_universallyClosed (hT.isIso_app_toBase f) g hg
 
 /-- The descent of a morphism constant on a surface blowup tower's fibers preserves its
@@ -82,10 +83,7 @@ theorem existsUnique_comp_eq_toBase_over (g : Y ⟶ Z) (p : X ⟶ S) (q : Z ⟶ 
     (hcomm : g ≫ q = T.toBase ≫ p) (hg : Function.FactorsThrough g T.toBase) :
     ∃! h : X ⟶ Z, T.toBase ≫ h = g ∧ h ≫ q = p := by
   obtain ⟨h, hh, huniq⟩ := hT.existsUnique_comp_eq_toBase f g hg
-  have := (hT.contraction_properties f).2.1
-  have : Epi T.toBase := T.toBase.epi_of_surjective_of_app_injective fun U ↦ by
-    have := hT.isIso_app_toBase f U
-    exact (ConcreteCategory.bijective_of_isIso (T.toBase.app U)).1
+  have := hT.epi_toBase f
   refine ⟨h, ⟨hh, (cancel_epi T.toBase).mp ?_⟩, fun h' hh' ↦ huniq h' hh'.1⟩
   rwa [← Category.assoc, hh]
 
