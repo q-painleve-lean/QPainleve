@@ -14,6 +14,8 @@ import Mathlib.RingTheory.Localization.Away.AdjoinRoot
 import QPainleve.Algebra.MvPolynomial.Laurent.FiniteType
 import QPainleve.AlgebraicGeometry.RationalMap.Affine
 import QPainleve.AlgebraicGeometry.RationalMap.Composition
+import QPainleve.AlgebraicGeometry.RationalMap.Modification
+import TauCeti.AlgebraicGeometry.Morphisms.Modification.Composition
 
 /-!
 # Cluster X evaluation at fixed toric centers
@@ -23,7 +25,8 @@ determinant characters. Pullback along the toric elementary transformation commu
 this specialization and cluster X mutation. The localization inverts the pivot binomial,
 so the comparison takes place on the common rational domain. The evaluation maps
 to this chart commute with the global isomorphism of the pivot blowups, also
-after dominant refinements of the source blowup.
+after dominant refinements of the source blowup and after descent through
+a modification of the source.
 
 The character and charge formulas used here are those of Gross, Hacking and Keel,
 [*Birational geometry of cluster algebras*, (1.2), (2.9), and §3.1]
@@ -33,7 +36,7 @@ The character and charge formulas used here are those of Gross, Hacking and Keel
 public noncomputable section
 
 open AlgebraicGeometry CategoryTheory Multiplicative PointedCone
-open QPainleve.Cluster TauCeti.LaurentRing
+open QPainleve.Cluster TauCeti.AlgebraicGeometry TauCeti.LaurentRing
 
 namespace TauCeti.Toric.Fan
 
@@ -340,6 +343,43 @@ theorem mutationBlowupIso_xEvaluation {W : Scheme} [IsIntegral W]
   have := (s p).isModification_mutationTargetBlowupToBase b hOpposite c[p]
   have h := Φ.mutationBlowupIso_mutationChartEvaluation b s p c hOpposite f
   rw [← mutationChartEvaluation_compHom (p := p), Scheme.RationalMap.comp_compHom, h]
+
+/-- Fixed-center evaluations descend through the modifications in a mutation
+contraction square. On the base the X-mutation equality uses the localized
+source chart and the full X torus as target. The projections to the two
+toric models are those of the same dominant refinement of the pivot blowup. -/
+theorem exists_xEvaluation_of_mutation_contraction {X X' W : Scheme}
+    [IsIntegral X] [IsIntegral X'] [IsIntegral W]
+    (q : W ⟶ X) [IsModification q] (g : X ≅ X')
+    (f : W ⟶ (I₀).blowup) [IsDominant f] :
+    letI : Nonempty Φ.cones := hΦ
+    letI : Nonempty (Fan.cones (Ψ)) := hΨ
+    letI := (s p).isIntegral_mutationSourceBlowup b hOpposite c[p]
+    letI := (s p).isModification_mutationSourceBlowupToBase b hOpposite c[p]
+    letI := (s p).isModification_mutationTargetBlowupToBase b hOpposite c[p]
+    ∃ a : X ⤏ Spec (.of (XMutationChart ℂ p)), ∃ a' : X' ⤏ Spec (.of (LaurentRing ℂ ι)),
+      q.toRationalMap.comp a =
+        (f ≫ π₀).toRationalMap.comp (Φ.mutationChartEvaluation b s p c) ∧
+      (q ≫ g.hom).toRationalMap.comp a' =
+        (f ≫ (e).hom ≫ π₁).toRationalMap.comp ((Ψ).xEvaluation b s′ c′) ∧
+      g.hom.toRationalMap.comp a' =
+        (a.compHom (Spec.map (CommRingCat.ofHom (M).toAlgHom.toRingHom))).compHom
+          (Spec.algebraMap (LaurentRing ℂ ι) (XMutationChart ℂ p)) := by
+  let : Nonempty Φ.cones := hΦ
+  let : Nonempty (Ψ).cones := hΨ
+  have := (s p).isIntegral_mutationSourceBlowup b hOpposite c[p]
+  have := (s p).isModification_mutationSourceBlowupToBase b hOpposite c[p]
+  have := (s p).isModification_mutationTargetBlowupToBase b hOpposite c[p]
+  obtain ⟨a, ha, -⟩ := q.existsUnique_rationalMap_comp_eq_of_isModification
+    ((f ≫ π₀).toRationalMap.comp (Φ.mutationChartEvaluation b s p c))
+  obtain ⟨a', ha', -⟩ := (q ≫ g.hom).existsUnique_rationalMap_comp_eq_of_isModification
+    ((f ≫ (e).hom ≫ π₁).toRationalMap.comp ((Ψ).xEvaluation b s′ c′))
+  refine ⟨a, a', ha, ha', ?_⟩
+  apply Scheme.RationalMap.comp_left_injective q.toRationalMap
+  dsimp only
+  simp only [← Scheme.RationalMap.comp_assoc, Scheme.RationalMap.comp_toRationalMap,
+    Scheme.Hom.toRationalMap_compHom, Scheme.RationalMap.comp_compHom, ha, ha']
+  exact Φ.mutationBlowupIso_xEvaluation b s p c hOpposite f
 
 end Pivot
 
