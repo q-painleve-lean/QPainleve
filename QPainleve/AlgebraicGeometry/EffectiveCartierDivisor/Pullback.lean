@@ -20,11 +20,13 @@ import TauCeti.AlgebraicGeometry.IdealSheaf.Comap
 A morphism that is an isomorphism over the support of an effective Cartier divisor
 pulls it back to an effective Cartier divisor. This is the local form of Cartier
 pullback used when comparing blowups under modifications away from their centers.
+When the pullback avoids the divisor, the ideal inclusion canonically trivializes
+the pulled-back line bundle.
 -/
 
 public section
 
-open CategoryTheory TopologicalSpace TauCeti.AlgebraicGeometry
+open CategoryTheory MonoidalCategory TopologicalSpace TauCeti.AlgebraicGeometry
 
 namespace AlgebraicGeometry.Scheme.IdealSheafData
 
@@ -73,5 +75,30 @@ theorem IsEffectiveCartier.pullback_effectiveCartierClass_eq_one_of_disjoint
     simpa using Set.disjoint_left.mp h (J.range_subschemeι.le (Set.mem_range_self x))
   rw [LineBundleClass.pullback_inv, hI.pullback_mk_toInvertibleSheaf_eq_one_of_comap_eq_top hcomap,
     inv_one]
+
+namespace IsEffectiveCartier
+
+open Scheme.Modules
+
+variable {X Y : Scheme.{u}} {I : Y.IdealSheafData}
+
+/-- The inclusion of an effective Cartier ideal trivializes its pullback to a
+scheme disjoint from the divisor. -/
+noncomputable def pullbackTrivializationOfComapEqTop (hI : I.IsEffectiveCartier) (f : X ⟶ Y)
+    (hf : I.comap f = ⊤) :
+    (pullback f).obj I.sheaf ≅ 𝟙_ X.Modules := by
+  haveI := I.isIso_pullbackSheafHom f hI (hf.symm ▸ isEffectiveCartier_top X)
+  haveI : IsIso (I.comap f).sheafι := by rw [hf]; infer_instance
+  exact asIso (I.pullbackSheafHom f ≫ (I.comap f).sheafι)
+
+/-- The trivialization is the pulled-back ideal inclusion. -/
+@[simp]
+theorem pullbackTrivializationOfComapEqTop_hom (hI : I.IsEffectiveCartier) (f : X ⟶ Y)
+    (hf : I.comap f = ⊤) :
+    (hI.pullbackTrivializationOfComapEqTop f hf).hom =
+      (pullback f).map I.sheafι ≫ (pullbackObjUnitIso f).hom :=
+  I.pullbackSheafHom_sheafι f
+
+end IsEffectiveCartier
 
 end AlgebraicGeometry.Scheme.IdealSheafData
