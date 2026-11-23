@@ -253,27 +253,12 @@ local notation "D[" hΞ "," ρ "]" =>
   (Fan.rayDivisorToPicard _ hΞ (@Pi.single _ (fun _ ↦ ℤ) _ (Classical.decEq _) ρ 1))
 local notation "F" => mutationFiberClass b p hΦ
 
-open Classical in
-private theorem intersection_rayDivisor {Ξ : Fan i} [Nonempty Ξ.cones]
-    [hProjective : Ξ.algebraicRealization.IsProjectiveOver ℂ] (hΞ : Ξ.IsRegular) (ρ τ : Ξ.Ray) :
-    A[Ξ,hΞ,hProjective] D[hΞ,ρ] D[hΞ,τ] =
-      if ρ = τ then Ξ.rayBoundarySelfIntersection hΞ ρ else
-        if ∃ σ : Ξ.cones, ρ.toCone ≤ σ ∧ τ.toCone ≤ σ then 1 else 0 := by
-  simp only [intersectionBilinForm_apply, rayDivisorToPicard_single, one_smul, toMul_ofMul]
-  by_cases h : ρ = τ
-  · subst τ
-    simp only [rayBoundarySelfIntersection_def, ite_true]
-  · rw [ite_eq_right h]
-    exact Ξ.classIntersectionNumber_rayBoundaryPoint hΞ
-      (by simpa using Module.finrank_eq_card_basis b) h
-
 omit hproj in
-private theorem mutationFiberClass_eq_sum [Nonempty Φ.cones] [Fintype Φ.Ray] :
-    F = ∑ τ, f τ • D[hΦ,τ] := by
+private theorem mutationFiberClass_eq_positiveCharacter [Nonempty Φ.cones] :
+    F = Φ.rayDivisorToPicard hΦ f := by
   have he (x : N) : m x = b.det ![x, v] := by
     rw [LinearMap.neg_apply, ← b.detDualEquiv_swap x v, Module.Basis.detDualEquiv_apply]
-  rw [mutationFiberClass_eq, rayDivisorToPicard_apply]
-  simp only [← he, rayDivisorToPicard_single, one_smul]
+  simp only [mutationFiberClass_eq, ← he]
 
 include hc hproj in
 open Classical in
@@ -281,35 +266,22 @@ private theorem intersection_mutationFiberClass_ray (ρ : Φ.Ray) :
     let : Nonempty Φ.cones := ⟨p.toCone⟩
     A[Φ,hΦ,hproj] D[hΦ,ρ] F = δ[ρ,p] + δ[ρ,q] := by
   let : Nonempty Φ.cones := ⟨p.toCone⟩
-  let := Fintype.ofFinite Φ.Ray
   obtain ⟨prev, next, hprev, hnext, hneigh, hwall⟩ :=
     Φ.exists_rayBoundaryPoint_selfIntersection_relation b hΦ hc ρ
   rw [← rayBoundarySelfIntersection_def] at hwall
-  have hne : prev ≠ next := by
-    intro h
-    rw [h, hnext] at hprev
-    omega
-  let adj (τ : Φ.Ray) := ∃ σ : Φ.cones, ρ.toCone ≤ σ ∧ τ.toCone ≤ σ
-  have hfilter : (Finset.univ.erase ρ).filter adj = {prev, next} := by
-    ext τ
-    simpa only [Finset.mem_filter, Finset.mem_erase, Finset.mem_univ, and_true,
-      Finset.mem_insert, Finset.mem_singleton, ne_comm (a := τ) (b := ρ)] using hneigh τ
+  have hconePrev := ((hneigh prev).mpr (Or.inl rfl)).2
+  have hconeNext := ((hneigh next).mpr (Or.inr rfl)).2
+  have hprev' : b.detDualEquiv prev.primitiveGenerator ρ.primitiveGenerator = 1 := by
+    rw [b.detDualEquiv_swap, hprev, neg_neg]
+  let : SmoothOfRelativeDimension 2 (Φ.algebraicRealization ↘ Spec (CommRingCat.of ℂ)) := by
+    rw [Φ.algebraicRealization_over]
+    simpa only [Module.finrank_eq_card_basis b, Fintype.card_fin] using
+      Φ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
   dsimp only
-  rw [mutationFiberClass_eq_sum, map_sum, ← Finset.add_sum_erase _ _ (Finset.mem_univ ρ)]
-  have hs : ∑ τ ∈ Finset.univ.erase ρ, A[Φ,hΦ,hproj] D[hΦ,ρ] (f τ • D[hΦ,τ]) =
-      f prev + f next := by
-    calc
-      _ = ∑ τ ∈ (Finset.univ.erase ρ).filter adj, f τ := by
-        rw [Finset.sum_filter]
-        apply Finset.sum_congr rfl
-        intro τ hτ
-        rw [map_zsmul, intersection_rayDivisor b hΦ, ite_eq_right (Finset.ne_of_mem_erase hτ).symm]
-        by_cases h : adj τ <;> simp [adj] at h ⊢
-      _ = _ := by rw [hfilter, Finset.sum_pair hne]
-  rw [hs, map_zsmul, intersection_rayDivisor b hΦ, ite_eq_left rfl, Int.zsmul_eq_mul, add_comm]
-  simpa only [add_assoc, add_left_comm, add_comm, mul_comm] using
-    positiveCharacter_wall b p hop hΦ hprev hnext ((hneigh prev).mpr (Or.inl rfl)).2
-      ((hneigh next).mpr (Or.inr rfl)).2 hwall
+  rw [mutationFiberClass_eq_positiveCharacter,
+    Φ.intersectionBilinForm_rayDivisorToPicard_single (decEq := Classical.decEq _) hΦ b hc f
+      ⟨hprev', hconePrev.imp fun _ h ↦ h.symm⟩ ⟨hnext, hconeNext⟩]
+  exact positiveCharacter_wall b p hop hΦ hprev hnext hconePrev hconeNext hwall
 
 include hop hc hproj in
 open Classical in
@@ -318,9 +290,12 @@ private theorem intersection_mutationFiberClass_self :
     A[Φ,hΦ,hproj] F F = 0 := by
   let : Nonempty Φ.cones := ⟨p.toCone⟩
   let := Fintype.ofFinite Φ.Ray
+  have hsum : F = ∑ τ, f τ • D[hΦ,τ] := by
+    rw [mutationFiberClass_eq_positiveCharacter, rayDivisorToPicard_apply]
+    simp only [rayDivisorToPicard_single, one_smul]
   dsimp only
   -- Expand the first copy to pair each ray divisor with the unchanged fiber class.
-  conv_lhs => arg 1; rw [mutationFiberClass_eq_sum]
+  conv_lhs => arg 1; rw [hsum]
   rw [BilinForm.sum_left]
   apply Finset.sum_eq_zero
   intro τ _
@@ -344,20 +319,26 @@ private theorem intersection_rayDivisor_mutation (hc : Φ.IsComplete)
       A[Φ,hΦ,hproj] D[hΦ,ρ] D[hΦ,τ] - δ[ρ,p] * δ[τ,p] + δ[ρ,q] * δ[τ,q] := by
   let : Nonempty Φ.cones := ⟨p.toCone⟩
   let : Nonempty (Ψ).cones := ⟨(r p).toCone⟩
+  have hN : Module.finrank ℤ N = 2 := by simpa using Module.finrank_eq_card_basis b
+  let : SmoothOfRelativeDimension 2 (Φ.algebraicRealization ↘ Spec (CommRingCat.of ℂ)) := by
+    rw [Φ.algebraicRealization_over]
+    exact hN ▸ Φ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
+  let : SmoothOfRelativeDimension 2 ((Ψ).algebraicRealization ↘ Spec (CommRingCat.of ℂ)) := by
+    rw [(Ψ).algebraicRealization_over]
+    exact hN ▸ (Ψ).smoothOfRelativeDimension_algebraicRealizationStructureMap hΨ
   dsimp only
+  rw [(Ψ).intersectionBilinForm_rayDivisorToPicard_single_single
+      (decEq := Classical.decEq _) hΨ hN (r ρ) (r τ),
+    Φ.intersectionBilinForm_rayDivisorToPicard_single_single (decEq := Classical.decEq _) hΦ hN ρ τ]
   by_cases h : ρ = τ
   · subst τ
-    rw [@intersection_rayDivisor N V _ _ _ i b Ψ _ hTarget hΨ (r ρ) (r ρ),
-      intersection_rayDivisor (hProjective := hproj) b hΦ ρ ρ]
     rw [ite_eq_left (rfl : (r ρ) = (r ρ)), ite_eq_left (rfl : ρ = ρ),
       rayBoundarySelfIntersection_mutation (hTarget := hTarget) b p hop hΦ hc]
     split_ifs <;> ring
-  · rw [@intersection_rayDivisor N V _ _ _ i b Ψ _ hTarget hΨ (r ρ) (r τ),
-      intersection_rayDivisor (hProjective := hproj) b hΦ ρ τ]
-    rw [ite_eq_right ((r).injective.ne h), ite_eq_right h, mutationRayEquiv_commonCone]
+  · rw [ite_eq_right ((r).injective.ne h), ite_eq_right h, mutationRayEquiv_commonCone]
     have hp' : δ[ρ,p] * δ[τ,p] = 0 := by split_ifs <;> simp_all
     have hq' : δ[ρ,q] * δ[τ,q] = 0 := by split_ifs <;> simp_all
-    simp [hp', hq']
+    simp only [hp', hq', sub_zero, add_zero]
 
 section Marking
 
