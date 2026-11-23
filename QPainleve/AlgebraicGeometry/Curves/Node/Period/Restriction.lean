@@ -32,38 +32,12 @@ variable {k : Type u} [Field k] [IsAlgClosed k] {X : Scheme.{u}} [X.Over (Spec (
   (hD : D.IsEffectiveCartier)
 
 local notation "C" => IdealSheafData.subscheme D
-local notation "ν" => IdealSheafData.blowupToBase (Scheme.singularLocus k C)
-local notation "PicZero" => MonoidHom.ker (pullbackHom ν)
 
 local notation "K[" S "," J "]" =>
-  (LinearMap.BilinForm.orthogonal (Chow.intersectionBilinForm k S)
-    (@Scheme.Opens.primeDivisorSpanCompl S
-      (LocallyOfFiniteType.isLocallyNoetherian (S ↘ Spec (CommRingCat.of k))) inferInstance
-      (Scheme.Hom.uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two
-        (S ↘ Spec (CommRingCat.of k)))
-      (Closeds.compl (IdealSheafData.support J))))
+  Scheme.IdealSheafData.boundaryOrthogonal (X := S) J k
 
 variable (hgenus : ∀ v : irreducibleComponents (D.subscheme.singularLocus k).blowup,
     (D.subscheme.blowupComponent (K := k) v).toScheme.genus k = 0)
-
-/-- A boundary-orthogonal surface class restricts to a class in the normalization kernel
-of a nodal Cartier boundary with genus-zero normalized components. -/
-def restrictBoundaryOrthogonal : Multiplicative K[X,D] →* PicZero :=
-  let f := (pullbackHom D.subschemeι).comp
-    (AddMonoidHom.toMultiplicativeLeft (K[X,D]).subtype.toAddMonoidHom)
-  f.codRestrict PicZero fun a ↦ by
-    rw [MonoidHom.mem_ker, MonoidHom.comp_apply, pullbackHom_apply, pullbackHom_apply,
-      pullback_comp]
-    exact (hD.pullback_blowupToBase_comp_subschemeι_eq_one_iff_mem_orthogonal
-      hgenus a.toAdd.val).mpr a.toAdd.property
-
-/-- The underlying line-bundle class of a boundary-orthogonal restriction is the
-ordinary pullback to the boundary. -/
-@[simp]
-theorem restrictBoundaryOrthogonal_apply (a : Multiplicative K[X,D]) :
-    (hD.restrictBoundaryOrthogonal hgenus a).val = pullback D.subschemeι a.toAdd.val.toMul := by
-  simp only [restrictBoundaryOrthogonal, MonoidHom.codRestrict_apply]
-  exact pullbackHom_apply _ _
 
 variable {ι : Type v} {p : ι → (D.subscheme ↘ Spec (.of k)).smoothLocus} {n : ℕ} [NeZero n]
   {e : ZMod n ≃ (D.subscheme.dualGraph p).Edge}
@@ -100,16 +74,9 @@ theorem boundaryPeriod_eq_one_of_disjoint {E : X.IdealSheafData} (hE : E.IsEffec
     (h : Disjoint (D.support : Set X) (E.support : Set X)) :
     let a := Additive.ofMul (LineBundleClass.mk hE.toInvertibleSheaf)⁻¹
     ∃ ha : a ∈ K[X,D], hD.boundaryPeriod hgenus hw (Multiplicative.ofAdd ⟨a, ha⟩) = 1 := by
-  have hcomap : E.comap D.subschemeι = ⊤ := by
-    apply (E.comap_eq_top_iff _).mpr
-    ext x
-    simpa using Set.disjoint_left.mp h (D.range_subschemeι.le (Set.mem_range_self x))
-  have hres : pullback D.subschemeι (LineBundleClass.mk hE.toInvertibleSheaf)⁻¹ = 1 := by
-    rw [pullback_inv, hE.pullback_mk_toInvertibleSheaf_eq_one_of_comap_eq_top hcomap, inv_one]
-  have ha := (hD.pullback_blowupToBase_comp_subschemeι_eq_one_iff_mem_orthogonal
-    hgenus (Additive.ofMul (LineBundleClass.mk hE.toInvertibleSheaf)⁻¹)).mp
-    (by rw [toMul_ofMul, ← pullback_comp, hres, pullback_one])
-  exact ⟨ha, (hD.boundaryPeriod_eq_one_iff hgenus hw _).mpr hres⟩
+  exact ⟨hD.effectiveCartierClass_mem_orthogonal_of_disjoint hgenus hE h,
+    (hD.boundaryPeriod_eq_one_iff hgenus hw _).mpr
+      (hE.pullback_effectiveCartierClass_eq_one_of_disjoint h)⟩
 
 section Pullback
 
@@ -122,7 +89,8 @@ local notation "C'" => IdealSheafData.subscheme E
 
 variable (hgenus' : ∀ v : irreducibleComponents (E.subscheme.singularLocus k).blowup,
     (E.subscheme.blowupComponent (K := k) v).toScheme.genus k = 0)
-  {ι' : Type v'} {p' : ι' → (E.subscheme ↘ Spec (.of k)).smoothLocus} {m : ℕ} [NeZero m]
+
+variable {ι' : Type v'} {p' : ι' → (E.subscheme ↘ Spec (.of k)).smoothLocus} {m : ℕ} [NeZero m]
   {e' : ZMod m ≃ (E.subscheme.dualGraph p').Edge}
   {o' : (E.subscheme.dualGraph p').Edge → Equiv.Perm (Fin 2)}
   {w' : ZMod m ≃ (E.subscheme.dualGraph p').Vertex}
@@ -143,22 +111,21 @@ theorem boundaryPeriod_pullback (f : X ⟶ Y) (g : C ≅ C') [g.hom.IsOver (Spec
     ∃ ha : a₀ ∈ K[X,D],
       hD.boundaryPeriod hgenus hw (Multiplicative.ofAdd ⟨a₀, ha⟩) =
         if swap then (hE.boundaryPeriod hgenus' hw' a)⁻¹ else hE.boundaryPeriod hgenus' hw' a := by
-  let b := hE.restrictBoundaryOrthogonal hgenus' a
-  have hb := g.pullback_mem_ker_pullback_blowupToBase_singularLocus b
-  have hrestrict : pullback D.subschemeι (pullback f a.toAdd.val.toMul) =
-      pullback g.hom b.val := by
-    simp only [b, restrictBoundaryOrthogonal_apply, pullback_comp, hcomm]
-  have ha := (hD.pullback_blowupToBase_comp_subschemeι_eq_one_iff_mem_orthogonal
-    hgenus (Additive.ofMul (pullback f a.toAdd.val.toMul))).mp (by
-    rw [toMul_ofMul, ← pullback_comp, hrestrict, ← pullbackHom_apply]
-    exact MonoidHom.mem_ker.mp hb)
+  let b := hD.boundaryOrthogonalPullback hgenus hE hgenus' f g hcomm a.toAdd
+  have ha : Additive.ofMul (pullback f a.toAdd.val.toMul) ∈ K[X,D] := by
+    rw [← hD.coe_boundaryOrthogonalPullback hgenus hE hgenus' f g hcomm a.toAdd]
+    exact b.property
   refine ⟨ha, ?_⟩
-  have hb' : hD.restrictBoundaryOrthogonal hgenus
+  let c := hE.restrictBoundaryOrthogonal hgenus' a
+  have hc := g.pullback_mem_ker_pullback_blowupToBase_singularLocus (k := k) c
+  have hres : hD.restrictBoundaryOrthogonal hgenus
       (Multiplicative.ofAdd ⟨Additive.ofMul (pullback f a.toAdd.val.toMul), ha⟩) =
-        ⟨pullback g.hom b.val, hb⟩ :=
-    Subtype.ext ((restrictBoundaryOrthogonal_apply ..).trans hrestrict)
-  rw [boundaryPeriod_apply, hb', boundaryPeriod_apply]
-  exact g.nodalPicardCycleMulEquiv_pullback hw hw' swap horder b
+        ⟨pullback g.hom c.val, hc⟩ := by
+    apply Subtype.ext
+    simp only [restrictBoundaryOrthogonal_apply, toAdd_ofAdd, c, toMul_ofMul, pullback_comp,
+      hcomm]
+  rw [boundaryPeriod_apply, hres, boundaryPeriod_apply]
+  exact g.nodalPicardCycleMulEquiv_pullback hw hw' swap horder c
 
 end Pullback
 

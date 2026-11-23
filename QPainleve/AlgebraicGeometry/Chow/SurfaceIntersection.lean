@@ -9,9 +9,9 @@ public import TauCeti.AlgebraicGeometry.Chow.SurfaceIntersection
 public import TauCeti.AlgebraicGeometry.IntersectionNumber.Basic
 public import TauCeti.AlgebraicGeometry.IdealSheaf.Over
 public import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.ProjectiveOver
-public import Mathlib.LinearAlgebra.BilinearForm.Properties
+public import Mathlib.LinearAlgebra.BilinearForm.Orthogonal
 public import QPainleve.AlgebraicGeometry.EffectiveCartierDivisor.ClosedImmersion
-public import TauCeti.AlgebraicGeometry.CartierDivisor.Excision
+public import QPainleve.AlgebraicGeometry.CartierDivisor.Excision
 public import QPainleve.AlgebraicGeometry.Morphisms.Smooth.Factorial
 import TauCeti.AlgebraicGeometry.Curves.Normalization
 import TauCeti.AlgebraicGeometry.LineBundle.BaseChange
@@ -27,6 +27,7 @@ The surface intersection pairing with the class of a Cartier curve is the degree
 of the restricted line bundle. Twisting by the curve changes the pairing by that
 same degree, independently of the starting twist. Distinct prime divisors meet
 nonnegatively, and intersection with a Weil divisor class is the sum over its components.
+The prime curves supported on a boundary ideal define an orthogonal sublattice.
 
 ## References
 
@@ -327,3 +328,33 @@ public theorem intersectionBilinForm_apply (x y : Additive (LineBundleClass X)) 
 end SmoothSurface
 
 end TauCeti.AlgebraicGeometry.Chow
+
+namespace AlgebraicGeometry.Scheme.IdealSheafData
+
+variable {X : Scheme.{u}} [IsIntegral X]
+
+/-- The Picard sublattice orthogonal to the prime curves in the support of a boundary
+ideal on a smooth integral projective surface. -/
+public noncomputable def boundaryOrthogonal
+    (D : X.IdealSheafData) (k : Type u) [Field k] [Infinite k]
+    [X.Over (Spec (.of k))] [X.IsProjectiveOver k]
+    [SmoothOfRelativeDimension 2 (X ↘ Spec (.of k))] :
+    Submodule ℤ (Additive (LineBundleClass X)) :=
+  letI := isNoetherian_of_finiteType (X ↘ Spec (.of k))
+  letI := (X ↘ Spec (.of k)).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two
+  (Chow.intersectionBilinForm k X).orthogonal
+    (Scheme.Opens.primeDivisorSpanCompl D.support.compl)
+
+/-- The boundary orthogonal is computed using the intersection form and the span of the
+prime divisors in the complement of the boundary open. -/
+public theorem boundaryOrthogonal_def
+    (D : X.IdealSheafData) (k : Type u) [Field k] [Infinite k]
+    [X.Over (Spec (.of k))] [X.IsProjectiveOver k]
+    [SmoothOfRelativeDimension 2 (X ↘ Spec (.of k))] :
+    letI := isNoetherian_of_finiteType (X ↘ Spec (.of k))
+    letI := (X ↘ Spec (.of k)).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two
+    D.boundaryOrthogonal k = (Chow.intersectionBilinForm k X).orthogonal
+      (Scheme.Opens.primeDivisorSpanCompl D.support.compl) :=
+  (rfl)
+
+end AlgebraicGeometry.Scheme.IdealSheafData

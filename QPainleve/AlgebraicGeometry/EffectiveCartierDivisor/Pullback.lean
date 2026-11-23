@@ -24,7 +24,7 @@ pullback used when comparing blowups under modifications away from their centers
 
 public section
 
-open CategoryTheory TauCeti.AlgebraicGeometry
+open CategoryTheory TopologicalSpace TauCeti.AlgebraicGeometry
 
 namespace AlgebraicGeometry.Scheme.IdealSheafData
 
@@ -60,5 +60,18 @@ theorem IsEffectiveCartier.pullback_mk_toInvertibleSheaf_eq_one_of_comap_eq_top
   rw [hI.pullback_mk_toInvertibleSheaf (hf.symm ▸ isEffectiveCartier_top X),
     LineBundleClass.mk_toInvertibleSheaf_congr _ (isEffectiveCartier_top X) hf,
     LineBundleClass.mk_toInvertibleSheaf_top]
+
+/-- The divisor class of an effective Cartier divisor restricts to the trivial class on
+the closed subscheme defined by an ideal with disjoint support. -/
+theorem IsEffectiveCartier.pullback_effectiveCartierClass_eq_one_of_disjoint
+    {X : Scheme.{u}} {I J : X.IdealSheafData} (hI : I.IsEffectiveCartier)
+    (h : Disjoint (J.support : Set X) (I.support : Set X)) :
+    LineBundleClass.pullback J.subschemeι (LineBundleClass.mk hI.toInvertibleSheaf)⁻¹ = 1 := by
+  have hcomap : I.comap J.subschemeι = ⊤ := by
+    apply (I.comap_eq_top_iff _).mpr
+    ext x
+    simpa using Set.disjoint_left.mp h (J.range_subschemeι.le (Set.mem_range_self x))
+  rw [LineBundleClass.pullback_inv, hI.pullback_mk_toInvertibleSheaf_eq_one_of_comap_eq_top hcomap,
+    inv_one]
 
 end AlgebraicGeometry.Scheme.IdealSheafData
