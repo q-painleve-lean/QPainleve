@@ -224,38 +224,36 @@ theorem finrank_cohomology_one_pointBlowup_exceptional_quotient
     rw [e.finrank_eq]
     omega
 
-variable [Infinite k] [X.IsProjectiveOver k]
-
-/-- All cohomology of an exceptional twist of a pulled-back line bundle on the blowup of
-a projective surface at a rational regular point is finite-dimensional, and degrees above
-two vanish. This applies to both positive and negative twists. -/
-theorem pointBlowup_exceptional_twist_cohomology
+/-- Finiteness and vanishing above degree two for a line bundle pass to every exceptional
+twist of its pullback under the blowup of a rational regular point of local dimension two. -/
+theorem pointBlowup_exceptional_twist_cohomology_of_cohomology [IsLocallyNoetherian X]
     (hp : IsClosed ({p} : Set X)) [IsRegularLocalRing (X.presheaf.stalk p)]
     (hdim : ringKrullDim (X.presheaf.stalk p) = 2)
     (hrat : IsIso (X.fromSpecResidueField p ≫ (X ↘ Spec (.of k))))
-    (hX : topologicalKrullDim X ≤ 2) (a : LineBundleClass X) (m : ℤ)
-    (M : InvertibleSheaf Y) (hM : LineBundleClass.mk M = twist[a, m]) (q : ℕ) :
+    (L : InvertibleSheaf X)
+    (hL : ∀ q, FiniteDimensional k (Cohomology L.obj q) ∧
+      (2 < q → Subsingleton (Cohomology L.obj q)))
+    (m : ℤ) (M : InvertibleSheaf Y) (hM : LineBundleClass.mk M = twist[LineBundleClass.mk L, m])
+    (q : ℕ) :
     let : Scheme.Over Y (Spec (.of k)) := ⟨π ≫ X ↘ Spec (.of k)⟩
     FiniteDimensional k (Cohomology M.obj q) ∧ (2 < q → Subsingleton (Cohomology M.obj q)) := by
+  let a := LineBundleClass.mk L
   suffices ∀ (B : InvertibleSheaf Y), LineBundleClass.mk B = twist[a, m] →
       ∀ q, FiniteDimensional k (Cohomology B.obj q) ∧
         (2 < q → Subsingleton (Cohomology B.obj q)) from this M hM q
   clear M hM q
-  have : IsNoetherian X := isNoetherian_of_finiteType (X ↘ Spec (.of k))
   induction m using Int.induction_on with
   | zero =>
       intro B hB q
-      obtain ⟨L, rfl⟩ := LineBundleClass.mk_surjective a
       have hclass : LineBundleClass.mk B =
           LineBundleClass.mk ((InvertibleSheaf.pullback π).obj L) := by
-        simpa only [neg_zero, zpow_zero, mul_one, LineBundleClass.pullback_mk] using hB
+        simpa only [a, neg_zero, zpow_zero, mul_one, LineBundleClass.pullback_mk] using hB
       obtain ⟨e⟩ := LineBundleClass.mk_eq_mk_iff.mp hclass
       obtain ⟨c⟩ := nonempty_cohomologyLinearEquiv_pointBlowup_pullback p k hp hdim L q
       let d := c.trans (cohomologyBaseLinearEquivOfIso k e.symm q)
-      have := moduleFinite_cohomology_of_isProjectiveOver k L.obj q
+      have := (hL q).1
       refine ⟨Module.Finite.equiv d, fun hq ↦ ?_⟩
-      have := subsingleton_cohomology_of_projective_dim_lt (k := k) L.obj
-        (hX.trans_lt (by exact_mod_cast hq))
+      have := (hL q).2 hq
       exact d.surjective.subsingleton
   | succ m ih =>
       intro B hB
@@ -267,22 +265,26 @@ theorem pointBlowup_exceptional_twist_cohomology
       obtain ⟨B, hB⟩ := LineBundleClass.mk_surjective (twist[a, -(m : ℤ)])
       exact (pointBlowup_exceptional_twist_cohomology_step p k hp hdim hrat a _ hA hB).mpr (ih B hB)
 
-/-- The Euler characteristic changes by `1 - m` between the `(m - 1)E` and `mE` twists.
-The map between the twists is the one induced by the ideal of the actual exceptional divisor. -/
-theorem eulerCharBelow_pointBlowup_exceptional_twist_sub_one
+private theorem eulerCharBelow_pointBlowup_exceptional_twist_sub_one_of_cohomology
+    [IsLocallyNoetherian X]
     (hp : IsClosed ({p} : Set X)) [IsRegularLocalRing (X.presheaf.stalk p)]
     (hdim : ringKrullDim (X.presheaf.stalk p) = 2)
     (hrat : IsIso (X.fromSpecResidueField p ≫ (X ↘ Spec (.of k))))
-    (hX : topologicalKrullDim X ≤ 2) (a : LineBundleClass X) (m : ℤ) :
+    (A : InvertibleSheaf X)
+    (hA : ∀ q, FiniteDimensional k (Cohomology A.obj q) ∧
+      (2 < q → Subsingleton (Cohomology A.obj q))) (m : ℤ) :
     let : Scheme.Over Y (Spec (.of k)) := ⟨π ≫ X ↘ Spec (.of k)⟩
-    LineBundleClass.eulerCharBelow k (twist[a, m]) 3 =
-      LineBundleClass.eulerCharBelow k (twist[a, m - 1]) 3 + (1 - m) := by
+    LineBundleClass.eulerCharBelow k (twist[LineBundleClass.mk A, m]) 3 =
+      LineBundleClass.eulerCharBelow k (twist[LineBundleClass.mk A, m - 1]) 3 + (1 - m) := by
+  let a := LineBundleClass.mk A
   obtain ⟨L, hL⟩ := LineBundleClass.mk_surjective (twist[a, m - 1])
   obtain ⟨M, hM⟩ := LineBundleClass.mk_surjective (twist[a, m])
   obtain ⟨e₁⟩ := exists_iso_tensor_exceptional_ideal_pointBlowup_twist p a m hL hM
   let e₂ := ρ_ M.obj
-  have h₁ q := pointBlowup_exceptional_twist_cohomology p k hp hdim hrat hX a (m - 1) L hL q
-  have h₂ q := pointBlowup_exceptional_twist_cohomology p k hp hdim hrat hX a m M hM q
+  have h₁ q := pointBlowup_exceptional_twist_cohomology_of_cohomology
+    p k hp hdim hrat A hA (m - 1) L hL q
+  have h₂ q := pointBlowup_exceptional_twist_cohomology_of_cohomology
+    p k hp hdim hrat A hA m M hM q
   have := (h₁ 3).2 (by decide)
   have h := eulerCharBelow_eq_add k ((E).shortExact_tensor_toPushforwardSubscheme M.obj) 3
     (fun q _ _ ↦ (finiteDimensional_cohomology_congr k e₁ q).mp (h₁ q).1)
@@ -298,24 +300,25 @@ theorem eulerCharBelow_pointBlowup_exceptional_twist_sub_one
     eulerCharBelow_pointBlowup_exceptional_quotient p k hp hdim hrat a m M hM] at h
   exact h
 
-/-- On the blowup of a projective surface at a rational regular point, the Euler characteristic
-of `π*L(mE)` is `χ(L) + m(1-m)/2`, for every integer `m`. -/
-theorem eulerCharBelow_pointBlowup_exceptional_twist
+/-- On a blowup at a rational regular point of local dimension two, twice the change
+in Euler characteristic for the exceptional twist by `mE` is `m(1-m)`.
+The base line bundle must have finite cohomology vanishing above degree two. -/
+theorem two_mul_eulerCharBelow_sub_pointBlowup_exceptional_twist [IsLocallyNoetherian X]
     (hp : IsClosed ({p} : Set X)) [IsRegularLocalRing (X.presheaf.stalk p)]
     (hdim : ringKrullDim (X.presheaf.stalk p) = 2)
     (hrat : IsIso (X.fromSpecResidueField p ≫ (X ↘ Spec (.of k))))
-    (hX : topologicalKrullDim X ≤ 2) (a : LineBundleClass X) (m : ℤ) :
+    (L : InvertibleSheaf X)
+    (hL : ∀ q, FiniteDimensional k (Cohomology L.obj q) ∧
+      (2 < q → Subsingleton (Cohomology L.obj q))) (m : ℤ) :
     let : Scheme.Over Y (Spec (.of k)) := ⟨π ≫ X ↘ Spec (.of k)⟩
-    LineBundleClass.eulerCharBelow k (twist[a, m]) 3 =
-      LineBundleClass.eulerCharBelow k a 3 + m * (1 - m) / 2 := by
+    2 * (LineBundleClass.eulerCharBelow k (twist[LineBundleClass.mk L, m]) 3 -
+      LineBundleClass.eulerCharBelow k (LineBundleClass.mk L) 3) = m * (1 - m) := by
+  let a := LineBundleClass.mk L
   let χ (t : ℤ) := LineBundleClass.eulerCharBelow k (twist[a, t]) 3
   let χ₀ := LineBundleClass.eulerCharBelow k a 3
-  suffices h : 2 * (χ m - χ₀) = m * (1 - m) by
-    have heq : χ m = χ₀ + m * (1 - m) / 2 := by omega
-    exact heq
-  have : IsNoetherian X := isNoetherian_of_finiteType (X ↘ Spec (.of k))
+  suffices h : 2 * (χ m - χ₀) = m * (1 - m) from h
   have hstep t : χ t = χ (t - 1) + (1 - t) :=
-    eulerCharBelow_pointBlowup_exceptional_twist_sub_one p k hp hdim hrat hX a t
+    eulerCharBelow_pointBlowup_exceptional_twist_sub_one_of_cohomology p k hp hdim hrat L hL t
   have hpoly (t : ℤ) : t * (1 - t) = (t - 1) * (1 - (t - 1)) + 2 * (1 - t) := by ring
   induction m using Int.induction_on with
   | zero =>
@@ -332,6 +335,32 @@ theorem eulerCharBelow_pointBlowup_exceptional_twist
       have h := hstep (-(m : ℤ))
       have h' := hpoly (-(m : ℤ))
       omega
+
+variable [Infinite k] [X.IsProjectiveOver k]
+
+private theorem lineBundle_cohomology_of_projective_surface (hX : topologicalKrullDim X ≤ 2)
+    (L : InvertibleSheaf X) (q : ℕ) :
+    FiniteDimensional k (Cohomology L.obj q) ∧ (2 < q → Subsingleton (Cohomology L.obj q)) :=
+  ⟨moduleFinite_cohomology_of_isProjectiveOver k L.obj q, fun hq ↦
+    subsingleton_cohomology_of_projective_dim_lt (k := k) L.obj
+      (hX.trans_lt (by exact_mod_cast hq))⟩
+
+/-- On the blowup of a projective surface at a rational regular point, the Euler characteristic
+of `π*L(mE)` is `χ(L) + m(1-m)/2`, for every integer `m`. -/
+theorem eulerCharBelow_pointBlowup_exceptional_twist
+    (hp : IsClosed ({p} : Set X)) [IsRegularLocalRing (X.presheaf.stalk p)]
+    (hdim : ringKrullDim (X.presheaf.stalk p) = 2)
+    (hrat : IsIso (X.fromSpecResidueField p ≫ (X ↘ Spec (.of k))))
+    (hX : topologicalKrullDim X ≤ 2) (a : LineBundleClass X) (m : ℤ) :
+    let : Scheme.Over Y (Spec (.of k)) := ⟨π ≫ X ↘ Spec (.of k)⟩
+    LineBundleClass.eulerCharBelow k (twist[a, m]) 3 =
+      LineBundleClass.eulerCharBelow k a 3 + m * (1 - m) / 2 := by
+  have : IsNoetherian X := isNoetherian_of_finiteType (X ↘ Spec (.of k))
+  obtain ⟨L, rfl⟩ := LineBundleClass.mk_surjective a
+  have h := two_mul_eulerCharBelow_sub_pointBlowup_exceptional_twist
+    p k hp hdim hrat L (lineBundle_cohomology_of_projective_surface k hX L) m
+  dsimp only at h ⊢
+  omega
 
 omit [Infinite k] in
 /-- The exceptional twist formula for the blowup of any closed point on a smooth projective
