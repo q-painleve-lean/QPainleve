@@ -503,6 +503,19 @@ theorem binomialCenterOnBoundary_comp_subschemeι (hdim : Module.finrank ℤ N =
     orbitToRayChart, ← Spec.map_comp, binomialCenter, binomialCenterEval]
   rfl
 
+/-- Negating the orbit character and inverting the parameter leaves the section of the
+reduced boundary unchanged. -/
+theorem binomialCenterOnBoundary_neg_inv (hdim : Module.finrank ℤ N = 2)
+    (hm : m v = 0) (hs : Function.Surjective m) (c : ℂˣ) :
+    ρ.binomialCenterOnBoundary hdim (m := -m) (by simp [hm])
+        (neg_involutive.surjective.comp hs) c⁻¹ =
+      ρ.binomialCenterOnBoundary hdim hm hs c := by
+  apply (cancel_mono (Φ.boundaryIdeal ⟨ρ.toCone⟩).subschemeι).mp
+  exact (ρ.binomialCenterOnBoundary_comp_subschemeι (m := -m) hdim (by simp [hm])
+    (neg_involutive.surjective.comp hs) c⁻¹).trans
+    ((ρ.binomialCenter_neg_inv hdim hm hs c).trans
+      (ρ.binomialCenterOnBoundary_comp_subschemeι hdim hm hs c).symm)
+
 /-- The binomial point is a reduced closed point of the boundary. -/
 instance isClosedImmersion_binomialCenterOnBoundary (hdim : Module.finrank ℤ N = 2)
     (hm : m v = 0) (hprim : Function.Surjective m) (c : ℂˣ) :
