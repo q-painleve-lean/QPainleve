@@ -67,6 +67,22 @@ instance Ray.isClosedImmersion_boundaryComponentι :
     infer_instance
   exact IsClosedImmersion.of_comp_isClosedImmersion _ (D).subschemeι
 
+/-- The closed ray components cover the reduced toric boundary. -/
+theorem iUnion_range_boundaryComponentι :
+    ⋃ ρ : Φ.Ray, Set.range (ρ.boundaryComponentι hΦ) = Set.univ := by
+  apply Set.eq_univ_of_forall
+  intro x
+  have hx : (D).subschemeι x ∈ ((D).support : Set Φ.algebraicRealization) := by
+    rw [← range_subschemeι]
+    exact Set.mem_range_self _
+  rw [Φ.support_boundaryIdeal_eq_iUnion_closure hΦ, Set.mem_iUnion] at hx
+  obtain ⟨ρ, hρ⟩ := hx
+  rw [← Φ.coe_support_rayBoundaryIdeal hΦ, ← range_subschemeι] at hρ
+  obtain ⟨y, hy⟩ := hρ
+  apply Set.mem_iUnion.mpr
+  refine ⟨ρ, y, (D).subschemeι.isClosedEmbedding.injective ?_⟩
+  simpa only [← Scheme.Hom.comp_apply, Ray.boundaryComponentι_subschemeι] using hy
+
 variable (hdim : Module.finrank ℤ N = 2) {m : N →+ ℤ}
   (hm : m ρ.primitiveGenerator = 0) (hprim : Function.Surjective m)
 
