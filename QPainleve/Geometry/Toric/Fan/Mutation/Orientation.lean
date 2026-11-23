@@ -43,42 +43,6 @@ local notation "m" => (LinearMap.toAddMonoidHom (b.detDualEquiv v))
 local notation "h₀" => Φ.detCharacter_nonneg_or_nonpos b hv hp hn
 local notation "h₁" => Φ.mutationDetCharacter_nonneg_or_nonpos b hv hp hn
 
-/-- Mutation preserves the determinant of the primitive generators of two rays in
-a common cone. In particular it preserves the positive order of adjacent rays. -/
-theorem detDualEquiv_mutationFanRayEquiv_of_le {σ : Φ.cones} {ρ τ : Φ.Ray}
-    (hρ : ρ.toCone ≤ σ) (hτ : τ.toCone ≤ σ) :
-    b.detDualEquiv (r ρ).primitiveGenerator (r τ).primitiveGenerator =
-      b.detDualEquiv ρ.primitiveGenerator τ.primitiveGenerator := by
-  let u := ρ.primitiveGenerator
-  let w := τ.primitiveGenerator
-  have eq (a : N) : b.det ![a, v] = -b.detDualEquiv v a := by
-    rw [← b.detDualEquiv_apply, b.detDualEquiv_swap]
-  simp only [mutationFanRayEquiv_primitiveGenerator, eq]
-  rcases h₀ σ with h | h
-  · have hu := h _ (hρ ρ.primitiveGenerator_mem)
-    have hw := h _ (hτ τ.primitiveGenerator_mem)
-    rw [IsIntegralLattice.realCharacter_apply] at hu hw
-    have hu' : 0 ≤ b.detDualEquiv v ρ.primitiveGenerator := by exact_mod_cast hu
-    have hw' : 0 ≤ b.detDualEquiv v τ.primitiveGenerator := by exact_mod_cast hw
-    simp only [max_eq_right (neg_nonpos.mpr hu'), max_eq_right (neg_nonpos.mpr hw'),
-      zero_smul, add_zero]
-  · have hu := h _ (hρ ρ.primitiveGenerator_mem)
-    have hw := h _ (hτ τ.primitiveGenerator_mem)
-    rw [IsIntegralLattice.realCharacter_apply] at hu hw
-    rw [max_eq_left (neg_nonneg.mpr (by exact_mod_cast hu)),
-      max_eq_left (neg_nonneg.mpr (by exact_mod_cast hw))]
-    let T := LinearEquiv.transvection (f := -b.detDualEquiv v) (v := v)
-      (by simp only [LinearMap.neg_apply, Basis.detDualEquiv_self, neg_zero])
-    have hT (x : N) : T x = x + (-b.detDualEquiv v x) • v := (rfl)
-    have hcomp : T.toLinearMap ∘ ![u, w] = ![T u, T w] := by
-      ext j
-      fin_cases j <;> rfl
-    have hdet : LinearMap.det T.toLinearMap = 1 := by
-      rw [← LinearEquiv.coe_det]
-      simp [T]
-    simpa only [Basis.detDualEquiv_apply, hcomp, hT, hdet, one_mul, u, w]
-      using b.det_comp T.toLinearMap ![u, w]
-
 section Complement
 
 variable (c : ℂˣ)
