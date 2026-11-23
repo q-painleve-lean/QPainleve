@@ -66,14 +66,8 @@ theorem rayBoundaryPoint_mem_mutationComplement (hv : v ≠ 0)
   have hy : y ∈ PrimeSpectrum.basicOpen (Φ.mutationChartBinomial side (c : ℂ) q) := hp
   rw [← Φ.additiveAffineToricChartι_preimage_mutationComplement b σ side hs (c : ℂ) h]
     at hy
-  have hcomp : Spec.map (CommRingCat.ofHom A.toAlgHom.toRingHom) ≫
-      Φ.additiveAffineToricChartι σ = Φ.affineToricChartι σ := by
-    rw [additiveAffineToricChartι_def, ← Spec.map_comp_assoc]
-    have hA : CommRingCat.ofHom A.symm.toRingEquiv.toRingHom ≫
-        CommRingCat.ofHom A.toAlgHom.toRingHom = 𝟙 _ :=
-      A.toRingEquiv.toCommRingCatIso.inv_hom_id
-    rw [hA, Spec.map_id, Category.id_comp]
-  rw [coe_rayBoundaryPoint, ← hcomp, Scheme.Hom.comp_apply]
+  rw [coe_rayBoundaryPoint, ← Φ.specMap_toMultiplicativeAlgEquiv_comp_additiveAffineToricChartι σ,
+    Scheme.Hom.comp_apply]
   exact (Scheme.Hom.mem_preimage _).mp hy
 
 variable (hv : v ≠ 0) (hpos : PointedCone.hull ℝ {i v} ∈ Φ.cones)
