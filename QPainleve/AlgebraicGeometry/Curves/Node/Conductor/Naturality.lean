@@ -31,6 +31,46 @@ universe u
 
 namespace CategoryTheory.Iso
 
+section PicardKernelPullback
+
+variable {k : Type u} [CommRing k] {X Y : Scheme.{u}}
+  [X.Over (Spec (.of k))] [Y.Over (Spec (.of k))] (e : X ≅ Y) [e.hom.IsOver (Spec (.of k))]
+
+local notation "ν[" C "]" => Scheme.IdealSheafData.blowupToBase (Scheme.singularLocus k C)
+
+variable [Flat (X ↘ Spec (.of k))] [LocallyOfFinitePresentation (X ↘ Spec (.of k))]
+  [PureRelativeDimension 1 (X ↘ Spec (.of k))]
+  [Flat (Y ↘ Spec (.of k))] [LocallyOfFinitePresentation (Y ↘ Spec (.of k))]
+  [PureRelativeDimension 1 (Y ↘ Spec (.of k))]
+
+/-- An isomorphism of curves pulls a Picard class trivialized by the singular-locus
+blowup back to a class trivialized by the corresponding blowup. -/
+theorem pullback_mem_ker_pullback_blowupToBase_singularLocus
+    (a : (LineBundleClass.pullbackHom (ν[Y])).ker) :
+    LineBundleClass.pullback e.hom a.val ∈ (LineBundleClass.pullbackHom (ν[X])).ker := by
+  have ha : LineBundleClass.pullback (ν[Y]) a.val = 1 := by
+    simpa only [LineBundleClass.pullbackHom_apply] using MonoidHom.mem_ker.mp a.property
+  rw [MonoidHom.mem_ker, LineBundleClass.pullbackHom_apply, LineBundleClass.pullback_comp,
+    ← e.singularLocusBlowupIso_hom_blowupToBase (R := k), ← LineBundleClass.pullback_comp, ha,
+    LineBundleClass.pullback_one]
+
+/-- Pullback along a curve isomorphism as a homomorphism of the Picard kernels
+of the singular-locus blowups. -/
+def nodalPicardKernelPullback :
+    (LineBundleClass.pullbackHom (ν[Y])).ker →* (LineBundleClass.pullbackHom (ν[X])).ker :=
+  ((LineBundleClass.pullbackHom e.hom).comp (Subgroup.subtype _)).codRestrict _ fun a ↦ by
+    simpa only [MonoidHom.comp_apply, Subgroup.subtype_apply, LineBundleClass.pullbackHom_apply]
+      using e.pullback_mem_ker_pullback_blowupToBase_singularLocus (k := k) a
+
+/-- The underlying Picard class is the ordinary pullback. -/
+@[simp]
+theorem coe_nodalPicardKernelPullback (a : (LineBundleClass.pullbackHom (ν[Y])).ker) :
+    (e.nodalPicardKernelPullback (k := k) a).val = LineBundleClass.pullback e.hom a.val := by
+  simp only [nodalPicardKernelPullback, MonoidHom.codRestrict_apply, MonoidHom.comp_apply,
+    Subgroup.subtype_apply, LineBundleClass.pullbackHom_apply]
+
+end PicardKernelPullback
+
 variable {k : Type u} [Field k] {X Y : Scheme.{u}}
   [X.Over (Spec (.of k))] [Y.Over (Spec (.of k))] (e : X ≅ Y) [e.hom.IsOver (Spec (.of k))]
 

@@ -24,7 +24,7 @@ pullback used when comparing blowups under modifications away from their centers
 
 public section
 
-open CategoryTheory TauCeti.AlgebraicGeometry
+open CategoryTheory TopologicalSpace TauCeti.AlgebraicGeometry
 
 namespace AlgebraicGeometry.Scheme.IdealSheafData
 
@@ -51,15 +51,27 @@ theorem IsEffectiveCartier.comap_of_support_subset_isoLocus {X Y : Scheme.{u}}
     · exact isEffectiveCartier_top _
     · rw [Scheme.Hom.comp_preimage, Scheme.Opens.ι_preimage_self]
 
-/-- The ideal line bundle of an effective Cartier divisor restricts to the trivial
-class along a morphism on which the divisor pulls back to the empty divisor. -/
+/-- The ideal class of an effective Cartier divisor pulls back to the trivial class
+along a morphism whose image avoids its support. -/
 theorem IsEffectiveCartier.pullback_mk_toInvertibleSheaf_eq_one_of_comap_eq_top
-    {X Y : Scheme.{u}} {I : Y.IdealSheafData} (hI : I.IsEffectiveCartier) (f : X ⟶ Y)
-    (h : I.comap f = ⊤) :
+    {X Y : Scheme.{u}} {I : Y.IdealSheafData} (hI : I.IsEffectiveCartier) {f : X ⟶ Y}
+    (hf : I.comap f = ⊤) :
     LineBundleClass.pullback f (LineBundleClass.mk hI.toInvertibleSheaf) = 1 := by
-  let htop := isEffectiveCartier_top X
-  rw [hI.pullback_mk_toInvertibleSheaf (h.symm ▸ htop),
-    LineBundleClass.mk_toInvertibleSheaf_congr _ htop h,
+  rw [hI.pullback_mk_toInvertibleSheaf (hf.symm ▸ isEffectiveCartier_top X),
+    LineBundleClass.mk_toInvertibleSheaf_congr _ (isEffectiveCartier_top X) hf,
     LineBundleClass.mk_toInvertibleSheaf_top]
+
+/-- The divisor class of an effective Cartier divisor restricts to the trivial class on
+the closed subscheme defined by an ideal with disjoint support. -/
+theorem IsEffectiveCartier.pullback_effectiveCartierClass_eq_one_of_disjoint
+    {X : Scheme.{u}} {I J : X.IdealSheafData} (hI : I.IsEffectiveCartier)
+    (h : Disjoint (J.support : Set X) (I.support : Set X)) :
+    LineBundleClass.pullback J.subschemeι (LineBundleClass.mk hI.toInvertibleSheaf)⁻¹ = 1 := by
+  have hcomap : I.comap J.subschemeι = ⊤ := by
+    apply (I.comap_eq_top_iff _).mpr
+    ext x
+    simpa using Set.disjoint_left.mp h (J.range_subschemeι.le (Set.mem_range_self x))
+  rw [LineBundleClass.pullback_inv, hI.pullback_mk_toInvertibleSheaf_eq_one_of_comap_eq_top hcomap,
+    inv_one]
 
 end AlgebraicGeometry.Scheme.IdealSheafData

@@ -103,23 +103,25 @@ theorem mem_centre_iff_two_le_coeff_totalTransform [PerfectField k] [IsIntegral 
 
 attribute [local instance] specializationOrder
 
-/-- Two nodal projections from the same model with equal total boundary transforms contract
-the same prime divisors. -/
-theorem exceptional_divisors_eq_of_totalTransform_eq {X' : Scheme.{u}}
+/-- Nodal projections whose total boundary transforms correspond under an
+isomorphism contract the same prime divisors under that isomorphism. -/
+theorem exceptional_divisors_eq_of_totalTransform_eq {X' W : Scheme.{u}}
     {s' : X' ⟶ Spec (.of k)} [SmoothOfRelativeDimension 2 s']
-    {D' : X'.IdealSheafData} {m : ℕ} {U : BlowupTower X' m Y}
+    {D' : X'.IdealSheafData} {m : ℕ} {U : BlowupTower X' m W}
     (hT : IsNodalBoundaryTower D s (𝟙 X) T) (hU : IsNodalBoundaryTower D' s' (𝟙 X') U)
+    (e : Y ≅ W)
     (hD : D.IsEffectiveCartier) (hD' : D'.IsEffectiveCartier)
     (hnodal : AtWorstNodalOfRelativeDimensionOne (D.subschemeι ≫ s))
     (hnodal' : AtWorstNodalOfRelativeDimensionOne (D'.subschemeι ≫ s'))
-    (h : D.comap T.toBase = D'.comap U.toBase) :
-    {x : Y | T.toBase x ∈ T.toBase.centre ∧ coheight x = 1} =
-      {x : Y | U.toBase x ∈ U.toBase.centre ∧ coheight x = 1} := by
-  ext x
-  simp only [Set.mem_ofPred_eq]
-  apply and_congr_left
-  intro hx
-  exact (hT.mem_centre_iff_two_le_stalkOrder hD hnodal ⟨x, hx⟩).trans
-    (h ▸ (hU.mem_centre_iff_two_le_stalkOrder hD' hnodal' ⟨x, hx⟩).symm)
+    (h : D.comap T.toBase = (D'.comap U.toBase).comap e.hom)
+    (x : Y) (hx : coheight x = 1) :
+    T.toBase x ∈ T.toBase.centre ↔ U.toBase (e.hom x) ∈ U.toBase.centre := by
+  have he := e.hom.isoLocus_eq_top_iff.mpr inferInstance
+  have hxe : coheight (e.hom x) = 1 :=
+    (e.hom.coheight_eq_of_apply_mem_isoLocus (x := x) (by simp [he])).trans hx
+  rw [hT.mem_centre_iff_two_le_stalkOrder hD hnodal ⟨x, hx⟩,
+    hU.mem_centre_iff_two_le_stalkOrder hD' hnodal' ⟨e.hom x, hxe⟩]
+  exact Iff.of_eq (congrArg (fun J : Y.IdealSheafData ↦ 2 ≤ J.stalkOrder x) h) |>.trans
+    (by rw [stalkOrder_comap_of_isIso_stalkMap])
 
 end QPainleve.BlowupTower.IsNodalBoundaryTower

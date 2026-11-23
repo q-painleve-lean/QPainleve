@@ -5,17 +5,22 @@ Authors: The QPainleve contributors
 -/
 module
 
+public import QPainleve.LinearAlgebra.Determinant.Dual
+public import TauCeti.Geometry.Toric.Algebraic.DualSemigroup.Basic
 public import TauCeti.Geometry.Toric.Algebraic.Fan.Ray
 public import TauCeti.Geometry.Toric.Algebraic.Fan.Subdivision
 public import TauCeti.Geometry.Toric.Algebraic.Ray.Primitive
 
+import Mathlib.Tactic.FinCases
 import TauCeti.Geometry.Toric.Algebraic.Ray.Generation
 
 /-!
 # Primitive generators of fan rays
 
 Each ray of a fan has a canonical primitive lattice generator, obtained from the
-primitive generator of its own one-dimensional cone. Subdivision preserves these ray cones.
+primitive generator of its own one-dimensional cone. In rank two, a surjective character
+vanishing on the ray generates its annihilator, and the determinant pairing detects primitive
+generators up to sign. Subdivision preserves the ray cones.
 -/
 
 public noncomputable section
@@ -64,6 +69,61 @@ theorem Ray.primitiveGenerator_ne_zero (ρ : Φ.Ray) : ρ.primitiveGenerator ≠
 theorem Ray.primitiveGenerator_mem (ρ : Φ.Ray) : i ρ.primitiveGenerator ∈ ρ.toCone.val := by
   rw [← Ray.toPointedCone_toToricRay Φ ρ ρ.toCone le_rfl]
   exact ρ.isPrimitiveGenerator.mem
+
+/-- A character lies in the dual semigroup of a ray exactly when it pairs nonnegatively
+with the primitive generator. -/
+theorem Ray.mem_rayDualSemigroup_iff (ρ : Φ.Ray) (a : N →+ ℤ) :
+    a ∈ dualSemigroup Φ.lattice ρ.toCone.val ↔ 0 ≤ a ρ.primitiveGenerator := by
+  rw [ρ.toCone_eq_hull_primitiveGenerator, ← Set.image_singleton,
+    mem_dualSemigroup_hull_image, Set.forall_mem_singleton]
+
+/-- In rank two, a surjective character vanishing on a ray generates its integral annihilator. -/
+theorem Ray.exists_zsmul_eq_of_apply_primitiveGenerator_eq_zero (ρ : Φ.Ray)
+    (hdim : Module.finrank ℤ N = 2) {m : N →+ ℤ} (hm : m ρ.primitiveGenerator = 0)
+    (hprim : Function.Surjective m) {a : N →+ ℤ} (ha : a ρ.primitiveGenerator = 0) :
+    ∃ n : ℤ, n • m = a := by
+  let := Φ.lattice.free
+  let := Φ.lattice.finite
+  obtain ⟨k, b, j, hj⟩ := ρ.isPrimitiveGenerator.isPrimitive.exists_basis
+  have hk : k = 2 := by simpa using (Module.finrank_eq_card_basis b).symm.trans hdim
+  subst k
+  let c := b.reindex (Equiv.swap j 0)
+  have hc : c 0 = ρ.primitiveGenerator := by
+    simpa [c, Module.Basis.reindex_apply] using hj
+  have heval (f : N →+ ℤ) (hf : f ρ.primitiveGenerator = 0) (x : N) :
+      f x = c.repr x 1 * f (c 1) := by
+    conv_lhs => rw [← c.sum_repr x]
+    rw [map_sum, Fin.sum_univ_two]
+    simp [hc, hf]
+  obtain ⟨x, hx⟩ := hprim 1
+  have hmul : c.repr x 1 * m (c 1) = 1 := (heval m hm x).symm.trans hx
+  refine ⟨a x, AddMonoidHom.toIntLinearMap_injective (c.ext fun l ↦ ?_)⟩
+  fin_cases l
+  · simp [hc, ha, hm]
+  · change a x * m (c 1) = a (c 1)
+    rw [heval a ha x, mul_right_comm, hmul, one_mul]
+
+/-- A primitive vector with determinant pairing zero against the ray generator is the generator
+or its negative. -/
+theorem Ray.eq_or_eq_neg_of_detCharacter_eq_zero (ρ : Φ.Ray) (b : Module.Basis (Fin 2) ℤ N)
+    {v : N} (hprim : IsPrimitive v) (h : b.detDualEquiv v ρ.primitiveGenerator = 0) :
+    v = ρ.primitiveGenerator ∨ v = -ρ.primitiveGenerator := by
+  let u := ρ.primitiveGenerator
+  obtain ⟨n, hn⟩ := ρ.exists_zsmul_eq_of_apply_primitiveGenerator_eq_zero
+    (by simpa using Module.finrank_eq_card_basis b) (m := (b.detDualEquiv u).toAddMonoidHom)
+    (a := (b.detDualEquiv v).toAddMonoidHom) (b.detDualEquiv_self u)
+    (b.surjective_detDualEquiv_of_isPrimitive ρ.isPrimitiveGenerator.isPrimitive) h
+  have hvn : n • u = v := by
+    apply b.detDualEquiv.injective
+    ext x
+    simpa only [map_zsmul, LinearMap.smul_apply, AddMonoidHom.zsmul_apply,
+      LinearMap.toAddMonoidHom_coe] using DFunLike.congr_fun hn x
+  obtain ⟨f, hf⟩ := isPrimitive_def.mp hprim
+  have hunit : IsUnit n :=
+    isUnit_iff_dvd_one.mpr ⟨f u, by simpa [← hvn] using hf.symm⟩
+  rcases Int.isUnit_iff.mp hunit with hn | hn
+  · exact Or.inl (by simpa [u, hn] using hvn.symm)
+  · exact Or.inr (by simpa [u, hn] using hvn.symm)
 
 /-- Containment of a fan ray in a cone is detected by its primitive generator. -/
 theorem Ray.toCone_le_iff (ρ : Φ.Ray) (σ : Φ.cones) :

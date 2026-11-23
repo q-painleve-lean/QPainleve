@@ -12,10 +12,10 @@ public import QPainleve.Geometry.Toric.Fan.Separated
 public import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.Basic
 import Mathlib.RingTheory.Spectrum.Prime.RingHom
 import QPainleve.Algebra.MonoidAlgebra.Smooth
+import QPainleve.Algebra.Polynomial.Laurent
 import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
 import TauCeti.Algebra.Bialgebra.MonoidAlgebra.Equiv
 import TauCeti.Algebra.MonoidAlgebra.Face
-import TauCeti.Algebra.Polynomial.Laurent.Augmentation
 import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.Section
 import TauCeti.AlgebraicGeometry.IdealSheaf.BaseChange
 import TauCeti.AlgebraicGeometry.IdealSheaf.OfIdealTop
@@ -32,7 +32,7 @@ reduced point. Its ideal in the ray chart includes the ray ideal and the binomia
 This uses the affine orbit description in Fulton, *Introduction to Toric Varieties*, §3.1,
 for the smooth boundary centers of Gross, Hacking and Keel, *Moduli of surfaces with an
 anti-canonical cycle*, Definition 1.2. The scheme structure comes from Tau Ceti's
-`AddSubmonoid.faceRestriction` and `ker_laurentEval`.
+`AddSubmonoid.faceRestriction` and `ker_laurentEval_neg_inv`.
 -/
 
 public noncomputable section
@@ -48,11 +48,6 @@ local notation "S" => dualSemigroup Φ.lattice ρ.toCone.val
 local notation "R" => affineCoordinateRing Φ.lattice ρ.toCone.val
 local notation "v" => ρ.primitiveGenerator
 
-private theorem mem_rayDualSemigroup_iff (a : N →+ ℤ) :
-    a ∈ S ↔ 0 ≤ a v := by
-  rw [ρ.toCone_eq_hull_primitiveGenerator, ← Set.image_singleton,
-    mem_dualSemigroup_hull_image, Set.forall_mem_singleton]
-
 private def rayDualFace : AddSubmonoid S :=
   AddMonoidHom.mker ((AddMonoidHom.eval v).comp (dualSemigroup Φ.lattice ρ.toCone.val).subtype)
 
@@ -65,30 +60,11 @@ private theorem rayDualFace_saturated : (rayDualFace ρ).AddSaturated := by
   have hb0 : (b : N →+ ℤ) v = 0 := by omega
   exact ⟨ha0, hb0⟩
 
-private abbrev unique_rayChartRay : Unique (ToricRay ρ.toCone.val) where
-  default := Ray.toToricRay Φ ρ ρ.toCone le_rfl
-  uniq a := by
-    apply ToricRay.eq_of_toPointedCone_le (Φ.isToricCone ρ.toCone.property).salient
-    rw [Ray.toPointedCone_toToricRay]
-    exact a.val.isFaceOf.le
-
 private theorem isRegularCone_toCone : IsRegularCone i ρ.toCone.val := by
   rw [ρ.toCone_eq_hull_primitiveGenerator]
   apply isRegularCone_hull_singleton Φ.lattice
   rw [Ray.primitiveGenerator_def]
   exact primitiveGenerator_isPrimitive Φ.lattice (Φ.isToricCone ρ.toCone.property) _
-
-private theorem exists_rayChartBasis (hdim : Module.finrank ℤ N = 2) :
-    ∃ b : Module.Basis (ToricRay ρ.toCone.val ⊕ Fin 1) ℤ N,
-      ∀ a, IsPrimitiveGenerator i a (b (Sum.inl a)) := by
-  let := unique_rayChartRay ρ
-  obtain ⟨l, b, hb⟩ := (isRegularCone_toCone ρ).exists_basis_sum
-  have hl : l = 1 := by
-    have h := Module.finrank_eq_card_basis b
-    rw [hdim, Fintype.card_sum, Fintype.card_unique, Fintype.card_fin] at h
-    omega
-  subst l
-  exact ⟨b, hb⟩
 
 variable {m : N →+ ℤ}
 
@@ -108,41 +84,15 @@ private def rayDualFaceHom (hm : m v = 0) : ℤ →+ rayDualFace ρ where
 private theorem bijective_rayDualFaceHom (hdim : Module.finrank ℤ N = 2)
     (hm : m v = 0) (hprim : Function.Surjective m) :
     Function.Bijective (rayDualFaceHom ρ hm) := by
-  let := unique_rayChartRay ρ
-  let r := Ray.toToricRay Φ ρ ρ.toCone le_rfl
-  obtain ⟨b, hb⟩ := exists_rayChartBasis ρ hdim
-  have hleft (a : ToricRay ρ.toCone.val) : b (.inl a) = v := by
-    have ha : a = r := Subsingleton.elim _ _
-    rw [ha, Ray.primitiveGenerator_def]
-    exact (hb r).eq_primitiveGenerator Φ.lattice (Φ.isToricCone ρ.toCone.property)
-  let w := b (.inr 0)
-  have hext (f g : N →+ ℤ) (hf : f v = g v) (hg : f w = g w) : f = g := by
-    apply AddMonoidHom.toIntLinearMap_injective
-    apply b.ext
-    intro j
-    cases j with
-    | inl a => simpa only [AddMonoidHom.coe_toIntLinearMap, hleft] using hf
-    | inr a =>
-      have : a = 0 := Subsingleton.elim _ _
-      simpa only [this, AddMonoidHom.coe_toIntLinearMap] using hg
-  have hinj : Function.Injective (rayDualFaceHom ρ hm) := by
-    intro a b hab
+  constructor
+  · intro a b hab
     obtain ⟨x, hx⟩ := hprim 1
     simpa [rayDualFaceHom, hx] using congrArg (fun f : rayDualFace ρ ↦
       (f.val : N →+ ℤ) x) hab
-  have ha : IsUnit (m w) := by
-    obtain ⟨x, hx⟩ := hprim 1
-    have heq : m x = b.repr x (.inr 0) * m w := by
-      conv_lhs => rw [← b.sum_repr x]
-      rw [map_sum, Fintype.sum_sum_type, Fintype.sum_unique]
-      simp [hleft, hm, w]
-    exact isUnit_iff_dvd_one.mpr ⟨b.repr x (.inr 0), (heq.symm.trans hx).symm.trans (mul_comm _ _)⟩
-  refine ⟨hinj, fun a ↦ ?_⟩
-  obtain ⟨u, hu⟩ := ha
-  refine ⟨(a.val : N →+ ℤ) w * ↑u⁻¹, Subtype.ext (Subtype.ext (hext _ _ ?_ ?_))⟩
-  · exact (by simp [hm] : ((a.val : N →+ ℤ) w * ↑u⁻¹) * m v = 0).trans
-      (show (a.val : N →+ ℤ) v = 0 from a.property).symm
-  · simp [rayDualFaceHom, ← hu, mul_assoc]
+  · intro a
+    obtain ⟨n, hn⟩ := ρ.exists_zsmul_eq_of_apply_primitiveGenerator_eq_zero hdim hm hprim
+      (show (a.val : N →+ ℤ) v = 0 from a.property)
+    exact ⟨n, Subtype.ext (Subtype.ext hn)⟩
 
 private def rayDualFaceEquiv (hdim : Module.finrank ℤ N = 2)
     (hm : m v = 0) (hprim : Function.Surjective m) : ℤ ≃+ rayDualFace ρ :=
@@ -215,14 +165,37 @@ def binomialCenterEval (hdim : Module.finrank ℤ N = 2)
 
 local notation "χ" => MonoidAlgebra.of ℂ (Multiplicative S)
 
+/-- Monomials of positive degree along the ray vanish at a binomial center. -/
+theorem binomialCenterEval_single_eq_zero (hdim : Module.finrank ℤ N = 2)
+    (hm : m v = 0) (hprim : Function.Surjective m) (c : ℂˣ) (a : S) (r : ℂ)
+    (ha : (a : N →+ ℤ) v ≠ 0) :
+    ρ.binomialCenterEval hdim hm hprim c (MonoidAlgebra.single (ofAdd a) r) = 0 := by
+  have hn : a ∉ rayDualFace ρ := ha
+  simp [binomialCenterEval, orbitCoordinateMap, AddSubmonoid.faceRestriction_single_of_notMem, hn]
+
+/-- A monomial of exponent `n • m` evaluates to the corresponding Laurent power. -/
+theorem binomialCenterEval_single_zsmul (hdim : Module.finrank ℤ N = 2)
+    (hm : m v = 0) (hprim : Function.Surjective m) (c : ℂˣ) (n : ℤ) (r : ℂ) :
+    ρ.binomialCenterEval hdim hm hprim c
+      (MonoidAlgebra.single (ofAdd (ρ.chartCharacter (m := n • m) (by simp [hm]))) r) =
+      r * (-(↑c⁻¹ : ℂ)) ^ n := by
+  let a := rayDualFaceEquiv ρ hdim hm hprim n
+  have he : a.val = ρ.chartCharacter (m := n • m) (by simp [hm]) := (rfl)
+  simp only [← he, binomialCenterEval, orbitCoordinateMap, AlgHom.comp_apply,
+    AlgEquiv.coe_toAlgHom, AddMonoidAlgebra.toMultiplicativeAlgEquiv_symm_single, toAdd_ofAdd,
+    AddSubmonoid.faceRestriction_single_mem, AddMonoidAlgebra.domCongr_single]
+  rw [(rayDualFaceEquiv ρ hdim hm hprim).symm_apply_apply]
+  rw [single_eq_C_mul_T, map_mul, laurentEval_T, C_eq_algebraMap]
+  simp
+
 /-- The primitive character evaluates at the unique root of the boundary binomial. -/
 @[simp]
 theorem binomialCenterEval_character (hdim : Module.finrank ℤ N = 2)
     (hm : m v = 0) (hprim : Function.Surjective m) (c : ℂˣ) :
     ρ.binomialCenterEval hdim hm hprim c
       (MonoidAlgebra.single (ofAdd (ρ.chartCharacter hm)) 1) = -(↑c⁻¹ : ℂ) := by
-  rw [binomialCenterEval, AlgHom.comp_apply, ρ.orbitCoordinateMap_character hdim hm hprim]
-  simp
+  simpa only [one_zsmul, zpow_one, one_mul] using
+    ρ.binomialCenterEval_single_zsmul hdim hm hprim c 1 1
 
 /-- The center ideal on the ray chart is generated by the ray ideal and the binomial. -/
 theorem ker_binomialCenterEval (hdim : Module.finrank ℤ N = 2)
@@ -236,19 +209,10 @@ theorem ker_binomialCenterEval (hdim : Module.finrank ℤ N = 2)
     Ideal.span {1 + algebraMap ℂ R (c : ℂ) * χ (ofAdd (ρ.chartCharacter hm))}
   have hJ : Ideal.map f J = RingHom.ker (laurentEval ((-1 : ℂˣ) * c⁻¹)) := by
     dsimp only [J]
-    rw [Ideal.map_span, Set.image_singleton, ker_laurentEval]
+    rw [Ideal.map_span, Set.image_singleton, ker_laurentEval_neg_inv]
     have hf : f (χ (ofAdd (ρ.chartCharacter hm))) = T 1 := by
       simpa only [MonoidAlgebra.of_apply] using ρ.orbitCoordinateMap_character hdim hm hprim
-    rw [map_add, map_one, map_mul, f.commutes, hf,
-      ← C_eq_algebraMap, Ideal.span_singleton_eq_span_singleton]
-    refine ⟨Units.map (C : ℂ →+* LaurentPolynomial ℂ).toMonoidHom c⁻¹, ?_⟩
-    simp only [Units.val_neg, neg_one_mul, Units.coe_map, map_neg]
-    calc
-      (1 + C (c : ℂ) * T 1) * C (↑c⁻¹ : ℂ) =
-          C (↑c⁻¹ : ℂ) + (C (c : ℂ) * C (↑c⁻¹ : ℂ)) * T 1 := by ring
-      _ = T 1 - -C (↑c⁻¹ : ℂ) := by
-        rw [← map_mul, ← Units.val_mul, mul_inv_cancel, Units.val_one, map_one, one_mul]
-        ring
+    rw [map_add, map_one, map_mul, f.commutes, hf, ← C_eq_algebraMap]
   calc
     _ = Ideal.comap f (RingHom.ker (laurentEval ((-1 : ℂˣ) * c⁻¹))) := by
       ext x
@@ -259,6 +223,20 @@ theorem ker_binomialCenterEval (hdim : Module.finrank ℤ N = 2)
     _ = _ := by
       dsimp only [f, J]
       rw [ρ.ker_orbitCoordinateMap, sup_comm]
+
+/-- A character strictly positive on the ray vanishes at every binomial center on that ray. -/
+theorem binomialCenterEval_monomial_of_pos
+    (hdim : Module.finrank ℤ N = 2) (hmρ : m ρ.primitiveGenerator = 0)
+    (hsurj : Function.Surjective m) (c : ℂˣ)
+    (a : dualSemigroup Φ.lattice ρ.toCone.val)
+    (ha : 0 < (a : N →+ ℤ) ρ.primitiveGenerator) :
+    ρ.binomialCenterEval hdim hmρ hsurj c (MonoidAlgebra.of ℂ _ (ofAdd a)) = 0 := by
+  apply RingHom.mem_ker.mp
+  rw [ρ.ker_binomialCenterEval]
+  exact le_sup_left (a := rayIdeal Φ.lattice (Φ.isToricCone ρ.toCone.property)
+    (ρ.toToricRay Φ ρ.toCone le_rfl))
+    (monomial_mem_rayIdeal Φ.lattice (Φ.isToricCone ρ.toCone.property)
+      (ρ.toToricRay Φ ρ.toCone le_rfl) a (by simpa only [Ray.primitiveGenerator_def] using ha))
 
 /-- The boundary point with parameter `c`, included into the entire fan scheme. -/
 def binomialCenter (hdim : Module.finrank ℤ N = 2)
