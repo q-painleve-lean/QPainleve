@@ -11,6 +11,7 @@ public import TauCeti.Geometry.Toric.Algebraic.Examples.ProjectiveLine
 public import TauCeti.Geometry.Toric.Algebraic.Fan.ProjectiveSpace.Proj
 
 import Mathlib.RingTheory.Polynomial.Ideal
+import TauCeti.Algebra.MonoidAlgebra.Cyclic
 import TauCeti.AlgebraicGeometry.IdealSheaf.Extension
 import TauCeti.AlgebraicGeometry.IdealSheaf.OfIdealTop
 import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.LinearAction
@@ -314,6 +315,32 @@ theorem denseTorusι_comp_characterRuling (h₀ : Nonempty Φ.cones) :
     simp [denseTorusDualEquiv_symm_apply]
   rw [hχ]
   rfl
+
+/-- A nonzero character gives a dominant morphism to the projective line. -/
+theorem isDominant_characterRuling [Nonempty Φ.cones] (hm : m ≠ 0) :
+    IsDominant (Φ.characterRuling m h) := by
+  let a := (denseTorusDualEquiv Φ.lattice).symm m
+  have := Function.Injective.isAddTorsionFree (AddMonoidHom.coeFn N ℤ) DFunLike.coe_injective
+  have ha : ¬ IsOfFinOrder (ofAdd m) :=
+    fun hfin ↦ not_isOfFinAddOrder_of_isAddTorsionFree hm (isOfFinOrder_ofAdd_iff.mp hfin)
+  let e := denseTorusCoordinateRingEquiv Φ.lattice
+  let φ := Polynomial.aeval (R := ℂ) (MonoidAlgebra.of ℂ _ (ofAdd a))
+  have he : φ = e.symm.toAlgHom.comp (Polynomial.aeval (MonoidAlgebra.of ℂ _ (ofAdd m))) := by
+    apply Polynomial.algHom_ext
+    simp [φ, e, a, MonoidAlgebra.of_apply]
+  have hinj : Function.Injective φ :=
+    he ▸ e.symm.injective.comp
+      (TauCeti.MonoidAlgebra.injective_aeval_of_not_isOfFinOrder (R := ℂ)
+        (M := Multiplicative (N →+ ℤ)) ha)
+  let g := Spec.map (CommRingCat.ofHom φ.toRingHom)
+  have : IsDominant g := by
+    rw [isDominant_iff]
+    exact (PrimeSpectrum.denseRange_comap_iff_ker_le_nilRadical _).mpr
+      ((RingHom.injective_iff_ker_eq_bot _).mp hinj ▸ bot_le)
+  have hcomp : IsDominant (Φ.denseTorusι inferInstance ≫ Φ.characterRuling m h) := by
+    rw [Φ.denseTorusι_comp_characterRuling m h inferInstance, projectiveLine.polynomialPoint_def]
+    exact (inferInstance : IsDominant (g ≫ projectiveLine.polynomialChartι ℂ 0))
+  exact IsDominant.of_comp (Φ.denseTorusι inferInstance) _
 
 end Fan
 end TauCeti.Toric
