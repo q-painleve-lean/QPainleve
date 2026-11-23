@@ -126,13 +126,25 @@ private def blowupComponentConstants (a : V) :
       rw [heq]
       exact h.comp (ConcreteCategory.bijective_of_isIso (ΓSpecIso (.of k)).inv))
 
-/-- Units on the blowup separating the branches of a proper nodal curve are
-the nonzero constants on its irreducible components. -/
+/-- Global functions on the normalization are constants indexed by its components. -/
+def blowupComponentGlobalSectionsEquiv : Γ(N, ⊤) ≃+* (V → k) :=
+  (globalSectionsEquivOfDisjointCover (X.blowupComponent (K := k))
+    (iSup_blowupComponent X) (pairwise_disjoint_blowupComponent X)).trans
+    (RingEquiv.piCongrRight fun a ↦ (blowupComponentConstants X a).symm)
+
+/-- Pullback of the constant for a component is restriction to that component. -/
+theorem appTop_blowupComponent (r : Γ(N, ⊤)) (a : V) :
+    (X.blowupComponent a).ι.appTop r =
+      Modules.baseRingToGlobalSections k (X.blowupComponent a).toScheme
+        (X.blowupComponentGlobalSectionsEquiv r a) := by
+  simp only [blowupComponentGlobalSectionsEquiv, RingEquiv.trans_apply,
+    RingEquiv.piCongrRight_apply, globalSectionsEquivOfDisjointCover_apply]
+  exact ((blowupComponentConstants X a).apply_symm_apply _).symm
+
+/-- Units on the blowup separating the branches of a proper nodal curve are nonzero constants
+on the normalization components. -/
 def blowupComponentUnits : Γ(N, ⊤)ˣ ≃* (V → kˣ) :=
-  let E := globalSectionsEquivOfDisjointCover (X.blowupComponent (K := k))
-    (iSup_blowupComponent X) (pairwise_disjoint_blowupComponent X)
-  (Units.mapEquiv (E.trans (RingEquiv.piCongrRight
-    fun a ↦ (blowupComponentConstants X a).symm)).toMulEquiv).trans MulEquiv.piUnits
+  (Units.mapEquiv (X.blowupComponentGlobalSectionsEquiv (k := k)).toMulEquiv).trans MulEquiv.piUnits
 
 /-- The tuple of constants restricts to the original global unit on each component. -/
 @[simp]
@@ -140,16 +152,8 @@ theorem blowupComponentUnits_apply (r : Γ(N, ⊤)ˣ) (a : V) :
     Units.map (↑(Modules.baseRingToGlobalSections k (X.blowupComponent a).toScheme))
         (X.blowupComponentUnits (k := k) r a) =
       Units.map ((X.blowupComponent a).ι.appTop.hom :
-        Γ(N, ⊤) →* Γ((X.blowupComponent a).toScheme, ⊤)) r := by
-  apply Units.ext
-  simp only [blowupComponentUnits, MulEquiv.trans_apply, MulEquiv.val_piUnits_apply,
-    Units.coe_map, Units.coe_mapEquiv, RingEquiv.toMulEquiv_eq_coe,
-    RingEquiv.coe_toMulEquiv, RingEquiv.trans_apply, RingEquiv.piCongrRight_apply,
-    globalSectionsEquivOfDisjointCover_apply]
-  -- Use the underlying ring homomorphism for both occurrences of the restriction.
-  change blowupComponentConstants X a ((blowupComponentConstants X a).symm
-    ((X.blowupComponent a).ι.appTop ↑r)) = (X.blowupComponent a).ι.appTop ↑r
-  exact (blowupComponentConstants X a).apply_symm_apply _
+        Γ(N, ⊤) →* Γ((X.blowupComponent a).toScheme, ⊤)) r :=
+  Units.ext (X.appTop_blowupComponent r.val a).symm
 
 local notation "ev[" p "]" =>
   Units.map (RingHom.toMonoidHom (CommRingCat.Hom.hom
@@ -157,13 +161,13 @@ local notation "ev[" p "]" =>
 
 variable {X}
 
-/-- A rational point of a normalization component evaluates a global unit at that component's
-constant. -/
-theorem blowupComponentUnits_eq_evaluation (r : Γ(N, ⊤)ˣ) (a : V)
+/-- Evaluation at a rational point of a normalization component gives the constant
+of a global function on that component. -/
+theorem blowupComponentGlobalSectionsEquiv_eq_evaluation (r : Γ(N, ⊤)) (a : V)
     (p : Spec (.of k) ⟶ N) (hp : p ≫ (X.singularLocus k).blowupToBase ≫
       (X ↘ Spec (.of k)) = 𝟙 _)
     (ha : p (IsLocalRing.closedPoint k) ∈ X.blowupComponent (K := k) a) :
-    X.blowupComponentUnits (k := k) r a = ev[p] r := by
+    X.blowupComponentGlobalSectionsEquiv r a = (p.appTop ≫ (ΓSpecIso (.of k)).hom) r := by
   let U := X.blowupComponent (K := k) a
   have hrange : Set.range p ⊆ Set.range U.ι := by
     rw [U.range_ι]
@@ -173,20 +177,22 @@ theorem blowupComponentUnits_eq_evaluation (r : Γ(N, ⊤)ˣ) (a : V)
   have hq : q ≫ U.ι = p := IsOpenImmersion.lift_fac _ _ _
   have hqOver : q ≫ (U.toScheme ↘ Spec (.of k)) = 𝟙 _ := by
     rw [X.blowupComponent_over (K := k), ← Category.assoc, hq, hp]
-  apply Units.ext
-  have h : (q.appTop ≫ (ΓSpecIso (.of k)).hom)
-      (Modules.baseRingToGlobalSections k U.toScheme ↑(X.blowupComponentUnits r a)) =
-      (q.appTop ≫ (ΓSpecIso (.of k)).hom) (U.ι.appTop ↑r) :=
-    congrArg (fun u : Γ(U.toScheme, ⊤)ˣ ↦ (q.appTop ≫ (ΓSpecIso (.of k)).hom) ↑u)
-      (X.blowupComponentUnits_apply (k := k) r a)
-  have heval : (q.appTop ≫ (ΓSpecIso (.of k)).hom) ((U.ι.appTop) ↑r) =
-      (p.appTop ≫ (ΓSpecIso (.of k)).hom) ↑r := by
-    rw [← ConcreteCategory.comp_apply, ← Category.assoc, ← Hom.comp_appTop, hq]
-  -- Identify evaluation on units with evaluation on their underlying global functions.
-  change (↑(X.blowupComponentUnits r a) : k) = (p.appTop ≫ (ΓSpecIso (.of k)).hom) ↑r
-  rw [← heval, ← h, Modules.baseRingToGlobalSections_apply]
+  rw [← hq, Hom.comp_appTop, Category.assoc, CommRingCat.comp_apply,
+    X.appTop_blowupComponent r a, Modules.baseRingToGlobalSections_apply]
+  change _ = (q.appTop ≫ (ΓSpecIso (.of k)).hom)
+    ((U.toScheme ↘ Spec (.of k)).appTop
+      ((ΓSpecIso (.of k)).inv (X.blowupComponentGlobalSectionsEquiv r a)))
   rw [← ConcreteCategory.comp_apply, ← Category.assoc, ← Hom.comp_appTop, hqOver]
   simp
+
+/-- A rational point of a normalization component evaluates a global unit at that component's
+constant. -/
+theorem blowupComponentUnits_eq_evaluation (r : Γ(N, ⊤)ˣ) (a : V)
+    (p : Spec (.of k) ⟶ N) (hp : p ≫ (X.singularLocus k).blowupToBase ≫
+      (X ↘ Spec (.of k)) = 𝟙 _)
+    (ha : p (IsLocalRing.closedPoint k) ∈ X.blowupComponent (K := k) a) :
+    X.blowupComponentUnits (k := k) r a = ev[p] r :=
+  Units.ext (blowupComponentGlobalSectionsEquiv_eq_evaluation r.val a p hp ha)
 
 /-- The ratio of the two branch values of a conductor rescaling is the ratio of
 the normalization constants on the incident components. The node rescaling cancels. -/

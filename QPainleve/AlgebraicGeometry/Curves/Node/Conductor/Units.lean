@@ -90,6 +90,24 @@ theorem branchSchemeGlobalUnitsEquiv_appTop (a : Γ(N, ⊤)ˣ) (b : B) :
   have : Etale π := X.etale_branchSchemeToSingularLocus hnodal
   exact Hom.finiteEtaleGlobalUnitsEquiv_appTop (π ≫ nodeMap) nodeMap π rfl a b
 
+/-- At a rational point of the branch scheme, the split unit coordinate is its
+pullback to the spectrum of the field. -/
+theorem val_branchSchemeGlobalUnitsEquiv_apply_section (a : Γ(B, ⊤)ˣ)
+    (s : Spec (.of k) ⟶ B) (hs : s ≫ π ≫ nodeMap = 𝟙 _)
+    (x : Spec (.of k)) :
+    (X.branchSchemeGlobalUnitsEquiv hnodal a (s x) : k) =
+      (Scheme.ΓSpecIso (.of k)).hom (s.appTop a.val) := by
+  have : IsFinite nodeMap := X.isFinite_singularLocus_subschemeι_comp hnodal
+  have : Etale nodeMap := X.etale_singularLocus_subschemeι_comp hnodal
+  have : IsFinite π := X.isFinite_branchSchemeToSingularLocus hnodal
+  have : Etale π := X.etale_branchSchemeToSingularLocus hnodal
+  rw [branchSchemeGlobalUnitsEquiv, Hom.val_finiteEtaleGlobalUnitsEquiv_apply,
+    ← Hom.finiteEtaleGlobalSectionsEquiv_appTop (𝟙 _) (π ≫ nodeMap) s hs]
+  let f : Spec (.of k) ⟶ Spec (.of k) := 𝟙 _
+  have hfield := f.finiteEtaleGlobalSectionsEquiv_algebraMap
+    ((Scheme.ΓSpecIso (.of k)).hom (s.appTop a.val)) x
+  simpa [f] using hfield
+
 /-- Pulling back a global unit along a map of branch schemes over the field evaluates it
 at the image branch. -/
 theorem branchSchemeGlobalUnitsEquiv_appTop_of_comp {Y : Scheme.{u}}
