@@ -6,9 +6,9 @@ Authors: The QPainleve contributors
 module
 
 public import QPainleve.SignedClusterModularGroup.SarkisovDegree.ElementaryTransform
+public import QPainleve.SignedClusterModularGroup.SarkisovDegree.Multiplicity
 
 import Mathlib.Algebra.BigOperators.Group.Finset.Piecewise
-import Mathlib.Algebra.Order.BigOperators.Group.Finset
 import Mathlib.Tactic.Linarith
 
 /-!
@@ -42,16 +42,6 @@ theorem ofLex_planeSarkisovBidegree (d M : ℕ) :
     ofLex (planeSarkisovBidegree d M) = (2 * d, M) := (rfl)
 
 variable {ι : Type*} [Fintype ι] {d : ℤ} {m : ι → ℤ}
-
-/-- Each base order is strictly less than the degree of a positive-degree plane system
-satisfying the square homaloidal identity. -/
-theorem baseOrder_lt_degree_of_plane_homaloidal (hd : 0 < d) (j : ι)
-    (hsq : ∑ i, m i ^ 2 = d ^ 2 - 1) : m j < d := by
-  have hbound : m j ^ 2 ≤ ∑ i, m i ^ 2 :=
-    Finset.single_le_sum (fun i _ ↦ sq_nonneg (m i)) (Finset.mem_univ j)
-  rw [hsq] at hbound
-  by_contra! hj
-  nlinarith only [hbound, mul_nonneg (sub_nonneg.mpr hj) (by omega : 0 ≤ m j + d)]
 
 variable [DecidableEq ι]
 
