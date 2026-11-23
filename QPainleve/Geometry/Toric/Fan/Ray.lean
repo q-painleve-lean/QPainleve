@@ -168,6 +168,13 @@ the original cone, so the two affine charts share a coordinate ring. -/
 theorem IsSubdivision.liftRay_toCone (h : Φ.IsSubdivision Ψ) (ρ : Ψ.Ray) :
     (h.liftRay ρ).toCone.val = ρ.toCone.val := (rfl)
 
+/-- The old ray in its own cone chart is unchanged under subdivision. -/
+theorem IsSubdivision.liftRay_toToricRay (h : Φ.IsSubdivision Ψ) (ρ : Ψ.Ray) :
+    (h.liftRay ρ).toToricRay Φ (h.liftRay ρ).toCone le_rfl =
+      ρ.toToricRay Ψ ρ.toCone le_rfl := by
+  apply ToricRay.eq_of_toPointedCone_le (Ψ.isToricCone ρ.toCone.property).salient
+  rw [Ray.toPointedCone_toToricRay, Ray.toPointedCone_toToricRay, liftRay_toCone]
+
 /-- Subdivision preserves the primitive generator of each old ray. -/
 @[simp]
 theorem IsSubdivision.primitiveGenerator_liftRay (h : Φ.IsSubdivision Ψ) (ρ : Ψ.Ray) :

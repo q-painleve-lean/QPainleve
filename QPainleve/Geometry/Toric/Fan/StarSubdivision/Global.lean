@@ -10,7 +10,7 @@ public import TauCeti.Geometry.Toric.Algebraic.Fan.DenseTorus
 public import QPainleve.Geometry.Toric.Fan.Point
 public import TauCeti.AlgebraicGeometry.Blowup.UniversalProperty
 
-import QPainleve.Geometry.Toric.Fan.Subdivision.Basic
+import QPainleve.Geometry.Toric.Fan.DenseTorus
 import QPainleve.Geometry.Toric.Fan.TwoDimensional
 import TauCeti.Geometry.Toric.Algebraic.Fan.SubfanScheme
 import QPainleve.AlgebraicGeometry.Blowup.Affine
@@ -330,9 +330,7 @@ theorem exists_iso_blowup_starSubdivisionAlong :
   obtain ⟨e, he⟩ := exists_iso_blowup_starSubdivisionAlong_over hΦ σ hN hc h₀
   have ht := isEffectiveCartier_comap_distinguishedPointHom_denseTorusι σ hc
   refine ⟨h₀, e, ht, he, fun hn ↦ (I).eq_blowupLift ht ?_⟩
-  rw [Category.assoc, he, FanHom.denseTorusι_comp_algebraicMap]
-  simp only [IsSubdivision.toFanHom_latticeMap, IsSubdivision.toFanHom_realMap,
-    affineToricSchemeMap_id, Category.id_comp]
+  rw [Category.assoc, he, IsSubdivision.denseTorusι_comp_algebraicMap]
 
 end LocalComparison
 
