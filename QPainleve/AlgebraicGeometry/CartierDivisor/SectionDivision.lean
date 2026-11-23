@@ -8,6 +8,7 @@ module
 public import QPainleve.AlgebraicGeometry.CartierDivisor.ZeroDivisor
 import QPainleve.AlgebraicGeometry.IdealSheaf.TensorProduct
 import QPainleve.AlgebraicGeometry.IdealSheaf.Image
+import TauCeti.AlgebraicGeometry.IdealSheaf.Colon
 
 /-!
 # Dividing sections by an effective Cartier divisor
@@ -60,22 +61,6 @@ private def sectionToFunctional :
     Γ(L.obj, ⊤) ≃ ((ihom L.obj).obj (𝟙_ X.Modules) ⟶ 𝟙_ X.Modules) :=
   L.obj.unitHomEquivTop.symm.trans (dualHomUnitEquiv L.obj).symm
 
-private theorem sectionToFunctional_imageIdealSheaf (s : Γ(L.obj, ⊤)) :
-    (sectionToFunctional L s).imageIdealSheaf = L.zeroIdeal s := by
-  let φ := L.dualSectionEquiv.symm s
-  let d : (dual L).obj ≅ (ihom L.obj).obj (𝟙_ X.Modules) := eqToIso (dual_obj L)
-  have hφ : d.inv ≫ φ = sectionToFunctional L s := by
-    apply (dualHomUnitEquiv L.obj).injective
-    apply L.obj.unitHomEquivTop.injective
-    exact (L.dualSectionEquiv_apply _).symm.trans ((L.dualSectionEquiv.apply_symm_apply s).trans
-      ((L.obj.unitHomEquivTop.apply_symm_apply s).symm.trans
-        (congrArg L.obj.unitHomEquivTop ((dualHomUnitEquiv L.obj).apply_symm_apply _).symm)))
-  have h : (d.inv ≫ φ).imageIdealSheaf = φ.imageIdealSheaf :=
-    φ.imageIdealSheaf_comp_iso d.symm
-  rw [← hφ, h]
-  ext V a
-  rw [Hom.imageIdealSheaf_ideal, zeroIdeal_ideal]
-
 /-- A section lies in the effective Cartier twist exactly when its zero ideal is contained
 in the divisor ideal. The section of the twist is unique. -/
 theorem existsUnique_idealTwist_section_iff (hI : I.IsEffectiveCartier)
@@ -86,9 +71,10 @@ theorem existsUnique_idealTwist_section_iff (hI : I.IsEffectiveCartier)
   let e := L.idealTwistIso hI
   let i := L.idealTwistInclusion hI
   let φ := sectionToFunctional L s
+  have hzero : L.zeroIdeal s = φ.imageIdealSheaf := L.zeroIdeal_eq_imageIdealSheaf_evaluation s
   have hs : dualHomUnitEquiv L.obj φ = L.obj.unitHomEquivTop.symm s :=
     (dualHomUnitEquiv L.obj).apply_symm_apply _
-  rw [← sectionToFunctional_imageIdealSheaf, ← exists_tensorLift_iff, hs]
+  rw [hzero, ← exists_tensorLift_iff, hs]
   constructor
   · rintro ⟨t, ht, -⟩
     let τ : 𝟙_ X.Modules ⟶ K.obj := K.obj.unitHomEquivTop.symm t
@@ -179,9 +165,10 @@ theorem zeroIdeal_eq_iff_exists_iso_tensorLift [IsIntegral X]
         e.hom ≫ I.sheafι ▷ L.obj ≫ (λ_ L.obj).hom = L.obj.unitHomEquivTop.symm s := by
   let φ := sectionToFunctional L s
   have : Mono φ := sectionToFunctional_mono L hs
+  have hzero : L.zeroIdeal s = φ.imageIdealSheaf := L.zeroIdeal_eq_imageIdealSheaf_evaluation s
   have heval : dualHomUnitEquiv L.obj φ = L.obj.unitHomEquivTop.symm s :=
     (dualHomUnitEquiv L.obj).apply_symm_apply _
-  rw [← sectionToFunctional_imageIdealSheaf, ← heval]
+  rw [hzero, ← heval]
   exact (exists_iso_tensorLift_iff L φ).symm
 
 /-- The zero ideal of a section mapped through the Cartier twist inclusion is the
@@ -226,5 +213,26 @@ theorem zeroIdeal_idealTwistInclusion [IsIntegral X] (hI : I.IsEffectiveCartier)
   let j : J.sheaf ⟶ 𝟙_ X.Modules := J.sheafι
   exact ((Category.assoc e.hom (j ▷ H.obj ≫ (λ_ H.obj).hom) _).trans
     (congrArg (e.hom ≫ ·) (Category.assoc (j ▷ H.obj) (λ_ H.obj).hom _))).symm
+
+/-- Dividing a family of sections by its effective Cartier base ideal leaves a family
+that generates the twisted line bundle at every point. -/
+theorem exists_idealTwist_sections_iSup_zeroIdeal_eq_top [IsIntegral X]
+    {ι : Type*} (s : ι → Γ(L.obj, ⊤)) (hI : I.IsEffectiveCartier)
+    (hbase : (⨆ i, L.zeroIdeal (s i)) = I) :
+    ∃ t : ι → Γ((hI.toInvertibleSheaf.tensorProduct L).obj, ⊤),
+      (∀ i, (L.idealTwistInclusion hI).app ⊤ (t i) = s i) ∧
+        (⨆ i, (hI.toInvertibleSheaf.tensorProduct L).zeroIdeal (t i)) = ⊤ := by
+  have hdiv i := (L.existsUnique_idealTwist_section_iff hI (s i)).mpr
+    (hbase ▸ le_iSup (fun i ↦ L.zeroIdeal (s i)) i)
+  choose t ht using fun i ↦ (hdiv i).exists
+  refine ⟨t, ht, hI.mul_left_cancel ?_⟩
+  have hprod (i : ι) := (L.zeroIdeal_idealTwistInclusion hI (t i)).symm
+  simp only [ht] at hprod
+  calc
+    _ = (⨆ i, (hI.toInvertibleSheaf.tensorProduct L).zeroIdeal (t i)) * I := mul_comm _ _
+    _ = ⨆ i, (hI.toInvertibleSheaf.tensorProduct L).zeroIdeal (t i) * I :=
+      (Scheme.IdealSheafData.gc_mul_colon I).l_iSup
+    _ = I := (iSup_congr hprod).trans hbase
+    _ = I * ⊤ := (Scheme.IdealSheafData.mul_top I).symm
 
 end TauCeti.AlgebraicGeometry.InvertibleSheaf

@@ -96,6 +96,21 @@ lemma zeroIdeal_ideal (s : Γ(L.obj, ⊤)) (U : X.affineOpens) :
     (L.zeroIdeal s).ideal U = (L.dualSectionEquiv.symm s).imageIdeal U :=
   Hom.imageIdealSheaf_ideal _ _
 
+/-- The zero ideal is the image ideal of evaluation on the internal-Hom dual. -/
+theorem zeroIdeal_eq_imageIdealSheaf_evaluation (s : Γ(L.obj, ⊤)) :
+    L.zeroIdeal s = ((dualHomUnitEquiv L.obj).symm
+      (L.obj.unitHomEquivTop.symm s)).imageIdealSheaf := by
+  let φ := L.dualSectionEquiv.symm s
+  let e : (ihom L.obj).obj (𝟙_ X.Modules) ≅ (dual L).obj := eqToIso (dual_obj L).symm
+  have hφ : (dualHomUnitEquiv L.obj).symm (L.obj.unitHomEquivTop.symm s) = e.hom ≫ φ := by
+    apply (dualHomUnitEquiv L.obj).injective
+    apply L.obj.unitHomEquivTop.injective
+    exact (congrArg L.obj.unitHomEquivTop ((dualHomUnitEquiv L.obj).apply_symm_apply _)).trans
+      ((L.obj.unitHomEquivTop.apply_symm_apply s).trans
+        ((L.dualSectionEquiv.apply_symm_apply s).symm.trans (L.dualSectionEquiv_apply φ)))
+  rw [hφ, Hom.imageIdealSheaf_comp_iso]
+  rfl
+
 /-- Transporting a section through an isomorphism of line bundles preserves its zero ideal. -/
 @[simp]
 theorem zeroIdeal_hom_app {K : InvertibleSheaf X} (e : L.obj ≅ K.obj) (s : Γ(L.obj, ⊤)) :
