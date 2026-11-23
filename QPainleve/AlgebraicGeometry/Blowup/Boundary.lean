@@ -97,6 +97,12 @@ theorem boundaryι_snoc_blowupToBase (hJ : J.IsEffectiveCartier) :
     (T.snoc J hJ).boundaryι ≫ (J.map T.boundaryι).blowupToBase = T.boundaryι := by
   rw [boundaryι_snoc, Scheme.IdealSheafData.blowupLift_blowupToBase]
 
+/-- The lifted boundary has the ideal of the scheme-theoretic strict transform. -/
+@[simp]
+theorem ker_boundaryι_snoc (hJ : J.IsEffectiveCartier) :
+    (T.snoc J hJ).boundaryι.ker = ((J.map T.boundaryι).blowupMap T.boundaryι).ker := by
+  rw [boundaryι_snoc, Scheme.IdealSheafData.ker_blowupLift, Scheme.IdealSheafData.ker_blowupMap]
+
 /-- The exceptional divisor intersects the strict transform of the boundary in the
 original center as a closed subscheme of the fixed boundary. -/
 @[simp]
