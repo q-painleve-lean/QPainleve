@@ -6,10 +6,10 @@ Authors: The QPainleve contributors
 module
 
 public import QPainleve.AlgebraicGeometry.Blowup.Projective.TwistedIdeal
+import QPainleve.AlgebraicGeometry.IdealSheaf.FiniteType
 import QPainleve.AlgebraicGeometry.LineBundle.Ample
 import QPainleve.AlgebraicGeometry.LineBundle.GlobalGeneration
 import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.Polynomial.Embedding
-import TauCeti.AlgebraicGeometry.Modules.Quasicoherent.FiniteType
 import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.TwistingSheaf.Ample
 
 /-!
@@ -65,12 +65,7 @@ theorem isProjectiveOver_blowup_of_isNoetherianRing [IsNoetherianRing R] :
     let : I.blowup.Over (Spec (.of R)) := ⟨I.blowupToBase ≫ (X ↘ Spec (.of R))⟩
     I.blowup.IsProjectiveOver R := by
   have : IsLocallyNoetherian X := LocallyOfFiniteType.isLocallyNoetherian (X ↘ Spec (.of R))
-  have : I.sheaf.IsFiniteType := Scheme.Modules.isFiniteType_of_finite_sections I.sheaf
-    fun U hU ↦ by
-      have := IsLocallyNoetherian.component_noetherian ⟨U, hU⟩
-      let φ : Γ(I.sheaf, U) →ₗ[Γ(X, U)] Γ(X, U) :=
-        ((Scheme.Modules.sectionsFunctor U).map I.sheafι).hom
-      exact Module.Finite.of_injective φ (I.sheafι_app_injective U)
+  have : I.sheaf.IsFiniteType := I.isFiniteType_sheaf
   exact I.isProjectiveOver_blowup R
 
 end AlgebraicGeometry.Scheme.IdealSheafData
