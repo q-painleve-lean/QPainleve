@@ -9,6 +9,7 @@ public import Mathlib.AlgebraicGeometry.Morphisms.ClosedImmersion
 public import TauCeti.Geometry.Toric.Algebraic.Fan.Scheme
 public import TauCeti.Geometry.Toric.Analytic.Cone.Orbit.Basic
 import TauCeti.AlgebraicGeometry.IdealSheaf.VanishingIdeal
+import TauCeti.Geometry.Toric.Algebraic.Fan.Over
 import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
 
 /-!
@@ -16,7 +17,8 @@ import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
 
 The distinguished complex point of a cone defines a scheme morphism into the fan scheme.
 Its membership in the open cone charts follows from Tau Ceti's localization of a face
-chart at a monomial. For a maximal cone it is a closed immersion with reduced image.
+chart at a monomial. The point is a section of the structure morphism to `Spec ℂ`
+and is a closed immersion with reduced image.
 -/
 
 public noncomputable section
@@ -99,77 +101,24 @@ theorem distinguishedPointHom_mem_range_affineToricChartι_iff (σ τ : Φ.cones
   rw [← Scheme.Hom.comp_apply, Φ.faceAffineToricSchemeMap_comp_affineToricChartι hface,
     distinguishedPointHom_def, Scheme.Hom.comp_apply]
 
-private theorem preimage_range_distinguishedPointHom_eq_empty (σ τ : Φ.cones)
-    (hστ : ¬ σ ≤ τ) :
-    Φ.affineToricChartι τ ⁻¹' Set.range (Φ.distinguishedPointHom σ) = ∅ :=
-  Set.eq_empty_iff_forall_notMem.mpr fun z ⟨x, hx⟩ ↦
-    hστ ((Φ.distinguishedPointHom_mem_range_affineToricChartι_iff σ τ x).1 ⟨z, hx.symm⟩)
-
-/-- The distinguished point of a maximal cone is a closed subscheme with residue field
-`ℂ`. -/
-theorem isClosedImmersion_distinguishedPointHom (σ : Φ.cones)
-    (hmax : ∀ τ : Φ.cones, σ ≤ τ → σ = τ) :
+/-- The distinguished point of a cone is a closed subscheme with residue field `ℂ`. -/
+theorem isClosedImmersion_distinguishedPointHom (σ : Φ.cones) :
     IsClosedImmersion (Φ.distinguishedPointHom σ) := by
-  let p := Spec.map
-    (CommRingCat.ofHom (distinguishedPoint Φ.lattice (⊤ : σ.val.Face)).toRingHom)
-  have hp : IsClosedImmersion p := by
-    apply IsClosedImmersion.spec_of_surjective
-    intro z
-    exact ⟨algebraMap ℂ _ z, AlgHom.commutes _ z⟩
-  let f := Φ.distinguishedPointHom σ
-  have hclosed : IsClosed (Set.range f) := by
-    have hcover : TopologicalSpace.IsOpenCover
-        (fun τ : Φ.cones ↦ (Φ.affineToricChartι τ).opensRange) := by
-      apply TopologicalSpace.IsOpenCover.mk
-      apply top_unique
-      intro y _
-      obtain ⟨τ, z, rfl⟩ := Φ.exists_affineToricChartι_apply_eq y
-      exact TopologicalSpace.Opens.mem_iSup.mpr ⟨τ, ⟨z, rfl⟩⟩
-    rw [hcover.isClosed_iff_coe_preimage]
-    intro τ
-    let j := Φ.affineToricChartι τ
-    suffices IsClosed (j ⁻¹' Set.range f) by
-      let e : Φ.affineToricChart τ ≃ₜ ↥(j.opensRange : Set Φ.algebraicRealization) :=
-        j.isOpenEmbedding.isEmbedding.toHomeomorph.trans
-          (Homeomorph.setCongr j.coe_opensRange.symm)
-      have hmap : (j : _ → _) ∘ e.symm = Subtype.val := by
-        funext x
-        exact congrArg Subtype.val (e.apply_symm_apply x)
-      have hpre := this.preimage e.symm.continuous
-      rw [← Set.preimage_comp, hmap] at hpre
-      exact hpre
-    by_cases he : τ = σ
-    · subst τ
-      dsimp only [j]
-      have hpre : Φ.affineToricChartι σ ⁻¹' Set.range f = Set.range p := by
-        ext y
-        constructor
-        · rintro ⟨x, hx⟩
-          refine ⟨x, (Φ.affineToricChartι σ).isOpenEmbedding.injective ?_⟩
-          simpa only [f, distinguishedPointHom_def, Scheme.Hom.comp_apply] using hx
-        · rintro ⟨x, rfl⟩
-          exact ⟨x, by simp only [f, p, distinguishedPointHom_def, Scheme.Hom.comp_apply]⟩
-      exact hpre ▸ p.isClosedEmbedding.isClosed_range
-    · dsimp only [j]
-      have hpre := Φ.preimage_range_distinguishedPointHom_eq_empty σ τ
-        (fun h ↦ he (hmax τ h).symm)
-      exact hpre ▸ isClosed_empty
-  have : IsPreimmersion f := by
-    unfold f
-    rw [Φ.distinguishedPointHom_def]
-    infer_instance
-  exact IsClosedImmersion.of_isPreimmersion f hclosed
+  apply isClosedImmersion_of_comp_eq_id Φ.algebraicRealizationStructureMap
+  rw [Φ.distinguishedPointHom_def, Category.assoc,
+    Φ.affineToricChartι_comp_algebraicRealizationStructureMap, ← Spec.map_comp, ← Spec.map_id]
+  congr 1
+  ext a
+  exact (distinguishedPoint Φ.lattice (⊤ : σ.val.Face)).commutes a
 
-/-- The closed immersion of a maximal cone's distinguished point cuts out its reduced
-vanishing ideal. -/
-theorem ker_distinguishedPointHom_eq_vanishingIdeal (σ : Φ.cones)
-    (hmax : ∀ τ : Φ.cones, σ ≤ τ → σ = τ) :
-    let _ := Φ.isClosedImmersion_distinguishedPointHom σ hmax
+/-- The closed immersion of a cone's distinguished point cuts out its reduced vanishing ideal. -/
+theorem ker_distinguishedPointHom_eq_vanishingIdeal (σ : Φ.cones) :
+    let _ := Φ.isClosedImmersion_distinguishedPointHom σ
     (Φ.distinguishedPointHom σ).ker =
       vanishingIdeal ⟨_, (Φ.distinguishedPointHom σ).isClosedEmbedding.isClosed_range⟩ := by
   dsimp only
   let p := Φ.distinguishedPointHom σ
-  have := Φ.isClosedImmersion_distinguishedPointHom σ hmax
+  have := Φ.isClosedImmersion_distinguishedPointHom σ
   have hs : (p.ker.support : Set Φ.algebraicRealization) = Set.range p :=
     p.support_ker.trans p.isClosedEmbedding.isClosed_range.closure_eq
   have he : p.ker.support = ⟨_, p.isClosedEmbedding.isClosed_range⟩ :=

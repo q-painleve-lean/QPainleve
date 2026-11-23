@@ -262,23 +262,22 @@ private theorem exists_isPullback_starSubdivisionAlong_otherChart
   simpa only [Iso.refl_hom, Category.comp_id, Iso.symm_hom, Category.assoc, Iso.hom_inv_id_assoc,
     e, asIso_hom, asIso_inv, IsIso.hom_inv_id_assoc, Q, q] using chartι_comp_facesInclusion τ
 
-private theorem comap_ker_distinguishedPointHom
-    (hmax : ∀ τ : Φ.cones, σ ≤ τ → σ = τ) :
+private theorem comap_ker_distinguishedPointHom :
     (I).comap (Φ.affineToricChartι σ) =
       ofIdealTop ((J).map
         (Scheme.ΓSpecIso (.of (affineCoordinateRing Φ.lattice σ.val))).inv.hom) := by
   let p := Spec.map
     (CommRingCat.ofHom (distinguishedPoint Φ.lattice (⊤ : σ.val.Face)).toRingHom)
-  have hclosed := Φ.isClosedImmersion_distinguishedPointHom σ hmax
+  have hclosed := Φ.isClosedImmersion_distinguishedPointHom σ
   have hp : IsPullback p (𝟙 _) (Φ.affineToricChartι σ) (Φ.distinguishedPointHom σ) :=
     IsPullback.of_vert_isIso_mono ⟨by simp [p, distinguishedPointHom_def]⟩
   rw [← ker_eq_comap_of_isPullback _ hp, Scheme.Hom.ker_Spec_map]
   rfl
 
 private theorem comap_ker_distinguishedPointHom_otherChart (τ : Φ.cones)
-    (hmax : ∀ τ : Φ.cones, σ ≤ τ → σ = τ) (hστ : ¬ σ ≤ τ) :
+    (hστ : ¬ σ ≤ τ) :
     (I).comap (Φ.affineToricChartι τ) = ⊤ := by
-  have hclosed := Φ.isClosedImmersion_distinguishedPointHom σ hmax
+  have hclosed := Φ.isClosedImmersion_distinguishedPointHom σ
   rw [← support_eq_bot_iff]
   apply SetLike.coe_injective
   rw [support_comap, TopologicalSpace.Closeds.coe_preimage,
@@ -296,14 +295,13 @@ private theorem exists_starSubdivisionAlong_localComparison (τ : Φ.cones) :
   · subst τ
     obtain ⟨a, ha⟩ := exists_isPullback_starSubdivisionAlong_rees hΦ σ hN hc h₀
     obtain ⟨b, hb⟩ := (I).exists_isPullback_toSpecCoeff_reesAlgebra
-      (Φ.affineToricChartι σ) (J) (comap_ker_distinguishedPointHom σ (eq_of_le_fullCone hΦ σ hN hc))
+      (Φ.affineToricChartι σ) (J) (comap_ker_distinguishedPointHom σ)
     exact ⟨_, a, b, _, ha, hb⟩
-  · have hmax := eq_of_le_fullCone hΦ σ hN hc
-    have hστ : ¬ σ ≤ τ := fun h ↦ ht (hmax τ h)
+  · have hστ : ¬ σ ≤ τ := fun h ↦ ht (eq_of_le_fullCone hΦ σ hN hc τ h)
     obtain ⟨a, ha⟩ := exists_isPullback_starSubdivisionAlong_otherChart hΦ σ h₀ τ hστ
     let j := Φ.affineToricChartι τ
     have : IsOpenImmersion j := Fan.isOpenImmersion_affineToricChartι τ
-    have hjtop : (I).comap j = ⊤ := comap_ker_distinguishedPointHom_otherChart σ τ hmax hστ
+    have hjtop : (I).comap j = ⊤ := comap_ker_distinguishedPointHom_otherChart σ τ hστ
     have hj : ((I).comap j).IsEffectiveCartier := by
       rw [hjtop]
       exact isEffectiveCartier_top _
@@ -363,13 +361,12 @@ private theorem exists_iso_blowup_starSubdivisionAlong_over :
   have := (MorphismProperty.isomorphisms.iff g).1 hgIso
   exact ⟨asIso g, hg⟩
 
-include hΦ hN hc in
+include hc in
 private theorem isEffectiveCartier_comap_distinguishedPointHom_denseTorusι :
     ((I).comap (Φ.denseTorusι ⟨σ⟩)).IsEffectiveCartier := by
   let τ : Φ.cones := ⟨⊥, Φ.bot_mem σ.property⟩
   have hστ : ¬ σ ≤ τ := fun h ↦ fullCone_ne_bot σ hc (le_bot_iff.mp h)
-  have hcomap := comap_ker_distinguishedPointHom_otherChart σ τ
-    (eq_of_le_fullCone hΦ σ hN hc) hστ
+  have hcomap := comap_ker_distinguishedPointHom_otherChart σ τ hστ
   rw [Φ.denseTorusι_eq_affineToricChartι _ τ.property, hcomap]
   exact isEffectiveCartier_top _
 
@@ -391,7 +388,7 @@ theorem exists_iso_blowup_starSubdivisionAlong :
           (Φ.distinguishedPointHom σ).ker.blowupLift t ht := by
   let h₀ := fullCone_ne_bot σ hc
   obtain ⟨e, he⟩ := exists_iso_blowup_starSubdivisionAlong_over hΦ σ hN hc h₀
-  have ht := isEffectiveCartier_comap_distinguishedPointHom_denseTorusι hΦ σ hN hc
+  have ht := isEffectiveCartier_comap_distinguishedPointHom_denseTorusι σ hc
   refine ⟨h₀, e, ht, he, fun hn ↦ (I).eq_blowupLift ht ?_⟩
   rw [Category.assoc, he, FanHom.denseTorusι_comp_algebraicMap]
   simp only [IsSubdivision.toFanHom_latticeMap, IsSubdivision.toFanHom_realMap,
