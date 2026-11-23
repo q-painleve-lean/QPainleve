@@ -11,8 +11,8 @@ public import TauCeti.Geometry.Toric.Algebraic.Fan.TorusAction.Action
 
 import Mathlib.Algebra.Group.Hom.Instances
 import Mathlib.CategoryTheory.Monoidal.Cartesian.Mod
+import QPainleve.Algebra.AlgebraicGroup.Hopf.SchemeTranslation
 import QPainleve.Geometry.Toric.Fan.Separated
-import TauCeti.Algebra.AlgebraicGroup.CommHopfAlgCat.SchemePoints
 import TauCeti.Algebra.AlgebraicGroup.DiagonalizableGroup.Basic
 import TauCeti.Geometry.Toric.Algebraic.TorusAction.Action
 
@@ -22,15 +22,14 @@ import TauCeti.Geometry.Toric.Algebraic.TorusAction.Action
 Specializing the native torus action at a complex point gives an automorphism.
 On the zero-cone chart its pullback is the character twist, so it scales each
 rational character by its value at the translating point. The twist comparison
-uses Mathlib's `Spec.mapMulEquiv` and convolution on algebra points, as in
-`QPainleve.CharacterTorus.monomialIso_refl`.
+uses the shared translation formula for spectra with group-like coordinates.
 -/
 
 public noncomputable section
 
 open AlgebraicGeometry CategoryTheory MonoidalCategory CartesianMonoidalCategory MonObj
 open SemiCartesianMonoidalCategory
-open Multiplicative WithConv
+open Multiplicative
 
 namespace TauCeti.Toric.Fan
 
@@ -63,40 +62,11 @@ private def translate (χ : Chars) : X ⟶ X :=
 private theorem denseTorus_twist_eq_mul (χ : Chars) :
     ((Spec.map (CommRingCat.ofHom (Φ.twist χ).toAlgHom.toRingHom)).asOver S : T ⟶ T) =
       (toUnit T ≫ Φ.torusPoint χ) * 𝟙 T := by
-  have hconst : Spec.mapMulEquiv (toConv ((Algebra.ofId ℂ R).comp (Φ.evaluation χ))) =
-      toUnit T ≫ Φ.torusPoint χ := by
-    apply Over.OverMorphism.ext
-    rw [CommHopfAlgCat.mapMulEquiv_left, Over.comp_left, Over.toUnit_left]
-    -- Read the affine structure map and the translating point as spectrum maps.
-    change Spec.map (CommRingCat.ofHom ((Algebra.ofId ℂ R).comp (Φ.evaluation χ)).toRingHom) =
-      Spec.map (CommRingCat.ofHom (algebraMap ℂ R)) ≫
-        Spec.map (CommRingCat.ofHom (Φ.evaluation χ).toRingHom)
-    rw [← Spec.map_comp]
-    rfl
-  have hid : Spec.mapMulEquiv (toConv (AlgHom.id ℂ R)) = 𝟙 T := by
-    apply Over.OverMorphism.ext
-    rw [CommHopfAlgCat.mapMulEquiv_left]
-    exact Spec.map_id _
-  have htwist : toConv (Φ.twist χ).toAlgHom =
-      toConv ((Algebra.ofId ℂ R).comp (Φ.evaluation χ)) * toConv (AlgHom.id ℂ R) := by
-    apply WithConv.ofConv_injective
-    apply MonoidAlgebra.algHom_ext
-    · intro m
-      -- Use the convolution formula on the wrapped algebra maps evaluated at a monomial.
-      change Φ.twist χ (MonoidAlgebra.single m 1) =
-        (toConv ((Algebra.ofId ℂ R).comp (Φ.evaluation χ)) *
-          toConv (AlgHom.id ℂ R)) (MonoidAlgebra.single m 1)
-      rw [AlgHom.convMul_apply]
-      have hm : Φ.evaluation χ (MonoidAlgebra.single m 1) = χ (ofAdd m.toAdd.val) := by
-        obtain ⟨b, rfl⟩ : ∃ b, ofAdd b = m := ⟨m.toAdd, ofAdd_toAdd m⟩
-        rw [evaluation, AlgHom.comp_apply, AlgEquiv.coe_toAlgHom,
-          denseTorusCoordinateRingEquiv_single, DiagonalizableGroup.point_single_one, toAdd_ofAdd]
-      simp [twist, hm, MonoidAlgebra.single_mul_single]
-    · exact Subsingleton.elim _ _
-  rw [← hconst, ← hid, ← map_mul, ← htwist]
-  apply Over.OverMorphism.ext
-  exact (OverClass.asOverHom_left _ _).trans
-    (CommHopfAlgCat.mapMulEquiv_left (toConv (Φ.twist χ).toAlgHom)).symm
+  refine QPainleve.specMap_eq_mul_of_groupLike_basis (MonoidAlgebra.basis _ ℂ)
+    (fun m ↦ by simp) (Φ.evaluation χ) (Φ.twist χ).toAlgHom ?_ (Φ.torusPoint χ) rfl
+  intro m
+  obtain ⟨a, rfl⟩ : ∃ a, ofAdd a = m := ⟨m.toAdd, ofAdd_toAdd m⟩
+  simp [twist, evaluation, denseTorusDualEquiv_apply, MonoidAlgebra.smul_single]
 
 variable [Nonempty Φ.cones]
 
