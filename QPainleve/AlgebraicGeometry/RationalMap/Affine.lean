@@ -76,12 +76,7 @@ theorem ofAffineAlgHom_compHom [Algebra.FiniteType k B] (φ : A →ₐ[k] X.func
     (ofAffineAlgHom φ).compHom (Spec.map (CommRingCat.ofHom g.toRingHom)) =
       ofAffineAlgHom (φ.comp g) := by
   apply eq_of_fromFunctionField_eq
-  have h (f : X ⤏ Spec (.of A)) (q : Spec (.of A) ⟶ Spec (.of B)) :
-      (f.compHom q).fromFunctionField = f.fromFunctionField ≫ q := by
-    obtain ⟨p, rfl⟩ := f.exists_rep
-    rw [← compHom_toRationalMap, fromFunctionField_toRationalMap, fromFunctionField_toRationalMap]
-    exact PartialMap.fromSpecStalkOfMem_compHom p q _ _
-  rw [h, fromFunctionField_ofAffineAlgHom, fromFunctionField_ofAffineAlgHom,
+  rw [fromFunctionField_compHom, fromFunctionField_ofAffineAlgHom, fromFunctionField_ofAffineAlgHom,
     ← Spec.map_comp, ← CommRingCat.ofHom_comp]
   rfl
 
