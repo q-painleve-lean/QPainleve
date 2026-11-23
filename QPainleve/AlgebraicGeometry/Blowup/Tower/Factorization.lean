@@ -200,7 +200,7 @@ theorem exists_common_pointBlowup_resolution
   have : a.toPartialMap.IsOver sX sY :=
     ⟨(Category.assoc a.iso.hom a.target.ι sY).trans ha⟩
   have : a.toRationalMap.IsOver sX sY := inferInstance
-  obtain ⟨m, V, T, _, _, hT, g, ⟨hg, hga⟩, _⟩ :=
+  obtain ⟨m, V, T, _, _, hT, _, g, ⟨hg, hga⟩, _⟩ :=
     a.toRationalMap.exists_isClosedPointTower_resolving (k := k)
   have : Nontrivial X := by
     rw [← not_subsingleton_iff_nontrivial, ← topologicalKrullDim_eq_zero_iff_subsingleton,

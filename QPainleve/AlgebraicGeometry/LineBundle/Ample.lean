@@ -7,6 +7,7 @@ module
 
 public import TauCeti.AlgebraicGeometry.LineBundle.Ample
 public import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.Invertible
+public import TauCeti.AlgebraicGeometry.LineBundle.GlobalGeneration.Basic
 public import TauCeti.AlgebraicGeometry.LineBundle.Power
 public import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.TwistingSheaf.Basic
 public import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.SymmetricAlgebra
@@ -15,6 +16,7 @@ public import Mathlib.AlgebraicGeometry.Morphisms.Proper
 import QPainleve.AlgebraicGeometry.CartierDivisor.ZeroDivisor
 import QPainleve.AlgebraicGeometry.LineBundle.GlobalGeneration
 import QPainleve.AlgebraicGeometry.LineBundle.Pullback
+import QPainleve.AlgebraicGeometry.LineBundle.TensorProduct
 import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.Sections.Affine
 import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.Sections.TwistingSheaf
 import TauCeti.AlgebraicGeometry.Morphisms.RelativeDimension
@@ -31,6 +33,9 @@ projective morphism is affine on the standard cover, and properness then makes i
 
 Conversely, a projective scheme over an affine base has an ample line bundle.
 
+Tensoring an ample line bundle by a globally generated one preserves ampleness
+([Stacks Project, Lemma 28.27.5](https://stacks.math.columbia.edu/tag/0890)).
+
 On a positive-dimensional proper integral scheme over a field, some positive power of
 an ample class is the class of a nonempty effective Cartier divisor. This uses the
 affine nonvanishing locus argument of
@@ -39,7 +44,7 @@ affine nonvanishing locus argument of
 
 public section
 
-open AlgebraicGeometry CategoryTheory TopologicalSpace
+open AlgebraicGeometry CategoryTheory MonoidalCategory TopologicalSpace
 open TauCeti.AlgebraicGeometry TauCeti.SymmetricAlgebra
 
 universe u
@@ -49,6 +54,29 @@ namespace TauCeti.AlgebraicGeometry.LineBundleClass.IsAmple
 attribute [local instance] MvPolynomial.gradedAlgebra
 
 variable {X : Scheme.{u}} {R : Type u} [CommRing R]
+
+/-- The tensor product of an ample line bundle and a globally generated line bundle is ample. -/
+theorem mul_mk_of_isGloballyGenerated {a : LineBundleClass X} (ha : a.IsAmple)
+    {L : InvertibleSheaf X} (hL : L.IsGloballyGenerated) : (a * LineBundleClass.mk L).IsAmple := by
+  refine ⟨ha.compactSpace, fun x ↦ ?_⟩
+  obtain ⟨n, hn, M, hM, s, hx, hV⟩ := ha.exists_isAffineOpen_nonvanishingLocus x
+  obtain ⟨t, ht⟩ := InvertibleSheaf.isGloballyGenerated_iff.mp hL x
+  let N := L.tensorPow n
+  let tₙ := (L.tensorPowObjIso n).inv.app ⊤ (Scheme.Modules.tensorPowSection t n)
+  have htₙ : N.obj.nonvanishingLocus tₙ = L.obj.nonvanishingLocus t :=
+    (Scheme.Modules.nonvanishingLocus_hom_app (L.tensorPowObjIso n).symm _).trans
+      (Scheme.Modules.nonvanishingLocus_tensorPowSection _ hn)
+  let V := M.obj.nonvanishingLocus s
+  let e := M.tensorProductObjIso N
+  let z := e.inv.app ⊤ (Scheme.Modules.tmulRight M.obj tₙ s)
+  have hz : (M.tensorProduct N).obj.nonvanishingLocus z = V ⊓ N.obj.nonvanishingLocus tₙ :=
+    (Scheme.Modules.nonvanishingLocus_hom_app e.symm _).trans
+      (Scheme.Modules.nonvanishingLocus_tmulRight s tₙ)
+  refine ⟨n, hn, M.tensorProduct N, by simp [N, hM, mul_pow], z, ?_, ?_⟩
+  · rw [hz, htₙ]
+    exact ⟨hx, ht⟩
+  · rw [hz, ← Scheme.Modules.nonvanishingLocus_map V.leTop]
+    exact hV.nonvanishingLocus _
 
 /-- Pullback by an affine morphism preserves ampleness. -/
 theorem pullback_of_isAffineHom {Y : Scheme.{u}} {a : LineBundleClass Y}

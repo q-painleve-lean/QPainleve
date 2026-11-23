@@ -5,14 +5,14 @@ Authors: The QPainleve contributors
 -/
 module
 
+public import QPainleve.AlgebraicGeometry.LineBundle.Power
 public import QPainleve.AlgebraicGeometry.LineBundle.Ratio
+public import QPainleve.AlgebraicGeometry.LineBundle.TensorProduct
 public import QPainleve.AlgebraicGeometry.Modules.TensorProduct
 public import TauCeti.AlgebraicGeometry.LineBundle.Ample
 public import TauCeti.AlgebraicGeometry.LineBundle.NonvanishingLocus
-public import TauCeti.AlgebraicGeometry.LineBundle.Power
 public import TauCeti.AlgebraicGeometry.Modules.Tensor.Sections
 public import Mathlib.AlgebraicGeometry.FunctionField
-import QPainleve.AlgebraicGeometry.LineBundle.Power
 import Mathlib.RingTheory.Localization.Integer
 import TauCeti.AlgebraicGeometry.LineBundle.TwistedSections
 import TauCeti.AlgebraicGeometry.Modules.Localization
@@ -258,6 +258,37 @@ theorem eventually_exists_extension_tensorSectionPow [CompactSpace X] [QuasiSepa
     exact (tensorSectionPow_succ _ _ _).symm
 
 end Extension
+
+/-- The nonvanishing locus of a line bundle section defined where a global section `s`
+generates is the nonvanishing locus of a global section of every sufficiently large twist
+by the line bundle of `s`. -/
+theorem eventually_exists_nonvanishingLocus_tensorPow_eq [CompactSpace X]
+    [QuasiSeparatedSpace X] (M L : TauCeti.AlgebraicGeometry.InvertibleSheaf X)
+    (s : Γ(L.obj, ⊤)) (t : Γ(M.obj, L.obj.nonvanishingLocus s)) :
+    ∀ᶠ n : ℕ in Filter.atTop, ∃ t' : Γ(M.obj ⊗ tensorPow L.obj n, ⊤),
+      (M.obj ⊗ tensorPow L.obj n).nonvanishingLocus t' = M.obj.nonvanishingLocus t := by
+  let D := L.obj.nonvanishingLocus s
+  let j : D ⟶ ⊤ := homOfLE (L.obj.nonvanishingLocus_le s)
+  obtain ⟨N, hN⟩ := Filter.eventually_atTop.mp
+    (eventually_exists_map_eq_tmulRight_tensorPowSection M.obj isCompact_univ
+      (isQuasiSeparated_univ_iff.mpr inferInstance) s t)
+  refine Filter.eventually_atTop.mpr ⟨N + 2, fun n hn ↦ ?_⟩
+  obtain ⟨q, rfl⟩ := Nat.exists_eq_succ_of_ne_zero (show n ≠ 0 by omega)
+  obtain ⟨z, hz⟩ := hN q (by omega)
+  let e := (α_ M.obj (tensorPow L.obj q) L.obj) ≪≫
+    whiskerLeftIso M.obj (tensorPowSuccIso L.obj q)
+  have hD : L.obj.nonvanishingLocus (L.obj.presheaf.map j.op s) = D := by
+    simp [j, D, nonvanishingLocus_map]
+  have hz' : D ⊓ (M.obj ⊗ tensorPow L.obj q).nonvanishingLocus z =
+      M.obj.nonvanishingLocus t := by
+    rw [← nonvanishingLocus_map j]
+    dsimp only [j]
+    rw [hz, nonvanishingLocus_tmulRight,
+      nonvanishingLocus_tensorPowSection _ (show 0 < q by omega), hD,
+      inf_eq_left.mpr (M.obj.nonvanishingLocus_le t)]
+  exact ⟨e.hom.app ⊤ (tmulRight _ s z), by
+    rw [nonvanishingLocus_hom_app, nonvanishingLocus_tmulRight, inf_comm]
+    exact hz'⟩
 
 /-- A finite family of functions on the nonvanishing locus of a global line bundle section
 extends to global sections after multiplying by a common positive tensor power of that section. -/
