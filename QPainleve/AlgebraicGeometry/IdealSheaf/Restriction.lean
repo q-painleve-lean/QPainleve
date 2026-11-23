@@ -50,6 +50,21 @@ theorem map_comap_ker_of_isSchemeTheoreticallyDominant {Z X : Scheme.{u}}
   rw [← ker_eq_comap_of_isPullback q (isPullback_morphismRestrict q U), ← Scheme.Hom.ker_comp,
     morphismRestrict_ι, Scheme.Hom.ker_comp_of_isSchemeTheoreticallyDominant]
 
+/-- An isomorphism pulls back the scheme-theoretic union of two closed subschemes
+to the union of their pullbacks. -/
+@[simp]
+theorem comap_inf_of_isIso {X Y : Scheme.{u}} (I J : Y.IdealSheafData)
+    (f : X ⟶ Y) [IsIso f] : (I ⊓ J).comap f = I.comap f ⊓ J.comap f := by
+  refine le_antisymm (le_inf (comap_mono f inf_le_left) (comap_mono f inf_le_right)) ?_
+  let K := I.comap f ⊓ J.comap f
+  have hK : K.comap (inv f) ≤ I ⊓ J := by
+    apply le_inf
+    · simpa only [← comap_comp, IsIso.inv_hom_id, comap_id] using
+        comap_mono (inv f) (inf_le_left : K ≤ I.comap f)
+    · simpa only [← comap_comp, IsIso.inv_hom_id, comap_id] using
+        comap_mono (inv f) (inf_le_right : K ≤ J.comap f)
+  simpa only [← comap_comp, IsIso.hom_inv_id, comap_id] using comap_mono f hK
+
 /-- If an ideal sheaf pulls back to the unit ideal along a dominant morphism, the
 open complement of its support is dense. -/
 theorem dense_compl_support_of_comap_eq_top {X Y : Scheme.{u}}

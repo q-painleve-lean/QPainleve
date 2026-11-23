@@ -7,12 +7,16 @@ module
 
 public import QPainleve.Geometry.Toric.Fan.Mutation.Complement
 public import QPainleve.Geometry.Toric.Fan.Ruling.Centers
+public import QPainleve.Geometry.Toric.Fan.Boundary.Ideal
 public import QPainleve.Geometry.Toric.Fan.Boundary.InternalCenter
 public import TauCeti.AlgebraicGeometry.Blowup.Pullback
 
 import QPainleve.Algebra.Polynomial.Laurent
 import QPainleve.AlgebraicGeometry.Blowup.Projective.Divisors
-import QPainleve.AlgebraicGeometry.Blowup.StrictTransform.Basic
+import QPainleve.AlgebraicGeometry.Blowup.Projective.Sections
+import QPainleve.AlgebraicGeometry.Blowup.StrictTransform.Reduced
+import QPainleve.AlgebraicGeometry.IdealSheaf.Restriction
+import QPainleve.Geometry.Toric.Fan.Ruling.Boundary
 import QPainleve.Geometry.Toric.Fan.Separated
 import QPainleve.LinearAlgebra.Dual.Basis
 import TauCeti.AlgebraicGeometry.IdealSheaf.BaseChange
@@ -444,6 +448,120 @@ theorem Ray.comap_pivotFiber_mutationPivotIso :
   simpa only [mutationPivotIso, Iso.trans_hom, Iso.symm_hom, comap_comp, hinv] using he'
 
 end Divisors
+
+section Boundary
+
+open Scheme.IdealSheafData
+
+local notation "r" => Φ.mutationFanRayEquiv b hv hp hOpp
+local notation "D(" j ")" => projectiveLine.coordinateSectionCenter (0 : L) j
+local notation "S(" I ", " D ")" =>
+  Scheme.Hom.ker (Scheme.IdealSheafData.blowupMap I (Scheme.IdealSheafData.subschemeι D))
+
+variable (hΦ : Φ.IsRegular) (τ : Φ.Ray)
+
+local notation "hΨ" => Iff.mpr (Φ.isRegular_mutationFan_iff b hv hp hOpp) hΦ
+local notation "D₀" => comap (Φ.rayBoundaryIdeal hΦ τ) π₀
+local notation "D₁" => comap (rayBoundaryIdeal (Ψ) hΨ (r τ)) π₁
+
+private theorem comap_sourceLaurentBlowupIso_strictTransform
+    (A : (projectiveLine L).IdealSheafData) :
+    (S(J(0), A)).comap (e₀).hom = S(I₀, A.comap (E₀).hom) := by
+  have hCenter : (J(0)).comap (E₀).hom = I₀ :=
+    ρ.comap_coordinateSectionCenter_characterRulingLaurentIso h₀ d
+      (pivotBasis_coord_one b ρ) ep₀ en₀ 0 (by simp [pivotBasis_zero])
+      hdim (b.detDualEquiv_self v) (ρ.surjective_detCharacter b) c
+  have : IsLocallyNoetherian (projectiveLine L) :=
+    LocallyOfFiniteType.isLocallyNoetherian ((E₀).inv ≫ π₀)
+  rw [(J(0)).eq_blowupIso_hom (E₀) hCenter (sourceLaurentBlowupIso_hom_blowupToBase b ρ hOpp c),
+    comap_ker_blowupMap_subschemeι_blowupIso]
+
+private theorem comap_targetLaurentBlowupIso_strictTransform
+    (A : (projectiveLine L).IdealSheafData) :
+    (S(J(1), A)).comap (e₁).hom = S(I₁, A.comap (E₁).hom) := by
+  have hCenter : (J(1)).comap (E₁).hom = I₁ :=
+    (ρ').comap_coordinateSectionCenter_characterRulingLaurentIso h₁ d
+      (pivotBasis_coord_one b ρ) ep₁ en₁ 1 (by simp [pivotBasis_zero]) hdim
+      (pivotCharacter_apply_opposite b ρ hOpp) (ρ.surjective_detCharacter b) c
+  have : IsLocallyNoetherian (projectiveLine L) :=
+    LocallyOfFiniteType.isLocallyNoetherian ((E₀).inv ≫ π₀)
+  rw [(J(1)).eq_blowupIso_hom (E₁) hCenter (targetLaurentBlowupIso_hom_blowupToBase b ρ hOpp c),
+    comap_ker_blowupMap_subschemeι_blowupIso]
+
+private theorem mutationFanRayEquiv_primitiveGenerator_eq (j : Fin 2)
+    (hτ : τ.primitiveGenerator = if j = 0 then v else -v) :
+    (r τ).primitiveGenerator = if j = 0 then v else -v := by
+  rw [mutationFanRayEquiv_primitiveGenerator, hτ]
+  split <;> simp only [← Basis.detDualEquiv_apply, map_neg, LinearMap.neg_apply,
+    Basis.detDualEquiv_self, neg_zero, max_self, zero_smul, add_zero]
+
+private theorem comap_mutationPivotIso_strictTransform
+    (A : (projectiveLine L).IdealSheafData)
+    (hA : (S(J(1), A)).comap
+      (projectiveLine.elementaryTransform f 0 (pivotBinomial_ne_zero c)).hom = S(J(0), A)) :
+    (S(I₁, A.comap (E₁).hom)).comap (ρ.mutationPivotIso b hOpp c).hom =
+      S(I₀, A.comap (E₀).hom) := by
+  rw [← comap_targetLaurentBlowupIso_strictTransform b ρ hOpp c A, ← comap_comp]
+  simp only [Ray.mutationPivotIso, Iso.trans_hom, Iso.symm_hom, Category.assoc,
+    Iso.inv_hom_id, Category.comp_id]
+  rw [comap_comp, hA, comap_sourceLaurentBlowupIso_strictTransform b ρ hOpp c A]
+
+/-- Over the base torus of the pivot ruling, elementary transformation pulls back the
+strict-transform ideal of each horizontal toric boundary divisor to the strict-transform
+ideal of the corresponding ray. -/
+theorem Ray.comap_rayBoundaryIdeal_mutationPivotIso (j : Fin 2)
+    (hτ : τ.primitiveGenerator = if j = 0 then v else -v) :
+    (S(I₁, D₁)).comap (ρ.mutationPivotIso b hOpp c).hom = S(I₀, D₀) := by
+  have ht := mutationFanRayEquiv_primitiveGenerator_eq b ρ hOpp τ j hτ
+  have hD₀ := τ.comap_coordinateSection_characterRulingLaurentIso h₀ d
+    (pivotBasis_coord_one b ρ) ep₀ en₀ hΦ j (by simpa only [pivotBasis_zero] using hτ)
+  have hD₁ := (r τ).comap_coordinateSection_characterRulingLaurentIso h₁ d
+    (pivotBasis_coord_one b ρ) ep₁ en₁ hΨ j (by simpa only [pivotBasis_zero] using ht)
+  rw [← hD₀, ← hD₁]
+  exact comap_mutationPivotIso_strictTransform b ρ hOpp c (D(j))
+    (projectiveLine.comap_ker_blowupMap_coordinateSectionCenter_elementaryTransform
+      f 0 (pivotBinomial_ne_zero c) j)
+
+local notation "B₀" => Φ.boundaryIdeal (Nonempty.intro (Ray.toCone Φ ρ))
+local notation "B₁" => boundaryIdeal (Ψ) (Nonempty.intro (Ray.toCone (Ψ) (r ρ)))
+
+include hΦ in
+private theorem comap_restrictedBoundaryIdeal_mutationPivotIso :
+    (S(I₁, comap (B₁) π₁)).comap (ρ.mutationPivotIso b hOpp c).hom =
+      S(I₀, comap (B₀) π₀) := by
+  have hB₀ := Φ.comap_boundaryIdeal_characterRulingLaurentIso h₀ d
+    (pivotBasis_coord_one b ρ) ep₀ en₀ hΦ
+  have hB₁ := (Ψ).comap_boundaryIdeal_characterRulingLaurentIso h₁ d
+    (pivotBasis_coord_one b ρ) ep₁ en₁ hΨ
+  rw [hB₀, hB₁]
+  apply comap_mutationPivotIso_strictTransform b ρ hOpp c
+  have : IsReduced (D(0)).subscheme :=
+    projectiveLine.isReduced_subscheme_coordinateSectionCenter_zero 0
+  have : IsReduced (D(1)).subscheme :=
+    projectiveLine.isReduced_subscheme_coordinateSectionCenter_zero 1
+  rw [ker_blowupMap_subschemeι_inf, ker_blowupMap_subschemeι_inf, comap_inf_of_isIso]
+  exact congrArg₂ (· ⊓ ·)
+    (projectiveLine.comap_ker_blowupMap_coordinateSectionCenter_elementaryTransform
+      f 0 (pivotBinomial_ne_zero c) 0)
+    (projectiveLine.comap_ker_blowupMap_coordinateSectionCenter_elementaryTransform
+      f 0 (pivotBinomial_ne_zero c) 1)
+
+include hΦ in
+/-- Over the base torus of the pivot ruling, mutation identifies the restrictions
+of the strict-transform ideals of the full reduced toric boundaries. -/
+theorem Ray.comap_boundaryIdeal_mutationPivotIso :
+    ((S(Ray.mutationTargetCenterIdeal b ρ hOpp c, B₁)).comap
+        (ρ.mutationPivotTargetBlowupι b hOpp c)).comap (ρ.mutationPivotIso b hOpp c).hom =
+      (S(Ray.mutationSourceCenterIdeal b ρ c, B₀)).comap
+        (ρ.mutationPivotSourceBlowupι b hOpp c) := by
+  have hSource := comap_ker_blowupMap_subschemeι_blowupMap_of_isOpenImmersion
+    (ρ.mutationSourceCenterIdeal b c) (B₀) (π₀)
+  have hTarget := comap_ker_blowupMap_subschemeι_blowupMap_of_isOpenImmersion
+    (ρ.mutationTargetCenterIdeal b hOpp c) (B₁) (π₁)
+  exact (congrArg (fun A ↦ A.comap (ρ.mutationPivotIso b hOpp c).hom) hTarget).trans
+    ((comap_restrictedBoundaryIdeal_mutationPivotIso b ρ hOpp c hΦ).trans hSource.symm)
+
+end Boundary
 
 section Torus
 
