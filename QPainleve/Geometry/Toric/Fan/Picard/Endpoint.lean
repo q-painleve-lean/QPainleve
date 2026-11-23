@@ -8,7 +8,6 @@ module
 public import QPainleve.Algebra.Cluster.ChargeKernel.Basic
 public import QPainleve.Geometry.Toric.Fan.Picard.CycleNumerics
 
-import Mathlib.GroupTheory.IndexNSmul
 import QPainleve.SignedClusterModularGroup.Endpoint
 
 /-!
@@ -34,26 +33,6 @@ variable {N N' V V' : Type} [AddCommGroup N] [AddCommGroup N']
   {i : N →+ V} {i' : N' →+ V'} {Φ : Fan i} {Ψ : Fan i'}
 
 variable {n : ℕ} (s : Fin n → Φ.Ray) (t : Fin n → Ψ.Ray)
-
-private theorem rayChargeMap_primitive (j : Fin n) :
-    IsPrimitive (rayChargeMap s (Pi.single j 1)) := by
-  rw [rayChargeMap_single]
-  exact (s j).isPrimitiveGenerator.isPrimitive
-
-private theorem rayChargeEquiv_ext [Module.IsTorsionFree ℤ N']
-    (hindex : (rayChargeMap s).range.toAddSubgroup.index ≠ 0)
-    {E F : N ≃ₗ[ℤ] N'}
-    (hE : ∀ j, E (s j).primitiveGenerator = (t j).primitiveGenerator)
-    (hF : ∀ j, F (s j).primitiveGenerator = (t j).primitiveGenerator) : E = F := by
-  have hcomp : E.toLinearMap.comp (rayChargeMap s) = F.toLinearMap.comp (rayChargeMap s) := by
-    apply (Pi.basisFun ℤ (Fin n)).ext
-    simp [hE, hF]
-  ext x
-  apply AddSubgroup.nsmulAddMonoidHom_injective_of_isTorsionFree hindex
-  obtain ⟨a, ha⟩ := (rayChargeMap s).range.toAddSubgroup.nsmul_index_mem x
-  have h := LinearMap.congr_fun hcomp a
-  simpa only [LinearMap.comp_apply, LinearEquiv.coe_coe, ha, map_nsmul,
-    nsmulAddMonoidHom_apply] using h
 
 variable [Nonempty Φ.cones] [Φ.algebraicRealization.IsProjectiveOver ℂ]
   (b : Module.Basis (Fin 2) ℤ N) (b' : Module.Basis (Fin 2) ℤ N') (c : Fin n → ℂˣ)
@@ -126,6 +105,6 @@ theorem existsUnique_rayChargeEquiv_of_anticanonical_cycle
   have hnz : (rayChargeMap s).range.toAddSubgroup.index ≠ 0 := by
     intro hz
     simp [hz, NeZero.ne k] at hindex
-  exact ⟨E, ⟨hE', hpair⟩, fun F hF ↦ rayChargeEquiv_ext s t hnz hF.1 hE'⟩
+  exact ⟨E, ⟨hE', hpair⟩, fun F hF ↦ rayChargeEquiv_ext s hnz (fun j ↦ (hF.1 j).trans (hE' j).symm)⟩
 
 end TauCeti.Toric.Fan
