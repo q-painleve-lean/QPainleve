@@ -59,30 +59,6 @@ local notation "q[" z "]" => Scheme.branchRationalPoint C nodal z
 local notation "L" => Proj.symmetricAlgebraTwistingBundle ℂ (Fin 2 → ℂ) 1
 local notation "s[" c "]" => projectiveLine.binomialSection ℂ (↑(c : ℂˣ)⁻¹ : ℂ)
 
-/-- A binomial center is away from the nodes, so its Cartier ideal restricts to
-the unit ideal on the singular locus. -/
-theorem Ray.comap_ker_binomialCenterOnBoundary_singularLocus (c : ℂˣ) :
-    (ρ.binomialCenterOnBoundary hdim hm hprim c).ker.comap (I).subschemeι = ⊤ := by
-  let t := ρ.orbitToBoundary hdim hm hprim
-  let f := C ↘ S
-  let p := ρ.binomialCenterOnBoundary hdim hm hprim c
-  have hsm := ρ.smoothOfRelativeDimension_orbitToBoundary hdim hm hprim
-  have : SmoothOfRelativeDimension 1 (t ≫ f) := by
-    simpa only [t, f, over_eq_subschemeι_comp, Φ.algebraicRealization_over] using hsm
-  have : Smooth (t ≫ f) := SmoothOfRelativeDimension.smooth 1 _
-  have hdisj : Set.range p ⊆ f.smoothLocus := by
-    refine (ρ.range_binomialCenterOnBoundary_subset_range_orbitToBoundary hdim hm hprim c).trans ?_
-    rintro _ ⟨y, rfl⟩
-    apply (t.mem_preimage).mp
-    rw [t.preimage_smoothLocus_eq f, (t ≫ f).smoothLocus_eq_top]
-    exact TopologicalSpace.Opens.mem_top y
-  rw [comap_eq_top_iff, ← TopologicalSpace.Opens.coe_eq_univ, Scheme.Hom.coe_preimage,
-    TopologicalSpace.Closeds.coe_compl, Scheme.Hom.support_ker,
-    p.isClosedEmbedding.isClosed_range.closure_eq, Set.eq_univ_iff_forall]
-  intro x hx
-  have hs : (I).subschemeι x ∈ (I).support := (I).range_subschemeι.le (Set.mem_range_self x)
-  exact ((C).mem_support_singularLocus_iff_notMem_smoothLocus _).mp hs (hdisj hx)
-
 /-- On every other normalization component, the binomial center ideal restricts to
 the unit ideal. -/
 theorem Ray.comap_ker_binomialCenterOnBoundary_normalizationComponent_eq_top_of_ne
