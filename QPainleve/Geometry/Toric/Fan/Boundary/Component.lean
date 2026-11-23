@@ -5,10 +5,8 @@ Authors: The QPainleve contributors
 -/
 module
 
-public import Mathlib.RingTheory.RegularLocalRing.Defs
 public import QPainleve.Geometry.Toric.Fan.Boundary.Center
 public import QPainleve.Geometry.Toric.Fan.Boundary.Ideal
-public import TauCeti.AlgebraicGeometry.IdealSheaf.Over
 
 import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.Section
 import TauCeti.AlgebraicGeometry.IdealSheaf.BaseChange

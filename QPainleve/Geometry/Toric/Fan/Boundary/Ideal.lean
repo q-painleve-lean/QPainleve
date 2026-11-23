@@ -8,6 +8,8 @@ module
 public import Mathlib.AlgebraicGeometry.IdealSheaf.Functorial
 public import QPainleve.Geometry.Toric.Fan.Boundary.Basic
 public import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.Basic
+public import TauCeti.AlgebraicGeometry.IdealSheaf.Over
+public import TauCeti.AlgebraicGeometry.Scheme.Regular.Scheme
 
 import QPainleve.Geometry.Toric.Fan.Picard.Basic
 import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.Factorial
@@ -18,7 +20,8 @@ import TauCeti.AlgebraicGeometry.IdealSheaf.VanishingIdeal
 
 A ray divisor is the reduced closure of its codimension-one point in the fan scheme.
 On a chart containing the ray it is cut out by the ray ideal. On the other charts
-its ideal is the unit ideal. This is the scheme-theoretic chart description of
+its ideal is the unit ideal. The ray divisor is regular, and it is proper over `ℂ` when
+the fan scheme is proper. This is the scheme-theoretic chart description of
 the invariant divisors in Fulton, *Introduction to Toric Varieties*, §3.1.
 -/
 
@@ -26,6 +29,7 @@ public noncomputable section
 
 open AlgebraicGeometry CategoryTheory TopologicalSpace
 open AlgebraicGeometry.Scheme.IdealSheafData
+open TauCeti.AlgebraicGeometry (isRegularLocalRing_stalk_iff_of_isOpenImmersion)
 
 namespace TauCeti.Toric.Fan
 
@@ -46,6 +50,14 @@ theorem rayBoundaryIdeal_def (ρ : Φ.Ray) :
 instance isIntegral_rayBoundary (ρ : Φ.Ray) :
     IsIntegral (Φ.rayBoundaryIdeal hΦ ρ).subscheme := by
   rw [Φ.rayBoundaryIdeal_def]
+  infer_instance
+
+/-- A ray divisor in a proper toric variety is proper over `ℂ`. -/
+instance isProper_rayBoundary {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
+    {i : N →+ V} {Φ : Fan i} (hΦ : Φ.IsRegular) (ρ : Φ.Ray)
+    [IsProper (Φ.algebraicRealization ↘ Spec (.of ℂ))] :
+    IsProper ((Φ.rayBoundaryIdeal hΦ ρ).subscheme ↘ Spec (.of ℂ)) := by
+  rw [over_eq_subschemeι_comp]
   infer_instance
 
 /-- The boundary ideal of a ray in a regular fan defines an effective Cartier divisor. -/
@@ -127,5 +139,51 @@ theorem comap_rayBoundaryIdeal_eq_ofIdealTop (ρ : Φ.Ray) (σ : Φ.cones) (h : 
     hreg.rayPoint_asIdeal]
   have := hreg.isPrime_rayIdeal Φ.lattice (Φ.isToricCone σ.property) r
   exact (Ideal.map_isPrime_of_equiv (Scheme.ΓSpecIso _).symm.commRingCatIsoToRingEquiv).radical
+
+variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
+  {i : N →+ V} {Φ : Fan i} (hΦ : Φ.IsRegular) (ρ : Φ.Ray)
+
+local notation "D" => Φ.rayBoundaryIdeal hΦ ρ
+
+private theorem isRegularLocalRing_stalk_rayBoundary (x : (D).subscheme) :
+    IsRegularLocalRing ((D).subscheme.presheaf.stalk x) := by
+  obtain ⟨σ, y, hy⟩ := Φ.exists_affineToricChartι_apply_eq ((D).subschemeι x)
+  let j := Φ.affineToricChartι σ
+  have hyD : y ∈ (((D).comap j).support : Set (Φ.affineToricChart σ)) := by
+    rw [support_comap, Closeds.coe_preimage, Set.mem_preimage, hy, ← (D).range_subschemeι]
+    exact Set.mem_range_self x
+  have hρ : ρ.toCone ≤ σ := by
+    by_contra h
+    rw [Φ.comap_rayBoundaryIdeal_eq_top hΦ ρ σ h, support_top] at hyD
+    exact hyD
+  let hσ := Φ.isToricCone σ.property
+  let I := rayIdeal Φ.lattice hσ (ρ.toToricRay Φ σ hρ)
+  let q := Spec.map (CommRingCat.ofHom (Ideal.Quotient.mk I))
+  have : IsClosedImmersion q := IsClosedImmersion.spec_of_surjective
+    _ Ideal.Quotient.mk_surjective
+  have hker : q.ker = (D).comap j := by
+    rw [Φ.comap_rayBoundaryIdeal_eq_ofIdealTop hΦ ρ σ hρ, Scheme.Hom.ker_Spec_map]
+    simp [I]
+  let g := IsClosedImmersion.lift (D).subschemeι (q ≫ j) (by
+    rw [ker_subschemeι, Scheme.Hom.ker_comp, hker]
+    exact le_map_comap _ _)
+  have hg : g ≫ (D).subschemeι = q ≫ j := IsClosedImmersion.lift_fac _ _ _
+  have hpb := isPullback_of_isClosedImmersion q (D).subschemeι g j hg.symm
+    (by rw [ker_subschemeι, hker])
+  have : IsOpenImmersion g := MorphismProperty.of_isPullback hpb inferInstance
+  have hyq : y ∈ Set.range q := by rwa [← hker, q.support_ker,
+    q.isClosedEmbedding.isClosed_range.closure_eq] at hyD
+  obtain ⟨z, hz⟩ := hyq
+  have hx : g z = x := (D).subschemeι.isClosedEmbedding.injective (by
+    rw [← Scheme.Hom.comp_apply, hg, Scheme.Hom.comp_apply, hz, hy])
+  have := ((isRegular_iff.mp hΦ) σ.val σ.property).isRegularRing_quotient_rayIdeal
+    Φ.lattice (ρ.toToricRay Φ σ hρ)
+  exact hx ▸ (isRegularLocalRing_stalk_iff_of_isOpenImmersion g z).mpr inferInstance
+
+/-- The reduced component belonging to a ray of a regular fan is a regular scheme. -/
+theorem isRegular_rayBoundary (Φ : Fan i) (hΦ : Φ.IsRegular) (ρ : Φ.Ray) :
+    TauCeti.AlgebraicGeometry.IsRegular (Φ.rayBoundaryIdeal hΦ ρ).subscheme := by
+  have := LocallyOfFiniteType.isLocallyNoetherian (Φ.rayBoundaryIdeal hΦ ρ).subschemeι
+  exact ⟨isRegularLocalRing_stalk_rayBoundary hΦ ρ⟩
 
 end TauCeti.Toric.Fan

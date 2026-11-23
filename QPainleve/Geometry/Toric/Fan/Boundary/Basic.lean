@@ -6,16 +6,18 @@ Authors: The QPainleve contributors
 module
 
 public import Mathlib.AlgebraicGeometry.IdealSheaf.Basic
+public import Mathlib.RingTheory.RegularLocalRing.Defs
 public import QPainleve.AlgebraicGeometry.OrderOfVanishing.Base
 public import QPainleve.Geometry.Toric.Fan.FunctionField
 public import QPainleve.Geometry.Toric.Fan.Ray
-public import QPainleve.Geometry.Toric.RegularChart
 public import TauCeti.AlgebraicGeometry.Scheme.CodimensionOnePoint
 public import TauCeti.Geometry.Toric.Algebraic.Fan.Over
 
 import Mathlib.Algebra.MvPolynomial.Division
 import Mathlib.RingTheory.Ideal.KrullsHeightTheorem
+import QPainleve.Geometry.Toric.RegularChart
 import TauCeti.AlgebraicGeometry.WeilDivisor.Scheme.Order
+import TauCeti.RingTheory.Smooth.Regular
 
 /-!
 # Toric boundary points and orders of characters
@@ -72,15 +74,6 @@ theorem monomial_mem_rayIdeal (ρ : ToricRay σ) (m : dualSemigroup hi σ)
 
 variable {b : Module.Basis (ToricRay σ ⊕ ι) ℤ N}
   (hb : ∀ ρ, IsPrimitiveGenerator i ρ (b (Sum.inl ρ)))
-
-/-- The character dual to a primitive ray is its polynomial variable in regular coordinates. -/
-theorem affineCoordinateRingEquivMvPolynomial_rayCoord (ρ : ToricRay σ) :
-    affineCoordinateRingEquivMvPolynomial hi hσ hb
-      (χ (ofAdd (dualSemigroupCoord hi hσ hb (Sum.inl ρ)))) = MvPolynomial.X ρ := by
-  have h := (regularDualSemigroupEquiv hi hσ hb).apply_symm_apply (Finsupp.single ρ 1, 0)
-  rw [regularDualSemigroupEquiv_symm_apply_single_zero] at h
-  rw [MonoidAlgebra.of_apply, affineCoordinateRingEquivMvPolynomial_single, h]
-  rw [← AddMonoidAlgebra.one_def, ← MvPolynomial.X_pow_eq_monomial, pow_one]
 
 /-- In regular coordinates the ray ideal is the principal ideal of the ray variable. -/
 theorem rayIdeal_eq_span (ρ : ToricRay σ) :
@@ -152,6 +145,44 @@ theorem coeff_eq_zero_of_mem_rayIdeal (hi : IsIntegralLattice i) (hσ : IsToricC
     simpa only [toAdd_mul, toAdd_ofAdd, AddSubmonoid.coe_add, AddMonoidHom.add_apply] using h
   have hm' : (m : N →+ ℤ) u = 0 := hm
   omega
+
+/-- The coordinate ring of a ray divisor in a regular affine toric chart is regular. -/
+theorem IsRegularCone.isRegularRing_quotient_rayIdeal {N V : Type} [AddCommGroup N]
+    [AddCommGroup V] [Module ℝ V] {i : N →+ V} {σ : PointedCone ℝ V}
+    (hreg : IsRegularCone i σ) (hi : IsIntegralLattice i) (ρ : ToricRay σ) :
+    IsRegularRing (affineCoordinateRing hi σ ⧸ rayIdeal hi hreg.toIsToricCone ρ) := by
+  classical
+  obtain ⟨l, b, hb⟩ := hreg.exists_basis_sum
+  let hσ := hreg.toIsToricCone
+  let R := AddMonoidAlgebra ℂ (Fin l →₀ ℤ)
+  let A := MvPolynomial {τ : ToricRay σ // τ ≠ ρ} R
+  let e : affineCoordinateRing hi σ ≃ₐ[ℂ] Polynomial A :=
+    (affineCoordinateRingEquivMvPolynomial hi hσ hb).trans <|
+      (((MvPolynomial.renameEquiv R (Equiv.optionSubtypeNe ρ).symm).trans
+        (MvPolynomial.optionEquivLeft R _)).restrictScalars ℂ)
+  let q := MonoidAlgebra.of ℂ (Multiplicative (dualSemigroup hi σ))
+    (ofAdd (dualSemigroupCoord hi hσ hb (Sum.inl ρ)))
+  have hq : e q = Polynomial.X := by
+    simp only [e, q, AlgEquiv.trans_apply, AlgEquiv.restrictScalars_apply,
+      affineCoordinateRingEquivMvPolynomial_rayCoord, MvPolynomial.renameEquiv_apply,
+      MvPolynomial.rename_X, Equiv.optionSubtypeNe_symm_self, MvPolynomial.optionEquivLeft_X_none]
+  have hmap : (rayIdeal hi hσ ρ).map e.toRingEquiv = Ideal.span {Polynomial.X} := by
+    rw [rayIdeal_eq_span hi hσ hb, Ideal.map_span, Set.image_singleton]
+    exact congrArg (fun v : Polynomial A ↦ Ideal.span {v}) hq
+  have : Algebra.IsStandardSmoothOfRelativeDimension (Nat.card (Fin l)) ℂ R :=
+    AddMonoidAlgebra.isStandardSmoothOfRelativeDimension_finsupp_int ℂ (Fin l)
+  have : Algebra.IsStandardSmooth ℂ R :=
+    Algebra.IsStandardSmoothOfRelativeDimension.isStandardSmooth (n := Nat.card (Fin l))
+  have : IsRegularRing R := IsRegularRing.of_smooth (R := ℂ)
+  have : Finite (ToricRay σ) := ToricRay.finite_of_fg hreg.fg
+  have : IsRegularRing A := inferInstanceAs (IsRegularRing (MvPolynomial _ R))
+  have hI : Ideal.span {Polynomial.X - Polynomial.C (0 : A)} =
+      (rayIdeal hi hσ ρ).map e.toRingEquiv := by
+    have hzero : (Polynomial.X - Polynomial.C (0 : A)) = Polynomial.X := by simp
+    rw [hzero, hmap]
+  let quotientEquiv := (Ideal.quotientEquiv _ _ e.toRingEquiv hI).trans
+    (Polynomial.quotientSpanXSubCAlgEquiv (0 : A)).toRingEquiv
+  exact IsRegularRing.of_ringEquiv quotientEquiv.symm
 
 /-- Ray ideals in regular cones are prime. -/
 theorem IsRegularCone.isPrime_rayIdeal (hreg : IsRegularCone i σ) (ρ : ToricRay σ) :

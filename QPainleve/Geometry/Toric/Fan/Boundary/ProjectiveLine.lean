@@ -8,122 +8,39 @@ module
 public import QPainleve.Geometry.Toric.Fan.Boundary.Component
 public import QPainleve.Geometry.Toric.Fan.Point
 public import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.ProjectiveLine.Scaling
-public import TauCeti.AlgebraicGeometry.Scheme.Regular.Scheme
 
-import Mathlib.RingTheory.Polynomial.Quotient
-import Mathlib.RingTheory.RegularLocalRing.Polynomial
 import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.ProjectiveLine
 import QPainleve.Geometry.Toric.Fan.Adjacency
 import QPainleve.Geometry.Toric.Fan.Boundary.Intersection
 import TauCeti.AlgebraicGeometry.Curves.ProjectiveLine
-import TauCeti.AlgebraicGeometry.IdealSheaf.OfIdealTop
-import TauCeti.AlgebraicGeometry.Morphisms.Smooth.Regular
 
 /-!
 # Projective coordinates on toric boundary components
 
-A ray divisor of a regular toric fan is regular. For a proper toric surface, a
-primitive character annihilating the ray identifies the divisor with the projective
-line, extending the Laurent coordinate on its open orbit. The neighboring nodes
-correspond to zero and the pole according to the sign of the character. A binomial
-center with parameter `c` has value `-c⁻¹`. This fixes the projective coordinate
-used to compare center divisors in the period calculation of Gross, Hacking and Keel,
+For a proper ray divisor of a regular toric surface, a primitive character annihilating
+the ray identifies the divisor with the projective line, extending the Laurent coordinate
+on its open orbit. The neighboring nodes correspond to zero and the pole according to the
+sign of the character. A binomial center with parameter `c` has value `-c⁻¹`. This fixes
+the projective coordinate used to compare center divisors in the period calculation of
+Gross, Hacking and Keel,
 [*Moduli of surfaces with an anti-canonical cycle*, §2](https://arxiv.org/html/1211.6367v5#S2).
 -/
 
 public noncomputable section
 
-open AlgebraicGeometry CategoryTheory CategoryTheory.Limits Multiplicative TopologicalSpace
+open AlgebraicGeometry CategoryTheory CategoryTheory.Limits Multiplicative
 open Scheme.IdealSheafData TauCeti.AlgebraicGeometry
 
 namespace TauCeti.Toric
 
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
-  {i : N →+ V} {σ : PointedCone ℝ V}
-
-/-- The coordinate ring of a ray divisor in a regular affine toric chart is regular. -/
-theorem IsRegularCone.isRegularRing_quotient_rayIdeal (hreg : IsRegularCone i σ)
-    (hi : IsIntegralLattice i) (ρ : ToricRay σ) :
-    IsRegularRing (affineCoordinateRing hi σ ⧸ rayIdeal hi hreg.toIsToricCone ρ) := by
-  classical
-  obtain ⟨l, b, hb⟩ := hreg.exists_basis_sum
-  let hσ := hreg.toIsToricCone
-  let R := AddMonoidAlgebra ℂ (Fin l →₀ ℤ)
-  let A := MvPolynomial {τ : ToricRay σ // τ ≠ ρ} R
-  let e : affineCoordinateRing hi σ ≃ₐ[ℂ] Polynomial A :=
-    (affineCoordinateRingEquivMvPolynomial hi hσ hb).trans <|
-      (((MvPolynomial.renameEquiv R (Equiv.optionSubtypeNe ρ).symm).trans
-        (MvPolynomial.optionEquivLeft R _)).restrictScalars ℂ)
-  let q := MonoidAlgebra.of ℂ (Multiplicative (dualSemigroup hi σ))
-    (ofAdd (dualSemigroupCoord hi hσ hb (Sum.inl ρ)))
-  have hq : e q = Polynomial.X := by
-    simp only [e, q, AlgEquiv.trans_apply, AlgEquiv.restrictScalars_apply,
-      affineCoordinateRingEquivMvPolynomial_rayCoord, MvPolynomial.renameEquiv_apply,
-      MvPolynomial.rename_X, Equiv.optionSubtypeNe_symm_self, MvPolynomial.optionEquivLeft_X_none]
-  have hmap : (rayIdeal hi hσ ρ).map e.toRingEquiv = Ideal.span {Polynomial.X} := by
-    rw [rayIdeal_eq_span hi hσ hb, Ideal.map_span, Set.image_singleton]
-    exact congrArg (fun v : Polynomial A ↦ Ideal.span {v}) hq
-  have : Algebra.IsStandardSmoothOfRelativeDimension (Nat.card (Fin l)) ℂ R :=
-    AddMonoidAlgebra.isStandardSmoothOfRelativeDimension_finsupp_int ℂ (Fin l)
-  have : Algebra.IsStandardSmooth ℂ R :=
-    Algebra.IsStandardSmoothOfRelativeDimension.isStandardSmooth (n := Nat.card (Fin l))
-  have : IsRegularRing R := IsRegularRing.of_smooth (R := ℂ)
-  have : Finite (ToricRay σ) := ToricRay.finite_of_fg hreg.fg
-  have : IsRegularRing A := inferInstanceAs (IsRegularRing (MvPolynomial _ R))
-  have hI : Ideal.span {Polynomial.X - Polynomial.C (0 : A)} =
-      (rayIdeal hi hσ ρ).map e.toRingEquiv := by
-    have hzero : (Polynomial.X - Polynomial.C (0 : A)) = Polynomial.X := by simp
-    rw [hzero, hmap]
-  let quotientEquiv := (Ideal.quotientEquiv _ _ e.toRingEquiv hI).trans
-    (Polynomial.quotientSpanXSubCAlgEquiv (0 : A)).toRingEquiv
-  exact IsRegularRing.of_ringEquiv quotientEquiv.symm
+  {i : N →+ V}
 
 namespace Fan
 
 variable {Φ : Fan i} (hΦ : Φ.IsRegular) (ρ : Φ.Ray)
 
 local notation "D" => Φ.rayBoundaryIdeal hΦ ρ
-
-private theorem isRegularLocalRing_stalk_rayBoundary (x : (D).subscheme) :
-    IsRegularLocalRing ((D).subscheme.presheaf.stalk x) := by
-  obtain ⟨σ, y, hy⟩ := Φ.exists_affineToricChartι_apply_eq ((D).subschemeι x)
-  let j := Φ.affineToricChartι σ
-  have hyD : y ∈ (((D).comap j).support : Set (Φ.affineToricChart σ)) := by
-    rw [support_comap, Closeds.coe_preimage, Set.mem_preimage, hy, ← (D).range_subschemeι]
-    exact Set.mem_range_self x
-  have hρ : ρ.toCone ≤ σ := by
-    by_contra h
-    rw [Φ.comap_rayBoundaryIdeal_eq_top hΦ ρ σ h, support_top] at hyD
-    exact hyD
-  let hσ := Φ.isToricCone σ.property
-  let I := rayIdeal Φ.lattice hσ (ρ.toToricRay Φ σ hρ)
-  let q := Spec.map (CommRingCat.ofHom (Ideal.Quotient.mk I))
-  have : IsClosedImmersion q := IsClosedImmersion.spec_of_surjective
-    _ Ideal.Quotient.mk_surjective
-  have hker : q.ker = (D).comap j := by
-    rw [Φ.comap_rayBoundaryIdeal_eq_ofIdealTop hΦ ρ σ hρ, Scheme.Hom.ker_Spec_map]
-    simp [I]
-  let g := IsClosedImmersion.lift (D).subschemeι (q ≫ j) (by
-    rw [ker_subschemeι, Scheme.Hom.ker_comp, hker]
-    exact le_map_comap _ _)
-  have hg : g ≫ (D).subschemeι = q ≫ j := IsClosedImmersion.lift_fac _ _ _
-  have hpb := isPullback_of_isClosedImmersion q (D).subschemeι g j hg.symm
-    (by rw [ker_subschemeι, hker])
-  have : IsOpenImmersion g := MorphismProperty.of_isPullback hpb inferInstance
-  have hyq : y ∈ Set.range q := by rwa [← hker, q.support_ker,
-    q.isClosedEmbedding.isClosed_range.closure_eq] at hyD
-  obtain ⟨z, hz⟩ := hyq
-  have hx : g z = x := (D).subschemeι.isClosedEmbedding.injective (by
-    rw [← Scheme.Hom.comp_apply, hg, Scheme.Hom.comp_apply, hz, hy])
-  have := ((isRegular_iff.mp hΦ) σ.val σ.property).isRegularRing_quotient_rayIdeal
-    Φ.lattice (ρ.toToricRay Φ σ hρ)
-  exact hx ▸ (isRegularLocalRing_stalk_iff_of_isOpenImmersion g z).mpr inferInstance
-
-/-- The reduced component belonging to a ray of a regular fan is a regular scheme. -/
-theorem isRegular_rayBoundary (Φ : Fan i) (hΦ : Φ.IsRegular) (ρ : Φ.Ray) :
-    TauCeti.AlgebraicGeometry.IsRegular (Φ.rayBoundaryIdeal hΦ ρ).subscheme := by
-  have := LocallyOfFiniteType.isLocallyNoetherian (Φ.rayBoundaryIdeal hΦ ρ).subschemeι
-  exact ⟨isRegularLocalRing_stalk_rayBoundary hΦ ρ⟩
 
 local notation "base" => Spec (CommRingCat.of ℂ)
 local notation "Gm" => Spec (CommRingCat.of (LaurentPolynomial ℂ))
@@ -142,12 +59,6 @@ private def rayBoundaryFunctionFieldEquiv :
   let eD := (asIso (j).functionFieldMap).commRingCatIsoToRingEquiv
   (AlgEquiv.ofRingEquiv (f := eP) ((t).functionFieldMap_algebraMap ℂ)).trans
     (AlgEquiv.ofRingEquiv (f := eD) ((j).functionFieldMap_algebraMap ℂ)).symm
-
-/-- A ray divisor in a proper toric variety is proper over `ℂ`. -/
-instance isProper_rayBoundary [IsProper (Φ.algebraicRealization ↘ base)] :
-    IsProper ((D).subscheme ↘ base) := by
-  rw [over_eq_subschemeι_comp]
-  infer_instance
 
 variable [hproper : IsProper ((Φ.rayBoundaryIdeal hΦ ρ).subscheme ↘ Spec (.of ℂ))]
 
