@@ -355,16 +355,6 @@ theorem exists_rayChart_of_not_isNodeOfReducedBoundary
   obtain ⟨r, hrt⟩ := exists_ne t
   exact ⟨Ray.ofToricRay Φ σ r, mem_range_rayChart_of_not_mem_otherRayIdeal σ hΦ hσ hrt y ht⟩
 
-/-- Away from the nodes, every point of the reduced boundary of a complete regular
-toric surface lies in a ray chart. The boundary in this chart is the ray orbit. -/
-theorem exists_mem_range_rayChart_of_not_isNodeOfReducedBoundary
-    (hΦ : Φ.IsRegular) (hc : Φ.IsComplete) (hdim : Module.finrank ℤ N = 2)
-    {x : Φ.algebraicRealization} (_hx : x ∈ (Φ.boundaryIdeal hc.nonempty_cones).support)
-    (hn : ¬ (Φ.boundaryIdeal hc.nonempty_cones).IsNodeOfReducedBoundary
-      Φ.algebraicRealizationStructureMap x) :
-    ∃ ρ : Φ.Ray, x ∈ Set.range (Φ.affineToricChartι ρ.toCone) :=
-  Φ.exists_rayChart_of_not_isNodeOfReducedBoundary hΦ hc hdim hn
-
 variable [Nonempty Φ.cones]
 
 local notation "D" => Φ.boundaryIdeal inferInstance
