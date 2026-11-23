@@ -60,13 +60,13 @@ private theorem formallySmooth_stalkMap_lifted_center (s : X ⟶ S) (f : X' ⟶ 
 boundary blowups is the lift of a closed node on the original boundary. Blowing
 up that original node first and transporting the ordered centers gives a
 cartesian comparison with the original tower. Each transported center is
-smooth on the reduced total boundary and has its original residue scheme.
-The comparison matches the final reduced boundary ideals. -/
+supported at formally smooth points of the reduced total boundary and has its
+original center scheme. The comparison matches the final reduced boundary ideals. -/
 theorem exists_iso_nodal_blowup_alongBoundary (s : X ⟶ S) {n : ℕ}
-    (p : Fin n → D.subscheme) (hp : ∀ j, IsClosed ({p j} : Set D.subscheme))
-    (hC : ∀ j, (D.subscheme.fromSpecResidueField (p j)).ker.IsEffectiveCartier)
-    (hs : ∀ j, ((D.subschemeι ≫ s).stalkMap (p j)).hom.FormallySmooth) :
-    let a := fun j ↦ D.subscheme.fromSpecResidueField (p j)
+    {C : Fin n → Scheme.{u}}
+    (a : ∀ j, C j ⟶ D.subscheme) [∀ j, IsClosedImmersion (a j)]
+    (hC : ∀ j, (a j).ker.IsEffectiveCartier)
+    (hs : ∀ j y, ((D.subschemeι ≫ s).stalkMap (a j y)).hom.FormallySmooth) :
     let A := alongBoundary D.subschemeι (fun j ↦ ⟨(a j).ker, hC j⟩)
     ∀ q : A.1, IsClosed ({q} : Set A.1) →
       A.2.boundaryι.ker.IsNodeOfReducedBoundary (A.2.toTower.toBase ≫ s) q →
@@ -76,7 +76,7 @@ theorem exists_iso_nodal_blowup_alongBoundary (s : X ⟶ S) {n : ℕ}
       let E := (D.comap I.blowupToBase).radical
       let d := subschemeMap E D I.blowupToBase (le_map_iff_comap_le.mpr (le_radical _))
       IsClosed ({x} : Set X) ∧ D.IsNodeOfReducedBoundary s x ∧
-      ∃ (a' : ∀ j, Spec (D.subscheme.residueField (p j)) ⟶ E.subscheme)
+      ∃ (a' : ∀ j, C j ⟶ E.subscheme)
         (hC' : ∀ j, (a' j).ker.IsEffectiveCartier),
         (∀ j, IsPullback (a' j) (𝟙 _) d (a j)) ∧
         (∀ j y, ((E.subschemeι ≫ I.blowupToBase ≫ s).stalkMap (a' j y)).hom.FormallySmooth) ∧
@@ -85,14 +85,12 @@ theorem exists_iso_nodal_blowup_alongBoundary (s : X ⟶ S) {n : ℕ}
           IsPullback (e.hom ≫ J.blowupToBase) B.2.toTower.toBase
             A.2.toTower.toBase I.blowupToBase ∧
           ((A.2.boundaryι.ker.comap J.blowupToBase).radical).comap e.hom = B.2.boundaryι.ker := by
-  intro a A q hq hnode
+  intro A q hq hnode
   let π := A.2.toTower.toBase
   let x := π q
   let I := (X.fromSpecResidueField x).ker
   let J := (A.1.fromSpecResidueField q).ker
   let f := I.blowupToBase
-  have ha (j : Fin n) : IsClosedImmersion (a j) :=
-    isClosed_singleton_iff_isClosedImmersion.mp (hp j)
   obtain ⟨z, hz, hn⟩ := (A.2.boundaryι.isNodeOfReducedBoundary_ker_iff _ q).mp hnode
   rw [WithBoundary.boundaryι_toBase_assoc] at hn
   have hx : D.subschemeι z = x := by rw [← A.2.boundaryι_toBase, Scheme.Hom.comp_apply, hz]
@@ -104,21 +102,21 @@ theorem exists_iso_nodal_blowup_alongBoundary (s : X ⟶ S) {n : ℕ}
   have hxnode : D.IsNodeOfReducedBoundary s x := by
     rw [← ker_subschemeι D]
     exact (D.subschemeι.isNodeOfReducedBoundary_ker_iff _ _).mpr ⟨z, hx, hn⟩
-  have hne (j : Fin n) : D.subschemeι (p j) ≠ x := by
+  have hne (j : Fin n) (y : C j) : D.subschemeι (a j y) ≠ x := by
     intro he
     have hj := D.subschemeι.isClosedEmbedding.injective (he.trans hx.symm)
-    exact hn.not_formallySmooth_stalkMap (hj ▸ hs j)
+    exact hn.not_formallySmooth_stalkMap (hj ▸ hs j y)
   have hI : (I.support : Set X) = {x} :=
     Scheme.support_ker_fromSpecResidueField_of_isClosed hxclosed
   have hg (j : Fin n) : Set.range (a j ≫ D.subschemeι) ⊆ f.isoLocus := by
     rintro _ ⟨y, rfl⟩
     apply f.le_isoLocus_iff.mpr I.isIso_blowupToBase_restrict_compl_support
-    simpa only [Scheme.Hom.comp_apply, a, Scheme.fromSpecResidueField_apply,
-      ← SetLike.mem_coe, Closeds.coe_compl, hI,
-      Set.mem_compl_iff, Set.mem_singleton_iff] using hne j
+    simpa only [Scheme.Hom.comp_apply, ← SetLike.mem_coe, Closeds.coe_compl, hI,
+      Set.mem_compl_iff, Set.mem_singleton_iff] using hne j y
   have hπ : x ∈ π.isoLocus := mem_isoLocus_toBase_alongBoundary _ _ fun j ↦ by
-    rw [Scheme.support_ker_fromSpecResidueField_of_isClosed (hp j), Set.image_singleton]
-    exact fun h ↦ hne j h.symm
+    rw [(a j).support_ker, (a j).isClosedEmbedding.isClosed_range.closure_eq]
+    rintro ⟨_, ⟨y, rfl⟩, hy⟩
+    exact hne j y hy
   have hJ : I.comap π = J := π.comap_ker_fromSpecResidueField_of_mem_isoLocus hxclosed hπ
   have hpb := I.isPullback_blowupMap_of_support_subset_isoLocus π
     (by simpa only [hI, Set.singleton_subset_iff, SetLike.mem_coe] using hπ)
@@ -130,9 +128,8 @@ theorem exists_iso_nodal_blowup_alongBoundary (s : X ⟶ S) {n : ℕ}
       Category.comp_id]
     exact hg'.isoIsPullback_hom_fst _ _ hpb
   refine ⟨hxclosed, hxnode, a', hC', ha', fun j y ↦ ?_, e, he.symm ▸ hg', ?_⟩
-  · have hy : a j y = p j := Scheme.fromSpecResidueField_apply (p j) y
-    exact formallySmooth_stalkMap_lifted_center s f (a j) (hg j) (a' j)
-      (by simpa only [Category.id_comp] using (ha' j).w) y (hy.symm ▸ hs j)
+  · exact formallySmooth_stalkMap_lifted_center s f (a j) (hg j) (a' j)
+      (by simpa only [Category.id_comp] using (ha' j).w) y (hs j y)
   · rw [← radical_comap_of_isOpenImmersion, ← comap_comp, he]
     exact hboundary
 
