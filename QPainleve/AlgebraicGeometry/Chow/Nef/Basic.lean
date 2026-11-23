@@ -99,10 +99,7 @@ public theorem isNef_weilToLineBundleClassHom_iff
   refine ⟨fun h p _ ↦ h p, fun h p ↦ ?_⟩
   by_cases hp : p ∈ D.support
   · exact h p hp
-  rw [classIntersectionNumber_comm, classIntersectionNumber_weilToLineBundleClassHom k hX]
-  refine Finset.sum_nonneg fun q hq ↦ mul_nonneg (hD q) ?_
-  exact classIntersectionNumber_primeDivisorClass_nonneg_of_ne k hX
-    (fun he ↦ hp (he.symm ▸ hq))
+  exact classIntersectionNumber_primeDivisorClass_nonneg_of_notMem_support k hX hD hp
 
 /-- A nef effective Weil divisor has square zero exactly when its class is orthogonal to
 each prime divisor in its support. -/
