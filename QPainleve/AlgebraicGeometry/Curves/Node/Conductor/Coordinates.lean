@@ -165,17 +165,6 @@ def normalizationGlobalSectionsEquiv :
   (X.blowupComponentGlobalSectionsEquiv (k := k)).trans
     (RingEquiv.piCongrLeft' (fun _ ↦ k) (X.dualGraphVertexEquiv p).symm)
 
-/-- A component restriction is the pullback of its corresponding scalar from the base field. -/
-theorem appTop_blowupComponent_eq (a : Γ((X.singularLocus k).blowup, ⊤))
-    (v : (X.dualGraph p).Vertex) :
-    let U := X.blowupComponent (X.dualGraphVertexEquiv p v)
-    U.ι.appTop a =
-      ((Scheme.ΓSpecIso (.of k)).inv ≫ (U.toScheme ↘ Spec (.of k)).appTop)
-        (X.normalizationGlobalSectionsEquiv p a v) := by
-  dsimp only
-  rw [CommRingCat.comp_apply, ← Modules.baseRingToGlobalSections_apply]
-  exact X.appTop_blowupComponent a (X.dualGraphVertexEquiv p v)
-
 /-- Evaluation on a rational section of the normalization reads the scalar
 of the component containing the point. -/
 theorem normalizationGlobalSectionsEquiv_eval (a : Γ((X.singularLocus k).blowup, ⊤))
