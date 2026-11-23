@@ -43,13 +43,7 @@ theorem exists_basis_of_ray_ne_of_le {ρ τ : Φ.Ray} {σ : Φ.cones}
     have he : Φ.rayEquiv σ ⟨ρ, hρ⟩ = Φ.rayEquiv σ ⟨τ, hτ⟩ := by
       simpa only [rayEquiv_apply] using r.injective h
     exact hne (congrArg Subtype.val ((Φ.rayEquiv σ).injective he))
-  have hu : Function.Injective u := by
-    intro a b h
-    fin_cases a <;> fin_cases b
-    · rfl
-    · exact (hne' h).elim
-    · exact (hne' h.symm).elim
-    · rfl
+  have hu : Function.Injective u := Matrix.injective_pair_iff_ne.mpr hne'
   let e := Equiv.ofBijective u (Finite.injective_iff_bijective.mp hu)
   refine ⟨c.reindex e.symm, ?_, ?_⟩
   · simpa [e, u] using
