@@ -238,40 +238,12 @@ local notation "p" => s (k)
 local notation "oppositeMem" => hull ℝ {i (-Ray.primitiveGenerator (p))} ∈ Φ.cones
 local notation "Ψₙ(" h ")" => Φ.mutationFan b (Ray.primitiveGenerator_ne_zero (p))
   (Ray.hull_primitiveGenerator_mem (p)) h
-local notation "hΨₙ(" h ")" => Iff.mpr (Φ.isRegular_mutationFan_iff b
-  (Ray.primitiveGenerator_ne_zero (p)) (Ray.hull_primitiveGenerator_mem (p)) h) hΦ
 local notation "I₀ₙ" => Ray.mutationSourceCenterIdeal b (p) c
 local notation "I₁ₙ(" h ")" => Ray.mutationTargetCenterIdeal b (p) h c
 local notation "Gₙ(" h ")" => Ray.mutationBlowupIso b (p) h c
 local notation "Mₙ(" h ")" => mutationPicardEquiv b s (k) h hΦ
-local notation "M₁(" h ")" => mutationPicardEquiv b (fun _ : Fin 1 ↦ p) 0 h hΦ
 local notation "P₀" => P(I₀ₙ)
 local notation "P₁(" h ")" => P(I₁ₙ(h))
-
-private theorem mutationPicardEquiv_pivot_split (hOppₙ : oppositeMem)
-    (a : Additive (LineBundleClass (Ψₙ(hOppₙ)).algebraicRealization) × (Fin (1 + n) → ℤ)) :
-    (((Mₙ(hOppₙ)) a).1, fun j : Fin 1 ↦ ((Mₙ(hOppₙ)) a).2 (j.castAdd n)) =
-      (M₁(hOppₙ)) (a.1, fun j : Fin 1 ↦ a.2 (j.castAdd n)) ∧
-    (fun j : Fin n ↦ ((Mₙ(hOppₙ)) a).2 (j.natAdd 1)) = fun j ↦ a.2 (j.natAdd 1) := by
-  classical
-  let : Nonempty (Ψₙ(hOppₙ)).cones := ⟨(Φ.mutationFanConeEquiv b (p).primitiveGenerator_ne_zero
-    (p).hull_primitiveGenerator_mem hOppₙ (p).toCone)⟩
-  obtain ⟨A, hA⟩ := (Ψₙ(hOppₙ)).rayDivisorToPicard_surjective (hΨₙ(hOppₙ)) a.1
-  obtain ⟨_, z⟩ := a
-  dsimp only at hA ⊢
-  rw [← hA, mutationPicardEquiv_apply_rayDivisor, mutationPicardEquiv_apply_rayDivisor]
-  constructor
-  · refine Prod.ext rfl ?_
-    funext j
-    rw [Subsingleton.elim j 0]
-    simp only [Pi.sub_apply, Pi.smul_apply, Pi.single_eq_same]
-  · funext j
-    have hj : j.natAdd 1 ≠ k := by
-      intro he
-      have hv' := congrArg Fin.val he
-      simp only [Fin.val_natAdd, Fin.val_castAdd, Fin.val_zero] at hv'
-      omega
-    simp only [Pi.sub_apply, Pi.smul_apply, Pi.single_eq_of_ne hj, smul_zero, sub_zero]
 
 /-- The Picard change of marking for one toric mutation also describes every lift
 through matching ordered towers after the pivot. Coordinates are ordered with

@@ -7,8 +7,7 @@ module
 
 public import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.Basic
 public import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.Polynomial.Chart
-public import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.TwistingSheaf.Basic
-public import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.SymmetricAlgebra
+public import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.TwistingSheaf.LocalTriviality
 public import TauCeti.AlgebraicGeometry.LineBundle.Class
 
 import QPainleve.AlgebraicGeometry.EffectiveCartierDivisor.Integral
@@ -361,6 +360,7 @@ private theorem exists_zpow_polynomialTwistingBundle [NeZero n] (a : LineBundleC
   exact h
 
 /-- The invertible sheaf `𝒪(m)` on the projective spectrum of a symmetric algebra. -/
+@[expose]
 def symmetricAlgebraTwistingBundle (k M : Type u) [CommRing k] [AddCommMonoid M] [Module k M]
     (m : ℤ) : InvertibleSheaf (Proj (TauCeti.SymmetricAlgebra.homogeneousSubmodule k M)) :=
   ⟨twistingSheaf _ m, inferInstance⟩
