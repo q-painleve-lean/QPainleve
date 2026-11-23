@@ -294,4 +294,48 @@ theorem eq_mutationPicardEquiv_of_eq_on_generators [Finite ι] [DecidableEq (Φ'
     intro j
     simpa [Pi.basisFun_apply] using hex j
 
+section Ordered
+
+variable {n : ℕ} (centers : Fin (1 + n) → Φ.Ray)
+
+local notation "k₀" => Fin.castAdd n (0 : Fin 1)
+local notation "p" => centers k₀
+local notation "Ψₙ(" h ")" => Φ.mutationFan b (Ray.primitiveGenerator_ne_zero (p))
+  (Ray.hull_primitiveGenerator_mem (p)) h
+local notation "Mₙ(" h ")" => mutationPicardEquiv b centers k₀ h hΦ
+local notation "M₁(" h ")" => mutationPicardEquiv b (fun _ : Fin 1 ↦ p) 0 h hΦ
+
+/-- When the pivot is first, the toric Picard component and first exceptional coordinate
+transform by the single-center marking, and the remaining exceptional coordinates agree. -/
+theorem mutationPicardEquiv_pivot_split
+    (hOpp : hull ℝ {i (-(p).primitiveGenerator)} ∈ Φ.cones)
+    (a : Pic Ψₙ(hOpp) × (Fin (1 + n) → ℤ)) :
+    (((Mₙ(hOpp)) a).1, fun j : Fin 1 ↦ ((Mₙ(hOpp)) a).2 (j.castAdd n)) =
+      (M₁(hOpp)) (a.1, fun j : Fin 1 ↦ a.2 (j.castAdd n)) ∧
+    (fun j : Fin n ↦ ((Mₙ(hOpp)) a).2 (j.natAdd 1)) = fun j ↦ a.2 (j.natAdd 1) := by
+  classical
+  let : Nonempty (Ψₙ(hOpp)).cones := ⟨Φ.mutationFanConeEquiv b (p).primitiveGenerator_ne_zero
+    (p).hull_primitiveGenerator_mem hOpp (p).toCone⟩
+  have hΨ : (Ψₙ(hOpp)).IsRegular :=
+    (Φ.isRegular_mutationFan_iff b (p).primitiveGenerator_ne_zero
+      (p).hull_primitiveGenerator_mem hOpp).mpr hΦ
+  obtain ⟨A, hA⟩ := (Ψₙ(hOpp)).rayDivisorToPicard_surjective hΨ a.1
+  obtain ⟨_, z⟩ := a
+  dsimp only at hA ⊢
+  rw [← hA, mutationPicardEquiv_apply_rayDivisor, mutationPicardEquiv_apply_rayDivisor]
+  constructor
+  · refine Prod.ext rfl ?_
+    funext j
+    rw [Subsingleton.elim j 0]
+    simp only [Pi.sub_apply, Pi.smul_apply, Pi.single_eq_same]
+  · funext j
+    have hj : j.natAdd 1 ≠ k₀ := by
+      intro he
+      have hv' := congrArg Fin.val he
+      simp only [Fin.val_natAdd, Fin.val_castAdd, Fin.val_zero] at hv'
+      omega
+    simp only [Pi.sub_apply, Pi.smul_apply, Pi.single_eq_of_ne hj, smul_zero, sub_zero]
+
+end Ordered
+
 end TauCeti.Toric.Fan
