@@ -8,6 +8,7 @@ module
 public import QPainleve.AlgebraicGeometry.Blowup.Tower.Logarithmic.Basic
 public import QPainleve.AlgebraicGeometry.Blowup.Tower.Nodal.Basic
 
+import QPainleve.AlgebraicGeometry.Blowup.StrictTransform.Nodality
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Logarithmic.Boundary
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Nodal.Reorder
 import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
@@ -485,56 +486,81 @@ variable [PerfectField k] [SmoothOfRelativeDimension 2 (X ↘ Spec (.of k))]
 private theorem exists_logarithmicBoundaryTower_of_totalTransform_le_ramification
     (hD : D.IsEffectiveCartier) (hT : IsClosedPointTower X T)
     (h : D.comap T.toBase ≤ hT.ramificationIdealSheafToBase k)
-    (hnodal : ∀ {a b : ℕ} {W : Scheme.{u}} {U : BlowupTower X a W}
-      (hU : IsClosedPointTower X U) (V : BlowupTower W (b + 1) Y) (hlen : a + (b + 1) = n),
-      cast (congrArg (fun j ↦ BlowupTower X j Y) hlen) (U.append V) = T →
-      let P := (D.comap U.toBase).colon (hU.ramificationIdealSheafToBase k)
-      AtWorstNodalOfRelativeDimensionOne (P.subschemeι ≫ U.toBase ≫ X ↘ Spec (.of k))) :
+    (hnodal : AtWorstNodalOfRelativeDimensionOne (D.subschemeι ≫ X ↘ Spec (.of k))) :
     let P := (D.comap T.toBase).colon (hT.ramificationIdealSheafToBase k)
-    ∃ (m : ℕ) (c : Fin m → Over X), IsLogarithmicBoundaryTower D (X ↘ Spec (.of k)) T P c := by
+    AtWorstNodalOfRelativeDimensionOne (P.subschemeι ≫ T.toBase ≫ X ↘ Spec (.of k)) ∧
+      ∃ (m : ℕ) (c : Fin m → Over X), IsLogarithmicBoundaryTower D (X ↘ Spec (.of k)) T P c := by
   induction hT with
   | nil =>
-    simp only [toBase_nil, comap_id, ramificationIdealSheafToBase_nil, colon_top]
-    exact ⟨0, Fin.elim0, .nil⟩
+    dsimp only
+    have hP : (D.comap (BlowupTower.nil (X := X)).toBase).colon
+        ((IsClosedPointTower.nil (X := X)).ramificationIdealSheafToBase k) = D := by
+      rw [toBase_nil, comap_id, ramificationIdealSheafToBase_nil, colon_top]
+    rw [hP, toBase_nil, Category.id_comp]
+    exact ⟨hnodal, 0, Fin.elim0, .nil⟩
   | @snoc n Y T I hT p hp hI ih =>
+    -- The no-zero inequality descends to the prefix, where the induction proves nodality.
     let V := BlowupTower.nil.snoc I
     have hV : IsClosedPointTower Y V := IsClosedPointTower.nil.snoc p hp hI
     have hpre := hT.totalTransform_le_ramification_of_append k hD hV
       (by simpa only [V, append_snoc, append_nil] using h)
-    have hn := hnodal hT V rfl (by simp only [V, append_snoc, append_nil, cast_eq])
-    obtain ⟨m, c, hc⟩ := ih hpre (fun hU W hlen he ↦
-      hnodal hU (W.snoc I) (congrArg Nat.succ hlen) (by
-        cases hlen
-        subst T
-        simp only [append_snoc, cast_eq]))
+    obtain ⟨hn, m, c, hc⟩ := ih hpre
     obtain ⟨hpP, _, hstep⟩ := hT.poleIdeal_snoc_of_nodal_boundary hD p hp hI h hn
+    -- A node contributes the reduced total transform, and a smooth center the strict transform.
     rcases hstep with ⟨hnode, heq⟩ | ⟨hsm, heq, hC⟩
-    · dsimp only at heq ⊢
+    · let P := (D.comap T.toBase).colon (hT.ramificationIdealSheafToBase k)
+      let s := T.toBase ≫ X ↘ Spec (.of k)
+      let : Y.Over (Spec (.of k)) := ⟨s⟩
+      have : SmoothOfRelativeDimension 2 (Y ↘ Spec (.of k)) := hT.smoothOfRelativeDimension _
+      have : IsIntegral Y := hT.isIntegral (X ↘ Spec (.of k))
+      have : IsNoetherian Y := T.isNoetherian
+      have : QuasiCompact (Y ↘ Spec (.of k)) := inferInstance
+      have hs : Y ↘ Spec (.of k) = T.toBase ≫ X ↘ Spec (.of k) := rfl
+      have hP := (hT.poleIdeal_snoc_of_totalTransform_le_ramification k hD p hp hI h).1
+      obtain ⟨q, hq⟩ := P.range_subschemeι.ge hpP
+      subst p
+      subst I
+      dsimp only at heq ⊢
       rw [heq]
-      exact ⟨m, c, hc.node p hp hI hnode⟩
+      refine ⟨?_, m, c, hc.node _ hp rfl hnode⟩
+      simp only [toBase_snoc, Category.assoc]
+      rw [Y.ker_fromSpecResidueField_eq_vanishingIdeal (P.subschemeι q)]
+      simpa only [hs, P] using
+        atWorstNodalOfRelativeDimensionOne_radical_comap_blowupToBase_of_node
+          (k := k) hn hP hp hnode
     · dsimp only at heq ⊢
       rw [heq]
       obtain ⟨c', hc'⟩ := exists_internal_of_not_isNodeOfReducedBoundary hc hn p hp hI hpP hsm hC
-      exact ⟨m + 1, c', hc'⟩
+      refine ⟨?_, m + 1, c', hc'⟩
+      simpa only [toBase_snoc, Category.assoc] using
+        atWorstNodalOfRelativeDimensionOne_strictTransform_of_isEffectiveCartier_comap
+          (T.toBase ≫ X ↘ Spec (.of k)) hn hC
 
-/-- If the pullback of a logarithmic form has no zeros and the pole boundary
-at every proper prefix is nodal, the specified point blowup projection factors
-into a nodal tower followed by the ordered internal blowups. The comparison
-identifies the final pole ideal with the strict boundary of the internal tower. -/
-theorem exists_orderedFactorization_of_totalTransform_le_ramification
-    [IsReduced D.subscheme] (hD : D.IsEffectiveCartier) (hT : IsClosedPointTower X T)
+/-- On a smooth integral surface, if the total transform of a nodal Cartier boundary
+is bounded by the ramification ideal, the final pole divisor is again nodal. -/
+theorem atWorstNodalOfRelativeDimensionOne_poleIdeal
+    (hD : D.IsEffectiveCartier) (hT : IsClosedPointTower X T)
     (h : D.comap T.toBase ≤ hT.ramificationIdealSheafToBase k)
-    (hnodal : ∀ {a b : ℕ} {W : Scheme.{u}} {U : BlowupTower X a W}
-      (hU : IsClosedPointTower X U) (V : BlowupTower W (b + 1) Y) (hlen : a + (b + 1) = n),
-      cast (congrArg (fun j ↦ BlowupTower X j Y) hlen) (U.append V) = T →
-      let P := (D.comap U.toBase).colon (hU.ramificationIdealSheafToBase k)
-      AtWorstNodalOfRelativeDimensionOne (P.subschemeι ≫ U.toBase ≫ X ↘ Spec (.of k))) :
+    (hnodal : AtWorstNodalOfRelativeDimensionOne (D.subschemeι ≫ X ↘ Spec (.of k))) :
+    let P := (D.comap T.toBase).colon (hT.ramificationIdealSheafToBase k)
+    AtWorstNodalOfRelativeDimensionOne (P.subschemeι ≫ T.toBase ≫ X ↘ Spec (.of k)) :=
+  (exists_logarithmicBoundaryTower_of_totalTransform_le_ramification hD hT h hnodal).1
+
+/-- If the pullback of a logarithmic form has no zeros and the initial boundary is nodal,
+the specified point blowup projection factors into a nodal tower followed by the ordered
+internal blowups. The comparison identifies the final pole ideal with the strict boundary
+of the internal tower. -/
+theorem exists_orderedFactorization_of_totalTransform_le_ramification
+    (hD : D.IsEffectiveCartier) (hT : IsClosedPointTower X T)
+    (h : D.comap T.toBase ≤ hT.ramificationIdealSheafToBase k)
+    (hnodal : AtWorstNodalOfRelativeDimensionOne (D.subschemeι ≫ X ↘ Spec (.of k))) :
     let P := (D.comap T.toBase).colon (hT.ramificationIdealSheafToBase k)
     ∃ (m : ℕ) (c : Fin m → Over X),
       IsLogarithmicBoundaryTower D (X ↘ Spec (.of k)) T P c ∧
       Nonempty (IsLogarithmicBoundaryTower.OrderedFactorization D (X ↘ Spec (.of k)) T P c) := by
-  obtain ⟨m, c, hc⟩ := exists_logarithmicBoundaryTower_of_totalTransform_le_ramification hD hT h
-    hnodal
+  have : IsReduced D.subscheme := hnodal.isReduced
+  obtain ⟨m, c, hc⟩ :=
+    (exists_logarithmicBoundaryTower_of_totalTransform_le_ramification hD hT h hnodal).2
   exact ⟨m, c, hc, hc.nonempty_orderedFactorization⟩
 
 end IsClosedPointTower
