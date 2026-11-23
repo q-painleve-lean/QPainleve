@@ -5,13 +5,15 @@ Authors: The QPainleve contributors
 -/
 module
 
+public import Mathlib.AlgebraicGeometry.AffineScheme
 public import Mathlib.AlgebraicGeometry.Restrict
 
 /-!
 # Global functions on a disjoint open cover
 
 Restriction to a pairwise disjoint open cover identifies the ring of global functions
-with the product of the rings of functions on the covering open subschemes.
+with the product of the rings of functions on the covering open subschemes. A scheme
+whose global sections form a field has singleton image under any map into an affine open.
 -/
 
 public noncomputable section
@@ -76,3 +78,26 @@ theorem globalSectionsEquivOfDisjointCover_apply (hcover : ⨆ i, U i = ⊤)
   (rfl)
 
 end AlgebraicGeometry.Scheme
+
+namespace AlgebraicGeometry.Scheme.Hom
+
+/-- A scheme whose ring of global sections is a field has at most one image point
+under a morphism landing in an affine open. -/
+theorem subsingleton_range_of_isField_globalSections {X Y : Scheme.{u}} (f : X ⟶ Y)
+    (hX : IsField Γ(X, ⊤)) {U : Y.Opens} (hU : IsAffineOpen U)
+    (hf : Set.range f ⊆ U) : (Set.range f).Subsingleton := by
+  let r := IsOpenImmersion.lift U.ι f ((Opens.range_ι U).symm ▸ hf)
+  have hr : r ≫ U.ι = f := IsOpenImmersion.lift_fac ..
+  let : IsAffine U.toScheme := hU
+  have hfac : r = X.toSpecΓ ≫ Spec.map r.appTop ≫ U.toScheme.isoSpec.inv := by
+    rw [← Category.assoc, ← Scheme.toSpecΓ_naturality, ← Scheme.isoSpec_hom,
+      Category.assoc, Iso.hom_inv_id, Category.comp_id]
+  let : Field Γ(X, ⊤) := hX.toField
+  have : Subsingleton (Spec Γ(X, ⊤)) :=
+    inferInstanceAs (Subsingleton (Spec (.of Γ(X, ⊤))))
+  rintro _ ⟨x, rfl⟩ _ ⟨y, rfl⟩
+  have hz : X.toSpecΓ x = X.toSpecΓ y := Subsingleton.elim _ _
+  rw [← hr, hfac]
+  simp only [Scheme.Hom.comp_apply, hz]
+
+end AlgebraicGeometry.Scheme.Hom

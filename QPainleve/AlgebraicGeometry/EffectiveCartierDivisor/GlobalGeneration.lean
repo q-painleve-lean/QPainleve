@@ -17,7 +17,6 @@ import QPainleve.AlgebraicGeometry.Cohomology.CartierPairing
 import QPainleve.AlgebraicGeometry.Cohomology.Projective
 import QPainleve.AlgebraicGeometry.Cohomology.SerreVanishing
 import QPainleve.AlgebraicGeometry.EffectiveCartierDivisor.Twist
-import QPainleve.AlgebraicGeometry.IdealSheaf.Image
 import QPainleve.AlgebraicGeometry.LineBundle.GlobalGeneration
 import QPainleve.AlgebraicGeometry.LineBundle.Power
 import QPainleve.AlgebraicGeometry.LineBundle.Pullback
@@ -174,14 +173,7 @@ theorem eventually_isGloballyGenerated_of_isAmple (k : Type u) [Field k]
   let M := (InvertibleSheaf.pullback i).obj L
   have hM : (LineBundleClass.mk M).IsAmple := by
     simpa only [M, i, L, LineBundleClass.pullback_mk] using hA
-  have hclass : LineBundleClass.mk L.dual = LineBundleClass.mk hI.toInvertibleSheaf := by
-    simp only [L, ← LineBundleClass.inv_mk, inv_inv]
-  obtain ⟨eDual⟩ := LineBundleClass.mk_eq_mk_iff.mp hclass
-  let eI : L.dual.obj ≅ I.sheaf := eDual ≪≫ eqToIso hI.toInvertibleSheaf_obj
-  let s := L.dualSectionEquiv (eI.hom ≫ I.sheafι)
-  have hs : L.zeroIdeal s = I := by
-    simp only [s, InvertibleSheaf.zeroIdeal_dualSectionEquiv,
-      I.sheafι.imageIdealSheaf_comp_iso eI, I.imageIdealSheaf_sheafι]
+  obtain ⟨s, hs⟩ := hI.exists_zeroIdeal_eq_dual
   have hsections := eventually_exists_generatingSections_tensor_tensorPow_of_isAmple (𝟙_ _) M hM
   filter_upwards [hsections,
     hI.eventually_surjective_pullbackSectionsLE_of_isAmple k hA,

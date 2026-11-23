@@ -313,3 +313,22 @@ theorem exists_zeroDivisor_eq {D : Scheme.CartierDivisor X} (hD : D.IsEffective)
 end
 
 end TauCeti.AlgebraicGeometry.InvertibleSheaf
+
+namespace AlgebraicGeometry.Scheme.IdealSheafData.IsEffectiveCartier
+
+open TauCeti.AlgebraicGeometry
+
+/-- The dual of an effective Cartier ideal has a section whose zero ideal is the
+given Cartier ideal. -/
+theorem exists_zeroIdeal_eq_dual {X : Scheme.{u}} {I : X.IdealSheafData}
+    (hI : I.IsEffectiveCartier) :
+    ∃ s : Γ(hI.toInvertibleSheaf.dual.obj, ⊤), hI.toInvertibleSheaf.dual.zeroIdeal s = I := by
+  let L : InvertibleSheaf X := hI.toInvertibleSheaf.dual
+  have hclass : LineBundleClass.mk L.dual = LineBundleClass.mk hI.toInvertibleSheaf := by
+    simp only [L, ← LineBundleClass.inv_mk, inv_inv]
+  let e := (LineBundleClass.mk_eq_mk_iff.mp hclass).some ≪≫ eqToIso hI.toInvertibleSheaf_obj
+  refine ⟨L.dualSectionEquiv (e.hom ≫ I.sheafι), ?_⟩
+  exact (L.zeroIdeal_dualSectionEquiv _).trans
+    ((I.sheafι.imageIdealSheaf_comp_iso e).trans I.imageIdealSheaf_sheafι)
+
+end AlgebraicGeometry.Scheme.IdealSheafData.IsEffectiveCartier
