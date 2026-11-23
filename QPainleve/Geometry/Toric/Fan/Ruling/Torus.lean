@@ -280,14 +280,8 @@ private theorem map_ray_eq_prod (v : V) (w : Fin 1 → ℝ) (hv : eℝ v = (w, 0
   rw [PointedCone.map, Submodule.map_span, Set.image_singleton]
   -- The restricted linear map has the same value at the generator.
   have he : (↑(eℝ).toLinearMap : V →ₗ[Nonneg ℝ] ((Fin 1 → ℝ) × (Fin 1 → ℝ))) v = (w, 0) := hv
-  rw [he]
-  ext ⟨x, y⟩
-  rw [Submodule.mem_prod, Submodule.mem_bot, mem_hull_singleton, mem_hull_singleton]
-  constructor
-  · rintro ⟨a, ha, hxy⟩
-    exact ⟨⟨a, ha, congrArg Prod.fst hxy⟩, by simpa using (congrArg Prod.snd hxy).symm⟩
-  · rintro ⟨⟨a, ha, rfl⟩, rfl⟩
-    exact ⟨a, ha, by simp⟩
+  rw [he, ← Submodule.map_inl, Submodule.map_span, Set.image_singleton]
+  rfl
 
 private theorem mem_product_cones_iff {σ : PointedCone ℝ ((Fin 1 → ℝ) × (Fin 1 → ℝ))} :
     σ ∈ ((P).prod projectiveLineTorusFan).cones ↔
