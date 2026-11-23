@@ -12,9 +12,9 @@ public import TauCeti.AlgebraicGeometry.IdealSheaf.Stalk
 public import TauCeti.AlgebraicGeometry.Morphisms.Smooth.RelativeDimension
 public import TauCeti.RingTheory.FittingIdeal.Basic
 
-import Mathlib.AlgebraicGeometry.Morphisms.Finite
 import Mathlib.RingTheory.Unramified.Field
 import QPainleve.AlgebraicGeometry.Modules.Differentials.Stalk
+import QPainleve.AlgebraicGeometry.Scheme.ClosedPoint
 import QPainleve.RingTheory.Kaehler.Hypersurface
 import QPainleve.RingTheory.Kaehler.LocalCoordinates
 import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.Stalk
@@ -73,13 +73,7 @@ theorem fittingIdeal_stalk_mul_eq_maximalIdeal_of_stalkIdeal_sup_eq
   have hab : Ideal.span {a, b} = maximalIdeal P := by
     rw [Ideal.span_insert, ← ha', ← hb']
     exact htrans
-  have : IsClosedImmersion (X.fromSpecResidueField x) :=
-    isClosed_singleton_iff_isClosedImmersion.mp hp
-  have hf : IsFinite (X.fromSpecResidueField x ≫ X ↘ Spec (.of k)) :=
-    isFinite_iff_locallyOfFiniteType_of_jacobsonSpace.mpr inferInstance
-  have : Module.Finite k (X.residueField x) := by
-    rwa [Scheme.fromSpecResidueField_comp_over, IsFinite.SpecMap_iff, CommRingCat.hom_ofHom,
-      RingHom.finite_algebraMap] at hf
+  have := X.moduleFinite_residueField_of_isClosed (k := k) hp
   obtain ⟨basis⟩ := X.nonempty_basis_kaehlerDifferential_stalk (k := k) 2 x
   let v : Fin 2 → P := ![a, b]
   have hv : Ideal.span (Set.range v) = maximalIdeal P := by
