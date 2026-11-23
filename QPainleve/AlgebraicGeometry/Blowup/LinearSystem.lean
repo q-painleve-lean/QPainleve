@@ -20,7 +20,6 @@ import TauCeti.AlgebraicGeometry.Blowup.Restriction
 import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.Subtraction
 import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.TensorProduct
 import TauCeti.AlgebraicGeometry.IdealSheaf.Reduced
-import TauCeti.AlgebraicGeometry.Morphisms.Dominant
 
 /-!
 # Moving linear systems on point blowups
@@ -150,9 +149,7 @@ private theorem isEffectiveCartier_comap_pointBlowup {D : X.IdealSheafData}
   have : Surjective π := by
     rw [X.ker_fromSpecResidueField_eq_vanishingIdeal]
     exact surjective_blowupToBase_point hp hdim
-  refine hD.comap_of_isIntegral π ?_
-  rw [(π).genericPoint_eq_of_isDominant]
-  exact hD.genericPoint_notMem_support
+  exact hD.comap_of_isDominant π
 
 /-- Removing an exceptional power up to the order of an effective Cartier divisor gives an
 effective Cartier divisor on the point blowup. -/
