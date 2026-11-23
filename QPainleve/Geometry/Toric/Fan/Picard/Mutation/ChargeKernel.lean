@@ -5,7 +5,7 @@ Authors: The QPainleve contributors
 -/
 module
 
-public import QPainleve.Algebra.Cluster.ChargeKernel.Basic
+public import QPainleve.Geometry.Toric.Fan.Mutation.Charge
 public import QPainleve.Geometry.Toric.Fan.Picard.ChargeKernel
 public import QPainleve.Geometry.Toric.Fan.Picard.Mutation.Basic
 
@@ -45,29 +45,6 @@ local notation "r" => Fan.mutationFanRayEquiv Φ b hv hpos hOpposite
 local notation "s'" => Fan.mutationFanCenterRays Φ b s k hOpposite
 local notation "ω" => b.detDualEquiv.toLinearMap
 local notation "mark" Ψ:arg => (Additive (LineBundleClass (Fan.algebraicRealization Ψ)) × (ι → ℤ))
-
-section
-
-variable [Fintype ι]
-
-/-- The charges of the mutated centers are obtained by the same integral change of basis
-that transports cluster exponents. -/
-theorem rayChargeMap_mutationFanCenterRays :
-    rayChargeMap s' = chargeMutation ω (rayChargeMap s) k := by
-  apply (Pi.basisFun ℤ ι).ext
-  intro j
-  simp only [Pi.basisFun_apply, rayChargeMap_single]
-  by_cases hj : j = k
-  · subst j
-    rw [chargeMutation_single_self, rayChargeMap_single,
-      mutationFanCenterRays_primitiveGenerator_self]
-  · rw [chargeMutation_single_of_ne _ (b.detDualEquiv_self) _ hj, chargeExchangeMatrix_apply,
-      rayChargeMap_single, rayChargeMap_single, mutationFanCenterRays_primitiveGenerator_of_ne
-        Φ b s k hOpposite hj]
-    simp only [LinearEquiv.coe_coe, Basis.detDualEquiv_apply]
-    rfl
-
-end
 
 variable (hΦ : Φ.IsRegular)
 
