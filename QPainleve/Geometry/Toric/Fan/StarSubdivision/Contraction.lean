@@ -36,64 +36,6 @@ namespace TauCeti.Toric.Fan
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {Φ : Fan i}
 
-private lemma basisHull_inter_chart (b : Basis (Fin 2) ℝ V)
-    {C : PointedCone ℝ V}
-    (h : (C ⊓ hull ℝ {b 0 + b 1}).IsFaceOf C) :
-    ∃ j : Fin 2, C ⊓ hull ℝ (Set.range b) = C ⊓ hull ℝ {b 0 + b 1, b j} := by
-  have hface := h.inf (IsFaceOf.refl (hull ℝ (Set.range b)))
-  have hr : hull ℝ {b 0 + b 1} ≤ hull ℝ (Set.range b) := by
-    apply (Submodule.span_singleton_le_iff_mem _ _).mpr
-    exact Submodule.add_mem _ (subset_hull (Set.mem_range_self 0))
-      (subset_hull (Set.mem_range_self 1))
-  have hface' : ((C ⊓ hull ℝ (Set.range b)) ⊓ hull ℝ {b 0 + b 1}).IsFaceOf
-      (C ⊓ hull ℝ (Set.range b)) := by
-    simpa only [inf_assoc, inf_eq_left.mpr hr, inf_eq_right.mpr hr] using hface
-  obtain ⟨j, hj⟩ := b.exists_le_hull_sum_pair_of_isFaceOf inf_le_right hface'
-  refine ⟨j, le_antisymm (le_inf inf_le_left hj) (inf_le_inf_left _ ?_)⟩
-  rw [Submodule.span_le]
-  intro x hx
-  rcases Set.mem_insert_iff.mp hx with rfl | hx
-  · exact (Submodule.span_singleton_le_iff_mem _ _).mp hr
-  · rw [Set.mem_singleton_iff] at hx
-    exact hx ▸ subset_hull (Set.mem_range_self j)
-
-private lemma face_inter_basisHull_of_not_le (b : Basis (Fin 2) ℝ V)
-    {C : PointedCone ℝ V}
-    (h : (C ⊓ hull ℝ {b 0 + b 1}).IsFaceOf C)
-    (hcharts : ∀ j : Fin 2,
-      (C ⊓ hull ℝ {b 0 + b 1, b j}).IsFaceOf C ∧
-        (C ⊓ hull ℝ {b 0 + b 1, b j}).IsFaceOf (hull ℝ {b 0 + b 1, b j}))
-    (hn : ¬ hull ℝ {b 0 + b 1} ≤ C) :
-    (C ⊓ hull ℝ (Set.range b)).IsFaceOf C ∧
-      (C ⊓ hull ℝ (Set.range b)).IsFaceOf (hull ℝ (Set.range b)) := by
-  obtain ⟨j, he⟩ := basisHull_inter_chart b h
-  rw [he]
-  refine ⟨(hcharts j).1, ?_⟩
-  have hnot : b 0 + b 1 ∉ C ⊓ hull ℝ {b 0 + b 1, b j} :=
-    fun hx ↦ hn ((Submodule.span_singleton_le_iff_mem _ _).mpr hx.1)
-  have hle : C ⊓ hull ℝ {b 0 + b 1, b j} ≤ hull ℝ {b j} := by
-    intro x hx
-    obtain ⟨a, d, rfl⟩ := Submodule.mem_span_pair.1 hx.2
-    have ha : (a : ℝ) = 0 := by
-      by_contra hne
-      have hpos : 0 < (a : ℝ) := lt_of_le_of_ne a.property (Ne.symm hne)
-      apply hnot
-      refine (hcharts j).2.mem_of_smul_add_mem (subset_hull (Set.mem_insert _ _))
-        ((hull ℝ {b 0 + b 1, b j}).smul_mem d.property
-          (subset_hull (Set.mem_insert_of_mem _ rfl))) hpos ?_
-      simpa only [Nonneg.coe_smul] using hx
-    simpa only [← Nonneg.coe_smul, ha, zero_smul, zero_add] using
-      (hull ℝ {b j}).smul_mem d.property (subset_hull rfl)
-  have hj : (hull ℝ {b j}).IsFaceOf (hull ℝ (Set.range b)) := by
-    simpa only [Set.image_singleton] using
-      isFaceOf_hull_image b.linearIndependent rfl {j}
-  have hsub : hull ℝ {b j} ≤ hull ℝ {b 0 + b 1, b j} :=
-    Submodule.span_mono (Set.singleton_subset_iff.mpr (Set.mem_insert_of_mem _ rfl))
-  refine (⟨hle, fun hx hy ha hxy ↦ (hcharts j).2.mem_of_smul_add_mem
-    (hsub hx) (hsub hy) ha hxy⟩ : (C ⊓ hull ℝ {b 0 + b 1, b j}).IsFaceOf
-      (hull ℝ {b j})).trans hj
-
-
 private lemma mem_starSubdivision_basisCone_iff (hi : IsIntegralLattice i)
     (b : Basis (Fin 2) ℤ N) {σ : PointedCone ℝ V}
     (hσ : IsRegularCone i σ) (he : σ = hull ℝ (Set.range (i ∘ b))) (C : PointedCone ℝ V) :
@@ -137,7 +79,7 @@ private lemma exists_regular_fan_replace_basis_sum (hΦ : Φ.IsRegular)
     simp only [hB, map_add]
   have hface {C} (hC : C ∈ A) : (C ⊓ σ₀).IsFaceOf C ∧ (C ⊓ σ₀).IsFaceOf σ₀ := by
     simp only [σ₀, ← hB']
-    exact face_inter_basisHull_of_not_le B
+    exact B.face_inter_basisHull_of_not_le
       (hR ▸ Φ.inf_isFaceOf_left hC.1 hr)
       (fun j ↦ hchart j ▸ ⟨Φ.inf_isFaceOf_left hC.1 (hcharts j),
         Φ.inf_isFaceOf_right hC.1 (hcharts j)⟩) (hR ▸ hC.2)
