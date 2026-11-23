@@ -8,6 +8,7 @@ module
 public import QPainleve.AlgebraicGeometry.Morphisms.IsoLocus
 public import TauCeti.AlgebraicGeometry.Birational.RationalMap
 public import TauCeti.AlgebraicGeometry.IntersectionNumber.ExceptionalCurve.Basic
+import QPainleve.AlgebraicGeometry.Morphisms.Separated
 import TauCeti.AlgebraicGeometry.IdealSheaf.Reduced
 
 /-!
@@ -60,17 +61,9 @@ theorem isIso_of_isIso_functionFieldMap (hJ : J.IsExceptionalCurveOfFirstKind)
       Category.id_comp]
   obtain ⟨σ, ⟨hσ, hσgen⟩, -⟩ :=
     g.existsUnique_section_of_valuationRing hJ.valuationRing_stalk (a ≫ s) ha
-  let : X.Over J.subscheme := ⟨g⟩
-  let : IsSeparated (X ↘ J.subscheme) := inferInstanceAs (IsSeparated g)
-  have : (g ≫ σ).IsOver J.subscheme := ⟨by
-    -- The structure morphism of the source is the specified map to the curve.
-    change (g ≫ σ) ≫ g = g
-    simp [hσ]⟩
-  have hinv : g ≫ σ = 𝟙 X := by
-    apply ext_of_isDominant_of_isSeparated' J.subscheme s
-    rw [← Category.assoc, hgen, Category.assoc, hσgen, ← Spec.map_comp_assoc,
-      IsIso.inv_hom_id, Spec.map_id, Category.id_comp, Category.comp_id]
-  exact ⟨⟨σ, hinv, hσ⟩⟩
+  have : IsDominant (t ≫ σ) := hσgen.symm ▸ inferInstanceAs (IsDominant (a ≫ s))
+  have : IsDominant σ := IsDominant.of_comp t σ
+  exact g.isIso_of_dominant_section σ hσ
 
 /-- Suppose a proper morphism restricts to a dominant morphism from an integral closed subscheme
 onto an exceptional curve of the first kind. If the target curve meets the ambient isomorphism
