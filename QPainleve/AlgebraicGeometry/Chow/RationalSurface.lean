@@ -5,6 +5,7 @@ Authors: The QPainleve contributors
 -/
 module
 
+public import Mathlib.Topology.Algebra.Module.PerfectPairing
 public import QPainleve.AlgebraicGeometry.AffineSpace.Dimension
 public import QPainleve.AlgebraicGeometry.Blowup.Tower.Factorization
 public import QPainleve.AlgebraicGeometry.Chow.Adjunction
@@ -17,6 +18,7 @@ import QPainleve.AlgebraicGeometry.Blowup.Tower.Cohomology
 import QPainleve.AlgebraicGeometry.Blowup.Tower.RiemannRoch
 import QPainleve.AlgebraicGeometry.Chow.Isomorphism
 import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.Polynomial.Rationality
+import QPainleve.Topology.Algebra.Module.PerfectPairing
 import TauCeti.AlgebraicGeometry.Cohomology.ClosedImmersion.Linear
 
 /-!
@@ -222,6 +224,18 @@ theorem signature_realIntersectionBilinForm_of_isRationalOver :
   obtain ⟨_, _, _, _, _, _, e, hT, hU, he⟩ :=
     X.exists_common_pointBlowup_resolution_projectivePlane k
   exact signature_realIntersectionBilinForm_of_common_resolution_projectivePlane k hT hU e he
+
+variable {X} in
+/-- The real intersection pairing of a smooth projective rational surface over an
+algebraically closed field is a continuous perfect pairing. -/
+theorem isContPerfPair_realIntersectionBilinForm_of_isRationalOver [Infinite k] [IsIntegral X]
+    [TopologicalSpace (ℝ ⊗[ℤ] Pic(X))] [IsTopologicalAddGroup (ℝ ⊗[ℤ] Pic(X))]
+    [ContinuousSMul ℝ (ℝ ⊗[ℤ] Pic(X))] [T2Space (ℝ ⊗[ℤ] Pic(X))] :
+    (realIntersectionBilinForm k X).IsContPerfPair := by
+  let : Module.Finite ℤ (Pic(X)) := X.finite_picard_of_isRationalOver k
+  exact ((LinearMap.BilinForm.nondegenerate_toQuadraticMap_iff
+    (isSymm_realIntersectionBilinForm k X)).mp
+      (signature_realIntersectionBilinForm_of_isRationalOver k X).1).isContPerfPair
 
 end TauCeti.AlgebraicGeometry.Chow
 

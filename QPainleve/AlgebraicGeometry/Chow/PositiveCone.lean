@@ -12,7 +12,7 @@ public import QPainleve.Topology.Algebra.QuadraticForm.PositiveCone
 public import TauCeti.AlgebraicGeometry.LineBundle.Ample
 
 import QPainleve.AlgebraicGeometry.Chow.Ample
-import QPainleve.AlgebraicGeometry.Chow.Nef
+import QPainleve.AlgebraicGeometry.Chow.Nef.Basic
 import QPainleve.AlgebraicGeometry.LineBundle.Ample
 
 /-!

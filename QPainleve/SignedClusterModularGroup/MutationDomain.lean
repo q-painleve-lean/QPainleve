@@ -7,7 +7,7 @@ module
 
 public import QPainleve.Geometry.Toric.CharacterTorus.Noncollision
 public import QPainleve.Geometry.Toric.Fan.Charge
-public import QPainleve.Geometry.Toric.Fan.Mutation
+public import QPainleve.Geometry.Toric.Fan.Mutation.Basic
 public import QPainleve.SignedClusterModularGroup.CenterMutation
 
 /-!

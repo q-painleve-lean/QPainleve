@@ -9,8 +9,9 @@ public import QPainleve.AlgebraicGeometry.Chow.Signature
 public import Mathlib.Analysis.Convex.Cone.Basic
 public import Mathlib.Geometry.Convex.Cone.Face.Basic
 public import QPainleve.AlgebraicGeometry.Morphisms.Smooth.Factorial
+public import TauCeti.AlgebraicGeometry.LineBundle.Ample
 import QPainleve.AlgebraicGeometry.Chow.Ample
-import QPainleve.AlgebraicGeometry.Chow.Nef
+import QPainleve.AlgebraicGeometry.Chow.Nef.Basic
 import QPainleve.AlgebraicGeometry.IntersectionNumber.GlobalGeneration
 import QPainleve.AlgebraicGeometry.LineBundle.Ample
 import Mathlib.Topology.Algebra.Module.FiniteDimension
@@ -80,7 +81,8 @@ theorem realIntersectionBilinForm_one_tmul_realPrimeDivisorClass
     B (ι a) (c p) = (classIntersectionNumber k X a (LineBundleClass.primeDivisorClass p) : ℝ) := by
   simp only [realPrimeDivisorClass_def, realIntersectionBilinForm_tmul, one_mul, toMul_ofMul]
 
-private theorem realIntersectionBilinForm_realPrimeDivisorClass_pos
+/-- An ample class has positive real intersection with every prime divisor class. -/
+theorem realIntersectionBilinForm_realPrimeDivisorClass_pos
     {a : LineBundleClass X} (ha : a.IsAmple) (p : CodimensionOnePoint X) :
     0 < B (ι a) (c p) := by
   have hX := topologicalKrullDim_eq_of_smoothOfRelativeDimension f (n := 2)
@@ -89,7 +91,8 @@ private theorem realIntersectionBilinForm_realPrimeDivisorClass_pos
   rw [realIntersectionBilinForm_one_tmul_realPrimeDivisorClass]
   exact_mod_cast classIntersectionNumber_primeDivisorClass_pos_of_isAmple k hX ha p
 
-private theorem realIntersectionBilinForm_realPrimeDivisorClass_nonneg
+/-- Distinct prime divisors have nonnegative real intersection. -/
+theorem realIntersectionBilinForm_realPrimeDivisorClass_nonneg
     {p q : CodimensionOnePoint X} (hpq : p ≠ q) :
     0 ≤ B (c p) (c q) := by
   have hX := topologicalKrullDim_eq_of_smoothOfRelativeDimension f (n := 2)

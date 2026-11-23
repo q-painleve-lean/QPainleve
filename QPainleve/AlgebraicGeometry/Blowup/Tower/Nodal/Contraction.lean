@@ -6,7 +6,7 @@ Authors: The QPainleve contributors
 module
 
 public import QPainleve.AlgebraicGeometry.Blowup.Tower.Nodal.Basic
-public import QPainleve.AlgebraicGeometry.Chow.Nef
+public import QPainleve.AlgebraicGeometry.Chow.Nef.Basic
 public import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.ProjectiveOver
 
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Contraction
