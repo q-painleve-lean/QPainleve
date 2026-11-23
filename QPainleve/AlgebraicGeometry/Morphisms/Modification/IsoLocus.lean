@@ -9,6 +9,7 @@ public import Mathlib.AlgebraicGeometry.ZariskisMainTheorem
 public import QPainleve.AlgebraicGeometry.Morphisms.IsoLocus
 public import QPainleve.AlgebraicGeometry.Morphisms.Separated
 public import QPainleve.AlgebraicGeometry.SpreadingOut
+public import TauCeti.AlgebraicGeometry.Morphisms.Dominant
 public import TauCeti.AlgebraicGeometry.Morphisms.Modification.Centre
 public import TauCeti.AlgebraicGeometry.Scheme.Normal
 
@@ -16,7 +17,6 @@ import Mathlib.AlgebraicGeometry.Noetherian
 import QPainleve.Topology.KrullDimension
 import QPainleve.Topology.NoetherianSpace
 import TauCeti.AlgebraicGeometry.Birational.Irreducible
-import TauCeti.AlgebraicGeometry.Morphisms.Dominant
 import TauCeti.AlgebraicGeometry.Normalization.Basic
 import TauCeti.AlgebraicGeometry.Normalization.IsIso
 import TauCeti.Topology.KrullDimension.Basic
@@ -47,6 +47,32 @@ namespace AlgebraicGeometry.Scheme.Hom
 universe u
 
 variable {X Y : Scheme.{u}} (f : X ⟶ Y)
+
+/-- A modification induces an isomorphism of function fields. -/
+theorem isIso_functionFieldMap_of_isModification [IrreducibleSpace X] [IrreducibleSpace Y]
+    [IsModification f] : IsIso f.functionFieldMap := by
+  obtain ⟨U, _, hpre, hIso⟩ := IsModification.exists_isIso_morphismRestrict (f := f)
+  obtain ⟨x, hx⟩ := hpre.nonempty
+  have hη : genericPoint X ∈ f ⁻¹ᵁ U :=
+    (genericPoint_specializes x).mem_open (f ⁻¹ᵁ U).isOpen hx
+  have := f.isIso_stalkMap_of_mem_isoLocus (f.le_isoLocus_iff.mpr hIso (f.mem_preimage.mp hη))
+  infer_instance
+
+/-- A modification cancels from the right of two dominant morphisms from a reduced,
+irreducible scheme. -/
+theorem eq_of_comp_eq_of_isModification {W : Scheme.{u}} [IsReduced W] [IrreducibleSpace W]
+    [IrreducibleSpace Y] [IsModification f] {g h : W ⟶ X}
+    [IsDominant g] [IsDominant h] (he : g ≫ f = h ≫ f) : g = h := by
+  have : IrreducibleSpace X := (IsModification.birational f).irreducibleSpace
+  have : IsIso f.functionFieldMap := f.isIso_functionFieldMap_of_isModification
+  let : X.Over Y := ⟨f⟩
+  let : W.Over Y := ⟨g ≫ f⟩
+  have : g.IsOver Y := ⟨rfl⟩
+  have : h.IsOver Y := ⟨he.symm⟩
+  have : IsSeparated (X ↘ Y) := inferInstanceAs (IsSeparated f)
+  apply Scheme.Hom.ext_of_functionFieldMap_eq Y
+  apply (cancel_epi f.functionFieldMap).mp
+  simp only [← Scheme.Hom.functionFieldMap_comp, he]
 
 /-- A modification with irreducible target has a dominant section over the generic point
 of the target. -/

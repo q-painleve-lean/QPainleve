@@ -149,6 +149,23 @@ theorem isNodeOfReducedBoundary_iff (D : Y.IdealSheafData) (g : Y ⟶ S)
   exact exists_congr fun z ↦ and_congr_right fun _ ↦
     (D.radical.subschemeι ≫ g).isNodeAt_iff_notMem_smoothLocus h z
 
+/-- A point on a reduced nodal boundary that is not a node lies in the smooth locus
+of the boundary. -/
+theorem exists_mem_smoothLocus_of_mem_support_of_not_isNodeOfReducedBoundary
+    (D : Y.IdealSheafData) [IsReduced D.subscheme] (g : Y ⟶ S)
+    (hD : AtWorstNodalOfRelativeDimensionOne (D.subschemeι ≫ g)) {x : Y} (hx : x ∈ D.support)
+    (hn : ¬ D.IsNodeOfReducedBoundary g x) :
+    let : SyntomicOfRelativeDimension 1 (D.subschemeι ≫ g) := hD.syntomic
+    ∃ z : D.subscheme, D.subschemeι z = x ∧ z ∈ (D.subschemeι ≫ g).smoothLocus := by
+  dsimp only
+  have hr : x ∈ Set.range D.subschemeι := by rwa [D.range_subschemeι]
+  obtain ⟨z, hz⟩ := hr
+  have := hD.syntomic
+  refine ⟨z, hz, ?_⟩
+  by_contra hs
+  exact hn ((D.isNodeOfReducedBoundary_iff_of_isReduced g x).mpr
+    ⟨z, hz, ((D.subschemeι ≫ g).isNodeAt_iff_notMem_smoothLocus hD z).mpr hs⟩)
+
 /-- Nodes of the reduced subscheme restrict to, and are detected on, open subschemes. -/
 theorem isNodeOfReducedBoundary_comap_iff_of_isOpenImmersion
     (D : Y.IdealSheafData) (g : Y ⟶ S) (f : X ⟶ Y) [IsOpenImmersion f] (x : X) :

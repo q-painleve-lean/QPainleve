@@ -70,7 +70,7 @@ jobs:
     with:
       review_ref: 692c51780c76777e8f6a00cc9ba2b876901f32e5
       tools_repository: q-painleve-lean/TauCetiTools
-      tools_ref: 79213262f3bc8fb99fc96f8a7d180ab3fb59c4d7
+      tools_ref: db9dced7850f8c1eb12496361045f6e9755feb5a
       dry_run: ${{ inputs.dry-run || false }}
       focused: ${{ github.event_name == 'repository_dispatch' || (github.event_name == 'workflow_dispatch' && !inputs.full-scan) }}
     secrets:

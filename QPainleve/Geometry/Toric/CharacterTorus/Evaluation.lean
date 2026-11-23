@@ -54,6 +54,40 @@ theorem affineRationalPullback_affineEvaluation_monomial (k : Type u) [Field k]
     (fun _ _ h ↦ congrArg Prod.fst h)]
   exact functionFieldMap_monomial k _ _ a
 
+section FiniteCoordinates
+
+variable {I : Type u} [Fintype I] (v : (I → ℤ) →ₗ[ℤ] N)
+
+local notation "reprEquiv" => Finsupp.linearEquivFunOnFinite ℤ ℤ I
+
+/-- The evaluation graph on finitely supported exponents, using the finite coordinate
+identification for the center exponent. -/
+@[expose]
+def xEvaluationGraph : (I →₀ ℤ) →+ ((I → ℤ) × N) :=
+  let repr := (reprEquiv).toAddEquiv.toAddMonoidHom
+  repr.prod (v.toAddMonoidHom.comp repr)
+
+/-- The center component of the evaluation graph determines the exponent. -/
+theorem xEvaluationGraph_injective : Function.Injective (xEvaluationGraph v) :=
+  fun _ _ h ↦ (reprEquiv).injective (congrArg Prod.fst h)
+
+variable (k : Type u) [CommRing k]
+
+/-- Evaluation on the joint torus as a morphism to the X torus of finitely supported
+exponents. Each X character is the product of the corresponding center and charge
+characters. -/
+@[expose]
+def xEvaluationMap : scheme k ((I → ℤ) × N) ⟶ scheme k (I →₀ ℤ) :=
+  map k (xEvaluationGraph v)
+
+instance : IsDominant (xEvaluationMap v k) :=
+  isDominant_map k _ (xEvaluationGraph_injective v)
+
+instance : (xEvaluationMap v k).IsOver (Spec (.of k)) :=
+  ⟨map_structureMap k (xEvaluationGraph v)⟩
+
+end FiniteCoordinates
+
 variable [IsAddFG A] [IsAddFG N]
 
 section CommRing

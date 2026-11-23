@@ -5,9 +5,8 @@ Authors: The QPainleve contributors
 -/
 module
 
-public import TauCeti.AlgebraicGeometry.Curves.Basic
+public import QPainleve.AlgebraicGeometry.Curves.Degree.Basic
 public import TauCeti.AlgebraicGeometry.LineBundle.Ample
-public import TauCeti.AlgebraicGeometry.LineBundle.Degree
 
 import QPainleve.AlgebraicGeometry.LineBundle.Ample
 import TauCeti.AlgebraicGeometry.CartierDivisor.Effective.Degree
@@ -53,12 +52,7 @@ theorem eulerDegree_pos (ha : a.IsAmple) : 0 < a.eulerDegree k := by
     exact Nat.pos_of_ne_zero fun hz ↦
       ((Scheme.Hom.finrank_eq_zero_iff_notMem_range _ _).mp hz)
         ⟨x, Subsingleton.elim _ _⟩
-  let deg : Additive (LineBundleClass X) →+ ℤ :=
-    AddMonoidHom.mk' (fun c ↦ eulerDegree k c.toMul) fun b c ↦
-      eulerDegree_mul_of_isIntegral k b.toMul c.toMul
-  have hpow : eulerDegree k (a ^ n) = (n : ℤ) * eulerDegree k a := by
-    simpa [deg, nsmul_eq_mul] using deg.map_nsmul n (Additive.ofMul a)
-  rw [hpow] at hdegree
+  rw [← zpow_natCast, eulerDegree_zpow_of_isCurveOver] at hdegree
   exact pos_of_mul_pos_right (hdegree.symm ▸ Int.natCast_pos.mpr hpos) (Int.natCast_nonneg n)
 
 end TauCeti.AlgebraicGeometry.LineBundleClass.IsAmple
