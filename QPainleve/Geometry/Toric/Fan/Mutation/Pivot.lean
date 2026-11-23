@@ -137,6 +137,70 @@ theorem Ray.mutationPivotTargetIdeal_def :
         ((ρ').surjective_detCharacter b) c⁻¹).ker.comap (π₁) := by
   rw [mutationPivotTargetIdeal, mutationTargetCenterIdeal_eq]
 
+section Boundary
+
+open AlgebraicGeometry.Scheme.IdealSheafData
+
+local notation "hΦ" => Nonempty.intro (Ray.toCone Φ ρ)
+local notation "hΨ" => Nonempty.intro (Φ.mutationFanConeEquiv b hv hp hOpp (Subtype.mk _ hp))
+local notation "D₀" => Φ.boundaryIdeal hΦ
+local notation "D₁" => boundaryIdeal (Ψ) hΨ
+local notation "I₀" => Ray.mutationSourceCenterIdeal b ρ c
+local notation "I₁" => Ray.mutationTargetCenterIdeal b ρ hOpp c
+
+/-- The fixed toric boundary lifts to its strict transform in the source pivot blowup. -/
+def Ray.mutationSourceBoundaryι : (D₀).subscheme ⟶ (I₀).blowup :=
+  (I₀).blowupLift (D₀).subschemeι (by
+    let : Nonempty Φ.cones := hΦ
+    rw [ρ.mutationSourceCenterIdeal_eq b c, ← ρ.map_internalCenter_subschemeι b c,
+      comap_map_of_isClosedImmersion]
+    exact (ρ.internalCenter b c).property)
+
+/-- The fixed toric boundary lifts to its strict transform in the target pivot blowup. -/
+def Ray.mutationTargetBoundaryι : (D₁).subscheme ⟶ (I₁).blowup :=
+  (I₁).blowupLift (D₁).subschemeι (by
+    let : Nonempty (Ψ).cones := hΨ
+    rw [ρ.mutationTargetCenterIdeal_eq b hOpp c,
+      ← (ρ').map_internalCenter_subschemeι b c⁻¹,
+      comap_map_of_isClosedImmersion]
+    exact ((ρ').internalCenter b c⁻¹).property)
+
+instance Ray.isClosedImmersion_mutationSourceBoundaryι :
+    IsClosedImmersion (ρ.mutationSourceBoundaryι b c) := by
+  rw [Ray.mutationSourceBoundaryι]
+  exact (I₀).isClosedImmersion_blowupLift _ _
+
+instance Ray.isClosedImmersion_mutationTargetBoundaryι :
+    IsClosedImmersion (ρ.mutationTargetBoundaryι b hOpp c) := by
+  rw [Ray.mutationTargetBoundaryι]
+  exact (I₁).isClosedImmersion_blowupLift _ _
+
+/-- The lifted source boundary projects to the original toric boundary. -/
+@[reassoc (attr := simp)]
+theorem Ray.mutationSourceBoundaryι_blowupToBase :
+    ρ.mutationSourceBoundaryι b c ≫ (I₀).blowupToBase = (D₀).subschemeι := by
+  rw [Ray.mutationSourceBoundaryι, blowupLift_blowupToBase]
+
+/-- The lifted target boundary projects to the mutated toric boundary. -/
+@[reassoc (attr := simp)]
+theorem Ray.mutationTargetBoundaryι_blowupToBase :
+    ρ.mutationTargetBoundaryι b hOpp c ≫ (I₁).blowupToBase = (D₁).subschemeι := by
+  rw [Ray.mutationTargetBoundaryι, blowupLift_blowupToBase]
+
+/-- The source embedding has the ideal of the strict transform of the toric boundary. -/
+@[simp]
+theorem Ray.ker_mutationSourceBoundaryι :
+    (ρ.mutationSourceBoundaryι b c).ker = ((I₀).blowupMap (D₀).subschemeι).ker := by
+  rw [Ray.mutationSourceBoundaryι, ker_blowupLift, ker_blowupMap]
+
+/-- The target embedding has the ideal of the strict transform of the toric boundary. -/
+@[simp]
+theorem Ray.ker_mutationTargetBoundaryι :
+    (ρ.mutationTargetBoundaryι b hOpp c).ker = ((I₁).blowupMap (D₁).subschemeι).ker := by
+  rw [Ray.mutationTargetBoundaryι, ker_blowupLift, ker_blowupMap]
+
+end Boundary
+
 local notation "I₀" => Ray.mutationPivotSourceIdeal b ρ hOpp c
 local notation "I₁" => Ray.mutationPivotTargetIdeal b ρ hOpp c
 
@@ -184,6 +248,22 @@ theorem Ray.mutationPivotTargetBlowupι_blowupToBase :
     ρ.mutationPivotTargetBlowupι b hOpp c ≫ (ρ.mutationTargetCenterIdeal b hOpp c).blowupToBase =
       (I₁).blowupToBase ≫ π₁ :=
   (ρ.isPullback_mutationPivotTargetBlowupι b hOpp c).w.symm
+
+/-- Restricting the source blowup to the ruling torus preserves its exceptional ideal. -/
+@[simp]
+theorem Ray.comap_exceptionalIdeal_mutationPivotSourceBlowupι :
+    ((ρ.mutationSourceCenterIdeal b c).comap
+      (ρ.mutationSourceCenterIdeal b c).blowupToBase).comap
+      (ρ.mutationPivotSourceBlowupι b hOpp c) = (I₀).comap (I₀).blowupToBase :=
+  (ρ.mutationSourceCenterIdeal b c).comap_comap_blowupMap (π₀)
+
+/-- Restricting the target blowup to the ruling torus preserves its exceptional ideal. -/
+@[simp]
+theorem Ray.comap_exceptionalIdeal_mutationPivotTargetBlowupι :
+    ((ρ.mutationTargetCenterIdeal b hOpp c).comap
+      (ρ.mutationTargetCenterIdeal b hOpp c).blowupToBase).comap
+      (ρ.mutationPivotTargetBlowupι b hOpp c) = (I₁).comap (I₁).blowupToBase :=
+  (ρ.mutationTargetCenterIdeal b hOpp c).comap_comap_blowupMap (π₁)
 
 private theorem exists_pivotBasis : ∃ d : Basis (Fin 2) ℤ N,
     d 0 = v ∧ m = (d.coord 1).toAddMonoidHom :=
@@ -246,6 +326,57 @@ the same ruling binomial, with the target center on the opposite section. -/
 def Ray.mutationPivotIso : (I₀).blowup ≅ (I₁).blowup :=
   (e₀) ≪≫ projectiveLine.elementaryTransform f 0
     (pivotBinomial_ne_zero c) ≪≫ (e₁).symm
+
+/-- The source pivot point has two lifts whose images under the elementary
+transformation are distinct on the mutated surface over the ruling torus. -/
+theorem Ray.exists_lifts_mutationPivotSource :
+    ∃ a a' : Spec (.of ℂ) ⟶ (I₀).blowup,
+      a ≫ (I₀).blowupToBase ≫ π₀ =
+        ρ.binomialCenter hdim (b.detDualEquiv_self v) (ρ.surjective_detCharacter b) c ∧
+      a ≫ (I₀).blowupToBase = a' ≫ (I₀).blowupToBase ∧
+      a ≫ (ρ.mutationPivotIso b hOpp c).hom ≫ (I₁).blowupToBase ≠
+        a' ≫ (ρ.mutationPivotIso b hOpp c).hom ≫ (I₁).blowupToBase := by
+  let ev : L →ₐ[ℂ] ℂ := laurentEval ((-1 : ℂˣ) * c⁻¹)
+  have hroot : ev f = 0 := by
+    have hmem : f ∈ Ideal.span ({f} : Set L) := Ideal.subset_span (Set.mem_singleton f)
+    rw [← ker_laurentEval_neg_inv c, RingHom.mem_ker] at hmem
+    exact hmem
+  let hf := pivotBinomial_ne_zero c
+  obtain ⟨a, ha, ha'⟩ :=
+    projectiveLine.exists_elementaryTransform_lift_of_map_eq_zero f 0 hf ev.toRingHom hroot 0
+  obtain ⟨a', hb, hb'⟩ :=
+    projectiveLine.exists_elementaryTransform_lift_of_map_eq_zero f 0 hf ev.toRingHom hroot 1
+  have hcenter := ρ.binomialCenterInRulingTorus_comp_characterRulingLaurentIso h₀ d
+    (pivotBasis_coord_one b ρ) ep₀ en₀ 0 (by simp [pivotBasis_zero])
+    hdim (b.detDualEquiv_self v) (ρ.surjective_detCharacter b) c
+  have hproj : a ≫ (e₀).inv ≫ (I₀).blowupToBase =
+      ρ.binomialCenterInRulingTorus h₀ hdim (b.detDualEquiv_self v)
+        (ρ.surjective_detCharacter b) c := by
+    apply (cancel_mono (E₀).hom).mp
+    simpa only [Category.assoc, ← sourceLaurentBlowupIso_hom_blowupToBase,
+      Iso.inv_hom_id_assoc, ha, ev] using hcenter.symm
+  refine ⟨a ≫ (e₀).inv, a' ≫ (e₀).inv, ?_, ?_, ?_⟩
+  · rw [Category.assoc, reassoc_of% hproj]
+    exact ρ.binomialCenterInRulingTorus_fst h₀ hdim (b.detDualEquiv_self v)
+      (ρ.surjective_detCharacter b) c
+  · apply (cancel_mono (E₀).hom).mp
+    simp only [Category.assoc, ← sourceLaurentBlowupIso_hom_blowupToBase,
+      Iso.inv_hom_id_assoc, ha, hb]
+  · intro h
+    have hh := congrArg (· ≫ (E₁).hom) h
+    have H (g : Spec (.of ℂ) ⟶ (J(0)).blowup) :
+        (g ≫ (e₀).inv) ≫ (ρ.mutationPivotIso b hOpp c).hom ≫ (I₁).blowupToBase ≫ (E₁).hom =
+          g ≫ (projectiveLine.elementaryTransform f 0 hf).hom ≫ (J(1)).blowupToBase := by
+      rw [← targetLaurentBlowupIso_hom_blowupToBase]
+      simp only [Category.assoc, mutationPivotIso, Iso.trans_hom, Iso.symm_hom,
+        Iso.inv_hom_id_assoc]
+    simp only [Category.assoc] at H hh
+    rw [H, H] at hh
+    have he := ha'.symm.trans (hh.trans hb')
+    rw [projectiveLine.polynomialPoint_def, projectiveLine.polynomialPoint_def,
+      cancel_mono, Spec.map_inj] at he
+    simpa using congrArg
+      (fun g : CommRingCat.of (Polynomial L) ⟶ CommRingCat.of ℂ ↦ g.hom Polynomial.X) he
 
 section Divisors
 

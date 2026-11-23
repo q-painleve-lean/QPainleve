@@ -66,6 +66,7 @@ local notation "hΨ" =>
 local notation "J₀" => Φ.boundaryIdeal hΦ
 local notation "J₁" => boundaryIdeal (Ψ) hΨ
 local notation "J" => comap (J₀) (f₀)
+local notation "boundaryToSource" => subschemeMap (J) (J₀) (f₀) (le_map_comap (J₀) (f₀))
 local notation "boundaryToTarget" => subschemeMap (J) (J₁) (f₁) (le_map_iff_comap_le.mpr
   (Eq.le (comap_boundaryIdeal_mutationComplementIso b hv hpos hneg c hΦ hΨ)))
 
@@ -100,6 +101,25 @@ private theorem exists_common_boundaryCenter
   rw [Category.assoc, ← h₁.w, ← Category.assoc, h₀.lift_fst]
   simpa only [Ray.binomialCenterOnBoundary_comp_subschemeι] using hp₁
 
+/-- The centers away from the pivot fiber are represented by the same points of the
+common boundary open. Its two maps to the toric boundaries are the cartesian
+restrictions of the complement isomorphism. -/
+theorem exists_common_boundaryCenters_mutationComplement (hprim : IsPrimitive v)
+    (hsame : ∀ j, (s j).primitiveGenerator = v → d j ≠ c)
+    (hopp : ∀ j, (s j).primitiveGenerator = -v → d j * c ≠ 1) :
+    ∃ t : Fin n → (S ⟶ (J).subscheme),
+      IsPullback (J).subschemeι (boundaryToSource) (f₀) (J₀).subschemeι ∧
+      IsPullback (J).subschemeι (boundaryToTarget) (f₁) (J₁).subschemeι ∧
+      (∀ j, t j ≫ (boundaryToSource) = (s₀) j) ∧
+      ∀ j, t j ≫ (boundaryToTarget) = (s₁) j := by
+  have h₀ : IsPullback (J).subschemeι (boundaryToSource) (f₀) (J₀).subschemeι :=
+    isPullback_of_isClosedImmersion _ _ _ _
+      (subschemeMap_subschemeι _ _ _ _).symm (by simp)
+  have h₁ := isPullback_boundary_to_mutationTarget b hv hpos hneg c
+  choose t ht₀ ht₁ using fun j ↦
+    exists_common_boundaryCenter b hv hpos hneg c s d h₀ h₁ hprim j (hsame j) (hopp j)
+  exact ⟨t, h₀, h₁, ht₀, ht₁⟩
+
 /-- The restrictions of the two ordered toric blowup models to the mutation fiber
 complements have a common model over the complement isomorphism. Both comparison
 squares are cartesian, and the same closed boundary embeds as the restriction of
@@ -116,13 +136,9 @@ theorem exists_common_internalBlowupTower_mutationComplement (hprim : IsPrimitiv
       IsPullback j (subschemeMap _ _ (f₀) ((J₀).le_map_comap (f₀))) g₀ A.2.boundaryι ∧
       IsPullback j (boundaryToTarget) g₁ B.2.boundaryι := by
   classical
-  let j₀ := subschemeMap _ _ (f₀) ((J₀).le_map_comap (f₀))
-  have h₀ : IsPullback (J).subschemeι j₀ (f₀) (J₀).subschemeι :=
-    isPullback_of_isClosedImmersion _ _ _ _
-      (subschemeMap_subschemeι _ _ _ _).symm (by simp)
-  have h₁ := isPullback_boundary_to_mutationTarget b hv hpos hneg c
-  choose s' hs₀ hs₁ using fun k ↦
-    exists_common_boundaryCenter b hv hpos hneg c s d h₀ h₁ hprim k (hsame k) (hopp k)
+  let j₀ := boundaryToSource
+  obtain ⟨s', h₀, h₁, hs₀, hs₁⟩ :=
+    exists_common_boundaryCenters_mutationComplement b hv hpos hneg c s d hprim hsame hopp
   have hC₀ (k : Fin n) : ((s₀) k).ker.IsEffectiveCartier :=
     (s k).isEffectiveCartier_ker_binomialCenterOnBoundary rankTwo hχ(s k)
       ((s k).surjective_detCharacter b) (d k)

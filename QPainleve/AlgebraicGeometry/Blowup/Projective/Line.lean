@@ -753,6 +753,23 @@ theorem elementaryTransform_hom_blowupToBase_eq_polynomialPoint
     sectionBlowupDivisorChartι_blowupToBase, SpecMap_polynomialPoint]
   simp
 
+/-- Above a zero of `f`, the divisor chart maps to the center on the source and retains
+its entire affine coordinate on the target of the elementary transformation. -/
+theorem exists_elementaryTransform_lift_of_map_eq_zero (hf : f ≠ 0)
+    {D : Type u} [CommRing D] (k : R →+* D) (hk : k f = 0) (a : D) :
+    ∃ g : Spec (.of D) ⟶ (coordinateSectionCenter f i).blowup,
+      g ≫ (coordinateSectionCenter f i).blowupToBase = polynomialPoint R k i 0 ∧
+      g ≫ (elementaryTransform f i hf).hom ≫
+        (coordinateSectionCenter f i.rev).blowupToBase = polynomialPoint R k i a := by
+  let e := Spec.map (CommRingCat.ofHom (eval₂RingHom k a))
+  refine ⟨e ≫ sectionBlowupDivisorChartι f i (IsRegular.of_ne_zero hf).left.isSMulRegular, ?_, ?_⟩
+  · rw [Category.assoc, sectionBlowupDivisorChartι_blowupToBase,
+      SpecMap_polynomialPoint]
+    simp [hk]
+  · rw [Category.assoc, sectionBlowupDivisorChartι_elementaryTransform_hom_assoc,
+      sectionBlowupOppositeChartι_blowupToBase, Fin.rev_rev]
+    exact (polynomialPoint_def R k i a).symm
+
 end Generic
 
 end TauCeti.AlgebraicGeometry.projectiveLine
