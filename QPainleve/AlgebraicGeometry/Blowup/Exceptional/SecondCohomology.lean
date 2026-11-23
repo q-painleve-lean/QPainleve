@@ -8,6 +8,7 @@ module
 public import QPainleve.AlgebraicGeometry.Blowup.Exceptional.EulerCharacteristic
 public import TauCeti.AlgebraicGeometry.Cohomology.LongExactSequence
 import QPainleve.AlgebraicGeometry.Blowup.Exceptional.Cohomology
+import QPainleve.AlgebraicGeometry.Blowup.Point.Cohomology
 import TauCeti.AlgebraicGeometry.Cohomology.ProjectiveSpace.TwistingSheaf
 
 /-!
@@ -127,9 +128,8 @@ theorem surjective_cohomologyTwoExceptionalTwistMap :
 map from the preceding Cartier sequence. The equivalence is induced by the inclusion. -/
 def cohomologyTwoExceptionalTwistQuotientEquiv :
     (Cohomology (M.obj ⊗ (E).sheaf) 2 ⧸ LinearMap.range (δ[R, M.obj])) ≃ₗ[R] Cohomology M.obj 2 :=
-  (Submodule.quotEquivOfEq _ _ (ker_cohomologyTwoExceptionalTwistMap p R M).symm).trans
-    ((cohomologyTwoExceptionalTwistMap p R M).quotKerEquivOfSurjective
-      (surjective_cohomologyTwoExceptionalTwistMap R hp hdim a M hM))
+  (LinearMap.exact_iff.mpr (ker_cohomologyTwoExceptionalTwistMap p R M)).linearEquivOfSurjective
+    (surjective_cohomologyTwoExceptionalTwistMap R hp hdim a M hM)
 
 /-- The quotient equivalence sends the class of a cohomology element to its image
 under the Cartier inclusion. -/
@@ -138,7 +138,7 @@ theorem cohomologyTwoExceptionalTwistQuotientEquiv_mk
     (x : Cohomology (M.obj ⊗ (E).sheaf) 2) :
     cohomologyTwoExceptionalTwistQuotientEquiv R hp hdim a M hM (Submodule.Quotient.mk x) =
       cohomologyTwoExceptionalTwistMap p R M x := by
-  simp [cohomologyTwoExceptionalTwistQuotientEquiv, LinearMap.quotKerEquivOfSurjective_apply_mk]
+  rfl
 
 /-- For twists of degree at most one, the transition on second cohomology is bijective
 because the exceptional quotient has vanishing first and second cohomology. -/

@@ -5,13 +5,16 @@ Authors: The QPainleve contributors
 -/
 module
 
+public import Mathlib.AlgebraicGeometry.ResidueField
 public import Mathlib.RingTheory.RegularLocalRing.Defs
 public import TauCeti.AlgebraicGeometry.Blowup.IdealSheaf
 public import TauCeti.AlgebraicGeometry.Cohomology.HigherDirectImage.Basic
 public import TauCeti.AlgebraicGeometry.Cohomology.Module.Base
+public import TauCeti.AlgebraicGeometry.LineBundle.Pullback
 public import TauCeti.AlgebraicGeometry.VectorBundle.FiniteLocallyFree
 import QPainleve.AlgebraicGeometry.Blowup.Cohomology
 import QPainleve.AlgebraicGeometry.Blowup.RegularPair
+import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
 import TauCeti.AlgebraicGeometry.Cohomology.HigherDirectImage.Affine
 import TauCeti.AlgebraicGeometry.Cohomology.HigherDirectImage.ProjectionFormula
 import TauCeti.AlgebraicGeometry.Cohomology.OpenImmersion
@@ -200,5 +203,23 @@ noncomputable def pointBlowupCohomologyLinearEquiv
     ((π).cohomologyPushforwardBaseLinearEquivOfIsZeroHigherDirectImage R _ hvan n)
 
 end Point
+
+variable {X : Scheme.{u}} (p : X) [IsLocallyNoetherian X]
+
+local notation "Iₚ" => Scheme.Hom.ker (Scheme.fromSpecResidueField X p)
+local notation "π" => blowupToBase Iₚ
+
+/-- Pulling back a line bundle along the blowup of a regular closed point of local
+dimension two preserves its cohomology in every degree. -/
+theorem nonempty_cohomologyLinearEquiv_pointBlowup_pullback
+    (k : Type u) [Field k] [X.Over (Spec (.of k))]
+    (hp : IsClosed ({p} : Set X)) [IsRegularLocalRing (X.presheaf.stalk p)]
+    (hdim : ringKrullDim (X.presheaf.stalk p) = 2) (L : InvertibleSheaf X) (q : ℕ) :
+    let : Scheme.Over (blowup Iₚ) (Spec (.of k)) := ⟨π ≫ X ↘ Spec (.of k)⟩
+    Nonempty (Cohomology L.obj q ≃ₗ[k]
+      Cohomology ((InvertibleSheaf.pullback π).obj L).obj q) := by
+  rw [ker_fromSpecResidueField_eq_vanishingIdeal p]
+  exact ⟨pointBlowupCohomologyLinearEquiv k hp hdim
+    ((InvertibleSheaf.toFiniteLocallyFree X).obj L) q⟩
 
 end AlgebraicGeometry.Scheme.IdealSheafData
