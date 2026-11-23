@@ -19,7 +19,8 @@ Over the isomorphism locus of the first map, the additional exceptional prime di
 of the composite are in bijection with the exceptional prime divisors of the second map
 meeting that locus at their generic point. For modifications this yields the strict
 decrease in the number of exceptional curves used when factoring a surface morphism
-through a point blowup.
+through a point blowup. A modification with irreducible Noetherian source has finitely
+many exceptional prime divisors.
 
 ## References
 
@@ -88,7 +89,22 @@ theorem encard_exceptional_divisors_comp (f : X ⟶ Y) (g : Y ⟶ Z)
   exact congrArg (A.encard + ·)
     (hb.injOn.encard_image.symm.trans (congrArg Set.encard hb.image_eq))
 
-open IsModification in
+/-- A modification with irreducible Noetherian source has finitely many codimension-one
+points mapping into its centre. -/
+theorem finite_coheight_one_preimage_centre (f : X ⟶ Y) [IrreducibleSpace X] [IsNoetherian X]
+    [IsModification f] : {x ∈ f ⁻¹' f.centre | Order.coheight x = 1}.Finite := by
+  let U := f ⁻¹ᵁ f.isoLocus
+  have hd : Dense (U : Set X) :=
+    IsModification.dense_preimage ‹IsModification f› (IsModification.dense_isoLocus f)
+  have : Nonempty U := hd.nonempty.to_subtype
+  have h := CodimensionOnePoint.finite_setOfPred_notMem U
+  apply (h.image (fun x : CodimensionOnePoint X ↦ (x : X))).subset
+  rintro x ⟨hx, hcx⟩
+  refine ⟨⟨x, hcx⟩, ?_, rfl⟩
+  have hnot : f x ∉ (f.isoLocus : Set Y) := by
+    simpa only [centre_def, Set.mem_compl_iff] using (Set.mem_preimage.mp hx)
+  exact fun hxU ↦ hnot (f.mem_preimage.mp hxU)
+
 /-- In a factorization of a modification, the exceptional prime divisor count strictly
 decreases when the first map is an isomorphism over a codimension-one point mapping into
 the centre of the second map. -/
@@ -98,18 +114,7 @@ theorem ncard_exceptional_divisors_lt_comp (f : X ⟶ Y) (g : Y ⟶ Z)
     {y : Y} (hy : y ∈ f.isoLocus) (hg : g y ∈ g.centre) (hc : Order.coheight y = 1) :
     {x : X | f x ∈ f.centre ∧ Order.coheight x = 1}.ncard <
       {x : X | (f ≫ g) x ∈ (f ≫ g).centre ∧ Order.coheight x = 1}.ncard := by
-  let T := {x : X | (f ≫ g) x ∈ (f ≫ g).centre ∧ Order.coheight x = 1}
-  have hT : T.Finite := by
-    let U := (f ≫ g) ⁻¹ᵁ (f ≫ g).isoLocus
-    have hd : Dense (U : Set X) := dense_preimage ‹IsModification (f ≫ g)› (dense_isoLocus (f ≫ g))
-    have : Nonempty U := hd.nonempty.to_subtype
-    have h := CodimensionOnePoint.finite_setOfPred_notMem U
-    apply (h.image (fun x : CodimensionOnePoint X ↦ (x : X))).subset
-    rintro x ⟨hx, hcx⟩
-    refine ⟨⟨x, hcx⟩, ?_, rfl⟩
-    have hnot : (f ≫ g) x ∉ ((f ≫ g).isoLocus : Set Z) := by
-      simpa only [centre_def, Set.mem_compl_iff] using hx
-    exact fun hxU ↦ hnot ((f ≫ g).mem_preimage.mp hxU)
+  have hT := (f ≫ g).finite_coheight_one_preimage_centre
   have hsum := f.encard_exceptional_divisors_comp g
   have ⟨hA, hC⟩ := ENat.add_lt_top.mp (hsum ▸ hT.encard_lt_top)
   have hpos : 0 < {y : Y | y ∈ f.isoLocus ∧ g y ∈ g.centre ∧ Order.coheight y = 1}.encard :=
