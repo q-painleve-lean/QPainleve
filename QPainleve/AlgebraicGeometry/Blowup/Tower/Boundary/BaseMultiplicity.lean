@@ -6,6 +6,7 @@ Authors: The QPainleve contributors
 module
 
 public import QPainleve.AlgebraicGeometry.Blowup.Tower.Boundary.Picard
+public import QPainleve.AlgebraicGeometry.Blowup.Tower.StrictTransform
 public import QPainleve.AlgebraicGeometry.IntersectionNumber.Nef
 import QPainleve.AlgebraicGeometry.IntersectionNumber.ClosedPoint
 import TauCeti.AlgebraicGeometry.Curves.Normalization
@@ -72,41 +73,68 @@ theorem intersectionNumber_picardHom_alongBoundary
   rw [intersectionNumber_zpow_of_isIntegral, hdegree]
   split <;> simp
 
-variable [X.Over (Spec (.of k))] [(e ≫ i).IsOver (Spec (.of k))]
-
-local notation "g" => (BlowupTower.toBase T ≫ X ↘ S)
-
 include hp hJ in
-/-- If the transform of a class is nef, the sum of its multiplicities over a boundary
-component is at most its initial degree on that component. Each infinitely near center
-in the ordered boundary tower contributes its own multiplicity. -/
-theorem sum_multiplicities_le_intersectionNumber_alongBoundary
-    (a : LineBundleClass X) (m : Fin n → ℤ)
-    (hnef : LineBundleClass.IsNef k g (picardHom T (Additive.ofMul a, -m)).toMul) :
+/-- If the class with exceptional coefficients `-m` is nef, the sum of its base
+multiplicities on the boundary curve is bounded by the original intersection number. -/
+theorem sum_baseMultiplicity_le_boundaryIntersection (f : X ⟶ S)
+    (hbase : C ↘ S = (e ≫ i) ≫ f) (a : LineBundleClass X) (m : Fin n → ℤ)
+    (hnef : ((T).picardHom (Additive.ofMul a, -m)).toMul.IsNef k ((T).toBase ≫ f)) :
     ∑ j ∈ s, m j ≤ intersectionNumber k (e ≫ i) a := by
-  have hcomp : (e ≫ WithBoundary.boundaryι B) ≫ g = C ↘ S := by
-    simp only [Category.assoc, WithBoundary.boundaryι_toBase_assoc, ← Category.assoc e i,
-      comp_over (e ≫ i) S]
-  have hdeg := hnef.intersectionNumber_nonneg (e ≫ WithBoundary.boundaryι B) hcomp.symm
+  have hfinal : C ↘ S = (e ≫ WithBoundary.boundaryι B) ≫ (T).toBase ≫ f := by
+    simpa only [Category.assoc, WithBoundary.boundaryι_toBase_assoc] using hbase
+  have hdeg := hnef.intersectionNumber_nonneg (e ≫ WithBoundary.boundaryι B) hfinal
   rw [intersectionNumber_picardHom_alongBoundary i e J p hp hJ a (-m)] at hdeg
   simp only [Pi.neg_apply, Finset.sum_neg_distrib] at hdeg
   omega
 
+section
+
+omit [∀ j, Decidable (p j ∈ Set.range e)]
+
 include hp hJ in
-/-- Among the centers on a fixed component, at most one has multiplicity greater than
-half the initial degree there, provided the transformed class is nef and all center
-multiplicities on that component are nonnegative. -/
-theorem card_filter_two_mul_lt_multiplicities_alongBoundary
+/-- Two labels above the same boundary curve cannot both have multiplicity strictly greater
+than half its original intersection number. This also applies to distinct labels with the
+same original center. -/
+theorem eq_of_boundaryIntersection_lt_two_mul_baseMultiplicity
+    (f : X ⟶ S) (hbase : C ↘ S = (e ≫ i) ≫ f)
     (a : LineBundleClass X) (m : Fin n → ℤ)
-    (hnef : LineBundleClass.IsNef k g (picardHom T (Additive.ofMul a, -m)).toMul)
-    (hm : ∀ j ∈ s, 0 ≤ m j) :
-    (Finset.filter (fun j ↦ intersectionNumber k (e ≫ i) a < 2 * m j) s).card ≤ 1 := by
-  refine Finset.card_le_one_iff.mpr fun {j l} hj hl ↦ ?_
-  obtain ⟨hj, hj'⟩ := Finset.mem_filter.mp hj
-  obtain ⟨hl, hl'⟩ := Finset.mem_filter.mp hl
+    (hnef : ((T).picardHom (Additive.ofMul a, -m)).toMul.IsNef k ((T).toBase ≫ f))
+    (hm : ∀ j, p j ∈ Set.range e → 0 ≤ m j)
+    {r l : Fin n} (hr : p r ∈ Set.range e) (hl : p l ∈ Set.range e)
+    (hrm : intersectionNumber k (e ≫ i) a < 2 * m r)
+    (hlm : intersectionNumber k (e ≫ i) a < 2 * m l) :
+    r = l := by
+  classical
   by_contra hne
-  have hsum := Finset.add_le_sum hm hj hl hne
-  have hbound := sum_multiplicities_le_intersectionNumber_alongBoundary i e J p hp hJ a m hnef
+  have hr' : r ∈ s := Finset.mem_filter.mpr ⟨Finset.mem_univ _, hr⟩
+  have hl' : l ∈ s := Finset.mem_filter.mpr ⟨Finset.mem_univ _, hl⟩
+  have hsum := Finset.add_le_sum (fun j hj ↦ hm j (Finset.mem_filter.mp hj).2) hr' hl' hne
+  have hbound := sum_baseMultiplicity_le_boundaryIntersection i e J p hp hJ f hbase a m hnef
   omega
+
+end
+
+variable (f : X ⟶ Spec (.of k)) [hIntegral : IsIntegral X] [hNoeth : IsNoetherian X]
+  [hSmooth : SmoothOfRelativeDimension 2 f]
+
+include hIntegral hNoeth hSmooth in
+/-- The successive orders of an effective Cartier divisor at the chosen centers on a
+boundary curve sum to at most its original intersection with the curve if the final
+strict transform has nef positive class. The orders are taken before the corresponding
+blowups, including at infinitely near points. -/
+theorem sum_neg_strictTransformCoefficients_le_boundaryIntersection
+    (hbase : C ↘ S = (e ≫ i) ≫ f)
+    {A : X.IdealSheafData} (hA : A.IsEffectiveCartier) :
+    let hT := isClosedPointTower_alongBoundary i J (fun j ↦ ⟨p j, hp j, hJ j⟩)
+    let hStrict := hT.isEffectiveCartier_strictTransform f hA
+    ((mk hStrict.toInvertibleSheaf)⁻¹).IsNef k ((T).toBase ≫ f) →
+      (∑ j ∈ s, -hT.strictTransformCoefficients A j) ≤
+        intersectionNumber k (e ≫ i) (mk hA.toInvertibleSheaf)⁻¹ := by
+  intro hT hStrict hnef
+  have hclass := congrArg Additive.toMul (hT.picardMarking_strictTransform f hA)
+  simp only [picardMarking_apply, toMul_ofMul] at hclass
+  exact sum_baseMultiplicity_le_boundaryIntersection i e J p hp hJ f hbase
+    (mk hA.toInvertibleSheaf)⁻¹ (-hT.strictTransformCoefficients A)
+    (by simpa only [neg_neg, hclass] using hnef)
 
 end QPainleve.BlowupTower
