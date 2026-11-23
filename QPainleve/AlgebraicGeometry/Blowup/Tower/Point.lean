@@ -69,6 +69,21 @@ theorem snoc_iff {I : Y.IdealSheafData} :
   · rintro ⟨hT, p, hp, hI⟩
     exact hT.snoc p hp hI
 
+/-- The closed point whose reduced ideal is the last center of a point blowup tower. -/
+noncomputable def lastCenter {I : Y.IdealSheafData} (hT : IsClosedPointTower X (T.snoc I)) :
+    {p : Y // IsClosed ({p} : Set Y) ∧ I = (Y.fromSpecResidueField p).ker} :=
+  ⟨(snoc_iff.mp hT).2.choose, (snoc_iff.mp hT).2.choose_spec⟩
+
+/-- A closed point presenting the last center is uniquely determined by its ideal. -/
+theorem lastCenter_eq {I : Y.IdealSheafData} (hT : IsClosedPointTower X (T.snoc I))
+    (p : Y) (hp : IsClosed ({p} : Set Y)) (hI : I = (Y.fromSpecResidueField p).ker) :
+    (lastCenter hT).val = p := by
+  let q := lastCenter hT
+  have h := congrArg (fun J : Y.IdealSheafData ↦ (J.support : Set Y))
+    (q.property.2.symm.trans hI)
+  simpa [Scheme.Hom.support_ker, Scheme.range_fromSpecResidueField, q.property.1.closure_eq,
+    hp.closure_eq] using h
+
 /-- Two consecutive towers of closed point blowups give a tower of closed point blowups. -/
 protected theorem append {U : BlowupTower Y m Z} (hT : IsClosedPointTower X T)
     (hU : IsClosedPointTower Y U) : IsClosedPointTower X (T.append U) := by

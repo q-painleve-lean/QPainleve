@@ -5,9 +5,12 @@ Authors: The QPainleve contributors
 -/
 module
 
+public import QPainleve.AlgebraicGeometry.Blowup.Tower.MovingBaseIdeal
 public import QPainleve.AlgebraicGeometry.Blowup.Tower.StrictTransform
 public import QPainleve.AlgebraicGeometry.Chow.Birational
 public import QPainleve.AlgebraicGeometry.Chow.ProjectivePlane.Numerical
+public import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.Polynomial.SymmetricAlgebra
+public import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.Sections.Resolution
 
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Intersection
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Projective
@@ -26,7 +29,7 @@ in the proof of Lemma 8.12 in [Lutz's appendix to Hacking and Keating][HKL].
 
 public section
 
-open AlgebraicGeometry CategoryTheory
+open AlgebraicGeometry CategoryTheory TopologicalSpace
 open Scheme.IdealSheafData.IsEffectiveCartier (toInvertibleSheaf)
 open TauCeti.AlgebraicGeometry LineBundleClass Chow TauCeti.SymmetricAlgebra
 
@@ -105,5 +108,66 @@ theorem homaloidal_intersection_identities_strictTransform (hT : IsClosedPointTo
   dsimp only at h
   rw [he] at h
   exact h
+
+attribute [local instance] MvPolynomial.gradedAlgebra
+
+/-- The homaloidal identities for the successive base multiplicities of a projective
+section presentation without a fixed divisor. The given birational morphism resolves
+the specified presentation. The formulas use the common order of the whole linear
+system at each center, including infinitely near centers. -/
+theorem homaloidal_intersection_identities_baseIdeal (hT : IsClosedPointTower X T)
+    (L : InvertibleSheaf X) (s : Fin 3 → Γ(L.obj, ⊤))
+    (i : Fin 3) (hi : Dense (L.obj.nonvanishingLocus (s i) : Set X))
+    (g : Y ⟶ P) (hg : g ≫ (P ↘ S) = T.toBase ≫ f)
+    (hbir : Scheme.BirationalOver g (𝟙 P))
+    (hrep :
+      let : IsNoetherian X := isNoetherian_of_finiteType f
+      let : IsIntegral Y := hT.isIntegral f
+      let b : Module.Basis (ULift.{u} (Fin 3)) k (Fin 3 → k) :=
+        (Pi.basisFun k (Fin 3)).reindex Equiv.ulift.symm
+      let : Surjective T.toBase := hT.surjective f
+      (g ≫ b.polynomialProjIso.inv).toRationalMap = T.toBase.toRationalMap.comp
+        (L.obj.partialMapToProjectiveSpace f (s ∘ ULift.down) (ULift.up i) hi).toRationalMap)
+    (hmove : ∀ p : CodimensionOnePoint X, (p : X) ∉ (⨆ j, L.zeroIdeal (s j)).support) :
+    let m := hT.baseMultiplicities (⨆ j, L.zeroIdeal (s j))
+    (∑ j, (m j : ℤ) ^ 2) = B(X) (mk L) (mk L) - 1 ∧
+      (∑ j, (m j : ℤ)) = -B(X) (mk L) K(X) - 3 := by
+  let : IsNoetherian X := isNoetherian_of_finiteType f
+  have : IsIntegral Y := hT.isIntegral f
+  have : Surjective T.toBase := hT.surjective f
+  -- The presentation API puts the coordinate indices in the same universe as the schemes.
+  let b : Module.Basis (ULift.{u} (Fin 3)) k (Fin 3 → k) :=
+    (Pi.basisFun k (Fin 3)).reindex Equiv.ulift.symm
+  let 𝒜 := MvPolynomial.homogeneousSubmodule (ULift.{u} (Fin 3)) k
+  have hover : (g ≫ b.polynomialProjIso.inv) ≫ Proj.toSpecCoeff 𝒜 = T.toBase ≫ f := by
+    rw [Category.assoc, ← b.polynomialProjIso_hom_over,
+      Iso.inv_hom_id_assoc]
+    exact hg
+  obtain ⟨hI, hclass⟩ := L.pullback_twistingSheafOne_eq_of_resolving f
+    (s ∘ ULift.down) (ULift.up i) hi T.toBase (g ≫ b.polynomialProjIso.inv) hover hrep
+  have hbase : (⨆ j : ULift.{u} (Fin 3), L.zeroIdeal (s j.down)) = ⨆ j, L.zeroIdeal (s j) := by
+    rw [iSup_ulift]
+  have hJ : ((⨆ j, L.zeroIdeal (s j)).comap T.toBase).IsEffectiveCartier :=
+    hbase ▸ hI
+  have hJclass := mk_toInvertibleSheaf_congr hI hJ
+    (congrArg (fun J : X.IdealSheafData ↦ J.comap T.toBase) hbase)
+  let L₁ : InvertibleSheaf (Proj 𝒜) := ⟨Proj.twistingSheaf 𝒜 1, inferInstance⟩
+  have he : pullback b.polynomialProjIso.hom H = mk L₁ := by
+    rw [pullback_mk, mk_eq_mk_iff, InvertibleSheaf.pullback_obj_obj,
+      Proj.symmetricAlgebraTwistingBundle_obj]
+    exact ⟨b.polynomialProjIsoPullbackTwistingSheafIso 1⟩
+  rw [hJclass, ← he, pullback_comp, Category.assoc, Iso.inv_hom_id, Category.comp_id] at hclass
+  let m := hT.baseMultiplicities (⨆ j, L.zeroIdeal (s j))
+  have hm := hT.picardHom_movingBaseIdeal f hmove hJ (mk L)
+  have hv : (T.picardMarking hT f).symm (Additive.ofMul (pullback g H)) =
+      (Additive.ofMul (mk L), fun j ↦ -(m j : ℤ)) := by
+    apply (LinearEquiv.symm_apply_eq _).mpr
+    apply Additive.toMul.injective
+    rw [picardMarking_apply, hm]
+    exact hclass
+  have h := hT.homaloidal_intersection_identities g hg hbir
+  dsimp only at h
+  rw [hv] at h
+  simpa only [neg_sq, neg_neg, toMul_ofMul] using h
 
 end QPainleve.BlowupTower.IsClosedPointTower

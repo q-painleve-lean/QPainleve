@@ -8,6 +8,7 @@ module
 public import QPainleve.AlgebraicGeometry.Blowup.Intersection
 public import QPainleve.AlgebraicGeometry.Blowup.Tower.Point
 public import QPainleve.AlgebraicGeometry.WeilDivisor.LinearSystem.BaseIdeal
+import QPainleve.AlgebraicGeometry.Blowup.Exceptional.Multiplicity
 import QPainleve.AlgebraicGeometry.Blowup.LinearSystem
 import QPainleve.AlgebraicGeometry.Blowup.Projective.Global
 import QPainleve.AlgebraicGeometry.CartierDivisor.Support
@@ -133,15 +134,9 @@ private theorem exists_isClosedPointTower_of_moving_bound (bound : ℕ)
       ih next hnextlt hS' hne' hclass' hmove' hnext.ge
     -- The tail principalizes the moving ideal. Its pullback of the removed power is Cartier too.
     have hE := isEffectiveCartier_pow P.isEffectiveCartier_comap_blowupToBase m
-    have hm : (m : ℕ∞) ≤ B.stalkOrder p :=
-      (ENat.natCast_toNat (stalkOrder_baseIdeal_lt_top hS hne p).ne).le
-    have hle : B.comap P.blowupToBase ≤ E ^ m := by
-      rw [← comap_pow]
-      exact comap_mono _
-        ((natCast_le_stalkOrder_iff_le_pow_ker_fromSpecResidueField p B hp m).mp hm)
     have hfactor : (baseIdeal S hS).comap P.blowupToBase = baseIdeal _ hS' * E ^ m := by
       rw [baseIdeal_range_pointBlowupTransform p hS hne hp hdim]
-      exact eq_colon_mul _ _ hE.locallyPrincipal hle
+      exact comap_blowupToBase_eq_colon_mul_exceptional_pow p hp B
     have hπ : (first.append T).toBase = T.toBase ≫ P.blowupToBase := by
       simp only [toBase_append, first, toBase_snoc, toBase_nil, Category.comp_id]
     refine ⟨1 + n, Z, first.append T, hfirst.append hT, by omega, ?_, ?_⟩

@@ -5,8 +5,10 @@ Authors: The QPainleve contributors
 -/
 module
 
+public import Mathlib.AlgebraicGeometry.Noetherian
 public import TauCeti.AlgebraicGeometry.IdealSheaf.Stalk
 
+import Mathlib.AlgebraicGeometry.FunctionField
 import TauCeti.AlgebraicGeometry.IdealSheaf.Affine
 
 /-!
@@ -47,6 +49,26 @@ theorem stalkIdeal_iSup {ι : Type*} (I : ι → X.IdealSheafData) (x : X) :
 theorem stalkOrder_iSup {ι : Type*} (I : ι → X.IdealSheafData) (x : X) :
     (⨆ i, I i).stalkOrder x = ⨅ i, (I i).stalkOrder x := by
   simp only [stalkOrder_def, stalkIdeal_iSup, Ideal.localOrder_iSup]
+
+/-- A nonzero ideal sheaf on an integral locally Noetherian scheme has finite order at every
+point. -/
+theorem stalkOrder_lt_top_of_ne_bot [IsIntegral X] [IsLocallyNoetherian X]
+    (I : X.IdealSheafData) (hI : I ≠ ⊥) (x : X) : I.stalkOrder x < ⊤ := by
+  obtain ⟨U, hU, hx, -⟩ := exists_isAffineOpen_mem_and_subset (TopologicalSpace.Opens.mem_top x)
+  have hη := (genericPoint_specializes x).mem_open U.isOpen hx
+  have hs : genericPoint X ∉ I.support := by
+    intro h
+    exact hI (support_eq_top_iff.mp (top_le_iff.mp fun y _ ↦
+      (genericPoint_specializes y).mem_closed I.support.isClosed h))
+  rw [mem_support_iff_stalkIdeal_ne_top, not_not,
+    I.stalkIdeal_eq_map ⟨U, hU⟩ _ hη] at hs
+  have hU' : I.ideal ⟨U, hU⟩ ≠ ⊥ := by
+    intro he
+    rw [he, Ideal.map_bot] at hs
+    exact bot_ne_top hs
+  rw [stalkOrder_def, lt_top_iff_ne_top, ne_eq, Ideal.localOrder_eq_top_iff_eq_bot,
+    I.stalkIdeal_eq_map ⟨U, hU⟩ _ hx]
+  exact mt ((Ideal.map_eq_bot_iff_of_injective (germ_injective_of_isIntegral X x hx)).mp) hU'
 
 variable {Y : Scheme.{u}}
 
