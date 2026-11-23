@@ -11,13 +11,13 @@ public import QPainleve.Geometry.Toric.Fan.StarSubdivision.Global
 
 import QPainleve.AlgebraicGeometry.Blowup.Exceptional.FirstKind
 import QPainleve.AlgebraicGeometry.Blowup.StrictTransform.Reduced
-import QPainleve.AlgebraicGeometry.EffectiveCartierDivisor.Dimension
+import QPainleve.AlgebraicGeometry.EffectiveCartierDivisor.Integral
+import QPainleve.AlgebraicGeometry.IdealSheaf.Integral
 import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
 import QPainleve.AlgebraicGeometry.IdealSheaf.Restriction
 import QPainleve.Geometry.Toric.Fan.Boundary.Intersection
 import QPainleve.Geometry.Toric.Fan.Boundary.Subdivision
 import QPainleve.Geometry.Toric.Fan.Smooth
-import TauCeti.AlgebraicGeometry.IdealSheaf.Reduced
 import TauCeti.AlgebraicGeometry.Morphisms.Smooth.Regular
 
 /-!
@@ -171,20 +171,13 @@ theorem comap_ker_distinguishedPointHom_eq_rayBoundaryIdeal
     have hpoint := algebraicMap_rayBoundaryPoint_starSubdivisionAlong hΦ σ h₀ (hc.trans hN.symm)
     rw [CodimensionOnePoint.coe_mapOfIsOpenImmersion, ← Scheme.Hom.comp_apply, he, hpoint]
     exact (s).range_subset_ker_support ⟨_, rfl⟩
-  have hg := (genericPoint_spec E.subscheme).image E.subschemeι.continuous
-  rw [Set.image_univ, E.range_subschemeι, E.support.isClosed.closure_eq] at hg
   have hEcart := (I).isEffectiveCartier_comap_blowupToBase
-  obtain ⟨p, hp, hpg⟩ := hEcart.mem_support_iff_exists_codimensionOnePoint.mp hg.mem
-  have hgp : E.subschemeι (genericPoint E.subscheme) = (p : (I).blowup) :=
-    ((hg.specializes hp).antisymm hpg).eq
-  have hpq : (p : (I).blowup) ⤳ (q' : (I).blowup) := hgp ▸ hg.specializes hq'
-  have hqp : q' = p := (CodimensionOnePoint.eq_of_specializes hpq).symm
-  have hs : E.support = ⟨closure {(q' : (I).blowup)}, isClosed_closure⟩ :=
-    SetLike.coe_injective (by rw [hqp, ← hgp]; exact hg.def.symm)
-  have hE : E.radical = E := (isReduced_subscheme_iff_radical_eq E).mp inferInstance
-  have heq : E = vanishingIdeal E.support := by rw [vanishingIdeal_support, hE]
-  rw [← he, comap_comp, ← show E = (I).comap (I).blowupToBase from rfl, heq, hs,
-    CodimensionOnePoint.coe_mapOfIsOpenImmersion,
+  have hη := (hEcart.mem_support_iff_eq_subschemeι_genericPoint q'.property).mp hq'
+  have hE : vanishingIdeal ⟨closure {(q' : (I).blowup)}, isClosed_closure⟩ = E := by
+    rw [hη, E.vanishingIdeal_closure_subschemeι_genericPoint]
+  rw [← he, comap_comp]
+  change E.comap e.hom = _
+  rw [← hE, CodimensionOnePoint.coe_mapOfIsOpenImmersion,
     comap_vanishingIdeal_closure_singleton_apply, (Ψ).rayBoundaryIdeal_def]
 
 include h₀ in
