@@ -135,6 +135,22 @@ theorem surjective {k : Type u} [Field k] [PerfectField k]
 
 end IsClosedPointTower
 
+/-- Transport along a tower lift preserves the closed point condition at every stage. -/
+theorem IsLift.isClosedPointTower {W : Scheme.{u}} {T : BlowupTower X n Y} {U : BlowupTower Z n W}
+    {e : X ≅ Z} {g : Y ≅ W} (h : IsLift e T U g) (hT : IsClosedPointTower X T) :
+    IsClosedPointTower Z U := by
+  induction hT generalizing W with
+  | nil => cases U; exact .nil
+  | @snoc m Y T I hT p hp hI ih =>
+    cases U with
+    | snoc U J =>
+      obtain ⟨f, hf, hJ, -⟩ := IsLift.snoc_iff.mp h
+      have hcomap : I.comap f.inv = J := by
+        rw [← hJ, ← Scheme.IdealSheafData.comap_comp, f.inv_hom_id, Scheme.IdealSheafData.comap_id]
+      obtain ⟨q, hq, -, hqJ⟩ :=
+        f.inv.exists_comap_ker_fromSpecResidueField_of_isIso_morphismRestrict p hp ⊤ (by simp)
+      exact (ih hf).snoc q hq (hcomap.symm.trans (hI ▸ hqJ))
+
 /-- A boundary tower whose prescribed centers are reduced closed points of the boundary is a
 tower of reduced closed point blowups on the successive ambient schemes. -/
 theorem isClosedPointTower_alongBoundary (i : D ⟶ X) [IsClosedImmersion i]

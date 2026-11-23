@@ -205,6 +205,24 @@ theorem exists_affineOpen_ideal_iSup_zeroIdeal_eq_of_mem_domain
   simpa only [sectionFrame_symm_apply, smul_eq_mul, mul_comm] using
     _root_.map_smul (L.obj.sectionFrame b hb).symm r (L.obj.presheaf.map U.val.leTop.op (s j))
 
+/-- If a projective section presentation is defined everywhere, its actual base ideal defines
+an effective Cartier divisor. The divisor can include fixed components of the presentation. -/
+theorem isEffectiveCartier_iSup_zeroIdeal_of_domain_eq_top
+    {i : ι} (hi : Dense (D[i] : Set X))
+    (hdom : (L.obj.partialMapToProjectiveSpace f s i hi).toRationalMap.domain = ⊤) :
+    (⨆ j, L.zeroIdeal (s j)).IsEffectiveCartier := by
+  rw [Scheme.IdealSheafData.isEffectiveCartier_iff]
+  intro x
+  have hx : x ∈ (L.obj.partialMapToProjectiveSpace f s i hi).toRationalMap.domain := by
+    rw [hdom]
+    exact Opens.mem_top x
+  obtain ⟨U, hxU, -, j, hj, hU⟩ :=
+    L.exists_affineOpen_ideal_iSup_zeroIdeal_eq_of_mem_domain f s hi hx
+  obtain ⟨V, hVU, hxV, a, ha, hV⟩ :=
+    (L.isEffectiveCartier_zeroIdeal hj).exists_eq_span_singleton_le U.val hxU
+  refine ⟨V, hxV, a, ha, ?_⟩
+  rwa [← Scheme.IdealSheafData.map_ideal _ hVU, hU, Scheme.IdealSheafData.map_ideal]
+
 private theorem exists_nonvanishing_of_notMem_support_iSup_zeroIdeal
     {X : Scheme.{u}} (L : InvertibleSheaf X) {κ : Type*} (s : κ → Γ(L.obj, ⊤))
     {x : X} (hx : x ∉ (⨆ j, L.zeroIdeal (s j)).support) :

@@ -5,7 +5,7 @@ Authors: The QPainleve contributors
 -/
 module
 
-public import Mathlib.AlgebraicGeometry.Birational.RationalMap
+public import Mathlib.AlgebraicGeometry.Birational.Composition
 import TauCeti.AlgebraicGeometry.Morphisms.SchemeTheoreticallyDominant
 
 /-!
@@ -14,12 +14,13 @@ import TauCeti.AlgebraicGeometry.Morphisms.SchemeTheoreticallyDominant
 Postcomposition with a monomorphism of schemes is injective on both partial maps
 and rational maps. Postcomposition can enlarge the domain of definition. On a
 reduced source, the kernel of the postcomposing morphism is contained in the
-kernel of every representative of the composite.
+kernel of every representative of the composite. Postcomposition by a morphism
+commutes with precomposition by a dominant rational map.
 -/
 
 public section
 
-open CategoryTheory TopologicalSpace
+open CategoryTheory Limits TopologicalSpace
 
 universe u
 
@@ -28,6 +29,21 @@ namespace AlgebraicGeometry.Scheme
 variable {X Y Z : Scheme.{u}}
 
 namespace Hom
+
+/-- Postcomposing the rational map of a morphism gives the rational map of the composite. -/
+@[simp]
+theorem toRationalMap_compHom (f : X ⟶ Y) (g : Y ⟶ Z) :
+    f.toRationalMap.compHom g = (f ≫ g).toRationalMap := by
+  simp only [Hom.toRationalMap, ← RationalMap.compHom_toRationalMap, Hom.toPartialMap_compHom]
+
+/-- A morphism from a reduced scheme to a separated scheme is determined by its rational map. -/
+theorem toRationalMap_injective [IsReduced X] [Y.IsSeparated] :
+    Function.Injective (fun f : X ⟶ Y ↦ f.toRationalMap) := by
+  intro f g h
+  have he := (PartialMap.equiv_toPartialMap_iff_of_isSeparated (terminal.from X) (terminal.from Y)
+    (f := f.toPartialMap) (g := g) (by simp)).mp (PartialMap.toRationalMap_eq_iff.mp h)
+  -- Both partial maps have domain `⊤`, whose inclusion is `X.topIso.hom`.
+  exact (cancel_epi X.topIso.hom).mp he
 
 /-- Postcomposition by a monomorphism is injective on partial maps. -/
 theorem partialMap_compHom_injective (i : Y ⟶ Z) [Mono i] :
@@ -56,6 +72,16 @@ theorem rationalMap_compHom_injective (i : Y ⟶ Z) [Mono i] :
 end Hom
 
 namespace RationalMap
+
+/-- Postcomposition by a morphism commutes with precomposition by a dominant rational map.
+The middle rational map can have nondense image. -/
+theorem comp_compHom {W : Scheme.{u}} [PreirreducibleSpace W] [Nonempty X]
+    (a : W ⤏ X) [a.IsDominant] (f : X ⤏ Y) (i : Y ⟶ Z) :
+    a.comp (f.compHom i) = (a.comp f).compHom i := by
+  obtain ⟨p, rfl⟩ := f.exists_rep
+  rw [← compHom_toRationalMap, comp_def, comp_def, ← compHom_toRationalMap]
+  apply congrArg PartialMap.toRationalMap
+  simp only [PartialMap.comp, PartialMap.compHom, Category.assoc]
 
 variable (f : X ⤏ Y) (i : Y ⟶ Z)
 
