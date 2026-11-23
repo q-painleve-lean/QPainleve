@@ -71,33 +71,42 @@ theorem connectedComponentIn_pos_eq_of_nonneg (hQ : Q.Nondegenerate) (hsig : sig
   ext x
   exact and_congr_right fun hx ↦ (polar_pos_iff_of_nonneg hQ hsig hh hd hd₀ hhd hx).symm
 
+/-- Adding a positive multiple of a positive vector to a point on its closed
+positive side gives a point in the same positive component. -/
+theorem add_smul_mem_connectedComponentIn_pos (hQ : Q.Nondegenerate) (hsig : sigPos Q ≤ 1)
+    {h x : V} (hh : 0 < Q h) (hx : 0 ≤ Q x) (hhx : 0 ≤ polar Q h x)
+    {t : ℝ} (ht : 0 < t) :
+    x + t • h ∈ connectedComponentIn {z | 0 < Q z} h := by
+  rw [connectedComponentIn_pos_eq hQ hsig hh]
+  refine ⟨?_, ?_⟩
+  · rw [QuadraticMap.map_add Q, QuadraticMap.map_smul, polar_smul_right, smul_eq_mul, smul_eq_mul,
+      polar_comm Q x h]
+    exact add_pos_of_pos_of_nonneg (add_pos_of_nonneg_of_pos hx (by positivity))
+      (mul_nonneg ht.le hhx)
+  · rw [polar_add_right, polar_smul_right, polar_self, two_nsmul, smul_eq_mul]
+    exact add_pos_of_nonneg_of_pos hhx (mul_pos ht (add_pos hh hh))
+
 /-- The closure of the component of `h` is cut out by nonnegative square and
 nonnegative polar pairing with `h`. -/
 theorem closure_connectedComponentIn_pos_eq (hQ : Q.Nondegenerate) (hsig : sigPos Q ≤ 1)
     {h : V} (hh : 0 < Q h) :
     closure (connectedComponentIn {x | 0 < Q x} h) = {x | 0 ≤ Q x ∧ 0 ≤ polar Q h x} := by
   have : ContinuousAdd V := IsModuleTopology.toContinuousAdd ℝ V
-  rw [connectedComponentIn_pos_eq hQ hsig hh]
   have hc : Continuous (polar Q h) :=
     IsModuleTopology.continuous_of_linearMap (Q.polarBilin h)
   refine Subset.antisymm
-    (closure_minimal (fun _ hx ↦ ⟨hx.1.le, hx.2.le⟩)
+    (closure_minimal ?_
       ((isClosed_le continuous_const Q.continuous).inter (isClosed_le continuous_const hc))) ?_
+  · rw [connectedComponentIn_pos_eq hQ hsig hh]
+    exact fun _ hx ↦ ⟨hx.1.le, hx.2.le⟩
   intro x hx
   have hc' : Continuous (fun t : ℝ ↦ x + t • h) := by fun_prop
   have h0 : (0 : ℝ) ∈ closure (Ioi 0) := by simp [closure_Ioi]
   have happrox : x ∈ closure ((fun t : ℝ ↦ x + t • h) '' Ioi 0) := by
     simpa using mem_closure_image hc'.continuousAt h0
-  refine closure_mono (image_subset_iff.mpr ?_) happrox
-  intro t ht
-  have ht' : 0 < t := ht
-  refine ⟨?_, ?_⟩
-  · rw [QuadraticMap.map_add Q, QuadraticMap.map_smul, polar_smul_right, smul_eq_mul, smul_eq_mul,
-      polar_comm Q x h]
-    exact add_pos_of_pos_of_nonneg (add_pos_of_nonneg_of_pos hx.1 (by positivity))
-      (mul_nonneg ht'.le hx.2)
-  · rw [polar_add_right, polar_smul_right, polar_self, two_nsmul, smul_eq_mul]
-    exact add_pos_of_nonneg_of_pos hx.2 (mul_pos ht' (add_pos hh hh))
+  exact closure_mono
+    (image_subset_iff.mpr fun _ ht ↦ add_smul_mem_connectedComponentIn_pos hQ hsig hh hx.1 hx.2 ht)
+      happrox
 
 /-- A nonzero vector in the closure of a positive-cone component detects that component
 by its polar pairing with positive vectors. -/
