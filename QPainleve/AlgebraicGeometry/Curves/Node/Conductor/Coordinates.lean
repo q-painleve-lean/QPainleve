@@ -12,7 +12,7 @@ import Mathlib.Algebra.Group.Pi.Units
 import Mathlib.Algebra.Group.Units.Equiv
 import Mathlib.AlgebraicGeometry.AlgClosed.Basic
 import QPainleve.AlgebraicGeometry.Morphisms.Finite.Field
-import QPainleve.AlgebraicGeometry.Scheme.GlobalSections
+import QPainleve.AlgebraicGeometry.Scheme.Sections
 import TauCeti.AlgebraicGeometry.Pullback.Carrier
 import TauCeti.AlgebraicGeometry.RationalPoint.Basic
 import TauCeti.AlgebraicGeometry.RationalPoint.Image
@@ -196,7 +196,7 @@ private def blowupComponentScalarEquiv (c : irreducibleComponents (X.singularLoc
 /-- Every global function on the normalization is a scalar on each component. -/
 def normalizationGlobalSectionsEquiv :
     Γ((X.singularLocus k).blowup, ⊤) ≃+* ((X.dualGraph p).Vertex → k) :=
-  (((X.singularLocus k).blowup.globalSectionsEquivOfDisjointCover (X.blowupComponent)
+  ((globalSectionsEquivOfDisjointCover (X.blowupComponent)
       (iSup_blowupComponent X) (pairwise_disjoint_blowupComponent X)).trans
     (RingEquiv.piCongrRight fun c ↦ (blowupComponentScalarEquiv X c).symm)).trans
     (RingEquiv.piCongrLeft' (fun _ ↦ k) (X.dualGraphVertexEquiv p).symm)

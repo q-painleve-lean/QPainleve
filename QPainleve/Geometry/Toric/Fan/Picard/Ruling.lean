@@ -6,7 +6,7 @@ Authors: The QPainleve contributors
 module
 
 public import QPainleve.Geometry.Toric.Fan.Picard.Presentation
-public import QPainleve.Geometry.Toric.Fan.Ruling
+public import QPainleve.Geometry.Toric.Fan.Ruling.Basic
 
 import QPainleve.AlgebraicGeometry.CartierDivisor.Support
 import TauCeti.AlgebraicGeometry.LineBundle.ProjectiveLine

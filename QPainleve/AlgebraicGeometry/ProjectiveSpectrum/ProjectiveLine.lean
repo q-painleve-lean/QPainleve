@@ -8,12 +8,14 @@ module
 public import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.ProjectiveLine
 import Mathlib.RingTheory.Polynomial.Ideal
 import Mathlib.RingTheory.Spectrum.Prime.RingHom
+import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.ChartEquality
 
 /-!
-# Nonvanishing loci on the projective line
+# Polynomial charts on the projective line
 
 Homogeneous linear forms define basic opens on the projective line. In the
-standard polynomial charts they are computed by dehomogenization.
+standard polynomial charts they are computed by dehomogenization. A point
+with a unit coordinate can be read in the opposite chart with the inverse coordinate.
 -/
 
 public section
@@ -24,7 +26,9 @@ namespace TauCeti.AlgebraicGeometry.projectiveLine
 
 open HomogeneousLocalization Polynomial
 
-variable {R : Type*} [CommRing R]
+universe u
+
+variable {R : Type u} [CommRing R]
 
 local notation "𝒜" => TauCeti.SymmetricAlgebra.homogeneousSubmodule R (Fin 2 → R)
 
@@ -53,6 +57,36 @@ theorem dehomogenize_coord_one_add_smul (c : R) :
     dehomogenize R 1 (coord R 0 + c • coord R 1) = X + C c := by
   have h₀ : dehomogenize R 1 (coord R 0) = X := dehomogenize_coord_rev R 1
   simp [h₀, Algebra.smul_def]
+
+/-- A polynomial chart point with a unit coordinate can be read on the opposite
+chart with the inverse unit as coordinate. -/
+theorem polynomialPoint_rev {A : Type u} [CommRing A] (f : R →+* A) (i : Fin 2) (a : Aˣ) :
+    polynomialPoint R f i (a : A) = polynomialPoint R f i.rev (↑a⁻¹ : A) := by
+  let e := awayEquivPolynomial R i.rev
+  let φ := pointCoordinates R f i (a : A)
+  have hu : IsUnit (φ (coord R i.rev)) := by
+    rw [pointCoordinates_coord_rev]
+    exact a.isUnit
+  let eval := Away.lift 𝒜 φ hu
+  have he : eval.comp e.symm.toRingHom = eval₂RingHom f (↑a⁻¹ : A) := by
+    apply Polynomial.ringHom_ext
+    · intro r
+      rw [RingHom.comp_apply, coe_eval₂RingHom, eval₂_C, ← Polynomial.algebraMap_eq,
+        RingEquiv.toRingHom_eq_coe, RingHom.coe_coe, AlgEquiv.coe_toRingEquiv, e.symm.commutes,
+        HomogeneousLocalization.algebraMap_eq_comp, RingHom.comp_apply,
+        ← HomogeneousLocalization.algebraMap_eq, Away.lift_algebraMap]
+      exact pointCoordinates_algebraMap R f i _ r
+    · simp [eval, e, φ]
+  rw [polynomialPoint_eq_fromGlobalSections,
+    Proj.fromOfGlobalSections_Spec_eq_awayLift φ (pointCoordinates_irrelevant R f i _)
+      one_pos (coord_mem R i.rev) hu, polynomialPoint_def, polynomialChartι_def,
+    ← Spec.map_comp_assoc]
+  congr 2
+  apply CommRingCat.hom_ext
+  -- The chart isomorphism identifies the comparison with the polynomial evaluation above.
+  change eval = (eval₂RingHom f (↑a⁻¹ : A)).comp e.toRingHom
+  rw [← he]
+  exact RingHom.ext fun x ↦ congrArg eval (e.symm_apply_apply x).symm
 
 section Field
 

@@ -45,15 +45,8 @@ instance isDominant_denseTorusι (Φ : Fan i) (hΦ : Nonempty Φ.cones) :
   rw [← Set.range_comp, ← hcomp, ← Φ.denseTorusι_face σ] at hclosure
   exact hclosure ⟨y, rfl⟩
 
-end TauCeti.Toric.Fan
-
-namespace TauCeti.Toric.Fan.IsSubdivision
-
-variable {N V : Type u} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
-  {i : N →+ V} {Φ Ψ : Fan i} (h : Φ.IsSubdivision Ψ)
-  (hΦ : Nonempty Φ.cones) (hΨ : Nonempty Ψ.cones)
-
-private theorem range_subfanInclusion_algebraicMap_of_eq_singleton_bot
+/-- The subfan consisting of the zero cone has image the dense torus. -/
+theorem range_subfanInclusion_algebraicMap_of_eq_singleton_bot
     (A : Fan i) (hA : Nonempty A.cones) {T : Set (PointedCone ℝ V)}
     (hT : T ⊆ A.cones) (hface : ∀ ⦃σ τ⦄, σ ∈ T → τ.IsFaceOf σ → τ ∈ T)
     (heq : T = {⊥}) :
@@ -66,6 +59,14 @@ private theorem range_subfanInclusion_algebraicMap_of_eq_singleton_bot
     exact le_of_eq (congrArg (fun τ : A.cones ↦ Set.range (A.affineToricChartι τ))
       (Subtype.ext (Set.mem_singleton_iff.mp (heq ▸ hσ))))
   · simpa only [subfan_cones] using hbot
+
+end TauCeti.Toric.Fan
+
+namespace TauCeti.Toric.Fan.IsSubdivision
+
+variable {N V : Type u} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
+  {i : N →+ V} {Φ Ψ : Fan i} (h : Φ.IsSubdivision Ψ)
+  (hΦ : Nonempty Φ.cones) (hΨ : Nonempty Ψ.cones)
 
 /-- A subdivision pulls back the open dense torus to the open dense torus. -/
 theorem preimage_range_denseTorusι :
@@ -90,8 +91,8 @@ theorem preimage_range_denseTorusι :
       refine (h.toFanHom.mem_preimageCones_iff T hbΦ).mpr ?_
       rw [h.leastCone_eq_self hbΦ hbΨ]
       exact Set.mem_singleton _
-  rw [← range_subfanInclusion_algebraicMap_of_eq_singleton_bot Ψ hΨ hT hface rfl,
+  rw [← Ψ.range_subfanInclusion_algebraicMap_of_eq_singleton_bot hΨ hT hface rfl,
     ← h.toFanHom.range_preimageSubfanAlgebraicMap T hT hface]
-  exact range_subfanInclusion_algebraicMap_of_eq_singleton_bot Φ hΦ _ _ hp
+  exact Φ.range_subfanInclusion_algebraicMap_of_eq_singleton_bot hΦ _ _ hp
 
 end TauCeti.Toric.Fan.IsSubdivision

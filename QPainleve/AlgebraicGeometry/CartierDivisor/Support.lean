@@ -5,10 +5,11 @@ Authors: The QPainleve contributors
 -/
 module
 
-public import TauCeti.AlgebraicGeometry.CartierDivisor.Factorial
+public import TauCeti.AlgebraicGeometry.CartierDivisor.Excision
 public import TauCeti.AlgebraicGeometry.IdealSheaf.Stalk
 import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.Stalk
 import TauCeti.AlgebraicGeometry.Morphisms.Dominant
+import TauCeti.AlgebraicGeometry.Scheme.DiscreteValuationStalk
 import TauCeti.RingTheory.DiscreteValuationRing.Basic
 
 /-!
@@ -158,6 +159,26 @@ theorem toWeilDivisor_eq_sum_single_of_isReduced [IsNoetherian X] (hI : I.IsEffe
   · rw [← WeilDivisor.coeff, (hI.coeff_toWeilDivisor_eq_zero_iff x).mpr (fun h ↦ hx ((hp x).mp h))]
     have hn (i : ι) : p i ≠ x := fun he ↦ hx ⟨i, he⟩
     simp [hn]
+
+open TauCeti.AlgebraicGeometry LineBundleClass in
+/-- The Picard class of a reduced effective Cartier divisor is the sum of the classes
+of its distinct prime components. -/
+theorem ofMul_inv_toInvertibleSheaf_eq_sum_primeDivisorClass [IsNoetherian X]
+    [∀ x : X, UniqueFactorizationMonoid (X.presheaf.stalk x)]
+    (hI : I.IsEffectiveCartier) [IsReduced I.subscheme]
+    {ι : Type*} [Fintype ι] (p : ι ↪ CodimensionOnePoint X)
+    (hp : ∀ x : CodimensionOnePoint X, (x : X) ∈ I.support ↔ x ∈ Set.range p) :
+    Additive.ofMul (LineBundleClass.mk hI.toInvertibleSheaf)⁻¹ =
+      ∑ i, Additive.ofMul (primeDivisorClass (p i)) := by
+  have : IsNormalScheme X := IsNormalScheme.of_uniqueFactorizationMonoid_stalk
+  let : ∀ q : CodimensionOnePoint X, IsDiscreteValuationRing (X.presheaf.stalk (q : X)) :=
+    fun q ↦ IsNormalScheme.isDiscreteValuationRing_stalk q.val q.property
+  have h := congrArg (Scheme.CartierDivisor.weilToLineBundleClassHom X)
+    (hI.toWeilDivisor_eq_sum_single_of_isReduced p hp)
+  rw [Scheme.CartierDivisor.weilToLineBundleClassHom_toWeilDivisor,
+    hI.toLineBundleClass_toCartierDivisor, map_sum] at h
+  simpa only [Scheme.CartierDivisor.weilToLineBundleClassHom_single,
+    ← LineBundleClass.primeDivisorClass_def, one_zsmul] using h
 
 open TauCeti.AlgebraicGeometry in
 /-- A principal equation on an affine open immersion computes the Weil coefficient of an
