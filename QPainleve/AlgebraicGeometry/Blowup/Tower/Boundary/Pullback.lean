@@ -11,6 +11,7 @@ public import TauCeti.AlgebraicGeometry.Morphisms.IsoLocus
 import QPainleve.AlgebraicGeometry.Blowup.Pullback
 import QPainleve.AlgebraicGeometry.EffectiveCartierDivisor.Pullback
 import QPainleve.AlgebraicGeometry.IdealSheaf.BaseChange
+import QPainleve.AlgebraicGeometry.IdealSheaf.ClosedImmersion
 import QPainleve.AlgebraicGeometry.Morphisms.Pullback.IsoLocus
 import TauCeti.AlgebraicGeometry.Blowup.Restriction
 
@@ -38,6 +39,53 @@ universe u
 variable {D D' X X' Y Y' S : Scheme.{u}} {i : D ⟶ X} {i' : D' ⟶ X'}
   {f : X' ⟶ X} {d : D' ⟶ D} {n : ℕ}
   {T : WithBoundary i n Y} {T' : WithBoundary i' n Y'} {g : Y' ⟶ Y}
+
+/-- A boundary subscheme disjoint from the current center has the full inverse-image
+scheme structure in the new ambient blowup. -/
+theorem WithBoundary.map_center_snoc_of_disjoint (T : WithBoundary i n Y)
+    (I J : D.IdealSheafData) (hI : I.IsEffectiveCartier)
+    (h : Disjoint ((I.map T.boundaryι).support : Set Y) ((J.map T.boundaryι).support : Set Y)) :
+    J.map (T.snoc I hI).boundaryι = (J.map T.boundaryι).comap (I.map T.boundaryι).blowupToBase := by
+  let π := (I.map T.boundaryι).blowupToBase
+  have hrange : Set.range (J.subschemeι ≫ T.boundaryι) = ((J.map T.boundaryι).support : Set Y) := by
+    rw [Scheme.Hom.comp_base, TopCat.coe_comp, Set.range_comp, range_subschemeι,
+      support_map_of_isClosedImmersion]
+  have hlocal : Set.range (J.subschemeι ≫ T.boundaryι) ⊆ π.isoLocus := by
+    rw [hrange]
+    exact fun _ hx ↦ (π.le_isoLocus_iff.mpr
+      (I.map T.boundaryι).isIso_blowupToBase_restrict_compl_support)
+      (Set.disjoint_right.mp h hx)
+  have hp : IsPullback (J.subschemeι ≫ (T.snoc I hI).boundaryι) (𝟙 _) π
+      (J.subschemeι ≫ T.boundaryι) := by
+    apply π.isPullback_of_isIso_of_range_subset_isoLocus
+    · simp [π]
+    · exact hlocal
+  simpa only [← map_ker, ker_subschemeι] using
+    ker_eq_comap_of_isPullback (J.subschemeι ≫ T.boundaryι) hp
+
+/-- A boundary subscheme disjoint from every center has its full inverse image on the
+final surface given by its image under the final boundary embedding. -/
+theorem comap_map_toBase_alongBoundary [IsClosedImmersion i]
+    (J : Fin n → {I : D.IdealSheafData // I.IsEffectiveCartier}) (K : D.IdealSheafData)
+    (hK : ∀ j, Disjoint ((J j).val.support : Set D) (K.support : Set D)) :
+    (K.map i).comap (alongBoundary i J).2.toTower.toBase =
+      K.map (alongBoundary i J).2.boundaryι := by
+  induction n with
+  | zero =>
+    rw [alongBoundary_zero, WithBoundary.toTower_nil, toBase_nil, comap_id,
+      WithBoundary.boundaryι_nil]
+  | succ n ih =>
+    let U := alongBoundary i (fun j : Fin n ↦ J j.castSucc)
+    let P := U.2
+    let A := J (Fin.last n)
+    have hd : Disjoint ((A.val.map P.boundaryι).support : Set U.1)
+        ((K.map P.boundaryι).support : Set U.1) := by
+      rw [support_map_of_isClosedImmersion, support_map_of_isClosedImmersion]
+      exact Set.disjoint_image_of_injective P.boundaryι.isClosedEmbedding.injective
+        (hK (Fin.last n))
+    rw [alongBoundary_succ, WithBoundary.toTower_snoc, toBase_snoc, comap_comp,
+      ih _ (fun j ↦ hK j.castSucc)]
+    exact (P.map_center_snoc_of_disjoint A.val K A.property hd).symm
 
 /-- An ordered boundary blowup tower is an isomorphism over any open avoiding
 the images of the prescribed centers on the original boundary. -/
