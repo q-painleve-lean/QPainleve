@@ -12,7 +12,6 @@ import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.AffineLine
 import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.Pullback
 import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.TensorProduct
 import TauCeti.AlgebraicGeometry.IdealSheaf.Comap
-import TauCeti.Data.Fin.Rev
 
 /-!
 # Divisors of a projective-line elementary transformation
@@ -52,29 +51,6 @@ local notation "π(" i ")" => IdealSheafData.blowupToBase (Z(i))
 local notation "E(" i ")" => IdealSheafData.comap (Z(i)) π(i)
 local notation "p" => (projectiveLine R ↘ Spec (CommRingCat.of R))
 
-private theorem coordinateSectionCenter_zero_comap_polynomialChartι :
-    (D(i)).comap (polynomialChartι R i) = 𝓘((X : P)) := by
-  rw [coordinateSectionCenter_comap_polynomialChartι, map_zero, Ideal.span_pair_zero]
-
-private theorem comap_coordinateSectionCenter_zero_polynomialPoint {A : Type u} [CommRing A]
-    (g : R →+* A) (a : A) : (D(i)).comap (polynomialPoint R g i a) = 𝓘(a) := by
-  rw [polynomialPoint_def, comap_comp,
-    coordinateSectionCenter_zero_comap_polynomialChartι,
-    IdealSheafData.comap_ofIdealTop_map_ΓSpecIso_inv, Ideal.map_span, Set.image_singleton,
-    CommRingCat.hom_ofHom, coe_eval₂RingHom, eval₂_X]
-
-private theorem comap_coordinateSectionCenter_zero_polynomialPoint_rev {A : Type u}
-    [CommRing A] (g : R →+* A) (a : A) :
-    (D(i)).comap (polynomialPoint R g i.rev a) = ⊤ := by
-  rw [polynomialPoint_def, comap_comp,
-    coordinateSectionCenter_comap_polynomialChartι_rev, IdealSheafData.comap_top]
-
-private theorem comap_coordinateSectionCenter_zero_rev_polynomialPoint {A : Type u}
-    [CommRing A] (g : R →+* A) (a : A) :
-    (D(i.rev)).comap (polynomialPoint R g i a) = ⊤ := by
-  simpa only [Fin.rev_rev] using
-    comap_coordinateSectionCenter_zero_polynomialPoint_rev i.rev g a
-
 local notation "F" =>
   Scheme.Hom.ker (Spec.map (CommRingCat.ofHom (Ideal.Quotient.mk (Ideal.span (singleton f)))))
 
@@ -83,26 +59,6 @@ private theorem comap_baseDivisor_SpecMap {A : Type u} [CommRing A] (g : R →+*
   rw [Scheme.Hom.ker_Spec_map, CommRingCat.hom_ofHom, Ideal.mk_ker,
     IdealSheafData.comap_ofIdealTop_map_ΓSpecIso_inv, Ideal.map_span, Set.image_singleton,
     CommRingCat.hom_ofHom]
-
-private theorem isEffectiveCartier_polynomialVariable : (𝓘((X : P))).IsEffectiveCartier := by
-  rw [← Polynomial.zeroIdealSheaf_eq_ofIdealTop]
-  exact (Polynomial.monic_X (R := R)).isRelativeEffectiveCartier_zeroIdealSheaf.isEffectiveCartier
-
-/-- The section of the projective line over the whole base is an effective Cartier divisor. -/
-theorem isEffectiveCartier_coordinateSectionCenter_zero : (D(i)).IsEffectiveCartier := by
-  apply (D(i)).isEffectiveCartier_of_forall_exists_isOpenImmersion
-  intro x
-  obtain ⟨j, y, rfl⟩ := exists_eq_awayι R x
-  have hy : awayι R j y ∈ Set.range (polynomialChartι R j) := by
-    rw [← Scheme.Hom.coe_opensRange, opensRange_polynomialChartι,
-      ← Proj.opensRange_awayι, Scheme.Hom.coe_opensRange]
-    exact Set.mem_range_self y
-  refine ⟨_, polynomialChartι R j, inferInstance, hy, ?_⟩
-  rcases Fin.fin_two_eq_or_eq_rev i j with rfl | rfl
-  · rw [coordinateSectionCenter_zero_comap_polynomialChartι]
-    exact isEffectiveCartier_polynomialVariable (R := R)
-  · rw [coordinateSectionCenter_comap_polynomialChartι_rev]
-    exact IdealSheafData.isEffectiveCartier_top _
 
 /-- The total transform of the opposite coordinate section is effective Cartier. -/
 theorem isEffectiveCartier_comap_coordinateSectionCenter_zero_rev (hf : IsSMulRegular R f) :
@@ -114,9 +70,8 @@ theorem isEffectiveCartier_comap_coordinateSectionCenter_zero_rev (hf : IsSMulRe
   · rw [← comap_comp, sectionBlowupDivisorChartι_blowupToBase,
       comap_coordinateSectionCenter_zero_rev_polynomialPoint]
     exact IdealSheafData.isEffectiveCartier_top _
-  · rw [← comap_comp, sectionBlowupOppositeChartι_blowupToBase,
-      coordinateSectionCenter_zero_comap_polynomialChartι]
-    exact isEffectiveCartier_polynomialVariable (R := R)
+  · rw [← comap_comp, sectionBlowupOppositeChartι_blowupToBase]
+    exact (isEffectiveCartier_coordinateSectionCenter_zero i.rev).comap (polynomialChartι R i.rev)
 
 section Domain
 
