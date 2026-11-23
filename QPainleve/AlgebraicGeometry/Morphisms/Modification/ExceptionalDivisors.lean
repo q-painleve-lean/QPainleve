@@ -7,10 +7,16 @@ module
 
 public import QPainleve.AlgebraicGeometry.Morphisms.IsoLocus
 public import TauCeti.AlgebraicGeometry.Morphisms.Modification.Basic
+public import TauCeti.AlgebraicGeometry.Scheme.Normal
 
+import QPainleve.AlgebraicGeometry.Morphisms.Modification.IsoLocus
+import QPainleve.Topology.KrullDimension
+import QPainleve.Topology.NoetherianSpace
+import TauCeti.AlgebraicGeometry.Birational.Irreducible
 import TauCeti.AlgebraicGeometry.Morphisms.Modification.Centre
 import TauCeti.AlgebraicGeometry.Morphisms.Modification.Composition
 import TauCeti.AlgebraicGeometry.Scheme.CodimensionOnePoint
+import TauCeti.AlgebraicGeometry.Scheme.GenericPoint
 
 /-!
 # Exceptional divisors of a composite
@@ -20,7 +26,8 @@ of the composite are in bijection with the exceptional prime divisors of the sec
 meeting that locus at their generic point. For modifications this yields the strict
 decrease in the number of exceptional curves used when factoring a surface morphism
 through a point blowup. A modification with irreducible Noetherian source has finitely
-many exceptional prime divisors.
+many exceptional prime divisors. For a modification of surfaces with normal target,
+the count vanishes exactly when the morphism is an isomorphism.
 
 ## References
 
@@ -29,7 +36,7 @@ many exceptional prime divisors.
 
 public section
 
-open CategoryTheory TopologicalSpace
+open CategoryTheory Order TopologicalSpace
 open TauCeti.AlgebraicGeometry
 
 namespace AlgebraicGeometry.Scheme.Hom
@@ -121,5 +128,56 @@ theorem ncard_exceptional_divisors_lt_comp (f : X ⟶ Y) (g : Y ⟶ Z)
     Set.encard_pos.mpr ⟨y, hy, hg, hc⟩
   simp only [Set.ncard_def, hsum, ENat.toNat_add hA.ne hC.ne]
   exact Nat.lt_add_of_pos_right (ENat.toNat_pos hpos.ne' hC.ne)
+
+/-- Over a closed point of the centre, a modification with reduced source of dimension at most two
+and normal integral target has a codimension-one point in the fiber if the source space is
+Noetherian. -/
+theorem exists_preimage_coheight_eq_one_of_mem_centre (f : X ⟶ Y) [IsReduced X]
+    [NoetherianSpace X] [IsIntegral Y] [IsNormalScheme Y] [IsModification f]
+    (hX : topologicalKrullDim X ≤ 2) {y : Y} (hy : y ∈ f.centre)
+    (hyClosed : IsClosed ({y} : Set Y)) : ∃ x : X, f x = y ∧ coheight x = 1 := by
+  have : IrreducibleSpace X := (IsModification.birational f).irreducibleSpace
+  have hyIso : y ∉ f.isoLocus := by
+    simpa only [centre_def, Set.mem_compl_iff, SetLike.mem_coe] using hy
+  let U := f ⁻¹ᵁ f.isoLocus
+  have hU : Dense (U : Set X) :=
+    IsModification.dense_preimage ‹IsModification f› (IsModification.dense_isoLocus f)
+  obtain ⟨z, hz⟩ := hU.nonempty
+  have hη : f (genericPoint X) ∈ f.isoLocus :=
+    f.mem_preimage.mp ((genericPoint_specializes z).mem_open U.isOpen hz)
+  by_contra! h
+  apply hyIso
+  apply f.mem_isoLocus_of_finite_preimage_singleton
+  refine (hyClosed.preimage f.continuous).finite_of_subset_closedPoints ?_
+  intro x hx
+  have he : f x = y := Set.mem_singleton_iff.mp hx
+  have hxη : x ≠ genericPoint X := fun hEq ↦ hyIso (he ▸ hEq.symm ▸ hη)
+  have hxPos := coheight_pos.mpr (hxη ∘ TauCeti.AlgebraicGeometry.Scheme.eq_genericPoint_of_isMax)
+  have hxOne : 1 < coheight x := lt_of_le_of_ne (Order.one_le_iff_pos.mpr hxPos) (h x he).symm
+  have hxTwo : 2 ≤ coheight x :=
+    (ENat.add_one_le_iff (by simp : (1 : ℕ∞) ≠ ⊤)).mpr hxOne
+  exact mem_closedPoints_iff.mpr
+    (QPainleve.isClosed_singleton_of_le_coheight_of_topologicalKrullDim_le hX hxTwo)
+
+/-- A modification with reduced Noetherian source of dimension at most two and normal integral
+target is an isomorphism exactly when there are no exceptional prime divisors. -/
+theorem ncard_exceptional_divisors_eq_zero_iff_isIso (f : X ⟶ Y) [IsReduced X]
+    [IsNoetherian X] [IsIntegral Y] [IsNormalScheme Y] [IsModification f]
+    (hX : topologicalKrullDim X ≤ 2) :
+    {x : X | f x ∈ f.centre ∧ coheight x = 1}.ncard = 0 ↔ IsIso f := by
+  have : IrreducibleSpace X := (IsModification.birational f).irreducibleSpace
+  have hfinite : {x : X | f x ∈ f.centre ∧ coheight x = 1}.Finite :=
+    f.finite_coheight_one_preimage_centre
+  rw [Set.ncard_eq_zero hfinite, ← f.centre_eq_empty_iff]
+  constructor
+  · intro h
+    by_contra hC
+    have : CompactSpace Y := f.surjective.compactSpace f.continuous
+    obtain ⟨y, hy, hyClosed⟩ := f.isClosed_centre.exists_closed_singleton
+      (Set.ne_empty_iff_nonempty.mp hC)
+    obtain ⟨x, hx, hcx⟩ := f.exists_preimage_coheight_eq_one_of_mem_centre hX hy hyClosed
+    exact Set.eq_empty_iff_forall_notMem.mp h x ⟨hx.symm ▸ hy, hcx⟩
+  · intro h
+    simp [h]
 
 end AlgebraicGeometry.Scheme.Hom
