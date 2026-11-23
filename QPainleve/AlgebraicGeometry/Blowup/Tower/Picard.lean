@@ -291,13 +291,16 @@ theorem free_picard_iff_of_common_resolution
       (E.injective.comp LinearMap.inl_injective)⟩
 
 include k in
-/-- For a finite free Picard group, its rank increases by the length of a tower
+/-- For a finitely generated Picard group, its rank increases by the length of a tower
 of closed point blowups. -/
-theorem finrank_picard [Module.Finite ℤ (Pic(X))] [Module.Free ℤ (Pic(X))]
-    (hT : IsClosedPointTower X T) :
+theorem finrank_picard [Module.Finite ℤ (Pic(X))] (hT : IsClosedPointTower X T) :
     Module.finrank ℤ (Pic(Y)) = Module.finrank ℤ (Pic(X)) + m := by
-  rw [← (T.picardMarking hT fX).finrank_eq, Module.finrank_prod]
-  simp
+  let p := LinearMap.fst ℤ (Pic(X)) (Fin m → ℤ)
+  have h := p.ker.finrank_quotient_add_finrank
+  rw [(p.quotKerEquivOfSurjective LinearMap.fst_surjective).finrank_eq,
+    LinearMap.ker_fst, LinearMap.finrank_range_of_inj LinearMap.inr_injective] at h
+  rw [← (T.picardMarking hT fX).finrank_eq]
+  simpa using h.symm
 
 end CommonResolution
 
