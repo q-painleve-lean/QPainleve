@@ -5,7 +5,7 @@ Authors: The QPainleve contributors
 -/
 module
 
-public import QPainleve.LinearAlgebra.Determinant.Dual
+public import QPainleve.Geometry.Toric.DeterminantCharacters
 public import TauCeti.Geometry.Toric.Algebraic.Fan.Basic
 
 /-!
@@ -60,28 +60,6 @@ theorem Fan.nonneg_or_nonpos_on_cone (Φ : Fan i) {f : V →ₗ[ℝ] ℝ} {v : V
   obtain ⟨a, -, rfl⟩ := mem_hull_singleton.mp hxw
   rw [map_smul, hfw, smul_zero] at hxpos
   exact (lt_irrefl 0) hxpos
-
-/-- In rank two the real determinant character of a nonzero vector vanishes on its line. -/
-theorem IsIntegralLattice.ker_realCharacter_detDualEquiv (hi : IsIntegralLattice i)
-    (b : Module.Basis (Fin 2) ℤ N) {v : N} (hv : v ≠ 0) :
-    (hi.realCharacter (b.detDualEquiv v).toAddMonoidHom).ker = ℝ ∙ i v := by
-  let f := hi.realCharacter (b.detDualEquiv v).toAddMonoidHom
-  have hf : f ≠ 0 := by
-    intro hf
-    have hzero : (b.detDualEquiv v).toAddMonoidHom = 0 :=
-      hi.realCharacter_injective (hf.trans (map_zero hi.realCharacter).symm)
-    exact hv (b.detDualEquiv.map_eq_zero_iff.mp (LinearMap.toAddMonoidHom_injective hzero))
-  have := hi.finiteDimensional
-  have hdim : Module.finrank ℝ V = 2 := by
-    rw [← hi.finrank_eq, Module.finrank_eq_card_basis b, Fintype.card_fin]
-  have hker := Module.Dual.finrank_ker_add_one_of_ne_zero hf
-  dsimp only [f] at hker
-  refine (Submodule.eq_of_le_of_finrank_le ?_ ?_).symm
-  · rw [Submodule.span_singleton_le_iff_mem, LinearMap.mem_ker]
-    have hvv := b.det.map_eq_zero_of_eq ![v, v] (i := 0) (j := 1) rfl (by decide)
-    simpa [f, IsIntegralLattice.realCharacter_apply, Module.Basis.detDualEquiv_apply] using hvv
-  · rw [finrank_span_singleton (fun h ↦ hv (hi.injective (h.trans (map_zero i).symm)))]
-    omega
 
 namespace Fan
 
