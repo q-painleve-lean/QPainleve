@@ -9,6 +9,8 @@ public import QPainleve.Geometry.Toric.FaceLocalization
 public import QPainleve.Geometry.Toric.Fan.Subdivision.Basic
 public import TauCeti.Geometry.Toric.Algebraic.Fan.DenseTorus
 
+import TauCeti.Geometry.Toric.Algebraic.Fan.SubfanScheme
+
 /-!
 # Density of the torus in a toric scheme
 
@@ -42,6 +44,21 @@ instance isDominant_denseTorusι (Φ : Fan i) (hΦ : Nonempty Φ.cones) :
     funext (Scheme.Hom.comp_apply _ _)
   rw [← Set.range_comp, ← hcomp, ← Φ.denseTorusι_face σ] at hclosure
   exact hclosure ⟨y, rfl⟩
+
+/-- The subfan consisting of the zero cone has image the dense torus. -/
+theorem range_subfanInclusion_algebraicMap_of_eq_singleton_bot
+    (A : Fan i) (hA : Nonempty A.cones) {T : Set (PointedCone ℝ V)}
+    (hT : T ⊆ A.cones) (hface : ∀ ⦃σ τ⦄, σ ∈ T → τ.IsFaceOf σ → τ ∈ T)
+    (heq : T = {⊥}) :
+    Set.range (A.subfanInclusion T hT hface).algebraicMap = Set.range (A.denseTorusι hA) := by
+  have hbot : (⊥ : PointedCone ℝ V) ∈ T := heq.symm ▸ Set.mem_singleton _
+  rw [A.range_subfanInclusion_algebraicMap T hT hface,
+    A.denseTorusι_eq_affineToricChartι hA (hT hbot)]
+  refine le_antisymm (iSup_le fun σ ↦ ?_) (le_iSup_of_le ⟨⊥, ?_⟩ le_rfl)
+  · have hσ : σ.val ∈ T := by simpa only [subfan_cones] using σ.property
+    exact le_of_eq (congrArg (fun τ : A.cones ↦ Set.range (A.affineToricChartι τ))
+      (Subtype.ext (Set.mem_singleton_iff.mp (heq ▸ hσ))))
+  · simpa only [subfan_cones] using hbot
 
 end TauCeti.Toric.Fan
 
