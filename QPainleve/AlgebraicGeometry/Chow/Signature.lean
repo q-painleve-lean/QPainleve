@@ -67,6 +67,14 @@ theorem isSymm_realIntersectionBilinForm : (realIntersectionBilinForm k X).IsSym
   exact LinearMap.BilinForm.isSymm_iff.mpr
     (LinearMap.BilinForm.IsSymm.baseChange ℝ (LinearMap.BilinForm.isSymm_iff.mp h))
 
+variable {X} in
+/-- The polar form of the real Picard square is twice the intersection pairing. -/
+theorem polar_realIntersectionBilinForm (x y : ℝ ⊗[ℤ] Pic(X)) :
+    polar (LinearMap.BilinMap.toQuadraticMap (realIntersectionBilinForm k X)) x y =
+      2 * realIntersectionBilinForm k X x y := by
+  rw [LinearMap.BilinMap.polar_toQuadraticMap,
+    (isSymm_realIntersectionBilinForm k X).eq y x, two_mul]
+
 end RealForm
 
 local notation "negDot(" d ")" => (-(dotProductBilin ℤ ℤ : LinearMap.BilinForm ℤ (Fin d → ℤ)))

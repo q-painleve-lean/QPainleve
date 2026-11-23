@@ -51,12 +51,6 @@ local notation "ι" => (fun a : LineBundleClass X ↦ (1 : ℝ) ⊗ₜ[ℤ] Addi
 local notation "C(" h ")" => connectedComponentIn (Set.ofPred (fun x : V(X) ↦ 0 < Q x)) (ι h)
 local notation "f" => (X ↘ Spec (CommRingCat.of k))
 
-/-- The polar form of the real Picard square is twice the intersection pairing. -/
-theorem polar_realIntersectionBilinForm (x y : V(X)) :
-    polar Q x y = 2 * B x y := by
-  rw [LinearMap.BilinMap.polar_toQuadraticMap,
-    (isSymm_realIntersectionBilinForm k X).eq y x, two_mul]
-
 /-- A real Picard class which pairs nonnegatively with every prime divisor also
 pairs nonnegatively with every ample class. -/
 theorem realIntersectionBilinForm_nonneg_of_isAmple {d : V(X)} {h : LineBundleClass X}
