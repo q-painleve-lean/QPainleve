@@ -5,6 +5,7 @@ Authors: The QPainleve contributors
 -/
 module
 
+public import Mathlib.AlgebraicGeometry.Artinian
 public import TauCeti.AlgebraicGeometry.IdealSheaf.Stalk
 
 import TauCeti.AlgebraicGeometry.IdealSheaf.Affine
@@ -19,11 +20,35 @@ commutative square of closed subschemes.
 
 public section
 
-open CategoryTheory
+open CategoryTheory TopologicalSpace
 
 namespace AlgebraicGeometry.Scheme.IdealSheafData
 
 variable {X : Scheme.{u}}
+
+/-- A reduced locally Artinian closed subscheme cuts out the maximal ideal in the
+ambient local ring at each point of its support. -/
+theorem stalkIdeal_eq_maximalIdeal_of_isLocallyArtinian
+    (I : X.IdealSheafData) [IsLocallyArtinian I.subscheme] [IsReduced I.subscheme]
+    {x : X} (hx : x ∈ I.support) :
+    I.stalkIdeal x = IsLocalRing.maximalIdeal (X.presheaf.stalk x) := by
+  obtain ⟨z, rfl⟩ := I.range_subschemeι.ge hx
+  obtain ⟨U, hU, hzU, _⟩ := exists_isAffineOpen_mem_and_subset (Opens.mem_top z)
+  have : IsArtinianRing Γ(I.subscheme, U) :=
+    IsLocallyArtinian.isArtinianRing_presheaf_obj ⟨U, hU⟩
+  let := TopCat.Presheaf.algebra_section_stalk I.subscheme.presheaf ⟨z, hzU⟩
+  let := hU.isLocalization_stalk ⟨z, hzU⟩
+  have : IsArtinianRing (I.subscheme.presheaf.stalk z) :=
+    IsArtinianRing.localization_artinian (hU.primeIdealOf ⟨z, hzU⟩).asIdeal.primeCompl _
+  have hzero : IsLocalRing.maximalIdeal (I.subscheme.presheaf.stalk z) = ⊥ :=
+    IsLocalRing.isField_iff_maximalIdeal_eq.mp
+      (IsArtinianRing.isField_of_isReduced_of_isLocalRing _)
+  let h := I.subschemeι.stalkMap z
+  have hmax : RingHom.ker h.hom =
+      IsLocalRing.maximalIdeal (X.presheaf.stalk (I.subschemeι z)) := by
+    rw [RingHom.ker_eq_comap_bot, ← hzero]
+    exact IsLocalRing.maximalIdeal_comap h.hom
+  simpa only [h, Hom.ker_stalkMap_of_isClosedImmersion, IdealSheafData.ker_subschemeι] using hmax
 
 /-- An ideal sheaf is determined by its pullbacks to the spectra of the local rings. -/
 theorem eq_of_comap_fromSpecStalk_eq {I J : X.IdealSheafData}

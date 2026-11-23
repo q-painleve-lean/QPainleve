@@ -9,7 +9,9 @@ public import TauCeti.AlgebraicGeometry.Curves.Node.Normalization
 public import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.Basic
 public import TauCeti.AlgebraicGeometry.IdealSheaf.VanishingIdeal
 import QPainleve.AlgebraicGeometry.Blowup.Comparison
+import QPainleve.AlgebraicGeometry.Fiber
 import TauCeti.AlgebraicGeometry.IdealSheaf.Reduced
+import TauCeti.AlgebraicGeometry.ResidueField
 
 /-!
 # Blowing up a single node of a nodal curve
@@ -46,6 +48,33 @@ theorem isClosed_singleton_of_mem_singularLocus
   obtain ⟨z, rfl⟩ : x ∈ Set.range I.subschemeι := I.range_subschemeι.ge hx
   rw [← Set.image_singleton]
   exact I.subschemeι.isClosedEmbedding.isClosedMap _ (isClosed_discrete _)
+
+/-- The fiber of the blowup of the singular locus over a node is finite étale
+over the residue field of the node. -/
+theorem isFinite_etale_fiberToSpecResidueField_blowup_singularLocus_of_node
+    (hnodal : AtWorstNodalOfRelativeDimensionOne (X ↘ Spec (.of k))) {x : X}
+    (hx : (letI := hnodal.syntomic; x ∈ (X.singularLocus k).support)) :
+    letI := hnodal.syntomic
+    let f := (X.singularLocus k).blowupToBase.fiberToSpecResidueField x
+    IsFinite f ∧ Etale f := by
+  let := hnodal.syntomic
+  let I := X.singularLocus k
+  obtain ⟨z, rfl⟩ := I.range_subschemeι.ge hx
+  have := X.isFinite_branchSchemeToSingularLocus hnodal
+  have := X.etale_branchSchemeToSingularLocus hnodal
+  let f := (X.branchSchemeToSingularLocus k).fiberToSpecResidueField z
+  let g := Spec.map (I.subschemeι.residueFieldMap z)
+  have : Etale f := MorphismProperty.of_isPullback
+    (IsPullback.of_hasPullback (X.branchSchemeToSingularLocus k)
+      (I.subscheme.fromSpecResidueField z)) inferInstance
+  have h₁ : IsFinite (f ≫ g) := inferInstance
+  have h₂ : Etale (f ≫ g) := inferInstance
+  obtain ⟨e⟩ := (X.isPullback_branchScheme k).flip.nonempty_iso_fiberToSpecResidueField z
+  let e' := (Over.forget _).mapIso e
+  have hw : e'.hom ≫ I.blowupToBase.fiberToSpecResidueField (I.subschemeι z) = f ≫ g :=
+    Over.w e.hom
+  rw [← e'.inv_hom_id_assoc (I.blowupToBase.fiberToSpecResidueField (I.subschemeι z)), hw]
+  exact ⟨inferInstance, inferInstance⟩
 
 /-- An open neighbourhood of a node identifies the singular ideal with the reduced ideal
 of that point. -/
