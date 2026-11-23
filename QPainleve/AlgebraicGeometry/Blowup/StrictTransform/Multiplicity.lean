@@ -5,17 +5,16 @@ Authors: The QPainleve contributors
 -/
 module
 
+public import QPainleve.AlgebraicGeometry.Blowup.StrictTransform.Basic
 public import QPainleve.AlgebraicGeometry.IdealSheaf.RegularPair
 public import QPainleve.AlgebraicGeometry.IdealSheaf.Restriction
 public import QPainleve.RingTheory.Ideal.AffineBlowup.Multiplicity
 public import TauCeti.AlgebraicGeometry.Blowup.AffineCharts
-public import TauCeti.AlgebraicGeometry.Blowup.StrictTransform
-public import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.Stalk
+public import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.Basic
 public import TauCeti.AlgebraicGeometry.IdealSheaf.Stalk
-import QPainleve.RingTheory.Regular.Pair
+import Mathlib.AlgebraicGeometry.FunctionField
 import TauCeti.Algebra.Regular.SMul
 import TauCeti.AlgebraicGeometry.Blowup.BaseChange
-import TauCeti.AlgebraicGeometry.IdealSheaf.Extension
 import TauCeti.AlgebraicGeometry.IdealSheaf.Locality
 import TauCeti.RingTheory.Ideal.Order
 
@@ -44,26 +43,6 @@ open TauCeti.AlgebraicGeometry
 namespace AlgebraicGeometry.Scheme.IdealSheafData
 
 universe u
-
-/-- The strict transform of a closed subscheme is obtained by restricting its total transform
-off the exceptional divisor and taking the scheme-theoretic image in the blowup. -/
-theorem ker_blowupMap_subschemeι_eq_map_comap {X : Scheme.{u}} (I J : X.IdealSheafData) :
-    let E := I.comap I.blowupToBase
-    let W : I.blowup.Opens := E.support.compl
-    let j := W.ι
-    (I.blowupMap J.subschemeι).ker = ((J.comap I.blowupToBase).comap j).map j := by
-  let E := I.comap I.blowupToBase
-  let W : I.blowup.Opens := E.support.compl
-  let f := pullback.snd J.subschemeι I.blowupToBase
-  have hW : f ⁻¹ᵁ W = (pullback.fst J.subschemeι I.blowupToBase ≫ J.subschemeι) ⁻¹ᵁ
-      I.support.compl := by
-    dsimp only [W, E]
-    rw [compl_support_comap, ← Scheme.Hom.comp_preimage, ← pullback.condition]
-  have hTotal : f.ker = J.comap I.blowupToBase := by
-    simpa [f] using (ker_eq_comap_of_isPullback J.subschemeι
-      (IsPullback.of_hasPullback J.subschemeι I.blowupToBase).flip)
-  rw [I.ker_blowupMap, ← hW, ← morphismRestrict_ι, Scheme.Hom.ker_comp]
-  rw [ker_eq_comap_of_isPullback f (isPullback_morphismRestrict f W), hTotal]
 
 /-- On an open of a blowup, a factor of the total transform obtained by removing a power
 of the exceptional ideal defines the strict transform if the exceptional complement in
@@ -167,15 +146,6 @@ theorem comap_totalTransform_eq_strictTransform_mul_pow {X : Scheme.{u}} [IsLoca
   rw [← hstrict] at hfactor
   simpa only [comap_comp J c _, comap_comp I c _] using hfactor
 
-private theorem comap_ker_blowupMap_subschemeι_exceptionalCompl
-    {X : Scheme.{u}} [IsLocallyNoetherian X] (I J : X.IdealSheafData) :
-    let W : I.blowup.Opens := (I.comap I.blowupToBase).support.compl
-    (I.blowupMap J.subschemeι).ker.comap W.ι = (J.comap I.blowupToBase).comap W.ι := by
-  let W : I.blowup.Opens := (I.comap I.blowupToBase).support.compl
-  have : IsLocallyNoetherian I.blowup := LocallyOfFiniteType.isLocallyNoetherian I.blowupToBase
-  have he := comap_map_of_isOpenImmersion ((J.comap I.blowupToBase).comap W.ι) W.ι
-  simpa only [ker_blowupMap_subschemeι_eq_map_comap] using he
-
 open RingTheory.Sequence in
 /-- A weakly regular pair around the whole center gives the total-transform formula on the
 blowup. The remainder of the blowup lies in the exceptional complement. -/
@@ -256,8 +226,8 @@ theorem IsEffectiveCartier.totalTransform_eq_strictTransform_mul_pow_closedPoint
     J.comap I.blowupToBase =
       (I.blowupMap J.subschemeι).ker * (I.comap I.blowupToBase) ^ (J.stalkOrder p).toNat := by
   let I := vanishingIdeal (Closeds.mk (closure {p}) isClosed_closure)
-  obtain ⟨V, -, hpV, f₀, -, hf₀⟩ := hJ.exists_eq_span_singleton_le ⊤ (Opens.mem_top p)
-  obtain ⟨U, hpU, hUV, a, b, hab, hreg⟩ :=
+  obtain ⟨V, -, hpV, f₀, hreg₀, hf₀⟩ := hJ.exists_eq_span_singleton_le ⊤ (Opens.mem_top p)
+  obtain ⟨U, hpU, hUV, a, b, hab, hreg, hswap⟩ :=
     exists_mem_le_span_pair_vanishingIdeal_closure_singleton hdim hpV
   let f : Γ(X, U) := X.presheaf.map (homOfLE hUV).op f₀
   have hf : J.ideal U = Ideal.span {f} := J.ideal_eq_span_singleton_of_le hUV hf₀
@@ -268,14 +238,16 @@ theorem IsEffectiveCartier.totalTransform_eq_strictTransform_mul_pow_closedPoint
   have hIP : I.ideal U = P := vanishingIdeal_closure_singleton_ideal p U hpU
   let : P.IsMaximal := U.property.primeIdealOf_isMaximal_of_isClosed ⟨p, hpU⟩ hp
   have hPrime : (I.ideal U).IsPrime := hIP.symm ▸ (inferInstance : P.IsPrime)
-  let : Nonempty U.val := ⟨⟨p, hpU⟩⟩
-  have hswap := hreg.swap_of_span_ne_top (hab.trans_ne hPrime.ne_top)
   have hord : J.stalkOrder p ≠ ⊤ := by
-    obtain ⟨x, hx, hEq⟩ := hJ.exists_map_germ_eq_span_singleton U hpU
+    let : Nonempty V.val := ⟨⟨p, hpV⟩⟩
+    have hf₀_ne : f₀ ≠ 0 := fun he ↦
+      one_ne_zero (hreg₀ (by simp [he]) : (1 : Γ(X, V)) = 0)
+    have hgerm : X.presheaf.germ V.val p hpV f₀ ≠ 0 := fun he ↦
+      hf₀_ne (germ_injective_of_isIntegral X p hpV (he.trans (map_zero _).symm))
     rw [J.stalkOrder_def, ne_eq, Ideal.localOrder_eq_top_iff_eq_bot,
-      J.stalkIdeal_eq_map U p hpU, hEq, Ideal.span_singleton_eq_bot]
-    intro he
-    exact one_ne_zero (hx (by simp [he]) : (1 : X.presheaf.stalk p) = 0)
+      J.stalkIdeal_eq_map V p hpV, hf₀, Ideal.map_span, Set.image_singleton,
+      Ideal.span_singleton_eq_bot]
+    exact hgerm
   let n := (J.stalkOrder p).toNat
   have hn : (n : ℕ∞) = J.stalkOrder p := ENat.natCast_toNat hord
   have hpow (m : ℕ) : f ∈ I.ideal U ^ m ↔ (m : ℕ∞) ≤ J.stalkOrder p := by
