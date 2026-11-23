@@ -16,7 +16,6 @@ import QPainleve.AlgebraicGeometry.Blowup.Picard
 import QPainleve.AlgebraicGeometry.Blowup.Ramification
 import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
 import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.TensorProduct
-import TauCeti.AlgebraicGeometry.Scheme.GenericPoint
 import TauCeti.AlgebraicGeometry.Scheme.Regular.Scheme
 
 /-!
@@ -58,22 +57,6 @@ local notation:max "twist[" a ", " m "]" => (pullback π a * E ^ (m : ℤ))
 local notation:max "rr[" S ", " a ", " K "]" =>
   (eulerCharBelow k a 3 = eulerCharBelow (X := S) k 1 3 +
     (classIntersectionNumber k S a a - classIntersectionNumber k S a K) / 2)
-
-include k in
-omit [IsAlgClosed k] in
-private theorem isIntegral_closedPointBlowup (hp : IsClosed ({p} : Set X)) : IsIntegral Y := by
-  have : IsNoetherian X := isNoetherian_of_finiteType (X ↘ Spec (.of k))
-  have hcod := coheight_eq_of_isClosed_of_smoothOfRelativeDimension (X ↘ Spec (.of k)) (n := 2) hp
-  have hgen : coheight (genericPoint X) = 0 :=
-    coheight_eq_zero.mpr Scheme.isMax_genericPoint
-  apply (Iₚ).isIntegral_blowup_of_nonempty_compl_support
-  refine ⟨⟨genericPoint X, ?_⟩⟩
-  have hs : ((Iₚ).support : Set X) = {p} :=
-    (coe_support_vanishingIdeal _).trans hp.closure_eq
-  rw [← SetLike.mem_coe, Closeds.coe_compl, Set.mem_compl_iff, hs, Set.mem_singleton_iff]
-  intro h
-  rw [h, hcod] at hgen
-  norm_num at hgen
 
 omit [IsIntegral X] in
 private theorem eulerCharBelow_twist (hp : IsClosed ({p} : Set X))
@@ -133,7 +116,7 @@ theorem eulerCharBelow_eq_riemannRoch_pointBlowup_iff (hp : IsClosed ({p} : Set 
   have : SmoothOfRelativeDimension 2 (Y ↘ Spec (.of k)) :=
     smoothOfRelativeDimension_blowup_closed_point (X ↘ Spec (.of k)) hp
   have : Smooth (Y ↘ Spec (.of k)) := SmoothOfRelativeDimension.smooth 2 _
-  have : IsIntegral Y := isIntegral_closedPointBlowup k p hp
+  have : IsIntegral Y := isIntegral_blowup_closed_point (X ↘ Spec (.of k)) hp
   let K := mk (canonicalBundle k X 2)
   have hK : mk (canonicalBundle k Y 2) = twist[K, 1] := by
     have hram := ramificationIdealSheaf_blowup_of_smoothSurface k hp
@@ -172,7 +155,7 @@ theorem forall_eulerCharBelow_eq_riemannRoch_pointBlowup_iff (hp : IsClosed ({p}
   have : Smooth (Y ↘ Spec (.of k)) := SmoothOfRelativeDimension.smooth 2 _
   have : IsRegular X := IsRegular.of_smooth (X ↘ Spec (.of k))
   have : IsRegular Y := IsRegular.of_smooth (Y ↘ Spec (.of k))
-  have : IsIntegral Y := isIntegral_closedPointBlowup k p hp
+  have : IsIntegral Y := isIntegral_blowup_closed_point (X ↘ Spec (.of k)) hp
   have hX₂ := topologicalKrullDim_eq_of_smoothOfRelativeDimension (X ↘ Spec (.of k)) (n := 2)
   have hY₂ := topologicalKrullDim_eq_of_smoothOfRelativeDimension (Y ↘ Spec (.of k)) (n := 2)
   have hcod := coheight_eq_of_isClosed_of_smoothOfRelativeDimension (X ↘ Spec (.of k)) (n := 2) hp
