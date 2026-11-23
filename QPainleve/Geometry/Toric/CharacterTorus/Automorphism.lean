@@ -7,8 +7,8 @@ module
 
 public import QPainleve.Geometry.Toric.CharacterTorus.Scheme
 public import TauCeti.CategoryTheory.Monoidal.Grp.Translation
+import QPainleve.Algebra.AlgebraicGroup.Hopf.SchemeTranslation
 import QPainleve.Algebra.MonoidAlgebra.MonomialEquiv
-import TauCeti.Algebra.AlgebraicGroup.CommHopfAlgCat.SchemePoints
 import TauCeti.Algebra.Group.UniqueProds.TorsionFree
 
 /-!
@@ -23,7 +23,7 @@ translation comparison uses Tau Ceti's `leftTranslation` on the relative spectru
 public noncomputable section
 
 open AlgebraicGeometry CategoryTheory MonoidalCategory CartesianMonoidalCategory
-open AddMonoidAlgebra TauCeti WithConv
+open AddMonoidAlgebra TauCeti
 
 namespace QPainleve.CharacterTorus
 
@@ -95,42 +95,15 @@ theorem monomialIso_refl (χ : Multiplicative A →* kˣ) :
         ((pointsEquiv k A).symm χ).property :
           𝟙_ (Over (Spec (CommRingCat.of k))) ⟶ (scheme k A).asOver _) := by
   let S := Spec (CommRingCat.of k)
-  let T := AddMonoidAlgebra k A
   let p := (DiagonalizableGroup.point χ).comp (toMultiplicativeAlgEquiv k k A).toAlgHom
   let x : 𝟙_ (Over S) ⟶ (scheme k A).asOver S :=
     Over.homMk ((pointsEquiv k A).symm χ).val ((pointsEquiv k A).symm χ).property
-  have hx : x.left = Spec.map (CommRingCat.ofHom p.toRingHom) :=
-    pointsEquiv_symm_apply_val k A χ
-  have hbase : ((scheme k A).asOver S).hom =
-      Spec.map (CommRingCat.ofHom (Algebra.ofId k T).toRingHom) := rfl
-  have hconst : Spec.mapMulEquiv (toConv ((Algebra.ofId k T).comp p)) =
-      toUnit ((scheme k A).asOver S) ≫ x := by
-    apply Over.OverMorphism.ext
-    erw [Over.comp_left]
-    simp only [CommHopfAlgCat.mapMulEquiv_left, Over.toUnit_left, hbase, hx]
-    erw [← Spec.map_comp]
-    rfl
-  have hid : Spec.mapMulEquiv (toConv (AlgHom.id k T)) = 𝟙 ((scheme k A).asOver S) := by
-    ext : 1
-    rw [CommHopfAlgCat.mapMulEquiv_left]
-    exact Spec.map_id _
-  have htwist : toConv (monomialAlgEquiv χ (AddEquiv.refl A)).toAlgHom =
-      toConv ((Algebra.ofId k T).comp p) * toConv (AlgHom.id k T) := by
-    apply WithConv.ofConv_injective
-    apply AddMonoidAlgebra.algHom_ext
-    · intro a
-      -- The convolution formula is stated for evaluation of a wrapped homomorphism.
-      change monomialAlgEquiv χ (AddEquiv.refl A) (single a 1) =
-        (toConv ((Algebra.ofId k T).comp p) * toConv (AlgHom.id k T)) (single a 1)
-      rw [AlgHom.convMul_apply]
-      dsimp only [T]
-      simp [p, AlgHom.id_apply]
-    · exact Subsingleton.elim _ _
+  have h := specMap_eq_mul_of_groupLike_basis (AddMonoidAlgebra.basis A k)
+    (fun a ↦ by simp) p (monomialAlgEquiv χ (AddEquiv.refl A)).toAlgHom
+    (fun a ↦ by simp [p, smul_single]) x (pointsEquiv_symm_apply_val k A χ)
   apply Iso.ext
-  rw [leftTranslation_hom, ← hconst, ← hid, ← map_mul, ← htwist]
-  ext : 1
-  exact (monomialIso_hom_left χ (AddEquiv.refl A)).trans
-    (CommHopfAlgCat.mapMulEquiv_left (toConv (monomialAlgEquiv χ (AddEquiv.refl A)).toAlgHom)).symm
+  rw [leftTranslation_hom, ← h]
+  exact Over.OverMorphism.ext (monomialIso_hom_left χ (AddEquiv.refl A))
 
 /-- The isomorphism is the lattice-induced isomorphism followed by translation at its target. -/
 theorem monomialIso_eq_map_trans (χ : Multiplicative A →* kˣ) (e : A ≃+ B) :

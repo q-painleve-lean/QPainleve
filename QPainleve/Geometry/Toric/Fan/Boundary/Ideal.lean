@@ -58,6 +58,27 @@ theorem coe_support_rayBoundaryIdeal (ρ : Φ.Ray) :
   rw [rayBoundaryIdeal, coe_support_vanishingIdeal]
   rfl
 
+/-- An automorphism preserves a ray divisor exactly when it fixes its generic point. -/
+theorem comap_rayBoundaryIdeal_eq_iff (e : Φ.algebraicRealization ≅ Φ.algebraicRealization)
+    (ρ : Φ.Ray) :
+    (Φ.rayBoundaryIdeal hΦ ρ).comap e.hom = Φ.rayBoundaryIdeal hΦ ρ ↔
+      e.hom (Φ.rayBoundaryPoint hΦ ρ).val = (Φ.rayBoundaryPoint hΦ ρ).val := by
+  let x := (Φ.rayBoundaryPoint hΦ ρ).val
+  constructor
+  · intro he
+    have h := congrArg (fun J : Φ.algebraicRealization.IdealSheafData ↦
+      (J.support : Set Φ.algebraicRealization)) he
+    rw [Scheme.IdealSheafData.support_comap, TopologicalSpace.Closeds.coe_preimage,
+      Φ.coe_support_rayBoundaryIdeal] at h
+    have himage := congrArg (Set.image e.hom) h
+    rw [Set.image_preimage_eq _ (fun y ↦ ⟨e.inv y, by simp [← Scheme.Hom.comp_apply]⟩)] at himage
+    have h' := (isGenericPoint_closure (x := x)).image e.hom.continuous
+    rw [← himage, closure_closure] at h'
+    exact h'.eq isGenericPoint_closure
+  · intro he
+    simpa only [x, he, Φ.rayBoundaryIdeal_def] using
+      Scheme.IdealSheafData.comap_vanishingIdeal_closure_singleton_apply e.hom x
+
 /-- On a chart not containing the ray, the boundary ideal is the unit ideal. -/
 @[simp]
 theorem comap_rayBoundaryIdeal_eq_top (ρ : Φ.Ray) (σ : Φ.cones) (h : ¬ ρ.toCone ≤ σ) :

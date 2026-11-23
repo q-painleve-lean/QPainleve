@@ -349,13 +349,8 @@ theorem rayBoundaryPoint_ofToricRay (Φ : Fan i) (hΦ : Φ.IsRegular)
   have : IsOpenImmersion f := hσ.rational.isOpenImmersion_faceAffineToricSchemeMap Φ.lattice hface
   let q := hτreg.rayPoint Φ.lattice hτ r
   let p := hσreg.rayPoint Φ.lattice hσ ρ
-  have hr : ToricRay.faceEmbedding hface r = ρ := by
-    apply SetLike.coe_injective
-    exact congrArg (fun C : PointedCone ℝ V ↦ (C : Set V)) <| by
-      rw [ToricRay.toPointedCone_faceEmbedding, Ray.toPointedCone_toToricRay,
-        Ray.toCone_ofToricRay]
   have hv : primitiveGenerator Φ.lattice hσ ρ = primitiveGenerator Φ.lattice hτ r := by
-    rw [← hr, primitiveGenerator_faceEmbedding]
+    simpa only [Ray.primitiveGenerator_def] using (Ray.primitiveGenerator_ofToricRay σ ρ).symm
   have hsub : p.val.asIdeal ≤ (f q.val).asIdeal := by
     rw [hσreg.rayPoint_asIdeal, rayIdeal_le_iff]
     intro m hm
@@ -551,9 +546,7 @@ theorem rayBoundaryPoint_injective (Φ : Fan i) (hΦ : Φ.IsRegular) :
           Φ.algebraicRealization.ord (Φ.character (ofAdd (b.coord j).toAddMonoidHom)) x.val) h
       simpa only [ord_rayBoundaryPoint_character Φ hΦ, LinearMap.toAddMonoidHom_coe,
         Module.Basis.coord_apply] using heq
-  apply Subtype.ext
-  apply Subtype.ext
-  rw [Ray.toCone_eq_hull_primitiveGenerator ρ, Ray.toCone_eq_hull_primitiveGenerator τ, hgen]
+  exact Ray.primitiveGenerator_injective hgen
 
 /-- The codimension-one points outside the dense torus are precisely the ray boundary points. -/
 theorem range_rayBoundaryPoint (Φ : Fan i) (hΦ : Φ.IsRegular) (h₀ : Nonempty Φ.cones) :
