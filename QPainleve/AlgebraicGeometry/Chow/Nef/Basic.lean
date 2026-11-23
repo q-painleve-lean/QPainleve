@@ -65,6 +65,25 @@ public theorem isNef_iff_classIntersectionNumber_nonneg [IsLocallyNoetherian X]
       ← LineBundleClass.primeDivisorClass_def]
     exact ha p
 
+/-- The intersection of a nef class with an effective Cartier divisor is nonnegative. -/
+public theorem classIntersectionNumber_nonneg_of_isNef_of_isEffectiveCartier
+    (hX : topologicalKrullDim X = 2) {a : LineBundleClass X}
+    (ha : LineBundleClass.IsNef k (X ↘ Spec (.of k)) a)
+    {I : X.IdealSheafData} (hI : I.IsEffectiveCartier) :
+    0 ≤ classIntersectionNumber k X a (LineBundleClass.mk hI.toInvertibleSheaf)⁻¹ := by
+  have : IsNoetherian X := isNoetherian_of_finiteType (X ↘ Spec (.of k))
+  have : IsNormalScheme X := IsNormalScheme.of_uniqueFactorizationMonoid_stalk
+  let D := hI.toCartierDivisor
+  have hD := (Scheme.CartierDivisor.isEffective_iff_toWeilDivisor_nonneg D).mp
+    hI.isEffective_toCartierDivisor
+  have hclass := congrArg Additive.toMul
+    (Scheme.CartierDivisor.weilToLineBundleClassHom_toWeilDivisor D)
+  simp only [toMul_ofMul, D, IsEffectiveCartier.toLineBundleClass_toCartierDivisor]
+    at hclass
+  rw [← hclass, classIntersectionNumber_weilToLineBundleClassHom k hX, Finsupp.sum]
+  exact Finset.sum_nonneg fun p _ ↦ mul_nonneg (hD p)
+    ((isNef_iff_classIntersectionNumber_nonneg k hX a).mp ha p)
+
 variable [IsNoetherian X]
 
 /-- An effective Weil divisor is nef exactly when it intersects each component of its
