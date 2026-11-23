@@ -6,9 +6,11 @@ Authors: The QPainleve contributors
 module
 
 public import TauCeti.AlgebraicGeometry.Blowup.StrictTransform
+import QPainleve.AlgebraicGeometry.IdealSheaf.Restriction
 import TauCeti.AlgebraicGeometry.Blowup.ExceptionalDivisor
 import TauCeti.AlgebraicGeometry.IdealSheaf.BaseChange
 import TauCeti.AlgebraicGeometry.IdealSheaf.Extension
+import TauCeti.AlgebraicGeometry.IdealSheaf.Locality
 
 /-!
 # Strict transforms of closed subschemes
@@ -62,6 +64,36 @@ theorem comap_ker_blowupMap_subschemeι_exceptionalCompl
   have : IsLocallyNoetherian I.blowup := LocallyOfFiniteType.isLocallyNoetherian I.blowupToBase
   have he := comap_map_of_isOpenImmersion ((J.comap I.blowupToBase).comap W.ι) W.ι
   simpa only [ker_blowupMap_subschemeι_eq_map_comap] using he
+
+/-- On an open of a blowup, a factor of the total transform obtained by removing a power
+of the exceptional ideal defines the strict transform if the exceptional complement in
+that factor is schematically dense. -/
+theorem comap_ker_blowupMap_subschemeι_eq_of_factor {X V Z : Scheme.{u}}
+    (I J : X.IdealSheafData) [IsLocallyNoetherian X]
+    (c : V ⟶ I.blowup) [IsOpenImmersion c] (q : Z ⟶ V) [IsClosedImmersion q] (n : ℕ)
+    (h : J.comap (c ≫ I.blowupToBase) =
+      q.ker * (I.comap (c ≫ I.blowupToBase)) ^ n)
+    (hd : IsSchemeTheoreticallyDominant
+      ((q ⁻¹ᵁ (I.comap (c ≫ I.blowupToBase)).support.compl).ι)) :
+    (I.blowupMap J.subschemeι).ker.comap c = q.ker := by
+  let E := I.comap I.blowupToBase
+  let W : I.blowup.Opens := E.support.compl
+  let U : V.Opens := c ⁻¹ᵁ W
+  have hU : U = (E.comap c).support.compl := (compl_support_comap E c).symm
+  have : IsLocallyNoetherian I.blowup := LocallyOfFiniteType.isLocallyNoetherian I.blowupToBase
+  have hE : (E.comap c).comap U.ι = ⊤ :=
+    (comap_eq_top_iff _ _).mpr (hU ▸ Scheme.Opens.ι_preimage_self U)
+  have htotal : ((J.comap I.blowupToBase).comap c).comap U.ι = q.ker.comap U.ι := by
+    rw [← comap_comp J c I.blowupToBase, h, comap_mul, comap_pow,
+      comap_comp I c I.blowupToBase, hE]
+    rw [← one_eq_top, one_pow, mul_one]
+  have hcomp : U.ι ≫ c = c ∣_ W ≫ W.ι := (morphismRestrict_ι c W).symm
+  let : IsSchemeTheoreticallyDominant ((q ⁻¹ᵁ U).ι) := by
+    rw [hU, ← comap_comp]
+    exact hd
+  rw [ker_blowupMap_subschemeι_eq_map_comap,
+    comap_map_of_isPullback_of_isOpenImmersion _ (isPullback_morphismRestrict c W).flip,
+    ← comap_comp, ← hcomp, comap_comp, htotal, map_comap_ker_of_isSchemeTheoreticallyDominant]
 
 variable {D X : Scheme.{u}} (I : X.IdealSheafData) (i : D ⟶ X)
 
