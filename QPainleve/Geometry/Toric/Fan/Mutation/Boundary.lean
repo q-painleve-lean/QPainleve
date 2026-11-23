@@ -9,7 +9,7 @@ public import QPainleve.Geometry.Toric.Fan.Boundary.Component
 public import QPainleve.Geometry.Toric.Fan.Mutation.Blowup
 
 import QPainleve.AlgebraicGeometry.Blowup.StrictTransform.Reduced
-import QPainleve.Geometry.Toric.Fan.Boundary.InternalCenter
+import QPainleve.Geometry.Toric.Fan.Boundary.StrictTransform
 import TauCeti.AlgebraicGeometry.IdealSheaf.BaseChange
 import QPainleve.Geometry.Toric.Fan.Mutation.Valuation
 
@@ -124,25 +124,6 @@ instance Ray.isOver_mutationBoundaryIso_hom :
     ← ρ.mutationTargetBoundaryι_blowupToBase_assoc b hOpp c,
     ρ.mutationBoundaryIso_hom_comp_boundaryι_assoc,
     ρ.mutationBlowupIso_hom_comp_toBase, ρ.mutationSourceBoundaryι_blowupToBase_assoc]
-
-private theorem ker_comp_boundaryι_eq_blowupMap
-    {Ω : Fan i} [Nonempty Ω.cones] (hΩ : Ω.IsRegular) (u w : Ω.Ray) (d : ℂˣ)
-    (I : Ω.algebraicRealization.IdealSheafData)
-    (hI : I = (u.internalCenter b d).val.map (Ω.boundaryIdeal inferInstance).subschemeι)
-    (j : (Ω.boundaryIdeal inferInstance).subscheme ⟶ I.blowup)
-    (hj : j ≫ I.blowupToBase = (Ω.boundaryIdeal inferInstance).subschemeι) :
-    (w.boundaryComponentι hΩ ≫ j).ker =
-      (I.blowupMap (Ω.rayBoundaryIdeal hΩ w).subschemeι).ker := by
-  have hproj : (w.boundaryComponentι hΩ ≫ j) ≫ I.blowupToBase =
-      (Ω.rayBoundaryIdeal hΩ w).subschemeι := by
-    simp only [Category.assoc, hj, Ray.boundaryComponentι_subschemeι]
-  have hCartier : (I.comap (Ω.rayBoundaryIdeal hΩ w).subschemeι).IsEffectiveCartier := by
-    rw [hI, ← Ray.boundaryComponentι_subschemeι, comap_comp,
-      comap_map_of_isClosedImmersion, Ray.internalCenter_val]
-    exact u.isEffectiveCartier_comap_ker_binomialCenterOnBoundary hΩ
-      (by simpa using Module.finrank_eq_card_basis b) (b.detDualEquiv_self _)
-      (u.surjective_detCharacter b) d w
-  rw [I.eq_blowupLift hCartier hproj, ker_blowupLift, ker_blowupMap]
 
 /-- The boundary isomorphism pulls the closed subscheme of a sheared ray back to
 the closed subscheme of the original ray. -/

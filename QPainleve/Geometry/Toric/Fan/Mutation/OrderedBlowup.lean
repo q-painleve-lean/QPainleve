@@ -154,6 +154,47 @@ theorem exists_iso_mutation_internal_blowup_tower
   rw [← hJ₀, ← hJ₁]
   exact h
 
+local notation "A" => internalBlowupTower (h₀ := hΦ₀) b s d
+local notation "targetModel(" t ", " e ")" => internalBlowupTower (h₀ := hΨ) b t e
+
+/-- A map of the ordered models restricts to the pivot boundary isomorphism
+when its projections satisfy the elementary transformation square. The source and target
+models can have arbitrary ordered internal centers. -/
+@[reassoc]
+theorem boundaryι_comp_of_ordered_mutation {m : ℕ}
+    (targetRays : Fin m → (Ψ).Ray) (targetParams : Fin m → ℂˣ) (hΦ : Φ.IsRegular)
+    {g : (A).1 ⟶ (targetModel(targetRays, targetParams)).1} {f : (A).1 ⟶ (I₀).blowup}
+    (hf : f ≫ (I₀).blowupToBase = (A).2.toTower.toBase)
+    (hg : g ≫ (targetModel(targetRays, targetParams)).2.toTower.toBase =
+      f ≫ (eB).hom ≫ (I₁).blowupToBase) :
+    (A).2.boundaryι ≫ g =
+      (ρ.mutationBoundaryIso b hOpp c hΦ).hom ≫
+        (targetModel(targetRays, targetParams)).2.boundaryι := by
+  let B := targetModel(targetRays, targetParams)
+  let : Nonempty Φ.cones := hΦ₀
+  let : Nonempty (Ψ).cones := hΨ
+  let a := (ρ.mutationBoundaryIso b hOpp c hΦ).hom
+  have hA : (A).2.boundaryι ≫ f = (j₀) := by
+    apply (I₀).blowup_hom_ext
+    · simp only [Category.assoc, hf, WithBoundary.boundaryι_toBase,
+        Ray.mutationSourceBoundaryι_blowupToBase]
+    · rw [Category.assoc, hf, WithBoundary.boundaryι_toBase, Ray.mutationSourceCenterIdeal_eq,
+        ← Ray.map_internalCenter_subschemeι, comap_map_of_isClosedImmersion]
+      exact (ρ.internalCenter (h₀ := hΦ₀) b c).property
+  let j := (D₁).subschemeι
+  have hB : ((A).2.boundaryι ≫ g) ≫ (B).2.toTower.toBase = a ≫ j := by
+    rw [Category.assoc, hg, ← Category.assoc (A).2.boundaryι f, hA,
+      ← Ray.mutationBoundaryIso_hom_comp_boundaryι_assoc,
+      Ray.mutationTargetBoundaryι_blowupToBase]
+  let P (U : Σ Z, WithBoundary j m Z) :=
+    ∀ p : (D₀).subscheme ⟶ U.1,
+      p ≫ U.2.toTower.toBase = a ≫ j → p = a ≫ U.2.boundaryι
+  suffices P (B) from this _ hB
+  simp only [B, internalBlowupTower_eq_alongBoundary]
+  intro p hproj
+  exact eq_comp_boundaryι_of_comp_toBase_eq j _ a (fun l ↦
+    ((targetRays l).internalCenter (h₀ := hΨ) b (targetParams l)).property.comap a) p hproj
+
 variable (rays : Fin n → Φ.Ray) (params : Fin n → ℂˣ)
 
 local notation "π₀" => Scheme.IdealSheafData.blowupToBase (I₀)
