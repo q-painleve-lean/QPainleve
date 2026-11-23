@@ -9,6 +9,7 @@ public import Mathlib.AlgebraicGeometry.Morphisms.ClosedImmersion
 public import TauCeti.Geometry.Toric.Algebraic.Fan.Scheme
 public import TauCeti.Geometry.Toric.Analytic.Cone.Orbit.Basic
 import TauCeti.AlgebraicGeometry.IdealSheaf.VanishingIdeal
+import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
 
 /-!
 # Distinguished points of fan schemes
@@ -171,11 +172,9 @@ theorem ker_distinguishedPointHom_eq_vanishingIdeal (σ : Φ.cones)
   have := Φ.isClosedImmersion_distinguishedPointHom σ hmax
   have hs : (p.ker.support : Set Φ.algebraicRealization) = Set.range p :=
     p.support_ker.trans p.isClosedEmbedding.isClosed_range.closure_eq
-  apply le_antisymm
-  · have he : p.ker.support = ⟨_, p.isClosedEmbedding.isClosed_range⟩ :=
-      SetLike.coe_injective hs
-    rw [← he, vanishingIdeal_support]
-    exact le_radical _
-  · exact vanishingIdeal_le_ker_of_range_subset p subset_rfl
+  have he : p.ker.support = ⟨_, p.isClosedEmbedding.isClosed_range⟩ :=
+    SetLike.coe_injective hs
+  rw [← he]
+  exact p.ker_eq_vanishingIdeal_support
 
 end TauCeti.Toric.Fan
