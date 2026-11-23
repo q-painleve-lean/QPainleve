@@ -25,9 +25,8 @@ import TauCeti.Topology.KrullDimension.Basic
 
 A modification with reduced source is an isomorphism at the valuation-ring stalks of its
 integral target. If the target is normal, its isomorphism locus is the image of its quasi-finite
-locus. For surfaces the centre is a finite set of closed points, and the prime divisors above
-it form a finite set. These are the isomorphism and finiteness criteria used to choose point
-blowups in a factorization of a proper birational morphism.
+locus. For surfaces the centre is a finite set of closed points. These are the isomorphism and
+finiteness criteria used to choose point blowups in a factorization of a proper birational morphism.
 
 The proof uses Tau Ceti's `Scheme.Hom.isoLocus` and `Scheme.Hom.normalizationMap`, together with
 Mathlib's relative form of Zariski's main theorem.
@@ -186,22 +185,5 @@ theorem finite_centre [IsNoetherian Y] (hY : topologicalKrullDim Y ≤ 2) :
   f.isClosed_centre.finite_of_subset_closedPoints (f.centre_subset_closedPoints hY)
 
 end Normal
-
-/-- A modification with irreducible Noetherian source has finitely many codimension-one
-points mapping into its centre. -/
-theorem finite_coheight_one_preimage_centre [IrreducibleSpace X] [IsNoetherian X]
-    [IsModification f] : {x ∈ f ⁻¹' f.centre | coheight x = 1}.Finite := by
-  have hclosed : IsClosed (f ⁻¹' f.centre) := f.isClosed_centre.preimage f.continuous
-  have : QuasiSober (f ⁻¹' f.centre) := hclosed.isClosedEmbedding_subtypeVal.quasiSober
-  refine NoetherianSpace.finite_coheight_one_of_closure_ne_univ ?_
-  rw [hclosed.closure_eq]
-  obtain ⟨U, -, hU, hIso⟩ := IsModification.exists_isIso_morphismRestrict (f := f)
-  obtain ⟨x, hx⟩ := hU.nonempty
-  intro h
-  have hxC : f x ∈ f.centre := by
-    exact Set.mem_preimage.mp (h ▸ Set.mem_univ x)
-  have hxNotIso : f x ∉ f.isoLocus := by
-    simpa only [f.centre_def, Set.mem_compl_iff, SetLike.mem_coe] using hxC
-  exact hxNotIso (f.le_isoLocus_iff.mpr hIso hx)
 
 end AlgebraicGeometry.Scheme.Hom
