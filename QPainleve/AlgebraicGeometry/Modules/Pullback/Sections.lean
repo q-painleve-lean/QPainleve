@@ -32,6 +32,30 @@ theorem pullbackSectionsLE_top {X Y : Scheme.{u}} (f : X ⟶ Y) {M : Y.Modules} 
   exact (congrArg (fun h : Γ(N, ⊤) ⟶ Γ(N, ⊤) ↦ h a)
     (N.presheaf.map_id (Opposite.op ⊤))).trans (id_apply a)
 
+/-- Comparing canonical pullbacks by a scalar also compares the pullbacks
+viewed as sections over the top open. -/
+theorem pullbackSectionsLE_top_eq_smul {X Y : Scheme.{u}} (f : X ⟶ Y)
+    {M : Y.Modules} {s t : Γ(M, ⊤)} (a : Γ(X, ⊤))
+    (h : f.pullbackSections M ⊤ s = a • f.pullbackSections M ⊤ t) :
+    f.pullbackSectionsLE M ⊤ ⊤ f.preimage_top.ge s =
+      a • f.pullbackSectionsLE M ⊤ ⊤ f.preimage_top.ge t := by
+  let N := (Modules.pullback f).obj M
+  let l := N.sectionsRestrictionLinear (homOfLE f.preimage_top.ge)
+  let v := f.pullbackSections M ⊤ t
+  have hl := by
+    letI := N.sectionsGlobalModule (⊤ : X.Opens)
+    exact _root_.map_smul l a v
+  have ha : X.presheaf.map (⊤ : X.Opens).leTop.op a = a :=
+    (congrArg (fun g : Γ(X, ⊤) ⟶ Γ(X, ⊤) ↦ g a)
+      (X.presheaf.map_id (Opposite.op ⊤))).trans (id_apply a)
+  have hv := N.sectionsGlobal_smul ⊤ a (l v)
+  have hb (r : Γ(M, ⊤)) :
+      f.pullbackSectionsLE M ⊤ ⊤ f.preimage_top.ge r = l (f.pullbackSections M ⊤ r) :=
+    (f.pullbackSectionsLE_apply M ⊤ ⊤ f.preimage_top.ge r).trans
+      ((N.sectionsRestrictionLinear_apply _ _).symm)
+  exact (hb s).trans ((congrArg l h).trans (hl.trans (hv.trans
+    ((congrArg (· • l v) ha).trans (congrArg (a • ·) (hb t).symm)))))
+
 /-- Pulling back the morphism of a global section gives the morphism of its pullback. -/
 theorem unitHomEquivTop_pullback {X Y : Scheme.{u}} (f : X ⟶ Y)
     {M : Y.Modules} (s : 𝟙_ Y.Modules ⟶ M) :

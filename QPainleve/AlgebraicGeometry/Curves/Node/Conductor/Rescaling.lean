@@ -93,7 +93,8 @@ local notation "P" => X.branchScheme k
 local notation "j" => X.branchSchemeToBlowup k
 local notation "g" => X.branchSchemeToSingularLocus k
 
-private theorem iSup_blowupComponent : ⨆ a : V, X.blowupComponent (K := k) a = ⊤ := by
+/-- The normalization components form an open cover. -/
+theorem iSup_blowupComponent : ⨆ a : V, X.blowupComponent (K := k) a = ⊤ := by
   have : IsRegular N := X.isRegular_blowup_singularLocus
     (PrestableFamily.atWorstNodalOfRelativeDimensionOne (f := X ↘ Spec (.of k)))
   apply top_unique
@@ -101,7 +102,8 @@ private theorem iSup_blowupComponent : ⨆ a : V, X.blowupComponent (K := k) a =
   exact TopologicalSpace.Opens.mem_iSup.mpr ⟨irreducibleComponentOf x,
     (SetLike.mem_coe.mp (by rw [X.coe_blowupComponent]; exact mem_irreducibleComponentOf x))⟩
 
-private theorem pairwise_disjoint_blowupComponent :
+/-- Distinct normalization components are disjoint opens. -/
+theorem pairwise_disjoint_blowupComponent :
     Pairwise (Function.onFun Disjoint (X.blowupComponent (K := k))) := by
   have : IsRegular N := X.isRegular_blowup_singularLocus
     (PrestableFamily.atWorstNodalOfRelativeDimensionOne (f := X ↘ Spec (.of k)))
