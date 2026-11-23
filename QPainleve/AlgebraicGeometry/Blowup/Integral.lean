@@ -50,3 +50,17 @@ theorem isIntegral_blowup_of_nonempty_compl_support {X : Scheme} [IsIntegral X] 
   exact isIntegral_of_irreducibleSpace_of_isReduced _
 
 end AlgebraicGeometry.Scheme.IdealSheafData
+
+namespace AlgebraicGeometry.Scheme
+
+/-- Blowing up the reduced closure of a non-generic point of a Noetherian integral scheme
+gives an integral scheme. -/
+theorem isIntegral_pointBlowup (X : Scheme) [IsIntegral X] [IsNoetherian X]
+    (p : X) (hp : p ≠ genericPoint X) : IsIntegral (X.fromSpecResidueField p).ker.blowup := by
+  apply (X.fromSpecResidueField p).ker.isIntegral_blowup_of_nonempty_compl_support
+  refine ⟨genericPoint X, ?_⟩
+  rw [← SetLike.mem_coe, Closeds.coe_compl, Set.mem_compl_iff, Scheme.Hom.support_ker,
+    range_fromSpecResidueField, ← specializes_iff_mem_closure]
+  exact fun h ↦ hp (h.antisymm (genericPoint_specializes p)).eq
+
+end AlgebraicGeometry.Scheme

@@ -139,28 +139,14 @@ variable [IsIntegral X] [IsNoetherian X] [IsRegularLocalRing (X.presheaf.stalk p
 
 include hp hdim
 
-omit [IsRegularLocalRing (X.presheaf.stalk p)] in
-private theorem isIntegral_pointBlowup : IsIntegral (P).blowup := by
-  have hpdim : coheight p = 2 := by
-    rw [ringKrullDim_stalk_eq_coheight] at hdim
-    exact WithBot.coe_injective (by exact hdim)
-  have hpgen : genericPoint X ≠ p := by
+private theorem isEffectiveCartier_comap_pointBlowup {D : X.IdealSheafData}
+    (hD : D.IsEffectiveCartier) : (D.comap π).IsEffectiveCartier := by
+  have : IsIntegral (P).blowup := X.isIntegral_pointBlowup p (by
     intro h
     have hg : coheight (genericPoint X) = 0 :=
       coheight_eq_zero.mpr TauCeti.AlgebraicGeometry.Scheme.isMax_genericPoint
-    rw [h, hpdim] at hg
-    norm_num at hg
-  have hcenter : ((P).support : Set X) = {p} := by
-    rw [X.ker_fromSpecResidueField_eq_vanishingIdeal, coe_support_vanishingIdeal,
-      Closeds.coe_mk, hp.closure_eq]
-  apply (P).isIntegral_blowup_of_nonempty_compl_support
-  exact ⟨⟨genericPoint X, by
-    rw [← SetLike.mem_coe, Closeds.coe_compl, hcenter, Set.mem_compl_iff, Set.mem_singleton_iff]
-    exact hpgen⟩⟩
-
-private theorem isEffectiveCartier_comap_pointBlowup {D : X.IdealSheafData}
-    (hD : D.IsEffectiveCartier) : (D.comap π).IsEffectiveCartier := by
-  have : IsIntegral (P).blowup := isIntegral_pointBlowup p hp hdim
+    rw [ringKrullDim_stalk_eq_coheight, h, hg] at hdim
+    norm_num at hdim)
   have : Surjective π := by
     rw [X.ker_fromSpecResidueField_eq_vanishingIdeal]
     exact surjective_blowupToBase_point hp hdim
