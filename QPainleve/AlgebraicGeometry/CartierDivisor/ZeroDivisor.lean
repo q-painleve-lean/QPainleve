@@ -6,9 +6,13 @@ Authors: The QPainleve contributors
 module
 
 public import TauCeti.AlgebraicGeometry.CartierDivisor.IdealSheaf
+public import TauCeti.AlgebraicGeometry.LineBundle.NonvanishingLocus
 
 import QPainleve.AlgebraicGeometry.IdealSheaf.Image
 import QPainleve.AlgebraicGeometry.IdealSheaf.Image.Basic
+import QPainleve.AlgebraicGeometry.LineBundle.NonvanishingLocus
+import QPainleve.AlgebraicGeometry.LineBundle.Pullback
+import QPainleve.AlgebraicGeometry.VectorBundle.SectionZeroLocus
 import TauCeti.AlgebraicGeometry.LineBundle.Endomorphisms
 
 /-!
@@ -26,8 +30,8 @@ they differ by a global unit.
 
 public section
 
-open AlgebraicGeometry CategoryTheory MonoidalCategory
-open Scheme.Modules
+open AlgebraicGeometry CategoryTheory MonoidalCategory MonoidalClosed
+open Scheme.Modules TopologicalSpace
 
 universe u
 
@@ -84,6 +88,64 @@ lemma dualSectionEquiv_comp_globalSectionsSmul
 /-- The ideal sheaf of the zero scheme of a section, obtained by evaluation on the dual. -/
 def zeroIdeal (s : Γ(L.obj, ⊤)) : X.IdealSheafData :=
   (L.dualSectionEquiv.symm s).imageIdealSheaf
+
+/-- The zero ideal agrees with the image of evaluation on the internal Hom dual. -/
+theorem zeroIdeal_eq_imageIdealSheaf_evaluation (s : Γ(L.obj, ⊤)) :
+    L.zeroIdeal s =
+      ((dualHomUnitEquiv L.obj).symm (L.obj.unitHomEquivTop.symm s)).imageIdealSheaf := by
+  let e : (dual L).obj ≅ (ihom L.obj).obj (𝟙_ X.Modules) := eqToIso (dual_obj L)
+  let φ := L.dualSectionEquiv.symm s
+  have hφ : e.inv ≫ φ = (dualHomUnitEquiv L.obj).symm (L.obj.unitHomEquivTop.symm s) := by
+    apply (dualHomUnitEquiv L.obj).injective
+    apply L.obj.unitHomEquivTop.injective
+    exact (L.dualSectionEquiv_apply φ).symm.trans ((L.dualSectionEquiv.apply_symm_apply s).trans
+      ((L.obj.unitHomEquivTop.apply_symm_apply s).symm.trans
+        (congrArg L.obj.unitHomEquivTop ((dualHomUnitEquiv L.obj).apply_symm_apply _).symm)))
+  rw [← hφ]
+  exact (φ.imageIdealSheaf_comp_iso e.symm).symm
+
+/-- The nonvanishing locus of a section is the complement of the support of its zero ideal. -/
+theorem mem_nonvanishingLocus_iff_notMem_support_zeroIdeal (s : Γ(L.obj, ⊤)) (x : X) :
+    x ∈ Scheme.Modules.nonvanishingLocus L.obj s ↔ x ∉ (L.zeroIdeal s).support := by
+  let f := X.fromSpecResidueField x
+  let E := (toFiniteLocallyFree X).obj L
+  let K : InvertibleSheaf (Spec (X.residueField x)) :=
+    ⟨(Scheme.Modules.pullback f).obj L.obj, inferInstance⟩
+  let η := genericPoint (Spec (X.residueField x))
+  have hi : f η = x := X.fromSpecResidueField_apply x η
+  have hmem : η ∈ Scheme.Modules.nonvanishingLocus
+      ((Scheme.Modules.pullback f).obj L.obj) (f.pullbackSections L.obj ⊤ s) ↔
+      x ∈ Scheme.Modules.nonvanishingLocus L.obj s := by
+    rw [Scheme.Modules.nonvanishingLocus_pullbackSections, Scheme.Hom.mem_preimage, hi]
+  have : Nonempty (f ⁻¹ᵁ (⊤ : X.Opens)) := ⟨⟨η, by simp⟩⟩
+  have hzero := E.mem_support_imageIdealSheaf_evaluation_section_iff s x
+  rw [L.zeroIdeal_eq_imageIdealSheaf_evaluation]
+  exact hmem.symm.trans ((K.genericPoint_mem_nonvanishingLocus_iff _).trans (not_congr hzero).symm)
+
+/-- The nonvanishing opens of a family of sections cover the scheme exactly when the sum
+of their zero ideals is the unit ideal. -/
+theorem iSup_nonvanishingLocus_eq_top_iff {ι : Type*} (s : ι → Γ(L.obj, ⊤)) :
+    (⨆ i, Scheme.Modules.nonvanishingLocus L.obj (s i)) = ⊤ ↔
+      (⨆ i, L.zeroIdeal (s i)) = ⊤ := by
+  rw [← Scheme.IdealSheafData.support_eq_bot_iff, Scheme.IdealSheafData.support_iSup]
+  classical
+  constructor
+  · intro h
+    apply bot_unique
+    intro x hx
+    have hx' : x ∈ (⨆ i, Scheme.Modules.nonvanishingLocus L.obj (s i)) := h.ge (Opens.mem_top x)
+    obtain ⟨i, hi⟩ := Opens.mem_iSup.mp hx'
+    exact ((L.mem_nonvanishingLocus_iff_notMem_support_zeroIdeal _ _).mp hi
+      (Closeds.mem_iInf.mp hx i)).elim
+  · intro h
+    apply top_unique
+    intro x _
+    apply Opens.mem_iSup.mpr
+    by_contra! hx
+    have hx' := Closeds.mem_iInf.mpr fun i ↦
+      not_not.mp ((L.mem_nonvanishingLocus_iff_notMem_support_zeroIdeal (s i) x).not.mp (hx i))
+    rw [h] at hx'
+    exact hx'
 
 /-- The zero section cuts out the entire scheme. -/
 @[simp]
