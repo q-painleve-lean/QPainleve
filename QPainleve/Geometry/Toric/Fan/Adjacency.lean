@@ -9,6 +9,7 @@ public import QPainleve.Geometry.Toric.DeterminantCharacters
 public import QPainleve.Geometry.Toric.Fan.Ray
 public import TauCeti.Geometry.Toric.Algebraic.Regular
 
+import Mathlib.Data.Set.Card
 import Mathlib.Topology.Instances.Real.Lemmas
 import TauCeti.Geometry.Convex.Cone.Face.Simplicial
 
@@ -65,6 +66,21 @@ theorem isUnit_det_of_ray_ne_of_le (b : Module.Basis (Fin 2) ℤ N)
     fin_cases j <;> assumption
   rw [Module.Basis.detDualEquiv_apply, ← hc]
   exact b.isUnit_det c
+
+/-- Two distinct fan rays in a regular cone of a rank-two lattice exhaust its toric rays. -/
+theorem toricRays_eq_pair (Φ : Fan i) {ρ τ : Φ.Ray} {σ : Φ.cones}
+    (hσ : IsRegularCone i σ.val) (hN : Module.finrank ℤ N = 2)
+    (hne : ρ ≠ τ) (hρ : ρ.toCone ≤ σ) (hτ : τ.toCone ≤ σ) :
+    ({ρ.toToricRay Φ σ hρ, τ.toToricRay Φ σ hτ} : Set (ToricRay σ.val)) = Set.univ := by
+  have hr : ρ.toToricRay Φ σ hρ ≠ τ.toToricRay Φ σ hτ := by
+    intro h
+    have he : Φ.rayEquiv σ ⟨ρ, hρ⟩ = Φ.rayEquiv σ ⟨τ, hτ⟩ := by
+      simpa only [rayEquiv_apply] using h
+    exact hne (congrArg Subtype.val ((Φ.rayEquiv σ).injective he))
+  have hcard := hσ.card_toricRay_le_finrank.trans_eq hN
+  have : Finite (ToricRay σ.val) := ToricRay.finite_of_fg (Φ.isToricCone σ.property).fg
+  apply Set.eq_of_subset_of_ncard_le (Set.subset_univ _)
+  rwa [Set.ncard_univ, Set.ncard_pair hr]
 
 -- Test membership in one cone along the real parameter line using an extending basis.
 private theorem isClosed_setOf_add_smul_mem (hΦ : Φ.IsRegular) (σ : Φ.cones) (x y : V) :
@@ -164,16 +180,17 @@ private theorem exists_pos_neighbor (hΦ : Φ.IsRegular) (hc : Φ.IsComplete)
 private theorem eq_of_third_ray_le (hΦ : Φ.IsRegular) (hN : Module.finrank ℤ N = 2)
     {ρ τ υ : Φ.Ray} {σ : Φ.cones} (hρ : ρ.toCone ≤ σ) (hτ : τ.toCone ≤ σ)
     (hυ : υ.toCone ≤ σ) (hne : ρ ≠ τ) (hne' : ρ ≠ υ) : υ = τ := by
-  obtain ⟨_, r, _⟩ := hN ▸ ((isRegular_iff.1 hΦ) σ.val σ.property).exists_basis_finrank
-  let a := r (Φ.rayEquiv σ ⟨ρ, hρ⟩)
-  let c := r (Φ.rayEquiv σ ⟨τ, hτ⟩)
-  let d := r (Φ.rayEquiv σ ⟨υ, hυ⟩)
-  have h (p q : {s : Φ.Ray // s.toCone ≤ σ}) (he : r (Φ.rayEquiv σ p) = r (Φ.rayEquiv σ q)) :
-      p.val = q.val := congrArg Subtype.val ((Φ.rayEquiv σ).injective (r.injective he))
-  have hac : a ≠ c := fun he ↦ hne (h ⟨ρ, hρ⟩ ⟨τ, hτ⟩ he)
-  have had : a ≠ d := fun he ↦ hne' (h ⟨ρ, hρ⟩ ⟨υ, hυ⟩ he)
-  have hdc : d = c := by omega
-  exact h ⟨υ, hυ⟩ ⟨τ, hτ⟩ hdc
+  have hm : υ.toToricRay Φ σ hυ ∈
+      ({ρ.toToricRay Φ σ hρ, τ.toToricRay Φ σ hτ} : Set (ToricRay σ.val)) := by
+    rw [Φ.toricRays_eq_pair ((isRegular_iff.1 hΦ) _ σ.property) hN hne hρ hτ]
+    exact Set.mem_univ _
+  simp only [Set.mem_insert_iff, Set.mem_singleton_iff] at hm
+  have eq_ray {r : Φ.Ray} (hr : r.toCone ≤ σ)
+      (he : υ.toToricRay Φ σ hυ = r.toToricRay Φ σ hr) : υ = r := by
+    have he' : Φ.rayEquiv σ ⟨υ, hυ⟩ = Φ.rayEquiv σ ⟨r, hr⟩ := by
+      simpa only [rayEquiv_apply] using he
+    exact congrArg Subtype.val ((Φ.rayEquiv σ).injective he')
+  exact eq_ray hτ (hm.resolve_left fun he ↦ hne' (eq_ray hρ he).symm)
 
 private theorem eq_of_positive_neighbors (hΦ : Φ.IsRegular) (hN : Module.finrank ℤ N = 2)
     {ρ τ υ : Φ.Ray} {σ σ' : Φ.cones} {f : V →ₗ[ℝ] ℝ}

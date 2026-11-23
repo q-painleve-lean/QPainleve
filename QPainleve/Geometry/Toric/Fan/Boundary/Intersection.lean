@@ -12,6 +12,7 @@ public import TauCeti.Geometry.Toric.Analytic.Cone.Orbit.Basic
 
 import Mathlib.Analysis.Complex.Polynomial.Basic
 import Mathlib.Data.Set.Card
+import QPainleve.Geometry.Toric.Fan.Adjacency
 import QPainleve.Geometry.Toric.Fan.Picard.Presentation
 import QPainleve.Geometry.Toric.Fan.Smooth
 import TauCeti.AlgebraicGeometry.IdealSheaf.Extension
@@ -150,20 +151,6 @@ variable {N : Type} [AddCommGroup N] {i : N →+ V}
   (Φ : Fan i) (hΦ : Φ.IsRegular) (hN : Module.finrank ℤ N = 2) {ρ τ : Φ.Ray}
 
 include hΦ hN in
-private theorem toricRays_eq_pair (hne : ρ ≠ τ) (σ : Φ.cones)
-    (hρ : ρ.toCone ≤ σ) (hτ : τ.toCone ≤ σ) :
-    ({ρ.toToricRay Φ σ hρ, τ.toToricRay Φ σ hτ} : Set (ToricRay σ.val)) = Set.univ := by
-  have hr : ρ.toToricRay Φ σ hρ ≠ τ.toToricRay Φ σ hτ := by
-    intro h
-    have he : Φ.rayEquiv σ ⟨ρ, hρ⟩ = Φ.rayEquiv σ ⟨τ, hτ⟩ := by
-      simpa only [rayEquiv_apply] using h
-    exact hne (congrArg Subtype.val ((Φ.rayEquiv σ).injective he))
-  have hcard := ((isRegular_iff.1 hΦ _ σ.property).card_toricRay_le_finrank).trans_eq hN
-  have : Finite (ToricRay σ.val) := ToricRay.finite_of_fg (Φ.isToricCone σ.property).fg
-  apply Set.eq_of_subset_of_ncard_le (Set.subset_univ _)
-  rwa [Set.ncard_univ, Set.ncard_pair hr]
-
-include hΦ hN in
 private theorem eq_cone_of_two_rays (hne : ρ ≠ τ) {σ σ' : Φ.cones}
     (hρ : ρ.toCone ≤ σ) (hτ : τ.toCone ≤ σ)
     (hρ' : ρ.toCone ≤ σ') (hτ' : τ.toCone ≤ σ') : σ = σ' := by
@@ -174,7 +161,7 @@ private theorem eq_cone_of_two_rays (hne : ρ ≠ τ) {σ σ' : Φ.cones}
   refine Φ.le_iff_forall_ray_le.mpr fun r hr ↦ ?_
   have hm : r.toToricRay Φ a hr ∈
       ({ρ.toToricRay Φ a hρa, τ.toToricRay Φ a hτa} : Set (ToricRay a.val)) := by
-    rw [toricRays_eq_pair Φ hΦ hN hne a hρa hτa]
+    rw [Φ.toricRays_eq_pair ((isRegular_iff.1 hΦ) _ a.property) hN hne hρa hτa]
     exact Set.mem_univ _
   simp only [Set.mem_insert_iff, Set.mem_singleton_iff] at hm
   rcases hm with he | he
@@ -195,7 +182,7 @@ private theorem comap_sup_rayBoundaryIdeal_eq_ker (hne : ρ ≠ τ) (σ : Φ.con
   let r := ρ.toToricRay Φ σ hρ
   let t := τ.toToricRay Φ σ hτ
   have hpair : ({r, t} : Set (ToricRay σ.val)) = Set.univ :=
-    toricRays_eq_pair Φ hΦ hN hne σ hρ hτ
+    Φ.toricRays_eq_pair ((isRegular_iff.1 hΦ) _ σ.property) hN hne hρ hτ
   have hrt : r ≠ t := by
     intro h
     have he : Φ.rayEquiv σ ⟨ρ, hρ⟩ = Φ.rayEquiv σ ⟨τ, hτ⟩ := by
