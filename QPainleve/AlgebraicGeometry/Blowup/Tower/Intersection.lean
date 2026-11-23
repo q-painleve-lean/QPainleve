@@ -123,7 +123,9 @@ theorem IsClosedPointTower.lineBundle_cohomology (hT : IsClosedPointTower X T)
   exact (cohomology_picardHom_aux k hT (T.toBase ≫ f) rfl a b L
     (congrArg Additive.toMul hab).symm).1 q
 
-private theorem two_mul_eulerCharBelow_sub_picardHom (hT : IsClosedPointTower X T)
+/-- The change in twice the Euler characteristic in the Picard coordinates of a point-blowup
+tower is the sum of the exceptional corrections `b * (1 - b)`. -/
+theorem two_mul_eulerCharBelow_sub_picardHom (hT : IsClosedPointTower X T)
     (a : Additive (LineBundleClass X) × (Fin n → ℤ)) :
     letI : Y.Over (Spec (.of k)) := ⟨T.toBase ≫ f⟩
     2 * (eulerCharBelow k (T.picardHom a).toMul 3 - eulerCharBelow k a.1.toMul 3) =

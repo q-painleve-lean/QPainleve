@@ -8,6 +8,8 @@ module
 public import TauCeti.AlgebraicGeometry.LineBundle.Pullback
 public import TauCeti.AlgebraicGeometry.LineBundle.NonvanishingLocus
 public import TauCeti.AlgebraicGeometry.Modules.Pullback.Sections
+public import QPainleve.AlgebraicGeometry.LineBundle.Ratio
+public import Mathlib.AlgebraicGeometry.Morphisms.UnderlyingMap
 import QPainleve.AlgebraicGeometry.LineBundle.Frame
 import TauCeti.AlgebraicGeometry.Modules.Pullback.BaseChange
 import Mathlib.RingTheory.TensorProduct.IsBaseChangeFree
@@ -18,6 +20,7 @@ import Mathlib.RingTheory.TensorProduct.IsBaseChangeFree
 An affine open framed by a section of a line bundle pulls back to an open framed by
 the pulled-back section. The preservation of the frame uses
 `Scheme.Hom.isBaseChange_pullbackSectionsLE` on affine opens in the inverse image.
+Ratios with respect to these frames commute with pullback.
 -/
 
 public section
@@ -115,5 +118,44 @@ theorem nonvanishingLocus_pullbackSections
   have hy : g x ∈ Y.basicOpen r := hxBasic
   rw [M.basicOpen_eq_inf_nonvanishingLocus i s ht.ge hr] at hy
   exact hy.2
+
+/-- The nonvanishing locus of a pulled-back section restricted to a smaller
+open is the intersection of that open with the preimage of its original locus. -/
+@[simp]
+theorem nonvanishingLocus_pullbackSectionsLE
+    (M : Y.Modules) [TauCeti.AlgebraicGeometry.SheafOfModules.isInvertible Y M]
+    (g : X ⟶ Y) {U : Y.Opens} {V : X.Opens} (hV : V ≤ g ⁻¹ᵁ U) (s : Γ(M, U)) :
+    ((pullback g).obj M).nonvanishingLocus (g.pullbackSectionsLE M U V hV s) =
+      V ⊓ g ⁻¹ᵁ M.nonvanishingLocus s := by
+  rw [g.pullbackSectionsLE_apply, nonvanishingLocus_map, nonvanishingLocus_pullbackSections]
+
+/-- Pulling back a section ratio to an open in the inverse image gives the ratio
+of the two pulled-back sections on that open. -/
+theorem appLE_sectionRatio
+    (M : Y.Modules) [TauCeti.AlgebraicGeometry.SheafOfModules.isInvertible Y M]
+    (g : X ⟶ Y) {U : Y.Opens} {V : X.Opens} (hV : V ≤ g ⁻¹ᵁ U)
+    (t s : Γ(M, U)) (hs : U ≤ M.nonvanishingLocus s) :
+    g.appLE U V hV (M.sectionRatio t s hs) =
+      ((pullback g).obj M).sectionRatio
+        (g.pullbackSectionsLE M U V hV t) (g.pullbackSectionsLE M U V hV s)
+        (by
+          rw [nonvanishingLocus_pullbackSectionsLE]
+          exact le_inf le_rfl (hV.trans (g.preimage_mono hs))) := by
+  symm
+  apply (sectionRatio_eq_iff _ _).mpr
+  rw [← map_smulₛₗ (g.pullbackSectionsLE M U V hV), sectionRatio_smul]
+
+/-- A global section with dense nonvanishing locus pulls back to a section with
+dense nonvanishing locus along a dominant morphism from a preirreducible scheme. -/
+theorem dense_nonvanishingLocus_pullbackSectionsLE_top
+    (M : Y.Modules) [TauCeti.AlgebraicGeometry.SheafOfModules.isInvertible Y M]
+    [PreirreducibleSpace X] [Nonempty Y] (g : X ⟶ Y) [IsDominant g]
+    {s : Γ(M, ⊤)} (hs : Dense (M.nonvanishingLocus s : Set Y)) :
+    Dense (((pullback g).obj M).nonvanishingLocus
+      (g.pullbackSectionsLE M ⊤ ⊤ g.preimage_top.ge s) : Set X) := by
+  rw [nonvanishingLocus_pullbackSectionsLE, top_inf_eq]
+  refine (g ⁻¹ᵁ M.nonvanishingLocus s).isOpen.dense ?_
+  simpa [← Set.nonempty_preimage_iff] using
+    g.denseRange.inter_open_nonempty _ (M.nonvanishingLocus s).isOpen hs.nonempty
 
 end AlgebraicGeometry.Scheme.Modules

@@ -5,18 +5,21 @@ Authors: The QPainleve contributors
 -/
 module
 
+public import Mathlib.AlgebraicGeometry.AffineSpace
 public import Mathlib.RingTheory.MvPolynomial.Homogeneous
+public import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.BaseChange
 public import TauCeti.RingTheory.MvPolynomial.HomogeneousLocalization
 
 import TauCeti.RingTheory.GradedAlgebra.HomogeneousLocalization.Basic
 import TauCeti.RingTheory.MvPolynomial.Dehomogenization
 
 /-!
-# Coordinate rings of projective-space charts
+# Coordinate charts of projective space
 
 Dehomogenizing at a variable identifies the degree-zero localization with the
 polynomial ring on the remaining variables. The inverse sends each variable to its
-ratio with the distinguished homogeneous coordinate.
+ratio with the distinguished homogeneous coordinate. At the scheme level, this
+identifies the standard open with affine space over the coefficient ring.
 
 The comparison uses Tau Ceti's generation of the chart by normalized coordinates
 and its substitution `dehomogenize`.
@@ -24,13 +27,15 @@ and its substitution `dehomogenize`.
 
 public noncomputable section
 
-open HomogeneousLocalization TauCeti
+open CategoryTheory HomogeneousLocalization TauCeti
 
 namespace AlgebraicGeometry.Proj
 
 attribute [local instance] MvPolynomial.gradedAlgebra
 
 universe u
+
+section CoordinateRing
 
 variable {k : Type u} [CommRing k] {n : ℕ}
 
@@ -97,5 +102,43 @@ theorem awayCoordinateAlgEquiv_apply_ratio (i : Fin (n + 1)) (j : Fin n) :
   rw [AlgEquiv.symm_apply_apply]
   exact (MvPolynomial.aeval_X (R := k) (fun a : Fin n ↦
     TauCeti.MvPolynomial.awayXRatio (R := k) i (i.succAbove a)) j).symm
+
+end CoordinateRing
+
+section AffineSpace
+
+variable {R : Type u} [CommRing R] {d : ℕ}
+
+local notation "𝒜" => MvPolynomial.homogeneousSubmodule (Fin (d + 1)) R
+
+private def affineSpaceChartIso (i : Fin (d + 1)) :
+    𝔸(ULift.{u} (Fin d); Spec (.of R)) ≅ Spec (.of (Away 𝒜 (MvPolynomial.X i))) :=
+  AffineSpace.SpecIso _ _ ≪≫ Scheme.Spec.mapIso
+    ((awayCoordinateAlgEquiv (k := R) i).trans
+      (MvPolynomial.renameEquiv R Equiv.ulift.symm)).toRingEquiv.toCommRingCatIso.op
+
+/-- A standard coordinate open of polynomial projective space is affine space.
+The affine variable indexed by `j` corresponds to the ratio `Xᵢ.succAbove j / Xᵢ`. -/
+def basicOpenIsoAffineSpace (i : Fin (d + 1)) :
+    (basicOpen 𝒜 (MvPolynomial.X i)).toScheme ≅ 𝔸(ULift.{u} (Fin d); Spec (.of R)) :=
+  basicOpenIsoSpec 𝒜 _ ((MvPolynomial.mem_homogeneousSubmodule ..).mpr
+    (MvPolynomial.isHomogeneous_X R i)) one_pos ≪≫ (affineSpaceChartIso i).symm
+
+/-- The affine-space inclusion into the coordinate open lies over the coefficient ring. -/
+@[reassoc (attr := simp)]
+theorem basicOpenIsoAffineSpace_inv_toSpecCoeff (i : Fin (d + 1)) :
+    (basicOpenIsoAffineSpace (R := R) i).inv ≫ (basicOpen 𝒜 (MvPolynomial.X i)).ι ≫
+      toSpecCoeff 𝒜 = 𝔸(ULift.{u} (Fin d); Spec (.of R)) ↘ Spec (.of R) := by
+  rw [basicOpenIsoAffineSpace, Iso.trans_inv, Category.assoc, Iso.symm_inv,
+    basicOpenIsoSpec_inv_ι_assoc, awayι_toSpecCoeff, affineSpaceChartIso, Iso.trans_hom,
+    Category.assoc, ← Iso.eq_inv_comp, AffineSpace.SpecIso_inv_over]
+  rw [Scheme.Spec.mapIso_hom, Scheme.Spec_map, ← Spec.map_comp, Spec.map_inj]
+  apply CommRingCat.hom_ext
+  apply RingHom.ext
+  intro r
+  exact ((awayCoordinateAlgEquiv (k := R) i).trans
+    (MvPolynomial.renameEquiv R Equiv.ulift.symm)).commutes r
+
+end AffineSpace
 
 end AlgebraicGeometry.Proj

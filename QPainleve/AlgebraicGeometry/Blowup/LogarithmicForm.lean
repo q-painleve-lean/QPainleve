@@ -128,9 +128,7 @@ theorem pullbackTopFormDivisor_pointBlowup (hD : D.IsEffectiveCartier)
     ((smoothOfRelativeDimension_iff_ringKrullDim_stalk_eq (X ↘ Spec (.of k)) 2).mp
       inferInstance).2 p hp
   have : Surjective π := surjective_blowupToBase_point hp hdim
-  let hT := hD.comap_of_isIntegral π (by
-    rw [(π).genericPoint_eq_of_isDominant]
-    exact hD.genericPoint_notMem_support)
+  let hT := hD.comap_of_isDominant π
   have hRamEq := ramificationIdealSheaf_blowup_of_smoothSurface k hp
   let hRam : (ramificationIdealSheaf k π).IsEffectiveCartier := hRamEq.symm ▸ hE
   have hRamDiv := (hRam.toCartierDivisor_eq_iff hE).mpr hRamEq
