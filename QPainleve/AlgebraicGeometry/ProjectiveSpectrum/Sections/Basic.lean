@@ -247,17 +247,44 @@ def toProjectiveSpaceChart (i : ι) :
     (Dₛ[i]).toScheme ⟶ Spec (.of (Away (homogeneousSubmodule ι R) (MvPolynomial.X i))) :=
   (Dₛ[i]).toScheme.toSpecΓ ≫ Spec.map (CommRingCat.ofHom (chartRingHom M f s i))
 
+private theorem toProjectiveSpaceChart_comp_awayι (i : ι) :
+    M.toProjectiveSpaceChart f s i ≫ Proj.awayι (homogeneousSubmodule ι R) (MvPolynomial.X i)
+        ((mem_homogeneousSubmodule _ _).mpr (isHomogeneous_X R i)) one_pos =
+      chartHom M f s i := by
+  rw [chartHom, Proj.fromOfGlobalSections_eq_toSpecΓ_awayLift (chartEval M f s i)
+    (chartEval_irrelevant M f s i) one_pos
+    ((mem_homogeneousSubmodule _ _).mpr (isHomogeneous_X R i)) (chartEval_isUnit M f s i)]
+  exact Category.assoc _ _ _
+
+/-- The maps to projective space defined on two coordinate opens agree on their overlap. -/
+theorem toProjectiveSpaceChart_awayι_eq_on_inf (i j : ι) :
+    X.homOfLE (inf_le_left : Dₛ[i] ⊓ Dₛ[j] ≤ Dₛ[i]) ≫
+      M.toProjectiveSpaceChart f s i ≫ Proj.awayι (homogeneousSubmodule ι R)
+        (MvPolynomial.X i) ((mem_homogeneousSubmodule _ _).mpr (isHomogeneous_X R i)) one_pos =
+    X.homOfLE (inf_le_right : Dₛ[i] ⊓ Dₛ[j] ≤ Dₛ[j]) ≫
+      M.toProjectiveSpaceChart f s j ≫ Proj.awayι (homogeneousSubmodule ι R)
+        (MvPolynomial.X j) ((mem_homogeneousSubmodule _ _).mpr (isHomogeneous_X R j)) one_pos := by
+  rw [toProjectiveSpaceChart_comp_awayι, toProjectiveSpaceChart_comp_awayι]
+  exact chartHom_compatible M f s i j
+
+/-- The morphism on a section's nonvanishing open preserves the coefficient morphism. -/
+@[reassoc (attr := simp)]
+theorem toProjectiveSpaceChart_toSpecCoeff (i : ι) :
+    M.toProjectiveSpaceChart f s i ≫
+      Spec.map (CommRingCat.ofHom
+        (algebraMap R (Away (homogeneousSubmodule ι R) (MvPolynomial.X i)))) =
+      (Dₛ[i]).ι ≫ f := by
+  rw [← Proj.awayι_toSpecCoeff (homogeneousSubmodule ι R)
+    ((mem_homogeneousSubmodule _ _).mpr (isHomogeneous_X R i)) one_pos,
+    ← Category.assoc, toProjectiveSpaceChart_comp_awayι, chartHom_comp_toSpecCoeff]
+
 /-- The affine chart morphism is the restriction of the projective morphism. -/
 @[reassoc]
 theorem toProjectiveSpaceChart_awayι (h : ⨆ i, Dₛ[i] = ⊤) (i : ι) :
     M.toProjectiveSpaceChart f s i ≫ Proj.awayι (homogeneousSubmodule ι R) (MvPolynomial.X i)
         ((mem_homogeneousSubmodule _ _).mpr (isHomogeneous_X R i)) one_pos =
       (Dₛ[i]).ι ≫ M.toProjectiveSpace f s h := by
-  rw [ι_toProjectiveSpace, chartHom,
-    Proj.fromOfGlobalSections_eq_toSpecΓ_awayLift (chartEval M f s i)
-      (chartEval_irrelevant M f s i) one_pos
-      ((mem_homogeneousSubmodule _ _).mpr (isHomogeneous_X R i)) (chartEval_isUnit M f s i)]
-  exact Category.assoc _ _ _
+  rw [ι_toProjectiveSpace, toProjectiveSpaceChart_comp_awayι]
 
 private theorem toProjectiveSpaceChart_appTop (i : ι) :
     (Scheme.ΓSpecIso _).inv ≫ (M.toProjectiveSpaceChart f s i).appTop =
