@@ -314,6 +314,28 @@ theorem toProjectiveSpaceChart_appTop_awayXRatio (i j : ι) :
     Units.ext ((chartEval_isUnit M f s i).unit_spec.trans (chartEval_X_self M f s i))
   simpa [hunit] using chartEval_X M f s i j
 
+variable {M f s} in
+/-- At the generic point, a normalized projective coordinate is the germ of the
+corresponding section ratio. -/
+theorem genericProjectiveChart_preimage_awayXRatio [IsIntegral X] (i j : ι)
+    (hi : genericPoint X ∈ Dₛ[i]) :
+    (Spec.preimage ((Dₛ[i]).fromSpecStalkOfMem _ hi ≫ M.toProjectiveSpaceChart f s i)).hom
+        (TauCeti.MvPolynomial.awayXRatio (R := R) i j) =
+      X.presheaf.germ (Dₛ[i]) (genericPoint X) hi
+        (M.sectionRatio (res[i] (s j))
+          (res[i] (s i)) (by rw [nonvanishingLocus_map, inf_idem])) := by
+  generalize hg' : M.toProjectiveSpaceChart f s i = g
+  have hg : (Dₛ[i]).toSpecΓ ≫ Spec.map
+      ((Scheme.ΓSpecIso _).inv ≫ g.appTop ≫ (Dₛ[i]).topIso.hom) = g := by
+    have ht : Spec.map (Dₛ[i]).topIso.inv ≫ Spec.map (Dₛ[i]).topIso.hom = 𝟙 _ := by
+      rw [← Spec.map_comp, Iso.hom_inv_id, Spec.map_id]
+    simp only [Spec.map_comp, Opens.toSpecΓ, Category.assoc, reassoc_of% ht,
+      ← Scheme.toSpecΓ_naturality_assoc, toSpecΓ_SpecMap_ΓSpecIso_inv, Category.comp_id]
+  rw [← hg, Opens.fromSpecStalkOfMem_toSpecΓ_assoc, ← Spec.map_comp, Spec.preimage_map]
+  simp only [CommRingCat.hom_comp, RingHom.comp_apply, ← hg']
+  have h := toProjectiveSpaceChart_appTop_awayXRatio M f s i j
+  erw [h, Iso.inv_hom_id_apply]
+
 private theorem isClosedImmersion_toProjectiveSpace_iff_chart
     (h : ⨆ i, Dₛ[i] = ⊤) :
     IsClosedImmersion (M.toProjectiveSpace f s h) ↔
@@ -493,3 +515,40 @@ theorem ι_toProjectiveSpace_eq_fromOfGlobalSections (h : ⨆ i, Dₛ[i] = ⊤)
   exact h'.trans hloc
 
 end AlgebraicGeometry.Scheme.Modules
+
+namespace AlgebraicGeometry.Proj
+
+open TauCeti.MvPolynomial
+
+variable {R ι : Type u} [CommRing R]
+
+attribute [local instance] MvPolynomial.gradedAlgebra
+
+local notation "𝒜" => MvPolynomial.homogeneousSubmodule ι R
+local notation "B[" i "]" => Away 𝒜 (MvPolynomial.X i)
+local notation "j[" i "]" =>
+  Proj.awayι 𝒜 (MvPolynomial.X i)
+    (Iff.mpr (mem_homogeneousSubmodule _ _) (isHomogeneous_X R i)) one_pos
+
+/-- Maps from an affine scheme into a standard polynomial projective chart agree if
+they agree on the coefficient ring and on every normalized coordinate. -/
+theorem eq_of_awayXRatio {K : Type u} [CommRing K] (i : ι)
+    (p q : Spec (.of K) ⟶ Spec (.of B[i]))
+    (hc : p ≫ j[i] ≫ Proj.toSpecCoeff 𝒜 = q ≫ j[i] ≫ Proj.toSpecCoeff 𝒜)
+    (h : ∀ j, (Spec.preimage p).hom (awayXRatio (R := R) i j) =
+      (Spec.preimage q).hom (awayXRatio (R := R) i j)) : p = q := by
+  rw [awayι_toSpecCoeff] at hc
+  have hcoeff (r : R) :
+      (Spec.preimage p).hom (algebraMap R B[i] r) =
+        (Spec.preimage q).hom (algebraMap R B[i] r) := by
+    have hpq := congrArg Spec.preimage hc
+    rw [Spec.preimage_comp, Spec.preimage_comp, Spec.preimage_map] at hpq
+    exact DFunLike.congr_fun (congrArg CommRingCat.Hom.hom hpq) r
+  let : Algebra R K := ((Spec.preimage p).hom.comp (algebraMap R B[i])).toAlgebra
+  let p' : B[i] →ₐ[R] K := ⟨(Spec.preimage p).hom, fun _ ↦ rfl⟩
+  let q' : B[i] →ₐ[R] K := ⟨(Spec.preimage q).hom, fun r ↦ (hcoeff r).symm⟩
+  have hpq : p' = q' := AlgHom.ext_of_adjoin_eq_top (adjoin_range_awayXRatio i)
+    (Set.eqOn_range.mpr (funext h))
+  exact Spec.preimage_injective (CommRingCat.hom_ext (congrArg AlgHom.toRingHom hpq))
+
+end AlgebraicGeometry.Proj
