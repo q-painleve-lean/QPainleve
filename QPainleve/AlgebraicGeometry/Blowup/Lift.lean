@@ -5,7 +5,7 @@ Authors: The QPainleve contributors
 -/
 module
 
-public import QPainleve.AlgebraicGeometry.RationalMap.Composition.Basic
+public import QPainleve.AlgebraicGeometry.RationalMap.Composition
 public import TauCeti.AlgebraicGeometry.Blowup.UniversalProperty
 
 import TauCeti.AlgebraicGeometry.Blowup.ExceptionalDivisor

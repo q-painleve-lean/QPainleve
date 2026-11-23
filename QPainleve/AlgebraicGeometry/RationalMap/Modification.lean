@@ -8,7 +8,7 @@ module
 public import QPainleve.AlgebraicGeometry.RationalMap.FunctionField
 public import TauCeti.AlgebraicGeometry.Morphisms.Modification.Basic
 
-import QPainleve.AlgebraicGeometry.RationalMap.Composition.Basic
+import QPainleve.AlgebraicGeometry.RationalMap.Composition
 import QPainleve.AlgebraicGeometry.RationalMap.Restriction
 
 /-!

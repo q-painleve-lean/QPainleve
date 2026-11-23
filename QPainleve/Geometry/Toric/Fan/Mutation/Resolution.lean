@@ -14,7 +14,7 @@ import QPainleve.AlgebraicGeometry.Blowup.Integral
 import QPainleve.AlgebraicGeometry.Blowup.Modification
 import QPainleve.AlgebraicGeometry.Blowup.Pullback
 import QPainleve.AlgebraicGeometry.IdealSheaf.Restriction
-import QPainleve.AlgebraicGeometry.RationalMap.Composition.Basic
+import QPainleve.AlgebraicGeometry.RationalMap.Composition
 import QPainleve.AlgebraicGeometry.RationalMap.Restriction
 
 /-!

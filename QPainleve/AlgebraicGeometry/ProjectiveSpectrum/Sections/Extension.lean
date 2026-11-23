@@ -10,7 +10,7 @@ public import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.Sections.RationalMa
 public import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.Sections.TwistingSheaf
 import QPainleve.AlgebraicGeometry.LineBundle.NonvanishingLocus
 import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.Sections.Comparison
-import QPainleve.AlgebraicGeometry.RationalMap.Composition.Basic
+import QPainleve.AlgebraicGeometry.RationalMap.Composition
 import TauCeti.AlgebraicGeometry.Morphisms.Separated
 import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.Proper
 

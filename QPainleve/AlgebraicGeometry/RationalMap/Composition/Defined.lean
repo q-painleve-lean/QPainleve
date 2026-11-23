@@ -6,7 +6,7 @@ Authors: The QPainleve contributors
 module
 
 public import TauCeti.AlgebraicGeometry.Birational.RationalMap
-public import QPainleve.AlgebraicGeometry.RationalMap.Composition.Basic
+public import QPainleve.AlgebraicGeometry.RationalMap.Composition
 public import QPainleve.AlgebraicGeometry.RationalMap.FunctionField
 
 /-!
