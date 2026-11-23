@@ -191,15 +191,26 @@ local notation "𝕋" => Spec (CommRingCat.of T)
 private def torusToChart : 𝕋 ⟶ LS :=
   Spec.map (CommRingCat.ofHom (mutationChartToTorus Φ b side c q rfl).toRingHom)
 
-private def torusToFan (h₀ : Nonempty Φ.cones) : 𝕋 ⟶ Φ.algebraicRealization :=
+/-- The dense torus with the pivot binomial inverted, included into the fan scheme. -/
+def mutationTorusι (h₀ : Nonempty Φ.cones) : 𝕋 ⟶ Φ.algebraicRealization :=
   Spec.map (CommRingCat.ofHom
     ((Algebra.algHom ℂ G T).comp ((toMultiplicativeAlgEquiv ℂ ℂ (N →+ ℤ)).symm.toAlgHom.comp
       (denseTorusCoordinateRingEquiv Φ.lattice).toAlgHom)).toRingHom) ≫ Φ.denseTorusι h₀
 
+/-- The localized torus inclusion is the localization morphism followed by the additive
+coordinate comparison and the native torus inclusion. -/
+theorem mutationTorusι_def (h₀ : Nonempty Φ.cones) :
+    Φ.mutationTorusι b (v := v) c h₀ =
+      Spec.algebraMap G T ≫ Spec.map (CommRingCat.ofHom
+        (((toMultiplicativeAlgEquiv ℂ ℂ (N →+ ℤ)).symm.toAlgHom.comp
+          (denseTorusCoordinateRingEquiv Φ.lattice).toAlgHom).toRingHom)) ≫ Φ.denseTorusι h₀ := by
+  rw [mutationTorusι, Spec.algebraMap, ← Spec.map_comp_assoc, ← CommRingCat.ofHom_comp]
+  rfl
+
 private theorem torusToChart_comp_complementChartToFan :
     torusToChart Φ b σ side hs c ≫ complementChartToFan Φ b σ side hs c =
-      torusToFan Φ b (v := v) c ⟨σ⟩ := by
-  rw [torusToChart, complementChartToFan, torusToFan, Φ.denseTorusι_face σ,
+      mutationTorusι Φ b (v := v) c ⟨σ⟩ := by
+  rw [torusToChart, complementChartToFan, mutationTorusι, Φ.denseTorusι_face σ,
     additiveAffineToricChartι_def, faceAffineToricSchemeMap_def]
   simp only [← Spec.map_comp_assoc, ← CommRingCat.ofHom_comp]
   congr 2
@@ -223,8 +234,8 @@ private theorem torusToChart_comp_complementChartToFan :
     faceAffineCoordinateRingMap_single, denseTorusCoordinateRingEquiv_single, toAdd_ofAdd,
     mutationChartToTorus_single]
 
-private theorem isDominant_torusToFan (hv : v ≠ 0) (h₀ : Nonempty Φ.cones) :
-    IsDominant (torusToFan Φ b (v := v) c h₀) := by
+private theorem isDominant_mutationTorusι (hv : v ≠ 0) (h₀ : Nonempty Φ.cones) :
+    IsDominant (mutationTorusι Φ b (v := v) c h₀) := by
   have hm : m ≠ 0 := by
     intro he
     apply hv
@@ -258,13 +269,42 @@ private theorem torusToChart_comp_mutationComplementChartι (τ : Φ.cones)
     (torusToChart_comp_complementChartToFan Φ b τ t ht c).symm
   simpa only [Category.assoc, mutationComplementChartι_comp_ι, complementChartToFan] using he
 
+/-- The localized torus included into the complement of the pivot fiber. -/
+def mutationComplementTorusι (h₀ : Nonempty Φ.cones) : 𝕋 ⟶ (U).toScheme :=
+  let σ : Φ.cones := ⟨⊥, Φ.bot_mem h₀.some.property⟩
+  let hs : mutationChartCharacter b (v := v) false ∈ dualSemigroup Φ.lattice σ.val := by
+    simp [σ]
+  torusToChart Φ b σ false hs c ≫ Φ.mutationComplementChartι b σ false hs c h
+
+/-- Every localized cone chart gives the same inclusion of the localized torus. -/
+private theorem torusToChart_comp_mutationComplementChartι_eq (h₀ : Nonempty Φ.cones) :
+    torusToChart Φ b σ side hs c ≫ Φ.mutationComplementChartι b σ side hs c h =
+      Φ.mutationComplementTorusι b c h h₀ :=
+  torusToChart_comp_mutationComplementChartι Φ b σ side hs c h _ _ _
+
+/-- Composing the localized torus inclusion with the open immersion into the fan
+recovers the ambient localized torus inclusion. -/
+@[reassoc (attr := simp)]
+theorem mutationComplementTorusι_comp_ι (h₀ : Nonempty Φ.cones) :
+    Φ.mutationComplementTorusι b c h h₀ ≫ (U).ι = Φ.mutationTorusι b c h₀ := by
+  simp only [mutationComplementTorusι, Category.assoc, mutationComplementChartι_comp_ι]
+  exact torusToChart_comp_complementChartToFan Φ b _ false _ c
+
+/-- The localized torus is dense in the complement of the pivot fiber. -/
+theorem isDominant_mutationComplementTorusι (hv : v ≠ 0) (h₀ : Nonempty Φ.cones) :
+    IsDominant (Φ.mutationComplementTorusι b c h h₀) := by
+  have : IsDominant (Φ.mutationComplementTorusι b c h h₀ ≫ (U).ι) := by
+    rw [mutationComplementTorusι_comp_ι]
+    exact isDominant_mutationTorusι Φ b c hv h₀
+  exact IsDominant.of_comp_of_isOpenImmersion _ (U).ι
+
 private theorem isDominant_torusToChart_comp_mutationComplementChartι (hv : v ≠ 0) :
     IsDominant (torusToChart Φ b σ side hs c ≫ Φ.mutationComplementChartι b σ side hs c h) := by
   have : IsDominant ((torusToChart Φ b σ side hs c ≫
       Φ.mutationComplementChartι b σ side hs c h) ≫ (U).ι) := by
     rw [Category.assoc, mutationComplementChartι_comp_ι, ← complementChartToFan,
       torusToChart_comp_complementChartToFan]
-    exact isDominant_torusToFan Φ b c hv ⟨σ⟩
+    exact isDominant_mutationTorusι Φ b c hv ⟨σ⟩
   exact IsDominant.of_comp_of_isOpenImmersion _ (U).ι
 
 private theorem mutationComplementChartι_comp_toBase :
@@ -537,6 +577,22 @@ theorem mutationComplementChartι_comp_mutationComplementIso_hom :
   simpa only [mutationComplementIso, localizedChartIso_hom] using
     sourceCover_f_mutationComplementHom Φ b c hv hpos hneg (⟨σ, side, hs⟩ : J)
 
+/-- On the dense torus with the pivot binomial inverted, the complement
+isomorphism is induced by the mutation binomial twist. -/
+@[reassoc]
+theorem mutationComplementTorusι_comp_mutationComplementIso_hom
+    (hs₀ : Nonempty Φ.cones) (hs₁ : Nonempty (Ψ).cones) :
+    Φ.mutationComplementTorusι b c hp₀ hs₀ ≫ (Φ.mutationComplementIso b c hv hpos hneg).hom =
+      Spec.map (CommRingCat.ofHom
+        (mutationTorusChartAlgEquiv b (v := v) c).toAlgHom.toRingHom) ≫
+        (Ψ).mutationComplementTorusι b c hp₁ hs₁ := by
+  rw [← torusTwist_hom]
+  rw [← torusToChart_comp_mutationComplementChartι_eq Φ b (jp).fst (jp).snd.val
+    (jp).snd.property c hp₀ hs₀, Category.assoc,
+    mutationComplementChartι_comp_mutationComplementIso_hom, ← localizedChartIso_hom,
+    ← Category.assoc, torusToChart_comp_localizedChartIso, Category.assoc,
+    torusToChart_comp_mutationComplementChartι_eq]
+
 /-- The toric mutation isomorphism on the fiber complements is over the complex field. -/
 @[reassoc]
 theorem mutationComplementIso_hom_comp_toBase :
@@ -552,6 +608,57 @@ theorem mutationComplementIso_hom_comp_toBase :
     sourceCover_f_mutationComplementHom Φ b c hv hpos hneg a, Category.assoc,
     targetChart_toBase Φ b c hv hpos hneg a, sourceChart_toBase Φ b c hv hpos hneg a]
   exact localizedChartIso_hom_comp_toBase Φ b a.fst a.snd.val a.snd.property c hv hpos hneg
+
+include h in
+private theorem range_mutationComplementChartι :
+    Set.range (Φ.mutationComplementChartι b σ side hs c h) =
+      (U).ι ⁻¹' Set.range (Φ.additiveAffineToricChartι σ) := by
+  have hι : Function.Injective ((U).ι) := (U).ι.isOpenEmbedding.injective
+  apply hι.image_injective
+  rw [← Set.range_comp, ← TopCat.coe_comp, ← Scheme.Hom.comp_base,
+    mutationComplementChartι_comp_ι,
+    ← complementChartToFan, range_complementChartToFan,
+    Set.image_preimage_eq_inter_range, Scheme.Opens.range_ι]
+
+/-- The mutation isomorphism on the fiber complement identifies its intersections with
+the dense tori of the two fans. -/
+theorem mutationComplementIso_preimage_range_denseTorusι
+    (hΦ : Nonempty Φ.cones) (hΨ : Nonempty (Ψ).cones) :
+    ((Φ.mutationComplementIso b c hv hpos hneg).hom ≫ (U₁).ι) ⁻¹'
+        Set.range ((Ψ).denseTorusι hΨ) =
+      (U₀).ι ⁻¹' Set.range (Φ.denseTorusι hΦ) := by
+  let j := zeroChart Φ b hpos
+  have hzero : (τ(j.fst)).val = ⊥ := by
+    apply SetLike.coe_injective
+    rw [coe_mutationFanConeEquiv]
+    dsimp only [j, zeroChart]
+    -- The zero cone is the singleton at the origin in the ambient space.
+    change Φ.lattice.mutationRayEquiv b v '' ({0} : Set V) = {0}
+    rw [Set.image_singleton]
+    simp [IsIntegralLattice.mutationRayEquiv_apply]
+  have h₀ : Set.range (Φ.additiveAffineToricChartι j.fst) = Set.range (Φ.denseTorusι hΦ) := by
+    rw [range_additiveAffineToricChartι, Φ.denseTorusι_eq_affineToricChartι hΦ j.fst.property]
+    rfl
+  have h₁ : Set.range ((Ψ).additiveAffineToricChartι τ(j.fst)) =
+      Set.range ((Ψ).denseTorusι hΨ) := by
+    have hb : (⊥ : PointedCone ℝ V) ∈ (Ψ).cones := hzero ▸ (τ(j.fst)).property
+    have hj : τ(j.fst) = ⟨⊥, hb⟩ := Subtype.ext hzero
+    rw [range_additiveAffineToricChartι, (Ψ).denseTorusι_eq_affineToricChartι hΨ hb, hj]
+  let e := Φ.mutationComplementIso b c hv hpos hneg
+  let f := Φ.mutationComplementChartι b j.fst j.snd.val j.snd.property c hp₀
+  let g := (Ψ).mutationComplementChartι b τ(j.fst) j.snd.val ht(j) c hp₁
+  have hr₀ : Set.range f = (U₀).ι ⁻¹' Set.range (Φ.denseTorusι hΦ) :=
+    (range_mutationComplementChartι Φ b j.fst j.snd.val j.snd.property c hp₀).trans
+      (congrArg (Set.preimage (U₀).ι) h₀)
+  have hr₁ : Set.range g = (U₁).ι ⁻¹' Set.range ((Ψ).denseTorusι hΨ) :=
+    (range_mutationComplementChartι Ψ b τ(j.fst) j.snd.val ht(j) c hp₁).trans
+      (congrArg (Set.preimage (U₁).ι) h₁)
+  have he : Set.range (f ≫ e.hom) = Set.range g := by
+    rw [mutationComplementChartι_comp_mutationComplementIso_hom, ← localizedChartIso_hom]
+    simp only [← Scheme.Hom.coe_opensRange, Scheme.Hom.opensRange_comp_of_isIso, g]
+  rw [Scheme.Hom.comp_base, TopCat.coe_comp, Set.preimage_comp, ← hr₀, ← hr₁, ← he,
+    Scheme.Hom.comp_base, TopCat.coe_comp, Set.range_comp,
+    Set.preimage_image_eq _ e.hom.isOpenEmbedding.injective]
 
 end Torus
 

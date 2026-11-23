@@ -35,32 +35,44 @@ local notation "π" => I.blowupToBase
 local notation "E" => I.comap I.blowupToBase
 local notation "S" => Scheme.Hom.ker (I.blowupMap D.subschemeι)
 
-/-- If a reduced closed subscheme contains the blowup center and the exceptional
-divisor is reduced, the ideal of the reduced total transform is the product of
-the strict-transform ideal and the exceptional ideal. -/
-theorem radical_comap_blowupToBase_eq_ker_blowupMap_subschemeι_mul
-    [IsReduced D.subscheme] [IsReduced (E).subscheme] (hDI : D ≤ I) :
-    (D.comap π).radical = S * E := by
-  let j := Scheme.Opens.ι ((E).support.compl)
-  let Z := (D.comap π).support
+/-- The strict transform of a reduced closed subscheme is cut out by the vanishing
+ideal of the closure of its inverse image off the exceptional divisor. -/
+theorem ker_blowupMap_subschemeι_eq_vanishingIdeal [IsReduced D.subscheme] :
+    S = vanishingIdeal (.closure (((D.comap π).support : Set I.blowup) \ (E).support)) := by
+  let j := Scheme.Opens.ι (E).support.compl
   have hj : IsOpenImmersion (j ≫ π) := by
     dsimp only [j]
     rw [compl_support_comap, ← morphismRestrict_ι]
     infer_instance
   have hD : vanishingIdeal D.support = D :=
     vanishingIdeal_support.trans ((isReduced_subscheme_iff_radical_eq D).mp inferInstance)
-  have hE : vanishingIdeal (E).support = E :=
-    vanishingIdeal_support.trans ((isReduced_subscheme_iff_radical_eq E).mp inferInstance)
-  have hjD : ((D.comap π).comap j) = vanishingIdeal (Z.preimage j.continuous) := by
+  have hjD : ((D.comap π).comap j) =
+      vanishingIdeal ((D.comap π).support.preimage j.continuous) := by
     rw [← comap_comp, ← hD, comap_vanishingIdeal_of_isOpenImmersion]
     congr 1
     apply SetLike.coe_injective
-    simp only [Z, support_comap, Closeds.coe_preimage, ← Set.preimage_comp]
+    simp only [support_comap, Closeds.coe_preimage, ← Set.preimage_comp]
     rfl
-  have hS : S = vanishingIdeal (.closure ((Z : Set I.blowup) \ (E).support)) := by
-    rw [ker_blowupMap_subschemeι_eq_map_comap, hjD, map_vanishingIdeal,
-      Closeds.coe_preimage, Set.image_preimage_eq_inter_range,
-      Scheme.Opens.range_ι, Closeds.coe_compl, Set.sdiff_eq]
+  rw [ker_blowupMap_subschemeι_eq_map_comap, hjD, map_vanishingIdeal,
+    Closeds.coe_preimage, Set.image_preimage_eq_inter_range,
+    Scheme.Opens.range_ι, Closeds.coe_compl, Set.sdiff_eq]
+
+/-- The strict transform of a reduced closed subscheme is reduced. -/
+theorem isReduced_subscheme_ker_blowupMap [IsReduced D.subscheme] :
+    IsReduced (S).subscheme := by
+  rw [ker_blowupMap_subschemeι_eq_vanishingIdeal]
+  infer_instance
+
+/-- If a reduced closed subscheme contains the blowup center and the exceptional
+divisor is reduced, the ideal of the reduced total transform is the product of
+the strict-transform ideal and the exceptional ideal. -/
+theorem radical_comap_blowupToBase_eq_ker_blowupMap_subschemeι_mul
+    [IsReduced D.subscheme] [IsReduced (E).subscheme] (hDI : D ≤ I) :
+    (D.comap π).radical = S * E := by
+  let Z := (D.comap π).support
+  have hE : vanishingIdeal (E).support = E :=
+    vanishingIdeal_support.trans ((isReduced_subscheme_iff_radical_eq E).mp inferInstance)
+  have hS := ker_blowupMap_subschemeι_eq_vanishingIdeal I D
   have hZ : Closeds.closure ((Z : Set I.blowup) \ (E).support) ⊔ (E).support = Z := by
     apply SetLike.coe_injective
     rw [Closeds.coe_sup, Closeds.coe_closure]

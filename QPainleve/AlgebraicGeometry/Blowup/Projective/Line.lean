@@ -8,13 +8,17 @@ module
 public import QPainleve.AlgebraicGeometry.Blowup.ElementaryTransform
 public import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.ProjectiveLine
 public import TauCeti.AlgebraicGeometry.Blowup.IdealSheaf
+public import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.Basic
 import Mathlib.RingTheory.Algebraic.Integral
 import Mathlib.RingTheory.Polynomial.Ideal
 import QPainleve.AlgebraicGeometry.Blowup.Affine
 import QPainleve.AlgebraicGeometry.Gluing
+import TauCeti.AlgebraicGeometry.Blowup.BaseChange
+import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.AffineLine
 import TauCeti.AlgebraicGeometry.IdealSheaf.Comap
 import TauCeti.AlgebraicGeometry.IdealSheaf.Extension
 import TauCeti.AlgebraicGeometry.Morphisms.SchemeTheoreticallyDominant
+import TauCeti.Data.Fin.Rev
 import TauCeti.RingTheory.Node.CoordinateOpen
 import TauCeti.RingTheory.Node.Reduced
 
@@ -132,6 +136,59 @@ theorem coordinateSectionCenter_comap_polynomialChartι_rev :
     change Ideal.Quotient.mk J (X : P) ∈ z.asIdeal
     rw [Ideal.Quotient.eq_zero_iff_mem.mpr (Ideal.subset_span (by simp))]
     exact z.asIdeal.zero_mem
+
+local notation "𝓘(" a ")" =>
+  IdealSheafData.ofIdealTop
+    (Ideal.map (CommRingCat.Hom.hom (Iso.inv (Scheme.ΓSpecIso (CommRingCat.of _))))
+      (Ideal.span (singleton a)))
+local notation "D(" i ")" => coordinateSectionCenter (0 : R) i
+
+/-- On its own chart, the full coordinate section has ideal `(X)`. -/
+theorem coordinateSectionCenter_zero_comap_polynomialChartι :
+    (D(i)).comap (polynomialChartι R i) = 𝓘((X : P)) := by
+  rw [coordinateSectionCenter_comap_polynomialChartι, map_zero, Ideal.span_pair_zero]
+
+/-- Pulling the full coordinate section back along a point of its chart gives the ideal `(a)`. -/
+theorem comap_coordinateSectionCenter_zero_polynomialPoint {S : Type u} [CommRing S]
+    (g : R →+* S) (a : S) : (D(i)).comap (polynomialPoint R g i a) = 𝓘(a) := by
+  rw [polynomialPoint_def, IdealSheafData.comap_comp,
+    coordinateSectionCenter_zero_comap_polynomialChartι,
+    IdealSheafData.comap_ofIdealTop_map_ΓSpecIso_inv, Ideal.map_span, Set.image_singleton,
+    CommRingCat.hom_ofHom, coe_eval₂RingHom, eval₂_X]
+
+/-- The full coordinate section pulls back to the empty subscheme at an opposite-chart point. -/
+theorem comap_coordinateSectionCenter_zero_polynomialPoint_rev {S : Type u}
+    [CommRing S] (g : R →+* S) (a : S) :
+    (D(i)).comap (polynomialPoint R g i.rev a) = ⊤ := by
+  rw [polynomialPoint_def, IdealSheafData.comap_comp,
+    coordinateSectionCenter_comap_polynomialChartι_rev, IdealSheafData.comap_top]
+
+/-- At a point of chart `i`, the section indexed by `i.rev` pulls back to the empty subscheme. -/
+theorem comap_coordinateSectionCenter_zero_rev_polynomialPoint {S : Type u}
+    [CommRing S] (g : R →+* S) (a : S) :
+    (D(i.rev)).comap (polynomialPoint R g i a) = ⊤ := by
+  simpa only [Fin.rev_rev] using
+    comap_coordinateSectionCenter_zero_polynomialPoint_rev i.rev g a
+
+private theorem isEffectiveCartier_polynomialVariable : (𝓘((X : P))).IsEffectiveCartier := by
+  rw [← Polynomial.zeroIdealSheaf_eq_ofIdealTop]
+  exact (Polynomial.monic_X (R := R)).isRelativeEffectiveCartier_zeroIdealSheaf.isEffectiveCartier
+
+/-- The section of the projective line over the whole base is an effective Cartier divisor. -/
+theorem isEffectiveCartier_coordinateSectionCenter_zero : (D(i)).IsEffectiveCartier := by
+  apply (D(i)).isEffectiveCartier_of_forall_exists_isOpenImmersion
+  intro x
+  obtain ⟨j, y, rfl⟩ := exists_eq_awayι R x
+  have hy : awayι R j y ∈ Set.range (polynomialChartι R j) := by
+    rw [← Scheme.Hom.coe_opensRange, opensRange_polynomialChartι,
+      ← Proj.opensRange_awayι, Scheme.Hom.coe_opensRange]
+    exact Set.mem_range_self y
+  refine ⟨_, polynomialChartι R j, inferInstance, hy, ?_⟩
+  rcases Fin.fin_two_eq_or_eq_rev i j with rfl | rfl
+  · rw [coordinateSectionCenter_zero_comap_polynomialChartι]
+    exact isEffectiveCartier_polynomialVariable (R := R)
+  · rw [coordinateSectionCenter_comap_polynomialChartι_rev]
+    exact IdealSheafData.isEffectiveCartier_top _
 
 local notation "Z" => coordinateSectionCenter f i
 
@@ -278,6 +335,70 @@ private def sectionBlowupCover (hf : IsSMulRegular R f) : ((Z).blowup).OpenCover
       · exact ⟨none, Scheme.Hom.mem_opensRange.mp hx⟩
       · exact ⟨some false, Scheme.Hom.mem_opensRange.mp hx⟩
     · exact ⟨some true, Scheme.Hom.mem_opensRange.mp hx⟩
+
+/-- The three section blowup charts detect equality of ideal sheaves. -/
+theorem sectionBlowup_idealSheaf_ext (hf : IsSMulRegular R f)
+    {I K : (Z).blowup.IdealSheafData}
+    (hn : I.comap (sectionBlowupNodeChartι f i hf) =
+      K.comap (sectionBlowupNodeChartι f i hf))
+    (hd : I.comap (sectionBlowupDivisorChartι f i hf) =
+      K.comap (sectionBlowupDivisorChartι f i hf))
+    (ho : I.comap (sectionBlowupOppositeChartι f i) =
+      K.comap (sectionBlowupOppositeChartι f i)) : I = K := by
+  apply IdealSheafData.ext_of_comap_openCover (sectionBlowupCover f i hf)
+  rintro (_ | (_ | _))
+  · exact hn
+  · exact hd
+  · exact ho
+
+/-- An ideal sheaf on the section blowup is effective Cartier if it is effective
+Cartier on the node, divisor, and opposite charts. -/
+theorem isEffectiveCartier_of_sectionBlowupCharts (hf : IsSMulRegular R f)
+    {I : (Z).blowup.IdealSheafData}
+    (hn : (I.comap (sectionBlowupNodeChartι f i hf)).IsEffectiveCartier)
+    (hd : (I.comap (sectionBlowupDivisorChartι f i hf)).IsEffectiveCartier)
+    (ho : (I.comap (sectionBlowupOppositeChartι f i)).IsEffectiveCartier) :
+    I.IsEffectiveCartier := by
+  apply I.isEffectiveCartier_of_forall_exists_isOpenImmersion
+  intro x
+  obtain ⟨j, y, rfl⟩ := (sectionBlowupCover f i hf).exists_eq x
+  rcases j with _ | (_ | _)
+  · exact ⟨_, sectionBlowupNodeChartι f i hf, inferInstance, Set.mem_range_self y, hn⟩
+  · exact ⟨_, sectionBlowupDivisorChartι f i hf, inferInstance, Set.mem_range_self y, hd⟩
+  · exact ⟨_, sectionBlowupOppositeChartι f i, inferInstance, Set.mem_range_self y, ho⟩
+
+private theorem exceptional_comap_reesBlowupι :
+    ((Z).comap (Z).blowupToBase).comap (reesBlowupι f i) =
+      affineBlowupExceptionalIdeal P J := by
+  rw [← IdealSheafData.comap_comp, (isPullback_reesBlowupι f i).w,
+    IdealSheafData.comap_comp, coordinateSectionCenter_comap_polynomialChartι,
+    affineBlowupExceptionalIdeal_def, toSpecCoeff_reesAlgebra]
+
+/-- On the node chart of the section blowup, the exceptional ideal is generated by the
+original section coordinate. -/
+@[simp]
+theorem exceptional_comap_sectionBlowupNodeChartι (hf : IsSMulRegular R f) :
+    ((Z).comap (Z).blowupToBase).comap (sectionBlowupNodeChartι f i hf) =
+      IdealSheafData.ofIdealTop
+        ((Ideal.span {TauCeti.NodeAlgebra.coord f i}).map (Scheme.ΓSpecIso (.of N)).inv.hom) := by
+  rw [sectionBlowupNodeChartι, IdealSheafData.comap_comp, exceptional_comap_reesBlowupι]
+  exact affineBlowupExceptionalIdeal_comap_elementaryTransformNodeChart f hf i
+
+/-- On the divisor chart of the section blowup, the exceptional ideal is generated by the
+base equation. -/
+@[simp]
+theorem exceptional_comap_sectionBlowupDivisorChartι (hf : IsSMulRegular R f) :
+    ((Z).comap (Z).blowupToBase).comap (sectionBlowupDivisorChartι f i hf) =
+      IdealSheafData.ofIdealTop ((Ideal.span {C f}).map (Scheme.ΓSpecIso (.of P)).inv.hom) := by
+  rw [sectionBlowupDivisorChartι, IdealSheafData.comap_comp, exceptional_comap_reesBlowupι]
+  exact affineBlowupExceptionalIdeal_comap_elementaryTransformOuterChart f hf
+
+/-- The exceptional divisor is disjoint from the unchanged opposite chart. -/
+@[simp]
+theorem exceptional_comap_sectionBlowupOppositeChartι :
+    ((Z).comap (Z).blowupToBase).comap (sectionBlowupOppositeChartι f i) = ⊤ := by
+  rw [← IdealSheafData.comap_comp, sectionBlowupOppositeChartι_blowupToBase,
+    coordinateSectionCenter_comap_polynomialChartι_rev]
 
 private def switchedChartι (hf : IsSMulRegular R f) :
     (j : Option Bool) → chartScheme f j ⟶ (Z).blowup
@@ -566,6 +687,28 @@ theorem elementaryTransform_hom_over (hf : f ≠ 0) :
   have hj := chartι_elementaryTransformHom f i hf i.rev rfl j
   exact (congrArg (· ≫ blowupStructureMap f i.rev) hj).trans
     ((switchedChartι_over f i.rev h j).trans (chartι_over f i h j).symm)
+
+/-- On the opposite affine chart the elementary transformation multiplies the affine
+coordinate by the base equation, with the same chart index on both projective lines. -/
+theorem elementaryTransform_hom_blowupToBase_eq_polynomialPoint
+    (hf : f ≠ 0) {D : Type u} [CommRing D] {k : R →+* D} {a : D}
+    {g : Spec (.of D) ⟶ (coordinateSectionCenter f i).blowup}
+    (hg : g ≫ (coordinateSectionCenter f i).blowupToBase = polynomialPoint R k i.rev a) :
+    g ≫ (elementaryTransform f i hf).hom ≫
+        (coordinateSectionCenter f i.rev).blowupToBase =
+      polynomialPoint R k i.rev (k f * a) := by
+  let h := Spec.map (CommRingCat.ofHom (eval₂RingHom k a))
+  have hproj : h ≫ sectionBlowupOppositeChartι f i ≫ (Z).blowupToBase =
+      polynomialPoint R k i.rev a := by
+    rw [sectionBlowupOppositeChartι_blowupToBase, polynomialPoint_def]
+  have hcomp : g = h ≫ sectionBlowupOppositeChartι f i := by
+    apply (Z).blowup_hom_ext (hg.trans (by simpa only [Category.assoc] using hproj.symm))
+    rw [hg, polynomialPoint_def, IdealSheafData.comap_comp,
+      coordinateSectionCenter_comap_polynomialChartι_rev, IdealSheafData.comap_top]
+    exact IdealSheafData.isEffectiveCartier_top _
+  rw [hcomp, Category.assoc, sectionBlowupOppositeChartι_elementaryTransform_hom_assoc,
+    sectionBlowupDivisorChartι_blowupToBase, SpecMap_polynomialPoint]
+  simp
 
 end Generic
 

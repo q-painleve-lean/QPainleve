@@ -14,6 +14,7 @@ import Mathlib.Analysis.Complex.Polynomial.Basic
 import Mathlib.Data.Set.Card
 import QPainleve.Geometry.Toric.Fan.Adjacency
 import QPainleve.Geometry.Toric.Fan.Picard.Presentation
+import QPainleve.Geometry.Toric.Fan.Point
 import QPainleve.Geometry.Toric.Fan.Smooth
 import TauCeti.AlgebraicGeometry.IdealSheaf.Extension
 import TauCeti.AlgebraicGeometry.IdealSheaf.Locality
@@ -71,21 +72,6 @@ private theorem exists_pos_primitiveGenerator_of_ne_zero
   · simpa only [AddMonoidHom.coe_toIntLinearMap, AddSubmonoid.coe_zero,
       AddMonoidHom.zero_apply, (hb r).eq_primitiveGenerator hi hσ] using hzero r
   · exact (Nat.not_lt_zero j.val (hl ▸ j.isLt)).elim
-
-private theorem distinguishedPoint_top_single_eq_zero_of_pos
-    (hi : IsIntegralLattice i) (hσ : IsToricCone i σ) (r : ToricRay σ)
-    (m : dualSemigroup hi σ)
-    (hm : 0 < (m : N →+ ℤ) (primitiveGenerator hi hσ r)) :
-    distinguishedPoint hi (⊤ : σ.Face) (MonoidAlgebra.single (ofAdd m) 1) = 0 := by
-  rw [distinguishedPoint_apply_single]
-  split_ifs with h
-  · exfalso
-    have hx : i (primitiveGenerator hi hσ r) ∈ (⊤ : σ.Face) :=
-      r.val.isFaceOf.le (primitiveGenerator_mem hi hσ r)
-    have hz := h _ hx
-    rw [hi.realCharacter_apply] at hz
-    exact hm.ne' (Int.cast_eq_zero.mp hz)
-  · rfl
 
 /-- In a full-rank regular cone the sum of the ray ideals is the kernel of evaluation
 at the distinguished point of the cone. -/

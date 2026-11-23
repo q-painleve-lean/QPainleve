@@ -7,6 +7,7 @@ module
 
 public import TauCeti.AlgebraicGeometry.CartierDivisor.Excision
 public import TauCeti.AlgebraicGeometry.IdealSheaf.Stalk
+import QPainleve.AlgebraicGeometry.IdealSheaf.Stalk
 import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.Stalk
 import TauCeti.AlgebraicGeometry.Morphisms.Dominant
 import TauCeti.AlgebraicGeometry.Scheme.DiscreteValuationStalk
@@ -125,6 +126,22 @@ theorem coeff_toWeilDivisor_eq_zero_iff [IsNoetherian X] (hI : I.IsEffectiveCart
     I.mem_support_iff_stalkIdeal_ne_top, not_not, I.stalkIdeal_eq_map U x hxU, hUa,
     Ideal.map_span, Set.image_singleton, Ideal.span_singleton_eq_top]
   simp [IsLocalRing.mem_maximalIdeal, mem_nonunits_iff]
+
+open TauCeti.AlgebraicGeometry in
+/-- Restricting an effective Cartier divisor to an open subscheme preserves its
+Weil coefficient at each codimension-one point of that open. -/
+theorem coeff_toWeilDivisor_comap_of_isOpenImmersion [IsNoetherian X] [IsNormalScheme X]
+    {Y : Scheme.{u}} [IsIntegral Y] [IsNoetherian Y] [IsNormalScheme Y]
+    (hI : I.IsEffectiveCartier) (f : Y ⟶ X) [IsOpenImmersion f]
+    (hJ : (I.comap f).IsEffectiveCartier) (p : CodimensionOnePoint Y) :
+    hJ.toCartierDivisor.toWeilDivisor p =
+      hI.toCartierDivisor.toWeilDivisor (p.mapOfIsOpenImmersion f) := by
+  have := IsNormalScheme.isDiscreteValuationRing_stalk (p : Y) p.property
+  have := IsNormalScheme.isDiscreteValuationRing_stalk
+    (p.mapOfIsOpenImmersion f : X) (p.mapOfIsOpenImmersion f).property
+  rw [← WeilDivisor.coeff, ← WeilDivisor.coeff, hJ.coeff_toWeilDivisor_eq_stalkOrder,
+    hI.coeff_toWeilDivisor_eq_stalkOrder, stalkOrder_comap_of_isIso_stalkMap,
+    CodimensionOnePoint.coe_mapOfIsOpenImmersion]
 
 open TauCeti.AlgebraicGeometry in
 /-- A prime component of a reduced effective Cartier divisor has Weil coefficient one. -/

@@ -199,8 +199,7 @@ theorem isClosedPointTower_alongBoundary (i : D ⟶ X) [IsClosedImmersion i]
     have hmap :
         (J (Fin.last d)).val.map T.boundaryι =
           (U.1.fromSpecResidueField (T.boundaryι p)).ker := by
-      rw [hcenter, Scheme.IdealSheafData.map_ker,
-        ← Scheme.Hom.SpecMap_residueFieldMap_fromSpecResidueField, Scheme.Hom.ker_comp_of_isIso]
+      rw [hcenter, T.boundaryι.map_ker_fromSpecResidueField]
     have heq := congrArg
       (fun P : Σ W, WithBoundary i (d + 1) W ↦ IsClosedPointTower X P.2.toTower)
       (alongBoundary_succ i J)

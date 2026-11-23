@@ -11,7 +11,9 @@ public import QPainleve.AlgebraicGeometry.Morphisms.Modification.Fiber
 import QPainleve.AlgebraicGeometry.Blowup.Point.Fiber
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Descent
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Modification
+import QPainleve.AlgebraicGeometry.Morphisms.IsoLocus
 import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
+import TauCeti.AlgebraicGeometry.Morphisms.Modification.Composition
 import TauCeti.AlgebraicGeometry.Morphisms.Smooth.Regular
 import TauCeti.AlgebraicGeometry.Noetherian
 import TauCeti.AlgebraicGeometry.Scheme.Regular.Scheme
@@ -38,7 +40,7 @@ universe u
 namespace QPainleve.BlowupTower.IsClosedPointTower
 
 variable {k : Type u} [Field k] [PerfectField k]
-  {X Y V : Scheme.{u}} {m n : ℕ} {T : BlowupTower X m V} {U : BlowupTower Y n V}
+  {X Y V W : Scheme.{u}} {m n : ℕ} {T : BlowupTower X m V} {U : BlowupTower Y n W}
 
 local notation "base" => Spec (CommRingCat.of k)
 
@@ -105,16 +107,17 @@ theorem existsUnique_comp_eq_toBase_of_exceptional_divisors_subset
 
 variable [IsIntegral Y]
 
-/-- If two projections by closed point blowup towers from a common smooth surface contract
-the same prime divisors, their bases are uniquely isomorphic compatibly with the projections. -/
+/-- If two closed point blowup towers contract the same prime divisors under an
+isomorphism of their top surfaces, their bases are uniquely isomorphic compatibly
+with the projections. -/
 theorem existsUnique_iso_of_eq_exceptional_divisors
-    (hT : IsClosedPointTower X T) (hU : IsClosedPointTower Y U)
+    (hT : IsClosedPointTower X T) (hU : IsClosedPointTower Y U) (e : V ≅ W)
     (f : X ⟶ base) (g : Y ⟶ base)
     [SmoothOfRelativeDimension 2 f] [SmoothOfRelativeDimension 2 g]
     [QuasiCompact f] [QuasiCompact g]
-    (hE : {z : V | T.toBase z ∈ T.toBase.centre ∧ coheight z = 1} =
-      {z : V | U.toBase z ∈ U.toBase.centre ∧ coheight z = 1}) :
-    ∃! e : X ≅ Y, T.toBase ≫ e.hom = U.toBase := by
+    (hE : ∀ x : V, coheight x = 1 →
+      (T.toBase x ∈ T.toBase.centre ↔ U.toBase (e.hom x) ∈ U.toBase.centre)) :
+    ∃! a : X ≅ Y, T.toBase ≫ a.hom = e.hom ≫ U.toBase := by
   have : Smooth f := SmoothOfRelativeDimension.smooth 2 f
   have : Smooth g := SmoothOfRelativeDimension.smooth 2 g
   have : IsNoetherian X := isNoetherian_of_finiteType f
@@ -125,32 +128,47 @@ theorem existsUnique_iso_of_eq_exceptional_divisors
   have hY := topologicalKrullDim_eq_of_smoothOfRelativeDimension g (n := 2)
   have : IsModification T.toBase := hT.isModification_of_smoothOfRelativeDimension_two f
   have : IsModification U.toBase := hU.isModification_of_smoothOfRelativeDimension_two g
+  have : IsIntegral V := hT.isIntegral f
+  have : IsIntegral W := hU.isIntegral g
+  have hcentreT : (e.inv ≫ T.toBase).centre = T.toBase.centre := by
+    rw [Scheme.Hom.centre_comp, e.inv.centre_eq_empty_iff.mpr inferInstance, Set.image_empty,
+      Set.union_empty]
+  have hcentreU : (e.hom ≫ U.toBase).centre = U.toBase.centre := by
+    rw [Scheme.Hom.centre_comp, e.hom.centre_eq_empty_iff.mpr inferInstance, Set.image_empty,
+      Set.union_empty]
   obtain ⟨a, ha, huniq⟩ :=
-    hT.existsUnique_comp_eq_toBase_of_exceptional_divisors_subset f U.toBase hY.le hE.le
+    hT.existsUnique_comp_eq_toBase_of_exceptional_divisors_subset f (e.hom ≫ U.toBase) hY.le
+      (fun x hx ↦ ⟨hcentreU ▸ (hE x hx.2).mp hx.1, hx.2⟩)
   obtain ⟨b, hb, _⟩ :=
-    hU.existsUnique_comp_eq_toBase_of_exceptional_divisors_subset g T.toBase hX.le hE.ge
+    hU.existsUnique_comp_eq_toBase_of_exceptional_divisors_subset g (e.inv ≫ T.toBase) hX.le
+      (fun y hy ↦ by
+        have htop := e.inv.isoLocus_eq_top_iff.mpr inferInstance
+        have hy' := (e.inv.coheight_eq_of_apply_mem_isoLocus (x := y)
+          (by simp [htop])).trans hy.2
+        refine ⟨hcentreT ▸ (hE (e.inv y) hy').mpr ?_, hy.2⟩
+        simpa only [← Scheme.Hom.comp_apply, Iso.inv_hom_id, Category.id_comp] using hy.1)
   have := hT.epi_toBase f
   have := hU.epi_toBase g
-  refine ⟨⟨a, b, ?_, ?_⟩, ha, fun e he ↦ Iso.ext (huniq e.hom he)⟩
+  refine ⟨⟨a, b, ?_, ?_⟩, ha, fun a' ha' ↦ Iso.ext (huniq a'.hom ha')⟩
   · apply (cancel_epi T.toBase).mp
-    rw [← Category.assoc, ha, hb, Category.comp_id]
+    rw [← Category.assoc, ha, Category.assoc, hb, Iso.hom_inv_id_assoc, Category.comp_id]
   · apply (cancel_epi U.toBase).mp
-    rw [← Category.assoc, hb, ha, Category.comp_id]
+    rw [← Category.assoc, hb, Category.assoc, ha, Iso.inv_hom_id_assoc, Category.comp_id]
 
-/-- If the projections to the two bases commute with the maps to the coefficient field,
-the canonical isomorphism between those bases does as well. -/
+/-- If the projections from isomorphic top surfaces commute over the coefficient field,
+the canonical isomorphism between their bases does as well. -/
 theorem existsUnique_iso_over_of_eq_exceptional_divisors
-    (hT : IsClosedPointTower X T) (hU : IsClosedPointTower Y U)
+    (hT : IsClosedPointTower X T) (hU : IsClosedPointTower Y U) (e : V ≅ W)
     (f : X ⟶ base) (g : Y ⟶ base)
     [SmoothOfRelativeDimension 2 f] [SmoothOfRelativeDimension 2 g]
     [QuasiCompact f] [QuasiCompact g]
-    (hE : {z : V | T.toBase z ∈ T.toBase.centre ∧ coheight z = 1} =
-      {z : V | U.toBase z ∈ U.toBase.centre ∧ coheight z = 1})
-    (hcomp : T.toBase ≫ f = U.toBase ≫ g) :
-    ∃! e : X ≅ Y, T.toBase ≫ e.hom = U.toBase ∧ e.hom ≫ g = f := by
-  obtain ⟨e, he, huniq⟩ := hT.existsUnique_iso_of_eq_exceptional_divisors hU f g hE
+    (hE : ∀ x : V, coheight x = 1 →
+      (T.toBase x ∈ T.toBase.centre ↔ U.toBase (e.hom x) ∈ U.toBase.centre))
+    (hcomp : T.toBase ≫ f = e.hom ≫ U.toBase ≫ g) :
+    ∃! a : X ≅ Y, T.toBase ≫ a.hom = e.hom ≫ U.toBase ∧ a.hom ≫ g = f := by
+  obtain ⟨a, ha, huniq⟩ := hT.existsUnique_iso_of_eq_exceptional_divisors hU e f g hE
   have := hT.epi_toBase f
-  refine ⟨e, ⟨he, (cancel_epi T.toBase).mp ?_⟩, fun a ha ↦ huniq a ha.1⟩
-  rw [← Category.assoc, he, hcomp]
+  refine ⟨a, ⟨ha, (cancel_epi T.toBase).mp ?_⟩, fun b hb ↦ huniq b hb.1⟩
+  rw [← Category.assoc, ha, Category.assoc, hcomp]
 
 end QPainleve.BlowupTower.IsClosedPointTower

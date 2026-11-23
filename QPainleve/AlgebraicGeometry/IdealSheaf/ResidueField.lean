@@ -7,6 +7,10 @@ module
 
 public import Mathlib.AlgebraicGeometry.IdealSheaf.Functorial
 public import Mathlib.AlgebraicGeometry.ResidueField
+public import TauCeti.AlgebraicGeometry.Morphisms.IsoLocus
+
+import QPainleve.AlgebraicGeometry.Morphisms.IsoLocus
+import TauCeti.AlgebraicGeometry.IdealSheaf.BaseChange
 import TauCeti.AlgebraicGeometry.IdealSheaf.VanishingIdeal
 import TauCeti.AlgebraicGeometry.ResidueField
 
@@ -63,6 +67,31 @@ theorem Hom.ker_eq_ker_fromSpecResidueField {k : Type*} [Field k]
   rw [s.support_ker, hrange]
   rfl
 
+/-- Reduced point ideals distinguish points of a scheme. -/
+@[simp]
+theorem ker_fromSpecResidueField_inj {X : Scheme} {p q : X} :
+    (X.fromSpecResidueField p).ker = (X.fromSpecResidueField q).ker ↔ p = q := by
+  refine ⟨fun h ↦ ?_, fun h ↦ h ▸ rfl⟩
+  have hs := congrArg (fun I : X.IdealSheafData ↦ (I.support : Set X)) h
+  simp only [ker_fromSpecResidueField_eq_vanishingIdeal, IdealSheafData.coe_support_vanishingIdeal,
+    Closeds.coe_mk] at hs
+  exact ((specializes_iff_closure_subset.mpr hs.ge).antisymm
+    (specializes_iff_closure_subset.mpr hs.le)).eq
+
+/-- A closed immersion maps a reduced point ideal to the reduced ideal of its image point. -/
+@[simp]
+theorem Hom.map_ker_fromSpecResidueField {X Y : Scheme} (i : X ⟶ Y) [IsClosedImmersion i]
+    (p : X) : (X.fromSpecResidueField p).ker.map i = (Y.fromSpecResidueField (i p)).ker := by
+  rw [IdealSheafData.map_ker, ← i.SpecMap_residueFieldMap_fromSpecResidueField p,
+    Hom.ker_comp_of_isIso]
+
+/-- Pulling back a reduced point ideal along the closed immersion containing the point
+recovers the reduced point ideal on the closed subscheme. -/
+@[simp]
+theorem Hom.comap_ker_fromSpecResidueField_apply {X Y : Scheme} (i : X ⟶ Y) [IsClosedImmersion i]
+    (p : X) : (Y.fromSpecResidueField (i p)).ker.comap i = (X.fromSpecResidueField p).ker := by
+  rw [← i.map_ker_fromSpecResidueField, IdealSheafData.comap_map_of_isClosedImmersion]
+
 /-- Over an open on which a morphism is an isomorphism, the inverse image of a reduced
 closed point is a reduced closed point, with its residue-field ideal. -/
 theorem Hom.exists_comap_ker_fromSpecResidueField_of_isIso_morphismRestrict
@@ -99,5 +128,27 @@ theorem Hom.exists_comap_ker_fromSpecResidueField_of_isIso_morphismRestrict
         (Hom.ker_comp_of_isIso _ _).symm
       _ = a.ker := congrArg Hom.ker hpb.isoPullback_hom_fst
       _ = _ := a.ker_eq_ker_fromSpecResidueField
+
+/-- If a point lies over a closed point in the isomorphism locus, its residue-field
+ideal is the inverse image of the ideal of that closed point. -/
+theorem Hom.comap_ker_fromSpecResidueField_of_mem_isoLocus {X Y : Scheme}
+    (f : Y ⟶ X) {q : Y} (hq : IsClosed ({f q} : Set X)) (hqU : f q ∈ f.isoLocus) :
+    (X.fromSpecResidueField (f q)).ker.comap f = (Y.fromSpecResidueField q).ker := by
+  have : IsIso (f ∣_ f.isoLocus) := f.le_isoLocus_iff.mp le_rfl
+  obtain ⟨q', -, hq', hker⟩ := f.exists_comap_ker_fromSpecResidueField_of_isIso_morphismRestrict
+    (f q) hq _ hqU
+  have hx' : f q' ∈ f.isoLocus := hq'.symm ▸ hqU
+  have heq : q' = q := f.injOn_preimage_isoLocus hx' hqU hq'
+  subst q'
+  exact hker
+
+/-- An ideal vanishes on a closed point exactly when its support contains that point. -/
+theorem IdealSheafData.le_ker_fromSpecResidueField_iff_mem_support {X : Scheme}
+    (D : X.IdealSheafData) {p : X}
+    (hp : IsClosed ({p} : Set X)) :
+    D ≤ (X.fromSpecResidueField p).ker ↔ p ∈ D.support := by
+  rw [ker_fromSpecResidueField_eq_vanishingIdeal, ← IdealSheafData.le_support_iff_le_vanishingIdeal]
+  rw [← SetLike.coe_subset_coe, Closeds.coe_mk, hp.closure_eq, Set.singleton_subset_iff]
+  rfl
 
 end AlgebraicGeometry.Scheme

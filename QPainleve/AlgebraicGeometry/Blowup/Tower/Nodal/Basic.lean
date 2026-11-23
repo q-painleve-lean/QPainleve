@@ -10,6 +10,7 @@ public import QPainleve.AlgebraicGeometry.Curves.Node.Locus
 
 import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
 import TauCeti.AlgebraicGeometry.Blowup.Restriction
+import QPainleve.AlgebraicGeometry.IdealSheaf.Restriction
 
 /-!
 # Common refinements of nodal boundary blowups
@@ -23,6 +24,7 @@ respect the morphisms to the base scheme and identify the reduced boundaries.
 public section
 
 open AlgebraicGeometry CategoryTheory TopologicalSpace
+open Scheme.IdealSheafData
 
 universe u
 
@@ -79,6 +81,61 @@ theorem IsNodalBoundaryTower.centre_subset_nodes {D : X.IdealSheafData} {s : X �
     rw [toBase_snoc]
     exact (J.blowupToBase ≫ T.toBase).mem_isoLocus_iff.mpr ⟨V, hV,
       (morphismRestrict_comp J.blowupToBase T.toBase V).symm ▸ IsIso.comp_isIso' hJiso hTiso⟩
+
+/-- The nodal condition on a tower depends on the reduced boundary pulled back
+to its base and on the induced structure morphism. -/
+theorem IsNodalBoundaryTower.congr
+    {D : S.IdealSheafData} {E : Z.IdealSheafData} {s : S ⟶ K} {t : Z ⟶ K}
+    {π : X ⟶ S} {ρ : X ⟶ Z} {T : BlowupTower X n Y}
+    (hT : IsNodalBoundaryTower D s π T)
+    (hs : π ≫ s = ρ ≫ t) (hD : (D.comap π).support = (E.comap ρ).support) :
+    IsNodalBoundaryTower E t ρ T := by
+  induction hT with
+  | nil => exact .nil
+  | @snoc n Y T I hT p hp hI hnode ih =>
+    have hsupport : (D.comap (T.toBase ≫ π)).support = (E.comap (T.toBase ≫ ρ)).support := by
+      rw [comap_comp, comap_comp, support_comap (D.comap π), support_comap (E.comap ρ), hD]
+    have hrad := congrArg (vanishingIdeal (X := Y)) hsupport
+    rw [vanishingIdeal_support, vanishingIdeal_support] at hrad
+    have hnode' := (isNodeOfReducedBoundary_radical _ _ _).mpr hnode
+    rw [hrad] at hnode'
+    exact ih.snoc p hp hI (by simpa only [isNodeOfReducedBoundary_radical, Category.assoc, hs]
+      using hnode')
+
+/-- Append a nodal boundary tower along an isomorphism to the top of the preceding
+tower. The boundary of the second base agrees with the reduced total boundary of
+the first tower, and the final comparison preserves the projections. -/
+theorem IsNodalBoundaryTower.exists_append_of_iso
+    {D : X.IdealSheafData} {E : Z.IdealSheafData} {s : X ⟶ K} {t : Z ⟶ K}
+    {T : BlowupTower X m Y} {U : BlowupTower Z n S}
+    (hT : IsNodalBoundaryTower D s (𝟙 X) T) (hU : IsNodalBoundaryTower E t (𝟙 Z) U)
+    (e : Y ≅ Z) (hs : e.hom ≫ t = T.toBase ≫ s)
+    (hD : (E.comap e.hom).support = (D.comap T.toBase).support) :
+    ∃ (W : Scheme.{u}) (V : BlowupTower X (m + n) W) (f : W ≅ S),
+      IsNodalBoundaryTower D s (𝟙 X) V ∧
+      V.toBase = f.hom ≫ U.toBase ≫ e.inv ≫ T.toBase ∧
+      (D.comap V.toBase).radical = ((E.comap U.toBase).radical).comap f.hom := by
+  let P := U.transport e.symm
+  have hP : IsNodalBoundaryTower E t e.hom P.tower :=
+    P.isLift.isPointTowerWith (isLocal_node E t) (by simp) hU
+  have hP' : IsNodalBoundaryTower D s (T.toBase ≫ 𝟙 X) P.tower :=
+    hP.congr (by simpa using hs) (by simpa using hD)
+  have hbase : P.tower.toBase = P.iso.inv ≫ U.toBase ≫ e.inv := by
+    have hcomm := P.isLift.hom_toBase
+    rw [Iso.symm_hom] at hcomm
+    rw [← hcomm, Iso.inv_hom_id_assoc]
+  refine ⟨P.top, T.append P.tower, P.iso.symm, hT.append hP', ?_, ?_⟩
+  · rw [toBase_append, hbase]
+    simp only [Iso.symm_hom, Category.assoc]
+  · have hD' : ((D.comap T.toBase).comap e.inv).support = E.support := by
+      rw [support_comap, ← hD, ← support_comap, ← comap_comp, Iso.inv_hom_id, comap_id]
+    rw [← radical_comap_of_isOpenImmersion, ← vanishingIdeal_support, toBase_append,
+      comap_comp, hbase, Iso.symm_hom, comap_comp, comap_comp,
+      ← vanishingIdeal_support (I := (E.comap U.toBase).comap P.iso.inv)]
+    congr 1
+    rw [support_comap (((D.comap T.toBase).comap e.inv).comap U.toBase),
+      support_comap ((D.comap T.toBase).comap e.inv), hD',
+      support_comap (E.comap U.toBase), support_comap E]
 
 /-- Two nodal boundary towers admit a common refinement through nodal centers.
 Each extension has length at most that of the opposite tower. The final isomorphism

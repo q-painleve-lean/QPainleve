@@ -86,29 +86,13 @@ theorem picardClass_eq_iff_gluingUnit_quotient_eq (hi : i.ker = f.conductor)
   rw [eq_comm, QuotientGroup.eq_iff_div_mem, MonoidHom.mem_range, Prod.exists]
   simp only [Scheme.Hom.lineGluingCoboundary_apply, div_eq_div_iff_mul_eq_mul]
 
-omit [IsFinite f] [IsSchemeTheoreticallyDominant f] [IsClosedImmersion i] in
-private theorem exists_trivialized_representative
-    (a : ((LineBundleClass.pullbackHom f).ker ⊓ (LineBundleClass.pullbackHom i).ker :
-      Subgroup (LineBundleClass X))) :
-    ∃ L : InvertibleSheaf X, Nonempty ((pullback f).obj L.obj ≅ 𝟙_ Y.Modules) ∧
-      Nonempty ((pullback i).obj L.obj ≅ 𝟙_ Z.Modules) ∧ LineBundleClass.mk L = a.val := by
-  obtain ⟨L, hL⟩ := LineBundleClass.mk_surjective a.val
-  have hf : LineBundleClass.pullback f a.val = 1 := by
-    simpa only [LineBundleClass.pullbackHom_apply] using
-      MonoidHom.mem_ker.mp (a.property.1 : a.val ∈ (LineBundleClass.pullbackHom f).ker)
-  have hi : LineBundleClass.pullback i a.val = 1 := by
-    simpa only [LineBundleClass.pullbackHom_apply] using
-      MonoidHom.mem_ker.mp (a.property.2 : a.val ∈ (LineBundleClass.pullbackHom i).ker)
-  rw [← hL, LineBundleClass.pullback_mk, LineBundleClass.mk_eq_one_iff] at hf hi
-  exact ⟨L, hf, hi, hL⟩
-
 private theorem exists_gluingUnitClass (hi : i.ker = f.conductor)
     (a : ((LineBundleClass.pullbackHom f).ker ⊓ (LineBundleClass.pullbackHom i).ker :
       Subgroup (LineBundleClass X))) :
     ∃ t : (Γ(P, ⊤)ˣ ⧸ (j.lineGluingCoboundary g).range), ∀ (L : InvertibleSheaf X)
       (e : (pullback f).obj L.obj ≅ 𝟙_ Y.Modules) (d : (pullback i).obj L.obj ≅ 𝟙_ Z.Modules),
       LineBundleClass.mk L = a.val → t = QuotientGroup.mk (h.toCommSq.lineGluingUnit e d) := by
-  obtain ⟨L, ⟨e⟩, ⟨d⟩, hL⟩ := exists_trivialized_representative a
+  obtain ⟨L, ⟨e⟩, ⟨d⟩, hL⟩ := LineBundleClass.exists_trivialized_representative a
   refine ⟨QuotientGroup.mk (h.toCommSq.lineGluingUnit e d), fun K e' d' hK ↦ ?_⟩
   exact (h.picardClass_eq_iff_gluingUnit_quotient_eq hi e d e' d').mp (hL.trans hK.symm)
 
@@ -117,8 +101,8 @@ private theorem gluingUnitClass_mul (hi : i.ker = f.conductor)
       Subgroup (LineBundleClass X))) :
     (h.exists_gluingUnitClass hi (a * b)).choose =
       (h.exists_gluingUnitClass hi a).choose * (h.exists_gluingUnitClass hi b).choose := by
-  obtain ⟨L, ⟨e⟩, ⟨d⟩, hL⟩ := exists_trivialized_representative a
-  obtain ⟨K, ⟨e'⟩, ⟨d'⟩, hK⟩ := exists_trivialized_representative b
+  obtain ⟨L, ⟨e⟩, ⟨d⟩, hL⟩ := LineBundleClass.exists_trivialized_representative a
+  obtain ⟨K, ⟨e'⟩, ⟨d'⟩, hK⟩ := LineBundleClass.exists_trivialized_representative b
   have hLK : LineBundleClass.mk (L ⊗ K) = (a * b).val := by
     rw [Subgroup.coe_mul, ← hL, ← hK, ← LineBundleClass.mk_tensorProduct]
     exact LineBundleClass.mk_eq_mk_iff.mpr ⟨(InvertibleSheaf.tensorProductObjIso L K).symm⟩
@@ -153,8 +137,8 @@ def lineGluingClassMulEquiv (hi : i.ker = f.conductor) :
     (⟨fun a ↦ (h.exists_gluingUnitClass hi a).choose, h.gluingUnitClass_mul hi⟩ : _ →ₙ* _)
     ⟨by
       intro a b hab
-      obtain ⟨L, ⟨e⟩, ⟨d⟩, hL⟩ := exists_trivialized_representative a
-      obtain ⟨K, ⟨e'⟩, ⟨d'⟩, hK⟩ := exists_trivialized_representative b
+      obtain ⟨L, ⟨e⟩, ⟨d⟩, hL⟩ := LineBundleClass.exists_trivialized_representative a
+      obtain ⟨K, ⟨e'⟩, ⟨d'⟩, hK⟩ := LineBundleClass.exists_trivialized_representative b
       have ha := (h.exists_gluingUnitClass hi a).choose_spec L e d hL
       have hb := (h.exists_gluingUnitClass hi b).choose_spec K e' d' hK
       have hLK := (h.picardClass_eq_iff_gluingUnit_quotient_eq hi e d e' d').mpr

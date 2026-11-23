@@ -8,6 +8,7 @@ module
 public import QPainleve.AlgebraicGeometry.Blowup.Disjoint
 public import QPainleve.AlgebraicGeometry.Blowup.StrictTransform.Composition
 
+import QPainleve.AlgebraicGeometry.Blowup.StrictTransform.Reduced
 import QPainleve.AlgebraicGeometry.IdealSheaf.Restriction
 import TauCeti.AlgebraicGeometry.IdealSheaf.Locality
 
@@ -108,6 +109,44 @@ theorem ker_blowupMap_mul_of_disjoint (I D E : X.IdealSheafData)
 
 local notation "S[" I "," D "]" =>
   Scheme.Hom.ker (IdealSheafData.blowupMap I (IdealSheafData.subschemeι D))
+
+/-- Under the interchange of disjoint centers, adjoining the exceptional divisor of
+the second center commutes with taking the strict transform at the first center. -/
+theorem comap_ker_blowupMap_adjoin_exceptional_blowupCommOfDisjoint
+    (I J D : X.IdealSheafData) (h : Disjoint (I.support : Set X) (J.support : Set X)) :
+    let I' := I.comap J.blowupToBase
+    let J' := J.comap I.blowupToBase
+    let D₂ := S[J,D] * J.comap J.blowupToBase
+    (S[I',D₂]).comap (I.blowupCommOfDisjoint J h).hom =
+      S[J',S[I,D]] * J'.comap J'.blowupToBase := by
+  dsimp only
+  have : IsLocallyNoetherian J.blowup := LocallyOfFiniteType.isLocallyNoetherian J.blowupToBase
+  have hI : Disjoint (((I.comap J.blowupToBase).support) : Set J.blowup)
+      ((J.comap J.blowupToBase).support : Set J.blowup) := by
+    simpa only [support_comap, TopologicalSpace.Closeds.coe_preimage] using
+      h.preimage J.blowupToBase
+  rw [ker_blowupMap_mul_of_disjoint _ _ _ hI, comap_mul,
+    comap_ker_blowupMap_blowupCommOfDisjoint I J D h]
+  congr 1
+  rw [← comap_comp, blowupCommOfDisjoint_hom_blowupToBase, comap_comap_blowupMap]
+
+/-- The comparison of disjoint blowups identifies the strict transform after a reduced
+total transform with the reduced total transform after a strict transform. -/
+theorem comap_ker_blowupMap_reduced_total_blowupCommOfDisjoint
+    (I J D : X.IdealSheafData) [IsReduced D.subscheme]
+    (h : Disjoint (I.support : Set X) (J.support : Set X))
+    (hJ : D ≤ J) (hJ' : S[I,D] ≤ J.comap I.blowupToBase)
+    [IsReduced (J.comap J.blowupToBase).subscheme]
+    [IsReduced ((J.comap I.blowupToBase).comap (J.comap I.blowupToBase).blowupToBase).subscheme] :
+    let I' := I.comap J.blowupToBase
+    let J' := J.comap I.blowupToBase
+    (S[I',(D.comap J.blowupToBase).radical]).comap (I.blowupCommOfDisjoint J h).hom =
+      ((S[I,D]).comap J'.blowupToBase).radical := by
+  dsimp only
+  have := I.isReduced_subscheme_ker_blowupMap D
+  rw [J.radical_comap_blowupToBase_eq_ker_blowupMap_subschemeι_mul D hJ,
+    (J.comap I.blowupToBase).radical_comap_blowupToBase_eq_ker_blowupMap_subschemeι_mul _ hJ']
+  exact comap_ker_blowupMap_adjoin_exceptional_blowupCommOfDisjoint I J D h
 
 /-- Interchanging blowups at disjoint centers identifies the boundaries obtained
 by adjoining one copy of the exceptional divisor to the strict transform at
