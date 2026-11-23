@@ -33,31 +33,6 @@ variable {N N' V V' : Type} [AddCommGroup N] [AddCommGroup N']
   {i : N →+ V} {i' : N' →+ V'} {Φ : Fan i} {Ψ : Fan i'}
   [hΦ₀ : Nonempty Φ.cones] [hΨ₀ : Nonempty Ψ.cones] {n : ℕ}
 
-private theorem exists_iso_reindex_transport_internalBlowupTower
-    (b : Module.Basis (Fin 2) ℤ N) (b' : Module.Basis (Fin 2) ℤ N')
-    {Ω : Fan i} (g : FanEquiv Ψ Ω) [hΩ₀ : Nonempty Ω.cones]
-    (hdet : ∀ x y, b.detDualEquiv (g.latticeEquiv x) (g.latticeEquiv y) = b'.detDualEquiv x y)
-    (hΨ : Ψ.IsRegular)
-    (τ : Fin n → Ψ.Ray) (c : Fin n → ℂˣ) (σ : Equiv.Perm (Fin n)) :
-    let A := internalBlowupTower b' τ c
-    let B := internalBlowupTower (h₀ := hΩ₀) b (g.rayEquiv ∘ τ ∘ σ) (c ∘ σ)
-    ∃ f : A.1 ≅ B.1,
-      f.hom ≫ B.2.toTower.toBase ≫ Ω.algebraicRealizationStructureMap =
-        A.2.toTower.toBase ≫ Ψ.algebraicRealizationStructureMap ∧
-      B.2.boundaryι.ker.comap f.hom = A.2.boundaryι.ker := by
-  dsimp only
-  let A := internalBlowupTower b' τ c
-  let B := internalBlowupTower (h₀ := hΩ₀) b (g.rayEquiv ∘ τ ∘ σ) (c ∘ σ)
-  obtain ⟨f, hf, hfB⟩ := exists_iso_internalBlowupTower_reindex b' τ c σ
-  obtain ⟨f', ⟨hf', hf'B⟩, -⟩ :=
-    g.existsUnique_isLift_internalBlowupTower b' b hdet (τ ∘ σ) (c ∘ σ) hΨ
-  refine ⟨f ≪≫ f', ?_, ?_⟩
-  · simp only [Iso.trans_hom, Category.assoc, reassoc_of% hf'.hom_toBase, asIso_hom,
-      FanHom.algebraicMap_comp_algebraicRealizationStructureMap, reassoc_of% hf]
-  · have hk : (A.2.boundaryι ≫ (f ≪≫ f').hom).ker = B.2.boundaryι.ker := by
-      rw [Iso.trans_hom, ← Category.assoc, hfB, hf'B, Scheme.Hom.ker_comp_of_isIso]
-    rw [← hk, Scheme.Hom.comap_ker_comp_of_isClosedImmersion]
-
 section SquareZero
 
 variable {X X' Y Y' : Scheme} [IsIntegral X] [IsIntegral X']
@@ -117,7 +92,7 @@ theorem exists_iso_of_matching_toric_models_of_latticeEquiv
       b'.detDualEquiv x y := by
     simpa only [g, mapEquivIso_latticeEquiv, LinearEquiv.coe_addEquiv_apply,
       LinearEquiv.apply_symm_apply] using (hdet (e.symm x) (e.symm y)).symm
-  have h := exists_iso_reindex_transport_internalBlowupTower b b' g hdet' hΨ τ d σ
+  have h := g.exists_iso_reindex_transport_internalBlowupTower b' b hdet' τ d hΨ σ
   dsimp only at h
   rw [hc] at h
   obtain ⟨f, hf, hfB⟩ := h
