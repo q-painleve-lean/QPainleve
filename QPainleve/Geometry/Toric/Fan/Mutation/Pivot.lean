@@ -9,9 +9,12 @@ public import QPainleve.Geometry.Toric.Fan.Mutation.Complement
 public import QPainleve.Geometry.Toric.Fan.Ruling.Centers
 public import QPainleve.Geometry.Toric.Fan.Boundary.InternalCenter
 
+import QPainleve.Algebra.Polynomial.Laurent
+import QPainleve.AlgebraicGeometry.Blowup.Projective.Divisors
 import QPainleve.Geometry.Toric.Fan.Separated
 import QPainleve.LinearAlgebra.Dual.Basis
 import TauCeti.AlgebraicGeometry.Blowup.Pullback
+import TauCeti.AlgebraicGeometry.IdealSheaf.BaseChange
 import TauCeti.AlgebraicGeometry.IdealSheaf.Comap
 
 /-!
@@ -238,6 +241,77 @@ the same ruling binomial, with the target center on the opposite section. -/
 def Ray.mutationPivotIso : (I₀).blowup ≅ (I₁).blowup :=
   (e₀) ≪≫ projectiveLine.elementaryTransform f 0
     (pivotBinomial_ne_zero c) ≪≫ (e₁).symm
+
+section Divisors
+
+open Scheme Scheme.IdealSheafData
+
+local notation "a₀" => (-1 : ℂˣ) * c⁻¹
+local notation "q" => projectiveLine.polynomialPoint ℂ (RingHom.id ℂ) 0 (Units.val a₀)
+local notation "g" =>
+  Spec.map (CommRingCat.ofHom (Ideal.Quotient.mk (Ideal.span ({f} : Set L))))
+local notation "r" => (projectiveLine L ↘ Spec (CommRingCat.of L))
+
+private theorem comap_pivotFiber_projectiveLineTorusIsoSpecLaurent :
+    (g).ker.comap projectiveLineTorusIsoSpecLaurent.hom =
+      (q).ker.comap projectiveLineTorusι := by
+  let j := projectiveLineTorusPoint (a₀)
+  have hj : j ≫ projectiveLineTorusι = q :=
+    projectiveLineTorusPoint_comp_projectiveLineTorusι _
+  have hclosed : IsClosedImmersion (q) :=
+    isClosedImmersion_of_comp_eq_id (projectiveLine ℂ ↘ Spec (.of ℂ)) _
+      (by simp [projectiveLine.polynomialPoint_over])
+  have hq : j.ker = (q).ker.comap projectiveLineTorusι :=
+    ker_eq_comap_of_isPullback (q)
+      (IsPullback.of_vert_isIso_mono (snd := 𝟙 _) ⟨by rw [hj, Category.id_comp]⟩)
+  have hg : (g).ker = (j ≫ projectiveLineTorusIsoSpecLaurent.hom).ker := by
+    rw [projectiveLineTorusPoint_comp_projectiveLineTorusIsoSpecLaurent, Hom.ker_Spec_map,
+      Hom.ker_Spec_map, CommRingCat.hom_ofHom, CommRingCat.hom_ofHom, Ideal.mk_ker]
+    exact congrArg (fun K : Ideal L ↦ ofIdealTop
+      (K.map (Scheme.ΓSpecIso (CommRingCat.of L)).inv.hom)) (ker_laurentEval_neg_inv c).symm
+  rw [hg, Hom.comap_ker_comp_of_isClosedImmersion, hq]
+
+private theorem comap_pivotFiber_sourceLaurentBlowupIso :
+    (g).ker.comap ((e₀).hom ≫ (J(0)).blowupToBase ≫ r) =
+      (q).ker.comap ((I₀).blowupToBase ≫ π₀ ≫ Φ.characterRuling m h₀) := by
+  rw [sourceLaurentBlowupIso_hom_blowupToBase_assoc,
+    characterRulingLaurentIso_hom_comp_toBase, ← Category.assoc (I₀).blowupToBase,
+    comap_comp, comap_pivotFiber_projectiveLineTorusIsoSpecLaurent, ← comap_comp,
+    Category.assoc, ← pullback.condition]
+
+local notation "E(" I ")" => IdealSheafData.comap I (IdealSheafData.blowupToBase I)
+
+private theorem comap_exceptional_sourceLaurentBlowupIso :
+    E(J(0)).comap (e₀).hom = E(I₀) :=
+  ρ.comap_exceptionalIdeal_characterRulingLaurentBlowupIso h₀ d
+    (pivotBasis_coord_one b ρ) ep₀ en₀ 0 (by simp [pivotBasis_zero])
+    hdim (b.detDualEquiv_self v) (ρ.surjective_detCharacter b) c
+
+private theorem comap_exceptional_targetLaurentBlowupIso :
+    E(J(1)).comap (e₁).hom = E(I₁) :=
+  (ρ').comap_exceptionalIdeal_characterRulingLaurentBlowupIso h₁ d
+    (pivotBasis_coord_one b ρ) ep₁ en₁ 1 (by simp [pivotBasis_zero]) hdim
+    (pivotCharacter_apply_opposite b ρ hOpp) (ρ.surjective_detCharacter b) c
+
+/-- On the pivot blowup over the ruling torus, the total transform of the pivot fiber
+is the sum of the source exceptional divisor and the pullback of the target exceptional
+divisor. This is an identity of their ideal sheaves. -/
+theorem Ray.comap_pivotFiber_mutationPivotIso :
+    (q).ker.comap ((I₀).blowupToBase ≫ π₀ ≫ Φ.characterRuling m h₀) =
+      E(I₀) * E(I₁).comap (ρ.mutationPivotIso b hOpp c).hom := by
+  have he : (g).ker.comap ((J(0)).blowupToBase ≫ r) =
+      E(J(0)) * E(J(1)).comap
+        (projectiveLine.elementaryTransform f 0 (pivotBinomial_ne_zero c)).hom :=
+    projectiveLine.comap_baseDivisor_elementaryTransform f 0 (pivotBinomial_ne_zero c)
+  have he' := congrArg (fun J : (J(0)).blowup.IdealSheafData ↦ J.comap (e₀).hom) he
+  have hinv : E(I₁).comap (e₁).inv = E(J(1)) := by
+    rw [← comap_exceptional_targetLaurentBlowupIso b ρ hOpp c, ← comap_comp,
+      Iso.inv_hom_id, comap_id]
+  rw [← comap_comp, comap_pivotFiber_sourceLaurentBlowupIso,
+    comap_mul, comap_exceptional_sourceLaurentBlowupIso, ← comap_comp] at he'
+  simpa only [mutationPivotIso, Iso.trans_hom, Iso.symm_hom, comap_comp, hinv] using he'
+
+end Divisors
 
 section Torus
 
