@@ -12,7 +12,6 @@ public import TauCeti.AlgebraicGeometry.Morphisms.Modification.Basic
 import QPainleve.AlgebraicGeometry.Blowup.Modification
 import QPainleve.AlgebraicGeometry.Blowup.Point.Contraction
 import QPainleve.AlgebraicGeometry.Blowup.Point.Factorization
-import QPainleve.AlgebraicGeometry.Blowup.Projective.Global
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Lift
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Modification
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Projective
@@ -25,9 +24,10 @@ import TauCeti.AlgebraicGeometry.Noetherian
 /-!
 # Factorization and common resolutions of projective surfaces
 
-A proper birational morphism of smooth integral projective surfaces factors into
-closed point blowups. Resolving a prescribed birational map and factoring the resulting
-morphism then gives a common resolution by point blowups on both sides.
+A birational morphism from a smooth integral projective surface to a smooth integral
+separated surface of finite type factors into closed point blowups. Resolving a prescribed
+birational map and factoring the resulting morphism then gives a common resolution by
+point blowups on both sides.
 
 The argument follows the Stacks Project, [Lemma 54.17.1](https://stacks.math.columbia.edu/tag/0C5R)
 and [Lemma 54.17.2](https://stacks.math.columbia.edu/tag/0C5S).
@@ -52,20 +52,23 @@ attribute [local instance] specializationOrder
 
 variable {k : Type u} [Field k] [IsAlgClosed k] {X Y : Scheme.{u}}
 variable [X.Over (Spec (.of k))] [Y.Over (Spec (.of k))]
-variable [X.IsProjectiveOver k] [Y.IsProjectiveOver k] [IsIntegral X] [IsIntegral Y]
+variable [X.IsProjectiveOver k] [IsIntegral X] [IsIntegral Y]
 variable [SmoothOfRelativeDimension 2 (X ↘ Spec (.of k))]
 variable [SmoothOfRelativeDimension 2 (Y ↘ Spec (.of k))]
 
-/-- A modification of smooth integral projective surfaces factors through the blowup of
-any closed point of its centre. The lift composes with the blowup projection to the
-specified modification and is itself a modification. -/
+include k in
+/-- A modification from a smooth integral projective surface to a smooth integral surface
+factors through the blowup of any closed point of its centre. The lift composes with the
+blowup projection to the specified modification and is itself a modification. -/
 theorem exists_comp_pointBlowup_eq_of_mem_centre (f : X ⟶ Y) [IsModification f]
-    [f.IsOver (Spec (.of k))] {q : Y} (hq : IsClosed ({q} : Set Y)) (hqf : q ∈ f.centre) :
+    {q : Y} (hq : IsClosed ({q} : Set Y)) (hqf : q ∈ f.centre) :
     ∃ g : X ⟶ (I[Y, q]).blowup, IsModification g ∧ g ≫ (I[Y, q]).blowupToBase = f := by
   let sX := X ↘ Spec (.of k)
   let sY := Y ↘ Spec (.of k)
   let J := I[Y, q]
   let b := J.blowupToBase
+  have : Smooth sY := SmoothOfRelativeDimension.smooth 2 sY
+  have : IsLocallyNoetherian Y := LocallyOfFiniteType.isLocallyNoetherian sY
   rcases f.exists_lift_pointBlowup_or_nonconstant_exceptional (k := k) hq with
     ⟨g, hg⟩ | ⟨n, W, T, p, g, hp, hT, _, hg, hpq, hnc⟩
   · have hs : (J.support : Set Y) = {q} := (coe_support_vanishingIdeal _).trans hq.closure_eq
@@ -74,7 +77,6 @@ theorem exists_comp_pointBlowup_eq_of_mem_centre (f : X ⟶ Y) [IsModification f
     have hdense : Dense (J.support.compl : Set Y) := by
       rw [Closeds.coe_compl, hs]
       exact (IsModification.dense_isoLocus f).mono (Set.subset_compl_singleton_iff.mpr hqIso)
-    have : IsLocallyNoetherian Y := LocallyOfFiniteType.isLocallyNoetherian sY
     have : IsModification b := J.isModification_blowupToBase hdense
     have : IsModification (g ≫ b) := hg.symm ▸ ‹IsModification f›
     exact ⟨g, IsModification.of_comp_right g b, hg⟩
@@ -92,13 +94,14 @@ theorem exists_comp_pointBlowup_eq_of_mem_centre (f : X ⟶ Y) [IsModification f
       exact Or.inl hqf
     have : SmoothOfRelativeDimension 2 sW := hT.smoothOfRelativeDimension sX
     have : Smooth sW := SmoothOfRelativeDimension.smooth 2 sW
-    have : Smooth sY := SmoothOfRelativeDimension.smooth 2 sY
     have : IsRegular W := IsRegular.of_smooth sW
     have : IsRegular Y := IsRegular.of_smooth sY
     have hdp := ((smoothOfRelativeDimension_iff_ringKrullDim_stalk_eq sW 2).mp inferInstance).2 p hp
     have hdq := ((smoothOfRelativeDimension_iff_ringKrullDim_stalk_eq sY 2).mp inferInstance).2 q hq
     exact (hnc ((T.toBase ≫ f).range_exceptional_subsingleton_of_mem_centre
       hp hq hdp hdq g hg hpq hcentre)).elim
+
+variable [QuasiCompact (Y ↘ Spec (.of k))]
 
 private theorem exists_isClosedPointTower_factorization_of_ncard_le
     (bound : ℕ) (f : X ⟶ Y) [IsModification f] [f.IsOver (Spec (.of k))]
@@ -109,8 +112,8 @@ private theorem exists_isClosedPointTower_factorization_of_ncard_le
   | ind bound ih =>
     let sY := Y ↘ Spec (.of k)
     have : IsNoetherian X := isNoetherian_of_finiteType (X ↘ Spec (.of k))
-    have : IsNoetherian Y := isNoetherian_of_finiteType sY
     have : Smooth sY := SmoothOfRelativeDimension.smooth 2 sY
+    have : IsNoetherian Y := isNoetherian_of_finiteType sY
     have : IsRegular Y := IsRegular.of_smooth sY
     have hdim := topologicalKrullDim_eq_of_smoothOfRelativeDimension sY (n := 2)
     by_cases hc : f.centre = ∅
@@ -128,7 +131,7 @@ private theorem exists_isClosedPointTower_factorization_of_ncard_le
       IsClosedPointTower.nil.snoc q hq (Scheme.ker_fromSpecResidueField_eq_vanishingIdeal q).symm
     let : V.Over (Spec (.of k)) := ⟨b ≫ sY⟩
     have hsV : (V ↘ Spec (.of k)) = b ≫ sY := rfl
-    have : V.IsProjectiveOver k := J.isProjectiveOver_blowup_of_isNoetherianRing k
+    have : QuasiCompact (V ↘ Spec (.of k)) := inferInstanceAs (QuasiCompact (b ≫ sY))
     have : SmoothOfRelativeDimension 2 (V ↘ Spec (.of k)) := by
       simpa only [hsV, first, toBase_snoc, toBase_nil, Category.comp_id] using
         hfirst.smoothOfRelativeDimension sY
@@ -152,11 +155,11 @@ private theorem exists_isClosedPointTower_factorization_of_ncard_le
     simpa only [toBase_append, first, toBase_snoc, toBase_nil, Category.comp_id,
       ← Category.assoc, he] using hg
 
-/-- A proper birational morphism of smooth integral projective surfaces over an algebraically
-closed field is a composition of closed point blowups, up to a source isomorphism over the
-target. -/
-theorem exists_isClosedPointTower_factorization (f : X ⟶ Y)
-    [f.IsOver (Spec (.of k))] (hf : Scheme.BirationalOver f (𝟙 Y)) :
+/-- A birational morphism from a smooth integral projective surface to a smooth integral
+separated surface of finite type over an algebraically closed field is a composition of
+closed point blowups, up to a source isomorphism over the target. -/
+theorem exists_isClosedPointTower_factorization [IsSeparated (Y ↘ Spec (.of k))]
+    (f : X ⟶ Y) [f.IsOver (Spec (.of k))] (hf : Scheme.BirationalOver f (𝟙 Y)) :
     ∃ (n : ℕ) (Z : Scheme.{u}) (T : BlowupTower Y n Z) (e : X ≅ Z),
       IsClosedPointTower Y T ∧ e.hom ≫ T.toBase = f := by
   obtain ⟨a, ha⟩ := hf
