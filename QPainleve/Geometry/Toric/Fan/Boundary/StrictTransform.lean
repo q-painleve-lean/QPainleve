@@ -90,11 +90,19 @@ theorem ker_boundaryComponentι_internalBlowupTower
     (ρ.boundaryComponentι hΦ ≫ M.2.boundaryι).ker =
       strictTransform (Φ.rayBoundaryIdeal hΦ ρ) M.2.toTower
   apply (congrArg P (internalBlowupTower_eq_alongBoundary b s c)).mpr
-  refine (strictTransform_rayBoundaryIdeal_alongBoundary hΦ J ρ ?_).symm
-  intro k
-  rw [Ray.internalCenter_val]
-  exact (s k).isEffectiveCartier_comap_ker_binomialCenterOnBoundary hΦ
-    (by simpa using Module.finrank_eq_card_basis b) (b.detDualEquiv_self _)
-    ((s k).surjective_detCharacter b) (c k) ρ
+  exact (strictTransform_rayBoundaryIdeal_alongBoundary hΦ J ρ
+    (fun k ↦ (s k).isEffectiveCartier_comap_internalCenter b (c k) hΦ ρ)).symm
+
+/-- The boundary of the ordered internal model is supported on the union of the
+strict transforms of the ray divisors, also for repeated centers. -/
+theorem support_ker_internalBlowupTower_boundaryι
+    (b : Module.Basis (Fin 2) ℤ N) (s : Fin n → Φ.Ray) (c : Fin n → ℂˣ)
+    (hΦ : Φ.IsRegular) :
+    ((internalBlowupTower b s c).2.boundaryι.ker.support : Set (internalBlowupTower b s c).1) =
+      ⋃ ρ : Φ.Ray, (strictTransform (Φ.rayBoundaryIdeal hΦ ρ)
+        (internalBlowupTower b s c).2.toTower).support := by
+  rw [internalBlowupTower_eq_alongBoundary]
+  exact support_ker_alongBoundary_boundaryι hΦ _
+    (fun k ρ ↦ (s k).isEffectiveCartier_comap_internalCenter b (c k) hΦ ρ)
 
 end TauCeti.Toric.Fan

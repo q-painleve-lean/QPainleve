@@ -47,12 +47,6 @@ local notation "J" => (fun j ↦ Ray.internalCenter b (s j) (c j))
 local notation "rankTwo" => (Eq.trans (Module.finrank_eq_card_basis b) (Fintype.card_fin 2))
 local notation "f" => Φ.algebraicRealizationStructureMap
 
-private theorem isEffectiveCartier_comap_internalCenter (j : Fin n) (ρ : Φ.Ray) :
-    (((J j).val).comap (ρ.boundaryComponentι hΦ)).IsEffectiveCartier := by
-  rw [(s j).internalCenter_val]
-  exact (s j).isEffectiveCartier_comap_ker_binomialCenterOnBoundary hΦ rankTwo
-    (b.detDualEquiv_self (s j).primitiveGenerator) ((s j).surjective_detCharacter b) (c j) ρ
-
 include hΦ in
 /-- The strict-transform boundary of the ordered internal blowup model has one prime
 for each original ray, including when some centers are infinitely near. -/
@@ -68,7 +62,7 @@ theorem ncard_boundaryPrimes_internalBlowupTower :
     exact isIntegral_subscheme_vanishingIdeal (isIrreducible_singleton.closure)
   have hg (ρ : Φ.Ray) : (g ρ).ker = strictTransform (S ρ) (Sigma.snd P').toTower :=
     (strictTransform_rayBoundaryIdeal_alongBoundary hΦ J ρ
-      (fun t ↦ isEffectiveCartier_comap_internalCenter hΦ b s c t ρ)).symm
+      (fun t ↦ (s t).isEffectiveCartier_comap_internalCenter b (c t) hΦ ρ)).symm
   have : IsNoetherian P'.1 := (Sigma.snd P').toTower.isNoetherian
   let (ρ : Φ.Ray) : IsIntegral (g ρ).ker.subscheme :=
     IsIntegral.of_isIso (g ρ).toImage
@@ -105,7 +99,7 @@ theorem ncard_boundaryPrimes_internalBlowupTower :
     simpa only [hbase] using congrArg
       (fun q : CodimensionOnePoint P'.1 ↦ (Sigma.snd P').toTower.toBase (q : P'.1)) h
   · rw [support_ker_alongBoundary_boundaryι hΦ J
-      (isEffectiveCartier_comap_internalCenter hΦ b s c)]
+      (fun t ρ ↦ (s t).isEffectiveCartier_comap_internalCenter b (c t) hΦ ρ)]
     exact Set.iUnion_congr fun ρ ↦ by
       rw [← hg]
       exact (g ρ).ker.support_eq_closure_subschemeι_genericPoint
