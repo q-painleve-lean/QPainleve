@@ -1,0 +1,125 @@
+/-
+Copyright (c) 2026 The QPainleve contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: The QPainleve contributors
+-/
+module
+
+public import QPainleve.AlgebraicGeometry.Blowup.Tower.Point
+public import QPainleve.AlgebraicGeometry.Morphisms.IsoLocus
+
+import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
+
+/-!
+# Local conditions on the centers of blowup towers
+
+A point-centered blowup tower can impose a condition on each center, using the
+map of its current scheme to a fixed base. Conditions preserved by local
+isomorphisms can be transported along lifts of tower isomorphisms.
+-/
+
+public section
+
+open AlgebraicGeometry CategoryTheory TopologicalSpace
+
+universe u
+
+namespace QPainleve.BlowupTower
+
+variable {S X Y Z X' Y' : Scheme.{u}} {m n : ℕ}
+
+/-- A condition on a point of a scheme over a fixed base. -/
+abbrev PointCondition (S : Scheme.{u}) :=
+  ∀ ⦃W : Scheme.{u}⦄, (W ⟶ S) → W → Prop
+
+/-- A point condition transports backwards along a morphism at points lying over its
+isomorphism locus. -/
+structure PointCondition.IsLocal (P : PointCondition S) : Prop where
+  /-- Pull back the condition to a point lying over the isomorphism locus. -/
+  pullback ⦃A B : Scheme.{u}⦄ (f : A ⟶ B) (g : B ⟶ S) (x : A) :
+    f x ∈ f.isoLocus → P g (f x) → P (f ≫ g) x
+
+/-- The centers of a closed point tower satisfy `P` on their successive schemes over `S`. -/
+inductive IsPointTowerWith (P : PointCondition S) (π : X ⟶ S) :
+    {n : ℕ} → {Y : Scheme.{u}} → BlowupTower X n Y → Prop
+  /-- The empty tower has no centers. -/
+  | nil : IsPointTowerWith P π .nil
+  /-- Append the blowup of a reduced closed point satisfying the point condition. -/
+  | snoc {n : ℕ} {Y : Scheme.{u}} {T : BlowupTower X n Y} {I : Y.IdealSheafData}
+      (hT : IsPointTowerWith P π T) (p : Y) (hp : IsClosed ({p} : Set Y))
+      (hI : I = (Y.fromSpecResidueField p).ker) (hP : P (T.toBase ≫ π) p) :
+      IsPointTowerWith P π (T.snoc I)
+
+namespace IsPointTowerWith
+
+variable {P : PointCondition S} {π : X ⟶ S} {T : BlowupTower X n Y}
+
+/-- Every tower with a center condition is a closed point tower. -/
+theorem isClosedPointTower (hT : IsPointTowerWith P π T) : IsClosedPointTower X T := by
+  induction hT with
+  | nil => exact .nil
+  | snoc _ p hp hI _ ih => exact ih.snoc p hp hI
+
+/-- A center condition on the successive schemes is preserved when appending compatible towers. -/
+protected theorem append {U : BlowupTower Y m Z} (hT : IsPointTowerWith P π T)
+    (hU : IsPointTowerWith P (T.toBase ≫ π) U) : IsPointTowerWith P π (T.append U) := by
+  induction hU with
+  | nil => simpa only [append_nil] using hT
+  | snoc _ p hp hI hP ih =>
+    rw [append_snoc]
+    exact ih.snoc p hp hI (by simpa only [toBase_append, Category.assoc] using hP)
+
+/-- A nonempty tower satisfies the center condition exactly when its prefix does and its
+last center is a reduced closed point satisfying the condition. -/
+theorem snoc_iff {I : Y.IdealSheafData} :
+    IsPointTowerWith P π (T.snoc I) ↔ IsPointTowerWith P π T ∧
+      ∃ p : Y, IsClosed ({p} : Set Y) ∧ I = (Y.fromSpecResidueField p).ker ∧
+        P (T.toBase ≫ π) p := by
+  constructor
+  · have step {d : ℕ} {W : Scheme.{u}} {U : BlowupTower X d W}
+        (hU : IsPointTowerWith P π U) :
+        match U with
+        | .nil => IsPointTowerWith P π .nil
+        | .snoc V J => IsPointTowerWith P π V ∧
+            ∃ p : _, IsClosed {p} ∧ J = (Scheme.fromSpecResidueField _ p).ker ∧
+              P (V.toBase ≫ π) p := by
+      cases hU with
+      | nil => exact .nil
+      | snoc hV p hp hJ hP => exact ⟨hV, p, hp, hJ, hP⟩
+    exact fun h ↦ step h
+  · rintro ⟨hT, p, hp, hI, hP⟩
+    exact hT.snoc p hp hI hP
+
+end IsPointTowerWith
+
+/-- An unconditional center condition agrees with the ordinary closed point condition. -/
+theorem IsClosedPointTower.isPointTowerWith_true {T : BlowupTower X n Y}
+    (hT : IsClosedPointTower X T) (π : X ⟶ S) :
+    IsPointTowerWith (fun {_} _ _ ↦ True) π T := by
+  induction hT with
+  | nil => exact .nil
+  | snoc _ p hp hI ih => exact ih.snoc p hp hI trivial
+
+/-- A tower lift over the fixed base preserves a local condition on the centers. -/
+theorem IsLift.isPointTowerWith {T : BlowupTower X n Y} {U : BlowupTower X' n Y'}
+    {e : X ≅ X'} {g : Y ≅ Y'} (h : IsLift e T U g)
+    {P : PointCondition S} (hP : P.IsLocal) {π : X ⟶ S} {π' : X' ⟶ S}
+    (he : e.hom ≫ π' = π) (hT : IsPointTowerWith P π T) :
+    IsPointTowerWith P π' U := by
+  induction hT generalizing Y' with
+  | nil => cases U; exact .nil
+  | @snoc m Y T I hT p hp hI hTp ih =>
+    cases U with
+    | snoc U J =>
+      obtain ⟨f, hf, hJ, -⟩ := IsLift.snoc_iff.mp h
+      have hcomap : I.comap f.inv = J := by
+        rw [← hJ, ← Scheme.IdealSheafData.comap_comp, f.inv_hom_id, Scheme.IdealSheafData.comap_id]
+      obtain ⟨q, hq, hqp, hqJ⟩ :=
+        f.inv.exists_comap_ker_fromSpecResidueField_of_isIso_morphismRestrict p hp ⊤ (by simp)
+      have hbase : f.inv ≫ T.toBase ≫ π = U.toBase ≫ π' := by
+        rw [← he, ← Category.assoc T.toBase, ← hf.hom_toBase, Category.assoc, Iso.inv_hom_id_assoc]
+      have hlocal := hP.pullback f.inv (T.toBase ≫ π) q
+        (by rw [f.inv.isoLocus_eq_top_iff.mpr inferInstance]; trivial) (hqp.symm ▸ hTp)
+      exact (ih hf).snoc q hq (hcomap.symm.trans (hI ▸ hqJ)) (hbase ▸ hlocal)
+
+end QPainleve.BlowupTower
