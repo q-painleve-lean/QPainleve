@@ -6,7 +6,8 @@ Authors: The QPainleve contributors
 module
 
 public import QPainleve.AlgebraicGeometry.Curves.Node.NormalizationComponent
-public import QPainleve.Geometry.Toric.Fan.Boundary.ProjectiveLine
+public import QPainleve.Geometry.Toric.Fan.Boundary.Component
+public import QPainleve.Geometry.Toric.Fan.Point
 
 import QPainleve.Geometry.Toric.Fan.Boundary.Node
 import TauCeti.AlgebraicGeometry.Curves.Node.Reduced
@@ -70,8 +71,8 @@ private theorem comp_blowupToBase_mem_singularLocus_of_distinguishedPointHom
 
 include hΦ in
 /-- A normalized point projecting to the distinguished point of a two-ray chart lifts
-uniquely to the branch scheme. In particular, the projective zero and pole in the
-endpoints comparison give actual branch sections of the conductor square. -/
+uniquely to the branch scheme. This applies to the projective zero and pole after
+transporting them along the component isomorphism and using the ray endpoint formulas. -/
 theorem existsUnique_branchScheme_point_of_comp_eq_distinguishedPointHom
     (hn : AtWorstNodalOfRelativeDimensionOne (C ↘ base))
     (hdim : Module.finrank ℤ N = 2) {σ : Φ.cones} (hc : Nat.card (ToricRay σ.val) = 2) :
@@ -225,43 +226,5 @@ instance Ray.isOver_boundaryNormalizationComponentIso_hom :
     _ = (ρ.boundaryNormalizationComponentIso hΦ).hom ≫ ρ.boundaryComponentι hΦ ≫ (C ↘ base) :=
       congrArg ((ρ.boundaryNormalizationComponentIso hΦ).hom ≫ ·) hbase.symm
     _ = _ := Ray.boundaryNormalizationComponentIso_hom_boundaryComponentι_assoc hΦ ρ _⟩
-
-section ProjectiveLine
-
-variable (hdim : Module.finrank ℤ N = 2) {m : N →+ ℤ}
-  (hm : m ρ.primitiveGenerator = 0) (hprim : Function.Surjective m)
-  [IsProper ((Φ.rayBoundaryIdeal hΦ ρ).subscheme ↘ Spec (.of ℂ))]
-  {σ : Φ.cones} (hρ : ρ.toCone ≤ σ) (τ : Φ.Ray) (hτ : τ.toCone ≤ σ)
-
-local notation "e" => ρ.boundaryNormalizationComponentIso hΦ
-local notation "p" => ρ.boundaryIsoProjectiveLine hΦ hdim hm hprim
-
-include hρ hτ in
-/-- The zero of the projective coordinate on the normalized component lies above
-the adjacent fixed point on the positive side of the character. -/
-@[reassoc]
-theorem Ray.polynomialPoint_comp_normalizationComponent_blowupToBase_of_pos
-    (hs : 0 < m τ.primitiveGenerator) :
-    projectiveLine.polynomialPoint ℂ (RingHom.id ℂ) 1 0 ≫ (p).inv ≫ (e).inv ≫ (U).ι ≫ ν ≫
-      (D).subschemeι = Φ.distinguishedPointHom σ := by
-  rw [Ray.boundaryNormalizationComponentIso_inv_ι_blowupToBase_assoc,
-    Ray.boundaryComponentι_subschemeι]
-  exact ρ.polynomialPoint_comp_boundaryIsoProjectiveLine_inv_subschemeι_of_pos
-    hΦ hdim hm hprim hρ τ hτ hs
-
-include hρ hτ in
-/-- The pole of the projective coordinate on the normalized component lies above
-the adjacent fixed point on the negative side of the character. -/
-@[reassoc]
-theorem Ray.polynomialPoint_comp_normalizationComponent_blowupToBase_of_neg
-    (hs : m τ.primitiveGenerator < 0) :
-    projectiveLine.polynomialPoint ℂ (RingHom.id ℂ) 0 0 ≫ (p).inv ≫ (e).inv ≫ (U).ι ≫ ν ≫
-      (D).subschemeι = Φ.distinguishedPointHom σ := by
-  rw [Ray.boundaryNormalizationComponentIso_inv_ι_blowupToBase_assoc,
-    Ray.boundaryComponentι_subschemeι]
-  exact ρ.polynomialPoint_comp_boundaryIsoProjectiveLine_inv_subschemeι_of_neg
-    hΦ hdim hm hprim hρ τ hτ hs
-
-end ProjectiveLine
 
 end TauCeti.Toric.Fan
