@@ -5,9 +5,11 @@ Authors: The QPainleve contributors
 -/
 module
 
+public import QPainleve.AlgebraicGeometry.Blowup.Exceptional.Class
 public import QPainleve.AlgebraicGeometry.Chow.SurfaceIntersection
 public import TauCeti.AlgebraicGeometry.Blowup.ExceptionalDivisor
 public import TauCeti.AlgebraicGeometry.Morphisms.Smooth.RelativeDimension
+import QPainleve.AlgebraicGeometry.Blowup.Exceptional.EulerCharacteristic
 import QPainleve.AlgebraicGeometry.Blowup.Exceptional.FirstKind
 import QPainleve.AlgebraicGeometry.Blowup.PointCohomology
 import QPainleve.AlgebraicGeometry.Blowup.Smooth
@@ -175,5 +177,41 @@ theorem classIntersectionNumber_pointBlowup
     classIntersectionNumber_pullback_pointBlowup p k hp hdim,
     classIntersectionNumber_comm (k := k) b a, mul_zero, add_zero]
   ring
+
+local notation "Jₚ" =>
+  vanishingIdeal (Closeds.mk (closure (Set.singleton p)) isClosed_closure)
+local notation:max "twist[" a ", " m "]" =>
+  (pullback (blowupToBase Jₚ) a * blowupExceptionalClass Jₚ ^ (m : ℤ))
+
+/-- Twisting the pullbacks of `a` and `K` by `mE` and `E` changes the difference
+`a² - a · K` by `m(1-m)`. Projectivity is required only on the base surface. -/
+theorem sub_classIntersectionNumber_pointBlowup_exceptional_twist [X.IsProjectiveOver k]
+    (hp : IsClosed ({p} : Set X)) (a K : LineBundleClass X) (m : ℤ) :
+    letI : (Jₚ).blowup.Over (Spec (.of k)) := ⟨(Jₚ).blowupToBase ≫ X ↘ Spec (.of k)⟩
+    classIntersectionNumber k (Jₚ).blowup twist[a, m] twist[a, m] -
+      classIntersectionNumber k (Jₚ).blowup twist[a, m] twist[K, 1] =
+      m * (1 - m) + (classIntersectionNumber k X a a - classIntersectionNumber k X a K) := by
+  let : (Jₚ).blowup.Over (Spec (.of k)) := ⟨(Jₚ).blowupToBase ≫ X ↘ Spec (.of k)⟩
+  have hinv (c : LineBundleClass X) (r : ℤ) : (twist[c, r])⁻¹ = twist[c⁻¹, -r] := by
+    simp only [mul_inv_rev, pullback_inv, zpow_neg]
+    exact mul_comm _ _
+  have hmul (c d : LineBundleClass X) (r s : ℤ) :
+      twist[c, r] * twist[d, s] = twist[c * d, r + s] := by
+    simp only [pullback_mul, zpow_add]
+    ac_rfl
+  simp only [classIntersectionNumber_eq, hinv, hmul,
+    eulerCharBelow_pointBlowup_exceptional_twist_vanishingIdeal p k hp]
+  -- Each product of consecutive integers is even, so the halves add exactly.
+  have half (r : ℤ) : 2 * (r * (1 - r) / 2) = r * (1 - r) := by
+    have heq : r * (1 - r) = -(r * (r - 1)) := by ring
+    have hdiv : 2 ∣ r * (1 - r) := heq ▸ dvd_neg.mpr (Int.even_mul_pred_self r).two_dvd
+    omega
+  have hpoly : (-m + -m) * (1 - (-m + -m)) - -m * (1 - -m) +
+      (-1) * (1 - (-1)) - (-m + -1) * (1 - (-m + -1)) = 2 * (m * (1 - m)) := by ring
+  have hm := half (-m)
+  have hmm := half (-m + -m)
+  have h₁ := half (-1)
+  have hm₁ := half (-m + -1)
+  omega
 
 end TauCeti.AlgebraicGeometry.Chow

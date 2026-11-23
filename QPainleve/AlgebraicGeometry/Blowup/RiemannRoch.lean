@@ -12,6 +12,7 @@ public import TauCeti.AlgebraicGeometry.Chow.SurfaceIntersection
 public import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.ProjectiveOver
 import QPainleve.AlgebraicGeometry.Blowup.Exceptional.EulerCharacteristic
 import QPainleve.AlgebraicGeometry.Blowup.Integral
+import QPainleve.AlgebraicGeometry.Blowup.Intersection
 import QPainleve.AlgebraicGeometry.Blowup.Picard
 import QPainleve.AlgebraicGeometry.Blowup.Ramification
 import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
@@ -30,7 +31,7 @@ surfaces.
 The argument uses the blowup identities in P. Hacking,
 [*583C Lecture notes (Compact Complex Surfaces)*, Propositions 7.1 and 7.2]
 (https://paulhacking.github.io/surfaces.pdf#page=35). The intersection calculation uses Tau Ceti's
-`Chow.classIntersectionNumber_eq` and the Euler characteristic formula for exceptional twists.
+`Chow.classIntersectionNumber_eq` via `sub_classIntersectionNumber_pointBlowup_exceptional_twist`.
 -/
 
 public section
@@ -58,51 +59,6 @@ local notation:max "rr[" S ", " a ", " K "]" =>
   (eulerCharBelow k a 3 = eulerCharBelow (X := S) k 1 3 +
     (classIntersectionNumber k S a a - classIntersectionNumber k S a K) / 2)
 
-omit [IsIntegral X] in
-private theorem eulerCharBelow_twist (hp : IsClosed ({p} : Set X))
-    (a : LineBundleClass X) (m : ℤ) :
-    letI : Scheme.Over Y (Spec (.of k)) := ⟨π ≫ X ↘ Spec (.of k)⟩
-    eulerCharBelow k twist[a, m] 3 = eulerCharBelow k a 3 + m * (1 - m) / 2 := by
-  -- Transport the scheme, structure map and exceptional class along the center equality.
-  let P (J : X.IdealSheafData) : Prop :=
-    let : J.blowup.Over (Spec (.of k)) := ⟨J.blowupToBase ≫ X ↘ Spec (.of k)⟩
-    eulerCharBelow k (pullback J.blowupToBase a * J.blowupExceptionalClass ^ m) 3 =
-      eulerCharBelow k a 3 + m * (1 - m) / 2
-  have h : P (Scheme.Hom.ker (X.fromSpecResidueField p)) := by
-    simpa only [P, blowupExceptionalClass_def, inv_zpow, zpow_neg] using
-      eulerCharBelow_pointBlowup_exceptional_twist_of_smoothSurface p k hp a m
-  exact (X.ker_fromSpecResidueField_eq_vanishingIdeal p) ▸ h
-
-omit [IsIntegral X] in
-private theorem sub_classIntersectionNumber_twist (hp : IsClosed ({p} : Set X))
-    (a K : LineBundleClass X) (m : ℤ) :
-    letI : Scheme.Over Y (Spec (.of k)) := ⟨π ≫ X ↘ Spec (.of k)⟩
-    classIntersectionNumber k Y twist[a, m] twist[a, m] -
-      classIntersectionNumber k Y twist[a, m] twist[K, 1] =
-      m * (1 - m) + (classIntersectionNumber k X a a - classIntersectionNumber k X a K) := by
-  let : Scheme.Over Y (Spec (.of k)) := ⟨π ≫ X ↘ Spec (.of k)⟩
-  have hinv (c : LineBundleClass X) (r : ℤ) : (twist[c, r])⁻¹ = twist[c⁻¹, -r] := by
-    simp only [mul_inv_rev, pullback_inv, zpow_neg]
-    exact mul_comm _ _
-  have hmul (c d : LineBundleClass X) (r s : ℤ) :
-      twist[c, r] * twist[d, s] = twist[c * d, r + s] := by
-    simp only [pullback_mul, zpow_add]
-    ac_rfl
-  -- The difference of Euler pairings can be computed using projectivity of the base alone.
-  simp only [classIntersectionNumber_eq, hinv, hmul, eulerCharBelow_twist k p hp]
-  -- Each product of consecutive integers is even, so the halves add exactly.
-  have half (r : ℤ) : 2 * (r * (1 - r) / 2) = r * (1 - r) := by
-    have heq : r * (1 - r) = -(r * (r - 1)) := by ring
-    have hdiv : 2 ∣ r * (1 - r) := heq ▸ dvd_neg.mpr (Int.even_mul_pred_self r).two_dvd
-    omega
-  have hpoly : (-m + -m) * (1 - (-m + -m)) - -m * (1 - -m) +
-      (-1) * (1 - (-1)) - (-m + -1) * (1 - (-m + -1)) = 2 * (m * (1 - m)) := by ring
-  have hm := half (-m)
-  have hmm := half (-m + -m)
-  have h₁ := half (-1)
-  have hm₁ := half (-m + -1)
-  omega
-
 /-- The surface Riemann–Roch equation for a line bundle is equivalent to that for any
 exceptional twist of its pullback along a closed point blowup. -/
 theorem eulerCharBelow_eq_riemannRoch_pointBlowup_iff (hp : IsClosed ({p} : Set X))
@@ -128,8 +84,9 @@ theorem eulerCharBelow_eq_riemannRoch_pointBlowup_iff (hp : IsClosed ({p} : Set 
       hclass, zpow_one, blowupExceptionalClass_def]
   have hχ₁ : eulerCharBelow (X := Y) k 1 3 = eulerCharBelow (X := X) k 1 3 := by
     simpa only [pullback_one, zpow_zero, mul_one, zero_mul, Int.zero_ediv, add_zero] using
-      eulerCharBelow_twist k p hp 1 0
-  rw [hK, sub_classIntersectionNumber_twist k p hp, eulerCharBelow_twist k p hp, hχ₁]
+      eulerCharBelow_pointBlowup_exceptional_twist_vanishingIdeal p k hp 1 0
+  rw [hK, sub_classIntersectionNumber_pointBlowup_exceptional_twist p k hp,
+    eulerCharBelow_pointBlowup_exceptional_twist_vanishingIdeal p k hp, hχ₁]
   have hmul : 2 ∣ m * (1 - m) := by
     rw [show m * (1 - m) = -(m * (m - 1)) by ring]
     exact dvd_neg.mpr (Int.even_mul_pred_self m).two_dvd
