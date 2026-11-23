@@ -110,14 +110,6 @@ theorem comap_map_toBase_alongBoundary [IsClosedImmersion i]
       ih _ (fun j ↦ hK j.castSucc)]
     exact (P.map_center_snoc_of_disjoint A.val K A.property hd).symm
 
-/-- The total transform of a closed subscheme of the original boundary restricts
-to the original ideal on the final boundary. -/
-@[simp]
-theorem WithBoundary.comap_map_toBase_boundaryι [IsClosedImmersion i]
-    (T : WithBoundary i n Y) (J : D.IdealSheafData) :
-    ((J.map i).comap T.toTower.toBase).comap T.boundaryι = J := by
-  rw [← comap_comp, WithBoundary.boundaryι_toBase, comap_map_of_isClosedImmersion]
-
 /-- If the ambient tower and the original boundary are pulled back, the commuting
 square of the final boundary embeddings is cartesian. -/
 theorem WithBoundary.isPullback_boundaryι (hi : IsPullback i' d f i)
