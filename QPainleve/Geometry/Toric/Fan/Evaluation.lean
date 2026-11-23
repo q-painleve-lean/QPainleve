@@ -190,10 +190,7 @@ theorem FanEquiv.comp_xEvaluation (f : FanEquiv Φ Ψ) [Finite ι] [Finite κ]
   · intro j
     ext x
     simp only [Function.comp_apply, primitiveGenerator_rayEquiv, toFanHom_latticeMap,
-      AddMonoidHom.coe_comp, LinearMap.toAddMonoidHom_coe, AddMonoidHom.coe_ofClass,
-      Module.Basis.detDualEquiv_apply, Module.Basis.det_map, AddEquiv.coe_symm_toIntLinearEquiv]
-    congr 1
-    funext i
-    fin_cases i <;> simp
+      AddMonoidHom.coe_comp, LinearMap.toAddMonoidHom_coe, AddMonoidHom.coe_ofClass]
+    exact b.detDualEquiv_map f.latticeEquiv.toIntLinearEquiv _ _
 
 end TauCeti.Toric

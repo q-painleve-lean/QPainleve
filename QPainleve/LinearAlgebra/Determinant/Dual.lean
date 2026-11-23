@@ -44,6 +44,15 @@ theorem detDualEquiv_apply (b : Basis (Fin 2) R N) (h u : N) :
   simp only [detDualEquiv, LinearMap.toPerfPair_apply, MultilinearMap.toBilinMap_apply,
     AlternatingMap.coe_multilinearMap]
 
+/-- Transporting the ordered basis and both arguments preserves the determinant pairing. -/
+theorem detDualEquiv_map {N' : Type*} [AddCommGroup N'] [Module R N']
+    (b : Basis (Fin 2) R N) (e : N ≃ₗ[R] N') (x y : N) :
+    (b.map e).detDualEquiv (e x) (e y) = b.detDualEquiv x y := by
+  simp only [detDualEquiv_apply, det_map]
+  congr 1
+  funext j
+  fin_cases j <;> simp
+
 /-- The determinant pairing has value one on the ordered basis. -/
 theorem detDualEquiv_apply_basis_zero_one (b : Basis (Fin 2) R N) :
     b.detDualEquiv (b 0) (b 1) = 1 := by
