@@ -29,6 +29,24 @@ open TauCeti.AlgebraicGeometry
 
 universe u
 
+namespace TauCeti.AlgebraicGeometry.LineBundleClass
+
+variable {X : Scheme.{u}} (k : Type u) [Field k]
+  [X.Over (Spec (.of k))] [X.IsCurveOver k]
+
+/-- The Euler degree of an integer tensor power on a proper integral curve. -/
+@[simp]
+theorem eulerDegree_zpow_of_isCurveOver (a : LineBundleClass X) (n : ℤ) :
+    eulerDegree k (a ^ n) = n * eulerDegree k a := by
+  have : RelativeDimensionLE 1 (X ↘ Spec (.of k)) :=
+    (relativeDimensionLE_iff_of_field _).mpr (Scheme.IsCurveOver.topologicalKrullDim_eq_one k).le
+  let deg : Additive (LineBundleClass X) →+ ℤ :=
+    AddMonoidHom.mk' (fun c ↦ eulerDegree k c.toMul) fun b c ↦
+      eulerDegree_mul_of_isIntegral k b.toMul c.toMul
+  simpa [deg, zsmul_eq_mul] using deg.map_zsmul n (Additive.ofMul a)
+
+end TauCeti.AlgebraicGeometry.LineBundleClass
+
 namespace TauCeti.AlgebraicGeometry.LineBundleClass.IsAmple
 
 variable {X : Scheme.{u}} {k : Type u} [Field k]
@@ -53,12 +71,7 @@ theorem eulerDegree_pos (ha : a.IsAmple) : 0 < a.eulerDegree k := by
     exact Nat.pos_of_ne_zero fun hz ↦
       ((Scheme.Hom.finrank_eq_zero_iff_notMem_range _ _).mp hz)
         ⟨x, Subsingleton.elim _ _⟩
-  let deg : Additive (LineBundleClass X) →+ ℤ :=
-    AddMonoidHom.mk' (fun c ↦ eulerDegree k c.toMul) fun b c ↦
-      eulerDegree_mul_of_isIntegral k b.toMul c.toMul
-  have hpow : eulerDegree k (a ^ n) = (n : ℤ) * eulerDegree k a := by
-    simpa [deg, nsmul_eq_mul] using deg.map_nsmul n (Additive.ofMul a)
-  rw [hpow] at hdegree
+  rw [← zpow_natCast, eulerDegree_zpow_of_isCurveOver] at hdegree
   exact pos_of_mul_pos_right (hdegree.symm ▸ Int.natCast_pos.mpr hpos) (Int.natCast_nonneg n)
 
 end TauCeti.AlgebraicGeometry.LineBundleClass.IsAmple
