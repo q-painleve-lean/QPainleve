@@ -11,7 +11,7 @@ import QPainleve.AlgebraicGeometry.Fiber
 import QPainleve.AlgebraicGeometry.Morphisms.Etale.GlobalSections
 import TauCeti.AlgebraicGeometry.Curves.Node.Reduced
 import TauCeti.AlgebraicGeometry.IdealSheaf.Affine
-import TauCeti.AlgebraicGeometry.IdealSheaf.Stalk
+import QPainleve.AlgebraicGeometry.IdealSheaf.Stalk
 import TauCeti.AlgebraicGeometry.IdealSheaf.Conductor.BaseChange
 import TauCeti.AlgebraicGeometry.Morphisms.Etale.Basic
 import TauCeti.AlgebraicGeometry.ResidueField
@@ -49,26 +49,11 @@ private theorem singularLocus_stalkIdeal_eq_maximalIdeal
     (X.singularLocus k).stalkIdeal x = maximalIdeal (X.presheaf.stalk x) := by
   let := hnodal.syntomic
   let J := X.singularLocus k
-  obtain ⟨z, rfl⟩ := J.range_subschemeι.ge hx
   let g := J.subschemeι ≫ (X ↘ Spec (.of k))
   have : Etale g := X.etale_singularLocus_subschemeι_comp hnodal
   have : IsLocallyArtinian J.subscheme := .of_locallyQuasiFinite g
   have : IsRegular J.subscheme := IsRegular.of_smooth g
-  have : IsReduced J.subscheme := inferInstance
-  obtain ⟨U, hU, hzU, _⟩ := exists_isAffineOpen_mem_and_subset (Opens.mem_top z)
-  have : IsArtinianRing Γ(J.subscheme, U) :=
-    IsLocallyArtinian.isArtinianRing_presheaf_obj ⟨U, hU⟩
-  let := TopCat.Presheaf.algebra_section_stalk J.subscheme.presheaf ⟨z, hzU⟩
-  let := hU.isLocalization_stalk ⟨z, hzU⟩
-  have : IsArtinianRing (J.subscheme.presheaf.stalk z) :=
-    IsArtinianRing.localization_artinian (hU.primeIdealOf ⟨z, hzU⟩).asIdeal.primeCompl _
-  let h := J.subschemeι.stalkMap z
-  have hzero : maximalIdeal (J.subscheme.presheaf.stalk z) = ⊥ :=
-    isField_iff_maximalIdeal_eq.mp (IsArtinianRing.isField_of_isReduced_of_isLocalRing _)
-  have hmax : RingHom.ker h.hom = maximalIdeal (X.presheaf.stalk (J.subschemeι z)) := by
-    rw [RingHom.ker_eq_comap_bot, ← hzero]
-    exact IsLocalRing.maximalIdeal_comap h.hom
-  simpa only [h, Hom.ker_stalkMap_of_isClosedImmersion, IdealSheafData.ker_subschemeι] using hmax
+  exact J.stalkIdeal_eq_maximalIdeal_of_isLocallyArtinian hx
 
 private theorem singularLocus_comap_fromSpecStalk_eq
     (hnodal : AtWorstNodalOfRelativeDimensionOne (X ↘ Spec (.of k))) {x : X}
