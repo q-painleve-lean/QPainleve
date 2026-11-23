@@ -175,6 +175,66 @@ theorem isClosedImmersion_blowup_graph {m : I.blowup ⟶ ℙ}
     hp.flip.isoPullback_hom_snd]
   infer_instance
 
+/-- Two maps to projective space over the base agree on their entire chart overlap
+if they agree on the complement of the exceptional divisor there. -/
+theorem eq_on_blowupChart_overlap {V W : X.Opens} (hV : IsAffineOpen V)
+    (hW : IsAffineOpen W)
+    {m : Proj (reesAlgebra.grade (I.ideal ⟨V, hV⟩)) ⟶ ℙ}
+    {n : Proj (reesAlgebra.grade (I.ideal ⟨W, hW⟩)) ⟶ ℙ}
+    (hm : m ≫ q = I.blowupChart hV ≫ I.blowupToBase ≫ f)
+    (hn : n ≫ q = I.blowupChart hW ≫ I.blowupToBase ≫ f)
+    (h : let c := I.blowupChart hV
+         let d := I.blowupChart hW
+         let k := pullback.fst c d ≫ c
+         let e := Scheme.Opens.ι (I.comap I.blowupToBase).support.compl
+         pullback.snd e k ≫ pullback.fst c d ≫ m =
+           pullback.snd e k ≫ pullback.snd c d ≫ n) :
+    pullback.fst (I.blowupChart hV) (I.blowupChart hW) ≫ m =
+      pullback.snd (I.blowupChart hV) (I.blowupChart hW) ≫ n := by
+  let c := I.blowupChart hV
+  let d := I.blowupChart hW
+  let V₀ : I.blowup.Opens := (I.comap I.blowupToBase).support.compl
+  let e := V₀.ι
+  let k := pullback.fst c d ≫ c
+  have : IsOpenImmersion k := inferInstanceAs (IsOpenImmersion (pullback.fst c d ≫ c))
+  have : IsSchemeTheoreticallyDominant (pullback.snd e k) := by
+    have hd := (I.isEffectiveCartier_comap_blowupToBase.comap k)
+      |>.isSchemeTheoreticallyDominant_support_compl_ι
+    rw [compl_support_comap] at hd
+    have : IsSchemeTheoreticallyDominant (k ⁻¹ᵁ V₀).ι := hd
+    rw [← (isPullback_morphismRestrict k V₀).isoPullback_inv_snd]
+    infer_instance
+  apply TauCeti.ext_of_isSchemeTheoreticallyDominant (pullback.snd e k) q
+  · simpa only [Category.assoc, hm, hn] using
+      (reassoc_of% (pullback.condition (f := c) (g := d))) (I.blowupToBase ≫ f)
+  · simpa only [Category.assoc] using h
+
+include hcover in
+/-- Compatible indexed Rees presentations glue to a morphism whose graph over the base
+is a closed immersion. -/
+theorem exists_blowupToProjectiveSpace_of_compatible
+    (h : ∀ i j, pullback.fst (I.blowupChart (hU i)) (I.blowupChart (hU j)) ≫
+      I.blowupChartToProjectiveSpace f (hU i) (aU i) (haU i) =
+      pullback.snd (I.blowupChart (hU i)) (I.blowupChart (hU j)) ≫
+      I.blowupChartToProjectiveSpace f (hU j) (aU j) (haU j)) :
+    ∃ (m : I.blowup ⟶ ℙ) (hm : m ≫ q = I.blowupToBase ≫ f),
+      IsClosedImmersion (pullback.lift I.blowupToBase m hm.symm) ∧
+        ∀ i, I.blowupChart (hU i) ≫ m =
+          I.blowupChartToProjectiveSpace f (hU i) (aU i) (haU i) := by
+  let 𝒰 := I.blowupProjectiveCover U hU hcover
+  let c i := I.blowupChartToProjectiveSpace f (hU i) (aU i) (haU i)
+  let m := 𝒰.glueMorphisms c h
+  have hchart (i : τ) : I.blowupChart (hU i) ≫ m = c i :=
+    𝒰.ι_glueMorphisms c h i
+  have hm : m ≫ q = I.blowupToBase ≫ f := by
+    apply 𝒰.hom_ext
+    intro i
+    -- The source cover maps are the native chart immersions.
+    change I.blowupChart (hU i) ≫ m ≫ q = I.blowupChart (hU i) ≫ I.blowupToBase ≫ f
+    rw [reassoc_of% (hchart i)]
+    exact I.blowupChartToProjectiveSpace_toSpecCoeff f (hU i) (aU i) (haU i)
+  exact ⟨m, hm, I.isClosedImmersion_blowup_graph f U hU hcover aU haU hm hchart, hchart⟩
+
 variable
   (g : Scheme.Opens.toScheme (X := I.blowup) (I.comap I.blowupToBase).support.compl ⟶
     Proj (MvPolynomial.homogeneousSubmodule ι R))
@@ -189,43 +249,35 @@ private theorem compatible_blowupChartToProjectiveSpace (i j : τ) :
         I.blowupChartToProjectiveSpace f (hU i) (aU i) (haU i) =
       pullback.snd (I.blowupChart (hU i)) (I.blowupChart (hU j)) ≫
         I.blowupChartToProjectiveSpace f (hU j) (aU j) (haU j) := by
-  let c := I.blowupChart (hU i)
-  let d := I.blowupChart (hU j)
-  let k := pullback.fst c d ≫ c
-  let V : I.blowup.Opens := (I.comap I.blowupToBase).support.compl
-  let e := V.ι
-  have : IsOpenImmersion k := inferInstanceAs (IsOpenImmersion (pullback.fst c d ≫ c))
-  have : IsSchemeTheoreticallyDominant (pullback.snd e k) := by
-    have hd := (I.isEffectiveCartier_comap_blowupToBase.comap k)
-      |>.isSchemeTheoreticallyDominant_support_compl_ι
-    rw [compl_support_comap] at hd
-    have : IsSchemeTheoreticallyDominant (k ⁻¹ᵁ V).ι := hd
-    rw [← (isPullback_morphismRestrict k V).isoPullback_inv_snd]
-    infer_instance
-  apply TauCeti.ext_of_isSchemeTheoreticallyDominant (pullback.snd e k) q
-  · simpa only [Category.assoc, I.blowupChartToProjectiveSpace_toSpecCoeff] using
-      (reassoc_of% (pullback.condition (f := c) (g := d))) (I.blowupToBase ≫ f)
-  let r := pullback.fst e k
-  let s := pullback.snd e k
-  have hk : r ≫ e = s ≫ k := pullback.condition
-  let l₁ := pullback.lift r (s ≫ pullback.fst c d) (by simpa [k] using hk)
-  let l₂ : pullback e k ⟶ pullback e d :=
-    pullback.lift r (s ≫ pullback.snd c d) (by
-      rw [hk, Category.assoc]
-      exact congrArg (s ≫ ·) (pullback.condition (f := c) (g := d)))
-  have hi : pullback.fst e c ≫ g = pullback.snd e c ≫
-      I.blowupChartToProjectiveSpace f (hU i) (aU i) (haU i) := hcompat i
-  have hj : pullback.fst e d ≫ g = pullback.snd e d ≫
-      I.blowupChartToProjectiveSpace f (hU j) (aU j) (haU j) := hcompat j
-  have h₁ : r ≫ g = s ≫ pullback.fst c d ≫
-      I.blowupChartToProjectiveSpace f (hU i) (aU i) (haU i) := by
-    simpa only [l₁, Category.assoc, pullback.lift_fst_assoc, pullback.lift_snd_assoc] using
-      congrArg (l₁ ≫ ·) hi
-  have h₂ : r ≫ g = s ≫ pullback.snd c d ≫
-      I.blowupChartToProjectiveSpace f (hU j) (aU j) (haU j) := by
-    simpa only [l₂, Category.assoc, pullback.lift_fst_assoc, pullback.lift_snd_assoc] using
-      congrArg (l₂ ≫ ·) hj
-  exact h₁.symm.trans h₂
+  apply I.eq_on_blowupChart_overlap f (hU i) (hU j)
+  · exact I.blowupChartToProjectiveSpace_toSpecCoeff f (hU i) (aU i) (haU i)
+  · exact I.blowupChartToProjectiveSpace_toSpecCoeff f (hU j) (aU j) (haU j)
+  · dsimp only
+    let e := Scheme.Opens.ι (I.comap I.blowupToBase).support.compl
+    let c := I.blowupChart (hU i)
+    let d := I.blowupChart (hU j)
+    let k := pullback.fst c d ≫ c
+    let r := pullback.fst e k
+    let s := pullback.snd e k
+    have hk : r ≫ e = s ≫ k := pullback.condition
+    let l₁ := pullback.lift r (s ≫ pullback.fst c d) (by simpa [k] using hk)
+    let l₂ : pullback e k ⟶ pullback e d :=
+      pullback.lift r (s ≫ pullback.snd c d) (by
+        rw [hk, Category.assoc]
+        exact congrArg (s ≫ ·) (pullback.condition (f := c) (g := d)))
+    have hi : pullback.fst e c ≫ g = pullback.snd e c ≫
+        I.blowupChartToProjectiveSpace f (hU i) (aU i) (haU i) := hcompat i
+    have hj : pullback.fst e d ≫ g = pullback.snd e d ≫
+        I.blowupChartToProjectiveSpace f (hU j) (aU j) (haU j) := hcompat j
+    have h₁ : r ≫ g = s ≫ pullback.fst c d ≫
+        I.blowupChartToProjectiveSpace f (hU i) (aU i) (haU i) := by
+      simpa only [l₁, Category.assoc, pullback.lift_fst_assoc, pullback.lift_snd_assoc] using
+        congrArg (l₁ ≫ ·) hi
+    have h₂ : r ≫ g = s ≫ pullback.snd c d ≫
+        I.blowupChartToProjectiveSpace f (hU j) (aU j) (haU j) := by
+      simpa only [l₂, Category.assoc, pullback.lift_fst_assoc, pullback.lift_snd_assoc] using
+        congrArg (l₂ ≫ ·) hj
+    exact h₁.symm.trans h₂
 
 include hcover hcompat in
 /-- Indexed affine Rees presentations agreeing on the complement of the exceptional divisor
@@ -236,20 +288,10 @@ theorem exists_blowupToProjectiveSpace :
         Scheme.Opens.ι (I.comap I.blowupToBase).support.compl ≫ m = g ∧
         ∀ i, I.blowupChart (hU i) ≫ m =
           I.blowupChartToProjectiveSpace f (hU i) (aU i) (haU i) := by
+  obtain ⟨m, hm, hclosed, hchart⟩ := I.exists_blowupToProjectiveSpace_of_compatible
+    f U hU hcover aU haU (I.compatible_blowupChartToProjectiveSpace f U hU aU haU g hcompat)
   let 𝒰 := I.blowupProjectiveCover U hU hcover
-  let c i := I.blowupChartToProjectiveSpace f (hU i) (aU i) (haU i)
-  let hc := I.compatible_blowupChartToProjectiveSpace f U hU aU haU g hcompat
-  let m := 𝒰.glueMorphisms c hc
-  have hchart (i : τ) : I.blowupChart (hU i) ≫ m = c i :=
-    𝒰.ι_glueMorphisms c hc i
-  have hm : m ≫ q = I.blowupToBase ≫ f := by
-    apply 𝒰.hom_ext
-    intro i
-    -- The source cover maps are the native chart immersions.
-    change I.blowupChart (hU i) ≫ m ≫ q = I.blowupChart (hU i) ≫ I.blowupToBase ≫ f
-    rw [reassoc_of% (hchart i)]
-    exact I.blowupChartToProjectiveSpace_toSpecCoeff f (hU i) (aU i) (haU i)
-  refine ⟨m, hm, I.isClosedImmersion_blowup_graph f U hU hcover aU haU hm hchart, ?_, hchart⟩
+  refine ⟨m, hm, hclosed, ?_, hchart⟩
   let e := Scheme.Opens.ι (I.comap I.blowupToBase).support.compl
   refine Scheme.Cover.hom_ext (𝒰.pullback₁ e) _ _ fun i ↦ ?_
   -- The pullback cover is indexed by the original charts.
@@ -258,17 +300,16 @@ theorem exists_blowupToProjectiveSpace :
   rw [reassoc_of% (pullback.condition (f := e) (g := I.blowupChart (hU i))), hchart i]
   exact (hcompat i).symm
 
-include hcover hcompat in
-/-- A blowup with compatible finite coordinate presentations over a projectively embedded
-base is projective over the coefficient ring. -/
-theorem isProjectiveOver_blowup_of_local_coordinates
+/-- A closed graph in the product of the base and a finite projective space gives
+projectivity of the blowup over the coefficient ring when the base is projectively embedded. -/
+theorem isProjectiveOver_blowup_of_closed_graph
     [Finite ι] {σ : Type u} [Finite σ]
     (j : X ⟶ Proj (MvPolynomial.homogeneousSubmodule σ R)) [IsClosedImmersion j]
-    (hj : j ≫ Proj.toSpecCoeff (MvPolynomial.homogeneousSubmodule σ R) = f) :
+    (hj : j ≫ Proj.toSpecCoeff (MvPolynomial.homogeneousSubmodule σ R) = f)
+    (m : I.blowup ⟶ ℙ) (hm : m ≫ q = I.blowupToBase ≫ f)
+    (hclosed : IsClosedImmersion (pullback.lift I.blowupToBase m hm.symm)) :
     let : I.blowup.Over (Spec (.of R)) := ⟨I.blowupToBase ≫ f⟩
     I.blowup.IsProjectiveOver R := by
-  obtain ⟨m, hm, hclosed, -, -⟩ :=
-    I.exists_blowupToProjectiveSpace f U hU hcover aU haU g hcompat
   let p := Proj.toSpecCoeff (MvPolynomial.homogeneousSubmodule σ R)
   let v := pullback.lift I.blowupToBase m hm.symm
   have : IsClosedImmersion v := hclosed
@@ -287,5 +328,18 @@ theorem isProjectiveOver_blowup_of_local_coordinates
     rfl⟩
   have : IsClosedImmersion b := inferInstanceAs (IsClosedImmersion (v ≫ w ≫ Proj.segre R))
   exact Scheme.IsProjectiveOver.of_isClosedImmersion R b
+
+include hcover hcompat in
+/-- A blowup with compatible finite coordinate presentations over a projectively embedded
+base is projective over the coefficient ring. -/
+theorem isProjectiveOver_blowup_of_local_coordinates
+    [Finite ι] {σ : Type u} [Finite σ]
+    (j : X ⟶ Proj (MvPolynomial.homogeneousSubmodule σ R)) [IsClosedImmersion j]
+    (hj : j ≫ Proj.toSpecCoeff (MvPolynomial.homogeneousSubmodule σ R) = f) :
+    let : I.blowup.Over (Spec (.of R)) := ⟨I.blowupToBase ≫ f⟩
+    I.blowup.IsProjectiveOver R := by
+  obtain ⟨m, hm, hclosed, -, -⟩ :=
+    I.exists_blowupToProjectiveSpace f U hU hcover aU haU g hcompat
+  exact I.isProjectiveOver_blowup_of_closed_graph f j hj m hm hclosed
 
 end AlgebraicGeometry.Scheme.IdealSheafData

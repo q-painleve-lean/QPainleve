@@ -7,10 +7,10 @@ module
 
 public import QPainleve.AlgebraicGeometry.LineBundle.Ratio
 public import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.Polynomial.Basic
+import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.Polynomial.GlobalSections
 import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.ChartEquality
 import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.Naturality
 import TauCeti.AlgebraicGeometry.Restrict
-import TauCeti.RingTheory.MvPolynomial.Homogeneous
 
 /-!
 # Projective morphisms from generating sections of a line bundle
@@ -92,31 +92,6 @@ private theorem restrict_chartEval_X {W : X.Opens} {i : ι} (h : W ≤ Dₛ[i]) 
   simp only [← ConcreteCategory.comp_apply, ← Functor.map_comp, ← op_comp]
   rfl
 
-private theorem fromOfGlobalSections_eq_of_X_unit_rescaling {S : Scheme.{u}}
-    (p q : MvPolynomial ι R →+* Γ(S, ⊤)) (c : Γ(S, ⊤)ˣ)
-    (hC : p.comp C = q.comp C) (hX : ∀ i, q (.X i) = c * p (.X i))
-    (hp : (HomogeneousIdeal.irrelevant (homogeneousSubmodule ι R)).toIdeal.map p = ⊤)
-    (hq : (HomogeneousIdeal.irrelevant (homogeneousSubmodule ι R)).toIdeal.map q = ⊤) :
-    Proj.fromOfGlobalSections _ p hp = Proj.fromOfGlobalSections _ q hq := by
-  have eval_eq (g : MvPolynomial ι R →+* Γ(S, ⊤)) :
-      eval₂Hom (g.comp C) (fun k ↦ g (.X k)) = g := by
-    apply MvPolynomial.ringHom_ext
-    · intro a
-      simp
-    · intro k
-      simp
-  have he (n : ℕ) (a : MvPolynomial ι R) (ha : a ∈ homogeneousSubmodule ι R n) :
-      q a = c ^ n * p a := by
-    calc
-      q a = eval₂ (p.comp C) (fun k ↦ c * p (.X k)) a := by
-        simpa only [← hC, hX, coe_eval₂Hom] using DFunLike.congr_fun (eval_eq q).symm a
-      _ = c ^ n * p a := by
-        simpa only [← coe_eval₂Hom, eval_eq] using
-          (mem_homogeneousSubmodule _ _ |>.mp ha).eval₂_const_mul (p.comp C)
-            (fun k ↦ p (.X k)) (c : Γ(S, ⊤))
-  exact (TauCeti.ProjectiveSpectrum.fromOfGlobalSections_eq_of_unit_rescaling
-    _ p q c he hp).symm
-
 private theorem chartHom_compatible (i j : ι) :
     X.homOfLE (inf_le_left : Dₛ[i] ⊓ Dₛ[j] ≤ Dₛ[i]) ≫ chartHom M f s i =
       X.homOfLE (inf_le_right : Dₛ[i] ⊓ Dₛ[j] ≤ Dₛ[j]) ≫ chartHom M f s j := by
@@ -151,7 +126,7 @@ private theorem chartHom_compatible (i j : ι) :
       DFunLike.congr_fun he r
   unfold chartHom
   rw [Proj.fromOfGlobalSections_naturality, Proj.fromOfGlobalSections_naturality]
-  exact fromOfGlobalSections_eq_of_X_unit_rescaling fi fj c hC hX
+  exact Proj.fromOfGlobalSections_eq_of_X_unit_rescaling fi fj c hC hX
     (by dsimp only [fi]; rw [← Ideal.map_map, chartEval_irrelevant, Ideal.map_top])
     (by dsimp only [fj]; rw [← Ideal.map_map, chartEval_irrelevant, Ideal.map_top])
 
@@ -476,7 +451,7 @@ private theorem chartHom_eq_fromOfGlobalSections_of_frame {V W : X.Opens} {i : �
     rw [eval₂Hom_X', ← ConcreteCategory.comp_apply, hh, ConcreteCategory.comp_apply,
       ← hframe j, restrict_chartEval_X M f s hle', hc, ← map_mul]
     exact congrArg V.topIso.inv (M.sectionRatio_mul_sectionRatio (r j) (r i) b hr hb).symm
-  exact fromOfGlobalSections_eq_of_X_unit_rescaling q₀ q₁ c hC hX _ _
+  exact Proj.fromOfGlobalSections_eq_of_X_unit_rescaling q₀ q₁ c hC hX _ _
 
 /-- In a frame on an affine open, the projective morphism is the ordinary
 evaluation map of the frame coordinates. The coordinates generate the unit

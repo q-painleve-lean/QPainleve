@@ -7,6 +7,7 @@ module
 
 public import QPainleve.AlgebraicGeometry.LineBundle.Ratio
 import Mathlib.Topology.Sheaves.SheafCondition.UniqueGluing
+public import TauCeti.AlgebraicGeometry.Modules.Tensor.Sections
 
 /-!
 # Comparing line bundles by section ratios
@@ -59,6 +60,15 @@ theorem sectionFrame_symm_apply {W : X.Opens} (s : Γ(M, W))
   symm
   apply (M.sectionRatio_eq_iff hs).mpr
   rw [← M.sectionFrame_apply s hs, LinearEquiv.apply_symm_apply]
+
+/-- Tensoring sections with a nowhere vanishing section of a line bundle is bijective
+on that open. -/
+theorem bijective_tmulRight_of_le_nonvanishingLocus (F : X.Modules) {W : X.Opens}
+    (e : Γ(M, W)) (he : W ≤ M.nonvanishingLocus e) :
+    Function.Bijective (tmulRight F e) := by
+  apply bijective_tmulRight
+  intro V j
+  simpa only [Category.comp_id] using (le_nonvanishingLocus_iff e (𝟙 W)).mp he V j
 
 private def frameMap {W : X.Opens} {i : ι} (h : W ≤ U i)
     (hs : ∀ i, U i ≤ M.nonvanishingLocus (s i)) : Γ(M, W) →ₗ[Γ(X, W)] Γ(N, W) :=
