@@ -10,6 +10,7 @@ public import QPainleve.Geometry.Toric.Fan.Subdivision.Basic
 public import TauCeti.Geometry.Toric.Algebraic.Fan.DenseTorus
 
 import TauCeti.Geometry.Toric.Algebraic.Fan.SubfanScheme
+import TauCeti.RingTheory.Spectrum.Prime.Topology
 
 /-!
 # Density of the torus in a toric scheme
@@ -17,12 +18,14 @@ import TauCeti.Geometry.Toric.Algebraic.Fan.SubfanScheme
 The inclusion of a face induces an injective map of affine toric coordinate rings, so
 the corresponding open immersion is dominant. Applying this to the zero face in each
 chart shows that Tau Ceti's torus inclusion is dense in any nonempty fan realization.
+`FanHom.denseTorusι_comp_algebraicMap` reduces dominance of a toric morphism to the
+map on dense tori, where injectivity on characters suffices.
 The common-cone chart comparison identifies the inverse image of the torus under a subdivision.
 -/
 
 public section
 
-open AlgebraicGeometry CategoryTheory
+open AlgebraicGeometry CategoryTheory Multiplicative
 
 namespace TauCeti.Toric.Fan
 
@@ -61,6 +64,49 @@ theorem range_subfanInclusion_algebraicMap_of_eq_singleton_bot
   · simpa only [subfan_cones] using hbot
 
 end TauCeti.Toric.Fan
+
+namespace TauCeti.Toric.FanHom
+
+variable {N N' : Type u} {V V' : Type*} [AddCommGroup N] [AddCommGroup N']
+  [AddCommGroup V] [AddCommGroup V'] [Module ℝ V] [Module ℝ V']
+  {i : N →+ V} {i' : N' →+ V'} {Φ : Fan i} {Ψ : Fan i'}
+
+/-- A toric morphism out of a nonempty fan is dominant if pullback is injective on
+the character lattice of the target. -/
+theorem isDominant_algebraicMap_of_injective_dualMap (f : FanHom Φ Ψ) (hΦ : Nonempty Φ.cones)
+    (hf : Function.Injective fun m : N' →+ ℤ ↦ m.comp f.latticeMap) :
+    IsDominant f.algebraicMap := by
+  let hbot : Set.MapsTo f.realMap (⊥ : PointedCone ℝ V) (⊥ : PointedCone ℝ V') :=
+    by simp [Set.MapsTo]
+  let d := dualSemigroupMap Φ.lattice Ψ.lattice f.latticeMap f.realMap f.map_lattice hbot
+  let q := affineToricSchemeMap Φ.lattice Ψ.lattice f.latticeMap f.realMap f.map_lattice hbot
+  have hq : IsDominant q := by
+    dsimp only [q]
+    rw [affineToricSchemeMap_def]
+    refine ⟨RingHom.denseRange_comap_of_injective _ ?_⟩
+    have he : affineCoordinateRingMap Φ.lattice Ψ.lattice f.latticeMap f.realMap
+        f.map_lattice hbot = MonoidAlgebra.mapDomainAlgHom ℂ ℂ d.toMultiplicative := by
+      apply MonoidAlgebra.algHom_ext
+      · intro m
+        rw [← ofAdd_toAdd m, affineCoordinateRingMap_single]
+        simp [d]
+      · ext
+    rw [he]
+    apply MonoidAlgebra.mapDomain_injective
+    intro m n hmn
+    apply Multiplicative.toAdd.injective
+    apply Subtype.ext
+    apply hf
+    simpa only [AddMonoidHom.coe_toMultiplicative, Function.comp_apply, toAdd_ofAdd,
+      coe_dualSemigroupMap, d] using
+      congrArg (fun x : Multiplicative (dualSemigroup Φ.lattice ⊥) ↦
+        (x.toAdd : N →+ ℤ)) hmn
+  have : IsDominant (Φ.denseTorusι hΦ ≫ f.algebraicMap) := by
+    rw [f.denseTorusι_comp_algebraicMap hΦ]
+    exact inferInstanceAs (IsDominant (q ≫ Ψ.denseTorusι _))
+  exact IsDominant.of_comp (Φ.denseTorusι hΦ) _
+
+end TauCeti.Toric.FanHom
 
 namespace TauCeti.Toric.Fan.IsSubdivision
 

@@ -30,6 +30,8 @@ fan scheme whose representatives on the affine cone charts are the corresponding
 whenever the character is nonnegative on the cone. Characters have order zero at the
 codimension-one points of the dense torus, and a nonzero rational function with this property
 is a scalar times a character.
+The restriction `FanHom.denseTorusι_comp_algebraicMap` also compares character pullback on
+the generic stalk with the monomial pullback on the torus.
 -/
 
 public noncomputable section
@@ -330,5 +332,63 @@ theorem exists_eq_const_mul_character (f : (𝒳).functionFieldˣ)
   rfl
 
 end Fan
+
+namespace FanHom
+
+variable {N N' : Type} {V V' : Type*} [AddCommGroup N] [AddCommGroup N']
+  [AddCommGroup V] [AddCommGroup V'] [Module ℝ V] [Module ℝ V']
+  {i : N →+ V} {i' : N' →+ V'} {Φ : Fan i} {Ψ : Fan i'}
+  [Nonempty Φ.cones] [Nonempty Ψ.cones]
+
+/-- A dominant toric morphism pulls back rational characters by precomposition
+with its lattice map. -/
+@[simp]
+theorem functionFieldMap_algebraicMap_character (f : FanHom Φ Ψ)
+    [IsDominant f.algebraicMap] (m : N' →+ ℤ) :
+    f.algebraicMap.functionFieldMap (Ψ.character (ofAdd m)) =
+      Φ.character (ofAdd (m.comp f.latticeMap)) := by
+  let j := Φ.denseTorusι inferInstance
+  let j' := Ψ.denseTorusι inferInstance
+  let R := CommRingCat.of (affineCoordinateRing Φ.lattice (⊥ : PointedCone ℝ V))
+  let S := CommRingCat.of (affineCoordinateRing Ψ.lattice (⊥ : PointedCone ℝ V'))
+  let hbot : Set.MapsTo f.realMap (⊥ : PointedCone ℝ V) (⊥ : PointedCone ℝ V') :=
+    by simp [Set.MapsTo]
+  let a : S ⟶ R := CommRingCat.ofHom (affineCoordinateRingMap Φ.lattice Ψ.lattice
+    f.latticeMap f.realMap f.map_lattice hbot).toRingHom
+  let q := Spec.map a
+  have hcomp : j ≫ f.algebraicMap = q ≫ j' := by
+    simpa only [j, j', q, a, affineToricSchemeMap_def] using
+      f.denseTorusι_comp_algebraicMap (inferInstance : Nonempty Φ.cones)
+  have : IsDominant (q ≫ j') := hcomp ▸ inferInstanceAs (IsDominant (j ≫ f.algebraicMap))
+  have : IsDominant q := IsDominant.of_comp_of_isOpenImmersion q j'
+  have hfield : f.algebraicMap.functionFieldMap ≫ j.functionFieldMap =
+      j'.functionFieldMap ≫ q.functionFieldMap := by
+    rw [← Scheme.Hom.functionFieldMap_comp, ← Scheme.Hom.functionFieldMap_comp,
+      Scheme.Hom.functionFieldMap_congr hcomp]
+  have hsections : (Scheme.ΓSpecIso S).inv ≫ Ψ.denseTorus.germToFunctionField ⊤ ≫
+      q.functionFieldMap = a ≫ (Scheme.ΓSpecIso R).inv ≫ Φ.denseTorus.germToFunctionField ⊤ := by
+    have hq : Ψ.denseTorus.germToFunctionField ⊤ ≫ q.functionFieldMap =
+        q.appTop ≫ Φ.denseTorus.germToFunctionField ⊤ :=
+      q.germToFunctionField_functionFieldMap ⊤
+    rw [hq, ← Scheme.ΓSpecIso_inv_naturality_assoc a]
+  apply j.functionFieldMap.hom.injective
+  rw [← CommRingCat.comp_apply, hfield, CommRingCat.comp_apply, Fan.functionFieldMap_character,
+    Fan.functionFieldMap_character, ← CommRingCat.comp_apply, Category.assoc, hsections,
+    CommRingCat.comp_apply]
+  let m₀ := m.comp f.latticeMap
+  have hm : a (MonoidAlgebra.of ℂ _ (ofAdd ((denseTorusDualEquiv Ψ.lattice).symm m))) =
+      MonoidAlgebra.of ℂ _ (ofAdd ((denseTorusDualEquiv Φ.lattice).symm m₀)) := by
+    have hsub : dualSemigroupMap Φ.lattice Ψ.lattice f.latticeMap f.realMap f.map_lattice hbot
+        ((denseTorusDualEquiv Ψ.lattice).symm m) =
+          (denseTorusDualEquiv Φ.lattice).symm (m.comp f.latticeMap) := by
+      apply Subtype.ext
+      simp [coe_dualSemigroupMap, denseTorusDualEquiv_symm_apply]
+    rw [MonoidAlgebra.of_apply, MonoidAlgebra.of_apply]
+    dsimp only [a]
+    exact (affineCoordinateRingMap_single _ _ _ _ _ _ _ _).trans
+      (congrArg (fun t ↦ MonoidAlgebra.single (ofAdd t) (1 : ℂ)) hsub)
+  simpa only [toAdd_ofAdd] using congrArg _ hm
+
+end FanHom
 
 end TauCeti.Toric
