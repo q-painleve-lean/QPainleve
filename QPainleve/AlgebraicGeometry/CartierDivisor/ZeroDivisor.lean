@@ -8,6 +8,7 @@ module
 public import TauCeti.AlgebraicGeometry.CartierDivisor.IdealSheaf
 
 import QPainleve.AlgebraicGeometry.IdealSheaf.Image
+import QPainleve.AlgebraicGeometry.IdealSheaf.Image.Basic
 import TauCeti.AlgebraicGeometry.LineBundle.Endomorphisms
 
 /-!
@@ -89,6 +90,11 @@ def zeroIdeal (s : Γ(L.obj, ⊤)) : X.IdealSheafData :=
 lemma zeroIdeal_ideal (s : Γ(L.obj, ⊤)) (U : X.affineOpens) :
     (L.zeroIdeal s).ideal U = (L.dualSectionEquiv.symm s).imageIdeal U :=
   Hom.imageIdealSheaf_ideal _ _
+
+/-- The evaluation ideal is the zero ideal sheaf exactly when the section vanishes identically. -/
+@[simp]
+theorem zeroIdeal_eq_bot_iff (s : Γ(L.obj, ⊤)) : L.zeroIdeal s = ⊥ ↔ s = 0 := by
+  rw [zeroIdeal, Hom.imageIdealSheaf_eq_bot_iff, Equiv.symm_apply_eq, dualSectionEquiv_zero]
 
 /-- Transporting a section through an isomorphism of line bundles preserves its zero ideal. -/
 @[simp]
