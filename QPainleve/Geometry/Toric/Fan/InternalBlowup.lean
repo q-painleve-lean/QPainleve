@@ -77,6 +77,15 @@ theorem internalBlowupTower_eq_alongBoundary :
     internalBlowupTower b s c =
       alongBoundary (boundary).subschemeι (fun j ↦ (s j).internalCenter b (c j)) := (rfl)
 
+/-- Reversing the ordered basis and inverting the center parameters gives the same
+ordered tower with strict boundary. In particular the equality retains the order of
+infinitely near centers. -/
+@[simp]
+theorem internalBlowupTower_reindex_swap :
+    internalBlowupTower (b.reindex (Equiv.swap 0 1)) s c⁻¹ =
+      internalBlowupTower b s c := by
+  simp [internalBlowupTower_eq_alongBoundary]
+
 /-- The empty list of internal centers leaves the toric model unchanged. -/
 @[simp]
 theorem internalBlowupTower_zero (s : Fin 0 → Φ.Ray) (c : Fin 0 → ℂˣ) :
