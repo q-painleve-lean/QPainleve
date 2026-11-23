@@ -96,6 +96,25 @@ public theorem classIntersectionNumber_eq_finrank_intersection (hX : topological
   rw [classIntersectionNumber_eq, inv_inv, inv_inv]
   linear_combination h₁ - h₂ + h₃ + hχ
 
+/-- Properly meeting effective Cartier divisors have positive intersection number exactly
+when their supports meet. -/
+public theorem classIntersectionNumber_pos_iff_support_inter_nonempty
+    (hX : topologicalKrullDim X ≤ 2) (hI : I.IsEffectiveCartier) (hJ : J.IsEffectiveCartier)
+    (hIJ : (I.comap J.subschemeι).IsEffectiveCartier) :
+    0 < classIntersectionNumber k X (LineBundleClass.mk hI.toInvertibleSheaf)⁻¹
+      (LineBundleClass.mk hJ.toInvertibleSheaf)⁻¹ ↔
+        ((I.support : Set X) ∩ (J.support : Set X)).Nonempty := by
+  let K := I.comap J.subschemeι
+  let i := K.subschemeι ≫ J.subschemeι
+  have : IsFinite (K.subscheme ↘ Spec (.of k)) := isFinite_cartierIntersection k hX hJ hIJ
+  have hrange : Set.range i = (I.support : Set X) ∩ (J.support : Set X) := by
+    rw [← TopologicalSpace.Closeds.coe_inf, ← support_sup, ← ker_cartierIntersection I J]
+    exact (i.support_ker.trans i.isClosedEmbedding.isClosed_range.closure_eq).symm
+  rw [classIntersectionNumber_eq_finrank_intersection k hX hI hJ hIJ default, Int.natCast_pos,
+    Nat.pos_iff_ne_zero, Ne, Scheme.Hom.finrank_eq_zero_iff_notMem_range, not_not,
+    ← hrange, Set.range_nonempty_iff_nonempty]
+  exact ⟨fun ⟨z, _⟩ ↦ ⟨z⟩, fun ⟨z⟩ ↦ ⟨z, Subsingleton.elim _ _⟩⟩
+
 /-- For two effective Cartier divisors meeting properly on a projective surface, the
 intersection number is the sum over the surface of the local quotient lengths,
 weighted by the residue degrees. The intersection scheme is finite over the field. -/

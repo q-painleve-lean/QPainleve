@@ -8,7 +8,7 @@ module
 public import QPainleve.AlgebraicGeometry.Blowup.Exceptional.Restriction
 public import TauCeti.AlgebraicGeometry.Cohomology.Module.Base
 public import Mathlib.AlgebraicGeometry.Noetherian
-import QPainleve.AlgebraicGeometry.Blowup.PointCohomology
+import QPainleve.AlgebraicGeometry.Blowup.Point.Cohomology
 import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
 import QPainleve.AlgebraicGeometry.Modules.Pushforward
 import TauCeti.AlgebraicGeometry.Cohomology.AffinePushforward

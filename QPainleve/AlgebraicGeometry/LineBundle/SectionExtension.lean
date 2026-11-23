@@ -5,9 +5,16 @@ Authors: The QPainleve contributors
 -/
 module
 
+public import QPainleve.AlgebraicGeometry.LineBundle.Ratio
 public import QPainleve.AlgebraicGeometry.Modules.TensorProduct
+public import TauCeti.AlgebraicGeometry.LineBundle.Ample
 public import TauCeti.AlgebraicGeometry.LineBundle.NonvanishingLocus
 public import TauCeti.AlgebraicGeometry.LineBundle.Power
+public import TauCeti.AlgebraicGeometry.Modules.Tensor.Sections
+public import Mathlib.AlgebraicGeometry.FunctionField
+import QPainleve.AlgebraicGeometry.LineBundle.Power
+import Mathlib.RingTheory.Localization.Integer
+import TauCeti.AlgebraicGeometry.LineBundle.TwistedSections
 import TauCeti.AlgebraicGeometry.Modules.Localization
 import TauCeti.Algebra.Group.Action.Pow
 
@@ -251,5 +258,67 @@ theorem eventually_exists_extension_tensorSectionPow [CompactSpace X] [QuasiSepa
     exact (tensorSectionPow_succ _ _ _).symm
 
 end Extension
+
+/-- A finite family of functions on the nonvanishing locus of a global line bundle section
+extends to global sections after multiplying by a common positive tensor power of that section. -/
+theorem exists_sections_mul_tensorPow [CompactSpace X] [QuasiSeparatedSpace X]
+    {ι : Type u} [Finite ι] (L : TauCeti.AlgebraicGeometry.InvertibleSheaf X) (e : Γ(L.obj, ⊤))
+    (a : ι → Γ(X, L.obj.nonvanishingLocus e)) :
+    ∃ (n : ℕ) (_ : 0 < n) (s : ι → Γ(tensorPow L.obj n, ⊤)),
+      ∀ i, (tensorPow L.obj n).presheaf.map (L.obj.nonvanishingLocus e).leTop.op (s i) =
+        a i • tensorPowSection (L.obj.presheaf.map (L.obj.nonvanishingLocus e).leTop.op e) n := by
+  have h (i : ι) := eventually_exists_map_eq_tmulRight_tensorPowSection (𝟙_ X.Modules)
+    isCompact_univ (isQuasiSeparated_univ_iff.mpr inferInstance) e (a i)
+  obtain ⟨n, hn, h⟩ := (Filter.eventually_all.mpr h |>.and (Filter.eventually_gt_atTop 0)).exists
+  choose t ht using hn
+  refine ⟨n, h, fun i ↦ (λ_ (tensorPow L.obj n)).hom.app ⊤ (t i), fun i ↦ ?_⟩
+  have hnat := ((λ_ (tensorPow L.obj n)).hom.mapPresheaf.naturality_apply
+    (L.obj.nonvanishingLocus e).leTop.op (t i)).symm
+  refine hnat.trans ((congrArg ((λ_ (tensorPow L.obj n)).hom.app _) (ht i)).trans ?_)
+  exact leftUnitor_hom_app_tmulRight _ _
+
+open TauCeti.AlgebraicGeometry in
+/-- A finite family of rational functions with a chosen entry equal to one is realized
+as ratios of global line bundle sections at the generic point. -/
+theorem exists_global_sections_of_ratios [IsIntegral X]
+    [CompactSpace X] [QuasiSeparatedSpace X] {A : LineBundleClass X} (hA : A.IsAmple)
+    {ι : Type u} [Finite ι] (c : ι → X.functionField) (i : ι) (hci : c i = 1) :
+    ∃ (L : InvertibleSheaf X) (s : ι → Γ(L.obj, ⊤)),
+      let D := L.obj.nonvanishingLocus (s i)
+      ∃ hD : genericPoint X ∈ D, ∀ j,
+        X.presheaf.germ D (genericPoint X) hD
+          (L.obj.sectionRatio (L.obj.presheaf.map D.leTop.op (s j))
+            (L.obj.presheaf.map D.leTop.op (s i))
+            (by rw [nonvanishingLocus_map, inf_idem])) = c j := by
+  obtain ⟨_, _, L, _, e, hη, hU⟩ := hA.exists_isAffineOpen_nonvanishingLocus (genericPoint X)
+  let U := L.obj.nonvanishingLocus e
+  have : Nonempty U := ⟨⟨_, hη⟩⟩
+  have := functionField_isFractionRing_of_isAffineOpen X U hU
+  obtain ⟨b, hb⟩ := IsLocalization.exist_integer_multiples_of_finite (nonZeroDivisors Γ(X, U)) c
+  choose a ha using hb
+  have hb' : X.presheaf.germ U (genericPoint X) hη b ≠ 0 := fun h ↦
+    nonZeroDivisors.ne_zero b.property (X.germToFunctionField_injective U
+      (h.trans (map_zero _).symm))
+  have hai : a i = b := (IsFractionRing.injective Γ(X, U) X.functionField) (by
+    simpa only [hci, Algebra.smul_def, mul_one] using ha i)
+  obtain ⟨n, hn, s, hs⟩ := exists_sections_mul_tensorPow L e a
+  let M : InvertibleSheaf X := ⟨tensorPow L.obj n, inferInstance⟩
+  let D := (tensorPow L.obj n).nonvanishingLocus (s i)
+  let eU := tensorPowSection (L.obj.presheaf.map U.leTop.op e) n
+  have heU : (tensorPow L.obj n).nonvanishingLocus eU = U := by
+    rw [nonvanishingLocus_tensorPowSection _ hn, nonvanishingLocus_map, inf_idem]
+  have hW : X.basicOpen (b : Γ(X, U)) = U ⊓ D := by
+    rw [← hai]
+    exact (tensorPow L.obj n).basicOpen_eq_inf_nonvanishingLocus U.leTop (s i) heU.ge (hs i).symm
+  have hηD : genericPoint X ∈ D := (hW.le.trans inf_le_right)
+    ((X.mem_basicOpen _ _ hη).mpr (isUnit_iff_ne_zero.mpr hb'))
+  refine ⟨M, s, hηD, fun j ↦ ?_⟩
+  have hg := (tensorPow L.obj n).germ_sectionRatio_mul_eq_of_restrict_eq_smul hη hηD
+    (s j) (s i) eU heU.ge (by rw [nonvanishingLocus_map, inf_idem]) (a j) (a i) (hs j) (hs i)
+  have hnum : X.presheaf.germ U (genericPoint X) hη (a j) =
+      X.presheaf.germ U (genericPoint X) hη b * c j := by
+    simpa only [Algebra.smul_def, RingHom.algebraMap_toAlgebra] using ha j
+  rw [hai, hnum, mul_comm _ (c j)] at hg
+  exact mul_right_cancel₀ hb' hg
 
 end AlgebraicGeometry.Scheme.Modules

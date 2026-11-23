@@ -5,26 +5,33 @@ Authors: The QPainleve contributors
 -/
 module
 
-public import TauCeti.AlgebraicGeometry.Blowup.StrictTransform
+public import QPainleve.AlgebraicGeometry.Blowup.StrictTransform.Basic
+public import QPainleve.AlgebraicGeometry.IdealSheaf.RegularPair
 public import TauCeti.AlgebraicGeometry.Blowup.AffineCharts
+public import TauCeti.AlgebraicGeometry.IdealSheaf.Stalk
 public import TauCeti.RingTheory.Ideal.AssociatedGraded
+import Mathlib.AlgebraicGeometry.FunctionField
 import QPainleve.RingTheory.Ideal.AffineBlowup.StrictTransform
 import TauCeti.AlgebraicGeometry.Blowup.BaseChange
 import TauCeti.AlgebraicGeometry.IdealSheaf.BaseChange
 import TauCeti.AlgebraicGeometry.IdealSheaf.Locality
+import TauCeti.RingTheory.Ideal.Order
+import TauCeti.RingTheory.Regular.AssociatedGraded
 
 /-!
-# Total and strict transforms on blowup charts
+# Total and strict transforms of divisors
 
 On an order-one affine chart the total-transform ideal of a hypersurface is its
 strict-transform ideal times the exceptional ideal to the order of the local equation.
 The comparison uses Tau Ceti's schematic closure theorem for the strict-transform morphism
 ([The Stacks Project, Tag 080E](https://stacks.math.columbia.edu/tag/080E)).
+For the blowup of a regular closed point of local dimension two, the chart formulas
+give a global equality with exceptional exponent equal to the stalk order.
 -/
 
 public section
 
-open CategoryTheory Limits
+open CategoryTheory Limits TopologicalSpace
 open TauCeti.AlgebraicGeometry
 
 universe u
@@ -176,5 +183,129 @@ theorem comap_eq_pow_mul_ker_blowupMap_on_blowupChart
   rw [comap_mul, comap_pow, ← comap_comp, ← comap_comp, ← comap_comp, ← Category.assoc]
   exact I.comap_eq_pow_mul_ker_blowupMap_on_affineBlowupChart D hU (hmem i) (ha₂ i)
     (haReg i) hD hf hf'
+
+open RingTheory.Sequence in
+/-- A weakly regular pair around the whole center gives the total-transform formula on the
+blowup. The remainder of the blowup lies in the exceptional complement. -/
+theorem totalTransform_eq_strictTransform_mul_pow_of_affine {X : Scheme.{u}} [IsLocallyNoetherian X]
+    (I J : X.IdealSheafData) (U : X.affineOpens) (hU : (I.support : Set X) ⊆ U.val)
+    {a b f : Γ(X, U)} (hI : Ideal.span {a, b} = I.ideal U) [(I.ideal U).IsPrime]
+    (hab : IsWeaklyRegular Γ(X, U) [a, b]) (hba : IsWeaklyRegular Γ(X, U) [b, a])
+    (hJ : J.ideal U = Ideal.span {f}) {n : ℕ}
+    (hf : f ∈ I.ideal U ^ n) (hf' : f ∉ I.ideal U ^ (n + 1)) :
+    J.comap I.blowupToBase =
+      (I.blowupMap J.subschemeι).ker * (I.comap I.blowupToBase) ^ n := by
+  let P := I.ideal U
+  have hList : Ideal.ofList [a, b] = P := by simpa [Ideal.span_insert] using hI
+  let e := hab.associatedGradedEquiv hList
+  have : IsDomain P.AssociatedGraded := e.toMulEquiv.isDomain_iff.mp inferInstance
+  have hOrder (i : Fin ([a, b] : List Γ(X, U)).length) :
+      ([a, b] : List Γ(X, U))[i.val] ∉ P ^ 2 := by
+    intro h
+    apply MvPolynomial.X_ne_zero (R := Γ(X, U) ⧸ P) i
+    apply e.injective
+    rw [map_zero, hab.associatedGradedEquiv_X hList]
+    exact (Ideal.AssociatedGraded.mk_eq_zero_iff _).mpr h
+  let s (i : Bool) := cond i a b
+  have hs : Ideal.span (Set.range s) = P := by
+    simpa [s, Bool.range_eq, Set.pair_comm] using hI
+  have hsOrder (i : Bool) : s i ∉ P ^ 2 := by
+    cases i
+    · exact hOrder 1
+    · exact hOrder 0
+  have hsReg (i : Bool) : s i ∈ nonZeroDivisors Γ(X, U) := by
+    cases i
+    · exact (isLeftRegular_iff_isRegular.mp
+        ((isWeaklyRegular_cons_iff _ _ _).mp hba).1.isLeftRegular).mem_nonZeroDivisors
+    · exact (isLeftRegular_iff_isRegular.mp
+        ((isWeaklyRegular_cons_iff _ _ _).mp hab).1.isLeftRegular).mem_nonZeroDivisors
+  let E := I.comap I.blowupToBase
+  let W : I.blowup.Opens := E.support.compl
+  let hAff : IsAffineOpen U.val := U.property
+  let C : I.blowup.OpenCover := Scheme.Cover.mkOfCovers Bool
+    (fun i ↦ cond i (Proj (reesAlgebra.grade P)) W.toScheme)
+    (fun i ↦ match i with
+    | false => W.ι
+    | true => I.blowupChart hAff)
+    (by
+      intro y
+      by_cases hy : y ∈ W
+      · exact ⟨false, ⟨y, hy⟩, rfl⟩
+      · refine ⟨true, ?_⟩
+        change y ∈ Set.range (I.blowupChart hAff)
+        rw [← Scheme.Hom.coe_opensRange, I.opensRange_blowupChart]
+        apply hU
+        have hyE : y ∈ (E.support : Set I.blowup) := by
+          by_contra h
+          exact hy h
+        rwa [support_comap, Closeds.coe_preimage] at hyE)
+    (by
+      rintro (_ | _)
+      · exact inferInstanceAs (IsOpenImmersion W.ι)
+      · exact inferInstanceAs (IsOpenImmersion (I.blowupChart hAff)))
+  refine ext_of_comap_openCover C fun i ↦ ?_
+  rw [comap_mul, comap_pow]
+  cases i with
+  | false =>
+    have hW : E.comap W.ι = ⊤ :=
+      (comap_eq_top_iff _ _).mpr (Scheme.Opens.ι_preimage_self W)
+    change (J.comap I.blowupToBase).comap W.ι =
+      (I.blowupMap J.subschemeι).ker.comap W.ι * (E.comap W.ι) ^ n
+    rw [hW, ← one_eq_top, one_pow, mul_one, comap_ker_blowupMap_subschemeι_exceptionalCompl]
+  | true =>
+    change (J.comap I.blowupToBase).comap (I.blowupChart hAff) =
+      (I.blowupMap J.subschemeι).ker.comap (I.blowupChart hAff) *
+        (E.comap (I.blowupChart hAff)) ^ n
+    rw [mul_comm, ← comap_comp, ← comap_comp]
+    exact I.comap_eq_pow_mul_ker_blowupMap_on_blowupChart J hAff s hs hsOrder hsReg hJ hf hf'
+
+open RingTheory.Sequence in
+/-- The total transform of an effective Cartier divisor under a blowup of a regular
+closed point of local dimension two is its strict transform plus its multiplicity at
+the point times the exceptional divisor. The equality is on the actual ideal sheaves. -/
+theorem IsEffectiveCartier.totalTransform_eq_strictTransform_mul_pow_closedPoint
+    {X : Scheme.{u}} [IsLocallyNoetherian X] [IsIntegral X] {p : X}
+    [IsRegularLocalRing (X.presheaf.stalk p)] {J : X.IdealSheafData}
+    (hJ : J.IsEffectiveCartier) (hp : IsClosed ({p} : Set X))
+    (hdim : ringKrullDim (X.presheaf.stalk p) = 2) :
+    let I := vanishingIdeal (Closeds.mk (closure {p}) isClosed_closure)
+    J.comap I.blowupToBase =
+      (I.blowupMap J.subschemeι).ker * (I.comap I.blowupToBase) ^ (J.stalkOrder p).toNat := by
+  let I := vanishingIdeal (Closeds.mk (closure {p}) isClosed_closure)
+  obtain ⟨V, -, hpV, f₀, hreg₀, hf₀⟩ := hJ.exists_eq_span_singleton_le ⊤ (Opens.mem_top p)
+  obtain ⟨U, hpU, hUV, a, b, hab, hreg, hswap⟩ :=
+    exists_mem_le_span_pair_vanishingIdeal_closure_singleton hdim hpV
+  let f : Γ(X, U) := X.presheaf.map (homOfLE hUV).op f₀
+  have hf : J.ideal U = Ideal.span {f} := J.ideal_eq_span_singleton_of_le hUV hf₀
+  have hsupport : (I.support : Set X) ⊆ U.val := by
+    rw [coe_support_vanishingIdeal, Closeds.coe_mk, hp.closure_eq]
+    exact Set.singleton_subset_iff.mpr hpU
+  let P := (U.property.primeIdealOf ⟨p, hpU⟩).asIdeal
+  have hIP : I.ideal U = P := vanishingIdeal_closure_singleton_ideal p U hpU
+  let : P.IsMaximal := U.property.primeIdealOf_isMaximal_of_isClosed ⟨p, hpU⟩ hp
+  have hPrime : (I.ideal U).IsPrime := hIP.symm ▸ (inferInstance : P.IsPrime)
+  have hord : J.stalkOrder p ≠ ⊤ := by
+    let : Nonempty V.val := ⟨⟨p, hpV⟩⟩
+    have hf₀_ne : f₀ ≠ 0 := fun he ↦
+      one_ne_zero (hreg₀ (by simp [he]) : (1 : Γ(X, V)) = 0)
+    have hgerm : X.presheaf.germ V.val p hpV f₀ ≠ 0 := fun he ↦
+      hf₀_ne (germ_injective_of_isIntegral X p hpV (he.trans (map_zero _).symm))
+    rw [J.stalkOrder_def, ne_eq, Ideal.localOrder_eq_top_iff_eq_bot,
+      J.stalkIdeal_eq_map V p hpV, hf₀, Ideal.map_span, Set.image_singleton,
+      Ideal.span_singleton_eq_bot]
+    exact hgerm
+  let n := (J.stalkOrder p).toNat
+  have hn : (n : ℕ∞) = J.stalkOrder p := ENat.natCast_toNat hord
+  have hpow (m : ℕ) : f ∈ I.ideal U ^ m ↔ (m : ℕ∞) ≤ J.stalkOrder p := by
+    have he : (IsLocalRing.maximalIdeal (Localization.AtPrime P) ^ m).comap
+        (algebraMap Γ(X, U) (Localization.AtPrime P)) = P ^ m :=
+      IsLocalization.AtPrime.under_maximalIdeal_pow P (Localization.AtPrime P) m
+    rw [J.stalkOrder_eq_orderAt U p hpU, Ideal.natCast_le_orderAt_iff, hIP,
+      Ideal.map_le_iff_le_comap, he, hf, Ideal.span_singleton_le_iff_mem]
+  refine totalTransform_eq_strictTransform_mul_pow_of_affine I J U hsupport hab hreg hswap hf
+    ((hpow n).mpr hn.le) (fun hm ↦ ?_)
+  have hle := (hpow (n + 1)).mp hm
+  rw [← hn] at hle
+  exact (Nat.not_succ_le_self n) (by exact_mod_cast hle)
 
 end AlgebraicGeometry.Scheme.IdealSheafData

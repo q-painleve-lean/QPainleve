@@ -9,7 +9,7 @@ public import Mathlib.AlgebraicGeometry.IdealSheaf.Functorial
 public import Mathlib.RingTheory.RegularLocalRing.Defs
 public import TauCeti.AlgebraicGeometry.Blowup.IdealSheaf
 import Mathlib.AlgebraicGeometry.Morphisms.SchemeTheoreticallyDominant
-import QPainleve.AlgebraicGeometry.Blowup.PointCohomology
+import QPainleve.AlgebraicGeometry.Blowup.Point.Cohomology
 import TauCeti.AlgebraicGeometry.Blowup.Restriction
 import TauCeti.AlgebraicGeometry.Descent.Contraction
 import TauCeti.AlgebraicGeometry.Morphisms.Epi

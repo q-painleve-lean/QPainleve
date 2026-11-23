@@ -10,7 +10,7 @@ public import TauCeti.AlgebraicGeometry.IdealSheaf.Over
 public import TauCeti.AlgebraicGeometry.LineBundle.EulerCharacteristic
 public import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.ProjectiveOver
 import Mathlib.AlgebraicGeometry.AlgClosed.Basic
-import QPainleve.AlgebraicGeometry.Blowup.PointCohomology
+import QPainleve.AlgebraicGeometry.Blowup.Point.Cohomology
 import QPainleve.AlgebraicGeometry.Cohomology.Projective
 import QPainleve.AlgebraicGeometry.Cohomology.ProjectiveSpace.EulerCharacteristic
 import QPainleve.AlgebraicGeometry.Cohomology.Support
