@@ -8,7 +8,6 @@ module
 public import QPainleve.AlgebraicGeometry.CartierDivisor.ZeroDivisor
 import QPainleve.AlgebraicGeometry.IdealSheaf.TensorProduct
 import QPainleve.AlgebraicGeometry.IdealSheaf.Image
-import QPainleve.AlgebraicGeometry.IdealSheaf.Image.Basic
 
 /-!
 # Dividing sections by an effective Cartier divisor
@@ -76,19 +75,6 @@ private theorem sectionToFunctional_imageIdealSheaf (s : Γ(L.obj, ⊤)) :
   rw [← hφ, h]
   ext V a
   rw [Hom.imageIdealSheaf_ideal, zeroIdeal_ideal]
-
-/-- The zero section cuts out the entire scheme. -/
-@[simp]
-theorem zeroIdeal_zero : L.zeroIdeal 0 = ⊥ := by
-  have hz : sectionToFunctional L 0 = 0 := by
-    apply (dualHomUnitEquiv L.obj).injective
-    apply L.obj.unitHomEquivTop.injective
-    exact ((congrArg L.obj.unitHomEquivTop ((dualHomUnitEquiv L.obj).apply_symm_apply _)).trans
-      (L.obj.unitHomEquivTop.apply_symm_apply 0)).trans
-      ((congrArg L.obj.unitHomEquivTop (dualHomUnitEquiv_zero L.obj)).trans
-        (unitHomEquivTop_zero L.obj)).symm
-  rw [← sectionToFunctional_imageIdealSheaf, Hom.imageIdealSheaf_eq_bot_iff]
-  exact hz
 
 /-- A section lies in the effective Cartier twist exactly when its zero ideal is contained
 in the divisor ideal. The section of the twist is unique. -/

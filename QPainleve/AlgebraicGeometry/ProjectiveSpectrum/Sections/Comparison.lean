@@ -81,27 +81,15 @@ private theorem germ_sectionRatio_projective_eq (i j : ι) {x : X}
   let b := N.sectionRatio (res[N, V[i]] (t j)) (res[N, V[i]] (t i))
     (by rw [N.nonvanishingLocus_map, inf_idem])
   have ha : X.presheaf.map p.op a = M.sectionRatio (res[M, W] (s j)) (res[M, W] (s i)) hM := by
-    symm
-    apply (M.sectionRatio_eq_iff hM).mpr
-    rw [← hrestrictM i, ← M.map_smul, M.sectionRatio_smul, hrestrictM j]
+    simpa only [hrestrictM] using
+      M.map_sectionRatio p (res[M, U[i]] (s j)) (res[M, U[i]] (s i))
+        (by rw [M.nonvanishingLocus_map, inf_idem])
   have hb : X.presheaf.map q.op b = N.sectionRatio (res[N, W] (t j)) (res[N, W] (t i)) hN := by
-    symm
-    apply (N.sectionRatio_eq_iff hN).mpr
-    rw [← hrestrictN i, ← N.map_smul, N.sectionRatio_smul, hrestrictN j]
+    simpa only [hrestrictN] using
+      N.map_sectionRatio q (res[N, V[i]] (t j)) (res[N, V[i]] (t i))
+        (by rw [N.nonvanishingLocus_map, inf_idem])
   have h := congrArg (X.presheaf.germ W x hx) (ha.trans (hratio.trans hb.symm))
   simpa only [TopCat.Presheaf.germ_res_apply] using h
-
-/-- A partial projective presentation restricts to its chosen affine chart at the generic
-point. -/
-theorem fromFunctionField_partialMapToProjectiveSpace [IsIntegral X]
-    (i : ι) (hs : Dense (U[i] : Set X)) (hx : genericPoint X ∈ U[i]) :
-    (M.partialMapToProjectiveSpace f s i hs).fromFunctionField =
-      (U[i]).fromSpecStalkOfMem _ hx ≫ M.toProjectiveSpaceChart f s i ≫ j[i] := by
-  simp only [PartialMap.fromSpecStalkOfMem, partialMapToProjectiveSpace_hom]
-  rw [← Category.assoc]
-  congr 1
-  apply (cancel_mono (U[i]).ι).mp
-  simp only [Category.assoc, Scheme.homOfLE_ι, Opens.fromSpecStalkOfMem_ι]
 
 include hφ in
 /-- When a map of line bundles takes one indexed family of sections to the other, the two

@@ -8,6 +8,7 @@ module
 public import TauCeti.AlgebraicGeometry.CartierDivisor.IdealSheaf
 
 import QPainleve.AlgebraicGeometry.IdealSheaf.Image
+import QPainleve.AlgebraicGeometry.IdealSheaf.Image.Basic
 import TauCeti.AlgebraicGeometry.LineBundle.Endomorphisms
 
 /-!
@@ -83,6 +84,11 @@ lemma dualSectionEquiv_comp_globalSectionsSmul
 /-- The ideal sheaf of the zero scheme of a section, obtained by evaluation on the dual. -/
 def zeroIdeal (s : Γ(L.obj, ⊤)) : X.IdealSheafData :=
   (L.dualSectionEquiv.symm s).imageIdealSheaf
+
+/-- The zero section cuts out the entire scheme. -/
+@[simp]
+theorem zeroIdeal_zero : L.zeroIdeal 0 = ⊥ := by
+  rw [zeroIdeal, Hom.imageIdealSheaf_eq_bot_iff, Equiv.symm_apply_eq, dualSectionEquiv_zero]
 
 /-- On an affine open, the zero ideal is the image of the evaluation map on sections. -/
 @[simp]
