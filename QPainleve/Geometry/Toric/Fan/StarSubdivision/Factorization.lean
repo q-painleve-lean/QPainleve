@@ -306,6 +306,13 @@ theorem IsTwoRayStarSubdivision.isSubdivision (h : Φ.IsTwoRayStarSubdivision Ψ
   obtain ⟨hΦ, σ, hc⟩ := h
   exact Φ.starSubdivisionAlong_isSubdivision hΦ σ.property (ne_bot_of_card_toricRay_eq_two hc)
 
+/-- A chain of two-ray star subdivisions gives a subdivision of the initial fan. -/
+theorem isSubdivision_of_starSubdivision_chain
+    (h : Relation.ReflTransGen IsTwoRayStarSubdivision Φ Ψ) : Ψ.IsSubdivision Φ := by
+  induction h with
+  | refl => exact IsSubdivision.refl _
+  | tail _ hstep ih => exact hstep.isSubdivision.trans ih
+
 /-- A subdivision between regular fans in a rank-two lattice factors by star subdivisions at
 two-dimensional cones. This holds for noncomplete fans with any common support. -/
 theorem IsSubdivision.exists_starSubdivision_factorization (h : Ψ.IsSubdivision Φ)

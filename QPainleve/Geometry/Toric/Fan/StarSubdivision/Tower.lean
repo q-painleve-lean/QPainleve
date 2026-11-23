@@ -71,12 +71,6 @@ private theorem IsSubdivision.isNodalBoundaryTower_snoc (h : Ψ.IsSubdivision Φ
   exact hT.snoc (p x) hp p.ker_eq_ker_fromSpecResidueField (by
     simpa only [Category.comp_id, p, Scheme.Hom.comp_apply] using hn)
 
-private theorem isSubdivision_of_starSubdivision_chain
-    (h : Relation.ReflTransGen IsTwoRayStarSubdivision Φ Ψ) : Ψ.IsSubdivision Φ := by
-  induction h with
-  | refl => exact IsSubdivision.refl _
-  | tail _ hstep ih => exact hstep.isSubdivision.trans ih
-
 /-- The toric projection of a subdivision of regular surface fans is an ordered tower
 of blowups of boundary nodes. The isomorphism to the tower identifies the final
 reduced boundary. Each exceptional class is pulled back from the new ray divisor
