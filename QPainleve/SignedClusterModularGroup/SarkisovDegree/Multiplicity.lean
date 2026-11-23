@@ -30,6 +30,17 @@ public section
 
 namespace QPainleve
 
+variable {ι : Type*} [Fintype ι] {d : ℤ} {m : ι → ℤ} in
+/-- Each base order is strictly less than the degree of a positive-degree plane system
+satisfying the square homaloidal identity. -/
+theorem baseOrder_lt_degree_of_plane_homaloidal (hd : 0 < d) (j : ι)
+    (hsq : ∑ i, m i ^ 2 = d ^ 2 - 1) : m j < d := by
+  have hbound : m j ^ 2 ≤ ∑ i, m i ^ 2 :=
+    Finset.single_le_sum (fun i _ ↦ sq_nonneg (m i)) (Finset.mem_univ j)
+  rw [hsq] at hbound
+  by_contra! hj
+  nlinarith only [hbound, mul_nonneg (sub_nonneg.mpr hj) (by omega : 0 ≤ m j + d)]
+
 variable {ι : Type*} [Fintype ι] {m : ι → ℤ}
 
 /-- A plane system of degree `d > 1` satisfying the homaloidal identities has
