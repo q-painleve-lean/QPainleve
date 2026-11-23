@@ -9,9 +9,13 @@ public import QPainleve.AlgebraicGeometry.Blowup.Tower.Boundary.Orthogonal
 public import QPainleve.Geometry.Toric.Fan.Picard.ChargeKernel
 public import QPainleve.Geometry.Toric.Fan.Picard.NodalDescent
 
+import Mathlib.Algebra.Order.BigOperators.Ring.Finset
 import Mathlib.Analysis.Complex.Polynomial.Basic
+import Mathlib.Data.Fin.Tuple.Reflection
+import QPainleve.Algebra.Cluster.ChargeKernel.Index
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Numerical
 import QPainleve.AlgebraicGeometry.Chow.Isomorphism
+import QPainleve.Geometry.Toric.Fan.Picard.NormCongruence
 import QPainleve.Geometry.Toric.Fan.Smooth
 import TauCeti.LinearAlgebra.Matrix.Dual
 
@@ -232,6 +236,17 @@ local notation "q" =>
   picardBoundaryOrthogonalEquivChargeKernel hΦ hdim s m hm hprim c J hJ hT e he hD
 
 include hJ hT he hD in
+private theorem coe_markedChargeKernelEquiv_symm (x : (rayChargeMap s).ker) :
+    let _ := isPerfPair_internal_markedForm hΦ hdim s m hm hprim c J hJ hT e he
+    ((boundaryOrthogonalEquivChargeKernel hΦ s B₁).symm x).val =
+      E (((q).symm x).val, 0) := by
+  intro _
+  let y := (boundaryOrthogonalEquivChargeKernel hΦ s B₁).symm x
+  rw [← coe_orthogonalMarking hΦ hdim s m hm hprim c J hJ hT e he hD]
+  exact congrArg Subtype.val
+    ((orthogonalMarking hΦ hdim s m hm hprim c J hJ hT e he hD).apply_symm_apply y).symm
+
+include hJ hT he hD in
 /-- The inverse charge comparison pulls back to the toric class of the prescribed boundary
 degrees minus the total exceptional classes weighted by the charge coordinates. -/
 theorem exists_picardBoundaryOrthogonalEquivChargeKernel_symm_marking
@@ -244,10 +259,7 @@ theorem exists_picardBoundaryOrthogonalEquivChargeKernel_symm_marking
   let : SmoothOfRelativeDimension 2 fZ := smoothZ
   let := isPerfPair_internal_markedForm hΦ hdim s m hm hprim c J hJ hT e he
   let y := (boundaryOrthogonalEquivChargeKernel hΦ s B₁).symm x
-  have hy : (y : Pic(Z) × (Fin n → ℤ)) = E (((q).symm x).val, 0) := by
-    rw [← coe_orthogonalMarking hΦ hdim s m hm hprim c J hJ hT e he hD]
-    exact congrArg Subtype.val
-      ((orthogonalMarking hΦ hdim s m hm hprim c J hJ hT e he hD).apply_symm_apply y).symm
+  have hy := coe_markedChargeKernelEquiv_symm hΦ hdim s m hm hprim c J hJ hT e he hD x
   have hsecond := boundaryOrthogonalEquivChargeKernel_symm_snd hΦ s A₁ x
   have hpic : ((U).picardHom (y.val.1, -(x : Fin n → ℤ))).toMul =
       pullback (e.inv ≫ T.toBase) ((q).symm x).val.toMul := by
@@ -308,6 +320,27 @@ the original surface. -/
     LinearMap.BilinForm.restrict_apply, LinearMap.domRestrict_apply]
 
 include hJ hT he hD in
+/-- The square of a charge relation on the original surface is congruent to the
+negative sum of its coordinate squares modulo every common divisor of the charge
+determinants. The congruence survives the nodal contractions. -/
+theorem chargeKernelIntersectionForm_norm_modEq (b : Module.Basis (Fin 2) ℤ N)
+    (hc : Φ.IsComplete) (x : (rayChargeMap s).ker) {a : ℤ}
+    (ha : ∀ j k, a ∣ b.detDualEquiv (s j).primitiveGenerator (s k).primitiveGenerator) :
+    chargeKernelIntersectionForm hΦ hdim s m hm hprim c J hJ hT e he hD x x ≡
+      -∑ j, x.val j ^ 2 [ZMOD a] := by
+  let : (B₁).IsPerfPair := isPerfPair_internal_markedForm hΦ hdim s m hm hprim c J hJ hT e he
+  let y := (boundaryOrthogonalEquivChargeKernel hΦ s B₁).symm x
+  have hy := coe_markedChargeKernelEquiv_symm hΦ hdim s m hm hprim c J hJ hT e he hD x
+  have hpair := pairing_resolutionMarking hΦ hdim s m hm hprim c J hJ hT e he
+    (((q).symm x).val, 0) (((q).symm x).val, 0)
+  have hnorm := boundaryOrthogonalEquivChargeKernel_symm_norm_modEq b hΦ hc s x ha
+  -- The smoothness and perfect-pairing instances in the two markings are proof-irrelevant.
+  have hnorm' : B₁ y.val y.val ≡ -∑ j, x.val j ^ 2 [ZMOD a] := hnorm
+  rw [hy, hpair] at hnorm'
+  simpa only [chargeKernelIntersectionForm_apply, LinearMap.BilinForm.prod_apply,
+    LinearMap.neg_apply, map_zero, LinearMap.zero_apply, neg_zero, add_zero] using hnorm'
+
+include hJ hT he hD in
 /-- In the internal model, the charge pairing is the intersection of the toric coordinates
 minus the dot product of the charge vectors. The same comparison applies to self-intersections. -/
 theorem chargeKernelIntersectionForm_eq_classIntersectionNumber_sub_dotProduct
@@ -335,5 +368,58 @@ theorem chargeKernelIntersectionForm_eq_classIntersectionNumber_sub_dotProduct
     LinearMap.neg_apply, dotProductBilin_apply_apply, dotProduct, Prod.fst, Prod.snd,
     Pi.neg_apply, neg_mul_neg, Pi.zero_apply, zero_mul, Finset.sum_const_zero, neg_zero,
     add_zero, sub_eq_add_neg, chargeKernelIntersectionForm_apply] using hp.symm
+
+section Isotropic
+
+variable (hc : Φ.IsComplete)
+
+local notation "v" => rayChargeMap s
+local notation "Q" => chargeKernelIntersectionForm hΦ hdim s m hm hprim c J hJ hT e he hD
+
+include hΦ hc hJ hT he hD in
+/-- The sum of the squared coordinates of an isotropic charge relation is divisible by the
+charge index. For infinite index, whose index is zero, the sum itself vanishes. -/
+theorem chargeIndex_dvd_sum_sq_of_isotropic (x : (v).ker) (hx : Q x x = 0) :
+    ((v).range.toAddSubgroup.index : ℤ) ∣ ∑ j, x.val j ^ 2 := by
+  have := Φ.lattice.free
+  have := Φ.lattice.finite
+  let b := Module.finBasisOfFinrankEq ℤ N hdim
+  let ω : LinearMap.BilinForm ℤ N := b.detDualEquiv.toLinearMap
+  have hω : ω.IsAlt := b.detDualEquiv_self
+  have hb : ω (b 0) (b 1) = 1 := by
+    have hbasis : ![b 0, b 1] = (b : Fin 2 → N) := FinVec.etaExpand_eq b
+    simpa only [ω, LinearEquiv.coe_coe, Module.Basis.detDualEquiv_apply, hbasis] using b.det_self
+  have hindex := (v).index_range_eq_gcd_chargeExchangeMatrix b hω hb
+  have hd (j k : Fin n) :
+      ((v).range.toAddSubgroup.index : ℤ) ∣
+        b.detDualEquiv (s j).primitiveGenerator (s k).primitiveGenerator := by
+    rw [← Int.natAbs_dvd_natAbs, Int.natAbs_natCast, hindex]
+    simpa only [QPainleve.Cluster.chargeExchangeMatrix_apply, rayChargeMap_single, ω,
+      LinearEquiv.coe_coe] using
+      (Finset.gcd_dvd (f := fun jk : Fin n × Fin n ↦
+        (QPainleve.Cluster.chargeExchangeMatrix ω v jk.1 jk.2).natAbs)
+        (Finset.mem_univ (j, k)))
+  have hnorm := chargeKernelIntersectionForm_norm_modEq hΦ hdim s m hm hprim c J hJ
+    hT e he hD b hc x hd
+  rw [hx, Int.modEq_comm, Int.modEq_zero_iff_dvd, dvd_neg] at hnorm
+  exact hnorm
+
+include hΦ hc hJ hT he hD in
+/-- A nonzero isotropic class in the transported Picard form forces the charge image to
+have rank two. This applies without assuming that the boundary classes form a cycle. -/
+theorem finrank_rayChargeMap_range_of_isotropic {x : (v).ker} (hx : x ≠ 0) (hxx : Q x x = 0) :
+    Module.finrank ℤ (v).range = 2 := by
+  have := Φ.lattice.free
+  have := Φ.lattice.finite
+  have hindex : (v).range.toAddSubgroup.index ≠ 0 := by
+    intro hz
+    have hs := chargeIndex_dvd_sum_sq_of_isotropic hΦ hdim s m hm hprim c J hJ hT e he hD hc x hxx
+    rw [hz, Nat.cast_zero, zero_dvd_iff] at hs
+    exact hx (Subtype.ext (funext fun j ↦
+      (Finset.sum_sq_eq_zero_iff _ _).mp hs j (Finset.mem_univ j)))
+  have hfinite := AddSubgroup.index_ne_zero_iff_finite.mp hindex
+  exact ((v).range.finiteQuotient_iff.mp hfinite).trans hdim
+
+end Isotropic
 
 end TauCeti.Toric.Fan
