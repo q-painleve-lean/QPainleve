@@ -205,6 +205,17 @@ theorem realPrimeDivisorClass_mem_closedCurveCone (p : CodimensionOnePoint X) :
   rw [← SetLike.mem_coe, coe_closedCurveCone]
   exact subset_closure (Submodule.subset_span (Set.mem_range_self p))
 
+/-- The real class of an effective Weil divisor belongs to the closed curve cone. -/
+theorem one_tmul_weilToLineBundleClassHom_mem_closedCurveCone [IsNoetherian X]
+    [∀ x : X, UniqueFactorizationMonoid (X.presheaf.stalk x)]
+    {D : SchemeWeilDivisor X} (hD : 0 ≤ D) :
+    (1 : ℝ) ⊗ₜ[ℤ] Scheme.CartierDivisor.weilToLineBundleClassHom X D ∈
+      closedCurveCone k (X := X) := by
+  rw [one_tmul_weilToLineBundleClassHom_eq_sum k]
+  exact (closedCurveCone k (X := X)).sum_mem fun p _ ↦
+    (closedCurveCone k).smul_mem (realPrimeDivisorClass_mem_closedCurveCone k p)
+      (by exact_mod_cast hD p)
+
 /-- The real class of an effective Cartier divisor belongs to the closed curve cone. -/
 theorem one_tmul_inv_mk_toInvertibleSheaf_mem_closedCurveCone
     {I : X.IdealSheafData} (hI : I.IsEffectiveCartier) :
@@ -222,10 +233,8 @@ theorem one_tmul_inv_mk_toInvertibleSheaf_mem_closedCurveCone
     simp only [F, D, Scheme.CartierDivisor.weilToLineBundleClassHom_toWeilDivisor,
       hI.toLineBundleClass_toCartierDivisor]
   dsimp only
-  rw [← hclass, one_tmul_weilToLineBundleClassHom_eq_sum k]
-  exact (closedCurveCone k (X := X)).sum_mem fun p _ ↦
-    (closedCurveCone k).smul_mem (realPrimeDivisorClass_mem_closedCurveCone k p)
-      (by exact_mod_cast hD p)
+  rw [← hclass]
+  exact one_tmul_weilToLineBundleClassHom_mem_closedCurveCone k hD
 
 /-- Nonnegativity of a continuous linear functional on the closed cone of curves is
 equivalent to nonnegativity on every prime divisor class. -/
