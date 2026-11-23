@@ -8,7 +8,6 @@ module
 public import QPainleve.AlgebraicGeometry.Curves.Node.Conductor
 
 import QPainleve.AlgebraicGeometry.Fiber
-import QPainleve.AlgebraicGeometry.IdealSheaf.Conductor
 import TauCeti.AlgebraicGeometry.Curves.Node.Reduced
 import TauCeti.AlgebraicGeometry.IdealSheaf.Affine
 import TauCeti.AlgebraicGeometry.IdealSheaf.Stalk
