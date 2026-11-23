@@ -340,6 +340,43 @@ theorem Ray.toCone_eq_hull_primitiveGenerator (ρ : Φ.Ray) :
   exact hr ▸ r.eq_hull_singleton (hσ.salient.anti r.val.isFaceOf.le)
     (primitiveGenerator_mem Φ.lattice hσ r) hne
 
+/-- The primitive generator of a fan ray agrees with its generator in every containing cone. -/
+@[simp]
+theorem Ray.primitiveGenerator_toToricRay (ρ : Φ.Ray) (σ : Φ.cones) (h : ρ.toCone ≤ σ) :
+    Toric.primitiveGenerator Φ.lattice (Φ.isToricCone σ.property)
+      (ρ.toToricRay Φ σ h) = ρ.primitiveGenerator := by
+  have hf := Φ.isFaceOf_of_le σ.property ρ.toCone.property h
+  have he : ρ.toToricRay Φ σ h =
+      ToricRay.faceEmbedding hf (ρ.toToricRay Φ ρ.toCone le_rfl) := by
+    apply SetLike.coe_injective
+    apply congrArg (fun C : PointedCone ℝ V ↦ (C : Set V))
+    simp
+  rw [ρ.primitiveGenerator_def, he]
+  exact primitiveGenerator_faceEmbedding Φ.lattice (Φ.isToricCone σ.property) hf
+    (ρ.toToricRay Φ ρ.toCone le_rfl)
+
+/-- The fan ray associated to a toric ray keeps the same primitive generator. -/
+@[simp]
+theorem Ray.primitiveGenerator_ofToricRay (σ : Φ.cones) (r : ToricRay σ.val) :
+    (Ray.ofToricRay Φ σ r).primitiveGenerator =
+      Toric.primitiveGenerator Φ.lattice (Φ.isToricCone σ.property) r := by
+  have h := congrArg (Toric.primitiveGenerator Φ.lattice (Φ.isToricCone σ.property))
+    ((Φ.rayEquiv σ).apply_symm_apply r)
+  simpa only [Φ.rayEquiv_symm_apply, Φ.rayEquiv_apply, primitiveGenerator_toToricRay] using h
+
+/-- A fan ray has a nonzero primitive generator. -/
+@[simp]
+theorem Ray.primitiveGenerator_ne_zero (ρ : Φ.Ray) : ρ.primitiveGenerator ≠ 0 := by
+  rw [ρ.primitiveGenerator_def]
+  exact Toric.primitiveGenerator_ne_zero _ _ _
+
+/-- Containment of a fan ray in a cone is detected by its primitive generator. -/
+theorem Ray.toCone_le_iff (ρ : Φ.Ray) (σ : Φ.cones) :
+    ρ.toCone ≤ σ ↔ i ρ.primitiveGenerator ∈ σ.val := by
+  rw [← Subtype.coe_le_coe, ρ.toCone_eq_hull_primitiveGenerator, Submodule.span_le,
+    Set.singleton_subset_iff]
+  rfl
+
 /-- The generic point of a fan ray's boundary divisor, viewed in the fan scheme. -/
 def rayBoundaryPoint (Φ : Fan i) (hΦ : Φ.IsRegular) (ρ : Φ.Ray) :
     CodimensionOnePoint Φ.algebraicRealization :=
@@ -374,13 +411,8 @@ theorem rayBoundaryPoint_ofToricRay (Φ : Fan i) (hΦ : Φ.IsRegular)
   have : IsOpenImmersion f := hσ.rational.isOpenImmersion_faceAffineToricSchemeMap Φ.lattice hface
   let q := hτreg.rayPoint Φ.lattice hτ r
   let p := hσreg.rayPoint Φ.lattice hσ ρ
-  have hr : ToricRay.faceEmbedding hface r = ρ := by
-    apply SetLike.coe_injective
-    exact congrArg (fun C : PointedCone ℝ V ↦ (C : Set V)) <| by
-      rw [ToricRay.toPointedCone_faceEmbedding, Ray.toPointedCone_toToricRay,
-        Ray.toCone_ofToricRay]
   have hv : primitiveGenerator Φ.lattice hσ ρ = primitiveGenerator Φ.lattice hτ r := by
-    rw [← hr, primitiveGenerator_faceEmbedding]
+    rw [← (Ray.ofToricRay Φ σ ρ).primitiveGenerator_def, Ray.primitiveGenerator_ofToricRay]
   have hsub : p.val.asIdeal ≤ (f q.val).asIdeal := by
     rw [hσreg.rayPoint_asIdeal, rayIdeal_le_iff]
     intro m hm
