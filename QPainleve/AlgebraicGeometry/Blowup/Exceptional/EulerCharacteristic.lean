@@ -141,17 +141,6 @@ private theorem pointBlowup_exceptional_twist_cohomology_step
           ((h₃ q).2 (by omega)) (c₂ (q + 1)).injective.subsingleton
         exact (c₁ (q + 1)).injective.subsingleton
 
-variable [IsLocallyNoetherian X] in
-private theorem nonempty_cohomologyLinearEquiv_pointBlowup_pullback
-    (hp : IsClosed ({p} : Set X)) [IsRegularLocalRing (X.presheaf.stalk p)]
-    (hdim : ringKrullDim (X.presheaf.stalk p) = 2) (L : InvertibleSheaf X) (q : ℕ) :
-    let : Scheme.Over Y (Spec (.of k)) := ⟨π ≫ X ↘ Spec (.of k)⟩
-    Nonempty (Cohomology L.obj q ≃ₗ[k]
-      Cohomology ((InvertibleSheaf.pullback π).obj L).obj q) := by
-  rw [ker_fromSpecResidueField_eq_vanishingIdeal p]
-  exact ⟨pointBlowupCohomologyLinearEquiv k hp hdim
-    ((InvertibleSheaf.toFiniteLocallyFree X).obj L) q⟩
-
 /-- The Euler characteristic of a pulled-back line bundle is unchanged by blowing up a
 regular closed point of local dimension two, for every truncation degree. -/
 theorem eulerCharBelow_pointBlowup_pullback [IsLocallyNoetherian X]
