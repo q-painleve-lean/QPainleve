@@ -62,6 +62,14 @@ namespace AlgebraicGeometry.Scheme.RationalMap
 
 variable {X Y : Scheme}
 
+/-- Postcomposition by a morphism commutes with restriction to the generic point. -/
+@[simp]
+theorem fromFunctionField_compHom {Z : Scheme} [IrreducibleSpace X] (f : X ⤏ Y) (q : Y ⟶ Z) :
+    (f.compHom q).fromFunctionField = f.fromFunctionField ≫ q := by
+  obtain ⟨p, rfl⟩ := f.exists_rep
+  rw [← compHom_toRationalMap, fromFunctionField_toRationalMap, fromFunctionField_toRationalMap]
+  exact PartialMap.fromSpecStalkOfMem_compHom p q _ _
+
 /-- The generic-point restriction of a dominant rational map is dominant. -/
 instance [IrreducibleSpace X] (f : X ⤏ Y) [f.IsDominant] : IsDominant f.fromFunctionField := by
   obtain ⟨p, rfl⟩ := f.exists_rep

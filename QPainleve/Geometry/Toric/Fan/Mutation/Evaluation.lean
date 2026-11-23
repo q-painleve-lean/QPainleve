@@ -13,7 +13,7 @@ public import QPainleve.SignedClusterModularGroup.CenterMutation
 import Mathlib.RingTheory.Localization.Away.AdjoinRoot
 import QPainleve.Algebra.MvPolynomial.Laurent.FiniteType
 import QPainleve.AlgebraicGeometry.RationalMap.Affine
-import QPainleve.AlgebraicGeometry.RationalMap.Composition
+import QPainleve.AlgebraicGeometry.RationalMap.Composition.Basic
 import QPainleve.AlgebraicGeometry.RationalMap.Modification
 import TauCeti.AlgebraicGeometry.Morphisms.Modification.Composition
 

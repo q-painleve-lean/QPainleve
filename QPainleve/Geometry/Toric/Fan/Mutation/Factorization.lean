@@ -8,7 +8,7 @@ module
 public import QPainleve.Geometry.Toric.Fan.Mutation.Indeterminacy
 
 import QPainleve.AlgebraicGeometry.Morphisms.Modification.Birational
-import QPainleve.AlgebraicGeometry.RationalMap.Composition
+import QPainleve.AlgebraicGeometry.RationalMap.Composition.Basic
 import QPainleve.Geometry.Toric.Fan.Separated
 
 /-!

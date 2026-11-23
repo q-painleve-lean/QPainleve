@@ -7,7 +7,7 @@ module
 
 public import QPainleve.AlgebraicGeometry.RationalMap.FunctionField
 
-import QPainleve.AlgebraicGeometry.RationalMap.Composition
+import QPainleve.AlgebraicGeometry.RationalMap.Composition.Basic
 
 /-!
 # Restricting rational maps to dense opens
