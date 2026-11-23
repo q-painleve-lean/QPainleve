@@ -105,37 +105,6 @@ variable (ω : BilinForm ℤ N) (v : (ι → ℤ) →ₗ[ℤ] N) (p : ι)
 local notation "ε" => chargeExchangeMatrix ω v
 local notation "B" => chargeMutationEquiv ε p
 
-local notation "reprEquiv" => Finsupp.linearEquivFunOnFinite ℤ ℤ ι
-
-private def xEvaluationGraph : (ι →₀ ℤ) →+ (A × N) :=
-  let repr := (reprEquiv).toAddEquiv.toAddMonoidHom
-  repr.prod (v.toAddMonoidHom.comp repr)
-
-omit [DecidableEq ι] in
-private theorem xEvaluationGraph_injective : Function.Injective (xEvaluationGraph v) :=
-  fun _ _ h ↦ (reprEquiv).injective (congrArg Prod.fst h)
-
-section EvaluationMap
-
-variable (k : Type u) [CommRing k]
-
-omit [DecidableEq ι] in
-/-- Evaluation on the joint torus as a morphism to the X torus of finitely supported
-exponents. Each X character is the product of the corresponding center and charge
-characters. -/
-def xEvaluationMap : scheme k (A × N) ⟶ scheme k (ι →₀ ℤ) :=
-  CharacterTorus.map k (xEvaluationGraph v)
-
-omit [DecidableEq ι] in
-instance : IsDominant (xEvaluationMap v k) :=
-  isDominant_map k _ (xEvaluationGraph_injective v)
-
-omit [DecidableEq ι] in
-instance : (xEvaluationMap v k).IsOver (Spec (.of k)) :=
-  ⟨map_structureMap k (xEvaluationGraph v)⟩
-
-end EvaluationMap
-
 variable (k : Type u) [Field k]
 
 variable [Module.Free ℤ N]
@@ -190,6 +159,8 @@ theorem centerMutationPullback_monomial (hω : ω.IsAlt) (a : A) (h : N) :
     rw [← AlgEquiv.toAlgHom_apply, algEquivOfAlgEquiv_domCongr_toAlgHom,
       functionFieldMap_monomial, AddEquiv.coe_toAddMonoidHom]
   simp [centerMutationPullback, he, mutationFunctional_apply, pivotExponent]
+
+local notation "reprEquiv" => Finsupp.linearEquivFunOnFinite ℤ ℤ ι
 
 omit [DecidableEq ι] in
 /-- Pullback of an independent X function to the joint field of variable centers and surface
