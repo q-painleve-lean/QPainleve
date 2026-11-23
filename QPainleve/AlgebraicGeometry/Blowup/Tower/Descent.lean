@@ -69,6 +69,13 @@ of the structure sheaf on any open with sections on its inverse image. -/
 theorem isIso_app_toBase (U : X.Opens) : IsIso (T.toBase.app U) :=
   (hT.contraction_properties f).2.2 U
 
+/-- The projection of a closed point blowup tower of a smooth surface is an epimorphism. -/
+theorem epi_toBase : Epi T.toBase := by
+  have := (hT.contraction_properties f).2.1
+  exact T.toBase.epi_of_surjective_of_app_injective fun U ↦ by
+    have := hT.isIso_app_toBase f U
+    exact (ConcreteCategory.bijective_of_isIso (T.toBase.app U)).1
+
 /-- A morphism constant on the fibers of a closed point blowup tower of a smooth surface
 descends uniquely to the base of the tower. -/
 theorem existsUnique_comp_eq_toBase (g : Y ⟶ Z) (hg : Function.FactorsThrough g T.toBase) :
@@ -82,10 +89,7 @@ theorem existsUnique_comp_eq_toBase_over (g : Y ⟶ Z) (p : X ⟶ S) (q : Z ⟶ 
     (hcomm : g ≫ q = T.toBase ≫ p) (hg : Function.FactorsThrough g T.toBase) :
     ∃! h : X ⟶ Z, T.toBase ≫ h = g ∧ h ≫ q = p := by
   obtain ⟨h, hh, huniq⟩ := hT.existsUnique_comp_eq_toBase f g hg
-  have := (hT.contraction_properties f).2.1
-  have : Epi T.toBase := T.toBase.epi_of_surjective_of_app_injective fun U ↦ by
-    have := hT.isIso_app_toBase f U
-    exact (ConcreteCategory.bijective_of_isIso (T.toBase.app U)).1
+  have := hT.epi_toBase f
   refine ⟨h, ⟨hh, (cancel_epi T.toBase).mp ?_⟩, fun h' hh' ↦ huniq h' hh'.1⟩
   rwa [← Category.assoc, hh]
 
