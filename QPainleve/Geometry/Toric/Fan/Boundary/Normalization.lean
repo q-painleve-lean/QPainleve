@@ -227,4 +227,11 @@ instance Ray.isOver_boundaryNormalizationComponentIso_hom :
       congrArg ((ρ.boundaryNormalizationComponentIso hΦ).hom ≫ ·) hbase.symm
     _ = _ := Ray.boundaryNormalizationComponentIso_hom_boundaryComponentι_assoc hΦ ρ _⟩
 
+/-- A ray divisor of a prestable toric boundary is proper because it is isomorphic to
+a component of the normalization. -/
+theorem Ray.isProper_boundaryComponent_of_prestableFamily : IsProper (R ↘ base) := by
+  let e := ρ.boundaryNormalizationComponentIso hΦ
+  rw [← MorphismProperty.cancel_left_of_respectsIso @IsProper e.hom, comp_over e.hom base]
+  infer_instance
+
 end TauCeti.Toric.Fan

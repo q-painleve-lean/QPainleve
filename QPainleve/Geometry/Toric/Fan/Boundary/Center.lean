@@ -10,13 +10,17 @@ public import Mathlib.AlgebraicGeometry.Morphisms.Smooth
 public import QPainleve.Geometry.Toric.Fan.Boundary.Basic
 public import QPainleve.Geometry.Toric.Fan.Separated
 public import TauCeti.Algebra.Polynomial.Laurent.Basic
+public import TauCeti.AlgebraicGeometry.Curves.Prestable
+public import TauCeti.AlgebraicGeometry.Curves.SingularLocus.Basic
 public import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.Basic
+public import TauCeti.AlgebraicGeometry.IdealSheaf.Over
 import Mathlib.RingTheory.Spectrum.Prime.RingHom
 import QPainleve.Algebra.MonoidAlgebra.Smooth
 import QPainleve.Algebra.Polynomial.Laurent
 import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
 import TauCeti.Algebra.Bialgebra.MonoidAlgebra.Equiv
 import TauCeti.Algebra.MonoidAlgebra.Face
+import TauCeti.AlgebraicGeometry.Curves.SingularLocus.Smooth
 import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.Section
 import TauCeti.AlgebraicGeometry.IdealSheaf.BaseChange
 import TauCeti.AlgebraicGeometry.IdealSheaf.OfIdealTop
@@ -469,6 +473,20 @@ theorem orbitToBoundary_comp_subschemeι (hdim : Module.finrank ℤ N = 2)
       ρ.orbitToRayChart hdim hm hprim ≫ Φ.affineToricChartι ρ.toCone :=
   IsClosedImmersion.lift_fac _ _ _
 
+/-- The toric structure map on the ray orbit is the structure map of the Laurent ring. -/
+theorem orbitToBoundary_comp_algebraicRealizationStructureMap
+    (hdim : Module.finrank ℤ N = 2) (hm : m v = 0) (hprim : Function.Surjective m) :
+    ρ.orbitToBoundary hdim hm hprim ≫ (Φ.boundaryIdeal ⟨ρ.toCone⟩).subschemeι ≫
+        Φ.algebraicRealizationStructureMap =
+      Spec.map (CommRingCat.ofHom (algebraMap ℂ (LaurentPolynomial ℂ))) := by
+  rw [orbitToBoundary_comp_subschemeι_assoc,
+    Φ.affineToricChartι_comp_algebraicRealizationStructureMap, orbitToRayChart_def, ← Spec.map_comp]
+  apply congrArg Spec.map
+  apply CommRingCat.hom_ext
+  apply RingHom.ext
+  intro a
+  exact (ρ.orbitCoordinateMap hdim hm hprim).commutes a
+
 /-- The affine ray orbit is the scheme-theoretic restriction of the boundary to the ray chart. -/
 theorem isPullback_orbitToBoundary (hdim : Module.finrank ℤ N = 2)
     (hm : m v = 0) (hprim : Function.Surjective m) :
@@ -492,6 +510,14 @@ def binomialCenterOnBoundary (hdim : Module.finrank ℤ N = 2)
     Spec (.of ℂ) ⟶ (Φ.boundaryIdeal ⟨ρ.toCone⟩).subscheme :=
   Spec.map (CommRingCat.ofHom (laurentEval ((-1 : ℂˣ) * c⁻¹)).toRingHom) ≫
     ρ.orbitToBoundary hdim hm hprim
+
+/-- On the ray orbit, a binomial center is Laurent evaluation at `-c⁻¹`. -/
+theorem binomialCenterOnBoundary_def (hdim : Module.finrank ℤ N = 2)
+    (hm : m v = 0) (hprim : Function.Surjective m) (c : ℂˣ) :
+    ρ.binomialCenterOnBoundary hdim hm hprim c =
+      Spec.map (CommRingCat.ofHom (laurentEval ((-1 : ℂˣ) * c⁻¹)).toRingHom) ≫
+        ρ.orbitToBoundary hdim hm hprim :=
+  (rfl)
 
 /-- Including the binomial point from the boundary gives the same point of the fan scheme. -/
 @[reassoc, simp]
@@ -532,16 +558,8 @@ theorem smoothOfRelativeDimension_orbitToBoundary (hdim : Module.finrank ℤ N =
     SmoothOfRelativeDimension 1
       (ρ.orbitToBoundary hdim hm hprim ≫ (Φ.boundaryIdeal ⟨ρ.toCone⟩).subschemeι ≫
         Φ.algebraicRealizationStructureMap) := by
-  rw [← Category.assoc, orbitToBoundary_comp_subschemeι, Category.assoc,
-    Φ.affineToricChartι_comp_algebraicRealizationStructureMap, orbitToRayChart, ← Spec.map_comp]
-  have h : CommRingCat.ofHom (algebraMap ℂ R) ≫
-      CommRingCat.ofHom (ρ.orbitCoordinateMap hdim hm hprim).toRingHom =
-      CommRingCat.ofHom (algebraMap ℂ (LaurentPolynomial ℂ)) := by
-    apply CommRingCat.hom_ext
-    apply RingHom.ext
-    intro a
-    exact (ρ.orbitCoordinateMap hdim hm hprim).commutes a
-  rw [h, HasRingHomProperty.Spec_iff (P := @SmoothOfRelativeDimension 1)
+  rw [orbitToBoundary_comp_algebraicRealizationStructureMap,
+    HasRingHomProperty.Spec_iff (P := @SmoothOfRelativeDimension 1)
     (Q := RingHom.Locally (@RingHom.IsStandardSmoothOfRelativeDimension 1)),
     CommRingCat.hom_ofHom]
   apply RingHom.locally_of RingHom.isStandardSmoothOfRelativeDimension_respectsIso
@@ -561,6 +579,45 @@ theorem range_binomialCenterOnBoundary_subset_range_orbitToBoundary
       Set.range (ρ.orbitToBoundary hdim hm hprim) := by
   rw [binomialCenterOnBoundary, Scheme.Hom.comp_base, TopCat.coe_comp, Set.range_comp]
   exact Set.image_subset_range _ _
+
+section SingularLocus
+
+open TauCeti.AlgebraicGeometry Scheme.IdealSheafData
+
+variable [Nonempty Φ.cones]
+
+local notation "base" => Spec (CommRingCat.of ℂ)
+local notation "C" => Scheme.IdealSheafData.subscheme (Φ.boundaryIdeal inferInstance)
+local notation "I" => Scheme.singularLocus ℂ C
+
+variable [PrestableFamily ((Φ.boundaryIdeal inferInstance).subscheme ↘ Spec (.of ℂ))]
+
+/-- A binomial center is away from the nodes, so its Cartier ideal restricts to
+the unit ideal on the singular locus. -/
+theorem comap_ker_binomialCenterOnBoundary_singularLocus
+    (hdim : Module.finrank ℤ N = 2) (hm : m v = 0) (hprim : Function.Surjective m) (c : ℂˣ) :
+    (ρ.binomialCenterOnBoundary hdim hm hprim c).ker.comap (I).subschemeι = ⊤ := by
+  let t := ρ.orbitToBoundary hdim hm hprim
+  let f := C ↘ base
+  let p := ρ.binomialCenterOnBoundary hdim hm hprim c
+  have hsm := ρ.smoothOfRelativeDimension_orbitToBoundary hdim hm hprim
+  have : SmoothOfRelativeDimension 1 (t ≫ f) := by
+    simpa only [t, f, over_eq_subschemeι_comp, Φ.algebraicRealization_over] using hsm
+  have : Smooth (t ≫ f) := SmoothOfRelativeDimension.smooth 1 _
+  have hdisj : Set.range p ⊆ f.smoothLocus := by
+    refine (ρ.range_binomialCenterOnBoundary_subset_range_orbitToBoundary hdim hm hprim c).trans ?_
+    rintro _ ⟨y, rfl⟩
+    apply (t.mem_preimage).mp
+    rw [t.preimage_smoothLocus_eq f, (t ≫ f).smoothLocus_eq_top]
+    exact TopologicalSpace.Opens.mem_top y
+  rw [comap_eq_top_iff, ← TopologicalSpace.Opens.coe_eq_univ, Scheme.Hom.coe_preimage,
+    TopologicalSpace.Closeds.coe_compl, Scheme.Hom.support_ker,
+    p.isClosedEmbedding.isClosed_range.closure_eq, Set.eq_univ_iff_forall]
+  intro x hx
+  have hs : (I).subschemeι x ∈ (I).support := (I).range_subschemeι.le (Set.mem_range_self x)
+  exact ((C).mem_support_singularLocus_iff_notMem_smoothLocus _).mp hs (hdisj hx)
+
+end SingularLocus
 
 /-- The binomial point is an effective Cartier divisor on the reduced toric boundary. -/
 theorem isEffectiveCartier_ker_binomialCenterOnBoundary (hdim : Module.finrank ℤ N = 2)

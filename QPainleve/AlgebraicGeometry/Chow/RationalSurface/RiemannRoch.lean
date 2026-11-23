@@ -7,8 +7,9 @@ module
 
 public import QPainleve.AlgebraicGeometry.Chow.RationalSurface.Basic
 
+import QPainleve.AlgebraicGeometry.Blowup.Tower.Cohomology
 import QPainleve.AlgebraicGeometry.Blowup.Tower.SecondCohomology
-import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.ZeroLocus
+import QPainleve.AlgebraicGeometry.EffectiveCartierDivisor.Effectivity
 import QPainleve.AlgebraicGeometry.Modules.Differentials.Restriction
 
 /-!
@@ -104,21 +105,14 @@ theorem subsingleton_cohomology_two_or_canonical_complement_of_isRationalOver
   have hN : LineBundleClass.mk (g.obj N) = K[W] * (LineBundleClass.mk (g.obj M))⁻¹ := by
     simp only [g, N, mk_tensorProduct, ← inv_mk, ← pullback_mk, pullback_mul, pullback_inv]
     rw [pullback_mk, mk_pullback_canonicalBundle]
-  have hdesc (A : InvertibleSheaf V) (hA : Subsingleton (Cohomology (g.obj A).obj 2)) :
-      Subsingleton (Cohomology A.obj 2) := by
-    rw [InvertibleSheaf.pullback_obj_obj] at hA
-    exact (e.hom.cohomologyPullbackBaseLinearEquivOfIsIso k A.obj 2).surjective.subsingleton
   rcases subsingleton_cohomology_two_or_of_plane_marking k hU (g.obj M) (g.obj N) hN with h | h
-  · have hM : LineBundleClass.mk M =
-        (T.picardHom (Additive.ofMul (LineBundleClass.mk L), 0)).toMul := by
-      rw [picardHom_apply_zero, toMul_ofMul, pullback_mk]
-    obtain ⟨eL⟩ := hT.nonempty_cohomologyTwoLinearEquiv_picardHom k L 0
-      (fun _ ↦ zero_le_one) M hM
-    have := hdesc M h
-    exact Or.inl (eL.injective.subsingleton)
+  · exact Or.inl (hT.subsingleton_cohomology_two_of_pullback_tower_iso k e L h)
   · obtain ⟨eL⟩ := hT.nonempty_cohomologyTwoLinearEquiv_picardHom k (L† L) (fun _ ↦ 1)
       (fun _ ↦ le_rfl) N (canonical_complement_picardHom k hT L)
-    have := hdesc N h
+    have : Subsingleton (Cohomology N.obj 2) := by
+      change Subsingleton (Cohomology ((InvertibleSheaf.pullback e.hom).obj N).obj 2) at h
+      rw [InvertibleSheaf.pullback_obj_obj] at h
+      exact (e.hom.cohomologyPullbackBaseLinearEquivOfIsIso k N.obj 2).surjective.subsingleton
     exact Or.inr (eL.injective.subsingleton)
 
 end AlgebraicGeometry.Scheme
@@ -169,22 +163,10 @@ theorem exists_effectiveCartier_or_canonical_mul_inv_of_eulerCharBelow_pos
   have χN : 0 < eulerCharBelow k (mk N) 3 := by
     rw [hN, eulerCharBelow_canonical_mul_inv_of_isRationalOver]
     exact ha
-  have effective (M : InvertibleSheaf X) (hχ : 0 < eulerCharBelow k (mk M) 3)
-      (h₂ : Subsingleton (Cohomology M.obj 2)) :
-      ∃ (I : X.IdealSheafData) (hI : I.IsEffectiveCartier), (mk hI.toInvertibleSheaf)⁻¹ = mk M := by
-    have hz : Module.finrank k (Cohomology M.obj 2) = 0 := Module.finrank_zero_of_subsingleton
-    rw [eulerCharBelow_mk, Scheme.Modules.eulerCharBelow_succ,
-      Scheme.Modules.eulerCharBelow_two, hz,
-      finrank_cohomology_zero_eq_finrank_globalSections] at hχ
-    have h₀ : 0 < Module.finrank k Γ(M.obj, ⊤) := by omega
-    have := Module.nontrivial_of_finrank_pos h₀
-    obtain ⟨s, hs⟩ := exists_ne (0 : Γ(M.obj, ⊤))
-    obtain ⟨I, hI, hc⟩ := M.exists_isEffectiveCartier_of_ne_zero s hs
-    exact ⟨I, hI, by rw [hc, inv_inv]⟩
   rcases X.subsingleton_cohomology_two_or_canonical_complement_of_isRationalOver k L with h | h
-  · obtain ⟨I, hI, h⟩ := effective L ha h
-    exact ⟨I, hI, Or.inl h⟩
-  · obtain ⟨I, hI, h⟩ := effective N χN h
-    exact ⟨I, hI, Or.inr (h.trans hN)⟩
+  · obtain ⟨I, hI, hclass⟩ := L.exists_effectiveCartier_of_eulerCharBelow_pos k ha h
+    exact ⟨I, hI, Or.inl (by rw [hclass, inv_inv])⟩
+  · obtain ⟨I, hI, hclass⟩ := N.exists_effectiveCartier_of_eulerCharBelow_pos k χN h
+    exact ⟨I, hI, Or.inr (by rw [hclass, inv_inv, hN])⟩
 
 end TauCeti.AlgebraicGeometry.LineBundleClass

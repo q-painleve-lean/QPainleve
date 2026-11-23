@@ -23,7 +23,8 @@ The resulting isomorphism commutes with the projection and the strict-transform 
 and matches the two exceptional classes with their center labels.
 It extends through the rest of the ordered centers by naturality, so any permutation of a
 family with disjoint supports for distinct ideals gives an isomorphic surface. A center
-can occur several times.
+can occur several times. When only pairs of disjoint centers change order, the
+isomorphism also identifies the full Picard marking in the prescribed label order.
 
 The comparison uses `Scheme.IdealSheafData.blowupCommOfDisjoint` and
 `WithBoundary.map_center_snoc_of_disjoint` for the actual center subschemes.
@@ -368,56 +369,103 @@ private theorem Reordered.alongBoundary_snoc {J : Fin (n + 1) → Center D} {σ 
   rw [alongBoundary_succ i J, alongBoundary_eq_snoc (i := i) hprefix hlast]
   exact h.snoc (J (Fin.last n))
 
-private theorem reordered_alongBoundary_moveToFront {n : ℕ} (J : Fin (n + 1) → Center D)
+omit [IsClosedImmersion i] in
+private theorem Reordered.refl (T : Σ Y, WithBoundary i n Y) : Reordered T T id :=
+  ⟨Iso.refl _, by simp, by simp, fun _ ↦ by simp⟩
+
+private theorem reordered_alongBoundary_moveToBack {n : ℕ} (J : Fin (n + 1) → Center D)
     (k : Fin (n + 1))
-    (h : ∀ j < k, Disjoint ((J j).val.support : Set D) ((J k).val.support : Set D)) :
-    let σ := Fin.cons k k.succAbove
+    (h : ∀ j, k < j → Disjoint ((J k).val.support : Set D) ((J j).val.support : Set D)) :
+    let τ := Fin.snoc k.succAbove k
+    Reordered (alongBoundary i J) (alongBoundary i (J ∘ τ)) τ := by
+  have lastCase {m : ℕ} (F : Fin (m + 1) → Center D) :
+      Reordered (alongBoundary i F) (alongBoundary i (F ∘ Fin.snoc (Fin.last m).succAbove
+        (Fin.last m))) (Fin.snoc (Fin.last m).succAbove (Fin.last m)) := by
+    have he : Fin.snoc (Fin.last m).succAbove (Fin.last m) = id := by
+      funext j
+      induction j using Fin.lastCases <;> simp
+    simpa only [he, Function.comp_id] using Reordered.refl (alongBoundary i F)
+  induction n with
+  | zero =>
+    simpa only [Fin.eq_zero k, Fin.eq_zero (Fin.last 0)] using lastCase J
+  | succ n ih =>
+    refine Fin.lastCases (fun _ ↦ lastCase J) (fun k h ↦ ?_) k h
+    have hp := (ih (J ∘ Fin.castSucc) k (fun j hj ↦
+      h j.castSucc (Fin.castSucc_lt_castSucc_iff.mpr hj))).alongBoundary_snoc
+    let τ : Fin (n + 2) → Fin (n + 2) :=
+      Fin.snoc (Fin.castSucc ∘ Fin.snoc k.succAbove k) (Fin.last (n + 1))
+    have hs := reordered_alongBoundary_swapLastTwo (i := i) (J ∘ τ)
+      (by simpa [τ] using h (Fin.last (n + 1)) (Fin.castSucc_lt_last k))
+    have hτ : τ ∘ swapLastTwo n = Fin.snoc k.castSucc.succAbove k.castSucc := by
+      funext j
+      refine Fin.lastCases ?_ (fun a ↦ Fin.lastCases ?_ (fun b ↦ ?_) a) j
+      · simp [τ, swapLastTwo]
+      · simp [τ, swapLastTwo, Fin.succAbove_ne_last_last (Fin.castSucc_lt_last k).ne]
+      · simp [τ, swapLastTwo, Fin.castSucc_succAbove_castSucc]
+    simpa only [Function.comp_assoc, ← hτ] using hp.trans hs
+
+private theorem reordered_alongBoundary_reindex (J : Fin n → Center D)
+    (σ : Equiv.Perm (Fin n))
+    (h : ∀ a b, a < b → σ b < σ a →
+      Disjoint ((J (σ a)).val.support : Set D) ((J (σ b)).val.support : Set D)) :
     Reordered (alongBoundary i J) (alongBoundary i (J ∘ σ)) σ := by
   induction n with
   | zero =>
-    have hσ : Fin.cons k k.succAbove = id := by
-      funext j
-      rw [Fin.eq_zero j, Fin.cons_zero, Fin.eq_zero k, id_eq]
-    have hrefl : Reordered (alongBoundary i J) (alongBoundary i J) id :=
-      ⟨Iso.refl _, by simp, by simp, fun _ ↦ by simp⟩
-    simpa only [hσ, Function.comp_id] using hrefl
+    have hσ : (σ : Fin 0 → Fin 0) = id := Subsingleton.elim _ _
+    simpa only [hσ, Function.comp_id] using Reordered.refl (alongBoundary i J)
   | succ n ih =>
-    refine Fin.lastCases ?_ (fun k ↦ ?_) k h
-    · intro h
-      -- Swap the last center into the prefix before applying the induction hypothesis.
-      let τ := swapLastTwo n
-      have hswap := reordered_alongBoundary_swapLastTwo (i := i) J
-        (h (Fin.last n).castSucc (Fin.castSucc_lt_last _))
-      have hrec := ih (J ∘ τ ∘ Fin.castSucc) (Fin.last n) (by
-        intro j hj
-        obtain ⟨a, rfl⟩ := Fin.eq_castSucc_of_ne_last hj.ne
-        simpa [τ, swapLastTwo] using h a.castSucc.castSucc (Fin.castSucc_lt_last _))
-      have hcomp := hswap.trans hrec.alongBoundary_snoc
-      have hindex : τ ∘ Fin.snoc (Fin.castSucc ∘ Fin.cons (Fin.last n) (Fin.last n).succAbove)
-          (Fin.last (n + 1)) =
-          Fin.cons (Fin.last (n + 1)) (Fin.last (n + 1)).succAbove := by
-        funext j
-        refine Fin.cases ?_ (fun a ↦ Fin.lastCases ?_ (fun b ↦ ?_) a) j
-        · simp [τ, swapLastTwo]
-        · simp [τ, swapLastTwo]
-        · rw [← Fin.castSucc_succ]
-          simp only [τ, swapLastTwo, Function.comp_apply, Fin.snoc_castSucc, Fin.cons_succ,
-            Fin.succAbove_last]
-          rw [Fin.castSucc_succ, Fin.cons_succ]
-      simpa only [Function.comp_assoc, ← hindex] using hcomp
-    · intro h
-      have hrec := (ih (J ∘ Fin.castSucc) k
-        (fun j hj ↦ h j.castSucc (Fin.castSucc_lt_castSucc_iff.mpr hj))).alongBoundary_snoc
-      have hindex : Fin.snoc (Fin.castSucc ∘ Fin.cons k k.succAbove) (Fin.last (n + 1)) =
-          Fin.cons (α := fun _ : Fin (n + 2) ↦ Fin (n + 2)) k.castSucc k.castSucc.succAbove := by
-        funext j
-        refine Fin.cases ?_ (fun a ↦ Fin.lastCases ?_ (fun b ↦ ?_) a) j
-        · simp
-        · simp
-        · rw [← Fin.castSucc_succ]
-          simp only [Fin.snoc_castSucc, Function.comp_apply, Fin.cons_succ]
-          rw [Fin.castSucc_succ, Fin.cons_succ, Fin.castSucc_succAbove_castSucc]
-      simpa only [hindex] using hrec
+    -- Move the final target center to the end, then reorder the remaining prefix.
+    let k := σ (Fin.last n)
+    let τ : Fin (n + 1) → Fin (n + 1) := Fin.snoc k.succAbove k
+    let e := σ.subtypeEquiv (p := (· ≠ Fin.last n)) (q := (· ≠ k))
+      (fun _ ↦ σ.injective.ne_iff.symm)
+    let π := ((finSuccAboveEquiv (Fin.last n)).trans e).trans (finSuccAboveEquiv k).symm
+    have hπ (j : Fin n) : k.succAbove (π j) = σ j.castSucc := by
+      have he := congrArg Subtype.val ((finSuccAboveEquiv k).apply_symm_apply
+        (e (finSuccAboveEquiv (Fin.last n) j)))
+      simpa only [π, e, Equiv.trans_apply, finSuccAboveEquiv_apply, Equiv.coe_subtypeEquiv_eq_map,
+        Subtype.map_coe, Fin.succAbove_last_apply] using he
+    have hτ := reordered_alongBoundary_moveToBack (i := i) J k (fun j hj ↦ by
+      have hj' : σ.symm j < Fin.last n :=
+        Fin.lt_last_iff_ne_last.mpr (fun he ↦ hj.ne (by simp [k, ← he]))
+      simpa only [Equiv.apply_symm_apply] using (h (σ.symm j) (Fin.last n) hj'
+        (by simpa only [Equiv.apply_symm_apply] using hj)).symm)
+    have hp := (ih ((J ∘ τ) ∘ Fin.castSucc) π (fun a b hab hba ↦ by
+      simp only [Function.comp_apply, τ, Fin.snoc_castSucc, hπ]
+      exact h a.castSucc b.castSucc (Fin.castSucc_lt_castSucc_iff.mpr hab)
+        (by simpa only [← hπ] using Fin.strictMono_succAbove k hba)))
+    have hsnoc := Reordered.alongBoundary_snoc (J := J ∘ τ)
+      (by simpa only [Function.comp_assoc] using hp)
+    have he' : τ ∘ Fin.snoc (Fin.castSucc ∘ π) (Fin.last n) = (σ : Fin (n + 1) → Fin (n + 1)) := by
+      funext j
+      refine Fin.lastCases ?_ (fun a ↦ ?_) j
+      · simp [τ, k]
+      · simpa only [Function.comp_apply, τ, Fin.snoc_castSucc] using hπ a
+    simpa only [Function.comp_assoc, ← he'] using hτ.trans hsnoc
+
+/-- A reindexing of ordered centers preserves the surface over the base, the strict
+boundary, and the full Picard marking, provided each pair that changes relative order
+has disjoint supports. This allows repeated centers in their original relative order. -/
+theorem exists_iso_alongBoundary_reindex_of_disjoint_inversions
+    (J : Fin n → {K : D.IdealSheafData // K.IsEffectiveCartier})
+    (σ : Equiv.Perm (Fin n))
+    (h : ∀ a b, a < b → σ b < σ a →
+      Disjoint ((J (σ a)).val.support : Set D) ((J (σ b)).val.support : Set D)) :
+    let A := alongBoundary i J
+    let B := alongBoundary i (J ∘ σ)
+    ∃ e : A.1 ≅ B.1,
+      e.hom ≫ B.2.toTower.toBase = A.2.toTower.toBase ∧
+      A.2.boundaryι ≫ e.hom = B.2.boundaryι ∧
+      ∀ (a : Additive (LineBundleClass X)) (b : Fin n → ℤ),
+        pullback e.hom (B.2.toTower.picardHom (a, b ∘ σ)).toMul =
+          (A.2.toTower.picardHom (a, b)).toMul := by
+  obtain ⟨e, he, hb, hE⟩ := reordered_alongBoundary_reindex (i := i) J σ h
+  refine ⟨e, he, hb, fun a b ↦ ?_⟩
+  rw [picardHom_apply_toMul, picardHom_apply_toMul, pullback_mul, pullback_comp, he]
+  congr 1
+  rw [← pullbackHom_apply (f := e.hom), map_prod]
+  simp only [pullbackHom_apply, pullback_zpow, hE, Function.comp_apply]
+  exact Fintype.prod_equiv σ _ _ (fun _ ↦ rfl)
 
 /-- A center disjoint from all preceding centers may be moved to the front of an ordered
 boundary blowup tower. The remaining centers keep their relative order, and later centers
@@ -439,13 +487,18 @@ theorem exists_iso_alongBoundary_move_to_front
   have hq : (q : Fin (n + 1) → Fin (n + 1)) = Fin.cons k k.succAbove := by
     funext j
     cases j using Fin.cases <;> simp [q]
-  obtain ⟨e, he, hb, hE⟩ := reordered_alongBoundary_moveToFront (i := i) J k h
-  refine ⟨e, he, hb, fun a b ↦ ?_⟩
-  rw [picardHom_apply_toMul, picardHom_apply_toMul, pullback_mul, pullback_comp, he]
-  congr 1
-  rw [← pullbackHom_apply (f := e.hom), map_prod]
-  simp only [pullbackHom_apply, pullback_zpow, hE, ← hq, Function.comp_apply]
-  exact Fintype.prod_equiv q _ _ (fun _ ↦ rfl)
+  have hinv (a b : Fin (n + 1)) : a < b → q b < q a →
+      Disjoint ((J (q a)).val.support : Set D) ((J (q b)).val.support : Set D) := by
+    refine Fin.cases ?_ (fun a ↦ Fin.cases ?_ (fun b hab hba ↦ ?_) b) a
+    · intro _ hba
+      simp only [hq, Fin.cons_zero] at hba ⊢
+      exact (h _ hba).symm
+    · simp
+    · exact (not_lt_of_ge (Fin.strictMono_succAbove k
+        (Fin.succ_lt_succ_iff.mp hab)).le (by simpa only [hq, Fin.cons_succ] using hba)).elim
+  dsimp only
+  rw [← hq]
+  exact exists_iso_alongBoundary_reindex_of_disjoint_inversions (i := i) J q hinv
 
 end Labeled
 
