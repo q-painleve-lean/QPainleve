@@ -6,7 +6,7 @@ Authors: The QPainleve contributors
 module
 
 public import QPainleve.Geometry.Toric.Fan.PiecewiseLinear
-public import QPainleve.LinearAlgebra.Determinant.Dual
+public import QPainleve.Geometry.Toric.Fan.HalfPlane
 public import QPainleve.LinearAlgebra.Transvection.Piecewise
 
 import Mathlib.Tactic.FinCases
@@ -84,26 +84,6 @@ theorem image_mutationRayEquiv_hull_singleton (x : V) :
   · rintro ⟨a, ha, rfl⟩
     exact ⟨a • x, ⟨a, ha, rfl⟩, hsmul ha⟩
 
-private theorem ker_mutationCharacter (hv : v ≠ 0) :
-    (hi.realCharacter (mutationCharacter b v).toAddMonoidHom).ker = ℝ ∙ i v := by
-  let f := hi.realCharacter (mutationCharacter b v).toAddMonoidHom
-  have hf : f ≠ 0 := by
-    intro hf
-    have hzero : (mutationCharacter b v).toAddMonoidHom = 0 :=
-      hi.realCharacter_injective (hf.trans (map_zero hi.realCharacter).symm)
-    have hz : -b.detDualEquiv v = 0 := LinearMap.toAddMonoidHom_injective hzero
-    exact hv (b.detDualEquiv.map_eq_zero_iff.mp (neg_eq_zero.mp hz))
-  have := hi.finiteDimensional
-  have hdim : Module.finrank ℝ V = 2 := by
-    rw [← hi.finrank_eq, Module.finrank_eq_card_basis b, Fintype.card_fin]
-  have hker := Module.Dual.finrank_ker_add_one_of_ne_zero hf
-  dsimp only [f] at hker
-  refine (Submodule.eq_of_le_of_finrank_le ?_ ?_).symm
-  · rw [Submodule.span_singleton_le_iff_mem, LinearMap.mem_ker]
-    simp [mutationCharacter_self]
-  · rw [finrank_span_singleton (fun h ↦ hv (hi.injective (h.trans (map_zero i).symm)))]
-    omega
-
 end IsIntegralLattice
 
 namespace Fan
@@ -114,47 +94,19 @@ variable (Φ : Fan i) (b : Module.Basis (Fin 2) ℤ N) {v : N}
   (hv : v ≠ 0) (hpos : hull ℝ {i v} ∈ Φ.cones) (hneg : hull ℝ {i (-v)} ∈ Φ.cones)
 
 include hv hpos hneg in
-private theorem cone_le_or_ge (σ : Φ.cones) :
-    let f := Φ.lattice.realCharacter (mutationCharacter b v).toAddMonoidHom
-    (∀ x ∈ σ.val, 0 ≤ f x) ∨ ∀ x ∈ σ.val, f x ≤ 0 := by
-  let f := Φ.lattice.realCharacter (mutationCharacter b v).toAddMonoidHom
-  by_cases hs : ∀ x ∈ σ.val, 0 ≤ f x
-  · exact Or.inl hs
-  · right
-    push Not at hs
-    obtain ⟨y, hy, hyneg⟩ := hs
-    intro x hx
-    by_contra! hxpos
-    -- A positive combination of the two points lies on one of the opposite rays.
-    let z := (-f y) • x + f x • y
-    have hz : z ∈ σ.val := σ.val.add_mem (σ.val.smul_mem (neg_pos.mpr hyneg).le hx)
-      (σ.val.smul_mem hxpos.le hy)
-    have hzf : z ∈ f.ker := LinearMap.mem_ker.mpr (by simp [z, mul_comm])
-    rw [Φ.lattice.ker_mutationCharacter b v hv] at hzf
-    obtain ⟨r, hr⟩ := Submodule.mem_span_singleton.mp hzf
-    have hfv : f (i v) = 0 := by simp [f, mutationCharacter_self]
-    have hRay : ∃ w : N, hull ℝ {i w} ∈ Φ.cones ∧ f (i w) = 0 ∧ z ∈ hull ℝ {i w} := by
-      rcases le_total 0 r with h | h
-      · exact ⟨v, hpos, hfv, mem_hull_singleton.mpr ⟨r, h, hr⟩⟩
-      · refine ⟨-v, hneg, by simp [hfv], mem_hull_singleton.mpr ⟨-r, neg_nonneg.mpr h, ?_⟩⟩
-        simpa using hr
-    obtain ⟨w, hw, hfw, hzw⟩ := hRay
-    -- A face containing that combination must contain both points, forcing their values to zero.
-    have hface := Φ.inf_isFaceOf_left σ.property hw
-    have hxw := (Submodule.mem_inf.mp (hface.mem_of_smul_add_smul_mem_left hx hy
-      (neg_pos.mpr hyneg) hxpos (Submodule.mem_inf.mpr ⟨hz, hzw⟩))).2
-    obtain ⟨a, -, rfl⟩ := mem_hull_singleton.mp hxw
-    rw [map_smul, hfw, smul_zero] at hxpos
-    exact (lt_irrefl 0) hxpos
-
-include hv hpos hneg in
 private theorem mutationRayEquiv_isPiecewiseLinear (σ : Φ.cones) :
     ∃ (a : V ≃ₗ[ℝ] V) (c : N ≃+ N),
       Set.EqOn a (Φ.lattice.mutationRayEquiv b v) (σ.val : Set V) ∧
         ∀ n, a (i n) = i (c n) := by
   let f := Φ.lattice.realCharacter (mutationCharacter b v).toAddMonoidHom
   have hfv : f (i v) = 0 := by simp [f, mutationCharacter_self]
-  rcases Φ.cone_le_or_ge b hv hpos hneg σ with hs | hs
+  have hker : f.ker = ℝ ∙ i v := by
+    have hchar : (mutationCharacter b v).toAddMonoidHom =
+        -(b.detDualEquiv v).toAddMonoidHom := (rfl)
+    dsimp only [f]
+    rw [hchar, map_neg, LinearMap.ker_neg]
+    exact Φ.lattice.ker_realCharacter_detDualEquiv b hv
+  rcases Φ.nonneg_or_nonpos_on_cone hker hpos (by simpa using hneg) σ with hs | hs
   · refine ⟨LinearEquiv.transvection hfv,
       (LinearEquiv.transvection (mutationCharacter_self b v)).toAddEquiv, ?_, ?_⟩
     · intro x hx

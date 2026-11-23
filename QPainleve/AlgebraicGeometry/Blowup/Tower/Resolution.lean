@@ -50,8 +50,8 @@ theorem exists_isClosedPointTower_resolving {k : Type u} [Field k] [IsAlgClosed 
   have : IsNoetherian X := isNoetherian_of_finiteType f
   obtain ⟨A, hA⟩ := X.exists_isAmple_of_isProjectiveOver k
   obtain ⟨ι, _, L, s, hs, hres⟩ := q.exists_section_family_for_resolution f hA
-  obtain ⟨n, Y, T, hT, hI⟩ :=
-    L.exists_isClosedPointTower_isEffectiveCartier_comap_iSup_zeroIdeal k s hs
+  obtain ⟨n, Y, T, hT, hI, _⟩ :=
+    L.exists_isClosedPointTower_principalizing_iSup_zeroIdeal k s hs
   have : IsIntegral Y := hT.isIntegral f
   have : Surjective T.toBase := hT.surjective f
   exact ⟨n, Y, T, inferInstance, inferInstance, hT, (hres T.toBase).mp hI⟩

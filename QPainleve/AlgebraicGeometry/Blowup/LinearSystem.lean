@@ -9,13 +9,10 @@ public import QPainleve.AlgebraicGeometry.Blowup.Intersection
 public import QPainleve.AlgebraicGeometry.Blowup.StrictTransform.Residual
 public import QPainleve.AlgebraicGeometry.WeilDivisor.LinearSystem.BaseIdeal
 public import TauCeti.AlgebraicGeometry.IdealSheaf.Colon
-import QPainleve.AlgebraicGeometry.Blowup.Exceptional.FirstKind
-import QPainleve.AlgebraicGeometry.EffectiveCartierDivisor.Integral
-import QPainleve.AlgebraicGeometry.IdealSheaf.Integral
+import QPainleve.AlgebraicGeometry.Blowup.Exceptional.Multiplicity
 import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
 import TauCeti.AlgebraicGeometry.Blowup.Restriction
 import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.Subtraction
-import TauCeti.AlgebraicGeometry.IdealSheaf.Reduced
 import TauCeti.AlgebraicGeometry.Morphisms.Dominant
 
 /-!
@@ -72,35 +69,6 @@ variable [IsIntegral X] [IsLocallyNoetherian X] [IsRegularLocalRing (X.presheaf.
   (hp : IsClosed ({p} : Set X)) (hdim : ringKrullDim (X.presheaf.stalk p) = 2)
 
 include hp hdim
-
-private theorem notMem_support_colon_exceptional_of_mem_exceptional (J : X.IdealSheafData)
-    (m : ℕ) (hm : J.stalkOrder p = m) (x : CodimensionOnePoint (P).blowup)
-    (hx : (x : (P).blowup) ∈ (E).support) :
-    (x : (P).blowup) ∉ (((J.comap π).colon (E ^ m)).support) := by
-  have : IsLocallyNoetherian (P).blowup := LocallyOfFiniteType.isLocallyNoetherian π
-  have : IsIntegral (E).subscheme :=
-    (isExceptionalCurveOfFirstKind_comap_blowupToBase_of_closedPoint p hp hdim).isIntegral_subscheme
-  have hxη := ((hE).mem_support_iff_eq_subschemeι_genericPoint x.property).mp hx
-  let R := (J.comap π).colon (E ^ m)
-  intro hxR
-  have hsub : ((E).support : Set (P).blowup) ⊆ (R.support : Set (P).blowup) := by
-    rw [(E).support_eq_closure_subschemeι_genericPoint, ← hxη]
-    exact R.support.isClosed.closure_subset_iff.mpr (Set.singleton_subset_iff.mpr hxR)
-  have hRE : R ≤ E := by
-    have hclosed : (E).support ≤ R.support := fun _ hx ↦ hsub hx
-    have hs := le_support_iff_le_vanishingIdeal.mp hclosed
-    rw [vanishingIdeal_support, ((E).isReduced_subscheme_iff_radical_eq).mp inferInstance] at hs
-    exact hs
-  have hF := TauCeti.isEffectiveCartier_pow hE m
-  have hle := (comap_blowupToBase_le_exceptional_pow_iff p hp hdim J m).mpr hm.ge
-  have hle' : J.comap π ≤ E ^ (m + 1) := calc
-    J.comap π = R * E ^ m := eq_colon_mul _ _ hF.locallyPrincipal hle
-    _ ≤ E * E ^ m := fun U ↦ by
-      simpa only [ideal_mul, Pi.mul_apply] using Ideal.mul_mono (hRE U) le_rfl
-    _ = E ^ (m + 1) := (pow_succ' _ _).symm
-  have h := (comap_blowupToBase_le_exceptional_pow_iff p hp hdim J (m + 1)).mp hle'
-  rw [hm, ENat.natCast_le_natCast] at h
-  omega
 
 /-- A base ideal with no codimension-one support keeps that property after pullback and division
 by the exceptional power of its exact stalk order. -/

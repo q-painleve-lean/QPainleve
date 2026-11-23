@@ -107,17 +107,6 @@ local notation "m" => ENat.toNat (D.stalkOrder p)
 
 variable [IsIntegral X] [IsNoetherian X] [IsRegularLocalRing (X.presheaf.stalk p)]
 
-/-- Removing the exceptional power of the exact multiplicity from the total transform
-gives the ideal of the scheme-theoretic strict transform. -/
-theorem IsEffectiveCartier.comap_blowupToBase_colon_eq_strictTransform
-    (hD : D.IsEffectiveCartier) (hp : IsClosed ({p} : Set X))
-    (hdim : ringKrullDim (X.presheaf.stalk p) = 2) :
-    (D.comap π).colon (E ^ m) = S := by
-  have h : D.comap π = S * E ^ m :=
-    hD.totalTransform_eq_strictTransform_mul_pow_closedPoint hp hdim
-  rw [h, (TauCeti.isEffectiveCartier_pow
-    (Iₚ).isEffectiveCartier_comap_blowupToBase m).mul_colon_cancel_right]
-
 /-- The scheme-theoretic strict transform of an effective Cartier divisor under a
 regular closed point blowup of local dimension two is effective Cartier. -/
 theorem IsEffectiveCartier.strictTransform_pointBlowup

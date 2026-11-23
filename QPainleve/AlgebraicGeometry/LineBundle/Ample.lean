@@ -6,22 +6,25 @@ Authors: The QPainleve contributors
 module
 
 public import TauCeti.AlgebraicGeometry.LineBundle.Ample
+public import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.Invertible
 public import TauCeti.AlgebraicGeometry.LineBundle.GlobalGeneration.Basic
 public import TauCeti.AlgebraicGeometry.LineBundle.Power
 public import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.TwistingSheaf.Basic
 public import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.SymmetricAlgebra
 public import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.ProjectiveOver
 public import Mathlib.AlgebraicGeometry.Morphisms.Proper
+import QPainleve.AlgebraicGeometry.CartierDivisor.ZeroDivisor
 import QPainleve.AlgebraicGeometry.LineBundle.GlobalGeneration
 import QPainleve.AlgebraicGeometry.LineBundle.Pullback
 import QPainleve.AlgebraicGeometry.LineBundle.TensorProduct
 import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.Sections.Affine
 import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.Sections.TwistingSheaf
+import TauCeti.AlgebraicGeometry.Morphisms.RelativeDimension
 import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.TwistingSheaf.Pullback
 import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.TwistingSheaf.Ample
 
 /-!
-# Realizing ample powers as projective twists
+# Positive powers of ample line bundles
 
 An ample line bundle on a scheme proper over an affine base has a positive power which
 pulls back from the tautological line bundle on projective space along a finite morphism.
@@ -29,8 +32,14 @@ Choose the sections of the power to have affine nonvanishing opens. The resultin
 projective morphism is affine on the standard cover, and properness then makes it finite.
 
 Conversely, a projective scheme over an affine base has an ample line bundle.
+
 Tensoring an ample line bundle by a globally generated one preserves ampleness
 ([Stacks Project, Lemma 28.27.5](https://stacks.math.columbia.edu/tag/0890)).
+
+On a positive-dimensional proper integral scheme over a field, some positive power of
+an ample class is the class of a nonempty effective Cartier divisor. This uses the
+affine nonvanishing locus argument of
+[Stacks Project, Lemma 33.44.14](https://stacks.math.columbia.edu/tag/0B5X).
 -/
 
 public section
@@ -92,6 +101,41 @@ theorem pullback_of_isAffineHom {Y : Scheme.{u}} {a : LineBundleClass Y}
     exact hx
   · rw [Scheme.Modules.nonvanishingLocus_hom_app, ht]
     exact hU.preimage g
+
+/-- On a positive-dimensional proper integral scheme over a field, a positive power of
+an ample line-bundle class is represented by a nonempty effective Cartier divisor. -/
+theorem exists_effectiveCartier_pow_ne_top {k : Type u} [Field k] {a : LineBundleClass X}
+    (ha : a.IsAmple) (f : X ⟶ Spec (.of k)) [IsProper f] [IsIntegral X]
+    (hX : 0 < topologicalKrullDim X) :
+    ∃ (n : ℕ) (_ : 0 < n) (I : X.IdealSheafData) (hI : I.IsEffectiveCartier),
+      I ≠ ⊤ ∧ (LineBundleClass.mk hI.toInvertibleSheaf)⁻¹ = a ^ n := by
+  obtain ⟨n, hn, L, hL, s, hx, hAffine⟩ :=
+    ha.exists_isAffineOpen_nonvanishingLocus (genericPoint X)
+  have hs : s ≠ 0 := by
+    intro hz
+    simp [hz, Scheme.Modules.nonvanishingLocus_zero] at hx
+  let I := L.zeroIdeal s
+  let hI := L.isEffectiveCartier_zeroIdeal hs
+  refine ⟨n, hn, I, hI, ?_, ?_⟩
+  · intro htop
+    have hsupport : (L.zeroIdeal s).support = ⊥ :=
+      (Scheme.IdealSheafData.support_eq_bot_iff _).mpr htop
+    have hU : L.obj.nonvanishingLocus s = ⊤ := by
+      apply top_unique
+      intro y _
+      exact (L.mem_nonvanishingLocus_iff_notMem_support_zeroIdeal s y).mpr (by
+        rw [hsupport]
+        exact Set.notMem_empty y)
+    have : IsAffine (↑(⊤ : X.Opens)) := hU ▸ hAffine
+    have : IsAffine X := IsAffine.of_isIso X.topIso.inv
+    have : IsFinite f := IsFinite.iff_isProper_and_isAffineHom.mpr ⟨inferInstance, inferInstance⟩
+    exact (not_le_of_gt hX) ((relativeDimensionLE_iff_of_field f).mp
+      (inferInstance : RelativeDimensionLE 0 f))
+  · let hD := L.isEffective_zeroDivisor hs
+    have hEq := (hD.isEffectiveCartier_idealSheaf.toCartierDivisor_eq_iff hI).mpr
+      (L.idealSheaf_zeroDivisor hs)
+    rw [← hI.toLineBundleClass_toCartierDivisor, ← hEq, hD.toCartierDivisor_idealSheaf,
+      L.toLineBundleClass_zeroDivisor hs, hL]
 
 /-- Some positive power of an ample line bundle on a scheme proper over an affine base is
 the pullback of 𝒪(1) along a finite morphism to projective space over the base. -/
