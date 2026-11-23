@@ -5,6 +5,7 @@ Authors: The QPainleve contributors
 -/
 module
 
+public import TauCeti.Geometry.Toric.Algebraic.DualSemigroup.Basic
 public import TauCeti.Geometry.Toric.Algebraic.Fan.Ray
 public import TauCeti.Geometry.Toric.Algebraic.Fan.Subdivision
 public import TauCeti.Geometry.Toric.Algebraic.Ray.Primitive
@@ -64,6 +65,13 @@ theorem Ray.primitiveGenerator_ne_zero (ρ : Φ.Ray) : ρ.primitiveGenerator ≠
 theorem Ray.primitiveGenerator_mem (ρ : Φ.Ray) : i ρ.primitiveGenerator ∈ ρ.toCone.val := by
   rw [← Ray.toPointedCone_toToricRay Φ ρ ρ.toCone le_rfl]
   exact ρ.isPrimitiveGenerator.mem
+
+/-- A character lies in the dual semigroup of a ray exactly when it pairs nonnegatively
+with the primitive generator. -/
+theorem Ray.mem_rayDualSemigroup_iff (ρ : Φ.Ray) (a : N →+ ℤ) :
+    a ∈ dualSemigroup Φ.lattice ρ.toCone.val ↔ 0 ≤ a ρ.primitiveGenerator := by
+  rw [ρ.toCone_eq_hull_primitiveGenerator, ← Set.image_singleton,
+    mem_dualSemigroup_hull_image, Set.forall_mem_singleton]
 
 /-- Containment of a fan ray in a cone is detected by its primitive generator. -/
 theorem Ray.toCone_le_iff (ρ : Φ.Ray) (σ : Φ.cones) :
