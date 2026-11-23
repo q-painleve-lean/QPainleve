@@ -7,6 +7,7 @@ module
 
 public import Mathlib.AlgebraicGeometry.Noetherian
 public import Mathlib.AlgebraicGeometry.OrderOfVanishing.Basic
+public import QPainleve.AlgebraicGeometry.OrderOfVanishing.Base
 public import QPainleve.Geometry.Toric.Fan.DenseTorus
 public import TauCeti.AlgebraicGeometry.Morphisms.Dominant
 public import TauCeti.AlgebraicGeometry.Scheme.CodimensionOnePoint
@@ -185,14 +186,62 @@ theorem denseTorusι_comp_structureMap :
   rw [Φ.denseTorusι_eq_affineToricChartι _ hbot,
     Φ.affineToricChartι_comp_algebraicRealizationStructureMap]
 
+/-- The dense torus inclusion is a morphism over the complex base. -/
+instance isOver_denseTorusι : (Φ.denseTorusι inferInstance).IsOver (Spec (.of ℂ)) :=
+  ⟨Φ.denseTorusι_comp_structureMap⟩
+
+/-- Maps from the function field of a toric fan over the base are determined by their
+values on rational characters. -/
+theorem functionFieldAlgHom_ext {K : Type*} [Semiring K] [Algebra ℂ K]
+    {f g : (𝒳).functionField →ₐ[ℂ] K}
+    (h : ∀ m, f (Φ.character m) = g (Φ.character m)) : f = g := by
+  let j := Φ.denseTorusι inferInstance
+  let e := AlgEquiv.ofBijective (j.functionFieldAlgHom ℂ) (by
+    have he : ⇑(j.functionFieldAlgHom ℂ) =
+        ⇑(asIso j.functionFieldMap).commRingCatIsoToRingEquiv := by
+      funext x
+      rw [Scheme.Hom.functionFieldAlgHom_apply]
+      rfl
+    rw [he]
+    exact (asIso j.functionFieldMap).commRingCatIsoToRingEquiv.bijective)
+  let : Algebra R (𝕋).functionField := instAlgebraCarrierFunctionFieldSpec (.of R)
+  have hgerm (r : R) : algebraMap R (𝕋).functionField r =
+      ((Scheme.ΓSpecIso (.of R)).inv ≫ (𝕋).germToFunctionField ⊤) r := by
+    rw [Scheme.ΓSpecIso_inv]
+    rfl
+  let : IsScalarTower ℂ R (𝕋).functionField := IsScalarTower.of_algebraMap_eq fun c ↦ by
+    rw [hgerm, Scheme.Spec.algebraMap_functionField_base]
+  let f' := f.comp e.symm.toAlgHom
+  let g' := g.comp e.symm.toAlgHom
+  have he : f' = g' := by
+    let a := Algebra.algHom ℂ R (𝕋).functionField
+    have : IsFractionRing R (𝕋).functionField := functionField_isFractionRing_of_affine (.of R)
+    apply AlgHom.toRingHom_injective
+    apply IsLocalization.ringHom_ext (nonZeroDivisors R)
+    suffices hcomp : f'.comp a = g'.comp a from congrArg AlgHom.toRingHom hcomp
+    refine MonoidAlgebra.algHom_ext ?_ (Subsingleton.elim _ _)
+    intro m
+    have hx : e.symm (algebraMap R (𝕋).functionField (MonoidAlgebra.single m 1)) =
+        Φ.character (ofAdd (denseTorusDualEquiv Φ.lattice m.toAdd)) := by
+      apply e.injective
+      rw [AlgEquiv.apply_symm_apply, hgerm]
+      simp only [e, AlgEquiv.ofBijective_apply, Scheme.Hom.functionFieldAlgHom_apply, j,
+        functionFieldMap_character, toAdd_ofAdd, AddEquiv.symm_apply_apply, ofAdd_toAdd,
+        MonoidAlgebra.of_apply]
+    exact (congrArg f hx).trans ((h _).trans (congrArg g hx).symm)
+  apply AlgHom.ext
+  intro x
+  simpa only [f', g', AlgHom.comp_apply, AlgEquiv.coe_toAlgHom, AlgEquiv.symm_apply_apply] using
+    congrArg (fun a : (𝕋).functionField →ₐ[ℂ] K ↦ a (e x)) he
+
 /-- A nonzero rational function of order zero at each codimension-one point of the dense torus
-is a character times the germ of a global unit. The proof takes the unit to be constant. -/
+is a character times a nonzero base scalar. -/
 theorem exists_eq_const_mul_character (f : (𝒳).functionFieldˣ)
     (hf : ∀ y : CodimensionOnePoint 𝕋,
       (𝕋).ord ((Φ.denseTorusι inferInstance).functionFieldMap (f : (𝒳).functionField)) y.val = 0) :
-    ∃ (s : Γ(𝒳, ⊤)ˣ) (m : N →+ ℤ),
+    ∃ (c : ℂˣ) (m : N →+ ℤ),
       (f : (𝒳).functionField) =
-        (𝒳).germToFunctionField ⊤ (s : Γ(𝒳, ⊤)) * Φ.character (ofAdd m) := by
+        algebraMap ℂ (𝒳).functionField (c : ℂ) * Φ.character (ofAdd m) := by
   let j := Φ.denseTorusι inferInstance
   obtain ⟨u, hu⟩ :=
     exists_unit_germToFunctionField_eq_of_ord_eq_zero_of_isIntegrallyClosed
@@ -207,14 +256,7 @@ theorem exists_eq_const_mul_character (f : (𝒳).functionFieldˣ)
   let c := (MonoidAlgebra.unitsEquiv uR).1
   let a := ((MonoidAlgebra.unitsEquiv uR).2 : Multiplicative (dualSemigroup Φ.lattice ⊥))
   let m := denseTorusDualEquiv Φ.lattice a.toAdd
-  let k := (Scheme.ΓSpecIso (.of ℂ)).inv ≫ Φ.algebraicRealizationStructureMap.appTop
-  refine ⟨Units.map k.hom.toMonoidHom c, m, j.functionFieldMap.hom.injective ?_⟩
-  have hc : j.appTop (k (c : ℂ)) = τ.inv (algebraMap ℂ R (c : ℂ)) := by
-    have he : k ≫ j.appTop = CommRingCat.ofHom (algebraMap ℂ R) ≫ τ.inv := by
-      dsimp only [k, j, τ]
-      rw [Category.assoc, ← Scheme.Hom.comp_appTop, Φ.denseTorusι_comp_structureMap]
-      exact (Scheme.ΓSpecIso_inv_naturality _).symm
-    exact ConcreteCategory.congr_hom he (c : ℂ)
+  refine ⟨c, m, j.functionFieldMap.hom.injective ?_⟩
   have hs : (uR : R) = algebraMap ℂ R (c : ℂ) * MonoidAlgebra.of ℂ _ a := by
     simpa [c, a, MonoidAlgebra.algebraMap_def, MonoidAlgebra.of_apply,
       MonoidAlgebra.single_mul_single] using MonoidAlgebra.val_eq_single_unitsEquiv uR
@@ -223,14 +265,11 @@ theorem exists_eq_const_mul_character (f : (𝒳).functionFieldˣ)
       CommRingCat.comp_apply, CommRingCat.id_apply] using
       ConcreteCategory.congr_hom τ.hom_inv_id (u : Γ(𝕋, ⊤))
   have hmono : ofAdd ((denseTorusDualEquiv Φ.lattice).symm m) = a := by simp [m]
-  rw [map_mul, functionFieldMap_character, toAdd_ofAdd, hmono, CommRingCat.comp_apply]
+  rw [map_mul, j.functionFieldMap_algebraMap ℂ, functionFieldMap_character,
+    toAdd_ofAdd, hmono, Scheme.Spec.algebraMap_functionField_base, CommRingCat.comp_apply]
   simp only [Units.coe_map, RingHom.toMonoidHom_eq_coe, MonoidHom.coe_ofClass] at hu ⊢
-  rw [← hu, ← hunit]
-  have htop : (𝒳).germToFunctionField ⊤ ≫ j.functionFieldMap =
-      j.appTop ≫ (𝕋).germToFunctionField ⊤ := j.germToFunctionField_functionFieldMap ⊤
-  have hcomm := ConcreteCategory.congr_hom htop (k (c : ℂ))
-  simp only [CommRingCat.comp_apply] at hcomm
-  rw [hcomm, hc, hs, map_mul, map_mul]
+  rw [← hu, ← hunit, hs, map_mul, map_mul]
+  rfl
 
 end Fan
 

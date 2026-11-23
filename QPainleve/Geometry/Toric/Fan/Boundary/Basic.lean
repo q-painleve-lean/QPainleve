@@ -15,6 +15,7 @@ public import TauCeti.Geometry.Toric.Algebraic.Fan.Ray
 import Mathlib.Algebra.MvPolynomial.Division
 import Mathlib.RingTheory.Ideal.KrullsHeightTheorem
 import QPainleve.Geometry.Toric.RegularChart
+import TauCeti.Geometry.Toric.Algebraic.Ray.Generation
 import TauCeti.AlgebraicGeometry.WeilDivisor.Scheme.Order
 
 /-!
@@ -340,6 +341,47 @@ theorem Ray.toCone_eq_hull_primitiveGenerator (ρ : Φ.Ray) :
   exact hr ▸ r.eq_hull_singleton (hσ.salient.anti r.val.isFaceOf.le)
     (primitiveGenerator_mem Φ.lattice hσ r) hne
 
+/-- The primitive generator determines a fan ray. -/
+theorem Ray.primitiveGenerator_injective : Function.Injective (Ray.primitiveGenerator (Φ := Φ)) :=
+  fun ρ τ h ↦ by
+    apply Subtype.ext
+    apply Subtype.ext
+    rw [Ray.toCone_eq_hull_primitiveGenerator ρ, Ray.toCone_eq_hull_primitiveGenerator τ, h]
+
+/-- Viewing a cone ray as a fan ray preserves its primitive lattice generator. -/
+@[simp]
+theorem Ray.primitiveGenerator_ofToricRay (σ : Φ.cones) (ρ : ToricRay σ.val) :
+    (Ray.ofToricRay Φ σ ρ).primitiveGenerator =
+      TauCeti.Toric.primitiveGenerator Φ.lattice (Φ.isToricCone σ.property) ρ := by
+  let τ := (Ray.ofToricRay Φ σ ρ).toCone
+  let hface := Φ.isFaceOf_of_le σ.property τ.property (Ray.toCone_ofToricRay_le Φ σ ρ)
+  let r := Ray.toToricRay Φ (Ray.ofToricRay Φ σ ρ) τ le_rfl
+  have hr : ToricRay.faceEmbedding hface r = ρ := by
+    apply SetLike.coe_injective
+    exact congrArg (fun C : PointedCone ℝ V ↦ (C : Set V)) <| by
+      rw [ToricRay.toPointedCone_faceEmbedding, Ray.toPointedCone_toToricRay,
+        Ray.toCone_ofToricRay]
+  rw [Ray.primitiveGenerator_def]
+  exact (primitiveGenerator_faceEmbedding Φ.lattice (Φ.isToricCone σ.property) hface r).symm.trans
+    (congrArg (TauCeti.Toric.primitiveGenerator Φ.lattice (Φ.isToricCone σ.property)) hr)
+
+/-- On a complete fan, a lattice character nonnegative on every primitive ray
+generator is zero. -/
+theorem character_eq_zero_of_nonneg_primitiveGenerator (Φ : Fan i) (hc : Φ.IsComplete) (m : N →+ ℤ)
+    (hm : ∀ ρ : Φ.Ray, 0 ≤ m ρ.primitiveGenerator) : m = 0 := by
+  have hcone (σ : Φ.cones) : m ∈ dualSemigroup Φ.lattice σ.val := by
+    let hσ := Φ.isToricCone σ.property
+    apply (mem_dualSemigroup_iff_primitiveGenerator Φ.lattice hσ m).2
+    intro ρ
+    simpa only [Ray.primitiveGenerator_ofToricRay] using hm (Ray.ofToricRay Φ σ ρ)
+  ext x
+  obtain ⟨σ, hσ, hx⟩ := (Φ.isComplete_iff.1 hc) (-i x)
+  have h := (mem_dualSemigroup Φ.lattice m).1 (hcone ⟨σ, hσ⟩) hx
+  obtain ⟨τ, hτ, hx'⟩ := (Φ.isComplete_iff.1 hc) (i x)
+  have h' := (mem_dualSemigroup Φ.lattice m).1 (hcone ⟨τ, hτ⟩) hx'
+  simp only [map_neg, IsIntegralLattice.realCharacter_apply, Left.nonneg_neg_iff] at h h'
+  exact_mod_cast le_antisymm h h'
+
 /-- The generic point of a fan ray's boundary divisor, viewed in the fan scheme. -/
 def rayBoundaryPoint (Φ : Fan i) (hΦ : Φ.IsRegular) (ρ : Φ.Ray) :
     CodimensionOnePoint Φ.algebraicRealization :=
@@ -374,13 +416,8 @@ theorem rayBoundaryPoint_ofToricRay (Φ : Fan i) (hΦ : Φ.IsRegular)
   have : IsOpenImmersion f := hσ.rational.isOpenImmersion_faceAffineToricSchemeMap Φ.lattice hface
   let q := hτreg.rayPoint Φ.lattice hτ r
   let p := hσreg.rayPoint Φ.lattice hσ ρ
-  have hr : ToricRay.faceEmbedding hface r = ρ := by
-    apply SetLike.coe_injective
-    exact congrArg (fun C : PointedCone ℝ V ↦ (C : Set V)) <| by
-      rw [ToricRay.toPointedCone_faceEmbedding, Ray.toPointedCone_toToricRay,
-        Ray.toCone_ofToricRay]
-  have hv : primitiveGenerator Φ.lattice hσ ρ = primitiveGenerator Φ.lattice hτ r := by
-    rw [← hr, primitiveGenerator_faceEmbedding]
+  have hv : primitiveGenerator Φ.lattice hσ ρ = primitiveGenerator Φ.lattice hτ r :=
+    (Ray.primitiveGenerator_ofToricRay σ ρ).symm
   have hsub : p.val.asIdeal ≤ (f q.val).asIdeal := by
     rw [hσreg.rayPoint_asIdeal, rayIdeal_le_iff]
     intro m hm
@@ -569,9 +606,7 @@ theorem rayBoundaryPoint_injective (Φ : Fan i) (hΦ : Φ.IsRegular) :
           Φ.algebraicRealization.ord (Φ.character (ofAdd (b.coord j).toAddMonoidHom)) x.val) h
       simpa only [ord_rayBoundaryPoint_character Φ hΦ, LinearMap.toAddMonoidHom_coe,
         Module.Basis.coord_apply] using heq
-  apply Subtype.ext
-  apply Subtype.ext
-  rw [Ray.toCone_eq_hull_primitiveGenerator ρ, Ray.toCone_eq_hull_primitiveGenerator τ, hgen]
+  exact Ray.primitiveGenerator_injective hgen
 
 /-- The codimension-one points outside the dense torus are precisely the ray boundary points. -/
 theorem range_rayBoundaryPoint (Φ : Fan i) (hΦ : Φ.IsRegular) (h₀ : Nonempty Φ.cones) :
