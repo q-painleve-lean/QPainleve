@@ -70,7 +70,7 @@ theorem exists_isClosedPointTower_lifting_blowup (f : X ⟶ Y) [f.IsOver (Spec (
     change a.hom ≫ I.blowupToBase ≫ (Y ↘ Spec (.of k)) = a.domain.ι ≫ s
     rw [← Category.assoc, a.over f I.blowupToBase, Category.assoc,
       HomIsOver.comp_over (f := f) (S := Spec (.of k))]
-  obtain ⟨n, Z, T, _, _, hT, g, ⟨_, hg⟩, _⟩ := r.exists_isClosedPointTower_resolving (k := k)
+  obtain ⟨n, Z, T, _, _, hT, _, g, ⟨_, hg⟩, _⟩ := r.exists_isClosedPointTower_resolving (k := k)
   have : Y.IsSeparated := Scheme.IsSeparated.of_isSeparated (Y ↘ Spec (.of k))
   exact ⟨n, Z, T, g, hT, (I.toRationalMap_eq_comp_iff_comp_blowupToBase_eq h hr g).mp hg⟩
 
