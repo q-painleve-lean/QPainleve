@@ -18,9 +18,10 @@ import QPainleve.AlgebraicGeometry.Morphisms.Separated
 
 For a surjective first map and a separated, universally closed second map with reduced
 intermediate scheme, the centre of their composite is the union of the second centre and
-the image of the first. Over its isomorphism locus, a morphism is injective, preserves
-codimension, and is quasi-finite. A dominant section over an open of the target of a separated
-morphism with reduced source places that open in the isomorphism locus.
+the image of the first. Over its isomorphism locus, a morphism is injective, induces
+isomorphisms on stalks, preserves codimension, and is quasi-finite. A dominant section over
+an open of the target of a separated morphism with reduced source places that open in the
+isomorphism locus.
 -/
 
 public section
@@ -85,6 +86,22 @@ theorem injOn_preimage_isoLocus (f : X ⟶ Y) :
   have hab : (f ∣_ U) a = (f ∣_ U) b := Subtype.ext <|
     (morphismRestrict_base_coe f U a).trans (hxy.trans (morphismRestrict_base_coe f U b).symm)
   exact congrArg Subtype.val ((f ∣_ U).isOpenEmbedding.injective hab)
+
+/-- The stalk map of a morphism at any point lying over its isomorphism locus is an isomorphism. -/
+theorem isIso_stalkMap_of_mem_isoLocus (f : X ⟶ Y) {x : X}
+    (hx : f x ∈ f.isoLocus) : IsIso (f.stalkMap x) := by
+  let U := f.isoLocus
+  let j := Scheme.Opens.ι (f ⁻¹ᵁ U)
+  let xU : (f ⁻¹ᵁ U).toScheme := ⟨x, f.mem_preimage.mpr hx⟩
+  have : IsIso (f ∣_ U) := f.le_isoLocus_iff.mp le_rfl
+  have hiOpen : IsOpenImmersion (j ≫ f) := by
+    rw [← morphismRestrict_ι f U]
+    infer_instance
+  have hi : IsIso ((j ≫ f).stalkMap xU) :=
+    (IsOpenImmersion.iff_isIso_stalkMap.mp hiOpen).2 xU
+  have : IsIso (f.stalkMap (j xU) ≫ j.stalkMap xU) :=
+    (Scheme.Hom.stalkMap_comp j f xU) ▸ hi
+  exact IsIso.of_isIso_comp_right (f.stalkMap (j xU)) (j.stalkMap xU)
 
 section
 
