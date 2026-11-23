@@ -7,7 +7,7 @@ module
 
 public import Mathlib.AlgebraicGeometry.Morphisms.Finite
 
-import Mathlib.AlgebraicGeometry.PullbackCarrier
+import TauCeti.AlgebraicGeometry.Pullback.Carrier
 
 /-!
 # Lifting units across pullbacks of closed immersions
@@ -42,13 +42,7 @@ theorem exists_affineOpen_unit_lift [IsFinite f] [IsClosedImmersion i]
       (P.presheaf.map (j ⁻¹ᵁ (f ⁻¹ᵁ U)).leTop.op (a : Γ(P, ⊤)))
     let V : X.Opens := ⟨(f '' (Y.basicOpen b : Set Y)ᶜ)ᶜ,
       (f.isClosedMap _ (Y.basicOpen b).isOpen.isClosed_compl).isOpen_compl⟩
-    have hsurj : Function.Surjective (⇑h.isoPullback.hom) := h.isoPullback.hom.homeomorph.surjective
-    have hr : Set.range j = f ⁻¹' Set.range i := by
-      calc
-        Set.range j = Set.range (⇑(pullback.fst f i) ∘ ⇑h.isoPullback.hom) := by
-          rw [← TopCat.coe_comp, ← Scheme.Hom.comp_base, h.isoPullback_hom_fst]
-        _ = Set.range (pullback.fst f i) := hsurj.range_comp _
-        _ = _ := Scheme.Pullback.range_fst _ _
+    have hr := Scheme.Pullback.range_fst_of_isPullback h
     have hV : x ∈ V := by
       rintro ⟨y, hy, rfl⟩
       have hyi : y ∈ f ⁻¹' Set.range i := hx
