@@ -6,7 +6,7 @@ Authors: The QPainleve contributors
 module
 
 public import QPainleve.Algebra.Cluster.ChargeKernel.Basic
-public import QPainleve.Algebra.Cluster.Word.Basic
+public import QPainleve.Algebra.Cluster.Word.Exponent
 
 /-!
 # Charge-kernel transport along signed cluster words
@@ -42,6 +42,12 @@ structure ChargeSeed (B : SkewExchangeMatrix ι) (N : Type*) [AddCommGroup N] wh
   /-- Pairing the basis charges gives the exchange matrix. -/
   matrix_eq : chargeExchangeMatrix form charge = B.matrix
 
+/-- Every charge relation is an exchange relation of the realized matrix. -/
+theorem ChargeSeed.ker_le_exchangeKernel {B : SkewExchangeMatrix ι} (P : ChargeSeed B N) :
+    P.charge.ker ≤ B.matrix.mulVecLin.ker := by
+  rw [← P.matrix_eq]
+  exact ker_le_ker_chargeExchangeMatrix P.form P.charge
+
 namespace Step
 
 variable {B C : SkewExchangeMatrix ι}
@@ -50,30 +56,6 @@ omit [Fintype ι] in
 private theorem toStep_eq_mk (g : Generator ι) (B : SkewExchangeMatrix ι) :
     g.toStep B = ⟨g, rfl⟩ :=
   Step.ext (Generator.toStep_generator g B)
-
-/-- The integral exponent substitution of a cluster step. For a mutation this gives the
-monomial part of the pullback, before accounting for the binomial factor. -/
-def exponentEquiv (s : B ⟶ C) : (ι → ℤ) ≃ₗ[ℤ] (ι → ℤ) :=
-  match s.generator with
-  | .mutate j => chargeMutationEquiv B.matrix j
-  | .permute σ => LinearEquiv.funCongrLeft ℤ ℤ σ.symm
-  | .invert => LinearEquiv.neg ℤ
-
-@[simp]
-theorem exponentEquiv_mutate (B : SkewExchangeMatrix ι) (j : ι) :
-    exponentEquiv ((Generator.mutate j).toStep B) = chargeMutationEquiv B.matrix j := by
-  rw [exponentEquiv, Generator.toStep_generator]
-
-@[simp]
-theorem exponentEquiv_permute (B : SkewExchangeMatrix ι) (σ : Equiv.Perm ι) :
-    exponentEquiv ((Generator.permute σ).toStep B) =
-      LinearEquiv.funCongrLeft ℤ ℤ σ.symm := by
-  rw [exponentEquiv, Generator.toStep_generator]
-
-@[simp]
-theorem exponentEquiv_invert (B : SkewExchangeMatrix ι) :
-    exponentEquiv (Generator.invert.toStep B) = LinearEquiv.neg ℤ := by
-  rw [exponentEquiv, Generator.toStep_generator]
 
 /-- Realize the target exchange matrix by mutation of charges, permutation of charges,
 or negation of the alternating form. -/
@@ -199,32 +181,6 @@ theorem chargeTarget_comp (w : Word B C) (w' : Word C D) (P : ChargeSeed B N) :
   induction w' with
   | nil => simp
   | cons _ _ ih => simp [ih]
-
-/-- Compose the integral exponent substitutions in pullback order. -/
-def exponentEquiv : {C : SkewExchangeMatrix ι} → Word B C → (ι → ℤ) ≃ₗ[ℤ] (ι → ℤ)
-  | _, .nil => LinearEquiv.refl ℤ _
-  | _, .cons w s => (Step.exponentEquiv s).trans w.exponentEquiv
-
-@[simp]
-theorem exponentEquiv_nil :
-    (Path.nil : Word B B).exponentEquiv = LinearEquiv.refl ℤ _ :=
-  (rfl)
-
-@[simp]
-theorem exponentEquiv_cons (w : Word B C) (s : C ⟶ D) :
-    (w.cons s).exponentEquiv = (Step.exponentEquiv s).trans w.exponentEquiv :=
-  (rfl)
-
-/-- The exponent substitution of a concatenation is the composition in pullback order. -/
-@[simp]
-theorem exponentEquiv_comp (w : Word B C) (w' : Word C D) :
-    (w.comp w').exponentEquiv = w'.exponentEquiv.trans w.exponentEquiv := by
-  induction w' with
-  | nil => simp
-  | cons _ _ ih =>
-    simp only [comp_cons, exponentEquiv_cons, ih]
-    ext x i
-    simp
 
 /-- Exponent transport pulls the initial charge kernel back to the terminal charge kernel. -/
 theorem chargeTarget_ker (w : Word B C) (P : ChargeSeed B N) :

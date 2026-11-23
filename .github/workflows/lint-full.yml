@@ -75,10 +75,10 @@ jobs:
           fetch-depth: 100
 
       - name: Prepare pinned shared tools
-        uses: q-painleve-lean/TauCetiTools/.github/actions/setup@bf49319f27d910443b1f8eb26b017b054fe2aa5b
+        uses: q-painleve-lean/TauCetiTools/.github/actions/setup@79213262f3bc8fb99fc96f8a7d180ab3fb59c4d7
         with:
           tools-repository: q-painleve-lean/TauCetiTools
-          tools-ref: bf49319f27d910443b1f8eb26b017b054fe2aa5b
+          tools-ref: 79213262f3bc8fb99fc96f8a7d180ab3fb59c4d7
           project-directory: .
       - name: Import-boundary guard (QPainleve/ and QPainleve.lean ⊬ roadmap/review)
         run: |
@@ -191,12 +191,28 @@ jobs:
           PUBLIC_REVISION_ENDPOINT: ${{ vars.LAKE_CACHE_REVISION_ENDPOINT_PUBLIC }}
         run: bash scripts/lake-cache-get.sh .
 
-      - name: Save verified Lake archive records before building
-        run: python3 scripts/lake_cache_reuse.py snapshot . "$RUNNER_TEMP/lake-cache-reuse.json"
-
       # No aggregator check: the root QPainleve.lean is intentionally empty and imports nothing.
       # The build globs every QPainleve/ module directly, so nothing depends on a root that
       # re-exports the library.
+      # As in pr-build: pinned upstream packages from their own caches, then the root package's
+      # outputs from main's newest CI bundle (`[services.cache] ci_bundle = true`). Lake rebuilds
+      # whatever a restored record does not match.
+      - name: Fetch pinned upstream packages' oleans from their Lake caches
+        run: python3 scripts/dependency-cache-get.py .
+
+      - name: Restore the project's own oleans from main's CI bundle
+        id: lake_bundle
+        if: ${{ env.TAUCETI_CACHE_CI_BUNDLE == '1' }}
+        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830
+        with:
+          path: ${{ runner.temp }}/lake-bundle
+          key: lake-bundle-v2-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('lean-toolchain') }}-${{ hashFiles('lake-manifest.json') }}-${{ github.sha }}
+          restore-keys: lake-bundle-v2-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('lean-toolchain') }}-${{ hashFiles('lake-manifest.json') }}-
+
+      - name: Install main's CI bundle into the Lake cache
+        if: ${{ steps.lake_bundle.outputs.cache-matched-key != '' }}
+        run: bash scripts/lake-cache-bundle.sh restore . "$RUNNER_TEMP/lake-bundle"
+
       - name: Build
         env:
           # Restore only from the locally-populated $LAKE_CACHE_DIR the step above filled;

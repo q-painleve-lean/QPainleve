@@ -155,8 +155,12 @@ section Free
 
 variable (k) [Module.Free ℤ B] [AddCommGroup C] [Module ℤ C] [Module.Free ℤ C]
 
-local instance {G : Type*} [AddCommGroup G] [Module ℤ G] [Module.Free ℤ G] : HasUniqueDiv G :=
+/-- Multiplication by a nonzero natural number is injective on a free integer module. -/
+lemma hasUniqueDiv_of_free_int {G : Type*} [AddCommGroup G] [Module ℤ G] [Module.Free ℤ G] :
+    HasUniqueDiv G :=
   .of_isTorsionFree ℤ G
+
+attribute [local instance] hasUniqueDiv_of_free_int
 
 omit [Module ℤ B] [Module.Free ℤ B] [Module ℤ C] [Module.Free ℤ C] in
 private theorem injective_monomialLift (f : B →+ C) (hf : Function.Injective f) :

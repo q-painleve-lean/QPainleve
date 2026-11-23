@@ -33,10 +33,10 @@ jobs:
           sparse-checkout: tauceti.toml
           sparse-checkout-cone-mode: false
           persist-credentials: false
-      - uses: q-painleve-lean/TauCetiTools/.github/actions/setup@bf49319f27d910443b1f8eb26b017b054fe2aa5b
+      - uses: q-painleve-lean/TauCetiTools/.github/actions/setup@79213262f3bc8fb99fc96f8a7d180ab3fb59c4d7
         with:
           tools-repository: q-painleve-lean/TauCetiTools
-          tools-ref: bf49319f27d910443b1f8eb26b017b054fe2aa5b
+          tools-ref: 79213262f3bc8fb99fc96f8a7d180ab3fb59c4d7
           project-directory: .
       - name: Cancel only builds whose live PR state makes them obsolete
         env:

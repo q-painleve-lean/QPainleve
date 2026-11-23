@@ -5,7 +5,7 @@ Authors: The QPainleve contributors
 -/
 module
 
-public import QPainleve.AlgebraicGeometry.Blowup.ExceptionalFiber
+public import QPainleve.AlgebraicGeometry.Blowup.Exceptional.Fiber
 public import Mathlib.AlgebraicGeometry.AlgClosed.Basic
 public import QPainleve.AlgebraicGeometry.Morphisms.Smooth.EtaleCoordinates
 import TauCeti.AlgebraicGeometry.IdealSheaf.BaseChange

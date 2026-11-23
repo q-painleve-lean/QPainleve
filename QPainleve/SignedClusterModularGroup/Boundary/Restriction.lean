@@ -1,0 +1,243 @@
+/-
+Copyright (c) 2026 Yuma Mizuno. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Yuma Mizuno, Codex
+-/
+module
+
+public import Mathlib.GroupTheory.Coset.Basic
+public import Mathlib.LinearAlgebra.Reflection
+public import QPainleve.SignedClusterModularGroup.Boundary.Isometry
+public import TauCeti.Algebra.Module.Primitive
+public import TauCeti.LinearAlgebra.BilinearForm.Characteristic
+import QPainleve.SignedClusterModularGroup.BoundaryCycle
+
+/-!
+# Signed action on the boundary orthogonal lattice
+
+A signed boundary isometry acts on the orthogonal complement of the boundary by its
+restriction times its sign. The total boundary class detects the sign whenever it is
+nonzero and lies in the orthogonal complement. For a unimodular cycle lattice, the
+reversing involution gives a reflection of the orthogonal complement in the direction
+of the total boundary class.
+
+The construction uses `TauCeti.BilinForm.IsIsometry.map_orthogonal` to obtain the
+restricted equivalence via `LinearEquiv.ofSubmodules`. The negative lift is expressed
+as Mathlib's `Module.reflection`.
+-/
+
+public section
+
+open LinearMap
+open scoped Pointwise RightActions
+
+namespace QPainleve.SignedBoundaryIsometryGroup
+
+variable {L : Type*} [AddCommGroup L] [scalar : Module ℤ L] {n : ℕ}
+variable (B : LinearMap.BilinForm ℤ L) (D : ZMod n → L)
+
+-- The restriction uses the submodule action induced by the ambient integer module.
+attribute [local instance high] Submodule.module Submodule.Quotient.module
+
+local notation "M" => Submodule.span ℤ (Set.range D)
+local notation "K" => B.orthogonal M
+local notation "δ" => ∑ i, D i
+
+private theorem exists_indexPerm (g : signedBoundaryIsometryGroup B D) :
+    ∃ p : Equiv.Perm (ZMod n), ∀ i, (toIsometry B D g).val (D i) = D (p i) := by
+  obtain ⟨k, hk⟩ := (mem_signedBoundaryIsometryGroup_iff B D).mp g.property
+  refine ⟨(MulAction.toPerm g.val.2).trans (Equiv.addRight k), fun i ↦ ?_⟩
+  simpa only [toIsometry_apply, Equiv.trans_apply, MulAction.toPerm_apply, Equiv.coe_addRight]
+    using hk i
+
+private theorem map_span_eq (g : signedBoundaryIsometryGroup B D) :
+    (M).map ((toIsometry B D g).val : L →ₗ[ℤ] L) = M := by
+  obtain ⟨p, hp⟩ := exists_indexPerm B D g
+  simp only [Submodule.map_span, LinearEquiv.coe_coe, ← Set.range_comp', funext hp]
+  exact congrArg (Submodule.span ℤ) (EquivLike.range_comp D p)
+
+private theorem map_orthogonal_eq (g : signedBoundaryIsometryGroup B D) :
+    (K).map ((toIsometry B D g).val : L →ₗ[ℤ] L) = K := by
+  let e := toIsometry B D g
+  rw [(BilinForm.mem_isometryGroup.mp e.property).map_orthogonal e.val.surjective,
+    map_span_eq B D g]
+
+private def signedRestrictionEquiv (g : signedBoundaryIsometryGroup B D) : K ≃ₗ[ℤ] K :=
+  ((toIsometry B D g).val.ofSubmodules K K (map_orthogonal_eq B D g)).trans
+    (LinearEquiv.smulOfUnit (sign B D g))
+
+private theorem coe_signedRestrictionEquiv_apply (g : signedBoundaryIsometryGroup B D) (x : K) :
+    (signedRestrictionEquiv B D g x : L) = sign B D g • (toIsometry B D g).val x := by
+  simp only [signedRestrictionEquiv, LinearEquiv.smulOfUnit, LinearEquiv.trans_apply,
+    DistribMulAction.toLinearEquiv_apply, LinearEquiv.ofSubmodules_apply, Units.smul_def,
+    Submodule.coe_smul]
+  exact int_smul_eq_zsmul ‹Module ℤ L› _ _
+
+/-- Restriction of a signed boundary isometry to the boundary orthogonal lattice, multiplied by
+its sign. The restricted isometry acts on the possibly degenerate restricted form. -/
+def signedOrthogonalRestriction :
+    signedBoundaryIsometryGroup B D →* (B.restrict K).isometryGroup where
+  toFun g := ⟨signedRestrictionEquiv B D g, BilinForm.mem_isometryGroup_iff.mpr (fun x y ↦ by
+    have he := (BilinForm.mem_isometryGroup_iff.mp (toIsometry B D g).property) x y
+    rcases Int.units_eq_one_or (sign B D g) with h | h <;>
+      simpa [BilinForm.restrict_apply, coe_signedRestrictionEquiv_apply, h, Units.smul_def]
+        using he)⟩
+  map_one' := Subtype.ext (LinearEquiv.ext fun x ↦ Subtype.ext (by
+    simp only [coe_signedRestrictionEquiv_apply, map_one, one_smul]
+    rfl))
+  map_mul' g h := Subtype.ext (LinearEquiv.ext fun x ↦ Subtype.ext (by
+    simp [mul_apply_eq_comp, coe_signedRestrictionEquiv_apply, Units.smul_def, mul_smul]))
+
+variable {B D}
+
+/-- On ambient lattice vectors, the signed restriction applies the isometry and its sign. -/
+@[simp]
+theorem coe_signedOrthogonalRestriction_apply (g : signedBoundaryIsometryGroup B D) (x : K) :
+    ((signedOrthogonalRestriction B D g).val x : L) = sign B D g • (toIsometry B D g).val x :=
+  coe_signedRestrictionEquiv_apply B D g x
+
+variable [NeZero n]
+
+/-- The unsigned action of a signed boundary isometry fixes the total boundary class. -/
+theorem toIsometry_apply_sum (g : signedBoundaryIsometryGroup B D) :
+    (toIsometry B D g).val δ = δ := by
+  obtain ⟨p, hp⟩ := exists_indexPerm B D g
+  rw [map_sum]
+  simpa only [hp] using Equiv.sum_comp p D
+
+/-- On the total boundary class, the signed restriction acts by the sign. -/
+@[simp]
+theorem signedOrthogonalRestriction_apply_sum (g : signedBoundaryIsometryGroup B D) (hδ : δ ∈ K) :
+    (signedOrthogonalRestriction B D g).val ⟨δ, hδ⟩ = sign B D g • (⟨δ, hδ⟩ : K) := by
+  apply Subtype.ext
+  rw [coe_signedOrthogonalRestriction_apply, toIsometry_apply_sum]
+  rfl
+
+/-- The action on the nonzero total boundary class recovers the sign from the restriction. -/
+theorem sign_eq_of_signedOrthogonalRestriction_eq [IsAddTorsionFree L]
+    (hδ : δ ∈ K) (hδ₀ : δ ≠ 0)
+    {g h : signedBoundaryIsometryGroup B D}
+    (he : signedOrthogonalRestriction B D g = signedOrthogonalRestriction B D h) :
+    sign B D g = sign B D h := by
+  have hδ' := congrArg (fun e : (B.restrict K).isometryGroup ↦ (e.val ⟨δ, hδ⟩ : L)) he
+  apply Units.ext
+  apply IsAddTorsionFree.zsmul_left_injective hδ₀
+  simpa only [coe_signedOrthogonalRestriction_apply, toIsometry_apply_sum, Units.smul_def]
+    using hδ'
+
+/-- A signed isometry acting trivially on the orthogonal lattice is a rotation whenever the
+total boundary class is a nonzero element of that lattice. -/
+theorem ker_signedOrthogonalRestriction_le_ker_sign [IsAddTorsionFree L]
+    (hδ : δ ∈ K) (hδ₀ : δ ≠ 0) :
+    (signedOrthogonalRestriction B D).ker ≤ (sign B D).ker := by
+  intro g hg
+  rw [MonoidHom.mem_ker] at hg ⊢
+  rw [← map_one (signedOrthogonalRestriction B D)] at hg
+  simpa only [map_one] using sign_eq_of_signedOrthogonalRestriction_eq hδ hδ₀ hg
+
+variable (B D)
+
+local notation "ρ" => signedOrthogonalRestriction B D
+local notation "W" => MonoidHom.range (MonoidHom.comp ρ (rotationInclusion B D))
+
+omit [NeZero n] in
+/-- The image of the signed restriction is the union of the rotation image and its right
+coset by the restriction of any negative-sign element. -/
+theorem range_signedOrthogonalRestriction_eq_union (s : signedBoundaryIsometryGroup B D)
+    (hs : sign B D s = -1) :
+    (↑(ρ).range : Set (B.restrict K).isometryGroup) = (W : Set _) ∪ ((W : Set _) <• ρ s) := by
+  let H := (sign B D).ker
+  have hcover : (Set.univ : Set (signedBoundaryIsometryGroup B D)) =
+      (H : Set _) ∪ ((H : Set _) <• s) := by
+    ext g
+    simp only [Set.mem_univ, Set.mem_union, true_iff, mem_rightCoset_iff, SetLike.mem_coe, H,
+      MonoidHom.mem_ker, map_mul, map_inv, hs]
+    rcases Int.units_eq_one_or (sign B D g) with hg | hg <;> simp [hg]
+  have hW : ρ '' (H : Set _) = (W : Set _) := by
+    have hH : H = (rotationInclusion B D).range := (range_rotationInclusion B D).symm
+    rw [hH, MonoidHom.coe_range, ← Set.range_comp]
+    rfl
+  calc
+    _ = ρ '' (Set.univ : Set (signedBoundaryIsometryGroup B D)) := by rw [Set.image_univ]; rfl
+    _ = _ := by rw [hcover, Set.image_union, Set.image_op_smul_distrib, hW]
+
+variable {B D}
+
+/-- The two image cosets are disjoint because they act on the nonzero total class with
+opposite signs. -/
+theorem disjoint_rotationRange_rightCoset [IsAddTorsionFree L] (hδ : δ ∈ K) (hδ₀ : δ ≠ 0)
+    (s : signedBoundaryIsometryGroup B D) (hs : sign B D s = -1) :
+    Disjoint (W : Set (B.restrict K).isometryGroup) ((W : Set _) <• ρ s) := by
+  refine Set.disjoint_left.mpr fun e he he' ↦ ?_
+  obtain ⟨g, rfl⟩ := MonoidHom.mem_range.mp he
+  obtain ⟨h, hh⟩ := MonoidHom.mem_range.mp ((mem_rightCoset_iff _).mp he')
+  have hmul : ρ (rotationInclusion B D g) * (ρ s)⁻¹ = ρ (rotationInclusion B D h) := by
+    simpa only [MonoidHom.comp_apply] using hh.symm
+  have heq : ρ (rotationInclusion B D h * s) = ρ (rotationInclusion B D g) := by
+    rw [map_mul, ← mul_inv_eq_iff_eq_mul.mp hmul]
+  have hsign : sign B D s = 1 := by
+    simpa only [map_mul, sign_apply, coe_rotationInclusion, one_mul] using
+      sign_eq_of_signedOrthogonalRestriction_eq hδ hδ₀ heq
+  exact (by decide : (-1 : ℤˣ) ≠ 1) (hs.symm.trans hsign)
+
+variable (B D)
+
+/-- The signed restriction of the central sign change is negation on the orthogonal lattice. -/
+@[simp]
+theorem signedOrthogonalRestriction_centralSign_apply (hn : n ≤ 2) (x : K) :
+    (signedOrthogonalRestriction B D (centralSign B D hn)).val x = -x := by
+  apply Subtype.ext
+  simp [Units.smul_def]
+
+/-- In a unimodular symmetric cycle lattice with primitive characteristic total class, the
+negative lift of the cycle-reversing involution restricts to the reflection
+`x ↦ x - 2 B(x,f) δ`. This reflection induces the identity on the quotient by the total class. -/
+theorem exists_signedOrthogonalRestriction_eq_reflection [Module.Free ℤ L] [Module.Finite ℤ L]
+    [B.IsPerfPair] (hSymm : B.IsSymm)
+    (hGram : ∀ i j : ZMod n,
+      B (D i) (D j) = (-2 : ℤ) * (if i = j then 1 else 0) +
+        (if j = i + 1 then 1 else 0) + (if j = i - 1 then 1 else 0))
+    (hPrimitive : TauCeti.IsPrimitive δ) (hCharacteristic : B.IsCharacteristic δ) :
+    ∃ (hδ : δ ∈ K) (f : L) (s : signedBoundaryIsometryGroup B D)
+      (hℓ : ((2 : ℤ) • (B.flip f).comp (K).subtype) ⟨δ, hδ⟩ = 2),
+      sign B D s = -1 ∧ s * s = 1 ∧ (ρ s).val = Module.reflection hℓ ∧
+        ∀ x : K, (ℤ ∙ (⟨δ, hδ⟩ : K)).mkQ ((ρ s).val x) = (ℤ ∙ (⟨δ, hδ⟩ : K)).mkQ x := by
+  classical
+  have hδ : δ ∈ K := Submodule.mem_orthogonalBilin_span.mpr
+    (by rintro _ ⟨i, rfl⟩; exact (hSymm.eq _ _).trans (BoundaryCycle.pairing_sum hGram i))
+  have hEven (x : L) : Even (B x x - B x δ) := by
+    rw [even_iff_two_dvd, dvd_sub_comm, hSymm.eq x δ]
+    exact (BilinForm.isCharacteristic_iff.mp hCharacteristic) x
+  have hPrimitive' : ∃ ℓ : L →ₗ[ℤ] ℤ, ℓ δ = 1 := by
+    have hscalar : scalar = AddCommGroup.toIntModule L := Subsingleton.elim _ _
+    rw [hscalar]
+    exact TauCeti.isPrimitive_def.mp hPrimitive
+  obtain ⟨j₀, f, g, _, hfD, hgInv, _, _, hgD, hgK⟩ :=
+    exists_cycle_reversing_involution L B hSymm (IsPerfPair.bijective_left B) n D
+      hGram hPrimitive' hEven
+  let hrev : ∃ k : ZMod n, ∀ j, g (D j) = D (-j + k) :=
+    ⟨2 * j₀, fun j ↦ by simpa only [sub_eq_neg_add] using hgD j⟩
+  let ℓ : K →ₗ[ℤ] ℤ := (2 : ℤ) • (B.flip f).comp (K).subtype
+  have hℓ_eval (x : K) : ℓ x = 2 * B x f := by simp [ℓ]
+  have hℓ : ℓ ⟨δ, hδ⟩ = 2 := by
+    have hfδ : B f δ = 1 := by simp [map_sum, hfD]
+    have hδf : B δ f = 1 := (hSymm.eq δ f).trans hfδ
+    simp only [hℓ_eval, hδf, mul_one]
+  have hr : (ρ (reversal g hrev)).val = Module.reflection hℓ := by
+    apply LinearEquiv.ext
+    intro x
+    apply Subtype.ext
+    have hx (j : ZMod n) : B x (D j) = 0 :=
+      (hSymm.eq _ _).trans (B.mem_orthogonal_iff.mp x.property _ (Submodule.subset_span
+        (Set.mem_range_self j)))
+    have hrev_apply : ((ρ (reversal g hrev)).val x : L) = -g x := by
+      simp [Units.smul_def]
+    rw [hrev_apply, hgK x hx, neg_add_rev, neg_neg, neg_add_eq_sub, Module.reflection_apply,
+      hℓ_eval, Submodule.coe_sub, Submodule.coe_smul]
+    exact congrArg ((x : L) - ·) (int_smul_eq_zsmul scalar _ _).symm
+  refine ⟨hδ, f, reversal g hrev, hℓ, by simp, reversal_mul_self g hrev hgInv, hr, ?_⟩
+  intro x
+  rw [hr, Module.reflection_apply, map_sub, sub_eq_self, ← LinearMap.mem_ker, Submodule.ker_mkQ]
+  exact Submodule.smul_mem _ _ (Submodule.mem_span_singleton_self _)
+
+end QPainleve.SignedBoundaryIsometryGroup

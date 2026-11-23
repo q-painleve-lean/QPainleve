@@ -28,7 +28,7 @@ completed_dir = "Completed"
 # branch is upstream main plus the fixes listed in its DOWNSTREAM.md.
 [tools.tools]
 repo = "q-painleve-lean/TauCetiTools"
-ref = "bf49319f27d910443b1f8eb26b017b054fe2aa5b"
+ref = "79213262f3bc8fb99fc96f8a7d180ab3fb59c4d7"
 [tools.review]
 repo = "TauCetiProject/TauCetiReview"
 ref = "60472b78568d274587971787276e9009f957217c"
@@ -86,6 +86,9 @@ mode = "off"
 deployment = "docker"
 
 [services.cache]
+# Main CI saves QPainleve's own outputs as one GitHub Actions cache bundle; PR, merge-queue
+# and full-lint builds restore it. No cache service is involved (mode stays off).
+ci_bundle = true
 # No project cache yet: QPainleve modules build in CI and on workers.
 # Mathlib and TauCeti use their upstream caches.
 mode = "off"

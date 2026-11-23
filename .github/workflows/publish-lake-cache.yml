@@ -74,10 +74,10 @@ jobs:
           persist-credentials: false
 
       - name: Prepare pinned shared tools
-        uses: q-painleve-lean/TauCetiTools/.github/actions/setup@bf49319f27d910443b1f8eb26b017b054fe2aa5b
+        uses: q-painleve-lean/TauCetiTools/.github/actions/setup@79213262f3bc8fb99fc96f8a7d180ab3fb59c4d7
         with:
           tools-repository: q-painleve-lean/TauCetiTools
-          tools-ref: bf49319f27d910443b1f8eb26b017b054fe2aa5b
+          tools-ref: 79213262f3bc8fb99fc96f8a7d180ab3fb59c4d7
           project-directory: .
           source-mirror-enabled: false
       - name: Check out workflow-pinned publication planning tools
@@ -90,7 +90,6 @@ jobs:
             tauceti_tools/assets/scripts/lake_cache_publish.py
             tauceti_tools/assets/scripts/ci_publication_observation.py
             tauceti_tools/assets/scripts/lake_cache_probe.py
-            tauceti_tools/assets/scripts/lake_cache_reuse.py
           sparse-checkout-cone-mode: false
           persist-credentials: false
 
