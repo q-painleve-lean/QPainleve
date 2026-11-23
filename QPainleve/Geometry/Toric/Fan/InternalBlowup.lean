@@ -159,6 +159,33 @@ theorem internalBlowupPicardMarking_apply (hΦ : Φ.IsRegular)
   simp [internalBlowupPicardMarking]
 
 open LineBundleClass in
+/-- Identifying the blowup models for opposite orientations sends the strict
+boundary identically to itself, preserves the projection to the fan, and pulls
+back every marked Picard class to the class with the same coordinates. -/
+theorem internalBlowupTower_reindex_swap_iso {l : N →+ V} {Φ : Fan l} [h₀ : Nonempty Φ.cones]
+    (b : Module.Basis (Fin 2) ℤ N) {n : ℕ} (s : Fin n → Φ.Ray) (c : Fin n → ℂˣ)
+    (hΦ : Φ.IsRegular) :
+    let A := internalBlowupTower b s c
+    let B := internalBlowupTower (b.reindex (Equiv.swap 0 1)) s c⁻¹
+    let e := eqToIso (congrArg Sigma.fst (internalBlowupTower_reindex_swap b s c).symm)
+    e.hom ≫ B.2.toTower.toBase = A.2.toTower.toBase ∧
+      A.2.boundaryι ≫ e.hom = B.2.boundaryι ∧
+      ∀ a, pullback e.hom
+        (internalBlowupPicardMarking (b.reindex (Equiv.swap 0 1)) s c⁻¹ hΦ a).toMul =
+          (internalBlowupPicardMarking b s c hΦ a).toMul := by
+  dsimp only
+  simp only [internalBlowupPicardMarking_apply]
+  have compare (A B : Σ Y, WithBoundary (Φ.boundaryIdeal h₀).subschemeι n Y) (h : A = B) :
+      let e := eqToIso (congrArg Sigma.fst h)
+      e.hom ≫ B.2.toTower.toBase = A.2.toTower.toBase ∧
+        A.2.boundaryι ≫ e.hom = B.2.boundaryι ∧
+        ∀ a, pullback e.hom (B.2.toTower.picardHom a).toMul =
+          (A.2.toTower.picardHom a).toMul := by
+    subst B
+    simp
+  exact compare _ _ (internalBlowupTower_reindex_swap b s c).symm
+
+open LineBundleClass in
 /-- Move the first occurrence of a binomial center to the beginning of the marked
 toric blowup tower. The other centers keep their relative order, including later
 occurrences of the pivot. The isomorphism over the fan scheme sends the strict

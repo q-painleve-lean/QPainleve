@@ -152,4 +152,21 @@ theorem existsUnique_cyclicRayNumbering (b : Module.Basis (Fin 2) ℤ N)
   | zero => simpa only [Nat.cast_zero] using hv₀.trans hu₀.symm
   | succ a ih => rw [Nat.cast_succ, hu, ← (hp _ _).mpr (hv _), ih]
 
+/-- Reversing the lattice orientation reverses the cyclic numbering by `j ↦ -j`.
+The initial ray and the cones at which successive rays meet are preserved. -/
+theorem cyclicRayNumbering_neg {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
+    {l : N →+ V} {Φ : Fan l} (b : Module.Basis (Fin 2) ℤ N)
+    (u : ZMod (Nat.card Φ.Ray) ≃ Φ.Ray)
+    (hu : ∀ j, b.detDualEquiv (u j).primitiveGenerator (u (j + 1)).primitiveGenerator = 1 ∧
+      ∃ σ : Φ.cones, (u j).toCone ≤ σ ∧ (u (j + 1)).toCone ≤ σ) (j : ZMod (Nat.card Φ.Ray)) :
+    (b.reindex (Equiv.swap 0 1)).detDualEquiv (u (-j)).primitiveGenerator
+        (u (-(j + 1))).primitiveGenerator = 1 ∧
+      ∃ σ : Φ.cones, (u (-j)).toCone ≤ σ ∧ (u (-(j + 1))).toCone ≤ σ := by
+  have h : -(j + 1) + 1 = -j := by simp [neg_add_rev, add_assoc]
+  obtain ⟨hdet, σ, h₁, h₂⟩ := hu (-(j + 1))
+  rw [h] at hdet h₂
+  refine ⟨?_, σ, h₂, h₁⟩
+  simpa only [Module.Basis.detDualEquiv_reindex_swap, LinearMap.neg_apply,
+    ← Module.Basis.detDualEquiv_swap b (u (-(j + 1))).primitiveGenerator] using hdet
+
 end TauCeti.Toric.Fan
