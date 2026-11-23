@@ -10,6 +10,7 @@ public import Mathlib.AlgebraicGeometry.ResidueField
 public import TauCeti.AlgebraicGeometry.Morphisms.IsoLocus
 
 import QPainleve.AlgebraicGeometry.Morphisms.IsoLocus
+import TauCeti.AlgebraicGeometry.IdealSheaf.BaseChange
 import TauCeti.AlgebraicGeometry.IdealSheaf.VanishingIdeal
 import TauCeti.AlgebraicGeometry.ResidueField
 
@@ -47,6 +48,12 @@ theorem ker_fromSpecResidueField_eq_vanishingIdeal {X : Scheme} (p : X) :
   rw [Hom.support_ker, range_fromSpecResidueField]
   rfl
 
+/-- The residue-field kernel of a closed point is supported exactly at that point. -/
+theorem support_ker_fromSpecResidueField_of_isClosed {X : Scheme} {p : X}
+    (hp : IsClosed ({p} : Set X)) : ((X.fromSpecResidueField p).ker.support : Set X) = {p} := by
+  rw [ker_fromSpecResidueField_eq_vanishingIdeal, IdealSheafData.coe_support_vanishingIdeal,
+    Closeds.coe_mk, hp.closure_eq]
+
 /-- A field-valued point has the same kernel ideal as the map from its residue field. -/
 theorem Hom.ker_eq_ker_fromSpecResidueField {k : Type*} [Field k]
     {X : Scheme} (s : Spec (.of k) ⟶ X) :
@@ -59,6 +66,31 @@ theorem Hom.ker_eq_ker_fromSpecResidueField {k : Type*} [Field k]
   apply SetLike.coe_injective
   rw [s.support_ker, hrange]
   rfl
+
+/-- Reduced point ideals distinguish points of a scheme. -/
+@[simp]
+theorem ker_fromSpecResidueField_inj {X : Scheme} {p q : X} :
+    (X.fromSpecResidueField p).ker = (X.fromSpecResidueField q).ker ↔ p = q := by
+  refine ⟨fun h ↦ ?_, fun h ↦ h ▸ rfl⟩
+  have hs := congrArg (fun I : X.IdealSheafData ↦ (I.support : Set X)) h
+  simp only [ker_fromSpecResidueField_eq_vanishingIdeal, IdealSheafData.coe_support_vanishingIdeal,
+    Closeds.coe_mk] at hs
+  exact ((specializes_iff_closure_subset.mpr hs.ge).antisymm
+    (specializes_iff_closure_subset.mpr hs.le)).eq
+
+/-- A closed immersion maps a reduced point ideal to the reduced ideal of its image point. -/
+@[simp]
+theorem Hom.map_ker_fromSpecResidueField {X Y : Scheme} (i : X ⟶ Y) [IsClosedImmersion i]
+    (p : X) : (X.fromSpecResidueField p).ker.map i = (Y.fromSpecResidueField (i p)).ker := by
+  rw [IdealSheafData.map_ker, ← i.SpecMap_residueFieldMap_fromSpecResidueField p,
+    Hom.ker_comp_of_isIso]
+
+/-- Pulling back a reduced point ideal along the closed immersion containing the point
+recovers the reduced point ideal on the closed subscheme. -/
+@[simp]
+theorem Hom.comap_ker_fromSpecResidueField_apply {X Y : Scheme} (i : X ⟶ Y) [IsClosedImmersion i]
+    (p : X) : (Y.fromSpecResidueField (i p)).ker.comap i = (X.fromSpecResidueField p).ker := by
+  rw [← i.map_ker_fromSpecResidueField, IdealSheafData.comap_map_of_isClosedImmersion]
 
 /-- Over an open on which a morphism is an isomorphism, the inverse image of a reduced
 closed point is a reduced closed point, with its residue-field ideal. -/

@@ -70,6 +70,56 @@ local notation "X₁" k => _root_.SymmetricAlgebra.ι ℂ (Option (Fin 1) → �
 private abbrev rulingLinearEquiv : (Fin 2 → ℂ) ≃ₗ[ℂ] (Option (Fin 1) → ℂ) :=
   LinearEquiv.funCongrLeft ℂ ℂ (finSuccEquiv 1).symm
 
+/-- The toric projective-space comparison in dimension one, with homogeneous coordinates
+numbered by `Fin 2`. -/
+def projectiveLineToricIso : (Fan.projectiveSpace b₁ h₁).algebraicRealization ≅ projectiveLine ℂ :=
+  asIso (projectiveSpaceToProj b₁ h₁) ≪≫ (Proj.symmetricAlgebraMapIso ℂ rulingLinearEquiv)
+
+/-- The toric comparison preserves the structure morphism to the coefficient field. -/
+instance isOver_projectiveLineToricIso_hom :
+    (projectiveLineToricIso).hom.IsOver (Spec (.of ℂ)) where
+  comp_over := by
+    simp only [projectiveLineToricIso, Iso.trans_hom, asIso_hom, Category.assoc]
+    rw [TauCeti.SymmetricAlgebra.over_eq_projToSpec, Proj.symmetricAlgebraMapIso_hom_projToSpec,
+      ← TauCeti.SymmetricAlgebra.over_eq_projToSpec, CategoryTheory.comp_over]
+
+/-- The rank-one projective-space fan consists of the zero cone and the two opposite rays. -/
+theorem projectiveSpace_finOne_eq_projectiveLineFan :
+    Fan.projectiveSpace b₁ h₁ = projectiveLineFan := by
+  ext σ
+  rw [mem_projectiveSpace_cones, mem_projectiveLineFan_cones]
+  constructor
+  · rintro ⟨S, hS, rfl⟩
+    have hcases : S = ∅ ∨ S = {none}ᶜ ∨ S = {some (0 : Fin 1)}ᶜ := by
+      by_cases h0 : none ∈ S <;> by_cases h1 : some (0 : Fin 1) ∈ S
+      · exfalso
+        apply hS
+        ext (j | j)
+        · simp [h0]
+        · simpa only [Subsingleton.elim j 0, Set.mem_univ, iff_true] using h1
+      · right
+        right
+        ext (j | j)
+        · simp [h0]
+        · simp [Subsingleton.elim j 0, h1]
+      · right
+        left
+        ext (j | j)
+        · simp [h0]
+        · simp [Subsingleton.elim j 0, h1]
+      · left
+        ext (j | j)
+        · simp [h0]
+        · simp [Subsingleton.elim j 0, h1]
+    rcases hcases with rfl | rfl | rfl
+    · exact Or.inl (projectiveSpaceCone_empty _)
+    · exact Or.inr (Or.inl projectiveSpaceCone_compl_none_finOne)
+    · exact Or.inr (Or.inr projectiveSpaceCone_compl_some_finOne)
+  · rintro (rfl | rfl | rfl)
+    · exact ⟨∅, by simp, projectiveSpaceCone_empty _⟩
+    · exact ⟨{none}ᶜ, by simp, projectiveSpaceCone_compl_none_finOne⟩
+    · exact ⟨{some 0}ᶜ, by simp, projectiveSpaceCone_compl_some_finOne⟩
+
 private theorem gradedMap_rulingLinearEquiv_coord (k : Fin 2) :
     _root_.SymmetricAlgebra.gradedMap ℂ rulingLinearEquiv.toLinearMap
       (projectiveLine.coord ℂ k) = X₁ (finSuccEquiv 1 k) := by
@@ -155,6 +205,59 @@ private theorem projectiveSpaceChartToProj_comp_rulingReindex (k : Fin 2) :
     (projectiveLine.coord_mem ℂ k) _ _
   simpa only [one_pow, Units.val_one, one_mul] using DFunLike.congr_fun hcoords x
 
+private theorem range_affineToricChartι_comp_projectiveLineToricIso (k : Fin 2) :
+    Set.range ((Fan.projectiveSpace b₁ h₁).affineToricChartι
+      (projectiveSpaceMaximalCone b₁ h₁ (finSuccEquiv 1 k)) ≫ projectiveLineToricIso.hom) =
+      Set.range (projectiveLine.polynomialChartι ℂ k) := by
+  let e := Proj.symmetricAlgebraMapIso ℂ rulingLinearEquiv
+  have he : e.hom ⁻¹ᵁ (projectiveLine.polynomialChartι ℂ k).opensRange =
+      (projectiveSpaceChartToProj b₁ h₁
+        (le_rfl : (projectiveSpaceMaximalCone b₁ h₁ (finSuccEquiv 1 k)).val ≤ _)).opensRange := by
+    dsimp only [e]
+    rw [projectiveLine.opensRange_polynomialChartι, Proj.symmetricAlgebraMapIso_hom,
+      Proj.map_preimage_basicOpen, gradedMap_rulingLinearEquiv_coord,
+      opensRange_projectiveSpaceChartToProj]
+  rw [projectiveLineToricIso, Iso.trans_hom, asIso_hom,
+    affineToricChartι_comp_projectiveSpaceToProj_assoc
+      (projectiveSpaceMaximalCone b₁ h₁ (finSuccEquiv 1 k)) le_rfl,
+    ← Scheme.Hom.coe_opensRange, ← Scheme.Hom.coe_opensRange]
+  congr 1
+  rw [Scheme.Hom.opensRange_comp, ← he, Scheme.Hom.image_preimage_eq_opensRange_inf,
+    Scheme.Hom.opensRange_of_isIso, top_inf_eq]
+
+/-- Under the toric comparison, the dense torus of the projective-line fan is the
+intersection of the two standard polynomial charts. -/
+theorem range_denseTorusι_comp_projectiveLineToricIso
+    (h₀ : Nonempty (Fan.projectiveSpace b₁ h₁).cones) :
+    Set.range ((Fan.projectiveSpace b₁ h₁).denseTorusι h₀ ≫ projectiveLineToricIso.hom) =
+      Set.range (projectiveLine.polynomialChartι ℂ 0) ∩
+        Set.range (projectiveLine.polynomialChartι ℂ 1) := by
+  let σ := projectiveSpaceMaximalCone b₁ h₁ none
+  let τ := projectiveSpaceMaximalCone b₁ h₁ (some 0)
+  have hbotMem := Fan.bot_mem_projectiveSpace_cones b₁ h₁
+  have hmeet : σ ⊓ τ = ⟨⊥, hbotMem⟩ := by
+    apply Subtype.ext
+    -- Infimum of fan cones is computed on the underlying cones.
+    change projectiveSpaceCone b₁ i₁ {none}ᶜ ⊓ projectiveSpaceCone b₁ i₁ {some 0}ᶜ = ⊥
+    rw [projectiveSpaceCone_compl_none_finOne, projectiveSpaceCone_compl_some_finOne,
+      affineRayCone_inf_negativeRayCone]
+  rw [denseTorusι_eq_affineToricChartι _ h₀ hbotMem,
+    ← range_affineToricChartι_comp_projectiveLineToricIso 0,
+    ← range_affineToricChartι_comp_projectiveLineToricIso 1]
+  have himage (ρ : (Fan.projectiveSpace b₁ h₁).cones) :
+      Set.range ((Fan.projectiveSpace b₁ h₁).affineToricChartι ρ ≫ projectiveLineToricIso.hom) =
+        projectiveLineToricIso.hom ''
+          Set.range ((Fan.projectiveSpace b₁ h₁).affineToricChartι ρ) := by
+    rw [← Set.range_comp]
+    exact congrArg Set.range (funext (Scheme.Hom.comp_apply _ _))
+  have hinj : Function.Injective projectiveLineToricIso.hom :=
+    projectiveLineToricIso.hom.homeomorph.injective
+  rw [himage, himage, himage, ← Set.image_inter hinj,
+    range_affineToricChartι_inter_range_affineToricChartι]
+  exact congrArg (fun ρ : (Fan.projectiveSpace b₁ h₁).cones ↦
+    projectiveLineToricIso.hom '' Set.range ((Fan.projectiveSpace b₁ h₁).affineToricChartι ρ))
+      hmeet.symm
+
 variable {N : Type} {V : Type*} [AddCommGroup N] [AddCommGroup V] [Module ℝ V] {i : N →+ V}
   (Φ : Fan i) (m : N →+ ℤ)
 
@@ -202,13 +305,15 @@ def characterRuling :
   (Φ.characterFanHom m h).algebraicMap ≫ projectiveSpaceToProj b₁ h₁ ≫
     (Proj.symmetricAlgebraMapIso ℂ rulingLinearEquiv).hom
 
+/-- The ruling is the toric character map followed by the projective-line comparison. -/
+theorem characterRuling_def :
+    Φ.characterRuling m h = (Φ.characterFanHom m h).algebraicMap ≫ projectiveLineToricIso.hom :=
+  (rfl)
+
 /-- The character morphism is a morphism over the coefficient field. -/
 instance isOver_characterRuling : (Φ.characterRuling m h).IsOver (Spec (.of ℂ)) where
   comp_over := by
-    rw [characterRuling, Category.assoc, Category.assoc]
-    rw [TauCeti.SymmetricAlgebra.over_eq_projToSpec, Proj.symmetricAlgebraMapIso_hom_projToSpec,
-      ← TauCeti.SymmetricAlgebra.over_eq_projToSpec, CategoryTheory.comp_over,
-      CategoryTheory.comp_over]
+    rw [characterRuling_def, CategoryTheory.comp_over]
 
 private theorem characterFanHom_mapsTo (σ : Φ.cones) (k : Fin 2)
     (hm : (if k = 0 then m else -m) ∈ dualSemigroup Φ.lattice σ.val) :

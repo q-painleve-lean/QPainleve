@@ -5,6 +5,7 @@ Authors: The QPainleve contributors
 -/
 module
 
+public import QPainleve.AlgebraicGeometry.Blowup.Exceptional.Class
 public import QPainleve.AlgebraicGeometry.Blowup.StrictTransform.Basic
 public import QPainleve.Geometry.Toric.Fan.Boundary.Ideal
 public import QPainleve.Geometry.Toric.Fan.StarSubdivision.Global
@@ -179,6 +180,22 @@ theorem comap_ker_distinguishedPointHom_eq_rayBoundaryIdeal
   change E.comap e.hom = _
   rw [← hE, CodimensionOnePoint.coe_mapOfIsOpenImmersion,
     comap_vanishingIdeal_closure_singleton_apply, (Ψ).rayBoundaryIdeal_def]
+
+/-- The exceptional class of a single point blowup corresponds to the positive class
+of the new ray divisor under the comparison over the toric projection. -/
+theorem pullback_blowupExceptionalClass_starSubdivisionAlong
+    (hN : Module.finrank ℤ N = 2) (hc : Nat.card (ToricRay σ.val) = 2)
+    (e : (Ψ).algebraicRealization ≅ (I).blowup) (he : e.hom ≫ (I).blowupToBase = π) :
+    LineBundleClass.pullback e.hom (I).blowupExceptionalClass =
+      (LineBundleClass.mk ((Ψ).isEffectiveCartier_rayBoundaryIdeal hΨ ρ).toInvertibleSheaf)⁻¹ := by
+  let hE := (I).isEffectiveCartier_comap_blowupToBase
+  have hcompare :
+      ((I).comap (I).blowupToBase).comap e.hom = (Ψ).rayBoundaryIdeal hΨ ρ := by
+    rw [← comap_comp, he]
+    exact comap_ker_distinguishedPointHom_eq_rayBoundaryIdeal hΦ σ h₀ hN hc
+  rw [blowupExceptionalClass_def, LineBundleClass.pullback_inv,
+    hE.pullback_mk_toInvertibleSheaf (hE.comap e.hom),
+    LineBundleClass.mk_toInvertibleSheaf_congr _ _ hcompare]
 
 include h₀ in
 private theorem boundaryIdeal_le_ker_distinguishedPointHom :

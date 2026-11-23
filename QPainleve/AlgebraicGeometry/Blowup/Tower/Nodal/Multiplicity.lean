@@ -9,10 +9,8 @@ public import QPainleve.AlgebraicGeometry.Blowup.Tower.Nodal.Basic
 public import QPainleve.AlgebraicGeometry.CartierDivisor.Support
 import QPainleve.AlgebraicGeometry.Blowup.Descent
 import QPainleve.AlgebraicGeometry.Curves.Node.Order
-import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
 import QPainleve.AlgebraicGeometry.IdealSheaf.Stalk
 import QPainleve.AlgebraicGeometry.Morphisms.IsoLocus
-import TauCeti.AlgebraicGeometry.Blowup.Restriction
 import TauCeti.AlgebraicGeometry.Curves.Node.Reduced
 import TauCeti.AlgebraicGeometry.Curves.SingularLocus.Smooth
 import TauCeti.AlgebraicGeometry.Morphisms.Smooth.GeometricallyReduced
@@ -36,50 +34,9 @@ universe u
 
 namespace QPainleve.BlowupTower.IsNodalBoundaryTower
 
-variable {k : Type u} [Field k] [PerfectField k] {X Y : Scheme.{u}}
+variable {k : Type u} [Field k] {X Y : Scheme.{u}}
   {s : X ⟶ Spec (.of k)} [SmoothOfRelativeDimension 2 s]
   {D : X.IdealSheafData} {n : ℕ} {T : BlowupTower X n Y}
-
-/-- A nodal blowup tower is an isomorphism away from the nodes of the original reduced boundary. -/
-theorem centre_subset_nodes (hT : IsNodalBoundaryTower D s (𝟙 X) T) :
-    T.toBase.centre ⊆ {x | D.IsNodeOfReducedBoundary s x} := by
-  induction hT with
-  | nil =>
-    rw [toBase_nil, (Scheme.Hom.centre_eq_empty_iff (𝟙 X)).mpr inferInstance]
-    exact Set.empty_subset _
-  | @snoc _ W U I hU p hp hI hn ih =>
-    have hclosed := hU.isClosedPointTower
-    have : Smooth s := SmoothOfRelativeDimension.smooth 2 s
-    have := LocallyOfFiniteType.isLocallyNoetherian s
-    have : IsProper U.toBase := U.isProper_toBase
-    have hs : SmoothOfRelativeDimension 2 (U.toBase ≫ s) := hclosed.smoothOfRelativeDimension s
-    have : Smooth (U.toBase ≫ s) := SmoothOfRelativeDimension.smooth 2 _
-    have := (U.toBase ≫ s).isReduced_of_smooth
-    have := LocallyOfFiniteType.isLocallyNoetherian (U.toBase ≫ s)
-    have := isRegularLocalRing_stalk_of_smooth (U.toBase ≫ s) p
-    have hdim := ((smoothOfRelativeDimension_iff_ringKrullDim_stalk_eq
-      (U.toBase ≫ s) 2).mp hs).2 p hp
-    have : Surjective I.blowupToBase := by
-      rw [hI, W.ker_fromSpecResidueField_eq_vanishingIdeal]
-      exact Scheme.IdealSheafData.surjective_blowupToBase_point hp hdim
-    have hi : I.support.compl ≤ I.blowupToBase.isoLocus :=
-      I.blowupToBase.le_isoLocus_iff.mpr inferInstance
-    have hsupport : (I.support : Set W) = {p} := by
-      rw [hI, Scheme.Hom.support_ker, Scheme.range_fromSpecResidueField, hp.closure_eq]
-    rw [toBase_snoc, Scheme.Hom.centre_comp]
-    refine Set.union_subset ih ?_
-    rintro _ ⟨q, hq, rfl⟩
-    have hqmem : q ∈ (I.support : Set W) := by
-      by_contra hnot
-      rw [Scheme.Hom.centre_def, Set.mem_compl_iff] at hq
-      exact hq (hi (by rwa [← SetLike.mem_coe, Closeds.coe_compl, Set.mem_compl_iff]))
-    have hqp : q = p := Set.mem_singleton_iff.mp (hsupport ▸ hqmem)
-    subst q
-    by_cases h : U.toBase p ∈ U.toBase.centre
-    · exact ih h
-    · have ho : U.toBase p ∈ U.toBase.isoLocus := by simpa [Scheme.Hom.centre_def] using h
-      apply (D.isNodeOfReducedBoundary_comap_iff_of_mem_isoLocus s U.toBase ho).mp
-      simpa only [Category.comp_id] using hn
 
 /-- The generic point of a prime divisor lies over the centre of a nodal tower exactly when
 the total transform has multiplicity at least two there. -/
@@ -88,6 +45,8 @@ theorem mem_centre_iff_two_le_stalkOrder (hT : IsNodalBoundaryTower D s (𝟙 X)
     (x : CodimensionOnePoint Y) :
     T.toBase x ∈ T.toBase.centre ↔ 2 ≤ (D.comap T.toBase).stalkOrder x := by
   have hred : IsReduced D.subscheme := hnodal.isReduced
+  have : Smooth s := SmoothOfRelativeDimension.smooth 2 s
+  have : IsLocallyNoetherian X := LocallyOfFiniteType.isLocallyNoetherian s
   constructor
   · intro hx
     obtain ⟨z, hz, hn⟩ := (D.isNodeOfReducedBoundary_iff_of_isReduced s _).mp
@@ -111,7 +70,6 @@ theorem mem_centre_iff_two_le_stalkOrder (hT : IsNodalBoundaryTower D s (𝟙 X)
     rw [D.stalkOrder_comap_of_isIso_stalkMap] at hx
     let y : CodimensionOnePoint X :=
       ⟨T.toBase x, (T.toBase.coheight_eq_of_apply_mem_isoLocus ho).trans x.property⟩
-    have : Smooth s := SmoothOfRelativeDimension.smooth 2 s
     have : IsRegularLocalRing (X.presheaf.stalk (y : X)) := isRegularLocalRing_stalk_of_smooth s _
     have := CodimensionOnePoint.isDiscreteValuationRing_stalk y
     exact not_le_of_gt (by decide : (1 : ℕ∞) < 2)
@@ -119,7 +77,7 @@ theorem mem_centre_iff_two_le_stalkOrder (hT : IsNodalBoundaryTower D s (𝟙 X)
 
 /-- The Weil coefficients of the total boundary transform detect the contracted prime
 divisors of a nodal tower. -/
-theorem mem_centre_iff_two_le_coeff_totalTransform [IsIntegral X] [IsNoetherian X]
+theorem mem_centre_iff_two_le_coeff_totalTransform [PerfectField k] [IsIntegral X] [IsNoetherian X]
     (hT : IsNodalBoundaryTower D s (𝟙 X) T)
     (hD : D.IsEffectiveCartier) (hnodal : AtWorstNodalOfRelativeDimensionOne (D.subschemeι ≫ s))
     (x : CodimensionOnePoint Y) :

@@ -6,7 +6,7 @@ Authors: The QPainleve contributors
 module
 
 public import QPainleve.AlgebraicGeometry.Chow.CurveCone
-public import QPainleve.AlgebraicGeometry.Chow.RationalSurface
+public import QPainleve.AlgebraicGeometry.Chow.RationalSurface.Basic
 public import TauCeti.AlgebraicGeometry.CartierDivisor.Factorial
 public import TauCeti.AlgebraicGeometry.IntersectionNumber.ExceptionalCurve.Basic
 

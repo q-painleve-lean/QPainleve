@@ -8,6 +8,9 @@ module
 public import QPainleve.AlgebraicGeometry.Blowup.Tower.Refinement
 public import QPainleve.AlgebraicGeometry.Curves.Node.Locus
 
+import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
+import TauCeti.AlgebraicGeometry.Blowup.Restriction
+
 /-!
 # Common refinements of nodal boundary blowups
 
@@ -19,7 +22,7 @@ respect the morphisms to the base scheme and identify the reduced boundaries.
 
 public section
 
-open AlgebraicGeometry CategoryTheory
+open AlgebraicGeometry CategoryTheory TopologicalSpace
 
 universe u
 
@@ -38,6 +41,44 @@ private theorem isLocal_node (D : S.IdealSheafData) (s : S ⟶ K) :
   intro A B f g x hx hn
   rw [D.comap_comp, Category.assoc]
   exact ((D.comap g).isNodeOfReducedBoundary_comap_iff_of_mem_isoLocus (g ≫ s) f hx).mpr hn
+
+/-- A nodal blowup tower is an isomorphism away from the nodes of the original reduced boundary. -/
+theorem IsNodalBoundaryTower.centre_subset_nodes {D : X.IdealSheafData} {s : X ⟶ K}
+    {T : BlowupTower X n Y} [IsLocallyNoetherian X] (hT : IsNodalBoundaryTower D s (𝟙 X) T) :
+    T.toBase.centre ⊆ {x | D.IsNodeOfReducedBoundary s x} := by
+  intro x hc
+  contrapose hc
+  rw [Scheme.Hom.centre_def, Set.mem_compl_iff, SetLike.mem_coe, not_not]
+  induction hT with
+  | nil =>
+    rw [toBase_nil, (Scheme.Hom.isoLocus_eq_top_iff (𝟙 X)).mpr inferInstance]
+    trivial
+  | @snoc n Y T J hT p hp hJ hP ih =>
+    have hpne : T.toBase p ≠ x := by
+      intro hpx
+      have hpiso : T.toBase p ∈ T.toBase.isoLocus := hpx.symm ▸ ih
+      apply hc
+      rw [← hpx]
+      apply (D.isNodeOfReducedBoundary_comap_iff_of_mem_isoLocus s T.toBase hpiso).mp
+      simpa only [Category.comp_id] using hP
+    let : IsProper T.toBase := T.isProper_toBase
+    have hclosed : IsClosed ({T.toBase p} : Set X) := by
+      simpa only [Set.image_singleton] using T.toBase.isClosedMap _ hp
+    let V := T.toBase.isoLocus ⊓ (⟨{T.toBase p}ᶜ, hclosed.isOpen_compl⟩ : X.Opens)
+    have hV : x ∈ V := ⟨ih, hpne.symm⟩
+    have hJsupport : (J.support : Set Y) = {p} :=
+      hJ.symm ▸ Scheme.support_ker_fromSpecResidueField_of_isClosed hp
+    have hsub : T.toBase ⁻¹ᵁ V ≤ J.support.compl := by
+      intro y hy
+      rw [← SetLike.mem_coe, Closeds.coe_compl, hJsupport]
+      exact fun he ↦ (T.toBase.mem_preimage.mp hy).2 (congrArg T.toBase he)
+    have hTiso : IsIso (T.toBase ∣_ V) := T.toBase.le_isoLocus_iff.mp inf_le_left
+    have hJiso : IsIso (J.blowupToBase ∣_ (T.toBase ⁻¹ᵁ V)) :=
+      J.isIso_blowupToBase_restrict_of_disjoint_support
+        (Set.disjoint_left.mpr fun _ hy hI ↦ hsub hy hI)
+    rw [toBase_snoc]
+    exact (J.blowupToBase ≫ T.toBase).mem_isoLocus_iff.mpr ⟨V, hV,
+      (morphismRestrict_comp J.blowupToBase T.toBase V).symm ▸ IsIso.comp_isIso' hJiso hTiso⟩
 
 /-- Two nodal boundary towers admit a common refinement through nodal centers.
 Each extension has length at most that of the opposite tower. The final isomorphism

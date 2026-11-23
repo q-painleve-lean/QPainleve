@@ -7,7 +7,7 @@ module
 
 public import QPainleve.Geometry.Toric.Fan.Chart
 public import QPainleve.Geometry.Toric.Fan.Mutation.Chart
-public import QPainleve.Geometry.Toric.Fan.Ruling
+public import QPainleve.Geometry.Toric.Fan.Ruling.Basic
 import QPainleve.AlgebraicGeometry.Gluing
 import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.ProjectiveLine
 import QPainleve.Geometry.Toric.Fan.DenseTorus
