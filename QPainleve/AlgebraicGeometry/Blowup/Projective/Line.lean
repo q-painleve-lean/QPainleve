@@ -8,10 +8,10 @@ module
 public import QPainleve.AlgebraicGeometry.Blowup.ElementaryTransform
 public import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.ProjectiveLine
 public import TauCeti.AlgebraicGeometry.Blowup.IdealSheaf
-import Mathlib.AlgebraicGeometry.Gluing
 import Mathlib.RingTheory.Algebraic.Integral
 import Mathlib.RingTheory.Polynomial.Ideal
 import QPainleve.AlgebraicGeometry.Blowup.Affine
+import QPainleve.AlgebraicGeometry.Gluing
 import TauCeti.AlgebraicGeometry.IdealSheaf.Comap
 import TauCeti.AlgebraicGeometry.IdealSheaf.Extension
 import TauCeti.AlgebraicGeometry.Morphisms.SchemeTheoreticallyDominant
@@ -34,7 +34,7 @@ See Gross, Hacking and Keel, [*Birational geometry of cluster algebras*][GHK], �
 
 public noncomputable section
 
-open AlgebraicGeometry AlgebraicGeometry.Scheme CategoryTheory CategoryTheory.Limits
+open AlgebraicGeometry AlgebraicGeometry.Scheme CategoryTheory
 open Polynomial reesAlgebra TauCeti.NodeAlgebra QPainleve
 
 namespace TauCeti.AlgebraicGeometry.projectiveLine
@@ -270,6 +270,10 @@ private def switchedChartι (hf : IsSMulRegular R f) :
 private def blowupStructureMap : (Z).blowup ⟶ Spec (.of R) :=
   (Z).blowupToBase ≫ (projectiveLine R ↘ Spec (.of R))
 
+private instance : IsSeparated (blowupStructureMap f i) := by
+  unfold blowupStructureMap
+  infer_instance
+
 private def chartStructureMap : (j : Option Bool) → chartScheme f j ⟶ Spec (.of R)
   | none => Spec.map (CommRingCat.ofHom (algebraMap R N))
   | some _ => Spec.map (CommRingCat.ofHom (algebraMap R P))
@@ -424,49 +428,49 @@ private theorem genericChart_comp_switchedChartι_blowupToBase (hf : f ≠ 0) (j
 private instance isReduced_chartScheme (j : Option Bool) : IsReduced (chartScheme f j) := by
   rcases j with _ | _ <;> dsimp only [chartScheme] <;> infer_instance
 
-private theorem switchedChartι_compatible (hf : f ≠ 0) (j k : Option Bool) :
+private theorem isReduced_sectionBlowup (h : IsSMulRegular R f) : IsReduced (Z).blowup := by
+  have : ∀ a, IsReduced ((sectionBlowupCover f i h).X a) := isReduced_chartScheme f
+  exact IsReduced.of_openCover _ (sectionBlowupCover f i h)
+
+private theorem genericChart_comp_chartι (hf : f ≠ 0) (a : Option Bool) :
     let h := (IsRegular.of_ne_zero hf).left.isSMulRegular
-    pullback.fst (chartι f i h j) (chartι f i h k) ≫ switchedChartι f i.rev h j =
-      pullback.snd (chartι f i h j) (chartι f i h k) ≫ switchedChartι f i.rev h k := by
+    genericChart f i a ≫ chartι f i h a = genericChart f i none ≫ chartι f i h none := by
+  apply eq_of_blowupToBase_eq_polynomialPoint f i (Units.mk0 x (x_ne_zero (R := R)))
+  · exact (Category.assoc _ _ _).trans (genericChart_comp_chartι_blowupToBase f i hf a)
+  · exact (Category.assoc _ _ _).trans (genericChart_comp_chartι_blowupToBase f i hf none)
+
+private theorem genericChart_comp_chartι_isDominant (hf : f ≠ 0) :
+    IsDominant (genericChart f i none ≫ chartι f i (IsRegular.of_ne_zero hf).left.isSMulRegular
+      none) := by
   let h := (IsRegular.of_ne_zero hf).left.isSMulRegular
-  let a := chartι f i h j
-  let b := chartι f i h k
-  have hab : genericChart f i j ≫ a = genericChart f i k ≫ b := by
-    apply eq_of_blowupToBase_eq_polynomialPoint f i (Units.mk0 x (x_ne_zero (R := R)))
-    · exact Category.assoc _ _ _ |>.trans (genericChart_comp_chartι_blowupToBase f i hf j)
-    · exact Category.assoc _ _ _ |>.trans (genericChart_comp_chartι_blowupToBase f i hf k)
-  let d := pullback.lift (genericChart f i j) (genericChart f i k) hab
-  have hdcomp : IsDominant (d ≫ pullback.fst a b) := by
-    rw [pullback.lift_fst]
-    exact genericChart_isDominant f i hf j
-  have : IsOpenImmersion b := inferInstanceAs (IsOpenImmersion (chartι f i h k))
-  have hd : IsDominant d := IsDominant.of_comp_of_isOpenImmersion _ (pullback.fst a b)
-  have : IsReduced (pullback a b) := isReduced_of_isOpenImmersion (pullback.fst a b)
-  have : IsSeparated (blowupStructureMap f i.rev) := by
-    unfold blowupStructureMap
-    infer_instance
-  let g := pullback.fst a b ≫ switchedChartι f i.rev h j
-  let g' := pullback.snd a b ≫ switchedChartι f i.rev h k
-  let π := blowupStructureMap f i.rev
-  have hover : g ≫ π = g' ≫ π := by
-    dsimp only [g, g', π]
-    rw [Category.assoc, Category.assoc, switchedChartι_over, switchedChartι_over]
-    simpa only [a, b, Category.assoc, chartι_over] using
-      congrArg (· ≫ blowupStructureMap f i) (pullback.condition (f := a) (g := b))
-  have htest : d ≫ g = d ≫ g' := by
-    dsimp only [d, g, g']
-    rw [pullback.lift_fst_assoc, pullback.lift_snd_assoc]
-    apply eq_of_blowupToBase_eq_polynomialPoint f i.rev (Units.mk0 s (s_ne_zero f hf))
-    · exact Category.assoc _ _ _ |>.trans (genericChart_comp_switchedChartι_blowupToBase f i hf j)
-    · exact Category.assoc _ _ _ |>.trans (genericChart_comp_switchedChartι_blowupToBase f i hf k)
-  exact ext_of_isDominant_of_isSeparated π hover d htest
+  constructor
+  intro p
+  obtain ⟨a, q, rfl⟩ := (sectionBlowupCover f i h).exists_eq p
+  rw [← genericChart_comp_chartι f i hf a]
+  have := genericChart_isDominant f i hf a
+  change chartι f i h a q ∈ closure (Set.range (genericChart f i a ≫ chartι f i h a))
+  simpa only [Scheme.Hom.comp_base, TopCat.coe_comp, Set.range_comp] using
+    (chartι f i h a).continuous.range_subset_closure_image_dense
+      (genericChart f i a).denseRange ⟨q, rfl⟩
 
 private def elementaryTransformHom (hf : f ≠ 0) (j : Fin 2) (hj : j = i.rev) :
     (Z).blowup ⟶ (coordinateSectionCenter f j).blowup := by
   subst j
   let h := (IsRegular.of_ne_zero hf).left.isSMulRegular
-  exact (sectionBlowupCover f i h).glueMorphisms
-    (switchedChartι f i.rev h) (switchedChartι_compatible f i hf)
+  have := isReduced_sectionBlowup f i h
+  have := genericChart_comp_chartι_isDominant f i hf
+  refine (sectionBlowupCover f i h).glueMorphismsOfDominant
+    (genericChart f i none ≫ chartι f i h none) (genericChart f i)
+    (genericChart_comp_chartι f i hf)
+    (switchedChartι f i.rev h) (genericChart f i none ≫ switchedChartι f i.rev h none) ?_
+    (blowupStructureMap f i.rev) (blowupStructureMap f i) ?_
+  · intro a
+    apply eq_of_blowupToBase_eq_polynomialPoint f i.rev (Units.mk0 s (s_ne_zero f hf))
+    · exact Category.assoc _ _ _ |>.trans (genericChart_comp_switchedChartι_blowupToBase f i hf a)
+    · exact (Category.assoc _ _ _).trans
+        (genericChart_comp_switchedChartι_blowupToBase f i hf none)
+  · intro a
+    exact (switchedChartι_over f i.rev h a).trans (chartι_over f i h a).symm
 
 private theorem chartι_elementaryTransformHom (hf : f ≠ 0) (j : Fin 2)
     (hj : j = i.rev) (a : Option Bool) :
@@ -474,8 +478,10 @@ private theorem chartι_elementaryTransformHom (hf : f ≠ 0) (j : Fin 2)
     chartι f i h a ≫ elementaryTransformHom f i hf j hj = switchedChartι f j h a := by
   subst j
   let h := (IsRegular.of_ne_zero hf).left.isSMulRegular
-  exact Scheme.Cover.ι_glueMorphisms (sectionBlowupCover f i h)
-    (switchedChartι f i.rev h) (switchedChartι_compatible f i hf) a
+  have := isReduced_sectionBlowup f i h
+  have := genericChart_comp_chartι_isDominant f i hf
+  unfold elementaryTransformHom
+  apply Scheme.Cover.ι_glueMorphismsOfDominant
 
 private theorem elementaryTransformHom_comp (hf : f ≠ 0) (j : Fin 2)
     (hj : j = i.rev) (hi : i = j.rev) :
