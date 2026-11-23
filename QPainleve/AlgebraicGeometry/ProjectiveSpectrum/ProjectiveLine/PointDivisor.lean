@@ -14,7 +14,6 @@ import TauCeti.AlgebraicGeometry.IdealSheaf.BaseChange
 import TauCeti.AlgebraicGeometry.IdealSheaf.Locality
 import TauCeti.AlgebraicGeometry.IdealSheaf.Section
 import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.TwistingSheaf.Ample
-import TauCeti.AlgebraicGeometry.Restrict
 
 /-!
 # Point divisors on the projective line
@@ -56,76 +55,6 @@ private def binomialForm (c : R) : 𝒜 1 :=
 /-- The section of `𝒪(1)` represented by the homogeneous form `X₀ + c X₁`. -/
 def binomialSection (c : R) : Γ((L).obj, ⊤) :=
   Proj.toTwistingSheaf 𝒜 rfl ⊤ (binomialForm R c)
-
-/-- The defining coordinate of a standard chart is nonvanishing throughout the chart. -/
-@[simp]
-theorem preimage_polynomialChartι_basicOpen_self (i : Fin 2) :
-    j[i] ⁻¹ᵁ U[i] = ⊤ := by
-  rw [← opensRange_polynomialChartι, Scheme.Hom.preimage_opensRange]
-
-/-- The polynomial chart pulls a function represented by a homogeneous fraction back
-to its dehomogenization. -/
-theorem appLE_polynomialChartι_awayToSection (i : Fin 2)
-    (a : Away 𝒜 (coord R i)) :
-    (Scheme.ΓSpecIso (.of R[X])).hom
-        (j[i].appLE U[i] ⊤ (preimage_polynomialChartι_basicOpen_self R i).ge
-          (Proj.awayToSection 𝒜 (coord R i) a)) =
-      awayEquivPolynomial R i a := by
-  let q := Spec.map (awayEquivPolynomial R i).toRingEquiv.toCommRingCatIso.hom
-  let g := awayι R i
-  have hg : ⊤ ≤ g ⁻¹ᵁ U[i] := by
-    rw [← image_awayι_top, Scheme.Hom.preimage_image_eq]
-  have hq := (Scheme.Hom.preimage_top q).ge
-  have hj := j[i].congr_appLE (polynomialChartι_def R i) U[i] ⊤
-    (preimage_polynomialChartι_basicOpen_self R i).ge
-    (hq.trans ((TopologicalSpace.Opens.map q.base).map (homOfLE hg)).le)
-  have hΓ : q.appLE ⊤ ⊤ hq ≫ (Scheme.ΓSpecIso (.of R[X])).hom =
-      (Scheme.ΓSpecIso (.of (Away 𝒜 (coord R i)))).hom ≫
-        (awayEquivPolynomial R i).toRingEquiv.toCommRingCatIso.hom :=
-    (congrArg (· ≫ (Scheme.ΓSpecIso (.of R[X])).hom)
-      (Scheme.Hom.appLE_eq_app q (U := ⊤))).trans (Scheme.ΓSpecIso_naturality _)
-  rw [hj, ← Scheme.Hom.appLE_comp_appLE q g U[i] ⊤ ⊤ hg hq, ← CommRingCat.comp_apply,
-    Category.assoc, hΓ]
-  have h := chartSectionsEquiv_awayToSection R i a
-  rw [chartSectionsEquiv_apply, Scheme.Hom.appIso_hom', ← CommRingCat.comp_apply,
-    ← CommRingCat.comp_apply, ← Category.assoc, Scheme.Hom.map_appLE'] at h
-  exact h
-
-section PolynomialPoint
-
-variable {A : Type u} [CommRing A] (f : R →+* A) (i : Fin 2) (a : A)
-
-local notation "p" => polynomialPoint R f i a
-
-/-- A point given in a standard chart factors through that chart. -/
-@[simp]
-theorem preimage_polynomialPoint_basicOpen_self :
-    p ⁻¹ᵁ U[i] = ⊤ := by
-  rw [polynomialPoint_def, Scheme.Hom.comp_preimage, preimage_polynomialChartι_basicOpen_self,
-    Scheme.Hom.preimage_top]
-
-/-- Pullback of a function along a polynomial chart point evaluates the chart polynomial. -/
-theorem appLE_polynomialPoint (b : Γ(P, U[i])) :
-    (Scheme.ΓSpecIso (.of A)).hom
-      ((p).appLE U[i] ⊤ (preimage_polynomialPoint_basicOpen_self R f i a).ge b) =
-    eval₂ f a ((Scheme.ΓSpecIso (.of R[X])).hom
-      (j[i].appLE U[i] ⊤ (preimage_polynomialChartι_basicOpen_self R i).ge b)) := by
-  let q := Spec.map (CommRingCat.ofHom (eval₂RingHom f a))
-  have hp : p = q ≫ j[i] := polynomialPoint_def R f i a
-  have h := (p).congr_appLE hp U[i] ⊤ (preimage_polynomialPoint_basicOpen_self R f i a).ge
-    ((Scheme.Hom.preimage_top q).ge.trans ((TopologicalSpace.Opens.map q.base).map
-      (homOfLE (preimage_polynomialChartι_basicOpen_self R i).ge)).le)
-  have hq : q.appLE ⊤ ⊤ (Scheme.Hom.preimage_top q).ge ≫
-      (Scheme.ΓSpecIso (.of A)).hom =
-        (Scheme.ΓSpecIso (.of R[X])).hom ≫ CommRingCat.ofHom (eval₂RingHom f a) :=
-    (congrArg (· ≫ (Scheme.ΓSpecIso (.of A)).hom)
-      (Scheme.Hom.appLE_eq_app q (U := ⊤))).trans (Scheme.ΓSpecIso_naturality _)
-  rw [h, ← Scheme.Hom.appLE_comp_appLE q j[i] U[i] ⊤ ⊤
-      (preimage_polynomialChartι_basicOpen_self R i).ge (Scheme.Hom.preimage_top q).ge,
-    ← CommRingCat.comp_apply, Category.assoc, hq]
-  rfl
-
-end PolynomialPoint
 
 local notation "M" => Proj.twistingSheaf 𝒜 1
 local notation "frame[" i "]" =>
