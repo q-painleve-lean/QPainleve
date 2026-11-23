@@ -43,19 +43,6 @@ variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
 local notation "X[" Δ "]" => algebraicRealization Δ
 local notation "s[" Δ "]" => algebraicRealizationStructureMap Δ
 
-private theorem center_is_reduced_point {X : Scheme} {D : X.IdealSheafData}
-    {s : X ⟶ S} {T : BlowupTower X n Y} {P : Y.IdealSheafData} {c : Fin m → Over X}
-    (h : IsLogarithmicBoundaryTower D s T P c) (j : Fin m) :
-    IsReduced (c j).left ∧ Nonempty (c j).left ∧ Subsingleton (c j).left := by
-  induction h with
-  | nil => exact j.elim0
-  | node _ _ _ _ _ ih => exact ih j
-  | @internal _ m _ _ P c _ p _ _ _ ih =>
-    refine Fin.lastCases ?_ (fun k ↦ ?_) j
-    · simp only [Fin.snoc_last, Over.mk_left]
-      exact ⟨inferInstance, ⟨IsLocalRing.closedPoint _⟩, inferInstance⟩
-    · simpa only [Fin.snoc_castSucc] using ih k
-
 private theorem exists_coordinates_of_orderedFactorization (b : Module.Basis (Fin 2) ℤ N)
     (hΨ : Ψ.IsRegular) (hc : Ψ.IsComplete)
     {X : Scheme} {D : X.IdealSheafData} {s : X ⟶ Spec (.of ℂ)}
@@ -71,7 +58,7 @@ private theorem exists_coordinates_of_orderedFactorization (b : Module.Basis (Fi
   let := hc.nonempty_cones
   let a (j : Fin m) := F.center j ≫ d.inv
   have H (j : Fin m) : ∃ (ρ : Ψ.Ray) (u : ℂˣ), (ρ.internalCenter b u).val = (a j).ker := by
-    obtain ⟨hred, ⟨y⟩, hsingle⟩ := center_is_reduced_point h j
+    obtain ⟨hred, ⟨y⟩, hsingle⟩ := h.center_is_reduced_point j
     have := F.isClosedImmersion_center j
     have : IsClosedImmersion (a j) := inferInstanceAs (IsClosedImmersion (F.center j ≫ d.inv))
     have : Nonempty (c j).left := ⟨y⟩

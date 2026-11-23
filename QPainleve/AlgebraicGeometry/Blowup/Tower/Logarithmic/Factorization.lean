@@ -76,6 +76,19 @@ namespace IsLogarithmicBoundaryTower
 variable {Y : Scheme.{u}} {D : X.IdealSheafData} {s : X ⟶ S} {n m : ℕ}
   {T : BlowupTower X n Y} {P : Y.IdealSheafData}
 
+/-- Each recorded internal center is reduced and has exactly one point. -/
+theorem center_is_reduced_point {c : Fin m → Over X}
+    (h : IsLogarithmicBoundaryTower D s T P c) (j : Fin m) :
+    IsReduced (c j).left ∧ Nonempty (c j).left ∧ Subsingleton (c j).left := by
+  induction h with
+  | nil => exact j.elim0
+  | node _ _ _ _ _ ih => exact ih j
+  | @internal _ m _ _ P c _ p _ _ _ ih =>
+    refine Fin.lastCases ?_ (fun k ↦ ?_) j
+    · simp only [Fin.snoc_last, Over.mk_left]
+      exact ⟨inferInstance, ⟨IsLocalRing.closedPoint _⟩, inferInstance⟩
+    · simpa only [Fin.snoc_castSucc] using ih k
+
 /-- A corner tower followed by the prescribed ordered internal centers, with an
 isomorphism over the original surface identifying the final boundary. -/
 structure OrderedFactorization (D : X.IdealSheafData) (s : X ⟶ S)
