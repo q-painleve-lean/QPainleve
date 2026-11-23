@@ -8,12 +8,15 @@ module
 public import Mathlib.AlgebraicGeometry.Noetherian
 public import Mathlib.AlgebraicGeometry.OrderOfVanishing.Basic
 public import QPainleve.AlgebraicGeometry.OrderOfVanishing.Base
+public import QPainleve.Geometry.Toric.Fan.Chart
 public import QPainleve.Geometry.Toric.Fan.DenseTorus
 public import TauCeti.AlgebraicGeometry.Morphisms.Dominant
 public import TauCeti.AlgebraicGeometry.Scheme.CodimensionOnePoint
 public import TauCeti.Geometry.Toric.Algebraic.Fan.Normal
 public import TauCeti.Geometry.Toric.Algebraic.Fan.Over
 
+import QPainleve.AlgebraicGeometry.Scheme.FunctionField
+import TauCeti.Algebra.Bialgebra.MonoidAlgebra.Equiv
 import TauCeti.Algebra.MonoidAlgebra.Units
 import TauCeti.AlgebraicGeometry.Scheme.Regular
 import TauCeti.Geometry.Toric.Algebraic.DualSemigroup.Finiteness
@@ -139,6 +142,37 @@ theorem functionFieldMap_affineToricChartι_character (σ : Φ.cones)
     rw [MonoidAlgebra.of_apply, MonoidAlgebra.of_apply, denseTorusDualEquiv_symm_apply]
     exact faceAffineCoordinateRingMap_single Φ.lattice h m 1
   rw [hm]
+
+/-- In the additive cone chart, a regular character is the corresponding monomial
+in the additive semigroup algebra. -/
+theorem functionFieldMap_additiveAffineToricChartι_character (σ : Φ.cones)
+    (a : dualSemigroup Φ.lattice σ.val) :
+    let R := CommRingCat.of (AddMonoidAlgebra ℂ (dualSemigroup Φ.lattice σ.val))
+    letI : Algebra R (Spec R).functionField := instAlgebraCarrierFunctionFieldSpec R
+    (Φ.additiveAffineToricChartι σ).functionFieldMap (Φ.character (ofAdd a.val)) =
+      algebraMap R (Spec R).functionField (AddMonoidAlgebra.single a 1) := by
+  dsimp only
+  let R := affineCoordinateRing Φ.lattice σ.val
+  let e := (AddMonoidAlgebra.toMultiplicativeAlgEquiv ℂ ℂ
+    (dualSemigroup Φ.lattice σ.val)).symm
+  let f := e.toRingEquiv.toCommRingCatIso.hom
+  have hf : Φ.additiveAffineToricChartι σ = Spec.map f ≫ Φ.affineToricChartι σ :=
+    Φ.additiveAffineToricChartι_def σ
+  have hc := Scheme.Hom.functionFieldMap_congr hf
+  rw [hc, Scheme.Hom.functionFieldMap_comp, CommRingCat.comp_apply,
+    functionFieldMap_affineToricChartι_character]
+  let : Algebra R (Spec (.of R)).functionField := instAlgebraCarrierFunctionFieldSpec (.of R)
+  have hbase (r : R) :
+      ((Scheme.ΓSpecIso (.of R)).inv ≫ (Φ.affineToricChart σ).germToFunctionField ⊤) r =
+        algebraMap R (Spec (.of R)).functionField r := by
+    rw [Scheme.ΓSpecIso_inv]
+    rfl
+  rw [hbase]
+  refine (Scheme.Hom.functionFieldMap_SpecMap_algebraMap f _).trans ?_
+  have hmono : f (MonoidAlgebra.of ℂ _ (ofAdd a)) = AddMonoidAlgebra.single a 1 := by
+    rw [MonoidAlgebra.of_apply]
+    exact AddMonoidAlgebra.toMultiplicativeAlgEquiv_symm_single (R := ℂ) (ofAdd a) 1
+  rw [hmono]
 
 local notation "𝒳" => Φ.algebraicRealization
 local notation "𝕋" => Φ.denseTorus
