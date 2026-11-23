@@ -6,7 +6,7 @@ Authors: The QPainleve contributors
 module
 
 public import QPainleve.AlgebraicGeometry.Blowup.ElementaryTransform
-public import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.ProjectiveLine
+public import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.ProjectiveLine.Basic
 public import TauCeti.AlgebraicGeometry.Blowup.IdealSheaf
 public import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.Basic
 import Mathlib.RingTheory.Algebraic.Integral
