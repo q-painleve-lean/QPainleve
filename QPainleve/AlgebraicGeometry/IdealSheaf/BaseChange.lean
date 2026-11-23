@@ -6,6 +6,8 @@ Authors: The QPainleve contributors
 module
 
 public import TauCeti.AlgebraicGeometry.IdealSheaf.BaseChange
+public import TauCeti.AlgebraicGeometry.Morphisms.IsoLocus
+import QPainleve.AlgebraicGeometry.Morphisms.Pullback.IsoLocus
 import TauCeti.AlgebraicGeometry.IdealSheaf.Reduced
 
 /-!
@@ -23,6 +25,43 @@ open CategoryTheory CategoryTheory.Limits
 namespace AlgebraicGeometry.Scheme.IdealSheafData
 
 universe u
+
+/-- The reduced inverse image of a reduced closed subscheme agrees with that
+subscheme over the isomorphism locus of the ambient morphism. -/
+theorem preimage_isoLocus_le_subschemeMap_radical {X Y : Scheme.{u}}
+    (D : X.IdealSheafData) [IsReduced D.subscheme] (f : Y ⟶ X) :
+    D.subschemeι ⁻¹ᵁ f.isoLocus ≤
+      (subschemeMap (D.comap f).radical D f
+        (le_map_iff_comap_le.mpr (le_radical _))).isoLocus := by
+  let I := D.comap f
+  let g := subschemeMap I D f (D.le_map_comap f)
+  let r := subschemeMap I.radical I (𝟙 Y) (by simpa using I.le_radical)
+  let d := subschemeMap I.radical D f (le_map_iff_comap_le.mpr I.le_radical)
+  have hr : r ≫ I.subschemeι = I.radical.subschemeι := by simp [r]
+  have hd : r ≫ g = d := by
+    apply (cancel_mono D.subschemeι).mp
+    simp only [Category.assoc, g, d, subschemeMap_subschemeι, reassoc_of% hr]
+  have hg : IsPullback I.subschemeι g f D.subschemeι :=
+    isPullback_of_isClosedImmersion _ _ _ _ (by simp [g]) (by simp [I])
+  let V := D.subschemeι ⁻¹ᵁ f.isoLocus
+  have hV : IsIso (g ∣_ V) :=
+    g.le_isoLocus_iff.mp (Scheme.Hom.preimage_isoLocus_le_of_isPullback hg.flip)
+  have : IsClosedImmersion (r ≫ I.subschemeι) := hr.symm ▸ inferInstance
+  have : IsClosedImmersion r := .of_comp_isClosedImmersion r I.subschemeι
+  have : Surjective r := ⟨fun x ↦ by
+    have hx : I.subschemeι x ∈ Set.range I.radical.subschemeι := by
+      rw [range_subschemeι, support_radical, ← range_subschemeι]
+      exact Set.mem_range_self x
+    obtain ⟨y, hy⟩ := hx
+    exact ⟨y, I.subschemeι.isClosedEmbedding.injective (by
+      simpa only [← Scheme.Hom.comp_apply, hr] using hy)⟩⟩
+  have : IsReduced (g ⁻¹ᵁ V).toScheme := isReduced_of_isOpenImmersion (g ∣_ V)
+  have : Surjective (r ∣_ (g ⁻¹ᵁ V)) :=
+    MorphismProperty.of_isPullback (isPullback_morphismRestrict r _).flip ‹Surjective r›
+  have hR : IsIso (r ∣_ (g ⁻¹ᵁ V)) := isIso_of_isClosedImmersion_of_surjective _
+  apply d.le_isoLocus_iff.mpr
+  rw [← hd, morphismRestrict_comp]
+  exact IsIso.comp_isIso' hR hV
 
 /-- In a cartesian square, a reduced closed subscheme over the reduced inverse image
 of a closed subscheme of the base is the reduced inverse image upstairs, provided
