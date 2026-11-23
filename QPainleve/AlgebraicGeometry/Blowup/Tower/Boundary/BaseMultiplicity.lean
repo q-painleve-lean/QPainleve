@@ -10,11 +10,8 @@ public import QPainleve.AlgebraicGeometry.Blowup.Tower.StrictTransform
 public import QPainleve.AlgebraicGeometry.IntersectionNumber.Nef
 public import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.ProjectiveOver
 
-import Mathlib.AlgebraicGeometry.AlgClosed.Basic
 import QPainleve.AlgebraicGeometry.Cohomology.Projective
-import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
-import QPainleve.AlgebraicGeometry.IdealSheaf.VanishingIdeal
-import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.Degree.EulerCharacteristic
+import QPainleve.AlgebraicGeometry.IdealSheaf.Degree
 import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.Pullback
 import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.TensorProduct
 
@@ -45,45 +42,6 @@ namespace QPainleve.BlowupTower
 variable (k : Type u) [Field k] [hk : IsAlgClosed k]
   {C D : Scheme.{u}} [C.Over (Spec (.of k))] [hProj : C.IsProjectiveOver k]
   (e : C ⟶ D) [heClosed : IsClosedImmersion e]
-
-include hk hProj heClosed in
-private theorem eulerDegree_mk_comap_point (p : D) (hp : IsClosed ({p} : Set D))
-    (h : ((D.fromSpecResidueField p).ker.comap e).IsEffectiveCartier)
-    [Decidable (p ∈ Set.range e)] :
-    eulerDegree k (mk h.toInvertibleSheaf) = if p ∈ Set.range e then -1 else 0 := by
-  by_cases hmem : p ∈ Set.range e
-  · obtain ⟨q, rfl⟩ := hmem
-    have hq : IsClosed ({q} : Set C) := by
-      apply e.isClosedEmbedding.isClosed_iff_image_isClosed.mpr
-      simpa only [Set.image_singleton] using hp
-    let s := C.fromSpecResidueField q
-    have hs : IsClosedImmersion s := isClosed_singleton_iff_isClosedImmersion.mp hq
-    have hker : (D.fromSpecResidueField (e q)).ker.comap e = s.ker := by
-      rw [Scheme.ker_fromSpecResidueField_eq_vanishingIdeal,
-        comap_vanishingIdeal_closure_singleton_of_isClosedImmersion,
-        ← Scheme.ker_fromSpecResidueField_eq_vanishingIdeal]
-    have hC : s.ker.IsEffectiveCartier := hker ▸ h
-    let f := C ↘ Spec (CommRingCat.of k)
-    have : IsIso (s ≫ f) := by
-      rw [← SpecMap_residueFieldIsoBase_inv f q hq]
-      infer_instance
-    have : IsIso (s.ker.subschemeι ≫ f) := by
-      rw [← isIso_comp_left_iff s.toImage, ← Category.assoc, Scheme.Hom.toImage_imageι]
-      infer_instance
-    have := Scheme.Modules.moduleFinite_cohomology_of_isProjectiveOver k
-      (InvertibleSheaf.trivial C).obj 0
-    have := Scheme.Modules.moduleFinite_cohomology_of_isProjectiveOver k
-      (InvertibleSheaf.trivial C).obj 1
-    rw [mk_toInvertibleSheaf_congr h hC hker, eulerDegree_mk,
-      hC.eulerDegree_toInvertibleSheaf k _ default, Scheme.Hom.finrank_eq_one_of_isIso]
-    simp
-  · have htop : (D.fromSpecResidueField p).ker.comap e = ⊤ := by
-      rw [comap_eq_top_iff, ← Opens.coe_eq_univ, Scheme.Hom.coe_preimage,
-        Closeds.coe_compl, Scheme.support_ker_fromSpecResidueField_of_isClosed hp,
-        Set.eq_univ_iff_forall]
-      exact fun q hq ↦ hmem ⟨q, hq⟩
-    rw [mk_toInvertibleSheaf_congr h (isEffectiveCartier_top C) htop,
-      mk_toInvertibleSheaf_top, eulerDegree_one, ite_eq_right hmem]
 
 variable {X : Scheme.{u}} [hCurve : C.IsCurveOver k] {n : ℕ} (i : D ⟶ X) [IsClosedImmersion i]
   (J : Fin n → {I : D.IdealSheafData // I.IsEffectiveCartier})
