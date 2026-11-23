@@ -68,17 +68,9 @@ local notation "j₁" => mutationComplementChartι Ψ b τ false ht c h₁
 
 include hv in
 private theorem mutationZeroBinomial_ne_zero : Φ.mutationChartBinomial false c q(σ,hs) ≠ 0 := by
-  have hm : m ≠ 0 := by
-    intro he
-    apply hv
-    apply b.detDualEquiv.injective
-    ext x
-    rw [map_zero, LinearMap.zero_apply]
-    exact DFunLike.congr_fun he x
   have hq : q(σ,hs) ≠ 0 := by
     intro he
-    apply hm
-    simpa only [mutationChartCharacter_false, AddSubmonoid.coe_zero] using congrArg Subtype.val he
+    exact mutationChartCharacter_ne_zero b hv false (congrArg Subtype.val he)
   intro he
   have h := congrArg (fun r : R(σ) ↦ r.coeff 0) he
   have hconst : (single (0 : dualSemigroup Φ.lattice (σ).val) (1 : ℂ)).coeff 0 = 1 :=

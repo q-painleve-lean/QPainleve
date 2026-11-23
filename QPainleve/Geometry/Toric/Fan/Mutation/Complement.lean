@@ -181,6 +181,19 @@ instance isOpenImmersion_mutationComplementChartι :
     infer_instance
   exact IsOpenImmersion.of_comp _ (U).ι
 
+include h in
+/-- The localized chart image is the restriction of the affine cone chart to the
+mutation complement. -/
+theorem range_mutationComplementChartι :
+    Set.range (Φ.mutationComplementChartι b σ side hs c h) =
+      (U).ι ⁻¹' Set.range (Φ.additiveAffineToricChartι σ) := by
+  have hι : Function.Injective ((U).ι) := (U).ι.isOpenEmbedding.injective
+  apply hι.image_injective
+  rw [← Set.range_comp, ← TopCat.coe_comp, ← Scheme.Hom.comp_base,
+    mutationComplementChartι_comp_ι,
+    ← complementChartToFan, range_complementChartToFan,
+    Set.image_preimage_eq_inter_range, Scheme.Opens.range_ι]
+
 section Torus
 
 local notation "G" => AddMonoidAlgebra ℂ (N →+ ℤ)
@@ -608,17 +621,6 @@ theorem mutationComplementIso_hom_comp_toBase :
     sourceCover_f_mutationComplementHom Φ b c hv hpos hneg a, Category.assoc,
     targetChart_toBase Φ b c hv hpos hneg a, sourceChart_toBase Φ b c hv hpos hneg a]
   exact localizedChartIso_hom_comp_toBase Φ b a.fst a.snd.val a.snd.property c hv hpos hneg
-
-include h in
-private theorem range_mutationComplementChartι :
-    Set.range (Φ.mutationComplementChartι b σ side hs c h) =
-      (U).ι ⁻¹' Set.range (Φ.additiveAffineToricChartι σ) := by
-  have hι : Function.Injective ((U).ι) := (U).ι.isOpenEmbedding.injective
-  apply hι.image_injective
-  rw [← Set.range_comp, ← TopCat.coe_comp, ← Scheme.Hom.comp_base,
-    mutationComplementChartι_comp_ι,
-    ← complementChartToFan, range_complementChartToFan,
-    Set.image_preimage_eq_inter_range, Scheme.Opens.range_ι]
 
 /-- The mutation isomorphism on the fiber complement identifies its intersections with
 the dense tori of the two fans. -/

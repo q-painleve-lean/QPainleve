@@ -71,37 +71,11 @@ theorem boundaryIso_hom_subschemeι (h₀ : Nonempty Φ.cones) (h₁ : Nonempty 
   subschemeMap_subschemeι _ _ _
     (le_map_iff_comap_le.mpr (e.comap_boundaryIdeal_algebraicMap h₀ h₁).le)
 
--- In the chart of one ray, the boundary generic point belongs to that ray.
-private theorem rayBoundaryPoint_specializes_of_mem_rayChart
-    (hΨ : Ψ.IsRegular) (ρ : Ψ.Ray) {x : Ψ.algebraicRealization}
-    (hx : x ∈ Set.range (Ψ.affineToricChartι ρ.toCone))
-    (ht : x ∉ Set.range (Ψ.denseTorusι ⟨ρ.toCone⟩)) :
-    (Ψ.rayBoundaryPoint hΨ ρ).val ⤳ x := by
-  have h := ht
-  rw [← Set.mem_compl_iff, ← Ψ.support_boundaryIdeal ⟨ρ.toCone⟩,
-    Ψ.support_boundaryIdeal_eq_iUnion_closure hΨ] at h
-  obtain ⟨τ, hτ⟩ := Set.mem_iUnion.mp h
-  have hspec : (Ψ.rayBoundaryPoint hΨ τ).val ⤳ x := specializes_iff_mem_closure.mpr hτ
-  have hm := (Ψ.affineToricChartι ρ.toCone).isOpenEmbedding.isOpen_range
-    |>.stableUnderGeneralization hspec hx
-  have hle := (Ψ.rayBoundaryPoint_mem_range_affineToricChartι_iff hΨ τ ρ.toCone).mp hm
-  let a := (τ).toToricRay Ψ ρ.toCone hle
-  let b := ρ.toToricRay Ψ ρ.toCone le_rfl
-  have hab : a = b := by
-    apply ToricRay.eq_of_toPointedCone_le (Ψ.isToricCone ρ.toCone.property).salient
-    rw [Fan.Ray.toPointedCone_toToricRay, Fan.Ray.toPointedCone_toToricRay]
-    exact hle
-  have heq : τ = ρ := by
-    apply Subtype.ext
-    apply Subtype.ext
-    simpa only [a, b, Fan.Ray.toPointedCone_toToricRay] using congrArg ToricRay.toPointedCone hab
-  exact heq ▸ hspec
-
 private theorem rayBoundaryPoint_specializes_algebraicMap (hΦ : Φ.IsRegular) (hΨ : Ψ.IsRegular)
     (ρ : Φ.Ray) :
     (Ψ.rayBoundaryPoint hΨ (e.rayEquiv ρ)).val ⤳
       e.toFanHom.algebraicMap (Φ.rayBoundaryPoint hΦ ρ).val := by
-  apply rayBoundaryPoint_specializes_of_mem_rayChart hΨ (e.rayEquiv ρ)
+  apply Ψ.rayBoundaryPoint_specializes_of_mem_rayChart hΨ (e.rayEquiv ρ)
   · rw [toCone_rayEquiv]
     exact e.mapsTo_affineToricChartι ρ.toCone
       ((Φ.rayBoundaryPoint_mem_range_affineToricChartι_iff hΦ ρ ρ.toCone).mpr le_rfl)

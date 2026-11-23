@@ -53,6 +53,17 @@ theorem mutationChartCharacter_false :
 theorem mutationChartCharacter_true :
     mutationChartCharacter b (v := v) true = -m := (rfl)
 
+/-- For a nonzero pivot, the regular character on either side is nontrivial. -/
+theorem mutationChartCharacter_ne_zero (hv : v ≠ 0) (side : Bool) :
+    mutationChartCharacter b (v := v) side ≠ 0 := by
+  have hm : m ≠ 0 := by
+    intro h
+    apply hv
+    apply b.detDualEquiv.injective
+    ext x
+    simpa using DFunLike.congr_fun h x
+  cases side <;> simp [hm]
+
 private theorem mutationChartCharacter_at_pivot (side : Bool) :
     mutationChartCharacter b (v := v) side v = 0 := by
   cases side <;> simp only [mutationChartCharacter_false, mutationChartCharacter_true,

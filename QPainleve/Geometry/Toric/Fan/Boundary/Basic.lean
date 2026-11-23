@@ -514,6 +514,33 @@ theorem support_boundaryIdeal_eq_iUnion_closure (Φ : Fan i) (hΦ : Φ.IsRegular
       (Set.singleton_subset_iff.mpr (Φ.rayBoundaryPoint_notMem_range_denseTorusι hΦ ρ))
       (Φ.denseTorusι h₀).isOpenEmbedding.isOpen_range.isClosed_compl
 
+/-- In a ray chart, every point outside the dense torus is a specialization of the
+corresponding ray boundary point. -/
+theorem rayBoundaryPoint_specializes_of_mem_rayChart (Φ : Fan i)
+    (hΦ : Φ.IsRegular) (ρ : Φ.Ray) {x : Φ.algebraicRealization}
+    (hx : x ∈ Set.range (Φ.affineToricChartι ρ.toCone))
+    (ht : x ∉ Set.range (Φ.denseTorusι ⟨ρ.toCone⟩)) :
+    (Φ.rayBoundaryPoint hΦ ρ).val ⤳ x := by
+  have h := ht
+  rw [← Set.mem_compl_iff, ← Φ.support_boundaryIdeal ⟨ρ.toCone⟩,
+    Φ.support_boundaryIdeal_eq_iUnion_closure hΦ] at h
+  obtain ⟨τ, hτ⟩ := Set.mem_iUnion.mp h
+  have hspec : (Φ.rayBoundaryPoint hΦ τ).val ⤳ x := specializes_iff_mem_closure.mpr hτ
+  have hm := (Φ.affineToricChartι ρ.toCone).isOpenEmbedding.isOpen_range
+    |>.stableUnderGeneralization hspec hx
+  have hle := (Φ.rayBoundaryPoint_mem_range_affineToricChartι_iff hΦ τ ρ.toCone).mp hm
+  let a := τ.toToricRay Φ ρ.toCone hle
+  let b := ρ.toToricRay Φ ρ.toCone le_rfl
+  have hab : a = b := by
+    apply ToricRay.eq_of_toPointedCone_le (Φ.isToricCone ρ.toCone.property).salient
+    rw [Fan.Ray.toPointedCone_toToricRay, Fan.Ray.toPointedCone_toToricRay]
+    exact hle
+  have heq : τ = ρ := by
+    apply Subtype.ext
+    apply Subtype.ext
+    simpa only [a, b, Fan.Ray.toPointedCone_toToricRay] using congrArg ToricRay.toPointedCone hab
+  exact heq ▸ hspec
+
 section Character
 
 variable (Φ : Fan i) [Nonempty Φ.cones]
