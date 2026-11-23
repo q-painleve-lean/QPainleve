@@ -165,6 +165,22 @@ theorem pullback_primeDivisorClass_rayBoundaryPoint (hΦ : Φ.IsRegular) (hΨ : 
 
 end Boundary
 
+section Over
+
+variable {N N' : Type} {V V' : Type*} [AddCommGroup N] [AddCommGroup N']
+  [AddCommGroup V] [AddCommGroup V'] [Module ℝ V] [Module ℝ V']
+  {i : N →+ V} {i' : N' →+ V'} {Φ : Fan i} {Ψ : Fan i'} (e : FanEquiv Φ Ψ)
+
+/-- The induced boundary isomorphism respects the complex-scheme structures. -/
+instance isOver_boundaryIso_hom (hΦ₀ : Nonempty Φ.cones) (hΨ₀ : Nonempty Ψ.cones) :
+    (e.boundaryIso hΦ₀ hΨ₀).hom.IsOver (Spec (.of ℂ)) := ⟨by
+  rw [Scheme.IdealSheafData.over_eq_subschemeι_comp, ← Category.assoc,
+    boundaryIso_hom_subschemeι, Category.assoc, Ψ.algebraicRealization_over,
+    e.toFanHom.algebraicMap_comp_algebraicRealizationStructureMap,
+    ← Φ.algebraicRealization_over, ← Scheme.IdealSheafData.over_eq_subschemeι_comp]⟩
+
+end Over
+
 section Centers
 
 variable {N N' V V' : Type} [AddCommGroup N] [AddCommGroup N']
