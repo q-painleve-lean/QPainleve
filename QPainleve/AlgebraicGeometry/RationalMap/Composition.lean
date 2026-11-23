@@ -5,7 +5,7 @@ Authors: The QPainleve contributors
 -/
 module
 
-public import Mathlib.AlgebraicGeometry.Birational.RationalMap
+public import Mathlib.AlgebraicGeometry.Birational.Composition
 import TauCeti.AlgebraicGeometry.Morphisms.SchemeTheoreticallyDominant
 
 /-!
@@ -28,6 +28,14 @@ namespace AlgebraicGeometry.Scheme
 variable {X Y Z : Scheme.{u}}
 
 namespace Hom
+
+/-- The rational map of a composite of morphisms is the postcomposition of the
+rational map of the first morphism by the second morphism. -/
+@[simp]
+theorem toRationalMap_compHom (f : X ⟶ Y) (i : Y ⟶ Z) :
+    f.toRationalMap.compHom i = (f ≫ i).toRationalMap :=
+  (RationalMap.compHom_toRationalMap f.toPartialMap i).symm.trans
+    (congrArg PartialMap.toRationalMap (f.toPartialMap_compHom i))
 
 /-- Postcomposition by a monomorphism is injective on partial maps. -/
 theorem partialMap_compHom_injective (i : Y ⟶ Z) [Mono i] :
@@ -56,6 +64,28 @@ theorem rationalMap_compHom_injective (i : Y ⟶ Z) [Mono i] :
 end Hom
 
 namespace RationalMap
+
+/-- Postcomposition by a morphism commutes with precomposition by a dominant rational map. -/
+theorem comp_compHom {W : Scheme.{u}} [PreirreducibleSpace W] [Nonempty X]
+    (g : W ⤏ X) [g.IsDominant] (f : X ⤏ Y) (i : Y ⟶ Z) :
+    g.comp (f.compHom i) = (g.comp f).compHom i := by
+  obtain ⟨p, rfl⟩ := f.exists_rep
+  rw [← compHom_toRationalMap, comp_def, comp_def, ← compHom_toRationalMap]
+  apply congrArg PartialMap.toRationalMap
+  have hdom : (g.representative.comp (p.compHom i)).domain =
+      ((g.representative.comp p).compHom i).domain := rfl
+  have hid : (W.isoOfEq hdom).hom = 𝟙 _ :=
+    congrArg Iso.hom (W.isoOfEq_rfl (g.representative.comp (p.compHom i)).domain)
+  apply PartialMap.ext _ _ hdom
+  have he := Category.id_comp ((g.representative.comp p).compHom i).hom
+  rw [hid]
+  refine Eq.trans ?_ he.symm
+  simp only [PartialMap.comp_hom, PartialMap.compHom_hom]
+  -- The two domains use the same preimage, so their restriction maps coincide.
+  let a := (g.representative.domain.ι.isoImage (g.representative.hom ⁻¹ᵁ p.domain)).inv
+  let b := g.representative.hom ∣_ p.domain
+  exact (congrArg (a ≫ ·) (Category.assoc b p.hom i).symm).trans
+    (Category.assoc a (b ≫ p.hom) i).symm
 
 variable (f : X ⤏ Y) (i : Y ⟶ Z)
 

@@ -9,12 +9,14 @@ public import TauCeti.AlgebraicGeometry.LineBundle.Ample
 public import TauCeti.AlgebraicGeometry.LineBundle.Power
 public import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.TwistingSheaf.Basic
 public import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.SymmetricAlgebra
+public import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.ProjectiveOver
 public import Mathlib.AlgebraicGeometry.Morphisms.Proper
 import QPainleve.AlgebraicGeometry.LineBundle.GlobalGeneration
 import QPainleve.AlgebraicGeometry.LineBundle.Pullback
 import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.Sections.Affine
 import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.Sections.TwistingSheaf
 import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.TwistingSheaf.Pullback
+import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.TwistingSheaf.Ample
 
 /-!
 # Realizing ample powers as projective twists
@@ -23,6 +25,8 @@ An ample line bundle on a scheme proper over an affine base has a positive power
 pulls back from the tautological line bundle on projective space along a finite morphism.
 Choose the sections of the power to have affine nonvanishing opens. The resulting
 projective morphism is affine on the standard cover, and properness then makes it finite.
+
+Conversely, a projective scheme over an affine base has an ample line bundle.
 -/
 
 public section
@@ -110,3 +114,15 @@ theorem exists_finite_to_proj_tensorPow {L : InvertibleSheaf X}
     (Scheme.Modules.pullback p).mapIso e'.symm ≪≫ (Scheme.Modules.pullbackComp p j).app _⟩⟩
 
 end TauCeti.AlgebraicGeometry.LineBundleClass.IsAmple
+
+namespace AlgebraicGeometry.Scheme
+
+/-- A scheme projective over an affine base has an ample line bundle class. -/
+theorem exists_isAmple_of_isProjectiveOver (X : Scheme.{u}) (R : Type u) [CommRing R]
+    [X.Over (Spec (.of R))] [X.IsProjectiveOver R] :
+    ∃ A : LineBundleClass X, A.IsAmple := by
+  obtain ⟨M, _, _, _, i, _, _⟩ := IsProjectiveOver.exists_isClosedImmersion (R := R) (X := X)
+  have h := TauCeti.SymmetricAlgebra.isAmple_twistingSheaf R M Nat.one_pos
+  exact ⟨_, h.pullback_of_isAffineHom i⟩
+
+end AlgebraicGeometry.Scheme
