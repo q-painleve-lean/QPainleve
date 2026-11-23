@@ -6,6 +6,7 @@ Authors: The QPainleve contributors
 module
 
 public import TauCeti.AlgebraicGeometry.Modules.Tensor.Product
+public import TauCeti.AlgebraicGeometry.Modules.GlobalSections
 
 /-!
 # Tensor products of sections of scheme modules
@@ -117,6 +118,26 @@ lemma tensorSection_naturality_left {N : X.Modules} (f : M ⟶ N) (x : Γ(M, U))
   (congrArg (fun p ↦ p.app (op U) (TensorProduct.tmul Γ(X, U)
     (M := Γ(M, U)) (N := Γ(L, U)) x s))
     (μ_natural_left (SheafOfModules.forget X.ringCatSheaf) f L)).symm
+
+/-- Multiplication by a global function on the first tensor factor is multiplication
+by the same function on the tensor product. -/
+theorem globalSectionsSmul_whiskerRight (M N : X.Modules) (r : Γ(X, ⊤)) :
+    globalSectionsSmul M r ▷ N = globalSectionsSmul (M ⊗ N) r := by
+  apply TauCeti.SheafOfModules.tensor_hom_ext
+  ext V : 1
+  apply ModuleCat.hom_ext
+  refine TensorProduct.ext' (R := Γ(X, V.unop)) (R₂ := Γ(X, V.unop)) (M := Γ(M, V.unop))
+    (N := Γ(N, V.unop)) (P₂ := Γ(M ⊗ N, V.unop)) ?_
+  intro x y
+  -- The tensor comparison on a pure tensor is the section `tensorSection x y`.
+  change (globalSectionsSmul M r ▷ N).app V.unop (tensorSection x y) =
+    (globalSectionsSmul (M ⊗ N) r).app V.unop (tensorSection x y)
+  rw [tensorSection_naturality_left]
+  have hs (A : X.Modules) (z : Γ(A, V.unop)) :
+      (globalSectionsSmul A r).app V.unop z = X.presheaf.map V.unop.leTop.op r • z := by
+    rw [globalSectionsSmul_app]
+    exact A.smul_apply _ _
+  rw [hs, hs, tensorSection_smul_left]
 
 /-- Consecutive twists add their exponents. -/
 lemma tensorTwist_add (M L : X.Modules) (n m : ℕ) :
