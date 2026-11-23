@@ -6,7 +6,7 @@ Authors: The QPainleve contributors
 module
 
 public import QPainleve.AlgebraicGeometry.Blowup.Tower.Point
-public import QPainleve.AlgebraicGeometry.Morphisms.IsoLocus
+public import TauCeti.AlgebraicGeometry.Morphisms.IsoLocus
 
 import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
 

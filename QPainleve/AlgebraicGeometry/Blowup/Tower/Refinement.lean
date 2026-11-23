@@ -197,48 +197,4 @@ theorem IsPointTowerWith.exists_common_point_tower_refinement_finset
 
 end Local
 
-/-- A tower and one blowup of its base admit a common refinement. The tower acquires
-at most one new blowup, and the single blowup acquires at most the original tower's length. -/
-theorem IsClosedPointTower.exists_common_refinement_point
-    {T : BlowupTower X n Y} (hT : IsClosedPointTower X T) {p : X}
-    (hp : IsClosed ({p} : Set X)) :
-    ∃ (a b : ℕ) (A B : Scheme.{u}) (L : BlowupTower Y a A)
-      (R : BlowupTower (pointIdeal p).blowup b B) (e : A ≅ B),
-      a ≤ 1 ∧ b ≤ n ∧ IsClosedPointTower _ L ∧ IsClosedPointTower _ R ∧
-      L.toBase ≫ T.toBase = e.hom ≫ R.toBase ≫ (pointIdeal p).blowupToBase := by
-  obtain ⟨a, b, A, B, L, R, e, ha, hb, hL, hR, h⟩ :=
-    (hT.isPointTowerWith_true (𝟙 X)).exists_common_refinement_point
-      ⟨by intros; trivial⟩ hp trivial
-  exact ⟨a, b, A, B, L, R, e, ha, hb, hL.isClosedPointTower, hR.isClosedPointTower, h⟩
-
-/-- Two closed point blowup towers over the same scheme admit extensions with isomorphic
-final schemes over the base. Each extension has length at most that of the opposite tower. -/
-theorem IsClosedPointTower.exists_common_point_tower_refinement
-    {T : BlowupTower X m Y} {U : BlowupTower X n Z}
-    (hT : IsClosedPointTower X T) (hU : IsClosedPointTower X U) :
-    ∃ (a b : ℕ) (A B : Scheme.{u}) (L : BlowupTower Y a A)
-      (R : BlowupTower Z b B) (e : A ≅ B),
-      a ≤ n ∧ b ≤ m ∧ IsClosedPointTower _ L ∧ IsClosedPointTower _ R ∧
-      L.toBase ≫ T.toBase = e.hom ≫ R.toBase ≫ U.toBase := by
-  obtain ⟨a, b, A, B, L, R, e, ha, hb, hL, hR, h⟩ :=
-    (hT.isPointTowerWith_true (𝟙 X)).exists_common_point_tower_refinement
-      (hU.isPointTowerWith_true (𝟙 X)) ⟨by intros; trivial⟩
-  exact ⟨a, b, A, B, L, R, e, ha, hb, hL.isClosedPointTower, hR.isClosedPointTower, h⟩
-
-/-- A finite family of closed point blowup towers over one scheme admits a common
-refinement by closed point blowups. The extensions commute with the maps to the base. -/
-theorem exists_common_point_tower_refinement_finset
-    {ι : Type*} (s : Finset ι) {n : ι → ℕ} {Y : ι → Scheme.{u}}
-    (T : ∀ i, BlowupTower X (n i) (Y i))
-    (hT : ∀ i ∈ s, IsClosedPointTower X (T i)) :
-    ∃ (m : ℕ) (Z : Scheme.{u}) (U : BlowupTower X m Z), IsClosedPointTower X U ∧
-      ∀ i ∈ s, ∃ (a : ℕ) (A : Scheme.{u}) (L : BlowupTower (Y i) a A) (e : Z ≅ A),
-        IsClosedPointTower _ L ∧ U.toBase = e.hom ≫ L.toBase ≫ (T i).toBase := by
-  obtain ⟨m, Z, U, hU, h⟩ :=
-    IsPointTowerWith.exists_common_point_tower_refinement_finset s T
-      (fun i hi ↦ (hT i hi).isPointTowerWith_true (𝟙 X)) ⟨by intros; trivial⟩
-  refine ⟨m, Z, U, hU.isClosedPointTower, fun i hi ↦ ?_⟩
-  obtain ⟨a, A, L, e, hL, hbase⟩ := h i hi
-  exact ⟨a, A, L, e, hL.isClosedPointTower, hbase⟩
-
 end QPainleve.BlowupTower
