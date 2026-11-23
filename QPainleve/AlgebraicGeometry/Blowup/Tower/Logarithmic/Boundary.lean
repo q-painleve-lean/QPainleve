@@ -90,17 +90,12 @@ theorem poleIdeal_snoc_of_nodal_boundary (hD : D.IsEffectiveCartier)
       dsimp only [P']
       rw [hformula, hm]
       simp [P]
-    have hr : p ∈ Set.range P.subschemeι := P.range_subschemeι.symm ▸ hpP
-    obtain ⟨q, hq⟩ := hr
+    obtain ⟨q, hq, hs⟩ := P.exists_mem_smoothLocus_of_mem_support_of_not_isNodeOfReducedBoundary
+      s hPnodal hpP hnode
     have hc : IsClosed ({q} : Set P.subscheme) :=
       P.subschemeι.isClosedEmbedding.isClosed_iff_image_isClosed.mpr (by
         simpa only [Set.image_singleton, hq] using hp)
     have := hPnodal.syntomic
-    have hs : q ∈ (P.subschemeι ≫ s).smoothLocus := by
-      by_contra hq'
-      apply hnode
-      exact (P.isNodeOfReducedBoundary_iff_of_isReduced s p).mpr
-        ⟨q, hq, ((P.subschemeι ≫ s).isNodeAt_iff_notMem_smoothLocus hPnodal q).mpr hq'⟩
     have hcart : (I.comap P.subschemeι).IsEffectiveCartier := by
       rw [hI, ← hq, P.subschemeι.comap_ker_fromSpecResidueField_apply]
       exact (P.subschemeι ≫ s).isEffectiveCartier_ker_fromSpecResidueField_of_mem_smoothLocus hc hs
