@@ -6,8 +6,9 @@ Authors: The QPainleve contributors
 module
 
 public import TauCeti.AlgebraicGeometry.Curves.Node.Normalization
+public import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.Basic
 public import TauCeti.AlgebraicGeometry.IdealSheaf.VanishingIdeal
-import TauCeti.AlgebraicGeometry.Blowup.Pullback
+import QPainleve.AlgebraicGeometry.Blowup.Comparison
 import TauCeti.AlgebraicGeometry.IdealSheaf.Reduced
 
 /-!
@@ -15,9 +16,10 @@ import TauCeti.AlgebraicGeometry.IdealSheaf.Reduced
 
 Near a chosen node of a nodal curve over a field, its reduced point ideal agrees
 with the ideal of the singular subscheme. The blowup of that point thus agrees
-near its exceptional fiber with the blowup of the singular subscheme. This
-compares the exceptional fiber with the two branches at the node using Tau Ceti's
-nodal normalization. See the [Stacks Project, Section 53.19](https://stacks.math.columbia.edu/tag/0C46).
+near its exceptional fiber with the blowup of the singular subscheme. In
+particular, the ideal of the node pulls back to an effective Cartier divisor
+on the normalization. The fiber comparison identifies the branches at the node.
+See the [Stacks Project, Section 53.19](https://stacks.math.columbia.edu/tag/0C46).
 -/
 
 public section
@@ -30,6 +32,20 @@ namespace AlgebraicGeometry.Scheme
 universe u
 
 variable {k : Type u} [Field k] {X : Scheme.{u}} [X.Over (Spec (.of k))]
+
+/-- Every point of the singular locus of a nodal curve over a field is a closed
+point of the curve. -/
+theorem isClosed_singleton_of_mem_singularLocus
+    (hnodal : AtWorstNodalOfRelativeDimensionOne (X ↘ Spec (.of k))) {x : X}
+    (hx : (letI := hnodal.syntomic; x ∈ (X.singularLocus k).support)) :
+    IsClosed ({x} : Set X) := by
+  have := hnodal.syntomic
+  let I := X.singularLocus k
+  have : Etale (I.subschemeι ≫ (X ↘ Spec (.of k))) := X.etale_singularLocus_subschemeι_comp hnodal
+  have : IsLocallyArtinian I.subscheme := .of_locallyQuasiFinite (I.subschemeι ≫ (X ↘ Spec (.of k)))
+  obtain ⟨z, rfl⟩ : x ∈ Set.range I.subschemeι := I.range_subschemeι.ge hx
+  rw [← Set.image_singleton]
+  exact I.subschemeι.isClosedEmbedding.isClosedMap _ (isClosed_discrete _)
 
 /-- An open neighbourhood of a node identifies the singular ideal with the reduced ideal
 of that point. -/
@@ -46,9 +62,8 @@ theorem exists_comap_singularLocus_eq_comap_vanishingIdeal_of_node
   have : IsLocallyArtinian I.subscheme := .of_locallyQuasiFinite g
   have hregular : IsRegular I.subscheme := IsRegular.of_smooth g
   obtain ⟨s, rfl⟩ : x ∈ Set.range I.subschemeι := (range_subschemeι I).ge hx
-  have hclosed : IsClosed ({I.subschemeι s} : Set X) := by
-    rw [← Set.image_singleton]
-    exact I.subschemeι.isClosedEmbedding.isClosedMap _ (isClosed_discrete _)
+  have hclosed : IsClosed ({I.subschemeι s} : Set X) :=
+    X.isClosed_singleton_of_mem_singularLocus hnodal (I.range_subschemeι.le ⟨s, rfl⟩)
   obtain ⟨V, hV, hpre⟩ := I.subschemeι.isClosedEmbedding.isInducing.isOpen_iff.mp
     (isOpen_discrete ({s} : Set I.subscheme))
   let U : X.Opens := ⟨V, hV⟩
@@ -71,6 +86,23 @@ theorem exists_comap_singularLocus_eq_comap_vanishingIdeal_of_node
     exact Set.Subset.rfl
   simp only [Closeds.coe_mk]
   rw [hclosed.closure_eq, ← hsupport, Set.preimage_inter, hU, Set.inter_univ]
+
+local notation "pointIdeal" x:arg =>
+  vanishingIdeal (Closeds.mk (closure (singleton x)) isClosed_closure)
+
+/-- Pulling the ideal of a node back to the blowup separating all the nodes gives an
+effective Cartier divisor. -/
+theorem isEffectiveCartier_comap_blowupToBase_singularLocus_of_node
+    (hnodal : AtWorstNodalOfRelativeDimensionOne (X ↘ Spec (.of k))) {x : X}
+    (hx : (letI := hnodal.syntomic; x ∈ (X.singularLocus k).support)) :
+    letI := hnodal.syntomic
+    ((pointIdeal x).comap (X.singularLocus k).blowupToBase).IsEffectiveCartier := by
+  have := hnodal.syntomic
+  obtain ⟨U, hxU, h⟩ := X.exists_comap_singularLocus_eq_comap_vanishingIdeal_of_node hnodal hx
+  apply isEffectiveCartier_comap_blowupToBase_of_comap_eq h
+  rw [coe_support_vanishingIdeal, Closeds.coe_mk,
+    (X.isClosed_singleton_of_mem_singularLocus hnodal hx).closure_eq]
+  exact Set.singleton_subset_iff.mpr hxU
 
 /-- The fiber of the single-node blowup agrees over the residue field with the fiber of
 the blowup of the whole singular subscheme. The latter is the node's branch fiber. -/
