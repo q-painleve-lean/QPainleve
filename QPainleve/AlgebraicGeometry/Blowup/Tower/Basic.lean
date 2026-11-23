@@ -6,6 +6,7 @@ Authors: The QPainleve contributors
 module
 
 public import QPainleve.AlgebraicGeometry.Blowup.Exceptional.Class
+import TauCeti.AlgebraicGeometry.Noetherian
 
 /-!
 # Ordered towers of blowups
@@ -40,6 +41,14 @@ inductive BlowupTower (X : Scheme.{u}) : ℕ → Scheme.{u} → Type (u + 1)
 namespace BlowupTower
 
 variable {X Y Z X' Y' Z' : Scheme.{u}} {m n : ℕ}
+
+/-- The final scheme of a blowup tower on a Noetherian scheme is Noetherian. -/
+theorem isNoetherian (T : BlowupTower X n Y) [IsNoetherian X] : IsNoetherian Y := by
+  induction T with
+  | nil => infer_instance
+  | snoc _ I ih =>
+    have := ih
+    exact isNoetherian_of_finiteType I.blowupToBase
 
 /-- The composite projection from the final scheme to the base of the tower. -/
 def toBase : {n : ℕ} → {Y : Scheme.{u}} → BlowupTower X n Y → (Y ⟶ X)
