@@ -9,6 +9,8 @@ public import QPainleve.Geometry.Toric.Fan.StarSubdivision.Affine
 public import TauCeti.Geometry.Toric.Algebraic.Fan.DenseTorus
 public import QPainleve.Geometry.Toric.Fan.Point
 public import TauCeti.AlgebraicGeometry.Blowup.UniversalProperty
+
+import QPainleve.Geometry.Toric.Fan.TwoDimensional
 import TauCeti.Geometry.Toric.Algebraic.Fan.SubfanScheme
 import QPainleve.AlgebraicGeometry.Blowup.Affine
 import TauCeti.AlgebraicGeometry.Blowup.BaseChange

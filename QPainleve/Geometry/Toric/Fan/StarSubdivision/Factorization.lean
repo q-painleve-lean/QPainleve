@@ -9,6 +9,7 @@ public import QPainleve.Geometry.Toric.Fan.StarSubdivision.TwoDimensional
 
 import Mathlib.Data.Set.Card
 import QPainleve.Geometry.Toric.Cone.Coordinates
+import QPainleve.Geometry.Toric.Fan.TwoDimensional
 
 /-!
 # Factorization of subdivisions of regular surface fans
