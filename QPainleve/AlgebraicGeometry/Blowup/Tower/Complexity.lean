@@ -5,7 +5,7 @@ Authors: The QPainleve contributors
 -/
 module
 
-public import QPainleve.AlgebraicGeometry.Blowup.Tower.Nodal
+public import QPainleve.AlgebraicGeometry.Blowup.Tower.Nodal.Basic
 public import QPainleve.AlgebraicGeometry.Blowup.Tower.Picard
 public import TauCeti.AlgebraicGeometry.Scheme.CodimensionOnePoint
 
