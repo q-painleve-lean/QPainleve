@@ -15,6 +15,7 @@ A fan equivalence preserving the determinant pairings preserves the orbit coordi
 of every corresponding ray. The binomial center pullback comparison identifies the two
 ideals with the same parameter. The ordered lift `BlowupTower.exists_isLift_alongBoundary`
 then transports the entire tower and its strict boundary.
+Combining transport with center reindexing compares the two orders over `ℂ`.
 -/
 
 public section
@@ -67,5 +68,29 @@ theorem existsUnique_isLift_internalBlowupTower (hΦ : Φ.IsRegular) :
       (fun j ↦ (s j).internalCenter b (c j)) (fun j ↦ (e.rayEquiv (s j)).internalCenter b' (c j))
       (fun j ↦ e.comap_internalCenter_boundaryIso b b' hdet hΦ (s j) (c j))
   exact ⟨g, ⟨hg, hb⟩, fun _ h ↦ h.1.unique hg⟩
+
+include hdet in
+/-- Transporting the internal blowups after reindexing the centers gives an isomorphism
+over `ℂ` that identifies the strict boundary ideals. The centers may repeat. -/
+theorem exists_iso_reindex_transport_internalBlowupTower (hΦ : Φ.IsRegular)
+    (σ : Equiv.Perm (Fin n)) :
+    let A := Fan.internalBlowupTower b s c
+    let B := Fan.internalBlowupTower b' (e.rayEquiv ∘ s ∘ σ) (c ∘ σ)
+    ∃ f : A.1 ≅ B.1,
+      f.hom ≫ B.2.toTower.toBase ≫ Ψ.algebraicRealizationStructureMap =
+        A.2.toTower.toBase ≫ Φ.algebraicRealizationStructureMap ∧
+      B.2.boundaryι.ker.comap f.hom = A.2.boundaryι.ker := by
+  dsimp only
+  let A := Fan.internalBlowupTower b s c
+  let B := Fan.internalBlowupTower b' (e.rayEquiv ∘ s ∘ σ) (c ∘ σ)
+  obtain ⟨f, hf, hfB⟩ := Fan.exists_iso_internalBlowupTower_reindex b s c σ
+  obtain ⟨f', ⟨hf', hf'B⟩, -⟩ :=
+    e.existsUnique_isLift_internalBlowupTower b b' hdet (s ∘ σ) (c ∘ σ) hΦ
+  refine ⟨f ≪≫ f', ?_, ?_⟩
+  · simp only [Iso.trans_hom, Category.assoc, reassoc_of% hf'.hom_toBase, asIso_hom,
+      FanHom.algebraicMap_comp_algebraicRealizationStructureMap, reassoc_of% hf]
+  · have hk : (A.2.boundaryι ≫ (f ≪≫ f').hom).ker = B.2.boundaryι.ker := by
+      rw [Iso.trans_hom, ← Category.assoc, hfB, hf'B, Scheme.Hom.ker_comp_of_isIso]
+    rw [← hk, Scheme.Hom.comap_ker_comp_of_isClosedImmersion]
 
 end TauCeti.Toric.FanEquiv
