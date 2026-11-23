@@ -8,12 +8,17 @@ module
 public import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.Sections.RationalMap
 public import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.Polynomial.Embedding
 public import QPainleve.AlgebraicGeometry.RationalMap.ClosedImmersion
+public import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.Sections.TwistingSheaf
 public import QPainleve.AlgebraicGeometry.CartierDivisor.ZeroDivisor
+public import TauCeti.AlgebraicGeometry.LineBundle.Functoriality
 
 import QPainleve.AlgebraicGeometry.CartierDivisor.Pullback
+import QPainleve.AlgebraicGeometry.Modules.Pullback.Sections
 import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.Sections.Domain
 import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.Sections.Extension
 import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.Sections.Pullback
+import QPainleve.AlgebraicGeometry.RationalMap.Composition
+import TauCeti.AlgebraicGeometry.Morphisms.Separated
 
 /-!
 # Resolving rational maps by principalizing their base ideals
@@ -61,19 +66,50 @@ theorem isEffectiveCartier_comap_iSup_zeroIdeal_iff_existsUnique_projective_morp
       g.toRationalMap.comp (L.obj.partialMapToProjectiveSpace f s i hi).toRationalMap :=
     L.obj.toRationalMap_partialMapToProjectiveSpace_pullback f s g i hi
   have hI : (⨆ j, M.zeroIdeal (t j)) = (⨆ j, L.zeroIdeal (s j)).comap g := by
-    have ht (j : ι) : t j = g.pullbackSections L.obj ⊤ (s j) := by
-      let N := (Scheme.Modules.pullback g).obj L.obj
-      let a : Γ(N, ⊤) := g.pullbackSections L.obj ⊤ (s j)
-      refine (g.pullbackSectionsLE_apply L.obj ⊤ ⊤ g.preimage_top.ge (s j)).trans ?_
-      exact (congrArg (fun h : Γ(N, ⊤) ⟶ Γ(N, ⊤) ↦ h a)
-        (N.presheaf.map_id (Opposite.op ⊤))).trans (id_apply a)
-    simpa only [ht] using L.iSup_zeroIdeal_pullbackSections g s
+    simpa only [t, Scheme.Hom.pullbackSectionsLE_top] using
+      L.iSup_zeroIdeal_pullbackSections g s
   rw [← hI, ← he]
   refine ⟨M.exists_projective_morphism_of_cartier_base_ideal (g ≫ f) t i hd, ?_⟩
   rintro ⟨h, ⟨-, hh⟩, -⟩
   apply M.isEffectiveCartier_iSup_zeroIdeal_of_domain_eq_top (g ≫ f) t hd
   rw [← hh]
   exact top_unique h.toPartialMap.le_domain_toRationalMap
+
+/-- For a morphism resolving a projective section presentation, the inverse image of the
+base ideal is Cartier. The resolved hyperplane class is the pullback of the original
+line class times the class of that ideal. -/
+theorem pullback_twistingSheafOne_eq_of_resolving
+    [IsIntegral X] [Nonempty Y]
+    (L : InvertibleSheaf Y) (f : Y ⟶ Spec (.of R)) (s : ι → Γ(L.obj, ⊤))
+    (i : ι) (hi : Dense (L.obj.nonvanishingLocus (s i) : Set Y))
+    (g : X ⟶ Y) [IsDominant g] (h : X ⟶ ℙ)
+    (hover : h ≫ Proj.toSpecCoeff 𝒜 = g ≫ f)
+    (hrep : h.toRationalMap = g.toRationalMap.comp
+      (L.obj.partialMapToProjectiveSpace f s i hi).toRationalMap) :
+    ∃ hI : ((⨆ j, L.zeroIdeal (s j)).comap g).IsEffectiveCartier,
+      LineBundleClass.pullback h
+          (LineBundleClass.mk (⟨Proj.twistingSheaf 𝒜 1, inferInstance⟩ : InvertibleSheaf ℙ)) =
+        LineBundleClass.pullback g (LineBundleClass.mk L) *
+          LineBundleClass.mk hI.toInvertibleSheaf := by
+  let : (ℙ).IsSeparated := Scheme.IsSeparated.of_isSeparated (Proj.toSpecCoeff 𝒜)
+  have hI := (L.isEffectiveCartier_comap_iSup_zeroIdeal_iff_existsUnique_projective_morphism
+    f s i hi g).mpr ⟨h, ⟨hover, hrep⟩, fun h' hh' ↦
+      Scheme.Hom.toRationalMap_injective (hh'.2.trans hrep.symm)⟩
+  let M := (pullback g).obj L
+  let t (j : ι) := g.pullbackSectionsLE L.obj ⊤ ⊤ g.preimage_top.ge (s j)
+  have hsum : (⨆ j, M.zeroIdeal (t j)) = (⨆ j, L.zeroIdeal (s j)).comap g := by
+    simpa only [t, Scheme.Hom.pullbackSectionsLE_top] using
+      L.iSup_zeroIdeal_pullbackSections g s
+  have hIt : (⨆ j, M.zeroIdeal (t j)).IsEffectiveCartier := hsum.symm ▸ hI
+  have hd : Dense (M.obj.nonvanishingLocus (t i) : Set X) :=
+    L.obj.dense_nonvanishingLocus_pullbackSectionsLE_top g hi
+  have hr : h.toRationalMap = (M.obj.partialMapToProjectiveSpace (g ≫ f) t i hd).toRationalMap :=
+    hrep.trans (L.obj.toRationalMap_partialMapToProjectiveSpace_pullback f s g i hi).symm
+  obtain ⟨e, -⟩ := M.exists_iso_pullbackTwistingSheaf_of_cartier_base_ideal (g ≫ f) t i hd hIt h hr
+  refine ⟨hI, ?_⟩
+  rw [LineBundleClass.pullback_mk, LineBundleClass.pullback_mk, mul_comm,
+    ← LineBundleClass.mk_toInvertibleSheaf_congr hIt hI hsum, ← LineBundleClass.mk_tensorProduct]
+  exact LineBundleClass.mk_eq_mk_iff.mpr ⟨e⟩
 
 end TauCeti.AlgebraicGeometry.InvertibleSheaf
 

@@ -83,6 +83,17 @@ theorem pointsEquiv_symm_comp_centerIso_hom (w : Word B C) (c : Multiplicative A
         (c.comp w.exponentEquiv.toAddEquiv.toAddMonoidHom.toMultiplicative)).val := by
   rw [centerIso_hom, pointsEquiv_symm_comp_map]
 
+/-- The inversion step sends a center character to its pointwise inverse. -/
+@[reassoc]
+theorem pointsEquiv_symm_comp_centerIso_hom_invert (c : Multiplicative A →* kˣ) :
+    ((pointsEquiv k A).symm c).val ≫ (((Generator.invert).toStep B).toPath.centerIso k).hom =
+      ((pointsEquiv k A).symm c⁻¹).val := by
+  rw [pointsEquiv_symm_comp_centerIso_hom, exponentEquiv_toPath, Step.exponentEquiv_invert]
+  congr 2
+  apply MonoidHom.ext
+  intro a
+  exact c.map_inv a
+
 variable {N : Type*} [AddCommGroup N]
 
 /-- The open where centers with equal charges are distinct at every prefix of the word,

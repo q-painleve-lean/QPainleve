@@ -57,6 +57,29 @@ theorem Ray.internalCenter_val (ρ : Φ.Ray) (c : ℂˣ) :
       (ρ.binomialCenterOnBoundary rankTwo (m := χ(ρ)) (b.detDualEquiv_self _)
         (ρ.surjective_detCharacter b) c).ker := (rfl)
 
+/-- Reversing the ordered basis and inverting the parameter gives the same Cartier
+center on the reduced boundary. -/
+@[simp]
+theorem Ray.internalCenter_reindex_swap (ρ : Φ.Ray) (c : ℂˣ) :
+    ρ.internalCenter (b.reindex (Equiv.swap 0 1)) c⁻¹ = ρ.internalCenter b c := by
+  apply Subtype.ext
+  simp only [internalCenter_val]
+  have hχ :
+      ((b.reindex (Equiv.swap 0 1)).detDualEquiv ρ.primitiveGenerator).toAddMonoidHom =
+        -χ(ρ) := by
+    ext x
+    simp
+  -- Generalize the orbit character so its vanishing and surjectivity proofs transport with it.
+  have h (m : N →+ ℤ) (hm : m = -χ(ρ))
+      (hz : m ρ.primitiveGenerator = 0) (hs : Function.Surjective m) :
+      ρ.binomialCenterOnBoundary rankTwo hz hs c⁻¹ =
+        ρ.binomialCenterOnBoundary rankTwo (m := χ(ρ)) (b.detDualEquiv_self _)
+          (ρ.surjective_detCharacter b) c := by
+    subst m
+    exact ρ.binomialCenterOnBoundary_neg_inv rankTwo (b.detDualEquiv_self _)
+      (ρ.surjective_detCharacter b) c
+  exact congrArg Scheme.Hom.ker (h _ hχ _ _)
+
 /-- In the original fan scheme, the center ideal is the kernel of the binomial point
 in the primitive determinant character. -/
 theorem Ray.map_internalCenter_subschemeι (ρ : Φ.Ray) (c : ℂˣ) :

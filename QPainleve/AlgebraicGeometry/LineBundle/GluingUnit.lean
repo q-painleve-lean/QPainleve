@@ -9,6 +9,9 @@ public import QPainleve.AlgebraicGeometry.Modules.Pullback.Tensor
 public import TauCeti.AlgebraicGeometry.LineBundle.Endomorphisms
 public import TauCeti.AlgebraicGeometry.LineBundle.Functoriality
 
+import QPainleve.AlgebraicGeometry.Modules.TensorProduct
+import TauCeti.CategoryTheory.Monoidal.InvertibleObject
+
 /-!
 # Gluing units for line bundle trivializations
 
@@ -190,6 +193,77 @@ theorem lineGluingUnit_tensor {M N : X.Modules} [M.IsQuasicoherent]
       rw [tensorHom_def, Category.assoc, leftUnitor_naturality, ← Category.assoc, unitors_equal,
         rightUnitor_naturality, Category.assoc, ← unitors_equal, mul_comm, globalSectionsSmul_mul]
     simp only [Category.assoc, Units.val_mul, hs])
+
+section Relative
+
+variable {L M K : X.Modules} [L.IsQuasicoherent] [M.IsQuasicoherent]
+
+private abbrev rightComparison
+    (b : (pullback i).obj L ≅ (pullback i).obj M) :
+    (pullback (j ≫ f)).obj L ≅ (pullback (j ≫ f)).obj M :=
+  ((pullbackComp g i ≪≫ pullbackCongr h.w.symm).app L).symm ≪≫
+    (pullback g).mapIso b ≪≫ (pullbackComp g i ≪≫ pullbackCongr h.w.symm).app M
+
+@[reassoc]
+private theorem rightFrame_tensorRight
+    (b : (pullback i).obj L ≅ (pullback i).obj M) (e : M ⊗ K ≅ 𝟙_ X.Modules) :
+    (h.rightFrame (pullbackTensorRightTrivialization i b e)).hom =
+      (pullbackTensorRightTrivialization (j ≫ f) (h.rightComparison b) e).hom := by
+  have heq {p q : P ⟶ X} (hpq : p = q) :
+      (pullbackCongr hpq).inv = (pullbackCongr hpq.symm).hom := by
+    subst q
+    rfl
+  rw [show (h.rightFrame (pullbackTensorRightTrivialization i b e)).hom =
+      (pullbackCongr h.w.symm).inv.app (L ⊗ K) ≫
+        ((pullbackComp g i).inv.app (L ⊗ K) ≫
+          (pullback g).map (pullbackTensorRightTrivialization i b e).hom ≫
+            (pullbackObjUnitIso g).hom) from by
+    simp [rightFrame]]
+  rw [pullbackTensorRightTrivialization_comp_hom, heq,
+    pullbackTensorRightTrivialization_congr_hom]
+  congr 2
+
+open Functor.OplaxMonoidal in
+/-- The gluing unit of a tensor difference is the scalar comparing the two side
+isomorphisms after transport to the overlap. -/
+theorem lineGluingUnit_tensorRightTrivialization
+    (a : (pullback f).obj L ≅ (pullback f).obj M)
+    (b : (pullback i).obj L ≅ (pullback i).obj M)
+    (e : M ⊗ K ≅ 𝟙_ X.Modules) (u : Γ(P, ⊤)ˣ) :
+    h.lineGluingUnit (pullbackTensorRightTrivialization f a e)
+        (pullbackTensorRightTrivialization i b e) = u ↔
+      let c := pullbackComp g i ≪≫ pullbackCongr h.w.symm
+      (pullbackComp j f).inv.app L ≫ (pullback j).map a.hom ≫ (pullbackComp j f).hom.app M =
+        c.inv.app L ≫ (pullback g).map b.hom ≫ c.hom.app M ≫
+          globalSectionsSmul ((pullback (j ≫ f)).obj M) u := by
+  rw [h.lineGluingUnit_eq_iff]
+  -- Express both sides in the pullback along the common composite.
+  have hl := pullbackTensorRightTrivialization_comp_hom j f a e
+  have hr := h.rightFrame_tensorRight_assoc b e (globalSectionsSmul (𝟙_ P.Modules) u)
+  simp only [rightFrame, Iso.trans_hom, Iso.symm_hom, Iso.app_inv, Iso.trans_inv,
+    NatTrans.comp_app, Functor.mapIso_hom, Category.assoc] at hr
+  rw [hl, hr]
+  dsimp only
+  let q := pullback (j ≫ f)
+  simp only [pullbackTensorRightTrivialization_hom, Iso.trans_hom, Iso.symm_hom,
+    Iso.app_inv, Iso.app_hom, Iso.trans_inv, NatTrans.comp_app, Functor.mapIso_hom,
+    Category.assoc]
+  -- Move the scalar across the common evaluation and tensor comparisons.
+  rw [← globalSectionsSmul_naturality (pullbackObjUnitIso (j ≫ f)).hom,
+    ← globalSectionsSmul_naturality_assoc (q.map e.hom),
+    ← globalSectionsSmul_naturality_assoc (inv (δ q M K)),
+    ← globalSectionsSmul_whiskerRight, ← comp_whiskerRight_assoc]
+  dsimp only [q]
+  simp only [← Category.assoc, cancel_mono]
+  simp only [Category.assoc, cancel_epi]
+  let t : q.obj M ⊗ q.obj K ≅ 𝟙_ P.Modules :=
+    (asIso (δ q M K)).symm ≪≫ q.mapIso e ≪≫ pullbackObjUnitIso (j ≫ f)
+  let E := tensorRightEquivalenceOfIso (β_ (q.obj K) (q.obj M) ≪≫ t) t
+  have hE : E.functor = tensorRight (q.obj K) := tensorRightEquivalenceOfIso_functor _ _
+  have : (tensorRight (q.obj K)).Faithful := hE ▸ inferInstanceAs E.functor.Faithful
+  exact (tensorRight (q.obj K)).map_injective.eq_iff
+
+end Relative
 
 private abbrev unitAut {W : Scheme.{u}} (u : Γ(W, ⊤)ˣ) :
     (𝟙_ W.Modules) ≅ (𝟙_ W.Modules) :=

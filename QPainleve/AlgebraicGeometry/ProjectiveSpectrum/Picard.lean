@@ -245,11 +245,27 @@ theorem isIntegral_subscheme_coordinateHyperplaneIdeal [NeZero n] (j : Fin (n + 
       ⟨closure {x}, isClosed_closure⟩).subscheme := inferInstance
   rwa [heq] at hX
 
-private abbrev polynomialTwistingBundle (m : ℤ) : InvertibleSheaf (Proj 𝒜) :=
+/-- The twisting line bundle `𝒪(m)` on polynomial projective space. -/
+def polynomialTwistingBundle (m : ℤ) : InvertibleSheaf (Proj 𝒜) :=
   ⟨twistingSheaf 𝒜 m, isInvertible_twistingSheaf_of_iSup_eq_top
     (fun i : ULift.{u} (Fin (n + 1)) ↦ MvPolynomial.X i.down)
     (fun i ↦ coordinate_mem_one i.down)
     (by simpa only [iSup_ulift] using iSup_coordinateChart (k := k) (n := n)) m⟩
+
+/-- The underlying sheaf of the bundled twist is the native twisting sheaf. -/
+@[simp]
+theorem polynomialTwistingBundle_obj (m : ℤ) :
+    (polynomialTwistingBundle (k := k) (n := n) m).obj = twistingSheaf 𝒜 m :=
+  (rfl)
+
+/-- The class of `𝒪(m)` is the `m`-th power of the hyperplane class. -/
+theorem mk_polynomialTwistingBundle_eq_zpow (m : ℤ) :
+    LineBundleClass.mk (polynomialTwistingBundle (k := k) (n := n) m) =
+      LineBundleClass.mk (polynomialTwistingBundle (k := k) (n := n) 1) ^ m :=
+  lineBundleClass_twistingSheaf_eq_zpow
+    (fun i : ULift.{u} (Fin (n + 1)) ↦ (MvPolynomial.X i.down : MvPolynomial (Fin (n + 1)) k))
+    (fun i ↦ coordinate_mem_one i.down)
+    (by simpa only [iSup_ulift] using iSup_coordinateChart (k := k) (n := n)) m
 
 private theorem mono_coordinateToUnit (j : Fin (n + 1)) : Mono (coordinateToUnit (k := k) j) := by
   have := isIntegral_polynomialProj (R := k) (σ := Fin (n + 1))
@@ -270,10 +286,8 @@ private theorem mono_coordinateToUnit (j : Fin (n + 1)) : Mono (coordinateToUnit
 /-- Each coordinate hyperplane is an effective Cartier divisor. -/
 theorem isEffectiveCartier_coordinateHyperplaneIdeal (j : Fin (n + 1)) :
     (coordinateHyperplaneIdeal (k := k) j).IsEffectiveCartier :=
-  letI : Mono ((coordinateToUnit (k := k) j) :
-    (polynomialTwistingBundle (-1)).obj ⟶ 𝟙_ (Proj 𝒜).Modules) := mono_coordinateToUnit j
-  (polynomialTwistingBundle (k := k) (n := n) (-1)).isEffectiveCartier_imageIdealSheaf
-    (coordinateToUnit j)
+  @InvertibleSheaf.isEffectiveCartier_imageIdealSheaf _ (polynomialTwistingBundle (-1))
+    (coordinateToUnit j) (mono_coordinateToUnit j)
 
 private theorem uniqueFactorizationMonoid_stalk_polynomialProj (x : P) :
     UniqueFactorizationMonoid ((Proj 𝒜).presheaf.stalk x) := by
@@ -340,24 +354,28 @@ private theorem exists_zpow_polynomialTwistingBundle [NeZero n] (a : LineBundleC
     · intro hb
       exact ⟨η, (hmem η).mpr rfl, (Set.mem_singleton_iff.mp hb).symm⟩
   have hc : primeDivisorClass η = mk (polynomialTwistingBundle (k := k) (n := n) 1) := by
-    have : Mono (coordinateToUnit (k := k) i) := mono_coordinateToUnit i
     rw [primeDivisorClass_def, mk_toInvertibleSheaf_congr _ hI
       I.vanishingIdeal_closure_subschemeι_genericPoint]
     have he : mk hI.toInvertibleSheaf = mk (polynomialTwistingBundle (-1)) :=
-      (polynomialTwistingBundle (k := k) (n := n) (-1)).mk_toInvertibleSheaf_imageIdealSheaf
-        (coordinateToUnit i)
+      @InvertibleSheaf.mk_toInvertibleSheaf_imageIdealSheaf _ (polynomialTwistingBundle (-1))
+        (coordinateToUnit i) (mono_coordinateToUnit i)
     have hz : mk (polynomialTwistingBundle (k := k) (n := n) (-1)) =
         mk (polynomialTwistingBundle 1) ^ (-1 : ℤ) :=
-      lineBundleClass_twistingSheaf_eq_zpow
-        (fun i : ULift.{u} (Fin (n + 1)) ↦ (MvPolynomial.X i.down : MvPolynomial (Fin (n + 1)) k))
-        (fun i ↦ coordinate_mem_one i.down)
-        (by simpa only [iSup_ulift] using iSup_coordinateChart (k := k) (n := n)) (-1)
+      mk_polynomialTwistingBundle_eq_zpow (-1)
     rw [he, hz, zpow_neg_one, inv_inv]
   have := subsingleton_picard_coordinateChart (k := k) i
   have h : pullback (U[i]).ι a = 1 := Subsingleton.elim _ _
   rw [pullback_eq_one_iff_mem_closure_of_isOpenImmersion, hset, hc,
     ← Subgroup.zpowers_eq_closure, Subgroup.mem_zpowers_iff] at h
   exact h
+
+/-- Every line bundle on positive-dimensional polynomial projective space over a field
+is isomorphic to a twist of the structure sheaf. -/
+theorem exists_iso_polynomialTwistingBundle [NeZero n] (L : InvertibleSheaf (Proj 𝒜)) :
+    ∃ m : ℤ, Nonempty (L.obj ≅ (polynomialTwistingBundle m).obj) := by
+  obtain ⟨m, hm⟩ := exists_zpow_polynomialTwistingBundle (LineBundleClass.mk L)
+  rw [← mk_polynomialTwistingBundle_eq_zpow] at hm
+  exact ⟨m, LineBundleClass.mk_eq_mk_iff.mp hm.symm⟩
 
 /-- The invertible sheaf `𝒪(m)` on the projective spectrum of a symmetric algebra. -/
 @[expose]
