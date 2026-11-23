@@ -90,15 +90,11 @@ theorem intersectionBilinForm_eq_of_nodal_cycle {I : X.IdealSheafData}
   have hW : 0 ≤ W :=
     (Scheme.CartierDivisor.isEffective_iff_toWeilDivisor_nonneg _).mp
       hI.isEffective_toCartierDivisor
-  have hcoeff : W = ∑ i, Finsupp.single (p i) 1 := hI.toWeilDivisor_eq_sum_single_of_isReduced p hp
   have hclass : cl W = Additive.ofMul (LineBundleClass.mk hI.toInvertibleSheaf)⁻¹ := by
     dsimp only [W]
     rw [Scheme.CartierDivisor.weilToLineBundleClassHom_toWeilDivisor,
       hI.toLineBundleClass_toCartierDivisor]
-  have hsumClass : cl W = ∑ i, D(p i) := by
-    rw [hcoeff, map_sum]
-    simp only [Scheme.CartierDivisor.weilToLineBundleClassHom_single,
-      ← LineBundleClass.primeDivisorClass_def, one_zsmul]
+  have hsumClass := hclass.trans (hI.ofMul_inv_toInvertibleSheaf_eq_sum_primeDivisorClass p hp)
   have hmem (i : ZMod n) : p i ∈ W.support := by
     rw [Finsupp.mem_support_iff, ← WeilDivisor.coeff]
     exact fun hz ↦ (hI.coeff_toWeilDivisor_eq_zero_iff (p i)).mp hz ((hp _).mpr
