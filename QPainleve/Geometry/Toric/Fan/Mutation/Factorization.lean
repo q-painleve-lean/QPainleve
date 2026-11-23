@@ -7,8 +7,6 @@ module
 
 public import QPainleve.Geometry.Toric.Fan.Mutation.Indeterminacy
 
-import Mathlib.Logic.Equiv.Fin.Basic
-import QPainleve.AlgebraicGeometry.Blowup.Tower.Boundary.Split
 import QPainleve.AlgebraicGeometry.Morphisms.Modification.Birational
 import QPainleve.AlgebraicGeometry.RationalMap.Composition
 import QPainleve.Geometry.Toric.Fan.Separated
@@ -49,37 +47,6 @@ local notation "M" => internalBlowupTower b s d
 local notation "F" => QPainleve.BlowupTower.toBase (WithBoundary.toTower (Sigma.snd M))
 local notation "tail(" k ")" => alongBoundary (ι₀)
   (fun a ↦ Ray.internalCenter b (s (Fin.succAbove k a)) (d (Fin.succAbove k a)))
-
-private theorem exists_iso_internalBlowupTower_pivot_first (k : Fin (n + 1))
-    (hk : s k = ρ) (hk' : d k = c) :
-    ∃ e : M.1 ≅ (tail(k)).1,
-      e.hom ≫ (tail(k)).2.toTower.toBase ≫ (J₀).blowupToBase = F ∧
-      M.2.boundaryι ≫ e.hom = (tail(k)).2.boundaryι := by
-  let σ := (finSuccEquiv n).trans (finSuccEquiv' k).symm
-  let i₀ := (Φ.boundaryIdeal hΦ).subschemeι
-  let A := ρ.internalCenter b c
-  let K := fun a ↦ (s (k.succAbove a)).internalCenter b (d (k.succAbove a))
-  have hcenters : (fun j ↦ (s (σ j)).internalCenter b (d (σ j))) = Fin.cons A K := by
-    funext j
-    refine Fin.cases ?_ (fun a ↦ ?_) j
-    · simp [σ, A, hk, hk']
-    · simp [σ, K]
-  have hA : A.val.map i₀ = J₀ := by
-    rw [Ray.mutationSourceCenterIdeal_eq]
-    exact ρ.map_internalCenter_subschemeι b c
-  obtain ⟨f, hf, hbf⟩ := exists_iso_alongBoundary_cons A hA (ι₀)
-    (ρ.mutationSourceBoundaryι_blowupToBase b c) K
-  have hmodel : internalBlowupTower b (s ∘ σ) (d ∘ σ) =
-      alongBoundary i₀ (Fin.cons A K) := by
-    rw [internalBlowupTower_eq_alongBoundary]
-    exact congrArg (alongBoundary i₀) hcenters
-  let P (T : Σ Y, WithBoundary i₀ (n + 1) Y) : Prop :=
-    ∃ e : M.1 ≅ T.1, e.hom ≫ T.2.toTower.toBase = F ∧ M.2.boundaryι ≫ e.hom = T.2.boundaryι
-  obtain ⟨e, he, hb⟩ := (congrArg P hmodel).mp
-    (exists_iso_internalBlowupTower_reindex b s d σ)
-  refine ⟨e ≪≫ f, ?_, ?_⟩
-  · simpa only [Iso.trans_hom, Category.assoc] using (congrArg (e.hom ≫ ·) hf).trans he
-  · simpa only [Iso.trans_hom, ← Category.assoc, hb] using hbf
 
 variable (hOpp : PointedCone.hull ℝ {i (-ρ.primitiveGenerator)} ∈ Φ.cones)
 
@@ -125,12 +92,17 @@ theorem Ray.exists_ordered_pivot_factorization_of_resolves
   obtain ⟨l, hl, hl'⟩ := ρ.exists_internalBlowupTower_center_of_resolves b hOpp c s d r hr
   have hS : S.Nonempty := ⟨l, Finset.mem_filter.mpr ⟨Finset.mem_univ _, Prod.ext hl hl'⟩⟩
   let k := S.min' hS
-  have hk := (Finset.mem_filter.mp (S.min'_mem hS)).2
-  obtain ⟨e, he, hb⟩ := exists_iso_internalBlowupTower_pivot_first b ρ c s d k
-    (congrArg Prod.fst hk) (congrArg Prod.snd hk)
-  refine ⟨k, congrArg Prod.fst hk, congrArg Prod.snd hk, ?_, e, he, hb, ?_⟩
-  · intro a ha h
+  have hk : (s k, d k) = (ρ, c) := (Finset.mem_filter.mp (S.min'_mem hS)).2
+  have hk₀ : s k = ρ := congrArg Prod.fst hk
+  have hk₁ : d k = c := congrArg Prod.snd hk
+  have hfirst (a : Fin (n + 1)) (ha : a < k) : (s a, d a) ≠ (ρ, c) := by
+    intro h
     exact (not_le_of_gt ha) (S.min'_le a (Finset.mem_filter.mpr ⟨Finset.mem_univ _, h⟩))
+  have hI : ((s k).internalCenter b (d k)).val.map (Φ.boundaryIdeal hΦ).subschemeι = J₀ := by
+    rw [hk₀, hk₁, Ray.mutationSourceCenterIdeal_eq, Ray.map_internalCenter_subschemeι]
+  obtain ⟨e, he, hb, -⟩ := exists_iso_internalBlowupTower_split_at b s d k
+    (fun a ha h ↦ hfirst a ha (h.trans hk)) hI (ρ.mutationSourceBoundaryι_blowupToBase b c)
+  refine ⟨k, hk₀, hk₁, hfirst, e, he, hb, ?_⟩
   let p := e.hom ≫ (tail(k)).2.toTower.toBase
   have hproj : p ≫ (J₀).blowupToBase = F := (Category.assoc _ _ _).trans he
   have : IsDominant (p ≫ (J₀).blowupToBase) := hproj ▸ inferInstanceAs (IsDominant F)
