@@ -8,6 +8,13 @@ module
 public import QPainleve.AlgebraicGeometry.Blowup.Tower.Boundary.Common
 public import QPainleve.Geometry.Toric.Fan.Mutation.Blowup
 public import QPainleve.Geometry.Toric.Fan.Mutation.InternalBlowup
+public import TauCeti.AlgebraicGeometry.Morphisms.Modification.Basic
+
+import QPainleve.AlgebraicGeometry.Blowup.Tower.Modification
+import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
+import QPainleve.Geometry.Toric.Fan.Smooth
+import TauCeti.AlgebraicGeometry.IdealSheaf.BaseChange
+import TauCeti.AlgebraicGeometry.RationalPoint.Basic
 
 /-!
 # Global mutation of the ordered internal blowups
@@ -25,7 +32,7 @@ public noncomputable section
 
 open AlgebraicGeometry CategoryTheory
 open AlgebraicGeometry.Scheme.IdealSheafData
-open QPainleve.BlowupTower
+open QPainleve QPainleve.BlowupTower TauCeti.AlgebraicGeometry
 
 namespace TauCeti.Toric.Fan
 
@@ -37,25 +44,49 @@ local notation "v" => Ray.primitiveGenerator ρ
 local notation "hv" => Ray.primitiveGenerator_ne_zero ρ
 local notation "hp" => Ray.hull_primitiveGenerator_mem ρ
 local notation "Ψ" => Φ.mutationFan b hv hp hOpp
-local notation "hΦ" => Nonempty.intro (Ray.toCone Φ ρ)
+local notation "hΦ₀" => Nonempty.intro (Ray.toCone Φ ρ)
 local notation "hΨ" => Nonempty.intro (Φ.mutationFanConeEquiv b hv hp hOpp (Subtype.mk _ hp))
-local notation "D₀" => Φ.boundaryIdeal hΦ
+local notation "D₀" => Φ.boundaryIdeal hΦ₀
 local notation "D₁" => boundaryIdeal (Ψ) hΨ
 local notation "I₀" => Ray.mutationSourceCenterIdeal b ρ c
 local notation "I₁" => Ray.mutationTargetCenterIdeal b ρ hOpp c
+local notation "eB" => Ray.mutationBlowupIso b ρ hOpp c
+local notation "j₀" => Ray.mutationSourceBoundaryι b ρ c
+local notation "j₁" => Ray.mutationTargetBoundaryι b ρ hOpp c
+
+/-- An ordered lift of the global pivot isomorphism identifies the full strict-boundary
+ideals. The tower may contain repeated centers. -/
+theorem Ray.comap_strictBoundary_mutationBlowupIso_lift (hΦ : Φ.IsRegular) {n : ℕ}
+    {J : Fin n → {K : (D₀).subscheme.IdealSheafData // K.IsEffectiveCartier}}
+    {J' : Fin n → {K : (D₁).subscheme.IdealSheafData // K.IsEffectiveCartier}}
+    {e : (alongBoundary (j₀) J).1 ≅ (alongBoundary (j₁) J').1}
+    (he : IsLift (eB) (alongBoundary (j₀) J).2.toTower (alongBoundary (j₁) J').2.toTower e) :
+    ((alongBoundary (j₁) J').2.boundaryι.ker).comap e.hom =
+      (alongBoundary (j₀) J).2.boundaryι.ker := by
+  have hker : ((j₀) ≫ (eB).hom).ker = (j₁).ker := by
+    have h := ρ.comap_strictBoundary_mutationBlowupIso b hOpp c hΦ
+    rw [← Ray.ker_mutationSourceBoundaryι, ← Ray.ker_mutationTargetBoundaryι] at h
+    rw [Scheme.Hom.ker_comp, ← h, map_comap_of_isClosedImmersion]
+    simp
+  let u := IsClosedImmersion.lift (j₁) ((j₀) ≫ (eB).hom) hker.ge
+  have : IsIso u := IsClosedImmersion.isIso_lift _ _ hker.symm
+  have hu : (j₀) ≫ (eB).hom = (asIso u).hom ≫ (j₁) :=
+    (IsClosedImmersion.lift_fac _ _ _).symm
+  have h := (he.alongBoundary (asIso u) hu).2
+  rw [← Scheme.Hom.ker_comp_of_isIso (asIso u).hom, ← h,
+    Scheme.Hom.comap_ker_comp_of_isClosedImmersion]
 
 local notation "U₀" => mutationComplement Φ b (detCharacter_nonneg_or_nonpos Φ b hv hp hOpp)
   (Units.val c)
 local notation "U₁" => mutationComplement (Ψ) b
   (mutationDetCharacter_nonneg_or_nonpos Φ b hv hp hOpp) (Units.val c)
 local notation "eC" => Φ.mutationComplementIso b (Units.val c) hv hp hOpp
-local notation "eB" => Ray.mutationBlowupIso b ρ hOpp c
 local notation "J" => comap (D₀) (Scheme.Opens.ι (U₀))
 local notation "d₀" => subschemeMap (J) (D₀) (Scheme.Opens.ι (U₀))
   (le_map_comap (D₀) (Scheme.Opens.ι (U₀)))
 local notation "d₁" => subschemeMap (J) (D₁) (Iso.hom (eC) ≫ Scheme.Opens.ι (U₁))
   (le_map_iff_comap_le.mpr (Eq.le
-    (comap_boundaryIdeal_mutationComplementIso b hv hp hOpp c hΦ hΨ)))
+    (comap_boundaryIdeal_mutationComplementIso b hv hp hOpp c hΦ₀ hΨ)))
 
 private theorem commonBoundary_comp_mutationBlowupIso
     (h₀ : (J).subschemeι ≫ (U₀).ι = (d₀) ≫ (D₀).subschemeι)
@@ -103,12 +134,12 @@ theorem exists_iso_mutation_internal_blowup_tower
     (hsame : ∀ j, (s j).primitiveGenerator = v → d j ≠ c)
     (hopp : ∀ j, (s j).primitiveGenerator = -v → d j * c ≠ 1) :
     let A := alongBoundary (ρ.mutationSourceBoundaryι b c)
-      (fun j ↦ (s j).internalCenter (h₀ := hΦ) b (d j))
+      (fun j ↦ (s j).internalCenter (h₀ := hΦ₀) b (d j))
     let B := alongBoundary (ρ.mutationTargetBoundaryι b hOpp c)
       (fun j ↦ ((r) (s j)).internalCenter (h₀ := hΨ) b (δ j))
     ∃ e : A.1 ≅ B.1, IsLift (eB) A.2.toTower B.2.toTower e ∧
       (d₀) ≫ A.2.boundaryι ≫ e.hom = (d₁) ≫ B.2.boundaryι := by
-  let : Nonempty Φ.cones := hΦ
+  let : Nonempty Φ.cones := hΦ₀
   let : Nonempty (Ψ).cones := hΨ
   obtain ⟨t, h₀, h₁, ht₀, ht₁⟩ := exists_common_boundaryCenters_mutationComplement
     b hv hp hOpp c s d ρ.isPrimitiveGenerator.isPrimitive hsame hopp
@@ -130,5 +161,41 @@ theorem exists_iso_mutation_internal_blowup_tower
   dsimp only
   rw [← hJ₀, ← hJ₁]
   exact h
+
+variable (rays : Fin n → Φ.Ray) (params : Fin n → ℂˣ)
+
+local notation "π₀" => Scheme.IdealSheafData.blowupToBase (I₀)
+
+/-- The projection from the ordered source model to the pivot blowup is a
+modification. In particular it can be used as a dominant refinement in the
+fixed-center X-evaluation comparison. -/
+theorem Ray.isModification_toBase_alongMutationSourceBoundary (hΦ : Φ.IsRegular) :
+    IsModification (alongBoundary (j₀)
+      (fun j ↦ Ray.internalCenter (h₀ := hΦ₀) b (rays j) (params j))).2.toTower.toBase := by
+  let : Nonempty Φ.cones := hΦ₀
+  have hdim := (Module.finrank_eq_card_basis b).trans (Fintype.card_fin 2)
+  have : SmoothOfRelativeDimension 2 Φ.algebraicRealizationStructureMap :=
+    hdim ▸ Φ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
+  let pt := ρ.binomialCenter hdim (b.detDualEquiv_self v) (ρ.surjective_detCharacter b) c
+  let x := pt (IsLocalRing.closedPoint ℂ)
+  have hx : IsClosed ({x} : Set Φ.algebraicRealization) :=
+    isClosed_singleton_of_section (ρ.binomialCenter_comp_structureMap hdim
+      (b.detDualEquiv_self v) (ρ.surjective_detCharacter b) c)
+  have hxI : (I₀) = (Φ.algebraicRealization.fromSpecResidueField x).ker :=
+    (ρ.mutationSourceCenterIdeal_eq b c).trans pt.ker_eq_ker_fromSpecResidueField
+  let T := (BlowupTower.nil (X := Φ.algebraicRealization)).snoc (I₀)
+  have hT : IsClosedPointTower Φ.algebraicRealization T := IsClosedPointTower.nil.snoc x hx hxI
+  have : IsIntegral (I₀).blowup := hT.isIntegral Φ.algebraicRealizationStructureMap
+  have : SmoothOfRelativeDimension 2 ((π₀) ≫ Φ.algebraicRealizationStructureMap) := by
+    simpa only [T, toBase_snoc, toBase_nil, Category.comp_id] using
+      hT.smoothOfRelativeDimension Φ.algebraicRealizationStructureMap
+  apply IsClosedPointTower.isModification_of_smoothOfRelativeDimension_two
+    (f := (π₀) ≫ Φ.algebraicRealizationStructureMap)
+  apply isClosedPointTower_alongBoundary
+  intro j
+  rw [Ray.internalCenter_val]
+  exact (rays j).exists_closedPoint_ker_binomialCenterOnBoundary hdim
+    (b.detDualEquiv_self (rays j).primitiveGenerator) ((rays j).surjective_detCharacter b)
+    (params j)
 
 end TauCeti.Toric.Fan
