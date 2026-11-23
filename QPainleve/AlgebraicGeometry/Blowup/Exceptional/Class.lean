@@ -9,6 +9,7 @@ public import QPainleve.AlgebraicGeometry.Blowup.Isomorphism
 public import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.Invertible
 public import TauCeti.AlgebraicGeometry.LineBundle.Functoriality
 
+import QPainleve.AlgebraicGeometry.EffectiveCartierDivisor.Pullback
 import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.Pullback
 import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.TensorProduct
 
@@ -47,9 +48,7 @@ theorem pullback_blowupExceptionalClass_eq_one (I : X.IdealSheafData) (g : Y ⟶
   let hE := I.isEffectiveCartier_comap_blowupToBase
   have heq : (I.comap I.blowupToBase).comap g = ⊤ := by rw [← I.comap_comp, hg]
   rw [blowupExceptionalClass_def, LineBundleClass.pullback_inv,
-    hE.pullback_mk_toInvertibleSheaf (heq.symm ▸ isEffectiveCartier_top Y),
-    LineBundleClass.mk_toInvertibleSheaf_congr _ (isEffectiveCartier_top Y) heq,
-    LineBundleClass.mk_toInvertibleSheaf_top, inv_one]
+    hE.pullback_mk_toInvertibleSheaf_eq_one_of_comap_eq_top g heq, inv_one]
 
 /-- The lift pulls the target exceptional class back to the source exceptional class. -/
 @[simp]

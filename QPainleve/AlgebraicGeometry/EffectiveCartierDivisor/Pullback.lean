@@ -6,8 +6,12 @@ Authors: The QPainleve contributors
 module
 
 public import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.Basic
+public import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.Invertible
+public import TauCeti.AlgebraicGeometry.LineBundle.Functoriality
 public import TauCeti.AlgebraicGeometry.Morphisms.IsoLocus
 
+import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.Pullback
+import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.TensorProduct
 import TauCeti.AlgebraicGeometry.IdealSheaf.Comap
 
 /-!
@@ -20,7 +24,7 @@ pullback used when comparing blowups under modifications away from their centers
 
 public section
 
-open CategoryTheory
+open CategoryTheory TauCeti.AlgebraicGeometry
 
 namespace AlgebraicGeometry.Scheme.IdealSheafData
 
@@ -46,5 +50,16 @@ theorem IsEffectiveCartier.comap_of_support_subset_isoLocus {X Y : Scheme.{u}}
     rw [← comap_comp, (I.comap_eq_top_iff _).mpr ?_]
     · exact isEffectiveCartier_top _
     · rw [Scheme.Hom.comp_preimage, Scheme.Opens.ι_preimage_self]
+
+/-- The ideal line bundle of an effective Cartier divisor restricts to the trivial
+class along a morphism on which the divisor pulls back to the empty divisor. -/
+theorem IsEffectiveCartier.pullback_mk_toInvertibleSheaf_eq_one_of_comap_eq_top
+    {X Y : Scheme.{u}} {I : Y.IdealSheafData} (hI : I.IsEffectiveCartier) (f : X ⟶ Y)
+    (h : I.comap f = ⊤) :
+    LineBundleClass.pullback f (LineBundleClass.mk hI.toInvertibleSheaf) = 1 := by
+  let htop := isEffectiveCartier_top X
+  rw [hI.pullback_mk_toInvertibleSheaf (h.symm ▸ htop),
+    LineBundleClass.mk_toInvertibleSheaf_congr _ htop h,
+    LineBundleClass.mk_toInvertibleSheaf_top]
 
 end AlgebraicGeometry.Scheme.IdealSheafData

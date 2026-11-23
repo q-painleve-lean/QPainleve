@@ -33,9 +33,41 @@ public section
 open CategoryTheory Order TopologicalSpace TauCeti TauCeti.AlgebraicGeometry
 open TauCeti.AlgebraicGeometry.LineBundleClass
 
-namespace AlgebraicGeometry.Scheme.IdealSheafData.IsEffectiveCartier
+namespace AlgebraicGeometry.Scheme.IdealSheafData
 
 universe u
+
+section BoundaryOrthogonal
+
+variable {X : Scheme.{u}} [IsIntegral X]
+
+/-- The Picard sublattice orthogonal to the prime curves in the support of a boundary
+ideal on a smooth integral projective surface. -/
+noncomputable def boundaryOrthogonal
+    (D : X.IdealSheafData) (k : Type u) [Field k] [Infinite k]
+    [X.Over (Spec (.of k))] [X.IsProjectiveOver k]
+    [SmoothOfRelativeDimension 2 (X ↘ Spec (.of k))] :
+    Submodule ℤ (Additive (LineBundleClass X)) :=
+  letI := isNoetherian_of_finiteType (X ↘ Spec (.of k))
+  letI := (X ↘ Spec (.of k)).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two
+  (Chow.intersectionBilinForm k X).orthogonal
+    (Scheme.Opens.primeDivisorSpanCompl D.support.compl)
+
+/-- The boundary orthogonal is computed using the intersection form and the span of the
+prime divisors in the complement of the boundary open. -/
+theorem boundaryOrthogonal_def
+    (D : X.IdealSheafData) (k : Type u) [Field k] [Infinite k]
+    [X.Over (Spec (.of k))] [X.IsProjectiveOver k]
+    [SmoothOfRelativeDimension 2 (X ↘ Spec (.of k))] :
+    letI := isNoetherian_of_finiteType (X ↘ Spec (.of k))
+    letI := (X ↘ Spec (.of k)).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two
+    D.boundaryOrthogonal k = (Chow.intersectionBilinForm k X).orthogonal
+      (Scheme.Opens.primeDivisorSpanCompl D.support.compl) :=
+  (rfl)
+
+end BoundaryOrthogonal
+
+namespace IsEffectiveCartier
 
 variable {k : Type u} [Field k] {X : Scheme.{u}} [X.Over (Spec (.of k))]
   {D : X.IdealSheafData} [PrestableFamily (D.subscheme ↘ Spec (.of k))]
@@ -201,18 +233,13 @@ section SmoothSurface
 variable [IsAlgClosed k] [X.IsProjectiveOver k] [IsIntegral X]
   [SmoothOfRelativeDimension 2 (X ↘ Spec (.of k))]
 
-local notation "M" => Scheme.Opens.primeDivisorSpanCompl (Closeds.compl (D.support))
-local notation "B" => Chow.intersectionBilinForm k X
-
 /-- On a smooth surface with a nodal Cartier boundary of rational components, the inverse
 image of the normalization kernel under boundary restriction is the boundary orthogonal. -/
 theorem pullback_blowupToBase_comp_subschemeι_eq_one_iff_mem_orthogonal
     (hD : D.IsEffectiveCartier)
     (hgenus : ∀ v : V, ((C).blowupComponent v).toScheme.genus k = 0)
     (a : Additive (LineBundleClass X)) :
-    letI := isNoetherian_of_finiteType (X ↘ Spec (.of k))
-    letI := (X ↘ Spec (.of k)).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two
-    pullback (ν ≫ D.subschemeι) a.toMul = 1 ↔ a ∈ (B).orthogonal M := by
+    pullback (ν ≫ D.subschemeι) a.toMul = 1 ↔ a ∈ D.boundaryOrthogonal k := by
   have : IsNoetherian X := isNoetherian_of_finiteType (X ↘ Spec (.of k))
   let := (X ↘ Spec (.of k)).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two
   have hX := topologicalKrullDim_eq_of_smoothOfRelativeDimension (X ↘ Spec (.of k)) (n := 2)
@@ -224,7 +251,7 @@ theorem pullback_blowupToBase_comp_subschemeι_eq_one_iff_mem_orthogonal
     exact hD.mem_support_iff_exists_codimensionOnePoint.trans
       ⟨fun ⟨p, hp, h⟩ ↦ ⟨⟨p, hp⟩, specializes_iff_mem_closure.mp h⟩,
         fun ⟨p, h⟩ ↦ ⟨p.val, p.property, specializes_iff_mem_closure.mpr h⟩⟩
-  rw [hD.pullback_blowupToBase_comp_subschemeι_eq_one_iff hX hgenus,
+  rw [D.boundaryOrthogonal_def k, hD.pullback_blowupToBase_comp_subschemeι_eq_one_iff hX hgenus,
     Scheme.Opens.primeDivisorSpanCompl_eq_span_of_iUnion_closure _ Subtype.val hsupport,
     LinearMap.BilinForm.orthogonal, Submodule.mem_orthogonalBilin_span]
   simp only [Set.forall_mem_range, Chow.intersectionBilinForm_apply, toMul_ofMul,
@@ -232,4 +259,6 @@ theorem pullback_blowupToBase_comp_subschemeι_eq_one_iff_mem_orthogonal
 
 end SmoothSurface
 
-end AlgebraicGeometry.Scheme.IdealSheafData.IsEffectiveCartier
+end IsEffectiveCartier
+
+end AlgebraicGeometry.Scheme.IdealSheafData

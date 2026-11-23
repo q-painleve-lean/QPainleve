@@ -34,6 +34,19 @@ open Modules
 
 variable {k : Type u} [Field k] {X : Scheme.{u}} [X.Over (Spec (.of k))]
 
+/-- Every line bundle on a nodal curve restricts trivially to its singular subscheme. -/
+theorem pullback_singularLocus_subschemeι_eq_one
+    (hnodal : AtWorstNodalOfRelativeDimensionOne (X ↘ Spec (.of k)))
+    (a : LineBundleClass X) :
+    letI := hnodal.syntomic
+    LineBundleClass.pullback (X.singularLocus k).subschemeι a = 1 := by
+  let := hnodal.syntomic
+  let I := X.singularLocus k
+  have := X.etale_singularLocus_subschemeι_comp hnodal
+  have : IsLocallyArtinian I.subscheme :=
+    .of_locallyQuasiFinite (I.subschemeι ≫ (X ↘ Spec (.of k)))
+  exact Subsingleton.elim _ _
+
 private theorem inf_ker_pullback_singularLocus
     (hnodal : AtWorstNodalOfRelativeDimensionOne (X ↘ Spec (.of k))) :
     letI := hnodal.syntomic
@@ -42,11 +55,9 @@ private theorem inf_ker_pullback_singularLocus
       (LineBundleClass.pullbackHom I.subschemeι).ker =
         (LineBundleClass.pullbackHom I.blowupToBase).ker := by
   let := hnodal.syntomic
-  let I := X.singularLocus k
-  have := X.etale_singularLocus_subschemeι_comp hnodal
-  have : IsLocallyArtinian I.subscheme :=
-    .of_locallyQuasiFinite (I.subschemeι ≫ (X ↘ Spec (.of k)))
-  exact inf_eq_left.mpr fun a _ ↦ MonoidHom.mem_ker.mpr (Subsingleton.elim _ _)
+  refine inf_eq_left.mpr fun a _ ↦ MonoidHom.mem_ker.mpr ?_
+  rw [LineBundleClass.pullbackHom_apply]
+  exact X.pullback_singularLocus_subschemeι_eq_one hnodal a
 
 /-- Picard classes trivial on the normalization of a nodal curve correspond
 multiplicatively to branch units modulo changes of the two conductor trivializations. -/

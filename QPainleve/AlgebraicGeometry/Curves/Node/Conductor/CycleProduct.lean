@@ -10,6 +10,8 @@ public import QPainleve.AlgebraicGeometry.Curves.Node.Conductor.Units
 public import QPainleve.AlgebraicGeometry.Curves.DualGraph.Gluing
 public import QPainleve.AlgebraicGeometry.LineBundle.GluingUnit
 
+import Mathlib.Algebra.BigOperators.Finprod
+
 /-!
 # The product of branch gluing ratios around a nodal cycle
 
@@ -72,6 +74,14 @@ theorem nodalConductorCycleProduct_apply (a : Γ(B, ⊤)ˣ) :
         (X.dualGraphBranchEquiv p (e i, o (e i) 0)) := by
   simp only [nodalConductorCycleProduct_eq_prod, cycleRatios, branchRatioHom_apply,
     branchOrderOfDualGraph_apply_val]
+
+/-- The cycle product can be taken over the actual nodes, with their ordered branch
+fibers. Only the branch order affects this expression. -/
+theorem nodalConductorCycleProduct_eq_finprod (a : Γ(B, ⊤)ˣ) :
+    X.nodalConductorCycleProduct p e o a =
+      ∏ᶠ z : N, X.branchRatioHom nodal (X.branchOrderOfDualGraph p o) a z := by
+  rw [← finprod_comp _ (cycleNodes X p e).bijective, finprod_eq_prod_of_fintype]
+  exact X.nodalConductorCycleProduct_eq_prod p e o a
 
 /-- The cycle product takes every nonzero scalar value. -/
 theorem nodalConductorCycleProduct_surjective :
