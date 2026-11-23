@@ -14,8 +14,7 @@ import TauCeti.AlgebraicGeometry.Blowup.Restriction
 # Strict transforms along successive blowups
 
 The iterated strict transform of a closed subscheme is the scheme-theoretic closure
-of its inverse image off both exceptional divisors. The restriction formula
-computes the same scheme-theoretic closure on an open of a blowup.
+of its inverse image off both exceptional divisors.
 
 The strict-transform convention and comparison under composition are from the
 [Stacks Project, Definition 31.34.1](https://stacks.math.columbia.edu/tag/080D) and
@@ -74,19 +73,5 @@ theorem ker_blowupMap_ker_blowupMap (I D : X.IdealSheafData) (J : I.blowup.Ideal
     _ = _ := by
       dsimp only [W, U, V, p]
       rw [Scheme.Hom.comp_preimage]
-
-/-- Restricting the strict transform to an open of the blowup computes the
-scheme-theoretic closure of the restricted total transform off the exceptional divisor. -/
-theorem comap_ker_blowupMap_subschemeι_eq_map_comap_of_isOpenImmersion
-    (I D : X.IdealSheafData) {Y : Scheme.{u}} (j : Y ⟶ I.blowup) [IsOpenImmersion j] :
-    let V := j ⁻¹ᵁ (I.comap I.blowupToBase).support.compl
-    (I.blowupMap D.subschemeι).ker.comap j =
-      ((D.comap (j ≫ I.blowupToBase)).comap V.ι).map V.ι := by
-  let U := (I.comap I.blowupToBase).support.compl
-  have : IsLocallyNoetherian I.blowup := LocallyOfFiniteType.isLocallyNoetherian I.blowupToBase
-  dsimp only
-  rw [ker_blowupMap_subschemeι_eq_map_comap,
-    comap_map_of_isPullback_of_isOpenImmersion _ (isPullback_morphismRestrict j U).flip]
-  simp only [← comap_comp, U, morphismRestrict_ι_assoc]
 
 end AlgebraicGeometry.Scheme.IdealSheafData

@@ -54,6 +54,21 @@ theorem ker_blowupMap_subschemeι_eq_map_comap {X : Scheme.{u}} (I J : X.IdealSh
   rw [I.ker_blowupMap, ← hW, ← morphismRestrict_ι, Scheme.Hom.ker_comp]
   rw [ker_eq_comap_of_isPullback f (isPullback_morphismRestrict f W), hTotal]
 
+/-- Restricting the strict transform to an open of the blowup computes the
+scheme-theoretic closure of the restricted total transform off the exceptional divisor. -/
+theorem comap_ker_blowupMap_subschemeι_eq_map_comap_of_isOpenImmersion
+    {X : Scheme.{u}} [IsLocallyNoetherian X]
+    (I D : X.IdealSheafData) {Y : Scheme.{u}} (j : Y ⟶ I.blowup) [IsOpenImmersion j] :
+    let V := j ⁻¹ᵁ (I.comap I.blowupToBase).support.compl
+    (I.blowupMap D.subschemeι).ker.comap j =
+      ((D.comap (j ≫ I.blowupToBase)).comap V.ι).map V.ι := by
+  let U := (I.comap I.blowupToBase).support.compl
+  have : IsLocallyNoetherian I.blowup := LocallyOfFiniteType.isLocallyNoetherian I.blowupToBase
+  dsimp only
+  rw [ker_blowupMap_subschemeι_eq_map_comap,
+    comap_map_of_isPullback_of_isOpenImmersion _ (isPullback_morphismRestrict j U).flip]
+  simp only [← comap_comp, U, morphismRestrict_ι_assoc]
+
 /-- The strict transform agrees with the total transform on the complement of
 the exceptional divisor. -/
 theorem comap_ker_blowupMap_subschemeι_exceptionalCompl
