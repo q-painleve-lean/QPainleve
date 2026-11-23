@@ -192,15 +192,10 @@ minus the source exceptional class. -/
 theorem pullback_blowupExceptionalClass_elementaryTransform :
     pullback (e).hom Ex(i.rev) =
       cl(isEffectiveCartier_comap_baseDivisor f i hf) / Ex(i) := by
-  let hE := (Z(i)).isEffectiveCartier_comap_blowupToBase
-  let hE' := (Z(i.rev)).isEffectiveCartier_comap_blowupToBase
-  have hc := mk_toInvertibleSheaf_congr (isEffectiveCartier_comap_baseDivisor f i hf)
-    (isEffectiveCartier_mul hE (hE'.comap (e).hom))
+  exact (Z(i.rev)).pullback_blowupExceptionalClass_eq_div_of_eq_mul (e).hom
+    (isEffectiveCartier_comap_baseDivisor f i hf)
+    ((Z(i.rev)).isEffectiveCartier_comap_blowupToBase.comap (e).hom)
     (comap_baseDivisor_elementaryTransform f i hf)
-  rw [mk_toInvertibleSheaf_mul hE (hE'.comap (e).hom)] at hc
-  apply eq_div_iff_mul_eq'.mpr
-  rw [blowupExceptionalClass_def, pullback_inv, hE'.pullback_mk_toInvertibleSheaf
-    (hE'.comap (e).hom), blowupExceptionalClass_def, hc, mul_inv_rev]
 
 /-- The target class of the source center's section pulls back to its source total
 transform minus the source exceptional class. -/
