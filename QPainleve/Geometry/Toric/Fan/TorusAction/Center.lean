@@ -116,49 +116,6 @@ theorem boundaryTranslation_symm (χ : Chars) :
     Iso.refl_hom,
     Category.id_comp]
 
-/-- Pullback by translation preserves the weighted rational character when its
-parameter is divided by the translating character value. -/
-theorem functionFieldMap_torusTranslation_mul_character (χ : Chars)
-    (a : Multiplicative (N →+ ℤ)) (c : ℂˣ) :
-    (Φ.torusTranslation χ).hom.functionFieldMap
-        (algebraMap ℂ Φ.algebraicRealization.functionField (↑(c / χ a) : ℂ) * Φ.character a) =
-      algebraMap ℂ Φ.algebraicRealization.functionField (c : ℂ) * Φ.character a := by
-  rw [map_mul, Scheme.Hom.functionFieldMap_algebraMap ℂ,
-    Φ.functionFieldMap_torusTranslation_character, ← mul_assoc, ← map_mul, ← Units.val_mul,
-    div_mul_cancel]
-
-/-- On every affine chart, translation is induced by twisting monomials by their
-character values. -/
-theorem affineToricChartι_comp_torusTranslation_hom (χ : Chars) (σ : Φ.cones) :
-    Φ.affineToricChartι σ ≫ (Φ.torusTranslation χ).hom =
-      Spec.map (CommRingCat.ofHom (MonoidAlgebra.charTwist
-        (χ.comp (dualSemigroup Φ.lattice σ.val).subtype.toMultiplicative)).toAlgHom.toRingHom) ≫
-        Φ.affineToricChartι σ := by
-  let hface := (Φ.isToricCone σ.property).salient.bot_isFaceOf
-  let j := faceAffineToricSchemeMap Φ.lattice hface
-  have : IsDominant j := isDominant_faceAffineToricSchemeMap _ _
-  apply AlgebraicGeometry.ext_of_isDominant j
-  dsimp only [j]
-  rw [← Category.assoc, ← Φ.denseTorusι_face σ, Φ.denseTorusι_comp_torusTranslation_hom χ,
-    Φ.denseTorusι_face σ, ← Category.assoc, ← Category.assoc, faceAffineToricSchemeMap_def,
-    ← Spec.map_comp, ← Spec.map_comp]
-  congr 2
-  let res := faceAffineCoordinateRingMap Φ.lattice hface
-  have heq : (MonoidAlgebra.charTwist
-      (χ.comp (denseTorusDualEquiv Φ.lattice).toMultiplicative.toMonoidHom)).toAlgHom.comp res =
-      res.comp (MonoidAlgebra.charTwist
-        (χ.comp (dualSemigroup Φ.lattice σ.val).subtype.toMultiplicative)).toAlgHom := by
-    apply MonoidAlgebra.algHom_ext
-    · intro a
-      obtain ⟨a, rfl⟩ := ofAdd.surjective a
-      simp [res, denseTorusDualEquiv_apply]
-    · apply AlgHom.ext
-      intro z
-      have hz : MonoidAlgebra.single 1 z = algebraMap ℂ (affineCoordinateRing Φ.lattice σ.val) z :=
-        (rfl)
-      simp only [AlgHom.comp_apply, MonoidAlgebra.singleOneAlgHom_apply, hz, AlgHom.commutes]
-  exact CommRingCat.hom_ext (congrArg AlgHom.toRingHom heq)
-
 namespace Ray
 
 variable {V : Type} [AddCommGroup V] [Module ℝ V]
