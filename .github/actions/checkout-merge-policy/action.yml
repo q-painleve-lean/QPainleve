@@ -16,8 +16,8 @@ runs:
   steps:
     - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
       with:
-        repository: TauCetiProject/TauCetiReview
-        ref: 60472b78568d274587971787276e9009f957217c
+        repository: q-painleve-lean/TauCetiReview
+        ref: 692c51780c76777e8f6a00cc9ba2b876901f32e5
         path: .tauceti-review
         sparse-checkout: runner
         persist-credentials: false

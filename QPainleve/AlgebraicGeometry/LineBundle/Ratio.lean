@@ -17,6 +17,7 @@ ratios commute with restriction and give units for changes of frame.
 public noncomputable section
 
 open CategoryTheory
+open Opposite
 open TauCeti.AlgebraicGeometry
 
 universe u
@@ -85,5 +86,39 @@ theorem le_nonvanishingLocus_map {U V : X.Opens} (i : V ⟶ U) (s : Γ(M, U))
     (hs : V ≤ M.nonvanishingLocus s) :
     V ≤ M.nonvanishingLocus (M.presheaf.map i.op s) := by
   simpa using hs
+
+/-- The germ of a section ratio times the local coefficient of its denominator is the local
+coefficient of its numerator, in any frame defined near the point. -/
+theorem germ_sectionRatio_mul_eq_of_restrict_eq_smul {U V : X.Opens} {x : X}
+    (hxU : x ∈ U) (hxV : x ∈ V) (t s : Γ(M, ⊤)) (e : Γ(M, U))
+    (he : U ≤ M.nonvanishingLocus e)
+    (hs : V ≤ M.nonvanishingLocus (M.presheaf.map V.leTop.op s))
+    (a b : Γ(X, U))
+    (ha : M.presheaf.map U.leTop.op t = a • e)
+    (hb : M.presheaf.map U.leTop.op s = b • e) :
+    X.presheaf.germ V x hxV
+        (M.sectionRatio (M.presheaf.map V.leTop.op t) (M.presheaf.map V.leTop.op s) hs) *
+      X.presheaf.germ U x hxU b = X.presheaf.germ U x hxU a := by
+  let W := U ⊓ V
+  let j : W ⟶ U := homOfLE inf_le_left
+  let k : W ⟶ V := homOfLE inf_le_right
+  let r := M.sectionRatio (M.presheaf.map V.leTop.op t) (M.presheaf.map V.leTop.op s) hs
+  have heW : W ≤ M.nonvanishingLocus (M.presheaf.map j.op e) := by
+    rw [nonvanishingLocus_map]
+    exact le_inf le_rfl (j.le.trans he)
+  have hjk : k ≫ V.leTop = j ≫ U.leTop := Subsingleton.elim _ _
+  have restrict (u : Γ(M, ⊤)) (c : Γ(X, U)) (h : M.presheaf.map U.leTop.op u = c • e) :
+      M.presheaf.map k.op (M.presheaf.map V.leTop.op u) =
+        X.presheaf.map j.op c • M.presheaf.map j.op e := by
+    rw [← M.map_smul, ← h]
+    simp only [← Functor.map_comp_apply, ← op_comp, hjk]
+  have hmul : X.presheaf.map k.op r * X.presheaf.map j.op b = X.presheaf.map j.op a := by
+    apply M.injective_smul_of_le_nonvanishingLocus heW
+    simpa only [mul_smul, ← restrict s b hb, ← M.map_smul, r, M.sectionRatio_smul] using
+      restrict t a ha
+  have hxW : x ∈ W := ⟨hxU, hxV⟩
+  have hm := map_mul (X.presheaf.germ W x hxW).hom (X.presheaf.map k.op r) (X.presheaf.map j.op b)
+  rw [hmul] at hm
+  simpa only [TopCat.Presheaf.germ_res_apply] using hm.symm
 
 end AlgebraicGeometry.Scheme.Modules
