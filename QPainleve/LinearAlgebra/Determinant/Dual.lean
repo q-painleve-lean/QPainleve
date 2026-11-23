@@ -44,6 +44,12 @@ theorem detDualEquiv_apply (b : Basis (Fin 2) R N) (h u : N) :
   simp only [detDualEquiv, LinearMap.toPerfPair_apply, MultilinearMap.toBilinMap_apply,
     AlternatingMap.coe_multilinearMap]
 
+/-- The determinant pairing has value one on the ordered basis. -/
+theorem detDualEquiv_apply_basis_zero_one (b : Basis (Fin 2) R N) :
+    b.detDualEquiv (b 0) (b 1) = 1 := by
+  have h : ![b 0, b 1] = (b : Fin 2 → N) := FinVec.etaExpand_eq b
+  rw [detDualEquiv_apply, h, b.det_self]
+
 /-- The determinant pairing is alternating. -/
 theorem detDualEquiv_self (b : Basis (Fin 2) R N) (v : N) : b.detDualEquiv v v = 0 := by
   rw [detDualEquiv_apply]
