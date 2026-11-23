@@ -6,6 +6,7 @@ Authors: The QPainleve contributors
 module
 
 public import QPainleve.Geometry.Toric.Fan.InternalBlowup
+public import QPainleve.Geometry.Toric.Fan.Mutation.Boundary
 public import QPainleve.Geometry.Toric.Fan.Mutation.Evaluation
 public import QPainleve.Geometry.Toric.Fan.Picard.Mutation.Basic
 
@@ -201,6 +202,40 @@ theorem exists_iso_ordered_mutation_picard_marking
     have : IsDominant (f ≫ (I₀).blowupToBase) := hf ▸ inferInstanceAs (IsDominant (πA))
     have : IsDominant f := IsModification.isDominant_of_comp f (I₀).blowupToBase
     simpa only [hf, ← he] using Φ.mutationBlowupIso_xEvaluation b s k χ hOpp f
+
+/-- A map of the ordered models restricts to the pivot boundary isomorphism
+when its projections satisfy the elementary transformation square. This applies
+to the same isomorphism used for the full Picard and X-evaluation comparisons. -/
+@[reassoc]
+theorem boundaryι_comp_of_ordered_mutation
+    {g : (A).1 ⟶ (B).1} {f : (A).1 ⟶ (I₀).blowup}
+    (hf : f ≫ (I₀).blowupToBase = πA)
+    (hg : g ≫ πB = f ≫ (G).hom ≫ (I₁).blowupToBase) :
+    (A).2.boundaryι ≫ g =
+      (Ray.mutationBoundaryIso b (ρ) hOpp (c) hΦ).hom ≫ (B).2.boundaryι := by
+  let : Nonempty Φ.cones := hΦ₀
+  let : Nonempty (Ψ).cones := hΨ₀
+  let a := (Ray.mutationBoundaryIso b (ρ) hOpp (c) hΦ).hom
+  have hA : (A).2.boundaryι ≫ f = (j₀) := by
+    apply (I₀).blowup_hom_ext
+    · simp only [Category.assoc, hf, WithBoundary.boundaryι_toBase,
+        Ray.mutationSourceBoundaryι_blowupToBase]
+    · rw [Category.assoc, hf, WithBoundary.boundaryι_toBase, Ray.mutationSourceCenterIdeal_eq,
+        ← Ray.map_internalCenter_subschemeι, comap_map_of_isClosedImmersion]
+      exact ((ρ).internalCenter (h₀ := hΦ₀) b (c)).property
+  let j := (boundaryIdeal (Ψ) hΨ₀).subschemeι
+  have hB : ((A).2.boundaryι ≫ g) ≫ πB = a ≫ j := by
+    rw [Category.assoc, hg, ← Category.assoc (A).2.boundaryι f, hA,
+      ← Ray.mutationBoundaryIso_hom_comp_boundaryι_assoc,
+      Ray.mutationTargetBoundaryι_blowupToBase]
+  let P (U : Σ Z, WithBoundary j (n + 1) Z) :=
+    ∀ p : (boundaryIdeal Φ hΦ₀).subscheme ⟶ U.1,
+      p ≫ U.2.toTower.toBase = a ≫ j → p = a ≫ U.2.boundaryι
+  suffices P (B) from this _ hB
+  rw [internalBlowupTower_eq_alongBoundary]
+  intro p hproj
+  exact eq_comp_boundaryι_of_comp_toBase_eq j _ a (fun l ↦
+    ((t l).internalCenter (h₀ := hΨ₀) b (d′ l)).property.comap a) p hproj
 
 end Mutation
 

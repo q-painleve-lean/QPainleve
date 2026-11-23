@@ -6,7 +6,9 @@ Authors: The QPainleve contributors
 module
 
 public import QPainleve.AlgebraicGeometry.Blowup.Tower.Basic
-public import QPainleve.Geometry.Toric.Fan.Mutation.Blowup
+public import QPainleve.AlgebraicGeometry.Curves.Node.Conductor.Isomorphism
+public import QPainleve.Geometry.Toric.Fan.Boundary.Normalization
+public import QPainleve.Geometry.Toric.Fan.Mutation.Boundary
 public import QPainleve.Geometry.Toric.Fan.Point
 import QPainleve.Geometry.Toric.Fan.Adjacency
 import QPainleve.Geometry.Toric.Fan.Boundary.Intersection
@@ -29,7 +31,7 @@ public noncomputable section
 
 open AlgebraicGeometry CategoryTheory Module PointedCone
 open AddMonoidAlgebra Multiplicative
-open Scheme.IdealSheafData QPainleve QPainleve.BlowupTower
+open Scheme.IdealSheafData QPainleve QPainleve.BlowupTower TauCeti.AlgebraicGeometry
 
 namespace TauCeti.Toric.Fan
 
@@ -238,6 +240,155 @@ theorem Ray.mutationBlowupIso_lift_comp_distinguishedPointHom (hΦ : Φ.IsRegula
     pivot.exists_lift_distinguishedPointHom_mutationBlowupIso b hOpp c hΦ hne hρ hτ
   have heq : p ≫ T.toBase = q := (hq _).mp (by simpa only [Category.assoc] using hp)
   rw [hg.hom_toBase_assoc, ← Category.assoc p, heq, himage]
+
+section Branches
+
+variable (hΦ : Φ.IsRegular)
+local notation "hΦ₀" => Nonempty.intro (Ray.toCone Φ pivot)
+local notation "hΨ₀" => Nonempty.intro ((coneEquiv)
+  (Subtype.mk _ (Ray.hull_primitiveGenerator_mem pivot)))
+local notation "D₀" => Φ.boundaryIdeal hΦ₀
+local notation "D₁" => boundaryIdeal (Sheared) hΨ₀
+local notation "C₀" => Scheme.IdealSheafData.subscheme (D₀)
+local notation "C₁" => Scheme.IdealSheafData.subscheme (D₁)
+local notation "E" => Ray.mutationBoundaryIso b pivot hOpp c hΦ
+local notation "hΨ" => Iff.mpr (Φ.isRegular_mutationFan_iff b
+  (Ray.primitiveGenerator_ne_zero pivot) (Ray.hull_primitiveGenerator_mem pivot) hOpp) hΦ
+local notation "s" => Φ.mutationFanRayEquiv b (Ray.primitiveGenerator_ne_zero pivot)
+  (Ray.hull_primitiveGenerator_mem pivot) hOpp
+
+include hΦ in
+/-- The isomorphism of the strict boundaries maps each distinguished node to the
+distinguished node of the sheared cone. -/
+@[reassoc]
+theorem Ray.mutationBoundaryIso_comp_distinguishedPointHom
+    {σ : Φ.cones} {ρ τ : Φ.Ray} (hne : ρ ≠ τ) (hρ : ρ.toCone ≤ σ) (hτ : τ.toCone ≤ σ)
+    {p : Spec (.of ℂ) ⟶ C₀} (hp : p ≫ (D₀).subschemeι = Φ.distinguishedPointHom σ) :
+    p ≫ (E).hom ≫ (D₁).subschemeι = (Sheared).distinguishedPointHom ((coneEquiv) σ) := by
+  obtain ⟨q, hq, hq'⟩ :=
+    pivot.exists_lift_distinguishedPointHom_mutationBlowupIso b hOpp c hΦ hne hρ hτ
+  have hl : p ≫ pivot.mutationSourceBoundaryι b c = q :=
+    (hq _).mp (by simpa only [Category.assoc, Ray.mutationSourceBoundaryι_blowupToBase] using hp)
+  rw [← Ray.mutationTargetBoundaryι_blowupToBase b pivot hOpp c,
+    Ray.mutationBoundaryIso_hom_comp_boundaryι_assoc, ← Category.assoc p, hl]
+  exact hq'
+
+variable [hN₀ : Nonempty Φ.cones]
+  [hN₁ : Nonempty (Φ.mutationFan b pivot.primitiveGenerator_ne_zero
+    pivot.hull_primitiveGenerator_mem hOpp).cones]
+
+local notation "ν[" C "]" => Scheme.IdealSheafData.blowupToBase (Scheme.singularLocus ℂ C)
+local notation "j[" C "]" => Scheme.branchSchemeToBlowup ℂ C
+
+private theorem image_rayComponent_mutationBoundaryIso (u : Φ.Ray) :
+    (E).hom '' Set.range (u.boundaryComponentι hΦ) =
+      Set.range ((s u).boundaryComponentι (hΨ)) := by
+  let f := u.boundaryComponentι hΦ
+  let g := (s u).boundaryComponentι (hΨ)
+  have hk : g.ker.comap (E).hom = f.ker :=
+    pivot.comap_ker_boundaryComponentι_mutationBoundaryIso b hOpp c hΦ u
+  have heq : (E).hom ⁻¹' Set.range g = Set.range f := by
+    simpa only [support_comap, TopologicalSpace.Closeds.coe_preimage, Scheme.Hom.support_ker,
+      f.isClosedEmbedding.isClosed_range.closure_eq, g.isClosedEmbedding.isClosed_range.closure_eq]
+      using congrArg (fun K : (C₀).IdealSheafData ↦ (K.support : Set C₀)) hk
+  have he : Function.Surjective (E).hom := by
+    simpa only [Scheme.coe_homeoOfIso] using (Scheme.homeoOfIso E).surjective
+  exact (congrArg (fun Z ↦ (E).hom '' Z) heq.symm).trans (Set.image_preimage_eq _ he)
+
+variable [PrestableFamily ((Φ.boundaryIdeal hN₀).subscheme ↘ Spec (.of ℂ))]
+  [PrestableFamily (((Φ.mutationFan b pivot.primitiveGenerator_ne_zero
+    pivot.hull_primitiveGenerator_mem hOpp).boundaryIdeal hN₁).subscheme ↘ Spec (.of ℂ))]
+
+/-- On the normalization, mutation maps the entire component of an original ray
+onto the component of the sheared ray. -/
+theorem Ray.image_boundaryNormalizationComponent_mutationBoundaryIso (u : Φ.Ray) :
+    ((E).singularLocusBlowupIso (R := ℂ)).hom ''
+      (Φ.boundaryNormalizationComponentEquiv hΦ u : Set (Scheme.singularLocus ℂ C₀).blowup) =
+      ((Sheared).boundaryNormalizationComponentEquiv (hΨ) (s u) :
+        Set (Scheme.singularLocus ℂ C₁).blowup) := by
+  let H := Scheme.homeoOfIso ((E).singularLocusBlowupIso (R := ℂ))
+  let A := Φ.boundaryNormalizationComponentEquiv hΦ u
+  let B := (Sheared).boundaryNormalizationComponentEquiv (hΨ) (s u)
+  have hW := image_mem_irreducibleComponents_of_isPreirreducible_fiber H H.continuous H.isOpenMap
+    (fun _ ↦ (Set.subsingleton_singleton.preimage H.injective).isPreirreducible)
+    H.surjective A.property
+  let W := (⟨H '' (A : Set _), hW⟩ : irreducibleComponents _)
+  have hcomp (x : (Scheme.singularLocus ℂ C₀).blowup) :
+      ν[C₁] (H x) = (E).hom (ν[C₀] x) := by
+    simpa only [Scheme.coe_homeoOfIso, Scheme.Hom.comp_apply, H] using
+      congrArg (fun f : _ ⟶ C₁ ↦ f x) ((E).singularLocusBlowupIso_hom_blowupToBase (R := ℂ))
+  have h : Set.range (((C₁).blowupComponent (K := ℂ) W).ι ≫ ν[C₁]) =
+      Set.range (((C₁).blowupComponent (K := ℂ) B).ι ≫ ν[C₁]) := by
+    calc
+      _ = ν[C₁] '' (H '' (A : Set _)) := by
+        simp only [Scheme.Hom.comp_base, TopCat.coe_comp, Set.range_comp, Scheme.Opens.range_ι,
+          Scheme.coe_blowupComponent]
+        rfl
+      _ = (E).hom '' (ν[C₀] '' (A : Set _)) := by
+        rw [Set.image_image, Set.image_image]
+        exact Set.image_congr (fun x _ ↦ hcomp x)
+      _ = (E).hom '' Set.range (u.boundaryComponentι hΦ) := by
+        rw [← Φ.range_boundaryNormalizationComponentEquiv hΦ u]
+        simp only [Scheme.Hom.comp_base, TopCat.coe_comp, Set.range_comp, Scheme.Opens.range_ι,
+          Scheme.coe_blowupComponent, A]
+      _ = Set.range ((s u).boundaryComponentι (hΨ)) :=
+        image_rayComponent_mutationBoundaryIso b pivot hOpp c hΦ u
+      _ = _ := ((Sheared).range_boundaryNormalizationComponentEquiv (hΨ) (s u)).symm
+  exact congrArg Subtype.val ((C₁).eq_of_range_blowupComponent_subset (k := ℂ) h.le)
+
+/-- An actual branch over a distinguished node, on a given normalized ray component,
+maps to the branch over the sheared node on the corresponding component. For two
+adjacent rays the determinant comparison preserves their ordering. -/
+theorem Ray.mutationBoundaryIso_maps_branch
+    {σ : Φ.cones} {ρ τ : Φ.Ray} (hne : ρ ≠ τ) (hρ : ρ.toCone ≤ σ) (hτ : τ.toCone ≤ σ)
+    (u : Φ.Ray) (q : Spec (.of ℂ) ⟶ (C₀).branchScheme ℂ)
+    (hq : q ≫ j[C₀] ≫ ν[C₀] ≫ (D₀).subschemeι = Φ.distinguishedPointHom σ) :
+    let q' := q ≫ ((E).branchSchemeIso (R := ℂ)).hom
+    (q' ≫ j[C₁] ≫ ν[C₁] ≫ (D₁).subschemeι = (Sheared).distinguishedPointHom ((coneEquiv) σ)) ∧
+      ∀ x : Spec (.of ℂ),
+        j[C₀] (q x) ∈
+          (Φ.boundaryNormalizationComponentEquiv hΦ u : Set (Scheme.singularLocus ℂ C₀).blowup) →
+        j[C₁] (q' x) ∈ ((Sheared).boundaryNormalizationComponentEquiv (hΨ) (s u) :
+          Set (Scheme.singularLocus ℂ C₁).blowup) := by
+  dsimp only
+  constructor
+  · simp only [Category.assoc, Iso.branchSchemeIso_hom_branchSchemeToBlowup_assoc,
+      Iso.singularLocusBlowupIso_hom_blowupToBase_assoc]
+    exact pivot.mutationBoundaryIso_comp_distinguishedPointHom b hOpp c hΦ hne hρ hτ
+      (p := q ≫ j[C₀] ≫ ν[C₀]) (by simpa only [Category.assoc] using hq)
+  · intro x hx
+    rw [← Scheme.Hom.comp_apply, Category.assoc, Iso.branchSchemeIso_hom_branchSchemeToBlowup,
+      ← Category.assoc, Scheme.Hom.comp_apply,
+      ← pivot.image_boundaryNormalizationComponent_mutationBoundaryIso b hOpp c hΦ u]
+    exact ⟨_, hx, by rw [Scheme.Hom.comp_apply]⟩
+
+/-- Mutation identifies the two branch sections selected by corresponding node and
+ray labels. The labels specify the branch itself on the normalization. -/
+theorem Ray.mutationBoundaryIso_branchSchemeIso_apply
+    {σ : Φ.cones} {ρ τ : Φ.Ray} (hne : ρ ≠ τ) (hρ : ρ.toCone ≤ σ) (hτ : τ.toCone ≤ σ)
+    (u : Φ.Ray) (q : Spec (.of ℂ) ⟶ (C₀).branchScheme ℂ)
+    (q' : Spec (.of ℂ) ⟶ (C₁).branchScheme ℂ)
+    (hq : q ≫ j[C₀] ≫ ν[C₀] ≫ (D₀).subschemeι = Φ.distinguishedPointHom σ)
+    (hq' : q' ≫ j[C₁] ≫ ν[C₁] ≫ (D₁).subschemeι =
+      (Sheared).distinguishedPointHom ((coneEquiv) σ))
+    (x : Spec (.of ℂ))
+    (hu : j[C₀] (q x) ∈
+      (Φ.boundaryNormalizationComponentEquiv hΦ u : Set (Scheme.singularLocus ℂ C₀).blowup))
+    (hu' : j[C₁] (q' x) ∈ ((Sheared).boundaryNormalizationComponentEquiv (hΨ) (s u) :
+      Set (Scheme.singularLocus ℂ C₁).blowup)) :
+    ((E).branchSchemeIso (R := ℂ)).hom (q x) = q' x := by
+  obtain ⟨hnode, hray⟩ := pivot.mutationBoundaryIso_maps_branch b hOpp c hΦ hne hρ hτ u q hq
+  have hj : IsClosedImmersion (j[C₁]) :=
+    MorphismProperty.of_isPullback ((C₁).isPullback_branchScheme ℂ) inferInstance
+  apply (j[C₁]).injective
+  apply (s u).injOn_blowupToBase_boundaryNormalizationComponent (hΨ)
+  · simpa only [Scheme.Hom.comp_apply] using hray x hu
+  · exact hu'
+  · apply (D₁).subschemeι.injective
+    simpa only [Scheme.Hom.comp_apply] using
+      congrArg (fun f : Spec (.of ℂ) ⟶ (Sheared).algebraicRealization ↦ f x) (hnode.trans hq'.symm)
+
+end Branches
 
 end PivotBlowup
 

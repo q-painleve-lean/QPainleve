@@ -6,7 +6,7 @@ Authors: The QPainleve contributors
 module
 
 public import QPainleve.AlgebraicGeometry.Blowup.Tower.Boundary.Common
-public import QPainleve.Geometry.Toric.Fan.Mutation.Blowup
+public import QPainleve.Geometry.Toric.Fan.Mutation.Boundary
 public import QPainleve.Geometry.Toric.Fan.Mutation.InternalBlowup
 public import TauCeti.AlgebraicGeometry.Morphisms.Modification.Basic
 
@@ -63,17 +63,9 @@ theorem Ray.comap_strictBoundary_mutationBlowupIso_lift (hΦ : Φ.IsRegular) {n 
     (he : IsLift (eB) (alongBoundary (j₀) J).2.toTower (alongBoundary (j₁) J').2.toTower e) :
     ((alongBoundary (j₁) J').2.boundaryι.ker).comap e.hom =
       (alongBoundary (j₀) J).2.boundaryι.ker := by
-  have hker : ((j₀) ≫ (eB).hom).ker = (j₁).ker := by
-    have h := ρ.comap_strictBoundary_mutationBlowupIso b hOpp c hΦ
-    rw [← Ray.ker_mutationSourceBoundaryι, ← Ray.ker_mutationTargetBoundaryι] at h
-    rw [Scheme.Hom.ker_comp, ← h, map_comap_of_isClosedImmersion]
-    simp
-  let u := IsClosedImmersion.lift (j₁) ((j₀) ≫ (eB).hom) hker.ge
-  have : IsIso u := IsClosedImmersion.isIso_lift _ _ hker.symm
-  have hu : (j₀) ≫ (eB).hom = (asIso u).hom ≫ (j₁) :=
-    (IsClosedImmersion.lift_fac _ _ _).symm
-  have h := (he.alongBoundary (asIso u) hu).2
-  rw [← Scheme.Hom.ker_comp_of_isIso (asIso u).hom, ← h,
+  let u := ρ.mutationBoundaryIso b hOpp c hΦ
+  have h := (he.alongBoundary u (ρ.mutationBoundaryIso_hom_comp_boundaryι b hOpp c hΦ).symm).2
+  rw [← Scheme.Hom.ker_comp_of_isIso u.hom, ← h,
     Scheme.Hom.comap_ker_comp_of_isClosedImmersion]
 
 local notation "U₀" => mutationComplement Φ b (detCharacter_nonneg_or_nonpos Φ b hv hp hOpp)
