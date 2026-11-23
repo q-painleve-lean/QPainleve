@@ -5,17 +5,13 @@ Authors: The QPainleve contributors
 -/
 module
 
-public import Mathlib.AlgebraicGeometry.Birational.Birational
 public import Mathlib.Analysis.Convex.Cone.Dual
 public import QPainleve.AlgebraicGeometry.Chow.CurveCone
 public import QPainleve.AlgebraicGeometry.Chow.Nef.Basic
 
-import QPainleve.AlgebraicGeometry.Chow.RationalSurface
 import QPainleve.Analysis.Convex.Cone.Dual
-
 import QPainleve.Topology.Algebra.Module.LocallyConvex
 import QPainleve.Topology.Algebra.Module.PerfectPairing
-import TauCeti.LinearAlgebra.QuadraticForm.Radical
 
 /-!
 # Duality between nef classes and curves on a surface
@@ -51,19 +47,6 @@ local notation "f" => (X ↘ Spec (CommRingCat.of k))
 
 variable [TopologicalSpace V(X)] [IsTopologicalAddGroup V(X)] [ContinuousSMul ℝ V(X)]
   [T2Space V(X)]
-
-section RationalSurface
-
-/-- The real intersection pairing of a smooth projective rational surface over an
-algebraically closed field is a continuous perfect pairing. -/
-theorem isContPerfPair_realIntersectionBilinForm_of_isRationalOver [IsAlgClosed k]
-    [Scheme.IsRationalOver f] : (B(X)).IsContPerfPair := by
-  let : Module.Finite ℤ (Additive (LineBundleClass X)) := X.finite_picard_of_isRationalOver k
-  exact ((LinearMap.BilinForm.nondegenerate_toQuadraticMap_iff
-    (isSymm_realIntersectionBilinForm k X)).mp
-      (signature_realIntersectionBilinForm_of_isRationalOver k X).1).isContPerfPair
-
-end RationalSurface
 
 variable [FiniteDimensional ℝ V(X)]
 
