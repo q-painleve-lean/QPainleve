@@ -63,6 +63,25 @@ theorem isReduced_subscheme_ker_blowupMap [IsReduced D.subscheme] :
   rw [ker_blowupMap_subschemeι_eq_vanishingIdeal]
   infer_instance
 
+/-- The strict transform of the reduced closure of a point outside the center is
+the reduced closure of its lift outside the exceptional divisor. -/
+theorem ker_blowupMap_vanishingIdeal_closure_singleton (p : I.blowup)
+    (hp : p ∉ ((E).support : Set I.blowup)) :
+    (I.blowupMap (vanishingIdeal ⟨closure {π p}, isClosed_closure⟩).subschemeι).ker =
+      vanishingIdeal ⟨closure {p}, isClosed_closure⟩ := by
+  let W : I.blowup.Opens := (E).support.compl
+  let q : W.toScheme := ⟨p, hp⟩
+  have : IsOpenImmersion (W.ι ≫ π) := by
+    dsimp only [W]
+    rw [compl_support_comap, ← morphismRestrict_ι]
+    infer_instance
+  have hq : (W.ι ≫ π) q = π p := by rw [Scheme.Hom.comp_apply, Scheme.Opens.ι_apply]
+  rw [ker_blowupMap_subschemeι_eq_map_comap, ← comap_comp, ← hq,
+    comap_vanishingIdeal_closure_singleton_apply, map_vanishingIdeal]
+  congr 1
+  apply SetLike.coe_injective
+  exact ((isGenericPoint_closure (x := q)).image W.ι.continuous).def.symm
+
 /-- If a reduced closed subscheme contains the blowup center and the exceptional
 divisor is reduced, the ideal of the reduced total transform is the product of
 the strict-transform ideal and the exceptional ideal. -/
