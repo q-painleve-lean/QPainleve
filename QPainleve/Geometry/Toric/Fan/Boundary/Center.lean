@@ -252,6 +252,35 @@ theorem binomialCenter_def (hdim : Module.finrank ℤ N = 2)
       Spec.map (CommRingCat.ofHom (ρ.binomialCenterEval hdim hm hprim c).toRingHom) ≫
         Φ.affineToricChartι ρ.toCone := (rfl)
 
+/-- Negating the primitive orbit character inverts the center parameter. The resulting
+sections coincide as morphisms from the coefficient field. -/
+theorem binomialCenter_neg_inv (hdim : Module.finrank ℤ N = 2)
+    (hm : m v = 0) (hs : Function.Surjective m) (c : ℂˣ) :
+    ρ.binomialCenter hdim (m := -m) (by simp [hm])
+        (neg_involutive.surjective.comp hs) c⁻¹ =
+      ρ.binomialCenter hdim hm hs c := by
+  suffices h : ∀ hs' : Function.Surjective (-m),
+      ρ.binomialCenter hdim (m := -m) (by simp [hm]) hs' c⁻¹ =
+        ρ.binomialCenter hdim hm hs c from h (neg_involutive.surjective.comp hs)
+  intro hs'
+  rw [binomialCenter, binomialCenter]
+  congr 3
+  apply congrArg AlgHom.toRingHom
+  apply (MonoidAlgebra.lift ℂ ℂ (Multiplicative S)).symm.injective
+  apply MonoidHom.ext
+  intro a
+  rw [MonoidAlgebra.lift_symm_apply, MonoidAlgebra.lift_symm_apply, ← ofAdd_toAdd a]
+  by_cases ha : (a.toAdd : N →+ ℤ) v = 0
+  · obtain ⟨n, hn⟩ := ρ.exists_zsmul_eq_of_apply_primitiveGenerator_eq_zero hdim hm hs ha
+    have h₁ : ρ.chartCharacter (m := n • m) (by simp [hm]) = a.toAdd := Subtype.ext hn
+    have h₂ : ρ.chartCharacter (m := (-n) • (-m)) (by simp [hm]) = a.toAdd :=
+      Subtype.ext (by simpa using hn)
+    rw [← h₂, binomialCenterEval_single_zsmul, h₂, ← h₁, binomialCenterEval_single_zsmul]
+    simp only [inv_inv, zpow_neg, Units.val_inv_eq_inv_val]
+    rw [← inv_zpow, inv_neg]
+  · rw [binomialCenterEval_single_eq_zero _ _ _ _ _ _ _ ha,
+      binomialCenterEval_single_eq_zero _ _ _ _ _ _ _ ha]
+
 /-- A binomial center is a section of the structural morphism. -/
 @[reassoc, simp]
 theorem binomialCenter_comp_structureMap (hdim : Module.finrank ℤ N = 2)

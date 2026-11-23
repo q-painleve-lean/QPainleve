@@ -688,6 +688,28 @@ theorem elementaryTransform_hom_over (hf : f ≠ 0) :
   exact (congrArg (· ≫ blowupStructureMap f i.rev) hj).trans
     ((switchedChartι_over f i.rev h j).trans (chartι_over f i h j).symm)
 
+/-- On the opposite affine chart the elementary transformation multiplies the affine
+coordinate by the base equation, with the same chart index on both projective lines. -/
+theorem elementaryTransform_hom_blowupToBase_eq_polynomialPoint
+    (hf : f ≠ 0) {D : Type u} [CommRing D] {k : R →+* D} {a : D}
+    {g : Spec (.of D) ⟶ (coordinateSectionCenter f i).blowup}
+    (hg : g ≫ (coordinateSectionCenter f i).blowupToBase = polynomialPoint R k i.rev a) :
+    g ≫ (elementaryTransform f i hf).hom ≫
+        (coordinateSectionCenter f i.rev).blowupToBase =
+      polynomialPoint R k i.rev (k f * a) := by
+  let h := Spec.map (CommRingCat.ofHom (eval₂RingHom k a))
+  have hproj : h ≫ sectionBlowupOppositeChartι f i ≫ (Z).blowupToBase =
+      polynomialPoint R k i.rev a := by
+    rw [sectionBlowupOppositeChartι_blowupToBase, polynomialPoint_def]
+  have hcomp : g = h ≫ sectionBlowupOppositeChartι f i := by
+    apply (Z).blowup_hom_ext (hg.trans (by simpa only [Category.assoc] using hproj.symm))
+    rw [hg, polynomialPoint_def, IdealSheafData.comap_comp,
+      coordinateSectionCenter_comap_polynomialChartι_rev, IdealSheafData.comap_top]
+    exact IdealSheafData.isEffectiveCartier_top _
+  rw [hcomp, Category.assoc, sectionBlowupOppositeChartι_elementaryTransform_hom_assoc,
+    sectionBlowupDivisorChartι_blowupToBase, SpecMap_polynomialPoint]
+  simp
+
 end Generic
 
 end TauCeti.AlgebraicGeometry.projectiveLine
