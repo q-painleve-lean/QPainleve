@@ -30,6 +30,16 @@ namespace TauCeti.Toric.Fan
 variable {N V : Type*} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {Φ Ψ : Fan i}
 
+/-- A complete fan in a lattice with a nonzero vector has a ray. -/
+theorem nonempty_ray_of_isComplete (Φ : Fan i) [Nontrivial N] (hc : Φ.IsComplete) :
+    Nonempty Φ.Ray := by
+  obtain ⟨x, hx⟩ := exists_ne (0 : N)
+  have hix : i x ≠ 0 := fun h ↦ hx (Φ.lattice.injective (h.trans i.map_zero.symm))
+  obtain ⟨σ, hσ, hmem⟩ := Φ.isComplete_iff.mp hc (i x)
+  have hne : σ ≠ ⊥ := fun h ↦ hix (by simpa [h] using hmem)
+  obtain ⟨ρ, -⟩ := Φ.exists_ray_le_of_ne_bot ⟨σ, hσ⟩ hne
+  exact ⟨ρ⟩
+
 /-- The generator of a fan ray as a primitive lattice vector. -/
 def Ray.primitiveGenerator (ρ : Φ.Ray) : N :=
   TauCeti.Toric.primitiveGenerator Φ.lattice (Φ.isToricCone ρ.toCone.property)

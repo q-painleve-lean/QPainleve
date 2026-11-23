@@ -53,16 +53,6 @@ theorem eq_of_le_fullCone (hΦ : Φ.IsRegular) {σ τ : Φ.cones}
   rw [primitiveGenerator_faceEmbedding]
   exact s.val.isFaceOf.le (primitiveGenerator_mem Φ.lattice (Φ.isToricCone σ.property) s)
 
-/-- A complete fan in a lattice with a nonzero vector has a ray. -/
-theorem nonempty_ray_of_isComplete (Φ : Fan i) [Nontrivial N] (hc : Φ.IsComplete) :
-    Nonempty Φ.Ray := by
-  obtain ⟨x, hx⟩ := exists_ne (0 : N)
-  have hix : i x ≠ 0 := fun h ↦ hx (Φ.lattice.injective (h.trans i.map_zero.symm))
-  obtain ⟨σ, hσ, hmem⟩ := Φ.isComplete_iff.mp hc (i x)
-  have hne : σ ≠ ⊥ := fun h ↦ hix (by simpa [h] using hmem)
-  obtain ⟨ρ, -⟩ := Φ.exists_ray_le_of_ne_bot ⟨σ, hσ⟩ hne
-  exact ⟨ρ⟩
-
 /-- In a complete regular rank-two fan, every cone lies in a two-ray cone. -/
 theorem exists_le_cone_of_card_toricRay_eq_two (hΦ : Φ.IsRegular) (hc : Φ.IsComplete)
     (hdim : Module.finrank ℤ N = 2) (σ : Φ.cones) :
