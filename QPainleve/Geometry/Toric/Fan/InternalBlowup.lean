@@ -7,8 +7,10 @@ module
 
 public import QPainleve.AlgebraicGeometry.Blowup.Tower.Picard
 public import QPainleve.Geometry.Toric.Fan.Boundary.InternalCenter
+public import TauCeti.AlgebraicGeometry.Morphisms.Modification.Basic
 
 import Mathlib.Data.List.FinRange
+import QPainleve.AlgebraicGeometry.Blowup.Tower.Modification
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Boundary.Reorder
 import QPainleve.Geometry.Toric.Fan.Smooth
 
@@ -119,6 +121,16 @@ theorem isClosedPointTower_internalBlowupTower :
     (fun j ↦ (b.detDualEquiv (s j).primitiveGenerator).toAddMonoidHom)
     (fun j ↦ b.detDualEquiv_self (s j).primitiveGenerator)
     (fun j ↦ (s j).surjective_detCharacter b) c _ (fun j ↦ (s j).internalCenter_val b (c j))
+
+/-- The projection of the ordered internal blowups of a regular toric surface
+is a modification. -/
+theorem isModification_internalBlowupTower_toBase (hΦ : Φ.IsRegular) :
+    IsModification (internalBlowupTower b s c).2.toTower.toBase := by
+  have : SmoothOfRelativeDimension 2 Φ.algebraicRealizationStructureMap :=
+    rankTwo ▸ Φ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
+  exact
+    (isClosedPointTower_internalBlowupTower b s c).isModification_of_smoothOfRelativeDimension_two
+      Φ.algebraicRealizationStructureMap
 
 /-- The Picard group of the model is marked by the original toric classes and the full
 transforms of the exceptional classes, with coordinates in the given center order. -/
