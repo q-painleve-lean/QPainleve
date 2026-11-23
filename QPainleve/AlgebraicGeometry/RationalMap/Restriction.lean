@@ -20,7 +20,7 @@ resolution is an isomorphism only over opens on which the original map was defin
 
 public section
 
-open CategoryTheory TopologicalSpace
+open CategoryTheory Limits TopologicalSpace
 
 namespace AlgebraicGeometry.Scheme.PartialMap
 
@@ -51,6 +51,50 @@ end AlgebraicGeometry.Scheme.PartialMap
 namespace AlgebraicGeometry.Scheme.RationalMap
 
 universe u
+
+/-- Over the domain of a rational map, any morphism resolving it agrees on maps with
+the same projection to the source. -/
+theorem resolvingHom_eq_of_comp_eq {X Y Z W : Scheme.{u}} [Nonempty X] [IsReduced X]
+    [PreirreducibleSpace Y] [IsReduced Y] [Z.IsSeparated]
+    (q : X ⤏ Z) (f : Y ⟶ X) [IsDominant f] (g : Y ⟶ Z)
+    (hg : g.toRationalMap = f.toRationalMap.comp q) {a b : W ⟶ Y}
+    (hab : a ≫ f = b ≫ f) (ha : Set.range (a ≫ f) ⊆ q.domain) : a ≫ g = b ≫ g := by
+  let p := q.toPartialMap
+  let t := f.toPartialMap
+  let r := t.comp p
+  let U := t.domain.ι ''ᵁ t.hom ⁻¹ᵁ p.domain
+  have hr : r.toRationalMap = g.toRationalMap := by
+    rw [hg, ← q.toRationalMap_toPartialMap, RationalMap.toRationalMap_comp]
+  have hrg : r.hom = U.ι ≫ g :=
+    (PartialMap.equiv_toPartialMap_iff_of_isSeparated (terminal.from Y) (terminal.from Z)
+      (by simp)).mp (PartialMap.toRationalMap_eq_iff.mp hr)
+  have hd : U = f ⁻¹ᵁ q.domain := by
+    have htop : U = (⊤ : Y.Opens).ι ''ᵁ (((⊤ : Y.Opens).ι ≫ f) ⁻¹ᵁ q.domain) := (rfl)
+    rw [htop,
+      Hom.comp_preimage, Hom.image_preimage_eq_opensRange_inf, Opens.opensRange_ι, top_inf_eq]
+  let d : U.toScheme ⟶ p.domain.toScheme :=
+    (t.domain.ι.isoImage _).inv ≫ t.hom ∣_ p.domain
+  have hdf : d ≫ p.domain.ι = U.ι ≫ f := by
+    dsimp only [d, U]
+    rw [Category.assoc, morphismRestrict_ι]
+    exact Hom.isoImage_inv_ι_assoc t.domain.ι (t.hom ⁻¹ᵁ p.domain) f
+  have hdr : d ≫ p.hom = r.hom := (Category.assoc _ _ _).symm
+  have ha' : Set.range a ⊆ Set.range U.ι := by
+    rw [Opens.range_ι, hd]
+    rintro _ ⟨x, rfl⟩
+    exact f.mem_preimage.mpr (ha ⟨x, rfl⟩)
+  have hb' : Set.range b ⊆ Set.range U.ι := by
+    rw [Opens.range_ι, hd]
+    rintro _ ⟨x, rfl⟩
+    have ha'' : Set.range (b ≫ f) ⊆ q.domain := hab ▸ ha
+    exact f.mem_preimage.mpr (ha'' ⟨x, rfl⟩)
+  let a' := IsOpenImmersion.lift U.ι a ha'
+  let b' := IsOpenImmersion.lift U.ι b hb'
+  have e : a' ≫ d = b' ≫ d := by
+    apply (cancel_mono p.domain.ι).mp
+    simpa only [Category.assoc, hdf, a', b', IsOpenImmersion.lift_fac_assoc] using hab
+  simpa only [Category.assoc, hdr, hrg, a', b', IsOpenImmersion.lift_fac_assoc]
+    using congrArg (· ≫ p.hom) e
 
 /-- If a dominant morphism resolves `q`, then every open over which the morphism is
 an isomorphism belongs to the domain of `q`. -/
