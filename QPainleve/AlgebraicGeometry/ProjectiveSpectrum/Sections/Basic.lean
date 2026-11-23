@@ -231,6 +231,18 @@ private theorem toProjectiveSpaceChart_comp_awayι (i : ι) :
     ((mem_homogeneousSubmodule _ _).mpr (isHomogeneous_X R i)) (chartEval_isUnit M f s i)]
   exact Category.assoc _ _ _
 
+/-- On a coordinate chart, the inverse image of another coordinate open is the
+restriction of the corresponding section's nonvanishing locus. -/
+@[simp]
+theorem toProjectiveSpaceChart_awayι_preimage_basicOpen (i j : ι) :
+    M.toProjectiveSpaceChart f s i ⁻¹ᵁ
+        (Proj.awayι (homogeneousSubmodule ι R) (MvPolynomial.X i)
+          ((mem_homogeneousSubmodule _ _).mpr (isHomogeneous_X R i)) one_pos ⁻¹ᵁ
+            Proj.basicOpen (homogeneousSubmodule ι R) (.X j)) =
+      (Dₛ[i]).ι ⁻¹ᵁ Dₛ[j] := by
+  rw [← Scheme.Hom.comp_preimage, toProjectiveSpaceChart_comp_awayι]
+  exact chartHom_preimage_basicOpen M f s i j
+
 /-- The maps to projective space defined on two coordinate opens agree on their overlap. -/
 theorem toProjectiveSpaceChart_awayι_eq_on_inf (i j : ι) :
     X.homOfLE (inf_le_left : Dₛ[i] ⊓ Dₛ[j] ≤ Dₛ[i]) ≫
