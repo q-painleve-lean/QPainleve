@@ -63,9 +63,7 @@ private theorem rayDualFace_saturated : (rayDualFace ρ).AddSaturated := by
 
 private theorem isRegularCone_toCone : IsRegularCone i ρ.toCone.val := by
   rw [ρ.toCone_eq_hull_primitiveGenerator]
-  apply isRegularCone_hull_singleton Φ.lattice
-  rw [Ray.primitiveGenerator_def]
-  exact primitiveGenerator_isPrimitive Φ.lattice (Φ.isToricCone ρ.toCone.property) _
+  exact isRegularCone_hull_singleton Φ.lattice ρ.primitiveGenerator_isPrimitive
 
 variable {m : N →+ ℤ}
 

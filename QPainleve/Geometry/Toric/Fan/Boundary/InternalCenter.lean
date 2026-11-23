@@ -31,10 +31,8 @@ variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
 
 /-- The determinant character of a primitive ray generator takes every integral value. -/
 theorem Ray.surjective_detCharacter (ρ : Φ.Ray) (b : Module.Basis (Fin 2) ℤ N) :
-    Function.Surjective (b.detDualEquiv ρ.primitiveGenerator).toAddMonoidHom := by
-  apply b.surjective_detDualEquiv_of_isPrimitive
-  rw [Ray.primitiveGenerator_def]
-  exact primitiveGenerator_isPrimitive Φ.lattice (Φ.isToricCone ρ.toCone.property) _
+    Function.Surjective (b.detDualEquiv ρ.primitiveGenerator).toAddMonoidHom :=
+  b.surjective_detDualEquiv_of_isPrimitive ρ.primitiveGenerator_isPrimitive
 
 variable [h₀ : Nonempty Φ.cones] (b : Module.Basis (Fin 2) ℤ N)
 

@@ -147,7 +147,7 @@ private theorem chartHom_basisMonomial_mul_ratioMonomial (j : Fin 2) :
 private theorem chartHom_basisMonomial_isRegular (j : Fin 2) :
     IsRegular (chartHom hi b j (basisMonomial hi b j)) := by
   rw [chartHom_basisMonomial, MonoidAlgebra.of_apply, isRegular_iff_mem_nonZeroDivisors]
-  exact MonoidAlgebra.single_mem_nonZeroDivisors _ (one_mem _)
+  exact TauCeti.MonoidAlgebra.single_mem_nonZeroDivisors_iff.mpr (one_mem _)
 
 private def pointIdeal : Ideal R := RingHom.ker
   (distinguishedPoint hi (⊤ : (basisCone b i).Face)).toRingHom

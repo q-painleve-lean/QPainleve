@@ -40,45 +40,34 @@ theorem nonempty_ray_of_isComplete (Φ : Fan i) [Nontrivial N] (hc : Φ.IsComple
   obtain ⟨ρ, -⟩ := Φ.exists_ray_le_of_ne_bot ⟨σ, hσ⟩ hne
   exact ⟨ρ⟩
 
-/-- The generator of a fan ray as a primitive lattice vector. -/
-def Ray.primitiveGenerator (ρ : Φ.Ray) : N :=
-  TauCeti.Toric.primitiveGenerator Φ.lattice (Φ.isToricCone ρ.toCone.property)
-    (Ray.toToricRay Φ ρ ρ.toCone le_rfl)
-
 /-- The primitive generator of a fan ray is the primitive generator in its ray cone. -/
 theorem Ray.primitiveGenerator_def (ρ : Φ.Ray) :
     ρ.primitiveGenerator =
       TauCeti.Toric.primitiveGenerator Φ.lattice (Φ.isToricCone ρ.toCone.property)
-        (Ray.toToricRay Φ ρ ρ.toCone le_rfl) := (rfl)
+        (Ray.toToricRay Φ ρ ρ.toCone le_rfl) :=
+  (ρ.primitiveGenerator_toToricRay ρ.toCone le_rfl).symm
 
 /-- A fan ray is the cone spanned by its primitive generator. -/
 theorem Ray.toCone_eq_hull_primitiveGenerator (ρ : Φ.Ray) :
     ρ.toCone.val = PointedCone.hull ℝ {i (Ray.primitiveGenerator ρ)} := by
   classical
-  let σ := ρ.toCone
-  let r := Ray.toToricRay Φ ρ σ le_rfl
-  let hσ := Φ.isToricCone σ.property
-  have hr : r.toPointedCone = σ.val := Ray.toPointedCone_toToricRay Φ ρ σ le_rfl
-  have hne : i (TauCeti.Toric.primitiveGenerator Φ.lattice hσ r) ≠ 0 := by
-    rw [map_ne_zero_iff _ Φ.lattice.injective]
-    exact primitiveGenerator_ne_zero Φ.lattice hσ r
-  exact hr ▸ r.eq_hull_singleton (hσ.salient.anti r.val.isFaceOf.le)
-    (primitiveGenerator_mem Φ.lattice hσ r) hne
+  let r := ρ.toToricRay Φ ρ.toCone le_rfl
+  have hr : r.toPointedCone = ρ.toCone.val := Ray.toPointedCone_toToricRay Φ ρ ρ.toCone le_rfl
+  have hp : IsPrimitiveGenerator i r ρ.primitiveGenerator :=
+    ρ.isPrimitiveGenerator_primitiveGenerator ρ.toCone le_rfl
+  rw [← hr]
+  exact r.eq_hull_singleton ((Φ.isToricCone ρ.toCone.property).salient.anti r.val.isFaceOf.le)
+    hp.mem ((map_ne_zero_iff _ Φ.lattice.injective).mpr hp.ne_zero)
 
 /-- The canonical primitive generator, using the toric ray of the ray cone itself. -/
 theorem Ray.isPrimitiveGenerator (ρ : Φ.Ray) :
     IsPrimitiveGenerator i (ρ.toToricRay Φ ρ.toCone le_rfl) ρ.primitiveGenerator :=
-  isPrimitiveGenerator_primitiveGenerator Φ.lattice (Φ.isToricCone ρ.toCone.property) _
+  ρ.isPrimitiveGenerator_primitiveGenerator ρ.toCone le_rfl
 
 /-- A fan ray has a nonzero primitive generator. -/
 @[simp]
 theorem Ray.primitiveGenerator_ne_zero (ρ : Φ.Ray) : ρ.primitiveGenerator ≠ 0 :=
   ρ.isPrimitiveGenerator.ne_zero
-
-/-- The primitive generator belongs to its ray in the ambient real vector space. -/
-theorem Ray.primitiveGenerator_mem (ρ : Φ.Ray) : i ρ.primitiveGenerator ∈ ρ.toCone.val := by
-  rw [← Ray.toPointedCone_toToricRay Φ ρ ρ.toCone le_rfl]
-  exact ρ.isPrimitiveGenerator.mem
 
 /-- A character lies in the dual semigroup of a ray exactly when it pairs nonnegatively
 with the primitive generator. -/
@@ -159,14 +148,8 @@ theorem IsSubdivision.ray_mem (h : Ψ.IsSubdivision Φ) (ρ : Φ.Ray) :
 
 /-- A primitive lattice vector lying in a ray is its canonical generator. -/
 theorem Ray.primitiveGenerator_eq_of_mem_of_isPrimitive (ρ : Φ.Ray) {v : N}
-    (hm : i v ∈ ρ.toCone.val) (hp : IsPrimitive v) : ρ.primitiveGenerator = v := by
-  have hv : IsPrimitiveGenerator i (ρ.toToricRay Φ ρ.toCone le_rfl) v := by
-    apply isPrimitiveGenerator_iff.mpr
-    refine ⟨?_, hp⟩
-    -- Express toric ray membership in its underlying pointed cone.
-    change i v ∈ (ρ.toToricRay Φ ρ.toCone le_rfl).toPointedCone
-    rwa [Ray.toPointedCone_toToricRay]
-  exact (hv.eq_primitiveGenerator Φ.lattice (Φ.isToricCone ρ.toCone.property)).symm
+    (hm : i v ∈ ρ.toCone.val) (hp : IsPrimitive v) : ρ.primitiveGenerator = v :=
+  ρ.primitiveGenerator_eq_iff.mpr ⟨hm, hp⟩
 
 /-- An old ray, viewed as a ray of the subdividing fan. Its underlying cone is definitionally
 the original cone, so the two affine charts share a coordinate ring. -/
@@ -232,37 +215,11 @@ theorem Ray.primitiveGenerator_ofPrimitiveGenerator {v : N} (hv : IsPrimitive v)
     (PointedCone.subset_hull (Set.mem_singleton _)) hv
 
 /-- The primitive generator determines a fan ray. -/
-theorem Ray.primitiveGenerator_injective : Function.Injective (Ray.primitiveGenerator (Φ := Φ)) :=
+theorem Ray.primitiveGenerator_injective : Function.Injective (Ray.primitiveGenerator (Phi := Φ)) :=
   fun ρ τ h ↦ by
     apply Subtype.ext
     apply Subtype.ext
     rw [Ray.toCone_eq_hull_primitiveGenerator ρ, Ray.toCone_eq_hull_primitiveGenerator τ, h]
-
-/-- Viewing a cone ray as a fan ray preserves its primitive lattice generator. -/
-@[simp]
-theorem Ray.primitiveGenerator_ofToricRay (σ : Φ.cones) (ρ : ToricRay σ.val) :
-    (Ray.ofToricRay Φ σ ρ).primitiveGenerator =
-      TauCeti.Toric.primitiveGenerator Φ.lattice (Φ.isToricCone σ.property) ρ := by
-  let τ := (Ray.ofToricRay Φ σ ρ).toCone
-  let hface := Φ.isFaceOf_of_le σ.property τ.property (Ray.toCone_ofToricRay_le Φ σ ρ)
-  let r := Ray.toToricRay Φ (Ray.ofToricRay Φ σ ρ) τ le_rfl
-  have hr : ToricRay.faceEmbedding hface r = ρ := by
-    apply SetLike.coe_injective
-    exact congrArg (fun C : PointedCone ℝ V ↦ (C : Set V)) <| by
-      rw [ToricRay.toPointedCone_faceEmbedding, Ray.toPointedCone_toToricRay,
-        Ray.toCone_ofToricRay]
-  rw [Ray.primitiveGenerator_def]
-  exact (primitiveGenerator_faceEmbedding Φ.lattice (Φ.isToricCone σ.property) hface r).symm.trans
-    (congrArg (TauCeti.Toric.primitiveGenerator Φ.lattice (Φ.isToricCone σ.property)) hr)
-
-/-- The primitive generator of a fan ray agrees with its generator in every containing cone. -/
-@[simp]
-theorem Ray.primitiveGenerator_toToricRay (ρ : Φ.Ray) (σ : Φ.cones) (h : ρ.toCone ≤ σ) :
-    Toric.primitiveGenerator Φ.lattice (Φ.isToricCone σ.property)
-      (ρ.toToricRay Φ σ h) = ρ.primitiveGenerator := by
-  have he := congrArg (fun s : {r : Φ.Ray // r.toCone ≤ σ} ↦ s.val.primitiveGenerator)
-    ((Φ.rayEquiv σ).symm_apply_apply ⟨ρ, h⟩)
-  simpa only [rayEquiv_apply, rayEquiv_symm_apply, Ray.primitiveGenerator_ofToricRay] using he
 
 /-- On a complete fan, a lattice character nonnegative on every primitive ray
 generator is zero. -/

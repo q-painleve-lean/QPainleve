@@ -42,7 +42,7 @@ variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {ι : Type} [DecidableEq ι] (s : ι → Φ.Ray) (p : ι)
   (c : Multiplicative (ι → ℤ) →* ℂˣ)
 
-local notation "u" j:arg => Ray.primitiveGenerator (Φ := Φ) (s j)
+local notation "u" j:arg => Ray.primitiveGenerator (Phi := Φ) (s j)
 local notation "χ(" x ")" => LinearMap.toAddMonoidHom (b.detDualEquiv x)
 local notation "c[" j "]" => c (ofAdd (Pi.single j 1))
 local notation "K(" F ")" => Scheme.functionField (Fan.algebraicRealization F)
