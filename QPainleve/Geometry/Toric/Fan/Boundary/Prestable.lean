@@ -11,12 +11,10 @@ public import TauCeti.AlgebraicGeometry.IdealSheaf.Over
 public import TauCeti.Geometry.Toric.Algebraic.Fan.Over
 
 import Mathlib.Analysis.Complex.Polynomial.Basic
-import QPainleve.AlgebraicGeometry.Curves.Node.Split
 import QPainleve.Geometry.Toric.Fan.Boundary.Component
 import QPainleve.Geometry.Toric.Fan.Boundary.InternalCenter
 import QPainleve.Geometry.Toric.Fan.Boundary.Intersection
 import QPainleve.Geometry.Toric.Fan.CyclicOrder
-import QPainleve.Geometry.Toric.Fan.TwoDimensional
 import TauCeti.AlgebraicGeometry.Geometrically.Irreducible
 import TauCeti.AlgebraicGeometry.Morphisms.Dominant
 import TauCeti.AlgebraicGeometry.Pullback.Carrier
@@ -44,82 +42,10 @@ namespace TauCeti.Toric.Fan
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {Φ : Fan i}
 
-private theorem exists_twoRayChart_apply_eq (hΦ : Φ.IsRegular) (hc : Φ.IsComplete)
-    (hdim : Module.finrank ℤ N = 2) (x : Φ.algebraicRealization) :
-    ∃ (υ : Φ.cones) (_ : Nat.card (ToricRay υ.val) = 2)
-      (y : Φ.affineToricChart υ), Φ.affineToricChartι υ y = x := by
-  obtain ⟨σ, y, hy⟩ := Φ.exists_affineToricChartι_apply_eq x
-  obtain ⟨υ, hσυ, hυ⟩ := exists_le_cone_of_card_toricRay_eq_two hΦ hc hdim σ
-  let j := faceAffineToricSchemeMap Φ.lattice (Φ.isFaceOf_of_le υ.property σ.property hσυ)
-  refine ⟨υ, hυ, j y, ?_⟩
-  rw [← Scheme.Hom.comp_apply, Φ.faceAffineToricSchemeMap_comp_affineToricChartι]
-  exact hy
-
 variable [Nonempty Φ.cones]
 
 local notation "D" => Φ.boundaryIdeal inferInstance
 local notation "boundaryMap" => subschemeι D ≫ Φ.algebraicRealizationStructureMap
-
-/-- The reduced boundary of a complete regular rank-two fan is nodal over `ℂ`. -/
-theorem atWorstNodalOfRelativeDimensionOne_boundary (hΦ : Φ.IsRegular) (hc : Φ.IsComplete)
-    (hdim : Module.finrank ℤ N = 2) : AtWorstNodalOfRelativeDimensionOne boundaryMap := by
-  classical
-  let J := {σ : Φ.cones // Nat.card (ToricRay σ.val) = 2}
-  choose q b hpb hbase _ using fun σ : J ↦
-    Φ.exists_isPullback_boundaryIdeal_splitNode hΦ σ.val hdim σ.property
-  let (σ : J) : IsOpenImmersion (b σ) :=
-    MorphismProperty.of_isPullback (P := @IsOpenImmersion) (hpb σ) inferInstance
-  let U : (D).subscheme.OpenCover := Scheme.Cover.mkOfCovers J _ b (by
-    intro x
-    obtain ⟨σ, hσ, y, hy⟩ := exists_twoRayChart_apply_eq hΦ hc hdim ((D).subschemeι x)
-    refine ⟨⟨σ, hσ⟩, ?_⟩
-    rw [← Set.mem_range, Scheme.Pullback.range_snd_of_isPullback (hpb ⟨σ, hσ⟩)]
-    exact ⟨y, hy⟩)
-  refine IsZariskiLocalAtSource.of_openCover (P := @AtWorstNodalOfRelativeDimensionOne) U ?_
-  intro σ
-  -- Unfold the cover member so that its inclusion is the chosen split-node chart.
-  change AtWorstNodalOfRelativeDimensionOne (b σ ≫ boundaryMap)
-  exact (hbase (σ : J)).symm ▸ NodeAlgebra.atWorstNodalOfRelativeDimensionOne 0
-
-/-- Each node of the reduced boundary is the distinguished point of a unique two-ray
-cone, and each such cone gives a node. -/
-theorem isNodeOfReducedBoundary_iff_existsUnique_twoRayCone (hΦ : Φ.IsRegular) (hc : Φ.IsComplete)
-    (hdim : Module.finrank ℤ N = 2) {x : Φ.algebraicRealization} :
-    (D).IsNodeOfReducedBoundary Φ.algebraicRealizationStructureMap x ↔
-      ∃! σ : Φ.cones, Nat.card (ToricRay σ.val) = 2 ∧
-        Φ.distinguishedPointHom σ (IsLocalRing.closedPoint ℂ) = x := by
-  have : IsReduced (D).subscheme := by
-    rw [Φ.boundaryIdeal_def]
-    infer_instance
-  constructor
-  · rw [isNodeOfReducedBoundary_iff_of_isReduced]
-    rintro ⟨z, rfl, hz⟩
-    obtain ⟨σ, hσ, y, hy⟩ := exists_twoRayChart_apply_eq hΦ hc hdim ((D).subschemeι z)
-    obtain ⟨q, b, hpb, hbase, ho⟩ := Φ.exists_isPullback_boundaryIdeal_splitNode hΦ σ hdim hσ
-    have : IsOpenImmersion b :=
-      MorphismProperty.of_isPullback (P := @IsOpenImmersion) hpb inferInstance
-    have hz' : z ∈ Set.range b := by
-      rw [Scheme.Pullback.range_snd_of_isPullback hpb]
-      exact ⟨y, hy⟩
-    obtain ⟨w, rfl⟩ := hz'
-    have hw := (Scheme.Hom.isNodeAt_comp_iff_of_isOpenImmersion boundaryMap b w).mpr hz
-    rw [hbase] at hw
-    obtain ⟨o, rfl⟩ := (NodeAlgebra.isNodeAt_iff_mem_range_origin w).mp hw
-    have hcomp : Spec.map (CommRingCat.ofHom (NodeAlgebra.origin ℂ).toRingHom) ≫
-        b ≫ (D).subschemeι = Φ.distinguishedPointHom σ := by
-      rw [← hpb.w, ho]
-    have ho' : o = IsLocalRing.closedPoint ℂ := Subsingleton.elim _ _
-    subst o
-    have hx := congrArg
-      (fun a : Spec (.of ℂ) ⟶ Φ.algebraicRealization ↦ a (IsLocalRing.closedPoint ℂ)) hcomp.symm
-    refine ⟨σ, ⟨hσ, hx⟩, fun τ ⟨hτ, hpt⟩ ↦ ?_⟩
-    apply Φ.eq_of_le_fullCone hΦ hdim hτ
-    let p : Spec (.of ℂ) := IsLocalRing.closedPoint ℂ
-    have hm := (Φ.distinguishedPointHom_mem_range_affineToricChartι_iff σ σ p).mpr le_rfl
-    exact (Φ.distinguishedPointHom_mem_range_affineToricChartι_iff τ σ p).mp
-      ((hpt.trans hx.symm).symm ▸ hm)
-  · rintro ⟨σ, ⟨hσ, rfl⟩, -⟩
-    exact Φ.isNodeOfReducedBoundary_distinguishedPointHom hΦ σ hdim hσ
 
 private theorem range_boundaryComponentι_inter_nonempty (hΦ : Φ.IsRegular)
     (hdim : Module.finrank ℤ N = 2) {ρ τ : Φ.Ray} (hne : ρ ≠ τ)
