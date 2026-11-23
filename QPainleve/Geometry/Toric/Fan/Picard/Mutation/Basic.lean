@@ -5,7 +5,7 @@ Authors: The QPainleve contributors
 -/
 module
 
-public import QPainleve.Geometry.Toric.Fan.Mutation
+public import QPainleve.Geometry.Toric.Fan.Mutation.Basic
 public import QPainleve.Geometry.Toric.Fan.Picard.BoundaryQuotient
 
 import Mathlib.LinearAlgebra.Reflection

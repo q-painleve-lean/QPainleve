@@ -62,6 +62,23 @@ theorem mutationRayEquiv_apply_lattice (u : N) :
     LinearMap.toAddMonoidHom_coe, mutationCharacter_apply, map_add, map_zsmul,
     ← Int.cast_smul_eq_zsmul ℝ, Int.cast_max, Int.cast_zero]
 
+/-- The mutation shear is the identity on the nonnegative determinant-character half-plane. -/
+theorem mutationRayEquiv_apply_of_nonneg
+    {x : V} (hx : 0 ≤ hi.realCharacter (b.detDualEquiv v).toAddMonoidHom x) :
+    hi.mutationRayEquiv b v x = x := by
+  have hm : (-b.detDualEquiv v).toAddMonoidHom = -(b.detDualEquiv v).toAddMonoidHom := (rfl)
+  rw [mutationRayEquiv_apply, hm, map_neg, LinearMap.neg_apply, max_eq_right (neg_nonpos.mpr hx),
+    zero_smul, add_zero]
+
+/-- On the nonpositive determinant-character half-plane, the mutation shear acts by
+subtracting the value of the determinant character times the pivot. -/
+theorem mutationRayEquiv_apply_of_nonpos
+    {x : V} (hx : hi.realCharacter (b.detDualEquiv v).toAddMonoidHom x ≤ 0) :
+    hi.mutationRayEquiv b v x =
+      x + -(hi.realCharacter (b.detDualEquiv v).toAddMonoidHom x) • i v := by
+  have hm : (-b.detDualEquiv v).toAddMonoidHom = -(b.detDualEquiv v).toAddMonoidHom := (rfl)
+  rw [mutationRayEquiv_apply, hm, map_neg, LinearMap.neg_apply, max_eq_left (neg_nonneg.mpr hx)]
+
 /-- The ray shear takes the hull of a vector to the hull of its image. -/
 theorem image_mutationRayEquiv_hull_singleton (x : V) :
     hi.mutationRayEquiv b v '' (PointedCone.hull ℝ {x} : Set V) =
@@ -115,6 +132,17 @@ rays along the mutation line. -/
 def mutationFan : Fan i :=
   Φ.mapPiecewiseLinear (Φ.lattice.mutationRayEquiv b v)
     (Φ.mutationRayEquiv_isPiecewiseLinear b hv hpos hneg)
+
+/-- The cone poset of the mutated fan, indexed by the original fan. -/
+def mutationFanConeEquiv : Φ.cones ≃o (Φ.mutationFan b hv hpos hneg).cones :=
+  Φ.mapPiecewiseLinearConeEquiv _ _
+
+/-- The corresponding cone is the image under the piecewise-linear mutation. -/
+@[simp]
+theorem coe_mutationFanConeEquiv (σ : Φ.cones) :
+    ((Φ.mutationFanConeEquiv b hv hpos hneg σ).val : Set V) =
+      Φ.lattice.mutationRayEquiv b v '' (σ.val : Set V) :=
+  Φ.coe_mapPiecewiseLinearConeEquiv _ _ σ
 
 /-- The cones in the mutated fan are the images of the original cones under the ray shear. -/
 theorem mem_mutationFan_cones {τ : PointedCone ℝ V} :
