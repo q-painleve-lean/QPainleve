@@ -24,7 +24,6 @@ universe u
 namespace AlgebraicGeometry.Scheme.Hom
 
 /-- Pulling a global section back to the top open agrees with its canonical pullback. -/
-@[simp]
 theorem pullbackSectionsLE_top {X Y : Scheme.{u}} (f : X ⟶ Y) {M : Y.Modules} (s : Γ(M, ⊤)) :
     f.pullbackSectionsLE M ⊤ ⊤ f.preimage_top.ge s = f.pullbackSections M ⊤ s := by
   let N := (Modules.pullback f).obj M
