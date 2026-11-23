@@ -240,7 +240,8 @@ theorem affineRationalPullback_eq_iff (f g : (scheme k C) ⤏ (scheme k B))
   obtain ⟨a, rfl⟩ := (affineFractionRingEquiv k B).surjective x
   exact (affineFractionRingEquiv k C).symm.injective (DFunLike.congr_fun h a)
 
-private theorem preimage_fromSpecStalk (k B : Type u) [Field k] [AddCommGroup B]
+/-- The generic-point morphism of a character torus is induced by its Laurent ring inclusion. -/
+theorem preimage_fromSpecStalk (k B : Type u) [Field k] [AddCommGroup B]
     [Module ℤ B] [Module.Free ℤ B] :
     (Spec.preimage ((scheme k B).fromSpecStalk (genericPoint (scheme k B)))).hom =
       (affineFractionRingEquiv k B).toRingHom.comp
