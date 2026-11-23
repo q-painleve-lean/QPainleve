@@ -14,7 +14,7 @@ review = "q-painleve-lean/TauCetiReview"
 # Enable and create these repositories when choosing the corresponding extras.
 # data = "q-painleve-lean/QPainleveData"
 # ci = "q-painleve-lean/QPainleveCI"
-# claims = "q-painleve-lean/QPainleve-claims"
+claims = "q-painleve-lean/QPainleve-claims"
 
 [lean]
 roots = ["QPainleve"]
@@ -72,7 +72,7 @@ upstream_destination = false
 [features]
 archives = false
 ci_archive = false
-claims = false
+claims = true
 docs = false
 progress = false
 zulip = false
