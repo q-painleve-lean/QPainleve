@@ -5,8 +5,8 @@ Authors: The QPainleve contributors
 -/
 module
 
+public import QPainleve.RingTheory.Ideal.AssociatedGraded
 public import TauCeti.RingTheory.Ideal.AffineBlowup
-public import TauCeti.RingTheory.Ideal.AssociatedGraded
 
 /-!
 # Exceptional multiplicity on an affine blowup chart
@@ -25,28 +25,6 @@ namespace Ideal
 
 variable {R S : Type*} [CommRing R] [CommRing S] [Algebra R S]
   {I : Ideal R} {a : R} [IsLocalization.Away a S]
-
-/-- If the initial form of `a` has degree one and the associated graded ring has no zero
-divisors, multiplying by `a ^ n` raises every ideal-power membership threshold by `n`. -/
-theorem pow_mul_mem_pow_add_iff_of_notMem_sq [NoZeroDivisors I.AssociatedGraded]
-    (ha : a ∈ I) (ha₂ : a ∉ I ^ 2) (n m : ℕ) (x : R) :
-    a ^ n * x ∈ I ^ (n + m) ↔ x ∈ I ^ m := by
-  have step (y : R) (j : ℕ) : a * y ∈ I ^ (j + 1) → y ∈ I ^ j := by
-    induction j with
-    | zero => simp
-    | succ j ih =>
-      intro h
-      have hx := ih (Ideal.pow_le_pow_right (Nat.le_succ _) h)
-      by_contra hx'
-      exact AssociatedGraded.mul_notMem_pow_succ (by simpa using ha) ha₂ hx hx'
-        (by simpa [Nat.add_comm 1 j] using h)
-  induction n with
-  | zero => simp
-  | succ n ih =>
-    rw [pow_succ', mul_assoc, Nat.succ_add]
-    exact ⟨fun h ↦ ih.mp (step _ _ h), fun h ↦ by
-      rw [pow_succ']
-      exact mul_mem_mul ha (ih.mpr h)⟩
 
 local notation "B" => I.affineBlowup a S
 local notation "aB" => algebraMap R B a

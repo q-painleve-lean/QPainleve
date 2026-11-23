@@ -6,8 +6,8 @@ Authors: The QPainleve contributors
 module
 
 public import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.Factorial
-import TauCeti.AlgebraicGeometry.IdealSheaf.Reduced
-import TauCeti.AlgebraicGeometry.Scheme.LocalDimension
+import QPainleve.AlgebraicGeometry.IdealSheaf.ClosedImmersion
+import QPainleve.AlgebraicGeometry.Scheme.LocalDimension
 
 /-!
 # Closed integral curves as effective Cartier divisors
@@ -32,26 +32,9 @@ public theorem isEffectiveCartier_ker_of_isRegular_of_dim_eq_two
     (k : Type u) [Field k] [X.Over (Spec (.of k))] [LocallyOfFiniteType (X ↘ Spec (.of k))]
     [IrreducibleSpace X] [IsRegular X] (hX : topologicalKrullDim X = 2)
     (hC : topologicalKrullDim C = 1) : i.ker.IsEffectiveCartier := by
-  let p := i (genericPoint C)
-  have hp : closure ({p} : Set X) = Set.range i := by
-    have h := (genericPoint_spec C).image i.continuous
-    rwa [Set.image_univ, i.isClosedEmbedding.isClosed_range.closure_eq] at h
-  have hdim := coheight_add_height_eq_topologicalKrullDim k p
-  rw [height_eq_topologicalKrullDim_closure_singleton, hp,
-    topologicalKrullDim_range_of_isPreimmersion, hC, hX] at hdim
-  have hcodim : Order.coheight p = 1 := by
-    apply ENat.add_left_injective_of_ne_top (n := 1) (by simp)
-    exact WithBot.coe_injective (by
-      simpa only [WithBot.coe_add, WithBot.coe_one] using hdim.trans
-        (by decide : (2 : WithBot ℕ∞) = 1 + 1))
-  have hs : i.ker.support = ⟨closure {p}, isClosed_closure⟩ := by
-    apply SetLike.coe_injective
-    rw [i.support_ker, i.isClosedEmbedding.isClosed_range.closure_eq, ← hp]
-    rfl
-  have : IsReduced i.ker.subscheme := isReduced_of_isOpenImmersion (CategoryTheory.inv i.toImage)
-  have hi := (IdealSheafData.isReduced_subscheme_iff_radical_eq i.ker).mp ‹_›
-  rw [← hi, ← IdealSheafData.vanishingIdeal_support, hs]
+  rw [i.ker_eq_vanishingIdeal_closure_genericPoint]
   exact IdealSheafData.isEffectiveCartier_vanishingIdeal_closure_singleton_of_isRegular
-    (fun x ↦ (WithBot.coe_le_coe.mp ((coheight_le_topologicalKrullDim x).trans_eq hX))) hcodim
+    (fun x ↦ WithBot.coe_le_coe.mp ((coheight_le_topologicalKrullDim x).trans_eq hX))
+    (i.coheight_apply_genericPoint_eq_one_of_dim_eq_two k hX hC)
 
 end AlgebraicGeometry.Scheme.Hom
