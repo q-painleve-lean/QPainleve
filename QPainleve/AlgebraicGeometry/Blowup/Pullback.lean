@@ -54,6 +54,18 @@ theorem isPullback_blowupMap_iff (I : X.IdealSheafData) (g : Y ⟶ X) :
       (asIso (I.blowupBaseChangeHom g)) (I.blowupBaseChangeHom_fst g)
       (I.blowupBaseChangeHom_snd g)
 
+/-- A flat morphism along which the center is already Cartier identifies its source
+with the base change of the blowup. -/
+theorem isPullback_blowupLift (I : X.IdealSheafData) (g : Y ⟶ X) [Flat g]
+    (hg : (I.comap g).IsEffectiveCartier) :
+    IsPullback (𝟙 Y) (I.blowupLift g hg) g I.blowupToBase := by
+  have : IsIso (I.comap g).blowupToBase := (isIso_blowupToBase_iff _).mpr hg
+  let e := asIso (I.comap g).blowupToBase
+  have hlift : e.inv ≫ I.blowupMap g = I.blowupLift g hg :=
+    I.eq_blowupLift hg (by simp [e, Category.assoc])
+  exact (I.isPullback_blowupMap_of_flat g).of_iso' e.symm (.refl _) (.refl _) (.refl _)
+    (by simp [e]) (by simpa using hlift) (by simp) (by simp)
+
 /-- A blowup commutes with base change by a morphism which is an isomorphism over the
 support of its center. -/
 theorem isPullback_blowupMap_of_support_subset_isoLocus (I : X.IdealSheafData) (g : Y ⟶ X)
