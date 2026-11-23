@@ -117,17 +117,26 @@ theorem picardHom_snoc_apply_toMul (T : BlowupTower X n Y) (I : Y.IdealSheafData
   rw [← pullbackHom_apply (f := I.blowupToBase) (a := ∏ j : Fin n, _), map_prod]
   simp only [pullbackHom_apply]
 
+/-- A morphism over a base map that preserves the ordered total exceptional classes
+pulls back the marked base class and retains the exceptional coefficients. -/
+theorem pullback_picardHom {T : BlowupTower X n Y} {T' : BlowupTower X' n Y'}
+    {f : X ⟶ X'} {g : Y ⟶ Y'} (h : g ≫ T'.toBase = T.toBase ≫ f)
+    (hE : ∀ j, pullback g (T'.exceptionalClass j) = T.exceptionalClass j)
+    (a : Additive (LineBundleClass X')) (b : Fin n → ℤ) :
+    pullback g (T'.picardHom (a, b)).toMul =
+      (T.picardHom (Additive.ofMul (pullback f a.toMul), b)).toMul := by
+  rw [picardHom_apply_toMul, picardHom_apply_toMul, pullback_mul, pullback_comp,
+    h, ← pullback_comp, ← pullbackHom_apply (f := g) (a := ∏ j, _)]
+  simp only [map_prod, pullbackHom_apply, pullback_zpow, hE, toMul_ofMul]
+
 /-- A lift through two towers pulls back the marked classes by pulling back their base
 classes and retaining their ordered exceptional coefficients. -/
 theorem IsLift.pullback_picardHom {T : BlowupTower X n Y} {T' : BlowupTower X' n Y'}
     {e : X ≅ X'} {g : Y ≅ Y'} (h : IsLift e T T' g)
     (a : Additive (LineBundleClass X')) (b : Fin n → ℤ) :
     pullback g.hom (T'.picardHom (a, b)).toMul =
-      (T.picardHom (Additive.ofMul (pullback e.hom a.toMul), b)).toMul := by
-  rw [picardHom_apply_toMul, picardHom_apply_toMul, pullback_mul, pullback_comp,
-    h.hom_toBase, ← pullback_comp, ← pullbackHom_apply (f := g.hom) (a := ∏ j, _)]
-  simp only [map_prod, pullbackHom_apply, pullback_zpow, h.pullback_exceptionalClass,
-    toMul_ofMul]
+      (T.picardHom (Additive.ofMul (pullback e.hom a.toMul), b)).toMul :=
+  BlowupTower.pullback_picardHom h.hom_toBase h.pullback_exceptionalClass a b
 
 private theorem bijective_picardHom_snoc {T : BlowupTower X n Y}
     (hT : Function.Bijective T.picardHom) [IsIntegral Y] [IsNoetherian Y]
