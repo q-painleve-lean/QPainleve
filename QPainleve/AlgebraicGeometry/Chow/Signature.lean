@@ -7,7 +7,7 @@ module
 
 public import Mathlib.Basic.Real.Basic
 public import QPainleve.AlgebraicGeometry.Blowup.Tower.Numerical
-public import QPainleve.AlgebraicGeometry.Chow.ProjectivePlane
+public import QPainleve.AlgebraicGeometry.Chow.ProjectivePlane.Basic
 public import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.Polynomial.Smooth
 public import TauCeti.LinearAlgebra.BilinearForm.BaseChange
 public import TauCeti.LinearAlgebra.QuadraticForm.Signature

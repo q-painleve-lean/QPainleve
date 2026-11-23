@@ -9,6 +9,10 @@ public import TauCeti.AlgebraicGeometry.Modules.Differentials.Forms
 public import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.Polynomial.Chart.Sections
 public import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.TwistingSheaf.LocalTriviality
 public import QPainleve.AlgebraicGeometry.Modules.ExteriorPower.Sections
+public import QPainleve.AlgebraicGeometry.Modules.Differentials.Canonical
+public import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.Picard
+public import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.Polynomial.Smooth
+import QPainleve.AlgebraicGeometry.Modules.Differentials.Restriction
 import TauCeti.AlgebraicGeometry.Modules.AffineRestriction
 import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.TwistingSheaf.Quasicoherent
 import TauCeti.Algebra.Category.ModuleCat.Sheaf.Hom
@@ -380,3 +384,34 @@ theorem differentialFormsTwoIsoTwistingSheaf_inv_app_chartGenerator
     (fromTwistLocal_twistOn R i hi)
 
 end AlgebraicGeometry.Proj
+
+namespace TauCeti.AlgebraicGeometry.LineBundleClass
+
+open _root_.AlgebraicGeometry QPainleve TauCeti.SymmetricAlgebra
+
+universe u
+
+attribute [local instance] MvPolynomial.gradedAlgebra
+
+variable (k : Type u) [CommRing k]
+
+local notation "P" => Proj (homogeneousSubmodule k (Fin 3 → k))
+local notation "basis" => Pi.basisFun k (Fin 3)
+
+/-- The canonical class of the projective plane is the class of the twist `𝒪(-3)`. -/
+theorem mk_canonicalBundle_projectivePlane :
+    mk (canonicalBundle k P 2) = mk (Proj.symmetricAlgebraTwistingBundle k (Fin 3 → k) (-3)) := by
+  let A := MvPolynomial.homogeneousSubmodule (Fin 3) k
+  let : (Proj A).Over (Spec (.of k)) := ⟨Proj.toSpecCoeff A⟩
+  let : SmoothOfRelativeDimension 2 (Proj A ↘ Spec (.of k)) :=
+    Proj.smoothOfRelativeDimension_polynomial k
+  let e := (basis).polynomialProjIso
+  let : e.hom.IsOver (Spec (.of k)) := ⟨(basis).polynomialProjIso_hom_over⟩
+  apply (pullbackEquiv e).injective
+  simp only [pullbackEquiv_apply, pullback_mk, mk_pullback_canonicalBundle, mk_eq_mk_iff,
+    canonicalBundle_obj, differentialForms_def, InvertibleSheaf.pullback_obj_obj,
+    Proj.symmetricAlgebraTwistingBundle_obj]
+  exact ⟨(Proj.differentialFormsTwoIsoTwistingSheaf k).trans
+    ((basis).polynomialProjIsoPullbackTwistingSheafIso (-3)).symm⟩
+
+end TauCeti.AlgebraicGeometry.LineBundleClass
