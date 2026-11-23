@@ -211,6 +211,40 @@ theorem alongBoundary_succ (i : D ⟶ X) [IsClosedImmersion i] {n : ℕ}
       ⟨_, (alongBoundary i (fun j : Fin n ↦ J j.castSucc)).2.snoc
         (J (Fin.last n)).val (J (Fin.last n)).property⟩ := (rfl)
 
+/-- A map to an ordered boundary blowup with projection factoring through the base
+boundary factors through its canonical strict transform by the same map if each center
+pulls back to an effective Cartier ideal. -/
+theorem eq_comp_boundaryι_of_comp_toBase_eq {S : Scheme.{u}} (i : D ⟶ X)
+    [IsClosedImmersion i] {n : ℕ} (J : Fin n → {K : D.IdealSheafData // K.IsEffectiveCartier})
+    (a : S ⟶ D) (ha : ∀ j, ((J j).val.comap a).IsEffectiveCartier)
+    (f : S ⟶ (alongBoundary i J).1) (hf : f ≫ (alongBoundary i J).2.toTower.toBase = a ≫ i) :
+    f = a ≫ (alongBoundary i J).2.boundaryι := by
+  let P {m : ℕ} (U : Σ Y, WithBoundary i m Y) :=
+    ∀ f : S ⟶ U.1, f ≫ U.2.toTower.toBase = a ≫ i → f = a ≫ U.2.boundaryι
+  suffices P (alongBoundary i J) from this f hf
+  clear f hf
+  induction n with
+  | zero =>
+    refine (congrArg P (alongBoundary_zero i J)).mpr ?_
+    intro f hf
+    simpa only [WithBoundary.toTower_nil, toBase_nil, Category.comp_id,
+      WithBoundary.boundaryι_nil] using hf
+  | succ n ih =>
+    refine (congrArg P (alongBoundary_succ i J)).mpr ?_
+    intro f hf
+    let T := (alongBoundary i (fun j : Fin n ↦ J j.castSucc)).2
+    let K := J (Fin.last n)
+    let I := K.val.map T.boundaryι
+    have hf' : (f ≫ I.blowupToBase) ≫ T.toTower.toBase = a ≫ i := by
+      simpa only [WithBoundary.toTower_snoc, toBase_snoc, Category.assoc] using hf
+    have h := ih (fun j ↦ J j.castSucc) (fun j ↦ ha j.castSucc) (f ≫ I.blowupToBase) hf'
+    apply I.blowup_hom_ext
+    · exact h.trans ((Category.assoc _ _ _).trans
+        (congrArg (a ≫ ·) (T.boundaryι_snoc_blowupToBase K.val K.property))).symm
+    · exact h.symm ▸ (by
+        rw [Scheme.IdealSheafData.comap_comp, Scheme.IdealSheafData.comap_map_of_isClosedImmersion]
+        exact ha (Fin.last n))
+
 /-- Isomorphisms matching the original boundary and the ordered centers lift through the
 whole tower and match the final strict transforms. Matching the centers is expressed on
 their ideal sheaves, so the statement applies also when a center occurs more than once. -/

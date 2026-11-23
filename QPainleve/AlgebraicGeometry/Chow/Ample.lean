@@ -55,14 +55,14 @@ theorem classIntersectionNumber_primeDivisorClass_pos_of_isAmple
   rw [classIntersectionNumber_primeDivisorClass_eq_intersectionNumber k hX]
   exact ha.intersectionNumber_pos I.subschemeι
 
-/-- An ample class has positive intersection with any nonzero effective Weil divisor. -/
-theorem classIntersectionNumber_weilToLineBundleClassHom_pos_of_isAmple [IsNoetherian X]
-    (hX : topologicalKrullDim X = 2) (ha : a.IsAmple)
+/-- A nonzero effective Weil divisor has positive intersection with an ample class. -/
+theorem classIntersectionNumber_weilToLineBundleClassHom_pos_of_isAmple
+    [IsNoetherian X] (hX : topologicalKrullDim X = 2) (ha : a.IsAmple)
     {D : SchemeWeilDivisor X} (hD : 0 ≤ D) (hne : D ≠ 0) :
     0 < classIntersectionNumber k X a
       (Scheme.CartierDivisor.weilToLineBundleClassHom X D).toMul := by
-  rw [classIntersectionNumber_weilToLineBundleClassHom k hX]
-  refine Finsupp.sum_pos (fun p hp ↦ ?_) hne
+  rw [classIntersectionNumber_weilToLineBundleClassHom k hX, Finsupp.sum]
+  refine Finset.sum_pos (fun p hp ↦ ?_) (Finsupp.support_nonempty_iff.mpr hne)
   exact mul_pos (lt_of_le_of_ne (hD p) (Finsupp.mem_support_iff.mp hp).symm)
     (classIntersectionNumber_primeDivisorClass_pos_of_isAmple k hX ha p)
 
@@ -74,9 +74,8 @@ theorem classIntersectionNumber_pos_of_isAmple (hX : topologicalKrullDim X = 2)
   have hdim : 0 < topologicalKrullDim X := by rw [hX]; decide
   obtain ⟨n, D, -, hE, hne, hDclass⟩ :=
     hb.exists_effectiveWeilDivisor_pow_eq (X ↘ Spec (.of k)) hdim
-  have hpow : 0 < classIntersectionNumber k X a (b ^ n) := by
-    rw [← hDclass]
-    exact classIntersectionNumber_weilToLineBundleClassHom_pos_of_isAmple k hX ha hE hne
+  have hpow := hDclass ▸ classIntersectionNumber_weilToLineBundleClassHom_pos_of_isAmple
+    k hX ha hE hne
   rw [classIntersectionNumber_pow_right k hX] at hpow
   exact pos_of_mul_pos_right hpow (Int.natCast_nonneg n)
 

@@ -42,6 +42,7 @@ variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
 
 local notation "X[" Δ "]" => algebraicRealization Δ
 local notation "s[" Δ "]" => algebraicRealizationStructureMap Δ
+local notation "rankTwo(" b ")" => (Eq.trans (Module.finrank_eq_card_basis b) (Fintype.card_fin 2))
 
 private theorem exists_coordinates_of_orderedFactorization (b : Module.Basis (Fin 2) ℤ N)
     (hΨ : Ψ.IsRegular) (hc : Ψ.IsComplete)
@@ -153,5 +154,43 @@ theorem exists_toric_internal_factorization (b : Module.Basis (Fin 2) ℤ N)
       hbound, Scheme.Hom.ker_comp_of_isIso]
   · rw [← hdBase]
     simpa only [a, Category.assoc, Iso.inv_hom_id_assoc] using F.center_toBase j
+
+/-- A specified logarithmic point blowup tower over a complete regular toric surface
+factors as a native toric subdivision followed by ordered internal binomial blowups.
+The projection and the final boundary agree as schemes, and each binomial center has the
+same morphism to the original surface as its labeled residue scheme. The construction
+allows repeated centers and uses the given lattice basis for the binomial coordinates. -/
+theorem exists_toric_internal_factorization_with_binomial_centers
+    (b : Module.Basis (Fin 2) ℤ N) (hΦ : Φ.IsRegular) (hc : Φ.IsComplete)
+    {T : BlowupTower X[Φ] n Y}
+    {P : Y.IdealSheafData} {c : Fin m → Over X[Φ]}
+    (hT : IsLogarithmicBoundaryTower (Φ.boundaryIdeal hc.nonempty_cones) s[Φ] T P c) :
+    ∃ (Ψ : Fan i) (_ : Ψ.IsRegular) (u : Ψ.IsSubdivision Φ)
+      (ρ : Fin m → Ψ.Ray) (z : Fin m → ℂˣ),
+      let : Nonempty Ψ.cones := u.nonempty_cones_of_nonempty hc.nonempty_cones
+      let A := Ψ.internalBlowupTower b ρ z
+      ∃ e : A.1 ≅ Y, e.hom ≫ T.toBase = A.2.toTower.toBase ≫ u.toFanHom.algebraicMap ∧
+        P.comap e.hom = A.2.boundaryι.ker ∧
+        ∀ j, ∃ a : Spec (.of ℂ) ≅ (c j).left,
+          (ρ j).binomialCenterOnBoundary rankTwo(b) (b.detDualEquiv_self _)
+              ((ρ j).surjective_detCharacter b) (z j) ≫
+              (Ψ.boundaryIdeal inferInstance).subschemeι ≫ u.toFanHom.algebraicMap =
+            a.hom ≫ (c j).hom := by
+  obtain ⟨Ψ, hΨ, u, ρ, z, e, a, he, hP, ha, hcenter⟩ :=
+    Φ.exists_toric_internal_factorization b hΦ hc hT
+  let : Nonempty Ψ.cones := u.nonempty_cones_of_nonempty hc.nonempty_cones
+  refine ⟨Ψ, hΨ, u, ρ, z, e, he, hP, fun j ↦ ?_⟩
+  let p := (ρ j).binomialCenterOnBoundary rankTwo(b) (b.detDualEquiv_self _)
+    ((ρ j).surjective_detCharacter b) (z j)
+  have : IsClosedImmersion (a j) := ha j
+  have : IsClosedImmersion p := (ρ j).isClosedImmersion_binomialCenterOnBoundary
+    rankTwo(b) (b.detDualEquiv_self _) ((ρ j).surjective_detCharacter b) (z j)
+  have hk : (a j).ker = p.ker := (hcenter j).1.trans (Ray.internalCenter_val ..)
+  have := IsClosedImmersion.isIso_lift (a j) p hk
+  let d := asIso (IsClosedImmersion.lift (a j) p hk.le)
+  have hd : d.hom ≫ a j = p := IsClosedImmersion.lift_fac _ _ _
+  refine ⟨d, ?_⟩
+  change p ≫ _ ≫ _ = _
+  rw [← hd, Category.assoc, (hcenter j).2]
 
 end TauCeti.Toric.Fan

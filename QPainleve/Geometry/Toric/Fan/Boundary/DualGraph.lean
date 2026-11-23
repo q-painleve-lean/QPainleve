@@ -6,6 +6,7 @@ Authors: The QPainleve contributors
 module
 
 public import Mathlib.Analysis.Complex.Polynomial.Basic
+public import QPainleve.AlgebraicGeometry.Curves.Node.Conductor.Coordinates
 public import QPainleve.Geometry.Toric.Fan.Boundary.Normalization
 public import QPainleve.Geometry.Toric.Fan.CyclicOrder
 public import TauCeti.AlgebraicGeometry.Curves.DualGraph.Cycle
@@ -166,3 +167,55 @@ theorem exists_toric_boundary_dualGraph_cycle (p : ι → (C ↘ base).smoothLoc
   · simpa [f, DualGraph.cycle] using hr j
 
 end TauCeti.Toric.Fan
+
+namespace TauCeti.Toric.FanEquiv
+
+variable {N N' V V' : Type} [AddCommGroup N] [AddCommGroup N']
+  [AddCommGroup V] [AddCommGroup V'] [Module ℝ V] [Module ℝ V']
+  {i : N →+ V} {i' : N' →+ V'} {Φ : Fan i} {Ψ : Fan i'} (e : FanEquiv Φ Ψ)
+
+variable [hΦ₀ : Nonempty Φ.cones] [hΨ₀ : Nonempty Ψ.cones]
+
+local notation "base" => Spec (CommRingCat.of ℂ)
+local notation "D[" Φ "]" => Fan.boundaryIdeal Φ inferInstance
+local notation "C[" Φ "]" => Scheme.IdealSheafData.subscheme (D[Φ])
+local notation "g" => e.boundaryIso hΦ₀ hΨ₀
+
+variable [PrestableFamily (C[Φ] ↘ base)] [PrestableFamily (C[Ψ] ↘ base)]
+
+variable {α β : Type*} {p : α → (C[Φ] ↘ base).smoothLocus}
+  {p' : β → (C[Ψ] ↘ base).smoothLocus}
+
+local notation "G[" p "]" => Scheme.dualGraph (K := ℂ) _ p
+
+/-- The induced isomorphism of singular loci sends the node of a cone to the
+node of its image cone. The edge labels can come from independent numberings. -/
+theorem singularLocusIso_dualGraphNodeEquiv_of_distinguishedPoint
+    {σ : Φ.cones} {x : (G[p]).Edge} {y : (G[p']).Edge}
+    (hx : (D[Φ]).subschemeι ((C[Φ]).dualGraphEdgeEquiv p x).val =
+      Φ.distinguishedPointHom σ (IsLocalRing.closedPoint ℂ))
+    (hy : (D[Ψ]).subschemeι ((C[Ψ]).dualGraphEdgeEquiv p' y).val =
+      Ψ.distinguishedPointHom (e.coneEquiv σ) (IsLocalRing.closedPoint ℂ)) :
+    (Iso.singularLocusIso (R := ℂ) g).hom ((C[Φ]).dualGraphNodeEquiv p x) =
+      (C[Ψ]).dualGraphNodeEquiv p' y := by
+  let I := Scheme.singularLocus ℂ (C[Φ])
+  let J := Scheme.singularLocus ℂ (C[Ψ])
+  let f := (Iso.singularLocusIso (R := ℂ) g).hom
+  have h : f ≫ J.subschemeι ≫ (D[Ψ]).subschemeι =
+      I.subschemeι ≫ (D[Φ]).subschemeι ≫ e.toFanHom.algebraicMap := by
+    simp only [f, I, J, Iso.singularLocusIso_hom_subschemeι_assoc, boundaryIso_hom_subschemeι]
+  have hp := congrArg (fun k : I.subscheme ⟶ Ψ.algebraicRealization ↦
+    k ((C[Φ]).dualGraphNodeEquiv p x)) h
+  let z := IsLocalRing.closedPoint ℂ
+  have hσ : e.toFanHom.algebraicMap (Φ.distinguishedPointHom σ z) =
+      Ψ.distinguishedPointHom (e.coneEquiv σ) z := by
+    calc
+      _ = (Φ.distinguishedPointHom σ ≫ e.toFanHom.algebraicMap) z :=
+        (Scheme.Hom.comp_apply (Φ.distinguishedPointHom σ) e.toFanHom.algebraicMap z).symm
+      _ = _ := by rw [e.distinguishedPointHom_comp_algebraicMap]
+  simp only [I, Scheme.Hom.comp_apply, Scheme.subschemeι_dualGraphNodeEquiv, hx] at hp
+  apply J.subschemeι.isClosedEmbedding.injective
+  apply (D[Ψ]).subschemeι.isClosedEmbedding.injective
+  simpa only [J, Scheme.subschemeι_dualGraphNodeEquiv, hy, z] using hp.trans hσ
+
+end TauCeti.Toric.FanEquiv

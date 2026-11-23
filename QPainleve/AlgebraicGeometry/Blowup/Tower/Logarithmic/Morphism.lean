@@ -83,7 +83,8 @@ end QPainleve.BlowupTower.IsClosedPointTower
 
 namespace AlgebraicGeometry.Scheme.Hom
 
-variable [IsAlgClosed k] [IsIntegral Y] [X.IsProjectiveOver k] [Y.IsProjectiveOver k]
+variable [IsAlgClosed k] [IsIntegral Y] [X.IsProjectiveOver k]
+  [QuasiCompact (Y ↘ Spec (.of k))] [IsSeparated (Y ↘ Spec (.of k))]
 
 variable (f) in
 /-- A specified birational morphism with pullback divisor `-P` factors into closed point

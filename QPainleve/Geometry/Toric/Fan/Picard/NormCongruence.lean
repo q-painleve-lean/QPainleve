@@ -40,7 +40,7 @@ variable {N : Type} {V ι : Type*} [AddCommGroup N] [AddCommGroup V] [Module ℝ
   (b : Module.Basis (Fin 2) ℤ N) (hΦ : Φ.IsRegular) (hc : Φ.IsComplete)
 
 local notation "X" => Φ.algebraicRealization
-local notation "gen" => Ray.primitiveGenerator (Φ := Φ)
+local notation "gen" => Ray.primitiveGenerator (Phi := Φ)
 local notation "det" => b.detDualEquiv
 local notation "R" => Φ.rayDivisorToPicard hΦ
 

@@ -52,6 +52,21 @@ lemma dualSectionEquiv_apply (φ : (dual L).obj ⟶ 𝟙_ X.Modules) :
       L.obj.unitHomEquivTop (dualHomUnitEquiv L.obj ((eqToIso (dual_obj L)).inv ≫ φ)) :=
   (rfl)
 
+/-- The functional associated to a section is evaluation through the bundled dual. -/
+lemma dualSectionEquiv_symm_apply (s : Γ(L.obj, ⊤)) :
+    L.dualSectionEquiv.symm s =
+      (eqToIso (dual_obj L)).hom ≫
+        (dualHomUnitEquiv L.obj).symm (L.obj.unitHomEquivTop.symm s) := by
+  apply L.dualSectionEquiv.injective
+  rw [Equiv.apply_symm_apply, dualSectionEquiv_apply]
+  let e := eqToIso (dual_obj L)
+  let t := L.obj.unitHomEquivTop.symm s
+  let f := (dualHomUnitEquiv L.obj).symm t
+  exact ((congrArg (L.obj.unitHomEquivTop ∘ dualHomUnitEquiv L.obj)
+    (e.inv_hom_id_assoc f)).trans ((congrArg L.obj.unitHomEquivTop
+      ((dualHomUnitEquiv L.obj).apply_symm_apply t)).trans
+        (L.obj.unitHomEquivTop.apply_symm_apply s))).symm
+
 /-- The zero functional corresponds to the zero section. -/
 @[simp]
 lemma dualSectionEquiv_zero : L.dualSectionEquiv 0 = 0 := by
@@ -205,7 +220,8 @@ theorem zeroIdeal_hom_app {K : InvertibleSheaf X} (e : L.obj ≅ K.obj) (s : Γ(
 
 variable [IsIntegral X]
 
-private lemma dualSectionEquiv_symm_mono {s : Γ(L.obj, ⊤)} (hs : s ≠ 0) :
+/-- Evaluation at a nonzero section of a line bundle on an integral scheme is monic. -/
+lemma dualSectionEquiv_symm_mono {s : Γ(L.obj, ⊤)} (hs : s ≠ 0) :
     Mono (L.dualSectionEquiv.symm s) := by
   apply (dual L).mono_of_ne_zero_to_unit
   intro h

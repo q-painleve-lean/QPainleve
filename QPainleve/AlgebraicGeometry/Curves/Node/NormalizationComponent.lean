@@ -45,6 +45,26 @@ local notation "N" => IdealSheafData.blowup I
 local notation "V" => irreducibleComponents N
 local notation "η" => genericPoints.ofComponent
 
+/-- The normalization components form an open cover. -/
+theorem iSup_blowupComponent : ⨆ a : V, C.blowupComponent (K := k) a = ⊤ := by
+  have : IsRegular N := C.isRegular_blowup_singularLocus
+    (PrestableFamily.atWorstNodalOfRelativeDimensionOne (f := C ↘ Spec (.of k)))
+  apply top_unique
+  intro x _
+  exact TopologicalSpace.Opens.mem_iSup.mpr ⟨irreducibleComponentOf x,
+    (SetLike.mem_coe.mp (by rw [C.coe_blowupComponent]; exact mem_irreducibleComponentOf x))⟩
+
+/-- Distinct normalization components are disjoint opens. -/
+theorem pairwise_disjoint_blowupComponent :
+    Pairwise (Function.onFun Disjoint (C.blowupComponent (K := k))) := by
+  have : IsRegular N := C.isRegular_blowup_singularLocus
+    (PrestableFamily.atWorstNodalOfRelativeDimensionOne (f := C ↘ Spec (.of k)))
+  intro a b hab
+  apply TopologicalSpace.Opens.coe_disjoint.mp
+  simp only [C.coe_blowupComponent]
+  exact Set.disjoint_left.mpr fun _ ha hb ↦ hab
+    ((irreducibleComponentOf_eq_iff.mpr ha).symm.trans (irreducibleComponentOf_eq_iff.mpr hb))
+
 /-- Each component's generic point lies over the isomorphism locus of the
 normalization morphism. -/
 theorem blowupComponentGeneric_mem_isoLocus (v : V) : ν (η v) ∈ (ν).isoLocus := by

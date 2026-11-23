@@ -8,6 +8,7 @@ module
 public import QPainleve.AlgebraicGeometry.Curves.Node.Locus
 public import QPainleve.Geometry.Toric.Fan.Boundary.Basic
 public import QPainleve.Geometry.Toric.Fan.Point
+public import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.Basic
 public import TauCeti.RingTheory.Node.Branches
 
 import QPainleve.AlgebraicGeometry.Curves.Node.Split
@@ -143,6 +144,17 @@ private theorem mem_boundaryIdeal_comap_chart_iff (hΦ : Φ.IsRegular) (σ : Φ.
   · rintro ⟨r, hr⟩
     exact ⟨Ray.ofToricRay Φ σ r, (hcomap _).mp ((hlocal r).mpr hr)⟩
 
+private theorem ker_nodeChart {R : Type} [CommRing R] [Algebra ℂ R]
+    (e : R ≃ₐ[ℂ] MvPolynomial (Fin 2) ℂ) :
+    RingHom.ker ((NodeAlgebra.mk 0).comp e.toAlgHom).toRingHom =
+      Ideal.span {e.symm (MvPolynomial.X 0) * e.symm (MvPolynomial.X 1)} := by
+  refine (AlgHom.comap_ker (NodeAlgebra.mk (0 : ℂ)) e.toAlgHom).symm.trans ?_
+  have hker : RingHom.ker (NodeAlgebra.mk (0 : ℂ) :
+      MvPolynomial (Fin 2) ℂ →+* NodeAlgebra ℂ 0) =
+      Ideal.span {MvPolynomial.X 0 * MvPolynomial.X 1} := by simp
+  refine (congrArg (Ideal.comap (e.toAlgHom : R →+* MvPolynomial (Fin 2) ℂ)) hker).trans ?_
+  exact (Ideal.map_symm e.toRingEquiv).symm.trans (by simp [Ideal.map_span])
+
 private theorem comap_boundaryIdeal_eq_ker_nodeChart (hΦ : Φ.IsRegular) (σ : Φ.cones)
     (r : Fin 2 ≃ ToricRay σ.val)
     (e : affineCoordinateRing Φ.lattice σ.val ≃ₐ[ℂ] MvPolynomial (Fin 2) ℂ)
@@ -179,16 +191,7 @@ private theorem comap_boundaryIdeal_eq_ker_nodeChart (hΦ : Φ.IsRegular) (σ : 
     p ∈ PrimeSpectrum.zeroLocus _
   rw [PrimeSpectrum.mem_zeroLocus, r.symm.exists_congr_left, Equiv.symm_symm,
     Fin.exists_fin_two, hr, hr]
-  have hk : RingHom.ker a.toRingHom =
-      Ideal.span {e.symm (MvPolynomial.X 0) * e.symm (MvPolynomial.X 1)} := by
-    refine (AlgHom.comap_ker (NodeAlgebra.mk (0 : ℂ)) e.toAlgHom).symm.trans ?_
-    have hqker : RingHom.ker (NodeAlgebra.mk (0 : ℂ) :
-        MvPolynomial (Fin 2) ℂ →+* NodeAlgebra ℂ 0) =
-        Ideal.span {MvPolynomial.X 0 * MvPolynomial.X 1} := by simp
-    refine (congrArg (Ideal.comap (e.toAlgHom :
-      affineCoordinateRing Φ.lattice σ.val →+* MvPolynomial (Fin 2) ℂ)) hqker).trans ?_
-    exact (Ideal.map_symm e.toRingEquiv).symm.trans (by simp [Ideal.map_span])
-  rw [hk]
+  rw [ker_nodeChart e]
   simp only [SetLike.coe_subset_coe, Ideal.span_singleton_le_iff_mem,
     p.isPrime.mul_mem_iff_mem_or_mem]
 
@@ -321,19 +324,16 @@ private theorem mem_range_rayChart_of_not_mem_otherRayIdeal (σ : Φ.cones)
   exact (congrArg (fun f : Φ.affineToricChart τ ⟶ Φ.algebraicRealization ↦ f z)
     (Φ.faceAffineToricSchemeMap_comp_affineToricChartι (τ := τ) (σ := σ) r.val.isFaceOf)).symm
 
-/-- Away from the nodes, every point of the reduced boundary of a complete regular
-toric surface lies in a ray chart. The boundary in this chart is the ray orbit. -/
-theorem exists_mem_range_rayChart_of_not_isNodeOfReducedBoundary
+/-- Every point of a complete regular toric surface outside the nodes of the reduced
+boundary belongs to a ray chart. -/
+theorem exists_rayChart_of_not_isNodeOfReducedBoundary
     (hΦ : Φ.IsRegular) (hc : Φ.IsComplete) (hdim : Module.finrank ℤ N = 2)
-    {x : Φ.algebraicRealization} (hx : x ∈ (Φ.boundaryIdeal hc.nonempty_cones).support)
+    {x : Φ.algebraicRealization}
     (hn : ¬ (Φ.boundaryIdeal hc.nonempty_cones).IsNodeOfReducedBoundary
       Φ.algebraicRealizationStructureMap x) :
     ∃ ρ : Φ.Ray, x ∈ Set.range (Φ.affineToricChartι ρ.toCone) := by
   obtain ⟨σ, hσ, y, rfl⟩ := exists_twoRayChart_apply_eq hΦ hc hdim x
-  have hy : y ∈ ((Φ.boundaryIdeal ⟨σ⟩).comap (Φ.affineToricChartι σ)).support := by
-    rwa [support_comap]
-  obtain ⟨r, hr⟩ := (mem_boundaryIdeal_comap_chart_iff hΦ σ y).mp hy
-  refine ⟨Ray.ofToricRay Φ σ r, ?_⟩
+  classical
   have hnot : ¬ (⨆ t : ToricRay σ.val, rayIdeal Φ.lattice (Φ.isToricCone σ.property) t) ≤
       y.asIdeal := by
     rw [iSup_rayIdeal_eq_ker_distinguishedPoint Φ.lattice (Φ.isToricCone σ.property)
@@ -353,13 +353,36 @@ theorem exists_mem_range_rayChart_of_not_isNodeOfReducedBoundary
       exact Scheme.Hom.comp_apply g (Φ.affineToricChartι σ) o
     exact hn (ho ▸ Φ.isNodeOfReducedBoundary_distinguishedPointHom hΦ σ hdim hσ)
   obtain ⟨t, ht⟩ := not_forall.mp (fun h ↦ hnot (iSup_le h))
-  exact mem_range_rayChart_of_not_mem_otherRayIdeal σ hΦ hσ
-    (fun e : r = t ↦ ht (e ▸ hr)) y ht
+  have : Finite (ToricRay σ.val) := ToricRay.finite_of_fg (Φ.isToricCone σ.property).fg
+  have : Nontrivial (ToricRay σ.val) := Finite.one_lt_card_iff_nontrivial.mp (by rw [hσ]; decide)
+  obtain ⟨r, hrt⟩ := exists_ne t
+  exact ⟨Ray.ofToricRay Φ σ r, mem_range_rayChart_of_not_mem_otherRayIdeal σ hΦ hσ hrt y ht⟩
 
 variable [Nonempty Φ.cones]
 
 local notation "D" => Φ.boundaryIdeal inferInstance
 local notation "boundaryMap" => subschemeι D ≫ Φ.algebraicRealizationStructureMap
+
+/-- The reduced boundary of a complete regular rank-two fan is effective Cartier.
+On each maximal cone chart the ideal is generated by the product of the two ray coordinates. -/
+theorem isEffectiveCartier_boundaryIdeal (hΦ : Φ.IsRegular) (hc : Φ.IsComplete)
+    (hdim : Module.finrank ℤ N = 2) : (D).IsEffectiveCartier := by
+  rw [isEffectiveCartier_iff_exists_isOpenImmersion]
+  intro x
+  obtain ⟨σ, hσ, y, hy⟩ := Φ.exists_twoRayChart_apply_eq hΦ hc hdim x
+  obtain ⟨r, e, hr, _⟩ := exists_twoRayChartCoordinates Φ.lattice
+    ((isRegular_iff.mp hΦ) σ.val σ.property) hdim hσ
+  let a := e.symm (MvPolynomial.X 0) * e.symm (MvPolynomial.X 1)
+  let E := Scheme.ΓSpecIso (.of (affineCoordinateRing Φ.lattice σ.val))
+  have ha : a ≠ 0 := by
+    dsimp only [a]
+    rw [← map_mul]
+    exact e.symm.toRingEquiv.map_ne_zero_iff.mpr
+      (mul_ne_zero (MvPolynomial.X_ne_zero _) (MvPolynomial.X_ne_zero _))
+  refine ⟨Φ.affineToricChart σ, inferInstance, Φ.affineToricChartι σ, inferInstance, ⟨y, hy⟩,
+    E.inv a, IsSMulRegular.of_ne_zero (E.symm.commRingCatIsoToRingEquiv.map_ne_zero_iff.mpr ha), ?_⟩
+  rw [comap_boundaryIdeal_eq_ker_nodeChart hΦ σ r e hr, Scheme.Hom.ker_Spec_map,
+    CommRingCat.hom_ofHom, ker_nodeChart, Ideal.map_span, Set.image_singleton]
 
 /-- The reduced boundary of a complete regular rank-two fan is nodal over `ℂ`. -/
 theorem atWorstNodalOfRelativeDimensionOne_boundary (hΦ : Φ.IsRegular) (hc : Φ.IsComplete)

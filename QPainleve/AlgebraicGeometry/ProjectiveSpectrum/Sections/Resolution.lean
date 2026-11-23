@@ -17,7 +17,7 @@ import QPainleve.AlgebraicGeometry.Modules.Pullback.Sections
 import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.Sections.Domain
 import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.Sections.Extension
 import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.Sections.Pullback
-import QPainleve.AlgebraicGeometry.RationalMap.Composition
+import QPainleve.AlgebraicGeometry.RationalMap.Composition.Basic
 import TauCeti.AlgebraicGeometry.Morphisms.Separated
 
 /-!

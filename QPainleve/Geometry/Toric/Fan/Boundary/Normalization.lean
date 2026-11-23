@@ -5,8 +5,10 @@ Authors: The QPainleve contributors
 -/
 module
 
+public import QPainleve.AlgebraicGeometry.Curves.Node.Conductor.Isomorphism
 public import QPainleve.AlgebraicGeometry.Curves.Node.NormalizationComponent
 public import QPainleve.Geometry.Toric.Fan.Boundary.Component
+public import QPainleve.Geometry.Toric.Fan.Boundary.Equiv
 public import QPainleve.Geometry.Toric.Fan.Point
 
 import QPainleve.Geometry.Toric.Fan.Boundary.Node
@@ -214,6 +216,22 @@ theorem Ray.boundaryNormalizationComponentIso_inv_ι_blowupToBase :
     (ρ.boundaryNormalizationComponentIso hΦ).inv ≫ (U).ι ≫ ν = ρ.boundaryComponentι hΦ := by
   rw [← Ray.boundaryNormalizationComponentIso_hom_boundaryComponentι, Iso.inv_hom_id_assoc]
 
+/-- A point on the normalized ray component is determined by its image in the boundary. -/
+theorem Ray.injOn_blowupToBase_boundaryNormalizationComponent :
+    Set.InjOn ν (Φ.boundaryNormalizationComponentEquiv hΦ ρ : Set (I).blowup) := by
+  intro x hx y hy hxy
+  have hx' : x ∈ Set.range (U).ι := by
+    rwa [Scheme.Opens.range_ι, Scheme.coe_blowupComponent]
+  have hy' : y ∈ Set.range (U).ι := by
+    rwa [Scheme.Opens.range_ι, Scheme.coe_blowupComponent]
+  obtain ⟨p, rfl⟩ := hx'
+  obtain ⟨q, rfl⟩ := hy'
+  let e := ρ.boundaryNormalizationComponentIso hΦ
+  have he : (e.hom ≫ ρ.boundaryComponentι hΦ) p = (e.hom ≫ ρ.boundaryComponentι hΦ) q := by
+    simpa only [e, Ray.boundaryNormalizationComponentIso_hom_boundaryComponentι,
+      Scheme.Hom.comp_apply] using hxy
+  exact congrArg (U).ι ((e.hom ≫ ρ.boundaryComponentι hΦ).injective he)
+
 instance Ray.isOver_boundaryNormalizationComponentIso_hom :
     (ρ.boundaryNormalizationComponentIso hΦ).hom.IsOver base := ⟨by
   have hbase : ρ.boundaryComponentι hΦ ≫ (C ↘ base) = (R ↘ base) := by
@@ -235,3 +253,79 @@ theorem Ray.isProper_boundaryComponent_of_prestableFamily : IsProper (R ↘ base
   infer_instance
 
 end TauCeti.Toric.Fan
+
+namespace TauCeti.Toric.FanEquiv
+
+variable {N N' V V' : Type} [AddCommGroup N] [AddCommGroup N']
+  [AddCommGroup V] [AddCommGroup V'] [Module ℝ V] [Module ℝ V']
+  {i : N →+ V} {i' : N' →+ V'} {Φ : Fan i} {Ψ : Fan i'} (e : FanEquiv Φ Ψ)
+
+variable [hΦ₀ : Nonempty Φ.cones] [hΨ₀ : Nonempty Ψ.cones]
+  (hΦ : Φ.IsRegular) (hΨ : Ψ.IsRegular)
+
+local notation "base" => Spec (CommRingCat.of ℂ)
+local notation "D[" Φ "]" => Fan.boundaryIdeal Φ inferInstance
+local notation "C[" Φ "]" => Scheme.IdealSheafData.subscheme (D[Φ])
+local notation "ν[" Φ "]" => Scheme.IdealSheafData.blowupToBase (Scheme.singularLocus ℂ (C[Φ]))
+local notation "g" => e.boundaryIso hΦ₀ hΨ₀
+local notation "gν" => Iso.hom (Iso.singularLocusBlowupIso (R := ℂ) g)
+
+variable [PrestableFamily (C[Φ] ↘ base)] [PrestableFamily (C[Ψ] ↘ base)]
+
+local notation "U[" Φ "," h "," ρ "]" =>
+  Fan.boundaryNormalizationComponentEquiv Φ h ρ
+
+private theorem range_normalizationComponent_to_toric
+    {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
+    {i : N →+ V} {Φ : Fan i} [Nonempty Φ.cones]
+    [PrestableFamily (C[Φ] ↘ base)] (hΦ : Φ.IsRegular) (ρ : Φ.Ray) :
+    Set.range (((C[Φ]).blowupComponent (K := ℂ) (U[Φ,hΦ,ρ])).ι ≫
+      ν[Φ] ≫ (D[Φ]).subschemeι) = closure {(Φ.rayBoundaryPoint hΦ ρ).val} := by
+  rw [← Category.assoc, Scheme.Hom.comp_base, TopCat.coe_comp, Set.range_comp,
+    Φ.range_boundaryNormalizationComponentEquiv hΦ ρ, ← Set.range_comp, ← TopCat.coe_comp,
+    ← Scheme.Hom.comp_base, ρ.boundaryComponentι_subschemeι hΦ,
+    Scheme.IdealSheafData.range_subschemeι,
+    Φ.coe_support_rayBoundaryIdeal]
+
+/-- The isomorphism of normalizations carries the component indexed by a ray
+onto the component indexed by its image ray. -/
+theorem image_singularLocusBlowupIso_boundaryNormalizationComponent (ρ : Φ.Ray) :
+    (gν) '' (U[Φ,hΦ,ρ] : Set (Scheme.singularLocus ℂ (C[Φ])).blowup) =
+      (U[Ψ,hΨ,e.rayEquiv ρ] : Set (Scheme.singularLocus ℂ (C[Ψ])).blowup) := by
+  let w := U[Φ,hΦ,ρ]
+  let F := ν[Ψ] ≫ (D[Ψ]).subschemeι
+  let G := ν[Φ] ≫ (D[Φ]).subschemeι
+  let I := gν
+  have hI : I ≫ F = G ≫ e.toFanHom.algebraicMap := by
+    simp only [I, F, G, Category.assoc, Iso.singularLocusBlowupIso_hom_blowupToBase_assoc,
+      boundaryIso_hom_subschemeι]
+  have him : I '' (w : Set _) ∈ irreducibleComponents (Scheme.singularLocus ℂ (C[Ψ])).blowup := by
+    apply image_mem_irreducibleComponents_of_isPreirreducible_fiber I I.continuous
+      I.homeomorph.isOpenMap (fun _ ↦ (Set.subsingleton_singleton.preimage
+        I.homeomorph.injective).isPreirreducible) I.homeomorph.surjective w.property
+  let w' : irreducibleComponents (Scheme.singularLocus ℂ (C[Ψ])).blowup := ⟨I '' w.val, him⟩
+  have hG : G '' (w : Set _) = closure {(Φ.rayBoundaryPoint hΦ ρ).val} := by
+    rw [← Scheme.coe_blowupComponent (K := ℂ) (C[Φ]) w,
+      ← Scheme.Opens.range_ι, ← Set.range_comp, ← TopCat.coe_comp, ← Scheme.Hom.comp_base]
+    exact range_normalizationComponent_to_toric hΦ ρ
+  have hr :
+      F '' (w' : Set _) = closure {(Ψ.rayBoundaryPoint hΨ (e.rayEquiv ρ)).val} := by
+    have hpoint (x : (Scheme.singularLocus ℂ (C[Φ])).blowup) :
+        F (I x) = e.toFanHom.algebraicMap (G x) := by
+      simpa only [Scheme.Hom.comp_apply] using
+        congrArg (fun f : _ ⟶ Ψ.algebraicRealization ↦ f x) hI
+    rw [Subtype.coe_mk, Set.image_image, Set.image_congr (fun x _ ↦ hpoint x),
+      ← Set.image_image, hG]
+    rw [← e.toFanHom.algebraicMap.isClosedMap.closure_image_eq_of_continuous
+      e.toFanHom.algebraicMap.continuous, Set.image_singleton, e.algebraicMap_rayBoundaryPoint]
+  have hw' : w' = U[Ψ,hΨ,e.rayEquiv ρ] := by
+    apply (C[Ψ]).eq_of_range_blowupComponent_subset (k := ℂ)
+    rw [← Set.image_subset_image_iff (D[Ψ]).subschemeι.isClosedEmbedding.injective,
+      ← Set.range_comp, ← Set.range_comp, ← TopCat.coe_comp, ← Scheme.Hom.comp_base,
+      ← TopCat.coe_comp, ← Scheme.Hom.comp_base, Category.assoc, Category.assoc,
+      range_normalizationComponent_to_toric, Scheme.Hom.comp_base, TopCat.coe_comp, Set.range_comp,
+      Scheme.Opens.range_ι, Scheme.coe_blowupComponent]
+    exact hr.le
+  exact congrArg Subtype.val hw'
+
+end TauCeti.Toric.FanEquiv

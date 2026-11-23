@@ -7,15 +7,18 @@ module
 
 public import QPainleve.AlgebraicGeometry.Blowup.Exceptional.SecondCohomology
 public import QPainleve.AlgebraicGeometry.Blowup.Tower.Picard
+public import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.Picard
 
+import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.Polynomial.Smooth
+import TauCeti.AlgebraicGeometry.Cohomology.ProjectiveSpace.HigherCohomology
 import TauCeti.AlgebraicGeometry.Scheme.Regular.Scheme
 
 /-!
 # Second cohomology and point-blowup markings
 
 The vanishing of second cohomology for the base coordinate of a Picard marking
-implies vanishing on the final surface. Iterate the single step
-`Scheme.IdealSheafData.subsingleton_cohomology_two_pointBlowup_exceptional_twist`.
+implies vanishing on the final surface. If every exceptional coefficient is at most one,
+second cohomology is unchanged.
 -/
 
 public section
@@ -60,5 +63,76 @@ theorem subsingleton_cohomology_two_picardHom
     rw [picardHom_snoc_apply_toMul, ← hA] at hM
     exact Scheme.IdealSheafData.subsingleton_cohomology_two_pointBlowup_exceptional_twist
       k hp hdim M A (ih (fun j ↦ b j.castSucc) A hA) hM
+
+open TauCeti.SymmetricAlgebra in
+/-- On a closed-point blowup tower over the projective plane, a line bundle whose
+base Picard coordinate has degree greater than `-3` has vanishing second cohomology. -/
+theorem subsingleton_cohomology_two_of_plane_degree_gt_neg_three
+    {U : BlowupTower (Proj (homogeneousSubmodule k (Fin 3 → k))) n Y}
+    (hU : IsClosedPointTower _ U)
+    (x : Additive (LineBundleClass (Proj (homogeneousSubmodule k (Fin 3 → k)))) × (Fin n → ℤ))
+    (L : InvertibleSheaf Y) (hL : U.picardHom x = Additive.ofMul (mk L))
+    (hd : -3 < (Pi.basisFun k (Fin 3)).picardTwistEquiv x.1) :
+    Subsingleton (Cohomology L.obj 2) := by
+  let d := (Pi.basisFun k (Fin 3)).picardTwistEquiv x.1
+  let O := Proj.symmetricAlgebraTwistingBundle k (Fin 3 → k) d
+  have hO : Additive.ofMul (mk O) = x.1 :=
+    (Pi.basisFun k (Fin 3)).picardTwistEquiv.injective
+      ((Pi.basisFun k (Fin 3)).picardTwistEquiv_apply_twist d)
+  have hvan : Subsingleton (Cohomology O.obj 2) := by
+    rw [Proj.symmetricAlgebraTwistingBundle_obj]
+    exact (Pi.basisFun k (Fin 3)).subsingleton_cohomology_twistingSheaf_of_neg_card_lt
+      (m := d) (q := 2) (by simpa only [Fintype.card_fin, Nat.cast_ofNat] using hd) (by decide)
+  exact hU.subsingleton_cohomology_two_picardHom k O hvan x.2 L
+    (by rw [hO, Prod.mk.eta, hL, toMul_ofMul])
+
+private theorem nonempty_cohomologyTwoLinearEquiv_picardHom_of_comp
+    [SmoothOfRelativeDimension 2 (X ↘ Spec (.of k))]
+    {T : BlowupTower X n Y} (hT : IsClosedPointTower X T)
+    (L : InvertibleSheaf X) (b : Fin n → ℤ) (hb : ∀ j, b j ≤ 1)
+    (g : Y ⟶ Spec (.of k)) (hg : g = T.toBase ≫ X ↘ Spec (.of k))
+    (M : InvertibleSheaf Y) (hM : mk M = (T.picardHom (Additive.ofMul (mk L), b)).toMul) :
+    let : Y.Over (Spec (.of k)) := ⟨g⟩
+    Nonempty (Cohomology L.obj 2 ≃ₗ[k] Cohomology M.obj 2) := by
+  revert g M
+  induction hT with
+  | nil =>
+    intro g hg M hM
+    rw [toBase_nil, Category.id_comp] at hg
+    subst g
+    rw [picardHom_nil, toMul_ofMul] at hM
+    obtain ⟨e⟩ := mk_eq_mk_iff.mp hM.symm
+    exact ⟨cohomologyBaseLinearEquivOfIso k e 2⟩
+  | @snoc d Z S I hS p hp hI ih =>
+    subst I
+    intro g' hg' M hM
+    rw [toBase_snoc, Category.assoc] at hg'
+    subst g'
+    let g := S.toBase ≫ X ↘ Spec (.of k)
+    let : Z.Over (Spec (.of k)) := ⟨g⟩
+    have hd : SmoothOfRelativeDimension 2 g := hS.smoothOfRelativeDimension _
+    have : Smooth g := hd.smooth 2 _
+    have : IsLocallyNoetherian Z := LocallyOfFiniteType.isLocallyNoetherian g
+    have : IsRegular Z := IsRegular.of_smooth g
+    have hdim := ((smoothOfRelativeDimension_iff_ringKrullDim_stalk_eq g 2).mp hd).2 p hp
+    obtain ⟨A, hA⟩ := mk_surjective (S.picardHom (Additive.ofMul (mk L),
+      fun j ↦ b j.castSucc)).toMul
+    obtain ⟨e⟩ := ih (fun j ↦ b j.castSucc) (fun j ↦ hb j.castSucc) g rfl A hA
+    rw [picardHom_snoc_apply_toMul, ← hA] at hM
+    obtain ⟨e'⟩ :=
+      Scheme.IdealSheafData.nonempty_cohomologyTwoPointBlowupExceptionalTwistLinearEquiv
+        k hp hdim M A hM (hb (Fin.last d))
+    exact ⟨e.trans e'⟩
+
+/-- The second cohomology of a marked line bundle agrees with that of its base
+coordinate when every total-transform exceptional coefficient is at most one. -/
+theorem nonempty_cohomologyTwoLinearEquiv_picardHom
+    [SmoothOfRelativeDimension 2 (X ↘ Spec (.of k))]
+    {T : BlowupTower X n Y} (hT : IsClosedPointTower X T)
+    (L : InvertibleSheaf X) (b : Fin n → ℤ) (hb : ∀ j, b j ≤ 1) (M : InvertibleSheaf Y)
+    (hM : mk M = (T.picardHom (Additive.ofMul (mk L), b)).toMul) :
+    let : Y.Over (Spec (.of k)) := ⟨T.toBase ≫ X ↘ Spec (.of k)⟩
+    Nonempty (Cohomology L.obj 2 ≃ₗ[k] Cohomology M.obj 2) :=
+  nonempty_cohomologyTwoLinearEquiv_picardHom_of_comp k hT L b hb _ rfl M hM
 
 end QPainleve.BlowupTower.IsClosedPointTower

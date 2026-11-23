@@ -7,10 +7,10 @@ module
 
 public import QPainleve.Geometry.Toric.Fan.InternalBlowup
 public import QPainleve.Geometry.Toric.Fan.Mutation.Evaluation
+public import QPainleve.Geometry.Toric.Fan.Mutation.OrderedBlowup
 public import QPainleve.Geometry.Toric.Fan.Picard.Mutation.Basic
 
 import QPainleve.AlgebraicGeometry.Morphisms.Modification.Birational
-import QPainleve.Geometry.Toric.Fan.Mutation.OrderedBlowup
 import QPainleve.Geometry.Toric.Fan.Picard.Mutation.Geometric
 
 /-!

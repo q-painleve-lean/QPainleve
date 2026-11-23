@@ -16,11 +16,11 @@ import QPainleve.AlgebraicGeometry.Chow.Ample
 import QPainleve.AlgebraicGeometry.Chow.Isomorphism
 import QPainleve.AlgebraicGeometry.Chow.Nef.Basic
 import QPainleve.AlgebraicGeometry.Chow.PositiveCone
+import QPainleve.AlgebraicGeometry.Chow.RationalSurface.RiemannRoch
 import QPainleve.AlgebraicGeometry.Curves.Degree.Ample
 import QPainleve.AlgebraicGeometry.EffectiveCartierDivisor.Effectivity
 import QPainleve.AlgebraicGeometry.IntersectionNumber.Nef.Pullback
 import QPainleve.AlgebraicGeometry.LineBundle.Ample
-import TauCeti.AlgebraicGeometry.Cohomology.ProjectiveSpace.HigherCohomology
 import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.TwistingSheaf.Ample
 
 /-!
@@ -39,6 +39,9 @@ An integral class in the ample component of the positive cone also has vanishing
 second cohomology. All its sufficiently high powers are effective by Riemann–Roch.
 This gives the effectivity used in the curve-cone description of
 [Gross, Hacking and Keel, Lemma 2.14][GHK].
+
+A class of positive Euler characteristic is effective if its canonical complement
+has negative intersection with a nef class.
 
 [GHK]: https://arxiv.org/html/1211.6367v5#S2
 [Debarre]: https://perso.imj-prg.fr/wp-content/uploads/debarre-pub/M22.pdf#page=42
@@ -99,20 +102,6 @@ private theorem plane_degree_nonneg_of_nef_marking {W : Scheme.{u}} {n : ℕ}
     nsmul_eq_mul, mul_one] at h
   exact nonneg_of_mul_nonneg_left h (Int.natCast_pos.mpr hr)
 
-private theorem subsingleton_cohomology_two_of_plane_marking {W : Scheme.{u}} {n : ℕ}
-    {U : BlowupTower P n W} (hU : IsClosedPointTower P U) (L : InvertibleSheaf W)
-    (a : Additive (LineBundleClass P)) (b : Fin n → ℤ)
-    (hmark : (U.picardHom (a, b)).toMul = LineBundleClass.mk L) (hd : -3 < degree a) :
-    Subsingleton (Cohomology L.obj 2) := by
-  let d := degree a
-  have hO : Additive.ofMul (LineBundleClass.mk (O[d])) = a :=
-    (degree).injective ((Pi.basisFun k (Fin 3)).picardTwistEquiv_apply_twist d)
-  have hvan : Subsingleton (Cohomology (O[d]).obj 2) := by
-    rw [Proj.symmetricAlgebraTwistingBundle_obj]
-    exact (Pi.basisFun k (Fin 3)).subsingleton_cohomology_twistingSheaf_of_neg_card_lt
-      (m := d) (q := 2) (by simp only [Fintype.card_fin]; omega) (by decide)
-  exact hU.subsingleton_cohomology_two_picardHom k (O[d]) hvan b L (hO.symm ▸ hmark.symm)
-
 private theorem subsingleton_cohomology_two_of_nef_plane_tower {W : Scheme.{u}} {n : ℕ}
     {U : BlowupTower P n W} (hU : IsClosedPointTower P U) (L : InvertibleSheaf W)
     (hL : IsNef k (U.toBase ≫ (P ↘ S)) (LineBundleClass.mk L)) :
@@ -122,7 +111,8 @@ private theorem subsingleton_cohomology_two_of_nef_plane_tower {W : Scheme.{u}} 
     (hU.bijective_picardHom (P ↘ S)).surjective (Additive.ofMul (LineBundleClass.mk L))
   have hmark := congrArg Additive.toMul hab
   have hd := plane_degree_nonneg_of_nef_marking k hU a b (hmark.symm ▸ hL)
-  exact subsingleton_cohomology_two_of_plane_marking k hU L a b hmark (by omega)
+  exact hU.subsingleton_cohomology_two_of_plane_degree_gt_neg_three k (a, b) L hab
+    (show -3 < degree a by omega)
 
 omit smooth rational in
 private theorem plane_degree_pos_of_positive_square {n : ℕ} {W : Scheme.{u}}
@@ -222,9 +212,9 @@ theorem subsingleton_cohomology_two_of_self_pos_of_intersection_pos
   let M := (InvertibleSheaf.pullback e.hom).obj ((InvertibleSheaf.pullback T.toBase).obj L)
   have hM : LineBundleClass.mk M = LineBundleClass.pullback g (LineBundleClass.mk L) := by
     simp only [M, g, ← pullback_mk, LineBundleClass.pullback_comp]
-  obtain ⟨⟨a, b⟩, hb⟩ :=
+  obtain ⟨⟨a, b⟩, hab⟩ :=
     (hU.bijective_picardHom (P ↘ S)).surjective (Additive.ofMul (LineBundleClass.mk M))
-  have hmark : (U.picardHom (a, b)).toMul = LineBundleClass.mk M := congrArg Additive.toMul hb
+  have hmark : (U.picardHom (a, b)).toMul = LineBundleClass.mk M := congrArg Additive.toMul hab
   let : ∀ x : X, UniqueFactorizationMonoid (X.presheaf.stalk x) :=
     (X ↘ S).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two
   have hhh := Chow.classIntersectionNumber_pos_of_isAmple k
@@ -232,7 +222,8 @@ theorem subsingleton_cohomology_two_of_self_pos_of_intersection_pos
   have hd : 0 < degree a :=
     plane_degree_pos_of_positive_square k X hU hg hh hpull hhh hLL hhL _ (hmark.trans hM)
   exact hT.subsingleton_cohomology_two_of_pullback_tower_iso k e L
-    (subsingleton_cohomology_two_of_plane_marking k hU M a b hmark (by omega))
+    (hU.subsingleton_cohomology_two_of_plane_degree_gt_neg_three k (a, b) M hab
+      (show -3 < degree a by omega))
 
 end AlgebraicGeometry.Scheme
 
@@ -332,5 +323,21 @@ theorem eventually_exists_effectiveCartier_pow_of_positive_cone
   obtain ⟨I, hI, hclass⟩ := L.exists_effectiveCartier_of_eulerCharBelow_pos k
     (hL.symm ▸ hn.2) hvan
   exact ⟨hn.1, I, hI, by rw [hclass, inv_inv, hL]⟩
+
+/-- A class of positive Euler characteristic is effective if a nef class has
+negative intersection with its canonical complement. -/
+theorem exists_effectiveCartier_of_eulerCharBelow_pos_of_intersection_canonical_mul_inv_neg
+    {a h : LineBundleClass X} (hχ : 0 < eulerCharBelow k a 3) (hh : h.IsNef k (X ↘ S))
+    (hneg : Chow.classIntersectionNumber k X h (mk (canonicalBundle k X 2) * a⁻¹) < 0) :
+    ∃ (I : X.IdealSheafData) (hI : I.IsEffectiveCartier), (mk hI.toInvertibleSheaf)⁻¹ = a := by
+  have : Smooth (X ↘ S) := SmoothOfRelativeDimension.smooth 2 _
+  have : IsIntegral X := rational.isIntegral_of_smooth
+  have := (X ↘ S).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two
+  have hX := topologicalKrullDim_eq_of_smoothOfRelativeDimension (X ↘ S) (n := 2)
+  obtain ⟨I, hI, he | he⟩ :=
+    exists_effectiveCartier_or_canonical_mul_inv_of_eulerCharBelow_pos k a hχ
+  · exact ⟨I, hI, he⟩
+  · exact False.elim (hneg.not_ge (he ▸
+      Chow.classIntersectionNumber_nonneg_of_isNef_of_isEffectiveCartier k hX hh hI))
 
 end TauCeti.AlgebraicGeometry.LineBundleClass

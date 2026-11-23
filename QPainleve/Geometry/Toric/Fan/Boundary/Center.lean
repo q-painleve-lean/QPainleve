@@ -25,6 +25,8 @@ import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.Section
 import TauCeti.AlgebraicGeometry.IdealSheaf.BaseChange
 import TauCeti.AlgebraicGeometry.IdealSheaf.OfIdealTop
 import TauCeti.AlgebraicGeometry.IdealSheaf.VanishingIdeal
+import TauCeti.AlgebraicGeometry.Pullback.Carrier
+import TauCeti.AlgebraicGeometry.Scheme.SpecOver
 
 /-!
 # Binomial centers on toric boundary rays
@@ -67,9 +69,7 @@ private theorem rayDualFace_saturated : (rayDualFace ρ).AddSaturated := by
 
 private theorem isRegularCone_toCone : IsRegularCone i ρ.toCone.val := by
   rw [ρ.toCone_eq_hull_primitiveGenerator]
-  apply isRegularCone_hull_singleton Φ.lattice
-  rw [Ray.primitiveGenerator_def]
-  exact primitiveGenerator_isPrimitive Φ.lattice (Φ.isToricCone ρ.toCone.property) _
+  exact isRegularCone_hull_singleton Φ.lattice ρ.primitiveGenerator_isPrimitive
 
 variable {m : N →+ ℤ}
 
@@ -551,6 +551,35 @@ instance isClosedImmersion_binomialCenterOnBoundary (hdim : Module.finrank ℤ N
     rw [binomialCenterOnBoundary_comp_subschemeι]
     infer_instance
   exact IsClosedImmersion.of_comp_isClosedImmersion _ (Φ.boundaryIdeal ⟨ρ.toCone⟩).subschemeι
+
+/-- Every complex section of the reduced boundary in a ray chart is the binomial
+point for some nonzero parameter in the prescribed primitive character. -/
+theorem exists_binomialCenterOnBoundary_eq_of_mem_rayChart
+    (hdim : Module.finrank ℤ N = 2) (hm : m v = 0) (hprim : Function.Surjective m)
+    (p : Spec (.of ℂ) ⟶ (Φ.boundaryIdeal ⟨ρ.toCone⟩).subscheme)
+    (hp : p ≫ (Φ.boundaryIdeal ⟨ρ.toCone⟩).subschemeι ≫ Φ.algebraicRealizationStructureMap = 𝟙 _)
+    (hx : (Φ.boundaryIdeal ⟨ρ.toCone⟩).subschemeι (p (IsLocalRing.closedPoint ℂ)) ∈
+      Set.range (Φ.affineToricChartι ρ.toCone)) :
+    ∃ c : ℂˣ, ρ.binomialCenterOnBoundary hdim hm hprim c = p := by
+  let o := ρ.orbitToBoundary hdim hm hprim
+  have hmem : Set.range p ⊆ Set.range o := by
+    rintro _ ⟨x, rfl⟩
+    rw [Subsingleton.elim x (IsLocalRing.closedPoint ℂ),
+      Scheme.Pullback.range_snd_of_isPullback (ρ.isPullback_orbitToBoundary hdim hm hprim)]
+    exact hx
+  let l := IsOpenImmersion.lift o p hmem
+  have hl : l ≫ o = p := IsOpenImmersion.lift_fac _ _ _
+  have hbase : l ≫ Spec.map (CommRingCat.ofHom (algebraMap ℂ (LaurentPolynomial ℂ))) = 𝟙 _ := by
+    rw [← ρ.orbitToBoundary_comp_algebraicRealizationStructureMap hdim hm hprim,
+      ← Category.assoc l o, hl, hp]
+  have hl' : l ≫ Spec.algebraMap ℂ (LaurentPolynomial ℂ) = Spec.algebraMap ℂ ℂ := by
+    simpa only [Spec.algebraMap, Algebra.algebraMap_self, CommRingCat.ofHom_id, Spec.map_id]
+      using hbase
+  obtain ⟨f, hf⟩ := TauCeti.AlgebraicGeometry.exists_algHom_SpecMap_eq l hl'
+  obtain ⟨u, rfl⟩ := laurentEvalEquiv.surjective f
+  refine ⟨(-u)⁻¹, ?_⟩
+  rw [binomialCenterOnBoundary_def, ← hl, ← hf, laurentEvalEquiv_apply]
+  simp [o]
 
 /-- The ray chart of the reduced boundary is a smooth relative curve over `ℂ`. -/
 theorem smoothOfRelativeDimension_orbitToBoundary (hdim : Module.finrank ℤ N = 2)

@@ -13,12 +13,13 @@ public import Mathlib.LinearAlgebra.BilinearForm.Orthogonal
 public import QPainleve.AlgebraicGeometry.EffectiveCartierDivisor.ClosedImmersion
 public import QPainleve.AlgebraicGeometry.CartierDivisor.Excision
 public import QPainleve.AlgebraicGeometry.Morphisms.Smooth.Factorial
+public import QPainleve.AlgebraicGeometry.Scheme.LocalDimension
 import TauCeti.AlgebraicGeometry.Curves.Normalization
 import TauCeti.AlgebraicGeometry.LineBundle.BaseChange
 import QPainleve.AlgebraicGeometry.Cohomology.Support
+import QPainleve.AlgebraicGeometry.IdealSheaf.ClosedImmersion
 import QPainleve.AlgebraicGeometry.IdealSheaf.EulerCharacteristic
 import QPainleve.AlgebraicGeometry.IdealSheaf.Image.Over
-import QPainleve.AlgebraicGeometry.Scheme.LocalDimension
 
 /-!
 # Surface intersection and restriction to a curve
@@ -190,6 +191,25 @@ public theorem classIntersectionNumber_primeDivisorClass_eq_intersectionNumber
         (vanishingIdeal ⟨closure {(p : X)}, isClosed_closure⟩).subschemeι a := by
   simpa only [one_mul, classIntersectionNumber_one_right, zero_add] using
     classIntersectionNumber_mul_primeDivisorClass k hX p a 1
+
+/-- Intersection with the prime class of an integral closed curve computes the degree
+on that curve with its given closed immersion. -/
+public theorem classIntersectionNumber_primeDivisorClass_eq_intersectionNumber_of_isClosedImmersion
+    [IsLocallyNoetherian X] (hX : topologicalKrullDim X = 2)
+    {C : Scheme.{u}} [C.Over (Spec (.of k))] [IsIntegral C]
+    (i : C ⟶ X) [IsClosedImmersion i] [i.IsOver (Spec (.of k))]
+    (hC : topologicalKrullDim C = 1) (a : LineBundleClass X) :
+    let p : CodimensionOnePoint X :=
+      ⟨i (genericPoint C), i.coheight_apply_genericPoint_eq_one_of_dim_eq_two k hX hC⟩
+    classIntersectionNumber k X a (LineBundleClass.primeDivisorClass p) =
+      LineBundleClass.intersectionNumber k i a := by
+  intro p
+  have hp : (vanishingIdeal ⟨closure {(p : X)}, isClosed_closure⟩).IsEffectiveCartier :=
+    isEffectiveCartier_vanishingIdeal_closure_singleton p.property
+  have he := i.ker_eq_vanishingIdeal_closure_genericPoint
+  have hi : i.ker.IsEffectiveCartier := he ▸ hp
+  rw [LineBundleClass.primeDivisorClass_def, ← LineBundleClass.mk_toInvertibleSheaf_congr hi hp he]
+  exact classIntersectionNumber_eq_intersectionNumber_of_isEffectiveCartier_ker k hX.le i hC hi a
 
 /-- Distinct prime divisors on an integral locally factorial projective surface intersect
 nonnegatively in the surface pairing. -/

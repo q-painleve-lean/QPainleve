@@ -24,7 +24,7 @@ import TauCeti.AlgebraicGeometry.Morphisms.Smooth.Regular
 import TauCeti.Topology.KrullDimension.Irreducible
 
 /-!
-# Resolving lifts to blowups of projective schemes
+# Resolving lifts to blowups from projective surfaces
 
 A morphism from a smooth projective surface that generically avoids a blowup center
 lifts to the blowup after a tower of closed point blowups of the source. For a
@@ -46,33 +46,41 @@ namespace AlgebraicGeometry.Scheme.Hom
 universe u
 
 variable {k : Type u} [Field k] [IsAlgClosed k] {X Y : Scheme.{u}}
-variable [X.Over (Spec (.of k))] [Y.Over (Spec (.of k))]
-variable [X.IsProjectiveOver k] [Y.IsProjectiveOver k] [IsIntegral X]
+variable [X.Over (Spec (.of k))]
+variable [X.IsProjectiveOver k] [IsIntegral X]
 variable [SmoothOfRelativeDimension 2 (X ↘ Spec (.of k))]
 
 open IdealSheafData
 
-/-- A morphism of projective schemes from a smooth integral surface that avoids a
-center on a dense open lifts to the blowup after a tower of closed point blowups. -/
-theorem exists_isClosedPointTower_lifting_blowup (f : X ⟶ Y) [f.IsOver (Spec (.of k))]
+include k in
+/-- A morphism from a smooth integral projective surface that avoids a center on a
+dense open lifts to the blowup after a tower of closed point blowups. -/
+theorem exists_isClosedPointTower_lifting_blowup (f : X ⟶ Y)
     (I : Y.IdealSheafData) (h : Dense (f ⁻¹ᵁ I.support.compl : Set X)) :
     ∃ (n : ℕ) (Z : Scheme.{u}) (T : BlowupTower X n Z) (g : Z ⟶ I.blowup),
       IsClosedPointTower X T ∧ g ≫ I.blowupToBase = T.toBase ≫ f := by
+  -- Resolve the map to the blowup of the pulled-back ideal, which is projective over the field.
+  let J := I.comap f
   let s := X ↘ Spec (.of k)
-  let : I.blowup.Over (Spec (.of k)) := ⟨I.blowupToBase ≫ (Y ↘ Spec (.of k))⟩
-  let : I.blowup.IsProjectiveOver k := I.isProjectiveOver_blowup_of_isNoetherianRing k
-  obtain ⟨r, hr, _⟩ := I.existsUnique_rationalMap_compHom_blowupToBase_eq f h
-  have : r.IsOver f I.blowupToBase := RationalMap.isOver_iff.mpr hr
-  have : r.IsOver s (I.blowup ↘ Spec (.of k)) := by
-    obtain ⟨a, ha, har⟩ := r.exists_partialMap_over f I.blowupToBase
-    refine ⟨a, ⟨?_⟩, har⟩
-    -- The chosen structure map is the blowup projection followed by the structure map of Y.
-    change a.hom ≫ I.blowupToBase ≫ (Y ↘ Spec (.of k)) = a.domain.ι ≫ s
-    rw [← Category.assoc, a.over f I.blowupToBase, Category.assoc,
-      HomIsOver.comp_over (f := f) (S := Spec (.of k))]
-  obtain ⟨n, Z, T, _, _, hT, _, g, ⟨_, hg⟩, _⟩ := r.exists_isClosedPointTower_resolving (k := k)
-  have : Y.IsSeparated := Scheme.IsSeparated.of_isSeparated (Y ↘ Spec (.of k))
-  exact ⟨n, Z, T, g, hT, (I.toRationalMap_eq_comp_iff_comp_blowupToBase_eq h hr g).mp hg⟩
+  let : J.blowup.Over (Spec (.of k)) := ⟨J.blowupToBase ≫ s⟩
+  let : J.blowup.IsProjectiveOver k := J.isProjectiveOver_blowup_of_isNoetherianRing k
+  have hd : Dense ((𝟙 X) ⁻¹ᵁ J.support.compl : Set X) := by
+    simpa [J, support_comap] using h
+  obtain ⟨r, hr, _⟩ := J.existsUnique_rationalMap_compHom_blowupToBase_eq (𝟙 X) hd
+  have hrOver : r.IsOver (𝟙 X) J.blowupToBase := RationalMap.isOver_iff.mpr hr
+  have hrBase : r.IsOver (X ↘ Spec (.of k)) (J.blowup ↘ Spec (.of k)) := by
+    obtain ⟨a, ha, har⟩ := r.exists_partialMap_over (𝟙 X) J.blowupToBase
+    have hs : (J.blowup ↘ Spec (.of k)) = J.blowupToBase ≫ s := rfl
+    exact ⟨a, ⟨by rw [hs, ← Category.assoc, a.over (𝟙 X) J.blowupToBase, Category.comp_id]⟩,
+      har⟩
+  obtain ⟨n, Z, T, _, _, hT, _, g, ⟨_, hg⟩, _⟩ :=
+    r.exists_isClosedPointTower_resolving (k := k)
+  have : X.IsSeparated := Scheme.IsSeparated.of_isSeparated s
+  have hπ : g ≫ J.blowupToBase = T.toBase := by
+    simpa only [Category.comp_id] using
+      (J.toRationalMap_eq_comp_iff_comp_blowupToBase_eq hd hr g).mp hg
+  exact ⟨n, Z, T, g ≫ I.blowupMap f, hT, by
+    rw [Category.assoc, blowupMap_blowupToBase, ← Category.assoc, hπ]⟩
 
 variable {W : Scheme.{u}} {p : W} {q : Y}
 
@@ -114,12 +122,13 @@ private theorem exists_descended_lift
   obtain ⟨g', ⟨_, hg'⟩, _⟩ := existsUnique_comp_eq_pointBlowup_over hp hd g hg h
   exact ⟨g', hg'.comp_over⟩
 
+include k in
 /-- For a modification from a smooth integral projective surface, either it lifts to
 the blowup of the specified closed point or a resolving tower has a lift that maps
 its last exceptional fiber nonconstantly. In the latter case the last center lies
 over the specified point, and the lift itself is a modification. -/
 theorem exists_lift_pointBlowup_or_nonconstant_exceptional
-    (f : X ⟶ Y) [f.IsOver (Spec (.of k))] [IsModification f] (hq : IsClosed ({q} : Set Y)) :
+    (f : X ⟶ Y) [IsLocallyNoetherian Y] [IsModification f] (hq : IsClosed ({q} : Set Y)) :
     (∃ g : X ⟶ 𝔪[q].blowup, g ≫ 𝔪[q].blowupToBase = f) ∨
       ∃ (n : ℕ) (W : Scheme.{u}) (T : BlowupTower X n W) (p : W)
         (g : 𝔪[p].blowup ⟶ 𝔪[q].blowup),
@@ -169,7 +178,6 @@ theorem exists_lift_pointBlowup_or_nonconstant_exceptional
     have hcenter : f (T.toBase p) = q := not_not.mp fun hne ↦
       hnonconstant (subsingleton_range_exceptional_of_ne hp hq (T.toBase ≫ f) g hg hne)
     have : IsLocallyNoetherian X := LocallyOfFiniteType.isLocallyNoetherian (X ↘ Spec (.of k))
-    have : IsLocallyNoetherian Y := LocallyOfFiniteType.isLocallyNoetherian (Y ↘ Spec (.of k))
     have : IsModification 𝔪[q].blowupToBase := 𝔪[q].isModification_blowupToBase hI
     have : IsModification (T.snoc 𝔪[p]).toBase := hT.isModification
     have : IsModification (g ≫ 𝔪[q].blowupToBase) := by

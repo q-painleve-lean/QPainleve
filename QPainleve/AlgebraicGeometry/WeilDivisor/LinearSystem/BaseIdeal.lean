@@ -12,7 +12,7 @@ public import QPainleve.AlgebraicGeometry.WeilDivisor.LinearSystem.FixedPart
 import QPainleve.AlgebraicGeometry.IdealSheaf.Stalk
 import QPainleve.Topology.NoetherianSpace
 import TauCeti.AlgebraicGeometry.IdealSheaf.Colon
-import TauCeti.AlgebraicGeometry.Scheme.GenericPoint
+import TauCeti.AlgebraicGeometry.Scheme.GenericPoint.Basic
 import TauCeti.Topology.KrullDimension.Basic
 
 /-!

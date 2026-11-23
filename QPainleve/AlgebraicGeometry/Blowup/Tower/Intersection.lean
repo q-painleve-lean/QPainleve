@@ -227,6 +227,27 @@ theorem picardMarking_canonicalClass [IsIntegral X] [IsNoetherian X]
     (hT.smoothOfRelativeDimension f)).symm
   exact (T.picardMarking_apply hT f _).trans (congrArg Additive.ofMul h)
 
+/-- The canonical complement of a pulled-back line bundle has the base canonical
+complement as its first coordinate and coefficient one at each exceptional divisor
+in the total-transform marking. -/
+theorem canonical_complement_picardHom [IsIntegral X] [IsNoetherian X]
+    (hT : IsClosedPointTower X T) (L : InvertibleSheaf X) :
+    let : Y.Over (Spec (.of k)) := ⟨T.toBase ≫ f⟩
+    let : SmoothOfRelativeDimension 2 (Y ↘ Spec (.of k)) := hT.smoothOfRelativeDimension f
+    let M := (InvertibleSheaf.pullback T.toBase).obj L
+    mk (InvertibleSheaf.tensorProduct (canonicalBundle k Y 2) (InvertibleSheaf.dual M)) =
+      (T.picardHom (Additive.ofMul (mk (InvertibleSheaf.tensorProduct (canonicalBundle k X 2)
+        (InvertibleSheaf.dual L))), fun _ ↦ 1)).toMul := by
+  intro _ _ M
+  have hK := congrArg Additive.toMul (picardMarking_canonicalClass k hT)
+  rw [T.picardMarking_apply, toMul_ofMul] at hK
+  have hM : mk M = (T.picardHom (Additive.ofMul (mk L), 0)).toMul := by
+    rw [picardHom_apply_zero, toMul_ofMul, pullback_mk]
+  simp only [mk_tensorProduct, ← inv_mk]
+  rw [← hK, hM, ← div_eq_mul_inv, ← toMul_sub, ← map_sub]
+  simp only [Prod.mk_sub_mk, sub_zero]
+  congr 2
+
 end CanonicalClass
 
 /-- A class pulled back from the base pairs trivially with the exceptional correction

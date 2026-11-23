@@ -5,7 +5,7 @@ Authors: The QPainleve contributors
 -/
 module
 
-public import QPainleve.Geometry.Toric.Fan.Boundary.Center
+public import QPainleve.Geometry.Toric.Fan.Boundary.Component
 public import QPainleve.LinearAlgebra.Determinant.Dual
 
 import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
@@ -31,10 +31,8 @@ variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
 
 /-- The determinant character of a primitive ray generator takes every integral value. -/
 theorem Ray.surjective_detCharacter (ρ : Φ.Ray) (b : Module.Basis (Fin 2) ℤ N) :
-    Function.Surjective (b.detDualEquiv ρ.primitiveGenerator).toAddMonoidHom := by
-  apply b.surjective_detDualEquiv_of_isPrimitive
-  rw [Ray.primitiveGenerator_def]
-  exact primitiveGenerator_isPrimitive Φ.lattice (Φ.isToricCone ρ.toCone.property) _
+    Function.Surjective (b.detDualEquiv ρ.primitiveGenerator).toAddMonoidHom :=
+  b.surjective_detDualEquiv_of_isPrimitive ρ.primitiveGenerator_isPrimitive
 
 variable [h₀ : Nonempty Φ.cones] (b : Module.Basis (Fin 2) ℤ N)
 
@@ -56,6 +54,14 @@ theorem Ray.internalCenter_val (ρ : Φ.Ray) (c : ℂˣ) :
     (ρ.internalCenter b c).val =
       (ρ.binomialCenterOnBoundary rankTwo (m := χ(ρ)) (b.detDualEquiv_self _)
         (ρ.surjective_detCharacter b) c).ker := (rfl)
+
+/-- An internal center restricts to an effective Cartier ideal on every ray divisor. -/
+theorem Ray.isEffectiveCartier_comap_internalCenter (ρ : Φ.Ray) (c : ℂˣ)
+    (hΦ : Φ.IsRegular) (τ : Φ.Ray) :
+    ((ρ.internalCenter b c).val.comap (τ.boundaryComponentι hΦ)).IsEffectiveCartier := by
+  rw [Ray.internalCenter_val]
+  exact ρ.isEffectiveCartier_comap_ker_binomialCenterOnBoundary hΦ rankTwo
+    (b.detDualEquiv_self _) (ρ.surjective_detCharacter b) c τ
 
 /-- Reversing the ordered basis and inverting the parameter gives the same Cartier
 center on the reduced boundary. -/
