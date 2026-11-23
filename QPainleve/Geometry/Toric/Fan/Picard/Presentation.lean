@@ -74,6 +74,13 @@ def rayDivisorToPicard (hΦ : Φ.IsRegular) :
   have := Φ.uniqueFactorizationMonoid_stalk_algebraicRealization hΦ
   (weilToLineBundleClassHom Φ.algebraicRealization).comp (Φ.rayDivisorToWeilDivisor hΦ)
 
+/-- The Picard class map on ray coefficients sends the corresponding Weil divisor to its class. -/
+theorem rayDivisorToPicard_def (hΦ : Φ.IsRegular) (a : Φ.Ray → ℤ) :
+    letI := Φ.uniqueFactorizationMonoid_stalk_algebraicRealization hΦ
+    Φ.rayDivisorToPicard hΦ a =
+      weilToLineBundleClassHom Φ.algebraicRealization (Φ.rayDivisorToWeilDivisor hΦ a) :=
+  (rfl)
+
 /-- A divisor concentrated on one ray maps to the corresponding multiple of its prime class. -/
 @[simp]
 theorem rayDivisorToPicard_single (hΦ : Φ.IsRegular) [DecidableEq Φ.Ray] (ρ : Φ.Ray) (n : ℤ) :

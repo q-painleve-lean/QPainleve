@@ -50,6 +50,24 @@ theorem stalkOrder_iSup {ι : Type*} (I : ι → X.IdealSheafData) (x : X) :
 
 variable {Y : Scheme.{u}}
 
+/-- Extending an ideal along a scheme morphism can only increase its stalk order. -/
+theorem stalkOrder_le_comap (J : Y.IdealSheafData) (f : X ⟶ Y) (x : X) :
+    J.stalkOrder (f x) ≤ (J.comap f).stalkOrder x := by
+  refine ENat.forall_natCast_le_iff_le.mp fun n hn ↦ ?_
+  rw [J.natCast_le_stalkOrder_iff] at hn
+  rw [natCast_le_stalkOrder_iff, stalkIdeal_comap]
+  let φ := (f.stalkMap x).hom
+  refine (Ideal.map_mono (f := φ) hn).trans ?_
+  rw [Ideal.map_pow]
+  exact Ideal.pow_right_mono (IsLocalRing.map_maximalIdeal_le φ) _
+
+/-- An isomorphism on local rings preserves the order of an inverse-image ideal. -/
+theorem stalkOrder_comap_of_isIso_stalkMap (J : Y.IdealSheafData)
+    (f : X ⟶ Y) (x : X) [IsIso (f.stalkMap x)] :
+    (J.comap f).stalkOrder x = J.stalkOrder (f x) := by
+  rw [stalkOrder_def, stalkIdeal_comap, J.stalkOrder_def]
+  exact Ideal.localOrder_map_equiv _ (asIso (f.stalkMap x)).commRingCatIsoToRingEquiv
+
 /-- In a commutative square of closed subschemes, if the induced map of closed subschemes
 is an isomorphism and the ambient stalk map at a point of the source subscheme is an isomorphism,
 then the inverse-image ideal and the source ideal have the same stalk at that point. -/

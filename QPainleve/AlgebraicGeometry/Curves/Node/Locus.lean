@@ -9,6 +9,7 @@ public import TauCeti.AlgebraicGeometry.Curves.Node.Relative
 public import QPainleve.AlgebraicGeometry.IdealSheaf.Restriction
 public import TauCeti.AlgebraicGeometry.Morphisms.IsoLocus
 
+import TauCeti.AlgebraicGeometry.IdealSheaf.Reduced
 import TauCeti.AlgebraicGeometry.Pullback.Carrier
 
 /-!
@@ -91,6 +92,15 @@ theorem mem_support_of_isNodeOfReducedBoundary {D : Y.IdealSheafData} {g : Y ⟶
   obtain ⟨z, rfl, _⟩ := hx
   rw [← SetLike.mem_coe, ← support_radical, ← range_subschemeι]
   exact Set.mem_range_self z
+
+/-- For an already reduced boundary, the node condition can be read on the original
+closed subscheme. -/
+theorem isNodeOfReducedBoundary_iff_of_isReduced (D : Y.IdealSheafData) [IsReduced D.subscheme]
+    (g : Y ⟶ S) (x : Y) :
+    D.IsNodeOfReducedBoundary g x ↔
+      ∃ z : D.subscheme, D.subschemeι z = x ∧ (D.subschemeι ≫ g).IsNodeAt z := by
+  unfold IsNodeOfReducedBoundary
+  rw [(D.isReduced_subscheme_iff_radical_eq).mp inferInstance]
 
 /-- If the reduced boundary is nodal, its nodes are its nonsmooth points read in the
 ambient scheme. -/

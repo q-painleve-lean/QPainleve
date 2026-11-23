@@ -62,6 +62,16 @@ theorem toBase_nil : (nil (X := X)).toBase = 𝟙 X := (rfl)
 theorem toBase_snoc (T : BlowupTower X n Y) (I : Y.IdealSheafData) :
     (T.snoc I).toBase = I.blowupToBase ≫ T.toBase := (rfl)
 
+/-- The projection of a blowup tower over a locally Noetherian scheme is proper. -/
+theorem isProper_toBase (T : BlowupTower X n Y) [IsLocallyNoetherian X] :
+    IsProper T.toBase := by
+  induction T with
+  | nil => simpa only [toBase_nil] using (inferInstance : IsProper (𝟙 X))
+  | snoc U I ih =>
+    have := LocallyOfFiniteType.isLocallyNoetherian U.toBase
+    rw [toBase_snoc]
+    infer_instance
+
 /-- Concatenate two towers by performing the blowups of the second after those of the first. -/
 def append (T : BlowupTower X m Y) :
     {n : ℕ} → {Z : Scheme.{u}} → BlowupTower Y n Z → BlowupTower X (m + n) Z
