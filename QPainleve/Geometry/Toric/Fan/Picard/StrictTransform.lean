@@ -138,6 +138,20 @@ theorem picardHom_markedBoundaryMap_single [DecidableEq Φ.Ray] (ρ : Φ.Ray) :
     rayDivisorToPicard_single, one_zsmul, Pi.single_apply, apply_ite, neg_zero, hbase]
     using h
 
+include hJ in
+/-- The ordered Picard marking sends the marked boundary span to the span of the actual
+strict-transform ray classes. -/
+theorem map_range_markedBoundaryMap_picardHom :
+    (markedBoundaryMap hΦ s).range.map (T).picardHom =
+      Submodule.span ℤ (Set.range (strictRayBoundaryClass hΦ hdim (T) (hT))) := by
+  classical
+  rw [range_markedBoundaryMap_eq_span, Submodule.map_span, ← Set.range_comp]
+  congr 2
+  funext ρ
+  simpa only [Function.comp_apply, markedBoundaryMap_apply, Pi.single_apply, apply_ite,
+    neg_zero] using picardHom_markedBoundaryMap_single hΦ hdim s m hm hprim c J hJ hT ρ
+
+include hJ in
 /-- In the surface obtained by blowing up the ordered binomial centers, the Picard group
 modulo the strict-transform ray classes is the cokernel of the dual of the charge map.
 The charges may have any rank. -/
@@ -145,19 +159,12 @@ def binomialBoundaryQuotientEquivDualChargeCokernel :
     ((Pic (Sigma.fst tower)) ⧸ Submodule.span ℤ
       (Set.range (strictRayBoundaryClass hΦ hdim (T) (hT)))) ≃ₗ[ℤ]
       (Module.Dual ℤ (Fin n → ℤ) ⧸ (rayChargeMap s).dualMap.range) := by
-  classical
   letI := smoothOfRelativeDimension_two hΦ hdim
   let e := (T).picardMarking (hT) f
-  have hspan : (markedBoundaryMap hΦ s).range.map e.toLinearMap =
-      Submodule.span ℤ (Set.range (strictRayBoundaryClass hΦ hdim (T) (hT))) := by
-    have h (ρ : Φ.Ray) : e (Φ.rayDivisorToPicard hΦ (Pi.single ρ 1),
-        fun j ↦ if s j = ρ then -1 else 0) = strictRayBoundaryClass hΦ hdim (T) (hT) ρ := by
-      simpa only [e, picardMarking_apply, markedBoundaryMap_apply, Pi.single_apply, apply_ite,
-        neg_zero] using picardHom_markedBoundaryMap_single hΦ hdim s m hm hprim c J hJ hT ρ
-    rw [range_markedBoundaryMap_eq_span, Submodule.map_span, ← Set.range_comp]
-    congr 2
-    exact funext h
-  exact (Submodule.Quotient.equiv _ _ e hspan).symm.trans
+  have he : e.toLinearMap = (T).picardHom :=
+    LinearMap.ext fun a ↦ picardMarking_apply (T) (hT) f a
+  have hspan := map_range_markedBoundaryMap_picardHom hΦ hdim s m hm hprim c J hJ hT
+  exact (Submodule.Quotient.equiv _ _ e (he.symm ▸ hspan)).symm.trans
     (boundaryQuotientEquivDualChargeCokernel hΦ s)
 
 /-- The inverse cokernel comparison sends a dual functional to the corresponding class

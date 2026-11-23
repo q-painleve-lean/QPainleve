@@ -9,6 +9,7 @@ public import TauCeti.AlgebraicGeometry.Blowup.StrictTransform
 import QPainleve.AlgebraicGeometry.IdealSheaf.Restriction
 import TauCeti.AlgebraicGeometry.Blowup.ExceptionalDivisor
 import TauCeti.AlgebraicGeometry.IdealSheaf.BaseChange
+import TauCeti.AlgebraicGeometry.IdealSheaf.Colon
 import TauCeti.AlgebraicGeometry.IdealSheaf.Extension
 import TauCeti.AlgebraicGeometry.IdealSheaf.Locality
 
@@ -53,6 +54,31 @@ theorem ker_blowupMap_subschemeι_eq_map_comap {X : Scheme.{u}} (I J : X.IdealSh
       (IsPullback.of_hasPullback J.subschemeι I.blowupToBase).flip)
   rw [I.ker_blowupMap, ← hW, ← morphismRestrict_ι, Scheme.Hom.ker_comp]
   rw [ker_eq_comap_of_isPullback f (isPullback_morphismRestrict f W), hTotal]
+
+/-- The intersection of the strict-transform ideal and the exceptional ideal equals
+their product. The strict-transform ideal is saturated with respect to the locally
+principal exceptional ideal. -/
+theorem inf_ker_blowupMap_subschemeι_exceptional {X : Scheme.{u}} (I D : X.IdealSheafData) :
+    (I.blowupMap D.subschemeι).ker ⊓ I.comap I.blowupToBase =
+      (I.blowupMap D.subschemeι).ker * I.comap I.blowupToBase := by
+  let S := (I.blowupMap D.subschemeι).ker
+  let E := I.comap I.blowupToBase
+  change S ⊓ E = S * E
+  let j := Scheme.Opens.ι (E.support.compl)
+  have hS : S = ((D.comap I.blowupToBase).comap j).map j :=
+    ker_blowupMap_subschemeι_eq_map_comap I D
+  have hEj : E.comap j = ⊤ :=
+    (comap_eq_top_iff _ _).mpr (Scheme.Opens.ι_preimage_self _)
+  rw [inf_eq_colon_mul _ _ I.isEffectiveCartier_comap_blowupToBase.locallyPrincipal]
+  congr 1
+  apply le_antisymm _ (le_colon _ _)
+  have hcomap : ((S.colon E) * E).comap j ≤ S.comap j :=
+    comap_mono j (colon_mul_le S E)
+  rw [comap_mul, hEj, ← one_eq_top, mul_one] at hcomap
+  have ht : S.comap j ≤ (D.comap I.blowupToBase).comap j := by
+    rw [hS]
+    exact comap_map_le _ _
+  exact ((le_map_iff_comap_le).mpr (hcomap.trans ht)).trans_eq hS.symm
 
 /-- Restricting the strict transform to an open of the blowup computes the
 scheme-theoretic closure of the restricted total transform off the exceptional divisor. -/

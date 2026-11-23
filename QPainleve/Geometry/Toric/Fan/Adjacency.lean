@@ -82,9 +82,29 @@ theorem toricRays_eq_pair (Φ : Fan i) {ρ τ : Φ.Ray} {σ : Φ.cones}
   apply Set.eq_of_subset_of_ncard_le (Set.subset_univ _)
   rwa [Set.ncard_univ, Set.ncard_pair hr]
 
--- Test membership in one cone along the real parameter line using an extending basis.
-private theorem isClosed_setOf_add_smul_mem (hΦ : Φ.IsRegular) (σ : Φ.cones) (x y : V) :
-    IsClosed {t : ℝ | x + t • y ∈ σ.val} := by
+/-- A cone of a regular rank-two fan containing two distinct rays is their join. -/
+theorem cone_eq_sup_of_ray_ne_of_le (hΦ : Φ.IsRegular) (hN : Module.finrank ℤ N = 2)
+    {ρ τ : Φ.Ray} {σ : Φ.cones} (hne : ρ ≠ τ) (hρ : ρ.toCone ≤ σ) (hτ : τ.toCone ≤ σ) :
+    σ.val = ρ.toCone.val ⊔ τ.toCone.val := by
+  refine le_antisymm ?_ (sup_le hρ hτ)
+  rw [← ToricRay.iSup_toPointedCone (Φ.isToricCone σ.property).fg
+    (Φ.isToricCone σ.property).salient]
+  refine iSup_le fun r ↦ ?_
+  have hr : r ∈ ({ρ.toToricRay Φ σ hρ, τ.toToricRay Φ σ hτ} : Set (ToricRay σ.val)) :=
+    Φ.toricRays_eq_pair ((isRegular_iff.1 hΦ) _ σ.property) hN hne hρ hτ ▸ Set.mem_univ _
+  simp only [Set.mem_insert_iff, Set.mem_singleton_iff] at hr
+  rcases hr with rfl | rfl
+  · rw [Ray.toPointedCone_toToricRay]
+    exact le_sup_left
+  · rw [Ray.toPointedCone_toToricRay]
+    exact le_sup_right
+
+/-- The preimage of a regular fan cone is closed if every real linear coordinate is
+continuous along the map. The ambient real vector space needs no topology. -/
+theorem isClosed_preimage_cone_of_isRegular {T : Type*} [TopologicalSpace T]
+    (hΦ : Φ.IsRegular) (σ : Φ.cones) (f : T → V)
+    (hf : ∀ l : V →ₗ[ℝ] ℝ, Continuous (l ∘ f)) :
+    IsClosed (f ⁻¹' (σ.val : Set V)) := by
   classical
   have hreg := (isRegular_iff.1 hΦ) σ.val σ.property
   obtain ⟨n, b, r, hb⟩ := hreg.exists_basis
@@ -99,27 +119,26 @@ private theorem isClosed_setOf_add_smul_mem (hΦ : Φ.IsRegular) (σ : Φ.cones)
     · simp [A, hj, c]
     · simp only [A, hj, not_false_eq_true, forall_const, ite_false, Set.mem_singleton_iff, c]
       exact ⟨And.right, fun h ↦ ⟨h.ge, h⟩⟩
-  simp only [hmem, Set.ofPred_forall]
+  rw [show f ⁻¹' (σ.val : Set V) = {t | ∀ j, c.repr (f t) j ∈
+      if j ∈ A then Set.Ici (0 : ℝ) else {0}} from Set.ext fun t ↦ hmem (f t)]
+  simp only [Set.ofPred_forall]
   refine isClosed_iInter fun j ↦ ?_
-  have hcont : Continuous fun t : ℝ ↦ c.repr (x + t • y) j := by
-    simp only [map_add, map_smul, Finsupp.add_apply, Finsupp.smul_apply, smul_eq_mul]
-    exact continuous_const.add (continuous_id.mul continuous_const)
   have hclosed : IsClosed (if j ∈ A then Set.Ici (0 : ℝ) else {0}) := by
     split_ifs
     · exact isClosed_Ici
     · exact isClosed_singleton
-  -- The coordinate condition is a preimage under the displayed affine map of the line.
-  change IsClosed ((fun t : ℝ ↦ c.repr (x + t • y) j) ⁻¹'
-    (if j ∈ A then Set.Ici 0 else {0}))
-  exact hclosed.preimage hcont
+  exact hclosed.preimage (hf (c.coord j))
 
 private theorem exists_cone_mem_pos (hΦ : Φ.IsRegular) (hc : Φ.IsComplete)
     {f : V →ₗ[ℝ] ℝ} {x y : V} (hx : f x = 0) (hy : 0 < f y) :
     ∃ σ : Φ.cones, x ∈ σ.val ∧ ∃ z ∈ σ.val, 0 < f z := by
   let S := {σ : Φ.cones | ∃ z ∈ σ.val, 0 < f z}
   let U := ⋃ σ ∈ S, {t : ℝ | x + t • y ∈ σ.val}
-  have hU : IsClosed U :=
-    S.toFinite.isClosed_biUnion fun σ _ ↦ isClosed_setOf_add_smul_mem hΦ σ x y
+  have hU : IsClosed U := S.toFinite.isClosed_biUnion fun σ _ ↦
+    isClosed_preimage_cone_of_isRegular hΦ σ (fun t : ℝ ↦ x + t • y) fun l ↦ by
+      rw [show (l ∘ fun t : ℝ ↦ x + t • y) = fun t ↦ l x + t * l y from
+        funext fun t ↦ by simp [smul_eq_mul]]
+      exact continuous_const.add (continuous_id.mul continuous_const)
   have hcover : Set.Ioi (0 : ℝ) ⊆ U := by
     intro t ht
     obtain ⟨σ, hσ, hz⟩ := Φ.isComplete_iff.1 hc (x + t • y)
@@ -298,5 +317,25 @@ theorem exists_ray_neighbors (b : Module.Basis (Fin 2) ℤ N)
       subst next
       rw [b.detDualEquiv_self] at hn
       omega
+
+/-- A specified preceding and succeeding ray account for all distinct rays sharing a cone
+with the middle ray. -/
+theorem ray_neighbors_iff_of_det (b : Module.Basis (Fin 2) ℤ N)
+    (hΦ : Φ.IsRegular) (hc : Φ.IsComplete) {prev ρ next : Φ.Ray}
+    (hprev : b.detDualEquiv prev.primitiveGenerator ρ.primitiveGenerator = 1 ∧
+      ∃ σ : Φ.cones, prev.toCone ≤ σ ∧ ρ.toCone ≤ σ)
+    (hnext : b.detDualEquiv ρ.primitiveGenerator next.primitiveGenerator = 1 ∧
+      ∃ σ : Φ.cones, ρ.toCone ≤ σ ∧ next.toCone ≤ σ) (τ : Φ.Ray) :
+    (ρ ≠ τ ∧ ∃ σ : Φ.cones, ρ.toCone ≤ σ ∧ τ.toCone ≤ σ) ↔ τ = prev ∨ τ = next := by
+  obtain ⟨p, q, hp, hq, hneighbors⟩ := exists_ray_neighbors b hΦ hc ρ
+  obtain ⟨⟨_, _, hpos⟩, ⟨_, _, hneg⟩⟩ := exists_unique_ray_neighbor_on_each_side b hΦ hc ρ
+  have hprev' : b.detDualEquiv ρ.primitiveGenerator prev.primitiveGenerator = -1 := by
+    rw [b.detDualEquiv_swap, hprev.1]
+  have hp' : p = prev :=
+    (hneg p ⟨hp, ((hneighbors p).2 (Or.inl rfl)).2⟩).trans
+      (hneg prev ⟨hprev', hprev.2.imp (fun _ h ↦ h.symm)⟩).symm
+  have hq' : q = next :=
+    (hpos q ⟨hq, ((hneighbors q).2 (Or.inr rfl)).2⟩).trans (hpos next hnext).symm
+  simpa only [hp', hq'] using hneighbors τ
 
 end TauCeti.Toric.Fan

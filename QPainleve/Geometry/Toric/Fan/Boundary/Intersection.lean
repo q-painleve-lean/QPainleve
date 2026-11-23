@@ -154,23 +154,8 @@ include hΦ hN in
 private theorem eq_cone_of_two_rays (hne : ρ ≠ τ) {σ σ' : Φ.cones}
     (hρ : ρ.toCone ≤ σ) (hτ : τ.toCone ≤ σ)
     (hρ' : ρ.toCone ≤ σ') (hτ' : τ.toCone ≤ σ') : σ = σ' := by
-  suffices ∀ (a b : Φ.cones), ρ.toCone ≤ a → τ.toCone ≤ a →
-      ρ.toCone ≤ b → τ.toCone ≤ b → a ≤ b from
-    le_antisymm (this σ σ' hρ hτ hρ' hτ') (this σ' σ hρ' hτ' hρ hτ)
-  intro a b hρa hτa hρb hτb
-  refine Φ.le_iff_forall_ray_le.mpr fun r hr ↦ ?_
-  have hm : r.toToricRay Φ a hr ∈
-      ({ρ.toToricRay Φ a hρa, τ.toToricRay Φ a hτa} : Set (ToricRay a.val)) := by
-    rw [Φ.toricRays_eq_pair ((isRegular_iff.1 hΦ) _ a.property) hN hne hρa hτa]
-    exact Set.mem_univ _
-  simp only [Set.mem_insert_iff, Set.mem_singleton_iff] at hm
-  rcases hm with he | he
-  · have hc : r.toCone = ρ.toCone := Subtype.ext <| by
-      simpa only [Ray.toPointedCone_toToricRay] using congrArg ToricRay.toPointedCone he
-    exact hc ▸ hρb
-  · have hc : r.toCone = τ.toCone := Subtype.ext <| by
-      simpa only [Ray.toPointedCone_toToricRay] using congrArg ToricRay.toPointedCone he
-    exact hc ▸ hτb
+  exact Subtype.ext ((cone_eq_sup_of_ray_ne_of_le hΦ hN hne hρ hτ).trans
+    (cone_eq_sup_of_ray_ne_of_le hΦ hN hne hρ' hτ').symm)
 
 include hN in
 private theorem comap_sup_rayBoundaryIdeal_eq_ker (hne : ρ ≠ τ) (σ : Φ.cones)

@@ -196,82 +196,6 @@ private theorem exists_ray_or_eq_of_basis_sum_mem
       · exact hmem 0 hp0
       · exact hmem 1 hp1
 
-private theorem mem_basisHull_iff (b : Basis (Fin 2) ℝ V) {x : V} :
-    x ∈ hull ℝ (Set.range b) ↔ 0 ≤ b.coord 0 x ∧ 0 ≤ b.coord 1 x := by
-  have hset : Set.range b = {b 0, b 1} := by
-    ext y
-    simp only [Set.mem_range, Set.mem_insert_iff, Set.mem_singleton_iff,
-      Fin.exists_fin_two, eq_comm]
-  rw [hset, Submodule.mem_span_pair]
-  constructor
-  · rintro ⟨a, d, rfl⟩
-    simpa [← Nonneg.coe_smul, Basis.coord_apply] using And.intro a.property d.property
-  · rintro ⟨h0, h1⟩
-    refine ⟨⟨_, h0⟩, ⟨_, h1⟩, ?_⟩
-    simpa only [Nonneg.mk_smul, Fin.sum_univ_two, Basis.coord_apply] using b.sum_repr x
-
-private theorem mem_hull_sum_iff (b : Basis (Fin 2) ℝ V) {x : V}
-    (hx : x ∈ hull ℝ (Set.range b)) :
-    x ∈ hull ℝ {b 0 + b 1} ↔ (b.coord 0 - b.coord 1) x = 0 := by
-  rw [mem_hull_singleton]
-  constructor
-  · rintro ⟨t, -, rfl⟩
-    simp [Basis.coord_apply]
-  · intro he
-    refine ⟨b.coord 0 x, ((mem_basisHull_iff b).mp hx).1, ?_⟩
-    have he' : b.coord 0 x = b.coord 1 x := sub_eq_zero.mp he
-    rw [smul_add]
-    nth_rw 2 [he']
-    simpa only [Fin.sum_univ_two, Basis.coord_apply] using b.sum_repr x
-
-private theorem mem_hull_sum_pair_of_coord_le (b : Basis (Fin 2) ℝ V) {x : V}
-    (hx : x ∈ hull ℝ (Set.range b)) {j k : Fin 2} (hjk : j ≠ k)
-    (h : b.coord k x ≤ b.coord j x) :
-    x ∈ hull ℝ {b 0 + b 1, b j} := by
-  have hpos (l : Fin 2) : 0 ≤ b.coord l x := by
-    have hp := (mem_basisHull_iff b).mp hx
-    fin_cases l
-    · exact hp.1
-    · exact hp.2
-  rw [Submodule.mem_span_pair]
-  refine ⟨⟨_, hpos k⟩, ⟨_, sub_nonneg.mpr h⟩, ?_⟩
-  have he := b.sum_repr x
-  simp only [Fin.sum_univ_two, ← Basis.coord_apply] at he
-  simp only [Nonneg.mk_smul, smul_add, sub_smul]
-  have hsum : (b.coord k x) • b 0 + (b.coord k x) • b 1 +
-      ((b.coord j x) • b j - (b.coord k x) • b j) =
-      (b.coord 0 x) • b 0 + (b.coord 1 x) • b 1 := by
-    have hcases : j = 0 ∧ k = 1 ∨ j = 1 ∧ k = 0 := by omega
-    rcases hcases with ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ <;> module
-  exact hsum.trans he
-
-private theorem exists_le_hull_sum_pair_of_isFaceOf (b : Basis (Fin 2) ℝ V)
-    {τ : PointedCone ℝ V} (hτ : τ ≤ hull ℝ (Set.range b))
-    (hface : (τ ⊓ hull ℝ {b 0 + b 1}).IsFaceOf τ) :
-    ∃ j : Fin 2, τ ≤ hull ℝ {b 0 + b 1, b j} := by
-  let f := b.coord 0 - b.coord 1
-  by_cases hp : ∃ x ∈ τ, 0 < f x
-  · obtain ⟨x, hx, hpos⟩ := hp
-    refine ⟨0, fun y hy ↦ mem_hull_sum_pair_of_coord_le b (hτ hy)
-      (by decide : (0 : Fin 2) ≠ 1) (sub_nonneg.mp ?_)⟩
-    by_contra! hneg
-    have hneg' : f y < 0 := hneg
-    have h1 := τ.smul_mem (neg_nonneg.mpr hneg'.le) hx
-    have h2 := τ.smul_mem hpos.le hy
-    have hz : f ((-f y) • x + f x • y) = 0 := by
-      simp only [map_add, map_smul, smul_eq_mul]
-      ring
-    have hm := (mem_hull_sum_iff b (hτ (τ.add_mem h1 h2))).mpr hz
-    have hxf := hface.mem_of_add_mem_left h1 h2 ⟨τ.add_mem h1 h2, hm⟩
-    have he := (mem_hull_sum_iff b (hτ h1)).mp hxf.2
-    have hz' : 0 < f ((-f y) • x) := by
-      rw [map_smul, smul_eq_mul]
-      exact mul_pos (neg_pos.mpr hneg') hpos
-    exact hz'.ne' he
-  · push Not at hp
-    refine ⟨1, fun y hy ↦ mem_hull_sum_pair_of_coord_le b (hτ hy)
-      (by decide : (1 : Fin 2) ≠ 0) (sub_nonpos.mp (hp y hy))⟩
-
 private theorem mem_starSubdivisionAlong_hull_sum_pair (hΦ : Φ.IsRegular)
     (σ : Φ.cones) (b : Basis (Fin 2) ℤ N) (e : Fin 2 ≃ ToricRay σ.val)
     (hb : ∀ j, b j = primitiveGenerator Φ.lattice (Φ.isToricCone σ.property) (e j))
@@ -351,7 +275,7 @@ private theorem IsSubdivision.exists_starSubdivisionAlong (h : Ψ.IsSubdivision 
     have hx' : i u ∈ σ.val ⊓ ray := ⟨hx, subset_hull (Set.mem_singleton _)⟩
     have hl := (Φ.isToricCone σ.property).le_of_isFaceOf_of_sum_primitiveGenerator_mem
       Φ.lattice hf (hsum.symm ▸ hx')
-    have he := (mem_hull_sum_iff c (subset_hull (Set.mem_range_self 0))).mp
+    have he := (c.mem_hull_sum_iff (subset_hull (Set.mem_range_self 0))).mp
       (hray ▸ (hl (hcone ▸ subset_hull (Set.mem_range_self 0))).2)
     simp [Basis.coord_apply] at he
   refine ⟨⟨?_, h.support_eq.trans hstar.support_eq.symm⟩,
@@ -362,7 +286,7 @@ private theorem IsSubdivision.exists_starSubdivisionAlong (h : Ψ.IsSubdivision 
   · subst η
     have hf := Ψ.inf_isFaceOf_left hκ hrayΨ
     rw [hray] at hf
-    obtain ⟨j, hj⟩ := exists_le_hull_sum_pair_of_isFaceOf c (hcone ▸ hκη) hf
+    obtain ⟨j, hj⟩ := c.exists_le_hull_sum_pair_of_isFaceOf (hcone ▸ hκη) hf
     refine ⟨hull ℝ {i u, i (b j)}, mem_starSubdivisionAlong_hull_sum_pair hΦ σ b e hb j, ?_⟩
     simpa only [hcv, ← map_add] using hj
   · have hnot : ¬ σ.val ≤ η := fun hle' ↦ he
