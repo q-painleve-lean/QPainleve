@@ -48,23 +48,6 @@ local notation "a" ρ:arg => (Ray.boundaryComponentι ρ hΦ ≫ j)
 local notation "Chars" => (Multiplicative (N →+ ℤ) →* ℂˣ)
 local notation "m" k:arg => LinearMap.toAddMonoidHom (b.detDualEquiv (Ray.primitiveGenerator (s k)))
 
-/-- The ray component embedded through the fixed boundary is the strict transform of
-the ray divisor in the ordered internal model. -/
-theorem ker_boundaryComponentι_internalBlowupTower (ρ : Φ.Ray) :
-    (a ρ).ker = strictTransform (Φ.rayBoundaryIdeal hΦ ρ) T := by
-  let D := (Φ.boundaryIdeal inferInstance).subschemeι
-  let J (k : Fin n) := (s k).internalCenter b (c k)
-  let P (M : Σ Z, WithBoundary D n Z) :=
-    (ρ.boundaryComponentι hΦ ≫ M.2.boundaryι).ker =
-      strictTransform (Φ.rayBoundaryIdeal hΦ ρ) M.2.toTower
-  apply (congrArg P (internalBlowupTower_eq_alongBoundary b s c)).mpr
-  refine (strictTransform_rayBoundaryIdeal_alongBoundary hΦ J ρ ?_).symm
-  intro k
-  rw [Ray.internalCenter_val]
-  exact (s k).isEffectiveCartier_comap_ker_binomialCenterOnBoundary hΦ
-    (by simpa using Module.finrank_eq_card_basis b) (b.detDualEquiv_self _)
-    ((s k).surjective_detCharacter b) (c k) ρ
-
 /-- Automorphisms over the complex base of the ordered internal toric model that act
 trivially on its Picard group and preserve the ideal of each strict ray divisor. -/
 def internalBlowupPicardBoundaryAut : Subgroup (Aut Y) where
