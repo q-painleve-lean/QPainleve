@@ -8,6 +8,7 @@ module
 public import QPainleve.AlgebraicGeometry.Curves.Node.Conductor
 
 import QPainleve.AlgebraicGeometry.Fiber
+import QPainleve.AlgebraicGeometry.Morphisms.Etale.GlobalSections
 import TauCeti.AlgebraicGeometry.Curves.Node.Reduced
 import TauCeti.AlgebraicGeometry.IdealSheaf.Affine
 import TauCeti.AlgebraicGeometry.IdealSheaf.Stalk
@@ -17,7 +18,6 @@ import TauCeti.AlgebraicGeometry.ResidueField
 import TauCeti.FieldTheory.IsSepClosed
 import TauCeti.RingTheory.Ideal.GoingUp
 import Mathlib.AlgebraicGeometry.Morphisms.SchemeTheoreticallyDominant
-import Mathlib.RingTheory.Etale.Field
 import Mathlib.RingTheory.Jacobson.Ideal
 
 /-!
@@ -170,55 +170,24 @@ private theorem exists_branchFiber_sectionsEquiv [IsSepClosed k]
   let b := (ΓSpecIso K).inv ≫ g.appTop
   have : Etale g := etale_fiberToSpecResidueField_blowupToBase_singularLocus hnodal hx
   have : IsFinite g := inferInstanceAs (IsFinite (pullback.snd f (X.fromSpecResidueField x)))
-  have : IsAffine F := isAffine_of_isAffineHom g
-  let s := F.isoSpec.hom
-  have hs : g = s ≫ Spec.map b := by
-    rw [← cancel_mono (Spec K).toSpecΓ, Scheme.toSpecΓ_naturality, Category.assoc]
-    simp only [b, Spec.map_comp, Category.assoc, SpecMap_ΓSpecIso_inv_toSpecΓ, Category.comp_id,
-      s, Scheme.isoSpec_hom, F]
-  have he : Etale (Spec.map b) := (MorphismProperty.cancel_left_of_respectsIso @Etale s _).mp
-    (hs ▸ ‹Etale g›)
-  have hb := (HasRingHomProperty.Spec_iff (P := @Etale)).mp he
-  let := b.hom.toAlgebra
-  have : Algebra.Etale K Γ(F, ⊤) := hb
   have : IsSepClosed K := isSepClosed_residueField_of_node hnodal hx
   have hcard : Nat.card F = 2 := (Nat.card_congr (f.fiberHomeo x).toEquiv).trans
     (X.natCard_preimage_blowupToBase_singularLocus_eq_two_of_mem_support hnodal hx)
-  have : Finite F := Nat.finite_of_card_ne_zero (by simp [hcard])
-  let := Fintype.ofFinite F
-  let order := Fintype.equivFinOfCardEq (by simpa only [Nat.card_eq_fintype_card] using hcard)
-  let D := Algebra.FormallyEtale.equivPiOfIsSepClosed K Γ(F, ⊤)
-  let E := D.trans (AlgEquiv.piCongrLeft K (fun _ ↦ K)
-    (order.symm.trans s.homeomorph.toEquiv).symm)
-  let e := E.toRingEquiv.trans (RingEquiv.piFinTwo (fun _ ↦ K))
-  let one : Fin 1 ≃ PrimeSpectrum K := Equiv.ofUnique _ _
-  let u := ((finSumFinEquiv (m := 1) (n := 1)).symm.trans (Equiv.sumCongr one one)).trans
-    (PrimeSpectrum.primeSpectrumProd K K).symm
-  let o := (u.trans (PrimeSpectrum.homeomorphOfRingEquiv e).symm.toEquiv).trans
-    s.homeomorph.symm.toEquiv
-  refine ⟨o, e, fun a ↦ congrArg (RingEquiv.piFinTwo (fun _ ↦ K)) (E.commutes a), fun t ↦ ?_⟩
-  have hpoint (i : Fin 2) : s (o i) = PrimeSpectrum.comap e.toRingHom (u i) :=
-    s.homeomorph.apply_symm_apply _
-  have hz (i : Fin 2) :
-      F.Γevaluation (o i) t = 0 ↔ e t ∈ (u i).asIdeal := by
-    rw [← RingHom.mem_ker, ← Scheme.toSpecΓ_apply_asIdeal, ← Scheme.isoSpec_hom,
-      hpoint, PrimeSpectrum.comap_asIdeal, Ideal.mem_comap]
+  have : Finite F := Nat.finite_of_card_ne_zero (hcard.trans_ne two_ne_zero)
+  let o := (Finite.equivFinOfCardEq hcard).symm
+  let d := g.finiteEtaleGlobalSectionsEquiv (k := K)
+  let e := d.trans
+    ((RingEquiv.piCongrLeft' (fun _ ↦ K) o.symm).trans (RingEquiv.piFinTwo (fun _ ↦ K)))
+  have he (t : Γ(F, ⊤)) :
+      e t = (d t (o 0), d t (o 1)) := by
     rfl
-  have hzero : (0 : Fin 2) = Fin.castAdd 1 (0 : Fin 1) := rfl
-  have hone : (1 : Fin 2) = Fin.natAdd 1 (0 : Fin 1) := rfl
-  have hu₀ : u 0 = PrimeSpectrum.comap (RingHom.fst K K) (one 0) := by
-    simp only [hzero, u, Equiv.trans_apply, finSumFinEquiv_symm_apply_castAdd, Equiv.sumCongr_apply,
-      Sum.map_inl, PrimeSpectrum.primeSpectrumProd_symm_inl]
-  have hu₁ : u 1 = PrimeSpectrum.comap (RingHom.snd K K) (one 0) := by
-    simp only [hone, u, Equiv.trans_apply, finSumFinEquiv_symm_apply_natAdd, Equiv.sumCongr_apply,
-      Sum.map_inr, PrimeSpectrum.primeSpectrumProd_symm_inr]
-  have hp : (one 0).asIdeal = ⊥ := congrArg PrimeSpectrum.asIdeal
-    (Subsingleton.elim (one 0) (⟨⊥, Ideal.isPrime_bot⟩ : PrimeSpectrum K))
-  constructor
-  · simpa only [hu₀, PrimeSpectrum.comap_asIdeal, Ideal.mem_comap, hp, Ideal.mem_bot,
-      RingHom.coe_fst] using (hz 0).symm
-  · simpa only [hu₁, PrimeSpectrum.comap_asIdeal, Ideal.mem_comap, hp, Ideal.mem_bot,
-      RingHom.coe_snd] using (hz 1).symm
+  refine ⟨o, e, fun a ↦ ?_, fun t ↦ ?_⟩
+  · rw [he]
+    exact Prod.ext (g.finiteEtaleGlobalSectionsEquiv_algebraMap (k := K) a (o 0))
+      (g.finiteEtaleGlobalSectionsEquiv_algebraMap (k := K) a (o 1))
+  · rw [he]
+    exact ⟨g.finiteEtaleGlobalSectionsEquiv_apply_eq_zero_iff (k := K) t (o 0),
+      g.finiteEtaleGlobalSectionsEquiv_apply_eq_zero_iff (k := K) t (o 1)⟩
 
 private theorem ker_branchRestriction_eq_and_subset_range
     (hnodal : AtWorstNodalOfRelativeDimensionOne (X ↘ Spec (.of k))) {x : X}
