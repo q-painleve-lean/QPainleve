@@ -132,14 +132,8 @@ theorem factorsThrough_of_exceptional_divisors_subset {Z : Scheme.{u}} (g : X �
       have hzg := (hsp.map g.continuous).mem_closed (mem_closedPoints_iff.mp (hclosed hz'))
         (Set.mem_singleton (g z))
       exact (Set.mem_singleton_iff.mp hzg).symm ▸ hz'
-    have : Finite g.centre := (g.finite_centre hZ).to_subtype
-    have hdiscrete : DiscreteTopology g.centre :=
-      DiscreteTopology.of_finite_of_isClosed_singleton fun z ↦ by
-        simpa only [Set.preimage_singleton (f := Subtype.val), Subtype.coe_inj,
-          Set.ofPred_eq_eq_singleton] using
-          (mem_closedPoints_iff.mp (hclosed z.property)).preimage
-            (continuous_subtypeVal (p := (· ∈ g.centre)))
-    exact (hconn _ hx).constant_of_mapsTo (isDiscrete_iff_discreteTopology.mpr hdiscrete)
+    exact (hconn _ hx).constant_of_mapsTo
+      ((g.finite_centre hZ).isDiscrete_of_subset_closedPoints hclosed)
       g.continuous.continuousOn hmap rfl hxy.symm
   · have hx' : f x ∈ f.isoLocus := by
       simpa only [centre_def, Set.mem_compl_iff, SetLike.mem_coe, not_not] using hx
