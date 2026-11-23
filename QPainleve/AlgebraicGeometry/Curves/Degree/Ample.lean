@@ -6,6 +6,7 @@ Authors: The QPainleve contributors
 module
 
 public import QPainleve.AlgebraicGeometry.Curves.Degree.Basic
+public import QPainleve.AlgebraicGeometry.IntersectionNumber.Nef
 public import TauCeti.AlgebraicGeometry.LineBundle.Ample
 
 import QPainleve.AlgebraicGeometry.LineBundle.Ample
@@ -19,6 +20,7 @@ An ample class has a positive power cut out by a nonempty effective Cartier divi
 Its degree is the rank of the finite divisor, and degree is additive under tensor
 product. This is the forward implication of
 [Stacks Project, Lemma 33.44.14](https://stacks.math.columbia.edu/tag/0B5X).
+Restricting an ample class to each integral curve gives nefness on the ambient scheme.
 -/
 
 public section
@@ -29,6 +31,8 @@ open TauCeti.AlgebraicGeometry
 universe u
 
 namespace TauCeti.AlgebraicGeometry.LineBundleClass.IsAmple
+
+section
 
 variable {X : Scheme.{u}} {k : Type u} [Field k]
   [X.Over (Spec (.of k))] [X.IsCurveOver k] {a : LineBundleClass X}
@@ -54,5 +58,17 @@ theorem eulerDegree_pos (ha : a.IsAmple) : 0 < a.eulerDegree k := by
         ⟨x, Subsingleton.elim _ _⟩
   rw [← zpow_natCast, eulerDegree_zpow_of_isCurveOver] at hdegree
   exact pos_of_mul_pos_right (hdegree.symm ▸ Int.natCast_pos.mpr hpos) (Int.natCast_nonneg n)
+
+end
+
+variable {X : Scheme.{u}} {k : Type u} [Field k]
+
+/-- An ample class has nonnegative degree along every closed integral curve over
+the base field. -/
+theorem isNef {f : X ⟶ Spec (.of k)} {a : LineBundleClass X} (ha : a.IsAmple) :
+    IsNef k f a := by
+  refine (isNef_iff k f a).mpr fun C _ _ i _ _ ↦ ?_
+  rw [intersectionNumber_def]
+  exact (ha.pullback_of_isAffineHom i).eulerDegree_pos.le
 
 end TauCeti.AlgebraicGeometry.LineBundleClass.IsAmple

@@ -12,7 +12,11 @@ import QPainleve.AlgebraicGeometry.Blowup.Tower.Cohomology
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Intersection
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Projective
 import QPainleve.AlgebraicGeometry.Blowup.Tower.SecondCohomology
+import QPainleve.AlgebraicGeometry.Chow.Ample
+import QPainleve.AlgebraicGeometry.Chow.Isomorphism
 import QPainleve.AlgebraicGeometry.Chow.Nef.Basic
+import QPainleve.AlgebraicGeometry.Chow.PositiveCone
+import QPainleve.AlgebraicGeometry.Curves.Degree.Ample
 import QPainleve.AlgebraicGeometry.IntersectionNumber.Nef.Pullback
 import QPainleve.AlgebraicGeometry.LineBundle.Ample
 import TauCeti.AlgebraicGeometry.Cohomology.ProjectiveSpace.HigherCohomology
@@ -20,7 +24,7 @@ import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.ZeroLocus
 import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.TwistingSheaf.Ample
 
 /-!
-# Effectivity of nef classes of positive square on rational surfaces
+# Effectivity on rational surfaces
 
 Second cohomology vanishes for nef line bundles on smooth projective rational surfaces over
 an algebraically closed field. On a common resolution with the projective plane, intersection
@@ -31,14 +35,22 @@ Riemann–Roch then gives a nonempty effective Cartier divisor in a positive ten
 any nef class of positive square. This supplies the effective divisor in the proof of the
 numerical ampleness criterion. See [Debarre, *Introduction to Mori Theory*, §4.1][Debarre].
 
+An integral class in the ample component of the positive cone also has vanishing
+second cohomology. All its sufficiently high powers are effective by Riemann–Roch.
+This gives the effectivity used in the curve-cone description of
+[Gross, Hacking and Keel, Lemma 2.14][GHK].
+
+[GHK]: https://arxiv.org/html/1211.6367v5#S2
 [Debarre]: https://perso.imj-prg.fr/wp-content/uploads/debarre-pub/M22.pdf#page=42
 -/
 
 public section
 
-open AlgebraicGeometry CategoryTheory QPainleve QPainleve.BlowupTower
+open AlgebraicGeometry CategoryTheory Filter QPainleve QPainleve.BlowupTower
 open TauCeti.AlgebraicGeometry TauCeti.AlgebraicGeometry.LineBundleClass TauCeti.SymmetricAlgebra
 open AlgebraicGeometry.Scheme.Modules TauCeti.AlgebraicGeometry.Scheme.Modules
+
+open scoped TensorProduct
 
 universe u
 
@@ -87,6 +99,20 @@ private theorem plane_degree_nonneg_of_nef_marking {W : Scheme.{u}} {n : ℕ}
     nsmul_eq_mul, mul_one] at h
   exact nonneg_of_mul_nonneg_left h (Int.natCast_pos.mpr hr)
 
+private theorem subsingleton_cohomology_two_of_plane_marking {W : Scheme.{u}} {n : ℕ}
+    {U : BlowupTower P n W} (hU : IsClosedPointTower P U) (L : InvertibleSheaf W)
+    (a : Additive (LineBundleClass P)) (b : Fin n → ℤ)
+    (hmark : (U.picardHom (a, b)).toMul = LineBundleClass.mk L) (hd : -3 < degree a) :
+    Subsingleton (Cohomology L.obj 2) := by
+  let d := degree a
+  have hO : Additive.ofMul (LineBundleClass.mk (O[d])) = a :=
+    (degree).injective ((Pi.basisFun k (Fin 3)).picardTwistEquiv_apply_twist d)
+  have hvan : Subsingleton (Cohomology (O[d]).obj 2) := by
+    rw [Proj.symmetricAlgebraTwistingBundle_obj]
+    exact (Pi.basisFun k (Fin 3)).subsingleton_cohomology_twistingSheaf_of_neg_card_lt
+      (m := d) (q := 2) (by simp only [Fintype.card_fin]; omega) (by decide)
+  exact hU.subsingleton_cohomology_two_picardHom k (O[d]) hvan b L (hO.symm ▸ hmark.symm)
+
 private theorem subsingleton_cohomology_two_of_nef_plane_tower {W : Scheme.{u}} {n : ℕ}
     {U : BlowupTower P n W} (hU : IsClosedPointTower P U) (L : InvertibleSheaf W)
     (hL : IsNef k (U.toBase ≫ (P ↘ S)) (LineBundleClass.mk L)) :
@@ -95,15 +121,78 @@ private theorem subsingleton_cohomology_two_of_nef_plane_tower {W : Scheme.{u}} 
   obtain ⟨⟨a, b⟩, hab⟩ :=
     (hU.bijective_picardHom (P ↘ S)).surjective (Additive.ofMul (LineBundleClass.mk L))
   have hmark := congrArg Additive.toMul hab
-  let d := degree a
-  have hd : 0 ≤ d := plane_degree_nonneg_of_nef_marking k hU a b (hmark.symm ▸ hL)
-  have hO : Additive.ofMul (LineBundleClass.mk (O[d])) = a :=
-    (degree).injective ((Pi.basisFun k (Fin 3)).picardTwistEquiv_apply_twist d)
-  have hvan : Subsingleton (Cohomology (O[d]).obj 2) := by
-    rw [Proj.symmetricAlgebraTwistingBundle_obj]
-    exact (Pi.basisFun k (Fin 3)).subsingleton_cohomology_twistingSheaf_of_neg_card_lt
-      (m := d) (q := 2) (by simp only [Fintype.card_fin]; omega) (by decide)
-  exact hU.subsingleton_cohomology_two_picardHom k (O[d]) hvan b L (hO.symm ▸ hmark.symm)
+  have hd := plane_degree_nonneg_of_nef_marking k hU a b (hmark.symm ▸ hL)
+  exact subsingleton_cohomology_two_of_plane_marking k hU L a b hmark (by omega)
+
+omit projective rational algClosed in
+include smooth in
+private theorem subsingleton_cohomology_two_of_pullback_tower_iso [PerfectField k]
+    {V W : Scheme.{u}} [V.Over S] [W.Over S] {m : ℕ}
+    {T : BlowupTower X m V} (hT : IsClosedPointTower X T)
+    [T.toBase.IsOver S] (e : W ≅ V) [e.hom.IsOver S] (L : InvertibleSheaf X)
+    (h : Subsingleton (Cohomology
+      ((InvertibleSheaf.pullback e.hom).obj ((InvertibleSheaf.pullback T.toBase).obj L)).obj 2)) :
+    Subsingleton (Cohomology L.obj 2) := by
+  obtain ⟨eT⟩ := hT.nonempty_cohomologyPullbackLinearEquiv k
+    ((InvertibleSheaf.toFiniteLocallyFree X).obj L) 2
+  let M := (InvertibleSheaf.pullback T.toBase).obj L
+  have eLM : Cohomology L.obj 2 ≃ₗ[k] Cohomology M.obj 2 := by
+    dsimp only [M]
+    rw [InvertibleSheaf.pullback_obj_obj]
+    exact eT
+  have eMN : Cohomology M.obj 2 ≃ₗ[k]
+      Cohomology ((InvertibleSheaf.pullback e.hom).obj M).obj 2 := by
+    rw [InvertibleSheaf.pullback_obj_obj]
+    exact (e.hom.cohomologyPullbackBaseLinearEquivOfIsIso k M.obj 2).symm
+  exact (eLM.trans eMN).injective.subsingleton
+
+omit smooth rational in
+private theorem plane_degree_pos_of_positive_square {n : ℕ} {W : Scheme.{u}}
+    {U : BlowupTower P n W} (hU : IsClosedPointTower P U)
+    {g : W ⟶ X} (hg : g ≫ X ↘ S = U.toBase ≫ P ↘ S)
+    {a h : LineBundleClass X} (hh : h.IsAmple)
+    (hpull : letI : W.Over S := ⟨U.toBase ≫ P ↘ S⟩
+      ∀ a b, Chow.classIntersectionNumber k W
+        (LineBundleClass.pullback g a) (LineBundleClass.pullback g b) =
+        Chow.classIntersectionNumber k X a b)
+    (hhh : 0 < Chow.classIntersectionNumber k X h h)
+    (haa : 0 < Chow.classIntersectionNumber k X a a)
+    (hha : 0 < Chow.classIntersectionNumber k X h a)
+    (b : Additive (LineBundleClass P) × (Fin n → ℤ))
+    (hb : (U.picardHom b).toMul = LineBundleClass.pullback g a) :
+    0 < degree b.1 := by
+  let : W.Over S := ⟨U.toBase ≫ P ↘ S⟩
+  let : g.IsOver S := ⟨hg⟩
+  let : U.toBase.IsOver S := ⟨rfl⟩
+  let : W.IsProjectiveOver k := U.isProjectiveOver k
+  let : IsIntegral W := hU.isIntegral (P ↘ S)
+  let : SmoothOfRelativeDimension 2 (W ↘ S) := hU.smoothOfRelativeDimension (P ↘ S)
+  have : IsNoetherian P := isNoetherian_of_finiteType (P ↘ S)
+  have : Module.Finite ℤ (Additive (LineBundleClass P)) :=
+    Module.Finite.of_surjective (degree).symm.toIntLinearEquiv.toLinearMap (degree).symm.surjective
+  let marking := U.picardMarking hU (P ↘ S)
+  have : Module.Finite ℤ (Additive (LineBundleClass W)) :=
+    Module.Finite.of_surjective marking.toLinearMap marking.surjective
+  obtain ⟨hQ, hsig, _⟩ :=
+    Chow.signature_realIntersectionBilinForm_of_common_resolution_projectivePlane k
+      (T := BlowupTower.nil (X := W)) IsClosedPointTower.nil hU (Iso.refl W) (by simp)
+  let H := LineBundleClass.mk (O[1])
+  have hH : H.IsAmple := isAmple_twistingSheaf k (Fin 3 → k) Nat.one_pos
+  have hdegree : degree (Additive.ofMul H) = 1 :=
+    (Pi.basisFun k (Fin 3)).picardTwistEquiv_apply_twist 1
+  have hplane : Chow.classIntersectionNumber k W (LineBundleClass.pullback U.toBase H)
+      (LineBundleClass.pullback U.toBase H) = 1 := by
+    rw [hU.classIntersectionNumber_pullback k, Chow.classIntersectionNumber_projectivePlane,
+      hdegree, mul_one]
+  have hpos := (Chow.classIntersectionNumber_pos_iff_of_isNef k hQ hsig.le
+    (hh.isNef.pullback g) (hH.isNef.pullback U.toBase)
+    (by rwa [hpull]) (by rw [hplane]; exact Int.zero_lt_one)
+    (by rwa [hpull])).mp (by rwa [hpull])
+  have hform := classIntersectionNumber_picardMarking k hU (Additive.ofMul H, 0) b
+  simp only [picardMarking_apply, picardHom_apply_zero, hb, toMul_ofMul, ofMul_toMul,
+    Pi.zero_apply, zero_mul, Finset.sum_const_zero, sub_zero,
+    Chow.classIntersectionNumber_projectivePlane, hdegree, one_mul] at hform
+  rwa [← hform]
 
 include projective smooth rational
 
@@ -123,18 +212,49 @@ theorem subsingleton_cohomology_two_of_isNef_of_isRationalOver (L : InvertibleSh
   have hN : IsNef k (W ↘ S) (LineBundleClass.mk N) := by
     rw [← pullback_mk, ← pullback_mk]
     exact (hL.pullback T.toBase).pullback e.hom
-  have := subsingleton_cohomology_two_of_nef_plane_tower k hU N hN
-  obtain ⟨eT⟩ := hT.nonempty_cohomologyPullbackLinearEquiv k
-    ((InvertibleSheaf.toFiniteLocallyFree X).obj L) 2
-  have eLM : Cohomology L.obj 2 ≃ₗ[k] Cohomology M.obj 2 := by
-    dsimp only [M]
-    rw [InvertibleSheaf.pullback_obj_obj]
-    exact eT
-  have eMN : Cohomology M.obj 2 ≃ₗ[k] Cohomology N.obj 2 := by
-    dsimp only [N]
-    rw [InvertibleSheaf.pullback_obj_obj]
-    exact (e.hom.cohomologyPullbackBaseLinearEquivOfIsIso k M.obj 2).symm
-  exact (eLM.trans eMN).injective.subsingleton
+  exact subsingleton_cohomology_two_of_pullback_tower_iso k X hT e L
+    (subsingleton_cohomology_two_of_nef_plane_tower k hU N hN)
+
+/-- A line bundle of positive square meeting an ample class positively has vanishing
+second cohomology on a smooth projective rational surface over an algebraically closed field. -/
+theorem subsingleton_cohomology_two_of_self_pos_of_intersection_pos
+    (L : InvertibleSheaf X) {h : LineBundleClass X} (hh : h.IsAmple)
+    (hLL : 0 < Chow.classIntersectionNumber k X (LineBundleClass.mk L) (LineBundleClass.mk L))
+    (hhL : 0 < Chow.classIntersectionNumber k X h (LineBundleClass.mk L)) :
+    Subsingleton (Cohomology L.obj 2) := by
+  obtain ⟨_, _, V, W, T, U, e, hT, hU, he⟩ :=
+    X.exists_common_pointBlowup_resolution_projectivePlane k
+  let : V.Over S := ⟨T.toBase ≫ X ↘ S⟩
+  let : W.Over S := ⟨U.toBase ≫ P ↘ S⟩
+  have : T.toBase.IsOver S := ⟨rfl⟩
+  have : e.hom.IsOver S := ⟨he⟩
+  have : IsNoetherian P := isNoetherian_of_finiteType (P ↘ S)
+  have : Smooth (X ↘ S) := SmoothOfRelativeDimension.smooth 2 _
+  have : IsIntegral X := rational.isIntegral_of_smooth
+  let g := e.hom ≫ T.toBase
+  have hg : g ≫ X ↘ S = U.toBase ≫ P ↘ S := by simpa only [g, Category.assoc] using he
+  have hpull (a b : LineBundleClass X) :
+      Chow.classIntersectionNumber k W
+        (LineBundleClass.pullback g a) (LineBundleClass.pullback g b) =
+        Chow.classIntersectionNumber k X a b := by
+    dsimp only [g]
+    rw [← LineBundleClass.pullback_comp, ← LineBundleClass.pullback_comp,
+      Chow.classIntersectionNumber_pullback_of_isIso k e.hom,
+      hT.classIntersectionNumber_pullback k]
+  let M := (InvertibleSheaf.pullback e.hom).obj ((InvertibleSheaf.pullback T.toBase).obj L)
+  have hM : LineBundleClass.mk M = LineBundleClass.pullback g (LineBundleClass.mk L) := by
+    simp only [M, g, ← pullback_mk, LineBundleClass.pullback_comp]
+  obtain ⟨⟨a, b⟩, hb⟩ :=
+    (hU.bijective_picardHom (P ↘ S)).surjective (Additive.ofMul (LineBundleClass.mk M))
+  have hmark : (U.picardHom (a, b)).toMul = LineBundleClass.mk M := congrArg Additive.toMul hb
+  let : ∀ x : X, UniqueFactorizationMonoid (X.presheaf.stalk x) :=
+    (X ↘ S).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two
+  have hhh := Chow.classIntersectionNumber_pos_of_isAmple k
+    (topologicalKrullDim_eq_of_smoothOfRelativeDimension (X ↘ S) (n := 2)) hh hh
+  have hd : 0 < degree a :=
+    plane_degree_pos_of_positive_square k X hU hg hh hpull hhh hLL hhL _ (hmark.trans hM)
+  exact subsingleton_cohomology_two_of_pullback_tower_iso k X hT e L
+    (subsingleton_cohomology_two_of_plane_marking k hU M a b hmark (by omega))
 
 end AlgebraicGeometry.Scheme
 
@@ -146,19 +266,19 @@ variable {X}
 
 include projective smooth rational
 
-private theorem exists_pow_pos_eulerCharBelow_of_self_pos
+private theorem eventually_pos_eulerCharBelow_pow_of_self_pos
     (a : LineBundleClass X) (hX : topologicalKrullDim X = 2)
     [IsIntegral X] [∀ x : X, UniqueFactorizationMonoid (X.presheaf.stalk x)]
     (ha : 0 < Chow.classIntersectionNumber k X a a) :
-    ∃ n : ℕ, 0 < n ∧ 0 < eulerCharBelow k (a ^ n) 3 := by
+    ∀ᶠ n : ℕ in atTop, 0 < n ∧ 0 < eulerCharBelow k (a ^ n) 3 := by
   let B := Chow.classIntersectionBilinForm k hX
   let x := Additive.ofMul a
   let K := Additive.ofMul (mk (canonicalBundle k X 2))
-  let n := (B x K).toNat + 1
-  have hn : 0 < n := Nat.succ_pos _
+  filter_upwards [eventually_ge_atTop ((B x K).toNat + 1)] with n hn
+  have hn₀ : 0 < n := by omega
   have hs : 0 < B x x := by
     simpa only [B, x, Chow.classIntersectionBilinForm_apply, toMul_ofMul] using ha
-  have hnK : B x K < (n : ℤ) := by dsimp [n]; omega
+  have hnK : B x K < (n : ℤ) := by omega
   have hpos : 0 < (n : ℤ) * B x x - B x K :=
     sub_pos.mpr (hnK.trans_le (le_mul_of_one_le_right (Int.natCast_nonneg n) (by omega)))
   have hRR := eulerCharBelow_eq_riemannRoch_of_isRationalOver k (a ^ n)
@@ -171,7 +291,28 @@ private theorem exists_pow_pos_eulerCharBelow_of_self_pos
       _ = _ := by
         rw [mul_sub]
         simp only [x, ofMul_pow, map_nsmul, LinearMap.smul_apply, nsmul_eq_mul]
-  exact ⟨n, hn, by linarith only [hRR', mul_pos (Int.natCast_pos.mpr hn) hpos]⟩
+  exact ⟨hn₀, by linarith only [hRR', mul_pos (Int.natCast_pos.mpr hn₀) hpos]⟩
+
+omit projective smooth rational algClosed in
+private theorem exists_effectiveCartier_of_eulerCharBelow_pos [IsIntegral X]
+    (L : InvertibleSheaf X) (hχ : 0 < eulerCharBelow k (mk L) 3)
+    (hL₂ : Subsingleton (Cohomology L.obj 2)) :
+    ∃ (I : X.IdealSheafData) (hI : I.IsEffectiveCartier),
+      mk hI.toInvertibleSheaf = (mk L)⁻¹ := by
+  let : Subsingleton (Cohomology L.obj 2) := hL₂
+  have h₂ : Module.finrank k (Cohomology L.obj 2) = 0 := Module.finrank_zero_of_subsingleton
+  have hs : ∃ s : Γ(L.obj, ⊤), s ≠ 0 := by
+    by_contra! hz
+    have : Subsingleton Γ(L.obj, ⊤) := (subsingleton_iff_forall_eq 0).mpr hz
+    have h₀ : Module.finrank k (Cohomology L.obj 0) = 0 :=
+      (finrank_cohomology_zero_eq_finrank_globalSections k L.obj).trans
+        Module.finrank_zero_of_subsingleton
+    rw [eulerCharBelow_mk, Scheme.Modules.eulerCharBelow_succ,
+      Scheme.Modules.eulerCharBelow_two, h₀, h₂] at hχ
+    omega
+  obtain ⟨s, hs⟩ := hs
+  obtain ⟨I, hI, hclass⟩ := L.exists_isEffectiveCartier_of_ne_zero s hs
+  exact ⟨I, hI, hclass⟩
 
 /-- A nef line bundle of positive self-intersection on a smooth projective rational
 surface has a positive power represented by a nonempty effective Cartier divisor. -/
@@ -184,7 +325,7 @@ theorem exists_effectiveCartier_pow_of_isNef_of_self_pos (a : LineBundleClass X)
   have (x : X) : UniqueFactorizationMonoid (X.presheaf.stalk x) :=
     (X ↘ S).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two x
   have hX := topologicalKrullDim_eq_of_smoothOfRelativeDimension (X ↘ S) (n := 2)
-  obtain ⟨n, hn, hχ⟩ := exists_pow_pos_eulerCharBelow_of_self_pos k a hX ha
+  obtain ⟨n, hn, hχ⟩ := (eventually_pos_eulerCharBelow_pow_of_self_pos k a hX ha).exists
   obtain ⟨L, hL⟩ := mk_surjective (a ^ n)
   have hpow (j : ℕ) : IsNef k (X ↘ S) (a ^ j) := by
     induction j with
@@ -192,18 +333,8 @@ theorem exists_effectiveCartier_pow_of_isNef_of_self_pos (a : LineBundleClass X)
     | succ j ih => simpa only [pow_succ] using ih.mul hnef
   have : Subsingleton (Cohomology L.obj 2) :=
     X.subsingleton_cohomology_two_of_isNef_of_isRationalOver k L (hL.symm ▸ hpow n)
-  have h₂ : Module.finrank k (Cohomology L.obj 2) = 0 := Module.finrank_zero_of_subsingleton
-  have hs : ∃ s : Γ(L.obj, ⊤), s ≠ 0 := by
-    by_contra! hz
-    have : Subsingleton Γ(L.obj, ⊤) := (subsingleton_iff_forall_eq 0).mpr hz
-    have h₀ : Module.finrank k (Cohomology L.obj 0) = 0 :=
-      (finrank_cohomology_zero_eq_finrank_globalSections k L.obj).trans
-        Module.finrank_zero_of_subsingleton
-    rw [← hL, eulerCharBelow_mk, Scheme.Modules.eulerCharBelow_succ,
-      Scheme.Modules.eulerCharBelow_two, h₀, h₂] at hχ
-    omega
-  obtain ⟨s, hs⟩ := hs
-  obtain ⟨I, hI, hclass⟩ := L.exists_isEffectiveCartier_of_ne_zero s hs
+  obtain ⟨I, hI, hclass⟩ := exists_effectiveCartier_of_eulerCharBelow_pos k L
+    (hL.symm ▸ hχ) inferInstance
   have hEq : (mk hI.toInvertibleSheaf)⁻¹ = a ^ n := by rw [hclass, inv_inv, hL]
   refine ⟨n, hn, I, hI, ?_, hEq⟩
   rintro rfl
@@ -213,5 +344,36 @@ theorem exists_effectiveCartier_pow_of_isNef_of_self_pos (a : LineBundleClass X)
   simp only [ofMul_one, ofMul_pow, map_zero, map_nsmul, B, nsmul_eq_mul,
     Chow.classIntersectionBilinForm_apply, toMul_ofMul] at hzero
   exact (mul_pos (Int.natCast_pos.mpr hn) ha).ne hzero
+
+/-- On a smooth projective rational surface over an algebraically closed field,
+every sufficiently high power of a class of positive square that meets an
+ample class positively is represented by an effective Cartier divisor. -/
+theorem eventually_exists_effectiveCartier_pow_of_positive_cone
+    (a : LineBundleClass X) {h : LineBundleClass X} (hh : h.IsAmple)
+    (haa : 0 < Chow.classIntersectionNumber k X a a)
+    (hha : 0 < Chow.classIntersectionNumber k X h a) :
+    ∀ᶠ n : ℕ in atTop, 0 < n ∧ ∃ (I : X.IdealSheafData) (hI : I.IsEffectiveCartier),
+      (mk hI.toInvertibleSheaf)⁻¹ = a ^ n := by
+  have : Smooth (X ↘ S) := SmoothOfRelativeDimension.smooth 2 _
+  have : IsIntegral X := rational.isIntegral_of_smooth
+  let : ∀ x : X, UniqueFactorizationMonoid (X.presheaf.stalk x) :=
+    (X ↘ S).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two
+  have hdim := topologicalKrullDim_eq_of_smoothOfRelativeDimension (X ↘ S) (n := 2)
+  filter_upwards [eventually_pos_eulerCharBelow_pow_of_self_pos k a hdim haa] with n hn
+  obtain ⟨L, hL⟩ := mk_surjective (a ^ n)
+  have hb (x y : LineBundleClass X) :
+      Chow.intersectionBilinForm k X (Additive.ofMul x) (Additive.ofMul y) =
+        Chow.classIntersectionNumber k X x y := by simp
+  have h₁ : 0 < Chow.classIntersectionNumber k X (mk L) (mk L) := by
+    rw [hL, ← hb]
+    simpa only [ofMul_pow, map_nsmul, LinearMap.smul_apply, nsmul_eq_mul, hb] using
+      mul_pos (Int.natCast_pos.mpr hn.1) (mul_pos (Int.natCast_pos.mpr hn.1) haa)
+  have h₂ : 0 < Chow.classIntersectionNumber k X h (mk L) := by
+    rw [hL, ← hb, ofMul_pow, map_nsmul, nsmul_eq_mul, hb]
+    exact mul_pos (Int.natCast_pos.mpr hn.1) hha
+  have hvan := X.subsingleton_cohomology_two_of_self_pos_of_intersection_pos k L hh h₁ h₂
+  obtain ⟨I, hI, hclass⟩ := exists_effectiveCartier_of_eulerCharBelow_pos k L
+    (hL.symm ▸ hn.2) hvan
+  exact ⟨hn.1, I, hI, by rw [hclass, inv_inv, hL]⟩
 
 end TauCeti.AlgebraicGeometry.LineBundleClass

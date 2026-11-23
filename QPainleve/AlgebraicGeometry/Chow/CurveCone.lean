@@ -178,6 +178,37 @@ theorem realPrimeDivisorClass_mem_closedCurveCone (p : CodimensionOnePoint X) :
   rw [← SetLike.mem_coe, coe_closedCurveCone]
   exact subset_closure (Submodule.subset_span (Set.mem_range_self p))
 
+/-- The real class of an effective Cartier divisor belongs to the closed curve cone. -/
+theorem one_tmul_inv_mk_toInvertibleSheaf_mem_closedCurveCone
+    {I : X.IdealSheafData} (hI : I.IsEffectiveCartier) :
+    ι (LineBundleClass.mk hI.toInvertibleSheaf)⁻¹ ∈ closedCurveCone k := by
+  have : IsNoetherian X := isNoetherian_of_finiteType f
+  let : ∀ x : X, UniqueFactorizationMonoid (X.presheaf.stalk x) :=
+    (f).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two
+  have : IsNormalScheme X := IsNormalScheme.of_uniqueFactorizationMonoid_stalk
+  let D := hI.toCartierDivisor.toWeilDivisor
+  have hD : 0 ≤ D :=
+    (Scheme.CartierDivisor.isEffective_iff_toWeilDivisor_nonneg _).mp
+      hI.isEffective_toCartierDivisor
+  let F := Scheme.CartierDivisor.weilToLineBundleClassHom X
+  have hclass : F D = Additive.ofMul (LineBundleClass.mk hI.toInvertibleSheaf)⁻¹ := by
+    simp only [F, D, Scheme.CartierDivisor.weilToLineBundleClassHom_toWeilDivisor,
+      hI.toLineBundleClass_toCartierDivisor]
+  have he : (1 : ℝ) ⊗ₜ[ℤ] F D = D.sum (fun p n ↦ (n : ℝ) • c p) := by
+    calc
+      _ = (1 : ℝ) ⊗ₜ[ℤ] F (D.sum Finsupp.single) := by rw [Finsupp.sum_single]
+      _ = _ := by
+        rw [map_finsuppSum, Finsupp.sum, TensorProduct.tmul_sum]
+        refine Finset.sum_congr rfl fun p _ ↦ ?_
+        simp only [F, Scheme.CartierDivisor.weilToLineBundleClassHom_single,
+          ← LineBundleClass.primeDivisorClass_def, TensorProduct.tmul_smul,
+          ← Int.cast_smul_eq_zsmul ℝ, realPrimeDivisorClass_def]
+  dsimp only
+  rw [← hclass, he]
+  exact (closedCurveCone k (X := X)).sum_mem fun p _ ↦
+    (closedCurveCone k).smul_mem (realPrimeDivisorClass_mem_closedCurveCone k p)
+      (by exact_mod_cast hD p)
+
 /-- Nonnegativity of a continuous linear functional on the closed cone of curves is
 equivalent to nonnegativity on every prime divisor class. -/
 theorem nonneg_on_closedCurveCone_iff (l : V(X) →L[ℝ] ℝ) :

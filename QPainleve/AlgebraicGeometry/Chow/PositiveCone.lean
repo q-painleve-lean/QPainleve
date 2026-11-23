@@ -168,6 +168,28 @@ theorem connectedComponentIn_pos_eq_of_isNef (hQ : (Q).Nondegenerate)
     simp only [realIntersectionBilinForm_tmul, one_mul, toMul_ofMul]
     exact_mod_cast (isNef_iff_classIntersectionNumber_nonneg k hX d).mp hd p
 
+omit [TopologicalSpace V(X)] [IsModuleTopology ℝ V(X)] in
+/-- Two nef classes of positive square select the same side of the positive locus
+on a surface whose real Picard form is nondegenerate of positive index one. -/
+theorem classIntersectionNumber_pos_iff_of_isNef
+    (hQ : (Q).Nondegenerate) (hsig : sigPos Q ≤ 1)
+    {a b x : LineBundleClass X} (ha : a.IsNef k f) (hb : b.IsNef k f)
+    (haa : 0 < classIntersectionNumber k X a a) (hbb : 0 < classIntersectionNumber k X b b)
+    (hxx : 0 < classIntersectionNumber k X x x) :
+    0 < classIntersectionNumber k X a x ↔ 0 < classIntersectionNumber k X b x := by
+  let : TopologicalSpace V(X) := moduleTopology ℝ V(X)
+  obtain ⟨h, hh⟩ := X.exists_isAmple_of_isProjectiveOver k
+  have hpos {y : LineBundleClass X} (hy : 0 < classIntersectionNumber k X y y) : 0 < Q (ι y) := by
+    simpa only [LinearMap.BilinMap.toQuadraticMap_apply, realIntersectionBilinForm_tmul, mul_one,
+      one_mul, toMul_ofMul, Int.cast_pos] using hy
+  have hne {y : LineBundleClass X} (hy : 0 < classIntersectionNumber k X y y) : ι y ≠ 0 := by
+    intro he
+    simpa only [he, map_zero, lt_self_iff_false] using hpos hy
+  have he := (connectedComponentIn_pos_eq_of_isNef k hQ hsig hh ha (hne haa) haa.le).symm.trans
+    (connectedComponentIn_pos_eq_of_isNef k hQ hsig hh hb (hne hbb) hbb.le)
+  simpa only [Set.mem_ofPred_eq, hpos hxx, true_and, realIntersectionBilinForm_tmul,
+    mul_one, one_mul, toMul_ofMul, Int.cast_pos] using Set.ext_iff.mp he (ι x)
+
 /-- Two real Picard classes in the closure of the ample component have nonnegative
 intersection. -/
 theorem realIntersectionBilinForm_nonneg_of_mem_closure_connectedComponentIn_pos
