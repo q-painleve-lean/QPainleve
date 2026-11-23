@@ -267,6 +267,13 @@ def binomialCenter (hdim : Module.finrank ℤ N = 2)
   Spec.map (CommRingCat.ofHom (ρ.binomialCenterEval hdim hm hprim c).toRingHom) ≫
     Φ.affineToricChartι ρ.toCone
 
+/-- The center is the point of the ray chart defined by the binomial evaluation map. -/
+theorem binomialCenter_def (hdim : Module.finrank ℤ N = 2)
+    (hm : m v = 0) (hprim : Function.Surjective m) (c : ℂˣ) :
+    ρ.binomialCenter hdim hm hprim c =
+      Spec.map (CommRingCat.ofHom (ρ.binomialCenterEval hdim hm hprim c).toRingHom) ≫
+        Φ.affineToricChartι ρ.toCone := (rfl)
+
 /-- A binomial center is a section of the structural morphism. -/
 @[reassoc, simp]
 theorem binomialCenter_comp_structureMap (hdim : Module.finrank ℤ N = 2)
