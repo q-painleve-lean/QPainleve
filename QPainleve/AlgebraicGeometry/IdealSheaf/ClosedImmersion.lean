@@ -5,15 +5,17 @@ Authors: The QPainleve contributors
 -/
 module
 
+public import Mathlib.AlgebraicGeometry.IdealSheaf.Functorial
 public import Mathlib.AlgebraicGeometry.Morphisms.ClosedImmersion
 public import TauCeti.AlgebraicGeometry.IdealSheaf.VanishingIdeal
 import TauCeti.AlgebraicGeometry.IdealSheaf.Reduced
 
 /-!
-# Ideal sheaves of closed integral subschemes
+# Ideal sheaves under closed immersions
 
 The kernel ideal of a closed immersion from an integral scheme is the vanishing ideal
-of the closure of the image of its generic point.
+of the closure of the image of its generic point. A closed immersion takes the support
+of an ideal sheaf to the support of its scheme-theoretic image.
 -/
 
 open CategoryTheory AlgebraicGeometry TopologicalSpace
@@ -39,3 +41,14 @@ public theorem ker_eq_vanishingIdeal_closure_genericPoint {C X : Scheme.{u}} (i 
   rw [← hi, ← IdealSheafData.vanishingIdeal_support, hs]
 
 end AlgebraicGeometry.Scheme.Hom
+
+namespace AlgebraicGeometry.Scheme.IdealSheafData
+
+/-- The support of the image ideal under a closed immersion is the image of the support. -/
+public theorem support_map_of_isClosedImmersion {X Y : Scheme.{u}} (I : X.IdealSheafData)
+    (f : X ⟶ Y) [IsClosedImmersion f] :
+    ((I.map f).support : Set Y) = f '' (I.support : Set X) := by
+  rw [support_map, Closeds.coe_closure]
+  exact (f.isClosedEmbedding.isClosedMap _ I.support.isClosed).closure_eq
+
+end AlgebraicGeometry.Scheme.IdealSheafData

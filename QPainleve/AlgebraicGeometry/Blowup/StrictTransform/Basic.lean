@@ -6,7 +6,7 @@ Authors: The QPainleve contributors
 module
 
 public import TauCeti.AlgebraicGeometry.Blowup.StrictTransform
-import QPainleve.AlgebraicGeometry.Blowup.Isomorphism
+public import QPainleve.AlgebraicGeometry.Blowup.Isomorphism
 import QPainleve.AlgebraicGeometry.IdealSheaf.Restriction
 import TauCeti.AlgebraicGeometry.Blowup.ExceptionalDivisor
 import TauCeti.AlgebraicGeometry.IdealSheaf.BaseChange
@@ -111,6 +111,40 @@ theorem comap_ker_blowupMap_subschemeι_eq_map_comap_of_isOpenImmersion
   rw [ker_blowupMap_subschemeι_eq_map_comap,
     comap_map_of_isPullback_of_isOpenImmersion _ (isPullback_morphismRestrict j U).flip]
   simp only [← comap_comp, U, morphismRestrict_ι_assoc]
+
+/-- Strict-transform ideals commute with restriction to an open subscheme of the base. -/
+theorem comap_ker_blowupMap_subschemeι_blowupMap_of_isOpenImmersion
+    {X Y : Scheme.{u}} [IsLocallyNoetherian X] (I D : X.IdealSheafData)
+    (f : Y ⟶ X) [IsOpenImmersion f] :
+    (I.blowupMap D.subschemeι).ker.comap (I.blowupMap f) =
+      ((I.comap f).blowupMap (D.comap f).subschemeι).ker := by
+  rw [comap_ker_blowupMap_subschemeι_eq_map_comap_of_isOpenImmersion,
+    ker_blowupMap_subschemeι_eq_map_comap, blowupMap_blowupToBase, comap_comp D,
+    ← compl_support_comap, comap_comap_blowupMap]
+
+/-- A base isomorphism identifying center ideals carries strict transforms to strict
+transforms of the inverse-image ideals. -/
+theorem comap_ker_blowupMap_subschemeι_blowupIso {X Y : Scheme.{u}}
+    [IsLocallyNoetherian Y] (J D : Y.IdealSheafData) (e : X ≅ Y)
+    {I : X.IdealSheafData} (h : J.comap e.hom = I) :
+    (J.blowupMap D.subschemeι).ker.comap (J.blowupIso e h).hom =
+      (I.blowupMap (D.comap e.hom).subschemeι).ker := by
+  subst I
+  rw [blowupIso_hom_comap, comap_ker_blowupMap_subschemeι_blowupMap_of_isOpenImmersion]
+
+/-- On an open disjoint from the exceptional divisor, the strict transform agrees
+with the pullback from the base. -/
+theorem comap_ker_blowupMap_subschemeι_of_comap_eq_top {X Y : Scheme.{u}}
+    [IsLocallyNoetherian X] (I D : X.IdealSheafData) (j : Y ⟶ I.blowup) [IsOpenImmersion j]
+    (h : I.comap (j ≫ I.blowupToBase) = ⊤) :
+    (I.blowupMap D.subschemeι).ker.comap j = D.comap (j ≫ I.blowupToBase) := by
+  have hW : j ⁻¹ᵁ (I.comap I.blowupToBase).support.compl = ⊤ := by
+    rw [← compl_support_comap, ← comap_comp, h, support_top]
+    ext x
+    simp
+  have : IsIso (Scheme.Opens.ι (⊤ : Y.Opens)) := Y.topIso.isIso_hom
+  rw [comap_ker_blowupMap_subschemeι_eq_map_comap_of_isOpenImmersion, hW,
+    map_comap_of_isClosedImmersion, Scheme.Hom.ker_eq_bot_of_isIso, sup_bot_eq]
 
 /-- The strict transform agrees with the total transform on the complement of
 the exceptional divisor. -/

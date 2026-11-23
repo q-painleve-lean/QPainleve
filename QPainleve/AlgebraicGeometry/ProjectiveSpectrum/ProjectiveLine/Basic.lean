@@ -9,6 +9,7 @@ public import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.ProjectiveLine
 import Mathlib.RingTheory.Polynomial.Ideal
 import Mathlib.RingTheory.Spectrum.Prime.RingHom
 import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.ChartEquality
+import TauCeti.AlgebraicGeometry.Restrict
 
 /-!
 # Polynomial charts on the projective line
@@ -31,6 +32,82 @@ universe u
 variable {R : Type u} [CommRing R]
 
 local notation "𝒜" => TauCeti.SymmetricAlgebra.homogeneousSubmodule R (Fin 2 → R)
+
+section PolynomialChart
+
+variable (R)
+
+local notation "P" => projectiveLine R
+local notation "U[" i "]" => Proj.basicOpen 𝒜 (coord R i)
+local notation "j[" i "]" => polynomialChartι R i
+
+/-- The defining coordinate of a standard chart is nonvanishing throughout the chart. -/
+@[simp]
+theorem preimage_polynomialChartι_basicOpen_self (i : Fin 2) :
+    j[i] ⁻¹ᵁ U[i] = ⊤ := by
+  rw [← opensRange_polynomialChartι, Scheme.Hom.preimage_opensRange]
+
+/-- The polynomial chart pulls a function represented by a homogeneous fraction back
+to its dehomogenization. -/
+theorem appLE_polynomialChartι_awayToSection (i : Fin 2)
+    (a : Away 𝒜 (coord R i)) :
+    (Scheme.ΓSpecIso (.of R[X])).hom
+        (j[i].appLE U[i] ⊤ (preimage_polynomialChartι_basicOpen_self R i).ge
+          (Proj.awayToSection 𝒜 (coord R i) a)) =
+      awayEquivPolynomial R i a := by
+  let q := Spec.map (awayEquivPolynomial R i).toRingEquiv.toCommRingCatIso.hom
+  let g := awayι R i
+  have hg : ⊤ ≤ g ⁻¹ᵁ U[i] := by
+    rw [← image_awayι_top, Scheme.Hom.preimage_image_eq]
+  have hq := (Scheme.Hom.preimage_top q).ge
+  have hj := j[i].congr_appLE (polynomialChartι_def R i) U[i] ⊤
+    (preimage_polynomialChartι_basicOpen_self R i).ge
+    (hq.trans ((TopologicalSpace.Opens.map q.base).map (homOfLE hg)).le)
+  have hΓ : q.appLE ⊤ ⊤ hq ≫ (Scheme.ΓSpecIso (.of R[X])).hom =
+      (Scheme.ΓSpecIso (.of (Away 𝒜 (coord R i)))).hom ≫
+        (awayEquivPolynomial R i).toRingEquiv.toCommRingCatIso.hom :=
+    (congrArg (· ≫ (Scheme.ΓSpecIso (.of R[X])).hom)
+      (Scheme.Hom.appLE_eq_app q (U := ⊤))).trans (Scheme.ΓSpecIso_naturality _)
+  rw [hj, ← Scheme.Hom.appLE_comp_appLE q g U[i] ⊤ ⊤ hg hq, ← CommRingCat.comp_apply,
+    Category.assoc, hΓ]
+  have h := chartSectionsEquiv_awayToSection R i a
+  rw [chartSectionsEquiv_apply, Scheme.Hom.appIso_hom', ← CommRingCat.comp_apply,
+    ← CommRingCat.comp_apply, ← Category.assoc, Scheme.Hom.map_appLE'] at h
+  exact h
+
+variable {A : Type u} [CommRing A] (f : R →+* A) (i : Fin 2) (a : A)
+
+local notation "p" => polynomialPoint R f i a
+
+/-- A point given in a standard chart factors through that chart. -/
+@[simp]
+theorem preimage_polynomialPoint_basicOpen_self :
+    p ⁻¹ᵁ U[i] = ⊤ := by
+  rw [polynomialPoint_def, Scheme.Hom.comp_preimage, preimage_polynomialChartι_basicOpen_self,
+    Scheme.Hom.preimage_top]
+
+/-- Pullback of a function along a polynomial chart point evaluates the chart polynomial. -/
+theorem appLE_polynomialPoint (b : Γ(P, U[i])) :
+    (Scheme.ΓSpecIso (.of A)).hom
+      ((p).appLE U[i] ⊤ (preimage_polynomialPoint_basicOpen_self R f i a).ge b) =
+    eval₂ f a ((Scheme.ΓSpecIso (.of R[X])).hom
+      (j[i].appLE U[i] ⊤ (preimage_polynomialChartι_basicOpen_self R i).ge b)) := by
+  let q := Spec.map (CommRingCat.ofHom (eval₂RingHom f a))
+  have hp : p = q ≫ j[i] := polynomialPoint_def R f i a
+  have h := (p).congr_appLE hp U[i] ⊤ (preimage_polynomialPoint_basicOpen_self R f i a).ge
+    ((Scheme.Hom.preimage_top q).ge.trans ((TopologicalSpace.Opens.map q.base).map
+      (homOfLE (preimage_polynomialChartι_basicOpen_self R i).ge)).le)
+  have hq : q.appLE ⊤ ⊤ (Scheme.Hom.preimage_top q).ge ≫
+      (Scheme.ΓSpecIso (.of A)).hom =
+        (Scheme.ΓSpecIso (.of R[X])).hom ≫ CommRingCat.ofHom (eval₂RingHom f a) :=
+    (congrArg (· ≫ (Scheme.ΓSpecIso (.of A)).hom)
+      (Scheme.Hom.appLE_eq_app q (U := ⊤))).trans (Scheme.ΓSpecIso_naturality _)
+  rw [h, ← Scheme.Hom.appLE_comp_appLE q j[i] U[i] ⊤ ⊤
+      (preimage_polynomialChartι_basicOpen_self R i).ge (Scheme.Hom.preimage_top q).ge,
+    ← CommRingCat.comp_apply, Category.assoc, hq]
+  rfl
+
+end PolynomialChart
 
 /-- The inverse image of a linear form's nonvanishing locus in a polynomial chart
 is the basic open of its dehomogenization. -/

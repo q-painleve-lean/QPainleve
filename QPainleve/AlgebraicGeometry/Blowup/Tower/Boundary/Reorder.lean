@@ -10,10 +10,10 @@ public import QPainleve.AlgebraicGeometry.Blowup.Exceptional.Class
 public import QPainleve.AlgebraicGeometry.Blowup.Tower.Picard
 
 import Mathlib.Data.List.OfFn
-import Mathlib.Logic.Equiv.Fin.Basic
+import Mathlib.GroupTheory.Perm.Fin
 import QPainleve.AlgebraicGeometry.Blowup.Disjoint
-import QPainleve.AlgebraicGeometry.Morphisms.Pullback.IsoLocus
-import TauCeti.AlgebraicGeometry.Blowup.Restriction
+import QPainleve.AlgebraicGeometry.Blowup.Tower.Boundary.Pullback
+import QPainleve.AlgebraicGeometry.IdealSheaf.ClosedImmersion
 
 /-!
 # Reordering blowups along a fixed boundary
@@ -26,7 +26,7 @@ family with disjoint supports for distinct ideals gives an isomorphic surface. A
 can occur several times.
 
 The comparison uses `Scheme.IdealSheafData.blowupCommOfDisjoint` and
-`Scheme.Hom.isPullback_of_isIso_of_range_subset_isoLocus` for the actual center subschemes.
+`WithBoundary.map_center_snoc_of_disjoint` for the actual center subschemes.
 -/
 
 public noncomputable section
@@ -45,39 +45,6 @@ namespace WithBoundary
 
 variable (T : WithBoundary i n Y) (I J : D.IdealSheafData)
   (hI : I.IsEffectiveCartier) (hJ : J.IsEffectiveCartier)
-
-private theorem support_map_boundaryι (K : D.IdealSheafData) :
-    ((K.map T.boundaryι).support : Set Y) = T.boundaryι '' (K.support : Set D) := by
-  rw [support_map, Closeds.coe_closure]
-  exact (T.boundaryι.isClosedEmbedding.isClosedMap _ K.support.isClosed).closure_eq
-
-private theorem disjoint_support_map
-    (h : Disjoint (I.support : Set D) (J.support : Set D)) :
-    Disjoint ((I.map T.boundaryι).support : Set Y) ((J.map T.boundaryι).support : Set Y) := by
-  rw [T.support_map_boundaryι, T.support_map_boundaryι]
-  exact Set.disjoint_image_of_injective T.boundaryι.isClosedEmbedding.injective h
-
-include hI in
-private theorem map_center_snoc_of_disjoint
-    (h : Disjoint ((I.map T.boundaryι).support : Set Y)
-      ((J.map T.boundaryι).support : Set Y)) :
-    J.map (T.snoc I hI).boundaryι = (J.map T.boundaryι).comap (I.map T.boundaryι).blowupToBase := by
-  let π := (I.map T.boundaryι).blowupToBase
-  have hrange : Set.range (J.subschemeι ≫ T.boundaryι) = ((J.map T.boundaryι).support : Set Y) := by
-    rw [Scheme.Hom.comp_base, TopCat.coe_comp, Set.range_comp, range_subschemeι,
-      T.support_map_boundaryι]
-  have hlocal : Set.range (J.subschemeι ≫ T.boundaryι) ⊆ π.isoLocus := by
-    rw [hrange]
-    exact fun _ hx ↦ (π.le_isoLocus_iff.mpr
-      (I.map T.boundaryι).isIso_blowupToBase_restrict_compl_support)
-      (Set.disjoint_right.mp h hx)
-  have hp : IsPullback (J.subschemeι ≫ (T.snoc I hI).boundaryι) (𝟙 _) π
-      (J.subschemeι ≫ T.boundaryι) := by
-    apply π.isPullback_of_isIso_of_range_subset_isoLocus
-    · simp [π]
-    · exact hlocal
-  simpa only [← map_ker, ker_subschemeι] using
-    ker_eq_comap_of_isPullback (J.subschemeι ≫ T.boundaryι) hp
 
 include hI hJ in
 private theorem boundaryι_snoc_blowupMap
@@ -100,7 +67,8 @@ private theorem boundaryι_snoc_blowupMap
 
 /-- Interchanging two disjoint Cartier centers of the fixed boundary preserves the
 projection, the strict boundary, and the two exceptional classes with their labels exchanged. -/
-theorem exists_iso_snoc_snoc_of_disjoint (h : Disjoint (I.support : Set D) (J.support : Set D)) :
+theorem exists_iso_snoc_snoc_of_disjoint_with_exceptionalClasses
+    (h : Disjoint (I.support : Set D) (J.support : Set D)) :
     let TI := T.snoc I hI
     let TJ := T.snoc J hJ
     let A := I.map T.boundaryι
@@ -115,7 +83,9 @@ theorem exists_iso_snoc_snoc_of_disjoint (h : Disjoint (I.support : Set D) (J.su
         B'.blowupExceptionalClass := by
   let A := I.map T.boundaryι
   let B := J.map T.boundaryι
-  have hd : Disjoint (A.support : Set Y) (B.support : Set Y) := T.disjoint_support_map I J h
+  have hd : Disjoint (A.support : Set Y) (B.support : Set Y) := by
+    rw [I.support_map_of_isClosedImmersion, J.support_map_of_isClosedImmersion]
+    exact Set.disjoint_image_of_injective T.boundaryι.isClosedEmbedding.injective h
   have hI' : (B.comap A.blowupToBase).comap (Iso.refl _).hom = J.map (T.snoc I hI).boundaryι := by
     simpa only [Iso.refl_hom, comap_id] using (T.map_center_snoc_of_disjoint I J hI hd).symm
   have hJ' : (A.comap B.blowupToBase).comap (Iso.refl _).hom = I.map (T.snoc J hJ).boundaryι := by
@@ -151,6 +121,19 @@ theorem exists_iso_snoc_snoc_of_disjoint (h : Disjoint (I.support : Set D) (J.su
   · simp only [← hJproj, Iso.trans_hom, Iso.symm_hom, pullback_comp, Category.assoc,
       Iso.inv_hom_id_assoc, blowupCommOfDisjoint_hom_blowupToBase]
     rwa [← pullback_comp, pullback_blowupExceptionalClass_blowupMap]
+
+/-- Two disjoint Cartier centers of the fixed boundary can be blown up in either order.
+The comparison is over the previous surface and identifies the two strict boundaries. -/
+theorem exists_iso_snoc_snoc_of_disjoint (h : Disjoint (I.support : Set D) (J.support : Set D)) :
+    let TI := T.snoc I hI
+    let TJ := T.snoc J hJ
+    ∃ e : (J.map TI.boundaryι).blowup ≅ (I.map TJ.boundaryι).blowup,
+      (J.map TI.boundaryι).blowupToBase ≫ (I.map T.boundaryι).blowupToBase =
+        e.hom ≫ (I.map TJ.boundaryι).blowupToBase ≫ (J.map T.boundaryι).blowupToBase ∧
+      (TI.snoc J hJ).boundaryι ≫ e.hom = (TJ.snoc I hI).boundaryι := by
+  obtain ⟨e, he, hb, -, -⟩ :=
+    T.exists_iso_snoc_snoc_of_disjoint_with_exceptionalClasses I J hI hJ h
+  exact ⟨e, he, hb⟩
 
 end WithBoundary
 
@@ -226,7 +209,7 @@ private theorem OverBoundaryIso.extend {T U : BoundaryTower i} (h : OverBoundary
 private theorem overBoundaryIso_swap (T : BoundaryTower i) (J K : Center D)
     (h : Disjoint (J.val.support : Set D) (K.val.support : Set D)) :
     OverBoundaryIso ((T.snoc J).snoc K) ((T.snoc K).snoc J) := by
-  obtain ⟨e, he, hb, -, -⟩ :=
+  obtain ⟨e, he, hb⟩ :=
     T.2.2.exists_iso_snoc_snoc_of_disjoint J.val K.val J.property K.property h
   refine ⟨e, ?_, hb⟩
   simpa only [snoc, WithBoundary.toTower_snoc, toBase_snoc, Category.assoc] using
@@ -325,7 +308,7 @@ private theorem reordered_swapLastTwo (T : Σ Y, WithBoundary i n Y) (J K : Cent
     Reordered ⟨_, (T.2.snoc J.val J.property).snoc K.val K.property⟩
       ⟨_, (T.2.snoc K.val K.property).snoc J.val J.property⟩ (swapLastTwo n) := by
   obtain ⟨e, he, hb, hJ, hK⟩ :=
-    T.2.exists_iso_snoc_snoc_of_disjoint J.val K.val J.property K.property h
+    T.2.exists_iso_snoc_snoc_of_disjoint_with_exceptionalClasses J.val K.val J.property K.property h
   refine ⟨e, ?_, hb, ?_⟩
   · simpa only [WithBoundary.toTower_snoc, toBase_snoc, Category.assoc] using
       congrArg (· ≫ T.2.toTower.toBase) he.symm
@@ -452,13 +435,10 @@ theorem exists_iso_alongBoundary_move_to_front
       ∀ (a : Additive (LineBundleClass X)) (b : Fin (n + 1) → ℤ),
         pullback e.hom (B.2.toTower.picardHom (a, b ∘ σ)).toMul =
           (A.2.toTower.picardHom (a, b)).toMul := by
-  let q := (finSuccEquiv' (0 : Fin (n + 1))).trans (finSuccEquiv' k).symm
+  let q := k.cycleRange.symm
   have hq : (q : Fin (n + 1) → Fin (n + 1)) = Fin.cons k k.succAbove := by
     funext j
-    refine Fin.cases (by simp [q]) (fun j ↦ ?_) j
-    have hj : finSuccEquiv' (0 : Fin (n + 1)) j.succ = some j := by
-      simpa only [Fin.succAbove_zero] using finSuccEquiv'_succAbove (0 : Fin (n + 1)) j
-    simp [q, hj]
+    cases j using Fin.cases <;> simp [q]
   obtain ⟨e, he, hb, hE⟩ := reordered_alongBoundary_moveToFront (i := i) J k h
   refine ⟨e, he, hb, fun a b ↦ ?_⟩
   rw [picardHom_apply_toMul, picardHom_apply_toMul, pullback_mul, pullback_comp, he]

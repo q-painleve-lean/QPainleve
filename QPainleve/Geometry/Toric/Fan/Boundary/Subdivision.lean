@@ -7,8 +7,11 @@ module
 
 public import Mathlib.AlgebraicGeometry.IdealSheaf.Functorial
 public import QPainleve.Geometry.Toric.Fan.Boundary.Center
+public import QPainleve.Geometry.Toric.Fan.Subdivision.FunctionField
 
 import QPainleve.AlgebraicGeometry.Morphisms.Pullback.IsoLocus
+import QPainleve.AlgebraicGeometry.Scheme.FunctionField
+import TauCeti.AlgebraicGeometry.WeilDivisor.Scheme.Order
 import TauCeti.RingTheory.LocalRing.Basic
 
 /-!
@@ -61,6 +64,58 @@ theorem boundaryMap_comp_subschemeι :
 
 end Boundary
 
+section RayPoints
+
+variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
+  {i : N →+ V} {Φ Ψ : Fan i} (h : Φ.IsSubdivision Ψ)
+
+/-- Under subdivision the generic point of an old ray maps to the original generic point. -/
+theorem algebraicMap_rayBoundaryPoint_liftRay (hΦ : Φ.IsRegular) (hΨ : Ψ.IsRegular)
+    (ρ : Ψ.Ray) :
+    h.toFanHom.algebraicMap (Φ.rayBoundaryPoint hΦ (h.liftRay ρ)).val =
+      (Ψ.rayBoundaryPoint hΨ ρ).val := by
+  have hchart : Φ.affineToricChartι (h.liftRay ρ).toCone ≫ h.toFanHom.algebraicMap =
+      Ψ.affineToricChartι ρ.toCone :=
+    h.affineToricChartι_comp_algebraicMap (h.ray_mem ρ) ρ.toCone.property
+  rw [Fan.coe_rayBoundaryPoint, ← Scheme.Hom.comp_apply, hchart, Fan.coe_rayBoundaryPoint,
+    h.liftRay_toToricRay]
+  rfl
+
+/-- Subdivision preserves the order of every rational function along each old boundary ray. -/
+theorem ord_functionFieldMap_liftRay [Nonempty Φ.cones] [Nonempty Ψ.cones]
+    (hΦ : Φ.IsRegular) (hΨ : Ψ.IsRegular) (ρ : Ψ.Ray)
+    (g : Ψ.algebraicRealization.functionField) :
+    Φ.algebraicRealization.ord (h.toFanHom.algebraicMap.functionFieldMap g)
+        (Φ.rayBoundaryPoint hΦ (h.liftRay ρ)).val =
+      Ψ.algebraicRealization.ord g (Ψ.rayBoundaryPoint hΨ ρ).val := by
+  let j := Φ.affineToricChartι (h.liftRay ρ).toCone
+  let k : Φ.affineToricChart (h.liftRay ρ).toCone ⟶ Ψ.algebraicRealization :=
+    Ψ.affineToricChartι ρ.toCone
+  have : IsOpenImmersion k := inferInstanceAs (IsOpenImmersion (Ψ.affineToricChartι ρ.toCone))
+  let x : AlgebraicGeometry.CodimensionOnePoint (Φ.affineToricChart (h.liftRay ρ).toCone) :=
+    (isRegular_iff.1 hΦ _ (h.ray_mem ρ)).rayPoint Φ.lattice
+      (Φ.isToricCone (h.ray_mem ρ)) ((h.liftRay ρ).toToricRay Φ (h.liftRay ρ).toCone le_rfl)
+  have hchart : j ≫ h.toFanHom.algebraicMap = k :=
+    h.affineToricChartι_comp_algebraicMap (h.ray_mem ρ) ρ.toCone.property
+  have hx : j x.val = (Φ.rayBoundaryPoint hΦ (h.liftRay ρ)).val :=
+    (Fan.coe_rayBoundaryPoint _ _ _).symm
+  have hy : k x.val = (Ψ.rayBoundaryPoint hΨ ρ).val := by
+    calc
+      k x.val = h.toFanHom.algebraicMap (j x.val) :=
+        (congrArg (fun f ↦ f x.val) hchart.symm).trans (Scheme.Hom.comp_apply _ _ _)
+      _ = _ := by rw [hx, h.algebraicMap_rayBoundaryPoint_liftRay hΦ hΨ]
+  have : Nonempty (Φ.affineToricChart (h.liftRay ρ).toCone) := ⟨x.val⟩
+  have : IsIntegral (Φ.affineToricChart (h.liftRay ρ).toCone) := isIntegral_of_isOpenImmersion j
+  have : IsLocallyNoetherian (Φ.affineToricChart (h.liftRay ρ).toCone) :=
+    isLocallyNoetherian_of_isOpenImmersion j
+  rw [← hx, ← hy, ← TauCeti.AlgebraicGeometry.Scheme.ord_functionFieldMap j _ x.val,
+    ← TauCeti.AlgebraicGeometry.Scheme.ord_functionFieldMap k _ x.val]
+  exact congrArg (fun a ↦ (Φ.affineToricChart (h.liftRay ρ).toCone).ord a x.val)
+    (ConcreteCategory.congr_hom ((Scheme.Hom.functionFieldMap_comp j _).symm.trans
+      (Scheme.Hom.functionFieldMap_congr hchart)) g)
+
+end RayPoints
+
 section Centers
 
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
@@ -83,14 +138,10 @@ private theorem binomialCenterEval_liftRay :
   have hker : RingHom.ker a = RingHom.ker b := by
     dsimp only [a, b]
     rw [Ray.ker_binomialCenterEval, Ray.ker_binomialCenterEval]
-    have hr : (h.liftRay ρ).toToricRay Φ (h.liftRay ρ).toCone le_rfl =
-        ρ.toToricRay Ψ ρ.toCone le_rfl := by
-      apply ToricRay.eq_of_toPointedCone_le (Ψ.isToricCone ρ.toCone.property).salient
-      rw [Ray.toPointedCone_toToricRay, Ray.toPointedCone_toToricRay, liftRay_toCone]
     have hχ : (h.liftRay ρ).chartCharacter
         ((congrArg m (h.primitiveGenerator_liftRay ρ)).trans hm) = ρ.chartCharacter hm :=
       Subtype.ext (by simp only [Ray.coe_chartCharacter])
-    rw [hr, hχ]
+    rw [h.liftRay_toToricRay, hχ]
     rfl
   let r := Algebra.ofId ℂ (_root_.IsLocalRing.ResidueField ℂ)
   have he : r.comp a = r.comp b := by

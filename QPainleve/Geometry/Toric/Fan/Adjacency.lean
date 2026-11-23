@@ -82,6 +82,19 @@ theorem toricRays_eq_pair (Φ : Fan i) {ρ τ : Φ.Ray} {σ : Φ.cones}
   apply Set.eq_of_subset_of_ncard_le (Set.subset_univ _)
   rwa [Set.ncard_univ, Set.ncard_pair hr]
 
+/-- A cone of a regular rank-two fan containing two distinct rays has exactly two rays. -/
+theorem card_toricRay_eq_two_of_ray_ne_of_le (Φ : Fan i)
+    (hΦ : Φ.IsRegular) (hdim : Module.finrank ℤ N = 2)
+    {ρ τ : Φ.Ray} {σ : Φ.cones} (hne : ρ ≠ τ)
+    (hρ : ρ.toCone ≤ σ) (hτ : τ.toCone ≤ σ) : Nat.card (ToricRay σ.val) = 2 := by
+  have hpair := Φ.toricRays_eq_pair ((isRegular_iff.mp hΦ) _ σ.property) hdim hne hρ hτ
+  have hne' : ρ.toToricRay Φ σ hρ ≠ τ.toToricRay Φ σ hτ := by
+    intro h
+    have he : Φ.rayEquiv σ ⟨ρ, hρ⟩ = Φ.rayEquiv σ ⟨τ, hτ⟩ := by
+      simpa only [rayEquiv_apply] using h
+    exact hne (congrArg Subtype.val ((Φ.rayEquiv σ).injective he))
+  rw [← Set.ncard_univ, ← hpair, Set.ncard_pair hne']
+
 /-- A cone of a regular rank-two fan containing two distinct rays is their join. -/
 theorem cone_eq_sup_of_ray_ne_of_le (hΦ : Φ.IsRegular) (hN : Module.finrank ℤ N = 2)
     {ρ τ : Φ.Ray} {σ : Φ.cones} (hne : ρ ≠ τ) (hρ : ρ.toCone ≤ σ) (hτ : τ.toCone ≤ σ) :

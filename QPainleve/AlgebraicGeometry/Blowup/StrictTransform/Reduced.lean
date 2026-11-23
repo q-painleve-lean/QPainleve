@@ -63,6 +63,30 @@ theorem isReduced_subscheme_ker_blowupMap [IsReduced D.subscheme] :
   rw [ker_blowupMap_subschemeι_eq_vanishingIdeal]
   infer_instance
 
+/-- The strict transform of the union of two reduced closed subschemes is the union
+of their strict transforms, with the scheme-theoretic ideal of the union. -/
+theorem ker_blowupMap_subschemeι_inf (A B : X.IdealSheafData)
+    [IsReduced A.subscheme] [IsReduced B.subscheme] :
+    (I.blowupMap (A ⊓ B).subschemeι).ker =
+      (I.blowupMap A.subschemeι).ker ⊓ (I.blowupMap B.subschemeι).ker := by
+  have hA : vanishingIdeal A.support = A :=
+    vanishingIdeal_support.trans (A.isReduced_subscheme_iff_radical_eq.mp inferInstance)
+  have hB : vanishingIdeal B.support = B :=
+    vanishingIdeal_support.trans (B.isReduced_subscheme_iff_radical_eq.mp inferInstance)
+  have hAB : A ⊓ B = vanishingIdeal (A.support ⊔ B.support) := by
+    rw [vanishingIdeal_sup, hA, hB]
+  have : IsReduced (A ⊓ B).subscheme := by rw [hAB]; infer_instance
+  have hs : (A ⊓ B).support = A.support ⊔ B.support := by
+    rw [hAB]
+    exact SetLike.coe_injective (coe_support_vanishingIdeal _)
+  rw [ker_blowupMap_subschemeι_eq_vanishingIdeal,
+    ker_blowupMap_subschemeι_eq_vanishingIdeal I A,
+    ker_blowupMap_subschemeι_eq_vanishingIdeal I B, ← vanishingIdeal_sup]
+  congr 1
+  apply SetLike.coe_injective
+  simp only [Closeds.coe_closure, Closeds.coe_sup, support_comap, hs,
+    Closeds.coe_preimage, Set.preimage_union, Set.union_sdiff_distrib, closure_union]
+
 /-- If a reduced closed subscheme contains the blowup center and the exceptional
 divisor is reduced, the ideal of the reduced total transform is the product of
 the strict-transform ideal and the exceptional ideal. -/

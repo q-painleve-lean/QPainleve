@@ -20,9 +20,12 @@ import TauCeti.AlgebraicGeometry.IdealSheaf.Comap
 /-!
 # Comparing exceptional divisors under a morphism
 
-An isomorphism between exceptional curves of the first kind identifies their conormal
-classes. If the Cartier pullback of the target curve agrees with the source curve
-at one stalk on the source curve, the residual divisor is disjoint from the source curve.
+A Cartier pullback that induces an isomorphism of the curves preserves the conormal
+class and the exceptional-curve condition. The proof extends Tau Ceti's
+`IsExceptionalCurveOfFirstKind.comap_of_isIso`. An isomorphism between exceptional
+curves of the first kind also identifies their conormal classes. If the Cartier pullback
+of the target curve agrees with the source curve at one stalk, the residual divisor is
+disjoint from the source curve.
 The pulled-back ideal then agrees with the source ideal on a neighborhood of the source curve.
 Consequently a locally finite type morphism is quasi-finite at every point on the source
 curve. This comparison is used in the factorization of proper birational morphisms of
@@ -38,6 +41,25 @@ open TauCeti.AlgebraicGeometry
 universe u
 
 namespace AlgebraicGeometry.Scheme.IdealSheafData.IsExceptionalCurveOfFirstKind
+
+/-- A Cartier pullback of an exceptional curve of the first kind is again of the
+first kind if the induced map on the curve is an isomorphism. -/
+theorem comap_of_isIso_subschemeMap {X Y : Scheme.{u}} {I : Y.IdealSheafData}
+    (hI : I.IsExceptionalCurveOfFirstKind) (f : X ⟶ Y) (hC : (I.comap f).IsEffectiveCartier)
+    [IsIso (subschemeMap (I.comap f) I f (I.le_map_comap f))] :
+    (I.comap f).IsExceptionalCurveOfFirstKind := by
+  obtain ⟨hCartier, κ, _, e, he⟩ := isExceptionalCurveOfFirstKind_iff_intersectionNumber.mp hI
+  let E := I.comap f
+  let g := subschemeMap E I f (I.le_map_comap f)
+  let ψ : E.subscheme ≅ I.subscheme := asIso g
+  have hψ : ψ.inv ≫ E.subschemeι ≫ f = I.subschemeι := by
+    rw [← subschemeMap_subschemeι E I f (I.le_map_comap f)]
+    exact ψ.inv_hom_id_assoc _
+  refine isExceptionalCurveOfFirstKind_iff_intersectionNumber.mpr
+    ⟨hC, κ, _, e ≪≫ ψ.symm, ?_⟩
+  rw [← hCartier.pullback_mk_toInvertibleSheaf hC, ← LineBundleClass.pullback_inv,
+    LineBundleClass.intersectionNumber_def, LineBundleClass.pullback_comp, Iso.trans_hom,
+    Iso.symm_hom, Category.assoc, Category.assoc, hψ, ← LineBundleClass.intersectionNumber_def, he]
 
 variable {X Y : Scheme.{u}} {E : X.IdealSheafData} {F : Y.IdealSheafData}
 

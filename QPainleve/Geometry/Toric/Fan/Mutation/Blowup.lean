@@ -9,6 +9,8 @@ public import QPainleve.Geometry.Toric.Fan.Mutation.Pivot
 public import TauCeti.AlgebraicGeometry.Blowup.UniversalProperty
 
 import QPainleve.AlgebraicGeometry.Blowup.Pullback
+import QPainleve.AlgebraicGeometry.Blowup.StrictTransform.Basic
+import TauCeti.AlgebraicGeometry.IdealSheaf.Locality
 import TauCeti.AlgebraicGeometry.IdealSheaf.Comap
 
 /-!
@@ -355,5 +357,51 @@ theorem Ray.mutationBlowupIso_hom_comp_toBase :
     (ρ.mutationBlowupIso_hom_comp_ruling b hOpp c)
   simpa only [Category.assoc, CategoryTheory.comp_over r₀, CategoryTheory.comp_over r₁,
     algebraicRealization_over] using h
+
+section Boundary
+
+open Scheme.IdealSheafData
+
+local notation "F₀" => Nonempty.intro (Ray.toCone Φ ρ)
+local notation "F₁" =>
+  Nonempty.intro (Ray.toCone (Ψ) (Φ.mutationFanRayEquiv b hv hp hOpp ρ))
+local notation "D₀" => Φ.boundaryIdeal F₀
+local notation "D₁" => boundaryIdeal (Ψ) F₁
+local notation "B₀" => Scheme.Hom.ker (Scheme.IdealSheafData.blowupMap (J₀) (subschemeι (D₀)))
+local notation "B₁" => Scheme.Hom.ker (Scheme.IdealSheafData.blowupMap (J₁) (subschemeι (D₁)))
+
+private theorem comap_strictBoundary_mutationComplement :
+    (B₁).comap ((T true).ι) = (D₁).comap (U₁).ι ∧
+      (B₀).comap ((S true).ι) = (D₀).comap (U₀).ι := by
+  have hSource : (S true).ι ≫ (J₀).blowupToBase = (U₀).ι :=
+    blowupLift_blowupToBase _ _ _
+  have hTarget : (T true).ι ≫ (J₁).blowupToBase = (U₁).ι :=
+    blowupLift_blowupToBase _ _ _
+  have : IsOpenImmersion (S true).ι := rulingChart_isOpenImmersion (S true)
+  have : IsOpenImmersion (T true).ι := rulingChart_isOpenImmersion (T true)
+  constructor
+  · rw [comap_ker_blowupMap_subschemeι_of_comap_eq_top, hTarget]
+    rw [hTarget, ρ.mutationTargetCenterIdeal_comap_complement b hOpp c]
+  · rw [comap_ker_blowupMap_subschemeι_of_comap_eq_top, hSource]
+    rw [hSource, ρ.mutationSourceCenterIdeal_comap_complement b hOpp c]
+
+/-- The global pivot blowup isomorphism identifies the scheme-theoretic strict
+transforms of the two reduced toric boundaries. -/
+theorem Ray.comap_strictBoundary_mutationBlowupIso (hΦ : Φ.IsRegular) :
+    (B₁).comap (ρ.mutationBlowupIso b hOpp c).hom = B₀ := by
+  refine ext_of_comap_openCover (𝒰) fun (j : Bool) ↦ ?_
+  have hj : (S j).ι ≫ (ρ.mutationBlowupIso b hOpp c).hom =
+      (E j).hom ≫ (T j).ι := mutationChart_ι_mutationBlowupHom b ρ hOpp c j
+  -- The glued cover is the pullback of the two ruling opens to the source blowup.
+  change ((B₁).comap (ρ.mutationBlowupIso b hOpp c).hom).comap (S j).ι =
+    (B₀).comap (S j).ι
+  rw [← comap_comp, hj, comap_comp]
+  cases j
+  · exact ρ.comap_boundaryIdeal_mutationPivotIso b hOpp c hΦ
+  · obtain ⟨hTarget, hSource⟩ := comap_strictBoundary_mutationComplement b ρ hOpp c
+    rw [hTarget, hSource, ← comap_comp]
+    exact comap_boundaryIdeal_mutationComplementIso (Φ := Φ) b hv hp hOpp c F₀ F₁
+
+end Boundary
 
 end TauCeti.Toric.Fan
