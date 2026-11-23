@@ -196,6 +196,14 @@ theorem mem_characterRulingTorusSubfan_cones_iff {σ : PointedCone ℝ V} :
     rintro _ ⟨x, hx, rfl⟩
     exact (Submodule.mem_bot (R := NNReal)).mpr (funext fun j ↦ by simp [hm x hx])
 
+/-- The inclusion of the torus subfan identifies its cone charts with the ambient cone charts. -/
+@[reassoc]
+theorem affineToricChartι_comp_characterRulingTorusSubfanInclusion (σ : (U).cones) :
+    (U).affineToricChartι σ ≫ (Φ.characterRulingTorusSubfanInclusion m h).algebraicMap =
+      Φ.affineToricChartι
+        ⟨σ.val, ((Φ.mem_characterRulingTorusSubfan_cones_iff m h).mp σ.property).1⟩ :=
+  affineToricChartι_comp_subfanInclusion_algebraicMap _ _ _ _ σ
+
 private def splitCoordinates (R : Type) [Semiring R] :
     (Fin 2 → R) ≃ₗ[R] (Fin 1 → R) × (Fin 1 → R) :=
   (LinearEquiv.finTwoArrow R R).trans
@@ -225,7 +233,8 @@ private theorem splitCoordinates_apply_pivot : eℝ (i (b 0)) = ((1 : Fin 1 → 
   ext j <;> simp [splitCoordinates, Basis.equivFun_apply]
 
 include hm hpos hneg in
-private theorem mem_cones_iff_eq_bot_or_opposite_rays {σ : PointedCone ℝ V} :
+/-- In an adapted basis, the torus subfan consists of the origin and the two opposite rays. -/
+theorem mem_characterRulingTorusSubfan_cones_iff_eq_bot_or_opposite_rays {σ : PointedCone ℝ V} :
     σ ∈ (U).cones ↔ σ = ⊥ ∨ σ = hull ℝ {i (b 0)} ∨ σ = hull ℝ {-i (b 0)} := by
   rw [mem_characterRulingTorusSubfan_cones_iff, hm, IsIntegralLattice.realCharacter_coord Φ.lattice]
   have hb (x : V) (hx : (bℝ).coord 1 x = 0) : x = (bℝ).coord 0 x • i (b 0) := by
@@ -306,7 +315,8 @@ def characterRulingTorusFanEquiv :
   realEquiv := eℝ
   map_lattice := splitCoordinates_map_lattice Φ b
   map_mem σ := by
-    rw [mem_product_cones_iff, mem_cones_iff_eq_bot_or_opposite_rays Φ m h b hm hpos hneg]
+    rw [mem_product_cones_iff, mem_characterRulingTorusSubfan_cones_iff_eq_bot_or_opposite_rays
+      Φ m h b hm hpos hneg]
     have hpos' := map_ray_eq_prod Φ b (i (b 0)) 1 (splitCoordinates_apply_pivot Φ b)
     have hneg' := map_ray_eq_prod Φ b (-i (b 0)) (-1) (by
       rw [map_neg, splitCoordinates_apply_pivot Φ b]
@@ -363,6 +373,16 @@ def characterRulingTorusIso :
       pullback (projectiveLine ℂ ↘ base) (projectiveLineTorusFan.algebraicRealization ↘ base) :=
   (Φ.isPullback_characterRulingTorusSubfan m h).isoPullback.symm ≪≫
     (Φ.isPullback_characterRulingTorusProduct m h b hm hpos hneg).isoPullback
+
+/-- The first projection of the ruling product is the first adapted fan coordinate. -/
+@[reassoc]
+theorem isoPullback_hom_comp_characterRulingTorusIso_hom_fst :
+    (Φ.isPullback_characterRulingTorusSubfan m h).isoPullback.hom ≫
+        (Φ.characterRulingTorusIso m h b hm hpos hneg).hom ≫ pullback.fst _ _ =
+      (E).toFanHom.algebraicMap ≫ (FanHom.fst P projectiveLineTorusFan).algebraicMap ≫
+        projectiveLineToricIso.hom := by
+  rw [characterRulingTorusIso, Iso.trans_hom, Iso.symm_hom, Category.assoc,
+    Iso.hom_inv_id_assoc, IsPullback.isoPullback_hom_fst]
 
 /-- The product comparison intertwines the projections to the base torus. -/
 @[reassoc (attr := simp)]

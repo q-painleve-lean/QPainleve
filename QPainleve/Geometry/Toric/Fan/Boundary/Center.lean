@@ -12,10 +12,10 @@ public import QPainleve.Geometry.Toric.Fan.Separated
 public import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.Basic
 import Mathlib.RingTheory.Spectrum.Prime.RingHom
 import QPainleve.Algebra.MonoidAlgebra.Smooth
+import QPainleve.Algebra.Polynomial.Laurent
 import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
 import TauCeti.Algebra.Bialgebra.MonoidAlgebra.Equiv
 import TauCeti.Algebra.MonoidAlgebra.Face
-import TauCeti.Algebra.Polynomial.Laurent.Augmentation
 import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.Section
 import TauCeti.AlgebraicGeometry.IdealSheaf.BaseChange
 import TauCeti.AlgebraicGeometry.IdealSheaf.OfIdealTop
@@ -32,7 +32,7 @@ reduced point. Its ideal in the ray chart includes the ray ideal and the binomia
 This uses the affine orbit description in Fulton, *Introduction to Toric Varieties*, §3.1,
 for the smooth boundary centers of Gross, Hacking and Keel, *Moduli of surfaces with an
 anti-canonical cycle*, Definition 1.2. The scheme structure comes from Tau Ceti's
-`AddSubmonoid.faceRestriction` and `ker_laurentEval`.
+`AddSubmonoid.faceRestriction` and `ker_laurentEval_neg_inv`.
 -/
 
 public noncomputable section
@@ -236,19 +236,10 @@ theorem ker_binomialCenterEval (hdim : Module.finrank ℤ N = 2)
     Ideal.span {1 + algebraMap ℂ R (c : ℂ) * χ (ofAdd (ρ.chartCharacter hm))}
   have hJ : Ideal.map f J = RingHom.ker (laurentEval ((-1 : ℂˣ) * c⁻¹)) := by
     dsimp only [J]
-    rw [Ideal.map_span, Set.image_singleton, ker_laurentEval]
+    rw [Ideal.map_span, Set.image_singleton, ker_laurentEval_neg_inv]
     have hf : f (χ (ofAdd (ρ.chartCharacter hm))) = T 1 := by
       simpa only [MonoidAlgebra.of_apply] using ρ.orbitCoordinateMap_character hdim hm hprim
-    rw [map_add, map_one, map_mul, f.commutes, hf,
-      ← C_eq_algebraMap, Ideal.span_singleton_eq_span_singleton]
-    refine ⟨Units.map (C : ℂ →+* LaurentPolynomial ℂ).toMonoidHom c⁻¹, ?_⟩
-    simp only [Units.val_neg, neg_one_mul, Units.coe_map, map_neg]
-    calc
-      (1 + C (c : ℂ) * T 1) * C (↑c⁻¹ : ℂ) =
-          C (↑c⁻¹ : ℂ) + (C (c : ℂ) * C (↑c⁻¹ : ℂ)) * T 1 := by ring
-      _ = T 1 - -C (↑c⁻¹ : ℂ) := by
-        rw [← map_mul, ← Units.val_mul, mul_inv_cancel, Units.val_one, map_one, one_mul]
-        ring
+    rw [map_add, map_one, map_mul, f.commutes, hf, ← C_eq_algebraMap]
   calc
     _ = Ideal.comap f (RingHom.ker (laurentEval ((-1 : ℂˣ) * c⁻¹))) := by
       ext x
@@ -259,6 +250,20 @@ theorem ker_binomialCenterEval (hdim : Module.finrank ℤ N = 2)
     _ = _ := by
       dsimp only [f, J]
       rw [ρ.ker_orbitCoordinateMap, sup_comm]
+
+/-- A character strictly positive on the ray vanishes at every binomial center on that ray. -/
+theorem binomialCenterEval_monomial_of_pos
+    (hdim : Module.finrank ℤ N = 2) (hmρ : m ρ.primitiveGenerator = 0)
+    (hsurj : Function.Surjective m) (c : ℂˣ)
+    (a : dualSemigroup Φ.lattice ρ.toCone.val)
+    (ha : 0 < (a : N →+ ℤ) ρ.primitiveGenerator) :
+    ρ.binomialCenterEval hdim hmρ hsurj c (MonoidAlgebra.of ℂ _ (ofAdd a)) = 0 := by
+  apply RingHom.mem_ker.mp
+  rw [ρ.ker_binomialCenterEval]
+  exact le_sup_left (a := rayIdeal Φ.lattice (Φ.isToricCone ρ.toCone.property)
+    (ρ.toToricRay Φ ρ.toCone le_rfl))
+    (monomial_mem_rayIdeal Φ.lattice (Φ.isToricCone ρ.toCone.property)
+      (ρ.toToricRay Φ ρ.toCone le_rfl) a (by simpa only [Ray.primitiveGenerator_def] using ha))
 
 /-- The boundary point with parameter `c`, included into the entire fan scheme. -/
 def binomialCenter (hdim : Module.finrank ℤ N = 2)
