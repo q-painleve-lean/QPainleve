@@ -10,6 +10,7 @@ public import TauCeti.AlgebraicGeometry.Morphisms.Smooth.RelativeDimension
 import QPainleve.AlgebraicGeometry.Blowup.Descent
 import QPainleve.AlgebraicGeometry.Blowup.Integral
 import QPainleve.AlgebraicGeometry.Blowup.Smooth
+import QPainleve.AlgebraicGeometry.CartierDivisor.Support
 import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
 import TauCeti.AlgebraicGeometry.ResidueField
 import TauCeti.AlgebraicGeometry.Scheme.GenericPoint
@@ -132,6 +133,16 @@ theorem surjective {k : Type u} [Field k] [PerfectField k]
       exact Scheme.IdealSheafData.surjective_blowupToBase_point hp hdim
     rw [toBase_snoc]
     infer_instance
+
+/-- The total transform of an effective Cartier divisor on a smooth integral surface
+in a tower of blowups at closed points is effective Cartier. -/
+theorem isEffectiveCartier_totalTransform {k : Type u} [Field k] [IsIntegral X]
+    [PerfectField k] [IsNoetherian X] (f : X ⟶ Spec (.of k)) [SmoothOfRelativeDimension 2 f]
+    (hT : IsClosedPointTower X T) {D : X.IdealSheafData} (hD : D.IsEffectiveCartier) :
+    (D.comap T.toBase).IsEffectiveCartier := by
+  have : IsIntegral Y := hT.isIntegral f
+  have : Surjective T.toBase := hT.surjective f
+  exact hD.comap_of_isDominant T.toBase
 
 end IsClosedPointTower
 
