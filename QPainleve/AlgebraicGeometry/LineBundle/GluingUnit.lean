@@ -63,6 +63,14 @@ def lineGluingUnit {M : X.Modules} (e : (pullback f).obj M ≅ 𝟙_ Y.Modules)
   (unitsGlobalSectionsMulEquivAut (𝟙_ P.Modules)).symm
     (Aut.of ((h.rightFrame d).symm ≪≫ leftFrame (j := j) e))
 
+/-- A trivialization on one side of a commutative square induces a trivialization
+of the iterated pullback along the other side. -/
+@[simps! hom]
+def pullbackTrivialization {M : X.Modules} (d : (pullback i).obj M ≅ 𝟙_ Z.Modules) :
+    (pullback j).obj ((pullback f).obj M) ≅ 𝟙_ P.Modules :=
+  (pullbackComp j f).app M ≪≫ (pullbackCongr h.w).app M ≪≫
+    ((pullbackComp g i).app M).symm ≪≫ (pullback g).mapIso d ≪≫ pullbackObjUnitIso g
+
 private theorem leftFrame_eq_rightFrame {M : X.Modules}
     (e : (pullback f).obj M ≅ 𝟙_ Y.Modules) (d : (pullback i).obj M ≅ 𝟙_ Z.Modules) :
     (leftFrame (j := j) e).hom =
@@ -122,6 +130,91 @@ private theorem scalar_frame_transport {W T : Scheme.{u}} (p : T ⟶ W)
     Units.coe_map, RingHom.toMonoidHom_eq_coe, Category.assoc,
     ← globalSectionsSmul_naturality_assoc, Iso.hom_inv_id_assoc]
   rfl
+
+section Pullback
+
+variable {P' Y' Z' X' : Scheme.{u}} {j' : P' ⟶ Y'} {g' : P' ⟶ Z'}
+  {f' : Y' ⟶ X'} {i' : Z' ⟶ X'} {p : P' ⟶ P} {y : Y' ⟶ Y} {z : Z' ⟶ Z} {x : X' ⟶ X}
+
+private theorem pullbackComp_inv_app_map_frame_hom {A B C D : Scheme.{u}}
+    (a : A ⟶ B) (b : B ⟶ C) (c : C ⟶ D) {M : D.Modules}
+    (e : (pullback c).obj M ≅ 𝟙_ C.Modules) :
+    (pullbackComp a (b ≫ c)).inv.app M ≫
+        (pullback a).map (leftFrame (j := b) e).hom ≫ (pullbackObjUnitIso a).hom =
+      eqToHom (by rw [Category.assoc]) ≫ (leftFrame (j := a ≫ b) e).hom := by
+  simp only [leftFrame, Iso.trans_hom, Iso.symm_hom, Iso.app_inv, Functor.mapIso_hom,
+    Functor.map_comp, Category.assoc,
+    pullbackComp_inv_app_comp_pullback_map_pullbackComp_inv_app_assoc]
+  have hn := (pullbackComp a b).inv.naturality_assoc e.hom
+    ((pullback a).map (pullbackObjUnitIso b).hom ≫ (pullbackObjUnitIso a).hom)
+  simp only [Functor.comp_map] at hn
+  rw [← hn, pullbackObjUnitIso_comp]
+
+@[reassoc]
+private theorem leftFrame_pullbackTrivialization
+    (hf : CommSq f' y x f) (hj : CommSq j' p y j)
+    {M : X.Modules} (e : (pullback f).obj M ≅ 𝟙_ Y.Modules) :
+    (leftFrame (j := j') (hf.pullbackTrivialization e)).hom =
+      (pullbackComp (j' ≫ f') x).hom.app M ≫
+        eqToHom (by rw [Category.assoc, hf.w, ← Category.assoc, hj.w, Category.assoc]) ≫
+        (pullbackComp p (j ≫ f)).inv.app M ≫
+        (pullback p).map (leftFrame (j := j) e).hom ≫ (pullbackObjUnitIso p).hom := by
+  rw [pullbackComp_inv_app_map_frame_hom]
+  simp only [leftFrame, pullbackTrivialization, Iso.trans_hom, Iso.symm_hom, Iso.app_hom,
+    Iso.app_inv, Functor.mapIso_hom, Functor.map_comp, Category.assoc,
+    pullbackComp_inv_app_comp_pullback_map_pullbackComp_hom_app_assoc,
+    pullbackComp_inv_app_comp_pullback_map_pullbackCongr_hom_app_assoc,
+    pullbackComp_inv_app_comp_pullback_map_pullbackComp_inv_app_assoc, eqToHom_trans_assoc]
+  have hn := (pullbackComp j' y).inv.naturality_assoc e.hom
+    ((pullback j').map (pullbackObjUnitIso y).hom ≫ (pullbackObjUnitIso j').hom)
+  simp only [Functor.comp_map] at hn
+  rw [← hn, pullbackObjUnitIso_comp]
+  have ht (b c : P' ⟶ Y) (hbc : b = c) :
+      (leftFrame (j := b) e).hom =
+        eqToHom (by rw [hbc]) ≫ (leftFrame (j := c) e).hom := by
+    subst c
+    simp
+  -- The source changes with the composite, so the frame comparison includes its transport.
+  rw [show (pullbackComp (j' ≫ y) f).inv.app M ≫
+      (pullback (j' ≫ y)).map e.hom ≫ (pullbackObjUnitIso (j' ≫ y)).hom =
+      eqToHom (by rw [hj.w]) ≫ (pullbackComp (p ≫ j) f).inv.app M ≫
+        (pullback (p ≫ j)).map e.hom ≫ (pullbackObjUnitIso (p ≫ j)).hom from ht _ _ hj.w]
+  simp only [eqToHom_trans_assoc]
+
+/-- In a commuting cube, the gluing unit of the induced trivializations is the pullback
+of the original gluing unit along the map of overlaps. -/
+theorem lineGluingUnit_pullback (h' : CommSq j' g' f' i') (hf : CommSq f' y x f)
+    (hi : CommSq i' z x i) (hj : CommSq j' p y j) (hg : CommSq g' p z g)
+    {M : X.Modules} (e : (pullback f).obj M ≅ 𝟙_ Y.Modules)
+    (d : (pullback i).obj M ≅ 𝟙_ Z.Modules) :
+    h'.lineGluingUnit (hf.pullbackTrivialization e) (hi.pullbackTrivialization d) =
+      Units.map p.appTop.hom (h.lineGluingUnit e d) := by
+  have hframe := congrArg ((pullback p).map · ≫ (pullbackObjUnitIso p).hom)
+    (h.leftFrame_eq_rightFrame e d)
+  rw [Functor.map_comp, Category.assoc, pullback_map_globalSectionsSmul,
+    globalSectionsSmul_naturality] at hframe
+  apply (h'.lineGluingUnit_eq_iff _ _ _).mpr
+  have hleft := leftFrame_pullbackTrivialization hf hj e
+  have hright := leftFrame_pullbackTrivialization_assoc hi hg d
+    (globalSectionsSmul (𝟙_ P'.Modules)
+      (p.appTop (h.lineGluingUnit e d : Γ(P, ⊤))))
+  -- Both pulled-back frames use the comparison for the same composite to X.
+  simp only [leftFrame, rightFrame, Iso.trans_hom, Iso.symm_hom, Iso.app_inv, Iso.trans_inv,
+    NatTrans.comp_app, Functor.mapIso_hom, Category.assoc] at hleft hright hframe
+  have happ (a : Γ(P, ⊤)) : (p.appTop.hom : Γ(P, ⊤) →* Γ(P', ⊤)) a =
+      p.appTop a := rfl
+  simp only [Units.coe_map, happ]
+  rw [hleft, hright]
+  rw [hframe]
+  have hcongr {A B : Scheme.{u}} {a b : A ⟶ B} (hab : a = b) :
+      (pullbackCongr hab).inv = (pullbackCongr hab.symm).hom := by
+    subst b
+    rfl
+  simp only [Functor.map_comp, Category.assoc, hcongr,
+    pullbackComp_inv_app_comp_pullback_map_pullbackCongr_hom_app_assoc,
+    pullbackCongr_hom_app_comp_pullbackComp_hom_app_assoc, eqToHom_trans_assoc]
+
+end Pullback
 
 variable {M N : X.Modules}
   (e : (pullback f).obj M ≅ 𝟙_ Y.Modules) (d : (pullback i).obj M ≅ 𝟙_ Z.Modules)
