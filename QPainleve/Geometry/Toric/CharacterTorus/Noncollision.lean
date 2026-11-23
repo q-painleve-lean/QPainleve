@@ -49,6 +49,13 @@ theorem mem_distinctCentersOpen_iff (s : ι → R) (x : scheme k A) :
     Subtype.forall, Prod.forall, and_imp]
   rfl
 
+/-- Injectively changing the component labels preserves the distinct-center open. -/
+theorem distinctCentersOpen_comp_of_injective {S : Type*} (s : ι → R) {f : R → S}
+    (hf : Function.Injective f) : distinctCentersOpen k (f ∘ s) = distinctCentersOpen k s := by
+  apply SetLike.ext
+  intro x
+  simp only [mem_distinctCentersOpen_iff, Function.comp_apply, hf.eq_iff]
+
 /-- At a point over a field, the center differences are tested on the coordinate units. -/
 @[simp]
 theorem point_mem_distinctCentersOpen_iff {K : Type u} [Field K] (s : ι → R)
