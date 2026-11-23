@@ -10,7 +10,6 @@ public import QPainleve.AlgebraicGeometry.Chow.RationalSurface
 public import TauCeti.AlgebraicGeometry.CartierDivisor.Factorial
 public import TauCeti.AlgebraicGeometry.IntersectionNumber.ExceptionalCurve.Basic
 
-import QPainleve.AlgebraicGeometry.Chow.Ample
 import QPainleve.AlgebraicGeometry.IntersectionNumber.ExceptionalCurve.Numerical
 import QPainleve.AlgebraicGeometry.LineBundle.Ample
 import QPainleve.AlgebraicGeometry.Scheme.LocalDimension
@@ -90,10 +89,7 @@ private theorem exists_pos_smul_eq_realPrimeDivisorClass_of_mem_support
       (lt_of_le_of_ne ((WeilDivisor.nonneg_iff D).mp hD p) (Finsupp.mem_support_iff.mp hp).symm))
   obtain ⟨r, hr, hpr⟩ := PointedCone.mem_hull_singleton.mp hmem
   obtain ⟨a, ha⟩ := X.exists_isAmple_of_isProjectiveOver k
-  have hpos : 0 < B (ι (Additive.ofMul a)) (realPrimeDivisorClass k p) := by
-    rw [realIntersectionBilinForm_one_tmul_realPrimeDivisorClass k]
-    exact_mod_cast classIntersectionNumber_primeDivisorClass_pos_of_isAmple k
-      (topologicalKrullDim_eq_of_smoothOfRelativeDimension f (n := 2)) ha p
+  have hpos := realIntersectionBilinForm_realPrimeDivisorClass_pos k ha p
   refine ⟨r, lt_of_le_of_ne hr (Ne.symm fun hr₀ ↦ ?_), hpr.symm⟩
   rw [hr₀, zero_smul] at hpr
   exact (ne_of_gt hpos) (by rw [← hpr, map_zero])
@@ -107,10 +103,7 @@ private theorem support_subsingleton_of_isEffective_of_extremalRay
   by_contra hne
   obtain ⟨r, hr, heq⟩ := exists_pos_smul_eq_realPrimeDivisorClass_of_mem_support k D hD hface p hp
   obtain ⟨s, hs, heq'⟩ := exists_pos_smul_eq_realPrimeDivisorClass_of_mem_support k D hD hface q hq
-  have hpos : 0 ≤ B (realPrimeDivisorClass k p) (realPrimeDivisorClass k q) := by
-    rw [realPrimeDivisorClass_def k p, realIntersectionBilinForm_one_tmul_realPrimeDivisorClass k]
-    exact_mod_cast classIntersectionNumber_primeDivisorClass_nonneg_of_ne k
-      (topologicalKrullDim_eq_of_smoothOfRelativeDimension f (n := 2)) hne
+  have hpos := realIntersectionBilinForm_realPrimeDivisorClass_nonneg k hne
   simp only [heq, heq', map_smul, LinearMap.smul_apply, smul_eq_mul] at hpos
   exact (not_lt_of_ge hpos) (mul_neg_of_pos_of_neg hs (mul_neg_of_pos_of_neg hr hneg))
 
