@@ -6,7 +6,7 @@ Authors: The QPainleve contributors
 module
 
 public import TauCeti.AlgebraicGeometry.Modules.Differentials.Forms
-public import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.Polynomial.ChartSections
+public import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.Polynomial.Chart.Sections
 public import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.TwistingSheaf.LocalTriviality
 public import QPainleve.AlgebraicGeometry.Modules.ExteriorPower.Sections
 import TauCeti.AlgebraicGeometry.Modules.AffineRestriction

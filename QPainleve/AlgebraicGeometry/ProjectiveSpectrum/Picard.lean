@@ -6,16 +6,18 @@ Authors: The QPainleve contributors
 module
 
 public import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.Basic
-public import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.Polynomial.Chart
+public import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.Polynomial.Chart.Basic
 public import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.TwistingSheaf.Basic
 public import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.SymmetricAlgebra
 public import TauCeti.AlgebraicGeometry.LineBundle.Class
 
 import QPainleve.AlgebraicGeometry.EffectiveCartierDivisor.Integral
 import QPainleve.AlgebraicGeometry.IdealSheaf.Integral
+import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.Polynomial.Chart.Sections
 import TauCeti.AlgebraicGeometry.CartierDivisor.Excision
 import TauCeti.AlgebraicGeometry.IdealSheaf.Reduced
 import TauCeti.AlgebraicGeometry.LineBundle.Affine.Picard
+import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.BaseChange
 import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.Integral
 import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.TwistingSheaf.Pullback
 import TauCeti.AlgebraicGeometry.Cohomology.ProjectiveSpace.TwistingSheaf
@@ -59,6 +61,11 @@ local notation "𝒜" => MvPolynomial.homogeneousSubmodule (Fin (n + 1)) k
 local notation "P" => Proj 𝒜
 local notation "U[" i "]" => basicOpen 𝒜 (MvPolynomial.X i)
 
+@[instance_reducible, local instance]
+private def chartSectionsAlgebra (i : Fin (n + 1)) : Algebra k Γ(P, U[i]) :=
+  letI : (P).Over (Spec (.of k)) := ⟨toSpecCoeff 𝒜⟩
+  (((P).baseRingToStructurePresheaf k).app (op U[i])).hom.toAlgebra
+
 private theorem coordinate_mem_one (i : Fin (n + 1)) : MvPolynomial.X i ∈ 𝒜 1 :=
   (MvPolynomial.mem_homogeneousSubmodule ..).mpr (MvPolynomial.isHomogeneous_X k i)
 
@@ -67,24 +74,6 @@ private abbrev coordinateChart (i : Fin (n + 1)) : (Proj 𝒜).affineOpens :=
 
 private theorem iSup_coordinateChart : (⨆ i : Fin (n + 1), (coordinateChart (k := k) i).val) = ⊤ :=
   iSup_basicOpen_eq_top _ _ (MvPolynomial.irrelevant_eq_span_X _ _).le
-
-private def chartSectionsRingEquiv (i : Fin (n + 1)) :
-    Γ(P, U[i]) ≃+* MvPolynomial (Fin n) k :=
-  ((basicOpenIsoAway 𝒜 _ (coordinate_mem_one i) one_pos).commRingCatIsoToRingEquiv.symm).trans
-    (awayCoordinateAlgEquiv i).toRingEquiv
-
-private def coordinateRatio (i j : Fin (n + 1)) : Γ(P, U[i]) :=
-  awayToSection 𝒜 (MvPolynomial.X i) (TauCeti.MvPolynomial.awayXRatio i j)
-
-private theorem chartSectionsRingEquiv_ratio (i : Fin (n + 1)) (j : Fin n) :
-    chartSectionsRingEquiv (k := k) i (coordinateRatio i (i.succAbove j)) = MvPolynomial.X j := by
-  let e := basicOpenIsoAway 𝒜 _ (coordinate_mem_one i) one_pos
-  have h : coordinateRatio (k := k) i (i.succAbove j) =
-      e.commRingCatIsoToRingEquiv (TauCeti.MvPolynomial.awayXRatio i (i.succAbove j)) := by
-    rw [coordinateRatio, ← basicOpenIsoAway_hom 𝒜 _ (coordinate_mem_one i) one_pos]
-    rfl
-  rw [h, chartSectionsRingEquiv, RingEquiv.trans_apply, RingEquiv.symm_apply_apply]
-  exact awayCoordinateAlgEquiv_apply_ratio i j
 
 private def coordinateToUnitLinear (j : Fin (n + 1)) (U : (Proj 𝒜).Opens) :
     Γ(twistingSheaf 𝒜 (-1), U) →ₗ[Γ(P, U)] Γ(P, U) :=
@@ -117,7 +106,7 @@ private theorem coordinateToUnit_app (j : Fin (n + 1)) (U : (Proj 𝒜).Opens)
 private theorem coordinateToUnit_app_chartGenerator (i j : Fin (n + 1)) :
     (coordinateToUnit (k := k) j).app U[i]
       (twistingSheaf.chartGenerator (-1) _ (coordinate_mem_one i) U[i] le_rfl) =
-        coordinateRatio i j := by
+        polynomialCoordinateRatio i j le_rfl := by
   apply (sectionsLinearEquivTwistingSheafZero 𝒜 U[i]).injective
   rw [coordinateToUnit_app, coordinateToUnitLinear, LinearMap.comp_apply, LinearEquiv.coe_coe,
     LinearEquiv.apply_symm_apply]
@@ -127,9 +116,10 @@ private theorem coordinateToUnit_app_chartGenerator (i j : Fin (n + 1)) :
   change (twistingSheaf.mul 𝒜 U[i] 1 (-1)
       (toTwistingSheaf 𝒜 rfl U[i] ⟨MvPolynomial.X j, coordinate_mem_one j⟩)
       (twistingSheaf.chartGenerator (-1) _ (coordinate_mem_one i) U[i] le_rfl)).val x = _
-  rw [twistingSheaf.mul_apply, twistingSheaf.chartGenerator_apply, coordinateRatio,
-    TauCeti.MvPolynomial.awayXRatio_def, sectionsLinearEquivTwistingSheafZero_apply_apply,
-    val_awayToSection_mk_apply, toTwistingSheaf_apply_apply, Localization.mk_mul]
+  rw [twistingSheaf.mul_apply, twistingSheaf.chartGenerator_apply,
+    polynomialCoordinateRatio_self_open, TauCeti.MvPolynomial.awayXRatio_def,
+    sectionsLinearEquivTwistingSheafZero_apply_apply, val_awayToSection_mk_apply,
+    toTwistingSheaf_apply_apply, Localization.mk_mul]
   norm_num
 
 /-- In the chart `D₊(Xᵢ)`, the coordinate hyperplane `Xⱼ = 0` has principal ideal
@@ -138,13 +128,14 @@ theorem coordinateHyperplaneIdeal_ideal (i j : Fin (n + 1)) (hU : IsAffineOpen U
     (coordinateHyperplaneIdeal (k := k) j).ideal ⟨U[i], hU⟩ =
       Ideal.span {awayToSection 𝒜 (MvPolynomial.X i) (TauCeti.MvPolynomial.awayXRatio i j)} := by
   -- Use the restriction of multiplication by the coordinate on this affine chart.
+  rw [← polynomialCoordinateRatio_self_open]
   change (coordinateHyperplaneIdeal (k := k) j).ideal (coordinateChart i) =
-    Ideal.span {coordinateRatio i j}
+    Ideal.span {polynomialCoordinateRatio i j le_rfl}
   rw [coordinateHyperplaneIdeal, Scheme.Modules.Hom.imageIdealSheaf_ideal]
   ext r
   -- The coordinate chart is the affine open attached to the indicated standard open.
   change r ∈ (coordinateToUnit (k := k) j).imageIdeal U[i] ↔
-    r ∈ (Ideal.span {coordinateRatio i j} : Ideal Γ(P, U[i]))
+    r ∈ (Ideal.span {polynomialCoordinateRatio i j le_rfl} : Ideal Γ(P, U[i]))
   rw [Scheme.Modules.Hom.mem_imageIdeal, Ideal.mem_span_singleton]
   let e := twistingSheaf.chartSectionsLinearEquiv (-1) _ (coordinate_mem_one i) U[i] le_rfl
   constructor
@@ -152,12 +143,12 @@ theorem coordinateHyperplaneIdeal_ideal (i j : Fin (n + 1)) (hU : IsAffineOpen U
     obtain ⟨a, rfl⟩ := e.surjective s
     rw [twistingSheaf.chartSectionsLinearEquiv_apply, coordinateToUnit_app, map_smul,
       ← coordinateToUnit_app, coordinateToUnit_app_chartGenerator]
-    exact ⟨a, mul_comm a (coordinateRatio (k := k) i j)⟩
+    exact ⟨a, mul_comm a (polynomialCoordinateRatio (R := k) i j le_rfl)⟩
   · rintro ⟨a, rfl⟩
     refine ⟨e a, ?_⟩
     rw [twistingSheaf.chartSectionsLinearEquiv_apply, coordinateToUnit_app, map_smul,
       ← coordinateToUnit_app, coordinateToUnit_app_chartGenerator]
-    exact mul_comm a (coordinateRatio (k := k) i j)
+    exact mul_comm a (polynomialCoordinateRatio (R := k) i j le_rfl)
 
 /-- The coordinate hyperplane is supported on the complement of the corresponding affine chart. -/
 @[simp]
@@ -168,11 +159,12 @@ theorem coe_support_coordinateHyperplaneIdeal (j : Fin (n + 1)) :
   obtain ⟨i, hi⟩ := TopologicalSpace.Opens.mem_iSup.mp
     ((iSup_coordinateChart (k := k) (n := n)).symm ▸ ht)
   rw [SetLike.mem_coe, Scheme.IdealSheafData.mem_support_iff_of_mem hi,
-    coordinateHyperplaneIdeal_ideal, ← coordinateRatio, Scheme.zeroLocus_span]
+    coordinateHyperplaneIdeal_ideal, ← polynomialCoordinateRatio_self_open, Scheme.zeroLocus_span]
   -- The basic open of the local equation is the intersection of the two coordinate charts.
-  have h : (Proj 𝒜).basicOpen (coordinateRatio (k := k) i j) = U[i] ⊓ U[j] := by
-    rw [coordinateRatio, TauCeti.MvPolynomial.awayXRatio_def, basicOpen_awayToSection_mk,
-      basicOpen_mul]
+  have h : (Proj 𝒜).basicOpen (polynomialCoordinateRatio (R := k) i j le_rfl) =
+      U[i] ⊓ U[j] := by
+    rw [polynomialCoordinateRatio_self_open, TauCeti.MvPolynomial.awayXRatio_def,
+      basicOpen_awayToSection_mk, basicOpen_mul]
   rw [Scheme.zeroLocus_singleton]
   rw [Set.mem_compl_iff, h]
   exact not_congr ⟨fun hx ↦ hx.2, fun hx ↦ ⟨hi, hx⟩⟩
@@ -183,22 +175,24 @@ private theorem isReduced_coordinateHyperplane (j : Fin (n + 1)) :
   apply Scheme.IdealSheafData.ext_of_iSup_eq_top coordinateChart iSup_coordinateChart
   intro i
   apply Ideal.radical_eq_iff.mpr
-  rw [coordinateHyperplaneIdeal_ideal, ← coordinateRatio]
+  rw [coordinateHyperplaneIdeal_ideal, ← polynomialCoordinateRatio_self_open]
   by_cases h : j = i
   · subst j
-    rw [coordinateRatio, TauCeti.MvPolynomial.awayXRatio_self, map_one, Ideal.span_singleton_one]
+    rw [polynomialCoordinateRatio_self, Ideal.span_singleton_one]
     exact Ideal.radical_eq_iff.mp (Ideal.radical_top _)
   · obtain ⟨a, rfl⟩ := Fin.exists_succAbove_eq h
-    let e := chartSectionsRingEquiv (k := k) i
+    let e := (polynomialChartSectionsEquiv k i).symm.toRingEquiv
     have hprime : (Ideal.span {MvPolynomial.X a} : Ideal (MvPolynomial (Fin n) k)).IsPrime := by
       simpa only [Set.image_singleton] using
         MvPolynomial.span_X_image_isPrime (R := k) ({a} : Set (Fin n))
     have he : (Ideal.span {MvPolynomial.X a}).comap e.toRingHom =
-        Ideal.span {coordinateRatio (k := k) i (i.succAbove a)} := by
-      have heq : (Ideal.span {coordinateRatio (k := k) i (i.succAbove a)}).map e.toRingHom =
-          Ideal.span {MvPolynomial.X a} := by
-        rw [Ideal.map_span, Set.image_singleton]
-        exact congrArg (fun f ↦ Ideal.span {f}) (chartSectionsRingEquiv_ratio i a)
+        Ideal.span {polynomialCoordinateRatio (R := k) i (i.succAbove a) le_rfl} := by
+      have heq : (Ideal.span {polynomialCoordinateRatio (R := k) i (i.succAbove a) le_rfl}).map
+          e.toRingHom = Ideal.span {MvPolynomial.X a} := by
+        rw [Ideal.map_span, Set.image_singleton, polynomialCoordinateRatio_self_open,
+          ← polynomialChartSectionsEquiv_X]
+        exact congrArg (fun f ↦ Ideal.span {f})
+          ((polynomialChartSectionsEquiv k i).symm_apply_apply (MvPolynomial.X a))
       rw [← heq]
       exact Ideal.comap_map_of_bijective e.toRingHom e.bijective
     rw [← he]
@@ -268,10 +262,6 @@ private theorem isIntegral_polynomialProj : IsIntegral (Proj 𝒜) := by
   rw [h, ← HomogeneousIdeal.mem_iff, HomogeneousIdeal.toIdeal_bot, Ideal.mem_bot] at hm
   exact MvPolynomial.X_ne_zero _ hm
 
-private theorem coordinateRatio_self (i : Fin (n + 1)) :
-    coordinateRatio (k := k) i i = 1 := by
-  simp [coordinateRatio]
-
 private theorem mono_coordinateToUnit (j : Fin (n + 1)) : Mono (coordinateToUnit (k := k) j) := by
   have := isIntegral_polynomialProj (k := k) (n := n)
   refine (polynomialTwistingBundle (k := k) (n := n) (-1)).mono_of_ne_zero_to_unit
@@ -283,9 +273,9 @@ private theorem mono_coordinateToUnit (j : Fin (n + 1)) : Mono (coordinateToUnit
     (congrArg (fun f : twistingSheaf 𝒜 (-1) ⟶ 𝟙_ (Proj 𝒜).Modules ↦
       f.app U[j] (twistingSheaf.chartGenerator (-1) _
         (coordinate_mem_one j) U[j] le_rfl)) h)
-  have : Nontrivial Γ(P, U[j]) := (chartSectionsRingEquiv (k := k) j).symm.injective.nontrivial
+  have : Nontrivial Γ(P, U[j]) := (polynomialChartSectionsEquiv k j).injective.nontrivial
   have h01 : (0 : Γ(P, U[j])) = 1 :=
-    hz.symm.trans (he.trans (coordinateRatio_self j))
+    hz.symm.trans (he.trans (polynomialCoordinateRatio_self j le_rfl))
   exact zero_ne_one h01
 
 /-- Each coordinate hyperplane is an effective Cartier divisor. -/
@@ -301,7 +291,7 @@ private theorem uniqueFactorizationMonoid_stalk_polynomialProj (x : P) :
   obtain ⟨i, hi⟩ := TopologicalSpace.Opens.mem_iSup.mp
     ((iSup_coordinateChart (k := k) (n := n)).symm ▸ (show x ∈ (⊤ : (Proj 𝒜).Opens) from trivial))
   have : UniqueFactorizationMonoid Γ(P, U[i]) :=
-    (chartSectionsRingEquiv (k := k) i).symm.toMulEquiv.uniqueFactorizationMonoid inferInstance
+    (polynomialChartSectionsEquiv k i).toMulEquiv.uniqueFactorizationMonoid inferInstance
   let := ((Proj 𝒜).presheaf.germ U[i] x hi).hom.toAlgebra
   have := (coordinateChart (k := k) i).property.isLocalization_stalk ⟨x, hi⟩
   exact UniqueFactorizationMonoid.of_isLocalization
@@ -325,7 +315,7 @@ private theorem subsingleton_picard_coordinateChart (i : Fin (n + 1)) :
 private theorem isNoetherian_polynomialProj : IsNoetherian (Proj 𝒜) := by
   apply (isNoetherian_iff _).2
   refine ⟨(isLocallyNoetherian_iff_of_iSup_eq_top iSup_coordinateChart).2 fun i ↦ ?_, ?_⟩
-  · exact isNoetherianRing_of_ringEquiv _ (chartSectionsRingEquiv (k := k) i).symm
+  · exact isNoetherianRing_of_ringEquiv _ (polynomialChartSectionsEquiv k i).toRingEquiv
   · constructor
     have he : (⋃ i : Fin (n + 1), (U[i] : Set P)) = Set.univ := by
       simpa only [TopologicalSpace.Opens.coe_iSup, TopologicalSpace.Opens.coe_top] using

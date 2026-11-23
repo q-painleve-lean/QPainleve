@@ -5,7 +5,7 @@ Authors: The QPainleve contributors
 -/
 module
 
-public import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.Polynomial.Chart
+public import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.Polynomial.Chart.Basic
 public import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.Polynomial.Basic
 public import TauCeti.AlgebraicGeometry.Morphisms.Smooth.StandardSmooth
 public import TauCeti.AlgebraicGeometry.Modules.GlobalSections
