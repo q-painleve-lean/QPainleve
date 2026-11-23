@@ -14,7 +14,7 @@ import QPainleve.AlgebraicGeometry.Blowup.PointCohomology
 import QPainleve.AlgebraicGeometry.Cohomology.Projective
 import QPainleve.AlgebraicGeometry.Cohomology.ProjectiveSpace.EulerCharacteristic
 import QPainleve.AlgebraicGeometry.Cohomology.Support
-import QPainleve.AlgebraicGeometry.IdealSheaf.Point
+import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
 import TauCeti.AlgebraicGeometry.Cohomology.ProjectiveLine.NegativeTwist
 import TauCeti.AlgebraicGeometry.IdealSheaf.EulerCharacteristic
 import TauCeti.AlgebraicGeometry.Noetherian
@@ -147,7 +147,7 @@ private theorem nonempty_cohomologyLinearEquiv_pointBlowup_pullback
     let : Scheme.Over Y (Spec (.of k)) := ⟨π ≫ X ↘ Spec (.of k)⟩
     Nonempty (Cohomology L.obj q ≃ₗ[k]
       Cohomology ((InvertibleSheaf.pullback π).obj L).obj q) := by
-  rw [X.ker_fromSpecResidueField_eq_vanishingIdeal p]
+  rw [ker_fromSpecResidueField_eq_vanishingIdeal p]
   exact ⟨pointBlowupCohomologyLinearEquiv k hp hdim
     ((InvertibleSheaf.toFiniteLocallyFree X).obj L) q⟩
 

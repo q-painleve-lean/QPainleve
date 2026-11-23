@@ -9,7 +9,7 @@ public import QPainleve.AlgebraicGeometry.Blowup.Exceptional.Restriction
 public import TauCeti.AlgebraicGeometry.Cohomology.Module.Base
 public import Mathlib.AlgebraicGeometry.Noetherian
 import QPainleve.AlgebraicGeometry.Blowup.PointCohomology
-import QPainleve.AlgebraicGeometry.IdealSheaf.Point
+import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
 import QPainleve.AlgebraicGeometry.Modules.Pushforward
 import TauCeti.AlgebraicGeometry.Cohomology.AffinePushforward
 import TauCeti.AlgebraicGeometry.Cohomology.ProjectiveSpace.TwistingSheaf
@@ -125,7 +125,7 @@ noncomputable def pointBlowupPushforwardExceptionalTwistIso
     let e : N.obj ≅ M.obj := Classical.choice (LineBundleClass.mk_eq_mk_iff.mp hN)
     have hbase : L.obj ≅ (pushforward π).obj N.obj := by
       dsimp only [N]
-      rw [X.ker_fromSpecResidueField_eq_vanishingIdeal p]
+      rw [ker_fromSpecResidueField_eq_vanishingIdeal p]
       exact pointBlowupPushforwardPullbackIso hp hdim
         ((InvertibleSheaf.toFiniteLocallyFree X).obj L)
     exact hbase ≪≫ (pushforward π).mapIso e

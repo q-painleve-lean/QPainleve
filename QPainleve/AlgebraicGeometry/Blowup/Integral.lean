@@ -1,0 +1,52 @@
+/-
+Copyright (c) 2026 The QPainleve contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: The QPainleve contributors
+-/
+module
+
+public import TauCeti.AlgebraicGeometry.Blowup.IdealSheaf
+public import Mathlib.AlgebraicGeometry.Properties
+import TauCeti.AlgebraicGeometry.Blowup.ExceptionalDivisor
+import TauCeti.AlgebraicGeometry.Blowup.Restriction
+import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.SchematicDensity
+import TauCeti.AlgebraicGeometry.IdealSheaf.Comap
+import TauCeti.AlgebraicGeometry.Noetherian
+
+/-!
+# Integrality of blowups
+
+A blowup of a Noetherian integral scheme along a center with nonempty complement is
+integral. The isomorphism off the center identifies a schematically dense open of the
+blowup with an integral open of the base.
+-/
+
+public section
+
+open CategoryTheory TopologicalSpace
+open TauCeti.AlgebraicGeometry
+
+namespace AlgebraicGeometry.Scheme.IdealSheafData
+
+/-- A blowup of a Noetherian integral scheme along a center with nonempty complement is integral. -/
+theorem isIntegral_blowup_of_nonempty_compl_support {X : Scheme} [IsIntegral X] [IsNoetherian X]
+    (I : X.IdealSheafData) (hU : Nonempty I.support.compl) : IsIntegral I.blowup := by
+  let U : X.Opens := I.support.compl
+  let e := asIso (I.blowupToBase ∣_ U)
+  let j := (I.blowupToBase ⁻¹ᵁ U).ι
+  have : Nonempty U := hU
+  have : IsIntegral U.toScheme := isIntegral_of_isOpenImmersion U.ι
+  have : IsIntegral (I.blowupToBase ⁻¹ᵁ U).toScheme := IsIntegral.of_isIso e.inv
+  have : IsNoetherian I.blowup := isNoetherian_of_finiteType I.blowupToBase
+  have : IsSchemeTheoreticallyDominant j := by
+    have hj :=
+      I.isEffectiveCartier_comap_blowupToBase.isSchemeTheoreticallyDominant_support_compl_ι
+    rwa [compl_support_comap] at hj
+  have : IsReduced I.blowup := IsSchemeTheoreticallyDominant.isReduced j
+  have : IrreducibleSpace I.blowup := by
+    apply (irreducibleSpace_def _).2
+    have h := ((IrreducibleSpace.isIrreducible_univ _).image j j.continuous.continuousOn).closure
+    rwa [Set.image_univ, j.denseRange.closure_range] at h
+  exact isIntegral_of_irreducibleSpace_of_isReduced _
+
+end AlgebraicGeometry.Scheme.IdealSheafData
