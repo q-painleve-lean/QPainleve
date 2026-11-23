@@ -114,42 +114,6 @@ theorem eq_of_boundaryIntersection_lt_two_mul_baseMultiplicity
 
 end
 
-section
-
-variable [X.Over (Spec (.of k))] [(e ≫ i).IsOver (Spec (.of k))]
-
-local notation "g" => (BlowupTower.toBase T ≫ X ↘ S)
-
-include hp hJ in
-/-- If the transform of a class is nef, the sum of its multiplicities over a boundary
-component is at most its initial degree on that component. Each infinitely near center
-in the ordered boundary tower contributes its own multiplicity. -/
-theorem sum_multiplicities_le_intersectionNumber_alongBoundary
-    (a : LineBundleClass X) (m : Fin n → ℤ)
-    (hnef : LineBundleClass.IsNef k g (picardHom T (Additive.ofMul a, -m)).toMul) :
-    ∑ j ∈ s, m j ≤ intersectionNumber k (e ≫ i) a := by
-  exact sum_baseMultiplicity_le_boundaryIntersection i e J p hp hJ
-    (X ↘ S) (comp_over (e ≫ i) S).symm a m hnef
-
-include hp hJ in
-/-- Among the centers on a fixed component, at most one has multiplicity greater than
-half the initial degree there, provided the transformed class is nef and all center
-multiplicities on that component are nonnegative. -/
-theorem card_filter_two_mul_lt_multiplicities_alongBoundary
-    (a : LineBundleClass X) (m : Fin n → ℤ)
-    (hnef : LineBundleClass.IsNef k g (picardHom T (Additive.ofMul a, -m)).toMul)
-    (hm : ∀ j ∈ s, 0 ≤ m j) :
-    (Finset.filter (fun j ↦ intersectionNumber k (e ≫ i) a < 2 * m j) s).card ≤ 1 := by
-  refine Finset.card_le_one_iff.mpr fun {j l} hj hl ↦ ?_
-  obtain ⟨hj, hj'⟩ := Finset.mem_filter.mp hj
-  obtain ⟨hl, hl'⟩ := Finset.mem_filter.mp hl
-  exact eq_of_boundaryIntersection_lt_two_mul_baseMultiplicity i e J p hp hJ
-    (X ↘ S) (comp_over (e ≫ i) S).symm a m hnef
-    (fun t ht ↦ hm t (Finset.mem_filter.mpr ⟨Finset.mem_univ _, ht⟩))
-    (Finset.mem_filter.mp hj).2 (Finset.mem_filter.mp hl).2 hj' hl'
-
-end
-
 variable (f : X ⟶ Spec (.of k)) [hIntegral : IsIntegral X] [hNoeth : IsNoetherian X]
   [hSmooth : SmoothOfRelativeDimension 2 f]
 
