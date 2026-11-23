@@ -7,13 +7,12 @@ module
 
 public import QPainleve.AlgebraicGeometry.Blowup.Tower.Nodal.Basic
 public import QPainleve.AlgebraicGeometry.Blowup.Tower.Picard
-public import TauCeti.AlgebraicGeometry.Scheme.CodimensionOnePoint
+public import QPainleve.AlgebraicGeometry.IdealSheaf.BoundaryComplexity
 
 import QPainleve.AlgebraicGeometry.Blowup.Exceptional.FirstKind
-import QPainleve.AlgebraicGeometry.CartierDivisor.Support
+import QPainleve.AlgebraicGeometry.EffectiveCartierDivisor.BoundaryPrimes
 import QPainleve.AlgebraicGeometry.EffectiveCartierDivisor.Integral
 import QPainleve.AlgebraicGeometry.Morphisms.IsoLocus
-import QPainleve.Topology.NoetherianSpace
 import TauCeti.AlgebraicGeometry.Blowup.Restriction
 
 /-!
@@ -36,96 +35,6 @@ universe u
 namespace AlgebraicGeometry.Scheme.IdealSheafData
 
 variable {X Y : Scheme.{u}}
-
-/-- The generic points of the prime divisors supported on a closed subscheme. -/
-def boundaryPrimes (D : X.IdealSheafData) : Set X :=
-  {x | x ∈ D.support ∧ Order.coheight x = 1}
-
-/-- Boundary primes are the codimension-one points of the ambient scheme in the support. -/
-@[simp]
-theorem mem_boundaryPrimes {D : X.IdealSheafData} {x : X} :
-    x ∈ D.boundaryPrimes ↔ x ∈ D.support ∧ Order.coheight x = 1 :=
-  (Iff.rfl)
-
-/-- An effective Cartier divisor on an integral Noetherian scheme has finitely many primes. -/
-theorem IsEffectiveCartier.finite_boundaryPrimes [IsIntegral X] [IsNoetherian X]
-    {D : X.IdealSheafData} (hD : D.IsEffectiveCartier) : D.boundaryPrimes.Finite := by
-  let : QuasiSober (D.support : Set X) :=
-    D.support.isClosed.isClosedEmbedding_subtypeVal.quasiSober
-  apply NoetherianSpace.finite_coheight_one_of_closure_ne_univ (p := (D.support : Set X))
-  rw [D.support.isClosed.closure_eq]
-  exact fun h ↦ hD.genericPoint_notMem_support
-    (show genericPoint X ∈ (D.support : Set X) from h.symm ▸ Set.mem_univ _)
-
-/-- A boundary covered by the closures of distinct codimension-one points has one
-prime divisor per index. -/
-theorem ncard_boundaryPrimes_eq_of_iUnion_closure {ι : Type*} (D : X.IdealSheafData)
-    (η : ι → CodimensionOnePoint X) (hη : Function.Injective η)
-    (hD : (D.support : Set X) = ⋃ j, closure {(η j : X)}) :
-    D.boundaryPrimes.ncard = Nat.card ι := by
-  have h : D.boundaryPrimes = Set.range fun j ↦ (η j : X) := by
-    ext x
-    rw [mem_boundaryPrimes]
-    constructor
-    · rintro ⟨hx, hc⟩
-      have hx' : x ∈ ⋃ j, closure {(η j : X)} := hD ▸ hx
-      obtain ⟨j, hj⟩ := Set.mem_iUnion.mp hx'
-      have he : η j = (⟨x, hc⟩ : CodimensionOnePoint X) :=
-        CodimensionOnePoint.eq_of_specializes (specializes_iff_mem_closure.mpr hj)
-      exact ⟨j, congrArg Subtype.val he⟩
-    · rintro ⟨j, rfl⟩
-      have hj : (η j : X) ∈ (D.support : Set X) := by
-        rw [hD]
-        exact Set.mem_iUnion.mpr ⟨j, subset_closure (Set.mem_singleton _)⟩
-      exact ⟨hj, (η j).property⟩
-  rw [h]
-  exact Set.ncard_range_of_injective (Subtype.val_injective.comp hη)
-
-/-- The Picard rank plus two minus the number of boundary components of a surface. -/
-def boundaryComplexity (D : X.IdealSheafData) : ℤ :=
-  (Module.finrank ℤ (Additive (LineBundleClass X)) : ℤ) + 2 - D.boundaryPrimes.ncard
-
-/-- Complexity is expressed using the Picard rank and the number of boundary primes. -/
-theorem boundaryComplexity_def (D : X.IdealSheafData) :
-    D.boundaryComplexity =
-      (Module.finrank ℤ (Additive (LineBundleClass X)) : ℤ) + 2 - D.boundaryPrimes.ncard :=
-  (rfl)
-
-/-- Ideal sheaves with identical support have the same boundary prime set. -/
-theorem boundaryPrimes_eq_of_support_eq {D E : X.IdealSheafData} (h : D.support = E.support) :
-    D.boundaryPrimes = E.boundaryPrimes := by
-  simp only [boundaryPrimes, h]
-
-/-- Pullback along a scheme isomorphism preserves the number of boundary primes. -/
-@[simp]
-theorem ncard_boundaryPrimes_eq_of_iso (e : X ≅ Y) (D : Y.IdealSheafData) :
-    (D.comap e.hom).boundaryPrimes.ncard = D.boundaryPrimes.ncard := by
-  have h (x : X) : e.hom x ∈ D.boundaryPrimes ↔ x ∈ (D.comap e.hom).boundaryPrimes := by
-    rw [mem_boundaryPrimes, mem_boundaryPrimes, support_comap, coheight_eq_of_isOpenImmersion e.hom]
-    rfl
-  apply Set.BijOn.ncard_eq (f := e.hom)
-  refine ⟨fun x hx ↦ (h x).mpr hx, e.hom.isOpenEmbedding.injective.injOn, ?_⟩
-  intro y hy
-  obtain ⟨x, rfl⟩ := e.hom.surjective y
-  exact ⟨x, (h x).mp hy, rfl⟩
-
-/-- The complexity depends only on the boundary support on a fixed scheme. -/
-theorem boundaryComplexity_eq_of_support_eq {D E : X.IdealSheafData}
-    (h : D.support = E.support) : D.boundaryComplexity = E.boundaryComplexity := by
-  rw [boundaryComplexity_def, boundaryComplexity_def, boundaryPrimes_eq_of_support_eq h]
-
-/-- Passing to the reduced boundary leaves the complexity unchanged. -/
-@[simp]
-theorem boundaryComplexity_radical (D : X.IdealSheafData) :
-    D.radical.boundaryComplexity = D.boundaryComplexity :=
-  boundaryComplexity_eq_of_support_eq (support_radical D)
-
-/-- Pullback along a scheme isomorphism preserves boundary complexity. -/
-@[simp]
-theorem boundaryComplexity_comap_iso (e : X ≅ Y) (D : Y.IdealSheafData) :
-    (D.comap e.hom).boundaryComplexity = D.boundaryComplexity := by
-  have h := (LineBundleClass.pullbackEquiv e).toAdditive.toIntLinearEquiv.finrank_eq
-  rw [boundaryComplexity_def, boundaryComplexity_def, ← h, ncard_boundaryPrimes_eq_of_iso]
 
 -- Off a center of codimension two, the isomorphism locus matches the old boundary primes.
 private theorem bijOn_boundaryPrimes_comap_off_point (D : X.IdealSheafData) (π : Y ⟶ X)
