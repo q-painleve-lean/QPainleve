@@ -40,6 +40,23 @@ theorem blowupExceptionalClass_def (I : X.IdealSheafData) :
     I.blowupExceptionalClass =
       (LineBundleClass.mk I.isEffectiveCartier_comap_blowupToBase.toInvertibleSheaf)⁻¹ := (rfl)
 
+/-- If a Cartier divisor is the sum of the source and pulled-back target exceptional
+divisors, the pulled-back target class is the quotient of its class by the source class. -/
+theorem pullback_blowupExceptionalClass_eq_div_of_eq_mul (J : Y.IdealSheafData)
+    {I : X.IdealSheafData} (f : I.blowup ⟶ J.blowup) {D : I.blowup.IdealSheafData}
+    (hD : D.IsEffectiveCartier) (hf : ((J.comap J.blowupToBase).comap f).IsEffectiveCartier)
+    (h : D = (I.comap I.blowupToBase) * ((J.comap J.blowupToBase).comap f)) :
+    LineBundleClass.pullback f J.blowupExceptionalClass =
+      (LineBundleClass.mk hD.toInvertibleSheaf)⁻¹ / I.blowupExceptionalClass := by
+  let hI := I.isEffectiveCartier_comap_blowupToBase
+  have hclass := LineBundleClass.mk_toInvertibleSheaf_congr hD
+    (TauCeti.isEffectiveCartier_mul hI hf) h
+  rw [LineBundleClass.mk_toInvertibleSheaf_mul hI hf] at hclass
+  apply eq_div_iff_mul_eq'.mpr
+  rw [blowupExceptionalClass_def, LineBundleClass.pullback_inv,
+    J.isEffectiveCartier_comap_blowupToBase.pullback_mk_toInvertibleSheaf hf,
+    blowupExceptionalClass_def, hclass, mul_inv_rev]
+
 /-- The exceptional line bundle pulls back to the trivial class along a morphism
 that avoids the center after composition with the blowup projection. -/
 theorem pullback_blowupExceptionalClass_eq_one (I : X.IdealSheafData) (g : Y ⟶ I.blowup)

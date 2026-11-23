@@ -5,9 +5,8 @@ Authors: The QPainleve contributors
 -/
 module
 
-public import QPainleve.Geometry.Toric.CharacterTorus.Noncollision
-public import QPainleve.Geometry.Toric.Fan.Charge
-public import QPainleve.Geometry.Toric.Fan.Mutation.Basic
+public import QPainleve.Algebra.Cluster.Word.Center
+public import QPainleve.Geometry.Toric.Fan.Mutation.Charge
 public import QPainleve.SignedClusterModularGroup.CenterMutation
 
 /-!
@@ -51,6 +50,38 @@ the pullback of the distinct-center open for the mutated rays. -/
 theorem mutationCenterOpen_def :
     mutationCenterOpen b s p hOpposite k =
       distinctCentersOpen k s ⊓ (centerMutation k E p).hom ⁻¹ᵁ distinctCentersOpen k s′ := (rfl)
+
+/-- At a mutation step of a toric charge realization, the word domain is exactly the
+geometric noncollision open for the elementary transformation. -/
+theorem mutationCenterOpen_eq_centerOpen {B : SkewExchangeMatrix ι} (P : ChargeSeed B N)
+    (hform : P.form = ω) (hcharge : P.charge = rayChargeMap s) :
+    mutationCenterOpen b s p hOpposite k =
+      ((Generator.mutate p).toStep B).toPath.centerOpen k P := by
+  have hB : B.matrix = E := by rw [← P.matrix_eq, hform, hcharge]
+  have hmap : (((Generator.mutate p).toStep B).toPath.centerIso k).hom =
+      (centerMutation k E p).hom := by
+    rw [Quiver.Path.centerIso_hom, Quiver.Path.exponentEquiv_toPath, Step.exponentEquiv_mutate,
+      hB, centerMutation_hom]
+  rw [mutationCenterOpen_def, Quiver.Hom.toPath, Quiver.Path.centerOpen_cons,
+    Quiver.Path.centerOpen_nil, Quiver.Path.chargeTarget_cons, Quiver.Path.chargeTarget_nil,
+    Step.chargeTarget_mutate_charge, hform, hcharge,
+    ← rayChargeMap_mutationFanCenterRays b s p hOpposite]
+  simp only [rayChargeMap_single]
+  rw [← Function.comp_def (f := Ray.primitiveGenerator) (g := s),
+    ← Function.comp_def (f := Ray.primitiveGenerator) (g := s′),
+    distinctCentersOpen_comp_of_injective k _ Ray.primitiveGenerator_injective,
+    distinctCentersOpen_comp_of_injective k _ Ray.primitiveGenerator_injective]
+  exact congrArg (fun f : scheme k A ⟶ scheme k A ↦
+    distinctCentersOpen k s ⊓ f ⁻¹ᵁ distinctCentersOpen k s′) hmap.symm
+
+/-- Appending a toric mutation to a word adds the inverse image of the elementary
+transformation's noncollision open under the preceding center map. -/
+theorem centerOpen_cons_mutate {B C : SkewExchangeMatrix ι} (w : Word B C) (P : ChargeSeed B N)
+    (hform : (w.chargeTarget P).form = ω) (hcharge : (w.chargeTarget P).charge = rayChargeMap s) :
+    (w.cons ((Generator.mutate p).toStep C)).centerOpen k P = w.centerOpen k P ⊓
+      (w.centerIso k).hom ⁻¹ᵁ mutationCenterOpen b s p hOpposite k := by
+  rw [← Quiver.Path.comp_toPath_eq_cons, Quiver.Path.centerOpen_comp,
+    mutationCenterOpen_eq_centerOpen b s p hOpposite k (w.chargeTarget P) hform hcharge]
 
 variable {k} in
 private theorem mutatedCenter_ne_iff_of_ne (c : Multiplicative A →* kˣ) {i j : ι}
@@ -126,16 +157,11 @@ theorem point_mem_mutationCenterOpen_iff (c : Multiplicative A →* Kˣ) (x : Sp
 /-- The elementary transformation's center conditions define a nonempty open. -/
 theorem nonempty_mutationCenterOpen :
     (mutationCenterOpen b s p hOpposite K : Set (scheme K A)).Nonempty := by
-  let : HasUniqueDiv A := hasUniqueDiv_of_free_int
-  let : IrreducibleSpace (scheme K A) :=
-    inferInstanceAs (IrreducibleSpace (PrimeSpectrum (AddMonoidAlgebra K A)))
-  let m := (centerMutation K E p).hom
-  let U := m ⁻¹ᵁ distinctCentersOpen K s′
-  have hU : (U : Set (scheme K A)).Nonempty :=
-    (nonempty_distinctCentersOpen s′).preimage m.homeomorph.surjective
-  rw [mutationCenterOpen_def, TopologicalSpace.Opens.coe_inf]
-  exact nonempty_preirreducible_inter (distinctCentersOpen K s).isOpen U.isOpen
-    (nonempty_distinctCentersOpen s) hU
+  let hω : (ω : LinearMap.BilinForm ℤ N).IsAlt := fun v ↦ b.detDualEquiv_self v
+  let B := SkewExchangeMatrix.ofMatrix E (isSkewSymmetrizer_chargeExchangeMatrix ω hω _)
+  let P : ChargeSeed B N := ⟨ω, rayChargeMap s, hω, (SkewExchangeMatrix.matrix_ofMatrix ..).symm⟩
+  rw [mutationCenterOpen_eq_centerOpen b s p hOpposite K P rfl rfl]
+  exact Quiver.Path.nonempty_centerOpen _ P
 
 /-- Over a separably closed field, the noncollision conditions can be met by a center
 character with values in that field. -/
