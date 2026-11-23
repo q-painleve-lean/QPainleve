@@ -11,6 +11,7 @@ public import QPainleve.AlgebraicGeometry.Blowup.Tower.Factorization
 public import QPainleve.AlgebraicGeometry.Chow.Adjunction
 public import QPainleve.AlgebraicGeometry.Chow.ProjectivePlane.Numerical
 public import QPainleve.AlgebraicGeometry.Chow.Signature
+public import QPainleve.AlgebraicGeometry.Cohomology.Projective
 public import QPainleve.AlgebraicGeometry.Morphisms.Smooth.Factorial
 public import TauCeti.LinearAlgebra.BilinearForm.Characteristic
 
@@ -18,6 +19,7 @@ import QPainleve.AlgebraicGeometry.Blowup.Tower.Cohomology
 import QPainleve.AlgebraicGeometry.Blowup.Tower.RiemannRoch
 import QPainleve.AlgebraicGeometry.Chow.Isomorphism
 import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.Polynomial.Rationality
+import QPainleve.AlgebraicGeometry.Scheme.LocalDimension
 import QPainleve.Topology.Algebra.Module.PerfectPairing
 import TauCeti.AlgebraicGeometry.Cohomology.ClosedImmersion.Linear
 
@@ -262,3 +264,37 @@ theorem two_mul_genus_sub_two_eq_intersection_of_isRationalOver (i : C ⟶ X)
   exact eulerCharBelow_eq_riemannRoch_of_isRationalOver k _
 
 end AlgebraicGeometry.Scheme.Hom
+
+namespace TauCeti.AlgebraicGeometry.Chow
+
+variable {X} in
+/-- Arithmetic adjunction written in terms of the class of a prime divisor. -/
+theorem two_mul_genus_sub_two_eq_intersection_primeDivisorClass
+    (p : CodimensionOnePoint X) :
+    let : Smooth f := smooth₂
+    let : IsIntegral X := rational.isIntegral_of_smooth
+    let : IsLocallyNoetherian X := LocallyOfFiniteType.isLocallyNoetherian f
+    let : ∀ x : X, UniqueFactorizationMonoid (X.presheaf.stalk x) :=
+      (f).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two
+    let J := Scheme.IdealSheafData.vanishingIdeal
+      ⟨closure {(p : X)}, isClosed_closure⟩
+    let : J.subscheme.IsProjectiveOver k :=
+      Scheme.IsProjectiveOver.of_isClosedImmersion k J.subschemeι
+    let : Module.Finite k (Cohomology (InvertibleSheaf.trivial J.subscheme).obj 1) :=
+      AlgebraicGeometry.Scheme.Modules.moduleFinite_cohomology_of_isProjectiveOver k
+      (InvertibleSheaf.trivial J.subscheme).obj 1
+    let a := LineBundleClass.primeDivisorClass p
+    2 * (J.subscheme.genus k : ℤ) - 2 =
+      classIntersectionNumber k X a a + classIntersectionNumber k X a K[X] := by
+  intro _ _ _ _ J _ _ a
+  have hJ : J.IsEffectiveCartier :=
+    Scheme.IdealSheafData.isEffectiveCartier_vanishingIdeal_closure_singleton p.property
+  have : J.subscheme.IsCurveOver k :=
+    Scheme.isCurveOver_iff.mpr ⟨inferInstance, inferInstance,
+      QPainleve.topologicalKrullDim_vanishingIdeal_subscheme k dim₂ p⟩
+  have h := J.subschemeι.two_mul_genus_sub_two_eq_intersection_of_isRationalOver k
+  dsimp only at h
+  rw [LineBundleClass.mk_toInvertibleSheaf_congr _ hJ J.ker_subschemeι] at h
+  simpa only [a, LineBundleClass.primeDivisorClass_def] using h
+
+end TauCeti.AlgebraicGeometry.Chow

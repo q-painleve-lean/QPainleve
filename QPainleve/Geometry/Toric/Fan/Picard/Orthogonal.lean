@@ -8,6 +8,7 @@ module
 public import QPainleve.AlgebraicGeometry.Blowup.Tower.Boundary.Orthogonal
 public import QPainleve.Geometry.Toric.Fan.Picard.ChargeKernel
 public import QPainleve.Geometry.Toric.Fan.Picard.NodalDescent
+public import QPainleve.Geometry.Toric.Fan.Smooth
 
 import Mathlib.Algebra.Order.BigOperators.Ring.Finset
 import Mathlib.Analysis.Complex.Polynomial.Basic
@@ -16,7 +17,6 @@ import QPainleve.Algebra.Cluster.ChargeKernel.Index
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Numerical
 import QPainleve.AlgebraicGeometry.Chow.Isomorphism
 import QPainleve.Geometry.Toric.Fan.Picard.NormCongruence
-import QPainleve.Geometry.Toric.Fan.Smooth
 import TauCeti.LinearAlgebra.Matrix.Dual
 
 /-!
@@ -62,12 +62,9 @@ local notation "W" => Sigma.fst model
 local notation "U" => WithBoundary.toTower (Sigma.snd model)
 local notation "hU" => isClosedPointTower_alongBoundary_binomialCenters hdim s m hm hprim c J hJ
 local notation "Dint" => Scheme.Hom.ker (WithBoundary.boundaryι (Sigma.snd model))
-omit [Nonempty Φ.cones] [Φ.algebraicRealization.IsProjectiveOver ℂ] in
-include hΦ hdim in
-private theorem smooth_toric_surface :
-    SmoothOfRelativeDimension 2 (Φ.algebraicRealization ↘ Spec (.of ℂ)) :=
-  hdim ▸ Φ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
-local notation "smoothZ" => smooth_toric_surface hΦ hdim
+local notation "smoothZ" =>
+  cast (congrArg (fun d ↦ SmoothOfRelativeDimension d fZ) hdim)
+    (Φ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ)
 local notation "A₁" =>
   (@Chow.intersectionBilinForm ℂ _ _ Z inferInstance inferInstance inferInstance smoothZ)
 local notation "S₁" => LinearMap.range (markedBoundaryMap hΦ s)
@@ -209,7 +206,9 @@ private theorem coe_orthogonalMarking (κ : (A₀).orthogonal M₀) :
 variable [LinearMap.IsPerfPair (Chow.intersectionBilinForm ℂ X)]
 
 include hJ hT he in
-private theorem isPerfPair_internal_markedForm : (B₁).IsPerfPair := by
+/-- The perfect intersection pairing of the original surface gives a perfect pairing
+on the toric Picard marking of its nodal refinement. -/
+theorem isPerfPair_internal_markedForm : (B₁).IsPerfPair := by
   have hneg : (negDot d).IsPerfPair := by
     convert LinearMap.IsPerfPair.compl₁₂
       (dotProductBilin ℤ ℤ : LinearMap.BilinForm ℤ (Fin d → ℤ))
@@ -247,6 +246,18 @@ private theorem coe_markedChargeKernelEquiv_symm (x : (rayChargeMap s).ker) :
     ((orthogonalMarking hΦ hdim s m hm hprim c J hJ hT e he hD).apply_symm_apply y).symm
 
 include hJ hT he hD in
+/-- The inverse charge comparison on the original surface pulls back to the inverse
+charge comparison in the toric Picard marking. -/
+theorem picardHom_boundaryOrthogonalEquivChargeKernel_symm (x : (rayChargeMap s).ker) :
+    letI := isPerfPair_internal_markedForm hΦ hdim s m hm hprim c J hJ hT e he
+    ((U).picardHom ((boundaryOrthogonalEquivChargeKernel hΦ s B₁).symm x).val).toMul =
+      pullback (e.inv ≫ T.toBase) ((q).symm x).val.toMul := by
+  rw [coe_markedChargeKernelEquiv_symm hΦ hdim s m hm hprim c J hJ hT e he hD]
+  have h := internal_picardHom_resolutionMarking hΦ hdim s m hm hprim c J hJ hT e
+    (((q).symm x).val, 0)
+  simpa only [picardHom_apply_zero, toMul_ofMul, pullback_comp] using congrArg Additive.toMul h
+
+include hJ hT he hD in
 /-- The inverse charge comparison pulls back to the toric class of the prescribed boundary
 degrees minus the total exceptional classes weighted by the charge coordinates. -/
 theorem exists_picardBoundaryOrthogonalEquivChargeKernel_symm_marking
@@ -259,14 +270,12 @@ theorem exists_picardBoundaryOrthogonalEquivChargeKernel_symm_marking
   let : SmoothOfRelativeDimension 2 fZ := smoothZ
   let := isPerfPair_internal_markedForm hΦ hdim s m hm hprim c J hJ hT e he
   let y := (boundaryOrthogonalEquivChargeKernel hΦ s B₁).symm x
-  have hy := coe_markedChargeKernelEquiv_symm hΦ hdim s m hm hprim c J hJ hT e he hD x
   have hsecond := boundaryOrthogonalEquivChargeKernel_symm_snd hΦ s A₁ x
   have hpic : ((U).picardHom (y.val.1, -(x : Fin n → ℤ))).toMul =
       pullback (e.inv ≫ T.toBase) ((q).symm x).val.toMul := by
-    rw [← hsecond, Prod.mk.eta, hy]
-    have h := internal_picardHom_resolutionMarking hΦ hdim s m hm hprim c J hJ hT e
-      (((q).symm x).val, 0)
-    simpa only [picardHom_apply_zero, toMul_ofMul, pullback_comp] using congrArg Additive.toMul h
+    rw [← hsecond, Prod.mk.eta]
+    exact picardHom_boundaryOrthogonalEquivChargeKernel_symm
+      hΦ hdim s m hm hprim c J hJ hT e he hD x
   refine ⟨y.val.1, hpic, fun G ↦ ?_⟩
   obtain ⟨H, _, hunique⟩ := existsUnique_rayDivisorToPicard_pairing_eq_charge hΦ s A₁ x
   have hdegree := boundaryOrthogonalEquivChargeKernel_symm_fst_pairing hΦ s A₁ x

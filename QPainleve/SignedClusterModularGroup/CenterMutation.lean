@@ -160,14 +160,7 @@ theorem centerMutationPullback_monomial (hω : ω.IsAlt) (a : A) (h : N) :
       functionFieldMap_monomial, AddEquiv.coe_toAddMonoidHom]
   simp [centerMutationPullback, he, mutationFunctional_apply, pivotExponent]
 
-local notation "r" => Finsupp.linearEquivFunOnFinite ℤ ℤ ι
-
-private def xEvaluationGraph : (ι →₀ ℤ) →+ (A × N) :=
-  (r).toAddEquiv.toAddMonoidHom.prod (v.toAddMonoidHom.comp (r).toAddEquiv.toAddMonoidHom)
-
-omit [DecidableEq ι] [Module.Free ℤ N] in
-private theorem xEvaluationGraph_injective : Function.Injective (xEvaluationGraph v) :=
-  fun _ _ h ↦ (r).injective (congrArg Prod.fst h)
+local notation "reprEquiv" => Finsupp.linearEquivFunOnFinite ℤ ℤ ι
 
 omit [DecidableEq ι] in
 /-- Pullback of an independent X function to the joint field of variable centers and surface
@@ -177,13 +170,21 @@ def xEvaluationPullback : FunctionField k (ι →₀ ℤ) →ₐ[k] Joint :=
   functionFieldMap k (xEvaluationGraph v) (xEvaluationGraph_injective v)
 
 omit [DecidableEq ι] in
+/-- The regular evaluation morphism induces the X evaluation on function fields. -/
+@[simp]
+theorem affineRationalPullback_xEvaluationMap :
+    affineRationalPullback k (xEvaluationMap v k).toRationalMap =
+      (xEvaluationPullback v k).toRingHom :=
+  affineRationalPullback_map _ (xEvaluationGraph_injective v)
+
+omit [DecidableEq ι] in
 /-- The X evaluation pullback agrees on every monomial with the rational pullback of the
 torus evaluation morphism after identifying the respective exponent lattices. -/
 @[simp]
 theorem xEvaluationPullback_monomial (a : ι →₀ ℤ) :
     xEvaluationPullback v k (monomial k (ofAdd a)) =
       affineRationalPullback k (affineEvaluation k v.toAddMonoidHom).toRationalMap
-        (monomial k (ofAdd (r a))) := by
+        (monomial k (ofAdd (reprEquiv a))) := by
   rw [xEvaluationPullback, functionFieldMap_monomial,
     affineRationalPullback_affineEvaluation_monomial]
   rfl

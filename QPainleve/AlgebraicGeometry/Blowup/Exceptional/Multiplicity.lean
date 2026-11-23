@@ -30,16 +30,27 @@ namespace AlgebraicGeometry.Scheme.IdealSheafData
 
 universe u
 
-variable {X : Scheme.{u}} [IsIntegral X] [IsLocallyNoetherian X]
-  (p : X) [IsRegularLocalRing (X.presheaf.stalk p)]
-  (hp : IsClosed ({p} : Set X)) (hdim : ringKrullDim (X.presheaf.stalk p) = 2)
-
-include hp hdim
+variable {X : Scheme.{u}} (p : X)
 
 local notation "P" => Scheme.Hom.ker (Scheme.fromSpecResidueField X p)
 local notation "π" => blowupToBase P
 local notation "E" => comap P π
 local notation "hE" => isEffectiveCartier_comap_blowupToBase P
+
+/-- The total transform factors as the residual ideal and the exceptional power of
+the natural-number value of the stalk order at the center. -/
+theorem comap_blowupToBase_eq_colon_mul_exceptional_pow
+    (hp : IsClosed ({p} : Set X)) (J : X.IdealSheafData) :
+    J.comap π = (J.comap π).colon (E ^ (J.stalkOrder p).toNat) * E ^ (J.stalkOrder p).toNat := by
+  apply eq_colon_mul _ _ (TauCeti.isEffectiveCartier_pow hE _).locallyPrincipal
+  rw [← comap_pow]
+  exact comap_mono π ((natCast_le_stalkOrder_iff_le_pow_ker_fromSpecResidueField p J hp _).mp
+    (ENat.natCast_toNat_le_self _))
+
+variable [IsIntegral X] [IsLocallyNoetherian X] [IsRegularLocalRing (X.presheaf.stalk p)]
+  (hp : IsClosed ({p} : Set X)) (hdim : ringKrullDim (X.presheaf.stalk p) = 2)
+
+include hp hdim
 
 /-- After dividing a total-transform ideal by the exceptional power of its exact stalk order,
 the generic point of the exceptional divisor lies outside the residual support. -/
@@ -61,10 +72,10 @@ theorem notMem_support_colon_exceptional_of_mem_exceptional (J : X.IdealSheafDat
     have hs := le_support_iff_le_vanishingIdeal.mp hclosed
     rw [vanishingIdeal_support, ((E).isReduced_subscheme_iff_radical_eq).mp inferInstance] at hs
     exact hs
-  have hF := TauCeti.isEffectiveCartier_pow hE m
-  have hle := (comap_blowupToBase_le_exceptional_pow_iff p hp hdim J m).mpr hm.ge
   have hle' : J.comap π ≤ E ^ (m + 1) := calc
-    J.comap π = R * E ^ m := eq_colon_mul _ _ hF.locallyPrincipal hle
+    J.comap π = R * E ^ m := by
+      simpa only [R, hm, ENat.toNat_natCast] using comap_blowupToBase_eq_colon_mul_exceptional_pow
+        p hp J
     _ ≤ E * E ^ m := fun U ↦ by
       simpa only [ideal_mul, Pi.mul_apply] using Ideal.mul_mono (hRE U) le_rfl
     _ = E ^ (m + 1) := (pow_succ' _ _).symm

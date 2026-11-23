@@ -5,9 +5,9 @@ Authors: The QPainleve contributors
 -/
 module
 
-public import TauCeti.AlgebraicGeometry.Curves.Basic
+public import QPainleve.AlgebraicGeometry.Curves.Degree.Basic
+public import TauCeti.AlgebraicGeometry.IntersectionNumber.Basic
 public import TauCeti.AlgebraicGeometry.LineBundle.Ample
-public import TauCeti.AlgebraicGeometry.LineBundle.Degree
 
 import QPainleve.AlgebraicGeometry.LineBundle.Ample
 import TauCeti.AlgebraicGeometry.CartierDivisor.Effective.Degree
@@ -31,9 +31,9 @@ universe u
 
 namespace TauCeti.AlgebraicGeometry.LineBundleClass.IsAmple
 
-variable {X : Scheme.{u}} {k : Type u} [Field k]
-  [X.Over (Spec (.of k))] [X.IsCurveOver k] {a : LineBundleClass X}
+variable {X : Scheme.{u}} {k : Type u} [Field k] {a : LineBundleClass X}
 
+variable [X.Over (Spec (.of k))] [X.IsCurveOver k] in
 /-- An ample line-bundle class on a proper integral curve has strictly positive Euler degree.
 The curve may be singular. -/
 theorem eulerDegree_pos (ha : a.IsAmple) : 0 < a.eulerDegree k := by
@@ -53,12 +53,15 @@ theorem eulerDegree_pos (ha : a.IsAmple) : 0 < a.eulerDegree k := by
     exact Nat.pos_of_ne_zero fun hz ↦
       ((Scheme.Hom.finrank_eq_zero_iff_notMem_range _ _).mp hz)
         ⟨x, Subsingleton.elim _ _⟩
-  let deg : Additive (LineBundleClass X) →+ ℤ :=
-    AddMonoidHom.mk' (fun c ↦ eulerDegree k c.toMul) fun b c ↦
-      eulerDegree_mul_of_isIntegral k b.toMul c.toMul
-  have hpow : eulerDegree k (a ^ n) = (n : ℤ) * eulerDegree k a := by
-    simpa [deg, nsmul_eq_mul] using deg.map_nsmul n (Additive.ofMul a)
-  rw [hpow] at hdegree
+  rw [← zpow_natCast, eulerDegree_zpow_of_isCurveOver] at hdegree
   exact pos_of_mul_pos_right (hdegree.symm ▸ Int.natCast_pos.mpr hpos) (Int.natCast_nonneg n)
+
+/-- An ample class has positive degree on every integral closed curve. -/
+theorem intersectionNumber_pos (ha : a.IsAmple)
+    {C : Scheme.{u}} [C.Over (Spec (.of k))] [C.IsCurveOver k]
+    (i : C ⟶ X) [IsClosedImmersion i] :
+    0 < intersectionNumber k i a := by
+  rw [intersectionNumber_def]
+  exact (ha.pullback_of_isAffineHom i).eulerDegree_pos
 
 end TauCeti.AlgebraicGeometry.LineBundleClass.IsAmple

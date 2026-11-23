@@ -12,6 +12,7 @@ public import TauCeti.AlgebraicGeometry.Morphisms.Modification.Basic
 import Mathlib.Data.List.FinRange
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Modification
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Boundary.Reorder
+import QPainleve.AlgebraicGeometry.Blowup.Tower.Boundary.Split
 import QPainleve.Geometry.Toric.Fan.Smooth
 
 /-!
@@ -77,6 +78,15 @@ theorem internalBlowupTower_eq_alongBoundary :
     internalBlowupTower b s c =
       alongBoundary (boundary).subschemeι (fun j ↦ (s j).internalCenter b (c j)) := (rfl)
 
+/-- Reversing the ordered basis and inverting the center parameters gives the same
+ordered tower with strict boundary. In particular the equality retains the order of
+infinitely near centers. -/
+@[simp]
+theorem internalBlowupTower_reindex_swap :
+    internalBlowupTower (b.reindex (Equiv.swap 0 1)) s c⁻¹ =
+      internalBlowupTower b s c := by
+  simp [internalBlowupTower_eq_alongBoundary]
+
 /-- The empty list of internal centers leaves the toric model unchanged. -/
 @[simp]
 theorem internalBlowupTower_zero (s : Fin 0 → Φ.Ray) (c : Fin 0 → ℂˣ) :
@@ -122,6 +132,14 @@ theorem isClosedPointTower_internalBlowupTower :
     (fun j ↦ b.detDualEquiv_self (s j).primitiveGenerator)
     (fun j ↦ (s j).surjective_detCharacter b) c _ (fun j ↦ (s j).internalCenter_val b (c j))
 
+/-- The ordered internal blowup model of a regular toric surface is integral. -/
+theorem isIntegral_internalBlowupTower (hΦ : Φ.IsRegular) :
+    IsIntegral (internalBlowupTower b s c).1 := by
+  have : SmoothOfRelativeDimension 2 Φ.algebraicRealizationStructureMap :=
+    rankTwo ▸ Φ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
+  exact (isClosedPointTower_internalBlowupTower b s c).isIntegral
+    Φ.algebraicRealizationStructureMap
+
 /-- The projection of the ordered internal blowups of a regular toric surface
 is a modification. -/
 theorem isModification_internalBlowupTower_toBase (hΦ : Φ.IsRegular) :
@@ -150,12 +168,39 @@ theorem internalBlowupPicardMarking_apply (hΦ : Φ.IsRegular)
   simp [internalBlowupPicardMarking]
 
 open LineBundleClass in
+/-- Identifying the blowup models for opposite orientations sends the strict
+boundary identically to itself, preserves the projection to the fan, and pulls
+back every marked Picard class to the class with the same coordinates. -/
+theorem internalBlowupTower_reindex_swap_iso {l : N →+ V} {Φ : Fan l} [h₀ : Nonempty Φ.cones]
+    (b : Module.Basis (Fin 2) ℤ N) {n : ℕ} (s : Fin n → Φ.Ray) (c : Fin n → ℂˣ)
+    (hΦ : Φ.IsRegular) :
+    let A := internalBlowupTower b s c
+    let B := internalBlowupTower (b.reindex (Equiv.swap 0 1)) s c⁻¹
+    let e := eqToIso (congrArg Sigma.fst (internalBlowupTower_reindex_swap b s c).symm)
+    e.hom ≫ B.2.toTower.toBase = A.2.toTower.toBase ∧
+      A.2.boundaryι ≫ e.hom = B.2.boundaryι ∧
+      ∀ a, pullback e.hom
+        (internalBlowupPicardMarking (b.reindex (Equiv.swap 0 1)) s c⁻¹ hΦ a).toMul =
+          (internalBlowupPicardMarking b s c hΦ a).toMul := by
+  dsimp only
+  simp only [internalBlowupPicardMarking_apply]
+  have compare (A B : Σ Y, WithBoundary (Φ.boundaryIdeal h₀).subschemeι n Y) (h : A = B) :
+      let e := eqToIso (congrArg Sigma.fst h)
+      e.hom ≫ B.2.toTower.toBase = A.2.toTower.toBase ∧
+        A.2.boundaryι ≫ e.hom = B.2.boundaryι ∧
+        ∀ a, pullback e.hom (B.2.toTower.picardHom a).toMul =
+          (A.2.toTower.picardHom a).toMul := by
+    subst B
+    simp
+  exact compare _ _ (internalBlowupTower_reindex_swap b s c).symm
+
+open LineBundleClass in
 /-- Move the first occurrence of a binomial center to the beginning of the marked
 toric blowup tower. The other centers keep their relative order, including later
 occurrences of the pivot. The isomorphism over the fan scheme sends the strict
 boundary to the strict boundary, and its Picard pullback undoes the reindexing
 of the exceptional coordinates. -/
-theorem exists_iso_internalBlowupTower_move_to_front (hΦ : Φ.IsRegular)
+theorem exists_iso_internalBlowupTower_move_to_front
     (b : Module.Basis (Fin 2) ℤ N) (s : Fin (n + 1) → Φ.Ray) (c : Fin (n + 1) → ℂˣ)
     (k : Fin (n + 1)) (h : ∀ j < k, (s j, c j) ≠ (s k, c k)) :
     let σ := Fin.cons k k.succAbove
@@ -165,8 +210,8 @@ theorem exists_iso_internalBlowupTower_move_to_front (hΦ : Φ.IsRegular)
       e.hom ≫ B.2.toTower.toBase = A.2.toTower.toBase ∧
       A.2.boundaryι ≫ e.hom = B.2.boundaryι ∧
       ∀ (a : Additive (LineBundleClass Φ.algebraicRealization)) (x : Fin (n + 1) → ℤ),
-        pullback e.hom (internalBlowupPicardMarking b (s ∘ σ) (c ∘ σ) hΦ (a, x ∘ σ)).toMul =
-          (internalBlowupPicardMarking b s c hΦ (a, x)).toMul := by
+        pullback e.hom (B.2.toTower.picardHom (a, x ∘ σ)).toMul =
+          (A.2.toTower.picardHom (a, x)).toMul := by
   let D := Φ.boundaryIdeal inferInstance
   let J (j : Fin (n + 1)) := (s j).internalCenter b (c j)
   have hd (j : Fin (n + 1)) (hj : j < k) :
@@ -174,7 +219,6 @@ theorem exists_iso_internalBlowupTower_move_to_front (hΦ : Φ.IsRegular)
     simpa only [J, Scheme.IdealSheafData.map_id] using
       (disjoint_support_map_internalCenter_iff b (𝟙 _) (s j) (s k) (c j) (c k)).mpr (h j hj)
   dsimp only
-  simp only [internalBlowupPicardMarking_apply]
   -- The type of the isomorphism depends on the two ordered models.
   let P (A B : Σ Y, WithBoundary D.subschemeι (n + 1) Y) : Prop :=
     ∃ e : A.1 ≅ B.1,
@@ -187,5 +231,50 @@ theorem exists_iso_internalBlowupTower_move_to_front (hΦ : Φ.IsRegular)
     (internalBlowupTower b (s ∘ Fin.cons k k.succAbove) (c ∘ Fin.cons k k.succAbove))
   rw [internalBlowupTower_eq_alongBoundary, internalBlowupTower_eq_alongBoundary]
   exact exists_iso_alongBoundary_move_to_front (i := D.subschemeι) J k hd
+
+section Split
+
+variable {n : ℕ} (s : Fin (n + 1) → Φ.Ray) (c : Fin (n + 1) → ℂˣ)
+
+local notation "A" => internalBlowupTower b s c
+
+open Scheme.IdealSheafData LineBundleClass in
+/-- Split off the first occurrence of a chosen binomial center. The remaining tower
+is on its blowup, in the relative order inherited from the original labels.
+The comparison preserves the projection and the full Picard marking. -/
+theorem exists_iso_internalBlowupTower_split_at
+    (k : Fin n.succ) (h : ∀ j < k, (s j, c j) ≠ (s k, c k))
+    {I : Φ.algebraicRealization.IdealSheafData}
+    (hI : ((s k).internalCenter b (c k)).val.map (boundary).subschemeι = I)
+    {j : (boundary).subscheme ⟶ I.blowup} [IsClosedImmersion j]
+    (hj : j ≫ I.blowupToBase = (boundary).subschemeι) :
+    let B := alongBoundary j (fun l ↦ (s (k.succAbove l)).internalCenter b (c (k.succAbove l)))
+    ∃ e : (A).1 ≅ B.1,
+      e.hom ≫ B.2.toTower.toBase ≫ I.blowupToBase = (A).2.toTower.toBase ∧
+      (A).2.boundaryι ≫ e.hom = B.2.boundaryι ∧
+      ∀ (a : Additive (LineBundleClass Φ.algebraicRealization)) (x : Fin (n + 1) → ℤ),
+        pullback e.hom (B.2.toTower.picardHom
+          ((nil.snoc I).picardHom (a, fun _ ↦ x k), x ∘ k.succAbove)).toMul =
+          ((A).2.toTower.picardHom (a, x)).toMul := by
+  let σ := Fin.cons (α := fun _ ↦ Fin (n + 1)) k k.succAbove
+  let J := fun l ↦ (s (k.succAbove l)).internalCenter b (c (k.succAbove l))
+  let J₀ := (s k).internalCenter b (c k)
+  have hmodel : internalBlowupTower b (s ∘ σ) (c ∘ σ) =
+      alongBoundary (boundary).subschemeι (Fin.cons J₀ J) := by
+    rw [internalBlowupTower_eq_alongBoundary]
+    exact congrArg (alongBoundary (boundary).subschemeι)
+      (Fin.comp_cons (fun l ↦ (s l).internalCenter b (c l)) k k.succAbove)
+  have hmove := exists_iso_internalBlowupTower_move_to_front b s c k h
+  dsimp only at hmove
+  rw [hmodel] at hmove
+  obtain ⟨e, he, heb, hep⟩ := hmove
+  obtain ⟨f, hf, hfb, hfp⟩ := exists_iso_alongBoundary_cons J₀ hI j hj J
+  refine ⟨e ≪≫ f, ?_, ?_, ?_⟩
+  · rw [Iso.trans_hom, Category.assoc, hf, he]
+  · simpa only [Iso.trans_hom, ← Category.assoc, heb] using hfb
+  · intro a x
+    rw [Iso.trans_hom, ← pullback_comp, hfp, ← Fin.comp_cons, hep]
+
+end Split
 
 end TauCeti.Toric.Fan
