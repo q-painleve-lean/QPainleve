@@ -199,4 +199,17 @@ theorem Ray.characterRulingLaurentBlowupIso_hom_comp_blowupToBase (ρ : Φ.Ray)
       ((ρ.binomialCenter hdim hmρ hsurj c).ker.comap (ι)).blowupToBase ≫ (eL).hom :=
   (center[j, c]).blowupIso_hom_blowupToBase _ _
 
+/-- The Laurent ruling comparison identifies the exceptional ideals of the two blowups. -/
+theorem Ray.comap_exceptionalIdeal_characterRulingLaurentBlowupIso (ρ : Φ.Ray)
+    (j : Fin 2) (hρ : ρ.primitiveGenerator = if j = 0 then b 0 else -b 0)
+    (hdim : Module.finrank ℤ N = 2) (hmρ : m ρ.primitiveGenerator = 0)
+    (hsurj : Function.Surjective m) (c : ℂˣ) :
+    let I := (ρ.binomialCenter hdim hmρ hsurj c).ker.comap (ι)
+    let J := center[j, c]
+    (J.comap J.blowupToBase).comap
+        (ρ.characterRulingLaurentBlowupIso h b hm hpos hneg j hρ hdim hmρ hsurj c).hom =
+      I.comap I.blowupToBase :=
+  (center[j, c]).comap_blowupIso_hom (eL) (ρ.comap_coordinateSectionCenter_characterRulingLaurentIso
+    h b hm hpos hneg j hρ hdim hmρ hsurj c)
+
 end TauCeti.Toric.Fan
