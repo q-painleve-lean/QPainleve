@@ -14,6 +14,7 @@ public import TauCeti.LinearAlgebra.QuadraticForm.LightCone
 For a nondegenerate quadratic form of positive index one, a vector of positive square
 selects a convex half of the positive locus by the sign of the polar pairing. Any
 nonzero vector of nonnegative square pairing positively with it selects the same half.
+Two vectors of nonnegative square on the same closed side pair nonnegatively.
 The comparison uses Tau Ceti's `QuadraticForm.sign_polar_eq_sign_polar`.
 -/
 
@@ -25,6 +26,32 @@ namespace QuadraticForm
 
 variable {K V : Type*} [Field K] [LinearOrder K] [IsStrictOrderedRing K]
   [AddCommGroup V] [Module K V] [FiniteDimensional K V] {Q : QuadraticForm K V}
+
+/-- Two vectors of nonnegative square on the same closed side of a positive vector
+have nonnegative polar pairing. -/
+theorem polar_nonneg_of_nonneg_of_polar_nonneg (hQ : Q.Nondegenerate) (hsig : sigPos Q ≤ 1)
+    {h x y : V} (hh : 0 < Q h) (hx : 0 ≤ Q x) (hy : 0 ≤ Q y)
+    (hhx : 0 ≤ polar Q h x) (hhy : 0 ≤ polar Q h y) : 0 ≤ polar Q x y := by
+  by_contra! hxy
+  have hx₀ : x ≠ 0 := by rintro rfl; simp at hxy
+  have hy₀ : y ≠ 0 := by rintro rfl; simp at hxy
+  have ha : 0 < polar Q h y := lt_of_le_of_ne hhy fun he ↦
+    hy₀ (eq_zero_of_polar_eq_zero_of_nonneg hQ hsig hh ((polar_comm Q y h).trans he.symm) hy)
+  have hb : 0 < polar Q h x := lt_of_le_of_ne hhx fun he ↦
+    hx₀ (eq_zero_of_polar_eq_zero_of_nonneg hQ hsig hh ((polar_comm Q x h).trans he.symm) hx)
+  -- A negative pairing would make this vector positive even though it is orthogonal to h.
+  let w := polar Q h y • x - polar Q h x • y
+  have hw : 0 < Q w := by
+    simp only [w, sub_eq_add_neg, QuadraticMap.map_add Q, QuadraticMap.map_neg,
+      QuadraticMap.map_smul, polar_neg_right, polar_smul_left, polar_smul_right, smul_eq_mul]
+    have hx' := mul_nonneg (mul_self_nonneg (polar Q h y)) hx
+    have hy' := mul_nonneg (mul_self_nonneg (polar Q h x)) hy
+    have hxy' := mul_neg_of_pos_of_neg hb (mul_neg_of_pos_of_neg ha hxy)
+    nlinarith only [hx', hy', hxy']
+  have hhw : polar Q h w = 0 := by
+    simp only [w, polar_sub_right, polar_smul_right, smul_eq_mul, mul_comm, sub_self]
+  have hw₀ := eq_zero_of_polar_eq_zero_of_nonneg hQ hsig hh ((polar_comm Q w h).trans hhw) hw.le
+  simp [hw₀] at hw
 
 /-- A nonzero vector `d` of nonnegative square selects the same half of the positive
 locus as a positive vector `h` with which it has nonnegative polar pairing. -/

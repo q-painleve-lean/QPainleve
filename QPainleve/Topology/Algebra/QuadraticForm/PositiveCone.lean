@@ -99,26 +99,22 @@ theorem closure_connectedComponentIn_pos_eq (hQ : Q.Nondegenerate) (hsig : sigPo
   · rw [polar_add_right, polar_smul_right, polar_self, two_nsmul, smul_eq_mul]
     exact add_pos_of_nonneg_of_pos hx.2 (mul_pos ht' (add_pos hh hh))
 
+/-- A nonzero vector in the closure of a positive-cone component detects that component
+by its polar pairing with positive vectors. -/
+theorem connectedComponentIn_pos_eq_of_mem_closure
+    (hQ : Q.Nondegenerate) (hsig : sigPos Q ≤ 1) {h d : V} (hh : 0 < Q h)
+    (hd₀ : d ≠ 0) (hd : d ∈ closure (connectedComponentIn {x | 0 < Q x} h)) :
+    connectedComponentIn {x | 0 < Q x} h = {x | 0 < Q x ∧ 0 < polar Q d x} := by
+  rw [closure_connectedComponentIn_pos_eq hQ hsig hh] at hd
+  exact connectedComponentIn_pos_eq_of_nonneg hQ hsig hh hd.1 hd₀ hd.2
+
 /-- Two vectors in the closure of the same positive component pair nonnegatively. -/
 theorem polar_nonneg_of_mem_closure_connectedComponentIn_pos (hQ : Q.Nondegenerate)
     (hsig : sigPos Q ≤ 1) {h x y : V} (hh : 0 < Q h)
     (hx : x ∈ closure (connectedComponentIn {z | 0 < Q z} h))
     (hy : y ∈ closure (connectedComponentIn {z | 0 < Q z} h)) :
     0 ≤ polar Q x y := by
-  rw [connectedComponentIn_pos_eq hQ hsig hh] at hx hy
-  let S : Set V := {z | 0 < Q z ∧ 0 < polar Q h z}
-  have hp (z : V) : IsClosed {u | 0 ≤ polar Q z u} :=
-    isClosed_le continuous_const (IsModuleTopology.continuous_of_linearMap (Q.polarBilin z))
-  have hpair (a : V) (ha : a ∈ S) : 0 ≤ polar Q a y := by
-    refine closure_minimal (fun b hb ↦ ?_) (hp a) hy
-    have ha₀ : a ≠ 0 := by
-      intro he
-      have h := ha.1
-      simp [he] at h
-    exact ((polar_pos_iff_of_nonneg hQ hsig hh ha.1.le ha₀ ha.2.le hb.1).mpr hb.2).le
-  rw [polar_comm]
-  apply closure_minimal ?_ (hp y) hx
-  intro a ha
-  simpa only [mem_ofPred_eq, polar_comm Q y a] using hpair a ha
+  rw [closure_connectedComponentIn_pos_eq hQ hsig hh] at hx hy
+  exact polar_nonneg_of_nonneg_of_polar_nonneg hQ hsig hh hx.1 hy.1 hx.2 hy.2
 
 end QuadraticForm
