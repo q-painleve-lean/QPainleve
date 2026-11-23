@@ -7,6 +7,7 @@ module
 
 public import QPainleve.AlgebraicGeometry.Modules.Pullback.Tensor
 public import TauCeti.AlgebraicGeometry.LineBundle.Endomorphisms
+public import TauCeti.AlgebraicGeometry.LineBundle.Functoriality
 
 /-!
 # Gluing units for line bundle trivializations
@@ -24,6 +25,27 @@ open CategoryTheory MonoidalCategory AlgebraicGeometry TauCeti.AlgebraicGeometry
 open Scheme.Modules
 
 universe u
+
+namespace TauCeti.AlgebraicGeometry.LineBundleClass
+
+/-- A Picard class in the kernels of both pullbacks has a representative with a
+trivialization along each morphism. -/
+theorem exists_trivialized_representative {X Y Z : Scheme.{u}} {f : Y ⟶ X} {i : Z ⟶ X}
+    (a : ((pullbackHom f).ker ⊓ (pullbackHom i).ker :
+      Subgroup (LineBundleClass X))) :
+    ∃ L : InvertibleSheaf X, Nonempty ((Scheme.Modules.pullback f).obj L.obj ≅ 𝟙_ Y.Modules) ∧
+      Nonempty ((Scheme.Modules.pullback i).obj L.obj ≅ 𝟙_ Z.Modules) ∧ mk L = a.val := by
+  obtain ⟨L, hL⟩ := mk_surjective a.val
+  have hf : pullback f a.val = 1 := by
+    simpa only [pullbackHom_apply] using
+      MonoidHom.mem_ker.mp (a.property.1 : a.val ∈ (pullbackHom f).ker)
+  have hi : pullback i a.val = 1 := by
+    simpa only [pullbackHom_apply] using
+      MonoidHom.mem_ker.mp (a.property.2 : a.val ∈ (pullbackHom i).ker)
+  rw [← hL, pullback_mk, mk_eq_one_iff] at hf hi
+  exact ⟨L, hf, hi, hL⟩
+
+end TauCeti.AlgebraicGeometry.LineBundleClass
 
 namespace AlgebraicGeometry.Scheme.Hom
 
