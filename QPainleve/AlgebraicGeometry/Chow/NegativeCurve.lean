@@ -5,7 +5,7 @@ Authors: The QPainleve contributors
 -/
 module
 
-public import QPainleve.AlgebraicGeometry.Chow.RationalSurface
+public import QPainleve.AlgebraicGeometry.Chow.RationalSurface.Basic
 public import TauCeti.AlgebraicGeometry.IntersectionNumber.ExceptionalCurve.Basic
 
 import QPainleve.AlgebraicGeometry.Cohomology.Projective
