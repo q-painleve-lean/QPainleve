@@ -7,8 +7,6 @@ module
 
 public import QPainleve.AlgebraicGeometry.Chow.SurfaceIntersection
 public import QPainleve.AlgebraicGeometry.IntersectionNumber.Nef
-import QPainleve.AlgebraicGeometry.IdealSheaf.ClosedImmersion
-import QPainleve.AlgebraicGeometry.Scheme.LocalDimension
 
 /-!
 # Intersection with effective divisors on surfaces
@@ -53,17 +51,10 @@ public theorem isNef_iff_classIntersectionNumber_nonneg [IsLocallyNoetherian X]
   · intro ha
     refine (LineBundleClass.isNef_iff k _ a).mpr fun C _ _ i _ hi ↦ ?_
     have hC := Scheme.IsCurveOver.topologicalKrullDim_eq_one (X := C) k
-    let p : CodimensionOnePoint X :=
-      ⟨i (genericPoint C), i.coheight_apply_genericPoint_eq_one_of_dim_eq_two k hX hC⟩
-    have he := i.ker_eq_vanishingIdeal_closure_genericPoint
-    have hp : (vanishingIdeal ⟨closure {(p : X)}, isClosed_closure⟩).IsEffectiveCartier :=
-      isEffectiveCartier_vanishingIdeal_closure_singleton p.property
-    have hker : i.ker.IsEffectiveCartier := he ▸ hp
     let : i.IsOver (Spec (.of k)) := ⟨hi.symm⟩
-    rw [← classIntersectionNumber_eq_intersectionNumber_of_isEffectiveCartier_ker k hX.le i hC
-      hker, LineBundleClass.mk_toInvertibleSheaf_congr hker hp he,
-      ← LineBundleClass.primeDivisorClass_def]
-    exact ha p
+    rw [← classIntersectionNumber_primeDivisorClass_eq_intersectionNumber_of_isClosedImmersion
+      k hX i hC a]
+    exact ha _
 
 /-- The intersection of a nef class with an effective Cartier divisor is nonnegative. -/
 public theorem classIntersectionNumber_nonneg_of_isNef_of_isEffectiveCartier

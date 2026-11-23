@@ -5,7 +5,7 @@ Authors: The QPainleve contributors
 -/
 module
 
-public import QPainleve.AlgebraicGeometry.Chow.Signature
+public import QPainleve.AlgebraicGeometry.Chow.PositiveCone
 public import Mathlib.Analysis.Convex.Cone.Basic
 public import Mathlib.Geometry.Convex.Cone.Face.Basic
 public import QPainleve.AlgebraicGeometry.Morphisms.Smooth.Factorial
@@ -90,6 +90,17 @@ theorem realIntersectionBilinForm_realPrimeDivisorClass_pos
     (f).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two
   rw [realIntersectionBilinForm_one_tmul_realPrimeDivisorClass]
   exact_mod_cast classIntersectionNumber_primeDivisorClass_pos_of_isAmple k hX ha p
+
+/-- A prime curve of nonnegative self-intersection lies in the closure of the
+positive component selected by any ample class. -/
+theorem realPrimeDivisorClass_mem_closure_connectedComponentIn_pos
+    [FiniteDimensional ℝ V(X)] [TopologicalSpace V(X)] [IsModuleTopology ℝ V(X)]
+    (hQ : (B).toQuadraticMap.Nondegenerate) (hsig : sigPos (B).toQuadraticMap ≤ 1)
+    {h : LineBundleClass X} (hh : h.IsAmple)
+    (p : CodimensionOnePoint X) (hp : 0 ≤ B (c p) (c p)) :
+    c p ∈ closure (connectedComponentIn {x : V(X) | 0 < (B).toQuadraticMap x} (ι h)) := by
+  rw [closure_connectedComponentIn_pos_eq_of_isAmple k hQ hsig hh]
+  exact ⟨hp, (realIntersectionBilinForm_realPrimeDivisorClass_pos k hh p).le⟩
 
 /-- Distinct prime divisors have nonnegative real intersection. -/
 theorem realIntersectionBilinForm_realPrimeDivisorClass_nonneg

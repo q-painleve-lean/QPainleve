@@ -53,6 +53,52 @@ theorem polar_nonneg_of_nonneg_of_polar_nonneg (hQ : Q.Nondegenerate) (hsig : si
   have hw₀ := eq_zero_of_polar_eq_zero_of_nonneg hQ hsig hh ((polar_comm Q w h).trans hhw) hw.le
   simp [hw₀] at hw
 
+/-- The closed positive side of a vector of positive square is self-dual for the
+polar pairing. -/
+theorem nonneg_and_polar_nonneg_iff_forall (hQ : Q.Nondegenerate) (hsig : sigPos Q ≤ 1)
+    {h x : V} (hh : 0 < Q h) :
+    (0 ≤ Q x ∧ 0 ≤ polar Q h x) ↔
+      ∀ y, 0 ≤ Q y → 0 ≤ polar Q h y → 0 ≤ polar Q x y := by
+  refine ⟨fun hx _ hy hhy ↦
+    polar_nonneg_of_nonneg_of_polar_nonneg hQ hsig hh hx.1 hy hx.2 hhy, fun hdual ↦ ?_⟩
+  have hhh : polar Q h h = 2 * Q h := by rw [polar_self, two_smul, two_mul]
+  have hhx : 0 ≤ polar Q h x := by
+    rw [polar_comm Q h x]
+    exact hdual h hh.le (by rw [hhh]; positivity)
+  refine ⟨?_, hhx⟩
+  by_contra! hx
+  have hxx : polar Q x x = 2 * Q x := by rw [polar_self, two_smul, two_mul]
+  have htest (t : K) (ht : 0 ≤ t) (hq : 0 ≤ Q x + t ^ 2 * Q h + t * polar Q h x) :
+      0 ≤ 2 * Q x + t * polar Q h x := by
+    have hy : 0 ≤ Q (x + t • h) := by
+      simpa only [QuadraticMap.map_add, QuadraticMap.map_smul, polar_smul_right,
+        smul_eq_mul, polar_comm Q x h, pow_two] using hq
+    have hyh : 0 ≤ polar Q h (x + t • h) := by
+      rw [polar_add_right, polar_smul_right, smul_eq_mul, hhh]
+      positivity
+    simpa only [polar_add_right, polar_smul_right, smul_eq_mul, hxx, polar_comm Q x h]
+      using hdual (x + t • h) hy hyh
+  rcases hhx.eq_or_lt with hzero | hpos
+  · -- Orthogonality makes the polar pairing independent of the shift.
+    let t := 1 - Q x / Q h
+    have ht : 1 ≤ t := by dsimp [t]; linarith [div_nonpos_of_nonpos_of_nonneg hx.le hh.le]
+    have htQ : t * Q h = Q h - Q x := by
+      rw [sub_mul, one_mul, div_mul_cancel₀ _ hh.ne']
+    have htQ' : Q h - Q x ≤ t ^ 2 * Q h := by
+      rw [← htQ, pow_two, mul_assoc]
+      exact le_mul_of_one_le_left (mul_nonneg (by linarith) hh.le) ht
+    have := htest t (by linarith) (by rw [← hzero]; linarith)
+    rw [← hzero, mul_zero, add_zero] at this
+    linarith
+  · -- The cross term cancels the negative square in the shifted vector.
+    let t := -Q x / polar Q h x
+    have ht : 0 ≤ t := div_nonneg (neg_nonneg.mpr hx.le) hpos.le
+    have htQ : t * polar Q h x = -Q x := div_mul_cancel₀ _ hpos.ne'
+    have hsq : 0 ≤ t ^ 2 * Q h := by positivity
+    have := htest t ht (by rw [htQ]; linarith)
+    rw [htQ] at this
+    linarith
+
 /-- A nonzero vector `d` of nonnegative square selects the same half of the positive
 locus as a positive vector `h` with which it has nonnegative polar pairing. -/
 theorem polar_pos_iff_of_nonneg (hQ : Q.Nondegenerate) (hsig : sigPos Q ≤ 1)

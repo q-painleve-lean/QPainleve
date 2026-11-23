@@ -51,7 +51,8 @@ local notation "ι" => (fun a : LineBundleClass X ↦ (1 : ℝ) ⊗ₜ[ℤ] Addi
 local notation "C(" h ")" => connectedComponentIn (Set.ofPred (fun x : V(X) ↦ 0 < Q x)) (ι h)
 local notation "f" => (X ↘ Spec (CommRingCat.of k))
 
-private theorem polar_realIntersectionBilinForm (x y : V(X)) :
+/-- The polar form of the real Picard square is twice the intersection pairing. -/
+theorem polar_realIntersectionBilinForm (x y : V(X)) :
     polar Q x y = 2 * B x y := by
   rw [LinearMap.BilinMap.polar_toQuadraticMap,
     (isSymm_realIntersectionBilinForm k X).eq y x, two_mul]
@@ -176,5 +177,17 @@ theorem realIntersectionBilinForm_nonneg_of_mem_closure_connectedComponentIn_pos
   have hpos : 0 < Q (ι h) := realIntersectionBilinForm_pos_of_isAmple k hh hh
   have h := QuadraticForm.polar_nonneg_of_mem_closure_connectedComponentIn_pos hQ hsig hpos hx hy
   rwa [polar_realIntersectionBilinForm, mul_nonneg_iff_of_pos_left (by norm_num : (0 : ℝ) < 2)] at h
+
+/-- A class in the ample component pairs positively with every nonzero class in
+its closure. -/
+theorem realIntersectionBilinForm_pos_of_mem_connectedComponentIn_pos
+    (hQ : (Q).Nondegenerate) (hsig : sigPos Q ≤ 1) (hh : h.IsAmple)
+    {x y : V(X)} (hx : x ∈ C(h)) (hy : y ∈ closure C(h)) (hy₀ : y ≠ 0) :
+    0 < B x y := by
+  have hhpos : 0 < Q (ι h) := realIntersectionBilinForm_pos_of_isAmple k hh hh
+  rw [QuadraticForm.connectedComponentIn_pos_eq_of_mem_closure hQ hsig hhpos hy₀ hy] at hx
+  have hxy : 0 < polar Q y x := hx.2
+  rwa [polar_comm Q y x, polar_realIntersectionBilinForm,
+    mul_pos_iff_of_pos_left (by norm_num : (0 : ℝ) < 2)] at hxy
 
 end TauCeti.AlgebraicGeometry.Chow
