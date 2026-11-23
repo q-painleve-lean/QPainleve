@@ -60,6 +60,36 @@ theorem xEval_X (j : ι) :
     Φ.xEval b s c (X j) = algebraMap ℂ K(Φ) (c[j] : ℂ) * Φ.character (ofAdd χ(u j)) := by
   simp [xEval, xCoordinateUnit]
 
+variable {Φ}
+
+local notation "bᵣ" => b.reindex (Equiv.swap 0 1)
+local notation "L" => LaurentRing ℂ ι
+local notation "invX" => AddMonoidAlgebra.domCongr ℂ ℂ (AddEquiv.neg (ι →₀ ℤ))
+
+/-- Reversing the basis and inverting the center character has the effect of
+inverting all independent X coordinates before evaluating. This inversion is the signed
+generator of Bershtein, Gavrylenko and Marshakov
+([*Cluster integrable systems, q-Painlevé equations and their quantization*, §3.1]
+(https://arxiv.org/abs/1711.02063)). -/
+theorem xEval_reindex_swap :
+    Φ.xEval bᵣ s c⁻¹ = (Φ.xEval b s c).comp (invX).toAlgHom := by
+  apply LaurentRing.algHom_ext
+  intro j
+  have hinv :
+      Φ.xEval b s c (↑((unitX j : Lˣ)⁻¹) : L) =
+        (Φ.xEval b s c (X j))⁻¹ := by
+    let f : L →* Φ.algebraicRealization.functionField := Φ.xEval b s c
+    simpa only [Units.val_inv_eq_inv_val, Units.coe_map, val_unitX, f,
+      AlgHom.coe_toMonoidHom] using (Units.coe_map_inv f (unitX j)).symm
+  have hX : (invX) (X j) = (↑((unitX j : Lˣ)⁻¹) : L) := by
+    rw [X_def, AddMonoidAlgebra.domCongr_single, AddEquiv.neg_apply, ← Finsupp.single_neg,
+      val_inv_unitX]
+  rw [AlgHom.comp_apply, AlgEquiv.coe_toAlgHom, hX, hinv, xEval_X, xEval_X]
+  simp only [character_detDualEquiv_reindex_swap, MonoidHom.inv_apply,
+    Units.val_inv_eq_inv_val, map_inv₀, mul_inv_rev, mul_comm]
+
+variable (Φ)
+
 variable [Finite ι]
 
 /-- The rational evaluation map to the independent X torus at a fixed center. -/
@@ -78,6 +108,16 @@ theorem fromFunctionField_xEvaluation :
       Spec.map (CommRingCat.ofHom (Φ.xEval b s c).toRingHom) := by
   unfold xEvaluation
   exact Scheme.RationalMap.fromFunctionField_ofAffineAlgHom _
+
+variable {Φ}
+
+/-- Fixed-center X evaluation in the reversed toric presentation equals evaluation
+in the original presentation followed by regular inversion on the X torus. -/
+theorem xEvaluation_reindex_swap :
+    Φ.xEvaluation bᵣ s c⁻¹ =
+      (Φ.xEvaluation b s c).compHom
+        (Spec.map (CommRingCat.ofHom (invX).toAlgHom.toRingHom)) := by
+  simp only [xEvaluation, Scheme.RationalMap.ofAffineAlgHom_compHom, xEval_reindex_swap]
 
 end
 

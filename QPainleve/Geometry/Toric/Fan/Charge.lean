@@ -5,6 +5,7 @@ Authors: The QPainleve contributors
 -/
 module
 
+public import QPainleve.Algebra.Cluster.ChargeKernel.Basic
 public import QPainleve.Geometry.Toric.Fan.Ray
 
 import Mathlib.GroupTheory.IndexNSmul
@@ -62,5 +63,16 @@ theorem rayChargeEquiv_ext {N' : Type*} [AddCommGroup N'] [Module.IsTorsionFree 
   obtain ⟨a, ha⟩ := (rayChargeMap s).range.toAddSubgroup.nsmul_index_mem x
   simpa only [LinearMap.comp_apply, LinearEquiv.coe_coe, ha, map_nsmul,
     nsmulAddMonoidHom_apply] using LinearMap.congr_fun hcomp a
+
+open QPainleve.Cluster in
+/-- Orientation reversal negates the exchange matrix without changing the ray charges. -/
+@[simp]
+theorem chargeExchangeMatrix_reindex_swap {N V : Type} [AddCommGroup N] [AddCommGroup V]
+    [Module ℝ V] {l : N →+ V} {Φ : Fan l} (b : Module.Basis (Fin 2) ℤ N)
+    {ι : Type} [DecidableEq ι] (s : ι → Φ.Ray) [Fintype ι] :
+    chargeExchangeMatrix (b.reindex (Equiv.swap 0 1)).detDualEquiv.toLinearMap (rayChargeMap s) =
+      -chargeExchangeMatrix b.detDualEquiv.toLinearMap (rayChargeMap s) := by
+  ext j k
+  simp [chargeExchangeMatrix_apply]
 
 end TauCeti.Toric.Fan

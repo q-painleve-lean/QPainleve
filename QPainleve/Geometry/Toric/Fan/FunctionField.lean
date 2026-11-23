@@ -10,6 +10,7 @@ public import Mathlib.AlgebraicGeometry.OrderOfVanishing.Basic
 public import QPainleve.AlgebraicGeometry.OrderOfVanishing.Base
 public import QPainleve.Geometry.Toric.Fan.Chart
 public import QPainleve.Geometry.Toric.Fan.DenseTorus
+public import QPainleve.LinearAlgebra.Determinant.Dual
 public import TauCeti.AlgebraicGeometry.Morphisms.Dominant
 public import TauCeti.AlgebraicGeometry.Scheme.CodimensionOnePoint
 public import TauCeti.Geometry.Toric.Algebraic.Fan.Normal
@@ -95,6 +96,19 @@ def character : Multiplicative (N →+ ℤ) →* Φ.algebraicRealization.functio
     (((Iso.inv (Scheme.ΓSpecIso (.of (affineCoordinateRing Φ.lattice ⊥))) ≫
       Φ.denseTorus.germToFunctionField ⊤).hom.toMonoidHom.comp (MonoidAlgebra.of ℂ _)).comp
         (denseTorusDualEquiv Φ.lattice).symm.toMultiplicative.toMonoidHom)
+
+/-- Each determinant character becomes its reciprocal when the basis orientation is
+reversed. This comparison uses the same function field of the fan. -/
+theorem character_detDualEquiv_reindex_swap {N V : Type} [AddCommGroup N] [AddCommGroup V]
+    [Module ℝ V] {l : N →+ V} {Φ : Fan l} (b : Module.Basis (Fin 2) ℤ N)
+    [Nonempty Φ.cones] (v : N) :
+    Φ.character (ofAdd ((b.reindex (Equiv.swap 0 1)).detDualEquiv v).toAddMonoidHom) =
+      (Φ.character (ofAdd (b.detDualEquiv v).toAddMonoidHom))⁻¹ := by
+  have h : ((b.reindex (Equiv.swap 0 1)).detDualEquiv v).toAddMonoidHom =
+      -(b.detDualEquiv v).toAddMonoidHom := by
+    ext x
+    simp
+  rw [h, ofAdd_neg, map_inv]
 
 /-- Pulling a rational character back to the dense torus gives the corresponding monomial. -/
 @[simp]

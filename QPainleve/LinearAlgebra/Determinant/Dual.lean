@@ -64,6 +64,14 @@ theorem detDualEquiv_swap (b : Basis (Fin 2) R N) (v w : N) :
   simpa only [h, detDualEquiv_apply] using
     b.det.map_swap ![w, v] (by decide : (0 : Fin 2) ≠ 1)
 
+/-- Swapping the two basis vectors negates the determinant functional. -/
+@[simp]
+theorem detDualEquiv_reindex_swap (b : Basis (Fin 2) R N) (v : N) :
+    (b.reindex (Equiv.swap 0 1)).detDualEquiv v = -b.detDualEquiv v := by
+  ext w
+  simpa only [LinearMap.neg_apply, detDualEquiv_apply, det_reindex] using
+    b.det.map_swap ![v, w] (by decide : (0 : Fin 2) ≠ 1)
+
 end Module.Basis
 
 namespace Module.Basis
