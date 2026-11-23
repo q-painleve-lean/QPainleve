@@ -6,6 +6,7 @@ Authors: The QPainleve contributors
 module
 
 public import Mathlib.AlgebraicGeometry.Morphisms.ClosedImmersion
+public import QPainleve.Geometry.Toric.Fan.Scheme
 public import TauCeti.Geometry.Toric.Algebraic.Fan.Over
 public import TauCeti.Geometry.Toric.Analytic.Cone.Orbit.Basic
 import TauCeti.AlgebraicGeometry.IdealSheaf.VanishingIdeal
@@ -154,3 +155,49 @@ theorem ker_distinguishedPointHom_eq_vanishingIdeal (σ : Φ.cones) :
   exact p.ker_eq_vanishingIdeal_support
 
 end TauCeti.Toric.Fan
+
+namespace TauCeti.Toric.FanEquiv
+
+variable {N N' V V' : Type} [AddCommGroup N] [AddCommGroup N']
+  [AddCommGroup V] [AddCommGroup V'] [Module ℝ V] [Module ℝ V']
+  {i : N →+ V} {i' : N' →+ V'} {Φ : Fan i} {Ψ : Fan i'} (e : FanEquiv Φ Ψ)
+
+/-- The scheme map of a fan equivalence sends the distinguished point of a cone
+to the distinguished point of the image cone. -/
+@[reassoc (attr := simp)]
+theorem distinguishedPointHom_comp_algebraicMap (σ : Φ.cones) :
+    Φ.distinguishedPointHom σ ≫ e.toFanHom.algebraicMap =
+      Ψ.distinguishedPointHom (e.coneEquiv σ) := by
+  classical
+  let f := e.toFanHom
+  let τ := e.coneEquiv σ
+  let hm := e.mapsTo_coneEquiv σ
+  let A := affineCoordinateRingMap Φ.lattice Ψ.lattice f.latticeMap f.realMap f.map_lattice hm
+  have hset : f.realMap '' (σ.val : Set V) = (τ.val : Set V') := by
+    rw [e.coneEquiv_apply_coe, PointedCone.coe_map, toFanHom_realMap]
+  have h (m : dualSemigroup Ψ.lattice τ.val) :
+      (∀ x ∈ (⊤ : σ.val.Face), Φ.lattice.realCharacter
+        (dualSemigroupMap Φ.lattice Ψ.lattice f.latticeMap f.realMap f.map_lattice hm m) x = 0) ↔
+      (∀ y ∈ (⊤ : τ.val.Face), Ψ.lattice.realCharacter m y = 0) := by
+    simp only [coe_dualSemigroupMap, Φ.lattice.realCharacter_comp Ψ.lattice f.latticeMap
+      f.realMap f.map_lattice, LinearMap.comp_apply]
+    -- The top face is the cone itself, so its points are the image of the source cone.
+    change (∀ x ∈ (σ.val : Set V), _) ↔ ∀ y ∈ (τ.val : Set V'), _
+    simp only [← hset, Set.forall_mem_image]
+  have he : (distinguishedPoint Φ.lattice (⊤ : σ.val.Face)).comp A =
+      distinguishedPoint Ψ.lattice (⊤ : τ.val.Face) := by
+    apply MonoidAlgebra.algHom_ext
+    · intro m
+      rw [← ofAdd_toAdd m, AlgHom.comp_apply, affineCoordinateRingMap_single,
+        distinguishedPoint_apply_single, distinguishedPoint_apply_single, h]
+    · exact Subsingleton.elim _ _
+  rw [Fan.distinguishedPointHom_def, Fan.distinguishedPointHom_def, Category.assoc,
+    e.toFanHom.affineToricChartι_comp_algebraicMap_of_mapsTo _ _ hm,
+    affineToricSchemeMap_def, ← Category.assoc, ← Spec.map_comp, ← CommRingCat.ofHom_comp]
+  have hr : (distinguishedPoint Φ.lattice (⊤ : σ.val.Face)).toRingHom.comp A.toRingHom =
+      (distinguishedPoint Ψ.lattice (⊤ : τ.val.Face)).toRingHom :=
+    congrArg AlgHom.toRingHom he
+  dsimp only [A, f, τ] at hr
+  rw [hr]
+
+end TauCeti.Toric.FanEquiv
