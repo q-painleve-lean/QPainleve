@@ -9,8 +9,8 @@ codeowners = ["@yuma-mizuno"]
 [repositories]
 content = "q-painleve-lean/QPainleve"
 roadmap = "q-painleve-lean/QPainleveRoadmap"
-# Upstream review engine and rubrics; [review] below selects the rubrics QPainleve runs.
-review = "TauCetiProject/TauCetiReview"
+# Review engine and rubrics come together from the [tools.review] fork commit.
+review = "q-painleve-lean/TauCetiReview"
 # Enable and create these repositories when choosing the corresponding extras.
 # data = "q-painleve-lean/QPainleveData"
 # ci = "q-painleve-lean/QPainleveCI"

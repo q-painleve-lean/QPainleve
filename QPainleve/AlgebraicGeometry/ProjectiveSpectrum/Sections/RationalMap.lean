@@ -75,6 +75,19 @@ theorem partialMapToProjectiveSpace_hom (i : ι) (hi : Dense (D[i] : Set X)) :
         M.toProjectiveSpaceChart f s i ≫ j[i] := by
   simp [partialMapToProjectiveSpace]
 
+variable {M} in
+/-- A partial projective presentation restricts to its chosen affine chart at the generic
+point. -/
+theorem fromFunctionField_partialMapToProjectiveSpace [IsIntegral X]
+    (i : ι) (hs : Dense (D[i] : Set X)) (hx : genericPoint X ∈ D[i]) :
+    (M.partialMapToProjectiveSpace f s i hs).fromFunctionField =
+      (D[i]).fromSpecStalkOfMem _ hx ≫ M.toProjectiveSpaceChart f s i ≫ j[i] := by
+  simp only [PartialMap.fromSpecStalkOfMem, partialMapToProjectiveSpace_hom]
+  rw [← Category.assoc]
+  congr 1
+  apply (cancel_mono (D[i]).ι).mp
+  simp only [Category.assoc, Scheme.homOfLE_ι, Opens.fromSpecStalkOfMem_ι]
+
 /-- The partial map given by projective sections preserves the base morphism. -/
 instance isOver_partialMapToProjectiveSpace (i : ι) (hi : Dense (D[i] : Set X)) :
     (M.partialMapToProjectiveSpace f s i hi).IsOver f (Proj.toSpecCoeff 𝒜) :=
