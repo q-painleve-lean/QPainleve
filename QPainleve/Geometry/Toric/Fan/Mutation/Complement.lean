@@ -42,6 +42,16 @@ local notation "𝒜" => TauCeti.SymmetricAlgebra.homogeneousSubmodule ℂ (Fin 
 private def pivotForm (c : ℂ) : SymmetricAlgebra ℂ (Fin 2 → ℂ) :=
   projectiveLine.coord ℂ 0 + c • projectiveLine.coord ℂ 1
 
+/-- The nonvanishing locus of the pivot linear form `X₀ + c X₁` on the ruling base. -/
+def mutationRulingComplement (c : ℂ) : (projectiveLine ℂ).Opens :=
+  Proj.basicOpen 𝒜 (pivotForm c)
+
+/-- The missing point has affine coordinate `-c⁻¹` in chart zero. -/
+theorem mutationRulingComplement_eq_compl_support (c : ℂˣ) :
+    mutationRulingComplement (c : ℂ) =
+      (projectiveLine.polynomialPoint ℂ (RingHom.id ℂ) 0 (-(↑c⁻¹ : ℂ))).ker.support.compl :=
+  projectiveLine.basicOpen_coord_add_smul_eq_compl_support c
+
 private theorem pivotForm_mem (c : ℂ) : pivotForm c ∈ 𝒜 1 :=
   (𝒜 1).add_mem (projectiveLine.coord_mem ℂ 0) ((𝒜 1).smul_mem c (projectiveLine.coord_mem ℂ 1))
 
@@ -57,7 +67,22 @@ def mutationComplement
     (h : ∀ σ : Φ.cones, (∀ x ∈ σ.val, 0 ≤ Φ.lattice.realCharacter m x) ∨
       ∀ x ∈ σ.val, Φ.lattice.realCharacter m x ≤ 0) (c : ℂ) :
     Φ.algebraicRealization.Opens :=
-  Φ.characterRuling m h ⁻¹ᵁ Proj.basicOpen 𝒜 (pivotForm c)
+  Φ.characterRuling m h ⁻¹ᵁ mutationRulingComplement c
+
+/-- Restriction of the character ruling to the complement of the pivot fiber. -/
+def mutationComplementToRuling
+    (h : ∀ σ : Φ.cones, (∀ x ∈ σ.val, 0 ≤ Φ.lattice.realCharacter m x) ∨
+      ∀ x ∈ σ.val, Φ.lattice.realCharacter m x ≤ 0) (c : ℂ) :
+    (Φ.mutationComplement b h c).toScheme ⟶ (mutationRulingComplement c).toScheme :=
+  Φ.characterRuling m h ∣_ mutationRulingComplement c
+
+/-- The ruling on the fiber complement is the pullback along the base open inclusion. -/
+theorem isPullback_mutationComplementToRuling
+    (h : ∀ σ : Φ.cones, (∀ x ∈ σ.val, 0 ≤ Φ.lattice.realCharacter m x) ∨
+      ∀ x ∈ σ.val, Φ.lattice.realCharacter m x ≤ 0) (c : ℂ) :
+    IsPullback (Φ.mutationComplementToRuling b h c) (Φ.mutationComplement b h c).ι
+      (mutationRulingComplement c).ι (Φ.characterRuling m h) :=
+  isPullback_morphismRestrict _ _
 
 /-- The mutation complement is the inverse image of the indicated projective basic open. -/
 theorem mutationComplement_eq
@@ -76,8 +101,8 @@ theorem mutationComplement_eq_compl_support
     Φ.mutationComplement b h (c : ℂ) =
       (((projectiveLine.polynomialPoint ℂ (RingHom.id ℂ) 0 (-(↑c⁻¹ : ℂ))).ker.comap
         (Φ.characterRuling m h)).support.compl) := by
-  rw [mutationComplement_eq, projectiveLine.basicOpen_coord_add_smul_eq_compl_support,
-    Scheme.IdealSheafData.compl_support_comap]
+  unfold mutationComplement
+  rw [mutationRulingComplement_eq_compl_support, Scheme.IdealSheafData.compl_support_comap]
 
 variable (σ : Φ.cones) (side : Bool)
   (hs : mutationChartCharacter b (v := v) side ∈ dualSemigroup Φ.lattice σ.val)
@@ -104,7 +129,8 @@ theorem additiveAffineToricChartι_preimage_mutationComplement
       mutationChartCharacter b (v := v) side := by
     cases side <;> simp [sideIndex]
   let j := sideIndex side
-  rw [mutationComplement, additiveAffineToricChartι_def, Scheme.Hom.comp_preimage,
+  rw [mutationComplement, mutationRulingComplement, additiveAffineToricChartι_def,
+    Scheme.Hom.comp_preimage,
     ← Scheme.Hom.comp_preimage (Φ.affineToricChartι σ),
     affineToricChartι_comp_characterRuling Φ m h σ j (hm.symm ▸ hs),
     Scheme.Hom.comp_preimage,

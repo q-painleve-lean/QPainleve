@@ -201,6 +201,44 @@ private theorem mutationComplementPullback_comp_localizedChart :
     mutationComplementPullback_comp_functionFieldMap, ← Scheme.Hom.functionFieldMap_comp]
   exact (Scheme.Hom.functionFieldMap_congr h).trans (Scheme.Hom.functionFieldMap_comp _ _)
 
+/-- The complement pullback preserves the complex scalars of the toric function fields. -/
+theorem mutationComplementPullback_algebraMap (a : ℂ) :
+    letI : Nonempty Φ.cones := ⟨⟨_, hpos⟩⟩
+    letI : Nonempty (Ψ).cones := ⟨Φ.mutationFanConeEquiv b hv hpos hneg ⟨_, hpos⟩⟩
+    Φ.mutationComplementPullback b c hv hpos hneg
+        (algebraMap ℂ (Ψ).algebraicRealization.functionField a) =
+      algebraMap ℂ Φ.algebraicRealization.functionField a := by
+  let : Nonempty Φ.cones := ⟨σ⟩
+  let : Nonempty (Ψ).cones := ⟨τ⟩
+  let : IsDomain L₀ := isDomain_mutationZeroLocalization Φ b c hv hpos
+  let : IsDomain L₁ := Function.Injective.isDomain (A) (A).injective
+  let : IsIso (twRing) := inferInstanceAs (IsIso (A).toRingEquiv.toCommRingCatIso.hom)
+  have := Φ.localizedChart_isOver b c σ hs h₀
+  have := (Ψ).localizedChart_isOver b c τ ht h₁
+  have : (tw).IsOver (Spec (.of ℂ)) :=
+    inferInstanceAs ((Spec.map (CommRingCat.ofHom (A).toAlgHom.toRingHom)).IsOver (Spec (.of ℂ)))
+  apply (j₀ ≫ (U₀).ι).functionFieldMap.hom.injective
+  have he := ConcreteCategory.congr_hom
+    (Φ.mutationComplementPullback_comp_localizedChart b c hv hpos hneg)
+    (algebraMap ℂ (Ψ).algebraicRealization.functionField a)
+  simpa only [CommRingCat.comp_apply, Scheme.Hom.functionFieldMap_algebraMap] using he
+
+/-- Pullback over `ℂ` along the toric mutation on the pivot-fiber complements. -/
+def mutationComplementPullbackAlgHom :
+    letI : Nonempty Φ.cones := ⟨⟨_, hpos⟩⟩
+    letI : Nonempty (Ψ).cones := ⟨Φ.mutationFanConeEquiv b hv hpos hneg ⟨_, hpos⟩⟩
+    (Ψ).algebraicRealization.functionField →ₐ[ℂ] Φ.algebraicRealization.functionField where
+  toRingHom := (Φ.mutationComplementPullback b c hv hpos hneg).hom
+  commutes' := Φ.mutationComplementPullback_algebraMap b c hv hpos hneg
+
+@[simp]
+theorem mutationComplementPullbackAlgHom_apply
+    (a : letI : Nonempty (Ψ).cones := ⟨Φ.mutationFanConeEquiv b hv hpos hneg ⟨_, hpos⟩⟩
+      (Ψ).algebraicRealization.functionField) :
+    letI : Nonempty Φ.cones := ⟨⟨_, hpos⟩⟩
+    Φ.mutationComplementPullbackAlgHom b c hv hpos hneg a =
+      Φ.mutationComplementPullback b c hv hpos hneg a := (rfl)
+
 private theorem mutationZeroExponent_value (a : dualSemigroup Φ.lattice (σ).val) :
     ((Φ.mutationChartExponentEquiv b hv hpos hneg σ false hs).symm a).val = a.val := by
   let e := Φ.mutationChartExponentEquiv b hv hpos hneg σ false hs

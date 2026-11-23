@@ -224,6 +224,30 @@ theorem denseTorusι_comp_structureMap :
 instance isOver_denseTorusι : (Φ.denseTorusι inferInstance).IsOver (Spec (.of ℂ)) :=
   ⟨Φ.denseTorusι_comp_structureMap⟩
 
+/-- The binomial with constant term one and a nontrivial rational character is nonzero. -/
+theorem one_add_mul_character_ne_zero (c : ℂ) {m : N →+ ℤ} (hm : m ≠ 0) :
+    1 + algebraMap ℂ (𝒳).functionField c * Φ.character (ofAdd m) ≠ 0 := by
+  let j := Φ.denseTorusι inferInstance
+  let g := ((Scheme.ΓSpecIso (.of R)).inv ≫ (𝕋).germToFunctionField ⊤).hom
+  let a := ofAdd ((denseTorusDualEquiv Φ.lattice).symm m)
+  have ha : a ≠ 1 := by
+    intro h
+    have hn := (denseTorusDualEquiv Φ.lattice).symm.injective.ne hm
+    exact hn ((congrArg Multiplicative.toAdd h).trans (map_zero _).symm)
+  have hg : algebraMap ℂ (𝕋).functionField c = g (algebraMap ℂ R c) := by
+    rw [Scheme.Spec.algebraMap_functionField_base]
+  have hchar : j.functionFieldMap (Φ.character (ofAdd m)) = g (MonoidAlgebra.of ℂ _ a) :=
+    Φ.functionFieldMap_character _
+  intro h
+  have he := congrArg j.functionFieldMap h
+  rw [map_add, map_one, map_mul, j.functionFieldMap_algebraMap ℂ,
+    hchar, map_zero, hg, ← map_mul, ← map_one g, ← map_add, ← map_zero g] at he
+  have hR : Function.Injective g :=
+    ((𝕋).germToFunctionField_injective ⊤).comp
+      (Scheme.ΓSpecIso (.of R)).symm.commRingCatIsoToRingEquiv.injective
+  have hcoeff := congrArg (fun r : R ↦ r.coeff 1) (hR he)
+  simp [MonoidAlgebra.of_apply, ha] at hcoeff
+
 /-- Maps from the function field of a toric fan over the base are determined by their
 values on rational characters. -/
 theorem functionFieldAlgHom_ext {K : Type*} [Semiring K] [Algebra ℂ K]

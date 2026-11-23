@@ -7,6 +7,7 @@ module
 
 public import QPainleve.AlgebraicGeometry.Modules.Differentials.Canonical
 public import TauCeti.AlgebraicGeometry.CartierDivisor.IdealSheaf
+import QPainleve.AlgebraicGeometry.CartierDivisor.Comparison
 import QPainleve.AlgebraicGeometry.IdealSheaf.Image
 import QPainleve.AlgebraicGeometry.IdealSheaf.Image.Pullback
 import QPainleve.AlgebraicGeometry.LineBundle.ZeroLocus
@@ -92,5 +93,16 @@ theorem pullbackTopFormDivisor_eq_ramification_sub
       (imageIdealSheaf_twistedToUnit_pullback_topForm R f n e)
   · rw [Scheme.IdealSheafData.IsEffectiveCartier.toCartierDivisor_eq_iff,
       Scheme.Modules.Hom.imageIdealSheaf_pullback, D.imageIdealSheaf_sheafι]
+
+/-- The pulled-back top form has no zeros precisely when the total-transform ideal
+of its poles is contained in the ramification ideal. -/
+theorem neg_pullbackTopFormDivisor_isEffective_iff
+    (hRam : letI := SmoothOfRelativeDimension.smooth n (X ↘ Spec (.of R))
+      (ramificationIdealSheaf R f).IsEffectiveCartier) :
+    letI := SmoothOfRelativeDimension.smooth n (X ↘ Spec (.of R))
+    (-(pullbackTopFormDivisor R f n hD e hTotal hRam)).IsEffective ↔
+      D.comap f ≤ ramificationIdealSheaf R f := by
+  rw [pullbackTopFormDivisor_eq_ramification_sub, neg_sub]
+  exact (hTotal.le_iff_isEffective_sub hRam).symm
 
 end QPainleve

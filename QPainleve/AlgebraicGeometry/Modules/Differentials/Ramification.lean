@@ -6,17 +6,24 @@ Authors: The QPainleve contributors
 module
 
 public import TauCeti.AlgebraicGeometry.Modules.Differentials.Ramification
+public import TauCeti.AlgebraicGeometry.Morphisms.Smooth.RelativeDimension
+import QPainleve.AlgebraicGeometry.Modules.FittingIdeal
+import QPainleve.AlgebraicGeometry.VectorBundle.FittingIdeal
 import TauCeti.AlgebraicGeometry.AffineScheme.Basic
+import TauCeti.AlgebraicGeometry.Modules.Differentials.Forms
+import TauCeti.AlgebraicGeometry.Modules.Differentials.LocallyFree
 import TauCeti.AlgebraicGeometry.IdealSheaf.Affine
 import TauCeti.AlgebraicGeometry.Scheme.Opens
 import TauCeti.RingTheory.FittingIdeal.BaseChange
 
 /-!
-# Ramification ideals in affine coordinates
+# Ramification ideals in affine coordinates and under composition
 
 A ring map presenting an affine chart of a morphism computes the ramification ideal
 on that chart. This transports Tau Ceti's calculation on section rings to a
-specified affine coordinate ring.
+specified affine coordinate ring. For morphisms of smooth schemes of equal relative
+dimension, the chain rule for the cotangent map gives the product formula for ramification
+ideals.
 -/
 
 open CategoryTheory Limits AlgebraicGeometry Scheme.IdealSheafData
@@ -105,5 +112,91 @@ public theorem ramificationIdealSheaf_comap_eq_top_of_isOpenImmersion_comp
   rw [ramificationIdealSheaf_comap_of_isOpenImmersion R f V j hg,
     (fittingIdeal_zero_eq_top_iff).mpr inferInstance, Ideal.map_top]
   exact (equivOfIsAffine (X := Spec (.of B))).symm.toOrderIso.map_top
+
+/-- Equal morphisms to a fixed scheme over the base have the same ramification ideal.
+Their source structure maps can be given by different expressions. -/
+public theorem ramificationIdealSheaf_congr
+    (R : Type u) [CommRing R] {X Y : Scheme.{u}} [oY : Y.Over (Spec (.of R))]
+    {f g : X ⟶ Y} (h : f = g)
+    {oX oX' : X.Over (Spec (.of R))}
+    {hf : @Scheme.Hom.IsOver X Y f (Spec (.of R)) oX oY}
+    {hg : @Scheme.Hom.IsOver X Y g (Spec (.of R)) oX' oY}
+    {hf' : (cokernel (@cotangentMap R _ X Y oX oY f hf)).IsFiniteType}
+    {hg' : (cokernel (@cotangentMap R _ X Y oX' oY g hg)).IsFiniteType} :
+    @ramificationIdealSheaf R _ X Y oX oY f hf hf' =
+      @ramificationIdealSheaf R _ X Y oX' oY g hg hg' := by
+  subst g
+  have ho : oX = oX' := by
+    cases oX
+    cases oX'
+    exact congrArg OverClass.ofHom (hf.comp_over.symm.trans hg.comp_over)
+  subst oX'
+  rfl
+
+/-- An open immersion over the base has unit ramification ideal. -/
+@[simp]
+public theorem ramificationIdealSheaf_eq_top_of_isOpenImmersion
+    (R : Type u) [CommRing R] {X Y : Scheme.{u}}
+    [X.Over (Spec (.of R))] [Y.Over (Spec (.of R))]
+    (f : X ⟶ Y) [f.IsOver (Spec (.of R))] [IsOpenImmersion f]
+    [(cokernel (cotangentMap R f)).IsFiniteType] :
+    ramificationIdealSheaf R f = ⊤ := by
+  rw [ramificationIdealSheaf_eq_fittingIdeal_cokernel]
+  exact Scheme.Modules.fittingIdeal_zero_eq_top_of_isZero _
+    ((Preadditive.epi_iff_isZero_cokernel _).mp inferInstance)
+
+/-- For two composable morphisms between smooth schemes of equal relative dimension, the
+ramification ideal of the composite is the product of the first ramification ideal
+and the inverse image of the second. -/
+public theorem ramificationIdealSheaf_comp
+    (R : Type u) [CommRing R] {X Y Z : Scheme.{u}}
+    [X.Over (Spec (.of R))] [Y.Over (Spec (.of R))] [Z.Over (Spec (.of R))]
+    (f : X ⟶ Y) (g : Y ⟶ Z) [f.IsOver (Spec (.of R))] [g.IsOver (Spec (.of R))]
+    (n : ℕ) [SmoothOfRelativeDimension n (X ↘ Spec (.of R))]
+    [SmoothOfRelativeDimension n (Y ↘ Spec (.of R))]
+    [SmoothOfRelativeDimension n (Z ↘ Spec (.of R))] :
+    letI := SmoothOfRelativeDimension.smooth n (X ↘ Spec (.of R))
+    letI := SmoothOfRelativeDimension.smooth n (Y ↘ Spec (.of R))
+    ramificationIdealSheaf R (f ≫ g) =
+      ramificationIdealSheaf R f * (ramificationIdealSheaf R g).comap f := by
+  have := SmoothOfRelativeDimension.smooth n (X ↘ Spec (.of R))
+  have := SmoothOfRelativeDimension.smooth n (Y ↘ Spec (.of R))
+  have := SmoothOfRelativeDimension.smooth n (Z ↘ Spec (.of R))
+  let E := (FiniteLocallyFreeSheaf.pullback f).obj
+    ((FiniteLocallyFreeSheaf.pullback g).obj (FiniteLocallyFreeSheaf.relativeDifferentials R Z))
+  let F := (FiniteLocallyFreeSheaf.pullback f).obj
+    (FiniteLocallyFreeSheaf.relativeDifferentials R Y)
+  let G := FiniteLocallyFreeSheaf.relativeDifferentials R X
+  let e : E.obj ≅ (Scheme.Modules.pullback f).obj
+      ((Scheme.Modules.pullback g).obj (Z.relativeDifferentials R)) := eqToIso (by
+    simp only [E, FiniteLocallyFreeSheaf.pullback_obj_obj,
+      FiniteLocallyFreeSheaf.relativeDifferentials_obj])
+  let d : F.obj ≅ (Scheme.Modules.pullback f).obj (Y.relativeDifferentials R) := eqToIso (by
+    simp only [F, FiniteLocallyFreeSheaf.pullback_obj_obj,
+      FiniteLocallyFreeSheaf.relativeDifferentials_obj])
+  let c : G.obj ≅ X.relativeDifferentials R :=
+    eqToIso (FiniteLocallyFreeSheaf.relativeDifferentials_obj R X)
+  let a := e.hom ≫ (Scheme.Modules.pullback f).map (cotangentMap R g) ≫ d.inv
+  let b := d.hom ≫ cotangentMap R f ≫ c.inv
+  have hF (x : X) : F.rank x = n :=
+    (FiniteLocallyFreeSheaf.rank_pullback_apply f _ x).trans
+      (FiniteLocallyFreeSheaf.rank_relativeDifferentials_apply R n _)
+  have hE (x : X) : E.rank x = n := by
+    dsimp only [E]
+    rw [FiniteLocallyFreeSheaf.rank_pullback_apply, FiniteLocallyFreeSheaf.rank_pullback_apply]
+    exact FiniteLocallyFreeSheaf.rank_relativeDifferentials_apply R n _
+  have hG (x : X) : G.rank x = n := FiniteLocallyFreeSheaf.rank_relativeDifferentials_apply R n x
+  let ea := cokernel.mapIso a ((Scheme.Modules.pullback f).map (cotangentMap R g))
+    e d (by simp [a])
+  let eb := cokernel.mapIso b (cotangentMap R f) d c (by simp [b])
+  let ecomp := cokernel.mapIso (a ≫ b) (cotangentMap R (f ≫ g))
+    (e ≪≫ (Scheme.Modules.pullbackComp f g).app _) c (by
+      simp [a, b, cotangentMap_comp])
+  simp only [ramificationIdealSheaf_eq_fittingIdeal_cokernel]
+  rw [← Scheme.Modules.fittingIdeal_zero_cokernel_comap,
+    ← Scheme.Modules.fittingIdeal_congr _ ea 0, ← Scheme.Modules.fittingIdeal_congr _ eb 0,
+    ← Scheme.Modules.fittingIdeal_congr _ ecomp 0]
+  exact Scheme.Modules.fittingIdeal_zero_cokernel_comp a b
+    (fun x ↦ (hE x).trans (hF x).symm) (fun x ↦ (hF x).trans (hG x).symm)
 
 end TauCeti.AlgebraicGeometry
