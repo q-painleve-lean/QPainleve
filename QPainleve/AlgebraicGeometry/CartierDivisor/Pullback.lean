@@ -9,6 +9,7 @@ public import QPainleve.AlgebraicGeometry.CartierDivisor.ZeroDivisor
 public import TauCeti.AlgebraicGeometry.LineBundle.Pullback
 public import TauCeti.AlgebraicGeometry.Modules.Pullback.Sections
 public import TauCeti.AlgebraicGeometry.Morphisms.Dominant
+import QPainleve.AlgebraicGeometry.IdealSheaf.Image
 import QPainleve.AlgebraicGeometry.IdealSheaf.Image.Basic
 import QPainleve.AlgebraicGeometry.Modules.Pullback.Sections
 import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.Pullback
@@ -86,17 +87,13 @@ theorem exists_iso_pullbackSheaf_of_zeroIdeal [IsIntegral X]
     I.isIso_pullbackSheafHom f hI (h ▸ L.isEffectiveCartier_zeroIdeal hs)
   have hφ : φ.imageIdealSheaf = I.comap f := by
     simpa only [φ, Equiv.apply_symm_apply, h] using (L.zeroIdeal_dualSectionEquiv φ).symm
-  let q := eqToIso (congrArg Scheme.IdealSheafData.sheaf hφ)
-  let e := φ.imageIdealSheafIso ≪≫ q ≪≫ (asIso (I.pullbackSheafHom f)).symm
-  refine ⟨e, ?_⟩
+  have himage : φ.imageIdealSheaf = (I.comap f).sheafι.imageIdealSheaf :=
+    hφ.trans (I.comap f).imageIdealSheaf_sheafι.symm
+  obtain ⟨e, he⟩ := (φ.imageIdealSheaf_eq_iff_exists_iso_comp_eq (I.comap f).sheafι).mp himage
+  refine ⟨e ≪≫ (asIso (I.pullbackSheafHom f)).symm, ?_⟩
   rw [← I.pullbackSheafHom_sheafι f]
-  simp only [e, Iso.trans_hom, Iso.symm_hom, asIso_inv, Category.assoc,
-    IsIso.inv_hom_id_assoc]
-  have hι : q.hom ≫ (I.comap f).sheafι = φ.imageIdealSheaf.sheafι := by
-    simpa only [q, eqToIso.hom, eqToHom_refl, Category.comp_id] using
-      (eqToHom_naturality (f := Scheme.IdealSheafData.sheaf)
-        (g := fun _ ↦ 𝟙_ X.Modules) Scheme.IdealSheafData.sheafι hφ).symm
-  rw [hι, φ.imageIdealSheafIso_hom_ι]
+  simpa only [Iso.trans_hom, Iso.symm_hom, asIso_inv, Category.assoc,
+    IsIso.inv_hom_id_assoc] using he
 
 /-- A scalar comparison of pulled-back sections is the same scalar comparison of
 their pulled-back evaluations on the dual. -/
