@@ -8,12 +8,20 @@ module
 public import Mathlib.LinearAlgebra.BilinearForm.Orthogonal
 public import Mathlib.LinearAlgebra.PerfectPairing.Basic
 
+import Mathlib.GroupTheory.FiniteAbelian.Basic
+import Mathlib.LinearAlgebra.FreeModule.Finite.Quotient
+import QPainleve.LinearAlgebra.Dual.Cokernel
+import TauCeti.LinearAlgebra.Dual.Basis
+
 /-!
 # Duals of quotients of perfectly paired modules
 
 The right orthogonal complement of an arbitrary submodule is identified with
 the dual of the quotient. The comparison uses Mathlib's
 `Submodule.dualQuotEquivDualAnnihilator`.
+
+Over the integers, restriction of functionals has finite-index image, so
+the submodule and its orthogonal complement have complementary ranks.
 -/
 
 public section
@@ -43,5 +51,31 @@ theorem orthogonalEquivDualQuotient_apply_mk (x : B.orthogonal S) (y : L) :
   change (↑_ : Dual R L) y = _
   rw [LinearEquiv.ofSubmodules_symm_apply, LinearEquiv.symm_symm, toPerfPair_apply,
     LinearMap.flip_apply]
+
+variable {M : Type*} [AddCommGroup M] [Module.Finite ℤ M]
+
+/-- In a perfectly paired finite free integer module, a submodule and its right
+orthogonal complement have complementary ranks, including for degenerate restrictions. -/
+theorem finrank_add_finrank_orthogonal_int (A : LinearMap.BilinForm ℤ M)
+    [A.IsPerfPair] (P : Submodule ℤ M) :
+    finrank ℤ P + finrank ℤ (A.orthogonal P) = finrank ℤ M := by
+  let : Module.IsTorsionFree ℤ M :=
+    (LinearMap.IsPerfPair.bijective_left A).injective.moduleIsTorsionFree A (map_smul A)
+  let f := P.subtype.dualMap.comp (LinearMap.flip A).toPerfPair.toLinearMap
+  have hker : f.ker = A.orthogonal P := by
+    ext x
+    simp [f, LinearMap.mem_ker, LinearMap.ext_iff, mem_orthogonal_iff, Subtype.forall]
+  have hrange : f.range = P.subtype.dualMap.range := by
+    simp [f, LinearMap.range_comp]
+  have : Finite (Submodule.torsion ℤ (M ⧸ P)) :=
+    Module.finite_of_fg_torsion _ Submodule.torsion_isTorsion
+  have : Finite (AddCommGroup.torsion (M ⧸ P)) := by
+    rwa [← Submodule.torsion_int]
+  have hfinite : Finite (Dual ℤ P ⧸ P.subtype.dualMap.range) :=
+    AddSubgroup.index_ne_zero_iff_finite.mp
+      (by rw [P.index_range_subtype_dualMap]; exact Nat.card_pos.ne')
+  have hrank := P.subtype.dualMap.range.finiteQuotient_iff.mp hfinite
+  have h := f.finrank_range_add_finrank_ker
+  rwa [hker, hrange, hrank, TauCeti.Module.dual_finrank_eq] at h
 
 end LinearMap.BilinForm
