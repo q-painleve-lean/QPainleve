@@ -44,22 +44,6 @@ section RealForm
 variable (k : Type u) [Field k] [Infinite k] (X : Scheme.{u}) [X.Over (Spec (.of k))]
   [X.IsProjectiveOver k] [IsIntegral X] [SmoothOfRelativeDimension 2 (X ↘ Spec (.of k))]
 
-local notation "f" => (X ↘ Spec (CommRingCat.of k))
-
-private def intersectionBilinForm : LinearMap.BilinForm ℤ (Pic(X)) :=
-  let hX := topologicalKrullDim_eq_of_smoothOfRelativeDimension f (n := 2)
-  let : IsNoetherian X := isNoetherian_of_finiteType f
-  let : Smooth f := SmoothOfRelativeDimension.smooth 2 f
-  let : IsRegular X := IsRegular.of_smooth f
-  let : ∀ x : X, UniqueFactorizationMonoid (X.presheaf.stalk x) :=
-    fun x ↦ IsRegular.uniqueFactorizationMonoid_stalk x
-      (WithBot.coe_le_coe.mp ((coheight_le_topologicalKrullDim x).trans_eq hX))
-  classIntersectionBilinForm k hX
-
-private theorem intersectionBilinForm_apply (x y : Pic(X)) :
-    intersectionBilinForm k X x y = classIntersectionNumber k X x.toMul y.toMul := by
-  simp only [intersectionBilinForm, classIntersectionBilinForm_apply]
-
 /-- The scalar extension of the surface intersection pairing to the real Picard space. -/
 def realIntersectionBilinForm : LinearMap.BilinForm ℝ (ℝ ⊗[ℤ] Pic(X)) :=
   (intersectionBilinForm k X).baseChange ℝ
@@ -74,10 +58,8 @@ theorem realIntersectionBilinForm_tmul (r s : ℝ) (x y : Pic(X)) :
 
 /-- The real intersection form of a smooth integral projective surface is symmetric. -/
 theorem isSymm_realIntersectionBilinForm : (realIntersectionBilinForm k X).IsSymm := by
-  have h : (intersectionBilinForm k X).IsSymm := by
-    unfold intersectionBilinForm
-    extract_lets hX
-    exact classIntersectionBilinForm_isSymm k hX
+  have h : (intersectionBilinForm k X).IsSymm :=
+    ⟨fun _ _ ↦ by simp only [intersectionBilinForm_apply, classIntersectionNumber_comm]⟩
   exact LinearMap.BilinForm.isSymm_iff.mpr
     (LinearMap.BilinForm.IsSymm.baseChange ℝ (LinearMap.BilinForm.isSymm_iff.mp h))
 
