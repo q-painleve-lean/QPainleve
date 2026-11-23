@@ -72,18 +72,40 @@ theorem boundaryPrimes_eq_of_support_eq {D E : X.IdealSheafData} (h : D.support 
     D.boundaryPrimes = E.boundaryPrimes := by
   simp only [boundaryPrimes, h]
 
+/-- A scheme isomorphism matches the primes of a pulled-back boundary with their images. -/
+noncomputable def boundaryPrimesEquivOfIso (D : Y.IdealSheafData) (e : X ≅ Y) :
+    (D.comap e.hom).boundaryPrimes ≃ D.boundaryPrimes :=
+  Set.BijOn.equiv e.hom (by
+    have h (x : X) : e.hom x ∈ D.boundaryPrimes ↔ x ∈ (D.comap e.hom).boundaryPrimes := by
+      rw [mem_boundaryPrimes, mem_boundaryPrimes, support_comap,
+        coheight_eq_of_isOpenImmersion e.hom]
+      rfl
+    refine ⟨fun x hx ↦ (h x).mpr hx, e.hom.isOpenEmbedding.injective.injOn, ?_⟩
+    intro y hy
+    obtain ⟨x, rfl⟩ := e.hom.surjective y
+    exact ⟨x, (h x).mp hy, rfl⟩)
+
+/-- The prime correspondence of an isomorphism acts by the underlying point map. -/
+@[simp]
+theorem boundaryPrimesEquivOfIso_apply_val (D : Y.IdealSheafData) (e : X ≅ Y)
+    (x : (D.comap e.hom).boundaryPrimes) :
+    (D.boundaryPrimesEquivOfIso e x).val = e.hom x.val := (rfl)
+
+/-- The inverse prime correspondence acts by the inverse point map. -/
+@[simp]
+theorem boundaryPrimesEquivOfIso_symm_apply_val (D : Y.IdealSheafData) (e : X ≅ Y)
+    (y : D.boundaryPrimes) :
+    ((D.boundaryPrimesEquivOfIso e).symm y).val = e.inv y.val := by
+  have h := congrArg Subtype.val ((D.boundaryPrimesEquivOfIso e).apply_symm_apply y)
+  rw [boundaryPrimesEquivOfIso_apply_val] at h
+  rw [← h, ← Scheme.Hom.comp_apply, e.hom_inv_id]
+  rfl
+
 /-- Pullback along a scheme isomorphism preserves the number of boundary primes. -/
 @[simp]
 theorem ncard_boundaryPrimes_eq_of_iso (e : X ≅ Y) (D : Y.IdealSheafData) :
-    (D.comap e.hom).boundaryPrimes.ncard = D.boundaryPrimes.ncard := by
-  have h (x : X) : e.hom x ∈ D.boundaryPrimes ↔ x ∈ (D.comap e.hom).boundaryPrimes := by
-    rw [mem_boundaryPrimes, mem_boundaryPrimes, support_comap, coheight_eq_of_isOpenImmersion e.hom]
-    rfl
-  apply Set.BijOn.ncard_eq (f := e.hom)
-  refine ⟨fun x hx ↦ (h x).mpr hx, e.hom.isOpenEmbedding.injective.injOn, ?_⟩
-  intro y hy
-  obtain ⟨x, rfl⟩ := e.hom.surjective y
-  exact ⟨x, (h x).mp hy, rfl⟩
+    (D.comap e.hom).boundaryPrimes.ncard = D.boundaryPrimes.ncard :=
+  Nat.card_congr (D.boundaryPrimesEquivOfIso e)
 
 /-- Over a subset of the isomorphism locus, taking inverse images of points gives a
 bijection on the boundary primes. -/
