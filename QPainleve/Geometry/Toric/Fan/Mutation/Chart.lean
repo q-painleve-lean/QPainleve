@@ -53,17 +53,32 @@ theorem mutationChartCharacter_false :
 theorem mutationChartCharacter_true :
     mutationChartCharacter b (v := v) true = -m := (rfl)
 
+/-- The signed pivot character vanishes exactly when the pivot is zero. -/
+@[simp]
+theorem mutationChartCharacter_eq_zero_iff (side : Bool) :
+    mutationChartCharacter b (v := v) side = 0 ↔ v = 0 := by
+  have hm : m = 0 ↔ v = 0 := by
+    constructor
+    · intro h
+      apply b.detDualEquiv.injective
+      rw [map_zero]
+      exact LinearMap.toAddMonoidHom_injective h
+    · rintro rfl
+      rw [map_zero]
+      rfl
+  cases side <;> simp [hm]
+
 private theorem mutationChartCharacter_at_pivot (side : Bool) :
     mutationChartCharacter b (v := v) side v = 0 := by
   cases side <;> simp only [mutationChartCharacter_false, mutationChartCharacter_true,
     AddMonoidHom.neg_apply, LinearMap.toAddMonoidHom_coe, Module.Basis.detDualEquiv_self, neg_zero]
 
-include hv hpos hneg in
-/-- Every cone admits a regular signed pivot character when the fan contains the two
-opposite pivot rays. -/
-theorem exists_mutationChartCharacter_mem_dualSemigroup (σ : Φ.cones) :
+/-- A cone on either side of the pivot line admits a regular signed pivot character. -/
+theorem exists_mutationChartCharacter_mem_dualSemigroup (σ : Φ.cones)
+    (h : (∀ x ∈ σ.val, 0 ≤ Φ.lattice.realCharacter m x) ∨
+      ∀ x ∈ σ.val, Φ.lattice.realCharacter m x ≤ 0) :
     ∃ side : Bool, mutationChartCharacter b (v := v) side ∈ dualSemigroup Φ.lattice σ.val := by
-  rcases Φ.detCharacter_nonneg_or_nonpos b hv hpos hneg σ with h | h
+  rcases h with h | h
   · exact ⟨false, (mem_dualSemigroup Φ.lattice _).mpr fun _ hx ↦ h _ hx⟩
   · refine ⟨true, (mem_dualSemigroup Φ.lattice _).mpr ?_⟩
     intro x hx
