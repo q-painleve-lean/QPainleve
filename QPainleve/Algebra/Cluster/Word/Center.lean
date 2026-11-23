@@ -1,0 +1,198 @@
+/-
+Copyright (c) 2026 The QPainleve contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: The QPainleve contributors
+-/
+module
+
+public import QPainleve.Algebra.Cluster.ChargeKernel.Word
+public import QPainleve.Geometry.Toric.CharacterTorus.Noncollision
+
+/-!
+# Center parameters along a cluster word
+
+The integral exponent substitutions of a typed word give a monomial isomorphism of
+the center torus. Intersecting the inverse images of the distinct-center opens at all
+prefixes gives the open where every intermediate center configuration is noncolliding.
+This open is dense over any field and contains a rational point over a separably closed
+field. It lets successive elementary transformations use a single initial choice of centers.
+-/
+
+public noncomputable section
+
+open AlgebraicGeometry CategoryTheory Multiplicative
+open QPainleve QPainleve.Cluster QPainleve.CharacterTorus
+
+namespace Quiver.Path
+
+universe u
+
+variable {ι : Type u} [Fintype ι] [DecidableEq ι]
+  {B C D : SkewExchangeMatrix ι}
+
+local notation "A" => (ι → ℤ)
+local notation "e" j:arg => (Pi.single j (1 : ℤ) : A)
+
+section Ring
+
+variable (k : Type u) [CommRing k]
+
+/-- The center map of a word is induced by its integral exponent substitution. -/
+def centerIso (w : Word B C) : scheme k A ≅ scheme k A :=
+  mapIso k w.exponentEquiv.toAddEquiv
+
+/-- Pull back center characters by the word's integral substitution. -/
+theorem centerIso_hom (w : Word B C) :
+    (w.centerIso k).hom = CharacterTorus.map k w.exponentEquiv.toAddEquiv.toAddMonoidHom := by
+  rw [centerIso, mapIso_hom]
+
+/-- Pull back center characters through the inverse by the inverse integral substitution. -/
+theorem centerIso_inv (w : Word B C) :
+    (w.centerIso k).inv = CharacterTorus.map k w.exponentEquiv.symm.toAddEquiv.toAddMonoidHom := by
+  rw [centerIso, mapIso_inv]
+  rfl
+
+/-- The center isomorphism is over the coefficient ring. -/
+@[reassoc (attr := simp)]
+theorem centerIso_hom_structureMap (w : Word B C) :
+    (w.centerIso k).hom ≫ structureMap k A = structureMap k A := by
+  rw [centerIso_hom, map_structureMap]
+
+/-- The empty word fixes the center torus. -/
+@[simp]
+theorem centerIso_nil : (Path.nil : Word B B).centerIso k = Iso.refl _ := by
+  apply Iso.ext
+  rw [centerIso_hom, exponentEquiv_nil]
+  exact CharacterTorus.map_id k
+
+/-- The center maps of consecutive words compose in execution order. -/
+@[simp]
+theorem centerIso_comp (w : Word B C) (v : Word C D) :
+    (w.comp v).centerIso k = w.centerIso k ≪≫ v.centerIso k := by
+  apply Iso.ext
+  simp only [centerIso_hom, exponentEquiv_comp, Iso.trans_hom]
+  exact CharacterTorus.map_comp k v.exponentEquiv.toAddEquiv.toAddMonoidHom
+    w.exponentEquiv.toAddEquiv.toAddMonoidHom
+
+/-- On rational points, center transport precomposes the character with the word's
+exponent substitution. -/
+@[reassoc (attr := simp)]
+theorem pointsEquiv_symm_comp_centerIso_hom (w : Word B C) (c : Multiplicative A →* kˣ) :
+    ((pointsEquiv k A).symm c).val ≫ (w.centerIso k).hom =
+      ((pointsEquiv k A).symm
+        (c.comp w.exponentEquiv.toAddEquiv.toAddMonoidHom.toMultiplicative)).val := by
+  rw [centerIso_hom, pointsEquiv_symm_comp_map]
+
+variable {N : Type*} [AddCommGroup N]
+
+/-- The open where centers with equal charges are distinct at every prefix of the word,
+including the initial and terminal configurations. -/
+def centerOpen : {C : SkewExchangeMatrix ι} → Word B C → ChargeSeed B N → (scheme k A).Opens
+  | _, .nil, P => distinctCentersOpen k (fun j ↦ P.charge (e j))
+  | _, .cons w s, P => centerOpen w P ⊓
+      ((w.cons s).centerIso k).hom ⁻¹ᵁ
+        distinctCentersOpen k (fun j ↦ ((w.cons s).chargeTarget P).charge (e j))
+
+/-- For the empty word only the initial configuration is tested. -/
+@[simp]
+theorem centerOpen_nil (P : ChargeSeed B N) :
+    (Path.nil : Word B B).centerOpen k P = distinctCentersOpen k (fun j ↦ P.charge (e j)) := (rfl)
+
+/-- Appending a step adds the condition that the new endpoint has distinct centers. -/
+theorem centerOpen_cons (w : Word B C) (s : C ⟶ D) (P : ChargeSeed B N) :
+    (w.cons s).centerOpen k P = w.centerOpen k P ⊓
+      ((w.cons s).centerIso k).hom ⁻¹ᵁ
+        distinctCentersOpen k (fun j ↦ ((w.cons s).chargeTarget P).charge (e j)) := (rfl)
+
+/-- The center map sends the word's open into the distinct-center open at its endpoint. -/
+theorem centerOpen_le_preimage_distinctCentersOpen (w : Word B C) (P : ChargeSeed B N) :
+    w.centerOpen k P ≤ (w.centerIso k).hom ⁻¹ᵁ
+      distinctCentersOpen k (fun j ↦ (w.chargeTarget P).charge (e j)) := by
+  cases w with
+  | nil => simp
+  | cons w s => rw [centerOpen_cons]; exact inf_le_right
+
+/-- The domain of a concatenation is the intersection of the first domain with the
+inverse image of the second domain. -/
+theorem centerOpen_comp (w : Word B C) (v : Word C D) (P : ChargeSeed B N) :
+    (w.comp v).centerOpen k P = w.centerOpen k P ⊓
+      (w.centerIso k).hom ⁻¹ᵁ v.centerOpen k (w.chargeTarget P) := by
+  induction v with
+  | nil =>
+    simpa using (inf_eq_left.mpr (w.centerOpen_le_preimage_distinctCentersOpen k P)).symm
+  | cons v s ih =>
+    simp only [comp_cons, centerOpen_cons, ih, Scheme.Hom.preimage_inf, inf_assoc]
+    rw [← Scheme.Hom.comp_preimage, ← Iso.trans_hom, ← centerIso_comp,
+      ← chargeTarget_comp, comp_cons]
+
+/-- A point lies in the domain exactly when every prefix sends it into the
+distinct-center open of that prefix's charge realization. -/
+theorem mem_centerOpen_iff (w : Word B C) (P : ChargeSeed B N) (x : scheme k A) :
+    x ∈ w.centerOpen k P ↔ ∀ ⦃D : SkewExchangeMatrix ι⦄ (p : Word B D) (q : Word D C),
+      p.comp q = w → (p.centerIso k).hom x ∈
+        distinctCentersOpen k (fun j ↦ (p.chargeTarget P).charge (e j)) := by
+  constructor
+  · intro hx D p q h
+    rw [← h, centerOpen_comp] at hx
+    exact p.centerOpen_le_preimage_distinctCentersOpen k P hx.1
+  · induction w with
+    | nil =>
+      intro h
+      simpa using h Path.nil Path.nil rfl
+    | cons w s ih =>
+      intro h
+      rw [centerOpen_cons]
+      exact ⟨ih fun {_} p q hpq ↦ h p (q.cons s) (by rw [comp_cons, hpq]),
+        h (w.cons s) Path.nil (comp_nil _)⟩
+
+end Ring
+
+variable {K : Type u} [Field K] {N : Type*} [AddCommGroup N]
+
+/-- A center character lies in the domain exactly when its transport along each prefix
+separates all different labels with equal charges at that prefix. -/
+theorem point_mem_centerOpen_iff (w : Word B C) (P : ChargeSeed B N)
+    (c : Multiplicative A →* Kˣ) (x : Spec (.of K)) :
+    ((pointsEquiv K A).symm c).val x ∈ w.centerOpen K P ↔
+      ∀ ⦃D : SkewExchangeMatrix ι⦄ (p : Word B D) (q : Word D C), p.comp q = w →
+        ∀ i j, i ≠ j → (p.chargeTarget P).charge (e i) = (p.chargeTarget P).charge (e j) →
+          c (ofAdd (p.exponentEquiv (e i))) ≠ c (ofAdd (p.exponentEquiv (e j))) := by
+  rw [mem_centerOpen_iff]
+  simp only [← Scheme.Hom.comp_apply, pointsEquiv_symm_comp_centerIso_hom,
+    point_mem_distinctCentersOpen_iff, MonoidHom.comp_apply, AddMonoidHom.coe_toMultiplicative,
+    Function.comp_apply, toAdd_ofAdd, AddEquiv.coe_toAddMonoidHom, LinearEquiv.coe_toAddEquiv]
+  -- The evaluation from `toAddMonoidHom` uses the same function as the linear equivalence.
+  rfl
+
+attribute [local instance] hasUniqueDiv_of_free_int
+
+/-- The center conditions for a finite word define a nonempty open over any field. -/
+theorem nonempty_centerOpen (w : Word B C) (P : ChargeSeed B N) :
+    (w.centerOpen K P : Set (scheme K A)).Nonempty := by
+  let : IrreducibleSpace (scheme K A) :=
+    inferInstanceAs (IrreducibleSpace (PrimeSpectrum (AddMonoidAlgebra K A)))
+  induction w with
+  | nil => rw [centerOpen_nil]; exact nonempty_distinctCentersOpen _
+  | cons w s ih =>
+    let U := distinctCentersOpen K (fun j ↦ ((w.cons s).chargeTarget P).charge (e j))
+    let f := ((w.cons s).centerIso K).hom
+    have hU : (U : Set (scheme K A)).Nonempty := nonempty_distinctCentersOpen _
+    rw [centerOpen_cons, TopologicalSpace.Opens.coe_inf, Scheme.Hom.coe_preimage]
+    exact nonempty_preirreducible_inter (w.centerOpen K P).isOpen
+      (f.continuous.isOpen_preimage _ U.isOpen) ih (hU.preimage f.homeomorph.surjective)
+
+/-- The center conditions for a finite word hold on a dense open over any field. -/
+theorem dense_centerOpen (w : Word B C) (P : ChargeSeed B N) :
+    Dense (w.centerOpen K P : Set (scheme K A)) := by
+  let : IrreducibleSpace (scheme K A) :=
+    inferInstanceAs (IrreducibleSpace (PrimeSpectrum (AddMonoidAlgebra K A)))
+  exact (w.centerOpen K P).isOpen.dense (w.nonempty_centerOpen P)
+
+/-- Over a separably closed field there is a rational initial center character satisfying
+the noncollision conditions at every step. -/
+theorem exists_point_mem_centerOpen [IsSepClosed K] (w : Word B C) (P : ChargeSeed B N) :
+    ∃ c : Multiplicative A →* Kˣ, ((pointsEquiv K A).symm c).val default ∈ w.centerOpen K P :=
+  (denseRange_centerPoints K ι).exists_mem_open (w.centerOpen K P).isOpen
+    (w.nonempty_centerOpen P)
+
+end Quiver.Path
