@@ -379,6 +379,13 @@ def orbitToRayChart (hdim : Module.finrank ℤ N = 2)
     Spec (.of (LaurentPolynomial ℂ)) ⟶ Φ.affineToricChart ρ.toCone :=
   Spec.map (CommRingCat.ofHom (ρ.orbitCoordinateMap hdim hm hprim).toRingHom)
 
+/-- The ray orbit immersion is induced by restriction to Laurent coordinates. -/
+theorem orbitToRayChart_def (hdim : Module.finrank ℤ N = 2)
+    (hm : m v = 0) (hprim : Function.Surjective m) :
+    ρ.orbitToRayChart hdim hm hprim =
+      Spec.map (CommRingCat.ofHom (ρ.orbitCoordinateMap hdim hm hprim).toRingHom) :=
+  (rfl)
+
 /-- The orbit is a closed subscheme of the ray chart. -/
 instance isClosedImmersion_orbitToRayChart (hdim : Module.finrank ℤ N = 2)
     (hm : m v = 0) (hprim : Function.Surjective m) :
