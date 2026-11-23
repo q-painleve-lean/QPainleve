@@ -12,6 +12,7 @@ import QPainleve.AlgebraicGeometry.Blowup.LinearSystem
 import QPainleve.AlgebraicGeometry.Blowup.Projective.Global
 import QPainleve.AlgebraicGeometry.CartierDivisor.Support
 import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
+import QPainleve.AlgebraicGeometry.Morphisms.Smooth.Factorial
 import QPainleve.AlgebraicGeometry.WeilDivisor.LinearSystem.Intersection
 import TauCeti.AlgebraicGeometry.IdealSheaf.Comap
 
@@ -89,9 +90,8 @@ private theorem exists_isClosedPointTower_of_moving_bound (bound : ℕ)
     have : Smooth (Y ↘ Spec (.of k)) := SmoothOfRelativeDimension.smooth 2 _
     have : IsRegular Y := IsRegular.of_smooth (Y ↘ Spec (.of k))
     have hY := topologicalKrullDim_eq_of_smoothOfRelativeDimension (Y ↘ Spec (.of k)) (n := 2)
-    have : ∀ y : Y, UniqueFactorizationMonoid (Y.presheaf.stalk y) := fun y ↦
-      IsRegular.uniqueFactorizationMonoid_stalk y
-        (WithBot.coe_le_coe.mp ((TauCeti.coheight_le_topologicalKrullDim y).trans hY.le))
+    have : ∀ y : Y, UniqueFactorizationMonoid (Y.presheaf.stalk y) :=
+      (Y ↘ Spec (.of k)).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two
     let transform := pointBlowupTransform p hS hne hp hdim
     let hS' : ∀ D ∈ Set.range transform, 0 ≤ D :=
       fun _ ⟨D, hD⟩ ↦ hD ▸ pointBlowupTransform_nonneg p hS hne hp hdim D
@@ -194,10 +194,8 @@ theorem exists_isClosedPointTower_isEffectiveCartier_comap_iSup_zeroIdeal
   have : Smooth f := SmoothOfRelativeDimension.smooth 2 f
   have : IsNoetherian X := isNoetherian_of_finiteType f
   have : IsRegular X := IsRegular.of_smooth f
-  have hX := topologicalKrullDim_eq_of_smoothOfRelativeDimension f (n := 2)
-  have : ∀ x : X, UniqueFactorizationMonoid (X.presheaf.stalk x) := fun x ↦
-    IsRegular.uniqueFactorizationMonoid_stalk x
-      (WithBot.coe_le_coe.mp ((TauCeti.coheight_le_topologicalKrullDim x).trans hX.le))
+  have : ∀ x : X, UniqueFactorizationMonoid (X.presheaf.stalk x) :=
+    f.uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two
   let D (i : {i // s i ≠ 0}) := (L.zeroDivisor i.property).toWeilDivisor
   have hD : ∀ i, 0 ≤ D i := fun i ↦
     (Scheme.CartierDivisor.isEffective_iff_toWeilDivisor_nonneg _).mp

@@ -10,6 +10,7 @@ public import QPainleve.AlgebraicGeometry.WeilDivisor.IdealSheaf
 public import QPainleve.AlgebraicGeometry.WeilDivisor.LinearSystem.FixedPart
 
 import QPainleve.AlgebraicGeometry.IdealSheaf.Stalk
+import QPainleve.Topology.NoetherianSpace
 import TauCeti.AlgebraicGeometry.IdealSheaf.Colon
 import TauCeti.AlgebraicGeometry.Scheme.GenericPoint
 import TauCeti.Topology.KrullDimension.Basic
@@ -165,17 +166,10 @@ theorem support_baseIdeal_movingPart_subset_closedPoints (hne : S.Nonempty)
 theorem finite_support_baseIdeal_movingPart (hne : S.Nonempty) (hX : topologicalKrullDim X ≤ 2) :
     (↑(baseIdeal (WeilDivisor.movingPart S hne hS)
       (fun _ ↦ WeilDivisor.nonneg_of_mem_movingPart hne hS)).support : Set X).Finite := by
-  let B : Closeds X := (baseIdeal (WeilDivisor.movingPart S hne hS)
-    (fun _ ↦ WeilDivisor.nonneg_of_mem_movingPart hne hS)).support
-  have hB := support_baseIdeal_movingPart_subset_closedPoints hS hne hX
-  obtain ⟨C, hCf, hCclosed, hCirred, hcover⟩ :=
-    NoetherianSpace.exists_finite_set_isClosed_irreducible B.isClosed
-  rw [hcover]
-  refine hCf.sUnion fun V hV ↦ ?_
-  obtain ⟨x, hx⟩ := QuasiSober.sober (hCirred V hV) (hCclosed V hV)
-  have hxB : x ∈ (B : Set X) := hcover ▸ Set.mem_sUnion_of_mem hx.mem hV
-  rw [← hx, (hB hxB).closure_eq]
-  exact Set.finite_singleton _
+  let B := baseIdeal (WeilDivisor.movingPart S hne hS)
+    (fun _ ↦ WeilDivisor.nonneg_of_mem_movingPart hne hS)
+  exact B.support.isClosed.finite_of_subset_closedPoints
+    (support_baseIdeal_movingPart_subset_closedPoints hS hne hX)
 
 attribute [local instance] IsNormalScheme.of_uniqueFactorizationMonoid_stalk
 
