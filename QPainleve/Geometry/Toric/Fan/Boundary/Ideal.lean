@@ -42,6 +42,12 @@ theorem rayBoundaryIdeal_def (ρ : Φ.Ray) :
       ⟨closure {((Φ.rayBoundaryPoint hΦ ρ).val)}, isClosed_closure⟩ :=
   (rfl)
 
+/-- The reduced ray divisor is integral. -/
+instance isIntegral_rayBoundary (ρ : Φ.Ray) :
+    IsIntegral (Φ.rayBoundaryIdeal hΦ ρ).subscheme := by
+  rw [Φ.rayBoundaryIdeal_def]
+  infer_instance
+
 /-- The boundary ideal of a ray in a regular fan defines an effective Cartier divisor. -/
 theorem isEffectiveCartier_rayBoundaryIdeal (ρ : Φ.Ray) :
     (Φ.rayBoundaryIdeal hΦ ρ).IsEffectiveCartier := by

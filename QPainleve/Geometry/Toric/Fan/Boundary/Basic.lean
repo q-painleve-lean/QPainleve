@@ -9,12 +9,12 @@ public import Mathlib.AlgebraicGeometry.IdealSheaf.Basic
 public import QPainleve.AlgebraicGeometry.OrderOfVanishing.Base
 public import QPainleve.Geometry.Toric.Fan.FunctionField
 public import QPainleve.Geometry.Toric.Fan.Ray
+public import QPainleve.Geometry.Toric.RegularChart
 public import TauCeti.AlgebraicGeometry.Scheme.CodimensionOnePoint
 public import TauCeti.Geometry.Toric.Algebraic.Fan.Over
 
 import Mathlib.Algebra.MvPolynomial.Division
 import Mathlib.RingTheory.Ideal.KrullsHeightTheorem
-import QPainleve.Geometry.Toric.RegularChart
 import TauCeti.AlgebraicGeometry.WeilDivisor.Scheme.Order
 
 /-!
@@ -73,7 +73,8 @@ theorem monomial_mem_rayIdeal (ρ : ToricRay σ) (m : dualSemigroup hi σ)
 variable {b : Module.Basis (ToricRay σ ⊕ ι) ℤ N}
   (hb : ∀ ρ, IsPrimitiveGenerator i ρ (b (Sum.inl ρ)))
 
-private theorem rayCoord_apply (ρ : ToricRay σ) :
+/-- The character dual to a primitive ray is its polynomial variable in regular coordinates. -/
+theorem affineCoordinateRingEquivMvPolynomial_rayCoord (ρ : ToricRay σ) :
     affineCoordinateRingEquivMvPolynomial hi hσ hb
       (χ (ofAdd (dualSemigroupCoord hi hσ hb (Sum.inl ρ)))) = MvPolynomial.X ρ := by
   have h := (regularDualSemigroupEquiv hi hσ hb).apply_symm_apply (Finsupp.single ρ 1, 0)
@@ -91,7 +92,7 @@ theorem rayIdeal_eq_span (ρ : ToricRay σ) :
     intro m hm
     apply Ideal.mem_span_singleton.mpr
     apply (map_dvd_iff e).mp
-    rw [rayCoord_apply hi hσ hb ρ]
+    rw [affineCoordinateRingEquivMvPolynomial_rayCoord hi hσ hb ρ]
     simp only [e, MonoidAlgebra.of_apply,
       affineCoordinateRingEquivMvPolynomial_single, MvPolynomial.X_dvd_monomial]
     right
@@ -117,7 +118,7 @@ theorem monomial_mem_rayIdeal_iff (hreg : IsRegularCone i σ) (ρ : ToricRay σ)
     rw [rayIdeal_eq_span hi hσ hb] at hm
     have hd := (map_dvd_iff (affineCoordinateRingEquivMvPolynomial hi hσ hb)).mpr
       (Ideal.mem_span_singleton.mp hm)
-    rw [rayCoord_apply hi hσ hb ρ] at hd
+    rw [affineCoordinateRingEquivMvPolynomial_rayCoord hi hσ hb ρ] at hd
     simp only [affineCoordinateRingEquivMvPolynomial_single, MvPolynomial.X_dvd_monomial,
       AddMonoidAlgebra.single_eq_zero, one_ne_zero, false_or] at hd
     have hpos : (0 : ℤ) < ((regularDualSemigroupEquiv hi hσ hb m).1 ρ : ℤ) :=
@@ -159,7 +160,7 @@ theorem IsRegularCone.isPrime_rayIdeal (hreg : IsRegularCone i σ) (ρ : ToricRa
   let e := affineCoordinateRingEquivMvPolynomial hi hσ hb
   have hp : Prime (χ (ofAdd (dualSemigroupCoord hi hσ hb (Sum.inl ρ)))) := by
     apply (MulEquiv.prime_iff e.toMulEquiv).1
-    exact (rayCoord_apply hi hσ hb ρ).symm ▸ MvPolynomial.prime_X
+    exact (affineCoordinateRingEquivMvPolynomial_rayCoord hi hσ hb ρ).symm ▸ MvPolynomial.prime_X
   rw [rayIdeal_eq_span hi hσ hb]
   exact (Ideal.span_singleton_prime hp.ne_zero).2 hp
 
@@ -287,7 +288,8 @@ private theorem exists_rayIdeal_le_of_monomial_mem (hreg : IsRegularCone i σ)
   refine ⟨ρ, ?_⟩
   rw [rayIdeal_eq_span hi hσ hb, Ideal.span_le, Set.singleton_subset_iff]
   obtain ⟨q, hq, hqX⟩ := (Ideal.mem_map_of_equiv e _).1 hX
-  exact e.injective (hqX.trans (rayCoord_apply hi hσ hb ρ).symm) ▸ hq
+  have heq := affineCoordinateRingEquivMvPolynomial_rayCoord hi hσ hb ρ
+  exact e.injective (hqX.trans heq.symm) ▸ hq
 
 end Chart
 

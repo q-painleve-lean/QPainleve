@@ -72,7 +72,8 @@ private theorem exists_pos_primitiveGenerator_of_ne_zero
       AddMonoidHom.zero_apply, (hb r).eq_primitiveGenerator hi hσ] using hzero r
   · exact (Nat.not_lt_zero j.val (hl ▸ j.isLt)).elim
 
-private theorem distinguishedPoint_top_single_eq_zero_of_pos
+/-- The distinguished point of a cone kills monomials positive on one of its rays. -/
+theorem distinguishedPoint_top_single_eq_zero_of_pos
     (hi : IsIntegralLattice i) (hσ : IsToricCone i σ) (r : ToricRay σ)
     (m : dualSemigroup hi σ)
     (hm : 0 < (m : N →+ ℤ) (primitiveGenerator hi hσ r)) :
