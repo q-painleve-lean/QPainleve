@@ -321,19 +321,16 @@ private theorem mem_range_rayChart_of_not_mem_otherRayIdeal (σ : Φ.cones)
   exact (congrArg (fun f : Φ.affineToricChart τ ⟶ Φ.algebraicRealization ↦ f z)
     (Φ.faceAffineToricSchemeMap_comp_affineToricChartι (τ := τ) (σ := σ) r.val.isFaceOf)).symm
 
-/-- Away from the nodes, every point of the reduced boundary of a complete regular
-toric surface lies in a ray chart. The boundary in this chart is the ray orbit. -/
-theorem exists_mem_range_rayChart_of_not_isNodeOfReducedBoundary
+/-- Every point of a complete regular toric surface outside the nodes of the reduced
+boundary belongs to a ray chart. -/
+theorem exists_rayChart_of_not_isNodeOfReducedBoundary
     (hΦ : Φ.IsRegular) (hc : Φ.IsComplete) (hdim : Module.finrank ℤ N = 2)
-    {x : Φ.algebraicRealization} (hx : x ∈ (Φ.boundaryIdeal hc.nonempty_cones).support)
+    {x : Φ.algebraicRealization}
     (hn : ¬ (Φ.boundaryIdeal hc.nonempty_cones).IsNodeOfReducedBoundary
       Φ.algebraicRealizationStructureMap x) :
     ∃ ρ : Φ.Ray, x ∈ Set.range (Φ.affineToricChartι ρ.toCone) := by
   obtain ⟨σ, hσ, y, rfl⟩ := exists_twoRayChart_apply_eq hΦ hc hdim x
-  have hy : y ∈ ((Φ.boundaryIdeal ⟨σ⟩).comap (Φ.affineToricChartι σ)).support := by
-    rwa [support_comap]
-  obtain ⟨r, hr⟩ := (mem_boundaryIdeal_comap_chart_iff hΦ σ y).mp hy
-  refine ⟨Ray.ofToricRay Φ σ r, ?_⟩
+  classical
   have hnot : ¬ (⨆ t : ToricRay σ.val, rayIdeal Φ.lattice (Φ.isToricCone σ.property) t) ≤
       y.asIdeal := by
     rw [iSup_rayIdeal_eq_ker_distinguishedPoint Φ.lattice (Φ.isToricCone σ.property)
@@ -353,8 +350,10 @@ theorem exists_mem_range_rayChart_of_not_isNodeOfReducedBoundary
       exact Scheme.Hom.comp_apply g (Φ.affineToricChartι σ) o
     exact hn (ho ▸ Φ.isNodeOfReducedBoundary_distinguishedPointHom hΦ σ hdim hσ)
   obtain ⟨t, ht⟩ := not_forall.mp (fun h ↦ hnot (iSup_le h))
-  exact mem_range_rayChart_of_not_mem_otherRayIdeal σ hΦ hσ
-    (fun e : r = t ↦ ht (e ▸ hr)) y ht
+  have : Finite (ToricRay σ.val) := ToricRay.finite_of_fg (Φ.isToricCone σ.property).fg
+  have : Nontrivial (ToricRay σ.val) := Finite.one_lt_card_iff_nontrivial.mp (by rw [hσ]; decide)
+  obtain ⟨r, hrt⟩ := exists_ne t
+  exact ⟨Ray.ofToricRay Φ σ r, mem_range_rayChart_of_not_mem_otherRayIdeal σ hΦ hσ hrt y ht⟩
 
 variable [Nonempty Φ.cones]
 
