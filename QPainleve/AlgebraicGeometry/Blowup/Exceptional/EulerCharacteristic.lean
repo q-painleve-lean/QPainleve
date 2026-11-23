@@ -142,7 +142,9 @@ private theorem pointBlowup_exceptional_twist_cohomology_step
         exact (c₁ (q + 1)).injective.subsingleton
 
 variable [IsLocallyNoetherian X] in
-private theorem nonempty_cohomologyLinearEquiv_pointBlowup_pullback
+/-- Pulling back a line bundle along the blowup of a regular closed point of local
+dimension two preserves its cohomology in every degree. -/
+theorem nonempty_cohomologyLinearEquiv_pointBlowup_pullback
     (hp : IsClosed ({p} : Set X)) [IsRegularLocalRing (X.presheaf.stalk p)]
     (hdim : ringKrullDim (X.presheaf.stalk p) = 2) (L : InvertibleSheaf X) (q : ℕ) :
     let : Scheme.Over Y (Spec (.of k)) := ⟨π ≫ X ↘ Spec (.of k)⟩
