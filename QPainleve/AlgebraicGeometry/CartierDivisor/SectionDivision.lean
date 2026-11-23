@@ -8,6 +8,7 @@ module
 public import QPainleve.AlgebraicGeometry.CartierDivisor.ZeroDivisor
 import QPainleve.AlgebraicGeometry.IdealSheaf.TensorProduct
 import QPainleve.AlgebraicGeometry.IdealSheaf.Image
+import TauCeti.AlgebraicGeometry.IdealSheaf.Colon
 
 /-!
 # Dividing sections by an effective Cartier divisor
@@ -60,22 +61,6 @@ private def sectionToFunctional :
     Γ(L.obj, ⊤) ≃ ((ihom L.obj).obj (𝟙_ X.Modules) ⟶ 𝟙_ X.Modules) :=
   L.obj.unitHomEquivTop.symm.trans (dualHomUnitEquiv L.obj).symm
 
-private theorem sectionToFunctional_imageIdealSheaf (s : Γ(L.obj, ⊤)) :
-    (sectionToFunctional L s).imageIdealSheaf = L.zeroIdeal s := by
-  let φ := L.dualSectionEquiv.symm s
-  let d : (dual L).obj ≅ (ihom L.obj).obj (𝟙_ X.Modules) := eqToIso (dual_obj L)
-  have hφ : d.inv ≫ φ = sectionToFunctional L s := by
-    apply (dualHomUnitEquiv L.obj).injective
-    apply L.obj.unitHomEquivTop.injective
-    exact (L.dualSectionEquiv_apply _).symm.trans ((L.dualSectionEquiv.apply_symm_apply s).trans
-      ((L.obj.unitHomEquivTop.apply_symm_apply s).symm.trans
-        (congrArg L.obj.unitHomEquivTop ((dualHomUnitEquiv L.obj).apply_symm_apply _).symm)))
-  have h : (d.inv ≫ φ).imageIdealSheaf = φ.imageIdealSheaf :=
-    φ.imageIdealSheaf_comp_iso d.symm
-  rw [← hφ, h]
-  ext V a
-  rw [Hom.imageIdealSheaf_ideal, zeroIdeal_ideal]
-
 /-- A section lies in the effective Cartier twist exactly when its zero ideal is contained
 in the divisor ideal. The section of the twist is unique. -/
 theorem existsUnique_idealTwist_section_iff (hI : I.IsEffectiveCartier)
@@ -88,7 +73,8 @@ theorem existsUnique_idealTwist_section_iff (hI : I.IsEffectiveCartier)
   let φ := sectionToFunctional L s
   have hs : dualHomUnitEquiv L.obj φ = L.obj.unitHomEquivTop.symm s :=
     (dualHomUnitEquiv L.obj).apply_symm_apply _
-  rw [← sectionToFunctional_imageIdealSheaf, ← exists_tensorLift_iff, hs]
+  have hzero : L.zeroIdeal s = φ.imageIdealSheaf := L.zeroIdeal_eq_imageIdealSheaf_evaluation s
+  rw [hzero, ← exists_tensorLift_iff, hs]
   constructor
   · rintro ⟨t, ht, -⟩
     let τ : 𝟙_ X.Modules ⟶ K.obj := K.obj.unitHomEquivTop.symm t
@@ -181,7 +167,8 @@ theorem zeroIdeal_eq_iff_exists_iso_tensorLift [IsIntegral X]
   have : Mono φ := sectionToFunctional_mono L hs
   have heval : dualHomUnitEquiv L.obj φ = L.obj.unitHomEquivTop.symm s :=
     (dualHomUnitEquiv L.obj).apply_symm_apply _
-  rw [← sectionToFunctional_imageIdealSheaf, ← heval]
+  have hzero : L.zeroIdeal s = φ.imageIdealSheaf := L.zeroIdeal_eq_imageIdealSheaf_evaluation s
+  rw [hzero, ← heval]
   exact (exists_iso_tensorLift_iff L φ).symm
 
 /-- The zero ideal of a section mapped through the Cartier twist inclusion is the
@@ -226,5 +213,25 @@ theorem zeroIdeal_idealTwistInclusion [IsIntegral X] (hI : I.IsEffectiveCartier)
   let j : J.sheaf ⟶ 𝟙_ X.Modules := J.sheafι
   exact ((Category.assoc e.hom (j ▷ H.obj ≫ (λ_ H.obj).hom) _).trans
     (congrArg (e.hom ≫ ·) (Category.assoc (j ▷ H.obj) (λ_ H.obj).hom _))).symm
+
+/-- If the common zero ideal of a family of sections is effective Cartier, dividing
+by that ideal gives sections whose nonvanishing loci cover the scheme. -/
+theorem exists_idealTwist_sections_of_cartier_base_ideal [IsIntegral X] {ι : Type*}
+    (s : ι → Γ(L.obj, ⊤)) (hI : (⨆ i, L.zeroIdeal (s i)).IsEffectiveCartier) :
+    let K := hI.toInvertibleSheaf.tensorProduct L
+    ∃ t : ι → Γ(K.obj, ⊤),
+      (∀ i, (L.idealTwistInclusion hI).app ⊤ (t i) = s i) ∧
+      (⨆ i, Scheme.Modules.nonvanishingLocus K.obj (t i)) = ⊤ := by
+  let J := ⨆ i, L.zeroIdeal (s i)
+  let K := hI.toInvertibleSheaf.tensorProduct L
+  choose t ht using fun i ↦
+    ((L.existsUnique_idealTwist_section_iff hI (s i)).mpr
+      (le_iSup (fun j ↦ L.zeroIdeal (s j)) i)).exists
+  refine ⟨t, ht, (K.iSup_nonvanishingLocus_eq_top_iff t).mpr ?_⟩
+  have hmul : (⨆ i, K.zeroIdeal (t i)) * J = J := by
+    rw [(J.gc_mul_colon).l_iSup]
+    exact iSup_congr fun i ↦ (L.zeroIdeal_idealTwistInclusion hI (t i)).symm.trans
+      (congrArg L.zeroIdeal (ht i))
+  exact hI.mul_left_cancel (by simpa only [mul_comm, Scheme.IdealSheafData.top_mul] using hmul)
 
 end TauCeti.AlgebraicGeometry.InvertibleSheaf
