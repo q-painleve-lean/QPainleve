@@ -5,7 +5,7 @@ Authors: The QPainleve contributors
 -/
 module
 
-public import QPainleve.AlgebraicGeometry.Blowup.Exceptional.FirstKind
+public import QPainleve.AlgebraicGeometry.Blowup.Exceptional.Restriction
 public import TauCeti.AlgebraicGeometry.IdealSheaf.Over
 public import TauCeti.AlgebraicGeometry.LineBundle.EulerCharacteristic
 public import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.ProjectiveOver
@@ -14,10 +14,9 @@ import QPainleve.AlgebraicGeometry.Blowup.PointCohomology
 import QPainleve.AlgebraicGeometry.Cohomology.Projective
 import QPainleve.AlgebraicGeometry.Cohomology.ProjectiveSpace.EulerCharacteristic
 import QPainleve.AlgebraicGeometry.Cohomology.Support
+import QPainleve.AlgebraicGeometry.IdealSheaf.Point
 import TauCeti.AlgebraicGeometry.Cohomology.ProjectiveLine.NegativeTwist
 import TauCeti.AlgebraicGeometry.IdealSheaf.EulerCharacteristic
-import TauCeti.AlgebraicGeometry.IdealSheaf.VanishingIdeal
-import TauCeti.AlgebraicGeometry.LineBundle.LocalRing
 import TauCeti.AlgebraicGeometry.Noetherian
 
 /-!
@@ -63,59 +62,6 @@ private noncomputable local instance : Scheme.Over Y (Spec (.of k)) := ⟨π ≫
 local notation "𝒜" => TauCeti.SymmetricAlgebra.homogeneousSubmodule k (Fin 2 → k)
 local notation "𝒪" => Proj.twistingSheaf 𝒜
 
-/-- On the exceptional divisor over a rational regular point of local dimension two, the
-restriction of the pullback of a line bundle twisted by `mE` is isomorphic to `𝒪(-m)` under the
-exceptional projective-line identification. The same projective-line isomorphism works for all
-line bundles and all integers `m`. -/
-theorem exists_iso_projectiveLine_pullback_pointBlowup_exceptional_twist
-    (hp : IsClosed ({p} : Set X)) [IsRegularLocalRing (X.presheaf.stalk p)]
-    (hdim : ringKrullDim (X.presheaf.stalk p) = 2)
-    (hrat : IsIso (X.fromSpecResidueField p ≫ (X ↘ Spec (.of k)))) :
-    ∃ e : projectiveLine k ≅ (E).subscheme,
-      e.hom ≫ ι ≫ π ≫ (X ↘ Spec (.of k)) = (projectiveLine k ↘ Spec (.of k)) ∧
-      ∀ (a : LineBundleClass X) (m : ℤ) (M : InvertibleSheaf Y),
-        LineBundleClass.mk M = twist[a, m] →
-        Nonempty (((InvertibleSheaf.pullback (e.hom ≫ ι)).obj M).obj ≅ 𝒪 (-m)) := by
-  let κ := X.residueField p
-  let c := X.fromSpecResidueField p ≫ (X ↘ Spec (.of k))
-  let : Algebra k κ := (Spec.preimage c).hom.toAlgebra
-  have hc : Spec.map (CommRingCat.ofHom (algebraMap k κ)) = c := Spec.map_preimage c
-  have : IsIso (Spec.map (CommRingCat.ofHom (algebraMap k κ))) := hc.symm ▸ hrat
-  let b := projectiveLine.baseChangeProjection k κ
-  have hb := projectiveLine.isPullback_baseChangeProjection k κ
-  have : IsIso b := hb.isIso_fst_of_isIso
-  obtain ⟨eκ, heκ, hconormal, -⟩ :=
-    exists_iso_projectiveLine_pullback_exceptionalIdeal_of_closedPoint p hp hdim
-  let e := (asIso b).symm ≪≫ eκ
-  have he : b ≫ e.hom = eκ.hom := by simp [e]
-  have hκ : eκ.hom ≫ ι ≫ π ≫ (X ↘ Spec (.of k)) =
-      b ≫ (projectiveLine k ↘ Spec (.of k)) := by
-    rw [hb.w, hc]
-    simpa only [Category.assoc, c] using
-      congrArg (· ≫ (X ↘ Spec (.of k))) heκ.w
-  refine ⟨e, (cancel_epi b).mp (by simpa only [← Category.assoc, he] using hκ), ?_⟩
-  intro a m M hM
-  let d := LineBundleClass.pullback (e.hom ≫ ι) (LineBundleClass.mk 𝒥)
-  have hd : LineBundleClass.eulerDegree k d = 1 := by
-    rw [← LineBundleClass.eulerDegree_pullback hb d, LineBundleClass.pullback_comp,
-      ← Category.assoc, he, LineBundleClass.pullback_mk, LineBundleClass.eulerDegree_mk]
-    exact (projectiveLine.nonempty_iso_twistingSheaf_iff κ _ 1).mp hconormal
-  have ha : LineBundleClass.pullback (e.hom ≫ ι) (LineBundleClass.pullback π a) = 1 := by
-    have hef : (e.hom ≫ ι) ≫ π =
-        ((asIso b).inv ≫ (projectiveLine κ ↘ Spec (.of κ))) ≫ X.fromSpecResidueField p := by
-      dsimp only [e, Iso.trans_hom, Iso.symm_hom]
-      simpa only [Category.assoc] using congrArg ((asIso b).inv ≫ ·) heκ.w
-    rw [LineBundleClass.pullback_comp, hef, ← LineBundleClass.pullback_comp]
-    have ht : LineBundleClass.pullback (X.fromSpecResidueField p) a = 1 :=
-      Subsingleton.elim _ _
-    rw [ht, LineBundleClass.pullback_one]
-  let : Fact (∀ x : projectiveLine k, Order.coheight x ≤ 1) :=
-    ⟨Scheme.IsCurveOver.coheight_le_one (k := k)⟩
-  apply (projectiveLine.nonempty_iso_twistingSheaf_iff k _ (-m)).mpr
-  rw [← LineBundleClass.eulerDegree_mk, ← LineBundleClass.pullback_mk, hM,
-    LineBundleClass.pullback_mul, ha, one_mul, LineBundleClass.pullback_zpow,
-    LineBundleClass.eulerDegree_zpow, hd, mul_one]
-
 /-- The Cartier quotient of the exceptional twist has the cohomology of `𝒪(-m)` on the
 exceptional projective line, as vector spaces over the base field. -/
 theorem nonempty_cohomologyLinearEquiv_pointBlowup_exceptional_quotient
@@ -131,35 +77,15 @@ theorem nonempty_cohomologyLinearEquiv_pointBlowup_exceptional_quotient
     exists_iso_projectiveLine_pullback_pointBlowup_exceptional_twist p k hp hdim hrat
   let : e.hom.IsOver (Spec (.of k)) := ⟨he⟩
   obtain ⟨t⟩ := htwist a m M hM
-  let F := (InvertibleSheaf.toFiniteLocallyFree Y).obj M
   let N := (Scheme.Modules.pullback ι).obj M.obj
-  have hF : F.obj = M.obj := ObjectProperty.ιOfLE_obj_obj _ _
-  have hN : ((FiniteLocallyFreeSheaf.pullback ι).obj F).obj = N := by
-    rw [FiniteLocallyFreeSheaf.pullback_obj_obj, hF]
-  let qIso : M.obj ⊗ (E).pushforwardSubscheme ≅ (Scheme.Modules.pushforward ι).obj N :=
-    eqToIso (congrArg (· ⊗ (E).pushforwardSubscheme) hF.symm) ≪≫
-      (E).tensorPushforwardSubschemeIso F ≪≫ (Scheme.Modules.pushforward ι).mapIso (eqToIso hN)
+  let qIso : M.obj ⊗ (E).pushforwardSubscheme ≅ (Scheme.Modules.pushforward ι).obj N := by
+    simpa only [N, FiniteLocallyFreeSheaf.pullback_obj_obj, ObjectProperty.ιOfLE_obj_obj] using
+      (E).tensorPushforwardSubschemeIso ((InvertibleSheaf.toFiniteLocallyFree Y).obj M)
   exact ⟨(cohomologyBaseLinearEquivOfIso k qIso q).trans <|
     (Scheme.Hom.cohomologyPushforwardBaseLinearEquiv ι k N q).trans <|
     (e.hom.cohomologyPullbackBaseLinearEquivOfIsIso k N q).symm.trans <|
     (cohomologyBaseLinearEquivOfIso k ((Scheme.Modules.pullbackComp e.hom ι).app M.obj) q)
       |>.trans (cohomologyBaseLinearEquivOfIso k t q)⟩
-
-/-- Tensoring the `mE` twist by the exceptional ideal gives the preceding twist.
-This identifies the first term of the actual tensor Cartier sequence. -/
-theorem exists_iso_tensor_exceptional_ideal_pointBlowup_twist
-    (a : LineBundleClass X) (m : ℤ) {L M : InvertibleSheaf Y}
-    (hL : LineBundleClass.mk L = twist[a, m - 1])
-    (hM : LineBundleClass.mk M = twist[a, m]) :
-    Nonempty (L.obj ≅ M.obj ⊗ (E).sheaf) := by
-  have h : LineBundleClass.mk L = LineBundleClass.mk (M.tensorProduct 𝒥) := by
-    rw [LineBundleClass.mk_tensorProduct, hL, hM, mul_assoc, ← zpow_add_one]
-    congr 2
-    omega
-  obtain ⟨e⟩ := LineBundleClass.mk_eq_mk_iff.mp h
-  exact ⟨e ≪≫ InvertibleSheaf.tensorProductObjIso _ _ ≪≫
-    (tensorLeft M.obj).mapIso
-      (eqToIso (isEffectiveCartier_comap_blowupToBase Iₚ).toInvertibleSheaf_obj)⟩
 
 private theorem pointBlowup_exceptional_twist_cohomology_step
     (hp : IsClosed ({p} : Set X)) [IsRegularLocalRing (X.presheaf.stalk p)]
@@ -221,16 +147,7 @@ private theorem nonempty_cohomologyLinearEquiv_pointBlowup_pullback
     let : Scheme.Over Y (Spec (.of k)) := ⟨π ≫ X ↘ Spec (.of k)⟩
     Nonempty (Cohomology L.obj q ≃ₗ[k]
       Cohomology ((InvertibleSheaf.pullback π).obj L).obj q) := by
-  have hs : (Iₚ).support = Closeds.mk (closure ({p} : Set X)) isClosed_closure := by
-    ext x
-    simp only [Scheme.Hom.support_ker, Scheme.range_fromSpecResidueField]
-    rfl
-  -- The cohomology comparison uses the reduced ideal on the closure of the point.
-  have hI : Iₚ = vanishingIdeal (Iₚ).support := by
-    refine le_antisymm (by rw [vanishingIdeal_support]; exact le_radical _) ?_
-    exact vanishingIdeal_le_ker_of_range_subset _
-      (X.fromSpecResidueField p).range_subset_ker_support
-  rw [hI.trans (congrArg vanishingIdeal hs)]
+  rw [X.ker_fromSpecResidueField_eq_vanishingIdeal p]
   exact ⟨pointBlowupCohomologyLinearEquiv k hp hdim
     ((InvertibleSheaf.toFiniteLocallyFree X).obj L) q⟩
 
