@@ -6,11 +6,9 @@ Authors: The QPainleve contributors
 module
 
 public import Mathlib.RingTheory.MvPolynomial.Homogeneous
-public import TauCeti.AlgebraicGeometry.Morphisms.Smooth.RelativeDimension
 public import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.BaseChange
 public import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.SymmetricAlgebra
 public import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.TwistingSheaf.Basic
-import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.Polynomial.Chart.Sections
 import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.TwistingSheaf.Pullback
 import TauCeti.LinearAlgebra.SymmetricAlgebra.BasisComparison
 
@@ -87,17 +85,5 @@ def polynomialProjIsoPullbackTwistingSheafIso (b : Basis ι R M) (m : ℤ) :
   rw [polynomialProjIso_hom]
   exact asIso (pullbackTwistingSheafMap (toPolynomialGradedHom b)
     (HomogeneousIdeal.irrelevant_le_map_of_surjective _ (toPolynomialGradedHom_surjective b)) m)
-
-/-- The projective spectrum on a basis of size `n + 1` is smooth of relative dimension `n`
-over the coefficient ring. -/
-theorem smoothOfRelativeDimension_projToSpec {R M : Type u} [CommRing R] [AddCommMonoid M]
-    [Module R M] {n : ℕ} (b : Basis (Fin (n + 1)) R M) :
-    SmoothOfRelativeDimension n (TauCeti.SymmetricAlgebra.projToSpec R M) := by
-  have : MorphismProperty.RespectsIso (@SmoothOfRelativeDimension.{u} n) :=
-    @MorphismProperty.IsStableUnderBaseChange.respectsIso _ _ _
-      (smoothOfRelativeDimension_isStableUnderBaseChange n)
-  rw [← MorphismProperty.cancel_left_of_respectsIso (@SmoothOfRelativeDimension n)
-    b.polynomialProjIso.hom, b.polynomialProjIso_hom_over]
-  exact smoothOfRelativeDimension_polynomial R
 
 end Module.Basis

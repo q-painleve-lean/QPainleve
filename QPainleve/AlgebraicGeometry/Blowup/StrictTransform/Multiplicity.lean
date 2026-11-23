@@ -8,11 +8,19 @@ module
 public import QPainleve.AlgebraicGeometry.Blowup.StrictTransform.Basic
 public import QPainleve.AlgebraicGeometry.IdealSheaf.RegularPair
 public import TauCeti.AlgebraicGeometry.Blowup.AffineCharts
+public import TauCeti.AlgebraicGeometry.Blowup.ExceptionalDivisor
+public import TauCeti.AlgebraicGeometry.CartierDivisor.IdealSheaf
+public import TauCeti.AlgebraicGeometry.IdealSheaf.Colon
 public import TauCeti.AlgebraicGeometry.IdealSheaf.Stalk
+public import TauCeti.AlgebraicGeometry.Scheme.CodimensionOnePoint
 public import TauCeti.RingTheory.Ideal.AssociatedGraded
 import Mathlib.AlgebraicGeometry.FunctionField
+import QPainleve.AlgebraicGeometry.Blowup.Exceptional.Multiplicity
+import QPainleve.AlgebraicGeometry.CartierDivisor.Support
+import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
 import QPainleve.RingTheory.Ideal.AffineBlowup.StrictTransform
 import TauCeti.AlgebraicGeometry.Blowup.BaseChange
+import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.Subtraction
 import TauCeti.AlgebraicGeometry.IdealSheaf.BaseChange
 import TauCeti.AlgebraicGeometry.IdealSheaf.Locality
 import TauCeti.RingTheory.Ideal.Order
@@ -307,5 +315,61 @@ theorem IsEffectiveCartier.totalTransform_eq_strictTransform_mul_pow_closedPoint
   have hle := (hpow (n + 1)).mp hm
   rw [← hn] at hle
   exact (Nat.not_succ_le_self n) (by exact_mod_cast hle)
+
+variable {X : Scheme.{u}} {p : X} [IsIntegral X] [IsLocallyNoetherian X]
+  [IsRegularLocalRing (X.presheaf.stalk p)] {D : X.IdealSheafData}
+
+local notation "Iₚ" => vanishingIdeal (Closeds.mk (closure (Set.singleton p)) isClosed_closure)
+local notation "B" => blowup Iₚ
+local notation "π" => blowupToBase Iₚ
+local notation "E" => Scheme.IdealSheafData.comap Iₚ π
+local notation "hE" => isEffectiveCartier_comap_blowupToBase Iₚ
+local notation "S" => Scheme.Hom.ker (blowupMap Iₚ D.subschemeι)
+local notation "m" => ENat.toNat (D.stalkOrder p)
+
+/-- Removing the exceptional power of the exact multiplicity from the total transform
+gives the ideal of the scheme-theoretic strict transform. -/
+theorem IsEffectiveCartier.comap_blowupToBase_colon_eq_strictTransform
+    (hD : D.IsEffectiveCartier) (hp : IsClosed ({p} : Set X))
+    (hdim : ringKrullDim (X.presheaf.stalk p) = 2) :
+    (D.comap π).colon (E ^ m) = S := by
+  have hsplit : D.comap π = S * E ^ m :=
+    hD.totalTransform_eq_strictTransform_mul_pow_closedPoint hp hdim
+  rw [hsplit, (TauCeti.isEffectiveCartier_pow hE m).mul_colon_cancel_right]
+
+/-- The total transform of an effective Cartier divisor under the blowup of a regular
+closed point of local dimension two is the strict transform plus the stalk order
+times the exceptional divisor. The strict transform is effective Cartier and its
+support omits every codimension-one point of the exceptional divisor. -/
+theorem IsEffectiveCartier.exists_strictTransform_cartierDivisor [IsIntegral B]
+    (hD : D.IsEffectiveCartier) (hp : IsClosed ({p} : Set X))
+    (hdim : ringKrullDim (X.presheaf.stalk p) = 2) (hT : (D.comap π).IsEffectiveCartier) :
+    ∃ hS : (S).IsEffectiveCartier,
+      hT.toCartierDivisor = hS.toCartierDivisor + m • (hE).toCartierDivisor ∧
+        ∀ x : CodimensionOnePoint B, (x : B) ∈ (E).support → (x : B) ∉ (S).support := by
+  let hF := TauCeti.isEffectiveCartier_pow hE m
+  have hsplit : D.comap π = S * E ^ m :=
+    hD.totalTransform_eq_strictTransform_mul_pow_closedPoint hp hdim
+  have hle : D.comap π ≤ E ^ m := by
+    rw [hsplit]
+    exact fun U ↦ by
+      simpa only [ideal_mul, Pi.mul_apply] using Ideal.mul_le_right
+  have hres := hD.comap_blowupToBase_colon_eq_strictTransform hp hdim
+  let hS : (S).IsEffectiveCartier :=
+    Eq.mp (congrArg Scheme.IdealSheafData.IsEffectiveCartier hres)
+      (hT.colon hF.locallyPrincipal hle)
+  refine ⟨hS, ?_, ?_⟩
+  · calc
+      _ = (TauCeti.isEffectiveCartier_mul hS hF).toCartierDivisor :=
+        (hT.toCartierDivisor_eq_iff _).mpr hsplit
+      _ = _ := by rw [toCartierDivisor_mul hS hF, toCartierDivisor_pow]
+  · have hm : (m : ℕ∞) = D.stalkOrder p := by
+      refine ENat.natCast_toNat ?_
+      rw [D.stalkOrder_def, ne_eq, Ideal.localOrder_eq_top_iff_eq_bot]
+      exact hD.stalkIdeal_ne_bot p
+    have hP : Iₚ = (X.fromSpecResidueField p).ker :=
+      (X.ker_fromSpecResidueField_eq_vanishingIdeal p).symm
+    rw [← hres, hP]
+    exact fun x hx ↦ notMem_support_colon_exceptional_of_mem_exceptional p hp hdim D m hm.symm x hx
 
 end AlgebraicGeometry.Scheme.IdealSheafData

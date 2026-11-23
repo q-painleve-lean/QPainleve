@@ -8,12 +8,12 @@ module
 public import QPainleve.AlgebraicGeometry.Chow.ProjectivePlane.Basic
 public import QPainleve.AlgebraicGeometry.Chow.SurfaceIntersection
 public import QPainleve.AlgebraicGeometry.Modules.Differentials.Canonical
+public import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.Polynomial.Smooth
 public import Mathlib.LinearAlgebra.PerfectPairing.Basic
 
 import QPainleve.AlgebraicGeometry.Modules.Differentials.Restriction
 import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.Polynomial.Canonical
 import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.Polynomial.Integral
-import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.Polynomial.SymmetricAlgebra
 import TauCeti.AlgebraicGeometry.Cohomology.ProjectiveSpace.HigherCohomology
 import TauCeti.AlgebraicGeometry.Scheme.Regular.Scheme
 import TauCeti.LinearAlgebra.Matrix.Dual
@@ -52,9 +52,6 @@ local notation "f" => P ↘ Spec (CommRingCat.of k)
 local notation "basis" => Pi.basisFun k (Fin 3)
 local notation "degree" => Module.Basis.picardTwistEquiv (Pi.basisFun k (Fin 3))
 local notation "K" => LineBundleClass.mk (canonicalBundle k P 2)
-
-local instance planeSmooth [CommRing k] : SmoothOfRelativeDimension 2 f :=
-  (basis).smoothOfRelativeDimension_projToSpec (n := 2)
 
 section
 
