@@ -12,7 +12,6 @@ import QPainleve.AlgebraicGeometry.Blowup.StrictTransform.Basic
 import QPainleve.AlgebraicGeometry.Blowup.Projective.Divisors
 import TauCeti.Algebra.Regular.SMul
 import TauCeti.AlgebraicGeometry.IdealSheaf.BaseChange
-import TauCeti.AlgebraicGeometry.IdealSheaf.Section
 import TauCeti.Data.Fin.Rev
 
 /-!
@@ -38,22 +37,11 @@ universe u
 variable {R : Type u} [CommRing R] (f : R) (i : Fin 2)
 
 local notation "S" => Spec (CommRingCat.of R)
-local notation "P" => projectiveLine R
 local notation "Z(" j ")" => coordinateSectionCenter f j
 local notation "D(" j ")" => coordinateSectionCenter (0 : R) j
 local notation "s(" j ")" => polynomialPoint R (RingHom.id R) j (0 : R)
 local notation "π(" j ")" => IdealSheafData.blowupToBase (Z(j))
 local notation "z" => Spec.map (CommRingCat.ofHom (eval₂RingHom (RingHom.id R) (0 : R)))
-
-private theorem ker_coordinateSection (j : Fin 2) : (s(j)).ker = D(j) := by
-  symm
-  apply coordinateSectionCenter_eq_ker_polynomialPoint_of_surjective
-  · exact Function.surjective_id
-  · rw [Ideal.span_singleton_zero]
-    exact (RingHom.injective_iff_ker_eq_bot (RingHom.id R)).mp Function.injective_id
-
-private theorem isClosedImmersion_coordinateSection (j : Fin 2) : IsClosedImmersion (s(j)) :=
-  (s(j)).isClosedImmersion_of_comp_eq_id (f := P ↘ S) (by simp [polynomialPoint_over])
 
 private theorem coordinateSectionCenter_comap_own_section :
     (Z(i)).comap (s(i)) =
