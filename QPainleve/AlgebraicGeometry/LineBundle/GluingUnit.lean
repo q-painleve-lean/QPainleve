@@ -6,7 +6,7 @@ Authors: The QPainleve contributors
 module
 
 public import TauCeti.AlgebraicGeometry.LineBundle.Endomorphisms
-public import TauCeti.AlgebraicGeometry.Modules.Pullback.Basic
+public import TauCeti.AlgebraicGeometry.Modules.Pullback.Quasicoherent
 
 /-!
 # Gluing units for line bundle trivializations
@@ -14,12 +14,13 @@ public import TauCeti.AlgebraicGeometry.Modules.Pullback.Basic
 In a commutative square of schemes, two side trivializations of a module pull back to
 trivializations on the overlap. Their comparison is multiplication by a global unit.
 The gluing compatibility criterion describes how rescaling the side trivializations
-affects this comparison.
+affects this comparison. Tensor product of trivializations multiplies the
+overlap units.
 -/
 
 public noncomputable section
 
-open CategoryTheory MonoidalCategory AlgebraicGeometry
+open CategoryTheory MonoidalCategory AlgebraicGeometry TauCeti.AlgebraicGeometry
 open Scheme.Modules
 
 universe u
@@ -42,6 +43,25 @@ theorem lineGluingCoboundary_apply (j : P ⟶ Y) (g : P ⟶ Z)
   (rfl)
 
 end AlgebraicGeometry.Scheme.Hom
+
+namespace AlgebraicGeometry.Scheme.Modules
+
+variable {X Y : Scheme.{u}} (f : X ⟶ Y) {M N : Y.Modules}
+
+/-- The tensor product of two trivializations of pulled-back modules. -/
+def pullbackTensorTrivialization [M.IsQuasicoherent]
+    (e : (pullback f).obj M ≅ 𝟙_ X.Modules) (d : (pullback f).obj N ≅ 𝟙_ X.Modules) :
+    (pullback f).obj (M ⊗ N) ≅ 𝟙_ X.Modules :=
+  asIso (Functor.OplaxMonoidal.δ (pullback f) M N) ≪≫ tensorIso e d ≪≫ λ_ _
+
+@[simp]
+theorem pullbackTensorTrivialization_hom [M.IsQuasicoherent]
+    (e : (pullback f).obj M ≅ 𝟙_ X.Modules) (d : (pullback f).obj N ≅ 𝟙_ X.Modules) :
+    (pullbackTensorTrivialization f e d).hom =
+      Functor.OplaxMonoidal.δ (pullback f) M N ≫ (e.hom ⊗ₘ d.hom) ≫ (λ_ _).hom :=
+  (rfl)
+
+end AlgebraicGeometry.Scheme.Modules
 
 namespace CategoryTheory.CommSq
 
@@ -105,6 +125,76 @@ theorem lineGluingUnit_eq_iff {M : X.Modules} (e : (pullback f).obj M ≅ 𝟙_ 
         NatTrans.comp_app, Functor.mapIso_hom, Category.assoc] using hw
     simp only [globalSectionsAction_apply]
     exact congrArg End.of ((cancel_epi (h.rightFrame d).hom).mp hw')
+
+open Functor.OplaxMonoidal in
+private theorem pullback_tensorFrame {W T : Scheme.{u}} (p : T ⟶ W)
+    {A B : W.Modules} (e : A ⟶ 𝟙_ W.Modules) (d : B ⟶ 𝟙_ W.Modules) :
+    (pullback p).map ((e ⊗ₘ d) ≫ (λ_ _).hom) ≫ (pullbackObjUnitIso p).hom =
+      δ (pullback p) A B ≫
+        (((pullback p).map e ≫ (pullbackObjUnitIso p).hom) ⊗ₘ
+          ((pullback p).map d ≫ (pullbackObjUnitIso p).hom)) ≫ (λ_ _).hom := by
+  simp only [← tensorHom_comp_tensorHom, δ_natural_assoc, Functor.map_comp, Category.assoc]
+  rw [← pullback_η]
+  have hu :
+      δ (pullback p) (𝟙_ W.Modules) (𝟙_ W.Modules) ≫
+          (η (pullback p) ⊗ₘ η (pullback p)) ≫ (λ_ _).hom =
+        (pullback p).map (λ_ (𝟙_ W.Modules)).hom ≫ η (pullback p) := by
+    simp only [tensorHom_def, Category.assoc, leftUnitor_naturality, left_unitality_hom_assoc]
+  rw [hu]
+
+open Functor.OplaxMonoidal in
+private theorem leftFrame_tensor {M N : X.Modules} [M.IsQuasicoherent]
+    (e : (pullback f).obj M ≅ 𝟙_ Y.Modules) (e' : (pullback f).obj N ≅ 𝟙_ Y.Modules) :
+    (leftFrame (j := j) (pullbackTensorTrivialization f e e')).hom =
+      δ (pullback (j ≫ f)) M N ≫
+        ((leftFrame (j := j) e).hom ⊗ₘ (leftFrame (j := j) e').hom) ≫ (λ_ _).hom := by
+  simp only [leftFrame, Iso.trans_hom, Iso.symm_hom, Iso.app_inv, Functor.mapIso_hom,
+    pullbackTensorTrivialization_hom]
+  rw [Functor.map_comp, Category.assoc, pullback_tensorFrame, pullback_comp_δ]
+  simp only [Category.assoc, tensorHom_comp_tensorHom_assoc, Iso.hom_inv_id_app_assoc]
+
+open Functor.OplaxMonoidal in
+private theorem rightFrame_tensor {M N : X.Modules} [M.IsQuasicoherent]
+    (d : (pullback i).obj M ≅ 𝟙_ Z.Modules) (d' : (pullback i).obj N ≅ 𝟙_ Z.Modules) :
+    (h.rightFrame (pullbackTensorTrivialization i d d')).hom =
+      δ (pullback (j ≫ f)) M N ≫
+        ((h.rightFrame d).hom ⊗ₘ (h.rightFrame d').hom) ≫ (λ_ _).hom := by
+  simp only [rightFrame, Iso.trans_hom, Iso.symm_hom, Iso.app_inv, Iso.trans_inv,
+    NatTrans.comp_app, Functor.mapIso_hom, Category.assoc]
+  -- First tensor the two frames over `g ≫ i`, then transport to `j ≫ f`.
+  have ht := leftFrame_tensor (j := g) d d'
+  simp only [leftFrame, Iso.trans_hom, Iso.symm_hom, Iso.app_inv, Functor.mapIso_hom] at ht
+  have hc {a b : P ⟶ X} (hab : a = b) :
+      (pullbackCongr hab.symm).inv = (pullbackCongr hab).hom := by
+    subst b
+    rfl
+  rw [hc h.w, ht, pullbackCongr_hom_app_comp_δ_assoc]
+  simp only [tensorHom_comp_tensorHom_assoc]
+
+/-- Tensoring the side trivializations multiplies their gluing units on the overlap. -/
+theorem lineGluingUnit_tensor {M N : X.Modules} [M.IsQuasicoherent]
+    (e : (pullback f).obj M ≅ 𝟙_ Y.Modules) (d : (pullback i).obj M ≅ 𝟙_ Z.Modules)
+    (e' : (pullback f).obj N ≅ 𝟙_ Y.Modules) (d' : (pullback i).obj N ≅ 𝟙_ Z.Modules) :
+    h.lineGluingUnit (pullbackTensorTrivialization f e e') (pullbackTensorTrivialization i d d') =
+      h.lineGluingUnit e d * h.lineGluingUnit e' d' := by
+  apply (h.lineGluingUnit_eq_iff ..).mpr
+  simp only [← Category.assoc]
+  -- Use the frames so that both overlap trivializations have the same source.
+  exact (show
+    (leftFrame (j := j) (pullbackTensorTrivialization f e e')).hom =
+      (h.rightFrame (pullbackTensorTrivialization i d d')).hom ≫
+        globalSectionsSmul (𝟙_ P.Modules) ↑(h.lineGluingUnit e d * h.lineGluingUnit e' d') from by
+    rw [leftFrame_tensor, rightFrame_tensor, h.leftFrame_eq_rightFrame e d,
+      h.leftFrame_eq_rightFrame e' d', ← tensorHom_comp_tensorHom]
+    -- Use the unitor calculation from
+    -- `Scheme.Hom.pushforward_map_globalSectionsSmul_tensorHom_mul` in Tau Ceti.
+    have hs (a b : Γ(P, ⊤)) :
+        (globalSectionsSmul (𝟙_ P.Modules) a ⊗ₘ globalSectionsSmul (𝟙_ P.Modules) b) ≫
+            (λ_ _).hom =
+          (λ_ (𝟙_ P.Modules)).hom ≫ globalSectionsSmul (𝟙_ P.Modules) (a * b) := by
+      rw [tensorHom_def, Category.assoc, leftUnitor_naturality, ← Category.assoc, unitors_equal,
+        rightUnitor_naturality, Category.assoc, ← unitors_equal, mul_comm, globalSectionsSmul_mul]
+    simp only [Category.assoc, Units.val_mul, hs])
 
 private abbrev unitAut {W : Scheme.{u}} (u : Γ(W, ⊤)ˣ) :
     (𝟙_ W.Modules) ≅ (𝟙_ W.Modules) :=

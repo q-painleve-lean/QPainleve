@@ -10,13 +10,17 @@ public import QPainleve.AlgebraicGeometry.IdealSheaf.Conductor.Modules
 public import QPainleve.AlgebraicGeometry.LineBundle.GluingUnit
 public import TauCeti.AlgebraicGeometry.LineBundle.Functoriality
 
+import QPainleve.AlgebraicGeometry.IdealSheaf.Conductor.LineBundle
+import TauCeti.AlgebraicGeometry.LineBundle.Monoidal
+
 /-!
 # Gluing units and line bundle classes
 
 Two trivializations of the restrictions of a line bundle in a conductor square
 differ on the overlap by a global unit. The Picard class determines this unit
-up to a rescaling by units on the two sides. This gives the equivalence relation
-on gluing units needed to use overlap coordinates on Picard classes.
+up to a rescaling by units on the two sides. The quotient of overlap units is
+isomorphic to the subgroup of Picard classes trivial on both sides. Tensor
+product multiplies the overlap units.
 
 The proof uses descent of compatible bundle isomorphisms across the conductor
 square and the identification of automorphisms of the trivial line with global
@@ -108,29 +112,63 @@ private theorem exists_gluingUnitClass (hi : i.ker = f.conductor)
   refine ⟨QuotientGroup.mk (h.toCommSq.lineGluingUnit e d), fun K e' d' hK ↦ ?_⟩
   exact (h.picardClass_eq_iff_gluingUnit_quotient_eq hi e d e' d').mp (hL.trans hK.symm)
 
-/-- The Picard classes whose restrictions to both sides of the conductor square are trivial
-embed into the quotient of overlap units by changes of trivializations. -/
-def lineGluingClassEmbedding (hi : i.ker = f.conductor) :
+private theorem gluingUnitClass_mul (hi : i.ker = f.conductor)
+    (a b : ((LineBundleClass.pullbackHom f).ker ⊓ (LineBundleClass.pullbackHom i).ker :
+      Subgroup (LineBundleClass X))) :
+    (h.exists_gluingUnitClass hi (a * b)).choose =
+      (h.exists_gluingUnitClass hi a).choose * (h.exists_gluingUnitClass hi b).choose := by
+  obtain ⟨L, ⟨e⟩, ⟨d⟩, hL⟩ := exists_trivialized_representative a
+  obtain ⟨K, ⟨e'⟩, ⟨d'⟩, hK⟩ := exists_trivialized_representative b
+  have hLK : LineBundleClass.mk (L ⊗ K) = (a * b).val := by
+    rw [Subgroup.coe_mul, ← hL, ← hK, ← LineBundleClass.mk_tensorProduct]
+    exact LineBundleClass.mk_eq_mk_iff.mpr ⟨(InvertibleSheaf.tensorProductObjIso L K).symm⟩
+  rw [(h.exists_gluingUnitClass hi a).choose_spec L e d hL,
+    (h.exists_gluingUnitClass hi b).choose_spec K e' d' hK,
+    (h.exists_gluingUnitClass hi (a * b)).choose_spec (L ⊗ K)
+      (pullbackTensorTrivialization f e e') (pullbackTensorTrivialization i d d') hLK,
+    h.toCommSq.lineGluingUnit_tensor, QuotientGroup.mk_mul]
+
+private theorem gluingUnitClass_surjective (hi : i.ker = f.conductor) :
+    Function.Surjective (fun a ↦ (h.exists_gluingUnitClass hi a).choose) := by
+  intro q
+  obtain ⟨u, rfl⟩ := QuotientGroup.mk_surjective q
+  obtain ⟨L, e, d, hu⟩ := h.exists_glued_line_of_conductor_square u hi
+  have hker {T : Scheme.{u}} (p : T ⟶ X)
+      (t : (pullback p).obj L.obj ≅ 𝟙_ T.Modules) :
+      LineBundleClass.mk L ∈ (LineBundleClass.pullbackHom p).ker := by
+    rw [MonoidHom.mem_ker, LineBundleClass.pullbackHom_apply,
+      LineBundleClass.pullback_mk, LineBundleClass.mk_eq_one_iff]
+    exact ⟨t⟩
+  let a : ((LineBundleClass.pullbackHom f).ker ⊓ (LineBundleClass.pullbackHom i).ker :
+      Subgroup (LineBundleClass X)) := ⟨LineBundleClass.mk L, hker f e, hker i d⟩
+  refine ⟨a, ((h.exists_gluingUnitClass hi a).choose_spec L e d rfl).trans ?_⟩
+  rw [(h.toCommSq.lineGluingUnit_eq_iff e d u).mpr hu]
+
+/-- Picard classes trivial on both sides of a conductor square are identified with
+overlap units modulo rescaling by units on the two sides. -/
+def lineGluingClassMulEquiv (hi : i.ker = f.conductor) :
     ((LineBundleClass.pullbackHom f).ker ⊓ (LineBundleClass.pullbackHom i).ker :
-      Subgroup (LineBundleClass X)) ↪ (Γ(P, ⊤)ˣ ⧸ (j.lineGluingCoboundary g).range) where
-  toFun a := (h.exists_gluingUnitClass hi a).choose
-  inj' := by
-    intro a b hab
-    obtain ⟨L, ⟨e⟩, ⟨d⟩, hL⟩ := exists_trivialized_representative a
-    obtain ⟨K, ⟨e'⟩, ⟨d'⟩, hK⟩ := exists_trivialized_representative b
-    have ha := (h.exists_gluingUnitClass hi a).choose_spec L e d hL
-    have hb := (h.exists_gluingUnitClass hi b).choose_spec K e' d' hK
-    have hLK := (h.picardClass_eq_iff_gluingUnit_quotient_eq hi e d e' d').mpr
-      (ha.symm.trans (hab.trans hb))
-    exact Subtype.ext (hL.symm.trans (hLK.trans hK))
+      Subgroup (LineBundleClass X)) ≃* (Γ(P, ⊤)ˣ ⧸ (j.lineGluingCoboundary g).range) :=
+  MulEquiv.ofBijective
+    (⟨fun a ↦ (h.exists_gluingUnitClass hi a).choose, h.gluingUnitClass_mul hi⟩ : _ →ₙ* _)
+    ⟨by
+      intro a b hab
+      obtain ⟨L, ⟨e⟩, ⟨d⟩, hL⟩ := exists_trivialized_representative a
+      obtain ⟨K, ⟨e'⟩, ⟨d'⟩, hK⟩ := exists_trivialized_representative b
+      have ha := (h.exists_gluingUnitClass hi a).choose_spec L e d hL
+      have hb := (h.exists_gluingUnitClass hi b).choose_spec K e' d' hK
+      have hLK := (h.picardClass_eq_iff_gluingUnit_quotient_eq hi e d e' d').mpr
+        (ha.symm.trans (hab.trans hb))
+      exact Subtype.ext (hL.symm.trans (hLK.trans hK)),
+    h.gluingUnitClass_surjective hi⟩
 
 /-- Compute the gluing class from any representative and any pair of trivializations. -/
-theorem lineGluingClassEmbedding_apply (hi : i.ker = f.conductor)
+theorem lineGluingClassMulEquiv_apply (hi : i.ker = f.conductor)
     (a : ((LineBundleClass.pullbackHom f).ker ⊓ (LineBundleClass.pullbackHom i).ker :
       Subgroup (LineBundleClass X)))
     (L : InvertibleSheaf X) (e : (pullback f).obj L.obj ≅ 𝟙_ Y.Modules)
     (d : (pullback i).obj L.obj ≅ 𝟙_ Z.Modules) (hL : LineBundleClass.mk L = a.val) :
-    h.lineGluingClassEmbedding hi a = QuotientGroup.mk (h.toCommSq.lineGluingUnit e d) :=
+    h.lineGluingClassMulEquiv hi a = QuotientGroup.mk (h.toCommSq.lineGluingUnit e d) :=
   (h.exists_gluingUnitClass hi a).choose_spec L e d hL
 
 end CategoryTheory.IsPullback
