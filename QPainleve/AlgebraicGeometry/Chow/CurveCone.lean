@@ -9,6 +9,7 @@ public import QPainleve.AlgebraicGeometry.Chow.Signature
 public import Mathlib.Analysis.Convex.Cone.Basic
 public import Mathlib.Geometry.Convex.Cone.Face.Basic
 public import QPainleve.AlgebraicGeometry.Morphisms.Smooth.Factorial
+public import TauCeti.AlgebraicGeometry.LineBundle.Ample
 import QPainleve.AlgebraicGeometry.Chow.Ample
 import QPainleve.AlgebraicGeometry.Chow.Nef
 import QPainleve.AlgebraicGeometry.IntersectionNumber.GlobalGeneration
@@ -65,30 +66,6 @@ theorem realPrimeDivisorClass_def (p : CodimensionOnePoint X) :
 
 local notation "c" => realPrimeDivisorClass k (X := X)
 
-/-- The real Picard class of a Weil divisor is the sum of its real prime classes weighted
-by their integral multiplicities. -/
-theorem one_tmul_weilToLineBundleClassHom (D : SchemeWeilDivisor X) :
-    let : IsNoetherian X := isNoetherian_of_finiteType f
-    let : ∀ x : X, UniqueFactorizationMonoid (X.presheaf.stalk x) :=
-      (f).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two
-    (1 : ℝ) ⊗ₜ[ℤ] Scheme.CartierDivisor.weilToLineBundleClassHom X D =
-      D.sum (fun p n ↦ (n : ℝ) • c p) := by
-  intro _ _
-  let t : Additive (LineBundleClass X) →ₗ[ℤ] V(X) := TensorProduct.mk ℤ ℝ _ 1
-  calc
-    _ = t (Scheme.CartierDivisor.weilToLineBundleClassHom X (D.sum Finsupp.single)) := by
-      rw [Finsupp.sum_single]
-      rfl
-    _ = _ := by
-      rw [map_finsuppSum, map_finsuppSum]
-      simp only [Scheme.CartierDivisor.weilToLineBundleClassHom_single, realPrimeDivisorClass_def,
-        LineBundleClass.primeDivisorClass_def]
-      apply Finset.sum_congr rfl
-      intro p _
-      dsimp only
-      rw [map_zsmul, ← Int.cast_smul_eq_zsmul ℝ]
-      rfl
-
 section IntersectionBounds
 
 variable [Infinite k]
@@ -104,7 +81,8 @@ theorem realIntersectionBilinForm_one_tmul_realPrimeDivisorClass
     B (ι a) (c p) = (classIntersectionNumber k X a (LineBundleClass.primeDivisorClass p) : ℝ) := by
   simp only [realPrimeDivisorClass_def, realIntersectionBilinForm_tmul, one_mul, toMul_ofMul]
 
-private theorem realIntersectionBilinForm_realPrimeDivisorClass_pos
+/-- An ample class has positive real intersection with every prime divisor class. -/
+theorem realIntersectionBilinForm_realPrimeDivisorClass_pos
     {a : LineBundleClass X} (ha : a.IsAmple) (p : CodimensionOnePoint X) :
     0 < B (ι a) (c p) := by
   have hX := topologicalKrullDim_eq_of_smoothOfRelativeDimension f (n := 2)
@@ -113,16 +91,8 @@ private theorem realIntersectionBilinForm_realPrimeDivisorClass_pos
   rw [realIntersectionBilinForm_one_tmul_realPrimeDivisorClass]
   exact_mod_cast classIntersectionNumber_primeDivisorClass_pos_of_isAmple k hX ha p
 
-/-- A prime divisor has nonzero class in the real Picard space, as detected by its
-positive intersection with an ample class. -/
-@[simp]
-theorem realPrimeDivisorClass_ne_zero (p : CodimensionOnePoint X) : c p ≠ 0 := by
-  obtain ⟨a, ha⟩ := X.exists_isAmple_of_isProjectiveOver k
-  intro hp
-  simpa only [hp, map_zero, lt_self_iff_false] using
-    realIntersectionBilinForm_realPrimeDivisorClass_pos k ha p
-
-private theorem realIntersectionBilinForm_realPrimeDivisorClass_nonneg
+/-- Distinct prime divisors have nonnegative real intersection. -/
+theorem realIntersectionBilinForm_realPrimeDivisorClass_nonneg
     {p q : CodimensionOnePoint X} (hpq : p ≠ q) :
     0 ≤ B (c p) (c q) := by
   have hX := topologicalKrullDim_eq_of_smoothOfRelativeDimension f (n := 2)

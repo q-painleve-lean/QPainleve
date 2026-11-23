@@ -39,6 +39,18 @@ theorem blowupExceptionalClass_def (I : X.IdealSheafData) :
     I.blowupExceptionalClass =
       (LineBundleClass.mk I.isEffectiveCartier_comap_blowupToBase.toInvertibleSheaf)⁻¹ := (rfl)
 
+/-- The exceptional line bundle pulls back to the trivial class along a morphism
+that avoids the center after composition with the blowup projection. -/
+theorem pullback_blowupExceptionalClass_eq_one (I : X.IdealSheafData) (g : Y ⟶ I.blowup)
+    (hg : I.comap (g ≫ I.blowupToBase) = ⊤) :
+    LineBundleClass.pullback g I.blowupExceptionalClass = 1 := by
+  let hE := I.isEffectiveCartier_comap_blowupToBase
+  have heq : (I.comap I.blowupToBase).comap g = ⊤ := by rw [← I.comap_comp, hg]
+  rw [blowupExceptionalClass_def, LineBundleClass.pullback_inv,
+    hE.pullback_mk_toInvertibleSheaf (heq.symm ▸ isEffectiveCartier_top Y),
+    LineBundleClass.mk_toInvertibleSheaf_congr _ (isEffectiveCartier_top Y) heq,
+    LineBundleClass.mk_toInvertibleSheaf_top, inv_one]
+
 /-- The lift pulls the target exceptional class back to the source exceptional class. -/
 @[simp]
 theorem pullback_blowupExceptionalClass (J : Y.IdealSheafData) (e : X ≅ Y)
