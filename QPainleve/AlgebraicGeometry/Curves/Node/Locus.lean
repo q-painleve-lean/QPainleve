@@ -86,6 +86,13 @@ ambient point if the reduced subscheme has a node above that point. -/
 def IsNodeOfReducedBoundary (D : Y.IdealSheafData) (g : Y ⟶ S) (x : Y) : Prop :=
   ∃ z : D.radical.subscheme, D.radical.subschemeι z = x ∧ (D.radical.subschemeι ≫ g).IsNodeAt z
 
+/-- Taking the radical of the boundary ideal preserves its reduced node condition. -/
+@[simp]
+theorem isNodeOfReducedBoundary_radical (D : Y.IdealSheafData) (g : Y ⟶ S) (x : Y) :
+    D.radical.IsNodeOfReducedBoundary g x ↔ D.IsNodeOfReducedBoundary g x := by
+  unfold IsNodeOfReducedBoundary
+  rw [← vanishingIdeal_support (I := D.radical), support_radical, vanishingIdeal_support]
+
 /-- A node of the reduced boundary belongs to the support of the original boundary ideal. -/
 theorem mem_support_of_isNodeOfReducedBoundary {D : Y.IdealSheafData} {g : Y ⟶ S} {x : Y}
     (hx : D.IsNodeOfReducedBoundary g x) : x ∈ D.support := by
