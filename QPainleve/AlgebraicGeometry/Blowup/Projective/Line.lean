@@ -79,6 +79,24 @@ theorem coordinateSectionCenter_eq_ker_polynomialPoint :
   rw [coordinateSectionCenter, polynomialPoint_def, hq, ← IdealSheafData.map_ker,
     Scheme.Hom.ker_Spec_map, CommRingCat.hom_ofHom, hker]
 
+/-- A surjective evaluation with kernel `(f)` gives the same coordinate-section
+center as the quotient by `(f)`. -/
+theorem coordinateSectionCenter_eq_ker_polynomialPoint_of_surjective
+    {B : Type u} [CommRing B] (ev : R →+* B) (hsurj : Function.Surjective ev)
+    (hker : RingHom.ker ev = Ideal.span {f}) :
+    coordinateSectionCenter f i = (polynomialPoint R ev i 0).ker := by
+  let e := RingHom.quotientKerEquivOfSurjective hsurj
+  have hq : e.symm.toRingHom.comp ev = Ideal.Quotient.mk (RingHom.ker ev) :=
+    RingHom.quotientKerEquivOfSurjective_symm_comp hsurj
+  have he : IsIso (Spec.map (CommRingCat.ofHom e.symm.toRingHom)) :=
+    inferInstanceAs (IsIso (Spec.map e.toCommRingCatIso.inv))
+  have hcomp : Spec.map (CommRingCat.ofHom e.symm.toRingHom) ≫
+      polynomialPoint R ev i (0 : B) =
+      polynomialPoint R (Ideal.Quotient.mk (RingHom.ker ev)) i 0 := by
+    rw [SpecMap_polynomialPoint, hq, map_zero]
+  rw [coordinateSectionCenter_eq_ker_polynomialPoint, ← hker, ← hcomp,
+    Scheme.Hom.ker_comp_of_isIso]
+
 /-- In the chart containing the chosen section, the center has ideal `(X, C f)`. -/
 @[simp]
 theorem coordinateSectionCenter_comap_polynomialChartι :
