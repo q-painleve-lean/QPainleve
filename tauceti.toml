@@ -30,8 +30,10 @@ completed_dir = "Completed"
 repo = "q-painleve-lean/TauCetiTools"
 ref = "79213262f3bc8fb99fc96f8a7d180ab3fb59c4d7"
 [tools.review]
-repo = "TauCetiProject/TauCetiReview"
-ref = "60472b78568d274587971787276e9009f957217c"
+# Review runs from this org's fork: its `downstream` branch is upstream main plus the fixes
+# listed in its DOWNSTREAM.md.
+repo = "q-painleve-lean/TauCetiReview"
+ref = "692c51780c76777e8f6a00cc9ba2b876901f32e5"
 [tools.progress]
 repo = "TauCetiProject/TauCetiProgress"
 ref = "ddaaed27a70d9f376d300edf32d521843c27cc16"

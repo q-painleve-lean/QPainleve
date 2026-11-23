@@ -8,7 +8,7 @@ module
 public import QPainleve.AlgebraicGeometry.Blowup.Tower.Point
 public import TauCeti.AlgebraicGeometry.LineBundle.EulerCharacteristic
 public import TauCeti.AlgebraicGeometry.VectorBundle.FiniteLocallyFree
-import QPainleve.AlgebraicGeometry.Blowup.PointCohomology
+import QPainleve.AlgebraicGeometry.Blowup.Point.Cohomology
 import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
 import TauCeti.AlgebraicGeometry.LineBundle.Pullback
 import TauCeti.AlgebraicGeometry.Scheme.Regular.Scheme

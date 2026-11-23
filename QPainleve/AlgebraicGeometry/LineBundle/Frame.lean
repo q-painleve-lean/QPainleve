@@ -7,6 +7,7 @@ module
 
 public import QPainleve.AlgebraicGeometry.LineBundle.Ratio
 import Mathlib.Topology.Sheaves.SheafCondition.UniqueGluing
+public import TauCeti.AlgebraicGeometry.Modules.Tensor.Sections
 
 /-!
 # Comparing line bundles by section ratios
@@ -24,6 +25,8 @@ universe u
 
 namespace AlgebraicGeometry.Scheme.Modules
 
+section
+
 variable {X : Scheme.{u}} {M N : X.Modules}
   [TauCeti.AlgebraicGeometry.SheafOfModules.isInvertible X M]
   {ι : Type*} {U : ι → X.Opens} {s : ι → Γ(M, ⊤)} {t : ι → Γ(N, ⊤)}
@@ -31,9 +34,8 @@ variable {X : Scheme.{u}} {M N : X.Modules}
 private theorem le_nonvanishingLocus_res {M : X.Modules}
     [TauCeti.AlgebraicGeometry.SheafOfModules.isInvertible X M]
     {W : X.Opens} {s : Γ(M, ⊤)} (h : W ≤ M.nonvanishingLocus s) :
-    W ≤ M.nonvanishingLocus (M.presheaf.map W.leTop.op s) := by
-  rw [M.nonvanishingLocus_map]
-  exact le_inf le_rfl h
+    W ≤ M.nonvanishingLocus (M.presheaf.map W.leTop.op s) :=
+  M.le_nonvanishingLocus_map W.leTop s h
 
 variable (M) in
 /-- A nowhere vanishing section gives a basis for the module of sections over its open. -/
@@ -59,6 +61,15 @@ theorem sectionFrame_symm_apply {W : X.Opens} (s : Γ(M, W))
   symm
   apply (M.sectionRatio_eq_iff hs).mpr
   rw [← M.sectionFrame_apply s hs, LinearEquiv.apply_symm_apply]
+
+/-- Tensoring sections with a nowhere vanishing section of a line bundle is bijective
+on that open. -/
+theorem bijective_tmulRight_of_le_nonvanishingLocus (F : X.Modules) {W : X.Opens}
+    (e : Γ(M, W)) (he : W ≤ M.nonvanishingLocus e) :
+    Function.Bijective (tmulRight F e) := by
+  apply bijective_tmulRight
+  intro V j
+  simpa only [Category.comp_id] using (le_nonvanishingLocus_iff e (𝟙 W)).mp he V j
 
 private def frameMap {W : X.Opens} {i : ι} (h : W ≤ U i)
     (hs : ∀ i, U i ≤ M.nonvanishingLocus (s i)) : Γ(M, W) →ₗ[Γ(X, W)] Γ(N, W) :=
@@ -199,6 +210,30 @@ private theorem framesHom_app (hU : ⨆ i, U i = ⊤) {V W : X.Opens} {i : ι}
       frameMap (t := t) hi hs (M.presheaf.map j.op m) :=
   framesMap_restrict hs hr hU j hi m
 
+/-- A morphism out of a line bundle is determined by its values on sections
+that give frames on an open cover. -/
+theorem hom_ext_of_covering_sections (hU : ⨆ i, U i = ⊤)
+    (hs : ∀ i, U i ≤ M.nonvanishingLocus (s i)) {φ ψ : M ⟶ N}
+    (h : ∀ i, φ.app ⊤ (s i) = ψ.app ⊤ (s i)) : φ = ψ := by
+  refine hom_ext _ _ fun W ↦ ?_
+  ext m
+  apply hom_ext_cover hU
+  intro i
+  let V := W ⊓ U i
+  let j : V ⟶ W := homOfLE inf_le_left
+  change N.presheaf.map j.op (φ.app W m) = N.presheaf.map j.op (ψ.app W m)
+  have hφ := φ.mapPresheaf.naturality_apply j.op m
+  have hψ := ψ.mapPresheaf.naturality_apply j.op m
+  simp only [mapPresheaf_app] at hφ hψ
+  rw [← hφ, ← hψ]
+  obtain ⟨r, hr⟩ := M.surjective_smul_of_le_nonvanishingLocus
+    (le_nonvanishingLocus_res ((inf_le_right (a := W)).trans (hs i)))
+    (M.presheaf.map j.op m)
+  have hφs := φ.mapPresheaf.naturality_apply V.leTop.op (s i)
+  have hψs := ψ.mapPresheaf.naturality_apply V.leTop.op (s i)
+  simp only [mapPresheaf_app] at hφs hψs
+  rw [← hr, φ.app_smul, ψ.app_smul, hφs, hψs, h i]
+
 variable [TauCeti.AlgebraicGeometry.SheafOfModules.isInvertible X N]
 
 variable (M N) in
@@ -256,5 +291,47 @@ theorem exists_iso_of_sectionRatios (hU : ⨆ i, U i = ⊤)
       (P.presheaf.map (homOfLE inf_le_left).op m)
     rw [← hr, frameMap_smul_basis, frameMap_smul_basis]
   exact ⟨⟨φ, ψ, hcomp hs ht hr hψ, hcomp ht hs hψ hr⟩, hφ⟩
+
+end
+
+section
+
+variable {X : Scheme.{u}} {ι : Type*} (M N : X.Modules)
+  [TauCeti.AlgebraicGeometry.SheafOfModules.isInvertible X M]
+  [TauCeti.AlgebraicGeometry.SheafOfModules.isInvertible X N]
+  (s : ι → Γ(M, ⊤)) (t : ι → Γ(N, ⊤)) (U : ι → X.Opens)
+  (hs : ∀ i, U i ≤ M.nonvanishingLocus (s i))
+  (ht : ∀ i, U i ≤ N.nonvanishingLocus (t i))
+  (hr : ∀ i j,
+    M.sectionRatio (M.presheaf.map (U i).leTop.op (s j)) (M.presheaf.map (U i).leTop.op (s i))
+        (M.le_nonvanishingLocus_map (U i).leTop (s i) (hs i)) =
+      N.sectionRatio (N.presheaf.map (U i).leTop.op (t j)) (N.presheaf.map (U i).leTop.op (t i))
+        (N.le_nonvanishingLocus_map (U i).leTop (t i) (ht i)))
+  (hU : ⨆ i, U i = ⊤)
+
+include hr hU in
+private theorem exists_isoOfSectionRatios : ∃ e : M ≅ N, ∀ i, e.hom.app ⊤ (s i) = t i := by
+  apply M.exists_iso_of_sectionRatios N hU hs ht
+  intro i j r h
+  rw [← (M.sectionRatio_eq_iff (le_nonvanishingLocus_res (hs i))).2 h,
+    hr i j, N.sectionRatio_smul]
+
+/-- The isomorphism between two invertible sheaves with matching section ratios on a cover. -/
+def isoOfSectionRatios : M ≅ N :=
+  (exists_isoOfSectionRatios M N s t U hs ht hr hU).choose
+
+/-- The isomorphism constructed from ratios sends each specified section to its counterpart. -/
+@[simp]
+theorem isoOfSectionRatios_hom_app (j : ι) :
+    (isoOfSectionRatios M N s t U hs ht hr hU).hom.app ⊤ (s j) = t j :=
+  (exists_isoOfSectionRatios M N s t U hs ht hr hU).choose_spec j
+
+/-- A morphism sending every specified section to its counterpart is the comparison morphism. -/
+theorem eq_isoOfSectionRatios_hom (φ : M ⟶ N) (hφ : ∀ i, φ.app ⊤ (s i) = t i) :
+    φ = (isoOfSectionRatios M N s t U hs ht hr hU).hom :=
+  hom_ext_of_covering_sections hU hs fun i ↦
+    (hφ i).trans (isoOfSectionRatios_hom_app M N s t U hs ht hr hU i).symm
+
+end
 
 end AlgebraicGeometry.Scheme.Modules

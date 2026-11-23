@@ -6,18 +6,21 @@ Authors: The QPainleve contributors
 module
 
 public import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.Basic
+public import TauCeti.AlgebraicGeometry.Scheme.CodimensionOnePoint
 public import Mathlib.AlgebraicGeometry.Noetherian
 import Mathlib.RingTheory.KrullDimension.Regular
 import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.Stalk
 import TauCeti.AlgebraicGeometry.IdealSheaf.Stalk
 import TauCeti.Topology.KrullDimension.Basic
+import TauCeti.Topology.Sober
 
 /-!
 # Local dimension along an effective Cartier divisor
 
 The local ring of an effective Cartier divisor has dimension one less than the ambient local
-ring. The comparison uses the closed-immersion stalk map and the nonzerodivisor equation of the
-divisor. The dimension formula for the quotient is
+ring. In particular, the generic points of its support have codimension one in the ambient
+scheme. The comparison uses the closed-immersion stalk map and the nonzerodivisor equation of
+the divisor. The dimension formula for the quotient is
 [The Stacks Project, Lemma 10.60.13](https://stacks.math.columbia.edu/tag/00KW).
 -/
 
@@ -61,5 +64,36 @@ theorem IsEffectiveCartier.topologicalKrullDim_subscheme_le (hI : I.IsEffectiveC
   rw [Nat.cast_one, hI.ringKrullDim_stalk_add_one, ringKrullDim_stalk_eq_coheight]
   exact (TauCeti.coheight_le_topologicalKrullDim (I.subschemeι x)).trans
     (by simpa only [Nat.cast_add, Nat.cast_one] using hX)
+
+open TopologicalSpace Order in
+/-- Each point of an effective Cartier divisor lies on the closure of a codimension-one
+point of the ambient scheme in the support of the divisor. -/
+theorem IsEffectiveCartier.mem_support_iff_exists_codimensionOnePoint (hI : I.IsEffectiveCartier)
+    {x : X} :
+    x ∈ I.support ↔
+      ∃ p : TauCeti.AlgebraicGeometry.CodimensionOnePoint X,
+        (p : X) ∈ I.support ∧ (p : X) ⤳ x := by
+  constructor
+  · intro hx
+    obtain ⟨y, rfl⟩ : x ∈ Set.range I.subschemeι := by
+      rw [I.range_subschemeι]
+      exact hx
+    let C : irreducibleComponents I.subscheme :=
+      ⟨irreducibleComponent y, irreducibleComponent_mem_irreducibleComponents y⟩
+    let z := genericPoints.ofComponent C
+    have hz : IsMax (z : I.subscheme) := by
+      intro w hw
+      have he := TauCeti.mem_genericPoints_iff.mp z.property w (Scheme.le_iff_specializes.mp hw)
+      exact he.le
+    have hdim := hI.ringKrullDim_stalk_add_one (z : I.subscheme)
+    rw [ringKrullDim_stalk_eq_coheight, ringKrullDim_stalk_eq_coheight, hz.coheight_eq_zero,
+      WithBot.coe_zero, zero_add, ← WithBot.coe_one, WithBot.coe_inj] at hdim
+    refine ⟨⟨I.subschemeι z, hdim.symm⟩, ?_, ?_⟩
+    · rw [← SetLike.mem_coe, ← I.range_subschemeι]
+      exact ⟨z, rfl⟩
+    · exact ((genericPoints.isGenericPoint_ofComponent C).specializes
+        mem_irreducibleComponent).map I.subschemeι.continuous
+  · rintro ⟨p, hp, hpx⟩
+    exact hpx.mem_closed I.support.isClosed hp
 
 end AlgebraicGeometry.Scheme.IdealSheafData

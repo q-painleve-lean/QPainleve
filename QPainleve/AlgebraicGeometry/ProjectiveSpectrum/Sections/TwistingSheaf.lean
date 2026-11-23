@@ -157,6 +157,40 @@ theorem exists_iso_pullbackTwistingSheaf_toProjectiveSpace
   have heq := L.injective_smul_of_le_nonvanishingLocus hi (hr.trans hc)
   rw [heq, hcoordinate, M.sectionRatio_smul]
 
+variable (R) (h : (⨆ i, M.nonvanishingLocus (s i)) = ⊤)
+
+local notation "g" => M.toProjectiveSpace f s h
+local notation "L" => Functor.obj (pullback g) T
+local notation "t" => fun i ↦ Scheme.Hom.pullbackSectionsLE g T ⊤ ⊤
+  (Eq.ge (Scheme.Hom.preimage_top g)) (Proj.polynomialCoordinateSection (R := R) i)
+
+/-- The isomorphism from the pullback of `𝒪(1)` to the line bundle defining the morphism. -/
+def pullbackTwistingSheafOneToProjectiveSpace : L ≅ M :=
+  (M.exists_iso_pullbackTwistingSheaf_toProjectiveSpace f s h).choose
+
+/-- The comparison sends the pulled-back homogeneous coordinates to the defining sections. -/
+@[simp]
+theorem pullbackTwistingSheafOneToProjectiveSpace_hom_app (i : ι) :
+    (M.pullbackTwistingSheafOneToProjectiveSpace R f s h).hom.app ⊤ (t i) = s i := by
+  have hi : t i = (g).pullbackSections T ⊤ (Proj.polynomialCoordinateSection (R := R) i) :=
+    (g).pullbackSectionsLE_self T ⊤ (Proj.polynomialCoordinateSection (R := R) i)
+  exact (congrArg ((M.pullbackTwistingSheafOneToProjectiveSpace R f s h).hom.app ⊤)
+    hi).trans ((M.exists_iso_pullbackTwistingSheaf_toProjectiveSpace f s h).choose_spec i)
+
+/-- The comparison is characterized by its values on the pulled-back homogeneous coordinates. -/
+theorem eq_pullbackTwistingSheafOneToProjectiveSpace_hom_iff (φ : L ⟶ M) :
+    φ = (M.pullbackTwistingSheafOneToProjectiveSpace R f s h).hom ↔
+      ∀ i, φ.app ⊤ (t i) = s i := by
+  refine ⟨fun he i ↦ he.symm ▸ M.pullbackTwistingSheafOneToProjectiveSpace_hom_app R f s h i, ?_⟩
+  intro hφ
+  apply hom_ext_of_covering_sections h (s := t)
+  · intro i
+    rw [Scheme.Hom.pullbackSectionsLE_apply, nonvanishingLocus_map,
+      nonvanishingLocus_pullbackSections, Proj.nonvanishingLocus_polynomialCoordinateSection,
+      M.toProjectiveSpace_preimage_basicOpen, top_inf_eq]
+  · intro i
+    exact (hφ i).trans (M.pullbackTwistingSheafOneToProjectiveSpace_hom_app R f s h i).symm
+
 end Scheme.Modules
 
 end AlgebraicGeometry

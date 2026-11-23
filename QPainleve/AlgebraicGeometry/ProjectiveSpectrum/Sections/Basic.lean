@@ -7,10 +7,10 @@ module
 
 public import QPainleve.AlgebraicGeometry.LineBundle.Ratio
 public import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.Polynomial.Basic
+import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.Polynomial.GlobalSections
 import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.ChartEquality
 import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.Naturality
 import TauCeti.AlgebraicGeometry.Restrict
-import TauCeti.RingTheory.MvPolynomial.Homogeneous
 
 /-!
 # Projective morphisms from generating sections of a line bundle
@@ -92,31 +92,6 @@ private theorem restrict_chartEval_X {W : X.Opens} {i : ι} (h : W ≤ Dₛ[i]) 
   simp only [← ConcreteCategory.comp_apply, ← Functor.map_comp, ← op_comp]
   rfl
 
-private theorem fromOfGlobalSections_eq_of_X_unit_rescaling {S : Scheme.{u}}
-    (p q : MvPolynomial ι R →+* Γ(S, ⊤)) (c : Γ(S, ⊤)ˣ)
-    (hC : p.comp C = q.comp C) (hX : ∀ i, q (.X i) = c * p (.X i))
-    (hp : (HomogeneousIdeal.irrelevant (homogeneousSubmodule ι R)).toIdeal.map p = ⊤)
-    (hq : (HomogeneousIdeal.irrelevant (homogeneousSubmodule ι R)).toIdeal.map q = ⊤) :
-    Proj.fromOfGlobalSections _ p hp = Proj.fromOfGlobalSections _ q hq := by
-  have eval_eq (g : MvPolynomial ι R →+* Γ(S, ⊤)) :
-      eval₂Hom (g.comp C) (fun k ↦ g (.X k)) = g := by
-    apply MvPolynomial.ringHom_ext
-    · intro a
-      simp
-    · intro k
-      simp
-  have he (n : ℕ) (a : MvPolynomial ι R) (ha : a ∈ homogeneousSubmodule ι R n) :
-      q a = c ^ n * p a := by
-    calc
-      q a = eval₂ (p.comp C) (fun k ↦ c * p (.X k)) a := by
-        simpa only [← hC, hX, coe_eval₂Hom] using DFunLike.congr_fun (eval_eq q).symm a
-      _ = c ^ n * p a := by
-        simpa only [← coe_eval₂Hom, eval_eq] using
-          (mem_homogeneousSubmodule _ _ |>.mp ha).eval₂_const_mul (p.comp C)
-            (fun k ↦ p (.X k)) (c : Γ(S, ⊤))
-  exact (TauCeti.ProjectiveSpectrum.fromOfGlobalSections_eq_of_unit_rescaling
-    _ p q c he hp).symm
-
 private theorem chartHom_compatible (i j : ι) :
     X.homOfLE (inf_le_left : Dₛ[i] ⊓ Dₛ[j] ≤ Dₛ[i]) ≫ chartHom M f s i =
       X.homOfLE (inf_le_right : Dₛ[i] ⊓ Dₛ[j] ≤ Dₛ[j]) ≫ chartHom M f s j := by
@@ -151,7 +126,7 @@ private theorem chartHom_compatible (i j : ι) :
       DFunLike.congr_fun he r
   unfold chartHom
   rw [Proj.fromOfGlobalSections_naturality, Proj.fromOfGlobalSections_naturality]
-  exact fromOfGlobalSections_eq_of_X_unit_rescaling fi fj c hC hX
+  exact Proj.fromOfGlobalSections_eq_of_X_unit_rescaling fi fj c hC hX
     (by dsimp only [fi]; rw [← Ideal.map_map, chartEval_irrelevant, Ideal.map_top])
     (by dsimp only [fj]; rw [← Ideal.map_map, chartEval_irrelevant, Ideal.map_top])
 
@@ -247,17 +222,44 @@ def toProjectiveSpaceChart (i : ι) :
     (Dₛ[i]).toScheme ⟶ Spec (.of (Away (homogeneousSubmodule ι R) (MvPolynomial.X i))) :=
   (Dₛ[i]).toScheme.toSpecΓ ≫ Spec.map (CommRingCat.ofHom (chartRingHom M f s i))
 
+private theorem toProjectiveSpaceChart_comp_awayι (i : ι) :
+    M.toProjectiveSpaceChart f s i ≫ Proj.awayι (homogeneousSubmodule ι R) (MvPolynomial.X i)
+        ((mem_homogeneousSubmodule _ _).mpr (isHomogeneous_X R i)) one_pos =
+      chartHom M f s i := by
+  rw [chartHom, Proj.fromOfGlobalSections_eq_toSpecΓ_awayLift (chartEval M f s i)
+    (chartEval_irrelevant M f s i) one_pos
+    ((mem_homogeneousSubmodule _ _).mpr (isHomogeneous_X R i)) (chartEval_isUnit M f s i)]
+  exact Category.assoc _ _ _
+
+/-- The maps to projective space defined on two coordinate opens agree on their overlap. -/
+theorem toProjectiveSpaceChart_awayι_eq_on_inf (i j : ι) :
+    X.homOfLE (inf_le_left : Dₛ[i] ⊓ Dₛ[j] ≤ Dₛ[i]) ≫
+      M.toProjectiveSpaceChart f s i ≫ Proj.awayι (homogeneousSubmodule ι R)
+        (MvPolynomial.X i) ((mem_homogeneousSubmodule _ _).mpr (isHomogeneous_X R i)) one_pos =
+    X.homOfLE (inf_le_right : Dₛ[i] ⊓ Dₛ[j] ≤ Dₛ[j]) ≫
+      M.toProjectiveSpaceChart f s j ≫ Proj.awayι (homogeneousSubmodule ι R)
+        (MvPolynomial.X j) ((mem_homogeneousSubmodule _ _).mpr (isHomogeneous_X R j)) one_pos := by
+  rw [toProjectiveSpaceChart_comp_awayι, toProjectiveSpaceChart_comp_awayι]
+  exact chartHom_compatible M f s i j
+
+/-- The morphism on a section's nonvanishing open preserves the coefficient morphism. -/
+@[reassoc (attr := simp)]
+theorem toProjectiveSpaceChart_toSpecCoeff (i : ι) :
+    M.toProjectiveSpaceChart f s i ≫
+      Spec.map (CommRingCat.ofHom
+        (algebraMap R (Away (homogeneousSubmodule ι R) (MvPolynomial.X i)))) =
+      (Dₛ[i]).ι ≫ f := by
+  rw [← Proj.awayι_toSpecCoeff (homogeneousSubmodule ι R)
+    ((mem_homogeneousSubmodule _ _).mpr (isHomogeneous_X R i)) one_pos,
+    ← Category.assoc, toProjectiveSpaceChart_comp_awayι, chartHom_comp_toSpecCoeff]
+
 /-- The affine chart morphism is the restriction of the projective morphism. -/
 @[reassoc]
 theorem toProjectiveSpaceChart_awayι (h : ⨆ i, Dₛ[i] = ⊤) (i : ι) :
     M.toProjectiveSpaceChart f s i ≫ Proj.awayι (homogeneousSubmodule ι R) (MvPolynomial.X i)
         ((mem_homogeneousSubmodule _ _).mpr (isHomogeneous_X R i)) one_pos =
       (Dₛ[i]).ι ≫ M.toProjectiveSpace f s h := by
-  rw [ι_toProjectiveSpace, chartHom,
-    Proj.fromOfGlobalSections_eq_toSpecΓ_awayLift (chartEval M f s i)
-      (chartEval_irrelevant M f s i) one_pos
-      ((mem_homogeneousSubmodule _ _).mpr (isHomogeneous_X R i)) (chartEval_isUnit M f s i)]
-  exact Category.assoc _ _ _
+  rw [ι_toProjectiveSpace, toProjectiveSpaceChart_comp_awayι]
 
 private theorem toProjectiveSpaceChart_appTop (i : ι) :
     (Scheme.ΓSpecIso _).inv ≫ (M.toProjectiveSpaceChart f s i).appTop =
@@ -286,6 +288,28 @@ theorem toProjectiveSpaceChart_appTop_awayXRatio (i j : ι) :
   have hunit : (chartEval_isUnit M f s i).unit = 1 :=
     Units.ext ((chartEval_isUnit M f s i).unit_spec.trans (chartEval_X_self M f s i))
   simpa [hunit] using chartEval_X M f s i j
+
+variable {M f s} in
+/-- At the generic point, a normalized projective coordinate is the germ of the
+corresponding section ratio. -/
+theorem genericProjectiveChart_preimage_awayXRatio [IsIntegral X] (i j : ι)
+    (hi : genericPoint X ∈ Dₛ[i]) :
+    (Spec.preimage ((Dₛ[i]).fromSpecStalkOfMem _ hi ≫ M.toProjectiveSpaceChart f s i)).hom
+        (TauCeti.MvPolynomial.awayXRatio (R := R) i j) =
+      X.presheaf.germ (Dₛ[i]) (genericPoint X) hi
+        (M.sectionRatio (res[i] (s j))
+          (res[i] (s i)) (by rw [nonvanishingLocus_map, inf_idem])) := by
+  generalize hg' : M.toProjectiveSpaceChart f s i = g
+  have hg : (Dₛ[i]).toSpecΓ ≫ Spec.map
+      ((Scheme.ΓSpecIso _).inv ≫ g.appTop ≫ (Dₛ[i]).topIso.hom) = g := by
+    have ht : Spec.map (Dₛ[i]).topIso.inv ≫ Spec.map (Dₛ[i]).topIso.hom = 𝟙 _ := by
+      rw [← Spec.map_comp, Iso.hom_inv_id, Spec.map_id]
+    simp only [Spec.map_comp, Opens.toSpecΓ, Category.assoc, reassoc_of% ht,
+      ← Scheme.toSpecΓ_naturality_assoc, toSpecΓ_SpecMap_ΓSpecIso_inv, Category.comp_id]
+  rw [← hg, Opens.fromSpecStalkOfMem_toSpecΓ_assoc, ← Spec.map_comp, Spec.preimage_map]
+  simp only [CommRingCat.hom_comp, RingHom.comp_apply, ← hg']
+  have h := toProjectiveSpaceChart_appTop_awayXRatio M f s i j
+  erw [h, Iso.inv_hom_id_apply]
 
 private theorem isClosedImmersion_toProjectiveSpace_iff_chart
     (h : ⨆ i, Dₛ[i] = ⊤) :
@@ -427,7 +451,7 @@ private theorem chartHom_eq_fromOfGlobalSections_of_frame {V W : X.Opens} {i : �
     rw [eval₂Hom_X', ← ConcreteCategory.comp_apply, hh, ConcreteCategory.comp_apply,
       ← hframe j, restrict_chartEval_X M f s hle', hc, ← map_mul]
     exact congrArg V.topIso.inv (M.sectionRatio_mul_sectionRatio (r j) (r i) b hr hb).symm
-  exact fromOfGlobalSections_eq_of_X_unit_rescaling q₀ q₁ c hC hX _ _
+  exact Proj.fromOfGlobalSections_eq_of_X_unit_rescaling q₀ q₁ c hC hX _ _
 
 /-- In a frame on an affine open, the projective morphism is the ordinary
 evaluation map of the frame coordinates. The coordinates generate the unit
@@ -466,3 +490,40 @@ theorem ι_toProjectiveSpace_eq_fromOfGlobalSections (h : ⨆ i, Dₛ[i] = ⊤)
   exact h'.trans hloc
 
 end AlgebraicGeometry.Scheme.Modules
+
+namespace AlgebraicGeometry.Proj
+
+open TauCeti.MvPolynomial
+
+variable {R ι : Type u} [CommRing R]
+
+attribute [local instance] MvPolynomial.gradedAlgebra
+
+local notation "𝒜" => MvPolynomial.homogeneousSubmodule ι R
+local notation "B[" i "]" => Away 𝒜 (MvPolynomial.X i)
+local notation "j[" i "]" =>
+  Proj.awayι 𝒜 (MvPolynomial.X i)
+    (Iff.mpr (mem_homogeneousSubmodule _ _) (isHomogeneous_X R i)) one_pos
+
+/-- Maps from an affine scheme into a standard polynomial projective chart agree if
+they agree on the coefficient ring and on every normalized coordinate. -/
+theorem eq_of_awayXRatio {K : Type u} [CommRing K] (i : ι)
+    (p q : Spec (.of K) ⟶ Spec (.of B[i]))
+    (hc : p ≫ j[i] ≫ Proj.toSpecCoeff 𝒜 = q ≫ j[i] ≫ Proj.toSpecCoeff 𝒜)
+    (h : ∀ j, (Spec.preimage p).hom (awayXRatio (R := R) i j) =
+      (Spec.preimage q).hom (awayXRatio (R := R) i j)) : p = q := by
+  rw [awayι_toSpecCoeff] at hc
+  have hcoeff (r : R) :
+      (Spec.preimage p).hom (algebraMap R B[i] r) =
+        (Spec.preimage q).hom (algebraMap R B[i] r) := by
+    have hpq := congrArg Spec.preimage hc
+    rw [Spec.preimage_comp, Spec.preimage_comp, Spec.preimage_map] at hpq
+    exact DFunLike.congr_fun (congrArg CommRingCat.Hom.hom hpq) r
+  let : Algebra R K := ((Spec.preimage p).hom.comp (algebraMap R B[i])).toAlgebra
+  let p' : B[i] →ₐ[R] K := ⟨(Spec.preimage p).hom, fun _ ↦ rfl⟩
+  let q' : B[i] →ₐ[R] K := ⟨(Spec.preimage q).hom, fun r ↦ (hcoeff r).symm⟩
+  have hpq : p' = q' := AlgHom.ext_of_adjoin_eq_top (adjoin_range_awayXRatio i)
+    (Set.eqOn_range.mpr (funext h))
+  exact Spec.preimage_injective (CommRingCat.hom_ext (congrArg AlgHom.toRingHom hpq))
+
+end AlgebraicGeometry.Proj
