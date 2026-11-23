@@ -5,7 +5,9 @@ Authors: The QPainleve contributors
 -/
 module
 
+public import TauCeti.AlgebraicGeometry.IdealSheaf.Stalk
 public import TauCeti.AlgebraicGeometry.IdealSheaf.VanishingIdeal
+import TauCeti.AlgebraicGeometry.IdealSheaf.Affine
 import TauCeti.AlgebraicGeometry.IdealSheaf.BaseChange
 import TauCeti.AlgebraicGeometry.IdealSheaf.Reduced
 
@@ -23,6 +25,17 @@ open CategoryTheory TopologicalSpace
 namespace AlgebraicGeometry.Scheme.IdealSheafData
 
 universe u
+
+/-- The ideal of a reduced point closure at a specialization is the prime of the ambient
+local ring corresponding to the given generization. -/
+theorem stalkIdeal_vanishingIdeal_closure_singleton_of_specializes {X : Scheme.{u}}
+    {η x : X} (h : η ⤳ x) :
+    (vanishingIdeal ⟨closure {η}, isClosed_closure⟩).stalkIdeal x =
+      (IsLocalRing.maximalIdeal (X.presheaf.stalk η)).comap
+        (X.presheaf.stalkSpecializes h).hom := by
+  obtain ⟨U, hU, hxU, -⟩ := exists_isAffineOpen_mem_and_subset (Opens.mem_top x)
+  rw [stalkIdeal_eq_map _ ⟨U, hU⟩ x hxU]
+  exact map_ideal_vanishingIdeal_closure_singleton_of_specializes hxU h
 
 /-- The ambient vanishing ideal of the image of a closed subset pulls back to the
 vanishing ideal of that subset along a closed immersion. -/

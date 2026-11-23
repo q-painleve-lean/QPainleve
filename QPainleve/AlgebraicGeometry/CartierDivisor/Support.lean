@@ -126,6 +126,40 @@ theorem coeff_toWeilDivisor_eq_zero_iff [IsNoetherian X] (hI : I.IsEffectiveCart
   simp [IsLocalRing.mem_maximalIdeal, mem_nonunits_iff]
 
 open TauCeti.AlgebraicGeometry in
+/-- A prime component of a reduced effective Cartier divisor has Weil coefficient one. -/
+theorem coeff_toWeilDivisor_eq_one_of_isReduced [IsNoetherian X] (hI : I.IsEffectiveCartier)
+    [IsReduced I.subscheme] (x : CodimensionOnePoint X)
+    [IsDiscreteValuationRing (X.presheaf.stalk (x : X))] (hx : (x : X) ∈ I.support) :
+    WeilDivisor.coeff hI.toCartierDivisor.toWeilDivisor x = 1 := by
+  have hne : WeilDivisor.coeff hI.toCartierDivisor.toWeilDivisor x ≠ 0 :=
+    fun hz ↦ (hI.coeff_toWeilDivisor_eq_zero_iff x).mp hz hx
+  rw [hI.coeff_toWeilDivisor_eq_stalkOrder x] at hne ⊢
+  have hle := ENat.toNat_le_of_le_natCast (hI.stalkOrder_le_one_of_isReduced x)
+  omega
+
+open TauCeti.AlgebraicGeometry in
+/-- The Weil divisor of a reduced effective Cartier divisor is the sum of its
+distinct prime components. -/
+theorem toWeilDivisor_eq_sum_single_of_isReduced [IsNoetherian X] (hI : I.IsEffectiveCartier)
+    [IsReduced I.subscheme] [∀ x : CodimensionOnePoint X,
+      IsDiscreteValuationRing (X.presheaf.stalk (x : X))]
+    {ι : Type*} [Fintype ι] (p : ι ↪ CodimensionOnePoint X)
+    (hp : ∀ x : CodimensionOnePoint X, (x : X) ∈ I.support ↔ x ∈ Set.range p) :
+    hI.toCartierDivisor.toWeilDivisor = ∑ i, Finsupp.single (p i) 1 := by
+  classical
+  apply Finsupp.ext
+  intro x
+  rw [Finsupp.finsetSum_apply]
+  by_cases hx : x ∈ Set.range p
+  · obtain ⟨j, rfl⟩ := hx
+    rw [← WeilDivisor.coeff, hI.coeff_toWeilDivisor_eq_one_of_isReduced _ ((hp _).mpr
+      (Set.mem_range_self j))]
+    simp [Finsupp.single_apply, p.injective.eq_iff]
+  · rw [← WeilDivisor.coeff, (hI.coeff_toWeilDivisor_eq_zero_iff x).mpr (fun h ↦ hx ((hp x).mp h))]
+    have hn (i : ι) : p i ≠ x := fun he ↦ hx ⟨i, he⟩
+    simp [hn]
+
+open TauCeti.AlgebraicGeometry in
 /-- A principal equation on an affine open immersion computes the Weil coefficient of an
 effective Cartier divisor at the image of a codimension-one point. -/
 theorem coeff_toWeilDivisor_eq_ord_of_comap_eq_span_singleton [IsNoetherian X]

@@ -12,7 +12,8 @@ import TauCeti.AlgebraicGeometry.Modules.Differentials.Quasicoherent
 # Stalk algebras over an affine base
 
 On a scheme locally of finite type over an affine base, the canonical base algebra
-on a stalk is essentially of finite type.
+on a stalk is essentially of finite type. Morphisms over the base induce algebra
+homomorphisms between the stalks.
 -/
 
 public section
@@ -39,5 +40,36 @@ theorem essFiniteType_stalk (R : Type u) [CommRing R] (X : Scheme.{u}) [X.Over (
   have : Algebra.EssFiniteType A (X.presheaf.stalk x) :=
     .of_isLocalization _ (hU.primeIdealOf ⟨x, hxU⟩).asIdeal.primeCompl
   exact .comp R A _
+
+namespace Hom
+
+/-- The stalk map of a morphism over an affine base, as a homomorphism of base algebras. -/
+noncomputable def stalkMapAlgHom {k : Type u} [CommRing k] {X Y : Scheme.{u}}
+    [X.Over (Spec (.of k))] [Y.Over (Spec (.of k))] (f : X ⟶ Y)
+    [f.IsOver (Spec (.of k))] (x : X) :
+    Y.presheaf.stalk (f x) →ₐ[k] X.presheaf.stalk x where
+  __ := (f.stalkMap x).hom
+  commutes' r := by
+    have h := SpecMap_stalkMap_fromSpecStalk f (x := x)
+    have he := congrArg (fun g ↦ g ≫ (Y ↘ Spec (.of k))) h
+    simp only [Category.assoc, comp_over, fromSpecStalk_comp_over, ← Spec.map_comp,
+      Spec.map_inj] at he
+    exact congrArg (fun g : CommRingCat.of k ⟶ _ ↦ g r) he
+
+/-- The underlying ring homomorphism is the stalk map of the scheme morphism. -/
+@[simp]
+theorem stalkMapAlgHom_toRingHom {k : Type u} [CommRing k] {X Y : Scheme.{u}}
+    [X.Over (Spec (.of k))] [Y.Over (Spec (.of k))] (f : X ⟶ Y)
+    [f.IsOver (Spec (.of k))] (x : X) :
+    (f.stalkMapAlgHom (k := k) x : _ →+* _) = (f.stalkMap x).hom := (rfl)
+
+/-- The stalk algebra homomorphism has the same values as the scheme stalk map. -/
+@[simp]
+theorem stalkMapAlgHom_apply {k : Type u} [CommRing k] {X Y : Scheme.{u}}
+    [X.Over (Spec (.of k))] [Y.Over (Spec (.of k))] (f : X ⟶ Y)
+    [f.IsOver (Spec (.of k))] (x : X) (a : Y.presheaf.stalk (f x)) :
+    f.stalkMapAlgHom (k := k) x a = f.stalkMap x a := (rfl)
+
+end Hom
 
 end AlgebraicGeometry.Scheme
