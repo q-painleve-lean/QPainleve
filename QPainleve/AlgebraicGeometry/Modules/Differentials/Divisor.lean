@@ -105,4 +105,16 @@ theorem neg_pullbackTopFormDivisor_isEffective_iff
   rw [pullbackTopFormDivisor_eq_ramification_sub, neg_sub]
   exact (hTotal.le_iff_isEffective_sub hRam).symm
 
+/-- The pullback has divisor `-P` precisely when its total-transform ideal is the
+product of the pole ideal `P` and the ramification ideal. -/
+theorem pullbackTopFormDivisor_eq_neg_iff {P : X.IdealSheafData} (hP : P.IsEffectiveCartier)
+    (hRam : letI := SmoothOfRelativeDimension.smooth n (X ↘ Spec (.of R))
+      (ramificationIdealSheaf R f).IsEffectiveCartier) :
+    letI := SmoothOfRelativeDimension.smooth n (X ↘ Spec (.of R))
+    pullbackTopFormDivisor R f n hD e hTotal hRam = -hP.toCartierDivisor ↔
+      D.comap f = P * ramificationIdealSheaf R f := by
+  rw [pullbackTopFormDivisor_eq_ramification_sub, ← neg_sub, neg_inj, sub_eq_iff_eq_add]
+  rw [← Scheme.IdealSheafData.IsEffectiveCartier.toCartierDivisor_mul hP hRam]
+  exact hTotal.toCartierDivisor_eq_iff (TauCeti.isEffectiveCartier_mul hP hRam)
+
 end QPainleve
