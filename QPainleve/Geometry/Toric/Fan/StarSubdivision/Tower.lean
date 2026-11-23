@@ -13,8 +13,6 @@ import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
 import QPainleve.Geometry.Toric.Fan.Boundary.Node
 import QPainleve.Geometry.Toric.Fan.Boundary.Subdivision
 import QPainleve.Geometry.Toric.Fan.StarSubdivision.Factorization
-import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.Pullback
-import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.TensorProduct
 
 /-!
 # Nodal blowup towers from toric subdivisions
@@ -35,35 +33,6 @@ namespace TauCeti.Toric.Fan
 
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {Φ Ψ : Fan i}
-
-section Step
-
-variable (hΦ : Φ.IsRegular) (σ : Φ.cones) (h₀ : σ.val ≠ ⊥)
-
-local notation "Ω" => Φ.starSubdivisionAlong hΦ σ.property
-local notation "hΩ" => Φ.isRegular_starSubdivisionAlong hΦ σ.property
-local notation "ρ" => Φ.starSubdivisionAlongRay hΦ σ.property h₀
-local notation "F" => Φ.starSubdivisionAlong_isSubdivision hΦ σ.property h₀
-local notation "J" => Scheme.Hom.ker (Φ.distinguishedPointHom σ)
-
-/-- The exceptional class of a single point blowup corresponds to the positive class
-of the new ray divisor under the comparison over the toric projection. -/
-theorem pullback_blowupExceptionalClass_starSubdivisionAlong
-    (hN : Module.finrank ℤ N = 2) (hc : Nat.card (ToricRay σ.val) = 2)
-    (e : (Ω).algebraicRealization ≅ (J).blowup)
-    (he : e.hom ≫ (J).blowupToBase = (F).toFanHom.algebraicMap) :
-    LineBundleClass.pullback e.hom (J).blowupExceptionalClass =
-      (LineBundleClass.mk ((Ω).isEffectiveCartier_rayBoundaryIdeal hΩ ρ).toInvertibleSheaf)⁻¹ := by
-  let hE := (J).isEffectiveCartier_comap_blowupToBase
-  have hcompare :
-      ((J).comap (J).blowupToBase).comap e.hom = (Ω).rayBoundaryIdeal hΩ ρ := by
-    rw [← comap_comp, he]
-    exact comap_ker_distinguishedPointHom_eq_rayBoundaryIdeal hΦ σ h₀ hN hc
-  rw [blowupExceptionalClass_def, LineBundleClass.pullback_inv,
-    hE.pullback_mk_toInvertibleSheaf (hE.comap e.hom),
-    LineBundleClass.mk_toInvertibleSheaf_congr _ _ hcompare]
-
-end Step
 
 private theorem IsSubdivision.reduced_boundary_of_iso (h : Ψ.IsSubdivision Φ)
     (hΦ : Nonempty Φ.cones) (hΨ : Nonempty Ψ.cones) {Y : Scheme}
