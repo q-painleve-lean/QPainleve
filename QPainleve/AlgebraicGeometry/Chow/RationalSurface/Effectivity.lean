@@ -17,10 +17,10 @@ import QPainleve.AlgebraicGeometry.Chow.Isomorphism
 import QPainleve.AlgebraicGeometry.Chow.Nef.Basic
 import QPainleve.AlgebraicGeometry.Chow.PositiveCone
 import QPainleve.AlgebraicGeometry.Curves.Degree.Ample
+import QPainleve.AlgebraicGeometry.EffectiveCartierDivisor.Effectivity
 import QPainleve.AlgebraicGeometry.IntersectionNumber.Nef.Pullback
 import QPainleve.AlgebraicGeometry.LineBundle.Ample
 import TauCeti.AlgebraicGeometry.Cohomology.ProjectiveSpace.HigherCohomology
-import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.ZeroLocus
 import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.TwistingSheaf.Ample
 
 /-!
@@ -124,28 +124,6 @@ private theorem subsingleton_cohomology_two_of_nef_plane_tower {W : Scheme.{u}} 
   have hd := plane_degree_nonneg_of_nef_marking k hU a b (hmark.symm ▸ hL)
   exact subsingleton_cohomology_two_of_plane_marking k hU L a b hmark (by omega)
 
-omit projective rational algClosed in
-include smooth in
-private theorem subsingleton_cohomology_two_of_pullback_tower_iso [PerfectField k]
-    {V W : Scheme.{u}} [V.Over S] [W.Over S] {m : ℕ}
-    {T : BlowupTower X m V} (hT : IsClosedPointTower X T)
-    [T.toBase.IsOver S] (e : W ≅ V) [e.hom.IsOver S] (L : InvertibleSheaf X)
-    (h : Subsingleton (Cohomology
-      ((InvertibleSheaf.pullback e.hom).obj ((InvertibleSheaf.pullback T.toBase).obj L)).obj 2)) :
-    Subsingleton (Cohomology L.obj 2) := by
-  obtain ⟨eT⟩ := hT.nonempty_cohomologyPullbackLinearEquiv k
-    ((InvertibleSheaf.toFiniteLocallyFree X).obj L) 2
-  let M := (InvertibleSheaf.pullback T.toBase).obj L
-  have eLM : Cohomology L.obj 2 ≃ₗ[k] Cohomology M.obj 2 := by
-    dsimp only [M]
-    rw [InvertibleSheaf.pullback_obj_obj]
-    exact eT
-  have eMN : Cohomology M.obj 2 ≃ₗ[k]
-      Cohomology ((InvertibleSheaf.pullback e.hom).obj M).obj 2 := by
-    rw [InvertibleSheaf.pullback_obj_obj]
-    exact (e.hom.cohomologyPullbackBaseLinearEquivOfIsIso k M.obj 2).symm
-  exact (eLM.trans eMN).injective.subsingleton
-
 omit smooth rational in
 private theorem plane_degree_pos_of_positive_square {n : ℕ} {W : Scheme.{u}}
     {U : BlowupTower P n W} (hU : IsClosedPointTower P U)
@@ -212,7 +190,7 @@ theorem subsingleton_cohomology_two_of_isNef_of_isRationalOver (L : InvertibleSh
   have hN : IsNef k (W ↘ S) (LineBundleClass.mk N) := by
     rw [← pullback_mk, ← pullback_mk]
     exact (hL.pullback T.toBase).pullback e.hom
-  exact subsingleton_cohomology_two_of_pullback_tower_iso k X hT e L
+  exact hT.subsingleton_cohomology_two_of_pullback_tower_iso k e L
     (subsingleton_cohomology_two_of_nef_plane_tower k hU N hN)
 
 /-- A line bundle of positive square meeting an ample class positively has vanishing
@@ -253,7 +231,7 @@ theorem subsingleton_cohomology_two_of_self_pos_of_intersection_pos
     (topologicalKrullDim_eq_of_smoothOfRelativeDimension (X ↘ S) (n := 2)) hh hh
   have hd : 0 < degree a :=
     plane_degree_pos_of_positive_square k X hU hg hh hpull hhh hLL hhL _ (hmark.trans hM)
-  exact subsingleton_cohomology_two_of_pullback_tower_iso k X hT e L
+  exact hT.subsingleton_cohomology_two_of_pullback_tower_iso k e L
     (subsingleton_cohomology_two_of_plane_marking k hU M a b hmark (by omega))
 
 end AlgebraicGeometry.Scheme
@@ -293,27 +271,6 @@ private theorem eventually_pos_eulerCharBelow_pow_of_self_pos
         simp only [x, ofMul_pow, map_nsmul, LinearMap.smul_apply, nsmul_eq_mul]
   exact ⟨hn₀, by linarith only [hRR', mul_pos (Int.natCast_pos.mpr hn₀) hpos]⟩
 
-omit projective smooth rational algClosed in
-private theorem exists_effectiveCartier_of_eulerCharBelow_pos [IsIntegral X]
-    (L : InvertibleSheaf X) (hχ : 0 < eulerCharBelow k (mk L) 3)
-    (hL₂ : Subsingleton (Cohomology L.obj 2)) :
-    ∃ (I : X.IdealSheafData) (hI : I.IsEffectiveCartier),
-      mk hI.toInvertibleSheaf = (mk L)⁻¹ := by
-  let : Subsingleton (Cohomology L.obj 2) := hL₂
-  have h₂ : Module.finrank k (Cohomology L.obj 2) = 0 := Module.finrank_zero_of_subsingleton
-  have hs : ∃ s : Γ(L.obj, ⊤), s ≠ 0 := by
-    by_contra! hz
-    have : Subsingleton Γ(L.obj, ⊤) := (subsingleton_iff_forall_eq 0).mpr hz
-    have h₀ : Module.finrank k (Cohomology L.obj 0) = 0 :=
-      (finrank_cohomology_zero_eq_finrank_globalSections k L.obj).trans
-        Module.finrank_zero_of_subsingleton
-    rw [eulerCharBelow_mk, Scheme.Modules.eulerCharBelow_succ,
-      Scheme.Modules.eulerCharBelow_two, h₀, h₂] at hχ
-    omega
-  obtain ⟨s, hs⟩ := hs
-  obtain ⟨I, hI, hclass⟩ := L.exists_isEffectiveCartier_of_ne_zero s hs
-  exact ⟨I, hI, hclass⟩
-
 /-- A nef line bundle of positive self-intersection on a smooth projective rational
 surface has a positive power represented by a nonempty effective Cartier divisor. -/
 theorem exists_effectiveCartier_pow_of_isNef_of_self_pos (a : LineBundleClass X)
@@ -333,7 +290,7 @@ theorem exists_effectiveCartier_pow_of_isNef_of_self_pos (a : LineBundleClass X)
     | succ j ih => simpa only [pow_succ] using ih.mul hnef
   have : Subsingleton (Cohomology L.obj 2) :=
     X.subsingleton_cohomology_two_of_isNef_of_isRationalOver k L (hL.symm ▸ hpow n)
-  obtain ⟨I, hI, hclass⟩ := exists_effectiveCartier_of_eulerCharBelow_pos k L
+  obtain ⟨I, hI, hclass⟩ := L.exists_effectiveCartier_of_eulerCharBelow_pos k
     (hL.symm ▸ hχ) inferInstance
   have hEq : (mk hI.toInvertibleSheaf)⁻¹ = a ^ n := by rw [hclass, inv_inv, hL]
   refine ⟨n, hn, I, hI, ?_, hEq⟩
@@ -372,7 +329,7 @@ theorem eventually_exists_effectiveCartier_pow_of_positive_cone
     rw [hL, ← hb, ofMul_pow, map_nsmul, nsmul_eq_mul, hb]
     exact mul_pos (Int.natCast_pos.mpr hn.1) hha
   have hvan := X.subsingleton_cohomology_two_of_self_pos_of_intersection_pos k L hh h₁ h₂
-  obtain ⟨I, hI, hclass⟩ := exists_effectiveCartier_of_eulerCharBelow_pos k L
+  obtain ⟨I, hI, hclass⟩ := L.exists_effectiveCartier_of_eulerCharBelow_pos k
     (hL.symm ▸ hn.2) hvan
   exact ⟨hn.1, I, hI, by rw [hclass, inv_inv, hL]⟩
 

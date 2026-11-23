@@ -14,7 +14,6 @@ import QPainleve.AlgebraicGeometry.IntersectionNumber.ExceptionalCurve.Numerical
 import QPainleve.AlgebraicGeometry.LineBundle.Ample
 import QPainleve.AlgebraicGeometry.Scheme.LocalDimension
 import Mathlib.RingTheory.Flat.Basic
-import TauCeti.AlgebraicGeometry.WeilDivisor.FiniteSum
 
 /-!
 # Effective representatives on exceptional rays
@@ -56,17 +55,6 @@ section Factorial
 
 variable [IsNoetherian X]
   [∀ x : X, UniqueFactorizationMonoid (X.presheaf.stalk x)]
-
-private theorem one_tmul_weilToLineBundleClassHom_eq_sum (D : SchemeWeilDivisor X) :
-    ι (cl D) = ∑ p ∈ D.support, (D p : ℝ) • realPrimeDivisorClass k p := by
-  classical
-  conv_lhs => rw [WeilDivisor.eq_sum_coeff_smul_ofPoint D]
-  simp only [map_sum, TensorProduct.tmul_sum]
-  refine Finset.sum_congr rfl fun p _ ↦ ?_
-  rw [← WeilDivisor.single_eq_zsmul_ofPoint, weilToLineBundleClassHom_single,
-    realPrimeDivisorClass_def, LineBundleClass.primeDivisorClass_def,
-    TensorProduct.tmul_smul, ← Int.cast_smul_eq_zsmul ℝ]
-  rfl
 
 variable [Infinite k] [TopologicalSpace V(X)] [IsTopologicalAddGroup V(X)]
   [ContinuousSMul ℝ V(X)]

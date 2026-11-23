@@ -10,6 +10,7 @@ public import TauCeti.AlgebraicGeometry.LineBundle.EulerCharacteristic
 public import TauCeti.AlgebraicGeometry.VectorBundle.FiniteLocallyFree
 import QPainleve.AlgebraicGeometry.Blowup.Point.Cohomology
 import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
+import TauCeti.AlgebraicGeometry.Cohomology.ClosedImmersion.Linear
 import TauCeti.AlgebraicGeometry.LineBundle.Pullback
 import TauCeti.AlgebraicGeometry.Scheme.Regular.Scheme
 
@@ -86,6 +87,29 @@ theorem nonempty_cohomologyPullbackLinearEquiv
     Nonempty (Cohomology E.obj i ≃ₗ[k] Cohomology ((pullback T.toBase).obj E.obj) i) :=
   hT.nonempty_cohomologyPullbackLinearEquiv_of_comp k (Y ↘ Spec (.of k))
     (comp_over T.toBase (Spec (.of k))).symm E i
+
+/-- Vanishing of second cohomology after pullback along a closed-point blowup tower and
+an isomorphism implies vanishing on the base surface. -/
+theorem subsingleton_cohomology_two_of_pullback_tower_iso
+    [SmoothOfRelativeDimension 2 (X ↘ Spec (.of k))]
+    {T : BlowupTower X n Y} (hT : IsClosedPointTower X T)
+    [T.toBase.IsOver (Spec (.of k))] {W : Scheme.{u}} [W.Over (Spec (.of k))]
+    (e : W ≅ Y) [e.hom.IsOver (Spec (.of k))] (L : InvertibleSheaf X)
+    (h : Subsingleton (Cohomology
+      ((InvertibleSheaf.pullback e.hom).obj ((InvertibleSheaf.pullback T.toBase).obj L)).obj 2)) :
+    Subsingleton (Cohomology L.obj 2) := by
+  obtain ⟨eT⟩ := hT.nonempty_cohomologyPullbackLinearEquiv k
+    ((InvertibleSheaf.toFiniteLocallyFree X).obj L) 2
+  let M := (InvertibleSheaf.pullback T.toBase).obj L
+  have eLM : Cohomology L.obj 2 ≃ₗ[k] Cohomology M.obj 2 := by
+    dsimp only [M]
+    rw [InvertibleSheaf.pullback_obj_obj]
+    exact eT
+  have eMN : Cohomology M.obj 2 ≃ₗ[k]
+      Cohomology ((InvertibleSheaf.pullback e.hom).obj M).obj 2 := by
+    rw [InvertibleSheaf.pullback_obj_obj]
+    exact (e.hom.cohomologyPullbackBaseLinearEquivOfIsIso k M.obj 2).symm
+  exact (eLM.trans eMN).injective.subsingleton
 
 /-- A tower of closed point blowups preserves the structure-sheaf cohomology
 in every degree. -/

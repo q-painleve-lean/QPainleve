@@ -15,6 +15,7 @@ import QPainleve.AlgebraicGeometry.Chow.Nef.Basic
 import QPainleve.AlgebraicGeometry.IntersectionNumber.GlobalGeneration
 import QPainleve.AlgebraicGeometry.LineBundle.Ample
 import Mathlib.Topology.Algebra.Module.FiniteDimension
+import TauCeti.AlgebraicGeometry.WeilDivisor.FiniteSum
 
 /-!
 # The closed cone of curves on a smooth projective surface
@@ -65,6 +66,21 @@ theorem realPrimeDivisorClass_def (p : CodimensionOnePoint X) :
     realPrimeDivisorClass k p = ι (LineBundleClass.primeDivisorClass p) := (rfl)
 
 local notation "c" => realPrimeDivisorClass k (X := X)
+
+/-- The real Picard class of a Weil divisor is the sum of its prime classes weighted by
+their coefficients. -/
+theorem one_tmul_weilToLineBundleClassHom_eq_sum [IsNoetherian X]
+    [∀ x : X, UniqueFactorizationMonoid (X.presheaf.stalk x)] (D : SchemeWeilDivisor X) :
+    (1 : ℝ) ⊗ₜ[ℤ] Scheme.CartierDivisor.weilToLineBundleClassHom X D =
+      ∑ p ∈ D.support, (D p : ℝ) • c p := by
+  classical
+  conv_lhs => rw [WeilDivisor.eq_sum_coeff_smul_ofPoint D]
+  simp only [map_sum, TensorProduct.tmul_sum]
+  refine Finset.sum_congr rfl fun p _ ↦ ?_
+  rw [← WeilDivisor.single_eq_zsmul_ofPoint, Scheme.CartierDivisor.weilToLineBundleClassHom_single,
+    realPrimeDivisorClass_def, LineBundleClass.primeDivisorClass_def,
+    TensorProduct.tmul_smul, ← Int.cast_smul_eq_zsmul ℝ]
+  rfl
 
 section IntersectionBounds
 
@@ -194,17 +210,8 @@ theorem one_tmul_inv_mk_toInvertibleSheaf_mem_closedCurveCone
   have hclass : F D = Additive.ofMul (LineBundleClass.mk hI.toInvertibleSheaf)⁻¹ := by
     simp only [F, D, Scheme.CartierDivisor.weilToLineBundleClassHom_toWeilDivisor,
       hI.toLineBundleClass_toCartierDivisor]
-  have he : (1 : ℝ) ⊗ₜ[ℤ] F D = D.sum (fun p n ↦ (n : ℝ) • c p) := by
-    calc
-      _ = (1 : ℝ) ⊗ₜ[ℤ] F (D.sum Finsupp.single) := by rw [Finsupp.sum_single]
-      _ = _ := by
-        rw [map_finsuppSum, Finsupp.sum, TensorProduct.tmul_sum]
-        refine Finset.sum_congr rfl fun p _ ↦ ?_
-        simp only [F, Scheme.CartierDivisor.weilToLineBundleClassHom_single,
-          ← LineBundleClass.primeDivisorClass_def, TensorProduct.tmul_smul,
-          ← Int.cast_smul_eq_zsmul ℝ, realPrimeDivisorClass_def]
   dsimp only
-  rw [← hclass, he]
+  rw [← hclass, one_tmul_weilToLineBundleClassHom_eq_sum k]
   exact (closedCurveCone k (X := X)).sum_mem fun p _ ↦
     (closedCurveCone k).smul_mem (realPrimeDivisorClass_mem_closedCurveCone k p)
       (by exact_mod_cast hD p)
