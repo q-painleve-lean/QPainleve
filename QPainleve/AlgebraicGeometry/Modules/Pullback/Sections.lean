@@ -23,6 +23,15 @@ universe u
 
 namespace AlgebraicGeometry.Scheme.Hom
 
+/-- Pulling a global section back to the top open agrees with its canonical pullback. -/
+theorem pullbackSectionsLE_top {X Y : Scheme.{u}} (f : X ⟶ Y) {M : Y.Modules} (s : Γ(M, ⊤)) :
+    f.pullbackSectionsLE M ⊤ ⊤ f.preimage_top.ge s = f.pullbackSections M ⊤ s := by
+  let N := (Modules.pullback f).obj M
+  let a : Γ(N, ⊤) := f.pullbackSections M ⊤ s
+  refine (f.pullbackSectionsLE_apply M ⊤ ⊤ f.preimage_top.ge s).trans ?_
+  exact (congrArg (fun h : Γ(N, ⊤) ⟶ Γ(N, ⊤) ↦ h a)
+    (N.presheaf.map_id (Opposite.op ⊤))).trans (id_apply a)
+
 /-- Pulling back the morphism of a global section gives the morphism of its pullback. -/
 theorem unitHomEquivTop_pullback {X Y : Scheme.{u}} (f : X ⟶ Y)
     {M : Y.Modules} (s : 𝟙_ Y.Modules ⟶ M) :
