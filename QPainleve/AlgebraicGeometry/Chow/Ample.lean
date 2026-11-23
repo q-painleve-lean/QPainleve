@@ -5,7 +5,7 @@ Authors: The QPainleve contributors
 -/
 module
 
-public import QPainleve.AlgebraicGeometry.Chow.SurfaceIntersection
+public import QPainleve.AlgebraicGeometry.Chow.Nef.Basic
 public import TauCeti.AlgebraicGeometry.LineBundle.Ample
 
 import QPainleve.AlgebraicGeometry.Curves.Degree.Ample
@@ -13,13 +13,14 @@ import QPainleve.AlgebraicGeometry.LineBundle.Ample
 import QPainleve.AlgebraicGeometry.Scheme.LocalDimension
 
 /-!
-# Positive intersections of ample classes on surfaces
+# Intersections with ample classes on surfaces
 
 An ample class has positive intersection with each integral curve on a projective
 surface. Expanding a nonempty effective Cartier divisor from a positive power of a
 second ample class gives positive intersection of the two ample classes. In
 particular an ample class has positive square, as required by the numerical
 criterion for ampleness and by the choice of a positive cone component.
+An ample class also has nonnegative intersection with every nef class.
 
 See the [Stacks Project, Lemma 33.45.9](https://stacks.math.columbia.edu/tag/0BEV)
 for the numerical positivity of ample intersections.
@@ -67,10 +68,26 @@ theorem classIntersectionNumber_pos_of_isAmple (hX : topologicalKrullDim X = 2)
     refine Finset.sum_pos (fun p hp ↦ ?_) (Finsupp.support_nonempty_iff.mpr hne)
     exact mul_pos (lt_of_le_of_ne (hE p) (Finsupp.mem_support_iff.mp hp).symm)
       (classIntersectionNumber_primeDivisorClass_pos_of_isAmple k hX ha p)
-  let f := classIntersectionBilinForm k hX (Additive.ofMul a)
-  have he : classIntersectionNumber k X a (b ^ n) = (n : ℤ) * classIntersectionNumber k X a b := by
-    simpa only [f, classIntersectionBilinForm_apply, toMul_zsmul, toMul_ofMul,
-      Int.zsmul_eq_mul, zpow_natCast] using f.map_smul (n : ℤ) (Additive.ofMul b)
-  exact pos_of_mul_pos_right (he ▸ hpow) (Int.natCast_nonneg n)
+  rw [classIntersectionNumber_pow_right k hX] at hpow
+  exact pos_of_mul_pos_right hpow (Int.natCast_nonneg n)
 
 end TauCeti.AlgebraicGeometry.Chow
+
+namespace TauCeti.AlgebraicGeometry.LineBundleClass
+
+variable {k : Type u} [Field k] [Infinite k] {X : Scheme.{u}}
+  [X.Over (Spec (.of k))] [X.IsProjectiveOver k] [IsIntegral X]
+  [∀ x : X, UniqueFactorizationMonoid (X.presheaf.stalk x)] {a h : LineBundleClass X}
+
+/-- The intersection of a nef class with an ample class is nonnegative. -/
+theorem IsNef.classIntersectionNumber_nonneg_of_isAmple
+    (ha : a.IsNef k (X ↘ Spec (.of k))) (hX : topologicalKrullDim X = 2)
+    (hh : h.IsAmple) : 0 ≤ Chow.classIntersectionNumber k X a h := by
+  have hdim : 0 < topologicalKrullDim X := by rw [hX]; decide
+  obtain ⟨n, hn, I, hI, _, hclass⟩ :=
+    hh.exists_effectiveCartier_pow_ne_top (X ↘ Spec (.of k)) hdim
+  have hnonneg := Chow.classIntersectionNumber_nonneg_of_isNef_of_isEffectiveCartier k hX ha hI
+  rw [hclass, Chow.classIntersectionNumber_pow_right k hX] at hnonneg
+  exact nonneg_of_mul_nonneg_right hnonneg (Int.natCast_pos.mpr hn)
+
+end TauCeti.AlgebraicGeometry.LineBundleClass
