@@ -7,6 +7,7 @@ module
 
 public import QPainleve.AlgebraicGeometry.Blowup.Tower.StrictTransform
 public import QPainleve.Geometry.Toric.Fan.Boundary.Component
+public import QPainleve.Geometry.Toric.Fan.InternalBlowup
 
 /-!
 # Boundary components of ordered toric blowups
@@ -75,5 +76,25 @@ theorem support_ker_alongBoundary_boundaryι
     strictTransform_rayBoundaryIdeal_alongBoundary hΦ J ρ (fun j ↦ hJ j ρ)]
   let k := ρ.boundaryComponentι hΦ ≫ j
   exact (k.support_ker.trans k.isClosedEmbedding.isClosed_range.closure_eq).symm
+
+/-- The ray component embedded through the fixed boundary is the strict transform of
+the ray divisor in the ordered internal model. -/
+theorem ker_boundaryComponentι_internalBlowupTower
+    (b : Module.Basis (Fin 2) ℤ N) (s : Fin n → Φ.Ray) (c : Fin n → ℂˣ)
+    (hΦ : Φ.IsRegular) (ρ : Φ.Ray) :
+    (ρ.boundaryComponentι hΦ ≫ (internalBlowupTower b s c).2.boundaryι).ker =
+      strictTransform (Φ.rayBoundaryIdeal hΦ ρ) (internalBlowupTower b s c).2.toTower := by
+  let D := (Φ.boundaryIdeal inferInstance).subschemeι
+  let J (k : Fin n) := (s k).internalCenter b (c k)
+  let P (M : Σ Z, WithBoundary D n Z) :=
+    (ρ.boundaryComponentι hΦ ≫ M.2.boundaryι).ker =
+      strictTransform (Φ.rayBoundaryIdeal hΦ ρ) M.2.toTower
+  apply (congrArg P (internalBlowupTower_eq_alongBoundary b s c)).mpr
+  refine (strictTransform_rayBoundaryIdeal_alongBoundary hΦ J ρ ?_).symm
+  intro k
+  rw [Ray.internalCenter_val]
+  exact (s k).isEffectiveCartier_comap_ker_binomialCenterOnBoundary hΦ
+    (by simpa using Module.finrank_eq_card_basis b) (b.detDualEquiv_self _)
+    ((s k).surjective_detCharacter b) (c k) ρ
 
 end TauCeti.Toric.Fan

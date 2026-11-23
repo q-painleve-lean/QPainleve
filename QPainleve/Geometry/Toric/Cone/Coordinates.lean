@@ -1,0 +1,210 @@
+/-
+Copyright (c) 2026 The QPainleve contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: The QPainleve contributors
+-/
+module
+
+public import TauCeti.Geometry.Toric.Algebraic.Regular
+
+import TauCeti.Geometry.Convex.Cone.Face.Simplicial
+import TauCeti.Geometry.Toric.Algebraic.Ray.Generation
+
+/-!
+# Coordinates in cones
+
+An extending basis gives a pointwise description of a regular cone by
+nonnegative ray coordinates and vanishing complementary coordinates. In rank
+two, comparing the coordinates locates a point on either side of the ray
+through the sum of the basis vectors.
+-/
+
+public section
+
+open Module PointedCone
+
+namespace TauCeti.Toric
+
+variable {N V : Type*} [AddCommGroup N] [AddCommGroup V] [Module ℝ V] {i : N →+ V}
+
+namespace IsExtendingBasis
+
+/-- A point belongs to the cone exactly when its coordinates in the extended real basis
+are nonnegative and vanish away from the ray indices. -/
+theorem mem_iff_real_basis_repr {σ : PointedCone ℝ V} {n : ℕ} {b : Basis (Fin n) ℤ N}
+    {r : ToricRay σ ↪ Fin n} (hb : IsExtendingBasis i b r) (hi : IsIntegralLattice i)
+    (hσ : IsToricCone i σ) (x : V) :
+    x ∈ σ ↔ ∀ j, 0 ≤ (hi.isBaseChange.basis b).repr x j ∧
+      (j ∉ Set.range r → (hi.isBaseChange.basis b).repr x j = 0) := by
+  let c := hi.isBaseChange.basis b
+  have hgen : (c : Fin n → V) ∘ r = i ∘ primitiveGenerator hi hσ := by
+    funext ρ
+    exact (hi.isBaseChange.basis_apply b (r ρ)).trans
+      (congrArg i ((hb.isPrimitiveGenerator_apply ρ).eq_primitiveGenerator hi hσ))
+  have hcone : hull ℝ (c '' Set.range r) = σ := by
+    rw [← Set.range_comp, hgen, Set.range_comp, hσ.hull_primitiveGenerator hi]
+  rw [← show x ∈ hull ℝ (c '' Set.range r) ↔ x ∈ σ by rw [hcone],
+    mem_hull_image_iff_linearCombination]
+  constructor
+  · rintro ⟨a, ha, hp, rfl⟩ j
+    rw [c.repr_linearCombination]
+    exact ⟨hp j, fun hn ↦ Finsupp.notMem_support_iff.mp
+      (fun hm ↦ hn ((Finsupp.mem_supported _ _).mp ha hm))⟩
+  · intro h
+    exact ⟨c.repr x, Finsupp.mem_supported _ _ |>.mpr (fun j hj ↦ by
+      by_contra hn
+      exact (Finsupp.mem_support_iff.mp hj) ((h j).2 hn)), fun j ↦ (h j).1,
+      c.linearCombination_repr x⟩
+
+/-- For a lattice point, the nonnegativity and support conditions of an extending basis
+can be checked on its integral coordinates. -/
+theorem mem_iff_lattice_basis_repr {σ : PointedCone ℝ V} {n : ℕ} {b : Basis (Fin n) ℤ N}
+    {r : ToricRay σ ↪ Fin n} (hb : IsExtendingBasis i b r) (hi : IsIntegralLattice i)
+    (hσ : IsToricCone i σ) (x : N) :
+    i x ∈ σ ↔ ∀ j, 0 ≤ b.repr x j ∧ (j ∉ Set.range r → b.repr x j = 0) := by
+  rw [hb.mem_iff_real_basis_repr hi hσ]
+  apply forall_congr'
+  intro j
+  have he : (hi.isBaseChange.basis b).repr (i x) j = (b.repr x j : ℝ) :=
+    hi.isBaseChange.basis_repr_comp_apply b x j
+  rw [he]
+  simp
+
+end IsExtendingBasis
+
+/-- A nonnegative linear functional that vanishes on the sum of the primitive ray
+generators vanishes on the entire cone. -/
+theorem IsToricCone.map_eq_zero_of_sum_generators {σ : PointedCone ℝ V}
+    (hσ : IsToricCone i σ) (hi : IsIntegralLattice i)
+    (f : V →ₗ[ℝ] ℝ) (hf : ∀ x ∈ σ, 0 ≤ f x) [Fintype (ToricRay σ)]
+    (hzero : f (∑ ρ : ToricRay σ, i (primitiveGenerator hi hσ ρ)) = 0) :
+    ∀ x ∈ σ, f x = 0 := by
+  have hgens := (Fintype.sum_eq_zero_iff_of_nonneg fun ρ : ToricRay σ ↦ hf _
+    (ρ.val.isFaceOf.le (primitiveGenerator_mem hi hσ ρ))).mp (by simpa only [map_sum] using hzero)
+  have hle : σ ≤ Submodule.restrictScalars (Nonneg ℝ) f.ker := by
+    rw [← hσ.hull_primitiveGenerator hi]
+    apply Submodule.span_le.mpr
+    rintro _ ⟨_, ⟨ρ, rfl⟩, rfl⟩
+    exact congrFun hgens ρ
+  exact fun x hx ↦ hle hx
+
+/-- A toric cone lies in a cone with an extending basis if the sum of its primitive ray
+generators lies there and each coordinate in that basis has constant weak sign. -/
+theorem IsToricCone.le_of_sum_generators_mem {σ τ : PointedCone ℝ V} {n : ℕ}
+    (hσ : IsToricCone i σ) (hi : IsIntegralLattice i)
+    (hτ : IsToricCone i τ) (b : Module.Basis (Fin n) ℤ N) (r : ToricRay τ ↪ Fin n)
+    (hb : IsExtendingBasis i b r) [Fintype (ToricRay σ)]
+    (hs : (∑ ρ : ToricRay σ, i (primitiveGenerator hi hσ ρ)) ∈ τ)
+    (hsign : ∀ j, (∀ x ∈ σ, 0 ≤ (hi.isBaseChange.basis b).repr x j) ∨
+      ∀ x ∈ σ, (hi.isBaseChange.basis b).repr x j ≤ 0) :
+    σ ≤ τ := by
+  let c := hi.isBaseChange.basis b
+  let z := ∑ ρ : ToricRay σ, i (primitiveGenerator hi hσ ρ)
+  have hz : z ∈ σ := Submodule.sum_mem _ fun ρ _ ↦
+    ρ.val.isFaceOf.le (primitiveGenerator_mem hi hσ ρ)
+  have hzτ := (hb.mem_iff_real_basis_repr hi hτ z).mp hs
+  intro x hx
+  apply (hb.mem_iff_real_basis_repr hi hτ x).mpr
+  intro j
+  have hfix {j : Fin n} (h : c.repr z j = 0) : c.repr x j = 0 := by
+    rcases hsign j with hj | hj
+    · exact hσ.map_eq_zero_of_sum_generators hi (c.coord j) hj h x hx
+    · have h' : (-c.coord j) z = 0 := by simp [h, c]
+      simpa using hσ.map_eq_zero_of_sum_generators hi (-c.coord j)
+        (fun y hy ↦ neg_nonneg.mpr (hj y hy)) h' x hx
+  refine ⟨?_, fun hj ↦ hfix ((hzτ j).2 hj)⟩
+  rcases hsign j with hj | hj
+  · exact hj x hx
+  · exact (hfix ((hj z hz).antisymm (hzτ j).1)).ge
+
+end TauCeti.Toric
+
+namespace Module.Basis
+
+variable {V : Type*} [AddCommGroup V] [Module ℝ V]
+
+/-- A point lies in the cone spanned by a real basis of size two exactly when both
+of its coordinates are nonnegative. -/
+theorem mem_basisHull_iff (b : Basis (Fin 2) ℝ V) {x : V} :
+    x ∈ hull ℝ (Set.range b) ↔ 0 ≤ b.coord 0 x ∧ 0 ≤ b.coord 1 x := by
+  have hset : Set.range b = {b 0, b 1} := by
+    ext y
+    simp only [Set.mem_range, Set.mem_insert_iff, Set.mem_singleton_iff,
+      Fin.exists_fin_two, eq_comm]
+  rw [hset, Submodule.mem_span_pair]
+  constructor
+  · rintro ⟨a, d, rfl⟩
+    simpa [← Nonneg.coe_smul, Basis.coord_apply] using And.intro a.property d.property
+  · rintro ⟨h0, h1⟩
+    refine ⟨⟨_, h0⟩, ⟨_, h1⟩, ?_⟩
+    simpa only [Nonneg.mk_smul, Fin.sum_univ_two, Basis.coord_apply] using b.sum_repr x
+
+/-- In the cone spanned by a real basis of size two, the ray through the sum of
+the basis vectors consists of the points with equal coordinates. -/
+theorem mem_hull_sum_iff (b : Basis (Fin 2) ℝ V) {x : V}
+    (hx : x ∈ hull ℝ (Set.range b)) :
+    x ∈ hull ℝ {b 0 + b 1} ↔ (b.coord 0 - b.coord 1) x = 0 := by
+  rw [mem_hull_singleton]
+  constructor
+  · rintro ⟨t, -, rfl⟩
+    simp [Basis.coord_apply]
+  · intro he
+    refine ⟨b.coord 0 x, ((mem_basisHull_iff b).mp hx).1, ?_⟩
+    have he' : b.coord 0 x = b.coord 1 x := sub_eq_zero.mp he
+    rw [smul_add]
+    nth_rw 2 [he']
+    simpa only [Fin.sum_univ_two, Basis.coord_apply] using b.sum_repr x
+
+/-- A point in the basis cone lies in the cone spanned by the sum and the basis
+vector corresponding to its larger coordinate. -/
+theorem mem_hull_sum_pair_of_coord_le (b : Basis (Fin 2) ℝ V) {x : V}
+    (hx : x ∈ hull ℝ (Set.range b)) {j k : Fin 2} (hjk : j ≠ k)
+    (h : b.coord k x ≤ b.coord j x) :
+    x ∈ hull ℝ {b 0 + b 1, b j} := by
+  have hpos (l : Fin 2) : 0 ≤ b.coord l x := by
+    have hp := (mem_basisHull_iff b).mp hx
+    fin_cases l
+    · exact hp.1
+    · exact hp.2
+  rw [Submodule.mem_span_pair]
+  refine ⟨⟨_, hpos k⟩, ⟨_, sub_nonneg.mpr h⟩, ?_⟩
+  have he := b.sum_repr x
+  simp only [Fin.sum_univ_two, ← Basis.coord_apply] at he
+  simp only [Nonneg.mk_smul, smul_add, sub_smul]
+  have hsum : (b.coord k x) • b 0 + (b.coord k x) • b 1 +
+      ((b.coord j x) • b j - (b.coord k x) • b j) =
+      (b.coord 0 x) • b 0 + (b.coord 1 x) • b 1 := by
+    have hcases : j = 0 ∧ k = 1 ∨ j = 1 ∧ k = 0 := by omega
+    rcases hcases with ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ <;> module
+  exact hsum.trans he
+
+/-- A subcone of the basis cone lies on one side of the ray through the sum of the
+basis vectors if its intersection with that ray is a face. -/
+theorem exists_le_hull_sum_pair_of_isFaceOf (b : Basis (Fin 2) ℝ V)
+    {τ : PointedCone ℝ V} (hτ : τ ≤ hull ℝ (Set.range b))
+    (hface : (τ ⊓ hull ℝ {b 0 + b 1}).IsFaceOf τ) :
+    ∃ j : Fin 2, τ ≤ hull ℝ {b 0 + b 1, b j} := by
+  let f := b.coord 0 - b.coord 1
+  by_cases hp : ∃ x ∈ τ, 0 < f x
+  · obtain ⟨x, hx, hpos⟩ := hp
+    refine ⟨0, fun y hy ↦ mem_hull_sum_pair_of_coord_le b (hτ hy)
+      (by decide : (0 : Fin 2) ≠ 1) (sub_nonneg.mp ?_)⟩
+    by_contra! hneg
+    have hneg' : f y < 0 := hneg
+    have h1 := τ.smul_mem (neg_nonneg.mpr hneg'.le) hx
+    have h2 := τ.smul_mem hpos.le hy
+    have hz : f ((-f y) • x + f x • y) = 0 := by
+      simp only [map_add, map_smul, smul_eq_mul]
+      ring
+    have hm := (mem_hull_sum_iff b (hτ (τ.add_mem h1 h2))).mpr hz
+    have hxf := hface.mem_of_add_mem_left h1 h2 ⟨τ.add_mem h1 h2, hm⟩
+    have he := (mem_hull_sum_iff b (hτ h1)).mp hxf.2
+    have hz' : 0 < f ((-f y) • x) := by
+      rw [map_smul, smul_eq_mul]
+      exact mul_pos (neg_pos.mpr hneg') hpos
+    exact hz'.ne' he
+  · push Not at hp
+    refine ⟨1, fun y hy ↦ mem_hull_sum_pair_of_coord_le b (hτ hy)
+      (by decide : (1 : Fin 2) ≠ 0) (sub_nonpos.mp (hp y hy))⟩
+
+end Module.Basis

@@ -10,6 +10,7 @@ public import TauCeti.AlgebraicGeometry.Modules.Differentials.Ramification
 public import TauCeti.AlgebraicGeometry.Modules.ExteriorPower.Pullback.Quasicoherent
 public import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.Invertible
 public import TauCeti.AlgebraicGeometry.LineBundle.Dual
+public import TauCeti.AlgebraicGeometry.IdealSheaf.Sequence
 import TauCeti.AlgebraicGeometry.Modules.FittingIdeal.Image
 import TauCeti.AlgebraicGeometry.Modules.FittingIdeal.Invertible
 import QPainleve.AlgebraicGeometry.IdealSheaf.Image
@@ -149,6 +150,63 @@ theorem ramificationIdealSheaf_eq_imageIdealSheaf_topDifferentialFormsMap :
       (InvertibleSheaf.dual K).obj 0).symm
     _ = _ := (Scheme.Modules.fittingIdeal_congr _
       (InvertibleSheaf.cokernelTwistedToUnitIso L K d) 0).symm
+
+/-- The pullback on top forms is injective if its ramification ideal is effective Cartier. -/
+theorem mono_topDifferentialFormsMap_of_ramification {J : X.IdealSheafData}
+    (hJ : J.IsEffectiveCartier) :
+    letI := SmoothOfRelativeDimension.smooth n (X ↘ Spec (.of R))
+    ramificationIdealSheaf R f = J → Mono (topDifferentialFormsMap R f n) := by
+  have := SmoothOfRelativeDimension.smooth n (X ↘ Spec (.of R))
+  intro hram
+  let L := (InvertibleSheaf.pullback f).obj (canonicalBundle R Y n)
+  let K := canonicalBundle R X n
+  let d := topDifferentialFormsMap R f n
+  let φ := InvertibleSheaf.twistedToUnit L K d
+  have himage :=
+    (ramificationIdealSheaf_eq_imageIdealSheaf_topDifferentialFormsMap R f n).symm.trans hram
+  have : IsIso φ.toImageIdealSheaf :=
+    φ.isIso_toImageIdealSheaf_of_isEffectiveCartier (himage.symm ▸ hJ)
+  have hmono : Mono φ := by
+    rw [← φ.toImageIdealSheaf_ι]
+    infer_instance
+  exact (InvertibleSheaf.mono_twistedToUnit_iff L K d).mp hmono
+
+/-- The cokernel of the pullback on top forms is the restriction of the source canonical
+bundle to the effective Cartier ramification subscheme, viewed on the source. -/
+def cokernelTopDifferentialFormsMapIso {J : X.IdealSheafData}
+    (hJ : J.IsEffectiveCartier) :
+    letI := SmoothOfRelativeDimension.smooth n (X ↘ Spec (.of R))
+    ramificationIdealSheaf R f = J →
+      (cokernel (C := X.Modules) (topDifferentialFormsMap R f n) ≅
+        (canonicalBundle R X n).obj ⊗ J.pushforwardSubscheme) := by
+  have := SmoothOfRelativeDimension.smooth n (X ↘ Spec (.of R))
+  intro hram
+  let L := (InvertibleSheaf.pullback f).obj (canonicalBundle R Y n)
+  let K := canonicalBundle R X n
+  let d := topDifferentialFormsMap R f n
+  let φ := InvertibleSheaf.twistedToUnit L K d
+  have himage :=
+    (ramificationIdealSheaf_eq_imageIdealSheaf_topDifferentialFormsMap R f n).symm.trans hram
+  have : IsIso φ.toImageIdealSheaf :=
+    φ.isIso_toImageIdealSheaf_of_isEffectiveCartier (himage.symm ▸ hJ)
+  let e : (L.tensorProduct (InvertibleSheaf.dual K)).obj ≅ φ.imageIdealSheaf.sheaf :=
+    asIso φ.toImageIdealSheaf
+  let e₁ : cokernel φ ≅ φ.imageIdealSheaf.pushforwardSubscheme :=
+    cokernel.mapIso φ φ.imageIdealSheaf.sheafι e (Iso.refl _)
+        (by simpa only [e, asIso_hom, Iso.refl_hom, Category.comp_id]
+          using φ.toImageIdealSheaf_ι.symm) ≪≫
+      (cokernelIsCokernel _).coconePointUniqueUpToIso
+        φ.imageIdealSheaf.shortExact_toPushforwardSubscheme.gIsCokernel
+  let e₂ : cokernel d ⊗ (InvertibleSheaf.dual K).obj ≅ J.pushforwardSubscheme :=
+    (InvertibleSheaf.cokernelTwistedToUnitIso L K d).symm ≪≫ e₁ ≪≫
+      eqToIso (congrArg Scheme.IdealSheafData.pushforwardSubscheme himage)
+  let t := InvertibleSheaf.tensorRightDualEquivalence K
+  let h : (t.functor ⋙ t.inverse).obj (cokernel d) =
+      (cokernel d ⊗ (InvertibleSheaf.dual K).obj) ⊗ K.obj := by
+    simp only [t, Functor.comp_obj, InvertibleSheaf.tensorRightDualEquivalence_functor,
+      InvertibleSheaf.tensorRightDualEquivalence_inverse]
+    rfl
+  exact t.unitIso.app (cokernel d) ≪≫ eqToIso h ≪≫ (tensorRight K.obj).mapIso e₂ ≪≫ β_ _ _
 
 /-- The canonical bundle of the source is the pullback of the target canonical bundle
 twisted by the dual of the effective Cartier ramification ideal. -/

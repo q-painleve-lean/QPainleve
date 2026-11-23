@@ -116,7 +116,8 @@ private theorem mutationRayEquiv_isPiecewiseLinear (σ : Φ.cones) :
     dsimp only [f]
     rw [hchar, map_neg, LinearMap.ker_neg]
     exact Φ.lattice.ker_realCharacter_detDualEquiv b hv
-  rcases Φ.nonneg_or_nonpos_on_cone hker hpos (by simpa using hneg) σ with hs | hs
+  rcases Φ.nonneg_or_nonpos_on_cone_of_mem_support hker (fun _ ↦ hpos)
+    (fun _ ↦ by simpa only [map_neg] using hneg) σ with hs | hs
   · refine ⟨LinearEquiv.transvection hfv,
       (LinearEquiv.transvection (mutationCharacter_self b v)).toAddEquiv, ?_, ?_⟩
     · intro x hx

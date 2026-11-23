@@ -67,6 +67,19 @@ theorem Ray.map_internalCenter_subschemeι (ρ : Φ.Ray) (c : ℂˣ) :
   exact congrArg Scheme.Hom.ker (ρ.binomialCenterOnBoundary_comp_subschemeι rankTwo
     (m := χ(ρ)) (b.detDualEquiv_self _) (ρ.surjective_detCharacter b) c)
 
+/-- The internal center ideal on a fixed ray determines its parameter. -/
+theorem Ray.internalCenter_injective (ρ : Φ.Ray) :
+    Function.Injective (fun c : ℂˣ ↦ (ρ.internalCenter b c).val) := by
+  intro c d h
+  have hker := congrArg (fun J ↦ Scheme.IdealSheafData.map J (boundary).subschemeι) h
+  rw [ρ.map_internalCenter_subschemeι, ρ.map_internalCenter_subschemeι] at hker
+  let hc := b.detDualEquiv_self ρ.primitiveGenerator
+  let hp := ρ.surjective_detCharacter b
+  exact ρ.binomialCenter_injective rankTwo hc hp
+    (((ρ.binomialCenter rankTwo hc hp c).ker_eq_ker_iff_of_comp_eq_id
+      (ρ.binomialCenter rankTwo hc hp d) (ρ.binomialCenter_comp_structureMap _ _ _ _)
+      (ρ.binomialCenter_comp_structureMap _ _ _ _)).mp hker)
+
 /-- Two ordered inputs give disjoint center supports on any embedded copy of the boundary
 exactly when the ray or the parameter differs. In particular the test also applies on a
 strict transform after any of the preceding internal blowups. -/

@@ -7,7 +7,7 @@ module
 
 public import TauCeti.AlgebraicGeometry.Blowup.AffineCharts
 public import TauCeti.Geometry.Toric.Algebraic.Fan.Scheme
-public import TauCeti.Geometry.Toric.Algebraic.Fan.StarSubdivision
+public import QPainleve.Geometry.Toric.Fan.StarSubdivision.TwoDimensional
 public import TauCeti.Geometry.Toric.Analytic.Cone.Orbit.Basic
 
 import TauCeti.AlgebraicGeometry.Blowup.ExceptionalDivisor
@@ -313,53 +313,16 @@ private theorem affineCoordinateRingMap_blowupCone (j : Fin 2) :
       _ = _ := by simp [he, chartHom, m₀]
   · ext
 
-private theorem exists_basis_primitiveGenerators {σ : PointedCone ℝ V}
-    (hσ : IsRegularCone i σ) (hN : Module.finrank ℤ N = 2)
-    (hc : Nat.card (ToricRay σ) = 2) :
-    ∃ (e : Fin 2 ≃ ToricRay σ) (b : Module.Basis (Fin 2) ℤ N),
-      ∀ j, b j = primitiveGenerator hi hσ.toIsToricCone (e j) := by
-  have := ToricRay.finite_of_fg hσ.fg
-  let := Fintype.ofFinite (ToricRay σ)
-  let e := (Fintype.equivFinOfCardEq (Nat.card_eq_fintype_card.symm.trans hc)).symm
-  obtain ⟨l, b₀, hb₀⟩ := hσ.exists_basis_sum
-  have hl := Module.finrank_eq_nat_card_basis b₀
-  rw [hN, Nat.card_sum, hc, Nat.card_fin] at hl
-  have hl₀ : l = 0 := by omega
-  subst l
-  let q := (Equiv.sumEmpty (ToricRay σ) (Fin 0)).trans e.symm
-  refine ⟨e, b₀.reindex q, fun j ↦ ?_⟩
-  simpa [q] using (hb₀ (e j)).eq_primitiveGenerator hi hσ.toIsToricCone
-
-private theorem eq_basisCone_of_primitiveGenerators {σ : PointedCone ℝ V}
-    (hσ : IsRegularCone i σ) (e : Fin 2 ≃ ToricRay σ)
-    (hb : ∀ j, b j = primitiveGenerator hi hσ.toIsToricCone (e j)) :
-    σ = basisCone b i := by
-  have hrange : Set.range b = Set.range (primitiveGenerator hi hσ.toIsToricCone) :=
-    (congrArg Set.range (funext hb)).trans (e.surjective.range_comp _)
-  rw [basisCone, hrange, hσ.toIsToricCone.hull_primitiveGenerator hi]
-
 private abbrev allRays {σ : PointedCone ℝ V} (hσ : IsRegularCone i σ) :=
   ToricRay.faceFinset (PointedCone.IsFaceOf.refl σ) hσ.fg
-
-private theorem sum_primitiveGenerator_allRays {σ : PointedCone ℝ V}
-    (hσ : IsRegularCone i σ) (e : Fin 2 ≃ ToricRay σ)
-    (hb : ∀ j, b j = primitiveGenerator hi hσ.toIsToricCone (e j)) :
-    ∑ ρ ∈ allRays hσ, primitiveGenerator hi hσ.toIsToricCone ρ = b 0 + b 1 := by
-  classical
-  let := Fintype.ofEquiv _ e
-  have hall : allRays hσ = Finset.univ := by
-    ext ρ
-    simp [allRays, ToricRay.mem_faceFinset, ρ.val.isFaceOf.le]
-  rw [hall, ← Equiv.sum_comp e, Fin.sum_univ_two, ← hb 0, ← hb 1]
 
 private theorem starSubdivisionCone_eq_blowupCone {σ : PointedCone ℝ V}
     (hσ : IsRegularCone i σ) (e : Fin 2 ≃ ToricRay σ)
     (hb : ∀ j, b j = primitiveGenerator hi hσ.toIsToricCone (e j)) (j : Fin 2) :
     starSubdivisionCone hi (allRays hσ) hσ.toIsToricCone {none, some (e j.rev)} =
       blowupCone b i j := by
-  have hsum := sum_primitiveGenerator_allRays hi b hσ e hb
-  simp only [starSubdivisionCone_def, Set.image_insert_eq, Set.image_singleton,
-    starSubdivisionGenerator_none, starSubdivisionGenerator_some, hsum, ← hb, blowupCone]
+  rw [hσ.starSubdivisionCone_pair_eq_hull hi b e hb, blowupCone,
+    Set.image_insert_eq, Set.image_singleton]
 
 @[reassoc]
 private theorem affineBlowupChartEquiv_SpecMap (j : Fin 2) :
@@ -388,9 +351,7 @@ private def starSubdivisionChart {σ : PointedCone ℝ V} (hσ : IsRegularCone i
     (e : Fin 2 ≃ ToricRay σ) (j : Fin 2) :
     (Fan.starSubdivision hi (allRays hσ) hσ).cones :=
   ⟨starSubdivisionCone hi (allRays hσ) hσ.toIsToricCone {none, some (e j.rev)},
-    (Fan.mem_starSubdivision_cones hi (allRays hσ) hσ).mpr
-      ⟨_, ⟨e j, (ToricRay.mem_faceFinset _ _).2 (e j).val.isFaceOf.le,
-        some_notMem_starSubdivisionChart e j⟩, rfl⟩⟩
+    hσ.starSubdivisionCone_pair_mem hi e j.rev⟩
 
 private theorem exists_le_starSubdivisionChart {σ : PointedCone ℝ V}
     (hσ : IsRegularCone i σ) (e : Fin 2 ≃ ToricRay σ)
@@ -419,7 +380,7 @@ private theorem starSubdivisionChart_inf_eq {σ : PointedCone ℝ V}
       PointedCone.hull ℝ {i (b 0 + b 1)} := by
   classical
   let := Fintype.ofEquiv _ e
-  have hsum := sum_primitiveGenerator_allRays hi b hσ e hb
+  have hsum := hσ.sum_primitiveGenerator_allRays hi b e hb
   have hS (k : Fin 2) : ∃ ρ ∈ allRays hσ,
       some ρ ∉ ({none, some (e k.rev)} : Set (Option (ToricRay σ))) :=
     ⟨e k, (ToricRay.mem_faceFinset _ _).2 (e k).val.isFaceOf.le,
@@ -582,8 +543,8 @@ theorem exists_affineBlowupCharts_starSubdivision {σ : PointedCone ℝ V}
             Spec.map (reesAlgebra.gradeZeroEquiv J).toCommRingCatIso.hom =
           affineToricSchemeMap Φ.lattice hi (AddMonoidHom.id N) LinearMap.id (fun _ ↦ rfl)
             ((Set.mapsTo_id (σ : Set V)).mono_left (SetLike.coe_subset_coe.mpr (hle j))) := by
-  obtain ⟨e, b, hb⟩ := exists_basis_primitiveGenerators hi hσ hN hc
-  have hcone := eq_basisCone_of_primitiveGenerators hi b hσ e hb
+  obtain ⟨e, b, hb⟩ := hσ.exists_basis_primitiveGenerators hi hN hc
+  have hcone : σ = basisCone b i := (hσ.hull_eq_of_basis_primitiveGenerators hi b e hb).symm
   subst σ
   let τ := starSubdivisionChart hi hσ e
   have hτ (j : Fin 2) : (τ j).val = blowupCone b i j :=
@@ -747,8 +708,8 @@ theorem exists_iso_reesBlowup_starSubdivision {σ : PointedCone ℝ V}
       e.hom ≫ Proj.toSpecZero (reesAlgebra.grade I) ≫
           Spec.map (reesAlgebra.gradeZeroEquiv I).toCommRingCatIso.hom ≫ Ψ.affineToricChartι τ =
         (Fan.starSubdivision_isSubdivision hi A hσ hA).toFanHom.algebraicMap := by
-  obtain ⟨e, b, hb⟩ := exists_basis_primitiveGenerators hi hσ hN hc
-  have hcone := eq_basisCone_of_primitiveGenerators hi b hσ e hb
+  obtain ⟨e, b, hb⟩ := hσ.exists_basis_primitiveGenerators hi hN hc
+  have hcone : σ = basisCone b i := (hσ.hull_eq_of_basis_primitiveGenerators hi b e hb).symm
   subst σ
   let A := allRays hσ
   let F := Fan.starSubdivision hi A hσ

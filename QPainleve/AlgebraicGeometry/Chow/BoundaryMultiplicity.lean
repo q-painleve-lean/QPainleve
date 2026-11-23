@@ -5,7 +5,7 @@ Authors: The QPainleve contributors
 -/
 module
 
-public import QPainleve.AlgebraicGeometry.Chow.Nef
+public import QPainleve.AlgebraicGeometry.Chow.Nef.Basic
 public import QPainleve.AlgebraicGeometry.WeilDivisor.IdealSheaf
 import QPainleve.AlgebraicGeometry.Chow.ProperIntersection
 import QPainleve.AlgebraicGeometry.EffectiveCartierDivisor.Dimension

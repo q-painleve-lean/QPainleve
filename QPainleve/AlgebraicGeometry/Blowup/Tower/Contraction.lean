@@ -42,15 +42,16 @@ variable {k : Type u} [Field k] [PerfectField k]
 
 local notation "base" => Spec (CommRingCat.of k)
 
-/-- A closed point blowup tower of a smooth surface has connected fibers over the closed
-points of its base, including fibers meeting infinitely near exceptional curves. -/
-theorem isConnected_preimage_singleton (hT : IsClosedPointTower X T)
-    (f : X ⟶ base) [SmoothOfRelativeDimension 2 f] (x : X) (hx : IsClosed {x}) :
-    _root_.IsConnected (T.toBase ⁻¹' {x}) := by
+/-- The inverse image of a closed connected subset under a closed point blowup tower
+of a smooth surface is connected. -/
+theorem isConnected_preimage_of_isClosed (hT : IsClosedPointTower X T)
+    (f : X ⟶ base) [SmoothOfRelativeDimension 2 f] {S : Set X}
+    (hS : IsClosed S) (hconn : _root_.IsConnected S) :
+    _root_.IsConnected (T.toBase ⁻¹' S) := by
   induction hT with
   | nil =>
     rw [toBase_nil]
-    exact isConnected_singleton
+    exact hconn
   | @snoc _ W R I hR p hp hI ih =>
     subst I
     rw [toBase_snoc, Scheme.ker_fromSpecResidueField_eq_vanishingIdeal]
@@ -63,13 +64,18 @@ theorem isConnected_preimage_singleton (hT : IsClosedPointTower X T)
     have := isRegularLocalRing_stalk_of_smooth (R.toBase ≫ f) p
     have hdim := ((smoothOfRelativeDimension_iff_ringKrullDim_stalk_eq
       (R.toBase ≫ f) 2).mp hD).2 p hp
-    have hconn := Scheme.IdealSheafData.isConnected_preimage_singleton_blowup_closed_point hp hdim
+    have hfib := Scheme.IdealSheafData.isConnected_preimage_singleton_blowup_closed_point hp hdim
     have : Surjective π := Scheme.IdealSheafData.surjective_blowupToBase_point hp hdim
     have hq := (π.isClosedMap.isQuotientMap π.continuous π.surjective).isCoinducing
-    have hpre : (π ≫ R.toBase) ⁻¹' {x} = π ⁻¹' (R.toBase ⁻¹' {x}) :=
-      Set.ext fun _ ↦ by simp only [Set.mem_preimage, Scheme.Hom.comp_apply]
-    rw [hpre]
-    exact hq.isConnected_preimage_of_isClosed hconn (hx.preimage R.toBase.continuous) ih
+    rw [funext (Scheme.Hom.comp_apply _ _)]
+    exact hq.isConnected_preimage_of_isClosed hfib (hS.preimage R.toBase.continuous) ih
+
+/-- A closed point blowup tower of a smooth surface has connected fibers over the closed
+points of its base, including fibers meeting infinitely near exceptional curves. -/
+theorem isConnected_preimage_singleton (hT : IsClosedPointTower X T)
+    (f : X ⟶ base) [SmoothOfRelativeDimension 2 f] (x : X) (hx : IsClosed {x}) :
+    _root_.IsConnected (T.toBase ⁻¹' {x}) :=
+  hT.isConnected_preimage_of_isClosed f hx isConnected_singleton
 
 variable [IsIntegral X]
 

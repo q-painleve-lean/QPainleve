@@ -11,7 +11,7 @@ public import Mathlib.Geometry.Convex.Cone.Face.Basic
 public import QPainleve.AlgebraicGeometry.Morphisms.Smooth.Factorial
 public import TauCeti.AlgebraicGeometry.LineBundle.Ample
 import QPainleve.AlgebraicGeometry.Chow.Ample
-import QPainleve.AlgebraicGeometry.Chow.Nef
+import QPainleve.AlgebraicGeometry.Chow.Nef.Basic
 import QPainleve.AlgebraicGeometry.IntersectionNumber.GlobalGeneration
 import QPainleve.AlgebraicGeometry.LineBundle.Ample
 import Mathlib.Topology.Algebra.Module.FiniteDimension

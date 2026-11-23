@@ -9,8 +9,8 @@ public import QPainleve.AlgebraicGeometry.Scheme.Stalk
 public import TauCeti.AlgebraicGeometry.Curves.Node.Relative
 public import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.Stalk
 public import TauCeti.AlgebraicGeometry.IdealSheaf.Stalk
-public import TauCeti.AlgebraicGeometry.Morphisms.Smooth.StandardSmooth
-import Mathlib.RingTheory.Smooth.StandardSmoothCotangent
+public import TauCeti.AlgebraicGeometry.Morphisms.Smooth.RelativeDimension
+import QPainleve.AlgebraicGeometry.Modules.Differentials.Stalk
 import QPainleve.RingTheory.Node.Order
 import TauCeti.RingTheory.Node.Cotangent.Basic
 
@@ -86,46 +86,30 @@ theorem stalkOrder_eq_two_of_node
     (hp : letI := hnodal.syntomic; p ∈ (C.singularLocus k).support) :
     i.ker.stalkOrder (i p) = 2 := by
   let := hnodal.syntomic
-  obtain ⟨U, hpU, hU⟩ := exists_isStandardSmoothOfRelativeDimension k 2 (i p)
-  let A := Γ(X, U)
+  obtain ⟨U, hU, hpU, -⟩ := exists_isAffineOpen_mem_and_subset (Opens.mem_top (i p))
   let P := X.presheaf.stalk (i p)
   let L := C.presheaf.stalk p
-  let : Algebra k A := ((X.baseRingToStructurePresheaf k).app (op U.val)).hom.toAlgebra
-  let := X.presheaf.algebra_section_stalk ⟨i p, hpU⟩
-  let : IsScalarTower k A P := isScalarTower_base_section_stalk k X ⟨i p, hpU⟩
-  let q := (U.property.primeIdealOf ⟨i p, hpU⟩).asIdeal
-  have : IsLocalization q.primeCompl P := U.property.isLocalization_stalk ⟨i p, hpU⟩
-  have : Algebra.FormallyEtale A P := .of_isLocalization q.primeCompl
-  have : Algebra.IsStandardSmoothOfRelativeDimension 2 k A := hU.toAlgebra
-  have : Algebra.IsStandardSmooth k A :=
-    Algebra.IsStandardSmoothOfRelativeDimension.isStandardSmooth 2
-  have : Nonempty U.val := ⟨⟨i p, hpU⟩⟩
-  let b := Module.finBasisOfFinrankEq A Ω[A⁄k]
-    (Module.finrank_eq_of_rank_eq
-      (Algebra.IsStandardSmoothOfRelativeDimension.rank_kaehlerDifferential 2))
-  let bP := (KaehlerDifferential.isBaseChange_of_formallyEtale k A P).basis b
+  obtain ⟨bP⟩ := X.nonempty_basis_kaehlerDifferential_stalk (k := k) 2 (i p)
   have := SmoothOfRelativeDimension.smooth 2 (X ↘ Spec (.of k))
   have : Algebra.EssFiniteType k P := X.essFiniteType_stalk k (i p)
   have : IsNoetherianRing P := Algebra.EssFiniteType.isNoetherianRing k P
-  let π : P →ₐ[k] L :=
-    { (i.stalkMap p).hom with
-      commutes' := fun r ↦ by
-        have h := SpecMap_stalkMap_fromSpecStalk i (x := p)
-        have hh := congrArg (fun g ↦ g ≫ (X ↘ Spec (.of k))) h
-        simp only [Category.assoc, HomIsOver.comp_over, fromSpecStalk_comp_over, ← Spec.map_comp,
-          Spec.map_inj] at hh
-        exact congrArg (fun f : CommRingCat.of k ⟶ _ ↦ f r) hh }
-  obtain ⟨f, -, hf⟩ := hi.exists_map_germ_eq_span_singleton U hpU
-  have hker : RingHom.ker π = Ideal.span {f} :=
-    (i.ker_stalkMap_of_isClosedImmersion p).trans
-      ((i.ker.stalkIdeal_eq_map U (i p) hpU).trans hf)
+  let π := i.stalkMapAlgHom (k := k) p
+  have hπring : (π : P →+* L) = (i.stalkMap p).hom := i.stalkMapAlgHom_toRingHom (k := k) p
+  obtain ⟨f, -, hf⟩ := hi.exists_map_germ_eq_span_singleton ⟨U, hU⟩ hpU
+  have hker : RingHom.ker π = Ideal.span {f} := by
+    rw [AlgHom.ker_coe, hπring, i.ker_stalkMap_of_isClosedImmersion p,
+      i.ker.stalkIdeal_eq_map ⟨U, hU⟩ (i p) hpU, hf]
+  have hπ : Function.Surjective π := by
+    intro y
+    simpa only [π, stalkMapAlgHom_apply] using i.stalkMap_surjective p y
   have : Algebra.EssFiniteType k L := C.essFiniteType_stalk k p
   obtain ⟨hfit, hunram⟩ := C.fittingIdeal_stalk_of_atWorstNodal hnodal p
   have hproper : fittingIdeal L Ω[L⁄k] 1 ≠ ⊤ :=
     hfit ▸ ((C.singularLocus k).mem_support_iff_stalkIdeal_ne_top p).mp hp
   have horder := QPainleve.localOrder_ker_eq_two_of_fittingIdeal (IsNoetherian.noetherian _)
-    bP π (i.stalkMap_surjective p) hker hproper
+    bP π hπ hker hproper
   rw [i.ker.stalkOrder_def, ← i.ker_stalkMap_of_isClosedImmersion p]
+  rw [AlgHom.ker_coe, hπring] at horder
   exact horder
 
 end Hom

@@ -210,5 +210,34 @@ theorem exists_isLift_alongBoundary {i : D ⟶ X} {i' : D' ⟶ X'}
     exact ⟨_, hg.snoc hcenter,
       T.boundaryι_snoc_blowupIso_hom C.val g d hb C'.val hlast C.property C'.property⟩
 
+/-- A lift through ordered boundary blowups matches the prescribed centers on the original
+boundaries and intertwines the final strict-transform embeddings. -/
+theorem IsLift.alongBoundary {i : D ⟶ X} {i' : D' ⟶ X'}
+    [IsClosedImmersion i] [IsClosedImmersion i'] {e : X ≅ X'} (d : D ≅ D')
+    (hi : i ≫ e.hom = d.hom ≫ i') {n : ℕ}
+    {J : Fin n → {J : D.IdealSheafData // J.IsEffectiveCartier}}
+    {J' : Fin n → {J : D'.IdealSheafData // J.IsEffectiveCartier}}
+    {g : (alongBoundary i J).1 ≅ (alongBoundary i' J').1}
+    (hg : IsLift e (alongBoundary i J).2.toTower (alongBoundary i' J').2.toTower g) :
+    (∀ j, (J' j).val.comap d.hom = (J j).val) ∧
+      (alongBoundary i J).2.boundaryι ≫ g.hom = d.hom ≫ (alongBoundary i' J').2.boundaryι := by
+  induction n with
+  | zero =>
+    rcases IsLift.nil_iff.mp hg with rfl
+    exact ⟨fun j ↦ j.elim0, hi⟩
+  | succ n ih =>
+    let T := (BlowupTower.alongBoundary i (fun j : Fin n ↦ J j.castSucc)).2
+    let T' := (BlowupTower.alongBoundary i' (fun j : Fin n ↦ J' j.castSucc)).2
+    let C := J (Fin.last n)
+    let C' := J' (Fin.last n)
+    obtain ⟨f, hf, hcenter, rfl⟩ := IsLift.snoc_iff.mp hg
+    obtain ⟨hprefix, hb⟩ := ih hf
+    have hlast : C'.val.comap d.hom = C.val := by
+      rw [← Scheme.IdealSheafData.comap_map_of_isClosedImmersion C'.val T'.boundaryι,
+        ← Scheme.IdealSheafData.comap_comp, ← hb, Scheme.IdealSheafData.comap_comp,
+        hcenter, Scheme.IdealSheafData.comap_map_of_isClosedImmersion]
+    exact ⟨Fin.lastCases hlast hprefix,
+      T.boundaryι_snoc_blowupIso_hom C.val f d hb C'.val hlast C.property C'.property⟩
+
 end
 end QPainleve.BlowupTower

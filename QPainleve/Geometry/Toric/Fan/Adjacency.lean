@@ -11,7 +11,7 @@ public import TauCeti.Geometry.Toric.Algebraic.Regular
 
 import Mathlib.Data.Set.Card
 import Mathlib.Topology.Instances.Real.Lemmas
-import TauCeti.Geometry.Convex.Cone.Face.Simplicial
+import QPainleve.Geometry.Toric.Cone.Coordinates
 
 /-!
 # Neighbouring rays in a complete regular fan
@@ -99,66 +99,46 @@ theorem cone_eq_sup_of_ray_ne_of_le (hΦ : Φ.IsRegular) (hN : Module.finrank �
   · rw [Ray.toPointedCone_toToricRay]
     exact le_sup_right
 
--- Test membership in one cone along the real parameter line using an extending basis.
-private theorem isClosed_setOf_add_smul_mem (hΦ : Φ.IsRegular) (σ : Φ.cones) (x y : V) :
-    IsClosed {t : ℝ | x + t • y ∈ σ.val} := by
+/-- The preimage of a regular fan cone is closed if every real linear coordinate is
+continuous along the map. The ambient real vector space needs no topology. -/
+theorem isClosed_preimage_cone_of_isRegular {T : Type*} [TopologicalSpace T]
+    (hΦ : Φ.IsRegular) (σ : Φ.cones) (f : T → V)
+    (hf : ∀ l : V →ₗ[ℝ] ℝ, Continuous (l ∘ f)) :
+    IsClosed (f ⁻¹' (σ.val : Set V)) := by
   classical
   have hreg := (isRegular_iff.1 hΦ) σ.val σ.property
   obtain ⟨n, b, r, hb⟩ := hreg.exists_basis
   let c := Φ.lattice.isBaseChange.basis b
-  have hgen : (c : Fin n → V) ∘ r =
-      i ∘ Toric.primitiveGenerator Φ.lattice (Φ.isToricCone σ.property) := by
-    funext ρ
-    rw [Function.comp_apply, Function.comp_apply, IsBaseChange.basis_apply,
-      (hb.isPrimitiveGenerator_apply ρ).eq_primitiveGenerator Φ.lattice
-        (Φ.isToricCone σ.property)]
-    rfl
   let A := Set.range r
-  have hA : A = Set.range r := rfl
-  have hcone : hull ℝ (c '' A) = σ.val := by
-    rw [hA, ← Set.range_comp, hgen, Set.range_comp,
-      (Φ.isToricCone σ.property).hull_primitiveGenerator Φ.lattice]
   have hmem (z : V) : z ∈ σ.val ↔ ∀ j, c.repr z j ∈
       if j ∈ A then Set.Ici (0 : ℝ) else {0} := by
-    rw [← hcone, mem_hull_image_iff_linearCombination]
-    constructor
-    · rintro ⟨a, ha, ha₀, rfl⟩ j
-      rw [c.repr_linearCombination]
-      by_cases hj : j ∈ A
-      · simpa [hj] using ha₀ j
-      · simp only [ite_eq_right hj, Set.mem_singleton_iff]
-        exact Finsupp.notMem_support_iff.mp (fun h ↦ hj ((Finsupp.mem_supported _ _).mp ha h))
-    · intro h
-      refine ⟨c.repr z, (Finsupp.mem_supported _ _).mpr ?_, ?_, c.linearCombination_repr z⟩
-      · intro j hj
-        by_contra hj'
-        exact (Finsupp.mem_support_iff.mp hj) (by simpa [hj'] using h j)
-      · intro j
-        by_cases hj : j ∈ A
-        · simpa [hj] using h j
-        · have hz : c.repr z j = 0 := by simpa [hj] using h j
-          exact hz.ge
-  simp only [hmem, Set.ofPred_forall]
+    rw [hb.mem_iff_real_basis_repr Φ.lattice hreg.toIsToricCone]
+    apply forall_congr'
+    intro j
+    by_cases hj : j ∈ A
+    · simp [A, hj, c]
+    · simp only [A, hj, not_false_eq_true, forall_const, ite_false, Set.mem_singleton_iff, c]
+      exact ⟨And.right, fun h ↦ ⟨h.ge, h⟩⟩
+  rw [show f ⁻¹' (σ.val : Set V) = {t | ∀ j, c.repr (f t) j ∈
+      if j ∈ A then Set.Ici (0 : ℝ) else {0}} from Set.ext fun t ↦ hmem (f t)]
+  simp only [Set.ofPred_forall]
   refine isClosed_iInter fun j ↦ ?_
-  have hcont : Continuous fun t : ℝ ↦ c.repr (x + t • y) j := by
-    simp only [map_add, map_smul, Finsupp.add_apply, Finsupp.smul_apply, smul_eq_mul]
-    exact continuous_const.add (continuous_id.mul continuous_const)
   have hclosed : IsClosed (if j ∈ A then Set.Ici (0 : ℝ) else {0}) := by
     split_ifs
     · exact isClosed_Ici
     · exact isClosed_singleton
-  -- The coordinate condition is a preimage under the displayed affine map of the line.
-  change IsClosed ((fun t : ℝ ↦ c.repr (x + t • y) j) ⁻¹'
-    (if j ∈ A then Set.Ici 0 else {0}))
-  exact hclosed.preimage hcont
+  exact hclosed.preimage (hf (c.coord j))
 
 private theorem exists_cone_mem_pos (hΦ : Φ.IsRegular) (hc : Φ.IsComplete)
     {f : V →ₗ[ℝ] ℝ} {x y : V} (hx : f x = 0) (hy : 0 < f y) :
     ∃ σ : Φ.cones, x ∈ σ.val ∧ ∃ z ∈ σ.val, 0 < f z := by
   let S := {σ : Φ.cones | ∃ z ∈ σ.val, 0 < f z}
   let U := ⋃ σ ∈ S, {t : ℝ | x + t • y ∈ σ.val}
-  have hU : IsClosed U :=
-    S.toFinite.isClosed_biUnion fun σ _ ↦ isClosed_setOf_add_smul_mem hΦ σ x y
+  have hU : IsClosed U := S.toFinite.isClosed_biUnion fun σ _ ↦
+    isClosed_preimage_cone_of_isRegular hΦ σ (fun t : ℝ ↦ x + t • y) fun l ↦ by
+      rw [show (l ∘ fun t : ℝ ↦ x + t • y) = fun t ↦ l x + t * l y from
+        funext fun t ↦ by simp [smul_eq_mul]]
+      exact continuous_const.add (continuous_id.mul continuous_const)
   have hcover : Set.Ioi (0 : ℝ) ⊆ U := by
     intro t ht
     obtain ⟨σ, hσ, hz⟩ := Φ.isComplete_iff.1 hc (x + t • y)
