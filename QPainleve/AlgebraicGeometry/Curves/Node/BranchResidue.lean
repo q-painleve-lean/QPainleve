@@ -7,11 +7,11 @@ module
 
 public import QPainleve.AlgebraicGeometry.Curves.Node.Conductor
 
-import QPainleve.AlgebraicGeometry.Fiber
+import QPainleve.AlgebraicGeometry.Curves.Node.PointBlowup
 import QPainleve.AlgebraicGeometry.Morphisms.Etale.GlobalSections
 import TauCeti.AlgebraicGeometry.Curves.Node.Reduced
 import TauCeti.AlgebraicGeometry.IdealSheaf.Affine
-import TauCeti.AlgebraicGeometry.IdealSheaf.Stalk
+import QPainleve.AlgebraicGeometry.IdealSheaf.Stalk
 import TauCeti.AlgebraicGeometry.IdealSheaf.Conductor.BaseChange
 import TauCeti.AlgebraicGeometry.Morphisms.Etale.Basic
 import TauCeti.AlgebraicGeometry.ResidueField
@@ -49,26 +49,11 @@ private theorem singularLocus_stalkIdeal_eq_maximalIdeal
     (X.singularLocus k).stalkIdeal x = maximalIdeal (X.presheaf.stalk x) := by
   let := hnodal.syntomic
   let J := X.singularLocus k
-  obtain ⟨z, rfl⟩ := J.range_subschemeι.ge hx
   let g := J.subschemeι ≫ (X ↘ Spec (.of k))
   have : Etale g := X.etale_singularLocus_subschemeι_comp hnodal
   have : IsLocallyArtinian J.subscheme := .of_locallyQuasiFinite g
   have : IsRegular J.subscheme := IsRegular.of_smooth g
-  have : IsReduced J.subscheme := inferInstance
-  obtain ⟨U, hU, hzU, _⟩ := exists_isAffineOpen_mem_and_subset (Opens.mem_top z)
-  have : IsArtinianRing Γ(J.subscheme, U) :=
-    IsLocallyArtinian.isArtinianRing_presheaf_obj ⟨U, hU⟩
-  let := TopCat.Presheaf.algebra_section_stalk J.subscheme.presheaf ⟨z, hzU⟩
-  let := hU.isLocalization_stalk ⟨z, hzU⟩
-  have : IsArtinianRing (J.subscheme.presheaf.stalk z) :=
-    IsArtinianRing.localization_artinian (hU.primeIdealOf ⟨z, hzU⟩).asIdeal.primeCompl _
-  let h := J.subschemeι.stalkMap z
-  have hzero : maximalIdeal (J.subscheme.presheaf.stalk z) = ⊥ :=
-    isField_iff_maximalIdeal_eq.mp (IsArtinianRing.isField_of_isReduced_of_isLocalRing _)
-  have hmax : RingHom.ker h.hom = maximalIdeal (X.presheaf.stalk (J.subschemeι z)) := by
-    rw [RingHom.ker_eq_comap_bot, ← hzero]
-    exact IsLocalRing.maximalIdeal_comap h.hom
-  simpa only [h, Hom.ker_stalkMap_of_isClosedImmersion, IdealSheafData.ker_subschemeι] using hmax
+  exact J.stalkIdeal_eq_maximalIdeal_of_isLocallyArtinian hx
 
 private theorem singularLocus_comap_fromSpecStalk_eq
     (hnodal : AtWorstNodalOfRelativeDimensionOne (X ↘ Spec (.of k))) {x : X}
@@ -90,26 +75,6 @@ private theorem singularLocus_comap_fromSpecStalk_eq
     Hom.ker_Spec_map]
   exact congrArg (fun I : Ideal (X.presheaf.stalk x) ↦ IdealSheafData.ofIdealTop
     (I.map (ΓSpecIso (X.presheaf.stalk x)).inv.hom)) (hm.trans hk.symm)
-
-private theorem etale_fiberToSpecResidueField_blowupToBase_singularLocus
-    (hnodal : AtWorstNodalOfRelativeDimensionOne (X ↘ Spec (.of k))) {x : X}
-    (hx : letI := hnodal.syntomic; x ∈ (X.singularLocus k).support) :
-    letI := hnodal.syntomic
-    Etale ((X.singularLocus k).blowupToBase.fiberToSpecResidueField x) := by
-  let := hnodal.syntomic
-  let J := X.singularLocus k
-  obtain ⟨z, rfl⟩ := J.range_subschemeι.ge hx
-  have : Etale (X.branchSchemeToSingularLocus k) :=
-    X.etale_branchSchemeToSingularLocus hnodal
-  have : IsIso ((X.singularLocus k).subschemeι.residueFieldMap z) := inferInstance
-  obtain ⟨e⟩ := (X.isPullback_branchScheme k).flip.nonempty_iso_fiberToSpecResidueField z
-  have : Etale ((X.branchSchemeToSingularLocus k).fiberToSpecResidueField z) :=
-    MorphismProperty.pullback_snd _ _ inferInstance
-  have hb : Etale ((X.branchSchemeToSingularLocus k).fiberToSpecResidueField z ≫
-      Spec.map ((X.singularLocus k).subschemeι.residueFieldMap z)) := inferInstance
-  have hf : Etale (e.hom.left ≫ (X.singularLocus k).blowupToBase.fiberToSpecResidueField
-      ((X.singularLocus k).subschemeι z)) := (Over.w e.hom).symm ▸ hb
-  exact (MorphismProperty.cancel_left_of_respectsIso @Etale _ _).mp hf
 
 private theorem conductor_eq_ker_residue_of_node
     (hnodal : AtWorstNodalOfRelativeDimensionOne (X ↘ Spec (.of k))) {x : X}
@@ -162,14 +127,14 @@ private theorem exists_branchFiber_sectionsEquiv [IsSepClosed k]
         ((e t).1 = 0 ↔ (f.fiber x).Γevaluation (o 0) t = 0) ∧
         ((e t).2 = 0 ↔ (f.fiber x).Γevaluation (o 1) t = 0) := by
   let := hnodal.syntomic
-  let := X.isFinite_blowupToBase_singularLocus hnodal
   let f := (X.singularLocus k).blowupToBase
   let K := X.residueField x
   let F := f.fiber x
   let g := f.fiberToSpecResidueField x
   let b := (ΓSpecIso K).inv ≫ g.appTop
-  have : Etale g := etale_fiberToSpecResidueField_blowupToBase_singularLocus hnodal hx
-  have : IsFinite g := inferInstanceAs (IsFinite (pullback.snd f (X.fromSpecResidueField x)))
+  have h := X.isFinite_etale_fiberToSpecResidueField_blowup_singularLocus_of_node hnodal hx
+  have : Etale g := h.2
+  have : IsFinite g := h.1
   have : IsSepClosed K := isSepClosed_residueField_of_node hnodal hx
   have hcard : Nat.card F = 2 := (Nat.card_congr (f.fiberHomeo x).toEquiv).trans
     (X.natCard_preimage_blowupToBase_singularLocus_eq_two_of_mem_support hnodal hx)
