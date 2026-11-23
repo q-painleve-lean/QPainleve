@@ -10,7 +10,7 @@ public import Mathlib.Analysis.Convex.Cone.Basic
 public import Mathlib.Geometry.Convex.Cone.Face.Basic
 public import QPainleve.AlgebraicGeometry.Morphisms.Smooth.Factorial
 import QPainleve.AlgebraicGeometry.Chow.Ample
-import QPainleve.AlgebraicGeometry.Chow.Nef
+import QPainleve.AlgebraicGeometry.Chow.Nef.Basic
 import QPainleve.AlgebraicGeometry.IntersectionNumber.GlobalGeneration
 import QPainleve.AlgebraicGeometry.LineBundle.Ample
 import Mathlib.Topology.Algebra.Module.FiniteDimension
