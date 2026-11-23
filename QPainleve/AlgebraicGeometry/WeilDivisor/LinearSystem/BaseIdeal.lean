@@ -44,6 +44,11 @@ variable {S : Set (SchemeWeilDivisor X)} (hS : ∀ D ∈ S, 0 ≤ D)
 def baseIdeal (S : Set (SchemeWeilDivisor X)) (hS : ∀ D ∈ S, 0 ≤ D) : X.IdealSheafData :=
   ⨆ D : S, D.val.idealSheaf (hS D D.property)
 
+/-- The base ideal is the supremum of the member ideals indexed by the system. -/
+theorem baseIdeal_eq_iSup :
+    baseIdeal S hS = ⨆ D : S, D.val.idealSheaf (hS D D.property) :=
+  (rfl)
+
 /-- The base ideal lies in an ideal exactly when each member's ideal lies in it. -/
 theorem baseIdeal_le_iff {I : X.IdealSheafData} :
     baseIdeal S hS ≤ I ↔ ∀ D (hD : D ∈ S), D.idealSheaf (hS D hD) ≤ I := by
