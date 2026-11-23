@@ -34,6 +34,20 @@ namespace TauCeti.AlgebraicGeometry.IsModification
 
 variable {X Y Z U : Scheme.{u}}
 
+/-- If the composite of a morphism with a modification is dominant, the first
+morphism is dominant. -/
+theorem isDominant_of_comp (f : X ⟶ Y) (g : Y ⟶ Z) [IsModification g]
+    [IsDominant (f ≫ g)] : IsDominant f := by
+  obtain ⟨V, _, hV, _⟩ := exists_isIso_morphismRestrict (f := g)
+  have hd := IsZariskiLocalAtTarget.restrict ‹IsDominant (f ≫ g)› V
+  rw [morphismRestrict_comp] at hd
+  have : IsDominant (f ∣_ g ⁻¹ᵁ V) :=
+    IsDominant.of_comp_of_isOpenImmersion _ (g ∣_ V) (H := hd)
+  have : IsDominant (g ⁻¹ᵁ V).ι := Opens.isDominant_ι hV
+  have hcomp : IsDominant ((f ∣_ g ⁻¹ᵁ V) ≫ (g ⁻¹ᵁ V).ι) := inferInstance
+  rw [morphismRestrict_ι] at hcomp
+  exact IsDominant.of_comp (f ⁻¹ᵁ (g ⁻¹ᵁ V)).ι f (H := hcomp)
+
 /-- A proper morphism is a modification if it identifies a dense open of the source
 with a dense open of the target. -/
 theorem of_isOpenImmersion_comp (f : X ⟶ Y) (i : U ⟶ X)
