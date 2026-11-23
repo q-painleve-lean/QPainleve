@@ -20,6 +20,7 @@ import QPainleve.AlgebraicGeometry.EffectiveCartierDivisor.Twist
 import QPainleve.AlgebraicGeometry.LineBundle.GlobalGeneration
 import QPainleve.AlgebraicGeometry.LineBundle.Power
 import QPainleve.AlgebraicGeometry.LineBundle.Pullback
+import QPainleve.AlgebraicGeometry.LineBundle.TensorProduct
 
 /-!
 # Global generation from an ample Cartier restriction
@@ -202,5 +203,36 @@ theorem eventually_isGloballyGenerated_of_isAmple (k : Type u) [Field k]
     rw [nonvanishingLocus_hom_app p.symm, nonvanishingLocus_tensorPowSection s hn,
       L.mem_nonvanishingLocus_iff_notMem_support_zeroIdeal, hs]
     exact hx
+
+/-- Twisting sections by a positive power of the defining section of an effective Cartier
+divisor removes its support from each nonvanishing locus and preserves affineness of these
+loci. -/
+theorem exists_twisted_sections
+    (hI : I.IsEffectiveCartier) (L : InvertibleSheaf X)
+    {ι : Type u} (t : ι → Γ(L.obj, ⊤))
+    (ht : ∀ i, IsAffineOpen (L.obj.nonvanishingLocus (t i))) {n : ℕ} (hn : 0 < n) :
+    let M := L.tensorProduct (InvertibleSheaf.tensorPow hI.toInvertibleSheaf.dual n)
+    ∃ s : ι → Γ(M.obj, ⊤), ∀ i,
+      (∀ x : X, x ∈ M.obj.nonvanishingLocus (s i) ↔
+          x ∈ L.obj.nonvanishingLocus (t i) ∧ x ∉ I.support) ∧
+        IsAffineOpen (M.obj.nonvanishingLocus (s i)) := by
+  intro M
+  let D : InvertibleSheaf X := hI.toInvertibleSheaf.dual
+  obtain ⟨d, hd⟩ := hI.exists_zeroIdeal_eq_dual
+  have hd' : D.zeroIdeal d = I := hd
+  let a := (D.tensorPowObjIso n).symm
+  let b := (L.tensorProductObjIso (D.tensorPow n)).symm
+  let d' := a.hom.app ⊤ (tensorPowSection d n)
+  refine ⟨fun i ↦ b.hom.app ⊤ (tmulRight L.obj d' (t i)), fun i ↦ ?_⟩
+  dsimp only [d']
+  rw [nonvanishingLocus_hom_app, nonvanishingLocus_tmulRight,
+    nonvanishingLocus_hom_app, nonvanishingLocus_tensorPowSection _ hn]
+  constructor
+  · intro x
+    exact and_congr_right fun _ ↦ by
+      exact (D.mem_nonvanishingLocus_iff_notMem_support_zeroIdeal d x).trans
+        (by rw [hd'])
+  · rw [← nonvanishingLocus_map (L.obj.nonvanishingLocus (t i)).leTop]
+    exact (ht i).nonvanishingLocus _
 
 end AlgebraicGeometry.Scheme.IdealSheafData.IsEffectiveCartier

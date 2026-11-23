@@ -9,13 +9,11 @@ public import TauCeti.AlgebraicGeometry.IntersectionNumber.ExceptionalCurve.Basi
 public import TauCeti.AlgebraicGeometry.LineBundle.Power
 public import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.ProjectiveOver
 
-import QPainleve.AlgebraicGeometry.CartierDivisor.ZeroDivisor
 import QPainleve.AlgebraicGeometry.Cohomology.SerreVanishing
 import QPainleve.AlgebraicGeometry.Curves.Degree.Ample
+import QPainleve.AlgebraicGeometry.EffectiveCartierDivisor.GlobalGeneration
 import QPainleve.AlgebraicGeometry.EffectiveCartierDivisor.Twist
 import QPainleve.AlgebraicGeometry.IdealSheaf.Tensor.Restriction
-import QPainleve.AlgebraicGeometry.LineBundle.Power
-import QPainleve.AlgebraicGeometry.LineBundle.TensorProduct
 import QPainleve.AlgebraicGeometry.Morphisms.Finite
 import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.Sections.Basic
 import QPainleve.AlgebraicGeometry.Scheme.Sections
@@ -163,34 +161,6 @@ private theorem exists_section_of_degree_zero
   obtain ⟨z, rfl⟩ := E.range_subschemeι.symm ▸ hx
   exact hy (Opens.mem_top z)
 
-private theorem exists_twisted_sections
-    (hE : E.IsEffectiveCartier) (L : InvertibleSheaf X)
-    {ι : Type u} (t : ι → Γ(L.obj, ⊤))
-    (ht : ∀ i, IsAffineOpen (L.obj.nonvanishingLocus (t i))) {n : ℕ} (hn : 0 < n) :
-    let M := L.tensorProduct (InvertibleSheaf.tensorPow hE.toInvertibleSheaf.dual n)
-    ∃ s : ι → Γ(M.obj, ⊤), ∀ i,
-      (∀ x : X, x ∈ M.obj.nonvanishingLocus (s i) ↔
-          x ∈ L.obj.nonvanishingLocus (t i) ∧ x ∉ E.support) ∧
-        IsAffineOpen (M.obj.nonvanishingLocus (s i)) := by
-  intro M
-  let D : InvertibleSheaf X := hE.toInvertibleSheaf.dual
-  obtain ⟨d, hd⟩ := hE.exists_zeroIdeal_eq_dual
-  have hd' : D.zeroIdeal d = E := hd
-  let a := (D.tensorPowObjIso n).symm
-  let b := (L.tensorProductObjIso (D.tensorPow n)).symm
-  let d' := a.hom.app ⊤ (tensorPowSection d n)
-  refine ⟨fun i ↦ b.hom.app ⊤ (tmulRight L.obj d' (t i)), fun i ↦ ?_⟩
-  dsimp only [d']
-  rw [nonvanishingLocus_hom_app, nonvanishingLocus_tmulRight,
-    nonvanishingLocus_hom_app, nonvanishingLocus_tensorPowSection _ hn]
-  constructor
-  · intro x
-    exact and_congr_right fun _ ↦ by
-      exact (D.mem_nonvanishingLocus_iff_notMem_support_zeroIdeal d x).trans
-        (by rw [hd'])
-  · rw [← nonvanishingLocus_map (L.obj.nonvanishingLocus (t i)).leTop]
-    exact (ht i).nonvanishingLocus _
-
 attribute [local instance] MvPolynomial.gradedAlgebra
 
 local notation "ℙ[" R "," ι "]" => Proj (MvPolynomial.homogeneousSubmodule ι R)
@@ -294,7 +264,7 @@ theorem IsExceptionalCurveOfFirstKind.exists_projective_morphism_contracting_exc
   have hnpos : 0 < n := by omega
   let M := L.tensorProduct (InvertibleSheaf.tensorPow h.toInvertibleSheaf.dual n)
   obtain ⟨a, ha⟩ := exists_section_of_degree_zero h e L n hn hd hvan hnpos
-  obtain ⟨s, hs⟩ := exists_twisted_sections h L t hta hnpos
+  obtain ⟨s, hs⟩ := h.exists_twisted_sections L t hta hnpos
   have hcover (x : X) : x ∉ E.support ↔ ∃ j, x ∈ M.obj.nonvanishingLocus (s j) := by
     constructor
     · intro hx
