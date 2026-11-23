@@ -7,14 +7,11 @@ module
 
 public import QPainleve.AlgebraicGeometry.Chow.ProjectivePlane.Basic
 public import QPainleve.AlgebraicGeometry.Chow.SurfaceIntersection
-public import QPainleve.AlgebraicGeometry.Modules.Differentials.Canonical
-public import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.Polynomial.Smooth
+public import QPainleve.AlgebraicGeometry.Cohomology.ProjectiveSpace.EulerCharacteristic
+public import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.Polynomial.Canonical
 public import Mathlib.LinearAlgebra.PerfectPairing.Basic
 
-import QPainleve.AlgebraicGeometry.Modules.Differentials.Restriction
-import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.Polynomial.Canonical
 import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.Polynomial.Integral
-import TauCeti.AlgebraicGeometry.Cohomology.ProjectiveSpace.HigherCohomology
 import TauCeti.AlgebraicGeometry.Scheme.Regular.Scheme
 import TauCeti.LinearAlgebra.Matrix.Dual
 
@@ -24,19 +21,15 @@ import TauCeti.LinearAlgebra.Matrix.Dual
 The canonical class has Picard coordinate `-3`. With the intersection pairing and Euler
 characteristic in the hyperplane coordinate, this gives the canonical square and the
 projective-plane case of Riemann–Roch ([Hacking, *Compact Complex Surfaces*, Theorem 5.2][Hacking]).
-The rank-one Picard pairing is unimodular, and the structure sheaf has no higher cohomology.
-
-The canonical class comparison uses `Proj.differentialFormsTwoIsoTwistingSheaf` and the
-basis-induced comparison of polynomial and symmetric-algebra twists.
+The rank-one Picard pairing is unimodular, and the structure sheaf has Euler characteristic one.
 
 [Hacking]: https://paulhacking.github.io/surfaces.pdf#page=30
 -/
 
 public section
 
-open AlgebraicGeometry CategoryTheory QPainleve
+open AlgebraicGeometry QPainleve
 open TauCeti.SymmetricAlgebra
-open AlgebraicGeometry.Scheme.Modules TauCeti.AlgebraicGeometry.Scheme.Modules
 
 universe u
 
@@ -44,7 +37,7 @@ namespace TauCeti.AlgebraicGeometry
 
 attribute [local instance] MvPolynomial.gradedAlgebra
 
-variable (k : Type u)
+variable (k : Type u) [Field k]
 
 local notation "𝒮" => homogeneousSubmodule k (Fin 3 → k)
 local notation "P" => Proj 𝒮
@@ -52,38 +45,6 @@ local notation "f" => P ↘ Spec (CommRingCat.of k)
 local notation "basis" => Pi.basisFun k (Fin 3)
 local notation "degree" => Module.Basis.picardTwistEquiv (Pi.basisFun k (Fin 3))
 local notation "K" => LineBundleClass.mk (canonicalBundle k P 2)
-
-section
-
-variable [CommRing k]
-
-/-- The projective plane has vanishing structure-sheaf cohomology in positive degrees. -/
-theorem subsingleton_cohomology_trivial_projectivePlane {i : ℕ} (hi : 0 < i) :
-    Subsingleton (Cohomology (InvertibleSheaf.trivial P).obj i) := by
-  have : Subsingleton (Cohomology (Proj.twistingSheaf 𝒮 0) i) :=
-    (basis).subsingleton_cohomology_twistingSheaf_of_neg_card_lt (by decide) hi
-  let e := InvertibleSheaf.trivialObjIsoUnit P ≪≫ Proj.unitIsoTwistingSheafZero 𝒮
-  exact (cohomologyBaseLinearEquivOfIso k e i).injective.subsingleton
-
-/-- The canonical class of the projective plane is the class of the twist `𝒪(-3)`. -/
-theorem LineBundleClass.mk_canonicalBundle_projectivePlane :
-    K = mk (Proj.symmetricAlgebraTwistingBundle k (Fin 3 → k) (-3)) := by
-  let A := MvPolynomial.homogeneousSubmodule (Fin 3) k
-  let : (Proj A).Over (Spec (.of k)) := ⟨Proj.toSpecCoeff A⟩
-  let : SmoothOfRelativeDimension 2 (Proj A ↘ Spec (.of k)) :=
-    Proj.smoothOfRelativeDimension_polynomial k
-  let e := (basis).polynomialProjIso
-  let : e.hom.IsOver (Spec (.of k)) := ⟨(basis).polynomialProjIso_hom_over⟩
-  apply (pullbackEquiv e).injective
-  simp only [pullbackEquiv_apply, pullback_mk, mk_pullback_canonicalBundle, mk_eq_mk_iff,
-    canonicalBundle_obj, differentialForms_def, InvertibleSheaf.pullback_obj_obj,
-    Proj.symmetricAlgebraTwistingBundle_obj]
-  exact ⟨(Proj.differentialFormsTwoIsoTwistingSheaf k).trans
-    ((basis).polynomialProjIsoPullbackTwistingSheafIso (-3)).symm⟩
-
-end
-
-variable [Field k]
 
 /-- The structure sheaf of the projective plane has Euler characteristic one. -/
 theorem LineBundleClass.eulerCharBelow_one_projectivePlane :
