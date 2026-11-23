@@ -6,12 +6,10 @@ Authors: The QPainleve contributors
 module
 
 public import QPainleve.AlgebraicGeometry.Blowup.RegularPair
+public import QPainleve.RingTheory.Node.Basic
 public import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.BaseChange
-public import TauCeti.RingTheory.Node.Basic
 import TauCeti.AlgebraicGeometry.Blowup.BaseChange
 import TauCeti.AlgebraicGeometry.Blowup.UniversalProperty
-import TauCeti.RingTheory.Ideal.Colon
-import TauCeti.RingTheory.Node.Flat
 import TauCeti.RingTheory.Regular.Pair
 
 /-!
@@ -320,27 +318,3 @@ theorem elementaryTransformNodeChart_overlap (ht : IsSMulRegular R t) (i : Fin 2
       (elementaryTransformNodeChart t ht i)).comap (ι(i))
 
 end QPainleve
-
-namespace TauCeti.NodeAlgebra
-
-variable {R : Type*} [CommRing R] (t : R)
-
-local notation "N" => NodeAlgebra R t
-
-/-- On the node chart the inverse image of the parameter divisor is the
-product of the two exceptional ideals from the opposite projections. -/
-theorem span_parameter_eq_mul_span_coords (i : Fin 2) :
-    Ideal.span {algebraMap R N t} = Ideal.span {coord t i} * Ideal.span {coord t (1 - i)} := by
-  rw [Ideal.span_singleton_mul_span_singleton, coord_mul_coord_one_sub]
-
-/-- Removing the exceptional factor for one projection leaves the exceptional
-equation for the opposite projection. -/
-theorem span_parameter_colon_coord (ht : IsSMulRegular R t) (i : Fin 2) :
-    (Ideal.span {algebraMap R N t}).colon {coord t i} = Ideal.span {coord t (1 - i)} := by
-  have ht' := (Commute.isRegular_iff (Commute.all t)).mpr ht.isLeftRegular
-  have hreg : IsLeftRegular (coord t i) :=
-    (isRegular_iff_mem_nonZeroDivisors.mpr (coord_mem_nonZeroDivisors ht'.mem_nonZeroDivisors
-      i)).left
-  rw [span_parameter_eq_mul_span_coords t i, Ideal.span_singleton_mul_colon_singleton hreg]
-
-end TauCeti.NodeAlgebra
