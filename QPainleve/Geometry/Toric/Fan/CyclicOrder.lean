@@ -152,24 +152,6 @@ theorem existsUnique_cyclicRayNumbering (b : Module.Basis (Fin 2) ℤ N)
   | zero => simpa only [Nat.cast_zero] using hv₀.trans hu₀.symm
   | succ a ih => rw [Nat.cast_succ, hu, ← (hp _ _).mpr (hv _), ih]
 
-/-- A two-ray cone of a regular rank-two fan contains an ordered pair of rays whose
-primitive generators have determinant one in the chosen lattice basis. -/
-theorem exists_ray_pair_le_det_eq_one (b : Module.Basis (Fin 2) ℤ N)
-    {σ : Φ.cones} (hσ : IsRegularCone i σ.val) (hcard : Nat.card (ToricRay σ.val) = 2) :
-    ∃ ρ τ : Φ.Ray, ρ.toCone ≤ σ ∧ τ.toCone ≤ σ ∧
-      b.detDualEquiv ρ.primitiveGenerator τ.primitiveGenerator = 1 := by
-  have : Finite (ToricRay σ.val) := ToricRay.finite_of_fg (Φ.isToricCone σ.property).fg
-  let := Fintype.ofFinite (ToricRay σ.val)
-  let e := (Fintype.equivFinOfCardEq ((Nat.card_eq_fintype_card).symm.trans hcard)).symm.trans
-    (Φ.rayEquiv σ).symm
-  let ρ : Φ.Ray := (e 0).val
-  let τ : Φ.Ray := (e 1).val
-  have hρθ : ρ ≠ τ := fun h ↦ zero_ne_one (e.injective (Subtype.ext h))
-  rcases Int.isUnit_iff.mp
-    (isUnit_det_of_ray_ne_of_le b hσ hρθ (e 0).property (e 1).property) with hd | hd
-  · exact ⟨ρ, τ, (e 0).property, (e 1).property, hd⟩
-  · exact ⟨τ, ρ, (e 1).property, (e 0).property, by rw [b.detDualEquiv_swap, hd, neg_neg]⟩
-
 /-- A positively oriented ray numbering of a complete regular rank-two fan numbers its
 two-ray cones: cone `j` contains rays `j` and `j + 1`. -/
 theorem exists_cyclicConeNumbering (b : Module.Basis (Fin 2) ℤ N)
