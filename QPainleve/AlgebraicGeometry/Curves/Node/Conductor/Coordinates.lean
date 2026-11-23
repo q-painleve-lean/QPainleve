@@ -5,10 +5,13 @@ Authors: The QPainleve contributors
 -/
 module
 
+public import QPainleve.AlgebraicGeometry.Curves.Node.Conductor.Units
 public import TauCeti.AlgebraicGeometry.Curves.Node.DualGraph
 
 import Mathlib.Algebra.Group.Pi.Units
 import Mathlib.Algebra.Group.Units.Equiv
+import Mathlib.AlgebraicGeometry.AlgClosed.Basic
+import QPainleve.AlgebraicGeometry.Morphisms.Finite.Field
 import QPainleve.AlgebraicGeometry.Scheme.GlobalSections
 import TauCeti.AlgebraicGeometry.Pullback.Carrier
 import TauCeti.AlgebraicGeometry.RationalPoint.Basic
@@ -250,5 +253,45 @@ theorem coe_normalizationGlobalUnitsEquiv (a : Γ((X.singularLocus k).blowup, �
     (v : (X.dualGraph p).Vertex) :
     (X.normalizationGlobalUnitsEquiv p a v : k) = X.normalizationGlobalSectionsEquiv p a v :=
   (rfl)
+
+local notation "nodal" => PrestableFamily.atWorstNodalOfRelativeDimensionOne
+local notation "B" => branchScheme k X
+local notation "Y" => IdealSheafData.blowup (singularLocus k X)
+local notation "π" => branchSchemeToSingularLocus k X
+local notation "j" => branchSchemeToBlowup k X
+local notation "ν" => IdealSheafData.blowupToBase (singularLocus k X)
+local notation "nodeMap" =>
+  IdealSheafData.subschemeι (singularLocus k X) ≫ (X ↘ Spec (CommRingCat.of k))
+
+/-- Restriction of a normalization unit to a branch has the value of the
+component carrying that branch. -/
+theorem branchSchemeGlobalUnitsEquiv_appTop_normalization
+    (a : Γ(Y, ⊤)ˣ) (b : B) (v : (X.dualGraph p).Vertex)
+    (hv : j b ∈ (X.dualGraphVertexEquiv p v : Set Y)) :
+    X.branchSchemeGlobalUnitsEquiv PrestableFamily.atWorstNodalOfRelativeDimensionOne
+      (Units.map (j).appTop.hom a) b = X.normalizationGlobalUnitsEquiv p a v := by
+  have : IsFinite nodeMap := X.isFinite_singularLocus_subschemeι_comp nodal
+  have : Etale nodeMap := X.etale_singularLocus_subschemeι_comp nodal
+  have : IsFinite π := X.isFinite_branchSchemeToSingularLocus nodal
+  have : Etale π := X.etale_branchSchemeToSingularLocus nodal
+  let f : B ⟶ Spec (.of k) := π ≫ nodeMap
+  let s := pointOfClosedPoint f b (f.isClosed_singleton_of_isFinite_toSpec b)
+  let x : Spec (.of k) := IsLocalRing.closedPoint k
+  have hs : s ≫ f = 𝟙 _ := pointOfClosedPoint_comp ..
+  have hsval : s x = b := pointOfClosedPoint_apply ..
+  have hsbase : (s ≫ j) ≫ ν ≫ X ↘ Spec (.of k) = 𝟙 _ := by
+    rw [Category.assoc, ← X.branchSchemeToSingularLocus_subschemeι_assoc k]
+    exact hs
+  have hsmem : (s ≫ j) x ∈ (X.dualGraphVertexEquiv p v : Set Y) := by
+    rwa [Hom.comp_apply, hsval]
+  have heval := X.val_branchSchemeGlobalUnitsEquiv_apply_section nodal
+    (Units.map (j).appTop.hom a) s hs x
+  rw [hsval, Units.coe_map] at heval
+  apply Units.ext
+  rw [coe_normalizationGlobalUnitsEquiv]
+  refine heval.trans ?_
+  have hnorm := X.normalizationGlobalSectionsEquiv_eval p a.val (s ≫ j) hsbase v hsmem
+  rw [Hom.comp_appTop, CommRingCat.comp_apply] at hnorm
+  exact hnorm
 
 end AlgebraicGeometry.Scheme
