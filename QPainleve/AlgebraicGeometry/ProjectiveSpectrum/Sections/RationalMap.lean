@@ -9,7 +9,7 @@ public import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.Sections.Basic
 public import TauCeti.AlgebraicGeometry.LineBundle.Ample
 public import Mathlib.AlgebraicGeometry.Birational.RationalMap
 import QPainleve.AlgebraicGeometry.LineBundle.Power
-import TauCeti.AlgebraicGeometry.LineBundle.TwistedSections
+import QPainleve.AlgebraicGeometry.LineBundle.SectionExtension
 import Mathlib.RingTheory.Localization.Integer
 
 /-!
@@ -22,9 +22,8 @@ map to finite-dimensional projective space over the base has such a presentation
 The sections give the linear system used to study the base points of the specified map.
 
 The construction clears the denominators of the normalized coordinates on one affine
-open and extends them using Tau Ceti's
-`Scheme.Modules.eventually_exists_map_eq_tmulRight_tensorPowSection`, the extension
-principle of the Stacks Project, Lemma 28.18.2 (tag 01PW).
+open and extends them using `Scheme.Modules.exists_sections_mul_tensorPow`, a finite-family
+form of the extension principle of the Stacks Project, Lemma 28.18.2 (tag 01PW).
 -/
 
 public section
@@ -133,22 +132,6 @@ private theorem genericProjectiveChart_preimage_awayXRatio [IsIntegral X] (i j :
 end Scheme.Modules
 
 open Scheme.Modules
-
-private theorem exists_sections_mul_tensorPow {X : Scheme.{u}} [CompactSpace X]
-    [QuasiSeparatedSpace X] (L : InvertibleSheaf X) [Finite ι] (e : Γ(L.obj, ⊤))
-    (a : ι → Γ(X, L.obj.nonvanishingLocus e)) :
-    ∃ (n : ℕ) (_ : 0 < n) (s : ι → Γ(tensorPow L.obj n, ⊤)),
-      ∀ i, (tensorPow L.obj n).presheaf.map (L.obj.nonvanishingLocus e).leTop.op (s i) =
-        a i • tensorPowSection (L.obj.presheaf.map (L.obj.nonvanishingLocus e).leTop.op e) n := by
-  have h (i : ι) := eventually_exists_map_eq_tmulRight_tensorPowSection (𝟙_ X.Modules)
-    isCompact_univ (isQuasiSeparated_univ_iff.mpr inferInstance) e (a i)
-  obtain ⟨n, hn, h⟩ := (Filter.eventually_all.mpr h |>.and (Filter.eventually_gt_atTop 0)).exists
-  choose t ht using hn
-  refine ⟨n, h, fun i ↦ (λ_ (tensorPow L.obj n)).hom.app ⊤ (t i), fun i ↦ ?_⟩
-  have hnat := ((λ_ (tensorPow L.obj n)).hom.mapPresheaf.naturality_apply
-    (L.obj.nonvanishingLocus e).leTop.op (t i)).symm
-  refine hnat.trans ((congrArg ((λ_ (tensorPow L.obj n)).hom.app _) (ht i)).trans ?_)
-  exact leftUnitor_hom_app_tmulRight _ _
 
 private theorem exists_global_sections_of_ratios {X : Scheme.{u}} [IsIntegral X]
     [CompactSpace X] [QuasiSeparatedSpace X] {A : LineBundleClass X} (hA : A.IsAmple)

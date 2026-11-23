@@ -8,6 +8,8 @@ module
 public import QPainleve.AlgebraicGeometry.Modules.TensorProduct
 public import TauCeti.AlgebraicGeometry.LineBundle.NonvanishingLocus
 public import TauCeti.AlgebraicGeometry.LineBundle.Power
+public import TauCeti.AlgebraicGeometry.Modules.Tensor.Sections
+import TauCeti.AlgebraicGeometry.LineBundle.TwistedSections
 import TauCeti.AlgebraicGeometry.Modules.Localization
 import TauCeti.Algebra.Group.Action.Pow
 
@@ -251,5 +253,23 @@ theorem eventually_exists_extension_tensorSectionPow [CompactSpace X] [QuasiSepa
     exact (tensorSectionPow_succ _ _ _).symm
 
 end Extension
+
+/-- A finite family of functions on the nonvanishing locus of a global line bundle section
+extends to global sections after multiplying by a common positive tensor power of that section. -/
+theorem exists_sections_mul_tensorPow [CompactSpace X] [QuasiSeparatedSpace X]
+    {ι : Type u} [Finite ι] (L : TauCeti.AlgebraicGeometry.InvertibleSheaf X) (e : Γ(L.obj, ⊤))
+    (a : ι → Γ(X, L.obj.nonvanishingLocus e)) :
+    ∃ (n : ℕ) (_ : 0 < n) (s : ι → Γ(tensorPow L.obj n, ⊤)),
+      ∀ i, (tensorPow L.obj n).presheaf.map (L.obj.nonvanishingLocus e).leTop.op (s i) =
+        a i • tensorPowSection (L.obj.presheaf.map (L.obj.nonvanishingLocus e).leTop.op e) n := by
+  have h (i : ι) := eventually_exists_map_eq_tmulRight_tensorPowSection (𝟙_ X.Modules)
+    isCompact_univ (isQuasiSeparated_univ_iff.mpr inferInstance) e (a i)
+  obtain ⟨n, hn, h⟩ := (Filter.eventually_all.mpr h |>.and (Filter.eventually_gt_atTop 0)).exists
+  choose t ht using hn
+  refine ⟨n, h, fun i ↦ (λ_ (tensorPow L.obj n)).hom.app ⊤ (t i), fun i ↦ ?_⟩
+  have hnat := ((λ_ (tensorPow L.obj n)).hom.mapPresheaf.naturality_apply
+    (L.obj.nonvanishingLocus e).leTop.op (t i)).symm
+  refine hnat.trans ((congrArg ((λ_ (tensorPow L.obj n)).hom.app _) (ht i)).trans ?_)
+  exact leftUnitor_hom_app_tmulRight _ _
 
 end AlgebraicGeometry.Scheme.Modules
