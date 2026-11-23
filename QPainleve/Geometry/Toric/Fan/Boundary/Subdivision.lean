@@ -9,6 +9,7 @@ public import Mathlib.AlgebraicGeometry.IdealSheaf.Functorial
 public import QPainleve.Geometry.Toric.Fan.Boundary.Center
 public import QPainleve.Geometry.Toric.Fan.Subdivision.FunctionField
 
+import QPainleve.AlgebraicGeometry.IdealSheaf.Restriction
 import QPainleve.AlgebraicGeometry.Morphisms.Pullback.IsoLocus
 import QPainleve.AlgebraicGeometry.Scheme.FunctionField
 import TauCeti.AlgebraicGeometry.WeilDivisor.Scheme.Order
@@ -48,6 +49,14 @@ theorem radical_comap_boundaryIdeal :
   rw [support_comap, Closeds.coe_preimage, Ψ.support_boundaryIdeal,
     Set.preimage_compl, h.preimage_range_denseTorusι hΦ hΨ]
   rfl
+
+/-- An isomorphism over a subdivision morphism identifies the reduced inverse image
+of the original boundary with the boundary of the subdivision. -/
+theorem radical_comap_boundaryIdeal_of_iso {Y : Scheme.{u}}
+    (f : Y ⟶ Ψ.algebraicRealization) (e : Φ.algebraicRealization ≅ Y)
+    (he : e.hom ≫ f = h.toFanHom.algebraicMap) :
+    (((Ψ.boundaryIdeal hΨ).comap f).radical).comap e.hom = Φ.boundaryIdeal hΦ := by
+  rw [← radical_comap_of_isOpenImmersion, ← comap_comp, he, h.radical_comap_boundaryIdeal hΦ hΨ]
 
 /-- The subdivision morphism restricted to the reduced toric boundaries. -/
 noncomputable def boundaryMap :

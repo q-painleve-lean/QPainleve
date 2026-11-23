@@ -8,6 +8,7 @@ module
 public import QPainleve.AlgebraicGeometry.Blowup.Exceptional.Class
 public import QPainleve.AlgebraicGeometry.Blowup.StrictTransform.Basic
 public import QPainleve.Geometry.Toric.Fan.Boundary.Ideal
+public import QPainleve.Geometry.Toric.Fan.Boundary.Node
 public import QPainleve.Geometry.Toric.Fan.StarSubdivision.Global
 
 import QPainleve.AlgebraicGeometry.Blowup.Exceptional.FirstKind
@@ -19,6 +20,7 @@ import QPainleve.AlgebraicGeometry.IdealSheaf.Restriction
 import QPainleve.Geometry.Toric.Fan.Boundary.Intersection
 import QPainleve.Geometry.Toric.Fan.Boundary.Subdivision
 import QPainleve.Geometry.Toric.Fan.Smooth
+import QPainleve.Geometry.Toric.Fan.Subdivision
 import TauCeti.AlgebraicGeometry.Morphisms.Smooth.Regular
 
 /-!
@@ -29,6 +31,8 @@ exceptional Cartier divisor of the blowup at the cone's distinguished point.
 The comparison also identifies the reduced toric boundary with the sum of the
 scheme-theoretic strict transform and the exceptional divisor. These identifications
 extend `exists_iso_blowup_starSubdivisionAlong` to the boundary ideal sheaves.
+Conversely, a node on a model of a subdivision determines the cone whose star
+subdivision realizes the blowup at that node.
 -/
 
 public noncomputable section
@@ -40,7 +44,11 @@ open TauCeti.AlgebraicGeometry Multiplicative
 namespace TauCeti.Toric.Fan
 
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
-  {i : N →+ V} {Φ : Fan i} (hΦ : Φ.IsRegular) (σ : Φ.cones) (h₀ : σ.val ≠ ⊥)
+  {i : N →+ V} {Φ : Fan i}
+
+section
+
+variable (hΦ : Φ.IsRegular) (σ : Φ.cones) (h₀ : σ.val ≠ ⊥)
 
 local notation "Ψ" => Φ.starSubdivisionAlong hΦ σ.property
 local notation "hΨ" => Φ.isRegular_starSubdivisionAlong hΦ σ.property
@@ -233,5 +241,61 @@ theorem comap_strictTransform_mul_exceptional_eq_boundaryIdeal
     rw [← radical_comap_of_isOpenImmersion, hcomp]
   exact (congrArg (fun J ↦ J.comap e.hom) hrad).symm.trans
     (hvan.trans ((F).radical_comap_boundaryIdeal hn ⟨σ⟩))
+
+end
+
+variable {Ψ : Fan i}
+
+local notation "X[" Δ "]" => algebraicRealization Δ
+local notation "s[" Δ "]" => algebraicRealizationStructureMap Δ
+local notation "classOf(" h ")" => (LineBundleClass.mk (IsEffectiveCartier.toInvertibleSheaf h))⁻¹
+
+/-- A closed node of the reduced boundary on a model of a subdivision determines a
+two-ray cone on that subdivision. Blowing up the actual center ideal is the star
+subdivision at this cone, with the new ray class equal to the exceptional class. -/
+theorem IsSubdivision.exists_iso_starSubdivision_of_isNodeOfReducedBoundary
+    (h : Ψ.IsSubdivision Φ) (hc : Φ.IsComplete)
+    (hΨ : Ψ.IsRegular) (hN : Module.finrank ℤ N = 2) {Y : Scheme}
+    (f : Y ⟶ X[Φ]) (e : X[Ψ] ≅ Y) (he : e.hom ≫ f = h.toFanHom.algebraicMap)
+    {p : Y} {I : Y.IdealSheafData} (hI : I = (Y.fromSpecResidueField p).ker)
+    (hp : ((Φ.boundaryIdeal hc.nonempty_cones).comap f).IsNodeOfReducedBoundary (f ≫ s[Φ]) p) :
+    ∃ (σ : Ψ.cones) (hσ : Nat.card (ToricRay σ.val) = 2),
+      let Ω := Ψ.starSubdivisionAlong hΨ σ.property
+      let hΩ := Ψ.isRegular_starSubdivisionAlong hΨ σ.property
+      let h₀ := ne_bot_of_card_toricRay_eq_two hσ
+      let F := Ψ.starSubdivisionAlong_isSubdivision hΨ σ.property h₀
+      let ρ := Ψ.starSubdivisionAlongRay hΨ σ.property h₀
+      I.comap e.hom = (Ψ.distinguishedPointHom σ).ker ∧
+      ∃ g : X[Ω] ≅ I.blowup,
+        g.hom ≫ I.blowupToBase = F.toFanHom.algebraicMap ≫ e.hom ∧
+        LineBundleClass.pullback g.hom I.blowupExceptionalClass =
+          classOf(Ω.isEffectiveCartier_rayBoundaryIdeal hΩ ρ) := by
+  let D := (Φ.boundaryIdeal hc.nonempty_cones).comap f
+  let x := e.inv p
+  have hx : e.hom x = p := by simp [x]
+  have hs : e.hom ≫ f ≫ s[Φ] = s[Ψ] := by
+    rw [← Category.assoc, he, h.toFanHom.algebraicMap_comp_algebraicRealizationStructureMap]
+  let : Nonempty Ψ.cones := h.nonempty_cones_of_nonempty hc.nonempty_cones
+  have hrad : (D.comap e.hom).radical = Ψ.boundaryIdeal inferInstance := by
+    rw [radical_comap_of_isOpenImmersion]
+    exact h.radical_comap_boundaryIdeal_of_iso _ hc.nonempty_cones f e he
+  have hnode : (Ψ.boundaryIdeal inferInstance).IsNodeOfReducedBoundary s[Ψ] x := by
+    have hp' : D.IsNodeOfReducedBoundary (f ≫ s[Φ]) (e.hom x) := by simpa only [hx] using hp
+    have hn := (D.isNodeOfReducedBoundary_comap_iff_of_isOpenImmersion (f ≫ s[Φ]) e.hom x).mpr
+      hp'
+    rwa [← isNodeOfReducedBoundary_radical (D.comap e.hom), hrad, hs] at hn
+  obtain ⟨σ, ⟨hσ, hpoint⟩, -⟩ :=
+    (Ψ.isNodeOfReducedBoundary_iff_existsUnique_twoRayCone hΨ (h.isComplete_iff.mpr hc) hN).mp hnode
+  let q := Ψ.distinguishedPointHom σ
+  have hcenter : I.comap e.hom = q.ker := by
+    rw [hI, ← hx, e.hom.comap_ker_fromSpecResidueField_apply,
+      q.ker_eq_ker_fromSpecResidueField, hpoint]
+  obtain ⟨_, d, _, hd, _⟩ := exists_iso_blowup_starSubdivisionAlong hΨ σ hN hσ
+  let g := d ≪≫ I.blowupIso e hcenter
+  refine ⟨σ, hσ, hcenter, g, ?_, ?_⟩
+  · rw [Iso.trans_hom, Category.assoc, blowupIso_hom_blowupToBase, ← Category.assoc, hd]
+  · rw [Iso.trans_hom, ← LineBundleClass.pullback_comp,
+      I.pullback_blowupExceptionalClass e hcenter]
+    exact pullback_blowupExceptionalClass_starSubdivisionAlong hΨ σ _ hN hσ d hd
 
 end TauCeti.Toric.Fan
