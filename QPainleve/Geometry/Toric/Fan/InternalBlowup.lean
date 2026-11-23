@@ -8,6 +8,8 @@ module
 public import QPainleve.AlgebraicGeometry.Blowup.Tower.Picard
 public import QPainleve.Geometry.Toric.Fan.Boundary.InternalCenter
 
+import Mathlib.Data.List.FinRange
+import QPainleve.AlgebraicGeometry.Blowup.Tower.Boundary.Reorder
 import QPainleve.Geometry.Toric.Fan.Smooth
 
 /-!
@@ -16,7 +18,8 @@ import QPainleve.Geometry.Toric.Fan.Smooth
 An oriented rank-two fan and an ordered list of rays with nonzero center parameters determine
 an actual tower of point blowups. Each center is placed on the current strict transform of the
 reduced toric boundary. The same ray and parameter can occur repeatedly, giving centers that
-are infinitely near. The Picard marking uses full transforms of the exceptional classes.
+are infinitely near. Reordering the centers preserves the model over its original fan scheme.
+The Picard marking uses full transforms of the exceptional classes.
 
 The models follow Gross, Hacking and Keel, *Moduli of surfaces with an anti-canonical cycle*,
 Definition 1.2. The construction uses `Ray.binomialCenterOnBoundary` and
@@ -25,7 +28,7 @@ Definition 1.2. The construction uses `Ray.binomialCenterOnBoundary` and
 
 public noncomputable section
 
-open AlgebraicGeometry QPainleve.BlowupTower TauCeti.AlgebraicGeometry
+open AlgebraicGeometry CategoryTheory QPainleve.BlowupTower TauCeti.AlgebraicGeometry
 
 namespace TauCeti.Toric.Fan
 
@@ -86,6 +89,27 @@ theorem internalBlowupTower_succ (s : Fin (n + 1) → Φ.Ray) (c : Fin (n + 1) �
       let J := (s (Fin.last n)).internalCenter b (c (Fin.last n))
       ⟨_, P.2.snoc J.val J.property⟩ :=
   alongBoundary_succ _ _
+
+/-- Reordering the same toric centers gives an isomorphism over the original fan scheme
+which identifies the strict boundaries. A repeated ray and parameter still specifies the
+same ordered chain of blowups above that point. -/
+theorem exists_iso_internalBlowupTower_reindex (σ : Equiv.Perm (Fin n)) :
+    let A := internalBlowupTower b s c
+    let B := internalBlowupTower b (s ∘ σ) (c ∘ σ)
+    ∃ e : A.1 ≅ B.1,
+      e.hom ≫ B.2.toTower.toBase = A.2.toTower.toBase ∧ A.2.boundaryι ≫ e.hom = B.2.boundaryι := by
+  let J (j : Fin n) := (s j).internalCenter b (c j)
+  have hd (a b' : Fin n) (hne : J a ≠ J b') :
+      Disjoint ((J a).val.support : Set (boundary).subscheme) ((J b').val.support : Set _) := by
+    have hpair : (s a, c a) ≠ (s b', c b') := by
+      intro h
+      apply hne
+      exact congrArg (fun p : Φ.Ray × ℂˣ ↦ p.1.internalCenter b p.2) h
+    simpa only [Scheme.IdealSheafData.map_id] using
+      (disjoint_support_map_internalCenter_iff b (𝟙 _) (s a) (s b') (c a) (c b')).mpr hpair
+  dsimp only
+  rw [internalBlowupTower_eq_alongBoundary, internalBlowupTower_eq_alongBoundary]
+  exact exists_iso_alongBoundary_perm_of_disjoint J (J ∘ σ) (σ.ofFn_comp_perm J).symm hd
 
 /-- All internal centers are reduced closed points of their successive ambient surfaces. -/
 theorem isClosedPointTower_internalBlowupTower :
