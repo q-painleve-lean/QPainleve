@@ -42,6 +42,11 @@ def IsNodeAt (f : C ⟶ S) (x : C) : Prop :=
     ∃ (V : Scheme.{u}) (i : V ⟶ C) (_ : IsOpenImmersion i) (z : V),
       i z = x ∧ AtWorstNodalOfRelativeDimensionOne (i ≫ f)
 
+/-- The stalk map at a node is not formally smooth. -/
+theorem IsNodeAt.not_formallySmooth_stalkMap {f : C ⟶ S} {x : C} (h : f.IsNodeAt x) :
+    ¬ (f.stalkMap x).hom.FormallySmooth :=
+  h.1
+
 /-- On a nodal relative curve, its nodes are precisely its nonsmooth points. -/
 theorem isNodeAt_iff_notMem_smoothLocus (f : C ⟶ S)
     (hf : AtWorstNodalOfRelativeDimensionOne f) (x : C) :

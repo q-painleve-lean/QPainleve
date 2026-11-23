@@ -138,19 +138,14 @@ theorem exceptionalCurveOfFirstKind_alongBoundary [SmoothOfRelativeDimension 2 f
     refine Fin.lastCases ?_ (fun a ↦ ?_) j
     · rw [← hA]
       obtain ⟨p, hp, hpA⟩ := hJ (Fin.last n)
-      let W : X.Opens := ⨅ a : Fin n, ((C a).val.map i).support.compl
-      have hW (a : Fin n) : Disjoint (W : Set X) (((C a).val.map i).support : Set X) :=
-        Set.disjoint_left.mpr fun _ hx ↦ (iInf_le (fun a ↦ ((C a).val.map i).support.compl) a) hx
       have hpA' : i p ∈ (A.val.map i).support := by
         rw [← SetLike.mem_coe, support_map_of_isClosedImmersion, hpA,
           Scheme.support_ker_fromSpecResidueField_of_isClosed hp]
         exact Set.mem_image_of_mem _ (Set.mem_singleton _)
-      have hWp : i p ∈ W := by
-        simp only [W, ← SetLike.mem_coe, Opens.coe_iInf, Set.mem_iInter, Closeds.coe_compl,
-          Set.mem_compl_iff]
-        exact fun a ha ↦ Set.disjoint_left.mp (hlastMap a) ha hpA'
-      have hlocal := P.toTower.toBase.le_isoLocus_iff.mpr
-        (isIso_toBase_restrict_alongBoundary (i := i) C W hW) hWp
+      have hlocal : i p ∈ P.toTower.toBase.isoLocus :=
+        mem_isoLocus_toBase_alongBoundary i C fun a ↦ by
+          simpa only [support_map_of_isClosedImmersion] using
+            Set.disjoint_right.mp (hlastMap a) hpA'
       have h := exceptionalCurveOfFirstKind_snoc i f P hp hlocal
       rw [← hpA] at h
       exact ⟨h, (exceptionalClass_snoc_last _ _).symm⟩

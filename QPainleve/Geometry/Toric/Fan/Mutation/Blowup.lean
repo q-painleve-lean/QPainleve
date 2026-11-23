@@ -294,6 +294,57 @@ theorem Ray.mutationBlowupIso_hom_comp_ruling :
     (ρ.mutationBlowupIso b hOpp c).hom ≫ R₁ = R₀ :=
   mutationBlowupHom_comp_ruling b ρ hOpp c
 
+section ExceptionalDivisor
+
+open Scheme.IdealSheafData
+
+local notation "p" =>
+  projectiveLine.polynomialPoint ℂ (RingHom.id ℂ) 0 (-(Units.val c⁻¹))
+local notation "G" => Ray.mutationBlowupIso b ρ hOpp c
+local notation "ex" I:arg => comap I (blowupToBase I)
+
+private theorem comap_pivotFiber_exceptional_at_torus :
+    ((p).ker.comap R₀).comap (S false).ι =
+      (ex(J₀) * (ex(J₁)).comap (G).hom).comap (S false).ι := by
+  rw [comap_mul, ← comap_comp (ex(J₁)),
+    ← comap_comp (p).ker, ← Category.assoc,
+    ρ.mutationPivotSourceBlowupι_blowupToBase,
+    ρ.mutationPivotSourceBlowupι_comp_mutationBlowupIso_hom, comap_comp (ex(J₁))]
+  have hSourceExc : (ex(J₀)).comap (S false).ι = ex(I₀) :=
+    ρ.comap_exceptionalIdeal_mutationPivotSourceBlowupι b hOpp c
+  rw [hSourceExc, ρ.comap_exceptionalIdeal_mutationPivotTargetBlowupι b hOpp c]
+  simpa only [Category.assoc, Units.val_mul, Units.val_neg, Units.val_one, neg_mul, one_mul] using
+    ρ.comap_pivotFiber_mutationPivotIso b hOpp c
+
+private theorem comap_pivotFiber_exceptional_at_complement :
+    ((p).ker.comap R₀).comap (S true).ι =
+      (ex(J₀) * (ex(J₁)).comap (G).hom).comap (S true).ι := by
+  have hF : (p).ker.comap (rulingOpenι (c : ℂ) true) = ⊤ := by
+    apply (comap_eq_top_iff _ _).mpr
+    rw [← mutationRulingComplement_eq_compl_support c]
+    exact Scheme.Opens.ι_preimage_self _
+  have hSourceExc : (ex(J₀)).comap (S true).ι = ⊤ := by
+    rw [← comap_comp, blowupLift_blowupToBase,
+      ρ.mutationSourceCenterIdeal_comap_complement b hOpp c]
+  have hTargetExc : (ex(J₁)).comap (T true).ι = ⊤ := by
+    rw [← comap_comp, blowupLift_blowupToBase,
+      ρ.mutationTargetCenterIdeal_comap_complement b hOpp c]
+  rw [← comap_comp (p).ker, (S true).isPullback.w, comap_comp, hF, comap_top,
+    comap_mul, hSourceExc, ← comap_comp (ex(J₁)),
+    ρ.mutationComplementBlowupι_comp_mutationBlowupIso_hom, comap_comp, hTargetExc, comap_top,
+    ← one_eq_top, mul_one]
+
+/-- The total pivot fiber on the global source blowup is the sum of the source
+exceptional divisor and the pullback of the target exceptional divisor. -/
+theorem Ray.comap_pivotFiber_mutationBlowupIso :
+    (p).ker.comap R₀ = ex(J₀) * (ex(J₁)).comap (G).hom := by
+  refine ext_of_comap_openCover (𝒰) fun j ↦ ?_
+  cases j
+  · exact comap_pivotFiber_exceptional_at_torus b ρ hOpp c
+  · exact comap_pivotFiber_exceptional_at_complement b ρ hOpp c
+
+end ExceptionalDivisor
+
 /-- The global mutation blowup isomorphism is over the complex field. -/
 @[reassoc]
 theorem Ray.mutationBlowupIso_hom_comp_toBase :

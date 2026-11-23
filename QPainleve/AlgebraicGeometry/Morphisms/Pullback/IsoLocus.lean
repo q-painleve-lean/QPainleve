@@ -11,12 +11,13 @@ public import TauCeti.AlgebraicGeometry.Morphisms.IsoLocus
 # Pullback squares over an isomorphism locus
 
 In a commuting square, if the bottom morphism has image in the isomorphism locus of the
-right morphism and the left morphism is an isomorphism, the square is cartesian.
+right morphism and the left morphism is an isomorphism, the square is cartesian. A
+morphism with image in the isomorphism locus has a lift with this property.
 -/
 
 public section
 
-open CategoryTheory
+open CategoryTheory Limits
 
 universe u
 
@@ -66,5 +67,20 @@ theorem preimage_isoLocus_le_of_isPullback {X Y A B : Scheme.{u}}
   apply g.le_isoLocus_iff.mpr
   simpa only [Scheme.Hom.resLE_eq_morphismRestrict] using
     hr.isIso_fst_of_isIso (by simpa only [Scheme.Hom.resLE_eq_morphismRestrict] using hIso)
+
+/-- A morphism with image in the isomorphism locus lifts to a cartesian square
+whose projection to its source is the identity. -/
+theorem exists_isPullback_id_of_range_subset_isoLocus {X Y B : Scheme.{u}}
+    (f : X ⟶ Y) (j : B ⟶ Y) (hj : Set.range j ⊆ f.isoLocus) :
+    ∃ i : B ⟶ X, IsPullback i (𝟙 B) f j := by
+  have hp := IsPullback.of_hasPullback f j
+  have htop : j ⁻¹ᵁ f.isoLocus = ⊤ :=
+    top_unique fun x _ ↦ j.mem_preimage.mpr (hj (Set.mem_range_self x))
+  have : IsIso (pullback.snd f j) :=
+    (Scheme.Hom.isoLocus_eq_top_iff _).mp <|
+      top_unique (htop ▸ Scheme.Hom.preimage_isoLocus_le_of_isPullback hp.flip)
+  exact ⟨inv (pullback.snd f j) ≫ pullback.fst f j,
+    hp.of_iso' (asIso (pullback.snd f j)).symm (.refl _) (.refl _) (.refl _)
+      (by simp) (by simp) (by simp) (by simp)⟩
 
 end AlgebraicGeometry.Scheme.Hom
