@@ -11,7 +11,7 @@ public import TauCeti.Geometry.Toric.Algebraic.Regular
 
 import Mathlib.Data.Set.Card
 import Mathlib.Topology.Instances.Real.Lemmas
-import TauCeti.Geometry.Convex.Cone.Face.Simplicial
+import QPainleve.Geometry.Toric.Cone.Coordinates
 
 /-!
 # Neighbouring rays in a complete regular fan
@@ -109,38 +109,16 @@ theorem isClosed_preimage_cone_of_isRegular {T : Type*} [TopologicalSpace T]
   have hreg := (isRegular_iff.1 hΦ) σ.val σ.property
   obtain ⟨n, b, r, hb⟩ := hreg.exists_basis
   let c := Φ.lattice.isBaseChange.basis b
-  have hgen : (c : Fin n → V) ∘ r =
-      i ∘ Toric.primitiveGenerator Φ.lattice (Φ.isToricCone σ.property) := by
-    funext ρ
-    rw [Function.comp_apply, Function.comp_apply, IsBaseChange.basis_apply,
-      (hb.isPrimitiveGenerator_apply ρ).eq_primitiveGenerator Φ.lattice
-        (Φ.isToricCone σ.property)]
-    rfl
   let A := Set.range r
-  have hA : A = Set.range r := rfl
-  have hcone : hull ℝ (c '' A) = σ.val := by
-    rw [hA, ← Set.range_comp, hgen, Set.range_comp,
-      (Φ.isToricCone σ.property).hull_primitiveGenerator Φ.lattice]
   have hmem (z : V) : z ∈ σ.val ↔ ∀ j, c.repr z j ∈
       if j ∈ A then Set.Ici (0 : ℝ) else {0} := by
-    rw [← hcone, mem_hull_image_iff_linearCombination]
-    constructor
-    · rintro ⟨a, ha, ha₀, rfl⟩ j
-      rw [c.repr_linearCombination]
-      by_cases hj : j ∈ A
-      · simpa [hj] using ha₀ j
-      · simp only [ite_eq_right hj, Set.mem_singleton_iff]
-        exact Finsupp.notMem_support_iff.mp (fun h ↦ hj ((Finsupp.mem_supported _ _).mp ha h))
-    · intro h
-      refine ⟨c.repr z, (Finsupp.mem_supported _ _).mpr ?_, ?_, c.linearCombination_repr z⟩
-      · intro j hj
-        by_contra hj'
-        exact (Finsupp.mem_support_iff.mp hj) (by simpa [hj'] using h j)
-      · intro j
-        by_cases hj : j ∈ A
-        · simpa [hj] using h j
-        · have hz : c.repr z j = 0 := by simpa [hj] using h j
-          exact hz.ge
+    rw [hb.mem_iff_real_basis_repr Φ.lattice hreg.toIsToricCone]
+    apply forall_congr'
+    intro j
+    by_cases hj : j ∈ A
+    · simp [A, hj, c]
+    · simp only [A, hj, not_false_eq_true, forall_const, ite_false, Set.mem_singleton_iff, c]
+      exact ⟨And.right, fun h ↦ ⟨h.ge, h⟩⟩
   rw [show f ⁻¹' (σ.val : Set V) = {t | ∀ j, c.repr (f t) j ∈
       if j ∈ A then Set.Ici (0 : ℝ) else {0}} from Set.ext fun t ↦ hmem (f t)]
   simp only [Set.ofPred_forall]
