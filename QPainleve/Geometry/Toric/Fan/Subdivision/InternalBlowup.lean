@@ -26,7 +26,7 @@ The ordered centers and strict boundary are as in Gross, Hacking and Keel,
 
 public section
 
-open AlgebraicGeometry CategoryTheory QPainleve.BlowupTower
+open AlgebraicGeometry CategoryTheory QPainleve.BlowupTower TauCeti.AlgebraicGeometry
 
 namespace TauCeti.Toric.Fan.IsSubdivision
 
@@ -38,12 +38,15 @@ local notation "rankTwo" => (Eq.trans (Module.finrank_eq_card_basis b) (Fintype.
 local notation "χ(" ρ ")" => LinearMap.toAddMonoidHom (b.detDualEquiv (Ray.primitiveGenerator ρ))
 
 /-- Subdivision pulls back the ordered internal model with the same center parameters.
-The lift also intertwines the strict-transform boundary embeddings. -/
+The lift intertwines the strict-transform boundary embeddings and pulls back each
+total exceptional class to the corresponding class on the refined model. -/
 theorem exists_isPullback_internalBlowupTower {n : ℕ} (ρ : Fin n → Ψ.Ray) (c : Fin n → ℂˣ) :
     let A := internalBlowupTower b ρ c
     let A' := internalBlowupTower b (h.liftRay ∘ ρ) c
     ∃ g : A'.1 ⟶ A.1, IsPullback g A'.2.toTower.toBase A.2.toTower.toBase h.toFanHom.algebraicMap ∧
-      A'.2.boundaryι ≫ g = h.boundaryMap hΦ hΨ ≫ A.2.boundaryι := by
+      A'.2.boundaryι ≫ g = h.boundaryMap hΦ hΨ ≫ A.2.boundaryι ∧
+      ∀ j, LineBundleClass.pullback g (A.2.toTower.exceptionalClass j) =
+        A'.2.toTower.exceptionalClass j := by
   let s (j : Fin n) : Spec (.of ℂ) ⟶ (Ψ.boundaryIdeal hΨ).subscheme :=
     (ρ j).binomialCenterOnBoundary rankTwo (m := χ(ρ j)) (b.detDualEquiv_self _)
       ((ρ j).surjective_detCharacter b) (c j)
@@ -104,11 +107,11 @@ theorem exists_common_internalBlowupTower {Ω : Fan i} [hΩ : Nonempty Ω.cones]
     funext j
     apply Ray.primitiveGenerator_injective
     simpa only [Function.comp_apply, primitiveGenerator_liftRay] using hρτ j
-  obtain ⟨g, hg, hb⟩ := h.exists_isPullback_internalBlowupTower b ρ c
+  obtain ⟨g, hg, hb, -⟩ := h.exists_isPullback_internalBlowupTower b ρ c
   have hsecond := h'.exists_isPullback_internalBlowupTower b τ c
   dsimp only at hsecond
   rw [← hmatch] at hsecond
-  obtain ⟨g', hg', hb'⟩ := hsecond
+  obtain ⟨g', hg', hb', -⟩ := hsecond
   exact ⟨g, g', hg, hg', hb, hb'⟩
 
 end TauCeti.Toric.Fan.IsSubdivision
