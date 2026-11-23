@@ -7,6 +7,7 @@ module
 
 public import QPainleve.AlgebraicGeometry.VectorBundle.ProjectionFormula
 public import TauCeti.AlgebraicGeometry.IdealSheaf.TensorSequence
+public import TauCeti.AlgebraicGeometry.Modules.Pullback.Sections
 
 /-!
 # Restriction of a line bundle to a closed subscheme
@@ -64,6 +65,36 @@ theorem tensorRestrictionHom_unit (M : InvertibleSheaf X) :
   refine (congrArg ((ρ_ M.obj).inv ≫ ·) h).trans ?_
   rw [← Functor.LaxMonoidal.right_unitality G ((F).obj M.obj),
     rightUnitor_naturality u, Iso.inv_hom_id_assoc]
+
+/-- Global sections of a line bundle lift from a closed subscheme if the first
+cohomology of the ideal-sheaf twist vanishes. -/
+theorem surjective_pullbackSectionsLE_of_subsingleton_cohomology_one (M : InvertibleSheaf X)
+    (h : Subsingleton (TauCeti.AlgebraicGeometry.Scheme.Modules.Cohomology (M.obj ⊗ I.sheaf) 1)) :
+    Function.Surjective ((i).pullbackSectionsLE M.obj ⊤ ⊤ (by simp)) := by
+  let N := M.obj
+  have : M.obj.IsLocallyFree := inferInstanceAs N.IsLocallyFree
+  have : M.obj.IsFiniteType := inferInstanceAs N.IsFiniteType
+  have hquot := I.surjective_tensorRestriction_of_subsingleton_cohomology_one M.obj h
+  have : IsIso (I.tensorRestrictionHom M) := I.isIso_tensorRestrictionHom M
+  have hcompare := (ConcreteCategory.bijective_of_isIso ((I.tensorRestrictionHom M).app ⊤)).2
+  -- The preimage of the full open is the full open of the closed subscheme.
+  let htop : (⊤ : I.subscheme.Opens) ≤ (i) ⁻¹ᵁ (⊤ : X.Opens) := by simp
+  have : IsIso (homOfLE htop).op := by
+    have := homOfLE_isIso_of_eq htop ((i).preimage_top.symm)
+    infer_instance
+  have hre : Function.Surjective
+      (((F).obj M.obj).presheaf.map (homOfLE htop).op) :=
+    (ConcreteCategory.bijective_of_isIso _).2
+  intro y
+  obtain ⟨v, hv⟩ := hre y
+  obtain ⟨x, hx⟩ := hcompare.comp hquot v
+  have he := congrArg (fun f ↦ f.app ⊤ x) (I.tensorRestrictionHom_unit M)
+  simp only [Scheme.Modules.Hom.comp_app] at he
+  have hu : (i).pullbackSections M.obj ⊤ x = v := by
+    rw [pullbackSections_apply]
+    exact he.symm.trans hx
+  refine ⟨x, ?_⟩
+  rw [pullbackSectionsLE_apply, hu, hv]
 
 /-- Under the quotient comparison, the map of quotients is the direct image of the
 pullback of the original morphism. -/
