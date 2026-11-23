@@ -6,7 +6,7 @@ Authors: The QPainleve contributors
 module
 
 public import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.Basic
-public import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.Polynomial.Chart.Basic
+public import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.Polynomial.Chart
 public import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.TwistingSheaf.Basic
 public import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.SymmetricAlgebra
 public import TauCeti.AlgebraicGeometry.LineBundle.Class
@@ -14,14 +14,12 @@ public import TauCeti.AlgebraicGeometry.LineBundle.Class
 import QPainleve.AlgebraicGeometry.EffectiveCartierDivisor.Integral
 import QPainleve.AlgebraicGeometry.IdealSheaf.Integral
 import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.Polynomial.Chart.Sections
+import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.Polynomial.Integral
+import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.Polynomial.SymmetricAlgebra
 import TauCeti.AlgebraicGeometry.CartierDivisor.Excision
 import TauCeti.AlgebraicGeometry.IdealSheaf.Reduced
 import TauCeti.AlgebraicGeometry.LineBundle.Affine.Picard
-import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.BaseChange
-import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.Integral
-import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.TwistingSheaf.Pullback
 import TauCeti.AlgebraicGeometry.Cohomology.ProjectiveSpace.TwistingSheaf
-import TauCeti.LinearAlgebra.SymmetricAlgebra.BasisComparison
 import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.TwistingSheaf.GlobalSections
 import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.TwistingSheaf.Quasicoherent
 import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.TwistingSheaf.TensorProduct
@@ -254,16 +252,8 @@ private abbrev polynomialTwistingBundle (m : ℤ) : InvertibleSheaf (Proj 𝒜) 
     (fun i ↦ coordinate_mem_one i.down)
     (by simpa only [iSup_ulift] using iSup_coordinateChart (k := k) (n := n)) m⟩
 
-private theorem isIntegral_polynomialProj : IsIntegral (Proj 𝒜) := by
-  apply isIntegral_of_isDomain
-  intro h
-  have hm := HomogeneousIdeal.mem_irrelevant_of_mem 𝒜 one_pos
-    (coordinate_mem_one (k := k) (0 : Fin (n + 1)))
-  rw [h, ← HomogeneousIdeal.mem_iff, HomogeneousIdeal.toIdeal_bot, Ideal.mem_bot] at hm
-  exact MvPolynomial.X_ne_zero _ hm
-
 private theorem mono_coordinateToUnit (j : Fin (n + 1)) : Mono (coordinateToUnit (k := k) j) := by
-  have := isIntegral_polynomialProj (k := k) (n := n)
+  have := isIntegral_polynomialProj (R := k) (σ := Fin (n + 1))
   refine (polynomialTwistingBundle (k := k) (n := n) (-1)).mono_of_ne_zero_to_unit
     (coordinateToUnit j) ?_
   intro h
@@ -327,7 +317,7 @@ open LineBundleClass in
 private theorem exists_zpow_polynomialTwistingBundle [NeZero n] (a : LineBundleClass (Proj 𝒜)) :
     ∃ m : ℤ, mk (polynomialTwistingBundle 1) ^ m = a := by
   classical
-  have := isIntegral_polynomialProj (k := k) (n := n)
+  have := isIntegral_polynomialProj (R := k) (σ := Fin (n + 1))
   have := isNoetherian_polynomialProj (k := k) (n := n)
   have := uniqueFactorizationMonoid_stalk_polynomialProj (k := k) (n := n)
   let i : Fin (n + 1) := 0
@@ -394,39 +384,6 @@ attribute [local instance] MvPolynomial.gradedAlgebra
 variable {k M : Type u} [Field k] [AddCommMonoid M] [Module k M] {n : ℕ}
 
 local notation "𝒮" => TauCeti.SymmetricAlgebra.homogeneousSubmodule k M
-local notation "𝒜" => MvPolynomial.homogeneousSubmodule (Fin (n + 2)) k
-
-private def toPolynomialGradedHom (b : Basis (Fin (n + 2)) k M) : 𝒮 →+*ᵍ 𝒜 where
-  toRingHom := (SymmetricAlgebra.equivMvPolynomial b).toRingHom
-  map_mem {i x} hx := (MvPolynomial.mem_homogeneousSubmodule _ _).mpr
-    ((SymmetricAlgebra.equivMvPolynomial_isHomogeneous_iff k M b i x).mpr hx)
-
-private def fromPolynomialGradedHom (b : Basis (Fin (n + 2)) k M) : 𝒜 →+*ᵍ 𝒮 where
-  toRingHom := (SymmetricAlgebra.equivMvPolynomial b).symm.toRingHom
-  map_mem {i x} hx := (SymmetricAlgebra.equivMvPolynomial_isHomogeneous_iff k M b i _).mp
-    (by
-      have h : SymmetricAlgebra.equivMvPolynomial b
-          ((SymmetricAlgebra.equivMvPolynomial b).symm.toRingHom x) = x :=
-        (SymmetricAlgebra.equivMvPolynomial b).apply_symm_apply x
-      rw [h]
-      exact (MvPolynomial.mem_homogeneousSubmodule _ _).mp hx)
-
-private theorem toPolynomialGradedHom_surjective (b : Basis (Fin (n + 2)) k M) :
-    Function.Surjective (toPolynomialGradedHom b) :=
-  (SymmetricAlgebra.equivMvPolynomial b).surjective
-
-private def polynomialProjIso (b : Basis (Fin (n + 2)) k M) :
-    Proj 𝒜 ≅ Proj 𝒮 :=
-  mapIso (toPolynomialGradedHom b) (fromPolynomialGradedHom b)
-    (SymmetricAlgebra.equivMvPolynomial b).apply_symm_apply
-    (SymmetricAlgebra.equivMvPolynomial b).symm_apply_apply
-
-private theorem polynomialProjIso_hom (b : Basis (Fin (n + 2)) k M) :
-    (polynomialProjIso b).hom = map (toPolynomialGradedHom b)
-      (HomogeneousIdeal.irrelevant_le_map_of_surjective _ (toPolynomialGradedHom_surjective b)) :=
-  mapIso_hom _ _ _ _
-
-local notation "S" => Proj 𝒮
 
 private theorem pullbackEquiv_polynomialProjIso_twist (b : Basis (Fin (n + 2)) k M) (m : ℤ) :
     pullbackEquiv (polynomialProjIso b)
@@ -434,10 +391,8 @@ private theorem pullbackEquiv_polynomialProjIso_twist (b : Basis (Fin (n + 2)) k
       LineBundleClass.mk (polynomialTwistingBundle m) := by
   rw [pullbackEquiv_apply, pullback_mk, mk_eq_mk_iff]
   refine ⟨?_⟩
-  rw [InvertibleSheaf.pullback_obj_obj, symmetricAlgebraTwistingBundle_obj,
-    polynomialProjIso_hom]
-  exact asIso (pullbackTwistingSheafMap (toPolynomialGradedHom b)
-    (HomogeneousIdeal.irrelevant_le_map_of_surjective _ (toPolynomialGradedHom_surjective b)) m)
+  rw [InvertibleSheaf.pullback_obj_obj, symmetricAlgebraTwistingBundle_obj]
+  exact b.polynomialProjIsoPullbackTwistingSheafIso m
 
 private theorem mk_symmetricAlgebraTwistingBundle_eq_zpow (m : ℤ) :
     LineBundleClass.mk (symmetricAlgebraTwistingBundle k M m) =

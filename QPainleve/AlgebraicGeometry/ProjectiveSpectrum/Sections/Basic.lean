@@ -6,11 +6,12 @@ Authors: The QPainleve contributors
 module
 
 public import QPainleve.AlgebraicGeometry.LineBundle.Ratio
+public import QPainleve.AlgebraicGeometry.LineBundle.Pullback
 public import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.Polynomial.Basic
+import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.Polynomial.GlobalSections
 import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.ChartEquality
 import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.Naturality
 import TauCeti.AlgebraicGeometry.Restrict
-import TauCeti.RingTheory.MvPolynomial.Homogeneous
 
 /-!
 # Projective morphisms from generating sections of a line bundle
@@ -92,31 +93,6 @@ private theorem restrict_chartEval_X {W : X.Opens} {i : ι} (h : W ≤ Dₛ[i]) 
   simp only [← ConcreteCategory.comp_apply, ← Functor.map_comp, ← op_comp]
   rfl
 
-private theorem fromOfGlobalSections_eq_of_X_unit_rescaling {S : Scheme.{u}}
-    (p q : MvPolynomial ι R →+* Γ(S, ⊤)) (c : Γ(S, ⊤)ˣ)
-    (hC : p.comp C = q.comp C) (hX : ∀ i, q (.X i) = c * p (.X i))
-    (hp : (HomogeneousIdeal.irrelevant (homogeneousSubmodule ι R)).toIdeal.map p = ⊤)
-    (hq : (HomogeneousIdeal.irrelevant (homogeneousSubmodule ι R)).toIdeal.map q = ⊤) :
-    Proj.fromOfGlobalSections _ p hp = Proj.fromOfGlobalSections _ q hq := by
-  have eval_eq (g : MvPolynomial ι R →+* Γ(S, ⊤)) :
-      eval₂Hom (g.comp C) (fun k ↦ g (.X k)) = g := by
-    apply MvPolynomial.ringHom_ext
-    · intro a
-      simp
-    · intro k
-      simp
-  have he (n : ℕ) (a : MvPolynomial ι R) (ha : a ∈ homogeneousSubmodule ι R n) :
-      q a = c ^ n * p a := by
-    calc
-      q a = eval₂ (p.comp C) (fun k ↦ c * p (.X k)) a := by
-        simpa only [← hC, hX, coe_eval₂Hom] using DFunLike.congr_fun (eval_eq q).symm a
-      _ = c ^ n * p a := by
-        simpa only [← coe_eval₂Hom, eval_eq] using
-          (mem_homogeneousSubmodule _ _ |>.mp ha).eval₂_const_mul (p.comp C)
-            (fun k ↦ p (.X k)) (c : Γ(S, ⊤))
-  exact (TauCeti.ProjectiveSpectrum.fromOfGlobalSections_eq_of_unit_rescaling
-    _ p q c he hp).symm
-
 private theorem chartHom_compatible (i j : ι) :
     X.homOfLE (inf_le_left : Dₛ[i] ⊓ Dₛ[j] ≤ Dₛ[i]) ≫ chartHom M f s i =
       X.homOfLE (inf_le_right : Dₛ[i] ⊓ Dₛ[j] ≤ Dₛ[j]) ≫ chartHom M f s j := by
@@ -151,7 +127,7 @@ private theorem chartHom_compatible (i j : ι) :
       DFunLike.congr_fun he r
   unfold chartHom
   rw [Proj.fromOfGlobalSections_naturality, Proj.fromOfGlobalSections_naturality]
-  exact fromOfGlobalSections_eq_of_X_unit_rescaling fi fj c hC hX
+  exact Proj.fromOfGlobalSections_eq_of_X_unit_rescaling fi fj c hC hX
     (by dsimp only [fi]; rw [← Ideal.map_map, chartEval_irrelevant, Ideal.map_top])
     (by dsimp only [fj]; rw [← Ideal.map_map, chartEval_irrelevant, Ideal.map_top])
 
@@ -256,6 +232,18 @@ private theorem toProjectiveSpaceChart_comp_awayι (i : ι) :
     ((mem_homogeneousSubmodule _ _).mpr (isHomogeneous_X R i)) (chartEval_isUnit M f s i)]
   exact Category.assoc _ _ _
 
+/-- On a coordinate chart, the inverse image of another coordinate open is the
+restriction of the corresponding section's nonvanishing locus. -/
+@[simp]
+theorem toProjectiveSpaceChart_awayι_preimage_basicOpen (i j : ι) :
+    M.toProjectiveSpaceChart f s i ⁻¹ᵁ
+        (Proj.awayι (homogeneousSubmodule ι R) (MvPolynomial.X i)
+          ((mem_homogeneousSubmodule _ _).mpr (isHomogeneous_X R i)) one_pos ⁻¹ᵁ
+            Proj.basicOpen (homogeneousSubmodule ι R) (.X j)) =
+      (Dₛ[i]).ι ⁻¹ᵁ Dₛ[j] := by
+  rw [← Scheme.Hom.comp_preimage, toProjectiveSpaceChart_comp_awayι]
+  exact chartHom_preimage_basicOpen M f s i j
+
 /-- The maps to projective space defined on two coordinate opens agree on their overlap. -/
 theorem toProjectiveSpaceChart_awayι_eq_on_inf (i j : ι) :
     X.homOfLE (inf_le_left : Dₛ[i] ⊓ Dₛ[j] ≤ Dₛ[i]) ≫
@@ -285,6 +273,85 @@ theorem toProjectiveSpaceChart_awayι (h : ⨆ i, Dₛ[i] = ⊤) (i : ι) :
         ((mem_homogeneousSubmodule _ _).mpr (isHomogeneous_X R i)) one_pos =
       (Dₛ[i]).ι ≫ M.toProjectiveSpace f s h := by
   rw [ι_toProjectiveSpace, toProjectiveSpaceChart_comp_awayι]
+
+section Pullback
+
+variable {Y : Scheme.{u}} (g : Y ⟶ X)
+
+local notation "N" => Functor.obj (Scheme.Modules.pullback g) M
+local notation "t" =>
+  (fun j : ι ↦ Scheme.Hom.pullbackSectionsLE g M ⊤ ⊤
+    (Eq.ge (Scheme.Hom.preimage_top g)) (s j) : ι → Γ(N, ⊤))
+local notation "E[" i "]" => Scheme.Modules.nonvanishingLocus N (t i)
+
+private theorem pullbackChart_le (i : ι) : E[i] ≤ g ⁻¹ᵁ Dₛ[i] :=
+  le_trans (M.nonvanishingLocus_pullbackSectionsLE g g.preimage_top.ge (s i)).le inf_le_right
+
+private theorem chartEval_pullback (i : ι) :
+    chartEval (N) (g ≫ f) t i =
+      (g.resLE Dₛ[i] E[i] (pullbackChart_le M s g i)).appTop.hom.comp (chartEval M f s i) := by
+  let e := g.resLE Dₛ[i] E[i] (pullbackChart_le M s g i)
+  have hbase : (E[i]).ι ≫ g ≫ f = e ≫ (Dₛ[i]).ι ≫ f :=
+    (g.resLE_comp_ι_assoc (pullbackChart_le M s g i) f).symm
+  apply MvPolynomial.ringHom_ext
+  · intro r
+    change chartEval (N) (g ≫ f) t i (C r) = e.appTop.hom (chartEval M f s i (C r))
+    have he := congrArg (fun h : (E[i]).toScheme ⟶ Spec (.of R) ↦
+      ((Scheme.ΓSpecIso (.of R)).inv ≫ h.appTop).hom r) hbase
+    simpa only [chartEval, RingHom.comp_apply, eval₂Hom_C, e, Category.assoc,
+      Scheme.Hom.comp_appTop, CommRingCat.hom_comp] using he
+  · intro j
+    change chartEval (N) (g ≫ f) t i (.X j) = e.appTop.hom (chartEval M f s i (.X j))
+    rw [chartEval_X, chartEval_X]
+    change _ = e.app ⊤ ((Dₛ[i]).topIso.inv _)
+    dsimp only [e]
+    rw [Scheme.Hom.resLE_app_top]
+    change _ = (E[i]).topIso.inv (g.appLE Dₛ[i] E[i] (pullbackChart_le M s g i)
+      ((Dₛ[i]).topIso.hom ((Dₛ[i]).topIso.inv _)))
+    rw [Iso.inv_hom_id_apply]
+    rw [M.appLE_sectionRatio]
+    have hsec (k : ι) : g.pullbackSectionsLE M Dₛ[i] E[i] (pullbackChart_le M s g i)
+        (res[i] (s k)) = (N).presheaf.map (homOfLE (le_top : E[i] ≤ ⊤)).op (t k) := by
+      rw [g.pullbackSectionsLE_map M ⊤ E[i] (le_top.trans g.preimage_top.ge)]
+      simp only [Hom.pullbackSectionsLE_apply, ← Functor.map_comp_apply, ← op_comp]
+      rfl
+    simp only [hsec]
+
+/-- Pullback of sections commutes with the projective chart morphism on the
+nonvanishing open of the pulled-back denominator section. -/
+@[reassoc]
+theorem toProjectiveSpaceChart_pullback (i : ι) :
+    (N).toProjectiveSpaceChart (g ≫ f) t i =
+      g.resLE Dₛ[i] E[i] (by rw [nonvanishingLocus_pullbackSectionsLE, top_inf_eq]) ≫
+        M.toProjectiveSpaceChart f s i := by
+  let a := Proj.awayι (homogeneousSubmodule ι R) (MvPolynomial.X i)
+    ((mem_homogeneousSubmodule _ _).mpr (isHomogeneous_X R i)) one_pos
+  rw [← cancel_mono a, Category.assoc]
+  change (N).toProjectiveSpaceChart (g ≫ f) t i ≫ a =
+    g.resLE Dₛ[i] E[i] (pullbackChart_le M s g i) ≫ M.toProjectiveSpaceChart f s i ≫ a
+  rw [toProjectiveSpaceChart_comp_awayι, toProjectiveSpaceChart_comp_awayι, chartHom, chartHom,
+    Proj.fromOfGlobalSections_naturality]
+  congr 1
+  exact chartEval_pullback M f s g i
+
+/-- A covering family of sections remains covering after pullback, and its
+projective morphism is the composite with the original projective morphism. -/
+theorem toProjectiveSpace_pullback (h : ⨆ i, Dₛ[i] = ⊤) :
+    (N).toProjectiveSpace (g ≫ f) t
+        (by simpa only [nonvanishingLocus_pullbackSectionsLE, top_inf_eq] using
+          g.iSup_preimage_eq_top h) =
+      g ≫ M.toProjectiveSpace f s h := by
+  have hE : ⨆ i, E[i] = ⊤ := by
+    simpa only [nonvanishingLocus_pullbackSectionsLE, top_inf_eq] using g.iSup_preimage_eq_top h
+  refine (Y.openCoverOfIsOpenCover (fun i ↦ E[i]) (IsOpenCover.mk hE)).hom_ext _ _ ?_
+  intro k
+  let i : ι := k
+  change (E[i]).ι ≫ (N).toProjectiveSpace (g ≫ f) t hE =
+    (E[i]).ι ≫ g ≫ M.toProjectiveSpace f s h
+  rw [← toProjectiveSpaceChart_awayι (N) (g ≫ f) t hE i, toProjectiveSpaceChart_pullback_assoc,
+    toProjectiveSpaceChart_awayι, Scheme.Hom.resLE_comp_ι_assoc]
+
+end Pullback
 
 private theorem toProjectiveSpaceChart_appTop (i : ι) :
     (Scheme.ΓSpecIso _).inv ≫ (M.toProjectiveSpaceChart f s i).appTop =
@@ -476,7 +543,7 @@ private theorem chartHom_eq_fromOfGlobalSections_of_frame {V W : X.Opens} {i : �
     rw [eval₂Hom_X', ← ConcreteCategory.comp_apply, hh, ConcreteCategory.comp_apply,
       ← hframe j, restrict_chartEval_X M f s hle', hc, ← map_mul]
     exact congrArg V.topIso.inv (M.sectionRatio_mul_sectionRatio (r j) (r i) b hr hb).symm
-  exact fromOfGlobalSections_eq_of_X_unit_rescaling q₀ q₁ c hC hX _ _
+  exact Proj.fromOfGlobalSections_eq_of_X_unit_rescaling q₀ q₁ c hC hX _ _
 
 /-- In a frame on an affine open, the projective morphism is the ordinary
 evaluation map of the frame coordinates. The coordinates generate the unit

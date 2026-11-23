@@ -81,6 +81,12 @@ theorem sectionRatio_mul_sectionRatio {U : X.Opens} (t s r : Γ(M, U))
   apply (M.sectionRatio_eq_iff hr).mpr
   rw [mul_comm, mul_smul, sectionRatio_smul, sectionRatio_smul]
 
+/-- A generator on a neighborhood remains a generator after restricting the section. -/
+theorem le_nonvanishingLocus_map {U V : X.Opens} (i : V ⟶ U) (s : Γ(M, U))
+    (hs : V ≤ M.nonvanishingLocus s) :
+    V ≤ M.nonvanishingLocus (M.presheaf.map i.op s) := by
+  simpa using hs
+
 /-- The germ of a section ratio times the local coefficient of its denominator is the local
 coefficient of its numerator, in any frame defined near the point. -/
 theorem germ_sectionRatio_mul_eq_of_restrict_eq_smul {U V : X.Opens} {x : X}

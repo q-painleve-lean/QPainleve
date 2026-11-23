@@ -11,6 +11,7 @@ public import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.TwistingSheaf.Basic
 public import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.SymmetricAlgebra
 public import Mathlib.AlgebraicGeometry.Morphisms.Proper
 import QPainleve.AlgebraicGeometry.LineBundle.GlobalGeneration
+import QPainleve.AlgebraicGeometry.LineBundle.Pullback
 import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.Sections.Affine
 import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.Sections.TwistingSheaf
 import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.TwistingSheaf.Pullback
@@ -36,6 +37,30 @@ namespace TauCeti.AlgebraicGeometry.LineBundleClass.IsAmple
 attribute [local instance] MvPolynomial.gradedAlgebra
 
 variable {X : Scheme.{u}} {R : Type u} [CommRing R]
+
+/-- Pullback by an affine morphism preserves ampleness. -/
+theorem pullback_of_isAffineHom {Y : Scheme.{u}} {a : LineBundleClass Y}
+    (ha : a.IsAmple) (g : X ⟶ Y) [IsAffineHom g] :
+    (LineBundleClass.pullback g a).IsAmple := by
+  have := ha.compactSpace
+  refine ⟨QuasiCompact.compactSpace_of_compactSpace g, fun x ↦ ?_⟩
+  obtain ⟨n, hn, L, hL, s, hx, hU⟩ := ha.exists_isAffineOpen_nonvanishingLocus (g x)
+  let P := (InvertibleSheaf.pullback g).obj L
+  have hP : LineBundleClass.mk P = (LineBundleClass.pullback g a) ^ n := by
+    rw [← LineBundleClass.pullback_pow, ← hL, LineBundleClass.pullback_mk]
+  let A := (Scheme.Modules.pullback g).obj L.obj
+  have htop : (⊤ : X.Opens) ≤ g ⁻¹ᵁ (⊤ : Y.Opens) := by simp
+  let t : Γ(A, ⊤) := g.pullbackSectionsLE L.obj ⊤ ⊤ htop s
+  have ht : A.nonvanishingLocus t = g ⁻¹ᵁ L.obj.nonvanishingLocus s := by
+    dsimp only [t, A]
+    rw [g.pullbackSectionsLE_apply, Scheme.Modules.nonvanishingLocus_map,
+      Scheme.Modules.nonvanishingLocus_pullbackSections, top_inf_eq]
+  let e : A ≅ P.obj := eqToIso (InvertibleSheaf.pullback_obj_obj g L).symm
+  refine ⟨n, hn, P, hP, e.hom.app ⊤ t, ?_, ?_⟩
+  · rw [Scheme.Modules.nonvanishingLocus_hom_app, ht]
+    exact hx
+  · rw [Scheme.Modules.nonvanishingLocus_hom_app, ht]
+    exact hU.preimage g
 
 /-- Some positive power of an ample line bundle on a scheme proper over an affine base is
 the pullback of 𝒪(1) along a finite morphism to projective space over the base. -/
