@@ -46,11 +46,106 @@ theorem hom_toRationalMap_eq_comp {X Z : Scheme.{u}} [IsIntegral X] (p : X.Parti
     PartialMap.fromFunctionField, PartialMap.fromSpecStalkOfMem_toPartialMap]
   rw [PartialMap.fromSpecStalkOfMem, ← Category.assoc, h]
 
+/-- A morphism factoring through a representative also factors through the maximal domain,
+with the same value under the rational map. -/
+theorem exists_lift_toPartialMap {X Y T : Scheme.{u}} [IsReduced X] [Y.IsSeparated]
+    (p : X.PartialMap Y) (a : T ⟶ p.domain) :
+    ∃ b : T ⟶ p.toRationalMap.toPartialMap.domain,
+      b ≫ p.toRationalMap.toPartialMap.domain.ι = a ≫ p.domain.ι ∧
+      b ≫ p.toRationalMap.toPartialMap.hom = a ≫ p.hom := by
+  refine ⟨a ≫ X.homOfLE p.le_domain_toRationalMap, ?_, ?_⟩
+  · erw [Category.assoc, homOfLE_ι]
+  · have h := p.toPartialMap_toRationalMap_restrict
+    erw [PartialMap.restrict_hom] at h
+    rw [Category.assoc, h]
+
 end AlgebraicGeometry.Scheme.PartialMap
+
+namespace AlgebraicGeometry.Scheme.Hom
+
+universe u
+
+/-- A regular morphism is defined on any morphism into its source, where the value
+of the associated rational map is ordinary composition. -/
+theorem exists_lift_toRationalMap {X Y T : Scheme.{u}} [IsReduced X] [Y.IsSeparated]
+    (f : X ⟶ Y) (a : T ⟶ X) :
+    ∃ b : T ⟶ f.toRationalMap.toPartialMap.domain,
+      b ≫ f.toRationalMap.toPartialMap.domain.ι = a ∧
+      b ≫ f.toRationalMap.toPartialMap.hom = a ≫ f := by
+  obtain ⟨b, hb, hb'⟩ := f.toPartialMap.exists_lift_toPartialMap (a ≫ X.topIso.inv)
+  have hι : (a ≫ X.topIso.inv) ≫ X.topIso.hom = a := by simp
+  refine ⟨b, hb.trans hι, hb'.trans ?_⟩
+  have he : (a ≫ X.topIso.inv) ≫ X.topIso.hom ≫ f = a ≫ f := by
+    rw [Category.assoc, Iso.inv_hom_id_assoc]
+  erw [Hom.toPartialMap_hom]
+  exact he
+
+end AlgebraicGeometry.Scheme.Hom
 
 namespace AlgebraicGeometry.Scheme.RationalMap
 
 universe u
+
+/-- A morphism into the domain of each successive rational map lifts to the domain
+of their composition. Its value there is the value of the second map. -/
+theorem exists_lift_comp {X Y Z T : Scheme.{u}} [PreirreducibleSpace X] [Nonempty Y]
+    [IsReduced X] [IsReduced Y] [Y.IsSeparated] [Z.IsSeparated]
+    (f : X ⤏ Y) [f.IsDominant] (g : Y ⤏ Z)
+    (a : T ⟶ f.toPartialMap.domain) (b : T ⟶ g.toPartialMap.domain)
+    (hab : a ≫ f.toPartialMap.hom = b ≫ g.toPartialMap.domain.ι) :
+    ∃ c : T ⟶ (f.comp g).toPartialMap.domain,
+      c ≫ (f.comp g).toPartialMap.domain.ι = a ≫ f.toPartialMap.domain.ι ∧
+      c ≫ (f.comp g).toPartialMap.hom = b ≫ g.toPartialMap.hom := by
+  let p := f.toPartialMap
+  let q := g.toPartialMap
+  have : IsDominant p.hom :=
+    p.isDominant_toRationalMap_iff.mp (f.toRationalMap_toPartialMap ▸ ‹f.IsDominant›)
+  let H := isPullback_morphismRestrict p.hom q.domain
+  let a' := H.lift b a hab.symm
+  let c := a' ≫ (p.domain.ι.isoImage (p.hom ⁻¹ᵁ q.domain)).hom
+  have hc₁ : c ≫ (p.comp q).domain.ι = a ≫ f.toPartialMap.domain.ι := by
+    -- The composite domain is the image of the inverse image under the first open inclusion.
+    change c ≫ (p.domain.ι ''ᵁ p.hom ⁻¹ᵁ q.domain).ι = a ≫ p.domain.ι
+    dsimp only [c]
+    rw [Category.assoc, Hom.isoImage_hom_ι, ← Category.assoc, H.lift_snd]
+  have hc₂ : c ≫ (p.comp q).hom = b ≫ g.toPartialMap.hom := by
+    dsimp only [c]
+    rw [PartialMap.comp_hom, Category.assoc, Iso.hom_inv_id_assoc,
+      ← Category.assoc, H.lift_fst]
+  have hq : (p.comp q).toRationalMap = f.comp g := by
+    simp only [← toRationalMap_comp, p, q, toRationalMap_toPartialMap]
+  obtain ⟨d, hd, hd'⟩ := (p.comp q).exists_lift_toPartialMap c
+  exact hq ▸ ⟨d, hd.trans hc₁, hd'.trans hc₂⟩
+
+/-- If an open immersion carries a regular representative of a rational map at the generic
+point, it factors through the domain of that map and recovers the representative there. -/
+theorem exists_lift_of_fromFunctionField_eq {X U Z : Scheme.{u}} [IsIntegral X]
+    [Z.IsSeparated] (f : X ⤏ Z) (i : U ⟶ X) [IsOpenImmersion i] (g : U ⟶ Z)
+    (η : Spec X.functionField ⟶ U)
+    (hη : η ≫ i = X.fromSpecStalk (genericPoint X)) (hg : η ≫ g = f.fromFunctionField) :
+    ∃ a : U ⟶ f.toPartialMap.domain,
+      a ≫ f.toPartialMap.domain.ι = i ∧ a ≫ f.toPartialMap.hom = g := by
+  let e := i.isoOpensRange
+  have hmem : genericPoint X ∈ i.opensRange := by
+    rw [← SetLike.mem_coe, Hom.coe_opensRange]
+    let x : (Spec X.functionField : Scheme) := IsLocalRing.closedPoint X.functionField
+    refine ⟨η x, ?_⟩
+    rw [← Hom.comp_apply, hη]
+    exact fromSpecStalk_closedPoint
+  let p : X.PartialMap Z :=
+    ⟨i.opensRange, i.opensRange.isOpen.dense ⟨_, hmem⟩, e.inv ≫ g⟩
+  have he : p.domain.fromSpecStalkOfMem _ hmem = η ≫ e.hom := by
+    apply (cancel_mono p.domain.ι).mp
+    have hei : e.hom ≫ p.domain.ι = i := i.isoOpensRange_hom_ι
+    rw [Category.assoc, hei, Opens.fromSpecStalkOfMem_ι, hη]
+  have hp : p.toRationalMap = f := by
+    apply eq_of_fromFunctionField_eq
+    rw [fromFunctionField_toRationalMap, PartialMap.fromFunctionField,
+      PartialMap.fromSpecStalkOfMem, he]
+    simpa only [p, Category.assoc, Iso.hom_inv_id_assoc] using hg
+  obtain ⟨a, ha, ha'⟩ := p.exists_lift_toPartialMap e.hom
+  exact hp ▸ ⟨a, ha.trans i.isoOpensRange_hom_ι,
+    ha'.trans (by simp only [p, Iso.hom_inv_id_assoc])⟩
 
 /-- Over the domain of a rational map, any morphism resolving it agrees on maps with
 the same projection to the source. -/
