@@ -28,7 +28,7 @@ to Toric Varieties*, §5.1.
 
 public noncomputable section
 
-open AlgebraicGeometry CategoryTheory Multiplicative
+open AlgebraicGeometry CategoryTheory
 open TauCeti.AlgebraicGeometry.Chow
 open LinearMap (BilinForm)
 
@@ -60,54 +60,6 @@ include hc
 local notation "B" => intersectionBilinForm ℂ X
 
 open Classical in
-private theorem rayDegree_eq (a : Φ.Ray → ℤ) {prev ρ next : Φ.Ray}
-    (hprev : det (gen prev) (gen ρ) = 1 ∧ ∃ σ : Φ.cones, prev.toCone ≤ σ ∧ ρ.toCone ≤ σ)
-    (hnext : det (gen ρ) (gen next) = 1 ∧ ∃ σ : Φ.cones, ρ.toCone ≤ σ ∧ next.toCone ≤ σ) :
-    B (R (Pi.single ρ 1)) (R a) =
-      a prev + Φ.rayBoundarySelfIntersection hΦ ρ * a ρ + a next := by
-  let := Fintype.ofFinite Φ.Ray
-  have := Φ.uniqueFactorizationMonoid_stalk_algebraicRealization hΦ
-  have hN : Module.finrank ℤ N = 2 := by simpa using Module.finrank_eq_card_basis b
-  have hρprev : ρ ≠ prev := by
-    intro he
-    have hd := hprev.1
-    rw [← he, b.detDualEquiv_self] at hd
-    omega
-  have hρnext : ρ ≠ next := by
-    intro he
-    have hd := hnext.1
-    rw [← he, b.detDualEquiv_self] at hd
-    omega
-  have hpq : prev ≠ next := by
-    intro he
-    have hd := hprev.1
-    rw [he, b.detDualEquiv_swap, hnext.1] at hd
-    omega
-  have hneigh := ray_neighbors_iff_of_det b hΦ hc hprev hnext
-  rw [Φ.rayDivisorToPicard_single, Φ.rayDivisorToPicard_apply]
-  simp only [one_smul, map_sum, map_smul, Int.zsmul_eq_mul]
-  calc
-    _ = ∑ τ, ((if τ = prev then a τ else 0) +
-        (if τ = ρ then Φ.rayBoundarySelfIntersection hΦ ρ * a τ else 0) +
-        (if τ = next then a τ else 0)) := by
-      apply Finset.sum_congr rfl
-      intro τ _
-      rw [intersectionBilinForm_apply, toMul_ofMul, toMul_ofMul]
-      by_cases h : τ = ρ
-      · subst τ
-        simp [hρprev, hρnext, Φ.rayBoundarySelfIntersection_def, mul_comm]
-      · have hne : ρ ≠ τ := Ne.symm h
-        rw [Φ.classIntersectionNumber_rayBoundaryPoint hΦ hN hne]
-        have hi : (∃ σ : Φ.cones, ρ.toCone ≤ σ ∧ τ.toCone ≤ σ) ↔ τ = prev ∨ τ = next :=
-          (and_iff_right hne).symm.trans (hneigh τ)
-        simp only [hi, ite_eq_right h, add_zero]
-        by_cases hp : τ = prev
-        · subst τ
-          simp [hpq]
-        · by_cases hq : τ = next <;> simp [hp, hq, hpq.symm]
-    _ = _ := by simp [Finset.sum_add_distrib]
-
-open Classical in
 private theorem coneCharacter_sub (a : Φ.Ray → ℤ) {prev ρ next : Φ.Ray}
     (hprev : det (gen prev) (gen ρ) = 1 ∧ ∃ σ : Φ.cones, prev.toCone ≤ σ ∧ ρ.toCone ≤ σ)
     (hnext : det (gen ρ) (gen next) = 1 ∧ ∃ σ : Φ.cones, ρ.toCone ≤ σ ∧ next.toCone ≤ σ)
@@ -118,7 +70,7 @@ private theorem coneCharacter_sub (a : Φ.Ray → ℤ) {prev ρ next : Φ.Ray}
   have h := congrArg (fun u ↦ det u v) hw
   simp only [map_add, map_smul, LinearMap.add_apply, LinearMap.smul_apply, Int.zsmul_eq_mul,
     LinearMap.zero_apply, map_zero] at h
-  rw [rayDegree_eq b hΦ hc a hprev hnext]
+  rw [Φ.intersectionBilinForm_rayDivisorToPicard_single hΦ b hc a hprev hnext]
   simp only [coneCharacter, LinearMap.sub_apply, LinearMap.smul_apply, Int.zsmul_eq_mul]
   linear_combination -a ρ * h
 
