@@ -32,7 +32,7 @@ The description of invariant divisors and their character orders follows Fulton,
 
 public noncomputable section
 
-open AlgebraicGeometry CategoryTheory Multiplicative
+open AlgebraicGeometry CategoryTheory Multiplicative TopologicalSpace
 open TauCeti.AlgebraicGeometry (CodimensionOnePoint)
 
 namespace TauCeti.Toric
@@ -442,11 +442,11 @@ theorem rayBoundaryPoint_mem_range_affineToricChartι_iff (Φ : Fan i) (hΦ : Φ
     exact ⟨_, (Φ.rayBoundaryPoint_ofToricRay hΦ σ r).symm.trans
       (congrArg (fun s : Φ.Ray ↦ (Φ.rayBoundaryPoint hΦ s).val) hr)⟩
 
-private theorem exists_rayBoundaryPoint_of_notMem_range_denseTorusι (Φ : Fan i) (hΦ : Φ.IsRegular)
-    (h₀ : Nonempty Φ.cones) (x : CodimensionOnePoint Φ.algebraicRealization)
-    (hx : x.val ∉ Set.range (Φ.denseTorusι h₀)) :
-    ∃ ρ : Φ.Ray, Φ.rayBoundaryPoint hΦ ρ = x := by
-  obtain ⟨σ, y, hy⟩ := Φ.exists_affineToricChartι_apply_eq x.val
+private theorem exists_rayBoundaryPoint_specializes (Φ : Fan i) (hΦ : Φ.IsRegular)
+    (h₀ : Nonempty Φ.cones) {x : Φ.algebraicRealization}
+    (hx : x ∉ Set.range (Φ.denseTorusι h₀)) :
+    ∃ ρ : Φ.Ray, (Φ.rayBoundaryPoint hΦ ρ).val ⤳ x := by
+  obtain ⟨σ, y, hy⟩ := Φ.exists_affineToricChartι_apply_eq x
   let hσ := Φ.isToricCone σ.property
   let hreg := (isRegular_iff.1 hΦ) _ σ.property
   let hface := hσ.salient.bot_isFaceOf
@@ -466,19 +466,25 @@ private theorem exists_rayBoundaryPoint_of_notMem_range_denseTorusι (Φ : Fan i
   have hmem : MonoidAlgebra.of ℂ _ (ofAdd m) ∈ y.asIdeal :=
     Classical.not_not.1 hy'
   obtain ⟨ρ, hρ⟩ := exists_rayIdeal_le_of_monomial_mem Φ.lattice hσ hreg y m hmem
-  have hheight : y.asIdeal.height = 1 := by
-    rw [idealHeight_eq_coheight (.of (affineCoordinateRing Φ.lattice σ.val)) y,
-      ← coheight_eq_of_isOpenImmersion (Φ.affineToricChartι σ), hy]
-    exact x.property
-  have hρheight := hreg.height_rayIdeal Φ.lattice hσ ρ
-  have := hreg.isPrime_rayIdeal Φ.lattice hσ ρ
-  have : (rayIdeal Φ.lattice hσ ρ).FiniteHeight :=
-    (rayIdeal Φ.lattice hσ ρ).finiteHeight_iff.mpr (by rw [hρheight]; simp)
-  have heq := Ideal.eq_of_le_of_height_le _ hρ (by rw [hheight, hρheight])
-  refine ⟨Ray.ofToricRay Φ σ ρ, Subtype.ext ?_⟩
+  refine ⟨Ray.ofToricRay Φ σ ρ, ?_⟩
   rw [rayBoundaryPoint_ofToricRay, ← hy]
-  exact congrArg (Φ.affineToricChartι σ) (PrimeSpectrum.ext
-    ((hreg.rayPoint_asIdeal Φ.lattice hσ ρ).trans heq))
+  apply Specializes.map _ (Φ.affineToricChartι σ).continuous
+  let p := (hreg.rayPoint Φ.lattice hσ ρ).val
+  exact (PrimeSpectrum.le_iff_specializes p y).mp ((PrimeSpectrum.asIdeal_le_asIdeal p y).mp
+    ((hreg.rayPoint_asIdeal Φ.lattice hσ ρ).symm ▸ hρ))
+
+/-- The support of the reduced toric boundary is the union of the ray closures. -/
+theorem support_boundaryIdeal_eq_iUnion_closure (Φ : Fan i) (hΦ : Φ.IsRegular)
+    (h₀ : Nonempty Φ.cones) :
+    ((Φ.boundaryIdeal h₀).support : Set Φ.algebraicRealization) =
+      ⋃ ρ : Φ.Ray, closure {(Φ.rayBoundaryPoint hΦ ρ).val} := by
+  rw [support_boundaryIdeal]
+  refine Set.Subset.antisymm (fun x hx ↦ ?_) (Set.iUnion_subset fun ρ ↦ ?_)
+  · obtain ⟨ρ, hρ⟩ := Φ.exists_rayBoundaryPoint_specializes hΦ h₀ hx
+    exact Set.mem_iUnion.mpr ⟨ρ, specializes_iff_mem_closure.mp hρ⟩
+  · exact closure_minimal
+      (Set.singleton_subset_iff.mpr (Φ.rayBoundaryPoint_notMem_range_denseTorusι hΦ ρ))
+      (Φ.denseTorusι h₀).isOpenEmbedding.isOpen_range.isClosed_compl
 
 section Character
 
@@ -557,7 +563,9 @@ theorem range_rayBoundaryPoint (Φ : Fan i) (hΦ : Φ.IsRegular) (h₀ : Nonempt
   constructor
   · rintro ⟨ρ, rfl⟩
     exact Φ.rayBoundaryPoint_notMem_range_denseTorusι hΦ ρ
-  · exact Φ.exists_rayBoundaryPoint_of_notMem_range_denseTorusι hΦ h₀ x
+  · intro hx
+    obtain ⟨ρ, hρ⟩ := Φ.exists_rayBoundaryPoint_specializes hΦ h₀ hx
+    exact ⟨ρ, CodimensionOnePoint.eq_of_specializes hρ⟩
 
 end Fan
 
