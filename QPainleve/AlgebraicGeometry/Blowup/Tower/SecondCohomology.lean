@@ -7,7 +7,10 @@ module
 
 public import QPainleve.AlgebraicGeometry.Blowup.Exceptional.SecondCohomology
 public import QPainleve.AlgebraicGeometry.Blowup.Tower.Picard
+public import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.Picard
 
+import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.Polynomial.Smooth
+import TauCeti.AlgebraicGeometry.Cohomology.ProjectiveSpace.HigherCohomology
 import TauCeti.AlgebraicGeometry.Scheme.Regular.Scheme
 
 /-!
@@ -60,6 +63,28 @@ theorem subsingleton_cohomology_two_picardHom
     rw [picardHom_snoc_apply_toMul, ← hA] at hM
     exact Scheme.IdealSheafData.subsingleton_cohomology_two_pointBlowup_exceptional_twist
       k hp hdim M A (ih (fun j ↦ b j.castSucc) A hA) hM
+
+open TauCeti.SymmetricAlgebra in
+/-- On a closed-point blowup tower over the projective plane, a line bundle whose
+base Picard coordinate has degree greater than `-3` has vanishing second cohomology. -/
+theorem subsingleton_cohomology_two_of_plane_degree_gt_neg_three
+    {U : BlowupTower (Proj (homogeneousSubmodule k (Fin 3 → k))) n Y}
+    (hU : IsClosedPointTower _ U)
+    (x : Additive (LineBundleClass (Proj (homogeneousSubmodule k (Fin 3 → k)))) × (Fin n → ℤ))
+    (L : InvertibleSheaf Y) (hL : U.picardHom x = Additive.ofMul (mk L))
+    (hd : -3 < (Pi.basisFun k (Fin 3)).picardTwistEquiv x.1) :
+    Subsingleton (Cohomology L.obj 2) := by
+  let d := (Pi.basisFun k (Fin 3)).picardTwistEquiv x.1
+  let O := Proj.symmetricAlgebraTwistingBundle k (Fin 3 → k) d
+  have hO : Additive.ofMul (mk O) = x.1 :=
+    (Pi.basisFun k (Fin 3)).picardTwistEquiv.injective
+      ((Pi.basisFun k (Fin 3)).picardTwistEquiv_apply_twist d)
+  have hvan : Subsingleton (Cohomology O.obj 2) := by
+    rw [Proj.symmetricAlgebraTwistingBundle_obj]
+    exact (Pi.basisFun k (Fin 3)).subsingleton_cohomology_twistingSheaf_of_neg_card_lt
+      (m := d) (q := 2) (by simpa only [Fintype.card_fin, Nat.cast_ofNat] using hd) (by decide)
+  exact hU.subsingleton_cohomology_two_picardHom k O hvan x.2 L
+    (by rw [hO, Prod.mk.eta, hL, toMul_ofMul])
 
 private theorem nonempty_cohomologyTwoLinearEquiv_picardHom_of_comp
     [SmoothOfRelativeDimension 2 (X ↘ Spec (.of k))]

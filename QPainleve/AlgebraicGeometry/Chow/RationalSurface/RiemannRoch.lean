@@ -8,7 +8,6 @@ module
 public import QPainleve.AlgebraicGeometry.Chow.RationalSurface.Basic
 
 import QPainleve.AlgebraicGeometry.Blowup.Tower.SecondCohomology
-import TauCeti.AlgebraicGeometry.Cohomology.ProjectiveSpace.HigherCohomology
 import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.ZeroLocus
 import QPainleve.AlgebraicGeometry.Modules.Differentials.Restriction
 
@@ -42,7 +41,6 @@ local notation "S" => Spec (CommRingCat.of k)
 local notation "P" => Proj (homogeneousSubmodule k (Fin 3 → k))
 local notation "ω[" Y "]" => canonicalBundle k Y 2
 local notation "K[" Y "]" => LineBundleClass.mk (ω[Y])
-local notation "O[" d "]" => Proj.symmetricAlgebraTwistingBundle k (Fin 3 → k) d
 local notation "degree" => Module.Basis.picardTwistEquiv (Pi.basisFun k (Fin 3))
 local notation "L†" L:arg => InvertibleSheaf.tensorProduct (ω[_]) (InvertibleSheaf.dual L)
 
@@ -68,45 +66,18 @@ private theorem subsingleton_cohomology_two_or_of_plane_marking
   have hdegree : degree b.1 = -3 - degree a.1 := by
     rw [hab, Prod.fst_sub, map_sub, mk_canonicalBundle_projectivePlane,
       (Pi.basisFun k (Fin 3)).picardTwistEquiv_apply_twist]
-  have hvan (L : InvertibleSheaf W) (x : Additive (LineBundleClass P) × (Fin n → ℤ))
-      (hx : mark x = Additive.ofMul (LineBundleClass.mk L)) (hd : -3 < degree x.1) :
-      Subsingleton (Cohomology L.obj 2) := by
-    let d := degree x.1
-    have hO : Additive.ofMul (LineBundleClass.mk (O[d])) = x.1 :=
-      (degree).injective ((Pi.basisFun k (Fin 3)).picardTwistEquiv_apply_twist d)
-    have h₂ : Subsingleton (Cohomology (O[d]).obj 2) := by
-      rw [Proj.symmetricAlgebraTwistingBundle_obj]
-      exact (Pi.basisFun k (Fin 3)).subsingleton_cohomology_twistingSheaf_of_neg_card_lt
-        (m := d) (q := 2) (by simpa only [Fintype.card_fin, Nat.cast_ofNat] using hd) (by decide)
-    rw [U.picardMarking_apply] at hx
-    exact hU.subsingleton_cohomology_two_picardHom k (O[d]) h₂ x.2 L
-      (by rw [hO, Prod.mk.eta, hx, toMul_ofMul])
+  have hmark (L : InvertibleSheaf W) :
+      U.picardHom (mark.symm (Additive.ofMul (LineBundleClass.mk L))) =
+        Additive.ofMul (LineBundleClass.mk L) :=
+    (U.picardMarking_apply hU (P ↘ S) _).symm.trans (mark.apply_symm_apply _)
   by_cases ha : -3 < degree a.1
-  · exact Or.inl (hvan M a (mark.apply_symm_apply _) ha)
-  · exact Or.inr (hvan N b (mark.apply_symm_apply _) (by omega))
+  · exact Or.inl (hU.subsingleton_cohomology_two_of_plane_degree_gt_neg_three k
+      a M (hmark M) ha)
+  · exact Or.inr (hU.subsingleton_cohomology_two_of_plane_degree_gt_neg_three k
+      b N (hmark N) (by omega))
 
 variable {X V : Scheme.{u}} [X.Over (Spec (.of k))]
   [SmoothOfRelativeDimension 2 (X ↘ Spec (.of k))]
-
-include algClosed in
-private theorem canonical_complement_picardHom
-    {m : ℕ} {T : BlowupTower X m V} [IsIntegral X] [IsNoetherian X]
-    (hT : IsClosedPointTower X T) (L : InvertibleSheaf X) :
-    let : V.Over S := ⟨T.toBase ≫ (X ↘ S)⟩
-    let : SmoothOfRelativeDimension 2 (V ↘ S) := hT.smoothOfRelativeDimension (X ↘ S)
-    let M := (InvertibleSheaf.pullback T.toBase).obj L
-    LineBundleClass.mk (L† M) =
-      (T.picardHom (Additive.ofMul (LineBundleClass.mk (L† L)), fun _ ↦ 1)).toMul := by
-  intro _ _ M
-  have hK := congrArg Additive.toMul (picardMarking_canonicalClass k hT)
-  rw [T.picardMarking_apply, toMul_ofMul] at hK
-  have hM : LineBundleClass.mk M =
-      (T.picardHom (Additive.ofMul (LineBundleClass.mk L), 0)).toMul := by
-    rw [picardHom_apply_zero, toMul_ofMul, pullback_mk]
-  simp only [mk_tensorProduct, ← inv_mk]
-  rw [← hK, hM, ← div_eq_mul_inv, ← toMul_sub, ← map_sub]
-  simp only [Prod.mk_sub_mk, sub_zero]
-  congr 2
 
 variable [X.IsProjectiveOver k] [rational : Scheme.IsRationalOver (X ↘ Spec (.of k))]
 

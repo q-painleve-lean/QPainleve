@@ -13,14 +13,14 @@ import QPainleve.AlgebraicGeometry.Blowup.Tower.Intersection
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Projective
 import QPainleve.AlgebraicGeometry.Blowup.Tower.SecondCohomology
 import QPainleve.AlgebraicGeometry.Chow.Nef.Basic
+import QPainleve.AlgebraicGeometry.Chow.RationalSurface.RiemannRoch
 import QPainleve.AlgebraicGeometry.IntersectionNumber.Nef.Pullback
 import QPainleve.AlgebraicGeometry.LineBundle.Ample
-import TauCeti.AlgebraicGeometry.Cohomology.ProjectiveSpace.HigherCohomology
 import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.ZeroLocus
 import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.TwistingSheaf.Ample
 
 /-!
-# Effectivity of nef classes of positive square on rational surfaces
+# Effectivity on rational surfaces
 
 Second cohomology vanishes for nef line bundles on smooth projective rational surfaces over
 an algebraically closed field. On a common resolution with the projective plane, intersection
@@ -30,6 +30,9 @@ calculation propagates vanishing from the plane for every choice of exceptional 
 Riemann–Roch then gives a nonempty effective Cartier divisor in a positive tensor power of
 any nef class of positive square. This supplies the effective divisor in the proof of the
 numerical ampleness criterion. See [Debarre, *Introduction to Mori Theory*, §4.1][Debarre].
+
+A class of positive Euler characteristic is effective if its canonical complement
+has negative intersection with a nef class.
 
 [Debarre]: https://perso.imj-prg.fr/wp-content/uploads/debarre-pub/M22.pdf#page=42
 -/
@@ -95,15 +98,9 @@ private theorem subsingleton_cohomology_two_of_nef_plane_tower {W : Scheme.{u}} 
   obtain ⟨⟨a, b⟩, hab⟩ :=
     (hU.bijective_picardHom (P ↘ S)).surjective (Additive.ofMul (LineBundleClass.mk L))
   have hmark := congrArg Additive.toMul hab
-  let d := degree a
-  have hd : 0 ≤ d := plane_degree_nonneg_of_nef_marking k hU a b (hmark.symm ▸ hL)
-  have hO : Additive.ofMul (LineBundleClass.mk (O[d])) = a :=
-    (degree).injective ((Pi.basisFun k (Fin 3)).picardTwistEquiv_apply_twist d)
-  have hvan : Subsingleton (Cohomology (O[d]).obj 2) := by
-    rw [Proj.symmetricAlgebraTwistingBundle_obj]
-    exact (Pi.basisFun k (Fin 3)).subsingleton_cohomology_twistingSheaf_of_neg_card_lt
-      (m := d) (q := 2) (by simp only [Fintype.card_fin]; omega) (by decide)
-  exact hU.subsingleton_cohomology_two_picardHom k (O[d]) hvan b L (hO.symm ▸ hmark.symm)
+  have hd : 0 ≤ degree a := plane_degree_nonneg_of_nef_marking k hU a b (hmark.symm ▸ hL)
+  exact hU.subsingleton_cohomology_two_of_plane_degree_gt_neg_three k (a, b) L hab
+    (show -3 < degree a by omega)
 
 include projective smooth rational
 
@@ -213,5 +210,21 @@ theorem exists_effectiveCartier_pow_of_isNef_of_self_pos (a : LineBundleClass X)
   simp only [ofMul_one, ofMul_pow, map_zero, map_nsmul, B, nsmul_eq_mul,
     Chow.classIntersectionBilinForm_apply, toMul_ofMul] at hzero
   exact (mul_pos (Int.natCast_pos.mpr hn) ha).ne hzero
+
+/-- A class of positive Euler characteristic is effective if a nef class has
+negative intersection with its canonical complement. -/
+theorem exists_effectiveCartier_of_eulerCharBelow_pos_of_intersection_canonical_mul_inv_neg
+    {a h : LineBundleClass X} (hχ : 0 < eulerCharBelow k a 3) (hh : h.IsNef k (X ↘ S))
+    (hneg : Chow.classIntersectionNumber k X h (mk (canonicalBundle k X 2) * a⁻¹) < 0) :
+    ∃ (I : X.IdealSheafData) (hI : I.IsEffectiveCartier), (mk hI.toInvertibleSheaf)⁻¹ = a := by
+  have : Smooth (X ↘ S) := SmoothOfRelativeDimension.smooth 2 _
+  have : IsIntegral X := rational.isIntegral_of_smooth
+  have := (X ↘ S).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two
+  have hX := topologicalKrullDim_eq_of_smoothOfRelativeDimension (X ↘ S) (n := 2)
+  obtain ⟨I, hI, he | he⟩ :=
+    exists_effectiveCartier_or_canonical_mul_inv_of_eulerCharBelow_pos k a hχ
+  · exact ⟨I, hI, he⟩
+  · exact False.elim (hneg.not_ge (he ▸
+      Chow.classIntersectionNumber_nonneg_of_isNef_of_isEffectiveCartier k hX hh hI))
 
 end TauCeti.AlgebraicGeometry.LineBundleClass
