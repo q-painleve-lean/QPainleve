@@ -89,6 +89,11 @@ lemma dualSectionEquiv_comp_globalSectionsSmul
 def zeroIdeal (s : Γ(L.obj, ⊤)) : X.IdealSheafData :=
   (L.dualSectionEquiv.symm s).imageIdealSheaf
 
+/-- The zero scheme is defined by the zero ideal exactly when the section is zero. -/
+@[simp]
+theorem zeroIdeal_eq_bot_iff (s : Γ(L.obj, ⊤)) : L.zeroIdeal s = ⊥ ↔ s = 0 := by
+  rw [zeroIdeal, Hom.imageIdealSheaf_eq_bot_iff, Equiv.symm_apply_eq, dualSectionEquiv_zero]
+
 /-- The zero ideal agrees with the image of evaluation on the internal Hom dual. -/
 theorem zeroIdeal_eq_imageIdealSheaf_evaluation (s : Γ(L.obj, ⊤)) :
     L.zeroIdeal s =
@@ -147,15 +152,10 @@ theorem iSup_nonvanishingLocus_eq_top_iff {ι : Type*} (s : ι → Γ(L.obj, ⊤
     rw [h] at hx'
     exact hx'
 
-/-- The evaluation ideal is the zero ideal sheaf exactly when the section vanishes identically. -/
-@[simp]
-theorem zeroIdeal_eq_bot_iff (s : Γ(L.obj, ⊤)) : L.zeroIdeal s = ⊥ ↔ s = 0 := by
-  rw [zeroIdeal, Hom.imageIdealSheaf_eq_bot_iff, Equiv.symm_apply_eq, dualSectionEquiv_zero]
-
 /-- The zero section cuts out the entire scheme. -/
 @[simp]
 theorem zeroIdeal_zero : L.zeroIdeal 0 = ⊥ :=
-  (L.zeroIdeal_eq_bot_iff 0).mpr rfl
+  (L.zeroIdeal_eq_bot_iff 0).2 rfl
 
 /-- On an affine open, the zero ideal is the image of the evaluation map on sections. -/
 @[simp]
