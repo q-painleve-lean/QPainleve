@@ -43,23 +43,6 @@ local notation "j[" i "]" =>
   Proj.awayι 𝒜 (MvPolynomial.X i)
     (Iff.mpr (mem_homogeneousSubmodule _ _) (isHomogeneous_X R i)) one_pos
 
-/-- A covering family of sections remains covering after pullback, and its
-projective morphism is the composite with the original projective morphism. -/
-theorem toProjectiveSpace_pullback (h : ⨆ i, D[i] = ⊤) :
-    (N).toProjectiveSpace (g ≫ f) t
-        (by simpa only [nonvanishingLocus_pullbackSectionsLE, top_inf_eq] using
-          g.iSup_preimage_eq_top h) =
-      g ≫ M.toProjectiveSpace f s h := by
-  have hE : ⨆ i, E[i] = ⊤ := by
-    simpa only [nonvanishingLocus_pullbackSectionsLE, top_inf_eq] using g.iSup_preimage_eq_top h
-  refine (X.openCoverOfIsOpenCover (fun i ↦ E[i]) (IsOpenCover.mk hE)).hom_ext _ _ ?_
-  intro k
-  let i : ι := k
-  change (E[i]).ι ≫ (N).toProjectiveSpace (g ≫ f) t hE =
-    (E[i]).ι ≫ g ≫ M.toProjectiveSpace f s h
-  rw [← toProjectiveSpaceChart_awayι (N) (g ≫ f) t hE i, toProjectiveSpaceChart_pullback_assoc,
-    toProjectiveSpaceChart_awayι, Scheme.Hom.resLE_comp_ι_assoc]
-
 variable [PreirreducibleSpace X] [Nonempty Y] [IsDominant g]
 
 /-- Pulling back the line bundle and its sections gives a presentation of the
