@@ -258,6 +258,36 @@ theorem nonempty_cohomologyTwoPointBlowupExceptionalTwistLinearEquiv
     obtain ⟨e'⟩ := ih B hB
     exact ⟨e'.trans e.symm⟩
 
+include k in
+omit hM in
+/-- If a line bundle has vanishing second cohomology, every exceptional twist of its
+pullback to a point blowup also has vanishing second cohomology. -/
+theorem subsingleton_cohomology_two_pointBlowup_exceptional_twist
+    (L : InvertibleSheaf X) (hL : Subsingleton (Cohomology L.obj 2))
+    (hM : LineBundleClass.mk M = twist[LineBundleClass.mk L, m]) :
+    Subsingleton (Cohomology M.obj 2) := by
+  let : Scheme.Over Y (Spec (.of k)) := ⟨π ≫ X ↘ Spec (.of k)⟩
+  by_cases hm : m ≤ 0
+  · obtain ⟨e⟩ := nonempty_cohomologyTwoPointBlowupExceptionalTwistLinearEquiv
+      k hp hdim M L hM (by omega)
+    exact e.surjective.subsingleton
+  obtain ⟨n, rfl⟩ : ∃ n : ℕ, m = n := ⟨m.toNat, by omega⟩
+  clear hm
+  induction n generalizing M with
+  | zero =>
+    obtain ⟨e⟩ := nonempty_cohomologyTwoPointBlowupExceptionalTwistLinearEquiv
+      k hp hdim M L hM (by omega)
+    exact e.surjective.subsingleton
+  | succ n ih =>
+    obtain ⟨A, hA⟩ := LineBundleClass.mk_surjective (twist[LineBundleClass.mk L, (n : ℤ)])
+    have := ih A hA
+    obtain ⟨e⟩ := exists_iso_tensor_exceptional_ideal_pointBlowup_twist p
+      (LineBundleClass.mk L) (n + 1)
+      (by simpa only [add_sub_cancel_right, blowupExceptionalClass_def, inv_zpow'] using hA)
+      (by simpa only [Nat.cast_succ, blowupExceptionalClass_def, inv_zpow'] using hM)
+    have := (cohomologyBaseLinearEquivOfIso k e 2).surjective.subsingleton
+    exact (surjective_cohomologyTwoExceptionalTwistMap k hp hdim _ M hM).subsingleton
+
 end Field
 
 end AlgebraicGeometry.Scheme.IdealSheafData
