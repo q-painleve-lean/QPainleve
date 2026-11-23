@@ -32,43 +32,12 @@ variable {k : Type u} [Field k] [IsAlgClosed k] {X : Scheme.{u}} [X.Over (Spec (
   (hD : D.IsEffectiveCartier)
 
 local notation "C" => IdealSheafData.subscheme D
-local notation "ν" => IdealSheafData.blowupToBase (Scheme.singularLocus k C)
-local notation "PicZero" => MonoidHom.ker (pullbackHom ν)
 
 local notation "K[" S "," J "]" =>
   Scheme.IdealSheafData.boundaryOrthogonal (X := S) J k
 
 variable (hgenus : ∀ v : irreducibleComponents (D.subscheme.singularLocus k).blowup,
     (D.subscheme.blowupComponent (K := k) v).toScheme.genus k = 0)
-
-/-- A boundary-orthogonal surface class restricts to a class in the normalization kernel
-of a nodal Cartier boundary with genus-zero normalized components. -/
-def restrictBoundaryOrthogonal : Multiplicative K[X,D] →* PicZero :=
-  let f := (pullbackHom D.subschemeι).comp
-    (AddMonoidHom.toMultiplicativeLeft (K[X,D]).subtype.toAddMonoidHom)
-  f.codRestrict PicZero fun a ↦ by
-    rw [MonoidHom.mem_ker, MonoidHom.comp_apply, pullbackHom_apply, pullbackHom_apply,
-      pullback_comp]
-    exact (hD.pullback_blowupToBase_comp_subschemeι_eq_one_iff_mem_orthogonal
-      hgenus a.toAdd.val).mpr a.toAdd.property
-
-/-- The underlying line-bundle class of a boundary-orthogonal restriction is the
-ordinary pullback to the boundary. -/
-@[simp]
-theorem restrictBoundaryOrthogonal_apply (a : Multiplicative K[X,D]) :
-    (hD.restrictBoundaryOrthogonal hgenus a).val = pullback D.subschemeι a.toAdd.val.toMul := by
-  simp only [restrictBoundaryOrthogonal, MonoidHom.codRestrict_apply]
-  exact pullbackHom_apply _ _
-
-include hD hgenus in
-/-- The class of an effective Cartier divisor disjoint from the boundary lies in the
-boundary orthogonal. -/
-theorem effectiveCartierClass_mem_orthogonal_of_disjoint {E : X.IdealSheafData}
-    (hE : E.IsEffectiveCartier) (h : Disjoint (D.support : Set X) (E.support : Set X)) :
-    Additive.ofMul (LineBundleClass.mk hE.toInvertibleSheaf)⁻¹ ∈ K[X,D] := by
-  apply (hD.pullback_blowupToBase_comp_subschemeι_eq_one_iff_mem_orthogonal hgenus _).mp
-  rw [toMul_ofMul, ← pullback_comp, hE.pullback_effectiveCartierClass_eq_one_of_disjoint h,
-    pullback_one]
 
 variable {ι : Type v} {p : ι → (D.subscheme ↘ Spec (.of k)).smoothLocus} {n : ℕ} [NeZero n]
   {e : ZMod n ≃ (D.subscheme.dualGraph p).Edge}
@@ -120,37 +89,6 @@ local notation "C'" => IdealSheafData.subscheme E
 
 variable (hgenus' : ∀ v : irreducibleComponents (E.subscheme.singularLocus k).blowup,
     (E.subscheme.blowupComponent (K := k) v).toScheme.genus k = 0)
-
-section OrthogonalPullback
-
-variable (f : X ⟶ Y) (g : D.subscheme ≅ E.subscheme) [g.hom.IsOver (Spec (.of k))]
-  (hcomm : D.subschemeι ≫ f = g.hom ≫ E.subschemeι)
-
-/-- A morphism inducing an isomorphism of the nodal boundaries pulls back classes
-orthogonal to the target boundary to classes orthogonal to the source boundary. -/
-def boundaryOrthogonalPullback : K[Y,E] →ₗ[ℤ] K[X,D] :=
-  ((pullbackHom f).toAdditive.toIntLinearMap.comp (K[Y,E]).subtype).codRestrict
-    K[X,D] fun b ↦ by
-      apply (hD.pullback_blowupToBase_comp_subschemeι_eq_one_iff_mem_orthogonal hgenus _).mp
-      have hb := (g.nodalPicardKernelPullback (k := k)
-        (hE.restrictBoundaryOrthogonal hgenus' (Multiplicative.ofAdd b))).property
-      simp only [LinearMap.comp_apply, Submodule.subtype_apply, AddMonoidHom.coe_toIntLinearMap,
-        MonoidHom.coe_toAdditive, Function.comp_apply, toMul_ofMul, pullbackHom_apply]
-      rw [← pullback_comp (D.subscheme.singularLocus k).blowupToBase D.subschemeι,
-        pullback_comp D.subschemeι f, hcomm, ← pullback_comp g.hom E.subschemeι]
-      simpa only [MonoidHom.mem_ker, pullbackHom_apply, Iso.coe_nodalPicardKernelPullback,
-        restrictBoundaryOrthogonal_apply, toAdd_ofAdd] using hb
-
-/-- The underlying boundary-orthogonal class is the ordinary pullback. -/
-@[simp]
-theorem coe_boundaryOrthogonalPullback (b : K[Y,E]) :
-    (hD.boundaryOrthogonalPullback hgenus hE hgenus' f g hcomm b).val.toMul =
-      pullback f b.val.toMul := by
-  simp only [boundaryOrthogonalPullback, LinearMap.codRestrict_apply, LinearMap.comp_apply,
-    Submodule.subtype_apply, AddMonoidHom.coe_toIntLinearMap, MonoidHom.coe_toAdditive,
-    Function.comp_apply, toMul_ofMul, pullbackHom_apply]
-
-end OrthogonalPullback
 
 variable {ι' : Type v'} {p' : ι' → (E.subscheme ↘ Spec (.of k)).smoothLocus} {m : ℕ} [NeZero m]
   {e' : ZMod m ≃ (E.subscheme.dualGraph p').Edge}

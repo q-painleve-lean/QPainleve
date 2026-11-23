@@ -5,12 +5,12 @@ Authors: The QPainleve contributors
 -/
 module
 
-public import Mathlib.LinearAlgebra.BilinearForm.Orthogonal
-public import QPainleve.AlgebraicGeometry.CartierDivisor.Excision
 public import QPainleve.AlgebraicGeometry.Chow.SurfaceIntersection
 public import QPainleve.AlgebraicGeometry.Curves.Node.Multidegree
 import QPainleve.AlgebraicGeometry.Curves.Degree.Pullback
+import QPainleve.AlgebraicGeometry.Curves.Node.Conductor.Naturality
 import QPainleve.AlgebraicGeometry.EffectiveCartierDivisor.Dimension
+import QPainleve.AlgebraicGeometry.EffectiveCartierDivisor.Pullback
 import QPainleve.AlgebraicGeometry.Morphisms.IsoLocus
 import QPainleve.AlgebraicGeometry.Scheme.LocalDimension
 import TauCeti.AlgebraicGeometry.Blowup.ExceptionalDivisor
@@ -33,41 +33,9 @@ public section
 open CategoryTheory Order TopologicalSpace TauCeti TauCeti.AlgebraicGeometry
 open TauCeti.AlgebraicGeometry.LineBundleClass
 
-namespace AlgebraicGeometry.Scheme.IdealSheafData
+namespace AlgebraicGeometry.Scheme.IdealSheafData.IsEffectiveCartier
 
 universe u
-
-section BoundaryOrthogonal
-
-variable {X : Scheme.{u}} [IsIntegral X]
-
-/-- The Picard sublattice orthogonal to the prime curves in the support of a boundary
-ideal on a smooth integral projective surface. -/
-noncomputable def boundaryOrthogonal
-    (D : X.IdealSheafData) (k : Type u) [Field k] [Infinite k]
-    [X.Over (Spec (.of k))] [X.IsProjectiveOver k]
-    [SmoothOfRelativeDimension 2 (X ↘ Spec (.of k))] :
-    Submodule ℤ (Additive (LineBundleClass X)) :=
-  letI := isNoetherian_of_finiteType (X ↘ Spec (.of k))
-  letI := (X ↘ Spec (.of k)).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two
-  (Chow.intersectionBilinForm k X).orthogonal
-    (Scheme.Opens.primeDivisorSpanCompl D.support.compl)
-
-/-- The boundary orthogonal is computed using the intersection form and the span of the
-prime divisors in the complement of the boundary open. -/
-theorem boundaryOrthogonal_def
-    (D : X.IdealSheafData) (k : Type u) [Field k] [Infinite k]
-    [X.Over (Spec (.of k))] [X.IsProjectiveOver k]
-    [SmoothOfRelativeDimension 2 (X ↘ Spec (.of k))] :
-    letI := isNoetherian_of_finiteType (X ↘ Spec (.of k))
-    letI := (X ↘ Spec (.of k)).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two
-    D.boundaryOrthogonal k = (Chow.intersectionBilinForm k X).orthogonal
-      (Scheme.Opens.primeDivisorSpanCompl D.support.compl) :=
-  (rfl)
-
-end BoundaryOrthogonal
-
-namespace IsEffectiveCartier
 
 variable {k : Type u} [Field k] {X : Scheme.{u}} [X.Over (Spec (.of k))]
   {D : X.IdealSheafData} [PrestableFamily (D.subscheme ↘ Spec (.of k))]
@@ -257,8 +225,84 @@ theorem pullback_blowupToBase_comp_subschemeι_eq_one_iff_mem_orthogonal
   simp only [Set.forall_mem_range, Chow.intersectionBilinForm_apply, toMul_ofMul,
     Subtype.forall]
 
+variable (hD : D.IsEffectiveCartier)
+
+local notation "PicZero" => MonoidHom.ker (pullbackHom ν)
+
+local notation "K[" S "," J "]" =>
+  Scheme.IdealSheafData.boundaryOrthogonal (X := S) J k
+
+variable (hgenus : ∀ v : irreducibleComponents (D.subscheme.singularLocus k).blowup,
+    (D.subscheme.blowupComponent (K := k) v).toScheme.genus k = 0)
+
+/-- A boundary-orthogonal surface class restricts to a class in the normalization kernel
+of a nodal Cartier boundary with genus-zero normalized components. -/
+noncomputable def restrictBoundaryOrthogonal : Multiplicative K[X,D] →* PicZero :=
+  let f := (pullbackHom D.subschemeι).comp
+    (AddMonoidHom.toMultiplicativeLeft (K[X,D]).subtype.toAddMonoidHom)
+  f.codRestrict PicZero fun a ↦ by
+    rw [MonoidHom.mem_ker, MonoidHom.comp_apply, pullbackHom_apply, pullbackHom_apply,
+      pullback_comp]
+    exact (hD.pullback_blowupToBase_comp_subschemeι_eq_one_iff_mem_orthogonal
+      hgenus a.toAdd.val).mpr a.toAdd.property
+
+/-- The underlying line-bundle class of a boundary-orthogonal restriction is the
+ordinary pullback to the boundary. -/
+@[simp]
+theorem restrictBoundaryOrthogonal_apply (a : Multiplicative K[X,D]) :
+    (hD.restrictBoundaryOrthogonal hgenus a).val = pullback D.subschemeι a.toAdd.val.toMul := by
+  simp only [restrictBoundaryOrthogonal, MonoidHom.codRestrict_apply]
+  exact pullbackHom_apply _ _
+
+include hD hgenus in
+/-- The class of an effective Cartier divisor disjoint from the boundary lies in the
+boundary orthogonal. -/
+theorem effectiveCartierClass_mem_orthogonal_of_disjoint {E : X.IdealSheafData}
+    (hE : E.IsEffectiveCartier) (h : Disjoint (D.support : Set X) (E.support : Set X)) :
+    Additive.ofMul (LineBundleClass.mk hE.toInvertibleSheaf)⁻¹ ∈ K[X,D] := by
+  apply (hD.pullback_blowupToBase_comp_subschemeι_eq_one_iff_mem_orthogonal hgenus _).mp
+  rw [toMul_ofMul, ← pullback_comp, hE.pullback_effectiveCartierClass_eq_one_of_disjoint h,
+    pullback_one]
+
+section Pullback
+
+variable {Y : Scheme.{u}} [Y.Over (Spec (.of k))] [Y.IsProjectiveOver k] [IsIntegral Y]
+  [SmoothOfRelativeDimension 2 (Y ↘ Spec (.of k))]
+  {E : Y.IdealSheafData} [PrestableFamily (E.subscheme ↘ Spec (.of k))]
+  (hE : E.IsEffectiveCartier)
+
+variable (hgenus' : ∀ v : irreducibleComponents (E.subscheme.singularLocus k).blowup,
+    (E.subscheme.blowupComponent (K := k) v).toScheme.genus k = 0)
+
+variable (f : X ⟶ Y) (g : D.subscheme ≅ E.subscheme) [g.hom.IsOver (Spec (.of k))]
+  (hcomm : D.subschemeι ≫ f = g.hom ≫ E.subschemeι)
+
+/-- A morphism inducing an isomorphism of the nodal boundaries pulls back classes
+orthogonal to the target boundary to classes orthogonal to the source boundary. -/
+noncomputable def boundaryOrthogonalPullback : K[Y,E] →ₗ[ℤ] K[X,D] :=
+  ((pullbackHom f).toAdditive.toIntLinearMap.comp (K[Y,E]).subtype).codRestrict
+    K[X,D] fun b ↦ by
+      apply (hD.pullback_blowupToBase_comp_subschemeι_eq_one_iff_mem_orthogonal hgenus _).mp
+      have hb := (g.nodalPicardKernelPullback (k := k)
+        (hE.restrictBoundaryOrthogonal hgenus' (Multiplicative.ofAdd b))).property
+      simp only [LinearMap.comp_apply, Submodule.subtype_apply, AddMonoidHom.coe_toIntLinearMap,
+        MonoidHom.coe_toAdditive, Function.comp_apply, toMul_ofMul, pullbackHom_apply]
+      rw [← pullback_comp (D.subscheme.singularLocus k).blowupToBase D.subschemeι,
+        pullback_comp D.subschemeι f, hcomm, ← pullback_comp g.hom E.subschemeι]
+      simpa only [MonoidHom.mem_ker, pullbackHom_apply, Iso.coe_nodalPicardKernelPullback,
+        restrictBoundaryOrthogonal_apply, toAdd_ofAdd] using hb
+
+/-- The underlying boundary-orthogonal class is the ordinary pullback. -/
+@[simp]
+theorem coe_boundaryOrthogonalPullback (b : K[Y,E]) :
+    (hD.boundaryOrthogonalPullback hgenus hE hgenus' f g hcomm b).val.toMul =
+      pullback f b.val.toMul := by
+  simp only [boundaryOrthogonalPullback, LinearMap.codRestrict_apply, LinearMap.comp_apply,
+    Submodule.subtype_apply, AddMonoidHom.coe_toIntLinearMap, MonoidHom.coe_toAdditive,
+    Function.comp_apply, toMul_ofMul, pullbackHom_apply]
+
+end Pullback
+
 end SmoothSurface
 
-end IsEffectiveCartier
-
-end AlgebraicGeometry.Scheme.IdealSheafData
+end AlgebraicGeometry.Scheme.IdealSheafData.IsEffectiveCartier
