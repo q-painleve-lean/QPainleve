@@ -48,6 +48,10 @@ variable (k : Type u) [Field k] [Infinite k] (X : Scheme.{u}) [X.Over (Spec (.of
 def realIntersectionBilinForm : LinearMap.BilinForm ℝ (ℝ ⊗[ℤ] Pic(X)) :=
   (intersectionBilinForm k X).baseChange ℝ
 
+/-- The real intersection form is obtained by base change of the integral intersection form. -/
+theorem realIntersectionBilinForm_def :
+    realIntersectionBilinForm k X = (intersectionBilinForm k X).baseChange ℝ := (rfl)
+
 /-- On pure tensors, the real pairing multiplies the integral intersection by both scalars. -/
 @[simp]
 theorem realIntersectionBilinForm_tmul (r s : ℝ) (x y : Pic(X)) :
