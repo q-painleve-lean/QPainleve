@@ -9,6 +9,7 @@ public import QPainleve.Geometry.Toric.Cone.TwoDimensional
 public import TauCeti.Geometry.Toric.Algebraic.Fan.StarSubdivision
 
 import Mathlib.LinearAlgebra.Transvection.Basic
+import QPainleve.Geometry.Toric.Cone.Coordinates
 import TauCeti.Data.Fin.Rev
 
 /-!
@@ -53,6 +54,28 @@ theorem starSubdivisionCone_pair_mem {σ : PointedCone ℝ V}
   · have hne : j.rev ≠ j := by fin_cases j <;> decide
     simpa using e.injective.ne hne
 
+/-- Every cone of the star subdivision of a regular two-ray cone lies in one of the
+two charts spanned by the new ray and one of the original rays. -/
+theorem exists_le_starSubdivisionCone_pair {σ : PointedCone ℝ V}
+    (hσ : IsRegularCone i σ) (hi : IsIntegralLattice i) (e : Fin 2 ≃ ToricRay σ)
+    {τ : PointedCone ℝ V}
+    (hτ : τ ∈ (Fan.starSubdivision hi (ToricRay.faceFinset (PointedCone.IsFaceOf.refl σ) hσ.fg)
+      hσ).cones) :
+    let A := ToricRay.faceFinset (PointedCone.IsFaceOf.refl σ) hσ.fg
+    ∃ j : Fin 2, τ ≤ starSubdivisionCone hi A hσ.toIsToricCone {none, some (e j)} := by
+  intro A
+  obtain ⟨S, ⟨ρ, -, hρ⟩, rfl⟩ := (Fan.mem_starSubdivision_cones hi A hσ).mp hτ
+  obtain ⟨j, rfl⟩ := e.surjective ρ
+  refine ⟨j.rev, starSubdivisionCone_mono hi A hσ.toIsToricCone ?_⟩
+  intro x hx
+  cases x with
+  | none => simp
+  | some ρ =>
+    obtain ⟨k, rfl⟩ := e.surjective ρ
+    rcases Fin.fin_two_eq_or_eq_rev j k with rfl | rfl
+    · exact (hρ hx).elim
+    · simp
+
 end IsRegularCone
 
 namespace Fan
@@ -77,16 +100,10 @@ theorem exists_starSubdivisionAlong_basis (Φ : Fan i) (hΦ : Φ.IsRegular) {σ 
   apply (Φ.mem_starSubdivisionAlong_cones hΦ hσ).mpr
   refine Or.inr ⟨σ, hσ, le_rfl, ?_⟩
   let hreg := isRegular_iff.mp hΦ _ hσ
-  have hli := Φ.lattice.linearIndependent_basis b
-  let r := toricRayEquivOfLinearIndependent (i ∘ b) hli hcone
-  have hb' (k : Fin 2) : b k = primitiveGenerator Φ.lattice hreg.toIsToricCone (r.symm k) := by
-    have hm := (apply_mem_iff_toricRayEquivOfLinearIndependent _ hli hcone (r.symm k) k).mpr
-      (r.apply_symm_apply k).symm
-    exact (isPrimitiveGenerator_iff.mpr ⟨hm, b.isPrimitive k⟩).eq_primitiveGenerator
-      Φ.lattice hreg.toIsToricCone
-  have hchart := hreg.starSubdivisionCone_pair_mem Φ.lattice r.symm j.rev
+  obtain ⟨r, hb'⟩ := hreg.exists_rayEquiv_of_basis Φ.lattice b hcone
+  have hchart := hreg.starSubdivisionCone_pair_mem Φ.lattice r j.rev
   dsimp only at hchart
-  rw [hreg.starSubdivisionCone_pair_eq_hull Φ.lattice b r.symm hb'] at hchart
+  rw [hreg.starSubdivisionCone_pair_eq_hull Φ.lattice b r hb'] at hchart
   have hsum : b 0 + b 1 = c j := by
     rw [hc]
     fin_cases j <;> simp [add_comm]
