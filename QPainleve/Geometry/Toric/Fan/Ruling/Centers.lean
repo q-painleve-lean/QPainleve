@@ -38,7 +38,6 @@ variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   (h : ∀ σ : Φ.cones, (∀ x ∈ σ.val, 0 ≤ Φ.lattice.realCharacter m x) ∨
     ∀ x ∈ σ.val, Φ.lattice.realCharacter m x ≤ 0)
 
-local notation "P" => Fan.projectiveSpace (Pi.basisFun ℤ (Fin 1)) (isIntegralLattice_intCast 1)
 local notation "U" => Φ.characterRulingTorusSubfan m h
 local notation "p" => Φ.isPullback_characterRulingTorusSubfan m h
 local notation "base" => Spec (CommRingCat.of ℂ)
@@ -46,48 +45,7 @@ local notation "base" => Spec (CommRingCat.of ℂ)
 variable (b : Basis (Fin 2) ℤ N) (hm : m = (b.coord 1).toAddMonoidHom)
   (hpos : hull ℝ {i (b 0)} ∈ Φ.cones) (hneg : hull ℝ {-i (b 0)} ∈ Φ.cones)
 
-local notation "E" => Φ.characterRulingTorusFanEquiv m h b hm hpos hneg
 local notation "e" => Φ.characterRulingTorusIso m h b hm hpos hneg
-
-include hm hpos hneg in
-private theorem rulingTorus_firstCoordinate_sign (σ : (U).cones) :
-    (∀ x ∈ σ.val, 0 ≤ (U).lattice.realCharacter (b.coord 0).toAddMonoidHom x) ∨
-      ∀ x ∈ σ.val, (U).lattice.realCharacter (b.coord 0).toAddMonoidHom x ≤ 0 := by
-  have hb : (U).lattice.realCharacter (b.coord 0).toAddMonoidHom (i (b 0)) = 1 := by
-    have hcoord (x : V) : (U).lattice.realCharacter (b.coord 0).toAddMonoidHom x =
-        (Φ.lattice.isBaseChange.basis b).coord 0 x :=
-      DFunLike.congr_fun (Φ.lattice.realCharacter_coord b 0) x
-    have hbR : i (b 0) = (Φ.lattice.isBaseChange.basis b) 0 :=
-      (IsBaseChange.basis_apply b Φ.lattice.isBaseChange 0).symm
-    rw [hcoord, hbR]
-    simp
-  rcases (Φ.mem_characterRulingTorusSubfan_cones_iff_eq_bot_or_opposite_rays
-    m h b hm hpos hneg).mp σ.property with hσ | hσ | hσ
-  · left
-    intro x hx
-    have hx₀ : x = 0 := (Submodule.mem_bot _).mp (hσ ▸ hx)
-    simp [hx₀]
-  · left
-    intro x hx
-    obtain ⟨r, hr, rfl⟩ := mem_hull_singleton.mp (hσ ▸ hx)
-    simpa only [map_smul, hb, smul_eq_mul, mul_one] using hr
-  · right
-    intro x hx
-    obtain ⟨r, hr, rfl⟩ := mem_hull_singleton.mp (hσ ▸ hx)
-    simpa only [map_smul, map_neg, hb, smul_eq_mul, mul_neg, mul_one, neg_nonpos] using hr
-
-private theorem rulingTorus_firstCoordinate_eq :
-    (E).toFanHom.algebraicMap ≫ (FanHom.fst P projectiveLineTorusFan).algebraicMap ≫
-      projectiveLineToricIso.hom =
-    (U).characterRuling (b.coord 0).toAddMonoidHom
-      (rulingTorus_firstCoordinate_sign h b hm hpos hneg) := by
-  have hf : (FanHom.fst P projectiveLineTorusFan).comp (E).toFanHom =
-      (U).characterFanHom (b.coord 0).toAddMonoidHom
-        (rulingTorus_firstCoordinate_sign h b hm hpos hneg) := by
-    apply FanHom.ext
-    ext x j
-    simp
-  rw [characterRuling_def, ← Category.assoc, ← FanHom.algebraicMap_comp, hf]
 
 private theorem binomialCenter_firstCoordinate {ρ : Φ.Ray}
     (hσ : ρ.toCone.val ∈ (U).cones) (j : Fin 2)
@@ -95,8 +53,8 @@ private theorem binomialCenter_firstCoordinate {ρ : Φ.Ray}
     (hdim : Module.finrank ℤ N = 2) (hmρ : m ρ.primitiveGenerator = 0)
     (hsurj : Function.Surjective m) (c : ℂˣ) :
     Spec.map (CommRingCat.ofHom (ρ.binomialCenterEval hdim hmρ hsurj c).toRingHom) ≫
-        (U).affineToricChartι ⟨ρ.toCone.val, hσ⟩ ≫ (E).toFanHom.algebraicMap ≫
-          (FanHom.fst P projectiveLineTorusFan).algebraicMap ≫ projectiveLineToricIso.hom =
+        (U).affineToricChartι ⟨ρ.toCone.val, hσ⟩ ≫ (p).isoPullback.hom ≫
+          (e).hom ≫ pullback.fst _ _ =
       projectiveLine.polynomialPoint ℂ (RingHom.id ℂ) j 0 := by
   let a : N →+ ℤ := if j = 0 then (b.coord 0).toAddMonoidHom else -(b.coord 0).toAddMonoidHom
   have ha : a ρ.primitiveGenerator = 1 := by
@@ -107,17 +65,13 @@ private theorem binomialCenter_firstCoordinate {ρ : Φ.Ray}
       mem_dualSemigroup_hull_image, Set.forall_mem_singleton, ha]
     omega
   let ev := ρ.binomialCenterEval hdim hmρ hsurj c
-  rw [rulingTorus_firstCoordinate_eq h b hm hpos hneg,
-    (U).affineToricChartι_comp_characterRuling _ _ ⟨ρ.toCone.val, hσ⟩ j haσ,
-    projectiveLine.polynomialPoint_def, ← Spec.map_comp_assoc, ← CommRingCat.ofHom_comp]
-  have he : ev.comp (Polynomial.aeval (MonoidAlgebra.of ℂ _ (ofAdd ⟨a, haσ⟩))) =
-      Polynomial.aeval (0 : ℂ) := by
-    apply Polynomial.algHom_ext
-    rw [AlgHom.comp_apply, Polynomial.aeval_X, Polynomial.aeval_X]
-    exact ρ.binomialCenterEval_monomial_of_pos hdim hmρ hsurj c _ (ha.symm ▸ Int.zero_lt_one)
-  exact congrArg (fun f : Polynomial ℂ →+* ℂ ↦
-    Spec.map (CommRingCat.ofHom f) ≫ projectiveLine.polynomialChartι ℂ j)
-    (congrArg AlgHom.toRingHom he)
+  rw [Φ.affineToricChartι_comp_characterRulingTorusIso_fst m h b hm hpos hneg
+    ⟨ρ.toCone.val, hσ⟩ j haσ, projectiveLine.SpecMap_polynomialPoint]
+  refine congrArg₂ (fun k a ↦ projectiveLine.polynomialPoint ℂ k j a) ?_ ?_
+  · apply RingHom.ext
+    intro r
+    exact ev.commutes r
+  · exact ρ.binomialCenterEval_monomial_of_pos hdim hmρ hsurj c _ (ha.symm ▸ Int.zero_lt_one)
 
 /-- The binomial center regarded as a point of the ruling's restriction above the base torus. -/
 def Ray.binomialCenterInRulingTorus (ρ : Φ.Ray)
@@ -174,7 +128,7 @@ theorem Ray.binomialCenterInRulingTorus_comp_characterRulingTorusIso_fst (ρ : �
       Ray.binomialCenter_def]
     simp only [t, Category.assoc, Φ.affineToricChartι_comp_characterRulingTorusSubfanInclusion]
     rfl
-  rw [← ht, Category.assoc, Φ.isoPullback_hom_comp_characterRulingTorusIso_hom_fst]
+  rw [← ht, Category.assoc]
   simpa only [t, Category.assoc] using
     binomialCenter_firstCoordinate h b hm hpos hneg hσ j hρ hdim hmρ hsurj c
 

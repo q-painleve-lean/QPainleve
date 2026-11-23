@@ -8,6 +8,8 @@ module
 public import QPainleve.Geometry.Toric.Fan.Ruling.Torus
 public import TauCeti.Algebra.Polynomial.Laurent.Basic
 
+import TauCeti.Algebra.Bialgebra.MonoidAlgebra.Equiv
+
 /-!
 # Laurent coordinates on the base of a toric ruling
 
@@ -19,7 +21,7 @@ Laurent ring, with its nonzero fibers specified by Laurent evaluation.
 
 public noncomputable section
 
-open AlgebraicGeometry CategoryTheory Limits LaurentPolynomial Module PointedCone
+open AlgebraicGeometry CategoryTheory Limits LaurentPolynomial Module Multiplicative PointedCone
 open TauCeti.AlgebraicGeometry (projectiveLine)
 
 namespace TauCeti.Toric
@@ -143,6 +145,80 @@ theorem characterRulingLaurentIso_hom_comp_toBase :
     Category.assoc, Category.assoc, Iso.hom_inv_id, Category.comp_id,
     characterRulingLaurentIso, Iso.trans_hom, Category.assoc, Iso.symm_hom, hproj,
     Φ.characterRulingTorusIso_hom_snd]
+
+/-- The coordinate-ring projection of the Laurent product, followed by the Laurent chart
+of the base, is the original ruling. -/
+@[reassoc]
+theorem characterRulingLaurentIso_hom_comp_toRuling :
+    (Φ.characterRulingLaurentIso m h b hm hpos hneg).hom ≫ (projectiveLine L ↘ S) ≫
+        (loc) ≫ chart =
+      pullback.fst (Φ.characterRuling m h) projectiveLineTorusι ≫ Φ.characterRuling m h := by
+  rw [Φ.characterRulingLaurentIso_hom_comp_toBase_assoc,
+    projectiveLineTorusIsoSpecLaurent_hom_comp_chart, pullback.condition]
+
+local notation "eL" => Φ.characterRulingLaurentIso m h b hm hpos hneg
+local notation "G" => AddMonoidAlgebra ℂ (N →+ ℤ)
+local notation "eG" => (AlgEquiv.trans (denseTorusCoordinateRingEquiv (lattice Φ))
+  (AlgEquiv.symm (AddMonoidAlgebra.toMultiplicativeAlgEquiv ℂ ℂ (N →+ ℤ))))
+local notation "aG" => Spec.map (CommRingCat.ofHom (AlgHom.toRingHom (AlgEquiv.toAlgHom eG)))
+local notation "k" => laurentEval (MonoidHom.toHomUnits (AddMonoidAlgebra.of ℂ (N →+ ℤ)) (ofAdd m))
+
+private theorem additiveDenseTorus_comp_polynomialPoint (a : N →+ ℤ) :
+    aG ≫ projectiveLine.polynomialPoint ℂ (algebraMap ℂ _) 0
+        (MonoidAlgebra.of ℂ _ (ofAdd ((denseTorusDualEquiv Φ.lattice).symm a))) =
+      projectiveLine.polynomialPoint ℂ (algebraMap ℂ G) 0 (AddMonoidAlgebra.single a 1) := by
+  rw [projectiveLine.SpecMap_polynomialPoint]
+  congr 1
+  · apply RingHom.ext
+    intro r
+    exact (eG).commutes r
+  · simp [MonoidAlgebra.of_apply, AddMonoidAlgebra.toMultiplicativeAlgEquiv_symm_single]
+
+private theorem additiveDenseTorus_comp_baseChangeProjection (h₀ : Nonempty Φ.cones) :
+    aG ≫ Φ.denseTorusιRulingTorus m h h₀ ≫ (eL).hom ≫
+        projectiveLine.baseChangeProjection ℂ L =
+      projectiveLine.polynomialPoint ℂ (algebraMap ℂ G) 0
+        (AddMonoidAlgebra.single (b.coord 0).toAddMonoidHom 1) := by
+  rw [Φ.characterRulingLaurentIso_hom_comp_baseChangeProjection,
+    denseTorusιRulingTorus_def, Category.assoc]
+  let U := Φ.characterRulingTorusSubfan m h
+  let σ : U.cones := ⟨⊥, Φ.bot_mem_characterRulingTorusSubfan m h h₀⟩
+  have hχ : (if (0 : Fin 2) = 0 then (b.coord 0).toAddMonoidHom else
+      -(b.coord 0).toAddMonoidHom) ∈ dualSemigroup U.lattice σ.val := by simp [σ]
+  rw [Φ.affineToricChartι_comp_characterRulingTorusIso_fst m h b hm hpos hneg σ 0 hχ]
+  simpa [σ] using
+    additiveDenseTorus_comp_polynomialPoint (Φ := U) (b.coord 0).toAddMonoidHom
+
+private theorem additiveDenseTorus_comp_laurentBase (h₀ : Nonempty Φ.cones) :
+    aG ≫ Φ.denseTorusιRulingTorus m h h₀ ≫ (eL).hom ≫ (projectiveLine L ↘ Spec (.of L)) =
+      Spec.map (CommRingCat.ofHom (AlgHom.toRingHom k)) := by
+  apply (cancel_mono ((loc) ≫ chart)).mp
+  simp only [Category.assoc, Φ.characterRulingLaurentIso_hom_comp_toBase_assoc]
+  rw [projectiveLineTorusIsoSpecLaurent_hom_comp_chart, ← pullback.condition,
+    denseTorusιRulingTorus_fst_assoc, Φ.denseTorusι_comp_characterRuling,
+    additiveDenseTorus_comp_polynomialPoint (Φ := Φ), ← projectiveLine.polynomialPoint_X,
+    projectiveLine.SpecMap_polynomialPoint, projectiveLine.SpecMap_polynomialPoint]
+  simp only [LaurentPolynomial.algebraMap_eq_toLaurent, Polynomial.toLaurent_X]
+  congr 1
+  · ext a
+    simp
+  · simp [MonoidHom.coe_toHomUnits, AddMonoidAlgebra.of_apply]
+
+/-- On the dense torus, the Laurent product coordinates are the two characters dual
+to the adapted integral basis. The fiber coordinate is in the chart at section zero. -/
+@[reassoc]
+theorem additiveDenseTorus_comp_characterRulingLaurentIso (h₀ : Nonempty Φ.cones) :
+    aG ≫ Φ.denseTorusιRulingTorus m h h₀ ≫ (eL).hom =
+      projectiveLine.polynomialPoint L (AlgHom.toRingHom k) 0
+        (AddMonoidAlgebra.single (b.coord 0).toAddMonoidHom 1) := by
+  apply (projectiveLine.isPullback_baseChangeProjection ℂ L).hom_ext
+  · rw [Category.assoc, Category.assoc,
+      additiveDenseTorus_comp_baseChangeProjection Φ m h b hm hpos hneg,
+      projectiveLine.polynomialPoint_comp_baseChangeProjection]
+    simp
+  · rw [Category.assoc, Category.assoc,
+      additiveDenseTorus_comp_laurentBase Φ m h b hm hpos hneg,
+      projectiveLine.polynomialPoint_over]
 
 end Fan
 
