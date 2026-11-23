@@ -8,6 +8,8 @@ module
 public import TauCeti.Geometry.Toric.Algebraic.Fan.Ray
 public import TauCeti.Geometry.Toric.Algebraic.Ray.Primitive
 
+import TauCeti.Geometry.Toric.Algebraic.Ray.Generation
+
 /-!
 # Primitive generators of fan rays
 
@@ -92,5 +94,46 @@ theorem Ray.primitiveGenerator_ofPrimitiveGenerator {v : N} (hv : IsPrimitive v)
     (Ray.ofPrimitiveGenerator hv h).primitiveGenerator = v :=
   (Ray.ofPrimitiveGenerator hv h).primitiveGenerator_eq_of_mem_of_isPrimitive
     (PointedCone.subset_hull (Set.mem_singleton _)) hv
+
+/-- The primitive generator determines a fan ray. -/
+theorem Ray.primitiveGenerator_injective : Function.Injective (Ray.primitiveGenerator (Φ := Φ)) :=
+  fun ρ τ h ↦ by
+    apply Subtype.ext
+    apply Subtype.ext
+    rw [Ray.toCone_eq_hull_primitiveGenerator ρ, Ray.toCone_eq_hull_primitiveGenerator τ, h]
+
+/-- Viewing a cone ray as a fan ray preserves its primitive lattice generator. -/
+@[simp]
+theorem Ray.primitiveGenerator_ofToricRay (σ : Φ.cones) (ρ : ToricRay σ.val) :
+    (Ray.ofToricRay Φ σ ρ).primitiveGenerator =
+      TauCeti.Toric.primitiveGenerator Φ.lattice (Φ.isToricCone σ.property) ρ := by
+  let τ := (Ray.ofToricRay Φ σ ρ).toCone
+  let hface := Φ.isFaceOf_of_le σ.property τ.property (Ray.toCone_ofToricRay_le Φ σ ρ)
+  let r := Ray.toToricRay Φ (Ray.ofToricRay Φ σ ρ) τ le_rfl
+  have hr : ToricRay.faceEmbedding hface r = ρ := by
+    apply SetLike.coe_injective
+    exact congrArg (fun C : PointedCone ℝ V ↦ (C : Set V)) <| by
+      rw [ToricRay.toPointedCone_faceEmbedding, Ray.toPointedCone_toToricRay,
+        Ray.toCone_ofToricRay]
+  rw [Ray.primitiveGenerator_def]
+  exact (primitiveGenerator_faceEmbedding Φ.lattice (Φ.isToricCone σ.property) hface r).symm.trans
+    (congrArg (TauCeti.Toric.primitiveGenerator Φ.lattice (Φ.isToricCone σ.property)) hr)
+
+/-- On a complete fan, a lattice character nonnegative on every primitive ray
+generator is zero. -/
+theorem character_eq_zero_of_nonneg_primitiveGenerator (Φ : Fan i) (hc : Φ.IsComplete) (m : N →+ ℤ)
+    (hm : ∀ ρ : Φ.Ray, 0 ≤ m ρ.primitiveGenerator) : m = 0 := by
+  have hcone (σ : Φ.cones) : m ∈ dualSemigroup Φ.lattice σ.val := by
+    let hσ := Φ.isToricCone σ.property
+    apply (mem_dualSemigroup_iff_primitiveGenerator Φ.lattice hσ m).2
+    intro ρ
+    simpa only [Ray.primitiveGenerator_ofToricRay] using hm (Ray.ofToricRay Φ σ ρ)
+  ext x
+  obtain ⟨σ, hσ, hx⟩ := (Φ.isComplete_iff.1 hc) (-i x)
+  have h := (mem_dualSemigroup Φ.lattice m).1 (hcone ⟨σ, hσ⟩) hx
+  obtain ⟨τ, hτ, hx'⟩ := (Φ.isComplete_iff.1 hc) (i x)
+  have h' := (mem_dualSemigroup Φ.lattice m).1 (hcone ⟨τ, hτ⟩) hx'
+  simp only [map_neg, IsIntegralLattice.realCharacter_apply, Left.nonneg_neg_iff] at h h'
+  exact_mod_cast le_antisymm h h'
 
 end TauCeti.Toric.Fan

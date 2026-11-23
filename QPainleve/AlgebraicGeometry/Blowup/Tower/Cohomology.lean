@@ -87,6 +87,19 @@ theorem nonempty_cohomologyPullbackLinearEquiv
   hT.nonempty_cohomologyPullbackLinearEquiv_of_comp k (Y ↘ Spec (.of k))
     (comp_over T.toBase (Spec (.of k))).symm E i
 
+/-- A tower of closed point blowups preserves the structure-sheaf cohomology
+in every degree. -/
+theorem nonempty_cohomologyTrivialLinearEquiv
+    [SmoothOfRelativeDimension 2 (X ↘ Spec (.of k))]
+    {T : BlowupTower X n Y} [T.toBase.IsOver (Spec (.of k))]
+    (hT : IsClosedPointTower X T) (i : ℕ) :
+    Nonempty (Cohomology (InvertibleSheaf.trivial X).obj i ≃ₗ[k]
+      Cohomology (InvertibleSheaf.trivial Y).obj i) := by
+  obtain ⟨eT⟩ := hT.nonempty_cohomologyPullbackLinearEquiv k
+    ((InvertibleSheaf.toFiniteLocallyFree X).obj (InvertibleSheaf.trivial X)) i
+  exact ⟨eT.trans
+    (cohomologyBaseLinearEquivOfIso k (InvertibleSheaf.pullbackTrivialObjIso T.toBase) i)⟩
+
 variable [W.Over (Spec (.of k))]
   {T : BlowupTower X m W} {U : BlowupTower Y n W}
   [T.toBase.IsOver (Spec (.of k))] [U.toBase.IsOver (Spec (.of k))]
@@ -99,13 +112,9 @@ theorem nonempty_cohomologyTrivialLinearEquiv_of_common_resolution
     (hT : IsClosedPointTower X T) (hU : IsClosedPointTower Y U) (i : ℕ) :
     Nonempty (Cohomology (InvertibleSheaf.trivial X).obj i ≃ₗ[k]
       Cohomology (InvertibleSheaf.trivial Y).obj i) := by
-  obtain ⟨eT⟩ := hT.nonempty_cohomologyPullbackLinearEquiv k
-    ((InvertibleSheaf.toFiniteLocallyFree X).obj (InvertibleSheaf.trivial X)) i
-  obtain ⟨eU⟩ := hU.nonempty_cohomologyPullbackLinearEquiv k
-    ((InvertibleSheaf.toFiniteLocallyFree Y).obj (InvertibleSheaf.trivial Y)) i
-  let t := cohomologyBaseLinearEquivOfIso k (InvertibleSheaf.pullbackTrivialObjIso T.toBase) i
-  let u := cohomologyBaseLinearEquivOfIso k (InvertibleSheaf.pullbackTrivialObjIso U.toBase) i
-  exact ⟨eT.trans (t.trans (u.symm.trans eU.symm))⟩
+  obtain ⟨eT⟩ := hT.nonempty_cohomologyTrivialLinearEquiv k i
+  obtain ⟨eU⟩ := hU.nonempty_cohomologyTrivialLinearEquiv k i
+  exact ⟨eT.trans eU.symm⟩
 
 /-- For a common resolution by closed point blowups, the structure sheaves of the two
 smooth surfaces have equal Euler characteristics at every cutoff. -/
