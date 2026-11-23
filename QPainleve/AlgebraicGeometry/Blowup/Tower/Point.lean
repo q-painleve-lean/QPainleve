@@ -10,7 +10,6 @@ public import TauCeti.AlgebraicGeometry.Morphisms.Smooth.RelativeDimension
 import QPainleve.AlgebraicGeometry.Blowup.Integral
 import QPainleve.AlgebraicGeometry.Blowup.Smooth
 import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
-import TauCeti.AlgebraicGeometry.Noetherian
 import TauCeti.AlgebraicGeometry.ResidueField
 import TauCeti.AlgebraicGeometry.Scheme.GenericPoint
 
@@ -43,14 +42,6 @@ inductive IsClosedPointTower (X : Scheme.{u}) :
       (hT : IsClosedPointTower X T) (p : Y)
       (hp : IsClosed ({p} : Set Y)) (hI : I = (Y.fromSpecResidueField p).ker) :
       IsClosedPointTower X (T.snoc I)
-
-/-- The final scheme of a blowup tower on a Noetherian scheme is Noetherian. -/
-theorem isNoetherian (T : BlowupTower X n Y) [IsNoetherian X] : IsNoetherian Y := by
-  induction T with
-  | nil => infer_instance
-  | snoc _ I ih =>
-    have := ih
-    exact isNoetherian_of_finiteType I.blowupToBase
 
 namespace IsClosedPointTower
 
