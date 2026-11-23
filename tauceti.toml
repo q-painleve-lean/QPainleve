@@ -9,8 +9,8 @@ codeowners = ["@yuma-mizuno"]
 [repositories]
 content = "q-painleve-lean/QPainleve"
 roadmap = "q-painleve-lean/QPainleveRoadmap"
-# Upstream review engine and rubrics; [review] below selects the rubrics QPainleve runs.
-review = "TauCetiProject/TauCetiReview"
+# Review engine and rubrics come together from the [tools.review] fork commit.
+review = "q-painleve-lean/TauCetiReview"
 # Enable and create these repositories when choosing the corresponding extras.
 # data = "q-painleve-lean/QPainleveData"
 # ci = "q-painleve-lean/QPainleveCI"
@@ -42,9 +42,6 @@ ref = "ddaaed27a70d9f376d300edf32d521843c27cc16"
 # is right and well placed. Every listed rubric must be green on the head before auto-merge.
 # Order matters: a block halts the round, so the block-capable angles run first.
 [review]
-# Rubrics stay upstream at the commit QPainleve reviewed with before the Review fork;
-# the engine and merge workflows come from [tools.review].
-rubrics_ref = "60472b78568d274587971787276e9009f957217c"
 rubrics = ["correctness", "reuse", "scope", "placement"]
 
 [merge]
