@@ -16,7 +16,7 @@ import TauCeti.AlgebraicGeometry.IdealSheaf.Affine
 # Regular pairs for point ideals
 
 A point whose local ring is regular of dimension two has a basis of affine neighborhoods
-on which its reduced closure is cut out by a regular pair. This supplies the center
+on which its reduced closure is cut out by a pair regular in both orders. This supplies the center
 equations used in the affine charts of its blowup.
 -/
 
@@ -34,13 +34,14 @@ local notation "Iₚ" =>
   vanishingIdeal (Closeds.mk (closure (Set.singleton p)) isClosed_closure)
 
 /-- Every open neighborhood of a point with a two-dimensional regular local ring contains
-an affine neighborhood on which the reduced closure of that point has a weakly regular
-generating pair. -/
+an affine neighborhood on which the reduced closure of that point has a generating pair
+weakly regular in both orders. -/
 theorem exists_mem_le_span_pair_vanishingIdeal_closure_singleton
     [IsLocallyNoetherian X] [IsRegularLocalRing (X.presheaf.stalk p)]
     (hdim : ringKrullDim (X.presheaf.stalk p) = 2) {W : X.Opens} (hp : p ∈ W) :
     ∃ (U : X.affineOpens), p ∈ U.val ∧ U.val ≤ W ∧ ∃ a b : Γ(X, U),
-      Ideal.span {a, b} = (Iₚ).ideal U ∧ IsWeaklyRegular Γ(X, U) [a, b] := by
+      Ideal.span {a, b} = (Iₚ).ideal U ∧
+        IsWeaklyRegular Γ(X, U) [a, b] ∧ IsWeaklyRegular Γ(X, U) [b, a] := by
   obtain ⟨U, hU, hpU, hUW⟩ := exists_isAffineOpen_mem_and_subset hp
   let P := (hU.primeIdealOf ⟨p, hpU⟩).asIdeal
   let _ := X.presheaf.algebra_section_stalk ⟨p, hpU⟩
@@ -52,8 +53,8 @@ theorem exists_mem_le_span_pair_vanishingIdeal_closure_singleton
   have := hU.isLocalization_basicOpen r
   have hpV : p ∈ X.basicOpen r := (X.mem_basicOpen r p hpU).mpr
     ((IsLocalization.AtPrime.isUnit_to_map_iff (X.presheaf.stalk p) P r).mpr hr)
-  obtain ⟨a, b, hspan, hab⟩ := hparams Γ(X, X.basicOpen r)
-  refine ⟨V, hpV, (X.basicOpen_le r).trans hUW, a, b, hspan.trans ?_, hab⟩
+  obtain ⟨a, b, hspan, hab, hba⟩ := hparams Γ(X, X.basicOpen r)
+  refine ⟨V, hpV, (X.basicOpen_le r).trans hUW, a, b, hspan.trans ?_, hab, hba⟩
   have hP : (Iₚ).ideal ⟨U, hU⟩ = P :=
     vanishingIdeal_closure_singleton_ideal p ⟨U, hU⟩ hpU
   rw [← (Iₚ).map_ideal_basicOpen ⟨U, hU⟩ r, hP]

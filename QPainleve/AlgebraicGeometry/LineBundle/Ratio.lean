@@ -80,22 +80,6 @@ theorem sectionRatio_mul_sectionRatio {U : X.Opens} (t s r : Γ(M, U))
   apply (M.sectionRatio_eq_iff hr).mpr
   rw [mul_comm, mul_smul, sectionRatio_smul, sectionRatio_smul]
 
-/-- Multiplication by a nowhere vanishing section identifies its section module with functions. -/
-def sectionFrame {U : X.Opens} (s : Γ(M, U)) (hs : U ≤ M.nonvanishingLocus s) :
-    Γ(X, U) ≃ₗ[Γ(X, U)] Γ(M, U) :=
-  LinearEquiv.ofBijective (LinearMap.toSpanSingleton _ _ s)
-    ⟨M.injective_smul_of_le_nonvanishingLocus hs, M.surjective_smul_of_le_nonvanishingLocus hs⟩
-
-@[simp]
-theorem sectionFrame_apply {U : X.Opens} (s : Γ(M, U)) (hs : U ≤ M.nonvanishingLocus s)
-    (a : Γ(X, U)) : M.sectionFrame s hs a = a • s := (rfl)
-
-@[simp]
-theorem sectionFrame_symm_apply {U : X.Opens} (s : Γ(M, U)) (hs : U ≤ M.nonvanishingLocus s)
-    (t : Γ(M, U)) : (M.sectionFrame s hs).symm t = M.sectionRatio t s hs :=
-  ((M.sectionRatio_eq_iff hs).2 (by
-    simpa only [sectionFrame_apply] using (M.sectionFrame s hs).apply_symm_apply t)).symm
-
 /-- A generator on a neighborhood remains a generator after restricting the section. -/
 theorem le_nonvanishingLocus_map {U V : X.Opens} (i : V ⟶ U) (s : Γ(M, U))
     (hs : V ≤ M.nonvanishingLocus s) :

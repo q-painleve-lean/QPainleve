@@ -92,6 +92,31 @@ public theorem classIntersectionNumber_mul_inv_mk_toInvertibleSheaf
     intersectionNumber_eq_eulerCharBelow_sub]
   linarith [hχ b⁻¹, hχ (a⁻¹ * b⁻¹)]
 
+/-- Twisting by any integral multiple of an integral effective Cartier curve adds that multiple
+of the degree of restriction. -/
+public theorem classIntersectionNumber_mul_zpow_inv_mk_toInvertibleSheaf
+    (hX : topologicalKrullDim X ≤ 2) {I : X.IdealSheafData} (hI : I.IsEffectiveCartier)
+    [IsIntegral I.subscheme] (hC : topologicalKrullDim I.subscheme = 1)
+    (a b : LineBundleClass X) (n : ℤ) :
+    classIntersectionNumber k X a (b * (LineBundleClass.mk hI.toInvertibleSheaf)⁻¹ ^ n) =
+      classIntersectionNumber k X a b +
+        n * LineBundleClass.intersectionNumber k I.subschemeι a := by
+  let e := (LineBundleClass.mk hI.toInvertibleSheaf)⁻¹
+  have hadd (x : LineBundleClass X) :
+      classIntersectionNumber k X a (x * e) =
+        classIntersectionNumber k X a x + LineBundleClass.intersectionNumber k I.subschemeι a :=
+    classIntersectionNumber_mul_inv_mk_toInvertibleSheaf k hX hI hC a x
+  induction n using Int.induction_on with
+  | zero => simp
+  | succ n ih =>
+    rw [zpow_add_one, ← mul_assoc, hadd, ih, add_mul, one_mul, add_assoc]
+  | pred n ih =>
+    have hstep := hadd (b * e ^ (-(n : ℤ) - 1))
+    rw [mul_assoc, mul_zpow_self, sub_add_cancel, ih] at hstep
+    dsimp only [e] at hstep
+    rw [sub_mul, one_mul]
+    omega
+
 /-- The surface intersection with the class of an integral effective Cartier curve equals
 the degree of restriction to that curve. -/
 public theorem classIntersectionNumber_eq_intersectionNumber_subschemeι
