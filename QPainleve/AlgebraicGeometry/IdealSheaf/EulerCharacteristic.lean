@@ -5,6 +5,7 @@ Authors: The QPainleve contributors
 -/
 module
 
+public import TauCeti.AlgebraicGeometry.Curves.Normalization
 public import TauCeti.AlgebraicGeometry.LineBundle.EulerCharacteristic
 public import TauCeti.AlgebraicGeometry.LineBundle.Functoriality
 public import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.Invertible
@@ -21,7 +22,8 @@ The exact sequence of an effective Cartier divisor gives the Euler characteristi
 a line bundle restricted to the divisor as a difference on the ambient projective scheme.
 This uses the exact sequence and projection formula for the actual closed subscheme,
 including its scheme structure. It uses Tau Ceti's `shortExact_tensor_toPushforwardSubscheme`
-and `eulerCharBelow_tensor_pushforwardSubscheme`.
+and `eulerCharBelow_tensor_pushforwardSubscheme`. For an integral curve with only constant
+global functions, the difference of Euler characteristics gives its arithmetic genus minus one.
 -/
 
 open CategoryTheory MonoidalCategory AlgebraicGeometry
@@ -68,5 +70,28 @@ public theorem eulerCharBelow_eq_add_restriction (hI : I.IsEffectiveCartier)
   rw [eulerCharBelow_congr k e₂, ← eulerCharBelow_congr k e₁, h₃] at h
   simpa only [← LineBundleClass.mk_tensorProduct, LineBundleClass.pullback_mk,
     LineBundleClass.eulerCharBelow_mk, InvertibleSheaf.pullback_obj_obj] using h
+
+open LineBundleClass in
+/-- The Euler characteristic of the ideal line bundle of an integral effective Cartier curve
+differs from that of the ambient projective scheme by its arithmetic genus minus one,
+provided the curve has only constant global functions. -/
+public theorem eulerCharBelow_sub_eulerCharBelow_one_eq_genus_sub_one
+    [I.subscheme.IsCurveOver k] (hI : I.IsEffectiveCartier)
+    (hX : topologicalKrullDim X < 3)
+    (hconst : Function.Surjective (Scheme.Modules.baseRingToGlobalSections k I.subscheme)) :
+    eulerCharBelow k (LineBundleClass.mk hI.toInvertibleSheaf) 3 -
+        eulerCharBelow k (1 : LineBundleClass X) 3 = (I.subscheme.genus k : ℤ) - 1 := by
+  have hχ := hI.eulerCharBelow_eq_add_restriction (k := k) (1 : LineBundleClass X) hX
+  rw [one_mul, pullback_one] at hχ
+  have h₂ := eulerCharBelow_trivial_eq_one_sub_genus_of_surjective k hconst
+  have := Scheme.Modules.subsingleton_cohomology_trivial_of_two_le_of_isCurveOver
+    k (X := I.subscheme) 2 le_rfl
+  have h₃ : eulerCharBelow k (1 : LineBundleClass I.subscheme) 3 = 1 - I.subscheme.genus k := by
+    rw [← mk_trivial, eulerCharBelow_mk, Scheme.Modules.eulerCharBelow_succ, h₂,
+      Module.finrank_zero_of_subsingleton]
+    simp
+  rw [h₃] at hχ
+  rw [hχ]
+  ring
 
 end AlgebraicGeometry.Scheme.IdealSheafData.IsEffectiveCartier

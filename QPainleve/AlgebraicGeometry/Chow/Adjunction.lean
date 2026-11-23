@@ -7,9 +7,8 @@ module
 
 public import QPainleve.AlgebraicGeometry.Chow.SurfaceIntersection
 public import QPainleve.AlgebraicGeometry.Modules.Differentials.Canonical
-public import TauCeti.AlgebraicGeometry.Curves.Normalization
+public import QPainleve.AlgebraicGeometry.IdealSheaf.EulerCharacteristic
 
-import QPainleve.AlgebraicGeometry.IdealSheaf.EulerCharacteristic
 import QPainleve.AlgebraicGeometry.IdealSheaf.Image.Over
 import TauCeti.AlgebraicGeometry.Cohomology.ClosedImmersion.Linear
 import TauCeti.AlgebraicGeometry.Geometrically.GlobalSections
@@ -37,27 +36,6 @@ namespace AlgebraicGeometry.Scheme.IdealSheafData.IsEffectiveCartier
 variable {k : Type u} [Field k] [Infinite k] {X : Scheme.{u}}
   [X.Over (Spec (.of k))] [X.IsProjectiveOver k]
   {I : X.IdealSheafData} [I.subscheme.IsCurveOver k]
-
-/-- The Euler characteristic of the ideal line bundle of an integral effective Cartier curve
-differs from that of the ambient projective scheme by its arithmetic genus minus one,
-provided the curve has only constant global functions. -/
-theorem eulerCharBelow_sub_eulerCharBelow_one_eq_genus_sub_one (hI : I.IsEffectiveCartier)
-    (hX : topologicalKrullDim X < 3)
-    (hconst : Function.Surjective (Scheme.Modules.baseRingToGlobalSections k I.subscheme)) :
-    eulerCharBelow k (LineBundleClass.mk hI.toInvertibleSheaf) 3 -
-        eulerCharBelow k (1 : LineBundleClass X) 3 = (I.subscheme.genus k : ℤ) - 1 := by
-  have hχ := hI.eulerCharBelow_eq_add_restriction (k := k) (1 : LineBundleClass X) hX
-  rw [one_mul, pullback_one] at hχ
-  have h₂ := eulerCharBelow_trivial_eq_one_sub_genus_of_surjective k hconst
-  have := Scheme.Modules.subsingleton_cohomology_trivial_of_two_le_of_isCurveOver
-    k (X := I.subscheme) 2 le_rfl
-  have h₃ : eulerCharBelow k (1 : LineBundleClass I.subscheme) 3 = 1 - I.subscheme.genus k := by
-    rw [← mk_trivial, eulerCharBelow_mk, Scheme.Modules.eulerCharBelow_succ, h₂,
-      Module.finrank_zero_of_subsingleton]
-    simp
-  rw [h₃] at hχ
-  rw [hχ]
-  ring
 
 /-- Arithmetic adjunction for the effective curve is equivalent to the doubled Riemann–Roch
 equation for its ideal line bundle. The arithmetic genus is computed on the given curve,
