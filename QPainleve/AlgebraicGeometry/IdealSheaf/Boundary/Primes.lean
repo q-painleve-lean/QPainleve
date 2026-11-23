@@ -37,28 +37,34 @@ theorem mem_boundaryPrimes {D : X.IdealSheafData} {x : X} :
     x ∈ D.boundaryPrimes ↔ x ∈ D.support ∧ Order.coheight x = 1 :=
   (Iff.rfl)
 
+/-- If the support is the union of closures of specified codimension-one points,
+those points are exactly its boundary primes. -/
+theorem boundaryPrimes_eq_range_of_iUnion_closure {ι : Type*} (D : X.IdealSheafData)
+    (η : ι → CodimensionOnePoint X)
+    (hD : (D.support : Set X) = ⋃ j, closure {(η j : X)}) :
+    D.boundaryPrimes = Set.range fun j ↦ (η j : X) := by
+  ext x
+  rw [mem_boundaryPrimes]
+  constructor
+  · rintro ⟨hx, hc⟩
+    have hx' : x ∈ ⋃ j, closure {(η j : X)} := hD ▸ hx
+    obtain ⟨j, hj⟩ := Set.mem_iUnion.mp hx'
+    have he : η j = (⟨x, hc⟩ : CodimensionOnePoint X) :=
+      CodimensionOnePoint.eq_of_specializes (specializes_iff_mem_closure.mpr hj)
+    exact ⟨j, congrArg Subtype.val he⟩
+  · rintro ⟨j, rfl⟩
+    have hj : (η j : X) ∈ (D.support : Set X) := by
+      rw [hD]
+      exact Set.mem_iUnion.mpr ⟨j, subset_closure (Set.mem_singleton _)⟩
+    exact ⟨hj, (η j).property⟩
+
 /-- A boundary covered by the closures of distinct codimension-one points has one
 prime divisor per index. -/
 theorem ncard_boundaryPrimes_eq_of_iUnion_closure {ι : Type*} (D : X.IdealSheafData)
     (η : ι → CodimensionOnePoint X) (hη : Function.Injective η)
     (hD : (D.support : Set X) = ⋃ j, closure {(η j : X)}) :
     D.boundaryPrimes.ncard = Nat.card ι := by
-  have h : D.boundaryPrimes = Set.range fun j ↦ (η j : X) := by
-    ext x
-    rw [mem_boundaryPrimes]
-    constructor
-    · rintro ⟨hx, hc⟩
-      have hx' : x ∈ ⋃ j, closure {(η j : X)} := hD ▸ hx
-      obtain ⟨j, hj⟩ := Set.mem_iUnion.mp hx'
-      have he : η j = (⟨x, hc⟩ : CodimensionOnePoint X) :=
-        CodimensionOnePoint.eq_of_specializes (specializes_iff_mem_closure.mpr hj)
-      exact ⟨j, congrArg Subtype.val he⟩
-    · rintro ⟨j, rfl⟩
-      have hj : (η j : X) ∈ (D.support : Set X) := by
-        rw [hD]
-        exact Set.mem_iUnion.mpr ⟨j, subset_closure (Set.mem_singleton _)⟩
-      exact ⟨hj, (η j).property⟩
-  rw [h]
+  rw [D.boundaryPrimes_eq_range_of_iUnion_closure η hD]
   exact Set.ncard_range_of_injective (Subtype.val_injective.comp hη)
 
 /-- Ideal sheaves with identical support have the same boundary prime set. -/
@@ -79,32 +85,40 @@ theorem ncard_boundaryPrimes_eq_of_iso (e : X ≅ Y) (D : Y.IdealSheafData) :
   obtain ⟨x, rfl⟩ := e.hom.surjective y
   exact ⟨x, (h x).mp hy, rfl⟩
 
+/-- Over a subset of the isomorphism locus, taking inverse images of points gives a
+bijection on the boundary primes. -/
+theorem bijOn_boundaryPrimes_comap_of_subset_isoLocus (D : X.IdealSheafData) (π : Y ⟶ X)
+    {U : Set X} (hU : U ⊆ π.isoLocus) :
+    Set.BijOn π ((D.comap π).boundaryPrimes ∩ π ⁻¹' U) (D.boundaryPrimes ∩ U) := by
+  refine ⟨?_, π.injOn_preimage_isoLocus.mono (fun _ hy ↦ hU hy.2), ?_⟩
+  · intro y hy
+    obtain ⟨h, hc⟩ := mem_boundaryPrimes.mp hy.1
+    rw [support_comap] at h
+    exact ⟨mem_boundaryPrimes.mpr
+      ⟨h, (π.coheight_eq_of_apply_mem_isoLocus (hU hy.2)).trans hc⟩, hy.2⟩
+  · intro x hx
+    obtain ⟨hxD, hxc⟩ := mem_boundaryPrimes.mp hx.1
+    let W := π.isoLocus
+    obtain ⟨y, hy⟩ := (π ∣_ W).surjective ⟨x, hU hx.2⟩
+    have hxy : π ((π ⁻¹ᵁ W).ι y) = x := by
+      rw [← Scheme.Hom.comp_apply, ← morphismRestrict_ι, Scheme.Hom.comp_apply, hy]
+      rfl
+    have hyU : π ((π ⁻¹ᵁ W).ι y) ∈ U := hxy.symm ▸ hx.2
+    have hyD : π ((π ⁻¹ᵁ W).ι y) ∈ D.support := hxy.symm ▸ hxD
+    refine ⟨_, ⟨mem_boundaryPrimes.mpr ⟨?_,
+      (π.coheight_eq_of_apply_mem_isoLocus (hU hyU)).symm.trans (hxy.symm ▸ hxc)⟩, hyU⟩, hxy⟩
+    simpa only [← SetLike.mem_coe, support_comap, Closeds.coe_preimage, Set.mem_preimage] using hyD
+
 /-- If a morphism is an isomorphism away from a point of coheight other than one,
 its point map bijects the pulled-back boundary primes away from that point with the
 original boundary primes. -/
 theorem bijOn_boundaryPrimes_comap_off_point (D : X.IdealSheafData) (π : Y ⟶ X)
     {p : X} (hp : Order.coheight p ≠ 1) (hIso : ∀ x : X, x ≠ p → x ∈ π.isoLocus) :
     Set.BijOn π ((D.comap π).boundaryPrimes ∩ {y | π y ≠ p}) D.boundaryPrimes := by
-  refine ⟨?_, π.injOn_preimage_isoLocus.mono (fun y hy ↦ hIso (π y) hy.2), ?_⟩
-  · intro y hy
-    obtain ⟨h, hc⟩ := mem_boundaryPrimes.mp hy.1
-    rw [support_comap] at h
-    exact mem_boundaryPrimes.mpr
-      ⟨h, (π.coheight_eq_of_apply_mem_isoLocus (hIso (π y) hy.2)).trans hc⟩
-  · intro x hx
-    obtain ⟨hxD, hxc⟩ := mem_boundaryPrimes.mp hx
-    have hne : x ≠ p := fun he ↦ hp (he ▸ hxc)
-    let U := π.isoLocus
-    obtain ⟨y, hy⟩ := (π ∣_ U).surjective ⟨x, hIso x hne⟩
-    have hxy : π ((π ⁻¹ᵁ U).ι y) = x := by
-      rw [← Scheme.Hom.comp_apply, ← morphismRestrict_ι, Scheme.Hom.comp_apply, hy]
-      rfl
-    exact ⟨_, ⟨mem_boundaryPrimes.mpr
-      ⟨by
-        rw [support_comap]
-        exact (show π ((π ⁻¹ᵁ U).ι y) ∈ D.support from hxy.symm ▸ hxD),
-        (π.coheight_eq_of_apply_mem_isoLocus (hxy.symm ▸ hIso x hne)).symm.trans
-          (hxy.symm ▸ hxc)⟩,
-      (show π ((π ⁻¹ᵁ U).ι y) ≠ p from hxy.symm ▸ hne)⟩, hxy⟩
+  have hsub : D.boundaryPrimes ⊆ {x | x ≠ p} :=
+    fun _ hx h ↦ hp (h ▸ (mem_boundaryPrimes.mp hx).2)
+  have hpreimage : π ⁻¹' {x | x ≠ p} = {y | π y ≠ p} := (rfl)
+  simpa only [Set.inter_eq_left.mpr hsub, hpreimage] using
+    D.bijOn_boundaryPrimes_comap_of_subset_isoLocus (U := {x | x ≠ p}) π (fun _ ↦ hIso _)
 
 end AlgebraicGeometry.Scheme.IdealSheafData

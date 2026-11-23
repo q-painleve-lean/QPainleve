@@ -63,21 +63,6 @@ private theorem range_boundaryComponentι_inter_nonempty (hΦ : Φ.IsRegular)
   apply (D).subschemeι.isClosedEmbedding.injective
   simpa only [← Scheme.Hom.comp_apply, Ray.boundaryComponentι_subschemeι] using hy.trans hx.symm
 
-private theorem iUnion_range_boundaryComponentι (hΦ : Φ.IsRegular) :
-    ⋃ ρ : Φ.Ray, Set.range (ρ.boundaryComponentι hΦ) = Set.univ := by
-  apply Set.eq_univ_of_forall
-  intro x
-  have hx : (D).subschemeι x ∈ ((D).support : Set Φ.algebraicRealization) := by
-    rw [← range_subschemeι]
-    exact Set.mem_range_self _
-  rw [Φ.support_boundaryIdeal_eq_iUnion_closure hΦ, Set.mem_iUnion] at hx
-  obtain ⟨ρ, hρ⟩ := hx
-  rw [← Φ.coe_support_rayBoundaryIdeal hΦ, ← range_subschemeι] at hρ
-  obtain ⟨y, hy⟩ := hρ
-  apply Set.mem_iUnion.mpr
-  refine ⟨ρ, y, (D).subschemeι.isClosedEmbedding.injective ?_⟩
-  simpa only [← Scheme.Hom.comp_apply, Ray.boundaryComponentι_subschemeι] using hy
-
 private theorem isConnected_preimage_range_boundaryComponentι (hΦ : Φ.IsRegular)
     (hdim : Module.finrank ℤ N = 2) (b : Module.Basis (Fin 2) ℤ N) (ρ : Φ.Ray)
     {K : Type} [Field K] (p : Spec (.of K) ⟶ Spec (.of ℂ))
