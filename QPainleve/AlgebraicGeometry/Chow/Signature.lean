@@ -74,11 +74,12 @@ theorem realIntersectionBilinForm_tmul (r s : ℝ) (x y : Pic(X)) :
 
 /-- The real intersection form of a smooth integral projective surface is symmetric. -/
 theorem isSymm_realIntersectionBilinForm : (realIntersectionBilinForm k X).IsSymm := by
-  have h : LinearMap.IsSymm (intersectionBilinForm k X) := by
-    refine ⟨fun x y ↦ ?_⟩
-    simpa only [RingHom.id_apply, intersectionBilinForm_apply] using
-      (classIntersectionNumber_comm (k := k) x.toMul y.toMul)
-  exact LinearMap.BilinForm.isSymm_iff.mpr (LinearMap.BilinForm.IsSymm.baseChange ℝ h)
+  have h : (intersectionBilinForm k X).IsSymm := by
+    unfold intersectionBilinForm
+    extract_lets hX
+    exact classIntersectionBilinForm_isSymm k hX
+  exact LinearMap.BilinForm.isSymm_iff.mpr
+    (LinearMap.BilinForm.IsSymm.baseChange ℝ (LinearMap.BilinForm.isSymm_iff.mp h))
 
 end RealForm
 
