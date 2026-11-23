@@ -8,9 +8,9 @@ module
 public import Mathlib.AlgebraicGeometry.IdealSheaf.Basic
 public import QPainleve.AlgebraicGeometry.OrderOfVanishing.Base
 public import QPainleve.Geometry.Toric.Fan.FunctionField
+public import QPainleve.Geometry.Toric.Fan.Ray
 public import TauCeti.AlgebraicGeometry.Scheme.CodimensionOnePoint
 public import TauCeti.Geometry.Toric.Algebraic.Fan.Over
-public import TauCeti.Geometry.Toric.Algebraic.Fan.Ray
 
 import Mathlib.Algebra.MvPolynomial.Division
 import Mathlib.RingTheory.Ideal.KrullsHeightTheorem
@@ -315,31 +315,6 @@ theorem support_boundaryIdeal (Φ : Fan i) (h₀ : Nonempty Φ.cones) :
   rw [boundaryIdeal, Scheme.IdealSheafData.coe_support_vanishingIdeal]
   rfl
 
-/-- The generator of a fan ray as a primitive lattice vector. -/
-def Ray.primitiveGenerator (ρ : Φ.Ray) : N :=
-  TauCeti.Toric.primitiveGenerator Φ.lattice (Φ.isToricCone ρ.toCone.property)
-    (Ray.toToricRay Φ ρ ρ.toCone le_rfl)
-
-/-- The primitive generator of a fan ray is the primitive generator in its ray cone. -/
-theorem Ray.primitiveGenerator_def (ρ : Φ.Ray) :
-    ρ.primitiveGenerator =
-      TauCeti.Toric.primitiveGenerator Φ.lattice (Φ.isToricCone ρ.toCone.property)
-        (Ray.toToricRay Φ ρ ρ.toCone le_rfl) := (rfl)
-
-/-- A fan ray is the cone spanned by its primitive generator. -/
-theorem Ray.toCone_eq_hull_primitiveGenerator (ρ : Φ.Ray) :
-    ρ.toCone.val = PointedCone.hull ℝ {i (Ray.primitiveGenerator ρ)} := by
-  classical
-  let σ := ρ.toCone
-  let r := Ray.toToricRay Φ ρ σ le_rfl
-  let hσ := Φ.isToricCone σ.property
-  have hr : r.toPointedCone = σ.val := Ray.toPointedCone_toToricRay Φ ρ σ le_rfl
-  have hne : i (TauCeti.Toric.primitiveGenerator Φ.lattice hσ r) ≠ 0 := by
-    rw [map_ne_zero_iff _ Φ.lattice.injective]
-    exact primitiveGenerator_ne_zero Φ.lattice hσ r
-  exact hr ▸ r.eq_hull_singleton (hσ.salient.anti r.val.isFaceOf.le)
-    (primitiveGenerator_mem Φ.lattice hσ r) hne
-
 /-- The generic point of a fan ray's boundary divisor, viewed in the fan scheme. -/
 def rayBoundaryPoint (Φ : Fan i) (hΦ : Φ.IsRegular) (ρ : Φ.Ray) :
     CodimensionOnePoint Φ.algebraicRealization :=
@@ -528,7 +503,8 @@ theorem ord_rayBoundaryPoint_character (hΦ : Φ.IsRegular) (ρ : Φ.Ray) (m : N
     have := hσ.isNoetherianRing_affineCoordinateRing Φ.lattice
     rw [coe_rayBoundaryPoint, ← TauCeti.AlgebraicGeometry.Scheme.ord_functionFieldMap,
       functionFieldMap_affineToricChartι_character Φ σ ⟨a, hnonneg a ha⟩]
-    exact rayMonomial_ord Φ.lattice hσ ((isRegular_iff.1 hΦ) _ σ.property) r ⟨a, hnonneg a ha⟩
+    simpa only [Ray.primitiveGenerator_def] using
+      rayMonomial_ord Φ.lattice hσ ((isRegular_iff.1 hΦ) _ σ.property) r ⟨a, hnonneg a ha⟩
   by_cases hm : 0 ≤ m (Ray.primitiveGenerator ρ)
   · exact hregular m hm
   · have hn := hregular (-m) (by simp [le_of_not_ge hm])

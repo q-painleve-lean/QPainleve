@@ -5,6 +5,7 @@ Authors: The QPainleve contributors
 -/
 module
 
+public import QPainleve.Geometry.Toric.Fan.Ray
 public import TauCeti.Geometry.Toric.Algebraic.Regular
 
 /-!
@@ -13,6 +14,8 @@ public import TauCeti.Geometry.Toric.Algebraic.Regular
 A bijection of the ambient space that restricts on each cone to a lattice isomorphism
 transports the fan, including its face relations, support and regularity. The construction
 uses `Fan.ofCones` and the existing `IsRegularCone.map_equiv` for individual cones.
+The cone order isomorphism restricts to a bijection on rays. Its dimension calculation
+is the cone-by-cone version of Tau Ceti's `FanEquiv.finrank_span_coneEquiv`.
 -/
 
 public noncomputable section
@@ -117,5 +120,69 @@ theorem isRegular_mapPiecewiseLinear_iff : (Φ.mapPiecewiseLinear e h).IsRegular
     have hτ' : τ = Φ.piecewiseImage e h σ' :=
       SetLike.coe_injective (heq.trans (coe_piecewiseImage Φ e h σ').symm)
     exact hτ'.symm ▸ (hreg _ hσ).map_equiv (h σ').choose_spec.choose_spec.2
+
+/-- The cone poset of a piecewise lattice image is canonically isomorphic to that of the
+original fan. The order is cone inclusion. -/
+def mapPiecewiseLinearConeEquiv : Φ.cones ≃o (Φ.mapPiecewiseLinear e h).cones where
+  toEquiv := Equiv.ofBijective (fun σ ↦ ⟨Φ.piecewiseImage e h σ,
+    (Φ.mem_mapPiecewiseLinear_cones e h).mpr ⟨_, σ.property, coe_piecewiseImage Φ e h σ⟩⟩) (by
+    constructor
+    · intro σ τ heq
+      apply Subtype.ext
+      apply SetLike.coe_injective
+      apply e.injective.image_injective
+      rw [← coe_piecewiseImage Φ e h σ, ← coe_piecewiseImage Φ e h τ]
+      exact congrArg (fun κ : (Φ.mapPiecewiseLinear e h).cones ↦ (κ.val : Set V)) heq
+    · intro τ
+      obtain ⟨σ, hσ, heq⟩ := (Φ.mem_mapPiecewiseLinear_cones e h).mp τ.property
+      refine ⟨⟨σ, hσ⟩, Subtype.ext (SetLike.coe_injective ?_)⟩
+      exact (coe_piecewiseImage Φ e h ⟨σ, hσ⟩).trans heq.symm)
+  map_rel_iff' := by
+    intro σ τ
+    -- The order on both cone subtypes is comparison of their underlying sets.
+    change (Φ.piecewiseImage e h σ : Set V) ⊆ (Φ.piecewiseImage e h τ : Set V) ↔
+      (σ.val : Set V) ⊆ (τ.val : Set V)
+    rw [coe_piecewiseImage, coe_piecewiseImage, Set.image_subset_image_iff e.injective]
+
+/-- The transported cone consists of the images of the vectors of the original cone. -/
+@[simp]
+theorem coe_mapPiecewiseLinearConeEquiv (σ : Φ.cones) :
+    ((Φ.mapPiecewiseLinearConeEquiv e h σ).val : Set V) = e '' (σ.val : Set V) :=
+  coe_piecewiseImage Φ e h σ
+
+/-- A piecewise lattice change preserves the dimension of every cone. -/
+@[simp]
+theorem finrank_span_mapPiecewiseLinearConeEquiv (σ : Φ.cones) :
+    Module.finrank ℝ (Submodule.span ℝ ((Φ.mapPiecewiseLinearConeEquiv e h σ).val : Set V)) =
+      Module.finrank ℝ (Submodule.span ℝ (σ.val : Set V)) := by
+  -- Use the linear equivalence on this cone to compute the span of its image.
+  change Module.finrank ℝ (Submodule.span ℝ (Φ.piecewiseImage e h σ : Set V)) = _
+  rw [piecewiseImage, PointedCone.coe_map, Submodule.span_image, LinearEquiv.finrank_map_eq]
+
+/-- A piecewise lattice change induces a bijection on the fan's rays. -/
+def mapPiecewiseLinearRayEquiv : Φ.Ray ≃ (Φ.mapPiecewiseLinear e h).Ray :=
+  (Φ.mapPiecewiseLinearConeEquiv e h).toEquiv.subtypeEquiv
+    (fun σ ↦ by simp [finrank_span_mapPiecewiseLinearConeEquiv Φ e h σ])
+
+/-- The ray equivalence is the restriction of the cone order isomorphism. -/
+@[simp]
+theorem mapPiecewiseLinearRayEquiv_toCone (ρ : Φ.Ray) :
+    (Φ.mapPiecewiseLinearRayEquiv e h ρ).toCone =
+      Φ.mapPiecewiseLinearConeEquiv e h ρ.toCone := (rfl)
+
+/-- The ambient vector of the image ray's primitive generator is the image of the
+original primitive generator. -/
+theorem mapPiecewiseLinearRayEquiv_primitiveGenerator (ρ : Φ.Ray) :
+    i (Φ.mapPiecewiseLinearRayEquiv e h ρ).primitiveGenerator = e (i ρ.primitiveGenerator) := by
+  let τ := Φ.mapPiecewiseLinearRayEquiv e h ρ
+  obtain ⟨a, b, ha, hb⟩ := h ρ.toCone
+  have hmap : i (b ρ.primitiveGenerator) = e (i ρ.primitiveGenerator) :=
+    (hb _).symm.trans (ha ρ.primitiveGenerator_mem)
+  have hmem : i (b ρ.primitiveGenerator) ∈ τ.toCone.val := by
+    rw [← SetLike.mem_coe, mapPiecewiseLinearRayEquiv_toCone, coe_mapPiecewiseLinearConeEquiv, hmap]
+    exact Set.mem_image_of_mem e ρ.primitiveGenerator_mem
+  have hp := (b.toIntLinearEquiv.isPrimitive_iff).mpr ρ.isPrimitiveGenerator.isPrimitive
+  rw [τ.primitiveGenerator_eq_of_mem_of_isPrimitive hmem hp]
+  exact hmap
 
 end TauCeti.Toric.Fan
