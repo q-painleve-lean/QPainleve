@@ -138,6 +138,26 @@ theorem comap_center_eq {m : ℕ} {T' : WithBoundary i' m Y'} (g : Y ≅ Y') (d 
   rw [← hmap, ← Scheme.IdealSheafData.map_comp, ← hg, Scheme.IdealSheafData.map_comp,
     Scheme.IdealSheafData.comap_map_of_isClosedImmersion]
 
+/-- If two maps into the boundaries are compatible with the ambient isomorphism,
+their strict-transform maps remain compatible provided the center pulls back to a
+Cartier ideal on the common source. -/
+@[reassoc]
+theorem comp_boundaryι_snoc_blowupIso_hom {m : ℕ} {T' : WithBoundary i' m Y'} (g : Y ≅ Y')
+    (a : S ⟶ D) (a' : S ⟶ D')
+    (ha : a ≫ T.boundaryι ≫ g.hom = a' ≫ T'.boundaryι)
+    (J' : D'.IdealSheafData) (hJ : (J'.map T'.boundaryι).comap g.hom = J.map T.boundaryι)
+    (h : J.IsEffectiveCartier) (h' : J'.IsEffectiveCartier) (hc : (J.comap a).IsEffectiveCartier) :
+    a ≫ (T.snoc J h).boundaryι ≫ ((J'.map T'.boundaryι).blowupIso g hJ).hom =
+      a' ≫ (T'.snoc J' h').boundaryι := by
+  apply (J'.map T'.boundaryι).blowup_hom_ext
+  · simpa only [Category.assoc, Scheme.IdealSheafData.blowupIso_hom_blowupToBase,
+      boundaryι_snoc_blowupToBase_assoc, boundaryι_snoc_blowupToBase] using ha
+  · simp only [Category.assoc, Scheme.IdealSheafData.blowupIso_hom_blowupToBase,
+      boundaryι_snoc_blowupToBase_assoc]
+    rw [Scheme.IdealSheafData.comap_comp,
+      Scheme.IdealSheafData.comap_comp, hJ, Scheme.IdealSheafData.comap_map_of_isClosedImmersion]
+    exact hc
+
 /-- The lifted isomorphism of the blowups intertwines the strict-transform boundary
 embeddings. -/
 @[reassoc]
@@ -148,12 +168,10 @@ theorem boundaryι_snoc_blowupIso_hom {m : ℕ} {T' : WithBoundary i' m Y'} (g :
     (T.snoc J h).boundaryι ≫
         ((J'.map T'.boundaryι).blowupIso g (T.comap_center_eq J g d hg J' hJ)).hom =
       d.hom ≫ (T'.snoc J' h').boundaryι := by
-  apply (J'.map T'.boundaryι).blowup_hom_ext
-  · simpa using hg
-  · rw [Category.assoc, Scheme.IdealSheafData.blowupIso_hom_blowupToBase,
-      ← Category.assoc, boundaryι_snoc_blowupToBase, Scheme.IdealSheafData.comap_comp,
-      T.comap_center_eq J g d hg J' hJ]
-    exact T.isEffectiveCartier_comap_center J h
+  simpa only [Category.id_comp] using
+    T.comp_boundaryι_snoc_blowupIso_hom J g (𝟙 D) d.hom
+      (by simpa only [Category.id_comp] using hg) J' (T.comap_center_eq J g d hg J' hJ)
+      h h' (by simpa only [Scheme.IdealSheafData.comap_id] using h)
 
 end WithBoundary
 

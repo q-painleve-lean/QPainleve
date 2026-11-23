@@ -27,6 +27,19 @@ namespace TauCeti.Toric
 variable {N : Type} {V : Type*} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V}
 
+/-- A binomial with nonzero constant coefficient and nontrivial exponent is a unit
+at the generic point of any ray of its regular cone chart. -/
+theorem IsRegularCone.rayPoint_mem_basicOpen_binomial {σ : PointedCone ℝ V}
+    (hreg : IsRegularCone i σ) (hi : IsIntegralLattice i) (hσ : IsToricCone i σ)
+    (ρ : ToricRay σ) {m : dualSemigroup hi σ} (hm : m ≠ 0) {a : ℂ} (ha : a ≠ 0) (c : ℂ) :
+    (hreg.rayPoint hi hσ ρ).val ∈ PrimeSpectrum.basicOpen
+      (MonoidAlgebra.single 1 a + MonoidAlgebra.single (ofAdd m) c) := by
+  intro hf
+  rw [hreg.rayPoint_asIdeal] at hf
+  have hcoeff := coeff_eq_zero_of_mem_rayIdeal hi hσ hreg ρ hf 0 (by simp)
+  have hm' : ofAdd m ≠ (1 : Multiplicative (dualSemigroup hi σ)) := hm
+  exact ha (by simpa [hm'] using hcoeff)
+
 namespace Fan
 
 variable (Φ : Fan i) [Nonempty Φ.cones]
@@ -54,14 +67,14 @@ private theorem one_add_mul_character_nonneg (hΦ : Φ.IsRegular) (ρ : Φ.Ray)
   let f : R := 1 + algebraMap ℂ R c * MonoidAlgebra.of ℂ _ (ofAdd a)
   let s := (Scheme.ΓSpecIso R).inv f
   let j := Φ.affineToricChartι σ
-  have hcoeff : f.coeff 1 = 1 := by
-    have ha : ofAdd a ≠ (1 : Multiplicative (dualSemigroup Φ.lattice σ.val)) := by
-      exact fun h ↦ hm (congrArg (fun t ↦ (t.toAdd : N →+ ℤ)) h)
-    simp [f, MonoidAlgebra.of_apply, R, MonoidAlgebra.coe_algebraMap, ha]
+  have ha : a ≠ 0 := fun h ↦ hm (congrArg Subtype.val h)
+  have heq : f = MonoidAlgebra.single 1 1 + MonoidAlgebra.single (ofAdd a) c := by
+    dsimp only [f]
+    rw [← Algebra.smul_def, MonoidAlgebra.of_apply, MonoidAlgebra.smul_single, smul_eq_mul, mul_one]
+    rfl
   have hf : f ∉ x.val.asIdeal := by
-    rw [hreg.rayPoint_asIdeal]
-    exact fun h ↦ one_ne_zero (hcoeff.symm.trans
-      (coeff_eq_zero_of_mem_rayIdeal Φ.lattice hσ hreg r h 0 (by simp)))
+    rw [heq]
+    exact hreg.rayPoint_mem_basicOpen_binomial Φ.lattice hσ r ha one_ne_zero c
   have hpull : j.functionFieldMap (1 + C c * Φ.character (ofAdd m)) =
       X.germToFunctionField ⊤ s := by
     rw [map_add, map_one, map_mul, j.functionFieldMap_algebraMap ℂ,

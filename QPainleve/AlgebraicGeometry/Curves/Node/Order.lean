@@ -5,19 +5,25 @@ Authors: The QPainleve contributors
 -/
 module
 
+public import QPainleve.AlgebraicGeometry.Curves.Node.Locus
 public import QPainleve.AlgebraicGeometry.Scheme.Stalk
 public import TauCeti.AlgebraicGeometry.Curves.Node.Relative
 public import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.Stalk
 public import TauCeti.AlgebraicGeometry.IdealSheaf.Stalk
 public import TauCeti.AlgebraicGeometry.Morphisms.Smooth.RelativeDimension
+import QPainleve.AlgebraicGeometry.EffectiveCartierDivisor.Stalk
 import QPainleve.AlgebraicGeometry.Modules.Differentials.Stalk
 import QPainleve.RingTheory.Node.Order
+import TauCeti.AlgebraicGeometry.Curves.Node.Reduced
+import TauCeti.AlgebraicGeometry.Curves.SingularLocus.Smooth
+import TauCeti.AlgebraicGeometry.Morphisms.Smooth.Regular
 import TauCeti.RingTheory.Node.Cotangent.Basic
 
 /-!
 # Stalk order of a nodal Cartier divisor
 
-An intrinsic node on a Cartier divisor in a smooth surface has stalk order two.
+A nodal Cartier divisor in a smooth surface has stalk order one at a smooth
+point and two at a node.
 The result applies to self-nodes: the singular subscheme detects the point directly
 on the curve. This gives the multiplicity used in the total transform under the
 blowup of a closed point.
@@ -113,5 +119,49 @@ theorem stalkOrder_eq_two_of_node
   exact horder
 
 end Hom
+
+namespace IdealSheafData.IsEffectiveCartier
+
+variable {k : Type u} [Field k] {X : Scheme.{u}} {s : X ⟶ Spec (.of k)}
+  [SmoothOfRelativeDimension 2 s] {D : X.IdealSheafData}
+
+open Classical in
+/-- At a point of a nodal Cartier boundary in a smooth surface, the ambient
+multiplicity is two at a node and one at a smooth point. -/
+theorem stalkOrder_eq_if_isNodeOfReducedBoundary (hD : D.IsEffectiveCartier)
+    (hnodal : AtWorstNodalOfRelativeDimensionOne (D.subschemeι ≫ s))
+    {p : X} (hp : p ∈ D.support) :
+    D.stalkOrder p = if D.IsNodeOfReducedBoundary s p then 2 else 1 := by
+  have hr : p ∈ Set.range D.subschemeι := D.range_subschemeι.symm ▸ hp
+  obtain ⟨q, rfl⟩ := hr
+  have : IsReduced D.subscheme := hnodal.isReduced
+  have := hnodal.syntomic
+  have hnode : D.IsNodeOfReducedBoundary s (D.subschemeι q) ↔
+      q ∉ (D.subschemeι ≫ s).smoothLocus := by
+    rw [D.isNodeOfReducedBoundary_iff_of_isReduced]
+    have hi := D.subschemeι.isClosedEmbedding.injective
+    simpa only [hi.eq_iff, exists_eq_left] using
+      (D.subschemeι ≫ s).isNodeAt_iff_notMem_smoothLocus hnodal q
+  rw [if_congr hnode rfl rfl]
+  by_cases hq : q ∈ (D.subschemeι ≫ s).smoothLocus
+  · rw [ite_eq_right (not_not.mpr hq)]
+    have : Smooth s := SmoothOfRelativeDimension.smooth 2 s
+    have := isRegularLocalRing_stalk_of_smooth s (D.subschemeι q)
+    apply (hD.stalkOrder_eq_one_iff_isRegularLocalRing q).mpr
+    let U := (D.subschemeι ≫ s).smoothLocus
+    let q' : U := ⟨q, hq⟩
+    exact (isRegularLocalRing_stalk_iff_of_isOpenImmersion U.ι q').mpr
+      (isRegularLocalRing_stalk_of_smooth (U.ι ≫ D.subschemeι ≫ s) q')
+  · rw [ite_eq_left hq]
+    let : X.Over (Spec (.of k)) := ⟨s⟩
+    let : D.subscheme.Over (Spec (.of k)) := ⟨D.subschemeι ≫ s⟩
+    have : D.subschemeι.IsOver (Spec (.of k)) := ⟨rfl⟩
+    have : SmoothOfRelativeDimension 2 (X ↘ Spec (.of k)) := ‹SmoothOfRelativeDimension 2 s›
+    have : SyntomicOfRelativeDimension 1 (D.subscheme ↘ Spec (.of k)) := hnodal.syntomic
+    have hsing := (D.subscheme.mem_support_singularLocus_iff_notMem_smoothLocus q).mpr hq
+    simpa only [ker_subschemeι] using D.subschemeι.stalkOrder_eq_two_of_node
+      (by simpa only [ker_subschemeι] using hD) hnodal q hsing
+
+end IdealSheafData.IsEffectiveCartier
 
 end AlgebraicGeometry.Scheme
