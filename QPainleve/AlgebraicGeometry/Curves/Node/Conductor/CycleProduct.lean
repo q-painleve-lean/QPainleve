@@ -63,6 +63,13 @@ private theorem nodalConductorCycleProduct_eq_prod (a : Γ(B, ⊤)ˣ) :
       ∏ i, cycleRatios X p o a (X.dualGraphNodeEquiv p (e i)) := by
   simp [nodalConductorCycleProduct, cycleNodes]
 
+/-- The cycle product can be indexed directly by the nodes of the curve. -/
+theorem nodalConductorCycleProduct_eq_finprod (a : Γ(B, ⊤)ˣ) :
+    X.nodalConductorCycleProduct p e o a =
+      ∏ᶠ z : N, X.branchRatioHom nodal (X.branchOrderOfDualGraph p o) a z := by
+  rw [nodalConductorCycleProduct_eq_prod, ← finprod_eq_prod_of_fintype]
+  exact finprod_comp_equiv (cycleNodes X p e)
+
 /-- Each factor in the cycle product is the second branch value divided by the first. -/
 theorem nodalConductorCycleProduct_apply (a : Γ(B, ⊤)ˣ) :
     X.nodalConductorCycleProduct p e o a = ∏ i,

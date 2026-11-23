@@ -58,6 +58,17 @@ variable [Flat (X ↘ Spec (.of k))] [LocallyOfFinitePresentation (X ↘ Spec (.
   [Flat (Y ↘ Spec (.of k))] [LocallyOfFinitePresentation (Y ↘ Spec (.of k))]
   [PureRelativeDimension 1 (Y ↘ Spec (.of k))]
 
+/-- An isomorphism of curves pulls a Picard class trivialized by the singular-locus
+blowup back to a class trivialized by the corresponding blowup. -/
+theorem pullback_mem_ker_pullback_blowupToBase_singularLocus
+    (a : (LineBundleClass.pullbackHom (ν[Y])).ker) :
+    LineBundleClass.pullback e.hom a.val ∈ (LineBundleClass.pullbackHom (ν[X])).ker := by
+  have ha : LineBundleClass.pullback (ν[Y]) a.val = 1 := by
+    simpa only [LineBundleClass.pullbackHom_apply] using MonoidHom.mem_ker.mp a.property
+  rw [MonoidHom.mem_ker, LineBundleClass.pullbackHom_apply, LineBundleClass.pullback_comp,
+    ← e.singularLocusBlowupIso_hom_blowupToBase (R := k), ← LineBundleClass.pullback_comp, ha,
+    LineBundleClass.pullback_one]
+
 /-- With the induced trivializations on the blowup and singular subscheme, the gluing unit
 pulls back along the induced isomorphism of branch schemes. -/
 @[simp]
