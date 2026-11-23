@@ -6,7 +6,8 @@ Authors: The QPainleve contributors
 module
 
 public import QPainleve.Geometry.Toric.DeterminantCharacters
-public import QPainleve.Geometry.Toric.Fan.Boundary.Basic
+public import QPainleve.Geometry.Toric.Fan.Ray
+public import TauCeti.Geometry.Toric.Algebraic.Regular
 
 import Mathlib.Topology.Instances.Real.Lemmas
 import TauCeti.Geometry.Convex.Cone.Face.Simplicial

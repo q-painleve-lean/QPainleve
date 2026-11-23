@@ -85,6 +85,13 @@ ambient point if the reduced subscheme has a node above that point. -/
 def IsNodeOfReducedBoundary (D : Y.IdealSheafData) (g : Y ⟶ S) (x : Y) : Prop :=
   ∃ z : D.radical.subscheme, D.radical.subschemeι z = x ∧ (D.radical.subschemeι ≫ g).IsNodeAt z
 
+/-- A node of the reduced boundary belongs to the support of the original boundary ideal. -/
+theorem mem_support_of_isNodeOfReducedBoundary {D : Y.IdealSheafData} {g : Y ⟶ S} {x : Y}
+    (hx : D.IsNodeOfReducedBoundary g x) : x ∈ D.support := by
+  obtain ⟨z, rfl, _⟩ := hx
+  rw [← SetLike.mem_coe, ← support_radical, ← range_subschemeι]
+  exact Set.mem_range_self z
+
 /-- If the reduced boundary is nodal, its nodes are its nonsmooth points read in the
 ambient scheme. -/
 theorem isNodeOfReducedBoundary_iff (D : Y.IdealSheafData) (g : Y ⟶ S)
