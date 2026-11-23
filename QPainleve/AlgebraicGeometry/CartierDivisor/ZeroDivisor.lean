@@ -90,6 +90,11 @@ def zeroIdeal (s : Γ(L.obj, ⊤)) : X.IdealSheafData :=
 theorem zeroIdeal_eq_bot_iff (s : Γ(L.obj, ⊤)) : L.zeroIdeal s = ⊥ ↔ s = 0 := by
   rw [zeroIdeal, Hom.imageIdealSheaf_eq_bot_iff, Equiv.symm_apply_eq, dualSectionEquiv_zero]
 
+/-- The zero section cuts out the entire scheme. -/
+@[simp]
+theorem zeroIdeal_zero : L.zeroIdeal 0 = ⊥ :=
+  (L.zeroIdeal_eq_bot_iff 0).2 rfl
+
 /-- On an affine open, the zero ideal is the image of the evaluation map on sections. -/
 @[simp]
 lemma zeroIdeal_ideal (s : Γ(L.obj, ⊤)) (U : X.affineOpens) :
