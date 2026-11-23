@@ -5,7 +5,6 @@ Authors: The QPainleve contributors
 -/
 module
 
-public import Mathlib.RingTheory.RegularLocalRing.Defs
 public import QPainleve.Geometry.Toric.Fan.Boundary.Center
 public import QPainleve.Geometry.Toric.Fan.Boundary.Ideal
 
@@ -79,7 +78,8 @@ private theorem comap_rayBoundaryIdeal_eq_ker_orbitToRayChart :
     Scheme.Hom.ker_Spec_map, CommRingCat.hom_ofHom, AlgHom.toRingHom_eq_coe,
     ← AlgHom.ker_coe, Ray.ker_orbitCoordinateMap]
 
-private def orbitToComponent :
+/-- The ray orbit as an open subscheme of its reduced ray divisor. -/
+def Ray.orbitToComponent :
     Spec (.of (LaurentPolynomial ℂ)) ⟶ (Φ.rayBoundaryIdeal hΦ ρ).subscheme :=
   IsClosedImmersion.lift (Φ.rayBoundaryIdeal hΦ ρ).subschemeι
     (ρ.orbitToRayChart hdim hm hprim ≫ Φ.affineToricChartι ρ.toCone) (by
@@ -88,63 +88,84 @@ private def orbitToComponent :
       exact le_map_comap _ _)
 
 omit [Nonempty Φ.cones] in
+/-- The ray orbit inclusion into the fan scheme factors through the ray divisor. -/
 @[reassoc (attr := simp)]
-private theorem orbitToComponent_subschemeι :
-    orbitToComponent ρ hΦ hdim hm hprim ≫ (Φ.rayBoundaryIdeal hΦ ρ).subschemeι =
+theorem Ray.orbitToComponent_subschemeι :
+    ρ.orbitToComponent hΦ hdim hm hprim ≫ (Φ.rayBoundaryIdeal hΦ ρ).subschemeι =
       ρ.orbitToRayChart hdim hm hprim ≫ Φ.affineToricChartι ρ.toCone :=
   IsClosedImmersion.lift_fac _ _ _
 
-private instance : IsOpenImmersion (orbitToComponent ρ hΦ hdim hm hprim) :=
+instance Ray.isOpenImmersion_orbitToComponent :
+    IsOpenImmersion (ρ.orbitToComponent hΦ hdim hm hprim) :=
   MorphismProperty.of_isPullback
     (isPullback_of_isClosedImmersion (ρ.orbitToRayChart hdim hm hprim)
       (Φ.rayBoundaryIdeal hΦ ρ).subschemeι _ (Φ.affineToricChartι ρ.toCone)
-      (orbitToComponent_subschemeι ρ hΦ hdim hm hprim).symm
+      (ρ.orbitToComponent_subschemeι hΦ hdim hm hprim).symm
       (by rw [ker_subschemeι, comap_rayBoundaryIdeal_eq_ker_orbitToRayChart ρ hΦ hdim hm hprim]))
     (Φ.isOpenImmersion_affineToricChartι ρ.toCone)
 
+/-- The ray orbit inclusion into the full boundary factors through the ray divisor. -/
 @[reassoc (attr := simp)]
-private theorem orbitToComponent_boundaryComponentι :
-    orbitToComponent ρ hΦ hdim hm hprim ≫ ρ.boundaryComponentι hΦ =
+theorem Ray.orbitToComponent_boundaryComponentι :
+    ρ.orbitToComponent hΦ hdim hm hprim ≫ ρ.boundaryComponentι hΦ =
       ρ.orbitToBoundary hdim hm hprim := by
   rw [← cancel_mono (D).subschemeι]
   simp
 
-private def binomialCenterToOrbit (c : ℂˣ) :
-    Spec (.of ℂ) ⟶ Spec (.of (LaurentPolynomial ℂ)) :=
-  (ρ.isPullback_orbitToBoundary hdim hm hprim).lift
-    (Spec.map (CommRingCat.ofHom (ρ.binomialCenterEval hdim hm hprim c).toRingHom))
-    (ρ.binomialCenterOnBoundary hdim hm hprim c)
-    (by rw [Ray.binomialCenterOnBoundary_comp_subschemeι, Ray.binomialCenter_def])
+/-- The open ray orbit is a morphism over `ℂ`. -/
+instance Ray.isOver_orbitToComponent :
+    (ρ.orbitToComponent hΦ hdim hm hprim).IsOver (Spec (.of ℂ)) where
+  comp_over := by
+    rw [over_eq_subschemeι_comp, ← Category.assoc, ρ.orbitToComponent_subschemeι,
+      Category.assoc, comp_over, Ray.orbitToRayChart_def]
+    exact comp_over (Spec.map (CommRingCat.ofHom
+      (ρ.orbitCoordinateMap hdim hm hprim).toRingHom)) (Spec (.of ℂ))
 
-private def binomialCenterOnComponent (c : ℂˣ) :
+/-- The binomial center on its own reduced ray divisor. -/
+def Ray.binomialCenterOnComponent (c : ℂˣ) :
     Spec (.of ℂ) ⟶ (Φ.rayBoundaryIdeal hΦ ρ).subscheme :=
-  binomialCenterToOrbit ρ hdim hm hprim c ≫ orbitToComponent ρ hΦ hdim hm hprim
+  Spec.map (CommRingCat.ofHom (laurentEval ((-1 : ℂˣ) * c⁻¹)).toRingHom) ≫
+    ρ.orbitToComponent hΦ hdim hm hprim
 
+omit [Nonempty Φ.cones] in
+/-- In Laurent coordinates the center is evaluation at the root `-c⁻¹` of the binomial. -/
+theorem Ray.binomialCenterOnComponent_eq (c : ℂˣ) :
+    ρ.binomialCenterOnComponent hΦ hdim hm hprim c =
+      Spec.map (CommRingCat.ofHom (laurentEval ((-1 : ℂˣ) * c⁻¹)).toRingHom) ≫
+        ρ.orbitToComponent hΦ hdim hm hprim :=
+  (rfl)
+
+/-- The center on its ray component maps to the binomial center on the full boundary. -/
 @[reassoc (attr := simp)]
-private theorem binomialCenterOnComponent_boundaryComponentι (c : ℂˣ) :
-    binomialCenterOnComponent ρ hΦ hdim hm hprim c ≫ ρ.boundaryComponentι hΦ =
+theorem Ray.binomialCenterOnComponent_boundaryComponentι (c : ℂˣ) :
+    ρ.binomialCenterOnComponent hΦ hdim hm hprim c ≫ ρ.boundaryComponentι hΦ =
       ρ.binomialCenterOnBoundary hdim hm hprim c := by
-  simp [binomialCenterOnComponent, binomialCenterToOrbit]
+  rw [Ray.binomialCenterOnComponent_eq, Category.assoc, Ray.orbitToComponent_boundaryComponentι]
+  apply (cancel_mono (D).subschemeι).mp
+  rw [Category.assoc, Ray.orbitToBoundary_comp_subschemeι,
+    Ray.binomialCenterOnBoundary_comp_subschemeι, Ray.binomialCenter_def,
+    Ray.orbitToRayChart_def, ← Spec.map_comp_assoc, Ray.binomialCenterEval_def]
+  rfl
 
 private theorem boundaryComponentι_binomialCenterOnComponent_apply (c : ℂˣ) (z : Spec (.of ℂ)) :
-    ρ.boundaryComponentι hΦ (binomialCenterOnComponent ρ hΦ hdim hm hprim c z) =
+    ρ.boundaryComponentι hΦ (ρ.binomialCenterOnComponent hΦ hdim hm hprim c z) =
       ρ.binomialCenterOnBoundary hdim hm hprim c z := by
-  rw [← Scheme.Hom.comp_apply, binomialCenterOnComponent_boundaryComponentι]
+  rw [← Scheme.Hom.comp_apply, Ray.binomialCenterOnComponent_boundaryComponentι]
 
 private theorem smoothOfRelativeDimension_orbitToComponent :
     SmoothOfRelativeDimension 1
-      (orbitToComponent ρ hΦ hdim hm hprim ≫
+      (ρ.orbitToComponent hΦ hdim hm hprim ≫
         (Φ.rayBoundaryIdeal hΦ ρ).subschemeι ≫ Φ.algebraicRealizationStructureMap) := by
-  have h : orbitToComponent ρ hΦ hdim hm hprim ≫ (Φ.rayBoundaryIdeal hΦ ρ).subschemeι =
+  have h : ρ.orbitToComponent hΦ hdim hm hprim ≫ (Φ.rayBoundaryIdeal hΦ ρ).subschemeι =
       ρ.orbitToBoundary hdim hm hprim ≫ (D).subschemeι := by
-    rw [← ρ.boundaryComponentι_subschemeι hΦ, orbitToComponent_boundaryComponentι_assoc]
+    rw [← ρ.boundaryComponentι_subschemeι hΦ, Ray.orbitToComponent_boundaryComponentι_assoc]
   simpa only [← Category.assoc, h] using
     ρ.smoothOfRelativeDimension_orbitToBoundary hdim hm hprim
 
 private theorem isRegularLocalRing_stalk_binomialCenterOnComponent (c : ℂˣ) :
     IsRegularLocalRing ((Φ.rayBoundaryIdeal hΦ ρ).subscheme.presheaf.stalk
-      (binomialCenterOnComponent ρ hΦ hdim hm hprim c (IsLocalRing.closedPoint ℂ))) := by
-  let j := orbitToComponent ρ hΦ hdim hm hprim
+      (ρ.binomialCenterOnComponent hΦ hdim hm hprim c (IsLocalRing.closedPoint ℂ))) := by
+  let j := ρ.orbitToComponent hΦ hdim hm hprim
   let f := j ≫ (Φ.rayBoundaryIdeal hΦ ρ).subschemeι ≫ Φ.algebraicRealizationStructureMap
   have : SmoothOfRelativeDimension 1 f := smoothOfRelativeDimension_orbitToComponent ρ hΦ hdim
     hm hprim
@@ -153,23 +174,23 @@ private theorem isRegularLocalRing_stalk_binomialCenterOnComponent (c : ℂˣ) :
     (isRegularLocalRing_stalk_of_smooth f _)
 
 private theorem isEffectiveCartier_ker_binomialCenterOnComponent (c : ℂˣ) :
-    (binomialCenterOnComponent ρ hΦ hdim hm hprim c).ker.IsEffectiveCartier := by
-  let j := orbitToComponent ρ hΦ hdim hm hprim
+    (ρ.binomialCenterOnComponent hΦ hdim hm hprim c).ker.IsEffectiveCartier := by
+  let j := ρ.orbitToComponent hΦ hdim hm hprim
   let U := j.opensRange
-  let t := binomialCenterOnComponent ρ hΦ hdim hm hprim c
+  let t := ρ.binomialCenterOnComponent hΦ hdim hm hprim c
   let f := (Φ.rayBoundaryIdeal hΦ ρ).subschemeι ≫ Φ.algebraicRealizationStructureMap
   have hf : t ≫ f = 𝟙 _ := by
     simp only [t, f, ← ρ.boundaryComponentι_subschemeι hΦ, ← Category.assoc,
-      binomialCenterOnComponent_boundaryComponentι, Ray.binomialCenterOnBoundary_comp_subschemeι,
-      Ray.binomialCenter_comp_structureMap]
+      Ray.binomialCenterOnComponent_boundaryComponentι,
+      Ray.binomialCenterOnBoundary_comp_subschemeι, Ray.binomialCenter_comp_structureMap]
   have : IsClosedImmersion (t ≫ ρ.boundaryComponentι hΦ) := by
-    simp only [t, binomialCenterOnComponent_boundaryComponentι]
+    simp only [t, Ray.binomialCenterOnComponent_boundaryComponentι]
     infer_instance
   have : IsClosedImmersion t := IsClosedImmersion.of_comp_isClosedImmersion t
     (ρ.boundaryComponentι hΦ)
   have hU : Set.range t ⊆ U := by
-    simpa only [t, binomialCenterOnComponent, U, j, Scheme.Hom.coe_opensRange, Scheme.Hom.comp_base,
-      TopCat.coe_comp] using Set.range_comp_subset_range _ _
+    simpa only [t, Ray.binomialCenterOnComponent, U, j, Scheme.Hom.coe_opensRange,
+      Scheme.Hom.comp_base, TopCat.coe_comp] using Set.range_comp_subset_range _ _
   let a := IsOpenImmersion.isoOfRangeEq j U.ι U.range_ι.symm
   have ha : a.hom ≫ U.ι = j := IsOpenImmersion.isoOfRangeEq_hom_fac j U.ι U.range_ι.symm
   have : MorphismProperty.RespectsIso (@SmoothOfRelativeDimension.{0} 1) :=
@@ -233,7 +254,7 @@ theorem Ray.isEffectiveCartier_comap_ker_binomialCenterOnBoundary :
     ((center).ker.comap (τ.boundaryComponentι hΦ)).IsEffectiveCartier := by
   by_cases h : ρ = τ
   · subst τ
-    have hcomp := binomialCenterOnComponent_boundaryComponentι ρ hΦ hdim hm hprim c
+    have hcomp := ρ.binomialCenterOnComponent_boundaryComponentι hΦ hdim hm hprim c
     rw [← hcomp, Scheme.Hom.comap_ker_comp_of_isClosedImmersion]
     exact isEffectiveCartier_ker_binomialCenterOnComponent ρ hΦ hdim hm hprim c
   · have hnot :=
@@ -255,7 +276,7 @@ theorem Ray.isRegularLocalRing_stalk_of_boundaryComponentι_eq_binomialCenter
   have h :=
     (ρ.binomialCenterOnBoundary_mem_range_boundaryComponentι_iff hΦ hdim hm hprim c τ).mp ⟨q, hq⟩
   subst τ
-  let t := binomialCenterOnComponent ρ hΦ hdim hm hprim c
+  let t := ρ.binomialCenterOnComponent hΦ hdim hm hprim c
   have hEq : q = t z := (ρ.boundaryComponentι hΦ).isClosedEmbedding.injective
     (hq.trans (boundaryComponentι_binomialCenterOnComponent_apply ρ hΦ hdim hm hprim c z).symm)
   exact hEq ▸ isRegularLocalRing_stalk_binomialCenterOnComponent ρ hΦ hdim hm hprim c

@@ -26,6 +26,28 @@ public noncomputable section
 open AlgebraicGeometry CategoryTheory Multiplicative
 open AlgebraicGeometry.Scheme.IdealSheafData
 
+namespace TauCeti.Toric
+
+/-- The distinguished point of a cone kills monomials positive on one of its rays. -/
+theorem distinguishedPoint_top_single_eq_zero_of_pos
+    {N V : Type*} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
+    {i : N →+ V} {σ : PointedCone ℝ V}
+    (hi : IsIntegralLattice i) (hσ : IsToricCone i σ) (r : ToricRay σ)
+    (m : dualSemigroup hi σ)
+    (hm : 0 < (m : N →+ ℤ) (primitiveGenerator hi hσ r)) :
+    distinguishedPoint hi (⊤ : σ.Face) (MonoidAlgebra.single (ofAdd m) 1) = 0 := by
+  rw [distinguishedPoint_apply_single]
+  split_ifs with h
+  · exfalso
+    have hx : i (primitiveGenerator hi hσ r) ∈ (⊤ : σ.Face) :=
+      r.val.isFaceOf.le (primitiveGenerator_mem hi hσ r)
+    have hz := h _ hx
+    rw [hi.realCharacter_apply] at hz
+    exact hm.ne' (Int.cast_eq_zero.mp hz)
+  · rfl
+
+end TauCeti.Toric
+
 namespace TauCeti.Toric.Fan
 
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]

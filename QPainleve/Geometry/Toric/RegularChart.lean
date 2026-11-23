@@ -60,6 +60,16 @@ theorem affineCoordinateRingEquivMvPolynomial_single (m : dualSemigroup hi σ) (
     AddMonoidAlgebra.domCongr_single, MvPolynomial.monomial]
   exact AddMonoidAlgebra.curryAlgEquiv_single (R := ℂ) _ _ _
 
+/-- The character dual to a primitive ray is its polynomial variable in regular coordinates. -/
+theorem affineCoordinateRingEquivMvPolynomial_rayCoord (ρ : ToricRay σ) :
+    affineCoordinateRingEquivMvPolynomial hi hσ hb
+      (MonoidAlgebra.of ℂ (Multiplicative (dualSemigroup hi σ))
+        (Multiplicative.ofAdd (dualSemigroupCoord hi hσ hb (Sum.inl ρ)))) = MvPolynomial.X ρ := by
+  have h := (regularDualSemigroupEquiv hi hσ hb).apply_symm_apply (Finsupp.single ρ 1, 0)
+  rw [regularDualSemigroupEquiv_symm_apply_single_zero] at h
+  rw [MonoidAlgebra.of_apply, affineCoordinateRingEquivMvPolynomial_single, h]
+  rw [← AddMonoidAlgebra.one_def, ← MvPolynomial.X_pow_eq_monomial, pow_one]
+
 end Coordinates
 
 /-- The coordinate ring of a regular cone is factorial. -/
