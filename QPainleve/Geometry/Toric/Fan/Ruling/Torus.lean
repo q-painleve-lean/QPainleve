@@ -9,10 +9,9 @@ public import QPainleve.Geometry.Toric.Fan.Ruling.Basic
 public import TauCeti.Geometry.Toric.Algebraic.Fan.Equiv
 public import TauCeti.Geometry.Toric.Algebraic.Fan.Product.Basic
 
-import Mathlib.LinearAlgebra.Basis.SMul
+import QPainleve.LinearAlgebra.Dual.Basis
 import QPainleve.Geometry.Toric.Fan.DenseTorus
 import QPainleve.Geometry.Toric.Fan.Scheme
-import TauCeti.Algebra.Module.Primitive
 import TauCeti.Geometry.Toric.Algebraic.Fan.Product.Isomorphism
 import TauCeti.Geometry.Toric.Algebraic.Fan.SubfanScheme
 
@@ -204,6 +203,33 @@ theorem affineToricChartι_comp_characterRulingTorusSubfanInclusion (σ : (U).co
         ⟨σ.val, ((Φ.mem_characterRulingTorusSubfan_cones_iff m h).mp σ.property).1⟩ :=
   affineToricChartι_comp_subfanInclusion_algebraicMap _ _ _ _ σ
 
+/-- The zero cone lies over the dense torus of the ruling base. -/
+theorem bot_mem_characterRulingTorusSubfan (h₀ : Nonempty Φ.cones) :
+    (⊥ : PointedCone ℝ V) ∈ (U).cones := by
+  refine (Φ.mem_characterRulingTorusSubfan_cones_iff m h).2 ⟨Φ.bot_mem h₀.some.property, ?_⟩
+  intro x hx
+  simp [(Submodule.mem_bot (R := NNReal)).mp hx]
+
+/-- The dense torus of a fan included in the inverse image of the base torus. -/
+def denseTorusιRulingTorus (h₀ : Nonempty Φ.cones) :
+    Φ.denseTorus ⟶ pullback (Φ.characterRuling m h) projectiveLineTorusι :=
+  (U).affineToricChartι ⟨⊥, Φ.bot_mem_characterRulingTorusSubfan m h h₀⟩ ≫
+    (Φ.isPullback_characterRulingTorusSubfan m h).isoPullback.hom
+
+/-- The dense torus in the ruling neighborhood is the zero-cone chart of the open subfan. -/
+theorem denseTorusιRulingTorus_def (h₀ : Nonempty Φ.cones) :
+    Φ.denseTorusιRulingTorus m h h₀ =
+      (U).affineToricChartι ⟨⊥, Φ.bot_mem_characterRulingTorusSubfan m h h₀⟩ ≫
+        (Φ.isPullback_characterRulingTorusSubfan m h).isoPullback.hom := (rfl)
+
+/-- The inclusion into the ruling neighborhood recovers the ambient dense torus. -/
+@[reassoc (attr := simp)]
+theorem denseTorusιRulingTorus_fst (h₀ : Nonempty Φ.cones) :
+    Φ.denseTorusιRulingTorus m h h₀ ≫ pullback.fst _ _ = Φ.denseTorusι h₀ := by
+  rw [denseTorusιRulingTorus, Category.assoc, IsPullback.isoPullback_hom_fst,
+    affineToricChartι_comp_characterRulingTorusSubfanInclusion,
+    denseTorusι_eq_affineToricChartι Φ h₀ (Φ.bot_mem h₀.some.property)]
+
 private def splitCoordinates (R : Type) [Semiring R] :
     (Fin 2 → R) ≃ₗ[R] (Fin 1 → R) × (Fin 1 → R) :=
   (LinearEquiv.finTwoArrow R R).trans
@@ -384,6 +410,61 @@ theorem isoPullback_hom_comp_characterRulingTorusIso_hom_fst :
   rw [characterRulingTorusIso, Iso.trans_hom, Iso.symm_hom, Category.assoc,
     Iso.hom_inv_id_assoc, IsPullback.isoPullback_hom_fst]
 
+include hm hpos hneg in
+private theorem rulingTorus_firstCoordinate_sign (σ : (U).cones) :
+    (∀ x ∈ σ.val, 0 ≤ (U).lattice.realCharacter (b.coord 0).toAddMonoidHom x) ∨
+      ∀ x ∈ σ.val, (U).lattice.realCharacter (b.coord 0).toAddMonoidHom x ≤ 0 := by
+  have hb : (U).lattice.realCharacter (b.coord 0).toAddMonoidHom (i (b 0)) = 1 := by
+    have hcoord (x : V) : (U).lattice.realCharacter (b.coord 0).toAddMonoidHom x =
+        (Φ.lattice.isBaseChange.basis b).coord 0 x :=
+      DFunLike.congr_fun (Φ.lattice.realCharacter_coord b 0) x
+    have hbR : i (b 0) = (Φ.lattice.isBaseChange.basis b) 0 :=
+      (IsBaseChange.basis_apply b Φ.lattice.isBaseChange 0).symm
+    rw [hcoord, hbR]
+    simp
+  rcases (Φ.mem_characterRulingTorusSubfan_cones_iff_eq_bot_or_opposite_rays
+    m h b hm hpos hneg).mp σ.property with hσ | hσ | hσ
+  · left
+    intro x hx
+    have hx₀ : x = 0 := (Submodule.mem_bot _).mp (hσ ▸ hx)
+    simp [hx₀]
+  · left
+    intro x hx
+    obtain ⟨r, hr, rfl⟩ := mem_hull_singleton.mp (hσ ▸ hx)
+    simpa only [map_smul, hb, smul_eq_mul, mul_one] using hr
+  · right
+    intro x hx
+    obtain ⟨r, hr, rfl⟩ := mem_hull_singleton.mp (hσ ▸ hx)
+    simpa only [map_smul, map_neg, hb, smul_eq_mul, mul_neg, mul_one, neg_nonpos] using hr
+
+private theorem rulingTorus_firstCoordinate_eq :
+    (E).toFanHom.algebraicMap ≫ (FanHom.fst P projectiveLineTorusFan).algebraicMap ≫
+      projectiveLineToricIso.hom =
+    (U).characterRuling (b.coord 0).toAddMonoidHom
+      (rulingTorus_firstCoordinate_sign Φ m h b hm hpos hneg) := by
+  have hf : (FanHom.fst P projectiveLineTorusFan).comp (E).toFanHom =
+      (U).characterFanHom (b.coord 0).toAddMonoidHom
+        (rulingTorus_firstCoordinate_sign Φ m h b hm hpos hneg) := by
+    apply FanHom.ext
+    ext x j
+    simp
+  rw [characterRuling_def, ← Category.assoc, ← FanHom.algebraicMap_comp, hf]
+
+/-- In an affine chart of the ruling subfan, the first product coordinate is the
+monomial of the first dual basis vector, with sign chosen for the projective-line chart. -/
+@[reassoc]
+theorem affineToricChartι_comp_characterRulingTorusIso_fst (σ : (U).cones) (j : Fin 2)
+    (ha : (if j = 0 then (b.coord 0).toAddMonoidHom else -(b.coord 0).toAddMonoidHom) ∈
+      dualSemigroup (U).lattice σ.val) :
+    (U).affineToricChartι σ ≫ (Φ.isPullback_characterRulingTorusSubfan m h).isoPullback.hom ≫
+        (Φ.characterRulingTorusIso m h b hm hpos hneg).hom ≫ pullback.fst _ _ =
+      projectiveLine.polynomialPoint ℂ (algebraMap ℂ (affineCoordinateRing (U).lattice σ.val)) j
+        (MonoidAlgebra.of ℂ _ (Multiplicative.ofAdd ⟨_, ha⟩)) := by
+  rw [Φ.isoPullback_hom_comp_characterRulingTorusIso_hom_fst,
+    rulingTorus_firstCoordinate_eq Φ m h b hm hpos hneg,
+    (U).affineToricChartι_comp_characterRuling _ _ σ j ha, projectiveLine.polynomialPoint_def]
+  rfl
+
 /-- The product comparison intertwines the projections to the base torus. -/
 @[reassoc (attr := simp)]
 theorem characterRulingTorusIso_hom_snd :
@@ -428,32 +509,8 @@ theorem exists_characterRulingTorusIso_of_isPrimitive
       e.hom ≫ pullback.snd _ _ = pullback.snd _ _ := by
   have := Φ.lattice.free
   have := Φ.lattice.finite
-  obtain ⟨f₀, hf₀⟩ := isPrimitive_def.mp hv
-  let b₀ := Module.finBasisOfFinrankEq ℤ N hdim
-  obtain ⟨c, -, hc⟩ := (b₀.exists_basis_eq_iff 0 v).mpr ⟨f₀, by simp, hf₀⟩
-  obtain ⟨w, hw⟩ := hsurj 1
-  have hu : IsUnit (m (c 1)) := by
-    apply isUnit_of_dvd_one
-    refine ⟨c.repr w 1, ?_⟩
-    have he := congrArg m (c.sum_repr w)
-    rw [Fin.sum_univ_two, map_add, map_zsmul, map_zsmul, hc, hmv, smul_zero, zero_add, hw,
-      zsmul_eq_mul, mul_comm] at he
-    exact he.symm
-  let d := c.unitsSMul fun j ↦ if j = 0 then 1 else hu.unit⁻¹
-  have hd : d 0 = v := by simp [d, Basis.unitsSMul_apply, hc]
-  have hd₁ : m (d 1) = 1 := by
-    dsimp only [d]
-    rw [Basis.unitsSMul_apply, ite_eq_right (by decide : (1 : Fin 2) ≠ 0), Units.smul_def,
-      map_zsmul, zsmul_eq_mul]
-    exact hu.val_inv_mul
-  have he : m = (d.coord 1).toAddMonoidHom := by
-    apply AddMonoidHom.toIntLinearMap_injective
-    apply d.ext
-    intro j
-    fin_cases j
-    · have h₀ : m (d 0) = 0 := by rw [hd, hmv]
-      simpa [Basis.coord_apply] using h₀
-    · simpa [Basis.coord_apply] using hd₁
+  obtain ⟨d, hd, he⟩ := (Module.finBasisOfFinrankEq ℤ N hdim).exists_basis_zero_eq_coord_one_eq
+    hv hmv hsurj
   rw [← hd] at hvpos hvneg
   exact ⟨Φ.characterRulingTorusIso m h d he hvpos hvneg,
     Φ.characterRulingTorusIso_hom_snd m h d he hvpos hvneg⟩

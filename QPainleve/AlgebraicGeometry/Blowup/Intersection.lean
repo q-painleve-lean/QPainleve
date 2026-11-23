@@ -12,6 +12,8 @@ public import TauCeti.AlgebraicGeometry.Morphisms.Smooth.RelativeDimension
 import QPainleve.AlgebraicGeometry.Blowup.Exceptional.EulerCharacteristic
 import QPainleve.AlgebraicGeometry.Blowup.Exceptional.FirstKind
 import QPainleve.AlgebraicGeometry.Blowup.Point.Cohomology
+import QPainleve.AlgebraicGeometry.Blowup.Projective.Global
+import QPainleve.AlgebraicGeometry.Blowup.StrictTransform.Residual
 import QPainleve.AlgebraicGeometry.Blowup.Smooth
 import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
 import TauCeti.AlgebraicGeometry.Cohomology.EulerCharacteristic
@@ -22,6 +24,7 @@ import TauCeti.AlgebraicGeometry.Curves.Normalization
 
 Pullback along a point blowup preserves the Euler-characteristic pairing. The exceptional
 curve is orthogonal to the pullback and has square `-1` over an algebraically closed field.
+The square of a strict transform drops by the square of its multiplicity at the center.
 The sign convention is that the positive exceptional class is the inverse of the class of
 its ideal sheaf.
 
@@ -177,6 +180,51 @@ theorem classIntersectionNumber_pointBlowup
     classIntersectionNumber_pullback_pointBlowup p k hp hdim,
     classIntersectionNumber_comm (k := k) b a, mul_zero, add_zero]
   ring
+
+/-- An effective Cartier divisor on a smooth integral projective surface has a Cartier
+strict transform under a point blowup. Its self-intersection drops by the square
+of its multiplicity at the center. -/
+theorem classIntersectionNumber_self_strictTransform_pointBlowup [X.IsProjectiveOver k]
+    [IsIntegral X]
+    (hp : IsClosed ({p} : Set X)) {C : X.IdealSheafData} (hC : C.IsEffectiveCartier) :
+    let I := (X.fromSpecResidueField p).ker
+    let : I.blowup.Over (Spec (.of k)) := ⟨I.blowupToBase ≫ (X ↘ Spec (.of k))⟩
+    ∃ hC' : (I.blowupMap C.subschemeι).ker.IsEffectiveCartier,
+      Chow.classIntersectionNumber k I.blowup (LineBundleClass.mk hC'.toInvertibleSheaf)⁻¹
+        (LineBundleClass.mk hC'.toInvertibleSheaf)⁻¹ =
+        Chow.classIntersectionNumber k X (LineBundleClass.mk hC.toInvertibleSheaf)⁻¹
+          (LineBundleClass.mk hC.toInvertibleSheaf)⁻¹ - ((C.stalkOrder p).toNat : ℤ) ^ 2 := by
+  let f := X ↘ Spec (.of k)
+  have : IsNoetherian X := isNoetherian_of_finiteType f
+  have : Smooth f := SmoothOfRelativeDimension.smooth 2 f
+  have : IsRegular X := IsRegular.of_smooth f
+  have hd := ((smoothOfRelativeDimension_iff_ringKrullDim_stalk_eq f 2).mp inferInstance).2 p hp
+  let I := (X.fromSpecResidueField p).ker
+  let : I.blowup.Over (Spec (.of k)) := ⟨I.blowupToBase ≫ f⟩
+  have hproj : I.blowup.IsProjectiveOver k :=
+    I.isProjectiveOver_blowup_of_isNoetherianRing k
+  let a := (LineBundleClass.mk hC.toInvertibleSheaf)⁻¹
+  let m : ℤ := (C.stalkOrder p).toNat
+  let P (K : X.IdealSheafData) : Prop :=
+    let : K.blowup.Over (Spec (.of k)) := ⟨K.blowupToBase ≫ f⟩
+    Chow.classIntersectionNumber k K.blowup
+      (pullback K.blowupToBase a * K.blowupExceptionalClass ^ (-m))
+      (pullback K.blowupToBase a * K.blowupExceptionalClass ^ (-m)) =
+      Chow.classIntersectionNumber k X a a - m ^ 2
+  have hpair : P I := by
+    simpa only [P, blowupExceptionalClass_def, pow_two, neg_mul_neg] using
+      Chow.classIntersectionNumber_pointBlowup p k hp a a (-m) (-m) hproj
+  have hcenter := X.ker_fromSpecResidueField_eq_vanishingIdeal p
+  have hpair' := (congrArg P hcenter).mp hpair
+  let Q (K : X.IdealSheafData) : Prop :=
+    let : K.blowup.Over (Spec (.of k)) := ⟨K.blowupToBase ≫ f⟩
+    ∃ hC' : (K.blowupMap C.subschemeι).ker.IsEffectiveCartier,
+      Chow.classIntersectionNumber k K.blowup (LineBundleClass.mk hC'.toInvertibleSheaf)⁻¹
+        (LineBundleClass.mk hC'.toInvertibleSheaf)⁻¹ = Chow.classIntersectionNumber k X a a - m ^ 2
+  refine (congrArg Q hcenter).mpr ?_
+  refine ⟨hC.strictTransform_pointBlowup hp hd, ?_⟩
+  rw [hC.toLineBundleClass_strictTransform_pointBlowup hp hd]
+  simpa only [P, a, m, zpow_neg, zpow_natCast, inv_pow] using! hpair'
 
 local notation "Jₚ" =>
   vanishingIdeal (Closeds.mk (closure (Set.singleton p)) isClosed_closure)

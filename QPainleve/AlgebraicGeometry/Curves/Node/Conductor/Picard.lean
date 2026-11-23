@@ -48,6 +48,24 @@ private theorem inf_ker_pullback_singularLocus
     .of_locallyQuasiFinite (I.subschemeι ≫ (X ↘ Spec (.of k)))
   exact inf_eq_left.mpr fun a _ ↦ MonoidHom.mem_ker.mpr (Subsingleton.elim _ _)
 
+/-- A Picard class trivial on the normalization has a representative with
+trivializations on both sides of the nodal conductor square. -/
+theorem exists_trivialized_representative_of_mem_nodalPicardKernel
+    (hnodal : AtWorstNodalOfRelativeDimensionOne (X ↘ Spec (.of k))) :
+    letI := hnodal.syntomic
+    let I := X.singularLocus k
+    ∀ a : (LineBundleClass.pullbackHom I.blowupToBase).ker,
+      ∃ L : InvertibleSheaf X,
+        Nonempty ((pullback I.blowupToBase).obj L.obj ≅ 𝟙_ _) ∧
+        Nonempty ((pullback I.subschemeι).obj L.obj ≅ 𝟙_ _) ∧
+        LineBundleClass.mk L = a.val := by
+  let := hnodal.syntomic
+  dsimp only
+  intro a
+  exact LineBundleClass.exists_trivialized_representative
+    (f := (X.singularLocus k).blowupToBase) (i := (X.singularLocus k).subschemeι)
+    ⟨a.val, (inf_ker_pullback_singularLocus hnodal).symm ▸ a.property⟩
+
 /-- Picard classes trivial on the normalization of a nodal curve correspond
 multiplicatively to branch units modulo changes of the two conductor trivializations. -/
 def nodalPicardKernelMulEquiv

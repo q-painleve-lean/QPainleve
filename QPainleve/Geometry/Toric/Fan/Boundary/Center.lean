@@ -9,6 +9,7 @@ public import Mathlib.Algebra.Polynomial.Laurent
 public import Mathlib.AlgebraicGeometry.Morphisms.Smooth
 public import QPainleve.Geometry.Toric.Fan.Boundary.Basic
 public import QPainleve.Geometry.Toric.Fan.Separated
+public import TauCeti.Algebra.Polynomial.Laurent.Basic
 public import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.Basic
 import Mathlib.RingTheory.Spectrum.Prime.RingHom
 import QPainleve.Algebra.MonoidAlgebra.Smooth
@@ -144,24 +145,40 @@ theorem ker_orbitCoordinateMap (hdim : Module.finrank ℤ N = 2)
     refine Ideal.subset_span ⟨_, ⟨b, ne_of_gt hb, rfl⟩, ?_⟩
     simp [e, MonoidAlgebra.of_apply]
 
+/-- A multiple of the primitive character restricts to the corresponding Laurent monomial. -/
+@[simp]
+theorem orbitCoordinateMap_zsmul_chartCharacter (hdim : Module.finrank ℤ N = 2)
+    (hm : m v = 0) (hprim : Function.Surjective m) (n : ℤ) :
+    ρ.orbitCoordinateMap hdim hm hprim
+      (MonoidAlgebra.single (ofAdd (ρ.chartCharacter (m := n • m)
+        (by simp [hm]))) 1) = T n := by
+  let a := rayDualFaceHom ρ hm n
+  have ha : a.val = ρ.chartCharacter (m := n • m) (by simp [hm]) := (rfl)
+  simp only [orbitCoordinateMap, AlgHom.comp_apply,
+    AlgEquiv.coe_toAlgHom, AddMonoidAlgebra.toMultiplicativeAlgEquiv_symm_single, toAdd_ofAdd]
+  rw [← ha, AddSubmonoid.faceRestriction_single_mem, AddMonoidAlgebra.domCongr_single]
+  congr 1
+  exact (rayDualFaceEquiv ρ hdim hm hprim).symm_apply_apply n
+
 /-- The primitive annihilating character becomes the Laurent variable on restriction. -/
 @[simp]
 theorem orbitCoordinateMap_character (hdim : Module.finrank ℤ N = 2)
     (hm : m v = 0) (hprim : Function.Surjective m) :
     ρ.orbitCoordinateMap hdim hm hprim
       (MonoidAlgebra.single (ofAdd (ρ.chartCharacter hm)) 1) = T 1 := by
-  let a := rayDualFaceHom ρ hm 1
-  have ha : a.val = ρ.chartCharacter hm := Subtype.ext (by simp [a, rayDualFaceHom])
-  simp only [orbitCoordinateMap, AlgHom.comp_apply,
-    AlgEquiv.coe_toAlgHom, AddMonoidAlgebra.toMultiplicativeAlgEquiv_symm_single, toAdd_ofAdd]
-  rw [← ha, AddSubmonoid.faceRestriction_single_mem, AddMonoidAlgebra.domCongr_single]
-  congr 1
-  exact (rayDualFaceEquiv ρ hdim hm hprim).symm_apply_apply 1
+  simpa only [one_zsmul] using ρ.orbitCoordinateMap_zsmul_chartCharacter hdim hm hprim 1
 
 /-- Evaluation on the ray chart at the boundary center with Laurent coordinate `-c⁻¹`. -/
 def binomialCenterEval (hdim : Module.finrank ℤ N = 2)
     (hm : m v = 0) (hprim : Function.Surjective m) (c : ℂˣ) : R →ₐ[ℂ] ℂ :=
   (laurentEval ((-1 : ℂˣ) * c⁻¹)).comp (ρ.orbitCoordinateMap hdim hm hprim)
+
+/-- Binomial evaluation is Laurent evaluation after restricting to the ray orbit. -/
+theorem binomialCenterEval_def (hdim : Module.finrank ℤ N = 2)
+    (hm : m v = 0) (hprim : Function.Surjective m) (c : ℂˣ) :
+    ρ.binomialCenterEval hdim hm hprim c =
+      (laurentEval ((-1 : ℂˣ) * c⁻¹)).comp (ρ.orbitCoordinateMap hdim hm hprim) :=
+  (rfl)
 
 local notation "χ" => MonoidAlgebra.of ℂ (Multiplicative S)
 
@@ -251,6 +268,35 @@ theorem binomialCenter_def (hdim : Module.finrank ℤ N = 2)
     ρ.binomialCenter hdim hm hprim c =
       Spec.map (CommRingCat.ofHom (ρ.binomialCenterEval hdim hm hprim c).toRingHom) ≫
         Φ.affineToricChartι ρ.toCone := (rfl)
+
+/-- Negating the primitive orbit character inverts the center parameter. The resulting
+sections coincide as morphisms from the coefficient field. -/
+theorem binomialCenter_neg_inv (hdim : Module.finrank ℤ N = 2)
+    (hm : m v = 0) (hs : Function.Surjective m) (c : ℂˣ) :
+    ρ.binomialCenter hdim (m := -m) (by simp [hm])
+        (neg_involutive.surjective.comp hs) c⁻¹ =
+      ρ.binomialCenter hdim hm hs c := by
+  suffices h : ∀ hs' : Function.Surjective (-m),
+      ρ.binomialCenter hdim (m := -m) (by simp [hm]) hs' c⁻¹ =
+        ρ.binomialCenter hdim hm hs c from h (neg_involutive.surjective.comp hs)
+  intro hs'
+  rw [binomialCenter, binomialCenter]
+  congr 3
+  apply congrArg AlgHom.toRingHom
+  apply (MonoidAlgebra.lift ℂ ℂ (Multiplicative S)).symm.injective
+  apply MonoidHom.ext
+  intro a
+  rw [MonoidAlgebra.lift_symm_apply, MonoidAlgebra.lift_symm_apply, ← ofAdd_toAdd a]
+  by_cases ha : (a.toAdd : N →+ ℤ) v = 0
+  · obtain ⟨n, hn⟩ := ρ.exists_zsmul_eq_of_apply_primitiveGenerator_eq_zero hdim hm hs ha
+    have h₁ : ρ.chartCharacter (m := n • m) (by simp [hm]) = a.toAdd := Subtype.ext hn
+    have h₂ : ρ.chartCharacter (m := (-n) • (-m)) (by simp [hm]) = a.toAdd :=
+      Subtype.ext (by simpa using hn)
+    rw [← h₂, binomialCenterEval_single_zsmul, h₂, ← h₁, binomialCenterEval_single_zsmul]
+    simp only [inv_inv, zpow_neg, Units.val_inv_eq_inv_val]
+    rw [← inv_zpow, inv_neg]
+  · rw [binomialCenterEval_single_eq_zero _ _ _ _ _ _ _ ha,
+      binomialCenterEval_single_eq_zero _ _ _ _ _ _ _ ha]
 
 /-- A binomial center is a section of the structural morphism. -/
 @[reassoc, simp]

@@ -9,8 +9,9 @@ public import TauCeti.AlgebraicGeometry.Curves.Node.Relative
 public import QPainleve.AlgebraicGeometry.IdealSheaf.Restriction
 public import TauCeti.AlgebraicGeometry.Morphisms.IsoLocus
 
+import QPainleve.AlgebraicGeometry.IdealSheaf.Boundary.Locus
 import TauCeti.AlgebraicGeometry.IdealSheaf.Reduced
-import TauCeti.AlgebraicGeometry.Pullback.Carrier
+import TauCeti.AlgebraicGeometry.Morphisms.StalkMap
 
 /-!
 # Nodes on reduced inverse images of closed subschemes
@@ -59,11 +60,7 @@ theorem not_isNodeAt_of_mem_smoothLocus (f : C ⟶ S) [LocallyOfFinitePresentati
 /-- The node condition is invariant under passage to an open neighborhood. -/
 theorem isNodeAt_comp_iff_of_isOpenImmersion (f : C ⟶ S) (j : W ⟶ C)
     [IsOpenImmersion j] (x : W) : (j ≫ f).IsNodeAt x ↔ f.IsNodeAt (j x) := by
-  have hs : ((j ≫ f).stalkMap x).hom.FormallySmooth ↔
-      (f.stalkMap (j x)).hom.FormallySmooth := by
-    have h := RingHom.FormallySmooth.respectsIso.cancel_right_isIso (f.stalkMap (j x))
-      (j.stalkMap x)
-    rwa [← CommRingCat.hom_comp, ← stalkMap_comp] at h
+  have hs := RingHom.FormallySmooth.respectsIso.stalkMap_comp_isOpenImmersion_iff j f x
   unfold IsNodeAt
   rw [hs]
   refine and_congr_right fun _ ↦ ⟨?_, ?_⟩
@@ -150,47 +147,15 @@ theorem isNodeOfReducedBoundary_iff (D : Y.IdealSheafData) (g : Y ⟶ S)
 /-- Nodes of the reduced subscheme restrict to, and are detected on, open subschemes. -/
 theorem isNodeOfReducedBoundary_comap_iff_of_isOpenImmersion
     (D : Y.IdealSheafData) (g : Y ⟶ S) (f : X ⟶ Y) [IsOpenImmersion f] (x : X) :
-    (D.comap f).IsNodeOfReducedBoundary (f ≫ g) x ↔ D.IsNodeOfReducedBoundary g (f x) := by
-  unfold IsNodeOfReducedBoundary
-  rw [D.radical_comap_of_isOpenImmersion f]
-  let I := D.radical
-  let J := I.comap f
-  let c := subschemeMap J I f (I.le_map_comap f)
-  have H : IsPullback J.subschemeι c f I.subschemeι :=
-    isPullback_of_isClosedImmersion _ _ _ _ (by simp [c]) (by simp [J])
-  have hc : IsOpenImmersion c := MorphismProperty.of_isPullback H inferInstance
-  have he : c ≫ I.subschemeι = J.subschemeι ≫ f := subschemeMap_subschemeι _ _ _ _
-  have happ (z : J.subscheme) : I.subschemeι (c z) = f (J.subschemeι z) := by
-    simpa only [← Scheme.Hom.comp_apply] using congrArg (fun m : J.subscheme ⟶ Y ↦ m z) he
-  have hnode (z : J.subscheme) :
-      (J.subschemeι ≫ f ≫ g).IsNodeAt z ↔ (I.subschemeι ≫ g).IsNodeAt (c z) := by
-    rw [← reassoc_of% he]
-    exact (I.subschemeι ≫ g).isNodeAt_comp_iff_of_isOpenImmersion c z
-  constructor
-  · rintro ⟨z, rfl, hz⟩
-    exact ⟨c z, happ z, (hnode z).mp hz⟩
-  · rintro ⟨z, hz, hn⟩
-    have hx : x ∈ Set.range J.subschemeι := by
-      rw [Scheme.Pullback.range_fst_of_isPullback H]
-      exact ⟨z, hz⟩
-    obtain ⟨w, rfl⟩ := hx
-    have hw : c w = z := I.subschemeι.isClosedEmbedding.injective ((happ w).trans hz.symm)
-    exact ⟨w, rfl, (hnode w).mpr (hw.symm ▸ hn)⟩
+    (D.comap f).IsNodeOfReducedBoundary (f ≫ g) x ↔ D.IsNodeOfReducedBoundary g (f x) :=
+  exists_reducedBoundaryPoint_comap_iff_of_isOpenImmersion
+    (fun {_} q z ↦ q.IsNodeAt z) Scheme.Hom.isNodeAt_comp_iff_of_isOpenImmersion D g f x
 
 /-- A reduced inverse image has the same nodes over the isomorphism locus of the map. -/
 theorem isNodeOfReducedBoundary_comap_iff_of_mem_isoLocus
     (D : Y.IdealSheafData) (g : Y ⟶ S) (f : X ⟶ Y) {x : X} (hx : f x ∈ f.isoLocus) :
-    (D.comap f).IsNodeOfReducedBoundary (f ≫ g) x ↔ D.IsNodeOfReducedBoundary g (f x) := by
-  let U := f.isoLocus
-  let i := (f ⁻¹ᵁ U).ι
-  let y : (f ⁻¹ᵁ U).toScheme := ⟨x, f.mem_preimage.mpr hx⟩
-  have : IsIso (f ∣_ U) := f.le_isoLocus_iff.mp le_rfl
-  have : IsOpenImmersion (i ≫ f) := by
-    rw [← morphismRestrict_ι f U]
-    infer_instance
-  have h₁ := (D.comap f).isNodeOfReducedBoundary_comap_iff_of_isOpenImmersion (f ≫ g) i y
-  have h₂ := D.isNodeOfReducedBoundary_comap_iff_of_isOpenImmersion g (i ≫ f) y
-  rw [comap_comp, Category.assoc, Scheme.Hom.comp_apply] at h₂
-  exact h₁.symm.trans h₂
+    (D.comap f).IsNodeOfReducedBoundary (f ≫ g) x ↔ D.IsNodeOfReducedBoundary g (f x) :=
+  exists_reducedBoundaryPoint_comap_iff_of_mem_isoLocus
+    (fun {_} q z ↦ q.IsNodeAt z) Scheme.Hom.isNodeAt_comp_iff_of_isOpenImmersion D g f hx
 
 end AlgebraicGeometry.Scheme.IdealSheafData

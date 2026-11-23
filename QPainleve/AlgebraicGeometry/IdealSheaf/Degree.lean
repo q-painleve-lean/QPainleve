@@ -12,7 +12,6 @@ public import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.ProjectiveOver
 import Mathlib.AlgebraicGeometry.AlgClosed.Basic
 import QPainleve.AlgebraicGeometry.Cohomology.Projective
 import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
-import QPainleve.AlgebraicGeometry.IdealSheaf.VanishingIdeal
 import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.TensorProduct
 
 /-!
@@ -51,10 +50,8 @@ theorem eulerDegree_mk_comap_point (p : D) (hp : IsClosed ({p} : Set D))
       simpa only [Set.image_singleton] using hp
     let s := C.fromSpecResidueField q
     have hs : IsClosedImmersion s := isClosed_singleton_iff_isClosedImmersion.mp hq
-    have hker : (D.fromSpecResidueField (e q)).ker.comap e = s.ker := by
-      rw [Scheme.ker_fromSpecResidueField_eq_vanishingIdeal,
-        comap_vanishingIdeal_closure_singleton_of_isClosedImmersion,
-        ← Scheme.ker_fromSpecResidueField_eq_vanishingIdeal]
+    have hker : (D.fromSpecResidueField (e q)).ker.comap e = s.ker :=
+      e.comap_ker_fromSpecResidueField_apply q
     have hC : s.ker.IsEffectiveCartier := hker ▸ h
     let f := C ↘ Spec (CommRingCat.of k)
     have : IsIso (s ≫ f) := by

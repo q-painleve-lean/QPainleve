@@ -7,9 +7,12 @@ module
 
 public import TauCeti.AlgebraicGeometry.Modules.FittingIdeal.Pullback
 public import TauCeti.AlgebraicGeometry.VectorBundle.ExteriorPower.Basic
+import QPainleve.AlgebraicGeometry.Modules.FittingIdeal
+import QPainleve.RingTheory.FittingIdeal.Composition
 import QPainleve.RingTheory.FittingIdeal.ExteriorPower
 import Mathlib.Algebra.Category.ModuleCat.Kernels
 import TauCeti.AlgebraicGeometry.IdealSheaf.Affine
+import TauCeti.AlgebraicGeometry.IdealSheaf.Comap
 import TauCeti.AlgebraicGeometry.Modules.ExteriorPower.Pullback.Quasicoherent
 import TauCeti.AlgebraicGeometry.Modules.Quasicoherent.Cokernels
 import TauCeti.AlgebraicGeometry.VectorBundle.Affine.Basic
@@ -21,7 +24,8 @@ For a map of finite locally free sheaves of equal constant rank, the cokernel of
 top exterior power map has the same zeroth Fitting ideal sheaf as the original
 cokernel. The comparison uses Tau Ceti's affine exterior power isomorphism and its
 Fitting ideal base change formula. It applies over the spectrum of each local ring,
-where the bundles become free.
+where the bundles become free. For a composition through bundles of equal rank,
+this local calculation also gives the product formula for the zeroth Fitting ideal.
 
 See the Stacks Project, Sections 31.9 (tag 0C3C) and 15.120 (tag 0FJ9).
 -/
@@ -44,26 +48,6 @@ local notation "coker(" X ", " f ")" => @cokernel (Scheme.Modules X) _ _ _ _ f _
 local notation "fit₀(" M ")" =>
   Scheme.Modules.fittingIdeal M
     (fun U ↦ Scheme.Modules.finite_sections_of_isAffineOpen _ U.val U.property) 0
-
-private theorem fittingIdeal_zero_cokernel_tilde {R : CommRingCat.{u}}
-    {M N : ModuleCat.{u} R} [Module.Finite R N] (f : M ⟶ N) :
-    fit₀(cokernel (tilde.map f)) =
-      Scheme.IdealSheafData.ofIdealTop
-        ((TauCeti.fittingIdeal R (N ⧸ LinearMap.range f.hom) 0).map
-          (Scheme.ΓSpecIso R).inv.hom) := by
-  let Q := ModuleCat.of R (N ⧸ LinearMap.range f.hom)
-  let e := ModuleCat.cokernelIsoRangeQuotient f
-  let e' : tilde Q ≅ cokernel (tilde.map f) :=
-    (tilde.functor R).mapIso e.symm ≪≫ PreservesCokernel.iso (tilde.functor R) f
-  have h := fittingIdeal_congr (M := tilde Q)
-    (fun U ↦ finite_sections_of_isAffineOpen _ U.val U.property) e' 0
-  rw [← h, fittingIdeal_Spec]
-  have : Module.Finite R ((𝟭 (ModuleCat R)).obj Q) :=
-    inferInstanceAs (Module.Finite R (N ⧸ LinearMap.range f.hom))
-  have := Module.Finite.equiv (tilde.toTildeΓNatIso.app Q).toLinearEquiv
-  exact congrArg (fun I : Ideal R ↦
-    Scheme.IdealSheafData.ofIdealTop (I.map (Scheme.ΓSpecIso R).inv.hom))
-    (TauCeti.fittingIdeal_congr (tilde.toTildeΓNatIso.app Q).toLinearEquiv.symm 0)
 
 variable {X : Scheme.{u}} {E F : FiniteLocallyFreeSheaf X} {n : ℕ}
 
@@ -128,13 +112,6 @@ private theorem fittingIdeal_zero_cokernel_exteriorPower_of_isLocalRing
   exact g.hom.fittingIdeal_coker_zero_exteriorPower
     ((E.finrank_moduleSpecΓ _).trans hE) ((F.finrank_moduleSpecΓ _).trans hF)
 
-private theorem fittingIdeal_zero_cokernel_comap {Y : Scheme.{u}} (p : Y ⟶ X)
-    {M N : X.Modules} [M.IsQuasicoherent] [N.IsQuasicoherent] [N.IsFiniteType]
-    (f : M ⟶ N) :
-    fit₀(cokernel ((pullback p).map f)) = (fit₀(cokernel f)).comap p :=
-  (fittingIdeal_congr (fun U ↦ finite_sections_of_isAffineOpen _ U.val U.property)
-    (PreservesCokernel.iso (pullback p) f).symm 0).trans (fittingIdeal_pullback p _ 0)
-
 /-- The top exterior power of a morphism of finite locally free sheaves of the same
 constant rank has the same zeroth cokernel Fitting ideal sheaf as the original morphism. -/
 theorem fittingIdeal_zero_cokernel_exteriorPower (f : E.obj ⟶ F.obj)
@@ -183,6 +160,54 @@ theorem fittingIdeal_zero_cokernel_exteriorPower (f : E.obj ⟶ F.obj)
     (coker((Spec (.of R)), Λ.map g)) U.val U.property) e.symm 0).symm.trans
       (hlocal.trans (fittingIdeal_congr
         (fun U ↦ finite_sections_of_isAffineOpen _ U.val U.property) e'.symm 0))
+
+private theorem fittingIdeal_zero_cokernel_comp_of_isLocalRing
+    {R : CommRingCat.{u}} [IsLocalRing R] {E F G : FiniteLocallyFreeSheaf (Spec R)}
+    (f : E.obj ⟶ F.obj) (g : F.obj ⟶ G.obj)
+    (hEF : E.rank (IsLocalRing.closedPoint R) = F.rank (IsLocalRing.closedPoint R))
+    (hFG : F.rank (IsLocalRing.closedPoint R) = G.rank (IsLocalRing.closedPoint R)) :
+    fit₀(cokernel (f ≫ g)) = fit₀(cokernel g) * fit₀(cokernel f) := by
+  have := (E.finite_projective_moduleSpecΓ).1
+  have := (F.finite_projective_moduleSpecΓ).1
+  have := (G.finite_projective_moduleSpecΓ).1
+  rw [fittingIdeal_zero_cokernel_Spec, fittingIdeal_zero_cokernel_Spec (f := g),
+    fittingIdeal_zero_cokernel_Spec (f := f), ← Scheme.IdealSheafData.ofIdealTop_mul,
+    ← Ideal.map_mul, Functor.map_comp, ModuleCat.hom_comp]
+  congr 2
+  exact LinearMap.fittingIdeal_coker_zero_comp_of_finrank_eq _ _
+    ((E.finrank_moduleSpecΓ _).trans (hEF.trans (F.finrank_moduleSpecΓ _).symm))
+    ((F.finrank_moduleSpecΓ _).trans (hFG.trans (G.finrank_moduleSpecΓ _).symm))
+
+/-- For a composite of maps between finite locally free sheaves of the same rank at
+each point, the zeroth Fitting ideal of the cokernel is the product of the two
+zeroth cokernel Fitting ideals. -/
+theorem fittingIdeal_zero_cokernel_comp {E F G : FiniteLocallyFreeSheaf X}
+    (f : E.obj ⟶ F.obj) (g : F.obj ⟶ G.obj)
+    (hEF : ∀ x, E.rank x = F.rank x) (hFG : ∀ x, F.rank x = G.rank x) :
+    fit₀(cokernel (f ≫ g)) = fit₀(cokernel g) * fit₀(cokernel f) := by
+  suffices h : ∀ (R : Type u) [CommRing R] [IsLocalRing R] (p : Spec (.of R) ⟶ X),
+      (fit₀(cokernel (f ≫ g))).comap p = (fit₀(cokernel g) * fit₀(cokernel f)).comap p from
+    le_antisymm (Scheme.IdealSheafData.le_of_comap_Spec_isLocalRing fun R _ _ p ↦ (h R p).le)
+      (Scheme.IdealSheafData.le_of_comap_Spec_isLocalRing fun R _ _ p ↦ (h R p).ge)
+  intro R _ _ p
+  let P := FiniteLocallyFreeSheaf.pullback p
+  let Q := pullback p
+  let e (V : FiniteLocallyFreeSheaf X) : (P.obj V).obj ≅ Q.obj V.obj :=
+    eqToIso (FiniteLocallyFreeSheaf.pullback_obj_obj p V)
+  let f' := (e E).hom ≫ Q.map f ≫ (e F).inv
+  let g' := (e F).hom ≫ Q.map g ≫ (e G).inv
+  have hrank (V : FiniteLocallyFreeSheaf X) (x : Spec (.of R)) :
+      (P.obj V).rank x = V.rank (p x) := FiniteLocallyFreeSheaf.rank_pullback_apply p V x
+  have hlocal := fittingIdeal_zero_cokernel_comp_of_isLocalRing f' g'
+    ((hrank E _).trans ((hEF _).trans (hrank F _).symm))
+    ((hrank F _).trans ((hFG _).trans (hrank G _).symm))
+  let ef := cokernel.mapIso f' (Q.map f) (e E) (e F) (by simp [f'])
+  let eg := cokernel.mapIso g' (Q.map g) (e F) (e G) (by simp [g'])
+  let efg := cokernel.mapIso (f' ≫ g') (Q.map (f ≫ g)) (e E) (e G) (by simp [f', g', Q])
+  rw [Scheme.IdealSheafData.comap_mul, ← fittingIdeal_zero_cokernel_comap,
+    ← fittingIdeal_zero_cokernel_comap, ← fittingIdeal_zero_cokernel_comap]
+  rw [← fittingIdeal_congr _ efg 0, ← fittingIdeal_congr _ ef 0, ← fittingIdeal_congr _ eg 0]
+  exact hlocal
 
 end
 
