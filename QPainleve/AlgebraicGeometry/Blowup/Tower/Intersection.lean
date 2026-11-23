@@ -229,6 +229,24 @@ theorem picardMarking_canonicalClass [IsIntegral X] [IsNoetherian X]
 
 end CanonicalClass
 
+/-- A class pulled back from the base pairs trivially with the exceptional correction
+to the canonical class of a closed-point blowup tower. -/
+theorem IsClosedPointTower.classIntersectionNumber_pullback_canonicalBundle
+    [IsAlgClosed k] [IsIntegral X] [X.IsProjectiveOver k] (hT : IsClosedPointTower X T)
+    (a : LineBundleClass X) :
+    let : Y.Over (Spec (.of k)) := ⟨T.toBase ≫ f⟩
+    let : SmoothOfRelativeDimension 2 (Y ↘ Spec (.of k)) :=
+      hT.smoothOfRelativeDimension f
+    Chow.classIntersectionNumber k Y (pullback T.toBase a) (mk (canonicalBundle k Y 2)) =
+      Chow.classIntersectionNumber k X a (mk (canonicalBundle k X 2)) := by
+  have : IsNoetherian X := isNoetherian_of_finiteType (X ↘ Spec (.of k))
+  have h := classIntersectionNumber_picardMarking k hT (Additive.ofMul a, 0)
+    (Additive.ofMul (mk (canonicalBundle k X 2)), fun _ ↦ 1)
+  have hK := picardMarking_canonicalClass k hT
+  dsimp only at h hK ⊢
+  rw [hK, picardMarking_apply, picardHom_apply_zero] at h
+  simpa only [toMul_ofMul, Pi.zero_apply, zero_mul, Finset.sum_const_zero, sub_zero] using h
+
 /-- The canonical self-intersection falls by the length of a tower of point blowups. -/
 theorem classIntersectionNumber_canonicalBundle [IsAlgClosed k] [IsIntegral X]
     [X.IsProjectiveOver k] (hT : IsClosedPointTower X T) :

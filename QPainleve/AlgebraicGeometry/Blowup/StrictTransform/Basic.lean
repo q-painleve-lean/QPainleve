@@ -6,6 +6,7 @@ Authors: The QPainleve contributors
 module
 
 public import TauCeti.AlgebraicGeometry.Blowup.StrictTransform
+import QPainleve.AlgebraicGeometry.Blowup.Isomorphism
 import QPainleve.AlgebraicGeometry.IdealSheaf.Restriction
 import TauCeti.AlgebraicGeometry.Blowup.ExceptionalDivisor
 import TauCeti.AlgebraicGeometry.IdealSheaf.BaseChange
@@ -54,6 +55,22 @@ theorem ker_blowupMap_subschemeι_eq_map_comap {X : Scheme.{u}} (I J : X.IdealSh
       (IsPullback.of_hasPullback J.subschemeι I.blowupToBase).flip)
   rw [I.ker_blowupMap, ← hW, ← morphismRestrict_ι, Scheme.Hom.ker_comp]
   rw [ker_eq_comap_of_isPullback f (isPullback_morphismRestrict f W), hTotal]
+
+/-- The kernel defining the strict transform of a closed immersion agrees with the one
+computed using the canonical closed subscheme of its ideal. -/
+theorem ker_blowupMap_eq_ker_blowupMap_subschemeι {D X : Scheme.{u}}
+    (I : X.IdealSheafData) (i : D ⟶ X) [IsClosedImmersion i] :
+    (I.blowupMap i).ker = (I.blowupMap i.ker.subschemeι).ker := by
+  let e := asIso i.toImage
+  have he : e.hom ≫ i.ker.subschemeι = i := i.toImage_imageι
+  let J := I.comap i.ker.subschemeι
+  have hJ : J.comap e.hom = I.comap i := by rw [← I.comap_comp, he]
+  let g := J.blowupIso e hJ
+  have hcomp : g.hom ≫ I.blowupMap i.ker.subschemeι = I.blowupMap i := by
+    apply I.eq_blowupMap
+    dsimp only [g, J]
+    rw [Category.assoc, blowupMap_blowupToBase, blowupIso_hom_blowupToBase_assoc, he]
+  rw [← hcomp, Scheme.Hom.ker_comp_of_isIso]
 
 /-- The intersection of the strict-transform ideal and the exceptional ideal equals
 their product. The strict-transform ideal is saturated with respect to the locally

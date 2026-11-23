@@ -5,7 +5,7 @@ Authors: The QPainleve contributors
 -/
 module
 
-public import QPainleve.AlgebraicGeometry.Chow.RationalSurface
+public import QPainleve.AlgebraicGeometry.Chow.RationalSurface.Basic
 public import QPainleve.Geometry.Toric.Fan.Picard.Orthogonal
 public import TauCeti.Algebra.Module.Primitive
 

@@ -128,7 +128,7 @@ theorem snocSection_eq_snoc (f : D ⟶ S) (s : S ⟶ D) [IsClosedImmersion s]
 
 /-- Isomorphisms matching the boundary embeddings and Cartier centers also match their
 ambient center ideals. -/
-theorem comap_center_eq {T' : WithBoundary i' n Y'} (g : Y ≅ Y') (d : D ≅ D')
+theorem comap_center_eq {m : ℕ} {T' : WithBoundary i' m Y'} (g : Y ≅ Y') (d : D ≅ D')
     (hg : T.boundaryι ≫ g.hom = d.hom ≫ T'.boundaryι)
     (J' : D'.IdealSheafData) (hJ : J'.comap d.hom = J) :
     (J'.map T'.boundaryι).comap g.hom = J.map T.boundaryι := by
@@ -141,7 +141,7 @@ theorem comap_center_eq {T' : WithBoundary i' n Y'} (g : Y ≅ Y') (d : D ≅ D'
 /-- The lifted isomorphism of the blowups intertwines the strict-transform boundary
 embeddings. -/
 @[reassoc]
-theorem boundaryι_snoc_blowupIso_hom {T' : WithBoundary i' n Y'} (g : Y ≅ Y') (d : D ≅ D')
+theorem boundaryι_snoc_blowupIso_hom {m : ℕ} {T' : WithBoundary i' m Y'} (g : Y ≅ Y') (d : D ≅ D')
     (hg : T.boundaryι ≫ g.hom = d.hom ≫ T'.boundaryι)
     (J' : D'.IdealSheafData) (hJ : J'.comap d.hom = J)
     (h : J.IsEffectiveCartier) (h' : J'.IsEffectiveCartier) :
