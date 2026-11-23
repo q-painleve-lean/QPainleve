@@ -6,6 +6,7 @@ Authors: The QPainleve contributors
 module
 
 public import TauCeti.Geometry.Toric.Algebraic.Fan.Ray
+public import TauCeti.Geometry.Toric.Algebraic.Fan.Subdivision
 public import TauCeti.Geometry.Toric.Algebraic.Ray.Primitive
 
 import TauCeti.Geometry.Toric.Algebraic.Ray.Generation
@@ -14,7 +15,7 @@ import TauCeti.Geometry.Toric.Algebraic.Ray.Generation
 # Primitive generators of fan rays
 
 Each ray of a fan has a canonical primitive lattice generator, obtained from the
-primitive generator of its own one-dimensional cone.
+primitive generator of its own one-dimensional cone. Subdivision preserves these ray cones.
 -/
 
 public noncomputable section
@@ -22,7 +23,7 @@ public noncomputable section
 namespace TauCeti.Toric.Fan
 
 variable {N V : Type*} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
-  {i : N →+ V} {Φ : Fan i}
+  {i : N →+ V} {Φ Ψ : Fan i}
 
 /-- The generator of a fan ray as a primitive lattice vector. -/
 def Ray.primitiveGenerator (ρ : Φ.Ray) : N :=
@@ -70,6 +71,21 @@ theorem Ray.toCone_le_iff (ρ : Φ.Ray) (σ : Φ.cones) :
   rw [← Subtype.coe_le_coe, ρ.toCone_eq_hull_primitiveGenerator, Submodule.span_le,
     Set.singleton_subset_iff]
   rfl
+
+/-- A subdivision retains every ray of the original fan. -/
+theorem IsSubdivision.ray_mem (h : Ψ.IsSubdivision Φ) (ρ : Φ.Ray) :
+    ρ.toCone.val ∈ Ψ.cones := by
+  let x := i ρ.primitiveGenerator
+  have hx : x ∈ Φ.support := Φ.subset_support ρ.toCone.property ρ.primitiveGenerator_mem
+  obtain ⟨σ, hσ, hxσ⟩ := Ψ.mem_support.mp (h.support_eq.symm ▸ hx)
+  obtain ⟨τ, hτ, hστ⟩ := h.exists_cone_le hσ
+  have hρσ : ρ.toCone.val ≤ σ := by
+    rw [ρ.toCone_eq_hull_primitiveGenerator, Submodule.span_singleton_le_iff_mem]
+    exact hxσ
+  have hface := (Φ.isFaceOf_of_le hτ ρ.toCone.property (hρσ.trans hστ)).inf
+    (PointedCone.IsFaceOf.refl σ)
+  rw [inf_eq_right.mpr hστ, inf_eq_left.mpr hρσ] at hface
+  exact Ψ.mem_of_isFaceOf hσ hface
 
 /-- A primitive lattice vector lying in a ray is its canonical generator. -/
 theorem Ray.primitiveGenerator_eq_of_mem_of_isPrimitive (ρ : Φ.Ray) {v : N}
