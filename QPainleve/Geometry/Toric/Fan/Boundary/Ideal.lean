@@ -9,7 +9,6 @@ public import QPainleve.Geometry.Toric.Fan.Boundary.Basic
 public import Mathlib.AlgebraicGeometry.IdealSheaf.Functorial
 
 import TauCeti.AlgebraicGeometry.IdealSheaf.VanishingIdeal
-import TauCeti.Geometry.Convex.Cone.Face.Finite
 
 /-!
 # Ideal sheaves of toric boundary divisors
@@ -47,34 +46,6 @@ theorem coe_support_rayBoundaryIdeal (ρ : Φ.Ray) :
       closure {((Φ.rayBoundaryPoint hΦ ρ).val)} := by
   rw [rayBoundaryIdeal, coe_support_vanishingIdeal]
   rfl
-
-/-- The generic point of a ray divisor belongs to a cone chart exactly when that cone
-contains the ray. -/
-theorem rayBoundaryPoint_mem_range_affineToricChartι_iff (ρ : Φ.Ray) (σ : Φ.cones) :
-    (Φ.rayBoundaryPoint hΦ ρ).val ∈ Set.range (Φ.affineToricChartι σ) ↔ ρ.toCone ≤ σ := by
-  constructor
-  · intro h
-    let τ := ρ.toCone ⊓ σ
-    have hτ : τ.val.IsFaceOf ρ.toCone.val :=
-      Φ.isFaceOf_of_le ρ.toCone.property τ.property inf_le_left
-    rw [ρ.toCone_eq_hull_primitiveGenerator] at hτ
-    rcases hτ.eq_bot_or_eq_of_hull_singleton (i ρ.primitiveGenerator) with hbot | hfull
-    · have hz : τ = ⟨⊥, Φ.bot_mem σ.property⟩ := Subtype.ext hbot
-      have hmem : (Φ.rayBoundaryPoint hΦ ρ).val ∈ Set.range (Φ.affineToricChartι τ) := by
-        rw [← Φ.range_affineToricChartι_inter_range_affineToricChartι]
-        exact ⟨⟨_, Φ.coe_rayBoundaryPoint hΦ ρ |>.symm⟩, h⟩
-      rw [hz, ← Φ.denseTorusι_eq_affineToricChartι ⟨ρ.toCone⟩ _] at hmem
-      exact (Φ.rayBoundaryPoint_notMem_range_denseTorusι hΦ ρ hmem).elim
-    · have heq : τ = ρ.toCone := Subtype.ext
-        (hfull.trans ρ.toCone_eq_hull_primitiveGenerator.symm)
-      exact heq ▸ inf_le_right (a := ρ.toCone) (b := σ)
-  · intro h
-    let r := ρ.toToricRay Φ σ h
-    have hr : Ray.ofToricRay Φ σ r = ρ := by
-      simpa only [r, rayEquiv_apply, rayEquiv_symm_apply] using
-        congrArg Subtype.val ((Φ.rayEquiv σ).symm_apply_apply ⟨ρ, h⟩)
-    exact ⟨_, (Φ.rayBoundaryPoint_ofToricRay hΦ σ r).symm.trans
-      (congrArg (fun s : Φ.Ray ↦ (Φ.rayBoundaryPoint hΦ s).val) hr)⟩
 
 /-- On a chart not containing the ray, the boundary ideal is the unit ideal. -/
 @[simp]
