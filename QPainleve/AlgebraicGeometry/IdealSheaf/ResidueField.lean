@@ -5,9 +5,10 @@ Authors: The QPainleve contributors
 -/
 module
 
-public import Mathlib.AlgebraicGeometry.IdealSheaf.Subscheme
+public import Mathlib.AlgebraicGeometry.IdealSheaf.Functorial
 public import Mathlib.AlgebraicGeometry.ResidueField
 import TauCeti.AlgebraicGeometry.IdealSheaf.VanishingIdeal
+import TauCeti.AlgebraicGeometry.ResidueField
 
 /-!
 # The ideal sheaf of the closure of a point
@@ -15,11 +16,13 @@ import TauCeti.AlgebraicGeometry.IdealSheaf.VanishingIdeal
 A morphism from a reduced scheme gives its schematic image the reduced structure.
 The kernel of a field-valued point thus defines the reduced closure of the point.
 This identifies the reduced-center and residue-field descriptions of point blowups.
+The reduced closed point ideal pulls back to a reduced closed point ideal along a
+morphism that is an isomorphism over a neighborhood of the point.
 -/
 
 public section
 
-open CategoryTheory TopologicalSpace
+open CategoryTheory Limits TopologicalSpace
 
 namespace AlgebraicGeometry.Scheme
 
@@ -53,5 +56,42 @@ theorem Hom.ker_eq_ker_fromSpecResidueField {k : Type*} [Field k]
   apply SetLike.coe_injective
   rw [s.support_ker, hrange]
   rfl
+
+/-- Over an open on which a morphism is an isomorphism, the inverse image of a reduced
+closed point is a reduced closed point, with its residue-field ideal. -/
+theorem Hom.exists_comap_ker_fromSpecResidueField_of_isIso_morphismRestrict
+    {X Y : Scheme} (f : Y ⟶ X) (p : X) (hp : IsClosed ({p} : Set X))
+    (U : X.Opens) (hU : p ∈ U) [IsIso (f ∣_ U)] :
+    ∃ q : Y, IsClosed ({q} : Set Y) ∧ f q = p ∧
+      (X.fromSpecResidueField p).ker.comap f = (Y.fromSpecResidueField q).ker := by
+  let s := X.fromSpecResidueField p
+  have : IsClosedImmersion s := isClosed_singleton_iff_isClosedImmersion.mp hp
+  let t := IsOpenImmersion.lift U.ι s (by
+    simpa [s, Scheme.range_fromSpecResidueField, hp.closure_eq, Scheme.Opens.range_ι] using hU)
+  let g := f ∣_ U
+  let a := t ≫ inv g ≫ (f ⁻¹ᵁ U).ι
+  have hsmall : IsPullback (t ≫ inv g) (𝟙 _) g t :=
+    .of_vert_isIso ⟨by simp⟩
+  have hpb : IsPullback a (𝟙 _) f s := by
+    simpa only [a, Category.assoc, IsOpenImmersion.lift_fac, t] using
+      hsmall.paste_horiz (isPullback_morphismRestrict f U).flip
+  have : IsClosedImmersion a := MorphismProperty.of_isPullback hpb.flip inferInstance
+  let x := IsLocalRing.closedPoint (X.residueField p)
+  let q := a x
+  have hrange : Set.range a = {q} := Set.range_eq_singleton fun y ↦
+    congrArg a (Subsingleton.elim y x)
+  refine ⟨q, hrange ▸ a.isClosedEmbedding.isClosed_range, ?_, ?_⟩
+  · calc
+      f q = (a ≫ f) x := (Hom.comp_apply _ _ _).symm
+      _ = (𝟙 _ ≫ s) x := congrArg (fun m : _ ⟶ X ↦ m x) hpb.w
+      _ = p := by
+        rw [Category.id_comp]
+        exact fromSpecResidueField_apply p x
+  · rw [← IdealSheafData.ker_fst_of_isClosedImmersion s f]
+    calc
+      (pullback.fst f s).ker = (hpb.isoPullback.hom ≫ pullback.fst f s).ker :=
+        (Hom.ker_comp_of_isIso _ _).symm
+      _ = a.ker := congrArg Hom.ker hpb.isoPullback_hom_fst
+      _ = _ := a.ker_eq_ker_fromSpecResidueField
 
 end AlgebraicGeometry.Scheme

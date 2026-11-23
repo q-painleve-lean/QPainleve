@@ -5,24 +5,27 @@ Authors: The QPainleve contributors
 -/
 module
 
+public import Mathlib.AlgebraicGeometry.Morphisms.QuasiFinite
 public import Mathlib.AlgebraicGeometry.Morphisms.Separated
 public import Mathlib.AlgebraicGeometry.Morphisms.UniversallyClosed
 public import TauCeti.AlgebraicGeometry.Morphisms.IsoLocus
 
 import Mathlib.AlgebraicGeometry.PullbackCarrier
+import QPainleve.AlgebraicGeometry.Morphisms.Separated
 
 /-!
-# Composition and codimension on isomorphism loci
+# Isomorphism loci of scheme morphisms
 
 For a surjective first map and a separated, universally closed second map with reduced
 intermediate scheme, the centre of their composite is the union of the second centre and
-the image of the first. Over the isomorphism locus, a morphism is injective and preserves
-codimension.
+the image of the first. Over its isomorphism locus, a morphism is injective, preserves
+codimension, and is quasi-finite. A dominant section over an open of the target of a separated
+morphism with reduced source places that open in the isomorphism locus.
 -/
 
 public section
 
-open CategoryTheory TopologicalSpace
+open CategoryTheory Limits TopologicalSpace
 
 namespace AlgebraicGeometry.Scheme.Hom
 
@@ -82,6 +85,35 @@ theorem injOn_preimage_isoLocus (f : X ⟶ Y) :
   have hab : (f ∣_ U) a = (f ∣_ U) b := Subtype.ext <|
     (morphismRestrict_base_coe f U a).trans (hxy.trans (morphismRestrict_base_coe f U b).symm)
   exact congrArg Subtype.val ((f ∣_ U).isOpenEmbedding.injective hab)
+
+section
+
+variable (f : X ⟶ Y)
+
+/-- A dominant morphism from an open of the target giving a section there places that open
+inside the isomorphism locus. -/
+theorem le_isoLocus_of_dominant_section [IsReduced X] [IsSeparated f]
+    {U : Y.Opens} (s : U.toScheme ⟶ X) [IsDominant s] (hs : s ≫ f = U.ι) :
+    U ≤ f.isoLocus := by
+  let H := (isPullback_morphismRestrict f U).flip
+  let t := H.lift s (𝟙 U.toScheme) (by simpa using hs)
+  have ht : t ≫ (f ⁻¹ᵁ U).ι = s := H.lift_fst _ _ _
+  have : IsDominant (t ≫ (f ⁻¹ᵁ U).ι) := ht.symm ▸ inferInstanceAs (IsDominant s)
+  have : IsDominant t := IsDominant.of_comp_of_isOpenImmersion t (f ⁻¹ᵁ U).ι
+  exact f.le_isoLocus_iff.mpr <|
+    (f ∣_ U).isIso_of_dominant_section t (H.lift_snd _ _ _)
+
+/-- A morphism is quasi-finite at each point above its isomorphism locus. -/
+theorem quasiFiniteAt_of_mem_isoLocus {x : X}
+    (hx : f x ∈ f.isoLocus) : f.QuasiFiniteAt x := by
+  let V := f.isoLocus
+  let z : f ⁻¹ᵁ V := ⟨x, hx⟩
+  have h : LocallyQuasiFinite ((f ⁻¹ᵁ V).ι ≫ f) :=
+    (morphismRestrict_ι f V) ▸ inferInstanceAs (LocallyQuasiFinite ((f ∣_ V) ≫ V.ι))
+  exact (quasiFiniteAt_comp_iff_of_isOpenImmersion (f := (f ⁻¹ᵁ V).ι) (g := f)
+    (x := z)).mp (((f ⁻¹ᵁ V).ι ≫ f).quasiFiniteAt z)
+
+end
 
 attribute [local instance] specializationOrder
 

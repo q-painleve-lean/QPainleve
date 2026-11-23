@@ -9,10 +9,13 @@ public import Mathlib.AlgebraicGeometry.Morphisms.QuasiFinite
 public import TauCeti.AlgebraicGeometry.IntersectionNumber.ExceptionalCurve.Basic
 public import TauCeti.AlgebraicGeometry.IdealSheaf.Colon
 public import TauCeti.AlgebraicGeometry.IdealSheaf.Stalk
+import QPainleve.AlgebraicGeometry.CartierDivisor.Support
 import QPainleve.AlgebraicGeometry.EffectiveCartierDivisor.Trivial
+import QPainleve.AlgebraicGeometry.IdealSheaf.Stalk
 import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.Stalk
 import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.Subtraction
 import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.TensorProduct
+import TauCeti.AlgebraicGeometry.IdealSheaf.Comap
 
 /-!
 # Comparing exceptional divisors under a morphism
@@ -20,6 +23,7 @@ import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.TensorProduct
 An isomorphism between exceptional curves of the first kind identifies their conormal
 classes. If the Cartier pullback of the target curve agrees with the source curve
 at one stalk on the source curve, the residual divisor is disjoint from the source curve.
+The pulled-back ideal then agrees with the source ideal on a neighborhood of the source curve.
 Consequently a locally finite type morphism is quasi-finite at every point on the source
 curve. This comparison is used in the factorization of proper birational morphisms of
 regular surfaces. See the Stacks Project,
@@ -180,3 +184,39 @@ theorem quasiFiniteAt_of_exceptional_curve_isomorphism
   exact R.support.compl.isOpen.preimage (f.fiberι y).continuous
 
 end AlgebraicGeometry.Scheme.IdealSheafData.IsExceptionalCurveOfFirstKind
+
+namespace AlgebraicGeometry.Scheme.Hom
+
+open IdealSheafData
+
+variable {X Y : Scheme.{u}} {I : X.IdealSheafData} {J : Y.IdealSheafData}
+
+/-- If a dominant morphism identifies two exceptional curves of the first kind and induces an
+isomorphism on ambient stalks at one point of the source curve, then on a neighborhood of that
+curve the inverse image of the target curve is exactly the source curve as a closed subscheme. -/
+theorem exists_comap_eq_on_open_of_isExceptionalCurveOfFirstKind
+    (f : X ⟶ Y) [IsIntegral X] [IsIntegral Y] [IsDominant f]
+    (hI : I.IsExceptionalCurveOfFirstKind) (hJ : J.IsExceptionalCurveOfFirstKind)
+    (g : I.subscheme ⟶ J.subscheme) [IsIso g]
+    (w : I.subschemeι ≫ f = g ≫ J.subschemeι)
+    (z₀ : I.subscheme) [IsIso (f.stalkMap (I.subschemeι z₀))] :
+    ∃ U : X.Opens, (I.support : Set X) ⊆ U ∧ (J.comap f).comap U.ι = I.comap U.ι := by
+  have hle : J.comap f ≤ I := le_map_iff_comap_le.mp (by
+    rw [IdealSheafData.map, w, Scheme.Hom.ker_comp_of_isIso, ker_subschemeι])
+  have hD : (J.comap f).IsEffectiveCartier := by
+    apply hJ.isEffectiveCartier.comap_of_isIntegral f
+    rw [f.genericPoint_eq_of_isDominant]
+    exact hJ.isEffectiveCartier.genericPoint_notMem_support
+  let R := (J.comap f).colon I
+  have hprod : J.comap f = R * I :=
+    (J.comap f).eq_colon_mul I hI.isEffectiveCartier.locallyPrincipal hle
+  have hd : Disjoint (R.support : Set X) (I.support : Set X) :=
+    hI.disjoint_support_colon_comap_of_exceptional_curve_isomorphism hJ f hD (asIso g) w z₀
+      (J.stalkIdeal_comap_eq_of_isIso_stalkMap f g w z₀)
+  refine ⟨R.support.compl, ?_, ?_⟩
+  · intro x hx hxR
+    exact Set.disjoint_left.mp hd hxR hx
+  · rw [hprod, comap_mul, (comap_eq_top_iff _ _).mpr
+      (Scheme.Opens.ι_preimage_self _), ← one_eq_top, one_mul]
+
+end AlgebraicGeometry.Scheme.Hom

@@ -6,17 +6,14 @@ Authors: The QPainleve contributors
 module
 
 public import QPainleve.AlgebraicGeometry.Blowup.Intersection
-public import QPainleve.AlgebraicGeometry.Blowup.Order
+public import QPainleve.AlgebraicGeometry.Blowup.StrictTransform.Residual
 public import QPainleve.AlgebraicGeometry.WeilDivisor.LinearSystem.BaseIdeal
 public import TauCeti.AlgebraicGeometry.IdealSheaf.Colon
-import QPainleve.AlgebraicGeometry.Blowup.Descent
 import QPainleve.AlgebraicGeometry.Blowup.Exceptional.Multiplicity
-import QPainleve.AlgebraicGeometry.Blowup.Integral
-import QPainleve.AlgebraicGeometry.CartierDivisor.Support
 import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
 import TauCeti.AlgebraicGeometry.Blowup.Restriction
 import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.Subtraction
-import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.TensorProduct
+import TauCeti.AlgebraicGeometry.Morphisms.Dominant
 
 /-!
 # Moving linear systems on point blowups
@@ -98,58 +95,6 @@ theorem notMem_support_comap_blowupToBase_colon_exceptional_pow (J : X.IdealShea
   exact fun h ↦ hpull (support_antitone (le_colon _ _) h)
 
 end Support
-
-section Cartier
-
-variable [IsIntegral X] [IsNoetherian X] [IsRegularLocalRing (X.presheaf.stalk p)]
-  (hp : IsClosed ({p} : Set X)) (hdim : ringKrullDim (X.presheaf.stalk p) = 2)
-
-include hp hdim
-
-private theorem isEffectiveCartier_comap_pointBlowup {D : X.IdealSheafData}
-    (hD : D.IsEffectiveCartier) : (D.comap π).IsEffectiveCartier := by
-  have : IsIntegral (P).blowup := X.isIntegral_pointBlowup p (by
-    intro h
-    have hg : coheight (genericPoint X) = 0 :=
-      coheight_eq_zero.mpr TauCeti.AlgebraicGeometry.Scheme.isMax_genericPoint
-    rw [ringKrullDim_stalk_eq_coheight, h, hg] at hdim
-    norm_num at hdim)
-  have : Surjective π := by
-    rw [X.ker_fromSpecResidueField_eq_vanishingIdeal]
-    exact surjective_blowupToBase_point hp hdim
-  exact hD.comap_of_isDominant π
-
-/-- Removing an exceptional power up to the order of an effective Cartier divisor gives an
-effective Cartier divisor on the point blowup. -/
-theorem IsEffectiveCartier.comap_blowupToBase_colon_exceptional_pow {D : X.IdealSheafData}
-    (hD : D.IsEffectiveCartier) (n : ℕ) (hn : (n : ℕ∞) ≤ D.stalkOrder p) :
-    ((D.comap π).colon (E ^ n)).IsEffectiveCartier :=
-  (isEffectiveCartier_comap_pointBlowup p hp hdim hD).colon
-    (TauCeti.isEffectiveCartier_pow hE n).locallyPrincipal
-    ((comap_blowupToBase_le_exceptional_pow_iff p hp hdim _ n).mpr hn)
-
-/-- The residual divisor has class `π*D - nE` in the Picard group. -/
-theorem IsEffectiveCartier.toLineBundleClass_comap_blowupToBase_colon_exceptional_pow
-    {D : X.IdealSheafData} (hD : D.IsEffectiveCartier)
-    (n : ℕ) (hn : (n : ℕ∞) ≤ D.stalkOrder p) :
-    let hR := IsEffectiveCartier.comap_blowupToBase_colon_exceptional_pow p hp hdim hD n hn
-    (LineBundleClass.mk hR.toInvertibleSheaf)⁻¹ =
-      LineBundleClass.pullback π (LineBundleClass.mk hD.toInvertibleSheaf)⁻¹ *
-        (LineBundleClass.mk (hE).toInvertibleSheaf) ^ n := by
-  dsimp only
-  let hF := TauCeti.isEffectiveCartier_pow hE n
-  let hT := isEffectiveCartier_comap_pointBlowup p hp hdim hD
-  let hR := IsEffectiveCartier.comap_blowupToBase_colon_exceptional_pow p hp hdim hD n hn
-  have heq := eq_colon_mul (D.comap π) (E ^ n) hF.locallyPrincipal
-    ((comap_blowupToBase_le_exceptional_pow_iff p hp hdim _ n).mpr hn)
-  have hprod := LineBundleClass.mk_toInvertibleSheaf_congr hT
-    (TauCeti.isEffectiveCartier_mul hR hF) heq
-  rw [LineBundleClass.pullback_inv, hD.pullback_mk_toInvertibleSheaf hT, hprod,
-    LineBundleClass.mk_toInvertibleSheaf_mul hR hF, LineBundleClass.mk_toInvertibleSheaf_pow hE n]
-  rw [mul_inv_rev, mul_comm _ (LineBundleClass.mk hR.toInvertibleSheaf)⁻¹,
-    mul_assoc, inv_mul_cancel, mul_one]
-
-end Cartier
 
 end AlgebraicGeometry.Scheme.IdealSheafData
 
