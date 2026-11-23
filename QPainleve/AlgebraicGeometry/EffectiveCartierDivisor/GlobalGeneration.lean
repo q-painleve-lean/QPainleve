@@ -48,13 +48,6 @@ namespace AlgebraicGeometry.Scheme.IdealSheafData.IsEffectiveCartier
 
 variable {X : Scheme.{u}} {I : X.IdealSheafData}
 
-private def tensorPowSuccIdealIso (hI : I.IsEffectiveCartier) (n : ℕ) :
-    (hI.toInvertibleSheaf.dual.tensorPow (n + 1)).obj ⊗ I.sheaf ≅
-      (hI.toInvertibleSheaf.dual.tensorPow n).obj :=
-  (tensorRight I.sheaf).mapIso (eqToIso
-    (congrArg (fun L : InvertibleSheaf X ↦ L.obj) (hI.toInvertibleSheaf.dual.tensorPow_succ n))) ≪≫
-    hI.tensorDualCancelIso _
-
 private theorem eventually_subsingleton_cohomology_quotient (k : Type u) [Field k]
     [X.Over (Spec (.of k))] [X.IsProjectiveOver k]
     (L : InvertibleSheaf X)
