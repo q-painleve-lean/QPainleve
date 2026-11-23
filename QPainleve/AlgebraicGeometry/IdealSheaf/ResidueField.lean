@@ -7,6 +7,9 @@ module
 
 public import Mathlib.AlgebraicGeometry.IdealSheaf.Functorial
 public import Mathlib.AlgebraicGeometry.ResidueField
+public import TauCeti.AlgebraicGeometry.Morphisms.IsoLocus
+
+import QPainleve.AlgebraicGeometry.Morphisms.IsoLocus
 import TauCeti.AlgebraicGeometry.IdealSheaf.VanishingIdeal
 import TauCeti.AlgebraicGeometry.ResidueField
 
@@ -93,5 +96,27 @@ theorem Hom.exists_comap_ker_fromSpecResidueField_of_isIso_morphismRestrict
         (Hom.ker_comp_of_isIso _ _).symm
       _ = a.ker := congrArg Hom.ker hpb.isoPullback_hom_fst
       _ = _ := a.ker_eq_ker_fromSpecResidueField
+
+/-- If a point lies over a closed point in the isomorphism locus, its residue-field
+ideal is the inverse image of the ideal of that closed point. -/
+theorem Hom.comap_ker_fromSpecResidueField_of_mem_isoLocus {X Y : Scheme}
+    (f : Y ⟶ X) {q : Y} (hq : IsClosed ({f q} : Set X)) (hqU : f q ∈ f.isoLocus) :
+    (X.fromSpecResidueField (f q)).ker.comap f = (Y.fromSpecResidueField q).ker := by
+  have : IsIso (f ∣_ f.isoLocus) := f.le_isoLocus_iff.mp le_rfl
+  obtain ⟨q', -, hq', hker⟩ := f.exists_comap_ker_fromSpecResidueField_of_isIso_morphismRestrict
+    (f q) hq _ hqU
+  have hx' : f q' ∈ f.isoLocus := hq'.symm ▸ hqU
+  have heq : q' = q := f.injOn_preimage_isoLocus hx' hqU hq'
+  subst q'
+  exact hker
+
+/-- An ideal vanishes on a closed point exactly when its support contains that point. -/
+theorem IdealSheafData.le_ker_fromSpecResidueField_iff_mem_support {X : Scheme}
+    (D : X.IdealSheafData) {p : X}
+    (hp : IsClosed ({p} : Set X)) :
+    D ≤ (X.fromSpecResidueField p).ker ↔ p ∈ D.support := by
+  rw [ker_fromSpecResidueField_eq_vanishingIdeal, ← IdealSheafData.le_support_iff_le_vanishingIdeal]
+  rw [← SetLike.coe_subset_coe, Closeds.coe_mk, hp.closure_eq, Set.singleton_subset_iff]
+  rfl
 
 end AlgebraicGeometry.Scheme
