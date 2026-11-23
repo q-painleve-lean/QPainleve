@@ -8,6 +8,7 @@ module
 public import TauCeti.AlgebraicGeometry.IdealSheaf.BaseChange
 public import TauCeti.AlgebraicGeometry.Morphisms.SchemeTheoreticallyDominant
 
+import TauCeti.AlgebraicGeometry.IdealSheaf.Comap
 import TauCeti.AlgebraicGeometry.IdealSheaf.VanishingIdeal
 
 /-!
@@ -48,6 +49,16 @@ theorem map_comap_ker_of_isSchemeTheoreticallyDominant {Z X : Scheme.{u}}
     (q.ker.comap U.ι).map U.ι = q.ker := by
   rw [← ker_eq_comap_of_isPullback q (isPullback_morphismRestrict q U), ← Scheme.Hom.ker_comp,
     morphismRestrict_ι, Scheme.Hom.ker_comp_of_isSchemeTheoreticallyDominant]
+
+/-- If an ideal sheaf pulls back to the unit ideal along a dominant morphism, the
+open complement of its support is dense. -/
+theorem dense_compl_support_of_comap_eq_top {X Y : Scheme.{u}}
+    (I : X.IdealSheafData) (f : Y ⟶ X) [IsDominant f] (h : I.comap f = ⊤) :
+    Dense (I.support.compl : Set X) := by
+  apply f.denseRange.mono
+  rw [Set.range_subset_iff]
+  intro y
+  exact f.mem_preimage.mp (by rw [(I.comap_eq_top_iff f).mp h]; trivial)
 
 /-- Taking the reduced subscheme commutes with restriction along an open immersion. -/
 @[simp]
