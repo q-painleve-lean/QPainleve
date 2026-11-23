@@ -5,9 +5,8 @@ Authors: The QPainleve contributors
 -/
 module
 
-public import TauCeti.AlgebraicGeometry.Curves.Basic
+public import QPainleve.AlgebraicGeometry.Curves.Degree.Basic
 public import TauCeti.AlgebraicGeometry.LineBundle.Ample
-public import TauCeti.AlgebraicGeometry.LineBundle.Degree
 
 import QPainleve.AlgebraicGeometry.LineBundle.Ample
 import TauCeti.AlgebraicGeometry.CartierDivisor.Effective.Degree
@@ -28,24 +27,6 @@ open AlgebraicGeometry CategoryTheory
 open TauCeti.AlgebraicGeometry
 
 universe u
-
-namespace TauCeti.AlgebraicGeometry.LineBundleClass
-
-variable {X : Scheme.{u}} (k : Type u) [Field k]
-  [X.Over (Spec (.of k))] [X.IsCurveOver k]
-
-/-- The Euler degree of an integer tensor power on a proper integral curve. -/
-@[simp]
-theorem eulerDegree_zpow_of_isCurveOver (a : LineBundleClass X) (n : ℤ) :
-    eulerDegree k (a ^ n) = n * eulerDegree k a := by
-  have : RelativeDimensionLE 1 (X ↘ Spec (.of k)) :=
-    (relativeDimensionLE_iff_of_field _).mpr (Scheme.IsCurveOver.topologicalKrullDim_eq_one k).le
-  let deg : Additive (LineBundleClass X) →+ ℤ :=
-    AddMonoidHom.mk' (fun c ↦ eulerDegree k c.toMul) fun b c ↦
-      eulerDegree_mul_of_isIntegral k b.toMul c.toMul
-  simpa [deg, zsmul_eq_mul] using deg.map_zsmul n (Additive.ofMul a)
-
-end TauCeti.AlgebraicGeometry.LineBundleClass
 
 namespace TauCeti.AlgebraicGeometry.LineBundleClass.IsAmple
 
