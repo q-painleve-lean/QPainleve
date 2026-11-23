@@ -68,6 +68,15 @@ theorem toTower_nil (i : D ⟶ X) [IsClosedImmersion i] :
 theorem boundaryι_nil (i : D ⟶ X) [IsClosedImmersion i] :
     (nil i).boundaryι = i := (rfl)
 
+/-- The total transform of a closed subscheme of the original boundary restricts
+to the original ideal on the final boundary. -/
+@[simp]
+theorem comap_map_toBase_boundaryι [IsClosedImmersion i]
+    (T : WithBoundary i n Y) (J : D.IdealSheafData) :
+    ((J.map i).comap T.toTower.toBase).comap T.boundaryι = J := by
+  rw [← Scheme.IdealSheafData.comap_comp, boundaryι_toBase,
+    Scheme.IdealSheafData.comap_map_of_isClosedImmersion]
+
 variable (T : WithBoundary i n Y) (J : D.IdealSheafData)
 
 private theorem isEffectiveCartier_comap_center (hJ : J.IsEffectiveCartier) :
