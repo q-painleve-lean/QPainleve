@@ -13,6 +13,7 @@ public import TauCeti.AlgebraicGeometry.LineBundle.Ample
 
 import QPainleve.AlgebraicGeometry.Chow.Ample
 import QPainleve.AlgebraicGeometry.Chow.Nef
+import QPainleve.AlgebraicGeometry.LineBundle.Ample
 
 /-!
 # The ample component of the real Picard positive cone

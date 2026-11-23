@@ -11,7 +11,6 @@ public import TauCeti.AlgebraicGeometry.LineBundle.Ample
 import QPainleve.AlgebraicGeometry.Curves.Degree.Ample
 import QPainleve.AlgebraicGeometry.LineBundle.Ample
 import QPainleve.AlgebraicGeometry.Scheme.LocalDimension
-import TauCeti.AlgebraicGeometry.CartierDivisor.Effectivity
 
 /-!
 # Positive intersections of ample classes on surfaces
@@ -33,31 +32,6 @@ open TauCeti.AlgebraicGeometry
 open Scheme.IdealSheafData
 
 universe u
-
-namespace TauCeti.AlgebraicGeometry.LineBundleClass.IsAmple
-
-/-- On a positive-dimensional proper locally factorial integral scheme over a field,
-some positive power of an ample class is represented by a nonzero effective Weil divisor. -/
-theorem exists_effectiveWeilDivisor_pow_eq {k : Type u} [Field k] {X : Scheme.{u}}
-    [IsIntegral X] [IsNoetherian X]
-    [∀ x : X, UniqueFactorizationMonoid (X.presheaf.stalk x)] {a : LineBundleClass X}
-    (ha : a.IsAmple) (f : X ⟶ Spec (.of k)) [IsProper f] (hX : 0 < topologicalKrullDim X) :
-    ∃ (n : ℕ) (D : SchemeWeilDivisor X), 0 < n ∧ 0 ≤ D ∧ D ≠ 0 ∧
-      (Scheme.CartierDivisor.weilToLineBundleClassHom X D).toMul = a ^ n := by
-  have : IsNormalScheme X := IsNormalScheme.of_uniqueFactorizationMonoid_stalk
-  obtain ⟨n, hn, I, hI, hne, hclass⟩ := ha.exists_effectiveCartier_pow_ne_top f hX
-  let D := hI.toCartierDivisor
-  refine ⟨n, D.toWeilDivisor, hn,
-    (Scheme.CartierDivisor.isEffective_iff_toWeilDivisor_nonneg D).mp
-      hI.isEffective_toCartierDivisor, ?_, ?_⟩
-  · intro hz
-    have hzero := Scheme.CartierDivisor.toWeilDivisor_eq_zero_iff.mp hz
-    exact hne ((hI.toCartierDivisor_eq_iff (isEffectiveCartier_top X)).mp
-      (hzero.trans IsEffectiveCartier.toCartierDivisor_top.symm))
-  · rw [Scheme.CartierDivisor.weilToLineBundleClassHom_toWeilDivisor, toMul_ofMul]
-    exact hI.toLineBundleClass_toCartierDivisor.trans hclass
-
-end TauCeti.AlgebraicGeometry.LineBundleClass.IsAmple
 
 namespace TauCeti.AlgebraicGeometry.Chow
 

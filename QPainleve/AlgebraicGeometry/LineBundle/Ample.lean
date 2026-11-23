@@ -7,6 +7,7 @@ module
 
 public import TauCeti.AlgebraicGeometry.LineBundle.Ample
 public import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.Invertible
+public import TauCeti.AlgebraicGeometry.CartierDivisor.Factorial
 public import TauCeti.AlgebraicGeometry.LineBundle.Power
 public import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.TwistingSheaf.Basic
 public import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.SymmetricAlgebra
@@ -35,6 +36,8 @@ On a positive-dimensional proper integral scheme over a field, some positive pow
 an ample class is the class of a nonempty effective Cartier divisor. This uses the
 affine nonvanishing locus argument of
 [Stacks Project, Lemma 33.44.14](https://stacks.math.columbia.edu/tag/0B5X).
+On a locally factorial Noetherian scheme the corresponding Weil divisor is effective
+and nonzero.
 -/
 
 public section
@@ -108,6 +111,28 @@ theorem exists_effectiveCartier_pow_ne_top {k : Type u} [Field k] {a : LineBundl
       (L.idealSheaf_zeroDivisor hs)
     rw [← hI.toLineBundleClass_toCartierDivisor, ← hEq, hD.toCartierDivisor_idealSheaf,
       L.toLineBundleClass_zeroDivisor hs, hL]
+
+open Scheme.IdealSheafData in
+/-- On a positive-dimensional proper locally factorial integral scheme over a field,
+some positive power of an ample class is represented by a nonzero effective Weil divisor. -/
+theorem exists_effectiveWeilDivisor_pow_eq {k : Type u} [Field k] {X : Scheme.{u}}
+    [IsIntegral X] [IsNoetherian X]
+    [∀ x : X, UniqueFactorizationMonoid (X.presheaf.stalk x)] {a : LineBundleClass X}
+    (ha : a.IsAmple) (f : X ⟶ Spec (.of k)) [IsProper f] (hX : 0 < topologicalKrullDim X) :
+    ∃ (n : ℕ) (D : SchemeWeilDivisor X), 0 < n ∧ 0 ≤ D ∧ D ≠ 0 ∧
+      (Scheme.CartierDivisor.weilToLineBundleClassHom X D).toMul = a ^ n := by
+  have : IsNormalScheme X := IsNormalScheme.of_uniqueFactorizationMonoid_stalk
+  obtain ⟨n, hn, I, hI, hne, hclass⟩ := ha.exists_effectiveCartier_pow_ne_top f hX
+  let D := hI.toCartierDivisor
+  refine ⟨n, D.toWeilDivisor, hn,
+    (Scheme.CartierDivisor.isEffective_iff_toWeilDivisor_nonneg D).mp
+      hI.isEffective_toCartierDivisor, ?_, ?_⟩
+  · intro hz
+    have hzero := Scheme.CartierDivisor.toWeilDivisor_eq_zero_iff.mp hz
+    exact hne ((hI.toCartierDivisor_eq_iff (isEffectiveCartier_top X)).mp
+      (hzero.trans IsEffectiveCartier.toCartierDivisor_top.symm))
+  · rw [Scheme.CartierDivisor.weilToLineBundleClassHom_toWeilDivisor, toMul_ofMul]
+    exact hI.toLineBundleClass_toCartierDivisor.trans hclass
 
 /-- Some positive power of an ample line bundle on a scheme proper over an affine base is
 the pullback of 𝒪(1) along a finite morphism to projective space over the base. -/
