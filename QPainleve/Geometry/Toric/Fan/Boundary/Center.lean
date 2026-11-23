@@ -469,6 +469,20 @@ theorem orbitToBoundary_comp_subschemeι (hdim : Module.finrank ℤ N = 2)
       ρ.orbitToRayChart hdim hm hprim ≫ Φ.affineToricChartι ρ.toCone :=
   IsClosedImmersion.lift_fac _ _ _
 
+/-- The toric structure map on the ray orbit is the structure map of the Laurent ring. -/
+theorem orbitToBoundary_comp_algebraicRealizationStructureMap
+    (hdim : Module.finrank ℤ N = 2) (hm : m v = 0) (hprim : Function.Surjective m) :
+    ρ.orbitToBoundary hdim hm hprim ≫ (Φ.boundaryIdeal ⟨ρ.toCone⟩).subschemeι ≫
+        Φ.algebraicRealizationStructureMap =
+      Spec.map (CommRingCat.ofHom (algebraMap ℂ (LaurentPolynomial ℂ))) := by
+  rw [orbitToBoundary_comp_subschemeι_assoc,
+    Φ.affineToricChartι_comp_algebraicRealizationStructureMap, orbitToRayChart_def, ← Spec.map_comp]
+  apply congrArg Spec.map
+  apply CommRingCat.hom_ext
+  apply RingHom.ext
+  intro a
+  exact (ρ.orbitCoordinateMap hdim hm hprim).commutes a
+
 /-- The affine ray orbit is the scheme-theoretic restriction of the boundary to the ray chart. -/
 theorem isPullback_orbitToBoundary (hdim : Module.finrank ℤ N = 2)
     (hm : m v = 0) (hprim : Function.Surjective m) :
@@ -492,6 +506,14 @@ def binomialCenterOnBoundary (hdim : Module.finrank ℤ N = 2)
     Spec (.of ℂ) ⟶ (Φ.boundaryIdeal ⟨ρ.toCone⟩).subscheme :=
   Spec.map (CommRingCat.ofHom (laurentEval ((-1 : ℂˣ) * c⁻¹)).toRingHom) ≫
     ρ.orbitToBoundary hdim hm hprim
+
+/-- On the ray orbit, a binomial center is Laurent evaluation at `-c⁻¹`. -/
+theorem binomialCenterOnBoundary_def (hdim : Module.finrank ℤ N = 2)
+    (hm : m v = 0) (hprim : Function.Surjective m) (c : ℂˣ) :
+    ρ.binomialCenterOnBoundary hdim hm hprim c =
+      Spec.map (CommRingCat.ofHom (laurentEval ((-1 : ℂˣ) * c⁻¹)).toRingHom) ≫
+        ρ.orbitToBoundary hdim hm hprim :=
+  (rfl)
 
 /-- Including the binomial point from the boundary gives the same point of the fan scheme. -/
 @[reassoc, simp]
@@ -519,16 +541,8 @@ theorem smoothOfRelativeDimension_orbitToBoundary (hdim : Module.finrank ℤ N =
     SmoothOfRelativeDimension 1
       (ρ.orbitToBoundary hdim hm hprim ≫ (Φ.boundaryIdeal ⟨ρ.toCone⟩).subschemeι ≫
         Φ.algebraicRealizationStructureMap) := by
-  rw [← Category.assoc, orbitToBoundary_comp_subschemeι, Category.assoc,
-    Φ.affineToricChartι_comp_algebraicRealizationStructureMap, orbitToRayChart, ← Spec.map_comp]
-  have h : CommRingCat.ofHom (algebraMap ℂ R) ≫
-      CommRingCat.ofHom (ρ.orbitCoordinateMap hdim hm hprim).toRingHom =
-      CommRingCat.ofHom (algebraMap ℂ (LaurentPolynomial ℂ)) := by
-    apply CommRingCat.hom_ext
-    apply RingHom.ext
-    intro a
-    exact (ρ.orbitCoordinateMap hdim hm hprim).commutes a
-  rw [h, HasRingHomProperty.Spec_iff (P := @SmoothOfRelativeDimension 1)
+  rw [orbitToBoundary_comp_algebraicRealizationStructureMap,
+    HasRingHomProperty.Spec_iff (P := @SmoothOfRelativeDimension 1)
     (Q := RingHom.Locally (@RingHom.IsStandardSmoothOfRelativeDimension 1)),
     CommRingCat.hom_ofHom]
   apply RingHom.locally_of RingHom.isStandardSmoothOfRelativeDimension_respectsIso
