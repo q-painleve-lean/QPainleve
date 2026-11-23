@@ -5,6 +5,7 @@ Authors: The QPainleve contributors
 -/
 module
 
+public import QPainleve.Geometry.Toric.Fan.Boundary.Basic
 public import QPainleve.Geometry.Toric.Fan.Chart
 public import QPainleve.Geometry.Toric.Fan.Mutation.Chart
 public import QPainleve.Geometry.Toric.Fan.Ruling.Basic
@@ -14,6 +15,7 @@ import QPainleve.Geometry.Toric.Fan.DenseTorus
 import QPainleve.Geometry.Toric.Fan.Separated
 import TauCeti.Algebra.Bialgebra.MonoidAlgebra.Equiv
 import TauCeti.AlgebraicGeometry.IdealSheaf.Comap
+import TauCeti.AlgebraicGeometry.IdealSheaf.VanishingIdeal
 import TauCeti.Geometry.Toric.Algebraic.Fan.Normal
 
 /-!
@@ -687,5 +689,25 @@ theorem mutationComplementIso_preimage_range_denseTorusι
     Set.preimage_image_eq _ e.hom.isOpenEmbedding.injective]
 
 end Torus
+
+variable {Φ} in
+/-- On the complement of the pivot fiber, mutation identifies the reduced boundary ideals. -/
+theorem comap_boundaryIdeal_mutationComplementIso
+    {v : N} (hv : v ≠ 0) (hpos : PointedCone.hull ℝ {i v} ∈ Φ.cones)
+    (hneg : PointedCone.hull ℝ {i (-v)} ∈ Φ.cones) (c : ℂˣ) (hΦ : Nonempty Φ.cones)
+    (hΨ : Nonempty (Φ.mutationFan b hv hpos hneg).cones) :
+    ((Φ.mutationFan b hv hpos hneg).boundaryIdeal hΨ).comap
+      ((Φ.mutationComplementIso b (c : ℂ) hv hpos hneg).hom ≫
+        (mutationComplement (Φ.mutationFan b hv hpos hneg) b
+          (Φ.mutationDetCharacter_nonneg_or_nonpos b hv hpos hneg) (c : ℂ)).ι) =
+      (Φ.boundaryIdeal hΦ).comap
+        (Φ.mutationComplement b (Φ.detCharacter_nonneg_or_nonpos b hv hpos hneg) (c : ℂ)).ι := by
+  rw [boundaryIdeal_def, boundaryIdeal_def,
+    Scheme.IdealSheafData.comap_vanishingIdeal_of_isOpenImmersion,
+    Scheme.IdealSheafData.comap_vanishingIdeal_of_isOpenImmersion]
+  congr 1
+  apply TopologicalSpace.Closeds.ext
+  exact congrArg Set.compl
+    (Φ.mutationComplementIso_preimage_range_denseTorusι b (c : ℂ) hv hpos hneg hΦ hΨ)
 
 end TauCeti.Toric.Fan

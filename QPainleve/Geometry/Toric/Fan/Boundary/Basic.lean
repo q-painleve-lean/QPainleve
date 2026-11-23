@@ -72,6 +72,34 @@ theorem monomial_mem_rayIdeal (ρ : ToricRay σ) (m : dualSemigroup hi σ)
     χ (ofAdd m) ∈ rayIdeal hi hσ ρ :=
   Ideal.subset_span ⟨m, hm, rfl⟩
 
+/-- On the chart of a single ray, any character of order one generates the ray ideal. -/
+theorem rayIdeal_eq_span_of_apply_eq_one (ρ : ToricRay σ)
+    (hcone : σ = PointedCone.hull ℝ {i (primitiveGenerator hi hσ ρ)})
+    (a : dualSemigroup hi σ) (ha : (a : N →+ ℤ) (primitiveGenerator hi hσ ρ) = 1) :
+    rayIdeal hi hσ ρ = Ideal.span {MonoidAlgebra.of ℂ _ (ofAdd a)} := by
+  apply le_antisymm
+  · rw [rayIdeal_le_iff]
+    intro m hm
+    let d : dualSemigroup hi σ := ⟨(m : N →+ ℤ) - a, by
+      have hmem (x : N →+ ℤ) :
+          x ∈ dualSemigroup hi σ ↔ 0 ≤ x (primitiveGenerator hi hσ ρ) := by
+        let v := primitiveGenerator hi hσ ρ
+        have he : σ = PointedCone.hull ℝ {i v} := hcone
+        -- Freeze the primitive generator before rewriting the cone in the dual semigroup.
+        change x ∈ dualSemigroup hi σ ↔ 0 ≤ x v
+        rw [he, ← Set.image_singleton, mem_dualSemigroup_hull_image,
+          Set.forall_mem_singleton]
+      rw [hmem]
+      simp only [AddMonoidHom.sub_apply, ha]
+      omega⟩
+    apply Ideal.mem_span_singleton.mpr
+    refine ⟨MonoidAlgebra.of ℂ _ (ofAdd d), ?_⟩
+    rw [← map_mul, ← ofAdd_add]
+    congr 2
+    exact Subtype.ext (add_sub_cancel _ _).symm
+  · rw [Ideal.span_singleton_le_iff_mem]
+    exact monomial_mem_rayIdeal hi hσ ρ a (ha ▸ Int.zero_lt_one)
+
 variable {b : Module.Basis (ToricRay σ ⊕ ι) ℤ N}
   (hb : ∀ ρ, IsPrimitiveGenerator i ρ (b (Sum.inl ρ)))
 

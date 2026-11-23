@@ -9,7 +9,6 @@ public import QPainleve.Geometry.Toric.Fan.InternalBlowup
 public import QPainleve.Geometry.Toric.Fan.Mutation.Center
 
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Boundary.Pullback
-import TauCeti.AlgebraicGeometry.IdealSheaf.VanishingIdeal
 import TauCeti.AlgebraicGeometry.Restrict
 
 /-!
@@ -49,17 +48,6 @@ local notation "U₁" =>
 local notation "e" => Φ.mutationComplementIso b (Units.val c) hv hpos hneg
 local notation "f₀" => Scheme.Opens.ι (U₀)
 local notation "f₁" => Iso.hom (e) ≫ Scheme.Opens.ι (U₁)
-
-/-- On the complement of the pivot fiber, mutation identifies the reduced boundary ideals. -/
-theorem comap_boundaryIdeal_mutationComplementIso (hΦ : Nonempty Φ.cones)
-    (hΨ : Nonempty (Ψ).cones) :
-    ((Ψ).boundaryIdeal hΨ).comap (f₁) = (Φ.boundaryIdeal hΦ).comap (f₀) := by
-  rw [boundaryIdeal_def, boundaryIdeal_def, comap_vanishingIdeal_of_isOpenImmersion,
-    comap_vanishingIdeal_of_isOpenImmersion]
-  congr 1
-  apply TopologicalSpace.Closeds.ext
-  exact congrArg Set.compl
-    (Φ.mutationComplementIso_preimage_range_denseTorusι b (c : ℂ) hv hpos hneg hΦ hΨ)
 
 local notation "S" => Spec (CommRingCat.of ℂ)
 local notation "rankTwo" => (Eq.trans (Module.finrank_eq_card_basis b) (Fintype.card_fin 2))
