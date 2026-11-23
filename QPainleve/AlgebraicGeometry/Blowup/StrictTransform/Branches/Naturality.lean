@@ -9,7 +9,6 @@ public import QPainleve.AlgebraicGeometry.Blowup.Isomorphism
 public import QPainleve.AlgebraicGeometry.Blowup.StrictTransform.Branches.Basic
 public import QPainleve.AlgebraicGeometry.Curves.Node.Conductor.Isomorphism
 
-import QPainleve.AlgebraicGeometry.Blowup.Comparison
 import QPainleve.AlgebraicGeometry.IdealSheaf.VanishingIdeal
 
 /-!
@@ -47,98 +46,6 @@ local notation "pointIdeal" a:arg =>
   vanishingIdeal (Closeds.mk (closure (singleton a)) isClosed_closure)
 local notation "P" => pointIdeal (i x)
 local notation "J" => comap (pointIdeal (i x)) i
-
-include hx in
-private theorem isEffectiveCartier_comap_strictTransformCenter :
-    letI := hnodal.syntomic
-    ((J).comap (D.singularLocus k).blowupToBase).IsEffectiveCartier := by
-  have := hnodal.syntomic
-  rw [comap_vanishingIdeal_closure_singleton_of_isClosedImmersion i x]
-  exact D.isEffectiveCartier_comap_blowupToBase_singularLocus_of_node hnodal hx
-
-private def normalizationToStrictTransform :
-    letI := hnodal.syntomic
-    (D.singularLocus k).blowup ⟶ (J).blowup := by
-  letI := hnodal.syntomic
-  exact (J).blowupLift _ (isEffectiveCartier_comap_strictTransformCenter i hnodal hx)
-
-@[reassoc]
-private theorem normalizationToStrictTransform_blowupToBase :
-    letI := hnodal.syntomic
-    normalizationToStrictTransform i hnodal hx ≫ (J).blowupToBase =
-      (D.singularLocus k).blowupToBase := by
-  have := hnodal.syntomic
-  exact (J).blowupLift_blowupToBase _ _
-
-/-- The branch scheme maps to the strict transform in the ambient blowup of the
-specified node. The map restricts the lift of the normalization morphism. -/
-def strictTransformBranchMap :
-    letI := hnodal.syntomic
-    D.branchScheme k ⟶ (J).blowup := by
-  letI := hnodal.syntomic
-  exact D.branchSchemeToBlowup k ≫ normalizationToStrictTransform i hnodal hx
-
-/-- The map from the branch scheme to the strict transform commutes with both maps
-to the original curve. -/
-@[reassoc (attr := simp)]
-theorem strictTransformBranchMap_blowupToBase :
-    letI := hnodal.syntomic
-    strictTransformBranchMap i hnodal hx ≫ (J).blowupToBase =
-      D.branchSchemeToSingularLocus k ≫ (D.singularLocus k).subschemeι := by
-  have := hnodal.syntomic
-  rw [strictTransformBranchMap, Category.assoc, normalizationToStrictTransform_blowupToBase,
-    Scheme.branchSchemeToSingularLocus_subschemeι]
-
-/-- On the fiber over a node, the canonical branch map is a bijection to the fiber of
-the strict transform. Over a separably closed field this identifies the two branches
-even at a self-node. -/
-theorem bijOn_strictTransformBranchMap :
-    letI := hnodal.syntomic
-    Set.BijOn (strictTransformBranchMap i hnodal hx)
-      {q | (D.singularLocus k).subschemeι (D.branchSchemeToSingularLocus k q) = x}
-      ((J).blowupToBase ⁻¹' {x}) := by
-  have := hnodal.syntomic
-  obtain ⟨U, hxU, h⟩ := D.exists_comap_singularLocus_eq_comap_vanishingIdeal_of_node hnodal hx
-  have hJ : (D.singularLocus k).comap U.ι = (J).comap U.ι :=
-    h.trans (congrArg (fun L : D.IdealSheafData ↦ L.comap U.ι)
-      (comap_vanishingIdeal_closure_singleton_of_isClosedImmersion i x)).symm
-  have hν :=
-    bijOn_fiber_of_comap_eq (normalizationToStrictTransform_blowupToBase i hnodal hx) hJ hxU
-  let a := D.branchSchemeToBlowup k
-  let b := D.branchSchemeToSingularLocus k ≫ (D.singularLocus k).subschemeι
-  let ν := (D.singularLocus k).blowupToBase
-  let H := D.isPullback_branchScheme k
-  have hb : (a ≫ ν) = b := (D.branchSchemeToSingularLocus_subschemeι k).symm
-  have ha : Set.BijOn a (b ⁻¹' {x}) (ν ⁻¹' {x}) := by
-    have : IsClosedImmersion a := MorphismProperty.of_isPullback H inferInstance
-    refine ⟨?_, a.isClosedEmbedding.injective.injOn, ?_⟩
-    · intro y hy
-      simpa only [Set.mem_preimage, ← Scheme.Hom.comp_apply, hb] using hy
-    · intro y hy
-      obtain ⟨z, hz⟩ : x ∈ Set.range (D.singularLocus k).subschemeι :=
-        (D.singularLocus k).range_subschemeι.ge hx
-      obtain ⟨q, -, hq⟩ := Scheme.exists_preimage_of_isPullback H z y
-        (hz.trans (Set.mem_singleton_iff.mp hy).symm)
-      have hq' : a q = y := hq
-      have hqBase : b q = ν y := by rw [← hb, Scheme.Hom.comp_apply, hq']
-      exact ⟨q, hqBase.trans (Set.mem_singleton_iff.mp hy), hq'⟩
-  exact hν.comp ha
-
-/-- The actual branches over a node are equivalent to the points of the ambient
-strict transform over that node. -/
-def strictTransformBranchEquiv :
-    letI := hnodal.syntomic
-    ({q | (D.singularLocus k).subschemeι (D.branchSchemeToSingularLocus k q) = x} :
-      Set (D.branchScheme k)) ≃ ((J).blowupToBase ⁻¹' {x} : Set (J).blowup) :=
-  (bijOn_strictTransformBranchMap i hnodal hx).equiv _
-
-/-- The forward map of the branch equivalence is induced by the canonical scheme
-morphism from the branch scheme. -/
-@[simp]
-theorem strictTransformBranchEquiv_apply_coe :
-    letI := hnodal.syntomic
-    ∀ q, (strictTransformBranchEquiv i hnodal hx q).val = strictTransformBranchMap i hnodal hx q :=
-  fun _ ↦ (rfl)
 
 variable {D' Y' : Scheme.{u}} [D'.Over (Spec (.of k))]
   (i' : D' ⟶ Y') [IsClosedImmersion i']
