@@ -10,10 +10,11 @@ public import QPainleve.Geometry.Toric.Fan.Boundary.Basic
 public import QPainleve.Geometry.Toric.Fan.Point
 public import TauCeti.RingTheory.Node.Branches
 
+import Mathlib.RingTheory.Spectrum.Prime.RingHom
 import QPainleve.AlgebraicGeometry.Curves.Node.Split
 import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
 import QPainleve.Geometry.Toric.Cone.TwoDimensional
-import QPainleve.Geometry.Toric.Fan.Boundary.Ideal
+import QPainleve.Geometry.Toric.Fan.Boundary.Intersection
 import QPainleve.Geometry.Toric.Fan.TwoDimensional
 import TauCeti.AlgebraicGeometry.IdealSheaf.Reduced
 import TauCeti.AlgebraicGeometry.Pullback.Carrier
@@ -336,6 +337,109 @@ theorem isNodeOfReducedBoundary_iff_existsUnique_twoRayCone (hΦ : Φ.IsRegular)
       ((hpt.trans hx.symm).symm ▸ hm)
   · rintro ⟨σ, ⟨hσ, rfl⟩, -⟩
     exact Φ.isNodeOfReducedBoundary_distinguishedPointHom hΦ σ hdim hσ
+
+omit [Nonempty Φ.cones] in
+private theorem rayFace_eq_inf_ker (σ : Φ.cones) (hreg : IsRegularCone i σ.val)
+    {r t : ToricRay σ.val} (hrt : r ≠ t)
+    (hpair : ({r, t} : Set (ToricRay σ.val)) = Set.univ)
+    {l : ℕ} {b : Module.Basis (ToricRay σ.val ⊕ Fin l) ℤ N}
+    (hb : ∀ u, IsPrimitiveGenerator i u (b (Sum.inl u))) :
+    let a := dualSemigroupCoord Φ.lattice (Φ.isToricCone σ.property) hb (Sum.inl t)
+    σ.val ⊓ PointedCone.ofSubmodule (LinearMap.ker (Φ.lattice.realCharacter (a : N →+ ℤ))) =
+      r.toPointedCone := by
+  classical
+  let H := Φ.isToricCone σ.property
+  let a := dualSemigroupCoord Φ.lattice H hb (Sum.inl t)
+  let K := PointedCone.ofSubmodule (LinearMap.ker (Φ.lattice.realCharacter (a : N →+ ℤ)))
+  let F : σ.val.Face :=
+    ⟨σ.val ⊓ K, PointedCone.isFaceOf_inf_ker ((mem_dualSemigroup Φ.lattice a).mp a.property)⟩
+  suffices hF : F = r.val from congrArg PointedCone.Face.toPointedCone hF
+  apply (hreg.faceOrderIso Φ.lattice).injective
+  rw [hreg.faceOrderIso_toricRay]
+  ext u
+  rw [hreg.mem_faceOrderIso_iff, Set.mem_singleton_iff]
+  have hu : u ∈ ({r, t} : Set (ToricRay σ.val)) := hpair.symm ▸ Set.mem_univ u
+  have hm : i (primitiveGenerator Φ.lattice H u) ∈ σ.val :=
+    u.val.isFaceOf.le (primitiveGenerator_mem Φ.lattice H u)
+  rw [← PointedCone.Face.mem_toPointedCone]
+  -- Read membership of the exposed face as a vanishing coordinate at the other ray.
+  change (i (primitiveGenerator Φ.lattice H u) ∈ σ.val ∧
+    i (primitiveGenerator Φ.lattice H u) ∈ K) ↔ u = r
+  rw [and_iff_right hm]
+  change Φ.lattice.realCharacter (a : N →+ ℤ) (i (primitiveGenerator Φ.lattice H u)) = 0 ↔ u = r
+  rw [Φ.lattice.realCharacter_apply, ← (hb u).eq_primitiveGenerator Φ.lattice H]
+  rcases Set.mem_insert_iff.mp hu with rfl | ht
+  · simp [a, Module.Basis.coord_apply, hrt]
+  · obtain rfl := Set.mem_singleton_iff.mp ht
+    simp [a, Module.Basis.coord_apply, Ne.symm hrt]
+
+omit [Nonempty Φ.cones] in
+private theorem rayIdeal_le_of_notMem_rayChart (hΦ : Φ.IsRegular) (σ : Φ.cones)
+    (hσ : Nat.card (ToricRay σ.val) = 2) (x : Φ.affineToricChart σ)
+    (hx : ∀ ρ : Φ.Ray, Φ.affineToricChartι σ x ∉ Set.range (Φ.affineToricChartι ρ.toCone))
+    (t : ToricRay σ.val) :
+    rayIdeal Φ.lattice (Φ.isToricCone σ.property) t ≤ x.asIdeal := by
+  classical
+  let H := Φ.isToricCone σ.property
+  let hreg := (isRegular_iff.mp hΦ) _ σ.property
+  have := ToricRay.finite_of_fg H.fg
+  have : Nontrivial (ToricRay σ.val) := Finite.one_lt_card_iff_nontrivial.mp (by rw [hσ]; decide)
+  obtain ⟨r, hrt⟩ := exists_ne t
+  obtain ⟨l, b, hb⟩ := hreg.exists_basis_sum
+  let a := dualSemigroupCoord Φ.lattice H hb (Sum.inl t)
+  have hpair : ({r, t} : Set (ToricRay σ.val)) = Set.univ := by
+    apply (Set.eq_univ_iff_ncard _).mpr
+    rw [Set.ncard_pair hrt, hσ]
+  let ρ := Ray.ofToricRay Φ σ r
+  let hface := Φ.isFaceOf_of_le σ.property ρ.toCone.property (Ray.toCone_ofToricRay_le Φ σ r)
+  have hchart : x ∉ Set.range (faceAffineToricSchemeMap Φ.lattice hface) := by
+    rintro ⟨y, rfl⟩
+    refine hx ρ ⟨y, ?_⟩
+    rw [← Scheme.Hom.comp_apply, Φ.faceAffineToricSchemeMap_comp_affineToricChartι]
+  have hcut :
+      σ.val ⊓ PointedCone.ofSubmodule (LinearMap.ker (Φ.lattice.realCharacter (a : N →+ ℤ))) =
+        ρ.toCone.val :=
+    (rayFace_eq_inf_ker σ hreg hrt hpair hb).trans (Ray.toCone_ofToricRay Φ σ r).symm
+  have hrange : Set.range (faceAffineToricSchemeMap Φ.lattice hface) =
+      (PrimeSpectrum.basicOpen (MonoidAlgebra.single (ofAdd a) (1 : ℂ)) :
+        Set (PrimeSpectrum (affineCoordinateRing Φ.lattice σ.val))) := by
+    let Q (τ : PointedCone ℝ V) := ∀ h : τ.IsFaceOf σ.val,
+      Set.range (faceAffineToricSchemeMap Φ.lattice h) =
+        (PrimeSpectrum.basicOpen (MonoidAlgebra.single (ofAdd a) (1 : ℂ)) :
+          Set (PrimeSpectrum (affineCoordinateRing Φ.lattice σ.val)))
+    exact (hcut ▸ (fun _ ↦ range_faceAffineToricSchemeMap Φ.lattice H.fg a) :
+      Q ρ.toCone.val) hface
+  rw [hrange] at hchart
+  rw [rayIdeal_eq_span Φ.lattice H hb, Ideal.span_singleton_le_iff_mem, MonoidAlgebra.of_apply]
+  exact not_not.mp (fun hm ↦ hchart ((PrimeSpectrum.mem_basicOpen _ _).mpr hm))
+
+/-- Every point of a complete regular toric surface outside the nodes of its reduced
+boundary belongs to a ray chart. -/
+theorem exists_rayChart_of_not_isNodeOfReducedBoundary (hΦ : Φ.IsRegular) (hc : Φ.IsComplete)
+    (hdim : Module.finrank ℤ N = 2) {x : Φ.algebraicRealization}
+    (hn : ¬ (D).IsNodeOfReducedBoundary Φ.algebraicRealizationStructureMap x) :
+    ∃ ρ : Φ.Ray, x ∈ Set.range (Φ.affineToricChartι ρ.toCone) := by
+  by_contra! hx
+  obtain ⟨σ, hσ, y, rfl⟩ := exists_twoRayChart_apply_eq hΦ hc hdim x
+  let d := distinguishedPoint Φ.lattice (⊤ : σ.val.Face)
+  have hy : RingHom.ker d.toRingHom ≤ y.asIdeal := by
+    rw [← iSup_rayIdeal_eq_ker_distinguishedPoint Φ.lattice (Φ.isToricCone σ.property)
+      ((isRegular_iff.mp hΦ) _ σ.property) (hσ.trans hdim.symm), iSup_le_iff]
+    exact rayIdeal_le_of_notMem_rayChart hΦ σ hσ y hx
+  have hd : Function.Surjective d := fun c ↦ ⟨algebraMap ℂ _ c, d.commutes c⟩
+  obtain ⟨z, hz⟩ : y ∈ Set.range (Spec.map (CommRingCat.ofHom d.toRingHom)) := by
+    -- In the affine chart, the morphism on points is comap of prime ideals.
+    let p : PrimeSpectrum (affineCoordinateRing Φ.lattice σ.val) := y
+    change p ∈ Set.range (PrimeSpectrum.comap d.toRingHom)
+    rw [range_comap_of_surjective _ _ hd]
+    exact (PrimeSpectrum.mem_zeroLocus p _).mpr hy
+  subst y
+  let pt : Spec (.of ℂ) := IsLocalRing.closedPoint ℂ
+  have he := congrArg (fun f : Spec (.of ℂ) ⟶ Φ.algebraicRealization ↦ f pt)
+    (Φ.distinguishedPointHom_def σ)
+  rw [Scheme.Hom.comp_apply] at he
+  rw [Subsingleton.elim z pt, ← he] at hn
+  exact hn (Φ.isNodeOfReducedBoundary_distinguishedPointHom hΦ σ hdim hσ)
 
 end Fan
 

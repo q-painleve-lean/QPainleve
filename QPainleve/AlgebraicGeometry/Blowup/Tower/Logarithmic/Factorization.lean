@@ -8,6 +8,7 @@ module
 public import QPainleve.AlgebraicGeometry.Blowup.Tower.Logarithmic.Basic
 public import QPainleve.AlgebraicGeometry.Blowup.Tower.Nodal.Basic
 
+import Mathlib.AlgebraicGeometry.AlgClosed.Basic
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Logarithmic.Boundary
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Nodal.Reorder
 import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
@@ -118,6 +119,28 @@ structure OrderedFactorization (D : X.IdealSheafData) (s : X ⟶ S)
   comap_boundary_iso_hom : P.comap iso.hom =
     (alongBoundary boundary.subschemeι
       (fun j ↦ ⟨(center j).ker, isEffectiveCartier_center j⟩)).2.boundaryι.ker
+
+/-- Over an algebraically closed field, the recorded residue schemes of the internal
+centers have their original structure morphisms isomorphic to the base point. -/
+theorem isIso_center_comp_structureMap {k : Type u} [Field k] [IsAlgClosed k]
+    {f : X ⟶ Spec (.of k)} [LocallyOfFiniteType f] {c : Fin m → Over X}
+    (h : IsLogarithmicBoundaryTower D f T P c) (j : Fin m) :
+    IsIso ((c j).hom ≫ f) := by
+  induction h with
+  | nil => exact j.elim0
+  | node _ _ _ _ _ ih => exact ih j
+  | @internal n m W U Q c _ p hp hC hs ih =>
+    refine Fin.lastCases ?_ (fun a ↦ ?_) j
+    · have := LocallyOfFiniteType.isLocallyNoetherian f
+      have := U.isProper_toBase
+      have : LocallyOfFiniteType (Q.subschemeι ≫ U.toBase ≫ f) := inferInstance
+      rw [Fin.snoc_last]
+      -- The new center is the actual residue-field scheme of the closed boundary point.
+      change IsIso (((Q.subscheme.fromSpecResidueField p ≫ Q.subschemeι) ≫ U.toBase) ≫ f)
+      rw [Category.assoc, Category.assoc, ← SpecMap_residueFieldIsoBase_inv _ p hp]
+      infer_instance
+    · rw [Fin.snoc_castSucc]
+      exact ih a
 
 namespace OrderedFactorization
 

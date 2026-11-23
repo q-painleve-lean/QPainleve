@@ -21,6 +21,8 @@ import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.Section
 import TauCeti.AlgebraicGeometry.IdealSheaf.BaseChange
 import TauCeti.AlgebraicGeometry.IdealSheaf.OfIdealTop
 import TauCeti.AlgebraicGeometry.IdealSheaf.VanishingIdeal
+import TauCeti.AlgebraicGeometry.Pullback.Carrier
+import TauCeti.AlgebraicGeometry.Scheme.SpecOver
 
 /-!
 # Binomial centers on toric boundary rays
@@ -513,23 +515,58 @@ instance isClosedImmersion_binomialCenterOnBoundary (hdim : Module.finrank ℤ N
     infer_instance
   exact IsClosedImmersion.of_comp_isClosedImmersion _ (Φ.boundaryIdeal ⟨ρ.toCone⟩).subschemeι
 
+/-- The ray orbit inclusion commutes with the structure morphisms over `ℂ`. -/
+@[reassoc (attr := simp)]
+theorem orbitToBoundary_comp_structureMap (hdim : Module.finrank ℤ N = 2)
+    (hm : m v = 0) (hprim : Function.Surjective m) :
+    ρ.orbitToBoundary hdim hm hprim ≫
+        (Φ.boundaryIdeal ⟨ρ.toCone⟩).subschemeι ≫ Φ.algebraicRealizationStructureMap =
+      Spec.map (CommRingCat.ofHom (algebraMap ℂ (LaurentPolynomial ℂ))) := by
+  rw [← Category.assoc, orbitToBoundary_comp_subschemeι, Category.assoc,
+    Φ.affineToricChartι_comp_algebraicRealizationStructureMap, orbitToRayChart, ← Spec.map_comp]
+  congr 1
+  apply CommRingCat.hom_ext
+  apply RingHom.ext
+  intro a
+  exact (ρ.orbitCoordinateMap hdim hm hprim).commutes a
+
+/-- Every complex section of the reduced boundary in a ray chart is the binomial
+point for some nonzero parameter in the prescribed primitive character. -/
+theorem exists_binomialCenterOnBoundary_eq_of_mem_rayChart
+    (hdim : Module.finrank ℤ N = 2) (hm : m v = 0) (hprim : Function.Surjective m)
+    (p : Spec (.of ℂ) ⟶ (Φ.boundaryIdeal ⟨ρ.toCone⟩).subscheme)
+    (hp : p ≫ (Φ.boundaryIdeal ⟨ρ.toCone⟩).subschemeι ≫ Φ.algebraicRealizationStructureMap = 𝟙 _)
+    (hx : (Φ.boundaryIdeal ⟨ρ.toCone⟩).subschemeι (p (IsLocalRing.closedPoint ℂ)) ∈
+      Set.range (Φ.affineToricChartι ρ.toCone)) :
+    ∃ c : ℂˣ, ρ.binomialCenterOnBoundary hdim hm hprim c = p := by
+  let o := ρ.orbitToBoundary hdim hm hprim
+  have hmem : Set.range p ⊆ Set.range o := by
+    rintro _ ⟨x, rfl⟩
+    rw [Subsingleton.elim x (IsLocalRing.closedPoint ℂ),
+      Scheme.Pullback.range_snd_of_isPullback (ρ.isPullback_orbitToBoundary hdim hm hprim)]
+    exact hx
+  let l := IsOpenImmersion.lift o p hmem
+  have hl : l ≫ o = p := IsOpenImmersion.lift_fac _ _ _
+  have hbase : l ≫ Spec.map (CommRingCat.ofHom (algebraMap ℂ (LaurentPolynomial ℂ))) = 𝟙 _ := by
+    rw [← ρ.orbitToBoundary_comp_structureMap hdim hm hprim, ← Category.assoc l o, hl, hp]
+  have hl' : l ≫ Spec.algebraMap ℂ (LaurentPolynomial ℂ) = Spec.algebraMap ℂ ℂ := by
+    simpa only [Spec.algebraMap, Algebra.algebraMap_self, CommRingCat.ofHom_id, Spec.map_id]
+      using hbase
+  obtain ⟨f, hf⟩ := TauCeti.AlgebraicGeometry.exists_algHom_SpecMap_eq l hl'
+  obtain ⟨u, rfl⟩ := laurentEvalEquiv.surjective f
+  refine ⟨(-u)⁻¹, ?_⟩
+  rw [binomialCenterOnBoundary, ← hl, ← hf, laurentEvalEquiv_apply]
+  simp [o]
+
 /-- The ray chart of the reduced boundary is a smooth relative curve over `ℂ`. -/
 theorem smoothOfRelativeDimension_orbitToBoundary (hdim : Module.finrank ℤ N = 2)
     (hm : m v = 0) (hprim : Function.Surjective m) :
     SmoothOfRelativeDimension 1
       (ρ.orbitToBoundary hdim hm hprim ≫ (Φ.boundaryIdeal ⟨ρ.toCone⟩).subschemeι ≫
         Φ.algebraicRealizationStructureMap) := by
-  rw [← Category.assoc, orbitToBoundary_comp_subschemeι, Category.assoc,
-    Φ.affineToricChartι_comp_algebraicRealizationStructureMap, orbitToRayChart, ← Spec.map_comp]
-  have h : CommRingCat.ofHom (algebraMap ℂ R) ≫
-      CommRingCat.ofHom (ρ.orbitCoordinateMap hdim hm hprim).toRingHom =
-      CommRingCat.ofHom (algebraMap ℂ (LaurentPolynomial ℂ)) := by
-    apply CommRingCat.hom_ext
-    apply RingHom.ext
-    intro a
-    exact (ρ.orbitCoordinateMap hdim hm hprim).commutes a
-  rw [h, HasRingHomProperty.Spec_iff (P := @SmoothOfRelativeDimension 1)
-    (Q := RingHom.Locally (@RingHom.IsStandardSmoothOfRelativeDimension 1)),
+  rw [orbitToBoundary_comp_structureMap, HasRingHomProperty.Spec_iff
+    (P := @SmoothOfRelativeDimension 1) (Q := RingHom.Locally
+      (@RingHom.IsStandardSmoothOfRelativeDimension 1)),
     CommRingCat.hom_ofHom]
   apply RingHom.locally_of RingHom.isStandardSmoothOfRelativeDimension_respectsIso
   rw [RingHom.isStandardSmoothOfRelativeDimension_algebraMap (n := 1)]
