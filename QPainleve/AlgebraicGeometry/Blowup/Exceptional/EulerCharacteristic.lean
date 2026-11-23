@@ -9,6 +9,7 @@ public import QPainleve.AlgebraicGeometry.Blowup.Exceptional.Restriction
 public import TauCeti.AlgebraicGeometry.IdealSheaf.Over
 public import TauCeti.AlgebraicGeometry.LineBundle.EulerCharacteristic
 public import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.ProjectiveOver
+public import QPainleve.AlgebraicGeometry.Blowup.Exceptional.Class
 import Mathlib.AlgebraicGeometry.AlgClosed.Basic
 import QPainleve.AlgebraicGeometry.Blowup.Point.Cohomology
 import QPainleve.AlgebraicGeometry.Cohomology.Projective
@@ -381,5 +382,29 @@ theorem eulerCharBelow_pointBlowup_exceptional_twist_of_smoothSurface
     rw [← SpecMap_residueFieldIsoBase_inv f p hp]
     infer_instance
   exact eulerCharBelow_pointBlowup_exceptional_twist p k hp hd hr hX.le a m
+
+local notation "Jₚ" =>
+  vanishingIdeal (Closeds.mk (closure (Set.singleton p)) isClosed_closure)
+
+omit [Infinite k] in
+/-- The exceptional twist formula for the center given by the vanishing ideal of the
+closed point, in terms of the Picard class of its exceptional divisor. -/
+theorem eulerCharBelow_pointBlowup_exceptional_twist_vanishingIdeal
+    [IsAlgClosed k] [SmoothOfRelativeDimension 2 (X ↘ Spec (.of k))]
+    (hp : IsClosed ({p} : Set X)) (a : LineBundleClass X) (m : ℤ) :
+    letI : Scheme.Over (Jₚ).blowup (Spec (.of k)) := ⟨(Jₚ).blowupToBase ≫ X ↘ Spec (.of k)⟩
+    LineBundleClass.eulerCharBelow k
+      (LineBundleClass.pullback (Jₚ).blowupToBase a * (Jₚ).blowupExceptionalClass ^ m) 3 =
+      LineBundleClass.eulerCharBelow k a 3 + m * (1 - m) / 2 := by
+  -- Transport the scheme, structure map and exceptional class along the center equality.
+  let P (J : X.IdealSheafData) : Prop :=
+    let : J.blowup.Over (Spec (.of k)) := ⟨J.blowupToBase ≫ X ↘ Spec (.of k)⟩
+    LineBundleClass.eulerCharBelow k
+      (LineBundleClass.pullback J.blowupToBase a * J.blowupExceptionalClass ^ m) 3 =
+      LineBundleClass.eulerCharBelow k a 3 + m * (1 - m) / 2
+  have h : P Iₚ := by
+    simpa only [P, blowupExceptionalClass_def, inv_zpow, zpow_neg] using
+      eulerCharBelow_pointBlowup_exceptional_twist_of_smoothSurface p k hp a m
+  exact (X.ker_fromSpecResidueField_eq_vanishingIdeal p) ▸ h
 
 end AlgebraicGeometry.Scheme.IdealSheafData
