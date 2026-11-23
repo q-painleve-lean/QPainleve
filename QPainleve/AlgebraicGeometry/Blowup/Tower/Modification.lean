@@ -13,6 +13,7 @@ public import TauCeti.AlgebraicGeometry.Morphisms.Modification.Basic
 import QPainleve.AlgebraicGeometry.Blowup.Modification
 import QPainleve.AlgebraicGeometry.Morphisms.Modification.Birational
 import TauCeti.AlgebraicGeometry.Morphisms.Modification.Composition
+import TauCeti.Topology.KrullDimension.Irreducible
 
 /-!
 # Birational morphisms from closed point blowup towers
@@ -33,6 +34,9 @@ universe u
 namespace QPainleve.BlowupTower.IsClosedPointTower
 
 variable {X Y Z S : Scheme.{u}} {n : ℕ} {T : BlowupTower X n Y}
+
+section
+
 variable [IsLocallyNoetherian X] [IrreducibleSpace X] [Nontrivial X]
 
 /-- The projection from a tower of blowups at closed points is a modification.
@@ -71,5 +75,19 @@ theorem isModification_of_resolved_partialIso (hT : IsClosedPointTower X T)
   have : IsProper (f ≫ sZ) := hf.symm ▸ inferInstanceAs (IsProper (T.toBase ≫ sX))
   have : IsProper f := IsProper.of_comp f sZ
   exact IsModification.of_resolved_partialIso T.toBase a f h
+
+end
+
+/-- A closed point blowup tower over an irreducible smooth surface is a modification. -/
+theorem isModification_of_smoothOfRelativeDimension_two
+    (hT : IsClosedPointTower X T) {k : Type u} [Field k] [IrreducibleSpace X]
+    (f : X ⟶ Spec (.of k)) [SmoothOfRelativeDimension 2 f] : IsModification T.toBase := by
+  have : Smooth f := SmoothOfRelativeDimension.smooth 2 f
+  have : IsLocallyNoetherian X := LocallyOfFiniteType.isLocallyNoetherian f
+  have : Nontrivial X := by
+    rw [← not_subsingleton_iff_nontrivial, ← TauCeti.topologicalKrullDim_eq_zero_iff_subsingleton,
+      topologicalKrullDim_eq_of_smoothOfRelativeDimension f (n := 2)]
+    decide
+  exact hT.isModification
 
 end QPainleve.BlowupTower.IsClosedPointTower

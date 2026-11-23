@@ -194,6 +194,23 @@ public theorem classIntersectionNumber_eq_ncard_of_stalkIdeal_sup_eq_maximalIdea
     rw [Set.indicator_of_notMem hx, htop]
     simp
 
+/-- Two distinct prime divisors on a locally factorial projective surface intersect
+positively exactly when their closures meet. -/
+public theorem classIntersectionNumber_primeDivisorClass_pos_iff
+    [IsLocallyNoetherian X] [∀ x : X, IsDomain (X.presheaf.stalk x)]
+    [∀ x : X, UniqueFactorizationMonoid (X.presheaf.stalk x)]
+    (hX : topologicalKrullDim X ≤ 2) {p q : CodimensionOnePoint X} (hpq : p ≠ q) :
+    0 < classIntersectionNumber k X (LineBundleClass.primeDivisorClass p)
+        (LineBundleClass.primeDivisorClass q) ↔
+      (closure {(p : X)} ∩ closure {(q : X)}).Nonempty := by
+  rw [LineBundleClass.primeDivisorClass_def, LineBundleClass.primeDivisorClass_def]
+  simpa only [coe_support_vanishingIdeal, TopologicalSpace.Closeds.coe_mk] using
+    classIntersectionNumber_pos_iff_support_inter_nonempty k hX
+      (isEffectiveCartier_vanishingIdeal_closure_singleton p.property)
+      (isEffectiveCartier_vanishingIdeal_closure_singleton q.property)
+      (IsEffectiveCartier.comap_subschemeι_vanishingIdeal_closure_singleton_of_ne
+        (isEffectiveCartier_vanishingIdeal_closure_singleton p.property) hpq.symm)
+
 omit [Infinite k] in
 /-- Distinct prime divisors on a locally factorial projective surface over an
 algebraically closed field meet with intersection number equal to the sum of their

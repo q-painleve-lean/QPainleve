@@ -12,6 +12,7 @@ public import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.ProjectiveOver
 public import Mathlib.LinearAlgebra.BilinearForm.Properties
 public import QPainleve.AlgebraicGeometry.EffectiveCartierDivisor.ClosedImmersion
 public import TauCeti.AlgebraicGeometry.CartierDivisor.Excision
+public import QPainleve.AlgebraicGeometry.Morphisms.Smooth.Factorial
 import TauCeti.AlgebraicGeometry.Curves.Normalization
 import TauCeti.AlgebraicGeometry.LineBundle.BaseChange
 import QPainleve.AlgebraicGeometry.Cohomology.Support
@@ -43,6 +44,8 @@ open AlgebraicGeometry.Scheme.Modules
 universe u
 
 namespace TauCeti.AlgebraicGeometry.Chow
+
+section
 
 variable (k : Type u) [Field k] [Infinite k] {X : Scheme.{u}}
   [X.Over (Spec (.of k))] [X.IsProjectiveOver k]
@@ -299,5 +302,28 @@ public theorem classIntersectionNumber_weilToLineBundleClassHom
         Int.zsmul_eq_mul]
 
 end Factorial
+
+end
+
+section SmoothSurface
+
+variable (k : Type u) [Field k] [Infinite k] (X : Scheme.{u})
+  [X.Over (Spec (.of k))] [X.IsProjectiveOver k] [IsIntegral X]
+  [SmoothOfRelativeDimension 2 (X ↘ Spec (.of k))]
+
+/-- The integral Picard intersection form of a smooth integral projective surface. -/
+public noncomputable def intersectionBilinForm :
+    LinearMap.BilinForm ℤ (Additive (LineBundleClass X)) :=
+  let f := (X ↘ Spec (CommRingCat.of k))
+  letI : IsNoetherian X := isNoetherian_of_finiteType f
+  letI := (X ↘ Spec (.of k)).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two
+  classIntersectionBilinForm k (topologicalKrullDim_eq_of_smoothOfRelativeDimension f (n := 2))
+
+@[simp]
+public theorem intersectionBilinForm_apply (x y : Additive (LineBundleClass X)) :
+    intersectionBilinForm k X x y = classIntersectionNumber k X x.toMul y.toMul := by
+  simp only [intersectionBilinForm, classIntersectionBilinForm_apply]
+
+end SmoothSurface
 
 end TauCeti.AlgebraicGeometry.Chow

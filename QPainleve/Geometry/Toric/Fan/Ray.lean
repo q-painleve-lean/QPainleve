@@ -54,10 +54,22 @@ theorem Ray.isPrimitiveGenerator (ρ : Φ.Ray) :
     IsPrimitiveGenerator i (ρ.toToricRay Φ ρ.toCone le_rfl) ρ.primitiveGenerator :=
   isPrimitiveGenerator_primitiveGenerator Φ.lattice (Φ.isToricCone ρ.toCone.property) _
 
+/-- A fan ray has a nonzero primitive generator. -/
+@[simp]
+theorem Ray.primitiveGenerator_ne_zero (ρ : Φ.Ray) : ρ.primitiveGenerator ≠ 0 :=
+  ρ.isPrimitiveGenerator.ne_zero
+
 /-- The primitive generator belongs to its ray in the ambient real vector space. -/
 theorem Ray.primitiveGenerator_mem (ρ : Φ.Ray) : i ρ.primitiveGenerator ∈ ρ.toCone.val := by
   rw [← Ray.toPointedCone_toToricRay Φ ρ ρ.toCone le_rfl]
   exact ρ.isPrimitiveGenerator.mem
+
+/-- Containment of a fan ray in a cone is detected by its primitive generator. -/
+theorem Ray.toCone_le_iff (ρ : Φ.Ray) (σ : Φ.cones) :
+    ρ.toCone ≤ σ ↔ i ρ.primitiveGenerator ∈ σ.val := by
+  rw [← Subtype.coe_le_coe, ρ.toCone_eq_hull_primitiveGenerator, Submodule.span_le,
+    Set.singleton_subset_iff]
+  rfl
 
 /-- A primitive lattice vector lying in a ray is its canonical generator. -/
 theorem Ray.primitiveGenerator_eq_of_mem_of_isPrimitive (ρ : Φ.Ray) {v : N}
@@ -119,6 +131,15 @@ theorem Ray.primitiveGenerator_ofToricRay (σ : Φ.cones) (ρ : ToricRay σ.val)
   exact (primitiveGenerator_faceEmbedding Φ.lattice (Φ.isToricCone σ.property) hface r).symm.trans
     (congrArg (TauCeti.Toric.primitiveGenerator Φ.lattice (Φ.isToricCone σ.property)) hr)
 
+/-- The primitive generator of a fan ray agrees with its generator in every containing cone. -/
+@[simp]
+theorem Ray.primitiveGenerator_toToricRay (ρ : Φ.Ray) (σ : Φ.cones) (h : ρ.toCone ≤ σ) :
+    Toric.primitiveGenerator Φ.lattice (Φ.isToricCone σ.property)
+      (ρ.toToricRay Φ σ h) = ρ.primitiveGenerator := by
+  have he := congrArg (fun s : {r : Φ.Ray // r.toCone ≤ σ} ↦ s.val.primitiveGenerator)
+    ((Φ.rayEquiv σ).symm_apply_apply ⟨ρ, h⟩)
+  simpa only [rayEquiv_apply, rayEquiv_symm_apply, Ray.primitiveGenerator_ofToricRay] using he
+
 /-- On a complete fan, a lattice character nonnegative on every primitive ray
 generator is zero. -/
 theorem character_eq_zero_of_nonneg_primitiveGenerator (Φ : Fan i) (hc : Φ.IsComplete) (m : N →+ ℤ)
@@ -137,3 +158,20 @@ theorem character_eq_zero_of_nonneg_primitiveGenerator (Φ : Fan i) (hc : Φ.IsC
   exact_mod_cast le_antisymm h h'
 
 end TauCeti.Toric.Fan
+
+namespace TauCeti.Toric.FanEquiv
+
+variable {N N' V V' : Type*} [AddCommGroup N] [AddCommGroup N']
+  [AddCommGroup V] [AddCommGroup V'] [Module ℝ V] [Module ℝ V']
+  {i : N →+ V} {i' : N' →+ V'} {Φ : Fan i} {Ψ : Fan i'}
+
+/-- A fan equivalence sends the primitive generator of a ray to that of its image ray. -/
+@[simp]
+theorem primitiveGenerator_rayEquiv (e : FanEquiv Φ Ψ) (ρ : Φ.Ray) :
+    (e.rayEquiv ρ).primitiveGenerator = e.latticeEquiv ρ.primitiveGenerator := by
+  refine (e.rayEquiv ρ).primitiveGenerator_eq_of_mem_of_isPrimitive ?_
+    ((e.latticeEquiv.toIntLinearEquiv.isPrimitive_iff).2 ρ.isPrimitiveGenerator.isPrimitive)
+  rw [← e.map_lattice, toCone_rayEquiv, coneEquiv_apply_coe]
+  exact ⟨_, ρ.primitiveGenerator_mem, rfl⟩
+
+end TauCeti.Toric.FanEquiv

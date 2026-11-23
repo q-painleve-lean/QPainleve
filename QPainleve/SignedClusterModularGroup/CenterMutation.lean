@@ -34,17 +34,19 @@ open scoped Int
 
 universe u
 
-variable {ι N : Type u} [Fintype ι] [DecidableEq ι] [AddCommGroup N]
+variable {ι : Type u} [Fintype ι] [DecidableEq ι]
 
 local notation "A" => (ι → ℤ)
 local notation "e" i:arg => (Pi.single i (1 : ℤ) : ι → ℤ)
+
+section Centers
+
+variable {N : Type*} [AddCommGroup N]
 
 variable (ω : BilinForm ℤ N) (v : (ι → ℤ) →ₗ[ℤ] N) (p : ι)
 
 local notation "ε" => chargeExchangeMatrix ω v
 local notation "B" => chargeMutationEquiv ε p
-
-section Centers
 
 variable (k : Type u) [CommRing k]
 
@@ -95,6 +97,13 @@ theorem centerMutation_character_apply_of_ne (hω : ω.IsAlt)
   simp only [chargeExchangeMatrix_apply, hω.neg_eq]
 
 end Centers
+
+variable {N : Type u} [AddCommGroup N]
+
+variable (ω : BilinForm ℤ N) (v : (ι → ℤ) →ₗ[ℤ] N) (p : ι)
+
+local notation "ε" => chargeExchangeMatrix ω v
+local notation "B" => chargeMutationEquiv ε p
 
 variable (k : Type u) [Field k]
 

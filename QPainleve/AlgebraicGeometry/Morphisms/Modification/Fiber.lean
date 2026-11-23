@@ -8,6 +8,7 @@ module
 public import QPainleve.AlgebraicGeometry.Morphisms.Modification.IsoLocus
 
 import QPainleve.AlgebraicGeometry.Morphisms.Modification.ExceptionalDivisors
+import Mathlib.Topology.Connected.TotallyDisconnected
 import TauCeti.AlgebraicGeometry.Birational.Irreducible
 import TauCeti.AlgebraicGeometry.Morphisms.Dominant
 import TauCeti.AlgebraicGeometry.Scheme.GenericPoint
@@ -108,6 +109,36 @@ theorem exists_coheight_one_specializes_of_mem_centre (hX : topologicalKrullDim 
     simpa only [a, fiberι_asFiber] using hza.map (f.fiberι (f x)).continuous
 
 end NoetherianSpace
+
+/-- If the exceptional prime divisors of a surface modification `f` are also exceptional
+for `g`, and the exceptional fibers of `f` are preconnected, then `g` is constant on the
+fibers of `f`. -/
+theorem factorsThrough_of_exceptional_divisors_subset {Z : Scheme.{u}} (g : X ⟶ Z)
+    [NoetherianSpace X] [IsNoetherian Z] [IsIntegral Z] [IsNormalScheme Z] [IsModification g]
+    (hX : topologicalKrullDim X ≤ 2) (hZ : topologicalKrullDim Z ≤ 2)
+    (hsub : {x : X | f x ∈ f.centre ∧ coheight x = 1} ⊆
+      {x : X | g x ∈ g.centre ∧ coheight x = 1})
+    (hconn : ∀ y ∈ f.centre, _root_.IsPreconnected (f ⁻¹' {y})) :
+    Function.FactorsThrough g f := by
+  intro x y hxy
+  by_cases hx : f x ∈ f.centre
+  · have hclosed := g.centre_subset_closedPoints hZ
+    have hmap : Set.MapsTo g (f ⁻¹' {f x}) g.centre := by
+      intro w hw
+      have hw' : f w = f x := hw
+      obtain ⟨z, hz, hzw, hsp⟩ :=
+        f.exists_coheight_one_specializes_of_mem_centre hX (hw'.symm ▸ hx)
+      have hz' := (hsub ⟨(hzw.trans hw').symm ▸ hx, hz⟩).1
+      have hzg := (hsp.map g.continuous).mem_closed (mem_closedPoints_iff.mp (hclosed hz'))
+        (Set.mem_singleton (g z))
+      exact (Set.mem_singleton_iff.mp hzg).symm ▸ hz'
+    exact (hconn _ hx).constant_of_mapsTo
+      ((g.finite_centre hZ).isDiscrete_of_subset_closedPoints hclosed)
+      g.continuous.continuousOn hmap rfl hxy.symm
+  · have hx' : f x ∈ f.isoLocus := by
+      simpa only [centre_def, Set.mem_compl_iff, SetLike.mem_coe, not_not] using hx
+    have hy' : f y ∈ f.isoLocus := hxy ▸ hx'
+    exact congrArg g (f.injOn_preimage_isoLocus hx' hy' hxy)
 
 /-- A surface modification has no exceptional prime divisors exactly when it is an
 isomorphism. -/

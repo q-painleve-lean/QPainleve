@@ -5,59 +5,53 @@ Authors: The QPainleve contributors
 -/
 module
 
-public import QPainleve.Geometry.Toric.Fan.Picard.Presentation
 public import QPainleve.Geometry.Toric.Fan.TorusAction.Translation
+public import TauCeti.AlgebraicGeometry.LineBundle.Functoriality
 
 import QPainleve.Geometry.Toric.Fan.Boundary.Automorphism
+import QPainleve.Geometry.Toric.Fan.Picard.Presentation
 
 /-!
-# Torus translations on the Picard group
+# Torus translations on the toric Picard group
 
-On a regular fan scheme, torus translations preserve the ray divisors. These divisors
-generate the Picard group, so translation pullback fixes every line bundle class.
+Torus translations preserve the reduced ray divisors. The generation theorem
+`Fan.rayDivisorToPicard_surjective` then identifies their action on the whole
+Picard group.
 -/
 
-public noncomputable section
+public section
 
-open Multiplicative
-open TauCeti.AlgebraicGeometry (LineBundleClass)
+open AlgebraicGeometry Multiplicative
+open TauCeti.AlgebraicGeometry LineBundleClass
 
 namespace TauCeti.Toric.Fan
 
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
-  {i : N →+ V} {Φ : Fan i} [h₀ : Nonempty Φ.cones]
+  {i : N →+ V} {Φ : Fan i} [Nonempty Φ.cones]
 
-local notation "Chars" => (Multiplicative (N →+ ℤ) →* ℂˣ)
-
-/-- Torus translations act trivially on the Picard group of a regular fan scheme. -/
-theorem pullback_torusTranslation_eq (hΦ : Φ.IsRegular) (χ : Chars)
+/-- Pullback by a torus translation fixes the Picard group of the regular fan scheme. -/
+theorem pullback_torusTranslation_hom (hΦ : Φ.IsRegular) (χ : Multiplicative (N →+ ℤ) →* ℂˣ)
     (a : LineBundleClass Φ.algebraicRealization) :
-    LineBundleClass.pullback (Φ.torusTranslation χ).hom a = a := by
+    pullback (Φ.torusTranslation χ).hom a = a := by
   classical
+  let := Φ.uniqueFactorizationMonoid_stalk_algebraicRealization hΦ
   let := Fintype.ofFinite Φ.Ray
-  have := Φ.uniqueFactorizationMonoid_stalk_algebraicRealization hΦ
-  let f := LineBundleClass.pullbackHom (Φ.torusTranslation χ).hom
-  have hsingle (ρ : Φ.Ray) :
-      f (LineBundleClass.primeDivisorClass (Φ.rayBoundaryPoint hΦ ρ)) =
-        LineBundleClass.primeDivisorClass (Φ.rayBoundaryPoint hΦ ρ) := by
-    let D := Φ.rayBoundaryIdeal hΦ ρ
-    have hD : D.IsEffectiveCartier := Φ.isEffectiveCartier_rayBoundaryIdeal hΦ ρ
-    have heq : D.comap (Φ.torusTranslation χ).hom = D :=
-      Φ.comap_rayBoundaryIdeal_torusTranslation_hom hΦ χ ρ
-    let toClass := fun J : {I : Φ.algebraicRealization.IdealSheafData // I.IsEffectiveCartier} ↦
-      LineBundleClass.mk J.property.toInvertibleSheaf
-    have hline := congrArg toClass (Subtype.ext heq :
-      (⟨_, hD.comap (Φ.torusTranslation χ).hom⟩ :
-        {I : Φ.algebraicRealization.IdealSheafData // I.IsEffectiveCartier}) = ⟨D, hD⟩)
-    simp only [f, LineBundleClass.pullbackHom_apply,
-      LineBundleClass.primeDivisorClass_def, ← Φ.rayBoundaryIdeal_def, LineBundleClass.pullback_inv]
-    rw [hD.pullback_mk_toInvertibleSheaf (hD.comap (Φ.torusTranslation χ).hom)]
-    exact congrArg Inv.inv hline
-  obtain ⟨u, hu⟩ := Φ.rayDivisorToPicard_surjective hΦ (Additive.ofMul a)
-  rw [← LineBundleClass.pullbackHom_apply]
-  suffices f a = a from this
-  have hu' : ((Φ.rayDivisorToPicard hΦ) u).toMul = a := congrArg Additive.toMul hu
-  rw [← hu', Φ.rayDivisorToPicard_apply]
-  simp only [toMul_sum, toMul_zsmul, toMul_ofMul, map_prod, map_zpow, hsingle]
+  let t := (Φ.torusTranslation χ).hom
+  obtain ⟨d, hd⟩ := Φ.rayDivisorToPicard_surjective hΦ (Additive.ofMul a)
+  have hρ (ρ : Φ.Ray) :
+      pullback (Φ.torusTranslation χ).hom (primeDivisorClass (Φ.rayBoundaryPoint hΦ ρ)) =
+        primeDivisorClass (Φ.rayBoundaryPoint hΦ ρ) := by
+    let hD := Φ.isEffectiveCartier_rayBoundaryIdeal hΦ ρ
+    have hfix := Φ.comap_rayBoundaryIdeal_torusTranslation_hom hΦ χ ρ
+    have hbase : primeDivisorClass (Φ.rayBoundaryPoint hΦ ρ) =
+        (LineBundleClass.mk hD.toInvertibleSheaf)⁻¹ := by
+      rw [primeDivisorClass_def, mk_toInvertibleSheaf_congr _ hD
+        (Φ.rayBoundaryIdeal_def hΦ ρ).symm]
+    rw [hbase, pullback_inv, hD.pullback_mk_toInvertibleSheaf (hD.comap t),
+      mk_toInvertibleSheaf_congr _ hD hfix]
+  have hd' := congrArg Additive.toMul hd
+  rw [toMul_ofMul, Φ.rayDivisorToPicard_apply] at hd'
+  rw [← hd', toMul_sum, ← pullbackHom_apply (f := (Φ.torusTranslation χ).hom), map_prod]
+  simp only [toMul_zsmul, toMul_ofMul, map_zpow, pullbackHom_apply, hρ]
 
 end TauCeti.Toric.Fan
