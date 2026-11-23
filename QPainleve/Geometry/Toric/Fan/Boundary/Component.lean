@@ -248,6 +248,17 @@ theorem Ray.binomialCenterOnBoundary_mem_range_boundaryComponentι_iff :
   rintro rfl
   exact ⟨_, boundaryComponentι_binomialCenterOnComponent_apply ρ hΦ hdim hm hprim c z⟩
 
+/-- On a different ray, the restricted binomial center ideal is the unit ideal. -/
+theorem Ray.comap_ker_binomialCenterOnBoundary_eq_top_of_ne (hne : ρ ≠ τ) :
+    (center).ker.comap (τ.boundaryComponentι hΦ) = ⊤ := by
+  have hnot :=
+    (ρ.binomialCenterOnBoundary_mem_range_boundaryComponentι_iff hΦ hdim hm hprim c τ).not.mpr hne
+  rw [comap_eq_top_iff, ← Opens.coe_eq_univ, Scheme.Hom.coe_preimage, Closeds.coe_compl,
+    Scheme.Hom.support_ker, (center).isClosedEmbedding.isClosed_range.closure_eq,
+    Set.range_eq_singleton (f := center) (fun q ↦ congrArg center (Subsingleton.elim q z)),
+    Set.eq_univ_iff_forall]
+  exact fun q hq ↦ hnot ⟨q, hq⟩
+
 /-- The ideal of a binomial center restricts to a Cartier ideal on every reduced ray
 component. Away from the ray of the center the restricted ideal is the unit ideal. -/
 theorem Ray.isEffectiveCartier_comap_ker_binomialCenterOnBoundary :
@@ -257,16 +268,7 @@ theorem Ray.isEffectiveCartier_comap_ker_binomialCenterOnBoundary :
     have hcomp := ρ.binomialCenterOnComponent_boundaryComponentι hΦ hdim hm hprim c
     rw [← hcomp, Scheme.Hom.comap_ker_comp_of_isClosedImmersion]
     exact isEffectiveCartier_ker_binomialCenterOnComponent ρ hΦ hdim hm hprim c
-  · have hnot :=
-      (ρ.binomialCenterOnBoundary_mem_range_boundaryComponentι_iff hΦ hdim hm hprim c τ).not.mpr h
-    have hsupport : ((center).ker.support : Set (D).subscheme) = {center z} := by
-      rw [Scheme.Hom.support_ker, (center).isClosedEmbedding.isClosed_range.closure_eq]
-      exact Set.range_eq_singleton fun q ↦ congrArg center (Subsingleton.elim q _)
-    have htop : (center).ker.comap (τ.boundaryComponentι hΦ) = ⊤ := by
-      rw [comap_eq_top_iff, ← Opens.coe_eq_univ, Scheme.Hom.coe_preimage, Closeds.coe_compl,
-        hsupport, Set.eq_univ_iff_forall]
-      exact fun q hq ↦ hnot ⟨q, hq⟩
-    rw [htop]
+  · rw [ρ.comap_ker_binomialCenterOnBoundary_eq_top_of_ne hΦ hdim hm hprim c τ h]
     exact isEffectiveCartier_top _
 
 /-- A point on a reduced ray component above a binomial center has regular local ring. -/
