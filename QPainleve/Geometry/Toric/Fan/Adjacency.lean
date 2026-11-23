@@ -99,9 +99,12 @@ theorem cone_eq_sup_of_ray_ne_of_le (hΦ : Φ.IsRegular) (hN : Module.finrank �
   · rw [Ray.toPointedCone_toToricRay]
     exact le_sup_right
 
--- Test membership in one cone along the real parameter line using an extending basis.
-private theorem isClosed_setOf_add_smul_mem (hΦ : Φ.IsRegular) (σ : Φ.cones) (x y : V) :
-    IsClosed {t : ℝ | x + t • y ∈ σ.val} := by
+/-- The preimage of a regular fan cone is closed if every real linear coordinate is
+continuous along the map. The ambient real vector space needs no topology. -/
+theorem isClosed_preimage_cone_of_isRegular {T : Type*} [TopologicalSpace T]
+    (hΦ : Φ.IsRegular) (σ : Φ.cones) (f : T → V)
+    (hf : ∀ l : V →ₗ[ℝ] ℝ, Continuous (l ∘ f)) :
+    IsClosed (f ⁻¹' (σ.val : Set V)) := by
   classical
   have hreg := (isRegular_iff.1 hΦ) σ.val σ.property
   obtain ⟨n, b, r, hb⟩ := hreg.exists_basis
@@ -138,27 +141,26 @@ private theorem isClosed_setOf_add_smul_mem (hΦ : Φ.IsRegular) (σ : Φ.cones)
         · simpa [hj] using h j
         · have hz : c.repr z j = 0 := by simpa [hj] using h j
           exact hz.ge
-  simp only [hmem, Set.ofPred_forall]
+  rw [show f ⁻¹' (σ.val : Set V) = {t | ∀ j, c.repr (f t) j ∈
+      if j ∈ A then Set.Ici (0 : ℝ) else {0}} from Set.ext fun t ↦ hmem (f t)]
+  simp only [Set.ofPred_forall]
   refine isClosed_iInter fun j ↦ ?_
-  have hcont : Continuous fun t : ℝ ↦ c.repr (x + t • y) j := by
-    simp only [map_add, map_smul, Finsupp.add_apply, Finsupp.smul_apply, smul_eq_mul]
-    exact continuous_const.add (continuous_id.mul continuous_const)
   have hclosed : IsClosed (if j ∈ A then Set.Ici (0 : ℝ) else {0}) := by
     split_ifs
     · exact isClosed_Ici
     · exact isClosed_singleton
-  -- The coordinate condition is a preimage under the displayed affine map of the line.
-  change IsClosed ((fun t : ℝ ↦ c.repr (x + t • y) j) ⁻¹'
-    (if j ∈ A then Set.Ici 0 else {0}))
-  exact hclosed.preimage hcont
+  exact hclosed.preimage (hf (c.coord j))
 
 private theorem exists_cone_mem_pos (hΦ : Φ.IsRegular) (hc : Φ.IsComplete)
     {f : V →ₗ[ℝ] ℝ} {x y : V} (hx : f x = 0) (hy : 0 < f y) :
     ∃ σ : Φ.cones, x ∈ σ.val ∧ ∃ z ∈ σ.val, 0 < f z := by
   let S := {σ : Φ.cones | ∃ z ∈ σ.val, 0 < f z}
   let U := ⋃ σ ∈ S, {t : ℝ | x + t • y ∈ σ.val}
-  have hU : IsClosed U :=
-    S.toFinite.isClosed_biUnion fun σ _ ↦ isClosed_setOf_add_smul_mem hΦ σ x y
+  have hU : IsClosed U := S.toFinite.isClosed_biUnion fun σ _ ↦
+    isClosed_preimage_cone_of_isRegular hΦ σ (fun t : ℝ ↦ x + t • y) fun l ↦ by
+      rw [show (l ∘ fun t : ℝ ↦ x + t • y) = fun t ↦ l x + t * l y from
+        funext fun t ↦ by simp [smul_eq_mul]]
+      exact continuous_const.add (continuous_id.mul continuous_const)
   have hcover : Set.Ioi (0 : ℝ) ⊆ U := by
     intro t ht
     obtain ⟨σ, hσ, hz⟩ := Φ.isComplete_iff.1 hc (x + t • y)

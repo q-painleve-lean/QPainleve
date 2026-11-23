@@ -9,7 +9,6 @@ public import QPainleve.Geometry.Toric.Fan.Boundary.StrictTransform
 public import QPainleve.Geometry.Toric.Fan.TorusAction.InternalBlowup
 
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Automorphism
-import QPainleve.AlgebraicGeometry.Blowup.Tower.Boundary.Centres
 import QPainleve.Geometry.Toric.CharacterTorus.CenterAlignment
 import QPainleve.Geometry.Toric.Fan.Boundary.Automorphism
 import QPainleve.Geometry.Toric.Fan.Picard.Translation
@@ -146,11 +145,8 @@ private theorem existsUnique_lift_fixed_centres (χ : Chars) (hχ : ∀ k, χ (o
       IsLift (Φ.torusTranslation χ) T T (g : Aut Y).asIso := by
   obtain ⟨g, ⟨hg, hb, hPic⟩, -⟩ := exists_unique_internal_blowup_torus_translation b s hΦ
     χ c c (fun k ↦ by simp [hχ k])
-  have hf : (Φ.torusTranslation χ).hom ≫ base = base := by
-    simpa only [algebraicRealization_over] using
-      (HomIsOver.comp_over (f := (Φ.torusTranslation χ).hom) (S := Spec (.of ℂ)))
   have hOver : g.hom ≫ p ≫ base = p ≫ base := by
-    rw [← Category.assoc, hg.hom_toBase, Category.assoc, hf]
+    exact hom_comp_internalBlowupTower_structureMap_of_isLift_torusTranslation b s c c χ hg
   have hPic' (L : LineBundleClass Y) : pullback g.hom L = L := by
     obtain ⟨x, hx⟩ := (internalBlowupPicardMarking b s c hΦ).surjective (Additive.ofMul L)
     simpa only [hx, toMul_ofMul] using hPic x
@@ -175,31 +171,9 @@ private theorem existsUnique_translation_of_internalBlowupAut (hc : Φ.IsComplet
     (fun ρ ↦ comap_rayBoundaryIdeal_of_isLift b s c hΦ he ρ (by
       simpa only [ker_boundaryComponentι_internalBlowupTower] using g.property.2.2 ρ))
   refine ⟨χ, ⟨he, fun k ↦ ?_⟩, ?_⟩
-  · have hcentres {g' : Y ≅ Y} (hg' : IsLift (Φ.torusTranslation χ) T T g') :
-        ((s k).internalCenter b (c k)).val.comap (boundaryTranslation (Φ := Φ) χ).hom =
-          ((s k).internalCenter b (c k)).val := by
-      -- Rewriting the tower also changes the type of its terminal isomorphism.
-      revert g'
-      rw [internalBlowupTower_eq_alongBoundary]
-      intro g' hlift
-      exact hlift.comap_centres_alongBoundary (boundaryTranslation_hom_subschemeι χ).symm k
-    have hcenter := hcentres he
-    have hshift := (s k).comap_internalCenter_boundaryTranslation_hom b χ (c k)
-    have hcancel := congrArg (fun I ↦ I.comap (boundaryTranslation (Φ := Φ) χ).inv)
-      (hshift.trans hcenter.symm)
-    simp only [← comap_comp, Iso.inv_hom_id, comap_id] at hcancel
-    have hker := congrArg (fun I ↦ I.map (Φ.boundaryIdeal inferInstance).subschemeι) hcancel
-    rw [Ray.map_internalCenter_subschemeι, Ray.map_internalCenter_subschemeι] at hker
-    let center := (s k).binomialCenter hN (b.detDualEquiv_self _)
-      ((s k).surjective_detCharacter b)
-    have hsection (u : ℂˣ) : center u ≫ base = 𝟙 _ :=
-      (s k).binomialCenter_comp_structureMap _ _ _ _
-    have hparam := (s k).binomialCenter_injective _ _ _
-      ((Scheme.Hom.ker_eq_ker_iff_of_comp_eq_id _ _ (hsection _) (hsection _)).mp hker)
-    have hmultiplication : c k * 1 = c k * χ (ofAdd (m k)) := by
-      rw [mul_one]
-      exact div_eq_iff_eq_mul.mp hparam
-    exact (mul_left_cancel hmultiplication).symm
+  · have hparam :=
+      (exists_isLift_internalBlowupTower_torusTranslation_iff b s c c χ).mp ⟨_, he⟩ k
+    exact mul_left_cancel (hparam.trans (mul_one (c k)).symm)
   · intro ψ hψ
     exact hUniq ψ (heUnique _ ⟨hψ.1, Φ.pullback_torusTranslation_hom hΦ ψ, by
       simpa only [algebraicRealization_over] using
