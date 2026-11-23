@@ -6,9 +6,9 @@ Authors: The QPainleve contributors
 module
 
 public import QPainleve.AlgebraicGeometry.CartierDivisor.LocalEquation
+public import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.Picard
 public import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.ProjectiveLine.Basic
 public import TauCeti.AlgebraicGeometry.Modules.Pullback.Sections
-public import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.TwistingSheaf.LocalTriviality
 import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.AffineLine
 import TauCeti.AlgebraicGeometry.IdealSheaf.BaseChange
 import TauCeti.AlgebraicGeometry.IdealSheaf.Locality
@@ -43,11 +43,7 @@ local notation "P" => projectiveLine R
 local notation "U[" i "]" => Proj.basicOpen 𝒜 (coord R i)
 local notation "j[" i "]" => polynomialChartι R i
 
-/-- The twisting sheaf `𝒪(1)` on the projective line, as an invertible sheaf. -/
-abbrev twistingSheafOne : InvertibleSheaf P :=
-  ⟨Proj.twistingSheaf 𝒜 1, inferInstance⟩
-
-local notation "L" => twistingSheafOne R
+local notation "L" => Proj.symmetricAlgebraTwistingBundle R (Fin 2 → R) 1
 
 private def binomialForm (c : R) : 𝒜 1 :=
   ⟨coord R 0 + c • coord R 1, (𝒜 1).add_mem (coord_mem R 0) ((𝒜 1).smul_mem _ (coord_mem R 1))⟩
@@ -105,7 +101,7 @@ theorem pullbackSections_binomialSection {A : Type u} [CommRing A]
     (M).sectionRatio_smul _ _ _
   have he := congrArg (p.pullbackSectionsLE M U[i] ⊤ h) hb
   rw [map_smulₛₗ, p.pullbackSectionsLE_map M ⊤ ⊤ (Scheme.Hom.preimage_top p).ge
-    (U[i]).leTop h] at he
+    (U[i]).leTop h (binomialSection R c)] at he
   have hc : p.appLE U[i] ⊤ h b =
       (Scheme.ΓSpecIso (.of A)).inv (if i = 0 then 1 + f c * a else a + f c) := by
     apply (ConcreteCategory.bijective_of_isIso (Scheme.ΓSpecIso (.of A)).hom).injective
@@ -145,7 +141,9 @@ private theorem zeroIdeal_binomialSection_comap (c : R) (i : Fin 2) :
   rw [← equivOfIsAffine_symm_apply, OrderRingIso.apply_symm_apply, equivOfIsAffine_apply]
   rw [ideal_comap_of_le _ j[i] U V (preimage_polynomialChartι_basicOpen_self R i).ge,
     (L).zeroIdeal_ideal_eq_span_singleton _ U frame[i]
-      (by rw [Proj.twistingSheaf.nonvanishingLocus_chartGenerator]),
+      (by
+        change U[i] ≤ (M).nonvanishingLocus frame[i]
+        rw [Proj.twistingSheaf.nonvanishingLocus_chartGenerator]),
     Ideal.map_span, Set.image_singleton, Ideal.map_span, Set.image_singleton]
   apply congrArg (fun a ↦ Ideal.span {a})
   apply (ConcreteCategory.bijective_of_isIso (Scheme.ΓSpecIso (.of R[X])).hom).injective

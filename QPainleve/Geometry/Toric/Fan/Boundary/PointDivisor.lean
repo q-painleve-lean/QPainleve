@@ -39,7 +39,7 @@ variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
 It is the zero ideal of the pullback of the section `X₀ + c⁻¹ X₁` of `𝒪(1)`. -/
 theorem Ray.comap_ker_binomialCenterOnBoundary_eq_zeroIdeal (c : ℂˣ) :
     let e := ρ.boundaryIsoProjectiveLine hΦ hdim hm hprim
-    let L := projectiveLine.twistingSheafOne ℂ
+    let L := Proj.symmetricAlgebraTwistingBundle ℂ (Fin 2 → ℂ) 1
     (ρ.binomialCenterOnBoundary hdim hm hprim c).ker.comap (ρ.boundaryComponentι hΦ) =
       ((InvertibleSheaf.pullback e.hom).obj L).zeroIdeal
         (e.hom.pullbackSections L.obj ⊤ (projectiveLine.binomialSection ℂ (↑c⁻¹ : ℂ))) := by
