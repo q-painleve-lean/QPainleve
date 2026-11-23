@@ -32,6 +32,28 @@ namespace TauCeti.Toric.Fan
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {Φ : Fan i}
 
+section BinomialCenters
+
+variable [Nonempty Φ.cones] {n : ℕ} (hdim : Module.finrank ℤ N = 2)
+  (s : Fin n → Φ.Ray) (m : Fin n → N →+ ℤ)
+  (hm : ∀ j, m j (s j).primitiveGenerator = 0) (hprim : ∀ j, Function.Surjective (m j))
+  (c : Fin n → ℂˣ)
+  (J : Fin n →
+    {K : (Φ.boundaryIdeal inferInstance).subscheme.IdealSheafData // K.IsEffectiveCartier})
+  (hJ : ∀ j, (J j).val = ((s j).binomialCenterOnBoundary hdim (hm j) (hprim j) (c j)).ker)
+
+include hJ in
+/-- An ordered family of binomial centers gives a tower of reduced closed point blowups. -/
+theorem isClosedPointTower_alongBoundary_binomialCenters :
+    IsClosedPointTower Φ.algebraicRealization
+      (alongBoundary (Φ.boundaryIdeal inferInstance).subschemeι J).2.toTower := by
+  apply isClosedPointTower_alongBoundary
+  intro j
+  rw [hJ j]
+  exact (s j).exists_closedPoint_ker_binomialCenterOnBoundary hdim (hm j) (hprim j) (c j)
+
+end BinomialCenters
+
 variable [h₀ : Nonempty Φ.cones] (b : Module.Basis (Fin 2) ℤ N)
 
 local notation "boundary" => Φ.boundaryIdeal h₀
@@ -44,6 +66,11 @@ variable {n : ℕ} (s : Fin n → Φ.Ray) (c : Fin n → ℂˣ)
 At each stage the center is the image of the original binomial point in the current boundary. -/
 def internalBlowupTower : Σ Y, WithBoundary (boundary).subschemeι n Y :=
   alongBoundary (boundary).subschemeι fun j ↦ (s j).internalCenter b (c j)
+
+/-- The ordered model uses the determinant-character center ideals in the boundary tower. -/
+theorem internalBlowupTower_eq_alongBoundary :
+    internalBlowupTower b s c =
+      alongBoundary (boundary).subschemeι (fun j ↦ (s j).internalCenter b (c j)) := (rfl)
 
 /-- The empty list of internal centers leaves the toric model unchanged. -/
 @[simp]
@@ -63,11 +90,11 @@ theorem internalBlowupTower_succ (s : Fin (n + 1) → Φ.Ray) (c : Fin (n + 1) �
 /-- All internal centers are reduced closed points of their successive ambient surfaces. -/
 theorem isClosedPointTower_internalBlowupTower :
     IsClosedPointTower Φ.algebraicRealization (internalBlowupTower b s c).2.toTower := by
-  apply isClosedPointTower_alongBoundary
-  intro j
-  rw [Ray.internalCenter_val]
-  exact (s j).exists_closedPoint_ker_binomialCenterOnBoundary rankTwo (b.detDualEquiv_self _)
-    ((s j).surjective_detCharacter b) (c j)
+  rw [internalBlowupTower_eq_alongBoundary]
+  exact isClosedPointTower_alongBoundary_binomialCenters rankTwo s
+    (fun j ↦ (b.detDualEquiv (s j).primitiveGenerator).toAddMonoidHom)
+    (fun j ↦ b.detDualEquiv_self (s j).primitiveGenerator)
+    (fun j ↦ (s j).surjective_detCharacter b) c _ (fun j ↦ (s j).internalCenter_val b (c j))
 
 /-- The Picard group of the model is marked by the original toric classes and the full
 transforms of the exceptional classes, with coordinates in the given center order. -/
