@@ -10,7 +10,6 @@ public import TauCeti.AlgebraicGeometry.IdealSheaf.VanishingIdeal
 public import TauCeti.AlgebraicGeometry.Morphisms.IsoLocus
 
 import QPainleve.AlgebraicGeometry.IdealSheaf.Restriction
-import QPainleve.AlgebraicGeometry.Morphisms.IsoLocus
 import TauCeti.AlgebraicGeometry.Morphisms.StalkMap
 import TauCeti.AlgebraicGeometry.IdealSheaf.Reduced
 import TauCeti.AlgebraicGeometry.Pullback.Carrier
