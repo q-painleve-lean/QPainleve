@@ -5,7 +5,7 @@ Authors: The QPainleve contributors
 -/
 module
 
-public import QPainleve.AlgebraicGeometry.IdealSheaf.BoundaryPrimes
+public import QPainleve.AlgebraicGeometry.IdealSheaf.Boundary.Primes
 public import TauCeti.AlgebraicGeometry.LineBundle.Class
 
 import Mathlib.LinearAlgebra.Dimension.Finrank

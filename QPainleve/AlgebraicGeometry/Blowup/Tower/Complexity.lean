@@ -7,7 +7,7 @@ module
 
 public import QPainleve.AlgebraicGeometry.Blowup.Tower.Nodal.Basic
 public import QPainleve.AlgebraicGeometry.Blowup.Tower.Picard
-public import QPainleve.AlgebraicGeometry.IdealSheaf.BoundaryComplexity
+public import QPainleve.AlgebraicGeometry.IdealSheaf.Boundary.Complexity
 
 import QPainleve.AlgebraicGeometry.Blowup.Exceptional.FirstKind
 import QPainleve.AlgebraicGeometry.EffectiveCartierDivisor.BoundaryPrimes
