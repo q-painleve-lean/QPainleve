@@ -7,7 +7,6 @@ module
 
 public import TauCeti.Geometry.Toric.Algebraic.Fan.Subdivision
 
-import Mathlib.LinearAlgebra.Transvection.Basic
 import QPainleve.Geometry.Toric.Cone.Coordinates
 import QPainleve.Geometry.Toric.Fan.Ray
 import QPainleve.Geometry.Toric.Fan.StarSubdivision.TwoDimensional
@@ -34,70 +33,6 @@ namespace TauCeti.Toric.Fan
 variable {N V : Type*} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {Φ Ψ : Fan i}
 
-private theorem hull_basisVector_mem (hσ : σ ∈ Φ.cones) (b : Module.Basis (Fin 2) ℤ N)
-    (r : ToricRay σ ↪ Fin 2) (hb : IsExtendingBasis i b r) {j : Fin 2}
-    (hj : j ∈ Set.range r) : hull ℝ {i (b j)} ∈ Φ.cones := by
-  obtain ⟨ρ, rfl⟩ := hj
-  have h := hb.isPrimitiveGenerator_apply ρ
-  rw [← ρ.eq_hull_singleton ((Φ.isToricCone hσ).salient.anti ρ.val.isFaceOf.le)
-    h.mem (map_ne_zero_iff _ Φ.lattice.injective |>.mpr h.ne_zero)]
-  exact Φ.mem_of_isFaceOf hσ ρ.val.isFaceOf
-
-private theorem exists_starSubdivisionAlong_basis (hΦ : Φ.IsRegular) {σ : PointedCone ℝ V}
-    (hσ : σ ∈ Φ.cones) (b : Module.Basis (Fin 2) ℤ N)
-    (hcone : σ = hull ℝ (Set.range (i ∘ b))) (j : Fin 2) :
-    ∃ c : Module.Basis (Fin 2) ℤ N, c j = b j + b j.rev ∧ c j.rev = b j.rev ∧
-      hull ℝ (Set.range (i ∘ c)) ∈ (Φ.starSubdivisionAlong hΦ hσ).cones := by
-  classical
-  have hne : j ≠ j.rev := by fin_cases j <;> decide
-  have hj : b.coord j (b j.rev) = 0 := by simp [hne]
-  let c := b.map (LinearEquiv.transvection hj)
-  have hc : c j = b j + b j.rev := by simp [c, LinearMap.transvection.apply]
-  have hc' : c j.rev = b j.rev := by
-    simp [c, LinearMap.transvection.apply, hj]
-  refine ⟨c, hc, hc', ?_⟩
-  apply (Φ.mem_starSubdivisionAlong_cones hΦ hσ).mpr
-  refine Or.inr ⟨σ, hσ, le_rfl, ?_⟩
-  let hreg := isRegular_iff.mp hΦ _ hσ
-  have hli := Φ.lattice.linearIndependent_basis b
-  let r := toricRayEquivOfLinearIndependent (i ∘ b) hli hcone
-  have hb' (k : Fin 2) : b k = primitiveGenerator Φ.lattice hreg.toIsToricCone (r.symm k) := by
-    have hm := (apply_mem_iff_toricRayEquivOfLinearIndependent _ hli hcone (r.symm k) k).mpr
-      (r.apply_symm_apply k).symm
-    exact (isPrimitiveGenerator_iff.mpr ⟨hm, b.isPrimitive k⟩).eq_primitiveGenerator
-      Φ.lattice hreg.toIsToricCone
-  have hchart := hreg.starSubdivisionCone_pair_mem Φ.lattice r.symm j.rev
-  dsimp only at hchart
-  rw [hreg.starSubdivisionCone_pair_eq_hull Φ.lattice b r.symm hb'] at hchart
-  have hsum : b 0 + b 1 = c j := by
-    rw [hc]
-    fin_cases j <;> simp [add_comm]
-  rw [hsum, ← hc'] at hchart
-  suffices Set.range (i ∘ c) = {i (c j), i (c j.rev)} by
-    rwa [this]
-  ext x
-  simp only [Set.mem_range, Function.comp_apply, Set.mem_insert_iff, Set.mem_singleton_iff]
-  exact ⟨fun ⟨k, hk⟩ ↦ (Fin.fin_two_eq_or_eq_rev j k).elim
-      (fun h ↦ Or.inl (h ▸ hk.symm)) (fun h ↦ Or.inr (h ▸ hk.symm)),
-    fun h ↦ h.elim (fun h ↦ ⟨j, h.symm⟩) (fun h ↦ ⟨j.rev, h.symm⟩)⟩
-
-private theorem hull_nsmul_mem_cones {u : N} (h : hull ℝ {i u} ∈ Φ.cones)
-    {a : ℕ} (ha : 0 < a) : hull ℝ {i (a • u)} ∈ Φ.cones := by
-  have ha' : (0 : ℝ) < a := by exact_mod_cast ha
-  rw [map_nsmul, ← Nat.cast_smul_eq_nsmul ℝ]
-  have he : hull ℝ {(a : ℝ) • i u} = hull ℝ {i u} := by
-    apply le_antisymm <;> rw [Submodule.span_singleton_le_iff_mem]
-    · exact (smul_mem_iff _ ha').mpr (subset_hull rfl)
-    · exact (smul_mem_iff _ ha').mp (subset_hull rfl)
-  rwa [he]
-
-private theorem hull_basis_ray_mem (b : Module.Basis (Fin 2) ℤ N)
-    (hcone : hull ℝ (Set.range (i ∘ b)) ∈ Φ.cones) (j : Fin 2) :
-    hull ℝ {i (b j)} ∈ Φ.cones := by
-  apply Φ.mem_of_isFaceOf hcone
-  simpa only [Set.image_singleton, Function.comp_def] using
-    isFaceOf_hull_image (Φ.lattice.linearIndependent_basis b) rfl {j}
-
 private theorem exists_regular_subdivision_of_basis_coords {u : N} (hu : u ≠ 0)
     (hΦ : Φ.IsRegular) (b : Module.Basis (Fin 2) ℤ N)
     (hcone : hull ℝ (Set.range (i ∘ b)) ∈ Φ.cones)
@@ -123,7 +58,7 @@ private theorem exists_regular_subdivision_of_basis_coords {u : N} (hu : u ≠ 0
       refine ⟨Φ, IsSubdivision.refl Φ, hΦ, ?_⟩
       rw [hz, zero_smul, zero_add] at ha
       rw [← ha]
-      exact hull_nsmul_mem_cones (hull_basis_ray_mem b hcone j.rev) hp
+      exact hull_nsmul_mem_cones (Φ.hull_basis_ray_mem b hcone j.rev) hp
     let Φ' := Φ.starSubdivisionAlong hΦ hcone
     have hcone_ne : hull ℝ (Set.range (i ∘ b)) ≠ ⊥ := by
       intro he
@@ -133,7 +68,7 @@ private theorem exists_regular_subdivision_of_basis_coords {u : N} (hu : u ≠ 0
       have hzero : i (b j) = 0 := by simpa only [Submodule.mem_bot] using hx
       exact b.ne_zero j (Φ.lattice.injective (hzero.trans i.map_zero.symm))
     have hsub := Φ.starSubdivisionAlong_isSubdivision hΦ hcone hcone_ne
-    obtain ⟨c, hc, hc', hnew⟩ := exists_starSubdivisionAlong_basis hΦ hcone b rfl j
+    obtain ⟨c, hc, hc', hnew⟩ := Φ.exists_starSubdivisionAlong_basis hΦ hcone b rfl j
     let a' : Fin 2 → ℕ := Function.update a j.rev (a j.rev - a j)
     have haj : a' j = a j := by simp [a', hne]
     have haj' : a' j.rev = a j.rev - a j := Function.update_self _ _ _
@@ -183,7 +118,7 @@ theorem exists_regular_subdivision_containing_ray (Φ : Fan i) (hΦ : Φ.IsRegul
       simp [a, (hm _).2 h] at hpos'
     refine ⟨Φ, IsSubdivision.refl Φ, hΦ, ?_⟩
     rw [← ha]
-    exact hull_nsmul_mem_cones (hull_basisVector_mem hσ b r hb hj') hpos'
+    exact hull_nsmul_mem_cones (Φ.hull_basisVector_mem hσ b r hb hj') hpos'
 
 /-- Finitely many specified lattice rays in the support of a regular rank-two fan
 can be included in a single regular subdivision. -/

@@ -152,71 +152,6 @@ theorem commonRefinement_self (Φ : Fan i) : Φ.commonRefinement Φ = Φ :=
 
 open PointedCone
 
-variable {Φ : Fan i}
-
-private theorem nonneg_or_nonpos_basis_repr_on_cone
-    (b : Module.Basis (Fin 2) ℤ N) (j : Fin 2) (σ : Φ.cones)
-    (hpos : i (b j.rev) ∈ Φ.support → hull ℝ {i (b j.rev)} ∈ Φ.cones)
-    (hneg : i (-b j.rev) ∈ Φ.support → hull ℝ {i (-b j.rev)} ∈ Φ.cones) :
-    let c := Φ.lattice.isBaseChange.basis b
-    (∀ x ∈ σ.val, 0 ≤ c.repr x j) ∨ ∀ x ∈ σ.val, c.repr x j ≤ 0 := by
-  let c := Φ.lattice.isBaseChange.basis b
-  have hne : j ≠ j.rev := by fin_cases j <;> decide
-  have hc : c j.rev = i (b j.rev) := IsBaseChange.basis_apply _ Φ.lattice.isBaseChange _
-  have hker : (c.coord j).ker = ℝ ∙ c j.rev := by
-    refine le_antisymm (fun x hx ↦ ?_) ?_
-    · have hz : c.repr x j = 0 := LinearMap.mem_ker.mp hx
-      rw [← Set.image_singleton (f := c) (a := j.rev), c.mem_span_image]
-      intro k hk
-      rcases Fin.fin_two_eq_or_eq_rev j k with rfl | rfl
-      · exact (Finsupp.mem_support_iff.mp hk hz).elim
-      · exact Set.mem_singleton _
-    · rw [Submodule.span_singleton_le_iff_mem, LinearMap.mem_ker]
-      simp [hne]
-  exact Φ.nonneg_or_nonpos_on_cone_of_mem_support hker
-    (by simpa only [hc] using hpos) (by simpa only [hc, map_neg] using hneg) σ
-
--- A linear map that has constant weak sign on a cone can vanish at the sum of the
--- generators only if it vanishes on the whole cone.
-private theorem map_eq_zero_of_sum_generators (hσ : IsToricCone i σ) (hi : IsIntegralLattice i)
-    (f : V →ₗ[ℝ] ℝ) (hf : ∀ x ∈ σ, 0 ≤ f x) [Fintype (ToricRay σ)]
-    (hzero : f (∑ ρ : ToricRay σ, i (primitiveGenerator hi hσ ρ)) = 0) :
-    ∀ x ∈ σ, f x = 0 := by
-  have hgens := (Fintype.sum_eq_zero_iff_of_nonneg fun ρ : ToricRay σ ↦ hf _
-    (ρ.val.isFaceOf.le (primitiveGenerator_mem hi hσ ρ))).mp (by simpa only [map_sum] using hzero)
-  have hle : σ ≤ Submodule.restrictScalars (Nonneg ℝ) f.ker := by
-    rw [← hσ.hull_primitiveGenerator hi]
-    apply Submodule.span_le.mpr
-    rintro _ ⟨_, ⟨ρ, rfl⟩, rfl⟩
-    exact congrFun hgens ρ
-  exact fun x hx ↦ hle hx
-
-private theorem le_of_sum_generators_mem (hσ : IsToricCone i σ) (hi : IsIntegralLattice i)
-    (hτ : IsToricCone i τ) (b : Module.Basis (Fin 2) ℤ N) (r : ToricRay τ ↪ Fin 2)
-    (hb : IsExtendingBasis i b r) [Fintype (ToricRay σ)]
-    (hs : (∑ ρ : ToricRay σ, i (primitiveGenerator hi hσ ρ)) ∈ τ)
-    (hsign : ∀ j, (∀ x ∈ σ, 0 ≤ (hi.isBaseChange.basis b).repr x j) ∨
-      ∀ x ∈ σ, (hi.isBaseChange.basis b).repr x j ≤ 0) :
-    σ ≤ τ := by
-  let c := hi.isBaseChange.basis b
-  let z := ∑ ρ : ToricRay σ, i (primitiveGenerator hi hσ ρ)
-  have hz : z ∈ σ := Submodule.sum_mem _ fun ρ _ ↦
-    ρ.val.isFaceOf.le (primitiveGenerator_mem hi hσ ρ)
-  have hzτ := (hb.mem_iff_real_basis_repr hi hτ z).mp hs
-  intro x hx
-  apply (hb.mem_iff_real_basis_repr hi hτ x).mpr
-  intro j
-  have hfix {j : Fin 2} (h : c.repr z j = 0) : c.repr x j = 0 := by
-    rcases hsign j with hj | hj
-    · exact map_eq_zero_of_sum_generators hσ hi (c.coord j) hj h x hx
-    · have h' : (-c.coord j) z = 0 := by simp [h, c]
-      simpa using map_eq_zero_of_sum_generators hσ hi (-c.coord j)
-        (fun y hy ↦ neg_nonneg.mpr (hj y hy)) h' x hx
-  refine ⟨?_, fun hj ↦ hfix ((hzτ j).2 hj)⟩
-  rcases hsign j with hj | hj
-  · exact hj x hx
-  · exact (hfix ((hj z hz).antisymm (hzτ j).1)).ge
-
 /-- Two regular fans in a rank-two lattice with the same support admit a regular common
 subdivision. In particular, two complete regular surface fans have a complete regular
 common subdivision. -/
@@ -248,8 +183,8 @@ theorem exists_regular_common_subdivision (Φ Ψ : Fan i)
     ρ.val.isFaceOf.le (primitiveGenerator_mem Ω.lattice hσt ρ)
   obtain ⟨τ, hτ, hzτ⟩ := Ψ.mem_support.mp (hsΩ ▸ Ω.subset_support hσ hz)
   let τ' : Ψ.cones := ⟨τ, hτ⟩
-  refine ⟨τ, hτ, le_of_sum_generators_mem hσt Ω.lattice (Ψ.isToricCone hτ) _ _ (hb τ')
-    hzτ fun j ↦ nonneg_or_nonpos_basis_repr_on_cone (b τ') j ⟨σ, hσ⟩ (fun hp ↦ ?_)
+  refine ⟨τ, hτ, hσt.le_of_sum_generators_mem Ω.lattice (Ψ.isToricCone hτ) _ _ (hb τ')
+    hzτ fun j ↦ Ω.nonneg_or_nonpos_basis_repr_on_cone (b τ') j ⟨σ, hσ⟩ (fun hp ↦ ?_)
       (fun hn ↦ ?_)⟩
   · exact hrays _ ⟨⟨⟨τ', j.rev, true⟩, by simp [v]⟩,
       Set.mem_preimage.mpr (hΩ.support_eq ▸ hp)⟩

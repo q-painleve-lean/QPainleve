@@ -8,6 +8,8 @@ module
 public import QPainleve.Geometry.Toric.DeterminantCharacters
 public import TauCeti.Geometry.Toric.Algebraic.Fan.Basic
 
+import TauCeti.Data.Fin.Rev
+
 /-!
 # Fans cut by a line
 
@@ -74,14 +76,6 @@ theorem Fan.nonneg_or_nonpos_on_cone_of_mem_support (Φ : Fan i) {f : V →ₗ[�
   rw [map_smul, hfw, smul_zero] at hxpos
   exact (lt_irrefl 0) hxpos
 
-/-- If both rays of the kernel line belong to a fan, every cone lies in one of the two
-closed half-spaces of the functional. -/
-theorem Fan.nonneg_or_nonpos_on_cone (Φ : Fan i) {f : V →ₗ[ℝ] ℝ} {v : V}
-    (hker : f.ker = ℝ ∙ v) (hpos : hull ℝ {v} ∈ Φ.cones)
-    (hneg : hull ℝ {-v} ∈ Φ.cones) (σ : Φ.cones) :
-    (∀ x ∈ σ.val, 0 ≤ f x) ∨ ∀ x ∈ σ.val, f x ≤ 0 :=
-  Φ.nonneg_or_nonpos_on_cone_of_mem_support hker (fun _ ↦ hpos) (fun _ ↦ hneg) σ
-
 namespace Fan
 
 variable (Φ : Fan i)
@@ -93,8 +87,32 @@ theorem detCharacter_nonneg_or_nonpos (b : Module.Basis (Fin 2) ℤ N) {v : N}
     (hneg : PointedCone.hull ℝ {i (-v)} ∈ Φ.cones) (σ : Φ.cones) :
     (∀ x ∈ σ.val, 0 ≤ Φ.lattice.realCharacter (b.detDualEquiv v).toAddMonoidHom x) ∨
       ∀ x ∈ σ.val, Φ.lattice.realCharacter (b.detDualEquiv v).toAddMonoidHom x ≤ 0 :=
-  Φ.nonneg_or_nonpos_on_cone (Φ.lattice.ker_realCharacter_detDualEquiv b hv)
-    hpos (by simpa only [map_neg] using hneg) σ
+  Φ.nonneg_or_nonpos_on_cone_of_mem_support (Φ.lattice.ker_realCharacter_detDualEquiv b hv)
+    (fun _ ↦ hpos) (fun _ ↦ by simpa only [map_neg] using hneg) σ
+
+/-- Each real basis coordinate has constant weak sign on a cone when the fan contains
+both directions of its kernel line that lie in the support. -/
+theorem nonneg_or_nonpos_basis_repr_on_cone
+    (b : Module.Basis (Fin 2) ℤ N) (j : Fin 2) (σ : Φ.cones)
+    (hpos : i (b j.rev) ∈ Φ.support → hull ℝ {i (b j.rev)} ∈ Φ.cones)
+    (hneg : i (-b j.rev) ∈ Φ.support → hull ℝ {i (-b j.rev)} ∈ Φ.cones) :
+    let c := Φ.lattice.isBaseChange.basis b
+    (∀ x ∈ σ.val, 0 ≤ c.repr x j) ∨ ∀ x ∈ σ.val, c.repr x j ≤ 0 := by
+  let c := Φ.lattice.isBaseChange.basis b
+  have hne : j ≠ j.rev := by fin_cases j <;> decide
+  have hc : c j.rev = i (b j.rev) := IsBaseChange.basis_apply _ Φ.lattice.isBaseChange _
+  have hker : (c.coord j).ker = ℝ ∙ c j.rev := by
+    refine le_antisymm (fun x hx ↦ ?_) ?_
+    · have hz : c.repr x j = 0 := LinearMap.mem_ker.mp hx
+      rw [← Set.image_singleton (f := c) (a := j.rev), c.mem_span_image]
+      intro k hk
+      rcases Fin.fin_two_eq_or_eq_rev j k with rfl | rfl
+      · exact (Finsupp.mem_support_iff.mp hk hz).elim
+      · exact Set.mem_singleton _
+    · rw [Submodule.span_singleton_le_iff_mem, LinearMap.mem_ker]
+      simp [hne]
+  exact Φ.nonneg_or_nonpos_on_cone_of_mem_support hker
+    (by simpa only [hc] using hpos) (by simpa only [hc, map_neg] using hneg) σ
 
 end Fan
 
