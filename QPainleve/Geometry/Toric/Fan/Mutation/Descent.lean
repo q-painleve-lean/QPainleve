@@ -7,14 +7,8 @@ module
 
 public import QPainleve.AlgebraicGeometry.Blowup.Tower.Nodal.Contraction
 public import QPainleve.Geometry.Toric.Fan.Mutation.OrderedBlowup
-public import TauCeti.AlgebraicGeometry.Morphisms.Modification.Basic
 
 import Mathlib.Analysis.Complex.Polynomial.Basic
-import QPainleve.AlgebraicGeometry.Blowup.Tower.Modification
-import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
-import QPainleve.Geometry.Toric.Fan.Smooth
-import TauCeti.AlgebraicGeometry.IdealSheaf.BaseChange
-import TauCeti.AlgebraicGeometry.RationalPoint.Basic
 
 /-!
 # Descent of toric mutation through nodal blowups
@@ -55,28 +49,6 @@ local notation "eB" => Ray.mutationBlowupIso b ρ hOpp c
 local notation "j₀" => Ray.mutationSourceBoundaryι b ρ c
 local notation "j₁" => Ray.mutationTargetBoundaryι b ρ hOpp c
 
-/-- An ordered lift of the global pivot isomorphism identifies the full strict-boundary
-ideals. The tower may contain repeated centers. -/
-theorem Ray.comap_strictBoundary_mutationBlowupIso_lift (hΦ : Φ.IsRegular) {n : ℕ}
-    {J : Fin n → {K : (D₀).subscheme.IdealSheafData // K.IsEffectiveCartier}}
-    {J' : Fin n → {K : (D₁).subscheme.IdealSheafData // K.IsEffectiveCartier}}
-    {e : (alongBoundary (j₀) J).1 ≅ (alongBoundary (j₁) J').1}
-    (he : IsLift (eB) (alongBoundary (j₀) J).2.toTower (alongBoundary (j₁) J').2.toTower e) :
-    ((alongBoundary (j₁) J').2.boundaryι.ker).comap e.hom =
-      (alongBoundary (j₀) J).2.boundaryι.ker := by
-  have hker : ((j₀) ≫ (eB).hom).ker = (j₁).ker := by
-    have h := ρ.comap_strictBoundary_mutationBlowupIso b hOpp c hΦ
-    rw [← Ray.ker_mutationSourceBoundaryι, ← Ray.ker_mutationTargetBoundaryι] at h
-    rw [Scheme.Hom.ker_comp, ← h, map_comap_of_isClosedImmersion]
-    simp
-  let u := IsClosedImmersion.lift (j₁) ((j₀) ≫ (eB).hom) hker.ge
-  have : IsIso u := IsClosedImmersion.isIso_lift _ _ hker.symm
-  have hu : (j₀) ≫ (eB).hom = (asIso u).hom ≫ (j₁) :=
-    (IsClosedImmersion.lift_fac _ _ _).symm
-  have h := (he.alongBoundary (asIso u) hu).2
-  rw [← Scheme.Hom.ker_comp_of_isIso (asIso u).hom, ← h,
-    Scheme.Hom.comap_ker_comp_of_isClosedImmersion]
-
 section Nodal
 
 variable {n : ℕ} (rays : Fin n → Φ.Ray) (params : Fin n → ℂˣ)
@@ -92,37 +64,6 @@ local notation "f₀" => toBase (WithBoundary.toTower (Sigma.snd (A))) ≫ (π�
   Φ.algebraicRealizationStructureMap
 local notation "f₁" => toBase (WithBoundary.toTower (Sigma.snd (B))) ≫ (π₁) ≫
   Fan.algebraicRealizationStructureMap (Ψ)
-
-/-- The projection from the ordered source model to the pivot blowup is a
-modification. In particular it can be used as a dominant refinement in the
-fixed-center X-evaluation comparison. -/
-theorem Ray.isModification_toBase_alongMutationSourceBoundary (hΦ : Φ.IsRegular) :
-    IsModification (A).2.toTower.toBase := by
-  let : Nonempty Φ.cones := hΦ₀
-  have hdim := (Module.finrank_eq_card_basis b).trans (Fintype.card_fin 2)
-  have : SmoothOfRelativeDimension 2 Φ.algebraicRealizationStructureMap :=
-    hdim ▸ Φ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
-  let pt := ρ.binomialCenter hdim (b.detDualEquiv_self v) (ρ.surjective_detCharacter b) c
-  let x := pt (IsLocalRing.closedPoint ℂ)
-  have hx : IsClosed ({x} : Set Φ.algebraicRealization) :=
-    isClosed_singleton_of_section (ρ.binomialCenter_comp_structureMap hdim
-      (b.detDualEquiv_self v) (ρ.surjective_detCharacter b) c)
-  have hxI : (I₀) = (Φ.algebraicRealization.fromSpecResidueField x).ker :=
-    (ρ.mutationSourceCenterIdeal_eq b c).trans pt.ker_eq_ker_fromSpecResidueField
-  let T := (BlowupTower.nil (X := Φ.algebraicRealization)).snoc (I₀)
-  have hT : IsClosedPointTower Φ.algebraicRealization T := IsClosedPointTower.nil.snoc x hx hxI
-  have : IsIntegral (I₀).blowup := hT.isIntegral Φ.algebraicRealizationStructureMap
-  have : SmoothOfRelativeDimension 2 ((π₀) ≫ Φ.algebraicRealizationStructureMap) := by
-    simpa only [T, toBase_snoc, toBase_nil, Category.comp_id] using
-      hT.smoothOfRelativeDimension Φ.algebraicRealizationStructureMap
-  apply IsClosedPointTower.isModification_of_smoothOfRelativeDimension_two
-    (f := (π₀) ≫ Φ.algebraicRealizationStructureMap)
-  apply isClosedPointTower_alongBoundary
-  intro j
-  rw [Ray.internalCenter_val]
-  exact (rays j).exists_closedPoint_ker_binomialCenterOnBoundary hdim
-    (b.detDualEquiv_self (rays j).primitiveGenerator) ((rays j).surjective_detCharacter b)
-    (params j)
 
 variable {X Y X' Y' : Scheme} [IsIntegral X] [IsIntegral X']
   [X.Over (Spec (.of ℂ))] [X'.Over (Spec (.of ℂ))]
