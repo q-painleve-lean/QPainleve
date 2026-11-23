@@ -55,6 +55,23 @@ def boundaryOrthogonalEquivChargeKernel (B : LinearMap.BilinForm ℤ Mark)
     ((boundaryQuotientEquivDualChargeCokernel hΦ s).symm.dualMap.trans
       ((rayChargeMap s).kerEquivDualCokerDualMap (charge_dual_eval_injective Φ)).symm)
 
+/-- A dual charge representative evaluates on a charge relation by pairing the corresponding
+boundary quotient class with the inverse image of that relation in the marked Picard group. -/
+theorem boundaryOrthogonalEquivChargeKernel_symm_pairing
+    (B : LinearMap.BilinForm ℤ Mark) [LinearMap.IsPerfPair B]
+    (x : (rayChargeMap s).ker) (φ : Dual ℤ (ι → ℤ)) (z : Mark)
+    (hz : (boundaryQuotientEquivDualChargeCokernel hΦ s) (Submodule.Quotient.mk z) =
+      Submodule.Quotient.mk φ) :
+    B z ((boundaryOrthogonalEquivChargeKernel hΦ s B).symm x : Mark) = φ x := by
+  let e := (rayChargeMap s).kerEquivDualCokerDualMap (charge_dual_eval_injective Φ)
+  have h := congrArg (fun y ↦ e y (Submodule.Quotient.mk φ))
+    ((boundaryOrthogonalEquivChargeKernel hΦ s B).apply_symm_apply x)
+  simp only [boundaryOrthogonalEquivChargeKernel, LinearEquiv.trans_apply, e.apply_symm_apply,
+    LinearEquiv.dualMap_apply, LinearMap.kerEquivDualCokerDualMap_apply_mk, e] at h
+  rw [← hz, LinearEquiv.symm_apply_apply, LinearMap.BilinForm.orthogonalEquivDualQuotient_apply_mk]
+    at h
+  exact h
+
 /-- Each charge coordinate is obtained by pairing with the corresponding total exceptional
 class in the first argument. For symmetric intersection pairings this is the intersection
 of the orthogonal class with the exceptional class. -/
@@ -62,22 +79,20 @@ of the orthogonal class with the exceptional class. -/
     (B : LinearMap.BilinForm ℤ Mark) [LinearMap.IsPerfPair B] (x : B.orthogonal M) (j : ι) :
     (boundaryOrthogonalEquivChargeKernel hΦ s B x : ι → ℤ) j =
       B (0, Pi.single j 1) x := by
+  let q := boundaryQuotientEquivDualChargeCokernel hΦ s
   let φ : Dual ℤ (ι → ℤ) := LinearMap.proj j
-  let e := (rayChargeMap s).kerEquivDualCokerDualMap (charge_dual_eval_injective Φ)
   have hφ : (fun k ↦ φ (Pi.single k 1)) = Pi.single j 1 := by
     funext k
     by_cases h : k = j
     · subst k
       simp [φ]
     · simp [φ, Pi.single_eq_of_ne, h, Ne.symm h]
-  calc
-    _ = e (boundaryOrthogonalEquivChargeKernel hΦ s B x) (Submodule.Quotient.mk φ) := by
-      simp [e, φ]
-    _ = B (0, Pi.single j 1) x := by
-      rw [boundaryOrthogonalEquivChargeKernel, LinearEquiv.trans_apply, LinearEquiv.trans_apply,
-        e.apply_symm_apply, LinearEquiv.dualMap_apply,
-        boundaryQuotientEquivDualChargeCokernel_symm_apply_mk,
-        LinearMap.BilinForm.orthogonalEquivDualQuotient_apply_mk, hφ]
+  have hz : q (Submodule.Quotient.mk (0, Pi.single j 1)) = Submodule.Quotient.mk φ := by
+    apply q.symm.injective
+    rw [LinearEquiv.symm_apply_apply, boundaryQuotientEquivDualChargeCokernel_symm_apply_mk, hφ]
+  simpa only [LinearEquiv.symm_apply_apply, LinearMap.proj_apply, φ] using
+    (boundaryOrthogonalEquivChargeKernel_symm_pairing hΦ s B
+      (boundaryOrthogonalEquivChargeKernel hΦ s B x) φ (0, Pi.single j 1) hz).symm
 
 variable [Fintype ι]
   (A : LinearMap.BilinForm ℤ (Additive (LineBundleClass (Fan.algebraicRealization Φ))))
