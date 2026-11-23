@@ -10,6 +10,7 @@ public import TauCeti.Geometry.Toric.Algebraic.Fan.DenseTorus
 public import QPainleve.Geometry.Toric.Fan.Point
 public import TauCeti.AlgebraicGeometry.Blowup.UniversalProperty
 
+import QPainleve.Geometry.Toric.Fan.Subdivision.Basic
 import QPainleve.Geometry.Toric.Fan.TwoDimensional
 import TauCeti.Geometry.Toric.Algebraic.Fan.SubfanScheme
 import QPainleve.AlgebraicGeometry.Blowup.Affine
@@ -197,43 +198,9 @@ private theorem exists_isPullback_starSubdivisionAlong_otherChart
     (τ : Φ.cones) (hστ : ¬ σ ≤ τ) :
     ∃ j : Φ.affineToricChart τ ⟶ (Fan.algebraicRealization Ψ),
       IsPullback j (𝟙 _) π (Φ.affineToricChartι τ) := by
-  let Q := Fan.ofCone Φ.lattice (Φ.isToricCone τ.property)
-  let q : Q.cones := ⟨τ.val, (Fan.mem_ofCone_cones _ _).2 (.refl _)⟩
-  let a : FanHom Q Ψ := FanHom.ofLatticeMap _ _ (AddMonoidHom.id N) fun κ hκ ↦ by
-    rw [IsIntegralLattice.extend_id, PointedCone.map_id]
-    have hκτ := (Fan.mem_ofCone_cones _ _).1 hκ
-    exact ⟨κ, Φ.mem_starSubdivisionAlong_cones_of_not_le hΦ σ.property
-      (Φ.mem_of_isFaceOf τ.property hκτ) (fun h ↦ hστ (h.trans hκτ.le)), le_rfl⟩
-  have hc : Q.cones = (F).toFanHom.preimageCones {κ | κ.IsFaceOf τ.val} := by
-    ext κ
-    constructor
-    · intro hκ
-      have hκτ := (Fan.mem_ofCone_cones _ _).1 hκ
-      have hκΦ := Φ.mem_of_isFaceOf τ.property hκτ
-      have hκΨ := Φ.mem_starSubdivisionAlong_cones_of_not_le hΦ σ.property hκΦ
-        (fun h ↦ hστ (h.trans hκτ.le))
-      apply ((F).toFanHom.mem_preimageCones_iff {κ | κ.IsFaceOf τ.val} hκΨ).2
-      have he := (F).leastCone_eq_self hκΨ hκΦ
-      exact Set.mem_ofPred_eq.mpr (he.symm ▸ hκτ)
-    · intro hκ
-      have hκΨ := (F).toFanHom.preimageCones_subset _ hκ
-      have hface : ((F).toFanHom.leastCone hκΨ).IsFaceOf τ.val :=
-        ((F).toFanHom.mem_preimageCones_iff {κ | κ.IsFaceOf τ.val} hκΨ).1 hκ
-      have hκΦ := ((Φ.not_le_leastCone_starSubdivisionAlong_iff hΦ σ.property h₀ hκΨ).1
-        (fun h ↦ hστ (h.trans hface.le))).1
-      exact (Fan.mem_ofCone_cones _ _).2 ((F).leastCone_eq_self hκΨ hκΦ ▸ hface)
-  have hp := isPullback_subdivision_of_localFans F (IsSubdivision.refl Q)
-    {κ | κ.IsFaceOf τ.val} (Φ.isFaceOf_subset_cones τ.property)
-    (fun _ _ ht hr ↦ hr.trans ht) hc (Set.ext fun _ ↦ Fan.mem_ofCone_cones ..) a (facesInclusion τ)
-    (FanHom.ofLatticeMap_latticeMap ..) (FanHom.ofLatticeMap_latticeMap ..)
-  rw [IsSubdivision.toFanHom_refl, FanHom.algebraicMap_id] at hp
-  let e := asIso (Q.affineToricChartι q)
-  refine ⟨e.hom ≫ a.algebraicMap, hp.of_iso e.symm (Iso.refl _) e.symm (Iso.refl _)
-    (by simp only [Iso.refl_hom, Category.comp_id, Iso.symm_hom, Iso.inv_hom_id_assoc])
-    (by simp) (by simp) ?_⟩
-  apply (cancel_epi e.hom).mp
-  simpa only [Iso.refl_hom, Category.comp_id, Iso.symm_hom, Category.assoc, Iso.hom_inv_id_assoc,
-    e, asIso_hom, asIso_inv, IsIso.hom_inv_id_assoc, Q, q] using chartι_comp_facesInclusion τ
+  have hτ : τ.val ∈ Fan.cones Ψ :=
+    Φ.mem_starSubdivisionAlong_cones_of_not_le hΦ σ.property τ.property hστ
+  exact ⟨_, (F).isPullback_affineToricChartι hτ τ.property⟩
 
 private theorem comap_ker_distinguishedPointHom :
     (I).comap (Φ.affineToricChartι σ) =

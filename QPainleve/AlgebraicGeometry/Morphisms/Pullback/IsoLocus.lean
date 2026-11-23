@@ -18,6 +18,8 @@ public section
 
 open CategoryTheory
 
+universe u
+
 namespace AlgebraicGeometry.Scheme.Hom
 
 /-- A commuting square over the isomorphism locus of its right map is cartesian if
@@ -49,5 +51,20 @@ theorem isPullback_of_isIso_of_range_subset_isoLocus {X Y A B : Scheme}
   have : IsIso (f ∣_ U) := inferInstanceAs (IsIso (f ∣_ f.isoLocus))
   have hpb : IsPullback i' e (f ∣_ U) j' := .of_vert_isIso ⟨hcomm⟩
   simpa only [hi', hj'] using hpb.paste_horiz (isPullback_morphismRestrict f U).flip
+
+/-- A base change is an isomorphism over the inverse image of the original isomorphism locus. -/
+theorem preimage_isoLocus_le_of_isPullback {X Y A B : Scheme.{u}}
+    {f : X ⟶ Y} {g : A ⟶ B} {a : A ⟶ X} {b : B ⟶ Y}
+    (h : IsPullback g a b f) :
+    b ⁻¹ᵁ f.isoLocus ≤ g.isoLocus := by
+  let U := f.isoLocus
+  have he : g ⁻¹ᵁ (b ⁻¹ᵁ U) = g ⁻¹ᵁ (b ⁻¹ᵁ U) ⊓ a ⁻¹ᵁ (f ⁻¹ᵁ U) := by
+    rw [← Scheme.Hom.comp_preimage, ← Scheme.Hom.comp_preimage, h.w, inf_idem]
+  have hr := Scheme.Hom.isPullback_resLE h (US := U) (UT := f ⁻¹ᵁ U)
+    (UX := b ⁻¹ᵁ U) le_rfl le_rfl he
+  have hIso : IsIso (f ∣_ U) := inferInstanceAs (IsIso (f ∣_ f.isoLocus))
+  apply g.le_isoLocus_iff.mpr
+  simpa only [Scheme.Hom.resLE_eq_morphismRestrict] using
+    hr.isIso_fst_of_isIso (by simpa only [Scheme.Hom.resLE_eq_morphismRestrict] using hIso)
 
 end AlgebraicGeometry.Scheme.Hom

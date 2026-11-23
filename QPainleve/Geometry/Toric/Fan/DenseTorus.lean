@@ -6,8 +6,8 @@ Authors: The QPainleve contributors
 module
 
 public import QPainleve.Geometry.Toric.FaceLocalization
+public import QPainleve.Geometry.Toric.Fan.Subdivision.Basic
 public import TauCeti.Geometry.Toric.Algebraic.Fan.DenseTorus
-public import TauCeti.Geometry.Toric.Algebraic.Fan.Subdivision
 
 import TauCeti.Geometry.Toric.Algebraic.Fan.SubfanScheme
 
@@ -17,7 +17,7 @@ import TauCeti.Geometry.Toric.Algebraic.Fan.SubfanScheme
 The inclusion of a face induces an injective map of affine toric coordinate rings, so
 the corresponding open immersion is dominant. Applying this to the zero face in each
 chart shows that Tau Ceti's torus inclusion is dense in any nonempty fan realization.
-The zero-cone subfan also identifies the inverse image of the torus under a subdivision.
+The common-cone chart comparison identifies the inverse image of the torus under a subdivision.
 -/
 
 public section
@@ -72,27 +72,9 @@ variable {N V : Type u} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
 theorem preimage_range_denseTorusι :
     h.toFanHom.algebraicMap ⁻¹' Set.range (Ψ.denseTorusι hΨ) =
       Set.range (Φ.denseTorusι hΦ) := by
-  let T : Set (PointedCone ℝ V) := {⊥}
   have hbΦ : (⊥ : PointedCone ℝ V) ∈ Φ.cones := let ⟨σ⟩ := hΦ; Φ.bot_mem σ.property
   have hbΨ : (⊥ : PointedCone ℝ V) ∈ Ψ.cones := let ⟨σ⟩ := hΨ; Ψ.bot_mem σ.property
-  have hT : T ⊆ Ψ.cones := Set.singleton_subset_iff.mpr hbΨ
-  have hface : ∀ ⦃σ τ⦄, σ ∈ T → τ.IsFaceOf σ → τ ∈ T := by
-    intro σ τ hσ hτ
-    exact Set.mem_singleton_iff.mpr (le_bot_iff.mp (Set.mem_singleton_iff.mp hσ ▸ hτ.le))
-  have hp : h.toFanHom.preimageCones T = {⊥} := by
-    ext σ
-    rw [Set.mem_singleton_iff]
-    constructor
-    · intro hσ
-      have hσΦ := h.toFanHom.preimageCones_subset T hσ
-      have hleast := (h.toFanHom.mem_preimageCones_iff T hσΦ).mp hσ
-      exact le_bot_iff.mp ((h.le_leastCone hσΦ).trans_eq (Set.mem_singleton_iff.mp hleast))
-    · rintro rfl
-      refine (h.toFanHom.mem_preimageCones_iff T hbΦ).mpr ?_
-      rw [h.leastCone_eq_self hbΦ hbΨ]
-      exact Set.mem_singleton _
-  rw [← Ψ.range_subfanInclusion_algebraicMap_of_eq_singleton_bot hΨ hT hface rfl,
-    ← h.toFanHom.range_preimageSubfanAlgebraicMap T hT hface]
-  exact Φ.range_subfanInclusion_algebraicMap_of_eq_singleton_bot hΦ _ _ hp
+  rw [Φ.denseTorusι_eq_affineToricChartι hΦ hbΦ, Ψ.denseTorusι_eq_affineToricChartι hΨ hbΨ]
+  exact h.preimage_range_affineToricChartι hbΦ hbΨ
 
 end TauCeti.Toric.Fan.IsSubdivision
