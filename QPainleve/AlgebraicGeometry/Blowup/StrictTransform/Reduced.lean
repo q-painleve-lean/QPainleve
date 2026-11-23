@@ -9,7 +9,6 @@ public import QPainleve.AlgebraicGeometry.Blowup.StrictTransform.Basic
 public import TauCeti.AlgebraicGeometry.IdealSheaf.Reduced
 
 import TauCeti.AlgebraicGeometry.Blowup.Restriction
-import TauCeti.AlgebraicGeometry.IdealSheaf.Colon
 import TauCeti.AlgebraicGeometry.IdealSheaf.VanishingIdeal
 
 /-!
@@ -35,27 +34,6 @@ variable {X : Scheme.{u}} (I D : X.IdealSheafData)
 local notation "π" => I.blowupToBase
 local notation "E" => I.comap I.blowupToBase
 local notation "S" => Scheme.Hom.ker (I.blowupMap D.subschemeι)
-
-/-- The intersection of the strict-transform ideal and the exceptional ideal equals
-their product. The strict-transform ideal is saturated with respect to the locally
-principal exceptional ideal. -/
-theorem inf_ker_blowupMap_subschemeι_exceptional :
-    S ⊓ E = S * E := by
-  let j := Scheme.Opens.ι ((E).support.compl)
-  have hS : S = ((D.comap π).comap j).map j :=
-    ker_blowupMap_subschemeι_eq_map_comap I D
-  have hEj : (E).comap j = ⊤ :=
-    (comap_eq_top_iff _ _).mpr (Scheme.Opens.ι_preimage_self _)
-  rw [inf_eq_colon_mul _ _ I.isEffectiveCartier_comap_blowupToBase.locallyPrincipal]
-  congr 1
-  apply le_antisymm _ (le_colon _ _)
-  have hcomap : (((S).colon E) * E).comap j ≤ (S).comap j :=
-    comap_mono j (colon_mul_le S E)
-  rw [comap_mul, hEj, ← one_eq_top, mul_one] at hcomap
-  have ht : (S).comap j ≤ (D.comap π).comap j := by
-    rw [hS]
-    exact comap_map_le _ _
-  exact ((le_map_iff_comap_le).mpr (hcomap.trans ht)).trans_eq hS.symm
 
 /-- If a reduced closed subscheme contains the blowup center and the exceptional
 divisor is reduced, the ideal of the reduced total transform is the product of

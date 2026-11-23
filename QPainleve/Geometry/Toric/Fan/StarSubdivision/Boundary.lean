@@ -13,6 +13,7 @@ import QPainleve.AlgebraicGeometry.Blowup.Exceptional.FirstKind
 import QPainleve.AlgebraicGeometry.Blowup.StrictTransform.Reduced
 import QPainleve.AlgebraicGeometry.EffectiveCartierDivisor.Dimension
 import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
+import QPainleve.AlgebraicGeometry.IdealSheaf.Restriction
 import QPainleve.Geometry.Toric.Fan.Boundary.Intersection
 import QPainleve.Geometry.Toric.Fan.Boundary.Subdivision
 import QPainleve.Geometry.Toric.Fan.Smooth
@@ -219,10 +220,7 @@ theorem comap_strictTransform_mul_exceptional_eq_boundaryIdeal
   have hcomp : (D.comap (I).blowupToBase).comap e.hom = D.comap π := by
     rw [← comap_comp, he]
   have hvan : ((D.comap (I).blowupToBase).radical).comap e.hom = (D.comap π).radical := by
-    have hJ : vanishingIdeal (D.comap π).support = (D.comap π).radical := vanishingIdeal_support
-    rw [← vanishingIdeal_support, ← hJ, ← hcomp, comap_vanishingIdeal_of_isOpenImmersion,
-      support_comap (D.comap (I).blowupToBase) e.hom]
-    rfl
+    rw [← radical_comap_of_isOpenImmersion, hcomp]
   exact (congrArg (fun J ↦ J.comap e.hom) hrad).symm.trans
     (hvan.trans ((F).radical_comap_boundaryIdeal hn ⟨σ⟩))
 
