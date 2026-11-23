@@ -1,0 +1,178 @@
+/-
+Copyright (c) 2026 The QPainleve contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: The QPainleve contributors
+-/
+module
+
+public import QPainleve.AlgebraicGeometry.Blowup.Tower.Nodal.Basic
+public import QPainleve.Geometry.Toric.Fan.StarSubdivision.Boundary
+public import QPainleve.Geometry.Toric.Fan.Subdivision
+
+import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
+import QPainleve.Geometry.Toric.Fan.Boundary.Node
+import QPainleve.Geometry.Toric.Fan.Boundary.Subdivision
+import QPainleve.Geometry.Toric.Fan.StarSubdivision.Factorization
+import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.Pullback
+import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.TensorProduct
+
+/-!
+# Nodal blowup towers from toric subdivisions
+
+A subdivision between regular surface fans factors as point blowups of boundary
+nodes. The comparison is over the specified toric projection. The ordered
+exceptional classes are the total pullbacks of the new ray divisors from the
+steps where they first appear.
+-/
+
+public noncomputable section
+
+open AlgebraicGeometry CategoryTheory
+open AlgebraicGeometry.Scheme.IdealSheafData
+open QPainleve.BlowupTower TauCeti.AlgebraicGeometry
+
+namespace TauCeti.Toric.Fan
+
+variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
+  {i : N →+ V} {Φ Ψ : Fan i}
+
+section Step
+
+variable (hΦ : Φ.IsRegular) (σ : Φ.cones) (h₀ : σ.val ≠ ⊥)
+
+local notation "Ω" => Φ.starSubdivisionAlong hΦ σ.property
+local notation "hΩ" => Φ.isRegular_starSubdivisionAlong hΦ σ.property
+local notation "ρ" => Φ.starSubdivisionAlongRay hΦ σ.property h₀
+local notation "F" => Φ.starSubdivisionAlong_isSubdivision hΦ σ.property h₀
+local notation "J" => Scheme.Hom.ker (Φ.distinguishedPointHom σ)
+
+/-- The exceptional class of a single point blowup corresponds to the positive class
+of the new ray divisor under the comparison over the toric projection. -/
+theorem pullback_blowupExceptionalClass_starSubdivisionAlong
+    (hN : Module.finrank ℤ N = 2) (hc : Nat.card (ToricRay σ.val) = 2)
+    (e : (Ω).algebraicRealization ≅ (J).blowup)
+    (he : e.hom ≫ (J).blowupToBase = (F).toFanHom.algebraicMap) :
+    LineBundleClass.pullback e.hom (J).blowupExceptionalClass =
+      (LineBundleClass.mk ((Ω).isEffectiveCartier_rayBoundaryIdeal hΩ ρ).toInvertibleSheaf)⁻¹ := by
+  let hE := (J).isEffectiveCartier_comap_blowupToBase
+  have hcompare :
+      ((J).comap (J).blowupToBase).comap e.hom = (Ω).rayBoundaryIdeal hΩ ρ := by
+    rw [← comap_comp, he]
+    exact comap_ker_distinguishedPointHom_eq_rayBoundaryIdeal hΦ σ h₀ hN hc
+  rw [blowupExceptionalClass_def, LineBundleClass.pullback_inv,
+    hE.pullback_mk_toInvertibleSheaf (hE.comap e.hom),
+    LineBundleClass.mk_toInvertibleSheaf_congr _ _ hcompare]
+
+end Step
+
+private theorem IsSubdivision.reduced_boundary_of_iso (h : Ψ.IsSubdivision Φ)
+    (hΦ : Nonempty Φ.cones) (hΨ : Nonempty Ψ.cones) {Y : Scheme}
+    (f : Y ⟶ Φ.algebraicRealization) (e : Ψ.algebraicRealization ≅ Y)
+    (he : e.hom ≫ f = h.toFanHom.algebraicMap) :
+    ((Φ.boundaryIdeal hΦ).comap f).radical.comap e.hom = Ψ.boundaryIdeal hΨ := by
+  rw [← radical_comap_of_isOpenImmersion, ← comap_comp, he, h.radical_comap_boundaryIdeal hΨ hΦ]
+
+private theorem IsSubdivision.isNodalBoundaryTower_snoc (h : Ψ.IsSubdivision Φ)
+    (hΦ : Nonempty Φ.cones) (hΨ : Ψ.IsRegular) (σ : Ψ.cones)
+    (hN : Module.finrank ℤ N = 2) (hc : Nat.card (ToricRay σ.val) = 2)
+    {n : ℕ} {Y : Scheme} {T : QPainleve.BlowupTower Φ.algebraicRealization n Y}
+    (e : Ψ.algebraicRealization ≅ Y) (he : e.hom ≫ T.toBase = h.toFanHom.algebraicMap)
+    (hT : IsNodalBoundaryTower (Φ.boundaryIdeal hΦ) Φ.algebraicRealizationStructureMap (𝟙 _) T) :
+    IsNodalBoundaryTower (Φ.boundaryIdeal hΦ) Φ.algebraicRealizationStructureMap (𝟙 _)
+      (T.snoc ((Ψ.distinguishedPointHom σ ≫ e.hom).ker)) := by
+  let D := (Φ.boundaryIdeal hΦ).comap T.toBase
+  let s := Φ.algebraicRealizationStructureMap
+  let q := Ψ.distinguishedPointHom σ
+  let p := q ≫ e.hom
+  let x : Spec (.of ℂ) := IsLocalRing.closedPoint ℂ
+  have : IsClosedImmersion q := Ψ.isClosedImmersion_distinguishedPointHom σ
+  have : IsClosedImmersion p := inferInstanceAs (IsClosedImmersion (q ≫ e.hom))
+  have hp : IsClosed ({p x} : Set Y) :=
+    (Set.range_eq_singleton (f := p) (fun y ↦ congrArg p (Subsingleton.elim y x))) ▸
+      p.isClosedEmbedding.isClosed_range
+  have hn : D.IsNodeOfReducedBoundary (T.toBase ≫ s) (e.hom (q x)) := by
+    have hD : (D.comap e.hom).radical = Ψ.boundaryIdeal ⟨σ⟩ := by
+      rw [radical_comap_of_isOpenImmersion]
+      exact h.reduced_boundary_of_iso hΦ ⟨σ⟩ T.toBase e he
+    have hs : e.hom ≫ T.toBase ≫ s = Ψ.algebraicRealizationStructureMap := by
+      rw [← Category.assoc, he, h.toFanHom.algebraicMap_comp_algebraicRealizationStructureMap]
+    apply (D.isNodeOfReducedBoundary_comap_iff_of_isOpenImmersion (T.toBase ≫ s) e.hom _).mp
+    rw [← isNodeOfReducedBoundary_radical, hD, hs]
+    exact Ψ.isNodeOfReducedBoundary_distinguishedPointHom hΨ σ hN hc
+  exact hT.snoc (p x) hp p.ker_eq_ker_fromSpecResidueField (by
+    simpa only [Category.comp_id, p, Scheme.Hom.comp_apply] using hn)
+
+private theorem isSubdivision_of_starSubdivision_chain
+    (h : Relation.ReflTransGen IsTwoRayStarSubdivision Φ Ψ) : Ψ.IsSubdivision Φ := by
+  induction h with
+  | refl => exact IsSubdivision.refl _
+  | tail _ hstep ih => exact hstep.isSubdivision.trans ih
+
+/-- The toric projection of a subdivision of regular surface fans is an ordered tower
+of blowups of boundary nodes. The isomorphism to the tower identifies the final
+reduced boundary. Each exceptional class is pulled back from the new ray divisor
+of a star subdivision between the base and final fans. -/
+theorem IsSubdivision.exists_toric_subdivision_blowup_tower
+    (h : Ψ.IsSubdivision Φ) (hΦ : Φ.IsRegular) (hΨ : Ψ.IsRegular)
+    (hΦ₀ : Nonempty Φ.cones) (hN : Module.finrank ℤ N = 2) :
+    ∃ (n : ℕ) (Y : Scheme) (T : QPainleve.BlowupTower Φ.algebraicRealization n Y)
+      (e : Ψ.algebraicRealization ≅ Y),
+      IsNodalBoundaryTower (Φ.boundaryIdeal hΦ₀) Φ.algebraicRealizationStructureMap
+        (𝟙 _) T ∧
+      e.hom ≫ T.toBase = h.toFanHom.algebraicMap ∧
+      ((Φ.boundaryIdeal hΦ₀).comap T.toBase).radical.comap e.hom =
+        Ψ.boundaryIdeal (h.nonempty_cones_of_nonempty hΦ₀) ∧
+      ∀ j : Fin n, ∃ (Δ : Fan i) (hΔ : Δ.IsRegular) (σ : Δ.cones) (h₀ : σ.val ≠ ⊥),
+        let Ω := Δ.starSubdivisionAlong hΔ σ.property
+        let hΩ := Δ.isRegular_starSubdivisionAlong hΔ σ.property
+        let ρ := Δ.starSubdivisionAlongRay hΔ σ.property h₀
+        ∃ (_ : Δ.IsSubdivision Φ) (hstep : Ψ.IsSubdivision Ω),
+          Nat.card (ToricRay σ.val) = 2 ∧
+          LineBundleClass.pullback e.hom (T.exceptionalClass j) =
+            LineBundleClass.pullback hstep.toFanHom.algebraicMap
+              (LineBundleClass.mk
+                (Ω.isEffectiveCartier_rayBoundaryIdeal hΩ ρ).toInvertibleSheaf)⁻¹ := by
+  have hchain := h.exists_starSubdivision_factorization hΦ hΨ hN
+  clear hΦ hΨ
+  revert h
+  induction hchain with
+  | refl =>
+    intro h
+    have he : (Iso.refl Φ.algebraicRealization).hom ≫ (nil (X := Φ.algebraicRealization)).toBase =
+        h.toFanHom.algebraicMap := by simp
+    exact ⟨0, _, .nil, Iso.refl _, .nil, he,
+      h.reduced_boundary_of_iso hΦ₀ _ _ _ he, fun j ↦ j.elim0⟩
+  | @tail Δ Ψ hpre hstep ih =>
+    intro h
+    have hΔΦ := isSubdivision_of_starSubdivision_chain hpre
+    obtain ⟨hΔ, σ, hc⟩ := hstep
+    obtain ⟨n, Y, T, e, hT, he, -, hclasses⟩ := ih hΔΦ
+    obtain ⟨h₀, d, _, hd, _⟩ := exists_iso_blowup_starSubdivisionAlong hΔ σ hN hc
+    let s := Δ.distinguishedPointHom σ
+    let p := s ≫ e.hom
+    let J := p.ker
+    let F := Δ.starSubdivisionAlong_isSubdivision hΔ σ.property h₀
+    have hJ : J.comap e.hom = s.ker := s.comap_ker_comp_of_isClosedImmersion e.hom
+    let g := d ≪≫ J.blowupIso e hJ
+    have hg : g.hom ≫ J.blowupToBase = F.toFanHom.algebraicMap ≫ e.hom := by
+      rw [Iso.trans_hom, Category.assoc, blowupIso_hom_blowupToBase, ← Category.assoc, hd]
+    have hbase : g.hom ≫ (T.snoc J).toBase = h.toFanHom.algebraicMap := by
+      rw [toBase_snoc, ← Category.assoc, hg, Category.assoc, he,
+        ← FanHom.algebraicMap_comp, ← IsSubdivision.toFanHom_trans F hΔΦ]
+    have hnodal := hΔΦ.isNodalBoundaryTower_snoc hΦ₀ hΔ σ hN hc e he hT
+    refine ⟨n + 1, _, T.snoc J, g, hnodal, hbase,
+      h.reduced_boundary_of_iso hΦ₀ _ _ g hbase, ?_⟩
+    intro j
+    refine Fin.lastCases ?_ (fun j ↦ ?_) j
+    · refine ⟨Δ, hΔ, σ, h₀, hΔΦ, IsSubdivision.refl _, hc, ?_⟩
+      rw [exceptionalClass_snoc_last, ← blowupExceptionalClass_def, Iso.trans_hom,
+        ← LineBundleClass.pullback_comp, J.pullback_blowupExceptionalClass e hJ,
+        IsSubdivision.toFanHom_refl, FanHom.algebraicMap_id, LineBundleClass.pullback_id]
+      exact pullback_blowupExceptionalClass_starSubdivisionAlong hΔ σ h₀ hN hc d hd
+    · obtain ⟨Γ, hΓ, τ, hτ, hΓΦ, hΔΩ, htwo, hclass⟩ := hclasses j
+      refine ⟨Γ, hΓ, τ, hτ, hΓΦ, F.trans hΔΩ, htwo, ?_⟩
+      rw [exceptionalClass_snoc_castSucc, LineBundleClass.pullback_comp, hg,
+        ← LineBundleClass.pullback_comp, hclass, LineBundleClass.pullback_comp,
+        IsSubdivision.toFanHom_trans F hΔΩ, FanHom.algebraicMap_comp]
+
+end TauCeti.Toric.Fan
