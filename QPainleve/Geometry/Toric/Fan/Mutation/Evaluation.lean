@@ -7,8 +7,13 @@ module
 
 public import QPainleve.Algebra.Cluster.XMutation.Evaluation
 public import QPainleve.Geometry.Toric.Fan.Charge
-public import QPainleve.Geometry.Toric.Fan.Mutation.Pullback
+public import QPainleve.Geometry.Toric.Fan.Mutation.Resolution
 public import QPainleve.SignedClusterModularGroup.CenterMutation
+
+import Mathlib.RingTheory.Localization.Away.AdjoinRoot
+import QPainleve.Algebra.MvPolynomial.Laurent.FiniteType
+import QPainleve.AlgebraicGeometry.RationalMap.Affine
+import QPainleve.AlgebraicGeometry.RationalMap.Composition
 
 /-!
 # Cluster X evaluation at fixed toric centers
@@ -16,7 +21,9 @@ public import QPainleve.SignedClusterModularGroup.CenterMutation
 Specializing the Laurent mutation chart at fixed centers sends its coordinates to scaled
 determinant characters. Pullback along the toric elementary transformation commutes with
 this specialization and cluster X mutation. The localization inverts the pivot binomial,
-so the comparison takes place on the common rational domain.
+so the comparison takes place on the common rational domain. The evaluation maps
+to this chart commute with the global isomorphism of the pivot blowups, also
+after dominant refinements of the source blowup.
 
 The character and charge formulas used here are those of Gross, Hacking and Keel,
 [*Birational geometry of cluster algebras*, (1.2), (2.9), and §3.1]
@@ -25,7 +32,7 @@ The character and charge formulas used here are those of Gross, Hacking and Keel
 
 public noncomputable section
 
-open AlgebraicGeometry Multiplicative PointedCone
+open AlgebraicGeometry CategoryTheory Multiplicative PointedCone
 open QPainleve.Cluster TauCeti.LaurentRing
 
 namespace TauCeti.Toric.Fan
@@ -40,6 +47,44 @@ local notation "χ(" x ")" => LinearMap.toAddMonoidHom (b.detDualEquiv x)
 local notation "c[" j "]" => c (ofAdd (Pi.single j 1))
 local notation "K(" F ")" => Scheme.functionField (Fan.algebraicRealization F)
 local notation "hΦ" => Nonempty.intro (Ray.toCone Φ (s p))
+
+section LaurentEvaluation
+
+variable [Nonempty Φ.cones]
+
+private def xCoordinateUnit (j : ι) : K(Φ)ˣ :=
+  Units.map (algebraMap ℂ K(Φ)).toMonoidHom c[j] * Φ.character.toHomUnits (ofAdd χ(u j))
+
+/-- Laurent evaluation at the scaled characters of a fixed-center toric presentation. -/
+def xEval : LaurentRing ℂ ι →ₐ[ℂ] K(Φ) :=
+  LaurentRing.aeval (xCoordinateUnit Φ b s c)
+
+/-- Each independent X coordinate evaluates to its center parameter times its charge character. -/
+@[simp]
+theorem xEval_X (j : ι) :
+    Φ.xEval b s c (X j) = algebraMap ℂ K(Φ) (c[j] : ℂ) * Φ.character (ofAdd χ(u j)) := by
+  simp [xEval, xCoordinateUnit]
+
+variable [Finite ι]
+
+/-- The rational evaluation map to the independent X torus at a fixed center. -/
+def xEvaluation : Φ.algebraicRealization ⤏ Spec (.of (LaurentRing ℂ ι)) :=
+  Scheme.RationalMap.ofAffineAlgHom (Φ.xEval b s c)
+
+instance : (Φ.xEvaluation b s c).IsOver
+    (Φ.algebraicRealization ↘ Spec (.of ℂ)) (Spec.algebraMap ℂ (LaurentRing ℂ ι)) := by
+  unfold xEvaluation
+  infer_instance
+
+/-- The generic-point map of fixed-center torus evaluation is induced by Laurent evaluation. -/
+@[simp]
+theorem fromFunctionField_xEvaluation :
+    (Φ.xEvaluation b s c).fromFunctionField =
+      Spec.map (CommRingCat.ofHom (Φ.xEval b s c).toRingHom) := by
+  unfold xEvaluation
+  exact Scheme.RationalMap.fromFunctionField_ofAffineAlgHom _
+
+end LaurentEvaluation
 
 omit [DecidableEq ι] in
 private theorem pivotCharacter_ne_zero : χ(u p) ≠ 0 := by
@@ -56,9 +101,8 @@ def mutationChartEval :
     letI : Nonempty Φ.cones := hΦ
     XMutationChart ℂ p →ₐ[ℂ] K(Φ) := by
   let : Nonempty Φ.cones := hΦ
-  refine xMutationChartEval p (fun j ↦
-    Units.map (algebraMap ℂ K(Φ)).toMonoidHom c[j] * Φ.character.toHomUnits (ofAdd χ(u j))) ?_
-  simpa using (Φ.one_add_mul_character_ne_zero (c[p] : ℂ)
+  refine xMutationChartEval p (xCoordinateUnit Φ b s c) ?_
+  simpa [xCoordinateUnit] using (Φ.one_add_mul_character_ne_zero (c[p] : ℂ)
     (pivotCharacter_ne_zero Φ b s p)).isUnit
 
 /-- The X coordinate at a fixed center is its center parameter times its charge character. -/
@@ -67,7 +111,56 @@ theorem mutationChartEval_X (j : ι) :
     letI : Nonempty Φ.cones := hΦ
     Φ.mutationChartEval b s p c (algebraMap (LaurentRing ℂ ι) (XMutationChart ℂ p) (X j)) =
       algebraMap ℂ K(Φ) (c[j] : ℂ) * Φ.character (ofAdd χ(u j)) := by
-  simp [mutationChartEval]
+  simp [mutationChartEval, xCoordinateUnit]
+
+section SchemeEvaluation
+
+variable [Finite ι]
+
+/-- The fixed-center X evaluation as a rational map to the open mutation chart of the
+independent X torus. Its coordinates are the scaled determinant characters. -/
+def mutationChartEvaluation :
+    Φ.algebraicRealization ⤏ Spec (.of (XMutationChart ℂ p)) :=
+  letI : Nonempty Φ.cones := hΦ
+  Scheme.RationalMap.ofAffineAlgHom (Φ.mutationChartEval b s p c)
+
+instance : (Φ.mutationChartEvaluation b s p c).IsOver
+    (Φ.algebraicRealization ↘ Spec (.of ℂ)) (Spec.algebraMap ℂ (XMutationChart ℂ p)) := by
+  let : Nonempty Φ.cones := hΦ
+  unfold mutationChartEvaluation
+  infer_instance
+
+/-- The generic-point map of fixed-center evaluation is induced by specialization of the
+localized Laurent chart. -/
+@[simp]
+theorem fromFunctionField_mutationChartEvaluation :
+    letI : Nonempty Φ.cones := hΦ
+    (Φ.mutationChartEvaluation b s p c).fromFunctionField =
+      Spec.map (CommRingCat.ofHom (Φ.mutationChartEval b s p c).toRingHom) := by
+  let : Nonempty Φ.cones := hΦ
+  unfold mutationChartEvaluation
+  exact Scheme.RationalMap.fromFunctionField_ofAffineAlgHom _
+
+/-- Including the pivot chart into the X torus recovers the evaluation map with no
+choice of pivot. -/
+@[simp]
+theorem mutationChartEvaluation_compHom :
+    letI : Nonempty Φ.cones := hΦ
+    (Φ.mutationChartEvaluation b s p c).compHom
+      (Spec.algebraMap (LaurentRing ℂ ι) (XMutationChart ℂ p)) = Φ.xEvaluation b s c := by
+  let : Nonempty Φ.cones := hΦ
+  let incl := IsScalarTower.toAlgHom ℂ (LaurentRing ℂ ι) (XMutationChart ℂ p)
+  have heval : (Φ.mutationChartEval b s p c).comp incl = Φ.xEval b s c := by
+    ext a
+    simp [incl, mutationChartEval, xEval]
+  unfold mutationChartEvaluation xEvaluation
+  -- The localization's algebra map is the ring map of the inclusion over ℂ.
+  change (Scheme.RationalMap.ofAffineAlgHom (Φ.mutationChartEval b s p c)).compHom
+    (Spec.map (CommRingCat.ofHom incl.toRingHom)) =
+      Scheme.RationalMap.ofAffineAlgHom (Φ.xEval b s c)
+  rw [Scheme.RationalMap.ofAffineAlgHom_compHom, heval]
+
+end SchemeEvaluation
 
 variable [Fintype ι] (hOpposite : hull ℝ {l (-(s p).primitiveGenerator)} ∈ Φ.cones)
 
@@ -169,5 +262,85 @@ theorem mutationComplementPullback_comp_mutationChartEval :
     simpa only [evalUnits, map_mul, map_zpow, Units.val_mul, Units.val_zpow_eq_zpow_val,
       Units.coe_map, MonoidHom.coe_ofClass, AlgHom.coe_toMonoidHom, val_xMutationChartBinomial,
       map_add, map_one] using h.symm
+
+section Pivot
+
+local notation "I₀" => Ray.mutationSourceCenterIdeal b (s p) c[p]
+local notation "I₁" => Ray.mutationTargetCenterIdeal b (s p) hOpposite c[p]
+local notation "e" => Ray.mutationBlowupIso b (s p) hOpposite c[p]
+local notation "π₀" => Scheme.IdealSheafData.blowupToBase I₀
+local notation "π₁" => Scheme.IdealSheafData.blowupToBase I₁
+
+/-- Fixed-center X evaluation commutes with the global mutation isomorphism on the
+pivot blowups, after any dominant refinement of the source. Both sides are rational
+maps to the open mutation chart, so the square holds on a common dense open. -/
+theorem mutationBlowupIso_mutationChartEvaluation {W : Scheme} [IsIntegral W]
+    (f : W ⟶ (I₀).blowup) [IsDominant f] :
+    letI : Nonempty Φ.cones := hΦ
+    letI : Nonempty (Fan.cones Ψ) := hΨ
+    letI := (s p).isIntegral_mutationSourceBlowup b hOpposite c[p]
+    letI := (s p).isModification_mutationSourceBlowupToBase b hOpposite c[p]
+    letI := (s p).isModification_mutationTargetBlowupToBase b hOpposite c[p]
+    (f ≫ (e).hom ≫ π₁).toRationalMap.comp ((Ψ).mutationChartEvaluation b s′ p c′) =
+      ((f ≫ π₀).toRationalMap.comp (Φ.mutationChartEvaluation b s p c)).compHom
+        (Spec.map (CommRingCat.ofHom (M).toAlgHom.toRingHom)) := by
+  let : Nonempty Φ.cones := hΦ
+  let : Nonempty (Fan.cones Ψ) := hΨ
+  have := (s p).isIntegral_mutationSourceBlowup b hOpposite c[p]
+  have := (s p).isIntegral_mutationTargetBlowup b hOpposite c[p]
+  have := (s p).isModification_mutationSourceBlowupToBase b hOpposite c[p]
+  have := (s p).isModification_mutationTargetBlowupToBase b hOpposite c[p]
+  let g := f ≫ π₀
+  let h := f ≫ (e).hom ≫ π₁
+  let a := Φ.mutationChartEval b s p c
+  let a' := (Ψ).mutationChartEval b s′ p c′
+  have : IsDominant g := inferInstanceAs (IsDominant (f ≫ π₀))
+  have : IsDominant h := inferInstanceAs (IsDominant (f ≫ (e).hom ≫ π₁))
+  let : W.Over (Spec (.of ℂ)) := ⟨g ≫ Φ.algebraicRealizationStructureMap⟩
+  have : g.IsOver (Spec (.of ℂ)) := ⟨by rw [Φ.algebraicRealization_over]; rfl⟩
+  have : h.IsOver (Spec (.of ℂ)) := ⟨by
+    rw [algebraicRealization_over]
+    -- Use the chosen base morphism so the comparison is between the two composites.
+    change h ≫ (Ψ).algebraicRealizationStructureMap = g ≫ Φ.algebraicRealizationStructureMap
+    simpa only [h, g, Category.assoc] using
+      congrArg (f ≫ ·) ((s p).mutationBlowupIso_hom_comp_toBase b hOpposite c[p])⟩
+  have hfield : h.functionFieldAlgHom ℂ = (g.functionFieldAlgHom ℂ).comp P := by
+    ext z
+    simpa only [Scheme.Hom.functionFieldAlgHom_apply, AlgHom.comp_apply,
+      mutationComplementPullbackAlgHom_apply, CommRingCat.comp_apply] using
+      ConcreteCategory.congr_hom
+        ((s p).functionFieldMap_comp_mutationBlowupIso b hOpposite c[p] f) z
+  have heval : (P).comp a' = a.comp (M).toAlgHom :=
+    Φ.mutationComplementPullback_comp_mutationChartEval b s p c hOpposite
+  -- Name the projection composites so the local instances for morphisms over ℂ apply.
+  change h.toRationalMap.comp (Scheme.RationalMap.ofAffineAlgHom a') =
+    (g.toRationalMap.comp (Scheme.RationalMap.ofAffineAlgHom a)).compHom
+      (Spec.map (CommRingCat.ofHom (M).toAlgHom.toRingHom))
+  simp only [Scheme.RationalMap.comp_ofAffineAlgHom, Scheme.RationalMap.ofAffineAlgHom_compHom]
+  rw [hfield, AlgHom.comp_assoc, heval, AlgHom.comp_assoc]
+
+/-- The resolved toric mutation commutes with fixed-center evaluation into the independent
+X torus. On the source the X mutation is the chart isomorphism followed by the
+inclusion of that chart into the torus. -/
+theorem mutationBlowupIso_xEvaluation {W : Scheme} [IsIntegral W]
+    (f : W ⟶ (I₀).blowup) [IsDominant f] :
+    letI : Nonempty Φ.cones := hΦ
+    letI : Nonempty (Fan.cones Ψ) := hΨ
+    letI := (s p).isIntegral_mutationSourceBlowup b hOpposite c[p]
+    letI := (s p).isModification_mutationSourceBlowupToBase b hOpposite c[p]
+    letI := (s p).isModification_mutationTargetBlowupToBase b hOpposite c[p]
+    (f ≫ (e).hom ≫ π₁).toRationalMap.comp ((Ψ).xEvaluation b s′ c′) =
+      (((f ≫ π₀).toRationalMap.comp (Φ.mutationChartEvaluation b s p c)).compHom
+        (Spec.map (CommRingCat.ofHom (M).toAlgHom.toRingHom))).compHom
+          (Spec.algebraMap (LaurentRing ℂ ι) (XMutationChart ℂ p)) := by
+  let : Nonempty Φ.cones := hΦ
+  let : Nonempty (Fan.cones Ψ) := hΨ
+  have := (s p).isIntegral_mutationSourceBlowup b hOpposite c[p]
+  have := (s p).isModification_mutationSourceBlowupToBase b hOpposite c[p]
+  have := (s p).isModification_mutationTargetBlowupToBase b hOpposite c[p]
+  have h := Φ.mutationBlowupIso_mutationChartEvaluation b s p c hOpposite f
+  rw [← mutationChartEvaluation_compHom (p := p), Scheme.RationalMap.comp_compHom, h]
+
+end Pivot
 
 end TauCeti.Toric.Fan
