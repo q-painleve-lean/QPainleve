@@ -7,6 +7,8 @@ module
 
 public import TauCeti.AlgebraicGeometry.IdealSheaf.Stalk
 
+import TauCeti.AlgebraicGeometry.IdealSheaf.Affine
+
 /-!
 # Stalks of ideal sheaves
 
@@ -22,6 +24,15 @@ open CategoryTheory
 namespace AlgebraicGeometry.Scheme.IdealSheafData
 
 variable {X : Scheme.{u}}
+
+/-- An ideal sheaf is determined by its pullbacks to the spectra of the local rings. -/
+theorem eq_of_comap_fromSpecStalk_eq {I J : X.IdealSheafData}
+    (h : ∀ x : X, I.comap (X.fromSpecStalk x) = J.comap (X.fromSpecStalk x)) : I = J := by
+  have hlocal (R : Type u) [CommRing R] [IsLocalRing R] (g : Spec (.of R) ⟶ X) :
+      I.comap g = J.comap g := by
+    rw [← Scheme.Spec_stalkClosedPointTo_fromSpecStalk g, comap_comp, comap_comp, h]
+  exact le_antisymm (le_of_comap_Spec_isLocalRing fun R _ _ g ↦ (hlocal R g).le)
+    (le_of_comap_Spec_isLocalRing fun R _ _ g ↦ (hlocal R g).ge)
 
 /-- The stalk ideal of a sum is the sum of the stalk ideals. -/
 @[simp]
