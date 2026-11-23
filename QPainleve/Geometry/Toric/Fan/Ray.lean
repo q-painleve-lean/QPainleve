@@ -158,3 +158,20 @@ theorem character_eq_zero_of_nonneg_primitiveGenerator (Φ : Fan i) (hc : Φ.IsC
   exact_mod_cast le_antisymm h h'
 
 end TauCeti.Toric.Fan
+
+namespace TauCeti.Toric.FanEquiv
+
+variable {N N' V V' : Type*} [AddCommGroup N] [AddCommGroup N']
+  [AddCommGroup V] [AddCommGroup V'] [Module ℝ V] [Module ℝ V']
+  {i : N →+ V} {i' : N' →+ V'} {Φ : Fan i} {Ψ : Fan i'}
+
+/-- A fan equivalence sends the primitive generator of a ray to that of its image ray. -/
+@[simp]
+theorem primitiveGenerator_rayEquiv (e : FanEquiv Φ Ψ) (ρ : Φ.Ray) :
+    (e.rayEquiv ρ).primitiveGenerator = e.latticeEquiv ρ.primitiveGenerator := by
+  refine (e.rayEquiv ρ).primitiveGenerator_eq_of_mem_of_isPrimitive ?_
+    ((e.latticeEquiv.toIntLinearEquiv.isPrimitive_iff).2 ρ.isPrimitiveGenerator.isPrimitive)
+  rw [← e.map_lattice, toCone_rayEquiv, coneEquiv_apply_coe]
+  exact ⟨_, ρ.primitiveGenerator_mem, rfl⟩
+
+end TauCeti.Toric.FanEquiv
