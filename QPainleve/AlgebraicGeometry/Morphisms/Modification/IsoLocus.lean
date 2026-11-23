@@ -5,19 +5,19 @@ Authors: The QPainleve contributors
 -/
 module
 
-public import Mathlib.AlgebraicGeometry.FunctionField
 public import Mathlib.AlgebraicGeometry.ZariskisMainTheorem
+public import QPainleve.AlgebraicGeometry.Morphisms.IsoLocus
+public import QPainleve.AlgebraicGeometry.Morphisms.Separated
+public import QPainleve.AlgebraicGeometry.SpreadingOut
 public import TauCeti.AlgebraicGeometry.Morphisms.Modification.Centre
 public import TauCeti.AlgebraicGeometry.Scheme.Normal
+
 import Mathlib.AlgebraicGeometry.Noetherian
-import Mathlib.AlgebraicGeometry.SpreadingOut
-import Mathlib.AlgebraicGeometry.ValuativeCriterion
 import QPainleve.Topology.NoetherianSpace
 import TauCeti.AlgebraicGeometry.Birational.Irreducible
 import TauCeti.AlgebraicGeometry.Morphisms.Dominant
 import TauCeti.AlgebraicGeometry.Normalization.Basic
 import TauCeti.AlgebraicGeometry.Normalization.IsIso
-import TauCeti.AlgebraicGeometry.Restrict
 import TauCeti.Topology.KrullDimension.Basic
 
 /-!
@@ -47,59 +47,6 @@ namespace AlgebraicGeometry.Scheme.Hom
 universe u
 
 variable {X Y : Scheme.{u}} (f : X ⟶ Y)
-
-/-- A dominant section of a separated morphism with reduced source is its inverse. -/
-theorem isIso_of_dominant_section [IsReduced X] [IsSeparated f] (s : Y ⟶ X)
-    [IsDominant s] (hs : s ≫ f = 𝟙 Y) : IsIso f := by
-  have hinv : f ≫ s = 𝟙 X :=
-    ext_of_isDominant_of_isSeparated f (by simp [hs]) s (by simp [reassoc_of% hs])
-  exact ⟨⟨s, hinv, hs⟩⟩
-
-/-- A dominant morphism from an open of the target giving a section there places that open
-inside the isomorphism locus. -/
-theorem le_isoLocus_of_dominant_section [IsReduced X] [IsSeparated f]
-    {U : Y.Opens} (s : U.toScheme ⟶ X) [IsDominant s] (hs : s ≫ f = U.ι) :
-    U ≤ f.isoLocus := by
-  let H := (isPullback_morphismRestrict f U).flip
-  let t := H.lift s (𝟙 U.toScheme) (by simpa using hs)
-  have ht : t ≫ (f ⁻¹ᵁ U).ι = s := H.lift_fst _ _ _
-  have : IsDominant (t ≫ (f ⁻¹ᵁ U).ι) := ht.symm ▸ inferInstanceAs (IsDominant s)
-  have : IsDominant t := IsDominant.of_comp_of_isOpenImmersion t (f ⁻¹ᵁ U).ι
-  exact f.le_isoLocus_iff.mpr <|
-    (f ∣_ U).isIso_of_dominant_section t (H.lift_snd _ _ _)
-
-/-- If a universally closed morphism locally of finite type has a dominant generic section,
-it has a dominant section over a neighbourhood of each valuation-ring stalk of its
-integral target. -/
-theorem exists_dominant_section_over_open_of_valuationRing [IsIntegral Y] [UniversallyClosed f]
-    [LocallyOfFiniteType f] (y : Y) [ValuationRing (Y.presheaf.stalk y)]
-    (s : Spec Y.functionField ⟶ X) [IsDominant s]
-    (hs : s ≫ f = Y.fromSpecStalk (genericPoint Y)) :
-    ∃ (U : Y.Opens) (_ : y ∈ U) (g : U.toScheme ⟶ X), g ≫ f = U.ι ∧ IsDominant g := by
-  have hsq : s ≫ f = Spec.map (CommRingCat.ofHom
-      (algebraMap (Y.presheaf.stalk y) Y.functionField)) ≫ Y.fromSpecStalk y := by
-    rw [hs, ← SpecMap_stalkSpecializes_fromSpecStalk (genericPoint_specializes y)]
-    rfl
-  let sq : ValuativeCommSq f :=
-    { R := Y.presheaf.stalk y
-      domain := inferInstanceAs (IsDomain (Y.presheaf.stalk y))
-      valuationRing := ‹ValuationRing (Y.presheaf.stalk y)›
-      K := Y.functionField
-      i₁ := s
-      i₂ := Y.fromSpecStalk y
-      commSq := ⟨hsq⟩ }
-  have hvc := ((UniversallyClosed.eq_valuativeCriterion.le _ _ f inferInstance).1) sq
-  let l := hvc.exists_lift.some
-  obtain ⟨U, hy, g, hl, hg⟩ :=
-    spread_out_of_isGermInjective' (𝟙 Y) f (x := y) l.l (by simpa using l.fac_right)
-  let i := Spec.map (CommRingCat.ofHom
-    (algebraMap (Y.presheaf.stalk y) Y.functionField)) ≫ U.fromSpecStalkOfMem y hy
-  have he : i ≫ g = s := by
-    dsimp only [i]
-    rw [Category.assoc, ← hl]
-    exact l.fac_left
-  have : IsDominant (i ≫ g) := he.symm ▸ ‹IsDominant s›
-  exact ⟨U, hy, g, by simpa using hg, IsDominant.of_comp i g⟩
 
 /-- A modification with irreducible target has a dominant section over the generic point
 of the target. -/
@@ -171,16 +118,6 @@ theorem mem_isoLocus_of_quasiFiniteAt [IsReduced X] [IsIntegral Y] [IsNormalSche
     simpa only [s, Category.assoc] using g.isoOpensRange_inv_comp
   have hy : f x ∈ g.opensRange := ⟨⟨x, f.mem_quasiFiniteLocus.mpr hx⟩, rfl⟩
   exact f.le_isoLocus_of_dominant_section s hs hy
-
-/-- A morphism is quasi-finite at each point above its isomorphism locus. -/
-theorem quasiFiniteAt_of_mem_isoLocus {x : X}
-    (hx : f x ∈ f.isoLocus) : f.QuasiFiniteAt x := by
-  let V := f.isoLocus
-  let z : f ⁻¹ᵁ V := ⟨x, hx⟩
-  have h : LocallyQuasiFinite ((f ⁻¹ᵁ V).ι ≫ f) :=
-    (morphismRestrict_ι f V) ▸ inferInstanceAs (LocallyQuasiFinite ((f ∣_ V) ≫ V.ι))
-  exact (quasiFiniteAt_comp_iff_of_isOpenImmersion (f := (f ⁻¹ᵁ V).ι) (g := f)
-    (x := z)).mp (((f ⁻¹ᵁ V).ι ≫ f).quasiFiniteAt z)
 
 section Normal
 
