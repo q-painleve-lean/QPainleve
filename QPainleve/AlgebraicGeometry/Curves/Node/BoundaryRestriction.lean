@@ -9,12 +9,11 @@ public import QPainleve.AlgebraicGeometry.Chow.SurfaceIntersection
 public import QPainleve.AlgebraicGeometry.Curves.Node.Multidegree
 import QPainleve.AlgebraicGeometry.Curves.Degree.Pullback
 import QPainleve.AlgebraicGeometry.Curves.Node.Conductor.Naturality
+import QPainleve.AlgebraicGeometry.Curves.Node.NormalizationComponent
 import QPainleve.AlgebraicGeometry.EffectiveCartierDivisor.Dimension
 import QPainleve.AlgebraicGeometry.EffectiveCartierDivisor.Pullback
 import QPainleve.AlgebraicGeometry.Morphisms.IsoLocus
 import QPainleve.AlgebraicGeometry.Scheme.LocalDimension
-import TauCeti.AlgebraicGeometry.Blowup.ExceptionalDivisor
-import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.SchematicDensity
 import TauCeti.AlgebraicGeometry.IdealSheaf.VanishingIdeal
 import TauCeti.AlgebraicGeometry.Morphisms.LocallyQuasiFinite
 import TauCeti.Topology.Sober
@@ -47,35 +46,12 @@ local notation "N" => IdealSheafData.blowup I
 local notation "V" => irreducibleComponents N
 local notation "η" => genericPoints.ofComponent
 
-private theorem blowupComponentGeneric_mem_isoLocus (v : V) : ν (η v) ∈ (ν).isoLocus := by
-  have : IsFinite ν := (C).isFinite_blowupToBase_singularLocus
-    PrestableFamily.atWorstNodalOfRelativeDimensionOne
-  have : IsNoetherian N := isNoetherian_of_finiteType (ν ≫ C ↘ Spec (.of k))
-  have hcartier := (I).isEffectiveCartier_comap_blowupToBase
-  have := hcartier.isSchemeTheoreticallyDominant_support_compl_ι
-  have hdense : Dense (((I).comap ν).support : Set N)ᶜ := by
-    simpa only [DenseRange, Scheme.Opens.range_ι, Closeds.coe_compl] using
-      (Scheme.Opens.ι ((I).comap ν).support.compl).denseRange
-  have hv : IsOpen (v : Set N) := by
-    rw [← (C).coe_blowupComponent v]
-    exact ((C).blowupComponent v).isOpen
-  obtain ⟨y, hyv, hy⟩ := hdense.inter_open_nonempty _ hv v.property.1.nonempty
-  have hη : (η v : N) ∈ ((I).comap ν).support.compl :=
-    ((genericPoints.isGenericPoint_ofComponent v).specializes hyv).mem_open
-      ((I).comap ν).support.compl.isOpen hy
-  have hIso := (C).isIso_blowupToBase_singularLocus_restrict_smoothLocus (R := k)
-  apply (ν).le_isoLocus_iff.mpr hIso
-  apply not_not.mp
-  exact ((C).mem_support_singularLocus_iff_notMem_smoothLocus (ν (η v))).not.mp
-    (by simpa only [← SetLike.mem_coe, Closeds.coe_compl, Set.mem_compl_iff,
-      support_comap, Closeds.coe_preimage, Set.mem_preimage] using hη)
-
 private theorem coheight_image_blowupComponentGeneric [IsLocallyNoetherian X]
     (hD : D.IsEffectiveCartier) (v : V) : coheight (D.subschemeι (ν (η v))) = 1 := by
   have hgeneric : IsMax (η v : N) := fun y hy ↦
     le_of_eq (TauCeti.mem_genericPoints_iff.mp (η v).property y (Scheme.le_iff_specializes.mp hy))
   have hco : coheight (ν (η v)) = 0 :=
-    ((ν).coheight_eq_of_apply_mem_isoLocus (blowupComponentGeneric_mem_isoLocus v)).trans
+    ((ν).coheight_eq_of_apply_mem_isoLocus ((C).blowupComponentGeneric_mem_isoLocus v)).trans
       hgeneric.coheight_eq_zero
   have hdim := hD.ringKrullDim_stalk_add_one (ν (η v))
   rw [ringKrullDim_stalk_eq_coheight, ringKrullDim_stalk_eq_coheight, hco, WithBot.coe_zero,
@@ -90,14 +66,8 @@ theorem range_blowupComponent_comp_subschemeι [IsLocallyNoetherian X]
       Set.range (((C).blowupComponent v).ι ≫ ν ≫ D.subschemeι) = closure {(p : X)} := by
   let p : CodimensionOnePoint X := ⟨D.subschemeι (ν (η v)),
     coheight_image_blowupComponentGeneric hD v⟩
-  have : IsFinite ν := (C).isFinite_blowupToBase_singularLocus
-    PrestableFamily.atWorstNodalOfRelativeDimensionOne
-  let f := ν ≫ D.subschemeι
-  refine ⟨p, D.range_subschemeι.le ⟨_, rfl⟩, ?_⟩
-  rw [Scheme.Hom.comp_base, TopCat.coe_comp, Set.range_comp, Scheme.Opens.range_ι,
-    (C).coe_blowupComponent v, ← (genericPoints.isGenericPoint_ofComponent v).def,
-    ← f.isClosedMap.closure_image_eq_of_continuous f.continuous, Set.image_singleton]
-  rfl
+  exact ⟨p, D.range_subschemeι.le ⟨_, rfl⟩,
+    (C).range_blowupComponent_comp v D.subschemeι D.subschemeι.isClosedMap⟩
 
 /-- Every prime curve of the boundary is the image of a normalized component. -/
 theorem exists_range_blowupComponent_comp_subschemeι [IsLocallyNoetherian X]
