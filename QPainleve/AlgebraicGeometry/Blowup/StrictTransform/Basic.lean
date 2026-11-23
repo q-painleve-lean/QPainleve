@@ -125,12 +125,31 @@ theorem comap_ker_blowupMap_subschemeι_blowupMap_of_isOpenImmersion
 /-- A base isomorphism identifying center ideals carries strict transforms to strict
 transforms of the inverse-image ideals. -/
 theorem comap_ker_blowupMap_subschemeι_blowupIso {X Y : Scheme.{u}}
-    [IsLocallyNoetherian Y] (J D : Y.IdealSheafData) (e : X ≅ Y)
-    {I : X.IdealSheafData} (h : J.comap e.hom = I) :
-    (J.blowupMap D.subschemeι).ker.comap (J.blowupIso e h).hom =
+    (J D : Y.IdealSheafData) (e : X ≅ Y) {I : X.IdealSheafData} (hI : J.comap e.hom = I) :
+    (J.blowupMap D.subschemeι).ker.comap (J.blowupIso e hI).hom =
       (I.blowupMap (D.comap e.hom).subschemeι).ker := by
-  subst I
-  rw [blowupIso_hom_comap, comap_ker_blowupMap_subschemeι_blowupMap_of_isOpenImmersion]
+  let i := (D.comap e.hom).subschemeι
+  let d := subschemeMap (D.comap e.hom) D e.hom (D.le_map_comap e.hom)
+  have : IsIso (pullback.snd e.hom D.subschemeι) :=
+    (IsPullback.of_hasPullback e.hom D.subschemeι).isIso_snd_of_isIso
+  have : IsIso d := by
+    dsimp only [d]
+    rw [← D.comapIso_hom_snd]
+    infer_instance
+  have hd : d ≫ D.subschemeι = i ≫ e.hom := subschemeMap_subschemeι _ _ _ _
+  have hC : (J.comap D.subschemeι).comap d = I.comap i := by
+    rw [← comap_comp, hd, comap_comp, hI]
+  let f := (J.comap D.subschemeι).blowupIso (asIso d) hC
+  have hw : I.blowupMap i ≫ (J.blowupIso e hI).hom = f.hom ≫ J.blowupMap D.subschemeι := by
+    apply J.blowup_hom_ext
+    · simp only [Category.assoc, blowupIso_hom_blowupToBase,
+        blowupMap_blowupToBase_assoc, ← hd, blowupMap_blowupToBase,
+        blowupIso_hom_blowupToBase_assoc, f, asIso_hom]
+    · simp only [Category.assoc, blowupIso_hom_blowupToBase, blowupMap_blowupToBase_assoc,
+        comap_comp, hI]
+      exact (I.comap i).isEffectiveCartier_comap_blowupToBase
+  rw [← Scheme.Hom.ker_comp_of_isIso f.hom, ← hw,
+    Scheme.Hom.comap_ker_comp_of_isClosedImmersion]
 
 /-- On an open disjoint from the exceptional divisor, the strict transform agrees
 with the pullback from the base. -/

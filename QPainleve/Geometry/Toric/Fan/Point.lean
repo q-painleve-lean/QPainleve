@@ -6,8 +6,8 @@ Authors: The QPainleve contributors
 module
 
 public import Mathlib.AlgebraicGeometry.Morphisms.ClosedImmersion
-public import TauCeti.Geometry.Toric.Analytic.Cone.Orbit.Basic
 public import TauCeti.Geometry.Toric.Algebraic.Fan.Over
+public import TauCeti.Geometry.Toric.Analytic.Cone.Orbit.Basic
 import TauCeti.AlgebraicGeometry.IdealSheaf.VanishingIdeal
 import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
 
@@ -122,8 +122,8 @@ theorem distinguishedPointHom_mem_range_affineToricChartι_iff (σ τ : Φ.cones
   rw [← Scheme.Hom.comp_apply, Φ.faceAffineToricSchemeMap_comp_affineToricChartι hface,
     distinguishedPointHom_def, Scheme.Hom.comp_apply]
 
-/-- The distinguished point of a cone is a section over `ℂ`. -/
-@[reassoc (attr := simp)]
+/-- The distinguished point is a section of the toric structure morphism. -/
+@[simp]
 theorem distinguishedPointHom_comp_algebraicRealizationStructureMap (σ : Φ.cones) :
     Φ.distinguishedPointHom σ ≫ Φ.algebraicRealizationStructureMap = 𝟙 _ := by
   rw [Φ.distinguishedPointHom_def, Category.assoc,
@@ -135,7 +135,7 @@ theorem distinguishedPointHom_comp_algebraicRealizationStructureMap (σ : Φ.con
 /-- The distinguished point of a cone is a closed subscheme with residue field `ℂ`. -/
 theorem isClosedImmersion_distinguishedPointHom (σ : Φ.cones) :
     IsClosedImmersion (Φ.distinguishedPointHom σ) :=
-  isClosedImmersion_of_comp_eq_id Φ.algebraicRealizationStructureMap _
+  isClosedImmersion_of_comp_eq_id Φ.algebraicRealizationStructureMap (Φ.distinguishedPointHom σ)
     (Φ.distinguishedPointHom_comp_algebraicRealizationStructureMap σ)
 
 /-- The closed immersion of a cone's distinguished point cuts out its reduced vanishing ideal. -/
