@@ -161,5 +161,76 @@ theorem isComplete_mutationFan_iff : (Φ.mutationFan b hv hpos hneg).IsComplete 
 theorem isRegular_mutationFan_iff : (Φ.mutationFan b hv hpos hneg).IsRegular ↔ Φ.IsRegular :=
   Φ.isRegular_mapPiecewiseLinear_iff _ _
 
+/-- Mutation in direction `v` identifies the actual rays of the two fans by the ray shear. -/
+def mutationFanRayEquiv : Φ.Ray ≃ (Φ.mutationFan b hv hpos hneg).Ray :=
+  Φ.mapPiecewiseLinearRayEquiv _ _
+
+/-- The ray correspondence sends each underlying cone to its piecewise-linear image. -/
+@[simp]
+theorem coe_mutationFanRayEquiv_toCone (ρ : Φ.Ray) :
+    (((Φ.mutationFanRayEquiv b hv hpos hneg ρ).toCone).val : Set V) =
+      Φ.lattice.mutationRayEquiv b v '' (ρ.toCone.val : Set V) := by
+  change ((Φ.mapPiecewiseLinearRayEquiv (Φ.lattice.mutationRayEquiv b v)
+    (Φ.mutationRayEquiv_isPiecewiseLinear b hv hpos hneg) ρ).toCone.val : Set V) = _
+  rw [mapPiecewiseLinearRayEquiv_toCone, coe_mapPiecewiseLinearConeEquiv]
+
+/-- The primitive generator of the image ray is the integral shear of the original generator. -/
+@[simp]
+theorem mutationFanRayEquiv_primitiveGenerator (ρ : Φ.Ray) :
+    (Φ.mutationFanRayEquiv b hv hpos hneg ρ).primitiveGenerator =
+      ρ.primitiveGenerator + max (b.det ![ρ.primitiveGenerator, v]) 0 • v := by
+  apply Φ.lattice.injective
+  rw [← Φ.lattice.mutationRayEquiv_apply_lattice b v]
+  exact Φ.mapPiecewiseLinearRayEquiv_primitiveGenerator _ _ ρ
+
+section CenterRay
+
+variable {ι : Type*} [DecidableEq ι] (s : ι → Φ.Ray) (k : ι)
+  (hOpposite : hull ℝ {i (-(s k).primitiveGenerator)} ∈ Φ.cones)
+
+local notation "pivot" => Ray.primitiveGenerator (s k)
+local notation "hPivot" => IsPrimitiveGenerator.ne_zero (Ray.isPrimitiveGenerator (s k))
+local notation "hRay" => Ray.hull_primitiveGenerator_mem (s k)
+
+/-- The ray labels of the centers in the mutated fan. The distinguished center moves to
+the opposite ray, and every other center follows the fan's ray correspondence. -/
+def mutationFanCenterRays : ι → (Φ.mutationFan b hPivot hRay hOpposite).Ray :=
+  fun j ↦ Φ.mutationFanRayEquiv b hPivot hRay hOpposite
+    (if j = k then Ray.ofPrimitiveGenerator (s k).isPrimitiveGenerator.isPrimitive.neg hOpposite
+      else s j)
+
+/-- The selected center goes to the image of the opposite ray. -/
+theorem mutationFanCenterRays_self :
+    Φ.mutationFanCenterRays b s k hOpposite k =
+      Φ.mutationFanRayEquiv b hPivot hRay hOpposite
+        (Ray.ofPrimitiveGenerator (s k).isPrimitiveGenerator.isPrimitive.neg hOpposite) := by
+  rw [mutationFanCenterRays, ite_eq_left rfl]
+
+/-- Every other center follows the ray correspondence. -/
+theorem mutationFanCenterRays_of_ne {j : ι} (hj : j ≠ k) :
+    Φ.mutationFanCenterRays b s k hOpposite j =
+      Φ.mutationFanRayEquiv b hPivot hRay hOpposite (s j) := by
+  rw [mutationFanCenterRays, ite_eq_right hj]
+
+/-- The charge of the distinguished center changes sign. -/
+@[simp]
+theorem mutationFanCenterRays_primitiveGenerator_self :
+    (Φ.mutationFanCenterRays b s k hOpposite k).primitiveGenerator = -pivot := by
+  rw [mutationFanCenterRays_self, mutationFanRayEquiv_primitiveGenerator,
+    Ray.primitiveGenerator_ofPrimitiveGenerator]
+  have hz : b.det ![-pivot, pivot] = 0 := by
+    have h := map_neg (mutationCharacter b pivot) pivot
+    rw [mutationCharacter_apply, mutationCharacter_self, neg_zero] at h
+    exact h
+  simp [hz]
+
+/-- The charge of every other center changes by the positive determinant shear. -/
+theorem mutationFanCenterRays_primitiveGenerator_of_ne {j : ι} (hj : j ≠ k) :
+    (Φ.mutationFanCenterRays b s k hOpposite j).primitiveGenerator =
+      (s j).primitiveGenerator + max (b.det ![(s j).primitiveGenerator, pivot]) 0 • pivot := by
+  rw [mutationFanCenterRays_of_ne Φ b s k hOpposite hj, mutationFanRayEquiv_primitiveGenerator]
+
+end CenterRay
+
 end Fan
 end TauCeti.Toric
