@@ -37,62 +37,12 @@ local notation "v" => Ray.primitiveGenerator ρ
 local notation "hv" => Ray.primitiveGenerator_ne_zero ρ
 local notation "hp" => Ray.hull_primitiveGenerator_mem ρ
 local notation "Ψ" => Φ.mutationFan b hv hp hOpp
-local notation "ρ′" => mutationFanCenterRays Φ b (fun _ : Unit ↦ ρ) () hOpp ()
 local notation "hΦ" => Nonempty.intro (Ray.toCone Φ ρ)
 local notation "hΨ" => Nonempty.intro (Φ.mutationFanConeEquiv b hv hp hOpp (Subtype.mk _ hp))
 local notation "D₀" => Φ.boundaryIdeal hΦ
 local notation "D₁" => boundaryIdeal (Ψ) hΨ
 local notation "I₀" => Ray.mutationSourceCenterIdeal b ρ c
 local notation "I₁" => Ray.mutationTargetCenterIdeal b ρ hOpp c
-
-/-- The fixed toric boundary lifts to its strict transform in the source pivot blowup. -/
-def Ray.mutationSourceBoundaryι : (D₀).subscheme ⟶ (I₀).blowup :=
-  (I₀).blowupLift (D₀).subschemeι (by
-    rw [ρ.mutationSourceCenterIdeal_eq b c, ← ρ.map_internalCenter_subschemeι (h₀ := hΦ) b c,
-      comap_map_of_isClosedImmersion]
-    exact (ρ.internalCenter (h₀ := hΦ) b c).property)
-
-/-- The fixed toric boundary lifts to its strict transform in the target pivot blowup. -/
-def Ray.mutationTargetBoundaryι : (D₁).subscheme ⟶ (I₁).blowup :=
-  (I₁).blowupLift (D₁).subschemeι (by
-    rw [ρ.mutationTargetCenterIdeal_eq b hOpp c,
-      ← (ρ′).map_internalCenter_subschemeι (h₀ := hΨ) b c⁻¹,
-      comap_map_of_isClosedImmersion]
-    exact ((ρ′).internalCenter (h₀ := hΨ) b c⁻¹).property)
-
-instance Ray.isClosedImmersion_mutationSourceBoundaryι :
-    IsClosedImmersion (ρ.mutationSourceBoundaryι b c) := by
-  rw [Ray.mutationSourceBoundaryι]
-  exact (I₀).isClosedImmersion_blowupLift _ _
-
-instance Ray.isClosedImmersion_mutationTargetBoundaryι :
-    IsClosedImmersion (ρ.mutationTargetBoundaryι b hOpp c) := by
-  rw [Ray.mutationTargetBoundaryι]
-  exact (I₁).isClosedImmersion_blowupLift _ _
-
-/-- The lifted source boundary projects to the original toric boundary. -/
-@[reassoc (attr := simp)]
-theorem Ray.mutationSourceBoundaryι_blowupToBase :
-    ρ.mutationSourceBoundaryι b c ≫ (I₀).blowupToBase = (D₀).subschemeι := by
-  rw [Ray.mutationSourceBoundaryι, blowupLift_blowupToBase]
-
-/-- The lifted target boundary projects to the mutated toric boundary. -/
-@[reassoc (attr := simp)]
-theorem Ray.mutationTargetBoundaryι_blowupToBase :
-    ρ.mutationTargetBoundaryι b hOpp c ≫ (I₁).blowupToBase = (D₁).subschemeι := by
-  rw [Ray.mutationTargetBoundaryι, blowupLift_blowupToBase]
-
-/-- The source embedding has the ideal of the strict transform of the toric boundary. -/
-@[simp]
-theorem Ray.ker_mutationSourceBoundaryι :
-    (ρ.mutationSourceBoundaryι b c).ker = ((I₀).blowupMap (D₀).subschemeι).ker := by
-  rw [Ray.mutationSourceBoundaryι, ker_blowupLift, ker_blowupMap]
-
-/-- The target embedding has the ideal of the strict transform of the toric boundary. -/
-@[simp]
-theorem Ray.ker_mutationTargetBoundaryι :
-    (ρ.mutationTargetBoundaryι b hOpp c).ker = ((I₁).blowupMap (D₁).subschemeι).ker := by
-  rw [Ray.mutationTargetBoundaryι, ker_blowupLift, ker_blowupMap]
 
 local notation "U₀" => mutationComplement Φ b (detCharacter_nonneg_or_nonpos Φ b hv hp hOpp)
   (Units.val c)
