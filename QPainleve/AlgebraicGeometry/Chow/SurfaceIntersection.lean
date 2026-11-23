@@ -16,6 +16,7 @@ import TauCeti.AlgebraicGeometry.Curves.Normalization
 import TauCeti.AlgebraicGeometry.LineBundle.BaseChange
 import QPainleve.AlgebraicGeometry.Cohomology.Support
 import QPainleve.AlgebraicGeometry.IdealSheaf.EulerCharacteristic
+import QPainleve.AlgebraicGeometry.IdealSheaf.Image.Over
 import QPainleve.AlgebraicGeometry.Scheme.LocalDimension
 
 /-!
@@ -138,14 +139,12 @@ public theorem classIntersectionNumber_eq_intersectionNumber_of_isEffectiveCarti
   have hdim := IsHomeomorph.topologicalKrullDim_eq _ i.toImage.homeomorph.isHomeomorph
   have : IsIntegral i.ker.subscheme := IsIntegral.of_isIso i.toImage
   rw [classIntersectionNumber_eq_intersectionNumber_subschemeι k hX hi (hdim.symm.trans hC)]
-  have he : i.toImage ≫ (i.ker.subscheme ↘ Spec (.of k)) = C ↘ Spec (.of k) := by
-    rw [Scheme.IdealSheafData.over_eq_subschemeι_comp, ← Category.assoc]
-    exact (congrArg (· ≫ X ↘ Spec (.of k)) i.toImage_imageι).trans (comp_over i _)
   calc
     _ = LineBundleClass.intersectionNumber k (i.toImage ≫ i.imageι) a := by
       rw [← LineBundleClass.intersectionNumber_pullback]
       simp only [LineBundleClass.intersectionNumber_def]
-      exact (LineBundleClass.eulerDegree_pullback_of_isIso (k := k) i.toImage he _).symm
+      exact (LineBundleClass.eulerDegree_pullback_of_isIso (k := k)
+        i.toImage (comp_over i.toImage _) _).symm
     _ = _ := by rw [i.toImage_imageι]
 
 /-- On a regular integral projective surface, intersection with the class of any closed integral
