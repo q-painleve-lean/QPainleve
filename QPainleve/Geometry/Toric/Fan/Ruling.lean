@@ -5,7 +5,6 @@ Authors: The QPainleve contributors
 -/
 module
 
-public import QPainleve.Geometry.Toric.Fan.HalfPlane
 public import TauCeti.Geometry.Toric.Algebraic.Fan.DenseTorus
 public import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.ProjectiveLine
 public import TauCeti.Geometry.Toric.Algebraic.Examples.ProjectiveLine
