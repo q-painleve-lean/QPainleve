@@ -323,6 +323,57 @@ def Ray.mutationPivotIso : (I₀).blowup ≅ (I₁).blowup :=
   (e₀) ≪≫ projectiveLine.elementaryTransform f 0
     (pivotBinomial_ne_zero c) ≪≫ (e₁).symm
 
+/-- The source pivot point has two lifts whose images under the elementary
+transformation are distinct on the mutated surface over the ruling torus. -/
+theorem Ray.exists_lifts_mutationPivotSource :
+    ∃ a a' : Spec (.of ℂ) ⟶ (I₀).blowup,
+      a ≫ (I₀).blowupToBase ≫ π₀ =
+        ρ.binomialCenter hdim (b.detDualEquiv_self v) (ρ.surjective_detCharacter b) c ∧
+      a ≫ (I₀).blowupToBase = a' ≫ (I₀).blowupToBase ∧
+      a ≫ (ρ.mutationPivotIso b hOpp c).hom ≫ (I₁).blowupToBase ≠
+        a' ≫ (ρ.mutationPivotIso b hOpp c).hom ≫ (I₁).blowupToBase := by
+  let ev : L →ₐ[ℂ] ℂ := laurentEval ((-1 : ℂˣ) * c⁻¹)
+  have hroot : ev f = 0 := by
+    have hmem : f ∈ Ideal.span ({f} : Set L) := Ideal.subset_span (Set.mem_singleton f)
+    rw [← ker_laurentEval_neg_inv c, RingHom.mem_ker] at hmem
+    exact hmem
+  let hf := pivotBinomial_ne_zero c
+  obtain ⟨a, ha, ha'⟩ :=
+    projectiveLine.exists_elementaryTransform_lift_of_map_eq_zero f 0 hf ev.toRingHom hroot 0
+  obtain ⟨a', hb, hb'⟩ :=
+    projectiveLine.exists_elementaryTransform_lift_of_map_eq_zero f 0 hf ev.toRingHom hroot 1
+  have hcenter := ρ.binomialCenterInRulingTorus_comp_characterRulingLaurentIso h₀ d
+    (pivotBasis_coord_one b ρ) ep₀ en₀ 0 (by simp [pivotBasis_zero])
+    hdim (b.detDualEquiv_self v) (ρ.surjective_detCharacter b) c
+  have hproj : a ≫ (e₀).inv ≫ (I₀).blowupToBase =
+      ρ.binomialCenterInRulingTorus h₀ hdim (b.detDualEquiv_self v)
+        (ρ.surjective_detCharacter b) c := by
+    apply (cancel_mono (E₀).hom).mp
+    simpa only [Category.assoc, ← sourceLaurentBlowupIso_hom_blowupToBase,
+      Iso.inv_hom_id_assoc, ha, ev] using hcenter.symm
+  refine ⟨a ≫ (e₀).inv, a' ≫ (e₀).inv, ?_, ?_, ?_⟩
+  · rw [Category.assoc, reassoc_of% hproj]
+    exact ρ.binomialCenterInRulingTorus_fst h₀ hdim (b.detDualEquiv_self v)
+      (ρ.surjective_detCharacter b) c
+  · apply (cancel_mono (E₀).hom).mp
+    simp only [Category.assoc, ← sourceLaurentBlowupIso_hom_blowupToBase,
+      Iso.inv_hom_id_assoc, ha, hb]
+  · intro h
+    have hh := congrArg (· ≫ (E₁).hom) h
+    have H (g : Spec (.of ℂ) ⟶ (J(0)).blowup) :
+        (g ≫ (e₀).inv) ≫ (ρ.mutationPivotIso b hOpp c).hom ≫ (I₁).blowupToBase ≫ (E₁).hom =
+          g ≫ (projectiveLine.elementaryTransform f 0 hf).hom ≫ (J(1)).blowupToBase := by
+      rw [← targetLaurentBlowupIso_hom_blowupToBase]
+      simp only [Category.assoc, mutationPivotIso, Iso.trans_hom, Iso.symm_hom,
+        Iso.inv_hom_id_assoc]
+    simp only [Category.assoc] at H hh
+    rw [H, H] at hh
+    have he := ha'.symm.trans (hh.trans hb')
+    rw [projectiveLine.polynomialPoint_def, projectiveLine.polynomialPoint_def,
+      cancel_mono, Spec.map_inj] at he
+    simpa using congrArg
+      (fun g : CommRingCat.of (Polynomial L) ⟶ CommRingCat.of ℂ ↦ g.hom Polynomial.X) he
+
 section Divisors
 
 open Scheme Scheme.IdealSheafData
