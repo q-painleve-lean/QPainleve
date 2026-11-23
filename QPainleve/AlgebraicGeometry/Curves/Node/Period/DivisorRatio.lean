@@ -7,6 +7,7 @@ module
 
 public import QPainleve.AlgebraicGeometry.Curves.Node.Period.Basic
 public import QPainleve.AlgebraicGeometry.EffectiveCartierDivisor.Pullback
+import QPainleve.AlgebraicGeometry.Modules.Pullback.Unit
 
 /-!
 # Period of a difference of Cartier divisors
@@ -134,6 +135,44 @@ theorem nodalCartierRatioUnit_branch_eq_iff (z : X.branchScheme k) (v : kˣ) :
       (by simpa only [globalSectionsActionRingEquiv_apply] using congrArg End.of hv)
     apply Units.ext
     exact he.trans ((congrArg (ΓSpecIso (.of k)).hom hval).trans (Iso.hom_inv_id_apply _ _))
+
+omit [IsAlgClosed k] in
+private theorem pullbackTrivialization_ideal_hom {K : X.IdealSheafData}
+    (hK : K.IsEffectiveCartier) (hKn : K.comap i₀ = ⊤) :
+    (CommSq.pullbackTrivialization sq (hK.pullbackTrivializationOfComapEqTop i₀ hKn)).hom =
+      (pullback j).map ((pullback ν).map K.sheafι ≫ (pullbackObjUnitIso ν).hom) ≫
+        (pullbackObjUnitIso j).hom := by
+  let φ : K.sheaf ⟶ 𝟙_ X.Modules := K.sheafι
+  simp only [CommSq.pullbackTrivialization_hom, ← pullbackObjUnitIso_hom,
+    IsEffectiveCartier.pullbackTrivializationOfComapEqTop_hom]
+  rw [pullbackComp_inv_app_map_toUnit, ← (pullbackCongr (CommSq.w sq)).hom.naturality_assoc φ,
+    pullbackObjUnitIso_congr, ← pullbackComp_inv_app_map_toUnit j ν φ]
+  simp only [Iso.hom_inv_id_app_assoc, φ]
+
+/-- Compute the Cartier ratio at a branch by evaluating the normalization isomorphism
+and the two ideal inclusions in the branch fiber. -/
+theorem nodalCartierRatioUnit_branch_eq_iff_toBlowup (z : X.branchScheme k) (v : kˣ) :
+    let q := X.branchRationalPoint nodal z ≫ j
+    let inc (K : X.IdealSheafData) :=
+      (pullback q).map ((pullback ν).map K.sheafι ≫ (pullbackObjUnitIso ν).hom) ≫
+        (pullbackObjUnitIso q).hom
+    X.branchSchemeGlobalUnitsEquiv nodal (nodalCartierRatioUnit (k := k) hI hJ hIn hJn a) z = v ↔
+      (pullback q).map a.hom ≫ inc J = inc I ≫
+        globalSectionsSmul (𝟙_ (Spec (.of k)).Modules) ((ΓSpecIso (.of k)).inv v.val) := by
+  let q := X.branchRationalPoint nodal z
+  let C := pullbackComp q j
+  have hbranch := nodalCartierRatioUnit_branch_eq_iff hI hJ hIn hJn a z v
+  dsimp only at hbranch ⊢
+  simp only [Iso.trans_hom, Functor.mapIso_hom, Functor.map_comp, Category.assoc] at hbranch
+  rw [pullbackTrivialization_ideal_hom, pullbackTrivialization_ideal_hom] at hbranch
+  rw [hbranch, ← cancel_epi (C.inv.app ((pullback ν).obj I.sheaf))]
+  have hn := C.inv.naturality_assoc a.hom
+    ((pullback q).map ((pullback j).map
+      ((pullback ν).map J.sheafι ≫ (pullbackObjUnitIso ν).hom) ≫
+        (pullbackObjUnitIso j).hom) ≫ (pullbackObjUnitIso q).hom)
+  simp only [Functor.comp_map] at hn
+  rw [← hn, pullbackComp_inv_app_map_toUnit]
+  simp only [C, q, Category.assoc, pullbackComp_inv_app_map_toUnit_assoc]
 
 /-- The period of the quotient of two Cartier ideal classes is the oriented product
 of the branch ratios of their normalization comparison. Both ideals may have
