@@ -5,8 +5,8 @@ Authors: The QPainleve contributors
 -/
 module
 
+public import QPainleve.AlgebraicGeometry.Modules.Pullback.Tensor
 public import TauCeti.AlgebraicGeometry.LineBundle.Endomorphisms
-public import TauCeti.AlgebraicGeometry.Modules.Pullback.Quasicoherent
 
 /-!
 # Gluing units for line bundle trivializations
@@ -43,25 +43,6 @@ theorem lineGluingCoboundary_apply (j : P ⟶ Y) (g : P ⟶ Z)
   (rfl)
 
 end AlgebraicGeometry.Scheme.Hom
-
-namespace AlgebraicGeometry.Scheme.Modules
-
-variable {X Y : Scheme.{u}} (f : X ⟶ Y) {M N : Y.Modules}
-
-/-- The tensor product of two trivializations of pulled-back modules. -/
-def pullbackTensorTrivialization [M.IsQuasicoherent]
-    (e : (pullback f).obj M ≅ 𝟙_ X.Modules) (d : (pullback f).obj N ≅ 𝟙_ X.Modules) :
-    (pullback f).obj (M ⊗ N) ≅ 𝟙_ X.Modules :=
-  asIso (Functor.OplaxMonoidal.δ (pullback f) M N) ≪≫ tensorIso e d ≪≫ λ_ _
-
-@[simp]
-theorem pullbackTensorTrivialization_hom [M.IsQuasicoherent]
-    (e : (pullback f).obj M ≅ 𝟙_ X.Modules) (d : (pullback f).obj N ≅ 𝟙_ X.Modules) :
-    (pullbackTensorTrivialization f e d).hom =
-      Functor.OplaxMonoidal.δ (pullback f) M N ≫ (e.hom ⊗ₘ d.hom) ≫ (λ_ _).hom :=
-  (rfl)
-
-end AlgebraicGeometry.Scheme.Modules
 
 namespace CategoryTheory.CommSq
 
@@ -125,22 +106,6 @@ theorem lineGluingUnit_eq_iff {M : X.Modules} (e : (pullback f).obj M ≅ 𝟙_ 
         NatTrans.comp_app, Functor.mapIso_hom, Category.assoc] using hw
     simp only [globalSectionsAction_apply]
     exact congrArg End.of ((cancel_epi (h.rightFrame d).hom).mp hw')
-
-open Functor.OplaxMonoidal in
-private theorem pullback_tensorFrame {W T : Scheme.{u}} (p : T ⟶ W)
-    {A B : W.Modules} (e : A ⟶ 𝟙_ W.Modules) (d : B ⟶ 𝟙_ W.Modules) :
-    (pullback p).map ((e ⊗ₘ d) ≫ (λ_ _).hom) ≫ (pullbackObjUnitIso p).hom =
-      δ (pullback p) A B ≫
-        (((pullback p).map e ≫ (pullbackObjUnitIso p).hom) ⊗ₘ
-          ((pullback p).map d ≫ (pullbackObjUnitIso p).hom)) ≫ (λ_ _).hom := by
-  simp only [← tensorHom_comp_tensorHom, δ_natural_assoc, Functor.map_comp, Category.assoc]
-  rw [← pullback_η]
-  have hu :
-      δ (pullback p) (𝟙_ W.Modules) (𝟙_ W.Modules) ≫
-          (η (pullback p) ⊗ₘ η (pullback p)) ≫ (λ_ _).hom =
-        (pullback p).map (λ_ (𝟙_ W.Modules)).hom ≫ η (pullback p) := by
-    simp only [tensorHom_def, Category.assoc, leftUnitor_naturality, left_unitality_hom_assoc]
-  rw [hu]
 
 open Functor.OplaxMonoidal in
 private theorem leftFrame_tensor {M N : X.Modules} [M.IsQuasicoherent]
