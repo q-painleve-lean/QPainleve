@@ -437,7 +437,8 @@ theorem mutationDetCharacter_nonneg_or_nonpos (θ : (Ψ).cones) :
     (∀ x ∈ θ.val, 0 ≤ (lattice Ψ).realCharacter m x) ∨
     ∀ x ∈ θ.val, (lattice Ψ).realCharacter m x ≤ 0 := by
   obtain ⟨σ, rfl⟩ := (mutationFanConeEquiv Φ b hv hpos hneg).surjective θ
-  obtain ⟨side, hs⟩ := Φ.exists_mutationChartCharacter_mem_dualSemigroup b hv hpos hneg σ
+  obtain ⟨side, hs⟩ := Φ.exists_mutationChartCharacter_mem_dualSemigroup b σ
+    (Φ.detCharacter_nonneg_or_nonpos b hv hpos hneg σ)
   have ht := (mem_dualSemigroup (lattice Ψ) _).mp
     (Φ.mutationChartCharacter_mem_dualSemigroup_target b hv hpos hneg σ side hs)
   cases side
@@ -458,7 +459,7 @@ local notation "J" => (SignedCone Φ b (v := v))
 include hv hpos hneg in
 private theorem signedCone_surjective : Function.Surjective (Sigma.fst : J → Φ.cones) := by
   intro σ
-  obtain ⟨s, hs⟩ := Φ.exists_mutationChartCharacter_mem_dualSemigroup b hv hpos hneg σ
+  obtain ⟨s, hs⟩ := Φ.exists_mutationChartCharacter_mem_dualSemigroup b σ (hp₀ σ)
   exact ⟨⟨σ, s, hs⟩, rfl⟩
 
 private def zeroChart : J :=
