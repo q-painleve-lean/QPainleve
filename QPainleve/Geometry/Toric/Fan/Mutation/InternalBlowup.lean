@@ -164,8 +164,8 @@ theorem exists_common_internalBlowupTower_mutationComplement (hprim : IsPrimitiv
     rw [← hs₁ k, Category.assoc, ← h₁.w, ← Category.assoc]
     exact (Set.range_comp_subset_range _ (f₁)).trans
       ((f₁).le_isoLocus_iff.mpr ((f₁).isIso_morphismRestrict_of_le_opensRange le_rfl))
-  obtain ⟨g₀, hg₀, hb₀⟩ := exists_isPullback_alongBoundary h₀.w (s₀) s' hs₀ hC₀ hs' himage₀
-  obtain ⟨g₁, hg₁, hb₁⟩ := exists_isPullback_alongBoundary h₁.w (s₁) s' hs₁ hC₁ hs' himage₁
+  obtain ⟨g₀, hg₀, hb₀, -⟩ := exists_isPullback_alongBoundary h₀.w (s₀) s' hs₀ hC₀ hs' himage₀
+  obtain ⟨g₁, hg₁, hb₁, -⟩ := exists_isPullback_alongBoundary h₁.w (s₁) s' hs₁ hC₁ hs' himage₁
   dsimp only at hg₀ hb₀ hg₁ hb₁ ⊢
   rw [internalBlowupTower_eq_alongBoundary b s d,
     internalBlowupTower_eq_alongBoundary (h₀ := hΨ) b ((r) ∘ s) (d₁)]
