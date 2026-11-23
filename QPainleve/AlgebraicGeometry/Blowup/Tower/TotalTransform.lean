@@ -10,7 +10,6 @@ public import QPainleve.AlgebraicGeometry.Chow.Nef
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Projective
 import QPainleve.AlgebraicGeometry.CartierDivisor.Support
 import QPainleve.AlgebraicGeometry.IntersectionNumber.Nef.Pullback
-import TauCeti.AlgebraicGeometry.Morphisms.Dominant
 import TauCeti.AlgebraicGeometry.Scheme.Regular.Scheme
 
 /-!
@@ -38,31 +37,8 @@ namespace QPainleve.BlowupTower.IsClosedPointTower
 variable {X Y : Scheme.{u}} {n : ℕ} {T : BlowupTower X n Y}
   {k : Type u} [Field k] [IsIntegral X]
 
-/-- The total transform of an effective Cartier divisor on a smooth integral surface
-in a tower of blowups at closed points is effective Cartier. -/
-theorem isEffectiveCartier_totalTransform [PerfectField k] [IsNoetherian X]
-    (f : X ⟶ Spec (.of k)) [SmoothOfRelativeDimension 2 f]
-    (hT : IsClosedPointTower X T) {D : X.IdealSheafData} (hD : D.IsEffectiveCartier) :
-    (D.comap T.toBase).IsEffectiveCartier := by
-  have : IsIntegral Y := hT.isIntegral f
-  have : Surjective T.toBase := hT.surjective f
-  refine hD.comap_of_isIntegral T.toBase ?_
-  rw [T.toBase.genericPoint_eq_of_isDominant]
-  exact hD.genericPoint_notMem_support
-
 variable (k) [IsAlgClosed k] [X.Over (Spec (.of k))] [X.IsProjectiveOver k]
   [SmoothOfRelativeDimension 2 (X ↘ Spec (.of k))]
-
-/-- The pullback of two Picard classes along a closed-point blowup tower preserves their
-surface intersection number. -/
-theorem classIntersectionNumber_pullback (hT : IsClosedPointTower X T)
-    (a b : LineBundleClass X) :
-    let : Y.Over (Spec (.of k)) := ⟨T.toBase ≫ X ↘ Spec (.of k)⟩
-    Chow.classIntersectionNumber k Y (pullback T.toBase a) (pullback T.toBase b) =
-      Chow.classIntersectionNumber k X a b := by
-  simpa only [picardMarking_apply, picardHom_apply_zero, toMul_ofMul, Pi.zero_apply,
-    zero_mul, Finset.sum_const_zero, sub_zero] using
-    (classIntersectionNumber_picardMarking k hT (Additive.ofMul a, 0) (Additive.ofMul b, 0))
 
 /-- The total transform of a nef effective Cartier divisor of square zero has zero
 intersection with every effective Cartier divisor supported on the total transform.
