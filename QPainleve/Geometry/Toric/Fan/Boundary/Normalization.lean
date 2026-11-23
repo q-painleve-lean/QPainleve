@@ -214,6 +214,22 @@ theorem Ray.boundaryNormalizationComponentIso_inv_ι_blowupToBase :
     (ρ.boundaryNormalizationComponentIso hΦ).inv ≫ (U).ι ≫ ν = ρ.boundaryComponentι hΦ := by
   rw [← Ray.boundaryNormalizationComponentIso_hom_boundaryComponentι, Iso.inv_hom_id_assoc]
 
+/-- A point on the normalized ray component is determined by its image in the boundary. -/
+theorem Ray.injOn_blowupToBase_boundaryNormalizationComponent :
+    Set.InjOn ν (Φ.boundaryNormalizationComponentEquiv hΦ ρ : Set (I).blowup) := by
+  intro x hx y hy hxy
+  have hx' : x ∈ Set.range (U).ι := by
+    rwa [Scheme.Opens.range_ι, Scheme.coe_blowupComponent]
+  have hy' : y ∈ Set.range (U).ι := by
+    rwa [Scheme.Opens.range_ι, Scheme.coe_blowupComponent]
+  obtain ⟨p, rfl⟩ := hx'
+  obtain ⟨q, rfl⟩ := hy'
+  let e := ρ.boundaryNormalizationComponentIso hΦ
+  have he : (e.hom ≫ ρ.boundaryComponentι hΦ) p = (e.hom ≫ ρ.boundaryComponentι hΦ) q := by
+    simpa only [e, Ray.boundaryNormalizationComponentIso_hom_boundaryComponentι,
+      Scheme.Hom.comp_apply] using hxy
+  exact congrArg (U).ι ((e.hom ≫ ρ.boundaryComponentι hΦ).injective he)
+
 instance Ray.isOver_boundaryNormalizationComponentIso_hom :
     (ρ.boundaryNormalizationComponentIso hΦ).hom.IsOver base := ⟨by
   have hbase : ρ.boundaryComponentι hΦ ≫ (C ↘ base) = (R ↘ base) := by
