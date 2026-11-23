@@ -6,7 +6,7 @@ Authors: The QPainleve contributors
 module
 
 public import QPainleve.AlgebraicGeometry.Blowup.Exceptional.Class
-public import QPainleve.Geometry.Toric.Fan.Mutation.Pivot
+public import QPainleve.Geometry.Toric.Fan.Mutation.Blowup
 public import QPainleve.Geometry.Toric.Fan.Picard.Mutation.Basic
 
 import QPainleve.Geometry.Toric.Fan.Picard.Ruling
@@ -16,10 +16,10 @@ import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.TensorProduct
 /-!
 # The pivot exceptional class under toric mutation
 
-The pullback of the new exceptional class over the ruling torus is the class of the
-total pivot fiber minus the original exceptional class. The pivot fiber has the
-same class as the boundary fiber in the toric divisor presentation, so the formula
-is the exceptional-generator formula in the marked Picard comparison.
+The global pivot blowup isomorphism pulls back the target exceptional class to
+the class of the total pivot fiber minus the original exceptional class. The
+pivot fiber has the same class as the boundary fiber in the toric divisor
+presentation. The formula also holds on the restriction over the ruling torus.
 
 See Gross, Hacking and Keel, [*Birational geometry of cluster algebras*,
 §3.1 and the proof of Theorem 5.6](https://arxiv.org/html/1309.2573v2#S3.SS1).
@@ -95,21 +95,40 @@ theorem Ray.exists_mutationFiberClass_eq_pivotFiber (hΦ : Φ.IsRegular) :
     exact (Φ.exact_characterToRayDivisor_rayDivisorToPicard hΦ).apply_apply_eq_zero m
   exact congrArg Additive.toMul hmarked
 
+private theorem pullback_blowupExceptionalClass_eq_div_mutationFiber
+    (hΦ : Φ.IsRegular) {X Y : Scheme} (I : X.IdealSheafData) (J : Y.IdealSheafData)
+    (g : I.blowup ⟶ J.blowup) [Flat g] (f : I.blowup ⟶ Φ.algebraicRealization)
+    (hprod : (F).comap f =
+      (I.comap I.blowupToBase) * ((J.comap J.blowupToBase).comap g)) :
+    pullback g J.blowupExceptionalClass =
+      pullback f (Φ.mutationFiberClass b ρ hΦ).toMul / I.blowupExceptionalClass := by
+  obtain ⟨hFiber, hFiberClass⟩ := ρ.exists_mutationFiberClass_eq_pivotFiber b hOpp c hΦ
+  let hE := J.isEffectiveCartier_comap_blowupToBase.comap g
+  have hf : ((F).comap f).IsEffectiveCartier :=
+    hprod.symm ▸ isEffectiveCartier_mul I.isEffectiveCartier_comap_blowupToBase hE
+  rw [hFiberClass, pullback_inv, hFiber.pullback_mk_toInvertibleSheaf hf]
+  exact J.pullback_blowupExceptionalClass_eq_div_of_eq_mul g hf hE hprod
+
 /-- On the pivot blowup over the ruling torus, the opposite exceptional class pulls back
 to the marked fiber class minus the source exceptional class. -/
 theorem Ray.pullback_blowupExceptionalClass_mutationPivotIso (hΦ : Φ.IsRegular) :
-    LineBundleClass.pullback (E).hom (I₁).blowupExceptionalClass =
-      LineBundleClass.pullback π (Φ.mutationFiberClass b ρ hΦ).toMul /
-        (I₀).blowupExceptionalClass := by
-  obtain ⟨hFiber, hFiberClass⟩ := ρ.exists_mutationFiberClass_eq_pivotFiber b hOpp c hΦ
-  let he₀ := (I₀).isEffectiveCartier_comap_blowupToBase
-  let he₁ := (I₁).isEffectiveCartier_comap_blowupToBase
-  let he := he₁.comap (E).hom
-  have hprod : (F).comap π =
-      ((I₀).comap (I₀).blowupToBase) * (((I₁).comap (I₁).blowupToBase).comap (E).hom) := by
-    simpa only [Category.assoc, comap_comp] using ρ.comap_pivotFiber_mutationPivotIso b hOpp c
-  have hπ : ((F).comap π).IsEffectiveCartier := hprod.symm ▸ isEffectiveCartier_mul he₀ he
-  rw [hFiberClass, pullback_inv, hFiber.pullback_mk_toInvertibleSheaf hπ]
-  exact (I₁).pullback_blowupExceptionalClass_eq_div_of_eq_mul (E).hom hπ he hprod
+    pullback (E).hom (I₁).blowupExceptionalClass =
+      pullback π (Φ.mutationFiberClass b ρ hΦ).toMul / (I₀).blowupExceptionalClass := by
+  apply pullback_blowupExceptionalClass_eq_div_mutationFiber b ρ hOpp c hΦ
+  simpa only [Category.assoc, comap_comp] using ρ.comap_pivotFiber_mutationPivotIso b hOpp c
+
+local notation "J₀" => Ray.mutationSourceCenterIdeal b ρ c
+local notation "J₁" => Ray.mutationTargetCenterIdeal b ρ hOpp c
+local notation "G" => Ray.mutationBlowupIso b ρ hOpp c
+
+/-- On the global pivot blowups, the opposite exceptional class pulls back to the
+marked ruling fiber class minus the original exceptional class. -/
+theorem Ray.pullback_blowupExceptionalClass_mutationBlowupIso (hΦ : Φ.IsRegular) :
+    pullback (G).hom (J₁).blowupExceptionalClass =
+      pullback (J₀).blowupToBase (Φ.mutationFiberClass b ρ hΦ).toMul /
+        (J₀).blowupExceptionalClass := by
+  apply pullback_blowupExceptionalClass_eq_div_mutationFiber b ρ hOpp c hΦ
+  simpa only [comap_comp, Units.val_mul, Units.val_neg, Units.val_one, neg_mul, one_mul] using
+    ρ.comap_pivotFiber_mutationBlowupIso b hOpp c
 
 end TauCeti.Toric.Fan

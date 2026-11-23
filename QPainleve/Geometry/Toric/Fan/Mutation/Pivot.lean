@@ -245,6 +245,22 @@ theorem Ray.mutationPivotTargetBlowupι_blowupToBase :
       (I₁).blowupToBase ≫ π₁ :=
   (ρ.isPullback_mutationPivotTargetBlowupι b hOpp c).w.symm
 
+/-- Restricting the source blowup to the ruling torus preserves its exceptional ideal. -/
+@[simp]
+theorem Ray.comap_exceptionalIdeal_mutationPivotSourceBlowupι :
+    ((ρ.mutationSourceCenterIdeal b c).comap
+      (ρ.mutationSourceCenterIdeal b c).blowupToBase).comap
+      (ρ.mutationPivotSourceBlowupι b hOpp c) = (I₀).comap (I₀).blowupToBase :=
+  (ρ.mutationSourceCenterIdeal b c).comap_comap_blowupMap (π₀)
+
+/-- Restricting the target blowup to the ruling torus preserves its exceptional ideal. -/
+@[simp]
+theorem Ray.comap_exceptionalIdeal_mutationPivotTargetBlowupι :
+    ((ρ.mutationTargetCenterIdeal b hOpp c).comap
+      (ρ.mutationTargetCenterIdeal b hOpp c).blowupToBase).comap
+      (ρ.mutationPivotTargetBlowupι b hOpp c) = (I₁).comap (I₁).blowupToBase :=
+  (ρ.mutationTargetCenterIdeal b hOpp c).comap_comap_blowupMap (π₁)
+
 private theorem exists_pivotBasis : ∃ d : Basis (Fin 2) ℤ N,
     d 0 = v ∧ m = (d.coord 1).toAddMonoidHom :=
   b.exists_basis_zero_eq_coord_one_eq ρ.isPrimitiveGenerator.isPrimitive
