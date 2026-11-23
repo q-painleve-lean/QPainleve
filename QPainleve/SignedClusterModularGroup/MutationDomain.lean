@@ -82,22 +82,6 @@ private theorem mutatedCenter_ne_pivot_iff (c : Multiplicative A →* kˣ) {j : 
   simpa using not_congr (eq_inv_iff_mul_eq_one
     (a := c (ofAdd (Pi.single j 1))) (b := c (ofAdd (Pi.single p 1))))
 
-omit [Fintype ι] in
-private theorem mutationFanCenterRays_eq_pivot_iff {j : ι} (hj : j ≠ p) :
-    s′ j = s′ p ↔ (s j).primitiveGenerator = -(s p).primitiveGenerator := by
-  rw [mutationFanCenterRays_of_ne _ _ _ _ _ hj, mutationFanCenterRays_self]
-  constructor
-  · intro h
-    have hr := (Φ.mutationFanRayEquiv b _ _ hOpposite).injective h
-    exact (congrArg Ray.primitiveGenerator hr).trans
-      (Ray.primitiveGenerator_ofPrimitiveGenerator ..)
-  · intro h
-    apply congrArg (Φ.mutationFanRayEquiv b _ _ hOpposite)
-    apply Subtype.ext
-    apply Subtype.ext
-    rw [(s j).toCone_eq_hull_primitiveGenerator, h]
-    exact (Ray.ofPrimitiveGenerator_toCone ..).symm
-
 section Field
 
 variable (K : Type u) [Field K]
@@ -123,16 +107,16 @@ theorem point_mem_mutationCenterOpen_iff (c : Multiplicative A →* Kˣ) (x : Sp
   · intro h j hj
     have hjp : j ≠ p := fun he ↦ hp (he ▸ hj)
     refine (mutatedCenter_ne_pivot_iff b s p c hjp hj).mp (h j p hjp ?_)
-    exact (mutationFanCenterRays_eq_pivot_iff b s p hOpposite hjp).mpr hj
+    exact (Φ.mutationFanCenterRays_eq_pivot_iff b s p hOpposite hjp).mpr hj
   · intro h i j hij hr
     by_cases hi : i = p
     · subst i
       have hj := hij.symm
-      have hneg := (mutationFanCenterRays_eq_pivot_iff b s p hOpposite hj).mp hr.symm
+      have hneg := (Φ.mutationFanCenterRays_eq_pivot_iff b s p hOpposite hj).mp hr.symm
       exact ((mutatedCenter_ne_pivot_iff b s p c hj hneg).mpr (h j hneg)).symm
     · by_cases hj : j = p
       · subst j
-        have hneg := (mutationFanCenterRays_eq_pivot_iff b s p hOpposite hi).mp hr
+        have hneg := (Φ.mutationFanCenterRays_eq_pivot_iff b s p hOpposite hi).mp hr
         exact (mutatedCenter_ne_pivot_iff b s p c hi hneg).mpr (h i hneg)
       · rw [mutationFanCenterRays_of_ne _ _ _ _ _ hi,
           mutationFanCenterRays_of_ne _ _ _ _ _ hj] at hr

@@ -5,11 +5,7 @@ Authors: The QPainleve contributors
 -/
 module
 
-public import Mathlib.FieldTheory.IsSepClosed
 public import QPainleve.Geometry.Toric.CharacterTorus.Scheme
-
-import QPainleve.Algebra.MonoidAlgebra.Smooth
-import TauCeti.AlgebraicGeometry.Morphisms.Smooth.RationalPoint
 
 /-!
 # Distinct center parameters on each boundary component
@@ -86,30 +82,5 @@ theorem nonempty_distinctCentersOpen {K : Type u} [Field K] (s : ι → R) :
     have hi := congrFun hsingle i
     simp [Pi.single_eq_of_ne hij] at hi
   exact he ((AddMonoidAlgebra.single_left_inj (one_ne_zero (α := K))).mp h)
-
-/-- Over a separably closed field, the characters of the finite center lattice give a
-Zariski-dense family of points. -/
-theorem denseRange_centerPoints (K : Type u) [Field K] [IsSepClosed K] (ι : Type u)
-    [Finite ι] :
-    DenseRange (fun c : Multiplicative (ι → ℤ) →* Kˣ ↦
-      ((pointsEquiv K (ι → ℤ)).symm c).val default) := by
-  have hs : Smooth (structureMap K (ι → ℤ)) := by
-    rw [structureMap, Spec.algebraMap, HasRingHomProperty.Spec_iff (P := @Smooth),
-      CommRingCat.hom_ofHom, RingHom.smooth_algebraMap]
-    let e := (Finsupp.linearEquivFunOnFinite ℤ ℤ ι).toAddEquiv
-    let := AddMonoidAlgebra.isStandardSmoothOfRelativeDimension_finsupp_int K ι
-    let := Algebra.IsStandardSmoothOfRelativeDimension.of_algEquiv (Nat.card ι)
-      (AddMonoidAlgebra.domCongr K K e)
-    let : Algebra.IsStandardSmooth K (AddMonoidAlgebra K (ι → ℤ)) :=
-      Algebra.IsStandardSmoothOfRelativeDimension.isStandardSmooth (n := Nat.card ι)
-    exact inferInstanceAs (Algebra.Smooth K (AddMonoidAlgebra K (ι → ℤ)))
-  let f (c : Points K (ι → ℤ)) := c.val default
-  have hf : DenseRange f := (structureMap K (ι → ℤ)).denseRange_rationalSections
-  have hr : Set.range (f ∘ (pointsEquiv K (ι → ℤ)).symm) = Set.range f :=
-    (pointsEquiv K (ι → ℤ)).symm.surjective.range_comp f
-  -- Reindex the rational sections by their character values.
-  change Dense (Set.range (f ∘ (pointsEquiv K (ι → ℤ)).symm))
-  rw [hr]
-  exact hf
 
 end QPainleve.CharacterTorus
