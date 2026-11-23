@@ -58,20 +58,13 @@ include hΦ hdim in
 private theorem smoothOfRelativeDimension_two : SmoothOfRelativeDimension 2 f :=
   hdim ▸ Φ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
 
-omit [Nonempty Φ.cones] in
-private theorem isEffectiveCartier_rayBoundaryIdeal (ρ : Φ.Ray) :
-    (Φ.rayBoundaryIdeal hΦ ρ).IsEffectiveCartier := by
-  have := Φ.uniqueFactorizationMonoid_stalk_algebraicRealization hΦ
-  rw [rayBoundaryIdeal_def]
-  exact isEffectiveCartier_vanishingIdeal_closure_singleton (Φ.rayBoundaryPoint hΦ ρ).property
-
 /-- The Picard class of the actual scheme-theoretic strict transform of a ray boundary divisor
 in a closed-point tower over the regular toric surface. -/
 def strictRayBoundaryClass {Y : Scheme} (T : BlowupTower Φ.algebraicRealization n Y)
     (hT : IsClosedPointTower Φ.algebraicRealization T) (ρ : Φ.Ray) : Pic Y :=
   let := smoothOfRelativeDimension_two hΦ hdim
   Additive.ofMul (LineBundleClass.mk (hT.isEffectiveCartier_strictTransform f
-    (isEffectiveCartier_rayBoundaryIdeal hΦ ρ)).toInvertibleSheaf)⁻¹
+    (Φ.isEffectiveCartier_rayBoundaryIdeal hΦ ρ)).toInvertibleSheaf)⁻¹
 
 /-- The strict boundary class is the inverse of the class of its Cartier ideal. -/
 theorem strictRayBoundaryClass_eq {Y : Scheme} (T : BlowupTower Φ.algebraicRealization n Y)
@@ -112,7 +105,7 @@ private theorem strictTransformCoefficients_rayBoundaryIdeal [DecidableEq Φ.Ray
     (fun j ↦ (s j).isRegularLocalRing_stalk_of_boundaryComponentι_eq_binomialCenter hΦ hdim
       (hm j) (hprim j) (c j) ρ)
     (by simpa only [Ray.boundaryComponentι_subschemeι, ker_subschemeι] using
-      isEffectiveCartier_rayBoundaryIdeal hΦ ρ)
+      Φ.isEffectiveCartier_rayBoundaryIdeal hΦ ρ)
     (hT)
   simp only [Ray.boundaryComponentι_subschemeι, ker_subschemeι] at h
   refine h.trans ?_
@@ -133,14 +126,14 @@ theorem picardHom_markedBoundaryMap_single [DecidableEq Φ.Ray] (ρ : Φ.Ray) :
       strictRayBoundaryClass hΦ hdim (T) (hT) ρ := by
   let := smoothOfRelativeDimension_two hΦ hdim
   have := Φ.uniqueFactorizationMonoid_stalk_algebraicRealization hΦ
-  have h := (hT).picardMarking_strictTransform f (isEffectiveCartier_rayBoundaryIdeal hΦ ρ)
+  have h := (hT).picardMarking_strictTransform f (Φ.isEffectiveCartier_rayBoundaryIdeal hΦ ρ)
   rw [strictTransformCoefficients_rayBoundaryIdeal hΦ hdim s m hm hprim c J hJ hT ρ] at h
   have hbase : LineBundleClass.primeDivisorClass (Φ.rayBoundaryPoint hΦ ρ) =
-      (LineBundleClass.mk (isEffectiveCartier_rayBoundaryIdeal hΦ ρ).toInvertibleSheaf)⁻¹ := by
+      (LineBundleClass.mk (Φ.isEffectiveCartier_rayBoundaryIdeal hΦ ρ).toInvertibleSheaf)⁻¹ := by
     rw [LineBundleClass.primeDivisorClass_def, LineBundleClass.mk_toInvertibleSheaf_congr _ _
       (Φ.rayBoundaryIdeal_def hΦ ρ).symm]
   rw [strictRayBoundaryClass_eq hΦ hdim (T) (hT) ρ
-    ((hT).isEffectiveCartier_strictTransform f (isEffectiveCartier_rayBoundaryIdeal hΦ ρ))]
+    ((hT).isEffectiveCartier_strictTransform f (Φ.isEffectiveCartier_rayBoundaryIdeal hΦ ρ))]
   simpa only [picardMarking_apply, markedBoundaryMap_apply,
     rayDivisorToPicard_single, one_zsmul, Pi.single_apply, apply_ite, neg_zero, hbase]
     using h

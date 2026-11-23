@@ -5,9 +5,12 @@ Authors: The QPainleve contributors
 -/
 module
 
-public import QPainleve.Geometry.Toric.Fan.Boundary.Basic
 public import Mathlib.AlgebraicGeometry.IdealSheaf.Functorial
+public import QPainleve.Geometry.Toric.Fan.Boundary.Basic
+public import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.Basic
 
+import QPainleve.Geometry.Toric.Fan.Picard.Basic
+import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.Factorial
 import TauCeti.AlgebraicGeometry.IdealSheaf.VanishingIdeal
 
 /-!
@@ -38,6 +41,14 @@ theorem rayBoundaryIdeal_def (ρ : Φ.Ray) :
     Φ.rayBoundaryIdeal hΦ ρ = vanishingIdeal
       ⟨closure {((Φ.rayBoundaryPoint hΦ ρ).val)}, isClosed_closure⟩ :=
   (rfl)
+
+/-- The boundary ideal of a ray in a regular fan defines an effective Cartier divisor. -/
+theorem isEffectiveCartier_rayBoundaryIdeal (ρ : Φ.Ray) :
+    (Φ.rayBoundaryIdeal hΦ ρ).IsEffectiveCartier := by
+  have : Nonempty Φ.cones := ⟨ρ.toCone⟩
+  have := Φ.uniqueFactorizationMonoid_stalk_algebraicRealization hΦ
+  rw [rayBoundaryIdeal_def]
+  exact isEffectiveCartier_vanishingIdeal_closure_singleton (Φ.rayBoundaryPoint hΦ ρ).property
 
 /-- The support of the ray divisor is the closure of its generic point. -/
 @[simp]
