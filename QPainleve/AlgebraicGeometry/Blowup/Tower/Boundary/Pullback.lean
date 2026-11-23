@@ -22,13 +22,14 @@ A base change that is an isomorphism over the original boundary centers pulls ba
 ordered ambient blowups and their strict boundary embeddings. At every stage the current
 center is the image of the specified closed subscheme under the current boundary embedding.
 Consequently the comparison also covers repeated centers and their infinitely near lifts.
+The comparison pulls back the total exceptional classes in the original order.
 When the new boundary is the reduced inverse image, the comparison recovers each
 transported center as a pullback and identifies the final reduced boundary.
 -/
 
 public section
 
-open AlgebraicGeometry CategoryTheory
+open AlgebraicGeometry CategoryTheory TauCeti.AlgebraicGeometry
 open AlgebraicGeometry.Scheme.IdealSheafData
 open TopologicalSpace
 
@@ -169,30 +170,35 @@ private theorem exists_isPullback_snoc (hi : i' ≫ f = d ≫ i)
     (hC : s.ker.IsEffectiveCartier) (hC' : s'.ker.IsEffectiveCartier)
     (hiso : Set.range (s ≫ i) ⊆ f.isoLocus) :
     ∃ q : (s'.ker.map T'.boundaryι).blowup ⟶ (s.ker.map T.boundaryι).blowup,
-      IsPullback q (T'.snoc s'.ker hC').toTower.toBase (T.snoc s.ker hC).toTower.toBase f ∧
-        (T'.snoc s'.ker hC').boundaryι ≫ q = d ≫ (T.snoc s.ker hC).boundaryι := by
+      IsPullback q (s'.ker.map T'.boundaryι).blowupToBase (s.ker.map T.boundaryι).blowupToBase g ∧
+      (T'.snoc s'.ker hC').boundaryι ≫ q = d ≫ (T.snoc s.ker hC).boundaryι ∧
+      LineBundleClass.pullback q (s.ker.map T.boundaryι).blowupExceptionalClass =
+        (s'.ker.map T'.boundaryι).blowupExceptionalClass := by
   let I := s.ker.map T.boundaryι
   have hcenter : I.comap g = s'.ker.map T'.boundaryι := by
     simpa only [I, map_ker] using
       (ker_eq_comap_of_isPullback _ (isPullback_center hi hg hb s s' hs hiso)).symm
   have hsupport := support_center_subset_isoLocus hg s hiso
-  obtain ⟨q, hq⟩ : ∃ q : (s'.ker.map T'.boundaryι).blowup ⟶ I.blowup,
-      IsPullback q (s'.ker.map T'.boundaryι).blowupToBase I.blowupToBase g := by
+  obtain ⟨q, hq, hE⟩ : ∃ q : (s'.ker.map T'.boundaryι).blowup ⟶ I.blowup,
+      IsPullback q (s'.ker.map T'.boundaryι).blowupToBase I.blowupToBase g ∧
+      LineBundleClass.pullback q I.blowupExceptionalClass =
+        (s'.ker.map T'.boundaryι).blowupExceptionalClass := by
     generalize s'.ker.map T'.boundaryι = I' at hcenter ⊢
     subst I'
-    exact ⟨_, (I.isPullback_blowupMap_of_support_subset_isoLocus g hsupport).flip⟩
-  refine ⟨q, ?_, ?_⟩
-  · simpa only [WithBoundary.toTower_snoc, BlowupTower.toBase_snoc] using hq.paste_vert hg
-  · apply I.blowup_hom_ext
-    · simpa only [I, Category.assoc, hq.w, ← Category.assoc (T'.snoc s'.ker hC').boundaryι,
-        WithBoundary.boundaryι_snoc_blowupToBase] using hb
-    · rw [Category.assoc, hq.w, ← Category.assoc, WithBoundary.boundaryι_snoc_blowupToBase,
-        comap_comp, hcenter, comap_map_of_isClosedImmersion]
-      exact hC'
+    exact ⟨_, (I.isPullback_blowupMap_of_support_subset_isoLocus g hsupport).flip,
+      I.pullback_blowupExceptionalClass_blowupMap g⟩
+  refine ⟨q, hq, ?_, hE⟩
+  apply I.blowup_hom_ext
+  · simpa only [I, Category.assoc, hq.w, ← Category.assoc (T'.snoc s'.ker hC').boundaryι,
+      WithBoundary.boundaryι_snoc_blowupToBase] using hb
+  · rw [Category.assoc, hq.w, ← Category.assoc, WithBoundary.boundaryι_snoc_blowupToBase,
+      comap_comp, hcenter, comap_map_of_isClosedImmersion]
+    exact hC'
 
 /-- Ordered blowups of Cartier subschemes of a boundary commute with base change
 that is an isomorphism over the original centers. The lift intertwines the final
-strict-transform embeddings of the fixed boundaries. -/
+strict-transform embeddings of the fixed boundaries and pulls back the total
+exceptional classes in the prescribed order. -/
 theorem exists_isPullback_alongBoundary [IsClosedImmersion i] [IsClosedImmersion i']
     (hi : i' ≫ f = d ≫ i) {S : Fin n → Scheme.{u}}
     (s : ∀ j, S j ⟶ D) (s' : ∀ j, S j ⟶ D') (hs : ∀ j, s' j ≫ d = s j)
@@ -202,20 +208,29 @@ theorem exists_isPullback_alongBoundary [IsClosedImmersion i] [IsClosedImmersion
     let A := alongBoundary i (fun j ↦ ⟨(s j).ker, hC j⟩)
     let A' := alongBoundary i' (fun j ↦ ⟨(s' j).ker, hC' j⟩)
     ∃ q : A'.1 ⟶ A.1, IsPullback q A'.2.toTower.toBase A.2.toTower.toBase f ∧
-      A'.2.boundaryι ≫ q = d ≫ A.2.boundaryι := by
+      A'.2.boundaryι ≫ q = d ≫ A.2.boundaryι ∧
+      ∀ j, LineBundleClass.pullback q (A.2.toTower.exceptionalClass j) =
+        A'.2.toTower.exceptionalClass j := by
   dsimp only
   induction n with
   | zero =>
     rw [alongBoundary_zero i', alongBoundary_zero i]
     simp only [WithBoundary.toTower_nil, BlowupTower.toBase_nil, WithBoundary.boundaryι_nil]
-    exact ⟨f, IsPullback.of_vert_isIso ⟨by simp⟩, hi⟩
+    exact ⟨f, IsPullback.of_vert_isIso ⟨by simp⟩, hi, fun j ↦ j.elim0⟩
   | succ n ih =>
-    obtain ⟨g, hg, hb⟩ := ih (fun j ↦ s j.castSucc) (fun j ↦ s' j.castSucc)
+    obtain ⟨g, hg, hb, hE⟩ := ih (fun j ↦ s j.castSucc) (fun j ↦ s' j.castSucc)
       (fun j ↦ hs j.castSucc) (fun j ↦ hC j.castSucc) (fun j ↦ hC' j.castSucc)
       (fun j ↦ hiso j.castSucc)
     rw [alongBoundary_succ i', alongBoundary_succ i]
     let j := Fin.last n
-    exact exists_isPullback_snoc hi hg hb (s j) (s' j) (hs j) (hC j) (hC' j) (hiso j)
+    obtain ⟨q, hq, hb', hE'⟩ :=
+      exists_isPullback_snoc hi hg hb (s j) (s' j) (hs j) (hC j) (hC' j) (hiso j)
+    refine ⟨q, ?_, hb', fun l ↦ Fin.lastCases ?_ (fun k ↦ ?_) l⟩
+    · simpa only [WithBoundary.toTower_snoc, toBase_snoc] using hq.paste_vert hg
+    · simpa only [WithBoundary.toTower_snoc, exceptionalClass_snoc_last, blowupExceptionalClass_def]
+        using hE'
+    · simp only [WithBoundary.toTower_snoc, exceptionalClass_snoc_castSucc]
+      rw [LineBundleClass.pullback_comp, hq.w, ← LineBundleClass.pullback_comp, hE k]
 
 /-- An ordered tower pulls back along a morphism that is an isomorphism over the
 specified centers. On the reduced inverse image of the original boundary, each
@@ -248,7 +263,7 @@ theorem exists_isPullback_alongBoundary_radical (D : X.IdealSheafData) [IsReduce
     apply (hC j).comap_of_support_subset_isoLocus d
     simpa only [(a j).support_ker, (a j).isClosedEmbedding.isClosed_range.closure_eq] using
       hcenter j
-  obtain ⟨q, hq, hb⟩ := exists_isPullback_alongBoundary
+  obtain ⟨q, hq, hb, -⟩ := exists_isPullback_alongBoundary
     (subschemeMap_subschemeι E D f _).symm a a' ha hC hC' hiso
   let A := alongBoundary D.subschemeι (fun j ↦ ⟨(a j).ker, hC j⟩)
   let B := alongBoundary E.subschemeι (fun j ↦ ⟨(a' j).ker, hC' j⟩)

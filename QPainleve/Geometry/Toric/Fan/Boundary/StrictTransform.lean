@@ -62,15 +62,9 @@ theorem support_ker_alongBoundary_boundaryι
     (hJ : ∀ j (ρ : Φ.Ray), ((J j).val.comap (ρ.boundaryComponentι hΦ)).IsEffectiveCartier) :
     ((model).2.boundaryι.ker.support : Set (model).1) =
       ⋃ ρ : Φ.Ray, ((strictIdeal ρ).support : Set (model).1) := by
-  have hcover : (⋃ ρ : Φ.Ray, Set.range (ρ.boundaryComponentι hΦ)) = Set.univ := by
-    apply Set.image_injective.mpr (toricBoundary).subschemeι.isClosedEmbedding.injective
-    rw [Set.image_iUnion, Set.image_univ]
-    simp only [← Set.range_comp, ← TopCat.coe_comp, ← Scheme.Hom.comp_base,
-      Ray.boundaryComponentι_subschemeι, range_subschemeι, coe_support_rayBoundaryIdeal]
-    exact (Φ.support_boundaryIdeal_eq_iUnion_closure hΦ inferInstance).symm
   let j := (model).2.boundaryι
   rw [j.support_ker, j.isClosedEmbedding.isClosed_range.closure_eq, ← Set.image_univ (f := j),
-    ← hcover, Set.image_iUnion]
+    ← iUnion_range_boundaryComponentι hΦ, Set.image_iUnion]
   refine Set.iUnion_congr fun ρ ↦ ?_
   rw [← Set.range_comp, ← TopCat.coe_comp, ← Scheme.Hom.comp_base,
     strictTransform_rayBoundaryIdeal_alongBoundary hΦ J ρ (fun j ↦ hJ j ρ)]

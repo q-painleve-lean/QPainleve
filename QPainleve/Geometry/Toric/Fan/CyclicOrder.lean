@@ -152,6 +152,56 @@ theorem existsUnique_cyclicRayNumbering (b : Module.Basis (Fin 2) ℤ N)
   | zero => simpa only [Nat.cast_zero] using hv₀.trans hu₀.symm
   | succ a ih => rw [Nat.cast_succ, hu, ← (hp _ _).mpr (hv _), ih]
 
+/-- A positively oriented ray numbering of a complete regular rank-two fan numbers its
+two-ray cones: cone `j` contains rays `j` and `j + 1`. -/
+theorem exists_cyclicConeNumbering (b : Module.Basis (Fin 2) ℤ N)
+    (hΦ : Φ.IsRegular) (hc : Φ.IsComplete) {n : ℕ} (u : ZMod n ≃ Φ.Ray)
+    (hu : ∀ j, b.detDualEquiv (u j).primitiveGenerator (u (j + 1)).primitiveGenerator = 1 ∧
+      ∃ σ : Φ.cones, (u j).toCone ≤ σ ∧ (u (j + 1)).toCone ≤ σ) :
+    ∃ c : ZMod n ≃ {σ : Φ.cones // Nat.card (ToricRay σ.val) = 2}, ∀ j,
+      (u j).toCone ≤ (c j).val ∧ (u (j + 1)).toCone ≤ (c j).val := by
+  have hdim : Module.finrank ℤ N = 2 := by simpa using Module.finrank_eq_card_basis b
+  choose σ h₀ h₁ using fun j ↦ (hu j).2
+  have hne (j : ZMod n) : u j ≠ u (j + 1) := by
+    intro he
+    have hdet := (hu j).1
+    rw [← he, b.detDualEquiv_self] at hdet
+    exact zero_ne_one hdet
+  let c (j : ZMod n) : {σ : Φ.cones // Nat.card (ToricRay σ.val) = 2} :=
+    ⟨σ j, Φ.card_toricRay_eq_two_of_ray_ne_of_le hΦ hdim (hne j) (h₀ j) (h₁ j)⟩
+  have hs (j : ZMod n) :
+      ∀ ρ : Φ.Ray, ρ.toCone ≤ σ j → ρ = u j ∨ ρ = u (j + 1) := by
+    intro ρ hρ
+    let e := Φ.rayEquiv (σ j)
+    have hr : e ⟨ρ, hρ⟩ ∈ ({e ⟨u j, h₀ j⟩, e ⟨u (j + 1), h₁ j⟩} : Set _) := by
+      simp only [e, rayEquiv_apply]
+      rw [Φ.toricRays_eq_pair ((isRegular_iff.mp hΦ) _ (σ j).property) hdim
+        (hne j) (h₀ j) (h₁ j)]
+      exact Set.mem_univ _
+    simpa only [Set.mem_insert_iff, Set.mem_singleton_iff, e.injective.eq_iff,
+      Subtype.mk.injEq] using hr
+  refine ⟨Equiv.ofBijective c ⟨?_, ?_⟩, fun j ↦ ⟨h₀ j, h₁ j⟩⟩
+  · intro j k h
+    have he : σ j = σ k := congrArg Subtype.val h
+    rcases hs k (u j) (he ▸ h₀ j) with hj | hj
+    · exact u.injective hj
+    rcases hs k (u (j + 1)) (he ▸ h₁ j) with hk | hk
+    · have hdet := (hu j).1
+      rw [hj, hk, b.detDualEquiv_swap, (hu k).1] at hdet
+      omega
+    exact (hne j (hj.trans hk.symm)).elim
+  · intro t
+    obtain ⟨r, s, hr, hs', hd⟩ := exists_ray_pair_le_det_eq_one b
+      ((isRegular_iff.mp hΦ) _ t.val.property) t.property
+    obtain ⟨j, rfl⟩ := u.surjective r
+    obtain ⟨_, _, huniq⟩ := (exists_unique_ray_neighbor_on_each_side b hΦ hc (u j)).1
+    have he : s = u (j + 1) := (huniq s ⟨hd, t.val, hr, hs'⟩).trans
+      (huniq (u (j + 1)) (hu j)).symm
+    subst s
+    refine ⟨j, Subtype.ext (Subtype.ext ?_)⟩
+    exact (cone_eq_sup_of_ray_ne_of_le hΦ hdim (hne j) (h₀ j) (h₁ j)).trans
+      (cone_eq_sup_of_ray_ne_of_le hΦ hdim (hne j) hr hs').symm
+
 /-- Reversing the lattice orientation reverses the cyclic numbering by `j ↦ -j`.
 The initial ray and the cones at which successive rays meet are preserved. -/
 theorem cyclicRayNumbering_neg {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
