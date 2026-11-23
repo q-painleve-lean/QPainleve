@@ -38,37 +38,6 @@ variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
 variable {Φ} (hΦ : Φ.IsRegular) (σ : Φ.cones)
   (hN : Module.finrank ℤ N = 2) (hc : Nat.card (ToricRay σ.val) = 2)
 
-include hΦ hN hc in
-private theorem eq_of_le_fullCone (τ : Φ.cones) (h : σ ≤ τ) : σ = τ := by
-  have hface := Φ.isFaceOf_of_le τ.property σ.property h
-  have hτ := isRegular_iff.1 hΦ _ τ.property
-  have := ToricRay.finite_of_fg (Φ.isToricCone σ.property).fg
-  have := ToricRay.finite_of_fg hτ.fg
-  let e := ToricRay.faceEmbedding hface
-  let _ := Fintype.ofFinite (ToricRay σ.val)
-  let _ := Fintype.ofFinite (ToricRay τ.val)
-  have hcard : Fintype.card (ToricRay τ.val) ≤ Fintype.card (ToricRay σ.val) := by
-    rw [← Nat.card_eq_fintype_card, ← Nat.card_eq_fintype_card, hc, ← hN]
-    exact hτ.card_toricRay_le_finrank
-  have hsurj := ((Fintype.bijective_iff_injective_and_card e).2
-    ⟨e.injective, le_antisymm (Fintype.card_le_of_injective e e.injective) hcard⟩).2
-  apply Subtype.ext
-  refine le_antisymm h ?_
-  rw [← (Φ.isToricCone τ.property).hull_primitiveGenerator Φ.lattice]
-  refine Submodule.span_le.mpr ?_
-  rintro _ ⟨_, ⟨r, rfl⟩, rfl⟩
-  obtain ⟨s, rfl⟩ := hsurj r
-  rw [primitiveGenerator_faceEmbedding]
-  exact s.val.isFaceOf.le (primitiveGenerator_mem Φ.lattice (Φ.isToricCone σ.property) s)
-
-include hc in
-private theorem fullCone_ne_bot : σ.val ≠ ⊥ := by
-  intro h
-  have hz : Nat.card (ToricRay (⊥ : PointedCone ℝ V)) = 0 := Nat.card_eq_zero.mpr
-    (Or.inl inferInstance)
-  rw [h, hz] at hc
-  omega
-
 private theorem algebraicMap_comp_eqToIso_hom {A B C : Fan i} (h : B = C)
     (f : FanHom A B) (g : FanHom A C) (hfg : f.latticeMap = g.latticeMap) :
     f.algebraicMap ≫ (eqToIso (congrArg Fan.algebraicRealization h)).hom =
@@ -125,13 +94,14 @@ include hΦ hN hc in
 private theorem preimageCones_starSubdivisionAlong_faces :
     let hσ := isRegular_iff.1 hΦ _ σ.property
     let A := ToricRay.faceFinset (PointedCone.IsFaceOf.refl σ.val) hσ.fg
-    let hsub := Φ.starSubdivisionAlong_isSubdivision hΦ σ.property (fullCone_ne_bot σ hc)
+    let hsub := Φ.starSubdivisionAlong_isSubdivision hΦ σ.property
+      (ne_bot_of_card_toricRay_eq_two hc)
     hsub.toFanHom.preimageCones {τ | τ.IsFaceOf σ.val} =
       (Fan.starSubdivision Φ.lattice A hσ).cones := by
   dsimp only
   let hσ := isRegular_iff.1 hΦ _ σ.property
   let A := ToricRay.faceFinset (PointedCone.IsFaceOf.refl σ.val) hσ.fg
-  let h := Φ.starSubdivisionAlong_isSubdivision hΦ σ.property (fullCone_ne_bot σ hc)
+  let h := Φ.starSubdivisionAlong_isSubdivision hΦ σ.property (ne_bot_of_card_toricRay_eq_two hc)
   ext κ
   constructor
   · intro hκ
@@ -142,7 +112,8 @@ private theorem preimageCones_starSubdivisionAlong_faces :
     · exact mem_starSubdivision_cones_of_isFaceOf Φ.lattice A hσ
         (Φ.isFaceOf_of_le σ.property hκΦ hle)
         (ToricRay.exists_mem_faceFinset_not_le_of_not_le _ _ hσ.toIsToricCone.salient hσκ)
-    · have he : σ.val = τ := congrArg Subtype.val (eq_of_le_fullCone hΦ σ hN hc ⟨τ, hτ⟩ hστ)
+    · have he : σ.val = τ :=
+        congrArg Subtype.val (eq_of_le_fullCone hΦ hN hc (τ := ⟨τ, hτ⟩) hστ)
       subst τ
       exact hκτ
   · intro hκ
@@ -297,7 +268,7 @@ private theorem exists_starSubdivisionAlong_localComparison (τ : Φ.cones) :
     obtain ⟨b, hb⟩ := (I).exists_isPullback_toSpecCoeff_reesAlgebra
       (Φ.affineToricChartι σ) (J) (comap_ker_distinguishedPointHom σ)
     exact ⟨_, a, b, _, ha, hb⟩
-  · have hστ : ¬ σ ≤ τ := fun h ↦ ht (eq_of_le_fullCone hΦ σ hN hc τ h)
+  · have hστ : ¬ σ ≤ τ := fun h ↦ ht (eq_of_le_fullCone hΦ hN hc h)
     obtain ⟨a, ha⟩ := exists_isPullback_starSubdivisionAlong_otherChart hΦ σ h₀ τ hστ
     let j := Φ.affineToricChartι τ
     have : IsOpenImmersion j := Fan.isOpenImmersion_affineToricChartι τ
@@ -365,7 +336,7 @@ include hc in
 private theorem isEffectiveCartier_comap_distinguishedPointHom_denseTorusι :
     ((I).comap (Φ.denseTorusι ⟨σ⟩)).IsEffectiveCartier := by
   let τ : Φ.cones := ⟨⊥, Φ.bot_mem σ.property⟩
-  have hστ : ¬ σ ≤ τ := fun h ↦ fullCone_ne_bot σ hc (le_bot_iff.mp h)
+  have hστ : ¬ σ ≤ τ := fun h ↦ ne_bot_of_card_toricRay_eq_two hc (le_bot_iff.mp h)
   have hcomap := comap_ker_distinguishedPointHom_otherChart σ τ hστ
   rw [Φ.denseTorusι_eq_affineToricChartι _ τ.property, hcomap]
   exact isEffectiveCartier_top _
@@ -386,7 +357,7 @@ theorem exists_iso_blowup_starSubdivisionAlong :
       ∀ hn : Nonempty (Φ.starSubdivisionAlong hΦ σ.property).cones,
         (Φ.starSubdivisionAlong hΦ σ.property).denseTorusι hn ≫ e.hom =
           (Φ.distinguishedPointHom σ).ker.blowupLift t ht := by
-  let h₀ := fullCone_ne_bot σ hc
+  let h₀ := ne_bot_of_card_toricRay_eq_two hc
   obtain ⟨e, he⟩ := exists_iso_blowup_starSubdivisionAlong_over hΦ σ hN hc h₀
   have ht := isEffectiveCartier_comap_distinguishedPointHom_denseTorusι σ hc
   refine ⟨h₀, e, ht, he, fun hn ↦ (I).eq_blowupLift ht ?_⟩
