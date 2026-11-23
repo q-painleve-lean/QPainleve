@@ -6,6 +6,8 @@ Authors: The QPainleve contributors
 module
 
 public import Mathlib.AlgebraicGeometry.IdealSheaf.Subscheme
+public import TauCeti.AlgebraicGeometry.IdealSheaf.Stalk
+import Mathlib.AlgebraicGeometry.FunctionField
 import TauCeti.AlgebraicGeometry.IdealSheaf.Reduced
 
 /-!
@@ -14,6 +16,7 @@ import TauCeti.AlgebraicGeometry.IdealSheaf.Reduced
 The image of the generic point of an irreducible closed subscheme has closure equal to the
 support. For an integral closed subscheme, the vanishing ideal of this closure recovers its
 defining ideal sheaf.
+At that point the stalk ideal is the maximal ideal of the ambient local ring.
 -/
 
 public section
@@ -40,5 +43,14 @@ theorem vanishingIdeal_closure_subschemeι_genericPoint [IsIntegral I.subscheme]
     SetLike.coe_injective I.support_eq_closure_subschemeι_genericPoint.symm
   rw [h, vanishingIdeal_support]
   exact I.isReduced_subscheme_iff_radical_eq.mp inferInstance
+
+/-- The stalk ideal at the generic point of an integral closed subscheme is the maximal
+ideal of the ambient local ring. -/
+@[simp] theorem stalkIdeal_subschemeι_genericPoint [IsIntegral I.subscheme] :
+    I.stalkIdeal (I.subschemeι (genericPoint I.subscheme)) =
+      IsLocalRing.maximalIdeal (X.presheaf.stalk (I.subschemeι (genericPoint I.subscheme))) := by
+  simpa only [I.subschemeι.ker_stalkMap_of_isClosedImmersion, I.ker_subschemeι] using
+    IsLocalRing.ker_eq_maximalIdeal (K := I.subscheme.functionField) _
+      (I.subschemeι.stalkMap_surjective (genericPoint I.subscheme))
 
 end AlgebraicGeometry.Scheme.IdealSheafData

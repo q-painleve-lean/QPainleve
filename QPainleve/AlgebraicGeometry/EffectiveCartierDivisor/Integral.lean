@@ -11,7 +11,6 @@ public import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.Basic
 import QPainleve.AlgebraicGeometry.IdealSheaf.Integral
 import Mathlib.RingTheory.Ideal.KrullsHeightTheorem
 import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.Stalk
-import TauCeti.AlgebraicGeometry.IdealSheaf.Stalk
 
 /-!
 # Integral effective Cartier divisors
@@ -40,12 +39,9 @@ theorem IsEffectiveCartier.coheight_subschemeι_genericPoint [IsLocallyNoetheria
   let x := I.subschemeι η
   obtain ⟨U, hU, hxU, -⟩ := exists_isAffineOpen_mem_and_subset (X := X) (Opens.mem_top x)
   obtain ⟨a, ha, hspan⟩ := hI.exists_map_germ_eq_span_singleton ⟨U, hU⟩ hxU
-  have hker : RingHom.ker (I.subschemeι.stalkMap η).hom =
-      IsLocalRing.maximalIdeal (X.presheaf.stalk x) :=
-    IsLocalRing.ker_eq_maximalIdeal (K := I.subscheme.functionField) _
-      (I.subschemeι.stalkMap_surjective η)
-  rw [I.subschemeι.ker_stalkMap_of_isClosedImmersion, I.ker_subschemeι,
-    I.stalkIdeal_eq_map ⟨U, hU⟩ x hxU, hspan] at hker
+  have hker : Ideal.span {a} = IsLocalRing.maximalIdeal (X.presheaf.stalk x) :=
+    hspan.symm.trans ((I.stalkIdeal_eq_map ⟨U, hU⟩ x hxU).symm.trans
+      I.stalkIdeal_subschemeι_genericPoint)
   have hnonunit : ¬ IsUnit a := by
     intro hu
     exact Ideal.IsMaximal.ne_top (inferInstance :
