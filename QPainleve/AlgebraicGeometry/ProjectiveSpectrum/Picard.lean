@@ -13,11 +13,11 @@ public import TauCeti.AlgebraicGeometry.LineBundle.Class
 
 import QPainleve.AlgebraicGeometry.EffectiveCartierDivisor.Integral
 import QPainleve.AlgebraicGeometry.IdealSheaf.Integral
+import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.Polynomial.Integral
 import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.Polynomial.SymmetricAlgebra
 import TauCeti.AlgebraicGeometry.CartierDivisor.Excision
 import TauCeti.AlgebraicGeometry.IdealSheaf.Reduced
 import TauCeti.AlgebraicGeometry.LineBundle.Affine.Picard
-import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.Integral
 import TauCeti.AlgebraicGeometry.Cohomology.ProjectiveSpace.TwistingSheaf
 import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.TwistingSheaf.GlobalSections
 import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.TwistingSheaf.Quasicoherent
@@ -259,20 +259,12 @@ private abbrev polynomialTwistingBundle (m : ℤ) : InvertibleSheaf (Proj 𝒜) 
     (fun i ↦ coordinate_mem_one i.down)
     (by simpa only [iSup_ulift] using iSup_coordinateChart (k := k) (n := n)) m⟩
 
-private theorem isIntegral_polynomialProj : IsIntegral (Proj 𝒜) := by
-  apply isIntegral_of_isDomain
-  intro h
-  have hm := HomogeneousIdeal.mem_irrelevant_of_mem 𝒜 one_pos
-    (coordinate_mem_one (k := k) (0 : Fin (n + 1)))
-  rw [h, ← HomogeneousIdeal.mem_iff, HomogeneousIdeal.toIdeal_bot, Ideal.mem_bot] at hm
-  exact MvPolynomial.X_ne_zero _ hm
-
 private theorem coordinateRatio_self (i : Fin (n + 1)) :
     coordinateRatio (k := k) i i = 1 := by
   simp [coordinateRatio]
 
 private theorem mono_coordinateToUnit (j : Fin (n + 1)) : Mono (coordinateToUnit (k := k) j) := by
-  have := isIntegral_polynomialProj (k := k) (n := n)
+  have := isIntegral_polynomialProj (R := k) (σ := Fin (n + 1))
   refine (polynomialTwistingBundle (k := k) (n := n) (-1)).mono_of_ne_zero_to_unit
     (coordinateToUnit j) ?_
   intro h
@@ -336,7 +328,7 @@ open LineBundleClass in
 private theorem exists_zpow_polynomialTwistingBundle [NeZero n] (a : LineBundleClass (Proj 𝒜)) :
     ∃ m : ℤ, mk (polynomialTwistingBundle 1) ^ m = a := by
   classical
-  have := isIntegral_polynomialProj (k := k) (n := n)
+  have := isIntegral_polynomialProj (R := k) (σ := Fin (n + 1))
   have := isNoetherian_polynomialProj (k := k) (n := n)
   have := uniqueFactorizationMonoid_stalk_polynomialProj (k := k) (n := n)
   let i : Fin (n + 1) := 0
