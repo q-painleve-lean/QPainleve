@@ -33,6 +33,14 @@ variable {D D' X X' Y Y' S : Scheme.{u}} {i : D ⟶ X} {i' : D' ⟶ X'}
   {f : X' ⟶ X} {d : D' ⟶ D} {n : ℕ}
   {T : WithBoundary i n Y} {T' : WithBoundary i' n Y'} {g : Y' ⟶ Y}
 
+/-- If the ambient tower and the original boundary are pulled back, the commuting
+square of the final boundary embeddings is cartesian. -/
+theorem WithBoundary.isPullback_boundaryι (hi : IsPullback i' d f i)
+    (hg : IsPullback g T'.toTower.toBase T.toTower.toBase f)
+    (hb : T'.boundaryι ≫ g = d ≫ T.boundaryι) :
+    IsPullback T'.boundaryι d g T.boundaryι :=
+  (IsPullback.of_bot (by simpa only [boundaryι_toBase] using hi.flip) hb.symm hg).flip
+
 private theorem isPullback_center (hi : i' ≫ f = d ≫ i)
     (hg : IsPullback g T'.toTower.toBase T.toTower.toBase f)
     (hb : T'.boundaryι ≫ g = d ≫ T.boundaryι)
