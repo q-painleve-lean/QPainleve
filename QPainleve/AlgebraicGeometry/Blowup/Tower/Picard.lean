@@ -195,6 +195,18 @@ theorem IsClosedPointTower.bijective_picardHom {k : Type u} [Field k] [PerfectFi
     · exact Scheme.IdealSheafData.isExceptionalCurveOfFirstKind_comap_blowupToBase_of_closedPoint
         p hp hdim
 
+/-- Pullback along an ordered tower of closed point blowups is injective on Picard classes. -/
+theorem IsClosedPointTower.injective_pullback_toBase {k : Type u} [Field k] [PerfectField k]
+    {X Y : Scheme.{u}} {n : ℕ} {T : BlowupTower X n Y} [IsIntegral X] [IsNoetherian X]
+    (hT : IsClosedPointTower X T) (f : X ⟶ Spec (.of k)) [SmoothOfRelativeDimension 2 f] :
+    Function.Injective (pullback T.toBase) := by
+  intro L M h
+  have h' : (T.picardHom (Additive.ofMul L, 0)).toMul =
+      (T.picardHom (Additive.ofMul M, 0)).toMul := by
+    simpa only [picardHom_apply_zero, toMul_ofMul] using h
+  exact Additive.ofMul.injective (congrArg Prod.fst
+    ((hT.bijective_picardHom f).injective (Additive.toMul.injective h')))
+
 /-- For an automorphism lifting through an ordered point blowup tower, pullback acts
 trivially on the final Picard group exactly when it acts trivially on the base Picard group. -/
 theorem IsLift.forall_pullback_eq_iff {k : Type u} [Field k] [PerfectField k]
