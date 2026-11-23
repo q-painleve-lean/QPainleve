@@ -21,7 +21,7 @@ It extends through the rest of the ordered centers by naturality, so any permuta
 family with disjoint supports for distinct ideals gives an isomorphic surface. A center
 can occur several times.
 
-The comparison uses `Scheme.IdealSheafData.isPullback_blowupMap_of_disjoint` and
+The comparison uses `Scheme.IdealSheafData.blowupCommOfDisjoint` and
 `Scheme.Hom.isPullback_of_isIso_of_range_subset_isoLocus` for the actual center subschemes.
 -/
 
@@ -75,34 +75,23 @@ private theorem map_center_snoc_of_disjoint
     ker_eq_comap_of_isPullback (J.subschemeι ≫ T.boundaryι) hp
 
 include hI hJ in
-private theorem exists_isPullback_snoc_snoc
-    (h : Disjoint ((I.map T.boundaryι).support : Set Y)
-      ((J.map T.boundaryι).support : Set Y)) :
-    let TI := T.snoc I hI
-    let TJ := T.snoc J hJ
-    ∃ f : (J.map TI.boundaryι).blowup ⟶ (J.map T.boundaryι).blowup,
-      IsPullback (J.map TI.boundaryι).blowupToBase f
-        (I.map T.boundaryι).blowupToBase (J.map T.boundaryι).blowupToBase ∧
-      (TI.snoc J hJ).boundaryι ≫ f = TJ.boundaryι := by
-  let π := (I.map T.boundaryι).blowupToBase
-  let K := J.map (T.snoc I hI).boundaryι
-  let L := J.map T.boundaryι
-  have hK : L.comap π = K := (T.map_center_snoc_of_disjoint I J hI h).symm
-  let e := (L.comap π).blowupIso (Iso.refl _) (by
-    simpa only [Iso.refl_hom, comap_id] using hK)
-  let f := e.hom ≫ L.blowupMap π
-  have hproj : e.hom ≫ (L.comap π).blowupToBase = K.blowupToBase := by
-    simp [e]
-  have hp : IsPullback K.blowupToBase f π L.blowupToBase := by
-    refine (L.isPullback_blowupMap_of_disjoint _ h.symm).of_iso e.symm
-      (Iso.refl _) (Iso.refl _) (Iso.refl _) ?_ ?_ (by simp [π]) (by simp)
-    · simp only [Iso.refl_hom, Category.comp_id, ← hproj, Iso.symm_hom, Iso.inv_hom_id_assoc, π]
-    · simp [f, π]
-  refine ⟨f, hp, L.blowup_hom_ext ?_ ?_⟩
-  · rw [Category.assoc, ← hp.w]
-    simp [K, π, L]
-  · rw [Category.assoc, ← hp.w, ← Category.assoc]
-    simpa [K, π, L] using hJ
+private theorem boundaryι_snoc_blowupMap
+    {e : (J.map (T.snoc I hI).boundaryι).blowup ≅
+      ((J.map T.boundaryι).comap (I.map T.boundaryι).blowupToBase).blowup}
+    (he : e.hom ≫ ((J.map T.boundaryι).comap (I.map T.boundaryι).blowupToBase).blowupToBase =
+      (J.map (T.snoc I hI).boundaryι).blowupToBase) :
+    ((T.snoc I hI).snoc J hJ).boundaryι ≫ e.hom ≫
+      (J.map T.boundaryι).blowupMap (I.map T.boundaryι).blowupToBase =
+        (T.snoc J hJ).boundaryι := by
+  have hbase : (((T.snoc I hI).snoc J hJ).boundaryι ≫ e.hom ≫
+      (J.map T.boundaryι).blowupMap (I.map T.boundaryι).blowupToBase) ≫
+      (J.map T.boundaryι).blowupToBase = T.boundaryι := by
+    rw [Category.assoc, Category.assoc, blowupMap_blowupToBase, ← Category.assoc e.hom, he]
+    simp
+  apply (J.map T.boundaryι).blowup_hom_ext
+  · simpa using hbase
+  · rw [hbase]
+    simpa using hJ
 
 /-- Two disjoint Cartier centers of the fixed boundary can be blown up in either order.
 The comparison is over the previous surface and identifies the two strict boundaries. -/
@@ -113,16 +102,30 @@ theorem exists_iso_snoc_snoc_of_disjoint (h : Disjoint (I.support : Set D) (J.su
       (J.map TI.boundaryι).blowupToBase ≫ (I.map T.boundaryι).blowupToBase =
         e.hom ≫ (I.map TJ.boundaryι).blowupToBase ≫ (J.map T.boundaryι).blowupToBase ∧
       (TI.snoc J hJ).boundaryι ≫ e.hom = (TJ.snoc I hI).boundaryι := by
-  have hd := T.disjoint_support_map I J h
-  obtain ⟨f, hf, hfb⟩ := T.exists_isPullback_snoc_snoc I J hI hJ hd
-  obtain ⟨g, hg, hgb⟩ := T.exists_isPullback_snoc_snoc J I hJ hI hd.symm
-  let e := hf.isoIsPullback _ _ hg.flip
-  refine ⟨e, ?_, hg.flip.hom_ext ?_ ?_⟩
-  · rw [← Category.assoc, IsPullback.isoIsPullback_hom_snd]
-    exact hf.w
-  · rw [Category.assoc, IsPullback.isoIsPullback_hom_fst, hgb]
-    exact boundaryι_snoc_blowupToBase _ _ _
-  · rw [Category.assoc, IsPullback.isoIsPullback_hom_snd, hfb, boundaryι_snoc_blowupToBase]
+  let A := I.map T.boundaryι
+  let B := J.map T.boundaryι
+  have hd : Disjoint (A.support : Set Y) (B.support : Set Y) := T.disjoint_support_map I J h
+  let eI := (B.comap A.blowupToBase).blowupIso (Iso.refl _) (by
+    simpa only [Iso.refl_hom, comap_id] using (T.map_center_snoc_of_disjoint I J hI hd).symm)
+  let eJ := (A.comap B.blowupToBase).blowupIso (Iso.refl _) (by
+    simpa only [Iso.refl_hom, comap_id] using (T.map_center_snoc_of_disjoint J I hJ hd.symm).symm)
+  have hIproj : eI.hom ≫ (B.comap A.blowupToBase).blowupToBase =
+      (J.map (T.snoc I hI).boundaryι).blowupToBase := by simp [eI]
+  have hJproj : eJ.hom ≫ (A.comap B.blowupToBase).blowupToBase =
+      (I.map (T.snoc J hJ).boundaryι).blowupToBase := by simp [eJ]
+  refine ⟨eI ≪≫ A.blowupCommOfDisjoint B hd ≪≫ eJ.symm, ?_, ?_⟩
+  · simp only [Iso.trans_hom, Iso.symm_hom, Category.assoc, ← hJproj,
+      Iso.inv_hom_id_assoc, blowupCommOfDisjoint_hom_blowupToBase_assoc]
+    rw [blowupMap_blowupToBase, ← Category.assoc, hIproj]
+  · rw [← cancel_mono eJ.hom]
+    simp only [Iso.trans_hom, Iso.symm_hom, Category.assoc, Iso.inv_hom_id, Category.comp_id]
+    apply (A.isPullback_blowupMap_of_disjoint B hd).hom_ext
+    · simp only [Category.assoc, blowupCommOfDisjoint_hom_blowupToBase]
+      rw [T.boundaryι_snoc_blowupMap I J hI hJ hIproj, hJproj,
+        boundaryι_snoc_blowupToBase]
+    · simp only [Category.assoc, blowupCommOfDisjoint_hom_blowupMap, hIproj,
+        boundaryι_snoc_blowupToBase]
+      exact (T.boundaryι_snoc_blowupMap J I hJ hI hJproj).symm
 
 end WithBoundary
 
