@@ -7,17 +7,23 @@ module
 
 public import TauCeti.AlgebraicGeometry.IdealSheaf.Image
 public import TauCeti.AlgebraicGeometry.IdealSheaf.Sequence
+public import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.Invertible
+import TauCeti.AlgebraicGeometry.Modules.Sheaf
+import Mathlib.RingTheory.Noetherian.Orzech
 
 /-!
 # Factorization through an image ideal
 
 Two embeddings into the structure sheaf identify their domains with the same ideal sheaf
 exactly when there is an isomorphism between the embeddings.
+An invertible sheaf mapping to the structure sheaf is already isomorphic to its image
+whenever the image ideal is effective Cartier.
 -/
 
 public section
 
 open AlgebraicGeometry CategoryTheory MonoidalCategory
+open scoped AlgebraicGeometry
 
 universe u
 
@@ -36,6 +42,43 @@ lemma imageIdealSheaf_sheafι {X : Scheme.{u}} (I : X.IdealSheafData) :
 end AlgebraicGeometry.Scheme.IdealSheafData
 
 namespace AlgebraicGeometry.Scheme.Modules.Hom
+
+/-- If the image ideal of a functional on an invertible sheaf is effective Cartier,
+the canonical map to that ideal sheaf is an isomorphism. -/
+theorem isIso_toImageIdealSheaf_of_isEffectiveCartier {X : Scheme.{u}} {M : X.Modules}
+    [TauCeti.AlgebraicGeometry.SheafOfModules.isInvertible X M] (φ : M ⟶ 𝟙_ X.Modules)
+    (h : φ.imageIdealSheaf.IsEffectiveCartier) : IsIso φ.toImageIdealSheaf := by
+  classical
+  let J := φ.imageIdealSheaf
+  have := h.isInvertible_sheaf
+  let B := {U : X.Opens | IsAffineOpen U ∧
+    Nonempty (Γ(M, U) ≃ₗ[Γ(X, U)] Γ(X, U)) ∧
+    Nonempty (Γ(J.sheaf, U) ≃ₗ[Γ(X, U)] Γ(X, U))}
+  have hB : TopologicalSpace.Opens.IsBasis B := by
+    apply TopologicalSpace.Opens.isBasis_iff_nbhd.mpr
+    intro W x hx
+    obtain ⟨V, eM, hxV⟩ := Scheme.Modules.exists_mem_trivialization M x
+    obtain ⟨V', eJ, hxV'⟩ := Scheme.Modules.exists_mem_trivialization J.sheaf x
+    have hx' : x ∈ V ⊓ V' ⊓ W := ⟨⟨hxV, hxV'⟩, hx⟩
+    obtain ⟨U, hU, hxU, hle⟩ := exists_isAffineOpen_mem_and_subset hx'
+    exact ⟨U, ⟨hU,
+      ⟨M.trivializationCoordinate eM (homOfLE (hle.trans (inf_le_left.trans inf_le_left)))⟩,
+      ⟨J.sheaf.trivializationCoordinate eJ
+        (homOfLE (hle.trans (inf_le_left.trans inf_le_right)))⟩⟩, hxU, hle.trans inf_le_right⟩
+  refine φ.toImageIdealSheaf.isIso_of_isBasis
+    (B := fun U : B ↦ U.val) (by rwa [Subtype.range_coe]) ?_
+  rintro ⟨U, hU, ⟨eM⟩, ⟨eJ⟩⟩
+  apply (ConcreteCategory.isIso_iff_bijective _).mpr
+  have hs : Function.Surjective (φ.toImageIdealSheaf.app U) := by
+    intro s
+    have hs := J.sheafι_app_mem U s
+    rw [J.sections_eq_ideal ⟨U, hU⟩, imageIdealSheaf_ideal] at hs
+    obtain ⟨t, ht⟩ := (mem_imageIdeal φ (U := U)).mp hs
+    exact ⟨t, J.sheafι_app_injective U ((φ.toImageIdealSheaf_app_sheafι U t).trans ht)⟩
+  let g : Γ(M, U) →ₗ[Γ(X, U)] Γ(J.sheaf, U) := (φ.toImageIdealSheaf.val.app (.op U)).hom
+  have := Module.Finite.equiv eJ.symm
+  exact OrzechProperty.bijective_of_surjective_of_injective
+    (eM.trans eJ.symm).toLinearMap g (eM.trans eJ.symm).injective hs
 
 /-- Monomorphisms into the structure sheaf have the same image ideal exactly when their
 sources are isomorphic over the structure sheaf. -/
