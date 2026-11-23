@@ -5,7 +5,7 @@ Authors: The QPainleve contributors
 -/
 module
 
-public import QPainleve.Geometry.Toric.Fan.Boundary.Center
+public import QPainleve.Geometry.Toric.Fan.Boundary.Component
 public import QPainleve.LinearAlgebra.Determinant.Dual
 
 import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
@@ -56,6 +56,14 @@ theorem Ray.internalCenter_val (ρ : Φ.Ray) (c : ℂˣ) :
     (ρ.internalCenter b c).val =
       (ρ.binomialCenterOnBoundary rankTwo (m := χ(ρ)) (b.detDualEquiv_self _)
         (ρ.surjective_detCharacter b) c).ker := (rfl)
+
+/-- An internal center restricts to an effective Cartier ideal on every ray divisor. -/
+theorem Ray.isEffectiveCartier_comap_internalCenter (ρ : Φ.Ray) (c : ℂˣ)
+    (hΦ : Φ.IsRegular) (τ : Φ.Ray) :
+    ((ρ.internalCenter b c).val.comap (τ.boundaryComponentι hΦ)).IsEffectiveCartier := by
+  rw [Ray.internalCenter_val]
+  exact ρ.isEffectiveCartier_comap_ker_binomialCenterOnBoundary hΦ rankTwo
+    (b.detDualEquiv_self _) (ρ.surjective_detCharacter b) c τ
 
 /-- Reversing the ordered basis and inverting the parameter gives the same Cartier
 center on the reduced boundary. -/

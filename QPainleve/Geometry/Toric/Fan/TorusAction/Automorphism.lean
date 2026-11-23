@@ -9,10 +9,13 @@ public import QPainleve.Geometry.Toric.Fan.Boundary.StrictTransform
 public import QPainleve.Geometry.Toric.Fan.TorusAction.InternalBlowup
 
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Automorphism
+import QPainleve.AlgebraicGeometry.EffectiveCartierDivisor.Component
+import QPainleve.AlgebraicGeometry.EffectiveCartierDivisor.Integral
 import QPainleve.Geometry.Toric.CharacterTorus.CenterAlignment
 import QPainleve.Geometry.Toric.Fan.Boundary.Automorphism
 import QPainleve.Geometry.Toric.Fan.Picard.Translation
 import QPainleve.Geometry.Toric.Fan.Smooth
+import TauCeti.AlgebraicGeometry.IdealSheaf.Reduced
 
 /-!
 # Picard-trivial automorphisms of ordered internal toric blowups
@@ -28,7 +31,7 @@ of Gross, Hacking and Keel, *Moduli of surfaces with an anti-canonical cycle*.
 
 public noncomputable section
 
-open AlgebraicGeometry CategoryTheory Multiplicative QPainleve.BlowupTower
+open AlgebraicGeometry CategoryTheory Multiplicative QPainleve.BlowupTower TopologicalSpace
 open TauCeti.AlgebraicGeometry LineBundleClass Scheme.IdealSheafData
 
 namespace TauCeti.Toric.Fan
@@ -80,6 +83,51 @@ theorem mem_internalBlowupPicardBoundaryAut (g : Aut Y) :
       g.asIso.hom ≫ p ≫ base = p ≫ base ∧ (∀ L, pullback g.asIso.hom L = L) ∧
         ∀ ρ, (strictTransform (Φ.rayBoundaryIdeal hΦ ρ) T).comap g.asIso.hom =
           strictTransform (Φ.rayBoundaryIdeal hΦ ρ) T := (Iff.rfl)
+
+/-- Membership in the boundary-fixing subgroup can be tested at the generic points
+of the prime curves in the boundary. -/
+theorem mem_internalBlowupPicardBoundaryAut_iff_fixes_boundary_primes (g : Aut Y) :
+    g ∈ internalBlowupPicardBoundaryAut b s c hΦ ↔
+      g.asIso.hom ≫ p ≫ base = p ≫ base ∧ (∀ L, pullback g.asIso.hom L = L) ∧
+      ∀ y : CodimensionOnePoint Y, y.val ∈ (j).ker.support → g.asIso.hom y.val = y.val := by
+  let I (ρ : Φ.Ray) := strictTransform (Φ.rayBoundaryIdeal hΦ ρ) T
+  let f := g.asIso.hom
+  have : IsNoetherian Y := (T).isNoetherian
+  have hN : Module.finrank ℤ N = 2 := by simpa using Module.finrank_eq_card_basis b
+  have : SmoothOfRelativeDimension 2 base :=
+    hN ▸ Φ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
+  have hCartier (ρ : Φ.Ray) : (I ρ).IsEffectiveCartier :=
+    (isClosedPointTower_internalBlowupTower b s c).isEffectiveCartier_strictTransform base
+      (Φ.isEffectiveCartier_rayBoundaryIdeal hΦ ρ)
+  have hcover : ((j).ker.support : Set (Y : Scheme)) = ⋃ ρ, ((I ρ).support : Set (Y : Scheme)) :=
+    support_ker_internalBlowupTower_boundaryι b s c hΦ
+  let (ρ : Φ.Ray) : IsIntegral (I ρ).subscheme := by
+    dsimp only [I]
+    rw [internalBlowupTower_eq_alongBoundary]
+    exact isIntegral_strictTransform_rayBoundaryIdeal hΦ _ ρ
+      (fun k ↦ (s k).isEffectiveCartier_comap_internalCenter b (c k) hΦ ρ)
+  rw [mem_internalBlowupPicardBoundaryAut]
+  refine and_congr_right fun _ ↦ and_congr_right fun _ ↦ ?_
+  constructor
+  · intro h y hy
+    rw [← SetLike.mem_coe, hcover] at hy
+    obtain ⟨ρ, hyρ⟩ := Set.mem_iUnion.mp hy
+    have hfy : f y ∈ (I ρ).support := by
+      have hy' : y.val ∈ ((I ρ).comap f).support := h ρ ▸ hyρ
+      simpa only [← SetLike.mem_coe, support_comap, Closeds.coe_preimage, Set.mem_preimage]
+        using hy'
+    have hcodim := (coheight_eq_of_isOpenImmersion f (x := y.val)).trans y.property
+    exact ((hCartier ρ).mem_support_iff_eq_subschemeι_genericPoint hcodim |>.mp hfy).trans
+      ((hCartier ρ).mem_support_iff_eq_subschemeι_genericPoint y.property |>.mp hyρ).symm
+  · intro h ρ
+    have hrad : (I ρ).radical = I ρ := (I ρ).isReduced_subscheme_iff_radical_eq.mp inferInstance
+    suffices h' : (I ρ).radical.comap g.asIso.hom = (I ρ).radical by
+      simpa only [hrad] using h'
+    apply (hCartier ρ).comap_radical_eq_of_fixes_components g.asIso
+    intro y hy
+    apply h y
+    rw [← SetLike.mem_coe, hcover]
+    exact Set.mem_iUnion.mpr ⟨ρ, hy⟩
 
 private theorem map_ker_boundaryComponentι_toBase (ρ : Φ.Ray) :
     (a ρ).ker.map p = Φ.rayBoundaryIdeal hΦ ρ := by
