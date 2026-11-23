@@ -8,10 +8,13 @@ module
 public import Mathlib.AlgebraicGeometry.IdealSheaf.Functorial
 public import TauCeti.AlgebraicGeometry.Blowup.IdealSheaf
 public import TauCeti.AlgebraicGeometry.Scheme.Regular.Scheme
+public import TauCeti.AlgebraicGeometry.Morphisms.IsoLocus
 public import TauCeti.AlgebraicGeometry.Morphisms.Smooth.RelativeDimension
+
 import QPainleve.AlgebraicGeometry.Blowup.Exceptional.Fiber
 import QPainleve.AlgebraicGeometry.EffectiveCartierDivisor.Dimension
 import QPainleve.AlgebraicGeometry.IdealSheaf.RegularPair
+import QPainleve.AlgebraicGeometry.Morphisms.IsoLocus
 import TauCeti.AlgebraicGeometry.Blowup.Restriction
 import TauCeti.AlgebraicGeometry.Blowup.ExceptionalDivisor
 import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.Regular
@@ -114,6 +117,21 @@ theorem isIntegral_exceptional_blowup_closed_point [IsLocallyNoetherian X]
     (hdim : ringKrullDim (X.presheaf.stalk p) = 2) (hp : IsClosed ({p} : Set X)) :
     IsIntegral ((Iₚ).comap (Iₚ).blowupToBase).subscheme :=
   (exceptional_integral_and_dimension hdim hp).1
+
+/-- Over the isomorphism locus of a morphism, a regular two-dimensional stalk on the target
+gives an integral exceptional subscheme in the blowup of the corresponding closed point on
+the source. -/
+theorem _root_.AlgebraicGeometry.Scheme.Hom.isIntegral_exceptional_blowup_of_mem_isoLocus
+    {Y : Scheme.{u}} [IsLocallyNoetherian X] (f : X ⟶ Y)
+    [IsRegularLocalRing (Y.presheaf.stalk (f p))]
+    (hdim : ringKrullDim (Y.presheaf.stalk (f p)) = 2) (hp : IsClosed ({p} : Set X))
+    (h : f p ∈ f.isoLocus) :
+    IsIntegral ((Iₚ).comap (Iₚ).blowupToBase).subscheme := by
+  have : IsIso (f.stalkMap p) := f.isIso_stalkMap_of_mem_isoLocus h
+  let e := (asIso (f.stalkMap p)).commRingCatIsoToRingEquiv
+  have : IsRegularLocalRing (X.presheaf.stalk p) := .of_ringEquiv e
+  exact isIntegral_exceptional_blowup_closed_point
+    ((ringKrullDim_eq_of_ringEquiv e).symm.trans hdim) hp
 
 private theorem mem_preimage_support_compl {I : X.IdealSheafData} {y : I.blowup}
     (hy : y ∉ (I.comap I.blowupToBase).support) :
