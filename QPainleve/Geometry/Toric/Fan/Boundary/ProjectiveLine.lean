@@ -9,7 +9,7 @@ public import QPainleve.Geometry.Toric.Fan.Boundary.Component
 public import QPainleve.Geometry.Toric.Fan.Point
 public import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.ProjectiveLine.Scaling
 
-import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.ProjectiveLine
+import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.ProjectiveLine.Basic
 import QPainleve.Geometry.Toric.Fan.Adjacency
 import QPainleve.Geometry.Toric.Fan.Boundary.Intersection
 import TauCeti.AlgebraicGeometry.Curves.ProjectiveLine
