@@ -187,14 +187,18 @@ theorem isRegular_mutationFan_iff : (Φ.mutationFan b hv hpos hneg).IsRegular �
 def mutationFanRayEquiv : Φ.Ray ≃ (Φ.mutationFan b hv hpos hneg).Ray :=
   Φ.mapPiecewiseLinearRayEquiv _ _
 
-/-- The ray correspondence sends each underlying cone to its piecewise-linear image. -/
+/-- The cone of a mutated ray is the corresponding mutated cone. -/
 @[simp]
+theorem mutationFanRayEquiv_toCone (ρ : Φ.Ray) :
+    (Φ.mutationFanRayEquiv b hv hpos hneg ρ).toCone =
+      Φ.mutationFanConeEquiv b hv hpos hneg ρ.toCone := by
+  exact Φ.mapPiecewiseLinearRayEquiv_toCone _ _ ρ
+
+/-- The ray correspondence sends each underlying cone to its piecewise-linear image. -/
 theorem coe_mutationFanRayEquiv_toCone (ρ : Φ.Ray) :
     (((Φ.mutationFanRayEquiv b hv hpos hneg ρ).toCone).val : Set V) =
       Φ.lattice.mutationRayEquiv b v '' (ρ.toCone.val : Set V) := by
-  change ((Φ.mapPiecewiseLinearRayEquiv (Φ.lattice.mutationRayEquiv b v)
-    (Φ.mutationRayEquiv_isPiecewiseLinear b hv hpos hneg) ρ).toCone.val : Set V) = _
-  rw [mapPiecewiseLinearRayEquiv_toCone, coe_mapPiecewiseLinearConeEquiv]
+  rw [mutationFanRayEquiv_toCone, coe_mutationFanConeEquiv]
 
 /-- The primitive generator of the image ray is the integral shear of the original generator. -/
 @[simp]
