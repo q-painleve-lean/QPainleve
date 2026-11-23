@@ -8,6 +8,7 @@ module
 public import QPainleve.AlgebraicGeometry.Curves.Node.Locus
 public import QPainleve.Geometry.Toric.Fan.Boundary.Basic
 public import QPainleve.Geometry.Toric.Fan.Point
+public import TauCeti.RingTheory.Node.Branches
 
 import QPainleve.AlgebraicGeometry.Curves.Node.Split
 import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
@@ -187,59 +188,74 @@ private theorem comap_boundaryIdeal_eq_ker_nodeChart (hΦ : Φ.IsRegular) (σ : 
   simp only [SetLike.coe_subset_coe, Ideal.span_singleton_le_iff_mem,
     p.isPrime.mul_mem_iff_mem_or_mem]
 
+/-- The reduced boundary on the chart of a two-ray cone is the split node. The
+comparison is a pullback of the ambient affine toric chart along the boundary inclusion. -/
+theorem exists_isPullback_boundaryIdeal_splitNode (hΦ : Φ.IsRegular) (σ : Φ.cones)
+    (hN : Module.finrank ℤ N = 2) (hc : Nat.card (ToricRay σ.val) = 2) :
+    ∃ (q : Spec (.of (NodeAlgebra ℂ 0)) ⟶ Φ.affineToricChart σ)
+      (b : Spec (.of (NodeAlgebra ℂ 0)) ⟶ (Φ.boundaryIdeal ⟨σ⟩).subscheme),
+      IsPullback q b (Φ.affineToricChartι σ) (Φ.boundaryIdeal ⟨σ⟩).subschemeι ∧
+      b ≫ (Φ.boundaryIdeal ⟨σ⟩).subschemeι ≫ Φ.algebraicRealizationStructureMap =
+        Spec.map (CommRingCat.ofHom (algebraMap ℂ (NodeAlgebra ℂ 0))) ∧
+      Spec.map (CommRingCat.ofHom (NodeAlgebra.origin ℂ).toRingHom) ≫ q ≫
+        Φ.affineToricChartι σ = Φ.distinguishedPointHom σ := by
+  obtain ⟨r, e, hr, ho⟩ := exists_twoRayChartCoordinates Φ.lattice
+    ((isRegular_iff.mp hΦ) σ.val σ.property) hN hc
+  let a := (NodeAlgebra.mk 0).comp e.toAlgHom
+  let q : Spec (.of (NodeAlgebra ℂ 0)) ⟶ Φ.affineToricChart σ :=
+    Spec.map (CommRingCat.ofHom a.toRingHom)
+  let j := Φ.affineToricChartι σ
+  let D := Φ.boundaryIdeal ⟨σ⟩
+  have : IsClosedImmersion q :=
+    IsClosedImmersion.spec_of_surjective _ ((NodeAlgebra.mk_surjective 0).comp e.surjective)
+  have hker : D.comap j = q.ker := comap_boundaryIdeal_eq_ker_nodeChart hΦ σ r e hr
+  let b := IsClosedImmersion.lift D.subschemeι (q ≫ j) (by
+    rw [ker_subschemeι, Scheme.Hom.ker_comp, ← hker]
+    exact le_map_comap _ _)
+  have hb : b ≫ D.subschemeι = q ≫ j := IsClosedImmersion.lift_fac _ _ _
+  refine ⟨q, b, isPullback_of_isClosedImmersion q D.subschemeι b j hb.symm (by
+    rwa [ker_subschemeι]), ?_, ?_⟩
+  · rw [← Category.assoc, hb, Category.assoc,
+      Φ.affineToricChartι_comp_algebraicRealizationStructureMap]
+    dsimp only [q]
+    rw [← Spec.map_comp]
+    congr 1
+    ext c
+    exact a.commutes c
+  · rw [Φ.distinguishedPointHom_def, ← Category.assoc]
+    dsimp only [q]
+    rw [← Spec.map_comp]
+    have ha : CommRingCat.ofHom a.toRingHom ≫ CommRingCat.ofHom (NodeAlgebra.origin ℂ).toRingHom =
+        CommRingCat.ofHom (distinguishedPoint Φ.lattice (⊤ : σ.val.Face)).toRingHom := by
+      rw [← CommRingCat.ofHom_comp]
+      exact congrArg (fun g : affineCoordinateRing Φ.lattice σ.val →ₐ[ℂ] ℂ ↦
+        CommRingCat.ofHom g.toRingHom) ho
+    rw [ha]
+
 /-- The distinguished point of a two-dimensional cone of a regular surface fan is a
 node of the reduced toric boundary. This holds for noncomplete fans as well. -/
 theorem isNodeOfReducedBoundary_distinguishedPointHom (hΦ : Φ.IsRegular) (σ : Φ.cones)
     (hN : Module.finrank ℤ N = 2) (hc : Nat.card (ToricRay σ.val) = 2) :
     (Φ.boundaryIdeal ⟨σ⟩).IsNodeOfReducedBoundary Φ.algebraicRealizationStructureMap
       (Φ.distinguishedPointHom σ (IsLocalRing.closedPoint ℂ)) := by
-  classical
-  obtain ⟨r, e, hr, ho⟩ := exists_twoRayChartCoordinates Φ.lattice
-    ((isRegular_iff.mp hΦ) σ.val σ.property) hN hc
-  let A := Φ.affineToricChart σ
-  let X := Spec (.of (NodeAlgebra ℂ 0))
-  let a := (NodeAlgebra.mk 0).comp e.toAlgHom
-  let q : X ⟶ A := Spec.map (CommRingCat.ofHom a.toRingHom)
-  let j := Φ.affineToricChartι σ
-  let o := Spec.map (CommRingCat.ofHom (NodeAlgebra.origin ℂ).toRingHom)
+  obtain ⟨q, b, hpb, hbase, ho⟩ := Φ.exists_isPullback_boundaryIdeal_splitNode hΦ σ hN hc
+  let D := Φ.boundaryIdeal ⟨σ⟩
+  let x := Spec.map (CommRingCat.ofHom (NodeAlgebra.origin ℂ).toRingHom)
     (IsLocalRing.closedPoint ℂ)
-  have hq : IsClosedImmersion q :=
-    IsClosedImmersion.spec_of_surjective _ ((NodeAlgebra.mk_surjective 0).comp e.surjective)
-  have : IsReduced X := inferInstanceAs (IsReduced (Spec (.of (NodeAlgebra ℂ 0))))
-  have hker := comap_boundaryIdeal_eq_ker_nodeChart hΦ σ r e hr
-  have hpt : j (q o) = Φ.distinguishedPointHom σ (IsLocalRing.closedPoint ℂ) := by
-    have hcomp : Spec.map (CommRingCat.ofHom (NodeAlgebra.origin ℂ).toRingHom) ≫ q ≫ j =
-        Φ.distinguishedPointHom σ := by
-      rw [Φ.distinguishedPointHom_def, ← Category.assoc]
-      dsimp only [q]
-      rw [← Spec.map_comp]
-      have ha : CommRingCat.ofHom a.toRingHom ≫ CommRingCat.ofHom (NodeAlgebra.origin ℂ).toRingHom =
-          CommRingCat.ofHom (distinguishedPoint Φ.lattice (⊤ : σ.val.Face)).toRingHom := by
-        rw [← CommRingCat.ofHom_comp]
-        exact congrArg (fun g : affineCoordinateRing Φ.lattice σ.val →ₐ[ℂ] ℂ ↦
-          CommRingCat.ofHom g.toRingHom) ho
-      rw [ha]
-    exact congrArg (fun g : Spec (.of ℂ) ⟶ Φ.algebraicRealization ↦
-      g (IsLocalRing.closedPoint ℂ)) hcomp
-  rw [← hpt, ← isNodeOfReducedBoundary_comap_iff_of_isOpenImmersion _ _ j, hker]
-  let e' := asIso q.toImage
-  have he' : e'.hom ≫ q.ker.subschemeι = q := by simp [e']
-  have : IsReduced q.ker.subscheme := isReduced_of_isOpenImmersion e'.inv
-  rw [q.ker.isNodeOfReducedBoundary_iff_of_isReduced]
-  refine ⟨e'.hom o, by rw [← Scheme.Hom.comp_apply, he'], ?_⟩
-  apply (Scheme.Hom.isNodeAt_comp_iff_of_isOpenImmersion
-    (q.ker.subschemeι ≫ j ≫ Φ.algebraicRealizationStructureMap) e'.hom o).mp
-  rw [← Category.assoc, he', Φ.affineToricChartι_comp_algebraicRealizationStructureMap]
-  have hbase : q ≫ Spec.map (CommRingCat.ofHom (algebraMap ℂ
-      (affineCoordinateRing Φ.lattice σ.val))) =
-      Spec.map (CommRingCat.ofHom (algebraMap ℂ (NodeAlgebra ℂ 0))) := by
-    dsimp only [q]
-    rw [← Spec.map_comp]
-    congr 1
-    ext c
-    exact a.commutes c
-  rw [hbase]
-  exact (NodeAlgebra.isNodeAt_iff_mem_range_origin o).mpr ⟨IsLocalRing.closedPoint ℂ, rfl⟩
+  have : IsOpenImmersion b := MorphismProperty.of_isPullback (P := @IsOpenImmersion)
+    hpb inferInstance
+  have : IsReduced D.subscheme := by
+    dsimp only [D]
+    rw [Φ.boundaryIdeal_def]
+    infer_instance
+  refine (D.isNodeOfReducedBoundary_iff_of_isReduced _ _).mpr ⟨b x, ?_, ?_⟩
+  · rw [← Scheme.Hom.comp_apply, ← hpb.w]
+    exact congrArg (fun a : Spec (.of ℂ) ⟶ Φ.algebraicRealization ↦
+      a (IsLocalRing.closedPoint ℂ)) ho
+  · apply (Scheme.Hom.isNodeAt_comp_iff_of_isOpenImmersion
+      (D.subschemeι ≫ Φ.algebraicRealizationStructureMap) b x).mp
+    rw [hbase]
+    exact (NodeAlgebra.isNodeAt_iff_mem_range_origin x).mpr ⟨IsLocalRing.closedPoint ℂ, rfl⟩
 
 end Fan
 
