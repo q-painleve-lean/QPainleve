@@ -9,7 +9,7 @@ public import QPainleve.AlgebraicGeometry.Chow.SurfaceIntersection
 public import TauCeti.AlgebraicGeometry.Blowup.ExceptionalDivisor
 public import TauCeti.AlgebraicGeometry.Morphisms.Smooth.RelativeDimension
 import QPainleve.AlgebraicGeometry.Blowup.Exceptional.FirstKind
-import QPainleve.AlgebraicGeometry.Blowup.PointCohomology
+import QPainleve.AlgebraicGeometry.Blowup.Point.Cohomology
 import QPainleve.AlgebraicGeometry.Blowup.Smooth
 import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
 import TauCeti.AlgebraicGeometry.Cohomology.EulerCharacteristic
