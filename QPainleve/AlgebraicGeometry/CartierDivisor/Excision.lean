@@ -20,7 +20,7 @@ the restriction formula on representatives.
 
 public noncomputable section
 
-open TauCeti.AlgebraicGeometry LineBundleClass
+open TauCeti.AlgebraicGeometry LineBundleClass TopologicalSpace
 
 namespace AlgebraicGeometry.Scheme.Opens
 
@@ -43,6 +43,25 @@ def primeDivisorSpanCompl (U : X.Opens) : Submodule ℤ (Additive (LineBundleCla
 theorem primeDivisorClass_mem_primeDivisorSpanCompl (U : X.Opens) (η : CodimensionOnePoint X)
     (hη : (η : X) ∉ U) : Additive.ofMul (primeDivisorClass η) ∈ U.primeDivisorSpanCompl :=
   Submodule.subset_span ⟨η, hη, rfl⟩
+
+/-- If the complement is the union of the closures of a family of codimension-one points,
+the classes of that family generate its boundary span. -/
+theorem primeDivisorSpanCompl_eq_span_of_iUnion_closure {ι : Type*} (U : X.Opens)
+    (η : ι → CodimensionOnePoint X) (h : (U : Set X)ᶜ = ⋃ j, closure {(η j : X)}) :
+    U.primeDivisorSpanCompl =
+      Submodule.span ℤ (Set.range fun j ↦ Additive.ofMul (primeDivisorClass (η j))) := by
+  refine le_antisymm (Submodule.span_le.mpr ?_) (Submodule.span_le.mpr ?_)
+  · rintro _ ⟨x, hx, rfl⟩
+    have hx' : (x : X) ∈ (U : Set X)ᶜ := hx
+    rw [h, Set.mem_iUnion] at hx'
+    obtain ⟨j, hj⟩ := hx'
+    have he := CodimensionOnePoint.eq_of_specializes (specializes_iff_mem_closure.mpr hj)
+    exact Submodule.subset_span ⟨j, congrArg (Additive.ofMul ∘ primeDivisorClass) he⟩
+  · rintro _ ⟨j, rfl⟩
+    apply U.primeDivisorClass_mem_primeDivisorSpanCompl
+    have hj : (η j : X) ∈ (U : Set X)ᶜ :=
+      h ▸ Set.mem_iUnion.mpr ⟨j, subset_closure (Set.mem_singleton _)⟩
+    exact hj
 
 end Span
 
