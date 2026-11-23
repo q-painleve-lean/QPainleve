@@ -282,6 +282,21 @@ public theorem classIntersectionBilinForm_isSymm (hX : topologicalKrullDim X = 2
   intro a b
   simpa only [classIntersectionBilinForm_apply] using classIntersectionNumber_comm a.toMul b.toMul
 
+/-- Intersecting with the `n`th tensor power scales the intersection by `n`. -/
+public theorem classIntersectionNumber_pow_right (hX : topologicalKrullDim X = 2)
+    (a b : LineBundleClass X) (n : ℕ) :
+    classIntersectionNumber k X a (b ^ n) = (n : ℤ) * classIntersectionNumber k X a b := by
+  let l := classIntersectionBilinForm k hX (Additive.ofMul a)
+  simpa only [l, classIntersectionBilinForm_apply, toMul_zsmul, toMul_ofMul,
+    Int.zsmul_eq_mul, zpow_natCast] using l.map_smul (n : ℤ) (Additive.ofMul b)
+
+/-- The intersection of an `n`th tensor power with another class scales by `n`. -/
+public theorem classIntersectionNumber_pow_left (hX : topologicalKrullDim X = 2)
+    (a b : LineBundleClass X) (n : ℕ) :
+    classIntersectionNumber k X (a ^ n) b = (n : ℤ) * classIntersectionNumber k X a b := by
+  rw [classIntersectionNumber_comm (a ^ n) b, classIntersectionNumber_pow_right k hX,
+    classIntersectionNumber_comm b a]
+
 /-- Intersection with the class of a Weil divisor is the sum of the intersections with
 its prime divisors weighted by their multiplicities. -/
 public theorem classIntersectionNumber_weilToLineBundleClassHom

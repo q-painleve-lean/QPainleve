@@ -62,15 +62,9 @@ theorem support_ker_alongBoundary_boundaryι
     (hJ : ∀ j (ρ : Φ.Ray), ((J j).val.comap (ρ.boundaryComponentι hΦ)).IsEffectiveCartier) :
     ((model).2.boundaryι.ker.support : Set (model).1) =
       ⋃ ρ : Φ.Ray, ((strictIdeal ρ).support : Set (model).1) := by
-  have hcover : (⋃ ρ : Φ.Ray, Set.range (ρ.boundaryComponentι hΦ)) = Set.univ := by
-    apply Set.image_injective.mpr (toricBoundary).subschemeι.isClosedEmbedding.injective
-    rw [Set.image_iUnion, Set.image_univ]
-    simp only [← Set.range_comp, ← TopCat.coe_comp, ← Scheme.Hom.comp_base,
-      Ray.boundaryComponentι_subschemeι, range_subschemeι, coe_support_rayBoundaryIdeal]
-    exact (Φ.support_boundaryIdeal_eq_iUnion_closure hΦ inferInstance).symm
   let j := (model).2.boundaryι
   rw [j.support_ker, j.isClosedEmbedding.isClosed_range.closure_eq, ← Set.image_univ (f := j),
-    ← hcover, Set.image_iUnion]
+    ← iUnion_range_boundaryComponentι hΦ, Set.image_iUnion]
   refine Set.iUnion_congr fun ρ ↦ ?_
   rw [← Set.range_comp, ← TopCat.coe_comp, ← Scheme.Hom.comp_base,
     strictTransform_rayBoundaryIdeal_alongBoundary hΦ J ρ (fun j ↦ hJ j ρ)]
@@ -90,11 +84,19 @@ theorem ker_boundaryComponentι_internalBlowupTower
     (ρ.boundaryComponentι hΦ ≫ M.2.boundaryι).ker =
       strictTransform (Φ.rayBoundaryIdeal hΦ ρ) M.2.toTower
   apply (congrArg P (internalBlowupTower_eq_alongBoundary b s c)).mpr
-  refine (strictTransform_rayBoundaryIdeal_alongBoundary hΦ J ρ ?_).symm
-  intro k
-  rw [Ray.internalCenter_val]
-  exact (s k).isEffectiveCartier_comap_ker_binomialCenterOnBoundary hΦ
-    (by simpa using Module.finrank_eq_card_basis b) (b.detDualEquiv_self _)
-    ((s k).surjective_detCharacter b) (c k) ρ
+  exact (strictTransform_rayBoundaryIdeal_alongBoundary hΦ J ρ
+    (fun k ↦ (s k).isEffectiveCartier_comap_internalCenter b (c k) hΦ ρ)).symm
+
+/-- The boundary of the ordered internal model is supported on the union of the
+strict transforms of the ray divisors, also for repeated centers. -/
+theorem support_ker_internalBlowupTower_boundaryι
+    (b : Module.Basis (Fin 2) ℤ N) (s : Fin n → Φ.Ray) (c : Fin n → ℂˣ)
+    (hΦ : Φ.IsRegular) :
+    ((internalBlowupTower b s c).2.boundaryι.ker.support : Set (internalBlowupTower b s c).1) =
+      ⋃ ρ : Φ.Ray, (strictTransform (Φ.rayBoundaryIdeal hΦ ρ)
+        (internalBlowupTower b s c).2.toTower).support := by
+  rw [internalBlowupTower_eq_alongBoundary]
+  exact support_ker_alongBoundary_boundaryι hΦ _
+    (fun k ρ ↦ (s k).isEffectiveCartier_comap_internalCenter b (c k) hΦ ρ)
 
 end TauCeti.Toric.Fan

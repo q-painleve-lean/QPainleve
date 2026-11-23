@@ -5,15 +5,17 @@ Authors: The QPainleve contributors
 -/
 module
 
+public import QPainleve.Algebra.Cluster.Word.RationalMap
 public import QPainleve.Algebra.Cluster.XMutation.Evaluation
 public import QPainleve.Geometry.Toric.Fan.Evaluation
 public import QPainleve.Geometry.Toric.Fan.Mutation.Resolution
 public import QPainleve.SignedClusterModularGroup.CenterMutation
 
 import Mathlib.RingTheory.Localization.Away.AdjoinRoot
+import QPainleve.Algebra.Cluster.Word.Chart
 import QPainleve.Algebra.MvPolynomial.Laurent.FiniteType
 import QPainleve.AlgebraicGeometry.RationalMap.Affine
-import QPainleve.AlgebraicGeometry.RationalMap.Composition
+import QPainleve.AlgebraicGeometry.RationalMap.Composition.Basic
 import QPainleve.AlgebraicGeometry.RationalMap.Modification
 import TauCeti.AlgebraicGeometry.Morphisms.Modification.Composition
 
@@ -79,6 +81,17 @@ theorem mutationChartEval_X (j : ι) :
       algebraMap ℂ K(Φ) (c[j] : ℂ) * Φ.character (ofAdd χ(u j)) := by
   simp [mutationChartEval]
 
+/-- Forgetting the inverted binomial recovers evaluation on the Laurent coordinate ring. -/
+@[simp]
+theorem mutationChartEval_comp_algebraMap :
+    letI : Nonempty Φ.cones := hΦ
+    (Φ.mutationChartEval b s p c).comp
+      (IsScalarTower.toAlgHom ℂ (LaurentRing ℂ ι) (XMutationChart ℂ p)) = Φ.xEval b s c := by
+  let : Nonempty Φ.cones := hΦ
+  apply LaurentRing.algHom_ext
+  intro j
+  simp
+
 section SchemeEvaluation
 
 variable [Finite ι]
@@ -116,9 +129,8 @@ theorem mutationChartEvaluation_compHom :
       (Spec.algebraMap (LaurentRing ℂ ι) (XMutationChart ℂ p)) = Φ.xEvaluation b s c := by
   let : Nonempty Φ.cones := hΦ
   let incl := IsScalarTower.toAlgHom ℂ (LaurentRing ℂ ι) (XMutationChart ℂ p)
-  have heval : (Φ.mutationChartEval b s p c).comp incl = Φ.xEval b s c := by
-    ext a
-    simp [incl]
+  have heval : (Φ.mutationChartEval b s p c).comp incl = Φ.xEval b s c :=
+    Φ.mutationChartEval_comp_algebraMap b s p c
   apply Scheme.RationalMap.eq_of_fromFunctionField_eq
   unfold mutationChartEvaluation
   rw [fromFunctionField_xEvaluation]
@@ -265,6 +277,40 @@ theorem mutationComplementPullback_comp_mutationChartEval :
     simpa only [evalUnits, map_mul, map_zpow, Units.val_mul, Units.val_zpow_eq_zpow_val,
       Units.coe_map, MonoidHom.coe_ofClass, AlgHom.coe_toMonoidHom, val_xMutationChartBinomial,
       map_add, map_one] using h.symm
+
+/-- The generic point of a fixed-center surface evaluates inside the domain of the
+independent X mutation. The value there is evaluation on the mutated surface pulled
+back by the elementary transformation. -/
+theorem exists_lift_xRationalMap_mutate (B : SkewExchangeMatrix ι)
+    (hB : ∀ j, B.matrix j p = a(j)) :
+    letI : Nonempty Φ.cones := hΦ
+    letI : Nonempty (Fan.cones Ψ) := hΨ
+    let f := ((Generator.mutate p).toStep B).toPath.xRationalMap ℂ
+    ∃ g : Spec K(Φ) ⟶ f.toPartialMap.domain,
+      g ≫ f.toPartialMap.domain.ι = (Φ.xEvaluation b s c).fromFunctionField ∧
+      g ≫ f.toPartialMap.hom = Spec.map (CommRingCat.ofHom (P).toRingHom) ≫
+        ((Ψ).xEvaluation b s′ c′).fromFunctionField := by
+  let : Nonempty Φ.cones := hΦ
+  let : Nonempty (Fan.cones Ψ) := hΨ
+  dsimp only
+  let a := Φ.mutationChartEval b s p c
+  let incl := IsScalarTower.toAlgHom ℂ (LaurentRing ℂ ι) (XMutationChart ℂ p)
+  have hincl : a.comp incl = Φ.xEval b s c := Φ.mutationChartEval_comp_algebraMap b s p c
+  obtain ⟨g, hg, hg'⟩ := Quiver.Path.exists_lift_xRationalMap_mutate ℂ B p
+  have hcol : (fun j ↦ B.matrix j p) = (fun j ↦ ε j p) := funext hB
+  refine ⟨Spec.map (CommRingCat.ofHom a.toRingHom) ≫ g, ?_, ?_⟩
+  · rw [Category.assoc, hg]
+    erw [← Spec.map_comp, fromFunctionField_xEvaluation]
+    exact congrArg (fun h : LaurentRing ℂ ι →ₐ[ℂ] K(Φ) ↦
+      Spec.map (CommRingCat.ofHom h.toRingHom)) hincl
+  · rw [Category.assoc, hg', hcol]
+    erw [← Spec.map_comp, fromFunctionField_xEvaluation, ← Spec.map_comp, Spec.map_inj]
+    apply CommRingCat.hom_ext
+    have heval := Φ.mutationComplementPullback_comp_mutationChartEval b s p c hOpposite
+    have h := congrArg (fun f ↦ AlgHom.comp f incl) heval
+    dsimp only [incl] at h
+    simp only [AlgHom.comp_assoc, mutationChartEval_comp_algebraMap] at h
+    exact congrArg AlgHom.toRingHom h.symm
 
 section Pivot
 

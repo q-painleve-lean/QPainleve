@@ -6,7 +6,7 @@ Authors: The QPainleve contributors
 module
 
 public import QPainleve.AlgebraicGeometry.Curves.Degree.Basic
-public import TauCeti.AlgebraicGeometry.IntersectionNumber.Basic
+public import QPainleve.AlgebraicGeometry.IntersectionNumber.Nef
 public import TauCeti.AlgebraicGeometry.LineBundle.Ample
 
 import QPainleve.AlgebraicGeometry.LineBundle.Ample
@@ -63,5 +63,10 @@ theorem intersectionNumber_pos (ha : a.IsAmple)
     0 < intersectionNumber k i a := by
   rw [intersectionNumber_def]
   exact (ha.pullback_of_isAffineHom i).eulerDegree_pos
+
+/-- An ample class has nonnegative degree along every closed integral curve over
+the base field. -/
+theorem isNef {f : X ⟶ Spec (.of k)} (ha : a.IsAmple) : IsNef k f a :=
+  (isNef_iff k f a).mpr fun _ _ _ i _ _ ↦ (ha.intersectionNumber_pos i).le
 
 end TauCeti.AlgebraicGeometry.LineBundleClass.IsAmple

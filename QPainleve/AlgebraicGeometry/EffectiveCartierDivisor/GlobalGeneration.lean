@@ -17,10 +17,10 @@ import QPainleve.AlgebraicGeometry.Cohomology.CartierPairing
 import QPainleve.AlgebraicGeometry.Cohomology.Projective
 import QPainleve.AlgebraicGeometry.Cohomology.SerreVanishing
 import QPainleve.AlgebraicGeometry.EffectiveCartierDivisor.Twist
-import QPainleve.AlgebraicGeometry.IdealSheaf.Image
 import QPainleve.AlgebraicGeometry.LineBundle.GlobalGeneration
 import QPainleve.AlgebraicGeometry.LineBundle.Power
 import QPainleve.AlgebraicGeometry.LineBundle.Pullback
+import QPainleve.AlgebraicGeometry.LineBundle.TensorProduct
 
 /-!
 # Global generation from an ample Cartier restriction
@@ -174,14 +174,7 @@ theorem eventually_isGloballyGenerated_of_isAmple (k : Type u) [Field k]
   let M := (InvertibleSheaf.pullback i).obj L
   have hM : (LineBundleClass.mk M).IsAmple := by
     simpa only [M, i, L, LineBundleClass.pullback_mk] using hA
-  have hclass : LineBundleClass.mk L.dual = LineBundleClass.mk hI.toInvertibleSheaf := by
-    simp only [L, ← LineBundleClass.inv_mk, inv_inv]
-  obtain ⟨eDual⟩ := LineBundleClass.mk_eq_mk_iff.mp hclass
-  let eI : L.dual.obj ≅ I.sheaf := eDual ≪≫ eqToIso hI.toInvertibleSheaf_obj
-  let s := L.dualSectionEquiv (eI.hom ≫ I.sheafι)
-  have hs : L.zeroIdeal s = I := by
-    simp only [s, InvertibleSheaf.zeroIdeal_dualSectionEquiv,
-      I.sheafι.imageIdealSheaf_comp_iso eI, I.imageIdealSheaf_sheafι]
+  obtain ⟨s, hs⟩ := hI.exists_zeroIdeal_eq_dual
   have hsections := eventually_exists_generatingSections_tensor_tensorPow_of_isAmple (𝟙_ _) M hM
   filter_upwards [hsections,
     hI.eventually_surjective_pullbackSectionsLE_of_isAmple k hA,
@@ -210,5 +203,36 @@ theorem eventually_isGloballyGenerated_of_isAmple (k : Type u) [Field k]
     rw [nonvanishingLocus_hom_app p.symm, nonvanishingLocus_tensorPowSection s hn,
       L.mem_nonvanishingLocus_iff_notMem_support_zeroIdeal, hs]
     exact hx
+
+/-- Twisting sections by a positive power of the defining section of an effective Cartier
+divisor removes its support from each nonvanishing locus and preserves affineness of these
+loci. -/
+theorem exists_twisted_sections
+    (hI : I.IsEffectiveCartier) (L : InvertibleSheaf X)
+    {ι : Type u} (t : ι → Γ(L.obj, ⊤))
+    (ht : ∀ i, IsAffineOpen (L.obj.nonvanishingLocus (t i))) {n : ℕ} (hn : 0 < n) :
+    let M := L.tensorProduct (InvertibleSheaf.tensorPow hI.toInvertibleSheaf.dual n)
+    ∃ s : ι → Γ(M.obj, ⊤), ∀ i,
+      (∀ x : X, x ∈ M.obj.nonvanishingLocus (s i) ↔
+          x ∈ L.obj.nonvanishingLocus (t i) ∧ x ∉ I.support) ∧
+        IsAffineOpen (M.obj.nonvanishingLocus (s i)) := by
+  intro M
+  let D : InvertibleSheaf X := hI.toInvertibleSheaf.dual
+  obtain ⟨d, hd⟩ := hI.exists_zeroIdeal_eq_dual
+  have hd' : D.zeroIdeal d = I := hd
+  let a := (D.tensorPowObjIso n).symm
+  let b := (L.tensorProductObjIso (D.tensorPow n)).symm
+  let d' := a.hom.app ⊤ (tensorPowSection d n)
+  refine ⟨fun i ↦ b.hom.app ⊤ (tmulRight L.obj d' (t i)), fun i ↦ ?_⟩
+  dsimp only [d']
+  rw [nonvanishingLocus_hom_app, nonvanishingLocus_tmulRight,
+    nonvanishingLocus_hom_app, nonvanishingLocus_tensorPowSection _ hn]
+  constructor
+  · intro x
+    exact and_congr_right fun _ ↦ by
+      exact (D.mem_nonvanishingLocus_iff_notMem_support_zeroIdeal d x).trans
+        (by rw [hd'])
+  · rw [← nonvanishingLocus_map (L.obj.nonvanishingLocus (t i)).leTop]
+    exact (ht i).nonvanishingLocus _
 
 end AlgebraicGeometry.Scheme.IdealSheafData.IsEffectiveCartier

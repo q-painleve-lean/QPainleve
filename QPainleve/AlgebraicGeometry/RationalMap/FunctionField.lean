@@ -56,11 +56,45 @@ theorem preimage_fromSpecStalk_comp {X : Scheme.{u}} [IrreducibleSpace X]
   let : IsFractionRing R (Spec R).functionField := functionField_isFractionRing_of_affine R
   exact RingHom.ext fun x ↦ ((FractionRing.algEquiv R (Spec R).functionField).commutes x).symm
 
+namespace PartialMap
+
+variable {X Y : Scheme.{u}} [IrreducibleSpace X]
+
+/-- The generic value of a partial map is its value at the generic point of its domain. -/
+theorem fromFunctionField_apply_closedPoint (f : X.PartialMap Y) :
+    f.fromFunctionField (IsLocalRing.closedPoint (X.presheaf.stalk (genericPoint X))) =
+      f.hom ⟨genericPoint X,
+        (genericPoint_specializes _).mem_open f.domain.isOpen
+          f.dense_domain.nonempty.choose_spec⟩ := by
+  let hx := (genericPoint_specializes _).mem_open f.domain.isOpen
+    f.dense_domain.nonempty.choose_spec
+  let x : Spec (X.presheaf.stalk (genericPoint X)) := IsLocalRing.closedPoint _
+  have he : f.domain.fromSpecStalkOfMem _ hx x = ⟨genericPoint X, hx⟩ := by
+    apply Subtype.ext
+    exact (congrArg (fun u : Spec _ ⟶ X ↦ u x) (Opens.fromSpecStalkOfMem_ι ..)).trans
+      fromSpecStalk_closedPoint
+  calc
+    _ = f.hom (f.domain.fromSpecStalkOfMem _ hx x) := (rfl)
+    _ = _ := congrArg f.hom he
+
+end PartialMap
+
 end AlgebraicGeometry.Scheme
 
 namespace AlgebraicGeometry.Scheme.RationalMap
 
 variable {X Y : Scheme}
+
+/-- A generic morphism factors through any open containing its value. -/
+theorem exists_lift_fromFunctionField [IrreducibleSpace X] (f : X ⤏ Y) (U : Y.Opens)
+    (h : f.fromFunctionField (IsLocalRing.closedPoint X.functionField) ∈ U) :
+    ∃ l : Spec X.functionField ⟶ U.toScheme, l ≫ U.ι = f.fromFunctionField := by
+  have hrange : Set.range f.fromFunctionField ⊆ Set.range U.ι := by
+    rw [Opens.range_ι]
+    rintro _ ⟨x, rfl⟩
+    exact f.fromFunctionField.mem_preimage.mp
+      ((preimage_eq_top_of_closedPoint_mem f.fromFunctionField h).ge trivial)
+  exact ⟨IsOpenImmersion.lift U.ι f.fromFunctionField hrange, IsOpenImmersion.lift_fac ..⟩
 
 /-- Postcomposition by a morphism commutes with restriction to the generic point. -/
 @[simp]
