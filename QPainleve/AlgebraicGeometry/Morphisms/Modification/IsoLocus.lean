@@ -13,6 +13,7 @@ public import TauCeti.AlgebraicGeometry.Morphisms.Modification.Centre
 public import TauCeti.AlgebraicGeometry.Scheme.Normal
 
 import Mathlib.AlgebraicGeometry.Noetherian
+import QPainleve.Topology.KrullDimension
 import QPainleve.Topology.NoetherianSpace
 import TauCeti.AlgebraicGeometry.Birational.Irreducible
 import TauCeti.AlgebraicGeometry.Morphisms.Dominant
@@ -163,20 +164,11 @@ theorem centre_subset_closedPoints [IsLocallyNoetherian Y] (hY : topologicalKrul
     obtain ⟨z, hz⟩ := (IsModification.dense_isoLocus f).nonempty
     exact hnot (he ▸ (genericPoint_specializes z).mem_open f.isoLocus.isOpen hz)
   have hcodim1 : coheight y ≠ 1 := fun h ↦ hnot (f.mem_isoLocus_of_coheight_eq_one h)
-  have hle (z : Y) : coheight z ≤ 2 :=
-    WithBot.coe_le_coe.mp ((TauCeti.coheight_le_topologicalKrullDim z).trans hY)
   have hy2 : 2 ≤ coheight y :=
     (ENat.add_one_le_iff (by simp : (1 : ℕ∞) ≠ ⊤)).mpr
       (lt_of_le_of_ne (Order.one_le_iff_pos.mpr (pos_iff_ne_zero.mpr hcodim0)) hcodim1.symm)
-  rw [mem_closedPoints_iff, ← closure_eq_iff_isClosed]
-  refine Set.Subset.antisymm (fun z hz ↦ ?_) subset_closure
-  have hzy := Scheme.le_iff_specializes.mpr (specializes_iff_mem_closure.mpr hz)
-  by_contra hz'
-  have hlt : z < y := lt_of_le_not_ge hzy fun hyz ↦
-    hz' (((Scheme.le_iff_specializes.mp hyz).antisymm (Scheme.le_iff_specializes.mp hzy)).eq)
-  have hstep := Order.coheight_add_one_le hlt
-  rw [le_antisymm (hle y) hy2] at hstep
-  exact (by decide : ¬ (2 : ℕ∞) + 1 ≤ 2) (hstep.trans (hle z))
+  exact mem_closedPoints_iff.mpr
+    (QPainleve.isClosed_singleton_of_le_coheight_of_topologicalKrullDim_le hY hy2)
 
 /-- The centre of a proper birational morphism to a normal Noetherian integral surface is
 a finite set of closed points. -/
