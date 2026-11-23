@@ -44,6 +44,12 @@ theorem ker_fromSpecResidueField_eq_vanishingIdeal {X : Scheme} (p : X) :
   rw [Hom.support_ker, range_fromSpecResidueField]
   rfl
 
+/-- The residue-field kernel of a closed point is supported exactly at that point. -/
+theorem support_ker_fromSpecResidueField_of_isClosed {X : Scheme} {p : X}
+    (hp : IsClosed ({p} : Set X)) : ((X.fromSpecResidueField p).ker.support : Set X) = {p} := by
+  rw [ker_fromSpecResidueField_eq_vanishingIdeal, IdealSheafData.coe_support_vanishingIdeal,
+    Closeds.coe_mk, hp.closure_eq]
+
 /-- A field-valued point has the same kernel ideal as the map from its residue field. -/
 theorem Hom.ker_eq_ker_fromSpecResidueField {k : Type*} [Field k]
     {X : Scheme} (s : Spec (.of k) ⟶ X) :

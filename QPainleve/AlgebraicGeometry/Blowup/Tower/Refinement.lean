@@ -53,12 +53,8 @@ private theorem exists_common_point_blowup_refinement (hlocal : P.IsLocal) (π :
       .nil, .nil, by simp⟩
   · let I := pointIdeal p
     let J := pointIdeal q
-    have support_point (r : X) (hr : IsClosed ({r} : Set X)) :
-        ((pointIdeal r).support : Set X) = {r} := by
-      rw [Scheme.ker_fromSpecResidueField_eq_vanishingIdeal, coe_support_vanishingIdeal,
-        Closeds.coe_mk, hr.closure_eq]
-    have hIp : (I.support : Set X) = {p} := support_point p hp
-    have hJq : (J.support : Set X) = {q} := support_point q hq
+    have hIp : (I.support : Set X) = {p} := Scheme.support_ker_fromSpecResidueField_of_isClosed hp
+    have hJq : (J.support : Set X) = {q} := Scheme.support_ker_fromSpecResidueField_of_isClosed hq
     have hpU : p ∈ J.support.compl := by
       rw [← SetLike.mem_coe, Closeds.coe_compl, hJq]
       exact h

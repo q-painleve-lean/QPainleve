@@ -51,6 +51,11 @@ theorem isNodeAt_iff_notMem_smoothLocus (f : C ⟶ S)
   rw [mem_smoothLocus]
   exact ⟨And.left, fun hx ↦ ⟨hx, C, 𝟙 C, inferInstance, x, by simp, by simpa⟩⟩
 
+/-- A point of the smooth locus is not a node. -/
+theorem not_isNodeAt_of_mem_smoothLocus (f : C ⟶ S) [LocallyOfFinitePresentation f]
+    {x : C} (hx : x ∈ f.smoothLocus) : ¬ f.IsNodeAt x :=
+  fun h ↦ h.1 (f.mem_smoothLocus.mp hx)
+
 /-- The node condition is invariant under passage to an open neighborhood. -/
 theorem isNodeAt_comp_iff_of_isOpenImmersion (f : C ⟶ S) (j : W ⟶ C)
     [IsOpenImmersion j] (x : W) : (j ≫ f).IsNodeAt x ↔ f.IsNodeAt (j x) := by
@@ -101,6 +106,27 @@ theorem isNodeOfReducedBoundary_iff_of_isReduced (D : Y.IdealSheafData) [IsReduc
       ∃ z : D.subscheme, D.subschemeι z = x ∧ (D.subschemeι ≫ g).IsNodeAt z := by
   unfold IsNodeOfReducedBoundary
   rw [(D.isReduced_subscheme_iff_radical_eq).mp inferInstance]
+
+/-- The node condition for the ideal of a closed immersion with reduced source can be read
+on that source. -/
+theorem _root_.AlgebraicGeometry.Scheme.Hom.isNodeOfReducedBoundary_ker_iff
+    (i : X ⟶ Y) [IsClosedImmersion i] [IsReduced X] (g : Y ⟶ S) (y : Y) :
+    i.ker.IsNodeOfReducedBoundary g y ↔ ∃ x : X, i x = y ∧ (i ≫ g).IsNodeAt x := by
+  have : IsReduced i.ker.subscheme := isReduced_of_isOpenImmersion (asIso i.toImage).inv
+  rw [isNodeOfReducedBoundary_iff_of_isReduced]
+  have hcomp : i.toImage ≫ i.ker.subschemeι = i := i.toImage_imageι
+  have heval (x : X) : i.ker.subschemeι (i.toImage x) = i x := by
+    simpa only [Scheme.Hom.comp_apply] using congrArg (fun f : X ⟶ Y ↦ f x) hcomp
+  have hnode (x : X) :
+      (i ≫ g).IsNodeAt x ↔ (i.ker.subschemeι ≫ g).IsNodeAt (i.toImage x) := by
+    rw [← reassoc_of% hcomp]
+    exact (i.ker.subschemeι ≫ g).isNodeAt_comp_iff_of_isOpenImmersion i.toImage x
+  constructor
+  · rintro ⟨z, hz, hn⟩
+    obtain ⟨x, rfl⟩ := i.toImage.surjective z
+    exact ⟨x, (heval x).symm.trans hz, (hnode x).mpr hn⟩
+  · rintro ⟨x, hx, hn⟩
+    exact ⟨i.toImage x, (heval x).trans hx, (hnode x).mp hn⟩
 
 /-- If the reduced boundary is nodal, its nodes are its nonsmooth points read in the
 ambient scheme. -/
