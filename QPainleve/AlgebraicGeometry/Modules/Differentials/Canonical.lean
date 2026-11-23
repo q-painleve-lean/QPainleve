@@ -14,6 +14,7 @@ public import TauCeti.AlgebraicGeometry.IdealSheaf.Sequence
 import TauCeti.AlgebraicGeometry.Modules.FittingIdeal.Image
 import TauCeti.AlgebraicGeometry.Modules.FittingIdeal.Invertible
 import QPainleve.AlgebraicGeometry.IdealSheaf.Image
+import QPainleve.AlgebraicGeometry.IdealSheaf.Image.Cokernel
 import QPainleve.AlgebraicGeometry.VectorBundle.FittingIdeal
 
 /-!
@@ -187,26 +188,9 @@ def cokernelTopDifferentialFormsMapIso {J : X.IdealSheafData}
   let φ := InvertibleSheaf.twistedToUnit L K d
   have himage :=
     (ramificationIdealSheaf_eq_imageIdealSheaf_topDifferentialFormsMap R f n).symm.trans hram
-  have : IsIso φ.toImageIdealSheaf :=
-    φ.isIso_toImageIdealSheaf_of_isEffectiveCartier (himage.symm ▸ hJ)
-  let e : (L.tensorProduct (InvertibleSheaf.dual K)).obj ≅ φ.imageIdealSheaf.sheaf :=
-    asIso φ.toImageIdealSheaf
-  let e₁ : cokernel φ ≅ φ.imageIdealSheaf.pushforwardSubscheme :=
-    cokernel.mapIso φ φ.imageIdealSheaf.sheafι e (Iso.refl _)
-        (by simpa only [e, asIso_hom, Iso.refl_hom, Category.comp_id]
-          using φ.toImageIdealSheaf_ι.symm) ≪≫
-      (cokernelIsCokernel _).coconePointUniqueUpToIso
-        φ.imageIdealSheaf.shortExact_toPushforwardSubscheme.gIsCokernel
-  let e₂ : cokernel d ⊗ (InvertibleSheaf.dual K).obj ≅ J.pushforwardSubscheme :=
-    (InvertibleSheaf.cokernelTwistedToUnitIso L K d).symm ≪≫ e₁ ≪≫
-      eqToIso (congrArg Scheme.IdealSheafData.pushforwardSubscheme himage)
-  let t := InvertibleSheaf.tensorRightDualEquivalence K
-  let h : (t.functor ⋙ t.inverse).obj (cokernel d) =
-      (cokernel d ⊗ (InvertibleSheaf.dual K).obj) ⊗ K.obj := by
-    simp only [t, Functor.comp_obj, InvertibleSheaf.tensorRightDualEquivalence_functor,
-      InvertibleSheaf.tensorRightDualEquivalence_inverse]
-    rfl
-  exact t.unitIso.app (cokernel d) ≪≫ eqToIso h ≪≫ (tensorRight K.obj).mapIso e₂ ≪≫ β_ _ _
+  have : Mono d := mono_topDifferentialFormsMap_of_ramification R f n hJ hram
+  exact InvertibleSheaf.cokernelIsoTensorPushforwardImageIdeal L K d ≪≫
+    eqToIso (congrArg (fun I : X.IdealSheafData ↦ K.obj ⊗ I.pushforwardSubscheme) himage)
 
 /-- The canonical bundle of the source is the pullback of the target canonical bundle
 twisted by the dual of the effective Cartier ramification ideal. -/
