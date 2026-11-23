@@ -345,37 +345,6 @@ private theorem lineBundle_cohomology_of_projective_surface (hX : topologicalKru
     subsingleton_cohomology_of_projective_dim_lt (k := k) L.obj
       (hX.trans_lt (by exact_mod_cast hq))⟩
 
-/-- All cohomology of an exceptional twist of a pulled-back line bundle on the blowup of
-a projective surface at a rational regular point is finite-dimensional, and degrees above
-two vanish. This applies to both positive and negative twists. -/
-theorem pointBlowup_exceptional_twist_cohomology
-    (hp : IsClosed ({p} : Set X)) [IsRegularLocalRing (X.presheaf.stalk p)]
-    (hdim : ringKrullDim (X.presheaf.stalk p) = 2)
-    (hrat : IsIso (X.fromSpecResidueField p ≫ (X ↘ Spec (.of k))))
-    (hX : topologicalKrullDim X ≤ 2) (a : LineBundleClass X) (m : ℤ)
-    (M : InvertibleSheaf Y) (hM : LineBundleClass.mk M = twist[a, m]) (q : ℕ) :
-    let : Scheme.Over Y (Spec (.of k)) := ⟨π ≫ X ↘ Spec (.of k)⟩
-    FiniteDimensional k (Cohomology M.obj q) ∧ (2 < q → Subsingleton (Cohomology M.obj q)) := by
-  have : IsNoetherian X := isNoetherian_of_finiteType (X ↘ Spec (.of k))
-  obtain ⟨L, rfl⟩ := LineBundleClass.mk_surjective a
-  exact pointBlowup_exceptional_twist_cohomology_of_cohomology
-    p k hp hdim hrat L (lineBundle_cohomology_of_projective_surface k hX L) m M hM q
-
-/-- The Euler characteristic changes by `1 - m` between the `(m - 1)E` and `mE` twists.
-The map between the twists is the one induced by the ideal of the actual exceptional divisor. -/
-theorem eulerCharBelow_pointBlowup_exceptional_twist_sub_one
-    (hp : IsClosed ({p} : Set X)) [IsRegularLocalRing (X.presheaf.stalk p)]
-    (hdim : ringKrullDim (X.presheaf.stalk p) = 2)
-    (hrat : IsIso (X.fromSpecResidueField p ≫ (X ↘ Spec (.of k))))
-    (hX : topologicalKrullDim X ≤ 2) (a : LineBundleClass X) (m : ℤ) :
-    let : Scheme.Over Y (Spec (.of k)) := ⟨π ≫ X ↘ Spec (.of k)⟩
-    LineBundleClass.eulerCharBelow k (twist[a, m]) 3 =
-      LineBundleClass.eulerCharBelow k (twist[a, m - 1]) 3 + (1 - m) := by
-  have : IsNoetherian X := isNoetherian_of_finiteType (X ↘ Spec (.of k))
-  obtain ⟨L, rfl⟩ := LineBundleClass.mk_surjective a
-  exact eulerCharBelow_pointBlowup_exceptional_twist_sub_one_of_cohomology
-    p k hp hdim hrat L (lineBundle_cohomology_of_projective_surface k hX L) m
-
 /-- On the blowup of a projective surface at a rational regular point, the Euler characteristic
 of `π*L(mE)` is `χ(L) + m(1-m)/2`, for every integer `m`. -/
 theorem eulerCharBelow_pointBlowup_exceptional_twist
