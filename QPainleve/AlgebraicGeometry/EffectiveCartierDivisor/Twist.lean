@@ -46,6 +46,16 @@ def IsEffectiveCartier.tensorPowSuccIdealIso (hI : I.IsEffectiveCartier) (n : �
     (congrArg (fun L : InvertibleSheaf X ↦ L.obj) (hI.toInvertibleSheaf.dual.tensorPow_succ n))) ≪≫
     hI.tensorDualCancelIso _
 
+/-- Tensoring `L((n + 1)D)` with the Cartier ideal gives `L(nD)`. -/
+def IsEffectiveCartier.tensorProductTensorPowSuccIdealIso (hI : I.IsEffectiveCartier)
+    (L : InvertibleSheaf X) (n : ℕ) :
+    (L.tensorProduct (hI.toInvertibleSheaf.dual.tensorPow (n + 1))).obj ⊗ I.sheaf ≅
+      (L.tensorProduct (hI.toInvertibleSheaf.dual.tensorPow n)).obj :=
+  (tensorRight I.sheaf).mapIso (L.tensorProductObjIso _) ≪≫
+    α_ L.obj (hI.toInvertibleSheaf.dual.tensorPow (n + 1)).obj I.sheaf ≪≫
+    (tensorLeft L.obj).mapIso (hI.tensorPowSuccIdealIso n) ≪≫
+    (L.tensorProductObjIso _).symm
+
 private def IsEffectiveCartier.tensorRightFullyFaithful (hI : I.IsEffectiveCartier) :
     (tensorRight I.sheaf).FullyFaithful := by
   rw [← hI.toInvertibleSheaf_obj, ← InvertibleSheaf.tensorRightDualEquivalence_inverse]

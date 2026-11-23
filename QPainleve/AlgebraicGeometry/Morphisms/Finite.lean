@@ -29,6 +29,21 @@ universe u
 
 namespace AlgebraicGeometry.Scheme.Hom
 
+/-- A proper morphism is quasi-finite at a point if that point lies over an
+affine open with affine preimage. -/
+theorem quasiFiniteAt_of_isAffineOpen {X Y : Scheme.{u}} (f : X ⟶ Y) [IsProper f]
+    {U : Y.Opens} (hU : IsAffineOpen U) (hV : IsAffineOpen (f ⁻¹ᵁ U)) {x : X}
+    (hx : f x ∈ U) : f.QuasiFiniteAt x := by
+  let : IsAffine U.toScheme := hU
+  let : IsAffine (f ⁻¹ᵁ U).toScheme := hV
+  have : IsFinite (f ∣_ U) := IsFinite.iff_isProper_and_isAffineHom.mpr
+    ⟨inferInstance, inferInstance⟩
+  let z : (f ⁻¹ᵁ U).toScheme := ⟨x, hx⟩
+  have h := (Scheme.Hom.quasiFiniteAt_comp_iff (g := U.ι)).mpr ((f ∣_ U).quasiFiniteAt z)
+  rw [morphismRestrict_ι] at h
+  exact (Scheme.Hom.quasiFiniteAt_comp_iff_of_isOpenImmersion
+    (f := (f ⁻¹ᵁ U).ι) (g := f) (x := z)).mp h
+
 variable {X Y : Scheme.{u}} (f : X ⟶ Y) [IsProper f] [CompactSpace Y]
 
 /-- A proper morphism to a quasi-compact scheme is finite exactly when its fibers
