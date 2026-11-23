@@ -14,14 +14,12 @@ public import TauCeti.AlgebraicGeometry.IdealSheaf.Stalk
 public import TauCeti.AlgebraicGeometry.WeilDivisor.Scheme.Cartier.Inverse
 import QPainleve.AlgebraicGeometry.Blowup.Descent
 import QPainleve.AlgebraicGeometry.Blowup.Exceptional.FirstKind
-import QPainleve.AlgebraicGeometry.Blowup.Exceptional.Multiplicity
 import QPainleve.AlgebraicGeometry.Blowup.Ramification
 import QPainleve.AlgebraicGeometry.Blowup.StrictTransform.Multiplicity
 import QPainleve.AlgebraicGeometry.CartierDivisor.Support
 import QPainleve.AlgebraicGeometry.EffectiveCartierDivisor.Integral
 import QPainleve.AlgebraicGeometry.IdealSheaf.Integral
 import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
-import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.Subtraction
 import TauCeti.Topology.KrullDimension.Basic
 
 /-!
@@ -56,39 +54,6 @@ local notation "B" => blowup Iₚ
 local notation "π" => blowupToBase Iₚ
 local notation "E" => Scheme.IdealSheafData.comap Iₚ π
 local notation "hE" => isEffectiveCartier_comap_blowupToBase Iₚ
-
-private theorem exists_strictTransform_cartierDivisor [IsLocallyNoetherian X]
-    [IsIntegral B] [IsRegularLocalRing (X.presheaf.stalk p)]
-    (hD : D.IsEffectiveCartier) (hp : IsClosed ({p} : Set X))
-    (hdim : ringKrullDim (X.presheaf.stalk p) = 2) (hT : (D.comap π).IsEffectiveCartier) :
-    ∃ hS : ((Iₚ).blowupMap D.subschemeι).ker.IsEffectiveCartier,
-      hT.toCartierDivisor = hS.toCartierDivisor + (D.stalkOrder p).toNat • (hE).toCartierDivisor ∧
-        ∀ x : CodimensionOnePoint B, (x : B) ∈ (E).support →
-          (x : B) ∉ ((Iₚ).blowupMap D.subschemeι).ker.support := by
-  let m := (D.stalkOrder p).toNat
-  let hF := TauCeti.isEffectiveCartier_pow hE m
-  have hsplit : D.comap π = ((Iₚ).blowupMap D.subschemeι).ker * E ^ m :=
-    hD.totalTransform_eq_strictTransform_mul_pow_closedPoint hp hdim
-  have hle : D.comap π ≤ E ^ m := by
-    rw [hsplit]
-    exact fun U ↦ by
-      simpa only [ideal_mul, Pi.mul_apply] using Ideal.mul_le_right
-  have hres : (D.comap π).colon (E ^ m) = ((Iₚ).blowupMap D.subschemeι).ker := by
-    rw [hsplit, hF.mul_colon_cancel_right]
-  let hS : ((Iₚ).blowupMap D.subschemeι).ker.IsEffectiveCartier :=
-    Eq.mp (congrArg Scheme.IdealSheafData.IsEffectiveCartier hres)
-      (hT.colon hF.locallyPrincipal hle)
-  refine ⟨hS, ?_, ?_⟩
-  · calc
-      _ = (TauCeti.isEffectiveCartier_mul hS hF).toCartierDivisor :=
-        (hT.toCartierDivisor_eq_iff _).mpr hsplit
-      _ = _ := by rw [toCartierDivisor_mul hS hF, toCartierDivisor_pow]
-  · have hm : (m : ℕ∞) = D.stalkOrder p := by
-      refine ENat.natCast_toNat ?_
-      rw [D.stalkOrder_def, ne_eq, Ideal.localOrder_eq_top_iff_eq_bot]
-      exact hD.stalkIdeal_ne_bot p
-    rw [← hres, ← X.ker_fromSpecResidueField_eq_vanishingIdeal]
-    exact fun x hx ↦ notMem_support_colon_exceptional_of_mem_exceptional p hp hdim D m hm.symm x hx
 
 variable (k : Type u) [Field k] [PerfectField k] [X.Over (Spec (.of k))]
   [QuasiCompact (X ↘ Spec (.of k))]
@@ -132,7 +97,7 @@ theorem pullbackTopFormDivisor_pointBlowup (hD : D.IsEffectiveCartier)
   have hRamEq := ramificationIdealSheaf_blowup_of_smoothSurface k hp
   let hRam : (ramificationIdealSheaf k π).IsEffectiveCartier := hRamEq.symm ▸ hE
   have hRamDiv := (hRam.toCartierDivisor_eq_iff hE).mpr hRamEq
-  obtain ⟨hS, hsplit, hSnot⟩ := exists_strictTransform_cartierDivisor hD hp hdim hT
+  obtain ⟨hS, hsplit, hSnot⟩ := hD.exists_strictTransform_cartierDivisor hp hdim hT
   have hdiv : QPainleve.pullbackTopFormDivisor k π 2 hD e hT hRam =
       (1 - ((D.stalkOrder p).toNat : ℤ)) • (hE).toCartierDivisor - hS.toCartierDivisor := by
     rw [QPainleve.pullbackTopFormDivisor_eq_ramification_sub, hRamDiv, hsplit, sub_smul, one_smul]
