@@ -9,7 +9,6 @@ public import QPainleve.Geometry.Toric.Fan.Boundary.Transport
 public import QPainleve.Geometry.Toric.Fan.Evaluation
 
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Boundary.Reorder
-import QPainleve.AlgebraicGeometry.Morphisms.Modification.Birational
 import QPainleve.AlgebraicGeometry.RationalMap.Composition
 
 /-!
