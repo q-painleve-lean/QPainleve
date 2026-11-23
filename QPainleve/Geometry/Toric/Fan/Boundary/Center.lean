@@ -517,6 +517,14 @@ theorem smoothOfRelativeDimension_orbitToBoundary (hdim : Module.finrank ℤ N =
       (AddMonoidAlgebra.domCongr ℂ ℂ e)
   exact hLaurent
 
+/-- The binomial point on the boundary lies in the open ray orbit. -/
+theorem range_binomialCenterOnBoundary_subset_range_orbitToBoundary
+    (hdim : Module.finrank ℤ N = 2) (hm : m v = 0) (hprim : Function.Surjective m) (c : ℂˣ) :
+    Set.range (ρ.binomialCenterOnBoundary hdim hm hprim c) ⊆
+      Set.range (ρ.orbitToBoundary hdim hm hprim) := by
+  rw [binomialCenterOnBoundary, Scheme.Hom.comp_base, TopCat.coe_comp, Set.range_comp]
+  exact Set.image_subset_range _ _
+
 /-- The binomial point is an effective Cartier divisor on the reduced toric boundary. -/
 theorem isEffectiveCartier_ker_binomialCenterOnBoundary (hdim : Module.finrank ℤ N = 2)
     (hm : m v = 0) (hprim : Function.Surjective m) (c : ℂˣ) :
@@ -531,9 +539,8 @@ theorem isEffectiveCartier_ker_binomialCenterOnBoundary (hdim : Module.finrank �
     rw [← Category.assoc, binomialCenterOnBoundary_comp_subschemeι,
       binomialCenter_comp_structureMap]
   have hU : Set.range s ⊆ U := by
-    dsimp only [s, U, j, binomialCenterOnBoundary]
-    rw [Scheme.Hom.comp_base, TopCat.coe_comp, Set.range_comp]
-    exact Set.image_subset_range _ _
+    simpa only [U, Scheme.Hom.coe_opensRange] using
+      ρ.range_binomialCenterOnBoundary_subset_range_orbitToBoundary hdim hm hprim c
   let e := IsOpenImmersion.isoOfRangeEq j U.ι U.range_ι.symm
   have he : e.hom ≫ U.ι = j :=
     IsOpenImmersion.isoOfRangeEq_hom_fac j U.ι U.range_ι.symm
