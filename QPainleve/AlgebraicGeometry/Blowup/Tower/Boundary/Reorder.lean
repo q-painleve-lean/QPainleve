@@ -9,8 +9,8 @@ public import QPainleve.AlgebraicGeometry.Blowup.Boundary
 
 import Mathlib.Data.List.OfFn
 import QPainleve.AlgebraicGeometry.Blowup.Disjoint
-import QPainleve.AlgebraicGeometry.Morphisms.Pullback.IsoLocus
-import TauCeti.AlgebraicGeometry.Blowup.Restriction
+import QPainleve.AlgebraicGeometry.Blowup.Tower.Boundary.Pullback
+import QPainleve.AlgebraicGeometry.IdealSheaf.ClosedImmersion
 
 /-!
 # Reordering blowups along a fixed boundary
@@ -22,7 +22,7 @@ family with disjoint supports for distinct ideals gives an isomorphic surface. A
 can occur several times.
 
 The comparison uses `Scheme.IdealSheafData.blowupCommOfDisjoint` and
-`Scheme.Hom.isPullback_of_isIso_of_range_subset_isoLocus` for the actual center subschemes.
+`WithBoundary.map_center_snoc_of_disjoint` for the actual center subschemes.
 -/
 
 public noncomputable section
@@ -40,39 +40,6 @@ namespace WithBoundary
 
 variable (T : WithBoundary i n Y) (I J : D.IdealSheafData)
   (hI : I.IsEffectiveCartier) (hJ : J.IsEffectiveCartier)
-
-private theorem support_map_boundaryι (K : D.IdealSheafData) :
-    ((K.map T.boundaryι).support : Set Y) = T.boundaryι '' (K.support : Set D) := by
-  rw [support_map, Closeds.coe_closure]
-  exact (T.boundaryι.isClosedEmbedding.isClosedMap _ K.support.isClosed).closure_eq
-
-private theorem disjoint_support_map
-    (h : Disjoint (I.support : Set D) (J.support : Set D)) :
-    Disjoint ((I.map T.boundaryι).support : Set Y) ((J.map T.boundaryι).support : Set Y) := by
-  rw [T.support_map_boundaryι, T.support_map_boundaryι]
-  exact Set.disjoint_image_of_injective T.boundaryι.isClosedEmbedding.injective h
-
-include hI in
-private theorem map_center_snoc_of_disjoint
-    (h : Disjoint ((I.map T.boundaryι).support : Set Y)
-      ((J.map T.boundaryι).support : Set Y)) :
-    J.map (T.snoc I hI).boundaryι = (J.map T.boundaryι).comap (I.map T.boundaryι).blowupToBase := by
-  let π := (I.map T.boundaryι).blowupToBase
-  have hrange : Set.range (J.subschemeι ≫ T.boundaryι) = ((J.map T.boundaryι).support : Set Y) := by
-    rw [Scheme.Hom.comp_base, TopCat.coe_comp, Set.range_comp, range_subschemeι,
-      T.support_map_boundaryι]
-  have hlocal : Set.range (J.subschemeι ≫ T.boundaryι) ⊆ π.isoLocus := by
-    rw [hrange]
-    exact fun _ hx ↦ (π.le_isoLocus_iff.mpr
-      (I.map T.boundaryι).isIso_blowupToBase_restrict_compl_support)
-      (Set.disjoint_right.mp h hx)
-  have hp : IsPullback (J.subschemeι ≫ (T.snoc I hI).boundaryι) (𝟙 _) π
-      (J.subschemeι ≫ T.boundaryι) := by
-    apply π.isPullback_of_isIso_of_range_subset_isoLocus
-    · simp [π]
-    · exact hlocal
-  simpa only [← map_ker, ker_subschemeι] using
-    ker_eq_comap_of_isPullback (J.subschemeι ≫ T.boundaryι) hp
 
 include hI hJ in
 private theorem boundaryι_snoc_blowupMap
@@ -104,7 +71,9 @@ theorem exists_iso_snoc_snoc_of_disjoint (h : Disjoint (I.support : Set D) (J.su
       (TI.snoc J hJ).boundaryι ≫ e.hom = (TJ.snoc I hI).boundaryι := by
   let A := I.map T.boundaryι
   let B := J.map T.boundaryι
-  have hd : Disjoint (A.support : Set Y) (B.support : Set Y) := T.disjoint_support_map I J h
+  have hd : Disjoint (A.support : Set Y) (B.support : Set Y) := by
+    rw [I.support_map_of_isClosedImmersion, J.support_map_of_isClosedImmersion]
+    exact Set.disjoint_image_of_injective T.boundaryι.isClosedEmbedding.injective h
   let eI := (B.comap A.blowupToBase).blowupIso (Iso.refl _) (by
     simpa only [Iso.refl_hom, comap_id] using (T.map_center_snoc_of_disjoint I J hI hd).symm)
   let eJ := (A.comap B.blowupToBase).blowupIso (Iso.refl _) (by
