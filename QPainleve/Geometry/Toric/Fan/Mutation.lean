@@ -205,6 +205,24 @@ theorem mutationFanCenterRays_of_ne {j : ι} (hj : j ≠ k) :
       Φ.mutationFanRayEquiv b hPivot hRay hOpposite (s j) := by
   rw [mutationFanCenterRays, ite_eq_right hj]
 
+/-- A nonpivot center lands on the same ray as the pivot exactly when it starts on the
+opposite ray. -/
+theorem mutationFanCenterRays_eq_pivot_iff {j : ι} (hj : j ≠ k) :
+    Φ.mutationFanCenterRays b s k hOpposite j = Φ.mutationFanCenterRays b s k hOpposite k ↔
+      (s j).primitiveGenerator = -pivot := by
+  rw [mutationFanCenterRays_of_ne _ _ _ _ _ hj, mutationFanCenterRays_self]
+  constructor
+  · intro h
+    have hr := (Φ.mutationFanRayEquiv b _ _ hOpposite).injective h
+    exact (congrArg Ray.primitiveGenerator hr).trans
+      (Ray.primitiveGenerator_ofPrimitiveGenerator ..)
+  · intro h
+    apply congrArg (Φ.mutationFanRayEquiv b _ _ hOpposite)
+    apply Subtype.ext
+    apply Subtype.ext
+    rw [(s j).toCone_eq_hull_primitiveGenerator, h]
+    exact (Ray.ofPrimitiveGenerator_toCone ..).symm
+
 /-- The charge of the distinguished center changes sign. -/
 @[simp]
 theorem mutationFanCenterRays_primitiveGenerator_self :
