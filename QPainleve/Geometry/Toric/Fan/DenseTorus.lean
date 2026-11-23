@@ -68,6 +68,13 @@ variable {N V : Type u} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {Φ Ψ : Fan i} (h : Φ.IsSubdivision Ψ)
   (hΦ : Nonempty Φ.cones) (hΨ : Nonempty Ψ.cones)
 
+/-- The subdivision morphism restricts to the identity on the common dense torus. -/
+@[reassoc]
+theorem denseTorusι_comp_algebraicMap :
+    Φ.denseTorusι hΦ ≫ h.toFanHom.algebraicMap = Ψ.denseTorusι hΨ := by
+  rw [h.toFanHom.denseTorusι_comp_algebraicMap]
+  simp only [h.toFanHom_latticeMap, h.toFanHom_realMap, affineToricSchemeMap_id, Category.id_comp]
+
 /-- A subdivision pulls back the open dense torus to the open dense torus. -/
 theorem preimage_range_denseTorusι :
     h.toFanHom.algebraicMap ⁻¹' Set.range (Ψ.denseTorusι hΨ) =
