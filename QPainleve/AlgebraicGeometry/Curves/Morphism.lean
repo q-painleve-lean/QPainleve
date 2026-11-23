@@ -7,7 +7,7 @@ module
 
 public import TauCeti.AlgebraicGeometry.Curves.Basic
 import Mathlib.AlgebraicGeometry.ZariskisMainTheorem
-import TauCeti.AlgebraicGeometry.Scheme.GenericPoint
+import TauCeti.AlgebraicGeometry.Scheme.GenericPoint.Basic
 
 /-!
 # Morphisms of proper integral curves

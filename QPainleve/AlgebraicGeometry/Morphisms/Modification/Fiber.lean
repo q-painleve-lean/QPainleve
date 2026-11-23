@@ -11,7 +11,7 @@ import QPainleve.AlgebraicGeometry.Morphisms.Modification.ExceptionalDivisors
 import Mathlib.Topology.Connected.TotallyDisconnected
 import TauCeti.AlgebraicGeometry.Birational.Irreducible
 import TauCeti.AlgebraicGeometry.Morphisms.Dominant
-import TauCeti.AlgebraicGeometry.Scheme.GenericPoint
+import TauCeti.AlgebraicGeometry.Scheme.GenericPoint.Basic
 import TauCeti.Topology.KrullDimension.Basic
 
 /-!

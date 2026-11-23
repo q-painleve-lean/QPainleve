@@ -9,7 +9,7 @@ public import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.Factorial
 import QPainleve.AlgebraicGeometry.IdealSheaf.ClosedImmersion
 import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
 import QPainleve.AlgebraicGeometry.Scheme.LocalDimension
-import TauCeti.AlgebraicGeometry.Scheme.GenericPoint
+import TauCeti.AlgebraicGeometry.Scheme.GenericPoint.Basic
 import TauCeti.Topology.KrullDimension.Irreducible
 
 /-!

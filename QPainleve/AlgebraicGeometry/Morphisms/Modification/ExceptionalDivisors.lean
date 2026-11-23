@@ -16,7 +16,7 @@ import TauCeti.AlgebraicGeometry.Birational.Irreducible
 import TauCeti.AlgebraicGeometry.Morphisms.Modification.Centre
 import TauCeti.AlgebraicGeometry.Morphisms.Modification.Composition
 import TauCeti.AlgebraicGeometry.Scheme.CodimensionOnePoint
-import TauCeti.AlgebraicGeometry.Scheme.GenericPoint
+import TauCeti.AlgebraicGeometry.Scheme.GenericPoint.Basic
 
 /-!
 # Exceptional divisors of a composite

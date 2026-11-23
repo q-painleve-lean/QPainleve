@@ -13,7 +13,7 @@ import QPainleve.AlgebraicGeometry.Blowup.Smooth
 import QPainleve.AlgebraicGeometry.CartierDivisor.Support
 import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
 import TauCeti.AlgebraicGeometry.ResidueField
-import TauCeti.AlgebraicGeometry.Scheme.GenericPoint
+import TauCeti.AlgebraicGeometry.Scheme.GenericPoint.Basic
 
 /-!
 # Towers of closed point blowups
