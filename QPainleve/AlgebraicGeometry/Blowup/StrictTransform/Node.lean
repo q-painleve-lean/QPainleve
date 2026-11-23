@@ -17,7 +17,7 @@ import QPainleve.AlgebraicGeometry.Blowup.Smooth
 import QPainleve.AlgebraicGeometry.Blowup.StrictTransform.Branches.Intersection
 import QPainleve.AlgebraicGeometry.Blowup.StrictTransform.Reduced
 import QPainleve.AlgebraicGeometry.CartierDivisor.Support
-import QPainleve.AlgebraicGeometry.Curves.Node.Intersection
+import QPainleve.AlgebraicGeometry.EffectiveCartierDivisor.Intersection
 import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
 import TauCeti.AlgebraicGeometry.Blowup.Restriction
 import TauCeti.AlgebraicGeometry.Curves.Node.Reduced

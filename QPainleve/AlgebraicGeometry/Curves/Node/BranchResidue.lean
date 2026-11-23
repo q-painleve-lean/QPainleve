@@ -7,7 +7,7 @@ module
 
 public import QPainleve.AlgebraicGeometry.Curves.Node.Conductor
 
-import QPainleve.AlgebraicGeometry.Fiber
+import QPainleve.AlgebraicGeometry.Curves.Node.PointBlowup
 import QPainleve.AlgebraicGeometry.Morphisms.Etale.GlobalSections
 import TauCeti.AlgebraicGeometry.Curves.Node.Reduced
 import TauCeti.AlgebraicGeometry.IdealSheaf.Affine
@@ -76,26 +76,6 @@ private theorem singularLocus_comap_fromSpecStalk_eq
   exact congrArg (fun I : Ideal (X.presheaf.stalk x) ↦ IdealSheafData.ofIdealTop
     (I.map (ΓSpecIso (X.presheaf.stalk x)).inv.hom)) (hm.trans hk.symm)
 
-private theorem etale_fiberToSpecResidueField_blowupToBase_singularLocus
-    (hnodal : AtWorstNodalOfRelativeDimensionOne (X ↘ Spec (.of k))) {x : X}
-    (hx : letI := hnodal.syntomic; x ∈ (X.singularLocus k).support) :
-    letI := hnodal.syntomic
-    Etale ((X.singularLocus k).blowupToBase.fiberToSpecResidueField x) := by
-  let := hnodal.syntomic
-  let J := X.singularLocus k
-  obtain ⟨z, rfl⟩ := J.range_subschemeι.ge hx
-  have : Etale (X.branchSchemeToSingularLocus k) :=
-    X.etale_branchSchemeToSingularLocus hnodal
-  have : IsIso ((X.singularLocus k).subschemeι.residueFieldMap z) := inferInstance
-  obtain ⟨e⟩ := (X.isPullback_branchScheme k).flip.nonempty_iso_fiberToSpecResidueField z
-  have : Etale ((X.branchSchemeToSingularLocus k).fiberToSpecResidueField z) :=
-    MorphismProperty.pullback_snd _ _ inferInstance
-  have hb : Etale ((X.branchSchemeToSingularLocus k).fiberToSpecResidueField z ≫
-      Spec.map ((X.singularLocus k).subschemeι.residueFieldMap z)) := inferInstance
-  have hf : Etale (e.hom.left ≫ (X.singularLocus k).blowupToBase.fiberToSpecResidueField
-      ((X.singularLocus k).subschemeι z)) := (Over.w e.hom).symm ▸ hb
-  exact (MorphismProperty.cancel_left_of_respectsIso @Etale _ _).mp hf
-
 private theorem conductor_eq_ker_residue_of_node
     (hnodal : AtWorstNodalOfRelativeDimensionOne (X ↘ Spec (.of k))) {x : X}
     (hx : letI := hnodal.syntomic; x ∈ (X.singularLocus k).support) :
@@ -147,14 +127,14 @@ private theorem exists_branchFiber_sectionsEquiv [IsSepClosed k]
         ((e t).1 = 0 ↔ (f.fiber x).Γevaluation (o 0) t = 0) ∧
         ((e t).2 = 0 ↔ (f.fiber x).Γevaluation (o 1) t = 0) := by
   let := hnodal.syntomic
-  let := X.isFinite_blowupToBase_singularLocus hnodal
   let f := (X.singularLocus k).blowupToBase
   let K := X.residueField x
   let F := f.fiber x
   let g := f.fiberToSpecResidueField x
   let b := (ΓSpecIso K).inv ≫ g.appTop
-  have : Etale g := etale_fiberToSpecResidueField_blowupToBase_singularLocus hnodal hx
-  have : IsFinite g := inferInstanceAs (IsFinite (pullback.snd f (X.fromSpecResidueField x)))
+  have h := X.isFinite_etale_fiberToSpecResidueField_blowup_singularLocus_of_node hnodal hx
+  have : Etale g := h.2
+  have : IsFinite g := h.1
   have : IsSepClosed K := isSepClosed_residueField_of_node hnodal hx
   have hcard : Nat.card F = 2 := (Nat.card_congr (f.fiberHomeo x).toEquiv).trans
     (X.natCard_preimage_blowupToBase_singularLocus_eq_two_of_mem_support hnodal hx)
