@@ -94,21 +94,6 @@ theorem LineBundleClass.eulerCharBelow_one_projectivePlane :
   rw [eulerCharBelow_projectivePlane]
   norm_num
 
-/-- The Picard group of the projective plane is free over the integers. -/
-instance LineBundleClass.instModuleFree_projectivePlane :
-    Module.Free ℤ (Additive (LineBundleClass P)) :=
-  Module.Free.of_equiv (degree).toIntLinearEquiv.symm
-
-/-- The Picard group of the projective plane is finitely generated. -/
-instance LineBundleClass.instModuleFinite_projectivePlane :
-    Module.Finite ℤ (Additive (LineBundleClass P)) :=
-  Module.Finite.equiv (degree).toIntLinearEquiv.symm
-
-/-- The additive Picard group of the projective plane has rank one. -/
-theorem LineBundleClass.finrank_projectivePlane :
-    Module.finrank ℤ (Additive (LineBundleClass P)) = 1 :=
-  (degree).toIntLinearEquiv.finrank_eq.trans (Module.finrank_self ℤ)
-
 local instance planeIntegral : IsIntegral P := by
   let := Proj.isIntegral_polynomialProj (R := k) (σ := Fin 3)
   exact IsIntegral.of_isIso (basis).polynomialProjIso.hom

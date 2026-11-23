@@ -469,3 +469,29 @@ theorem picardTwistEquiv_apply_twist (b : Basis (Fin (n + 2)) k M) (m : ℤ) :
   exact b.picardTwistEquiv.apply_symm_apply m
 
 end Module.Basis
+
+namespace TauCeti.AlgebraicGeometry.LineBundleClass
+
+open _root_.AlgebraicGeometry TauCeti.SymmetricAlgebra
+
+variable (k : Type u) [Field k]
+
+local notation "P" => Proj (homogeneousSubmodule k (Fin 3 → k))
+local notation "degree" => Module.Basis.picardTwistEquiv (Pi.basisFun k (Fin 3))
+
+/-- The Picard group of the projective plane is free over the integers. -/
+instance instModuleFree_projectivePlane :
+    Module.Free ℤ (Additive (LineBundleClass P)) :=
+  Module.Free.of_equiv (degree).toIntLinearEquiv.symm
+
+/-- The Picard group of the projective plane is finitely generated. -/
+instance instModuleFinite_projectivePlane :
+    Module.Finite ℤ (Additive (LineBundleClass P)) :=
+  Module.Finite.equiv (degree).toIntLinearEquiv.symm
+
+/-- The additive Picard group of the projective plane has rank one. -/
+theorem finrank_projectivePlane :
+    Module.finrank ℤ (Additive (LineBundleClass P)) = 1 :=
+  (degree).toIntLinearEquiv.finrank_eq.trans (Module.finrank_self ℤ)
+
+end TauCeti.AlgebraicGeometry.LineBundleClass
