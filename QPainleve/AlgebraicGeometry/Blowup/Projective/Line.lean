@@ -15,7 +15,7 @@ import QPainleve.AlgebraicGeometry.Blowup.Affine
 import QPainleve.AlgebraicGeometry.Gluing
 import TauCeti.AlgebraicGeometry.Blowup.BaseChange
 import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.AffineLine
-import TauCeti.AlgebraicGeometry.IdealSheaf.Comap
+import TauCeti.AlgebraicGeometry.IdealSheaf.BaseChange
 import TauCeti.AlgebraicGeometry.IdealSheaf.Extension
 import TauCeti.AlgebraicGeometry.Morphisms.SchemeTheoreticallyDominant
 import TauCeti.Data.Fin.Rev
@@ -142,6 +142,49 @@ local notation "𝓘(" a ")" =>
     (Ideal.map (CommRingCat.Hom.hom (Iso.inv (Scheme.ΓSpecIso (CommRingCat.of _))))
       (Ideal.span (singleton a)))
 local notation "D(" i ")" => coordinateSectionCenter (0 : R) i
+
+/-- The ideal of the full coordinate section is the kernel of its zero point. -/
+theorem ker_coordinateSection (j : Fin 2) :
+    (polynomialPoint R (RingHom.id R) j (0 : R)).ker = D(j) := by
+  symm
+  apply coordinateSectionCenter_eq_ker_polynomialPoint_of_surjective
+  · exact Function.surjective_id
+  · rw [Ideal.span_singleton_zero]
+    exact (RingHom.injective_iff_ker_eq_bot (RingHom.id R)).mp Function.injective_id
+
+/-- The full coordinate section embeds the base as a closed subscheme. -/
+theorem isClosedImmersion_coordinateSection (j : Fin 2) :
+    IsClosedImmersion (polynomialPoint R (RingHom.id R) j (0 : R)) :=
+  (polynomialPoint R (RingHom.id R) j (0 : R)).isClosedImmersion_of_comp_eq_id
+    (f := projectiveLine R ↘ Spec (.of R)) (by simp [polynomialPoint_over])
+
+/-- Over a reduced base the full coordinate section is a reduced closed subscheme. -/
+theorem isReduced_subscheme_coordinateSectionCenter_zero [IsReduced (Spec (.of R))]
+    (j : Fin 2) : IsReduced (D(j)).subscheme := by
+  have := isClosedImmersion_coordinateSection (R := R) j
+  rw [← ker_coordinateSection (R := R) j]
+  exact isReduced_of_isOpenImmersion (inv (polynomialPoint R (RingHom.id R) j (0 : R)).toImage)
+
+/-- The ideal of a coordinate section pulls back to the same coordinate section
+under extension of the coefficient ring. -/
+theorem comap_coordinateSectionCenter_zero_baseChangeProjection
+    (S : Type u) [CommRing S] [Algebra R S] (j : Fin 2) :
+    (D(j)).comap (baseChangeProjection R S) = coordinateSectionCenter (0 : S) j := by
+  let g := Spec.map (CommRingCat.ofHom (algebraMap R S))
+  let s := polynomialPoint R (RingHom.id R) j 0
+  let t := polynomialPoint S (RingHom.id S) j 0
+  have h₀ : IsPullback (𝟙 _) g g (𝟙 _) := IsPullback.of_id_fst
+  have h₁ : t ≫ baseChangeProjection R S = g ≫ s := by
+    simp [g, s, t, polynomialPoint_comp_baseChangeProjection, SpecMap_polynomialPoint]
+  have h₂ : IsPullback t g (baseChangeProjection R S) s := by
+    apply IsPullback.of_right _ h₁ (isPullback_baseChangeProjection R S).flip
+    have hid (B : Type u) [CommRing B] :
+        Spec.map (CommRingCat.ofHom (RingHom.id B)) = 𝟙 (Spec (.of B)) := by
+      exact Scheme.Spec.map_id _
+    simpa only [s, t, polynomialPoint_over, hid] using h₀
+  have := isClosedImmersion_coordinateSection (R := R) j
+  rw [← ker_coordinateSection (R := R) j, ← ker_coordinateSection (R := S) j]
+  exact (IdealSheafData.ker_eq_comap_of_isPullback _ h₂).symm
 
 /-- On its own chart, the full coordinate section has ideal `(X)`. -/
 theorem coordinateSectionCenter_zero_comap_polynomialChartι :

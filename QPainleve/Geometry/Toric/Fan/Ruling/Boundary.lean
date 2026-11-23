@@ -9,7 +9,6 @@ public import QPainleve.Geometry.Toric.Fan.Boundary.Ideal
 public import QPainleve.Geometry.Toric.Fan.Ruling.Laurent
 public import QPainleve.AlgebraicGeometry.Blowup.Projective.Line
 
-import QPainleve.AlgebraicGeometry.Blowup.Projective.Sections
 import TauCeti.AlgebraicGeometry.IdealSheaf.Locality
 import QPainleve.AlgebraicGeometry.IdealSheaf.Restriction
 import TauCeti.AlgebraicGeometry.IdealSheaf.VanishingIdeal

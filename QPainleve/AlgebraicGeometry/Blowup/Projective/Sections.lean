@@ -12,7 +12,6 @@ import QPainleve.AlgebraicGeometry.Blowup.StrictTransform.Basic
 import QPainleve.AlgebraicGeometry.Blowup.Projective.Divisors
 import TauCeti.Algebra.Regular.SMul
 import TauCeti.AlgebraicGeometry.IdealSheaf.BaseChange
-import TauCeti.AlgebraicGeometry.IdealSheaf.Section
 import TauCeti.Data.Fin.Rev
 
 /-!
@@ -38,49 +37,11 @@ universe u
 variable {R : Type u} [CommRing R] (f : R) (i : Fin 2)
 
 local notation "S" => Spec (CommRingCat.of R)
-local notation "P" => projectiveLine R
 local notation "Z(" j ")" => coordinateSectionCenter f j
 local notation "D(" j ")" => coordinateSectionCenter (0 : R) j
 local notation "s(" j ")" => polynomialPoint R (RingHom.id R) j (0 : R)
 local notation "π(" j ")" => IdealSheafData.blowupToBase (Z(j))
 local notation "z" => Spec.map (CommRingCat.ofHom (eval₂RingHom (RingHom.id R) (0 : R)))
-
-private theorem ker_coordinateSection (j : Fin 2) : (s(j)).ker = D(j) := by
-  symm
-  apply coordinateSectionCenter_eq_ker_polynomialPoint_of_surjective
-  · exact Function.surjective_id
-  · rw [Ideal.span_singleton_zero]
-    exact (RingHom.injective_iff_ker_eq_bot (RingHom.id R)).mp Function.injective_id
-
-private theorem isClosedImmersion_coordinateSection (j : Fin 2) : IsClosedImmersion (s(j)) :=
-  (s(j)).isClosedImmersion_of_comp_eq_id (f := P ↘ S) (by simp [polynomialPoint_over])
-
-/-- Over a reduced base the full coordinate section is a reduced closed subscheme. -/
-theorem isReduced_subscheme_coordinateSectionCenter_zero [IsReduced (Spec (.of R))]
-    (j : Fin 2) : IsReduced (D(j)).subscheme := by
-  have := isClosedImmersion_coordinateSection (R := R) j
-  rw [← ker_coordinateSection (R := R) j]
-  exact isReduced_of_isOpenImmersion (inv (s(j)).toImage)
-
-/-- The ideal of a coordinate section pulls back to the same coordinate section
-under extension of the coefficient ring. -/
-theorem comap_coordinateSectionCenter_zero_baseChangeProjection
-    (A : Type u) [CommRing A] [Algebra R A] (j : Fin 2) :
-    (D(j)).comap (baseChangeProjection R A) = coordinateSectionCenter (0 : A) j := by
-  let g := Spec.map (CommRingCat.ofHom (algebraMap R A))
-  let t := polynomialPoint A (RingHom.id A) j 0
-  have h₀ : IsPullback (𝟙 _) g g (𝟙 _) := IsPullback.of_id_fst
-  have h₁ : t ≫ baseChangeProjection R A = g ≫ s(j) := by
-    simp [g, t, polynomialPoint_comp_baseChangeProjection, SpecMap_polynomialPoint]
-  have h₂ : IsPullback t g (baseChangeProjection R A) (s(j)) := by
-    apply IsPullback.of_right _ h₁ (isPullback_baseChangeProjection R A).flip
-    have hid (B : Type u) [CommRing B] :
-        Spec.map (CommRingCat.ofHom (RingHom.id B)) = 𝟙 (Spec (.of B)) := by
-      exact Scheme.Spec.map_id _
-    simpa only [t, polynomialPoint_over, hid] using h₀
-  have := isClosedImmersion_coordinateSection (R := R) j
-  rw [← ker_coordinateSection (R := R) j, ← ker_coordinateSection (R := A) j]
-  exact (ker_eq_comap_of_isPullback _ h₂).symm
 
 private theorem coordinateSectionCenter_comap_own_section :
     (Z(i)).comap (s(i)) =
