@@ -186,21 +186,6 @@ private theorem centerEval_pivotBinomial_of_ne_zero (h : pivotChar u ≠ 0) :
   by_cases hn : pivotChar u < 0 <;> simp only [raySide, hn, decide_true, decide_false,
     Bool.cond_true, Bool.cond_false, ite_true, ite_false, Algebra.algebraMap_self_apply]
 
-private theorem detCharacter_eq_or_eq_neg (hprim : IsPrimitive v) (h : pivotChar u = 0) :
-    v = u ∨ v = -u := by
-  obtain ⟨n, hn⟩ := ρ.exists_zsmul_eq_of_apply_primitiveGenerator_eq_zero
-    rankTwo (b.detDualEquiv_self u) (ρ.surjective_detCharacter b) h
-  have hvn : n • u = v := by
-    apply b.detDualEquiv.injective
-    ext x
-    simpa only [map_zsmul, LinearMap.smul_apply, AddMonoidHom.zsmul_apply,
-      LinearMap.toAddMonoidHom_coe] using DFunLike.congr_fun hn x
-  obtain ⟨f, hf⟩ := isPrimitive_def.mp hprim
-  have hunit : IsUnit n := by
-    apply isUnit_iff_dvd_one.mpr
-    exact ⟨f u, by simpa [← hvn] using hf.symm⟩
-  rcases Int.isUnit_iff.mp hunit with hn | hn <;> simp_all
-
 private theorem centerEval_pivotBinomial_of_zsmul (j : ℤ)
     (hj : pivotChar = j • χ(u)) :
     centerEval b ρ d B = 1 + (c : ℂ) * (-(↑d⁻¹ : ℂ)) ^ j := by
@@ -216,7 +201,7 @@ private theorem centerEval_pivotBinomial_ne_zero (hprim : IsPrimitive v)
     (hsame : u = v → d ≠ c) (hopp : u = -v → d * c ≠ 1) :
     centerEval b ρ d B ≠ 0 := by
   by_cases h : pivotChar u = 0
-  · rcases detCharacter_eq_or_eq_neg b ρ hprim h with hvu | hvu
+  · rcases ρ.eq_or_eq_neg_of_detCharacter_eq_zero b hprim h with hvu | hvu
     · rw [centerEval_pivotBinomial_of_zsmul b ρ c d 1 (by simp [hvu])]
       intro he
       apply hsame hvu.symm

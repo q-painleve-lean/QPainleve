@@ -60,30 +60,11 @@ private theorem rayDualFace_saturated : (rayDualFace ρ).AddSaturated := by
   have hb0 : (b : N →+ ℤ) v = 0 := by omega
   exact ⟨ha0, hb0⟩
 
-private abbrev unique_rayChartRay : Unique (ToricRay ρ.toCone.val) where
-  default := Ray.toToricRay Φ ρ ρ.toCone le_rfl
-  uniq a := by
-    apply ToricRay.eq_of_toPointedCone_le (Φ.isToricCone ρ.toCone.property).salient
-    rw [Ray.toPointedCone_toToricRay]
-    exact a.val.isFaceOf.le
-
 private theorem isRegularCone_toCone : IsRegularCone i ρ.toCone.val := by
   rw [ρ.toCone_eq_hull_primitiveGenerator]
   apply isRegularCone_hull_singleton Φ.lattice
   rw [Ray.primitiveGenerator_def]
   exact primitiveGenerator_isPrimitive Φ.lattice (Φ.isToricCone ρ.toCone.property) _
-
-private theorem exists_rayChartBasis (hdim : Module.finrank ℤ N = 2) :
-    ∃ b : Module.Basis (ToricRay ρ.toCone.val ⊕ Fin 1) ℤ N,
-      ∀ a, IsPrimitiveGenerator i a (b (Sum.inl a)) := by
-  let := unique_rayChartRay ρ
-  obtain ⟨l, b, hb⟩ := (isRegularCone_toCone ρ).exists_basis_sum
-  have hl : l = 1 := by
-    have h := Module.finrank_eq_card_basis b
-    rw [hdim, Fintype.card_sum, Fintype.card_unique, Fintype.card_fin] at h
-    omega
-  subst l
-  exact ⟨b, hb⟩
 
 variable {m : N →+ ℤ}
 
@@ -103,53 +84,19 @@ private def rayDualFaceHom (hm : m v = 0) : ℤ →+ rayDualFace ρ where
 private theorem bijective_rayDualFaceHom (hdim : Module.finrank ℤ N = 2)
     (hm : m v = 0) (hprim : Function.Surjective m) :
     Function.Bijective (rayDualFaceHom ρ hm) := by
-  let := unique_rayChartRay ρ
-  let r := Ray.toToricRay Φ ρ ρ.toCone le_rfl
-  obtain ⟨b, hb⟩ := exists_rayChartBasis ρ hdim
-  have hleft (a : ToricRay ρ.toCone.val) : b (.inl a) = v := by
-    have ha : a = r := Subsingleton.elim _ _
-    rw [ha, Ray.primitiveGenerator_def]
-    exact (hb r).eq_primitiveGenerator Φ.lattice (Φ.isToricCone ρ.toCone.property)
-  let w := b (.inr 0)
-  have hext (f g : N →+ ℤ) (hf : f v = g v) (hg : f w = g w) : f = g := by
-    apply AddMonoidHom.toIntLinearMap_injective
-    apply b.ext
-    intro j
-    cases j with
-    | inl a => simpa only [AddMonoidHom.coe_toIntLinearMap, hleft] using hf
-    | inr a =>
-      have : a = 0 := Subsingleton.elim _ _
-      simpa only [this, AddMonoidHom.coe_toIntLinearMap] using hg
-  have hinj : Function.Injective (rayDualFaceHom ρ hm) := by
-    intro a b hab
+  constructor
+  · intro a b hab
     obtain ⟨x, hx⟩ := hprim 1
     simpa [rayDualFaceHom, hx] using congrArg (fun f : rayDualFace ρ ↦
       (f.val : N →+ ℤ) x) hab
-  have ha : IsUnit (m w) := by
-    obtain ⟨x, hx⟩ := hprim 1
-    have heq : m x = b.repr x (.inr 0) * m w := by
-      conv_lhs => rw [← b.sum_repr x]
-      rw [map_sum, Fintype.sum_sum_type, Fintype.sum_unique]
-      simp [hleft, hm, w]
-    exact isUnit_iff_dvd_one.mpr ⟨b.repr x (.inr 0), (heq.symm.trans hx).symm.trans (mul_comm _ _)⟩
-  refine ⟨hinj, fun a ↦ ?_⟩
-  obtain ⟨u, hu⟩ := ha
-  refine ⟨(a.val : N →+ ℤ) w * ↑u⁻¹, Subtype.ext (Subtype.ext (hext _ _ ?_ ?_))⟩
-  · exact (by simp [hm] : ((a.val : N →+ ℤ) w * ↑u⁻¹) * m v = 0).trans
-      (show (a.val : N →+ ℤ) v = 0 from a.property).symm
-  · simp [rayDualFaceHom, ← hu, mul_assoc]
+  · intro a
+    obtain ⟨n, hn⟩ := ρ.exists_zsmul_eq_of_apply_primitiveGenerator_eq_zero hdim hm hprim
+      (show (a.val : N →+ ℤ) v = 0 from a.property)
+    exact ⟨n, Subtype.ext (Subtype.ext hn)⟩
 
 private def rayDualFaceEquiv (hdim : Module.finrank ℤ N = 2)
     (hm : m v = 0) (hprim : Function.Surjective m) : ℤ ≃+ rayDualFace ρ :=
   AddEquiv.ofBijective (rayDualFaceHom ρ hm) (bijective_rayDualFaceHom ρ hdim hm hprim)
-
-/-- A primitive character vanishing on the ray generates its integral annihilator. -/
-theorem exists_zsmul_eq_of_apply_primitiveGenerator_eq_zero
-    (hdim : Module.finrank ℤ N = 2) (hm : m v = 0) (hprim : Function.Surjective m)
-    {a : N →+ ℤ} (ha : a v = 0) : ∃ n : ℤ, n • m = a := by
-  obtain ⟨n, hn⟩ := (rayDualFaceEquiv ρ hdim hm hprim).surjective
-    ⟨ρ.chartCharacter ha, ha⟩
-  exact ⟨n, congrArg (fun t : rayDualFace ρ ↦ (t.val : N →+ ℤ)) hn⟩
 
 /-- Restriction from the affine ray chart to its boundary torus, in the Laurent coordinate
 given by the primitive character `m`. -/
