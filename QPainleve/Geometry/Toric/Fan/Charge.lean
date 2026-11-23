@@ -35,6 +35,12 @@ theorem rayChargeMap_single [Finite ι] [DecidableEq ι] (s : ι → Φ.Ray) (j 
     rayChargeMap s (Pi.single j 1) = (s j).primitiveGenerator := by
   rw [rayChargeMap, Module.piEquiv, ← Pi.basisFun_apply, Module.Basis.constr_basis]
 
+/-- Lifting the labeled rays through a subdivision leaves their charges unchanged. -/
+@[simp]
+theorem IsSubdivision.rayChargeMap_liftRay [Finite ι] {Ω : Fan i} (h : Ω.IsSubdivision Φ)
+    (s : ι → Φ.Ray) : rayChargeMap (h.liftRay ∘ s) = rayChargeMap s := by
+  simp only [rayChargeMap, Function.comp_apply, primitiveGenerator_liftRay]
+
 /-- The charge of each standard basis vector is primitive. -/
 theorem rayChargeMap_primitive [Finite ι] [DecidableEq ι] (s : ι → Φ.Ray) (j : ι) :
     IsPrimitive (rayChargeMap s (Pi.single j 1)) := by
