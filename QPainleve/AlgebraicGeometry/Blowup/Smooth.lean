@@ -5,6 +5,7 @@ Authors: The QPainleve contributors
 -/
 module
 
+public import Mathlib.AlgebraicGeometry.IdealSheaf.Functorial
 public import TauCeti.AlgebraicGeometry.Blowup.IdealSheaf
 public import TauCeti.AlgebraicGeometry.Scheme.Regular.Scheme
 public import TauCeti.AlgebraicGeometry.Morphisms.Smooth.RelativeDimension
@@ -60,11 +61,11 @@ private theorem isIso_subschemeCover_of_point (hp : IsClosed ({p} : Set X))
   rw [coe_support_point hp, Set.mem_singleton_iff] at hx
   exact (Iₚ).subschemeι.mem_preimage.mpr (hx.symm ▸ hpU)
 
-private theorem exceptional_regular_and_dimension [IsLocallyNoetherian X]
+private theorem exceptional_integral_and_dimension [IsLocallyNoetherian X]
     [IsRegularLocalRing (X.presheaf.stalk p)]
     (hdim : ringKrullDim (X.presheaf.stalk p) = 2) (hp : IsClosed ({p} : Set X)) :
     let E := (Iₚ).comap (Iₚ).blowupToBase
-    IsRegular E.subscheme ∧
+    IsIntegral E.subscheme ∧ IsRegular E.subscheme ∧
       ∀ x : E.subscheme, IsClosed {x} → ringKrullDim (E.subscheme.presheaf.stalk x) = 1 := by
   dsimp only
   obtain ⟨U, hpU, -, a, b, hspan, hab, -⟩ :=
@@ -97,13 +98,22 @@ private theorem exceptional_regular_and_dimension [IsLocallyNoetherian X]
         exact hq.symm)
   let iso := I.comapIso f ≪≫ hP.isoPullback.symm ≪≫ e.symm
   have hL : IsRegular (projectiveLine S) := ⟨fun _ ↦ inferInstance⟩
-  refine ⟨IsRegular.of_isOpenImmersion iso.hom, fun x hx ↦ ?_⟩
+  refine ⟨IsIntegral.of_isIso iso.inv, IsRegular.of_isOpenImmersion iso.hom, fun x hx ↦ ?_⟩
   have hx' : IsClosed {iso.hom x} := by
     simpa using iso.hom.isClosedEmbedding.isClosedMap _ hx
   have hline := ((smoothOfRelativeDimension_iff_ringKrullDim_stalk_eq
     (projectiveLine S ↘ Spec (.of S)) 1).mp inferInstance).2 _ hx'
   rw [ringKrullDim_stalk_eq_coheight] at hline ⊢
   exact_mod_cast (coheight_eq_of_isOpenImmersion iso.hom).symm.trans (by exact_mod_cast hline)
+
+/-- The exceptional subscheme of the blowup of a regular closed point of local dimension
+two is integral. The affine comparison identifies it with a projective line over the
+residue field of the center. -/
+theorem isIntegral_exceptional_blowup_closed_point [IsLocallyNoetherian X]
+    [IsRegularLocalRing (X.presheaf.stalk p)]
+    (hdim : ringKrullDim (X.presheaf.stalk p) = 2) (hp : IsClosed ({p} : Set X)) :
+    IsIntegral ((Iₚ).comap (Iₚ).blowupToBase).subscheme :=
+  (exceptional_integral_and_dimension hdim hp).1
 
 private theorem mem_preimage_support_compl {I : X.IdealSheafData} {y : I.blowup}
     (hy : y ∉ (I.comap I.blowupToBase).support) :
@@ -119,7 +129,7 @@ theorem isRegular_blowup_closed_point [IsRegular X]
   let f := I.blowupToBase
   let E := I.comap f
   have : IsLocallyNoetherian I.blowup := LocallyOfFiniteType.isLocallyNoetherian f
-  have hE : IsRegular E.subscheme := (exceptional_regular_and_dimension hdim hp).1
+  have hE : IsRegular E.subscheme := (exceptional_integral_and_dimension hdim hp).2.1
   refine ⟨fun y ↦ ?_⟩
   by_cases hy : y ∈ E.support
   · exact I.isEffectiveCartier_comap_blowupToBase.isRegularLocalRing_stalk_of_mem_support
@@ -153,7 +163,7 @@ theorem smoothOfRelativeDimension_blowup_closed_point {k : Type u} [Field k] [Pe
       rwa [← Set.image_singleton, Set.preimage_image_eq _ E.subschemeι.isClosedEmbedding.injective]
         at hpull
     rw [← I.isEffectiveCartier_comap_blowupToBase.ringKrullDim_stalk_add_one x,
-      (exceptional_regular_and_dimension (hX p hp) hp).2 x hx]
+      (exceptional_integral_and_dimension (hX p hp) hp).2.2 x hx]
     norm_num
   · have hfy : IsClosed ({f y} : Set X) := by
       simpa using f.isClosedMap _ hy

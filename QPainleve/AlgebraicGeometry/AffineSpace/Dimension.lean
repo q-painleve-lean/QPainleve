@@ -6,6 +6,8 @@ Authors: The QPainleve contributors
 module
 
 public import Mathlib.AlgebraicGeometry.Birational.Birational
+public import TauCeti.AlgebraicGeometry.Morphisms.Smooth.GeometricallyReduced
+
 import Mathlib.FieldTheory.FinTrdeg
 import Mathlib.RingTheory.KrullDimension.Polynomial
 import TauCeti.AlgebraicGeometry.Birational.KrullDimension
@@ -19,6 +21,9 @@ is birational to the affine space indexed by `Fin d`, where `d` is its dimension
 rationality predicate permits an infinite index type, so the finiteness of that type is part of
 the proof. We use Tau Ceti's comparison of function fields on affine charts and birational
 invariance of Krull dimension.
+
+A reduced rational scheme over an integral base is integral because its dense affine-space
+chart is irreducible. This applies in particular to smooth rational schemes.
 -/
 
 public section
@@ -95,6 +100,27 @@ theorem topologicalKrullDim_eq_of_affineSpace {ι : Type u}
 end Scheme.BirationalOver
 
 namespace Scheme
+
+/-- A reduced scheme rational over an integral base is integral. -/
+theorem IsRationalOver.isIntegral {S X : Scheme.{u}} {f : X ⟶ S}
+    [IsIntegral S] [IsReduced X] (h : IsRationalOver f) : IsIntegral X := by
+  obtain ⟨ι, ⟨e, _⟩⟩ := h
+  have : Nonempty e.target.toScheme := e.dense_target.nonempty.to_subtype
+  have : Nonempty e.source.toScheme := Nonempty.map e.iso.inv ‹Nonempty e.target.toScheme›
+  have : IsIntegral e.source.toScheme :=
+    isIntegral_of_isOpenImmersion (e.iso.hom ≫ e.target.ι)
+  have hSource := (IrreducibleSpace.isIrreducible_univ e.source.toScheme).image
+    e.source.ι e.source.ι.continuous.continuousOn
+  rw [Set.image_univ, Opens.range_ι] at hSource
+  have : IrreducibleSpace X := (irreducibleSpace_def X).mpr
+    (by simpa only [Set.top_eq_univ, e.dense_source.closure_eq] using hSource.closure)
+  exact isIntegral_of_irreducibleSpace_of_isReduced X
+
+/-- A smooth scheme rational over an integral base is integral. -/
+theorem IsRationalOver.isIntegral_of_smooth {S X : Scheme.{u}} {f : X ⟶ S}
+    [IsIntegral S] [Smooth f] (h : IsRationalOver f) : IsIntegral X := by
+  have : IsReduced X := f.isReduced_of_smooth
+  exact h.isIntegral
 
 /-- For a scheme of dimension `d` locally of finite type over a field, rationality
 is equivalent to birationality over the field with affine `d`-space. -/
