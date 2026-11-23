@@ -148,6 +148,37 @@ local notation "Y" c:arg => Sigma.fst (internalBlowupTower b s c)
 local notation "T" c:arg => WithBoundary.toTower (Sigma.snd (internalBlowupTower b s c))
 local notation "π" c:arg => QPainleve.BlowupTower.toBase (T c)
 
+/-- Two dominant morphisms into ordered toric blowup models with equal scaled
+charge evaluations differ by the lift of a unique torus translation. -/
+theorem existsUnique_isLift_of_eq_scaled_characters_of_dominant
+    (hΦ : Φ.IsRegular) (c d : Fin n → ℂˣ) (hindex : (rayChargeMap s).range.toAddSubgroup.index ≠ 0)
+    {W : Scheme} [IsIntegral W] {f : W ⟶ Y c} {g : W ⟶ Y d}
+    [IsDominant f] [IsDominant g]
+    (hover : f ≫ π c ≫ Φ.algebraicRealizationStructureMap =
+      g ≫ π d ≫ Φ.algebraicRealizationStructureMap)
+    (heval : have := isModification_internalBlowupTower_toBase b s c hΦ
+             have := isModification_internalBlowupTower_toBase b s d hΦ
+             ∀ j, (g ≫ π d).functionFieldMap (C (d j : ℂ) * Φ.character (m j)) =
+               (f ≫ π c).functionFieldMap (C (c j : ℂ) * Φ.character (m j))) :
+    ∃! χ : Multiplicative (N →+ ℤ) →* ℂˣ, ∃ t : Y c ≅ Y d,
+      IsLift (Φ.torusTranslation χ) (T c) (T d) t ∧ f ≫ t.hom = g := by
+  have := isModification_internalBlowupTower_toBase b s c hΦ
+  have := isModification_internalBlowupTower_toBase b s d hΦ
+  let : W.Over S := ⟨f ≫ π c ≫ Φ.algebraicRealizationStructureMap⟩
+  have : (f ≫ π c).IsOver S := ⟨Category.assoc _ _ _⟩
+  have : (g ≫ π d).IsOver S := ⟨(Category.assoc _ _ _).trans hover.symm⟩
+  obtain ⟨χ, ⟨hχ, hcenters⟩, huniq⟩ :=
+    existsUnique_comp_torusTranslation_of_eq_scaled_characters b s hindex c d heval
+  obtain ⟨t, ht⟩ := (exists_isLift_internalBlowupTower_torusTranslation_iff b s c d χ).mpr hcenters
+  have hproj {ψ : Multiplicative (N →+ ℤ) →* ℂˣ} {t' : Y c ≅ Y d}
+      (ht' : IsLift (Φ.torusTranslation ψ) (T c) (T d) t') :
+      (f ≫ t'.hom) ≫ π d = (f ≫ π c) ≫ (Φ.torusTranslation ψ).hom := by
+    simp only [Category.assoc, ht'.hom_toBase]
+  refine ⟨χ, ⟨t, ht, (π d).eq_of_comp_eq_of_isModification ((hproj ht).trans hχ.symm)⟩, ?_⟩
+  rintro ψ ⟨t', ht', hfg⟩
+  exact huniq ψ ⟨hfg ▸ hproj ht',
+    (exists_isLift_internalBlowupTower_torusTranslation_iff b s c d ψ).mp ⟨t', ht'⟩⟩
+
 /-- Two isomorphisms from a common surface into ordered toric blowup models with the
 same scaled charge evaluations differ by the lift of a unique torus translation.
 The lift matches each labeled center at its stage, including infinitely near centers.
@@ -165,26 +196,12 @@ theorem existsUnique_isLift_of_eq_scaled_characters (hΦ : Φ.IsRegular)
          ∀ j, (e'.hom ≫ π d).functionFieldMap (C (d j : ℂ) * Φ.character (m j)) =
            (e.hom ≫ π c).functionFieldMap (C (c j : ℂ) * Φ.character (m j))) :
     ∃! χ : Chars, IsLift (Φ.torusTranslation χ) (T c) (T d) (e.symm.trans e') := by
-  have : IsModification (π c) := isModification_internalBlowupTower_toBase b s c hΦ
-  have : IsModification (π d) := isModification_internalBlowupTower_toBase b s d hΦ
-  let : W.Over S := ⟨e.hom ≫ π c ≫ Φ.algebraicRealizationStructureMap⟩
-  have : (e.hom ≫ π c).IsOver S := ⟨Category.assoc _ _ _⟩
-  have : (e'.hom ≫ π d).IsOver S := ⟨(Category.assoc _ _ _).trans hover.symm⟩
-  obtain ⟨χ, ⟨hχ, hcd⟩, huniq⟩ :=
-    existsUnique_comp_torusTranslation_of_eq_scaled_characters b s hindex c d h
-  have hproj {ψ : Chars} {t : Y c ≅ Y d}
-      (ht : IsLift (Φ.torusTranslation ψ) (T c) (T d) t) :
-      (e.hom ≫ t.hom) ≫ π d = (e.hom ≫ π c) ≫ (Φ.torusTranslation ψ).hom := by
-    rw [Category.assoc, ht.hom_toBase, Category.assoc]
-  obtain ⟨t, ht⟩ := (exists_isLift_internalBlowupTower_torusTranslation_iff b s c d χ).mpr hcd
-  have he : e'.hom = e.hom ≫ t.hom :=
-    (π d).eq_of_comp_eq_of_isModification (hχ.trans (hproj ht).symm)
+  obtain ⟨χ, ⟨t, ht, he⟩, huniq⟩ :=
+    existsUnique_isLift_of_eq_scaled_characters_of_dominant b s hΦ c d hindex hover h
   have het : e.symm.trans e' = t := by
     apply Iso.ext
-    simp only [Iso.trans_hom, Iso.symm_hom, he, Iso.inv_hom_id_assoc]
-  refine ⟨χ, het.symm ▸ ht, fun ψ hψ ↦ huniq ψ ⟨?_, ?_⟩⟩
-  · simpa only [Iso.trans_hom, Iso.symm_hom, ← Category.assoc, Iso.hom_inv_id,
-      Category.id_comp] using hproj hψ
-  · exact (exists_isLift_internalBlowupTower_torusTranslation_iff b s c d ψ).mp ⟨_, hψ⟩
+    simp only [Iso.trans_hom, Iso.symm_hom, ← he, Iso.inv_hom_id_assoc]
+  refine ⟨χ, het.symm ▸ ht, fun ψ hψ ↦ huniq ψ ⟨_, hψ, ?_⟩⟩
+  simp only [Iso.trans_hom, Iso.symm_hom, Iso.hom_inv_id_assoc]
 
 end TauCeti.Toric.Fan
