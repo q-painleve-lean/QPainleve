@@ -12,6 +12,7 @@ import QPainleve.AlgebraicGeometry.Blowup.Tower.Modification
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Projective
 import QPainleve.AlgebraicGeometry.CartierDivisor.Support
 import QPainleve.AlgebraicGeometry.Chow.BoundaryMultiplicity
+import QPainleve.AlgebraicGeometry.Chow.Isomorphism
 import QPainleve.AlgebraicGeometry.EffectiveCartierDivisor.Dimension
 import QPainleve.AlgebraicGeometry.IdealSheaf.Stalk
 import QPainleve.AlgebraicGeometry.IntersectionNumber.Nef.Pullback
@@ -145,61 +146,78 @@ theorem classIntersectionNumber_totalTransform_eq_zero (hT : IsClosedPointTower 
       (htotal.coeff_toWeilDivisor_eq_zero_iff p).mp hzero (hsub hpE)
   simp only [← hclass, horth p hpTotal, mul_zero]
 
-/-- Two total transforms from smooth projective surfaces with a common blowup model
-are equal if their supports agree and the original divisors are nonempty, reduced, nef,
-and of square zero, with connected support on the first base. -/
-theorem totalTransform_eq_of_nef_square_zero {X' : Scheme.{u}}
+/-- Two total transforms identified by an isomorphism of the top models are equal
+if their supports agree, the original divisors are reduced, nef and of square zero,
+and the first has connected support. -/
+theorem totalTransform_eq_of_nef_square_zero {X' W : Scheme.{u}}
     [IsIntegral X'] [X'.Over (Spec (.of k))] [X'.IsProjectiveOver k]
     [SmoothOfRelativeDimension 2 (X' ↘ Spec (.of k))]
-    {m : ℕ} {U : BlowupTower X' m Y} (hT : IsClosedPointTower X T)
-    (hU : IsClosedPointTower X' U)
-    (hover : T.toBase ≫ (X ↘ Spec (.of k)) = U.toBase ≫ (X' ↘ Spec (.of k)))
+    {m : ℕ} {U : BlowupTower X' m W} (hT : IsClosedPointTower X T)
+    (hU : IsClosedPointTower X' U) (e : Y ≅ W)
+    (hover : T.toBase ≫ (X ↘ Spec (.of k)) = e.hom ≫ U.toBase ≫ (X' ↘ Spec (.of k)))
     {D : X.IdealSheafData} {E : X'.IdealSheafData}
     [IsReduced D.subscheme] [IsReduced E.subscheme]
     (hD : D.IsEffectiveCartier) (hE : E.IsEffectiveCartier)
     (hconn : _root_.IsConnected (D.support : Set X))
-    (hsupp : (D.comap T.toBase).support = (E.comap U.toBase).support)
+    (hsupp : (D.comap T.toBase).support = ((E.comap U.toBase).comap e.hom).support)
     (hnefD : IsNef k (X ↘ Spec (.of k)) (mk hD.toInvertibleSheaf)⁻¹)
     (hnefE : IsNef k (X' ↘ Spec (.of k)) (mk hE.toInvertibleSheaf)⁻¹)
     (hsqD : Chow.classIntersectionNumber k X (mk hD.toInvertibleSheaf)⁻¹
       (mk hD.toInvertibleSheaf)⁻¹ = 0)
     (hsqE : Chow.classIntersectionNumber k X' (mk hE.toInvertibleSheaf)⁻¹
       (mk hE.toInvertibleSheaf)⁻¹ = 0) :
-    D.comap T.toBase = E.comap U.toBase := by
+    D.comap T.toBase = (E.comap U.toBase).comap e.hom := by
   let f := X ↘ Spec (.of k)
   let g := X' ↘ Spec (.of k)
   let : Y.Over (Spec (.of k)) := ⟨T.toBase ≫ f⟩
+  let : W.Over (Spec (.of k)) := ⟨U.toBase ≫ g⟩
+  have : e.hom.IsOver (Spec (.of k)) := ⟨hover.symm⟩
   have : IsNoetherian X := isNoetherian_of_finiteType f
   have : IsNoetherian X' := isNoetherian_of_finiteType g
   have : IsNoetherian Y := T.isNoetherian
+  have : IsNoetherian W := U.isNoetherian
   have : IsIntegral Y := hT.isIntegral f
+  have : IsIntegral W := hU.isIntegral g
   have : Y.IsProjectiveOver k := T.isProjectiveOver k
+  have : W.IsProjectiveOver k := U.isProjectiveOver k
   have : SmoothOfRelativeDimension 2 (T.toBase ≫ f) := hT.smoothOfRelativeDimension f
+  have : Smooth (T.toBase ≫ f) := (hT.smoothOfRelativeDimension f).smooth 2 _
+  have : Smooth (U.toBase ≫ g) := (hU.smoothOfRelativeDimension g).smooth 2 _
+  have : IsRegular Y := IsRegular.of_smooth (T.toBase ≫ f)
+  have : IsRegular W := IsRegular.of_smooth (U.toBase ≫ g)
+  have : T.toBase.IsOver (Spec (.of k)) := ⟨rfl⟩
+  have : U.toBase.IsOver (Spec (.of k)) := ⟨rfl⟩
+  have hdim := topologicalKrullDim_eq_of_smoothOfRelativeDimension (T.toBase ≫ f) (n := 2)
   have (y : Y) : UniqueFactorizationMonoid (Y.presheaf.stalk y) :=
     (T.toBase ≫ f).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two y
-  have : T.toBase.IsOver (Spec (.of k)) := ⟨rfl⟩
-  have : U.toBase.IsOver (Spec (.of k)) := ⟨hover.symm⟩
-  have hdim := topologicalKrullDim_eq_of_smoothOfRelativeDimension (T.toBase ≫ f) (n := 2)
   have hDT := hT.isEffectiveCartier_totalTransform f hD
   have hEU := hU.isEffectiveCartier_totalTransform g hE
+  have hEU' := hEU.comap_of_isDominant e.hom
   have hconnT : _root_.IsConnected ((D.comap T.toBase).support : Set Y) := by
     rw [support_comap, Closeds.coe_preimage]
     exact hT.isConnected_preimage_of_isClosed f D.support.isClosed hconn
   have hneE : (E.support : Set X').Nonempty := by
     obtain ⟨q, hq⟩ := hconnT.nonempty
-    exact ⟨U.toBase q, by rwa [hsupp, support_comap, Closeds.coe_preimage] at hq⟩
+    exact ⟨U.toBase (e.hom q),
+      by simpa only [hsupp, support_comap, Closeds.coe_preimage, Set.mem_preimage] using hq⟩
   obtain ⟨p, hp⟩ := hT.exists_coeff_totalTransform_eq_one f hD hconn.nonempty
   obtain ⟨q, hq⟩ := hU.exists_coeff_totalTransform_eq_one g hE hneE
+  let q' := q.mapOfIsOpenImmersion e.inv
+  have hqmap : q'.mapOfIsOpenImmersion e.hom = q := Subtype.ext (by simp [q'])
+  have hq' := (hEU.coeff_toWeilDivisor_comap_of_isOpenImmersion e.hom hEU' q').trans
+    (hqmap.symm ▸ hq)
   have hclD : pullback T.toBase (mk hD.toInvertibleSheaf)⁻¹ = (mk hDT.toInvertibleSheaf)⁻¹ := by
     rw [pullback_inv, hD.pullback_mk_toInvertibleSheaf hDT]
   have hclE : pullback U.toBase (mk hE.toInvertibleSheaf)⁻¹ = (mk hEU.toInvertibleSheaf)⁻¹ := by
     rw [pullback_inv, hE.pullback_mk_toInvertibleSheaf hEU]
-  refine Chow.eq_of_nef_square_zero_of_support_eq k hdim hDT hEU hsupp hconnT.isPreconnected
-    (hclD ▸ hnefD.pullback T.toBase) (hclE ▸ hnefE.pullback U.toBase) ?_ ?_ hp hq
+  have hclE' : pullback e.hom (mk hEU.toInvertibleSheaf)⁻¹ = (mk hEU'.toInvertibleSheaf)⁻¹ := by
+    rw [pullback_inv, hEU.pullback_mk_toInvertibleSheaf hEU']
+  refine Chow.eq_of_nef_square_zero_of_support_eq k hdim hDT hEU' hsupp hconnT.isPreconnected
+    (hclD ▸ hnefD.pullback T.toBase) (hclE' ▸ (hclE ▸ hnefE.pullback U.toBase).pullback e.hom)
+    ?_ ?_ hp hq'
   · rw [← hclD, hT.classIntersectionNumber_pullback k, hsqD]
-  · rw [← hclE]
-    have he := (hU.classIntersectionNumber_pullback k _ _).trans hsqE
-    rwa [← hover] at he
+  · rw [← hclE', Chow.classIntersectionNumber_pullback_of_isIso k, ← hclE,
+      hU.classIntersectionNumber_pullback k, hsqE]
 
 end Nef
 
