@@ -66,7 +66,7 @@ theorem IsSubdivision.exists_nodal_refinement_internalBlowupTower
     h.exists_toric_subdivision_blowup_tower hΨ hΦ hΨ₀ hrank
   obtain ⟨Z, T, g, hT, hg⟩ :=
     Ψ.exists_isPullback_nodalBoundaryTower_internalBlowupTower hR b ρ c
-  obtain ⟨g', hg', hb⟩ := h.exists_isPullback_internalBlowupTower b ρ c
+  obtain ⟨g', hg', hb, -⟩ := h.exists_isPullback_internalBlowupTower b ρ c
   have hpb : IsPullback T.toBase (g ≫ a.inv) B.2.toTower.toBase
       h.toFanHom.algebraicMap := by
     refine hg.flip.of_iso' (Iso.refl _) (Iso.refl _) a (Iso.refl _)
