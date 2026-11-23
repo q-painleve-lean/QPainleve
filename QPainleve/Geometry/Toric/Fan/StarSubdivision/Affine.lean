@@ -357,21 +357,9 @@ private theorem exists_le_starSubdivisionChart {σ : PointedCone ℝ V}
     (hσ : IsRegularCone i σ) (e : Fin 2 ≃ ToricRay σ)
     (τ : (Fan.starSubdivision hi (allRays hσ) hσ).cones) :
     ∃ j, τ ≤ starSubdivisionChart hi hσ e j := by
-  obtain ⟨S, ⟨ρ, -, hρ⟩, hτ⟩ := (Fan.mem_starSubdivision_cones hi (allRays hσ) hσ).mp τ.property
-  obtain ⟨j, rfl⟩ := e.surjective ρ
-  refine ⟨j, ?_⟩
-  -- The cone indexed by S is a face of the chart omitting the same original ray.
-  change τ.val ≤ starSubdivisionCone hi (allRays hσ) hσ.toIsToricCone {none, some (e j.rev)}
-  rw [← hτ]
-  apply starSubdivisionCone_mono
-  intro a ha
-  cases a with
-  | none => simp
-  | some ρ =>
-    obtain ⟨k, rfl⟩ := e.surjective ρ
-    rcases Fin.fin_two_eq_or_eq_rev j k with rfl | rfl
-    · exact (hρ ha).elim
-    · simp
+  obtain ⟨j, hj⟩ := hσ.exists_le_starSubdivisionCone_pair hi e τ.property
+  refine ⟨j.rev, ?_⟩
+  simpa only [← Subtype.coe_le_coe, starSubdivisionChart, allRays, Fin.rev_rev] using hj
 
 private theorem starSubdivisionChart_inf_eq {σ : PointedCone ℝ V}
     (hσ : IsRegularCone i σ) (e : Fin 2 ≃ ToricRay σ)

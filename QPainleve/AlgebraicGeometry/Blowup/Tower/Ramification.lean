@@ -50,6 +50,28 @@ theorem ramificationIdealSheafToBase_def (hT : IsClosedPointTower X T) :
       (hT.smoothOfRelativeDimension (X ↘ Spec (.of k))).smooth
     hT.ramificationIdealSheafToBase k = ramificationIdealSheaf k T.toBase := (rfl)
 
+/-- The ramification ideal of a closed point tower pulls back to that of a specified morphism
+identified with its projection by a source isomorphism. -/
+theorem comap_ramificationIdealSheafToBase (hT : IsClosedPointTower X T)
+    {W : Scheme.{u}} [W.Over (Spec (.of k))]
+    [SmoothOfRelativeDimension 2 (W ↘ Spec (.of k))]
+    (e : W ≅ Y) {f : W ⟶ X} [f.IsOver (Spec (.of k))] (he : e.hom ≫ T.toBase = f) :
+    letI := SmoothOfRelativeDimension.smooth 2 (W ↘ Spec (.of k))
+    (hT.ramificationIdealSheafToBase k).comap e.hom = ramificationIdealSheaf k f := by
+  let : Y.Over (Spec (.of k)) := ⟨T.toBase ≫ X ↘ Spec (.of k)⟩
+  have : T.toBase.IsOver (Spec (.of k)) := ⟨rfl⟩
+  have : e.hom.IsOver (Spec (.of k)) := ⟨((reassoc_of% he) _).trans (comp_over f _)⟩
+  have : SmoothOfRelativeDimension 2 (Y ↘ Spec (.of k)) :=
+    hT.smoothOfRelativeDimension (X ↘ Spec (.of k))
+  have := SmoothOfRelativeDimension.smooth 2 (W ↘ Spec (.of k))
+  have := SmoothOfRelativeDimension.smooth 2 (Y ↘ Spec (.of k))
+  calc
+    _ = ramificationIdealSheaf k (e.hom ≫ T.toBase) := by
+      rw [ramificationIdealSheaf_comp k e.hom T.toBase 2,
+        ramificationIdealSheaf_eq_top_of_isOpenImmersion, top_mul,
+        ramificationIdealSheafToBase_def]
+    _ = _ := ramificationIdealSheaf_congr k he
+
 /-- The projection of the empty point tower has unit ramification ideal. -/
 @[simp]
 theorem ramificationIdealSheafToBase_nil :

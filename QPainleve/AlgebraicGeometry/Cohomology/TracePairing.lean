@@ -5,11 +5,13 @@ Authors: The QPainleve contributors
 -/
 module
 
+import Mathlib.AlgebraicGeometry.Artinian
 import TauCeti.AlgebraicGeometry.Cohomology.LongExactSequence
 public import TauCeti.AlgebraicGeometry.Cohomology.Module.Base
 public import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.ProjectiveOver
 public import QPainleve.AlgebraicGeometry.Modules.InternalHom.Sections
 public import TauCeti.AlgebraicGeometry.LineBundle.Dual
+import QPainleve.AlgebraicGeometry.EffectiveCartierDivisor.Dimension
 import QPainleve.AlgebraicGeometry.CartierDivisor.Support
 import QPainleve.AlgebraicGeometry.Cohomology.Support
 import TauCeti.AlgebraicGeometry.Cohomology.PushforwardAcyclic.Affine
@@ -68,11 +70,78 @@ theorem cohomologyTracePairing_apply (q : ℕ) (tr : Cohomology N q →ₗ[R] R)
       tr (cohomologyMapBaseLinear R X (internalHomSectionsEquiv s) q x) :=
   (rfl)
 
+/-- A nonzero trace separates sections whose corresponding nonzero morphisms
+surject on cohomology. -/
+theorem cohomologyTracePairing_injective_flip_of_surjective {q : ℕ}
+    (tr : Cohomology N q →ₗ[R] R) (htr : tr ≠ 0)
+    (hsurj : ∀ f : M ⟶ N, f ≠ 0 → Function.Surjective (cohomologyMapBaseLinear R X f q)) :
+    Function.Injective (cohomologyTracePairing (M := M) R q tr).flip := by
+  apply (injective_iff_map_eq_zero _).mpr
+  intro s hs
+  by_contra h
+  have hφ : internalHomSectionsEquiv s ≠ 0 := fun hzero ↦
+    h (internalHomSectionsEquiv.injective (hzero.trans internalHomSectionsEquiv_zero.symm))
+  apply htr
+  ext y
+  obtain ⟨x, rfl⟩ := hsurj _ hφ y
+  simpa only [LinearMap.flip_apply, LinearMap.zero_apply, cohomologyTracePairing_apply]
+    using DFunLike.congr_fun hs x
+
 end AlgebraicGeometry.Scheme.Modules
 
 namespace TauCeti.AlgebraicGeometry.InvertibleSheaf
 
 open _root_.AlgebraicGeometry.Scheme.Modules
+
+section BaseRing
+
+variable (R : Type u) [CommRing R] {X : Scheme.{u}}
+  [IsIntegral X] [X.Over (Spec (.of R))] {q : ℕ}
+
+private theorem surjective_cohomologyMap_of_cartierVanishing (L K : InvertibleSheaf X)
+    (f : L.obj ⟶ K.obj) (hf : f ≠ 0)
+    (hvan : ∀ I : X.IdealSheafData, I.IsEffectiveCartier →
+      Subsingleton (Cohomology ((Scheme.Modules.pullback I.subschemeι).obj K.obj) q)) :
+    Function.Surjective (cohomologyMapBaseLinear R X f q) := by
+  let φ := L.twistedToUnit K f
+  have hφ : φ ≠ 0 := fun h ↦ hf ((L.twistedToUnit_eq_zero_iff K f).mp h)
+  let E : InvertibleSheaf X := L.tensorProduct (dual K)
+  have : Mono φ := E.mono_of_ne_zero_to_unit φ hφ
+  have : Mono f := (L.mono_twistedToUnit_iff K f).mp inferInstance
+  let I := φ.imageIdealSheaf
+  have hI : I.IsEffectiveCartier := E.isEffectiveCartier_imageIdealSheaf φ
+  let i := I.subschemeι
+  let : I.subscheme.Over (Spec (.of R)) := ⟨i ≫ X ↘ Spec (.of R)⟩
+  let : i.IsOver (Spec (.of R)) := ⟨rfl⟩
+  let EK := (InvertibleSheaf.toFiniteLocallyFree X).obj K
+  let V : I.subscheme.Modules := ((FiniteLocallyFreeSheaf.pullback i).obj EK).obj
+  have : Subsingleton (Cohomology V q) := by
+    simpa only [V, FiniteLocallyFreeSheaf.pullback_obj_obj, EK, ObjectProperty.ιOfLE_obj_obj]
+      using hvan I hI
+  let eQ := cokernelIsoTensorPushforwardImageIdeal L K f ≪≫ I.tensorPushforwardSubschemeIso EK
+  let eH := (cohomologyBaseLinearEquivOfIso R eQ q).trans
+    (i.cohomologyPushforwardBaseLinearEquivOfIsAffineHom R V q)
+  have : Subsingleton (Cohomology (cokernel f) q) := eH.injective.subsingleton
+  rw [coe_cohomologyMapBaseLinear]
+  intro y
+  have hy : cohomologyMap (cokernel.π f) q y = 0 := Subsingleton.elim _ _
+  exact (exact_cohomologyMap_cohomologyMap (TauCeti.cokernelSequence_shortExact f) q y).mp hy
+
+/-- A nonzero morphism between line bundles on a Noetherian integral scheme of
+dimension at most one induces a surjection on first cohomology. -/
+theorem surjective_cohomologyMap_one_of_ne_zero [IsNoetherian X] (L K : InvertibleSheaf X)
+    (f : L.obj ⟶ K.obj) (hf : f ≠ 0) (hdim : topologicalKrullDim X ≤ 1) :
+    Function.Surjective (cohomologyMapBaseLinear R X f 1) := by
+  refine surjective_cohomologyMap_of_cartierVanishing R L K f hf fun I hI ↦ ?_
+  have : IsLocallyNoetherian I.subscheme :=
+    LocallyOfFiniteType.isLocallyNoetherian I.subschemeι
+  have : IsLocallyArtinian I.subscheme := .of_topologicalKrullDim_le_zero
+    (hI.topologicalKrullDim_subscheme_le (d := 0) (by simpa using hdim))
+  have : CompactSpace I.subscheme := QuasiCompact.compactSpace_of_compactSpace I.subschemeι
+  have : Finite I.subscheme := finite_of_compact_of_discrete
+  exact subsingleton_cohomology_succ_of_isAffine _ 0
+
+end BaseRing
 
 variable (k : Type u) [Field k] [Infinite k] {X : Scheme.{u}}
   [IsIntegral X] [X.Over (Spec (.of k))] [X.IsProjectiveOver k] {q : ℕ}
@@ -82,13 +151,7 @@ dimension of the integral projective scheme is at most `q`. -/
 theorem surjective_cohomologyMap_of_ne_zero (L K : InvertibleSheaf X)
     (f : L.obj ⟶ K.obj) (hf : f ≠ 0) (hdim : topologicalKrullDim X ≤ q) :
     Function.Surjective (cohomologyMapBaseLinear k X f q) := by
-  let φ := L.twistedToUnit K f
-  have hφ : φ ≠ 0 := fun h ↦ hf ((L.twistedToUnit_eq_zero_iff K f).mp h)
-  let E : InvertibleSheaf X := L.tensorProduct (dual K)
-  have : Mono φ := E.mono_of_ne_zero_to_unit φ hφ
-  have : Mono f := (L.mono_twistedToUnit_iff K f).mp inferInstance
-  let I := φ.imageIdealSheaf
-  have hI : I.IsEffectiveCartier := E.isEffectiveCartier_imageIdealSheaf φ
+  refine surjective_cohomologyMap_of_cartierVanishing k L K f hf fun I hI ↦ ?_
   let i := I.subschemeι
   let : I.subscheme.Over (Spec (.of k)) := ⟨i ≫ X ↘ Spec (.of k)⟩
   let : i.IsOver (Spec (.of k)) := ⟨rfl⟩
@@ -106,33 +169,14 @@ theorem surjective_cohomologyMap_of_ne_zero (L K : InvertibleSheaf X)
     (Homeomorph.setCongr I.range_subschemeι)
   have hdim' : topologicalKrullDim I.subscheme < q :=
     e.isHomeomorph.topologicalKrullDim_eq.trans_lt (hs'.trans_le hdim)
-  let EK := (InvertibleSheaf.toFiniteLocallyFree X).obj K
-  let V : I.subscheme.Modules := ((FiniteLocallyFreeSheaf.pullback i).obj EK).obj
-  have hvan := subsingleton_cohomology_of_projective_dim_lt (k := k) V hdim'
-  let eQ := cokernelIsoTensorPushforwardImageIdeal L K f ≪≫ I.tensorPushforwardSubschemeIso EK
-  let eH := (cohomologyBaseLinearEquivOfIso k eQ q).trans
-    (i.cohomologyPushforwardBaseLinearEquivOfIsAffineHom k V q)
-  have : Subsingleton (Cohomology (cokernel f) q) := eH.injective.subsingleton
-  rw [coe_cohomologyMapBaseLinear]
-  intro y
-  have hy : cohomologyMap (cokernel.π f) q y = 0 := Subsingleton.elim _ _
-  exact (exact_cohomologyMap_cohomologyMap (TauCeti.cokernelSequence_shortExact f) q y).mp hy
+  exact subsingleton_cohomology_of_projective_dim_lt (k := k) _ hdim'
 
 /-- A nonzero top-degree trace on a line bundle separates global sections of
 the internal Hom from any other line bundle on an integral projective scheme. -/
 theorem cohomologyTracePairing_injective_flip (L K : InvertibleSheaf X)
     (hdim : topologicalKrullDim X ≤ q) (tr : Cohomology K.obj q →ₗ[k] k) (htr : tr ≠ 0) :
     Function.Injective (cohomologyTracePairing (M := L.obj) k q tr).flip := by
-  apply (injective_iff_map_eq_zero _).mpr
-  intro s hs
-  by_contra h
-  have hφ : internalHomSectionsEquiv s ≠ 0 := fun hzero ↦
-    h (internalHomSectionsEquiv.injective (hzero.trans internalHomSectionsEquiv_zero.symm))
-  have hsurj := surjective_cohomologyMap_of_ne_zero k L K _ hφ hdim
-  apply htr
-  ext y
-  obtain ⟨x, rfl⟩ := hsurj y
-  simpa only [LinearMap.flip_apply, LinearMap.zero_apply, cohomologyTracePairing_apply]
-    using DFunLike.congr_fun hs x
+  exact cohomologyTracePairing_injective_flip_of_surjective k tr htr fun f hf ↦
+    surjective_cohomologyMap_of_ne_zero k L K f hf hdim
 
 end TauCeti.AlgebraicGeometry.InvertibleSheaf
