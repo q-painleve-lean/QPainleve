@@ -9,11 +9,14 @@ public import TauCeti.RingTheory.GradedAlgebra.DirectSum
 public import TauCeti.RingTheory.Ideal.AssociatedGraded
 
 /-!
-# The internal grading of an associated graded ring
+# Associated graded rings of ideals
 
 The degree-`n` summand of `Ideal.AssociatedGraded I` is a submodule over the quotient ring
 `R ⧸ I`. The internal grading reuses the direct-sum grading on `DirectSum.summand`, allowing
 constructions such as `Proj` to use the existing direct-sum ring.
+
+When the associated graded ring has no zero divisors, powers of an order-one element
+shift ideal-power membership by their degree.
 -/
 
 public section
@@ -60,3 +63,31 @@ noncomputable instance : GradedAlgebra (grade I) := by
   exact { d with }
 
 end Ideal.AssociatedGraded
+
+namespace Ideal
+
+variable {R : Type*} [CommRing R] {I : Ideal R} {a : R}
+
+/-- If the initial form of `a` has degree one and the associated graded ring has no zero
+divisors, multiplying by `a ^ n` raises every ideal-power membership threshold by `n`. -/
+theorem pow_mul_mem_pow_add_iff_of_notMem_sq [NoZeroDivisors I.AssociatedGraded]
+    (ha : a ∈ I) (ha₂ : a ∉ I ^ 2) (n m : ℕ) (x : R) :
+    a ^ n * x ∈ I ^ (n + m) ↔ x ∈ I ^ m := by
+  have step (y : R) (j : ℕ) : a * y ∈ I ^ (j + 1) → y ∈ I ^ j := by
+    induction j with
+    | zero => simp
+    | succ j ih =>
+      intro h
+      have hx := ih (Ideal.pow_le_pow_right (Nat.le_succ _) h)
+      by_contra hx'
+      exact AssociatedGraded.mul_notMem_pow_succ (by simpa using ha) ha₂ hx hx'
+        (by simpa [Nat.add_comm 1 j] using h)
+  induction n with
+  | zero => simp
+  | succ n ih =>
+    rw [pow_succ', mul_assoc, Nat.succ_add]
+    exact ⟨fun h ↦ ih.mp (step _ _ h), fun h ↦ by
+      rw [pow_succ']
+      exact mul_mem_mul ha (ih.mpr h)⟩
+
+end Ideal

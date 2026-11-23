@@ -5,7 +5,7 @@ Authors: The QPainleve contributors
 -/
 module
 
-public import QPainleve.AlgebraicGeometry.Blowup.StrictTransform
+public import QPainleve.AlgebraicGeometry.Blowup.StrictTransform.Basic
 public import QPainleve.AlgebraicGeometry.Blowup.Tower.Basic
 public import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.Section
 public import TauCeti.AlgebraicGeometry.IdealSheaf.BaseChange
