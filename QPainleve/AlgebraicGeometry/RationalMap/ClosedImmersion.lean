@@ -75,11 +75,8 @@ theorem existsUnique_hom_of_toRationalMap_eq_compHom
     (congrArg Hom.ker (Hom.toPartialMap_hom g)).trans (Hom.ker_comp_of_isIso X.topIso.hom g)
   let h := IsClosedImmersion.lift i g (hk.trans_eq hk')
   have hf : h ≫ i = g := IsClosedImmersion.lift_fac _ _ _
-  have hmap : h.toRationalMap.compHom i = f.compHom i := calc
-    h.toRationalMap.compHom i = (h.toPartialMap.compHom i).toRationalMap :=
-      (compHom_toRationalMap _ _).symm
-    _ = (h ≫ i).toRationalMap := congrArg PartialMap.toRationalMap (Hom.toPartialMap_compHom h i)
-    _ = _ := (congrArg Hom.toRationalMap hf).trans hg
+  have hmap : h.toRationalMap.compHom i = f.compHom i := by
+    rw [Hom.toRationalMap_compHom, hf, hg]
   exact ⟨h, ⟨hf, i.rationalMap_compHom_injective hmap⟩,
     fun h' hh' ↦ (cancel_mono i).mp (hh'.1.trans hf.symm)⟩
 
