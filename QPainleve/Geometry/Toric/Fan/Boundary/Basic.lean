@@ -8,14 +8,13 @@ module
 public import Mathlib.AlgebraicGeometry.IdealSheaf.Basic
 public import QPainleve.AlgebraicGeometry.OrderOfVanishing.Base
 public import QPainleve.Geometry.Toric.Fan.FunctionField
+public import QPainleve.Geometry.Toric.Fan.Ray
 public import TauCeti.AlgebraicGeometry.Scheme.CodimensionOnePoint
 public import TauCeti.Geometry.Toric.Algebraic.Fan.Over
-public import TauCeti.Geometry.Toric.Algebraic.Fan.Ray
 
 import Mathlib.Algebra.MvPolynomial.Division
 import Mathlib.RingTheory.Ideal.KrullsHeightTheorem
 import QPainleve.Geometry.Toric.RegularChart
-import TauCeti.Geometry.Toric.Algebraic.Ray.Generation
 import TauCeti.AlgebraicGeometry.WeilDivisor.Scheme.Order
 
 /-!
@@ -316,72 +315,6 @@ theorem support_boundaryIdeal (Φ : Fan i) (h₀ : Nonempty Φ.cones) :
   rw [boundaryIdeal, Scheme.IdealSheafData.coe_support_vanishingIdeal]
   rfl
 
-/-- The generator of a fan ray as a primitive lattice vector. -/
-def Ray.primitiveGenerator (ρ : Φ.Ray) : N :=
-  TauCeti.Toric.primitiveGenerator Φ.lattice (Φ.isToricCone ρ.toCone.property)
-    (Ray.toToricRay Φ ρ ρ.toCone le_rfl)
-
-/-- The primitive generator of a fan ray is the primitive generator in its ray cone. -/
-theorem Ray.primitiveGenerator_def (ρ : Φ.Ray) :
-    ρ.primitiveGenerator =
-      TauCeti.Toric.primitiveGenerator Φ.lattice (Φ.isToricCone ρ.toCone.property)
-        (Ray.toToricRay Φ ρ ρ.toCone le_rfl) := (rfl)
-
-/-- A fan ray is the cone spanned by its primitive generator. -/
-theorem Ray.toCone_eq_hull_primitiveGenerator (ρ : Φ.Ray) :
-    ρ.toCone.val = PointedCone.hull ℝ {i (Ray.primitiveGenerator ρ)} := by
-  classical
-  let σ := ρ.toCone
-  let r := Ray.toToricRay Φ ρ σ le_rfl
-  let hσ := Φ.isToricCone σ.property
-  have hr : r.toPointedCone = σ.val := Ray.toPointedCone_toToricRay Φ ρ σ le_rfl
-  have hne : i (TauCeti.Toric.primitiveGenerator Φ.lattice hσ r) ≠ 0 := by
-    rw [map_ne_zero_iff _ Φ.lattice.injective]
-    exact primitiveGenerator_ne_zero Φ.lattice hσ r
-  exact hr ▸ r.eq_hull_singleton (hσ.salient.anti r.val.isFaceOf.le)
-    (primitiveGenerator_mem Φ.lattice hσ r) hne
-
-/-- The primitive generator determines a fan ray. -/
-theorem Ray.primitiveGenerator_injective : Function.Injective (Ray.primitiveGenerator (Φ := Φ)) :=
-  fun ρ τ h ↦ by
-    apply Subtype.ext
-    apply Subtype.ext
-    rw [Ray.toCone_eq_hull_primitiveGenerator ρ, Ray.toCone_eq_hull_primitiveGenerator τ, h]
-
-/-- Viewing a cone ray as a fan ray preserves its primitive lattice generator. -/
-@[simp]
-theorem Ray.primitiveGenerator_ofToricRay (σ : Φ.cones) (ρ : ToricRay σ.val) :
-    (Ray.ofToricRay Φ σ ρ).primitiveGenerator =
-      TauCeti.Toric.primitiveGenerator Φ.lattice (Φ.isToricCone σ.property) ρ := by
-  let τ := (Ray.ofToricRay Φ σ ρ).toCone
-  let hface := Φ.isFaceOf_of_le σ.property τ.property (Ray.toCone_ofToricRay_le Φ σ ρ)
-  let r := Ray.toToricRay Φ (Ray.ofToricRay Φ σ ρ) τ le_rfl
-  have hr : ToricRay.faceEmbedding hface r = ρ := by
-    apply SetLike.coe_injective
-    exact congrArg (fun C : PointedCone ℝ V ↦ (C : Set V)) <| by
-      rw [ToricRay.toPointedCone_faceEmbedding, Ray.toPointedCone_toToricRay,
-        Ray.toCone_ofToricRay]
-  rw [Ray.primitiveGenerator_def]
-  exact (primitiveGenerator_faceEmbedding Φ.lattice (Φ.isToricCone σ.property) hface r).symm.trans
-    (congrArg (TauCeti.Toric.primitiveGenerator Φ.lattice (Φ.isToricCone σ.property)) hr)
-
-/-- On a complete fan, a lattice character nonnegative on every primitive ray
-generator is zero. -/
-theorem character_eq_zero_of_nonneg_primitiveGenerator (Φ : Fan i) (hc : Φ.IsComplete) (m : N →+ ℤ)
-    (hm : ∀ ρ : Φ.Ray, 0 ≤ m ρ.primitiveGenerator) : m = 0 := by
-  have hcone (σ : Φ.cones) : m ∈ dualSemigroup Φ.lattice σ.val := by
-    let hσ := Φ.isToricCone σ.property
-    apply (mem_dualSemigroup_iff_primitiveGenerator Φ.lattice hσ m).2
-    intro ρ
-    simpa only [Ray.primitiveGenerator_ofToricRay] using hm (Ray.ofToricRay Φ σ ρ)
-  ext x
-  obtain ⟨σ, hσ, hx⟩ := (Φ.isComplete_iff.1 hc) (-i x)
-  have h := (mem_dualSemigroup Φ.lattice m).1 (hcone ⟨σ, hσ⟩) hx
-  obtain ⟨τ, hτ, hx'⟩ := (Φ.isComplete_iff.1 hc) (i x)
-  have h' := (mem_dualSemigroup Φ.lattice m).1 (hcone ⟨τ, hτ⟩) hx'
-  simp only [map_neg, IsIntegralLattice.realCharacter_apply, Left.nonneg_neg_iff] at h h'
-  exact_mod_cast le_antisymm h h'
-
 /-- The generic point of a fan ray's boundary divisor, viewed in the fan scheme. -/
 def rayBoundaryPoint (Φ : Fan i) (hΦ : Φ.IsRegular) (ρ : Φ.Ray) :
     CodimensionOnePoint Φ.algebraicRealization :=
@@ -416,8 +349,8 @@ theorem rayBoundaryPoint_ofToricRay (Φ : Fan i) (hΦ : Φ.IsRegular)
   have : IsOpenImmersion f := hσ.rational.isOpenImmersion_faceAffineToricSchemeMap Φ.lattice hface
   let q := hτreg.rayPoint Φ.lattice hτ r
   let p := hσreg.rayPoint Φ.lattice hσ ρ
-  have hv : primitiveGenerator Φ.lattice hσ ρ = primitiveGenerator Φ.lattice hτ r :=
-    (Ray.primitiveGenerator_ofToricRay σ ρ).symm
+  have hv : primitiveGenerator Φ.lattice hσ ρ = primitiveGenerator Φ.lattice hτ r := by
+    simpa only [Ray.primitiveGenerator_def] using (Ray.primitiveGenerator_ofToricRay σ ρ).symm
   have hsub : p.val.asIdeal ≤ (f q.val).asIdeal := by
     rw [hσreg.rayPoint_asIdeal, rayIdeal_le_iff]
     intro m hm
@@ -565,7 +498,8 @@ theorem ord_rayBoundaryPoint_character (hΦ : Φ.IsRegular) (ρ : Φ.Ray) (m : N
     have := hσ.isNoetherianRing_affineCoordinateRing Φ.lattice
     rw [coe_rayBoundaryPoint, ← TauCeti.AlgebraicGeometry.Scheme.ord_functionFieldMap,
       functionFieldMap_affineToricChartι_character Φ σ ⟨a, hnonneg a ha⟩]
-    exact rayMonomial_ord Φ.lattice hσ ((isRegular_iff.1 hΦ) _ σ.property) r ⟨a, hnonneg a ha⟩
+    simpa only [Ray.primitiveGenerator_def] using
+      rayMonomial_ord Φ.lattice hσ ((isRegular_iff.1 hΦ) _ σ.property) r ⟨a, hnonneg a ha⟩
   by_cases hm : 0 ≤ m (Ray.primitiveGenerator ρ)
   · exact hregular m hm
   · have hn := hregular (-m) (by simp [le_of_not_ge hm])

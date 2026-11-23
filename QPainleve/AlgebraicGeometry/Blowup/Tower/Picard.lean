@@ -195,6 +195,24 @@ theorem IsClosedPointTower.bijective_picardHom {k : Type u} [Field k] [PerfectFi
     · exact Scheme.IdealSheafData.isExceptionalCurveOfFirstKind_comap_blowupToBase_of_closedPoint
         p hp hdim
 
+/-- For an automorphism lifting through an ordered point blowup tower, pullback acts
+trivially on the final Picard group exactly when it acts trivially on the base Picard group. -/
+theorem IsLift.forall_pullback_eq_iff {k : Type u} [Field k] [PerfectField k]
+    {X Y : Scheme.{u}} {n : ℕ} {T : BlowupTower X n Y} [IsIntegral X] [IsNoetherian X]
+    (f : X ⟶ Spec (.of k)) [SmoothOfRelativeDimension 2 f] {a : X ≅ X} {g : Y ≅ Y}
+    (h : IsLift a T T g) (hT : IsClosedPointTower X T) :
+    (∀ L, pullback g.hom L = L) ↔ ∀ L, pullback a.hom L = L := by
+  have hbij := hT.bijective_picardHom f
+  constructor
+  · intro hg L
+    have hpair := hbij.injective (Additive.toMul.injective
+      ((h.pullback_picardHom (Additive.ofMul L) 0).symm.trans (hg _)))
+    exact congrArg (fun z : Additive (LineBundleClass X) × (Fin n → ℤ) ↦ z.1.toMul) hpair
+  · intro ha L
+    obtain ⟨⟨b, c⟩, hb⟩ := hbij.surjective (Additive.ofMul L)
+    have hb' : (T.picardHom (b, c)).toMul = L := congrArg Additive.toMul hb
+    rw [← hb', h.pullback_picardHom, ha, ofMul_toMul]
+
 variable {k : Type u} [Field k] [PerfectField k] [IsIntegral X] [IsNoetherian X]
   (T : BlowupTower X n Y) (hT : IsClosedPointTower X T)
   (f : X ⟶ Spec (.of k)) [SmoothOfRelativeDimension 2 f]

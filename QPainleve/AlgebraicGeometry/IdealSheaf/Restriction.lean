@@ -8,12 +8,15 @@ module
 public import TauCeti.AlgebraicGeometry.IdealSheaf.BaseChange
 public import TauCeti.AlgebraicGeometry.Morphisms.SchemeTheoreticallyDominant
 
+import TauCeti.AlgebraicGeometry.IdealSheaf.VanishingIdeal
+
 /-!
 # Scheme-theoretic images under open restriction
 
 An ideal pushed forward along a quasi-compact morphism can be computed after
 restriction to an open. Restricting a closed immersion to an open whose inverse
-image is schematically dense leaves its scheme-theoretic image unchanged.
+image is schematically dense leaves its scheme-theoretic image unchanged. Taking a reduced
+closed subscheme commutes with open restriction.
 -/
 
 public section
@@ -45,5 +48,14 @@ theorem map_comap_ker_of_isSchemeTheoreticallyDominant {Z X : Scheme.{u}}
     (q.ker.comap U.ι).map U.ι = q.ker := by
   rw [← ker_eq_comap_of_isPullback q (isPullback_morphismRestrict q U), ← Scheme.Hom.ker_comp,
     morphismRestrict_ι, Scheme.Hom.ker_comp_of_isSchemeTheoreticallyDominant]
+
+/-- Taking the reduced subscheme commutes with restriction along an open immersion. -/
+@[simp]
+theorem radical_comap_of_isOpenImmersion {X Y : Scheme.{u}}
+    (D : Y.IdealSheafData) (f : X ⟶ Y)
+    [IsOpenImmersion f] : (D.comap f).radical = D.radical.comap f := by
+  rw [← vanishingIdeal_support (I := D), comap_vanishingIdeal_of_isOpenImmersion,
+    ← vanishingIdeal_support (I := D.comap f), support_comap]
+  rfl
 
 end AlgebraicGeometry.Scheme.IdealSheafData

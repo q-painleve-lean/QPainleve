@@ -379,6 +379,13 @@ def orbitToRayChart (hdim : Module.finrank ℤ N = 2)
     Spec (.of (LaurentPolynomial ℂ)) ⟶ Φ.affineToricChart ρ.toCone :=
   Spec.map (CommRingCat.ofHom (ρ.orbitCoordinateMap hdim hm hprim).toRingHom)
 
+/-- The ray orbit immersion is induced by restriction to Laurent coordinates. -/
+theorem orbitToRayChart_def (hdim : Module.finrank ℤ N = 2)
+    (hm : m v = 0) (hprim : Function.Surjective m) :
+    ρ.orbitToRayChart hdim hm hprim =
+      Spec.map (CommRingCat.ofHom (ρ.orbitCoordinateMap hdim hm hprim).toRingHom) :=
+  (rfl)
+
 /-- The orbit is a closed subscheme of the ray chart. -/
 instance isClosedImmersion_orbitToRayChart (hdim : Module.finrank ℤ N = 2)
     (hm : m v = 0) (hprim : Function.Surjective m) :
@@ -551,5 +558,48 @@ theorem exists_closedPoint_ker_binomialCenterOnBoundary (hdim : Module.finrank �
     Set.range_eq_singleton fun z ↦ congrArg s (Subsingleton.elim z _)
   rw [← hrange]
   exact s.isClosedEmbedding.isClosed_range
+
+/-- Two binomial centers can coincide only if their rays agree. Distinct ray charts
+intersect in the dense torus, whereas these centers lie on the boundary. -/
+theorem eq_of_binomialCenter_eq {τ : Φ.Ray} {m' : N →+ ℤ} (hdim : Module.finrank ℤ N = 2)
+    (hm : m v = 0) (hprim : Function.Surjective m) (c : ℂˣ)
+    (hm' : m' τ.primitiveGenerator = 0) (hprim' : Function.Surjective m') (d : ℂˣ)
+    (h : ρ.binomialCenter hdim hm hprim c = τ.binomialCenter hdim hm' hprim' d) : ρ = τ := by
+  let pt : Spec (.of ℂ) := IsLocalRing.closedPoint ℂ
+  let p := ρ.binomialCenter hdim hm hprim c pt
+  let σ := ρ.toCone ⊓ τ.toCone
+  have hpρ : p ∈ Set.range (Φ.affineToricChartι ρ.toCone) := by
+    dsimp only [p]
+    rw [binomialCenter_def, Scheme.Hom.comp_apply]
+    exact Set.mem_range_self _
+  have hpτ : p ∈ Set.range (Φ.affineToricChartι τ.toCone) := by
+    dsimp only [p]
+    rw [h, binomialCenter_def, Scheme.Hom.comp_apply]
+    exact Set.mem_range_self _
+  have hp : p ∈ Set.range (Φ.affineToricChartι σ) := by
+    rw [← Φ.range_affineToricChartι_inter_range_affineToricChartι]
+    exact ⟨hpρ, hpτ⟩
+  have hD : p ∈ ((Φ.boundaryIdeal ⟨ρ.toCone⟩).support : Set Φ.algebraicRealization) := by
+    dsimp only [p]
+    rw [← (Φ.boundaryIdeal ⟨ρ.toCone⟩).range_subschemeι,
+      ← binomialCenterOnBoundary_comp_subschemeι, Scheme.Hom.comp_apply]
+    exact Set.mem_range_self _
+  have hσ : σ.val ≠ ⊥ := by
+    intro hbot
+    have heq : σ = ⟨⊥, Φ.bot_mem ρ.toCone.property⟩ := Subtype.ext hbot
+    rw [heq, ← Φ.denseTorusι_eq_affineToricChartι ⟨ρ.toCone⟩ _] at hp
+    exact (Φ.support_boundaryIdeal ⟨ρ.toCone⟩ ▸ hD) hp
+  have hρ : σ.val.IsFaceOf ρ.toCone.val :=
+    Φ.isFaceOf_of_le ρ.toCone.property σ.property inf_le_left
+  have hτ : σ.val.IsFaceOf τ.toCone.val :=
+    Φ.isFaceOf_of_le τ.toCone.property σ.property inf_le_right
+  rw [ρ.toCone_eq_hull_primitiveGenerator] at hρ
+  rw [τ.toCone_eq_hull_primitiveGenerator] at hτ
+  apply Subtype.ext
+  apply Subtype.ext
+  exact ((hρ.eq_bot_or_eq_of_hull_singleton _).resolve_left hσ |>.trans
+    ρ.toCone_eq_hull_primitiveGenerator.symm).symm.trans
+    ((hτ.eq_bot_or_eq_of_hull_singleton _).resolve_left hσ |>.trans
+      τ.toCone_eq_hull_primitiveGenerator.symm)
 
 end TauCeti.Toric.Fan.Ray

@@ -11,7 +11,6 @@ public import TauCeti.AlgebraicGeometry.LineBundle.Ample
 import QPainleve.AlgebraicGeometry.Curves.Degree.Ample
 import QPainleve.AlgebraicGeometry.LineBundle.Ample
 import QPainleve.AlgebraicGeometry.Scheme.LocalDimension
-import TauCeti.AlgebraicGeometry.CartierDivisor.Effectivity
 
 /-!
 # Positive intersections of ample classes on surfaces
@@ -61,26 +60,12 @@ intersection. Taking the same class twice gives positivity of its square. -/
 theorem classIntersectionNumber_pos_of_isAmple (hX : topologicalKrullDim X = 2)
     (ha : a.IsAmple) (hb : b.IsAmple) : 0 < classIntersectionNumber k X a b := by
   have : IsNoetherian X := isNoetherian_of_finiteType (X ↘ Spec (.of k))
-  have : IsNormalScheme X := IsNormalScheme.of_uniqueFactorizationMonoid_stalk
   have hdim : 0 < topologicalKrullDim X := by rw [hX]; decide
-  obtain ⟨n, hn, I, hI, hne, hclass⟩ :=
-    hb.exists_effectiveCartier_pow_ne_top (X ↘ Spec (.of k)) hdim
-  let D := hI.toCartierDivisor
-  have hE : 0 ≤ D.toWeilDivisor :=
-    (Scheme.CartierDivisor.isEffective_iff_toWeilDivisor_nonneg D).mp
-      hI.isEffective_toCartierDivisor
-  have hsupport : D.toWeilDivisor.support.Nonempty := by
-    rw [Finsupp.support_nonempty_iff, Ne, Scheme.CartierDivisor.toWeilDivisor_eq_zero_iff]
-    intro hz
-    exact hne ((hI.toCartierDivisor_eq_iff (isEffectiveCartier_top X)).mp
-      (hz.trans IsEffectiveCartier.toCartierDivisor_top.symm))
-  have hDclass :
-      (Scheme.CartierDivisor.weilToLineBundleClassHom X D.toWeilDivisor).toMul = b ^ n := by
-    rw [Scheme.CartierDivisor.weilToLineBundleClassHom_toWeilDivisor, toMul_ofMul]
-    exact hI.toLineBundleClass_toCartierDivisor.trans hclass
+  obtain ⟨n, D, -, hE, hne, hDclass⟩ :=
+    hb.exists_effectiveWeilDivisor_pow_eq (X ↘ Spec (.of k)) hdim
   have hpow : 0 < classIntersectionNumber k X a (b ^ n) := by
     rw [← hDclass, classIntersectionNumber_weilToLineBundleClassHom k hX, Finsupp.sum]
-    refine Finset.sum_pos (fun p hp ↦ ?_) hsupport
+    refine Finset.sum_pos (fun p hp ↦ ?_) (Finsupp.support_nonempty_iff.mpr hne)
     exact mul_pos (lt_of_le_of_ne (hE p) (Finsupp.mem_support_iff.mp hp).symm)
       (classIntersectionNumber_primeDivisorClass_pos_of_isAmple k hX ha p)
   let f := classIntersectionBilinForm k hX (Additive.ofMul a)

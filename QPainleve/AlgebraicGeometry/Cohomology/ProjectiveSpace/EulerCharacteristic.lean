@@ -8,9 +8,11 @@ module
 public import Mathlib.RingTheory.Binomial
 public import TauCeti.AlgebraicGeometry.Cohomology.EulerCharacteristic
 public import TauCeti.AlgebraicGeometry.Cohomology.ProjectiveSpace.HigherCohomology
+public import TauCeti.AlgebraicGeometry.LineBundle.Basic
 import Mathlib.Data.Finsupp.Multiset
 import Mathlib.Data.Sym.NatCard
 import TauCeti.AlgebraicGeometry.Cohomology.ProjectiveSpace.TwistingSheaf
+import TauCeti.AlgebraicGeometry.LineBundle.TensorProduct
 
 /-!
 # Euler characteristics of twists on projective space
@@ -18,7 +20,8 @@ import TauCeti.AlgebraicGeometry.Cohomology.ProjectiveSpace.TwistingSheaf
 On projective space of positive dimension `d`, the Euler characteristic of `𝒪(m)` is the
 integer binomial coefficient `Ring.choose (m + d) d`, for every integer twist `m`. On the
 projective plane this gives the quadratic formula used as the starting point for computing
-Euler characteristics on blowups of the plane.
+Euler characteristics on blowups of the plane. The structure sheaf of the projective plane
+also has vanishing cohomology in positive degrees.
 
 The calculation uses Tau Ceti's Čech computation of the top cohomology, following the Stacks
 Project, Lemma 30.8.1 (tag 01XT). Subtracting each negative exponent from `-1` identifies its
@@ -194,3 +197,23 @@ theorem eulerCharBelow_twistingSheaf_projectivePlane (k : Type u) [Field k] (m :
 end
 
 end QPainleve
+
+namespace TauCeti.AlgebraicGeometry
+
+open _root_.AlgebraicGeometry _root_.AlgebraicGeometry.Scheme.Modules _root_.CategoryTheory
+open TauCeti.SymmetricAlgebra
+
+variable (k : Type u) [CommRing k]
+
+local notation "𝒮" => homogeneousSubmodule k (Fin 3 → k)
+local notation "P" => Proj 𝒮
+
+/-- The projective plane has vanishing structure-sheaf cohomology in positive degrees. -/
+public theorem subsingleton_cohomology_trivial_projectivePlane {i : ℕ} (hi : 0 < i) :
+    Subsingleton (Cohomology (InvertibleSheaf.trivial P).obj i) := by
+  have : Subsingleton (Cohomology (Proj.twistingSheaf 𝒮 0) i) :=
+    (Pi.basisFun k (Fin 3)).subsingleton_cohomology_twistingSheaf_of_neg_card_lt (by decide) hi
+  let e := InvertibleSheaf.trivialObjIsoUnit P ≪≫ Proj.unitIsoTwistingSheafZero 𝒮
+  exact (cohomologyBaseLinearEquivOfIso k e i).injective.subsingleton
+
+end TauCeti.AlgebraicGeometry
