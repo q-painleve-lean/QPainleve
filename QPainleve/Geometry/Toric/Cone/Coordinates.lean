@@ -72,6 +72,51 @@ theorem mem_iff_lattice_basis_repr {σ : PointedCone ℝ V} {n : ℕ} {b : Basis
 
 end IsExtendingBasis
 
+/-- A nonnegative linear functional that vanishes on the sum of the primitive ray
+generators vanishes on the entire cone. -/
+theorem IsToricCone.map_eq_zero_of_sum_generators {σ : PointedCone ℝ V}
+    (hσ : IsToricCone i σ) (hi : IsIntegralLattice i)
+    (f : V →ₗ[ℝ] ℝ) (hf : ∀ x ∈ σ, 0 ≤ f x) [Fintype (ToricRay σ)]
+    (hzero : f (∑ ρ : ToricRay σ, i (primitiveGenerator hi hσ ρ)) = 0) :
+    ∀ x ∈ σ, f x = 0 := by
+  have hgens := (Fintype.sum_eq_zero_iff_of_nonneg fun ρ : ToricRay σ ↦ hf _
+    (ρ.val.isFaceOf.le (primitiveGenerator_mem hi hσ ρ))).mp (by simpa only [map_sum] using hzero)
+  have hle : σ ≤ Submodule.restrictScalars (Nonneg ℝ) f.ker := by
+    rw [← hσ.hull_primitiveGenerator hi]
+    apply Submodule.span_le.mpr
+    rintro _ ⟨_, ⟨ρ, rfl⟩, rfl⟩
+    exact congrFun hgens ρ
+  exact fun x hx ↦ hle hx
+
+/-- A toric cone lies in a cone with an extending basis if the sum of its primitive ray
+generators lies there and each coordinate in that basis has constant weak sign. -/
+theorem IsToricCone.le_of_sum_generators_mem {σ τ : PointedCone ℝ V} {n : ℕ}
+    (hσ : IsToricCone i σ) (hi : IsIntegralLattice i)
+    (hτ : IsToricCone i τ) (b : Module.Basis (Fin n) ℤ N) (r : ToricRay τ ↪ Fin n)
+    (hb : IsExtendingBasis i b r) [Fintype (ToricRay σ)]
+    (hs : (∑ ρ : ToricRay σ, i (primitiveGenerator hi hσ ρ)) ∈ τ)
+    (hsign : ∀ j, (∀ x ∈ σ, 0 ≤ (hi.isBaseChange.basis b).repr x j) ∨
+      ∀ x ∈ σ, (hi.isBaseChange.basis b).repr x j ≤ 0) :
+    σ ≤ τ := by
+  let c := hi.isBaseChange.basis b
+  let z := ∑ ρ : ToricRay σ, i (primitiveGenerator hi hσ ρ)
+  have hz : z ∈ σ := Submodule.sum_mem _ fun ρ _ ↦
+    ρ.val.isFaceOf.le (primitiveGenerator_mem hi hσ ρ)
+  have hzτ := (hb.mem_iff_real_basis_repr hi hτ z).mp hs
+  intro x hx
+  apply (hb.mem_iff_real_basis_repr hi hτ x).mpr
+  intro j
+  have hfix {j : Fin n} (h : c.repr z j = 0) : c.repr x j = 0 := by
+    rcases hsign j with hj | hj
+    · exact hσ.map_eq_zero_of_sum_generators hi (c.coord j) hj h x hx
+    · have h' : (-c.coord j) z = 0 := by simp [h, c]
+      simpa using hσ.map_eq_zero_of_sum_generators hi (-c.coord j)
+        (fun y hy ↦ neg_nonneg.mpr (hj y hy)) h' x hx
+  refine ⟨?_, fun hj ↦ hfix ((hzτ j).2 hj)⟩
+  rcases hsign j with hj | hj
+  · exact hj x hx
+  · exact (hfix ((hj z hz).antisymm (hzτ j).1)).ge
+
 end TauCeti.Toric
 
 namespace Module.Basis
