@@ -140,22 +140,38 @@ def comp (R : FiberRealization M N F I g) (R' : FiberRealization N O G J h) :
 @[simp]
 theorem refl_iso : (refl M).iso = Iso.refl M.pair := (rfl)
 
-/-- A regular change in evaluation is realized by the identity on the marked pair. -/
-def compEvaluation (M : MarkedSurface k n B₀ X₀) (f : X₀ ⟶ X₁) :
-    FiberRealization M (M.compEvaluation f) f.toRationalMap (.refl B₀) 1 :=
-  have hIso : surfaceIso (M := M) (N := M.compEvaluation f) (Iso.refl M.pair) =
-      Iso.refl M.surface := MarkedSurface.surfaceIso_refl (M := M)
+/-- The identity on a marked pair realizes an X map when the new evaluation is the
+rational composite of the original evaluation and that map. -/
+def withEvaluation (M : MarkedSurface k n B₀ X₀) (F : X₀ ⤏ X₁) (ev : M.surface ⤏ X₁)
+    (h : ∃ h : M.evaluation.fromFunctionField (IsLocalRing.closedPoint M.surface.functionField)
+        ∈ F.domain, M.evaluation.compOfDefined F h = ev) :
+    FiberRealization M (M.withEvaluation ev) F (.refl B₀) 1 :=
+  have hIso : surfaceIso (M := M) (N := M.withEvaluation ev) (Iso.refl M.pair) =
+      Iso.refl M.surface := MarkedSurface.surfaceIso_refl
   { iso := Iso.refl M.pair
     picard_eq a := by
       have ha : LinearMap.BilinForm.IsometryEquiv.refl B₀ a = a := rfl
-      rw [ha, hIso, Iso.refl_hom, MarkedSurface.compEvaluation_picardMarking]
+      rw [ha, hIso, Iso.refl_hom, MarkedSurface.withEvaluation_picardMarking]
       exact congrArg Additive.ofMul (LineBundleClass.pullback_id (M.picardMarking a).toMul).symm
-    boundaryAction_eq := M.boundaryCycleAction_compEvaluation_refl f
+    boundaryAction_eq := M.boundaryCycleAction_withEvaluation_refl ev
     evaluation_eq := by
-      obtain ⟨h, he⟩ := M.evaluation.compOfDefined_toRationalMap f
+      obtain ⟨h, he⟩ := h
       refine ⟨h, he.trans ?_⟩
-      simp only [hIso, Iso.refl_hom, MarkedSurface.compEvaluation_evaluation]
+      simp only [hIso, Iso.refl_hom, MarkedSurface.withEvaluation_evaluation]
       exact (RationalMap.id_comp _).symm }
+
+omit [IsIntegral X₁] in
+/-- Changing the evaluation realizes the X map by the identity of the pair. -/
+@[simp]
+theorem withEvaluation_iso (M : MarkedSurface k n B₀ X₀) (F : X₀ ⤏ X₁)
+    (ev : M.surface ⤏ X₁) (h : ∃ h, M.evaluation.compOfDefined F h = ev) :
+    (withEvaluation M F ev h).iso = Iso.refl M.pair := (rfl)
+
+/-- A regular change in evaluation is realized by the identity on the marked pair. -/
+def compEvaluation (M : MarkedSurface k n B₀ X₀) (f : X₀ ⟶ X₁) :
+    FiberRealization M (M.compEvaluation f) f.toRationalMap (.refl B₀) 1 :=
+  withEvaluation M f.toRationalMap (M.evaluation.compHom f)
+    (M.evaluation.compOfDefined_toRationalMap f)
 
 omit [IsIntegral X₁] in
 @[simp]
