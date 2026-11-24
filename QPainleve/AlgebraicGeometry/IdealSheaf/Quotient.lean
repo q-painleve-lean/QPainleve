@@ -5,11 +5,14 @@ Authors: The QPainleve contributors
 -/
 module
 
+public import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.Invertible
 public import TauCeti.AlgebraicGeometry.IdealSheaf.TensorProduct
 public import TauCeti.AlgebraicGeometry.IdealSheaf.MayerVietoris
 public import TauCeti.AlgebraicGeometry.Modules.Pullback.Basic
 
+import QPainleve.AlgebraicGeometry.IdealSheaf.Tensor.Product
 import TauCeti.Algebra.Homology.ShortComplex.ShortExact
+import TauCeti.AlgebraicGeometry.IdealSheaf.TensorSequence
 import TauCeti.AlgebraicGeometry.Modules.AffineGlobalSections
 import TauCeti.AlgebraicGeometry.Modules.Pushforward.Basic
 import TauCeti.AlgebraicGeometry.Modules.Quasicoherent.Cokernels
@@ -21,7 +24,8 @@ import TauCeti.AlgebraicGeometry.Modules.SchemeTheoreticSupport
 The quotient of an ideal sheaf by its product with another ideal sheaf
 is the direct image of its restriction to the closed subscheme of the
 second ideal. For nested ideals, this quotient is the kernel of the restriction
-between the corresponding closed subschemes.
+between the corresponding closed subschemes. For an effective Cartier ideal,
+the quotient of successive powers is the restriction of an invertible sheaf.
 -/
 
 public section
@@ -174,6 +178,44 @@ theorem sheafMul_sheafHomOfLE_mul (I J : X.IdealSheafData) :
     _ = (I.sheaf ◁ j ≫ (ρ_ I.sheaf).hom) ≫ i := by
       rw [tensorHom_def', unitors_equal, Category.assoc, Category.assoc]
       exact (I.sheaf ◁ j) ≫= rightUnitor_naturality i
+
+section CartierThickening
+
+open TauCeti (isEffectiveCartier_pow)
+
+variable {E : X.IdealSheafData}
+
+local notation "powLE" => pow_le_pow_right_of_le_one' (a := E)
+  (le_of_le_of_eq le_top (Eq.symm (one_eq_top (X := X))))
+
+/-- The layer `I^n/I^(n+1)` of a Cartier thickening is the restriction of `I^n` to
+`V(I)`, viewed as a sheaf on the ambient scheme. -/
+def IsEffectiveCartier.thickeningLayerIso (hE : E.IsEffectiveCartier) (n : ℕ) :
+    cokernel (sheafHomOfLE (powLE (Nat.le_succ n))) ≅
+      (isEffectiveCartier_pow hE n).toInvertibleSheaf.obj ⊗ E.pushforwardSubscheme := by
+  let N := (isEffectiveCartier_pow hE n).toInvertibleSheaf
+  let j := sheafHomOfLE (mul_le_of_le_one_right' (a := E ^ n) (b := E) le_top)
+  let a := (E ^ n).sheaf ◁ (E.sheafι : E.sheaf ⟶ Scheme.Modules.unit X)
+  let hN : N.obj = (E ^ n).sheaf := (isEffectiveCartier_pow hE n).toInvertibleSheaf_obj
+  have := (E ^ n).isIso_sheafMul_of_isEffectiveCartier E hE
+  let e := asIso ((E ^ n).sheafMul E)
+  have hsq : a ≫ (ρ_ (E ^ n).sheaf).hom = e.hom ≫ j :=
+    (sheafMul_sheafHomOfLE_mul (E ^ n) E).symm
+  have : (E ^ n).sheaf.IsLocallyFree := hN ▸ (inferInstance : N.obj.IsLocallyFree)
+  have : (E ^ n).sheaf.IsFiniteType := hN ▸ (inferInstance : N.obj.IsFiniteType)
+  have hp : cokernel (sheafHomOfLE (powLE (Nat.le_succ n))) = cokernel j := by
+    let P := {I : X.IdealSheafData // I ≤ E ^ n}
+    let Q (I : P) := cokernel (sheafHomOfLE I.property)
+    let I : P := ⟨E ^ (n + 1), powLE (Nat.le_succ n)⟩
+    let J : P := ⟨E ^ n * E, mul_le_of_le_one_right' le_top⟩
+    have hIJ : I = J := Subtype.ext (pow_succ E n)
+    exact congrArg Q hIJ
+  exact eqToIso hp ≪≫ (cokernel.mapIso a j e (ρ_ (E ^ n).sheaf) hsq).symm ≪≫
+    (cokernelIsCokernel a).coconePointUniqueUpToIso
+      (E.shortExact_tensor_toPushforwardSubscheme (E ^ n).sheaf).gIsCokernel ≪≫
+    (tensorRight E.pushforwardSubscheme).mapIso (eqToIso hN.symm)
+
+end CartierThickening
 
 /-- The quotient of an ideal sheaf by its product with a second ideal is the
 direct image of its restriction to the closed subscheme defined by the second

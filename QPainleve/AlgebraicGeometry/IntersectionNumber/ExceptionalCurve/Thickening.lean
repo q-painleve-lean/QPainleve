@@ -6,10 +6,9 @@ Authors: The QPainleve contributors
 module
 
 public import QPainleve.AlgebraicGeometry.IdealSheaf.Quotient
-public import QPainleve.AlgebraicGeometry.IdealSheaf.Tensor.Restriction
 public import TauCeti.AlgebraicGeometry.IntersectionNumber.ExceptionalCurve.Basic
 
-import QPainleve.AlgebraicGeometry.IdealSheaf.Tensor.Product
+import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.ProjectiveLine.Cohomology
 import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.TensorProduct
 
 /-!
@@ -39,65 +38,8 @@ open LineBundleClass
 
 variable {X : Scheme.{u}} {E : X.IdealSheafData}
 
-/-- The restriction of a line bundle of degree at least `-1` to a projective-line
-subscheme has no first cohomology, also when viewed as a sheaf on the ambient scheme. -/
-theorem subsingleton_cohomology_one_tensor_pushforwardSubscheme_of_projectiveLine
-    (M : InvertibleSheaf X) {κ : Type u} [Field κ] (e : projectiveLine κ ≅ E.subscheme)
-    (hdeg : -1 ≤ intersectionNumber κ (e.hom ≫ E.subschemeι) (LineBundleClass.mk M)) :
-    Subsingleton (Cohomology (M.obj ⊗ E.pushforwardSubscheme) 1) := by
-  let i := E.subschemeι
-  let N := (Scheme.Modules.pullback i).obj M.obj
-  let P := (InvertibleSheaf.pullback (e.hom ≫ i)).obj M
-  let d := intersectionNumber κ (e.hom ≫ i) (LineBundleClass.mk M)
-  have hP : InvertibleSheaf.eulerDegree κ P = d := by
-    simp only [d, P, intersectionNumber_def, pullback_mk, eulerDegree_mk]
-  obtain ⟨t⟩ := (projectiveLine.nonempty_iso_twistingSheaf_iff κ P d).mpr hP
-  let t' := ((Scheme.Modules.pullbackComp e.hom i).app M.obj) ≪≫
-    eqToIso (InvertibleSheaf.pullback_obj_obj (e.hom ≫ i) M).symm ≪≫ t
-  have := E.isIso_tensorRestrictionHom M
-  let c := (cohomologyFunctor _ 1).mapIso (asIso (E.tensorRestrictionHom M)) ≪≫
-    cohomologyPushforwardIso i N 1
-  let c' := (cohomologyFunctor _ 1).mapIso ((e.hom.pullbackIsoPushforwardInv).app N) ≪≫
-    cohomologyPushforwardIso (inv e.hom) N 1
-  let b := Pi.basisFun κ (Fin 2)
-  have hd : -1 ≤ d := hdeg
-  have hz : Subsingleton (Cohomology (Proj.twistingSheaf
-      (TauCeti.SymmetricAlgebra.homogeneousSubmodule κ (Fin 2 → κ)) d) 1) :=
-    b.subsingleton_cohomology_twistingSheaf_of_neg_card_lt (by omega : -2 < d)
-      Nat.one_pos
-  let h := c ≪≫ c'.symm ≪≫ (cohomologyFunctor _ 1).mapIso t'
-  exact @Function.Injective.subsingleton _ _ _ h.addCommGroupIsoToAddEquiv.injective hz
-
-
 local notation "powLE" => pow_le_pow_right_of_le_one' (a := E)
   (le_of_le_of_eq le_top (Eq.symm (one_eq_top (X := X))))
-
-/-- The layer `I^n/I^(n+1)` of a Cartier thickening is the restriction of `I^n` to
-`V(I)`, viewed as a sheaf on the ambient scheme. -/
-def IsEffectiveCartier.thickeningLayerIso (hE : E.IsEffectiveCartier) (n : ℕ) :
-    cokernel (sheafHomOfLE (powLE (Nat.le_succ n))) ≅
-      (isEffectiveCartier_pow hE n).toInvertibleSheaf.obj ⊗ E.pushforwardSubscheme := by
-  let N := (isEffectiveCartier_pow hE n).toInvertibleSheaf
-  let j := sheafHomOfLE (mul_le_of_le_one_right' (a := E ^ n) (b := E) le_top)
-  let a := (E ^ n).sheaf ◁ (E.sheafι : E.sheaf ⟶ Scheme.Modules.unit X)
-  let hN : N.obj = (E ^ n).sheaf := (isEffectiveCartier_pow hE n).toInvertibleSheaf_obj
-  have := (E ^ n).isIso_sheafMul_of_isEffectiveCartier E hE
-  let e := asIso ((E ^ n).sheafMul E)
-  have hsq : a ≫ (ρ_ (E ^ n).sheaf).hom = e.hom ≫ j :=
-    (sheafMul_sheafHomOfLE_mul (E ^ n) E).symm
-  have : (E ^ n).sheaf.IsLocallyFree := hN ▸ (inferInstance : N.obj.IsLocallyFree)
-  have : (E ^ n).sheaf.IsFiniteType := hN ▸ (inferInstance : N.obj.IsFiniteType)
-  have hp : cokernel (sheafHomOfLE (powLE (Nat.le_succ n))) = cokernel j := by
-    let P := {I : X.IdealSheafData // I ≤ E ^ n}
-    let Q (I : P) := cokernel (sheafHomOfLE I.property)
-    let I : P := ⟨E ^ (n + 1), powLE (Nat.le_succ n)⟩
-    let J : P := ⟨E ^ n * E, mul_le_of_le_one_right' le_top⟩
-    have hIJ : I = J := Subtype.ext (pow_succ E n)
-    exact congrArg Q hIJ
-  exact eqToIso hp ≪≫ (cokernel.mapIso a j e (ρ_ (E ^ n).sheaf) hsq).symm ≪≫
-    (cokernelIsCokernel a).coconePointUniqueUpToIso
-      (E.shortExact_tensor_toPushforwardSubscheme (E ^ n).sheaf).gIsCokernel ≪≫
-    (tensorRight E.pushforwardSubscheme).mapIso (eqToIso hN.symm)
 
 /-- A nonnegative Cartier twist on an exceptional curve has surjective restriction
 between any two of its finite thickenings. The map is the restriction of

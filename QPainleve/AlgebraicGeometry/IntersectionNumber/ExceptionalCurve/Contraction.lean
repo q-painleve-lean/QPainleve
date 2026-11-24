@@ -13,8 +13,9 @@ import QPainleve.AlgebraicGeometry.Cohomology.SerreVanishing
 import QPainleve.AlgebraicGeometry.Curves.Degree.Ample
 import QPainleve.AlgebraicGeometry.EffectiveCartierDivisor.GlobalGeneration
 import QPainleve.AlgebraicGeometry.EffectiveCartierDivisor.Twist
-import QPainleve.AlgebraicGeometry.IntersectionNumber.ExceptionalCurve.Thickening
+import QPainleve.AlgebraicGeometry.IdealSheaf.Tensor.Restriction
 import QPainleve.AlgebraicGeometry.Morphisms.Finite
+import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.ProjectiveLine.Cohomology
 import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.Sections.Basic
 import QPainleve.AlgebraicGeometry.Scheme.Sections
 import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.Proper
