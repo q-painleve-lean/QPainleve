@@ -103,6 +103,22 @@ theorem completionToFiberThickening_apply (f : X ⟶ Spec (.of R)) (n : ℕ) (a 
         ((Scheme.ΓSpecIso _).inv (AdicCompletion.evalₐ 𝔪 (n + 1) a)) :=
   (rfl)
 
+/-- For an element of the base ring, completion followed by restriction to an
+infinitesimal fiber is ordinary pullback from the base to that fiber. -/
+theorem completionToFiberThickening_algebraMap (f : X ⟶ Spec (.of R)) (n : ℕ) (r : R) :
+    f.completionToFiberThickening n (algebraMap R R̂ r) =
+      (pullback.fst f (Spec.map (CommRingCat.ofHom (Ideal.Quotient.mk (𝔪 ^ (n + 1)))))).appTop
+        (f.appTop ((Scheme.ΓSpecIso (.of R)).inv r)) := by
+  let Q := CommRingCat.of (R ⧸ 𝔪 ^ (n + 1))
+  let qr : CommRingCat.of R ⟶ Q := CommRingCat.ofHom (Ideal.Quotient.mk _)
+  let q := Spec.map qr
+  have h : (Scheme.ΓSpecIso (.of R)).inv ≫ f.appTop ≫ (pullback.fst f q).appTop =
+      qr ≫ (Scheme.ΓSpecIso Q).inv ≫ (pullback.snd f q).appTop := by
+    rw [← Scheme.Hom.comp_appTop, pullback.condition, Scheme.Hom.comp_appTop,
+      ← Scheme.ΓSpecIso_inv_naturality_assoc]
+  rw [completionToFiberThickening_apply, AdicCompletion.algebraMap_apply, AdicCompletion.evalₐ_of]
+  exact (ConcreteCategory.congr_hom h r).symm
+
 private theorem pullback_appTop_pow_subschemeι_eq_zero [IsNoetherianRing R]
     (f : X ⟶ Spec (.of R)) (n : ℕ) (d : R̂)
     (ha : f.completionToFiberThickening n d = 0) :
@@ -214,7 +230,9 @@ noncomputable abbrev fiberThickeningSections (f : X ⟶ Spec (.of R)) : ℕᵒ�
     Γ(pullback f (Spec.map (CommRingCat.ofHom (Ideal.Quotient.mk (𝔪 ^ (n + 1))))), ⊤))
       (fun n ↦ (fiberThickeningι f n).appTop)
 
-private theorem completionToFiberThickening_naturality (f : X ⟶ Spec (.of R)) (n : ℕ) :
+/-- Restriction from one infinitesimal fiber to the preceding fiber commutes with
+pullback from the completed base. -/
+theorem completionToFiberThickening_naturality (f : X ⟶ Spec (.of R)) (n : ℕ) :
     CommRingCat.ofHom (f.completionToFiberThickening (n + 1)) ≫
         (fiberThickeningι f n).appTop =
       CommRingCat.ofHom (f.completionToFiberThickening n) := by
