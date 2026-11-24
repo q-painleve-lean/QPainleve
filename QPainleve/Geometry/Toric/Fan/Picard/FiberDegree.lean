@@ -8,11 +8,11 @@ module
 public import QPainleve.AlgebraicGeometry.Blowup.Tower.Intersection
 public import QPainleve.Geometry.Toric.Fan.Picard.Hirzebruch
 public import QPainleve.Geometry.Toric.Fan.Ruling.Basic
+public import QPainleve.Geometry.Toric.Fan.Ruling.Hirzebruch
 public import TauCeti.AlgebraicGeometry.LineBundle.ProjectiveLine
 
 import Mathlib.Analysis.Complex.Polynomial.Basic
 import QPainleve.AlgebraicGeometry.Chow.Isomorphism
-import QPainleve.Geometry.Toric.Fan.HalfPlane
 import QPainleve.Geometry.Toric.Fan.Picard.Ruling
 import QPainleve.Geometry.Toric.Fan.Ruling.Subdivision
 import TauCeti.AlgebraicGeometry.RationalPoint.IdealSheaf
@@ -32,7 +32,7 @@ comparison used in the preparation of a Hirzebruch surface for the quadric case 
 
 public section
 
-open AlgebraicGeometry CategoryTheory Module PointedCone
+open AlgebraicGeometry CategoryTheory Module
 open TauCeti.AlgebraicGeometry LineBundleClass TauCeti.Toric
 
 local notation "S" => Spec (CommRingCat.of ℂ)
@@ -47,21 +47,6 @@ variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   (hr : (fun j ↦ (r j).primitiveGenerator) = ![b 0, b 1, -b 0, e • b 0 - b 1])
 
 local notation "m" => LinearMap.toAddMonoidHom (b.coord 1)
-
-omit [Nonempty Φ.cones] in
-include hr in
-/-- The second coordinate character has constant weak sign on each cone of a
-Hirzebruch fan, so it defines the ruling to the projective line. -/
-theorem nonneg_or_nonpos_hirzebruch_ruling_character (σ : Φ.cones) :
-    (∀ x ∈ σ.val, 0 ≤ Φ.lattice.realCharacter m x) ∨
-      ∀ x ∈ σ.val, Φ.lattice.realCharacter m x ≤ 0 := by
-  have h₀ : (r 0).primitiveGenerator = b 0 := congrFun hr 0
-  have h₂ : (r 2).primitiveGenerator = -b 0 := congrFun hr 2
-  have hrev : (1 : Fin 2).rev = 0 := by decide
-  simpa only [IsIntegralLattice.realCharacter_coord, Basis.coord_apply] using
-    Φ.nonneg_or_nonpos_basis_repr_on_cone b 1 σ
-      (fun _ ↦ by simpa only [hrev, h₀] using (r 0).hull_primitiveGenerator_mem)
-      (fun _ ↦ by simpa only [hrev, h₂] using (r 2).hull_primitiveGenerator_mem)
 
 /-- The first Hirzebruch Picard basis vector is the pullback of `𝒪(1)`
 under the ruling defined by the second basis character. -/
