@@ -20,7 +20,7 @@ centers vary in any nonempty open.
 
 public noncomputable section
 
-open AlgebraicGeometry CategoryTheory TauCeti DiagonalizableGroup
+open AlgebraicGeometry CategoryTheory Limits TauCeti DiagonalizableGroup
 open scoped CategoryTheory.MonObj
 
 namespace QPainleve.CharacterTorus
@@ -34,6 +34,15 @@ generated. -/
 def affineEvaluation (k : Type u) [CommRing k] (v : A →+ N) :
     scheme k (A × N) ⟶ scheme k A :=
   map k ((AddMonoidHom.id A).prod v)
+
+/-- A regular monomial pulls back to its center exponent and its charge exponent. -/
+@[simp]
+theorem preimage_affineEvaluation_single (k : Type u) [CommRing k] (v : A →+ N)
+    (a : A) (r : k) :
+    (Spec.preimage (affineEvaluation k v)).hom (AddMonoidAlgebra.single a r) =
+      AddMonoidAlgebra.single (a, v a) r := by
+  rw [affineEvaluation, preimage_map]
+  simp [AddMonoidAlgebra.mapDomainAlgHom]
 
 instance isDominant_affineEvaluation (k : Type u) [CommRing k] (v : A →+ N) :
     IsDominant (affineEvaluation k v) := by
@@ -98,11 +107,29 @@ local notation "L" B => FGCommGrpCat.of (Multiplicative B)
 local notation:max "D" B:arg => groupScheme k (L B)
 local notation "Dmap" f => groupSchemeMap k (FGCommGrpCat.ofHom (AddMonoidHom.toMultiplicative f))
 local notation "π₁" => Dmap (AddMonoidHom.inl A N)
+local notation "S" => Spec (CommRingCat.of k)
 
 /-- Evaluation of independent characters using a variable center and a charge map.
 The domain models the product of the center and charge tori via `prodIso`. -/
 def evaluation (v : A →+ N) : (D (A × N)) ⟶ (D A) :=
   Dmap ((AddMonoidHom.id A).prod v)
+
+/-- Evaluate the independent characters on the charge torus at the specified center
+point. This is specialization of the variable-center morphism with the center fixed. -/
+@[expose]
+def evaluationAtCenter (v : A →+ N) (c : S ⟶ (D A).X.left)
+    (hc : c ≫ (D A).X.hom = 𝟙 S) :
+    (D N).X.left ⟶ (D A).X.left :=
+  pullback.lift (f := (D A).X.hom) (g := (D N).X.hom)
+    ((D N).X.hom ≫ c) (𝟙 _) (by simp [hc]) ≫
+    (prodIso k A N).hom ≫ (evaluation k v).hom.hom.left
+
+/-- Evaluation at a center depends only on the underlying point. -/
+theorem evaluationAtCenter_congr (v : A →+ N) {c d : S ⟶ (D A).X.left} (h : c = d)
+    {hc : c ≫ (D A).X.hom = 𝟙 S} {hd : d ≫ (D A).X.hom = 𝟙 S} :
+    evaluationAtCenter k v c hc = evaluationAtCenter k v d hd := by
+  subst d
+  rfl
 
 /-- On points evaluation multiplies the center character by the pullback of the charge
 character. -/
@@ -135,6 +162,13 @@ theorem section_evaluation (v : A →+ N) :
       (AddMonoidHom.fst_comp_prod (AddMonoidHom.id A) v)
   rw [hcomp]
   simp
+
+/-- The group-scheme evaluation agrees with the evaluation in additive coordinates. -/
+@[reassoc]
+theorem evaluation_comp_diagonalizableGroupSchemeIso (v : A →+ N) :
+    (evaluation k v).hom.hom.left ≫ (diagonalizableGroupSchemeIso k (L A)).hom =
+      (diagonalizableGroupSchemeIso k (L (A × N))).hom ≫ affineEvaluation k v :=
+  groupSchemeMap_comp_diagonalizableGroupSchemeIso k ((AddMonoidHom.id A).prod v)
 
 /-- Evaluation is dominant since it has a section obtained by setting the charge character
 to the identity. -/

@@ -72,10 +72,50 @@ theorem tensorRestrictionHom_unit (M : InvertibleSheaf X) :
   rw [← Functor.LaxMonoidal.right_unitality G ((F).obj M.obj),
     rightUnitor_naturality u, Iso.inv_hom_id_assoc]
 
+/-- A global section of a line bundle restricts to zero on the closed subscheme
+exactly when it comes from the ideal-sheaf twist. -/
+theorem exact_pullbackSections (M : InvertibleSheaf X) :
+    Function.Exact
+      ((M.obj ◁ (I.sheafι : I.sheaf ⟶ 𝟙_ X.Modules) ≫ (ρ_ M.obj).hom).app ⊤)
+      ((i).pullbackSections M.obj ⊤) := by
+  let N := M.obj
+  have : N.IsLocallyFree := inferInstanceAs M.obj.IsLocallyFree
+  have : N.IsFiniteType := inferInstanceAs M.obj.IsFiniteType
+  have : IsIso (I.tensorRestrictionHom M) := I.isIso_tensorRestrictionHom M
+  intro s
+  let t := ((I.tensorRestrictionHom M).app ⊤).hom
+  have ht : Function.Injective t :=
+    (ConcreteCategory.bijective_of_isIso ((I.tensorRestrictionHom M).app ⊤)).injective
+  have he : t ((N ◁ I.toPushforwardSubscheme).app ⊤ ((ρ_ N).inv.app ⊤ s)) =
+      (i).pullbackSections M.obj ⊤ s := by
+    rw [pullbackSections_apply]
+    exact congrArg (fun g ↦ g.app ⊤ s) (I.tensorRestrictionHom_unit M)
+  have hex : Function.Exact ((N ◁ (I.sheafι : I.sheaf ⟶ 𝟙_ X.Modules)).app ⊤)
+      ((N ◁ I.toPushforwardSubscheme).app ⊤) :=
+    (TauCeti.AlgebraicGeometry.Scheme.Modules.exact_sections
+      (I.shortExact_tensor_toPushforwardSubscheme N))
+  refine (he.symm.congr_left.trans (map_eq_zero_iff t ht)).trans
+    ((hex ((ρ_ N).inv.app ⊤ s)).trans ?_)
+  constructor
+  · rintro ⟨a, ha⟩
+    refine ⟨a, ?_⟩
+    rw [Scheme.Modules.Hom.comp_app, ConcreteCategory.comp_apply, ha]
+    have he' := ConcreteCategory.congr_hom
+      (congrArg (fun g : N ⟶ N ↦ g.app ⊤) (ρ_ N).inv_hom_id) s
+    simpa only [Scheme.Modules.Hom.comp_app, ConcreteCategory.comp_apply,
+      Scheme.Modules.Hom.id_app, ConcreteCategory.id_apply] using he'
+  · rintro ⟨a, rfl⟩
+    refine ⟨a, ?_⟩
+    have he' := ConcreteCategory.congr_hom
+      (congrArg (fun g : N ⊗ 𝟙_ X.Modules ⟶ N ⊗ 𝟙_ X.Modules ↦ g.app ⊤)
+        (ρ_ N).hom_inv_id) ((N ◁ I.sheafι).app ⊤ a)
+    simpa only [Scheme.Modules.Hom.comp_app, ConcreteCategory.comp_apply,
+      Scheme.Modules.Hom.id_app, ConcreteCategory.id_apply] using he'.symm
+
 /-- Global sections of a line bundle lift from a closed subscheme if the first
 cohomology of the ideal-sheaf twist vanishes. -/
 theorem surjective_pullbackSectionsLE_of_subsingleton_cohomology_one (M : InvertibleSheaf X)
-    (h : Subsingleton (Cohomology (M.obj ⊗ I.sheaf) 1)) :
+    (h : Subsingleton (TauCeti.AlgebraicGeometry.Scheme.Modules.Cohomology (M.obj ⊗ I.sheaf) 1)) :
     Function.Surjective ((i).pullbackSectionsLE M.obj ⊤ ⊤ (by simp)) := by
   let N := M.obj
   have : M.obj.IsLocallyFree := inferInstanceAs N.IsLocallyFree
@@ -102,36 +142,6 @@ theorem surjective_pullbackSectionsLE_of_subsingleton_cohomology_one (M : Invert
   refine ⟨x, ?_⟩
   rw [pullbackSectionsLE_apply, hu, hv]
 
-/-- A section of a line bundle vanishes on the closed subscheme exactly when it
-comes from the tensor product with the defining ideal. -/
-theorem pullbackSections_eq_zero_iff (M : InvertibleSheaf X) (s : Γ(M.obj, ⊤)) :
-    (i).pullbackSections M.obj ⊤ s = 0 ↔
-      ∃ w, (M.obj ◁ I.sheafι ≫ (ρ_ M.obj).hom).app ⊤ w = s := by
-  let μ := (ρ_ M.obj).inv
-  let t := M.obj ◁ I.toPushforwardSubscheme
-  have : IsIso (I.tensorRestrictionHom M) := I.isIso_tensorRestrictionHom M
-  have hzero : t.app ⊤ (μ.app ⊤ s) = 0 ↔ (i).pullbackSections M.obj ⊤ s = 0 := by
-    rw [pullbackSections_apply, ← I.tensorRestrictionHom_unit,
-      Scheme.Modules.Hom.comp_app, Scheme.Modules.Hom.comp_app]
-    exact (map_eq_zero_iff _ (ConcreteCategory.bijective_of_isIso
-      ((I.tensorRestrictionHom M).app ⊤)).1).symm
-  rw [← hzero]
-  have hex : Function.Exact ⇑((M.obj ◁ I.sheafι).app ⊤) ⇑(t.app ⊤) :=
-    TauCeti.AlgebraicGeometry.Scheme.Modules.exact_sections
-      (I.shortExact_tensor_toPushforwardSubscheme M.obj)
-  rw [hex _]
-  constructor
-  · rintro ⟨w, hw⟩
-    exact ⟨w, by
-      simp only [Scheme.Modules.Hom.comp_app, ConcreteCategory.comp_apply]
-      rw [hw]
-      exact Iso.inv_hom_id_apply ((sectionsFunctor ⊤).mapIso (ρ_ M.obj)) s⟩
-  · rintro ⟨w, hw⟩
-    exact ⟨w, by
-      simp only [Scheme.Modules.Hom.comp_app, ConcreteCategory.comp_apply] at hw
-      rw [← hw]
-      exact (Iso.hom_inv_id_apply ((sectionsFunctor ⊤).mapIso (ρ_ M.obj)) _).symm⟩
-
 /-- Under the quotient comparison, the map of quotients is the direct image of the
 pullback of the original morphism. -/
 @[reassoc]
@@ -156,12 +166,9 @@ theorem IsEffectiveCartier.pullbackSections_pow_eq_zero_iff {E : X.IdealSheafDat
   let a := (E ^ n).sheaf ◁ E.sheafι ≫ (ρ_ (E ^ n).sheaf).hom
   let b := sheafHomOfLE (mul_le_of_le_one_right' (a := E ^ n) (b := E) le_top)
   have hab : (E ^ n).sheafMul E ≫ b = a := sheafMul_sheafHomOfLE_mul _ _
-  have hk (M : X.Modules) (hM : M = N.obj) (t : Γ(M, ⊤)) :
-      E.subschemeι.pullbackSections M ⊤ t = 0 ↔
-        ∃ w, (M ◁ E.sheafι ≫ (ρ_ M).hom).app ⊤ w = t := by
-    subst M
-    exact E.pullbackSections_eq_zero_iff N t
-  rw [hk _ (IsEffectiveCartier.toInvertibleSheaf_obj _).symm s]
+  have hex := E.exact_pullbackSections N
+  rw [IsEffectiveCartier.toInvertibleSheaf_obj] at hex
+  rw [hex s]
   constructor
   · rintro ⟨w, rfl⟩
     let z := ((E ^ n).sheafMul E).app ⊤ w

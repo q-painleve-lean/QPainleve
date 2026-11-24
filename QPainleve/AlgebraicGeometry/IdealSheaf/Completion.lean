@@ -11,10 +11,14 @@ public import Mathlib.AlgebraicGeometry.Noetherian
 public import Mathlib.Algebra.Category.Ring.Limits
 public import Mathlib.RingTheory.AdicCompletion.LocalRing
 public import Mathlib.CategoryTheory.Functor.OfSequence
+public import TauCeti.AlgebraicGeometry.IdealSheaf.Module
+public import TauCeti.AlgebraicGeometry.IdealSheaf.OfIdealTop
 import Mathlib.RingTheory.AdicCompletion.AsTensorProduct
+import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
+import QPainleve.AlgebraicGeometry.IdealSheaf.Stalk
+import QPainleve.AlgebraicGeometry.Scheme.Stalk
 import TauCeti.AlgebraicGeometry.IdealSheaf.Comap
-import TauCeti.AlgebraicGeometry.IdealSheaf.OfIdealTop
-import TauCeti.AlgebraicGeometry.IdealSheaf.Stalk
+import TauCeti.AlgebraicGeometry.Morphisms.SchemeTheoreticallyDominant
 import TauCeti.RingTheory.AdicCompletion.Algebra
 import TauCeti.RingTheory.AdicCompletion.AlgHom
 import TauCeti.RingTheory.AdicCompletion.Noetherian
@@ -26,8 +30,10 @@ A global function on a locally Noetherian scheme is determined by its restrictio
 thickenings cut out by powers of an ideal whose vanishing locus meets the closure of every point.
 For a proper, scheme-theoretically dominant morphism to a Noetherian local spectrum, the completed
 base ring injects into the inverse limit of the rings of functions on the infinitesimal fibers.
-This part of the degree-zero [theorem on formal functions](https://stacks.math.columbia.edu/tag/02OC)
-compares the completed base of an exceptional-curve contraction with the thickened fibers.
+This is part of the degree-zero
+[theorem on formal functions](https://stacks.math.columbia.edu/tag/02OC).
+Localization at a closed point gives the analogous comparison for the completed local ring
+and the original fiber thickenings.
 
 The stalk argument uses Krull intersection, as in the
 [Stacks Project, Lemma 52.28.2](https://stacks.math.columbia.edu/tag/0EL2).
@@ -42,6 +48,13 @@ universe u
 namespace AlgebraicGeometry.Scheme
 
 namespace IdealSheafData
+
+/-- The inverse system of global sections on the positive thickenings of a closed
+subscheme, with restriction as the transition maps. -/
+noncomputable abbrev thickeningSections {X : Scheme.{u}} (I : X.IdealSheafData) :
+    ℕᵒᵖ ⥤ CommRingCat.{u} :=
+  Functor.ofOpSequence (X := fun n ↦ Γ((I ^ (n + 1)).subscheme, ⊤))
+    (fun n ↦ (inclusion (pow_le_pow_of_le_one bot_le le_top (Nat.le_succ (n + 1)))).appTop)
 
 /-- Suppose every point specializes to a point of the closed locus of `I`.
 A global function that restricts to zero on every positive thickening of this locus is zero. -/
@@ -86,6 +99,54 @@ variable {R : Type u} [CommRing R] [IsLocalRing R] {X : Scheme.{u}}
 
 local notation "𝔪" => maximalIdeal R
 local notation "R̂" => AdicCompletion 𝔪 R
+local notation "centerIdeal" =>
+  IdealSheafData.ofIdealTop
+    (Ideal.map (CommRingCat.Hom.hom (Iso.inv (Scheme.ΓSpecIso (CommRingCat.of R)))) 𝔪)
+local notation "quotientSpecPow" n =>
+  Spec.map (CommRingCat.ofHom (Ideal.Quotient.mk (𝔪 ^ n)))
+local notation "quotientSpec" n => quotientSpecPow (n + 1)
+local notation "fiberSectionsMap(" f ", " n ")" =>
+  CommRingCat.Hom.hom
+    (Iso.inv (Scheme.ΓSpecIso _) ≫ Scheme.Hom.appTop (pullback.snd f (quotientSpecPow n)))
+local notation "baseSectionsMap(" f ")" =>
+  Iso.inv (Scheme.ΓSpecIso (CommRingCat.of R)) ≫ Scheme.Hom.appTop f
+
+/-- The ideal of the fiber cut out by the `n`th power of the base maximal ideal
+is the `n`th power of the closed-fiber ideal. -/
+theorem ker_fst_fiberThickening (f : X ⟶ Spec (.of R)) {E : X.IdealSheafData}
+    (hE : (centerIdeal).comap f = E) (n : ℕ) :
+    (pullback.fst f (quotientSpecPow n)).ker = E ^ n := by
+  have : IsClosedImmersion (quotientSpecPow n) :=
+    IsClosedImmersion.spec_of_surjective _ Ideal.Quotient.mk_surjective
+  rw [IdealSheafData.ker_fst_of_isClosedImmersion, Scheme.Hom.ker_Spec_map, CommRingCat.hom_ofHom,
+    Ideal.mk_ker, Ideal.map_pow, IdealSheafData.ofIdealTop_pow, IdealSheafData.comap_pow, hE]
+
+/-- The infinitesimal fiber cut out by a power of the maximal ideal is the
+corresponding thickening of the scheme-theoretic closed fiber. -/
+noncomputable def fiberThickeningIso (f : X ⟶ Spec (.of R)) {E : X.IdealSheafData}
+    (hE : (centerIdeal).comap f = E) (n : ℕ) :
+    pullback f (quotientSpec n) ≅ (E ^ (n + 1)).subscheme := by
+  have : IsClosedImmersion (quotientSpec n) :=
+    IsClosedImmersion.spec_of_surjective _ Ideal.Quotient.mk_surjective
+  have h : (pullback.fst f (quotientSpec n)).ker = (E ^ (n + 1)).subschemeι.ker := by
+    rw [f.ker_fst_fiberThickening hE, IdealSheafData.ker_subschemeι]
+  have := IsClosedImmersion.isIso_lift _ _ h
+  exact (asIso (IsClosedImmersion.lift _ _ h.le)).symm
+
+/-- The identification of the fiber thickening commutes with the closed embedding
+in the source of the morphism. -/
+@[reassoc (attr := simp)]
+theorem fiberThickeningIso_hom_subschemeι (f : X ⟶ Spec (.of R)) {E : X.IdealSheafData}
+    (hE : (centerIdeal).comap f = E) (n : ℕ) :
+    (f.fiberThickeningIso hE n).hom ≫ (E ^ (n + 1)).subschemeι =
+      pullback.fst f (quotientSpec n) := by
+  have : IsClosedImmersion (quotientSpec n) :=
+    IsClosedImmersion.spec_of_surjective _ Ideal.Quotient.mk_surjective
+  have h : (f.fiberThickeningIso hE n).inv ≫ pullback.fst f (quotientSpec n) =
+      (E ^ (n + 1)).subschemeι := by
+    unfold fiberThickeningIso
+    exact IsClosedImmersion.lift_fac _ _ _
+  rw [← h, Iso.hom_inv_id_assoc]
 
 /-- The map from the completed base ring to global functions on the infinitesimal fiber
 of order `n + 1`, given by truncation followed by pullback. -/
@@ -103,21 +164,71 @@ theorem completionToFiberThickening_apply (f : X ⟶ Spec (.of R)) (n : ℕ) (a 
         ((Scheme.ΓSpecIso _).inv (AdicCompletion.evalₐ 𝔪 (n + 1) a)) :=
   (rfl)
 
+/-- Pulling a base function back to an infinitesimal fiber factors through the
+corresponding quotient of the base ring. -/
+theorem fiberSectionsMap_comp_quotient (f : X ⟶ Spec (.of R)) (n : ℕ) :
+    fiberSectionsMap(f, n).comp (Ideal.Quotient.mk (𝔪 ^ n)) =
+      (baseSectionsMap(f) ≫ (pullback.fst f (quotientSpecPow n)).appTop).hom := by
+  let q := CommRingCat.ofHom (Ideal.Quotient.mk (𝔪 ^ n))
+  let a := pullback.fst f (Spec.map q)
+  let b := pullback.snd f (Spec.map q)
+  have h : baseSectionsMap(f) ≫ a.appTop = q ≫ (Scheme.ΓSpecIso _).inv ≫ b.appTop := by
+    rw [Category.assoc, ← Scheme.Hom.comp_appTop, pullback.condition, Scheme.Hom.comp_appTop,
+      ← Scheme.ΓSpecIso_inv_naturality_assoc]
+  exact congrArg CommRingCat.Hom.hom h.symm
+
+/-- The base functions killed on an infinitesimal fiber are those whose pullbacks
+belong to the corresponding power of the closed-fiber ideal. -/
+theorem ker_fiberSectionsMap_comp_quotient (f : X ⟶ Spec (.of R)) {E : X.IdealSheafData}
+    (hE : (centerIdeal).comap f = E) (n : ℕ) :
+    RingHom.ker (fiberSectionsMap(f, n).comp (Ideal.Quotient.mk (𝔪 ^ n))) =
+      ((E ^ n).sections ⊤).comap (baseSectionsMap(f)).hom := by
+  have : IsClosedImmersion (quotientSpecPow n) :=
+    IsClosedImmersion.spec_of_surjective _ Ideal.Quotient.mk_surjective
+  ext r
+  rw [f.fiberSectionsMap_comp_quotient n, RingHom.mem_ker, Ideal.mem_comap,
+    ← f.ker_fst_fiberThickening hE n, Hom.mem_ker_sections_iff]
+  rfl
+
 /-- For an element of the base ring, completion followed by restriction to an
 infinitesimal fiber is ordinary pullback from the base to that fiber. -/
 theorem completionToFiberThickening_algebraMap (f : X ⟶ Spec (.of R)) (n : ℕ) (r : R) :
     f.completionToFiberThickening n (algebraMap R R̂ r) =
-      (pullback.fst f (Spec.map (CommRingCat.ofHom (Ideal.Quotient.mk (𝔪 ^ (n + 1)))))).appTop
-        (f.appTop ((Scheme.ΓSpecIso (.of R)).inv r)) := by
-  let Q := CommRingCat.of (R ⧸ 𝔪 ^ (n + 1))
-  let qr : CommRingCat.of R ⟶ Q := CommRingCat.ofHom (Ideal.Quotient.mk _)
-  let q := Spec.map qr
-  have h : (Scheme.ΓSpecIso (.of R)).inv ≫ f.appTop ≫ (pullback.fst f q).appTop =
-      qr ≫ (Scheme.ΓSpecIso Q).inv ≫ (pullback.snd f q).appTop := by
-    rw [← Scheme.Hom.comp_appTop, pullback.condition, Scheme.Hom.comp_appTop,
-      ← Scheme.ΓSpecIso_inv_naturality_assoc]
+      (pullback.fst f (quotientSpec n)).appTop (f.appTop ((Scheme.ΓSpecIso (.of R)).inv r)) := by
   rw [completionToFiberThickening_apply, AdicCompletion.algebraMap_apply, AdicCompletion.evalₐ_of]
-  exact (ConcreteCategory.congr_hom h r).symm
+  exact DFunLike.congr_fun (f.fiberSectionsMap_comp_quotient (n + 1)) r
+
+/-- The kernel on the completed base is the extension of the ideal of base functions
+whose pullbacks vanish on the corresponding infinitesimal fiber. -/
+theorem ker_completionToFiberThickening_eq_map [IsNoetherianRing R]
+    (f : X ⟶ Spec (.of R)) {E : X.IdealSheafData} (hE : (centerIdeal).comap f = E) (n : ℕ) :
+    RingHom.ker (f.completionToFiberThickening n) =
+      (((E ^ (n + 1)).sections ⊤).comap ((Scheme.ΓSpecIso (.of R)).inv ≫ f.appTop).hom).map
+        (algebraMap R R̂) := by
+  let e := (AdicCompletion.evalₐ 𝔪 (n + 1)).toRingHom
+  let q := Ideal.Quotient.mk (𝔪 ^ (n + 1))
+  let J := RingHom.ker fiberSectionsMap(f, n + 1)
+  have he : e.comp (algebraMap R R̂) = q := by
+    ext r
+    exact AdicCompletion.evalₐ_of 𝔪 (n + 1) r
+  have hk : RingHom.ker (f.completionToFiberThickening n) = J.comap e := rfl
+  rw [hk, ← f.ker_fiberSectionsMap_comp_quotient hE (n + 1), ← RingHom.comap_ker]
+  change J.comap e = (J.comap q).map (algebraMap R R̂)
+  let K := (J.comap q).map (algebraMap R R̂)
+  have hmap : K.map e = J := by
+    dsimp only [K]
+    rw [Ideal.map_map, he, Ideal.map_comap_of_surjective _ Ideal.Quotient.mk_surjective]
+  have hle : RingHom.ker e ≤ K := by
+    have heker : RingHom.ker e = (𝔪 ^ (n + 1)).map (algebraMap R R̂) :=
+      AdicCompletion.ker_evalₐ_eq_map_pow (Ideal.fg_of_isNoetherianRing 𝔪) (n + 1)
+    have hqker : RingHom.ker q = 𝔪 ^ (n + 1) := Ideal.mk_ker
+    rw [heker, ← hqker]
+    exact Ideal.map_mono (Ideal.ker_le_comap (K := J) q)
+  calc
+    J.comap e = (K.map e).comap e := congrArg (Ideal.comap e) hmap.symm
+    _ = K := by
+      rw [Ideal.comap_map_of_surjective e (AdicCompletion.surjective_evalₐ 𝔪 (n + 1)),
+        ← RingHom.ker_eq_comap_bot, sup_eq_left.mpr hle]
 
 private theorem pullback_appTop_pow_subschemeι_eq_zero [IsNoetherianRing R]
     (f : X ⟶ Spec (.of R)) (n : ℕ) (d : R̂)
@@ -298,5 +409,133 @@ theorem injective_completionToFiberThickeningLimit [IsNoetherianRing R]
   exact ha.symm.trans ((congrArg (limit.π f.fiberThickeningSections (op n)) h).trans hb)
 
 end Hom
+
+noncomputable section
+
+open IdealSheafData
+
+variable {X Y : Scheme.{u}} (f : X ⟶ Y) {p : Y} {E : X.IdealSheafData}
+
+local notation "Aₚ" => Y.presheaf.stalk p
+local notation "s" => Y.fromSpecStalk p
+local notation "a" => pullback.fst f s
+local notation "g" => pullback.snd f s
+local notation "I" => Hom.ker (Spec.map (Y.residue p))
+local notation "q" n =>
+  Spec.map (CommRingCat.ofHom (R := Aₚ) (Ideal.Quotient.mk (maximalIdeal Aₚ ^ (n + 1))))
+local notation "powLE" => pow_le_pow_of_le_one bot_le le_top (Nat.le_succ (_ + 1))
+
+namespace Hom
+
+/-- The infinitesimal fiber over the spectrum of the local ring at a closed point
+is canonically isomorphic to the corresponding thickening of the original fiber. -/
+def localizedFiberThickeningIso
+    (hp : IsClosed ({p} : Set Y)) (hE : (Y.fromSpecResidueField p).ker.comap f = E)
+    (n : ℕ) : pullback g (q n) ≅ (E ^ (n + 1)).subscheme := by
+  have hI := comap_ker_residue_pullback_snd_fromSpecStalk f hp hE
+  have hker : RingHom.ker (Y.residue p).hom = maximalIdeal Aₚ := IsLocalRing.ker_residue
+  rw [Hom.ker_Spec_map, hker] at hI
+  let J := E ^ (n + 1)
+  have hJ : E.comap a ^ (n + 1) = J.comap a := (E.comap_pow a _).symm
+  have := isIso_subschemeMap_comap_pullback_fst_of_support_le f hp hE J
+    (support_pow_succ E n).le hJ
+  -- Supply the ring instances of the bundled stalk to the local-ring construction.
+  exact @Hom.fiberThickeningIso Aₚ inferInstance inferInstance _ g _ hI n ≪≫
+    asIso (subschemeMap _ J a (hJ ▸ J.le_map_comap a))
+
+/-- The localized thickening isomorphism commutes with the projections to the
+original source scheme. -/
+@[reassoc (attr := simp)]
+theorem localizedFiberThickeningIso_hom_subschemeι
+    (hp : IsClosed ({p} : Set Y)) (hE : (Y.fromSpecResidueField p).ker.comap f = E)
+    (n : ℕ) :
+    (localizedFiberThickeningIso f hp hE n).hom ≫ (E ^ (n + 1)).subschemeι =
+      pullback.fst g (q n) ≫ a := by
+  unfold localizedFiberThickeningIso
+  dsimp only [Iso.trans_hom, asIso_hom]
+  rw [Category.assoc, subschemeMap_subschemeι, Hom.fiberThickeningIso_hom_subschemeι_assoc]
+
+/-- Restriction between successive infinitesimal fibers agrees with the inclusion
+between the corresponding thickenings of the original fiber. -/
+theorem localizedFiberThickeningIso_transition
+    (hp : IsClosed ({p} : Set Y)) (hE : (Y.fromSpecResidueField p).ker.comap f = E)
+    (n : ℕ) :
+    @Hom.fiberThickeningι Aₚ inferInstance inferInstance _ g n ≫
+        (localizedFiberThickeningIso f hp hE (n + 1)).hom =
+      (localizedFiberThickeningIso f hp hE n).hom ≫
+        inclusion (powLE : E ^ (n + 2) ≤ E ^ (n + 1)) := by
+  apply (cancel_mono (E ^ (n + 2)).subschemeι).mp
+  rw [Category.assoc, localizedFiberThickeningIso_hom_subschemeι,
+    Hom.fiberThickeningι_fst_assoc, Category.assoc, inclusion_subschemeι,
+    localizedFiberThickeningIso_hom_subschemeι]
+
+/-- Localization at the closed point identifies the inverse system of rings
+of functions on the original thickenings with the infinitesimal fiber rings. -/
+def localizedFiberThickeningSectionsIso
+    (hp : IsClosed ({p} : Set Y)) (hE : (Y.fromSpecResidueField p).ker.comap f = E) :
+    E.thickeningSections ≅ @Hom.fiberThickeningSections Aₚ inferInstance inferInstance _ g := by
+  let α : E.thickeningSections ⟶ @Hom.fiberThickeningSections Aₚ inferInstance inferInstance _ g :=
+    NatTrans.ofOpSequence (fun n ↦ (localizedFiberThickeningIso f hp hE n).hom.appTop)
+      (fun n ↦ by
+        rw [Functor.ofOpSequence_map_homOfLE_succ, Functor.ofOpSequence_map_homOfLE_succ]
+        exact (Hom.comp_appTop _ _).symm.trans
+          ((congrArg Hom.appTop (localizedFiberThickeningIso_transition f hp hE n).symm).trans
+            (Hom.comp_appTop _ _)))
+  exact NatIso.ofComponents
+    (fun n ↦ Scheme.Γ.mapIso (localizedFiberThickeningIso f hp hE n.unop).op)
+    (fun {_ _} m ↦ α.naturality m)
+
+/-- At each level, the comparison of section rings is pullback along the
+localized thickening isomorphism. -/
+@[simp]
+theorem localizedFiberThickeningSectionsIso_hom_app
+    (hp : IsClosed ({p} : Set Y)) (hE : (Y.fromSpecResidueField p).ker.comap f = E)
+    (n : ℕ) :
+    (localizedFiberThickeningSectionsIso f hp hE).hom.app (op n) =
+      (localizedFiberThickeningIso f hp hE n).hom.appTop :=
+  (rfl)
+
+/-- Pullback from the completed local ring at a closed point to the inverse
+limit of the section rings of the original fiber thickenings. -/
+def completionToThickeningLimitAt
+    (hp : IsClosed ({p} : Set Y)) (hE : (Y.fromSpecResidueField p).ker.comap f = E) :
+    CommRingCat.of (AdicCompletion (maximalIdeal Aₚ) Aₚ) ⟶ limit E.thickeningSections :=
+  @Hom.completionToFiberThickeningLimit Aₚ inferInstance inferInstance _ g ≫
+    (HasLimit.isoOfNatIso (localizedFiberThickeningSectionsIso f hp hE)).inv
+
+/-- At each level the completion map is the truncated pullback, transported
+back to the section ring of the original thickening. -/
+@[reassoc (attr := simp)]
+theorem completionToThickeningLimitAt_π
+    (hp : IsClosed ({p} : Set Y)) (hE : (Y.fromSpecResidueField p).ker.comap f = E)
+    (n : ℕ) :
+    completionToThickeningLimitAt f hp hE ≫ limit.π E.thickeningSections (op n) =
+      CommRingCat.ofHom (@Hom.completionToFiberThickening Aₚ inferInstance inferInstance _ g n) ≫
+        (localizedFiberThickeningSectionsIso f hp hE).inv.app (op n) := by
+  let e := localizedFiberThickeningSectionsIso f hp hE
+  let c := @Hom.completionToFiberThickeningLimit Aₚ inferInstance inferInstance _ g
+  calc
+    _ = c ≫ ((HasLimit.isoOfNatIso e).inv ≫ limit.π E.thickeningSections (op n)) :=
+      Category.assoc _ _ _
+    _ = c ≫ limit.π _ (op n) ≫ e.inv.app (op n) :=
+      congrArg (c ≫ ·) (HasLimit.isoOfNatIso_inv_π e (op n))
+    _ = _ := @Hom.completionToFiberThickeningLimit_π_assoc Aₚ inferInstance inferInstance _
+      g n _ (e.inv.app (op n))
+
+/-- The comparison to functions on the original infinitesimal thickenings is
+injective for a proper, scheme-theoretically dominant morphism to a locally
+Noetherian scheme. -/
+theorem injective_completionToThickeningLimitAt [IsLocallyNoetherian Y] [IsProper f]
+    [IsSchemeTheoreticallyDominant f]
+    (hp : IsClosed ({p} : Set Y)) (hE : (Y.fromSpecResidueField p).ker.comap f = E) :
+    Function.Injective (completionToThickeningLimitAt f hp hE) :=
+  (ConcreteCategory.bijective_of_isIso
+    (HasLimit.isoOfNatIso (localizedFiberThickeningSectionsIso f hp hE)).inv).1.comp
+    (@Hom.injective_completionToFiberThickeningLimit Aₚ inferInstance inferInstance _
+      inferInstance g inferInstance inferInstance)
+
+end Hom
+
+end
 
 end AlgebraicGeometry.Scheme

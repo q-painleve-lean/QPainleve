@@ -12,11 +12,9 @@ import QPainleve.AlgebraicGeometry.Curves.Node.Conductor.Naturality
 import QPainleve.AlgebraicGeometry.Curves.Node.NormalizationComponent
 import QPainleve.AlgebraicGeometry.EffectiveCartierDivisor.Dimension
 import QPainleve.AlgebraicGeometry.EffectiveCartierDivisor.Pullback
-import QPainleve.AlgebraicGeometry.Morphisms.IsoLocus
 import QPainleve.AlgebraicGeometry.Scheme.LocalDimension
 import TauCeti.AlgebraicGeometry.IdealSheaf.VanishingIdeal
 import TauCeti.AlgebraicGeometry.Morphisms.LocallyQuasiFinite
-import TauCeti.Topology.Sober
 
 /-!
 # Restricting surface classes to a nodal boundary
@@ -49,18 +47,6 @@ section Components
 
 variable [D.subscheme.Over (Spec (.of k))] [PrestableFamily (D.subscheme ↘ Spec (.of k))]
 
-private theorem coheight_image_blowupComponentGeneric [IsLocallyNoetherian X]
-    (hD : D.IsEffectiveCartier) (v : V) : coheight (D.subschemeι (ν (η v))) = 1 := by
-  have hgeneric : IsMax (η v : N) := fun y hy ↦
-    le_of_eq (TauCeti.mem_genericPoints_iff.mp (η v).property y (Scheme.le_iff_specializes.mp hy))
-  have hco : coheight (ν (η v)) = 0 :=
-    ((ν).coheight_eq_of_apply_mem_isoLocus ((C).blowupComponentGeneric_mem_isoLocus v)).trans
-      hgeneric.coheight_eq_zero
-  have hdim := hD.ringKrullDim_stalk_add_one (ν (η v))
-  rw [ringKrullDim_stalk_eq_coheight, ringKrullDim_stalk_eq_coheight, hco, WithBot.coe_zero,
-    zero_add, ← WithBot.coe_one, WithBot.coe_inj] at hdim
-  exact hdim.symm
-
 /-- Each normalized component maps onto the reduced prime curve through the image of its
 generic point. The image point has codimension one in the ambient scheme. -/
 theorem range_blowupComponent_comp_subschemeι [IsLocallyNoetherian X]
@@ -68,7 +54,7 @@ theorem range_blowupComponent_comp_subschemeι [IsLocallyNoetherian X]
     ∃ p : CodimensionOnePoint X, (p : X) ∈ D.support ∧
       Set.range (((C).blowupComponent v).ι ≫ ν ≫ D.subschemeι) = closure {(p : X)} := by
   let p : CodimensionOnePoint X := ⟨D.subschemeι (ν (η v)),
-    coheight_image_blowupComponentGeneric hD v⟩
+    hD.coheight_subschemeι_of_coheight_eq_zero ((C).coheight_blowupComponentGeneric v)⟩
   exact ⟨p, D.range_subschemeι.le ⟨_, rfl⟩,
     (C).range_blowupComponent_comp v D.subschemeι D.subschemeι.isClosedMap⟩
 

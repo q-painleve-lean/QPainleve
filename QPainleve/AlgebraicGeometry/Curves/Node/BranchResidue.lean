@@ -12,6 +12,7 @@ import QPainleve.AlgebraicGeometry.Morphisms.Etale.GlobalSections
 import TauCeti.AlgebraicGeometry.Curves.Node.Reduced
 import TauCeti.AlgebraicGeometry.IdealSheaf.Affine
 import QPainleve.AlgebraicGeometry.IdealSheaf.Stalk
+import QPainleve.AlgebraicGeometry.Scheme.Stalk
 import TauCeti.AlgebraicGeometry.IdealSheaf.Conductor.BaseChange
 import TauCeti.AlgebraicGeometry.Morphisms.Etale.Basic
 import TauCeti.AlgebraicGeometry.ResidueField
@@ -85,17 +86,6 @@ private theorem conductor_eq_ker_residue_of_node
       (Spec.map (X.residue x)).ker := by
   let := hnodal.syntomic
   let := X.isFinite_blowupToBase_singularLocus hnodal
-  obtain ⟨U, hU, hxU, _⟩ := exists_isAffineOpen_mem_and_subset (Opens.mem_top x)
-  have hf : Flat (X.fromSpecStalk x) := by
-    rw [← hU.fromSpecStalk_eq_fromSpecStalk hxU, IsAffineOpen.fromSpecStalk]
-    let := TopCat.Presheaf.algebra_section_stalk X.presheaf ⟨x, hxU⟩
-    let := hU.isLocalization_stalk ⟨x, hxU⟩
-    have hg : Flat (Spec.map (X.presheaf.germ U x hxU)) := by
-      rw [Flat.SpecMap_iff, ← X.presheaf.stalk_open_algebraMap ⟨x, hxU⟩,
-        RingHom.flat_algebraMap_iff]
-      exact IsLocalization.flat _ (hU.primeIdealOf ⟨x, hxU⟩).asIdeal.primeCompl
-    have : IsOpenImmersion hU.fromSpec := IsAffineOpen.isOpenImmersion_fromSpec hU
-    exact Flat.comp _ _
   have hc := Hom.conductor_eq_comap_of_isPullback
     (IsPullback.of_hasPullback (X.singularLocus k).blowupToBase (X.fromSpecStalk x))
   rw [conductor_blowupToBase_singularLocus hnodal] at hc
