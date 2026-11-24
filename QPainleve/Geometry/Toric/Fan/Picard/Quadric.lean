@@ -5,16 +5,24 @@ Authors: The QPainleve contributors
 -/
 module
 
-public import QPainleve.AlgebraicGeometry.Blowup.Tower.Picard
+public import QPainleve.AlgebraicGeometry.Blowup.Tower.CurveIntersection
 public import QPainleve.Geometry.Toric.Fan.Picard.Hirzebruch
+public import QPainleve.Geometry.Toric.Fan.Ruling.Basic
 public import QPainleve.Geometry.Toric.Fan.Ruling.Quadric
 
+import QPainleve.Geometry.Toric.Fan.Picard.Ruling
+import QPainleve.Geometry.Toric.Fan.Ruling.Torus
+import TauCeti.AlgebraicGeometry.Curves.ProjectiveLine
+import TauCeti.AlgebraicGeometry.IdealSheaf.BaseChange
+import TauCeti.AlgebraicGeometry.Morphisms.Smooth.Regular
+
 /-!
-# Picard coordinates under the quadric ruling exchange
+# Picard coordinates and fiber degrees of the toric quadric
 
 The ruling exchange of the Hirzebruch fan of index zero interchanges the two
 integral Picard coordinates. Transport of a closed point blowup tower by this exchange
-preserves its ordered exceptional coefficients.
+preserves its ordered exceptional coefficients. The Picard coordinates also give the degree
+on a nonzero fiber of the exchanged ruling, which bounds the orders of first centers on it.
 -/
 
 public noncomputable section
@@ -113,5 +121,119 @@ theorem picardMarking_symm_rulingExchange (L : LineBundleClass Y) :
     simpa only [Iso.symm_hom, hτ, hv, Prod.mk.eta] using q.isLift.symm.pullback_picardHom v.1 v.2
   rw [hw]
   exact ⟨Fan.hirzebruchPicardBasis_repr_pullback_quadricRulingExchange b hΦ hc r hr v.1, rfl⟩
+
+section
+
+open Limits Chow
+
+variable [Φ.algebraicRealization.IsProjectiveOver ℂ]
+
+local notation "P" => projectiveLine ℂ
+local notation "d" => b.reindex (Equiv.swap 0 1)
+local notation "m" => LinearMap.toAddMonoidHom (Basis.coord b 0)
+local notation "p(" t ")" => projectiveLine.polynomialPoint ℂ (RingHom.id ℂ) 0 (t : ℂ)
+
+local notation "h" => Fan.nonneg_or_nonpos_quadric_transverse_character b r hr
+local notation "ruling" => Φ.characterRuling m h
+
+omit [Nonempty Φ.cones] [Φ.algebraicRealization.IsProjectiveOver ℂ] in
+include hr in
+private theorem quadric_transverse_ruling_positive_part :
+    (fun ρ : Φ.Ray ↦ max (m ρ.primitiveGenerator) 0) = Pi.single (r 0) 1 := by
+  classical
+  funext ρ
+  obtain ⟨j, rfl⟩ := r.surjective ρ
+  fin_cases j <;> simp [congrFun hr, Basis.coord_apply]
+
+include hc in
+private theorem quadric_intersection_section (L : Additive (LineBundleClass X)) :
+    classIntersectionNumber ℂ X L.toMul (C 1).toMul = (C).repr L 0 := by
+  let : SmoothOfRelativeDimension 2 (X ↘ S) :=
+      (by simpa using Module.finrank_eq_card_basis b : Module.finrank ℤ N = 2) ▸
+        Φ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
+  let B := intersectionBilinForm ℂ X
+  rw [← intersectionBilinForm_apply]
+  calc
+    B L (C 1) =
+        B (((C).repr L 0) • C 0 + ((C).repr L 1) • C 1) (C 1) := by
+      apply congrArg (fun L' ↦ B L' (C 1))
+      simpa only [Fin.sum_univ_two] using ((C).sum_repr L).symm
+    _ = _ := by
+      simp only [B, map_add, map_zsmul, LinearMap.add_apply, LinearMap.smul_apply,
+        Int.zsmul_eq_mul, Fan.hirzebruchPicardBasis_intersection b 0 hΦ r hr hc]
+      norm_num
+
+include hc in
+private theorem exists_quadric_transverse_fiber (t : ℂˣ) :
+    ∃ j : P ⟶ X, IsClosedImmersion j ∧ j ≫ (X ↘ S) = P ↘ S ∧
+      Set.range j = ruling ⁻¹' Set.range (p(t)) ∧
+      ∀ L : Additive (LineBundleClass X), intersectionNumber ℂ j L.toMul = (C).repr L 0 := by
+  classical
+  obtain ⟨hp, hn⟩ := Fan.quadric_transverse_ruling_rays b r hr
+  have hcoord : m = ((d).coord 1).toAddMonoidHom := by
+    ext x
+    simp [Basis.coord_apply]
+  let e := Φ.characterRulingNonzeroFiberIso m h d hcoord
+    (by simpa using hp) (by simpa using hn) t
+  let j := e.inv ≫ pullback.fst ruling (p(t))
+  have ht : p(t) ≫ (P ↘ S) = 𝟙 S := by simp [projectiveLine.polynomialPoint_over]
+  have : IsClosedImmersion (p(t)) := (p(t)).isClosedImmersion_of_comp_eq_id ht
+  have hj : IsClosedImmersion j := inferInstance
+  have he := Φ.characterRulingNonzeroFiberIso_hom_comp_over m h d hcoord
+    (by simpa using hp) (by simpa using hn) t
+  have hver : e.inv ≫ pullback.snd ruling (p(t)) = P ↘ S := by
+    rw [← he, Iso.inv_hom_id_assoc]
+  have hbase : j ≫ (X ↘ S) = P ↘ S := by
+    dsimp only [j]
+    rw [← comp_over ruling S, Category.assoc, pullback.condition_assoc,
+      ← Category.assoc e.inv, hver, ht, Category.comp_id]
+  refine ⟨j, hj, hbase, ?_, fun L ↦ ?_⟩
+  · rw [range_eq_range_of_surjective j (pullback.fst ruling (p(t))) e.inv rfl,
+      Scheme.Pullback.range_fst]
+  have hm : m ≠ 0 := by
+    intro hz
+    have hd : m (b 0) = 1 := by simp
+    rw [hz, AddMonoidHom.zero_apply] at hd
+    norm_num at hd
+  have hker : j.ker = (p(t)).ker.comap ruling := by
+    dsimp only [j]
+    rw [Scheme.Hom.ker_comp_of_isIso]
+    exact Scheme.IdealSheafData.ker_eq_comap_of_isPullback (p(t))
+      (IsPullback.of_hasPullback ruling (p(t)))
+  let hcart := Φ.isEffectiveCartier_characterRuling_fiber m h hm (p(t)) ht
+  have hclass := Φ.toLineBundleClass_characterRuling_fiber m h hm (p(t)) ht hΦ
+  simp only [Scheme.IdealSheafData.IsEffectiveCartier.toLineBundleClass_toCartierDivisor,
+    quadric_transverse_ruling_positive_part b r hr] at hclass
+  rw [← Fan.hirzebruchPicardBasis_apply_one b 0 hΦ r hr] at hclass
+  have hdim : Module.finrank ℤ N = 2 := by simpa using Module.finrank_eq_card_basis b
+  have : SmoothOfRelativeDimension 2 (X ↘ S) :=
+    hdim ▸ Φ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
+  have : j.IsOver S := ⟨hbase⟩
+  have hjcart : j.ker.IsEffectiveCartier := hker.symm ▸ hcart
+  rw [← classIntersectionNumber_eq_intersectionNumber_of_isEffectiveCartier_ker ℂ
+    (topologicalKrullDim_eq_of_smoothOfRelativeDimension (X ↘ S) (n := 2)).le j
+    (Scheme.IsCurveOver.topologicalKrullDim_eq_one ℂ) hjcart L.toMul]
+  have heq := mk_toInvertibleSheaf_congr hjcart hcart hker
+  have hpic := congrArg Additive.toMul hclass
+  rw [toMul_ofMul] at hpic
+  rw [heq, hpic, quadric_intersection_section b hΦ hc r hr L]
+
+include hc in
+/-- The orders of selected first centers on a fiber of the exchanged quadric ruling
+over a point of the base torus sum to at most the original degree on that fiber. -/
+theorem sum_first_base_orders_le_quadric_transverse_fiber_degree
+    (L : Additive (LineBundleClass X)) (orders : Fin n → ℕ) (s : Finset (Fin n)) (t : ℂˣ)
+    (hs : ∀ j ∈ s, ruling (hT.baseCenter j) ∈ Set.range (p(t)) ∧
+      ∀ l < j, hT.baseCenter l ≠ hT.baseCenter j)
+    (hnef : (T.picardHom (L, fun l ↦ -(orders l : ℤ))).toMul.IsNef ℂ (T.toBase ≫ (X ↘ S))) :
+    ∑ l ∈ s, (orders l : ℤ) ≤ (C).repr L 0 := by
+  obtain ⟨j, hj, hjbase, hjrange, hjdeg⟩ := exists_quadric_transverse_fiber b hΦ hc r hr t
+  have : Smooth (P ↘ S) := SmoothOfRelativeDimension.smooth 1 _
+  have : IsRegular P := IsRegular.of_smooth (P ↘ S)
+  rw [← hjdeg L]
+  exact hT.sum_first_base_orders_le_curve_intersection j (X ↘ S) hjbase.symm L.toMul orders s
+    (fun l hl ↦ ⟨hjrange.symm ▸ (hs l hl).1, (hs l hl).2⟩) hnef
+
+end
 
 end QPainleve.BlowupTower.IsClosedPointTower
