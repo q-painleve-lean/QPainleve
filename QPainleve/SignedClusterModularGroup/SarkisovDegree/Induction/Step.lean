@@ -159,12 +159,16 @@ private theorem HasPlaneTargetDecrease.of_iso {m : ℕ} {W : Scheme} {U : Blowup
     (precomposeSarkisovOfIso_obj_hom ..) (precomposeSarkisovOfIso_obj_hom ..)
 
 include hD hNode in
-private theorem HasPlaneTargetDecrease.of_path_on_iso
-    (hn : AtWorstNodalOfRelativeDimensionOne ((D₁).subschemeι ≫ Y ↘ S))
+/-- Transport a decreasing marked path on an isomorphic resolving surface
+to the specified source and target projections. -/
+theorem HasPlaneTargetDecrease.of_path_on_iso
     {d next : ℕ ×ₗ ℕ} (hlt : next < d) {A' C B' : LogarithmicProjection i D₁}
     (p : SarkisovPath A' C) (hA' : A'.fan = A.fan) (hhA : A'.hom ≍ k.inv ≫ A.hom)
     (hB' : B'.fan = B.fan) (hhB : B'.hom ≍ k.inv ≫ B.hom)
     (hm : HasPlaneTargetMarking C B' next) : HasPlaneTargetDecrease A B hRank hD hNode d := by
+  let : k.inv.IsOver S := inferInstance
+  have hn : AtWorstNodalOfRelativeDimensionOne ((D₁).subschemeι ≫ Y ↘ S) := by
+    simpa only [comp_over k.inv S] using hNode.comap_of_etale k.inv
   let U : BlowupTower Y 0 Y := .nil
   let hU : IsNodalBoundaryTower D₁ (Y ↘ S) (𝟙 Y) U := .nil
   have hrad : (D₁).radical = D₁ := (isReduced_subscheme_iff_radical_eq _).mp hn.isReduced
@@ -414,13 +418,11 @@ theorem exists_sarkisov_step_of_quadric_marking
     precomposeSarkisovOfIso_obj_hom_of_comp rankTwo k.symm rfl A rfl (heq_of_eq hAh)
   have hR : (obj[F,B]).hom ≍ g ≫ (planeIso[b',hi]).inv :=
     precomposeSarkisovOfIso_obj_hom_of_comp rankTwo k.symm rfl B hB hBh
-  have hn : AtWorstNodalOfRelativeDimensionOne ((D.comap k.inv).subschemeι ≫ Y ↘ S) := by
-    simpa only [comp_over k.inv S] using hNode.comap_of_etale k.inv
   obtain ⟨next, hlt, C, ⟨p⟩, hm⟩ :=
     exists_path_with_smaller_marking_of_quadric r hr hT g hg hbir (D.comap k.inv)
       (obj[F,A]) (obj[F,B]) (precomposeSarkisovOfIso_obj_fan ..) hL
       ((precomposeSarkisovOfIso_obj_fan ..).trans hB) hR
-  exact HasPlaneTargetDecrease.of_path_on_iso rankTwo hD hNode k hn hlt p
+  exact HasPlaneTargetDecrease.of_path_on_iso rankTwo hD hNode k hlt p
     (precomposeSarkisovOfIso_obj_fan ..) (precomposeSarkisovOfIso_obj_hom ..)
     (precomposeSarkisovOfIso_obj_fan ..) (precomposeSarkisovOfIso_obj_hom ..) hm
 
@@ -468,7 +470,6 @@ theorem exists_sarkisov_step_of_hirzebruch_marking_of_no_high_order
     (hAh ▸ comp_over A.hom S)⟩
   let : k.inv.IsOver S := inferInstance
   let : k.symm.hom.IsOver S := inferInstanceAs (k.inv.IsOver S)
-  let F := precomposeSarkisovOfIso (i := i) rankTwo k.symm (rfl : D.comap k.inv = D.comap k.inv)
   have hL := precomposeSarkisovOfIso_obj_fan rankTwo k.symm rfl A
   have hhL := precomposeSarkisovOfIso_obj_hom_of_comp rankTwo k.symm rfl A rfl (heq_of_eq hAh)
   have hR := (precomposeSarkisovOfIso_obj_fan rankTwo k.symm rfl B).trans hB
@@ -476,9 +477,7 @@ theorem exists_sarkisov_step_of_hirzebruch_marking_of_no_high_order
   obtain ⟨next, hlt, C, _, _, ⟨p⟩, hm⟩ :=
     exists_sarkisov_path_with_smaller_plane_marking_of_no_high_order a A.isRegular A.isComplete
       r hr hT g ha hg hbir hlow hL hhL hR hhR
-  have hn : AtWorstNodalOfRelativeDimensionOne ((D.comap k.inv).subschemeι ≫ Y ↘ S) := by
-    simpa only [comp_over k.inv S] using hNode.comap_of_etale k.inv
-  exact HasPlaneTargetDecrease.of_path_on_iso rankTwo hD hNode k hn hlt p hL
+  exact HasPlaneTargetDecrease.of_path_on_iso rankTwo hD hNode k hlt p hL
     (precomposeSarkisovOfIso_obj_hom ..) (precomposeSarkisovOfIso_obj_fan ..)
     (precomposeSarkisovOfIso_obj_hom ..) hm
 

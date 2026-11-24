@@ -9,6 +9,8 @@ public import QPainleve.AlgebraicGeometry.WeilDivisor.IdealSheaf
 
 import Mathlib.Data.Finsupp.Order
 import QPainleve.AlgebraicGeometry.EffectiveCartierDivisor.Dimension
+import QPainleve.AlgebraicGeometry.EffectiveCartierDivisor.Reduced
+import QPainleve.AlgebraicGeometry.IdealSheaf.Restriction
 import TauCeti.AlgebraicGeometry.IdealSheaf.Reduced
 import TauCeti.AlgebraicGeometry.IdealSheaf.VanishingIdeal
 
@@ -29,19 +31,19 @@ namespace AlgebraicGeometry.Scheme.IdealSheafData.IsEffectiveCartier
 
 universe u
 
-/-- An effective Cartier divisor on an open subscheme extends to an
-effective Cartier divisor on the locally factorial Noetherian ambient integral scheme. -/
-theorem exists_comap_eq_of_isOpenImmersion {U X : Scheme.{u}} [IsIntegral X]
+private theorem exists_extension {U X : Scheme.{u}} [IsIntegral X]
     [IsNoetherian X] [∀ x : X, UniqueFactorizationMonoid (X.presheaf.stalk x)]
     (j : U ⟶ X) [IsOpenImmersion j]
     {D : U.IdealSheafData} (hD : D.IsEffectiveCartier) :
-    ∃ E : X.IdealSheafData, E.IsEffectiveCartier ∧ E.comap j = D := by
+    ∃ E : X.IdealSheafData, E.IsEffectiveCartier ∧ E.comap j = D ∧
+      ∀ x : CodimensionOnePoint X, (x : X) ∈ E.support → (x : X) ∈ Set.range j := by
   classical
   rcases isEmpty_or_nonempty U with hU | hU
   · have : IsEmpty D.subscheme := Function.isEmpty D.subschemeι
     have hDtop : D = ⊤ :=
       D.ker_subschemeι.symm.trans (D.subschemeι.ker_eq_top_iff_isEmpty.mpr inferInstance)
-    exact ⟨⊤, isEffectiveCartier_top X, (comap_top j).trans hDtop.symm⟩
+    exact ⟨⊤, isEffectiveCartier_top X, (comap_top j).trans hDtop.symm,
+      fun _ hx ↦ (show False from hx).elim⟩
   let : IsNormalScheme X := IsNormalScheme.of_uniqueFactorizationMonoid_stalk
   have : IsIntegral U := isIntegral_of_isOpenImmersion j
   have : IsNoetherian U := isNoetherian_of_isOpenImmersion j
@@ -57,15 +59,34 @@ theorem exists_comap_eq_of_isOpenImmersion {U X : Scheme.{u}} [IsIntegral X]
   let E := V.idealSheaf hV
   have hE := V.isEffectiveCartier_idealSheaf hV
   have hEU := hE.comap j
-  refine ⟨E, hE, (hEU.toCartierDivisor_eq_iff hD).mp ?_⟩
-  apply Scheme.CartierDivisor.toWeilDivisorHom_injective
-  ext y
-  rw [Scheme.CartierDivisor.toWeilDivisorHom_apply,
-    Scheme.CartierDivisor.toWeilDivisorHom_apply, WeilDivisor.coeff, WeilDivisor.coeff,
-    hE.coeff_toWeilDivisor_comap_of_isOpenImmersion j hEU,
-    V.toCartierDivisor_idealSheaf,
-    SchemeWeilDivisor.toWeilDivisor_equivCartierDivisorOfUniqueFactorizationMonoid]
-  exact Finsupp.embDomain_apply_self e W y
+  refine ⟨E, hE, (hEU.toCartierDivisor_eq_iff hD).mp ?_, ?_⟩
+  · apply Scheme.CartierDivisor.toWeilDivisorHom_injective
+    ext y
+    rw [Scheme.CartierDivisor.toWeilDivisorHom_apply,
+      Scheme.CartierDivisor.toWeilDivisorHom_apply, WeilDivisor.coeff, WeilDivisor.coeff,
+      hE.coeff_toWeilDivisor_comap_of_isOpenImmersion j hEU,
+      V.toCartierDivisor_idealSheaf,
+      SchemeWeilDivisor.toWeilDivisor_equivCartierDivisorOfUniqueFactorizationMonoid]
+    exact Finsupp.embDomain_apply_self e W y
+  · intro x hx
+    by_contra hnot
+    apply (hE.coeff_toWeilDivisor_eq_zero_iff x).mp ?_ hx
+    have hrange : x ∉ Set.range e := by
+      rintro ⟨y, rfl⟩
+      exact hnot ⟨y, (CodimensionOnePoint.coe_mapOfIsOpenImmersion j y).symm⟩
+    rw [WeilDivisor.coeff, V.toCartierDivisor_idealSheaf,
+      SchemeWeilDivisor.toWeilDivisor_equivCartierDivisorOfUniqueFactorizationMonoid]
+    exact Finsupp.embDomain_of_notMem_range e W x hrange
+
+/-- An effective Cartier divisor on an open subscheme extends to an
+effective Cartier divisor on the locally factorial Noetherian ambient integral scheme. -/
+theorem exists_comap_eq_of_isOpenImmersion {U X : Scheme.{u}} [IsIntegral X]
+    [IsNoetherian X] [∀ x : X, UniqueFactorizationMonoid (X.presheaf.stalk x)]
+    (j : U ⟶ X) [IsOpenImmersion j]
+    {D : U.IdealSheafData} (hD : D.IsEffectiveCartier) :
+    ∃ E : X.IdealSheafData, E.IsEffectiveCartier ∧ E.comap j = D := by
+  obtain ⟨E, hE, hj, -⟩ := hD.exists_extension j
+  exact ⟨E, hE, hj⟩
 
 /-- A reduced effective Cartier divisor is the schematic closure of its restriction
 to any open containing the generic points of all its components. -/
@@ -91,5 +112,24 @@ theorem map_comap_eq_of_codimensionOne_mem_range {U X : Scheme.{u}} [IsLocallyNo
   have hyn : p.val ∈ j '' (j ⁻¹' (D.support : Set X)) :=
     ⟨y, Set.mem_preimage.mpr (hy.symm ▸ hp), hy⟩
   exact closure_mono (Set.singleton_subset_iff.mpr hyn) (specializes_iff_mem_closure.mp hpx)
+
+/-- The schematic closure of a reduced effective Cartier divisor in an open
+subscheme of a locally factorial Noetherian integral scheme is effective Cartier. -/
+theorem map_of_isOpenImmersion {U X : Scheme.{u}} [IsIntegral X]
+    [IsNoetherian X] [∀ x : X, UniqueFactorizationMonoid (X.presheaf.stalk x)]
+    {D : U.IdealSheafData} (hD : D.IsEffectiveCartier) [IsReduced D.subscheme]
+    (j : U ⟶ X) [IsOpenImmersion j] :
+    (D.map j).IsEffectiveCartier := by
+  obtain ⟨E, hE, hEj, hsupport⟩ := hD.exists_extension j
+  have hcomap : E.radical.comap j = D := by
+    rw [← radical_comap_of_isOpenImmersion, hEj,
+      D.isReduced_subscheme_iff_radical_eq.mp inferInstance]
+  have : IsReduced E.radical.subscheme := by
+    rw [← vanishingIdeal_support]
+    infer_instance
+  have hj : ∀ x : CodimensionOnePoint X, (x : X) ∈ E.radical.support → (x : X) ∈ Set.range j := by
+    simpa only [support_radical] using hsupport
+  rw [← hcomap, hE.radical.map_comap_eq_of_codimensionOne_mem_range j hj]
+  exact hE.radical
 
 end AlgebraicGeometry.Scheme.IdealSheafData.IsEffectiveCartier

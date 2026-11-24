@@ -9,6 +9,7 @@ public import TauCeti.AlgebraicGeometry.LineBundle.ProjectiveLine
 public import TauCeti.AlgebraicGeometry.VectorBundle.FixedRank
 
 import QPainleve.AlgebraicGeometry.Cohomology.LineBundleLifting
+import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.ProjectiveLine.MaximalTwist
 import QPainleve.AlgebraicGeometry.VectorBundle.LineSubbundle
 import TauCeti.Algebra.Homology.ShortComplex.ShortExact
 import TauCeti.Algebra.Homology.ShortComplex.Splitting
@@ -20,7 +21,8 @@ In an extension of one line bundle by another, a maximal-degree map from a twist
 into the middle term forces the quotient degree to be at most the subbundle degree.
 A lift of the quotient's identity then gives the splitting. For the degree argument,
 see [McKernan, Splitting type, Theorem 4.1](https://mathweb.ucsd.edu/~jmckerna/Teaching/17-18/Autumn/206A/l_4.pdf).
-The rank-two case is used in the classification of ruled surfaces.
+Every rank-two bundle on the projective line consequently splits as two twisting
+sheaves, as used in the classification of ruled surfaces.
 -/
 
 public section
@@ -160,5 +162,17 @@ theorem exists_iso_biprod_twistingSheaf_of_maximal
     _ = (i ≫ s.isoBinaryBiproduct.hom) ≫ t.hom := (Category.assoc _ _ _).symm
     _ = biprod.inl ≫ t.hom := congrArg (· ≫ t.hom) hinl
     _ = _ := by simp only [t, biprod.mapIso_hom, Iso.refl_hom, biprod.inl_map, Category.id_comp]
+
+/-- Every rank-two vector bundle on the projective line over a field splits as
+`𝒪(a) ⊞ 𝒪(b)` with `b ≤ a`. -/
+theorem exists_iso_biprod_twistingSheaf (E : FiniteLocallyFreeSheaf.FixedRank P 2) :
+    ∃ (a b : ℤ), b ≤ a ∧ Nonempty (E.obj.obj ≅ 𝒪(a) ⊞ 𝒪(b)) := by
+  have hE : ¬ IsZero E.obj.obj := by
+    intro hz
+    have h := (E.obj.isZero_obj_iff_forall_rank_eq_zero.mp hz) (infinity k)
+    simp [E.rank_apply] at h
+  obtain ⟨a, i, _, hmax, hi⟩ := exists_maximal_twisting_hom k E.obj hE
+  obtain ⟨b, e, hba, _⟩ := exists_iso_biprod_twistingSheaf_of_maximal E i hi hmax
+  exact ⟨a, b, hba, ⟨e⟩⟩
 
 end TauCeti.AlgebraicGeometry.projectiveLine
