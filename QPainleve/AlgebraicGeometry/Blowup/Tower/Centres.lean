@@ -10,6 +10,7 @@ public import TauCeti.AlgebraicGeometry.Morphisms.IsoLocus
 
 import QPainleve.AlgebraicGeometry.Blowup.Descent
 import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
+import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.Pullback
 
 /-!
 # Local conditions on the centers of blowup towers
@@ -21,7 +22,8 @@ isomorphisms can be transported along lifts of tower isomorphisms.
 
 public section
 
-open AlgebraicGeometry CategoryTheory TopologicalSpace
+open AlgebraicGeometry CategoryTheory TopologicalSpace TauCeti.AlgebraicGeometry
+open Scheme.IdealSheafData
 
 universe u
 
@@ -96,6 +98,44 @@ theorem isClosed_baseCenter [IsLocallyNoetherian X] {T : BlowupTower X n Y}
       have := T.isProper_toBase
       simpa only [Set.image_singleton] using T.toBase.isClosedMap _ hq
     · simpa only [baseCenter_snoc_castSucc] using ih i
+
+/-- Each marked exceptional class is represented by the effective Cartier total transform of
+the exceptional divisor at its stage. The total transform of any divisor through the projected
+center contains this exceptional divisor. -/
+theorem exists_isEffectiveCartier_exceptionalClass {k : Type u} [Field k]
+    {X Y : Scheme.{u}} {n : ℕ} {T : BlowupTower X n Y} [PerfectField k] [IsIntegral X]
+    [IsNoetherian X] (hT : IsClosedPointTower X T) (f : X ⟶ Spec (.of k))
+    [SmoothOfRelativeDimension 2 f] (j : Fin n) :
+    ∃ (E : Y.IdealSheafData) (hE : E.IsEffectiveCartier),
+      (LineBundleClass.mk hE.toInvertibleSheaf)⁻¹ = T.exceptionalClass j ∧
+      ∀ D : X.IdealSheafData, hT.baseCenter j ∈ D.support → D.comap T.toBase ≤ E := by
+  induction hT with
+  | nil => exact j.elim0
+  | @snoc m W U I hU p hp hI ih =>
+    refine Fin.lastCases ?_ (fun l ↦ ?_) j
+    · refine ⟨_, I.isEffectiveCartier_comap_blowupToBase,
+        (exceptionalClass_snoc_last U I).symm, fun D hD ↦ ?_⟩
+      rw [baseCenter_snoc_last, lastCenter_eq _ p hp hI] at hD
+      have hmem : p ∈ (D.comap U.toBase).support := by
+        rw [← SetLike.mem_coe, support_comap, Closeds.coe_preimage, Set.mem_preimage]
+        exact hD
+      have hle : D.comap U.toBase ≤ I :=
+        hI ▸ ((D.comap U.toBase).le_ker_fromSpecResidueField_iff_mem_support hp).mpr hmem
+      rw [toBase_snoc, comap_comp]
+      exact comap_mono _ hle
+    · obtain ⟨D, hD, hclass, hle⟩ := ih l
+      let g := U.toBase ≫ f
+      have : SmoothOfRelativeDimension 2 g := hU.smoothOfRelativeDimension f
+      have : IsIntegral W := hU.isIntegral f
+      have : IsNoetherian W := U.isNoetherian
+      have hE := (IsClosedPointTower.nil.snoc p hp hI).isEffectiveCartier_totalTransform g hD
+      rw [toBase_snoc, toBase_nil, Category.comp_id] at hE
+      refine ⟨_, hE, ?_, fun J hJ ↦ ?_⟩
+      · rw [exceptionalClass_snoc_castSucc, ← hclass, LineBundleClass.pullback_inv,
+          hD.pullback_mk_toInvertibleSheaf hE]
+      · rw [baseCenter_snoc_castSucc] at hJ
+        rw [toBase_snoc, comap_comp]
+        exact comap_mono _ (hle J hJ)
 
 /-- A closed-point tower is injective above the complement of the projected centers. -/
 theorem injOn_toBase_compl_range_baseCenter {T : BlowupTower X n Y}

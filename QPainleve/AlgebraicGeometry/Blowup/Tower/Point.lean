@@ -164,31 +164,6 @@ theorem isEffectiveCartier_totalTransform {k : Type u} [Field k] [IsIntegral X]
   have : Surjective T.toBase := hT.surjective f
   exact hD.comap_of_isDominant T.toBase
 
-/-- Each marked exceptional class is represented by the effective Cartier total transform
-of the exceptional divisor at its stage. -/
-theorem exists_isEffectiveCartier_exceptionalClass {k : Type u} [Field k]
-    {X Y : Scheme.{u}} {n : ℕ} {T : BlowupTower X n Y} [PerfectField k] [IsIntegral X]
-    [IsNoetherian X] (hT : IsClosedPointTower X T) (f : X ⟶ Spec (.of k))
-    [SmoothOfRelativeDimension 2 f] (j : Fin n) :
-    ∃ (D : Y.IdealSheafData) (hD : D.IsEffectiveCartier),
-      (LineBundleClass.mk hD.toInvertibleSheaf)⁻¹ = T.exceptionalClass j := by
-  induction hT with
-  | nil => exact j.elim0
-  | @snoc m W U I hU p hp hI ih =>
-    refine Fin.lastCases ?_ (fun l ↦ ?_) j
-    · exact ⟨_, I.isEffectiveCartier_comap_blowupToBase,
-        (exceptionalClass_snoc_last U I).symm⟩
-    · obtain ⟨D, hD, hclass⟩ := ih l
-      let g := U.toBase ≫ f
-      have : SmoothOfRelativeDimension 2 g := hU.smoothOfRelativeDimension f
-      have : IsIntegral W := hU.isIntegral f
-      have : IsNoetherian W := U.isNoetherian
-      have hE := (IsClosedPointTower.nil.snoc p hp hI).isEffectiveCartier_totalTransform g hD
-      rw [toBase_snoc, toBase_nil, Category.comp_id] at hE
-      refine ⟨_, hE, ?_⟩
-      rw [exceptionalClass_snoc_castSucc, ← hclass, LineBundleClass.pullback_inv,
-        hD.pullback_mk_toInvertibleSheaf hE]
-
 end IsClosedPointTower
 
 /-- Transport along a tower lift preserves the closed point condition at every stage. -/
