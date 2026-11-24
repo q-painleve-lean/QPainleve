@@ -41,20 +41,6 @@ variable {k : Type u} [Field k] [IsAlgClosed k]
   [IsIntegral X] [IsIntegral Z] [X.IsProjectiveOver k] [Z.IsProjectiveOver k]
   (hT : IsClosedPointTower X T) (hU : IsClosedPointTower Z U)
 
-include hT in
-/-- Intersecting a marked class with the total exceptional class of one blowup
-reads the negative of that blowup's coefficient. -/
-@[simp]
-theorem classIntersectionNumber_picardHom_exceptionalClass
-    (a : Pic(X) × (Fin n → ℤ)) (j : Fin n) :
-    let : Y.Over (Spec (.of k)) := ⟨T.toBase ≫ g(k, X)⟩
-    Chow.classIntersectionNumber k Y (T.picardHom a).toMul (T.exceptionalClass j) =
-      -a.2 j := by
-  let : IsNoetherian X := isNoetherian_of_finiteType (g(k, X))
-  have h := classIntersectionNumber_picardMarking k hT a (0, Pi.single j 1)
-  simpa [picardMarking_apply, picardHom_apply_single, Pi.single_apply,
-    mul_ite, Finset.sum_ite_eq', Chow.classIntersectionNumber_one_right] using h
-
 variable (e :
    let : IsNoetherian X := isNoetherian_of_finiteType (g(k, X))
    let : IsNoetherian Z := isNoetherian_of_finiteType (g(k, Z))

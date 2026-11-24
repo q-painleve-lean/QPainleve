@@ -165,6 +165,20 @@ theorem classIntersectionNumber_picardMarking (hT : IsClosedPointTower X T)
     zero_mul, Finset.sum_const_zero] at hzero ha hb hab
   omega
 
+variable {k} in
+/-- Intersecting a marked class with the total exceptional class of one blowup
+reads the negative of that blowup's coefficient. -/
+@[simp]
+theorem classIntersectionNumber_picardHom_exceptionalClass (hT : IsClosedPointTower X T)
+    (a : Additive (LineBundleClass X) × (Fin n → ℤ)) (j : Fin n) :
+    let : Y.Over (Spec (.of k)) := ⟨T.toBase ≫ f⟩
+    Chow.classIntersectionNumber k Y (T.picardHom a).toMul (T.exceptionalClass j) =
+      -a.2 j := by
+  let : IsNoetherian X := isNoetherian_of_finiteType f
+  have h := classIntersectionNumber_picardMarking k hT a (0, Pi.single j 1)
+  simpa [picardMarking_apply, picardHom_apply_single, Pi.single_apply,
+    mul_ite, Finset.sum_ite_eq', Chow.classIntersectionNumber_one_right] using h
+
 /-- The pullback of two Picard classes along a closed-point blowup tower preserves their
 surface intersection number. -/
 theorem IsClosedPointTower.classIntersectionNumber_pullback (hT : IsClosedPointTower X T)

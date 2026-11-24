@@ -9,13 +9,18 @@ public import QPainleve.AlgebraicGeometry.Blowup.Tower.Homaloidal
 public import QPainleve.Geometry.Toric.Fan.Picard.Hirzebruch
 
 import Mathlib.Analysis.Complex.Polynomial.Basic
+import QPainleve.AlgebraicGeometry.Blowup.Tower.Nef
+import QPainleve.AlgebraicGeometry.Chow.Nef.Basic
+import QPainleve.AlgebraicGeometry.Curves.Degree.Ample
+import QPainleve.AlgebraicGeometry.IntersectionNumber.Nef.Pullback
 
 /-!
-# Homaloidal identities in Hirzebruch coordinates
+# Homaloidal identities and degree bounds in Hirzebruch coordinates
 
 The ordered blowup marking for a resolved map to the plane gives the two
 homaloidal identities in the fiber and section coordinates on the source.
-These are the identities used in Lutz's appendix to Hacking and Keating,
+Nefness of the resolved line class gives bounds on those coordinates and on
+the exceptional coefficients. The identities are used in Lutz's appendix to Hacking and Keating,
 [*Homological mirror symmetry for log Calabi–Yau surfaces*, Lemmas 8.8 and 8.12](
 https://arxiv.org/abs/2005.05010v3).
 -/
@@ -88,5 +93,62 @@ theorem homaloidal_intersection_identities_of_hirzebruch {Y : Scheme} {n : ℕ}
   simp only [intersectionBilinForm_apply, K, toMul_ofMul] at hK
   rw [hsq, hK, neg_neg] at h
   exact h
+
+variable {Y : Scheme.{0}} {n : ℕ} {T : BlowupTower Φ.algebraicRealization n Y}
+
+omit [Nonempty Φ.cones] in
+/-- The resolved line class of a birational map to the plane has positive fiber
+degree and nonnegative intersection with the section of square `-e`. The negatives of
+its exceptional coefficients, including those at infinitely near points, are
+nonnegative. -/
+theorem hirzebruch_resolution_degree_bounds (hT : IsClosedPointTower X T)
+    (g : Y ⟶ P) (hg : g ≫ (P ↘ S) = T.toBase ≫ f)
+    (hbir : Scheme.BirationalOver g (𝟙 P)) :
+    let : Nonempty Φ.cones := hc.nonempty_cones
+    let : SmoothOfRelativeDimension 2 f :=
+      (by simpa using Module.finrank_eq_card_basis b : Module.finrank ℤ N = 2) ▸
+        Φ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
+    let : IsNoetherian X := isNoetherian_of_finiteType f
+    let v : Additive (LineBundleClass X) × (Fin n → ℤ) :=
+      (T.picardMarking (k := ℂ) hT f).symm (Additive.ofMul (pullback g H))
+    let a := (C).repr v.1 0
+    let d := (C).repr v.1 1
+    0 < d ∧ (e : ℤ) * d ≤ a ∧ ∀ j, 0 ≤ -v.2 j := by
+  classical
+  intro hcones hdim hnoeth v a d
+  let := hcones
+  let := hdim
+  let := hnoeth
+  let : Y.Over S := ⟨T.toBase ≫ f⟩
+  have : g.IsOver S := ⟨hg⟩
+  have hH : (H).IsAmple := isAmple_twistingSheaf ℂ (Fin 3 → ℂ) Nat.one_pos
+  have hv : (T.picardHom v).toMul = pullback g H := by
+    rw [← picardMarking_apply _ hT f, LinearEquiv.apply_symm_apply, toMul_ofMul]
+  have hnef : (T.picardHom v).toMul.IsNef ℂ (T.toBase ≫ f) :=
+    hv.symm ▸ hH.isNef.pullback g
+  have hbase := hT.isNef_fst_of_isNef_picardHom hnef
+  have hX := topologicalKrullDim_eq_of_smoothOfRelativeDimension f (n := 2)
+  have := Φ.uniqueFactorizationMonoid_stalk_algebraicRealization hΦ
+  have hnonneg := (isNef_iff_classIntersectionNumber_nonneg ℂ hX _).mp hbase
+  have hF : 0 ≤ B v.1 (C 0) := by
+    simpa only [Fan.hirzebruchPicardBasis_apply_zero, Fan.rayDivisorToPicard_single,
+      one_zsmul, intersectionBilinForm_apply, toMul_ofMul] using
+      hnonneg (Φ.rayBoundaryPoint hΦ (r 1))
+  have hB : 0 ≤ B v.1 (C 1) := by
+    simpa only [Fan.hirzebruchPicardBasis_apply_one, Fan.rayDivisorToPicard_single,
+      one_zsmul, intersectionBilinForm_apply, toMul_ofMul] using
+      hnonneg (Φ.rayBoundaryPoint hΦ (r 0))
+  obtain ⟨hd, ha⟩ := Fan.hirzebruchPicardBasis_intersection_repr b e hΦ r hr hc v.1
+  rw [hd] at hF
+  rw [ha] at hB
+  have hd₀ : d ≠ 0 := by
+    intro hzero
+    have hsq : (∑ j, (v.2 j) ^ 2) = 2 * a * d - (e : ℤ) * d ^ 2 - 1 :=
+      (hT.homaloidal_intersection_identities_of_hirzebruch b e hΦ hc r hr g hg hbir).1
+    simp only [hzero, mul_zero, zero_pow (by decide : 2 ≠ 0), sub_zero, zero_sub] at hsq
+    have hsum : 0 ≤ ∑ j, (v.2 j) ^ 2 := Finset.sum_nonneg fun j _ ↦ sq_nonneg (v.2 j)
+    omega
+  exact ⟨lt_of_le_of_ne hF (Ne.symm hd₀), sub_nonneg.mp hB,
+    fun j ↦ neg_nonneg.mpr (hT.exceptionalCoeff_nonpos_of_isNef_picardHom hnef j)⟩
 
 end QPainleve.BlowupTower.IsClosedPointTower
