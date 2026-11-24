@@ -9,6 +9,7 @@ public import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.Factorial
 import QPainleve.AlgebraicGeometry.IdealSheaf.ClosedImmersion
 import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
 import QPainleve.AlgebraicGeometry.Scheme.LocalDimension
+import TauCeti.AlgebraicGeometry.IdealSheaf.Comap
 import TauCeti.AlgebraicGeometry.Scheme.GenericPoint.Basic
 import TauCeti.Topology.KrullDimension.Irreducible
 
@@ -68,3 +69,27 @@ public theorem isEffectiveCartier_ker_fromSpecResidueField_of_dim_eq_one
   exact (WithBot.coe_le_coe.mp hx).trans (by decide)
 
 end AlgebraicGeometry.Scheme
+
+namespace AlgebraicGeometry.Scheme.Hom
+
+/-- A reduced closed point pulls back along a regular integral curve embedded in the
+ambient scheme to an effective Cartier divisor. -/
+public theorem isEffectiveCartier_comap_ker_fromSpecResidueField
+    {C X : Scheme.{u}} (i : C ⟶ X) [IsClosedImmersion i] [IrreducibleSpace C]
+    [IsRegular C] (hC : topologicalKrullDim C = 1)
+    {p : X} (hp : IsClosed ({p} : Set X)) :
+    ((X.fromSpecResidueField p).ker.comap i).IsEffectiveCartier := by
+  by_cases h : p ∈ Set.range i
+  · obtain ⟨q, rfl⟩ := h
+    rw [i.comap_ker_fromSpecResidueField_apply]
+    apply C.isEffectiveCartier_ker_fromSpecResidueField_of_dim_eq_one _ hC
+    simpa only [← Set.image_singleton, i.isClosedEmbedding.injective.preimage_image] using
+      hp.preimage i.continuous
+  · have htop : (X.fromSpecResidueField p).ker.comap i = ⊤ := by
+      rw [IdealSheafData.comap_eq_top_iff, ← Opens.coe_eq_univ, Hom.coe_preimage,
+        Closeds.coe_compl, X.support_ker_fromSpecResidueField_of_isClosed hp]
+      exact Set.eq_univ_of_forall fun q hq ↦ h ⟨q, hq⟩
+    rw [htop]
+    exact IdealSheafData.isEffectiveCartier_top C
+
+end AlgebraicGeometry.Scheme.Hom

@@ -8,6 +8,7 @@ module
 public import QPainleve.Geometry.Toric.Fan.Boundary.Equiv
 
 import QPainleve.Geometry.Toric.Fan.Boundary.Reconstruction
+import QPainleve.Geometry.Toric.Fan.HalfPlane
 
 /-!
 # The ruling exchange of the toric quadric
@@ -22,7 +23,7 @@ proof of Theorem 8.4](https://arxiv.org/abs/2005.05010v3).
 
 public noncomputable section
 
-open AlgebraicGeometry CategoryTheory Module
+open AlgebraicGeometry CategoryTheory Module PointedCone
 
 namespace TauCeti.Toric.Fan
 
@@ -35,6 +36,29 @@ local notation "u" => Equiv.trans (RingEquiv.toEquiv (RingEquiv.symm (ZMod.finEq
 local notation "p" => (Equiv.subLeft (1 : ZMod 4))
 local notation "b'" => b.reindex (Equiv.swap 0 1)
 local notation "f" => b.equiv b (Equiv.swap 0 1)
+
+include hr in
+/-- The two rays in the second basis direction lie in the kernel of the
+first coordinate character on the toric quadric. -/
+theorem quadric_transverse_ruling_rays :
+    hull ℝ {i (b 1)} ∈ Φ.cones ∧ hull ℝ {-i (b 1)} ∈ Φ.cones := by
+  have h₁ : (r 1).primitiveGenerator = b 1 := congrFun hr 1
+  have h₃ : (r 3).primitiveGenerator = -b 1 := by simpa using congrFun hr (3 : Fin 4)
+  exact ⟨h₁ ▸ (r 1).hull_primitiveGenerator_mem, by
+    simpa only [h₃, map_neg] using (r 3).hull_primitiveGenerator_mem⟩
+
+include hr in
+/-- On a toric quadric the first basis character defines the ruling transverse to
+the fibers in the first basis direction. The character has constant weak sign on each cone. -/
+theorem nonneg_or_nonpos_quadric_transverse_character (σ : Φ.cones) :
+    (∀ x ∈ σ.val, 0 ≤ Φ.lattice.realCharacter (b.coord 0).toAddMonoidHom x) ∨
+      ∀ x ∈ σ.val, Φ.lattice.realCharacter (b.coord 0).toAddMonoidHom x ≤ 0 := by
+  obtain ⟨hpos, hneg⟩ := quadric_transverse_ruling_rays b r hr
+  have hrev : (0 : Fin 2).rev = 1 := by decide
+  simpa only [IsIntegralLattice.realCharacter_coord, Basis.coord_apply] using
+    Φ.nonneg_or_nonpos_basis_repr_on_cone b 0 σ
+      (fun _ ↦ by simpa only [hrev] using hpos)
+      (fun _ ↦ by simpa only [hrev, map_neg] using hneg)
 
 include hr in
 private theorem quadric_rayGenerator (j : ZMod 4) :
