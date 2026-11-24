@@ -207,10 +207,11 @@ theorem chargeKernelAction_eq_signedPicardRestriction
     have hsign := sign_eq_one_of_mem_ker_signedOrthogonalRestriction
       (M c₀) (hD c₀) hnef hsq hprim (funext (hmark c₀)) hrestrict
     rw [(comparison w).2, neg_one_pow_eq_one_iff_even (by decide : (-1 : ℤˣ) ≠ 1)] at hsign
-    obtain ⟨v, hv, hx⟩ := (End.asHom w).exists_xPullback_eq_of_even_inversionCount ℂ hsign
-    let v' : inversionFreeLoops E := ⟨End.of v, (mem_inversionFreeLoops_iff E _).mpr hv⟩
-    refine ⟨clusterModularGroupMap ℂ E v', ?_⟩
-    rw [clusterModularGroupInclusion_clusterModularGroupMap]
-    exact (signedClusterModularGroupMap_eq_iff ℂ E v'.val w).mpr hx.symm
+    have hu := (mem_unsignedLoopPullbacks_iff_exists_even ℂ E _).mpr
+      ⟨End.asHom w, hsign, rfl⟩
+    refine ⟨op ⟨_, hu⟩, unop_injective (Subtype.ext ?_)⟩
+    simp only [clusterModularGroupInclusion, MonoidHom.op_apply_apply, Function.comp_apply,
+      unop_op, Subgroup.coe_inclusion, signedClusterModularGroupMap_unop_coe]
+    rfl
 
 end QPainleve.SignedClusterModularGroup.GeometricRealization
