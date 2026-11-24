@@ -61,7 +61,7 @@ local notation "hU" => isClosedPointTower_internalBlowupTower b s c
 local notation "hp" => isModification_orderedContraction hΦ b s c hT u
 local notation "μ" => contractedPicardMarking ℂ hT.isClosedPointTower hU u hu
 
-local instance : IsNoetherian X := isNoetherian_of_finiteType (X ↘ S)
+private local instance : IsNoetherian X := isNoetherian_of_finiteType (X ↘ S)
 local instance : IsNormalScheme X := by
   let := (X ↘ S).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two
   exact IsNormalScheme.of_uniqueFactorizationMonoid_stalk
