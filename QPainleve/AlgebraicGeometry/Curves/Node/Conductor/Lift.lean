@@ -76,14 +76,57 @@ private theorem existsUnique_lift_from_smoothLocus {C : Scheme.{u}} [IsIntegral 
     a ≫ g' = l ≫ (ν[Y] ⁻¹ᵁ smooth[Y]).ι := (P.lift_snd _ _ _).symm
     _ = s := by simp only [hl, s, Category.assoc]
 
+local notation "V" => irreducibleComponents N[X]
+local notation "comp[" v "]" => Scheme.Opens.toScheme (X.blowupComponent (K := k) v)
+local notation "ι[" v "]" => Scheme.Opens.ι (X.blowupComponent (K := k) v)
+private theorem exists_glue_normalizationComponents (g : ∀ v : V, comp[v] ⟶ N[Y]) :
+    ∃ lift : N[X] ⟶ N[Y], ∀ v : V, ι[v] ≫ lift = g v := by
+  let cover := (N[X]).openCoverOfIsOpenCover (X.blowupComponent (K := k))
+    (X.iSup_blowupComponent (k := k))
+  have hglue (v w : V) :
+      pullback.fst (ι[v]) (ι[w]) ≫ g v = pullback.snd _ _ ≫ g w := by
+    by_cases h : v = w
+    · subst w
+      rw [(cancel_mono (ι[v])).mp pullback.condition]
+    · have hempty : IsEmpty ↥(pullback (ι[v]) (ι[w])) := by
+        apply Scheme.isEmpty_pullback
+        simpa only [Scheme.Opens.range_ι, ← TopologicalSpace.Opens.coe_disjoint]
+          using X.pairwise_disjoint_blowupComponent h
+      exact (isInitialOfIsEmpty (X := pullback (ι[v]) (ι[w]))).hom_ext _ _
+  exact ⟨cover.glueMorphisms g hglue, cover.ι_glueMorphisms g hglue⟩
+
+/-- A map from the normalization of a prestable curve to a prestable curve lifts
+uniquely to the target normalization if each source component meets the inverse
+image of the smooth locus. -/
+theorem existsUnique_lift_to_nodal_normalization
+    (f : N[X] ⟶ Y)
+    (hf : ∀ v : V, ∃ x : comp[v], (ι[v] ≫ f) x ∈ smooth[Y]) :
+    ∃! g : N[X] ⟶ N[Y], g ≫ ν[Y] = f := by
+  have : IsRegular N[X] := X.isRegular_blowup_singularLocus nodal[X]
+  have hlocal (v : V) : ∃! g : comp[v] ⟶ N[Y], g ≫ ν[Y] = ι[v] ≫ f := by
+    have : IsRegular comp[v] := IsRegular.of_isOpenImmersion (ι[v])
+    have : IsNormalScheme comp[v] := inferInstance
+    obtain ⟨x, hx⟩ := hf v
+    exact existsUnique_lift_from_smoothLocus (ι[v] ≫ f)
+      (((genericPoint_specializes x).map (ι[v] ≫ f).continuous).mem_open
+        (smooth[Y]).isOpen hx)
+  let g (v : V) := (hlocal v).exists.choose
+  have hg (v : V) : g v ≫ ν[Y] = ι[v] ≫ f := (hlocal v).exists.choose_spec
+  obtain ⟨lift, hl⟩ := exists_glue_normalizationComponents g
+  let cover := (N[X]).openCoverOfIsOpenCover (X.blowupComponent (K := k))
+    (X.iSup_blowupComponent (k := k))
+  refine ⟨lift, cover.hom_ext _ _ (fun (v : V) ↦ ?_), ?_⟩
+  · exact (Category.assoc _ _ _).symm.trans ((congrArg (· ≫ ν[Y]) (hl v)).trans (hg v))
+  · intro g' (hg' : g' ≫ ν[Y] = f)
+    refine cover.hom_ext _ _ (fun (v : V) ↦ ?_)
+    have hv := (Category.assoc (ι[v]) g' ν[Y]).trans (congrArg (ι[v] ≫ ·) hg')
+    exact ((hlocal v).unique hv (hg v)).trans (hl v).symm
+
 section BranchChoice
 
 variable [IsAlgClosed k] (f : X ⟶ Y) [f.IsOver (Spec (.of k))]
 
 local notation "j" => Scheme.branchSchemeToBlowup k Y
-local notation "V" => irreducibleComponents N[X]
-local notation "comp[" v "]" => Scheme.Opens.toScheme (X.blowupComponent (K := k) v)
-local notation "ι[" v "]" => Scheme.Opens.ι (X.blowupComponent (K := k) v)
 local notation "F[" v "]" => ι[v] ≫ ν[X] ≫ f
 local notation "imageGeneric[" v "]" => (F[v]) (genericPoint comp[v])
 
@@ -144,8 +187,6 @@ theorem existsUnique_nodal_normalization_lift
     ∃! g : N[X] ⟶ N[Y], g ≫ ν[Y] = ν[X] ≫ f ∧
       ∀ v h (x : comp[v]), g (ι[v] x) = j (b v h) := by
   classical
-  let 𝒰 := (N[X]).openCoverOfIsOpenCover (X.blowupComponent (K := k))
-    (X.iSup_blowupComponent (k := k))
   have hlocal (v : V) : ∃! g : comp[v] ⟶ N[Y],
       g ≫ ν[Y] = ι[v] ≫ ν[X] ≫ f ∧ ∀ h (x : comp[v]), g x = j (b v h) := by
     by_cases h : imageGeneric[v] ∈ (Y.singularLocus k).support
@@ -160,26 +201,17 @@ theorem existsUnique_nodal_normalization_lift
       exact ⟨g, ⟨hg, fun h' ↦ (h h').elim⟩, fun g' hg' ↦ huniq g' hg'.1⟩
   let g (v : V) := (hlocal v).exists.choose
   have hg (v : V) := (hlocal v).exists.choose_spec
-  have hglue (v w : V) :
-      pullback.fst (ι[v]) (ι[w]) ≫ g v = pullback.snd _ _ ≫ g w := by
-    by_cases h : v = w
-    · subst w
-      rw [(cancel_mono (ι[v])).mp pullback.condition]
-    · have hempty : IsEmpty ↥(pullback (ι[v]) (ι[w])) := by
-        apply Scheme.isEmpty_pullback
-        simpa only [Scheme.Opens.range_ι, ← TopologicalSpace.Opens.coe_disjoint]
-          using X.pairwise_disjoint_blowupComponent h
-      exact (isInitialOfIsEmpty (X := pullback (ι[v]) (ι[w]))).hom_ext _ _
-  let lift := 𝒰.glueMorphisms g hglue
-  have hl (v : V) : ι[v] ≫ lift = g v := 𝒰.ι_glueMorphisms g hglue v
+  obtain ⟨lift, hl⟩ := exists_glue_normalizationComponents g
+  let cover := (N[X]).openCoverOfIsOpenCover (X.blowupComponent (K := k))
+    (X.iSup_blowupComponent (k := k))
   refine ⟨lift, ⟨?_, ?_⟩, ?_⟩
-  · refine 𝒰.hom_ext _ _ (fun (v : V) ↦ ?_)
+  · refine cover.hom_ext _ _ (fun (v : V) ↦ ?_)
     exact ((Category.assoc _ _ _).symm.trans (congrArg (· ≫ ν[Y]) (hl v))).trans (hg v).1
   · intro v h x
     rw [← Hom.comp_apply, hl v]
     exact (hg v).2 h x
   · rintro g' ⟨hg', hb'⟩
-    refine 𝒰.hom_ext _ _ (fun (v : V) ↦ ?_)
+    refine cover.hom_ext _ _ (fun (v : V) ↦ ?_)
     have heq : ι[v] ≫ g' = g v :=
       (hlocal v).unique ⟨by rw [Category.assoc, hg'], hb' v⟩ (hg v)
     exact heq.trans (hl v).symm

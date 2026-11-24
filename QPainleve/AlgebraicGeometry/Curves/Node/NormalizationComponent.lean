@@ -65,9 +65,9 @@ theorem pairwise_disjoint_blowupComponent :
   exact Set.disjoint_left.mpr fun _ ha hb ↦ hab
     ((irreducibleComponentOf_eq_iff.mpr ha).symm.trans (irreducibleComponentOf_eq_iff.mpr hb))
 
-/-- Each component's generic point lies over the isomorphism locus of the
-normalization morphism. -/
-theorem blowupComponentGeneric_mem_isoLocus (v : V) : ν (η v) ∈ (ν).isoLocus := by
+/-- Each normalization component's generic point maps to the smooth locus. -/
+theorem blowupComponentGeneric_mem_smoothLocus (v : V) :
+    ν (η v) ∈ (C ↘ Spec (.of k)).smoothLocus := by
   have : IsFinite ν := C.isFinite_blowupToBase_singularLocus
     PrestableFamily.atWorstNodalOfRelativeDimensionOne
   have : IsNoetherian N := isNoetherian_of_finiteType (ν ≫ C ↘ Spec (.of k))
@@ -83,12 +83,16 @@ theorem blowupComponentGeneric_mem_isoLocus (v : V) : ν (η v) ∈ (ν).isoLocu
   have hη : (η v : N) ∈ ((I).comap ν).support.compl :=
     ((genericPoints.isGenericPoint_ofComponent v).specializes hyv).mem_open
       ((I).comap ν).support.compl.isOpen hy
-  have hIso := C.isIso_blowupToBase_singularLocus_restrict_smoothLocus (R := k)
-  apply (ν).le_isoLocus_iff.mpr hIso
   apply not_not.mp
   exact (C.mem_support_singularLocus_iff_notMem_smoothLocus (ν (η v))).not.mp
     (by simpa only [← SetLike.mem_coe, Closeds.coe_compl, Set.mem_compl_iff,
       support_comap, Closeds.coe_preimage, Set.mem_preimage] using hη)
+
+/-- Each component's generic point lies over the isomorphism locus of the
+normalization morphism. -/
+theorem blowupComponentGeneric_mem_isoLocus (v : V) : ν (η v) ∈ (ν).isoLocus :=
+  (ν).le_isoLocus_iff.mpr (C.isIso_blowupToBase_singularLocus_restrict_smoothLocus (R := k))
+    (C.blowupComponentGeneric_mem_smoothLocus v)
 
 /-- The image of a normalization component under the normalization followed by a
 closed morphism is the closure of the image of its generic point. -/
