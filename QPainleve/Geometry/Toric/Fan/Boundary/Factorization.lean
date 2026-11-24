@@ -8,10 +8,9 @@ module
 public import QPainleve.Geometry.Toric.Fan.Boundary.Automorphism
 public import QPainleve.Geometry.Toric.Fan.Boundary.Equiv
 
-import QPainleve.Geometry.Toric.Fan.Adjacency
-import QPainleve.Geometry.Toric.Fan.Boundary.Intersection
+import QPainleve.Geometry.Toric.Fan.Equiv
 import QPainleve.Geometry.Toric.Fan.Picard.Rank
-import QPainleve.Geometry.Toric.Lattice
+import QPainleve.Geometry.Toric.Fan.TwoDimensional
 import Mathlib.LinearAlgebra.Dual.Defs
 
 /-!
@@ -32,7 +31,7 @@ of [Lutz's appendix to Hacking and Keating][HKL].
 
 public section
 
-open AlgebraicGeometry CategoryTheory PointedCone
+open AlgebraicGeometry CategoryTheory
 open TauCeti.AlgebraicGeometry (CodimensionOnePoint LineBundleClass)
 open AlgebraicGeometry.Scheme.IdealSheafData
 
@@ -172,120 +171,39 @@ private theorem exists_latticeEquiv_of_boundary_image (hc : Φ.IsComplete) (hc' 
 
 end PicardRelations
 
-section Cones
-
-private theorem exists_commonCone_of_boundary_image
-    (hΦ : Φ.IsRegular) (hΨ : Ψ.IsRegular) (hN : Module.finrank ℤ N = 2)
-    (e : X[Φ] ≅ X[Ψ]) (r : Φ.Ray ≃ Ψ.Ray)
-    (hr : ∀ ρ, e.hom (p[Φ,hΦ,ρ]).val = (p[Ψ,hΨ,r ρ]).val)
-    {ρ τ : Φ.Ray} (hne : ρ ≠ τ)
-    (h : ∃ σ : Φ.cones, ρ.toCone ≤ σ ∧ τ.toCone ≤ σ) :
-    ∃ σ : Ψ.cones, (r ρ).toCone ≤ σ ∧ (r τ).toCone ≤ σ := by
-  by_contra hnone
-  have side (a : Φ.Ray) : (I[Ψ,hΨ,r a]).comap e.hom = I[Φ,hΦ,a] := by
-    simpa only [hr a, rayBoundaryIdeal_def] using
-      comap_vanishingIdeal_closure_singleton_apply e.hom (p[Φ,hΦ,a]).val
-  have htop := congrArg (fun J : (X[Ψ]).IdealSheafData ↦ J.comap e.hom)
-    (Ψ.sup_rayBoundaryIdeal_eq_top hΨ hnone)
-  rw [comap_sup, side, side, comap_top] at htop
-  obtain ⟨σ, hρ, hτ⟩ := h
-  rw [Φ.sup_rayBoundaryIdeal_eq_ker_distinguishedPoint hΦ hN hne σ hρ hτ,
-    Scheme.Hom.ker_eq_top_iff_isEmpty] at htop
-  exact htop.false (IsLocalRing.closedPoint ℂ)
-
-private theorem map_mem_cones_of_boundary_rays [Nonempty Ψ.cones]
-    (hΦ : Φ.IsRegular) (hN : Module.finrank ℤ N = 2)
-    (r : Φ.Ray ↪ Ψ.Ray) (g : V →ₗ[ℝ] V')
-    (hg : ∀ ρ, (ρ.toCone.val).map g = (r ρ).toCone.val)
-    (hcone : ∀ ⦃ρ τ : Φ.Ray⦄, ρ ≠ τ →
-      (∃ σ : Φ.cones, ρ.toCone ≤ σ ∧ τ.toCone ≤ σ) →
-      ∃ σ : Ψ.cones, (r ρ).toCone ≤ σ ∧ (r τ).toCone ≤ σ)
-    (hΨ : Ψ.IsRegular) (hN' : Module.finrank ℤ N' = 2) (σ : Φ.cones) :
-    σ.val.map g ∈ Ψ.cones := by
-  by_cases hz : σ.val = ⊥
-  · rw [hz, PointedCone.map, Submodule.map_bot]
-    exact Ψ.bot_mem (Classical.choice (inferInstance : Nonempty Ψ.cones)).property
-  obtain ⟨ρ, hρ⟩ := Φ.exists_ray_le_of_ne_bot σ hz
-  by_cases htwo : ∃ τ : Φ.Ray, ρ ≠ τ ∧ τ.toCone ≤ σ
-  · obtain ⟨τ, hne, hτ⟩ := htwo
-    obtain ⟨s, hsρ, hsτ⟩ := hcone hne ⟨σ, hρ, hτ⟩
-    have hs := cone_eq_sup_of_ray_ne_of_le hΨ hN' (r.injective.ne hne) hsρ hsτ
-    rw [cone_eq_sup_of_ray_ne_of_le hΦ hN hne hρ hτ]
-    -- Cone maps are submodule maps over the nonnegative reals.
-    simp only [PointedCone.map] at hg ⊢
-    rw [Submodule.map_sup, hg, hg, ← hs]
-    exact s.property
-  · have heq : σ = ρ.toCone := le_antisymm (Φ.le_iff_forall_ray_le.mpr (fun τ hτ ↦ by
-      have h : ρ = τ := not_ne_iff.mp (fun hne ↦ htwo ⟨τ, hne, hτ⟩)
-      exact h ▸ le_rfl)) hρ
-    rw [heq, hg]
-    exact (r ρ).toCone.property
-
-variable [Nonempty Φ.cones] [Nonempty Ψ.cones]
-
-private theorem exists_fanEquiv_of_boundary_image
+private theorem exists_fanEquiv_of_boundary_image [Nonempty Φ.cones] [Nonempty Ψ.cones]
     (hΦ : Φ.IsRegular) (hΨ : Ψ.IsRegular) (hc : Φ.IsComplete) (hc' : Ψ.IsComplete)
-    (hN : Module.finrank ℤ N = 2) (hN' : Module.finrank ℤ N' = 2)
+    (hN' : Module.finrank ℤ N' = 2)
     (e : X[Φ] ≅ X[Ψ]) (r : Φ.Ray ≃ Ψ.Ray)
     (hr : ∀ ρ, e.hom (p[Φ,hΦ,ρ]).val = (p[Ψ,hΨ,r ρ]).val) :
     ∃ f : FanEquiv Φ Ψ, f.rayEquiv = r := by
   obtain ⟨l, hl⟩ := exists_latticeEquiv_of_boundary_image hΦ hΨ e r hr hc hc'
-  let g := Φ.lattice.extendEquiv Ψ.lattice l
-  have hg (ρ : Φ.Ray) :
-      ρ.toCone.val.map g.toLinearMap = (r ρ).toCone.val := by
-    rw [Ray.toCone_eq_hull_primitiveGenerator, Ray.toCone_eq_hull_primitiveGenerator,
-      PointedCone.map, Submodule.map_span, Set.image_singleton]
-    simp only [LinearMap.coe_restrictScalars, LinearEquiv.coe_coe, g,
-      IsIntegralLattice.extendEquiv_apply_lattice, hl]
-  have hg' (τ : Ψ.Ray) :
-      τ.toCone.val.map g.symm.toLinearMap = (r.symm τ).toCone.val := by
-    have hh := congrArg (PointedCone.map g.symm.toLinearMap) (hg (r.symm τ))
-    simpa only [PointedCone.map_map, LinearEquiv.symm_comp, PointedCone.map_id,
-      Equiv.apply_symm_apply] using hh.symm
-  have hr' (τ : Ψ.Ray) :
-      e.symm.hom (p[Ψ,hΨ,τ]).val = (p[Φ,hΦ,r.symm τ]).val := by
-    apply e.hom.isOpenEmbedding.injective
-    rw [hr, r.apply_symm_apply, ← Scheme.Hom.comp_apply, Iso.symm_hom, Iso.inv_hom_id]
-    simp
-  let f : FanEquiv Φ Ψ :=
-    { latticeEquiv := l
-      realEquiv := g
-      map_lattice := Φ.lattice.extendEquiv_apply_lattice Ψ.lattice l
-      map_mem := fun σ ↦ ⟨fun h ↦ by
-        have hh := map_mem_cones_of_boundary_rays hΨ hN' r.symm.toEmbedding g.symm.toLinearMap hg'
-          (fun _ _ ↦ exists_commonCone_of_boundary_image hΨ hΦ hN' e.symm r.symm hr')
-          hΦ hN ⟨σ.map g.toLinearMap, h⟩
-        simpa only [PointedCone.map_map, LinearEquiv.symm_comp, PointedCone.map_id] using hh,
-        fun h ↦ map_mem_cones_of_boundary_rays hΦ hN r.toEmbedding g.toLinearMap hg
-          (fun _ _ ↦ exists_commonCone_of_boundary_image hΦ hΨ hN e r hr) hΨ hN' ⟨σ, h⟩⟩ }
-  exact ⟨f, Equiv.ext fun ρ ↦ Ray.primitiveGenerator_injective
-    ((f.primitiveGenerator_rayEquiv ρ).trans (hl ρ))⟩
-
-end Cones
-
-private theorem fanEquiv_eq_of_rayEquiv_eq (hc : Φ.IsComplete) {f g : FanEquiv Φ Ψ}
-    (h : f.rayEquiv = g.rayEquiv) : f = g := by
-  apply FanEquiv.ext
+  let Ω := Φ.mapEquiv Ψ.lattice l
+  let g : FanEquiv Φ Ω := Φ.mapEquivIso Ψ.lattice l
+  have hgl : g.latticeEquiv = l := Φ.mapEquivIso_latticeEquiv Ψ.lattice l
   have := Ψ.lattice.free
-  let b := Module.Free.chooseBasis ℤ N'
-  apply AddEquiv.ext
-  intro x
-  apply b.ext_elem_iff.mpr
-  intro j
-  let m := (b.coord j).toAddMonoidHom
-  have hm : m.comp f.latticeEquiv.toAddMonoidHom = m.comp g.latticeEquiv.toAddMonoidHom := by
-    apply Φ.characterToRayDivisor_injective hc
-    funext ρ
-    simp only [characterToRayDivisor_apply, AddMonoidHom.comp_apply, AddEquiv.coe_toAddMonoidHom,
-      ← FanEquiv.primitiveGenerator_rayEquiv, h]
-  exact DFunLike.congr_fun hm x
+  have := Ψ.lattice.finite
+  let b : Module.Basis (Fin 2) ℤ N' := hN' ▸ Module.finBasis ℤ N'
+  have hg (ρ : Φ.Ray) :
+      (g.rayEquiv ρ).primitiveGenerator = (r ρ).primitiveGenerator := by
+    simpa only [FanEquiv.primitiveGenerator_rayEquiv, hgl] using hl ρ
+  have hΩ : Ω = Ψ := by
+    apply eq_of_range_primitiveGenerator_eq b (g.isRegular_iff.mpr hΦ) hΨ
+      (g.isComplete_iff.mpr hc) hc'
+    have h := congrArg Set.range (show Ray.primitiveGenerator ∘ g.rayEquiv =
+      Ray.primitiveGenerator ∘ r from funext hg)
+    simpa only [EquivLike.range_comp] using h
+  let f : FanEquiv Φ Ψ := { g with map_mem := fun σ ↦ hΩ ▸ g.map_mem σ }
+  have hfl : f.latticeEquiv = l := hgl
+  refine ⟨f, Equiv.ext fun ρ ↦ Ray.primitiveGenerator_injective ?_⟩
+  simpa only [FanEquiv.primitiveGenerator_rayEquiv, hfl] using hl ρ
 
 /-- An isomorphism of complete regular toric surfaces over `ℂ` preserving the
 reduced boundaries is the composite of a unique fan isomorphism followed by a
 unique torus translation on the target. -/
 theorem existsUnique_toric_factorization_of_boundary_iso
     (hΦ : Φ.IsRegular) (hΨ : Ψ.IsRegular) (hc : Φ.IsComplete) (hc' : Ψ.IsComplete)
-    (hN : Module.finrank ℤ N = 2) (hN' : Module.finrank ℤ N' = 2)
+    (_hN : Module.finrank ℤ N = 2) (hN' : Module.finrank ℤ N' = 2)
     (e : X[Φ] ≅ X[Ψ]) [e.hom.IsOver (Spec (.of ℂ))]
     (he : (D[Ψ,hc'.nonempty_cones]).comap e.hom = D[Φ,hc.nonempty_cones]) :
     letI := hc'.nonempty_cones
@@ -294,7 +212,7 @@ theorem existsUnique_toric_factorization_of_boundary_iso
   let := hc.nonempty_cones
   let := hc'.nonempty_cones
   obtain ⟨r, hr⟩ := exists_boundary_ray_equiv hΦ hΨ e he
-  obtain ⟨f, hfr⟩ := exists_fanEquiv_of_boundary_image hΦ hΨ hc hc' hN hN' e r hr
+  obtain ⟨f, hfr⟩ := exists_fanEquiv_of_boundary_image hΦ hΨ hc hc' hN' e r hr
   let a := asIso f.toFanHom.algebraicMap
   let t := a.symm ≪≫ e
   have : a.hom.IsOver (Spec (.of ℂ)) :=
@@ -328,7 +246,7 @@ theorem existsUnique_toric_factorization_of_boundary_iso
       rw [← hp]
       exact ((Ψ.comap_rayBoundaryIdeal_eq_iff hΨ (Ψ.torusTranslation ψ) (g.rayEquiv ρ)).mp
         (Ψ.comap_rayBoundaryIdeal_torusTranslation_hom hΨ ψ (g.rayEquiv ρ))).symm
-    have hgf := fanEquiv_eq_of_rayEquiv_eq hc (hg.trans hfr.symm)
+    have hgf := FanEquiv.eq_of_rayEquiv_eq hc (hg.trans hfr.symm)
     subst g
     congr 1
     apply huniq ψ
