@@ -5,15 +5,16 @@ Authors: The QPainleve contributors
 -/
 module
 
+public import QPainleve.Geometry.Toric.Fan.Adjacency
 public import QPainleve.Geometry.Toric.Lattice
-public import TauCeti.Geometry.Toric.Algebraic.Fan.Equiv
 
 /-!
 # Transport of toric fans along integral lattice equivalences
 
 An integral lattice equivalence transports each cone by its real extension and
 induces a native `FanEquiv`. This lets fans originally presented in different
-lattices be compared in the same lattice.
+lattices be compared in the same lattice. In rank two, matching a positively oriented
+pair of adjacent rays also identifies the determinant pairings.
 -/
 
 public noncomputable section
@@ -75,3 +76,53 @@ def mapEquivIso : FanEquiv Φ (Φ.mapEquiv hi' e) where
 theorem mapEquivIso_latticeEquiv : (Φ.mapEquivIso hi' e).latticeEquiv = e := (rfl)
 
 end TauCeti.Toric.Fan
+
+namespace TauCeti.Toric.FanEquiv
+
+variable {N N' V V' : Type*} [AddCommGroup N] [AddCommGroup N']
+  [AddCommGroup V] [AddCommGroup V'] [Module ℝ V] [Module ℝ V']
+  {i : N →+ V} {i' : N' →+ V'} {Φ : Fan i} {Ψ : Fan i'}
+
+/-- A fan equivalence preserves the determinant pairings if a pair of adjacent rays
+and their images have determinant one in the respective lattice bases. -/
+theorem detDualEquiv_of_matching_adjacent_rays (f : FanEquiv Φ Ψ)
+    (b : Module.Basis (Fin 2) ℤ N) (b' : Module.Basis (Fin 2) ℤ N') (hΦ : Φ.IsRegular)
+    {p q : Φ.Ray} {p' q' : Ψ.Ray}
+    (hp : f.rayEquiv p = p') (hq : f.rayEquiv q = q')
+    (h : b.detDualEquiv p.primitiveGenerator q.primitiveGenerator = 1)
+    (h' : b'.detDualEquiv p'.primitiveGenerator q'.primitiveGenerator = 1)
+    (hcone : ∃ σ : Φ.cones, p.toCone ≤ σ ∧ q.toCone ≤ σ) (x y : N) :
+    b'.detDualEquiv (f.latticeEquiv x) (f.latticeEquiv y) = b.detDualEquiv x y := by
+  have hne : p ≠ q := by
+    intro he
+    simp [he, Module.Basis.detDualEquiv_self, -Module.Basis.detDualEquiv_apply] at h
+  obtain ⟨σ, hpσ, hqσ⟩ := hcone
+  obtain ⟨a, ha, hb⟩ := Fan.exists_basis_of_ray_ne_of_le
+    ((Fan.isRegular_iff.mp hΦ) _ σ.property)
+    (by simpa using Module.finrank_eq_card_basis b) hne hpσ hqσ
+  let E : N ≃ₗ[ℤ] N' := f.latticeEquiv.toIntLinearEquiv
+  let A := a.map E
+  have hA : (A : Fin 2 → N') = ![p'.primitiveGenerator, q'.primitiveGenerator] := by
+    have hp' := congrArg Fan.Ray.primitiveGenerator hp
+    have hq' := congrArg Fan.Ray.primitiveGenerator hq
+    funext j
+    fin_cases j
+    · simpa [A, E, ha, FanEquiv.primitiveGenerator_rayEquiv] using hp'
+    · simpa [A, E, hb, FanEquiv.primitiveGenerator_rayEquiv] using hq'
+  have h₁ : b'.det A = 1 := by
+    rw [hA, ← Module.Basis.detDualEquiv_apply, h']
+  have h₂ : (b.map E).det A = 1 := by
+    rw [Module.Basis.det_map]
+    have ha' : (a : Fin 2 → N) = ![p.primitiveGenerator, q.primitiveGenerator] := by
+      funext j
+      fin_cases j <;> simp [ha, hb]
+    simpa only [Function.comp_def, A, Module.Basis.map_apply, E.symm_apply_apply, ha',
+      ← Module.Basis.detDualEquiv_apply] using h
+  have hd : b'.det = (b.map E).det := by
+    calc
+      b'.det = A.det := by rw [b'.det.eq_smul_basis_det A, h₁, one_smul]
+      _ = (b.map E).det := by rw [(b.map E).det.eq_smul_basis_det A, h₂, one_smul]
+  rw [Module.Basis.detDualEquiv_apply, hd, ← Module.Basis.detDualEquiv_apply]
+  exact b.detDualEquiv_map E x y
+
+end TauCeti.Toric.FanEquiv

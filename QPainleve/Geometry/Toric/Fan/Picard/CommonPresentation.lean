@@ -8,6 +8,8 @@ module
 public import QPainleve.Geometry.Toric.Fan.Boundary.Transport
 public import QPainleve.Geometry.Toric.Fan.Picard.Reconstruction
 
+import QPainleve.Geometry.Toric.Fan.Equiv
+
 /-!
 # Comparing toric blowup models in a common presentation
 
@@ -43,45 +45,6 @@ local notation "mark[" b ", " s ", " c ", " h "]" => internalBlowupPicardMarking
 local notation "strict[" h ", " b ", " s ", " c "]" =>
   strictRayBoundaryClass h rankTwo(b) (tower[b, s, c])
     (isClosedPointTower_internalBlowupTower b s c)
-
-private theorem detDualEquiv_of_matching_adjacent_rays
-    (b : Module.Basis (Fin 2) ℤ N) (b' : Module.Basis (Fin 2) ℤ N') (hΦ : Φ.IsRegular)
-    (f : FanEquiv Φ Ψ) {p q : Φ.Ray} {p' q' : Ψ.Ray}
-    (hp : f.rayEquiv p = p') (hq : f.rayEquiv q = q')
-    (h : b.detDualEquiv p.primitiveGenerator q.primitiveGenerator = 1)
-    (h' : b'.detDualEquiv p'.primitiveGenerator q'.primitiveGenerator = 1)
-    (hcone : ∃ σ : Φ.cones, p.toCone ≤ σ ∧ q.toCone ≤ σ) (x y : N) :
-    b'.detDualEquiv (f.latticeEquiv x) (f.latticeEquiv y) = b.detDualEquiv x y := by
-  have hne : p ≠ q := by
-    intro he
-    simp [he, Module.Basis.detDualEquiv_self, -Module.Basis.detDualEquiv_apply] at h
-  obtain ⟨σ, hpσ, hqσ⟩ := hcone
-  obtain ⟨a, ha, hb⟩ := exists_basis_of_ray_ne_of_le
-    ((isRegular_iff.mp hΦ) _ σ.property) rankTwo(b) hne hpσ hqσ
-  let E : N ≃ₗ[ℤ] N' := f.latticeEquiv.toIntLinearEquiv
-  let A := a.map E
-  have hA : (A : Fin 2 → N') = ![p'.primitiveGenerator, q'.primitiveGenerator] := by
-    have hp' := congrArg Ray.primitiveGenerator hp
-    have hq' := congrArg Ray.primitiveGenerator hq
-    funext j
-    fin_cases j
-    · simpa [A, E, ha, FanEquiv.primitiveGenerator_rayEquiv] using hp'
-    · simpa [A, E, hb, FanEquiv.primitiveGenerator_rayEquiv] using hq'
-  have h₁ : b'.det A = 1 := by
-    rw [hA, ← Module.Basis.detDualEquiv_apply, h']
-  have h₂ : (b.map E).det A = 1 := by
-    rw [Module.Basis.det_map]
-    have ha' : (a : Fin 2 → N) = ![p.primitiveGenerator, q.primitiveGenerator] := by
-      funext j
-      fin_cases j <;> simp [ha, hb]
-    simpa only [Function.comp_def, A, Module.Basis.map_apply, E.symm_apply_apply, ha',
-      ← Module.Basis.detDualEquiv_apply] using h
-  have hd : b'.det = (b.map E).det := by
-    calc
-      b'.det = A.det := by rw [b'.det.eq_smul_basis_det A, h₁, one_smul]
-      _ = (b.map E).det := by rw [(b.map E).det.eq_smul_basis_det A, h₂, one_smul]
-  rw [Module.Basis.detDualEquiv_apply, hd, ← Module.Basis.detDualEquiv_apply]
-  exact b.detDualEquiv_map E x y
 
 variable [h₀ : Nonempty Φ.cones] [h₁ : Nonempty Ψ.cones]
   {n : ℕ} (b : Module.Basis (Fin 2) ℤ N) (b' : Module.Basis (Fin 2) ℤ N')
@@ -158,7 +121,7 @@ theorem exists_common_toric_presentation_of_picard_isometry
       (isClosedPointTower_internalBlowupTower b' s' d) e he hD
   have hcenters := centerRays_of_matching_strictRayClasses b b' s s' c d hΦ hΨ f e hcoord
     (fun r ↦ by obtain ⟨j, rfl⟩ := u.surjective r; rw [hf]; exact hD j)
-  have hdet := detDualEquiv_of_matching_adjacent_rays b b' hΦ f (hf 0) (hf (0 + 1))
+  have hdet := f.detDualEquiv_of_matching_adjacent_rays b b' hΦ (hf 0) (hf (0 + 1))
     (hu 0).1 (hv 0).1 (hu 0).2
   have hlift := f.existsUnique_isLift_internalBlowupTower b b' hdet s d hΦ
   rw [hcenters] at hlift
