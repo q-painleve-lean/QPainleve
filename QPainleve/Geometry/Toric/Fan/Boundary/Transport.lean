@@ -71,14 +71,13 @@ theorem existsUnique_isLift_internalBlowupTower (hΦ : Φ.IsRegular) :
 
 include hdet in
 /-- Transporting the internal blowups after reindexing the centers gives an isomorphism
-over `ℂ` that identifies the strict boundary ideals. The centers may repeat. -/
+over the toric schemes that identifies the strict boundary ideals. The centers may repeat. -/
 theorem exists_iso_reindex_transport_internalBlowupTower (hΦ : Φ.IsRegular)
     (σ : Equiv.Perm (Fin n)) :
     let A := Fan.internalBlowupTower b s c
     let B := Fan.internalBlowupTower b' (e.rayEquiv ∘ s ∘ σ) (c ∘ σ)
     ∃ f : A.1 ≅ B.1,
-      f.hom ≫ B.2.toTower.toBase ≫ Ψ.algebraicRealizationStructureMap =
-        A.2.toTower.toBase ≫ Φ.algebraicRealizationStructureMap ∧
+      f.hom ≫ B.2.toTower.toBase = A.2.toTower.toBase ≫ e.toFanHom.algebraicMap ∧
       B.2.boundaryι.ker.comap f.hom = A.2.boundaryι.ker := by
   dsimp only
   let A := Fan.internalBlowupTower b s c
@@ -87,8 +86,8 @@ theorem exists_iso_reindex_transport_internalBlowupTower (hΦ : Φ.IsRegular)
   obtain ⟨f', ⟨hf', hf'B⟩, -⟩ :=
     e.existsUnique_isLift_internalBlowupTower b b' hdet (s ∘ σ) (c ∘ σ) hΦ
   refine ⟨f ≪≫ f', ?_, ?_⟩
-  · simp only [Iso.trans_hom, Category.assoc, reassoc_of% hf'.hom_toBase, asIso_hom,
-      FanHom.algebraicMap_comp_algebraicRealizationStructureMap, reassoc_of% hf]
+  · simpa only [← Category.assoc, hf, asIso_hom, Iso.trans_hom] using
+      congrArg (f.hom ≫ ·) hf'.hom_toBase
   · have hk : (A.2.boundaryι ≫ (f ≪≫ f').hom).ker = B.2.boundaryι.ker := by
       rw [Iso.trans_hom, ← Category.assoc, hfB, hf'B, Scheme.Hom.ker_comp_of_isIso]
     rw [← hk, Scheme.Hom.comap_ker_comp_of_isClosedImmersion]

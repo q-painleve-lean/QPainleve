@@ -139,6 +139,36 @@ def centerFiberEvaluation (U : (D A).X.left.Opens) (v : A →+ N) (c : S ⟶ U.t
 theorem centerFiberEvaluation_def (U : (D A).X.left.Opens) (v : A →+ N) (c : S ⟶ U.toScheme) :
     centerFiberEvaluation k U v c = pullback.fst π[U] c ≫ ev[U, v] := (rfl)
 
+/-- The fiber of variable-center evaluation is evaluation at the corresponding
+center of the ambient torus. -/
+theorem centerFiberIso_hom_comp_evaluationAtCenter
+    (U : (D A).X.left.Opens) (v : A →+ N) (c : S ⟶ U.toScheme)
+    (hc : c ≫ U.ι ≫ (D A).X.hom = 𝟙 S) :
+    (centerFiberIso k (N := N) U c hc).hom ≫
+        evaluationAtCenter k v (c ≫ U.ι) (by simpa using hc) =
+      centerFiberEvaluation k U v c := by
+  let e := centerFiberIso k (N := N) U c hc
+  let j := pullback.fst π[U] c ≫ (E[U]).ι
+  let q := pullback.lift (f := (D A).X.hom) (g := (D N).X.hom)
+    ((D N).X.hom ≫ c ≫ U.ι) (𝟙 (D N).X.left) (by simp [hc])
+  have hf := ((prodIso k A N).inv_comp_eq).2 (prodIso_hom_fst k A N).symm
+  have hs := ((prodIso k A N).inv_comp_eq).2 (prodIso_hom_snd k A N).symm
+  have h : (e.hom ≫ q) ≫ (prodIso k A N).hom = j := by
+    symm
+    apply ((prodIso k A N).comp_inv_eq).mp
+    apply pullback.hom_ext
+    · simp only [q, j, Category.assoc, hf, pullback.lift_fst]
+      rw [← morphismRestrict_ι, pullback.condition_assoc]
+      have he : e.hom ≫ (D N).X.hom = pullback.snd π[U] c := by
+        simp only [e, centerFiberIso_hom, Category.assoc, Over.w]
+        rw [← Over.w ((π₁).hom.hom), ← morphismRestrict_ι_assoc,
+          pullback.condition_assoc, hc, Category.comp_id]
+      rw [reassoc_of% he]
+    · simp only [q, j, e, Category.assoc, hs, pullback.lift_snd,
+        Category.comp_id, centerFiberIso_hom]
+  simpa only [evaluationAtCenter, centerFiberEvaluation_def, e, q, j, Category.assoc]
+    using congrArg (· ≫ (evaluation k v).hom.hom.left) h
+
 end CenterEvaluation
 
 variable [Field k] [IsSepClosed k] [Module.Free ℤ A] [Module.Free ℤ N]

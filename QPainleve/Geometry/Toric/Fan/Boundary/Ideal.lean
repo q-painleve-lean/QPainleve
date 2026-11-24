@@ -7,11 +7,16 @@ module
 
 public import Mathlib.AlgebraicGeometry.IdealSheaf.Functorial
 public import QPainleve.Geometry.Toric.Fan.Boundary.Basic
+public import QPainleve.Geometry.Toric.Fan.Point
 public import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.Basic
 public import TauCeti.AlgebraicGeometry.IdealSheaf.Over
+public import TauCeti.AlgebraicGeometry.IdealSheaf.Stalk
 public import TauCeti.AlgebraicGeometry.Scheme.Regular.Scheme
 
+import QPainleve.AlgebraicGeometry.EffectiveCartierDivisor.Stalk
 import QPainleve.Geometry.Toric.Fan.Picard.Basic
+import QPainleve.Geometry.Toric.Fan.Smooth
+import TauCeti.AlgebraicGeometry.Morphisms.Smooth.Regular
 import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.Factorial
 import TauCeti.AlgebraicGeometry.IdealSheaf.VanishingIdeal
 
@@ -27,9 +32,10 @@ the invariant divisors in Fulton, *Introduction to Toric Varieties*, §3.1.
 
 public noncomputable section
 
-open AlgebraicGeometry CategoryTheory TopologicalSpace
+open AlgebraicGeometry CategoryTheory TopologicalSpace Multiplicative
 open AlgebraicGeometry.Scheme.IdealSheafData
-open TauCeti.AlgebraicGeometry (isRegularLocalRing_stalk_iff_of_isOpenImmersion)
+open TauCeti.AlgebraicGeometry (isRegularLocalRing_stalk_iff_of_isOpenImmersion
+  isRegularLocalRing_stalk_of_smooth)
 
 namespace TauCeti.Toric.Fan
 
@@ -185,5 +191,71 @@ theorem isRegular_rayBoundary (Φ : Fan i) (hΦ : Φ.IsRegular) (ρ : Φ.Ray) :
     TauCeti.AlgebraicGeometry.IsRegular (Φ.rayBoundaryIdeal hΦ ρ).subscheme := by
   have := LocallyOfFiniteType.isLocallyNoetherian (Φ.rayBoundaryIdeal hΦ ρ).subschemeι
   exact ⟨isRegularLocalRing_stalk_rayBoundary hΦ ρ⟩
+
+local notation "p[" σ "]" =>
+  Fan.distinguishedPointHom _ σ (IsLocalRing.closedPoint ℂ : Spec (CommRingCat.of ℂ))
+
+/-- A distinguished point lies on a ray divisor precisely when the ray is a face
+of its cone. -/
+theorem distinguishedPoint_mem_support_rayBoundaryIdeal_iff
+    (σ : Φ.cones) (ρ : Φ.Ray) :
+    p[σ] ∈ (Φ.rayBoundaryIdeal hΦ ρ).support ↔ ρ.toCone ≤ σ := by
+  classical
+  let j := Φ.affineToricChartι σ
+  let d := distinguishedPoint Φ.lattice (⊤ : σ.val.Face)
+  let x : Φ.affineToricChart σ := PrimeSpectrum.comap d.toRingHom (IsLocalRing.closedPoint ℂ)
+  let z : Spec (CommRingCat.of ℂ) := IsLocalRing.closedPoint ℂ
+  have hd : p[σ] = j x :=
+    congrArg (fun f : Spec (CommRingCat.of ℂ) ⟶ Φ.algebraicRealization ↦ f z)
+      (Φ.distinguishedPointHom_def σ)
+  have hx : x ∈ ((Φ.rayBoundaryIdeal hΦ ρ).comap j).support ↔
+      j x ∈ (Φ.rayBoundaryIdeal hΦ ρ).support := by
+    rw [← SetLike.mem_coe, support_comap, Closeds.coe_preimage]
+    rfl
+  rw [hd, ← hx]
+  by_cases h : ρ.toCone ≤ σ
+  · rw [iff_true_intro h, Φ.comap_rayBoundaryIdeal_eq_ofIdealTop hΦ _ σ h]
+    rw [← SetLike.mem_coe, coe_support_ofIdealTop, Spec_zeroLocus]
+    let y : PrimeSpectrum (affineCoordinateRing Φ.lattice σ.val) := x
+    -- Affine membership here is membership of the contracted prime in the zero locus.
+    change (y ∈ PrimeSpectrum.zeroLocus _) ↔ True
+    rw [iff_true, PrimeSpectrum.mem_zeroLocus, ← Ideal.coe_comap,
+      Ideal.comap_map_of_bijective _ (ConcreteCategory.bijective_of_isIso (C := CommRingCat) _),
+      SetLike.coe_subset_coe]
+    -- At the distinguished point the contracted prime comes from the zero ideal of the field.
+    change _ ≤ (PrimeSpectrum.comap d.toRingHom (IsLocalRing.closedPoint ℂ)).asIdeal
+    have hz : (IsLocalRing.closedPoint ℂ).asIdeal = ⊥ := IsLocalRing.maximalIdeal_eq_bot
+    rw [PrimeSpectrum.comap_asIdeal, hz, ← RingHom.ker_eq_comap_bot]
+    apply (rayIdeal_le_iff _ _ _ _).mpr
+    intro m hm
+    rw [RingHom.mem_ker, AlgHom.toRingHom_eq_coe, MonoidAlgebra.of_apply]
+    exact distinguishedPoint_top_single_eq_zero_of_pos _ _ _ _ hm
+  · rw [iff_false_intro h, Φ.comap_rayBoundaryIdeal_eq_top hΦ ρ σ h, support_top]
+    exact Iff.rfl
+
+open Classical in
+/-- The multiplicity of a ray divisor at a distinguished point is one for a ray
+of the center cone and zero for any other ray. -/
+theorem stalkOrder_rayBoundaryIdeal_distinguishedPoint
+    (σ : Φ.cones) (ρ : Φ.Ray) :
+    (Φ.rayBoundaryIdeal hΦ ρ).stalkOrder p[σ] = if ρ.toCone ≤ σ then 1 else 0 := by
+  let p := p[σ]
+  let J := Φ.rayBoundaryIdeal hΦ ρ
+  let : Smooth Φ.algebraicRealizationStructureMap :=
+    Φ.smooth_algebraicRealizationStructureMap hΦ
+  let : IsRegularLocalRing (Φ.algebraicRealization.presheaf.stalk p) :=
+    isRegularLocalRing_stalk_of_smooth Φ.algebraicRealizationStructureMap p
+  let : TauCeti.AlgebraicGeometry.IsRegular J.subscheme := Φ.isRegular_rayBoundary hΦ ρ
+  have hm := Φ.distinguishedPoint_mem_support_rayBoundaryIdeal_iff hΦ σ ρ
+  split_ifs with h
+  · have hp : p ∈ (J.support : Set Φ.algebraicRealization) := hm.mpr h
+    rw [← J.range_subschemeι] at hp
+    obtain ⟨x, hx⟩ := hp
+    have : IsRegularLocalRing (Φ.algebraicRealization.presheaf.stalk (J.subschemeι x)) :=
+      hx.symm ▸ inferInstanceAs (IsRegularLocalRing (Φ.algebraicRealization.presheaf.stalk p))
+    have hD := Φ.isEffectiveCartier_rayBoundaryIdeal hΦ ρ
+    have horder := (hD.stalkOrder_eq_one_iff_isRegularLocalRing x).mpr inferInstance
+    exact (congrArg J.stalkOrder hx).symm.trans horder
+  · exact (J.stalkOrder_eq_zero_iff p).mpr (h ∘ hm.mp)
 
 end TauCeti.Toric.Fan

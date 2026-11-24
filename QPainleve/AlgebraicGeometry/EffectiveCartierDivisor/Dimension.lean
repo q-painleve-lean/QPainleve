@@ -39,6 +39,16 @@ theorem IsEffectiveCartier.ringKrullDim_stalk_add_one (hI : I.IsEffectiveCartier
   rw [← ringKrullDim_eq_of_ringEquiv e]
   exact ringKrullDim_quotient_span_singleton_succ_eq_ringKrullDim ha hamem
 
+open Order in
+/-- A generic point of an effective Cartier divisor has codimension one in the ambient scheme. -/
+theorem IsEffectiveCartier.coheight_subschemeι_of_coheight_eq_zero
+    (hI : I.IsEffectiveCartier) {x : I.subscheme} (hx : coheight x = 0) :
+    coheight (I.subschemeι x) = 1 := by
+  have hdim := hI.ringKrullDim_stalk_add_one x
+  rw [ringKrullDim_stalk_eq_coheight, ringKrullDim_stalk_eq_coheight, hx, WithBot.coe_zero,
+    zero_add, ← WithBot.coe_one, WithBot.coe_inj] at hdim
+  exact hdim.symm
+
 /-- An effective Cartier divisor in a scheme of dimension at most `d + 1`
 has dimension at most `d`. This includes the empty divisor. -/
 theorem IsEffectiveCartier.topologicalKrullDim_subscheme_le (hI : I.IsEffectiveCartier)
@@ -72,10 +82,8 @@ theorem IsEffectiveCartier.mem_support_iff_exists_codimensionOnePoint (hI : I.Is
       intro w hw
       have he := TauCeti.mem_genericPoints_iff.mp z.property w (Scheme.le_iff_specializes.mp hw)
       exact he.le
-    have hdim := hI.ringKrullDim_stalk_add_one (z : I.subscheme)
-    rw [ringKrullDim_stalk_eq_coheight, ringKrullDim_stalk_eq_coheight, hz.coheight_eq_zero,
-      WithBot.coe_zero, zero_add, ← WithBot.coe_one, WithBot.coe_inj] at hdim
-    refine ⟨⟨I.subschemeι z, hdim.symm⟩, ?_, ?_⟩
+    refine ⟨⟨I.subschemeι z, hI.coheight_subschemeι_of_coheight_eq_zero hz.coheight_eq_zero⟩,
+      ?_, ?_⟩
     · rw [← SetLike.mem_coe, ← I.range_subschemeι]
       exact ⟨z, rfl⟩
     · exact ((genericPoints.isGenericPoint_ofComponent C).specializes

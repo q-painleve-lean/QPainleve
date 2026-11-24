@@ -20,9 +20,12 @@ import TauCeti.AlgebraicGeometry.Cohomology.ProjectiveLine.Basic
 
 For the four rays of a Hirzebruch fan, the fiber ray and the section of
 self-intersection `-e` give an integral basis of the Picard group of the toric
-surface. These are the coordinates used for the Sarkisov degree in Lutz's
-appendix to Hacking and Keating, [*Homological mirror symmetry for log
-Calabi–Yau surfaces*, Definition 8.5](https://arxiv.org/abs/2005.05010v3).
+surface. The signed parameter `e` lets either section be used. These are the
+coordinates used for the Sarkisov degree in Lutz's appendix to Hacking and
+Keating, [*Homological mirror symmetry for log Calabi–Yau surfaces*][HKL],
+Definition 8.5.
+
+[HKL]: https://arxiv.org/abs/2005.05010v3
 -/
 
 public noncomputable section
@@ -34,17 +37,17 @@ open TauCeti.AlgebraicGeometry.Chow
 namespace TauCeti.Toric.Fan
 
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
-  {i : N →+ V} {Φ : Fan i} (b : Basis (Fin 2) ℤ N) (e : ℕ)
+  {i : N →+ V} {Φ : Fan i} (b : Basis (Fin 2) ℤ N) (e : ℤ)
 
 open Classical in
 /-- The four primitive generators in Hirzebruch normal form give an indexing
 of the rays by `Fin 4`. -/
 theorem exists_rayEquiv_of_hirzebruch_ray_generators
     (h : Set.range (Ray.primitiveGenerator (Phi := Φ)) =
-      {b 0, b 1, -b 0, (e : ℤ) • b 0 - b 1}) :
+      {b 0, b 1, -b 0, e • b 0 - b 1}) :
     ∃ r : Fin 4 ≃ Φ.Ray,
-      (fun j ↦ (r j).primitiveGenerator) = ![b 0, b 1, -b 0, (e : ℤ) • b 0 - b 1] := by
-  let v : Fin 4 → N := ![b 0, b 1, -b 0, (e : ℤ) • b 0 - b 1]
+      (fun j ↦ (r j).primitiveGenerator) = ![b 0, b 1, -b 0, e • b 0 - b 1] := by
+  let v : Fin 4 → N := ![b 0, b 1, -b 0, e • b 0 - b 1]
   have hv : Set.range v = Set.range (Ray.primitiveGenerator (Phi := Φ)) := by
     rw [h]
     ext x
@@ -60,7 +63,7 @@ theorem exists_rayEquiv_of_hirzebruch_ray_generators
   exact congrArg Subtype.val (rays.apply_symm_apply (vectors j))
 
 variable [Nonempty Φ.cones] (hΦ : Φ.IsRegular) (r : Fin 4 ≃ Φ.Ray)
-  (hr : (fun j ↦ (r j).primitiveGenerator) = ![b 0, b 1, -b 0, (e : ℤ) • b 0 - b 1])
+  (hr : (fun j ↦ (r j).primitiveGenerator) = ![b 0, b 1, -b 0, e • b 0 - b 1])
 
 local notation "X" => Φ.algebraicRealization
 local notation "Pic" => Additive (LineBundleClass X)
@@ -71,7 +74,7 @@ include hr in
 open Classical in
 private theorem hirzebruch_character_relation (m : N →+ ℤ) :
     m (b 0) • D 0 + m (b 1) • D 1 + (-m (b 0)) • D 2 +
-      ((e : ℤ) * m (b 0) - m (b 1)) • D 3 = 0 := by
+      (e * m (b 0) - m (b 1)) • D 3 = 0 := by
   let := Fintype.ofFinite Φ.Ray
   have h := (Φ.exact_characterToRayDivisor_rayDivisorToPicard hΦ _).mpr ⟨m, rfl⟩
   have hsum (a : Φ.Ray → ℤ) : R a = ∑ j : Fin 4, a (r j) • D j := by
@@ -83,14 +86,14 @@ private theorem hirzebruch_character_relation (m : N →+ ℤ) :
 include hr in
 open Classical in
 private theorem hirzebruch_ray_classes :
-    D 2 = D 0 + (e : ℤ) • D 1 ∧ D 3 = D 1 := by
+    D 2 = D 0 + e • D 1 ∧ D 3 = D 1 := by
   have h₀ := hirzebruch_character_relation b e hΦ r hr (b.coord 0).toAddMonoidHom
   have h₁ := hirzebruch_character_relation b e hΦ r hr (b.coord 1).toAddMonoidHom
   have h₃ : D 3 = D 1 := by
     apply (sub_eq_zero.mp _).symm
     simpa [Basis.coord_apply, sub_eq_add_neg, ← rayDivisorToPicard_single] using h₁
   rw [h₃] at h₀
-  have h : D 0 + (-1 : ℤ) • D 2 + (e : ℤ) • D 1 = 0 := by
+  have h : D 0 + (-1 : ℤ) • D 2 + e • D 1 = 0 := by
     simpa [Basis.coord_apply, ← rayDivisorToPicard_single] using h₀
   refine ⟨(sub_eq_zero.mp ?_).symm, h₃⟩
   rw [← h]
@@ -191,7 +194,7 @@ private theorem hirzebruch_adjacent :
 omit [Nonempty Φ.cones] in
 include hc hr in
 private theorem hirzebruch_selfIntersection :
-    Φ.rayBoundarySelfIntersection hΦ (r 0) = -(e : ℤ) ∧
+    Φ.rayBoundarySelfIntersection hΦ (r 0) = -e ∧
       Φ.rayBoundarySelfIntersection hΦ (r 1) = 0 := by
   obtain ⟨h₀₁, h₀₃, h₂₁⟩ := hirzebruch_adjacent b e hΦ r hr hc
   have hcoord (j : Fin 4) := congrFun hr j
@@ -223,7 +226,7 @@ theorem hirzebruchPicardBasis_intersection (j k : Fin 2) :
     letI : SmoothOfRelativeDimension 2 (X ↘ Spec (CommRingCat.of ℂ)) :=
       (by simpa using Module.finrank_eq_card_basis b : Module.finrank ℤ N = 2) ▸
         Φ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
-    B (C j) (C k) = (!![0, 1; 1, -(e : ℤ)] : Matrix (Fin 2) (Fin 2) ℤ) j k := by
+    B (C j) (C k) = (!![0, 1; 1, -e] : Matrix (Fin 2) (Fin 2) ℤ) j k := by
   have hN : Module.finrank ℤ N = 2 := by simpa using Module.finrank_eq_card_basis b
   let : SmoothOfRelativeDimension 2 (X ↘ Spec (CommRingCat.of ℂ)) :=
     hN ▸ Φ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
@@ -262,7 +265,7 @@ theorem hirzebruchPicardBasis_intersection_canonical (j : Fin 2) :
     letI : SmoothOfRelativeDimension 2 (X ↘ S) :=
       (by simpa using Module.finrank_eq_card_basis b : Module.finrank ℤ N = 2) ▸
         Φ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
-    B (C j) K = ![-2, (e : ℤ) - 2] j := by
+    B (C j) K = ![-2, e - 2] j := by
   have hN : Module.finrank ℤ N = 2 := by simpa using Module.finrank_eq_card_basis b
   let : SmoothOfRelativeDimension 2 (X ↘ S) :=
     hN ▸ Φ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ

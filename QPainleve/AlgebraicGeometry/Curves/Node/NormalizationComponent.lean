@@ -94,6 +94,14 @@ theorem blowupComponentGeneric_mem_isoLocus (v : V) : ν (η v) ∈ (ν).isoLocu
   (ν).le_isoLocus_iff.mpr (C.isIso_blowupToBase_singularLocus_restrict_smoothLocus (R := k))
     (C.blowupComponentGeneric_mem_smoothLocus v)
 
+open Order in
+/-- The image of a normalized component's generic point has coheight zero in the nodal curve. -/
+theorem coheight_blowupComponentGeneric (v : V) : coheight (ν (η v)) = 0 := by
+  have hv : IsMax (η v : N) := fun y hy ↦
+    le_of_eq (TauCeti.mem_genericPoints_iff.mp (η v).property y (Scheme.le_iff_specializes.mp hy))
+  exact ((ν).coheight_eq_of_apply_mem_isoLocus (C.blowupComponentGeneric_mem_isoLocus v)).trans
+    hv.coheight_eq_zero
+
 /-- The image of a normalization component under the normalization followed by a
 closed morphism is the closure of the image of its generic point. -/
 theorem range_blowupComponent_comp {Y : Scheme.{u}} (v : V) (j : C ⟶ Y) (hj : IsClosedMap j) :

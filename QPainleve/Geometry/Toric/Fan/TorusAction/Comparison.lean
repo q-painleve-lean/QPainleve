@@ -5,11 +5,11 @@ Authors: The QPainleve contributors
 -/
 module
 
-public import QPainleve.Geometry.Toric.Fan.Evaluation
+public import QPainleve.Geometry.Toric.Fan.Evaluation.Contraction
 public import QPainleve.Geometry.Toric.Fan.TorusAction.Contraction
 
 import QPainleve.AlgebraicGeometry.RationalMap.Composition.Basic
-import QPainleve.AlgebraicGeometry.RationalMap.Modification
+import QPainleve.AlgebraicGeometry.RationalMap.FunctionField
 import TauCeti.Geometry.Toric.Algebraic.Fan.Normal
 
 /-!
@@ -34,7 +34,6 @@ variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
 
 local notation "S" => Spec (CommRingCat.of ℂ)
 local notation "L" => LaurentRing ℂ (Fin n)
-local notation "F" => Φ.algebraicRealization
 local notation "center" a:arg => (fun j : Fin n ↦ a (ofAdd (Pi.single j 1)))
 local notation "Y" a:arg => (Sigma.fst (internalBlowupTower b s (center a)))
 local notation "T" a:arg => WithBoundary.toTower (Sigma.snd (internalBlowupTower b s (center a)))
@@ -43,19 +42,8 @@ local notation "ι" a:arg => WithBoundary.boundaryι
   (Sigma.snd (internalBlowupTower b s (center a)))
 local notation "m" j:arg => ofAdd (LinearMap.toAddMonoidHom
   (b.detDualEquiv (Ray.primitiveGenerator (s j))))
-local notation "C" => algebraMap ℂ (Scheme.functionField F)
 
 variable {X : Scheme} [IsIntegral X]
-
-/-- Evaluation at the specified centers on a contraction of an ordered toric blowup
-model. Its pullback to the model evaluates each Laurent coordinate as its scaled charge
-character. -/
-def contractedXEvaluation (c : Multiplicative (Fin n → ℤ) →* ℂˣ) (hΦ : Φ.IsRegular)
-    (p : Y c ⟶ X) [IsModification p] : X ⤏ Spec (.of L) := by
-  have := isIntegral_internalBlowupTower b s (center c) hΦ
-  have := isModification_internalBlowupTower_toBase b s (center c) hΦ
-  exact (p.existsUnique_rationalMap_comp_eq_of_isModification
-    ((π c).toRationalMap.comp (Φ.xEvaluation b s c))).exists.choose
 
 variable (c d : Multiplicative (Fin n → ℤ) →* ℂˣ) (hΦ : Φ.IsRegular)
   {X' : Scheme} [IsIntegral X']
@@ -63,53 +51,6 @@ variable (p : (internalBlowupTower b s (fun j : Fin n ↦ c (ofAdd (Pi.single j 
   [IsModification p]
   (q : (internalBlowupTower b s (fun j : Fin n ↦ d (ofAdd (Pi.single j 1)))).1 ⟶ X')
   [IsModification q]
-
-/-- Pullback to the ordered blowup model recovers the original fixed-center evaluation. -/
-theorem comp_contractedXEvaluation :
-    letI := isIntegral_internalBlowupTower b s (center c) hΦ
-    letI := isModification_internalBlowupTower_toBase b s (center c) hΦ
-    p.toRationalMap.comp (contractedXEvaluation b s c hΦ p) =
-      (π c).toRationalMap.comp (Φ.xEvaluation b s c) := by
-  have := isIntegral_internalBlowupTower b s (center c) hΦ
-  have := isModification_internalBlowupTower_toBase b s (center c) hΦ
-  exact (p.existsUnique_rationalMap_comp_eq_of_isModification
-    ((π c).toRationalMap.comp (Φ.xEvaluation b s c))).exists.choose_spec
-
-/-- The descended evaluation is over the complex base when the two projections
-from the ordered model give the same structure morphism. -/
-theorem contractedXEvaluation_isOver (f : X ⟶ S)
-    (hf : p ≫ f = π c ≫ Φ.algebraicRealizationStructureMap) :
-    (contractedXEvaluation b s c hΦ p).IsOver f (Spec.algebraMap ℂ L) := by
-  have := isIntegral_internalBlowupTower b s (center c) hΦ
-  have := isModification_internalBlowupTower_toBase b s (center c) hΦ
-  have hbase := Scheme.RationalMap.isOver_iff.mp
-    (inferInstance : (Φ.xEvaluation b s c).IsOver
-      (F ↘ S) (Spec.algebraMap ℂ L))
-  apply Scheme.RationalMap.isOver_iff.mpr
-  apply Scheme.RationalMap.comp_left_injective p.toRationalMap
-  simpa only [Scheme.RationalMap.comp_compHom, comp_contractedXEvaluation,
-    Scheme.RationalMap.comp_toRationalMap, Scheme.Hom.toRationalMap_compHom,
-    algebraicRealization_over, hf] using
-    congrArg ((π c).toRationalMap.comp ·) hbase
-
-/-- At the generic point the contracted evaluation is the scaled Laurent evaluation
-transported through the function field isomorphism of the contraction. -/
-@[simp]
-theorem fromFunctionField_contractedXEvaluation :
-    letI := isIntegral_internalBlowupTower b s (center c) hΦ
-    letI := isModification_internalBlowupTower_toBase b s (center c) hΦ
-    letI := p.isIso_functionFieldMap_of_isModification
-    (contractedXEvaluation b s c hΦ p).fromFunctionField =
-      Spec.map ((CommRingCat.ofHom (Φ.xEval b s c).toRingHom) ≫
-        (π c).functionFieldMap ≫ inv p.functionFieldMap) := by
-  have := isIntegral_internalBlowupTower b s (center c) hΦ
-  have := isModification_internalBlowupTower_toBase b s (center c) hΦ
-  have := p.isIso_functionFieldMap_of_isModification
-  have h := congrArg Scheme.RationalMap.fromFunctionField (comp_contractedXEvaluation b s c hΦ p)
-  simp only [Scheme.RationalMap.fromFunctionField_comp,
-    Scheme.Hom.functionFieldMap_toRationalMap, fromFunctionField_xEvaluation] at h
-  rw [Spec.map_comp, Spec.map_comp, Category.assoc, ← h, ← Category.assoc, ← Spec.map_comp,
-    IsIso.hom_inv_id, Spec.map_id, Category.id_comp]
 
 variable {D : X.IdealSheafData} {D' : X'.IdealSheafData}
   [X.Over S] [X'.Over S] [IsSeparated (X' ↘ S)]

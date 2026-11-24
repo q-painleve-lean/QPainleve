@@ -79,6 +79,11 @@ instance : M.surface.IsSeparated := by
   rw [Scheme.isSeparated_iff, ← Limits.terminal.comp_from (M.surface ↘ S)]
   infer_instance
 
+instance : IsLocallyNoetherian M.surface := by
+  let : SmoothOfRelativeDimension 2 (M.surface ↘ S) := M.smooth
+  let : Smooth (M.surface ↘ S) := SmoothOfRelativeDimension.smooth 2 _
+  exact LocallyOfFiniteType.isLocallyNoetherian (M.surface ↘ S)
+
 /-- Postcompose the evaluation of a marked surface, keeping the same underlying pair
 so that its identity isomorphism can be used for the resulting realization. -/
 @[expose, simps pair evaluation]
@@ -112,6 +117,15 @@ def surfaceIso (e : M.pair ≅ N.pair) : M.surface ≅ N.surface :=
 /-- The boundary isomorphism underlying an isomorphism of marked surface pairs. -/
 def boundaryIso (e : M.pair ≅ N.pair) : M.boundary ≅ N.boundary :=
   (Arrow.leftFunc ⋙ Over.forget S).mapIso e
+
+instance (e : M.pair ≅ N.pair) : (surfaceIso e).hom.IsOver S :=
+  ⟨Over.w e.hom.right⟩
+
+/-- An isomorphism of marked pairs intertwines the two boundary immersions. -/
+@[reassoc]
+theorem boundaryIso_hom_comp (e : M.pair ≅ N.pair) :
+    (boundaryIso e).hom ≫ N.pair.hom.left = M.pair.hom.left ≫ (surfaceIso e).hom :=
+  congrArg (fun f ↦ f.left) (Arrow.w e.hom)
 
 instance (e : M.pair ≅ N.pair) : (boundaryIso e).hom.IsOver S :=
   ⟨Over.w e.hom.left⟩

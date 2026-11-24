@@ -172,8 +172,9 @@ private theorem hirzebruch_elementary_transformation_rays {Ψ F : Fan i}
 /-- Blowing up the corner spanned by `b 0` and `b 1` and then contracting
 the ray of `b 1` replaces the Hirzebruch parameter `e` by `e + 1` in the
 basis `(b 0, b 0 + b 1)`. The same fan is the star subdivision at the
-specified corner of the source and at the reverse corner of the target.
-The signed parameter lets either section be the chosen section. -/
+specified corner of the source and at the corner of the new fiber and the
+opposite section of the target. The signed parameter lets either section be
+the chosen section. -/
 theorem exists_hirzebruch_toric_elementary_transformation (hΦ : Φ.IsRegular) (hc : Φ.IsComplete)
     (e : ℤ)
     (hrays : Set.range (Ray.primitiveGenerator (Phi := Φ)) =
@@ -188,7 +189,8 @@ theorem exists_hirzebruch_toric_elementary_transformation (hΦ : Φ.IsRegular) (
       (Φ.starSubdivisionAlongRay hΦ σ.property
         (ne_bot_of_card_toricRay_eq_two hσ)).primitiveGenerator = b 0 + b 1 ∧
       (Ψ.starSubdivisionAlongRay hΨ τ.property
-        (ne_bot_of_card_toricRay_eq_two hτ)).primitiveGenerator = b 1 := by
+        (ne_bot_of_card_toricRay_eq_two hτ)).primitiveGenerator = b 1 ∧
+      τ.val = hull ℝ {i (d 1), i (-d 0)} := by
   obtain ⟨p, r, q, σ, τ, hp, hr, hq, hpσ, hrσ, hrτ, hqτ⟩ :=
     exists_hirzebruch_fiber_cones b hΦ hc e hrays
   obtain ⟨hσ, d, hcone, hd₀, hd₁, ha, hleft, hright⟩ :=
@@ -211,7 +213,7 @@ theorem exists_hirzebruch_toric_elementary_transformation (hΦ : Φ.IsRegular) (
   have hsum : a.primitiveGenerator + q'.primitiveGenerator = r'.primitiveGenerator := by
     rw [ha, hq', hr']
     abel
-  obtain ⟨Ψ, hΨ, υ, hυ, hc', hstar, hRay, hremoved⟩ :=
+  obtain ⟨Ψ, hΨ, υ, hυ, hc', hstar, hRay, hremoved, hτcone⟩ :=
     F.exists_star_subdivision_of_ray_eq_sum b (Φ.isRegular_starSubdivisionAlong hΦ σ.property)
       (hsub.isComplete_iff.mpr hc) ⟨hdet₁, hleft⟩ ⟨hdet₂, hright⟩ hsum
   have hrHull : r'.toCone.val = hull ℝ {i (b 1)} := by
@@ -221,11 +223,13 @@ theorem exists_hirzebruch_toric_elementary_transformation (hΦ : Φ.IsRegular) (
     apply u.primitiveGenerator_eq_of_mem_of_isPrimitive _ (b.isPrimitive 1)
     rw [hRay, hrHull]
     exact subset_hull (Set.mem_singleton _)
-  refine ⟨Ψ, hΨ, σ, υ, hσ, hυ, d, hc', hcone, hd₀, hd₁, ?_, hstar, ha, hu⟩
-  rw [hirzebruch_elementary_transformation_rays b hΦ hΨ σ υ hσ hυ rfl hstar ha hu
-    (hrHull ▸ hremoved) e hrays, hd₀, hd₁, add_zsmul, one_zsmul]
-  congr 4
-  abel
+  refine ⟨Ψ, hΨ, σ, υ, hσ, hυ, d, hc', hcone, hd₀, hd₁, ?_, hstar, ha, hu, ?_⟩
+  · rw [hirzebruch_elementary_transformation_rays b hΦ hΨ σ υ hσ hυ rfl hstar ha hu
+      (hrHull ▸ hremoved) e hrays, hd₀, hd₁, add_zsmul, one_zsmul]
+    congr 4
+    abel
+  · rw [hτcone, a.toCone_eq_hull_primitiveGenerator, q'.toCone_eq_hull_primitiveGenerator,
+      ha, hq', hd₀, hd₁, ← Submodule.span_union, Set.singleton_union]
 
 end Combinatorial
 
@@ -241,7 +245,8 @@ two ordinary point blowups. The projection to the source blows up the fixed
 point of the cone spanned by `b 0` and `b 1`. The projection to the target
 contracts the strict transform of the fiber of ray `b 1`. Both projections
 are the toric subdivision maps and pull back the reduced boundary to the
-common reduced boundary after taking radicals. -/
+common reduced boundary after taking radicals. The reverse center is the
+corner on the new fiber and the opposite section. -/
 theorem exists_blowup_span_hirzebruch_toric_elementary_transformation
     (hΦ : Φ.IsRegular) (hc : Φ.IsComplete) (e : ℤ)
     (hrays : rays[Φ] = {b 0, b 1, -b 0, e • b 0 - b 1}) :
@@ -261,8 +266,9 @@ theorem exists_blowup_span_hirzebruch_toric_elementary_transformation
       ((Φ.boundaryIdeal hc.nonempty_cones).comap s.toFanHom.algebraicMap).radical =
         F.boundaryIdeal hcF.nonempty_cones ∧
       ((Ψ.boundaryIdeal hc'.nonempty_cones).comap t.toFanHom.algebraicMap).radical =
-        F.boundaryIdeal hcF.nonempty_cones := by
-  obtain ⟨Ψ, hΨ, σ, τ, hσ, hτ, d, hc', hcone, hd₀, hd₁, hrays', hstar, ha, hr⟩ :=
+        F.boundaryIdeal hcF.nonempty_cones ∧
+      τ.val = hull ℝ {i (d 1), i (-d 0)} := by
+  obtain ⟨Ψ, hΨ, σ, τ, hσ, hτ, d, hc', hcone, hd₀, hd₁, hrays', hstar, ha, hr, hτcone⟩ :=
     exists_hirzebruch_toric_elementary_transformation b hΦ hc e hrays
   have hN : Module.finrank ℤ N = 2 := by simpa using Module.finrank_eq_card_basis b
   let F := Φ.starSubdivisionAlong hΦ σ.property
@@ -300,6 +306,6 @@ theorem exists_blowup_span_hirzebruch_toric_elementary_transformation
     hcone, hd₀, hd₁, hrays', ha, hgen, hg, hg', hsource,
     hLift.symm ▸ htarget, s.comap_ker_blowupMap_rayBoundaryIdeal hF hΦ g hg r hnot,
     s.radical_comap_boundaryIdeal hcF.nonempty_cones hc.nonempty_cones,
-    t.radical_comap_boundaryIdeal hcF.nonempty_cones hc'.nonempty_cones⟩
+    t.radical_comap_boundaryIdeal hcF.nonempty_cones hc'.nonempty_cones, hτcone⟩
 
 end TauCeti.Toric.Fan

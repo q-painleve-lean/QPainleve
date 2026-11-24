@@ -62,9 +62,9 @@ private theorem exists_common_point_blowup_refinement (hlocal : P.IsLocal) (π :
       rw [← SetLike.mem_coe, Closeds.coe_compl, hIp]
       exact Ne.symm h
     obtain ⟨p', hp', hpp', hI⟩ :=
-      J.blowupToBase.exists_comap_ker_fromSpecResidueField_of_isIso_morphismRestrict p hp _ hpU
+      J.exists_comap_ker_fromSpecResidueField_blowupToBase hp hpU
     obtain ⟨q', hq', hqq', hJ⟩ :=
-      I.blowupToBase.exists_comap_ker_fromSpecResidueField_of_isIso_morphismRestrict q hq _ hqU
+      I.exists_comap_ker_fromSpecResidueField_blowupToBase hq hqU
     have hIiso : I.support.compl ≤ I.blowupToBase.isoLocus :=
       I.blowupToBase.le_isoLocus_iff.mpr inferInstance
     have hJiso : J.support.compl ≤ J.blowupToBase.isoLocus :=

@@ -34,7 +34,14 @@ universe u
 
 namespace QPainleve.SignedClusterModularGroup
 
-variable {k : Type u} [Field k]
+variable {k : Type u} [Field k] [IsSepClosed k] [Infinite k] {n : ℕ} [NeZero n]
+  {L₀ L₁ L₂ : Type u} [AddCommGroup L₀] [AddCommGroup L₁] [AddCommGroup L₂]
+  {B₀ : LinearMap.BilinForm ℤ L₀} {B₁ : LinearMap.BilinForm ℤ L₁}
+  {B₂ : LinearMap.BilinForm ℤ L₂}
+  {X₀ X₁ X₂ : Scheme.{u}} [IsIntegral X₀]
+  [X₀.IsSeparated] [X₁.IsSeparated] [X₂.IsSeparated]
+
+local notation "S" => Spec (CommRingCat.of k)
 
 namespace GeometricRealization
 
@@ -50,26 +57,7 @@ abbrev CenterPoint := Point C.domainOver
 
 end Points
 
-/-- The center torus, viewed as an object over the ground field, is nonempty. -/
-theorem nonempty_centerTorus (ι : Type u) :
-    Nonempty (Over.mk (CharacterTorus.structureMap k (ι → ℤ))).left :=
-  inferInstanceAs (Nonempty (CharacterTorus.scheme k (ι → ℤ)))
-
-/-- The center torus on a finite set of labels is smooth over the ground field. -/
-theorem smooth_centerTorus (ι : Type u) [Finite ι] :
-    Smooth (Over.mk (CharacterTorus.structureMap k (ι → ℤ))).hom :=
-  CharacterTorus.smooth_structureMap_pi_int k ι
-
 end GeometricRealization
-
-variable [IsSepClosed k] [Infinite k] {n : ℕ} [NeZero n]
-  {L₀ L₁ L₂ : Type u} [AddCommGroup L₀] [AddCommGroup L₁] [AddCommGroup L₂]
-  {B₀ : LinearMap.BilinForm ℤ L₀} {B₁ : LinearMap.BilinForm ℤ L₁}
-  {B₂ : LinearMap.BilinForm ℤ L₂}
-  {X₀ X₁ X₂ : Scheme.{u}} [IsIntegral X₀]
-  [X₀.IsSeparated] [X₁.IsSeparated] [X₂.IsSeparated]
-
-local notation "S" => Spec (CommRingCat.of k)
 
 open GeometricRealization (Point CenterPoint)
 
@@ -115,9 +103,8 @@ def refl : FiberRealization M M (Scheme.RationalMap.id X₀) (.refl B₀) 1 wher
   evaluation_eq := by
     obtain ⟨h, he⟩ := M.evaluation.compOfDefined_toRationalMap (𝟙 X₀)
     refine ⟨h, he.trans ?_⟩
-    simp only [MarkedSurface.surfaceIso_refl, Iso.refl_hom, RationalMap.id_comp]
-    obtain ⟨p, hp⟩ := M.evaluation.exists_rep
-    rw [← hp, ← RationalMap.compHom_toRationalMap, PartialMap.compHom_id]
+    simp only [MarkedSurface.surfaceIso_refl, Iso.refl_hom, RationalMap.id_comp,
+      RationalMap.compHom_id]
 
 variable {M} {N : MarkedSurface k n B₁ X₁} {O : MarkedSurface k n B₂ X₂}
   [IsIntegral X₁] {F : X₀ ⤏ X₁} [F.IsDominant] {G : X₁ ⤏ X₂}
@@ -213,6 +200,10 @@ def boundaryPerm : Equiv.Perm (ZMod n) := DihedralGroup.cycleVertexPerm R.bounda
 
 /-- The orientation sign read on the actual ordered branches. -/
 def orientation : ℤˣ := DihedralGroup.cycleOrientationSign R.boundaryAction
+
+/-- The orientation is the sign character of the action on the numbered branches. -/
+theorem orientation_def : R.orientation = DihedralGroup.cycleOrientationSign R.boundaryAction :=
+  (rfl)
 
 /-- A single fiber isomorphism determines the forward action on the numbered boundary. -/
 theorem boundaryAction_eq_of_fiberIso_eq

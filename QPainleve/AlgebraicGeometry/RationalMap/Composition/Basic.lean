@@ -73,6 +73,12 @@ end Hom
 
 namespace RationalMap
 
+/-- Postcomposing with the identity morphism preserves a rational map. -/
+@[simp]
+theorem compHom_id (f : X ⤏ Y) : f.compHom (𝟙 Y) = f := by
+  obtain ⟨p, rfl⟩ := f.exists_rep
+  rw [← compHom_toRationalMap, PartialMap.compHom_id]
+
 /-- Postcomposition by a morphism commutes with precomposition by a dominant rational map.
 The middle rational map can have nondense image. -/
 theorem comp_compHom {W : Scheme.{u}} [PreirreducibleSpace W] [Nonempty X]
