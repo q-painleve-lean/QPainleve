@@ -6,6 +6,7 @@ Authors: The QPainleve contributors
 module
 
 public import QPainleve.Geometry.Toric.Fan.CyclicOrder
+public import QPainleve.SignedClusterModularGroup.Realization.ContractionNumerics
 public import QPainleve.SignedClusterModularGroup.Realization.Inversion.Contracted
 
 /-!
@@ -23,7 +24,7 @@ open AlgebraicGeometry CategoryTheory Multiplicative Quiver
 open Module (Basis)
 open QPainleve.BlowupTower QPainleve.CharacterTorus QPainleve.Cluster
 open TauCeti TauCeti.AlgebraicGeometry TauCeti.Toric TauCeti.Toric.Fan
-open Scheme
+open Scheme Scheme.IdealSheafData
 
 namespace QPainleve.SignedClusterModularGroup
 
@@ -82,6 +83,7 @@ local notation "χ(" c ")" => pointsEquiv ℂ A
   (Subtype.mk (CommaMorphism.left (c : Point Centers)) (Over.w (c : Point Centers)))
 local notation "centers(" a ")" => fun j : Fin r ↦ (a) (ofAdd (Pi.single j 1))
 local notation "Dₘ(" M ")" => Scheme.Hom.ker (Over.Hom.left (Arrow.hom (MarkedSurface.pair M)))
+local notation "classOf(" h ")" => (LineBundleClass.mk (IsEffectiveCartier.toInvertibleSheaf h))⁻¹
 
 attribute [local instance] hasUniqueDiv_of_free_int
 
@@ -111,6 +113,29 @@ theorem CompleteToricPresentation.hasNodalModel_iff (Q : CompleteToricPresentati
   (Iff.rfl)
 
 namespace CompleteToricPresentation
+
+/-- The charge lattice of a marked toric presentation of a primitive nef
+square-zero anticanonical cycle has finite index. -/
+theorem chargeIndex_ne_zero_of_anticanonical_cycle
+    (Q : CompleteToricPresentation i b r L γ)
+    {M : Point Centers → MarkedSurface ℂ n H XTor} {c₀ : Point Centers}
+    (hmodel : Q.HasNodalModel c₀ (M c₀)) [IsRationalOver ((M c₀).surface ↘ S)]
+    (hD : Dₘ(M c₀).IsEffectiveCartier)
+    (hnef : classOf(hD).IsNef ℂ ((M c₀).surface ↘ S))
+    (hsq : Chow.classIntersectionNumber ℂ (M c₀).surface classOf(hD) classOf(hD) = 0)
+    (hcan : letI : SmoothOfRelativeDimension 2 ((M c₀).surface ↘ S) := (M c₀).smooth
+      classOf(hD) = (LineBundleClass.mk (canonicalBundle ℂ (M c₀).surface 2))⁻¹)
+    (hprim : IsPrimitive (Additive.ofMul classOf(hD))) :
+    (Fan.rayChargeMap Q.rays).range.toAddSubgroup.index ≠ 0 := by
+  let := Q.complete.nonempty_cones
+  let := Q.prestable
+  let := Q.neZero
+  let : SmoothOfRelativeDimension 2 ((M c₀).surface ↘ S) := (M c₀).smooth
+  obtain ⟨p, _, _, _, e, hW, hp⟩ := (Q.hasNodalModel_iff c₀ (M c₀)).mp hmodel
+  obtain ⟨_, _, _, _, hdiv, _, _⟩ :=
+    p.chargeIndex_bounds_of_anticanonical_cycle Q.complete hW e hp.symm hD hnef hsq hcan hprim
+  intro hz
+  simp [hz, NeZero.ne n] at hdiv
 
 /-- The inclusion in the auxiliary Picard lattice is injective whenever the
 presentation has a nodal model. -/

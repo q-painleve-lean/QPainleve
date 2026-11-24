@@ -10,7 +10,6 @@ public import QPainleve.SignedClusterModularGroup.Realization.PicardAction
 
 import QPainleve.Algebra.Cluster.ChargeKernel.Index
 import QPainleve.Algebra.Cluster.Word.SignExtension
-import QPainleve.SignedClusterModularGroup.Realization.Endpoint.EqualExchangeMatrix
 
 /-!
 # The signed Picard action of a marked toric presentation
@@ -51,35 +50,6 @@ variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {b : Basis (Fin 2) ℤ N} {r n : ℕ} [NeZero n]
   {L : Type} [AddCommGroup L] {H : LinearMap.BilinForm ℤ L} {γ : Type}
   {E : SkewExchangeMatrix (Fin r)}
-
-namespace CompleteToricPresentation
-
-open GeometricRealization (Point)
-
-/-- The charge lattice of a marked toric presentation of a primitive nef
-square-zero anticanonical cycle has finite index. -/
-theorem chargeIndex_ne_zero_of_anticanonical_cycle
-    (Q : CompleteToricPresentation i b r L γ)
-    {M : Point Centers[r] → MarkedSurface ℂ n H XTor[r]} {c₀ : Point Centers[r]}
-    (hmodel : Q.HasNodalModel c₀ (M c₀)) [IsRationalOver ((M c₀).surface ↘ S)]
-    (hD : D[M c₀].IsEffectiveCartier)
-    (hnef : classOf(hD).IsNef ℂ ((M c₀).surface ↘ S))
-    (hsq : Chow.classIntersectionNumber ℂ (M c₀).surface classOf(hD) classOf(hD) = 0)
-    (hcan : letI : SmoothOfRelativeDimension 2 ((M c₀).surface ↘ S) := (M c₀).smooth
-      classOf(hD) = (LineBundleClass.mk (canonicalBundle ℂ (M c₀).surface 2))⁻¹)
-    (hprim : IsPrimitive (Additive.ofMul classOf(hD))) :
-    (Fan.rayChargeMap Q.rays).range.toAddSubgroup.index ≠ 0 := by
-  let := Q.complete.nonempty_cones
-  let := Q.prestable
-  let := Q.neZero
-  let : SmoothOfRelativeDimension 2 ((M c₀).surface ↘ S) := (M c₀).smooth
-  obtain ⟨p, _, _, _, e, hW, hp⟩ := (Q.hasNodalModel_iff c₀ (M c₀)).mp hmodel
-  obtain ⟨_, _, _, _, hdiv, _, _⟩ :=
-    p.chargeIndex_bounds_of_anticanonical_cycle Q.complete hW e hp.symm hD hnef hsq hcan hprim
-  intro hz
-  simp [hz, NeZero.ne n] at hdiv
-
-end CompleteToricPresentation
 
 namespace GeometricRealization
 

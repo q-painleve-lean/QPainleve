@@ -112,13 +112,10 @@ variable [Q.fan.algebraicRealization.IsProjectiveOver ℂ]
 private theorem separatingRight_aux : (Aux).SeparatingRight := by
   let : IsRationalOver (Q.fan.algebraicRealization ↘ S) := rational_fan Q
   have hperf := Chow.isPerfPair_intersectionBilinForm_of_isRationalOver ℂ Q.fan.algebraicRealization
-  have hneg : (-(dotProductBilin ℤ ℤ : LinearMap.BilinForm ℤ (Fin r → ℤ))).IsPerfPair := by
-    convert LinearMap.IsPerfPair.compl₁₂
-      (dotProductBilin ℤ ℤ : LinearMap.BilinForm ℤ (Fin r → ℤ))
-      (LinearEquiv.neg ℤ) (LinearEquiv.refl ℤ _) using 1
-    ext x y
-    simp
-  exact (LinearMap.BilinForm.isPerfPair_prod_iff.mpr ⟨hperf, hneg⟩).separatingRight
+  refine LinearMap.BilinForm.separatingRight_prod_iff.mpr ⟨hperf.separatingRight, ?_⟩
+  intro y hy
+  exact (dotProductBilin_isPerfPair ℤ (Fin r)).separatingRight y
+    (fun x ↦ by simpa only [LinearMap.neg_apply, neg_eq_zero] using hy x)
 
 local instance instIsDominantKernelLoopXRationalMap (w : Loops[E]) :
     ((End.asHom w).xRationalMap ℂ).IsDominant :=

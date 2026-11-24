@@ -50,27 +50,8 @@ namespace GeometricRealization
 local notation "frameSwap" => (Equiv.swap 0 1 : Equiv.Perm (Fin 2))
 local notation "Cw[" w "," P "]" => Quiver.Path.centerPartialMap ℂ w P
 local notation "Cnil[" P "]" => Quiver.Path.centerPartialMap ℂ Quiver.Path.nil P
-local notation "src(" C "," c ")" =>
-  c ≫ Scheme.PartialMap.domainSource (X := Centers[r]) (Y := Centers[r]) C
 local notation "dst(" C "," c ")" =>
   c ≫ Scheme.PartialMap.domainTarget (X := Centers[r]) (Y := Centers[r]) C
-
-/-- Both ends of a loop's center map lie in the initial noncollision open
-when the exchange kernel is the charge kernel. -/
-theorem _root_.Quiver.Path.centerPoint_endpoints_mem_noncollision
-    {E : SkewExchangeMatrix (Fin r)} (w : Word E E) (P : ChargeSeed E N)
-    (hker : E.matrix.mulVecLin.ker = P.charge.ker)
-    (x : CenterPoint (U := Centers[r]) (V := Centers[r]) Cw[w,P]) :
-    (src(Cw[w,P],x)).left (default : S) ∈ Path.centerOpen ℂ Path.nil P ∧
-      (dst(Cw[w,P],x)).left (default : S) ∈ Path.centerOpen ℂ Path.nil P := by
-  constructor
-  · rw [Over.comp_left, PartialMap.domainSource_left, Scheme.Hom.comp_apply]
-    apply w.centerOpen_le_centerOpen_nil ℂ P
-    rw [← w.centerPartialMap_domain (K := ℂ) P]
-    exact (x.left (default : S)).property
-  · rw [Over.comp_left, PartialMap.domainTarget_left, Scheme.Hom.comp_apply]
-    apply w.centerPartialMap_opensRange_le_centerOpen_nil P hker
-    exact (Cw[w,P]).hom.mem_opensRange.mpr (Set.mem_range_self _)
 
 private theorem hasNodalModel_at_loop_target
     {B : SkewExchangeMatrix (Fin r)} (w : Word B B) (P : ChargeSeed B N)
