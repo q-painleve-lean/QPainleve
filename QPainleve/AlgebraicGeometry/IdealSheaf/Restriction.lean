@@ -8,6 +8,7 @@ module
 public import TauCeti.AlgebraicGeometry.IdealSheaf.BaseChange
 public import TauCeti.AlgebraicGeometry.Morphisms.SchemeTheoreticallyDominant
 
+import QPainleve.AlgebraicGeometry.IdealSheaf.BaseChange
 import TauCeti.AlgebraicGeometry.IdealSheaf.Comap
 import TauCeti.AlgebraicGeometry.IdealSheaf.VanishingIdeal
 
@@ -18,6 +19,8 @@ An ideal pushed forward along a quasi-compact morphism can be computed after
 restriction to an open. Restricting a closed immersion to an open whose inverse
 image is schematically dense leaves its scheme-theoretic image unchanged. Taking a reduced
 closed subscheme commutes with open restriction.
+
+Equivariant morphisms preserve invariance under reduced inverse image.
 -/
 
 public section
@@ -100,12 +103,6 @@ theorem exists_radicalComapSubschemeIso {X Y : Scheme.{u}}
   have hR : R.comap g.hom = R := by
     dsimp only [R]
     rw [← radical_comap_of_isOpenImmersion, ← comap_comp, hf, comap_comp, hD]
-  let r := R.subschemeMap R g.hom (le_map_iff_comap_le.mpr hR.le)
-  have hr : r ≫ R.subschemeι = R.subschemeι ≫ g.hom := subschemeMap_subschemeι _ _ _ _
-  have hpull : IsPullback R.subschemeι r g.hom R.subschemeι :=
-    isPullback_of_isClosedImmersion _ _ _ _ hr.symm
-      (by simpa only [ker_subschemeι] using hR)
-  have : IsIso r := hpull.isIso_snd_of_isIso
-  exact ⟨asIso r, hr⟩
+  exact R.exists_iso_of_comap_eq_ker g R.subschemeι (by simpa only [ker_subschemeι] using hR)
 
 end AlgebraicGeometry.Scheme.IdealSheafData

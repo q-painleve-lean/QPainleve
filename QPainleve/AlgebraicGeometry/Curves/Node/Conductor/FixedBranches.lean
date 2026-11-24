@@ -91,6 +91,77 @@ theorem fixesNodalBranches_iff_branchScheme :
 
 end
 
+section Functoriality
+
+variable {k : Type u} [Field k] {C D : Scheme.{u}}
+  {f : C ⟶ Spec (.of k)} {g : D ⟶ Spec (.of k)}
+  {hC : AtWorstNodalOfRelativeDimensionOne f} {hD : AtWorstNodalOfRelativeDimensionOne g}
+  {a b : C ≅ C} {d : D ≅ D} {ha : a.hom ≫ f = f} {hb : b.hom ≫ f = f}
+  {hd : d.hom ≫ g = g}
+
+/-- The identity of a nodal curve fixes each branch. -/
+@[simp]
+theorem fixesNodalBranches_refl (hC : AtWorstNodalOfRelativeDimensionOne f) :
+    (Iso.refl C).FixesNodalBranches f hC (by simp) := by
+  let : C.Over (Spec (.of k)) := ⟨f⟩
+  have := hC.syntomic
+  simp [fixesNodalBranches_iff_branchScheme]
+
+/-- Composing two branch-fixing automorphisms fixes each branch. -/
+theorem FixesNodalBranches.trans (h₁ : a.FixesNodalBranches f hC ha)
+    (h₂ : b.FixesNodalBranches f hC hb) :
+    (a ≪≫ b).FixesNodalBranches f hC (by rw [Iso.trans_hom, Category.assoc, hb, ha]) := by
+  let : C.Over (Spec (.of k)) := ⟨f⟩
+  let : a.hom.IsOver (Spec (.of k)) := ⟨ha⟩
+  let : b.hom.IsOver (Spec (.of k)) := ⟨hb⟩
+  have : SyntomicOfRelativeDimension 1 (C ↘ Spec (.of k)) := hC.syntomic
+  rw [fixesNodalBranches_iff_branchScheme] at h₁ h₂ ⊢
+  intro q
+  rw [branchSchemeIso_trans (R := k) a b, Iso.trans_hom, Scheme.Hom.comp_apply, h₁, h₂]
+
+/-- The inverse of a branch-fixing automorphism fixes each branch. -/
+theorem FixesNodalBranches.symm (h : a.FixesNodalBranches f hC ha) :
+    a.symm.FixesNodalBranches f hC (by rw [Iso.symm_hom, ← ha, Iso.inv_hom_id_assoc, ha]) := by
+  have hinv : a.inv ≫ f = f := by rw [← ha, Iso.inv_hom_id_assoc, ha]
+  let : C.Over (Spec (.of k)) := ⟨f⟩
+  let : a.hom.IsOver (Spec (.of k)) := ⟨ha⟩
+  let : a.symm.hom.IsOver (Spec (.of k)) := ⟨hinv⟩
+  have : SyntomicOfRelativeDimension 1 (C ↘ Spec (.of k)) := hC.syntomic
+  have hcomp := branchSchemeIso_trans (R := k) a a.symm
+  simp only [a.self_symm_id, branchSchemeIso_refl] at hcomp
+  rw [fixesNodalBranches_iff_branchScheme] at h ⊢
+  intro q
+  simpa only [Iso.refl_hom, Scheme.Hom.id_base, TopCat.coe_id, id_eq, Iso.trans_hom,
+    Scheme.Hom.comp_apply, h q] using
+    (congrArg (fun v : C.branchScheme k ≅ C.branchScheme k ↦ v.hom q) hcomp).symm
+
+/-- An isomorphism of nodal curves intertwining two automorphisms transports branch
+fixation in both directions. -/
+theorem fixesNodalBranches_iff_of_comm (e : C ≅ D) (he : e.hom ≫ g = f)
+    (hcomm : a ≪≫ e = e ≪≫ d) :
+    a.FixesNodalBranches f hC ha ↔ d.FixesNodalBranches g hD hd := by
+  let : C.Over (Spec (.of k)) := ⟨f⟩
+  let : D.Over (Spec (.of k)) := ⟨g⟩
+  let : e.hom.IsOver (Spec (.of k)) := ⟨he⟩
+  let : a.hom.IsOver (Spec (.of k)) := ⟨ha⟩
+  let : d.hom.IsOver (Spec (.of k)) := ⟨hd⟩
+  have : SyntomicOfRelativeDimension 1 (C ↘ Spec (.of k)) := hC.syntomic
+  have : SyntomicOfRelativeDimension 1 (D ↘ Spec (.of k)) := hD.syntomic
+  have h : (a.branchSchemeIso (R := k)) ≪≫ (e.branchSchemeIso (R := k)) =
+      (e.branchSchemeIso (R := k)) ≪≫ (d.branchSchemeIso (R := k)) := by
+    rw [← branchSchemeIso_trans (R := k) a e, ← branchSchemeIso_trans (R := k) e d]
+    congr 1
+  rw [fixesNodalBranches_iff_branchScheme, fixesNodalBranches_iff_branchScheme]
+  have hpoint (q : C.branchScheme k) :=
+    congrArg (fun t : C.branchScheme k ≅ D.branchScheme k ↦ t.hom q) h
+  simp only [Iso.trans_hom, Scheme.Hom.comp_apply] at hpoint
+  refine ⟨fun ha q ↦ ?_, fun hd q ↦ ?_⟩
+  · obtain ⟨p, rfl⟩ := (e.branchSchemeIso (R := k)).hom.surjective q
+    simpa only [ha p] using (hpoint p).symm
+  · exact (e.branchSchemeIso (R := k)).hom.injective ((hpoint q).trans (hd _))
+
+end Functoriality
+
 variable {k : Type u} [Field k] {C : Scheme.{u}}
   [C.Over (Spec (.of k))] (hnodal : AtWorstNodalOfRelativeDimensionOne (C ↘ Spec (.of k)))
   (g : C ≅ C) [g.hom.IsOver (Spec (.of k))]
