@@ -100,6 +100,19 @@ theorem toricRays_eq_pair (Φ : Fan i) {ρ τ : Φ.Ray} {σ : Φ.cones}
   apply Set.eq_of_subset_of_ncard_le (Set.subset_univ _)
   rwa [Set.ncard_univ, Set.ncard_pair hr]
 
+/-- In rank two, a ray lying in a regular cone with two known distinct rays is
+one of those two rays. -/
+theorem ray_eq_or_eq_of_le {σ : Φ.cones} (hσ : IsRegularCone i σ.val)
+    (hN : Module.finrank ℤ N = 2) {p q r : Φ.Ray} (hne : p ≠ q)
+    (hp : p.toCone ≤ σ) (hq : q.toCone ≤ σ) (hr : r.toCone ≤ σ) :
+    r = p ∨ r = q := by
+  let e := Φ.rayEquiv σ
+  have h := Φ.toricRays_eq_pair hσ hN hne hp hq
+  have hm : e ⟨r, hr⟩ ∈ ({e ⟨p, hp⟩, e ⟨q, hq⟩} : Set _) := by
+    simp only [e, rayEquiv_apply, h, Set.mem_univ]
+  simpa only [Set.mem_insert_iff, Set.mem_singleton_iff, e.injective.eq_iff,
+    Subtype.mk.injEq] using hm
+
 /-- A cone of a regular rank-two fan containing two distinct rays has exactly two rays. -/
 theorem card_toricRay_eq_two_of_ray_ne_of_le (Φ : Fan i)
     (hΦ : Φ.IsRegular) (hdim : Module.finrank ℤ N = 2)
@@ -205,21 +218,6 @@ private theorem exists_pos_neighbor (hΦ : Φ.IsRegular) (hc : Φ.IsComplete)
   exact ⟨Ray.ofToricRay Φ σ τ, by simpa using hτ, σ, (ρ.toCone_le_iff σ).mpr hx,
     Ray.toCone_ofToricRay_le Φ σ τ⟩
 
-private theorem eq_of_third_ray_le (hΦ : Φ.IsRegular) (hN : Module.finrank ℤ N = 2)
-    {ρ τ υ : Φ.Ray} {σ : Φ.cones} (hρ : ρ.toCone ≤ σ) (hτ : τ.toCone ≤ σ)
-    (hυ : υ.toCone ≤ σ) (hne : ρ ≠ τ) (hne' : ρ ≠ υ) : υ = τ := by
-  have hm : υ.toToricRay Φ σ hυ ∈
-      ({ρ.toToricRay Φ σ hρ, τ.toToricRay Φ σ hτ} : Set (ToricRay σ.val)) := by
-    rw [Φ.toricRays_eq_pair ((isRegular_iff.1 hΦ) _ σ.property) hN hne hρ hτ]
-    exact Set.mem_univ _
-  simp only [Set.mem_insert_iff, Set.mem_singleton_iff] at hm
-  have eq_ray {r : Φ.Ray} (hr : r.toCone ≤ σ)
-      (he : υ.toToricRay Φ σ hυ = r.toToricRay Φ σ hr) : υ = r := by
-    have he' : Φ.rayEquiv σ ⟨υ, hυ⟩ = Φ.rayEquiv σ ⟨r, hr⟩ := by
-      simpa only [rayEquiv_apply] using he
-    exact congrArg Subtype.val ((Φ.rayEquiv σ).injective he')
-  exact eq_ray hτ (hm.resolve_left fun he ↦ hne' (eq_ray hρ he).symm)
-
 private theorem eq_of_positive_neighbors (hΦ : Φ.IsRegular) (hN : Module.finrank ℤ N = 2)
     {ρ τ υ : Φ.Ray} {σ σ' : Φ.cones} {f : V →ₗ[ℝ] ℝ}
     (hker : f.ker = ℝ ∙ i ρ.primitiveGenerator) (hρ₀ : f (i ρ.primitiveGenerator) = 0)
@@ -241,16 +239,16 @@ private theorem eq_of_positive_neighbors (hΦ : Φ.IsRegular) (hN : Module.finra
       rw [hab]
       exact σ.val.add_mem (σ.val.smul_mem hp ((ρ.toCone_le_iff σ).mp hρσ))
         (σ.val.smul_mem hυ.le ((τ.toCone_le_iff σ).mp hτσ))
-    exact eq_of_third_ray_le hΦ hN hρσ hτσ
-      ((υ.toCone_le_iff σ).mpr ((σ.val.smul_mem_iff hτ).mp hz)) hne hne'
+    exact (ray_eq_or_eq_of_le ((isRegular_iff.mp hΦ) _ σ.property) hN hne hρσ hτσ
+      ((υ.toCone_le_iff σ).mpr ((σ.val.smul_mem_iff hτ).mp hz))).resolve_left (Ne.symm hne')
   · have hba : f z • y = -t • x + f y • z := by
       rw [hab, neg_smul, ← add_assoc, neg_add_cancel, zero_add]
     have hy : f z • y ∈ σ'.val := by
       rw [hba]
       exact σ'.val.add_mem (σ'.val.smul_mem (neg_nonneg.mpr hn) ((ρ.toCone_le_iff σ').mp hρσ'))
         (σ'.val.smul_mem hτ.le ((υ.toCone_le_iff σ').mp hυσ'))
-    exact (eq_of_third_ray_le hΦ hN hρσ' hυσ'
-      ((τ.toCone_le_iff σ').mpr ((σ'.val.smul_mem_iff hυ).mp hy)) hne' hne).symm
+    exact ((ray_eq_or_eq_of_le ((isRegular_iff.mp hΦ) _ σ'.property) hN hne' hρσ' hυσ'
+      ((τ.toCone_le_iff σ').mpr ((σ'.val.smul_mem_iff hυ).mp hy))).resolve_left (Ne.symm hne)).symm
 
 private theorem existsUnique_pos_neighbor (hΦ : Φ.IsRegular) (hc : Φ.IsComplete)
     (hN : Module.finrank ℤ N = 2) (ρ : Φ.Ray) {f : V →ₗ[ℝ] ℝ} (hf : f ≠ 0)
