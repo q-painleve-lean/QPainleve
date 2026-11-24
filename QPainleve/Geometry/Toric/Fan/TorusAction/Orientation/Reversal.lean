@@ -21,7 +21,6 @@ specified contraction changes by regular inversion in the independent X torus.
 public noncomputable section
 
 open AlgebraicGeometry CategoryTheory Multiplicative QPainleve.BlowupTower
-open TauCeti.LaurentRing
 open TauCeti.AlgebraicGeometry
 
 namespace TauCeti.Toric.Fan
@@ -35,10 +34,9 @@ local notation "center" a:arg => (fun j : Fin m ↦ a (ofAdd (Pi.single j 1)))
 local notation "bᵣ" => b.reindex (Equiv.swap 0 1)
 local notation "T" => internalBlowupTower b s (center c)
 local notation "Tᵣ" => internalBlowupTower bᵣ s (center (c⁻¹))
-local notation "L" => LaurentRing ℂ (Fin m)
-local notation "invX" => Spec.map (CommRingCat.ofHom
-  (AlgHom.toRingHom (AlgEquiv.toAlgHom (AddMonoidAlgebra.domCongr ℂ ℂ
-    (AddEquiv.neg (Fin m →₀ ℤ))))))
+local notation "Xtor" => QPainleve.CharacterTorus.scheme ℂ (Fin m →₀ ℤ)
+local notation "invX" =>
+  QPainleve.CharacterTorus.map ℂ (AddEquiv.toAddMonoidHom (AddEquiv.neg (Fin m →₀ ℤ)))
 
 variable {X : Scheme} [IsIntegral X] (hΦ : Φ.IsRegular)
   (p : (internalBlowupTower b s (fun j : Fin m ↦ c (ofAdd (Pi.single j 1)))).1 ⟶ X)
@@ -64,7 +62,7 @@ theorem contractedXEvaluation_reindex_swap
       [IsIntegral U.1] [IsIntegral V.1] [IsDominant f] [IsDominant g]
       [IsDominant U.2.toTower.toBase] [IsDominant V.2.toTower.toBase]
       (hfg : eqToHom (congrArg Sigma.fst h) ≫ f = g)
-      (v : X ⤏ Spec (.of L))
+      (v : X ⤏ Xtor)
       (hv : f.toRationalMap.comp v =
         V.2.toTower.toBase.toRationalMap.comp (Φ.xEvaluation b s c)) :
       g.toRationalMap.comp v =

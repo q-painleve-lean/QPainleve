@@ -165,7 +165,7 @@ private theorem edgeMutation_marking
   let := hW
   let := hπ
   let := hne
-  obtain ⟨Z, U, e, hU, hover, he, hmark⟩ :=
+  obtain ⟨Z, U, e, hU, hover, he, _, _, hmark⟩ :=
     (ρ).exists_sarkisov_decrease_of_smooth_section_center b hOpp c hΦ hT j hj hfirst
   refine ⟨Z, U, e, hU, hover, he, fun a β x ↦ ?_⟩
   let q := Fan.Ray.ofPrimitiveGenerator (ρ).isPrimitiveGenerator.isPrimitive.neg hOpp

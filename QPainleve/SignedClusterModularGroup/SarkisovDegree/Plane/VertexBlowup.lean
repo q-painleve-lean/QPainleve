@@ -78,7 +78,7 @@ private theorem exists_vertex_blowup_comparison :
         (D).hom ∧
       e.hom ≫ (J).blowupToBase ≫ fP = fX ∧
       (J).comap (e.hom ≫ (J).blowupToBase) = (Φ).rayBoundaryIdeal hΦ (r 0) := by
-  obtain ⟨hσ, b, e₀, hrays, hgen, he₀, hE⟩ :=
+  obtain ⟨hσ, b, e₀, hrays, hgen, he₀, hE, -⟩ :=
     Fan.exists_blowup_projectivePlane_vertex_hirzebruchOne d hi a
   obtain ⟨r, hr⟩ := Fan.exists_rayEquiv_of_hirzebruch_ray_generators b 1
     (by simpa only [Nat.cast_one, one_smul] using hrays)

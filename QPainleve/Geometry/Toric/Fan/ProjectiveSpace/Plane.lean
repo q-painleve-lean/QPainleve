@@ -77,12 +77,13 @@ theorem exists_projectivePlane_vertex_basis (d : Basis (Fin 2) ℤ N)
     (hp.eq_primitiveGenerator hi hσ.toIsToricCone).symm
 
 /-- In a basis for the maximal cone at a plane vertex, the third ray generator is
-the negative sum of the two basis vectors. -/
+the negative sum of the two basis vectors, and is the generator omitted at that vertex. -/
 theorem projectivePlane_vertex_rays (d : Basis (Fin 2) ℤ N) (hi : IsIntegralLattice i)
     (k : Option (Fin 2)) :
     let σ := projectiveSpaceMaximalCone d hi k
     ∃ c : Basis (Fin 2) ℤ N, σ.val = hull ℝ (Set.range (i ∘ c)) ∧
-      Set.range (projectiveSpaceGenerator d) = {c 0, c 1, -c 0 - c 1} := by
+      Set.range (projectiveSpaceGenerator d) = {c 0, c 1, -c 0 - c 1} ∧
+      projectiveSpaceGenerator d k = -c 0 - c 1 := by
   classical
   obtain ⟨c, a, ha⟩ := exists_projectivePlane_vertex_basis d hi k
   have hrange : projectiveSpaceGenerator d '' {k}ᶜ = Set.range c := by
@@ -99,7 +100,7 @@ theorem projectivePlane_vertex_rays (d : Basis (Fin 2) ℤ N) (hi : IsIntegralLa
     calc
       _ = -(c 0 + c 1) := eq_neg_of_add_eq_zero_right hsum
       _ = _ := by abel
-  refine ⟨c, ?_, ?_⟩
+  refine ⟨c, ?_, ?_, hk⟩
   · -- Unfold the maximal cone to apply its hull formula.
     change projectiveSpaceCone d i {k}ᶜ = _
     rw [projectiveSpaceCone_def, hrange, Set.range_comp]
@@ -112,6 +113,15 @@ theorem projectivePlane_vertex_rays (d : Basis (Fin 2) ℤ N) (hi : IsIntegralLa
     simp only [Set.mem_insert_iff, Set.mem_singleton_iff, Set.mem_range,
       Fin.exists_fin_two]
     tauto
+
+/-- A two-ray cone of the plane fan is one of its three maximal cones. -/
+theorem exists_eq_projectiveSpaceMaximalCone_of_card_toricRay_eq_two
+    (d : Basis (Fin 2) ℤ N) (hi : IsIntegralLattice i) (σ : (projectiveSpace d hi).cones)
+    (hσ : Nat.card (ToricRay σ.val) = 2) :
+    ∃ k : Option (Fin 2), σ = projectiveSpaceMaximalCone d hi k := by
+  have hdim : finrank ℤ N = 2 := (finrank_eq_card_basis d).trans (Fintype.card_fin 2)
+  obtain ⟨k, hk⟩ := exists_le_projectiveSpaceCone_compl d hi σ.property
+  exact ⟨k, (projectiveSpace d hi).eq_of_le_fullCone (isRegular_projectiveSpace d hi) hdim hσ hk⟩
 
 /-- A complete regular rank-two fan with the plane ray generators is the
 projective-space fan in that lattice frame. -/

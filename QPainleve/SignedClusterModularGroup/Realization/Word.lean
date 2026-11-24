@@ -41,40 +41,6 @@ attribute [local instance] hasUniqueDiv_of_free_int
 local instance : PreirreducibleSpace (Centers).left :=
   inferInstanceAs (PreirreducibleSpace (scheme k A))
 
-variable {L₀ L₁ : Type u} [AddCommGroup L₀] [AddCommGroup L₁]
-  {B₀ : LinearMap.BilinForm ℤ L₀} {B₁ : LinearMap.BilinForm ℤ L₁}
-  {M₀ : Point (Over.mk (structureMap k (ι → ℤ))) → MarkedSurface k n B₀ (scheme k (ι →₀ ℤ))}
-  {M₁ : Point (Over.mk (structureMap k (ι → ℤ))) → MarkedSurface k n B₁ (scheme k (ι →₀ ℤ))}
-  {C : (scheme k (ι → ℤ)).PartialMap (scheme k (ι → ℤ))} [IsDominant C.hom]
-  [C.IsOver (Over.mk (structureMap k (ι → ℤ))).hom (Over.mk (structureMap k (ι → ℤ))).hom]
-  {F : scheme k (ι →₀ ℤ) ⤏ scheme k (ι →₀ ℤ)} [F.IsDominant]
-  {E : SkewExchangeMatrix ι} {w : Word B E} {P : ChargeSeed B N}
-
-/-- Identify the indices of a restricted or composed realization with the two
-maps of the word it realizes. -/
-private def reindexWord (R : GeometricRealization (T₀ := Centers) (T₁ := Centers) M₀ M₁ C F)
-    (hC : C = w.centerPartialMap k P) (hF : F = w.xRationalMap k) :
-    GeometricRealization (T₀ := Centers) (T₁ := Centers) M₀ M₁
-      (w.centerPartialMap k P) (w.xRationalMap k) := by
-  subst C F
-  exact R
-
-@[simp]
-private theorem reindexWord_picard
-    (R : GeometricRealization (T₀ := Centers) (T₁ := Centers) M₀ M₁ C F)
-    (hC : C = w.centerPartialMap k P) (hF : F = w.xRationalMap k) :
-    (reindexWord R hC hF).picard = R.picard := by
-  subst C F
-  rfl
-
-@[simp]
-private theorem reindexWord_boundaryAction
-    (R : GeometricRealization (T₀ := Centers) (T₁ := Centers) M₀ M₁ C F)
-    (hC : C = w.centerPartialMap k P) (hF : F = w.xRationalMap k) :
-    (reindexWord R hC hF).boundaryAction = R.boundaryAction := by
-  subst C F
-  rfl
-
 variable (P : ChargeSeed B N)
   {L : ∀ {E : SkewExchangeMatrix ι}, Word B E → AddCommGrpCat.{u}}
   {form : ∀ {E} (p : Word B E), LinearMap.BilinForm ℤ (L p)}
@@ -148,9 +114,11 @@ def ofWord : {E : SkewExchangeMatrix ι} → (w : Word B E) →
     letI : IsDominant C.hom := hC ▸ (inferInstance : IsDominant ((ε).centerPartialMap k P).hom)
     letI : C.IsOver (Centers).hom (Centers).hom := hC ▸ (inferInstance :
       ((ε).centerPartialMap k P).IsOver (Centers).hom (Centers).hom)
-    reindexWord (C := C) ((GeometricRealization.refl (family ε)).restrict
-      ((ε).centerOpen k P) ((ε).dense_centerOpen P) le_top)
-      hC.symm (xRationalMap_nil (B := B) k).symm
+    let R : GeometricRealization (T₀ := Centers) (T₁ := Centers) (family ε) (family ε)
+        C (Scheme.RationalMap.id XTor) :=
+      (GeometricRealization.refl (family ε)).restrict
+        ((ε).centerOpen k P) ((ε).dense_centerOpen P) le_top
+    R.congrMaps hC.symm (xRationalMap_nil (B := B) k).symm
   | _, .cons p s, step =>
     let R := ofWord p step.prefix
     let T := WordStepRealizations.last (P := P) (family := family) (p := p) (s := s) step
@@ -160,21 +128,21 @@ def ofWord : {E : SkewExchangeMatrix ι} → (w : Word B E) →
         (centerPartialMap_comp p s.toPath P)
     letI : C.IsOver (Centers).hom (Centers).hom := hC ▸ (inferInstance :
       ((p.cons s).centerPartialMap k P).IsOver (Centers).hom (Centers).hom)
-    reindexWord (C := C) (R.comp T) hC.symm
+    (R.comp T).congrMaps hC.symm
       (by rw [← xRationalMap_comp, Path.comp_toPath_eq_cons])
 
 /-- The empty word pulls Picard classes back by the identity. -/
 @[simp]
 theorem ofWord_nil_picard (step : WordStepRealizations P family ε) :
     (ofWord P ε step).picard = .refl (form ε) := by
-  simp only [ofWord, reindexWord_picard]
+  simp only [ofWord, congrMaps_picard]
   exact (restrict_picard (refl (family ε)) _ _ _).trans (refl_picard (family ε))
 
 /-- The empty word fixes every numbered branch. -/
 @[simp]
 theorem ofWord_nil_boundaryAction (step : WordStepRealizations P family ε) :
     (ofWord P ε step).boundaryAction = 1 := by
-  simp only [ofWord, reindexWord_boundaryAction]
+  simp only [ofWord, congrMaps_boundaryAction]
   exact (restrict_boundaryAction (refl (family ε)) _ _ _).trans
     (refl_boundaryAction (family ε))
 

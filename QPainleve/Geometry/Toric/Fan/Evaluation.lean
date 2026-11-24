@@ -6,6 +6,7 @@ Authors: The QPainleve contributors
 module
 
 public import Mathlib.AlgebraicGeometry.Birational.Composition
+public import QPainleve.Geometry.Toric.CharacterTorus.Scheme
 public import QPainleve.Geometry.Toric.Fan.Charge
 public import QPainleve.Geometry.Toric.Fan.FunctionField
 public import QPainleve.Geometry.Toric.Fan.Scheme
@@ -116,8 +117,14 @@ in the original presentation followed by regular inversion on the X torus. -/
 theorem xEvaluation_reindex_swap :
     Φ.xEvaluation bᵣ s c⁻¹ =
       (Φ.xEvaluation b s c).compHom
-        (Spec.map (CommRingCat.ofHom (invX).toAlgHom.toRingHom)) := by
-  simp only [xEvaluation, Scheme.RationalMap.ofAffineAlgHom_compHom, xEval_reindex_swap]
+        (QPainleve.CharacterTorus.map ℂ (AddEquiv.neg (ι →₀ ℤ)).toAddMonoidHom) := by
+  have hmap : QPainleve.CharacterTorus.map ℂ (AddEquiv.neg (ι →₀ ℤ)).toAddMonoidHom =
+      Spec.map (CommRingCat.ofHom (invX).toAlgHom.toRingHom) := by
+    apply Spec.preimage_injective
+    apply CommRingCat.hom_ext
+    simp only [QPainleve.CharacterTorus.preimage_map, Spec.preimage_map, CommRingCat.hom_ofHom,
+      AddMonoidAlgebra.domCongr_toAlgHom, AddEquiv.toAddMonoidHom_eq_coe]
+  simp only [hmap, xEvaluation, Scheme.RationalMap.ofAffineAlgHom_compHom, xEval_reindex_swap]
 
 end
 

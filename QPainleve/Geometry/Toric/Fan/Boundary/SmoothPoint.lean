@@ -5,6 +5,7 @@ Authors: The QPainleve contributors
 -/
 module
 
+public import QPainleve.AlgebraicGeometry.Curves.Node.Locus
 public import QPainleve.Geometry.Toric.Fan.Boundary.InternalCenter
 
 import Mathlib.AlgebraicGeometry.AlgClosed.Basic
@@ -72,5 +73,46 @@ theorem exists_internalCenter_eq_ker_fromSpecResidueField
   rw [Ray.internalCenter_val, ha, f.ker_eq_ker_fromSpecResidueField]
   exact congrArg (fun x ↦ (D.subscheme.fromSpecResidueField x).ker)
     (pointOfClosedPoint_apply s p hp (IsLocalRing.closedPoint ℂ))
+
+local notation "X" => Φ.algebraicRealization
+local notation "f" => Φ.algebraicRealizationStructureMap
+
+/-- A closed point in the smooth part of a complete regular toric surface boundary is
+specified by a unique ray and binomial parameter, at the level of the reduced point ideal
+on the surface. -/
+theorem existsUnique_internalCenter_of_mem_boundary_of_not_isNode
+    (hΦ : Φ.IsRegular) (hc : Φ.IsComplete) {p : X} (hp : IsClosed ({p} : Set X))
+    (hmem : p ∈ (Φ.boundaryIdeal hc.nonempty_cones).support)
+    (hn : ¬ (Φ.boundaryIdeal hc.nonempty_cones).IsNodeOfReducedBoundary f p) :
+    letI := hc.nonempty_cones
+    ∃! a : Φ.Ray × ℂˣ, (a.1.internalCenter b a.2).val.map
+      (Φ.boundaryIdeal hc.nonempty_cones).subschemeι = (Scheme.fromSpecResidueField X p).ker := by
+  let : Nonempty Φ.cones := hc.nonempty_cones
+  let D := Φ.boundaryIdeal hc.nonempty_cones
+  have hn' : AtWorstNodalOfRelativeDimensionOne (D.subschemeι ≫ f) :=
+    Φ.atWorstNodalOfRelativeDimensionOne_boundary hΦ hc rankTwo
+  have : IsReduced D.subscheme := by
+    dsimp only [D]
+    rw [Φ.boundaryIdeal_def]
+    infer_instance
+  obtain ⟨q, hq, hs⟩ := D.exists_mem_smoothLocus_of_mem_support_of_not_isNodeOfReducedBoundary
+    f hn' hmem hn
+  have hclosed : IsClosed ({q} : Set D.subscheme) := by
+    rw [← D.subschemeι.isClosedEmbedding.injective.preimage_image {q}, Set.image_singleton, hq]
+    exact hp.preimage D.subschemeι.continuous
+  let := hn'.syntomic
+  obtain ⟨ρ, c, he⟩ := exists_internalCenter_eq_ker_fromSpecResidueField b hΦ hc q hclosed
+    (Scheme.Hom.mem_smoothLocus.mp hs)
+  have hI : (ρ.internalCenter b c).val.map D.subschemeι =
+      (Scheme.fromSpecResidueField X p).ker := by
+    rw [he, D.subschemeι.map_ker_fromSpecResidueField, hq]
+  refine ⟨(ρ, c), hI, fun a ha ↦ ?_⟩
+  by_contra hne
+  have hdis := (disjoint_support_map_internalCenter_iff b D.subschemeι a.1 ρ a.2 c).mpr hne
+  rw [ha, hI] at hdis
+  have hm : p ∈ (Scheme.fromSpecResidueField X p).ker.support := by
+    rw [← SetLike.mem_coe, Scheme.support_ker_fromSpecResidueField_of_isClosed hp]
+    exact Set.mem_singleton p
+  exact Set.disjoint_left.mp hdis hm hm
 
 end TauCeti.Toric.Fan

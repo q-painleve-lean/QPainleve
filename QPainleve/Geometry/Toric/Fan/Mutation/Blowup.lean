@@ -290,6 +290,25 @@ theorem Ray.mutationComplementBlowupι_comp_mutationBlowupIso_hom :
         exact Scheme.IdealSheafData.isEffectiveCartier_top _) :=
   mutationChart_ι_mutationBlowupHom b ρ hOpp c true
 
+/-- A point on the common resolution above the complement of the pivot fiber projects on
+the target to its image under the mutation isomorphism of the two complements. -/
+theorem Ray.mutationBlowupIso_apply_over_complement (p : (J₀).blowup) (x : (U₀).toScheme)
+    (hx : (J₀).blowupToBase p = (U₀).ι x) :
+    (J₁).blowupToBase ((ρ.mutationBlowupIso b hOpp c).hom p) = (U₁).ι ((eC).hom x) := by
+  let hI := sourceCenter_comap_complement_isEffectiveCartier b ρ hOpp c
+  let j := (J₀).blowupLift (U₀).ι hI
+  obtain ⟨y, hy, hproj⟩ := Scheme.exists_preimage_of_isPullback
+    ((J₀).isPullback_blowupLift (U₀).ι hI) x p hx.symm
+  change y = x at hy
+  subst y
+  change j x = p at hproj
+  have hcomp : j ≫ (ρ.mutationBlowupIso b hOpp c).hom ≫ (J₁).blowupToBase =
+      (eC).hom ≫ (U₁).ι := by
+    rw [← Category.assoc, ρ.mutationComplementBlowupι_comp_mutationBlowupIso_hom b hOpp c,
+      Category.assoc, Scheme.IdealSheafData.blowupLift_blowupToBase]
+  rw [← hproj]
+  exact congrArg (fun f ↦ f x) hcomp
+
 /-- The global mutation blowup isomorphism preserves the projective-line ruling. -/
 @[reassoc]
 theorem Ray.mutationBlowupIso_hom_comp_ruling :

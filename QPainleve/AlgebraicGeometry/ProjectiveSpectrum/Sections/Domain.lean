@@ -282,9 +282,10 @@ variable [IsNoetherian X]
 attribute [local instance] IsNormalScheme.of_uniqueFactorizationMonoid_stalk
 open SchemeWeilDivisor
 
-/-- The indeterminacy locus of a projective presentation is the support of the base
-ideal of the moving part of its system of zero divisors. Zero coordinates are allowed. -/
-theorem domain_partialMapToProjectiveSpace_eq_compl_support_baseIdeal_movingPart
+/-- Divide the coordinates of a projective presentation by their common fixed divisor.
+The resulting sections present the same rational map, and their base ideal is the base
+ideal of the moving part of the original family of zero divisors. -/
+theorem exists_moving_projective_presentation
     {i : ι} (hi : Dense (D[i] : Set X)) :
     let S := Set.range (fun j : {j // s j ≠ 0} ↦ (L.zeroDivisor j.property).toWeilDivisor)
     let hS : ∀ E ∈ S, 0 ≤ E := fun _ ⟨j, hj⟩ ↦ hj ▸
@@ -296,9 +297,12 @@ theorem domain_partialMapToProjectiveSpace_eq_compl_support_baseIdeal_movingPart
       rw [h, nonvanishingLocus_zero] at hd
       exact hd.nonempty.ne_empty rfl
     let hne : S.Nonempty := ⟨_, Set.mem_range_self ⟨i, hsi⟩⟩
-    ((L.obj.partialMapToProjectiveSpace f s i hi).toRationalMap.domain : Set X) =
-      ((baseIdeal (WeilDivisor.movingPart S hne hS) (fun _ ↦
-        WeilDivisor.nonneg_of_mem_movingPart hne hS)).support : Set X)ᶜ := by
+    ∃ (M : InvertibleSheaf X) (t : ι → Γ(M.obj, ⊤))
+      (hd : Dense (M.obj.nonvanishingLocus (t i) : Set X)),
+      (M.obj.partialMapToProjectiveSpace f t i hd).toRationalMap =
+        (L.obj.partialMapToProjectiveSpace f s i hi).toRationalMap ∧
+      (⨆ j, M.zeroIdeal (t j)) = baseIdeal (WeilDivisor.movingPart S hne hS)
+          (fun _ ↦ WeilDivisor.nonneg_of_mem_movingPart hne hS) := by
   classical
   intro S hS hsi hne
   let K := {j // s j ≠ 0}
@@ -335,9 +339,30 @@ theorem domain_partialMapToProjectiveSpace_eq_compl_support_baseIdeal_movingPart
     congr 1
   have he := toRationalMap_partialMapToProjectiveSpace_eq_of_hom f t s
     (L.idealTwistInclusion hI) ht i htd hi
+  exact ⟨M, t, htd, he, hbase⟩
+
+/-- The indeterminacy locus of a projective presentation is the support of the base
+ideal of the moving part of its system of zero divisors. Zero coordinates are allowed. -/
+theorem domain_partialMapToProjectiveSpace_eq_compl_support_baseIdeal_movingPart
+    {i : ι} (hi : Dense (D[i] : Set X)) :
+    let S := Set.range (fun j : {j // s j ≠ 0} ↦ (L.zeroDivisor j.property).toWeilDivisor)
+    let hS : ∀ E ∈ S, 0 ≤ E := fun _ ⟨j, hj⟩ ↦ hj ▸
+      (Scheme.CartierDivisor.isEffective_iff_toWeilDivisor_nonneg _).mp
+        (L.isEffective_zeroDivisor j.property)
+    let hsi : s i ≠ 0 := by
+      intro h
+      have hd := hi
+      rw [h, nonvanishingLocus_zero] at hd
+      exact hd.nonempty.ne_empty rfl
+    let hne : S.Nonempty := ⟨_, Set.mem_range_self ⟨i, hsi⟩⟩
+    ((L.obj.partialMapToProjectiveSpace f s i hi).toRationalMap.domain : Set X) =
+      ((baseIdeal (WeilDivisor.movingPart S hne hS) (fun _ ↦
+        WeilDivisor.nonneg_of_mem_movingPart hne hS)).support : Set X)ᶜ := by
+  intro S hS hsi hne
+  obtain ⟨M, t, hd, hmap, hbase⟩ := L.exists_moving_projective_presentation f s hi
   ext x
-  rw [← he]
-  exact (M.mem_domain_partialMapToProjectiveSpace_iff_notMem_support f t htd
+  rw [← hmap]
+  exact (M.mem_domain_partialMapToProjectiveSpace_iff_notMem_support f t hd
     (by rw [hbase]; exact notMem_support_baseIdeal_movingPart hS hne) x).trans
     (Iff.of_eq (congrArg (fun I : X.IdealSheafData ↦ x ∉ I.support) hbase))
 

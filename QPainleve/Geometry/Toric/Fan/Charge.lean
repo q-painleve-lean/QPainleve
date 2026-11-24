@@ -48,6 +48,47 @@ theorem rayChargeMap_primitive [Finite ι] [DecidableEq ι] (s : ι → Φ.Ray) 
   rw [rayChargeMap_single]
   exact (s j).isPrimitiveGenerator.isPrimitive
 
+section Reindex
+
+variable {N' V' ι' : Type*} [AddCommGroup N'] [AddCommGroup V'] [Module ℝ V']
+  {i' : N' →+ V'} {Ψ : Fan i'} [Finite ι] [Finite ι']
+  {s : ι → Φ.Ray} {t : ι' → Ψ.Ray}
+
+/-- An injective lattice map matching primitive charges induces the contravariant
+reindexing of their integer relations along the labeling equivalence. -/
+def rayChargeKernelReindex (σ : ι ≃ ι') (e : N →ₗ[ℤ] N') (he : Function.Injective e)
+    (h : ∀ j, e (s j).primitiveGenerator = (t (σ j)).primitiveGenerator) :
+    (rayChargeMap t).ker ≃ₗ[ℤ] (rayChargeMap s).ker := by
+  classical
+  let p := LinearEquiv.funCongrLeft ℤ ℤ σ
+  refine p.ofSubmodules _ _ ?_
+  have hcomp : (rayChargeMap t).comp p.symm.toLinearMap =
+      e.comp (rayChargeMap s) := by
+    let := Fintype.ofFinite ι
+    apply (Pi.basisFun ℤ ι).ext
+    intro j
+    have hj : p.symm (Pi.single j 1) = Pi.single (σ j) 1 := by
+      ext a
+      simpa only [p, LinearEquiv.funCongrLeft_symm, LinearEquiv.funCongrLeft_apply,
+        LinearMap.funLeft_apply, Function.comp_apply, Equiv.symm_symm] using
+        congrFun (Pi.single_comp_equiv σ.symm j (1 : ℤ)) a
+    simpa only [Pi.basisFun_apply, LinearMap.comp_apply, LinearEquiv.coe_coe, hj,
+      rayChargeMap_single] using (h j).symm
+  rw [Submodule.map_equiv_eq_comap_symm, ← LinearMap.ker_comp, hcomp,
+    LinearMap.ker_comp_of_ker_eq_bot _ (LinearMap.ker_eq_bot_of_injective he)]
+
+/-- The coefficient of a transported relation is the target coefficient at the
+corresponding label. -/
+@[simp]
+theorem rayChargeKernelReindex_apply (σ : ι ≃ ι') (e : N →ₗ[ℤ] N') (he : Function.Injective e)
+    (h : ∀ j, e (s j).primitiveGenerator = (t (σ j)).primitiveGenerator)
+    (x : (rayChargeMap t).ker) (j : ι) :
+    (rayChargeKernelReindex σ e he h x : ι → ℤ) j = (x : ι' → ℤ) (σ j) := by
+  rw [rayChargeKernelReindex, LinearEquiv.ofSubmodules_apply]
+  exact (rfl)
+
+end Reindex
+
 /-- If the charges span a finite-index sublattice, a lattice equivalence into a
 torsion-free group is determined by its values on the labeled ray generators. -/
 theorem rayChargeEquiv_ext {N' : Type*} [AddCommGroup N'] [Module.IsTorsionFree ℤ N']

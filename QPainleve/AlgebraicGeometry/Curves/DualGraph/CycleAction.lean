@@ -97,6 +97,16 @@ theorem eq_r_iff_cycleVertexPerm_zero_eq {g : DihedralGroup n} {j : ZMod n}
     rw [cycleOrientationSign_sr] at h
     exact (by decide : (-1 : ℤˣ) ≠ 1) h |>.elim
 
+/-- The vertex permutation together with the orientation determines the dihedral action,
+including on cycles with one or two vertices. -/
+theorem eq_of_cycleVertexPerm_eq_of_cycleOrientationSign_eq {g h : DihedralGroup n}
+    (hp : cycleVertexPerm g = cycleVertexPerm h)
+    (hs : cycleOrientationSign g = cycleOrientationSign h) : g = h := by
+  have hsign : cycleOrientationSign (g * h⁻¹) = 1 := by simp [hs]
+  have hzero : cycleVertexPerm (g * h⁻¹) 0 = 0 := by simp [hp]
+  exact mul_inv_eq_one.mp
+    (((eq_r_iff_cycleVertexPerm_zero_eq hsign).mpr hzero).trans DihedralGroup.one_def.symm)
+
 /-- A reflection exchanges the two ordered branches at every node. -/
 theorem cycleBranchPerm_snd (g : DihedralGroup n) (j : ZMod n) (b : Fin 2) :
     (cycleBranchPerm g (j, b)).2 = if cycleOrientationSign g = -1 then b.rev else b := by

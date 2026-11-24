@@ -71,6 +71,13 @@ local notation "pivotPoint[" c "]" =>
     (Fan.Ray.surjective_detCharacter (r 0) b) c) (IsLocalRing.closedPoint ℂ)
 local notation "mutationMap[" c "]" =>
   Scheme.PartialMap.toRationalMap (Φ.mutationPartialMap b (c : ℂ) hv hp hop)
+local notation "sourceCenter[" c "]" => Fan.Ray.mutationSourceCenterIdeal b (r 0) c
+local notation "targetCenter[" c "]" => Fan.Ray.mutationTargetCenterIdeal b (r 0) hop c
+local notation "reverseRay" => Φ.mutationFanCenterRays b (fun _ : Unit ↦ r 0) () hop ()
+local notation "reversePoint[" c "]" =>
+  (Fan.Ray.binomialCenter (reverseRay) rankTwo
+    (b.detDualEquiv_self (Fan.Ray.primitiveGenerator (reverseRay)))
+    (Fan.Ray.surjective_detCharacter (reverseRay) b) c⁻¹) (IsLocalRing.closedPoint ℂ)
 
 variable {n : ℕ} {Y : Scheme.{0}} {T : BlowupTower Φ.algebraicRealization (n + 1) Y}
   (hT : IsClosedPointTower Φ.algebraicRealization T) (g : Y ⟶ P)
@@ -82,7 +89,9 @@ section point carries a specified plane resolution to the Hirzebruch-one fan.
 The isomorphism of resolving surfaces gives the mutation square. In the two
 Picard markings, the old base coordinates `(b, a)` become `(b + a - m, a)`,
 where `m` is the order at the pivot. The first new order is `a - m` and the
-other orders keep their original relative order. -/
+other orders keep their original relative order. The first new center is the
+reverse pivot, and the remaining projected centers correspond through the
+common pivot blowup, including for infinitely near centers. -/
 theorem exists_hirzebruchOne_resolution_of_quadric_mutation
     (hg : g ≫ fP = T.toBase ≫ fX) (hbir : Scheme.BirationalOver g (𝟙 P))
     (c : ℂˣ) (j : Fin (n + 1)) (hj : hT.baseCenter j = pivotPoint[c])
@@ -111,6 +120,11 @@ theorem exists_hirzebruchOne_resolution_of_quadric_mutation
       T.toBase.toRationalMap.comp mutationMap[c] = (e.hom ≫ U.toBase).toRationalMap ∧
       (e.inv ≫ g) ≫ fP = U.toBase ≫ fX' ∧
       Scheme.BirationalOver (e.inv ≫ g) (𝟙 P) ∧
+      hU.baseCenter firstIndex = reversePoint[c] ∧
+      (∀ l : Fin n, ∃ p : (sourceCenter[c]).blowup,
+        (sourceCenter[c]).blowupToBase p = hT.baseCenter (j.succAbove l) ∧
+        (targetCenter[c]).blowupToBase (((r 0).mutationBlowupIso b hop c).hom p) =
+          hU.baseCenter (l.natAdd 1)) ∧
       let y := (U.picardMarking hU fX').symm (Additive.ofMul (pullback (e.inv ≫ g) H))
       (C').repr y.1 0 = (C).repr x.1 0 + (C).repr x.1 1 + x.2 j ∧
       (C').repr y.1 1 = (C).repr x.1 1 ∧
@@ -125,7 +139,7 @@ theorem exists_hirzebruchOne_resolution_of_quadric_mutation
   let := hnoeth'
   let := hY
   let := hmod
-  obtain ⟨Z, U, e, hU, hover, hmap, hcoords⟩ :=
+  obtain ⟨Z, U, e, hU, hover, hmap, hreverse, hcenters, hcoords⟩ :=
     Fan.Ray.exists_sarkisov_decrease_of_smooth_section_center (r 0) b hop c hΦ hT j hj hfirst
   have hg' : (e.inv ≫ g) ≫ fP = U.toBase ≫ fX' := by
     apply (cancel_epi e.hom).mp
@@ -133,7 +147,7 @@ theorem exists_hirzebruchOne_resolution_of_quadric_mutation
   have hb' : Scheme.BirationalOver (e.inv ≫ g) (𝟙 P) := by
     refine Scheme.BirationalOver.trans (sY := g) ⟨.ofIso e.symm, ?_⟩ hbir
     simp [Scheme.PartialIso.IsOver, Scheme.PartialIso.ofIso]
-  refine ⟨Z, U, hU, e, hmap, hg', hb', ?_⟩
+  refine ⟨Z, U, hU, e, hmap, hg', hb', hreverse, hcenters, ?_⟩
   intro y
   let a := (C).repr x.1 0
   let d := (C).repr x.1 1
@@ -236,7 +250,7 @@ theorem exists_plane_resolution_of_quadric_single_high_center
       have hadd : 2 * a₀ + 2 * b₀ = 2 * b₀ + 2 * a₀ := add_comm _ _
       simpa only [m, Nat.cast_zero, sub_zero, hadd] using hsum)
     hm.le hmb hsmall
-  obtain ⟨Z, U, hU, e, hmap, hg', hbir', hα, hβ, hfirst', htail⟩ :=
+  obtain ⟨Z, U, hU, e, hmap, hg', hbir', _, _, hα, hβ, hfirst', htail⟩ :=
     hT.exists_hirzebruchOne_resolution_of_quadric_mutation b hΦ hc r hr g hg hbir c j hj hfirst
   obtain ⟨d, s₀, W, V₀, hV, k, hproj, hg'', hbir'', hdegree, hvertex, hrem, -⟩ :=
     hU.exists_plane_resolution_of_hirzebruchOne b hΨ hcΨ s hs (e.inv ≫ g) hg' hbir'

@@ -6,10 +6,13 @@ Authors: The QPainleve contributors
 module
 
 public import QPainleve.AlgebraicGeometry.Curves.Node.GenericPoint
+public import QPainleve.AlgebraicGeometry.IdealSheaf.Boundary.Primes
 public import QPainleve.SignedClusterModularGroup.Boundary.Isometry
 public import QPainleve.SignedClusterModularGroup.Realization.Basic
 
+import QPainleve.AlgebraicGeometry.Curves.Node.BoundaryRestriction
 import QPainleve.AlgebraicGeometry.EffectiveCartierDivisor.Dimension
+import QPainleve.AlgebraicGeometry.IdealSheaf.Image.Over
 
 /-!
 # Boundary classes of geometric realizations
@@ -27,6 +30,7 @@ on the ambient surface isomorphism.
 public noncomputable section
 
 open AlgebraicGeometry CategoryTheory DihedralGroup Order TauCeti.AlgebraicGeometry
+open Scheme Scheme.IdealSheafData
 
 universe u
 
@@ -38,6 +42,8 @@ variable {k : Type u} [Field k] [IsSepClosed k] [Infinite k] {n : ℕ} [NeZero n
   {X₀ X₁ : Scheme.{u}} {M : MarkedSurface k n B₀ X₀} {N : MarkedSurface k n B₁ X₁}
 
 local notation "S" => Spec (CommRingCat.of k)
+
+local notation "D[" P "]" => Scheme.Hom.ker (Over.Hom.left (Arrow.hom (MarkedSurface.pair P)))
 
 namespace MarkedSurface
 
@@ -65,6 +71,35 @@ def boundaryPrime (hM : M.pair.hom.left.ker.IsEffectiveCartier) (j : ZMod n) :
 theorem coe_boundaryPrime (hM : M.pair.hom.left.ker.IsEffectiveCartier) (j : ZMod n) :
     letI : PrestableFamily (M.boundary ↘ S) := M.prestable
     (M.boundaryPrime hM j : M.surface) = M.pair.hom.left (M.cycle.componentGenericPoint j) :=
+  (rfl)
+
+/-- Each numbered boundary prime belongs to the set of primes of the boundary ideal. -/
+theorem boundaryPrime_mem_boundaryPrimes (hP : D[M].IsEffectiveCartier) (j : ZMod n) :
+    (M.boundaryPrime hP j : M.surface) ∈ D[M].boundaryPrimes := by
+  let : PrestableFamily (M.boundary ↘ S) := M.prestable
+  let : IsClosedImmersion M.pair.hom.left := M.closedImmersion
+  refine mem_boundaryPrimes.mpr ⟨?_, (M.boundaryPrime hP j).property⟩
+  have hs : (D[M].support : Set M.surface) = Set.range M.pair.hom.left :=
+    M.pair.hom.left.support_ker.trans M.pair.hom.left.isClosedEmbedding.isClosed_range.closure_eq
+  rw [M.coe_boundaryPrime]
+  rw [← SetLike.mem_coe, hs]
+  exact Set.mem_range_self _
+
+/-- The numbering of a marked Cartier boundary as an embedding into its ambient primes. -/
+def numberedBoundaryPrimes (hM : D[M].IsEffectiveCartier) : ZMod n ↪ D[M].boundaryPrimes where
+  toFun j := ⟨M.boundaryPrime hM j, M.boundaryPrime_mem_boundaryPrimes hM j⟩
+  inj' := by
+    let : PrestableFamily (M.boundary ↘ S) := M.prestable
+    let : IsClosedImmersion M.pair.hom.left := M.closedImmersion
+    intro j l h
+    apply M.cycle.componentGenericPoint_injective
+    apply M.pair.hom.left.isClosedEmbedding.injective
+    simpa only [coe_boundaryPrime] using congrArg Subtype.val h
+
+/-- The prime at a numbered component is the ambient image of its generic point. -/
+@[simp]
+theorem numberedBoundaryPrimes_apply_val (hM : D[M].IsEffectiveCartier) (j : ZMod n) :
+    (M.numberedBoundaryPrimes hM j).val = (M.boundaryPrime hM j : M.surface) :=
   (rfl)
 
 /-- The class of the numbered prime divisor in the fixed Picard marking. -/
@@ -96,6 +131,120 @@ theorem map_boundaryPrime (hM : M.pair.hom.left.ker.IsEffectiveCartier)
   simp only [CodimensionOnePoint.coe_mapOfIsOpenImmersion, coe_boundaryPrime]
   rw [← Scheme.Hom.comp_apply, ← boundaryIso_hom_comp, Scheme.Hom.comp_apply]
   exact congrArg N.pair.hom.left ((boundaryIso e).apply_componentGenericPoint M.cycle N.cycle j)
+
+section BoundaryImage
+
+variable (P : MarkedSurface k n B₀ X₀)
+
+/-- The specified closed boundary identifies with the subscheme cut out by its ideal. -/
+def boundaryImageIso : P.boundary ≅ D[P].subscheme :=
+  letI : IsClosedImmersion P.pair.hom.left := P.closedImmersion
+  asIso P.pair.hom.left.toImage
+
+@[reassoc]
+theorem boundaryImageIso_hom_comp :
+    (boundaryImageIso P).hom ≫ D[P].subschemeι = P.pair.hom.left :=
+  P.pair.hom.left.toImage_imageι
+
+instance :
+    (boundaryImageIso P).hom.IsOver (Spec (.of k)) := by
+  constructor
+  rw [over_eq_subschemeι_comp, boundaryImageIso_hom_comp_assoc]
+  exact Over.w P.pair.hom
+
+/-- The subscheme cut out by the ideal of a marked surface's boundary is prestable. -/
+theorem prestable_boundaryImage : PrestableFamily (D[P].subscheme ↘ Spec (.of k)) := by
+  have h : (boundaryImageIso P).hom ≫ (D[P].subscheme ↘ Spec (.of k)) =
+      (P.boundary ↘ Spec (.of k)) := HomIsOver.comp_over
+  exact (MorphismProperty.cancel_left_of_respectsIso (P := @PrestableFamily)
+    (boundaryImageIso P).hom _).mp (h.symm ▸ P.prestable)
+
+local instance : PrestableFamily (D[P].subscheme ↘ S) := P.prestable_boundaryImage
+
+/-- The marked cycle numbering transported to the subscheme cut out by the boundary ideal. -/
+def imageCycle :
+    NodalCycleNumbering (Empty.elim : Empty → (D[P].subscheme ↘ S).smoothLocus) n :=
+  letI : PrestableFamily (P.boundary ↘ S) := P.prestable
+  (boundaryImageIso P).mapNodalCycleNumbering P.cycle
+
+/-- Transport to the boundary subscheme preserves the numbered branches. -/
+theorem boundaryCycleAction_boundaryImageIso :
+    letI : PrestableFamily (P.boundary ↘ S) := P.prestable
+    (boundaryImageIso P).boundaryCycleAction P.cycle (imageCycle P) = 1 := by
+  let : PrestableFamily (P.boundary ↘ S) := P.prestable
+  refine ((boundaryImageIso P).existsUnique_boundaryCycleAction P.cycle
+    (D := imageCycle P)).unique (Iso.branch_boundaryCycleAction _ _ _) ?_
+  intro j l
+  simpa only [map_one, Equiv.Perm.one_apply, imageCycle] using
+    ((boundaryImageIso P).branch_mapNodalCycleNumbering P.cycle j l)
+
+/-- The transported component has the same generic point in the ambient surface. -/
+theorem imageCycle_genericPoint (j : ZMod n) :
+    letI : PrestableFamily (P.boundary ↘ S) := P.prestable
+    D[P].subschemeι ((imageCycle P).componentGenericPoint j) =
+      P.pair.hom.left (P.cycle.componentGenericPoint j) := by
+  let : PrestableFamily (P.boundary ↘ S) := P.prestable
+  have h := (boundaryImageIso P).apply_componentGenericPoint P.cycle (imageCycle P) j
+  rw [boundaryCycleAction_boundaryImageIso, map_one, Equiv.Perm.one_apply] at h
+  rw [← h, ← Scheme.Hom.comp_apply, boundaryImageIso_hom_comp]
+
+/-- Every ambient boundary prime is the generic point of a numbered component. -/
+theorem numberedBoundaryPrimes_surjective (hP : D[P].IsEffectiveCartier) :
+    Function.Surjective (P.numberedBoundaryPrimes hP) := by
+  intro x
+  let p := D[P].boundaryPrimeEmbedding x
+  have hp : (p : P.surface) ∈ D[P].support := by
+    simpa only [p, coe_boundaryPrimeEmbedding] using (mem_boundaryPrimes.mp x.property).1
+  obtain ⟨v, hv⟩ := hP.exists_subschemeι_blowupComponentGeneric_eq (k := k) hp
+  obtain ⟨j, hj⟩ := (P.imageCycle).component.surjective v
+  let : PrestableFamily (P.boundary ↘ S) := P.prestable
+  refine ⟨j, Subtype.ext ?_⟩
+  rw [← hj, ← NodalCycleNumbering.componentGenericPoint_def, P.imageCycle_genericPoint] at hv
+  simpa only [numberedBoundaryPrimes_apply_val, coe_boundaryPrime, p, coe_boundaryPrimeEmbedding]
+    using hv
+
+variable {P} {Q : MarkedSurface k n B₁ X₁}
+
+/-- A marked pair isomorphism induces an isomorphism of the subschemes cut out by the
+boundary ideals. -/
+def imagePairIso (e : P.pair ≅ Q.pair) : D[P].subscheme ≅ D[Q].subscheme :=
+  (boundaryImageIso P).symm ≪≫ (boundaryIso e ≪≫ boundaryImageIso Q)
+
+instance (e : P.pair ≅ Q.pair) : (imagePairIso e).hom.IsOver S :=
+  inferInstanceAs (((boundaryImageIso P).inv ≫ (boundaryIso e).hom ≫
+    (boundaryImageIso Q).hom).IsOver S)
+
+/-- The induced isomorphism commutes with the inclusions into the ambient surfaces. -/
+theorem imagePairIso_hom_comp (e : P.pair ≅ Q.pair) :
+    (imagePairIso e).hom ≫ D[Q].subschemeι = D[P].subschemeι ≫ (surfaceIso e).hom := by
+  apply (cancel_epi (boundaryImageIso P).hom).mp
+  simpa only [imagePairIso, Iso.trans_hom, Iso.symm_hom, Category.assoc, Iso.hom_inv_id_assoc,
+    boundaryImageIso_hom_comp_assoc, boundaryImageIso_hom_comp] using
+      MarkedSurface.boundaryIso_hom_comp e
+
+/-- An isomorphism fixing the numbered branches also fixes them on the boundary subschemes. -/
+theorem imagePairIso_boundaryAction (e : P.pair ≅ Q.pair)
+    (hact : letI : PrestableFamily (P.boundary ↘ S) := P.prestable
+            letI : PrestableFamily (Q.boundary ↘ S) := Q.prestable
+            (boundaryIso e).boundaryCycleAction P.cycle Q.cycle = 1) :
+    (imagePairIso e).boundaryCycleAction (imageCycle P) (imageCycle Q) = DihedralGroup.r 0 := by
+  let : PrestableFamily (P.boundary ↘ S) := P.prestable
+  let : PrestableFamily (Q.boundary ↘ S) := Q.prestable
+  let : (boundaryImageIso P).symm.hom.IsOver S :=
+    inferInstanceAs ((boundaryImageIso P).inv.IsOver S)
+  let : (boundaryIso e ≪≫ boundaryImageIso Q).hom.IsOver S :=
+    inferInstanceAs (((boundaryIso e).hom ≫ (boundaryImageIso Q).hom).IsOver S)
+  calc
+    _ = (boundaryIso e ≪≫ boundaryImageIso Q).boundaryCycleAction P.cycle (imageCycle Q) *
+          (boundaryImageIso P).symm.boundaryCycleAction (imageCycle P) P.cycle :=
+      Iso.boundaryCycleAction_trans _ _ _ _ _
+    _ = _ := by
+      have hinv := (boundaryImageIso P).boundaryCycleAction_symm P.cycle (imageCycle P)
+      rw [boundaryCycleAction_boundaryImageIso, inv_one] at hinv
+      rw [Iso.boundaryCycleAction_trans (boundaryIso e) P.cycle Q.cycle, hinv,
+        boundaryCycleAction_boundaryImageIso, hact, mul_one, mul_one, DihedralGroup.one_def]
+
+end BoundaryImage
 
 end MarkedSurface
 

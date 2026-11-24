@@ -5,7 +5,7 @@ Authors: The QPainleve contributors
 -/
 module
 
-public import QPainleve.AlgebraicGeometry.Blowup.Tower.StrictTransform
+public import QPainleve.AlgebraicGeometry.Blowup.Tower.StrictTransform.Basic
 public import QPainleve.Geometry.Toric.Fan.Boundary.Component
 public import QPainleve.Geometry.Toric.Fan.InternalBlowup
 
