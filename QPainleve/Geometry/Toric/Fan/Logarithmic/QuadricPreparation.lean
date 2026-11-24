@@ -5,8 +5,8 @@ Authors: The QPainleve contributors
 -/
 module
 
+public import QPainleve.Geometry.Toric.Fan.Logarithmic.HirzebruchPath
 public import QPainleve.Geometry.Toric.Fan.Logarithmic.ToricChange
-public import QPainleve.Geometry.Toric.Fan.StarSubdivision.QuadricPreparation
 
 import QPainleve.Geometry.Toric.Fan.Boundary.Subdivision
 
@@ -75,13 +75,17 @@ variable {X : Scheme} [X.Over S] [IsIntegral X] [X.IsProjectiveOver ℂ]
   [SmoothOfRelativeDimension 2 s(X)] {f : X ⟶ X[Φ]} [f.IsOver S]
   {D : X.IdealSheafData}
 
+open LogarithmicProjection
+open scoped Sarkisov
+
 /-- A specified logarithmic birational morphism to a Hirzebruch surface remains
 resolved along the entire sequence of elementary transformations to the quadric
 after one tower of boundary-node blowups. In particular, each intermediate
 Hirzebruch model and each common blowup is a regular coarsening of the preparation
 fan, with a regular projection representing the prescribed rational composite.
 The pole ideal of each projection is the reduced total transform of the original
-boundary. All links take place on the fiber opposite the ray of `b 1`. -/
+boundary. The resolved path records the prescribed blowup and blowdown on the
+fiber opposite the ray of `b 1` at each step. -/
 theorem exists_nodal_resolution_of_hirzebruch_quadric_preparation
     (b : Module.Basis (Fin 2) ℤ N) (e : ℕ) (hΦ : Φ.IsRegular) (hc : Φ.IsComplete)
     (hrays : Set.range (Ray.primitiveGenerator (Phi := Φ)) =
@@ -104,7 +108,7 @@ theorem exists_nodal_resolution_of_hirzebruch_quadric_preparation
         (_ : IsIntegral Z) (_ : IsDominant g) (_ : IsDominant (T.toBase ≫ f))
         (hT : IsNodalBoundaryTower D s(X) (𝟙 X) T),
         g ≫ π[P.common_source] = T.toBase ≫ f ∧
-        ∀ (Δ : Fan i) [Nonempty Δ.cones] (L : P.common.IsSubdivision Δ),
+        (∀ (Δ : Fan i) [Nonempty Δ.cones] (L : P.common.IsSubdivision Δ),
           (T.toBase ≫ f).toRationalMap.comp (Φ.denseTorusPartialIso Δ).toRationalMap =
             (g ≫ π[L]).toRationalMap ∧
           ∃ hOver : g ≫ π[L] ≫ s[Δ] = T.toBase ≫ s(X),
@@ -113,8 +117,16 @@ theorem exists_nodal_resolution_of_hirzebruch_quadric_preparation
             let : Smooth s(Z) :=
               (hT.isClosedPointTower.smoothOfRelativeDimension s(X)).smooth
             Δ.IsRegular →
-            (Δ.boundaryIdeal inferInstance).comap (g ≫ π[L]) =
-              (D.comap T.toBase).radical * ramificationIdealSheaf ℂ (g ≫ π[L]) := by
+              (Δ.boundaryIdeal inferInstance).comap (g ≫ π[L]) =
+                (D.comap T.toBase).radical * ramificationIdealSheaf ℂ (g ≫ π[L])) ∧
+        letI : Z.Over S := ⟨T.toBase ≫ s(X)⟩
+        letI : SmoothOfRelativeDimension 2 s(Z) :=
+          hT.isClosedPointTower.smoothOfRelativeDimension s(X)
+        ∃ (A B : LogarithmicProjection i (D.comap T.toBase).radical) (p : SarkisovPath A B),
+          A.fan = Φ ∧ A.hom ≍ T.toBase ≫ f ∧
+          B.fan = P.model 0 ∧ B.hom ≍ g ≫ π[P.common_model 0] ∧
+          p.length = 2 * e ∧
+            p.rationalMap = (A.fan.denseTorusPartialIso B.fan).toRationalMap := by
   intro _ _ B hB ω hTotal hRam hdiv
   obtain ⟨P⟩ := Φ.exists_hirzebruch_quadric_preparation b e hΦ hc hrays
   have hcP : P.common.IsComplete := P.common_source.isComplete_iff.mpr hc
@@ -125,14 +137,31 @@ theorem exists_nodal_resolution_of_hirzebruch_quadric_preparation
   let : Nonempty P.common.cones := hcP.nonempty_cones
   let : Nonempty Ω.cones := v.nonempty_cones_of_nonempty inferInstance
   have hg : IsDominant g := inferInstanceAs (IsDominant (q ≫ π[v]))
-  refine ⟨P, m, Z, T, g, hZ, hg, hdom, hT, ?_, ?_⟩
-  · simpa only [g, Category.assoc, ← FanHom.algebraicMap_comp, ← IsSubdivision.toFanHom_trans]
-      using hproj
+  have hcomp {Δ : Fan i} (L : P.common.IsSubdivision Δ) :
+      g ≫ π[L] = q ≫ π[v.trans L] := by
+    dsimp only [g]
+    rw [Category.assoc, IsSubdivision.toFanHom_trans v L, FanHom.algebraicMap_comp]
+  have hsource : g ≫ π[P.common_source] = T.toBase ≫ f :=
+    (hcomp P.common_source).trans hproj
+  refine ⟨P, m, Z, T, g, hZ, hg, hdom, hT, hsource, ?_, ?_⟩
   · intro Δ _ L
-    have hcomp : g ≫ π[L] = q ≫ π[v.trans L] := by
-      dsimp only [g]
-      rw [Category.assoc, ← FanHom.algebraicMap_comp, ← IsSubdivision.toFanHom_trans]
-    simpa only [hcomp, reassoc_of% hcomp]
+    simpa only [hcomp L, reassoc_of% hcomp L]
       using hregular Δ (v.trans L)
+  · obtain ⟨_, hover, hpole⟩ := hregular P.common v
+    let : IsIntegral Z := hZ
+    let : Z.Over S := ⟨T.toBase ≫ s(X)⟩
+    let : SmoothOfRelativeDimension 2 s(Z) :=
+      hT.isClosedPointTower.smoothOfRelativeDimension s(X)
+    let C : LogarithmicProjection i (D.comap T.toBase).radical :=
+      { fan := P.common
+        isRegular := P.common_regular
+        isComplete := hcP
+        hom := g
+        isOver := ⟨by rwa [P.common.algebraicRealization_over]⟩
+        isDominant := hg
+        comap_boundaryIdeal := hpole P.common_regular }
+    obtain ⟨A, B, p, hA, hAh, hB, hBh, hlen, hmap⟩ :=
+      P.exists_sarkisov_path_of_quadric_preparation C rfl
+    exact ⟨A, B, p, hA, hAh.trans (heq_of_eq hsource), hB, hBh, hlen, hmap⟩
 
 end TauCeti.Toric.Fan

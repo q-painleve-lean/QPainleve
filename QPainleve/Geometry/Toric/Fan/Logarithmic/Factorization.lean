@@ -118,11 +118,11 @@ def ofStar (p : @Quiver.Path _ instQuiver A B) : SarkisovPath A B :=
     (LogarithmicProjection i D) sarkisovQuiver id (fun e ↦ StarStep.toSarkisovStep e)
   @Prefunctor.mapPath _ instQuiver _ sarkisovQuiver F _ _ p
 
-/-- Including a toric star path as a Sarkisov path preserves its number of links. -/
+/-- Including a toric star path preserves its number of edges. -/
 @[simp]
 theorem length_ofStar (p : @Quiver.Path _ instQuiver A B) :
-    (ofStar p).length = @Quiver.Path.length _ instQuiver A B p :=
-  @Prefunctor.length_mapPath _ _ instQuiver sarkisovQuiver _ A B p
+    (ofStar p).length = @Quiver.Path.length _ instQuiver _ _ p := by
+  simp only [ofStar, Prefunctor.length_mapPath]
 
 /-- The composite of the links along a resolved path, in execution order. -/
 def rationalMap (p : SarkisovPath A B) : X[A.fan] ⤏ X[B.fan] :=

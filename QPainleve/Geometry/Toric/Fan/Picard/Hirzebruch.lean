@@ -164,6 +164,40 @@ theorem exists_hirzebruch_picardBasis_of_fiber (hΦ : Φ.IsRegular) (t : Fin 2) 
 local notation "C" => hirzebruchPicardBasis b e hΦ r hr
 
 include hr in
+/-- A signed Hirzebruch marking can be replaced by one of index `e.natAbs`,
+with the same fiber class and fiber-degree coordinate on every Picard class. -/
+theorem exists_hirzebruchPicardBasis_natAbs :
+    ∃ (d : Basis (Fin 2) ℤ N) (t : Fin 4 ≃ Φ.Ray)
+      (ht : (fun j ↦ (t j).primitiveGenerator) =
+        ![d 0, d 1, -d 0, (e.natAbs : ℤ) • d 0 - d 1]),
+      hirzebruchPicardBasis d (e.natAbs : ℤ) hΦ t ht 0 = (C) 0 ∧
+      ∀ x : Pic, (hirzebruchPicardBasis d (e.natAbs : ℤ) hΦ t ht).repr x 1 = (C).repr x 1 := by
+  by_cases he : 0 ≤ e
+  · have h : (e.natAbs : ℤ) = e := by omega
+    simp only [h]
+    exact ⟨b, r, hr, rfl, fun _ ↦ rfl⟩
+  have hs : (e.natAbs : ℤ) = -e := by omega
+  obtain ⟨d, t, ht, hf, hs'⟩ := exists_hirzebruch_opposite_section_basis b e r hr
+  simp only [hs]
+  let C' := hirzebruchPicardBasis d (-e) hΦ t ht
+  have h₀ : C' 0 = (C) 0 := by simp only [C', hirzebruchPicardBasis_apply_zero, hf]
+  have h₁ : C' 1 = (C) 1 + e • (C) 0 := by
+    simp only [C', hirzebruchPicardBasis_apply_one, hirzebruchPicardBasis_apply_zero, hs']
+    exact (hirzebruch_ray_classes b e hΦ r hr).1
+  refine ⟨d, t, ht, h₀, fun x ↦ ?_⟩
+  have hzero : C'.repr ((C) 0) 1 = 0 := by
+    rw [← h₀]
+    simp [Basis.repr_self]
+  have hone : C'.repr ((C) 1) 1 = 1 := by
+    have h := congrArg (fun y ↦ C'.repr y 1) h₁
+    simpa [Basis.repr_self, hzero, -hirzebruchPicardBasis_apply_zero,
+      -hirzebruchPicardBasis_apply_one] using h.symm
+  have hx := (C).sum_repr x
+  rw [Fin.sum_univ_two] at hx
+  simpa [hzero, hone, -hirzebruchPicardBasis_apply_zero, -hirzebruchPicardBasis_apply_one] using
+    congrArg (fun y ↦ C'.repr y 1) hx.symm
+
+include hr in
 open Classical in
 /-- In a Hirzebruch marking based at a selected toric corner, the section coefficient
 of every Picard class is preserved. If the chosen section changes, the fiber coefficient

@@ -33,6 +33,8 @@ public section
 
 open AlgebraicGeometry CategoryTheory Module
 open TauCeti.AlgebraicGeometry TauCeti.Toric LineBundleClass Scheme.IdealSheafData
+open Fan.LogarithmicProjection
+open scoped Sarkisov
 
 namespace QPainleve.BlowupTower.IsClosedPointTower
 
@@ -101,7 +103,7 @@ private theorem exists_quadric_tower_of_resolved_preparation
 than half the Hirzebruch fiber degree to the same binomial point of the quadric,
 with equal order and equal fiber degree. The prepared point tower resolves the
 prescribed rational change of target on the same nodal refinement as the
-intermediate toric links. Its pole ideal is the pulled-back reduced total
+resolved Sarkisov path. Its pole ideal is the pulled-back reduced total
 boundary. The line bundle can in particular be the pullback of the plane
 hyperplane bundle along a specified resolving morphism. -/
 theorem exists_prepared_quadric_resolution_of_high_fiber_center
@@ -154,6 +156,15 @@ theorem exists_prepared_quadric_resolution_of_high_fiber_center
             Γ.IsRegular →
             (Γ.boundaryIdeal inferInstance).comap (q ≫ π[A]) =
               (D.comap R.toBase).radical * ramificationIdealSheaf ℂ (q ≫ π[A])) ∧
+        (letI : W.Over S := ⟨R.toBase ≫ s(Y)⟩
+         letI : SmoothOfRelativeDimension 2 s(W) :=
+           hR.isClosedPointTower.smoothOfRelativeDimension s(Y)
+         ∃ (A B : Fan.LogarithmicProjection i (D.comap R.toBase).radical)
+           (p : SarkisovPath A B),
+           A.fan = Φ ∧ A.hom ≍ R.toBase ≫ T.toBase ∧
+           B.fan = Δ ∧ B.hom ≍ e.hom ≫ U.toBase ∧
+           p.length = 2 * a ∧
+             p.rationalMap = (A.fan.denseTorusPartialIso B.fan).toRationalMap) ∧
         letI : Z.Over S := ⟨U.toBase ≫ s[Δ]⟩
         letI : U.toBase.IsOver S := ⟨rfl⟩
         letI : Smooth s(Z) := (hU.smoothOfRelativeDimension s[Δ]).smooth
@@ -187,7 +198,7 @@ theorem exists_prepared_quadric_resolution_of_high_fiber_center
     rw [← r.surjective.range_comp, Function.comp_def, hr]
     simp [Fin.range_fin_succ]
   -- Keep the single nodal refinement that resolves all the toric stages.
-  obtain ⟨P, m, W, R, q, hW, hq, hdom, hR, hproj, hreg⟩ :=
+  obtain ⟨P, m, W, R, q, hW, hq, hdom, hR, hproj, hreg, hpath⟩ :=
     Φ.exists_nodal_resolution_of_hirzebruch_quadric_preparation b a hΦ hc hrays
       (IsModification.birationalOver T.toBase) hD ω hTotal hRam hdiv
   let Δ := P.model 0
@@ -222,8 +233,8 @@ theorem exists_prepared_quadric_resolution_of_high_fiber_center
     rw [← Category.assoc, he]
     exact hfOver
   refine ⟨P, m, W, R, hR, q, hW, hq, hdom, u, hu, inferInstance, l, Z, U, hU, e, j',
-    hproj, he.symm, heOver, hreg, ?_, hj', hfirst', hclass, hdegree.symm, horder.symm,
-    hdegree.symm ▸ horder.symm ▸ hhigh⟩
+    hproj, he.symm, heOver, hreg, by simpa only [he] using hpath, ?_, hj', hfirst', hclass,
+    hdegree.symm, horder.symm, hdegree.symm ▸ horder.symm ▸ hhigh⟩
   -- Transport the pole factorization to the endpoint of the closed-point tower.
   let : W.Over S := ⟨R.toBase ≫ s(Y)⟩
   let : Z.Over S := ⟨U.toBase ≫ s[Δ]⟩
