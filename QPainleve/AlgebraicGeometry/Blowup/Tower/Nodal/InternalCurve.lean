@@ -13,7 +13,7 @@ public import QPainleve.AlgebraicGeometry.Blowup.Tower.Projective
 public import QPainleve.AlgebraicGeometry.Chow.CurveCone
 
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Modification
-import QPainleve.AlgebraicGeometry.Chow.Nef.Anticanonical
+import QPainleve.AlgebraicGeometry.Chow.NegativeCurve
 import QPainleve.AlgebraicGeometry.EffectiveCartierDivisor.ClosedImmersion
 import QPainleve.AlgebraicGeometry.Morphisms.ClosedImmersion.IsoLocus
 import QPainleve.AlgebraicGeometry.Morphisms.Pullback.IsoLocus

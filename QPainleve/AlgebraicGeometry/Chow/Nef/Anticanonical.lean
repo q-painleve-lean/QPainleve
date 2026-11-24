@@ -12,9 +12,6 @@ import QPainleve.AlgebraicGeometry.Chow.NegativeCurve
 import QPainleve.AlgebraicGeometry.Chow.Nef.NumericalExceptional
 import QPainleve.AlgebraicGeometry.Chow.Nef.PositiveCone
 import QPainleve.AlgebraicGeometry.Chow.RationalSurface.PositiveCone
-import QPainleve.AlgebraicGeometry.IntersectionNumber.ExceptionalCurve.Numerical
-import QPainleve.AlgebraicGeometry.IdealSheaf.ClosedImmersion
-import QPainleve.AlgebraicGeometry.Scheme.LocalDimension
 import TauCeti.Topology.Algebra.Module.ModuleTopology
 
 /-!
@@ -54,89 +51,6 @@ variable [rational : Scheme.IsRationalOver (X ↘ Spec (.of k))] {D : X.IdealShe
   (hD : D.IsEffectiveCartier)
   (hcan : LineBundleClass.mk hD.toInvertibleSheaf =
     LineBundleClass.mk (QPainleve.canonicalBundle k X 2))
-
-include rational hD hcan in
-private theorem negativePrimeDivisorClass_cases [IsIntegral X] (p : CodimensionOnePoint X)
-    (hp : B(X) (c p) (c p) < 0) (hdis : (p : X) ∉ D.support) :
-    (B(X) (c p) (c p) = -1 ∧ B(X) (c p) (ι K(X)) = -1) ∨
-      (B(X) (c p) (c p) = -2 ∧ Disjoint
-        ((vanishingIdeal ⟨closure {(p : X)}, isClosed_closure⟩).support : Set X) D.support) := by
-  let I := vanishingIdeal (Closeds.mk (closure {(p : X)}) isClosed_closure)
-  have hX := topologicalKrullDim_eq_of_smoothOfRelativeDimension (X ↘ Spec (.of k)) (n := 2)
-  have : IsProper (I.subscheme ↘ Spec (.of k)) := by
-    rw [← comp_over I.subschemeι]
-    infer_instance
-  have : I.subscheme.IsCurveOver k := Scheme.isCurveOver_iff.mpr
-    ⟨inferInstance, inferInstance, QPainleve.topologicalKrullDim_vanishingIdeal_subscheme k hX p⟩
-  have : IsLocallyNoetherian X := LocallyOfFiniteType.isLocallyNoetherian (X ↘ Spec (.of k))
-  let : ∀ x : X, UniqueFactorizationMonoid (X.presheaf.stalk x) :=
-    (X ↘ Spec (.of k)).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two
-  have hI : I.IsEffectiveCartier := isEffectiveCartier_vanishingIdeal_closure_singleton p.property
-  let a := (LineBundleClass.mk hI.toInvertibleSheaf)⁻¹
-  have hp' : c p = ι a := by
-    rw [realPrimeDivisorClass_def, primeDivisorClass_def]
-  have hneg : b(X) a a < 0 := by
-    rw [hp', realIntersectionBilinForm_tmul, one_mul, one_mul, toMul_ofMul, Int.cast_lt_zero] at hp
-    exact hp
-  have hoff : I.subschemeι (genericPoint I.subscheme) ∉ D.support := by
-    simpa only [I, subschemeι_genericPoint_vanishingIdeal_closure_singleton] using hdis
-  rcases (hI.classIntersectionNumber_self_neg_iff_of_anticanonical hD hcan hoff).mp hneg with
-    ⟨he, hd⟩ | ⟨_, hsq, hdisjoint⟩
-  · have hsq := ((hI.isExceptionalCurveOfFirstKind_iff_genus_eq_zero_and_classIntersectionNumber
-      (k := k) hX.le).mp he).2
-    have hc := (intersectionBilinForm k X (Additive.ofMul a)).map_neg (Additive.ofMul K(X))
-    have hd' : b(X) a K(X) = -1 := by
-      simp only [intersectionBilinForm_apply, toMul_neg, toMul_ofMul] at hc
-      rw [hcan, classIntersectionNumber_comm] at hd
-      have hdeg : b(X) a K(X)⁻¹ = 1 := hd
-      exact neg_eq_iff_eq_neg.mp (hdeg.symm.trans hc).symm
-    have hsq' : b(X) a a = -1 := hsq
-    left
-    simp [hp', hsq', hd']
-  · have hsq' : b(X) a a = -2 := hsq
-    exact Or.inr ⟨by simp [hp', hsq'], hdisjoint⟩
-
-include rational hD hcan in
-/-- An anticanonical pair has a prime class of square `-2` off the boundary precisely
-when it has an integral closed curve of square `-2` disjoint from the boundary. -/
-theorem exists_realPrimeDivisorClass_self_eq_neg_two_iff [IsIntegral X] :
-    (∃ p : CodimensionOnePoint X, (p : X) ∉ D.support ∧ B(X) (c p) (c p) = -2) ↔
-      ∃ (C : Scheme.{u}) (i : C ⟶ X) (_ : IsClosedImmersion i) (_ : IsIntegral C)
-        (hi : i.ker.IsEffectiveCartier),
-        topologicalKrullDim C = 1 ∧ Disjoint (Set.range i) D.support ∧
-          b(X) (mk hi.toInvertibleSheaf)⁻¹ (mk hi.toInvertibleSheaf)⁻¹ = -2 := by
-  have : IsLocallyNoetherian X := LocallyOfFiniteType.isLocallyNoetherian (X ↘ Spec (.of k))
-  have := (X ↘ Spec (.of k)).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two
-  have hX := topologicalKrullDim_eq_of_smoothOfRelativeDimension (X ↘ Spec (.of k)) (n := 2)
-  have hreal (p : CodimensionOnePoint X) :
-      B(X) (c p) (c p) = (b(X) (primeDivisorClass p) (primeDivisorClass p) : ℝ) := by
-    rw [realPrimeDivisorClass_def k p, realIntersectionBilinForm_tmul, one_mul, one_mul,
-      toMul_ofMul]
-  constructor
-  · rintro ⟨p, hp, hsq⟩
-    let I := vanishingIdeal (Closeds.mk (closure {(p : X)}) isClosed_closure)
-    have hI : I.IsEffectiveCartier := isEffectiveCartier_vanishingIdeal_closure_singleton p.property
-    have hneg : B(X) (c p) (c p) < 0 := by rw [hsq]; norm_num
-    obtain hE | ⟨_, hdis⟩ := negativePrimeDivisorClass_cases k hD hcan p hneg hp
-    · linarith [hE.1]
-    · have hi : I.subschemeι.ker.IsEffectiveCartier := (ker_subschemeι I).symm ▸ hI
-      refine ⟨I.subscheme, I.subschemeι, inferInstance, inferInstance, hi,
-        QPainleve.topologicalKrullDim_vanishingIdeal_subscheme k hX p,
-        I.range_subschemeι.symm ▸ hdis, ?_⟩
-      rw [mk_toInvertibleSheaf_congr hi hI (ker_subschemeι I)]
-      rw [hreal, primeDivisorClass_def] at hsq
-      exact_mod_cast hsq
-  · rintro ⟨C, i, hi, _, hI, hdim, hdis, hsq⟩
-    let : C.Over (Spec (.of k)) := ⟨i ≫ X ↘ Spec (.of k)⟩
-    let : i.IsOver (Spec (.of k)) := ⟨rfl⟩
-    let p : CodimensionOnePoint X :=
-      ⟨i (genericPoint C), i.coheight_apply_genericPoint_eq_one_of_dim_eq_two k hX hdim⟩
-    have hp : (p : X) ∉ D.support :=
-      fun hp ↦ Set.disjoint_left.mp hdis (Set.mem_range_self (genericPoint C)) hp
-    refine ⟨p, hp, ?_⟩
-    rw [hreal, primeDivisorClass_def,
-      ← mk_toInvertibleSheaf_congr hI _ i.ker_eq_vanishingIdeal_closure_genericPoint, hsq]
-    norm_num
 
 variable [TopologicalSpace V(X)] [IsModuleTopology ℝ V(X)]
 
