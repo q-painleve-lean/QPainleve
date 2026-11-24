@@ -171,15 +171,8 @@ theorem exists_cyclicConeNumbering (b : Module.Basis (Fin 2) ℤ N)
     ⟨σ j, Φ.card_toricRay_eq_two_of_ray_ne_of_le hΦ hdim (hne j) (h₀ j) (h₁ j)⟩
   have hs (j : ZMod n) :
       ∀ ρ : Φ.Ray, ρ.toCone ≤ σ j → ρ = u j ∨ ρ = u (j + 1) := by
-    intro ρ hρ
-    let e := Φ.rayEquiv (σ j)
-    have hr : e ⟨ρ, hρ⟩ ∈ ({e ⟨u j, h₀ j⟩, e ⟨u (j + 1), h₁ j⟩} : Set _) := by
-      simp only [e, rayEquiv_apply]
-      rw [Φ.toricRays_eq_pair ((isRegular_iff.mp hΦ) _ (σ j).property) hdim
-        (hne j) (h₀ j) (h₁ j)]
-      exact Set.mem_univ _
-    simpa only [Set.mem_insert_iff, Set.mem_singleton_iff, e.injective.eq_iff,
-      Subtype.mk.injEq] using hr
+    exact fun _ ↦ ray_eq_or_eq_of_le ((isRegular_iff.mp hΦ) _ (σ j).property)
+      hdim (hne j) (h₀ j) (h₁ j)
   refine ⟨Equiv.ofBijective c ⟨?_, ?_⟩, fun j ↦ ⟨h₀ j, h₁ j⟩⟩
   · intro j k h
     have he : σ j = σ k := congrArg Subtype.val h
