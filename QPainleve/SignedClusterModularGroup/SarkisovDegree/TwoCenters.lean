@@ -5,13 +5,16 @@ Authors: The QPainleve contributors
 -/
 module
 
+public import QPainleve.AlgebraicGeometry.Blowup.Tower.Ramification
 public import QPainleve.SignedClusterModularGroup.SarkisovDegree.OppositeSection
 public import QPainleve.SignedClusterModularGroup.SarkisovDegree.Quadric
 
 import QPainleve.Geometry.Toric.Fan.Mutation.Center
+import QPainleve.Geometry.Toric.Fan.Mutation.Logarithmic
 import QPainleve.SignedClusterModularGroup.SarkisovDegree.QuadricFiber
 import QPainleve.SignedClusterModularGroup.SarkisovDegree.Decrease
 import TauCeti.Data.Fin.Basic
+import QPainleve.AlgebraicGeometry.Modules.Differentials.PoleIdeal
 import QPainleve.AlgebraicGeometry.RationalMap.Composition.Basic
 
 /-!
@@ -33,6 +36,7 @@ public noncomputable section
 
 open AlgebraicGeometry CategoryTheory Module PointedCone TauCeti.Toric
 open TauCeti.AlgebraicGeometry LineBundleClass TauCeti.SymmetricAlgebra
+open Scheme.IdealSheafData
 
 namespace QPainleve.BlowupTower.IsClosedPointTower
 
@@ -64,6 +68,7 @@ local notation "fP" => (P ↘ S)
 local notation "C" => Fan.hirzebruchPicardBasis b 0 hΦ r hr
 local notation "C'" => Fan.hirzebruchPicardBasis b 1 hΨ s hs
 local notation "rankTwo" => Eq.trans (finrank_eq_card_basis b) (Fintype.card_fin 2)
+local notation "B[" Δ "," hcΔ "]" => Fan.boundaryIdeal Δ (Fan.IsComplete.nonempty_cones hcΔ)
 local notation "center[" u "," c "]" =>
   (Fan.Ray.binomialCenter u rankTwo (b.detDualEquiv_self (Fan.Ray.primitiveGenerator u))
     (Fan.Ray.surjective_detCharacter u b) c)
@@ -297,7 +302,9 @@ local notation "τ[" a "," ht "]" =>
 /-- The two smooth high-order centers on opposite sections of a quadric give a
 degree-decreasing block on the original resolving surface. The input quadric is
 written in the frame of the exchanged ruling. The projections after each
-mutation and after the final ruling exchange are regular on that surface.
+mutation and after the final ruling exchange are regular on that surface and
+have the same pole ideal as the original projection, when it has a pole
+factorization. The returned quadric tower carries the transported pole ideal.
 
 If the original fiber and section coordinates are `(β, α)` in this frame and
 the two base orders are `m₁, m₂`, the final coordinates after exchanging the
@@ -343,7 +350,7 @@ theorem exists_quadric_resolution_of_two_smooth_high_centers
       let q := V₀.transport (asIso τ[a,ht])
       let hQ := q.isLift.isClosedPointTower hV
       let p₁ := e.hom ≫ U.toBase
-      let p₂ := (e ≪≫ k).hom ≫ V₀.toBase
+      let p₂ := e.hom ≫ k.hom ≫ V₀.toBase
       let p₃ := (e ≪≫ k ≪≫ q.iso).hom ≫ q.tower.toBase
       let g' := (e ≪≫ k ≪≫ q.iso).inv ≫ g
       let : IsModification U.toBase := hU.isModification_of_smoothOfRelativeDimension_two fX'
@@ -353,6 +360,21 @@ theorem exists_quadric_resolution_of_two_smooth_high_centers
       p₃ = p₂ ≫ τ[a,ht] ∧
       g' ≫ fP = q.tower.toBase ≫ fX'' ∧
       Scheme.BirationalOver g' (𝟙 P) ∧
+      (letI : Y.Over S := ⟨T.toBase ≫ fX⟩
+       letI : T.toBase.IsOver S := ⟨rfl⟩
+       letI : SmoothOfRelativeDimension 2 (Y ↘ S) := hT.smoothOfRelativeDimension fX
+       letI : Smooth (Y ↘ S) := SmoothOfRelativeDimension.smooth 2 _
+       ∀ D : Y.IdealSheafData,
+         ∃ (hp₁ : p₁.IsOver S) (hp₂ : p₂.IsOver S) (hp₃ : p₃.IsOver S),
+           letI := hp₁
+           letI := hp₂
+           letI := hp₃
+           B[Φ,hc].comap T.toBase = D * ramificationIdealSheaf ℂ T.toBase →
+             B[Ψ,hcΨ].comap p₁ = D * ramificationIdealSheaf ℂ p₁ ∧
+             B[Ω,hcΩ].comap p₂ = D * ramificationIdealSheaf ℂ p₂ ∧
+             B[Ω,hcΩ].comap p₃ = D * ramificationIdealSheaf ℂ p₃ ∧
+             B[Ω,hcΩ].comap q.tower.toBase =
+               D.comap (e ≪≫ k ≪≫ q.iso).inv * hQ.ramificationIdealSheafToBase ℂ) ∧
       let y := (q.tower.picardMarking hQ fX'').symm (Additive.ofMul (pullback g' H))
       let C'' := Fan.hirzebruchPicardBasis a 0 hΩ t ht
       C''.repr y.1 0 = α ∧
@@ -424,7 +446,43 @@ theorem exists_quadric_resolution_of_two_smooth_high_centers
     Scheme.BirationalOver.trans (sY := g)
       ⟨.ofIso (e ≪≫ k ≪≫ q.iso).symm,
         by simp [g', Scheme.PartialIso.IsOver, Scheme.PartialIso.ofIso]⟩ hbir
-  refine ⟨hmap, hcomp, hthird, hg', hbir', ?_⟩
+  refine ⟨hmap, hcomp, hthird, hg', hbir', ?_, ?_⟩
+  -- Carry the pole factorization through both mutations and the ruling exchange.
+  · intro D
+    let : Y.Over S := ⟨T.toBase ≫ fX⟩
+    let : T.toBase.IsOver S := ⟨rfl⟩
+    let : SmoothOfRelativeDimension 2 (Y ↘ S) := hT.smoothOfRelativeDimension fX
+    let : Smooth (Y ↘ S) := SmoothOfRelativeDimension.smooth 2 _
+    obtain ⟨hp₁, hpole₁⟩ := (r 0).mutation_resolution_poleIdeal_iff b hop c hT hΦ hc p₁ D hmap
+    let : p₁.IsOver S := hp₁
+    have he : e.hom ≫ U.toBase ≫ fX' = Y ↘ S :=
+      (Category.assoc _ _ _).symm.trans (comp_over p₁ S)
+    obtain ⟨hp₂, hpole₂⟩ := (s 2).mutation_resolution_poleIdeal_iff_of_iso
+      b hwOpp d hΨ hcΨ hU e he (k.hom ≫ V₀.toBase) D hnext
+    let : p₂.IsOver S := hp₂
+    let : p₃.IsOver S := ⟨hthird ▸ comp_over (p₂ ≫ τ[a,ht]) S⟩
+    refine ⟨hp₁, hp₂, ‹_›, fun hpole ↦ ?_⟩
+    have h₁ := hpole₁.mp (by simpa only [hT.ramificationIdealSheafToBase_def ℂ] using hpole)
+    have h₂ := hpole₂.mp h₁
+    let : Smooth fX'' := hdim''.smooth
+    have hτ : B[Ω,hcΩ].comap τ[a,ht] = B[Ω,hcΩ] * ramificationIdealSheaf ℂ τ[a,ht] := by
+      rw [ramificationIdealSheaf_eq_top_of_isOpenImmersion ℂ (τ[a,ht]), mul_top]
+      exact (Fan.quadricRulingExchange a hΩ hcΩ t ht).comap_boundaryIdeal_algebraicMap _ _
+    have hram : ramificationIdealSheaf ℂ p₃ = ramificationIdealSheaf ℂ (p₂ ≫ τ[a,ht]) :=
+      ramificationIdealSheaf_congr ℂ hthird
+    have h₃ : B[Ω,hcΩ].comap p₃ = D * ramificationIdealSheaf ℂ p₃ := by
+      rw [hram]
+      exact (congrArg (Scheme.IdealSheafData.comap B[Ω,hcΩ]) hthird).trans
+        (comap_eq_mul_ramificationIdealSheaf_comp ℂ p₂ τ[a,ht] 2 hτ h₂)
+    refine ⟨h₁, h₂, h₃, ?_⟩
+    -- The next block uses the pole ideal on the top of the returned point tower.
+    let k₂ := e ≪≫ k ≪≫ q.iso
+    let : q.top.Over S := ⟨q.tower.toBase ≫ fX''⟩
+    let : q.tower.toBase.IsOver S := ⟨rfl⟩
+    let : SmoothOfRelativeDimension 2 (q.top ↘ S) := hQ.smoothOfRelativeDimension fX''
+    let : k₂.hom.IsOver S := ⟨(Category.assoc _ _ _).symm.trans (comp_over p₃ S)⟩
+    simpa only [IsIso.inv_eq_of_hom_inv_id k₂.hom_inv_id, hQ.ramificationIdealSheafToBase_def ℂ]
+      using (comap_eq_mul_ramificationIdealSheaf_comp_iff_of_isIso ℂ k₂.hom q.tower.toBase 2).mp h₃
   -- Read the marked line class through both links in the order of the retained centers.
   intro y C''
   have h₂ := hcoord (pullback (e.inv ≫ g) H)
