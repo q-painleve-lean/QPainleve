@@ -36,6 +36,14 @@ theorem rayBoundaryOrders_apply (ρ : Φ.Ray) (j : ι) :
     rayBoundaryOrders b s ρ j = b.det ![(s j).primitiveGenerator, ρ.primitiveGenerator] :=
   (rfl)
 
+/-- Reversing the lattice orientation negates the boundary orders of the determinant characters. -/
+@[simp]
+theorem rayBoundaryOrders_reindex_swap (ρ : Φ.Ray) :
+    rayBoundaryOrders (b.reindex (Equiv.swap 0 1)) s ρ = -rayBoundaryOrders b s ρ := by
+  funext j
+  simp only [Pi.neg_apply, rayBoundaryOrders_apply, ← Basis.detDualEquiv_apply,
+    Basis.detDualEquiv_reindex_swap, LinearMap.neg_apply]
+
 /-- The determinant formula computes an order entry from the two integer coordinate pairs. -/
 theorem rayBoundaryOrders_apply_eq_repr (ρ : Φ.Ray) (j : ι) :
     rayBoundaryOrders b s ρ j =

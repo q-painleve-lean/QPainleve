@@ -11,7 +11,6 @@ public import QPainleve.SignedClusterModularGroup.Boundary.Isometry
 public import QPainleve.SignedClusterModularGroup.Realization.Basic
 
 import QPainleve.AlgebraicGeometry.Curves.Node.BoundaryRestriction
-
 import QPainleve.AlgebraicGeometry.EffectiveCartierDivisor.Dimension
 import QPainleve.AlgebraicGeometry.IdealSheaf.Image.Over
 
@@ -85,6 +84,23 @@ theorem boundaryPrime_mem_boundaryPrimes (hP : D[M].IsEffectiveCartier) (j : ZMo
   rw [M.coe_boundaryPrime]
   rw [← SetLike.mem_coe, hs]
   exact Set.mem_range_self _
+
+/-- The numbering of a marked Cartier boundary as an embedding into its ambient primes. -/
+def numberedBoundaryPrimes (hM : D[M].IsEffectiveCartier) : ZMod n ↪ D[M].boundaryPrimes where
+  toFun j := ⟨M.boundaryPrime hM j, M.boundaryPrime_mem_boundaryPrimes hM j⟩
+  inj' := by
+    let : PrestableFamily (M.boundary ↘ S) := M.prestable
+    let : IsClosedImmersion M.pair.hom.left := M.closedImmersion
+    intro j l h
+    apply M.cycle.componentGenericPoint_injective
+    apply M.pair.hom.left.isClosedEmbedding.injective
+    simpa only [coe_boundaryPrime] using congrArg Subtype.val h
+
+/-- The prime at a numbered component is the ambient image of its generic point. -/
+@[simp]
+theorem numberedBoundaryPrimes_apply_val (hM : D[M].IsEffectiveCartier) (j : ZMod n) :
+    (M.numberedBoundaryPrimes hM j).val = (M.boundaryPrime hM j : M.surface) :=
+  (rfl)
 
 /-- The class of the numbered prime divisor in the fixed Picard marking. -/
 def boundaryClass (hM : M.pair.hom.left.ker.IsEffectiveCartier) (j : ZMod n) : L₀ :=
@@ -171,6 +187,21 @@ theorem imageCycle_genericPoint (j : ZMod n) :
   have h := (boundaryImageIso P).apply_componentGenericPoint P.cycle (imageCycle P) j
   rw [boundaryCycleAction_boundaryImageIso, map_one, Equiv.Perm.one_apply] at h
   rw [← h, ← Scheme.Hom.comp_apply, boundaryImageIso_hom_comp]
+
+/-- Every ambient boundary prime is the generic point of a numbered component. -/
+theorem numberedBoundaryPrimes_surjective (hP : D[P].IsEffectiveCartier) :
+    Function.Surjective (P.numberedBoundaryPrimes hP) := by
+  intro x
+  let p := D[P].boundaryPrimeEmbedding x
+  have hp : (p : P.surface) ∈ D[P].support := by
+    simpa only [p, coe_boundaryPrimeEmbedding] using (mem_boundaryPrimes.mp x.property).1
+  obtain ⟨v, hv⟩ := hP.exists_subschemeι_blowupComponentGeneric_eq (k := k) hp
+  obtain ⟨j, hj⟩ := (P.imageCycle).component.surjective v
+  let : PrestableFamily (P.boundary ↘ S) := P.prestable
+  refine ⟨j, Subtype.ext ?_⟩
+  rw [← hj, ← NodalCycleNumbering.componentGenericPoint_def, P.imageCycle_genericPoint] at hv
+  simpa only [numberedBoundaryPrimes_apply_val, coe_boundaryPrime, p, coe_boundaryPrimeEmbedding]
+    using hv
 
 variable {P} {Q : MarkedSurface k n B₁ X₁}
 

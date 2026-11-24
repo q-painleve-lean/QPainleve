@@ -6,7 +6,7 @@ Authors: The QPainleve contributors
 module
 
 public import QPainleve.AlgebraicGeometry.Blowup.Tower.Boundary.Picard
-public import QPainleve.AlgebraicGeometry.Blowup.Tower.StrictTransform
+public import QPainleve.AlgebraicGeometry.Blowup.Tower.StrictTransform.Basic
 public import QPainleve.AlgebraicGeometry.IntersectionNumber.Nef
 import QPainleve.AlgebraicGeometry.IntersectionNumber.ClosedPoint
 import TauCeti.AlgebraicGeometry.Curves.Normalization

@@ -150,7 +150,7 @@ theorem exists_quadric_resolution_of_hirzebruchOne_mutation
   obtain ⟨d, hd₀, hd₁, hs⟩ :=
     (r 2).mutationFan_hirzebruch_ray_generators b hop 1 r hr false rfl
   simp only [Bool.false_eq_true, ↓reduceIte, sub_self] at hd₁ hs
-  obtain ⟨Z, U, e, hU, hover, hmap, hcoords⟩ :=
+  obtain ⟨Z, U, e, hU, hover, hmap, _, _, hcoords⟩ :=
     (r 2).exists_sarkisov_decrease_of_smooth_section_center b hop c hΦ hT j hj hfirst
   refine ⟨d, hs, Z, U, hU, e, ?_⟩
   intro q hQ

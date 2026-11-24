@@ -529,3 +529,115 @@ theorem pullback_picardBoundaryOrthogonalEquivChargeKernel_symm
   exact hinj hclass
 
 end TauCeti.Toric.Fan
+
+namespace TauCeti.Toric.Fan
+
+variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
+  {i : N →+ V} {Φ : Fan i} [Nonempty Φ.cones] {n : ℕ}
+  (hΦ : Φ.IsRegular) (b : Module.Basis (Fin 2) ℤ N) (s : Fin n → Φ.Ray)
+
+local notation "S" => Spec (CommRingCat.of ℂ)
+local notation "ChargeKernel" => LinearMap.ker (rayChargeMap s)
+local notation "rankTwo" => (Eq.trans (Module.finrank_eq_card_basis b) (Fintype.card_fin 2))
+local notation "m" =>
+  (fun j ↦ LinearMap.toAddMonoidHom (Module.Basis.detDualEquiv b (Ray.primitiveGenerator (s j))))
+local notation "hm" => (fun j ↦ Module.Basis.detDualEquiv_self b (Ray.primitiveGenerator (s j)))
+local notation "hprim" => (fun j ↦ Ray.surjective_detCharacter (s j) b)
+local notation "J[" c "]" => (fun j ↦ Ray.internalCenter b (s j) (c j))
+local notation "hJ[" c "]" => (fun j ↦ Ray.internalCenter_val b (s j) (c j))
+
+/-- Transport the structural map and boundary support across an equality of tower presentations. -/
+theorem transport_boundaryPresentation {X Y : Scheme} [X.Over S] {D : X.IdealSheafData}
+    {length : ℕ} {P : QPainleve.BlowupTower X length Y}
+    {U W : Σ Z, WithBoundary (Φ.boundaryIdeal inferInstance).subschemeι n Z}
+    (h : U = W) (e : Y ≅ W.1)
+    (he : e.inv ≫ P.toBase ≫ (X ↘ S) = W.2.toTower.toBase ≫ (Φ.algebraicRealization ↘ S))
+    (hD : ((D.comap P.toBase).comap e.inv).support = W.2.boundaryι.ker.support) :
+    let a := e ≪≫ eqToIso (congrArg Sigma.fst h).symm
+    a.inv ≫ P.toBase ≫ (X ↘ S) = U.2.toTower.toBase ≫ Φ.algebraicRealizationStructureMap ∧
+      ((D.comap P.toBase).comap a.inv).support = U.2.boundaryι.ker.support := by
+  subst W
+  simpa only [eqToIso_refl, Iso.trans_refl, ← algebraicRealization_over] using
+    And.intro he hD
+
+variable [Φ.algebraicRealization.IsProjectiveOver ℂ]
+
+variable {c : Fin n → ℂˣ}
+  {X Y : Scheme} [X.Over S] [X.IsProjectiveOver ℂ] [IsIntegral X]
+  [SmoothOfRelativeDimension 2 (X ↘ S)]
+  [LinearMap.IsPerfPair (Chow.intersectionBilinForm ℂ X)]
+  {D : X.IdealSheafData} {d : ℕ} {T : QPainleve.BlowupTower X d Y}
+  (hT : IsNodalBoundaryTower D (X ↘ S) (𝟙 X) T)
+  (e : Y ≅ (alongBoundary (Φ.boundaryIdeal inferInstance).subschemeι
+      (fun j ↦ (s j).internalCenter b (c j))).1)
+  (he : e.inv ≫ T.toBase ≫ (X ↘ S) =
+    (alongBoundary (Φ.boundaryIdeal inferInstance).subschemeι
+      (fun j ↦ (s j).internalCenter b (c j))).2.toTower.toBase ≫ (Φ.algebraicRealization ↘ S))
+  (hD : ((D.comap T.toBase).comap e.inv).support =
+    (alongBoundary (Φ.boundaryIdeal inferInstance).subschemeι
+      (fun j ↦ (s j).internalCenter b (c j))).2.boundaryι.ker.support)
+
+local notation "charge" =>
+  picardBoundaryOrthogonalEquivChargeKernel hΦ rankTwo s m hm hprim c (J[c]) (hJ[c]) hT e he hD
+
+/-- The charge coordinates identify the boundary-orthogonal classes on the contracted
+surface with the kernel of the charge map of its ordered toric presentation. -/
+def markedBoundaryChargeEquiv : D.boundaryOrthogonal ℂ ≃ₗ[ℤ] ChargeKernel :=
+  ((charge).symm.trans (LinearEquiv.ofEq _ _ (D.boundaryOrthogonal_def ℂ).symm)).symm
+
+/-- The inverse charge coordinates give the same underlying Picard class as the
+inverse of the span-based comparison. -/
+@[simp]
+theorem coe_markedBoundaryChargeEquiv_symm (x : ChargeKernel) :
+    ((markedBoundaryChargeEquiv hΦ b s hT e he hD).symm x).val = ((charge).symm x).val := by
+  simp only [markedBoundaryChargeEquiv, LinearEquiv.symm_symm, LinearEquiv.trans_apply,
+    LinearEquiv.coe_ofEq_apply]
+
+section InternalBlowup
+
+variable {a : Y ≅ (internalBlowupTower b s c).1}
+  (ha : a.inv ≫ T.toBase ≫ (X ↘ S) =
+    (internalBlowupTower b s c).2.toTower.toBase ≫ (Φ.algebraicRealization ↘ S))
+  (hb : ((D.comap T.toBase).comap a.inv).support =
+    (internalBlowupTower b s c).2.boundaryι.ker.support)
+
+local notation "M" => alongBoundary (subschemeι (Fan.boundaryIdeal Φ inferInstance)) (J[c])
+
+/-- The total exceptional coefficients of a pulled-back boundary-orthogonal class
+are the negatives of its charge coordinates. -/
+theorem internalBlowupPicardMarking_symm_pullback_snd_eq_neg_charge
+    (κ : D.boundaryOrthogonal ℂ) :
+    let h := internalBlowupTower_eq_alongBoundary b s c
+    let a' := a ≪≫ eqToIso (congrArg Sigma.fst h)
+    let hp := transport_boundaryPresentation h.symm a ha hb
+    ((internalBlowupPicardMarking b s c hΦ).symm
+        (Additive.ofMul (pullback (a.inv ≫ T.toBase) κ.val.toMul))).2 =
+      -(markedBoundaryChargeEquiv hΦ b s hT a' hp.1 hp.2 κ : Fin n → ℤ) := by
+  suffices coords : ∀ (U : Σ Z, WithBoundary (Φ.boundaryIdeal inferInstance).subschemeι n Z)
+      (h : U = M) (a : Y ≅ U.1)
+      (ha : a.inv ≫ T.toBase ≫ (X ↘ S) = U.2.toTower.toBase ≫ (Φ.algebraicRealization ↘ S))
+      (hb : ((D.comap T.toBase).comap a.inv).support = U.2.boundaryι.ker.support)
+      (z : Additive (LineBundleClass Φ.algebraicRealization) × (Fin n → ℤ))
+      (hz : U.2.toTower.picardHom z = Additive.ofMul (pullback (a.inv ≫ T.toBase) κ.val.toMul)),
+      let a' := a ≪≫ eqToIso (congrArg Sigma.fst h)
+      let hp := transport_boundaryPresentation h.symm a ha hb
+      z.2 = -(markedBoundaryChargeEquiv hΦ b s hT a' hp.1 hp.2 κ : Fin n → ℤ) by
+    apply coords _ (internalBlowupTower_eq_alongBoundary b s c) a ha hb
+    rw [← internalBlowupPicardMarking_apply b s c hΦ, LinearEquiv.apply_symm_apply]
+  intro U h a ha hb z hz
+  subst U
+  simp only [eqToIso_refl, Iso.trans_refl]
+  let χ := markedBoundaryChargeEquiv hΦ b s hT a ha hb
+  obtain ⟨H, hH, -⟩ := exists_picardBoundaryOrthogonalEquivChargeKernel_symm_marking
+    hΦ rankTwo s m hm hprim c (J[c]) (hJ[c]) hT a ha hb (χ κ)
+  rw [← coe_markedBoundaryChargeEquiv_symm hΦ b s hT a ha hb, LinearEquiv.symm_apply_apply] at hH
+  let f := Φ.algebraicRealization ↘ S
+  let : SmoothOfRelativeDimension 2 f :=
+    rankTwo ▸ Φ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
+  have hU := isClosedPointTower_alongBoundary_binomialCenters rankTwo s m hm hprim c (J[c]) (hJ[c])
+  exact congrArg Prod.snd ((hU.bijective_picardHom f).injective
+    (hz.trans (congrArg Additive.ofMul hH.symm)))
+
+end InternalBlowup
+
+end TauCeti.Toric.Fan

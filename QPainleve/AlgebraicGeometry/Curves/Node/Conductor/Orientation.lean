@@ -77,15 +77,12 @@ theorem fixes_components_of_boundaryCycleAction_eq_one
     [d.hom.IsOver (Spec (.of k))] (numbering : Scheme.NodalCycleNumbering marks n)
     (ha : d.boundaryCycleAction numbering numbering = 1)
     (p : CodimensionOnePoint X) (hp : (p : X) ∈ D.support) : e.hom p = p := by
-  obtain ⟨v, hv⟩ := hD.exists_range_blowupComponent_comp_subschemeι (k := k) hp
+  obtain ⟨v, hv⟩ := hD.exists_subschemeι_blowupComponentGeneric_eq (k := k) hp
   obtain ⟨j, rfl⟩ := numbering.component.surjective v
-  rw [D.subscheme.range_blowupComponent_comp _ _ D.subschemeι.isClosedMap,
-    ← numbering.componentGenericPoint_def] at hv
-  have hx : D.subschemeι (numbering.componentGenericPoint j) = p.val :=
-    isGenericPoint_closure.eq (hv.symm ▸ isGenericPoint_closure)
+  rw [← numbering.componentGenericPoint_def] at hv
   have he := d.apply_componentGenericPoint numbering numbering j
   rw [ha, map_one, Equiv.Perm.one_apply] at he
-  rw [← hx, ← Scheme.Hom.comp_apply, ← hd, Scheme.Hom.comp_apply, he]
+  rw [← hv, ← Scheme.Hom.comp_apply, ← hd, Scheme.Hom.comp_apply, he]
 
 /-- An orientation-preserving automorphism fixing the ambient boundary primes acts
 as the identity on the numbered boundary cycle, including its individual branches. -/

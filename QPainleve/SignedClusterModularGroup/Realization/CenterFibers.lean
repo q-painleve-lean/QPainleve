@@ -71,7 +71,8 @@ theorem xMap_eq_of_target_evaluation_eq_on_center_fibers
       (surfaceIso (R.fiber x).iso).hom.toRationalMap.comp (P₁ (x ≫ C.domainTarget)).evaluation =
         (surfaceIso r.iso).hom.toRationalMap.comp (P₁ (x' ≫ C'.domainTarget)).evaluation) :
     F = G := by
-  apply CharacterTorus.eq_of_compOfDefined_eq_on_center_fibers k U v sY
+  refine CharacterTorus.eq_of_compOfDefined_eq_on_center_fibers k U v
+    D[k,A].X.hom sY (𝟙 _) (Category.id_comp _) ?_
   intro c hc
   let e := CharacterTorus.centerFiberIso k (N := N) U c hc
   let : IsIntegral (pullback ((πmap).hom.hom.left ∣_ U) c) := IsIntegral.of_isIso e.inv
@@ -103,7 +104,7 @@ theorem xMap_eq_of_target_evaluation_eq_on_center_fibers
       (P₁ (x ≫ C.domainTarget)).evaluation =
       (surfaceIso r.iso).hom.toRationalMap.comp (P₁ (x' ≫ C'.domainTarget)).evaluation := by
     exact heq x x' hs ⟨c, hp.symm⟩
-  simpa only [hj] using
+  simpa only [Category.comp_id, hj] using
     (R.fiber x).exists_compOfDefined_eq_of_target_evaluation_eq r j hr
 
 end QPainleve.SignedClusterModularGroup.GeometricRealization

@@ -87,6 +87,13 @@ instance : IsLocallyNoetherian M.surface := by
   let : Smooth (M.surface ↘ S) := SmoothOfRelativeDimension.smooth 2 _
   exact LocallyOfFiniteType.isLocallyNoetherian (M.surface ↘ S)
 
+/-- The smooth surface underlying a marked pair is normal. -/
+instance : IsNormalScheme M.surface := by
+  let : SmoothOfRelativeDimension 2 (M.surface ↘ S) := M.smooth
+  let : Smooth (M.surface ↘ S) := SmoothOfRelativeDimension.smooth 2 _
+  let : IsRegular M.surface := IsRegular.of_smooth (M.surface ↘ S)
+  exact IsRegular.isNormal
+
 /-- Postcompose the evaluation of a marked surface, keeping the same underlying pair
 so that its identity isomorphism can be used for the resulting realization. -/
 @[expose, simps pair evaluation]

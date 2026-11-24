@@ -6,7 +6,7 @@ Authors: The QPainleve contributors
 module
 
 public import QPainleve.AlgebraicGeometry.Blowup.Tower.MovingBaseIdeal
-public import QPainleve.AlgebraicGeometry.Blowup.Tower.StrictTransform
+public import QPainleve.AlgebraicGeometry.Blowup.Tower.StrictTransform.Basic
 public import QPainleve.AlgebraicGeometry.Chow.Birational
 public import QPainleve.AlgebraicGeometry.Chow.ProjectivePlane.Numerical
 public import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.Polynomial.SymmetricAlgebra

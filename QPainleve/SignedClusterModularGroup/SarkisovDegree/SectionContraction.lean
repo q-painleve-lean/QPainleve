@@ -62,25 +62,6 @@ section
 
 variable [Nonempty Φ.cones] [Φ.algebraicRealization.IsProjectiveOver ℂ]
 
-include hc in
-private theorem hirzebruchOne_intersection_section (L : Additive (LineBundleClass X)) :
-    let : SmoothOfRelativeDimension 2 fX :=
-      (by simpa using Module.finrank_eq_card_basis b : Module.finrank ℤ N = 2) ▸
-        Φ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
-    classIntersectionNumber ℂ X L.toMul (C 1).toMul = (C).repr L 0 - (C).repr L 1 := by
-  intro hdim
-  let := hdim
-  rw [← intersectionBilinForm_apply]
-  have hL : L = (C).repr L 0 • C 0 + (C).repr L 1 • C 1 := by
-    simpa only [Fin.sum_univ_two] using ((C).sum_repr L).symm
-  conv_lhs => rw [hL]
-  rw [map_add, LinearMap.add_apply, map_zsmul, map_zsmul, LinearMap.smul_apply,
-    LinearMap.smul_apply,
-    Fan.hirzebruchPicardBasis_intersection b 1 hΦ r _ hc 0 1,
-    Fan.hirzebruchPicardBasis_intersection b 1 hΦ r _ hc 1 1]
-  simp
-  ring
-
 omit [Nonempty Φ.cones] [Φ.algebraicRealization.IsProjectiveOver ℂ] in
 include b hc hr in
 private theorem hirzebruchOne_plane_blowup :
@@ -161,7 +142,8 @@ private theorem hirzebruchOne_section_class (e : X ≅ W)
     mk_toInvertibleSheaf_congr _ _ (Φ.rayBoundaryIdeal_def hΦ (r 0))]
 
 include hc in
-private theorem hirzebruchOne_section_coefficient (hp : IsClosed ({p} : Set P))
+private theorem hirzebruchOne_section_coefficient [SmoothOfRelativeDimension 2 fX]
+    (hp : IsClosed ({p} : Set P))
     (e : X ≅ W) (he : e.hom ≫ π ≫ fP = fX)
     (hE : (J).comap (e.hom ≫ π) = Φ.rayBoundaryIdeal hΦ (r 0))
     (L : Additive (LineBundleClass P)) (c : Fin 1 → ℤ) :
@@ -171,9 +153,9 @@ private theorem hirzebruchOne_section_coefficient (hp : IsClosed ({p} : Set P))
   let : (W).Over S := ⟨π ≫ fP⟩
   let : e.hom.IsOver S := ⟨he⟩
   have hW : (W).IsProjectiveOver ℂ := (J).isProjectiveOver_blowup_of_isNoetherianRing ℂ
-  have h := hirzebruchOne_intersection_section b hΦ hc r hr
-    (Additive.ofMul (pullback e.hom ((U₀).picardHom (L, c)).toMul))
-  dsimp only [toMul_ofMul] at h
+  have h := (Fan.hirzebruchPicardBasis_intersection_repr b 1 hΦ r hr hc
+    (Additive.ofMul (pullback e.hom ((U₀).picardHom (L, c)).toMul))).2
+  simp only [intersectionBilinForm_apply, toMul_ofMul, one_mul] at h
   rw [← hirzebruchOne_section_class b hΦ r hr e hE,
     classIntersectionNumber_pullback_of_isIso ℂ e.hom] at h
   have hpull := classIntersectionNumber_pointBlowup p ℂ hp L.toMul 1 (c 0) 1 hW

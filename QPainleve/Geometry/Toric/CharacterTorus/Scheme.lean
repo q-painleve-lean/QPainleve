@@ -14,6 +14,7 @@ public import TauCeti.Algebra.AlgebraicGroup.DiagonalizableGroup.Scheme.Points
 public import TauCeti.AlgebraicGeometry.Scheme.BaseAlgebra
 
 import QPainleve.Algebra.MonoidAlgebra.Smooth
+import TauCeti.Algebra.AlgebraicGroup.DiagonalizableGroup.Scheme.Smooth
 import TauCeti.AlgebraicGeometry.Morphisms.Smooth.RationalPoint
 
 /-!
@@ -405,6 +406,15 @@ local notation "Dmap" f => groupSchemeMap k (FGCommGrpCat.ofHom (AddMonoidHom.to
 instance isIntegral_groupScheme [Module.Free ℤ B] : IsIntegral (D B).X.left := by
   rw [groupScheme_X_left]
   infer_instance
+
+variable (k) in
+/-- The group scheme of a finite free character lattice over a field is smooth. -/
+theorem smooth_groupScheme_of_free (B : Type u) [AddCommGroup B] [IsAddFG B] [Module.Free ℤ B] :
+    Smooth (D B).X.hom := by
+  obtain ⟨p, hp⟩ := ExpChar.exists k
+  let : ExpChar k p := hp
+  exact (smooth_groupScheme_iff k p (L B)).mpr fun b hb ↦
+    pow_left_injective (expChar_ne_zero k p) (hb.trans (one_pow p).symm)
 
 variable (k) in
 /-- The fraction field of the additive character algebra identifies with the generic stalk
