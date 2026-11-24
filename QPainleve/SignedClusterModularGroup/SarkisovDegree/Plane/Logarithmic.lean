@@ -9,7 +9,6 @@ public import QPainleve.Geometry.Toric.Fan.Logarithmic.Subdivision
 public import QPainleve.SignedClusterModularGroup.SarkisovDegree.Plane.VertexBlowup
 
 import Mathlib.Analysis.Complex.Polynomial.Basic
-import QPainleve.AlgebraicGeometry.Blowup.Projective.Global
 import QPainleve.AlgebraicGeometry.Modules.Differentials.PoleIdeal
 import QPainleve.SignedClusterModularGroup.SarkisovDegree.Plane.Multiplicity
 
@@ -71,17 +70,6 @@ private theorem planeIso_isOver : (eP).hom.IsOver S := by
   simp only [Iso.trans_hom, Category.assoc, over_eq_projToSpec,
     Basis.polynomialProjIso_hom_over, Fan.projectivePlaneIso_hom_toSpecCoeff,
     Fan.algebraicRealization_over]
-
-private theorem isProjectiveOver_vertexSubdivision : (X[Φ]).IsProjectiveOver ℂ := by
-  obtain ⟨hσ, _, e, -, -, he, -, -⟩ := Fan.exists_blowup_projectivePlane_vertex_hirzebruchOne d hi a
-  let J := (Fan.distinguishedPointHom Π σ).ker
-  let : J.blowup.Over S := ⟨J.blowupToBase ≫ X[Π] ↘ S⟩
-  let := planeIso_isOver d hi
-  let : (X[Π]).IsProjectiveOver ℂ := Scheme.IsProjectiveOver.of_isClosedImmersion ℂ (eP).hom
-  let : J.blowup.IsProjectiveOver ℂ := J.isProjectiveOver_blowup_of_isNoetherianRing ℂ
-  let : e.hom.IsOver S :=
-    ⟨((reassoc_of% he) (X[Π] ↘ S)).trans (comp_over π[hσ] S)⟩
-  exact Scheme.IsProjectiveOver.of_isClosedImmersion ℂ e.hom
 
 private theorem poleIdeal_of_vertex_projection {Y : Scheme} [IsIntegral Y] [Y.Over S]
     [SmoothOfRelativeDimension 2 (Y ↘ S)] (hσ : (σ).val ≠ ⊥)
@@ -218,7 +206,8 @@ theorem exists_sarkisov_decrease_of_logarithmic_plane_vertex
       (htransport.trans (congrArg (D.comap k.inv * ·) (ramificationIdealSheaf_congr ℂ he)))
   obtain ⟨hδ, -, -⟩ := hT.plane_degree_eq_one_or_exists_high_baseCenter g hg hbir
   obtain ⟨h₁, h₂, h₃, hlt⟩ := hcoords
-  exact ⟨hσ, b, r, hr, Z, U, hU, k, hqOver, isProjectiveOver_vertexSubdivision d hi a,
+  exact ⟨hσ, b, r, hr, Z, U, hU, k, hqOver,
+    Fan.isProjectiveOver_projectivePlane_vertex_starSubdivision d hi a,
     hq, hrat, hqPole, hUPole, hg', hbir', h₁, h₂, h₃, hlt hδ hhigh⟩
 
 end QPainleve.BlowupTower.IsClosedPointTower

@@ -7,8 +7,10 @@ module
 
 public import QPainleve.Geometry.Toric.Fan.ProjectiveSpace.Boundary
 public import QPainleve.Geometry.Toric.Fan.StarSubdivision.Boundary
+public import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.ProjectiveOver
 
 import QPainleve.AlgebraicGeometry.Blowup.Isomorphism
+import QPainleve.AlgebraicGeometry.Blowup.Projective.Global
 import QPainleve.Geometry.Toric.Fan.Boundary.Subdivision
 import QPainleve.Geometry.Toric.Fan.StarSubdivision.Generators
 import QPainleve.Geometry.Toric.Cone.Coordinates
@@ -209,5 +211,25 @@ theorem exists_blowup_projectivePlane_vertex_hirzebruchOne
   obtain ⟨hσ, e, -, he, -⟩ := Ψ.exists_iso_blowup_starSubdivisionAlong hΨ σ hdim hcard
   exact ⟨hσ, b, e, hrays, hnew, he,
     he ▸ Ψ.comap_ker_distinguishedPointHom_eq_rayBoundaryIdeal hΨ σ hσ hdim hcard, hb⟩
+
+/-- The star subdivision of the plane fan at any specified torus-fixed vertex
+has projective algebraic realization over `ℂ`. -/
+theorem isProjectiveOver_projectivePlane_vertex_starSubdivision
+    (d : Basis (Fin 2) ℤ N) (hi : IsIntegralLattice i) (k : Option (Fin 2)) :
+    let Ψ := projectiveSpace d hi
+    let hΨ := isRegular_projectiveSpace d hi
+    let σ := projectiveSpaceMaximalCone d hi k
+    (Ψ.starSubdivisionAlong hΨ σ.property).algebraicRealization.IsProjectiveOver ℂ := by
+  intro Ψ hΨ σ
+  obtain ⟨hσ, _, e, -, -, he, -, -⟩ := exists_blowup_projectivePlane_vertex_hirzebruchOne d hi k
+  let J := (Ψ.distinguishedPointHom σ).ker
+  let : J.blowup.Over S := ⟨J.blowupToBase ≫ Ψ.algebraicRealization ↘ S⟩
+  let : Ψ.algebraicRealization.IsProjectiveOver ℂ :=
+    Scheme.IsProjectiveOver.of_isClosedImmersion ℂ (projectiveSpaceToProj d hi)
+  let : J.blowup.IsProjectiveOver ℂ := J.isProjectiveOver_blowup_of_isNoetherianRing ℂ
+  let π := (Ψ.starSubdivisionAlong_isSubdivision hΨ σ.property hσ).toFanHom.algebraicMap
+  let : e.hom.IsOver S :=
+    ⟨((reassoc_of% he) (Ψ.algebraicRealization ↘ S)).trans (comp_over π S)⟩
+  exact Scheme.IsProjectiveOver.of_isClosedImmersion ℂ e.hom
 
 end TauCeti.Toric.Fan
