@@ -94,10 +94,9 @@ instance : IsNormalScheme M.surface := by
   let : IsRegular M.surface := IsRegular.of_smooth (M.surface ↘ S)
   exact IsRegular.isNormal
 
-/-- Postcompose the evaluation of a marked surface, keeping the same underlying pair
-so that its identity isomorphism can be used for the resulting realization. -/
+/-- Equip the same marked pair with a new rational evaluation. -/
 @[expose, simps pair evaluation]
-def compEvaluation {Y : Scheme.{u}} (g : X ⟶ Y) : MarkedSurface k n B Y where
+def withEvaluation {Y : Scheme.{u}} (f : M.surface ⤏ Y) : MarkedSurface k n B Y where
   pair := M.pair
   closedImmersion := M.closedImmersion
   integral := M.integral
@@ -106,15 +105,26 @@ def compEvaluation {Y : Scheme.{u}} (g : X ⟶ Y) : MarkedSurface k n B Y where
   prestable := M.prestable
   cycle := M.cycle
   marking := M.marking
-  evaluation := M.evaluation.compHom g
+  evaluation := f
+
+/-- Postcompose the evaluation of a marked surface by a regular morphism. -/
+@[expose, simps! pair evaluation]
+def compEvaluation {Y : Scheme.{u}} (g : X ⟶ Y) : MarkedSurface k n B Y :=
+  M.withEvaluation (M.evaluation.compHom g)
 
 /-- The underlying Picard marking, with tensor product written additively. -/
 def picardMarking : L ≃ₗ[ℤ] Additive (LineBundleClass M.surface) :=
   M.marking.toLinearEquiv
 
+/-- Replacing the evaluation preserves the Picard marking. -/
+@[simp]
+theorem withEvaluation_picardMarking {Y : Scheme.{u}} (f : M.surface ⤏ Y) (a : L) :
+    (M.withEvaluation f).picardMarking a = M.picardMarking a := (rfl)
+
 @[simp]
 theorem compEvaluation_picardMarking {Y : Scheme.{u}} (g : X ⟶ Y) (a : L) :
-    (M.compEvaluation g).picardMarking a = M.picardMarking a := (rfl)
+    (M.compEvaluation g).picardMarking a = M.picardMarking a :=
+  M.withEvaluation_picardMarking (M.evaluation.compHom g) a
 
 /-- A perfect pairing on the marked lattice gives a perfect Picard intersection pairing. -/
 theorem isPerfPair_intersectionForm [B.IsPerfPair] :
@@ -198,15 +208,15 @@ theorem boundaryIso_refl : boundaryIso (M := M) (N := M) (Iso.refl M.pair) =
   Functor.mapIso_refl _ _
 
 /-- Changing the evaluation preserves the action of the identity on the numbered branches. -/
-theorem boundaryCycleAction_compEvaluation_refl {Y : Scheme.{u}} (g : X ⟶ Y) :
+theorem boundaryCycleAction_withEvaluation_refl {Y : Scheme.{u}} (f : M.surface ⤏ Y) :
     letI : PrestableFamily (M.boundary ↘ S) := M.prestable
-    letI : PrestableFamily ((M.compEvaluation g).boundary ↘ S) := (M.compEvaluation g).prestable
-    letI : (boundaryIso (M := M) (N := M.compEvaluation g) (Iso.refl M.pair)).hom.IsOver S :=
+    letI : PrestableFamily ((M.withEvaluation f).boundary ↘ S) := (M.withEvaluation f).prestable
+    letI : (boundaryIso (M := M) (N := M.withEvaluation f) (Iso.refl M.pair)).hom.IsOver S :=
       ⟨by erw [boundaryIso_refl (M := M), Iso.refl_hom]; exact Category.id_comp _⟩
-    (boundaryIso (M := M) (N := M.compEvaluation g) (Iso.refl M.pair)).boundaryCycleAction
-      M.cycle (M.compEvaluation g).cycle = 1 := by
+    (boundaryIso (M := M) (N := M.withEvaluation f) (Iso.refl M.pair)).boundaryCycleAction
+      M.cycle (M.withEvaluation f).cycle = 1 := by
   let : PrestableFamily (M.boundary ↘ S) := M.prestable
-  let e : M.boundary ≅ M.boundary := boundaryIso (M := M) (N := M.compEvaluation g) (.refl M.pair)
+  let e : M.boundary ≅ M.boundary := boundaryIso (M := M) (N := M.withEvaluation f) (.refl M.pair)
   have he : e = Iso.refl M.boundary := boundaryIso_refl (M := M)
   let : e.hom.IsOver S := ⟨by
     rw [he, Iso.refl_hom]
@@ -216,6 +226,16 @@ theorem boundaryCycleAction_compEvaluation_refl {Y : Scheme.{u}} (g : X ⟶ Y) :
     infer_instance
   exact (e.boundaryCycleAction_congr M.cycle M.cycle _ he).trans
     (Iso.boundaryCycleAction_refl (X := M.boundary) M.cycle)
+
+/-- Postcomposing the evaluation preserves the action of the identity on the numbered branches. -/
+theorem boundaryCycleAction_compEvaluation_refl {Y : Scheme.{u}} (g : X ⟶ Y) :
+    letI : PrestableFamily (M.boundary ↘ S) := M.prestable
+    letI : PrestableFamily ((M.compEvaluation g).boundary ↘ S) := (M.compEvaluation g).prestable
+    letI : (boundaryIso (M := M) (N := M.compEvaluation g) (Iso.refl M.pair)).hom.IsOver S :=
+      ⟨by erw [boundaryIso_refl (M := M), Iso.refl_hom]; exact Category.id_comp _⟩
+    (boundaryIso (M := M) (N := M.compEvaluation g) (Iso.refl M.pair)).boundaryCycleAction
+      M.cycle (M.compEvaluation g).cycle = 1 :=
+  M.boundaryCycleAction_withEvaluation_refl (M.evaluation.compHom g)
 
 @[simp]
 theorem surfaceIso_symm (e : M.pair ≅ N.pair) :
