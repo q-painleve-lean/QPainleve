@@ -166,6 +166,17 @@ theorem coe_orderedBoundaryRestriction (c : Fin n → ℂˣ) (x : K) :
     orderedRestriction, MonoidHom.comp_apply, pullbackHom_apply]
   rfl
 
+/-- In the ordered internal blowup model, the restricted charge class is obtained by
+applying the Picard marking and restricting to the strict boundary. -/
+theorem coe_orderedBoundaryRestriction_eq_pullback_internalBlowupPicardMarking
+    (c : Fin n → ℂˣ) (x : K) :
+    (orderedBoundaryRestriction hΦ b s c (Multiplicative.ofAdd x)).val =
+      pullback (internalBlowupTower b s c).2.boundaryι
+        (internalBlowupPicardMarking b s c hΦ (mark x).val).toMul := by
+  rw [coe_orderedBoundaryRestriction, internalBlowupPicardMarking_apply,
+    internalBlowupTower_eq_alongBoundary]
+  rfl
+
 /-- The period character obtained by restricting marked charge classes on the ordered
 internal blowup to its boundary, identified with the original toric boundary. -/
 def orderedBoundaryPeriod (c : Fin n → ℂˣ) : Multiplicative K →* ℂˣ :=
