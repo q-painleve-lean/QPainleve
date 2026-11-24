@@ -153,20 +153,14 @@ private theorem finrank_globalSections_dual_eq_three_of_iso_projectiveLine
     (hcan : B (LineBundleClass.mk (O(hI))) K = -3) :
     Module.finrank k Γ((O(hI)).obj, ⊤) = 3 := by
   let L := O(hI)
-  have : Subsingleton (Cohomology (L.obj ⊗ I.sheaf) 1) :=
+  have hIdeal : Subsingleton (Cohomology (L.obj ⊗ I.sheaf) 1) :=
     hI.subsingleton_cohomology_one_tensor_ideal (k := k)
-  have : Subsingleton (Cohomology (L.obj ⊗ I.pushforwardSubscheme) 1) :=
+  have hDivisor : Subsingleton (Cohomology (L.obj ⊗ I.pushforwardSubscheme) 1) :=
     I.subsingleton_cohomology_one_tensor_pushforwardSubscheme_of_projectiveLine L e
       (hdeg ▸ (by decide : (-1 : ℤ) ≤ 1))
-  have hmiddle : Subsingleton (Cohomology (L.obj ⊗ 𝟙_ X.Modules) 1) := by
-    refine (subsingleton_iff_forall_eq 0).mpr fun x ↦ ?_
-    have hseq := I.shortExact_tensor_toPushforwardSubscheme L.obj
-    have hex : Function.Exact (cohomologyMap (L.obj ◁ I.sheafι) 1)
-        (cohomologyMap (L.obj ◁ I.toPushforwardSubscheme) 1) :=
-      exact_cohomologyMap_cohomologyMap hseq 1
-    obtain ⟨a, ha⟩ := (hex x).mp (Subsingleton.elim _ _)
-    rw [Subsingleton.elim a 0, map_zero] at ha
-    exact ha.symm
+  have hmiddle : Subsingleton (Cohomology (L.obj ⊗ 𝟙_ X.Modules) 1) :=
+    subsingleton_cohomology_X₂ (I.shortExact_tensor_toPushforwardSubscheme L.obj) 1
+      hIdeal hDivisor
   have : Subsingleton (Cohomology L.obj 1) :=
     (cohomologyBaseLinearEquivOfIso k (ρ_ L.obj).symm 1).injective.subsingleton
   have hpos : 0 < B (LineBundleClass.mk L) (LineBundleClass.mk L) := hsq ▸ zero_lt_one
