@@ -69,4 +69,14 @@ theorem mem_picardNodalBoundaryAut {a : Aut X} :
         d.FixesNodalBranches _ hN (by rw [reassoc_of% hd, ha]) :=
   (Iff.rfl)
 
+/-- Every restriction to the boundary of a member of the Picard kernel fixes the branches. -/
+theorem fixesNodalBranches_of_mem_picardNodalBoundaryAut {a : Aut X}
+    (ha : a.asIso.hom ≫ f = f) (h : a ∈ D.picardNodalBoundaryAut hN)
+    (d : D.subscheme ≅ D.subscheme)
+    (hd : d.hom ≫ D.subschemeι = D.subschemeι ≫ a.asIso.hom) :
+    d.FixesNodalBranches _ hN (by rw [reassoc_of% hd, ha]) := by
+  obtain ⟨_, _, _, d', hd', hfix⟩ := (D.mem_picardNodalBoundaryAut hN).mp h
+  have he : d' = d := Iso.ext ((cancel_mono D.subschemeι).mp (hd'.trans hd.symm))
+  exact he ▸ hfix
+
 end AlgebraicGeometry.Scheme.IdealSheafData

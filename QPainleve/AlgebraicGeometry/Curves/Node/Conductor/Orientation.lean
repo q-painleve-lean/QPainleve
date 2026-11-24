@@ -5,11 +5,11 @@ Authors: The QPainleve contributors
 -/
 module
 
+public import QPainleve.AlgebraicGeometry.Curves.Node.Conductor.FixedBranches
 public import QPainleve.AlgebraicGeometry.Curves.Node.GenericPoint
 public import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.Basic
 
 import QPainleve.AlgebraicGeometry.Curves.Node.BoundaryRestriction
-import TauCeti.AlgebraicGeometry.Pullback.Carrier
 
 /-!
 # Orientation and fixed branches of numbered nodal cycles
@@ -31,25 +31,30 @@ variable {k : Type u} [Field k] [IsSepClosed k] {C : Scheme.{u}} [C.Over (Spec (
   [PrestableFamily (C ↘ Spec (.of k))] {n : ℕ} [NeZero n]
   {ι : Type v} {marks : ι → (C ↘ Spec (.of k)).smoothLocus}
 
-local notation "I" => Scheme.singularLocus k C
-local notation "ν" => Scheme.IdealSheafData.blowupToBase I
-local notation "N" => Scheme.IdealSheafData.blowup I
-
-/-- When a boundary automorphism has identity dihedral action, it fixes every
-point of the normalization lying over a node. -/
-theorem fixes_normalization_branches_of_boundaryCycleAction_eq_one
-    (d : C ≅ C) [d.hom.IsOver (Spec (.of k))] (numbering : Scheme.NodalCycleNumbering marks n)
-    (h : d.boundaryCycleAction numbering numbering = 1) (y : N)
-    (hy : ν y ∈ (I).support) : (d.singularLocusBlowupIso (R := k)).hom y = y := by
-  have hrange : Set.range (C.branchSchemeToBlowup k) = (ν) ⁻¹' Set.range (I).subschemeι :=
-    Scheme.Pullback.range_snd_of_isPullback (C.isPullback_branchScheme k)
-  rw [(I).range_subschemeι] at hrange
-  obtain ⟨b, rfl⟩ := hrange.symm ▸ (show y ∈ (ν) ⁻¹' ((I).support : Set C) from hy)
-  obtain ⟨⟨j, a⟩, rfl⟩ := numbering.branch.surjective b
-  have hb := d.branch_boundaryCycleAction numbering numbering j a
-  rw [h, map_one, Equiv.Perm.one_apply] at hb
-  rw [← Scheme.Hom.comp_apply, ← d.branchSchemeIso_hom_branchSchemeToBlowup (R := k),
-    Scheme.Hom.comp_apply, ← hb]
+/-- An automorphism fixes every branch of a numbered nodal cycle exactly when its
+dihedral action is the identity. -/
+theorem fixesNodalBranches_iff_boundaryCycleAction_eq_one
+    (d : C ≅ C) [d.hom.IsOver (Spec (.of k))] (numbering : Scheme.NodalCycleNumbering marks n) :
+    d.FixesNodalBranches (C ↘ Spec (.of k))
+      PrestableFamily.atWorstNodalOfRelativeDimensionOne (HomIsOver.comp_over (f := d.hom)) ↔
+      d.boundaryCycleAction numbering numbering = 1 := by
+  -- Match the `Over` instance built by `FixesNodalBranches` from the structure map.
+  cases ‹C.Over (Spec (.of k))› with
+  | ofHom f =>
+    let : C.Over (Spec (.of k)) := ⟨f⟩
+    rw [fixesNodalBranches_iff_branchScheme]
+    constructor
+    · intro hfix
+      apply (d.existsUnique_boundaryCycleAction numbering (D := numbering)).unique
+        (d.branch_boundaryCycleAction numbering numbering)
+      intro j b
+      rw [map_one, Equiv.Perm.one_apply]
+      exact (hfix (numbering.branch (j, b))).symm
+    · intro h b
+      obtain ⟨⟨j, a⟩, rfl⟩ := numbering.branch.surjective b
+      have hb := d.branch_boundaryCycleAction numbering numbering j a
+      rw [h, map_one, Equiv.Perm.one_apply] at hb
+      exact hb.symm
 
 end CategoryTheory.Iso
 
@@ -63,6 +68,7 @@ variable [IsSepClosed k] [IsLocallyNoetherian X] [X.Over (Spec (.of k))]
   {ι : Type v} {marks : ι → (D.subscheme ↘ Spec (.of k)).smoothLocus}
 
 local notation "C" => (D.subscheme)
+
 /-- An orientation-preserving automorphism fixing the ambient boundary primes acts
 as the identity on the numbered boundary cycle, including its individual branches. -/
 theorem boundaryCycleAction_eq_one_of_fixes_components

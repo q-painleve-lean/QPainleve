@@ -10,8 +10,7 @@ public import QPainleve.AlgebraicGeometry.Chow.Nef.Basic
 public import QPainleve.AlgebraicGeometry.Curves.Node.CycleAction
 
 import QPainleve.AlgebraicGeometry.Blowup.StrictTransform.Branches.Automorphism
-import QPainleve.AlgebraicGeometry.Chow.Nef.Boundary
-import QPainleve.AlgebraicGeometry.Curves.Node.Conductor.Orientation
+import QPainleve.AlgebraicGeometry.IdealSheaf.Boundary.Orientation
 import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
 import QPainleve.AlgebraicGeometry.IdealSheaf.Restriction
 import TauCeti.AlgebraicGeometry.Curves.Node.Reduced
@@ -247,21 +246,14 @@ theorem existsUnique_isLift_of_picard_trivial_of_preserves_orientation
   have : d.hom.IsOver (Spec (.of k)) :=
     ⟨by rw [D.over_eq_subschemeι_comp, reassoc_of% hd, comp_over]⟩
   intro _ ι marks numbering horient
-  have : IsNoetherian X := isNoetherian_of_finiteType s
-  have hN := PrestableFamily.atWorstNodalOfRelativeDimensionOne
-    (f := D.subscheme ↘ Spec (.of k))
-  have hpb : IsPullback D.subschemeι d.hom e.hom D.subschemeι :=
-    .of_vert_isIso ⟨hd.symm⟩
-  have hmap : D.comap e.hom = D := by
-    simpa only [ker_subschemeι] using (ker_eq_comap_of_isPullback D.subschemeι hpb).symm
-  have : ConnectedSpace D.subscheme :=
-    GeometricallyConnected.connectedSpace_of_subsingleton (f := D.subscheme ↘ Spec (.of k))
-  have hconn : _root_.IsPreconnected (D.support : Set X) := by
-    simpa only [Set.image_univ, D.range_subschemeι] using
-      isPreconnected_univ.image D.subschemeι D.subschemeι.continuous.continuousOn
-  have hfix := hD.fixes_boundary_components_of_picard_trivial hconn hnef hsq e hmap hPic
-  have ha := hD.boundaryCycleAction_eq_one_of_fixes_components e d hd numbering hfix horient
-  exact hT.exists_isLift_of_fixes_nodal_branches hD hN e d (comp_over e.hom _) hd
-    (d.fixes_normalization_branches_of_boundaryCycleAction_eq_one numbering ha)
+  have hN : AtWorstNodalOfRelativeDimensionOne (D.subschemeι ≫ s) := by
+    rw [← D.over_eq_subschemeι_comp]
+    exact PrestableFamily.atWorstNodalOfRelativeDimensionOne
+  have he := comp_over e.hom (Spec (.of k))
+  have hm := (hD.mem_picardNodalBoundaryAut_iff_preserves_orientation
+    (Aut.of e) he d hd numbering hnef hsq).mpr ⟨hPic, horient⟩
+  have hb := D.fixesNodalBranches_of_mem_picardNodalBoundaryAut hN he hm d hd
+  exact hT.exists_isLift_of_fixes_nodal_branches hD hN e d he hd
+    ((d.fixesNodalBranches_iff _ hN _).mp hb)
 
 end QPainleve.BlowupTower.IsNodalBoundaryTower
