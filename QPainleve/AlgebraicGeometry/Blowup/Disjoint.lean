@@ -7,6 +7,7 @@ module
 
 public import QPainleve.AlgebraicGeometry.Blowup.Pullback
 
+import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
 import TauCeti.AlgebraicGeometry.Blowup.Restriction
 
 /-!
@@ -27,7 +28,7 @@ public section
 
 noncomputable section
 
-open CategoryTheory Limits
+open CategoryTheory Limits TopologicalSpace
 open TauCeti.AlgebraicGeometry
 
 universe u
@@ -35,6 +36,15 @@ universe u
 namespace AlgebraicGeometry.Scheme.IdealSheafData
 
 variable {X Y : Scheme.{u}}
+
+/-- A closed point away from a blowup center pulls back to a reduced closed point. -/
+theorem exists_comap_ker_fromSpecResidueField_blowupToBase (J : X.IdealSheafData)
+    {p : X} (hp : IsClosed ({p} : Set X)) (h : p ∉ J.support) :
+    ∃ q : J.blowup, IsClosed ({q} : Set J.blowup) ∧ J.blowupToBase q = p ∧
+      (X.fromSpecResidueField p).ker.comap J.blowupToBase = (J.blowup.fromSpecResidueField q).ker :=
+  J.blowupToBase.exists_comap_ker_fromSpecResidueField_of_isIso_morphismRestrict p hp
+    J.support.compl
+    (by simpa only [← SetLike.mem_coe, Closeds.coe_compl, Set.mem_compl_iff] using h)
 
 variable (I J : X.IdealSheafData)
 
