@@ -8,7 +8,7 @@ module
 public import QPainleve.Geometry.Toric.Fan.Logarithmic.Factorization
 public import QPainleve.SignedClusterModularGroup.SarkisovDegree.Plane.Step
 
-import QPainleve.AlgebraicGeometry.Modules.Differentials.PoleIdeal
+import QPainleve.Geometry.Toric.Fan.Logarithmic.QuadricFactorization
 
 /-!
 # Resolved Sarkisov paths for a plane degree decrease
@@ -38,7 +38,6 @@ local notation "S" => Spec (CommRingCat.of ℂ)
 local notation "P" => Proj (homogeneousSubmodule ℂ (Fin 3 → ℂ))
 local notation "X[" Φ "]" => Fan.algebraicRealization Φ
 local notation "f[" Φ "]" => (X[Φ] ↘ S)
-local notation "B[" Φ "," hc "]" => Fan.boundaryIdeal Φ (Fan.IsComplete.nonempty_cones hc)
 
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V] {i : N →+ V}
 
@@ -49,54 +48,6 @@ variable {W : Scheme} [W.Over S] [SmoothOfRelativeDimension 2 (W ↘ S)]
 
 local instance : Smooth (W ↘ S) := SmoothOfRelativeDimension.smooth 2 _
 
-private theorem exists_edge_path [PreirreducibleSpace W] (A : LogarithmicProjection i D)
-    (b : Basis (Fin 2) ℤ N) (ρ : A.fan.Ray) (c : ℂˣ)
-    (hOpp : hull ℝ {i (-ρ.primitiveGenerator)} ∈ A.fan.cones) :
-    let Ψ := A.fan.mutationFan b ρ.primitiveGenerator_ne_zero ρ.hull_primitiveGenerator_mem hOpp
-    ∀ (hΨ : Ψ.IsRegular) (hcΨ : Ψ.IsComplete)
-      (b' : Basis (Fin 2) ℤ N) (r : Fin 4 ≃ Ψ.Ray)
-      (hr : (fun l ↦ (r l).primitiveGenerator) = ![b' 0, b' 1, -b' 0, (0 : ℤ) • b' 0 - b' 1])
-      (p : W ⟶ X[Ψ]) [p.IsOver S],
-    A.hom.toRationalMap.comp
-        (A.fan.mutationPartialMap b (c : ℂ) ρ.primitiveGenerator_ne_zero
-          ρ.hull_primitiveGenerator_mem hOpp).toRationalMap = p.toRationalMap →
-    B[Ψ,hcΨ].comap p = D * ramificationIdealSheaf ℂ p →
-    ∃ (C : LogarithmicProjection i D) (path : SarkisovPath A C),
-      C.fan = Ψ ∧ C.hom ≍ p ≫ (Ψ.quadricRulingExchange b' hΨ hcΨ r hr).toFanHom.algebraicMap ∧
-      path.length = 2 := by
-  intro Ψ hΨ hcΨ b' r hr p hp hmap hpole
-  let : Nonempty Ψ.cones := hcΨ.nonempty_cones
-  let μ := (A.fan.mutationPartialMap b (c : ℂ) ρ.primitiveGenerator_ne_zero
-    ρ.hull_primitiveGenerator_mem hOpp).toRationalMap
-  have hdom : p.toRationalMap.IsDominant :=
-    hmap ▸ inferInstanceAs ((A.hom.toRationalMap.comp μ).IsDominant)
-  have hpdom : IsDominant p := by
-    rw [Scheme.Hom.toRationalMap, Scheme.PartialMap.isDominant_toRationalMap_iff,
-      Scheme.Hom.toPartialMap_hom] at hdom
-    exact IsDominant.of_comp W.topIso.hom p (H := hdom)
-  let B : LogarithmicProjection i D := ⟨Ψ, hΨ, hcΨ, p, hp, hpdom, hpole⟩
-  let τ := Ψ.quadricRulingExchange b' hΨ hcΨ r hr
-  let t := τ.toFanHom.algebraicMap
-  let : IsIso t := inferInstanceAs (IsIso τ.toFanHom.algebraicMap)
-  let : t.IsOver S := inferInstanceAs (τ.toFanHom.algebraicMap.IsOver S)
-  let : SmoothOfRelativeDimension 2 f[Ψ] := by
-    have hRank := (finrank_eq_card_basis b).trans (Fintype.card_fin 2)
-    rw [Ψ.algebraicRealization_over, ← hRank]
-    exact Ψ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΨ
-  have htPole : B[Ψ,hcΨ].comap t = B[Ψ,hcΨ] * ramificationIdealSheaf ℂ t := by
-    rw [ramificationIdealSheaf_eq_top_of_isOpenImmersion, mul_top]
-    exact τ.comap_boundaryIdeal_algebraicMap _ _
-  let C : LogarithmicProjection i D :=
-    ⟨Ψ, hΨ, hcΨ, p ≫ t, inferInstance, inferInstance,
-      comap_eq_mul_ramificationIdealSheaf_comp ℂ p t 2 htPole hpole⟩
-  let m : SarkisovStep A B := ⟨μ, .mutation b ρ c hOpp, hmap⟩
-  have ht : Fan.IsSarkisovLink t.toRationalMap := by
-    simpa only [Fan.torusTranslation_one, Iso.refl_hom, Category.comp_id] using
-      (Fan.IsSarkisovLink.toricIso τ 1)
-  let e : SarkisovStep B C := ⟨t.toRationalMap, ht, by
-    rw [Scheme.RationalMap.comp_toRationalMap, Scheme.Hom.toRationalMap_compHom]⟩
-  exact ⟨C, (Quiver.Hom.toPath m).cons e, rfl, HEq.rfl, rfl⟩
-
 private theorem exists_continuation_path [IsIntegral W] (A : LogarithmicProjection i D)
     {index : ℕ} {Ψ : Fan i} {p : W ⟶ X[Ψ]}
     (h : ResolvesPlaneSarkisovLink A.hom D index Ψ p) :
@@ -106,7 +57,7 @@ private theorem exists_continuation_path [IsIntegral W] (A : LogarithmicProjecti
   | vertex => exact ⟨A, .nil, rfl, HEq.rfl, rfl⟩
   | edge b ρ c hOpp hΨ hcΨ b' r hr p hp hmap hpole =>
     let : p.IsOver S := hp
-    exact exists_edge_path A b ρ c hOpp hΨ hcΨ b' r hr p hmap hpole
+    exact A.exists_mutation_rulingExchange_path b ρ c hOpp hΨ hcΨ b' r hr p hmap hpole
 
 end Continuation
 
