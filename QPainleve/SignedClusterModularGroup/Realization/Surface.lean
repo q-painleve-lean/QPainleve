@@ -126,27 +126,17 @@ theorem boundaryIso_refl : boundaryIso (M := M) (N := M) (Iso.refl M.pair) =
     Iso.refl M.boundary :=
   Functor.mapIso_refl _ _
 
-@[simp]
-theorem surfaceIso_compEvaluation_refl {Y : Scheme.{u}} (g : X ⟶ Y) :
-    surfaceIso (M := M) (N := M.compEvaluation g) (Iso.refl M.pair) = Iso.refl M.surface :=
-  Functor.mapIso_refl _ _
-
-@[simp]
-theorem boundaryIso_compEvaluation_refl {Y : Scheme.{u}} (g : X ⟶ Y) :
-    boundaryIso (M := M) (N := M.compEvaluation g) (Iso.refl M.pair) = Iso.refl M.boundary :=
-  Functor.mapIso_refl _ _
-
 /-- Changing the evaluation preserves the action of the identity on the numbered branches. -/
 theorem boundaryCycleAction_compEvaluation_refl {Y : Scheme.{u}} (g : X ⟶ Y) :
     letI : PrestableFamily (M.boundary ↘ S) := M.prestable
     letI : PrestableFamily ((M.compEvaluation g).boundary ↘ S) := (M.compEvaluation g).prestable
     letI : (boundaryIso (M := M) (N := M.compEvaluation g) (Iso.refl M.pair)).hom.IsOver S :=
-      ⟨by erw [boundaryIso_compEvaluation_refl, Iso.refl_hom]; exact Category.id_comp _⟩
+      ⟨by erw [boundaryIso_refl (M := M), Iso.refl_hom]; exact Category.id_comp _⟩
     (boundaryIso (M := M) (N := M.compEvaluation g) (Iso.refl M.pair)).boundaryCycleAction
       M.cycle (M.compEvaluation g).cycle = 1 := by
   let : PrestableFamily (M.boundary ↘ S) := M.prestable
   let e : M.boundary ≅ M.boundary := boundaryIso (M := M) (N := M.compEvaluation g) (.refl M.pair)
-  have he : e = Iso.refl M.boundary := boundaryIso_compEvaluation_refl g
+  have he : e = Iso.refl M.boundary := boundaryIso_refl (M := M)
   let : e.hom.IsOver S := ⟨by
     rw [he, Iso.refl_hom]
     exact Category.id_comp _⟩

@@ -45,18 +45,6 @@ local notation "S" => Spec (CommRingCat.of k)
 
 namespace GeometricRealization
 
-omit [IsSepClosed k] [Infinite k] in
-/-- The trivial character supplies a point of the center torus. -/
-theorem centerTorus_nonempty {ι : Type u} :
-    Nonempty (Over.mk (CharacterTorus.structureMap k (ι → ℤ))).left :=
-  ⟨((CharacterTorus.pointsEquiv k (ι → ℤ)).symm 1).val default⟩
-
-omit [IsSepClosed k] [Infinite k] in
-/-- The center torus of a finite seed is smooth over the field. -/
-theorem centerTorus_smooth {ι : Type u} [Finite ι] :
-    Smooth (Over.mk (CharacterTorus.structureMap k (ι → ℤ))).hom :=
-  CharacterTorus.smooth_structureMap_pi_int k ι
-
 section Points
 
 variable {S₀ : Scheme.{u}} {U V : Over S₀} (C : U.left.PartialMap V.left)
@@ -155,20 +143,20 @@ theorem refl_iso : (refl M).iso = Iso.refl M.pair := (rfl)
 
 /-- A regular change in evaluation is realized by the identity on the marked pair. -/
 def compEvaluation (M : MarkedSurface k n B₀ X₀) (f : X₀ ⟶ X₁) :
-    FiberRealization M (M.compEvaluation f) f.toRationalMap (.refl B₀) 1 where
-  iso := Iso.refl _
-  picard_eq a := by
-    have ha : LinearMap.BilinForm.IsometryEquiv.refl B₀ a = a := rfl
-    rw [ha, MarkedSurface.surfaceIso_compEvaluation_refl, Iso.refl_hom,
-      MarkedSurface.compEvaluation_picardMarking]
-    exact congrArg Additive.ofMul (LineBundleClass.pullback_id (M.picardMarking a).toMul).symm
-  boundaryAction_eq := M.boundaryCycleAction_compEvaluation_refl f
-  evaluation_eq := by
-    obtain ⟨h, he⟩ := M.evaluation.compOfDefined_toRationalMap f
-    refine ⟨h, he.trans ?_⟩
-    simp only [MarkedSurface.surfaceIso_compEvaluation_refl, Iso.refl_hom,
-      MarkedSurface.compEvaluation_evaluation]
-    exact (RationalMap.id_comp _).symm
+    FiberRealization M (M.compEvaluation f) f.toRationalMap (.refl B₀) 1 :=
+  have hIso : surfaceIso (M := M) (N := M.compEvaluation f) (Iso.refl M.pair) =
+      Iso.refl M.surface := MarkedSurface.surfaceIso_refl (M := M)
+  { iso := Iso.refl M.pair
+    picard_eq a := by
+      have ha : LinearMap.BilinForm.IsometryEquiv.refl B₀ a = a := rfl
+      rw [ha, hIso, Iso.refl_hom, MarkedSurface.compEvaluation_picardMarking]
+      exact congrArg Additive.ofMul (LineBundleClass.pullback_id (M.picardMarking a).toMul).symm
+    boundaryAction_eq := M.boundaryCycleAction_compEvaluation_refl f
+    evaluation_eq := by
+      obtain ⟨h, he⟩ := M.evaluation.compOfDefined_toRationalMap f
+      refine ⟨h, he.trans ?_⟩
+      simp only [hIso, Iso.refl_hom, MarkedSurface.compEvaluation_evaluation]
+      exact (RationalMap.id_comp _).symm }
 
 omit [IsIntegral X₁] in
 @[simp]

@@ -76,7 +76,8 @@ namespace GeometricRealization
 
 local notation "Centers" => Over.mk (structureMap k A)
 
-attribute [local instance] centerTorus_nonempty centerTorus_smooth
+local instance : Nonempty (Centers).left := inferInstanceAs (Nonempty (scheme k A))
+local instance [Finite ι] : Smooth (Centers).hom := smooth_structureMap_pi_int k ι
 
 variable [Fintype ι] [DecidableEq ι]
 
