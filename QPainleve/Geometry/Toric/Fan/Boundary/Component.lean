@@ -7,8 +7,10 @@ module
 
 public import QPainleve.Geometry.Toric.Fan.Boundary.Center
 public import QPainleve.Geometry.Toric.Fan.Boundary.Ideal
+public import TauCeti.AlgebraicGeometry.IdealSheaf.Colon
 
 import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.Section
+import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.Subtraction
 import TauCeti.AlgebraicGeometry.IdealSheaf.BaseChange
 import TauCeti.AlgebraicGeometry.IdealSheaf.OfIdealTop
 import TauCeti.AlgebraicGeometry.IdealSheaf.VanishingIdeal
@@ -38,7 +40,8 @@ local notation "D" => Φ.boundaryIdeal inferInstance
 
 variable (ρ : Φ.Ray) (hΦ : Φ.IsRegular)
 
-private theorem boundaryIdeal_le_rayBoundaryIdeal : D ≤ Φ.rayBoundaryIdeal hΦ ρ := by
+/-- The reduced ray divisor is a closed subscheme of the reduced toric boundary. -/
+theorem boundaryIdeal_le_rayBoundaryIdeal : D ≤ Φ.rayBoundaryIdeal hΦ ρ := by
   have : IsReduced (Φ.rayBoundaryIdeal hΦ ρ).subscheme := by
     rw [rayBoundaryIdeal_def]
     infer_instance
@@ -263,6 +266,43 @@ theorem Ray.binomialCenterOnBoundary_mem_range_boundaryComponentι_iff :
     binomialCenter_notMem_range_boundaryComponentι ρ hΦ hdim hm hprim hn c h), ?_⟩
   rintro rfl
   exact ⟨_, boundaryComponentι_binomialCenterOnComponent_apply ρ hΦ hdim hm hprim c z⟩
+
+/-- A binomial point lies on its ray divisor away from the residual toric boundary. -/
+theorem Ray.binomialCenter_mem_support_sdiff_colon :
+    ρ.binomialCenter hdim hm hprim c (z : Spec (.of ℂ)) ∈
+      ((Φ.rayBoundaryIdeal hΦ ρ).support : Set Φ.algebraicRealization) \
+        ((D).colon (Φ.rayBoundaryIdeal hΦ ρ)).support := by
+  let j := Φ.affineToricChartι ρ.toCone
+  let C := Φ.rayBoundaryIdeal hΦ ρ
+  have hDC : D ≤ C := boundaryIdeal_le_rayBoundaryIdeal ρ hΦ
+  have hC := Φ.isEffectiveCartier_rayBoundaryIdeal hΦ ρ
+  have hcart : (C.comap j).IsEffectiveCartier := hC.comap j
+  have heq : (D).comap j = C.comap j := by
+    rw [comap_rayBoundaryIdeal_eq_ker_orbitToRayChart ρ hΦ hdim hm hprim]
+    simpa only [ker_subschemeι] using
+      ker_eq_comap_of_isPullback _ (ρ.isPullback_orbitToBoundary hdim hm hprim) |>.symm
+  have hres : ((D).colon C).comap j = ⊤ := by
+    rw [comap_colon _ _ hC.locallyPrincipal hDC j hcart, heq, colon_self]
+  have hin := (ρ.binomialCenterOnBoundary_mem_range_boundaryComponentι_iff
+    hΦ hdim hm hprim c ρ).mpr rfl
+  obtain ⟨q, hq⟩ := hin
+  constructor
+  · rw [← range_subschemeι]
+    refine ⟨q, ?_⟩
+    have hbin := congrArg (fun f : Spec (.of ℂ) ⟶ Φ.algebraicRealization ↦ f z)
+      (ρ.binomialCenterOnBoundary_comp_subschemeι hdim hm hprim c)
+    rw [← ρ.boundaryComponentι_subschemeι hΦ, Scheme.Hom.comp_apply, hq]
+    exact hbin
+  · have hx : ρ.binomialCenter hdim hm hprim c (z : Spec (.of ℂ)) ∈ Set.range j := by
+      rw [Ray.binomialCenter_def]
+      exact Set.mem_range_self _
+    obtain ⟨x, hx⟩ := hx
+    rw [← hx]
+    intro hmem
+    have hx' : x ∈ (((D).colon C).comap j).support := by
+      simpa only [← SetLike.mem_coe, support_comap, Closeds.coe_preimage, Set.mem_preimage]
+        using hmem
+    rwa [hres, support_top] at hx'
 
 /-- On a different ray, the restricted binomial center ideal is the unit ideal. -/
 theorem Ray.comap_ker_binomialCenterOnBoundary_eq_top_of_ne (hne : ρ ≠ τ) :

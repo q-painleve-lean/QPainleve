@@ -154,6 +154,13 @@ theorem hirzebruchPicardBasis_apply_one :
   rw [hirzebruchPicardBasis, Basis.mk_apply]
   rfl
 
+open Classical in
+/-- The other invariant fiber of a Hirzebruch surface also represents its first
+Picard basis vector. -/
+theorem hirzebruchPicardBasis_apply_zero_eq_ray_three :
+    hirzebruchPicardBasis b e hΦ r hr 0 = D 3 := by
+  rw [hirzebruchPicardBasis_apply_zero, (hirzebruch_ray_classes b e hΦ r hr).2]
+
 section Intersection
 
 variable [Φ.algebraicRealization.IsProjectiveOver ℂ]
