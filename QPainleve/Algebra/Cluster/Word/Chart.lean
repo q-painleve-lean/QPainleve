@@ -6,6 +6,7 @@ Authors: The QPainleve contributors
 module
 
 public import QPainleve.Algebra.Cluster.Word.RationalMap
+public import QPainleve.AlgebraicGeometry.RationalMap.Composition.Defined
 public import TauCeti.Algebra.MvPolynomial.Laurent.Basic
 
 import QPainleve.AlgebraicGeometry.RationalMap.Restriction
@@ -89,6 +90,36 @@ theorem exists_lift_xRationalMap_mutate (B : SkewExchangeMatrix ι) (p : ι) :
       (xMutationChartEquiv k p (fun j ↦ B.matrix j p) (a x)) =
       xMutation k p (fun j ↦ B.matrix j p) (algebraMap L K x)
     rw [← xMutation_xMutationChartToFunctionField, xMutationChartToFunctionField_algebraMap]
+
+/-- An evaluation into the pivot chart can be followed by rational X mutation.
+The composite is obtained by applying the chart isomorphism and including the result
+in the independent X torus. -/
+theorem compOfDefined_xRationalMap_mutate {X : Scheme.{u}} [IsIntegral X]
+    (B : SkewExchangeMatrix ι) (p : ι) (a : X ⤏ Spec (.of (XMutationChart k p))) :
+    let i := Spec.algebraMap L (XMutationChart k p)
+    let f := ((Generator.mutate p).toStep B).toPath.xRationalMap k
+    let e := Spec.map (CommRingCat.ofHom
+      (xMutationChartEquiv k p (fun j ↦ B.matrix j p)).toAlgHom.toRingHom)
+    ∃ h : (a.compHom i).fromFunctionField (IsLocalRing.closedPoint X.functionField) ∈ f.domain,
+      (a.compHom i).compOfDefined f h = (a.compHom e).compHom i := by
+  intro i f e
+  obtain ⟨l, hl, hl'⟩ := exists_lift_xRationalMap_mutate k B p
+  have hi : Spec.map (CommRingCat.ofHom (algebraMap L (XMutationChart k p))) = i := (rfl)
+  have hm : l ≫ f.toPartialMap.hom = e ≫ i := by
+    rw [hl', ← hi, ← Spec.map_comp]
+    rfl
+  let g := a.fromFunctionField ≫ l
+  have hg : g ≫ f.toPartialMap.domain.ι = (a.compHom i).fromFunctionField := by
+    rw [Scheme.RationalMap.fromFunctionField_compHom, Category.assoc, hl, hi]
+  have h : (a.compHom i).fromFunctionField
+      (IsLocalRing.closedPoint X.functionField) ∈ f.domain := by
+    let x : Spec X.functionField := IsLocalRing.closedPoint X.functionField
+    rw [← f.toPartialMap_domain, ← congrArg (fun m : Spec X.functionField ⟶ Xtor ↦ m x) hg]
+    exact (g x).property
+  refine ⟨h, Scheme.RationalMap.eq_of_fromFunctionField_eq _ _ ?_⟩
+  rw [Scheme.RationalMap.fromFunctionField_compOfDefined _ _ h g hg,
+    Scheme.RationalMap.fromFunctionField_compHom, Scheme.RationalMap.fromFunctionField_compHom,
+    Category.assoc, hm, Category.assoc]
 
 /-- A relabeling acts regularly on the entire X torus by renaming its Laurent coordinates. -/
 theorem exists_lift_xRationalMap_permute (B : SkewExchangeMatrix ι) (σ : Equiv.Perm ι) :
