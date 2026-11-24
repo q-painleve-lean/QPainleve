@@ -173,12 +173,14 @@ theorem mem_boundaryPrimes_iff_of_matching_picard_markings
   dsimp only at hρ hρ'
   exact not_iff_not.mp (hρ.symm.trans (hspan ▸ hρ'))
 
-local instance : IsNoetherian X := isNoetherian_of_finiteType (X ↘ S)
-local instance : IsNoetherian X' := isNoetherian_of_finiteType (X' ↘ S)
-local instance : IsNormalScheme X := by
+local instance isNoetherian_survivingRayBase : IsNoetherian X :=
+  isNoetherian_of_finiteType (X ↘ S)
+local instance isNoetherian_survivingRayComparisonBase : IsNoetherian X' :=
+  isNoetherian_of_finiteType (X' ↘ S)
+local instance isNormalScheme_survivingRayBase : IsNormalScheme X := by
   let := (X ↘ S).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two
   exact IsNormalScheme.of_uniqueFactorizationMonoid_stalk
-local instance : IsNormalScheme X' := by
+local instance isNormalScheme_survivingRayComparisonBase : IsNormalScheme X' := by
   let := (X' ↘ S).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two
   exact IsNormalScheme.of_uniqueFactorizationMonoid_stalk
 
