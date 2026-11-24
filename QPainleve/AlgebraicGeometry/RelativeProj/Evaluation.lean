@@ -61,14 +61,10 @@ theorem relativeProjEvaluation_app_pullbackSectionsLE (U : X.Opens)
     (W : A.relativeProj.Opens) (hle : W ≤ p ⁻¹ᵁ U) (s : Γ(A.X 1, U)) :
     A.relativeProjEvaluation.app W ((p).pullbackSectionsLE (A.X 1) U W hle s) =
       (L).presheaf.map (homOfLE hle).op ((σ).app U s) := by
-  have h := A.homEquiv_relativeProjEvaluation
-  rw [Adjunction.homEquiv_unit] at h
-  have happ := congrArg (fun f : A.X 1 ⟶ (Scheme.Modules.pushforward p).obj L ↦ f.app U) h
-  simp only [Scheme.Modules.Hom.comp_app, Scheme.Modules.pushforward_map_app] at happ
   have hU : A.relativeProjEvaluation.app (p ⁻¹ᵁ U) ((p).pullbackSections (A.X 1) U s) =
       (σ).app U s := by
-    rw [Scheme.Hom.pullbackSections_apply]
-    exact ConcreteCategory.congr_hom happ s
+    rw [← Scheme.Modules.pullbackPushforwardAdjunction_homEquiv_app_apply,
+      A.homEquiv_relativeProjEvaluation]
   rw [Scheme.Hom.pullbackSectionsLE_apply]
   exact (A.relativeProjEvaluation.mapPresheaf.naturality_apply (homOfLE hle).op
     ((p).pullbackSections (A.X 1) U s)).trans (congrArg _ hU)
