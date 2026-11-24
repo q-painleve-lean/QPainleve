@@ -10,11 +10,9 @@ public import QPainleve.Geometry.Toric.Fan.Logarithmic.Factorization
 public import QPainleve.SignedClusterModularGroup.SarkisovDegree.Corner
 
 import Mathlib.Analysis.Complex.Polynomial.Basic
-import QPainleve.AlgebraicGeometry.Blowup.Point.Projective
-import QPainleve.AlgebraicGeometry.Blowup.Projective.Global
 import QPainleve.AlgebraicGeometry.Blowup.Tower.PlaneResolution
-import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
 import QPainleve.Geometry.Toric.Fan.Picard.FiberDegree
+import QPainleve.Geometry.Toric.Fan.StarSubdivision.Descent
 
 /-!
 # Resolved Sarkisov path at a Hirzebruch corner
@@ -43,46 +41,12 @@ local notation "S" => Spec (CommRingCat.of ℂ)
 local notation "X[" Δ "]" => Fan.algebraicRealization Δ
 local notation "f[" Δ "]" => (X[Δ] ↘ S)
 local notation "B[" Δ "," h "]" => Fan.boundaryIdeal Δ (Fan.IsComplete.nonempty_cones h)
-local notation "I[" σ "]" => Scheme.Hom.ker (Fan.distinguishedPointHom _ σ)
-local notation "π[" s "]" => FanHom.algebraicMap (Fan.IsSubdivision.toFanHom s)
 local notation "rankTwo(" b ")" => Eq.trans (finrank_eq_card_basis b) (Fintype.card_fin 2)
 local notation "P" => Proj (homogeneousSubmodule ℂ (Fin 3 → ℂ))
 local notation "H" => mk (Proj.symmetricAlgebraTwistingBundle ℂ (Fin 3 → ℂ) 1)
 local notation "L[" D "]" => Fan.LogarithmicProjection i D
 local notation "coordinates(" U "," hU "," g "," s ")" =>
   LinearEquiv.symm (BlowupTower.picardMarking U hU s) (Additive.ofMul (pullback g H))
-
-private theorem isProjectiveOver_corner_target {F Ψ : Fan i}
-    [X[Φ].IsProjectiveOver ℂ] [Nonempty Ψ.cones]
-    [SmoothOfRelativeDimension 2 f[Ψ]]
-    (σ : Φ.cones) (τ : Ψ.cones) (s : F.IsSubdivision Φ) (t : F.IsSubdivision Ψ)
-    (v : X[F] ≅ (I[σ]).blowup) (w : X[F] ≅ (I[τ]).blowup)
-    (hv : v.hom ≫ (I[σ]).blowupToBase = π[s])
-    (hw : w.hom ≫ (I[τ]).blowupToBase = π[t]) :
-    X[Ψ].IsProjectiveOver ℂ := by
-  let : (I[σ]).blowup.Over S := ⟨(I[σ]).blowupToBase ≫ f[Φ]⟩
-  let : (I[τ]).blowup.Over S := ⟨(I[τ]).blowupToBase ≫ f[Ψ]⟩
-  let : v.hom.IsOver S := ⟨by
-    -- The structure map on the blowup was chosen as the composite with its projection.
-    change v.hom ≫ (I[σ]).blowupToBase ≫ f[Φ] = f[F]
-    rw [← Category.assoc, hv, comp_over]⟩
-  let : w.hom.IsOver S := ⟨by
-    -- Use the structure map on the target blowup in the same form.
-    change w.hom ≫ (I[τ]).blowupToBase ≫ f[Ψ] = f[F]
-    rw [← Category.assoc, hw, comp_over]⟩
-  let : (I[σ]).blowup.IsProjectiveOver ℂ := (I[σ]).isProjectiveOver_blowup_of_isNoetherianRing ℂ
-  let : X[F].IsProjectiveOver ℂ := Scheme.IsProjectiveOver.of_isClosedImmersion ℂ v.hom
-  have hprojective : (I[τ]).blowup.IsProjectiveOver ℂ :=
-    Scheme.IsProjectiveOver.of_isClosedImmersion ℂ w.inv
-  let p := Ψ.distinguishedPointHom τ (IsLocalRing.closedPoint ℂ)
-  have hp := Ψ.isClosed_singleton_distinguishedPoint τ
-  have hker := (Ψ.distinguishedPointHom τ).ker_eq_ker_fromSpecResidueField
-  let : Smooth f[Ψ] := SmoothOfRelativeDimension.smooth 2 _
-  have hnoeth : IsNoetherian X[Ψ] := isNoetherian_of_finiteType f[Ψ]
-  apply Scheme.IsProjectiveOver.of_pointBlowup (k := ℂ) p hp
-  exact (congrArg (fun J : X[Ψ].IdealSheafData ↦
-    let : J.blowup.Over S := ⟨J.blowupToBase ≫ f[Ψ]⟩
-    J.blowup.IsProjectiveOver ℂ) hker).mp hprojective
 
 private theorem corner_coordinates_of_pullback_eq {Ψ : Fan i} {n : ℕ} {Y Z : Scheme}
     {U : BlowupTower X[Ψ] (1 + n) Z} [Nonempty Ψ.cones] [SmoothOfRelativeDimension 2 f[Ψ]]
@@ -253,7 +217,7 @@ theorem exists_sarkisov_path_decrease_of_toric_corner [X[Φ].IsProjectiveOver �
     p₀.cons (Fan.LogarithmicProjection.StarStep.blowdown ht hq')
   let path := Fan.LogarithmicProjection.SarkisovPath.ofStar p
   refine ⟨B, path, d, r', hr', Z, U, hU, k, ?_, ?_, rfl,
-    isProjectiveOver_corner_target σ τ s t v w hv hw,
+    t.isProjectiveOver_of_common_pointBlowup s σ τ v w hv hw,
     hg', hbir', hpU, ?_⟩
   · exact (Fan.LogarithmicProjection.SarkisovPath.length_ofStar p).trans rfl
   · exact (Fan.LogarithmicProjection.SarkisovPath.rationalMap_ofStar p).trans
