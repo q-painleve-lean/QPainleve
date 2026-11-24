@@ -5,6 +5,7 @@ Authors: The QPainleve contributors
 -/
 module
 
+public import QPainleve.AlgebraicGeometry.Curves.Node.Locus
 public import QPainleve.Geometry.Toric.Fan.Boundary.InternalCenter
 
 import Mathlib.AlgebraicGeometry.AlgClosed.Basic
@@ -73,40 +74,45 @@ theorem exists_internalCenter_eq_ker_fromSpecResidueField
   exact congrArg (fun x ↦ (D.subscheme.fromSpecResidueField x).ker)
     (pointOfClosedPoint_apply s p hp (IsLocalRing.closedPoint ℂ))
 
-/-- The same binomial point on a fixed ray can be written in the determinant character
-of any other lattice basis. -/
-theorem Ray.exists_binomialCenter_eq_of_basis (ρ : Φ.Ray) (d : Module.Basis (Fin 2) ℤ N)
-    (c : ℂˣ) :
-    letI : Nonempty Φ.cones := ⟨ρ.toCone⟩
-    ∃ a : ℂˣ,
-      ρ.binomialCenter rankTwo (b.detDualEquiv_self ρ.primitiveGenerator)
-          (ρ.surjective_detCharacter b) a =
-        ρ.binomialCenter rankTwo (d.detDualEquiv_self ρ.primitiveGenerator)
-          (ρ.surjective_detCharacter d) c := by
-  let : Nonempty Φ.cones := ⟨ρ.toCone⟩
-  let p := ρ.binomialCenterOnBoundary rankTwo (d.detDualEquiv_self ρ.primitiveGenerator)
-    (ρ.surjective_detCharacter d) c
-  let D := Φ.boundaryIdeal ⟨ρ.toCone⟩
-  have hp : p ≫ D.subschemeι =
-      ρ.binomialCenter rankTwo (d.detDualEquiv_self ρ.primitiveGenerator)
-        (ρ.surjective_detCharacter d) c :=
-    ρ.binomialCenterOnBoundary_comp_subschemeι rankTwo
-      (d.detDualEquiv_self ρ.primitiveGenerator) (ρ.surjective_detCharacter d) c
-  have hbase : p ≫ D.subschemeι ≫ Φ.algebraicRealizationStructureMap = 𝟙 _ := by
-    rw [← Category.assoc, hp]
-    exact ρ.binomialCenter_comp_structureMap rankTwo
-      (d.detDualEquiv_self ρ.primitiveGenerator) (ρ.surjective_detCharacter d) c
-  let x : Spec (.of ℂ) := IsLocalRing.closedPoint ℂ
-  have hchart : D.subschemeι (p x) ∈ Set.range (Φ.affineToricChartι ρ.toCone) := by
-    rw [← Scheme.Hom.comp_apply p D.subschemeι x, hp]
-    have he := ρ.binomialCenter_def rankTwo (d.detDualEquiv_self ρ.primitiveGenerator)
-      (ρ.surjective_detCharacter d) c
-    exact ⟨_, congrArg (fun g : Spec (.of ℂ) ⟶ Φ.algebraicRealization ↦ g x) he.symm⟩
-  obtain ⟨a, ha⟩ := ρ.exists_binomialCenterOnBoundary_eq_of_mem_rayChart rankTwo
-    (b.detDualEquiv_self ρ.primitiveGenerator) (ρ.surjective_detCharacter b) p hbase hchart
-  refine ⟨a, ?_⟩
-  have he := ρ.binomialCenterOnBoundary_comp_subschemeι rankTwo
-    (b.detDualEquiv_self ρ.primitiveGenerator) (ρ.surjective_detCharacter b) a
-  exact he.symm.trans ((congrArg (· ≫ D.subschemeι) ha).trans hp)
+local notation "X" => Φ.algebraicRealization
+local notation "f" => Φ.algebraicRealizationStructureMap
+
+/-- A closed point in the smooth part of a complete regular toric surface boundary is
+specified by a unique ray and binomial parameter, at the level of the reduced point ideal
+on the surface. -/
+theorem existsUnique_internalCenter_of_mem_boundary_of_not_isNode
+    (hΦ : Φ.IsRegular) (hc : Φ.IsComplete) {p : X} (hp : IsClosed ({p} : Set X))
+    (hmem : p ∈ (Φ.boundaryIdeal hc.nonempty_cones).support)
+    (hn : ¬ (Φ.boundaryIdeal hc.nonempty_cones).IsNodeOfReducedBoundary f p) :
+    letI := hc.nonempty_cones
+    ∃! a : Φ.Ray × ℂˣ, (a.1.internalCenter b a.2).val.map
+      (Φ.boundaryIdeal hc.nonempty_cones).subschemeι = (Scheme.fromSpecResidueField X p).ker := by
+  let : Nonempty Φ.cones := hc.nonempty_cones
+  let D := Φ.boundaryIdeal hc.nonempty_cones
+  have hn' : AtWorstNodalOfRelativeDimensionOne (D.subschemeι ≫ f) :=
+    Φ.atWorstNodalOfRelativeDimensionOne_boundary hΦ hc rankTwo
+  have : IsReduced D.subscheme := by
+    dsimp only [D]
+    rw [Φ.boundaryIdeal_def]
+    infer_instance
+  obtain ⟨q, hq, hs⟩ := D.exists_mem_smoothLocus_of_mem_support_of_not_isNodeOfReducedBoundary
+    f hn' hmem hn
+  have hclosed : IsClosed ({q} : Set D.subscheme) := by
+    rw [← D.subschemeι.isClosedEmbedding.injective.preimage_image {q}, Set.image_singleton, hq]
+    exact hp.preimage D.subschemeι.continuous
+  let := hn'.syntomic
+  obtain ⟨ρ, c, he⟩ := exists_internalCenter_eq_ker_fromSpecResidueField b hΦ hc q hclosed
+    (Scheme.Hom.mem_smoothLocus.mp hs)
+  have hI : (ρ.internalCenter b c).val.map D.subschemeι =
+      (Scheme.fromSpecResidueField X p).ker := by
+    rw [he, D.subschemeι.map_ker_fromSpecResidueField, hq]
+  refine ⟨(ρ, c), hI, fun a ha ↦ ?_⟩
+  by_contra hne
+  have hdis := (disjoint_support_map_internalCenter_iff b D.subschemeι a.1 ρ a.2 c).mpr hne
+  rw [ha, hI] at hdis
+  have hm : p ∈ (Scheme.fromSpecResidueField X p).ker.support := by
+    rw [← SetLike.mem_coe, Scheme.support_ker_fromSpecResidueField_of_isClosed hp]
+    exact Set.mem_singleton p
+  exact Set.disjoint_left.mp hdis hm hm
 
 end TauCeti.Toric.Fan
