@@ -9,6 +9,7 @@ public import QPainleve.AlgebraicGeometry.Chow.RationalSurface.NakaiMoishezon
 
 import QPainleve.AlgebraicGeometry.Chow.Ample
 import QPainleve.AlgebraicGeometry.Curves.Degree.Ample
+import QPainleve.AlgebraicGeometry.IntersectionNumber.GlobalGeneration
 import QPainleve.AlgebraicGeometry.LineBundle.Ample
 
 /-!
@@ -114,6 +115,18 @@ theorem IsAmple.mul_of_isNef {h a : LineBundleClass X} (hh : h.IsAmple)
   rw [Chow.classIntersectionNumber_mul_left k hX, Chow.classIntersectionNumber_mul_right k hX,
     Chow.classIntersectionNumber_mul_right k hX, Chow.classIntersectionNumber_comm h a]
   omega
+
+/-- A homomorphism of Picard groups that sends nef classes to nef classes preserves
+ampleness on a rational target if its image contains an ample class. -/
+theorem IsAmple.map_of_isNef_preserving {Y : Scheme.{u}} {a h : LineBundleClass Y} (ha : a.IsAmple)
+    (fY : Y ⟶ Spec (.of k)) (g : LineBundleClass Y →* LineBundleClass X)
+    (hnef : ∀ b : LineBundleClass Y, b.IsNef k fY → (g b).IsNef k f) (hh : (g h).IsAmple) :
+    (g a).IsAmple := by
+  obtain ⟨n, hn, hb⟩ := ((Filter.eventually_gt_atTop (0 : ℕ)).and
+    (ha.eventually_isNef_mul_pow h⁻¹ fY)).exists
+  apply IsAmple.of_pow hn
+  have ht := hh.mul_of_isNef (hnef _ hb)
+  simpa only [map_mul, map_inv, map_pow, ← mul_assoc, mul_inv_cancel, one_mul] using ht
 
 /-- Two nef line-bundle classes on a smooth projective rational surface have nonnegative
 intersection. -/

@@ -48,11 +48,9 @@ theorem isNef_of_no_fixed_components
     LineBundleClass.IsNef k (X ↘ Spec (.of k)) a := by
   refine (isNef_iff_classIntersectionNumber_nonneg k hX a).mpr fun p ↦ ?_
   obtain ⟨D, hD, hp⟩ := (notMem_support_baseIdeal_iff hS).mp (hmove p)
-  rw [← hclass D hD, classIntersectionNumber_comm,
-    classIntersectionNumber_weilToLineBundleClassHom k hX]
-  refine Finset.sum_nonneg fun q hq ↦ mul_nonneg (hS D hD q) ?_
-  exact classIntersectionNumber_primeDivisorClass_nonneg_of_ne k hX
-    (fun heq ↦ Finsupp.mem_support_iff.mp hq (heq ▸ hp))
+  rw [← hclass D hD]
+  exact classIntersectionNumber_primeDivisorClass_nonneg_of_notMem_support k hX (hS D hD)
+    (Finsupp.notMem_support_iff.mpr hp)
 
 /-- A common class of a nonempty family of effective divisors with no fixed component
 has nonnegative self-intersection. -/
