@@ -488,7 +488,8 @@ theorem exists_nodalBlowupNormalizationLift (q : centerBranch) :
     rw [branchSchemeToBlowup_exceptionalSideBranch, ← (B).coe_blowupComponent]
     exact ((excBranch) a).property.1
 
-private theorem branchProjection_strict_apply (q : (C).branchScheme k) :
+/-- The projection of a strict branch lands at its original node. -/
+theorem boundaryMap_strictBranch_node (q : (C).branchScheme k) :
     (β) ((J[B]).subschemeι ((B).branchSchemeToSingularLocus k ((strBranch) q))) =
       (J[C]).subschemeι ((C).branchSchemeToSingularLocus k q) := by
   rw [← Scheme.blowupToBase_branchSchemeToBlowup_apply,
@@ -527,7 +528,7 @@ local notation "nodeAt" => D.numberedStrictNode hc hp hCOver hBOver hD A
 private theorem boundaryMap_numberedStrictNode (a : ZMod n) (b : Fin 2) :
     (β) ((J[B]).subschemeι ((nodeAt) a b)) = (J[C]).subschemeι ((oldNode) a) := by
   unfold numberedStrictNode
-  rw [branchProjection_strict_apply, Scheme.NodalCycleNumbering.branchSchemeToSingularLocus_branch]
+  rw [boundaryMap_strictBranch_node, Scheme.NodalCycleNumbering.branchSchemeToSingularLocus_branch]
 
 include hi in
 private theorem numberedStrictNode_eq_of_ne (a : ZMod n) (ha : a ≠ i) (b : Fin 2) :

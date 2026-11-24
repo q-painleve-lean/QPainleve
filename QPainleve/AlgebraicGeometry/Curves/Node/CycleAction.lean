@@ -63,6 +63,10 @@ theorem component_apply (j : ZMod n) : C.component j = X.dualGraphVertexEquiv p 
 def node : ZMod n ≃ (X.singularLocus k).subscheme :=
   C.edge.trans (X.dualGraphNodeEquiv p)
 
+/-- The numbered node is the singular point of the corresponding dual graph edge. -/
+theorem node_apply (j : ZMod n) : C.node j = X.dualGraphNodeEquiv p (C.edge j) :=
+  (rfl)
+
 /-- The numbering of the points of the branch scheme by node and ordered endpoint. -/
 def branch : (ZMod n × Fin 2) ≃ X.branchScheme k :=
   ((C.edge.prodCongr (.refl _)).trans (Equiv.prodCongrRight C.order)).trans
