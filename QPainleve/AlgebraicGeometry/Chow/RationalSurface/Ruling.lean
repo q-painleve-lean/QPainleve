@@ -16,17 +16,14 @@ import QPainleve.AlgebraicGeometry.CartierDivisor.Support
 import QPainleve.AlgebraicGeometry.EffectiveCartierDivisor.ClosedImmersion
 import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
 import QPainleve.AlgebraicGeometry.IntersectionNumber.ClosedPoint
-import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.Polynomial.SymmetricAlgebra
-import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.Sections.TwistingSheaf
+import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.ProjectiveLine.Morphisms
 import QPainleve.AlgebraicGeometry.RationalPoint
 import QPainleve.AlgebraicGeometry.WeilDivisor.Basic
 import TauCeti.AlgebraicGeometry.Morphisms.Flat.Dominant
-import TauCeti.AlgebraicGeometry.LineBundle.LocalRing
 import TauCeti.AlgebraicGeometry.LineBundle.ProjectiveLine
 import QPainleve.AlgebraicGeometry.Chow.EffectiveClass
 import QPainleve.AlgebraicGeometry.Chow.Nef.Basic
 import QPainleve.AlgebraicGeometry.LineBundle.Ample
-import QPainleve.AlgebraicGeometry.LineBundle.GlobalGeneration
 import TauCeti.LinearAlgebra.QuadraticForm.LightCone
 
 /-!
@@ -253,31 +250,6 @@ theorem exists_iso_projectiveLine_of_isNef_of_self_eq_zero
   rw [mk_toInvertibleSheaf_congr _ hI I.ker_subschemeι, hsq, hcan] at hg
   exact genus_eq_zero_iff_exists_iso_projectiveLine.mp (by omega)
 
-omit [X.Over S] [IsAlgClosed k] [X.IsProjectiveOver k]
-  [SmoothOfRelativeDimension 2 (X ↘ S)] hRat in
-private theorem isDominant_of_pullback_twistingSheaf_ne_one [IsIntegral X]
-    (f : X ⟶ projectiveLine k) (h : pullback f (LineBundleClass.mk T) ≠ 1) : IsDominant f := by
-  rw [isDominant_iff_genericPoint_eq]
-  by_contra hn
-  let p := f (genericPoint X)
-  have hdim := Scheme.IsCurveOver.topologicalKrullDim_eq_one (X := projectiveLine k) k
-  have hp : IsClosed ({p} : Set (projectiveLine k)) :=
-    TauCeti.AlgebraicGeometry.Scheme.isClosed_singleton_of_ne_genericPoint hdim.le hn
-  let j := (projectiveLine k).fromSpecResidueField p
-  have : IsClosedImmersion j := isClosed_singleton_iff_isClosedImmersion.mp hp
-  have hrange : Set.range f ⊆ {p} := by
-    rintro _ ⟨x, rfl⟩
-    exact ((genericPoint_specializes x).map f.continuous).mem_closed hp (Set.mem_singleton p)
-  have hker : j.ker ≤ f.ker := by
-    rw [Scheme.ker_fromSpecResidueField_eq_vanishingIdeal]
-    apply vanishingIdeal_le_ker_of_range_subset f
-    rw [Closeds.coe_mk, hp.closure_eq]
-    exact hrange
-  let g := IsClosedImmersion.lift j f hker
-  have hg : g ≫ j = f := IsClosedImmersion.lift_fac _ _ _
-  exact h (by rw [← hg, ← pullback_comp,
-    Subsingleton.elim (pullback j (LineBundleClass.mk T)) 1, pullback_one])
-
 include hRat in
 private theorem exists_projectiveLine_fiber_of_pullback_twistingSheaf
     [IsIntegral X] (f : X ⟶ projectiveLine k) [IsDominant f]
@@ -322,30 +294,6 @@ private theorem exists_projectiveLine_fiber_of_pullback_twistingSheaf
   rw [Iso.trans_hom, Category.assoc, comp_over e.hom S, IdealSheafData.over_eq_subschemeι_comp,
     ← Category.assoc, ha']
 
-attribute [local instance] MvPolynomial.gradedAlgebra
-
-omit [IsAlgClosed k] [X.IsProjectiveOver k] [SmoothOfRelativeDimension 2 (X ↘ S)] hRat in
-private theorem exists_to_projectiveLine_of_basis (L : InvertibleSheaf X)
-    (v : Module.Basis (ULift.{u} (Fin 2)) k Γ(L.obj, ⊤)) (hglob : L.IsGloballyGenerated) :
-    ∃ f : X ⟶ projectiveLine k, f.IsOver S ∧
-      pullback f (LineBundleClass.mk T) = LineBundleClass.mk L := by
-  let b := (Pi.basisFun k (Fin 2)).reindex Equiv.ulift.symm
-  let hcover := hglob.iSup_nonvanishingLocus_basis_eq_top v
-  let g := L.obj.toProjectiveSpace (X ↘ S) v hcover
-  let f := g ≫ b.polynomialProjIso.hom
-  have hbase : b.polynomialProjIso.hom ≫ (projectiveLine k ↘ S) =
-      Proj.toSpecCoeff (MvPolynomial.homogeneousSubmodule (ULift.{u} (Fin 2)) k) :=
-    b.polynomialProjIso_hom_over
-  have hf : f ≫ (projectiveLine k ↘ S) = X ↘ S := by
-    rw [Category.assoc, hbase,
-      L.obj.toProjectiveSpace_toSpecCoeff (X ↘ S) v hcover]
-  obtain ⟨a, -⟩ := L.obj.exists_iso_pullbackTwistingSheaf_toProjectiveSpace (X ↘ S) v hcover
-  refine ⟨f, ⟨hf⟩, ?_⟩
-  dsimp only [f]
-  rw [← pullback_comp, pullback_mk, pullback_mk]
-  exact mk_eq_mk_iff.mpr ⟨
-    (Scheme.Modules.pullback g).mapIso (b.polynomialProjIsoPullbackTwistingSheafIso 1) ≪≫ a⟩
-
 include hRat in
 /-- The complete pencil of an integral genus-zero Cartier divisor of square zero defines a
 morphism to the projective line whose pullback of `𝒪(1)` is the divisor class. -/
@@ -375,7 +323,7 @@ theorem exists_to_projectiveLine_of_square_zero_rational_curve
   have hdim : Module.finrank k Γ(L.obj, ⊤) = 2 := hdim
   have : Module.Finite k Γ(L.obj, ⊤) := Module.finite_of_finrank_pos (hdim.symm ▸ by decide)
   let v := (Module.finBasisOfFinrankEq k Γ(L.obj, ⊤) hdim).reindex Equiv.ulift.symm
-  obtain ⟨f, hf, hclass⟩ := exists_to_projectiveLine_of_basis L v hglob
+  obtain ⟨f, hf, hclass⟩ := L.exists_to_projectiveLine_of_basis v hglob
   exact ⟨f, hf, hclass.trans hL⟩
 
 include hRat in
@@ -420,7 +368,7 @@ theorem exists_ruling_of_square_zero_rational_curve
   have : IsProper (f ≫ (projectiveLine k ↘ S)) := (comp_over f S).symm ▸
     (inferInstance : IsProper (X ↘ S))
   have hproper : IsProper f := .of_comp f (projectiveLine k ↘ S)
-  have : IsDominant f := isDominant_of_pullback_twistingSheaf_ne_one f (by
+  have : IsDominant f := f.isDominant_of_pullback_twistingSheaf_ne_one (by
     rw [hcl]
     intro hh
     rw [hh, classIntersectionNumber_one_left] at hcan
