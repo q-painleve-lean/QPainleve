@@ -11,6 +11,8 @@ public import QPainleve.Geometry.Toric.Fan.Hirzebruch.Corner
 public import QPainleve.Geometry.Toric.Fan.Smooth
 
 import Mathlib.Analysis.Complex.Polynomial.Basic
+import Mathlib.LinearAlgebra.Basis.SMul
+import Mathlib.LinearAlgebra.Transvection.Basic
 import QPainleve.AlgebraicGeometry.Chow.RationalSurface.Basic
 import QPainleve.Geometry.Toric.Fan.Boundary.ProjectiveLine
 import QPainleve.Geometry.Toric.Fan.Rationality
@@ -138,6 +140,44 @@ Picard basis vector. -/
 theorem hirzebruchPicardBasis_apply_zero_eq_ray_three :
     hirzebruchPicardBasis b e hΦ r hr 0 = D 3 := by
   rw [hirzebruchPicardBasis_apply_zero, (hirzebruch_ray_classes b e hΦ r hr).2]
+
+omit [Nonempty Φ.cones] in
+include hr in
+private theorem exists_hirzebruch_marking_swap_fibers :
+    ∃ (d : Basis (Fin 2) ℤ N),
+      (fun j ↦ (r (Equiv.swap 1 3 j)).primitiveGenerator) =
+        ![d 0, d 1, -d 0, e • d 0 - d 1] := by
+  let d := (b.map (LinearEquiv.transvection (f := (-e) • b.coord 1) (v := b 0)
+    (by simp [Basis.coord_apply]))).unitsSMul (fun j ↦ if j = 1 then (-1 : ℤˣ) else 1)
+  have h₀ : d 0 = b 0 := by
+    simp [d, Basis.unitsSMul_apply, LinearMap.transvection.apply, Basis.coord_apply]
+  have h₁ : d 1 = e • b 0 - b 1 := by
+    simp [d, Basis.unitsSMul_apply, LinearMap.transvection.apply, Basis.coord_apply,
+      sub_eq_add_neg, add_comm]
+  refine ⟨d, funext fun j ↦ ?_⟩
+  fin_cases j <;> simp [Equiv.swap_apply_def, h₀, h₁, congrFun hr]
+
+include hr in
+/-- Either invariant fiber can be placed first among the fiber rays in a
+Hirzebruch marking. The section at index zero and the entire Picard basis are
+unchanged, so every fiber degree and section coefficient is preserved. -/
+theorem exists_hirzebruch_picardBasis_of_fiber (hΦ : Φ.IsRegular) (t : Fin 2) :
+    ∃ (d : Basis (Fin 2) ℤ N) (s : Fin 4 ≃ Φ.Ray)
+      (hs : (fun j ↦ (s j).primitiveGenerator) = ![d 0, d 1, -d 0, e • d 0 - d 1]),
+      s 0 = r 0 ∧ s 1 = r ((![1, 3] : Fin 2 → Fin 4) t) ∧
+      hirzebruchPicardBasis d e hΦ s hs = hirzebruchPicardBasis b e hΦ r hr := by
+  classical
+  fin_cases t
+  · exact ⟨b, r, hr, rfl, rfl, rfl⟩
+  obtain ⟨d, hd⟩ := exists_hirzebruch_marking_swap_fibers b e r hr
+  let s := (Equiv.swap 1 3).trans r
+  have hs : (fun j ↦ (s j).primitiveGenerator) = ![d 0, d 1, -d 0, e • d 0 - d 1] := hd
+  have h₀ : s 0 = r 0 := by simp [s, Equiv.swap_apply_def]
+  have h₁ : s 1 = r 3 := by simp [s]
+  refine ⟨d, s, hs, h₀, h₁, DFunLike.ext _ _ (Fin.forall_fin_two.mpr ⟨?_, ?_⟩)⟩
+  · simp only [hirzebruchPicardBasis_apply_zero d, h₁,
+      hirzebruchPicardBasis_apply_zero_eq_ray_three b]
+  · simp only [hirzebruchPicardBasis_apply_one, h₀]
 
 local notation "C" => hirzebruchPicardBasis b e hΦ r hr
 

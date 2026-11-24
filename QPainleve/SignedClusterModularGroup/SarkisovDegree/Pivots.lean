@@ -16,7 +16,6 @@ import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
 import QPainleve.AlgebraicGeometry.IntersectionNumber.Nef.Pullback
 import QPainleve.Geometry.Toric.Fan.Boundary.Node
 import QPainleve.Geometry.Toric.Fan.Logarithmic.Multiplicity
-import QPainleve.Geometry.Toric.Fan.Picard.RetainedFiber
 
 /-!
 # High-order pivots of a logarithmic Hirzebruch resolution
