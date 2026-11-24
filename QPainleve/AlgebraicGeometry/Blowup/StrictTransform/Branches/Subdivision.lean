@@ -460,13 +460,9 @@ old branch and one exceptional branch for each old branch at the center. -/
 def normalizationBranchEquiv :
     (C).branchScheme k ⊕ (centerBranch) ≃ (B).branchScheme k :=
   Equiv.ofBijective (Sum.elim (strBranch) (newBranch))
-    ⟨by
-      intro a b h
-      rcases a with a | a <;> rcases b with b | b
-      · exact congrArg Sum.inl (D.strictNormalizationBranch_injective hc hp hCOver hBOver hD h)
-      · exact (D.branchSide_ne hc hp hCOver hBOver hD a b h).elim
-      · exact (D.branchSide_ne hc hp hCOver hBOver hD b a h.symm).elim
-      · exact congrArg Sum.inr (D.exceptionalSideBranch_injective hc hp hCOver hBOver hD h),
+    ⟨(D.strictNormalizationBranch_injective hc hp hCOver hBOver hD).sumElim
+      (D.exceptionalSideBranch_injective hc hp hCOver hBOver hD)
+      (D.branchSide_ne hc hp hCOver hBOver hD),
       D.branchSide_surjective hc hp hCOver hBOver hD⟩
 
 @[simp]
