@@ -210,6 +210,29 @@ theorem isGloballyGenerated_and_finrank_globalSections_eq_three_of_self_eq_one
   exact hI.finrank_globalSections_dual_eq_three_of_iso_projectiveLine e.symm hdeg
     (hclass'.symm ▸ hA) (hclass'.symm ▸ hsq) (hclass'.symm ▸ hcan)
 
+attribute [local instance] MvPolynomial.gradedAlgebra
+
+/-- A globally generated ample line bundle with a three-dimensional space of global
+sections on a proper scheme defines a finite morphism to the projective plane, with pullback
+of the hyperplane bundle equal to the original bundle. -/
+theorem exists_finite_to_projectivePlane
+    {k : Type u} [Field k] {X : Scheme.{u}} [X.Over (Spec (.of k))]
+    [IsProper (X ↘ Spec (.of k))] (L : InvertibleSheaf X)
+    (hA : (LineBundleClass.mk L).IsAmple) (hglob : L.IsGloballyGenerated)
+    (hnum : Module.finrank k Γ(L.obj, ⊤) = 3) :
+    let 𝒜 := MvPolynomial.homogeneousSubmodule (ULift.{u} (Fin 3)) k
+    let H : InvertibleSheaf (Proj 𝒜) := ⟨Proj.twistingSheaf 𝒜 1, inferInstance⟩
+    ∃ f : X ⟶ Proj 𝒜, f ≫ Proj.toSpecCoeff 𝒜 = X ↘ Spec (.of k) ∧ IsFinite f ∧
+      LineBundleClass.pullback f (LineBundleClass.mk H) = LineBundleClass.mk L := by
+  intro 𝒜 H
+  have : Module.Finite k Γ(L.obj, ⊤) := Module.finite_of_finrank_pos (hnum.symm ▸ by decide)
+  let b : Module.Basis (ULift.{u} (Fin 3)) k Γ(L.obj, ⊤) :=
+    (Module.finBasisOfFinrankEq k Γ(L.obj, ⊤) hnum).reindex Equiv.ulift.symm
+  have hcover := hglob.iSup_nonvanishingLocus_basis_eq_top b
+  refine L.exists_finite_toProjectiveSpace_of_intersectionNumber_pos b hcover ?_
+  intro C _ _ i _ _
+  exact hA.intersectionNumber_pos i
+
 end TauCeti.AlgebraicGeometry.InvertibleSheaf
 
 namespace AlgebraicGeometry.Scheme
@@ -258,28 +281,10 @@ theorem exists_finite_to_projectivePlane_of_finrank_eq_one
   intro 𝒜 H
   obtain ⟨L, hA, hsq, -, hgen, hglob, hnum⟩ :=
     X.exists_ample_picard_generator_linear_system_of_finrank_eq_one k hrank
-  have : Module.Finite k Γ(L.obj, ⊤) := Module.finite_of_finrank_pos (hnum.symm ▸ by decide)
-  let b : Module.Basis (ULift.{u} (Fin 3)) k Γ(L.obj, ⊤) :=
-    (Module.finBasisOfFinrankEq k Γ(L.obj, ⊤) hnum).reindex Equiv.ulift.symm
-  have hcover := hglob.iSup_nonvanishingLocus_basis_eq_top b
-  let f := L.obj.toProjectiveSpace (X ↘ S) b hcover
-  have hcomp := L.obj.toProjectiveSpace_toSpecCoeff (X ↘ S) b hcover
-  obtain ⟨e, -⟩ := L.obj.exists_iso_pullbackTwistingSheaf_toProjectiveSpace (X ↘ S) b hcover
-  have ha : LineBundleClass.pullback f (LineBundleClass.mk H) = LineBundleClass.mk L := by
-    rw [LineBundleClass.pullback_mk]
-    exact LineBundleClass.mk_eq_mk_iff.mpr ⟨
-      eqToIso (InvertibleSheaf.pullback_obj_obj f H) ≪≫ e⟩
-  have : IsProper (Proj.toSpecCoeff 𝒜) := by
-    rw [← Proj.over_polynomial]
-    infer_instance
-  have : IsProper (f ≫ Proj.toSpecCoeff 𝒜) := hcomp.symm ▸ (inferInstance : IsProper (X ↘ S))
-  have : IsProper f := .of_comp f (Proj.toSpecCoeff 𝒜)
-  have : CompactSpace (Proj 𝒜) := QuasiCompact.compactSpace_of_compactSpace (Proj.toSpecCoeff 𝒜)
-  refine ⟨f, hcomp, f.isFinite_of_intersectionNumber_pullback_pos (k := k)
-    (LineBundleClass.mk H) ?_, ?_⟩
-  · intro C _ _ i _ _
-    rw [ha]
-    exact hA.intersectionNumber_pos i
-  · simpa only [ha] using And.intro hA (And.intro hsq hgen)
+  obtain ⟨f, hf, hfin, ha⟩ := L.exists_finite_to_projectivePlane hA hglob hnum
+  refine ⟨f, hf, hfin, ?_⟩
+  dsimp only
+  rw [ha]
+  exact ⟨hA, hsq, hgen⟩
 
 end AlgebraicGeometry.Scheme
