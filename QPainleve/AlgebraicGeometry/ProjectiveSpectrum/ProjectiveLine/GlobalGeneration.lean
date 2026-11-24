@@ -92,8 +92,8 @@ theorem exists_nonzero_twisting_hom (M : (P).Modules)
     apply Cofan.IsColimit.hom_ext (SheafOfModules.isColimitFreeCofan σ.I)
     intro j
     exact (h _).trans (comp_zero (f := _)).symm
-  have hm : IsZero (F.obj M) := (IsZero.iff_id_eq_zero _).mpr
-    ((cancel_epi σ.π).mp ((Category.comp_id _).trans (hπ.trans (comp_zero (f := _)).symm)))
+  have hm : IsZero (F.obj M) :=
+    @IsZero.of_epi_eq_zero (P).Modules _ _ _ (F.obj M) σ.π σ.epi hπ
   exact hM (Functor.isZero_of_isZero_obj F hm)
 
 end TauCeti.AlgebraicGeometry.projectiveLine
