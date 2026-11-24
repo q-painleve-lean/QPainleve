@@ -8,7 +8,7 @@ module
 public import QPainleve.SignedClusterModularGroup.Realization.Mutation.Family
 public import QPainleve.SignedClusterModularGroup.Realization.Mutation.Transport
 
-import QPainleve.Geometry.Toric.Fan.Boundary.DualGraph
+import QPainleve.Geometry.Toric.Fan.Mutation.CycleAction
 
 /-!
 # Mutating a family of ordered toric presentations
@@ -89,42 +89,6 @@ local notation "J'" => LinearMap.comp
 
 local notation "Aux[" b "," s "," h "," c "]" =>
   internalBlowupTower (h₀ := h) b s centers(χ(c))
-
-private theorem exists_mutation_numbering (hc : Φ.IsComplete)
-    (hpos : ∀ j, b.detDualEquiv (r j).primitiveGenerator (r (j + 1)).primitiveGenerator = 1 ∧
-      ∃ σ : Φ.cones, (r j).toCone ≤ σ ∧ (r (j + 1)).toCone ≤ σ) :
-    ∃ (hpre : PrestableFamily (Dtor[Ψ,hΨ₀] ↘ S)),
-      letI := hpre
-      ∃ T' : Scheme.NodalCycleNumbering
-          (Empty.elim : Empty → (Dtor[Ψ,hΨ₀] ↘ S).smoothLocus) l,
-      (∀ j, T'.component j = (Ψ).boundaryNormalizationComponentEquiv (hΨ) (shear (r j))) ∧
-      ∀ j, b.detDualEquiv (shear (r j)).primitiveGenerator
-        (shear (r (j + 1))).primitiveGenerator = 1 ∧
-        ∃ σ : (Ψ).cones, (shear (r j)).toCone ≤ σ ∧ (shear (r (j + 1))).toCone ≤ σ := by
-  have hc' := (Φ.isComplete_mutationFan_iff b hv hp hOpp).mpr hc
-  let u := (s k).mutationBoundaryIso b hOpp (1 : ℂˣ) hΦ
-  have hpre : PrestableFamily (Dtor[Ψ,hΨ₀] ↘ S) := by
-    rw [← comp_over u.inv S]
-    exact (MorphismProperty.cancel_left_of_respectsIso (P := @PrestableFamily)
-      u.inv _).2 inferInstance
-  let _ := hpre
-  let r' := r.trans (shear)
-  have ht (j : ZMod l) : b.detDualEquiv (r' j).primitiveGenerator
-      (r' (j + 1)).primitiveGenerator = 1 ∧
-      ∃ σ : (Ψ).cones, (r' j).toCone ≤ σ ∧ (r' (j + 1)).toCone ≤ σ := by
-    obtain ⟨hd, σ, h₀, h₁⟩ := hpos j
-    let e := Φ.mutationFanConeEquiv b hv hp hOpp
-    refine ⟨(Φ.detDualEquiv_mutationFanRayEquiv_of_le b hv hp hOpp h₀ h₁).trans hd, e σ, ?_, ?_⟩
-    · simpa only [r', Equiv.trans_apply, mutationFanRayEquiv_toCone] using e.monotone h₀
-    · simpa only [r', Equiv.trans_apply, mutationFanRayEquiv_toCone] using e.monotone h₁
-  obtain ⟨edge, branches, vertices, hcycle, hcomponent, -⟩ :=
-    (Ψ).exists_toric_boundary_dualGraph_cycle (hΨ) hc' Empty.elim b r' ht
-  let T' : Scheme.NodalCycleNumbering
-      (Empty.elim : Empty → (Dtor[Ψ,hΨ₀] ↘ S).smoothLocus) l :=
-    ⟨vertices, edge, branches, hcycle⟩
-  have hr' (j : ZMod l) : T'.component j = (Ψ).boundaryNormalizationComponentEquiv (hΨ) (r' j) :=
-    by simpa only [Scheme.NodalCycleNumbering.component_apply, T'] using hcomponent j
-  exact ⟨hpre, T', hr', ht⟩
 
 section Fibers
 
@@ -231,7 +195,7 @@ theorem exists_mutate_contracted (hc : Φ.IsComplete)
         IsNodalBoundaryTower (M' (dst(c))).pair.hom.left.ker ((M' (dst(c))).surface ↘ S) (𝟙 _) W ∧
           p.projection = e.inv ≫ W.toBase := by
   classical
-  obtain ⟨hpre, T', hr', ht⟩ := exists_mutation_numbering b s k hOpp hΦ r hc hpos
+  obtain ⟨hpre, T', hr', ht⟩ := (s k).exists_mutationBoundaryNumbering b hOpp hΦ r hc hpos
   let _ := hpre
   have hcharge' : (Quiver.Path.chargeTarget w P).charge = rayChargeMap (t) := by
     rw [Quiver.Hom.toPath, Quiver.Path.chargeTarget_cons, Quiver.Path.chargeTarget_nil,
