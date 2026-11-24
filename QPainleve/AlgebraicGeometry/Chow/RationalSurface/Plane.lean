@@ -12,7 +12,6 @@ public import TauCeti.AlgebraicGeometry.LineBundle.GlobalGeneration.Basic
 
 import QPainleve.AlgebraicGeometry.Chow.PrimeDivisor
 import QPainleve.AlgebraicGeometry.Chow.RationalSurface.Effectivity
-import QPainleve.AlgebraicGeometry.Curves.Degree.Ample
 import QPainleve.AlgebraicGeometry.EffectiveCartierDivisor.Effectivity
 import QPainleve.AlgebraicGeometry.IntersectionNumber.Ample
 import QPainleve.AlgebraicGeometry.LineBundle.GlobalGeneration
@@ -194,28 +193,10 @@ theorem exists_finite_to_projectivePlane_of_finrank_eq_one
   intro 𝒜 H
   obtain ⟨L, hA, hsq, -, hgen, hglob, hnum⟩ :=
     X.exists_ample_picard_generator_linear_system_of_finrank_eq_one k hrank
-  have : Module.Finite k Γ(L.obj, ⊤) := Module.finite_of_finrank_pos (hnum.symm ▸ by decide)
-  let b : Module.Basis (ULift.{u} (Fin 3)) k Γ(L.obj, ⊤) :=
-    (Module.finBasisOfFinrankEq k Γ(L.obj, ⊤) hnum).reindex Equiv.ulift.symm
-  have hcover := hglob.iSup_nonvanishingLocus_basis_eq_top b
-  let f := L.obj.toProjectiveSpace (X ↘ S) b hcover
-  have hcomp := L.obj.toProjectiveSpace_toSpecCoeff (X ↘ S) b hcover
-  obtain ⟨e, -⟩ := L.obj.exists_iso_pullbackTwistingSheaf_toProjectiveSpace (X ↘ S) b hcover
-  have ha : LineBundleClass.pullback f (LineBundleClass.mk H) = LineBundleClass.mk L := by
-    rw [LineBundleClass.pullback_mk]
-    exact LineBundleClass.mk_eq_mk_iff.mpr ⟨
-      eqToIso (InvertibleSheaf.pullback_obj_obj f H) ≪≫ e⟩
-  have : IsProper (Proj.toSpecCoeff 𝒜) := by
-    rw [← Proj.over_polynomial]
-    infer_instance
-  have : IsProper (f ≫ Proj.toSpecCoeff 𝒜) := hcomp.symm ▸ (inferInstance : IsProper (X ↘ S))
-  have : IsProper f := .of_comp f (Proj.toSpecCoeff 𝒜)
-  have : CompactSpace (Proj 𝒜) := QuasiCompact.compactSpace_of_compactSpace (Proj.toSpecCoeff 𝒜)
-  refine ⟨f, hcomp, f.isFinite_of_intersectionNumber_pullback_pos (k := k)
-    (LineBundleClass.mk H) ?_, ?_⟩
-  · intro C _ _ i _ _
-    rw [ha]
-    exact hA.intersectionNumber_pos i
-  · simpa only [ha] using And.intro hA (And.intro hsq hgen)
+  obtain ⟨f, hf, hfin, ha⟩ := L.exists_finite_to_projectivePlane hA hglob hnum
+  refine ⟨f, hf, hfin, ?_⟩
+  dsimp only
+  rw [ha]
+  exact ⟨hA, hsq, hgen⟩
 
 end AlgebraicGeometry.Scheme
