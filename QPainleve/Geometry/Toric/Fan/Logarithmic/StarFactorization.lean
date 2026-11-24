@@ -111,21 +111,28 @@ theorem StarStep.comp_toRationalMap [PreirreducibleSpace Z] (e : StarStep A B) :
     rw [← h.isSubdivision.toRationalMap_algebraicMap, Scheme.RationalMap.comp_toRationalMap,
       Scheme.Hom.toRationalMap_compHom, comm]
 
-private def dominantPathRationalMap {A : LogarithmicProjection i D} :
-    ∀ {B : LogarithmicProjection i D}, Quiver.Path A B →
+/-- Evaluate a path between logarithmic projections by composing its dominant edge maps.
+The explicit quiver permits different kinds of resolved steps on the same projections. -/
+@[expose]
+def dominantPathRationalMap (Q : Quiver (LogarithmicProjection i D))
+    (edge : ∀ {A B : LogarithmicProjection i D},
+      Q.Hom A B → {f : X[A.fan] ⤏ X[B.fan] // f.IsDominant}) :
+    ∀ {B : LogarithmicProjection i D}, @Quiver.Path _ Q A B →
       {f : X[A.fan] ⤏ X[B.fan] // f.IsDominant}
-  | _, .nil => ⟨Scheme.RationalMap.id _, inferInstance⟩
-  | B, @Quiver.Path.cons _ _ _ C _ p _ =>
-    let f := dominantPathRationalMap p
+  | _, @Quiver.Path.nil _ _ _ => ⟨Scheme.RationalMap.id _, inferInstance⟩
+  | _, @Quiver.Path.cons _ _ _ _ _ p e =>
+    let f := dominantPathRationalMap Q edge p
+    let g := edge e
     haveI := f.property
-    ⟨f.val.comp toricMap[C,B], inferInstance⟩
+    haveI := g.property
+    ⟨f.val.comp g.val, inferInstance⟩
 
 /-- Compose the rational maps of a resolved toric path in execution order. -/
 def pathRationalMap (p : Quiver.Path A B) : X[A.fan] ⤏ X[B.fan] :=
-  (dominantPathRationalMap p).val
+  (dominantPathRationalMap instQuiver (fun {_ _} _ ↦ ⟨toricMap[_,_], inferInstance⟩) p).val
 
 instance (p : Quiver.Path A B) : (pathRationalMap p).IsDominant :=
-  (dominantPathRationalMap p).property
+  (dominantPathRationalMap instQuiver (fun {_ _} _ ↦ ⟨toricMap[_,_], inferInstance⟩) p).property
 
 @[simp]
 theorem pathRationalMap_nil :
@@ -275,24 +282,28 @@ variable {W : Scheme} [W.Over S] [SmoothOfRelativeDimension 2 (W ↘ S)]
   (hf : letI : Smooth (W ↘ S) := SmoothOfRelativeDimension.smooth 2 _
     D.comap f = E * ramificationIdealSheaf ℂ f)
 
+/-- Precompose a regular projection with a dominant morphism carrying the pole ideal.
+The target fan is unchanged. -/
+@[expose]
+def precomposeProjection (A : LogarithmicProjection i D) : LogarithmicProjection i E := by
+  let : SmoothOfRelativeDimension 2 (X[A.fan] ↘ S) := by
+    rw [A.fan.algebraicRealization_over, ← hN]
+    exact A.fan.smoothOfRelativeDimension_algebraicRealizationStructureMap A.isRegular
+  exact
+    { fan := A.fan
+      isRegular := A.isRegular
+      isComplete := A.isComplete
+      hom := f ≫ A.hom
+      isOver := inferInstance
+      isDominant := inferInstance
+      comap_boundaryIdeal :=
+        comap_eq_mul_ramificationIdealSheaf_comp ℂ f A.hom 2 A.comap_boundaryIdeal hf }
+
 /-- Precompose every projection and commutative triangle by a dominant morphism that
 carries the pole factorization. The resulting prefunctor lifts whole paths to the new
 resolving surface using `Prefunctor.mapPath`. -/
 def precompose : LogarithmicProjection i D ⥤q LogarithmicProjection i E := by
-  let refined (A : LogarithmicProjection i D) : LogarithmicProjection i E := by
-    let : SmoothOfRelativeDimension 2 (X[A.fan] ↘ S) := by
-      rw [A.fan.algebraicRealization_over, ← hN]
-      exact A.fan.smoothOfRelativeDimension_algebraicRealizationStructureMap A.isRegular
-    exact
-      { fan := A.fan
-        isRegular := A.isRegular
-        isComplete := A.isComplete
-        hom := f ≫ A.hom
-        isOver := inferInstance
-        isDominant := inferInstance
-        comap_boundaryIdeal :=
-          comap_eq_mul_ramificationIdealSheaf_comp ℂ f A.hom 2 A.comap_boundaryIdeal hf }
-  refine ⟨refined, ?_⟩
+  refine ⟨precomposeProjection hN f hf, ?_⟩
   intro A B e
   cases e with
   | blowup h comm => exact .blowup h ((Category.assoc _ _ _).trans (congrArg (f ≫ ·) comm))
