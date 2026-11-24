@@ -248,19 +248,12 @@ theorem imagePairIso_boundaryAction (e : P.pair ≅ Q.pair) :
 theorem mem_range_boundaryPrime_iff (P : MarkedSurface k n B₀ X₀)
     (hD : D[P].IsEffectiveCartier) (x : CodimensionOnePoint P.surface) :
     x ∈ Set.range (P.boundaryPrime hD) ↔ (x : P.surface) ∈ D[P].support := by
-  constructor
-  · rintro ⟨j, rfl⟩
-    exact (mem_boundaryPrimes.mp (P.boundaryPrime_mem_boundaryPrimes hD j)).1
-  · intro hx
-    obtain ⟨v, hv⟩ := hD.exists_range_blowupComponent_comp_subschemeι (k := k) hx
-    obtain ⟨j, rfl⟩ := P.imageCycle.component.surjective v
-    have hr := (D[P]).subscheme.range_blowupComponent_comp
-      (P.imageCycle.component j) D[P].subschemeι D[P].subschemeι.isClosedMap
-    rw [← P.imageCycle.componentGenericPoint_def, P.imageCycle_genericPoint j,
-      ← P.coe_boundaryPrime hD j, hv] at hr
-    refine ⟨j, CodimensionOnePoint.eq_of_specializes ?_⟩
-    rw [specializes_iff_mem_closure, ← hr]
-    exact subset_closure (Set.mem_singleton _)
+  have hcomp : P.boundaryPrime hD = D[P].boundaryPrimeEmbedding ∘ P.numberedBoundaryPrimes hD := by
+    funext j
+    exact Subtype.ext (by
+      simp only [Function.comp_apply, coe_boundaryPrimeEmbedding, numberedBoundaryPrimes_apply_val])
+  rw [hcomp, (P.numberedBoundaryPrimes_surjective hD).range_comp, range_boundaryPrimeEmbedding]
+  exact Iff.rfl
 
 /-- The Picard marking identifies the orthogonal to the numbered boundary classes with
 the geometric boundary orthogonal. -/
