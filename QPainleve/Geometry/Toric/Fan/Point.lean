@@ -139,6 +139,16 @@ theorem isClosedImmersion_distinguishedPointHom (σ : Φ.cones) :
   isClosedImmersion_of_comp_eq_id Φ.algebraicRealizationStructureMap (Φ.distinguishedPointHom σ)
     (Φ.distinguishedPointHom_comp_algebraicRealizationStructureMap σ)
 
+/-- The distinguished point of a cone is closed. -/
+theorem isClosed_singleton_distinguishedPoint (σ : Φ.cones) :
+    IsClosed ({Φ.distinguishedPointHom σ (IsLocalRing.closedPoint ℂ)} :
+      Set Φ.algebraicRealization) := by
+  let q := Φ.distinguishedPointHom σ
+  have := Φ.isClosedImmersion_distinguishedPointHom σ
+  have hr : Set.range q = {q (IsLocalRing.closedPoint ℂ)} :=
+    Set.range_eq_singleton fun x ↦ congrArg q (Subsingleton.elim x _)
+  exact hr ▸ q.isClosedEmbedding.isClosed_range
+
 /-- The closed immersion of a cone's distinguished point cuts out its reduced vanishing ideal. -/
 theorem ker_distinguishedPointHom_eq_vanishingIdeal (σ : Φ.cones) :
     let _ := Φ.isClosedImmersion_distinguishedPointHom σ
