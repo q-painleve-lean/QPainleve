@@ -77,7 +77,7 @@ private theorem evaluation_eq_reindex (hc : centers(d) = centers(c) ∘ σ)
   have hidR (X : Scheme.{0}) : (𝟙 X : X ⟶ X).toRationalMap = Scheme.RationalMap.id X :=
     (id_compHom (𝟙 X)).symm.trans (compHom_id _)
   simp only [FanHom.algebraicMap_id, id_comp] at htor
-  dsimp only [MarkedSurface.compEvaluation]
+  dsimp only [MarkedSurface.compEvaluation, MarkedSurface.withEvaluation]
   rw [p.evaluation_eq]
   simpa only [hidR, id_comp] using
     (comp_contractedXEvaluation_of_common_model b s c hΦ p.projection b (s ∘ σ) d hΦ
