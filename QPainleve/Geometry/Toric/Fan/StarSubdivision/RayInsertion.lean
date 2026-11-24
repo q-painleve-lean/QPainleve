@@ -5,10 +5,9 @@ Authors: The QPainleve contributors
 -/
 module
 
-public import TauCeti.Geometry.Toric.Algebraic.Fan.Subdivision
+public import QPainleve.Geometry.Toric.Fan.Ray
 
 import QPainleve.Geometry.Toric.Cone.Coordinates
-import QPainleve.Geometry.Toric.Fan.Ray
 import QPainleve.Geometry.Toric.Fan.StarSubdivision.TwoDimensional
 import TauCeti.Data.Fin.Rev
 
@@ -137,5 +136,16 @@ theorem exists_regular_subdivision_containing_rays (Φ : Fan i) (hΦ : Φ.IsRegu
     · exact hnew
     · exact hΩ.ray_mem ⟨⟨_, hrays _ hv⟩, finrank_span_coe_hull_singleton
         (map_ne_zero_iff i Ψ.lattice.injective |>.mpr (hs _ (Set.mem_insert_of_mem _ hv)).1)⟩
+
+/-- A complete regular surface fan has a complete regular subdivision containing
+the ray opposite a specified ray. The specified ray survives in the subdivision. -/
+theorem Ray.exists_regular_subdivision_containing_opposite (ρ : Φ.Ray)
+    (hΦ : Φ.IsRegular) (hc : Φ.IsComplete) (hN : Module.finrank ℤ N = 2) :
+    ∃ (Ψ : Fan i) (h : Ψ.IsSubdivision Φ), Ψ.IsRegular ∧ Ψ.IsComplete ∧
+      hull ℝ {i (-(h.liftRay ρ).primitiveGenerator)} ∈ Ψ.cones := by
+  obtain ⟨Ψ, h, hreg, hopp⟩ := Φ.exists_regular_subdivision_containing_ray hΦ hN
+    (neg_ne_zero.mpr ρ.primitiveGenerator_ne_zero) (Φ.mem_support.mpr (Φ.isComplete_iff.mp hc _))
+  exact ⟨Ψ, h, hreg, h.isComplete_iff.mpr hc,
+    by simpa only [h.primitiveGenerator_liftRay] using hopp⟩
 
 end TauCeti.Toric.Fan

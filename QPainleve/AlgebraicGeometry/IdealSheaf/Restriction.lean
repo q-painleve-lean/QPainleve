@@ -31,6 +31,26 @@ namespace AlgebraicGeometry.Scheme.IdealSheafData
 
 universe u
 
+/-- Restricting the identity morphism to the same closed subscheme gives the identity. -/
+@[simp]
+theorem subschemeMap_id {X : Scheme.{u}} (D : X.IdealSheafData)
+    (h : D ≤ D.map (𝟙 X)) :
+    D.subschemeMap D (𝟙 X) h = 𝟙 D.subscheme := by
+  rw [← cancel_mono D.subschemeι]
+  simp
+
+/-- The composite of two restrictions to closed subschemes is the restriction of
+the composite of the ambient morphisms. -/
+theorem subschemeMap_comp {X Y Z : Scheme.{u}}
+    {D : X.IdealSheafData} {E : Y.IdealSheafData} (G : Z.IdealSheafData)
+    {f : Y ⟶ X} {g : Z ⟶ Y} (hf : D.comap f ≤ E) (hg : E.comap g ≤ G) :
+    G.subschemeMap E g (le_map_iff_comap_le.mpr hg) ≫
+      E.subschemeMap D f (le_map_iff_comap_le.mpr hf) =
+        G.subschemeMap D (g ≫ f) (le_map_iff_comap_le.mpr
+          (by rw [comap_comp]; exact (comap_mono g hf).trans hg)) := by
+  rw [← cancel_mono D.subschemeι]
+  simp [Category.assoc]
+
 /-- Forming the scheme-theoretic image of a closed subscheme under a quasi-compact morphism
 commutes with restriction to an open of the target. -/
 theorem comap_map_of_isPullback_of_isOpenImmersion {Y W Y' W' : Scheme.{u}}

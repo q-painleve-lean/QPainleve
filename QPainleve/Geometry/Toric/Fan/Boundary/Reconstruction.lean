@@ -6,8 +6,7 @@ Authors: The QPainleve contributors
 module
 
 public import QPainleve.Geometry.Toric.Fan.Boundary.SelfIntersection
-public import Mathlib.Data.ZMod.Basic
-import QPainleve.Geometry.Toric.Lattice
+public import QPainleve.Geometry.Toric.Fan.CyclicOrder
 
 /-!
 # Reconstruction of a toric surface fan from its boundary
@@ -23,7 +22,6 @@ This is the fan comparison used in Gross–Hacking–Keel,
 
 public section
 
-open PointedCone
 open TauCeti.AlgebraicGeometry
 
 namespace TauCeti.Toric
@@ -35,109 +33,6 @@ variable {N N' : Type} {V V' : Type*} [AddCommGroup N] [AddCommGroup N']
 namespace Fan
 
 variable {n : ℕ}
-
-private theorem adjacent_iff (b : Module.Basis (Fin 2) ℤ N)
-    (hΦ : Φ.IsRegular) (hc : Φ.IsComplete) (u : ZMod n ≃ Φ.Ray)
-    (hu : ∀ j, b.detDualEquiv (u j).primitiveGenerator (u (j + 1)).primitiveGenerator = 1 ∧
-      ∃ σ : Φ.cones, (u j).toCone ≤ σ ∧ (u (j + 1)).toCone ≤ σ)
-    (j : ZMod n) (τ : Φ.Ray) :
-    (u j ≠ τ ∧ ∃ σ : Φ.cones, (u j).toCone ≤ σ ∧ τ.toCone ≤ σ) ↔
-      τ = u (j - 1) ∨ τ = u (j + 1) := by
-  exact ray_neighbors_iff_of_det b hΦ hc
-    (by simpa only [sub_add_cancel] using hu (j - 1)) (hu j) τ
-
-private theorem mem_cones_iff (b : Module.Basis (Fin 2) ℤ N)
-    (hΦ : Φ.IsRegular) (hc : Φ.IsComplete) (u : ZMod n ≃ Φ.Ray)
-    (hu : ∀ j, b.detDualEquiv (u j).primitiveGenerator (u (j + 1)).primitiveGenerator = 1 ∧
-      ∃ σ : Φ.cones, (u j).toCone ≤ σ ∧ (u (j + 1)).toCone ≤ σ)
-    {σ : PointedCone ℝ V} :
-    σ ∈ Φ.cones ↔ σ = ⊥ ∨ σ ∈ Set.range (fun j ↦ (u j).toCone.val) ∨
-      σ ∈ Set.range (fun j ↦ (u j).toCone.val ⊔ (u (j + 1)).toCone.val) := by
-  have hN : Module.finrank ℤ N = 2 := by simpa using Module.finrank_eq_card_basis b
-  constructor
-  · intro hσ
-    by_cases hzero : σ = ⊥
-    · exact Or.inl hzero
-    let s : Φ.cones := ⟨σ, hσ⟩
-    obtain ⟨ρ, hρ⟩ := Φ.exists_ray_le_of_ne_bot s hzero
-    obtain ⟨j, rfl⟩ := u.surjective ρ
-    by_cases htwo : ∃ τ : Φ.Ray, u j ≠ τ ∧ τ.toCone ≤ s
-    · obtain ⟨τ, hne, hτ⟩ := htwo
-      have hsup := cone_eq_sup_of_ray_ne_of_le hΦ hN hne hρ hτ
-      rcases (adjacent_iff b hΦ hc u hu j τ).mp ⟨hne, s, hρ, hτ⟩ with rfl | rfl
-      · exact Or.inr (Or.inr ⟨j - 1, by simpa [sup_comm] using hsup.symm⟩)
-      · exact Or.inr (Or.inr ⟨j, hsup.symm⟩)
-    · have he : s = (u j).toCone := by
-        refine le_antisymm (Φ.le_iff_forall_ray_le.mpr fun τ hτ ↦ ?_) hρ
-        by_contra hn
-        exact htwo ⟨τ, fun he ↦ hn (he ▸ le_rfl), hτ⟩
-      exact Or.inr (Or.inl ⟨j, (congrArg Subtype.val he).symm⟩)
-  · rintro (rfl | ⟨j, rfl⟩ | ⟨j, rfl⟩)
-    · exact Φ.bot_mem (u 0).toCone.property
-    · exact (u j).toCone.property
-    · obtain ⟨s, hρ, hτ⟩ := (hu j).2
-      have hne : u j ≠ u (j + 1) := by
-        intro he
-        have hd := (hu j).1
-        rw [← he, b.detDualEquiv_self] at hd
-        omega
-      simpa only [cone_eq_sup_of_ray_ne_of_le hΦ hN hne hρ hτ] using s.property
-
-private theorem map_mem_cones_iff
-    (f : V ≃ₗ[ℝ] V') (u : ZMod n ≃ Φ.Ray) (v : ZMod n ≃ Ψ.Ray)
-    (hu : ∀ σ, σ ∈ Φ.cones ↔ σ = ⊥ ∨ σ ∈ Set.range (fun j ↦ (u j).toCone.val) ∨
-      σ ∈ Set.range (fun j ↦ (u j).toCone.val ⊔ (u (j + 1)).toCone.val))
-    (hv : ∀ σ, σ ∈ Ψ.cones ↔ σ = ⊥ ∨ σ ∈ Set.range (fun j ↦ (v j).toCone.val) ∨
-      σ ∈ Set.range (fun j ↦ (v j).toCone.val ⊔ (v (j + 1)).toCone.val))
-    (hf : ∀ j, PointedCone.map (f : V →ₗ[ℝ] V') (u j).toCone.val = (v j).toCone.val)
-    (σ : PointedCone ℝ V) :
-    PointedCone.map (f : V →ₗ[ℝ] V') σ ∈ Ψ.cones ↔ σ ∈ Φ.cones := by
-  have hinj : Function.Injective (PointedCone.map (f : V →ₗ[ℝ] V')) :=
-    Submodule.map_injective_of_injective f.injective
-  have hs (j : ZMod n) :
-      PointedCone.map (f : V →ₗ[ℝ] V') ((u j).toCone.val ⊔ (u (j + 1)).toCone.val) =
-        (v j).toCone.val ⊔ (v (j + 1)).toCone.val := by
-    simp only [PointedCone.map] at hf ⊢
-    rw [Submodule.map_sup, hf, hf]
-  rw [hu, hv]
-  have hbot : PointedCone.map (f : V →ₗ[ℝ] V') ⊥ = ⊥ := Submodule.map_bot _
-  simp only [Set.mem_range, ← hs, ← hbot]
-  simp only [← hf, hinj.eq_iff]
-
-/-- A lattice equivalence matching two cyclic lists of rays induces a fan equivalence.
-The numberings carry the adjacent-cone and orientation conditions separately on each side. -/
-noncomputable def fanEquivOfCyclicRays
-    (b : Module.Basis (Fin 2) ℤ N) (b' : Module.Basis (Fin 2) ℤ N')
-    (hΦ : Φ.IsRegular) (hΨ : Ψ.IsRegular) (hc : Φ.IsComplete) (hc' : Ψ.IsComplete)
-    (u : ZMod n ≃ Φ.Ray) (v : ZMod n ≃ Ψ.Ray)
-    (hu : ∀ j, b.detDualEquiv (u j).primitiveGenerator (u (j + 1)).primitiveGenerator = 1 ∧
-      ∃ σ : Φ.cones, (u j).toCone ≤ σ ∧ (u (j + 1)).toCone ≤ σ)
-    (hv : ∀ j, b'.detDualEquiv (v j).primitiveGenerator (v (j + 1)).primitiveGenerator = 1 ∧
-      ∃ σ : Ψ.cones, (v j).toCone ≤ σ ∧ (v (j + 1)).toCone ≤ σ)
-    (f : N ≃+ N') (hf : ∀ j, f (u j).primitiveGenerator = (v j).primitiveGenerator) :
-    FanEquiv Φ Ψ where
-  latticeEquiv := f
-  realEquiv := Φ.lattice.extendEquiv Ψ.lattice f
-  map_lattice := Φ.lattice.extendEquiv_apply_lattice Ψ.lattice f
-  map_mem := map_mem_cones_iff _ u v
-    (fun _ ↦ mem_cones_iff b hΦ hc u hu) (fun _ ↦ mem_cones_iff b' hΨ hc' v hv)
-    (fun j ↦ by
-      rw [Ray.toCone_eq_hull_primitiveGenerator, Ray.toCone_eq_hull_primitiveGenerator,
-        PointedCone.map, Submodule.map_span, Set.image_singleton]
-      simp only [LinearMap.coe_restrictScalars, LinearEquiv.coe_coe,
-        IsIntegralLattice.extendEquiv_apply_lattice, hf])
-
-@[simp]
-theorem fanEquivOfCyclicRays_latticeEquiv
-    (b : Module.Basis (Fin 2) ℤ N) (b' : Module.Basis (Fin 2) ℤ N')
-    (hΦ : Φ.IsRegular) (hΨ : Ψ.IsRegular) (hc : Φ.IsComplete) (hc' : Ψ.IsComplete)
-    (u : ZMod n ≃ Φ.Ray) (v : ZMod n ≃ Ψ.Ray)
-    (hu : ∀ j, b.detDualEquiv (u j).primitiveGenerator (u (j + 1)).primitiveGenerator = 1 ∧
-      ∃ σ : Φ.cones, (u j).toCone ≤ σ ∧ (u (j + 1)).toCone ≤ σ)
-    (hv : ∀ j, b'.detDualEquiv (v j).primitiveGenerator (v (j + 1)).primitiveGenerator = 1 ∧
-      ∃ σ : Ψ.cones, (v j).toCone ≤ σ ∧ (v (j + 1)).toCone ≤ σ)
-    (f : N ≃+ N') (hf : ∀ j, f (u j).primitiveGenerator = (v j).primitiveGenerator) :
-    (fanEquivOfCyclicRays b b' hΦ hΨ hc hc' u v hu hv f hf).latticeEquiv = f := (rfl)
 
 private theorem map_primitiveGenerator_of_selfIntersection_eq
     [NeZero n]
@@ -219,7 +114,9 @@ theorem existsUnique_fanEquiv_of_boundarySelfIntersections
     apply a.ext
     simp only [LinearEquiv.coe_coe, AddEquiv.coe_toIntLinearEquiv, hf, Fin.forall_fin_two]
     exact ⟨by simpa only [ha₀, ha₀'] using hk 0, by simpa only [ha₁, ha₁'] using hk 1⟩
-  exact AddEquiv.ext fun x ↦ DFunLike.congr_fun hEq x
+  exact AddEquiv.ext fun x ↦ by
+    simp only [e, fanEquivOfCyclicRays_latticeEquiv]
+    exact DFunLike.congr_fun hEq x
 
 end Fan
 

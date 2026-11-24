@@ -48,12 +48,17 @@ namespace QPainleve.BlowupTower.IsClosedPointTower
 
 variable [PerfectField k] {Z : Scheme.{u}} {n : ℕ} {T : BlowupTower Y n Z}
 
-/-- On any point-blowup factorization of the morphism, the formula `div(f*ω) = -P`
-is equivalent to containment in the ramification ideal together with the exact
-identification of the resulting pole ideal under the factorization isomorphism. -/
-theorem pullbackTopFormDivisor_eq_neg_iff (hT : IsClosedPointTower Y T)
+omit [IsIntegral X] in
+/-- A point-blowup factorization computes the pole ideal of the specified morphism
+as the quotient of the total transform by the ramification ideal. The containment
+ensures that the quotient accounts for the full total transform. -/
+theorem comap_eq_mul_ramificationIdealSheaf_iff
+    (hT : IsClosedPointTower Y T)
+    (hRam : letI := SmoothOfRelativeDimension.smooth 2 (X ↘ Spec (.of k))
+      (ramificationIdealSheaf k f).IsEffectiveCartier)
     (e : X ≅ Z) (he : e.hom ≫ T.toBase = f) :
-    pullbackTopFormDivisor k f 2 hD ω hTotal hRam = -hP.toCartierDivisor ↔
+    letI := SmoothOfRelativeDimension.smooth 2 (X ↘ Spec (.of k))
+    D.comap f = P * ramificationIdealSheaf k f ↔
       D.comap T.toBase ≤ hT.ramificationIdealSheafToBase k ∧
       ((D.comap T.toBase).colon (hT.ramificationIdealSheafToBase k)).comap e.hom = P := by
   have := SmoothOfRelativeDimension.smooth 2 (X ↘ Spec (.of k))
@@ -65,8 +70,7 @@ theorem pullbackTopFormDivisor_eq_neg_iff (hT : IsClosedPointTower Y T)
   have hbase : (R.comap e.hom).IsEffectiveCartier := hram.symm ▸ hRam
   have hR : R.IsEffectiveCartier := by
     simpa only [← comap_comp, Iso.inv_hom_id, comap_id] using hbase.comap e.inv
-  rw [QPainleve.pullbackTopFormDivisor_eq_neg_iff k f 2 hD ω hTotal hP hRam,
-    ← htotal, ← hram]
+  rw [← htotal, ← hram]
   constructor
   · intro h
     have hleX : A.comap e.hom ≤ R.comap e.hom := by
@@ -78,6 +82,17 @@ theorem pullbackTopFormDivisor_eq_neg_iff (hT : IsClosedPointTower Y T)
       hbase.mul_colon_cancel_right]⟩
   · rintro ⟨hle, h⟩
     rw [← h, ← comap_mul, ← A.eq_colon_mul R hR.locallyPrincipal hle]
+
+/-- On any point-blowup factorization of the morphism, the formula `div(f*ω) = -P`
+is equivalent to containment in the ramification ideal together with the exact
+identification of the resulting pole ideal under the factorization isomorphism. -/
+theorem pullbackTopFormDivisor_eq_neg_iff (hT : IsClosedPointTower Y T)
+    (e : X ≅ Z) (he : e.hom ≫ T.toBase = f) :
+    pullbackTopFormDivisor k f 2 hD ω hTotal hRam = -hP.toCartierDivisor ↔
+      D.comap T.toBase ≤ hT.ramificationIdealSheafToBase k ∧
+      ((D.comap T.toBase).colon (hT.ramificationIdealSheafToBase k)).comap e.hom = P := by
+  exact (QPainleve.pullbackTopFormDivisor_eq_neg_iff k f 2 hD ω hTotal hP hRam).trans
+    (hT.comap_eq_mul_ramificationIdealSheaf_iff hRam e he)
 
 end QPainleve.BlowupTower.IsClosedPointTower
 

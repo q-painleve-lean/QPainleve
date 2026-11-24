@@ -42,6 +42,16 @@ universe u
 
 namespace AlgebraicGeometry.Scheme.IdealSheafData.IsExceptionalCurveOfFirstKind
 
+/-- An exceptional curve of the first kind has more than one point in its support. -/
+theorem not_subsingleton_support {X : Scheme.{u}} {E : X.IdealSheafData}
+    (hE : E.IsExceptionalCurveOfFirstKind) : ¬ (E.support : Set X).Subsingleton := by
+  have := hE.isIntegral_subscheme
+  intro h
+  have hsub : Subsingleton E.subscheme := ⟨fun x y ↦ E.subschemeι.injective
+    (h (E.range_subschemeι ▸ Set.mem_range_self x) (E.range_subschemeι ▸ Set.mem_range_self y))⟩
+  exact zero_ne_one ((TauCeti.topologicalKrullDim_eq_zero_iff_subsingleton.mpr hsub).symm.trans
+    hE.topologicalKrullDim_subscheme)
+
 /-- A Cartier pullback of an exceptional curve of the first kind is again of the
 first kind if the induced map on the curve is an isomorphism. -/
 theorem comap_of_isIso_subschemeMap {X Y : Scheme.{u}} {I : Y.IdealSheafData}

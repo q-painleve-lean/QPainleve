@@ -95,6 +95,48 @@ theorem picardIsometryCongr_picardHom (a : Pic(X)) (b : Fin n → ℤ) :
     LinearEquiv.prodCongr_apply, LinearEquiv.refl_apply,
     LinearMap.BilinForm.IsometryEquiv.coe_toLinearEquiv]
 
+/-- With no blowups the Picard extension is the original isometry. -/
+@[simp]
+theorem picardIsometryCongr_nil_apply (a : Pic(X)) :
+    picardIsometryCongr k (IsClosedPointTower.nil (X := X))
+      (IsClosedPointTower.nil (X := Z)) e a = e a := by
+  simpa only [picardHom_nil] using
+    (picardIsometryCongr_picardHom k IsClosedPointTower.nil IsClosedPointTower.nil e a
+      (0 : Fin 0 → ℤ))
+
+/-- The extension through an appended pair of point blowups is the one-step
+extension of the isometry on the preceding surfaces. -/
+theorem picardIsometryCongr_snoc_apply {I : Y.IdealSheafData} {J : W.IdealSheafData}
+    {x : Y} {z : W} (hx : IsClosed ({x} : Set Y)) (hz : IsClosed ({z} : Set W))
+    (hI : I = (Scheme.fromSpecResidueField Y x).ker)
+    (hJ : J = (Scheme.fromSpecResidueField W z).ker) :
+    let : IsNoetherian X := isNoetherian_of_finiteType (g(k, X))
+    let : IsNoetherian Z := isNoetherian_of_finiteType (g(k, Z))
+    let : Y.Over (Spec (.of k)) := ⟨T.toBase ≫ g(k, X)⟩
+    let : W.Over (Spec (.of k)) := ⟨U.toBase ≫ g(k, Z)⟩
+    let : Y.IsProjectiveOver k := T.isProjectiveOver k
+    let : W.IsProjectiveOver k := U.isProjectiveOver k
+    let : IsIntegral Y := hT.isIntegral (g(k, X))
+    let : IsIntegral W := hU.isIntegral (g(k, Z))
+    let : SmoothOfRelativeDimension 2 (g(k, Y)) := hT.smoothOfRelativeDimension (g(k, X))
+    let : SmoothOfRelativeDimension 2 (g(k, W)) := hU.smoothOfRelativeDimension (g(k, Z))
+    ∀ a : Pic(I.blowup),
+      picardIsometryCongr k (hT.snoc x hx hI) (hU.snoc z hz hJ) e a =
+        picardIsometryCongr k (IsClosedPointTower.snoc .nil x hx hI)
+          (IsClosedPointTower.snoc .nil z hz hJ) (picardIsometryCongr k hT hU e) a := by
+  intro _ _ _ _ _ _ _ _ _ _ a
+  have hmark {V L : Scheme.{u}} (P : BlowupTower V n L) (Q : L.IdealSheafData)
+      (b : Pic(V)) (c : Fin (n + 1) → ℤ) :
+      (P.snoc Q).picardHom (b, c) = (nil.snoc Q).picardHom
+        (P.picardHom (b, fun j ↦ c (j.castAdd 1)), fun j ↦ c (j.natAdd n)) := by
+    simpa only [append_snoc, append_nil] using P.picardHom_append (nil.snoc Q) b c
+  obtain ⟨⟨b, c⟩, rfl⟩ := ((hT.snoc x hx hI).bijective_picardHom (g(k, X))).surjective a
+  rw [picardIsometryCongr_picardHom, hmark, hmark]
+  symm
+  refine (picardIsometryCongr_picardHom k (IsClosedPointTower.snoc .nil x hx hI)
+    (IsClosedPointTower.snoc .nil z hz hJ) _ _ _).trans ?_
+  rw [picardIsometryCongr_picardHom]
+
 /-- The extension intertwines pullbacks from the two base surfaces. -/
 @[simp]
 theorem picardIsometryCongr_pullback (a : LineBundleClass X) :

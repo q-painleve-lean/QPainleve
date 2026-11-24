@@ -69,6 +69,23 @@ theorem isNodeOfReducedBoundary_ambientNode [X.Over (Spec (.of k))] (j : ZMod n)
     (((C).mem_support_singularLocus_iff_notMem_smoothLocus _).mp
       ((J).range_subschemeι.le ⟨_, rfl⟩))
 
+/-- Every node of the reduced boundary occurs in its cycle numbering. -/
+theorem exists_ambientNode_eq [X.Over (Spec (.of k))] {x : X}
+    (hx : D.IsNodeOfReducedBoundary (X ↘ Spec (.of k)) x)
+    (hOver : C ↘ Spec (.of k) = D.subschemeι ≫ X ↘ Spec (.of k)) :
+    ∃ j, A.ambientNode j = x := by
+  have hn : AtWorstNodalOfRelativeDimensionOne (C ↘ Spec (.of k)) :=
+    PrestableFamily.atWorstNodalOfRelativeDimensionOne
+  have := hn.isReduced
+  have := hn.syntomic
+  obtain ⟨z, rfl, hz⟩ := (D.isNodeOfReducedBoundary_iff_of_isReduced _ _).mp hx
+  rw [← hOver] at hz
+  have hs := ((C).mem_support_singularLocus_iff_notMem_smoothLocus z).mpr
+    (((C ↘ Spec (.of k)).isNodeAt_iff_notMem_smoothLocus hn z).mp hz)
+  obtain ⟨q, rfl⟩ := (J).range_subschemeι.ge hs
+  obtain ⟨j, rfl⟩ := A.node.surjective q
+  exact ⟨j, A.ambientNode_def j⟩
+
 variable [IsLocallyNoetherian X]
 
 /-- The numbered normalized components give exactly the prime divisors of a Cartier boundary. -/

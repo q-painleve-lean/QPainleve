@@ -14,7 +14,10 @@ public import QPainleve.Geometry.Toric.Fan.StarSubdivision.Factorization
 
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Modification
 import QPainleve.AlgebraicGeometry.Modules.Differentials.PoleIdeal
+import QPainleve.AlgebraicGeometry.Morphisms.Modification.Birational
 import QPainleve.AlgebraicGeometry.RationalMap.Composition.Basic
+import QPainleve.Geometry.Toric.Fan.StarSubdivision.Tower
+import TauCeti.AlgebraicGeometry.Morphisms.Modification.Composition
 
 /-!
 # Resolved factorizations of toric changes
@@ -94,6 +97,25 @@ instance : Quiver.HasInvolutiveReverse (LogarithmicProjection i D) where
     | .blowdown h comm => .blowup h comm
   inv' e := by cases e <;> rfl
 
+/-- A resolved toric star step carries the modification property from its source
+projection to its target projection. -/
+theorem StarStep.isModification_target (step : StarStep A B)
+    (hN : Module.finrank ℤ N = 2) (hA : IsModification A.hom) : IsModification B.hom := by
+  cases step with
+  | blowup h comm =>
+    let H := h.isSubdivision
+    let : IsModification π[H] :=
+      H.isModification_algebraicMap A.isRegular B.isRegular A.isComplete.nonempty_cones hN
+    let : IsModification (B.hom ≫ π[H]) := comm.symm ▸ hA
+    exact IsModification.of_comp_right B.hom π[H]
+  | blowdown h comm =>
+    let H := h.isSubdivision
+    let : IsModification A.hom := hA
+    let : IsModification π[H] :=
+      H.isModification_algebraicMap B.isRegular A.isRegular B.isComplete.nonempty_cones hN
+    rw [← comm]
+    infer_instance
+
 local notation "toricMap[" A "," B "]" =>
   Scheme.PartialIso.toRationalMap
     (Fan.denseTorusPartialIso (LogarithmicProjection.fan A) (LogarithmicProjection.fan B))
@@ -111,21 +133,28 @@ theorem StarStep.comp_toRationalMap [PreirreducibleSpace Z] (e : StarStep A B) :
     rw [← h.isSubdivision.toRationalMap_algebraicMap, Scheme.RationalMap.comp_toRationalMap,
       Scheme.Hom.toRationalMap_compHom, comm]
 
-private def dominantPathRationalMap {A : LogarithmicProjection i D} :
-    ∀ {B : LogarithmicProjection i D}, Quiver.Path A B →
+/-- Evaluate a path between logarithmic projections by composing its dominant edge maps.
+The explicit quiver permits different kinds of resolved steps on the same projections. -/
+@[expose]
+def dominantPathRationalMap (Q : Quiver (LogarithmicProjection i D))
+    (edge : ∀ {A B : LogarithmicProjection i D},
+      Q.Hom A B → {f : X[A.fan] ⤏ X[B.fan] // f.IsDominant}) :
+    ∀ {B : LogarithmicProjection i D}, @Quiver.Path _ Q A B →
       {f : X[A.fan] ⤏ X[B.fan] // f.IsDominant}
-  | _, .nil => ⟨Scheme.RationalMap.id _, inferInstance⟩
-  | B, @Quiver.Path.cons _ _ _ C _ p _ =>
-    let f := dominantPathRationalMap p
+  | _, @Quiver.Path.nil _ _ _ => ⟨Scheme.RationalMap.id _, inferInstance⟩
+  | _, @Quiver.Path.cons _ _ _ _ _ p e =>
+    let f := dominantPathRationalMap Q edge p
+    let g := edge e
     haveI := f.property
-    ⟨f.val.comp toricMap[C,B], inferInstance⟩
+    haveI := g.property
+    ⟨f.val.comp g.val, inferInstance⟩
 
 /-- Compose the rational maps of a resolved toric path in execution order. -/
 def pathRationalMap (p : Quiver.Path A B) : X[A.fan] ⤏ X[B.fan] :=
-  (dominantPathRationalMap p).val
+  (dominantPathRationalMap instQuiver (fun {_ _} _ ↦ ⟨toricMap[_,_], inferInstance⟩) p).val
 
 instance (p : Quiver.Path A B) : (pathRationalMap p).IsDominant :=
-  (dominantPathRationalMap p).property
+  (dominantPathRationalMap instQuiver (fun {_ _} _ ↦ ⟨toricMap[_,_], inferInstance⟩) p).property
 
 @[simp]
 theorem pathRationalMap_nil :
@@ -194,6 +223,16 @@ theorem coarsen_hom (C : LogarithmicProjection i D) {Φ : Fan i}
     (H : C.fan.IsSubdivision Φ) (hΦ : Φ.IsRegular) (hN : Module.finrank ℤ N = 2) :
     (C.coarsen H hΦ hN).hom ≍ C.hom ≫ π[H] := (HEq.rfl)
 
+/-- A star blowup between two coarsenings of a common logarithmic projection. -/
+def coarsenBlowup (C : LogarithmicProjection i D) (hN : Module.finrank ℤ N = 2)
+    {Φ Ψ : Fan i} (hΦ : Φ.IsRegular) (hΨ : Ψ.IsRegular)
+    (h : Φ.IsTwoRayStarSubdivision Ψ) (K : C.fan.IsSubdivision Ψ) :
+    StarStep (C.coarsen (K.trans h.isSubdivision) hΦ hN) (C.coarsen K hΨ hN) :=
+  .blowup h (by
+    -- Unfold the two coarsenings to compare their composites from the common fan.
+    change (C.hom ≫ π[K]) ≫ π[h.isSubdivision] = C.hom ≫ π[K.trans h.isSubdivision]
+    rw [IsSubdivision.toFanHom_trans K h.isSubdivision, FanHom.algebraicMap_comp, Category.assoc])
+
 private theorem nonempty_blowupPath (C : LogarithmicProjection i D)
     (hN : Module.finrank ℤ N = 2) {Φ Ψ : Fan i} (hΦ : Φ.IsRegular) (hΨ : Ψ.IsRegular)
     (h : Relation.ReflTransGen IsTwoRayStarSubdivision Φ Ψ) (K : C.fan.IsSubdivision Ψ) :
@@ -204,11 +243,7 @@ private theorem nonempty_blowupPath (C : LogarithmicProjection i D)
   | @tail Δ Ψ hchain hstep ih =>
     have hΔ : Δ.IsRegular := by cases hstep with | along hΔ => exact hΔ
     obtain ⟨p⟩ := ih hΔ (K.trans hstep.isSubdivision)
-    refine ⟨p.cons (.blowup hstep ?_)⟩
-    -- The endpoint fans are definitionally Ψ and Δ, so this is subdivision composition.
-    change (C.hom ≫ π[K]) ≫ π[hstep.isSubdivision] = C.hom ≫ π[K.trans hstep.isSubdivision]
-    rw [IsSubdivision.toFanHom_trans K hstep.isSubdivision, FanHom.algebraicMap_comp,
-      Category.assoc]
+    exact ⟨p.cons (C.coarsenBlowup hN hΔ hΨ hstep K)⟩
 
 /-- A subdivision between regular fans lifts to a path of resolved toric steps.
 The same projection to the fine fan determines all intermediate projections. -/
@@ -275,24 +310,28 @@ variable {W : Scheme} [W.Over S] [SmoothOfRelativeDimension 2 (W ↘ S)]
   (hf : letI : Smooth (W ↘ S) := SmoothOfRelativeDimension.smooth 2 _
     D.comap f = E * ramificationIdealSheaf ℂ f)
 
+/-- Precompose a regular projection with a dominant morphism carrying the pole ideal.
+The target fan is unchanged. -/
+@[expose]
+def precomposeProjection (A : LogarithmicProjection i D) : LogarithmicProjection i E := by
+  let : SmoothOfRelativeDimension 2 (X[A.fan] ↘ S) := by
+    rw [A.fan.algebraicRealization_over, ← hN]
+    exact A.fan.smoothOfRelativeDimension_algebraicRealizationStructureMap A.isRegular
+  exact
+    { fan := A.fan
+      isRegular := A.isRegular
+      isComplete := A.isComplete
+      hom := f ≫ A.hom
+      isOver := inferInstance
+      isDominant := inferInstance
+      comap_boundaryIdeal :=
+        comap_eq_mul_ramificationIdealSheaf_comp ℂ f A.hom 2 A.comap_boundaryIdeal hf }
+
 /-- Precompose every projection and commutative triangle by a dominant morphism that
 carries the pole factorization. The resulting prefunctor lifts whole paths to the new
 resolving surface using `Prefunctor.mapPath`. -/
 def precompose : LogarithmicProjection i D ⥤q LogarithmicProjection i E := by
-  let refined (A : LogarithmicProjection i D) : LogarithmicProjection i E := by
-    let : SmoothOfRelativeDimension 2 (X[A.fan] ↘ S) := by
-      rw [A.fan.algebraicRealization_over, ← hN]
-      exact A.fan.smoothOfRelativeDimension_algebraicRealizationStructureMap A.isRegular
-    exact
-      { fan := A.fan
-        isRegular := A.isRegular
-        isComplete := A.isComplete
-        hom := f ≫ A.hom
-        isOver := inferInstance
-        isDominant := inferInstance
-        comap_boundaryIdeal :=
-          comap_eq_mul_ramificationIdealSheaf_comp ℂ f A.hom 2 A.comap_boundaryIdeal hf }
-  refine ⟨refined, ?_⟩
+  refine ⟨precomposeProjection hN f hf, ?_⟩
   intro A B e
   cases e with
   | blowup h comm => exact .blowup h ((Category.assoc _ _ _).trans (congrArg (f ≫ ·) comm))

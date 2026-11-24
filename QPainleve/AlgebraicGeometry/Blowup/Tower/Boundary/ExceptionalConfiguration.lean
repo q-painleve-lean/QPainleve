@@ -11,6 +11,7 @@ public import TauCeti.AlgebraicGeometry.IntersectionNumber.ExceptionalCurve.Basi
 import QPainleve.AlgebraicGeometry.Blowup.Disjoint
 import QPainleve.AlgebraicGeometry.Blowup.Exceptional.FirstKind
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Boundary.Pullback
+import QPainleve.AlgebraicGeometry.Chow.Isomorphism
 import QPainleve.AlgebraicGeometry.EffectiveCartierDivisor.Pullback
 import QPainleve.AlgebraicGeometry.IdealSheaf.ClosedImmersion
 import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
@@ -18,6 +19,7 @@ import QPainleve.AlgebraicGeometry.IntersectionNumber.ExceptionalCurve.Compariso
 import QPainleve.AlgebraicGeometry.Morphisms.IsoLocus
 import TauCeti.AlgebraicGeometry.Blowup.Restriction
 import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.TensorProduct
+import TauCeti.AlgebraicGeometry.IdealSheaf.BaseChange
 
 /-!
 # Exceptional configurations of disjoint internal blowups
@@ -198,5 +200,96 @@ theorem exceptional_configuration_alongBoundary
   exact ⟨h, hclass, (T).comap_map_toBase_boundaryι (J j).val⟩
 
 end RootFree
+
+/-- An exceptional curve over a reduced closed boundary center is internal.
+The projection is injective on the strict boundary and constant on this curve. -/
+theorem exceptional_support_not_le_boundary_alongBoundary (j : Fin n) {p : D}
+    (hp : IsClosed ({p} : Set D)) (hJ : (J j).val = (D.fromSpecResidueField p).ker)
+    (hE : E[j].IsExceptionalCurveOfFirstKind) :
+    ¬ E[j].support ≤ (T).boundaryι.ker.support := by
+  intro hle
+  let π := (T).toTower.toBase
+  let s := (T).boundaryι
+  have hpoint (x : (alongBoundary i J).1) (hx : x ∈ E[j].support) : π x = i p := by
+    have hker := D.support_ker_fromSpecResidueField_of_isClosed hp
+    simpa only [← SetLike.mem_coe, support_comap, Closeds.coe_preimage, Set.mem_preimage,
+      support_map_of_isClosedImmersion, hJ, hker, Set.image_singleton, Set.mem_singleton_iff]
+      using hx
+  have hrange (x : (alongBoundary i J).1) (hx : x ∈ E[j].support) : x ∈ Set.range s := by
+    have hmem := hle hx
+    rwa [← SetLike.mem_coe, s.support_ker, s.isClosedEmbedding.isClosed_range.closure_eq] at hmem
+  refine hE.not_subsingleton_support fun x hx y hy ↦ ?_
+  obtain ⟨a, rfl⟩ := hrange x hx
+  obtain ⟨b, rfl⟩ := hrange y hy
+  have hab := (hpoint (s a) hx).trans (hpoint (s b) hy).symm
+  have hs : s ≫ π = i := (T).boundaryι_toBase
+  rw [← Scheme.Hom.comp_apply, ← Scheme.Hom.comp_apply, hs] at hab
+  exact congrArg s (i.injective hab)
+
+variable (k) [IsAlgClosed k] [X.Over (Spec (.of k))] [X.IsProjectiveOver k] [IsIntegral X]
+  [SmoothOfRelativeDimension 2 (X ↘ Spec (.of k))]
+
+/-- An identification with an ordered internal blowup model of a root-free pair
+gives an internal exceptional configuration on the pair, with the ordered total
+exceptional classes of the given model. -/
+theorem exceptional_configuration_alongBoundary_of_iso
+    {Y : Scheme.{u}} [Y.Over (Spec (.of k))] (B : Y.IdealSheafData)
+    (a : Y ≅ (alongBoundary i J).1)
+    (ha : a.hom ≫ (T).toTower.toBase ≫ (X ↘ Spec (.of k)) = Y ↘ Spec (.of k))
+    (hB : (B.comap a.inv).support = (T).boundaryι.ker.support)
+    (hJ : ∀ j, ∃ p : D, IsClosed ({p} : Set D) ∧ (J j).val = (D.fromSpecResidueField p).ker)
+    (hroot : ¬ ∃ (C : Scheme.{u}) (g : C ⟶ Y) (_ : IsClosedImmersion g) (_ : IsIntegral C)
+      (hg : g.ker.IsEffectiveCartier),
+      topologicalKrullDim C = 1 ∧ Disjoint (Set.range g) B.support ∧
+      Chow.classIntersectionNumber k Y (LineBundleClass.mk hg.toInvertibleSheaf)⁻¹
+        (LineBundleClass.mk hg.toInvertibleSheaf)⁻¹ = -2) :
+    let E (j : Fin n) := E[j].comap a.hom
+    Pairwise (fun j l ↦ Disjoint ((E j).support : Set Y) (E l).support) ∧
+    (∀ j, ¬ (E j).support ≤ B.support) ∧
+    ∀ j, ∃ h : (E j).IsExceptionalCurveOfFirstKind,
+      (LineBundleClass.mk h.isEffectiveCartier.toInvertibleSheaf)⁻¹ =
+        LineBundleClass.pullback a.hom ((T).toTower.exceptionalClass j) := by
+  let : (alongBoundary i J).1.Over (Spec (.of k)) :=
+    ⟨(T).toTower.toBase ≫ (X ↘ Spec (.of k))⟩
+  let : a.hom.IsOver (Spec (.of k)) := ⟨ha⟩
+  have hrootModel : ¬ ∃ (C : Scheme.{u}) (g : C ⟶ (alongBoundary i J).1)
+      (_ : IsClosedImmersion g) (_ : IsIntegral C) (hg : g.ker.IsEffectiveCartier),
+      topologicalKrullDim C = 1 ∧ Disjoint (Set.range g) (Set.range (T).boundaryι) ∧
+      Chow.classIntersectionNumber k (alongBoundary i J).1
+        (LineBundleClass.mk hg.toInvertibleSheaf)⁻¹
+        (LineBundleClass.mk hg.toInvertibleSheaf)⁻¹ = -2 := by
+    rintro ⟨C, g, _, hC, hg, hdim, hdis, hsq⟩
+    have hk : (g ≫ a.inv).ker = g.ker.comap a.hom := by
+      simpa only [Category.assoc, Iso.inv_hom_id, Category.comp_id] using
+        ((g ≫ a.inv).comap_ker_comp_of_isClosedImmersion a.hom).symm
+    let h := hk.symm ▸ hg.comap a.hom
+    refine hroot ⟨C, g ≫ a.inv, inferInstance, hC, h, hdim, ?_, ?_⟩
+    · apply Set.disjoint_left.mpr
+      rintro _ ⟨x, rfl⟩ hx
+      apply Set.disjoint_left.mp hdis (Set.mem_range_self x)
+      rw [← (T).boundaryι.isClosedEmbedding.isClosed_range.closure_eq,
+        ← (T).boundaryι.support_ker, ← hB, support_comap,
+        Closeds.coe_preimage, Set.mem_preimage]
+      simpa only [Scheme.Hom.comp_apply] using hx
+    · rw [LineBundleClass.mk_toInvertibleSheaf_congr h (hg.comap a.hom) hk,
+        ← hg.pullback_mk_toInvertibleSheaf (hg.comap a.hom),
+        ← LineBundleClass.pullback_inv, Chow.classIntersectionNumber_pullback_of_isIso]
+      exact hsq
+  obtain ⟨hd, hE⟩ := exceptional_configuration_alongBoundary i J k hJ hrootModel
+  have hb : ((T).boundaryι.ker.comap a.hom).support = B.support := by
+    rw [support_comap, ← hB, ← support_comap, ← comap_comp, Iso.hom_inv_id, comap_id]
+  refine ⟨fun j l hjl ↦ ?_, fun j ↦ ?_, fun j ↦ ?_⟩
+  · simpa only [support_comap, Closeds.coe_preimage] using (hd hjl).preimage a.hom
+  · obtain ⟨p, hp, hj⟩ := hJ j
+    intro hle
+    apply exceptional_support_not_le_boundary_alongBoundary i J j hp hj (hE j).choose
+    rw [← hb] at hle
+    simpa only [← SetLike.coe_subset_coe, support_comap, Closeds.coe_preimage,
+      a.hom.surjective.preimage_subset_preimage_iff] using hle
+  · obtain ⟨h, hc, -⟩ := hE j
+    let h' := h.comap_of_isIso a.hom
+    refine ⟨h', ?_⟩
+    rw [← h.isEffectiveCartier.pullback_mk_toInvertibleSheaf h'.isEffectiveCartier,
+      ← LineBundleClass.pullback_inv, hc]
 
 end QPainleve.BlowupTower

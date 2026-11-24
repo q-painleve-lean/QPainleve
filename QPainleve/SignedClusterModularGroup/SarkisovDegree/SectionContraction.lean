@@ -74,14 +74,15 @@ private theorem hirzebruchOne_plane_blowup :
       e.hom ≫ (Scheme.fromSpecResidueField P p).ker.blowupToBase ≫ fP = fX ∧
       ((Scheme.fromSpecResidueField P p).ker.comap
         (e.hom ≫ (Scheme.fromSpecResidueField P p).ker.blowupToBase)) =
-        Φ.rayBoundaryIdeal hΦ (r 0) := by
+        Φ.rayBoundaryIdeal hΦ (r 0) ∧
+      (Fan.projectiveSpace d Φ.lattice).IsTwoRayStarSubdivision Φ := by
   have hrays : Set.range (Fan.Ray.primitiveGenerator (Phi := Φ)) =
       {b 0, b 1, -b 0, b 0 - b 1} := by
     rw [← r.surjective.range_comp, Function.comp_def, hr]
     ext x
     simp
     tauto
-  obtain ⟨d, s, ρ, e, -, -, hρ, -, -, he, hE, -⟩ :=
+  obtain ⟨d, s, ρ, e, -, -, hρ, -, -, he, hE, -, hstar⟩ :=
     Fan.exists_iso_blowup_projectivePlane_of_hirzebruchOne b hΦ hc hrays
   let q := (Fan.projectiveSpace d Φ.lattice).distinguishedPointHom
     (Fan.projectiveSpaceMaximalCone d Φ.lattice none)
@@ -106,7 +107,7 @@ private theorem hirzebruchOne_plane_blowup :
   have hρ' : ρ = r 0 := by
     apply Fan.Ray.primitiveGenerator_injective
     exact hρ.trans (congrFun hr 0).symm
-  refine ⟨d, s, p, hp, e', he', ?_, ?_⟩
+  refine ⟨d, s, p, hp, e', he', ?_, ?_, hstar⟩
   · rw [← Category.assoc, he']
     simp only [Category.assoc, a, over_eq_projToSpec,
       Module.Basis.polynomialProjIso_hom_over, Fan.projectivePlaneIso_hom_toSpecCoeff,
@@ -248,7 +249,8 @@ For the resolved line class with original coordinates `(a, b)`, the new
 plane degree is `a`. The new exceptional coordinate is `b - a` and all
 later exceptional coordinates agree in their original order. If the original
 fiber degree is positive and all base orders lie in `[0, b / 2]`, the
-Sarkisov bidegree strictly decreases. -/
+Sarkisov bidegree strictly decreases. The plane projection uses a single
+toric star blowdown. -/
 theorem exists_plane_resolution_of_hirzebruchOne {Y : Scheme} {n : ℕ}
     {T : BlowupTower X n Y} (hT : IsClosedPointTower X T)
     (g : Y ⟶ P) (hg : g ≫ fP = T.toBase ≫ fX)
@@ -277,13 +279,14 @@ theorem exists_plane_resolution_of_hirzebruchOne {Y : Scheme} {n : ℕ}
       (∀ j : Fin n, w.2 (j.natAdd 1) = v.2 j) ∧
       (0 < β → (∀ j : Fin n, 0 ≤ -v.2 j ∧ 2 * (-v.2 j) ≤ β) →
         planeSarkisovBidegree (degree w.1).toNat (∑ j, (-w.2 j).toNat) <
-          hirzebruchSarkisovBidegree β.toNat (∑ j, (-v.2 j).toNat)) := by
+          hirzebruchSarkisovBidegree β.toNat (∑ j, (-v.2 j).toNat)) ∧
+      (Fan.projectiveSpace d Φ.lattice).IsTwoRayStarSubdivision Φ := by
   intro hcones hdim hsmooth hnoeth v α β
   let := hcones
   let := hdim
   let := hsmooth
   let := hnoeth
-  obtain ⟨d, s, p, hp, e, he, hover, hE⟩ := hirzebruchOne_plane_blowup b hΦ hc r hr
+  obtain ⟨d, s, p, hp, e, he, hover, hE, hstar⟩ := hirzebruchOne_plane_blowup b hΦ hc r hr
   let J := (Scheme.fromSpecResidueField P p).ker
   let : J.blowup.Over S := ⟨J.blowupToBase ≫ fP⟩
   let : e.hom.IsOver S := ⟨hover⟩
@@ -309,7 +312,7 @@ theorem exists_plane_resolution_of_hirzebruchOne {Y : Scheme} {n : ℕ}
   obtain ⟨hdegree, hfirst, hrest⟩ :=
     hirzebruchOne_resolution_coordinates b hΦ hc r hr hT hp e hover hE
       R.isLift g hg hbir hU hf hbir'
-  refine ⟨hdegree, hfirst, hrest, fun hβ hm ↦ ?_⟩
+  refine ⟨hdegree, hfirst, hrest, fun hβ hm ↦ ?_, hstar⟩
   have hH := hT.homaloidal_intersection_identities_of_hirzebruch b 1 hΦ hc r hr g hg hbir
   have hsq : (∑ j, (-v.2 j) ^ 2) = 2 * α * β - (1 : ℤ) * β ^ 2 - 1 := by
     simpa only [neg_sq, Nat.cast_one] using hH.1
