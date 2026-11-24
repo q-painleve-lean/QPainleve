@@ -9,7 +9,6 @@ public import Mathlib.FieldTheory.IsSepClosed
 public import QPainleve.AlgebraicGeometry.RationalMap.Composition.Defined
 public import QPainleve.Geometry.Toric.CharacterTorus.Evaluation
 
-import QPainleve.AlgebraicGeometry.RationalMap.Composition.Restriction
 import QPainleve.AlgebraicGeometry.RationalMap.Fiber
 import TauCeti.Algebra.AlgebraicGroup.DiagonalizableGroup.Scheme.Smooth
 import TauCeti.AlgebraicGeometry.Morphisms.Smooth.GeometricallyReduced
@@ -45,6 +44,23 @@ section RationalFibers
 
 variable [Field k] [IsSepClosed k] [Module.Free ℤ A] [Module.Free ℤ N]
 
+omit [IsSepClosed k] in
+private theorem smoothTorus (B : Type u) [AddCommGroup B] [IsAddFG B] [Module.Free ℤ B] :
+    Smooth (D B).X.hom := by
+  obtain ⟨p, hp⟩ := ExpChar.exists k
+  let : ExpChar k p := hp
+  let : HasUniqueDiv B := .of_isTorsionFree ℤ B
+  exact (smooth_groupScheme_iff k p (L B)).mpr fun b hb ↦
+    pow_left_injective (expChar_ne_zero k p) (hb.trans (one_pow p).symm)
+
+omit [IsSepClosed k] [Module.Free ℤ A] in
+private theorem smoothProjection :
+    Smooth (π₁).hom.hom.left := by
+  let : Smooth (D N).X.hom := smoothTorus k N
+  have h : Smooth ((prodIso k A N).inv ≫ pullback.fst (D A).X.hom (D N).X.hom) :=
+    inferInstance
+  simpa only [← prodIso_hom_fst, Iso.inv_hom_id_assoc] using h
+
 /-- Two rational maps on the independent character torus are equal if, after evaluation
 over a nonempty open of the center torus, their regular representatives on a common dense
 open agree as rational maps on each rational center fiber of that open. -/
@@ -65,19 +81,8 @@ theorem eq_of_evaluation_rationalFibers (v : A →+ N) (U : (D A).X.left.Opens) 
     f = g := by
   dsimp only
   intro hf hg
-  obtain ⟨p, hp⟩ := ExpChar.exists k
-  let : ExpChar k p := hp
-  have smoothTorus (B : Type u) [AddCommGroup B] [IsAddFG B] [Module.Free ℤ B] :
-      Smooth (D B).X.hom := by
-    let : HasUniqueDiv B := .of_isTorsionFree ℤ B
-    exact (smooth_groupScheme_iff k p (L B)).mpr fun b hb ↦
-      pow_left_injective (expChar_ne_zero k p) (hb.trans (one_pow p).symm)
-  have : Smooth (D N).X.hom := smoothTorus N
-  have : Smooth (D A).X.hom := smoothTorus A
-  have : Smooth (π₁).hom.hom.left := by
-    have h : Smooth ((prodIso k A N).inv ≫ pullback.fst (D A).X.hom (D N).X.hom) :=
-      inferInstance
-    simpa only [← prodIso_hom_fst, Iso.inv_hom_id_assoc] using h
+  have : Smooth (D A).X.hom := smoothTorus k A
+  let : Smooth (π₁).hom.hom.left := smoothProjection k
   let π := W.ι ≫ ((π₁).hom.hom.left ∣_ U)
   let sU := U.ι ≫ (D A).X.hom
   have : Smooth π := inferInstanceAs (Smooth (W.ι ≫ ((π₁).hom.hom.left ∣_ U)))
@@ -175,53 +180,34 @@ variable [Field k] [IsSepClosed k] [Module.Free ℤ A] [Module.Free ℤ N]
   {Y : Scheme.{u}} [Y.IsSeparated]
 
 /-- Agreement after rational composition on every center fiber of a nonempty
-open determines the X map. The fiber evaluations need only land generically
-in the domains of the two X maps. -/
+open determines the X map. Postcompose evaluation by a dominant morphism `eX`
+over the ground field to compare maps on the chosen independent-variable scheme. -/
 theorem eq_of_compOfDefined_eq_on_center_fibers (U : (D A).X.left.Opens) [Nonempty U]
-    (v : A →+ N)
-    (sY : Y ⟶ S) {f g : (D A).X.left ⤏ Y}
-    [f.IsOver (D A).X.hom sY] [g.IsOver (D A).X.hom sY]
+    (v : A →+ N) {X : Scheme.{u}} [IsIntegral X] [X.IsSeparated]
+    (sX : X ⟶ S) (sY : Y ⟶ S)
+    (eX : (D A).X.left ⟶ X) [IsDominant eX] (heX : eX ≫ sX = (D A).X.hom)
+    {f g : X ⤏ Y} [f.IsOver sX sY] [g.IsOver sX sY]
     (heq : ∀ (c : S ⟶ U.toScheme) (hc : c ≫ U.ι ≫ (D A).X.hom = 𝟙 S),
       letI : IsIntegral (pullback π[U] c) :=
         IsIntegral.of_isIso (centerFiberIso k (N := N) U c hc).inv
-      let j := (centerFiberEvaluation k U v c).toRationalMap
+      let j := (centerFiberEvaluation k U v c ≫ eX).toRationalMap
       let x := j.fromFunctionField (IsLocalRing.closedPoint _)
       ∃ (hf : x ∈ f.domain) (hg : x ∈ g.domain),
         j.compOfDefined f hf = j.compOfDefined g hg) :
     f = g := by
-  let e : (E[U]).toScheme ⟶ (D A).X.left := ev[U, v]
-  have : IsDominant e := isDominant_evaluation_on_center_open k v U
+  let e := ev[U, v]
+  let : IsDominant e := isDominant_evaluation_on_center_open k v U
   have : (E[U]).toScheme.IsSeparated := Scheme.IsSeparated.of_isSeparated (E[U]).ι
-  let p := f.toPartialMap
-  let q := g.toPartialMap
-  let V := p.domain ⊓ q.domain
-  have : Nonempty V := Set.nonempty_coe_sort.mpr (p.dense_domain.inter_of_isOpen_left
-    q.dense_domain p.domain.isOpen).nonempty
-  let W := e ⁻¹ᵁ V
-  have : Nonempty W := inferInstance
-  have hW : Dense (W : Set (E[U]).toScheme) :=
-    W.isOpen.dense (Set.nonempty_coe_sort.mp ‹Nonempty W›)
-  let l := (e ∣_ V) ≫ (D A).X.left.homOfLE (show V ≤ p.domain from inf_le_left)
-  let m := (e ∣_ V) ≫ (D A).X.left.homOfLE (show V ≤ q.domain from inf_le_right)
-  have hl : l ≫ p.domain.ι = W.ι ≫ e := by
-    simp only [l, W, Category.assoc, Scheme.homOfLE_ι, morphismRestrict_ι]
-  have hm : m ≫ q.domain.ι = W.ι ≫ e := by
-    simp only [m, W, Category.assoc, Scheme.homOfLE_ι, morphismRestrict_ι]
-  have hb : e ≫ (D A).X.hom = π[U] ≫ U.ι ≫ (D A).X.hom := by
-    simp only [e, Category.assoc, morphismRestrict_ι_assoc, Over.w]
-  apply eq_of_evaluation_rationalFibers k v U sY W hW (l ≫ p.hom) (m ≫ q.hom)
-  · rw [Category.assoc, p.over (D A).X.hom sY, ← Category.assoc, hl, Category.assoc, hb]
-  · rw [Category.assoc, q.over (D A).X.hom sY, ← Category.assoc, hm, Category.assoc, hb]
-  · intro c hc
-    let : IsIntegral (pullback π[U] c) := IsIntegral.of_isIso (centerFiberIso k (N := N) U c hc).inv
-    have := Scheme.IsSeparated.of_isSeparated (centerFiberIso k (N := N) U c hc).hom
-    apply congrArg Scheme.Hom.toRationalMap
-    apply Scheme.Hom.comp_eq_on_fiber_of_compOfDefined_eq π[U] c e W p q l m hl hm
-    simpa only [p, q, Scheme.RationalMap.toRationalMap_toPartialMap,
-      centerFiberEvaluation_def] using heq c hc
-  · simpa only [p, Scheme.RationalMap.toRationalMap_toPartialMap] using
-      e.comp_eq_toRationalMap_of_lift p W hW l hl
-  · simpa only [q, Scheme.RationalMap.toRationalMap_toPartialMap] using
-      e.comp_eq_toRationalMap_of_lift q W hW m hm
+  let : Smooth (D A).X.hom := smoothTorus k A
+  let : Smooth (π₁).hom.hom.left := smoothProjection k
+  have hb : (e ≫ eX) ≫ sX = π[U] ≫ (U.ι ≫ (D A).X.hom) := by
+    simp only [e, Category.assoc, heX, morphismRestrict_ι_assoc, Over.w]
+  have hF (c : S ⟶ U.toScheme) (hc : c ≫ (U.ι ≫ (D A).X.hom) = 𝟙 S) :
+      IsIntegral (pullback π[U] c : Scheme) :=
+    IsIntegral.of_isIso (centerFiberIso k (N := N) U c hc).inv
+  apply Scheme.RationalMap.eq_of_compOfDefined_eq_on_rationalFibers
+    π[U] (U.ι ≫ (D A).X.hom) sX sY (e ≫ eX) hb hF
+  intro c hc
+  simpa only [centerFiberEvaluation_def, Category.assoc, e] using heq c hc
 
 end QPainleve.CharacterTorus

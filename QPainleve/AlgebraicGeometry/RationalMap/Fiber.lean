@@ -20,7 +20,9 @@ import TauCeti.AlgebraicGeometry.Morphisms.Smooth.RationalPoint
 Two morphisms from a smooth scheme over a separably closed field to a separated
 scheme agree if their restrictions to each rational fiber agree as rational maps.
 Reducedness extends the equality over each fiber, and the density of rational
-sections extends it over the whole source. The proof uses Tau Ceti's
+sections extends it over the whole source. A dominant evaluation then detects
+equality of rational maps from their generically defined composites on the fibers.
+The proof uses Tau Ceti's
 `Scheme.Hom.denseRange_rationalSections` and
 `AlgebraicGeometry.ext_of_dense_iUnion_range_of_isSeparated`.
 -/
@@ -106,3 +108,61 @@ theorem comp_eq_on_fiber_of_compOfDefined_eq
     exact isInitialOfIsEmpty.hom_ext _ _
 
 end AlgebraicGeometry.Scheme.Hom
+
+namespace AlgebraicGeometry.Scheme.RationalMap
+
+universe u
+
+/-- A dominant evaluation on a smooth family detects rational maps by their generically
+defined composites on the fibers over rational points of the parameter scheme. -/
+theorem eq_of_compOfDefined_eq_on_rationalFibers
+    {k : Type u} [Field k] [IsSepClosed k] {X C T Y : Scheme.{u}}
+    [IsIntegral X] [X.IsSeparated] [IsIntegral T] [T.IsSeparated] [Y.IsSeparated]
+    (π : X ⟶ C) (sC : C ⟶ Spec (.of k)) (sT : T ⟶ Spec (.of k)) (sY : Y ⟶ Spec (.of k))
+    [Smooth π] [Smooth sC]
+    (e : X ⟶ T) [IsDominant e] (he : e ≫ sT = π ≫ sC)
+    {f g : T ⤏ Y} [f.IsOver sT sY] [g.IsOver sT sY]
+    (hF : ∀ (c : Spec (.of k) ⟶ C), c ≫ sC = 𝟙 _ →
+      IsIntegral (pullback π c : Scheme))
+    (hfg : ∀ (c : Spec (.of k) ⟶ C) (hc : c ≫ sC = 𝟙 _),
+      letI := hF c hc
+      let j := (pullback.fst π c ≫ e).toRationalMap
+      let x := j.fromFunctionField (IsLocalRing.closedPoint _)
+      ∃ (hf : x ∈ f.domain) (hg : x ∈ g.domain),
+        j.compOfDefined f hf = j.compOfDefined g hg) :
+    f = g := by
+  let p := f.toPartialMap
+  let q := g.toPartialMap
+  let V := p.domain ⊓ q.domain
+  let : Nonempty V := Set.nonempty_coe_sort.mpr (p.dense_domain.inter_of_isOpen_left
+    q.dense_domain p.domain.isOpen).nonempty
+  let W := e ⁻¹ᵁ V
+  have hW : Dense (W : Set X) := W.isOpen.dense (Set.nonempty_coe_sort.mp
+    (inferInstanceAs (Nonempty (e ⁻¹ᵁ V))))
+  let l := (e ∣_ V) ≫ T.homOfLE (show V ≤ p.domain from inf_le_left)
+  let m := (e ∣_ V) ≫ T.homOfLE (show V ≤ q.domain from inf_le_right)
+  have hl : l ≫ p.domain.ι = W.ι ≫ e := by simp [l, W]
+  have hm : m ≫ q.domain.ι = W.ι ≫ e := by simp [m, W]
+  have hp : (l ≫ p.hom) ≫ sY = (W.ι ≫ π) ≫ sC := by
+    rw [Category.assoc, p.over sT sY, ← Category.assoc, hl, Category.assoc, he, Category.assoc]
+  have hq : (m ≫ q.hom) ≫ sY = (W.ι ≫ π) ≫ sC := by
+    rw [Category.assoc, q.over sT sY, ← Category.assoc, hm, Category.assoc, he, Category.assoc]
+  have hred (c : Spec (.of k) ⟶ C) : IsReduced (pullback (W.ι ≫ π) c) :=
+    GeometricallyReduced.geometrically_isReduced c _ _ (IsPullback.of_hasPullback (W.ι ≫ π) c)
+  have h : l ≫ p.hom = m ≫ q.hom := by
+    apply (Hom.eq_iff_toRationalMap_eq_on_rationalFibers (W.ι ≫ π) sC sY
+      (fun c _ ↦ hred c) hp hq).mpr
+    intro c hc
+    let := hF c hc
+    have : (pullback π c : Scheme).IsSeparated := Scheme.IsSeparated.of_isSeparated
+      (pullback.snd π c)
+    apply congrArg Hom.toRationalMap
+    apply Hom.comp_eq_on_fiber_of_compOfDefined_eq π c e W p q l m hl hm
+    simpa only [p, q, toRationalMap_toPartialMap] using hfg c hc
+  apply comp_left_injective e.toRationalMap
+  have hf := e.comp_eq_toRationalMap_of_lift p W hW l hl
+  have hg := e.comp_eq_toRationalMap_of_lift q W hW m hm
+  rw [h] at hf
+  simpa only [p, q, toRationalMap_toPartialMap] using hf.trans hg.symm
+
+end AlgebraicGeometry.Scheme.RationalMap
