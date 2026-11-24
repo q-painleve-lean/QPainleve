@@ -37,25 +37,6 @@ open TauCeti.Toric.Fan
 
 namespace QPainleve.BlowupTower.IsClosedPointTower
 
-private theorem mutationFiberClass_of_opposite_section
-    {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
-    {i : N →+ V} {Φ : Fan i} [Nonempty Φ.cones]
-    (b : Basis (Fin 2) ℤ N) (hΦ : Φ.IsRegular) (r : Fin 4 ≃ Φ.Ray)
-    (e t : ℤ) (hr : (fun j ↦ Fan.Ray.primitiveGenerator (r j)) =
-      ![b 0, b 1 - t • b 0, -b 0, e • b 0 - (b 1 - t • b 0)]) :
-    mutationFiberClass b (r 2) hΦ = Φ.rayDivisorToPicard hΦ (Pi.single (r 1) 1) := by
-  classical
-  rw [mutationFiberClass_eq]
-  congr 1
-  funext ρ
-  obtain ⟨j, rfl⟩ := r.surjective ρ
-  have hg (k : Fin 4) := congrFun hr k
-  have h₀ := b.detDualEquiv_self (b 0)
-  have h₁ : b.detDualEquiv (b 0) (b 1) = 1 := b.detDualEquiv_apply_basis_zero_one
-  rw [← b.detDualEquiv_apply, b.detDualEquiv_swap]
-  simp only [hg j, hg 2, Matrix.cons_val_two, Pi.single_apply, Equiv.apply_eq_iff_eq]
-  fin_cases j <;> norm_num [← Basis.detDualEquiv_apply, h₀, h₁]
-
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {Φ : Fan i} [Nonempty Φ.cones]
   (b : Basis (Fin 2) ℤ N) (hΦ : Φ.IsRegular) (hc : Φ.IsComplete)
