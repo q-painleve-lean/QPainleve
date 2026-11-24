@@ -25,16 +25,6 @@ universe u
 variable {X Y A B : Scheme.{u}} [IsIntegral X] [IsIntegral Y] [IsReduced A] [IsIntegral B]
   [Y.IsSeparated] [A.IsSeparated] [B.IsSeparated]
 
-/-- An evaluation composed with the rational identity at a defined generic value is unchanged. -/
-@[simp]
-theorem compOfDefined_id (a : X ⤏ A)
-    (ha : a.fromFunctionField (IsLocalRing.closedPoint X.functionField) ∈ (id A).domain) :
-    a.compOfDefined (id A) ha = a := by
-  obtain ⟨h, he⟩ := a.compOfDefined_toRationalMap (𝟙 A)
-  refine he.trans ?_
-  obtain ⟨p, rfl⟩ := a.exists_rep
-  rw [← compHom_toRationalMap, PartialMap.compHom_id]
-
 variable [IsIntegral A]
 
 /-- Reverse a rational evaluation square with an isomorphism on the source side

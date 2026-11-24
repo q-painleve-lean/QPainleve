@@ -79,6 +79,16 @@ theorem fromFunctionField_apply_closedPoint (f : X.PartialMap Y) :
 
 end PartialMap
 
+/-- The generic value of a morphism is its value at the generic point of the source. -/
+theorem Hom.fromFunctionField_toRationalMap_apply_closedPoint {X Y : Scheme.{u}}
+    [IrreducibleSpace X] (f : X ⟶ Y) :
+    f.toRationalMap.fromFunctionField
+      (IsLocalRing.closedPoint (X.presheaf.stalk (genericPoint X))) = f (genericPoint X) := by
+  rw [Hom.toRationalMap, RationalMap.fromFunctionField_toRationalMap,
+    PartialMap.fromFunctionField_apply_closedPoint]
+  -- The whole-source representative uses the top-open inclusion at the generic point.
+  exact congrArg f rfl
+
 end AlgebraicGeometry.Scheme
 
 namespace AlgebraicGeometry.Scheme.RationalMap
