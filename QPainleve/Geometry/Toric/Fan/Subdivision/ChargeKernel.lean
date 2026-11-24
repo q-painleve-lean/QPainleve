@@ -123,7 +123,7 @@ theorem exists_iso_of_matching_toric_models_chargeKernel
   have hs' := congrArg (fun Z : TopologicalSpace.Closeds (internalBlowupTower b' τ centers(d)).1 ↦
     Z.preimage a'.hom.continuous) hb'
   simp only [← support_comap, ← comap_comp, Iso.hom_inv_id_assoc] at hs hs'
-  obtain ⟨f, hf, hfD, hfX, hpic⟩ := exists_iso_of_matching_toric_models_of_latticeEquiv
+  obtain ⟨f, hf, hfD, -, hfX, hpic⟩ := exists_iso_of_matching_toric_models_of_latticeEquiv
     b b' hΦ hΨ ρ τ c d σ hc e hρτ hdet hΔΦ hΔΩ hΔ hP hQ a a'
     (by simpa only [Category.assoc] using hbase.symm)
     (by simpa only [Category.assoc] using hbase'.symm)

@@ -5,6 +5,7 @@ Authors: The QPainleve contributors
 -/
 module
 
+public import Mathlib.LinearAlgebra.BilinearForm.IsometryEquiv
 public import QPainleve.AlgebraicGeometry.Chow.SurfaceIntersection
 public import TauCeti.AlgebraicGeometry.LineBundle.Functoriality
 public import QPainleve.AlgebraicGeometry.Modules.Differentials.Canonical
@@ -49,6 +50,32 @@ theorem Chow.classIntersectionNumber_pullback_of_isIso (a b : LineBundleClass Y)
   simp only [classIntersectionNumber_eq, ← LineBundleClass.pullback_inv,
     ← LineBundleClass.pullback_mul, LineBundleClass.eulerCharBelow_pullback_of_isIso k f,
     ← LineBundleClass.pullback_one f]
+
+namespace Chow
+
+variable [Infinite k] [IsIntegral X] [IsIntegral Y] [X.IsProjectiveOver k] [Y.IsProjectiveOver k]
+  [SmoothOfRelativeDimension 2 (X ↘ Spec (.of k))]
+  [SmoothOfRelativeDimension 2 (Y ↘ Spec (.of k))]
+  (e : X ≅ Y) [e.hom.IsOver (Spec (.of k))]
+
+/-- Pullback along an isomorphism of smooth projective surfaces is an isometry of
+their integral Picard intersection forms. -/
+noncomputable def picardPullbackIsometry :
+    (intersectionBilinForm k Y).IsometryEquiv (intersectionBilinForm k X) where
+  toLinearEquiv := (LineBundleClass.pullbackEquiv e).toAdditive.toIntLinearEquiv
+  map_app' a b := by
+    simpa only [intersectionBilinForm_apply, LinearEquiv.toFun_eq_coe,
+      AddEquiv.coe_toIntLinearEquiv,
+      MulEquiv.toAdditive_apply_apply, LineBundleClass.pullbackEquiv_apply, toMul_ofMul] using
+      classIntersectionNumber_pullback_of_isIso k e.hom a.toMul b.toMul
+
+/-- The Picard isometry of a surface isomorphism sends a line-bundle class to its pullback. -/
+@[simp]
+theorem picardPullbackIsometry_apply (x : Additive (LineBundleClass Y)) :
+    picardPullbackIsometry k e x = Additive.ofMul (LineBundleClass.pullback e.hom x.toMul) :=
+  congrArg Additive.ofMul (LineBundleClass.pullbackEquiv_apply e x.toMul)
+
+end Chow
 
 namespace LineBundleClass
 
