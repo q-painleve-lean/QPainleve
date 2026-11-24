@@ -16,6 +16,7 @@ import QPainleve.AlgebraicGeometry.Cohomology.Projective
 import QPainleve.AlgebraicGeometry.Cohomology.ProjectiveSpace.EulerCharacteristic
 import QPainleve.AlgebraicGeometry.Cohomology.Support
 import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
+import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.ProjectiveLine.Cohomology
 import TauCeti.AlgebraicGeometry.Cohomology.ProjectiveLine.NegativeTwist
 import TauCeti.AlgebraicGeometry.IdealSheaf.EulerCharacteristic
 import TauCeti.AlgebraicGeometry.Noetherian
@@ -77,16 +78,11 @@ theorem nonempty_cohomologyLinearEquiv_pointBlowup_exceptional_quotient
   obtain ⟨e, he, htwist⟩ :=
     exists_iso_projectiveLine_pullback_pointBlowup_exceptional_twist p k hp hdim hrat
   let : e.hom.IsOver (Spec (.of k)) := ⟨he⟩
-  obtain ⟨t⟩ := htwist a m M hM
-  let N := (Scheme.Modules.pullback ι).obj M.obj
-  let qIso : M.obj ⊗ (E).pushforwardSubscheme ≅ (Scheme.Modules.pushforward ι).obj N := by
-    simpa only [N, FiniteLocallyFreeSheaf.pullback_obj_obj, ObjectProperty.ιOfLE_obj_obj] using
-      (E).tensorPushforwardSubschemeIso ((InvertibleSheaf.toFiniteLocallyFree Y).obj M)
-  exact ⟨(cohomologyBaseLinearEquivOfIso k qIso q).trans <|
-    (Scheme.Hom.cohomologyPushforwardBaseLinearEquiv ι k N q).trans <|
-    (e.hom.cohomologyPullbackBaseLinearEquivOfIsIso k N q).symm.trans <|
-    (cohomologyBaseLinearEquivOfIso k ((Scheme.Modules.pullbackComp e.hom ι).app M.obj) q)
-      |>.trans (cohomologyBaseLinearEquivOfIso k t q)⟩
+  have hdegree : LineBundleClass.intersectionNumber k (e.hom ≫ ι) (LineBundleClass.mk M) = -m := by
+    rw [LineBundleClass.intersectionNumber_mk]
+    exact (projectiveLine.nonempty_iso_twistingSheaf_iff k _ (-m)).mp (htwist a m M hM)
+  exact ⟨((E).cohomologyTensorPushforwardSubschemeEquivTwistingSheaf e M q).trans
+    (LinearEquiv.cast (M := fun d : ℤ ↦ Cohomology (𝒪 d) q) hdegree)⟩
 
 private theorem pointBlowup_exceptional_twist_cohomology_step
     (hp : IsClosed ({p} : Set X)) [IsRegularLocalRing (X.presheaf.stalk p)]

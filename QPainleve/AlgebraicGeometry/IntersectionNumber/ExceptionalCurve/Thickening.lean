@@ -90,11 +90,11 @@ theorem IsExceptionalCurveOfFirstKind.surjective_exceptionalThickening_restricti
     exact ⟨x, (ConcreteCategory.congr_hom
       (congrArg (fun f ↦ f.app (⊤ : X.Opens)) hc) x).symm.trans hx⟩
 
-/-- Regular functions restrict surjectively from a larger finite thickening of an
-exceptional curve of the first kind to a smaller one. -/
-theorem IsExceptionalCurveOfFirstKind.surjective_appTop_inclusion_pow
+/-- Restriction between thickenings of an exceptional curve is surjective on global
+sections of their structure sheaves pushed forward to the ambient scheme. -/
+theorem IsExceptionalCurveOfFirstKind.surjective_pushforwardSubschemeMap_app_top_pow
     (hE : E.IsExceptionalCurveOfFirstKind) {m n : ℕ} (hmn : m ≤ n) :
-    Function.Surjective (inclusion (powLE hmn)).appTop := by
+    Function.Surjective ((pushforwardSubschemeMap (powLE hmn)).app ⊤) := by
   let g := pushforwardSubschemeMap (powLE hmn)
   let M := (isEffectiveCartier_pow hE.isEffectiveCartier 0).toInvertibleSheaf
   have hM : LineBundleClass.mk M = 1 :=
@@ -107,15 +107,19 @@ theorem IsExceptionalCurveOfFirstKind.surjective_appTop_inclusion_pow
       (congrArg (e.hom ▷ _ ≫ ·) (leftUnitor_naturality g))
   have hs := hE.surjective_exceptionalThickening_restriction 0 hmn
   have h₂ := (ConcreteCategory.bijective_of_isIso ((u (E ^ m).pushforwardSubscheme).hom.app ⊤)).2
-  have hg : Function.Surjective (g.app ⊤) := by
-    intro y
-    obtain ⟨x, hx⟩ := h₂.comp hs y
-    refine ⟨(u (E ^ n).pushforwardSubscheme).hom.app ⊤ x, ?_⟩
-    have hh := ConcreteCategory.congr_hom
-      (congrArg (fun f ↦ f.app (⊤ : X.Opens)) hcomp) x
-    exact hh.symm.trans hx
+  intro y
+  obtain ⟨x, hx⟩ := h₂.comp hs y
+  refine ⟨(u (E ^ n).pushforwardSubscheme).hom.app ⊤ x, ?_⟩
+  have hh := ConcreteCategory.congr_hom (congrArg (fun f ↦ f.app (⊤ : X.Opens)) hcomp) x
+  exact hh.symm.trans hx
+
+/-- Regular functions restrict surjectively from a larger finite thickening of an
+exceptional curve of the first kind to a smaller one. -/
+theorem IsExceptionalCurveOfFirstKind.surjective_appTop_inclusion_pow
+    (hE : E.IsExceptionalCurveOfFirstKind) {m n : ℕ} (hmn : m ≤ n) :
+    Function.Surjective (inclusion (powLE hmn)).appTop := by
   intro z
-  obtain ⟨s, hs⟩ := hg z
+  obtain ⟨s, hs⟩ := hE.surjective_pushforwardSubschemeMap_app_top_pow hmn z
   refine ⟨s, ?_⟩
   have h := pushforwardSubschemeMap_app (powLE hmn) ⊤ s
   have htop := Scheme.Hom.appLE_eq_app (f := inclusion (powLE hmn))
