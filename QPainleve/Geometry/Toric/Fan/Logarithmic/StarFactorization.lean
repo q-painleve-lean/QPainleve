@@ -14,7 +14,10 @@ public import QPainleve.Geometry.Toric.Fan.StarSubdivision.Factorization
 
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Modification
 import QPainleve.AlgebraicGeometry.Modules.Differentials.PoleIdeal
+import QPainleve.AlgebraicGeometry.Morphisms.Modification.Birational
 import QPainleve.AlgebraicGeometry.RationalMap.Composition.Basic
+import QPainleve.Geometry.Toric.Fan.StarSubdivision.Tower
+import TauCeti.AlgebraicGeometry.Morphisms.Modification.Composition
 
 /-!
 # Resolved factorizations of toric changes
@@ -93,6 +96,25 @@ instance : Quiver.HasInvolutiveReverse (LogarithmicProjection i D) where
     | .blowup h comm => .blowdown h comm
     | .blowdown h comm => .blowup h comm
   inv' e := by cases e <;> rfl
+
+/-- A resolved toric star step carries the modification property from its source
+projection to its target projection. -/
+theorem StarStep.isModification_target (step : StarStep A B)
+    (hN : Module.finrank ℤ N = 2) (hA : IsModification A.hom) : IsModification B.hom := by
+  cases step with
+  | blowup h comm =>
+    let H := h.isSubdivision
+    let : IsModification π[H] :=
+      H.isModification_algebraicMap A.isRegular B.isRegular A.isComplete.nonempty_cones hN
+    let : IsModification (B.hom ≫ π[H]) := comm.symm ▸ hA
+    exact IsModification.of_comp_right B.hom π[H]
+  | blowdown h comm =>
+    let H := h.isSubdivision
+    let : IsModification A.hom := hA
+    let : IsModification π[H] :=
+      H.isModification_algebraicMap B.isRegular A.isRegular B.isComplete.nonempty_cones hN
+    rw [← comm]
+    infer_instance
 
 local notation "toricMap[" A "," B "]" =>
   Scheme.PartialIso.toRationalMap
