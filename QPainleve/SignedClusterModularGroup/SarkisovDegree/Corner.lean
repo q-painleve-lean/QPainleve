@@ -7,6 +7,7 @@ module
 
 public import QPainleve.AlgebraicGeometry.Blowup.Tower.Modification
 public import QPainleve.AlgebraicGeometry.Blowup.Tower.Reorder
+public import QPainleve.Geometry.Toric.Fan.Ruling.Basic
 public import QPainleve.Geometry.Toric.Fan.Smooth
 public import QPainleve.Geometry.Toric.Fan.Subdivision.FunctionField
 public import QPainleve.SignedClusterModularGroup.SarkisovDegree.ToricLink
@@ -15,6 +16,8 @@ import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
 import QPainleve.AlgebraicGeometry.Morphisms.Modification.Birational
 import QPainleve.AlgebraicGeometry.RationalMap.Composition.Basic
 import QPainleve.AlgebraicGeometry.RationalMap.Modification
+import QPainleve.Geometry.Toric.Fan.Ruling.FixedPoint
+import QPainleve.Geometry.Toric.Fan.Ruling.Subdivision
 import TauCeti.AlgebraicGeometry.Morphisms.Modification.Composition
 
 /-!
@@ -85,11 +88,43 @@ private theorem existsUnique_rationalMap_toric_corner
     _ = _ := by
       simp only [Scheme.RationalMap.comp_toRationalMap, Scheme.Hom.toRationalMap_compHom, hv]
 
+private theorem toric_corner_baseCenter_ruling {F Ψ : Fan i}
+    (b d : Basis (Fin 2) ℤ N) (σ : Φ.cones) (τ : Ψ.cones)
+    (hσ : σ.val = hull ℝ (Set.range (i ∘ b))) (hτ : τ.val = hull ℝ {i (d 1), i (-d 0)})
+    (hd₀ : d 0 = b 0) (hd₁ : d 1 = b 0 + b 1) (s : F.IsSubdivision Φ) (t : F.IsSubdivision Ψ)
+    {p : Fin (n + 1) → X[Φ]} {q : Fin (1 + n) → X[Ψ]} (j : Fin (n + 1))
+    (hp : p j = Φ.distinguishedPointHom σ (IsLocalRing.closedPoint ℂ))
+    (hq : q (Fin.castAdd n (0 : Fin 1)) = Ψ.distinguishedPointHom τ (IsLocalRing.closedPoint ℂ))
+    (hpts : ∀ l : Fin n, ∃ z : X[F], s.toFanHom.algebraicMap z = p (j.succAbove l) ∧
+      t.toFanHom.algebraicMap z = q (l.natAdd 1))
+    (h₀ : ∀ γ : Φ.cones, (∀ x ∈ γ.val, 0 ≤ Φ.lattice.realCharacter
+      (b.coord 1).toAddMonoidHom x) ∨ ∀ x ∈ γ.val,
+        Φ.lattice.realCharacter (b.coord 1).toAddMonoidHom x ≤ 0)
+    (h₁ : ∀ γ : Ψ.cones, (∀ x ∈ γ.val, 0 ≤ Ψ.lattice.realCharacter
+      (b.coord 1).toAddMonoidHom x) ∨ ∀ x ∈ γ.val,
+        Ψ.lattice.realCharacter (b.coord 1).toAddMonoidHom x ≤ 0)
+    (l : Fin (1 + n)) :
+    Ψ.characterRuling (b.coord 1).toAddMonoidHom h₁ (q l) =
+      Φ.characterRuling (b.coord 1).toAddMonoidHom h₀
+        (Fin.addCases (fun _ : Fin 1 ↦ p j) (p ∘ j.succAbove) l) := by
+  induction l using Fin.addCases with
+  | left l =>
+    rw [Subsingleton.elim l (0 : Fin 1), Fin.addCases_left, hq, hp]
+    exact (Fan.characterRuling_distinguishedPointHom_eq_of_hirzebruch_link
+      b d hd₀ hd₁ σ τ hσ hτ h₀ h₁ (IsLocalRing.closedPoint ℂ)).symm
+  | right l =>
+    obtain ⟨z, hz, hz'⟩ := hpts l
+    have h := s.comp_characterRuling_eq t (b.coord 1).toAddMonoidHom h₀ h₁
+    simpa only [Fin.addCases_right, Function.comp_apply, Scheme.Hom.comp_apply, hz, hz'] using
+      congrArg (fun f ↦ f z) h.symm
+
 /-- Perform the toric elementary link at the first center over the selected
 corner of a specified Hirzebruch resolution. The two projections from the
 common toric blowup are regular lifts of the link on the original resolution.
 The new point tower retains the specified birational morphism up to the
-displayed isomorphism over the base field.
+displayed isomorphism over the base field. Each retained center comes from a
+point of the common blowup. The reverse center lies over the same point of the
+ruling as the selected center, and every other center retains its ruling value.
 
 For a class with fiber and section coefficients `a, β` and selected base order
 `m`, the new coordinates are `a + β - m, β` with reverse order `β - m`.
@@ -119,12 +154,24 @@ theorem exists_sarkisov_decrease_of_toric_corner
       (hr : (fun l ↦ (r l).primitiveGenerator) = ![b 0, b 1, -b 0, e • b 0 - b 1])
       (hr' : (fun l ↦ (r' l).primitiveGenerator) = ![d 0, d 1, -d 0, (e + 1) • d 0 - d 1])
       (Z : Scheme) (U : BlowupTower X[Ψ] (1 + n) Z)
-      (_ : IsClosedPointTower X[Ψ] U) (k : Y ≅ Z),
+      (hU : IsClosedPointTower X[Ψ] U) (k : Y ≅ Z),
       d 0 = b 0 ∧ d 1 = b 0 + b 1 ∧ τ.val = hull ℝ {i (d 1), i (-d 0)} ∧
       v.hom ≫ (I[σ]).blowupToBase = s.toFanHom.algebraicMap ∧
       v'.hom ≫ (I[τ]).blowupToBase = t.toFanHom.algebraicMap ∧
       q ≫ s.toFanHom.algebraicMap = T.toBase ∧
       q ≫ t.toFanHom.algebraicMap = k.hom ≫ U.toBase ∧
+      (∀ l : Fin n, ∃ z : X[F],
+        s.toFanHom.algebraicMap z = hT.baseCenter (j.succAbove l) ∧
+        t.toFanHom.algebraicMap z = hU.baseCenter (l.natAdd 1)) ∧
+      (∀ (h₀ : ∀ γ : Φ.cones, (∀ x ∈ γ.val, 0 ≤ Φ.lattice.realCharacter
+        (b.coord 1).toAddMonoidHom x) ∨ ∀ x ∈ γ.val,
+          Φ.lattice.realCharacter (b.coord 1).toAddMonoidHom x ≤ 0)
+        (h₁ : ∀ γ : Ψ.cones, (∀ x ∈ γ.val, 0 ≤ Ψ.lattice.realCharacter
+          (b.coord 1).toAddMonoidHom x) ∨ ∀ x ∈ γ.val,
+            Ψ.lattice.realCharacter (b.coord 1).toAddMonoidHom x ≤ 0) (l : Fin (1 + n)),
+        Ψ.characterRuling (b.coord 1).toAddMonoidHom h₁ (hU.baseCenter l) =
+          Φ.characterRuling (b.coord 1).toAddMonoidHom h₀
+            (Fin.addCases (fun _ : Fin 1 ↦ hT.baseCenter j) (hT.baseCenter ∘ j.succAbove) l)) ∧
       (k.inv ≫ g) ≫ p = U.toBase ≫ f[Ψ] ∧
       Scheme.BirationalOver (k.inv ≫ g) (𝟙 P) ∧
       let : Nonempty F.cones := hcF.nonempty_cones
@@ -151,11 +198,12 @@ theorem exists_sarkisov_decrease_of_toric_corner
   have hmove := hT.exists_move_closed_point_blowup_to_front j
     (Φ.isClosed_singleton_distinguishedPoint σ) hj hfirst
   rw [← hI] at hmove
-  obtain ⟨W, A, h, hA, hbase, hE, _, htail⟩ := hmove
+  obtain ⟨W, A, h, hA, hbase, hE, hcenters, htail⟩ := hmove
   obtain ⟨Ψ, F, hΨ, hF, hc', hcF, d, τ, s, t, v, v', r, r', hr, hr', Z, A', k,
-      hU, hd₀, hd₁, hτ, hv, hv', hproj, hcoord⟩ :=
+      hU, hd₀, hd₁, hτ, hv, hv', hproj, hhead, htarget, hcoord⟩ :=
     hA.exists_hirzebruch_toric_link_resolution b e hΦ hc hrays σ hσ
   let U := (BlowupTower.nil.snoc (I[τ])).append A'
+  -- The common blowup gives both projections and hence the ruling comparison.
   let q := h.hom ≫ A.toBase ≫ v.inv
   let k' := h ≪≫ k
   have hq : q ≫ s.toFanHom.algebraicMap = T.toBase := by
@@ -169,11 +217,18 @@ theorem exists_sarkisov_decrease_of_toric_corner
   have hbir' : Scheme.BirationalOver (k'.inv ≫ g) (𝟙 P) :=
     Scheme.BirationalOver.trans (sY := g)
       ⟨.ofIso k'.symm, by simp [Scheme.PartialIso.IsOver, Scheme.PartialIso.ofIso]⟩ hbir
+  have hpts (l : Fin n) : ∃ z : X[F],
+      s.toFanHom.algebraicMap z = hT.baseCenter (j.succAbove l) ∧
+      t.toFanHom.algebraicMap z = hU.baseCenter (l.natAdd 1) := by
+    refine ⟨v.inv (hA.baseCenter l), ?_, htarget l⟩
+    rw [← Scheme.Hom.comp_apply, ← hv, Iso.inv_hom_id_assoc, hcenters]
   refine ⟨Ψ, F, hΨ, hF, hc', hcF, d, τ, s, t, v, v', q, r, r', hr, hr', Z, U, hU, k',
-    hd₀, hd₁, hτ, hv, hv', hq, hq', hover, hbir', ?_⟩
+    hd₀, hd₁, hτ, hv, hv', hq, hq', hpts,
+    toric_corner_baseCenter_ruling b d σ τ hσ hτ hd₀ hd₁ s t j hj hhead hpts, hover, hbir', ?_⟩
   let : Nonempty F.cones := hcF.nonempty_cones
   have : IsModification s.toFanHom.algebraicMap := isModification_corner_projection σ s v hv
   refine ⟨existsUnique_rationalMap_toric_corner s t q T.toBase (k'.hom ≫ U.toBase) hq hq', ?_⟩
+  -- Read the degree in the new marking and undo the permutation in the old order sum.
   intro hcones' C C' a β x x'
   let := hcones'
   obtain ⟨hclass, hsum, hlt⟩ := hcoord a β (x j) (x ∘ j.succAbove)

@@ -53,6 +53,14 @@ theorem baseCenter_snoc_last {T : BlowupTower X n Y} {I : Y.IdealSheafData}
     hT.baseCenter (Fin.last n) = T.toBase hT.lastCenter.val := by
   simp [baseCenter]
 
+/-- The projected center of a one-step tower is its actual center. -/
+@[simp]
+theorem baseCenter_snoc_nil {I : X.IdealSheafData}
+    (hT : IsClosedPointTower X (BlowupTower.nil.snoc I)) (j : Fin 1) :
+    hT.baseCenter j = hT.lastCenter.val := by
+  rw [Subsingleton.elim j (Fin.last 0), baseCenter_snoc_last, toBase_nil]
+  rfl
+
 /-- Appending a tower leaves the projected centers in the prefix unchanged. -/
 @[simp]
 theorem baseCenter_append_castAdd {T : BlowupTower X m Y} {U : BlowupTower Y n Z}

@@ -10,6 +10,7 @@ public import QPainleve.Geometry.Toric.Fan.Ruling.Subdivision
 public import QPainleve.Geometry.Toric.Fan.StarSubdivision.Picard.Hirzebruch
 
 import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
+import QPainleve.Geometry.Toric.Fan.Ruling.FixedPoint
 
 /-!
 # Toric preparation of a Hirzebruch resolution
@@ -51,7 +52,8 @@ variable {n : ℕ} {Y : Scheme} {T : BlowupTower X[Φ] n Y}
 /-- Transport a specified closed-point resolution across the toric Hirzebruch link
 at a corner absent from its projected centers. The common resolution is obtained by
 blowing up the inverse image of the corner. Each retained center lies over the
-same base point for every character ruling common to the two fans.
+same base point for every character ruling common to the two fans. The inserted
+reverse center lies over the ruling value of the original corner.
 
 In the two Picard markings the source coefficients `(a, b)` become `(a + b, b)`.
 The new first exceptional coefficient is `-b`, and all old coefficients retain their
@@ -81,6 +83,15 @@ theorem exists_hirzebruch_toric_link_resolution_of_absent_corner
       k.hom ≫ U.toBase ≫ g'.inv ≫ s.toFanHom.algebraicMap = A.blowupToBase ≫ T.toBase ∧
       k.hom ≫ U.toBase ≫ g'.inv ≫ t.toFanHom.algebraicMap = k.hom ≫ U'.toBase ∧
       (∀ j, s.toFanHom.algebraicMap (g'.inv (hU.baseCenter j)) = hT.baseCenter j) ∧
+      (∀ (h₀ : ∀ γ : Φ.cones, (∀ x ∈ γ.val, 0 ≤ Φ.lattice.realCharacter
+        (b.coord 1).toAddMonoidHom x) ∨ ∀ x ∈ γ.val,
+          Φ.lattice.realCharacter (b.coord 1).toAddMonoidHom x ≤ 0)
+        (h₁ : ∀ γ : Ψ.cones, (∀ x ∈ γ.val, 0 ≤ Ψ.lattice.realCharacter
+          (b.coord 1).toAddMonoidHom x) ∨ ∀ x ∈ γ.val,
+            Ψ.lattice.realCharacter (b.coord 1).toAddMonoidHom x ≤ 0),
+        Ψ.characterRuling (b.coord 1).toAddMonoidHom h₁
+            (hU'.baseCenter (Fin.castAdd n (0 : Fin 1))) =
+          Φ.characterRuling (b.coord 1).toAddMonoidHom h₀ p) ∧
       (∀ (m : N →+ ℤ)
         (h₀ : ∀ γ : Φ.cones, (∀ x ∈ γ.val, 0 ≤ Φ.lattice.realCharacter m x) ∨
           ∀ x ∈ γ.val, Φ.lattice.realCharacter m x ≤ 0)
@@ -107,6 +118,7 @@ theorem exists_hirzebruch_toric_link_resolution_of_absent_corner
   let R := L.transport (g.symm ≪≫ g')
   let hU : IsClosedPointTower (I[τ]).blowup R.tower := R.isLift.isClosedPointTower hL
   let k := f ≪≫ R.iso
+  -- The reshaped tower starts at the reverse corner and then follows the transported tail.
   have hτTower : IsClosedPointTower X[Ψ] (tower[I[τ]]) :=
     .snoc .nil _ (Ψ.isClosed_singleton_distinguishedPoint τ)
       (Ψ.distinguishedPointHom τ).ker_eq_ker_fromSpecResidueField
@@ -121,12 +133,18 @@ theorem exists_hirzebruch_toric_link_resolution_of_absent_corner
   have htarget : g'.inv ≫ t.toFanHom.algebraicMap = (I[τ]).blowupToBase := by
     rw [← hg', Iso.inv_hom_id_assoc]
   refine ⟨q, Ψ, F, hΨ, hF, hc', d, τ, s, t, r, r', hr, hr', g, g', _, R.tower, k, hU,
-    hτTower.append hU, hq, hqp, hA, hd₀, hd₁, hτ, hg, hg', ?_, ?_, hpts, ?_, ?_⟩
+    hτTower.append hU, hq, hqp, hA, hd₀, hd₁, hτ, hg, hg', ?_, ?_, hpts, ?_, ?_, ?_⟩
   · calc
       _ = f.hom ≫ (R.iso.hom ≫ R.tower.toBase) ≫ g'.inv ≫ s.toFanHom.algebraicMap := by
         simp only [k, Iso.trans_hom, Category.assoc]
       _ = _ := by rw [R.isLift.hom_toBase, Category.assoc L.toBase, hsource, hf]
   · simp only [toBase_append, toBase_snoc, toBase_nil, Category.comp_id, htarget]
+  · intro h₀ h₁
+    rw [baseCenter_append_castAdd hτTower hU, baseCenter_snoc_nil,
+      hτTower.lastCenter_eq _ (Ψ.isClosed_singleton_distinguishedPoint τ)
+        (Ψ.distinguishedPointHom τ).ker_eq_ker_fromSpecResidueField]
+    exact (Fan.characterRuling_distinguishedPointHom_eq_of_hirzebruch_link
+      b d hd₀ hd₁ σ τ hσ hτ h₀ h₁ (IsLocalRing.closedPoint ℂ)).symm
   · intro m h₀ h₁ j
     rw [baseCenter_append_natAdd hτTower hU, toBase_snoc, toBase_nil, Category.comp_id, ← htarget]
     have hpoint := congrArg (fun f : X[F] ⟶ projectiveLine ℂ ↦ f (g'.inv (hU.baseCenter j)))
