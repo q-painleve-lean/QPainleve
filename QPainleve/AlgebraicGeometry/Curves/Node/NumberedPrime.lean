@@ -50,6 +50,10 @@ def ambientNode (j : ZMod n) : X := D.subschemeι ((J).subschemeι (A.node j))
 theorem ambientNode_def (j : ZMod n) :
     A.ambientNode j = D.subschemeι ((J).subschemeι (A.node j)) := (rfl)
 
+/-- Distinct numbered nodes give distinct points of the ambient scheme. -/
+theorem ambientNode_injective : Function.Injective A.ambientNode :=
+  D.subschemeι.injective.comp (J).subschemeι.injective |>.comp A.node.injective
+
 /-- A numbered node is a closed point of the ambient scheme. -/
 theorem isClosed_ambientNode (j : ZMod n) : IsClosed ({A.ambientNode j} : Set X) := by
   rw [ambientNode_def, ← Set.image_singleton]
@@ -139,5 +143,55 @@ theorem ambientNode_mem_closure_boundaryPrime_iff (hD : D.IsEffectiveCartier) (j
     exact ⟨x, by
       rw [Scheme.Hom.comp_apply, Scheme.Hom.comp_apply, hι, hbranch,
         A.branchSchemeToSingularLocus_branch, ambientNode_def]⟩
+
+private theorem exists_ambientNode_of_mem_closure_boundaryPrimes (hD : D.IsEffectiveCartier)
+    {i j : ZMod n} (hij : i ≠ j) {x : X}
+    (hi : x ∈ closure {(A.boundaryPrimeEquiv hD i).val})
+    (hj : x ∈ closure {(A.boundaryPrimeEquiv hD j).val}) :
+    ∃ a, A.ambientNode a = x := by
+  have hnodal : AtWorstNodalOfRelativeDimensionOne (C ↘ Spec (.of k)) :=
+    PrestableFamily.atWorstNodalOfRelativeDimensionOne
+  let := hnodal.syntomic
+  have hclosure (l : ZMod n) := (C).range_blowupComponent_comp
+    (A.component l) D.subschemeι D.subschemeι.isClosedMap
+  simp only [← componentGenericPoint_def] at hclosure
+  obtain ⟨y, hy⟩ := (hclosure i).symm ▸ hi
+  obtain ⟨z, hz⟩ := (hclosure j).symm ▸ hj
+  simp only [Scheme.Hom.comp_apply] at hy hz
+  have he := D.subschemeι.injective (hy.trans hz.symm)
+  have hs : ν (((C).blowupComponent (A.component i)).ι y) ∈ (J).support := by
+    apply ((C).mem_support_singularLocus_iff_notMem_smoothLocus _).mpr
+    intro hm
+    have h := (C).eq_of_blowupToBase_singularLocus_eq_of_mem_smoothLocus he hm
+    have hd := (C).pairwise_disjoint_blowupComponent (A.component.injective.ne hij)
+    have hz' : ((C).blowupComponent (A.component j)).ι z ∈
+        (C).blowupComponent (A.component j) := z.property
+    have hy' : ((C).blowupComponent (A.component i)).ι y ∈
+        (C).blowupComponent (A.component j) := h.symm ▸ hz'
+    exact Set.disjoint_left.mp (TopologicalSpace.Opens.coe_disjoint.mpr hd) y.property hy'
+  obtain ⟨a, ha⟩ := (J).range_subschemeι.ge hs
+  obtain ⟨l, rfl⟩ := A.node.surjective a
+  exact ⟨l, (congrArg D.subschemeι ha).trans hy⟩
+
+/-- Distinct components of a numbered nodal Cartier cycle meet exactly at the
+numbered nodes incident to both. For a two-component cycle, both joining nodes
+occur in the intersection. -/
+theorem closure_boundaryPrime_inter_of_ne (hD : D.IsEffectiveCartier) {i j : ZMod n}
+    (hij : i ≠ j) :
+    closure {(A.boundaryPrimeEquiv hD i).val} ∩ closure {(A.boundaryPrimeEquiv hD j).val} =
+      A.ambientNode '' {a | (a = i ∧ j = i + 1) ∨ (a = j ∧ i = j + 1)} := by
+  have hnode (a : ZMod n) : A.ambientNode a ∈
+      closure {(A.boundaryPrimeEquiv hD i).val} ∩ closure {(A.boundaryPrimeEquiv hD j).val} ↔
+      (a = i ∧ j = i + 1) ∨ (a = j ∧ i = j + 1) := by
+    simp only [Set.mem_inter_iff, A.ambientNode_mem_closure_boundaryPrime_iff, Fin.exists_fin_two]
+    simp
+    grind
+  ext x
+  constructor
+  · rintro ⟨hi, hj⟩
+    obtain ⟨a, rfl⟩ := A.exists_ambientNode_of_mem_closure_boundaryPrimes hD hij hi hj
+    exact ⟨a, (hnode a).mp ⟨hi, hj⟩, rfl⟩
+  · rintro ⟨a, ha, rfl⟩
+    exact (hnode a).mpr ha
 
 end AlgebraicGeometry.Scheme.NodalCycleNumbering

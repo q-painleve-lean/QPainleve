@@ -56,31 +56,34 @@ local instance (X : Scheme) [X.Over S] : (Iso.refl X).hom.IsOver S := by
   rw [Iso.refl_hom]
   infer_instance
 
-private theorem cycleOrientationSign_refl_of_matching_rays
-    (hΦ : Φ.IsRegular) (A A' : NodalCycleNumbering p n) (r : ZMod n ≃ Φ.Ray)
+/-- The identity preserves orientation between any two determinant-positive
+numberings of the same toric boundary, even when their initial rays differ. -/
+theorem cycleOrientationSign_refl_of_positive_numberings
+    (hΦ : Φ.IsRegular) {γ' : Type*} {p' : γ' → (C[Φ] ↘ S).smoothLocus}
+    (A : NodalCycleNumbering p n) (A' : NodalCycleNumbering p' n)
+    (r r' : ZMod n ≃ Φ.Ray)
     (hA : ∀ j, A.component j = Φ.boundaryNormalizationComponentEquiv hΦ (r j))
-    (hA' : ∀ j, A'.component j = Φ.boundaryNormalizationComponentEquiv hΦ (r j))
-    (hpos : ∀ j, b.detDualEquiv (r j).primitiveGenerator (r (j + 1)).primitiveGenerator = 1) :
+    (hA' : ∀ j, A'.component j = Φ.boundaryNormalizationComponentEquiv hΦ (r' j))
+    (hpos : ∀ j, b.detDualEquiv (r j).primitiveGenerator (r (j + 1)).primitiveGenerator = 1)
+    (hpos' : ∀ j, b.detDualEquiv (r' j).primitiveGenerator (r' (j + 1)).primitiveGenerator = 1) :
     cycleOrientationSign ((Iso.refl C[Φ]).boundaryCycleAction A A') = 1 := by
   let g := (Iso.refl C[Φ]).boundaryCycleAction A A'
-  have hfix (j : ZMod n) : cycleVertexPerm g j = j := by
+  have hmap (j : ZMod n) : r' (cycleVertexPerm g j) = r j := by
     have hr := (Iso.refl C[Φ]).apply_componentGenericPoint A A' j
-    have hj : A.componentGenericPoint j = A'.componentGenericPoint j := by
-      rw [A.componentGenericPoint_def, A'.componentGenericPoint_def, hA, hA']
     simp only [Iso.refl_hom, Scheme.Hom.id_base, TopCat.coe_id, id_eq] at hr
-    exact A'.componentGenericPoint_injective (hr.symm.trans hj)
+    have he : A.componentGenericPoint j = A'.componentGenericPoint (r'.symm (r j)) := by
+      rw [A.componentGenericPoint_def, A'.componentGenericPoint_def, hA, hA',
+        Equiv.apply_symm_apply]
+    rw [A'.componentGenericPoint_injective (hr.symm.trans he), Equiv.apply_symm_apply]
   cases hg : g with
   | r j => simpa only [g, cycleOrientationSign_r] using congrArg cycleOrientationSign hg
   | sr j =>
-    have hz := hfix 0
-    rw [hg, cycleVertexPerm_sr_apply, sub_zero, neg_eq_zero] at hz
-    subst j
-    have hone := hfix 1
-    rw [hg, cycleVertexPerm_sr_apply, neg_zero, zero_sub] at hone
-    have hn := hpos (-1)
-    rw [neg_add_cancel, hone, b.detDualEquiv_swap] at hn
+    have h₀ : r' (-j) = r 0 := by simpa only [hg, cycleVertexPerm_sr_apply, sub_zero] using hmap 0
+    have h₁ : r' (-j - 1) = r 1 := by simpa only [hg, cycleVertexPerm_sr_apply] using hmap 1
+    have hn := hpos' (-j - 1)
+    rw [sub_add_cancel, h₁, h₀, b.detDualEquiv_swap] at hn
     have hz := hpos 0
-    simp only [zero_add] at hz
+    rw [zero_add] at hz
     rw [hz] at hn
     norm_num at hn
 
@@ -155,8 +158,9 @@ theorem IsSubdivision.exists_positive_boundary_subdivision_numbering (ρ : Φ.Ra
   obtain ⟨edge, order, vertex, hw, hwA, hperiod⟩ :=
     Φ.exists_toric_boundary_period_of_cyclicRayNumbering hΦ b hc p r hr
   let A' : NodalCycleNumbering p n := ⟨vertex, edge, order, hw⟩
-  have hsign := cycleOrientationSign_refl_of_matching_rays b hΦ A' A r
-    (by simpa only [NodalCycleNumbering.component_apply, A'] using hwA) hA (fun j ↦ (hr j).1)
+  have hsign := cycleOrientationSign_refl_of_positive_numberings b hΦ A' A r r
+    (by simpa only [NodalCycleNumbering.component_apply, A'] using hwA) hA
+    (fun j ↦ (hr j).1) (fun j ↦ (hr j).1)
   have hAA' : (𝟙 C[Φ] : C[Φ] ⟶ C[Φ]).IsOrientedCycleSubdivision A' A :=
     (Iso.refl C[Φ]).isOrientedCycleSubdivision_of_cycleOrientationSign_eq_one A' A hsign
   obtain ⟨hpre, m, hm, hW⟩ := h.exists_isOrientedCycleSubdivision_boundaryMap
