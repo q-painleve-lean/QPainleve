@@ -11,7 +11,6 @@ public import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.ProjectiveLine.Scalin
 import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.ProjectiveLine.Basic
 import QPainleve.Geometry.Toric.Fan.DenseTorus
 import TauCeti.Geometry.Toric.Algebraic.Fan.Normal
-import TauCeti.Geometry.Toric.Algebraic.Fan.Product.Isomorphism
 
 /-!
 # Toric shears as projective-line scalings
@@ -22,7 +21,7 @@ integral shear acts by a diagonal projective automorphism. This expresses
 the transition of the Hirzebruch ruling charts in the projective-line
 coordinates used for split projective bundles.
 
-The comparison uses Tau Ceti's product-fan pullback and
+The comparison uses the Laurent product projections and
 `projectiveLine.polynomialPoint_comp_scalingBy`.
 -/
 
@@ -37,13 +36,10 @@ local notation "P" => Fan.projectiveSpace (Pi.basisFun ℤ (Fin 1)) (isIntegralL
 local notation "T₀" => projectiveLineTorusFan
 local notation "F" => (Fan.prod P T₀)
 local notation "L" => LaurentPolynomial ℂ
-local notation "S" => Spec (CommRingCat.of ℂ)
 local notation "SL" => Spec (CommRingCat.of L)
 local notation "q" => (projectiveLine L ↘ SL)
-local notation "p" => (projectiveLine ℂ ↘ S)
 local notation "fstF" => (FanHom.fst P T₀)
 local notation "sndF" => (FanHom.snd P T₀)
-local notation "π₁" => (FanHom.algebraicMap fstF ≫ Iso.hom Fan.projectiveLineToricIso)
 local notation "π₂" => FanHom.algebraicMap sndF
 local notation "eT" => projectiveLineTorusIsoSpecLaurent
 
@@ -52,37 +48,7 @@ local notation "m(" f ")" =>
 
 namespace Fan
 
-private theorem isPullback_laurentProduct :
-    IsPullback π₁ (π₂ ≫ (eT).hom) p (Spec.algebraMap ℂ L) := by
-  apply ((P).isPullback_fst_snd_algebraicMap T₀).of_iso'
-    (Iso.refl _) Fan.projectiveLineToricIso.symm (eT).symm (Iso.refl _) ?_ ?_ ?_ ?_
-  · simp
-  · simp
-  · rw [Iso.refl_hom, Category.comp_id, Iso.symm_hom, ← cancel_epi Fan.projectiveLineToricIso.hom,
-      Iso.hom_inv_id_assoc, ← Fan.algebraicRealization_over, CategoryTheory.comp_over]
-  · rw [Iso.refl_hom, Category.comp_id, Iso.symm_hom, ← Fan.algebraicRealization_over,
-      ← projectiveLineTorusIsoSpecLaurent_hom_comp_toBase, Iso.inv_hom_id_assoc]
-
-/-- The product fan of the projective line and its base torus realizes the
-projective line over the Laurent polynomial ring. -/
-def projectiveLineTorusProductIsoLaurent : (F).algebraicRealization ≅ projectiveLine L :=
-  isPullback_laurentProduct.isoPullback ≪≫
-    (projectiveLine.isPullback_baseChangeProjection ℂ L).isoPullback.symm
-
 local notation "E" => projectiveLineTorusProductIsoLaurent
-
-/-- The Laurent model's fiber projection is the first fan projection. -/
-@[reassoc (attr := simp)]
-theorem projectiveLineTorusProductIsoLaurent_hom_baseChangeProjection :
-    (E).hom ≫ projectiveLine.baseChangeProjection ℂ L = π₁ := by
-  simp [projectiveLineTorusProductIsoLaurent]
-
-/-- The Laurent model's structural map is the second fan projection, expressed
-in the Laurent coordinate of the base. -/
-@[reassoc (attr := simp)]
-theorem projectiveLineTorusProductIsoLaurent_hom_toBase :
-    (E).hom ≫ q = π₂ ≫ (eT).hom := by
-  simp [projectiveLineTorusProductIsoLaurent]
 
 private theorem productFan_nonempty_cones : Nonempty (F).cones :=
   ⟨⟨(⊥ : PointedCone ℝ (Fin 1 → ℝ)).prod (⊥ : PointedCone ℝ (Fin 1 → ℝ)),
