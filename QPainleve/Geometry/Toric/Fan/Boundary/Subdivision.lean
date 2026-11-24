@@ -7,8 +7,11 @@ module
 
 public import Mathlib.AlgebraicGeometry.IdealSheaf.Functorial
 public import QPainleve.Geometry.Toric.Fan.Boundary.Center
+public import QPainleve.Geometry.Toric.Fan.Boundary.Ideal
 public import QPainleve.Geometry.Toric.Fan.Subdivision.FunctionField
+public import TauCeti.AlgebraicGeometry.Blowup.StrictTransform
 
+import QPainleve.AlgebraicGeometry.Blowup.StrictTransform.Reduced
 import QPainleve.AlgebraicGeometry.IdealSheaf.Restriction
 import QPainleve.AlgebraicGeometry.Morphisms.Pullback.IsoLocus
 import QPainleve.AlgebraicGeometry.Scheme.FunctionField
@@ -21,6 +24,7 @@ import TauCeti.RingTheory.LocalRing.Basic
 The inverse image of the dense torus under a subdivision is the dense torus.
 Consequently the reduced inverse image of the toric boundary is the toric
 boundary of the subdividing fan. Every old ray survives and its affine chart is unchanged.
+For subdivisions realized as blowups, the surviving ray divisors give the strict transforms.
 In particular, each binomial center on the old boundary pulls back to the center with
 the same primitive orbit character and parameter.
 -/
@@ -89,6 +93,23 @@ theorem algebraicMap_rayBoundaryPoint_liftRay (hΦ : Φ.IsRegular) (hΨ : Ψ.IsR
   rw [Fan.coe_rayBoundaryPoint, ← Scheme.Hom.comp_apply, hchart, Fan.coe_rayBoundaryPoint,
     h.liftRay_toToricRay]
   rfl
+
+/-- When a subdivision is identified with a blowup, the strict transform of an old
+ray divisor whose generic point lies outside the center is the lifted ray divisor. -/
+theorem comap_ker_blowupMap_rayBoundaryIdeal (hΦ : Φ.IsRegular) (hΨ : Ψ.IsRegular)
+    {I : Ψ.algebraicRealization.IdealSheafData} (e : Φ.algebraicRealization ≅ I.blowup)
+    (he : e.hom ≫ I.blowupToBase = h.toFanHom.algebraicMap) (ρ : Ψ.Ray)
+    (hρ : (Ψ.rayBoundaryPoint hΨ ρ).val ∉ (I.support : Set Ψ.algebraicRealization)) :
+    (I.blowupMap (Ψ.rayBoundaryIdeal hΨ ρ).subschemeι).ker.comap e.hom =
+      Φ.rayBoundaryIdeal hΦ (h.liftRay ρ) := by
+  let x := (Φ.rayBoundaryPoint hΦ (h.liftRay ρ)).val
+  have hx : I.blowupToBase (e.hom x) = (Ψ.rayBoundaryPoint hΨ ρ).val := by
+    rw [← Scheme.Hom.comp_apply, he]
+    exact h.algebraicMap_rayBoundaryPoint_liftRay hΦ hΨ ρ
+  have houtside : e.hom x ∉ ((I.comap I.blowupToBase).support : Set I.blowup) := by
+    rwa [support_comap, Closeds.coe_preimage, Set.mem_preimage, hx]
+  rw [Ψ.rayBoundaryIdeal_def, ← hx, I.ker_blowupMap_vanishingIdeal_closure_singleton _ houtside,
+    comap_vanishingIdeal_closure_singleton_apply, Φ.rayBoundaryIdeal_def]
 
 /-- Subdivision preserves the order of every rational function along each old boundary ray. -/
 theorem ord_functionFieldMap_liftRay [Nonempty Φ.cones] [Nonempty Ψ.cones]
