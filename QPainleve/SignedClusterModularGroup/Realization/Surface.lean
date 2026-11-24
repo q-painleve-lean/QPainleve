@@ -122,6 +122,14 @@ theorem picardMarking_apply (a : L) :
     M.picardMarking a = M.marking a :=
   (rfl)
 
+/-- The Picard marking sends the fixed form to the intersection form on the surface. -/
+@[simp]
+theorem intersectionBilinForm_picardMarking (x y : L) :
+    letI : SmoothOfRelativeDimension 2 (M.surface ↘ S) := M.smooth
+    letI : M.surface.IsProjectiveOver k := M.projective
+    Chow.intersectionBilinForm k M.surface (M.picardMarking x) (M.picardMarking y) = B x y :=
+  M.marking.map_app y x
+
 /-- Replacing the evaluation preserves the Picard marking. -/
 @[simp]
 theorem withEvaluation_picardMarking {Y : Scheme.{u}} (f : M.surface ⤏ Y) (a : L) :

@@ -262,4 +262,49 @@ theorem binomialCenter_liftRay_comp_algebraicMap
   exact lift _ (congrArg (fun z ↦ (b.detDualEquiv z).toAddMonoidHom)
     (h.primitiveGenerator_liftRay ρ)) _ _
 
+section SharedRay
+
+variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
+  {i : N →+ V} {Φ Ψ F : Fan i}
+
+local notation "X[" Δ "]" => Fan.algebraicRealization Δ
+local notation "π[" H "]" => FanHom.algebraicMap (Fan.IsSubdivision.toFanHom H)
+local notation "S" => Spec (CommRingCat.of ℂ)
+local notation "pt" => IsLocalRing.closedPoint ℂ
+local notation "dim(" b ")" =>
+  Eq.trans (Module.finrank_eq_card_basis b) (Fintype.card_fin 2)
+local notation "p[" b "," ρ "," c "]" =>
+  Fan.Ray.binomialCenter ρ dim(b)
+    (Module.Basis.detDualEquiv_self b (Fan.Ray.primitiveGenerator ρ))
+    (Fan.Ray.surjective_detCharacter ρ b) c
+
+/-- Binomial centers on a shared ray of two subdivisions lift to the same point of the
+common refinement after expressing the parameter in the target basis. Both centers lie
+in the isomorphism loci of the respective subdivision maps. -/
+theorem exists_binomialCenter_lift_of_shared_ray
+    (s : F.IsSubdivision Φ) (t : F.IsSubdivision Ψ)
+    (ρ : Φ.Ray) (ρ' : Ψ.Ray) (hρ : ρ.primitiveGenerator = ρ'.primitiveGenerator)
+    (b d : Module.Basis (Fin 2) ℤ N) (c : ℂˣ) :
+    ∃ (c' : ℂˣ) (z : X[F]),
+      π[s] z = p[b,ρ,c] pt ∧ π[t] z = p[d,ρ',c'] pt ∧
+      p[b,ρ,c] pt ∈ (π[s]).isoLocus ∧ p[d,ρ',c'] pt ∈ (π[t]).isoLocus := by
+  have hl : s.liftRay ρ = t.liftRay ρ' := Fan.Ray.primitiveGenerator_injective (by
+    rw [s.primitiveGenerator_liftRay, t.primitiveGenerator_liftRay, hρ])
+  obtain ⟨c', hc'⟩ := ρ'.exists_binomialCenter_eq_of_basis d b c
+  let z := p[b,s.liftRay ρ,c] pt
+  have hs := s.binomialCenter_liftRay_comp_algebraicMap ρ b c
+  have ht := t.binomialCenter_liftRay_comp_algebraicMap ρ' b c
+  dsimp only at hs ht
+  have hsrc : π[s] z = p[b,ρ,c] pt := congrArg (fun a : S ⟶ X[Φ] ↦ a pt) hs
+  have htgt : π[t] z = p[d,ρ',c'] pt := by
+    rw [hc']
+    exact congrArg (fun a : S ⟶ X[Ψ] ↦ a pt) (hl ▸ ht)
+  refine ⟨c', z, hsrc, htgt, ?_, ?_⟩
+  · exact s.range_binomialCenter_subset_isoLocus ρ dim(b) (b.detDualEquiv_self _)
+      (ρ.surjective_detCharacter b) c (Set.mem_range_self pt)
+  · exact t.range_binomialCenter_subset_isoLocus ρ' dim(d) (d.detDualEquiv_self _)
+      (ρ'.surjective_detCharacter d) c' (Set.mem_range_self pt)
+
+end SharedRay
+
 end TauCeti.Toric.Fan.IsSubdivision
