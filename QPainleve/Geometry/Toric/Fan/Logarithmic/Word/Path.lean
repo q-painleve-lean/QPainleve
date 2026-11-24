@@ -5,7 +5,7 @@ Authors: The QPainleve contributors
 -/
 module
 
-public import QPainleve.Geometry.Toric.Fan.Logarithmic.Word.Orientation
+public import QPainleve.Geometry.Toric.Fan.Logarithmic.Boundary
 public import QPainleve.Geometry.Toric.Fan.Logarithmic.Word.Star
 
 import QPainleve.Geometry.Toric.Fan.Logarithmic.Evaluation
