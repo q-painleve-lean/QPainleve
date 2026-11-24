@@ -197,6 +197,15 @@ theorem range_boundaryNormalizationComponentEquiv (ρ : Φ.Ray) :
   refine hrange.trans (hR.symm.trans ?_)
   exact congrArg (fun f : _ ⟶ X ↦ Set.range f) (ρ.boundaryComponentι_subschemeι hΦ).symm
 
+private theorem range_normalizationComponent_to_toric (ρ : Φ.Ray) :
+    Set.range (((C).blowupComponent (K := ℂ) (Φ.boundaryNormalizationComponentEquiv hΦ ρ)).ι ≫
+      ν ≫ (D).subschemeι) = closure {(Φ.rayBoundaryPoint hΦ ρ).val} := by
+  rw [← Category.assoc, Scheme.Hom.comp_base, TopCat.coe_comp, Set.range_comp,
+    Φ.range_boundaryNormalizationComponentEquiv hΦ ρ, ← Set.range_comp, ← TopCat.coe_comp,
+    ← Scheme.Hom.comp_base, ρ.boundaryComponentι_subschemeι hΦ,
+    Scheme.IdealSheafData.range_subschemeι,
+    Φ.coe_support_rayBoundaryIdeal]
+
 /-- The generic point of a numbered toric boundary component is the prime of
 the corresponding ray, viewed in the ambient surface. -/
 theorem subschemeι_componentGenericPoint_eq_rayBoundaryPoint
@@ -204,24 +213,10 @@ theorem subschemeι_componentGenericPoint_eq_rayBoundaryPoint
     (A : Scheme.NodalCycleNumbering p n) (hΦ : Φ.IsRegular) (j : ZMod n) (ρ : Φ.Ray)
     (hρ : A.component j = Φ.boundaryNormalizationComponentEquiv hΦ ρ) :
     (D).subschemeι (A.componentGenericPoint j) = (Φ.rayBoundaryPoint hΦ ρ).val := by
-  let ι := (D).subschemeι
-  have h := (genericPoints.isGenericPoint_ofComponent (A.component j)).image (ν ≫ ι).continuous
-  let jρ := ((C).blowupComponent (Φ.boundaryNormalizationComponentEquiv hΦ ρ)).ι
-  have himage : (ν ≫ ι) '' (A.component j : Set _) = closure {((Φ.rayBoundaryPoint hΦ ρ).val)} := by
-    calc
-      _ = Set.range ((jρ ≫ ν) ≫ ι) := by
-        rw [hρ, ← Scheme.coe_blowupComponent, ← Scheme.Opens.range_ι, ← Set.range_comp,
-          ← TopCat.coe_comp, ← Scheme.Hom.comp_base, Category.assoc]
-      _ = Set.range (ρ.boundaryComponentι hΦ ≫ ι) := by
-        have hrange : Set.range (jρ ≫ ν) = Set.range (ρ.boundaryComponentι hΦ) :=
-          Φ.range_boundaryNormalizationComponentEquiv hΦ ρ
-        simpa only [Scheme.Hom.comp_base, TopCat.coe_comp, Set.range_comp] using
-          congrArg (fun t : Set C ↦ ι '' t) hrange
-      _ = _ := by
-        rw [Ray.boundaryComponentι_subschemeι, range_subschemeι, coe_support_rayBoundaryIdeal]
-  rw [himage, closure_closure, Scheme.Hom.comp_apply] at h
-  simpa only [Scheme.NodalCycleNumbering.componentGenericPoint_def] using
-    h.eq isGenericPoint_closure
+  have h := (C).range_blowupComponent_comp (k := ℂ) (A.component j) (D).subschemeι
+    (D).subschemeι.isClosedMap
+  rw [← A.componentGenericPoint_def, hρ, range_normalizationComponent_to_toric hΦ ρ] at h
+  exact isGenericPoint_closure.eq (h.symm ▸ isGenericPoint_closure)
 
 variable (ρ : Φ.Ray)
 
@@ -329,18 +324,6 @@ variable [PrestableFamily (C[Φ] ↘ base)] [PrestableFamily (C[Ψ] ↘ base)]
 local notation "U[" Φ "," h "," ρ "]" =>
   Fan.boundaryNormalizationComponentEquiv Φ h ρ
 
-private theorem range_normalizationComponent_to_toric
-    {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
-    {i : N →+ V} {Φ : Fan i} [Nonempty Φ.cones]
-    [PrestableFamily (C[Φ] ↘ base)] (hΦ : Φ.IsRegular) (ρ : Φ.Ray) :
-    Set.range (((C[Φ]).blowupComponent (K := ℂ) (U[Φ,hΦ,ρ])).ι ≫
-      ν[Φ] ≫ (D[Φ]).subschemeι) = closure {(Φ.rayBoundaryPoint hΦ ρ).val} := by
-  rw [← Category.assoc, Scheme.Hom.comp_base, TopCat.coe_comp, Set.range_comp,
-    Φ.range_boundaryNormalizationComponentEquiv hΦ ρ, ← Set.range_comp, ← TopCat.coe_comp,
-    ← Scheme.Hom.comp_base, ρ.boundaryComponentι_subschemeι hΦ,
-    Scheme.IdealSheafData.range_subschemeι,
-    Φ.coe_support_rayBoundaryIdeal]
-
 /-- The isomorphism of normalizations carries the component indexed by a ray
 onto the component indexed by its image ray. -/
 theorem image_singularLocusBlowupIso_boundaryNormalizationComponent (ρ : Φ.Ray) :
@@ -361,7 +344,7 @@ theorem image_singularLocusBlowupIso_boundaryNormalizationComponent (ρ : Φ.Ray
   have hG : G '' (w : Set _) = closure {(Φ.rayBoundaryPoint hΦ ρ).val} := by
     rw [← Scheme.coe_blowupComponent (K := ℂ) (C[Φ]) w,
       ← Scheme.Opens.range_ι, ← Set.range_comp, ← TopCat.coe_comp, ← Scheme.Hom.comp_base]
-    exact range_normalizationComponent_to_toric hΦ ρ
+    exact Fan.range_normalizationComponent_to_toric hΦ ρ
   have hr :
       F '' (w' : Set _) = closure {(Ψ.rayBoundaryPoint hΨ (e.rayEquiv ρ)).val} := by
     have hpoint (x : (Scheme.singularLocus ℂ (C[Φ])).blowup) :
@@ -377,8 +360,8 @@ theorem image_singularLocusBlowupIso_boundaryNormalizationComponent (ρ : Φ.Ray
     rw [← Set.image_subset_image_iff (D[Ψ]).subschemeι.isClosedEmbedding.injective,
       ← Set.range_comp, ← Set.range_comp, ← TopCat.coe_comp, ← Scheme.Hom.comp_base,
       ← TopCat.coe_comp, ← Scheme.Hom.comp_base, Category.assoc, Category.assoc,
-      range_normalizationComponent_to_toric, Scheme.Hom.comp_base, TopCat.coe_comp, Set.range_comp,
-      Scheme.Opens.range_ι, Scheme.coe_blowupComponent]
+      Fan.range_normalizationComponent_to_toric, Scheme.Hom.comp_base, TopCat.coe_comp,
+      Set.range_comp, Scheme.Opens.range_ι, Scheme.coe_blowupComponent]
     exact hr.le
   exact congrArg Subtype.val hw'
 
