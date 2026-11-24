@@ -48,6 +48,34 @@ namespace QPainleve.BlowupTower.IsClosedPointTower
 
 variable [PerfectField k] {Z : Scheme.{u}} {n : ℕ} {T : BlowupTower Y n Z}
 
+omit [IsIntegral X] in
+/-- The pole factorization of a specified morphism holds exactly when the total
+boundary transform on its point-blowup model is contained in the ramification
+ideal and the quotient ideal pulls back to the given pole ideal. -/
+theorem comap_eq_mul_ramificationIdealSheaf_iff (hT : IsClosedPointTower Y T)
+    (e : X ≅ Z) (he : e.hom ≫ T.toBase = f)
+    (hR : (hT.ramificationIdealSheafToBase k).IsEffectiveCartier) :
+    letI := SmoothOfRelativeDimension.smooth 2 (X ↘ Spec (.of k))
+    D.comap f = P * ramificationIdealSheaf k f ↔
+      D.comap T.toBase ≤ hT.ramificationIdealSheafToBase k ∧
+      ((D.comap T.toBase).colon (hT.ramificationIdealSheafToBase k)).comap e.hom = P := by
+  let : Smooth (X ↘ Spec (.of k)) := SmoothOfRelativeDimension.smooth 2 _
+  have htotal : (D.comap T.toBase).comap e.hom = D.comap f := by
+    rw [← comap_comp, he]
+  rw [← htotal, ← hT.comap_ramificationIdealSheafToBase k e he]
+  constructor
+  · intro h
+    have hmul : D.comap T.toBase = P.comap e.inv * hT.ramificationIdealSheafToBase k := by
+      simpa only [comap_mul, ← comap_comp, Iso.inv_hom_id_assoc, Iso.inv_hom_id, comap_id] using
+        congrArg (fun I : X.IdealSheafData ↦ I.comap e.inv) h
+    have hle : D.comap T.toBase ≤ hT.ramificationIdealSheafToBase k := by
+      rw [hmul]
+      exact fun _ ↦ Ideal.mul_le_right
+    refine ⟨hle, ?_⟩
+    rw [hmul, hR.mul_colon_cancel_right, ← comap_comp, Iso.hom_inv_id, comap_id]
+  · rintro ⟨hle, h⟩
+    rw [← h, ← comap_mul, ← eq_colon_mul _ _ hR.locallyPrincipal hle]
+
 /-- On any point-blowup factorization of the morphism, the formula `div(f*ω) = -P`
 is equivalent to containment in the ramification ideal together with the exact
 identification of the resulting pole ideal under the factorization isomorphism. -/
@@ -56,28 +84,13 @@ theorem pullbackTopFormDivisor_eq_neg_iff (hT : IsClosedPointTower Y T)
     pullbackTopFormDivisor k f 2 hD ω hTotal hRam = -hP.toCartierDivisor ↔
       D.comap T.toBase ≤ hT.ramificationIdealSheafToBase k ∧
       ((D.comap T.toBase).colon (hT.ramificationIdealSheafToBase k)).comap e.hom = P := by
-  have := SmoothOfRelativeDimension.smooth 2 (X ↘ Spec (.of k))
-  have htotal : (D.comap T.toBase).comap e.hom = D.comap f := by
-    rw [← comap_comp, he]
-  have hram := hT.comap_ramificationIdealSheafToBase k e he
-  let R := hT.ramificationIdealSheafToBase k
-  let A := D.comap T.toBase
-  have hbase : (R.comap e.hom).IsEffectiveCartier := hram.symm ▸ hRam
-  have hR : R.IsEffectiveCartier := by
+  let : Smooth (X ↘ Spec (.of k)) := SmoothOfRelativeDimension.smooth 2 _
+  have hbase : ((hT.ramificationIdealSheafToBase k).comap e.hom).IsEffectiveCartier :=
+    (hT.comap_ramificationIdealSheafToBase k e he).symm ▸ hRam
+  have hR : (hT.ramificationIdealSheafToBase k).IsEffectiveCartier := by
     simpa only [← comap_comp, Iso.inv_hom_id, comap_id] using hbase.comap e.inv
-  rw [QPainleve.pullbackTopFormDivisor_eq_neg_iff k f 2 hD ω hTotal hP hRam,
-    ← htotal, ← hram]
-  constructor
-  · intro h
-    have hleX : A.comap e.hom ≤ R.comap e.hom := by
-      rw [h]
-      exact fun _ ↦ Ideal.mul_le_right
-    have hle : A ≤ R := by
-      simpa only [← comap_comp, Iso.inv_hom_id, comap_id] using comap_mono e.inv hleX
-    exact ⟨hle, by rw [comap_colon A R hR.locallyPrincipal hle e.hom hbase, h,
-      hbase.mul_colon_cancel_right]⟩
-  · rintro ⟨hle, h⟩
-    rw [← h, ← comap_mul, ← A.eq_colon_mul R hR.locallyPrincipal hle]
+  exact (QPainleve.pullbackTopFormDivisor_eq_neg_iff k f 2 hD ω hTotal hP hRam).trans
+    (hT.comap_eq_mul_ramificationIdealSheaf_iff e he hR)
 
 end QPainleve.BlowupTower.IsClosedPointTower
 
