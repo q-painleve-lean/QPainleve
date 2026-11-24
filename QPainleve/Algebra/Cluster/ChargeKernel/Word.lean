@@ -48,6 +48,15 @@ theorem ChargeSeed.ker_le_exchangeKernel {B : SkewExchangeMatrix ι} (P : Charge
   rw [← P.matrix_eq]
   exact ker_le_ker_chargeExchangeMatrix P.form P.charge
 
+/-- A charge seed with rationally spanning charges and a right-separating form has
+the same charge and exchange kernels. -/
+theorem ChargeSeed.exchangeKernel_eq {B : SkewExchangeMatrix ι}
+    [Module.Free ℤ N] [Module.Finite ℤ N] (P : ChargeSeed B N)
+    (hω : P.form.SeparatingRight) (hrank : Module.finrank ℤ P.charge.range = Module.finrank ℤ N) :
+    B.matrix.mulVecLin.ker = P.charge.ker := by
+  rw [← P.matrix_eq]
+  exact ker_chargeExchangeMatrix P.form P.charge hω hrank
+
 namespace Step
 
 variable {B C : SkewExchangeMatrix ι}
@@ -190,6 +199,12 @@ theorem chargeTarget_ker (w : Word B C) (P : ChargeSeed B N) :
   | cons w s ih =>
     simp only [chargeTarget_cons, Step.chargeTarget_ker, exponentEquiv_cons,
       LinearEquiv.coe_trans, Submodule.comap_comp, ih]
+
+/-- Equality of the charge and exchange kernels is preserved by every signed word. -/
+theorem exchangeKernel_eq_chargeTarget_ker (P : ChargeSeed B N) (w : Word B C)
+    (h : B.matrix.mulVecLin.ker = P.charge.ker) :
+    C.matrix.mulVecLin.ker = (w.chargeTarget P).charge.ker := by
+  rw [w.exchangeKernel_comap, w.chargeTarget_ker, h]
 
 /-- In particular, a word preserves the charge image and its index in the ambient lattice. -/
 @[simp]

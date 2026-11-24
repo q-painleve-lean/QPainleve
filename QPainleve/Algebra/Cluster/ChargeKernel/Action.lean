@@ -91,23 +91,7 @@ theorem exchangeKernelAction_monomial (f : Γᵐᵒᵖ) (x : E) :
 
 variable {B}
 
-/-- A charge seed with rationally spanning charges and a right-separating form has
-the same charge and exchange kernels. -/
-theorem ChargeSeed.exchangeKernel_eq {N : Type*} [AddCommGroup N]
-    [Module.Free ℤ N] [Module.Finite ℤ N] (P : ChargeSeed B N)
-    (hω : P.form.SeparatingRight) (hrank : Module.finrank ℤ P.charge.range = Module.finrank ℤ N) :
-    E = P.charge.ker := by
-  rw [← P.matrix_eq]
-  exact ker_chargeExchangeMatrix P.form P.charge hω hrank
-
 variable {N : Type*} [AddCommGroup N] (P : ChargeSeed B N)
-
-variable {C : SkewExchangeMatrix ι} in
-/-- Equality of the charge and exchange kernels is preserved by every signed word. -/
-theorem _root_.Quiver.Path.exchangeKernel_eq_chargeTarget_ker (w : Word B C)
-    (h : E = P.charge.ker) :
-    C.matrix.mulVecLin.ker = (w.chargeTarget P).charge.ker := by
-  rw [w.exchangeKernel_comap, w.chargeTarget_ker, h]
 
 local notation "K" => P.charge.ker
 
