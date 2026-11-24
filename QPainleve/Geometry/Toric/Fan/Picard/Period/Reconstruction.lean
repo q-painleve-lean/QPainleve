@@ -1,0 +1,186 @@
+/-
+Copyright (c) 2026 The QPainleve contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: The QPainleve contributors
+-/
+module
+
+public import QPainleve.Geometry.Toric.Fan.Picard.Period.Alignment
+public import QPainleve.Geometry.Toric.Fan.TorusAction.Orientation.Basic
+
+import QPainleve.AlgebraicGeometry.Blowup.Tower.Picard
+import QPainleve.AlgebraicGeometry.IdealSheaf.BaseChange
+import TauCeti.AlgebraicGeometry.Curves.Node.Reduced
+
+/-!
+# Reconstructing a marked pair isomorphism from periods
+
+Once the two ordered models use the same fan and Picard coordinates, equal periods
+align the internal centers. The translating lift descends when the projections
+retain the same boundary rays. Its Picard pullback is determined by the full
+markings, and its action on the ordered branches follows from the oriented
+subdivisions and the surviving ray above component zero.
+
+This is the reconstruction in a common presentation used in the proof of
+[Gross, Hacking and Keel, Theorem 1.8](https://arxiv.org/html/1211.6367v5#S2).
+-/
+
+public section
+
+open AlgebraicGeometry CategoryTheory Multiplicative QPainleve QPainleve.BlowupTower
+open TauCeti.AlgebraicGeometry LineBundleClass Scheme.IdealSheafData
+open Scheme (NodalCycleNumbering)
+
+namespace TauCeti.Toric.Fan
+
+variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
+  {i : N →+ V} {Φ : Fan i} [h₀ : Nonempty Φ.cones] {r : ℕ}
+  (hΦ : Φ.IsRegular) (b : Module.Basis (Fin 2) ℤ N) (s : Fin r → Φ.Ray)
+  (c d : Multiplicative (Fin r → ℤ) →* ℂˣ)
+
+local notation "S" => Spec (CommRingCat.of ℂ)
+local notation "Btor" => Scheme.IdealSheafData.subscheme (Φ.boundaryIdeal h₀)
+local notation "center" a:arg => (fun j : Fin r ↦ a (ofAdd (Pi.single j 1)))
+local notation "M" a:arg => internalBlowupTower b s (center a)
+local notation "π" a:arg => toBase (WithBoundary.toTower (Sigma.snd (M a)))
+local notation "ι" a:arg => WithBoundary.boundaryι (Sigma.snd (M a))
+local notation "mark" a:arg => internalBlowupPicardMarking b s (center a) hΦ
+local notation "prime[" a "]" => internalBlowupBoundaryPrimeEquiv hΦ b s (center a)
+local notation "base" => Φ.algebraicRealizationStructureMap
+
+variable {X Y W Z : Scheme} [X.Over S] [Y.Over S]
+  {D : X.IdealSheafData} {E : Y.IdealSheafData}
+  {l l' : ℕ} {T : BlowupTower X l W} {U : BlowupTower Y l' Z}
+  (e : W ≅ (internalBlowupTower b s (fun j : Fin r ↦ c (ofAdd (Pi.single j 1)))).1)
+  (e' : Z ≅ (internalBlowupTower b s (fun j : Fin r ↦ d (ofAdd (Pi.single j 1)))).1)
+
+local notation "p" => (Iso.inv e ≫ toBase T)
+local notation "q" => (Iso.inv e' ≫ toBase U)
+
+variable [PrestableFamily ((Φ.boundaryIdeal h₀).subscheme ↘ S)] [PrestableFamily (D.subscheme ↘ S)]
+  [PrestableFamily (E.subscheme ↘ S)]
+  {n m : ℕ} [NeZero n] [NeZero m] {α β γ : Type*}
+  {a₀ : α → (D.subscheme ↘ S).smoothLocus} {a₁ : β → (E.subscheme ↘ S).smoothLocus}
+  {aT : γ → ((Φ.boundaryIdeal h₀).subscheme ↘ S).smoothLocus}
+  (A : NodalCycleNumbering a₀ n) (B : NodalCycleNumbering a₁ n) (C : NodalCycleNumbering aT m)
+
+private theorem boundaryCycleAction_of_translation_of_common_ray
+    (hc : Φ.IsComplete)
+    {f : Btor ⟶ D.subscheme} {g : Btor ⟶ E.subscheme} [f.IsOver S] [g.IsOver S]
+    (hf : f ≫ D.subschemeι = ι c ≫ p) (hg : g ≫ E.subschemeι = ι d ≫ q)
+    (hfs : f.IsOrientedCycleSubdivision C A) (hgs : g.IsOrientedCycleSubdivision C B)
+    {χ : Multiplicative (N →+ ℤ) →* ℂˣ} {t : (M c).1 ≅ (M d).1}
+    (ht : IsLift (Φ.torusTranslation χ) (M c).2.toTower (M d).2.toTower t)
+    {a : X ≅ Y} (ha : p ≫ a.hom = t.hom ≫ q)
+    (aB : D.subscheme ≅ E.subscheme) [aB.hom.IsOver S]
+    (haB : aB.hom ≫ E.subschemeι = D.subschemeι ≫ a.hom)
+    (j : ZMod n) (ρ : Φ.Ray)
+    (hρ : p (prime[c] ρ).val = D.subschemeι (A.componentGenericPoint 0))
+    (hρ' : q (prime[d] ρ).val = E.subschemeι (B.componentGenericPoint j)) :
+    aB.boundaryCycleAction A B = DihedralGroup.r j := by
+  have hsign := cycleOrientationSign_eq_one_of_isLift_torusTranslation b s c d hΦ A B C
+    hf hg hfs hgs haB hc ht ha
+  apply (DihedralGroup.eq_r_iff_cycleVertexPerm_zero_eq hsign).mpr
+  apply (E.subschemeι.injective.comp B.componentGenericPoint_injective)
+  have hpoint := congrArg (fun k : (M c).1 ⟶ Y ↦ k (prime[c] ρ).val) ha
+  simp only [Function.comp_apply]
+  rw [← aB.apply_componentGenericPoint, ← Scheme.Hom.comp_apply, haB, Scheme.Hom.comp_apply]
+  simpa only [Scheme.Hom.comp_apply, hρ, hρ',
+    apply_internalBlowupBoundaryPrimeEquiv_of_isLift_torusTranslation b s hΦ
+      (center c) (center d) ht] using hpoint
+
+variable [IsIntegral X] [IsIntegral Y] [QuasiCompact (X ↘ S)] [QuasiCompact (Y ↘ S)]
+  [SmoothOfRelativeDimension 2 (X ↘ S)] [SmoothOfRelativeDimension 2 (Y ↘ S)]
+  [Φ.algebraicRealization.IsProjectiveOver ℂ]
+  [SmoothOfRelativeDimension 2 (Φ.algebraicRealization ↘ S)]
+  [LinearMap.IsPerfPair
+    ((Chow.intersectionBilinForm ℂ Φ.algebraicRealization).prod
+      (-(dotProductBilin ℤ ℤ : LinearMap.BilinForm ℤ (Fin r → ℤ))))]
+
+/-- Equal ordered periods in a common toric presentation realize a prescribed Picard
+pullback matching the full markings when the two nodal projections retain the same
+boundary rays. The target numbering is aligned with the toric orientation according to the sign
+of the prescribed dihedral action. The common lifted ray over component zero
+determines its image. The action includes the ordered branches at self-nodes
+and two-component cycles. -/
+theorem exists_iso_of_eq_period_of_matching_picard_markings
+    (hc : Φ.IsComplete) (u : ZMod m ≃ Φ.Ray)
+    (hvertices : ∀ j, (Btor).dualGraphVertexEquiv aT (C.vertex j) =
+      Φ.boundaryNormalizationComponentEquiv hΦ (u j))
+    (hdet : ∀ j, b.detDualEquiv (u j).primitiveGenerator (u (j + 1)).primitiveGenerator = 1)
+    (hnodes : ∀ j, ∃ σ : Φ.cones, (u j).toCone ≤ σ ∧ (u (j + 1)).toCone ≤ σ ∧
+      (Φ.boundaryIdeal h₀).subschemeι ((Btor).dualGraphEdgeEquiv aT (C.edge j)).val =
+        Φ.distinguishedPointHom σ (IsLocalRing.closedPoint ℂ))
+    (hT : IsNodalBoundaryTower D (X ↘ S) (𝟙 X) T)
+    (hU : IsNodalBoundaryTower E (Y ↘ S) (𝟙 Y) U)
+    (hp : p ≫ (X ↘ S) = π c ≫ base) (hq : q ≫ (Y ↘ S) = π d ≫ base)
+    (hD : (D.comap p).support = (ι c).ker.support)
+    (hE : (E.comap q).support = (ι d).ker.support)
+    (hkeep : ∀ ρ : Φ.Ray, p (prime[c] ρ).val ∈ D.boundaryPrimes ↔
+      q (prime[d] ρ).val ∈ E.boundaryPrimes)
+    (hperiod : orderedBoundaryPeriod hΦ b s C (center c) =
+      orderedBoundaryPeriod hΦ b s C (center d))
+    (G : LineBundleClass Y → LineBundleClass X)
+    (hPic : ∀ L : LineBundleClass Y, (mark c).symm (Additive.ofMul (pullback p (G L))) =
+      (mark d).symm (Additive.ofMul (pullback q L)))
+    {f : Btor ⟶ D.subscheme} {g : Btor ⟶ E.subscheme} [f.IsOver S] [g.IsOver S]
+    (hf : f ≫ D.subschemeι = ι c ≫ p) (hg : g ≫ E.subschemeι = ι d ≫ q)
+    (hfs : f.IsOrientedCycleSubdivision C A) (act : DihedralGroup n)
+    (hgs : g.IsOrientedCycleSubdivision C
+      (if DihedralGroup.cycleOrientationSign act = -1 then B.reverse else B))
+    (ρ : Φ.Ray)
+    (hρ : p (prime[c] ρ).val = D.subschemeι (A.componentGenericPoint 0))
+    (hρ' : q (prime[d] ρ).val =
+      E.subschemeι (B.componentGenericPoint (DihedralGroup.cycleVertexPerm act 0))) :
+    ∃ (a : X ≅ Y) (aB : D.subscheme ≅ E.subscheme) (haB : aB.hom.IsOver S),
+      a.hom ≫ (Y ↘ S) = (X ↘ S) ∧ E.comap a.hom = D ∧
+      aB.hom ≫ E.subschemeι = D.subschemeι ≫ a.hom ∧
+      (∀ L : LineBundleClass Y, pullback a.hom L = G L) ∧
+      (letI := haB; aB.boundaryCycleAction A B = act) := by
+  have : IsReduced D.subscheme :=
+    (PrestableFamily.atWorstNodalOfRelativeDimensionOne (f := D.subscheme ↘ S)).isReduced
+  have : IsReduced E.subscheme :=
+    (PrestableFamily.atWorstNodalOfRelativeDimensionOne (f := E.subscheme ↘ S)).isReduced
+  obtain ⟨χ, t, a, ht, ha, haOver, haD, -, haMark⟩ :=
+    exists_iso_of_eq_orderedBoundaryPeriod hΦ b s c d C u hvertices hdet hnodes
+      hT hU e e' hp hq hD hE hkeep hperiod
+  have haPic (L : LineBundleClass Y) : pullback a.hom L = G L := by
+    have : Smooth (X ↘ S) := SmoothOfRelativeDimension.smooth 2 _
+    have : IsNoetherian X := isNoetherian_of_finiteType (X ↘ S)
+    apply hT.isClosedPointTower.injective_pullback_toBase (X ↘ S)
+    apply (pullbackEquiv e.symm).injective
+    apply Additive.ofMul.injective
+    apply (mark c).symm.injective
+    simpa only [pullbackEquiv_apply, Iso.symm_hom, pullback_comp, Category.assoc] using
+      (haMark L).trans (hPic L).symm
+  obtain ⟨aB, haB⟩ := E.exists_iso_of_comap_eq_ker a D.subschemeι
+    (haD.trans D.ker_subschemeι.symm)
+  let hover : aB.hom.IsOver S := ⟨by
+    rw [E.over_eq_subschemeι_comp, reassoc_of% haB, haOver, D.over_eq_subschemeι_comp]⟩
+  refine ⟨a, aB, hover, haOver, haD, haB, haPic, ?_⟩
+  cases act with
+  | r j =>
+    have hsign : (1 : ℤˣ) ≠ -1 := by decide
+    simp only [DihedralGroup.cycleOrientationSign_r, ite_eq_right hsign] at hgs
+    simp only [DihedralGroup.cycleVertexPerm_r_apply, zero_add] at hρ'
+    exact boundaryCycleAction_of_translation_of_common_ray hΦ b s c d e e' A B C hc
+      hf hg hfs hgs ht ha aB haB j ρ hρ hρ'
+  | sr j =>
+    simp only [DihedralGroup.cycleOrientationSign_sr, ite_true] at hgs
+    have hρ'' : q (prime[d] ρ).val = E.subschemeι (B.reverse.componentGenericPoint j) := by
+      simpa only [DihedralGroup.cycleVertexPerm_sr_apply, sub_zero,
+        NodalCycleNumbering.componentGenericPoint_def, NodalCycleNumbering.reverse_component]
+        using hρ'
+    have h := boundaryCycleAction_of_translation_of_common_ray hΦ b s c d e e' A B.reverse C hc
+      hf hg hfs hgs ht ha aB haB j ρ hρ hρ''
+    have : (Iso.refl E.subscheme).hom.IsOver S := by
+      rw [Iso.refl_hom]
+      infer_instance
+    have hm : DihedralGroup.r j = DihedralGroup.sr 0 * aB.boundaryCycleAction A B := by
+      simpa only [Iso.trans_refl, Iso.boundaryCycleAction_refl_reverse, h] using
+        Iso.boundaryCycleAction_trans aB A B (Iso.refl _) B.reverse
+    simpa only [← mul_assoc, DihedralGroup.sr_mul_sr, sub_self, ← DihedralGroup.one_def,
+      one_mul, DihedralGroup.sr_mul_r, zero_add] using
+      congrArg (DihedralGroup.sr 0 * ·) hm.symm
+
+end TauCeti.Toric.Fan
