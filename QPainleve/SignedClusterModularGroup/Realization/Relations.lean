@@ -126,27 +126,6 @@ local notation "orders[" q "," hd "]" => (fun j : Fin n ↦
 local notation "startOrders" => Fan.rayBoundaryOrders b s
   (Equiv.symm (Fan.boundaryNormalizationComponentEquiv Φ hΦ) (τ.component origin))
 
-private noncomputable def precompCenter
-    {U T₀ T₁ : Over S} [Nonempty U.left] [Smooth U.hom] [PreirreducibleSpace U.left]
-    [Nonempty T₀.left] [Smooth T₀.hom]
-    {P₀ : Point T₀ → MarkedSurface ℂ n B Xtor} {P₁ : Point T₁ → MarkedSurface ℂ n B Xtor}
-    {C : T₀.left.PartialMap T₁.left} [IsDominant C.hom] [C.IsOver T₀.hom T₁.hom]
-    {F : Xtor ⤏ Xtor} [F.IsDominant] (R : GeometricRealization P₀ P₁ C F)
-    (e : U ⟶ T₀) [IsDominant e.left] [e.left.toPartialMap.IsOver U.hom T₀.hom] :
-    GeometricRealization (fun c ↦ P₀ (c ≫ e)) P₁ (e.left.toPartialMap.comp C) F where
-  picard := R.picard
-  boundaryAction := R.boundaryAction
-  fiber c := by
-    let f := e.left.toPartialMap
-    have hf : f.domainTarget = f.domainSource ≫ e :=
-      PartialMap.domainTarget_toPartialMap e rfl
-    have hsrc : (c ≫ f.compDomainRight C) ≫ C.domainSource = (c ≫ (f.comp C).domainSource) ≫ e := by
-      rw [Category.assoc, ← f.compDomainLeft_target C, hf,
-        ← Category.assoc (f.compDomainLeft C), f.compDomainLeft_source, Category.assoc]
-    have htgt : (c ≫ f.compDomainRight C) ≫ C.domainTarget = c ≫ (f.comp C).domainTarget := by
-      rw [Category.assoc, f.compDomainRight_target]
-    exact hsrc ▸ htgt ▸ R.fiber (c ≫ f.compDomainRight C)
-
 private theorem xRationalMap_eq_of_marked_actions
     [Φ.algebraicRealization.IsProjectiveOver ℂ] [B.IsPerfPair]
     (hcΦ : Φ.IsComplete) (u : ZMod m ≃ Φ.Ray)
@@ -192,8 +171,8 @@ private theorem xRationalMap_eq_of_marked_actions
     PartialMap.instIsOverCompHom_qPainleve (X := Torus[Cent]) (Y := T) (Z := T) f C
   let : (f.comp C').IsOver Torus[Cent].hom (T).hom :=
     PartialMap.instIsOverCompHom_qPainleve (X := Torus[Cent]) (Y := T) (Z := T) f C'
-  let R₀ := (precompCenter R eOver).precompEvaluation eX
-  let R₁ := (precompCenter R' eOver).precompEvaluation eX
+  let R₀ := (R.precompCenter eOver).precompEvaluation eX
+  let R₁ := (R'.precompCenter eOver).precompEvaluation eX
   have hover : eX.hom.toRationalMap.IsOver Torus[Cent].hom (structureMap ℂ (Fin l →₀ ℤ)) := by
     rw [RationalMap.isOver_iff, Hom.toRationalMap_compHom, heX]
   let : (eX.hom.toRationalMap.comp (w.xRationalMap ℂ)).IsOver Torus[Cent].hom
@@ -206,11 +185,11 @@ private theorem xRationalMap_eq_of_marked_actions
   let : Nonempty U := hU.nonempty.to_subtype
   apply RationalMap.comp_left_injective eX.hom.toRationalMap
   refine R₀.xMap_eq_of_marked_actions_eq R₁
-    (by simpa only [R₀, R₁, precompEvaluation_picard, precompCenter] using hpic)
-    (by simpa only [R₀, R₁, boundaryPerm_def, precompEvaluation_boundaryAction, precompCenter]
-      using hperm)
-    (by simpa only [R₀, R₁, orientation_def, precompEvaluation_boundaryAction, precompCenter]
-      using hη)
+    (by simpa only [R₀, R₁, precompEvaluation_picard, precompCenter_picard] using hpic)
+    (by simpa only [R₀, R₁, boundaryPerm_def, precompEvaluation_boundaryAction,
+      precompCenter_boundaryAction] using hperm)
+    (by simpa only [R₀, R₁, orientation_def, precompEvaluation_boundaryAction,
+      precompCenter_boundaryAction] using hη)
     (Fan.rayChargeMap s).toAddMonoidHom (structureMap ℂ (Fin l →₀ ℤ)) U inf_le_left inf_le_right
     (fun c _ ↦ ?_) hcΦ u hvertices hdet hnodes (fun c ↦ χ[c]) survives
     (fun x ↦ ⟨p _, hnodal _, hkeep _⟩) (fun y ↦ ⟨p _, hnodal _, hkeep _⟩)
