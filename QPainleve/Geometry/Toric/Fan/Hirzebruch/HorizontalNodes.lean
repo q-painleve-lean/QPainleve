@@ -11,6 +11,7 @@ public import QPainleve.Geometry.Toric.Fan.Hirzebruch.Anticanonical
 import Mathlib.AlgebraicGeometry.AlgClosed.Basic
 import QPainleve.AlgebraicGeometry.EffectiveCartierDivisor.BoundaryPrimes
 import QPainleve.AlgebraicGeometry.EffectiveCartierDivisor.Dimension
+import QPainleve.Geometry.Toric.Fan.Hirzebruch.Bisection
 import QPainleve.Geometry.Toric.Fan.Picard.Ruling
 import TauCeti.AlgebraicGeometry.Curves.Node.Reduced
 
@@ -228,5 +229,27 @@ theorem exists_hirzebruch_horizontal_node_or_boundary_cases
     rw [boundaryComplexity_def, finrank_eq_card_basis C, Fintype.card_fin, hcard, h₄]
     norm_num
   · exact Or.inr (Or.inr h₂)
+
+include hc A hD hK in
+/-- If the distinguished section belongs to a numbered anticanonical cycle of
+positive complexity, a numbered node lies on a ruling fiber omitted by the
+boundary. The distinguished section rules out the bisection case. -/
+theorem exists_hirzebruch_node_on_omitted_fiber_of_section_mem_support
+    (hOver : D.subscheme ↘ S = D.subschemeι ≫ X ↘ S)
+    (hpos : 0 < D.boundaryComplexity)
+    (hsection : (Φ.rayBoundaryPoint hΦ (r 0) : X) ∈ D.support) :
+    ∃ (j : ZMod n) (y : S ⟶ projectiveLine ℂ),
+      IsClosed ({A.ambientNode j} : Set X) ∧
+      D.IsNodeOfReducedBoundary (X ↘ S) (A.ambientNode j) ∧
+      y ≫ (projectiveLine ℂ ↘ S) = 𝟙 S ∧ A.ambientNode j ∈ (y.ker.comap ruling).support ∧
+      ¬ (y.ker.comap ruling).support ≤ D.support := by
+  rcases exists_hirzebruch_horizontal_node_or_boundary_cases b e hΦ hc r hr A hD hK hOver
+    with hnode | hzero | ⟨_, j, hj⟩
+  · exact hnode
+  · exact (ne_of_gt hpos hzero).elim
+  · let : IsReduced D.subscheme := (PrestableFamily.atWorstNodalOfRelativeDimensionOne
+      (f := D.subscheme ↘ S)).isReduced
+    exact (hirzebruch_section_notMem_boundary_support_of_bisection b e hΦ hc r hr hD hK
+      (s := A.boundaryPrimeEquiv hD j) hj hsection).elim
 
 end TauCeti.Toric.Fan
