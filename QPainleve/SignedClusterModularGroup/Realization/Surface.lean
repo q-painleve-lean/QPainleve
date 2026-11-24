@@ -11,6 +11,8 @@ public import QPainleve.Geometry.Toric.CharacterTorus.Scheme
 public import Mathlib.AlgebraicGeometry.Birational.RationalMap
 public import Mathlib.LinearAlgebra.BilinearForm.IsometryEquiv
 
+import QPainleve.AlgebraicGeometry.IdealSheaf.BaseChange
+
 /-!
 # Marked surfaces with numbered nodal boundary
 
@@ -88,6 +90,19 @@ instance : IsLocallyNoetherian M.surface := by
 def picardMarking : L ≃ₗ[ℤ] Additive (LineBundleClass M.surface) :=
   M.marking.toLinearEquiv
 
+/-- The closed subscheme defined by the boundary ideal is at worst nodal over the ground field. -/
+theorem boundaryIdeal_nodal :
+    AtWorstNodalOfRelativeDimensionOne
+      (M.pair.hom.left.ker.subschemeι ≫ (M.surface ↘ S)) := by
+  have : IsClosedImmersion M.pair.hom.left := M.closedImmersion
+  have : PrestableFamily M.pair.left.hom := M.prestable
+  have hi : M.pair.hom.left.toImage ≫ M.pair.hom.left.ker.subschemeι = M.pair.hom.left :=
+    M.pair.hom.left.toImage_imageι
+  have hOver : M.pair.hom.left ≫ (M.surface ↘ S) = M.pair.left.hom := Over.w M.pair.hom
+  rw [← MorphismProperty.cancel_left_of_respectsIso (P := @AtWorstNodalOfRelativeDimensionOne)
+    M.pair.hom.left.toImage, ← Category.assoc, hi, hOver]
+  exact PrestableFamily.atWorstNodalOfRelativeDimensionOne
+
 variable {M} {L' : Type u} [AddCommGroup L'] {B' : LinearMap.BilinForm ℤ L'} {X' : Scheme.{u}}
   {N : MarkedSurface k n B' X'}
 
@@ -95,6 +110,28 @@ variable {M} {L' : Type u} [AddCommGroup L'] {B' : LinearMap.BilinForm ℤ L'} {
 @[expose]
 def surfaceIso (e : M.pair ≅ N.pair) : M.surface ≅ N.surface :=
   (Arrow.rightFunc ⋙ Over.forget S).mapIso e
+
+variable (M N) in
+/-- A surface isomorphism over the ground field that pulls back the target boundary ideal to
+the source boundary ideal lifts to an isomorphism of pairs. -/
+theorem exists_pairIso_of_boundaryIdeal (g : M.surface ≅ N.surface)
+    (hover : g.hom ≫ (N.surface ↘ S) = M.surface ↘ S)
+    (hker : N.pair.hom.left.ker.comap g.hom = M.pair.hom.left.ker) :
+    ∃ e : M.pair ≅ N.pair, (surfaceIso e).hom = g.hom := by
+  have : IsClosedImmersion M.pair.hom.left := M.closedImmersion
+  have : IsClosedImmersion N.pair.hom.left := N.closedImmersion
+  obtain ⟨d, hd⟩ := N.pair.hom.left.ker.exists_iso_of_comap_eq_ker g M.pair.hom.left hker
+  let d' := d ≪≫ (asIso N.pair.hom.left.toImage).symm
+  have hi : N.pair.hom.left.toImage ≫ N.pair.hom.left.ker.subschemeι = N.pair.hom.left :=
+    N.pair.hom.left.toImage_imageι
+  have hd' : d'.hom ≫ N.pair.hom.left = M.pair.hom.left ≫ g.hom := by
+    simpa only [d', Iso.trans_hom, Iso.symm_hom, ← hi, Category.assoc, asIso_inv,
+      IsIso.inv_hom_id_assoc] using hd
+  have hdOver : d'.hom ≫ N.pair.left.hom = M.pair.left.hom := by
+    have hover' : g.hom ≫ N.pair.right.hom = M.pair.right.hom := hover
+    rw [← Over.w N.pair.hom, ← Category.assoc, hd', Category.assoc, hover', Over.w M.pair.hom]
+  let e := Arrow.isoMk (Over.isoMk d' hdOver) (Over.isoMk g hover) (by ext1; exact hd')
+  exact ⟨e, rfl⟩
 
 /-- The boundary isomorphism underlying an isomorphism of marked surface pairs. -/
 def boundaryIso (e : M.pair ≅ N.pair) : M.boundary ≅ N.boundary :=
