@@ -12,8 +12,6 @@ public import QPainleve.Geometry.Toric.Fan.Boundary.Contraction
 public import QPainleve.Geometry.Toric.Fan.Picard.Contraction.Basic
 
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Modification
-import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
-import QPainleve.AlgebraicGeometry.Morphisms.Smooth.Factorial
 import QPainleve.Geometry.Toric.Fan.Boundary.StrictTransform
 import TauCeti.AlgebraicGeometry.Morphisms.Modification.Composition
 import TauCeti.LinearAlgebra.BilinearForm.Isometry.Basic
@@ -54,45 +52,6 @@ local notation "fZ" => (Φ.algebraicRealization ↘ S)
 local notation "prime(" x ")" => (Subtype.mk (Subtype.val x)
   (And.right (mem_boundaryPrimes.mp (Subtype.property x))) : CodimensionOnePoint _)
 local notation "cl" ρ:arg => markedBoundaryMap hΦ s (Pi.single ρ 1)
-
-/-- In the ordered Picard marking the actual boundary prime over a ray has the
-fixed strict ray class. -/
-theorem picardHom_markedBoundaryMap_single_eq_primeDivisorClass [DecidableEq Φ.Ray]
-    (c : Fin n → ℂˣ) (ρ : Φ.Ray) :
-    let : IsIntegral (model c).1 := isIntegral_internalBlowupTower b s c hΦ
-    let : IsNoetherian (model c).1 := (U c).isNoetherian
-    let : SmoothOfRelativeDimension 2 fZ :=
-      d₂ ▸ Φ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
-    let : SmoothOfRelativeDimension 2 ((U c).toBase ≫ fZ) :=
-      (hU c).smoothOfRelativeDimension fZ
-    let := ((U c).toBase ≫ fZ).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two
-    (U c).picardHom (cl ρ) =
-      Additive.ofMul (primeDivisorClass (prime(internalBlowupBoundaryPrimeEquiv hΦ b s c ρ))) := by
-  intro _ _ _ _ _
-  let j := ρ.boundaryComponentι hΦ ≫ (model c).2.boundaryι
-  have : IsIntegral (Φ.rayBoundaryIdeal hΦ ρ).subscheme := by
-    rw [rayBoundaryIdeal_def]
-    exact isIntegral_subscheme_vanishingIdeal isIrreducible_singleton.closure
-  have hI := ker_boundaryComponentι_internalBlowupTower b s c hΦ ρ
-  have hs := range_rayComponent_internalBlowupBoundaryPrimeEquiv hΦ b s c ρ
-  let x := (internalBlowupBoundaryPrimeEquiv hΦ b s c ρ).val
-  have hker : j.ker = vanishingIdeal ⟨closure {x}, isClosed_closure⟩ := by
-    rw [j.ker_eq_vanishingIdeal_support]
-    congr 1
-    exact SetLike.coe_injective ((j.support_ker.trans
-      j.isClosedEmbedding.isClosed_range.closure_eq).trans hs)
-  have heff := (hU c).isEffectiveCartier_strictTransform fZ
-    (Φ.isEffectiveCartier_rayBoundaryIdeal hΦ ρ)
-  let Marked (M : Model) := ∀ hM : IsClosedPointTower Z M.2.toTower,
-    M.2.toTower.picardHom (cl ρ) = strictRayBoundaryClass hΦ d₂ _ hM ρ
-  have hmark : Marked (model c) := by
-    rw [internalBlowupTower_eq_alongBoundary]
-    intro hM
-    exact picardHom_markedBoundaryMap_single hΦ d₂ s m hm hprim c _
-      (fun j ↦ (s j).internalCenter_val b (c j)) hM ρ
-  rw [hmark (hU c),
-    strictRayBoundaryClass_eq _ _ _ _ _ heff, primeDivisorClass_def,
-    mk_toInvertibleSheaf_congr _ _ (hI.symm.trans hker)]
 
 variable {X Y : Scheme} [X.Over S] [X.IsProjectiveOver ℂ] [IsIntegral X]
   [SmoothOfRelativeDimension 2 (X ↘ S)] [Φ.algebraicRealization.IsProjectiveOver ℂ]
