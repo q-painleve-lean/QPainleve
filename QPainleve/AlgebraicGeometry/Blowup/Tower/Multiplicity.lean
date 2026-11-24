@@ -164,7 +164,8 @@ theorem exists_move_base_point_blowup_to_front {T : BlowupTower X (n + 1) Y}
   have hle' : hT.baseMultiplicities J j ≤ hT.baseMultiplicities J i := by
     rw [horder]
     simpa only [ENat.toNat_natCast] using hle
-  obtain ⟨W, U, e, he⟩ := hT.exists_move_closed_point_blowup_to_front i hp hip hprevious
-  exact ⟨i, W, U, e, ⟨hi, fun l hl ↦ le_of_not_gt (hfirst l hl)⟩, hle', horder, he⟩
+  obtain ⟨W, U, e, hU, he, hE, _, htail⟩ :=
+    hT.exists_move_closed_point_blowup_to_front i hp hip hprevious
+  exact ⟨i, W, U, e, ⟨hi, fun l hl ↦ le_of_not_gt (hfirst l hl)⟩, hle', horder, hU, he, hE, htail⟩
 
 end QPainleve.BlowupTower.IsClosedPointTower

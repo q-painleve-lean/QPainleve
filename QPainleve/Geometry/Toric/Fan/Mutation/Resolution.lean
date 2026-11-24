@@ -10,6 +10,7 @@ public import QPainleve.Geometry.Toric.Fan.Mutation.Blowup
 public import QPainleve.Geometry.Toric.Fan.Mutation.Pullback
 public import TauCeti.AlgebraicGeometry.Morphisms.Modification.Basic
 
+import QPainleve.AlgebraicGeometry.Blowup.Descent
 import QPainleve.AlgebraicGeometry.Blowup.Integral
 import QPainleve.AlgebraicGeometry.Blowup.Modification
 import QPainleve.AlgebraicGeometry.Blowup.Pullback
@@ -32,7 +33,7 @@ The elementary transformation is that of Gross, Hacking and Keel,
 
 public noncomputable section
 
-open AlgebraicGeometry CategoryTheory Multiplicative TauCeti.AlgebraicGeometry
+open AlgebraicGeometry CategoryTheory Multiplicative TauCeti.AlgebraicGeometry TopologicalSpace
 open Scheme.IdealSheafData
 
 namespace TauCeti.Toric.Fan
@@ -164,6 +165,31 @@ theorem Ray.isModification_mutationSourceBlowupToBase : IsModification (I₀).bl
 /-- The projection of the opposite pivot blowup is a modification. -/
 theorem Ray.isModification_mutationTargetBlowupToBase : IsModification (I₁).blowupToBase :=
   (I₁).isModification_blowupToBase (dense_target_pivot_compl b ρ hOpp a)
+
+/-- A point on the common resolution above the complement of the pivot fiber projects on
+the target to its image under the mutation isomorphism of the two complements. -/
+theorem Ray.mutationBlowupIso_apply_over_complement (p : (I₀).blowup) (x : (Us).toScheme)
+    (hx : (I₀).blowupToBase p = (Us).ι x) :
+    (I₁).blowupToBase ((e).hom p) = (Ut).ι ((C).hom x) := by
+  let j := (I₀).blowupLift (Us).ι (by
+    rw [ρ.mutationSourceCenterIdeal_comap_complement b hOpp a]
+    exact isEffectiveCartier_top _)
+  have hj : j ≫ (I₀).blowupToBase = (Us).ι := (I₀).blowupLift_blowupToBase _ _
+  have hnot : (Us).ι x ∉ ((I₀).support : Set _) := by
+    have htop : x ∉ (((I₀).comap (Us).ι).support : Set _) := by
+      rw [ρ.mutationSourceCenterIdeal_comap_complement b hOpp a, support_top, Closeds.coe_bot]
+      exact Set.notMem_empty x
+    rw [support_comap, Closeds.coe_preimage, Set.mem_preimage] at htop
+    exact htop
+  have hjx : (I₀).blowupToBase (j x) = (Us).ι x := congrArg (fun f ↦ f x) hj
+  have hpx : p = j x := (I₀).injOn_blowupToBase_compl_support
+    (by simpa only [Set.mem_preimage, Set.mem_compl_iff, hx] using hnot)
+    (by simpa only [Set.mem_preimage, Set.mem_compl_iff, hjx] using hnot) (hx.trans hjx.symm)
+  have hcomp : j ≫ (e).hom ≫ (I₁).blowupToBase = (C).hom ≫ (Ut).ι := by
+    rw [← Category.assoc, ρ.mutationComplementBlowupι_comp_mutationBlowupIso_hom b hOpp a,
+      Category.assoc, blowupLift_blowupToBase]
+  rw [hpx]
+  exact congrArg (fun f ↦ f x) hcomp
 
 /-- The global pivot blowup isomorphism resolves the elementary transformation as an
 equality of rational maps on the source blowup. -/
