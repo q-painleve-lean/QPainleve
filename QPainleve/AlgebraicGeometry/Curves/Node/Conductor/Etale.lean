@@ -41,6 +41,47 @@ theorem mem_support_singularLocus_image_iff (x : X) :
   rw [singularLocus_eq_comap_of_etale (R := R) f, IdealSheafData.support_comap]
   rfl
 
+/-- A morphism which is an isomorphism over an open induces a bijection between
+the singular points over that open and the singular points in it. -/
+theorem bijOn_support_singularLocus_of_isIso_morphismRestrict
+    (g : X ⟶ Y) [g.IsOver (Spec (.of R))] (U : Y.Opens) [IsIso (g ∣_ U)] :
+    Set.BijOn g
+      (((g ⁻¹ᵁ U : X.Opens) : Set X) ∩ (X.singularLocus R).support)
+      ((U : Set Y) ∩ (Y.singularLocus R).support) := by
+  let V := g ⁻¹ᵁ U
+  let j := V.ι
+  let i := j ≫ g
+  have : IsOpenImmersion i := by
+    dsimp only [i, j, V]
+    rw [← morphismRestrict_ι]
+    infer_instance
+  let : V.toScheme.Over (Spec (.of R)) := ⟨j ≫ X ↘ Spec (.of R)⟩
+  have : Flat (V.toScheme ↘ Spec (.of R)) :=
+    inferInstanceAs (Flat (j ≫ X ↘ Spec (.of R)))
+  have : LocallyOfFinitePresentation (V.toScheme ↘ Spec (.of R)) :=
+    inferInstanceAs (LocallyOfFinitePresentation (j ≫ X ↘ Spec (.of R)))
+  have : PureRelativeDimension 1 (V.toScheme ↘ Spec (.of R)) :=
+    inferInstanceAs (PureRelativeDimension 1 (j ≫ X ↘ Spec (.of R)))
+  have : j.IsOver (Spec (.of R)) := ⟨rfl⟩
+  have : i.IsOver (Spec (.of R)) := inferInstanceAs ((j ≫ g).IsOver _)
+  have hsing (x : X) (hx : x ∈ V) :
+      g x ∈ (Y.singularLocus R).support ↔ x ∈ (X.singularLocus R).support :=
+    (i.mem_support_singularLocus_image_iff (R := R) ⟨x, hx⟩).trans
+      (j.mem_support_singularLocus_image_iff (R := R) ⟨x, hx⟩).symm
+  have hbij : Function.Bijective (g ∣_ U) :=
+    ⟨(g ∣_ U).injective, (g ∣_ U).surjective⟩
+  refine ⟨fun x hx ↦ ⟨g.mem_preimage.mp hx.1, (hsing x hx.1).mpr hx.2⟩, ?_, ?_⟩
+  · intro x hx y hy hxy
+    have he : (g ∣_ U) ⟨x, hx.1⟩ = (g ∣_ U) ⟨y, hy.1⟩ :=
+      Subtype.ext ((morphismRestrict_base_coe g U ⟨x, hx.1⟩).trans
+        (hxy.trans (morphismRestrict_base_coe g U ⟨y, hy.1⟩).symm))
+    exact congrArg Subtype.val (hbij.1 he)
+  · intro y hy
+    obtain ⟨x, hx⟩ := hbij.2 ⟨y, hy.1⟩
+    have he : g x.val = y := (morphismRestrict_base_coe g U x).symm.trans
+      (congrArg Subtype.val hx)
+    exact ⟨x.val, ⟨x.property, (hsing _ x.property).mp (he.symm ▸ hy.2)⟩, he⟩
+
 /-- The map of singular-locus blowups induced by an étale morphism of relative curves. -/
 def singularLocusBlowupMap : (X.singularLocus R).blowup ⟶ (Y.singularLocus R).blowup :=
   eqToHom (congrArg IdealSheafData.blowup (singularLocus_eq_comap_of_etale (R := R) f)) ≫
