@@ -8,7 +8,6 @@ module
 public import QPainleve.Geometry.Toric.Fan.Logarithmic.ToricChange
 public import QPainleve.Geometry.Toric.Fan.StarSubdivision.QuadricPreparation
 
-import QPainleve.AlgebraicGeometry.Morphisms.Pullback.IsoLocus
 import QPainleve.Geometry.Toric.Fan.Boundary.Subdivision
 
 /-!
@@ -66,11 +65,11 @@ theorem HirzebruchQuadricPreparation.exists_binomialCenter_on_retained_fiber
     rw [(P.common_model 0).primitiveGenerator_liftRay,
       (P.common_model j).primitiveGenerator_liftRay, hρ 0, hρ j]
   rw [hτ]
-  apply π[P.common_model j].isPullback_of_isIso_of_range_subset_isoLocus
-  · simpa only [Category.id_comp] using
-      (P.common_model j).binomialCenter_liftRay_comp_algebraicMap (ρ j) b c
-  · exact (P.common_model j).range_binomialCenter_subset_isoLocus (ρ j) hdim
-      (b.detDualEquiv_self _) ((ρ j).surjective_detCharacter b) c
+  convert (P.common_model j).isPullback_binomialCenter (ρ j)
+    (m := (b.detDualEquiv (ρ j).primitiveGenerator).toAddMonoidHom)
+    hdim (b.detDualEquiv_self _) ((ρ j).surjective_detCharacter b) c using 2
+  congr 1
+  rw [(P.common_model j).primitiveGenerator_liftRay]
 
 variable {X : Scheme} [X.Over S] [IsIntegral X] [X.IsProjectiveOver ℂ]
   [SmoothOfRelativeDimension 2 s(X)] {f : X ⟶ X[Φ]} [f.IsOver S]
