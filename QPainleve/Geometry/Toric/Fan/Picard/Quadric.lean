@@ -6,10 +6,12 @@ Authors: The QPainleve contributors
 module
 
 public import QPainleve.AlgebraicGeometry.Blowup.Tower.CurveIntersection
+public import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.Picard
 public import QPainleve.Geometry.Toric.Fan.Picard.Hirzebruch
 public import QPainleve.Geometry.Toric.Fan.Ruling.Basic
 public import QPainleve.Geometry.Toric.Fan.Ruling.Quadric
 
+import QPainleve.Geometry.Toric.Fan.Picard.FiberDegree
 import QPainleve.Geometry.Toric.Fan.Picard.Ruling
 import QPainleve.Geometry.Toric.Fan.Ruling.Torus
 import TauCeti.AlgebraicGeometry.Curves.ProjectiveLine
@@ -121,6 +123,35 @@ theorem picardMarking_symm_rulingExchange (L : LineBundleClass Y) :
     simpa only [Iso.symm_hom, hτ, hv, Prod.mk.eta] using q.isLift.symm.pullback_picardHom v.1 v.2
   rw [hw]
   exact ⟨Fan.hirzebruchPicardBasis_repr_pullback_quadricRulingExchange b hΦ hc r hr v.1, rfl⟩
+
+local notation "Plane" => Proj (TauCeti.SymmetricAlgebra.homogeneousSubmodule ℂ (Fin 3 → ℂ))
+
+omit [Nonempty Φ.cones] in
+/-- Every base order of a resolved plane line system on a toric quadric is bounded
+by its fiber degree in the exchanged ruling. This degree is the first Hirzebruch
+Picard coordinate in the given frame. -/
+theorem base_order_le_quadric_exchanged_fiber_degree [Φ.algebraicRealization.IsProjectiveOver ℂ]
+    (g : Y ⟶ Plane) (hg : g ≫ (Plane ↘ S) = T.toBase ≫ f) (j : Fin n) :
+    let : Nonempty Φ.cones := hc.nonempty_cones
+    let : SmoothOfRelativeDimension 2 f :=
+      rankTwo ▸ Φ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
+    let H := mk (Proj.symmetricAlgebraTwistingBundle ℂ (Fin 3 → ℂ) 1)
+    let v := (T.picardMarking hT f).symm (Additive.ofMul (pullback g H))
+    (-v.2 j) ≤ (C).repr v.1 0 := by
+  intro hcones hSmooth H v
+  let := hcones
+  let := hSmooth
+  let q := Q(T)
+  let hQ := q.isLift.isClosedPointTower hT
+  have hg' : (q.iso.inv ≫ g) ≫ (Plane ↘ S) = q.tower.toBase ≫ f := by
+    apply (cancel_epi q.iso.hom).mp
+    rw [← Category.assoc, Iso.hom_inv_id_assoc, hg, ← Category.assoc, q.isLift.hom_toBase,
+      Category.assoc, asIso_hom, comp_over τ S]
+  have hbound := hQ.base_order_le_hirzebruch_fiber_degree b 0 hΦ r hr hc (q.iso.inv ≫ g) hg' j
+  have ⟨hBase, hOrders⟩ := hT.picardMarking_symm_rulingExchange b hΦ hc r hr (pullback g H)
+  dsimp only at hbound hBase hOrders
+  rw [← pullback_comp, hOrders, hBase, Equiv.swap_apply_right] at hbound
+  exact hbound
 
 section
 
