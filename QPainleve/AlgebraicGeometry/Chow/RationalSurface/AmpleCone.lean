@@ -5,8 +5,11 @@ Authors: The QPainleve contributors
 -/
 module
 
-public import QPainleve.AlgebraicGeometry.Chow.CurveCone
+public import QPainleve.AlgebraicGeometry.Chow.Nef.Cone
 public import QPainleve.AlgebraicGeometry.Chow.RationalSurface.NakaiMoishezon
+
+import QPainleve.AlgebraicGeometry.Chow.RationalSurface.Ample
+import TauCeti.Topology.Algebra.Module.ModuleTopology
 
 /-!
 # Ample classes and negative curves on rational surfaces
@@ -91,5 +94,58 @@ theorem isAmple_iff_mem_positiveComponent_and_pos_negative {h : LineBundleClass 
         Chow.classIntersectionNumber_primeDivisorClass_eq_intersectionNumber_of_isClosedImmersion
           k hX i hC a, Int.cast_pos] at hp
       exact hp
+
+section Transport
+
+variable {Y : Scheme.{u}} [Y.Over (Spec (.of k))] [Y.IsProjectiveOver k]
+  [SmoothOfRelativeDimension 2 (Y ↘ Spec (.of k))]
+  [rationalY : Scheme.IsRationalOver (Y ↘ Spec (.of k))]
+  [TopologicalSpace V(Y)] [IsModuleTopology ℝ V(Y)]
+
+local instance : IsTopologicalAddGroup V(X) := IsModuleTopology.isTopologicalAddGroup ℝ _
+local instance : IsTopologicalAddGroup V(Y) := IsModuleTopology.isTopologicalAddGroup ℝ _
+
+local instance : T2Space V(X) := TauCeti.ModuleTopology.t2Space (Module.Free.chooseBasis ℝ _)
+local instance : T2Space V(Y) := TauCeti.ModuleTopology.t2Space (Module.Free.chooseBasis ℝ _)
+
+include rational rationalY in
+/-- An integral Picard isometry identifying the real nef cones identifies the
+ample classes as soon as it takes one ample class to an ample class. -/
+theorem isAmple_iff_of_image_nefCone_eq {h : LineBundleClass X} (hh : h.IsAmple) :
+    let : Smooth (X ↘ Spec (.of k)) := SmoothOfRelativeDimension.smooth 2 _
+    let : Smooth (Y ↘ Spec (.of k)) := SmoothOfRelativeDimension.smooth 2 _
+    let : IsIntegral X := rational.isIntegral_of_smooth
+    let : IsIntegral Y := rationalY.isIntegral_of_smooth
+    let : Module.Finite ℤ (Additive (LineBundleClass X)) :=
+      X.finite_picard_of_isRationalOver k
+    let : Module.Finite ℤ (Additive (LineBundleClass Y)) :=
+      Y.finite_picard_of_isRationalOver k
+    ∀ (e : (Chow.intersectionBilinForm k X).IsometryEquiv (Chow.intersectionBilinForm k Y)),
+      (e.baseChange ℝ) '' (Chow.nefCone k (X := X) : Set V(X)) = Chow.nefCone k (X := Y) →
+      (e (Additive.ofMul h)).toMul.IsAmple →
+      ∀ a : LineBundleClass X, a.IsAmple ↔ (e (Additive.ofMul a)).toMul.IsAmple := by
+  intro _ _ _ _ _ _ e hnef hhY a
+  let g : LineBundleClass X ≃* LineBundleClass Y :=
+    (MulEquiv.multiplicativeAdditive _).symm.trans
+      (AddEquiv.toMultiplicativeLeft e.toLinearEquiv.toAddEquiv)
+  have hg (b : LineBundleClass X) : g b = (e (Additive.ofMul b)).toMul := (rfl)
+  have hmem (b : LineBundleClass X) :
+      b.IsNef k (X ↘ Spec (.of k)) ↔ (g b).IsNef k (Y ↘ Spec (.of k)) := by
+    rw [← Chow.one_tmul_mem_nefCone_iff k b, ← Chow.one_tmul_mem_nefCone_iff k (g b)]
+    simp only [← SetLike.mem_coe]
+    rw [← hnef, hg, ofMul_toMul, ← e.baseChange_tmul (1 : ℝ) (Additive.ofMul b)]
+    have hinj : Function.Injective ((e.baseChange ℝ) : V(X) → V(Y)) := (e.baseChange ℝ).injective
+    exact hinj.mem_set_image.symm
+  rw [← hg] at hhY ⊢
+  refine ⟨fun ha ↦ ha.map_of_isNef_preserving (X ↘ Spec (.of k)) g.toMonoidHom
+    (fun b ↦ (hmem b).mp) hhY, fun ha ↦ ?_⟩
+  have hi (b : LineBundleClass Y) (hb : b.IsNef k (Y ↘ Spec (.of k))) :
+      (g.symm b).IsNef k (X ↘ Spec (.of k)) :=
+    (hmem (g.symm b)).mpr (by simpa only [g.apply_symm_apply] using hb)
+  have hhX : (g.symm (g h)).IsAmple := by simpa only [g.symm_apply_apply] using hh
+  simpa only [MulEquiv.coe_toMonoidHom, g.symm_apply_apply] using
+    ha.map_of_isNef_preserving (Y ↘ Spec (.of k)) g.symm.toMonoidHom hi hhX
+
+end Transport
 
 end TauCeti.AlgebraicGeometry.LineBundleClass
