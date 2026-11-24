@@ -14,6 +14,7 @@ import QPainleve.AlgebraicGeometry.Blowup.Tower.Modification
 import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
 import QPainleve.AlgebraicGeometry.Morphisms.Modification.IsoLocus
 import QPainleve.AlgebraicGeometry.Morphisms.Smooth.Factorial
+import Mathlib.LinearAlgebra.Projection
 import TauCeti.AlgebraicGeometry.Morphisms.Smooth.Regular
 
 /-!
@@ -306,5 +307,24 @@ theorem picardHom_contractedPicardMarking_symm (a : Pic(X)) :
   let : IsNoetherian Z := isNoetherian_of_finiteType (f(k,Z))
   rw [coe_contractedPicardMarking_symm_apply, picardHom_picardEquivOfCommonResolution,
     picardHom_apply_zero, pullback_comp]
+
+include hT he in
+/-- The marked pullback lattice of the base and the marked exceptional span are complements. -/
+theorem isCompl_orthogonal_markedExceptionalSpan : IsCompl K P := by
+  let : IsNoetherian X := noeth(X)
+  let : IsNoetherian Z := noeth(Z)
+  let μ := contractedPicardMarking k hT hU e he
+  let m := (μ.symm.toLinearEquiv : Pic(X) →ₗ[ℤ] K)
+  let p := m.comp ((LinearMap.fst ℤ _ _).comp (E).symm.toLinearMap)
+  have hker : p.ker = P := by
+    ext x
+    simp only [LinearMap.mem_ker, LinearMap.comp_apply, LinearMap.fst_apply, p, m,
+      LinearEquiv.coe_coe, LinearEquiv.map_eq_zero_iff,
+      mem_markedExceptionalSpan_iff k hT hU e]
+  have hp (x : K) : p x.val = x := by
+    simp only [p, m, LinearMap.comp_apply, LinearMap.fst_apply, LinearEquiv.coe_coe,
+      LinearMap.BilinForm.IsometryEquiv.coe_toLinearEquiv]
+    exact μ.symm_apply_apply x
+  simpa only [hker] using LinearMap.isCompl_of_proj hp
 
 end QPainleve.BlowupTower
