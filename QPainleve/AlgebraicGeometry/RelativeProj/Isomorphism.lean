@@ -64,6 +64,13 @@ def relativeProjMapIso (e : A ≅ B) : B.relativeProj ≅ A.relativeProj where
       (fun U _ ↦ irrelevant_le_map_gradedSectionsGradedHom_of_iso (e ≪≫ e.symm) U)]
     exact relativeProjMap_eq_id e.hom_inv_id _
 
+/-- The forward projective comparison is the relative projective map induced by
+the forward graded algebra map. -/
+theorem relativeProjMapIso_hom (e : A ≅ B) :
+    (relativeProjMapIso e).hom =
+      relativeProjMap e.hom (fun U _ ↦ irrelevant_le_map_gradedSectionsGradedHom_of_iso e U) :=
+  (rfl)
+
 /-- The inverse projective comparison is induced by the inverse graded isomorphism. -/
 @[simp]
 theorem relativeProjMapIso_symm (e : A ≅ B) :

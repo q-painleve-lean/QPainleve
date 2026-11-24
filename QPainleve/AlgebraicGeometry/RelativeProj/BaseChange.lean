@@ -192,6 +192,14 @@ theorem relativeProjCover_f_relativeProjBaseChange (V : X.AffineZariskiSite)
         A.obj.relativeProjCover.f U :=
   (projCover A f).ι_glueMorphisms _ _ ⟨V, U, h⟩
 
+/-- Maps from the base-changed relative projective spectrum agree if they agree
+on the affine source charts lying over affine target opens. -/
+theorem relativeProjBaseChange_hom_ext {Z : Scheme.{u}} (g h : (B).relativeProj ⟶ Z)
+    (he : ∀ (V : X.AffineZariskiSite) (U : Y.AffineZariskiSite),
+      V.toOpens ≤ f ⁻¹ᵁ U.toOpens →
+        (B).relativeProjCover.f V ≫ g = (B).relativeProjCover.f V ≫ h) : g = h :=
+  (projCover A f).hom_ext g h fun i ↦ he i.source i.target i.le
+
 private theorem chart_isPullback (i : Chart f) :
     IsPullback
       (Proj.toSpecCoeff (CommMon.gradedSectionsGrading B i.source.toOpens) ≫
