@@ -84,4 +84,28 @@ theorem radical_comap_of_isOpenImmersion {X Y : Scheme.{u}}
     ← vanishingIdeal_support (I := D.comap f), support_comap]
   rfl
 
+/-- The reduced inverse image of an invariant closed subscheme under an equivariant
+morphism is invariant under the source automorphism. -/
+theorem exists_radicalComapSubschemeIso {X Y : Scheme.{u}}
+    (D : X.IdealSheafData) (f : Y ⟶ X) {e : X ≅ X} {g : Y ≅ Y}
+    {d : D.subscheme ≅ D.subscheme} (hd : d.hom ≫ D.subschemeι = D.subschemeι ≫ e.hom)
+    (hf : g.hom ≫ f = f ≫ e.hom) :
+    let R := (D.comap f).radical
+    ∃ r : R.subscheme ≅ R.subscheme, r.hom ≫ R.subschemeι = R.subschemeι ≫ g.hom := by
+  have hpb : IsPullback D.subschemeι d.hom e.hom D.subschemeι :=
+    (IsPullback.of_horiz_isIso ⟨hd⟩).flip
+  have hD : D.comap e.hom = D := by
+    simpa only [ker_subschemeι] using (ker_eq_comap_of_isPullback D.subschemeι hpb).symm
+  let R := (D.comap f).radical
+  have hR : R.comap g.hom = R := by
+    dsimp only [R]
+    rw [← radical_comap_of_isOpenImmersion, ← comap_comp, hf, comap_comp, hD]
+  let r := R.subschemeMap R g.hom (le_map_iff_comap_le.mpr hR.le)
+  have hr : r ≫ R.subschemeι = R.subschemeι ≫ g.hom := subschemeMap_subschemeι _ _ _ _
+  have hpull : IsPullback R.subschemeι r g.hom R.subschemeι :=
+    isPullback_of_isClosedImmersion _ _ _ _ hr.symm
+      (by simpa only [ker_subschemeι] using hR)
+  have : IsIso r := hpull.isIso_snd_of_isIso
+  exact ⟨asIso r, hr⟩
+
 end AlgebraicGeometry.Scheme.IdealSheafData

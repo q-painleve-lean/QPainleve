@@ -11,9 +11,9 @@ public import TauCeti.AlgebraicGeometry.Curves.Node.Normalization
 
 import QPainleve.AlgebraicGeometry.Blowup.StrictTransform.Branches.Automorphism
 import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
+import QPainleve.AlgebraicGeometry.IdealSheaf.Restriction
 import TauCeti.AlgebraicGeometry.Curves.Node.Reduced
 import TauCeti.AlgebraicGeometry.Curves.SingularLocus.Smooth
-import TauCeti.AlgebraicGeometry.IdealSheaf.BaseChange
 import TauCeti.AlgebraicGeometry.IdealSheaf.Reduced
 import TauCeti.AlgebraicGeometry.Noetherian
 
@@ -42,19 +42,10 @@ namespace QPainleve.BlowupTower
 variable {k : Type u} [Field k] [IsSepClosed k] [PerfectField k]
   {X Y : Scheme.{u}}
 
-private def fixesBranches {C : Scheme.{u}} (s : C ⟶ Spec (.of k))
-    (hN : AtWorstNodalOfRelativeDimensionOne s) (d : C ≅ C) (hd : d.hom ≫ s = s) : Prop :=
-  letI : C.Over (Spec (.of k)) := ⟨s⟩
-  letI : d.hom.IsOver (Spec (.of k)) := ⟨hd⟩
-  letI : SyntomicOfRelativeDimension 1 (C ↘ Spec (.of k)) := hN.syntomic
-  ∀ y : (C.singularLocus k).blowup,
-    (C.singularLocus k).blowupToBase y ∈ (C.singularLocus k).support →
-      (d.singularLocusBlowupIso (R := k)).hom y = y
-
 omit [IsSepClosed k] [PerfectField k] in
 private theorem fixes_node_of_fixesBranches {C : Scheme.{u}} {s : C ⟶ Spec (.of k)}
     {hN : AtWorstNodalOfRelativeDimensionOne s} {d : C ≅ C} {hd : d.hom ≫ s = s}
-    (hbranches : fixesBranches s hN d hd) (p : C) (hp : s.IsNodeAt p) : d.hom p = p := by
+    (hbranches : d.FixesNodalBranches s hN hd) (p : C) (hp : s.IsNodeAt p) : d.hom p = p := by
   let : C.Over (Spec (.of k)) := ⟨s⟩
   let : d.hom.IsOver (Spec (.of k)) := ⟨hd⟩
   have : SyntomicOfRelativeDimension 1 (C ↘ Spec (.of k)) := hN.syntomic
@@ -63,7 +54,7 @@ private theorem fixes_node_of_fixesBranches {C : Scheme.{u}} {s : C ⟶ Spec (.o
   obtain ⟨y, rfl⟩ := (C.singularLocus k).blowupToBase.surjective p
   have hy := (C.mem_support_singularLocus_iff_notMem_smoothLocus (R := k) _).mpr
     ((s.isNodeAt_iff_notMem_smoothLocus hN _).mp hp)
-  have hh := hbranches y hy
+  have hh := (d.fixesNodalBranches_iff s hN hd).mp hbranches y hy
   have hcomm := congrArg (fun f : (C.singularLocus k).blowup ⟶ C ↦ f y)
     (d.singularLocusBlowupIso_hom_blowupToBase (R := k))
   simpa only [Scheme.Hom.comp_apply, hh] using hcomm.symm
@@ -87,44 +78,31 @@ local notation "R" => radical (D.comap (π))
 
 include hD he hd hp hpN in
 private theorem exists_blowupIso_fixesBranches
-    (hb : fixesBranches (D.subschemeι ≫ X ↘ Spec (.of k)) hN d hdOver)
+    (hb : d.FixesNodalBranches (D.subschemeι ≫ X ↘ Spec (.of k)) hN hdOver)
     (hR : AtWorstNodalOfRelativeDimensionOne ((R).subschemeι ≫ (π) ≫ X ↘ Spec (.of k))) :
     ∃ (hI : (I).comap e.hom = I) (r : (R).subscheme ≅ (R).subscheme),
       r.hom ≫ (R).subschemeι = (R).subschemeι ≫ ((I).blowupIso e hI).hom ∧
       ∃ hr : r.hom ≫ (R).subschemeι ≫ (π) ≫ X ↘ Spec (.of k) =
           (R).subschemeι ≫ (π) ≫ X ↘ Spec (.of k),
-        fixesBranches _ hR r hr := by
+        r.FixesNodalBranches _ hR hr := by
   let : D.subscheme.Over (Spec (.of k)) := ⟨D.subschemeι ≫ X ↘ Spec (.of k)⟩
   let : d.hom.IsOver (Spec (.of k)) := ⟨hdOver⟩
   have hqfix := fixes_node_of_fixesBranches hb p hpN
   have hI : (I).comap e.hom = I := comap_nodeIdeal_eq_of_iso D.subschemeι D.subschemeι d e hd hqfix
-  let g := (I).blowupIso e hI
-  have hpb : IsPullback D.subschemeι d.hom e.hom D.subschemeι :=
-    (IsPullback.of_horiz_isIso ⟨hd⟩).flip
-  have hDcomap : D.comap e.hom = D := by
-    simpa only [ker_subschemeι] using (ker_eq_comap_of_isPullback D.subschemeι hpb).symm
-  have hcomap : (R).comap g.hom = R := by
-    rw [← radical_comap_of_isOpenImmersion, ← comap_comp, blowupIso_hom_blowupToBase,
-      comap_comp, hDcomap]
-  let r₀ := subschemeMap (R) (R) g.hom (le_map_iff_comap_le.mpr hcomap.le)
-  have hr₀ : r₀ ≫ (R).subschemeι = (R).subschemeι ≫ g.hom := subschemeMap_subschemeι _ _ _ _
-  have hpull : IsPullback (R).subschemeι r₀ g.hom (R).subschemeι :=
-    isPullback_of_isClosedImmersion _ _ _ _ hr₀.symm (by simpa only [ker_subschemeι] using hcomap)
-  have : IsIso r₀ := hpull.isIso_snd_of_isIso
-  let r := asIso r₀
+  obtain ⟨r, hr⟩ := D.exists_radicalComapSubschemeIso (π) hd (blowupIso_hom_blowupToBase I e hI)
   have hover : r.hom ≫ (R).subschemeι ≫ (π) ≫ X ↘ Spec (.of k) =
       (R).subschemeι ≫ (π) ≫ X ↘ Spec (.of k) := by
-    rw [← Category.assoc r.hom, asIso_hom, hr₀, Category.assoc,
-      blowupIso_hom_blowupToBase_assoc, he]
-  refine ⟨hI, r, hr₀, hover, ?_⟩
+    rw [reassoc_of% hr, blowupIso_hom_blowupToBase_assoc, he]
+  refine ⟨hI, r, hr, hover, ?_⟩
   let : (R).subscheme.Over (Spec (.of k)) := ⟨(R).subschemeι ≫ (π) ≫ X ↘ Spec (.of k)⟩
   let : r.hom.IsOver (Spec (.of k)) := ⟨hover⟩
   have : SyntomicOfRelativeDimension 1 (D.subscheme ↘ Spec (.of k)) := hN.syntomic
   have hqsing : p ∈ (D.subscheme.singularLocus k).support :=
     (D.subscheme.mem_support_singularLocus_iff_notMem_smoothLocus p).mpr
       (((D.subschemeι ≫ X ↘ Spec (.of k)).isNodeAt_iff_notMem_smoothLocus hN p).mp hpN)
+  apply (r.fixesNodalBranches_iff _ hR hover).mpr
   exact hD.singularLocusBlowupIso_fixes_over_nodeBlowup hN hqsing hp e d hd hqfix r hR
-    hr₀ rfl rfl hb
+    hr rfl rfl ((d.fixesNodalBranches_iff _ hN hdOver).mp hb)
 
 end Step
 
@@ -140,7 +118,7 @@ variable [X.Over (Spec (.of k))] [IsIntegral X] [IsNoetherian X] [QuasiCompact (
 
 include hD hN he hd hdOver in
 private theorem exists_isLift_aux
-    (hb : fixesBranches (D.subschemeι ≫ X ↘ Spec (.of k)) hN d hdOver)
+    (hb : d.FixesNodalBranches (D.subschemeι ≫ X ↘ Spec (.of k)) hN hdOver)
     {n : ℕ} {T : BlowupTower X n Y}
     (hT : IsNodalBoundaryTower D (X ↘ Spec (.of k)) (𝟙 X) T)
     {P : Y.IdealSheafData} (hP : P = (D.comap T.toBase).radical)
@@ -149,7 +127,7 @@ private theorem exists_isLift_aux
       IsLift e T T g ∧ r.hom ≫ P.subschemeι = P.subschemeι ≫ g.hom ∧
       ∃ hr : r.hom ≫ P.subschemeι ≫ T.toBase ≫ X ↘ Spec (.of k) =
           P.subschemeι ≫ T.toBase ≫ X ↘ Spec (.of k),
-        fixesBranches _ hNP r hr := by
+        r.FixesNodalBranches _ hNP hr := by
   induction hT with
   | nil =>
     have : IsReduced D.subscheme := hN.isReduced
@@ -222,7 +200,7 @@ theorem IsNodalBoundaryTower.exists_isLift_of_fixes_nodal_branches
   have hdOver : d.hom ≫ D.subschemeι ≫ X ↘ Spec (.of k) =
       D.subschemeι ≫ X ↘ Spec (.of k) := by
     rw [← Category.assoc, hd, Category.assoc, he]
-  have hb : fixesBranches _ hN d hdOver := hfix
+  have hb := (d.fixesNodalBranches_iff _ hN hdOver).mpr hfix
   obtain ⟨g, _, hg, -⟩ := exists_isLift_aux hD hN e d he hd hdOver hb hT rfl
     (hT.radical_comap_toBase hD hN).2
   exact ⟨g, hg, fun _ hh ↦ hh.unique hg⟩
