@@ -51,7 +51,7 @@ theorem exists_iso_alongBoundary_cons
     let T := WithBoundary.nil i
     have heq : I.comap (Iso.refl X).hom = A.val.map T.boundaryι := by
       simpa only [T, WithBoundary.boundaryι_nil, Iso.refl_hom, comap_id] using hI.symm
-    let e := I.blowupIso (Iso.refl X) heq
+    let e := blowupIso (Iso.refl X) heq.symm
     have he : e.hom ≫ I.blowupToBase = (A.val.map T.boundaryι).blowupToBase := by simp [e]
     have hproj : (T.snoc A.val A.property).boundaryι ≫ e.hom ≫ I.blowupToBase = i := by
       rw [he, WithBoundary.boundaryι_snoc_blowupToBase, WithBoundary.boundaryι_nil]
@@ -66,7 +66,7 @@ theorem exists_iso_alongBoundary_cons
     · intro a z x
       simp only [picardHom_snoc_apply_toMul, picardHom_nil, Fin.last_zero, Fin.cons_zero,
         pullback_mul, pullback_comp, he, pullback_zpow, e,
-        pullback_blowupExceptionalClass]
+        pullback_blowupExceptionalClass I (Iso.refl X) heq]
       rfl
   | succ n ih =>
     let K := fun k : Fin n ↦ J k.castSucc
@@ -88,9 +88,9 @@ theorem exists_iso_alongBoundary_cons
     have hB : B.val.comap (Iso.refl D).hom = B.val := by simp
     have hcenter : (B.val.map U.boundaryι).comap e.hom = B.val.map T.boundaryι :=
       T.comap_center_eq B.val e (Iso.refl D) hb' B.val hB
-    let e' := (B.val.map U.boundaryι).blowupIso e hcenter
+    let e' := blowupIso e hcenter.symm
     have he' : e'.hom ≫ (B.val.map U.boundaryι).blowupToBase =
-        (B.val.map T.boundaryι).blowupToBase ≫ e.hom := blowupIso_hom_blowupToBase _ _ _
+        (B.val.map T.boundaryι).blowupToBase ≫ e.hom := blowupIso_hom_blowupToBase _ _
     refine ⟨e', ?_, ?_, ?_⟩
     · simp only [WithBoundary.toTower_snoc, toBase_snoc]
       calc

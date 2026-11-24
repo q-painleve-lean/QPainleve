@@ -113,7 +113,7 @@ theorem IsSubdivision.exists_toric_subdivision_blowup_tower
     let J := p.ker
     let F := Δ.starSubdivisionAlong_isSubdivision hΔ σ.property h₀
     have hJ : J.comap e.hom = s.ker := s.comap_ker_comp_of_isClosedImmersion e.hom
-    let g := d ≪≫ J.blowupIso e hJ
+    let g := d ≪≫ blowupIso e hJ.symm
     have hg : g.hom ≫ J.blowupToBase = F.toFanHom.algebraicMap ≫ e.hom := by
       rw [Iso.trans_hom, Category.assoc, blowupIso_hom_blowupToBase, ← Category.assoc, hd]
     have hbase : g.hom ≫ (T.snoc J).toBase = h.toFanHom.algebraicMap := by

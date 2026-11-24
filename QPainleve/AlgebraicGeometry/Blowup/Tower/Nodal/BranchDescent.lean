@@ -59,7 +59,7 @@ private theorem fixes_branches_at_prefix {m : ℕ} {U : BlowupTower X m Y}
     (hcenter : J.comap g.hom = J)
     {P : J.blowup.IdealSheafData} (hP : P = (D.comap (U.snoc J).toBase).radical)
     {r : P.subscheme ≅ P.subscheme}
-    (hr : r.hom ≫ P.subschemeι = P.subschemeι ≫ (J.blowupIso g hcenter).hom)
+    (hr : r.hom ≫ P.subschemeι = P.subschemeι ≫ (blowupIso g hcenter.symm).hom)
     (hNP : AtWorstNodalOfRelativeDimensionOne
       (P.subschemeι ≫ J.blowupToBase ≫ U.toBase ≫ X ↘ Spec (.of k)))
     (hrOver : r.hom ≫ P.subschemeι ≫ J.blowupToBase ≫ U.toBase ≫ X ↘ Spec (.of k) =

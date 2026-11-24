@@ -7,7 +7,7 @@ module
 
 public import QPainleve.AlgebraicGeometry.Curves.DualGraph.Gluing
 public import QPainleve.AlgebraicGeometry.LineBundle.GluingUnit
-public import TauCeti.AlgebraicGeometry.Curves.Node.DualGraph
+public import TauCeti.AlgebraicGeometry.Curves.Node.DualGraph.Basic
 public import TauCeti.AlgebraicGeometry.IdealSheaf.Over
 
 import Mathlib.Algebra.Group.Pi.Units

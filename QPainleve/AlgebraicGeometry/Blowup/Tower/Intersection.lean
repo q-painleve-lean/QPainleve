@@ -7,7 +7,7 @@ module
 
 public import QPainleve.AlgebraicGeometry.Blowup.Canonical
 public import QPainleve.AlgebraicGeometry.Blowup.Tower.Picard
-public import TauCeti.AlgebraicGeometry.Chow.SurfaceIntersection
+public import TauCeti.AlgebraicGeometry.Chow.SurfaceIntersection.Basic
 public import TauCeti.AlgebraicGeometry.Noetherian
 public import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.ProjectiveOver
 import Mathlib.AlgebraicGeometry.AlgClosed.Basic

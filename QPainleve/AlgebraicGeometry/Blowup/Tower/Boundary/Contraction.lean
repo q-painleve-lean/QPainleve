@@ -113,7 +113,7 @@ private theorem internalBlowdown_snoc {I : Y.IdealSheafData}
         ∃ e : B.subscheme ≅ D.subscheme, e.hom ≫ D.subschemeι = B.subschemeι ≫ I.blowupToBase := by
   let J := vanishingIdeal (Closeds.mk (closure ({p} : Set Y)) isClosed_closure)
   have hJ : J = I := (hI.trans (Y.ker_fromSpecResidueField_eq_vanishingIdeal p)).symm
-  let a : J.blowup ≅ I.blowup := I.blowupIso (Iso.refl Y) (by simpa using hJ.symm)
+  let a : J.blowup ≅ I.blowup := blowupIso (Iso.refl Y) (hJ.trans (comap_id I).symm)
   have ha : a.hom ≫ I.blowupToBase = J.blowupToBase := by simp [a]
   let : Y.Over S := ⟨T.toBase ≫ s⟩
   let : I.blowup.Over S := ⟨(T.snoc I).toBase ≫ s⟩

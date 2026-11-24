@@ -84,7 +84,7 @@ private theorem exists_blowupIso_fixesBranches
     (hb : d.FixesNodalBranches (D.subschemeι ≫ X ↘ Spec (.of k)) hN hdOver)
     (hR : AtWorstNodalOfRelativeDimensionOne ((R).subschemeι ≫ (π) ≫ X ↘ Spec (.of k))) :
     ∃ (hI : (I).comap e.hom = I) (r : (R).subscheme ≅ (R).subscheme),
-      r.hom ≫ (R).subschemeι = (R).subschemeι ≫ ((I).blowupIso e hI).hom ∧
+      r.hom ≫ (R).subschemeι = (R).subschemeι ≫ (blowupIso e hI.symm).hom ∧
       ∃ hr : r.hom ≫ (R).subschemeι ≫ (π) ≫ X ↘ Spec (.of k) =
           (R).subschemeι ≫ (π) ≫ X ↘ Spec (.of k),
         r.FixesNodalBranches _ hR hr := by
@@ -92,7 +92,7 @@ private theorem exists_blowupIso_fixesBranches
   let : d.hom.IsOver (Spec (.of k)) := ⟨hdOver⟩
   have hqfix := fixes_node_of_fixesBranches hb p hpN
   have hI : (I).comap e.hom = I := comap_nodeIdeal_eq_of_iso D.subschemeι D.subschemeι d e hd hqfix
-  obtain ⟨r, hr⟩ := D.exists_radicalComapSubschemeIso (π) hd (blowupIso_hom_blowupToBase I e hI)
+  obtain ⟨r, hr⟩ := D.exists_radicalComapSubschemeIso (π) hd (blowupIso_hom_blowupToBase e hI.symm)
   have hover : r.hom ≫ (R).subschemeι ≫ (π) ≫ X ↘ Spec (.of k) =
       (R).subschemeι ≫ (π) ≫ X ↘ Spec (.of k) := by
     rw [reassoc_of% hr, blowupIso_hom_blowupToBase_assoc, he]

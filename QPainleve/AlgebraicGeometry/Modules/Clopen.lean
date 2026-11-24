@@ -35,7 +35,20 @@ theorem exists_iso_of_pairwise_disjoint_openCover
   let b (i : ι) := (r i).app M ≪≫ a i ≪≫ ((r i).app N).symm
   let m := clopenCoverProductIso U hU hd M
   let n := clopenCoverProductIso U hU hd N
-  let p := Pi.mapIso fun i ↦ (pushforward (U i).ι).mapIso (b i)
+  let F (i : ι) := (restrictFunctor (U i).ι).obj M
+  let G (i : ι) := (restrictFunctor (U i).ι).obj N
+  let c (i : ι) := (pushforward (U i).ι).mapIso (b i)
+  let p : disjointGlue U F ≅ disjointGlue U G :=
+    { hom := disjointGlue.lift U G fun i ↦ disjointGlue.π U F i ≫ (c i).hom
+      inv := disjointGlue.lift U F fun i ↦ disjointGlue.π U G i ≫ (c i).inv
+      hom_inv_id := by
+        apply disjointGlue.hom_ext
+        intro i
+        simp [Category.assoc]
+      inv_hom_id := by
+        apply disjointGlue.hom_ext
+        intro i
+        simp [Category.assoc] }
   let e := m ≪≫ p ≪≫ n.symm
   refine ⟨e, fun i ↦ ?_⟩
   have h : (restrictFunctor (U i).ι).map e.hom = (b i).hom := by
@@ -45,8 +58,8 @@ theorem exists_iso_of_pairwise_disjoint_openCover
     simp only [Functor.id_map, Functor.comp_map] at hn
     rw [Adjunction.homEquiv_unit, Adjunction.homEquiv_unit, ← hn]
     rw [← clopenCoverProductIso_hom_π U hU hd N i]
-    simp only [e, m, n, p, Iso.trans_hom, Iso.symm_hom, Category.assoc,
-      Iso.inv_hom_id_assoc, Pi.mapIso_hom_π, Functor.mapIso_hom]
+    simp only [e, m, n, p, c, F, G, Iso.trans_hom, Iso.symm_hom, Category.assoc,
+      Iso.inv_hom_id_assoc, disjointGlue.lift_π, Functor.mapIso_hom]
     exact (reassoc_of% (clopenCoverProductIso_hom_π U hU hd M i)) _
   apply (cancel_epi ((r i).hom.app M)).mp
   rw [← (r i).hom.naturality, h]

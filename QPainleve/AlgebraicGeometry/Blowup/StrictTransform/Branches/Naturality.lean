@@ -75,12 +75,12 @@ theorem strictTransformBranchMap_comp_blowupIso :
     letI := hnodal.syntomic
     letI := hnodal'.syntomic
     strictTransformBranchMap i hnodal hx ≫ (P).blowupMap i ≫
-        ((P').blowupIso g (comap_nodeIdeal_eq_of_iso i i' e g h hxx')).hom =
+        (blowupIso g (comap_nodeIdeal_eq_of_iso i i' e g h hxx').symm).hom =
       (e.branchSchemeIso (R := k)).hom ≫ strictTransformBranchMap i' hnodal' hx' ≫
         (P').blowupMap i' := by
   have := hnodal.syntomic
   have := hnodal'.syntomic
-  let E := ((P').blowupIso g (comap_nodeIdeal_eq_of_iso i i' e g h hxx')).hom
+  let E := (blowupIso g (comap_nodeIdeal_eq_of_iso i i' e g h hxx').symm).hom
   let N := normalizationToStrictTransform i hnodal hx
   let N' := normalizationToStrictTransform i' hnodal' hx'
   let ν := (D.singularLocus k).blowupToBase
@@ -112,7 +112,7 @@ variable (d : D ≅ D) [d.hom.IsOver (Spec (.of k))] (f : Y ≅ Y)
 local notation "nodeMap" =>
   Scheme.branchSchemeToSingularLocus k D ≫ IdealSheafData.subschemeι (D.singularLocus k)
 local notation "liftHom" =>
-  Iso.hom (IdealSheafData.blowupIso (P) f (comap_nodeIdeal_eq_of_iso i i d f hd hfix))
+  Iso.hom (blowupIso f (Eq.symm (comap_nodeIdeal_eq_of_iso i i d f hd hfix)))
 local notation "branchHom" => Iso.hom (d.branchSchemeIso (R := k))
 
 include hx in

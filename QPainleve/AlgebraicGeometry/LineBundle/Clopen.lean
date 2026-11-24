@@ -6,20 +6,19 @@ Authors: The QPainleve contributors
 module
 
 public import TauCeti.AlgebraicGeometry.LineBundle.Functoriality
-import TauCeti.AlgebraicGeometry.Modules.Clopen
-import TauCeti.AlgebraicGeometry.Modules.Products
+import QPainleve.AlgebraicGeometry.Modules.Clopen
 
 /-!
 # Line bundle classes on disjoint open covers
 
 Restriction to a disjoint open cover detects equality of line bundle classes.
-Tau Ceti's `Scheme.Modules.clopenCoverProductIso` identifies each sheaf of modules
-with the product of the pushforwards of its restrictions.
+Isomorphisms of the restricted modules extend to a global isomorphism by
+`Scheme.Modules.exists_iso_of_pairwise_disjoint_openCover`.
 -/
 
 public section
 
-open AlgebraicGeometry CategoryTheory Limits
+open AlgebraicGeometry CategoryTheory
 open scoped Function
 
 namespace TauCeti.AlgebraicGeometry.LineBundleClass
@@ -34,15 +33,13 @@ theorem eq_of_pullback_eq_of_clopenCover {X : Scheme.{u}} {ι : Type u} {U : ι 
   obtain ⟨L, rfl⟩ := mk_surjective a
   obtain ⟨M, rfl⟩ := mk_surjective b
   have hIso (i : ι) : Nonempty
-      ((Scheme.Modules.restrictFunctor (U i).ι).obj L.obj ≅
-        (Scheme.Modules.restrictFunctor (U i).ι).obj M.obj) := by
+      ((_root_.AlgebraicGeometry.Scheme.Modules.pullback (U i).ι).obj L.obj ≅
+        (_root_.AlgebraicGeometry.Scheme.Modules.pullback (U i).ι).obj M.obj) := by
     have hi := h i
-    rw [pullback_mk, pullback_mk, mk_eq_mk_iff] at hi
-    obtain ⟨e⟩ := hi
-    let r := Scheme.Modules.restrictFunctorIsoPullback (U i).ι
-    exact ⟨r.app L.obj ≪≫ e ≪≫ (r.app M.obj).symm⟩
-  exact mk_eq_mk_iff.mpr ⟨Scheme.Modules.clopenCoverProductIso U hcover hdisj L.obj ≪≫
-    Pi.mapIso (fun i ↦ (Scheme.Modules.pushforward (U i).ι).mapIso (hIso i).some) ≪≫
-    (Scheme.Modules.clopenCoverProductIso U hcover hdisj M.obj).symm⟩
+    simpa only [pullback_mk, mk_eq_mk_iff, InvertibleSheaf.pullback_obj_obj] using hi
+  obtain ⟨e, -⟩ :=
+    _root_.AlgebraicGeometry.Scheme.Modules.exists_iso_of_pairwise_disjoint_openCover U hcover
+      hdisj (fun i ↦ (hIso i).some)
+  exact mk_eq_mk_iff.mpr ⟨e⟩
 
 end TauCeti.AlgebraicGeometry.LineBundleClass
