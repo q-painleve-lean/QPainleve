@@ -203,7 +203,8 @@ regular projections on the specified resolution, transported by isomorphisms.
 
 For original fiber and section coefficients β and a in this frame, and base
 orders m and m' at the two points, the final coefficients are a and β + a - m - m'.
-The second final coefficient is positive and the Sarkisov bidegree decreases.
+The second final coefficient is positive and strictly less than β, so the
+Sarkisov bidegree decreases.
 The pole factorization is preserved along the common toric blowup, its contraction,
 the mutation and the final ruling exchange. On the final point tower the pole ideal
 is pulled back along the inverse of the composite resolving isomorphism.
@@ -267,6 +268,7 @@ theorem exists_quadric_resolution_of_corner_and_smooth_high_centers
           ((Fin.addCases (fun _ : Fin 1 ↦ -a - x.2 j) (x.2 ∘ j.succAbove) :
             Fin (1 + (n + 1)) → ℤ) ∘ k.succAbove) ∧
         0 < (C[b',0,hΘ,s',hs']).repr z.1 1 ∧
+        (C[b',0,hΘ,s',hs']).repr z.1 1 < β ∧
         hirzebruchSarkisovBidegree ((C[b',0,hΘ,s',hs']).repr z.1 1).toNat (∑ k, -z.2 k).toNat <
           hirzebruchSarkisovBidegree β.toNat (∑ k, m k).toNat ∧
         letI : SmoothOfRelativeDimension 2 (X[Φ] ↘ S) := by
@@ -355,7 +357,7 @@ theorem exists_quadric_resolution_of_corner_and_smooth_high_centers
   have hz₁' : (C[b',0,hΘ,s',hs']).repr z.1 1 = β + a - m j - m l := by
     simpa only [z, k₁, τq, R, ← pullback_comp, Category.assoc, Fan.algebraicRealization_over,
       ha, hm, m, sub_neg_eq_add, add_comm a β] using hz₁
-  refine ⟨hz₀', hz₁', ?_, hz₁' ▸ hlt.1, ?_, ?_⟩
+  refine ⟨hz₀', hz₁', ?_, hz₁' ▸ hlt.1, hz₁' ▸ hlt.2, ?_, ?_⟩
   · funext i
     refine Fin.addCases (fun f ↦ ?_) (fun f ↦ ?_) i
     · rw [Subsingleton.elim f (0 : Fin 1), Fin.addCases_left]
