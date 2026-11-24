@@ -7,19 +7,25 @@ module
 
 public import QPainleve.SignedClusterModularGroup.Realization.Mutation.Complete
 public import QPainleve.SignedClusterModularGroup.Realization.Permutation.Contracted
+public import QPainleve.SignedClusterModularGroup.Realization.Presentation
 public import QPainleve.SignedClusterModularGroup.Realization.Word
 
 /-!
 # Iterating marked toric presentations along cluster words
 
-An inversion-free word acts on a marked family with ordered nodal contractions.
+A signed cluster word acts on a marked family with ordered nodal contractions.
 At each prefix, the transported presentation is valid at every center reached
 by that prefix. Mutation can refine the fan before transporting the presentation,
-and a permutation reorders the internal centers in the same fan. The realization
-on the entire simultaneous noncollision open compares the marked Picard pullback
-and the action on the numbered branches. The underlying elementary transformation
+a permutation reorders the internal centers in the same fan, and inversion reverses
+the frame and boundary numbering. The realization on the entire simultaneous
+noncollision open compares the marked Picard pullback and the action on the
+numbered branches. The underlying elementary transformation
 is the construction of Gross, Hacking and Keel in
 [*Birational geometry of cluster algebras*, §3.1](https://arxiv.org/html/1309.2573v2#S3.SS1).
+The signed inversion is the generator of Bershtein, Gavrylenko and Marshakov,
+[*Cluster integrable systems, q-Painlevé equations and their quantization*, §3.1][BGM].
+
+[BGM]: https://arxiv.org/abs/1711.02063
 -/
 
 public noncomputable section
@@ -36,88 +42,18 @@ open GeometricRealization (Point CenterPoint)
 
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V] {i : N →+ V}
 
-local notation "S" => Spec (CommRingCat.of ℂ)
-local notation "Dtor[" Φ "," h "]" => Scheme.IdealSheafData.subscheme (Fan.boundaryIdeal Φ h)
-
-variable (i) in
-/-- The data common to the fibers of an ordered toric presentation on a complete
-regular fan, with positive cyclic numbering and a fixed auxiliary Picard inclusion. -/
-structure CompleteToricPresentation (b : Basis (Fin 2) ℤ N) (r : ℕ)
-    (L : Type) [AddCommGroup L] (γ : Type) where
-  /-- The complete regular fan of the toric surface. -/
-  fan : Fan i
-  /-- Completeness of the toric surface fan. -/
-  complete : fan.IsComplete
-  /-- Regularity of the fan. -/
-  regular : fan.IsRegular
-  /-- The ray of each internal center, in label order. -/
-  rays : Fin r → fan.Ray
-  /-- The toric boundary is a prestable curve. -/
-  [prestable : PrestableFamily (Dtor[fan,complete.nonempty_cones] ↘ S)]
-  /-- The number of components of the toric boundary. -/
-  length : ℕ
-  /-- The toric boundary has at least one component. -/
-  [neZero : NeZero length]
-  /-- The marked smooth points used in the boundary numbering. -/
-  marks : γ → (Dtor[fan,complete.nonempty_cones] ↘ S).smoothLocus
-  /-- The numbering of the components, nodes and branches of the toric boundary. -/
-  cycle : Scheme.NodalCycleNumbering marks length
-  /-- The ray indexing the first component of the contracted boundary. -/
-  origin : ZMod length
-  /-- The fixed pullback of the Picard marking in auxiliary toric coordinates. -/
-  inclusion : L →ₗ[ℤ] Additive (LineBundleClass fan.algebraicRealization) × (Fin r → ℤ)
-  /-- The rays in the order of the toric boundary numbering. -/
-  rayOrder : ZMod length ≃ fan.Ray
-  /-- The ray order agrees with the numbering of the normalized curve. -/
-  component_eq (j : ZMod length) :
-    letI := complete.nonempty_cones
-    cycle.component j = fan.boundaryNormalizationComponentEquiv regular (rayOrder j)
-  /-- Consecutive rays in the positive order span regular two-dimensional cones. -/
-  positive (j : ZMod length) :
-    b.detDualEquiv (rayOrder j).primitiveGenerator (rayOrder (j + 1)).primitiveGenerator = 1 ∧
-      ∃ σ : fan.cones, (rayOrder j).toCone ≤ σ ∧ (rayOrder (j + 1)).toCone ≤ σ
-
 variable {b : Basis (Fin 2) ℤ N} {r n : ℕ} [NeZero n] {L : Type}
   [AddCommGroup L] {H : LinearMap.BilinForm ℤ L} {γ : Type}
 
 local notation "A" => (Fin r → ℤ)
 local notation "Centers" => Over.mk (structureMap ℂ A)
 local notation "XTor" => scheme ℂ (Fin r →₀ ℤ)
-local notation "χ(" c ")" => pointsEquiv ℂ A
-  (Subtype.mk (CommaMorphism.left (c : Point Centers)) (Over.w (c : Point Centers)))
-local notation "centers(" a ")" => fun j : Fin r ↦ (a) (ofAdd (Pi.single j 1))
-local notation "Dₘ(" M ")" => Scheme.Hom.ker (Over.Hom.left (Arrow.hom (MarkedSurface.pair M)))
 local notation "src(" C "," c ")" =>
   c ≫ Scheme.PartialMap.domainSource (X := Centers) (Y := Centers) C
 local notation "dst(" C "," c ")" =>
   c ≫ Scheme.PartialMap.domainTarget (X := Centers) (Y := Centers) C
 
 attribute [local instance] hasUniqueDiv_of_free_int
-
-/-- A contracted fiber whose specified projection is realized by a nodal blowup tower. -/
-def CompleteToricPresentation.HasNodalModel (Q : CompleteToricPresentation i b r L γ)
-    (c : Point Centers) (M : MarkedSurface ℂ n H XTor) : Prop :=
-  letI := Q.complete.nonempty_cones
-  letI := Q.prestable
-  letI := Q.neZero
-  ∃ (p : ContractedToricFiber b Q.rays Q.regular Q.cycle Q.origin Q.inclusion χ(c) M)
-    (Y : Scheme) (d : ℕ) (W : BlowupTower M.surface d Y)
-    (e : Y ≅ (internalBlowupTower b Q.rays centers(χ(c))).1),
-    IsNodalBoundaryTower Dₘ(M) (M.surface ↘ S) (𝟙 _) W ∧ p.projection = e.inv ≫ W.toBase
-
-/-- A nodal model exposes the ordered toric contraction and a nodal tower
-whose projection agrees with that contraction. -/
-theorem CompleteToricPresentation.hasNodalModel_iff (Q : CompleteToricPresentation i b r L γ)
-    (c : Point Centers) (M : MarkedSurface ℂ n H XTor) :
-    letI := Q.complete.nonempty_cones
-    letI := Q.prestable
-    letI := Q.neZero
-    Q.HasNodalModel c M ↔
-      ∃ (p : ContractedToricFiber b Q.rays Q.regular Q.cycle Q.origin Q.inclusion χ(c) M)
-        (Y : Scheme) (d : ℕ) (W : BlowupTower M.surface d Y)
-        (e : Y ≅ (internalBlowupTower b Q.rays centers(χ(c))).1),
-        IsNodalBoundaryTower Dₘ(M) (M.surface ↘ S) (𝟙 _) W ∧ p.projection = e.inv ≫ W.toBase :=
-  (Iff.rfl)
 
 namespace GeometricRealization
 
@@ -186,14 +122,19 @@ private theorem hasNodalModel_appended (Q : CompleteToricPresentation i b r L γ
     models (c ≫ (Cw[w,P]).compDomainRight (X := Centers) (Y := Centers) (Z := Centers)
       (Cstep[w,s,P]))
 
-private abbrev StepResult (w : Word B E) (s : E ⟶ D) (P : ChargeSeed B N)
+local notation "frameSwap" => (Equiv.swap 0 1 : Equiv.Perm (Fin 2))
+local notation "reflection" => (DihedralGroup.sr (0 : ZMod n))
+
+private abbrev StepResult (b : Basis (Fin 2) ℤ N)
+    (w : Word B E) (s : E ⟶ D) (P : ChargeSeed B N)
     (M : Point Centers → MarkedSurface ℂ n H XTor) :=
   ∃ (γ' : Type) (Q' : CompleteToricPresentation i b r L γ')
     (M' : Point Centers → MarkedSurface ℂ n H XTor)
     (R : GeometricRealization (T₀ := Centers) (T₁ := Centers) M M' Cstep[w,s,P]
       (s.toPath.xRationalMap ℂ)),
+    ((w.cons s).chargeTarget P).form = b.detDualEquiv.toLinearMap ∧
     ((w.cons s).chargeTarget P).charge = rayChargeMap Q'.rays ∧
-    R.picard = .refl H ∧ R.boundaryAction = 1 ∧
+    R.picard = .refl H ∧ R.boundaryAction = reflection ^ (Step.generator s).inversionCount ∧
     ∀ c : CenterPoint (U := Centers) (V := Centers) Cstep[w,s,P],
       Q'.HasNodalModel (dst(Cstep[w,s,P],c)) (M' (dst(Cstep[w,s,P],c)))
 
@@ -205,7 +146,7 @@ private theorem exists_mutation_step {r : ℕ} {B E : SkewExchangeMatrix (Fin (r
     (M : Point (Over.mk (structureMap ℂ (Fin (r + 1) → ℤ))) →
       MarkedSurface ℂ n H (scheme ℂ (Fin (r + 1) →₀ ℤ)))
     (models : NodalModelsOn Q M Cw[w,P]) :
-    StepResult (b := b) (i := i) w ((Generator.mutate k).toStep E) P M := by
+    StepResult (i := i) b w ((Generator.mutate k).toStep E) P M := by
   let s := (Generator.mutate k).toStep E
   let U := (w.centerStepPartialMap ℂ s P).domain
   have hU := (w.centerStepPartialMap ℂ s P).dense_domain
@@ -222,21 +163,19 @@ private theorem exists_mutation_step {r : ℕ} {B E : SkewExchangeMatrix (Fin (r
       hcharge U hU hle M Q.rayOrder Q.complete Q.component_eq Q.positive
       (T := Q.cycle) (o := Q.origin) (J := Q.inclusion) (by
         rw [← hC]
-        exact hasNodalModel_stepSource Q models)
+        intro c
+        exact (Q.hasNodalModel_iff _ _).mp (hasNodalModel_stepSource Q models c))
   let t := (h.liftRay ∘ Q.rays) k
-  let Ψ := Ω.mutationFan b t.primitiveGenerator_ne_zero t.hull_primitiveGenerator_mem hopp
-  let hcΨ := (Ω.isComplete_mutationFan_iff b t.primitiveGenerator_ne_zero
-    t.hull_primitiveGenerator_mem hopp).mpr hcΩ
-  let hΨ := (Ω.isRegular_mutationFan_iff b t.primitiveGenerator_ne_zero
-    t.hull_primitiveGenerator_mem hopp).mpr hΩ
   let J' := (mutationPicardEquiv b (h.liftRay ∘ Q.rays) k hopp hΩ).symm.toLinearMap.comp
     ((LinearMap.prodMap (AddMonoidHom.toIntLinearMap (MonoidHom.toAdditive
       (LineBundleClass.pullbackHom (FanHom.algebraicMap (Fan.IsSubdivision.toFanHom h)))))
       LinearMap.id).comp Q.inclusion)
   let Q' : CompleteToricPresentation i b (r + 1) L Empty :=
-    { fan := Ψ
-      complete := hcΨ
-      regular := hΨ
+    { fan := Ω.mutationFan b t.primitiveGenerator_ne_zero t.hull_primitiveGenerator_mem hopp
+      complete := (Ω.isComplete_mutationFan_iff b t.primitiveGenerator_ne_zero
+        t.hull_primitiveGenerator_mem hopp).mpr hcΩ
+      regular := (Ω.isRegular_mutationFan_iff b t.primitiveGenerator_ne_zero
+        t.hull_primitiveGenerator_mem hopp).mpr hΩ
       rays := Ω.mutationFanCenterRays b (h.liftRay ∘ Q.rays) k hopp
       prestable := hpre
       length := l'
@@ -248,20 +187,24 @@ private theorem exists_mutation_step {r : ℕ} {B E : SkewExchangeMatrix (Fin (r
       rayOrder := v
       component_eq := hv
       positive := hpos }
-  refine ⟨Empty, Q', M', R.congrMaps hC.symm rfl, ?_, (congrMaps_picard _ _ _).trans hpic,
-    (congrMaps_boundaryAction _ _ _).trans hact, ?_⟩
+  refine ⟨Empty, Q', M', R.congrMaps hC.symm rfl, ?_, ?_,
+    (congrMaps_picard _ _ _).trans hpic, ?_, ?_⟩
+  · simpa only [Path.chargeTarget_cons, Step.chargeTarget_mutate_form] using hform
   · simpa only [s, Path.chargeTarget_cons, Path.chargeTarget_nil, Hom.toPath, Q'] using hcharge'
+  · simpa only [congrMaps_boundaryAction, Generator.toStep_generator,
+      Generator.inversionCount_mutate, pow_zero] using hact
   · refine (nodalModelsOn_congr Q' M' hC).mpr ?_
     intro c
     obtain ⟨_, _, _, p, Y, d, W, e, hW, hp⟩ := hmodels c
-    exact ⟨p, Y, d, W, e, hW, hp⟩
+    exact (Q'.hasNodalModel_iff _ _).mpr ⟨p, Y, d, W, e, hW, hp⟩
 
 private theorem exists_permutation_step (w : Word B E) (P : ChargeSeed B N)
     (σ : Equiv.Perm (Fin r)) (Q : CompleteToricPresentation i b r L γ)
+    (hform : (w.chargeTarget P).form = b.detDualEquiv.toLinearMap)
     (hcharge : (w.chargeTarget P).charge = rayChargeMap Q.rays)
     (M : Point Centers → MarkedSurface ℂ n H XTor)
     (models : NodalModelsOn Q M Cw[w,P]) :
-    StepResult (b := b) (i := i) w ((Generator.permute σ).toStep E) P M := by
+    StepResult (i := i) b w ((Generator.permute σ).toStep E) P M := by
   let s := (Generator.permute σ).toStep E
   let U := (w.centerStepPartialMap ℂ s P).domain
   have hU := (w.centerStepPartialMap ℂ s P).dense_domain
@@ -276,7 +219,8 @@ private theorem exists_permutation_step (w : Word B E) (P : ChargeSeed B N)
     exists_permute_contracted σ (w.chargeTarget P) M hcharge hU hle
       (b := b) (hΦ := Q.regular) (T := Q.cycle) (o := Q.origin) (J := Q.inclusion) (by
         rw [← hC]
-        exact hasNodalModel_stepSource Q models)
+        intro c
+        exact (Q.hasNodalModel_iff _ _).mp (hasNodalModel_stepSource Q models c))
   let Q' : CompleteToricPresentation i b r L γ := { Q with
     rays := Q.rays ∘ σ
     inclusion := (LinearMap.prodMap LinearMap.id
@@ -284,8 +228,9 @@ private theorem exists_permutation_step (w : Word B E) (P : ChargeSeed B N)
   let M' : Point Centers → MarkedSurface ℂ n H XTor :=
     fun y ↦ (M (y ≫ (s.toPath.centerIsoOver ℂ).inv)).compEvaluation
       (Spec.map (CommRingCat.ofHom (TauCeti.LaurentRing.rename (R := ℂ) σ.toFun).toRingHom))
-  refine ⟨γ, Q', M', R.congrMaps hC.symm rfl, ?_, (congrMaps_picard _ _ _).trans hpic,
-    (congrMaps_boundaryAction _ _ _).trans hact, ?_⟩
+  refine ⟨γ, Q', M', R.congrMaps hC.symm rfl, ?_, ?_,
+    (congrMaps_picard _ _ _).trans hpic, ?_, ?_⟩
+  · simpa only [Path.chargeTarget_cons, Step.chargeTarget_permute_form] using hform
   · rw [Path.chargeTarget_cons, Step.chargeTarget_permute_charge, hcharge]
     apply (Pi.basisFun ℤ (Fin r)).ext
     intro j
@@ -295,15 +240,70 @@ private theorem exists_permutation_step (w : Word B E) (P : ChargeSeed B N)
         Equiv.symm_symm] using congrFun (Pi.single_comp_equiv σ.symm j (1 : ℤ)) a
     simp only [Pi.basisFun_apply, LinearMap.comp_apply, LinearEquiv.coe_coe, hj,
       rayChargeMap_single, Q', Function.comp_apply]
-  · exact (nodalModelsOn_congr Q' M' hC).mpr (fun c ↦ hmodels c)
+  · simpa only [congrMaps_boundaryAction, Generator.toStep_generator,
+      Generator.inversionCount_permute, pow_zero] using hact
+  · exact (nodalModelsOn_congr Q' M' hC).mpr fun c ↦
+      (Q'.hasNodalModel_iff _ _).mpr (hmodels c)
 
-private theorem exists_step (w : Word B E) (s : E ⟶ D) (P : ChargeSeed B N)
-    (hs : (Step.generator s).inversionCount = 0) (Q : CompleteToricPresentation i b r L γ)
+private theorem exists_inversion_step (w : Word B E) (P : ChargeSeed B N)
+    (Q : CompleteToricPresentation i b r L γ)
     (hform : (w.chargeTarget P).form = b.detDualEquiv.toLinearMap)
     (hcharge : (w.chargeTarget P).charge = rayChargeMap Q.rays)
     (M : Point Centers → MarkedSurface ℂ n H XTor)
     (models : NodalModelsOn Q M Cw[w,P]) :
-    StepResult (b := b) (i := i) w s P M := by
+    StepResult (i := i) (b.reindex frameSwap) w (Generator.invert.toStep E) P M := by
+  let s := Generator.invert.toStep E
+  let C := Cstep[w,s,P]
+  let e := s.toPath.centerIsoOver ℂ
+  let M' : Point Centers → MarkedSurface ℂ n H XTor := fun y ↦ (M (y ≫ e.inv)).invert
+  let C₀ := (s.toPath.centerIso ℂ).hom.toPartialMap
+  let : ((s.toPath.centerIso ℂ).hom.toPartialMap).IsOver (Centers).hom (Centers).hom :=
+    Hom.isOver_toPartialMap (s.toPath.centerIso_hom_structureMap ℂ)
+  let hle : C.domain ≤ C₀.domain := le_top
+  let R := (invert E M).restrict C.domain C.dense_domain hle
+  have hC : C₀.restrict C.domain C.dense_domain hle = C := by
+    let U := s.toPath.centerOpen ℂ (w.chargeTarget P)
+    have hU := s.toPath.dense_centerOpen (K := ℂ) (w.chargeTarget P)
+    have hstep : C.domain ≤ (s.toPath.centerPartialMap ℂ (w.chargeTarget P)).domain := by
+      dsimp only [C]
+      rw [Path.centerStepPartialMap_domain]
+      exact inf_le_right
+    have collapse (g : (scheme ℂ A).PartialMap (scheme ℂ A)) (hg : C.domain ≤ g.domain)
+        (he : g = C₀.restrict U hU le_top) :
+        g.restrict C.domain C.dense_domain hg = C₀.restrict C.domain C.dense_domain hle := by
+      subst g
+      exact PartialMap.restrict_restrict C₀ U hU le_top C.domain C.dense_domain hg
+    exact (collapse _ hstep (Path.centerPartialMap_eq_restrict s.toPath _)).symm.trans
+      (Path.centerStepPartialMap_eq_restrict w s P).symm
+  let : IsDominant (C₀.restrict C.domain C.dense_domain hle).hom := hC.symm ▸
+    inferInstanceAs (IsDominant (Cstep[w,s,P]).hom)
+  refine ⟨γ, Q.invert, M', R.congrMaps hC rfl, ?_, ?_, ?_, ?_, ?_⟩
+  · rw [Path.chargeTarget_cons, Step.chargeTarget_invert_form, hform]
+    exact LinearMap.ext fun x ↦ (b.detDualEquiv_reindex_swap x).symm
+  · rw [Path.chargeTarget_cons, Step.chargeTarget_invert_charge, hcharge]
+    exact congrArg (rayChargeMap (Φ := Q.fan)) Q.invert_rays.symm
+  · simp only [R, congrMaps_picard, restrict_picard, invert_picard]
+  · simp only [R, congrMaps_boundaryAction, restrict_boundaryAction, invert_boundaryAction,
+      Generator.toStep_generator, Generator.inversionCount_invert, pow_one]
+  · intro c
+    have hcenter : dst(C,c) ≫ e.inv = src(C,c) := by
+      rw [Category.assoc]
+      congr 1
+      apply Over.OverMorphism.ext
+      rw [Over.comp_left, domainTarget_left, domainSource_left, Path.centerStepPartialMap_hom]
+      rw [← Path.centerIsoOver_hom_left, Category.assoc, ← Over.comp_left, Iso.hom_inv_id,
+        Over.id_left]
+      exact Category.comp_id _
+    exact Q.hasNodalModel_invert E M (dst(C,c))
+      (hcenter.symm ▸ hasNodalModel_stepSource Q models c)
+
+private theorem exists_step (w : Word B E) (s : E ⟶ D) (P : ChargeSeed B N)
+    (Q : CompleteToricPresentation i b r L γ)
+    (hform : (w.chargeTarget P).form = b.detDualEquiv.toLinearMap)
+    (hcharge : (w.chargeTarget P).charge = rayChargeMap Q.rays)
+    (M : Point Centers → MarkedSurface ℂ n H XTor)
+    (models : NodalModelsOn Q M Cw[w,P]) :
+    StepResult (i := i) (b.reindex (frameSwap ^ (Step.generator s).inversionCount)) w s P M := by
   obtain ⟨g, rfl⟩ := s
   have he : (⟨g, rfl⟩ : E ⟶ g.target E) = g.toStep E :=
     Step.ext (Generator.toStep_generator g E).symm
@@ -312,9 +312,81 @@ private theorem exists_step (w : Word B E) (s : E ⟶ D) (P : ChargeSeed B N)
   | mutate k =>
     cases r with
     | zero => exact Fin.elim0 k
-    | succ r => exact exists_mutation_step w P k Q hform hcharge M models
-  | permute σ => exact exists_permutation_step w P σ Q hcharge M models
-  | invert => simp at hs
+    | succ r =>
+      simpa only [Generator.toStep_generator, Generator.inversionCount_mutate, pow_zero,
+        Equiv.Perm.one_def, Basis.reindex_refl] using
+        exists_mutation_step w P k Q hform hcharge M models
+  | permute σ =>
+    simpa only [Generator.toStep_generator, Generator.inversionCount_permute, pow_zero,
+      Equiv.Perm.one_def, Basis.reindex_refl] using
+      exists_permutation_step w P σ Q hform hcharge M models
+  | invert =>
+    simpa only [Generator.toStep_generator, Generator.inversionCount_invert, pow_one] using
+      exists_inversion_step w P Q hform hcharge M models
+
+/-- A signed word starting at a complete ordered toric presentation is realized on
+its entire simultaneous noncollision open. The terminal presentation has the transported
+charges in the frame obtained by swapping the two basis vectors at each inversion, and
+its ordered nodal model exists at every reached center. In the transported markings the
+Picard pullback is the identity, and each inversion reverses the numbered branches
+around component zero. -/
+theorem exists_realize_signed_word (w : Word B E) (P : ChargeSeed B N)
+    (Q : CompleteToricPresentation i b r L γ)
+    (hform : P.form = b.detDualEquiv.toLinearMap) (hcharge : P.charge = rayChargeMap Q.rays)
+    (M : Point Centers → MarkedSurface ℂ n H XTor)
+    (models : ∀ c : CenterPoint (U := Centers) (V := Centers)
+        ((Path.nil : Word B B).centerPartialMap ℂ P),
+      let a := c ≫ ((Path.nil : Word B B).centerPartialMap ℂ P).domainTarget
+        (X := Centers) (Y := Centers)
+      Q.HasNodalModel a (M a)) :
+    let b' := b.reindex (frameSwap ^ w.inversionCount)
+    ∃ (γ' : Type) (Q' : CompleteToricPresentation i b' r L γ')
+      (M' : Point Centers → MarkedSurface ℂ n H XTor)
+      (R : GeometricRealization (T₀ := Centers) (T₁ := Centers) M M' Cw[w,P] (w.xRationalMap ℂ)),
+      (w.chargeTarget P).form = b'.detDualEquiv.toLinearMap ∧
+      (w.chargeTarget P).charge = rayChargeMap Q'.rays ∧
+      R.picard = .refl H ∧ R.boundaryAction = reflection ^ w.inversionCount ∧
+      ∀ c : CenterPoint (U := Centers) (V := Centers) Cw[w,P],
+        Q'.HasNodalModel (dst(Cw[w,P],c)) (M' (dst(Cw[w,P],c))) := by
+  induction w with
+  | nil =>
+    let step : WordStepRealizations (L := fun _ ↦ AddCommGrpCat.of L)
+        (form := fun _ ↦ H) P (fun _ ↦ M) (Path.nil : Word B B) :=
+      fun {D D'} ↦ WordStepRealizations.nil (k := ℂ) (n := n)
+        (L := fun _ ↦ AddCommGrpCat.of L) (form := fun _ ↦ H) P (fun _ ↦ M) (D := D) (D' := D')
+    let R := ofWord P Path.nil (@step)
+    have hb : b.reindex (frameSwap ^ (Path.nil : Word B B).inversionCount) = b := by
+      simp only [Path.inversionCount_nil, pow_zero, Equiv.Perm.one_def, Basis.reindex_refl]
+    dsimp only
+    rw [hb]
+    exact ⟨γ, Q, M, R, by simpa only [Path.chargeTarget_nil] using hform,
+      by simpa only [Path.chargeTarget_nil] using hcharge, ofWord_nil_picard P (@step),
+      by simpa only [Path.inversionCount_nil, pow_zero] using ofWord_nil_boundaryAction P (@step),
+      models⟩
+  | @cons E D w s ih =>
+    obtain ⟨γ₀, Q₀, M₀, R₀, hform₀, hcharge₀, hpic₀, hact₀, hmodels₀⟩ := ih
+    obtain ⟨γ', Q', M', R', hform', hcharge', hpic', hact', hmodels'⟩ :=
+      exists_step w s P Q₀ hform₀ hcharge₀ M₀ hmodels₀
+    let C := (w.centerPartialMap ℂ P).comp (w.centerStepPartialMap ℂ s P)
+    have hC : (w.cons s).centerPartialMap ℂ P = C := Path.centerPartialMap_cons w s P
+    let : C.IsOver (Centers).hom (Centers).hom := hC ▸ inferInstanceAs
+      (((w.cons s).centerPartialMap ℂ P).IsOver (Centers).hom (Centers).hom)
+    let R := (R₀.comp R').congrMaps hC.symm
+      (by rw [← Path.xRationalMap_comp, Path.comp_toPath_eq_cons])
+    have hb : b.reindex (frameSwap ^ (w.cons s).inversionCount) =
+        (b.reindex (frameSwap ^ w.inversionCount)).reindex
+          (frameSwap ^ (Step.generator s).inversionCount) := by
+      rw [Path.inversionCount_cons, Nat.add_comm w.inversionCount, pow_add, Equiv.Perm.mul_def]
+      ext j
+      simp only [Basis.reindex_apply, Equiv.symm_trans_apply]
+    dsimp only
+    rw [hb]
+    refine ⟨γ', Q', M', R, hform', hcharge', ?_, ?_, hasNodalModel_appended Q' hmodels'⟩
+    · simp only [R, congrMaps_picard, comp_picard, hpic₀, hpic']
+      exact DFunLike.ext _ _ fun _ ↦ rfl
+    · simp only [R, congrMaps_boundaryAction, comp_boundaryAction, hact₀, hact',
+        Path.inversionCount_cons]
+      rw [Nat.add_comm w.inversionCount, pow_add]
 
 /-- Every inversion-free word starting at an ordered toric presentation on a
 complete regular fan has a geometric realization on its entire simultaneous
@@ -338,37 +410,12 @@ theorem exists_realize_inversion_free_word (w : Word B E) (P : ChargeSeed B N)
       R.picard = .refl H ∧ R.boundaryAction = 1 ∧
       ∀ c : CenterPoint (U := Centers) (V := Centers) Cw[w,P],
         Q'.HasNodalModel (dst(Cw[w,P],c)) (M' (dst(Cw[w,P],c))) := by
-  induction w with
-  | nil =>
-    let step : WordStepRealizations (L := fun _ ↦ AddCommGrpCat.of L)
-        (form := fun _ ↦ H) P (fun _ ↦ M) (Path.nil : Word B B) :=
-      fun {D D'} ↦ WordStepRealizations.nil (k := ℂ) (n := n)
-        (L := fun _ ↦ AddCommGrpCat.of L) (form := fun _ ↦ H) P (fun _ ↦ M) (D := D) (D' := D')
-    let R := ofWord P Path.nil (@step)
-    exact ⟨γ, Q, M, R, by simpa only [Path.chargeTarget_nil] using hform,
-      by simpa only [Path.chargeTarget_nil] using hcharge, ofWord_nil_picard P (@step),
-      ofWord_nil_boundaryAction P (@step), models⟩
-  | @cons E D w s ih =>
-    obtain ⟨hw, hs⟩ := Nat.add_eq_zero_iff.mp ((Path.inversionCount_cons w s).symm.trans hw)
-    obtain ⟨γ₀, Q₀, M₀, R₀, hform₀, hcharge₀, hpic₀, hact₀, hmodels₀⟩ := ih hw
-    obtain ⟨γ', Q', M', R', hcharge', hpic', hact', hmodels'⟩ :=
-      exists_step w s P hs Q₀ hform₀ hcharge₀ M₀ hmodels₀
-    let C := (w.centerPartialMap ℂ P).comp (w.centerStepPartialMap ℂ s P)
-    have hC : (w.cons s).centerPartialMap ℂ P = C := Path.centerPartialMap_cons w s P
-    let : C.IsOver (Centers).hom (Centers).hom := hC ▸ inferInstanceAs
-      (((w.cons s).centerPartialMap ℂ P).IsOver (Centers).hom (Centers).hom)
-    let R := (R₀.comp R').congrMaps hC.symm
-      (by rw [← Path.xRationalMap_comp, Path.comp_toPath_eq_cons])
-    have hform' : ((w.cons s).chargeTarget P).form = b.detDualEquiv.toLinearMap := by
-      obtain ⟨g, rfl⟩ := s
-      have he : (⟨g, rfl⟩ : E ⟶ g.target E) = g.toStep E :=
-        Step.ext (Generator.toStep_generator g E).symm
-      rw [he, Path.chargeTarget_cons]
-      cases g <;> simp_all
-    refine ⟨γ', Q', M', R, hform', hcharge', ?_, ?_, hasNodalModel_appended Q' hmodels'⟩
-    · simp only [R, congrMaps_picard, comp_picard, hpic₀, hpic']
-      exact DFunLike.ext _ _ fun _ ↦ rfl
-    · simp only [R, congrMaps_boundaryAction, comp_boundaryAction, hact₀, hact', mul_one]
+  have hb : b.reindex (frameSwap ^ w.inversionCount) = b := by
+    simp only [hw, pow_zero, Equiv.Perm.one_def, Basis.reindex_refl]
+  have h := exists_realize_signed_word w P Q hform hcharge M models
+  dsimp only at h
+  rw [hb] at h
+  simpa only [hw, pow_zero] using h
 
 end GeometricRealization
 
