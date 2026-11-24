@@ -5,7 +5,6 @@ Authors: The QPainleve contributors
 -/
 module
 
-public import QPainleve.AlgebraicGeometry.Chow.RationalSurface.BoundaryCharacter
 public import QPainleve.AlgebraicGeometry.Curves.Node.Period.Restriction
 
 import QPainleve.AlgebraicGeometry.Chow.Ample
