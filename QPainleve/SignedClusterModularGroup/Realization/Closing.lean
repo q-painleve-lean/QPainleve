@@ -8,8 +8,6 @@ module
 public import QPainleve.SignedClusterModularGroup.Realization.Endpoint.Basic
 public import QPainleve.SignedClusterModularGroup.Realization.Iteration
 
-import QPainleve.AlgebraicGeometry.Chow.Isomorphism
-import QPainleve.AlgebraicGeometry.IntersectionNumber.Nef.Pullback
 import QPainleve.SignedClusterModularGroup.Realization.BranchAction
 
 /-!
@@ -96,30 +94,6 @@ private theorem exists_comp_fiber_rotations
     exists_of_fiber_rotations (I.trans R.picard) d₀ d hd hcart₀ hcart₂ hmark₀ hmark₂ hf
   exact ⟨I, j, U, hpic, hact, hI, hpic.symm ▸ hj⟩
 
-private theorem exists_nef_square_zero_boundary_of_pairIso
-    {M : MarkedSurface ℂ n B₀ XTor} {M' : MarkedSurface ℂ n B₁ XTor}
-    (f : M.pair ≅ M'.pair) (h : D[M].IsEffectiveCartier)
-    (hnef : IsNef ℂ (M.surface ↘ S) classOf(h))
-    (hsq : Chow.classIntersectionNumber ℂ M.surface classOf(h) classOf(h) = 0) :
-    ∃ h' : D[M'].IsEffectiveCartier, IsNef ℂ (M'.surface ↘ S) classOf(h') ∧
-      Chow.classIntersectionNumber ℂ M'.surface classOf(h') classOf(h') = 0 := by
-  let e := MarkedSurface.surfaceIso f.symm
-  let : e.hom.IsOver S := inferInstanceAs ((MarkedSurface.surfaceIso f.symm).hom.IsOver S)
-  have hker : D[M].comap e.hom = D[M'] := by
-    have hb := congrArg Scheme.Hom.ker (MarkedSurface.boundaryIso_hom_comp f.symm)
-    rw [Scheme.Hom.ker_comp_of_isIso] at hb
-    rw [hb, Scheme.Hom.comap_ker_comp_of_isClosedImmersion]
-  have hc := h.comap e.hom
-  let h' : D[M'].IsEffectiveCartier := hker ▸ hc
-  have hclass : pullback e.hom classOf(h) = classOf(h') := by
-    rw [LineBundleClass.pullback_inv, h.pullback_mk_toInvertibleSheaf hc,
-      LineBundleClass.mk_toInvertibleSheaf_congr hc h' hker]
-  let : SmoothOfRelativeDimension 2 (M.surface ↘ S) := M.smooth
-  let : Smooth (M.surface ↘ S) := SmoothOfRelativeDimension.smooth 2 _
-  let : M.surface.IsProjectiveOver ℂ := M.projective
-  refine ⟨h', hclass ▸ hnef.pullback e.hom, ?_⟩
-  rw [← hclass, Chow.classIntersectionNumber_pullback_of_isIso, hsq]
-
 variable {N N' V V' : Type} [AddCommGroup N] [AddCommGroup N']
   [AddCommGroup V] [AddCommGroup V'] [Module ℝ V] [Module ℝ V']
   {i : N →+ V} {i' : N' →+ V'} {b : Basis (Fin 2) ℤ N} {b' : Basis (Fin 2) ℤ N'}
@@ -192,8 +166,8 @@ theorem exists_comp_marked_toric_endpoint_comparison
   refine exists_comp_fiber_rotations R hR d₀ d hd hcart₀ hcart₂ hmark₀ hmark₂ _ fun c ↦ ?_
   obtain ⟨p, _, _, _, u, hp, hpu⟩ := (Q.hasNodalModel_iff _ _).mp (hmodel₁ c)
   obtain ⟨q, _, _, _, v, hq, hqv⟩ := (Q'.hasNodalModel_iff _ _).mp (hmodel₂ c)
-  obtain ⟨hcart₁, hnef₁, hsq₁⟩ := exists_nef_square_zero_boundary_of_pairIso (R.fiber c).iso
-    (hcart₀ c) (hnef₀ c) (hsq₀ c)
+  obtain ⟨hcart₁, hnef₁, hsq₁⟩ := MarkedSurface.exists_nef_square_zero_boundary_of_pairIso
+    (R.fiber c).iso (hcart₀ c) (hnef₀ c) (hsq₀ c)
   obtain ⟨I, j, E, -, hI, -⟩ := p.exists_marked_toric_endpoint_comparison q e hΔQ hΔQ' hΔ
     (Equiv.refl _) (Function.comp_id _) (fun j ↦ hcharge j) hdet
     (fun j l hj hl ↦ (not_lt_of_gt hj hl).elim) hp hq u v hpu.symm hqv.symm
