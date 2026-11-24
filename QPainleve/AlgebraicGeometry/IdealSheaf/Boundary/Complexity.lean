@@ -47,11 +47,19 @@ theorem boundaryComplexity_radical (D : X.IdealSheafData) :
     D.radical.boundaryComplexity = D.boundaryComplexity :=
   boundaryComplexity_eq_of_support_eq (support_radical D)
 
+/-- A Picard equivalence and a bijection of boundary components preserve boundary complexity. -/
+theorem boundaryComplexity_eq_of_picardEquiv (D : X.IdealSheafData) {E : Y.IdealSheafData}
+    (e : Additive (LineBundleClass X) ≃ₗ[ℤ] Additive (LineBundleClass Y))
+    (σ : D.boundaryPrimes ≃ E.boundaryPrimes) :
+    D.boundaryComplexity = E.boundaryComplexity := by
+  rw [boundaryComplexity_def, boundaryComplexity_def, e.finrank_eq, Set.ncard_congr' σ]
+
 /-- Pullback along a scheme isomorphism preserves boundary complexity. -/
 @[simp]
 theorem boundaryComplexity_comap_iso (e : X ≅ Y) (D : Y.IdealSheafData) :
-    (D.comap e.hom).boundaryComplexity = D.boundaryComplexity := by
-  have h := (LineBundleClass.pullbackEquiv e).toAdditive.toIntLinearEquiv.finrank_eq
-  rw [boundaryComplexity_def, boundaryComplexity_def, ← h, ncard_boundaryPrimes_eq_of_iso]
+    (D.comap e.hom).boundaryComplexity = D.boundaryComplexity :=
+  (D.comap e.hom).boundaryComplexity_eq_of_picardEquiv
+    (LineBundleClass.pullbackEquiv e).toAdditive.toIntLinearEquiv.symm
+    (D.boundaryPrimesEquivOfIso e)
 
 end AlgebraicGeometry.Scheme.IdealSheafData
