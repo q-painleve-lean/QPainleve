@@ -10,6 +10,7 @@ public import TauCeti.AlgebraicGeometry.Curves.Node.Normalization
 
 import TauCeti.AlgebraicGeometry.IrreducibleOfConnectedDomainStalk
 import TauCeti.AlgebraicGeometry.Curves.SingularLocus.Smooth
+import TauCeti.AlgebraicGeometry.Pullback.Carrier
 import Mathlib.AlgebraicGeometry.Morphisms.Proper
 
 /-!
@@ -28,6 +29,67 @@ open AlgebraicGeometry TopologicalSpace TauCeti TauCeti.AlgebraicGeometry
 namespace CategoryTheory.Iso
 
 universe u
+
+section
+
+variable {k : Type u} [Field k] {C : Scheme.{u}} (a : C ≅ C)
+  (f : C ⟶ Spec (.of k)) (hN : AtWorstNodalOfRelativeDimensionOne f) (ha : a.hom ≫ f = f)
+
+/-- Pointwise fixation of the normalization points over the nodes. Over a separably closed
+field this fixes both branches of each node individually, including at self-nodes. -/
+def FixesNodalBranches : Prop :=
+  letI : C.Over (Spec (.of k)) := ⟨f⟩
+  letI : a.hom.IsOver (Spec (.of k)) := ⟨ha⟩
+  letI : SyntomicOfRelativeDimension 1 (C ↘ Spec (.of k)) := hN.syntomic
+  ∀ y : (C.singularLocus k).blowup,
+    (C.singularLocus k).blowupToBase y ∈ (C.singularLocus k).support →
+      (a.singularLocusBlowupIso (R := k)).hom y = y
+
+/-- The normalization-point criterion for branch fixation. -/
+theorem fixesNodalBranches_iff :
+    a.FixesNodalBranches f hN ha ↔
+      letI : C.Over (Spec (.of k)) := ⟨f⟩
+      letI : a.hom.IsOver (Spec (.of k)) := ⟨ha⟩
+      letI : SyntomicOfRelativeDimension 1 (C ↘ Spec (.of k)) := hN.syntomic
+      ∀ y : (C.singularLocus k).blowup,
+        (C.singularLocus k).blowupToBase y ∈ (C.singularLocus k).support →
+          (a.singularLocusBlowupIso (R := k)).hom y = y :=
+  Iff.rfl
+
+/-- Branch fixation is the pointwise identity on the branch scheme. -/
+theorem fixesNodalBranches_iff_branchScheme :
+    a.FixesNodalBranches f hN ha ↔
+      letI : C.Over (Spec (.of k)) := ⟨f⟩
+      letI : a.hom.IsOver (Spec (.of k)) := ⟨ha⟩
+      letI : SyntomicOfRelativeDimension 1 (C ↘ Spec (.of k)) := hN.syntomic
+      ∀ q : C.branchScheme k, (a.branchSchemeIso (R := k)).hom q = q := by
+  let : C.Over (Spec (.of k)) := ⟨f⟩
+  let : a.hom.IsOver (Spec (.of k)) := ⟨ha⟩
+  have : SyntomicOfRelativeDimension 1 (C ↘ Spec (.of k)) := hN.syntomic
+  let i := C.branchSchemeToBlowup k
+  let p := C.isPullback_branchScheme k
+  have : IsClosedImmersion i := MorphismProperty.of_isPullback p inferInstance
+  have hRange : Set.range i =
+      (C.singularLocus k).blowupToBase ⁻¹' ((C.singularLocus k).support : Set C) := by
+    rw [← Scheme.IdealSheafData.range_subschemeι]
+    exact Scheme.Pullback.range_snd_of_isPullback p
+  have hcomm (q : C.branchScheme k) :
+      i ((a.branchSchemeIso (R := k)).hom q) =
+        (a.singularLocusBlowupIso (R := k)).hom (i q) :=
+    congrArg (fun v : C.branchScheme k ⟶ (C.singularLocus k).blowup ↦ v q)
+      (a.branchSchemeIso_hom_branchSchemeToBlowup (R := k))
+  rw [fixesNodalBranches_iff]
+  constructor
+  · intro h q
+    apply i.injective
+    have hq : i q ∈ (C.singularLocus k).blowupToBase ⁻¹'
+        ((C.singularLocus k).support : Set C) := hRange ▸ Set.mem_range_self q
+    exact (hcomm q).trans (h _ (Set.mem_preimage.mp hq))
+  · intro h y hy
+    obtain ⟨q, rfl⟩ : y ∈ Set.range i := hRange.symm ▸ hy
+    simpa only [h q] using (hcomm q).symm
+
+end
 
 variable {k : Type u} [Field k] {C : Scheme.{u}}
   [C.Over (Spec (.of k))] (hnodal : AtWorstNodalOfRelativeDimensionOne (C ↘ Spec (.of k)))
@@ -74,6 +136,32 @@ private theorem exists_mem_closure_preimage_over (U : C.Opens) {x : C}
     (ν ⁻¹' (U : Set C))
   rwa [← Set.image_preimage_eq (U : Set C) (ν).surjective, heq] at hx
 
+private theorem exists_distinct_over_of_mem_closure
+    (U V : C.Opens) (hUV : Disjoint U V) {x : C}
+    (hxU : x ∈ closure (U : Set C)) (hxV : x ∈ closure (V : Set C)) :
+    letI := hnodal.syntomic
+    ∃ a ∈ closure (ν ⁻¹' (U : Set C)), ∃ b ∈ closure (ν ⁻¹' (V : Set C)),
+      ν a = x ∧ ν b = x ∧ a ≠ b := by
+  have := hnodal.syntomic
+  obtain ⟨a, ha, hax⟩ := exists_mem_closure_preimage_over hnodal U hxU
+  obtain ⟨b, hb, hbx⟩ := exists_mem_closure_preimage_over hnodal V hxV
+  have hd := Set.disjoint_left.mp (disjoint_closures_preimage_of_disjoint_opens hnodal U V hUV)
+  exact ⟨a, ha, b, hb, hax, hbx, fun e ↦ hd ha (e.symm ▸ hb)⟩
+
+/-- Two disjoint open subsets of a nodal curve can approach the same point only at a node. -/
+theorem _root_.AlgebraicGeometry.Scheme.mem_support_singularLocus_of_mem_closures
+    (C : Scheme.{u}) [C.Over (Spec (.of k))]
+    (hnodal : AtWorstNodalOfRelativeDimensionOne (C ↘ Spec (.of k)))
+    (U V : C.Opens) (hUV : Disjoint U V) {x : C}
+    (hxU : x ∈ closure (U : Set C)) (hxV : x ∈ closure (V : Set C)) :
+    letI := hnodal.syntomic
+    x ∈ (C.singularLocus k).support := by
+  have := hnodal.syntomic
+  obtain ⟨a, _, b, _, hax, hbx, hab⟩ := exists_distinct_over_of_mem_closure hnodal U V hUV hxU hxV
+  refine (C.mem_support_singularLocus_iff_notMem_smoothLocus x).mpr fun hx ↦ hab ?_
+  exact C.eq_of_blowupToBase_singularLocus_eq_of_mem_smoothLocus
+    (hax.trans hbx.symm) (hax.symm ▸ hx)
+
 private theorem mapsTo_closure_preimage (U : C.Opens) (hU : Set.MapsTo g.hom U U) :
     letI := hnodal.syntomic
     Set.MapsTo gν (closure (ν ⁻¹' (U : Set C))) (closure (ν ⁻¹' (U : Set C))) := by
@@ -94,14 +182,9 @@ theorem singularLocusBlowupIso_fixes_over_of_mem_closure [IsSepClosed k]
     letI := hnodal.syntomic
     x ∈ (S).support ∧ ∀ {z : N}, ν z = x → gν z = z := by
   have := hnodal.syntomic
-  obtain ⟨a, ha, hax⟩ := exists_mem_closure_preimage_over hnodal U hxU
-  obtain ⟨b, hb, hbx⟩ := exists_mem_closure_preimage_over hnodal V hxV
+  obtain ⟨a, ha, b, hb, hax, hbx, hab⟩ := exists_distinct_over_of_mem_closure hnodal U V hUV hxU hxV
   have hd := Set.disjoint_left.mp (disjoint_closures_preimage_of_disjoint_opens hnodal U V hUV)
-  have hab : a ≠ b := fun e ↦ hd ha (e.symm ▸ hb)
-  have hsing : x ∈ (S).support := by
-    refine (C.mem_support_singularLocus_iff_notMem_smoothLocus x).mpr fun hx' ↦ hab ?_
-    exact C.eq_of_blowupToBase_singularLocus_eq_of_mem_smoothLocus
-      (hax.trans hbx.symm) (hax.symm ▸ hx')
+  have hsing := C.mem_support_singularLocus_of_mem_closures hnodal U V hUV hxU hxV
   refine ⟨hsing, ?_⟩
   let F := ν ⁻¹' ({x} : Set C)
   have hcard : F.ncard = 2 :=
