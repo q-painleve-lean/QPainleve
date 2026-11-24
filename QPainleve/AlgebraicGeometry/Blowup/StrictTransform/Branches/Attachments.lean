@@ -61,6 +61,20 @@ local notation "j" => subschemeι (totalBoundary)
 local notation "f" => subschemeMap (totalBoundary) D (π)
   (le_map_iff_comap_le.mpr (le_radical _))
 
+include hc in
+/-- A point of the reduced total boundary lies on the exceptional divisor exactly when its
+image on the original boundary is the blowup center. -/
+theorem mem_exceptional_iff_boundaryMap_eq (z : B) :
+    (j) z ∈ (E).support ↔ (f) z = p := by
+  have hE : Set.range (E).subschemeι = (π) ⁻¹' {D.subschemeι p} :=
+    range_subschemeι_comap_pointBlowup hc
+  have h := congrArg (fun g : B ⟶ X ↦ g z)
+    (subschemeMap_subschemeι (totalBoundary) D (π)
+      (le_map_iff_comap_le.mpr (le_radical _)))
+  simp only [Scheme.Hom.comp_apply] at h
+  rw [← SetLike.mem_coe, ← (E).range_subschemeι, hE, Set.mem_preimage, Set.mem_singleton_iff,
+    ← h, D.subschemeι.injective.eq_iff]
+
 variable [hX : X.Over (Spec (.of k))] [IsIntegral X] [QuasiCompact (X ↘ Spec (.of k))]
   [SmoothOfRelativeDimension 2 (X ↘ Spec (.of k))]
 
@@ -140,18 +154,6 @@ variable (hp : (letI := hnodal.syntomic; p ∈ (D.subscheme.singularLocus k).sup
     ((D.comap (vanishingIdeal
       ⟨closure ({D.subschemeι p} : Set X), isClosed_closure⟩).blowupToBase).radical.subscheme ↘
         Spec (.of k)))
-
-omit [IsIntegral X] in
-include hc in
-private theorem mem_exceptional_iff_boundaryMap_eq (z : B) :
-    (j) z ∈ (E).support ↔ (f) z = p := by
-  rw [support_comap, ← SetLike.mem_coe, Closeds.coe_preimage, Set.mem_preimage,
-    coe_support_vanishingIdeal, Closeds.coe_mk]
-  have h := congrArg (fun g : B ⟶ X ↦ g z)
-    (subschemeMap_subschemeι (totalBoundary) D (π)
-      (le_map_iff_comap_le.mpr (le_radical _)))
-  simp only [Scheme.Hom.comp_apply] at h
-  simp only [← h, hc.closure_eq, Set.mem_singleton_iff, D.subschemeι.injective.eq_iff]
 
 include hD hnodal hc hBOver hCOver in
 /-- A point of the reduced boundary over the center is singular exactly when
