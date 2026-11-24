@@ -75,7 +75,7 @@ section RationalReference
 
 variable [rational : Scheme.IsRationalOver (X ↘ S)]
 
-local instance : IsIntegral X :=
+local instance rationalReferenceIsIntegral : IsIntegral X :=
   let : Smooth (X ↘ S) := SmoothOfRelativeDimension.smooth 2 (X ↘ S)
   rational.isIntegral_of_smooth
 
