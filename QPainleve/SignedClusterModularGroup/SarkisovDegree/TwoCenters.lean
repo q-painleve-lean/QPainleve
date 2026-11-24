@@ -6,10 +6,10 @@ Authors: The QPainleve contributors
 module
 
 public import QPainleve.SignedClusterModularGroup.SarkisovDegree.OppositeSection
-public import QPainleve.SignedClusterModularGroup.SarkisovDegree.Quadric
+public import QPainleve.SignedClusterModularGroup.SarkisovDegree.Quadric.Basic
 
 import QPainleve.Geometry.Toric.Fan.Mutation.Center
-import QPainleve.SignedClusterModularGroup.SarkisovDegree.QuadricFiber
+import QPainleve.SignedClusterModularGroup.SarkisovDegree.Quadric.Fiber
 import QPainleve.SignedClusterModularGroup.SarkisovDegree.Decrease
 import TauCeti.Data.Fin.Basic
 import QPainleve.AlgebraicGeometry.RationalMap.Composition.Basic
