@@ -8,6 +8,7 @@ module
 public import QPainleve.Algebra.Cluster.Word.Exponent
 public import QPainleve.AlgebraicGeometry.RationalMap.Composition.Defined
 public import QPainleve.Geometry.Toric.Fan.Mutation.Evaluation
+public import TauCeti.Algebra.Group.FreeAbelianCharacter
 
 import QPainleve.Algebra.Cluster.Word.Chart
 import QPainleve.AlgebraicGeometry.RationalMap.Composition.Basic
@@ -242,5 +243,93 @@ theorem comp_xEvaluation_of_resolved_mutation_pivot_first {Z : Scheme} [IsIntegr
   rw [← Scheme.RationalMap.comp_compHom, xEvaluation_reordered_mutation b r k a opp]
 
 end Ordered
+
+section OrderedParameters
+
+open TauCeti
+
+local notation "X[" Φ "]" => Fan.algebraicRealization Φ
+local notation "χ[" u "]" => MonoidHom.comp (freeAbelianCharEquiv.symm u)
+  (MulEquiv.toMonoidHom (AddEquiv.toMultiplicative (LinearEquiv.toAddEquiv
+    (LinearEquiv.symm (Finsupp.linearEquivFunOnFinite ℤ ℤ _)))))
+local notation "E[" b "," a "]" => chargeExchangeMatrix
+  (LinearEquiv.toLinearMap (Module.Basis.detDualEquiv b)) (rayChargeMap a)
+local notation "B[" b "," a "]" => SkewExchangeMatrix.ofMatrix E[b,a]
+  (isSkewSymmetrizer_chargeExchangeMatrix _ (Module.Basis.detDualEquiv_self b) _)
+local notation "σ[" k "]" => Equiv.trans (finSuccEquiv _) (Equiv.symm (finSuccEquiv' k))
+local notation "w[" B "," k "]" => Quiver.Path.comp
+  (Quiver.Hom.toPath (Generator.toStep (Generator.mutate k) B))
+  (Quiver.Hom.toPath (Generator.toStep (Generator.permute σ[k]) _))
+local notation "rays[" Ω "," b "," τ "," opp "," a "," k "]" => Fin.cons
+  (α := fun _ ↦ Fan.Ray (Fan.mutationFan Ω b (Ray.primitiveGenerator_ne_zero τ)
+    (Ray.hull_primitiveGenerator_mem τ) opp))
+  (Fan.mutationFanCenterRays Ω b (fun _ : Unit ↦ τ) () opp ())
+  (fun l ↦ Fan.mutationFanRayEquiv Ω b (Ray.primitiveGenerator_ne_zero τ)
+    (Ray.hull_primitiveGenerator_mem τ) opp (a (Fin.succAbove k l)))
+local notation "params[" b "," τ "," c "," a "," u "," k "]" => Fin.cons (α := fun _ ↦ ℂˣ) c⁻¹
+  (fun l ↦ u (Fin.succAbove k l) * c ^ max (Module.Basis.det b
+    ![Ray.primitiveGenerator (a (Fin.succAbove k l)), Ray.primitiveGenerator τ]) 0)
+
+local notation "M[" Δ "," b "," r "," h "]" =>
+  Fan.mutationFan Δ b (Ray.primitiveGenerator_ne_zero r) (Ray.hull_primitiveGenerator_mem r) h
+
+variable {Z : Scheme} [IsIntegral Z]
+
+/-- Compare the fixed-center evaluations of a resolved toric mutation with the cluster
+word that puts the reverse pivot first. The word has the ordered target's exchange
+matrix, and its exponent action carries the source center character to the character
+of the ordered target parameters. -/
+theorem compare_ordered_mutation (Ω : Fan i) [Nonempty Ω.cones]
+    (b : Module.Basis (Fin 2) ℤ N)
+    {n : ℕ} (a : Fin (n + 1) → Ω.Ray) (u : Fin (n + 1) → ℂˣ) (k : Fin (n + 1))
+    (τ : Ω.Ray) (opp : hull ℝ {i (-τ.primitiveGenerator)} ∈ Ω.cones) (c : ℂˣ)
+    (hk : τ = a k) (hc : c = u k)
+    (f : Z ⟶ X[Ω]) [IsDominant f] (g : Z ⟶ X[M[Ω,b,τ,opp]])
+    (hr : f.toRationalMap.comp
+      (Ω.mutationPartialMap b (c : ℂ) τ.primitiveGenerator_ne_zero
+        τ.hull_primitiveGenerator_mem opp).toRationalMap = g.toRationalMap) :
+    letI : Nonempty (M[Ω,b,τ,opp]).cones := ⟨(rays[Ω,b,τ,opp,a,k] 0).toCone⟩
+    letI : g.toRationalMap.IsDominant := hr ▸ inferInstance
+    let B := B[b,a]
+    let w := w[B,k]
+    let c₀ := χ[u]
+    let c₁ := c₀.comp w.exponentEquiv.toAddEquiv.toAddMonoidHom.toMultiplicative
+    let a₁ := rays[Ω,b,τ,opp,a,k]
+    let u₁ := params[b,τ,c,a,u,k]
+    B[b,a₁] = (Generator.permute σ[k]).target ((Generator.mutate k).target B) ∧
+    c₁ = χ[u₁] ∧
+    let ev := f.toRationalMap.comp (Ω.xEvaluation b a c₀)
+    ∃ hdom : ev.fromFunctionField (IsLocalRing.closedPoint Z.functionField) ∈
+        (w.xRationalMap ℂ).domain,
+      ev.compOfDefined (w.xRationalMap ℂ) hdom =
+        g.toRationalMap.comp ((M[Ω,b,τ,opp]).xEvaluation b a₁ χ[u₁]) := by
+  -- Substitution transports the mutated fan and the target projection together.
+  subst τ c
+  have hparam (v : Fin (n + 1) → ℂˣ) (j : Fin (n + 1)) :
+      (χ[v]) (ofAdd (Pi.single j 1)) = v j := by
+    simp [Finsupp.linearEquivFunOnFinite_symm_single]
+  have hr' : f.toRationalMap.comp
+      (Ω.mutationPartialMap b ((χ[u]) (ofAdd (Pi.single k 1)) : ℂ)
+        (a k).primitiveGenerator_ne_zero (a k).hull_primitiveGenerator_mem opp).toRationalMap =
+      g.toRationalMap := by
+    simpa only [hparam] using hr
+  obtain ⟨hmat, hcenters, hdom, hEval⟩ :=
+    Ω.comp_xEvaluation_of_resolved_mutation_pivot_first b a k (χ[u])
+      opp f g hr' B[b,a] (SkewExchangeMatrix.matrix_ofMatrix _ _).symm
+  intro B w c₀ c₁ a₁ u₁
+  have hc₁ : c₁ = χ[u₁] := by
+    let e := (Finsupp.linearEquivFunOnFinite ℤ ℤ (Fin (n + 1))).toAddEquiv.toMultiplicative
+    apply (MonoidHom.cancel_right (f := e.toMonoidHom) e.surjective).mp
+    apply MonoidHom.ext_finsupp_mint
+    intro j
+    have he : e (ofAdd (Finsupp.single j 1)) = ofAdd (Pi.single j 1) := by
+      simp [e, Finsupp.linearEquivFunOnFinite_single]
+    simp only [MonoidHom.comp_apply, MulEquiv.coe_toMonoidHom, he, hparam]
+    simpa only [hparam] using hcenters j
+  refine ⟨SkewExchangeMatrix.ext ((SkewExchangeMatrix.matrix_ofMatrix _ _).trans hmat), hc₁,
+    hdom, ?_⟩
+  simpa only [← hc₁] using hEval
+
+end OrderedParameters
 
 end TauCeti.Toric.Fan

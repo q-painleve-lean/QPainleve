@@ -7,7 +7,6 @@ module
 
 public import QPainleve.Geometry.Toric.Fan.Logarithmic.ResolvedMutation
 public import QPainleve.Geometry.Toric.Fan.Mutation.ResolvedEvaluation
-public import TauCeti.Algebra.Group.FreeAbelianCharacter
 
 import QPainleve.AlgebraicGeometry.RationalMap.Composition.Basic
 
@@ -60,57 +59,6 @@ variable {Z : Scheme} [IsIntegral Z]
 
 local notation "M[" Δ "," b "," r "," h "]" =>
   Fan.mutationFan Δ b (Ray.primitiveGenerator_ne_zero r) (Ray.hull_primitiveGenerator_mem r) h
-
-private theorem compare_ordered_mutation {Ω : Fan i} [Nonempty Ω.cones]
-    (b : Module.Basis (Fin 2) ℤ N)
-    {n : ℕ} (a : Fin (n + 1) → Ω.Ray) (u : Fin (n + 1) → ℂˣ) (k : Fin (n + 1))
-    (τ : Ω.Ray) (opp : hull ℝ {i (-τ.primitiveGenerator)} ∈ Ω.cones) (t : ℂˣ)
-    (hk : τ = a k) (ht : t = u k)
-    (f : Z ⟶ X[Ω]) [IsDominant f] (g : Z ⟶ X[M[Ω,b,τ,opp]])
-    (hr : f.toRationalMap.comp
-      (Ω.mutationPartialMap b (t : ℂ) τ.primitiveGenerator_ne_zero
-        τ.hull_primitiveGenerator_mem opp).toRationalMap = g.toRationalMap) :
-    letI : Nonempty (M[Ω,b,τ,opp]).cones := ⟨(rays[Ω,b,τ,opp,a,k] 0).toCone⟩
-    letI : g.toRationalMap.IsDominant := hr ▸ inferInstance
-    let B := B[b,a]
-    let w := w[B,k]
-    let c₀ := χ[u]
-    let c₁ := c₀.comp w.exponentEquiv.toAddEquiv.toAddMonoidHom.toMultiplicative
-    let a₁ := rays[Ω,b,τ,opp,a,k]
-    let u₁ := params[b,τ,t,a,u,k]
-    B[b,a₁] = (Generator.permute σ[k]).target ((Generator.mutate k).target B) ∧
-    c₁ = χ[u₁] ∧
-    let ev := f.toRationalMap.comp (Ω.xEvaluation b a c₀)
-    ∃ hdom : ev.fromFunctionField (IsLocalRing.closedPoint Z.functionField) ∈
-        (w.xRationalMap ℂ).domain,
-      ev.compOfDefined (w.xRationalMap ℂ) hdom =
-        g.toRationalMap.comp ((M[Ω,b,τ,opp]).xEvaluation b a₁ χ[u₁]) := by
-  -- Substitution transports the mutated fan and the target projection together.
-  subst τ t
-  have hparam (v : Fin (n + 1) → ℂˣ) (j : Fin (n + 1)) :
-      (χ[v]) (ofAdd (Pi.single j 1)) = v j := by
-    simp [Finsupp.linearEquivFunOnFinite_symm_single]
-  have hr' : f.toRationalMap.comp
-      (Ω.mutationPartialMap b ((χ[u]) (ofAdd (Pi.single k 1)) : ℂ)
-        (a k).primitiveGenerator_ne_zero (a k).hull_primitiveGenerator_mem opp).toRationalMap =
-      g.toRationalMap := by
-    simpa only [hparam] using hr
-  obtain ⟨hmat, hcenters, hdom, hEval⟩ :=
-    Ω.comp_xEvaluation_of_resolved_mutation_pivot_first b a k (χ[u])
-      opp f g hr' B[b,a] (SkewExchangeMatrix.matrix_ofMatrix _ _).symm
-  intro B w c₀ c₁ a₁ u₁
-  have hc₁ : c₁ = χ[u₁] := by
-    let e := (Finsupp.linearEquivFunOnFinite ℤ ℤ (Fin (n + 1))).toAddEquiv.toMultiplicative
-    apply (MonoidHom.cancel_right (f := e.toMonoidHom) e.surjective).mp
-    apply MonoidHom.ext_finsupp_mint
-    intro j
-    have he : e (ofAdd (Finsupp.single j 1)) = ofAdd (Pi.single j 1) := by
-      simp [e, Finsupp.linearEquivFunOnFinite_single]
-    simp only [MonoidHom.comp_apply, MulEquiv.coe_toMonoidHom, he, hparam]
-    simpa only [hparam] using hcenters j
-  refine ⟨SkewExchangeMatrix.ext ((SkewExchangeMatrix.matrix_ofMatrix _ _).trans hmat), hc₁,
-    hdom, ?_⟩
-  simpa only [← hc₁] using hEval
 
 variable [Z.Over S] [SmoothOfRelativeDimension 2 (Z ↘ S)] {P : Z.IdealSheafData}
   (A : LogarithmicProjection i P) (b : Module.Basis (Fin 2) ℤ N) (ρ : A.fan.Ray)
@@ -203,6 +151,6 @@ theorem exists_word_of_resolved_mutation
         rw [Scheme.RationalMap.comp_assoc, hrat, Scheme.RationalMap.comp_toRationalMap,
           Scheme.Hom.toRationalMap_compHom]
         rfl
-  exact compare_ordered_mutation b a₀ (u ∘ ι) k σ opp c hk.symm hc.symm _ _ hrat'
+  exact Ω.compare_ordered_mutation b a₀ (u ∘ ι) k σ opp c hk.symm hc.symm _ _ hrat'
 
 end TauCeti.Toric.Fan.LogarithmicProjection
