@@ -154,8 +154,16 @@ theorem exists_common_nodal_plane_reduction
   let Ψ j := projectiveSpace (b j) (Φ j).lattice
   have hΨ j : (Ψ j).IsRegular := isRegular_projectiveSpace (b j) (Φ j).lattice
   have hcΨ j : (Ψ j).IsComplete := isComplete_projectiveSpace (b j) (Φ j).lattice
+  have hPole (j : ι) :
+      letI : Smooth (X ↘ S) := SmoothOfRelativeDimension.smooth 2 _
+      (B[Φ j,hcΦ j]).comap (f j) = D * ramificationIdealSheaf ℂ (f j) := by
+    let hRank := (Module.finrank_eq_card_basis (b j)).trans (Fintype.card_fin 2)
+    let : SmoothOfRelativeDimension 2 (X[Φ j] ↘ S) :=
+      hRank ▸ (Φ j).smoothOfRelativeDimension_algebraicRealizationStructureMap (hΦ j)
+    obtain ⟨ω, hTotal, hRam, hω⟩ := hdiv j
+    exact (QPainleve.pullbackTopFormDivisor_eq_neg_iff ℂ (f j) 2 _ ω hTotal hD hRam).mp hω
   obtain ⟨n, Z, T, hT, h⟩ := exists_common_nodal_resolution_of_toric_changes
-    b hΦ hcΦ hΨ hcΨ f hD hN hdiv
+    b hΦ hcΦ hΨ hcΨ f hD hN hPole
   let : Z.Over S := ⟨T.toBase ≫ X ↘ S⟩
   let : SmoothOfRelativeDimension 2 (Z ↘ S) :=
     hT.isClosedPointTower.smoothOfRelativeDimension (X ↘ S)

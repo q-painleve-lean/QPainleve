@@ -98,18 +98,8 @@ theorem exists_common_nodal_resolution_of_toric_changes
     (f : ∀ j, X ⟶ X[Φ j]) [∀ j, (f j).IsOver S] [∀ j, IsModification (f j)]
     (hD : D.IsEffectiveCartier)
     (hN : AtWorstNodalOfRelativeDimensionOne (D.subschemeι ≫ X ↘ S))
-    (hdiv : ∀ j,
-      let hRank : Module.finrank ℤ (N j) = 2 :=
-        (Module.finrank_eq_card_basis (b j)).trans (Fintype.card_fin 2)
-      letI : SmoothOfRelativeDimension 2 (X[Φ j] ↘ S) :=
-        hRank ▸ (Φ j).smoothOfRelativeDimension_algebraicRealizationStructureMap (hΦ j)
-      letI : Nonempty (Φ j).cones := (hcΦ j).nonempty_cones
-      let hB := (Φ j).isEffectiveCartier_boundaryIdeal (hΦ j) (hcΦ j) hRank
-      ∃ (ω : hB.toInvertibleSheaf ≅ canonicalBundle ℂ X[Φ j] 2)
-        (hTotal : ((B[Φ j,hcΦ j]).comap (f j)).IsEffectiveCartier)
-        (hRam : letI := SmoothOfRelativeDimension.smooth 2 (X ↘ S)
-          (ramificationIdealSheaf ℂ (f j)).IsEffectiveCartier),
-        pullbackTopFormDivisor ℂ (f j) 2 hB ω hTotal hRam = -hD.toCartierDivisor) :
+    (hPole : letI : Smooth (X ↘ S) := SmoothOfRelativeDimension.smooth 2 _
+      ∀ j, (B[Φ j,hcΦ j]).comap (f j) = D * ramificationIdealSheaf ℂ (f j)) :
     letI : IsNoetherian X := isNoetherian_of_finiteType (X ↘ S)
     ∃ (n : ℕ) (Z : Scheme) (T : BlowupTower X n Z)
       (hT : IsNodalBoundaryTower D (X ↘ S) (𝟙 X) T),
@@ -139,13 +129,21 @@ theorem exists_common_nodal_resolution_of_toric_changes
   classical
   let := Fintype.ofFinite ι
   let : IsNoetherian X := isNoetherian_of_finiteType (X ↘ S)
-  choose ω hTotal hRam hdiv using hdiv
-  have hone j := exists_nodal_resolution_of_toric_change_of_pullbackTopFormDivisor
-    (b j) (hΦ j) (hcΦ j) (hΨ j) (hcΨ j) (IsModification.birationalOver (f j))
-    hD (ω j) (hTotal j) (hRam j) (hdiv j)
+  choose Ξ hΞ H m ρ c e he hboundary using fun j ↦
+    (Φ j).exists_toric_internal_factorization_of_boundary_comap_eq (b j) (hΦ j) (hcΦ j)
+      (IsModification.birationalOver (f j)) (hPole j)
+  have hs (j : ι) : (Φ j).support = (Ψ j).support := by
+    ext x
+    simp only [mem_support, (Φ j).isComplete_iff.mp (hcΦ j) x, (Ψ j).isComplete_iff.mp (hcΨ j) x]
+  let : ∀ j, Nonempty (Φ j).cones := fun j ↦ (hcΦ j).nonempty_cones
+  have hone j :=
+    exists_nodal_resolution_of_toric_change (b j) (hΦ j) (hΨ j) (hs j) (hΞ j) (H j) (ρ j) (c j)
+      (f j) D (e j) (he j) (hboundary j)
   choose Ω J K hΩ hchain hchain' n Y T g _ hg _ hT hproj _ using hone
+  have hOver j : f j ≫ s[Φ j] = X ↘ S := by
+    rw [← (Φ j).algebraicRealization_over, comp_over]
   obtain ⟨m, Z, U, hU, hRef⟩ := exists_common_nodal_boundary_tower_refinement_finset
-    D (X ↘ S) (𝟙 X) Finset.univ T (fun j _ ↦ hT j)
+    D (X ↘ S) (𝟙 X) Finset.univ T (fun j _ ↦ hOver j ▸ hT j)
   refine ⟨m, Z, U, hU, fun j ↦ ?_⟩
   obtain ⟨_, W, L, e, hL, hbase, -⟩ := hRef j (Finset.mem_univ _)
   let : (Y j).Over S := ⟨(T j).toBase ≫ X ↘ S⟩
@@ -162,7 +160,6 @@ theorem exists_common_nodal_resolution_of_toric_changes
     hU.isClosedPointTower.isModification_of_smoothOfRelativeDimension_two (X ↘ S)
   let : U.toBase.IsOver S := ⟨rfl⟩
   let : Z.IsProjectiveOver ℂ := U.isProjectiveOver ℂ
-  let : Nonempty (Φ j).cones := (hcΦ j).nonempty_cones
   let : Nonempty (Ω j).cones := (J j).nonempty_cones_of_nonempty inferInstance
   let g' := (e.hom ≫ L.toBase) ≫ g j
   let : IsDominant (g j) := hg j
@@ -173,11 +170,9 @@ theorem exists_common_nodal_resolution_of_toric_changes
     (Module.finrank_eq_card_basis (b j)).trans (Fintype.card_fin 2)
   let : SmoothOfRelativeDimension 2 (X[Φ j] ↘ S) :=
     hRank ▸ (Φ j).smoothOfRelativeDimension_algebraicRealizationStructureMap (hΦ j)
-  have hPole := (QPainleve.pullbackTopFormDivisor_eq_neg_iff ℂ (f j) 2
-    ((Φ j).isEffectiveCartier_boundaryIdeal (hΦ j) (hcΦ j) hRank)
-    (ω j) (hTotal j) hD (hRam j)).mp (hdiv j)
-  have hPull :=
-    (hU.comap_eq_mul_ramificationIdealSheaf_iff hD hN (f j) (hTotal j) (hRam j)).mpr hPole
+  have hRefined := hU.comap_eq_radical_mul_ramificationIdealSheaf_of_iso hD hN
+    (Iso.refl Z) U.toBase (Category.id_comp _)
+  have hPull := comap_eq_mul_ramificationIdealSheaf_comp ℂ U.toBase (f j) 2 (hPole j) hRefined
   refine ⟨Ω j, J j, K j, g', hΩ j, hchain j, hchain' j, he, fun Δ _ M ↦ ?_⟩
   exact resolved_toric_projection (J j) M (hΦ j) (hΩ j) (hcΦ j) hRank
     g' (U.toBase ≫ f j) he _ hPull

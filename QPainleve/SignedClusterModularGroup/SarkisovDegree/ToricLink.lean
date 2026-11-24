@@ -88,6 +88,7 @@ theorem exists_hirzebruch_toric_link_resolution
       d 0 = b 0 ∧ d 1 = b 0 + b 1 ∧ τ.val = hull ℝ {i (d 1), i (-d 0)} ∧
       g.hom ≫ (I[σ]).blowupToBase = s.toFanHom.algebraicMap ∧
       g'.hom ≫ (I[τ]).blowupToBase = t.toFanHom.algebraicMap ∧
+      Φ.IsTwoRayStarSubdivision F ∧ Ψ.IsTwoRayStarSubdivision F ∧
       k.hom ≫ U'.toBase = T.toBase ≫ g.inv ≫ t.toFanHom.algebraicMap ∧
       hU'.baseCenter (Fin.castAdd n (0 : Fin 1)) =
         Ψ.distinguishedPointHom τ (IsLocalRing.closedPoint ℂ) ∧
@@ -108,7 +109,7 @@ theorem exists_hirzebruch_toric_link_resolution
           hirzebruchSarkisovBidegree β.toNat M'.toNat <
             hirzebruchSarkisovBidegree β.toNat M.toNat) := by
   obtain ⟨Ψ, F, hΨ, hF, hc', hcF, d, τ, s, t, g, g', r, r', hr, hr',
-      hd₀, hd₁, hτcone, hg, hg', hcoord⟩ :=
+      hd₀, hd₁, hτcone, hg, hg', hstar, hstar', hcoord⟩ :=
     Fan.exists_hirzebruch_toric_elementary_transform_picard_coordinates b e hΦ hc hrays σ hσ
   let R := T.transport (g.symm ≪≫ g')
   let U := (tower[I[τ]]).append R.tower
@@ -121,7 +122,7 @@ theorem exists_hirzebruch_toric_link_resolution
     rw [toBase_append, ← Category.assoc, R.isLift.hom_toBase, toBase_snoc, toBase_nil,
       Category.comp_id, Category.assoc, Iso.trans_hom, Iso.symm_hom, Category.assoc, hg']
   refine ⟨Ψ, F, hΨ, hF, hc', hcF, d, τ, s, t, g, g', r, r', hr, hr', _, R.tower, R.iso,
-    hU, hd₀, hd₁, hτcone, hg, hg', hproj, ?_, ?_, fun α β c m ↦ ⟨?_, ?_, ?_⟩⟩
+    hU, hd₀, hd₁, hτcone, hg, hg', hstar, hstar', hproj, ?_, ?_, fun α β c m ↦ ⟨?_, ?_, ?_⟩⟩
   · rw [baseCenter_append_castAdd hτ hR, baseCenter_snoc_nil,
       hτ.lastCenter_eq _ (Ψ.isClosed_singleton_distinguishedPoint τ)
         (Ψ.distinguishedPointHom τ).ker_eq_ker_fromSpecResidueField]

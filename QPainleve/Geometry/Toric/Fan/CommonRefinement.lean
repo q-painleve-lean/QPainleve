@@ -5,6 +5,7 @@ Authors: Yuma Mizuno
 -/
 module
 
+public import TauCeti.Geometry.Toric.Algebraic.Fan.Equiv
 public import TauCeti.Geometry.Toric.Algebraic.Fan.Subdivision
 
 import QPainleve.Geometry.Toric.Cone.Coordinates
@@ -192,3 +193,25 @@ theorem exists_regular_common_subdivision (Φ Ψ : Fan i)
       Set.mem_preimage.mpr (hΩ.support_eq ▸ hn)⟩
 
 end TauCeti.Toric.Fan
+
+namespace TauCeti.Toric.FanEquiv
+
+variable {N N' V V' : Type} [AddCommGroup N] [AddCommGroup N']
+  [AddCommGroup V] [AddCommGroup V'] [Module ℝ V] [Module ℝ V']
+  {i : N →+ V} {i' : N' →+ V'} {Φ Ω : Fan i} {Ψ : Fan i'}
+
+/-- Two complete regular surface fans admit a regular common subdivision after
+transporting the second fan to the lattice of the first via the specified equivalence. -/
+theorem exists_common_regular_subdivision_of_complete (e : FanEquiv Ψ Ω)
+    (hΦ : Φ.IsRegular) (hΨ : Ψ.IsRegular) (hcΦ : Φ.IsComplete) (hcΨ : Ψ.IsComplete)
+    (b : Module.Basis (Fin 2) ℤ N) :
+    ∃ Δ : Fan i, Δ.IsSubdivision Φ ∧ Δ.IsSubdivision Ω ∧ Δ.IsRegular := by
+  have hcΩ := e.isComplete_iff.mpr hcΨ
+  have hs : Φ.support = Ω.support := by
+    ext x
+    exact iff_of_true (Φ.mem_support.mpr (Φ.isComplete_iff.mp hcΦ x))
+      (Ω.mem_support.mpr (Ω.isComplete_iff.mp hcΩ x))
+  exact Φ.exists_regular_common_subdivision Ω hΦ (e.isRegular_iff.mpr hΨ)
+    ((Module.finrank_eq_card_basis b).trans (Fintype.card_fin 2)) hs
+
+end TauCeti.Toric.FanEquiv

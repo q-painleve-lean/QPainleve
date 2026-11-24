@@ -223,6 +223,13 @@ theorem coarsen_hom (C : LogarithmicProjection i D) {Φ : Fan i}
     (H : C.fan.IsSubdivision Φ) (hΦ : Φ.IsRegular) (hN : Module.finrank ℤ N = 2) :
     (C.coarsen H hΦ hN).hom ≍ C.hom ≫ π[H] := (HEq.rfl)
 
+/-- Coarsening along the identity subdivision gives the original projection. -/
+theorem coarsen_refl (C : LogarithmicProjection i D) (hN : Module.finrank ℤ N = 2) :
+    C.coarsen (.refl C.fan) C.isRegular hN = C := by
+  refine LogarithmicProjection.ext (coarsen_fan ..) ((coarsen_hom ..).trans ?_)
+  exact heq_of_eq (by simp only [IsSubdivision.toFanHom_refl, FanHom.algebraicMap_id,
+    Category.comp_id])
+
 /-- A star blowup between two coarsenings of a common logarithmic projection. -/
 def coarsenBlowup (C : LogarithmicProjection i D) (hN : Module.finrank ℤ N = 2)
     {Φ Ψ : Fan i} (hΦ : Φ.IsRegular) (hΨ : Ψ.IsRegular)
@@ -253,11 +260,7 @@ theorem nonempty_path_of_subdivision (C : LogarithmicProjection i D)
     Nonempty (Quiver.Path (C.coarsen H hΦ hN) C) := by
   have h := H.exists_starSubdivision_factorization hΦ C.isRegular hN
   have hpath := nonempty_blowupPath C hN hΦ C.isRegular h (.refl C.fan)
-  have hself : C.coarsen (.refl C.fan) C.isRegular hN = C := by
-    refine LogarithmicProjection.ext (coarsen_fan ..) ((coarsen_hom ..).trans ?_)
-    exact heq_of_eq (by simp only [IsSubdivision.toFanHom_refl, FanHom.algebraicMap_id,
-      Category.comp_id])
-  rwa [hself] at hpath
+  rwa [C.coarsen_refl hN] at hpath
 
 /-- Factor the dense-torus change between two regular coarsenings into blowups and
 blowdowns on a single specified resolving surface. The endpoints are the given maps,

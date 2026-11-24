@@ -12,6 +12,7 @@ public import QPainleve.AlgebraicGeometry.LineBundle.EffectiveClass
 
 import QPainleve.AlgebraicGeometry.LineBundle.Ample
 import QPainleve.AlgebraicGeometry.Scheme.LocalDimension
+import QPainleve.AlgebraicGeometry.WeilDivisor.Basic
 
 /-!
 # Effective classes and negative prime curves
@@ -51,17 +52,6 @@ variable (k : Type u) [Field k] [Infinite k] [X.Over (Spec (.of k))] [X.IsProjec
 
 local notation "I(" Z ")" => classIntersectionNumber k Z
 local notation "Pic" => Additive (LineBundleClass X)
-
-omit [IsIntegral X] [AlgebraicGeometry.IsNoetherian X]
-  [∀ x : X, UniqueFactorizationMonoid (X.presheaf.stalk x)] in
-private theorem single_le_of_coeff_pos {D : SchemeWeilDivisor X} (hD : 0 ≤ D)
-    {p : CodimensionOnePoint X} (hp : 0 < D p) : Finsupp.single p 1 ≤ D := by
-  classical
-  intro q
-  simp only [Finsupp.single_apply]
-  split
-  · next h => exact h ▸ (by omega : 1 ≤ D p)
-  · exact hD q
 
 omit [AlgebraicGeometry.IsNoetherian X] in
 /-- A nef class has nonnegative intersection with any effective Picard class. -/
@@ -112,8 +102,9 @@ theorem exists_component_of_intersection_nonpos
         (Finsupp.support_nonempty_iff.mpr hD₀) (hab.trans_eq Finset.sum_const_zero.symm)
       exact ⟨p, hp, nonpos_of_mul_nonpos_right hnonpos (hpos hp), fun h ↦ (hlt h).elim⟩
   obtain ⟨p, hp, hbp, hlt⟩ := hex
+  have hle := WeilDivisor.single_one_le_of_coeff_pos hD (hpos hp)
   exact ⟨p, hbp, hlt, mem_effectiveClasses_iff_exists_weilDivisor.mpr
-    ⟨D - Finsupp.single p 1, sub_nonneg.mpr (single_le_of_coeff_pos hD (hpos hp)), by
+    ⟨D - Finsupp.single p 1, sub_nonneg.mpr hle, by
       simp only [map_sub, weilToLineBundleClassHom_single, one_smul,
         ← LineBundleClass.primeDivisorClass_def]⟩⟩
 
@@ -123,7 +114,7 @@ theorem single_le_of_classIntersectionNumber_lt_zero
     (hX : topologicalKrullDim X = 2) {D : SchemeWeilDivisor X} (hD : 0 ≤ D)
     (p : CodimensionOnePoint X) (hneg : I(X) (P p) (cl X D).toMul < 0) :
     Finsupp.single p 1 ≤ D := by
-  apply single_le_of_coeff_pos hD
+  apply WeilDivisor.single_one_le_of_coeff_pos hD
   by_contra! hp
   have hp₀ : D p = 0 := le_antisymm hp (hD p)
   rw [classIntersectionNumber_comm] at hneg
@@ -202,7 +193,7 @@ theorem exists_primeDivisorClass_eq_of_addIrreducible
     rintro rfl
     exact ha.ne_zero (Subtype.ext (by simpa only [map_zero, AddSubmonoid.coe_zero] using hDa.symm))
   obtain ⟨p, hp⟩ := WeilDivisor.exists_pos_coeff_of_ne_zero hD hD₀
-  have hle := single_le_of_coeff_pos hD hp
+  have hle := WeilDivisor.single_one_le_of_coeff_pos hD hp
   let S : SchemeWeilDivisor X := Finsupp.single p 1
   let b : X.effectiveClasses :=
     ⟨cl X S, mem_effectiveClasses_iff_exists_weilDivisor.mpr ⟨S, by simp [S], rfl⟩⟩
