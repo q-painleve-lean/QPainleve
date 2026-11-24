@@ -10,7 +10,6 @@ public import QPainleve.AlgebraicGeometry.RationalMap.Composition.Defined
 public import QPainleve.Geometry.Toric.CharacterTorus.Evaluation
 
 import QPainleve.AlgebraicGeometry.RationalMap.Fiber
-import TauCeti.Algebra.AlgebraicGroup.DiagonalizableGroup.Scheme.Smooth
 import TauCeti.AlgebraicGeometry.Morphisms.Smooth.GeometricallyReduced
 
 /-!
@@ -18,8 +17,7 @@ import TauCeti.AlgebraicGeometry.Morphisms.Smooth.GeometricallyReduced
 
 Agreement after evaluation on each rational center fiber of a common regular
 domain determines a rational map on the independent character torus. The proof
-uses smoothness of the character tori, via Tau Ceti's
-`DiagonalizableGroup.smooth_groupScheme_iff`, and dominance of variable-center evaluation.
+uses smoothness of the character tori and dominance of variable-center evaluation.
 -/
 
 public noncomputable section
@@ -44,23 +42,6 @@ section RationalFibers
 
 variable [Field k] [IsSepClosed k] [Module.Free ℤ A] [Module.Free ℤ N]
 
-omit [IsSepClosed k] in
-private theorem smoothTorus (B : Type u) [AddCommGroup B] [IsAddFG B] [Module.Free ℤ B] :
-    Smooth (D B).X.hom := by
-  obtain ⟨p, hp⟩ := ExpChar.exists k
-  let : ExpChar k p := hp
-  let : HasUniqueDiv B := .of_isTorsionFree ℤ B
-  exact (smooth_groupScheme_iff k p (L B)).mpr fun b hb ↦
-    pow_left_injective (expChar_ne_zero k p) (hb.trans (one_pow p).symm)
-
-omit [IsSepClosed k] [Module.Free ℤ A] in
-private theorem smoothProjection :
-    Smooth (π₁).hom.hom.left := by
-  let : Smooth (D N).X.hom := smoothTorus k N
-  have h : Smooth ((prodIso k A N).inv ≫ pullback.fst (D A).X.hom (D N).X.hom) :=
-    inferInstance
-  simpa only [← prodIso_hom_fst, Iso.inv_hom_id_assoc] using h
-
 /-- Two rational maps on the independent character torus are equal if, after evaluation
 over a nonempty open of the center torus, their regular representatives on a common dense
 open agree as rational maps on each rational center fiber of that open. -/
@@ -81,8 +62,9 @@ theorem eq_of_evaluation_rationalFibers (v : A →+ N) (U : (D A).X.left.Opens) 
     f = g := by
   dsimp only
   intro hf hg
-  have : Smooth (D A).X.hom := smoothTorus k A
-  let : Smooth (π₁).hom.hom.left := smoothProjection k
+  have : Smooth (D A).X.hom := smooth_groupScheme_of_free k A
+  let : Smooth (D N).X.hom := smooth_groupScheme_of_free k N
+  let : Smooth (π₁).hom.hom.left := smooth_map_inl k A N
   let π := W.ι ≫ ((π₁).hom.hom.left ∣_ U)
   let sU := U.ι ≫ (D A).X.hom
   have : Smooth π := inferInstanceAs (Smooth (W.ι ≫ ((π₁).hom.hom.left ∣_ U)))
@@ -198,8 +180,9 @@ theorem eq_of_compOfDefined_eq_on_center_fibers (U : (D A).X.left.Opens) [Nonemp
   let e := ev[U, v]
   let : IsDominant e := isDominant_evaluation_on_center_open k v U
   have : (E[U]).toScheme.IsSeparated := Scheme.IsSeparated.of_isSeparated (E[U]).ι
-  let : Smooth (D A).X.hom := smoothTorus k A
-  let : Smooth (π₁).hom.hom.left := smoothProjection k
+  let : Smooth (D A).X.hom := smooth_groupScheme_of_free k A
+  let : Smooth (D N).X.hom := smooth_groupScheme_of_free k N
+  let : Smooth (π₁).hom.hom.left := smooth_map_inl k A N
   have hb : (e ≫ eX) ≫ sX = π[U] ≫ (U.ι ≫ (D A).X.hom) := by
     simp only [e, Category.assoc, heX, morphismRestrict_ι_assoc, Over.w]
   have hF (c : S ⟶ U.toScheme) (hc : c ≫ (U.ι ≫ (D A).X.hom) = 𝟙 S) :
