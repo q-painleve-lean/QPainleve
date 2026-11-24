@@ -191,30 +191,45 @@ theorem resolvingHom_eq_of_comp_eq {X Y Z W : Scheme.{u}} [Nonempty X] [IsReduce
   simpa only [Category.assoc, hdr, hrg, a', b', IsOpenImmersion.lift_fac_assoc]
     using congrArg (· ≫ p.hom) e
 
-/-- If a dominant morphism resolves `q`, then every open over which the morphism is
-an isomorphism belongs to the domain of `q`. -/
-theorem le_domain_of_isIso_morphismRestrict {X Y Z : Scheme.{u}} [IsIntegral X] [IsIntegral Y]
+/-- If a dominant morphism resolves `q` and the resolving morphism descends over an
+open of the base, then that open is contained in the domain of `q`. -/
+theorem le_domain_of_morphismRestrict_comp_eq {X Y Z : Scheme.{u}}
+    [IsIntegral X] [IsIntegral Y]
     (q : X ⤏ Z) (f : Y ⟶ X) [IsDominant f] (g : Y ⟶ Z)
     (hg : g.toRationalMap = f.toRationalMap.comp q)
-    (U : X.Opens) [IsIso (f ∣_ U)] : U ≤ q.domain := by
+    {U : X.Opens} (a : U.toScheme ⟶ Z)
+    (ha : f ∣_ U ≫ a = (f ⁻¹ᵁ U).ι ≫ g) : U ≤ q.domain := by
   by_cases hbot : U = ⊥
   · exact hbot.le.trans bot_le
   have hne := (Opens.ne_bot_iff_nonempty U).mp hbot
   have hU : Dense (U : Set X) := U.isOpen.dense hne
   have : Nonempty U := Set.nonempty_coe_sort.mpr hne
   have : IsDominant U.ι := Opens.isDominant_ι hU
-  let j := inv (f ∣_ U) ≫ (f ⁻¹ᵁ U).ι
-  have hj : j ≫ f = U.ι := by
-    simp only [j, Category.assoc, ← morphismRestrict_ι, IsIso.inv_hom_id_assoc]
-  have : IsOpenImmersion j := inferInstanceAs (IsOpenImmersion (_ ≫ _))
-  have : IsDominant j := inferInstance
-  let p : X.PartialMap Z := ⟨U, hU, j ≫ g⟩
-  have hp : (j ≫ g).toRationalMap = U.ι.toRationalMap.comp p.toRationalMap :=
-    p.hom_toRationalMap_eq_comp
-  have hq : (j ≫ g).toRationalMap = U.ι.toRationalMap.comp q := by
-    rw [← Hom.toRationalMap_compHom, ← comp_toRationalMap, hg, ← comp_assoc]
-    simp only [comp_toRationalMap, Hom.toRationalMap_compHom, hj]
-  have h := comp_left_injective U.ι.toRationalMap (hp.symm.trans hq)
+  have hpre : Set.Nonempty (↑(f ⁻¹ᵁ U) : Set Y) := by
+    obtain ⟨y, hy⟩ := f.denseRange.exists_mem_open U.isOpen hne
+    exact ⟨y, f.mem_preimage.mpr hy⟩
+  have : Nonempty (f ⁻¹ᵁ U) := Set.nonempty_coe_sort.mpr hpre
+  have : IsDominant (f ⁻¹ᵁ U).ι := inferInstance
+  have : IsDominant (f ∣_ U) :=
+    IsDominant.of_comp_of_isOpenImmersion (f ∣_ U) U.ι
+      (H := by rw [morphismRestrict_ι]; infer_instance)
+  let p : X.PartialMap Z := ⟨U, hU, a⟩
+  have hq : a.toRationalMap = U.ι.toRationalMap.comp q := by
+    apply comp_left_injective (f ∣_ U).toRationalMap
+    simp only [← comp_assoc, comp_toRationalMap,
+      Hom.toRationalMap_compHom, ha, morphismRestrict_ι]
+    rw [← Hom.toRationalMap_compHom, ← comp_toRationalMap, hg]
+    simp only [← comp_assoc, comp_toRationalMap, Hom.toRationalMap_compHom]
+  have h := comp_left_injective U.ι.toRationalMap (p.hom_toRationalMap_eq_comp.symm.trans hq)
   exact h ▸ p.le_domain_toRationalMap
+
+/-- If a dominant morphism resolves `q`, then every open over which the morphism is
+an isomorphism belongs to the domain of `q`. -/
+theorem le_domain_of_isIso_morphismRestrict {X Y Z : Scheme.{u}} [IsIntegral X] [IsIntegral Y]
+    (q : X ⤏ Z) (f : Y ⟶ X) [IsDominant f] (g : Y ⟶ Z)
+    (hg : g.toRationalMap = f.toRationalMap.comp q)
+    (U : X.Opens) [IsIso (f ∣_ U)] : U ≤ q.domain :=
+  q.le_domain_of_morphismRestrict_comp_eq f g hg (inv (f ∣_ U) ≫ (f ⁻¹ᵁ U).ι ≫ g)
+    (by rw [IsIso.hom_inv_id_assoc])
 
 end AlgebraicGeometry.Scheme.RationalMap
