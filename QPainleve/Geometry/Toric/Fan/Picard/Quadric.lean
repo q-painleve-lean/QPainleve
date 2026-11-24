@@ -42,6 +42,49 @@ variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
 local notation "E" => quadricRulingExchange b hΦ hc r hr
 local notation "τ" => FanHom.algebraicMap (FanEquiv.toFanHom (E))
 
+include hr in
+/-- Reindexing the quadric rays with the exchanged lattice basis exchanges the
+two vectors of the Hirzebruch Picard basis. -/
+theorem hirzebruchPicardBasis_quadric_swap [Nonempty Φ.cones] :
+    let p := Equiv.swap (0 : Fin 2) 1
+    let s := ((Equiv.swap (0 : Fin 4) 1).trans (Equiv.swap 2 3)).trans r
+    hirzebruchPicardBasis (b.reindex p) 0 hΦ s (quadric_swapped_generators b r hr) =
+      (hirzebruchPicardBasis b 0 hΦ r hr).reindex p := by
+  intro p s
+  have hp₀ : p.symm 0 = 1 := rfl
+  have hp₁ : p.symm 1 = 0 := rfl
+  apply DFunLike.ext
+  refine Fin.forall_fin_two.mpr ⟨?_, ?_⟩
+  · rw [hirzebruchPicardBasis_apply_zero (b.reindex p) 0 hΦ s _,
+      Basis.reindex_apply, hp₀, hirzebruchPicardBasis_apply_one]
+    rfl
+  · rw [hirzebruchPicardBasis_apply_one (b.reindex p) 0 hΦ s _,
+      Basis.reindex_apply, hp₁, hirzebruchPicardBasis_apply_zero]
+    rfl
+
+include hr in
+/-- Reframe a quadric so that the specified invariant fiber and its opposite become
+the section rays. The two Picard basis vectors exchange places. -/
+theorem exists_quadric_picardBasis_of_fiber [Nonempty Φ.cones] (t : Fin 2) :
+    ∃ (d : Basis (Fin 2) ℤ N) (s : Fin 4 ≃ Φ.Ray)
+      (hs : (fun j ↦ (s j).primitiveGenerator) = ![d 0, d 1, -d 0, (0 : ℤ) • d 0 - d 1]),
+      s 0 = r ((![1, 3] : Fin 2 → Fin 4) t) ∧
+      s 2 = r ((![1, 3] : Fin 2 → Fin 4) (Equiv.swap 0 1 t)) ∧
+      hirzebruchPicardBasis d 0 hΦ s hs =
+        (hirzebruchPicardBasis b 0 hΦ r hr).reindex (Equiv.swap 0 1) := by
+  obtain ⟨a, u, hu, -, h₁, hpic⟩ := exists_hirzebruch_picardBasis_of_fiber b 0 r hr hΦ t
+  have hop (j : Fin 2) :
+      (r ((![1, 3] : Fin 2 → Fin 4) (Equiv.swap 0 1 j))).primitiveGenerator =
+        -(r ((![1, 3] : Fin 2 → Fin 4) j)).primitiveGenerator := by
+    fin_cases j <;> simp [congrFun hr]
+  have h₃ : u 3 = r ((![1, 3] : Fin 2 → Fin 4) (Equiv.swap 0 1 t)) := by
+    apply Ray.primitiveGenerator_injective
+    rw [hop, ← h₁, congrFun hu 3, congrFun hu 1]
+    simp
+  refine ⟨a.reindex (Equiv.swap 0 1), ((Equiv.swap 0 1).trans (Equiv.swap 2 3)).trans u,
+    quadric_swapped_generators a u hu, h₁, h₃, ?_⟩
+  rw [hirzebruchPicardBasis_quadric_swap a hΦ u hu, hpic]
+
 variable [Nonempty Φ.cones]
 
 local notation "C" => hirzebruchPicardBasis b 0 hΦ r hr

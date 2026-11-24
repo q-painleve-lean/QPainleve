@@ -47,6 +47,15 @@ local notation "b'" => b.reindex (Equiv.swap 0 1)
 local notation "f" => b.equiv b (Equiv.swap 0 1)
 
 include hr in
+/-- Exchanging the two basis directions and relabeling the rays in pairs gives
+another Hirzebruch marking of the same quadric. -/
+theorem quadric_swapped_generators :
+    (fun j ↦ ((((Equiv.swap 0 1).trans (Equiv.swap 2 3)).trans r) j).primitiveGenerator) =
+      ![(b') 0, (b') 1, -(b') 0, (0 : ℤ) • (b') 0 - (b') 1] := by
+  funext j
+  fin_cases j <;> simp [Equiv.swap_apply_def, Basis.reindex_apply, congrFun hr]
+
+include hr in
 /-- The two rays in the second basis direction lie in the kernel of the
 first coordinate character on the toric quadric. -/
 theorem quadric_transverse_ruling_rays :
