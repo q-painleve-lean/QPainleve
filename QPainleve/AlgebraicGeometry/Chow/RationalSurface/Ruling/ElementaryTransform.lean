@@ -20,7 +20,6 @@ import QPainleve.AlgebraicGeometry.Blowup.StrictTransform.Nodality
 import QPainleve.AlgebraicGeometry.Blowup.StrictTransform.RegularCurve
 import QPainleve.AlgebraicGeometry.Blowup.StrictTransform.Reduced
 import QPainleve.AlgebraicGeometry.CartierDivisor.Comparison
-import QPainleve.AlgebraicGeometry.Curves.Node.Order
 import QPainleve.AlgebraicGeometry.EffectiveCartierDivisor.Stalk
 import QPainleve.AlgebraicGeometry.IdealSheaf.BaseChange
 import QPainleve.AlgebraicGeometry.IntersectionNumber.ExceptionalCurve.Numerical
@@ -28,7 +27,6 @@ import QPainleve.AlgebraicGeometry.IntersectionNumber.ExceptionalCurve.SmoothPro
 import QPainleve.AlgebraicGeometry.Morphisms.IsoLocus
 import QPainleve.AlgebraicGeometry.Morphisms.Pullback.IsoLocus
 import TauCeti.AlgebraicGeometry.Blowup.Restriction
-import TauCeti.AlgebraicGeometry.Curves.Node.Reduced
 import TauCeti.AlgebraicGeometry.Descent.Contraction
 import TauCeti.AlgebraicGeometry.Morphisms.Epi
 import TauCeti.AlgebraicGeometry.IdealSheaf.Comap
@@ -244,52 +242,6 @@ private theorem exists_descended_ruling
     rw [← hx, ← Scheme.Hom.comp_apply, hf']
     exact hpre hx
 
-private theorem isAnticanonical_reducedTotalTransform_of_node
-    {D : X.IdealSheafData} (hD : D.IsEffectiveCartier)
-    (hN : AtWorstNodalOfRelativeDimensionOne (D.subschemeι ≫ X ↘ S))
-    (hK : LineBundleClass.mk hD.toInvertibleSheaf = K[X])
-    {p : X} (hp : IsClosed ({p} : Set X)) (hn : D.IsNodeOfReducedBoundary (X ↘ S) p) :
-    let : B[p].Over S := ⟨π[p] ≫ X ↘ S⟩
-    let : SmoothOfRelativeDimension 2 (B[p] ↘ S) :=
-      smoothOfRelativeDimension_blowup_closed_point (X ↘ S) hp
-    ∃ hR : (R[p,D]).IsEffectiveCartier,
-      LineBundleClass.mk hR.toInvertibleSheaf = K[B[p]] ∧
-      D.comap (π[p]) = R[p,D] * E[p] ∧ R[p,D] ≤ E[p] ∧
-      AtWorstNodalOfRelativeDimensionOne ((R[p,D]).subschemeι ≫ π[p] ≫ X ↘ S) := by
-  intro hOver hSmooth
-  let := hOver
-  let := hSmooth
-  have : IsNoetherian X := isNoetherian_of_finiteType (X ↘ S)
-  have : Smooth (X ↘ S) := SmoothOfRelativeDimension.smooth 2 _
-  have : IsReduced D.subscheme := hN.isReduced
-  have hpD := mem_support_of_isNodeOfReducedBoundary hn
-  have hDI : D ≤ I[p] :=
-    (X.ker_fromSpecResidueField_eq_vanishingIdeal p) ▸
-      (D.le_ker_fromSpecResidueField_iff_mem_support hp).mpr hpD
-  have horder : D.stalkOrder p = 2 := by
-    simpa only [ite_eq_left hn] using hD.stalkOrder_eq_if_isNodeOfReducedBoundary hN hpD
-  have h := hD.exists_anticanonical_strictTransform_mul_exceptional_pow k hp hpD hK
-  dsimp only at h
-  have : IsIntegral B[p] := isIntegral_blowup_closed_point (X ↘ S) hp
-  have hd := ((smoothOfRelativeDimension_iff_ringKrullDim_stalk_eq (X ↘ S) 2).mp
-    inferInstance).2 p hp
-  have := isRegularLocalRing_stalk_of_smooth (X ↘ S) p
-  have : Surjective π[p] := surjective_blowupToBase_point hp hd
-  have : IsIntegral (E[p]).subscheme := isIntegral_exceptional_blowup_closed_point hd hp
-  simp only [horder, ENat.toNat_ofNat, Nat.reduceSub, pow_one] at h
-  have hN' : AtWorstNodalOfRelativeDimensionOne ((R[p,D]).subschemeι ≫ π[p] ≫ X ↘ S) := by
-    obtain ⟨z, hz, -⟩ := (D.isNodeOfReducedBoundary_iff_of_isReduced _ _).mp hn
-    subst p
-    exact atWorstNodalOfRelativeDimensionOne_radical_comap_blowupToBase_of_node hN hD hp hn
-  have hEq := (I[p]).radical_comap_blowupToBase_eq_ker_blowupMap_subschemeι_mul D hDI
-  have hLe : R[p,D] ≤ E[p] := hEq.trans_le (mul_le_of_le_one_left' le_top)
-  obtain ⟨hOld, hc, ht⟩ := h
-  refine ⟨hEq.symm ▸ hOld, ?_, ?_, hLe, hN'⟩
-  · rw [LineBundleClass.mk_toInvertibleSheaf_congr _ hOld hEq]
-    exact hc
-  · rw [hEq]
-    exact ht.symm
-
 omit [IsAlgClosed k] [X.Over S] [C.Over S] [IsIntegral X] [X.IsProjectiveOver k]
   [SmoothOfRelativeDimension 2 (X ↘ S)] in
 private theorem exceptional_image_le_strictTransform_fiber_image
@@ -496,7 +448,7 @@ theorem exists_elementary_transform_of_nodal_fiber
   let : SmoothOfRelativeDimension 2 (Y ↘ S) := hSmooth
   obtain ⟨f', hf', hcomp, hfq⟩ := f.exists_descended_ruling hp hy g hc hgF hq a hΓ hg
   obtain ⟨hR, hcanR, htotal, hER, hnodalR⟩ :=
-    isAnticanonical_reducedTotalTransform_of_node hD hN hK hp hn
+    hD.isAnticanonical_reducedTotalTransform_of_node hN hK hp hn
   have hnot := f.strictTransform_fiber_not_le_boundary hp a hF
   have : IsNoetherian Y := isNoetherian_of_finiteType (Y ↘ S)
   let Q := vanishingIdeal (Closeds.mk (closure ({q} : Set Y)) isClosed_closure)
