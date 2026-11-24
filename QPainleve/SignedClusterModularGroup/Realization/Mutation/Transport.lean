@@ -97,13 +97,14 @@ private theorem transported_marked_pullback (e : (A).1 ≅ (B).1)
     (internalBlowupPicardMarking b (t) (d′) (hΨ)).symm
         (Additive.ofMul (pullback (qProj(e)) (M.picardMarking x).toMul)) = J′ x := by
   apply (I).injective
-  rw [LinearMap.comp_apply, LinearEquiv.coe_coe, LinearEquiv.apply_symm_apply,
-    ← p.marked_pullback x]
-  apply (internalBlowupPicardMarking b s (d) hΦ).injective
-  apply Additive.toMul.injective
-  simp only [LinearEquiv.apply_symm_apply, toMul_ofMul]
-  rw [← hmark, LinearEquiv.apply_symm_apply, toMul_ofMul, pullback_comp e.hom (qProj(e)),
-    Iso.hom_inv_id_assoc]
+  have hsquare : e.hom ≫ qProj(e) = p.projection ≫ (Iso.refl M.surface).hom := by
+    simp only [Iso.refl_hom, Category.comp_id, Iso.hom_inv_id_assoc]
+  have hpullback := pullback_nodal_mutation_picard_marking b s k hOpp hΦ (d) (d′)
+    hsquare (by simpa only [internalBlowupPicardMarking_apply] using hmark)
+    (M.picardMarking x).toMul
+  rw [Iso.refl_hom, pullback_id, p.marked_pullback x] at hpullback
+  simpa only [LinearMap.comp_apply, LinearEquiv.coe_coe, LinearEquiv.apply_symm_apply]
+    using hpullback.symm
 
 private def transportMutation (e : (A).1 ≅ (B).1)
     (he : (ιA) ≫ e.hom = (u).hom ≫ (ιB))
