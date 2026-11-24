@@ -9,6 +9,7 @@ public import Mathlib.Data.ZMod.Basic
 public import QPainleve.AlgebraicGeometry.Chow.NodalIntersection
 public import QPainleve.AlgebraicGeometry.Chow.Nef.Basic
 import QPainleve.AlgebraicGeometry.CartierDivisor.Support
+import QPainleve.AlgebraicGeometry.Curves.DualGraph.CycleAction
 import TauCeti.AlgebraicGeometry.Curves.Node.Reduced
 import TauCeti.AlgebraicGeometry.Scheme.DiscreteValuationStalk
 
@@ -32,23 +33,6 @@ universe u
 namespace QPainleve.BoundaryCycle
 
 variable {n : ℕ}
-
-private theorem ncard_cycle_edges (i j : ZMod n) (hij : i ≠ j) :
-    ({e | (e = i ∧ j = i + 1) ∨ (e = j ∧ i = j + 1)} : Set (ZMod n)).ncard =
-      (if j = i + 1 then 1 else 0) + (if j = i - 1 then 1 else 0) := by
-  have hprev : i = j + 1 ↔ j = i - 1 := eq_comm.trans eq_sub_iff_add_eq.symm
-  simp only [hprev]
-  by_cases hs : j = i + 1
-  · by_cases ht : j = i - 1
-    · simp only [eq_true hs, eq_true ht, and_true, ite_true, Set.ofPred_or,
-        Set.ofPred_eq_eq_singleton, Set.singleton_union, Set.ncard_pair hij]
-    · simp only [eq_true hs, eq_false ht, and_true, and_false, or_false, ite_true, ite_false,
-        Set.ofPred_eq_eq_singleton, Set.ncard_singleton, add_zero]
-  · by_cases ht : j = i - 1
-    · simp only [eq_false hs, eq_true ht, and_true, and_false, false_or, ite_true, ite_false,
-        Set.ofPred_eq_eq_singleton, Set.ncard_singleton, zero_add]
-    · simp only [eq_false hs, eq_false ht, and_false, or_self, ite_false, Set.ofPred_false,
-        Set.ncard_empty, add_zero]
 
 variable [NeZero n] {k : Type u} [Field k] [IsAlgClosed k] {X : Scheme.{u}}
   [X.Over (Spec (.of k))] [X.IsProjectiveOver k] [IsIntegral X]
@@ -112,7 +96,8 @@ theorem intersectionBilinForm_eq_of_nodal_cycle {I : X.IdealSheafData}
     rw [Chow.intersectionBilinForm_apply, toMul_ofMul, toMul_ofMul,
       Chow.classIntersectionNumber_eq_ncard_of_nodal hI hnodal (p.injective.ne hij)
         ((hp _).mpr (Set.mem_range_self i)) ((hp _).mpr (Set.mem_range_self j)),
-      hinc i j hij, Set.ncard_image_of_injective _ node.injective, ncard_cycle_edges i j hij]
+      hinc i j hij, Set.ncard_image_of_injective _ node.injective,
+      DualGraph.ncard_cycle_edges_of_ne i j hij]
     simp [F, hij, apply_ite ((↑) : ℕ → ℤ)]
   intro i j
   by_cases hij : i = j
