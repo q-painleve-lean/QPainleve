@@ -7,7 +7,7 @@ module
 
 public import QPainleve.SignedClusterModularGroup.SarkisovDegree.Plane.Logarithmic
 public import QPainleve.SignedClusterModularGroup.SarkisovDegree.Plane.PolePropagation
-public import QPainleve.SignedClusterModularGroup.SarkisovDegree.Plane.Terminal
+public import QPainleve.SignedClusterModularGroup.SarkisovDegree.Plane.Terminal.Basic
 
 import Mathlib.Analysis.Complex.Polynomial.Basic
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Centres

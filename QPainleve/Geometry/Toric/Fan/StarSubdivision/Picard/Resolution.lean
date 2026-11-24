@@ -113,7 +113,8 @@ theorem exists_hirzebruch_toric_link_resolution_of_absent_corner
     hT.exists_prepend_closed_point_blowup (Φ.isClosed_singleton_distinguishedPoint σ) hp
   rw [← hI] at hinsert
   obtain ⟨q, W, L, f, hL, hq, hqp, hA, hf, hcenters, hprep⟩ := hinsert
-  obtain ⟨Ψ, F, hΨ, hF, hc', _, d, τ, s, t, g, g', r, r', hr, hr', hd₀, hd₁, hτ, hg, hg', hcoord⟩ :=
+  obtain ⟨Ψ, F, hΨ, hF, hc', _, d, τ, s, t, g, g', r, r', hr, hr',
+      hd₀, hd₁, hτ, hg, hg', -, -, hcoord⟩ :=
     Fan.exists_hirzebruch_toric_elementary_transform_picard_coordinates b e hΦ hc hrays σ hσ
   let R := L.transport (g.symm ≪≫ g')
   let hU : IsClosedPointTower (I[τ]).blowup R.tower := R.isLift.isClosedPointTower hL

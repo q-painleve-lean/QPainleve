@@ -159,7 +159,8 @@ contraction give a two-step Sarkisov path on the specified resolving surface.
 The final projection identifies the smaller plane resolution, retaining the
 prescribed morphism to the target plane, its pole factorization, and all
 ordered exceptional coordinates. The quadric is marked in the exchanged ruling,
-so the original fiber degree is the coefficient of its fiber in this frame. -/
+so the original fiber degree is read in this frame. The Sarkisov degree
+decreases for any total base orders. -/
 theorem exists_sarkisov_path_decrease_of_quadric_single_high_center
     (hg : g ≫ fP = T.toBase ≫ f[Φ]) (hbir : Scheme.BirationalOver g (𝟙 P))
     (c : ℂˣ) (j : Fin (n + 1)) (hj : hT.baseCenter j = pivotPoint[c])
@@ -196,8 +197,8 @@ theorem exists_sarkisov_path_decrease_of_quadric_single_high_center
       y.2 (Fin.natAdd 1 (Fin.castAdd n (0 : Fin 1))) = m j - a₀ ∧
       (∀ l : Fin n, y.2 (Fin.natAdd 1 (l.natAdd 1)) = x.2 (j.succAbove l)) ∧
       0 < degree y.1 ∧
-      planeSarkisovBidegree (degree y.1).toNat (∑ l, -y.2 l).toNat <
-        hirzebruchSarkisovBidegree b₀.toNat (∑ l, m l).toNat := by
+      ∀ M' M, planeSarkisovBidegree (degree y.1).toNat M' <
+        hirzebruchSarkisovBidegree b₀.toNat M := by
   let : Nonempty Φ.cones := hc.nonempty_cones
   let : Nonempty (Fan.cones Ψ) := (hcΨ).nonempty_cones
   let : SmoothOfRelativeDimension 2 f[Φ] := by
