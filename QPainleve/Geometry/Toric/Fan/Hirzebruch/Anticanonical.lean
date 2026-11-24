@@ -256,10 +256,14 @@ private theorem exists_ruling_fiber_pair_of_hirzebruch_boundary
     simp [V, and_comm]
   have hu := (hmem u).mp (by simp [huvV])
   have hv := (hmem v).mp (by simp [huvV])
-  obtain ⟨y, hy, hY⟩ :=
-    exists_hirzebruch_ruling_fiber_of_prime_class_eq b e hΦ hc r hr (p u) (hf u hu.1 hu.2)
-  obtain ⟨z, hz, hZ⟩ :=
-    exists_hirzebruch_ruling_fiber_of_prime_class_eq b e hΦ hc r hr (p v) (hf v hv.1 hv.2)
+  obtain ⟨y, hy, -, hY⟩ :=
+    exists_hirzebruch_ruling_fiber_of_degree_zero b e hΦ hc r hr (p u) (by
+      rw [hf u hu.1 hu.2, Basis.repr_self]
+      simp)
+  obtain ⟨z, hz, -, hZ⟩ :=
+    exists_hirzebruch_ruling_fiber_of_degree_zero b e hΦ hc r hr (p v) (by
+      rw [hf v hv.1 hv.2, Basis.repr_self]
+      simp)
   have hne : y (IsLocalRing.closedPoint ℂ) ≠ z (IsLocalRing.closedPoint ℂ) := by
     intro h
     have hyz := ext_of_apply_closedPoint_eq (projectiveLine ℂ ↘ S) hy hz h

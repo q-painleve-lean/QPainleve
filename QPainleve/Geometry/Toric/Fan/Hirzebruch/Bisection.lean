@@ -133,7 +133,7 @@ theorem hirzebruch_anticanonical_bisection (he : 0 ≤ e)
 include hc hK in
 private theorem hirzebruch_one_bisection_coordinates (he : e = 1)
     (s t : D.boundaryPrimes) (hs : d[s] = 2) (hst : s ≠ t) :
-    (∀ j : D.boundaryPrimes, j = s ∨ j = t) ∧ a[s] = 2 ∧ P p[t] = C 0 := by
+    (∀ j : D.boundaryPrimes, j = s ∨ j = t) ∧ a[s] = 2 := by
   classical
   let : Fintype D.boundaryPrimes := hD.finite_boundaryPrimes.fintype
   obtain ⟨hsec, -, hbound⟩ := hirzebruch_anticanonical_bisection b e hΦ hc r hr hD hK
@@ -148,12 +148,7 @@ private theorem hirzebruch_one_bisection_coordinates (he : e = 1)
   rw [← hpair, Finset.sum_pair hst] at hsum
   have hdt := hirzebruch_boundary_prime_degree_eq_zero_of_bisection b e hΦ hc r hr hD hK hs hst.symm
   have hat := hirzebruch_fiber_coeff_pos_of_degree_zero b e hΦ r hr hc (by omega) p[t] hdt
-  have ht₁ : a[t] = 1 := by omega
-  have htClass : P p[t] = C 0 := by
-    have hrepr := ((C).sum_repr (P p[t])).symm
-    rw [Fin.sum_univ_two, ht₁, hdt, one_smul, zero_smul, add_zero] at hrepr
-    exact hrepr
-  refine ⟨fun j ↦ ?_, by omega, htClass⟩
+  refine ⟨fun j ↦ ?_, by omega⟩
   have hj : j ∈ ({s, t} : Finset D.boundaryPrimes) := hpair ▸ Finset.mem_univ j
   simpa only [Finset.mem_insert, Finset.mem_singleton] using hj
 
@@ -189,25 +184,13 @@ theorem exists_fiber_of_hirzebruch_one_anticanonical_bisection (he : e = 1)
       I[p[t]] = y.ker.comap q ∧ D = I[p[s]] * (y.ker.comap q) := by
   classical
   let := Φ.uniqueFactorizationMonoid_stalk_algebraicRealization hΦ
-  obtain ⟨hall, ha, ht⟩ := hirzebruch_one_bisection_coordinates b e hΦ hc r hr hD hK he s t hs hst
-  obtain ⟨y, hy, hf⟩ := exists_hirzebruch_ruling_fiber_of_prime_class_eq b e hΦ hc r hr p[t] ht
+  obtain ⟨hall, ha⟩ := hirzebruch_one_bisection_coordinates b e hΦ hc r hr hD hK he s t hs hst
+  have ht := hirzebruch_boundary_prime_degree_eq_zero_of_bisection b e hΦ hc r hr hD hK hs hst.symm
+  obtain ⟨y, hy, -, hf⟩ := exists_hirzebruch_ruling_fiber_of_degree_zero b e hΦ hc r hr p[t] ht
   refine ⟨disjoint_hirzebruch_bisection_section b e hΦ hc r hr hs (by rw [ha, he]; decide),
     y, hy, hf, ?_⟩
   rw [← hf]
-  let A : Finset (CodimensionOnePoint X) := {p[s], p[t]}
-  have hA (a : CodimensionOnePoint X) : a ∈ A ↔ (a : X) ∈ D.support := by
-    refine Iff.trans ?_ (Set.ext_iff.mp D.range_boundaryPrimeEmbedding a)
-    simp only [A, Finset.mem_insert, Finset.mem_singleton, Set.mem_range]
-    constructor
-    · rintro (rfl | rfl)
-      · exact ⟨s, rfl⟩
-      · exact ⟨t, rfl⟩
-    · rintro ⟨j, rfl⟩
-      rcases hall j with rfl | rfl
-      · exact Or.inl rfl
-      · exact Or.inr rfl
-  have h := hD.eq_prod_vanishingIdeal_of_isReduced A hA
-  rwa [Finset.prod_pair (D.boundaryPrimeEmbedding.injective.ne hst)] at h
+  simpa only [coe_boundaryPrimeEmbedding] using hD.eq_mul_vanishingIdeal_of_boundaryPrimes hst hall
 
 include hc hK in
 /-- In the presence of a bisection the distinguished invariant section is not a
