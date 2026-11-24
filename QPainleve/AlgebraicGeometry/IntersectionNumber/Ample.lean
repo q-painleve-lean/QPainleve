@@ -33,6 +33,38 @@ open TauCeti.AlgebraicGeometry
 
 universe u
 
+namespace AlgebraicGeometry.Scheme.Hom
+
+/-- A proper morphism is finite if the pullback of a line-bundle class has positive
+degree on every integral closed curve. -/
+theorem isFinite_of_intersectionNumber_pullback_pos
+    {k : Type u} [Field k] {X Y : Scheme.{u}} [X.Over (Spec (.of k))]
+    [IsProper (X ↘ Spec (.of k))] [CompactSpace Y] (f : X ⟶ Y) [IsProper f]
+    (a : LineBundleClass Y)
+    (ha : ∀ {C : Scheme.{u}} [C.Over (Spec (.of k))] [C.IsCurveOver k]
+      (i : C ⟶ X) [IsClosedImmersion i], C ↘ Spec (.of k) = i ≫ X ↘ Spec (.of k) →
+        0 < LineBundleClass.intersectionNumber k i (LineBundleClass.pullback f a)) :
+    IsFinite f := by
+  by_contra hfin
+  obtain ⟨y, hy, C, i, hi, hC, hdim⟩ := f.exists_closed_curve_in_fiber_of_not_isFinite hfin
+  have : IsClosedImmersion (Y.fromSpecResidueField y) :=
+    isClosed_singleton_iff_isClosedImmersion.mp hy
+  have : IsClosedImmersion (f.fiberι y) :=
+    inferInstanceAs (IsClosedImmersion (pullback.fst f (Y.fromSpecResidueField y)))
+  let j := i ≫ f.fiberι y
+  let : C.Over (Spec (.of k)) := ⟨j ≫ X ↘ Spec (.of k)⟩
+  have : C.IsCurveOver k := Scheme.isCurveOver_iff.mpr
+    ⟨hC, inferInstanceAs (IsProper (j ≫ X ↘ Spec (.of k))), hdim⟩
+  have hp := ha j rfl
+  rw [LineBundleClass.intersectionNumber_pullback] at hp
+  exact hp.ne' (LineBundleClass.intersectionNumber_eq_zero_of_eq_comp k _
+    (i ≫ f.fiberToSpecResidueField y) (Y.fromSpecResidueField y)
+    (by simp only [j, Category.assoc, f.fiber_fac y])
+    (t := IsLocalRing.closedPoint (Y.residueField y))
+    (fun z ↦ (Subsingleton.elim z _) ▸ specializes_rfl) _)
+
+end AlgebraicGeometry.Scheme.Hom
+
 namespace TauCeti.AlgebraicGeometry.InvertibleSheaf
 
 attribute [local instance] MvPolynomial.gradedAlgebra
@@ -71,24 +103,11 @@ theorem isAmple_of_isGloballyGenerated_of_intersectionNumber_pos
   have hclass : LineBundleClass.mk L = LineBundleClass.pullback p (LineBundleClass.mk M) := by
     rw [LineBundleClass.pullback_mk]
     exact LineBundleClass.mk_eq_mk_iff.mpr ⟨e.symm⟩
-  have : IsFinite p := by
-    by_contra hfin
-    obtain ⟨y, hy, C, i, hi, hC, hdim⟩ := p.exists_closed_curve_in_fiber_of_not_isFinite hfin
-    have : IsClosedImmersion ((Proj A).fromSpecResidueField y) :=
-      isClosed_singleton_iff_isClosedImmersion.mp hy
-    have : IsClosedImmersion (p.fiberι y) :=
-      inferInstanceAs (IsClosedImmersion (pullback.fst p ((Proj A).fromSpecResidueField y)))
-    let j := i ≫ p.fiberι y
-    let : C.Over (Spec (.of k)) := ⟨j ≫ f⟩
-    have : C.IsCurveOver k := Scheme.isCurveOver_iff.mpr
-      ⟨hC, inferInstanceAs (IsProper (j ≫ f)), hdim⟩
-    have hp := hpos j rfl
-    rw [hclass, LineBundleClass.intersectionNumber_pullback] at hp
-    exact hp.ne' (LineBundleClass.intersectionNumber_eq_zero_of_eq_comp k _
-      (i ≫ p.fiberToSpecResidueField y) ((Proj A).fromSpecResidueField y)
-      (by simp only [j, Category.assoc, p.fiber_fac y])
-      (t := IsLocalRing.closedPoint ((Proj A).residueField y))
-      (fun z ↦ (Subsingleton.elim z _) ▸ specializes_rfl) _)
+  have : IsFinite p := p.isFinite_of_intersectionNumber_pullback_pos (LineBundleClass.mk M)
+    (by
+      intro C _ _ i _ hi
+      rw [← hclass]
+      exact hpos i hi)
   have hM : (LineBundleClass.mk M).IsAmple :=
     Proj.isAmple_twistingSheaf (fun s : T ↦ MvPolynomial.X s)
       (fun s ↦ (MvPolynomial.mem_homogeneousSubmodule ..).mpr (MvPolynomial.isHomogeneous_X k s))
