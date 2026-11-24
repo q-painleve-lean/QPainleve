@@ -144,10 +144,7 @@ theorem existsUnique_isLift_of_eq_scaled_characters_of_contractions
   have := (IsModification.birational p).irreducibleSpace
   have := (IsModification.birational q).irreducibleSpace
   have : IsReduced (Y c) := by
-    have hN : Module.finrank ℤ N = 2 := by simpa using Module.finrank_eq_card_basis b
-    have : SmoothOfRelativeDimension 2 base :=
-      hN ▸ Φ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
-    have := (isClosedPointTower_internalBlowupTower b s c).smoothOfRelativeDimension base
+    have := smoothOfRelativeDimension_internalBlowupTower b s c hΦ
     have : Smooth (π c ≫ base) := SmoothOfRelativeDimension.smooth 2 _
     exact (π c ≫ base).isReduced_of_smooth
   have := p.isIso_functionFieldMap_of_isModification

@@ -12,11 +12,9 @@ import QPainleve.AlgebraicGeometry.Curves.Node.Conductor.Naturality
 import QPainleve.AlgebraicGeometry.Curves.Node.NormalizationComponent
 import QPainleve.AlgebraicGeometry.EffectiveCartierDivisor.Dimension
 import QPainleve.AlgebraicGeometry.EffectiveCartierDivisor.Pullback
-import QPainleve.AlgebraicGeometry.Morphisms.IsoLocus
 import QPainleve.AlgebraicGeometry.Scheme.LocalDimension
 import TauCeti.AlgebraicGeometry.IdealSheaf.VanishingIdeal
 import TauCeti.AlgebraicGeometry.Morphisms.LocallyQuasiFinite
-import TauCeti.Topology.Sober
 
 /-!
 # Restricting surface classes to a nodal boundary
@@ -36,8 +34,7 @@ namespace AlgebraicGeometry.Scheme.IdealSheafData.IsEffectiveCartier
 
 universe u
 
-variable {k : Type u} [Field k] {X : Scheme.{u}} [X.Over (Spec (.of k))]
-  {D : X.IdealSheafData} [PrestableFamily (D.subscheme ↘ Spec (.of k))]
+variable {k : Type u} [Field k] {X : Scheme.{u}} {D : X.IdealSheafData}
 
 local notation "C" => IdealSheafData.subscheme D
 local notation "I" => Scheme.singularLocus k C
@@ -45,6 +42,10 @@ local notation "ν" => IdealSheafData.blowupToBase I
 local notation "N" => IdealSheafData.blowup I
 local notation "V" => irreducibleComponents N
 local notation "η" => genericPoints.ofComponent
+
+section Components
+
+variable [D.subscheme.Over (Spec (.of k))] [PrestableFamily (D.subscheme ↘ Spec (.of k))]
 
 /-- Each normalized component maps onto the reduced prime curve through the image of its
 generic point. The image point has codimension one in the ambient scheme. -/
@@ -78,6 +79,10 @@ theorem exists_range_blowupComponent_comp_subschemeι [IsLocallyNoetherian X]
     rw [Scheme.Hom.comp_apply, Scheme.Hom.comp_apply, hy', hy, hx]
   have he := CodimensionOnePoint.eq_of_specializes (specializes_iff_mem_closure.mpr hqp)
   exact ⟨v, he ▸ hq⟩
+
+end Components
+
+variable [X.Over (Spec (.of k))] [PrestableFamily (D.subscheme ↘ Spec (.of k))]
 
 section Surface
 

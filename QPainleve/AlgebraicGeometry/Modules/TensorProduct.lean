@@ -13,7 +13,8 @@ public import TauCeti.AlgebraicGeometry.Modules.GlobalSections
 
 The pure tensor of two sections gives a section of the sheaf tensor product over the same open.
 Iterating this construction gives a linear map from the original module of sections to the
-sections of the iterated tensor product.
+sections of the iterated tensor product. Surjectivity of the tensor map on sections is
+invariant under isomorphisms of the coefficient sheaves.
 -/
 
 public section
@@ -26,6 +27,27 @@ open TauCeti
 universe u
 
 namespace AlgebraicGeometry.Scheme.Modules
+
+/-- Isomorphic coefficient sheaves give equivalent surjectivity conditions
+for the tensor map on sections. -/
+theorem surjective_sectionsFunctor_μ_iff_of_iso
+    {X : Scheme.{u}} {U : X.Opens} {M N M' N' : X.Modules}
+    (a : M ≅ M') (b : N ≅ N') :
+    Function.Surjective (μ (sectionsFunctor U) M N) ↔
+      Function.Surjective (μ (sectionsFunctor U) M' N') := by
+  suffices ∀ {A B A' B' : X.Modules}, (A ≅ A') → (B ≅ B') →
+      Function.Surjective (μ (sectionsFunctor U) A B) →
+      Function.Surjective (μ (sectionsFunctor U) A' B') from
+    ⟨this a b, this a.symm b.symm⟩
+  intro A B A' B' c d h x
+  let F := sectionsFunctor U
+  let e := F.mapIso (tensorIso c d)
+  obtain ⟨y, hy⟩ := h (e.inv x)
+  refine ⟨(F.map c.hom ⊗ₘ F.map d.hom) y, ?_⟩
+  have hw := ConcreteCategory.congr_hom (μ_natural F c.hom d.hom) y
+  simp only [ConcreteCategory.comp_apply] at hw
+  refine hw.trans (congrArg e.hom hy |>.trans ?_)
+  exact ConcreteCategory.congr_hom e.inv_hom_id x
 
 variable {X : Scheme.{u}} {M L : X.Modules} {U V : X.Opens}
 
