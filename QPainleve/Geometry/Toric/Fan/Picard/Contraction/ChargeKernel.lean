@@ -93,8 +93,10 @@ variable {X Y : Scheme} [X.Over S] [X.IsProjectiveOver ℂ] [IsIntegral X]
   {D : X.IdealSheafData} {d : ℕ} {T : QPainleve.BlowupTower X d Y}
   (hT : IsNodalBoundaryTower D (X ↘ S) (𝟙 X) T)
 
-local instance : IsNoetherian X := isNoetherian_of_finiteType (X ↘ S)
-local instance : ∀ x : X, UniqueFactorizationMonoid (X.presheaf.stalk x) :=
+local instance isNoetherian_contractedChargeKernel : IsNoetherian X :=
+  isNoetherian_of_finiteType (X ↘ S)
+local instance uniqueFactorizationMonoidStalk_contractedChargeKernel :
+    ∀ x : X, UniqueFactorizationMonoid (X.presheaf.stalk x) :=
   (X ↘ S).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two
 
 local notation "K" => LinearMap.ker (rayChargeMap s)
