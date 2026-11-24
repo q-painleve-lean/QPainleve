@@ -493,32 +493,30 @@ local notation "kE" =>
   picardBoundaryOrthogonalEquivChargeKernel hΦ dim s m hm hprim d (J[d]) (hJ[d]) hQ q hq hEs
 local notation "mark[" z "]" => picardMarking (U[z]) (hU[z]) fZ
 
-variable {f : X ⟶ Y}
-
-/-- If pullback preserves the marked Picard coordinates of the class of a charge
-relation, it gives the class of the same relation on the source. -/
-theorem pullback_picardBoundaryOrthogonalEquivChargeKernel_symm
-    (x : ChargeKernel)
+/-- A map of Picard classes that preserves the marked coordinates of a charge
+relation sends it to the class of the same relation on the other surface. -/
+theorem map_picardBoundaryOrthogonalEquivChargeKernel_symm_of_matching_markings
+    (G : LineBundleClass Y → LineBundleClass X) (x : ChargeKernel)
     (hmark : letI : SmoothOfRelativeDimension 2 fZ := smoothZ
       let L := ((kE).symm x).val.toMul
-      (mark[c]).symm (Additive.ofMul (pullback a (pullback f L))) =
+      (mark[c]).symm (Additive.ofMul (pullback a (G L))) =
         (mark[d]).symm (Additive.ofMul (pullback a' L))) :
-    pullback f ((kE).symm x).val.toMul = ((kD).symm x).val.toMul := by
+    G ((kE).symm x).val.toMul = ((kD).symm x).val.toMul := by
   let : SmoothOfRelativeDimension 2 fZ := smoothZ
   let L := ((kE).symm x).val.toMul
   obtain ⟨H, hH, hdeg⟩ := exists_picardBoundaryOrthogonalEquivChargeKernel_symm_marking
     hΦ dim s m hm hprim c (J[c]) (hJ[c]) hP p hp hDs x
-  obtain ⟨G, hG, hdeg'⟩ := exists_picardBoundaryOrthogonalEquivChargeKernel_symm_marking
+  obtain ⟨H', hH', hdeg'⟩ := exists_picardBoundaryOrthogonalEquivChargeKernel_symm_marking
     hΦ dim s m hm hprim d (J[d]) (hJ[d]) hQ q hq hEs x
-  have hGH : G = H := (hdeg G).mp ((hdeg' G).mpr rfl)
+  have hHH' : H' = H := (hdeg H').mp ((hdeg' H').mpr rfl)
   have hcoords : (mark[d]).symm (Additive.ofMul (pullback a' L)) =
-      (G, -(x : Fin n → ℤ)) := by
+      (H', -(x : Fin n → ℤ)) := by
     apply (mark[d]).injective
     rw [LinearEquiv.apply_symm_apply, picardMarking_apply]
-    exact (congrArg Additive.ofMul hG).symm
-  have hclass : pullback a (pullback f L) = pullback a ((kD).symm x).val.toMul := by
+    exact (congrArg Additive.ofMul hH').symm
+  have hclass : pullback a (G L) = pullback a ((kD).symm x).val.toMul := by
     have h := congrArg (fun z ↦ ((mark[c]) z).toMul) (hmark.trans hcoords)
-    simpa only [LinearEquiv.apply_symm_apply, toMul_ofMul, hGH, picardMarking_apply, hH] using h
+    simpa only [LinearEquiv.apply_symm_apply, toMul_ofMul, hHH', picardMarking_apply, hH] using h
   have hinj : Function.Injective (pullback a) := by
     intro L₁ L₂ h
     simp only [← pullback_comp] at h
