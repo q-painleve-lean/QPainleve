@@ -62,6 +62,16 @@ private theorem projectiveSpaceCone_compl_some_finOne :
     rw [basisFun_finOne_eq_one, intCast_finOne_one]
   simp only [Set.image_singleton, projectiveSpaceGenerator_none, Fin.sum_univ_one, map_neg, hb]
 
+/-- The projective-line chart at coordinate zero uses the positive ray, and
+the chart at coordinate one uses the negative ray. -/
+theorem projectiveSpaceMaximalCone_finOne_val (k : Fin 2) :
+    (Fan.projectiveSpaceMaximalCone b₁ h₁ (finSuccEquiv 1 k)).val =
+      if k = 0 then affineRayCone else negativeRayCone := by
+  fin_cases k
+  · simpa using projectiveSpaceCone_compl_none_finOne
+  · have hk : finSuccEquiv 1 (1 : Fin 2) = some 0 := (rfl)
+    simpa [hk] using projectiveSpaceCone_compl_some_finOne
+
 namespace Fan
 
 local notation "𝒜₁" => TauCeti.SymmetricAlgebra.homogeneousSubmodule ℂ (Option (Fin 1) → ℂ)
@@ -205,7 +215,9 @@ private theorem projectiveSpaceChartToProj_comp_rulingReindex (k : Fin 2) :
     (projectiveLine.coord_mem ℂ k) _ _
   simpa only [one_pow, Units.val_one, one_mul] using DFunLike.congr_fun hcoords x
 
-private theorem range_affineToricChartι_comp_projectiveLineToricIso (k : Fin 2) :
+/-- The maximal cone chart corresponds to the polynomial chart at the same
+homogeneous coordinate. -/
+theorem range_affineToricChartι_comp_projectiveLineToricIso (k : Fin 2) :
     Set.range ((Fan.projectiveSpace b₁ h₁).affineToricChartι
       (projectiveSpaceMaximalCone b₁ h₁ (finSuccEquiv 1 k)) ≫ projectiveLineToricIso.hom) =
       Set.range (projectiveLine.polynomialChartι ℂ k) := by
@@ -321,18 +333,10 @@ private theorem characterFanHom_mapsTo (σ : Φ.cones) (k : Fin 2)
       (projectiveSpaceMaximalCone b₁ h₁ (finSuccEquiv 1 k)).val := by
   intro x hx
   have hx' := (mem_dualSemigroup Φ.lattice _).1 hm hx
-  -- Use the underlying cone of the selected projective chart.
-  change (Φ.characterFanHom m h).realMap x ∈ projectiveSpaceCone b₁ i₁ {finSuccEquiv 1 k}ᶜ
-  have hk : finSuccEquiv 1 (1 : Fin 2) = some 0 := (rfl)
-  rcases Fin.eq_zero_or_eq_succ k with rfl | ⟨l, rfl⟩
-  · rw [finSuccEquiv_zero, projectiveSpaceCone_compl_none_finOne, mem_affineRayCone_iff]
-    simpa only [ite_true, characterFanHom_realMap] using hx'
-  · have hl : l = 0 := Subsingleton.elim _ _
-    subst l
-    -- The successor of the only rank-one index is the second projective coordinate.
-    have hs : (0 : Fin 1).succ = (1 : Fin 2) := (rfl)
-    rw [hs, hk, projectiveSpaceCone_compl_some_finOne, mem_negativeRayCone_iff]
-    simpa [hs] using hx'
+  rw [projectiveSpaceMaximalCone_finOne_val]
+  split_ifs at hx' ⊢
+  · exact (mem_affineRayCone_iff _).2 (by simpa only [characterFanHom_realMap] using hx')
+  · exact (mem_negativeRayCone_iff _).2 (by simpa using hx')
 
 private theorem characterFanHom_ratioCharacter (k : Fin 2) :
     (projectiveSpaceRatioCharacter b₁ (finSuccEquiv 1 k.rev) (finSuccEquiv 1 k)).comp
@@ -448,4 +452,45 @@ theorem isDominant_characterRuling [Nonempty Φ.cones] (hm : m ≠ 0) :
   exact IsDominant.of_comp (Φ.denseTorusι inferInstance) _
 
 end Fan
+
+namespace FanHom
+
+variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
+  {i : N →+ V} {Φ : Fan i}
+
+open Fan
+
+/-- A fan morphism to the projective-line fan with lattice character `n`
+is the character map induced by `n`. Its existence supplies the cone-wise sign
+condition. -/
+theorem exists_eq_characterFanHom
+    (q : FanHom Φ (Fan.projectiveSpace b₁ h₁)) (n : N →+ ℤ) (hq : ∀ x j, q.latticeMap x j = n x) :
+    ∃ hn, q = Φ.characterFanHom n hn := by
+  let φ := (LinearMap.proj (0 : Fin 1)).comp q.realMap
+  have hφ : φ = Φ.lattice.realCharacter n := by
+    apply Φ.lattice.eq_realCharacter
+    intro x
+    simp [φ, q.map_lattice, hq]
+  have he (x : V) : q.realMap x 0 = Φ.lattice.realCharacter n x :=
+    DFunLike.congr_fun hφ x
+  have hn (σ : Φ.cones) :
+      (∀ x ∈ σ.val, 0 ≤ Φ.lattice.realCharacter n x) ∨
+        ∀ x ∈ σ.val, Φ.lattice.realCharacter n x ≤ 0 := by
+    have hcones := congrArg Fan.cones projectiveSpace_finOne_eq_projectiveLineFan
+    have hτ := (mem_projectiveLineFan_cones _).mp (hcones.subset (q.leastCone_mem σ.property))
+    have hx (x : V) (hx : x ∈ σ.val) :
+        q.realMap x ∈ q.leastCone σ.property :=
+      q.map_le_leastCone σ.property ⟨x, hx, rfl⟩
+    rcases hτ with hτ | hτ | hτ
+    · exact Or.inl fun x h ↦ by
+        have hzero : q.realMap x = 0 := (Submodule.mem_bot (Nonneg ℝ)).mp (hτ ▸ hx x h)
+        simp [← he x, hzero]
+    · exact Or.inl fun x h ↦ he x ▸ (mem_affineRayCone_iff _).mp (hτ ▸ hx x h)
+    · exact Or.inr fun x h ↦ he x ▸ (mem_negativeRayCone_iff _).mp (hτ ▸ hx x h)
+  refine ⟨hn, FanHom.ext ?_⟩
+  ext x j
+  rw [characterFanHom_latticeMap, hq]
+
+end FanHom
+
 end TauCeti.Toric

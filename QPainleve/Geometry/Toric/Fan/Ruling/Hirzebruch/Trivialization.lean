@@ -11,6 +11,7 @@ public import TauCeti.Geometry.Toric.Algebraic.Fan.Equiv
 public import TauCeti.Geometry.Toric.Algebraic.Fan.Product.Basic
 
 import QPainleve.Geometry.Toric.Fan.Hirzebruch.Corner
+import QPainleve.Geometry.Toric.Fan.Ruling.ChartProduct
 import QPainleve.Geometry.Toric.Fan.Scheme
 import QPainleve.Geometry.Toric.Lattice
 import Mathlib.LinearAlgebra.Transvection.Basic
@@ -34,7 +35,7 @@ The scheme comparisons use Tau Ceti's
 
 public noncomputable section
 
-open AlgebraicGeometry CategoryTheory Limits Module PointedCone
+open AlgebraicGeometry CategoryTheory Limits Module Multiplicative PointedCone
 open TauCeti.AlgebraicGeometry (projectiveLine)
 
 namespace TauCeti.Toric.Fan
@@ -416,5 +417,60 @@ theorem hirzebruchRulingAffineIso_hom_fst (hΦ : Φ.IsRegular) (hc : Φ.IsComple
           (projectiveLineAffineFan k)).algebraicMap ≫ projectiveLineToricIso.hom := by
   simp only [hirzebruchRulingAffineIso, Iso.trans_hom, Iso.symm_hom, Category.assoc,
     Iso.hom_inv_id_assoc, IsPullback.isoPullback_hom_fst]
+
+variable (Φ) in
+include hr in
+/-- The character ruling of a complete regular Hirzebruch fan is a product over
+each of the two standard affine charts of the base projective line. The first
+fiber coordinate is the monomial of the first dual basis vector. In the
+second chart its exponent gains `e` times the second dual basis vector. -/
+theorem exists_hirzebruch_characterRuling_affine_chart_product
+    (hΦ : Φ.IsRegular) (hc : Φ.IsComplete) (k : Fin 2) :
+    let f := Φ.characterRuling (b.coord 1).toAddMonoidHom
+      (nonneg_or_nonpos_hirzebruch_ruling_character b e r hr)
+    let c := projectiveLine.polynomialChartι ℂ k
+    let n := (b.coord 0 + (if k = 0 then 0 else e) • b.coord 1).toAddMonoidHom
+    ∃ (u : pullback f c ⟶ projectiveLine ℂ) (t : Φ.denseTorus ⟶ pullback f c),
+      IsPullback u (pullback.snd f c) (projectiveLine ℂ ↘ S)
+        (Spec.map (CommRingCat.ofHom (algebraMap ℂ (Polynomial ℂ)))) ∧
+      t ≫ pullback.fst f c = Φ.denseTorusι hc.nonempty_cones ∧
+      t ≫ u = projectiveLine.polynomialPoint ℂ (algebraMap ℂ _) 0
+        (MonoidAlgebra.of ℂ _ (ofAdd ((denseTorusDualEquiv Φ.lattice).symm n))) := by
+  intro f c n
+  let h := nonneg_or_nonpos_hirzebruch_ruling_character b e r hr
+  rcases eq_or_ne k 0 with rfl | hk
+  · simpa [f, c, n] using Φ.exists_characterRuling_affine_chart_product _ h b rfl 0
+      (by simpa using fun j ↦ Φ.hirzebruch_chart_corners b e r hr hΦ hc j 0)
+  · let shear := LinearEquiv.transvection (f := (-e) • b.coord 1) (v := b 0)
+        (by simp [Basis.coord_apply])
+    let d := b.map shear
+    have hd₀ : d 0 = b 0 := by
+      simp [d, shear, LinearMap.transvection.apply, Basis.coord_apply]
+    have hd₁ : d 1 = b 1 - e • b 0 := by
+      simp [d, shear, LinearMap.transvection.apply, Basis.coord_apply, sub_eq_add_neg]
+    have hcoord : (b.coord 1).toAddMonoidHom = (d.coord 1).toAddMonoidHom := by
+      apply congrArg LinearMap.toAddMonoidHom
+      apply d.ext
+      intro j
+      simp only [Basis.coord_apply, Basis.repr_self]
+      fin_cases j
+      · simp [hd₀]
+      · simp [hd₁]
+    have hfirst : (d.coord 0).toAddMonoidHom = n := by
+      dsimp only [n]
+      apply congrArg LinearMap.toAddMonoidHom
+      apply d.ext
+      intro j
+      simp only [Basis.coord_apply, Basis.repr_self, ite_eq_right hk, LinearMap.add_apply,
+        LinearMap.smul_apply]
+      fin_cases j
+      · simp [hd₀]
+      · simp [hd₁]
+    have hcorners (j : Fin 2) : hull ℝ {i (if j = 0 then d 0 else -d 0),
+        i (if k = 0 then d 1 else -d 1)} ∈ Φ.cones := by
+      simpa only [hd₀, ite_eq_right hk, hd₁, neg_sub] using
+        Φ.hirzebruch_chart_corners b e r hr hΦ hc j k
+    simpa only [f, c, hfirst] using
+      Φ.exists_characterRuling_affine_chart_product _ h d hcoord k hcorners
 
 end TauCeti.Toric.Fan
