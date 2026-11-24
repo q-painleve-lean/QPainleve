@@ -148,6 +148,27 @@ private theorem card_boundaryPrimes_of_hirzebruch_boundaryComplexity_zero
 variable [(Φ.algebraicRealization).IsProjectiveOver ℂ]
   [SmoothOfRelativeDimension 2 (Φ.algebraicRealization ↘ Spec (CommRingCat.of ℂ))]
 
+include hc in
+/-- The prime coordinates of a reduced anticanonical divisor sum to the
+anticanonical coordinates in the Hirzebruch fiber–section basis. -/
+theorem sum_hirzebruch_boundary_prime_coordinates
+    {D : (X).IdealSheafData} [IsReduced D.subscheme] [Fintype D.boundaryPrimes]
+    (hD : D.IsEffectiveCartier)
+    (hK : LineBundleClass.mk hD.toInvertibleSheaf =
+      LineBundleClass.mk (QPainleve.canonicalBundle ℂ X 2)) (j : Fin 2) :
+    ∑ k : D.boundaryPrimes, (C).repr (P (D.boundaryPrimeEmbedding k)) j =
+      (![e + 2, 2] : Fin 2 → ℤ) j := by
+  let := Φ.uniqueFactorizationMonoid_stalk_algebraicRealization hΦ
+  have hsum : ∑ k : D.boundaryPrimes, P (D.boundaryPrimeEmbedding k) = -K := by
+    rw [← hD.ofMul_inv_toInvertibleSheaf_eq_sum_primeDivisorClass D.boundaryPrimeEmbedding
+      (fun q ↦ D.range_boundaryPrimeEmbedding.symm ▸ Iff.rfl), hK]
+    rfl
+  rw [← Finsupp.finsetSum_apply, ← map_sum, hsum]
+  obtain ⟨h₀, h₁⟩ := hirzebruch_anticanonical_coordinates b e hΦ r hr hc
+  fin_cases j
+  · simpa using h₀
+  · simpa using h₁
+
 omit [SmoothOfRelativeDimension 2 (Φ.algebraicRealization ↘ Spec (CommRingCat.of ℂ))] in
 include hc in
 /-- A reduced anticanonical divisor of complexity zero on a Hirzebruch surface
@@ -178,17 +199,11 @@ theorem exists_boundaryPrimes_of_hirzebruch_boundaryComplexity_zero (he : 0 ≤ 
   let a (j : D.boundaryPrimes) := (C).repr (P (p j)) 0
   let d (j : D.boundaryPrimes) := (C).repr (P (p j)) 1
   have hcard := card_boundaryPrimes_of_hirzebruch_boundaryComplexity_zero b e hΦ r hr hzero
-  have hsum : ∑ j, P (p j) = -K := by
-    rw [← hD.ofMul_inv_toInvertibleSheaf_eq_sum_primeDivisorClass p
-      (fun q ↦ D.range_boundaryPrimeEmbedding.symm ▸ Iff.rfl), hK]
-    rfl
-  have hsums (j : Fin 2) : ∑ k, (C).repr (P (p k)) j = (C).repr (-K) j := by
-    rw [← Finsupp.finsetSum_apply, ← map_sum, hsum]
-  have ⟨hcan₀, hcan₁⟩ := hirzebruch_anticanonical_coordinates b e hΦ r hr hc
+  have hsums (j : Fin 2) := sum_hirzebruch_boundary_prime_coordinates b e hΦ hc r hr hD hK j
   have hsection (j : D.boundaryPrimes) (hj : a j < e * d j) : p j = S₀ :=
     eq_section_of_hirzebruch_fiber_coeff_lt b e hΦ r hr hc (p j) hj
   obtain ⟨s, t, hst, hs, ht, hsa, hta, hf⟩ :=
-    exists_anticanonical_coordinate_split hcard he ((hsums 0).trans hcan₀) ((hsums 1).trans hcan₁)
+    exists_anticanonical_coordinate_split (a := a) (d := d) hcard he (hsums 0) (hsums 1)
       (fun j ↦ hirzebruch_fiber_coeff_nonneg b e hΦ r hr hc he (p j))
       (fun j ↦ hirzebruch_fiber_degree_nonneg b e hΦ r hr hc (p j))
       (fun j ↦ hirzebruch_fiber_coeff_pos_of_degree_zero b e hΦ r hr hc he (p j))
