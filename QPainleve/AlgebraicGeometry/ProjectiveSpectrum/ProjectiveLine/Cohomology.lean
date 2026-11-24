@@ -12,8 +12,7 @@ public import TauCeti.AlgebraicGeometry.IntersectionNumber.Basic
 public import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.ProjectiveLine
 public import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.TwistingSheaf.Basic
 
-import QPainleve.AlgebraicGeometry.IdealSheaf.Tensor.Restriction
-import TauCeti.AlgebraicGeometry.Cohomology.ClosedImmersion.Linear
+import QPainleve.AlgebraicGeometry.Cohomology.CartierPairing
 import TauCeti.AlgebraicGeometry.LineBundle.ProjectiveLine
 
 /-!
@@ -57,9 +56,7 @@ noncomputable def cohomologyTensorPushforwardSubschemeEquivTwistingSheaf
   let t := ((projectiveLine.nonempty_iso_twistingSheaf_iff k P d).mpr hP).some
   let t' := (Scheme.Modules.pullbackComp e.hom i).app M.obj ≪≫
     eqToIso (InvertibleSheaf.pullback_obj_obj (e.hom ≫ i) M).symm ≪≫ t
-  have := E.isIso_tensorRestrictionHom M
-  exact (cohomologyBaseLinearEquivOfIso k (asIso (E.tensorRestrictionHom M)) q).trans <|
-    (i.cohomologyPushforwardBaseLinearEquiv k N q).trans <|
+  exact (E.cohomologyTensorRestrictionEquiv k M q).trans <|
     (e.hom.cohomologyPullbackBaseLinearEquivOfIsIso k N q).symm.trans <|
     cohomologyBaseLinearEquivOfIso k t' q
 
