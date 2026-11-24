@@ -97,7 +97,8 @@ local notation "D₁" => Scheme.IdealSheafData.comap D (Iso.inv k)
 
 omit [SmoothOfRelativeDimension 2 (X ↘ S)] [IsIntegral X] [AlgebraicGeometry.IsNoetherian X]
   [SmoothOfRelativeDimension 2 (Y ↘ S)] [IsIntegral Y] [AlgebraicGeometry.IsNoetherian Y] in
-private theorem transported_tower_hom_comp {m m' : ℕ} {Z W : Scheme}
+/-- The isomorphism between transported tower tops commutes with their structure maps. -/
+theorem transported_tower_hom_comp {m m' : ℕ} {Z W : Scheme}
     {U : BlowupTower Y m W} {T : BlowupTower X m' Z}
     (e : Z ≅ W) (hT : T.toBase = e.hom ≫ U.toBase ≫ k.inv) :
     e.hom ≫ (U.toBase ≫ Y ↘ S) = T.toBase ≫ X ↘ S := by
@@ -107,7 +108,9 @@ private theorem transported_tower_hom_comp {m m' : ℕ} {Z W : Scheme}
 
 omit [SmoothOfRelativeDimension 2 (X ↘ S)] [IsIntegral X] [AlgebraicGeometry.IsNoetherian X]
   [SmoothOfRelativeDimension 2 (Y ↘ S)] [IsIntegral Y] [AlgebraicGeometry.IsNoetherian Y] in
-private theorem nodalTower_from_iso {m : ℕ} {W : Scheme} {U : BlowupTower Y m W}
+/-- Transport a nodal boundary tower along an isomorphism of bases, preserving its
+projection and identifying the reduced total boundary on the two tower tops. -/
+theorem nodalTower_from_iso {m : ℕ} {W : Scheme} {U : BlowupTower Y m W}
     (hU : IsNodalBoundaryTower D₁ (Y ↘ S) (𝟙 Y) U) :
     ∃ (Z : Scheme) (T : BlowupTower X (0 + m) Z) (e : Z ≅ W),
       IsNodalBoundaryTower D (X ↘ S) (𝟙 X) T ∧

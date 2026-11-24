@@ -140,7 +140,6 @@ theorem exists_marked_quadric_preparation_of_hirzebruch
   let : IsNoetherian Y := T.isNoetherian
   let : k.hom.IsOver S := ⟨(Category.assoc k.hom T.toBase fA).symm.trans
     (hhA ▸ comp_over A.hom S)⟩
-  let : k.inv.IsOver S := inferInstance
   let E := D.comap k.inv
   let : Smooth (Y ↘ S) := SmoothOfRelativeDimension.smooth 2 _
   let : T.toBase.IsOver S := ⟨rfl⟩
@@ -178,21 +177,11 @@ theorem exists_marked_quadric_preparation_of_hirzebruch
     (Q.model_regular 0) (Q.model_complete 0) r u hr hu hR.isClosedPointTower hU e
     Q.common_source (Q.common_model 0) q hq hq' g hg
   -- Descend the refinement from the coordinates of the source point tower.
-  let hnil : IsNodalBoundaryTower D (X ↘ S) (𝟙 X) (.nil : BlowupTower X 0 X) := .nil
-  have hsupp : (E.comap k.hom).support =
-      (D.comap (.nil : BlowupTower X 0 X).toBase).support := by
-    simp [E, ← comap_comp]
-  have hk : k.hom ≫ Y ↘ S = (.nil : BlowupTower X 0 X).toBase ≫ X ↘ S := by
-    simpa only [toBase_nil, Category.id_comp] using comp_over k.hom S
-  obtain ⟨V, J, d, hJ, hbase, hideal⟩ := hnil.exists_append_of_iso hR k hk hsupp
-  simp only [toBase_nil, Category.comp_id] at hbase
+  obtain ⟨V, J, d, hJ, hbase, hideal⟩ := nodalTower_from_iso k hR
   let : V.Over S := over[J]
   let : SmoothOfRelativeDimension 2 (V ↘ S) := smooth[hJ]
   let : IsIntegral V := integral[hJ]
-  have hd : d.hom ≫ (R.toBase ≫ Y ↘ S) = J.toBase ≫ X ↘ S := by
-    rw [hbase]
-    simp only [Category.assoc, comp_over k.inv S]
-  let : d.hom.IsOver S := ⟨hd⟩
+  let : d.hom.IsOver S := ⟨transported_tower_hom_comp k d hbase⟩
   let F := precomposeSarkisovOfNodalTower (i := i) rankTwo hD hNode hJ
   let K := precomposeSarkisovOfIso (i := i) rankTwo d hideal.symm
   -- Recover the specified source and target on the lifted resolving surface.
