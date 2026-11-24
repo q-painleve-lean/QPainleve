@@ -10,6 +10,7 @@ public import QPainleve.AlgebraicGeometry.IdealSheaf.Boundary.Complexity
 public import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.ProjectiveOver
 
 import QPainleve.AlgebraicGeometry.Chow.NodalIntersection
+import QPainleve.AlgebraicGeometry.Curves.DualGraph.Cycle.Basic
 import QPainleve.LinearAlgebra.BilinearForm.Cycle
 
 /-!

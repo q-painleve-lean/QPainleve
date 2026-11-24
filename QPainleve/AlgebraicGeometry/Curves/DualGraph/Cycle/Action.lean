@@ -16,38 +16,12 @@ import Mathlib.Tactic.Abel
 A symmetry of the cycle acts on its vertices and on its branches. The branch action is
 faithful even for a loop or a two-edge cycle. Conversely, any branch permutation preserving
 incidence with the vertices and edges comes from a unique dihedral symmetry.
-We also count the edges joining two distinct vertices.
 The cycle and its symmetries use `TauCeti.DualGraph.cycle` and Mathlib's `DihedralGroup`.
 -/
 
 public section
 
 open TauCeti
-
-namespace TauCeti.DualGraph
-
-variable {n : ℕ}
-
-/-- The edges between distinct vertices of the numbered cycle count the two cyclic
-adjacencies separately. In a two-vertex cycle both terms contribute. -/
-theorem ncard_cycle_edges_of_ne (i j : ZMod n) (hij : i ≠ j) :
-    ({e | (e = i ∧ j = i + 1) ∨ (e = j ∧ i = j + 1)} : Set (ZMod n)).ncard =
-      (if j = i + 1 then 1 else 0) + (if j = i - 1 then 1 else 0) := by
-  have hprev : i = j + 1 ↔ j = i - 1 := eq_comm.trans eq_sub_iff_add_eq.symm
-  simp only [hprev]
-  by_cases hs : j = i + 1
-  · by_cases ht : j = i - 1
-    · simp only [eq_true hs, eq_true ht, and_true, ite_true, Set.ofPred_or,
-        Set.ofPred_eq_eq_singleton, Set.singleton_union, Set.ncard_pair hij]
-    · simp only [eq_true hs, eq_false ht, and_true, and_false, or_false, ite_true, ite_false,
-        Set.ofPred_eq_eq_singleton, Set.ncard_singleton, add_zero]
-  · by_cases ht : j = i - 1
-    · simp only [eq_false hs, eq_true ht, and_true, and_false, false_or, ite_true, ite_false,
-        Set.ofPred_eq_eq_singleton, Set.ncard_singleton, zero_add]
-    · simp only [eq_false hs, eq_false ht, and_false, or_self, ite_false, Set.ofPred_false,
-        Set.ncard_empty, add_zero]
-
-end TauCeti.DualGraph
 
 namespace DihedralGroup
 

@@ -9,7 +9,7 @@ public import Mathlib.Data.ZMod.Basic
 public import QPainleve.AlgebraicGeometry.Chow.NodalIntersection
 public import QPainleve.AlgebraicGeometry.Chow.Nef.Basic
 import QPainleve.AlgebraicGeometry.CartierDivisor.Support
-import QPainleve.AlgebraicGeometry.Curves.DualGraph.CycleAction
+import QPainleve.AlgebraicGeometry.Curves.DualGraph.Cycle.Basic
 import TauCeti.AlgebraicGeometry.Curves.Node.Reduced
 import TauCeti.AlgebraicGeometry.Scheme.DiscreteValuationStalk
 

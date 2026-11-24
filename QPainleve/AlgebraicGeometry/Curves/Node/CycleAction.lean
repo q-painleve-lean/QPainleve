@@ -5,7 +5,7 @@ Authors: The QPainleve contributors
 -/
 module
 
-public import QPainleve.AlgebraicGeometry.Curves.DualGraph.CycleAction
+public import QPainleve.AlgebraicGeometry.Curves.DualGraph.Cycle.Action
 public import QPainleve.AlgebraicGeometry.Curves.Node.Conductor.Coordinates
 public import QPainleve.AlgebraicGeometry.Curves.Node.Conductor.Isomorphism
 
