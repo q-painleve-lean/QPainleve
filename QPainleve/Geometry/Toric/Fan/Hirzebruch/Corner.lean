@@ -186,6 +186,27 @@ private theorem hirzebruch_corner_ray_order {d : Basis (Fin 2) ℤ N} (j k : Fin
   · fin_cases j <;> fin_cases k <;> simp [p, q, Equiv.swap_apply_def]
 
 include hr in
+/-- Keeping the first fiber ray and choosing the opposite section negates the
+Hirzebruch parameter in the ray presentation of the same fan. -/
+theorem exists_hirzebruch_opposite_section_basis :
+    ∃ (d : Basis (Fin 2) ℤ N) (t : Fin 4 ≃ Φ.Ray),
+      (fun l ↦ (t l).primitiveGenerator) = ![d 0, d 1, -d 0, (-e) • d 0 - d 1] ∧
+      t 1 = r 1 ∧ t 0 = r 2 := by
+  let d := b.unitsSMul ![-1, 1]
+  have h₀ : d 0 = (r 2).primitiveGenerator := by
+    simp [d, Basis.unitsSMul_apply, congrFun hr 2]
+  have h₁ : d 1 = (r 1).primitiveGenerator := by
+    simp [d, Basis.unitsSMul_apply, congrFun hr 1]
+  obtain ⟨a, t, ht, -, ha⟩ := hirzebruch_corner_ray_order b e r hr (d := d) 1 0 h₀ h₁
+  have ht₂ : t 0 = r 2 :=
+    Ray.primitiveGenerator_injective ((congrFun ht 0).trans h₀)
+  have ht₁ : t 1 = r 1 :=
+    Ray.primitiveGenerator_injective ((congrFun ht 1).trans h₁)
+  rcases ha with ⟨he, -⟩ | ⟨-, rfl⟩
+  · exact (r.injective.ne (by decide : (0 : Fin 4) ≠ 2) (he.symm.trans ht₂)).elim
+  · exact ⟨d, t, ht, ht₁, ht₂⟩
+
+include hr in
 /-- At any corner of a complete regular Hirzebruch fan, the section and fiber
 generators give another Hirzebruch basis for the same ruling. Ray one in the
 new numbering is one of the original two fiber rays. Choosing the other section negates the
