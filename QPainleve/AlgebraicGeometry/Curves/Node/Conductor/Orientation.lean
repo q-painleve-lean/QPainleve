@@ -69,6 +69,24 @@ variable [IsSepClosed k] [IsLocallyNoetherian X] [X.Over (Spec (.of k))]
 
 local notation "C" => (D.subscheme)
 
+/-- If the action on a numbered boundary cycle is the identity, the ambient
+isomorphism fixes each prime of the boundary at its generic point. -/
+theorem fixes_components_of_boundaryCycleAction_eq_one
+    (hD : D.IsEffectiveCartier) (e : X ≅ X) (d : C ≅ C)
+    (hd : d.hom ≫ D.subschemeι = D.subschemeι ≫ e.hom)
+    [d.hom.IsOver (Spec (.of k))] (numbering : Scheme.NodalCycleNumbering marks n)
+    (ha : d.boundaryCycleAction numbering numbering = 1)
+    (p : CodimensionOnePoint X) (hp : (p : X) ∈ D.support) : e.hom p = p := by
+  obtain ⟨v, hv⟩ := hD.exists_range_blowupComponent_comp_subschemeι (k := k) hp
+  obtain ⟨j, rfl⟩ := numbering.component.surjective v
+  rw [D.subscheme.range_blowupComponent_comp _ _ D.subschemeι.isClosedMap,
+    ← numbering.componentGenericPoint_def] at hv
+  have hx : D.subschemeι (numbering.componentGenericPoint j) = p.val :=
+    isGenericPoint_closure.eq (hv.symm ▸ isGenericPoint_closure)
+  have he := d.apply_componentGenericPoint numbering numbering j
+  rw [ha, map_one, Equiv.Perm.one_apply] at he
+  rw [← hx, ← Scheme.Hom.comp_apply, ← hd, Scheme.Hom.comp_apply, he]
+
 /-- An orientation-preserving automorphism fixing the ambient boundary primes acts
 as the identity on the numbered boundary cycle, including its individual branches. -/
 theorem boundaryCycleAction_eq_one_of_fixes_components

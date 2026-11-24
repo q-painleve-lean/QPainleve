@@ -219,6 +219,25 @@ theorem orderedBoundaryPeriod_mul_torusCharacter (c d : Fin n → ℂˣ) (x : K)
   simpa only [mul_comm (torusCharacter d _)] using div_eq_div_iff_mul_eq_mul.mp h
 
 include hcomp hdet hnodes in
+/-- Ordered boundary periods agree exactly when the center characters agree on all
+charge relations. -/
+theorem orderedBoundaryPeriod_eq_iff (c d : Fin n → ℂˣ) :
+    orderedBoundaryPeriod hΦ b s B c = orderedBoundaryPeriod hΦ b s B d ↔
+      ∀ x ∈ (rayChargeMap s).ker, (∏ j, c j ^ x j) = ∏ j, d j ^ x j := by
+  constructor
+  · intro h x hx
+    have hp := orderedBoundaryPeriod_mul_torusCharacter hΦ b s B r hcomp hdet hnodes c d ⟨x, hx⟩
+    rw [h, mul_right_inj] at hp
+    simpa only [torusCharacter_def] using hp
+  · intro h
+    apply MonoidHom.ext
+    intro x
+    have hp := orderedBoundaryPeriod_mul_torusCharacter hΦ b s B r hcomp hdet hnodes c d x.toAdd
+    rw [ofAdd_toAdd, torusCharacter_def, torusCharacter_def, h _ x.toAdd.property,
+      mul_left_inj] at hp
+    exact hp
+
+include hcomp hdet hnodes in
 /-- Every charge-kernel character is the period of an ordered internal blowup in
 the positive determinant orientation. All choices of centers, including repetitions,
 are allowed. -/
