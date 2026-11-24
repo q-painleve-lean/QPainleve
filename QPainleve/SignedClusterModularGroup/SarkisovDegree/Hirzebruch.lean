@@ -53,22 +53,6 @@ local notation "H" => mk (Proj.symmetricAlgebraTwistingBundle ℂ (Fin 3 → ℂ
 local notation "C" => Fan.hirzebruchPicardBasis b e hΦ r hr
 local notation "B" => intersectionBilinForm ℂ X
 
-include hc in
-private theorem hirzebruch_basis_intersections [Nonempty Φ.cones]
-    [SmoothOfRelativeDimension 2 f] (x : Additive (LineBundleClass X)) :
-    B x (C 0) = (C).repr x 1 ∧ B x (C 1) = (C).repr x 0 - (e : ℤ) * (C).repr x 1 := by
-  let a := (C).repr x 0
-  let d := (C).repr x 1
-  have hx : x = a • C 0 + d • C 1 := by
-    simpa only [a, d, Fin.sum_univ_two] using ((C).sum_repr x).symm
-  have h (j : Fin 2) : B x (C j) =
-      a * (!![0, 1; 1, -(e : ℤ)] : Matrix (Fin 2) (Fin 2) ℤ) 0 j +
-        d * (!![0, 1; 1, -(e : ℤ)] : Matrix (Fin 2) (Fin 2) ℤ) 1 j := by
-    conv_lhs => rw [hx]
-    simp only [map_add, map_zsmul, LinearMap.add_apply, LinearMap.smul_apply, Int.zsmul_eq_mul,
-      Fan.hirzebruchPicardBasis_intersection b e hΦ r hr hc]
-  exact ⟨by simpa using h 0, by simpa [sub_eq_add_neg, mul_comm d] using h 1⟩
-
 variable {Y : Scheme.{0}} {n : ℕ} {T : BlowupTower Φ.algebraicRealization n Y}
 
 /-- The resolved line class of a birational map to the plane has positive fiber
@@ -112,7 +96,7 @@ theorem hirzebruch_resolution_degree_bounds (hT : IsClosedPointTower X T)
     simpa only [Fan.hirzebruchPicardBasis_apply_one, Fan.rayDivisorToPicard_single,
       one_zsmul, intersectionBilinForm_apply, toMul_ofMul] using
       hnonneg (Φ.rayBoundaryPoint hΦ (r 0))
-  obtain ⟨hd, ha⟩ := hirzebruch_basis_intersections b e hΦ hc r hr v.1
+  obtain ⟨hd, ha⟩ := Fan.hirzebruchPicardBasis_intersection_repr b e hΦ r hr hc v.1
   rw [hd] at hF
   rw [ha] at hB
   have hd₀ : d ≠ 0 := by
