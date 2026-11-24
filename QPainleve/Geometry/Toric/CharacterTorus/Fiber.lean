@@ -139,22 +139,6 @@ def centerFiberEvaluation (U : (D A).X.left.Opens) (v : A →+ N) (c : S ⟶ U.t
 theorem centerFiberEvaluation_def (U : (D A).X.left.Opens) (v : A →+ N) (c : S ⟶ U.toScheme) :
     centerFiberEvaluation k U v c = pullback.fst π[U] c ≫ ev[U, v] := (rfl)
 
-/-- Evaluate the independent characters on the charge torus at the specified center
-point. This is specialization of the variable-center morphism with the center fixed. -/
-def evaluationAtCenter (v : A →+ N) (c : S ⟶ (D A).X.left)
-    (hc : c ≫ (D A).X.hom = 𝟙 S) :
-    (D N).X.left ⟶ (D A).X.left :=
-  pullback.lift (f := (D A).X.hom) (g := (D N).X.hom)
-    ((D N).X.hom ≫ c) (𝟙 _) (by simp [hc]) ≫
-    (prodIso k A N).hom ≫ (evaluation k v).hom.hom.left
-
-/-- Evaluation at a center depends only on the underlying point. -/
-theorem evaluationAtCenter_congr (v : A →+ N) {c d : S ⟶ (D A).X.left} (h : c = d)
-    {hc : c ≫ (D A).X.hom = 𝟙 S} {hd : d ≫ (D A).X.hom = 𝟙 S} :
-    evaluationAtCenter k v c hc = evaluationAtCenter k v d hd := by
-  subst d
-  rfl
-
 /-- The fiber of variable-center evaluation is evaluation at the corresponding
 center of the ambient torus. -/
 theorem centerFiberIso_hom_comp_evaluationAtCenter
