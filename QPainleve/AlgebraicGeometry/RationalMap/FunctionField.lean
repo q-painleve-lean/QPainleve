@@ -223,6 +223,18 @@ theorem fromFunctionField_comp (f : X ⤏ Y) [f.IsDominant] (g : Y ⤏ Z) :
       rfl
     _ = _ := by rw [h, Category.assoc]; rfl
 
+/-- Pulling a rational map back along a dominant rational map leaves its generic value
+as a point of the target unchanged. -/
+theorem fromFunctionField_comp_apply_closedPoint [IsIntegral Y]
+    (f : X ⤏ Y) [f.IsDominant] (g : Y ⤏ Z) :
+    (f.comp g).fromFunctionField (IsLocalRing.closedPoint X.functionField) =
+      g.fromFunctionField (IsLocalRing.closedPoint Y.functionField) := by
+  let : Subsingleton (Spec Y.functionField) :=
+    inferInstanceAs (Subsingleton (PrimeSpectrum Y.functionField))
+  let x : Spec X.functionField := IsLocalRing.closedPoint X.functionField
+  rw [fromFunctionField_comp]
+  exact (Hom.comp_apply _ _ x).trans (congrArg g.fromFunctionField (Subsingleton.elim _ _))
+
 /-- Pullback along a composite of dominant rational maps composes in the reverse order. -/
 @[simp]
 theorem functionFieldMap_comp [IsIntegral Y] [IrreducibleSpace Z]
