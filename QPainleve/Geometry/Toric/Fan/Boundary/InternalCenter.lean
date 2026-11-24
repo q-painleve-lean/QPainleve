@@ -10,6 +10,7 @@ public import QPainleve.LinearAlgebra.Determinant.Dual
 
 import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
 import TauCeti.AlgebraicGeometry.IdealSheaf.Section
+import TauCeti.AlgebraicGeometry.Morphisms.Smooth.Regular
 
 /-!
 # Internal centers on toric boundaries
@@ -93,6 +94,30 @@ theorem Ray.internalCenter_val (ρ : Φ.Ray) (c : ℂˣ) :
     (ρ.internalCenter b c).val =
       (ρ.binomialCenterOnBoundary rankTwo (m := χ(ρ)) (b.detDualEquiv_self _)
         (ρ.surjective_detCharacter b) c).ker := (rfl)
+
+/-- The reduced toric boundary has a regular stalk at each binomial center. -/
+theorem Ray.isRegularLocalRing_stalk_of_mem_support_internalCenter (ρ : Φ.Ray) (c : ℂˣ)
+    {p : (boundary).subscheme} (hp : p ∈ (ρ.internalCenter b c).val.support) :
+    IsRegularLocalRing ((boundary).subscheme.presheaf.stalk p) := by
+  let z := ρ.binomialCenterOnBoundary rankTwo (b.detDualEquiv_self ρ.primitiveGenerator)
+    (ρ.surjective_detCharacter b) c
+  let j := ρ.orbitToBoundary rankTwo (b.detDualEquiv_self ρ.primitiveGenerator)
+    (ρ.surjective_detCharacter b)
+  have : IsClosedImmersion z := ρ.isClosedImmersion_binomialCenterOnBoundary rankTwo _ _ c
+  have : IsOpenImmersion j := ρ.isOpenImmersion_orbitToBoundary rankTwo _ _
+  have hz : p ∈ Set.range z := by
+    rwa [Ray.internalCenter_val, ← SetLike.mem_coe, Scheme.Hom.support_ker,
+      z.isClosedEmbedding.isClosed_range.closure_eq] at hp
+  obtain ⟨q, rfl⟩ := ρ.range_binomialCenterOnBoundary_subset_range_orbitToBoundary rankTwo
+    (b.detDualEquiv_self ρ.primitiveGenerator) (ρ.surjective_detCharacter b) c hz
+  have : SmoothOfRelativeDimension 1 (j ≫ (boundary).subschemeι ≫
+      Φ.algebraicRealizationStructureMap) :=
+    ρ.smoothOfRelativeDimension_orbitToBoundary rankTwo _ _
+  have : Smooth (j ≫ (boundary).subschemeι ≫ Φ.algebraicRealizationStructureMap) :=
+    SmoothOfRelativeDimension.smooth 1 _
+  exact (isRegularLocalRing_stalk_iff_of_isOpenImmersion j q).mpr
+    (isRegularLocalRing_stalk_of_smooth (j ≫ (boundary).subschemeι ≫
+      Φ.algebraicRealizationStructureMap) q)
 
 /-- An internal center restricts to an effective Cartier ideal on every ray divisor. -/
 theorem Ray.isEffectiveCartier_comap_internalCenter (ρ : Φ.Ray) (c : ℂˣ)

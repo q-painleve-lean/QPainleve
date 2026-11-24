@@ -157,6 +157,39 @@ theorem IsNodalBoundaryTower.exists_common_nodal_boundary_tower_refinement
   rw [← Scheme.IdealSheafData.radical_comap_of_isOpenImmersion, ← D.comap_comp,
     ← reassoc_of% h]
 
+/-- Nodal towers over isomorphic pairs admit refinements that lift the specified
+base isomorphism. Each extension has length at most that of the opposite tower. -/
+theorem IsNodalBoundaryTower.exists_common_refinement_of_pair_iso
+    {D : X.IdealSheafData} {E : S.IdealSheafData} {s : X ⟶ K} {t : S ⟶ K}
+    {T : BlowupTower X m Y} {U : BlowupTower S n Z}
+    (hT : IsNodalBoundaryTower D s (𝟙 X) T) (hU : IsNodalBoundaryTower E t (𝟙 S) U)
+    (e : X ≅ S) (he : e.hom ≫ t = s) (hE : (E.comap e.hom).support = D.support) :
+    ∃ (a b : ℕ) (A B : Scheme.{u}) (L : BlowupTower Y a A)
+      (R : BlowupTower Z b B) (f : A ≅ B),
+      a ≤ n ∧ b ≤ m ∧ IsNodalBoundaryTower D s T.toBase L ∧ IsNodalBoundaryTower E t U.toBase R ∧
+      L.toBase ≫ T.toBase ≫ e.hom = f.hom ≫ R.toBase ≫ U.toBase := by
+  let P := U.transport e.symm
+  have hP : IsNodalBoundaryTower E t e.hom P.tower :=
+    P.isLift.isPointTowerWith (isLocal_node E t) (by simp) hU
+  have hPX : IsNodalBoundaryTower D s (𝟙 X) P.tower :=
+    hP.congr (by simpa using he) (by simpa using hE)
+  obtain ⟨a, b, A, B, L, R, g, ha, hb, hL, hR, hbase, -⟩ :=
+    hT.exists_common_nodal_boundary_tower_refinement hPX
+  let Q := R.transport P.iso.symm
+  have hPbase : P.tower.toBase ≫ e.hom = P.iso.inv ≫ U.toBase := by
+    have h := P.isLift.hom_toBase_assoc e.hom
+    simp only [Iso.symm_hom, Iso.inv_hom_id, Category.comp_id] at h
+    rw [← Iso.inv_hom_id_assoc P.iso (P.tower.toBase ≫ e.hom), h]
+  have hR' : IsNodalBoundaryTower E t (P.iso.inv ≫ U.toBase) R :=
+    hR.congr (by rw [Category.comp_id, ← hPbase, Category.assoc, he])
+      (by rw [Category.comp_id, ← hPbase, comap_comp, support_comap, support_comap, hE])
+  refine ⟨a, b, A, Q.top, L, Q.tower, g ≪≫ Q.iso, ha, hb, ?_, ?_, ?_⟩
+  · simpa only [Category.comp_id] using hL
+  · exact Q.isLift.isPointTowerWith (isLocal_node E t) rfl hR'
+  · rw [← Category.assoc, hbase, Category.assoc, Category.assoc, hPbase, Iso.trans_hom,
+      Category.assoc]
+    exact congrArg (g.hom ≫ ·) (Q.isLift.hom_toBase_assoc U.toBase).symm
+
 /-- A finite family of nodal boundary towers admits a common nodal boundary refinement.
 The comparisons commute with the projections and identify the final reduced boundaries. -/
 theorem exists_common_nodal_boundary_tower_refinement_finset
