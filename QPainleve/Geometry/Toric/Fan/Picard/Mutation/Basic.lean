@@ -56,34 +56,24 @@ theorem mutationFiberClass_eq (ρ₀ : Φ.Ray) (hΦ : Φ.IsRegular) :
         (fun ρ ↦ max (b.det ![ρ.primitiveGenerator, ρ₀.primitiveGenerator]) 0) :=
   (rfl)
 
-/-- The mutation fiber class depends on the ruling character up to sign.
-The positive and negative parts of its principal divisor have the same Picard class. -/
-theorem mutationFiberClass_eq_of_detDualEquiv_eq_or_eq_neg
-    (d : Module.Basis (Fin 2) ℤ N) (ρ τ : Φ.Ray) (hΦ : Φ.IsRegular)
-    (h : b.detDualEquiv ρ.primitiveGenerator = d.detDualEquiv τ.primitiveGenerator ∨
-      b.detDualEquiv ρ.primitiveGenerator = -d.detDualEquiv τ.primitiveGenerator) :
-    mutationFiberClass b ρ hΦ = mutationFiberClass d τ hΦ := by
+/-- In Hirzebruch ray coordinates, mutation at the opposite section (ray two) has
+fiber class given by the divisor of ray one. -/
+theorem mutationFiberClass_of_opposite_section [Nonempty Φ.cones]
+    (hΦ : Φ.IsRegular) (r : Fin 4 ≃ Φ.Ray)
+    (e t : ℤ) (hr : (fun j ↦ Fan.Ray.primitiveGenerator (r j)) =
+      ![b 0, b 1 - t • b 0, -b 0, e • b 0 - (b 1 - t • b 0)]) :
+    mutationFiberClass b (r 2) hΦ = Φ.rayDivisorToPicard hΦ (Pi.single (r 1) 1) := by
   classical
-  let : Nonempty Φ.cones := ⟨ρ.toCone⟩
-  let m := d.detDualEquiv τ.primitiveGenerator
-  let a : Φ.Ray → ℤ := fun u ↦ max (-(m u.primitiveGenerator)) 0
-  have hdet (c : Module.Basis (Fin 2) ℤ N) (u v : Φ.Ray) :
-      c.det ![u.primitiveGenerator, v.primitiveGenerator] =
-        -(c.detDualEquiv v.primitiveGenerator u.primitiveGenerator) := by
-    rw [← c.detDualEquiv_apply, c.detDualEquiv_swap]
-  simp only [mutationFiberClass_eq, hdet]
-  rcases h with h | h
-  · rw [h]
-  · rw [h]
-    simp only [LinearMap.neg_apply, neg_neg]
-    have hcoeff : (fun u : Φ.Ray ↦ max (m u.primitiveGenerator) 0) =
-        a + Φ.characterToRayDivisor m.toAddMonoidHom := by
-      funext u
-      simp only [a, Pi.add_apply, characterToRayDivisor_apply, toAddMonoidHom_coe]
-      omega
-    have hprincipal :=
-      (Φ.exact_characterToRayDivisor_rayDivisorToPicard hΦ _).mpr ⟨m.toAddMonoidHom, rfl⟩
-    rw [hcoeff, map_add, hprincipal, add_zero]
+  rw [mutationFiberClass_eq]
+  congr 1
+  funext ρ
+  obtain ⟨j, rfl⟩ := r.surjective ρ
+  have hg (k : Fin 4) := congrFun hr k
+  have h₀ := b.detDualEquiv_self (b 0)
+  have h₁ : b.detDualEquiv (b 0) (b 1) = 1 := b.detDualEquiv_apply_basis_zero_one
+  rw [← b.detDualEquiv_apply, b.detDualEquiv_swap]
+  simp only [hg j, hg 2, Matrix.cons_val_two, Pi.single_apply, Equiv.apply_eq_iff_eq]
+  fin_cases j <;> norm_num [← Module.Basis.detDualEquiv_apply, h₀, h₁]
 
 variable (s : ι → Φ.Ray) (k : ι)
 

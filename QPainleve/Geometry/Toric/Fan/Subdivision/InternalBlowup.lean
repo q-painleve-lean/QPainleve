@@ -103,10 +103,7 @@ theorem exists_common_internalBlowupTower {Ω : Fan i} [hΩ : Nonempty Ω.cones]
       IsPullback g' A.2.toTower.toBase C.2.toTower.toBase h'.toFanHom.algebraicMap ∧
       A.2.boundaryι ≫ g = h.boundaryMap hΦ hΨ ≫ B.2.boundaryι ∧
       A.2.boundaryι ≫ g' = h'.boundaryMap hΦ hΩ ≫ C.2.boundaryι := by
-  have hmatch : h.liftRay ∘ ρ = h'.liftRay ∘ τ := by
-    funext j
-    apply Ray.primitiveGenerator_injective
-    simpa only [Function.comp_apply, primitiveGenerator_liftRay] using hρτ j
+  have hmatch := h.liftRay_comp_eq_of_primitiveGenerator_eq h' ρ τ hρτ
   obtain ⟨g, hg, hb, -⟩ := h.exists_isPullback_internalBlowupTower b ρ c
   have hsecond := h'.exists_isPullback_internalBlowupTower b τ c
   dsimp only at hsecond

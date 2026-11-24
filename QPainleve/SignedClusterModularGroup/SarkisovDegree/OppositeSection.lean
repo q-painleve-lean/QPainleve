@@ -10,7 +10,7 @@ public import QPainleve.Geometry.Toric.Fan.Picard.Quadric
 public import QPainleve.SignedClusterModularGroup.SarkisovDegree.SmoothSection
 
 import QPainleve.AlgebraicGeometry.RationalMap.Composition.Basic
-import QPainleve.Geometry.Toric.Fan.Picard.Mutation.Hirzebruch
+import QPainleve.Geometry.Toric.Fan.Picard.Mutation.Basic
 
 /-!
 # The return to the quadric in the two-center Sarkisov block
@@ -62,35 +62,6 @@ local notation "mutation[" c "]" =>
   Scheme.PartialMap.toRationalMap (Φ.mutationPartialMap b (c : ℂ) hv hp hop)
 
 local notation "C'[" d "," hs "]" => Fan.hirzebruchPicardBasis d 0 hΨ s hs
-
-private theorem mutationFiberClass_source :
-    let : Nonempty Φ.cones := hc.nonempty_cones
-    Φ.mutationFiberClass b (r 2) hΦ = (C) 0 := by
-  intro _
-  rw [← Fan.mutationFiberClass_eq_hirzebruchPicardBasis_zero b 1 hΦ r hr]
-  apply Φ.mutationFiberClass_eq_of_detDualEquiv_eq_or_eq_neg
-  have h₀ : (r 0).primitiveGenerator = b 0 := congrFun hr 0
-  have h₂ : v = -b 0 := congrFun hr 2
-  exact Or.inr (by rw [h₀, h₂, map_neg])
-
-private theorem mutationFiberClass_target {d : Basis (Fin 2) ℤ N}
-    (hs : (fun j ↦ (s j).primitiveGenerator) = ![d 0, d 1, -d 0, (0 : ℤ) • d 0 - d 1])
-    (hd₀ : d 0 = b 0) (hd₁ : d 1 = b 1 - b 0) :
-    let : Nonempty (Ψ).cones := (hcΨ).nonempty_cones
-    (Ψ).mutationFiberClass b (s 2) hΨ = C'[d,hs] 0 := by
-  intro hcones
-  let := hcones
-  rw [← Fan.mutationFiberClass_eq_hirzebruchPicardBasis_zero d 0 hΨ s hs]
-  apply (Ψ).mutationFiberClass_eq_of_detDualEquiv_eq_or_eq_neg
-  right
-  have h₀ : (s 0).primitiveGenerator = d 0 := congrFun hs 0
-  have h₂ : (s 2).primitiveGenerator = -d 0 := congrFun hs 2
-  rw [h₀, h₂, map_neg, neg_inj]
-  apply d.ext
-  refine Fin.forall_fin_two.mpr ⟨?_, ?_⟩
-  · rw [Basis.detDualEquiv_self, hd₀, Basis.detDualEquiv_self]
-  · rw [Basis.detDualEquiv_apply_basis_zero_one, hd₁, hd₀, map_sub,
-      Basis.detDualEquiv_apply_basis_zero_one, Basis.detDualEquiv_self, sub_zero]
 
 variable {n : ℕ} {Y : Scheme.{0}} {T : BlowupTower Φ.algebraicRealization (n + 1) Y}
   (hT : IsClosedPointTower Φ.algebraicRealization T)
@@ -178,7 +149,7 @@ theorem exists_quadric_resolution_of_hirzebruchOne_mutation
   let := hmod
   obtain ⟨d, hd₀, hd₁, hs⟩ :=
     (r 2).mutationFan_hirzebruch_ray_generators b hop 1 r hr false rfl
-  simp only [Bool.false_eq_true, ↓reduceIte, sub_self] at hs
+  simp only [Bool.false_eq_true, ↓reduceIte, sub_self] at hd₁ hs
   obtain ⟨Z, U, e, hU, hover, hmap, hcoords⟩ :=
     (r 2).exists_sarkisov_decrease_of_smooth_section_center b hop c hΦ hT j hj hfirst
   refine ⟨d, hs, Z, U, hU, e, ?_⟩
@@ -207,15 +178,16 @@ theorem exists_quadric_resolution_of_hirzebruchOne_mutation
     apply Additive.toMul.injective
     rw [picardMarking_apply, toMul_ofMul, ← hxL]
     have h := (hcoords false a β x.2).1
-    have hF' := mutationFiberClass_target b hΦ hc r hr hs hd₀ hd₁
+    have hF := Fan.mutationFiberClass_of_opposite_section b hΦ r 1 0
+      (by simpa only [zero_smul, sub_zero] using hr)
+    have hF' := Fan.mutationFiberClass_of_opposite_section b hΨ s 0 1
+      (by simpa only [hd₀, hd₁, one_smul] using hs)
     simp only [Equiv.trans_apply] at hF'
-    have hS := Fan.hirzebruchPicardBasis_apply_one b 1 hΦ r hr
-    have hS' := Fan.hirzebruchPicardBasis_apply_one d 0 hΨ s hs
-    simp only [Fan.rayDivisorToPicard_single, one_zsmul, Equiv.trans_apply] at hS hS'
-    simp only [Bool.false_eq_true, ↓reduceIte, add_zero, hOppRay,
-      mutationFiberClass_source b hΦ hc r hr, hF', ← hS, ← hS'] at h
-    rw [← hx, Prod.mk.eta] at h
-    exact h
+    have hpair : (a • C 0 + β • C 1, x.2) = x := by rw [← hx, Prod.mk.eta]
+    conv_lhs => rw [← hpair]
+    simpa only [Bool.false_eq_true, ↓reduceIte, add_zero, hOppRay, hF, hF',
+      Fan.hirzebruchPicardBasis_apply_zero, Fan.hirzebruchPicardBasis_apply_one,
+      Fan.rayDivisorToPicard_single, one_zsmul, Equiv.trans_apply] using h
   simpa only [y, Iso.trans_inv, ← pullback_comp] using
     quadricReturn_coordinates b hΦ hc r hr hs hU j a β x.2 (pullback e.inv L) hz
 

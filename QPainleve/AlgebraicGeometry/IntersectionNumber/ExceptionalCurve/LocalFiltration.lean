@@ -12,6 +12,7 @@ public import TauCeti.AlgebraicGeometry.IdealSheaf.OfIdealTop
 import QPainleve.RingTheory.AdicCompletion.IdealFiltration
 import TauCeti.AlgebraicGeometry.Morphisms.SchemeTheoreticallyDominant
 import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.ProjectiveLine
+import TauCeti.RingTheory.AdicCompletion.Algebra
 
 /-!
 # Ideal powers of a local exceptional contraction
@@ -19,7 +20,8 @@ import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.ProjectiveLine
 For a proper exceptional contraction to a Noetherian local spectrum, pullback
 identifies the powers of the maximal ideal with the ideals of functions that
 vanish on the corresponding thickenings of the exceptional fiber. This identifies
-each positive maximal-ideal quotient with the ring of functions on its thickened fiber.
+each positive maximal-ideal quotient of the base or its completion with the ring of functions
+on its thickened fiber.
 
 This is the ideal-filtration comparison in
 [Stacks Project, Lemma 54.16.3](https://stacks.math.columbia.edu/tag/0C2K).
@@ -38,6 +40,7 @@ variable {R : Type u} [CommRing R] [IsLocalRing R] {X : Scheme.{u}}
 variable (f : X ⟶ Spec (.of R)) {E : X.IdealSheafData}
 
 local notation "𝔪" => maximalIdeal R
+local notation "R̂" => AdicCompletion 𝔪 R
 local notation "𝔫" => ofIdealTop (Ideal.map
   (CommRingCat.Hom.hom (Iso.inv (Scheme.ΓSpecIso (CommRingCat.of R)))) (maximalIdeal R))
 
@@ -49,38 +52,6 @@ private abbrev fiberSectionsMap (n : ℕ) :=
 
 private abbrev baseSectionsMap :=
   (Scheme.ΓSpecIso (.of R)).inv ≫ f.appTop
-
-private theorem ker_fiberThickening_fst (hE : (𝔫).comap f = E) (n : ℕ) :
-    (pullback.fst f (quotientSpec (R := R) n)).ker = E ^ n := by
-  have : IsClosedImmersion (quotientSpec (R := R) n) :=
-    IsClosedImmersion.spec_of_surjective _ Ideal.Quotient.mk_surjective
-  rw [quotientSpec, ker_fst_of_isClosedImmersion, Scheme.Hom.ker_Spec_map,
-    CommRingCat.hom_ofHom, Ideal.mk_ker, Ideal.map_pow, ofIdealTop_pow, comap_pow, hE]
-
-private theorem fiberSectionsMap_comp_quotient (n : ℕ) :
-    (fiberSectionsMap f n).comp (Ideal.Quotient.mk (𝔪 ^ n)) =
-      (baseSectionsMap f ≫ (pullback.fst f (quotientSpec (R := R) n)).appTop).hom := by
-  let q := CommRingCat.ofHom (Ideal.Quotient.mk (𝔪 ^ n))
-  let a := pullback.fst f (Spec.map q)
-  let b := pullback.snd f (Spec.map q)
-  have hcomm : baseSectionsMap f ≫ a.appTop = q ≫ (Scheme.ΓSpecIso _).inv ≫ b.appTop := by
-    -- Apply global sections to the Cartesian square and use the affine section isomorphisms.
-    simp only [baseSectionsMap, Category.assoc, ← Scheme.Hom.comp_appTop]
-    rw [show a ≫ f = b ≫ Spec.map q from pullback.condition, Scheme.Hom.comp_appTop,
-      ← Scheme.ΓSpecIso_inv_naturality_assoc]
-  exact congrArg CommRingCat.Hom.hom hcomm.symm
-
-private theorem ker_fiberSectionsMap_comp_quotient (hE : (𝔫).comap f = E) (n : ℕ) :
-    RingHom.ker ((fiberSectionsMap f n).comp (Ideal.Quotient.mk (𝔪 ^ n))) =
-      ((E ^ n).sections ⊤).comap (baseSectionsMap f).hom := by
-  let a := pullback.fst f (quotientSpec (R := R) n)
-  have : IsClosedImmersion (quotientSpec (R := R) n) :=
-    IsClosedImmersion.spec_of_surjective _ Ideal.Quotient.mk_surjective
-  have : IsClosedImmersion a := inferInstanceAs (IsClosedImmersion (pullback.fst f _))
-  ext r
-  rw [fiberSectionsMap_comp_quotient, RingHom.mem_ker, Ideal.mem_comap,
-    ← ker_fiberThickening_fst f hE n, a.mem_ker_sections_iff]
-  rfl
 
 private theorem comap_sections_one (hE : E.IsExceptionalCurveOfFirstKind)
     (hI : (𝔫).comap f = E) :
@@ -97,7 +68,7 @@ private theorem comap_sections_one (hE : E.IsExceptionalCurveOfFirstKind)
     let x := e.hom (projectiveLine.infinity k)
     have he := congrArg (E.subscheme.presheaf.Γgerm x) hz
     exact one_ne_zero (by simpa only [map_one, map_zero] using he)
-  · rw [← ker_fiberSectionsMap_comp_quotient f hI 1, ← RingHom.comap_ker]
+  · rw [← f.ker_fiberSectionsMap_comp_quotient hI 1, ← RingHom.comap_ker]
     have h : RingHom.ker (Ideal.Quotient.mk (𝔪 ^ 1)) = 𝔪 := Ideal.mk_ker.trans (pow_one _)
     exact h.symm.le.trans (Ideal.comap_mono bot_le)
 
@@ -156,7 +127,7 @@ theorem comap_sections_pow_of_exceptional_contraction [IsNoetherianRing R]
   have hle : (J (j + 1)).map (Ideal.Quotient.mk (𝔪 ^ (j + 1))) ≤
       RingHom.ker (fiberSectionsMap f (j + 1)) := by
     rw [Ideal.map_le_iff_le_comap, RingHom.comap_ker,
-      ker_fiberSectionsMap_comp_quotient f hI]
+      f.ker_fiberSectionsMap_comp_quotient hI]
   have hz : f.completionToFiberThickening j a = 0 := by
     rw [f.completionToFiberThickening_apply]
     exact hle (ha (j + 1))
@@ -173,7 +144,7 @@ private theorem injective_fiberSectionsMap [IsNoetherianRing R]
   obtain ⟨r, rfl⟩ := Ideal.Quotient.mk_surjective a
   have hr : r ∈ RingHom.ker ((fiberSectionsMap f (n + 1)).comp
       (Ideal.Quotient.mk (𝔪 ^ (n + 1)))) := ha
-  rw [ker_fiberSectionsMap_comp_quotient f hI,
+  rw [f.ker_fiberSectionsMap_comp_quotient hI,
     comap_sections_pow_of_exceptional_contraction f hE hI hU] at hr
   exact Ideal.Quotient.eq_zero_iff_mem.mpr hr
 
@@ -187,7 +158,7 @@ private theorem surjective_fiberSectionsMap [IsNoetherianRing R] [IsProper f] [I
     IsClosedImmersion.spec_of_surjective _ Ideal.Quotient.mk_surjective
   have : IsClosedImmersion a := inferInstanceAs (IsClosedImmersion (pullback.fst f _))
   have h : i.ker = a.ker :=
-    (ker_subschemeι _).trans (ker_fiberThickening_fst f hI n).symm
+    (ker_subschemeι _).trans (f.ker_fst_fiberThickening hI n).symm
   let b := IsClosedImmersion.lift i a h.le
   have : IsIso b := IsClosedImmersion.isIso_lift i a h
   have : IsIso b.appTop := Scheme.Γ.map_isIso b.op
@@ -198,7 +169,7 @@ private theorem surjective_fiberSectionsMap [IsNoetherianRing R] [IsProper f] [I
       (hE.surjective_appTop_subschemeι_pow_of_contraction f hI hU n)
   suffices Function.Surjective ((fiberSectionsMap f n).comp (Ideal.Quotient.mk (𝔪 ^ n))) from
     Function.Surjective.of_comp this
-  rw [fiberSectionsMap_comp_quotient]
+  rw [f.fiberSectionsMap_comp_quotient]
   exact ha.comp (ConcreteCategory.bijective_of_isIso (baseSectionsMap f)).surjective
 
 /-- Pullback identifies the `(n + 1)`st quotient of the local base of a proper
@@ -222,5 +193,56 @@ theorem fiberThickeningRingEquiv_apply [IsNoetherianRing R]
       (pullback.snd f (Spec.map (CommRingCat.ofHom (Ideal.Quotient.mk (𝔪 ^ (n + 1)))))).appTop
         ((Scheme.ΓSpecIso _).inv r) :=
   (rfl)
+
+variable [IsNoetherianRing R] [IsProper f] [IsIso f.appTop]
+
+/-- The kernel of the map from the completed local base ring to functions on the
+`(n + 1)`st thickening of the exceptional fiber is the `(n + 1)`st power of the
+maximal ideal of the completion. -/
+theorem ker_completionToFiberThickening (hE : E.IsExceptionalCurveOfFirstKind)
+    (hI : (𝔫).comap f = E) (hU : (𝔫).support.compl ≤ f.isoLocus) (n : ℕ) :
+    RingHom.ker (f.completionToFiberThickening n) = maximalIdeal R̂ ^ (n + 1) := by
+  rw [f.ker_completionToFiberThickening_eq_map hI n,
+    hE.comap_sections_pow_of_exceptional_contraction f hI hU, Ideal.map_pow,
+    ← AdicCompletion.maximalIdeal_eq_map]
+
+/-- The functions on the `(n + 1)`st thickening of the exceptional fiber are the
+`(n + 1)`st truncation of the completed local base ring. The equivalence is induced by
+pullback from the base. -/
+def completionQuotientEquivFiberThickening (hE : E.IsExceptionalCurveOfFirstKind)
+    (hI : (𝔫).comap f = E) (hU : (𝔫).support.compl ≤ f.isoLocus) (n : ℕ) :
+    (R̂ ⧸ maximalIdeal R̂ ^ (n + 1)) ≃+*
+      Γ(pullback f (Spec.map (CommRingCat.ofHom (Ideal.Quotient.mk (𝔪 ^ (n + 1))))), ⊤) :=
+  let e := Ideal.quotEquivOfEq
+    (show maximalIdeal R̂ ^ (n + 1) = (𝔪 ^ (n + 1)).map (algebraMap R R̂) from
+      by rw [Ideal.map_pow, ← AdicCompletion.maximalIdeal_eq_map])
+  (e.trans (AdicCompletion.quotientMapPowAlgEquiv
+    (Ideal.fg_of_isNoetherianRing 𝔪) (n + 1)).toRingEquiv).trans
+      (fiberThickeningRingEquiv f hE hI hU n)
+
+/-- The finite-level equivalence sends the class of a completed element to its pullback
+on the infinitesimal fiber. -/
+@[simp]
+theorem completionQuotientEquivFiberThickening_mk (hE : E.IsExceptionalCurveOfFirstKind)
+    (hI : (𝔫).comap f = E) (hU : (𝔫).support.compl ≤ f.isoLocus) (n : ℕ) (r : R̂) :
+    hE.completionQuotientEquivFiberThickening f hI hU n (Ideal.Quotient.mk _ r) =
+      f.completionToFiberThickening n r := by
+  simp only [completionQuotientEquivFiberThickening, RingEquiv.trans_apply, Ideal.quotEquivOfEq_mk,
+    AlgEquiv.coe_toRingEquiv, AdicCompletion.quotientMapPowAlgEquiv_mk,
+    fiberThickeningRingEquiv_apply, Scheme.Hom.completionToFiberThickening_apply]
+
+/-- Under the finite-level equivalences, the quotient transition is restriction
+along the inclusion of infinitesimal fibers. -/
+theorem completionQuotientEquivFiberThickening_factor (hE : E.IsExceptionalCurveOfFirstKind)
+    (hI : (𝔫).comap f = E) (hU : (𝔫).support.compl ≤ f.isoLocus) (n : ℕ)
+    (q : R̂ ⧸ maximalIdeal R̂ ^ (n + 2)) :
+    hE.completionQuotientEquivFiberThickening f hI hU n
+        (Ideal.Quotient.factor (Ideal.pow_le_pow_right (Nat.le_succ (n + 1))) q) =
+      (f.fiberThickeningι n).appTop
+        (hE.completionQuotientEquivFiberThickening f hI hU (n + 1) q) := by
+  obtain ⟨r, rfl⟩ := Ideal.Quotient.mk_surjective q
+  rw [Ideal.Quotient.factor_mk, completionQuotientEquivFiberThickening_mk,
+    completionQuotientEquivFiberThickening_mk]
+  exact (ConcreteCategory.congr_hom (f.completionToFiberThickening_naturality n) r).symm
 
 end AlgebraicGeometry.Scheme.IdealSheafData.IsExceptionalCurveOfFirstKind
