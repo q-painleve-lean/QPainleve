@@ -49,6 +49,20 @@ theorem IsEffectiveCartier.coheight_subschemeι_of_coheight_eq_zero
     zero_add, ← WithBot.coe_one, WithBot.coe_inj] at hdim
   exact hdim.symm
 
+open Order in
+/-- The points of an effective Cartier divisor with ambient codimension one
+are exactly its component generic points. -/
+@[simp]
+theorem IsEffectiveCartier.coheight_subschemeι_eq_one_iff
+    (hI : I.IsEffectiveCartier) (x : I.subscheme) :
+    coheight (I.subschemeι x) = 1 ↔ coheight x = 0 := by
+  refine ⟨fun hx ↦ ?_, hI.coheight_subschemeι_of_coheight_eq_zero⟩
+  have h := hI.ringKrullDim_stalk_add_one x
+  rw [ringKrullDim_stalk_eq_coheight, ringKrullDim_stalk_eq_coheight, hx, WithBot.coe_one] at h
+  apply WithBot.coe_injective
+  rw [WithBot.coe_zero]
+  exact ENat.WithBot.add_one_cancel.mp (by simpa only [zero_add] using h)
+
 /-- An effective Cartier divisor in a scheme of dimension at most `d + 1`
 has dimension at most `d`. This includes the empty divisor. -/
 theorem IsEffectiveCartier.topologicalKrullDim_subscheme_le (hI : I.IsEffectiveCartier)
