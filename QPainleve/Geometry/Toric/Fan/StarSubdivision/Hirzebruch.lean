@@ -9,6 +9,7 @@ public import QPainleve.Geometry.Toric.Fan.StarSubdivision.Boundary
 
 import QPainleve.Geometry.Toric.Cone.Coordinates
 import QPainleve.Geometry.Toric.Fan.Boundary.Subdivision
+import QPainleve.Geometry.Toric.Fan.Hirzebruch.Corner
 import QPainleve.Geometry.Toric.Fan.StarSubdivision.Contraction
 import QPainleve.Geometry.Toric.Fan.StarSubdivision.Generators
 import QPainleve.Geometry.Toric.Fan.StarSubdivision.TwoDimensional
@@ -39,37 +40,6 @@ section Combinatorial
 
 variable {N V : Type*} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {Φ : Fan i} (b : Basis (Fin 2) ℤ N)
-
-private theorem exists_hirzebruch_fiber_cones (hΦ : Φ.IsRegular) (hc : Φ.IsComplete)
-    (e : ℤ)
-    (hrays : Set.range (Ray.primitiveGenerator (Phi := Φ)) =
-      {b 0, b 1, -b 0, e • b 0 - b 1}) :
-    ∃ (p r q : Φ.Ray) (σ τ : Φ.cones),
-      p.primitiveGenerator = b 0 ∧ r.primitiveGenerator = b 1 ∧ q.primitiveGenerator = -b 0 ∧
-      p.toCone ≤ σ ∧ r.toCone ≤ σ ∧ r.toCone ≤ τ ∧ q.toCone ≤ τ := by
-  classical
-  obtain ⟨p, hp⟩ : b 0 ∈ Set.range (Ray.primitiveGenerator (Phi := Φ)) := by simp [hrays]
-  obtain ⟨r, hr⟩ : b 1 ∈ Set.range (Ray.primitiveGenerator (Phi := Φ)) := by simp [hrays]
-  obtain ⟨q, hq⟩ : -b 0 ∈ Set.range (Ray.primitiveGenerator (Phi := Φ)) := by simp [hrays]
-  have hd : b.detDualEquiv (b 0) = b.coord 1 := by
-    apply b.ext
-    intro j
-    fin_cases j <;> simp [Basis.detDualEquiv_self, Basis.detDualEquiv_apply_basis_zero_one,
-      -Basis.detDualEquiv_apply]
-  have huniq (v : Φ.Ray) (hv : b.coord 1 v.primitiveGenerator = 1) : v = r := by
-    apply Ray.primitiveGenerator_injective
-    have hm := hrays ▸ Set.mem_range_self (f := Ray.primitiveGenerator (Phi := Φ)) v
-    rcases (by simpa only [Set.mem_insert_iff, Set.mem_singleton_iff] using hm :
-        v.primitiveGenerator = b 0 ∨ v.primitiveGenerator = b 1 ∨
-          v.primitiveGenerator = -b 0 ∨ v.primitiveGenerator = e • b 0 - b 1) with h | h | h | h
-    all_goals first | exact h.trans hr.symm | simp [h] at hv
-  obtain ⟨_, p', _, hp', H⟩ := Φ.exists_ray_neighbors b hΦ hc p
-  obtain ⟨q', _, hq', _, H'⟩ := Φ.exists_ray_neighbors b hΦ hc q
-  have hp'r := huniq p' (by simpa only [hp, hd] using hp')
-  have hq'r := huniq q' (by simpa only [hq, map_neg, hd, LinearMap.neg_apply, neg_inj] using hq')
-  obtain ⟨_, σ, hpσ, hrσ⟩ := (H r).mpr (Or.inr hp'r.symm)
-  obtain ⟨_, τ, hqτ, hrτ⟩ := (H' r).mpr (Or.inl hq'r.symm)
-  exact ⟨p, r, q, σ, τ, hp, hr, hq, hpσ, hrσ, hrτ, hqτ⟩
 
 private theorem hirzebruch_star_at_corner (hΦ : Φ.IsRegular)
     {p r q : Φ.Ray} {σ τ : Φ.cones}
@@ -191,8 +161,14 @@ theorem exists_hirzebruch_toric_elementary_transformation (hΦ : Φ.IsRegular) (
       (Ψ.starSubdivisionAlongRay hΨ τ.property
         (ne_bot_of_card_toricRay_eq_two hτ)).primitiveGenerator = b 1 ∧
       τ.val = hull ℝ {i (d 1), i (-d 0)} := by
-  obtain ⟨p, r, q, σ, τ, hp, hr, hq, hpσ, hrσ, hrτ, hqτ⟩ :=
-    exists_hirzebruch_fiber_cones b hΦ hc e hrays
+  obtain ⟨rays, hgen⟩ := exists_rayEquiv_of_hirzebruch_ray_generators b e hrays
+  obtain ⟨σ, hpσ, hrσ⟩ := exists_cone_of_hirzebruch_section_fiber b e rays hgen hΦ hc 0 0
+  obtain ⟨τ, hqτ, hrτ⟩ := exists_cone_of_hirzebruch_section_fiber b e rays hgen hΦ hc 1 0
+  let r := rays 1
+  let q := rays 2
+  have hp : (rays 0).primitiveGenerator = b 0 := congrFun hgen 0
+  have hr : r.primitiveGenerator = b 1 := congrFun hgen 1
+  have hq : q.primitiveGenerator = -b 0 := congrFun hgen 2
   obtain ⟨hσ, d, hcone, hd₀, hd₁, ha, hleft, hright⟩ :=
     hirzebruch_star_at_corner b hΦ hp hr hq hpσ hrσ hrτ hqτ
   let F := Φ.starSubdivisionAlong hΦ σ.property

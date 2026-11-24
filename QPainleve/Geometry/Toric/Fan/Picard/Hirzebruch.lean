@@ -7,6 +7,7 @@ module
 
 public import QPainleve.AlgebraicGeometry.Modules.Differentials.Canonical
 public import QPainleve.Geometry.Toric.Fan.Boundary.SelfIntersection
+public import QPainleve.Geometry.Toric.Fan.Hirzebruch.Corner
 public import QPainleve.Geometry.Toric.Fan.Smooth
 
 import Mathlib.Analysis.Complex.Polynomial.Basic
@@ -38,29 +39,6 @@ namespace TauCeti.Toric.Fan
 
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {Φ : Fan i} (b : Basis (Fin 2) ℤ N) (e : ℤ)
-
-open Classical in
-/-- The four primitive generators in Hirzebruch normal form give an indexing
-of the rays by `Fin 4`. -/
-theorem exists_rayEquiv_of_hirzebruch_ray_generators
-    (h : Set.range (Ray.primitiveGenerator (Phi := Φ)) =
-      {b 0, b 1, -b 0, e • b 0 - b 1}) :
-    ∃ r : Fin 4 ≃ Φ.Ray,
-      (fun j ↦ (r j).primitiveGenerator) = ![b 0, b 1, -b 0, e • b 0 - b 1] := by
-  let v : Fin 4 → N := ![b 0, b 1, -b 0, e • b 0 - b 1]
-  have hv : Set.range v = Set.range (Ray.primitiveGenerator (Phi := Φ)) := by
-    rw [h]
-    ext x
-    simp [v, or_comm, or_left_comm, or_assoc]
-  have hinj : Function.Injective v := by
-    intro j k hjk
-    have h₀ := congrArg (b.coord 0) hjk
-    have h₁ := congrArg (b.coord 1) hjk
-    fin_cases j <;> fin_cases k <;> norm_num [v, Basis.coord_apply] at *
-  let rays := Equiv.ofInjective _ (Ray.primitiveGenerator_injective (Φ := Φ))
-  let vectors := (Equiv.ofInjective v hinj).trans (Set.equivOfEq hv)
-  refine ⟨vectors.trans rays.symm, funext fun j ↦ ?_⟩
-  exact congrArg Subtype.val (rays.apply_symm_apply (vectors j))
 
 variable [Nonempty Φ.cones] (hΦ : Φ.IsRegular) (r : Fin 4 ≃ Φ.Ray)
   (hr : (fun j ↦ (r j).primitiveGenerator) = ![b 0, b 1, -b 0, e • b 0 - b 1])
@@ -161,6 +139,51 @@ theorem hirzebruchPicardBasis_apply_zero_eq_ray_three :
     hirzebruchPicardBasis b e hΦ r hr 0 = D 3 := by
   rw [hirzebruchPicardBasis_apply_zero, (hirzebruch_ray_classes b e hΦ r hr).2]
 
+local notation "C" => hirzebruchPicardBasis b e hΦ r hr
+
+include hr in
+open Classical in
+/-- In a Hirzebruch marking based at a selected toric corner, the section coefficient
+of every Picard class is preserved. If the chosen section changes, the fiber coefficient
+changes by subtracting the original signed Hirzebruch parameter times the section coefficient. -/
+theorem exists_hirzebruch_corner_picardBasis (hc : Φ.IsComplete)
+    (σ : Φ.cones) (hσ : Nat.card (ToricRay σ.val) = 2) :
+    ∃ (d : Basis (Fin 2) ℤ N) (a : ℤ) (t : Fin 4 ≃ Φ.Ray)
+      (ht : (fun j ↦ (t j).primitiveGenerator) = ![d 0, d 1, -d 0, a • d 0 - d 1])
+      (shift : ℤ),
+      σ.val = PointedCone.hull ℝ (Set.range (i ∘ d)) ∧
+      (shift = 0 ∨ shift = e) ∧ a = e - 2 * shift ∧
+      ∀ L : Pic, (hirzebruchPicardBasis d a hΦ t ht).repr L 0 =
+        (C).repr L 0 - shift * (C).repr L 1 ∧
+        (hirzebruchPicardBasis d a hΦ t ht).repr L 1 = (C).repr L 1 := by
+  obtain ⟨d, a, t, hcone, ht, hf, hs⟩ := exists_hirzebruch_corner_basis b e r hr hΦ hc σ hσ
+  let C' := hirzebruchPicardBasis d a hΦ t ht
+  have hfiber : C' 0 = (C) 0 := by
+    rw [hirzebruchPicardBasis_apply_zero]
+    rcases hf with h | h
+    · rw [h, hirzebruchPicardBasis_apply_zero]
+    · rw [h, hirzebruchPicardBasis_apply_zero_eq_ray_three]
+  have hsection : ∃ shift : ℤ, (shift = 0 ∨ shift = e) ∧ a = e - 2 * shift ∧
+      C' 1 = (C) 1 + shift • (C) 0 := by
+    rw [hirzebruchPicardBasis_apply_one, hirzebruchPicardBasis_apply_one,
+      hirzebruchPicardBasis_apply_zero]
+    rcases hs with ⟨h, rfl⟩ | ⟨h, rfl⟩
+    · exact ⟨0, Or.inl rfl, by simp, by simp [h]⟩
+    · exact ⟨e, Or.inr rfl, by omega, by
+        rw [h, (hirzebruch_ray_classes b e hΦ r hr).1]⟩
+  obtain ⟨shift, hshift, ha, hsection⟩ := hsection
+  refine ⟨d, a, t, ht, shift, hcone, hshift, ha, fun L ↦ ?_⟩
+  have hL : L = ((C).repr L 0 - shift * (C).repr L 1) • C' 0 + (C).repr L 1 • C' 1 := by
+    have hsum := (C).sum_repr L
+    rw [Fin.sum_univ_two] at hsum
+    calc
+      L = (C).repr L 0 • (C) 0 + (C).repr L 1 • (C) 1 := hsum.symm
+      _ = _ := by
+        rw [hfiber, hsection, smul_add, sub_smul, smul_smul, mul_comm ((C).repr L 1) shift]
+        abel
+  exact ⟨by simpa [Basis.repr_self] using congrArg (fun x ↦ C'.repr x 0) hL,
+    by simpa [Basis.repr_self] using congrArg (fun x ↦ C'.repr x 1) hL⟩
+
 section Intersection
 
 variable [Φ.algebraicRealization.IsProjectiveOver ℂ]
@@ -169,41 +192,15 @@ variable (hc : Φ.IsComplete)
 local notation "S" => Spec (CommRingCat.of ℂ)
 local notation "B" => intersectionBilinForm ℂ X
 local notation "K" => Additive.ofMul (LineBundleClass.mk (QPainleve.canonicalBundle ℂ X 2))
-local notation "C" => hirzebruchPicardBasis b e hΦ r hr
-local notation "Adj[" j "," k "]" =>
-  ∃ σ : Φ.cones, Ray.toCone Φ (r j) ≤ σ ∧ Ray.toCone Φ (r k) ≤ σ
-
-omit [Nonempty Φ.cones] [Φ.algebraicRealization.IsProjectiveOver ℂ] in
-include hΦ hc hr in
-private theorem hirzebruch_adjacent :
-    Adj[0, 1] ∧ Adj[0, 3] ∧ Adj[2, 1] := by
-  obtain ⟨p, q, hp, hq, h₀⟩ := exists_ray_neighbors b hΦ hc (r 0)
-  obtain ⟨p', _, hp', _, h₂⟩ := exists_ray_neighbors b hΦ hc (r 2)
-  have hcoord (j : Fin 4) := congrFun hr j
-  have hd : b.detDualEquiv (b 0) = b.coord 1 := by
-    apply b.ext
-    intro j
-    fin_cases j <;> norm_num [Basis.coord_apply, -Basis.detDualEquiv_apply,
-      Basis.detDualEquiv_self, Basis.detDualEquiv_apply_basis_zero_one]
-  have hp₃ : p = r 3 := by
-    obtain ⟨j, rfl⟩ := r.surjective p
-    fin_cases j <;> first | rfl | norm_num [hcoord, hd, Basis.coord_apply] at hp
-  have hq₁ : q = r 1 := by
-    obtain ⟨j, rfl⟩ := r.surjective q
-    fin_cases j <;> first | rfl | norm_num [hcoord, hd, Basis.coord_apply] at hq
-  have hp'₁ : p' = r 1 := by
-    obtain ⟨j, rfl⟩ := r.surjective p'
-    fin_cases j <;> first | rfl | norm_num [hcoord, -Basis.detDualEquiv_apply, hd,
-      Basis.coord_apply] at hp'
-  exact ⟨((h₀ _).2 (Or.inr hq₁.symm)).2, ((h₀ _).2 (Or.inl hp₃.symm)).2,
-    ((h₂ _).2 (Or.inl hp'₁.symm)).2⟩
 
 omit [Nonempty Φ.cones] in
 include hc hr in
 private theorem hirzebruch_selfIntersection :
     Φ.rayBoundarySelfIntersection hΦ (r 0) = -e ∧
       Φ.rayBoundarySelfIntersection hΦ (r 1) = 0 := by
-  obtain ⟨h₀₁, h₀₃, h₂₁⟩ := hirzebruch_adjacent b e hΦ r hr hc
+  have h₀₁ := exists_cone_of_hirzebruch_section_fiber b e r hr hΦ hc 0 0
+  have h₀₃ := exists_cone_of_hirzebruch_section_fiber b e r hr hΦ hc 0 1
+  have h₂₁ := exists_cone_of_hirzebruch_section_fiber b e r hr hΦ hc 1 0
   have hcoord (j : Fin 4) := congrFun hr j
   have hd₃₀ : b.detDualEquiv (r 3).primitiveGenerator (r 0).primitiveGenerator = 1 := by
     simp [hcoord, -Module.Basis.detDualEquiv_apply, Module.Basis.detDualEquiv_self,
@@ -238,8 +235,9 @@ theorem hirzebruchPicardBasis_intersection (j k : Fin 2) :
   let : SmoothOfRelativeDimension 2 (X ↘ Spec (CommRingCat.of ℂ)) :=
     hN ▸ Φ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
   obtain ⟨hB, hF⟩ := hirzebruch_selfIntersection b e hΦ r hr hc
-  have h₀₁ := (hirzebruch_adjacent b e hΦ r hr hc).1
-  have h₁₀ : Adj[1, 0] := h₀₁.imp (fun _ h ↦ h.symm)
+  have h₀₁ : ∃ σ : Φ.cones, (r 0).toCone ≤ σ ∧ (r 1).toCone ≤ σ :=
+    exists_cone_of_hirzebruch_section_fiber b e r hr hΦ hc 0 0
+  have h₁₀ : ∃ σ : Φ.cones, (r 1).toCone ≤ σ ∧ (r 0).toCone ≤ σ := h₀₁.imp (fun _ h ↦ h.symm)
   fin_cases j <;> fin_cases k <;>
     simp only [Fin.zero_eta, Fin.mk_one, hirzebruchPicardBasis_apply_zero,
       hirzebruchPicardBasis_apply_one, Equiv.apply_eq_iff_eq,
@@ -267,7 +265,7 @@ omit [Nonempty Φ.cones] [Φ.algebraicRealization.IsProjectiveOver ℂ] in
 include hΦ hc hr in
 private theorem isRationalOver_of_hirzebruch :
     Scheme.IsRationalOver (X ↘ S) := by
-  obtain ⟨σ, h₀, h₁⟩ := (hirzebruch_adjacent b e hΦ r hr hc).1
+  obtain ⟨σ, h₀, h₁⟩ := exists_cone_of_hirzebruch_section_fiber b e r hr hΦ hc 0 0
   have hN : Module.finrank ℤ N = 2 := by simpa using Module.finrank_eq_card_basis b
   have hcone := Φ.cone_eq_sup_of_ray_ne_of_le hΦ hN
     (r.injective.ne (by decide : (0 : Fin 4) ≠ 1)) h₀ h₁
