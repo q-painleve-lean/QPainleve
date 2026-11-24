@@ -20,10 +20,11 @@ import TauCeti.AlgebraicGeometry.Scheme.StalkSpecializes
 /-!
 # Intersections of components of a nodal Cartier divisor
 
-At a point common to two distinct prime components of a nodal Cartier divisor in
-a smooth surface, the two reduced component ideals generate the ambient maximal
-ideal. The first Fitting ideal of the divisor differentials detects the intrinsic
-singular subscheme and gives transversality in the surface.
+At a point common to two Cartier factors of a nodal divisor in a smooth surface,
+the factor ideals generate the ambient maximal ideal. This also applies to two
+distinct prime components of a nodal Cartier divisor. The first Fitting ideal of
+the divisor differentials detects the intrinsic singular subscheme and gives
+transversality in the surface.
 See [Stacks Project, Lemma 53.19.17](https://stacks.math.columbia.edu/tag/0E38)
 for the intersection of complementary unions of components of a nodal curve.
 -/
@@ -60,6 +61,48 @@ private theorem exists_prime_stalkIdeal_generator (p : CodimensionOnePoint X) {x
   obtain ⟨a, _, ha, hspan, _⟩ := hI.exists_stalkIdeal_eq_span_and_quotient z
   exact hz ▸ ⟨a, ha, hspan⟩
 
+include hsmooth in
+private theorem span_pair_eq_maximalIdeal_of_nodal {D : X.IdealSheafData}
+    (hnodal : AtWorstNodalOfRelativeDimensionOne (D.subscheme ↘ Spec (.of k)))
+    (z : D.subscheme) {a c f : X.presheaf.stalk (D.subschemeι z)}
+    (ha : a ∈ maximalIdeal _) (hc : c ∈ maximalIdeal _)
+    (hf : D.stalkIdeal (D.subschemeι z) = Ideal.span {f}) (hdiv : a * c ∣ f) :
+    Ideal.span {a, c} = maximalIdeal _ := by
+  let := hnodal.syntomic
+  obtain ⟨b⟩ := X.nonempty_basis_kaehlerDifferential_stalk (k := k) 2 (D.subschemeι z)
+  let π := D.subschemeι.stalkMapAlgHom (k := k) z
+  have hπring : (π : _ →+* _) = (D.subschemeι.stalkMap z).hom :=
+    D.subschemeι.stalkMapAlgHom_toRingHom (k := k) z
+  have hker : RingHom.ker π = Ideal.span {f} := by
+    rw [AlgHom.ker_coe, hπring, D.subschemeι.ker_stalkMap_of_isClosedImmersion, ker_subschemeι, hf]
+  have hπ : Function.Surjective π := by
+    intro y
+    simpa only [π, Hom.stalkMapAlgHom_apply] using D.subschemeι.stalkMap_surjective z y
+  let := D.subscheme.essFiniteType_stalk k z
+  let := (D.subscheme.fittingIdeal_stalk_of_atWorstNodal hnodal z).2
+  exact b.span_pair_eq_maximalIdeal_of_formallyUnramified π hπ hker ha hc hdiv
+
+/-- Where two effective Cartier factors of a nodal divisor meet, their equations
+generate the maximal ideal of the smooth surface. The factors can be reducible. -/
+theorem IsEffectiveCartier.stalkIdeal_sup_eq_maximalIdeal_of_nodal_mul {I J : X.IdealSheafData}
+    (hI : I.IsEffectiveCartier) (hJ : J.IsEffectiveCartier)
+    (hnodal : AtWorstNodalOfRelativeDimensionOne ((I * J).subscheme ↘ Spec (.of k)))
+    {x : X} (hx : x ∈ (I ⊔ J).support) :
+    I.stalkIdeal x ⊔ J.stalkIdeal x = maximalIdeal (X.presheaf.stalk x) := by
+  rw [support_sup] at hx
+  have generator {K : X.IdealSheafData} (hK : K.IsEffectiveCartier) (hxK : x ∈ K.support) :
+      ∃ a : X.presheaf.stalk x, a ∈ maximalIdeal _ ∧ K.stalkIdeal x = Ideal.span {a} := by
+    obtain ⟨y, rfl⟩ := K.range_subschemeι.ge hxK
+    obtain ⟨a, _, ha, hspan, _⟩ := hK.exists_stalkIdeal_eq_span_and_quotient y
+    exact ⟨a, ha, hspan⟩
+  obtain ⟨z, rfl⟩ := (I * J).range_subschemeι.ge
+    (support_antitone (mul_le_of_le_one_right' (le_top : J ≤ 1)) hx.1)
+  obtain ⟨a, ha, hspanI⟩ := generator hI hx.1
+  obtain ⟨c, hc, hspanJ⟩ := generator hJ hx.2
+  rw [hspanI, hspanJ, ← Ideal.span_insert]
+  apply span_pair_eq_maximalIdeal_of_nodal hnodal z ha hc _ (dvd_refl _)
+  rw [stalkIdeal_mul, hspanI, hspanJ, Ideal.span_singleton_mul_span_singleton]
+
 /-- The reduced ideals of distinct prime components of a nodal Cartier divisor
 sum to the ambient maximal ideal wherever the components meet. -/
 theorem IsEffectiveCartier.stalkIdeal_sup_eq_maximalIdeal_of_nodal {D : X.IdealSheafData}
@@ -68,7 +111,6 @@ theorem IsEffectiveCartier.stalkIdeal_sup_eq_maximalIdeal_of_nodal {D : X.IdealS
     {p q : CodimensionOnePoint X} (hpq : p ≠ q) (hpD : (p : X) ∈ D.support)
     (hqD : (q : X) ∈ D.support) {x : X} (hp : (p : X) ⤳ x) (hq : (q : X) ⤳ x) :
     (I(p)).stalkIdeal x ⊔ (I(q)).stalkIdeal x = maximalIdeal (X.presheaf.stalk x) := by
-  let := hnodal.syntomic
   have hle {y : X} (hy : y ∈ D.support) : D ≤ I(y) :=
     le_support_iff_le_vanishingIdeal.mp (closure_minimal (Set.singleton_subset_iff.mpr hy)
       D.support.isClosed)
@@ -98,18 +140,7 @@ theorem IsEffectiveCartier.stalkIdeal_sup_eq_maximalIdeal_of_nodal {D : X.IdealS
     have hm := hprime.mem_or_mem (hr ▸ hfc)
     obtain ⟨s, hs⟩ := Ideal.mem_span_singleton.mp (hqc ▸ hm.resolve_left hnot)
     exact ⟨s, by rw [hr, hs, mul_assoc]⟩
-  obtain ⟨b⟩ := X.nonempty_basis_kaehlerDifferential_stalk (k := k) 2 x
-  let π := D.subschemeι.stalkMapAlgHom (k := k) z
-  have hπring : (π : _ →+* _) = (D.subschemeι.stalkMap z).hom :=
-    D.subschemeι.stalkMapAlgHom_toRingHom (k := k) z
-  have hker : RingHom.ker π = Ideal.span {f} := by
-    rw [AlgHom.ker_coe, hπring, D.subschemeι.ker_stalkMap_of_isClosedImmersion, ker_subschemeι, hf]
-  have hπ : Function.Surjective π := by
-    intro y
-    simpa only [π, Hom.stalkMapAlgHom_apply] using D.subschemeι.stalkMap_surjective z y
-  let := D.subscheme.essFiniteType_stalk k z
-  let := (D.subscheme.fittingIdeal_stalk_of_atWorstNodal hnodal z).2
   rw [hpa, hqc, ← Ideal.span_insert]
-  exact b.span_pair_eq_maximalIdeal_of_formallyUnramified π hπ hker ha hc hdiv
+  exact span_pair_eq_maximalIdeal_of_nodal hnodal z ha hc hf hdiv
 
 end AlgebraicGeometry.Scheme.IdealSheafData
