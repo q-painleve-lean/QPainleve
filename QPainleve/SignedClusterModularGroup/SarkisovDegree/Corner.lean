@@ -15,7 +15,6 @@ public import QPainleve.Geometry.Toric.Fan.Smooth
 public import QPainleve.SignedClusterModularGroup.SarkisovDegree.ToricLink
 
 import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
-import QPainleve.AlgebraicGeometry.Modules.Differentials.PoleIdeal
 import QPainleve.AlgebraicGeometry.Morphisms.Modification.Birational
 import QPainleve.AlgebraicGeometry.RationalMap.FunctionField
 import QPainleve.Geometry.Toric.Fan.Logarithmic.Subdivision
@@ -70,52 +69,6 @@ private theorem isModification_corner_projection {F : Fan i} [Nonempty Φ.cones]
       hσ.isModification_of_smoothOfRelativeDimension_two f[Φ]
   rw [← hv]
   infer_instance
-
-private theorem toric_corner_pole_ideal {F Ψ : Fan i} {Z : Scheme}
-    (hΦ : Φ.IsRegular) (hF : F.IsRegular) (hΨ : Ψ.IsRegular)
-    (hc : Φ.IsComplete) (hcF : F.IsComplete) (hcΨ : Ψ.IsComplete)
-    (hN : Module.finrank ℤ N = 2)
-    [SmoothOfRelativeDimension 2 (X[Φ] ↘ S)] [SmoothOfRelativeDimension 2 (X[Ψ] ↘ S)] [IsIntegral Y]
-    {T : BlowupTower X[Φ] (n + 1) Y} (hT : IsClosedPointTower X[Φ] T)
-    {U : BlowupTower X[Ψ] (1 + n) Z} (hU : IsClosedPointTower X[Ψ] U)
-    (s : F.IsSubdivision Φ) (t : F.IsSubdivision Ψ) (q : Y ⟶ X[F]) [IsDominant q] (k : Y ≅ Z)
-    (hq : q ≫ π[s] = T.toBase) (hq' : q ≫ π[t] = k.hom ≫ U.toBase) :
-    letI : Y.Over S := ⟨T.toBase ≫ X[Φ] ↘ S⟩
-    letI : T.toBase.IsOver S := ⟨rfl⟩
-    letI : SmoothOfRelativeDimension 2 (Y ↘ S) := hT.smoothOfRelativeDimension (X[Φ] ↘ S)
-    letI : Smooth (Y ↘ S) := SmoothOfRelativeDimension.smooth 2 _
-    ∃ (_ : q.IsOver S) (_ : (k.hom ≫ U.toBase).IsOver S),
-      ∀ D : Y.IdealSheafData,
-        B[Φ,hc].comap T.toBase = D * hT.ramificationIdealSheafToBase ℂ →
-          B[F,hcF].comap q = D * ramificationIdealSheaf ℂ q ∧
-          B[Ψ,hcΨ].comap (k.hom ≫ U.toBase) = D * ramificationIdealSheaf ℂ (k.hom ≫ U.toBase) ∧
-          B[Ψ,hcΨ].comap U.toBase = D.comap k.inv * hU.ramificationIdealSheafToBase ℂ := by
-  let : Y.Over S := ⟨T.toBase ≫ X[Φ] ↘ S⟩
-  let : T.toBase.IsOver S := ⟨rfl⟩
-  let : SmoothOfRelativeDimension 2 (Y ↘ S) := hT.smoothOfRelativeDimension (X[Φ] ↘ S)
-  let : Smooth (Y ↘ S) := SmoothOfRelativeDimension.smooth 2 _
-  let : q.IsOver S := ⟨by
-    rw [Fan.algebraicRealization_over,
-      ← s.toFanHom.algebraicMap_comp_algebraicRealizationStructureMap, ← Category.assoc, hq,
-      ← Φ.algebraicRealization_over, comp_over]⟩
-  let : (k.hom ≫ U.toBase).IsOver S := ⟨hq' ▸ comp_over (q ≫ π[t]) S⟩
-  refine ⟨‹q.IsOver S›, ‹(k.hom ≫ U.toBase).IsOver S›, fun D hD ↦ ?_⟩
-  have hΦq : B[Φ,hc].comap (q ≫ π[s]) = D * ramificationIdealSheaf ℂ (q ≫ π[s]) :=
-    (congrArg B[Φ,hc].comap hq).trans (hD.trans (congrArg (D * ·)
-      ((hT.ramificationIdealSheafToBase_def ℂ).trans (ramificationIdealSheaf_congr ℂ hq.symm))))
-  have hFq := (s.comap_boundaryIdeal_eq_mul_ramificationIdealSheaf_comp_iff hΦ hF hc hN q D).mp hΦq
-  have hΨq :=
-    (t.comap_boundaryIdeal_eq_mul_ramificationIdealSheaf_comp_iff hΨ hF hcΨ hN q D).mpr hFq
-  have hΨk : B[Ψ,hcΨ].comap (k.hom ≫ U.toBase) = D * ramificationIdealSheaf ℂ (k.hom ≫ U.toBase) :=
-    (congrArg B[Ψ,hcΨ].comap hq'.symm).trans
-      (hΨq.trans (congrArg (D * ·) (ramificationIdealSheaf_congr ℂ hq')))
-  let : Z.Over S := ⟨U.toBase ≫ X[Ψ] ↘ S⟩
-  let : U.toBase.IsOver S := ⟨rfl⟩
-  let : k.hom.IsOver S := ⟨(Category.assoc _ _ _).symm.trans (comp_over (k.hom ≫ U.toBase) S)⟩
-  let : SmoothOfRelativeDimension 2 (Z ↘ S) := hU.smoothOfRelativeDimension (X[Ψ] ↘ S)
-  refine ⟨hFq, hΨk, ?_⟩
-  simpa only [IsIso.inv_eq_of_hom_inv_id k.hom_inv_id, hU.ramificationIdealSheafToBase_def ℂ]
-    using (comap_eq_mul_ramificationIdealSheaf_comp_iff_of_isIso ℂ k.hom U.toBase 2).mp hΨk
 
 private theorem toric_corner_baseCenter_ruling {F Ψ : Fan i}
     (b d : Basis (Fin 2) ℤ N) (σ : Φ.cones) (τ : Ψ.cones)
@@ -300,7 +253,7 @@ theorem exists_sarkisov_decrease_of_toric_corner
   let : SmoothOfRelativeDimension 2 (X[Ψ] ↘ S) := by
     rw [Fan.algebraicRealization_over]
     exact rankTwo(b) ▸ Ψ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΨ
-  refine ⟨toric_corner_pole_ideal hΦ hF hΨ hc hcF hc' rankTwo(b) hT hU s t q k' hq hq', ?_⟩
+  refine ⟨s.pole_ideal_of_blowup_towers t hΦ hF hΨ hc hcF hc' rankTwo(b) hT hU q k' hq hq', ?_⟩
   -- Read the degree in the new marking and undo the permutation in the old order sum.
   intro C C' a β x x'
   obtain ⟨hclass, hsum, hlt⟩ := hcoord a β (x j) (x ∘ j.succAbove)
