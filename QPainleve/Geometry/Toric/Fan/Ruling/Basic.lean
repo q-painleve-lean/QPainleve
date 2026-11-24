@@ -448,4 +448,52 @@ theorem isDominant_characterRuling [Nonempty Φ.cones] (hm : m ≠ 0) :
   exact IsDominant.of_comp (Φ.denseTorusι inferInstance) _
 
 end Fan
+
+local notation "m(" f ")" =>
+  AddMonoidHom.comp (Pi.evalAddMonoidHom (fun _ : Fin 1 ↦ ℤ) 0) (FanHom.latticeMap f)
+
+namespace FanHom
+
+variable {N : Type} {V : Type*} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
+  {i : N →+ V} {Φ : Fan i} (f : FanHom Φ (Fan.projectiveSpace b₁ h₁))
+
+private theorem realCharacter_projectiveLine :
+    Φ.lattice.realCharacter m(f) = (LinearMap.proj 0).comp f.realMap := by
+  symm
+  apply Φ.lattice.eq_realCharacter
+  intro n
+  simp [f.map_lattice]
+
+private theorem projectiveLine_sign (σ : Φ.cones) :
+    (∀ x ∈ σ.val, 0 ≤ Φ.lattice.realCharacter m(f) x) ∨
+      ∀ x ∈ σ.val, Φ.lattice.realCharacter m(f) x ≤ 0 := by
+  obtain ⟨τ, hτ, hm⟩ := f.map_cone σ.property
+  rw [Fan.projectiveSpace_finOne_eq_projectiveLineFan, mem_projectiveLineFan_cones] at hτ
+  simp only [realCharacter_projectiveLine f, LinearMap.comp_apply, LinearMap.proj_apply]
+  rcases hτ with h | h | h
+  · left
+    intro x hx
+    have hz := hm ⟨x, hx, rfl⟩
+    rw [h, Submodule.mem_bot] at hz
+    have hz' : f.realMap x = 0 := hz
+    simp [hz']
+  · exact Or.inl fun x hx ↦ (mem_affineRayCone_iff _).mp (h ▸ hm ⟨x, hx, rfl⟩)
+  · exact Or.inr fun x hx ↦ (mem_negativeRayCone_iff _).mp (h ▸ hm ⟨x, hx, rfl⟩)
+
+/-- On the dense torus, the projective coordinates of a map to the projective-line
+fan are `[1 : zᵐ]`, where `m` evaluates its lattice map at the sole coordinate. -/
+@[reassoc]
+theorem denseTorusι_comp_projectiveLineToricIso (hΦ : Nonempty Φ.cones) :
+    Φ.denseTorusι hΦ ≫ f.algebraicMap ≫ Fan.projectiveLineToricIso.hom =
+      projectiveLine.polynomialPoint ℂ (algebraMap ℂ _) 0
+        (MonoidAlgebra.of ℂ _ (ofAdd ((denseTorusDualEquiv Φ.lattice).symm m(f)))) := by
+  have h : Φ.characterFanHom m(f) (projectiveLine_sign f) = f := by
+    apply FanHom.ext
+    ext n j
+    rw [Fan.characterFanHom_latticeMap, Subsingleton.elim j 0]
+    rfl
+  conv_lhs => rw [← h, ← Fan.characterRuling_def, Φ.denseTorusι_comp_characterRuling]
+
+end FanHom
+
 end TauCeti.Toric
