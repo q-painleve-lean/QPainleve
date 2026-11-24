@@ -46,7 +46,9 @@ private theorem adjacent_iff (b : Module.Basis (Fin 2) ℤ N)
   exact ray_neighbors_iff_of_det b hΦ hc
     (by simpa only [sub_add_cancel] using hu (j - 1)) (hu j) τ
 
-private theorem mem_cones_iff (b : Module.Basis (Fin 2) ℤ N)
+/-- The cones of a regular complete surface fan with a positive cyclic ray
+numbering are the zero cone, the rays, and the joins of consecutive rays. -/
+theorem mem_cones_iff_of_cyclicRays (b : Module.Basis (Fin 2) ℤ N)
     (hΦ : Φ.IsRegular) (hc : Φ.IsComplete) (u : ZMod n ≃ Φ.Ray)
     (hu : ∀ j, b.detDualEquiv (u j).primitiveGenerator (u (j + 1)).primitiveGenerator = 1 ∧
       ∃ σ : Φ.cones, (u j).toCone ≤ σ ∧ (u (j + 1)).toCone ≤ σ)
@@ -120,7 +122,8 @@ noncomputable def fanEquivOfCyclicRays
   realEquiv := Φ.lattice.extendEquiv Ψ.lattice f
   map_lattice := Φ.lattice.extendEquiv_apply_lattice Ψ.lattice f
   map_mem := map_mem_cones_iff _ u v
-    (fun _ ↦ mem_cones_iff b hΦ hc u hu) (fun _ ↦ mem_cones_iff b' hΨ hc' v hv)
+    (fun _ ↦ mem_cones_iff_of_cyclicRays b hΦ hc u hu)
+    (fun _ ↦ mem_cones_iff_of_cyclicRays b' hΨ hc' v hv)
     (fun j ↦ by
       rw [Ray.toCone_eq_hull_primitiveGenerator, Ray.toCone_eq_hull_primitiveGenerator,
         PointedCone.map, Submodule.map_span, Set.image_singleton]
