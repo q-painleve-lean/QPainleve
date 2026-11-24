@@ -105,14 +105,10 @@ private theorem two_nsmul_canonical_notMem_effectiveClasses : (2 : ℕ) • K �
     (one_ne_zero : (1 : Γ(X, ⊤)) ≠ 0)) (hs.trans (map_zero _).symm)
 
 include rational in
-private theorem two_mul_eulerChar_sub_one (a : Pic) :
-    2 * (eulerCharBelow k a.toMul 3 - 1) = B a a - B a K := by
-  simpa only [intersectionBilinForm_apply, toMul_ofMul] using
-    eulerCharBelow_eq_riemannRoch_of_isRationalOver k a.toMul
-
-include rational in
 private theorem anticanonical_mem_effectiveClasses (hK : 0 ≤ B K K) : -K ∈ E := by
-  have hRR := two_mul_eulerChar_sub_one k (-K)
+  have hRR : 2 * (eulerCharBelow k (-K : Pic).toMul 3 - 1) = B (-K) (-K) - B (-K) K := by
+    simpa only [intersectionBilinForm_apply, toMul_ofMul] using
+      eulerCharBelow_eq_riemannRoch_of_isRationalOver k (-K : Pic).toMul
   simp only [map_neg, LinearMap.neg_apply, neg_neg] at hRR
   rcases mem_effectiveClasses_or_canonical_sub_of_eulerChar_pos k (-K) (by omega) with h | h
   · exact h
@@ -299,27 +295,24 @@ private theorem exists_primeDivisorClass_notMem_zmultiples_canonical :
   exact ⟨n, by simpa only [toMul_zsmul, toMul_ofMul] using congrArg Additive.toMul hn⟩
 
 include rational in
-private theorem adjunction_prime (p : CodimensionOnePoint X) :
-    let I := C(p)
-    let : I.subscheme.IsProjectiveOver k :=
-      Scheme.IsProjectiveOver.of_isClosedImmersion k I.subschemeι
-    let : Module.Finite k (Cohomology (InvertibleSheaf.trivial I.subscheme).obj 1) :=
-      moduleFinite_cohomology_of_isProjectiveOver k (InvertibleSheaf.trivial I.subscheme).obj 1
-    2 * (I.subscheme.genus k : ℤ) - 2 = B P(p) P(p) + B P(p) K := by
-  dsimp only
-  simpa only [intersectionBilinForm_apply, toMul_ofMul] using
-    two_mul_genus_sub_two_eq_intersection_primeDivisorClass k p
-
-include rational in
 private theorem self_add_canonical_degree_eq_neg_two_of_adjoint_notMem_effectiveClasses
     (p : CodimensionOnePoint X) (hnot : K + P(p) ∉ E) :
     B P(p) P(p) + B P(p) K = -2 := by
   have hsym : B K P(p) = B P(p) K := by
     simp only [intersectionBilinForm_apply, classIntersectionNumber_comm]
-  have hχ := two_mul_eulerChar_sub_one k (K + P(p))
+  have hχ : 2 * (eulerCharBelow k (K + P(p)).toMul 3 - 1) =
+      B (K + P(p)) (K + P(p)) - B (K + P(p)) K := by
+    simpa only [intersectionBilinForm_apply, toMul_ofMul] using
+      eulerCharBelow_eq_riemannRoch_of_isRationalOver k (K + P(p)).toMul
   simp only [add_left, add_right, hsym] at hχ
-  have hadj := adjunction_prime k p
-  dsimp only at hadj
+  let I := C(p)
+  have : I.subscheme.IsProjectiveOver k :=
+    Scheme.IsProjectiveOver.of_isClosedImmersion k I.subschemeι
+  have : Module.Finite k (Cohomology (InvertibleSheaf.trivial I.subscheme).obj 1) :=
+    moduleFinite_cohomology_of_isProjectiveOver k (InvertibleSheaf.trivial I.subscheme).obj 1
+  have hadj : 2 * (I.subscheme.genus k : ℤ) - 2 = B P(p) P(p) + B P(p) K := by
+    simpa only [I, intersectionBilinForm_apply, toMul_ofMul] using
+      two_mul_genus_sub_two_eq_intersection_primeDivisorClass k p
   by_contra! hne
   rcases mem_effectiveClasses_or_canonical_sub_of_eulerChar_pos k (K + P(p)) (by omega)
     with h | h
@@ -352,7 +345,10 @@ private theorem canonical_degree_neg_of_irreducible_anticanonical
   have hs := self_add_canonical_degree_eq_neg_two_of_adjoint_notMem_effectiveClasses k p hnot
   rw [hsym, hzero] at hs
   -- A component of canonical degree zero would split the anticanonical class.
-  have hRR := two_mul_eulerChar_sub_one k (-K - P(p))
+  have hRR : 2 * (eulerCharBelow k (-K - P(p)).toMul 3 - 1) =
+      B (-K - P(p)) (-K - P(p)) - B (-K - P(p)) K := by
+    simpa only [intersectionBilinForm_apply, toMul_ofMul] using
+      eulerCharBelow_eq_riemannRoch_of_isRationalOver k (-K - P(p)).toMul
   simp only [map_sub, LinearMap.sub_apply, neg_left, neg_right, hsym, hzero] at hRR
   rcases mem_effectiveClasses_or_canonical_sub_of_eulerChar_pos k (-K - P(p)) (by omega)
     with hrest | htwo
@@ -439,10 +435,7 @@ include rational in
 private theorem primeDivisorClass_self_nonneg_of_canonical_degree_neg
     (hmin : ∀ I : X.IdealSheafData, ¬ I.IsExceptionalCurveOfFirstKind)
     (p : CodimensionOnePoint X) (hp : B P(p) K < 0) : 0 ≤ B P(p) P(p) := by
-  have h := adjunction_prime k p
-  dsimp only at h
   by_contra! hneg
-  have hsq : B P(p) P(p) = -1 := by omega
   let I := C(p)
   have : I.subscheme.IsProjectiveOver k :=
     Scheme.IsProjectiveOver.of_isClosedImmersion k I.subschemeι
@@ -450,12 +443,15 @@ private theorem primeDivisorClass_self_nonneg_of_canonical_degree_neg
     ⟨inferInstance, inferInstance, topologicalKrullDim_vanishingIdeal_subscheme k dim₂ p⟩
   have : Module.Finite k (Cohomology (InvertibleSheaf.trivial I.subscheme).obj 1) :=
     moduleFinite_cohomology_of_isProjectiveOver k (InvertibleSheaf.trivial I.subscheme).obj 1
+  have hadj : 2 * (I.subscheme.genus k : ℤ) - 2 = B P(p) P(p) + B P(p) K := by
+    simpa only [I, intersectionBilinForm_apply, toMul_ofMul] using
+      two_mul_genus_sub_two_eq_intersection_primeDivisorClass k p
+  have hsq : B P(p) P(p) = -1 := by omega
   have hI : I.IsEffectiveCartier := isEffectiveCartier_vanishingIdeal_closure_singleton p.property
   apply hmin I
   refine (hI.isExceptionalCurveOfFirstKind_iff_genus_eq_zero_and_classIntersectionNumber
     (k := k) (dim₂).le).mpr ⟨?_, ?_⟩
-  · dsimp only [I]
-    omega
+  · omega
   · simpa only [intersectionBilinForm_apply, toMul_ofMul, primeDivisorClass_def] using hsq
 
 include rational in
@@ -513,8 +509,6 @@ theorem exists_rational_curve_self_intersection_nonneg
     exact hp (by rwa [hsym])
   have hnot' := adjoint_notMem_effectiveClasses_of_sub_mem k hnot hres
   have hnum := self_add_canonical_degree_eq_neg_two_of_adjoint_notMem_effectiveClasses k p hnot'
-  have hadj := adjunction_prime k p
-  dsimp only at hadj
   let I := C(p)
   have : I.subscheme.IsProjectiveOver k :=
     Scheme.IsProjectiveOver.of_isClosedImmersion k I.subschemeι
@@ -522,10 +516,11 @@ theorem exists_rational_curve_self_intersection_nonneg
     ⟨inferInstance, inferInstance, topologicalKrullDim_vanishingIdeal_subscheme k dim₂ p⟩
   have : Module.Finite k (Cohomology (InvertibleSheaf.trivial I.subscheme).obj 1) :=
     moduleFinite_cohomology_of_isProjectiveOver k (InvertibleSheaf.trivial I.subscheme).obj 1
+  have hadj : 2 * (I.subscheme.genus k : ℤ) - 2 = B P(p) P(p) + B P(p) K := by
+    simpa only [I, intersectionBilinForm_apply, toMul_ofMul] using
+      two_mul_genus_sub_two_eq_intersection_primeDivisorClass k p
   have hI : I.IsEffectiveCartier := isEffectiveCartier_vanishingIdeal_closure_singleton p.property
-  have hgen : I.subscheme.genus k = 0 := by
-    dsimp only [I]
-    omega
+  have hgen : I.subscheme.genus k = 0 := by omega
   obtain ⟨e, he⟩ := genus_eq_zero_iff_exists_iso_projectiveLine.mp hgen
   refine ⟨I, hI, e, he, ?_⟩
   simpa only [intersectionBilinForm_apply, toMul_ofMul, primeDivisorClass_def] using
