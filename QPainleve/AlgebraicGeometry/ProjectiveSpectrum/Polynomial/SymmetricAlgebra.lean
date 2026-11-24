@@ -128,3 +128,18 @@ theorem pullback_mk_symmetricAlgebraTwistingBundle {R V : Type (max v w)} {ι : 
   exact b.polynomialProjIsoPullbackTwistingSheafIso m
 
 end Module.Basis
+
+namespace QPainleve
+
+attribute [local instance] MvPolynomial.gradedAlgebra
+
+/-- An equivalence of coordinate indices with `Fin 3` identifies the corresponding
+polynomial projective spectrum with the standard projective plane. -/
+@[expose]
+def polynomialPlaneIso {k ι : Type u} [Field k] (ε : ι ≃ Fin 3) :
+    Proj (MvPolynomial.homogeneousSubmodule ι k) ≅
+      Proj (MvPolynomial.homogeneousSubmodule (Fin 3) k) :=
+  let b := Pi.basisFun k (Fin 3)
+  (b.reindex ε.symm).polynomialProjIso ≪≫ b.polynomialProjIso.symm
+
+end QPainleve

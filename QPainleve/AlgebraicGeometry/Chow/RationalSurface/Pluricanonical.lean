@@ -9,6 +9,7 @@ public import QPainleve.AlgebraicGeometry.Chow.RationalSurface.Basic
 public import QPainleve.AlgebraicGeometry.LineBundle.EffectiveClass
 
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Pluricanonical
+import QPainleve.AlgebraicGeometry.CartierDivisor.ZeroDivisor
 import QPainleve.AlgebraicGeometry.Modules.Differentials.Restriction
 import TauCeti.AlgebraicGeometry.Cohomology.ProjectiveSpace.TwistingSheaf
 
@@ -28,7 +29,6 @@ public section
 
 open AlgebraicGeometry CategoryTheory QPainleve
 open TauCeti.AlgebraicGeometry TauCeti.AlgebraicGeometry.LineBundleClass TauCeti.SymmetricAlgebra
-open TauCeti.AlgebraicGeometry.Scheme.CartierDivisor
 open AlgebraicGeometry.Scheme.Modules TauCeti.AlgebraicGeometry.Scheme.Modules
 
 universe u
@@ -85,31 +85,19 @@ theorem subsingleton_cohomology_zero_pluricanonical_of_isRationalOver {m : ℕ} 
   exact (eT.trans (eVW.trans (eU.symm.trans
     (cohomologyBaseLinearEquivOfIso k eH 0)))).injective.subsingleton
 
-variable {X} [IsIntegral X]
-
-/-- No positive multiple of the canonical class of a smooth projective rational surface
-over an algebraically closed field is effective. -/
-theorem nsmul_canonical_notMem_effectiveClasses {m : ℕ} (hm : 0 < m) :
-    m • Additive.ofMul (LineBundleClass.mk (ω[X])) ∉ X.effectiveClasses := by
-  intro he
-  obtain ⟨D, hD, hclass⟩ := mem_effectiveClasses.mp he
+/-- Positive multiples of the canonical class of a smooth projective rational surface
+over an algebraically closed field are ineffective. -/
+theorem not_mem_effectiveClasses_nsmul_canonical [IsIntegral X] {m : ℕ}
+    (hm : 0 < m) : m • Additive.ofMul (LineBundleClass.mk ω[X]) ∉ X.effectiveClasses := by
+  intro h
+  obtain ⟨D, hD, hclass⟩ := mem_effectiveClasses.mp h
   let L := (ω[X]).tensorPow m
-  have hL : D.toLineBundleClass = LineBundleClass.mk L := by
-    simpa only [L, mk_tensorPow, toMul_nsmul, toMul_ofMul] using congrArg Additive.toMul hclass
-  obtain ⟨e⟩ := toLineBundleClass_eq_mk_iff.mp hL
-  have := X.subsingleton_cohomology_zero_pluricanonical_of_isRationalOver k hm
-  have : Subsingleton (Cohomology D.sheaf 0) :=
-    (cohomologyBaseLinearEquivOfIso k e 0).injective.subsingleton
-  have : Subsingleton (Γ(D.sheaf, ⊤)) :=
-    (cohomologyZeroBaseLinearEquiv k X D.sheaf).surjective.subsingleton
-  have heq : Scheme.Modules.Hom.app (D.unitToSheaf hD) ⊤ (1 : Γ(X, ⊤)) = 0 := Subsingleton.elim _ _
-  have hs : Scheme.Modules.Hom.app (Scheme.toRationalFunctions X) ⊤ (1 : Γ(X, ⊤)) = 0 := calc
-    _ = Scheme.Modules.Hom.app (D.unitToSheaf hD ≫ D.sheafι) ⊤ (1 : Γ(X, ⊤)) :=
-      congrArg (fun g ↦ Scheme.Modules.Hom.app g ⊤ (1 : Γ(X, ⊤))) (D.unitToSheaf_ι hD).symm
-    _ = Scheme.Modules.Hom.app D.sheafι ⊤
-        (Scheme.Modules.Hom.app (D.unitToSheaf hD) ⊤ (1 : Γ(X, ⊤))) := rfl
-    _ = 0 := by rw [heq, map_zero]
-  exact ((Scheme.toRationalFunctions_app_injective (X := X) ⊤).ne
-    (one_ne_zero : (1 : Γ(X, ⊤)) ≠ 0)) (hs.trans (map_zero _).symm)
+  have hL : LineBundleClass.mk L = D.toLineBundleClass := by
+    simpa only [L, mk_tensorPow, toMul_nsmul, toMul_ofMul] using congrArg Additive.toMul hclass.symm
+  have hvan := X.subsingleton_cohomology_zero_pluricanonical_of_isRationalOver k hm
+  have : Subsingleton Γ(L.obj, ⊤) :=
+    (cohomologyZeroBaseLinearEquiv k X L.obj).surjective.subsingleton
+  obtain ⟨s, hs, _⟩ := L.exists_zeroDivisor_eq hD hL.symm
+  exact hs (Subsingleton.elim s 0)
 
 end AlgebraicGeometry.Scheme

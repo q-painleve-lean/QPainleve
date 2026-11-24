@@ -28,6 +28,15 @@ universe u
 
 namespace AlgebraicGeometry.Scheme
 
+/-- A conductor branch maps to the same curve point through the normalization
+and through the singular subscheme. -/
+theorem blowupToBase_branchSchemeToBlowup_apply {k : Type u} [Field k] (X : Scheme.{u})
+    [X.Over (Spec (.of k))] [SyntomicOfRelativeDimension 1 (X ↘ Spec (.of k))]
+    (q : X.branchScheme k) :
+    (X.singularLocus k).blowupToBase (X.branchSchemeToBlowup k q) =
+      (X.singularLocus k).subschemeι (X.branchSchemeToSingularLocus k q) := by
+  rw [← Hom.comp_apply, ← Hom.comp_apply, branchSchemeToSingularLocus_subschemeι]
+
 /-- The image of the branch scheme in the normalization is the inverse image of the
 singular locus of the curve. -/
 theorem range_branchSchemeToBlowup {k : Type u} [Field k] (X : Scheme.{u})

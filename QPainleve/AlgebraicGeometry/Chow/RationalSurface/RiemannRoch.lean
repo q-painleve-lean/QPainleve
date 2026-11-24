@@ -187,3 +187,29 @@ theorem mem_effectiveClasses_or_canonical_sub_of_eulerChar_pos (a : Additive (Li
           sub_eq_add_neg]⟩)
 
 end TauCeti.AlgebraicGeometry.LineBundleClass
+
+namespace AlgebraicGeometry.Scheme
+
+open Chow
+
+variable (X : Scheme.{u}) [X.Over (Spec (.of k))] [X.IsProjectiveOver k]
+  [SmoothOfRelativeDimension 2 (X ↘ Spec (.of k))]
+  [rational : Scheme.IsRationalOver (X ↘ Spec (.of k))]
+
+local notation "B" => classIntersectionBilinForm k
+  (topologicalKrullDim_eq_of_smoothOfRelativeDimension (X ↘ S) (n := 2))
+local notation "K" => Additive.ofMul K[X]
+
+include algClosed rational in
+/-- On a smooth projective rational surface, if a class intersects its difference with the
+canonical class nonnegatively, either the class or its canonical complement is effective. -/
+theorem mem_effectiveClasses_or_canonical_sub
+    [IsIntegral X] [∀ x : X, UniqueFactorizationMonoid (X.presheaf.stalk x)]
+    (a : Additive (LineBundleClass X))
+    (h : 0 ≤ B a a - B a K) : a ∈ X.effectiveClasses ∨ K - a ∈ X.effectiveClasses := by
+  have hRR : 2 * (eulerCharBelow k a.toMul 3 - 1) = B a a - B a K := by
+    simpa only [classIntersectionBilinForm_apply, toMul_ofMul] using
+      eulerCharBelow_eq_riemannRoch_of_isRationalOver k a.toMul
+  exact mem_effectiveClasses_or_canonical_sub_of_eulerChar_pos k a (by omega)
+
+end AlgebraicGeometry.Scheme

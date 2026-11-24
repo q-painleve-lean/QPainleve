@@ -11,12 +11,11 @@ public import TauCeti.AlgebraicGeometry.LineBundle.GlobalGeneration.Basic
 public import TauCeti.AlgebraicGeometry.LineBundle.Power
 public import TauCeti.AlgebraicGeometry.Modules.Pullback.Sections
 public import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.ProjectiveOver
-import Mathlib.Order.OrderIsoNat
 import QPainleve.AlgebraicGeometry.CartierDivisor.ZeroDivisor
 import QPainleve.AlgebraicGeometry.Cohomology.CartierPairing
-import QPainleve.AlgebraicGeometry.Cohomology.Projective
 import QPainleve.AlgebraicGeometry.Cohomology.SerreVanishing
 import QPainleve.AlgebraicGeometry.EffectiveCartierDivisor.Twist
+import QPainleve.AlgebraicGeometry.IdealSheaf.Tensor.SectionLifting
 import QPainleve.AlgebraicGeometry.LineBundle.GlobalGeneration
 import QPainleve.AlgebraicGeometry.LineBundle.Power
 import QPainleve.AlgebraicGeometry.LineBundle.Pullback
@@ -69,54 +68,6 @@ private theorem eventually_subsingleton_cohomology_quotient (k : Type u) [Field 
   exact ((I.cohomologyTensorRestrictionEquiv k (L.tensorPow n) 1).trans
     (cohomologyBaseLinearEquivOfIso k e' 1)).injective.subsingleton
 
-private theorem eventually_injective_cohomologyMap_tensorIdeal (k : Type u) [Field k]
-    [X.Over (Spec (.of k))] [X.IsProjectiveOver k] (hI : I.IsEffectiveCartier)
-    (hA : (LineBundleClass.pullback I.subschemeι
-      (LineBundleClass.mk hI.toInvertibleSheaf.dual)).IsAmple) :
-    ∀ᶠ n : ℕ in atTop, Function.Injective
-      (cohomologyMap ((hI.toInvertibleSheaf.dual.tensorPow (n + 1)).obj ◁ I.sheafι) 1) := by
-  let L := hI.toInvertibleSheaf.dual
-  let d (n : ℕ) := Module.finrank k (Cohomology (L.tensorPow n).obj 1)
-  let a (n : ℕ) := (L.tensorPow (n + 1)).obj
-  let src (n : ℕ) := cohomologyBaseLinearEquivOfIso k (hI.tensorPowSuccIdealIso n).symm 1
-  let tgt (n : ℕ) := cohomologyBaseLinearEquivOfIso k (ρ_ (a n)) 1
-  let map (n : ℕ) := (tgt n).toLinearMap.comp
-    ((cohomologyMapBaseLinear k X (a n ◁ I.sheafι) 1).comp (src n).toLinearMap)
-  have hmaps : ∀ᶠ n : ℕ in atTop, Function.Surjective (map n) := by
-    obtain ⟨N, hN⟩ := eventually_atTop.mp (eventually_subsingleton_cohomology_quotient k L hA)
-    filter_upwards [eventually_ge_atTop N] with n hn
-    have : Subsingleton (Cohomology (a n ⊗ I.pushforwardSubscheme) 1) :=
-      hN (n + 1) (hn.trans (Nat.le_succ n))
-    have hS := I.shortExact_tensor_toPushforwardSubscheme (a n)
-    have hs : Function.Surjective (cohomologyMap (a n ◁ I.sheafι) 1) :=
-      fun y ↦ by
-        have hy : cohomologyMap (a n ◁ I.toPushforwardSubscheme) 1 y = 0 :=
-          Subsingleton.elim _ _
-        exact (exact_cohomologyMap_cohomologyMap hS 1 y).mp hy
-    simpa only [map, LinearMap.coe_comp, LinearEquiv.coe_coe, coe_cohomologyMapBaseLinear] using
-      (tgt n).surjective.comp (hs.comp (src n).surjective)
-  have hfinite (n : ℕ) : Module.Finite k (Cohomology (L.tensorPow n).obj 1) :=
-    moduleFinite_cohomology_of_isProjectiveOver k _ _
-  have hstep : ∀ᶠ n : ℕ in atTop, d (n + 1) ≤ d n := hmaps.mono fun n hn ↦ by
-    have := hfinite n
-    exact LinearMap.finrank_le_finrank_of_surjective hn
-  obtain ⟨N, hN⟩ := eventually_atTop.mp hstep
-  have hanti : Antitone (fun n ↦ d (N + n)) := antitone_nat_of_succ_le fun n ↦
-    hN (N + n) (Nat.le_add_right ..)
-  obtain ⟨m, hm⟩ := WellFoundedLT.antitone_chain_condition hanti
-  filter_upwards [hmaps, eventually_ge_atTop (N + m)] with n hn hnm
-  have := hfinite n
-  have := hfinite (n + 1)
-  have heq : d n = d (n + 1) := by
-    have h := (hm (n - N) (by omega)).symm.trans (hm (n + 1 - N) (by omega))
-    simpa only [Nat.add_sub_of_le (by omega : N ≤ n),
-      Nat.add_sub_of_le (by omega : N ≤ n + 1)] using h
-  have hinj := (OrzechProperty.bijective_of_surjective_of_finrank_le (map n) hn heq.le).injective
-  simp only [map, LinearMap.coe_comp, LinearEquiv.coe_coe, coe_cohomologyMapBaseLinear] at hinj
-  -- Reassociate the three functions to cancel the source isomorphism first.
-  rw [← Function.comp_assoc] at hinj
-  exact (hinj.of_comp_right (src n).surjective).of_comp
-
 /-- If the associated line bundle of an effective Cartier divisor is ample on the divisor,
 all global sections on the divisor of sufficiently high powers lift to the ambient scheme. -/
 theorem eventually_surjective_pullbackSectionsLE_of_isAmple (k : Type u) [Field k]
@@ -126,41 +77,9 @@ theorem eventually_surjective_pullbackSectionsLE_of_isAmple (k : Type u) [Field 
     ∀ᶠ n : ℕ in atTop, Function.Surjective
       (I.subschemeι.pullbackSectionsLE ((hI.toInvertibleSheaf.dual.tensorPow n).obj) ⊤ ⊤
         (by rw [Scheme.Hom.preimage_top])) := by
-  obtain ⟨N, hN⟩ := eventually_atTop.mp (hI.eventually_injective_cohomologyMap_tensorIdeal k hA)
-  refine eventually_atTop.mpr ⟨N + 1, fun n hn ↦ ?_⟩
-  cases n with
-  | zero => omega
-  | succ n =>
-    let M := hI.toInvertibleSheaf.dual.tensorPow (n + 1)
-    let i := I.subschemeι
-    have hS := I.shortExact_tensor_toPushforwardSubscheme M.obj
-    have hinj := hN n (by omega)
-    have hsurj : Function.Surjective (cohomologyMap (M.obj ◁ I.toPushforwardSubscheme) 0) := by
-      intro y
-      apply (exact_cohomologyMap_cohomologyδ hS 0 1 rfl y).mp
-      apply hinj
-      rw [map_zero]
-      exact (exact_cohomologyδ_cohomologyMap hS 0 1 rfl _).mpr ⟨y, rfl⟩
-    have happ : Function.Surjective ⇑((M.obj ◁ I.toPushforwardSubscheme).app ⊤) := by
-      intro y
-      obtain ⟨x, hx⟩ := hsurj ((cohomologyZeroEquiv _).symm y)
-      exact ⟨cohomologyZeroEquiv _ x, by rw [← cohomologyZeroEquiv_cohomologyMap, hx,
-        AddEquiv.apply_symm_apply]⟩
-    have := I.isIso_tensorRestrictionHom M
-    have hunit : Function.Surjective
-        (((pullbackPushforwardAdjunction i).unit.app M.obj).app ⊤) := by
-      rw [← I.tensorRestrictionHom_unit M]
-      exact (ConcreteCategory.bijective_of_isIso ((I.tensorRestrictionHom M).app ⊤)).surjective.comp
-        (happ.comp (ConcreteCategory.bijective_of_isIso ((ρ_ M.obj).inv.app ⊤)).surjective)
-    let topLE : (⊤ : I.subscheme.Opens) ≤ i ⁻¹ᵁ ⊤ := by rw [Scheme.Hom.preimage_top]
-    have : IsIso (homOfLE topLE) := isIso_homOfLE (Scheme.Hom.preimage_top i).symm
-    have htop := (ConcreteCategory.bijective_of_isIso
-      (((Scheme.Modules.pullback i).obj M.obj).presheaf.map (homOfLE topLE).op)).surjective
-    intro t
-    obtain ⟨x, hx⟩ := (htop.comp hunit) t
-    refine ⟨x, ?_⟩
-    rw [Scheme.Hom.pullbackSectionsLE_apply, Scheme.Hom.pullbackSections_apply]
-    exact hx
+  exact eventually_surjective_pullbackSectionsLE_of_eventually_subsingleton_cohomology_quotient
+    k hI.toInvertibleSheaf.dual.tensorPow hI.tensorPowSuccIdealIso
+    (eventually_subsingleton_cohomology_quotient k _ hA)
 
 /-- If `𝒪_X(D)|_D` is ample for an effective Cartier divisor `D` on a projective scheme,
 every sufficiently high tensor power of `𝒪_X(D)` is globally generated. -/

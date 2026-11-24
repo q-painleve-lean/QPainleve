@@ -368,7 +368,7 @@ theorem anticanonical_mem_effectiveClasses (hK : 0 ≤ B K K) : -K ∈ E := by
   simp only [map_neg, LinearMap.neg_apply, neg_neg] at hRR
   rcases mem_effectiveClasses_or_canonical_sub_of_eulerChar_pos k (-K) (by omega) with h | h
   · exact h
-  · exact (nsmul_canonical_notMem_effectiveClasses k (by decide : 0 < 2)
+  · exact (X.not_mem_effectiveClasses_nsmul_canonical k (by decide : 0 < 2)
       (by simpa only [sub_neg_eq_add, two_nsmul] using h)).elim
 
 variable [∀ x : X, UniqueFactorizationMonoid (X.presheaf.stalk x)]
@@ -444,15 +444,16 @@ theorem exists_effectiveClass_of_canonical_degree_neg (hK : B K K ≤ 0) :
   · exact ⟨h, hh, hh, hneg⟩
   have hkne : K ≠ (0 : Pic) := by
     intro hz
-    exact nsmul_canonical_notMem_effectiveClasses k (X := X) (by decide : 0 < 2)
+    exact X.not_mem_effectiveClasses_nsmul_canonical k (by decide : 0 < 2)
       (by rw [hz, nsmul_zero]; exact (X.effectiveClasses).zero_mem)
   have hn : B K K < 0 := by
     by_contra! hzero
     have heq := le_antisymm hK hzero
     have hA := anticanonical_mem_effectiveClasses k heq.ge
     have hpos : 0 < B h (-K) := by
-      simpa only [h, intersectionBilinForm_apply, toMul_ofMul] using
-        intersection_pos_of_mem_effectiveClasses k dim₂ hH hA (neg_ne_zero.mpr hkne)
+      rw [intersectionBilinForm_apply, ← classIntersectionBilinForm_apply k dim₂ h (-K)]
+      exact classIntersectionBilinForm_pos_of_isAmple_of_mem_effectiveClasses k dim₂
+        (H := h) hH hA (neg_ne_zero.mpr hkne)
     rw [map_neg] at hpos
     omega
   exact exists_positive_class_of_canonical_square_neg k hh (le_of_not_gt hneg) hn

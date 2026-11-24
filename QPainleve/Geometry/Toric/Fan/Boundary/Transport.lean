@@ -7,6 +7,7 @@ module
 
 public import QPainleve.Geometry.Toric.Fan.Boundary.Equiv
 public import QPainleve.Geometry.Toric.Fan.InternalBlowup
+public import QPainleve.Geometry.Toric.Fan.TorusAction.Center
 
 /-!
 # Transport of ordered internal blowups along fan equivalences
@@ -20,7 +21,7 @@ Combining transport with center reindexing compares the two orders over `ℂ`.
 
 public section
 
-open AlgebraicGeometry CategoryTheory QPainleve.BlowupTower
+open AlgebraicGeometry CategoryTheory Multiplicative QPainleve.BlowupTower
 
 namespace TauCeti.Toric.FanEquiv
 
@@ -42,6 +43,22 @@ theorem comap_internalCenter_boundaryIso (hΦ : Φ.IsRegular) (ρ : Φ.Ray) (c :
   ext x
   simpa only [AddMonoidHom.comp_apply, LinearMap.toAddMonoidHom_coe,
     primitiveGenerator_rayEquiv, AddMonoidHom.coe_ofClass] using hdet ρ.primitiveGenerator x
+
+include hdet in
+/-- A fan equivalence followed by translation identifies the corresponding center ideals
+exactly when the target parameter times the translating character equals the source one. -/
+theorem comap_internalCenter_toricIso_eq_iff (hΦ : Φ.IsRegular) (ρ : Φ.Ray)
+    (χ : Multiplicative (N' →+ ℤ) →* ℂˣ) (c d : ℂˣ) :
+    ((e.rayEquiv ρ).internalCenter b' d).val.comap
+      ((e.boundaryIso h₀ h₁).hom ≫ (Ψ.boundaryTranslation χ).hom) =
+        (ρ.internalCenter b c).val ↔
+      d * χ (ofAdd (b'.detDualEquiv (e.rayEquiv ρ).primitiveGenerator).toAddMonoidHom) = c := by
+  let a := χ (ofAdd (b'.detDualEquiv (e.rayEquiv ρ).primitiveGenerator).toAddMonoidHom)
+  have ht := (e.rayEquiv ρ).comap_internalCenter_boundaryTranslation_hom b' χ (d * a)
+  have ha : d * a / a = d := mul_div_cancel_right _ _
+  rw [ha] at ht
+  rw [Scheme.IdealSheafData.comap_comp, ht, e.comap_internalCenter_boundaryIso b b' hdet hΦ]
+  exact (ρ.internalCenter_injective b).eq_iff
 
 variable {n : ℕ} (s : Fin n → Φ.Ray) (c : Fin n → ℂˣ)
 

@@ -41,6 +41,9 @@ local notation "pointIdeal(" p ")" => Scheme.Hom.ker (Scheme.fromSpecResidueFiel
 local notation "pointTower(" p ")" => (BlowupTower.nil.snoc (pointIdeal(p)))
 local notation "P(" q ")" => vanishingIdeal (Closeds.mk (closure {(q : _)}) isClosed_closure)
 local notation "prime(" a ")" => Scheme.IdealSheafData.boundaryPrimeEmbedding _ a
+local notation "Bnd(" D "," p ")" => radical (comap D (blowupToBase (pointIdeal(p))))
+local notation "class(" D "," p ")" =>
+  Additive.ofMul (primeDivisorClass (boundaryPrimeEmbedding D p))
 local notation "S(" k ")" => Spec (CommRingCat.of k)
 local notation "g(" k ", " X ")" => (X ↘ S(k))
 local notation "B(" k ", " S ")" => Chow.intersectionBilinForm k S
@@ -189,5 +192,79 @@ theorem picardIsometryCongr_nodal_boundaryPrimes
         prime(r (.inr PUnit.unit)) (by simpa only [coe_boundaryPrimeEmbedding] using hrq) hq hdq]
     simpa only [T, U, exceptionalClass_snoc_last, ← blowupExceptionalClass_def] using
       picardIsometryCongr_exceptionalClass k hT hU e (Fin.last 0)
+
+include hcenter in
+/-- Primes on the reduced total boundaries at matching closed nodes have matching
+classes under the extended Picard isometry whenever their projections are paired
+original boundary primes or the two blowup centers. -/
+theorem picardIsometryCongr_nodal_boundaryPrimes_of_projection
+    [IsAlgClosed k] [X.IsProjectiveOver k] [Z.IsProjectiveOver k]
+    (hD : D.IsEffectiveCartier) (hF : F.IsEffectiveCartier)
+    (hp : IsClosed ({p} : Set X)) (hq : IsClosed ({q} : Set Z))
+    (hpn : D.IsNodeOfReducedBoundary (g(k, X)) p)
+    (hqn : F.IsNodeOfReducedBoundary (g(k, Z)) q)
+    (hnd : AtWorstNodalOfRelativeDimensionOne (D.subschemeι ≫ g(k, X)))
+    (hnf : AtWorstNodalOfRelativeDimensionOne (F.subschemeι ≫ g(k, Z)))
+    (e : B(k, X).IsometryEquiv B(k, Z))
+    (he : letI := (g(k, X)).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two
+          letI := (g(k, Z)).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two
+          letI := LocallyOfFiniteType.isLocallyNoetherian (g(k, X))
+          letI := LocallyOfFiniteType.isLocallyNoetherian (g(k, Z))
+          ∀ a, e class(D,a) = class(F,σ a)) :
+    let T := pointTower(p)
+    let U := pointTower(q)
+    let hT : IsClosedPointTower X T := .snoc .nil p hp rfl
+    let hU : IsClosedPointTower Z U := .snoc .nil q hq rfl
+    let : IsNoetherian X := isNoetherian_of_finiteType (g(k, X))
+    let : IsNoetherian Z := isNoetherian_of_finiteType (g(k, Z))
+    let := T.isNoetherian
+    let := U.isNoetherian
+    let := hT.smoothOfRelativeDimension (g(k, X))
+    let := hU.smoothOfRelativeDimension (g(k, Z))
+    let := hT.isIntegral (g(k, X))
+    let := hU.isIntegral (g(k, Z))
+    let := (T.toBase ≫ g(k, X)).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two
+    let := (U.toBase ≫ g(k, Z)).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two
+    ∀ (a : (Bnd(D,p)).boundaryPrimes) (b : (Bnd(F,q)).boundaryPrimes),
+      (let π := (pointIdeal(p)).blowupToBase
+       let τ := (pointIdeal(q)).blowupToBase
+       (π a.val = p ∧ τ b.val = q) ∨
+         (∃ c : D.boundaryPrimes, π a.val = c.val ∧ τ b.val = (σ c).val)) →
+      picardIsometryCongr k hT hU e class(Bnd(D,p),a) = class(Bnd(F,q),b) := by
+  have : IsNoetherian X := isNoetherian_of_finiteType (g(k, X))
+  have : IsNoetherian Z := isNoetherian_of_finiteType (g(k, Z))
+  obtain ⟨σ', hσ'⟩ := picardIsometryCongr_nodal_boundaryPrimes σ hcenter e he hp hq hD hF
+    hnd hnf hpn hqn
+  intro T U hT hU _ _ _ _ _ _ _ _ _ _ a b hab
+  let π := (pointIdeal(p)).blowupToBase
+  let τ := (pointIdeal(q)).blowupToBase
+  let a' : (D.comap π).boundaryPrimes :=
+    Set.equivOfEq (boundaryPrimes_eq_of_support_eq (support_radical _)) a
+  let b' : (F.comap τ).boundaryPrimes :=
+    Set.equivOfEq (boundaryPrimes_eq_of_support_eq (support_radical _)) b
+  have ha' : a'.val = a.val := (rfl)
+  have hb' : b'.val = b.val := (rfl)
+  have hne (c : D.boundaryPrimes) : c.val ≠ p := by
+    intro hc
+    have h := (mem_boundaryPrimes.mp c.property).2
+    rw [hc, coheight_eq_of_isClosed_of_smoothOfRelativeDimension (n := 2) (g(k, X)) hp] at h
+    norm_num at h
+  have hproj : τ (σ' a').val = τ b'.val := by
+    rcases (hσ' a').2 with ⟨hx, hy⟩ | ⟨c, hx, hy⟩ <;>
+      rcases hab with ⟨hx', hy'⟩ | ⟨c', hx', hy'⟩
+    · exact hy.trans (hb' ▸ hy').symm
+    · exact (hne c' (hx'.symm.trans (ha' ▸ hx))).elim
+    · exact (hne c (hx.symm.trans (ha'.symm ▸ hx'))).elim
+    · have hc : c = c' := Subtype.ext (hx.symm.trans (ha'.symm ▸ hx'))
+      exact hy.trans (by rw [hc, hb', hy'])
+  have hb'' : σ' a' = b' := Subtype.ext
+    (F.injOn_blowupToBase_boundaryPrimes_comap_pointBlowup (g(k, Z)) hq
+      (mem_support_of_isNodeOfReducedBoundary hqn) (σ' a').property b'.property hproj)
+  have haPrime : (D.comap π).boundaryPrimeEmbedding a' = (Bnd(D,p)).boundaryPrimeEmbedding a :=
+    Subtype.ext (by simpa only [coe_boundaryPrimeEmbedding] using ha')
+  have hbPrime : (F.comap τ).boundaryPrimeEmbedding b' = (Bnd(F,q)).boundaryPrimeEmbedding b :=
+    Subtype.ext (by simpa only [coe_boundaryPrimeEmbedding] using hb')
+  rw [← haPrime, ← hbPrime, ← hb'']
+  exact (hσ' a').1
 
 end QPainleve.BlowupTower
