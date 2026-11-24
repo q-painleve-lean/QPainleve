@@ -138,6 +138,34 @@ variable {X Y : Scheme.{u}} [IsIntegral X] [IsNoetherian X]
   [IsIntegral Y] [IsNoetherian Y]
   [∀ y : Y, UniqueFactorizationMonoid (Y.presheaf.stalk y)]
 
+/-- Over an open where `f` is an isomorphism, the pullback of a prime divisor class
+and the class of its strict transform have the same restriction. -/
+theorem pullback_primeDivisorClass_sub_mem_primeDivisorSpanCompl
+    (f : Y ⟶ X) (U : X.Opens) [IsIso (f ∣_ U)]
+    (x : CodimensionOnePoint X) (y : CodimensionOnePoint Y)
+    (hy : f y = x) (hxU : (x : X) ∈ U) :
+    Additive.ofMul (pullback f (primeDivisorClass x)) - Additive.ofMul (primeDivisorClass y) ∈
+      (f ⁻¹ᵁ U).primeDivisorSpanCompl := by
+  let V := f ⁻¹ᵁ U
+  obtain ⟨p, hp⟩ := (CodimensionOnePoint.mem_range_mapOfIsOpenImmersion V.ι).mpr
+    ⟨⟨y, f.mem_preimage.mpr (hy.symm ▸ hxU)⟩, rfl⟩
+  have hpy : V.ι p.val = y.val := by
+    simpa only [CodimensionOnePoint.coe_mapOfIsOpenImmersion] using congrArg Subtype.val hp
+  have hq : CodimensionOnePoint.mapOfIsOpenImmersion U.ι
+      (CodimensionOnePoint.mapOfIsOpenImmersion (f ∣_ U) p) = x := by
+    apply Subtype.ext
+    rw [← CodimensionOnePoint.mapOfIsOpenImmersion_comp,
+      CodimensionOnePoint.coe_mapOfIsOpenImmersion, morphismRestrict_ι,
+      Scheme.Hom.comp_apply, hpy, hy]
+  rw [← ofMul_div, V.mem_primeDivisorSpanCompl_iff, ← pullbackHom_apply, map_div, div_eq_one]
+  simp only [pullbackHom_apply]
+  let := U.ι.isDomain_stalk_of_isOpenImmersion
+  let := U.ι.uniqueFactorizationMonoid_stalk_of_isOpenImmersion
+  rw [pullback_comp, ← morphismRestrict_ι, ← pullback_comp, ← hq,
+    pullback_primeDivisorClass_mapOfIsOpenImmersion U.ι,
+    pullback_primeDivisorClass_mapOfIsOpenImmersion (f ∣_ U), ← hp,
+    pullback_primeDivisorClass_mapOfIsOpenImmersion V.ι]
+
 /-- If a morphism is an isomorphism over an open, its pullback identifies the Picard
 quotients by the complementary prime divisors. -/
 def quotientPrimeDivisorSpanComplEquiv (f : Y ⟶ X) (U : X.Opens) [IsIso (f ∣_ U)] :
