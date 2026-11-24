@@ -10,12 +10,10 @@ public import QPainleve.AlgebraicGeometry.IntersectionNumber.ExceptionalCurve.Nu
 
 import QPainleve.AlgebraicGeometry.Chow.EffectiveClass
 import QPainleve.AlgebraicGeometry.Chow.RationalSurface.Effectivity
-import QPainleve.AlgebraicGeometry.Chow.RationalSurface.Pluricanonical
 import QPainleve.AlgebraicGeometry.Chow.RationalSurface.RankOne
 import QPainleve.AlgebraicGeometry.Chow.RationalSurface.RiemannRoch
 import QPainleve.AlgebraicGeometry.Curves.GenusZero
 import QPainleve.AlgebraicGeometry.LineBundle.Ample
-import Mathlib.Data.Nat.Order.Lemmas
 
 /-!
 # Rational curves on minimal rational surfaces
@@ -68,150 +66,7 @@ section Integral
 
 variable [IsIntegral X]
 
-include rational in
-private theorem mem_effectiveClasses_or_canonical_sub_of_eulerChar_pos (a : Pic)
-    (ha : 0 < eulerCharBelow k a.toMul 3) : a ∈ E ∨ K - a ∈ E := by
-  obtain ⟨I, hI, hclass | hclass⟩ :=
-    exists_effectiveCartier_or_canonical_mul_inv_of_eulerCharBelow_pos k a.toMul ha
-  · exact Or.inl (mem_effectiveClasses.mpr
-      ⟨hI.toCartierDivisor, hI.isEffective_toCartierDivisor, by
-        rw [hI.toLineBundleClass_toCartierDivisor, hclass, ofMul_toMul]⟩)
-  · exact Or.inr (mem_effectiveClasses.mpr
-      ⟨hI.toCartierDivisor, hI.isEffective_toCartierDivisor, by
-        rw [hI.toLineBundleClass_toCartierDivisor, hclass, ofMul_mul, ofMul_inv, ofMul_toMul,
-          sub_eq_add_neg]⟩)
-
-include rational in
-private theorem two_nsmul_canonical_notMem_effectiveClasses : (2 : ℕ) • K ∉ E := by
-  intro he
-  obtain ⟨D, hD, hclass⟩ := mem_effectiveClasses.mp he
-  let L := (canonicalBundle k X 2).tensorPow 2
-  have hL : D.toLineBundleClass = LineBundleClass.mk L := by
-    simpa only [L, mk_tensorPow, toMul_nsmul, toMul_ofMul] using congrArg Additive.toMul hclass
-  obtain ⟨e⟩ := toLineBundleClass_eq_mk_iff.mp hL
-  have := X.subsingleton_cohomology_zero_pluricanonical_of_isRationalOver k (by decide : 0 < 2)
-  have : Subsingleton (Cohomology D.sheaf 0) :=
-    (cohomologyBaseLinearEquivOfIso k e 0).injective.subsingleton
-  have : Subsingleton (Γ(D.sheaf, ⊤)) :=
-    (cohomologyZeroBaseLinearEquiv k X D.sheaf).surjective.subsingleton
-  have heq : Scheme.Modules.Hom.app (D.unitToSheaf hD) ⊤ (1 : Γ(X, ⊤)) = 0 := Subsingleton.elim _ _
-  have hs : Scheme.Modules.Hom.app (Scheme.toRationalFunctions X) ⊤ (1 : Γ(X, ⊤)) = 0 := calc
-    _ = Scheme.Modules.Hom.app (D.unitToSheaf hD ≫ D.sheafι) ⊤ (1 : Γ(X, ⊤)) :=
-      congrArg (fun g ↦ Scheme.Modules.Hom.app g ⊤ (1 : Γ(X, ⊤))) (D.unitToSheaf_ι hD).symm
-    _ = Scheme.Modules.Hom.app D.sheafι ⊤
-        (Scheme.Modules.Hom.app (D.unitToSheaf hD) ⊤ (1 : Γ(X, ⊤))) := rfl
-    _ = 0 := by rw [heq, map_zero]
-  exact ((Scheme.toRationalFunctions_app_injective (X := X) ⊤).ne
-    (one_ne_zero : (1 : Γ(X, ⊤)) ≠ 0)) (hs.trans (map_zero _).symm)
-
-include rational in
-private theorem anticanonical_mem_effectiveClasses (hK : 0 ≤ B K K) : -K ∈ E := by
-  have hRR : 2 * (eulerCharBelow k (-K : Pic).toMul 3 - 1) = B (-K) (-K) - B (-K) K := by
-    simpa only [intersectionBilinForm_apply, toMul_ofMul] using
-      eulerCharBelow_eq_riemannRoch_of_isRationalOver k (-K : Pic).toMul
-  simp only [map_neg, LinearMap.neg_apply, neg_neg] at hRR
-  rcases mem_effectiveClasses_or_canonical_sub_of_eulerChar_pos k (-K) (by omega) with h | h
-  · exact h
-  · exact (two_nsmul_canonical_notMem_effectiveClasses k) (by simpa [two_nsmul] using h) |>.elim
-
 variable [IsNoetherian X] [∀ x : X, UniqueFactorizationMonoid (X.presheaf.stalk x)]
-
-omit rational [IsNoetherian X] in
-private theorem exists_last_effective_adjoint {h a : Pic}
-    (hnef : h.toMul.IsNef k f) (hK : B h K < 0) (ha : a ∈ E) :
-    ∃ n : ℕ, a + n • K ∈ E ∧ a + (n + 1) • K ∉ E := by
-  have hlarge : ∃ n : ℕ, a + n • K ∉ E := by
-    refine ⟨(B h a).toNat + 1, fun he ↦ ?_⟩
-    have hpos : 0 ≤ B h (a + ((B h a).toNat + 1) • K) := by
-      simpa only [intersectionBilinForm_apply] using
-        intersection_nonneg_of_mem_effectiveClasses k dim₂ hnef he
-    rw [map_add, map_nsmul] at hpos
-    have hm := mul_le_mul_of_nonneg_left (show B h K ≤ -1 by omega)
-      (Int.natCast_nonneg ((B h a).toNat + 1))
-    simp only [nsmul_eq_mul, mul_neg, mul_one] at hpos hm
-    omega
-  simpa only [not_not] using
-    Nat.exists_not_and_succ_of_not_zero_of_exists (by simpa using ha) hlarge
-
-omit rational [IsNoetherian X] [∀ x : X, UniqueFactorizationMonoid (X.presheaf.stalk x)] in
-private theorem exists_positive_class_of_canonical_square_neg {h : Pic}
-    (hh : 0 < B h h) (hd₀ : 0 ≤ B h K) (hn : B K K < 0) :
-    ∃ y : Pic, 0 < B y y ∧ 0 < B h y ∧ B y K < 0 := by
-  have hsym (a b : Pic) : B a b = B b a := by
-    simp only [intersectionBilinForm_apply, classIntersectionNumber_comm]
-  let q : ℤ := -(B K K)
-  let d : ℤ := B h K
-  have hq : 0 < q := neg_pos.mpr hn
-  -- First move onto the orthogonal of the canonical class, then add it once.
-  let x : Pic := q • h + d • K
-  have hxK : B x K = 0 := by
-    simp only [x, add_left, smul_left, q, d]
-    ring
-  have hhx : 0 < B h x := by
-    simp only [x, add_right, smul_right]
-    exact add_pos_of_pos_of_nonneg (mul_pos hq hh) (mul_self_nonneg d)
-  have hxx : B x x = q * B h x := by
-    calc
-      B x x = B x (q • h + d • K) := rfl
-      _ = q * B x h + d * B x K := by rw [add_right, smul_right, smul_right]
-      _ = q * B h x := by rw [hsym x h, hxK, mul_zero, add_zero]
-  let y : Pic := (q + 1) • x + K
-  have hyK : B y K = B K K := by simp only [y, add_left, smul_left, hxK, mul_zero, zero_add]
-  refine ⟨y, ?_, ?_, hyK.trans_lt hn⟩
-  · have hxy : B x y = (q + 1) * B x x := by
-      simp only [y, add_right, smul_right, hxK, add_zero]
-    have hyy : B y y = (q + 1) * ((q + 1) * B x x) + B K K := calc
-      B y y = B ((q + 1) • x + K) y := rfl
-      _ = _ := by rw [add_left, smul_left, hxy, hsym K y, hyK]
-    have hlt : q < (q + 1) * ((q + 1) * (q * B h x)) := by
-      have hhx₁ : 1 ≤ B h x := by omega
-      have h₁ : q ≤ q * B h x := le_mul_of_one_le_right hq.le hhx₁
-      have h₂ : q * B h x < (q + 1) * (q * B h x) := by
-        simpa only [one_mul] using mul_lt_mul_of_pos_right
-          (show (1 : ℤ) < q + 1 by omega) (mul_pos hq hhx)
-      have h₃ : (q + 1) * (q * B h x) ≤ (q + 1) * ((q + 1) * (q * B h x)) := by
-        exact le_mul_of_one_le_left (mul_nonneg (by omega) (mul_pos hq hhx).le) (by omega)
-      exact h₁.trans_lt (h₂.trans_le h₃)
-    rw [hyy, hxx]
-    have h : -(B K K) < (q + 1) * ((q + 1) * (q * B h x)) := hlt
-    omega
-  · simp only [y, add_right, smul_right]
-    exact add_pos_of_pos_of_nonneg (mul_pos (by omega) hhx) hd₀
-
-include rational in
-private theorem exists_effectiveClass_of_canonical_degree_neg (hK : B K K ≤ 0) :
-    ∃ a : Pic, a ∈ E ∧ B a K < 0 := by
-  obtain ⟨H, hH⟩ := X.exists_isAmple_of_isProjectiveOver k
-  let h : Pic := Additive.ofMul H
-  have hh : 0 < B h h := by
-    simpa only [h, intersectionBilinForm_apply, toMul_ofMul] using
-      classIntersectionNumber_pos_of_isAmple k dim₂ hH hH
-  suffices ∃ a : Pic, 0 < B a a ∧ 0 < B h a ∧ B a K < 0 by
-    obtain ⟨a, haa, hha, haK⟩ := this
-    simp only [intersectionBilinForm_apply, h, toMul_ofMul] at haa hha
-    obtain ⟨n, hn, I, hI, he⟩ :=
-      (eventually_exists_effectiveCartier_pow_of_positive_cone k a.toMul hH haa hha).exists
-    refine ⟨n • a, mem_effectiveClasses.mpr
-      ⟨hI.toCartierDivisor, hI.isEffective_toCartierDivisor, by
-        rw [hI.toLineBundleClass_toCartierDivisor, he, ofMul_pow, ofMul_toMul]⟩, ?_⟩
-    rw [← Nat.cast_smul_eq_nsmul ℤ, smul_left]
-    exact mul_neg_of_pos_of_neg (Int.natCast_pos.mpr hn) haK
-  by_cases hneg : B h K < 0
-  · exact ⟨h, hh, hh, hneg⟩
-  have hkne : K ≠ (0 : Pic) := by
-    intro hz
-    exact two_nsmul_canonical_notMem_effectiveClasses (k := k) (X := X)
-      (by rw [hz, nsmul_zero]; exact (X.effectiveClasses).zero_mem)
-  have hn : B K K < 0 := by
-    by_contra! hzero
-    have heq := le_antisymm hK hzero
-    have hA := anticanonical_mem_effectiveClasses k heq.ge
-    have hpos : 0 < B h (-K) := by
-      simpa only [h, intersectionBilinForm_apply, toMul_ofMul] using
-        intersection_pos_of_mem_effectiveClasses k dim₂ hH hA (neg_ne_zero.mpr hkne)
-    rw [map_neg] at hpos
-    omega
-  exact exists_positive_class_of_canonical_square_neg k hh (le_of_not_gt hneg) hn
 
 include rational in
 private theorem exists_primeDivisorClass_notMem_zmultiples_canonical :
@@ -260,13 +115,6 @@ private theorem self_add_canonical_degree_eq_neg_two_of_adjoint_notMem_effective
         intersection_nonneg_of_mem_effectiveClasses k dim₂ hnef hneg
     rw [neg_right, intersectionBilinForm_apply, toMul_ofMul, toMul_ofMul, neg_nonneg] at hc
     exact (classIntersectionNumber_primeDivisorClass_pos_of_isAmple k dim₂ hh p).not_ge hc
-
-omit algClosed [X.IsProjectiveOver k] rational [IsNoetherian X]
-  [∀ x : X, UniqueFactorizationMonoid (X.presheaf.stalk x)] in
-private theorem adjoint_notMem_effectiveClasses_of_sub_mem {a b : Pic}
-    (ha : K + a ∉ E) (hab : a - b ∈ E) : K + b ∉ E := fun h ↦ ha (by
-  have hsum := (X.effectiveClasses).add_mem hab h
-  rwa [show a - b + (K + b) = K + a by abel] at hsum)
 
 include rational in
 private theorem canonical_degree_neg_of_irreducible_anticanonical
@@ -338,7 +186,7 @@ private theorem exists_prime_with_ineffective_adjoint_of_irreducible_anticanonic
   have hn₃ : K + c ∉ E := by
     rw [show K + c = P(q) + (n + 1) • K by simp only [c, add_nsmul, one_nsmul]; abel]
     exact hn₂
-  have hnot := adjoint_notMem_effectiveClasses_of_sub_mem k hn₃ hres
+  have hnot := notMem_effectiveClasses_add_of_sub_mem hn₃ hres
   exact ⟨r, canonical_degree_neg_of_irreducible_anticanonical k hK hprime r
     (by simpa only [intersectionBilinForm_apply, toMul_ofMul] using hr) hnot, hnot⟩
 
@@ -453,7 +301,7 @@ theorem exists_rational_curve_self_intersection_nonneg
   have hneg : B P(p) K < 0 := by
     rw [← hsym]
     simpa only [intersectionBilinForm_apply, toMul_ofMul] using hp hKa
-  have hnot' := adjoint_notMem_effectiveClasses_of_sub_mem k hnot hres
+  have hnot' := notMem_effectiveClasses_add_of_sub_mem hnot hres
   have hnum := self_add_canonical_degree_eq_neg_two_of_adjoint_notMem_effectiveClasses k p hnot'
   let I := C(p)
   have : I.subscheme.IsProjectiveOver k :=

@@ -7,15 +7,18 @@ module
 
 public import QPainleve.AlgebraicGeometry.Chow.RationalSurface.Basic
 public import QPainleve.AlgebraicGeometry.IntersectionNumber.Nef
+public import QPainleve.AlgebraicGeometry.LineBundle.EffectiveClass
 
+import Mathlib.Data.Nat.Order.Lemmas
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Cohomology
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Intersection
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Projective
 import QPainleve.AlgebraicGeometry.Blowup.Tower.SecondCohomology
-import QPainleve.AlgebraicGeometry.Chow.Ample
+import QPainleve.AlgebraicGeometry.Chow.EffectiveClass
 import QPainleve.AlgebraicGeometry.Chow.Isomorphism
 import QPainleve.AlgebraicGeometry.Chow.Nef.Basic
 import QPainleve.AlgebraicGeometry.Chow.PositiveCone
+import QPainleve.AlgebraicGeometry.Chow.RationalSurface.Pluricanonical
 import QPainleve.AlgebraicGeometry.Chow.RationalSurface.RiemannRoch
 import QPainleve.AlgebraicGeometry.Curves.Degree.Ample
 import QPainleve.AlgebraicGeometry.EffectiveCartierDivisor.Effectivity
@@ -341,3 +344,137 @@ theorem exists_effectiveCartier_of_eulerCharBelow_pos_of_intersection_canonical_
       Chow.classIntersectionNumber_nonneg_of_isNef_of_isEffectiveCartier k hX hh hI))
 
 end TauCeti.AlgebraicGeometry.LineBundleClass
+
+namespace AlgebraicGeometry.Scheme
+
+open LinearMap.BilinForm TauCeti.AlgebraicGeometry.Chow
+open TauCeti.AlgebraicGeometry.Scheme.CartierDivisor
+
+variable {X} [IsIntegral X]
+
+local notation "f" => X ↘ S
+local notation "Pic" => Additive (LineBundleClass X)
+local notation "K" => Additive.ofMul (LineBundleClass.mk (canonicalBundle k X 2))
+local notation "E" => X.effectiveClasses
+local notation "B" => intersectionBilinForm k X
+local notation "dim₂" => topologicalKrullDim_eq_of_smoothOfRelativeDimension f (n := 2)
+
+include rational in
+/-- On a smooth projective rational surface of nonnegative canonical square,
+the anticanonical class is effective. -/
+theorem anticanonical_mem_effectiveClasses (hK : 0 ≤ B K K) : -K ∈ E := by
+  have hRR : 2 * (eulerCharBelow k (-K : Pic).toMul 3 - 1) = B (-K) (-K) - B (-K) K := by
+    simpa only [intersectionBilinForm_apply, toMul_ofMul] using
+      eulerCharBelow_eq_riemannRoch_of_isRationalOver k (-K : Pic).toMul
+  simp only [map_neg, LinearMap.neg_apply, neg_neg] at hRR
+  rcases mem_effectiveClasses_or_canonical_sub_of_eulerChar_pos k (-K) (by omega) with h | h
+  · exact h
+  · exact (nsmul_canonical_notMem_effectiveClasses k (by decide : 0 < 2)
+      (by simpa only [sub_neg_eq_add, two_nsmul] using h)).elim
+
+variable [∀ x : X, UniqueFactorizationMonoid (X.presheaf.stalk x)]
+
+omit rational in
+/-- If a nef class has negative canonical degree, an effective class has a canonical
+twist that is effective while its next canonical twist is ineffective. -/
+theorem exists_last_effective_adjoint {h a : Pic}
+    (hnef : h.toMul.IsNef k f) (hK : B h K < 0) (ha : a ∈ E) :
+    ∃ n : ℕ, a + n • K ∈ E ∧ a + (n + 1) • K ∉ E := by
+  have hlarge : ∃ n : ℕ, a + n • K ∉ E := by
+    refine ⟨(B h a).toNat + 1, fun he ↦ ?_⟩
+    have hpos : 0 ≤ B h (a + ((B h a).toNat + 1) • K) := by
+      simpa only [intersectionBilinForm_apply] using
+        intersection_nonneg_of_mem_effectiveClasses k dim₂ hnef he
+    rw [map_add, map_nsmul] at hpos
+    have hm := mul_le_mul_of_nonneg_left (show B h K ≤ -1 by omega)
+      (Int.natCast_nonneg ((B h a).toNat + 1))
+    simp only [nsmul_eq_mul, mul_neg, mul_one] at hpos hm
+    omega
+  simpa only [not_not] using
+    Nat.exists_not_and_succ_of_not_zero_of_exists (by simpa using ha) hlarge
+
+omit rational [∀ x : X, UniqueFactorizationMonoid (X.presheaf.stalk x)] in
+private theorem exists_positive_class_of_canonical_square_neg {h : Pic}
+    (hh : 0 < B h h) (hd₀ : 0 ≤ B h K) (hn : B K K < 0) :
+    ∃ y : Pic, 0 < B y y ∧ 0 < B h y ∧ B y K < 0 := by
+  have hsym (a b : Pic) : B a b = B b a := by
+    simp only [intersectionBilinForm_apply, classIntersectionNumber_comm]
+  let q : ℤ := -(B K K)
+  let d : ℤ := B h K
+  have hq : 0 < q := neg_pos.mpr hn
+  -- First move onto the orthogonal of the canonical class, then add it once.
+  let x : Pic := q • h + d • K
+  have hxK : B x K = 0 := by
+    simp only [x, add_left, smul_left, q, d]
+    ring
+  have hhx : 0 < B h x := by
+    simp only [x, add_right, smul_right]
+    exact add_pos_of_pos_of_nonneg (mul_pos hq hh) (mul_self_nonneg d)
+  have hxx : B x x = q * B h x := by
+    calc
+      B x x = B x (q • h + d • K) := rfl
+      _ = q * B x h + d * B x K := by rw [add_right, smul_right, smul_right]
+      _ = q * B h x := by rw [hsym x h, hxK, mul_zero, add_zero]
+  let y : Pic := (q + 1) • x + K
+  have hyK : B y K = B K K := by simp only [y, add_left, smul_left, hxK, mul_zero, zero_add]
+  refine ⟨y, ?_, ?_, hyK.trans_lt hn⟩
+  · have hxy : B x y = (q + 1) * B x x := by
+      simp only [y, add_right, smul_right, hxK, add_zero]
+    have hyy : B y y = (q + 1) * ((q + 1) * B x x) + B K K := calc
+      B y y = B ((q + 1) • x + K) y := rfl
+      _ = _ := by rw [add_left, smul_left, hxy, hsym K y, hyK]
+    have hlt : q < (q + 1) * ((q + 1) * (q * B h x)) := by
+      have hhx₁ : 1 ≤ B h x := by omega
+      have h₁ : q ≤ q * B h x := le_mul_of_one_le_right hq.le hhx₁
+      have h₂ : q * B h x < (q + 1) * (q * B h x) := by
+        simpa only [one_mul] using mul_lt_mul_of_pos_right
+          (show (1 : ℤ) < q + 1 by omega) (mul_pos hq hhx)
+      have h₃ : (q + 1) * (q * B h x) ≤ (q + 1) * ((q + 1) * (q * B h x)) := by
+        exact le_mul_of_one_le_left (mul_nonneg (by omega) (mul_pos hq hhx).le) (by omega)
+      exact h₁.trans_lt (h₂.trans_le h₃)
+    rw [hyy, hxx]
+    have h : -(B K K) < (q + 1) * ((q + 1) * (q * B h x)) := hlt
+    omega
+  · simp only [y, add_right, smul_right]
+    exact add_pos_of_pos_of_nonneg (mul_pos (by omega) hhx) hd₀
+
+variable [IsNoetherian X]
+
+include rational in
+/-- A smooth projective rational surface of nonpositive canonical square has an effective
+Picard class of negative canonical degree. -/
+theorem exists_effectiveClass_of_canonical_degree_neg (hK : B K K ≤ 0) :
+    ∃ a : Pic, a ∈ E ∧ B a K < 0 := by
+  obtain ⟨H, hH⟩ := X.exists_isAmple_of_isProjectiveOver k
+  let h : Pic := Additive.ofMul H
+  have hh : 0 < B h h := by
+    simpa only [h, intersectionBilinForm_apply, toMul_ofMul] using
+      classIntersectionNumber_pos_of_isAmple k dim₂ hH hH
+  suffices ∃ a : Pic, 0 < B a a ∧ 0 < B h a ∧ B a K < 0 by
+    obtain ⟨a, haa, hha, haK⟩ := this
+    simp only [intersectionBilinForm_apply, h, toMul_ofMul] at haa hha
+    obtain ⟨n, hn, I, hI, he⟩ :=
+      (eventually_exists_effectiveCartier_pow_of_positive_cone k a.toMul hH haa hha).exists
+    refine ⟨n • a, mem_effectiveClasses.mpr
+      ⟨hI.toCartierDivisor, hI.isEffective_toCartierDivisor, by
+        rw [hI.toLineBundleClass_toCartierDivisor, he, ofMul_pow, ofMul_toMul]⟩, ?_⟩
+    rw [← Nat.cast_smul_eq_nsmul ℤ, smul_left]
+    exact mul_neg_of_pos_of_neg (Int.natCast_pos.mpr hn) haK
+  by_cases hneg : B h K < 0
+  · exact ⟨h, hh, hh, hneg⟩
+  have hkne : K ≠ (0 : Pic) := by
+    intro hz
+    exact nsmul_canonical_notMem_effectiveClasses k (X := X) (by decide : 0 < 2)
+      (by rw [hz, nsmul_zero]; exact (X.effectiveClasses).zero_mem)
+  have hn : B K K < 0 := by
+    by_contra! hzero
+    have heq := le_antisymm hK hzero
+    have hA := anticanonical_mem_effectiveClasses k heq.ge
+    have hpos : 0 < B h (-K) := by
+      simpa only [h, intersectionBilinForm_apply, toMul_ofMul] using
+        intersection_pos_of_mem_effectiveClasses k dim₂ hH hA (neg_ne_zero.mpr hkne)
+    rw [map_neg] at hpos
+    omega
+  exact exists_positive_class_of_canonical_square_neg k hh (le_of_not_gt hneg) hn
+
+end AlgebraicGeometry.Scheme
