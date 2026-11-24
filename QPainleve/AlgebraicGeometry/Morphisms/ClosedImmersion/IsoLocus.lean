@@ -7,6 +7,8 @@ module
 
 public import Mathlib.AlgebraicGeometry.Morphisms.ClosedImmersion
 public import TauCeti.AlgebraicGeometry.Morphisms.IsoLocus
+import QPainleve.AlgebraicGeometry.Morphisms.Pullback.IsoLocus
+import TauCeti.AlgebraicGeometry.SchemeTheoreticImage.Basic
 
 /-!
 # Closed immersions over an isomorphism locus
@@ -41,5 +43,15 @@ theorem isClosedImmersion_comp_of_range_subset_isoLocus {C X Y : Scheme}
     rw [← hj, Category.assoc, ← morphismRestrict_ι f U, ← Category.assoc]
     infer_instance
   exact IsClosedImmersion.of_isPreimmersion _ hclosed
+
+/-- A morphism whose composite is a closed immersion in the isomorphism locus
+is the pullback of its scheme-theoretic image. -/
+theorem isPullback_toImage_of_range_subset_isoLocus {C X Y : Scheme}
+    (i : C ⟶ X) (f : X ⟶ Y) [IsClosedImmersion (i ≫ f)]
+    (h : Set.range (i ≫ f) ⊆ f.isoLocus) :
+    IsPullback i (i ≫ f).toImage f (i ≫ f).imageι := by
+  apply f.isPullback_of_isIso_of_range_subset_isoLocus i (i ≫ f).toImage (i ≫ f).imageι
+    (i ≫ f).toImage_imageι.symm
+  rwa [(i ≫ f).range_imageι, (i ≫ f).isClosedEmbedding.isClosed_range.closure_eq]
 
 end AlgebraicGeometry.Scheme.Hom
