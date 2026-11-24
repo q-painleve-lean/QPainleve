@@ -9,7 +9,6 @@ public import QPainleve.Algebra.Cluster.Word.Parity
 public import TauCeti.GroupTheory.GroupExtension.Of.Surjective
 
 import Mathlib.Algebra.GroupWithZero.Units.Fintype
-import Mathlib.Data.Int.Order.Units
 import Mathlib.GroupTheory.Index
 
 /-!
@@ -28,27 +27,6 @@ open CategoryTheory MulOpposite Quiver
 namespace QPainleve.Cluster
 
 variable (k : Type*) [Field k] {ι : Type*} [DecidableEq ι] (B : SkewExchangeMatrix ι)
-
-/-- Include the inversion-free X maps in the signed point-map group. -/
-def clusterModularGroupInclusion : ClusterModularGroup k B →* SignedClusterModularGroup k B :=
-  (Subgroup.inclusion (unsignedLoopPullbacks_le_signedLoopPullbacks k B)).op
-
-@[simp]
-theorem clusterModularGroupInclusion_clusterModularGroupMap (w : inversionFreeLoops B) :
-    clusterModularGroupInclusion k B (clusterModularGroupMap k B w) =
-      signedClusterModularGroupMap k B w.val := by
-  apply unop_injective
-  apply Subtype.coe_injective
-  simp only [clusterModularGroupInclusion, MonoidHom.op_apply_apply, Function.comp_apply,
-    unop_op, Subgroup.coe_inclusion, clusterModularGroupMap_unop_coe,
-    signedClusterModularGroupMap_unop_coe]
-
-theorem clusterModularGroupInclusion_injective :
-    Function.Injective (clusterModularGroupInclusion k B) :=
-  op_injective.comp
-    ((Subgroup.inclusion_injective (unsignedLoopPullbacks_le_signedLoopPullbacks k B)).comp
-      unop_injective)
-
 variable [CharZero k] [Finite ι]
 
 /-- The sign homomorphism is onto as soon as an odd loop exists. -/
