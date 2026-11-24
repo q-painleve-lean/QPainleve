@@ -45,8 +45,8 @@ local notation "center(" b "," ρ "," c ")" => Fan.Ray.binomialCenter ρ rankTwo
   (Fan.Ray.surjective_detCharacter ρ b) c
 local notation "pt(" b "," ρ "," c ")" => center(b,ρ,c) (IsLocalRing.closedPoint ℂ)
 
-variable {Y Z : Scheme} {n m r : ℕ}
-  {T : BlowupTower X[Φ] n Y} {R : BlowupTower Y r Z} {U : BlowupTower X[Ψ] m Z}
+variable {Y W Z : Scheme} {n m r : ℕ}
+  {T : BlowupTower X[Φ] n Y} {R : BlowupTower Y r W} {U : BlowupTower X[Ψ] m Z}
   [X[Φ].IsProjectiveOver ℂ] [X[Ψ].IsProjectiveOver ℂ]
 
 /-- A binomial point on a common ray of two smooth projective toric surfaces
@@ -58,8 +58,8 @@ to the negative exceptional coefficient of any pulled-back line bundle. -/
 theorem base_order_eq_of_common_subdivision (hT : IsClosedPointTower X[Φ] T)
     (hR : IsClosedPointTower Y R) (hU : IsClosedPointTower X[Ψ] U)
     (hΦ : Φ.IsRegular) (hΨ : Ψ.IsRegular)
-    (H : Ω.IsSubdivision Φ) (K : Ω.IsSubdivision Ψ) (g : Z ⟶ X[Ω])
-    (hg : g ≫ π[H] = R.toBase ≫ T.toBase) (hg' : g ≫ π[K] = U.toBase)
+    (e : W ≅ Z) (H : Ω.IsSubdivision Φ) (K : Ω.IsSubdivision Ψ) (g : W ⟶ X[Ω])
+    (hg : g ≫ π[H] = R.toBase ≫ T.toBase) (hg' : g ≫ π[K] = e.hom ≫ U.toBase)
     (b : Basis (Fin 2) ℤ N) (ρ : Φ.Ray) (τ : Ψ.Ray)
     (hρ : ρ.primitiveGenerator = τ.primitiveGenerator) (c : ℂˣ)
     (j : Fin n) (hj : hT.baseCenter j = pt(b,ρ,c))
@@ -73,9 +73,10 @@ theorem base_order_eq_of_common_subdivision (hT : IsClosedPointTower X[Φ] T)
     let : IsNoetherian X[Φ] := isNoetherian_of_finiteType f[Φ]
     let : IsNoetherian X[Ψ] := isNoetherian_of_finiteType f[Ψ]
     let a := (T.picardMarking hT f[Φ]).symm (Additive.ofMul L)
-    let a' := (U.picardMarking hU f[Ψ]).symm (Additive.ofMul (pullback R.toBase L))
+    let a' := (U.picardMarking hU f[Ψ]).symm (Additive.ofMul (pullback (e.inv ≫ R.toBase) L))
     ∃ j' : Fin m, hU.baseCenter j' = pt(b,τ,c) ∧ (∀ l < j', hU.baseCenter l ≠ pt(b,τ,c)) ∧
-      pullback R.toBase (T.exceptionalClass j) = U.exceptionalClass j' ∧ -a.2 j = -a'.2 j' := by
+      pullback R.toBase (T.exceptionalClass j) = pullback e.hom (U.exceptionalClass j') ∧
+      -a.2 j = -a'.2 j' := by
   intro hdim hdim' hN hN' a a'
   let := hdim
   let := hdim'
@@ -94,13 +95,13 @@ theorem base_order_eq_of_common_subdivision (hT : IsClosedPointTower X[Φ] T)
   have hray : H.liftRay ρ = K.liftRay τ := Fan.Ray.primitiveGenerator_injective
     ((H.primitiveGenerator_liftRay ρ).trans (hρ.trans (K.primitiveGenerator_liftRay τ).symm))
   have hI : (center(b,ρ,c)).ker.comap (R.toBase ≫ T.toBase) =
-      (center(b,τ,c)).ker.comap U.toBase := by
+      (center(b,τ,c)).ker.comap (e.hom ≫ U.toBase) := by
     rw [← hg, ← hg', comap_comp, comap_comp, hker H ρ, hker K τ, hray]
   rw [(center(b,ρ,c)).ker_eq_ker_fromSpecResidueField,
     (center(b,τ,c)).ker_eq_ker_fromSpecResidueField] at hI
-  have hOver : (T.append R).toBase ≫ f[Φ] = U.toBase ≫ f[Ψ] := by
+  have hOver : e.hom ≫ U.toBase ≫ f[Ψ] = (T.append R).toBase ≫ f[Φ] := by
     rw [toBase_append, Fan.algebraicRealization_over, Fan.algebraicRealization_over,
-      ← hg, ← hg', Category.assoc, Category.assoc,
+      ← hg, ← Category.assoc e.hom, ← hg', Category.assoc, Category.assoc,
       FanHom.algebraicMap_comp_algebraicRealizationStructureMap,
       FanHom.algebraicMap_comp_algebraicRealizationStructureMap]
   have hClosed {A : Fan i} (r : A.Ray) : IsClosed ({pt(b,r,c)} : Set X[A]) :=
@@ -115,9 +116,10 @@ theorem base_order_eq_of_common_subdivision (hT : IsClosedPointTower X[Φ] T)
     exact hfirst _ (Fin.lt_def.mpr (Fin.lt_def.mp hl))
   rw [← toBase_append] at hI
   obtain ⟨j', hj'', hfirst'', hC, horder⟩ :=
-    (hT.append hR).base_order_eq_of_comap_point_ideal_eq (k := ℂ) hU hOver
+    (hT.append hR).base_order_eq_of_comap_point_ideal_eq (k := ℂ) hU e hOver
       (hClosed ρ) (hClosed τ) hI (j.castAdd r) hj' hfirst' (pullback R.toBase L)
-  simp only [hT.picardMarking_symm_pullback_append hR f[Φ] L, Fin.append_left] at horder
+  simp only [hT.picardMarking_symm_pullback_append hR f[Φ] L, Fin.append_left,
+    pullback_comp] at horder
   exact ⟨j', hj'', hfirst'', (exceptionalClass_append_castAdd T R j).symm.trans hC, horder⟩
 
 end QPainleve.BlowupTower.IsClosedPointTower
