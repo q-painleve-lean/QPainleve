@@ -388,35 +388,6 @@ theorem exists_realize_signed_word (w : Word B E) (P : ChargeSeed B N)
         Path.inversionCount_cons]
       rw [Nat.add_comm w.inversionCount, pow_add]
 
-/-- Every inversion-free word starting at an ordered toric presentation on a
-complete regular fan has a geometric realization on its entire simultaneous
-noncollision open. The terminal family has an ordered presentation with the
-word's transported charges and a fixed Picard inclusion in its auxiliary model.
-The contracted Picard marking and every numbered branch are preserved. -/
-theorem exists_realize_inversion_free_word (w : Word B E) (P : ChargeSeed B N)
-    (hw : w.inversionCount = 0) (Q : CompleteToricPresentation i b r L γ)
-    (hform : P.form = b.detDualEquiv.toLinearMap) (hcharge : P.charge = rayChargeMap Q.rays)
-    (M : Point Centers → MarkedSurface ℂ n H XTor)
-    (models : ∀ c : CenterPoint (U := Centers) (V := Centers)
-        ((Path.nil : Word B B).centerPartialMap ℂ P),
-      let a := c ≫ ((Path.nil : Word B B).centerPartialMap ℂ P).domainTarget
-        (X := Centers) (Y := Centers)
-      Q.HasNodalModel a (M a)) :
-    ∃ (γ' : Type) (Q' : CompleteToricPresentation i b r L γ')
-      (M' : Point Centers → MarkedSurface ℂ n H XTor)
-      (R : GeometricRealization (T₀ := Centers) (T₁ := Centers) M M' Cw[w,P] (w.xRationalMap ℂ)),
-      (w.chargeTarget P).form = b.detDualEquiv.toLinearMap ∧
-      (w.chargeTarget P).charge = rayChargeMap Q'.rays ∧
-      R.picard = .refl H ∧ R.boundaryAction = 1 ∧
-      ∀ c : CenterPoint (U := Centers) (V := Centers) Cw[w,P],
-        Q'.HasNodalModel (dst(Cw[w,P],c)) (M' (dst(Cw[w,P],c))) := by
-  have hb : b.reindex (frameSwap ^ w.inversionCount) = b := by
-    simp only [hw, pow_zero, Equiv.Perm.one_def, Basis.reindex_refl]
-  have h := exists_realize_signed_word w P Q hform hcharge M models
-  dsimp only at h
-  rw [hb] at h
-  simpa only [hw, pow_zero] using h
-
 end GeometricRealization
 
 end QPainleve.SignedClusterModularGroup
