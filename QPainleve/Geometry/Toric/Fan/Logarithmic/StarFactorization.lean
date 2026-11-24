@@ -201,6 +201,12 @@ theorem coarsen_hom (C : LogarithmicProjection i D) {Φ : Fan i}
     (H : C.fan.IsSubdivision Φ) (hΦ : Φ.IsRegular) (hN : Module.finrank ℤ N = 2) :
     (C.coarsen H hΦ hN).hom ≍ C.hom ≫ π[H] := (HEq.rfl)
 
+/-- The coarsening along a single star subdivision gives one resolved blowup step. -/
+def coarsenBlowup (C : LogarithmicProjection i D) {Φ : Fan i}
+    (h : Φ.IsTwoRayStarSubdivision C.fan) (hΦ : Φ.IsRegular) (hN : Module.finrank ℤ N = 2) :
+    StarStep (C.coarsen h.isSubdivision hΦ hN) C :=
+  .blowup h rfl
+
 private theorem nonempty_blowupPath (C : LogarithmicProjection i D)
     (hN : Module.finrank ℤ N = 2) {Φ Ψ : Fan i} (hΦ : Φ.IsRegular) (hΨ : Ψ.IsRegular)
     (h : Relation.ReflTransGen IsTwoRayStarSubdivision Φ Ψ) (K : C.fan.IsSubdivision Ψ) :
