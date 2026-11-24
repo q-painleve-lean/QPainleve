@@ -8,10 +8,12 @@ module
 public import QPainleve.AlgebraicGeometry.Blowup.StrictTransform.Branches.Exceptional
 public import QPainleve.AlgebraicGeometry.Blowup.StrictTransform.Branches.Normalization
 public import QPainleve.AlgebraicGeometry.Curves.Node.Conductor.Subdivision
+public import QPainleve.AlgebraicGeometry.Curves.Node.GenericPoint
 
 import Mathlib.Logic.Equiv.Fin.Basic
 import Mathlib.Logic.Equiv.Option
 import QPainleve.AlgebraicGeometry.Curves.Node.Conductor.Lift
+import QPainleve.AlgebraicGeometry.Curves.Node.Conductor.Map
 import QPainleve.AlgebraicGeometry.IdealSheaf.BaseChange
 import QPainleve.AlgebraicGeometry.Morphisms.IsoLocus
 import TauCeti.AlgebraicGeometry.Curves.Node.Reduced
@@ -190,16 +192,10 @@ theorem range_normalizationToNodalBlowup :
     exact ((genericPoints.isGenericPoint_ofComponent v).specializes (mem_irreducibleComponentOf y))
       |>.mem_closed (isClosed_range_strictNormalization hc hp hCOver hBOver) hη
 
-private theorem branch_projection (T : Scheme.{u}) [T.Over S] [PrestableFamily (T ↘ S)]
-    (q : T.branchScheme k) :
-    ν[T] (b[T] q) = (J[T]).subschemeι (T.branchSchemeToSingularLocus k q) := by
-  rw [← Scheme.Hom.comp_apply, ← Scheme.Hom.comp_apply,
-    branchSchemeToSingularLocus_subschemeι]
-
 private theorem branchPoint_mem_singular (T : Scheme.{u}) [T.Over S]
     [PrestableFamily (T ↘ S)] (q : T.branchScheme k) :
     ν[T] (b[T] q) ∈ (J[T]).support :=
-  (J[T]).range_subschemeι.le ⟨_, (branch_projection T q).symm⟩
+  (J[T]).range_subschemeι.le ⟨_, (Scheme.blowupToBase_branchSchemeToBlowup_apply T q).symm⟩
 
 private instance {T : Scheme.{u}} [T.Over S] [PrestableFamily (T ↘ S)] :
     IsClosedImmersion b[T] :=
@@ -220,7 +216,7 @@ private theorem strictBranch_mem_range (q : (C).branchScheme k) :
   rw [(B).range_branchSchemeToBlowup, Set.mem_preimage]
   let y := ν[B] ((s) (b[C] q))
   have hy := boundaryMap_normalizationToNodalBlowup_apply hc hp hCOver hBOver (b[C] q)
-  rw [branch_projection] at hy
+  rw [Scheme.blowupToBase_branchSchemeToBlowup_apply] at hy
   have hn : (β) y ∈ (J[C]).support :=
     (J[C]).range_subschemeι.le ⟨_, hy.symm⟩
   by_cases h : (β) y = p
@@ -281,7 +277,7 @@ private theorem exists_lift_with_exceptional_value (q : centerBranch) :
   obtain ⟨g, ⟨hg, hgq⟩, _⟩ := (β).existsUnique_nodal_normalization_lift
     (fun _ _ ↦ q.val) (fun w hw ↦ by
       obtain rfl := hcomp w hw
-      rw [branch_projection, q.property]
+      rw [Scheme.blowupToBase_branchSchemeToBlowup_apply, q.property]
       exact (he _).symm)
   refine ⟨g, hg, fun y hy ↦ ?_⟩
   have hy' : y ∈ (B).blowupComponent (K := k) v := by
@@ -399,7 +395,8 @@ theorem branchSchemeToSingularLocus_exceptionalSideBranch (q : centerBranch) :
       (B).branchSchemeToSingularLocus k
         (D.strictNormalizationBranch hc hp hCOver hBOver hD q.val) := by
   apply (J[B]).subschemeι.injective
-  rw [← branch_projection, ← branch_projection, branchSchemeToBlowup_exceptionalSideBranch,
+  rw [← Scheme.blowupToBase_branchSchemeToBlowup_apply,
+    ← Scheme.blowupToBase_branchSchemeToBlowup_apply, branchSchemeToBlowup_exceptionalSideBranch,
     branchSchemeToBlowup_strictNormalizationBranch,
     hD.blowupToBase_exceptionalNormalizationBranchEquiv hc hCOver hBOver hp,
     D.blowupToBase_normalizationToNodalBlowup_branch hc hp hCOver hBOver hD]
@@ -494,8 +491,10 @@ theorem exists_nodalBlowupNormalizationLift (q : centerBranch) :
 private theorem branchProjection_strict_apply (q : (C).branchScheme k) :
     (β) ((J[B]).subschemeι ((B).branchSchemeToSingularLocus k ((strBranch) q))) =
       (J[C]).subschemeι ((C).branchSchemeToSingularLocus k q) := by
-  rw [← branch_projection, branchSchemeToBlowup_strictNormalizationBranch,
-    boundaryMap_normalizationToNodalBlowup_apply hc hp hCOver hBOver, branch_projection]
+  rw [← Scheme.blowupToBase_branchSchemeToBlowup_apply,
+    branchSchemeToBlowup_strictNormalizationBranch,
+    boundaryMap_normalizationToNodalBlowup_apply hc hp hCOver hBOver,
+    Scheme.blowupToBase_branchSchemeToBlowup_apply]
 
 omit [X.Over S] [(C).Over S] [PrestableFamily (C ↘ S)] [IsIntegral X] [QuasiCompact (X ↘ S)]
   [SmoothOfRelativeDimension 2 (X ↘ S)] [IsAlgClosed k] in
@@ -549,7 +548,7 @@ private theorem numberedStrictNode_center_ne :
   let v := D.centerBranchAt A i hi 1
   intro heq
   have h := congrArg ((J[B]).subschemeι) heq
-  simp only [numberedStrictNode, ← branch_projection,
+  simp only [numberedStrictNode, ← Scheme.blowupToBase_branchSchemeToBlowup_apply,
     branchSchemeToBlowup_strictNormalizationBranch] at h
   have hu := D.blowupToBase_normalizationToNodalBlowup_branch hc hp hCOver hBOver hD u
   have hv := D.blowupToBase_normalizationToNodalBlowup_branch hc hp hCOver hBOver hD v
@@ -837,6 +836,43 @@ private def subdivisionNumbering (pB : ι₁ → (B ↘ S).smoothLocus) :
     rw [h]
     exact D.orderedBranch_mem_vertex hc hp hCOver hBOver hD A i hi a b
 
+private theorem subdivisionNumbering_component (pB : ι₁ → (B ↘ S).smoothLocus)
+    (a : ZMod (n + 1)) :
+    (D.subdivisionNumbering hc hp hCOver hBOver hD A i hi pB).component a =
+      (vertices) (indexEquivOption i a) := by
+  simp only [Scheme.NodalCycleNumbering.component_apply, subdivisionNumbering,
+    Equiv.trans_apply, Equiv.apply_symm_apply]
+
+include hi in
+private theorem boundaryMap_componentGenericPoint_subdivisionNumbering
+    (pB : ι₁ → (B ↘ S).smoothLocus) (a : ZMod (n + 1)) :
+    (β) ((D.subdivisionNumbering hc hp hCOver hBOver hD A i hi pB).componentGenericPoint a) =
+      (indexEquivOption i a).elim p A.componentGenericPoint := by
+  rw [Scheme.NodalCycleNumbering.componentGenericPoint_def, subdivisionNumbering_component]
+  cases he : indexEquivOption i a with
+  | none =>
+    have hm : (genericPoints.ofComponent (exc) : N[B]) ∈
+        (B).blowupComponent (K := k) (exc) := by
+      rw [← SetLike.mem_coe, (B).coe_blowupComponent]
+      exact (genericPoints.isGenericPoint_ofComponent _).mem
+    exact (IsEffectiveCartier.mem_exceptional_iff_boundaryMap_eq hc _).mp
+      ((hD.bijOn_blowupToBase_exceptionalNormalizationComponent (k := k) hc).mapsTo hm)
+  | some t =>
+    let w := A.component t
+    let v := (D.strictNormalizationComponentEquiv hc hp hCOver hBOver hD w).val
+    have hm : (s) (genericPoints.ofComponent w) ∈ (v : Set N[B]) :=
+      D.normalizationToNodalBlowup_mem_strictNormalizationComponentEquiv hc hp hCOver hBOver hD w
+        ((genericPoints.isGenericPoint_ofComponent _).mem)
+    have hs := ((genericPoints.isGenericPoint_ofComponent v).specializes hm).map
+      ((ν[B] ≫ (β)).continuous)
+    simp only [Scheme.Hom.comp_apply, D.boundaryMap_normalizationToNodalBlowup_apply] at hs
+    have hmax := Order.coheight_eq_zero.mp ((C).coheight_blowupComponentGeneric w)
+    have heq := (hs.antisymm (Scheme.le_iff_specializes.mp
+      (hmax (Scheme.le_iff_specializes.mpr hs)))).eq
+    simpa only [Option.elim_some, Scheme.NodalCycleNumbering.componentGenericPoint_def,
+      vertexEquivOption, Equiv.trans_apply, Equiv.optionCongr_apply, Option.map_some,
+      Equiv.optionSubtypeNe_some, w, v] using heq
+
 private theorem orderedBranch_apply_lift (g : N[B] ⟶ N[C])
     (hg : ∀ a : (C).branchScheme k, g (b[B] ((strBranch) a)) = b[C] a)
     (he : ∀ a : centerBranch, g (b[B] ((newBranch) a)) = b[C] ((atCenter) 1).val)
@@ -884,6 +920,26 @@ private theorem isOrientedCycleSubdivision_subdivisionNumbering
       exact (hstr ((oldBranch) (i, 1))).trans (hexc ((atCenter) 1)).symm
 
 omit [IsReduced C] in
+include hc hp hCOver hBOver hD hi in
+/-- Blowing up node `i` gives a numbering beginning at the strict transform of
+component `i + 1` and ending at the exceptional component. The boundary projection
+respects the ordered conductor subdivision and sends the numbered generic points to
+the corresponding old generic points, or to the center for the exceptional component. -/
+theorem exists_isOrientedCycleSubdivision_nodalBlowup_at
+    (pB : ι₁ → (B ↘ S).smoothLocus) :
+    ∃ T : Scheme.NodalCycleNumbering pB (n + 1),
+      (β).IsOrientedCycleSubdivision T A ∧
+      ∀ a : ZMod (n + 1), (β) (T.componentGenericPoint a) =
+        if a.val < n then A.componentGenericPoint ((a.val : ZMod n) + (i + 1)) else p := by
+  have : IsReduced C := (nodal[C]).isReduced
+  refine ⟨_, D.isOrientedCycleSubdivision_subdivisionNumbering hc hp hCOver hBOver hD A i hi pB,
+    fun a ↦ ?_⟩
+  rw [D.boundaryMap_componentGenericPoint_subdivisionNumbering hc hp hCOver hBOver hD A i hi]
+  split_ifs with ha
+  · rw [indexEquivOption_of_lt i ha, Option.elim_some]
+  · rw [indexEquivOption_of_eq i (by have := ZMod.val_lt a; omega), Option.elim_none]
+
+omit [IsReduced C] in
 include hc hp hCOver hBOver hD in
 /-- Blowing up a node of a numbered cycle inserts one normalized component and splits
 the node into two attachments. The numbering of the longer cycle inherits the old
@@ -894,7 +950,9 @@ theorem exists_isOrientedCycleSubdivision_nodalBlowup
   have : IsReduced C := (nodal[C]).isReduced
   obtain ⟨z, hz⟩ := (J[C]).range_subschemeι.ge hp
   obtain ⟨i, rfl⟩ := (oldNode).surjective z
-  exact ⟨_, D.isOrientedCycleSubdivision_subdivisionNumbering hc hp hCOver hBOver hD A i hz pB⟩
+  obtain ⟨T, hT, -⟩ := D.exists_isOrientedCycleSubdivision_nodalBlowup_at
+    hc hp hCOver hBOver hD A i hz pB
+  exact ⟨T, hT⟩
 
 end Numbering
 

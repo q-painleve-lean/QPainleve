@@ -90,6 +90,38 @@ theorem exists_equiv_boundaryPrimes_comap_pointBlowup
   refine ⟨e, fun q ↦ ?_, hη⟩
   exact congrArg Subtype.val (hb.equiv.apply_symm_apply q)
 
+/-- The projection of a point blowup distinguishes the boundary primes of the
+total transform. The only prime projecting to the center is exceptional. -/
+theorem injOn_blowupToBase_boundaryPrimes_comap_pointBlowup
+    {k : Type u} [Field k] [IsNoetherian X] (D : X.IdealSheafData)
+    (f : X ⟶ Spec (.of k)) [SmoothOfRelativeDimension 2 f]
+    {p : X} (hp : IsClosed ({p} : Set X)) (hD : p ∈ D.support) :
+    let I := (X.fromSpecResidueField p).ker
+    Set.InjOn I.blowupToBase (D.comap I.blowupToBase).boundaryPrimes := by
+  dsimp only
+  obtain ⟨e, he, hep⟩ := D.exists_equiv_boundaryPrimes_comap_pointBlowup f hp hD
+  have hp' := coheight_eq_of_isClosed_of_smoothOfRelativeDimension (n := 2) f hp
+  have hne (a : D.boundaryPrimes) : a.val ≠ p := by
+    intro h
+    have ha := (mem_boundaryPrimes.mp a.property).2
+    rw [h, hp'] at ha
+    norm_num at ha
+  intro x hx y hy
+  obtain ⟨a, ha⟩ := e.surjective ⟨x, hx⟩
+  obtain ⟨b, hb⟩ := e.surjective ⟨y, hy⟩
+  have ha' : (e a).val = x := congrArg Subtype.val ha
+  have hb' : (e b).val = y := congrArg Subtype.val hb
+  rw [← ha', ← hb']
+  intro hxy
+  rcases a with a | ⟨⟩ <;> rcases b with b | ⟨⟩
+  · rw [he, he] at hxy
+    exact congrArg (fun t : D.boundaryPrimes ↦ (e (.inl t)).val) (Subtype.ext hxy)
+  · rw [he, hep] at hxy
+    exact (hne _ hxy).elim
+  · rw [hep, he] at hxy
+    exact (hne _ hxy.symm).elim
+  · rfl
+
 /-- Blowing up a closed point on a smooth Noetherian surface adds one boundary prime
 to the pullback of an ideal sheaf whose support contains the center. -/
 theorem encard_boundaryPrimes_comap_pointBlowup
