@@ -77,6 +77,20 @@ private theorem hirzebruch_ruling_fiber_coefficients :
 
 variable [Nonempty Φ.cones]
 
+/-- The Cartier class of the scheme-theoretic fiber over any complex point is
+the first vector of the Hirzebruch Picard basis. -/
+theorem toLineBundleClass_hirzebruch_characterRuling_fiber
+    (p : S ⟶ projectiveLine ℂ) (hp : p ≫ (projectiveLine ℂ ↘ S) = 𝟙 S) :
+    let h := nonneg_or_nonpos_hirzebruch_ruling_character b e r hr
+    ∃ hI : (p.ker.comap (Φ.characterRuling m h)).IsEffectiveCartier,
+      Additive.ofMul (LineBundleClass.mk hI.toInvertibleSheaf)⁻¹ = C 0 := by
+  intro h
+  let hm := hirzebruch_ruling_character_ne_zero b
+  refine ⟨Φ.isEffectiveCartier_characterRuling_fiber m h hm p hp, ?_⟩
+  have hclass := Φ.toLineBundleClass_characterRuling_fiber m h hm p hp hΦ
+  simpa only [Scheme.IdealSheafData.IsEffectiveCartier.toLineBundleClass_toCartierDivisor,
+    hirzebruch_ruling_fiber_coefficients b e r hr, hirzebruchPicardBasis_apply_zero] using hclass
+
 /-- The first Hirzebruch Picard basis vector is the pullback of `𝒪(1)`
 under the ruling defined by the second basis character. -/
 theorem hirzebruchPicardBasis_zero_eq_pullback_characterRuling :
@@ -88,12 +102,9 @@ theorem hirzebruchPicardBasis_zero_eq_pullback_characterRuling :
   let p := projectiveLine.polynomialPoint ℂ (RingHom.id ℂ) 0 0
   have hp : p ≫ (projectiveLine ℂ ↘ S) = 𝟙 S := by
     simp [p, projectiveLine.polynomialPoint_over]
-  have hm := hirzebruch_ruling_character_ne_zero b
-  have hI := Φ.isEffectiveCartier_characterRuling_fiber m h hm p hp
-  have hclass := congrArg Additive.toMul
-    (Φ.toLineBundleClass_characterRuling_fiber m h hm p hp hΦ)
-  simp only [toMul_ofMul, hirzebruch_ruling_fiber_coefficients b e r hr,
-    ← hirzebruchPicardBasis_apply_zero b e hΦ r hr] at hclass
+  obtain ⟨hI, hclass⟩ := Φ.toLineBundleClass_hirzebruch_characterRuling_fiber b e hΦ r hr p hp
+  have hFC := congrArg Additive.toMul hclass
+  simp only [toMul_ofMul] at hFC
   let hP := (Scheme.Hom.isRelativeEffectiveCartier_ker_of_smoothOfRelativeDimension p hp)
     |>.isEffectiveCartier
   have hH : (LineBundleClass.mk hP.toInvertibleSheaf)⁻¹ = rulingLineClass := by
@@ -102,7 +113,7 @@ theorem hirzebruchPicardBasis_zero_eq_pullback_characterRuling :
     rw [projectiveLine.picardDegreeEquiv_apply, toMul_ofMul, projectiveLine.eulerDegree_inv,
       LineBundleClass.eulerDegree_mk, p.eulerDegree_ker_of_smooth hp]
     simp only [ofMul_toMul, AddEquiv.apply_symm_apply, neg_neg]
-  rw [← hH, ← hclass, hI.toLineBundleClass_toCartierDivisor, pullback_inv,
+  rw [← hH, ← hFC, pullback_inv,
     hP.pullback_mk_toInvertibleSheaf hI]
 
 /-- The fiber class of a Hirzebruch fan has an effective Cartier representative through
@@ -113,7 +124,6 @@ theorem exists_isEffectiveCartier_mem_support_hirzebruchPicardBasis_zero
       Additive.ofMul (LineBundleClass.mk hD.toInvertibleSheaf)⁻¹ = C 0 := by
   classical
   let h := nonneg_or_nonpos_hirzebruch_ruling_character b e r hr
-  have hm := hirzebruch_ruling_character_ne_zero b
   let f := (X[Φ] ↘ S)
   have hdim : SmoothOfRelativeDimension 2 f :=
     (Eq.trans (Module.finrank_eq_card_basis b) (Fintype.card_fin 2)) ▸
@@ -124,16 +134,13 @@ theorem exists_isEffectiveCartier_mem_support_hirzebruchPicardBasis_zero
   have hp : p ≫ (projectiveLine ℂ ↘ S) = 𝟙 S := by
     simpa only [p, Category.assoc, comp_over q S] using pointOfClosedPoint_comp f x hx
   have : IsClosedImmersion p := p.isClosedImmersion_of_comp_eq_id hp
-  let hD := Φ.isEffectiveCartier_characterRuling_fiber m h hm p hp
-  refine ⟨p.ker.comap q, hD, ?_, ?_⟩
-  · rw [← SetLike.mem_coe, Scheme.IdealSheafData.support_comap,
-      TopologicalSpace.Closeds.coe_preimage, Set.mem_preimage, Scheme.Hom.support_ker,
-      p.isClosedEmbedding.isClosed_range.closure_eq]
-    refine ⟨IsLocalRing.closedPoint ℂ, (Scheme.Hom.comp_apply _ _ _).trans ?_⟩
-    exact congrArg q (pointOfClosedPoint_apply f x hx (IsLocalRing.closedPoint ℂ))
-  · have hclass := Φ.toLineBundleClass_characterRuling_fiber m h hm p hp hΦ
-    simpa only [Scheme.IdealSheafData.IsEffectiveCartier.toLineBundleClass_toCartierDivisor,
-      hirzebruch_ruling_fiber_coefficients b e r hr, hirzebruchPicardBasis_apply_zero] using hclass
+  obtain ⟨hD, hclass⟩ := Φ.toLineBundleClass_hirzebruch_characterRuling_fiber b e hΦ r hr p hp
+  refine ⟨p.ker.comap q, hD, ?_, hclass⟩
+  rw [← SetLike.mem_coe, Scheme.IdealSheafData.support_comap,
+    TopologicalSpace.Closeds.coe_preimage, Set.mem_preimage, Scheme.Hom.support_ker,
+    p.isClosedEmbedding.isClosed_range.closure_eq]
+  refine ⟨IsLocalRing.closedPoint ℂ, (Scheme.Hom.comp_apply _ _ _).trans ?_⟩
+  exact congrArg q (pointOfClosedPoint_apply f x hx (IsLocalRing.closedPoint ℂ))
 
 end TauCeti.Toric.Fan
 
