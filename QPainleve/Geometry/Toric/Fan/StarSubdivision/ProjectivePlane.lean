@@ -156,9 +156,10 @@ private theorem projectivePlane_vertex_starSubdivision_rays
     ∃ (hσ : Nat.card (ToricRay σ.val) = 2) (b : Basis (Fin 2) ℤ N),
       (Ψ.starSubdivisionAlongRay hΨ σ.property
         (ne_bot_of_card_toricRay_eq_two hσ)).primitiveGenerator = b 0 ∧
-      Set.range (Ray.primitiveGenerator (Phi := Γ)) = {b 0, b 1, -b 0, b 0 - b 1} := by
+      Set.range (Ray.primitiveGenerator (Phi := Γ)) = {b 0, b 1, -b 0, b 0 - b 1} ∧
+      b 0 = -projectiveSpaceGenerator d k := by
   intro Ψ hΨ σ Γ
-  obtain ⟨c, hc, hrays⟩ := projectivePlane_vertex_rays d hi k
+  obtain ⟨c, hc, hrays, hk⟩ := projectivePlane_vertex_rays d hi k
   let hreg := isRegular_iff.mp hΨ σ.val σ.property
   obtain ⟨e, he⟩ := hreg.exists_rayEquiv_of_basis hi c hc
   have hσ : Nat.card (ToricRay σ.val) = 2 := by rw [← Nat.card_congr e, Nat.card_fin]
@@ -172,7 +173,7 @@ private theorem projectivePlane_vertex_starSubdivision_rays
     apply Ray.primitiveGenerator_eq_of_mem_of_isPrimitive _ _ (b.isPrimitive 0)
     rw [coe_toCone_starSubdivisionAlongRay, hreg.sum_primitiveGenerator_allRays hi c e he, hb₀]
     exact subset_hull (Set.mem_singleton _)
-  refine ⟨hσ, b, hnew, ?_⟩
+  refine ⟨hσ, b, hnew, ?_, by rw [hb₀, hk]; abel⟩
   rw [range_primitiveGenerator_starSubdivisionAlong hΨ σ (ne_bot_of_card_toricRay_eq_two hσ),
     hnew, range_primitiveGenerator_projectiveSpace d hi, hrays, hb₀, hb₁]
   have hneg : -(c 0 + c 1) = -c 0 - c 1 := by abel
@@ -184,7 +185,8 @@ private theorem projectivePlane_vertex_starSubdivision_rays
 
 /-- Blowing up any specified torus-fixed vertex of the plane is the star subdivision
 with Hirzebruch-one rays. The projection and the exceptional ideal agree with those
-of the actual blowup at the distinguished point. -/
+of the actual blowup at the distinguished point. The first basis vector is opposite
+to the ray omitted by the vertex cone. -/
 theorem exists_blowup_projectivePlane_vertex_hirzebruchOne
     (d : Basis (Fin 2) ℤ N) (hi : IsIntegralLattice i) (k : Option (Fin 2)) :
     let Ψ := projectiveSpace d hi
@@ -199,12 +201,13 @@ theorem exists_blowup_projectivePlane_vertex_hirzebruchOne
         (Ψ.starSubdivisionAlong_isSubdivision hΨ σ.property hσ).toFanHom.algebraicMap ∧
       J.comap (e.hom ≫ J.blowupToBase) =
         Γ.rayBoundaryIdeal (Ψ.isRegular_starSubdivisionAlong hΨ σ.property)
-          (Ψ.starSubdivisionAlongRay hΨ σ.property hσ) := by
+          (Ψ.starSubdivisionAlongRay hΨ σ.property hσ) ∧
+      b 0 = -projectiveSpaceGenerator d k := by
   intro Ψ hΨ σ Γ J
   have hdim : Module.finrank ℤ N = 2 := by simpa using Module.finrank_eq_card_basis d
-  obtain ⟨hcard, b, hnew, hrays⟩ := projectivePlane_vertex_starSubdivision_rays d hi k
+  obtain ⟨hcard, b, hnew, hrays, hb⟩ := projectivePlane_vertex_starSubdivision_rays d hi k
   obtain ⟨hσ, e, -, he, -⟩ := Ψ.exists_iso_blowup_starSubdivisionAlong hΨ σ hdim hcard
   exact ⟨hσ, b, e, hrays, hnew, he,
-    he ▸ Ψ.comap_ker_distinguishedPointHom_eq_rayBoundaryIdeal hΨ σ hσ hdim hcard⟩
+    he ▸ Ψ.comap_ker_distinguishedPointHom_eq_rayBoundaryIdeal hΨ σ hσ hdim hcard, hb⟩
 
 end TauCeti.Toric.Fan

@@ -73,4 +73,40 @@ theorem exists_internalCenter_eq_ker_fromSpecResidueField
   exact congrArg (fun x ↦ (D.subscheme.fromSpecResidueField x).ker)
     (pointOfClosedPoint_apply s p hp (IsLocalRing.closedPoint ℂ))
 
+/-- The same binomial point on a fixed ray can be written in the determinant character
+of any other lattice basis. -/
+theorem Ray.exists_binomialCenter_eq_of_basis (ρ : Φ.Ray) (d : Module.Basis (Fin 2) ℤ N)
+    (c : ℂˣ) :
+    letI : Nonempty Φ.cones := ⟨ρ.toCone⟩
+    ∃ a : ℂˣ,
+      ρ.binomialCenter rankTwo (b.detDualEquiv_self ρ.primitiveGenerator)
+          (ρ.surjective_detCharacter b) a =
+        ρ.binomialCenter rankTwo (d.detDualEquiv_self ρ.primitiveGenerator)
+          (ρ.surjective_detCharacter d) c := by
+  let : Nonempty Φ.cones := ⟨ρ.toCone⟩
+  let p := ρ.binomialCenterOnBoundary rankTwo (d.detDualEquiv_self ρ.primitiveGenerator)
+    (ρ.surjective_detCharacter d) c
+  let D := Φ.boundaryIdeal ⟨ρ.toCone⟩
+  have hp : p ≫ D.subschemeι =
+      ρ.binomialCenter rankTwo (d.detDualEquiv_self ρ.primitiveGenerator)
+        (ρ.surjective_detCharacter d) c :=
+    ρ.binomialCenterOnBoundary_comp_subschemeι rankTwo
+      (d.detDualEquiv_self ρ.primitiveGenerator) (ρ.surjective_detCharacter d) c
+  have hbase : p ≫ D.subschemeι ≫ Φ.algebraicRealizationStructureMap = 𝟙 _ := by
+    rw [← Category.assoc, hp]
+    exact ρ.binomialCenter_comp_structureMap rankTwo
+      (d.detDualEquiv_self ρ.primitiveGenerator) (ρ.surjective_detCharacter d) c
+  let x : Spec (.of ℂ) := IsLocalRing.closedPoint ℂ
+  have hchart : D.subschemeι (p x) ∈ Set.range (Φ.affineToricChartι ρ.toCone) := by
+    rw [← Scheme.Hom.comp_apply p D.subschemeι x, hp]
+    have he := ρ.binomialCenter_def rankTwo (d.detDualEquiv_self ρ.primitiveGenerator)
+      (ρ.surjective_detCharacter d) c
+    exact ⟨_, congrArg (fun g : Spec (.of ℂ) ⟶ Φ.algebraicRealization ↦ g x) he.symm⟩
+  obtain ⟨a, ha⟩ := ρ.exists_binomialCenterOnBoundary_eq_of_mem_rayChart rankTwo
+    (b.detDualEquiv_self ρ.primitiveGenerator) (ρ.surjective_detCharacter b) p hbase hchart
+  refine ⟨a, ?_⟩
+  have he := ρ.binomialCenterOnBoundary_comp_subschemeι rankTwo
+    (b.detDualEquiv_self ρ.primitiveGenerator) (ρ.surjective_detCharacter b) a
+  exact he.symm.trans ((congrArg (· ≫ D.subschemeι) ha).trans hp)
+
 end TauCeti.Toric.Fan
