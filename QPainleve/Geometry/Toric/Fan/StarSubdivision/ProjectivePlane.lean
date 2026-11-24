@@ -10,7 +10,6 @@ public import QPainleve.Geometry.Toric.Fan.StarSubdivision.Boundary
 
 import QPainleve.AlgebraicGeometry.Blowup.Isomorphism
 import QPainleve.Geometry.Toric.Fan.Boundary.Subdivision
-import QPainleve.Geometry.Toric.Fan.ProjectiveSpace.Ray
 import QPainleve.Geometry.Toric.Fan.StarSubdivision.Generators
 import QPainleve.Geometry.Toric.Cone.Coordinates
 import QPainleve.Geometry.Toric.Cone.TwoDimensional
