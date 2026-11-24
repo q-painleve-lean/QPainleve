@@ -5,14 +5,21 @@ Authors: The QPainleve contributors
 -/
 module
 
+public import QPainleve.AlgebraicGeometry.Blowup.Tower.Ramification
 public import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.Picard
 public import QPainleve.SignedClusterModularGroup.SarkisovDegree.OppositeSection
 
 import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
+import QPainleve.AlgebraicGeometry.Modules.Differentials.PoleIdeal
+import QPainleve.AlgebraicGeometry.Morphisms.Modification.Birational
 import QPainleve.Geometry.Toric.Fan.Boundary.Subdivision
+import QPainleve.Geometry.Toric.Fan.Logarithmic.Subdivision
+import QPainleve.Geometry.Toric.Fan.Mutation.Tower
 import QPainleve.Geometry.Toric.Fan.Picard.Homaloidal
+import QPainleve.Geometry.Toric.Fan.StarSubdivision.Tower
 import QPainleve.SignedClusterModularGroup.SarkisovDegree.Decrease
 import QPainleve.SignedClusterModularGroup.SarkisovDegree.ToricLink
+import TauCeti.AlgebraicGeometry.Morphisms.Modification.Composition
 
 /-!
 # The quadric Sarkisov block with a corner and a smooth center
@@ -22,6 +29,8 @@ a Hirzebruch-one surface. The smooth center on the opposite section lifts
 uniquely to the common toric blowup. It remains the first center over its image
 in the transported tower. The link at this point and the final ruling exchange
 give the degree-decreasing resolution over a quadric.
+The original logarithmic pole ideal works for each regular projection in this
+block, and its inverse image works on the final transported point tower.
 
 This is the corner case of the two-point block in Lutz's appendix to
 [*Homological mirror symmetry for log Calabi–Yau surfaces*][HKL],
@@ -44,6 +53,8 @@ local notation "X[" Δ "]" => Fan.algebraicRealization Δ
 local notation "f[" Δ "]" => Fan.algebraicRealizationStructureMap Δ
 local notation "I[" σ "]" => Scheme.Hom.ker (Fan.distinguishedPointHom _ σ)
 local notation "π[" H "]" => FanHom.algebraicMap (Fan.IsSubdivision.toFanHom H)
+local notation "D[" Δ "," hc "]" => Fan.boundaryIdeal Δ (Fan.IsComplete.nonempty_cones hc)
+local notation "R[" f "]" => ramificationIdealSheaf ℂ f
 local notation "S" => Spec (CommRingCat.of ℂ)
 local notation "P" => Proj (homogeneousSubmodule ℂ (Fin 3 → ℂ))
 local notation "H" => mk (Proj.symmetricAlgebraTwistingBundle ℂ (Fin 3 → ℂ) 1)
@@ -193,6 +204,9 @@ regular projections on the specified resolution, transported by isomorphisms.
 For original fiber and section coefficients β and a in this frame, and base
 orders m and m' at the two points, the final coefficients are a and β + a - m - m'.
 The second final coefficient is positive and the Sarkisov bidegree decreases.
+The pole factorization is preserved along the common toric blowup, its contraction,
+the mutation and the final ruling exchange. On the final point tower the pole ideal
+is pulled back along the inverse of the composite resolving isomorphism.
 The exceptional coordinates record the reverse pivots and the order inherited
 from the original tower, including at infinitely near centers. -/
 theorem exists_quadric_resolution_of_corner_and_smooth_high_centers
@@ -254,7 +268,30 @@ theorem exists_quadric_resolution_of_corner_and_smooth_high_centers
             Fin (1 + (n + 1)) → ℤ) ∘ k.succAbove) ∧
         0 < (C[b',0,hΘ,s',hs']).repr z.1 1 ∧
         hirzebruchSarkisovBidegree ((C[b',0,hΘ,s',hs']).repr z.1 1).toNat (∑ k, -z.2 k).toNat <
-          hirzebruchSarkisovBidegree β.toNat (∑ k, m k).toNat := by
+          hirzebruchSarkisovBidegree β.toNat (∑ k, m k).toNat ∧
+        letI : SmoothOfRelativeDimension 2 (X[Φ] ↘ S) := by
+          simpa only [Fan.algebraicRealization_over] using
+            (dim(b) ▸ Φ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ :
+              SmoothOfRelativeDimension 2 f[Φ])
+        letI : SmoothOfRelativeDimension 2 (X[Θ] ↘ S) := by
+          simpa only [Fan.algebraicRealization_over] using
+            (dim(d) ▸ Θ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΘ :
+              SmoothOfRelativeDimension 2 f[Θ])
+        letI : Y.Over S := ⟨T.toBase ≫ (X[Φ] ↘ S)⟩
+        letI : Smooth (Y ↘ S) := (hT.smoothOfRelativeDimension (X[Φ] ↘ S)).smooth
+        letI : T.toBase.IsOver S := ⟨rfl⟩
+        ∃ (_ : q.IsOver S) (_ : (e.hom ≫ U.toBase).IsOver S)
+          (_ : (e.hom ≫ k₀.hom ≫ V₀.toBase).IsOver S)
+          (_ : (e.hom ≫ k₁.hom ≫ V.toBase).IsOver S),
+          ∀ D : Y.IdealSheafData, D[Φ,hcΦ].comap T.toBase = D * R[T.toBase] →
+            D[F,s.isComplete_iff.mpr hcΦ].comap q = D * R[q] ∧
+            D[Ψ,hcΨ].comap (e.hom ≫ U.toBase) = D * R[e.hom ≫ U.toBase] ∧
+            D[Θ,hcΘ].comap (e.hom ≫ k₀.hom ≫ V₀.toBase) =
+              D * R[e.hom ≫ k₀.hom ≫ V₀.toBase] ∧
+            D[Θ,hcΘ].comap (e.hom ≫ k₁.hom ≫ V.toBase) =
+              D * R[e.hom ≫ k₁.hom ≫ V.toBase] ∧
+            D[Θ,hcΘ].comap V.toBase =
+              D.comap (e ≪≫ k₁).inv * hV.ramificationIdealSheafToBase ℂ := by
   intro hcones hdim x β a m hjbig hjle hlbig hlle hsmall
   let := hcones
   let := hdim
@@ -318,7 +355,7 @@ theorem exists_quadric_resolution_of_corner_and_smooth_high_centers
   have hz₁' : (C[b',0,hΘ,s',hs']).repr z.1 1 = β + a - m j - m l := by
     simpa only [z, k₁, τq, R, ← pullback_comp, Category.assoc, Fan.algebraicRealization_over,
       ha, hm, m, sub_neg_eq_add, add_comm a β] using hz₁
-  refine ⟨hz₀', hz₁', ?_, hz₁' ▸ hlt.1, ?_⟩
+  refine ⟨hz₀', hz₁', ?_, hz₁' ▸ hlt.1, ?_, ?_⟩
   · funext i
     refine Fin.addCases (fun f ↦ ?_) (fun f ↦ ?_) i
     · rw [Subsingleton.elim f (0 : Fin 1), Fin.addCases_left]
@@ -333,6 +370,88 @@ theorem exists_quadric_resolution_of_corner_and_smooth_high_centers
         using hztail f
   · rw [Prod.Lex.lt_iff, ofLex_hirzebruchSarkisovBidegree, ofLex_hirzebruchSarkisovBidegree]
     exact Or.inl (by rw [hz₁']; omega)
+  · -- Compare the pole ideals on the original resolution before moving to the final tower.
+    let : SmoothOfRelativeDimension 2 (X[Φ] ↘ S) := by
+      simpa only [Fan.algebraicRealization_over] using hdim
+    let : SmoothOfRelativeDimension 2 (X[Ψ] ↘ S) := by
+      simpa only [Fan.algebraicRealization_over] using hdimΨ
+    let : SmoothOfRelativeDimension 2 (X[Θ] ↘ S) := by
+      simpa only [Fan.algebraicRealization_over] using hdimΘ
+    let : Smooth (X[Θ] ↘ S) := SmoothOfRelativeDimension.smooth 2 _
+    let : Y.Over S := ⟨T.toBase ≫ (X[Φ] ↘ S)⟩
+    let : T.toBase.IsOver S := ⟨rfl⟩
+    let : SmoothOfRelativeDimension 2 (Y ↘ S) := hT.smoothOfRelativeDimension (X[Φ] ↘ S)
+    let : Smooth (Y ↘ S) := SmoothOfRelativeDimension.smooth 2 _
+    let : Z.Over S := ⟨U.toBase ≫ (X[Ψ] ↘ S)⟩
+    let : SmoothOfRelativeDimension 2 (Z ↘ S) := hU.smoothOfRelativeDimension (X[Ψ] ↘ S)
+    let : Smooth (Z ↘ S) := SmoothOfRelativeDimension.smooth 2 _
+    let : q.IsOver S := ⟨by rw [← comp_over π[s] S, ← Category.assoc, hq]; rfl⟩
+    have hy : (Y ↘ S) = T.toBase ≫ (X[Φ] ↘ S) := rfl
+    let : (e.hom ≫ U.toBase).IsOver S := ⟨by
+      rw [hy, Category.assoc]
+      simpa only [Fan.algebraicRealization_over] using h₀⟩
+    have hfinal : (e.hom ≫ k₁.hom ≫ R.tower.toBase).IsOver S := ⟨by
+      rw [hy]
+      simpa only [Category.assoc, Fan.algebraicRealization_over] using
+        (congrArg (e.hom ≫ ·) hover').trans h₀⟩
+    have hstep : (e.hom ≫ k₀.hom ≫ V₀.toBase) ≫ τq = e.hom ≫ k₁.hom ≫ R.tower.toBase := by
+      simpa only [Category.assoc] using congrArg (e.hom ≫ ·) hproj
+    have hmutation : (e.hom ≫ k₀.hom ≫ V₀.toBase).IsOver S := ⟨by
+      rw [← comp_over τq S, ← Category.assoc, hstep, comp_over]⟩
+    refine ⟨‹_›, ‹_›, hmutation, hfinal, fun D hpole ↦ ?_⟩
+    let : IsIntegral Y := hT.isIntegral (X[Φ] ↘ S)
+    let : IsModification T.toBase := hT.isModification_of_smoothOfRelativeDimension_two (X[Φ] ↘ S)
+    have : IsDominant (q ≫ π[s]) := hq ▸ inferInstanceAs (IsDominant T.toBase)
+    obtain ⟨_, _, A, a, hA, ha, -, -⟩ :=
+      s.exists_toric_subdivision_blowup_tower hΦ hF hcΦ.nonempty_cones dim(b)
+    have : IsModification A.toBase :=
+      hA.isClosedPointTower.isModification_of_smoothOfRelativeDimension_two (X[Φ] ↘ S)
+    have : IsModification π[s] := ha ▸ inferInstanceAs (IsModification (a.hom ≫ A.toBase))
+    have : IsDominant q := IsModification.isDominant_of_comp q π[s]
+    have hbase : D[Φ,hcΦ].comap (q ≫ π[s]) = D * R[q ≫ π[s]] :=
+      (congrArg (D[Φ,hcΦ].comap ·) hq).trans
+        (hpole.trans (congrArg (D * ·) (ramificationIdealSheaf_congr ℂ hq).symm))
+    have hFpole :=
+      (s.comap_boundaryIdeal_eq_mul_ramificationIdealSheaf_comp_iff hΦ hF hcΦ dim(b) q D).mp hbase
+    have hΨpole :=
+      (t.comap_boundaryIdeal_eq_mul_ramificationIdealSheaf_comp_iff hΨ hF hcΨ dim(b) q D).mpr hFpole
+    have hbefore : D[Ψ,hcΨ].comap (e.hom ≫ U.toBase) = D * R[e.hom ≫ U.toBase] :=
+      (congrArg (D[Ψ,hcΨ].comap ·) hq'.symm).trans
+        (hΨpole.trans (congrArg (D * ·) (ramificationIdealSheaf_congr ℂ hq')))
+    have hramU := hU.comap_ramificationIdealSheafToBase ℂ e (f := e.hom ≫ U.toBase) rfl
+    have hU' : D[Ψ,hcΨ].comap U.toBase = D.comap e.inv * hU.ramificationIdealSheafToBase ℂ := by
+      have h := hbefore
+      rw [← hramU] at h
+      simpa only [comap_mul, ← comap_comp, Iso.inv_hom_id_assoc, Iso.inv_hom_id,
+        Scheme.IdealSheafData.comap_id] using congrArg (·.comap e.inv) h
+    obtain ⟨hOver, hiff⟩ := (r' 2).mutation_resolution_poleIdeal_iff d opp[d,r',hr'] c'
+      hU hΨ hcΨ (k₀.hom ≫ V₀.toBase) (D.comap e.inv) hμ
+    let : (k₀.hom ≫ V₀.toBase).IsOver S := hOver
+    have hz : (Z ↘ S) = U.toBase ≫ (X[Ψ] ↘ S) := rfl
+    have : e.hom.IsOver S := ⟨by
+      rw [hz, hy]
+      simpa only [Fan.algebraicRealization_over] using h₀⟩
+    let p := k₀.hom ≫ V₀.toBase
+    have hmut : D[Θ,hcΘ].comap (e.hom ≫ p) = D * R[e.hom ≫ p] := by
+      apply comap_eq_mul_ramificationIdealSheaf_comp ℂ e.hom p 2 (hiff.mp hU')
+      simp only [← comap_comp, Iso.hom_inv_id, Scheme.IdealSheafData.comap_id,
+        ramificationIdealSheaf_eq_top_of_isOpenImmersion, mul_top]
+    have hexchange : D[Θ,hcΘ].comap τq = D[Θ,hcΘ] * R[τq] := by
+      rw [ramificationIdealSheaf_eq_top_of_isOpenImmersion, mul_top]
+      exact (Fan.quadricRulingExchange b' hΘ hcΘ s' hs').comap_boundaryIdeal_algebraicMap _ _
+    have hafter := comap_eq_mul_ramificationIdealSheaf_comp ℂ _ τq 2 hexchange hmut
+    have hlast : D[Θ,hcΘ].comap (e.hom ≫ k₁.hom ≫ R.tower.toBase) =
+        D * R[e.hom ≫ k₁.hom ≫ R.tower.toBase] :=
+      (congrArg (D[Θ,hcΘ].comap ·) hstep.symm).trans
+        (hafter.trans (congrArg (D * ·) (ramificationIdealSheaf_congr ℂ hstep)))
+    refine ⟨hFpole, hbefore, hmut, hlast, ?_⟩
+    let a := e ≪≫ k₁
+    have ha : a.hom ≫ R.tower.toBase = e.hom ≫ k₁.hom ≫ R.tower.toBase := by
+      simp only [a, Iso.trans_hom, Category.assoc]
+    rw [← (R.isLift.isClosedPointTower hV₀).comap_ramificationIdealSheafToBase ℂ a ha,
+      ← ha] at hlast
+    simpa only [comap_mul, ← comap_comp, Iso.inv_hom_id_assoc, Iso.inv_hom_id,
+      Scheme.IdealSheafData.comap_id] using congrArg (·.comap a.inv) hlast
 
 end Quadric
 

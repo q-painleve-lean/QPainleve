@@ -73,6 +73,23 @@ theorem comap_eq_mul_ramificationIdealSheaf_comp_iff :
   apply hCart.mul_left_cancel
   simpa only [mul_comm ((ram(g)).comap f)] using h
 
+/-- Changing the source by an isomorphism transports the pole factorization in both
+directions. The ideal on the original source is the pullback along the inverse. -/
+theorem comap_eq_mul_ramificationIdealSheaf_comp_iff_of_isIso [IsIso f] :
+    letI := SmoothOfRelativeDimension.smooth n (X ↘ Spec (.of R))
+    letI := SmoothOfRelativeDimension.smooth n (Y ↘ Spec (.of R))
+    D.comap (f ≫ g) = Q * ram(f ≫ g) ↔
+      D.comap g = Q.comap (inv f) * ram(g) := by
+  have := SmoothOfRelativeDimension.smooth n (X ↘ Spec (.of R))
+  have := SmoothOfRelativeDimension.smooth n (Y ↘ Spec (.of R))
+  have hinj : Function.Injective (fun I : Y.IdealSheafData ↦ I.comap f) :=
+    Function.LeftInverse.injective (g := fun I : X.IdealSheafData ↦ I.comap (inv f)) <| fun I ↦ by
+      simp only [← comap_comp _ (inv f) f, IsIso.inv_hom_id, comap_id]
+  rw [comap_comp, ramificationIdealSheaf_comp R f g n,
+    ramificationIdealSheaf_eq_top_of_isOpenImmersion R f, top_mul]
+  simpa only [comap_mul, ← comap_comp _ f (inv f), IsIso.hom_inv_id, comap_id] using
+    (hinj.eq_iff (a := D.comap g) (b := Q.comap (inv f) * ram(g)))
+
 /-- If a modification pulls the intermediate pole ideal back to a specified pole ideal,
 one can check the factorization for a map out of the intermediate scheme on the modified
 source. Both sides of the equality on the intermediate scheme are effective Cartier. -/

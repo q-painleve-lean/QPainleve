@@ -19,6 +19,7 @@ import QPainleve.AlgebraicGeometry.Morphisms.IsoLocus
 import TauCeti.AlgebraicGeometry.Curves.Node.Reduced
 import TauCeti.AlgebraicGeometry.IrreducibleOfConnectedDomainStalk
 import TauCeti.AlgebraicGeometry.Morphisms.Proper
+import TauCeti.Topology.Sober
 
 /-!
 # Subdivision of the boundary at a node
@@ -195,7 +196,7 @@ theorem range_normalizationToNodalBlowup :
 private theorem branchPoint_mem_singular (T : Scheme.{u}) [T.Over S]
     [PrestableFamily (T ↘ S)] (q : T.branchScheme k) :
     ν[T] (b[T] q) ∈ (J[T]).support :=
-  (J[T]).range_subschemeι.le ⟨_, (Scheme.blowupToBase_branchSchemeToBlowup_apply T q).symm⟩
+  (J[T]).range_subschemeι.le ⟨_, (T.blowupToBase_branchSchemeToBlowup_apply q).symm⟩
 
 private instance {T : Scheme.{u}} [T.Over S] [PrestableFamily (T ↘ S)] :
     IsClosedImmersion b[T] :=
@@ -836,43 +837,6 @@ private def subdivisionNumbering (pB : ι₁ → (B ↘ S).smoothLocus) :
     rw [h]
     exact D.orderedBranch_mem_vertex hc hp hCOver hBOver hD A i hi a b
 
-private theorem subdivisionNumbering_component (pB : ι₁ → (B ↘ S).smoothLocus)
-    (a : ZMod (n + 1)) :
-    (D.subdivisionNumbering hc hp hCOver hBOver hD A i hi pB).component a =
-      (vertices) (indexEquivOption i a) := by
-  simp only [Scheme.NodalCycleNumbering.component_apply, subdivisionNumbering,
-    Equiv.trans_apply, Equiv.apply_symm_apply]
-
-include hi in
-private theorem boundaryMap_componentGenericPoint_subdivisionNumbering
-    (pB : ι₁ → (B ↘ S).smoothLocus) (a : ZMod (n + 1)) :
-    (β) ((D.subdivisionNumbering hc hp hCOver hBOver hD A i hi pB).componentGenericPoint a) =
-      (indexEquivOption i a).elim p A.componentGenericPoint := by
-  rw [Scheme.NodalCycleNumbering.componentGenericPoint_def, subdivisionNumbering_component]
-  cases he : indexEquivOption i a with
-  | none =>
-    have hm : (genericPoints.ofComponent (exc) : N[B]) ∈
-        (B).blowupComponent (K := k) (exc) := by
-      rw [← SetLike.mem_coe, (B).coe_blowupComponent]
-      exact (genericPoints.isGenericPoint_ofComponent _).mem
-    exact (IsEffectiveCartier.mem_exceptional_iff_boundaryMap_eq hc _).mp
-      ((hD.bijOn_blowupToBase_exceptionalNormalizationComponent (k := k) hc).mapsTo hm)
-  | some t =>
-    let w := A.component t
-    let v := (D.strictNormalizationComponentEquiv hc hp hCOver hBOver hD w).val
-    have hm : (s) (genericPoints.ofComponent w) ∈ (v : Set N[B]) :=
-      D.normalizationToNodalBlowup_mem_strictNormalizationComponentEquiv hc hp hCOver hBOver hD w
-        ((genericPoints.isGenericPoint_ofComponent _).mem)
-    have hs := ((genericPoints.isGenericPoint_ofComponent v).specializes hm).map
-      ((ν[B] ≫ (β)).continuous)
-    simp only [Scheme.Hom.comp_apply, D.boundaryMap_normalizationToNodalBlowup_apply] at hs
-    have hmax := Order.coheight_eq_zero.mp ((C).coheight_blowupComponentGeneric w)
-    have heq := (hs.antisymm (Scheme.le_iff_specializes.mp
-      (hmax (Scheme.le_iff_specializes.mpr hs)))).eq
-    simpa only [Option.elim_some, Scheme.NodalCycleNumbering.componentGenericPoint_def,
-      vertexEquivOption, Equiv.trans_apply, Equiv.optionCongr_apply, Option.map_some,
-      Equiv.optionSubtypeNe_some, w, v] using heq
-
 private theorem orderedBranch_apply_lift (g : N[B] ⟶ N[C])
     (hg : ∀ a : (C).branchScheme k, g (b[B] ((strBranch) a)) = b[C] a)
     (he : ∀ a : centerBranch, g (b[B] ((newBranch) a)) = b[C] ((atCenter) 1).val)
@@ -919,25 +883,78 @@ private theorem isOrientedCycleSubdivision_subdivisionNumbering
       simp only [orderedBranch, Option.elim_none, ite_eq_right h10, ite_true]
       exact (hstr ((oldBranch) (i, 1))).trans (hexc ((atCenter) 1)).symm
 
+private theorem normalizationToNodalBlowup_genericPoint (v : irreducibleComponents N[C]) :
+    (s) (genericPoints.ofComponent v) =
+      genericPoints.ofComponent
+        (D.strictNormalizationComponentEquiv hc hp hCOver hBOver hD v).val := by
+  have : IsRegular N[C] := (C).isRegular_blowup_singularLocus nodal[C]
+  have : IsRegular N[B] := (B).isRegular_blowup_singularLocus nodal[B]
+  let e := D.strictNormalizationComponentEquiv hc hp hCOver hBOver hD
+  let y := genericPoints.ofComponent (e v).val
+  have hy : (y : N[B]) ∈ ((e v).val : Set N[B]) :=
+    (genericPoints.isGenericPoint_ofComponent (e v).val).mem
+  have hy' : (y : N[B]) ∈ Set.range (s) := by
+    rw [D.range_normalizationToNodalBlowup hc hp hCOver hBOver hD]
+    intro h
+    exact (e v).property ((irreducibleComponentOf_eq_iff.mpr hy).symm.trans
+      (irreducibleComponentOf_eq_iff.mpr h))
+  obtain ⟨x, hx⟩ := hy'
+  let w := irreducibleComponentOf x
+  have hw := D.normalizationToNodalBlowup_mem_strictNormalizationComponentEquiv
+    hc hp hCOver hBOver hD w (mem_irreducibleComponentOf x)
+  rw [hx] at hw
+  have hwv : w = v := e.injective (Subtype.ext
+    ((irreducibleComponentOf_eq_iff.mpr hw).symm.trans (irreducibleComponentOf_eq_iff.mpr hy)))
+  have hxv : x ∈ (v : Set N[C]) := hwv ▸ mem_irreducibleComponentOf x
+  exact (TauCeti.mem_genericPoints_iff.mp y.property) _
+    (hx ▸ ((genericPoints.isGenericPoint_ofComponent v).specializes hxv).map (s).continuous)
+
+include hi in
+private theorem ambient_subdivisionNumbering_component (pB : ι₁ → (B ↘ S).smoothLocus)
+    (a : ZMod (n + 1)) :
+    (π) ((j) ((D.subdivisionNumbering hc hp hCOver hBOver hD A i hi pB).componentGenericPoint a)) =
+      if a.val < n then D.subschemeι (A.componentGenericPoint ((a.val : ZMod n) + (i + 1)))
+      else D.subschemeι p := by
+  let T := D.subdivisionNumbering hc hp hCOver hBOver hD A i hi pB
+  have hT : T.component a = (vertices) (indexEquivOption i a) := by
+    simp [T, Scheme.NodalCycleNumbering.component_apply, subdivisionNumbering]
+  have hπ (x : B) : (π) ((j) x) = D.subschemeι ((β) x) := by
+    rw [← Scheme.Hom.comp_apply, ← Scheme.Hom.comp_apply, subschemeMap_subschemeι]
+  rw [hπ, Scheme.NodalCycleNumbering.componentGenericPoint_def, hT]
+  split_ifs with ha
+  · rw [indexEquivOption_of_lt i ha]
+    let b : ZMod n := (a.val : ZMod n) + (i + 1)
+    have hv : (vertices) (some b) =
+        (D.strictNormalizationComponentEquiv hc hp hCOver hBOver hD (A.component b)).val := by
+      simp [vertexEquivOption]
+    rw [hv, ← D.normalizationToNodalBlowup_genericPoint hc hp hCOver hBOver hD,
+      boundaryMap_normalizationToNodalBlowup_apply hc hp hCOver hBOver,
+      Scheme.NodalCycleNumbering.componentGenericPoint_def]
+  · rw [indexEquivOption_of_eq i (by have := ZMod.val_lt a; omega)]
+    have hv : (vertices) none = (exc) := by simp [vertexEquivOption]
+    rw [hv]
+    apply congrArg D.subschemeι
+    apply (IsEffectiveCartier.mem_exceptional_iff_boundaryMap_eq hc _).mp
+    apply (hD.bijOn_blowupToBase_exceptionalNormalizationComponent (k := k) hc).mapsTo
+    rw [(B).coe_blowupComponent]
+    exact (genericPoints.isGenericPoint_ofComponent (exc)).mem
+
 omit [IsReduced C] in
 include hc hp hCOver hBOver hD hi in
-/-- Blowing up node `i` gives a numbering beginning at the strict transform of
-component `i + 1` and ending at the exceptional component. The boundary projection
-respects the ordered conductor subdivision and sends the numbered generic points to
-the corresponding old generic points, or to the center for the exceptional component. -/
+/-- At the specified node, the reduced total boundary has the induced oriented
+numbering starting just after that node and ending at the exceptional component.
+The surface projection sends each numbered generic point to the corresponding
+original prime, or to the center for the last component. -/
 theorem exists_isOrientedCycleSubdivision_nodalBlowup_at
     (pB : ι₁ → (B ↘ S).smoothLocus) :
     ∃ T : Scheme.NodalCycleNumbering pB (n + 1),
       (β).IsOrientedCycleSubdivision T A ∧
-      ∀ a : ZMod (n + 1), (β) (T.componentGenericPoint a) =
-        if a.val < n then A.componentGenericPoint ((a.val : ZMod n) + (i + 1)) else p := by
+      ∀ a, (π) ((j) (T.componentGenericPoint a)) =
+        if a.val < n then D.subschemeι (A.componentGenericPoint ((a.val : ZMod n) + (i + 1)))
+        else D.subschemeι p := by
   have : IsReduced C := (nodal[C]).isReduced
-  refine ⟨_, D.isOrientedCycleSubdivision_subdivisionNumbering hc hp hCOver hBOver hD A i hi pB,
-    fun a ↦ ?_⟩
-  rw [D.boundaryMap_componentGenericPoint_subdivisionNumbering hc hp hCOver hBOver hD A i hi]
-  split_ifs with ha
-  · rw [indexEquivOption_of_lt i ha, Option.elim_some]
-  · rw [indexEquivOption_of_eq i (by have := ZMod.val_lt a; omega), Option.elim_none]
+  exact ⟨_, D.isOrientedCycleSubdivision_subdivisionNumbering hc hp hCOver hBOver hD A i hi pB,
+    D.ambient_subdivisionNumbering_component hc hp hCOver hBOver hD A i hi pB⟩
 
 omit [IsReduced C] in
 include hc hp hCOver hBOver hD in
@@ -950,8 +967,8 @@ theorem exists_isOrientedCycleSubdivision_nodalBlowup
   have : IsReduced C := (nodal[C]).isReduced
   obtain ⟨z, hz⟩ := (J[C]).range_subschemeι.ge hp
   obtain ⟨i, rfl⟩ := (oldNode).surjective z
-  obtain ⟨T, hT, -⟩ := D.exists_isOrientedCycleSubdivision_nodalBlowup_at
-    hc hp hCOver hBOver hD A i hz pB
+  obtain ⟨T, hT, -⟩ :=
+    D.exists_isOrientedCycleSubdivision_nodalBlowup_at hc hp hCOver hBOver hD A i hz pB
   exact ⟨T, hT⟩
 
 end Numbering

@@ -82,10 +82,8 @@ variable [Φ.algebraicRealization.IsProjectiveOver ℂ]
 local notation "a" => (Iso.inv p ≫ BlowupTower.toBase P)
 local notation "a'" => (Iso.inv q ≫ BlowupTower.toBase Q)
 
-local notation "kD" =>
-  picardBoundaryOrthogonalEquivChargeKernel hΦ dim s m hm hprim c (J[c]) (hJ[c]) hP p hp hDs
-local notation "kE" =>
-  picardBoundaryOrthogonalEquivChargeKernel hΦ dim s m hm hprim d (J[d]) (hJ[d]) hQ q hq hEs
+local notation "kD" => markedBoundaryChargeEquiv hΦ b s hP p hp hDs
+local notation "kE" => markedBoundaryChargeEquiv hΦ b s hQ q hq hEs
 local notation "mark[" z "]" => picardMarking (U[z]) (hU[z]) fZ
 
 variable {f : X ⟶ Y}
@@ -118,23 +116,26 @@ theorem markedBoundaryPeriod_eq_of_pullback_marking
       else periodE := by
   apply MonoidHom.ext
   intro x
-  let z := LinearEquiv.ofEq _ _ (E.boundaryOrthogonal_def ℂ).symm ((kE).symm x.toAdd)
+  let z := (kE).symm x.toAdd
   let swap := decide (DihedralGroup.cycleOrientationSign (g.boundaryCycleAction A B) = -1)
   obtain ⟨hz, hperiod⟩ := hD.boundaryPeriod_pullback gD A.endpoint_eq hE gE B.endpoint_eq
     f g hcomm swap (by simpa only [swap, decide_eq_true_eq] using
       g.branchOrder_boundaryCycleAction A B) (ofAdd z)
   have heq : (⟨Additive.ofMul (pullback f z.val.toMul), hz⟩ : D.boundaryOrthogonal ℂ) =
-      LinearEquiv.ofEq _ _ (D.boundaryOrthogonal_def ℂ).symm ((kD).symm x.toAdd) := by
+      (kD).symm x.toAdd := by
     apply Subtype.ext
-    exact congrArg Additive.ofMul
-      (pullback_picardBoundaryOrthogonalEquivChargeKernel_symm hΦ b s hP hQ p q hp hq hDs hEs
-        x.toAdd (hmark _))
+    have htarget := coe_markedBoundaryChargeEquiv_symm hΦ b s hQ q hq hEs x.toAdd
+    have hsource := coe_markedBoundaryChargeEquiv_symm hΦ b s hP p hp hDs x.toAdd
+    have hmap := map_picardBoundaryOrthogonalEquivChargeKernel_symm_of_matching_markings
+      hΦ b s hP hQ p q hp hq hDs hEs (pullback f) x.toAdd (hmark _)
+    exact (congrArg Additive.ofMul
+      ((congrArg (fun L ↦ pullback f L.toMul) htarget).trans hmap)).trans hsource.symm
   have hsource : periodD x = hD.boundaryPeriod gD A.endpoint_eq
-      (ofAdd (LinearEquiv.ofEq _ _ (D.boundaryOrthogonal_def ℂ).symm ((kD).symm x.toAdd))) := by
-    rw [← ofAdd_toAdd x, markedBoundaryPeriod_apply, LinearEquiv.trans_apply]
+      (ofAdd ((kD).symm x.toAdd)) := by
+    rw [← ofAdd_toAdd x, markedBoundaryPeriod_apply]
     simp only [toAdd_ofAdd]
   have htarget : periodE x = hE.boundaryPeriod gE B.endpoint_eq (ofAdd z) := by
-    rw [← ofAdd_toAdd x, markedBoundaryPeriod_apply, LinearEquiv.trans_apply]
+    rw [← ofAdd_toAdd x, markedBoundaryPeriod_apply]
   simp only [toAdd_ofAdd] at hperiod
   rw [heq, ← hsource, ← htarget] at hperiod
   simp only [swap, decide_eq_true_eq] at hperiod
