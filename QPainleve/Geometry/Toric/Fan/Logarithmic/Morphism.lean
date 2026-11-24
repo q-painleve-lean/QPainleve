@@ -92,7 +92,8 @@ theorem exists_toric_internal_factorization_of_poleIdeal
 
 /-- Under an ordered toric factorization of a specified morphism, every boundary prime
 corresponds to a ray of the subdivided fan. Its orders on all pulled-back characters
-are the evaluations on that ray's primitive generator, which characterize the correspondence. -/
+are the evaluations on that ray's primitive generator, which characterize the correspondence.
+The closure of each prime is the image of the embedded ray component. -/
 theorem exists_equiv_boundaryPrimes_of_toric_internal_factorization
     [Nonempty Φ.cones] {Ψ : Fan i} [Nonempty Ψ.cones]
     (hΨ : Ψ.IsRegular) (H : Ψ.IsSubdivision Φ)
@@ -101,9 +102,12 @@ theorem exists_equiv_boundaryPrimes_of_toric_internal_factorization
     (e : (Ψ.internalBlowupTower b ρ u).1 ≅ X)
     (he : e.hom ≫ f = (Ψ.internalBlowupTower b ρ u).2.toTower.toBase ≫ H.toFanHom.algebraicMap)
     (hP : P.comap e.hom = (Ψ.internalBlowupTower b ρ u).2.boundaryι.ker) :
-    ∃ R : Ψ.Ray ≃ P.boundaryPrimes, ∀ (r : Ψ.Ray) (p : P.boundaryPrimes),
-      R r = p ↔ ∀ a : N →+ ℤ,
-        X.ord (f.functionFieldMap (Φ.character (ofAdd a))) p.val = a r.primitiveGenerator := by
+    ∃ R : Ψ.Ray ≃ P.boundaryPrimes,
+      (∀ (r : Ψ.Ray) (p : P.boundaryPrimes),
+        R r = p ↔ ∀ a : N →+ ℤ,
+          X.ord (f.functionFieldMap (Φ.character (ofAdd a))) p.val = a r.primitiveGenerator) ∧
+      ∀ r, Set.range (r.boundaryComponentι hΨ ≫ (Ψ.internalBlowupTower b ρ u).2.boundaryι ≫
+        e.hom) = closure {((R r).val : X)} := by
   let A := Ψ.internalBlowupTower b ρ u
   let π := A.2.toTower.toBase
   have : IsIntegral A.1 := isIntegral_internalBlowupTower b ρ u hΨ
@@ -113,32 +117,35 @@ theorem exists_equiv_boundaryPrimes_of_toric_internal_factorization
   let E := (Set.equivOfEq (congrArg boundaryPrimes hP.symm)).trans
     (P.boundaryPrimesEquivOfIso e)
   let rays := R.trans E
+  have hrays (r : Ψ.Ray) : (rays r).val = e.hom (R r).val := by
+    simp only [rays, E, Equiv.trans_apply, boundaryPrimesEquivOfIso_apply_val, Set.equivOfEq_apply]
   have horder (r : Ψ.Ray) (a : N →+ ℤ) :
       X.ord (f.functionFieldMap (Φ.character (ofAdd a))) (rays r).val =
         a r.primitiveGenerator := by
-    dsimp only [rays]
     let x := (R r).val
-    have hx : (E (R r)).val = e.hom x := by
-      simp only [E, Equiv.trans_apply, boundaryPrimesEquivOfIso_apply_val, Set.equivOfEq_apply, x]
     have hπ : π x = (Ψ.rayBoundaryPoint hΨ r).val :=
       toBase_internalBlowupBoundaryPrimeEquiv hΨ b ρ u r
     have hIso : π x ∈ π.isoLocus :=
       π.mem_isoLocus_of_coheight_eq_one (hπ.symm ▸ (Ψ.rayBoundaryPoint hΨ r).property)
-    rw [Equiv.trans_apply, hx, ← TauCeti.AlgebraicGeometry.Scheme.ord_functionFieldMap e.hom]
+    rw [hrays, ← TauCeti.AlgebraicGeometry.Scheme.ord_functionFieldMap e.hom]
     have hfield := (Scheme.Hom.functionFieldMap_comp e.hom f).symm.trans
       ((Scheme.Hom.functionFieldMap_congr he).trans (Scheme.Hom.functionFieldMap_comp π _))
     rw [← CommRingCat.comp_apply, hfield, CommRingCat.comp_apply,
       π.ord_functionFieldMap_of_mem_isoLocus hIso, hπ,
       H.toFanHom.functionFieldMap_algebraicMap_character,
       H.toFanHom_latticeMap, AddMonoidHom.comp_id, Ψ.ord_rayBoundaryPoint_character hΨ]
-  refine ⟨rays, fun r p ↦ ⟨fun h a ↦ h ▸ horder r a, ?_⟩⟩
-  obtain ⟨q, rfl⟩ := rays.surjective p
-  intro h
-  apply congrArg rays
-  apply Ray.primitiveGenerator_injective
-  apply b.repr.injective
-  ext j
-  exact (h (b.coord j).toAddMonoidHom).symm.trans (horder q (b.coord j).toAddMonoidHom)
+  refine ⟨rays, fun r p ↦ ⟨fun h a ↦ h ▸ horder r a, ?_⟩, ?_⟩
+  · obtain ⟨q, rfl⟩ := rays.surjective p
+    intro h
+    apply congrArg rays
+    apply Ray.primitiveGenerator_injective
+    apply b.repr.injective
+    ext j
+    exact (h (b.coord j).toAddMonoidHom).symm.trans (horder q (b.coord j).toAddMonoidHom)
+  · intro r
+    rw [← Category.assoc, Scheme.Hom.comp_base, TopCat.coe_comp, Set.range_comp,
+      range_rayComponent_internalBlowupBoundaryPrimeEquiv hΨ b ρ u,
+      ← e.hom.isClosedEmbedding.closure_image_eq, Set.image_singleton, hrays]
 
 variable [X.Over (Spec (.of ℂ))] [IsIntegral X] [X.IsProjectiveOver ℂ]
   [SmoothOfRelativeDimension 2 (X ↘ Spec (.of ℂ))]

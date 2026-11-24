@@ -55,6 +55,10 @@ variable (C : NodalCycleNumbering p n)
 def component : ZMod n ≃ irreducibleComponents (X.singularLocus k).blowup :=
   C.vertex.trans (X.dualGraphVertexEquiv p)
 
+/-- The component is the normalized component at the corresponding dual graph vertex. -/
+theorem component_apply (j : ZMod n) : C.component j = X.dualGraphVertexEquiv p (C.vertex j) :=
+  (rfl)
+
 /-- The numbering of the points of the singular subscheme. -/
 def node : ZMod n ≃ (X.singularLocus k).subscheme :=
   C.edge.trans (X.dualGraphNodeEquiv p)
@@ -101,6 +105,93 @@ variable {k : Type u} [Field k] [IsSepClosed k] {X Y Z : Scheme.{u}}
   (f : X ≅ Y) [f.hom.IsOver (Spec (.of k))]
   (C : NodalCycleNumbering p n)
 
+local notation "fN" => Iso.hom (singularLocusIso (R := k) f)
+local notation "fB" => Iso.hom (branchSchemeIso (R := k) f)
+local notation "fV" => Iso.hom (singularLocusBlowupIso (R := k) f)
+local notation "π[" Z "]" => Scheme.branchSchemeToSingularLocus k Z
+
+omit [IsSepClosed k] in
+include f in
+private theorem branchSchemeIso_mem_fiber_iff (z : (X.singularLocus k).subscheme)
+    (b : X.branchScheme k) : π[X] b = z ↔ π[Y] (fB b) = fN z := by
+  rw [← Scheme.Hom.comp_apply, f.branchSchemeIso_hom_branchSchemeToSingularLocus,
+    Scheme.Hom.comp_apply, (fN).injective.eq_iff]
+
+private def mappedEdge : ZMod n ≃ (Y.dualGraph q).Edge :=
+  (C.node.trans (fN).homeomorph.toEquiv).trans (Y.dualGraphNodeEquiv q).symm
+
+private def mappedOrderAt (j : ZMod n) : Equiv.Perm (Fin 2) :=
+  (X.branchOrderOfDualGraph p C.order (C.node j)).trans <|
+    ((fB).homeomorph.toEquiv.subtypeEquiv (branchSchemeIso_mem_fiber_iff f (C.node j))).trans <|
+      (Y.branchOrderOfDualGraph q (fun _ ↦ Equiv.refl _) (fN (C.node j))).symm
+
+private def mappedOrder (a : (Y.dualGraph q).Edge) : Equiv.Perm (Fin 2) :=
+  mappedOrderAt f C (q := q) ((mappedEdge f C (q := q)).symm a)
+
+include f C in
+private theorem mappedOrder_branch (j : ZMod n) (b : Fin 2) :
+    Y.dualGraphBranchEquiv q
+      (mappedEdge f C (q := q) j, mappedOrder f C (q := q) (mappedEdge f C (q := q) j) b) =
+      fB (C.branch (j, b)) := by
+  have hn : Y.dualGraphNodeEquiv q (mappedEdge f C j) = fN (C.node j) := by
+    simp [mappedEdge]
+  have hb := Y.branchOrderOfDualGraph_apply_val q (fun _ ↦ Equiv.refl _) (mappedEdge f C j)
+    (mappedOrder f C (q := q) (mappedEdge f C (q := q) j) b)
+  simp only [Equiv.refl_apply] at hb
+  rw [← hb, C.branch_eq_branchOrderOfDualGraph]
+  rw [hn, mappedOrder, Equiv.symm_apply_apply]
+  simp only [mappedOrderAt, Equiv.trans_apply, Equiv.apply_symm_apply]
+  rfl
+
+private def mappedComponent :
+    irreducibleComponents (X.singularLocus k).blowup ≃
+      irreducibleComponents (Y.singularLocus k).blowup :=
+  (irreducibleComponentsEquivOfIsPreirreducibleFiber fV (fV).continuous (fV).isOpenMap
+    (fun _ ↦ (Set.subsingleton_singleton.preimage (fV).injective).isPreirreducible)
+    (fV).surjective).symm.toEquiv
+
+/-- Transport the nodes and ordered branches of a cycle along an isomorphism over the
+ground field. The target may use any marking in its native dual graph. -/
+def mapNodalCycleNumbering : Scheme.NodalCycleNumbering q n where
+  vertex := (C.component.trans (mappedComponent f)).trans (Y.dualGraphVertexEquiv q).symm
+  edge := mappedEdge f C
+  order := mappedOrder f C
+  endpoint_eq j b := by
+    let a := C.component ((DualGraph.cycle n).endpoint j b)
+    apply (Y.dualGraphVertexEquiv q).injective
+    simp only [Equiv.trans_apply, Equiv.apply_symm_apply]
+    apply (Y.dualGraphVertexEquiv_endpoint_eq_iff q _ _ (mappedComponent f a)).mpr
+    rw [← Y.branchSchemeToBlowup_dualGraphBranchEquiv, mappedOrder_branch f C,
+      ← Scheme.Hom.comp_apply, f.branchSchemeIso_hom_branchSchemeToBlowup,
+      Scheme.Hom.comp_apply]
+    exact Set.mem_image_of_mem fV ((C.branchSchemeToBlowup_branch_mem_component_iff j b a).mpr rfl)
+
+include f C in
+/-- The component of a transported numbering is the image of the original component
+under the normalization isomorphism. -/
+@[simp]
+theorem coe_component_mapNodalCycleNumbering (j : ZMod n) :
+    ((f.mapNodalCycleNumbering C (q := q)).component j : Set _) =
+      fV '' (C.component j : Set _) := by
+  simp only [Scheme.NodalCycleNumbering.component, mapNodalCycleNumbering, Equiv.trans_apply,
+    Equiv.apply_symm_apply]
+  rfl
+
+include f C in
+/-- The node of a transported numbering is the image under the singular-locus isomorphism. -/
+@[simp]
+theorem node_mapNodalCycleNumbering (j : ZMod n) :
+    (f.mapNodalCycleNumbering C (q := q)).node j = fN (C.node j) := by
+  simp [Scheme.NodalCycleNumbering.node, mapNodalCycleNumbering, mappedEdge]
+
+include f C in
+/-- The ordered branch of a transported numbering is the image under the branch-scheme
+isomorphism, with its index preserved. -/
+@[simp]
+theorem branch_mapNodalCycleNumbering (j : ZMod n) (b : Fin 2) :
+    (f.mapNodalCycleNumbering C (q := q)).branch (j, b) = fB (C.branch (j, b)) :=
+  mappedOrder_branch f C j b
+
 include f C in
 /-- Isomorphic nodal cycles have the same number of nodes. -/
 theorem nodalCycleNumbering_length_eq (D : NodalCycleNumbering q m) : n = m := by
@@ -133,10 +224,7 @@ private theorem image_component_mem_irreducibleComponents (j : ZMod n) :
     (f.singularLocusBlowupIso (R := k)).hom ''
         (C.component j : Set (X.singularLocus k).blowup) ∈
       irreducibleComponents (Y.singularLocus k).blowup := by
-  let g := (f.singularLocusBlowupIso (R := k)).hom
-  exact image_mem_irreducibleComponents_of_isPreirreducible_fiber g g.continuous g.isOpenMap
-    (fun x ↦ (Set.subsingleton_singleton.preimage g.injective).isPreirreducible)
-    g.surjective (C.component j).property
+  exact (mappedComponent f (C.component j)).property
 
 private theorem image_component_endpoint {D : NodalCycleNumbering q m}
     (j : ZMod n) (b : Fin 2) :
