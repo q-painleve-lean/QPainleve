@@ -9,9 +9,8 @@ public import QPainleve.AlgebraicGeometry.Blowup.StrictTransform.Branches.Contra
 public import QPainleve.AlgebraicGeometry.Curves.Node.Locus
 
 import QPainleve.AlgebraicGeometry.Blowup.Integral
-import QPainleve.AlgebraicGeometry.Blowup.StrictTransform.Node
+import QPainleve.AlgebraicGeometry.Blowup.StrictTransform.Nodality
 import QPainleve.AlgebraicGeometry.Curves.Node.Order
-import TauCeti.AlgebraicGeometry.Blowup.Restriction
 import TauCeti.AlgebraicGeometry.Curves.Node.Reduced
 import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.Subtraction
 import TauCeti.AlgebraicGeometry.Noetherian
@@ -46,44 +45,6 @@ local notation "strict(" D ")" => Scheme.Hom.ker (blowupMap I (subschemeι D))
 local notation "S" => Spec (CommRingCat.of k)
 local notation "s" => (X ↘ S)
 local notation "K(" W ")" => LineBundleClass.mk (QPainleve.canonicalBundle k W 2)
-
-omit [SmoothOfRelativeDimension 2 (X ↘ Spec (.of k))] in
-private theorem atWorstNodalOfRelativeDimensionOne_of_pointBlowdown
-    {D : X.IdealSheafData} {B : (I).blowup.IdealSheafData}
-    (hD : D.comap π = B * E)
-    (hB : AtWorstNodalOfRelativeDimensionOne (B.subschemeι ≫ π ≫ s))
-    (hp : IsClosed ({p} : Set X))
-    (hnode : ∀ q : D.subscheme, D.subschemeι q = p → (D.subschemeι ≫ s).IsNodeAt q) :
-    AtWorstNodalOfRelativeDimensionOne (D.subschemeι ≫ s) := by
-  classical
-  let V : X.Opens := (I).support.compl
-  let U : (I).blowup.Opens := π ⁻¹ᵁ V
-  have hπ : U.ι ≫ π = (π ∣_ V) ≫ V.ι := (morphismRestrict_ι π V).symm
-  have : IsOpenImmersion (U.ι ≫ π) := hπ ▸ inferInstanceAs (IsOpenImmersion ((π ∣_ V) ≫ V.ι))
-  have hU : (E).support.compl = U := compl_support_comap _ _
-  have hE : (E).comap U.ι = ⊤ :=
-    (comap_eq_top_iff _ _).mpr (hU.symm ▸ Scheme.Opens.ι_preimage_self U)
-  have hDE : D.comap (U.ι ≫ π) = B.comap U.ι := by
-    rw [comap_comp, hD, comap_mul, hE, mul_top]
-  have hRange : Set.range (U.ι ≫ π) = ({p} : Set X)ᶜ := by
-    rw [hπ, Scheme.Hom.comp_base, TopCat.coe_comp, Set.range_comp,
-      Set.range_eq_univ.mpr (ConcreteCategory.bijective_of_isIso _).surjective,
-      Set.image_univ, Scheme.Opens.range_ι, Closeds.coe_compl, coe_support_vanishingIdeal,
-      Closeds.coe_mk, hp.closure_eq]
-  have hlocal (q : D.subscheme) :
-      ∃ (W : Scheme.{u}) (j : W ⟶ D.subscheme), IsOpenImmersion j ∧ q ∈ Set.range j ∧
-        AtWorstNodalOfRelativeDimensionOne (j ≫ D.subschemeι ≫ s) := by
-    by_cases hq : D.subschemeι q = p
-    · exact (hnode q hq).exists_nodal_neighbourhood
-    · exact D.exists_nodal_neighbourhood_of_comap_eq (U.ι ≫ π) U.ι
-        (by simp only [Category.assoc]) hDE hB q (by
-          rw [hRange, Set.mem_compl_iff, Set.mem_singleton_iff]
-          exact hq)
-  choose W j hj hmem hnodal using hlocal
-  let (q : D.subscheme) : IsOpenImmersion (j q) := hj q
-  let cover : D.subscheme.OpenCover := Scheme.Cover.mkOfCovers D.subscheme W j (fun q ↦ ⟨q, hmem q⟩)
-  exact IsZariskiLocalAtSource.of_openCover (P := @AtWorstNodalOfRelativeDimensionOne)
-    cover hnodal
 
 variable (k) [IsAlgClosed k] [NeZero (2 : k)] [X.IsProjectiveOver k] [IsIntegral X]
 

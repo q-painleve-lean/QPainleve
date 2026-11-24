@@ -35,7 +35,8 @@ The reduced total transform of a nodal Cartier divisor at a closed node is
 nodal. Near the attachment points the strict and exceptional divisors meet
 transversely, including when the original node is a self-node. The other
 points are covered by the original curve off the center and by the smooth
-exceptional line off the strict transform.
+exceptional line off the strict transform. Nodality also descends along a
+point blowdown when the boundary is nodal over the center.
 -/
 
 public section
@@ -66,6 +67,56 @@ theorem atWorstNodalOfRelativeDimensionOne_strictTransform_of_isEffectiveCartier
     e _).mp
   rw [hcomp]
   exact hD.comp_of_etale π
+
+section
+
+variable {k : Type u} [Field k] {X : Scheme.{u}} {p : X} [X.Over (Spec (.of k))]
+
+local notation "I" => vanishingIdeal (Closeds.mk (closure (Singleton.singleton p)) isClosed_closure)
+local notation "π" => blowupToBase I
+local notation "E" => comap I π
+local notation "s" => (X ↘ Spec (CommRingCat.of k))
+
+/-- A boundary is nodal if its total transform is the product of a nodal boundary
+and the exceptional ideal, and every boundary point over the closed center is a node. -/
+theorem atWorstNodalOfRelativeDimensionOne_of_pointBlowdown
+    {D : X.IdealSheafData} {B : (I).blowup.IdealSheafData}
+    (hD : D.comap π = B * E)
+    (hB : AtWorstNodalOfRelativeDimensionOne (B.subschemeι ≫ π ≫ s))
+    (hp : IsClosed ({p} : Set X))
+    (hnode : ∀ q : D.subscheme, D.subschemeι q = p → (D.subschemeι ≫ s).IsNodeAt q) :
+    AtWorstNodalOfRelativeDimensionOne (D.subschemeι ≫ s) := by
+  classical
+  let V : X.Opens := (I).support.compl
+  let U : (I).blowup.Opens := π ⁻¹ᵁ V
+  have hπ : U.ι ≫ π = (π ∣_ V) ≫ V.ι := (morphismRestrict_ι π V).symm
+  have : IsOpenImmersion (U.ι ≫ π) := hπ ▸ inferInstanceAs (IsOpenImmersion ((π ∣_ V) ≫ V.ι))
+  have hU : (E).support.compl = U := compl_support_comap _ _
+  have hE : (E).comap U.ι = ⊤ :=
+    (comap_eq_top_iff _ _).mpr (hU.symm ▸ Scheme.Opens.ι_preimage_self U)
+  have hDE : D.comap (U.ι ≫ π) = B.comap U.ι := by
+    rw [comap_comp, hD, comap_mul, hE, mul_top]
+  have hRange : Set.range (U.ι ≫ π) = ({p} : Set X)ᶜ := by
+    rw [hπ, Scheme.Hom.comp_base, TopCat.coe_comp, Set.range_comp,
+      Set.range_eq_univ.mpr (ConcreteCategory.bijective_of_isIso _).surjective,
+      Set.image_univ, Scheme.Opens.range_ι, Closeds.coe_compl, coe_support_vanishingIdeal,
+      Closeds.coe_mk, hp.closure_eq]
+  have hlocal (q : D.subscheme) :
+      ∃ (W : Scheme.{u}) (j : W ⟶ D.subscheme), IsOpenImmersion j ∧ q ∈ Set.range j ∧
+        AtWorstNodalOfRelativeDimensionOne (j ≫ D.subschemeι ≫ s) := by
+    by_cases hq : D.subschemeι q = p
+    · exact (hnode q hq).exists_nodal_neighbourhood
+    · exact D.exists_nodal_neighbourhood_of_comap_eq (U.ι ≫ π) U.ι
+        (by simp only [Category.assoc]) hDE hB q (by
+          rw [hRange, Set.mem_compl_iff, Set.mem_singleton_iff]
+          exact hq)
+  choose W j hj hmem hnodal using hlocal
+  let (q : D.subscheme) : IsOpenImmersion (j q) := hj q
+  let cover : D.subscheme.OpenCover := Scheme.Cover.mkOfCovers D.subscheme W j (fun q ↦ ⟨q, hmem q⟩)
+  exact IsZariskiLocalAtSource.of_openCover (P := @AtWorstNodalOfRelativeDimensionOne)
+    cover hnodal
+
+end
 
 variable {k : Type u} [Field k] [PerfectField k] {X : Scheme.{u}} [X.Over (Spec (.of k))]
   [SmoothOfRelativeDimension 2 (X ↘ Spec (.of k))]
