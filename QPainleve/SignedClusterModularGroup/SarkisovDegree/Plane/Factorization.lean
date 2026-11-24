@@ -8,7 +8,7 @@ module
 public import QPainleve.Geometry.Toric.Fan.Logarithmic.Factorization
 public import QPainleve.SignedClusterModularGroup.SarkisovDegree.Plane.Step
 
-import QPainleve.Geometry.Toric.Fan.Logarithmic.QuadricFactorization
+import QPainleve.Geometry.Toric.Fan.Logarithmic.Quadric.Factorization
 
 /-!
 # Resolved Sarkisov paths for a plane degree decrease
