@@ -9,14 +9,12 @@ public import QPainleve.AlgebraicGeometry.Blowup.Tower.Ramification
 public import QPainleve.Geometry.Toric.Fan.Mutation.Boundary
 
 import Mathlib.Analysis.Complex.Polynomial.Basic
-import QPainleve.AlgebraicGeometry.Blowup.StrictTransform.Multiplicity
+import QPainleve.AlgebraicGeometry.Blowup.StrictTransform.Residual
 import QPainleve.AlgebraicGeometry.EffectiveCartierDivisor.Stalk
 import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
 import QPainleve.Geometry.Toric.Fan.Boundary.Node
-import QPainleve.Geometry.Toric.Fan.Mutation.Resolution
 import QPainleve.Geometry.Toric.Fan.Smooth
 import QPainleve.AlgebraicGeometry.CartierDivisor.Support
-import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.Subtraction
 import TauCeti.AlgebraicGeometry.Morphisms.Smooth.Regular
 import TauCeti.AlgebraicGeometry.Morphisms.Smooth.RelativeDimension
 import TauCeti.AlgebraicGeometry.RationalPoint.Basic
@@ -91,10 +89,10 @@ private theorem isClosedPointTower_binomialCenter :
   IsClosedPointTower.nil.snoc _ (isClosed_binomialCenter b ρ c)
     (a).ker_eq_ker_fromSpecResidueField
 
-private theorem binomialCenter_totalTransform_boundary (hΦ : Φ.IsRegular) (hc : Φ.IsComplete) :
+private theorem binomialCenter_boundary_transforms (hΦ : Φ.IsRegular) (hc : Φ.IsComplete) :
     let I := (a).ker
-    (D).comap I.blowupToBase =
-      (I.blowupMap (D).subschemeι).ker * (I.comap I.blowupToBase) := by
+    let S := (I.blowupMap (D).subschemeι).ker
+    S.IsEffectiveCartier ∧ (D).comap I.blowupToBase = S * (I.comap I.blowupToBase) := by
   intro I
   let p := (a) (IsLocalRing.closedPoint ℂ)
   have hp : IsClosed ({p} : Set X) := isClosed_binomialCenter b ρ c
@@ -104,11 +102,13 @@ private theorem binomialCenter_totalTransform_boundary (hΦ : Φ.IsRegular) (hc 
   have hSmooth : SmoothOfRelativeDimension 2 Φ.algebraicRealizationStructureMap :=
     (n₂) ▸ Φ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
   have : Smooth Φ.algebraicRealizationStructureMap := hSmooth.smooth
+  have : IsNoetherian X := isNoetherian_of_finiteType Φ.algebraicRealizationStructureMap
   have := isRegularLocalRing_stalk_of_smooth Φ.algebraicRealizationStructureMap p
   have hdim := ((smoothOfRelativeDimension_iff_ringKrullDim_stalk_eq
     Φ.algebraicRealizationStructureMap 2).mp hSmooth).2 p hp
   rw [hI]
   have hD := Φ.isEffectiveCartier_boundaryIdeal hΦ hc n₂
+  refine ⟨hD.strictTransform_pointBlowup hp hdim, ?_⟩
   simpa only [p, stalkOrder_boundary_binomialCenter b ρ c hΦ hc, ENat.toNat_one, pow_one] using
     hD.totalTransform_eq_strictTransform_mul_pow_closedPoint hp hdim
 
@@ -125,23 +125,23 @@ local notation "J" => Ray.mutationTargetCenterIdeal b ρ hOpp c
 local notation "e" => Ray.mutationBlowupIso b ρ hOpp c
 local notation "E" => Scheme.Hom.ker (ρ.mutationSourceBoundaryι b c)
 
-private theorem mutationBlowupIso_totalTransform_boundary
+private theorem mutationBlowupIso_boundary_transforms
     (hΦ : Φ.IsRegular) (hc : Φ.IsComplete) :
+    (E).IsEffectiveCartier ∧
     (D).comap (I).blowupToBase = E * ((I).comap (I).blowupToBase) ∧
     (D').comap ((e).hom ≫ (J).blowupToBase) =
       E * ((J).comap ((e).hom ≫ (J).blowupToBase)) := by
   have hΨ := (Φ.isRegular_mutationFan_iff b hv hp hOpp).mpr hΦ
   have hc' := (Φ.isComplete_mutationFan_iff b hv hp hOpp).mpr hc
-  have hs := binomialCenter_totalTransform_boundary b ρ c hΦ hc
+  obtain ⟨hE, hs⟩ := binomialCenter_boundary_transforms b ρ c hΦ hc
   let τ := Φ.mutationFanCenterRays b (fun _ : Unit ↦ ρ) () hOpp ()
-  have ht := binomialCenter_totalTransform_boundary b τ c⁻¹ hΨ hc'
+  have ht := (binomialCenter_boundary_transforms b τ c⁻¹ hΨ hc').2
+  rw [← ρ.mutationSourceCenterIdeal_eq b c] at hE hs
   rw [← ρ.mutationTargetCenterIdeal_eq b hOpp c] at ht
-  refine ⟨?_, ?_⟩
-  · rw [← ρ.mutationSourceCenterIdeal_eq b c] at hs
-    rw [Ray.ker_mutationSourceBoundaryι]
-    exact hs
-  · rw [comap_comp, ht, comap_mul, ρ.comap_strictBoundary_mutationBlowupIso b hOpp c hΦ,
-      ← comap_comp, Ray.ker_mutationSourceBoundaryι]
+  rw [Ray.ker_mutationSourceBoundaryι]
+  refine ⟨hE, hs, ?_⟩
+  rw [comap_comp, ht, comap_mul, ρ.comap_strictBoundary_mutationBlowupIso b hOpp c hΦ,
+    ← comap_comp]
 
 local notation "X'" => Fan.algebraicRealization Ψ
 
@@ -169,20 +169,10 @@ theorem Ray.mutationBlowupIso_pole_ideal (hΦ : Φ.IsRegular) (hc : Φ.IsComplet
   have hJ := isClosedPointTower_binomialCenter b τ c⁻¹
   rw [← ρ.mutationSourceCenterIdeal_eq b c] at hI
   rw [← ρ.mutationTargetCenterIdeal_eq b hOpp c] at hJ
-  obtain ⟨hs, ht⟩ := mutationBlowupIso_totalTransform_boundary b ρ c hOpp hΦ hc
+  obtain ⟨hE, hs, ht⟩ := mutationBlowupIso_boundary_transforms b ρ c hOpp hΦ hc
   have hIram := IsClosedPointTower.ramificationIdealSheafToBase_snoc ℂ hI
   have hJram := IsClosedPointTower.ramificationIdealSheafToBase_snoc ℂ hJ
   simp only [IsClosedPointTower.ramificationIdealSheafToBase_nil, comap_top, mul_top] at hIram hJram
-  let : Nonempty Φ.cones := ⟨ρ.toCone⟩
-  have := ρ.isModification_mutationSourceBlowupToBase b hOpp c
-  have := ρ.isIntegral_mutationSourceBlowup b hOpp c
-  have hC := (Φ.isEffectiveCartier_boundaryIdeal hΦ hc n₂).comap_of_isDominant (I).blowupToBase
-  have hexceptional := (I).isEffectiveCartier_comap_blowupToBase
-  have hle : (D).comap (I).blowupToBase ≤ (I).comap (I).blowupToBase := by
-    rw [hs]
-    exact fun _ ↦ Ideal.mul_le_right
-  have hE := hC.colon hexceptional.locallyPrincipal hle
-  rw [hs, hexceptional.mul_colon_cancel_right] at hE
   refine ⟨hI, hJ, hE, hs.trans ?_, ht.trans ?_⟩
   · rw [hIram]
   · rw [hJram, comap_comp]
