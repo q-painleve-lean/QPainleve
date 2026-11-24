@@ -26,6 +26,40 @@ public noncomputable section
 open AlgebraicGeometry CategoryTheory Module Multiplicative
 open QPainleve.BlowupTower TauCeti.AlgebraicGeometry TauCeti.LaurentRing LineBundleClass
 
+namespace TauCeti.Toric.Fan
+
+variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
+  {i : N →+ V} {Φ : Fan i} [h₀ : Nonempty Φ.cones] {n : ℕ}
+
+/-- Reordering the centers preserves the strict boundary and carries the total exceptional
+coordinates along the permutation, provided that coincident centers retain their order. -/
+theorem exists_iso_internalBlowupPicardMarking_reindex (b : Basis (Fin 2) ℤ N)
+    (s : Fin n → Φ.Ray) (c : Fin n → ℂˣ) (hΦ : Φ.IsRegular) (σ : Equiv.Perm (Fin n))
+    (h : ∀ a b, a < b → σ b < σ a → (s (σ a), c (σ a)) ≠ (s (σ b), c (σ b))) :
+    let A := internalBlowupTower b s c
+    let B := internalBlowupTower b (s ∘ σ) (c ∘ σ)
+    ∃ e : A.1 ≅ B.1,
+      e.hom ≫ B.2.toTower.toBase = A.2.toTower.toBase ∧
+      A.2.boundaryι ≫ e.hom = B.2.boundaryι ∧
+      ∀ (a : Additive (LineBundleClass Φ.algebraicRealization)) (x : Fin n → ℤ),
+        pullback e.hom (internalBlowupPicardMarking b (s ∘ σ) (c ∘ σ) hΦ (a, x ∘ σ)).toMul =
+          (internalBlowupPicardMarking b s c hΦ (a, x)).toMul := by
+  let J (j : Fin n) := (s j).internalCenter b (c j)
+  have hd (a b : Fin n) (hab : a < b) (hba : σ b < σ a) :
+      Disjoint ((J (σ a)).val.support : Set (Φ.boundaryIdeal h₀).subscheme)
+        ((J (σ b)).val.support : Set _) := by
+    simpa only [J, Scheme.IdealSheafData.map_id] using
+      (disjoint_support_map_internalCenter_iff _ (𝟙 _) _ _ _ _).mpr (h a b hab hba)
+  have hm := exists_iso_alongBoundary_reindex_of_disjoint_inversions
+    (i := (Φ.boundaryIdeal h₀).subschemeι) J σ hd
+  have hJ : J ∘ σ = (fun j ↦ ((s ∘ σ) j).internalCenter b ((c ∘ σ) j)) := rfl
+  dsimp only at hm
+  rw [hJ, ← internalBlowupTower_eq_alongBoundary b s c,
+    ← internalBlowupTower_eq_alongBoundary b (s ∘ σ) (c ∘ σ)] at hm
+  simpa only [internalBlowupPicardMarking_apply] using hm
+
+end TauCeti.Toric.Fan
+
 namespace TauCeti.Toric.FanEquiv
 
 variable {N N' V V' : Type} [AddCommGroup N] [AddCommGroup N']
@@ -56,19 +90,8 @@ theorem exists_iso_transport_internalBlowupPicardMarking
           (Fan.internalBlowupPicardMarking b s c hΦ
             (Additive.ofMul (pullback φ a.toMul), x ∘ σ.symm)).toMul := by
   let : Nonempty Ψ.cones := h₀.map e.coneEquiv
-  let J (j : Fin n) := (s j).internalCenter b (c j)
-  have hd (a b : Fin n) (hab : a < b) (hba : σ b < σ a) :
-      Disjoint ((J (σ a)).val.support : Set (Φ.boundaryIdeal h₀).subscheme)
-        ((J (σ b)).val.support : Set _) := by
-    simpa only [J, Scheme.IdealSheafData.map_id] using
-      (Fan.disjoint_support_map_internalCenter_iff _ (𝟙 _) _ _ _ _).mpr (h a b hab hba)
-  have hm := exists_iso_alongBoundary_reindex_of_disjoint_inversions
-    (i := (Φ.boundaryIdeal h₀).subschemeι) J σ hd
-  have hJ : J ∘ σ = (fun j ↦ ((s ∘ σ) j).internalCenter b ((c ∘ σ) j)) := rfl
-  dsimp only at hm
-  rw [hJ, ← Fan.internalBlowupTower_eq_alongBoundary b s c,
-    ← Fan.internalBlowupTower_eq_alongBoundary b (s ∘ σ) (c ∘ σ)] at hm
-  obtain ⟨f, hf, hfB, hmark⟩ := hm
+  obtain ⟨f, hf, hfB, hmark⟩ :=
+    Fan.exists_iso_internalBlowupPicardMarking_reindex b s c hΦ σ h
   obtain ⟨f', ⟨hf', hf'B⟩, -⟩ :=
     e.existsUnique_isLift_internalBlowupTower b b' hdet (s ∘ σ) (c ∘ σ) hΦ
   refine ⟨f ≪≫ f', ?_, ?_, ?_⟩
@@ -78,7 +101,8 @@ theorem exists_iso_transport_internalBlowupPicardMarking
     simp only [Iso.trans_hom, Fan.internalBlowupPicardMarking_apply]
     rw [← pullback_comp, hf'.pullback_picardHom]
     have hx : (x ∘ σ.symm) ∘ σ = x := by ext j; simp
-    simpa only [asIso_hom, hx] using hmark (Additive.ofMul (pullback φ a.toMul)) (x ∘ σ.symm)
+    simpa only [asIso_hom, hx, Fan.internalBlowupPicardMarking_apply] using
+      hmark (Additive.ofMul (pullback φ a.toMul)) (x ∘ σ.symm)
 
 /-- Pullback along the inverse of a reindexed toric lift, expressed in the two
 ordered Picard markings. The toric class follows the inverse fan equivalence and the
