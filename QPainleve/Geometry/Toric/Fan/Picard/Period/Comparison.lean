@@ -82,7 +82,6 @@ variable [Φ.algebraicRealization.IsProjectiveOver ℂ]
 local notation "a" => (Iso.inv p ≫ BlowupTower.toBase P)
 local notation "a'" => (Iso.inv q ≫ BlowupTower.toBase Q)
 
-local notation "ChargeKernel" => LinearMap.ker (rayChargeMap s)
 local notation "kD" =>
   picardBoundaryOrthogonalEquivChargeKernel hΦ dim s m hm hprim c (J[c]) (hJ[c]) hP p hp hDs
 local notation "kE" =>
@@ -90,39 +89,6 @@ local notation "kE" =>
 local notation "mark[" z "]" => picardMarking (U[z]) (hU[z]) fZ
 
 variable {f : X ⟶ Y}
-
-/-- If pullback preserves the marked Picard coordinates of the class of a charge
-relation, it gives the class of the same relation on the source. -/
-theorem pullback_picardBoundaryOrthogonalEquivChargeKernel_symm
-    (x : ChargeKernel)
-    (hmark : letI : SmoothOfRelativeDimension 2 fZ := smoothZ
-      let L := ((kE).symm x).val.toMul
-      (mark[c]).symm (Additive.ofMul (pullback a (pullback f L))) =
-        (mark[d]).symm (Additive.ofMul (pullback a' L))) :
-    pullback f ((kE).symm x).val.toMul = ((kD).symm x).val.toMul := by
-  let : SmoothOfRelativeDimension 2 fZ := smoothZ
-  let L := ((kE).symm x).val.toMul
-  obtain ⟨H, hH, hdeg⟩ := exists_picardBoundaryOrthogonalEquivChargeKernel_symm_marking
-    hΦ dim s m hm hprim c (J[c]) (hJ[c]) hP p hp hDs x
-  obtain ⟨G, hG, hdeg'⟩ := exists_picardBoundaryOrthogonalEquivChargeKernel_symm_marking
-    hΦ dim s m hm hprim d (J[d]) (hJ[d]) hQ q hq hEs x
-  have hGH : G = H := (hdeg G).mp ((hdeg' G).mpr rfl)
-  have hcoords : (mark[d]).symm (Additive.ofMul (pullback a' L)) =
-      (G, -(x : Fin n → ℤ)) := by
-    apply (mark[d]).injective
-    rw [LinearEquiv.apply_symm_apply, picardMarking_apply]
-    exact (congrArg Additive.ofMul hG).symm
-  have hclass : pullback a (pullback f L) = pullback a ((kD).symm x).val.toMul := by
-    have h := congrArg (fun z ↦ ((mark[c]) z).toMul) (hmark.trans hcoords)
-    simpa only [LinearEquiv.apply_symm_apply, toMul_ofMul, hGH, picardMarking_apply, hH] using h
-  have hinj : Function.Injective (pullback a) := by
-    intro L₁ L₂ h
-    simp only [← pullback_comp] at h
-    let : IsNoetherian X := isNoetherian_of_finiteType (X ↘ S)
-    apply hP.isClosedPointTower.injective_pullback_toBase (X ↘ S)
-    apply (pullbackEquiv p.symm).injective
-    simpa only [pullbackEquiv_apply, Iso.symm_hom] using h
-  exact hinj hclass
 
 variable [PrestableFamily (D.subscheme ↘ S)] [PrestableFamily (E.subscheme ↘ S)]
   (hD : D.IsEffectiveCartier) (hE : E.IsEffectiveCartier)
