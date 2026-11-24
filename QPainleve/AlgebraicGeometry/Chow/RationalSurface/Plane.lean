@@ -13,12 +13,11 @@ public import TauCeti.AlgebraicGeometry.LineBundle.GlobalGeneration.Basic
 import QPainleve.AlgebraicGeometry.Chow.PrimeDivisor
 import QPainleve.AlgebraicGeometry.Chow.RationalSurface.Effectivity
 import QPainleve.AlgebraicGeometry.EffectiveCartierDivisor.Effectivity
-import QPainleve.AlgebraicGeometry.EffectiveCartierDivisor.Twist
-import QPainleve.AlgebraicGeometry.IdealSheaf.Tensor.Restriction
 import QPainleve.AlgebraicGeometry.IntersectionNumber.Ample
-import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.ProjectiveLine.Cohomology
-import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.ProjectiveLine.GlobalGeneration
+import QPainleve.AlgebraicGeometry.LineBundle.GlobalGeneration
+import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.ProjectiveLine.LinearSystem
 import TauCeti.AlgebraicGeometry.LineBundle.BaseChange
+import TauCeti.AlgebraicGeometry.LineBundle.ProjectiveLine
 
 /-!
 # The plane linear system on a rational surface
@@ -106,70 +105,6 @@ private theorem intersectionNumber_dual_eq_one_of_iso_projectiveLine
     inv_mk]
   exact hsq
 
-include hRat in
-private theorem subsingleton_cohomology_one_tensor_ideal (hI : I.IsEffectiveCartier) :
-    Subsingleton (Cohomology ((O(hI)).obj ⊗ I.sheaf) 1) := by
-  have := X.subsingleton_cohomology_trivial_of_isRationalOver k (i := 1) Nat.one_pos
-  let e := whiskerRightIso (InvertibleSheaf.tensorTrivialLeftIsoSheaf (O(hI))) I.sheaf
-  let d := e.symm ≪≫ hI.tensorDualCancelIso (InvertibleSheaf.trivial X)
-  exact (cohomologyBaseLinearEquivOfIso k d 1).injective.subsingleton
-
-include hRat in
-private theorem isGloballyGenerated_dual_of_iso_projectiveLine
-    (hI : I.IsEffectiveCartier) (e : projectiveLine k ≅ I.subscheme)
-    (hdeg : 0 ≤ intersectionNumber k (e.hom ≫ I.subschemeι) (LineBundleClass.mk (O(hI)))) :
-    (O(hI)).IsGloballyGenerated := by
-  let L := O(hI)
-  let M := (InvertibleSheaf.pullback I.subschemeι).obj L
-  have hd : 0 ≤ ((InvertibleSheaf.pullback e.hom).obj M).eulerDegree k := by
-    rw [← eulerDegree_mk, ← pullback_mk, ← pullback_mk, pullback_comp,
-      ← intersectionNumber_def]
-    exact hdeg
-  have hM := M.isGloballyGenerated_of_nonneg_eulerDegree_projectiveLine e hd
-  have hlift := I.surjective_pullbackSectionsLE_of_subsingleton_cohomology_one L
-    (hI.subsingleton_cohomology_one_tensor_ideal (k := k))
-  refine InvertibleSheaf.isGloballyGenerated_iff.mpr fun x ↦ ?_
-  by_cases hx : x ∈ I.support
-  · obtain ⟨y, rfl⟩ := I.range_subschemeι.ge hx
-    obtain ⟨t, ht⟩ := InvertibleSheaf.isGloballyGenerated_iff.mp hM y
-    let a := eqToIso (InvertibleSheaf.pullback_obj_obj I.subschemeι L)
-    obtain ⟨s, hs⟩ := hlift (a.hom.app ⊤ t)
-    have ht' : y ∈ ((Scheme.Modules.pullback I.subschemeι).obj L.obj).nonvanishingLocus
-        (a.hom.app ⊤ t) := by
-      rwa [nonvanishingLocus_hom_app]
-    rw [← hs, nonvanishingLocus_pullbackSectionsLE, top_inf_eq] at ht'
-    exact ⟨s, I.subschemeι.mem_preimage.mp ht'⟩
-  · obtain ⟨s, hs⟩ := hI.exists_zeroIdeal_eq_dual
-    exact ⟨s, (L.mem_nonvanishingLocus_iff_notMem_support_zeroIdeal s x).mpr (hs.symm ▸ hx)⟩
-
-include hRat in
-private theorem finrank_globalSections_dual_eq_three_of_iso_projectiveLine
-    (hI : I.IsEffectiveCartier) (e : projectiveLine k ≅ I.subscheme)
-    (hdeg : intersectionNumber k (e.hom ≫ I.subschemeι) (LineBundleClass.mk (O(hI))) = 1)
-    (hA : (LineBundleClass.mk (O(hI))).IsAmple)
-    (hsq : B (LineBundleClass.mk (O(hI))) (LineBundleClass.mk (O(hI))) = 1)
-    (hcan : B (LineBundleClass.mk (O(hI))) K = -3) :
-    Module.finrank k Γ((O(hI)).obj, ⊤) = 3 := by
-  let L := O(hI)
-  have hIdeal : Subsingleton (Cohomology (L.obj ⊗ I.sheaf) 1) :=
-    hI.subsingleton_cohomology_one_tensor_ideal (k := k)
-  have hDivisor : Subsingleton (Cohomology (L.obj ⊗ I.pushforwardSubscheme) 1) :=
-    I.subsingleton_cohomology_one_tensor_pushforwardSubscheme_of_projectiveLine L e
-      (hdeg ▸ (by decide : (-1 : ℤ) ≤ 1))
-  have hmiddle : Subsingleton (Cohomology (L.obj ⊗ 𝟙_ X.Modules) 1) :=
-    subsingleton_cohomology_X₂ (I.shortExact_tensor_toPushforwardSubscheme L.obj) 1
-      hIdeal hDivisor
-  have : Subsingleton (Cohomology L.obj 1) :=
-    (cohomologyBaseLinearEquivOfIso k (ρ_ L.obj).symm 1).injective.subsingleton
-  have hpos : 0 < B (LineBundleClass.mk L) (LineBundleClass.mk L) := hsq ▸ zero_lt_one
-  have := X.subsingleton_cohomology_two_of_self_pos_of_intersection_pos k L hA hpos hpos
-  have h₁ : Module.finrank k (Cohomology L.obj 1) = 0 := Module.finrank_zero_of_subsingleton
-  have h₂ : Module.finrank k (Cohomology L.obj 2) = 0 := Module.finrank_zero_of_subsingleton
-  have hχ := eulerCharBelow_eq_riemannRoch_of_isRationalOver k (LineBundleClass.mk L)
-  rw [eulerCharBelow_mk, Scheme.Modules.eulerCharBelow_succ, Scheme.Modules.eulerCharBelow_two,
-    finrank_cohomology_zero_eq_finrank_globalSections, h₁, h₂, hsq, hcan] at hχ
-  exact_mod_cast (show (Module.finrank k Γ(L.obj, ⊤) : ℤ) = 3 by omega)
-
 end AlgebraicGeometry.Scheme.IdealSheafData.IsEffectiveCartier
 
 namespace TauCeti.AlgebraicGeometry.InvertibleSheaf
@@ -200,13 +135,15 @@ theorem isGloballyGenerated_and_finrank_globalSections_eq_three_of_self_eq_one
     let := he
     exact (inferInstance : e.inv.IsOver S)
   have hdeg := hI.intersectionNumber_dual_eq_one_of_iso_projectiveLine e.symm (hclass'.symm ▸ hsq)
-  refine ⟨(isGloballyGenerated_iff_of_iso a).mp
-    (hI.isGloballyGenerated_dual_of_iso_projectiveLine e.symm (hdeg ▸ zero_le_one)), ?_⟩
+  have h₁ := X.subsingleton_cohomology_trivial_of_isRationalOver k (i := 1) Nat.one_pos
+  obtain ⟨hglob, hdim⟩ :=
+    hI.isGloballyGenerated_and_finrank_globalSections_dual_of_projectiveLine e.symm h₁
+      (d := 1) hdeg
+  refine ⟨(isGloballyGenerated_iff_of_iso a).mp hglob, ?_⟩
   rw [← finrank_cohomology_zero_eq_finrank_globalSections,
     ← (cohomologyBaseLinearEquivOfIso k a 0).finrank_eq,
     finrank_cohomology_zero_eq_finrank_globalSections]
-  exact hI.finrank_globalSections_dual_eq_three_of_iso_projectiveLine e.symm hdeg
-    (hclass'.symm ▸ hA) (hclass'.symm ▸ hsq) (hclass'.symm ▸ hcan)
+  exact hdim
 
 end TauCeti.AlgebraicGeometry.InvertibleSheaf
 

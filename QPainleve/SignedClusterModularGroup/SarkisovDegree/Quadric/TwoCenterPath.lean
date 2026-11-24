@@ -131,7 +131,8 @@ Its intermediate projections are the two successive mutations at the specified
 centers, and its composite ends with the ruling exchange. The terminal projection
 is identified with a new quadric tower carrying the transported map to the plane
 and pole ideal. The two selected orders are measured against the fiber degree
-in the exchanged ruling. -/
+in the exchanged ruling. The Sarkisov degree decreases for any total base
+orders. -/
 theorem exists_sarkisov_path_decrease_of_quadric_two_smooth_centers
     [X[Φ].IsProjectiveOver ℂ] {n : ℕ} {T : BlowupTower X[Φ] (n + 2) Y}
     (hT : IsClosedPointTower X[Φ] T) (g : Y ⟶ P) (hg : g ≫ fP = T.toBase ≫ f[Φ])
@@ -176,8 +177,8 @@ theorem exists_sarkisov_path_decrease_of_quadric_two_smooth_centers
       g' ≫ fP = U.toBase ≫ f[Ω] ∧ Scheme.BirationalOver g' (𝟙 P) ∧
       B[Ω,hcΩ].comap U.toBase = D.comap e.inv * hU.ramificationIdealSheafToBase ℂ ∧
       0 < β' ∧
-      hirzebruchSarkisovBidegree β'.toNat (∑ k, -y.2 k).toNat <
-        hirzebruchSarkisovBidegree β.toNat (∑ k, orders k).toNat := by
+      ∀ M' M, hirzebruchSarkisovBidegree β'.toNat M' <
+        hirzebruchSarkisovBidegree β.toNat M := by
   intro hcones₀ hcones₁ hcones₂ hdim₀ hdim₂ hY hOver hdimY hSmooth hIntegral hMod
     x β orders hpole hjhigh hlhigh hsmall
   let := hcones₀
