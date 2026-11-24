@@ -54,22 +54,6 @@ local notation "P[" W "]" => MonoidHom.ker (LineBundleClass.pullbackHom ν[W])
 local notation "F[" W "]" => Scheme.branchSchemeToBlowup ℂ W
 local notation "nodes[" W "]" => IdealSheafData.subscheme (Scheme.singularLocus ℂ W)
 
-/-- The toric boundary projection is over any base for which the presentation
-identification commutes with the two projections to that base. -/
-theorem isOver_toricBoundaryToBase {X Y Z : Scheme} [X.Over Z]
-    [Φ.algebraicRealization.Over Z]
-    {D : X.IdealSheafData} {d : ℕ} {T : QPainleve.BlowupTower X d Y}
-    (J : Fin n → {I : (C).IdealSheafData // I.IsEffectiveCartier})
-    (e : Y ≅ (alongBoundary (subschemeι Dtor) J).1)
-    (he : e.inv ≫ T.toBase ≫ (X ↘ Z) =
-      (alongBoundary (subschemeι Dtor) J).2.toTower.toBase ≫ (Φ.algebraicRealization ↘ Z))
-    (hD : ((D.comap T.toBase).comap e.inv).support =
-      (alongBoundary (subschemeι Dtor) J).2.boundaryι.ker.support) :
-    (toricBoundaryToBase J e hD).IsOver Z := by
-  constructor
-  rw [D.over_eq_subschemeι_comp, toricBoundaryToBase_comp_subschemeι_assoc, he,
-    WithBoundary.boundaryι_toBase_assoc, ← (Dtor).over_eq_subschemeι_comp]
-
 variable [Φ.algebraicRealization.IsProjectiveOver ℂ]
 
 section Presentation

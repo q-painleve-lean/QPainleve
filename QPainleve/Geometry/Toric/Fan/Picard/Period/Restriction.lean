@@ -33,7 +33,6 @@ variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {Φ : Fan i} [Nonempty Φ.cones] {n : ℕ}
 
 local notation "Dtor" => Φ.boundaryIdeal inferInstance
-local notation "Z" => Φ.algebraicRealization
 local notation "Pic(" S ")" => Additive (LineBundleClass S)
 
 variable {X Y : Scheme} {D : X.IdealSheafData} {d : ℕ} {T : QPainleve.BlowupTower X d Y}
@@ -69,6 +68,24 @@ def toricBoundaryToBase : (Dtor).subscheme ⟶ D.subscheme :=
 theorem toricBoundaryToBase_comp_subschemeι :
     toricBoundaryToBase J e hD ≫ D.subschemeι = boundaryι ≫ e.inv ≫ T.toBase :=
   IsClosedImmersion.lift_fac _ _ _
+
+/-- The toric boundary projection is over any base for which the presentation
+identification commutes with the two projections to that base. -/
+theorem isOver_toricBoundaryToBase {X Y Z : Scheme} [X.Over Z]
+    [Φ.algebraicRealization.Over Z]
+    {D : X.IdealSheafData} {d : ℕ} {T : QPainleve.BlowupTower X d Y}
+    (J : Fin n → {I : (Dtor).subscheme.IdealSheafData // I.IsEffectiveCartier})
+    (e : Y ≅ (alongBoundary (subschemeι Dtor) J).1)
+    (he : e.inv ≫ T.toBase ≫ (X ↘ Z) =
+      (alongBoundary (subschemeι Dtor) J).2.toTower.toBase ≫ (Φ.algebraicRealization ↘ Z))
+    (hD : ((D.comap T.toBase).comap e.inv).support =
+      (alongBoundary (subschemeι Dtor) J).2.boundaryι.ker.support) :
+    (toricBoundaryToBase J e hD).IsOver Z := by
+  constructor
+  rw [D.over_eq_subschemeι_comp, toricBoundaryToBase_comp_subschemeι_assoc, he,
+    WithBoundary.boundaryι_toBase_assoc, ← (Dtor).over_eq_subschemeι_comp]
+
+local notation "Z" => Φ.algebraicRealization
 
 variable [Φ.algebraicRealization.IsProjectiveOver ℂ]
   (hΦ : Φ.IsRegular) (hdim : Module.finrank ℤ N = 2)
