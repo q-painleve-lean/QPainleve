@@ -7,6 +7,7 @@ module
 
 public import QPainleve.Geometry.Toric.Fan.ProjectiveSpace.Boundary
 public import QPainleve.Geometry.Toric.Fan.StarSubdivision.Boundary
+public import QPainleve.Geometry.Toric.Fan.StarSubdivision.Factorization
 public import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.ProjectiveOver
 
 import QPainleve.AlgebraicGeometry.Blowup.Isomorphism
@@ -104,7 +105,8 @@ local notation "triangle" =>
 plane at its vertex `[1 : 0 : 0]`. The projection is the toric contraction followed
 by the plane comparison. The pullback of the vertex ideal is the boundary
 ideal of the negative section, and the reduced pullback of the coordinate
-triangle is the toric boundary of the source. -/
+triangle is the toric boundary of the source. The contraction reverses one
+two-ray star subdivision. -/
 theorem exists_iso_blowup_projectivePlane_of_hirzebruchOne
     (b : Basis (Fin 2) ℤ N) (hΦ : Φ.IsRegular) (hc : Φ.IsComplete)
     (hrays : Set.range (Fan.Ray.primitiveGenerator (Phi := Φ)) =
@@ -118,7 +120,7 @@ theorem exists_iso_blowup_projectivePlane_of_hirzebruchOne
         h.toFanHom.algebraicMap ≫ (projectivePlaneIso d Φ.lattice).hom ∧
       (vertex[d]).ker.comap (e.hom ≫ (vertex[d]).ker.blowupToBase) = Φ.rayBoundaryIdeal hΦ r ∧
       ((triangle).comap (e.hom ≫ (vertex[d]).ker.blowupToBase)).radical =
-        Φ.boundaryIdeal hc.nonempty_cones := by
+        Φ.boundaryIdeal hc.nonempty_cones ∧ (plane[d]).IsTwoRayStarSubdivision Φ := by
   obtain ⟨d, hσ, hd₀, hd₁, heq, hnew⟩ :=
     exists_eq_starSubdivision_projectivePlane_of_hirzebruchOne b hΦ hc hrays
   -- Keep the lattice frame of the plane fixed while replacing the source fan.
@@ -138,7 +140,7 @@ theorem exists_iso_blowup_projectivePlane_of_hirzebruchOne
   let e := f ≪≫ p.ker.blowupIso g hcenter
   have hproj : e.hom ≫ p.ker.blowupToBase = hstar.toFanHom.algebraicMap ≫ g.hom := by
     rw [Iso.trans_hom, Category.assoc, blowupIso_hom_blowupToBase, ← Category.assoc, hf]
-  refine ⟨d, hstar, u, e, hd₀, hd₁, hnew, ?_, ?_, hproj, ?_, ?_⟩
+  refine ⟨d, hstar, u, e, hd₀, hd₁, hnew, ?_, ?_, hproj, ?_, ?_, .along hΨ σ hσ⟩
   · simp only [Category.assoc, projectivePlaneIso_hom_toSpecCoeff,
       distinguishedPointHom_comp_algebraicRealizationStructureMap]
   · intro j x
