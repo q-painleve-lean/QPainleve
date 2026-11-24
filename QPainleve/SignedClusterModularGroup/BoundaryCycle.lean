@@ -55,6 +55,36 @@ private theorem sum_sub_prev {A : Type*} [AddCommGroup A] (a : ZMod n → A) :
     Equiv.sum_comp (Equiv.subRight (1 : ZMod n)) a
   rw [Finset.sum_sub_distrib, h, sub_self]
 
+section IntegralGram
+
+variable {L : Type*} [AddCommGroup L] [Module ℤ L]
+
+omit [NeZero n] in
+/-- The diagonal of the cycle intersection matrix is minus two for cycles of
+length at least two. -/
+theorem diagonal_eq_neg_two_of_cycle_gram (B : LinearMap.BilinForm ℤ L) (D : ZMod n → L)
+    (hgram : ∀ i j : ZMod n, B (D i) (D j) = (-2 : ℤ) * (if i = j then 1 else 0) +
+      (if j = i + 1 then 1 else 0) + (if j = i - 1 then 1 else 0))
+    (hn : 2 ≤ n) (i : ZMod n) : B (D i) (D i) = -2 := by
+  let : Fact (1 < n) := ⟨hn⟩
+  rw [hgram]
+  simp [eq_sub_iff_add_eq]
+
+omit [NeZero n] in
+/-- The components of a cycle intersection matrix of length at least two are distinct. -/
+theorem injective_of_cycle_gram (B : LinearMap.BilinForm ℤ L) (D : ZMod n → L)
+    (hgram : ∀ i j : ZMod n, B (D i) (D j) = (-2 : ℤ) * (if i = j then 1 else 0) +
+      (if j = i + 1 then 1 else 0) + (if j = i - 1 then 1 else 0))
+    (hn : 2 ≤ n) : Function.Injective D := by
+  intro i j h
+  by_contra hij
+  have he := congrArg (B (D i)) h
+  rw [diagonal_eq_neg_two_of_cycle_gram B D hgram hn, hgram i j] at he
+  simp only [ite_eq_right hij, mul_zero, zero_add] at he
+  split at he <;> split at he <;> omega
+
+end IntegralGram
+
 section Gram
 
 variable {R V : Type*} [CommRing R] [AddCommGroup V] [Module R V]

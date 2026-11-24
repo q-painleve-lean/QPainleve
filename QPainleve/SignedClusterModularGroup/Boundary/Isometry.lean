@@ -9,6 +9,9 @@ public import Mathlib.GroupTheory.GroupExtension.Basic
 public import QPainleve.SignedClusterModularGroup.BoundaryReflection
 public import TauCeti.LinearAlgebra.BilinearForm.Isometry
 
+import QPainleve.Combinatorics.SimpleGraph.CycleGraph
+import TauCeti.Data.ZMod.Two
+
 /-!
 # Signed boundary isometries
 
@@ -77,6 +80,21 @@ def toIsometry : signedBoundaryIsometryGroup B D →* B.isometryGroup :=
 @[simp]
 theorem toIsometry_apply (p : signedBoundaryIsometryGroup B D) :
     toIsometry B D p = p.val.1 := (rfl)
+
+/-- A signed boundary isometry permutes the indexed boundary classes. -/
+theorem exists_indexPerm (g : signedBoundaryIsometryGroup B D) :
+    ∃ p : Equiv.Perm (ZMod n), ∀ i, (toIsometry B D g).val (D i) = D (p i) := by
+  obtain ⟨k, hk⟩ := (mem_signedBoundaryIsometryGroup_iff B D).mp g.property
+  refine ⟨(MulAction.toPerm g.val.2).trans (Equiv.addRight k), fun i ↦ ?_⟩
+  simpa only [toIsometry_apply, Equiv.trans_apply, MulAction.toPerm_apply, Equiv.coe_addRight]
+    using hk i
+
+/-- The unsigned action of a signed boundary isometry fixes the total boundary class. -/
+theorem toIsometry_apply_sum [NeZero n] (g : signedBoundaryIsometryGroup B D) :
+    (toIsometry B D g).val (∑ i, D i) = ∑ i, D i := by
+  obtain ⟨p, hp⟩ := exists_indexPerm B D g
+  rw [map_sum]
+  simpa only [hp] using Equiv.sum_comp p D
 
 /-- Projection to the sign of the boundary action. -/
 def sign : signedBoundaryIsometryGroup B D →* ℤˣ :=
@@ -306,3 +324,42 @@ theorem orderOf_centralSign [NeZero n] (hn : n ≤ 2) : orderOf (centralSign B D
 
 end SignedBoundaryIsometryGroup
 end QPainleve
+
+namespace QPainleve.BoundaryCycle
+
+variable {L : Type*} [AddCommGroup L] [Module ℤ L] {n : ℕ}
+
+/-- A permutation preserving the cycle intersection matrix is a signed shift.
+For two vertices the sign can always be taken to be positive. -/
+theorem exists_signedShift_of_preserves_cycle_gram [NeZero n]
+    (B : LinearMap.BilinForm ℤ L) (D : ZMod n → L)
+    (hgram : ∀ i j : ZMod n, B (D i) (D j) = (-2 : ℤ) * (if i = j then 1 else 0) +
+      (if j = i + 1 then 1 else 0) + (if j = i - 1 then 1 else 0))
+    (σ : Equiv.Perm (ZMod n)) (hσ : ∀ i j, B (D (σ i)) (D (σ j)) = B (D i) (D j))
+    (hn : 2 ≤ n) :
+    ∃ (η : ℤˣ) (a : ZMod n), ∀ j, σ j = η • j + a := by
+  by_cases hlarge : 3 ≤ n
+  · let : Fact (1 < n) := ⟨hn⟩
+    have hadj (i : ZMod n) : σ (i + 1) = σ i + 1 ∨ σ (i + 1) = σ i - 1 := by
+      by_contra! h
+      have hi : i ≠ i + 1 := by simp
+      have hpair := hσ i (i + 1)
+      rw [hgram (σ i) (σ (i + 1)), hgram i (i + 1)] at hpair
+      simp [σ.injective.ne hi, h.1, h.2, hi] at hpair
+      split at hpair <;> omega
+    obtain ⟨d, hd, _⟩ := σ.existsUnique_dihedral_of_map_successors hlarge hadj
+    cases d with
+    | r a => exact ⟨1, a, fun j ↦ by simpa using (Equiv.congr_fun hd j).symm⟩
+    | sr a =>
+      refine ⟨-1, -a, fun j ↦ ?_⟩
+      simpa [Units.smul_def, sub_eq_add_neg] using (Equiv.congr_fun hd j).symm
+  · obtain rfl : n = 2 := by omega
+    refine ⟨1, σ 0, fun j ↦ ?_⟩
+    rcases j.eq_zero_or_eq_one with rfl | rfl
+    · simp
+    · have hne := σ.injective.ne (one_ne_zero : (1 : ZMod 2) ≠ 0)
+      rcases (σ 0).eq_zero_or_eq_one with h₀ | h₀ <;>
+        rcases (σ 1).eq_zero_or_eq_one with h₁ | h₁ <;>
+        first | exact (hne (h₁.trans h₀.symm)).elim | rw [h₁, h₀, one_smul]; decide
+
+end QPainleve.BoundaryCycle
