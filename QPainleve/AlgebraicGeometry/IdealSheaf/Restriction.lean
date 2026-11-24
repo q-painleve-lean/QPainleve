@@ -8,6 +8,7 @@ module
 public import TauCeti.AlgebraicGeometry.IdealSheaf.BaseChange
 public import TauCeti.AlgebraicGeometry.Morphisms.SchemeTheoreticallyDominant
 
+import QPainleve.AlgebraicGeometry.IdealSheaf.BaseChange
 import TauCeti.AlgebraicGeometry.IdealSheaf.Comap
 import TauCeti.AlgebraicGeometry.IdealSheaf.VanishingIdeal
 
@@ -19,7 +20,7 @@ restriction to an open. Restricting a closed immersion to an open whose inverse
 image is schematically dense leaves its scheme-theoretic image unchanged. Taking a reduced
 closed subscheme commutes with open restriction.
 
-An ambient isomorphism also restricts to the closed subschemes it identifies.
+Equivariant morphisms preserve invariance under reduced inverse image.
 -/
 
 public section
@@ -86,19 +87,6 @@ theorem radical_comap_of_isOpenImmersion {X Y : Scheme.{u}}
     ← vanishingIdeal_support (I := D.comap f), support_comap]
   rfl
 
-/-- An isomorphism of schemes restricts to an isomorphism of closed subschemes
-when their defining ideals correspond under pullback. -/
-theorem exists_subschemeIso_of_comap_eq {X Y : Scheme.{u}} (D : Y.IdealSheafData)
-    (e : X ≅ Y) {E : X.IdealSheafData} (hD : D.comap e.hom = E) :
-    ∃ d : E.subscheme ≅ D.subscheme, d.hom ≫ D.subschemeι = E.subschemeι ≫ e.hom := by
-  let d := E.subschemeMap D e.hom (le_map_iff_comap_le.mpr hD.le)
-  have hd : d ≫ D.subschemeι = E.subschemeι ≫ e.hom := subschemeMap_subschemeι _ _ _ _
-  have hpull : IsPullback E.subschemeι d e.hom D.subschemeι :=
-    isPullback_of_isClosedImmersion _ _ _ _ hd.symm
-      (by simpa only [ker_subschemeι] using hD)
-  have : IsIso d := hpull.isIso_snd_of_isIso
-  exact ⟨asIso d, hd⟩
-
 /-- The reduced inverse image of an invariant closed subscheme under an equivariant
 morphism is invariant under the source automorphism. -/
 theorem exists_radicalComapSubschemeIso {X Y : Scheme.{u}}
@@ -115,6 +103,6 @@ theorem exists_radicalComapSubschemeIso {X Y : Scheme.{u}}
   have hR : R.comap g.hom = R := by
     dsimp only [R]
     rw [← radical_comap_of_isOpenImmersion, ← comap_comp, hf, comap_comp, hD]
-  exact R.exists_subschemeIso_of_comap_eq g hR
+  exact R.exists_iso_of_comap_eq_ker g R.subschemeι (by simpa only [ker_subschemeι] using hR)
 
 end AlgebraicGeometry.Scheme.IdealSheafData

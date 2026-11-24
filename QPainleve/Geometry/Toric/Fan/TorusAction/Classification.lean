@@ -12,6 +12,7 @@ public import QPainleve.Geometry.Toric.Fan.TorusAction.NodalDescent
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Nodal.Automorphism
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Nodal.BranchDescent
 import QPainleve.AlgebraicGeometry.EffectiveCartierDivisor.Component
+import QPainleve.AlgebraicGeometry.IdealSheaf.BaseChange
 import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
 import QPainleve.AlgebraicGeometry.IdealSheaf.Restriction
 import QPainleve.Geometry.Toric.Fan.Boundary.Prestable
@@ -159,7 +160,8 @@ theorem toricPresentationCharacterHom_range_eq_picardNodalBoundaryAut :
     have hred : IsReduced D.subscheme := hN.isReduced
     have hD := hCartier.comap_radical_eq_of_fixes_components _ hfix
     rw [D.isReduced_subscheme_iff_radical_eq.mp hred] at hD
-    obtain ⟨d, hd⟩ := D.exists_subschemeIso_of_comap_eq _ hD
+    obtain ⟨d, hd⟩ := D.exists_iso_of_comap_eq_ker _ D.subschemeι
+      (by simpa only [ker_subschemeι] using hD)
     exact ⟨hover, hPic, hfix, d, hd,
       toricPresentationCharacterHom_fixes_branches b s c hΦ hc e he hB hCartier hN hT z hover d hd⟩
   · rintro ⟨hover, hPic, hfix, d, hd, hb⟩
