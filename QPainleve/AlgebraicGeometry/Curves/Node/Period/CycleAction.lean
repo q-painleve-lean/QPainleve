@@ -55,3 +55,29 @@ theorem nodalPicardCycleMulEquiv_pullback_boundaryCycleAction
       (by simpa only [hη, ite_true] using horder) a
 
 end CategoryTheory.Iso
+
+namespace AlgebraicGeometry.Scheme.NodalCycleNumbering
+
+variable {k : Type u} [Field k] [IsAlgClosed k] {X : Scheme.{u}}
+  [X.Over (Spec (.of k))] [PrestableFamily (X ↘ Spec (.of k))]
+  {ι : Type v} {p : ι → (X ↘ Spec (.of k)).smoothLocus} {n : ℕ} [NeZero n]
+
+/-- Reversing a numbered boundary with its initial component fixed inverts its Picard period. -/
+@[simp]
+theorem nodalPicardCycleMulEquiv_reverse (C : NodalCycleNumbering p n)
+    (a : MonoidHom.ker (LineBundleClass.pullbackHom (X.singularLocus k).blowupToBase)) :
+    Scheme.nodalPicardCycleMulEquiv C.reverse.endpoint_eq a =
+      (Scheme.nodalPicardCycleMulEquiv C.endpoint_eq a)⁻¹ := by
+  have : (Iso.refl X).hom.IsOver (Spec (.of k)) := by
+    rw [Iso.refl_hom]
+    infer_instance
+  have h := (Iso.refl X).nodalPicardCycleMulEquiv_pullback_boundaryCycleAction C C.reverse a
+  simp only [Iso.refl_hom, LineBundleClass.pullback_id, Iso.boundaryCycleAction_refl_reverse,
+    cycleOrientationSign_sr, Units.val_neg, Units.val_one, zpow_neg_one] at h
+  have he : (⟨a.val, _⟩ :
+      MonoidHom.ker (LineBundleClass.pullbackHom (X.singularLocus k).blowupToBase)) = a :=
+    Subtype.ext rfl
+  rw [he] at h
+  simpa only [inv_inv] using (congrArg Inv.inv h).symm
+
+end AlgebraicGeometry.Scheme.NodalCycleNumbering

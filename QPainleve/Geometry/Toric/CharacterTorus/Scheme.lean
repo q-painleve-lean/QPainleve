@@ -5,6 +5,7 @@ Authors: The QPainleve contributors
 -/
 module
 
+public import Mathlib.AlgebraicGeometry.Morphisms.Smooth
 public import Mathlib.FieldTheory.IsSepClosed
 public import QPainleve.Algebra.AlgebraicGroup.DiagonalizableGroup.Scheme.Basic
 public import QPainleve.AlgebraicGeometry.RationalMap.FunctionField
@@ -80,22 +81,25 @@ theorem pointsEquiv_symm_apply_val (c : Multiplicative B →* kˣ) :
         ((DiagonalizableGroup.point c).comp
           (AddMonoidAlgebra.toMultiplicativeAlgEquiv k k B).toAlgHom).toRingHom) := (rfl)
 
+/-- The character scheme on a finite tuple of integer exponents is smooth over the base. -/
+instance smooth_structureMap_pi_int (ι : Type u) [Finite ι] :
+    Smooth (structureMap k (ι → ℤ)) := by
+  rw [structureMap, Spec.algebraMap, HasRingHomProperty.Spec_iff (P := @Smooth),
+    CommRingCat.hom_ofHom, RingHom.smooth_algebraMap]
+  let e := (Finsupp.linearEquivFunOnFinite ℤ ℤ ι).toAddEquiv
+  let := AddMonoidAlgebra.isStandardSmoothOfRelativeDimension_finsupp_int k ι
+  let := Algebra.IsStandardSmoothOfRelativeDimension.of_algEquiv (Nat.card ι)
+    (AddMonoidAlgebra.domCongr k k e)
+  let : Algebra.IsStandardSmooth k (AddMonoidAlgebra k (ι → ℤ)) :=
+    Algebra.IsStandardSmoothOfRelativeDimension.isStandardSmooth (n := Nat.card ι)
+  infer_instance
+
 /-- Over a separably closed field, the characters of the finite center lattice give a
 Zariski-dense family of points. -/
 theorem denseRange_centerPoints (K : Type u) [Field K] [IsSepClosed K] (ι : Type u)
     [Finite ι] :
     DenseRange (fun c : Multiplicative (ι → ℤ) →* Kˣ ↦
       ((pointsEquiv K (ι → ℤ)).symm c).val default) := by
-  have hs : Smooth (structureMap K (ι → ℤ)) := by
-    rw [structureMap, Spec.algebraMap, HasRingHomProperty.Spec_iff (P := @Smooth),
-      CommRingCat.hom_ofHom, RingHom.smooth_algebraMap]
-    let e := (Finsupp.linearEquivFunOnFinite ℤ ℤ ι).toAddEquiv
-    let := AddMonoidAlgebra.isStandardSmoothOfRelativeDimension_finsupp_int K ι
-    let := Algebra.IsStandardSmoothOfRelativeDimension.of_algEquiv (Nat.card ι)
-      (AddMonoidAlgebra.domCongr K K e)
-    let : Algebra.IsStandardSmooth K (AddMonoidAlgebra K (ι → ℤ)) :=
-      Algebra.IsStandardSmoothOfRelativeDimension.isStandardSmooth (n := Nat.card ι)
-    exact inferInstanceAs (Algebra.Smooth K (AddMonoidAlgebra K (ι → ℤ)))
   let f (c : Points K (ι → ℤ)) := c.val default
   have hf : DenseRange f := (structureMap K (ι → ℤ)).denseRange_rationalSections
   have hr : Set.range (f ∘ (pointsEquiv K (ι → ℤ)).symm) = Set.range f :=

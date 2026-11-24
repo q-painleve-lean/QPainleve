@@ -88,6 +88,31 @@ theorem branchSchemeToBlowup_branch_mem_component_iff (j : ZMod n) (b : Fin 2)
   simpa [branch, component, C.endpoint_eq] using
     (X.dualGraphVertexEquiv_endpoint_eq_iff p (C.edge j) (C.order (C.edge j) b) a).symm
 
+/-- Reverse the orientation of the numbering, keeping component zero fixed. Node `j`
+becomes the old node `-1 - j` with its two branches exchanged. -/
+def reverse : NodalCycleNumbering p n where
+  vertex := (DihedralGroup.cycleVertexPerm (.sr 0)).trans C.vertex
+  edge := (Equiv.subLeft (-1 : ZMod n)).trans C.edge
+  order q := Fin.revPerm.trans (C.order q)
+  endpoint_eq j b := by
+    have h := DihedralGroup.cycle_endpoint_cycleBranchPerm (.sr (0 : ZMod n)) j b
+    simp only [DihedralGroup.cycleBranchPerm_sr_apply, neg_zero, zero_sub] at h
+    simp only [Equiv.trans_apply, Equiv.subLeft_apply, Fin.revPerm_apply, C.endpoint_eq, h]
+
+@[simp]
+theorem reverse_component (j : ZMod n) : C.reverse.component j = C.component (-j) := by
+  simp only [component, reverse, Equiv.trans_apply, DihedralGroup.cycleVertexPerm_sr_apply,
+    neg_zero, zero_sub]
+
+@[simp]
+theorem reverse_node (j : ZMod n) : C.reverse.node j = C.node (-1 - j) :=
+  (rfl)
+
+@[simp]
+theorem reverse_branch (j : ZMod n) (b : Fin 2) :
+    C.reverse.branch (j, b) = C.branch (-1 - j, b.rev) :=
+  (rfl)
+
 end NodalCycleNumbering
 
 end AlgebraicGeometry.Scheme
@@ -340,6 +365,16 @@ theorem boundaryCycleAction_refl :
   refine (existsUnique_boundaryCycleAction (Iso.refl X) C (D := C)).unique
     (branch_boundaryCycleAction _ _ _) fun j b ↦ ?_
   simp
+
+/-- The identity of the underlying curve induces the reflection fixing component zero
+when its target is numbered in the opposite orientation. -/
+@[simp]
+theorem boundaryCycleAction_refl_reverse :
+    (Iso.refl X).boundaryCycleAction C C.reverse = .sr 0 := by
+  refine (existsUnique_boundaryCycleAction (Iso.refl X) C (D := C.reverse)).unique
+    (branch_boundaryCycleAction _ _ _) fun j b ↦ ?_
+  have hj : -1 - (-1 - j) = j := by abel
+  simp [hj]
 
 variable [Z.Over (Spec (.of k))] [PrestableFamily (Z ↘ Spec (.of k))]
   {ι'' : Type z} {r : ι'' → (Z ↘ Spec (.of k)).smoothLocus}
