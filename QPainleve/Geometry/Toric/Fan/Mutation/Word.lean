@@ -24,14 +24,18 @@ import QPainleve.Geometry.Toric.Fan.Subdivision.FunctionField
 
 Insert the opposite pivot ray by a regular subdivision before each elementary transformation.
 The original rays survive subdivision, and the subsequent mutation sends them by its integral
-shear. In this way a word transports the original boundary rays into a terminal fan. The
-orders of the terminal charge characters at these rays are the entries of the tropical word.
+shear. Inversion retains the rays and reverses the oriented basis. A signed word thus transports
+the original boundary rays into a terminal fan, where the orders of the terminal charge characters
+at these rays are the entries of the tropical word.
 At fixed centers, the word is defined at the generic point of the evaluated surface.
 The same function-field pullback compares the independent X rational map with the
 terminal evaluation.
 
 The boundary calculation for an elementary transformation follows Gross, Hacking and Keel,
 [*Birational geometry of cluster algebras*, §3.1](https://arxiv.org/html/1309.2573v2#S3.SS1).
+The signed inversion is from Bershtein, Gavrylenko and Marshakov,
+[*Cluster integrable systems, q-Painlevé equations and their quantization*, §3.1]
+(https://arxiv.org/abs/1711.02063).
 -/
 
 public noncomputable section
@@ -50,6 +54,7 @@ local notation "trop" => Paths.lift (tropicalPrefunctor (A := ℤ) ι)
 
 local notation "K(" Φ ")" => Scheme.functionField (Fan.algebraicRealization Φ)
 local notation "χ" => Multiplicative (ι → ℤ) →* ℂˣ
+local notation "swapBasis" a:arg => Basis.reindex a (Equiv.swap 0 1)
 
 local notation "center(" c "," w ")" =>
   MonoidHom.comp c (AddMonoidHom.toMultiplicative
@@ -57,8 +62,8 @@ local notation "center(" c "," w ")" =>
 local notation "fieldPoint(" Φ "," Ψ "," q ")" =>
   Spec.map (ConcreteCategory.ofHom (X := K(Ψ)) (Y := K(Φ))
     (RingEquiv.toRingHom (AlgEquiv.toRingEquiv q)))
-local notation "eval(" Φ "," s "," c ")" =>
-  Scheme.RationalMap.fromFunctionField (Fan.xEvaluation Φ b s c)
+local notation "eval(" Φ "," a "," s "," c ")" =>
+  Scheme.RationalMap.fromFunctionField (Fan.xEvaluation Φ a s c)
 
 private theorem fieldPoint_refl (Φ : Fan i) [Nonempty Φ.cones] :
     fieldPoint(Φ,Φ,(AlgEquiv.refl : K(Φ) ≃ₐ[ℂ] K(Φ))) = 𝟙 (Spec K(Φ)) :=
@@ -81,8 +86,8 @@ private theorem exists_lift_xRationalMap_mutate_of_subdivision {Ω : Fan i} [Non
     ∀ q : K(Ψ) ≃ₐ[ℂ] K(Φ),
       (∀ a, h.toFanHom.algebraicMap.functionFieldMap (q a) = q₀ a) →
       ∃ l : Spec K(Φ) ⟶ f.toPartialMap.domain,
-        l ≫ f.toPartialMap.domain.ι = eval(Φ,s,c) ∧
-        l ≫ f.toPartialMap.hom = fieldPoint(Φ,Ψ,q) ≫ eval(Ψ,t',center(c,w)) := by
+        l ≫ f.toPartialMap.domain.ι = eval(Φ,b,s,c) ∧
+        l ≫ f.toPartialMap.hom = fieldPoint(Φ,Ψ,q) ≫ eval(Ψ,b,t',center(c,w)) := by
   intro t hv hp Ψ t' q₀ w f q hq
   let : Nonempty Ω.cones := ⟨(t p).toCone⟩
   let : Nonempty Ψ.cones := ⟨(t' p).toCone⟩
@@ -96,7 +101,7 @@ private theorem exists_lift_xRationalMap_mutate_of_subdivision {Ω : Fan i} [Non
     (fun j ↦ congrArg (fun M : Matrix ι ι ℤ ↦ M j p) hmat)
   let u := Spec.map h.toFanHom.algebraicMap.functionFieldMap
   have : IsIso u := inferInstanceAs (IsIso (Spec.map h.toFanHom.algebraicMap.functionFieldMap))
-  have hsource : u ≫ eval(Φ,s,c) = eval(Ω,t,c) := by
+  have hsource : u ≫ eval(Φ,b,s,c) = eval(Ω,b,t,c) := by
     have he := congrArg Scheme.RationalMap.fromFunctionField (h.comp_xEvaluation b s c)
     rw [Scheme.RationalMap.fromFunctionField_comp, Scheme.Hom.functionFieldMap_toRationalMap] at he
     exact he
@@ -167,9 +172,9 @@ private theorem exists_toric_boundary_valuation_transport_mutate {B : SkewExchan
             Ψ.algebraicRealization.ord a (Ψ.rayBoundaryPoint hΨ (f ρ)).val) ∧
         ∀ c : χ, let F := ((Generator.mutate p).toStep B).toPath.xRationalMap ℂ
           ∃ l : Spec K(Φ) ⟶ F.toPartialMap.domain,
-            l ≫ F.toPartialMap.domain.ι = eval(Φ,s,c) ∧
+            l ≫ F.toPartialMap.domain.ι = eval(Φ,b,s,c) ∧
             l ≫ F.toPartialMap.hom = fieldPoint(Φ,Ψ,q c) ≫
-              eval(Ψ,t,center(c,((Generator.mutate p).toStep B).toPath)) := by
+              eval(Ψ,b,t,center(c,((Generator.mutate p).toStep B).toPath)) := by
   have hrank : finrank ℤ N = 2 := by simpa using Module.finrank_eq_card_basis b
   have hv := (s p).isPrimitiveGenerator.ne_zero
   obtain ⟨Ω, hΩ, hreg, hopp⟩ := Φ.exists_regular_subdivision_containing_ray hΦ hrank
@@ -216,14 +221,63 @@ private theorem exists_toric_boundary_valuation_transport_mutate {B : SkewExchan
     rw [mutationComplementPullbackAlgHom_apply]
     exact hq c a
 
+private theorem exists_lift_xRationalMap_inversion [Nonempty Φ.cones] (B : SkewExchangeMatrix ι)
+    (s : ι → Φ.Ray) (c : χ) :
+    let w := (Generator.invert.toStep B).toPath
+    let F := w.xRationalMap ℂ
+    ∃ l : Spec K(Φ) ⟶ F.toPartialMap.domain,
+      l ≫ F.toPartialMap.domain.ι = eval(Φ,b,s,c) ∧
+      l ≫ F.toPartialMap.hom = eval(Φ,swapBasis b,s,center(c,w)) := by
+  intro w F
+  have hc : center(c,w) = c⁻¹ := by
+    ext x
+    simp [w, Path.exponentEquiv_toPath, Step.exponentEquiv_invert,
+      AddMonoidHom.coe_toMultiplicative]
+  dsimp only [F, w]
+  rw [hc, Path.xRationalMap_invert, xEvaluation_reindex_swap,
+    Scheme.RationalMap.fromFunctionField_compHom]
+  let f := QPainleve.CharacterTorus.map ℂ (AddEquiv.neg (ι →₀ ℤ)).toAddMonoidHom
+  exact f.exists_lift_toRationalMap (eval(Φ,b,s,c))
+
+private theorem exists_lift_xRationalMap_permutation [Nonempty Φ.cones] (B : SkewExchangeMatrix ι)
+    (s : ι → Φ.Ray) (σ : Equiv.Perm ι)
+    (hsingle : ∀ j, LinearEquiv.funCongrLeft ℤ ℤ σ.symm (Pi.single j 1) = Pi.single (σ j) 1)
+    (c : χ) :
+    let w := ((Generator.permute σ).toStep B).toPath
+    let F := w.xRationalMap ℂ
+    ∃ l : Spec K(Φ) ⟶ F.toPartialMap.domain,
+      l ≫ F.toPartialMap.domain.ι = eval(Φ,b,s,c) ∧
+      l ≫ F.toPartialMap.hom = eval(Φ,b,s ∘ σ,center(c,w)) := by
+  intro w F
+  obtain ⟨l, hl, hl'⟩ := Quiver.Path.exists_lift_xRationalMap_permute ℂ B σ
+  refine ⟨eval(Φ,b,s,c) ≫ l, by simp only [F, w, Category.assoc, hl, Category.comp_id], ?_⟩
+  have heval : (Φ.xEval b s c).comp (rename σ) =
+      Φ.xEval b (s ∘ σ) center(c,w) := by
+    apply algHom_ext
+    intro j
+    simp only [AlgHom.comp_apply, rename_X, xEval_X, MonoidHom.comp_apply,
+      AddMonoidHom.coe_toMultiplicative, Function.comp_apply, AddEquiv.coe_toAddMonoidHom,
+      LinearEquiv.coe_toAddEquiv, w, Path.exponentEquiv_toPath, toAdd_ofAdd]
+    -- The multiplicative synonym in the center character is transported by `ofAdd`.
+    have hj : Step.exponentEquiv ((Generator.permute σ).toStep B) (Pi.single j 1) =
+        Pi.single (σ j) 1 := by
+      rw [Step.exponentEquiv_permute, hsingle]
+    erw [hj]
+    rfl
+  dsimp only [F, w]
+  rw [Category.assoc, hl', fromFunctionField_xEvaluation,
+    fromFunctionField_xEvaluation, ← Spec.map_comp]
+  exact congrArg (fun a ↦ Spec.map (CommRingCat.ofHom (AlgHom.toRingHom a))) heval
+
 private theorem exists_toric_boundary_valuation_transport_step {B C : SkewExchangeMatrix ι}
-    (e : B ⟶ C) (he : e.generator.inversionCount = 0)
+    (e : B ⟶ C)
     (P : ChargeSeed B N) (hΦ : Φ.IsRegular) (hc : Φ.IsComplete) (s : ι → Φ.Ray)
     (hform : P.form = b.detDualEquiv.toLinearMap) (hcharge : P.charge = rayChargeMap s) :
+    let b' := if e.generator.inversionCount = 0 then b else swapBasis b
     ∃ (Ψ : Fan i) (hΨ : Ψ.IsRegular) (hΨc : Ψ.IsComplete) (t : ι → Ψ.Ray) (f : Φ.Ray ↪ Ψ.Ray),
-      (Step.chargeTarget e P).form = b.detDualEquiv.toLinearMap ∧
+      (Step.chargeTarget e P).form = b'.detDualEquiv.toLinearMap ∧
       (Step.chargeTarget e P).charge = rayChargeMap t ∧
-      (∀ ρ, rayBoundaryOrders b t (f ρ) = Step.tropical e (rayBoundaryOrders b s ρ)) ∧
+      (∀ ρ, rayBoundaryOrders b' t (f ρ) = Step.tropical e (rayBoundaryOrders b s ρ)) ∧
       letI : Nonempty Φ.cones := hc.nonempty_cones
       letI : Nonempty Ψ.cones := hΨc.nonempty_cones
       ∃ q : χ → (K(Ψ) ≃ₐ[ℂ] K(Φ)),
@@ -232,19 +286,34 @@ private theorem exists_toric_boundary_valuation_transport_step {B C : SkewExchan
             Ψ.algebraicRealization.ord a (Ψ.rayBoundaryPoint hΨ (f ρ)).val) ∧
         ∀ c : χ, let F := e.toPath.xRationalMap ℂ
           ∃ l : Spec K(Φ) ⟶ F.toPartialMap.domain,
-            l ≫ F.toPartialMap.domain.ι = eval(Φ,s,c) ∧
-            l ≫ F.toPartialMap.hom = fieldPoint(Φ,Ψ,q c) ≫ eval(Ψ,t,center(c,e.toPath)) := by
+            l ≫ F.toPartialMap.domain.ι = eval(Φ,b,s,c) ∧
+            l ≫ F.toPartialMap.hom = fieldPoint(Φ,Ψ,q c) ≫ eval(Ψ,b',t,center(c,e.toPath)) := by
   obtain ⟨g, rfl⟩ := e
   have hg : g.toStep B = (⟨g, rfl⟩ : Step B (g.target B)) :=
     Step.ext (Generator.toStep_generator g B)
   rw [← hg]
   cases g with
-  | invert => simp at he
+  | invert =>
+    let : Nonempty Φ.cones := hc.nonempty_cones
+    simp only [Generator.toStep_generator, Generator.inversionCount_invert, Nat.one_ne_zero,
+      ite_false]
+    refine ⟨Φ, hΦ, hc, s, Function.Embedding.refl _, ?_, by simpa, ?_, ?_⟩
+    · ext x
+      simp [hform]
+    · intro ρ
+      rw [rayBoundaryOrders_reindex_swap]
+      funext j
+      simp [Step.tropical_apply]
+    · refine ⟨fun _ ↦ AlgEquiv.refl, by simp, fun c ↦ ?_⟩
+      simpa only [fieldPoint_refl, Category.id_comp] using
+        exists_lift_xRationalMap_inversion b B s c
   | mutate p =>
+    simp only [Generator.toStep_generator, Generator.inversionCount_mutate, ite_true]
     obtain ⟨Ψ, hreg, hcomp, t, f, hq, ho, hfield⟩ :=
       exists_toric_boundary_valuation_transport_mutate b P hΦ hc s hform hcharge p
     exact ⟨Ψ, hreg, hcomp, t, f, by simpa using hform, hq, by simpa using ho, hfield⟩
   | permute σ =>
+    simp only [Generator.toStep_generator, Generator.inversionCount_permute, ite_true]
     let : Nonempty Φ.cones := hc.nonempty_cones
     have hsingle (j : ι) :
         LinearEquiv.funCongrLeft ℤ ℤ σ.symm (Pi.single j 1) = Pi.single (σ j) 1 := by
@@ -260,41 +329,39 @@ private theorem exists_toric_boundary_valuation_transport_step {B C : SkewExchan
       ext j
       simp [rayBoundaryOrders_apply]
     · refine ⟨fun _ ↦ AlgEquiv.refl, by simp, fun c ↦ ?_⟩
-      obtain ⟨l, hl, hl'⟩ := Quiver.Path.exists_lift_xRationalMap_permute ℂ B σ
-      refine ⟨eval(Φ,s,c) ≫ l, by simp only [Category.assoc, hl, Category.comp_id], ?_⟩
-      have heval : (Φ.xEval b s c).comp (rename σ) =
-          Φ.xEval b (s ∘ σ) center(c,((Generator.permute σ).toStep B).toPath) := by
-        apply algHom_ext
-        intro j
-        simp only [AlgHom.comp_apply, rename_X, xEval_X, MonoidHom.comp_apply,
-          AddMonoidHom.coe_toMultiplicative, Function.comp_apply, AddEquiv.coe_toAddMonoidHom,
-          LinearEquiv.coe_toAddEquiv, Path.exponentEquiv_toPath, toAdd_ofAdd]
-        -- The multiplicative synonym in the center character is transported by `ofAdd`.
-        have hj : Step.exponentEquiv ((Generator.permute σ).toStep B) (Pi.single j 1) =
-            Pi.single (σ j) 1 := by
-          rw [Step.exponentEquiv_permute, hsingle]
-        erw [hj]
-        rfl
-      rw [Category.assoc, hl', fieldPoint_refl, Category.id_comp,
-        fromFunctionField_xEvaluation, fromFunctionField_xEvaluation, ← Spec.map_comp]
-      exact congrArg (fun a ↦ Spec.map (CommRingCat.ofHom (AlgHom.toRingHom a))) heval
+      simpa only [fieldPoint_refl, Category.id_comp] using
+        exists_lift_xRationalMap_permutation b B s σ hsingle c
 
-/-- For an inversion-free word from a complete regular surface fan, there is a complete
-regular terminal fan realizing the transported charges. All initial rays map injectively
-to terminal rays, and the determinant orders at each image are the tropical word applied
-to the corresponding initial orders. For each center character, the pullbacks along
+omit [Fintype ι] in
+private theorem terminal_basis_cons {B C D : SkewExchangeMatrix ι} (w : Word B C) (e : C ⟶ D) :
+    (if Even (w.cons e).inversionCount then b else swapBasis b) =
+      let b' := if Even w.inversionCount then b else swapBasis b
+      if e.generator.inversionCount = 0 then b' else swapBasis b' := by
+  have hswap : swapBasis (swapBasis b) = b := by
+    ext j
+    simp [Basis.reindex_apply]
+  obtain ⟨g, rfl⟩ := e
+  cases g <;> by_cases hw : Even w.inversionCount <;>
+    simp [Path.inversionCount_cons, hw, Nat.even_add_one, hswap]
+
+/-- For a signed word from a complete regular surface fan, there is a complete regular
+terminal fan realizing the transported charges. Its basis is reversed precisely for odd
+inversion count. All initial rays map injectively to terminal rays, and the determinant orders
+at each image are the tropical word applied to the corresponding initial orders.
+For each center character, the pullbacks along
 the subdivisions and mutations give an isomorphism on function fields preserving
 orders at every transported ray. The generic point of the fixed-center X evaluation
 lies in the domain of the independent word map, and its value equals the terminal
 evaluation pulled back by that same function-field isomorphism. -/
 theorem exists_toric_boundary_valuation_transport {B C : SkewExchangeMatrix ι}
-    (w : Word B C) (hw : w.inversionCount = 0) (P : ChargeSeed B N)
+    (w : Word B C) (P : ChargeSeed B N)
     (hΦ : Φ.IsRegular) (hc : Φ.IsComplete) (s : ι → Φ.Ray)
     (hform : P.form = b.detDualEquiv.toLinearMap) (hcharge : P.charge = rayChargeMap s) :
+    let b' := if Even w.inversionCount then b else swapBasis b
     ∃ (Ψ : Fan i) (hΨ : Ψ.IsRegular) (hΨc : Ψ.IsComplete) (t : ι → Ψ.Ray) (f : Φ.Ray ↪ Ψ.Ray),
-      (w.chargeTarget P).form = b.detDualEquiv.toLinearMap ∧
+      (w.chargeTarget P).form = b'.detDualEquiv.toLinearMap ∧
       (w.chargeTarget P).charge = rayChargeMap t ∧
-      (∀ ρ, rayBoundaryOrders b t (f ρ) =
+      (∀ ρ, rayBoundaryOrders b' t (f ρ) =
         DFunLike.coe (F := Equiv.Perm (ι → ℤ)) ((trop).map w) (rayBoundaryOrders b s ρ)) ∧
       letI : Nonempty Φ.cones := hc.nonempty_cones
       letI : Nonempty Ψ.cones := hΨc.nonempty_cones
@@ -304,11 +371,13 @@ theorem exists_toric_boundary_valuation_transport {B C : SkewExchangeMatrix ι}
             Ψ.algebraicRealization.ord a (Ψ.rayBoundaryPoint hΨ (f ρ)).val) ∧
         ∀ c : χ, let F := w.xRationalMap ℂ
           ∃ l : Spec K(Φ) ⟶ F.toPartialMap.domain,
-            l ≫ F.toPartialMap.domain.ι = eval(Φ,s,c) ∧
-            l ≫ F.toPartialMap.hom = fieldPoint(Φ,Ψ,q c) ≫ eval(Ψ,t,center(c,w)) := by
+            l ≫ F.toPartialMap.domain.ι = eval(Φ,b,s,c) ∧
+            l ≫ F.toPartialMap.hom = fieldPoint(Φ,Ψ,q c) ≫ eval(Ψ,b',t,center(c,w)) := by
   induction w with
   | nil =>
     let : Nonempty Φ.cones := hc.nonempty_cones
+    have heven : Even (0 : ℕ) := ⟨0, rfl⟩
+    simp only [Path.inversionCount_nil, heven, ite_true]
     refine ⟨Φ, hΦ, hc, s, Function.Embedding.refl _, ?_, ?_, ?_, ?_⟩
     · simpa using hform
     · simpa using hcharge
@@ -318,12 +387,14 @@ theorem exists_toric_boundary_valuation_transport {B C : SkewExchangeMatrix ι}
         MonoidHom.ext fun a ↦ by simp [Path.exponentEquiv_nil, AddMonoidHom.coe_toMultiplicative]
       rw [Path.xRationalMap_nil, he, fieldPoint_refl, Category.id_comp]
       let T := QPainleve.CharacterTorus.scheme ℂ (ι →₀ ℤ)
-      simpa only [Category.comp_id] using (𝟙 T : T ⟶ T).exists_lift_toRationalMap (eval(Φ,s,c))
+      simpa only [Category.comp_id] using (𝟙 T : T ⟶ T).exists_lift_toRationalMap (eval(Φ,b,s,c))
   | cons w e ih =>
-    rw [Path.inversionCount_cons, Nat.add_eq_zero_iff] at hw
-    obtain ⟨Ω, hΩ, hΩc, t, f, hp, hq, ho, hfield⟩ := ih hw.1
+    dsimp only at ih ⊢
+    rw [terminal_basis_cons b w e]
+    let b₀ := if Even w.inversionCount then b else swapBasis b
+    obtain ⟨Ω, hΩ, hΩc, t, f, hp, hq, ho, hfield⟩ := ih
     obtain ⟨Ψ, hΨ, hΨc, t', g, hp', hq', ho', hfield'⟩ :=
-      exists_toric_boundary_valuation_transport_step b e hw.2 _ hΩ hΩc t hp hq
+      exists_toric_boundary_valuation_transport_step b₀ e _ hΩ hΩc t hp hq
     refine ⟨Ψ, hΨ, hΨc, t', f.trans g, ?_, ?_, ?_, ?_⟩
     · simpa using hp'
     · simpa using hq'
@@ -350,11 +421,8 @@ theorem exists_toric_boundary_valuation_transport {B C : SkewExchangeMatrix ι}
       have hc : center(center(c,w),e.toPath) = center(c,w.cons e) := by
         ext x
         simp [Path.exponentEquiv_toPath, Path.exponentEquiv_cons]
-      have hv : fieldPoint(Φ,Ω,q c) ≫ fieldPoint(Ω,Ψ,r center(c,w)) =
-          fieldPoint(Φ,Ψ,(r center(c,w)).trans (q c)) := by
-        rw [← Spec.map_comp]
-        rfl
       refine hx ▸ ⟨a, ha.trans hl, ?_⟩
-      rw [ha', Category.assoc, hm', hc, ← Category.assoc, hv]
+      rw [ha', Category.assoc, hm', hc, ← Category.assoc, ← Spec.map_comp]
+      rfl
 
 end TauCeti.Toric.Fan

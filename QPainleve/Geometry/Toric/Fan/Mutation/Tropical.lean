@@ -64,12 +64,13 @@ local notation "evaluationSquare" =>
 
 /-- Compare the coordinate pullbacks through a generic lift of the word's source evaluation. -/
 private theorem functionFieldMap_contracted_coordinate {Ω : Fan i} [Nonempty Ω.cones]
-    (heval : evaluationSquare) (u : Fin r → Ω.Ray) (a : Multiplicative (Fin r → ℤ) →* ℂˣ)
+    (heval : evaluationSquare) (bΩ : Basis (Fin 2) ℤ N)
+    (u : Fin r → Ω.Ray) (a : Multiplicative (Fin r → ℤ) →* ℂˣ)
     (g : K(Ω) ≃ₐ[ℂ] K(Φ)) (l : Spec K(Φ) ⟶ (wordMap).toPartialMap.domain)
     (hl : l ≫ (wordMap).toPartialMap.domain.ι = (Φ.xEvaluation b s c).fromFunctionField)
     (hl' : l ≫ (wordMap).toPartialMap.hom =
       Spec.map (CommRingCat.ofHom g.toRingEquiv.toRingHom) ≫
-        (Ω.xEvaluation b u a).fromFunctionField) (j : Fin r) :
+        (Ω.xEvaluation bΩ u a).fromFunctionField) (j : Fin r) :
     let := isIntegral_internalBlowupTower b s (center c) hΦ
     let := isIntegral_internalBlowupTower b' t (center d) hΨ
     let := isModification_internalBlowupTower_toBase b s (center c) hΦ
@@ -79,7 +80,7 @@ private theorem functionFieldMap_contracted_coordinate {Ω : Fan i} [Nonempty Ω
     e.hom.functionFieldMap (inv q.functionFieldMap
       ((π[b',t,d]).functionFieldMap (Ψ.xEval b' t d (LaurentRing.X j)))) =
       inv p.functionFieldMap
-        ((π[b,s,c]).functionFieldMap (g (Ω.xEval b u a (LaurentRing.X j)))) := by
+        ((π[b,s,c]).functionFieldMap (g (Ω.xEval bΩ u a (LaurentRing.X j)))) := by
   have := isIntegral_internalBlowupTower b s (center c) hΦ
   have := isIntegral_internalBlowupTower b' t (center d) hΨ
   have := isModification_internalBlowupTower_toBase b s (center c) hΦ
@@ -110,14 +111,14 @@ variable [IsNormalScheme X] [IsNormalScheme Y] [IsLocallyNoetherian X] [IsLocall
     (internalBlowupTower b s (fun j : Fin r ↦ c (ofAdd (Pi.single j 1)))).2.boundaryι.ker.support)
   (hq : (E.comap q).support =
     (internalBlowupTower b' t (fun j : Fin r ↦ d (ofAdd (Pi.single j 1)))).2.boundaryι.ker.support)
-  (hcΦ : Φ.IsComplete) (hw : w.inversionCount = 0)
+  (hcΦ : Φ.IsComplete)
   (hB : B.matrix = chargeExchangeMatrix b.detDualEquiv.toLinearMap (rayChargeMap s))
 
 local notation "ρ" => contractedBoundaryRayEmbedding hΦ b s (center c) p hp
 local notation "τ" => contractedBoundaryRayEmbedding hΨ b' t (center d) q hq
 
-include hcΦ hw hB hp hq in
-/-- Under the fixed-center evaluation square for an inversion-free word, the orders
+include hcΦ hB hp hq in
+/-- Under the fixed-center evaluation square for a signed word, the orders
 along an image boundary prime are the tropical word applied to the orders at its
 source prime. The result holds for charges of any rank. -/
 theorem rayBoundaryOrders_eq_tropical_of_comp_contractedXEvaluation
@@ -127,8 +128,9 @@ theorem rayBoundaryOrders_eq_tropical_of_comp_contractedXEvaluation
       DFunLike.coe (F := Equiv.Perm (Fin r → ℤ)) ((trop).map w) (rayBoundaryOrders b s (ρ x)) := by
   let P : ChargeSeed B N :=
     ⟨b.detDualEquiv.toLinearMap, rayChargeMap s, b.detDualEquiv_self, hB.symm⟩
+  let bΩ := if Even w.inversionCount then b else b.reindex (Equiv.swap 0 1)
   obtain ⟨Ω, hΩ, hΩc, u, f, -, -, horders, hfield⟩ :=
-    exists_toric_boundary_valuation_transport b w hw P hΦ hcΦ s rfl rfl
+    exists_toric_boundary_valuation_transport b w P hΦ hcΦ s rfl rfl
   let : Nonempty Ω.cones := hΩc.nonempty_cones
   obtain ⟨g, hg, he⟩ := hfield
   obtain ⟨l, hl, hl'⟩ := he c
@@ -143,12 +145,12 @@ theorem rayBoundaryOrders_eq_tropical_of_comp_contractedXEvaluation
   rw [← ord_contracted_toric_boundary_chargeCharacter hΨ b' t (center d) q hq,
     ← hy, ← TauCeti.AlgebraicGeometry.Scheme.ord_functionFieldMap e.hom]
   simp only [← xEval_X]
-  rw [functionFieldMap_contracted_coordinate b b' s t hΦ hΨ c d p q w e heval _ _ (g c)
+  rw [functionFieldMap_contracted_coordinate b b' s t hΦ hΨ c d p q w e heval bΩ _ _ (g c)
       l hl hl' j,
     ord_contracted_toric_boundary hΦ b s (center c) p hp, hg,
     xEval_X, ord_rayBoundaryPoint_chargeCharacter]
 
-include hcΦ hw hB hp hq in
+include hcΦ hB hp hq in
 /-- For finite-index target charges, searching the numbered target boundary with
 the tropical word's output returns precisely the label of the image prime. -/
 theorem boundaryRayOfOrders_tropical_word (heval : evaluationSquare)
@@ -165,7 +167,7 @@ theorem boundaryRayOfOrders_tropical_word (heval : evaluationSquare)
   have hy : y.val = e.hom x.val := E.boundaryPrimesEquivOfIso_apply_val e _
   rw [boundaryRayOfOrders_eq_some_iff _ _ _ _ hindex, Function.Embedding.trans_apply,
     ← rayBoundaryOrders_eq_tropical_of_comp_contractedXEvaluation b b' s t hΦ hΨ c d p q w e
-      hp hq hcΦ hw hB heval x y hy.symm, ← hy]
+      hp hq hcΦ hB heval x y hy.symm, ← hy]
   exact ⟨fun h ↦ congrArg Subtype.val
     ((τ).injective (rayBoundaryOrders_injective b' t hindex h)).symm,
     fun h ↦ congrArg (fun z ↦ rayBoundaryOrders b' t (τ z)) (Subtype.ext h).symm⟩
