@@ -59,21 +59,11 @@ variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
 local notation "m" => LinearMap.toAddMonoidHom (b.coord 1)
 local notation "C" => Φ.hirzebruchPicardBasis b e hΦ r hr
 
-private theorem hirzebruch_ruling_character_ne_zero : m ≠ 0 := by
-  intro hz
-  have ha := DFunLike.congr_fun hz (b 1)
-  simp [Basis.coord_apply] at ha
-
 open scoped Classical in
 include hr in
 private theorem hirzebruch_ruling_fiber_coefficients :
-    (fun ρ : Φ.Ray ↦ max (m ρ.primitiveGenerator) 0) = Pi.single (r 1) 1 := by
-  funext ρ
-  obtain ⟨j, rfl⟩ := r.surjective ρ
-  have hj := congrFun hr j
-  simp only [Equiv.apply_eq_iff_eq, Pi.single_apply]
-  rw [hj]
-  fin_cases j <;> norm_num [Basis.coord_apply]
+    (fun ρ : Φ.Ray ↦ max (m ρ.primitiveGenerator) 0) = Pi.single (r 1) 1 :=
+  hirzebruch_ruling_coordinateFiber_coefficients b e r hr 0
 
 variable [Nonempty Φ.cones]
 

@@ -258,6 +258,17 @@ theorem hirzebruch_section_coordinates :
   rw [← h, Basis.repr_self]
   simp
 
+/-- The opposite invariant section has Hirzebruch Picard coordinates `(e, 1)`. -/
+theorem hirzebruch_opposite_section_coordinates :
+    (C).repr (P (Φ.rayBoundaryPoint hΦ (r 2))) 0 = e ∧
+      (C).repr (P (Φ.rayBoundaryPoint hΦ (r 2))) 1 = 1 := by
+  classical
+  let := Φ.uniqueFactorizationMonoid_stalk_algebraicRealization hΦ
+  have h : P (Φ.rayBoundaryPoint hΦ (r 2)) = C 1 + e • C 0 := by
+    rw [hirzebruchPicardBasis_apply_one, hirzebruchPicardBasis_apply_zero,
+      ← (hirzebruch_ray_classes b e hΦ r hr).1, rayDivisorToPicard_single, one_zsmul]
+  simp [h, Basis.repr_self, -hirzebruchPicardBasis_apply_one, -hirzebruchPicardBasis_apply_zero]
+
 section Intersection
 
 variable [Φ.algebraicRealization.IsProjectiveOver ℂ]
