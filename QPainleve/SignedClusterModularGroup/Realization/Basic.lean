@@ -57,6 +57,18 @@ abbrev CenterPoint := Point C.domainOver
 
 end Points
 
+variable {K : Type u} [Field K]
+
+/-- The center torus, viewed as an object over the ground field, is nonempty. -/
+theorem nonempty_centerTorus (ι : Type u) :
+    Nonempty (Over.mk (CharacterTorus.structureMap K (ι → ℤ))).left :=
+  inferInstanceAs (Nonempty (CharacterTorus.scheme K (ι → ℤ)))
+
+/-- The center torus on a finite set of labels is smooth over the ground field. -/
+theorem smooth_centerTorus (ι : Type u) [Finite ι] :
+    Smooth (Over.mk (CharacterTorus.structureMap K (ι → ℤ))).hom :=
+  CharacterTorus.smooth_structureMap_pi_int K ι
+
 end GeometricRealization
 
 open GeometricRealization (Point CenterPoint)
