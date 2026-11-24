@@ -52,7 +52,8 @@ variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {L : Type} [AddCommGroup L] {H : LinearMap.BilinForm ℤ L} {γ : Type}
   {E : SkewExchangeMatrix (Fin r)}
 
-local instance (w : Loops[E]) : ((End.asHom w).xRationalMap ℂ).IsDominant :=
+local instance instIsDominantPresentationLoopXRationalMap (w : Loops[E]) :
+    ((End.asHom w).xRationalMap ℂ).IsDominant :=
   Quiver.Path.instIsDominantXRationalMap ℂ (End.asHom w)
 
 /-- The signed Picard pullback of a fixed marked toric presentation of a
