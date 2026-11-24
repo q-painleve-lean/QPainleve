@@ -8,6 +8,7 @@ module
 public import QPainleve.AlgebraicGeometry.Blowup.Tower.Nodal.Canonical
 public import QPainleve.AlgebraicGeometry.Modules.Differentials.PoleIdeal
 
+import QPainleve.AlgebraicGeometry.Blowup.Tower.IsoLocus
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Modification
 import QPainleve.AlgebraicGeometry.IdealSheaf.Restriction
 import TauCeti.AlgebraicGeometry.IdealSheaf.Comap
@@ -35,6 +36,78 @@ open Scheme.IdealSheafData
 universe u
 
 namespace QPainleve.BlowupTower
+
+section
+
+open TopologicalSpace
+
+variable {k : Type u} [Field k] [PerfectField k] {X Y : Scheme.{u}}
+  [X.Over (Spec (.of k))] [SmoothOfRelativeDimension 2 (X ↘ Spec (.of k))]
+  {n : ℕ} {T : BlowupTower X n Y} (hT : IsClosedPointTower X T)
+
+local notation "s" => X ↘ Spec (CommRingCat.of k)
+local notation "J[" p "]" => Scheme.Hom.ker (Scheme.fromSpecResidueField X p)
+
+/-- The reduced pole boundary has a node above a base node outside the projected centers. -/
+theorem IsClosedPointTower.isNodeOfReducedBoundary_of_notMem_range_baseCenter
+    {p₀ : X} (habs : p₀ ∉ Set.range hT.baseCenter) {z : Y} (hz : T.toBase z = p₀)
+    {E : X.IdealSheafData} {D : Y.IdealSheafData}
+    (hnode : E.IsNodeOfReducedBoundary s p₀)
+    (hpole : E.comap T.toBase = D * hT.ramificationIdealSheafToBase k) :
+    D.IsNodeOfReducedBoundary (T.toBase ≫ s) z := by
+  let U := T.toBase ⁻¹ᵁ T.toBase.isoLocus
+  have hc : p₀ ∉ T.toBase.centre := by
+    rwa [hT.centre_toBase_eq_range_baseCenter s]
+  have hzOpen : z ∈ U := by
+    rw [Scheme.Hom.mem_preimage, hz]
+    rw [Scheme.Hom.centre_def, Set.mem_compl_iff, not_not] at hc
+    exact hc
+  have hRam : (hT.ramificationIdealSheafToBase k).comap U.ι = ⊤ := by
+    rw [comap_eq_top_iff, ← TopologicalSpace.Opens.coe_eq_univ]
+    apply Set.eq_univ_of_forall
+    intro x
+    have hx := x.property
+    rw [Scheme.Hom.mem_preimage] at hx
+    rw [SetLike.mem_coe, Scheme.Hom.mem_preimage,
+      ← SetLike.mem_coe, Closeds.coe_compl, Set.mem_compl_iff,
+      hT.support_ramificationIdealSheafToBase k, Set.mem_preimage,
+      Scheme.Hom.centre_def, Set.mem_compl_iff, not_not]
+    exact hx
+  have hEq : (E.comap T.toBase).comap U.ι = D.comap U.ι := by
+    rw [hpole, comap_mul, hRam, mul_top]
+  have hn := (E.isNodeOfReducedBoundary_comap_iff_of_mem_isoLocus s T.toBase
+    ((T.toBase.mem_preimage).mp hzOpen)).mpr (hz.symm ▸ hnode)
+  have h := ((E.comap T.toBase).isNodeOfReducedBoundary_comap_iff_of_isOpenImmersion
+    (T.toBase ≫ s) U.ι ⟨z, hzOpen⟩).mpr hn
+  rw [hEq] at h
+  exact (D.isNodeOfReducedBoundary_comap_iff_of_isOpenImmersion
+    (T.toBase ≫ s) U.ι ⟨z, hzOpen⟩).mp h
+
+/-- Preparing a closed point tower for the blowup of a boundary node gives a nodal
+refinement of length at most one. The specified projection is an isomorphism if the node
+already occurs among the projected centers, and a blowup of its inverse image otherwise. -/
+theorem IsClosedPointTower.exists_nodal_refinement_of_point_preparation
+    {p₀ : X} {A : Scheme.{u}} (q : A ⟶ Y) {E : X.IdealSheafData} {D : Y.IdealSheafData}
+    (hnode : E.IsNodeOfReducedBoundary s p₀)
+    (hpole : E.comap T.toBase = D * hT.ramificationIdealSheafToBase k)
+    (hqIso : p₀ ∈ Set.range hT.baseCenter → IsIso q)
+    (hqBlowup : p₀ ∉ Set.range hT.baseCenter → ∃ (z : Y)
+      (e : A ≅ ((J[p₀]).comap T.toBase).blowup),
+      IsClosed ({z} : Set Y) ∧ T.toBase z = p₀ ∧
+      (J[p₀]).comap T.toBase = (Y.fromSpecResidueField z).ker ∧
+      q = e.hom ≫ ((J[p₀]).comap T.toBase).blowupToBase) :
+    ∃ (m : ℕ) (W : Scheme.{u}) (R : BlowupTower Y m W) (e : A ≅ W),
+      m ≤ 1 ∧ IsNodalBoundaryTower D (T.toBase ≫ s) (𝟙 Y) R ∧ e.hom ≫ R.toBase = q := by
+  by_cases h : p₀ ∈ Set.range hT.baseCenter
+  · let := hqIso h
+    exact ⟨0, Y, .nil, asIso q, Nat.zero_le _, .nil, by simp [toBase_nil]⟩
+  · obtain ⟨z, e, hz, hzbase, hI, hq⟩ := hqBlowup h
+    have hN := hT.isNodeOfReducedBoundary_of_notMem_range_baseCenter h hzbase hnode hpole
+    refine ⟨1, _, .snoc .nil ((J[p₀]).comap T.toBase), e, le_rfl, .snoc .nil z hz hI ?_, ?_⟩
+    · simpa only [toBase_nil, Category.id_comp, Category.comp_id, comap_id] using hN
+    · simpa only [toBase_snoc, toBase_nil, Category.comp_id] using hq.symm
+
+end
 
 variable {k : Type u} [Field k] [PerfectField k] {X : Scheme.{u}}
   [X.Over (Spec (.of k))] [IsIntegral X] [IsNoetherian X]

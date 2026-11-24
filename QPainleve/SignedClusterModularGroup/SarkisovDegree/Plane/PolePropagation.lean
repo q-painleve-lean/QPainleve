@@ -9,7 +9,6 @@ public import QPainleve.AlgebraicGeometry.Blowup.Tower.Nodal.Canonical
 public import QPainleve.Geometry.Toric.Fan.Logarithmic.Subdivision
 public import QPainleve.SignedClusterModularGroup.SarkisovDegree.Plane.SmoothCenter
 
-import QPainleve.AlgebraicGeometry.Blowup.Tower.IsoLocus
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Nodal.PoleIdeal
 import QPainleve.Geometry.Toric.Fan.Mutation.Tower
 
@@ -47,61 +46,6 @@ local notation "π[" s "]" => FanHom.algebraicMap (Fan.IsSubdivision.toFanHom s)
 
 variable {Y : Scheme} {n : ℕ} {T : BlowupTower Plane (n + 1) Y}
   (hT : IsClosedPointTower Plane T)
-
-private theorem isNodeOfReducedBoundary_of_absent_vertex
-    {p₀ : Plane} (habs : p₀ ∉ Set.range hT.baseCenter) {z : Y} (hz : T.toBase z = p₀)
-    {E : Scheme.IdealSheafData Plane} {D : Y.IdealSheafData}
-    (hnode : E.IsNodeOfReducedBoundary fP p₀)
-    (hpole : E.comap T.toBase = D * hT.ramificationIdealSheafToBase ℂ) :
-    D.IsNodeOfReducedBoundary (T.toBase ≫ fP) z := by
-  let U := T.toBase ⁻¹ᵁ T.toBase.isoLocus
-  have hc : p₀ ∉ T.toBase.centre := by
-    rwa [hT.centre_toBase_eq_range_baseCenter fP]
-  have hzOpen : z ∈ U := by
-    rw [Scheme.Hom.mem_preimage, hz]
-    rw [Scheme.Hom.centre_def, Set.mem_compl_iff, not_not] at hc
-    exact hc
-  have hRam : (hT.ramificationIdealSheafToBase ℂ).comap U.ι = ⊤ := by
-    rw [comap_eq_top_iff, ← TopologicalSpace.Opens.coe_eq_univ]
-    apply Set.eq_univ_of_forall
-    intro x
-    have hx := x.property
-    rw [Scheme.Hom.mem_preimage] at hx
-    rw [SetLike.mem_coe, Scheme.Hom.mem_preimage,
-      ← SetLike.mem_coe, Closeds.coe_compl, Set.mem_compl_iff,
-      hT.support_ramificationIdealSheafToBase ℂ, Set.mem_preimage,
-      Scheme.Hom.centre_def, Set.mem_compl_iff, not_not]
-    exact hx
-  have hEq : (E.comap T.toBase).comap U.ι = D.comap U.ι := by
-    rw [hpole, comap_mul, hRam, mul_top]
-  have hn := (E.isNodeOfReducedBoundary_comap_iff_of_mem_isoLocus fP T.toBase
-    ((T.toBase.mem_preimage).mp hzOpen)).mpr (hz.symm ▸ hnode)
-  have h := ((E.comap T.toBase).isNodeOfReducedBoundary_comap_iff_of_isOpenImmersion
-    (T.toBase ≫ fP) U.ι ⟨z, hzOpen⟩).mpr hn
-  rw [hEq] at h
-  exact (D.isNodeOfReducedBoundary_comap_iff_of_isOpenImmersion
-    (T.toBase ≫ fP) U.ι ⟨z, hzOpen⟩).mp h
-
-private theorem exists_nodal_refinement_of_vertex_preparation
-    {p₀ : Plane} {A : Scheme} (q : A ⟶ Y) {E : Scheme.IdealSheafData Plane} {D : Y.IdealSheafData}
-    (hnode : E.IsNodeOfReducedBoundary fP p₀)
-    (hpole : E.comap T.toBase = D * hT.ramificationIdealSheafToBase ℂ)
-    (hqIso : p₀ ∈ Set.range hT.baseCenter → IsIso q)
-    (hqBlowup : p₀ ∉ Set.range hT.baseCenter → ∃ (z : Y)
-      (e : A ≅ ((J[p₀]).comap T.toBase).blowup),
-      IsClosed ({z} : Set Y) ∧ T.toBase z = p₀ ∧
-      (J[p₀]).comap T.toBase = (Y.fromSpecResidueField z).ker ∧
-      q = e.hom ≫ ((J[p₀]).comap T.toBase).blowupToBase) :
-    ∃ (k : ℕ) (W : Scheme) (R : BlowupTower Y k W) (e : A ≅ W),
-      k ≤ 1 ∧ IsNodalBoundaryTower D (T.toBase ≫ fP) (𝟙 Y) R ∧ e.hom ≫ R.toBase = q := by
-  by_cases h : p₀ ∈ Set.range hT.baseCenter
-  · let := hqIso h
-    exact ⟨0, Y, .nil, asIso q, Nat.zero_le _, .nil, by simp [toBase_nil]⟩
-  · obtain ⟨z, e, hz, hzbase, hI, hq⟩ := hqBlowup h
-    have hN := isNodeOfReducedBoundary_of_absent_vertex hT h hzbase hnode hpole
-    refine ⟨1, _, .snoc .nil ((J[p₀]).comap T.toBase), e, le_rfl, .snoc .nil z hz hI ?_, ?_⟩
-    · simpa only [toBase_nil, Category.id_comp, Category.comp_id, comap_id] using hN
-    · simpa only [toBase_snoc, toBase_nil, Category.comp_id] using hq.symm
 
 section Edge
 
@@ -272,7 +216,7 @@ theorem exists_sarkisov_decrease_of_logarithmic_plane_edge
   have hnode := isNodeOfReducedBoundary_plane_vertex b regΔ hcΔ eP σ hσ
   rw [hvertex] at hnode
   obtain ⟨k, W, R, e₁, hk, hR, he₁⟩ :=
-    exists_nodal_refinement_of_vertex_preparation hT q hnode hpole hqIso hqBlowup
+    hT.exists_nodal_refinement_of_point_preparation q hnode hpole hqIso hqBlowup
   let a := R'.toBase
   let : Y.Over S := ⟨T.toBase ≫ fP⟩
   let : A.Over S := ⟨a ≫ f[Φ]⟩
