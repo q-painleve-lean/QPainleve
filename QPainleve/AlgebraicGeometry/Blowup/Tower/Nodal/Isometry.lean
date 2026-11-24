@@ -5,7 +5,7 @@ Authors: The QPainleve contributors
 -/
 module
 
-public import QPainleve.AlgebraicGeometry.Blowup.Tower.Isometry
+public import QPainleve.AlgebraicGeometry.Blowup.Tower.Isometry.Basic
 public import QPainleve.AlgebraicGeometry.IdealSheaf.Boundary.Primes
 public import QPainleve.AlgebraicGeometry.Curves.Node.Locus
 
