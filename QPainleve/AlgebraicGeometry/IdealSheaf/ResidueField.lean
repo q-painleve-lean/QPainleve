@@ -36,6 +36,20 @@ theorem Hom.ker_eq_vanishingIdeal_support {X Y : Scheme} (f : X ⟶ Y) [IsReduce
   le_antisymm (by rw [IdealSheafData.vanishingIdeal_support]; exact f.ker.le_radical)
     (IdealSheafData.vanishingIdeal_le_ker_of_range_subset f f.range_subset_ker_support)
 
+/-- A map from a reduced scheme with image in a reduced closed section factors
+as its map to the base followed by the section. -/
+theorem Hom.eq_comp_of_range_subset_of_section {C T S : Scheme} [IsReduced C] [IsReduced S]
+    (a : C ⟶ T) (q : T ⟶ S) (r : S ⟶ T) [IsClosedImmersion r] (hr : r ≫ q = 𝟙 S)
+    (ha : Set.range a ⊆ Set.range r) : a = a ≫ q ≫ r := by
+  have hker : r.ker ≤ a.ker := by
+    rw [r.ker_eq_vanishingIdeal_support]
+    exact IdealSheafData.vanishingIdeal_le_ker_of_range_subset a
+      (ha.trans r.range_subset_ker_support)
+  let b := IsClosedImmersion.lift r a hker
+  have hba : b ≫ r = a := IsClosedImmersion.lift_fac _ _ _
+  have hb : b = a ≫ q := by simp only [← hba, Category.assoc, hr, Category.comp_id]
+  simpa only [Category.assoc] using hba.symm.trans (congrArg (· ≫ r) hb)
+
 /-- The kernel of a residue-field morphism is the vanishing ideal of the closure of its point. -/
 theorem ker_fromSpecResidueField_eq_vanishingIdeal {X : Scheme} (p : X) :
     (X.fromSpecResidueField p).ker =
