@@ -6,6 +6,7 @@ Authors: The QPainleve contributors
 module
 
 public import Mathlib.AlgebraicGeometry.Birational.Birational
+public import QPainleve.Geometry.Toric.Fan.Adjacency
 public import TauCeti.Geometry.Toric.Algebraic.Fan.Over
 
 import QPainleve.Geometry.Toric.Fan.FunctionField
@@ -53,5 +54,23 @@ theorem isRationalOver_of_hull_basis_mem {ι : Type} [Finite ι]
     simp
   let := hover he.symm
   exact comp_over g (Spec (CommRingCat.of ℂ))
+
+/-- A regular rank-two fan with two distinct rays in a common cone realizes
+a rational surface. -/
+theorem isRationalOver_of_ray_ne_of_le (hΦ : Φ.IsRegular) (hN : Module.finrank ℤ N = 2)
+    {ρ τ : Φ.Ray} {σ : Φ.cones} (hne : ρ ≠ τ) (hρ : ρ.toCone ≤ σ) (hτ : τ.toCone ≤ σ) :
+    Scheme.IsRationalOver (Φ.algebraicRealization ↘ Spec (CommRingCat.of ℂ)) := by
+  obtain ⟨b, hb₀, hb₁⟩ := Fan.exists_basis_of_ray_ne_of_le
+    (Fan.isRegular_iff.mp hΦ _ σ.property) hN hne hρ hτ
+  have hcone := Φ.cone_eq_sup_of_ray_ne_of_le hΦ hN hne hρ hτ
+  apply Φ.isRationalOver_of_hull_basis_mem b
+  have hpair : Set.range (fun j : Fin 2 ↦ i (b j)) = {i (b 0)} ∪ {i (b 1)} := by
+    ext x
+    simp [Fin.exists_fin_succ, eq_comm, or_comm]
+  rw [Ray.toCone_eq_hull_primitiveGenerator, Ray.toCone_eq_hull_primitiveGenerator,
+    ← hb₀, ← hb₁, ← Submodule.span_union, ← hpair] at hcone
+  have hσ : σ.val = PointedCone.hull ℝ (Set.range fun j : Fin 2 ↦ i (b j)) := hcone
+  rw [← hσ]
+  exact σ.property
 
 end TauCeti.Toric.Fan

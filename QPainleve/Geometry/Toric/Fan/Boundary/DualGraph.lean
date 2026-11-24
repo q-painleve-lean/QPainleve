@@ -166,6 +166,49 @@ theorem exists_toric_boundary_dualGraph_cycle (p : ι → (C ↘ base).smoothLoc
   · simpa [f, DualGraph.cycle] using hl j
   · simpa [f, DualGraph.cycle] using hr j
 
+
+include hc in
+/-- In any numbering agreeing with a positive cyclic ray order, the numbered
+node is the distinguished point of the cone between the two incident rays. -/
+theorem exists_cone_of_numberedBoundaryNode (p : ι → (C ↘ base).smoothLocus)
+    (b : Module.Basis (Fin 2) ℤ N) {n : ℕ} [NeZero n]
+    (A : Scheme.NodalCycleNumbering p n) (u : ZMod n ≃ Φ.Ray)
+    (hcomp : ∀ j, A.component j = Φ.boundaryNormalizationComponentEquiv hΦ (u j))
+    (hu : ∀ j, b.detDualEquiv (u j).primitiveGenerator (u (j + 1)).primitiveGenerator = 1 ∧
+      ∃ σ : Φ.cones, (u j).toCone ≤ σ ∧ (u (j + 1)).toCone ≤ σ) (j : ZMod n) :
+    ∃ σ : Φ.cones, (u j).toCone ≤ σ ∧ (u (j + 1)).toCone ≤ σ ∧
+      (D).subschemeι ((C).dualGraphEdgeEquiv p (A.edge j)).val =
+        Φ.distinguishedPointHom σ point := by
+  obtain ⟨e, o, v, he, hv, hn⟩ := exists_toric_boundary_dualGraph_cycle hΦ hc p b u hu
+  have hvA (j : ZMod n) : v j = A.vertex j :=
+    ((C).dualGraphVertexEquiv p).injective
+      ((hv j).trans ((hcomp j).symm.trans (A.component_apply j)))
+  obtain ⟨k, hk⟩ := e.surjective (A.edge j)
+  let order := (o (e k)).trans (A.order (A.edge j)).symm
+  have hend (l : Fin 2) : (DualGraph.cycle n).endpoint k l =
+      (DualGraph.cycle n).endpoint j (order l) := by
+    apply A.vertex.injective
+    have h := he k l
+    rw [hvA, hk] at h
+    rw [← h, ← A.endpoint_eq]
+    simp [order, hk]
+  have hkj : k = j := by
+    by_cases h₀ : order 0 = 0
+    · simpa [h₀] using hend 0
+    · have h₁ : order 1 = 0 := by
+        obtain ⟨l, hl⟩ := order.surjective 0
+        fin_cases l
+        · exact (h₀ hl).elim
+        · exact hl
+      have hk' : k = j + 1 := by simpa [h₀] using hend 0
+      have hj' : k + 1 = j := by simpa [h₁] using hend 1
+      have hdet := (hu k).1
+      rw [hj', hk', b.detDualEquiv_swap, (hu j).1] at hdet
+      norm_num at hdet
+  have heq : e j = A.edge j := hkj ▸ hk
+  obtain ⟨σ, h₀, h₁, hpoint⟩ := hn j
+  exact ⟨σ.val, h₀, h₁, heq ▸ hpoint⟩
+
 end TauCeti.Toric.Fan
 
 namespace TauCeti.Toric.FanEquiv

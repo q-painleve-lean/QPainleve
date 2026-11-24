@@ -31,7 +31,7 @@ open QPainleve.CharacterTorus QPainleve.Cluster
 open TauCeti TauCeti.AlgebraicGeometry TauCeti.Toric
 open Scheme Scheme.IdealSheafData
 
-namespace QPainleve.SignedClusterModularGroup.GeometricRealization
+namespace QPainleve.SignedClusterModularGroup
 
 local notation "S" => Spec (CommRingCat.of ℂ)
 local notation "A[" r "]" => (Fin r → ℤ)
@@ -51,6 +51,37 @@ variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {b : Basis (Fin 2) ℤ N} {r n : ℕ} [NeZero n]
   {L : Type} [AddCommGroup L] {H : LinearMap.BilinForm ℤ L} {γ : Type}
   {E : SkewExchangeMatrix (Fin r)}
+
+namespace CompleteToricPresentation
+
+open GeometricRealization (Point)
+
+/-- The charge lattice of a marked toric presentation of a primitive nef
+square-zero anticanonical cycle has finite index. -/
+theorem chargeIndex_ne_zero_of_anticanonical_cycle
+    (Q : CompleteToricPresentation i b r L γ)
+    {M : Point Centers[r] → MarkedSurface ℂ n H XTor[r]} {c₀ : Point Centers[r]}
+    (hmodel : Q.HasNodalModel c₀ (M c₀)) [IsRationalOver ((M c₀).surface ↘ S)]
+    (hD : D[M c₀].IsEffectiveCartier)
+    (hnef : classOf(hD).IsNef ℂ ((M c₀).surface ↘ S))
+    (hsq : Chow.classIntersectionNumber ℂ (M c₀).surface classOf(hD) classOf(hD) = 0)
+    (hcan : letI : SmoothOfRelativeDimension 2 ((M c₀).surface ↘ S) := (M c₀).smooth
+      classOf(hD) = (LineBundleClass.mk (canonicalBundle ℂ (M c₀).surface 2))⁻¹)
+    (hprim : IsPrimitive (Additive.ofMul classOf(hD))) :
+    (Fan.rayChargeMap Q.rays).range.toAddSubgroup.index ≠ 0 := by
+  let := Q.complete.nonempty_cones
+  let := Q.prestable
+  let := Q.neZero
+  let : SmoothOfRelativeDimension 2 ((M c₀).surface ↘ S) := (M c₀).smooth
+  obtain ⟨p, _, _, _, e, hW, hp⟩ := (Q.hasNodalModel_iff c₀ (M c₀)).mp hmodel
+  obtain ⟨_, _, _, _, hdiv, _, _⟩ :=
+    p.chargeIndex_bounds_of_anticanonical_cycle Q.complete hW e hp.symm hD hnef hsq hcan hprim
+  intro hz
+  simp [hz, NeZero.ne n] at hdiv
+
+end CompleteToricPresentation
+
+namespace GeometricRealization
 
 local instance instIsDominantPresentationLoopXRationalMap (w : Loops[E]) :
     ((End.asHom w).xRationalMap ℂ).IsDominant :=
@@ -96,14 +127,8 @@ theorem existsUnique_signedPicardHom_of_presentation
   let := Q.complete.nonempty_cones
   let := Q.prestable
   let := Q.neZero
-  let : SmoothOfRelativeDimension 2 ((M c₀).surface ↘ S) := (M c₀).smooth
-  obtain ⟨p, _, _, _, e, hW, hp⟩ := (Q.hasNodalModel_iff c₀ (M c₀)).mp hmodel
-  obtain ⟨_, _, _, _, hdiv, _, _⟩ :=
-    p.chargeIndex_bounds_of_anticanonical_cycle Q.complete hW e hp.symm
-      (hD c₀) hnef hsq hcan hprim
-  have hindex : (Fan.rayChargeMap Q.rays).range.toAddSubgroup.index ≠ 0 := by
-    intro hzero
-    simp [hzero, NeZero.ne n] at hdiv
+  have hindex := Q.chargeIndex_ne_zero_of_anticanonical_cycle (M := M) hmodel
+    (hD c₀) hnef hsq hcan hprim
   let : PreirreducibleSpace Centers[r].left :=
     inferInstanceAs (PreirreducibleSpace (scheme ℂ A[r]))
   obtain ⟨ρ, hρ, huniq⟩ :=
@@ -134,4 +159,6 @@ theorem existsUnique_signedPicardHom_of_presentation
   simp only [Subgroup.mem_unop, MonoidHom.mem_ker, MonoidHom.comp_apply, (hρ w).1,
     signedInversionSign_apply]
 
-end QPainleve.SignedClusterModularGroup.GeometricRealization
+end GeometricRealization
+
+end QPainleve.SignedClusterModularGroup
