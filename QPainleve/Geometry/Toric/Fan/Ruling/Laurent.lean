@@ -99,6 +99,44 @@ theorem projectiveLineTorusPoint_comp_projectiveLineTorusIsoSpecLaurent (a : ℂ
 
 namespace Fan
 
+local notation "P" => Fan.projectiveSpace (Pi.basisFun ℤ (Fin 1)) (isIntegralLattice_intCast 1)
+local notation "F" => Fan.prod P projectiveLineTorusFan
+local notation "π₁" => (FanHom.algebraicMap (FanHom.fst P projectiveLineTorusFan) ≫
+  Iso.hom Fan.projectiveLineToricIso)
+local notation "π₂" => FanHom.algebraicMap (FanHom.snd P projectiveLineTorusFan)
+
+private theorem isPullback_laurentProduct :
+    IsPullback π₁ (π₂ ≫ projectiveLineTorusIsoSpecLaurent.hom)
+      (projectiveLine ℂ ↘ base) (Spec.algebraMap ℂ L) := by
+  refine isPullback_projectiveLineTorusProduct.of_iso'
+    (Iso.refl _) (Iso.refl _) projectiveLineTorusIsoSpecLaurent.symm (Iso.refl _) ?_ ?_ ?_ ?_
+  · simp
+  · simp
+  · simp
+  · rw [Iso.refl_hom, Category.comp_id, Iso.symm_hom, Spec.algebraMap,
+      ← projectiveLineTorusIsoSpecLaurent_hom_comp_toBase, Iso.inv_hom_id_assoc]
+
+/-- The product fan of the projective line and its base torus realizes the
+projective line over the Laurent polynomial ring. -/
+def projectiveLineTorusProductIsoLaurent : (F).algebraicRealization ≅ projectiveLine L :=
+  isPullback_laurentProduct.isoPullback ≪≫
+    (projectiveLine.isPullback_baseChangeProjection ℂ L).isoPullback.symm
+
+/-- The Laurent model's fiber projection is the first fan projection. -/
+@[reassoc (attr := simp)]
+theorem projectiveLineTorusProductIsoLaurent_hom_baseChangeProjection :
+    projectiveLineTorusProductIsoLaurent.hom ≫ projectiveLine.baseChangeProjection ℂ L =
+      π₁ := by
+  simp [projectiveLineTorusProductIsoLaurent]
+
+/-- The Laurent model's structural map is the second fan projection, expressed
+in the Laurent coordinate of the base. -/
+@[reassoc (attr := simp)]
+theorem projectiveLineTorusProductIsoLaurent_hom_toBase :
+    projectiveLineTorusProductIsoLaurent.hom ≫ (projectiveLine L ↘ S) =
+      π₂ ≫ projectiveLineTorusIsoSpecLaurent.hom := by
+  simp [projectiveLineTorusProductIsoLaurent]
+
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V] {i : N →+ V}
   (Φ : Fan i) (m : N →+ ℤ)
   (h : ∀ σ : Φ.cones, (∀ x ∈ σ.val, 0 ≤ Φ.lattice.realCharacter m x) ∨

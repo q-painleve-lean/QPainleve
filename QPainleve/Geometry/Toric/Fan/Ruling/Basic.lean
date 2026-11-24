@@ -455,7 +455,7 @@ end Fan
 
 namespace FanHom
 
-variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
+variable {N : Type} {V : Type*} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {Φ : Fan i}
 
 open Fan
@@ -490,6 +490,22 @@ theorem exists_eq_characterFanHom
   refine ⟨hn, FanHom.ext ?_⟩
   ext x j
   rw [characterFanHom_latticeMap, hq]
+
+local notation "m(" f ")" =>
+  AddMonoidHom.comp (Pi.evalAddMonoidHom (fun _ : Fin 1 ↦ ℤ) 0) (FanHom.latticeMap f)
+
+/-- On the dense torus, the projective coordinates of a map to the projective-line
+fan are `[1 : zᵐ]`, where `m` evaluates its lattice map at the sole coordinate. -/
+@[reassoc]
+theorem denseTorusι_comp_projectiveLineToricIso (f : FanHom Φ (Fan.projectiveSpace b₁ h₁))
+    (hΦ : Nonempty Φ.cones) :
+    Φ.denseTorusι hΦ ≫ f.algebraicMap ≫ Fan.projectiveLineToricIso.hom =
+      projectiveLine.polynomialPoint ℂ (algebraMap ℂ _) 0
+        (MonoidAlgebra.of ℂ _ (ofAdd ((denseTorusDualEquiv Φ.lattice).symm m(f)))) := by
+  obtain ⟨_, hf⟩ := f.exists_eq_characterFanHom m(f) fun x j ↦ by
+    rw [Subsingleton.elim j 0]
+    rfl
+  conv_lhs => rw [hf, ← Fan.characterRuling_def, Φ.denseTorusι_comp_characterRuling]
 
 end FanHom
 
