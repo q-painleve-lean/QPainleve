@@ -71,25 +71,29 @@ theorem existsUnique_isLift_internalBlowupTower (hΦ : Φ.IsRegular) :
 
 include hdet in
 /-- Transporting the internal blowups after reindexing the centers gives an isomorphism
-over the toric schemes that identifies the strict boundary ideals. The centers may repeat. -/
+over the toric schemes that restricts to the fan equivalence on the strict boundaries.
+The centers may repeat. -/
 theorem exists_iso_reindex_transport_internalBlowupTower (hΦ : Φ.IsRegular)
     (σ : Equiv.Perm (Fin n)) :
     let A := Fan.internalBlowupTower b s c
     let B := Fan.internalBlowupTower b' (e.rayEquiv ∘ s ∘ σ) (c ∘ σ)
     ∃ f : A.1 ≅ B.1,
       f.hom ≫ B.2.toTower.toBase = A.2.toTower.toBase ≫ e.toFanHom.algebraicMap ∧
-      B.2.boundaryι.ker.comap f.hom = A.2.boundaryι.ker := by
+      B.2.boundaryι.ker.comap f.hom = A.2.boundaryι.ker ∧
+      A.2.boundaryι ≫ f.hom = (e.boundaryIso h₀ h₁).hom ≫ B.2.boundaryι := by
   dsimp only
   let A := Fan.internalBlowupTower b s c
   let B := Fan.internalBlowupTower b' (e.rayEquiv ∘ s ∘ σ) (c ∘ σ)
   obtain ⟨f, hf, hfB⟩ := Fan.exists_iso_internalBlowupTower_reindex b s c σ
   obtain ⟨f', ⟨hf', hf'B⟩, -⟩ :=
     e.existsUnique_isLift_internalBlowupTower b b' hdet (s ∘ σ) (c ∘ σ) hΦ
-  refine ⟨f ≪≫ f', ?_, ?_⟩
+  have hstrict : A.2.boundaryι ≫ (f ≪≫ f').hom = (e.boundaryIso h₀ h₁).hom ≫ B.2.boundaryι := by
+    rw [Iso.trans_hom, ← Category.assoc, hfB, hf'B]
+  refine ⟨f ≪≫ f', ?_, ?_, hstrict⟩
   · simpa only [← Category.assoc, hf, asIso_hom, Iso.trans_hom] using
       congrArg (f.hom ≫ ·) hf'.hom_toBase
   · have hk : (A.2.boundaryι ≫ (f ≪≫ f').hom).ker = B.2.boundaryι.ker := by
-      rw [Iso.trans_hom, ← Category.assoc, hfB, hf'B, Scheme.Hom.ker_comp_of_isIso]
+      rw [hstrict, Scheme.Hom.ker_comp_of_isIso]
     rw [← hk, Scheme.Hom.comap_ker_comp_of_isClosedImmersion]
 
 end TauCeti.Toric.FanEquiv

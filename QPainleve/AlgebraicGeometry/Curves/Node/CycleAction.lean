@@ -114,6 +114,15 @@ theorem reverse_branch (j : ZMod n) (b : Fin 2) :
     C.reverse.branch (j, b) = C.branch (-1 - j, b.rev) :=
   (rfl)
 
+/-- Reversing the cycle exchanges the two ordered branches of each actual node. -/
+@[simp]
+theorem reverse_branchOrderOfDualGraph (z : (X.singularLocus k).subscheme) (b : Fin 2) :
+    X.branchOrderOfDualGraph p C.reverse.order z b =
+      X.branchOrderOfDualGraph p C.order z b.rev := by
+  obtain ⟨e, rfl⟩ := (X.dualGraphNodeEquiv p).surjective z
+  apply Subtype.ext
+  simp only [Scheme.branchOrderOfDualGraph_apply_val, reverse, Equiv.trans_apply, Fin.revPerm_apply]
+
 end NodalCycleNumbering
 
 end AlgebraicGeometry.Scheme

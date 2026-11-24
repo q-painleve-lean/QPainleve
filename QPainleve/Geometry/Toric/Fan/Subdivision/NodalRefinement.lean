@@ -45,7 +45,8 @@ local notation "model" => internalBlowupTower b
 
 /-- A regular subdivision induces a nodal blowup projection of the ordered internal
 model. Its reduced total boundary is the strict boundary of the refined internal model,
-and the square of projections to the fan schemes is cartesian. -/
+its restriction to the strict boundaries is the toric subdivision map, and the square
+of projections to the fan schemes is cartesian. -/
 theorem IsSubdivision.exists_nodal_refinement_internalBlowupTower
     (h : Φ.IsSubdivision Ψ) (hΦ : Φ.IsRegular) (hΨ : Ψ.IsRegular)
     (ρ : Fin n → Ψ.Ray) (c : Fin n → ℂˣ) :
@@ -56,7 +57,8 @@ theorem IsSubdivision.exists_nodal_refinement_internalBlowupTower
         (B.2.toTower.toBase ≫ Ψ.algebraicRealizationStructureMap) (𝟙 B.1) T ∧
       IsPullback (e.hom ≫ T.toBase) A.2.toTower.toBase
         B.2.toTower.toBase h.toFanHom.algebraicMap ∧
-      ((B.2.boundaryι.ker.comap T.toBase).radical).comap e.hom = A.2.boundaryι.ker := by
+      ((B.2.boundaryι.ker.comap T.toBase).radical).comap e.hom = A.2.boundaryι.ker ∧
+      A.2.boundaryι ≫ e.hom ≫ T.toBase = h.boundaryMap hΦ₀ hΨ₀ ≫ B.2.boundaryι := by
   dsimp only
   let A := model (h.liftRay ∘ ρ) c
   let B := model ρ c
@@ -72,7 +74,7 @@ theorem IsSubdivision.exists_nodal_refinement_internalBlowupTower
       (by simp) (by simp) (by simp [B]) (by simpa using ha)
   let e := hg'.isoIsPullback _ _ hpb
   have he : e.hom ≫ T.toBase = g' := hg'.isoIsPullback_hom_fst _ _ hpb
-  refine ⟨m, Z, T, e, hT, he.symm ▸ hg', ?_⟩
+  refine ⟨m, Z, T, e, hT, he.symm ▸ hg', ?_, by rw [he, hb]⟩
   have hred : IsReduced (Φ.boundaryIdeal hΦ₀).subscheme := by
     rw [Fan.boundaryIdeal_def]
     infer_instance
@@ -118,15 +120,17 @@ theorem exists_common_nodal_refinement_internalBlowupTower
       IsPullback (f.hom ≫ U.toBase) A.2.toTower.toBase
         C.2.toTower.toBase hΩΨ.toFanHom.algebraicMap ∧
       ((B.2.boundaryι.ker.comap T.toBase).radical).comap e.hom = A.2.boundaryι.ker ∧
-      ((C.2.boundaryι.ker.comap U.toBase).radical).comap f.hom = A.2.boundaryι.ker := by
+      ((C.2.boundaryι.ker.comap U.toBase).radical).comap f.hom = A.2.boundaryι.ker ∧
+      A.2.boundaryι ≫ e.hom ≫ T.toBase = hΩΦ.boundaryMap hΩ₀ hΦ₀ ≫ B.2.boundaryι ∧
+      A.2.boundaryι ≫ f.hom ≫ U.toBase = hΩΨ.boundaryMap hΩ₀ hΨ₀ ≫ C.2.boundaryι := by
   dsimp only
   have hmatch := hΩΦ.liftRay_comp_eq_of_primitiveGenerator_eq hΩΨ ρ τ hρτ
-  obtain ⟨m, Y, T, e, hT, he, hD⟩ :=
+  obtain ⟨m, Y, T, e, hT, he, hD, hboundary⟩ :=
     hΩΦ.exists_nodal_refinement_internalBlowupTower b hΩ hΦ ρ c
   have hright := hΩΨ.exists_nodal_refinement_internalBlowupTower b hΩ hΨ τ c
   dsimp only at hright
   rw [← hmatch] at hright
-  obtain ⟨l, Z, U, f, hU, hf, hE⟩ := hright
-  exact ⟨m, l, Y, Z, T, U, e, f, hT, hU, he, hf, hD, hE⟩
+  obtain ⟨l, Z, U, f, hU, hf, hE, hboundary'⟩ := hright
+  exact ⟨m, l, Y, Z, T, U, e, f, hT, hU, he, hf, hD, hE, hboundary, hboundary'⟩
 
 end TauCeti.Toric.Fan

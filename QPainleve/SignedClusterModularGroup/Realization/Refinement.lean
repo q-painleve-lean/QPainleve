@@ -119,7 +119,7 @@ theorem exists_subdivision (hΨ : Ψ.IsRegular)
   have : IsModification π := isModification_internalBlowupTower_toBase b s (centers c) hΦ
   have : IsModification π' :=
     isModification_internalBlowupTower_toBase b (h.liftRay ∘ s) (centers c) hΨ
-  obtain ⟨k, Y, R, e, hR, hcart, hD⟩ :=
+  obtain ⟨k, Y, R, e, hR, hcart, hD, hboundary⟩ :=
     h.exists_nodal_refinement_internalBlowupTower b hΨ hΦ s (centers c)
   let g := e.hom ≫ R.toBase
   have hg : g ≫ π = π' ≫ f := hcart.w
@@ -129,11 +129,7 @@ theorem exists_subdivision (hΨ : Ψ.IsRegular)
     hR.isClosedPointTower.isModification_of_smoothOfRelativeDimension_two
       (π ≫ Φ.algebraicRealizationStructureMap)
   have : IsModification g := inferInstanceAs (IsModification (e.hom ≫ R.toBase))
-  obtain ⟨g', hg', hb, -⟩ := h.exists_isPullback_internalBlowupTower b s (centers c)
-  have : IsDominant (g' ≫ π) := hg'.w.symm ▸ inferInstanceAs (IsDominant (π' ≫ f))
-  have : IsDominant g' := IsModification.isDominant_of_comp g' π
-  have hgg' : g = g' := (π).eq_of_comp_eq_of_isModification (hg.trans hg'.w.symm)
-  have hβ : (A').2.boundaryι ≫ g = β ≫ (A).2.boundaryι := hgg'.symm ▸ hb
+  have hβ : (A').2.boundaryι ≫ g = β ≫ (A).2.boundaryι := hboundary
   let : PrestableFamily (M.boundary ↘ S) := M.prestable
   refine ⟨{
     projection := g ≫ p.projection
@@ -144,7 +140,6 @@ theorem exists_subdivision (hΨ : Ψ.IsRegular)
     boundaryMap := β ≫ p.boundaryMap
     boundary_comp := by rw [Category.assoc, p.boundary_comp, ← Category.assoc, ← hβ,
       Category.assoc]
-    boundary_over := ?_
     orientedSubdivision := hU.comp p.orientedSubdivision
     component_zero := by rw [Scheme.Hom.comp_apply, ho, p.component_zero]
     marked_pullback := marked_pullback_subdivision p h hΨ g hg
@@ -153,11 +148,6 @@ theorem exists_subdivision (hΨ : Ψ.IsRegular)
   · rw [comap_comp, Scheme.IdealSheafData.support_comap, p.support_comap,
       ← Scheme.IdealSheafData.support_comap, ← hD,
       ← radical_comap_of_isOpenImmersion, support_radical, comap_comp]
-  · refine ⟨?_⟩
-    rw [Category.assoc, comp_over p.boundaryMap S, over_eq_subschemeι_comp,
-      reassoc_of% (h.boundaryMap_comp_subschemeι hΨ₀ hΦ₀),
-      algebraicRealization_over, FanHom.algebraicMap_comp_algebraicRealizationStructureMap,
-      ← algebraicRealization_over, ← over_eq_subschemeι_comp]
 
 end Numbering
 

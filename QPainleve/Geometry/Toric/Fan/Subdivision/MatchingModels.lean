@@ -147,7 +147,8 @@ local notation "classOf(" h ")" => (LineBundleClass.mk (IsEffectiveCartier.toInv
 
 /-- Two connected nef square-zero nodal pairs with matching ordered toric models
 in a common oriented lattice are isomorphic as pairs over the field. The isomorphism
-intertwines their fixed-center X evaluations. The marked Picard pullback is given on
+identifies the two projections of the common strict boundary and intertwines the
+fixed-center X evaluations. The marked Picard pullback is given on
 the specified common subdivision by pulling back the toric classes and keeping the
 total exceptional coefficients. -/
 theorem exists_iso_of_matching_toric_models
@@ -179,6 +180,8 @@ theorem exists_iso_of_matching_toric_models
     let p := a.inv ≫ P.toBase
     let q := a'.inv ≫ Q.toBase
     ∃ f : X ≅ X', f.hom ≫ t = s ∧ E.comap f.hom = D ∧
+      (hΩΦ.boundaryMap inferInstance hΦ₀ ≫ (model ρ centers(c)).2.boundaryι ≫ p) ≫ f.hom =
+        hΩΨ.boundaryMap inferInstance hΨ₀ ≫ (model τ centers(c)).2.boundaryι ≫ q ∧
       f.hom.toRationalMap.comp (contractedXEvaluation b τ c hΨ q) =
         contractedXEvaluation b ρ c hΦ p ∧
       ∀ (L : LineBundleClass X) (L' : LineBundleClass X'),
@@ -191,7 +194,7 @@ theorem exists_iso_of_matching_toric_models
             (Additive.ofMul (pullback hΩΨ.toFanHom.algebraicMap y.1.toMul), y.2) := by
   have := hP.isClosedPointTower.isModification_of_smoothOfRelativeDimension_two s
   have := hQ.isClosedPointTower.isModification_of_smoothOfRelativeDimension_two t
-  obtain ⟨m, l, W, W', T, U, e, e', hT, hU, hL, hR, hBL, hBR⟩ :=
+  obtain ⟨m, l, W, W', T, U, e, e', hT, hU, hL, hR, hBL, hBR, hιL, hιR⟩ :=
     exists_common_nodal_refinement_internalBlowupTower b hΩΦ hΩΨ hΩ hΦ hΨ ρ τ centers(c) hρτ
   obtain ⟨V, L, f, hLT, hLf, hLD⟩ := hP.exists_append_of_iso hT a ha hb
   obtain ⟨V', R, f', hRT, hRf, hRE⟩ := hQ.exists_append_of_iso hU a' ha' hb'
@@ -227,8 +230,10 @@ theorem exists_iso_of_matching_toric_models
   have hcomm : (u ≫ p) ≫ iso.hom = v ≫ q := by
     simpa only [u, v, p, q, hLf, hRf, g, Iso.trans_hom, Iso.symm_hom, Category.assoc,
       Iso.hom_inv_id_assoc, Iso.inv_hom_id_assoc] using congrArg (e.hom ≫ f.inv ≫ ·) hiso
-  refine ⟨iso, hfield, hpair, comp_contractedXEvaluation_of_common_subdivision b hΩΦ hΩΨ
+  refine ⟨iso, hfield, hpair, ?_, comp_contractedXEvaluation_of_common_subdivision b hΩΦ hΩΨ
     hΩ hΦ hΨ ρ τ c hρτ u v hL.w hR.w iso hcomm, ?_⟩
+  · simpa only [u, v, p, q, Category.assoc, reassoc_of% hιL, reassoc_of% hιR] using
+      congrArg ((model (hΩΦ.liftRay ∘ ρ) centers(c)).2.boundaryι ≫ ·) hcomm
   have : IsNoetherian X := isNoetherian_of_finiteType s
   have hbase : u ≫ p = (e ≪≫ f.symm).hom ≫ L.toBase := by simp [u, p, hLf]
   have hinj : Function.Injective (pullback (u ≫ p)) := by

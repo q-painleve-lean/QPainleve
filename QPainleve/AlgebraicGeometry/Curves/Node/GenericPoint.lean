@@ -48,6 +48,12 @@ theorem componentGenericPoint_def (j : ZMod n) :
     A.componentGenericPoint j = ν[X] (η (A.component j)) :=
   (rfl)
 
+/-- Reversing the cycle negates the index of each component's generic point. -/
+@[simp]
+theorem reverse_componentGenericPoint (j : ZMod n) :
+    A.reverse.componentGenericPoint j = A.componentGenericPoint (-j) := by
+  simp only [componentGenericPoint_def, reverse_component]
+
 /-- Distinct numbered components have distinct generic points in the nodal curve. -/
 theorem componentGenericPoint_injective : Function.Injective A.componentGenericPoint := by
   intro j l h

@@ -36,6 +36,15 @@ theorem rayBoundaryOrders_apply (ρ : Φ.Ray) (j : ι) :
     rayBoundaryOrders b s ρ j = b.det ![(s j).primitiveGenerator, ρ.primitiveGenerator] :=
   (rfl)
 
+/-- A fan subdivision preserves the order vector on the lift of an old ray
+when the charge labels are lifted with it. -/
+@[simp]
+theorem IsSubdivision.rayBoundaryOrders_liftRay {Ψ : Fan i} (h : Ψ.IsSubdivision Φ)
+    (ρ : Φ.Ray) :
+    rayBoundaryOrders b (h.liftRay ∘ s) (h.liftRay ρ) = rayBoundaryOrders b s ρ := by
+  funext j
+  simp only [rayBoundaryOrders_apply, Function.comp_apply, h.primitiveGenerator_liftRay]
+
 /-- Reversing the lattice orientation negates the boundary orders of the determinant characters. -/
 @[simp]
 theorem rayBoundaryOrders_reindex_swap (ρ : Φ.Ray) :
