@@ -76,8 +76,6 @@ namespace GeometricRealization
 
 local notation "Centers" => Over.mk (structureMap k A)
 
-attribute [local instance] nonempty_centerTorus smooth_centerTorus
-
 variable [Fintype ι] [DecidableEq ι]
 
 local notation "invertStep" E:arg => Quiver.Hom.toPath (Generator.invert.toStep E)

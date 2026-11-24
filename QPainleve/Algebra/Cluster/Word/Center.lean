@@ -7,6 +7,7 @@ module
 
 public import QPainleve.Algebra.Cluster.ChargeKernel.Word
 public import QPainleve.Geometry.Toric.CharacterTorus.Noncollision
+public import Mathlib.AlgebraicGeometry.Birational.Composition
 
 /-!
 # Center parameters along a cluster word
@@ -211,6 +212,77 @@ theorem dense_centerOpen (w : Word B C) (P : ChargeSeed B N) :
   let : IrreducibleSpace (scheme K A) :=
     inferInstanceAs (IrreducibleSpace (PrimeSpectrum (AddMonoidAlgebra K A)))
   exact (w.centerOpen K P).isOpen.dense (w.nonempty_centerOpen P)
+
+variable (K) in
+/-- The monomial center map restricted to the simultaneous noncollision open of a word. -/
+def centerPartialMap (w : Word B C) (P : ChargeSeed B N) :
+    (scheme K A).PartialMap (scheme K A) :=
+  (w.centerIso K).hom.toPartialMap.restrict (w.centerOpen K P) (w.dense_centerOpen P) le_top
+
+/-- The center map is the restriction of the regular monomial isomorphism. -/
+theorem centerPartialMap_eq_restrict (w : Word B C) (P : ChargeSeed B N) :
+    w.centerPartialMap K P =
+      (w.centerIso K).hom.toPartialMap.restrict (w.centerOpen K P) (w.dense_centerOpen P) le_top :=
+  (rfl)
+
+/-- The center partial map has the simultaneous noncollision open as its domain. -/
+@[simp]
+theorem centerPartialMap_domain (w : Word B C) (P : ChargeSeed B N) :
+    (w.centerPartialMap K P).domain = w.centerOpen K P := (rfl)
+
+/-- The center partial map applies the monomial isomorphism after the open inclusion. -/
+theorem centerPartialMap_hom (w : Word B C) (P : ChargeSeed B N) :
+    (w.centerPartialMap K P).hom =
+      (w.centerPartialMap K P).domain.ι ≫ (w.centerIso K).hom := by
+  -- The restriction inserts the inclusion of the domain into the top open.
+  change (scheme K A).homOfLE (show w.centerOpen K P ≤ ⊤ from le_top) ≫
+    (scheme K A).topIso.hom ≫ (w.centerIso K).hom = _
+  rw [Scheme.topIso_hom, Scheme.homOfLE_ι_assoc]
+  rfl
+
+instance (w : Word B C) (P : ChargeSeed B N) : IsDominant (w.centerPartialMap K P).hom := by
+  have := Opens.isDominant_ι (w.centerPartialMap K P).dense_domain
+  rw [centerPartialMap_hom]
+  infer_instance
+
+instance (w : Word B C) (P : ChargeSeed B N) :
+    (w.centerPartialMap K P).IsOver (structureMap K A) (structureMap K A) where
+  over := by simp [centerPartialMap_hom]
+
+/-- The center partial map is over the base for the bundled slice objects.
+The projected structure morphisms need their own instance for typeclass search. -/
+instance (w : Word B C) (P : ChargeSeed B N) :
+    (w.centerPartialMap K P).IsOver
+      (Over.mk (structureMap K A)).hom (Over.mk (structureMap K A)).hom :=
+  inferInstanceAs ((w.centerPartialMap K P).IsOver (structureMap K A) (structureMap K A))
+
+/-- The center map for the empty word is the identity on the initial noncollision open. -/
+theorem centerPartialMap_nil (P : ChargeSeed B N) :
+    (Path.nil : Word B B).centerPartialMap K P =
+      (Scheme.PartialMap.id (scheme K A)).restrict
+        ((Path.nil : Word B B).centerOpen K P) (Path.nil.dense_centerOpen P) le_top := by
+  simp only [centerPartialMap_eq_restrict, centerIso_nil, Iso.refl_hom, Scheme.PartialMap.id]
+
+/-- The center partial maps compose on exactly the noncollision open of the concatenation. -/
+theorem centerPartialMap_comp (w : Word B C) (v : Word C D) (P : ChargeSeed B N) :
+    (w.comp v).centerPartialMap K P = (w.centerPartialMap K P).comp
+      (v.centerPartialMap K (w.chargeTarget P)) := by
+  let f := w.centerPartialMap K P
+  let g := v.centerPartialMap K (w.chargeTarget P)
+  have hd : (f.comp g).domain = (w.comp v).centerOpen K P := by
+    simp only [f, g, Scheme.PartialMap.comp_domain, centerPartialMap_hom,
+      Scheme.Hom.comp_preimage, Scheme.Hom.image_preimage_eq_opensRange_inf,
+      Scheme.Opens.opensRange_ι, centerPartialMap_domain, centerOpen_comp]
+  refine (Scheme.PartialMap.ext _ _ (hd.trans (centerPartialMap_domain _ _).symm) ?_).symm
+  calc
+    (f.comp g).hom = (f.comp g).domain.ι ≫ (w.centerIso K).hom ≫ (v.centerIso K).hom := by
+      simp only [Scheme.PartialMap.comp_hom, g, centerPartialMap_hom, Category.assoc,
+        morphismRestrict_ι_assoc, f, Scheme.Opens.isoImage_ι_inv_ι_assoc,
+        Scheme.homOfLE_ι_assoc]
+      rfl
+    _ = _ := by
+      simp only [centerPartialMap_hom, centerIso_comp, Iso.trans_hom,
+        Scheme.isoOfEq_hom, Scheme.homOfLE_ι_assoc]
 
 /-- Over a separably closed field there is a rational initial center character satisfying
 the noncollision conditions at every step. -/

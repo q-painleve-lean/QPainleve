@@ -14,6 +14,7 @@ import QPainleve.AlgebraicGeometry.Blowup.Integral
 import QPainleve.AlgebraicGeometry.Blowup.Modification
 import QPainleve.AlgebraicGeometry.Blowup.Pullback
 import QPainleve.AlgebraicGeometry.IdealSheaf.Restriction
+import QPainleve.AlgebraicGeometry.Morphisms.Modification.Birational
 import QPainleve.AlgebraicGeometry.RationalMap.Composition.Basic
 import QPainleve.AlgebraicGeometry.RationalMap.Restriction
 
@@ -194,6 +195,29 @@ theorem Ray.mutationPartialMap_resolved :
   let p := Φ.mutationPartialMap b (a : ℂ) hnz hp hOpp
   simpa only [p, mutationPartialMap] using
     p.hom_toRationalMap_eq_comp.symm
+
+/-- On a dominant refinement of the pivot blowup, the mutated rational map
+is represented by the refined projection to the opposite pivot blowup. -/
+theorem Ray.mutationPartialMap_resolved_of_comp_eq {W : Scheme} [IsIntegral W]
+    (f : W ⟶ (I₀).blowup) (g : W ⟶ Φ.algebraicRealization) [IsDominant g]
+    (hg : f ≫ (I₀).blowupToBase = g) :
+    let : Nonempty Φ.cones := hs
+    g.toRationalMap.comp q =
+      (f ≫ (e).hom ≫ (I₁).blowupToBase).toRationalMap := by
+  subst g
+  intro hcones
+  let := hcones
+  have := ρ.isIntegral_mutationSourceBlowup b hOpp a
+  have := ρ.isModification_mutationSourceBlowupToBase b hOpp a
+  have : IsDominant f := IsModification.isDominant_of_comp f (I₀).blowupToBase
+  calc
+    _ = (f.toRationalMap.comp (I₀).blowupToBase.toRationalMap).comp q := by
+      simp only [Scheme.RationalMap.comp_toRationalMap, Scheme.Hom.toRationalMap_compHom]
+    _ = f.toRationalMap.comp ((I₀).blowupToBase.toRationalMap.comp q) :=
+      Scheme.RationalMap.comp_assoc _ _ _
+    _ = _ := by
+      rw [ρ.mutationPartialMap_resolved b hOpp a, Scheme.RationalMap.comp_toRationalMap,
+        Scheme.Hom.toRationalMap_compHom]
 
 /-- The regular morphism from the pivot blowup to the mutated fan pulls back rational
 functions by the toric mutation followed by the original blowup pullback. -/

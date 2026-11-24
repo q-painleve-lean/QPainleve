@@ -35,6 +35,15 @@ def affineEvaluation (k : Type u) [CommRing k] (v : A →+ N) :
     scheme k (A × N) ⟶ scheme k A :=
   map k ((AddMonoidHom.id A).prod v)
 
+/-- A regular monomial pulls back to its center exponent and its charge exponent. -/
+@[simp]
+theorem preimage_affineEvaluation_single (k : Type u) [CommRing k] (v : A →+ N)
+    (a : A) (r : k) :
+    (Spec.preimage (affineEvaluation k v)).hom (AddMonoidAlgebra.single a r) =
+      AddMonoidAlgebra.single (a, v a) r := by
+  rw [affineEvaluation, preimage_map]
+  simp [AddMonoidAlgebra.mapDomainAlgHom]
+
 instance isDominant_affineEvaluation (k : Type u) [CommRing k] (v : A →+ N) :
     IsDominant (affineEvaluation k v) := by
   have : IsDominant (map k (AddMonoidHom.fst A N) ≫ affineEvaluation k v) := by
@@ -153,6 +162,13 @@ theorem section_evaluation (v : A →+ N) :
       (AddMonoidHom.fst_comp_prod (AddMonoidHom.id A) v)
   rw [hcomp]
   simp
+
+/-- The group-scheme evaluation agrees with the evaluation in additive coordinates. -/
+@[reassoc]
+theorem evaluation_comp_diagonalizableGroupSchemeIso (v : A →+ N) :
+    (evaluation k v).hom.hom.left ≫ (diagonalizableGroupSchemeIso k (L A)).hom =
+      (diagonalizableGroupSchemeIso k (L (A × N))).hom ≫ affineEvaluation k v :=
+  groupSchemeMap_comp_diagonalizableGroupSchemeIso k ((AddMonoidHom.id A).prod v)
 
 /-- Evaluation is dominant since it has a section obtained by setting the charge character
 to the identity. -/
