@@ -11,6 +11,7 @@ public import TauCeti.AlgebraicGeometry.IdealSheaf.TensorSequence
 public import TauCeti.AlgebraicGeometry.Modules.Pullback.Sections
 import QPainleve.AlgebraicGeometry.IdealSheaf.Quotient
 import QPainleve.AlgebraicGeometry.IdealSheaf.Tensor.Product
+import QPainleve.AlgebraicGeometry.Modules.Pullback.Sections
 
 /-!
 # Restriction of a line bundle to a closed subscheme
@@ -199,14 +200,9 @@ theorem IsEffectiveCartier.surjective_pullbackSections_pow_of_subsingleton_cohom
     @Function.Injective.subsingleton _ _ _
       ((cohomologyFunctor _ 1).mapIso e).addCommGroupIsoToAddEquiv.injective hvan
   have hs : Function.Surjective (E.subschemeι.pullbackSections N.obj ⊤) := by
-    have hs := E.surjective_pullbackSectionsLE_of_subsingleton_cohomology_one N hv
-    let htop : (⊤ : E.subscheme.Opens) ≤ E.subschemeι ⁻¹ᵁ ⊤ := by simp
-    have : IsIso (homOfLE htop) := homOfLE_isIso_of_eq htop (E.subschemeι.preimage_top.symm)
     intro y
-    obtain ⟨x, hx⟩ := hs (((pullback E.subschemeι).obj N.obj).presheaf.map (homOfLE htop).op y)
-    rw [Scheme.Hom.pullbackSectionsLE_apply] at hx
-    exact ⟨x, (ConcreteCategory.bijective_of_isIso
-      (((pullback E.subschemeι).obj N.obj).presheaf.map (homOfLE htop).op)).1 hx⟩
+    obtain ⟨x, hx⟩ := E.surjective_pullbackSectionsLE_of_subsingleton_cohomology_one N hv y
+    exact ⟨x, by simpa only [Scheme.Hom.pullbackSectionsLE_top] using! hx⟩
   exact IsEffectiveCartier.toInvertibleSheaf_obj _ ▸ hs
 
 end AlgebraicGeometry.Scheme.IdealSheafData
