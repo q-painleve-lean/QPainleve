@@ -91,6 +91,25 @@ theorem isModification_of_smoothOfRelativeDimension_two
     decide
   exact hT.isModification
 
+/-- Blowing up one more closed point on a tower over an integral Noetherian smooth
+surface preserves birationality of a morphism from the final surface. -/
+theorem birationalOver_blowupToBase_comp {k : Type u} [Field k] [PerfectField k]
+    [IsIntegral X] [IsNoetherian X] (hT : IsClosedPointTower X T)
+    (f : X ⟶ Spec (.of k)) [SmoothOfRelativeDimension 2 f] {A : Y.IdealSheafData}
+    {q : Y} (hq : IsClosed ({q} : Set Y)) (hA : A = (Y.fromSpecResidueField q).ker)
+    {g : Y ⟶ Z} (hg : Scheme.BirationalOver g (𝟙 Z)) :
+    Scheme.BirationalOver (A.blowupToBase ≫ g) (𝟙 Z) := by
+  let := hT.isIntegral f
+  let := hT.smoothOfRelativeDimension f
+  have hU : IsClosedPointTower Y (BlowupTower.nil.snoc A) := .snoc .nil q hq hA
+  have : IsModification A.blowupToBase := by
+    simpa only [toBase_snoc, toBase_nil, Category.comp_id] using
+      hU.isModification_of_smoothOfRelativeDimension_two (T.toBase ≫ f)
+  obtain ⟨e, he⟩ := IsModification.birationalOver A.blowupToBase
+  have hπ : Scheme.BirationalOver (A.blowupToBase ≫ g) g :=
+    ⟨e, by simpa only [Category.assoc, Category.comp_id] using congrArg (· ≫ g) he⟩
+  exact hπ.trans hg
+
 /-- The final surface of a closed point blowup tower over a rational smooth surface is
 rational over the same field. -/
 theorem isRationalOver (hT : IsClosedPointTower X T)

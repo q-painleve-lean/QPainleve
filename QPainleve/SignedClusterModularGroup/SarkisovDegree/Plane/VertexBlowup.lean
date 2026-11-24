@@ -66,21 +66,25 @@ local notation "X" => Fan.algebraicRealization Φ
 local notation "fX" => (X ↘ S)
 local notation "hΦ" => Fan.isRegular_starSubdivisionAlong Ψ hΨ (Subtype.property σ)
 
-private theorem isClosed_projectivePlane_vertex : IsClosed ({p} : Set P) := by
+/-- The distinguished toric vertex is a closed point of the symmetric-algebra plane. -/
+theorem isClosed_projectivePlane_vertex : IsClosed ({p} : Set P) := by
   have : IsClosedImmersion z := Fan.isClosedImmersion_distinguishedPointHom _ _
   have : IsClosedImmersion (z ≫ (D).hom) := inferInstance
   exact (Set.range_eq_singleton (f := fun x : S ↦ (z ≫ (D).hom) x)
     (fun x ↦ congrArg (fun y : S ↦ (z ≫ (D).hom) y) (Subsingleton.elim x _))) ▸
       (z ≫ (D).hom).isClosedEmbedding.isClosed_range
 
-private theorem exists_vertex_blowup_comparison :
+/-- The specified star subdivision realizes the blowup of the corresponding vertex
+of the symmetric-algebra plane. Its new ray is the negative section. -/
+theorem exists_vertex_blowup_comparison :
     ∃ (hσ : (σ).val ≠ ⊥) (b : Basis (Fin 2) ℤ N) (r : Fin 4 ≃ (Φ).Ray) (e : X ≅ W),
       (fun j ↦ (r j).primitiveGenerator) = ![b 0, b 1, -b 0, ((1 : ℕ) : ℤ) • b 0 - b 1] ∧
       e.hom ≫ (J).blowupToBase =
         ((Ψ).starSubdivisionAlong_isSubdivision hΨ (σ).property hσ).toFanHom.algebraicMap ≫
         (D).hom ∧
       e.hom ≫ (J).blowupToBase ≫ fP = fX ∧
-      (J).comap (e.hom ≫ (J).blowupToBase) = (Φ).rayBoundaryIdeal hΦ (r 0) := by
+      (J).comap (e.hom ≫ (J).blowupToBase) = (Φ).rayBoundaryIdeal hΦ (r 0) ∧
+      (Ψ).starSubdivisionAlongRay hΨ (σ).property hσ = r 0 := by
   obtain ⟨hσ, b, e₀, hrays, hgen, he₀, hE, -⟩ :=
     Fan.exists_blowup_projectivePlane_vertex_hirzebruchOne d hi a
   obtain ⟨r, hr⟩ := Fan.exists_rayEquiv_of_hirzebruch_ray_generators b 1
@@ -99,7 +103,7 @@ private theorem exists_vertex_blowup_comparison :
       _ = _ := congrArg (· ≫ (D).hom) he₀
   have hr₀ : (Ψ).starSubdivisionAlongRay hΨ (σ).property hσ = r 0 :=
     Fan.Ray.primitiveGenerator_injective (hgen.trans (congrFun hr 0).symm)
-  refine ⟨hσ, b, r, e, hr, he, ?_, ?_⟩
+  refine ⟨hσ, b, r, e, hr, he, ?_, ?_, hr₀⟩
   · rw [← Category.assoc, he]
     simp only [Iso.trans_hom, Category.assoc, over_eq_projToSpec,
       Module.Basis.polynomialProjIso_hom_over, Fan.projectivePlaneIso_hom_toSpecCoeff,
@@ -156,7 +160,7 @@ theorem exists_hirzebruch_resolution_of_plane_vertex {Y : Scheme} {n : ℕ}
           planeSarkisovBidegree δ.toNat (∑ j, (m j).toNat)) := by
   intro w δ m
   have hU := (IsClosedPointTower.append_iff.mp hP).2
-  obtain ⟨hσ, b, r, e, hr, he, hover, hE⟩ := exists_vertex_blowup_comparison d hi a
+  obtain ⟨hσ, b, r, e, hr, he, hover, hE, -⟩ := exists_vertex_blowup_comparison d hi a
   let s := (Ψ).starSubdivisionAlong_isSubdivision hΨ (σ).property hσ
   have hc : (Φ).IsComplete := s.isComplete_iff.mpr (Fan.isComplete_projectiveSpace d hi)
   let : Nonempty (Φ).cones := hc.nonempty_cones
@@ -204,24 +208,6 @@ theorem exists_hirzebruch_resolution_of_plane_vertex {Y : Scheme} {n : ℕ}
     have hsq' : (∑ j, (m j) ^ 2) = δ ^ 2 - 1 := by
       simpa only [δ, m, w, neg_sq, toMul_ofMul, ofMul_toMul, ← pow_two] using hsq
     simpa only [hβ] using hirzebruchSarkisovBidegree_lt_plane_of_high_order hδ _ hsq' hhigh _ _
-
-private theorem birationalOver_prepend_vertex {Y Z : Scheme} {n : ℕ}
-    {T : BlowupTower P n Y} (hT : IsClosedPointTower P T) {A : Y.IdealSheafData}
-    {q : Y} (hq : IsClosed ({q} : Set Y)) (hA : A = (Y.fromSpecResidueField q).ker)
-    (e : A.blowup ≅ Z) {g : Y ⟶ P} (hg : Scheme.BirationalOver g (𝟙 P)) :
-    Scheme.BirationalOver (e.inv ≫ A.blowupToBase ≫ g) (𝟙 P) := by
-  let := hT.isIntegral fP
-  let := hT.smoothOfRelativeDimension fP
-  have hU : IsClosedPointTower Y (BlowupTower.nil.snoc A) := .snoc .nil q hq hA
-  have : IsModification A.blowupToBase := by
-    simpa only [toBase_snoc, toBase_nil, Category.comp_id] using
-      hU.isModification_of_smoothOfRelativeDimension_two (T.toBase ≫ fP)
-  obtain ⟨u, hu⟩ := IsModification.birationalOver A.blowupToBase
-  have hπ : Scheme.BirationalOver (A.blowupToBase ≫ g) g :=
-    ⟨u, by simpa only [Category.assoc, Category.comp_id] using congrArg (· ≫ g) hu⟩
-  have he : Scheme.BirationalOver (e.inv ≫ A.blowupToBase ≫ g) (A.blowupToBase ≫ g) :=
-    ⟨.ofIso e.symm, by simp [Scheme.PartialIso.IsOver, Scheme.PartialIso.ofIso]⟩
-  exact he.trans (hπ.trans hg)
 
 private theorem comp_vertexLink_eq {Y : Scheme} [PreirreducibleSpace Y]
     (hσ : (σ).val ≠ ⊥) (q : Y ⟶ X) [IsDominant q] {f : Y ⟶ P} [IsDominant f]
@@ -390,7 +376,9 @@ theorem exists_prepend_plane_vertex_blowup {Y : Scheme} {n : ℕ}
     apply (cancel_epi e.hom).mp
     simp only [g₁, Category.assoc, Iso.hom_inv_id_assoc, hg, toBase_append, toBase_snoc,
       toBase_nil, Category.id_comp, reassoc_of% he']
-  have hb₁ := birationalOver_prepend_vertex hT hq hA e hbir
+  have hb₁ : Scheme.BirationalOver g₁ (𝟙 P) :=
+    (e.inv.birationalOver (A.blowupToBase ≫ g) g₁ rfl).trans
+      (hT.birationalOver_blowupToBase_comp fP hq hA hbir)
   obtain ⟨hσ, b, r, hr, Z, U, hU, f, k, hLift, hf, hproj, hover, hb, hcoord⟩ :=
     exists_hirzebruch_resolution_of_plane_vertex d hi a hV g₁ hg₁ hb₁
   let π := ((Ψ).starSubdivisionAlong_isSubdivision hΨ (σ).property hσ).toFanHom.algebraicMap ≫
