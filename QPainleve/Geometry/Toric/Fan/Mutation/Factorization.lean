@@ -8,7 +8,6 @@ module
 public import QPainleve.Geometry.Toric.Fan.Mutation.Indeterminacy
 public import QPainleve.Geometry.Toric.Fan.Mutation.OrderedBlowup
 
-import QPainleve.AlgebraicGeometry.Morphisms.Modification.Birational
 import QPainleve.AlgebraicGeometry.RationalMap.Composition.Basic
 import QPainleve.Geometry.Toric.Fan.Separated
 
@@ -68,14 +67,8 @@ private theorem comp_mutationBlowupIso_eq_of_resolves
     p ≫ (E).hom ≫ (J₁).blowupToBase = r := by
   let : Nonempty (Ψ).cones := ⟨Φ.mutationFanConeEquiv b hv hp hOpp ρ.toCone⟩
   let : Scheme.IsSeparated (Ψ).algebraicRealization := (Ψ).isSeparated_algebraicRealization
-  have := ρ.isIntegral_mutationSourceBlowup b hOpp c
-  have := ρ.isModification_mutationSourceBlowupToBase b hOpp c
-  have : IsDominant p := IsModification.isDominant_of_comp p (J₀).blowupToBase
   apply Scheme.Hom.toRationalMap_injective
-  dsimp only
-  rw [← Scheme.Hom.toRationalMap_compHom, ← Scheme.RationalMap.comp_toRationalMap,
-    ← ρ.mutationPartialMap_resolved b hOpp c, ← Scheme.RationalMap.comp_assoc]
-  simpa only [Scheme.RationalMap.comp_toRationalMap, Scheme.Hom.toRationalMap_compHom] using hr
+  exact (ρ.mutationPartialMap_resolved_of_comp_eq b hOpp c p _ rfl).symm.trans hr
 
 include hOpp in
 /-- A specified morphism resolving a toric elementary transformation factors through the
