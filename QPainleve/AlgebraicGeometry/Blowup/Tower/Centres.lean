@@ -52,6 +52,30 @@ theorem baseCenter_snoc_last {T : BlowupTower X n Y} {I : Y.IdealSheafData}
     hT.baseCenter (Fin.last n) = T.toBase hT.lastCenter.val := by
   simp [baseCenter]
 
+/-- Appending a tower leaves the projected centers in the prefix unchanged. -/
+@[simp]
+theorem baseCenter_append_castAdd {T : BlowupTower X m Y} {U : BlowupTower Y n Z}
+    (hT : IsClosedPointTower X T) (hU : IsClosedPointTower Y U) (j : Fin m) :
+    (hT.append hU).baseCenter (j.castAdd n) = hT.baseCenter j := by
+  induction hU with
+  | nil => simp
+  | snoc _ _ _ _ ih =>
+    simpa only [← Fin.castSucc_castAdd, append_snoc, baseCenter_snoc_castSucc] using ih
+
+/-- The projected center of a tail step is the image of that step's center on the
+intermediate base. -/
+theorem baseCenter_append_natAdd {T : BlowupTower X m Y} {U : BlowupTower Y n Z}
+    (hT : IsClosedPointTower X T) (hU : IsClosedPointTower Y U) (j : Fin n) :
+    (hT.append hU).baseCenter (j.natAdd m) = T.toBase (hU.baseCenter j) := by
+  induction hU with
+  | nil => exact j.elim0
+  | @snoc n Z U I hU p hp hI ih =>
+    refine Fin.lastCases ?_ (fun l ↦ ?_) j
+    · rw [Fin.natAdd_last]
+      simp only [append_snoc, baseCenter_snoc_last, lastCenter_eq _ p hp hI, toBase_append,
+        Scheme.Hom.comp_apply]
+    · simpa only [Fin.natAdd_castSucc, append_snoc, baseCenter_snoc_castSucc] using ih l
+
 /-- On a locally Noetherian base, every projected center is a closed point. -/
 theorem isClosed_baseCenter [IsLocallyNoetherian X] {T : BlowupTower X n Y}
     (hT : IsClosedPointTower X T) (j : Fin n) : IsClosed ({hT.baseCenter j} : Set X) := by
@@ -159,5 +183,29 @@ theorem IsLift.isPointTowerWith {T : BlowupTower X n Y} {U : BlowupTower X' n Y'
       have hlocal := hP.pullback f.inv (T.toBase ≫ π) q
         (by rw [f.inv.isoLocus_eq_top_iff.mpr inferInstance]; trivial) (hqp.symm ▸ hTp)
       exact (ih hf).snoc q hq (hcomap.symm.trans (hI ▸ hqJ)) (hbase ▸ hlocal)
+
+/-- A lift of an isomorphism carries the projected centers in their given order. -/
+theorem IsLift.hom_baseCenter {T : BlowupTower X n Y} {U : BlowupTower X' n Y'}
+    {e : X ≅ X'} {g : Y ≅ Y'} (h : IsLift e T U g)
+    (hT : IsClosedPointTower X T) (hU : IsClosedPointTower X' U) (j : Fin n) :
+    e.hom (hT.baseCenter j) = hU.baseCenter j := by
+  induction hT generalizing Y' with
+  | nil => exact j.elim0
+  | @snoc m Y T I hT p hp hI ih =>
+    cases U with
+    | snoc U J =>
+      obtain ⟨f, hf, hI', -⟩ := IsLift.snoc_iff.mp h
+      refine Fin.lastCases ?_ (fun l ↦ ?_) j
+      · have hJ : I.map f.hom = J := by
+          rw [← hI', Scheme.IdealSheafData.map_comap_of_isClosedImmersion,
+            f.hom.ker_eq_bot_of_isIso, sup_bot_eq]
+        have hq : hU.lastCenter.val = f.hom p := by
+          apply Scheme.ker_fromSpecResidueField_inj.mp
+          rw [← hU.lastCenter.property.2, ← f.hom.map_ker_fromSpecResidueField, ← hI, hJ]
+        rw [IsClosedPointTower.baseCenter_snoc_last, hU.baseCenter_snoc_last,
+          IsClosedPointTower.lastCenter_eq _ p hp hI, hq]
+        exact congrArg (fun a : Y ⟶ X' ↦ a p) hf.hom_toBase.symm
+      · simpa only [IsClosedPointTower.baseCenter_snoc_castSucc] using
+          ih hf (IsClosedPointTower.snoc_iff.mp hU).1 l
 
 end QPainleve.BlowupTower
