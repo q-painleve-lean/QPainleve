@@ -6,6 +6,7 @@ Authors: The QPainleve contributors
 module
 
 public import QPainleve.AlgebraicGeometry.Blowup.Tower.Centres
+public import QPainleve.AlgebraicGeometry.Blowup.Tower.Picard
 
 import QPainleve.AlgebraicGeometry.Blowup.Disjoint
 import QPainleve.AlgebraicGeometry.Blowup.Exceptional.Class
@@ -233,3 +234,33 @@ theorem exists_move_closed_point_blowup_to_front {T : BlowupTower X (n + 1) Y}
               exceptionalClass_snoc_castSucc, pullback_comp, hproj, ← pullback_comp, htail]
 
 end QPainleve.BlowupTower.IsClosedPointTower
+
+namespace QPainleve.BlowupTower
+
+/-- Moving a selected blowup to the front reindexes the full Picard marking.
+The base stays fixed, and the original exceptional coefficient at `j`
+comes first, followed by the other coefficients in their relative order. -/
+theorem pullback_picardHom_move_to_front {X W Z : Scheme.{u}} {n : ℕ}
+    (T₀ : BlowupTower X (n + 1) W) {I : X.IdealSheafData} {T₁ : BlowupTower I.blowup n Z}
+    (j : Fin (n + 1)) (e : W ≅ Z)
+    (he : e.hom ≫ T₁.toBase ≫ I.blowupToBase = T₀.toBase)
+    (hE : pullback e.hom (pullback T₁.toBase I.blowupExceptionalClass) =
+      T₀.exceptionalClass j)
+    (hTail : ∀ l, pullback e.hom (T₁.exceptionalClass l) = T₀.exceptionalClass (j.succAbove l))
+    (a : Additive (LineBundleClass X)) (x : Fin (n + 1) → ℤ) :
+    pullback e.inv (T₀.picardHom (a, x)).toMul =
+      (((nil.snoc I).append T₁).picardHom
+        (a, Fin.addCases (fun _ : Fin 1 ↦ x j) (x ∘ j.succAbove))).toMul := by
+  let x' : Fin (1 + n) → ℤ := Fin.addCases (fun _ : Fin 1 ↦ x j) (x ∘ j.succAbove)
+  have h : pullback e.hom (((nil.snoc I).append T₁).picardHom (a, x')).toMul =
+      (T₀.picardHom (a, x)).toMul := by
+    rw [picardHom_append, picardHom_apply_toMul, picardHom_snoc_apply_toMul, picardHom_nil,
+      picardHom_apply_toMul T₀, Fin.prod_univ_succAbove _ j]
+    simp only [x', Fin.addCases_left, Fin.addCases_right, pullback_mul, pullback_zpow, mul_assoc]
+    rw [pullback_comp e.hom T₁.toBase, hE,
+      ← pullbackHom_apply (f := e.hom) (a := ∏ l : Fin n, _), map_prod]
+    simp only [pullbackHom_apply, pullback_zpow, hTail, Function.comp_apply]
+    rw [pullback_comp (e.hom ≫ T₁.toBase), Category.assoc, he]
+  rw [← h, pullback_comp, Iso.inv_hom_id, pullback_id]
+
+end QPainleve.BlowupTower
