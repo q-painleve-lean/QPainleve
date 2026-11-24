@@ -95,10 +95,10 @@ variable {k : Type u} [Field k] [PerfectField k] {X : Scheme.{u}} [X.Over (Spec 
 
 local notation "base" => (X ↘ Spec (CommRingCat.of k))
 
-private theorem atWorstNodalOfRelativeDimensionOne_exceptional {x : X}
+private theorem smoothOfRelativeDimension_exceptional {x : X}
     (hx : IsClosed ({x} : Set X)) :
     let I := vanishingIdeal (Closeds.mk (closure ({x} : Set X)) isClosed_closure)
-    AtWorstNodalOfRelativeDimensionOne
+    SmoothOfRelativeDimension 1
       ((I.comap I.blowupToBase).subschemeι ≫ I.blowupToBase ≫ base) := by
   dsimp only
   rw [← X.ker_fromSpecResidueField_eq_vanishingIdeal x]
@@ -120,12 +120,12 @@ private theorem atWorstNodalOfRelativeDimensionOne_exceptional {x : X}
       ((projectiveLine (X.residueField x) ↘ Spec (.of (X.residueField x))) ≫ s) := by
     exact inferInstanceAs (SmoothOfRelativeDimension (1 + 0)
       ((projectiveLine (X.residueField x) ↘ Spec (.of (X.residueField x))) ≫ s))
-  have hc := AtWorstNodalOfRelativeDimensionOne.of_smooth
-    ((projectiveLine (X.residueField x) ↘ Spec (.of (X.residueField x))) ≫ s)
-  apply (MorphismProperty.cancel_left_of_respectsIso (P := @AtWorstNodalOfRelativeDimensionOne)
+  have : MorphismProperty.RespectsIso (@SmoothOfRelativeDimension.{u} 1) :=
+    (smoothOfRelativeDimension_isStableUnderBaseChange 1).respectsIso
+  apply (MorphismProperty.cancel_left_of_respectsIso (P := @SmoothOfRelativeDimension 1)
     e.hom _).mp
   rw [← Category.assoc e.hom, hpb.w_assoc]
-  exact hc
+  exact hs
 
 variable [IsIntegral X] [QuasiCompact (X ↘ Spec (.of k))] {D : X.IdealSheafData}
   (hnodal : AtWorstNodalOfRelativeDimensionOne (D.subschemeι ≫ X ↘ Spec (.of k)))
@@ -204,7 +204,9 @@ private theorem exists_nodal_neighbourhood_radical_comap (z : (R).subscheme)
       have hS : (S).comap U.ι = ⊤ := (comap_eq_top_iff _ _).mpr (Scheme.Opens.ι_preimage_self _)
       have heq : (R).comap U.ι = (E).comap U.ι := by rw [hR, comap_mul, hS, top_mul]
       exact exists_nodal_neighbourhood_of_comap_eq U.ι U.ι rfl heq
-        (atWorstNodalOfRelativeDimensionOne_exceptional hp) z ⟨⟨y, hU⟩, rfl⟩
+        (by
+          have := smoothOfRelativeDimension_exceptional (k := k) hp
+          exact AtWorstNodalOfRelativeDimensionOne.of_smooth _) z ⟨⟨y, hU⟩, rfl⟩
   · let U : (I).blowup.Opens := (E).support.compl
     have : IsOpenImmersion (U.ι ≫ (π)) := by
       dsimp only [U]
@@ -234,5 +236,57 @@ theorem atWorstNodalOfRelativeDimensionOne_radical_comap_blowupToBase_of_node
   let cover : (R).subscheme.OpenCover :=
     Scheme.Cover.mkOfCovers (R).subscheme W j (fun z ↦ ⟨z, hMem z⟩)
   exact IsZariskiLocalAtSource.of_openCover (P := @AtWorstNodalOfRelativeDimensionOne) cover hNodal
+
+omit [IsIntegral X] [QuasiCompact (X ↘ Spec (.of k))] in
+include hnodal hp in
+/-- A singular point of the reduced total boundary of a nodal blowup lies on the
+strict transform. Away from the strict transform the boundary is the smooth
+exceptional curve. -/
+theorem mem_strictTransform_of_notMem_smoothLocus
+    (hN : AtWorstNodalOfRelativeDimensionOne ((R).subschemeι ≫ (π) ≫ base))
+    {z : (R).subscheme}
+    (hz : letI := hN.syntomic; z ∉ ((R).subschemeι ≫ (π) ≫ base).smoothLocus) :
+    (R).subschemeι z ∈ (S).support := by
+  have := hN.syntomic
+  by_contra hzS
+  have : IsReduced D.subscheme := hnodal.isReduced
+  have : Smooth base := SmoothOfRelativeDimension.smooth 2 _
+  have : IsLocallyNoetherian X := LocallyOfFiniteType.isLocallyNoetherian base
+  have := isRegularLocalRing_stalk_of_smooth base (x)
+  have hdim :=
+    ((smoothOfRelativeDimension_iff_ringKrullDim_stalk_eq base 2).mp inferInstance).2 _ hp
+  have : IsReduced (E).subscheme :=
+    @isReduced_of_isIntegral _ (isIntegral_exceptional_blowup_closed_point hdim hp)
+  have hDI : D ≤ (I) :=
+    ((D.le_ker_fromSpecResidueField_iff_mem_support hp).mpr
+      (D.range_subschemeι.le (Set.mem_range_self p))).trans
+      (X.ker_fromSpecResidueField_eq_vanishingIdeal (x)).le
+  have hR := (I).radical_comap_blowupToBase_eq_ker_blowupMap_subschemeι_mul D hDI
+  let U : (I).blowup.Opens := (S).support.compl
+  have hS : (S).comap U.ι = ⊤ := (comap_eq_top_iff _ _).mpr (Scheme.Opens.ι_preimage_self _)
+  have heq : (R).comap U.ι = (E).comap U.ι := by rw [hR, comap_mul, hS, top_mul]
+  let J := (R).comap U.ι
+  let j := subschemeMap J (R) U.ι (le_map_comap _ _)
+  let i := subschemeMap J (E) U.ι (le_map_iff_comap_le.mpr heq.ge)
+  have hj : IsPullback J.subschemeι j U.ι (R).subschemeι :=
+    isPullback_of_isClosedImmersion _ _ _ _ (by simp [j]) (by simp [J])
+  have hi : IsPullback J.subschemeι i U.ι (E).subschemeι :=
+    isPullback_of_isClosedImmersion _ _ _ _ (by simp [i]) (by simpa [J] using heq.symm)
+  have : IsOpenImmersion j := MorphismProperty.of_isPullback hj inferInstance
+  have : IsOpenImmersion i := MorphismProperty.of_isPullback hi inferInstance
+  have := smoothOfRelativeDimension_exceptional (k := k) hp
+  have : Smooth ((E).subschemeι ≫ (π) ≫ base) :=
+    SmoothOfRelativeDimension.smooth 1 _
+  have hcomp : j ≫ (R).subschemeι ≫ (π) ≫ base = i ≫ (E).subschemeι ≫ (π) ≫ base := by
+    rw [← hj.w_assoc, ← hi.w_assoc]
+  have : Smooth (j ≫ (R).subschemeι ≫ (π) ≫ base) := hcomp.symm ▸ inferInstance
+  obtain ⟨w, rfl⟩ : z ∈ Set.range j := by
+    rw [Scheme.Pullback.range_snd_of_isPullback hj]
+    exact ⟨⟨(R).subschemeι z, hzS⟩, rfl⟩
+  apply hz
+  have hw : w ∈ (j ≫ (R).subschemeι ≫ (π) ≫ base).smoothLocus := by
+    rw [Scheme.Hom.smoothLocus_eq_top]
+    trivial
+  rwa [← Scheme.Hom.preimage_smoothLocus_eq, Scheme.Hom.mem_preimage] at hw
 
 end AlgebraicGeometry.Scheme.IdealSheafData
