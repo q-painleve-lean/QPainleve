@@ -59,22 +59,6 @@ variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
 local notation "m" => LinearMap.toAddMonoidHom (b.coord 1)
 local notation "C" => Φ.hirzebruchPicardBasis b e hΦ r hr
 
-private theorem hirzebruch_ruling_character_ne_zero : m ≠ 0 := by
-  intro hz
-  have ha := DFunLike.congr_fun hz (b 1)
-  simp [Basis.coord_apply] at ha
-
-open scoped Classical in
-include hr in
-private theorem hirzebruch_ruling_fiber_coefficients :
-    (fun ρ : Φ.Ray ↦ max (m ρ.primitiveGenerator) 0) = Pi.single (r 1) 1 := by
-  funext ρ
-  obtain ⟨j, rfl⟩ := r.surjective ρ
-  have hj := congrFun hr j
-  simp only [Equiv.apply_eq_iff_eq, Pi.single_apply]
-  rw [hj]
-  fin_cases j <;> norm_num [Basis.coord_apply]
-
 variable [Nonempty Φ.cones]
 
 /-- The Cartier class of the scheme-theoretic fiber over any complex point is
@@ -88,8 +72,10 @@ theorem toLineBundleClass_hirzebruch_characterRuling_fiber
   let hm := hirzebruch_ruling_character_ne_zero b
   refine ⟨Φ.isEffectiveCartier_characterRuling_fiber m h hm p hp, ?_⟩
   have hclass := Φ.toLineBundleClass_characterRuling_fiber m h hm p hp hΦ
+  have hcoeff := hirzebruch_ruling_coordinateFiber_coefficients b e r hr 0
+  simp only [ite_true, Matrix.cons_val_zero] at hcoeff
   simpa only [Scheme.IdealSheafData.IsEffectiveCartier.toLineBundleClass_toCartierDivisor,
-    hirzebruch_ruling_fiber_coefficients b e r hr, hirzebruchPicardBasis_apply_zero] using hclass
+    hcoeff, hirzebruchPicardBasis_apply_zero] using hclass
 
 /-- The first Hirzebruch Picard basis vector is the pullback of `𝒪(1)`
 under the ruling defined by the second basis character. -/

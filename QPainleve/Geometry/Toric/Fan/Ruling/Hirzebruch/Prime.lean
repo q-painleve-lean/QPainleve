@@ -209,10 +209,7 @@ theorem hirzebruch_ruling_fiber_of_degree_zero
     P p = C 0 ∧ I[p] = y.ker.comap q := by
   let := Φ.uniqueFactorizationMonoid_stalk_algebraicRealization hΦ
   have hdim := topologicalKrullDim_eq_of_smoothOfRelativeDimension (X ↘ S) (n := 2)
-  have hm : m ≠ 0 := by
-    intro hz
-    have hh := DFunLike.congr_fun hz (b 1)
-    simp [Basis.coord_apply] at hh
+  have hm := hirzebruch_ruling_character_ne_zero b
   let hI := Φ.isEffectiveCartier_characterRuling_fiber m
     (nonneg_or_nonpos_hirzebruch_ruling_character b e r hr) hm y hy
   have hyC := (Scheme.Hom.isRelativeEffectiveCartier_ker_of_smoothOfRelativeDimension y hy)
