@@ -58,6 +58,18 @@ attribute [local instance] MvPolynomial.gradedAlgebra
 
 variable {X : Scheme.{u}} {R : Type u} [CommRing R]
 
+/-- Every positive tensor power of an ample line bundle is ample. -/
+theorem pow {a : LineBundleClass X} (ha : a.IsAmple) {m : ℕ} (hm : 0 < m) :
+    (a ^ m).IsAmple := by
+  refine ⟨ha.compactSpace, fun x ↦ ?_⟩
+  obtain ⟨n, hn, L, hL, s, hx, hV⟩ := ha.exists_isAffineOpen_nonvanishingLocus x
+  let t := (L.tensorPowObjIso m).inv.app ⊤ (Scheme.Modules.tensorPowSection s m)
+  have ht : (L.tensorPow m).obj.nonvanishingLocus t = L.obj.nonvanishingLocus s :=
+    (Scheme.Modules.nonvanishingLocus_hom_app (L.tensorPowObjIso m).symm _).trans
+      (Scheme.Modules.nonvanishingLocus_tensorPowSection _ hm)
+  refine ⟨n, hn, L.tensorPow m, ?_, t, ht.symm ▸ hx, ht.symm ▸ hV⟩
+  rw [LineBundleClass.mk_tensorPow, hL, ← pow_mul, ← pow_mul, Nat.mul_comm]
+
 /-- The tensor product of an ample line bundle and a globally generated line bundle is ample. -/
 theorem mul_mk_of_isGloballyGenerated {a : LineBundleClass X} (ha : a.IsAmple)
     {L : InvertibleSheaf X} (hL : L.IsGloballyGenerated) : (a * LineBundleClass.mk L).IsAmple := by

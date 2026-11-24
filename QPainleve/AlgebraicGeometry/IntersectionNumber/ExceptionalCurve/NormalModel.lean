@@ -11,7 +11,6 @@ public import QPainleve.AlgebraicGeometry.Normalization.Proper
 public import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.Polynomial.Basic
 
 import QPainleve.AlgebraicGeometry.CartierDivisor.Support
-import TauCeti.AlgebraicGeometry.IdealSheaf.Reduced
 import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.Proper
 import TauCeti.AlgebraicGeometry.SchemeTheoreticImage.Basic
 import TauCeti.Topology.KrullDimension.Basic
@@ -22,7 +21,8 @@ import TauCeti.Topology.KrullDimension.Basic
 A morphism collapsing an exceptional curve of the first kind factors through the
 relative normalization of its scheme-theoretic image. The new target is normal and
 finite over projective space, and the morphism to it is an isomorphism away from the
-curve. This gives the normal model in the contraction argument of the
+curve. The scheme-theoretic fiber over the collapsed point is the exceptional curve.
+This gives the normal model in the contraction argument of the
 [Stacks Project, Lemma 54.16.4](https://stacks.math.columbia.edu/tag/0C2L).
 -/
 
@@ -51,10 +51,9 @@ private theorem IsExceptionalCurveOfFirstKind.not_subsingleton_support
 variable [IsIntegral X] [IsNormalScheme X]
 
 /-- An exceptional curve of the first kind on a normal integral projective scheme is the
-set-theoretic fiber of a modification to a normal integral scheme finite over projective
-space. Its reduced fiber is the given exceptional subscheme. The contracted point is
-the entire non-isomorphism locus. Pullback induces an isomorphism on sections over
-every open of the target. -/
+scheme-theoretic fiber of a modification to a normal integral scheme finite over projective
+space. The contracted point is the entire non-isomorphism locus. Pullback induces an
+isomorphism on sections over every open of the target. -/
 theorem IsExceptionalCurveOfFirstKind.exists_normal_model_collapsing_exceptional_curve
     (hE : E.IsExceptionalCurveOfFirstKind)
     (k : Type u) [Field k] [X.Over (Spec (.of k))] [X.IsProjectiveOver k] :
@@ -63,10 +62,10 @@ theorem IsExceptionalCurveOfFirstKind.exists_normal_model_collapsing_exceptional
       IsIntegral Z ∧ IsNormalScheme Z ∧ IsFinite j ∧
       f ≫ j ≫ Proj.toSpecCoeff (MvPolynomial.homogeneousSubmodule ι k) = X ↘ Spec (.of k) ∧
       IsModification f ∧ IsClosed ({p} : Set Z) ∧ f ⁻¹' {p} = (E.support : Set X) ∧
-      ((Z.fromSpecResidueField p).ker.comap f).radical = E ∧
+      (Z.fromSpecResidueField p).ker.comap f = E ∧
       f.centre = {p} ∧ ∀ U : Z.Opens, IsIso (f.app U) := by
-  obtain ⟨ι, hι, g, p, hg, hproper, -, hpre, hq⟩ :=
-    hE.exists_projective_morphism_contracting_exceptional_curve k
+  obtain ⟨ι, hι, g, p, hg, hproper, hp, hpre, hideal, hq⟩ :=
+    hE.exists_projective_morphism_with_exceptional_fiber k
   let g' := g.toImage
   have : IsProper (g' ≫ g.imageι) := g.toImage_imageι.symm ▸ hproper
   have : IsProper g' := IsProper.of_comp g' g.imageι
@@ -100,17 +99,19 @@ theorem IsExceptionalCurveOfFirstKind.exists_normal_model_collapsing_exceptional
     (hpre'.symm ▸ hE.not_subsingleton_support) (fun _ hx ↦ hq' (by rwa [← hpre']))
   have hF : f ⁻¹' {q} = (E.support : Set X) := hfiber.trans hpre'
   have hclosed : IsClosed ({q} : Set g'.normalization) := hcentre ▸ f.isClosed_centre
-  have hrad : ((g'.normalization.fromSpecResidueField q).ker.comap f).radical = E := by
-    have hEred := (E.isReduced_subscheme_iff_radical_eq).mp inferInstance
-    rw [← vanishingIdeal_support, ← hEred, ← vanishingIdeal_support]
-    congr 1
-    apply SetLike.coe_injective
-    rw [support_comap]
-    exact (congrArg (fun S : Set g'.normalization ↦ f ⁻¹' S)
-      (Scheme.support_ker_fromSpecResidueField_of_isClosed hclosed)).trans hF
+  have hjq : j q = p := by
+    have hxq : f x = q := (Set.ext_iff.mp hF x).mpr hx
+    rw [← hxq, ← Scheme.Hom.comp_apply, hf]
+    exact (Set.ext_iff.mp hpre x).mpr hx
+  have hideal' : (Scheme.fromSpecResidueField _ (j q)).ker.comap (f ≫ j) = E :=
+    (congrArg₂ (fun z a ↦ (Scheme.fromSpecResidueField _ z).ker.comap a) hjq hf).trans hideal
+  have : IsReduced ((Scheme.fromSpecResidueField _ (j q)).ker.comap (f ≫ j)).subscheme :=
+    hideal' ▸ (inferInstance : IsReduced E.subscheme)
+  have heq := f.comap_ker_fromSpecResidueField_eq_of_comp j hclosed (hjq.symm ▸ hp)
+    (hF.trans (by rw [hjq, hf]; exact hpre.symm))
   refine ⟨ι, hι, g'.normalization, j, f, q, inferInstance,
     g'.isNormalScheme_normalization_of_isNormalScheme, inferInstance, ?_,
-    g'.isModification_toNormalization_of_quasiFiniteAt hη, hclosed, hF, hrad, hcentre,
+    g'.isModification_toNormalization_of_quasiFiniteAt hη, hclosed, hF, heq.trans hideal', hcentre,
     g'.isIso_app_toNormalization⟩
   rwa [← Category.assoc, hf]
 
