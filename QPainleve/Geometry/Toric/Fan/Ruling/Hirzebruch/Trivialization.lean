@@ -84,6 +84,14 @@ theorem hirzebruchRulingAffineFanProjection_latticeMap (k : Fin 2) (x : N) (j : 
     characterFanHom_latticeMap]
   rfl
 
+/-- The affine ruling projection on the real vector space is the extended ruling character. -/
+@[simp]
+theorem hirzebruchRulingAffineFanProjection_realMap (k : Fin 2) (x : V) (j : Fin 1) :
+    (hirzebruchRulingAffineFanProjection b e r hr k).realMap x j =
+      Φ.lattice.realCharacter (b.coord 1).toAddMonoidHom x := by
+  rw [hirzebruchRulingAffineFanProjection, FanHom.restrictToPreimage_realMap,
+    characterFanHom_realMap]
+
 /-- Including the affine chart leaves the lattice point unchanged. -/
 @[simp]
 theorem hirzebruchRulingAffineFanInclusion_latticeMap (k : Fin 2) (x : N) :
@@ -313,7 +321,8 @@ def hirzebruchRulingAffineFanEquiv (hΦ : Φ.IsRegular) (hc : Φ.IsComplete) (k 
       exact hface.map _ (L[k]).injective
 
 include hr in
-private theorem snd_comp_hirzebruchRulingAffineFanEquiv (hΦ : Φ.IsRegular) (hc : Φ.IsComplete)
+/-- The second projection of the affine product fan is the restricted ruling map. -/
+theorem snd_comp_hirzebruchRulingAffineFanEquiv (hΦ : Φ.IsRegular) (hc : Φ.IsComplete)
     (k : Fin 2) :
     (FanHom.snd P₁ (projectiveLineAffineFan k)).comp
       (hirzebruchRulingAffineFanEquiv b e r hr hΦ hc k).toFanHom =

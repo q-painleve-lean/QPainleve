@@ -5,7 +5,7 @@ Authors: The QPainleve contributors
 -/
 module
 
-public import QPainleve.Geometry.Toric.Fan.Ruling.Basic
+public import QPainleve.Geometry.Toric.Fan.Ruling.AffineChart
 public import TauCeti.Geometry.Toric.Algebraic.Fan.Equiv
 public import TauCeti.Geometry.Toric.Algebraic.Fan.Product.Basic
 
@@ -134,6 +134,46 @@ theorem projectiveLineTorusPoint_comp_over (a : ℂˣ) :
 
 namespace Fan
 
+/-- The zero-cone fan included in either affine chart of the projective line. -/
+def projectiveLineTorusToAffineFan (k : Fin 2) :
+    FanHom projectiveLineTorusFan (projectiveLineAffineFan k) :=
+  FanHom.ofLatticeMap _ _ (AddMonoidHom.id (Fin 1 → ℤ)) fun σ hσ ↦ by
+    obtain rfl := mem_projectiveLineTorusFan_cones.mp hσ
+    exact ⟨⊥, (projectiveLineAffineFan k).bot_mem
+      (mem_projectiveLineAffineFan_cones.mpr (.refl _)), by simp⟩
+
+/-- Including the base torus in an affine chart leaves the lattice unchanged. -/
+@[simp]
+theorem projectiveLineTorusToAffineFan_latticeMap (k : Fin 2) :
+    (projectiveLineTorusToAffineFan k).latticeMap = AddMonoidHom.id (Fin 1 → ℤ) := by
+  rw [projectiveLineTorusToAffineFan, FanHom.ofLatticeMap_latticeMap]
+
+/-- Either inclusion of the overlap recovers the base torus immersion. -/
+@[reassoc (attr := simp)]
+theorem projectiveLineTorusToAffineFan_algebraicMap_comp_ι (k : Fin 2) :
+    (projectiveLineTorusToAffineFan k).algebraicMap ≫ projectiveLineAffineFanι k =
+      projectiveLineTorusι := by
+  rw [projectiveLineAffineFanι_def, ← Category.assoc, ← FanHom.algebraicMap_comp,
+    projectiveLineTorusι]
+  congr 2
+  apply FanHom.ext
+  simp
+
+/-- The product fan over the projective-line torus realizes the scheme-theoretic
+product of the projective line and the torus. -/
+theorem isPullback_projectiveLineTorusProduct :
+    IsPullback ((FanHom.fst P projectiveLineTorusFan).algebraicMap ≫ projectiveLineToricIso.hom)
+      (FanHom.snd P projectiveLineTorusFan).algebraicMap (projectiveLine ℂ ↘ base)
+      (projectiveLineTorusFan.algebraicRealization ↘ base) := by
+  refine ((P).isPullback_fst_snd_algebraicMap projectiveLineTorusFan).of_iso'
+    (Iso.refl _) projectiveLineToricIso.symm (Iso.refl _) (Iso.refl _) ?_ ?_ ?_ ?_
+  · simp
+  · simp
+  · rw [Iso.refl_hom, Category.comp_id, Iso.symm_hom,
+      ← cancel_epi projectiveLineToricIso.hom, Iso.hom_inv_id_assoc,
+      ← Fan.algebraicRealization_over, CategoryTheory.comp_over]
+  · simp [Fan.algebraicRealization_over]
+
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} (Φ : Fan i) (m : N →+ ℤ)
   (h : ∀ σ : Φ.cones, (∀ x ∈ σ.val, 0 ≤ Φ.lattice.realCharacter m x) ∨
@@ -151,6 +191,12 @@ local notation "U" => Φ.characterRulingTorusSubfan m h
 def characterRulingTorusSubfanInclusion : FanHom U Φ :=
   Φ.subfanInclusion _ ((f).preimageCones_subset S₀)
     ((f).preimageCones_closedUnderFaces S₀ zeroCone_closedUnderFaces)
+
+/-- Including the ruling's torus subfan leaves the lattice unchanged. -/
+@[simp]
+theorem characterRulingTorusSubfanInclusion_latticeMap :
+    (Φ.characterRulingTorusSubfanInclusion m h).latticeMap = AddMonoidHom.id N :=
+  subfanInclusion_latticeMap _ _ _ _
 
 /-- The restriction of the character fan map to the two open subfans. -/
 def characterRulingTorusFanHom : FanHom U projectiveLineTorusFan :=
@@ -379,18 +425,14 @@ theorem isPullback_characterRulingTorusProduct :
         projectiveLineToricIso.hom)
       (Φ.characterRulingTorusFanHom m h).algebraicMap
       (projectiveLine ℂ ↘ base) (projectiveLineTorusFan.algebraicRealization ↘ base) := by
-  refine ((P).isPullback_fst_snd_algebraicMap projectiveLineTorusFan).of_iso'
-    (asIso (E).toFanHom.algebraicMap) projectiveLineToricIso.symm
-    (Iso.refl _) (Iso.refl _) ?_ ?_ ?_ ?_
-  · simp [Category.assoc]
+  refine isPullback_projectiveLineTorusProduct.of_iso'
+    (asIso (E).toFanHom.algebraicMap) (Iso.refl _) (Iso.refl _) (Iso.refl _) ?_ ?_ ?_ ?_
+  · simp
   · simpa only [asIso_hom, Iso.refl_hom, Category.comp_id, ← FanHom.algebraicMap_comp]
       using congrArg FanHom.algebraicMap (snd_comp_characterRulingTorusFanEquiv
         Φ m h b hm hpos hneg)
-  · rw [Iso.refl_hom, Category.comp_id, Iso.symm_hom,
-      ← cancel_epi projectiveLineToricIso.hom, Iso.hom_inv_id_assoc,
-      ← Fan.algebraicRealization_over, CategoryTheory.comp_over]
-  · rw [Iso.refl_hom, Iso.refl_hom, Category.comp_id, Category.id_comp,
-      Fan.algebraicRealization_over]
+  · simp
+  · simp
 
 /-- Over the dense torus, the ruling is isomorphic to the projection from the product of the
 projective line and the base torus. -/
