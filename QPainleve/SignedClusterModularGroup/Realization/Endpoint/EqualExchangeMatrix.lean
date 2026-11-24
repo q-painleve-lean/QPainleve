@@ -9,12 +9,8 @@ public import QPainleve.Geometry.Toric.Fan.Boundary.CommonRefinement
 public import QPainleve.SignedClusterModularGroup.Realization.Endpoint.Basic
 
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Projective
-import QPainleve.AlgebraicGeometry.CartierDivisor.Excision
-import QPainleve.AlgebraicGeometry.CartierDivisor.Support
 import QPainleve.AlgebraicGeometry.Curves.Node.NumberedPrime
-import QPainleve.SignedClusterModularGroup.Boundary.Intersection
 import QPainleve.SignedClusterModularGroup.Realization.Boundary
-import TauCeti.AlgebraicGeometry.Curves.Node.Reduced
 
 /-!
 # Marked endpoints with equal exchange matrices
@@ -90,6 +86,63 @@ theorem isProjectiveOver_toricBase {l : ℕ} {Y : Scheme} {A : BlowupTower M.sur
   exact (isClosedPointTower_internalBlowupTower b s centers(c)).isProjectiveOver_base hP
 
 include p in
+/-- The charge lattice of a contracted nodal toric model of a primitive nef
+square-zero anticanonical cycle has rank two and index at most three. The
+number of centers and the rank of the charge kernel are fixed by the cycle length. -/
+theorem chargeIndex_bounds_of_anticanonical_cycle
+    [Scheme.IsRationalOver (M.surface ↘ S)]
+    (hcΦ : Φ.IsComplete)
+    {l : ℕ} {Y : Scheme} {A : BlowupTower M.surface l Y}
+    (hA : IsNodalBoundaryTower D[M] (M.surface ↘ S) (𝟙 _) A)
+    (u : Y ≅ (model[b,s,c]).1) (hu : u.inv ≫ A.toBase = p.projection)
+    (hD : D[M].IsEffectiveCartier) (hnefD : IsNef ℂ (M.surface ↘ S) classOf(hD))
+    (hsqD : Chow.classIntersectionNumber ℂ M.surface classOf(hD) classOf(hD) = 0)
+    (hcan : classOf(hD) = (LineBundleClass.mk (canonicalBundle ℂ M.surface 2))⁻¹)
+    (hδ : IsPrimitive (Additive.ofMul classOf(hD))) :
+    r + n = 12 ∧ Module.finrank ℤ (Fan.rayChargeMap s).ker = 10 - n ∧
+      Module.finrank ℤ (Fan.rayChargeMap s).range = 2 ∧
+      n ≤ 9 ∧ (Fan.rayChargeMap s).range.toAddSubgroup.index ^ 2 ∣ n ∧
+      (Fan.rayChargeMap s).range.toAddSubgroup.index ∈ ({1, 2, 3} : Finset ℕ) ∧
+      ∃ x : (Fan.rayChargeMap s).ker, TauCeti.IsPrimitive x ∧
+        ((Fan.rayChargeMap s).range.toAddSubgroup.index : ℤ) ∣ ∑ j, x.val j ^ 2 := by
+  let : IsNoetherian M.surface := isNoetherian_of_finiteType (M.surface ↘ S)
+  let D := M.imageCycle
+  let P := (D.boundaryPrimeEquiv hD).toEmbedding.trans (D[M]).boundaryPrimeEmbedding
+  let Q : ZMod n ↪ M.surface := ⟨D.ambientNode, D.ambientNode_injective⟩
+  have hp (x : CodimensionOnePoint M.surface) :
+      (x : M.surface) ∈ D[M].support ↔ x ∈ Set.range P := by
+    simp only [P, Function.Embedding.coe_trans, Equiv.coe_toEmbedding,
+      (D.boundaryPrimeEquiv hD).surjective.range_comp, range_boundaryPrimeEmbedding]
+    rfl
+  have hinc (i j : ZMod n) (hij : i ≠ j) :
+      closure {(P i : M.surface)} ∩ closure {(P j : M.surface)} =
+        Q '' {a | (a = i ∧ j = i + 1) ∨ (a = j ∧ i = j + 1)} := by
+    simpa only [P, Q, Function.Embedding.trans_apply, Equiv.toEmbedding_apply,
+      Function.Embedding.coeFn_mk, coe_boundaryPrimeEmbedding] using
+      D.closure_boundaryPrime_inter_of_ne hD hij
+  have hnodal : AtWorstNodalOfRelativeDimensionOne (D[M].subscheme ↘ S) :=
+    PrestableFamily.atWorstNodalOfRelativeDimensionOne
+  have hprojective : Φ.algebraicRealization.IsProjectiveOver ℂ :=
+    p.isProjectiveOver_toricBase u hu
+  have he : u.inv ≫ A.toBase ≫ (M.surface ↘ S) =
+      (model[b,s,c]).2.toTower.toBase ≫ (Φ.algebraicRealization ↘ S) := by
+    rw [← Category.assoc, hu, p.projection_over, Fan.algebraicRealization_over]
+  have hs : ((D[M].comap A.toBase).comap u.inv).support =
+      (model[b,s,c]).2.boundaryι.ker.support := by
+    rw [← comap_comp, hu, p.support_comap]
+  clear hu
+  revert u he hs
+  rw [Fan.internalBlowupTower_eq_alongBoundary]
+  intro u he hs
+  have hdim := (Module.finrank_eq_card_basis b).trans (Fintype.card_fin 2)
+  exact Fan.chargeIndex_bounds_of_nodal_anticanonical_cycle hΦ hdim s
+    (fun j ↦ (b.detDualEquiv (s j).primitiveGenerator).toAddMonoidHom)
+    (fun _ ↦ b.detDualEquiv_self _) (fun j ↦ (s j).surjective_detCharacter b) centers(c)
+    (fun j ↦ (s j).internalCenter b (centers(c) j))
+    (fun j ↦ (s j).internalCenter_val b (centers(c) j)) hA u he hs hcΦ
+    hD hnodal hnefD hsqD hcan hδ P Q hp hinc
+
+include p in
 /-- An equal exchange matrix identifies the ambient lattice of an ordered presentation
 of a primitive nef square-zero anticanonical cycle. The equivalence is unique,
 sends each labeled primitive ray to its counterpart, and preserves the determinant. -/
@@ -107,43 +160,9 @@ theorem existsUnique_rayChargeEquiv_of_equal_exchange_matrix
       chargeExchangeMatrix b'.detDualEquiv.toLinearMap (rayChargeMap s')) :
     ∃! E : N ≃ₗ[ℤ] N', (∀ j, E (s j).primitiveGenerator = (s' j).primitiveGenerator) ∧
       ∀ x y, b'.detDualEquiv (E x) (E y) = b.detDualEquiv x y := by
-  let : IsNoetherian M.surface := isNoetherian_of_finiteType (M.surface ↘ S)
-  let : ∀ x : M.surface, UniqueFactorizationMonoid (M.surface.presheaf.stalk x) :=
-    (M.surface ↘ S).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two
-  let D := M.imageCycle
-  let P := (D.boundaryPrimeEquiv hD).toEmbedding.trans (D[M]).boundaryPrimeEmbedding
-  let Q : ZMod n ↪ M.surface := ⟨D.ambientNode, D.ambientNode_injective⟩
-  let C (j : ZMod n) := Additive.ofMul (primeDivisorClass (P j))
-  have hp (x : CodimensionOnePoint M.surface) :
-      (x : M.surface) ∈ D[M].support ↔ x ∈ Set.range P := by
-    simp only [P, Function.Embedding.coe_trans, Equiv.coe_toEmbedding,
-      (D.boundaryPrimeEquiv hD).surjective.range_comp, range_boundaryPrimeEmbedding]
-    rfl
-  have hinc (i j : ZMod n) (hij : i ≠ j) :
-      closure {(P i : M.surface)} ∩ closure {(P j : M.surface)} =
-        Q '' {a | (a = i ∧ j = i + 1) ∨ (a = j ∧ i = j + 1)} := by
-    simpa only [P, Q, Function.Embedding.trans_apply, Equiv.toEmbedding_apply,
-      Function.Embedding.coeFn_mk, coe_boundaryPrimeEmbedding] using
-      D.closure_boundaryPrime_inter_of_ne hD hij
-  have hnodal : AtWorstNodalOfRelativeDimensionOne (D[M].subscheme ↘ S) :=
-    PrestableFamily.atWorstNodalOfRelativeDimensionOne
-  have hGram := BoundaryCycle.intersectionBilinForm_eq_of_nodal_cycle
-    hD hnodal hnefD hsqD P Q hp hinc
-  have hspan : Scheme.Opens.primeDivisorSpanCompl (D[M].support.compl) =
-      Submodule.span ℤ (Set.range C) := by
-    apply Scheme.Opens.primeDivisorSpanCompl_eq_span_of_mem_iff _ P
-    intro x
-    simpa only [C, ← SetLike.mem_coe, Closeds.coe_compl, Set.mem_compl_iff, not_not] using hp x
-  let : IsReduced D[M].subscheme := hnodal.isReduced
-  have hsum : Additive.ofMul classOf(hD) = ∑ j, C j :=
-    hD.ofMul_inv_toInvertibleSheaf_eq_sum_primeDivisorClass P hp
-  have hsumCan : ∑ j, C j =
-      -Additive.ofMul (LineBundleClass.mk (canonicalBundle ℂ M.surface 2)) := by
-    rw [← hsum, hcan, ofMul_inv]
-  let : Φ.algebraicRealization.IsProjectiveOver ℂ := p.isProjectiveOver_toricBase u hu
-  exact Fan.existsUnique_rayChargeEquiv_of_anticanonical_cycle s s' b b' centers(c) hΦ hcΦ
-    hA u (by rw [← Category.assoc, hu, p.projection_over, Fan.algebraicRealization_over])
-    (by rw [← comap_comp, hu, p.support_comap]) C hGram hspan hsumCan (hsum ▸ hδ) hmat
+  obtain ⟨hcount, _, _, hk, hindex, _, hrel⟩ :=
+    p.chargeIndex_bounds_of_anticanonical_cycle hcΦ hA u hu hD hnefD hsqD hcan hδ
+  exact Fan.existsUnique_rayChargeEquiv_of_index s s' b b' hmat hcount hk hindex hrel
 
 variable [hΨ₀ : Nonempty Ψ.cones] {m' : ℕ} [NeZero m']
   {L' : Type} [AddCommGroup L'] {B' : LinearMap.BilinForm ℤ L'}

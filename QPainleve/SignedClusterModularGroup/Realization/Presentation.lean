@@ -112,6 +112,31 @@ theorem CompleteToricPresentation.hasNodalModel_iff (Q : CompleteToricPresentati
 
 namespace CompleteToricPresentation
 
+/-- The inclusion in the auxiliary Picard lattice is injective whenever the
+presentation has a nodal model. -/
+theorem inclusion_injective (Q : CompleteToricPresentation i b r L γ)
+    {c : Point Centers} {M : MarkedSurface ℂ n H XTor} (h : Q.HasNodalModel c M) :
+    Function.Injective Q.inclusion := by
+  let := Q.complete.nonempty_cones
+  let := Q.prestable
+  let := Q.neZero
+  obtain ⟨p, _, _, W, e, hW, hp⟩ := (Q.hasNodalModel_iff c M).mp h
+  let : IsIntegral M.surface := M.integral
+  let : M.surface.IsProjectiveOver ℂ := M.projective
+  let : SmoothOfRelativeDimension 2 (M.surface ↘ S) := M.smooth
+  let : Smooth (M.surface ↘ S) := SmoothOfRelativeDimension.smooth 2 _
+  let : IsNoetherian M.surface := isNoetherian_of_finiteType (M.surface ↘ S)
+  intro x y hxy
+  rw [← p.marked_pullback x, ← p.marked_pullback y] at hxy
+  apply M.picardMarking.injective
+  apply Additive.toMul.injective
+  apply hW.isClosedPointTower.injective_pullback_toBase (M.surface ↘ S)
+  apply (LineBundleClass.pullbackEquiv e.symm).injective
+  have h := Additive.ofMul.injective
+    ((Fan.internalBlowupPicardMarking b Q.rays centers(χ(c)) Q.regular).symm.injective hxy)
+  simpa only [hp, LineBundleClass.pullback_comp, LineBundleClass.pullbackEquiv_apply,
+    Iso.symm_hom] using h
+
 /-- Read the same ordered toric presentation in the reversed lattice frame.
 The numbered boundary is read from the same geometric origin in reverse order. -/
 -- The fan and the length reduce in the types of dependent projections of the reverse.
