@@ -11,7 +11,9 @@ public import TauCeti.AlgebraicGeometry.IntersectionNumber.Basic
 public import TauCeti.AlgebraicGeometry.LineBundle.Ample
 public import TauCeti.AlgebraicGeometry.LineBundle.GlobalGeneration.Basic
 public import TauCeti.AlgebraicGeometry.LineBundle.Power
+import QPainleve.AlgebraicGeometry.Curves.Degree.Ample
 import QPainleve.AlgebraicGeometry.LineBundle.Ample
+import QPainleve.AlgebraicGeometry.LineBundle.GlobalGeneration
 import QPainleve.AlgebraicGeometry.Morphisms.Finite
 import TauCeti.AlgebraicGeometry.Curves.Normalization
 
@@ -104,6 +106,27 @@ theorem exists_finite_toProjectiveSpace_of_intersectionNumber_pos
   intro C _ _ i _ hi
   rw [hclass]
   exact hpos i hi
+
+/-- A globally generated ample line bundle with a three-dimensional space of global
+sections on a proper scheme defines a finite morphism to the projective plane, with pullback
+of the hyperplane bundle equal to the original bundle. -/
+theorem exists_finite_to_projectivePlane
+    {k : Type u} [Field k] {X : Scheme.{u}} [X.Over (Spec (.of k))]
+    [IsProper (X ↘ Spec (.of k))] (L : InvertibleSheaf X)
+    (hA : (LineBundleClass.mk L).IsAmple) (hglob : L.IsGloballyGenerated)
+    (hnum : Module.finrank k Γ(L.obj, ⊤) = 3) :
+    let 𝒜 := MvPolynomial.homogeneousSubmodule (ULift.{u} (Fin 3)) k
+    let H : InvertibleSheaf (Proj 𝒜) := ⟨Proj.twistingSheaf 𝒜 1, inferInstance⟩
+    ∃ f : X ⟶ Proj 𝒜, f ≫ Proj.toSpecCoeff 𝒜 = X ↘ Spec (.of k) ∧ IsFinite f ∧
+      LineBundleClass.pullback f (LineBundleClass.mk H) = LineBundleClass.mk L := by
+  intro 𝒜 H
+  have : Module.Finite k Γ(L.obj, ⊤) := Module.finite_of_finrank_pos (hnum.symm ▸ by decide)
+  let b : Module.Basis (ULift.{u} (Fin 3)) k Γ(L.obj, ⊤) :=
+    (Module.finBasisOfFinrankEq k Γ(L.obj, ⊤) hnum).reindex Equiv.ulift.symm
+  have hcover := hglob.iSup_nonvanishingLocus_basis_eq_top b
+  refine L.exists_finite_toProjectiveSpace_of_intersectionNumber_pos b hcover ?_
+  intro C _ _ i _ _
+  exact hA.intersectionNumber_pos i
 
 /-- A globally generated line bundle on a proper scheme over a field is ample if
 its intersection number with every integral closed curve is positive. -/

@@ -12,12 +12,10 @@ public import TauCeti.AlgebraicGeometry.LineBundle.GlobalGeneration.Basic
 
 import QPainleve.AlgebraicGeometry.Chow.PrimeDivisor
 import QPainleve.AlgebraicGeometry.Chow.RationalSurface.Effectivity
-import QPainleve.AlgebraicGeometry.Curves.Degree.Ample
 import QPainleve.AlgebraicGeometry.EffectiveCartierDivisor.Effectivity
 import QPainleve.AlgebraicGeometry.EffectiveCartierDivisor.Twist
 import QPainleve.AlgebraicGeometry.IdealSheaf.Tensor.Restriction
 import QPainleve.AlgebraicGeometry.IntersectionNumber.Ample
-import QPainleve.AlgebraicGeometry.LineBundle.GlobalGeneration
 import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.ProjectiveLine.Cohomology
 import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.ProjectiveLine.GlobalGeneration
 import TauCeti.AlgebraicGeometry.LineBundle.BaseChange
@@ -209,29 +207,6 @@ theorem isGloballyGenerated_and_finrank_globalSections_eq_three_of_self_eq_one
     finrank_cohomology_zero_eq_finrank_globalSections]
   exact hI.finrank_globalSections_dual_eq_three_of_iso_projectiveLine e.symm hdeg
     (hclass'.symm ▸ hA) (hclass'.symm ▸ hsq) (hclass'.symm ▸ hcan)
-
-attribute [local instance] MvPolynomial.gradedAlgebra
-
-/-- A globally generated ample line bundle with a three-dimensional space of global
-sections on a proper scheme defines a finite morphism to the projective plane, with pullback
-of the hyperplane bundle equal to the original bundle. -/
-theorem exists_finite_to_projectivePlane
-    {k : Type u} [Field k] {X : Scheme.{u}} [X.Over (Spec (.of k))]
-    [IsProper (X ↘ Spec (.of k))] (L : InvertibleSheaf X)
-    (hA : (LineBundleClass.mk L).IsAmple) (hglob : L.IsGloballyGenerated)
-    (hnum : Module.finrank k Γ(L.obj, ⊤) = 3) :
-    let 𝒜 := MvPolynomial.homogeneousSubmodule (ULift.{u} (Fin 3)) k
-    let H : InvertibleSheaf (Proj 𝒜) := ⟨Proj.twistingSheaf 𝒜 1, inferInstance⟩
-    ∃ f : X ⟶ Proj 𝒜, f ≫ Proj.toSpecCoeff 𝒜 = X ↘ Spec (.of k) ∧ IsFinite f ∧
-      LineBundleClass.pullback f (LineBundleClass.mk H) = LineBundleClass.mk L := by
-  intro 𝒜 H
-  have : Module.Finite k Γ(L.obj, ⊤) := Module.finite_of_finrank_pos (hnum.symm ▸ by decide)
-  let b : Module.Basis (ULift.{u} (Fin 3)) k Γ(L.obj, ⊤) :=
-    (Module.finBasisOfFinrankEq k Γ(L.obj, ⊤) hnum).reindex Equiv.ulift.symm
-  have hcover := hglob.iSup_nonvanishingLocus_basis_eq_top b
-  refine L.exists_finite_toProjectiveSpace_of_intersectionNumber_pos b hcover ?_
-  intro C _ _ i _ _
-  exact hA.intersectionNumber_pos i
 
 end TauCeti.AlgebraicGeometry.InvertibleSheaf
 
