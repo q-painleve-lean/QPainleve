@@ -311,6 +311,38 @@ theorem restrict_picard (W : T₀.left.Opens) (hW : Dense (W : Set T₀.left)) (
 theorem restrict_boundaryAction (W : T₀.left.Opens) (hW : Dense (W : Set T₀.left))
     (hWC : W ≤ C.domain) : (R.restrict W hW hWC).boundaryAction = R.boundaryAction := (rfl)
 
+section PrecompCenter
+
+variable {U : Over (Spec (CommRingCat.of k))}
+  [Nonempty U.left] [Smooth U.hom] [PreirreducibleSpace U.left]
+  (e : U ⟶ T₀) [IsDominant e.left] [e.left.toPartialMap.IsOver U.hom T₀.hom]
+
+/-- Precompose the center map by a dominant morphism and evaluate the source family
+at the image of each center. The rational X map and both marked actions are preserved. -/
+def precompCenter :
+    GeometricRealization (fun c ↦ P₀ (c ≫ e)) P₁ (e.left.toPartialMap.comp C) F where
+  picard := R.picard
+  boundaryAction := R.boundaryAction
+  fiber c := by
+    let f := e.left.toPartialMap
+    have hf : f.domainTarget = f.domainSource ≫ e :=
+      PartialMap.domainTarget_toPartialMap e rfl
+    have hsrc : (c ≫ f.compDomainRight C) ≫ C.domainSource = (c ≫ (f.comp C).domainSource) ≫ e := by
+      rw [Category.assoc, ← f.compDomainLeft_target C, hf,
+        ← Category.assoc (f.compDomainLeft C), f.compDomainLeft_source, Category.assoc]
+    have htgt : (c ≫ f.compDomainRight C) ≫ C.domainTarget = c ≫ (f.comp C).domainTarget := by
+      rw [Category.assoc, f.compDomainRight_target]
+    exact hsrc ▸ htgt ▸ R.fiber (c ≫ f.compDomainRight C)
+
+@[simp]
+theorem precompCenter_picard : (R.precompCenter e).picard = R.picard := (rfl)
+
+@[simp]
+theorem precompCenter_boundaryAction :
+    (R.precompCenter e).boundaryAction = R.boundaryAction := (rfl)
+
+end PrecompCenter
+
 /-- The identity realization uses the identity pair isomorphism at each center. -/
 def refl (P : Point T₀ → MarkedSurface k n B₀ X₀) :
     GeometricRealization P P (PartialMap.id T₀.left) (RationalMap.id X₀) where
