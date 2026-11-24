@@ -65,12 +65,6 @@ local notation "eP" =>
 local notation "p" => (Fan.distinguishedPointHom Π σ ≫ Iso.hom eP) (IsLocalRing.closedPoint ℂ)
 local notation "rankTwo" => Eq.trans (finrank_eq_card_basis d) (Fintype.card_fin 2)
 
-private theorem planeIso_isOver : (eP).hom.IsOver S := by
-  refine ⟨?_⟩
-  simp only [Iso.trans_hom, Category.assoc, over_eq_projToSpec,
-    Basis.polynomialProjIso_hom_over, Fan.projectivePlaneIso_hom_toSpecCoeff,
-    Fan.algebraicRealization_over]
-
 private theorem poleIdeal_of_vertex_projection {Y : Scheme} [IsIntegral Y] [Y.Over S]
     [SmoothOfRelativeDimension 2 (Y ↘ S)] (hσ : (σ).val ≠ ⊥)
     (q : Y ⟶ X[Φ]) (f : Y ⟶ Plane) [q.IsOver S] [f.IsOver S] [IsDominant q]
@@ -89,7 +83,7 @@ private theorem poleIdeal_of_vertex_projection {Y : Scheme} [IsIntegral Y] [Y.Ov
   let : SmoothOfRelativeDimension 2 (X[Φ] ↘ S) := by
     simpa only [Fan.algebraicRealization_over, rankTwo] using
       (Φ).smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
-  let := planeIso_isOver d hi
+  let := Fan.projectivePlaneIso_trans_polynomialProjIso_hom_isOver d hi (Pi.basisFun ℂ (Fin 3))
   let : (eP).inv.IsOver S := inferInstance
   have h := comap_eq_mul_ramificationIdealSheaf_comp ℂ f (eP).inv 2
     (D := B[Π,hcΠ]) (P := (B[Π,hcΠ]).comap (eP).inv) (by simp only [
@@ -173,7 +167,7 @@ theorem exists_sarkisov_decrease_of_logarithmic_plane_vertex
     hT.exists_sarkisov_decrease_of_plane_vertex d hi a j hj hfirst g hg hbir
   let := hcΠ.nonempty_cones
   let := Fan.IsComplete.nonempty_cones hcΦ[hσ]
-  let := planeIso_isOver d hi
+  let := Fan.projectivePlaneIso_trans_polynomialProjIso_hom_isOver d hi (Pi.basisFun ℂ (Fin 3))
   let : SmoothOfRelativeDimension 2 (X[Φ] ↘ S) := by
     simpa only [rankTwo, Fan.algebraicRealization_over] using
       (Φ).smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ

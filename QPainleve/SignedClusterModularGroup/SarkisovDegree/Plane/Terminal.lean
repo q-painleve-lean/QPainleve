@@ -86,11 +86,8 @@ theorem existsUnique_toric_factorization_of_plane_degree_one
     hT.existsUnique_iso_of_plane_degree_one_of_eq_poleIdeal g hg hbir
       (D(b,hi).comap e₀.inv) (D(b',hi').comap e₁.inv) J hd hD hE
   let e := e₀ ≪≫ f ≪≫ e₁.symm
-  have ⟨_, _⟩ : e₀.hom.IsOver S ∧ e₁.hom.IsOver S := by
-    constructor <;> refine ⟨?_⟩ <;>
-    simp only [e₀, e₁, Iso.trans_hom, Category.assoc, over_eq_projToSpec,
-      Basis.polynomialProjIso_hom_over, Fan.projectivePlaneIso_hom_toSpecCoeff,
-      Fan.algebraicRealization_over]
+  let : e₀.hom.IsOver S := Fan.projectivePlaneIso_trans_polynomialProjIso_hom_isOver b hi coords
+  let : e₁.hom.IsOver S := Fan.projectivePlaneIso_trans_polynomialProjIso_hom_isOver b' hi' coords
   have : f.hom.IsOver S := ⟨hfs⟩
   have : e.hom.IsOver S := by
     simpa only [e, Iso.trans_hom, Iso.symm_hom, Category.assoc] using

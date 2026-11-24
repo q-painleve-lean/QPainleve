@@ -164,7 +164,7 @@ private theorem projectivePlane_vertex_starSubdivision_rays
   obtain ⟨c, hc, hrays, hk⟩ := projectivePlane_vertex_rays d hi k
   let hreg := isRegular_iff.mp hΨ σ.val σ.property
   obtain ⟨e, he⟩ := hreg.exists_rayEquiv_of_basis hi c hc
-  have hσ : Nat.card (ToricRay σ.val) = 2 := by rw [← Nat.card_congr e, Nat.card_fin]
+  have hσ : Nat.card (ToricRay σ.val) = 2 := card_toricRay_projectiveSpaceMaximalCone d hi k
   have hzero : c.coord 0 (c 1) = 0 := by simp
   let b := c.map (LinearEquiv.transvection hzero)
   have hb₀ : b 0 = c 0 + c 1 := by

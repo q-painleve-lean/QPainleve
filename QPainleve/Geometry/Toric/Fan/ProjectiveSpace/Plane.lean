@@ -114,6 +114,15 @@ theorem projectivePlane_vertex_rays (d : Basis (Fin 2) ℤ N) (hi : IsIntegralLa
       Fin.exists_fin_two]
     tauto
 
+/-- A vertex cone of the projective plane fan has exactly two rays. -/
+@[simp]
+theorem card_toricRay_projectiveSpaceMaximalCone
+    (d : Basis (Fin 2) ℤ N) (hi : IsIntegralLattice i) (k : Option (Fin 2)) :
+    Nat.card (ToricRay (projectiveSpaceMaximalCone d hi k).val) = 2 := by
+  obtain ⟨c, hc, -, -⟩ := projectivePlane_vertex_rays d hi k
+  let e := toricRayEquivOfLinearIndependent (i ∘ c) (hi.linearIndependent_basis c) hc
+  exact (Nat.card_congr e).trans (Nat.card_fin 2)
+
 /-- A two-ray cone of the plane fan is one of its three maximal cones. -/
 theorem exists_eq_projectiveSpaceMaximalCone_of_card_toricRay_eq_two
     (d : Basis (Fin 2) ℤ N) (hi : IsIntegralLattice i) (σ : (projectiveSpace d hi).cones)
@@ -156,6 +165,16 @@ theorem projectivePlaneIso_hom_toSpecCoeff :
   rw [projectivePlaneIso, Iso.trans_hom, Iso.symm_hom, asIso_hom,
     ← (coords).polynomialProjIso_hom_over, Category.assoc, Iso.inv_hom_id_assoc,
     ← SymmetricAlgebra.over_eq_projToSpec, CategoryTheory.comp_over, algebraicRealization_over]
+
+/-- A basis comparison from the toric plane to the projective spectrum of
+a symmetric algebra respects the structure morphisms over the coefficient field. -/
+theorem projectivePlaneIso_trans_polynomialProjIso_hom_isOver
+    {M : Type} [AddCommGroup M] [Module ℂ M] (c : Basis (Fin 3) ℂ M) :
+    ((projectivePlaneIso b hi) ≪≫ c.polynomialProjIso).hom.IsOver (Spec (.of ℂ)) := by
+  refine ⟨?_⟩
+  simp only [Iso.trans_hom, Category.assoc, SymmetricAlgebra.over_eq_projToSpec,
+    Basis.polynomialProjIso_hom_over, projectivePlaneIso_hom_toSpecCoeff,
+    algebraicRealization_over]
 
 /-- The standard chart of the polynomial projective plane pulls back to the corresponding
 maximal cone chart. -/
