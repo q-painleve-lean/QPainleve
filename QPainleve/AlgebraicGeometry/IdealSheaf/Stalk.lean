@@ -8,20 +8,23 @@ module
 public import Mathlib.AlgebraicGeometry.Artinian
 public import TauCeti.AlgebraicGeometry.IdealSheaf.Stalk
 
-import Mathlib.AlgebraicGeometry.FunctionField
+import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
+import QPainleve.AlgebraicGeometry.Scheme.Stalk
 import TauCeti.AlgebraicGeometry.IdealSheaf.Affine
+import TauCeti.AlgebraicGeometry.IdealSheaf.BaseChange
 
 /-!
 # Stalks of ideal sheaves
 
 The stalk of an arbitrary sum is the sum of the stalk ideals. Its order of vanishing
 is the infimum of the orders of the summands. We also compare stalk ideals in a
-commutative square of closed subschemes.
+commutative square of closed subschemes and show that localization preserves closed subschemes
+supported over a closed point.
 -/
 
 public section
 
-open CategoryTheory TopologicalSpace
+open CategoryTheory Limits TopologicalSpace
 
 namespace AlgebraicGeometry.Scheme.IdealSheafData
 
@@ -153,3 +156,27 @@ theorem stalkIdeal_comap_eq_of_isIso_stalkMap (J : Y.IdealSheafData) {I : X.Idea
     (ConcreteCategory.bijective_of_isIso (f.stalkMap (I.subschemeι z))).surjective]
 
 end AlgebraicGeometry.Scheme.IdealSheafData
+
+namespace AlgebraicGeometry.Scheme.Hom
+
+open IdealSheafData TauCeti.AlgebraicGeometry
+
+/-- Localizing over a closed point preserves closed subschemes supported in its fiber. -/
+theorem isIso_subschemeMap_comap_pullback_fst_of_support_le
+    {X Y : Scheme.{u}} (f : X ⟶ Y) {p : Y} {E : X.IdealSheafData}
+    (hp : IsClosed ({p} : Set Y)) (hE : (Y.fromSpecResidueField p).ker.comap f = E)
+    (J : X.IdealSheafData) (hJ : J.support ≤ E.support)
+    {J' : (pullback f (Y.fromSpecStalk p)).IdealSheafData}
+    (hJ' : J' = J.comap (pullback.fst f (Y.fromSpecStalk p))) :
+    IsIso (subschemeMap J' J (pullback.fst f (Y.fromSpecStalk p)) (hJ' ▸ J.le_map_comap _)) := by
+  have h := isPullback_subschemeMap_of_eq hJ' (IsPullback.of_hasPullback f (Y.fromSpecStalk p))
+  apply h.isIso_fst_of_fromSpecStalk
+  intro x
+  have hx : J.subschemeι x ∈ (E.support : Set X) := hJ (by
+    rw [← SetLike.mem_coe, ← J.range_subschemeι]
+    exact Set.mem_range_self x)
+  rw [← hE, support_comap, Closeds.coe_preimage,
+    support_ker_fromSpecResidueField_of_isClosed hp, Set.mem_preimage, Set.mem_singleton_iff] at hx
+  exact specializes_of_eq ((Hom.comp_apply _ _ _).trans hx)
+
+end AlgebraicGeometry.Scheme.Hom
