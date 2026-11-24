@@ -5,13 +5,15 @@ Authors: The QPainleve contributors
 -/
 module
 
+public import QPainleve.AlgebraicGeometry.Blowup.Tower.Nodal.Basic
 public import QPainleve.Geometry.Toric.Fan.Subdivision
-public import QPainleve.Geometry.Toric.Fan.Subdivision.NodalRefinement
+public import QPainleve.Geometry.Toric.Fan.Subdivision.InternalBlowup
 
 import QPainleve.AlgebraicGeometry.Blowup.Pullback
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Boundary.Pullback
 import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
 import QPainleve.AlgebraicGeometry.IdealSheaf.VanishingIdeal
+import QPainleve.Geometry.Toric.Fan.Boundary.NodalPullback
 import QPainleve.Geometry.Toric.Fan.StarSubdivision.Boundary
 import TauCeti.AlgebraicGeometry.IdealSheaf.Reduced
 

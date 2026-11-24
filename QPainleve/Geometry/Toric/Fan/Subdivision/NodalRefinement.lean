@@ -10,10 +10,8 @@ public import QPainleve.Geometry.Toric.Fan.Boundary.NodalPullback
 public import QPainleve.Geometry.Toric.Fan.Subdivision.InternalBlowup
 
 import Mathlib.Analysis.Complex.Polynomial.Basic
-import QPainleve.AlgebraicGeometry.IdealSheaf.BaseChange
 import QPainleve.AlgebraicGeometry.IdealSheaf.Restriction
 import QPainleve.Geometry.Toric.Fan.StarSubdivision.Tower
-import TauCeti.AlgebraicGeometry.IdealSheaf.Reduced
 
 /-!
 # Common nodal refinements of internal toric blowup models
@@ -42,31 +40,6 @@ variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   (b : Module.Basis (Fin 2) ℤ N) {n : ℕ}
 
 local notation "model" => internalBlowupTower b
-
-/-- In the cartesian comparison of ordered internal models, the refined
-strict boundary is the reduced inverse image of the original strict boundary. -/
-theorem IsSubdivision.radical_comap_internalBlowupTower_boundary
-    (h : Φ.IsSubdivision Ψ) (ρ : Fin n → Ψ.Ray) (c : Fin n → ℂˣ)
-    {g : (model (h.liftRay ∘ ρ) c).1 ⟶ (model ρ c).1}
-    (hg : IsPullback g (model (h.liftRay ∘ ρ) c).2.toTower.toBase
-      (model ρ c).2.toTower.toBase h.toFanHom.algebraicMap)
-    (hb : (model (h.liftRay ∘ ρ) c).2.boundaryι ≫ g =
-      h.boundaryMap hΦ₀ hΨ₀ ≫ (model ρ c).2.boundaryι) :
-    ((model ρ c).2.boundaryι.ker.comap g).radical = (model (h.liftRay ∘ ρ) c).2.boundaryι.ker := by
-  let A := model (h.liftRay ∘ ρ) c
-  let B := model ρ c
-  have : IsReduced (Φ.boundaryIdeal hΦ₀).subscheme := by
-    rw [Fan.boundaryIdeal_def]
-    infer_instance
-  have : IsClosedImmersion (B.2.boundaryι ≫ B.2.toTower.toBase) := by
-    rw [WithBoundary.boundaryι_toBase]
-    infer_instance
-  have : IsClosedImmersion (A.2.boundaryι ≫ A.2.toTower.toBase) := by
-    rw [WithBoundary.boundaryι_toBase]
-    infer_instance
-  apply radical_comap_ker_eq_of_isPullback hg _ _ _ hb
-  simpa only [WithBoundary.boundaryι_toBase, ker_subschemeι] using
-    h.radical_comap_boundaryIdeal hΦ₀ hΨ₀
 
 /-- A regular subdivision induces a nodal blowup projection of the ordered internal
 model. Its reduced total boundary is the strict boundary of the refined internal model,

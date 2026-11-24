@@ -9,6 +9,8 @@ public import QPainleve.Geometry.Toric.Fan.Boundary.Subdivision
 public import QPainleve.Geometry.Toric.Fan.InternalBlowup
 
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Boundary.Pullback
+import QPainleve.AlgebraicGeometry.IdealSheaf.BaseChange
+import TauCeti.AlgebraicGeometry.IdealSheaf.Reduced
 
 /-!
 # Internal toric blowups under fan subdivision
@@ -27,6 +29,7 @@ The ordered centers and strict boundary are as in Gross, Hacking and Keel,
 public section
 
 open AlgebraicGeometry CategoryTheory QPainleve.BlowupTower TauCeti.AlgebraicGeometry
+open Scheme.IdealSheafData
 
 namespace TauCeti.Toric.Fan.IsSubdivision
 
@@ -88,6 +91,31 @@ theorem exists_isPullback_internalBlowupTower {n : ℕ} (ρ : Fin n → Ψ.Ray) 
   rw [hA, hA'] at hp
   rw [internalBlowupTower_eq_alongBoundary, internalBlowupTower_eq_alongBoundary]
   exact hp
+
+/-- In the cartesian comparison of ordered internal models, the refined
+strict boundary is the reduced inverse image of the original strict boundary. -/
+theorem radical_comap_internalBlowupTower_boundary {n : ℕ} (ρ : Fin n → Ψ.Ray) (c : Fin n → ℂˣ)
+    {g : (internalBlowupTower b (h.liftRay ∘ ρ) c).1 ⟶ (internalBlowupTower b ρ c).1}
+    (hg : IsPullback g (internalBlowupTower b (h.liftRay ∘ ρ) c).2.toTower.toBase
+      (internalBlowupTower b ρ c).2.toTower.toBase h.toFanHom.algebraicMap)
+    (hb : (internalBlowupTower b (h.liftRay ∘ ρ) c).2.boundaryι ≫ g =
+      h.boundaryMap hΦ hΨ ≫ (internalBlowupTower b ρ c).2.boundaryι) :
+    ((internalBlowupTower b ρ c).2.boundaryι.ker.comap g).radical =
+      (internalBlowupTower b (h.liftRay ∘ ρ) c).2.boundaryι.ker := by
+  let A := internalBlowupTower b (h.liftRay ∘ ρ) c
+  let B := internalBlowupTower b ρ c
+  have : IsReduced (Φ.boundaryIdeal hΦ).subscheme := by
+    rw [Fan.boundaryIdeal_def]
+    infer_instance
+  have : IsClosedImmersion (B.2.boundaryι ≫ B.2.toTower.toBase) := by
+    rw [WithBoundary.boundaryι_toBase]
+    infer_instance
+  have : IsClosedImmersion (A.2.boundaryι ≫ A.2.toTower.toBase) := by
+    rw [WithBoundary.boundaryι_toBase]
+    infer_instance
+  apply radical_comap_ker_eq_of_isPullback hg _ _ _ hb
+  simpa only [WithBoundary.boundaryι_toBase, ker_subschemeι] using
+    h.radical_comap_boundaryIdeal hΦ hΨ
 
 /-- A specified common subdivision with matching labeled primitive generators gives one
 ordered internal model projecting cartesianly to both endpoint models. Both projections
