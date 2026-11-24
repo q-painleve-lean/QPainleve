@@ -45,21 +45,6 @@ private theorem exists_compOfDefined_nil (U : OrderedToricModel A m) :
   simpa only [Quiver.Path.xRationalMap_nil, Scheme.RationalMap.compHom_id] using
     U.xEvaluation.compOfDefined_toRationalMap (𝟙 _)
 
-/-- Successive words carrying one fixed-center evaluation to the next compose
-at the generic point of the same resolving surface. -/
-theorem exists_compOfDefined_word_comp {C : LogarithmicProjection i D}
-    (U : OrderedToricModel A m) (M : OrderedToricModel B m) (W : OrderedToricModel C m)
-    (u : Word U.exchangeMatrix M.exchangeMatrix) (v : Word M.exchangeMatrix W.exchangeMatrix)
-    (h₀ : ∃ h, U.xEvaluation.compOfDefined (u.xRationalMap ℂ) h = M.xEvaluation)
-    (h₁ : ∃ h, M.xEvaluation.compOfDefined (v.xRationalMap ℂ) h = W.xEvaluation) :
-    ∃ h, U.xEvaluation.compOfDefined ((u.comp v).xRationalMap ℂ) h = W.xEvaluation := by
-  obtain ⟨hu, h₀⟩ := h₀
-  obtain ⟨hv, h₁⟩ := h₁
-  obtain ⟨h, he⟩ := U.xEvaluation.compOfDefined_comp (u.xRationalMap ℂ) (v.xRationalMap ℂ)
-    hu (h₀.symm ▸ hv)
-  refine ⟨(Quiver.Path.xRationalMap_comp ℂ u v).symm ▸ h, ?_⟩
-  simpa only [Quiver.Path.xRationalMap_comp, ← he, h₀] using h₁
-
 omit [IsIntegral Z] in
 private theorem exists_iso_of_tower_eq (U : OrderedToricModel A m)
     (b : Basis (Fin 2) ℤ N) (c : Fin m → ℂˣ)
