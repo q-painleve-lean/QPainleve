@@ -63,16 +63,19 @@ private def internalBlowupRayPoint (ρ : Φ.Ray) : CodimensionOnePoint (P).1 := 
   exact ⟨x, ((π).coheight_eq_of_apply_mem_isoLocus
     ((π).mem_isoLocus_of_coheight_eq_one hx)).symm.trans hx⟩
 
+private theorem range_rayComponent_internalBlowupRayPoint (ρ : Φ.Ray) :
+    Set.range (e ρ) = closure {(internalBlowupRayPoint hΦ b s c ρ : (P).1)} := by
+  rw [← Set.image_univ (f := e ρ), ← genericPoint_closure,
+    ← (e ρ).isClosedEmbedding.closure_image_eq, Set.image_singleton]
+  rfl
+
 private theorem support_internalBlowup_boundary : ((j).ker.support : Set (P).1) =
     ⋃ ρ : Φ.Ray, closure {(internalBlowupRayPoint hΦ b s c ρ : (P).1)} := by
   rw [(j).support_ker, (j).isClosedEmbedding.isClosed_range.closure_eq, ← Set.image_univ (f := j),
     ← iUnion_range_boundaryComponentι hΦ, Set.image_iUnion]
   refine Set.iUnion_congr fun ρ ↦ ?_
-  rw [← Set.range_comp, ← TopCat.coe_comp, ← Scheme.Hom.comp_base,
-    ← Set.image_univ (f := e ρ), ← genericPoint_closure,
-    ← (e ρ).isClosedEmbedding.closure_image_eq,
-    Set.image_singleton]
-  rfl
+  rw [← Set.range_comp, ← TopCat.coe_comp, ← Scheme.Hom.comp_base]
+  exact range_rayComponent_internalBlowupRayPoint hΦ b s c ρ
 
 /-- The rays index the prime components of the strict boundary of the ordered internal
 blowup. The comparison uses the same labeled ray divisors for every center tuple. -/
@@ -91,6 +94,11 @@ def internalBlowupBoundaryPrimeEquiv : Φ.Ray ≃ (j).ker.boundaryPrimes := by
   · intro x
     obtain ⟨ρ, hρ⟩ := (Set.ext_iff.mp hr x.val).mp x.property
     exact ⟨ρ, Subtype.ext hρ⟩
+
+/-- The embedded ray component is the closure of the corresponding strict boundary prime. -/
+theorem range_rayComponent_internalBlowupBoundaryPrimeEquiv (ρ : Φ.Ray) :
+    Set.range (e ρ) = closure {((internalBlowupBoundaryPrimeEquiv hΦ b s c ρ).val : (P).1)} :=
+  range_rayComponent_internalBlowupRayPoint hΦ b s c ρ
 
 /-- The strict boundary prime indexed by a ray projects to the original toric ray prime. -/
 @[simp]

@@ -12,9 +12,9 @@ import Mathlib.AlgebraicGeometry.AlgClosed.Basic
 import QPainleve.AlgebraicGeometry.Blowup.StrictTransform.Nodality
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Logarithmic.Boundary
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Nodal.Reorder
+import QPainleve.AlgebraicGeometry.IdealSheaf.BaseChange
 import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
 import TauCeti.AlgebraicGeometry.Curves.Node.Reduced
-import TauCeti.AlgebraicGeometry.IdealSheaf.BaseChange
 import TauCeti.AlgebraicGeometry.IdealSheaf.Reduced
 import TauCeti.AlgebraicGeometry.Morphisms.StalkMap
 
@@ -284,24 +284,6 @@ private theorem exists_node (F : OrderedFactorization D s T P c)
       ← Category.assoc (a j)]
     exact congrArg (· ≫ F.boundary.subschemeι ≫ F.tower.toBase) hd |>.trans (F.center_toBase j)
 
-private theorem exists_boundaryIso (F : OrderedFactorization D s T P c) :
-    ∃ d : F.boundary.subscheme ≅ P.subscheme,
-      F.internalTower.2.boundaryι ≫ F.iso.hom = d.hom ≫ P.subschemeι := by
-  let b := F.internalTower.2.boundaryι
-  have : IsClosedImmersion (b ≫ F.iso.hom) :=
-    inferInstanceAs (IsClosedImmersion (F.internalTower.2.boundaryι ≫ F.iso.hom))
-  have h : P.subschemeι.ker = (b ≫ F.iso.hom).ker := calc
-    P.subschemeι.ker = P := P.ker_subschemeι
-    _ = (P.comap F.iso.hom).comap F.iso.inv := by
-      rw [← comap_comp, Iso.inv_hom_id, comap_id]
-    _ = b.ker.comap F.iso.inv := congrArg (·.comap F.iso.inv) F.comap_boundary_iso_hom
-    _ = (b ≫ F.iso.hom).ker := by
-      rw [← Scheme.Hom.comap_ker_comp_of_isClosedImmersion b F.iso.hom,
-        ← comap_comp, Iso.inv_hom_id, comap_id]
-  let d := IsClosedImmersion.lift P.subschemeι (b ≫ F.iso.hom) h.le
-  have : IsIso d := IsClosedImmersion.isIso_lift _ _ h
-  exact ⟨asIso d, (IsClosedImmersion.lift_fac _ _ _).symm⟩
-
 private theorem exists_snocCenters (F : OrderedFactorization D s T P c)
     {V : Scheme.{u}} (a : V ⟶ F.boundary.subscheme) [IsClosedImmersion a]
     (hC : a.ker.IsEffectiveCartier)
@@ -429,7 +411,8 @@ private theorem exists_internal (F : OrderedFactorization D s T P c)
     Nonempty (OrderedFactorization D s (T.snoc I) (I.blowupMap P.subschemeι).ker
       (Fin.snoc c (Over.mk (a ≫ P.subschemeι ≫ T.toBase)))) := by
   intro a I
-  obtain ⟨d, hd⟩ := F.exists_boundaryIso
+  obtain ⟨d, hd⟩ := P.exists_iso_of_comap_eq_ker F.iso _ F.comap_boundary_iso_hom
+  have hd := hd.symm
   let b := F.internalTower.2
   let a' := a ≫ d.inv
   have : IsClosedImmersion a := isClosed_singleton_iff_isClosedImmersion.mp hp
