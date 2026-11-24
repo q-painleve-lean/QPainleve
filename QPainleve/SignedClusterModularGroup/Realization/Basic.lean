@@ -45,6 +45,18 @@ local notation "S" => Spec (CommRingCat.of k)
 
 namespace GeometricRealization
 
+omit [IsSepClosed k] [Infinite k] in
+/-- The trivial character supplies a point of the center torus. -/
+theorem centerTorus_nonempty {ι : Type u} :
+    Nonempty (Over.mk (CharacterTorus.structureMap k (ι → ℤ))).left :=
+  ⟨((CharacterTorus.pointsEquiv k (ι → ℤ)).symm 1).val default⟩
+
+omit [IsSepClosed k] [Infinite k] in
+/-- The center torus of a finite seed is smooth over the field. -/
+theorem centerTorus_smooth {ι : Type u} [Finite ι] :
+    Smooth (Over.mk (CharacterTorus.structureMap k (ι → ℤ))).hom :=
+  CharacterTorus.smooth_structureMap_pi_int k ι
+
 section Points
 
 variable {S₀ : Scheme.{u}} {U V : Over S₀} (C : U.left.PartialMap V.left)
