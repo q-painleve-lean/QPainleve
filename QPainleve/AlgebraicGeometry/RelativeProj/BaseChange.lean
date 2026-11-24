@@ -6,7 +6,9 @@ Authors: The QPainleve contributors
 module
 
 public import TauCeti.AlgebraicGeometry.RelativeProj.BaseChange
-public import TauCeti.AlgebraicGeometry.RelativeProj.Basic
+public import TauCeti.AlgebraicGeometry.RelativeProj.Map
+
+import QPainleve.AlgebraicGeometry.Modules.GradedAlgebra.Sections
 
 /-!
 # Base change of relative projective spectra
@@ -29,7 +31,11 @@ universe u
 
 namespace TauCeti.AlgebraicGeometry.GradedQuasicoherentAlgebra
 
-variable {X Y : Scheme.{u}} (A : GradedQuasicoherentAlgebra Y) (f : X ⟶ Y)
+variable {X Y : Scheme.{u}}
+
+section
+
+variable (A : GradedQuasicoherentAlgebra Y) (f : X ⟶ Y)
 
 local notation "B" => ObjectProperty.FullSubcategory.obj (Functor.obj (pullback f) A)
 local notation "P[" a "," U "]" =>
@@ -205,6 +211,14 @@ theorem relativeProjCover_f_relativeProjBaseChange (V : X.AffineZariskiSite)
       A.relativeProjBaseChangeChartMap f h ≫ A.obj.relativeProjCover.f U :=
   (projCover A f).ι_glueMorphisms _ _ ⟨V, U, h⟩
 
+/-- Maps from the base-changed relative projective spectrum agree if they agree
+on the affine source charts lying over affine target opens. -/
+theorem relativeProjBaseChange_hom_ext {Z : Scheme.{u}} (g h : (B).relativeProj ⟶ Z)
+    (he : ∀ (V : X.AffineZariskiSite) (U : Y.AffineZariskiSite),
+      V.toOpens ≤ f ⁻¹ᵁ U.toOpens →
+        (B).relativeProjCover.f V ≫ g = (B).relativeProjCover.f V ≫ h) : g = h :=
+  (projCover A f).hom_ext g h fun i ↦ he i.source i.target i.le
+
 private theorem chart_isPullback (i : BaseChangeChart f) :
     IsPullback
       (Proj.toSpecCoeff (CommMon.gradedSectionsGrading B i.source.toOpens) ≫
@@ -255,5 +269,52 @@ theorem isPullback_relativeProjBaseChange :
 theorem relativeProjBaseChange_toBase :
     A.relativeProjBaseChange f ≫ A.obj.relativeProjToBase = (B).relativeProjToBase ≫ f :=
   (A.isPullback_relativeProjBaseChange f).w.symm
+
+end
+
+open CategoryTheory.CommMon
+
+variable (f : X ⟶ Y)
+
+/-- The base-change comparison commutes with the maps induced by a morphism of
+graded algebras, when both projective maps are defined on the whole relative Proj. -/
+theorem relativeProjBaseChange_naturality {A B : GradedQuasicoherentAlgebra Y} (g : A ⟶ B)
+    (hg : ∀ U : Y.Opens, IsAffineOpen U →
+      HomogeneousIdeal.irrelevant (B.obj.gradedSectionsGrading U) ≤
+        (HomogeneousIdeal.irrelevant (A.obj.gradedSectionsGrading U)).map
+          (gradedSectionsGradedHom g.hom U))
+    (hg' : ∀ V : X.Opens, IsAffineOpen V →
+      HomogeneousIdeal.irrelevant (((pullback f).obj B).obj.gradedSectionsGrading V) ≤
+        (HomogeneousIdeal.irrelevant (((pullback f).obj A).obj.gradedSectionsGrading V)).map
+          (gradedSectionsGradedHom ((pullback f).map g).hom V)) :
+    relativeProjMap ((pullback f).map g).hom hg' ≫ A.relativeProjBaseChange f =
+      B.relativeProjBaseChange f ≫ relativeProjMap g.hom hg := by
+  refine B.relativeProjBaseChange_hom_ext f _ _ fun V U hVU ↦ ?_
+  have hV := relativeProjCover_f_relativeProjMap ((pullback f).map g).hom hg' V
+  have hU := relativeProjCover_f_relativeProjMap g.hom hg U
+  rw [relativeProjFunctorMap_app] at hV hU
+  have hA := A.relativeProjCover_f_relativeProjBaseChange f V U hVU
+  have hB := B.relativeProjCover_f_relativeProjBaseChange f V U hVU
+  have hring := pullbackGradedSectionsGradedHom_naturality f g hVU
+  have hcomm :
+      Proj.map (gradedSectionsGradedHom ((pullback f).map g).hom V.toOpens)
+          (hg' V.toOpens V.property) ≫
+        A.relativeProjBaseChangeChartMap f hVU =
+      B.relativeProjBaseChangeChartMap f hVU ≫
+        Proj.map (gradedSectionsGradedHom g.hom U.toOpens) (hg U.toOpens U.property) := by
+    unfold relativeProjBaseChangeChartMap
+    rw [← Proj.map_comp, ← Proj.map_comp]
+    exact Proj.map_congr hring _ _
+  calc
+    _ = (_ ≫ A.obj.relativeProjCover.f U) := by
+      exact ((Category.assoc ..).symm.trans
+        (congrArg (· ≫ A.relativeProjBaseChange f) hV)).trans
+          ((Category.assoc ..).trans ((congrArg (_ ≫ ·) hA).trans (Category.assoc ..).symm))
+    _ = (_ ≫ A.obj.relativeProjCover.f U) :=
+      congrArg (· ≫ A.obj.relativeProjCover.f U) hcomm
+    _ = _ := by
+      symm
+      exact ((Category.assoc ..).symm.trans (congrArg (· ≫ relativeProjMap g.hom hg) hB)).trans
+        ((Category.assoc ..).trans ((congrArg (_ ≫ ·) hU).trans (Category.assoc ..).symm))
 
 end TauCeti.AlgebraicGeometry.GradedQuasicoherentAlgebra
