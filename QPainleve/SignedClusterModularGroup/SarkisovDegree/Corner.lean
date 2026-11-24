@@ -102,8 +102,9 @@ private theorem toric_corner_baseCenter_ruling {F Ψ : Fan i}
 
 /-- Perform the toric elementary link at the first center over the selected
 corner of a specified Hirzebruch resolution. The two projections from the
-common toric blowup are regular lifts of the link on the original resolution.
-The map to the common blowup is a modification. Both partial composites
+common toric blowup are single star subdivisions at two-ray cones. Their
+composites with the map from the resolving surface agree with the two tower
+projections. The map to the common blowup is a modification. Both partial composites
 represent the corresponding canonical dense-torus changes.
 Any pole ideal for the original projection is also the pole ideal for both
 partial composites. On the returned tower it pulls back along the inverse of
@@ -145,6 +146,7 @@ theorem exists_sarkisov_decrease_of_toric_corner
       d 0 = b 0 ∧ d 1 = b 0 + b 1 ∧ τ.val = hull ℝ {i (d 1), i (-d 0)} ∧
       v.hom ≫ (I[σ]).blowupToBase = s.toFanHom.algebraicMap ∧
       v'.hom ≫ (I[τ]).blowupToBase = t.toFanHom.algebraicMap ∧
+      Φ.IsTwoRayStarSubdivision F ∧ Ψ.IsTwoRayStarSubdivision F ∧
       q ≫ s.toFanHom.algebraicMap = T.toBase ∧
       q ≫ t.toFanHom.algebraicMap = k.hom ≫ U.toBase ∧
       (∀ l : Fin n, ∃ z : X[F],
@@ -205,7 +207,7 @@ theorem exists_sarkisov_decrease_of_toric_corner
   rw [← hI] at hmove
   obtain ⟨W, A, h, hA, hbase, hE, hcenters, htail⟩ := hmove
   obtain ⟨Ψ, F, hΨ, hF, hc', hcF, d, τ, s, t, v, v', r, r', hr, hr', Z, A', k,
-      hU, hd₀, hd₁, hτ, hv, hv', hproj, hhead, htarget, hcoord⟩ :=
+      hU, hd₀, hd₁, hτ, hv, hv', hstar, hstar', hproj, hhead, htarget, hcoord⟩ :=
     hA.exists_hirzebruch_toric_link_resolution b e hΦ hc hrays σ hσ
   let U := (BlowupTower.nil.snoc (I[τ])).append A'
   -- The common blowup gives both projections and hence the ruling comparison.
@@ -228,7 +230,7 @@ theorem exists_sarkisov_decrease_of_toric_corner
     refine ⟨v.inv (hA.baseCenter l), ?_, htarget l⟩
     rw [← Scheme.Hom.comp_apply, ← hv, Iso.inv_hom_id_assoc, hcenters]
   refine ⟨Ψ, F, hΨ, hF, hc', hcF, d, τ, s, t, v, v', q, r, r', hr, hr', Z, U, hU, k',
-    hd₀, hd₁, hτ, hv, hv', hq, hq', hpts,
+    hd₀, hd₁, hτ, hv, hv', hstar, hstar', hq, hq', hpts,
     toric_corner_baseCenter_ruling b d σ τ hσ hτ hd₀ hd₁ s t j hj hhead hpts, hover, hbir', ?_⟩
   -- Identify the rational partial composites and their poles on the same resolution.
   let : Nonempty F.cones := hcF.nonempty_cones

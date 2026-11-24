@@ -14,6 +14,7 @@ import QPainleve.AlgebraicGeometry.Blowup.Exceptional.FirstKind
 import QPainleve.AlgebraicGeometry.Blowup.Intersection
 import QPainleve.AlgebraicGeometry.Blowup.Isomorphism
 import QPainleve.AlgebraicGeometry.Blowup.Point.Picard
+import QPainleve.AlgebraicGeometry.Blowup.Point.Projective
 import QPainleve.AlgebraicGeometry.Blowup.Projective.Global
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Projective
 import QPainleve.AlgebraicGeometry.Chow.Isomorphism
@@ -51,6 +52,43 @@ variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
 
 local notation "S" => Spec (CommRingCat.of ℂ)
 local notation "s[" Δ "]" => algebraicRealizationStructureMap Δ
+local notation "X[" Δ "]" => algebraicRealization Δ
+local notation "f[" Δ "]" => (X[Δ] ↘ S)
+local notation "I[" σ "]" => Scheme.Hom.ker (distinguishedPointHom _ σ)
+
+/-- A smooth toric surface is projective if a common subdivision realizes its
+distinguished point blowup and a distinguished point blowup of a projective toric surface. -/
+theorem IsSubdivision.isProjectiveOver_of_common_pointBlowup {F Ψ : Fan i}
+    [X[Φ].IsProjectiveOver ℂ] [Nonempty Ψ.cones]
+    [SmoothOfRelativeDimension 2 f[Ψ]]
+    (t : F.IsSubdivision Ψ) (s : F.IsSubdivision Φ) (σ : Φ.cones) (τ : Ψ.cones)
+    (v : X[F] ≅ (I[σ]).blowup) (w : X[F] ≅ (I[τ]).blowup)
+    (hv : v.hom ≫ (I[σ]).blowupToBase = s.toFanHom.algebraicMap)
+    (hw : w.hom ≫ (I[τ]).blowupToBase = t.toFanHom.algebraicMap) :
+    X[Ψ].IsProjectiveOver ℂ := by
+  let : (I[σ]).blowup.Over S := ⟨(I[σ]).blowupToBase ≫ f[Φ]⟩
+  let : (I[τ]).blowup.Over S := ⟨(I[τ]).blowupToBase ≫ f[Ψ]⟩
+  let : v.hom.IsOver S := ⟨by
+    -- The structure map on the blowup was chosen as the composite with its projection.
+    change v.hom ≫ (I[σ]).blowupToBase ≫ f[Φ] = f[F]
+    rw [← Category.assoc, hv, comp_over]⟩
+  let : w.hom.IsOver S := ⟨by
+    -- Use the structure map on the target blowup in the same form.
+    change w.hom ≫ (I[τ]).blowupToBase ≫ f[Ψ] = f[F]
+    rw [← Category.assoc, hw, comp_over]⟩
+  let : (I[σ]).blowup.IsProjectiveOver ℂ := (I[σ]).isProjectiveOver_blowup_of_isNoetherianRing ℂ
+  let : X[F].IsProjectiveOver ℂ := Scheme.IsProjectiveOver.of_isClosedImmersion ℂ v.hom
+  have hprojective : (I[τ]).blowup.IsProjectiveOver ℂ :=
+    Scheme.IsProjectiveOver.of_isClosedImmersion ℂ w.inv
+  let p := Ψ.distinguishedPointHom τ (IsLocalRing.closedPoint ℂ)
+  have hp := Ψ.isClosed_singleton_distinguishedPoint τ
+  have hker := (Ψ.distinguishedPointHom τ).ker_eq_ker_fromSpecResidueField
+  let : Smooth f[Ψ] := SmoothOfRelativeDimension.smooth 2 _
+  have hnoeth : IsNoetherian X[Ψ] := isNoetherian_of_finiteType f[Ψ]
+  apply Scheme.IsProjectiveOver.of_pointBlowup (k := ℂ) p hp
+  exact (congrArg (fun J : X[Ψ].IdealSheafData ↦
+    let : J.blowup.Over S := ⟨J.blowupToBase ≫ f[Ψ]⟩
+    J.blowup.IsProjectiveOver ℂ) hker).mp hprojective
 
 private theorem exists_rayBoundaryIdeal_of_exceptional_comap
     {Y : Scheme} {J : Y.IdealSheafData}

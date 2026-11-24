@@ -6,6 +6,7 @@ Authors: The QPainleve contributors
 module
 
 public import QPainleve.Geometry.Toric.Fan.StarSubdivision.Boundary
+public import QPainleve.Geometry.Toric.Fan.StarSubdivision.Factorization
 
 import QPainleve.Geometry.Toric.Cone.Coordinates
 import QPainleve.Geometry.Toric.Fan.Boundary.Subdivision
@@ -220,8 +221,8 @@ local notation "rays[" Δ "]" => Set.range (Ray.primitiveGenerator (Phi := Δ))
 two ordinary point blowups. The projection to the source blows up the fixed
 point of the cone spanned by `b 0` and `b 1`. The projection to the target
 contracts the strict transform of the fiber of ray `b 1`. Both projections
-are the toric subdivision maps and pull back the reduced boundary to the
-common reduced boundary after taking radicals. The reverse center is the
+are single star subdivisions at two-ray cones and pull back the reduced
+boundary to the common reduced boundary after taking radicals. The reverse center is the
 corner on the new fiber and the opposite section. -/
 theorem exists_blowup_span_hirzebruch_toric_elementary_transformation
     (hΦ : Φ.IsRegular) (hc : Φ.IsComplete) (e : ℤ)
@@ -243,6 +244,7 @@ theorem exists_blowup_span_hirzebruch_toric_elementary_transformation
         F.boundaryIdeal hcF.nonempty_cones ∧
       ((Ψ.boundaryIdeal hc'.nonempty_cones).comap t.toFanHom.algebraicMap).radical =
         F.boundaryIdeal hcF.nonempty_cones ∧
+      Φ.IsTwoRayStarSubdivision F ∧ Ψ.IsTwoRayStarSubdivision F ∧
       τ.val = hull ℝ {i (d 1), i (-d 0)} := by
   obtain ⟨Ψ, hΨ, σ, τ, hσ, hτ, d, hc', hcone, hd₀, hd₁, hrays', hstar, ha, hr, hτcone⟩ :=
     exists_hirzebruch_toric_elementary_transformation b hΦ hc e hrays
@@ -278,10 +280,14 @@ theorem exists_blowup_span_hirzebruch_toric_elementary_transformation
     have hn := congrArg (b.coord 0) (ha.symm.trans
       ((congrArg Ray.primitiveGenerator he).trans (hLift ▸ hr')))
     simp at hn
-  exact ⟨Ψ, F, hΨ, hF, hc', hcF, d, σ, τ, s, t, g, g', a, r,
+  refine ⟨Ψ, F, hΨ, hF, hc', hcF, d, σ, τ, s, t, g, g', a, r,
     hcone, hd₀, hd₁, hrays', ha, hgen, hg, hg', hsource,
     hLift.symm ▸ htarget, s.comap_ker_blowupMap_rayBoundaryIdeal hF hΦ g hg r hnot,
     s.radical_comap_boundaryIdeal hcF.nonempty_cones hc.nonempty_cones,
-    t.radical_comap_boundaryIdeal hcF.nonempty_cones hc'.nonempty_cones, hτcone⟩
+    t.radical_comap_boundaryIdeal hcF.nonempty_cones hc'.nonempty_cones,
+    .along hΦ σ hσ, ?_, hτcone⟩
+  dsimp only [F]
+  rw [← hstar]
+  exact .along hΨ τ hτ
 
 end TauCeti.Toric.Fan
