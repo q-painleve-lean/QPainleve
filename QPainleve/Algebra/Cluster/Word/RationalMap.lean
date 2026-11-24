@@ -48,6 +48,14 @@ theorem affineRationalPullback_xRationalMap (w : Word B C) :
     affineRationalPullback k (w.xRationalMap k) = (w.xPullback k).toRingHom :=
   affineRationalPullback_rationalPullbackEquiv_symm k _
 
+/-- Words with the same source and target induce the same rational X map exactly when
+their pullbacks on the independent X field agree. -/
+theorem xRationalMap_eq_iff (w v : Word B C) :
+    w.xRationalMap k = v.xRationalMap k ↔ w.xPullback k = v.xPullback k := by
+  rw [← affineRationalPullback_eq_iff, affineRationalPullback_xRationalMap,
+    affineRationalPullback_xRationalMap]
+  exact (RingEquiv.toRingHom_injective.comp AlgEquiv.toRingEquiv_injective).eq_iff
+
 @[simp]
 theorem xRationalMap_nil :
     (Path.nil : Word B B).xRationalMap k = Scheme.RationalMap.id X := by

@@ -10,6 +10,8 @@ public import QPainleve.SignedClusterModularGroup.Realization.Agreement
 public import QPainleve.SignedClusterModularGroup.Realization.Boundary
 public import QPainleve.SignedClusterModularGroup.Realization.CenterFibers
 
+import QPainleve.Geometry.Toric.Fan.Boundary.NumberedPrime
+
 /-!
 # Independent X maps determined by marked actions
 
@@ -89,34 +91,15 @@ variable (u : ZMod m ≃ Φ.Ray)
   (hvertices : ∀ j, Dtor[Φ,h₀].dualGraphVertexEquiv a (T.vertex j) =
     Φ.boundaryNormalizationComponentEquiv hΦ (u j))
 
-include hvertices in
-private theorem internalBlowupBoundaryPrime_val (j : ZMod m) :
-    (prime[b,s,hΦ,c] (u j)).val = (Model[b,s,c]).2.boundaryι (T.componentGenericPoint j) := by
-  let v := T.component j
-  let ν := (Dtor[Φ,h₀].singularLocus ℂ).blowupToBase
-  let jD := (Model[b,s,c]).2.boundaryι
-  have hv : v = Φ.boundaryNormalizationComponentEquiv hΦ (u j) :=
-    (T.component_apply j).trans (hvertices j)
-  have h := (genericPoints.isGenericPoint_ofComponent v).image (ν ≫ jD).continuous
-  have hr : (ν ≫ jD) '' (v : Set _) =
-      Set.range ((u j).boundaryComponentι hΦ ≫ jD) := by
-    have hray := Φ.range_boundaryNormalizationComponentEquiv hΦ (u j)
-    rw [← hv] at hray
-    simpa only [Scheme.Hom.comp_base, TopCat.coe_comp, Set.range_comp, Set.image_comp,
-      Scheme.Opens.range_ι, Scheme.coe_blowupComponent] using congrArg (fun Z ↦ jD '' Z) hray
-  rw [hr, Fan.range_rayComponent_internalBlowupBoundaryPrimeEquiv] at h
-  rw [closure_closure] at h
-  simpa only [Hom.comp_apply, NodalCycleNumbering.componentGenericPoint_def, v, ν, jD] using
-    (h.eq isGenericPoint_closure).symm
-
 include p hvertices in
 private theorem projection_prime_origin :
     letI : PrestableFamily (P.boundary ↘ S) := P.prestable
     p.projection (prime[b,s,hΦ,c] (u origin)).val =
       P.pair.hom.left (P.cycle.componentGenericPoint 0) := by
   let : PrestableFamily (P.boundary ↘ S) := P.prestable
-  rw [internalBlowupBoundaryPrime_val u hvertices, ← Hom.comp_apply, ← p.boundary_comp,
-    Hom.comp_apply, p.component_zero]
+  have hprime := Fan.internalBlowupBoundaryPrime_val hΦ b s (center c) (u origin)
+  rw [← hvertices origin, ← T.component_apply origin, ← T.componentGenericPoint_def] at hprime
+  rw [hprime, ← Hom.comp_apply, ← p.boundary_comp, Hom.comp_apply, p.component_zero]
 
 variable [Φ.algebraicRealization.IsProjectiveOver ℂ] [B₁.IsPerfPair]
   (hdet : ∀ j, b.detDualEquiv (u j).primitiveGenerator (u (j + 1)).primitiveGenerator = 1)
