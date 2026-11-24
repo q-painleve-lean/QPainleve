@@ -45,6 +45,16 @@ def domainTarget : f.domainOver ⟶ Y :=
 @[simp]
 theorem domainTarget_left : f.domainTarget.left = f.hom := (rfl)
 
+/-- A morphism viewed as a partial map acts on its domain by the original morphism
+after the source inclusion. -/
+theorem domainTarget_toPartialMap {g : X.left ⟶ Y.left} [g.toPartialMap.IsOver X.hom Y.hom]
+    (h : X ⟶ Y) (hh : h.left = g) :
+    g.toPartialMap.domainTarget = g.toPartialMap.domainSource ≫ h := by
+  apply Over.OverMorphism.ext
+  simp only [domainTarget_left, domainSource_left, Over.comp_left, Hom.toPartialMap_hom,
+    Scheme.topIso_hom, hh]
+  rfl
+
 variable (U : X.left.Opens) (hU : Dense (U : Set X.left)) (hUf : U ≤ f.domain)
 
 /-- The inclusion of a smaller domain into the domain of the original partial map. -/
@@ -140,9 +150,6 @@ instance (A : Over S) : (PartialMap.id A.left).IsOver A.hom A.hom :=
 @[simp]
 theorem domainTarget_id (A : Over S) :
     (PartialMap.id A.left).domainTarget = (PartialMap.id A.left).domainSource := by
-  ext : 1
-  simp only [domainTarget_left, domainSource_left, Hom.toPartialMap_hom, Scheme.topIso_hom,
-    Category.comp_id]
-  rfl
+  simpa only [Category.comp_id] using domainTarget_toPartialMap (𝟙 A) (Over.id_left A)
 
 end AlgebraicGeometry.Scheme.PartialMap

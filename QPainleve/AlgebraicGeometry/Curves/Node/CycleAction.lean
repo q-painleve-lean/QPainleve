@@ -303,6 +303,12 @@ variable (D : NodalCycleNumbering q n)
 def boundaryCycleAction : DihedralGroup n :=
   (existsUnique_boundaryCycleAction f C (D := D)).exists.choose
 
+/-- The action depends only on the underlying isomorphism of curves. -/
+theorem boundaryCycleAction_congr (g : X ≅ Y) [g.hom.IsOver (Spec (.of k))] (h : f = g) :
+    f.boundaryCycleAction C D = g.boundaryCycleAction C D := by
+  subst g
+  rfl
+
 /-- The induced dihedral element computes the map on the actual numbered branches. -/
 @[simp]
 theorem branch_boundaryCycleAction (j : ZMod n) (b : Fin 2) :

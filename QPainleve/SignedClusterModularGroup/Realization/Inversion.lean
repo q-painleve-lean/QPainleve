@@ -83,10 +83,6 @@ local notation "centerMap" E:arg => Scheme.Hom.toPartialMap
   (CategoryTheory.Iso.hom (Quiver.Path.centerIso k (invertStep E)))
 local notation "centerOver" E:arg => Quiver.Path.centerIsoOver k (invertStep E)
 
-local instance (E : SkewExchangeMatrix ι) : IsDominant (centerMap E).hom := by
-  rw [Hom.toPartialMap_hom]
-  exact ⟨((scheme k A).topIso ≪≫ (invertStep E).centerIso k).hom.surjective.denseRange⟩
-
 local instance (E : SkewExchangeMatrix ι) :
     (centerMap E).IsOver (Over.mk (structureMap k A)).hom (Over.mk (structureMap k A)).hom :=
   Hom.isOver_toPartialMap ((invertStep E).centerIso_hom_structureMap k)
@@ -95,12 +91,8 @@ omit [IsSepClosed k] [Infinite k] in
 private theorem domainTarget_comp_centerIsoOver_inv (E : SkewExchangeMatrix ι) :
     (centerMap E).domainTarget (X := Centers) (Y := Centers) ≫ (centerOver E).inv =
       (centerMap E).domainSource (X := Centers) (Y := Centers) := by
-  have h : (centerMap E).domainTarget (X := Centers) (Y := Centers) =
-      (centerMap E).domainSource (X := Centers) (Y := Centers) ≫ (centerOver E).hom := by
-    apply Over.OverMorphism.ext
-    simp only [domainTarget_left, domainSource_left, Over.comp_left,
-      Quiver.Path.centerIsoOver_hom_left, Hom.toPartialMap_hom, Scheme.topIso_hom]
-    rfl
+  have h := domainTarget_toPartialMap (centerOver E).hom
+    ((invertStep E).centerIsoOver_hom_left k)
   rw [h, Category.assoc, Iso.hom_inv_id, Category.comp_id]
 
 /-- The signed inversion step has a geometric realization on the entire center torus.

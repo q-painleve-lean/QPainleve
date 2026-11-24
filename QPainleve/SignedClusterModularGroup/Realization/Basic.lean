@@ -103,9 +103,8 @@ def refl : FiberRealization M M (Scheme.RationalMap.id X₀) (.refl B₀) 1 wher
   evaluation_eq := by
     obtain ⟨h, he⟩ := M.evaluation.compOfDefined_toRationalMap (𝟙 X₀)
     refine ⟨h, he.trans ?_⟩
-    simp only [MarkedSurface.surfaceIso_refl, Iso.refl_hom, RationalMap.id_comp]
-    obtain ⟨p, hp⟩ := M.evaluation.exists_rep
-    rw [← hp, ← RationalMap.compHom_toRationalMap, PartialMap.compHom_id]
+    simp only [MarkedSurface.surfaceIso_refl, Iso.refl_hom, RationalMap.id_comp,
+      RationalMap.compHom_id]
 
 variable {M} {N : MarkedSurface k n B₁ X₁} {O : MarkedSurface k n B₂ X₂}
   [IsIntegral X₁] {F : X₀ ⤏ X₁} [F.IsDominant] {G : X₁ ⤏ X₂}
@@ -140,6 +139,28 @@ def comp (R : FiberRealization M N F I g) (R' : FiberRealization N O G J h) :
 
 @[simp]
 theorem refl_iso : (refl M).iso = Iso.refl M.pair := (rfl)
+
+/-- A regular change in evaluation is realized by the identity on the marked pair. -/
+def compEvaluation (M : MarkedSurface k n B₀ X₀) (f : X₀ ⟶ X₁) :
+    FiberRealization M (M.compEvaluation f) f.toRationalMap (.refl B₀) 1 :=
+  have hIso : surfaceIso (M := M) (N := M.compEvaluation f) (Iso.refl M.pair) =
+      Iso.refl M.surface := MarkedSurface.surfaceIso_refl (M := M)
+  { iso := Iso.refl M.pair
+    picard_eq a := by
+      have ha : LinearMap.BilinForm.IsometryEquiv.refl B₀ a = a := rfl
+      rw [ha, hIso, Iso.refl_hom, MarkedSurface.compEvaluation_picardMarking]
+      exact congrArg Additive.ofMul (LineBundleClass.pullback_id (M.picardMarking a).toMul).symm
+    boundaryAction_eq := M.boundaryCycleAction_compEvaluation_refl f
+    evaluation_eq := by
+      obtain ⟨h, he⟩ := M.evaluation.compOfDefined_toRationalMap f
+      refine ⟨h, he.trans ?_⟩
+      simp only [hIso, Iso.refl_hom, MarkedSurface.compEvaluation_evaluation]
+      exact (RationalMap.id_comp _).symm }
+
+omit [IsIntegral X₁] in
+@[simp]
+theorem compEvaluation_iso (M : MarkedSurface k n B₀ X₀) (f : X₀ ⟶ X₁) :
+    (compEvaluation M f).iso = Iso.refl M.pair := (rfl)
 
 @[simp]
 theorem comp_iso (R : FiberRealization M N F I g) (R' : FiberRealization N O G J h) :
