@@ -14,6 +14,8 @@ import QPainleve.AlgebraicGeometry.Blowup.Smooth
 import QPainleve.AlgebraicGeometry.Blowup.StrictTransform.Nodality
 import QPainleve.AlgebraicGeometry.Blowup.StrictTransform.Reduced
 import QPainleve.AlgebraicGeometry.CartierDivisor.Support
+import QPainleve.AlgebraicGeometry.Curves.Node.Conductor.Locality
+import QPainleve.AlgebraicGeometry.IdealSheaf.BaseChange
 import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
 import QPainleve.AlgebraicGeometry.EffectiveCartierDivisor.Integral
 import TauCeti.AlgebraicGeometry.Blowup.Pullback
@@ -237,5 +239,105 @@ theorem singularLocusBlowupIso_fixes_over_attachment [IsSepClosed k] [PerfectFie
   exact r.singularLocusBlowupIso_fixes_over_of_mem_closure hN U V hdisj
     (hmap hEcomap) (hmap hScomap) hU hV
     (fixes_attachment_of_fixes_branches hnodal hp hc e d hd hfix r hr hbranches hzS hzE)
+
+omit [IsIntegral X] [QuasiCompact (X ↘ Spec (.of k))]
+  [SmoothOfRelativeDimension 2 (X ↘ Spec (.of k))] in
+include hc in
+private theorem fixes_over_compl_exceptional
+    (hN : AtWorstNodalOfRelativeDimensionOne (B ↘ Spec (.of k)))
+    (hr : r.hom ≫ j = j ≫ (l).hom)
+    (hCOver : C ↘ Spec (.of k) = D.subschemeι ≫ s)
+    (hBOver : B ↘ Spec (.of k) = j ≫ (π) ≫ s)
+    (hbranches : letI := hnodal.syntomic
+      ∀ y : ((C).singularLocus k).blowup,
+        ((C).singularLocus k).blowupToBase y ∈ ((C).singularLocus k).support →
+          (d.singularLocusBlowupIso (R := k)).hom y = y) :
+    letI := hN.syntomic
+    ∀ y : ((B).singularLocus k).blowup,
+      ((B).singularLocus k).blowupToBase y ∈ ((B).singularLocus k).support →
+      (j) (((B).singularLocus k).blowupToBase y) ∉ (E).support →
+      (r.singularLocusBlowupIso (R := k)).hom y = y := by
+  have := hnodal.syntomic
+  have := hN.syntomic
+  have : IsReduced D.subscheme := hnodal.isReduced
+  let f := subschemeMap (totalBoundary) D (π) (le_map_iff_comap_le.mpr (le_radical _))
+  have hf : f ≫ D.subschemeι = (j) ≫ (π) := subschemeMap_subschemeι _ _ _ _
+  have : f.IsOver (Spec (.of k)) := ⟨by rw [hCOver, ← Category.assoc, hf, Category.assoc, hBOver]⟩
+  have hcomm : r.hom ≫ f = f ≫ d.hom := by
+    rw [← cancel_mono D.subschemeι, Category.assoc, hf, Category.assoc, hd,
+      ← Category.assoc f, hf, ← Category.assoc r.hom, hr, Category.assoc,
+      blowupIso_hom_blowupToBase, Category.assoc]
+  let U := D.subschemeι ⁻¹ᵁ (I).support.compl
+  have hIso : (I).support.compl ≤ (π).isoLocus :=
+    (π).le_isoLocus_iff.mpr ((I).isIso_blowupToBase_restrict_of_disjoint_support
+      (by exact disjoint_compl_left))
+  have : IsIso (f ∣_ U) := f.le_isoLocus_iff.mp
+    ((D.subschemeι.preimage_mono hIso).trans (D.preimage_isoLocus_le_subschemeMap_radical (π)))
+  have hU : Set.MapsTo d.hom U U := by
+    have hmem (x : C) : x ∈ U ↔ x ≠ p := by
+      dsimp only [U]
+      rw [Scheme.Hom.mem_preimage, ← SetLike.mem_coe, Closeds.coe_compl,
+        coe_support_vanishingIdeal]
+      simp only [Closeds.coe_mk, hc.closure_eq, Set.mem_compl_iff, Set.mem_singleton_iff,
+        D.subschemeι.injective.eq_iff]
+    intro x hx
+    exact (hmem _).mpr fun eq ↦ (hmem _).mp hx (d.hom.injective (eq.trans hfix.symm))
+  intro y hy hE
+  apply d.singularLocusBlowupIso_fixes_over_of_isIso_restrict r f U hU hcomm hbranches
+    y hy
+  dsimp only [U]
+  rw [Scheme.Hom.mem_preimage, ← Scheme.Hom.comp_apply, hf, Scheme.Hom.comp_apply]
+  simpa only [support_comap, ← SetLike.mem_coe, Closeds.coe_preimage, Closeds.coe_compl,
+    Set.mem_preimage, Set.mem_compl_iff] using hE
+
+include hD hp hc in
+/-- An automorphism fixing the normalization points over every node still fixes them
+after blowing up a closed node. This includes the branches over new attachment points
+and the branches over nodes away from the center. -/
+theorem singularLocusBlowupIso_fixes_over_nodeBlowup [IsSepClosed k] [PerfectField k]
+    (hN : AtWorstNodalOfRelativeDimensionOne (B ↘ Spec (.of k)))
+    (hr : r.hom ≫ j = j ≫ (l).hom)
+    (hCOver : C ↘ Spec (.of k) = D.subschemeι ≫ s)
+    (hBOver : B ↘ Spec (.of k) = j ≫ (π) ≫ s)
+    (hbranches : letI := hnodal.syntomic
+      ∀ y : ((C).singularLocus k).blowup,
+        ((C).singularLocus k).blowupToBase y ∈ ((C).singularLocus k).support →
+          (d.singularLocusBlowupIso (R := k)).hom y = y) :
+    letI := hN.syntomic
+      ∀ y : ((B).singularLocus k).blowup,
+        ((B).singularLocus k).blowupToBase y ∈ ((B).singularLocus k).support →
+          (r.singularLocusBlowupIso (R := k)).hom y = y := by
+  have := hnodal.syntomic
+  have := hN.syntomic
+  intro y hy
+  let z := ((B).singularLocus k).blowupToBase y
+  by_cases hzE : (j) z ∈ (E).support
+  · have hz : z ∉ (B ↘ Spec (.of k)).smoothLocus :=
+      ((B).mem_support_singularLocus_iff_notMem_smoothLocus z).mp hy
+    have hN' : AtWorstNodalOfRelativeDimensionOne ((j) ≫ (π) ≫ s) := hBOver ▸ hN
+    have := hN'.syntomic
+    have hz' : z ∉ ((j) ≫ (π) ≫ s).smoothLocus := by
+      simpa only [← hBOver] using hz
+    have hS := mem_strictTransform_of_notMem_smoothLocus (hCOver ▸ hnodal) hc
+      (hBOver ▸ hN) hz'
+    have hF : ∀ q : (C).branchScheme k,
+        ((C).branchSchemeToSingularLocus k ≫ ((C).singularLocus k).subschemeι) q = p →
+        (d.branchSchemeIso (R := k)).hom q = q := by
+      intro q hq
+      have hpb := (C).isPullback_branchScheme k
+      have : IsClosedImmersion ((C).branchSchemeToBlowup k) :=
+        MorphismProperty.of_isPullback hpb inferInstance
+      apply ((C).branchSchemeToBlowup k).injective
+      rw [← Scheme.Hom.comp_apply, Iso.branchSchemeIso_hom_branchSchemeToBlowup,
+        Scheme.Hom.comp_apply]
+      apply hbranches
+      rw [← Scheme.Hom.comp_apply, ← hpb.w, Scheme.Hom.comp_apply]
+      rw [← Scheme.Hom.comp_apply, hq]
+      exact hp
+    obtain ⟨hN', h⟩ := singularLocusBlowupIso_fixes_over_attachment hD hnodal hp hc e d hd
+      hfix r hr hCOver hBOver hF hS hzE
+    exact h.2 rfl
+  · exact fixes_over_compl_exceptional hnodal hc e d hd hfix r hN hr hCOver hBOver hbranches
+      y hy hzE
 
 end AlgebraicGeometry.Scheme.IdealSheafData.IsEffectiveCartier
