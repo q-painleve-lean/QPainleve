@@ -205,6 +205,20 @@ local notation "prime(" x ")" => (Subtype.mk (Subtype.val x)
   (And.right (mem_boundaryPrimes.mp (Subtype.property x))) : CodimensionOnePoint _)
 local notation "cl" ρ:arg => markedBoundaryMap hΦ s (Pi.single ρ 1)
 
+/-- The strict ray class has exceptional coefficient `-1` at every center on the ray
+and zero at the other centers, including in an ordered tower with repeated centers. -/
+theorem picardHom_markedBoundaryMap_single_internalBlowupTower [DecidableEq Φ.Ray]
+    (c : Fin n → ℂˣ) (ρ : Φ.Ray) :
+    (U c).picardHom (cl ρ) = strictRayBoundaryClass hΦ d₂ (U c) (hU c) ρ := by
+  let Marked (M : Model) := ∀ hM : IsClosedPointTower Z M.2.toTower,
+    M.2.toTower.picardHom (cl ρ) = strictRayBoundaryClass hΦ d₂ _ hM ρ
+  have hmark : Marked (model c) := by
+    rw [internalBlowupTower_eq_alongBoundary]
+    intro hM
+    exact picardHom_markedBoundaryMap_single hΦ d₂ s m hm hprim c _
+      (fun j ↦ (s j).internalCenter_val b (c j)) hM ρ
+  exact hmark (hU c)
+
 /-- In the ordered Picard marking the actual boundary prime over a ray has the
 fixed strict ray class. -/
 theorem picardHom_markedBoundaryMap_single_eq_primeDivisorClass [DecidableEq Φ.Ray]
@@ -233,14 +247,7 @@ theorem picardHom_markedBoundaryMap_single_eq_primeDivisorClass [DecidableEq Φ.
       j.isClosedEmbedding.isClosed_range.closure_eq).trans hs)
   have heff := (hU c).isEffectiveCartier_strictTransform fZ
     (Φ.isEffectiveCartier_rayBoundaryIdeal hΦ ρ)
-  let Marked (M : Model) := ∀ hM : IsClosedPointTower Z M.2.toTower,
-    M.2.toTower.picardHom (cl ρ) = strictRayBoundaryClass hΦ d₂ _ hM ρ
-  have hmark : Marked (model c) := by
-    rw [internalBlowupTower_eq_alongBoundary]
-    intro hM
-    exact picardHom_markedBoundaryMap_single hΦ d₂ s m hm hprim c _
-      (fun j ↦ (s j).internalCenter_val b (c j)) hM ρ
-  rw [hmark (hU c),
+  rw [picardHom_markedBoundaryMap_single_internalBlowupTower hΦ b s c ρ,
     strictRayBoundaryClass_eq _ _ _ _ _ heff, primeDivisorClass_def,
     mk_toInvertibleSheaf_congr _ _ (hI.symm.trans hker)]
 
