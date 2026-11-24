@@ -9,7 +9,7 @@ public import Mathlib.LinearAlgebra.BilinearForm.IsometryEquiv
 public import QPainleve.AlgebraicGeometry.Blowup.Tower.Ample
 public import QPainleve.AlgebraicGeometry.Blowup.Tower.Intersection
 public import QPainleve.AlgebraicGeometry.Blowup.Tower.Projective
-public import QPainleve.AlgebraicGeometry.Blowup.Tower.StrictTransform
+public import QPainleve.AlgebraicGeometry.Blowup.Tower.StrictTransform.Basic
 public import QPainleve.AlgebraicGeometry.Chow.SurfaceIntersection
 public import QPainleve.AlgebraicGeometry.Morphisms.Smooth.Factorial
 
