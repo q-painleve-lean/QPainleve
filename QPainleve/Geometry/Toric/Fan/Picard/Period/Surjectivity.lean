@@ -178,6 +178,58 @@ theorem orderedBoundaryPeriod_apply (c : Fin n → ℂˣ) (x : Multiplicative K)
     orderedBoundaryPeriod hΦ b s B c x =
       (C).nodalPicardCycleMulEquiv B.endpoint_eq (orderedBoundaryRestriction hΦ b s c x) := (rfl)
 
+private theorem ne_center_of_orderedBoundaryPeriod_injective {c : Fin n → ℂˣ}
+    (hc : Function.Injective (orderedBoundaryPeriod hΦ b s B c))
+    {j l : Fin n} (hjl : j ≠ l) (hray : s j = s l) : c j ≠ c l := by
+  classical
+  intro hcenter
+  let x : K := ⟨Pi.single j 1 - Pi.single l 1, by
+    simp only [LinearMap.mem_ker, map_sub, rayChargeMap_single, hray, sub_self]⟩
+  have hx (u : Fin n → ℤ) : ∑ t, u t * (x : Fin n → ℤ) t = u j - u l := by
+    simp [x, mul_sub, Finset.sum_sub_distrib, Pi.single_apply, mul_ite, mul_zero]
+  obtain ⟨_, _, huniq⟩ :=
+    existsUnique_rayDivisorToPicard_pairing_eq_charge hΦ s A x
+  have htoric : (mark x).val.1 = 0 := by
+    have hzero (u : Φ.Ray → ℤ) : A (Φ.rayDivisorToPicard hΦ u) 0 =
+        ∑ t, u (s t) * (x : Fin n → ℤ) t := by
+      have hsum := hx (u ∘ s)
+      simpa [Function.comp_apply, hray] using hsum.symm
+    exact (huniq _ (boundaryOrthogonalEquivChargeKernel_symm_fst_pairing hΦ s A x)).trans
+      (huniq _ hzero).symm
+  have hsingle (v : Fin n) :
+      ∏ t, I[s t,c t] ^ ((Pi.single v 1 : Fin n → ℤ) t) = I[s v,c v] := by
+    rw [Finset.prod_eq_single v]
+    · simp
+    · intro u _ huv
+      simp [Pi.single_eq_of_ne huv]
+    · simp
+  have hprod : ∏ t, I[s t,c t] ^ (x : Fin n → ℤ) t = 1 := by
+    simp only [x, Pi.sub_apply, zpow_sub, Finset.prod_mul_distrib, Finset.prod_inv_distrib,
+      hsingle, hray, hcenter, mul_inv_cancel]
+  have hres : orderedBoundaryRestriction hΦ b s c (Multiplicative.ofAdd x) = 1 := by
+    apply Subtype.ext
+    -- Compute in the ambient Picard group using the ordered restriction formula.
+    change orderedRestriction hΦ b s c (Multiplicative.ofAdd x) = 1
+    rw [orderedRestriction_apply, htoric, hprod, toMul_zero, pullback_one, mul_one]
+  have hperiod : orderedBoundaryPeriod hΦ b s B c (Multiplicative.ofAdd x) = 1 := by
+    rw [orderedBoundaryPeriod_apply, hres, map_one]
+  have hzero := Multiplicative.ofAdd.injective
+    (hc (hperiod.trans ((orderedBoundaryPeriod hΦ b s B c).map_one.symm)))
+  have hval := congrArg (fun y : K ↦ (y : Fin n → ℤ) j) hzero
+  simp [x, hjl] at hval
+
+/-- An injective ordered boundary period forces the original boundary centers at
+distinct labels to have disjoint supports. -/
+theorem pairwise_disjoint_internalCenters_of_orderedBoundaryPeriod_injective {c : Fin n → ℂˣ}
+    (hc : Function.Injective (orderedBoundaryPeriod hΦ b s B c)) :
+    Pairwise fun j l ↦ Disjoint ((J[c] j).val.support : Set C) ((J[c] l).val.support : Set C) := by
+  intro j l hjl
+  have hpair : (s j, c j) ≠ (s l, c l) := fun h ↦
+    ne_center_of_orderedBoundaryPeriod_injective hΦ b s B hc hjl (congrArg Prod.fst h)
+      (congrArg Prod.snd h)
+  simpa only [Scheme.IdealSheafData.map_id] using
+    (disjoint_support_map_internalCenter_iff b (𝟙 C) (s j) (s l) (c j) (c l)).mpr hpair
+
 variable (r : ZMod a ≃ Φ.Ray)
   (hcomp : ∀ j, (Φ.boundaryIdeal inferInstance).subscheme.dualGraphVertexEquiv p (B.vertex j) =
     Φ.boundaryNormalizationComponentEquiv hΦ (r j))

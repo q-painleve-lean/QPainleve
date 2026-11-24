@@ -93,6 +93,20 @@ local notation "charge" =>
 local notation "chargeClass" =>
   (LinearEquiv.trans (LinearEquiv.symm charge)
     (LinearEquiv.ofEq _ _ (Eq.symm (IdealSheafData.boundaryOrthogonal_def D ℂ))))
+
+/-- The charge coordinates identify the boundary-orthogonal classes on the contracted
+surface with the kernel of the charge map of its ordered toric presentation. -/
+def markedBoundaryChargeEquiv : D.boundaryOrthogonal ℂ ≃ₗ[ℤ] ChargeKernel :=
+  (chargeClass).symm
+
+/-- The inverse charge coordinates give the same underlying Picard class as the
+inverse of the span-based comparison. -/
+@[simp]
+theorem coe_markedBoundaryChargeEquiv_symm (x : ChargeKernel) :
+    ((markedBoundaryChargeEquiv hΦ b s hT e he hD).symm x).val = ((charge).symm x).val := by
+  simp only [markedBoundaryChargeEquiv, LinearEquiv.symm_symm, LinearEquiv.trans_apply,
+    LinearEquiv.coe_ofEq_apply]
+
 local notation "g" => toricBoundaryToBase (J[c]) e hD
 
 variable [PrestableFamily (D.subscheme ↘ S)]
@@ -113,6 +127,13 @@ theorem markedBoundaryPeriod_apply (x : ChargeKernel) :
     markedBoundaryPeriod hΦ b s hT e he hD hCartier hgenus A (Multiplicative.ofAdd x) =
       hCartier.boundaryPeriod hgenus A.endpoint_eq (Multiplicative.ofAdd (chargeClass x)) :=
   (rfl)
+
+/-- Writing the boundary period in charge coordinates preserves and detects
+injectivity. -/
+theorem markedBoundaryPeriod_injective_iff :
+    Function.Injective (markedBoundaryPeriod hΦ b s hT e he hD hCartier hgenus A) ↔
+      Function.Injective (hCartier.boundaryPeriod hgenus A.endpoint_eq) :=
+  Function.Injective.of_comp_iff' _ (chargeClass).toAddEquiv.toMultiplicative.bijective
 
 variable [PrestableFamily ((Φ.boundaryIdeal inferInstance).subscheme ↘ Spec (.of ℂ))]
   {β : Type*} {q : β → ((Φ.boundaryIdeal inferInstance).subscheme ↘ S).smoothLocus}
