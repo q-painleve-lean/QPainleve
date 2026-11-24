@@ -5,8 +5,10 @@ Authors: The QPainleve contributors
 -/
 module
 
-public import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.Basic
+public import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.Invertible
+public import TauCeti.AlgebraicGeometry.LineBundle.Functoriality
 public import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.Polynomial.Chart
+public import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.Polynomial.SymmetricAlgebra
 public import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.TwistingSheaf.LocalTriviality
 public import TauCeti.AlgebraicGeometry.LineBundle.Class
 
@@ -14,7 +16,6 @@ import QPainleve.AlgebraicGeometry.EffectiveCartierDivisor.Integral
 import QPainleve.AlgebraicGeometry.IdealSheaf.Integral
 import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.Polynomial.Chart.Sections
 import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.Polynomial.Integral
-import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.Polynomial.SymmetricAlgebra
 import TauCeti.AlgebraicGeometry.CartierDivisor.Excision
 import TauCeti.AlgebraicGeometry.IdealSheaf.Reduced
 import TauCeti.AlgebraicGeometry.LineBundle.Affine.Picard
@@ -23,6 +24,7 @@ import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.TwistingSheaf.GlobalSections
 import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.TwistingSheaf.Quasicoherent
 import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.TwistingSheaf.TensorProduct
 import TauCeti.RingTheory.GradedAlgebra.Homogeneous.Ideal
+import Mathlib.Algebra.MvPolynomial.Division
 import Mathlib.GroupTheory.MonoidLocalization.UniqueFactorization
 import Mathlib.RingTheory.MvPolynomial.Ideal
 import Mathlib.RingTheory.Polynomial.UniqueFactorization
@@ -200,50 +202,51 @@ private theorem coordinateHyperplane_prime (j : Fin (n + 1)) :
   simpa only [Set.image_singleton] using
     MvPolynomial.span_X_image_isPrime (R := k) ({j} : Set (Fin (n + 1)))
 
-private def hyperplaneGenericPoint [NeZero n] (j : Fin (n + 1)) : ProjectiveSpectrum 𝒜 where
-  asHomogeneousIdeal := ⟨Ideal.span {MvPolynomial.X j},
-    Ideal.isHomogeneous_span_singleton 𝒜 ⟨1, coordinate_mem_one j⟩⟩
-  isPrime := coordinateHyperplane_prime j
-  not_irrelevant_le := by
-    intro h
-    let a : Fin n := ⟨0, Nat.pos_of_ne_zero (NeZero.ne n)⟩
-    have he : j.succAbove a ≠ j := Fin.succAbove_ne _ _
-    have heval := MvPolynomial.span_X_image_eq_ker_aeval_ite_mem (R := k)
-      ({j} : Set (Fin (n + 1)))
-    have hmem : MvPolynomial.X (j.succAbove a) ∈
-        (Ideal.span {MvPolynomial.X j} : Ideal (MvPolynomial (Fin (n + 1)) k)) :=
-      h (HomogeneousIdeal.mem_irrelevant_of_mem 𝒜 one_pos (coordinate_mem_one (j.succAbove a)))
-    rw [Set.image_singleton] at heval
-    rw [heval, RingHom.mem_ker] at hmem
-    simp [he] at hmem
+private def hyperplaneGenericPoint [NeZero n] (j : Fin (n + 1)) : P :=
+  -- Construct the homogeneous prime and use it as a point of the scheme.
+  show ProjectiveSpectrum 𝒜 from
+  { asHomogeneousIdeal := ⟨Ideal.span {MvPolynomial.X j},
+      Ideal.isHomogeneous_span_singleton 𝒜 ⟨1, coordinate_mem_one j⟩⟩
+    isPrime := coordinateHyperplane_prime j
+    not_irrelevant_le := by
+      intro h
+      let a : Fin n := ⟨0, Nat.pos_of_ne_zero (NeZero.ne n)⟩
+      have ha : MvPolynomial.X (j.succAbove a) ∈
+          (Ideal.span {MvPolynomial.X j} : Ideal (MvPolynomial (Fin (n + 1)) k)) :=
+        h (HomogeneousIdeal.mem_irrelevant_of_mem 𝒜 one_pos (coordinate_mem_one (j.succAbove a)))
+      exact Fin.succAbove_ne j a (by simpa only [Ideal.mem_span_singleton,
+        MvPolynomial.X_dvd_X, eq_comm] using ha) }
 
 private theorem coe_support_coordinateHyperplaneIdeal_eq_closure [NeZero n] (j : Fin (n + 1)) :
     ((coordinateHyperplaneIdeal (k := k) j).support : Set P) =
-      closure {(hyperplaneGenericPoint (k := k) j : P)} := by
+      closure {hyperplaneGenericPoint (k := k) j} := by
   rw [coe_support_coordinateHyperplaneIdeal]
   ext x
   -- The topology of the scheme is the topology on homogeneous prime ideals.
   let y : ProjectiveSpectrum 𝒜 := x
-  have h : MvPolynomial.X j ∈ y.asHomogeneousIdeal ↔
-      y ∈ closure {hyperplaneGenericPoint (k := k) j} := by
+  let z : ProjectiveSpectrum 𝒜 := hyperplaneGenericPoint (k := k) j
+  have h : MvPolynomial.X j ∈ y.asHomogeneousIdeal ↔ y ∈ closure {z} := by
     rw [← ProjectiveSpectrum.le_iff_mem_closure]
     exact (Ideal.span_singleton_le_iff_mem _).symm
   exact (not_not.trans h)
 
-/-- A coordinate hyperplane in positive-dimensional projective space is integral. -/
-theorem isIntegral_subscheme_coordinateHyperplaneIdeal [NeZero n] (j : Fin (n + 1)) :
-    IsIntegral (coordinateHyperplaneIdeal (k := k) j).subscheme := by
+private theorem coordinateHyperplaneIdeal_eq_vanishingIdeal [NeZero n] (j : Fin (n + 1)) :
+    coordinateHyperplaneIdeal (k := k) j =
+      Scheme.IdealSheafData.vanishingIdeal (X := P)
+        ⟨closure ({hyperplaneGenericPoint (k := k) j} : Set P), isClosed_closure⟩ := by
   let I := coordinateHyperplaneIdeal (k := k) j
   let x : P := hyperplaneGenericPoint (k := k) j
   have hsupport : I.support = ⟨closure {x}, isClosed_closure⟩ :=
     SetLike.coe_injective (coe_support_coordinateHyperplaneIdeal_eq_closure j)
   have hrad := (Scheme.IdealSheafData.isReduced_subscheme_iff_radical_eq I).mp
     (isReduced_coordinateHyperplane j)
-  have heq : Scheme.IdealSheafData.vanishingIdeal ⟨closure {x}, isClosed_closure⟩ = I := by
-    rw [← hsupport, Scheme.IdealSheafData.vanishingIdeal_support, hrad]
-  have hX : IsIntegral (Scheme.IdealSheafData.vanishingIdeal
-      ⟨closure {x}, isClosed_closure⟩).subscheme := inferInstance
-  rwa [heq] at hX
+  rw [← hsupport, Scheme.IdealSheafData.vanishingIdeal_support, hrad]
+
+/-- A coordinate hyperplane in positive-dimensional projective space is integral. -/
+theorem isIntegral_subscheme_coordinateHyperplaneIdeal [NeZero n] (j : Fin (n + 1)) :
+    IsIntegral (coordinateHyperplaneIdeal (k := k) j).subscheme := by
+  rw [coordinateHyperplaneIdeal_eq_vanishingIdeal]
+  infer_instance
 
 /-- The twisting line bundle `𝒪(m)` on polynomial projective space. -/
 def polynomialTwistingBundle (m : ℤ) : InvertibleSheaf (Proj 𝒜) :=
@@ -288,6 +291,33 @@ theorem isEffectiveCartier_coordinateHyperplaneIdeal (j : Fin (n + 1)) :
     (coordinateHyperplaneIdeal (k := k) j).IsEffectiveCartier :=
   @InvertibleSheaf.isEffectiveCartier_imageIdealSheaf _ (polynomialTwistingBundle (-1))
     (coordinateToUnit j) (mono_coordinateToUnit j)
+
+/-- Two distinct coordinate hyperplanes meet properly. -/
+theorem isEffectiveCartier_comap_coordinateHyperplaneIdeal [NeZero n] {i j : Fin (n + 1)}
+    (hij : i ≠ j) : ((coordinateHyperplaneIdeal (k := k) i).comap
+      (coordinateHyperplaneIdeal (k := k) j).subschemeι).IsEffectiveCartier := by
+  have hη : hyperplaneGenericPoint (k := k) j ∉
+      ((coordinateHyperplaneIdeal (k := k) i).support : Set P) := by
+    rw [coe_support_coordinateHyperplaneIdeal, Set.notMem_compl_iff]
+    -- Membership in the open is nonmembership in the homogeneous prime `(Xⱼ)`.
+    change MvPolynomial.X i ∉ (Ideal.span {MvPolynomial.X j} : Ideal (MvPolynomial (Fin (n + 1)) k))
+    simpa only [Ideal.mem_span_singleton, MvPolynomial.X_dvd_X] using Ne.symm hij
+  rw [coordinateHyperplaneIdeal_eq_vanishingIdeal j]
+  exact (isEffectiveCartier_coordinateHyperplaneIdeal i)
+    |>.comap_subschemeι_vanishingIdeal_closure_singleton hη
+
+/-- The divisor class of a coordinate hyperplane is the class of `𝒪(1)`. -/
+@[simp]
+theorem mk_dual_coordinateHyperplaneIdeal (j : Fin (n + 1)) :
+    LineBundleClass.mk
+      (isEffectiveCartier_coordinateHyperplaneIdeal (k := k) j).toInvertibleSheaf.dual =
+      LineBundleClass.mk (polynomialTwistingBundle 1) := by
+  have h : LineBundleClass.mk
+        (isEffectiveCartier_coordinateHyperplaneIdeal (k := k) j).toInvertibleSheaf =
+      LineBundleClass.mk (polynomialTwistingBundle (-1)) :=
+    @InvertibleSheaf.mk_toInvertibleSheaf_imageIdealSheaf _
+      (polynomialTwistingBundle (k := k) (-1)) (coordinateToUnit j) (mono_coordinateToUnit j)
+  rw [← LineBundleClass.inv_mk, h, mk_polynomialTwistingBundle_eq_zpow, zpow_neg_one, inv_inv]
 
 private theorem uniqueFactorizationMonoid_stalk_polynomialProj (x : P) :
     UniqueFactorizationMonoid ((Proj 𝒜).presheaf.stalk x) := by
@@ -356,13 +386,7 @@ private theorem exists_zpow_polynomialTwistingBundle [NeZero n] (a : LineBundleC
   have hc : primeDivisorClass η = mk (polynomialTwistingBundle (k := k) (n := n) 1) := by
     rw [primeDivisorClass_def, mk_toInvertibleSheaf_congr _ hI
       I.vanishingIdeal_closure_subschemeι_genericPoint]
-    have he : mk hI.toInvertibleSheaf = mk (polynomialTwistingBundle (-1)) :=
-      @InvertibleSheaf.mk_toInvertibleSheaf_imageIdealSheaf _ (polynomialTwistingBundle (-1))
-        (coordinateToUnit i) (mono_coordinateToUnit i)
-    have hz : mk (polynomialTwistingBundle (k := k) (n := n) (-1)) =
-        mk (polynomialTwistingBundle 1) ^ (-1 : ℤ) :=
-      mk_polynomialTwistingBundle_eq_zpow (-1)
-    rw [he, hz, zpow_neg_one, inv_inv]
+    simpa only [inv_mk] using mk_dual_coordinateHyperplaneIdeal i
   have := subsingleton_picard_coordinateChart (k := k) i
   have h : pullback (U[i]).ι a = 1 := Subsingleton.elim _ _
   rw [pullback_eq_one_iff_mem_closure_of_isOpenImmersion, hset, hc,
@@ -403,13 +427,17 @@ variable {k M : Type u} [Field k] [AddCommMonoid M] [Module k M] {n : ℕ}
 
 local notation "𝒮" => TauCeti.SymmetricAlgebra.homogeneousSubmodule k M
 
-private theorem pullbackEquiv_polynomialProjIso_twist (b : Basis (Fin (n + 2)) k M) (m : ℤ) :
-    pullbackEquiv (polynomialProjIso b)
-        (LineBundleClass.mk (symmetricAlgebraTwistingBundle k M m)) =
-      LineBundleClass.mk (polynomialTwistingBundle m) := by
-  rw [pullbackEquiv_apply, pullback_mk, mk_eq_mk_iff]
+/-- A basis identifies the class of the symmetric-algebra twist with the same twist
+on the polynomial projective spectrum. -/
+theorem pullback_mk_symmetricAlgebraTwistingBundle {R V : Type (max v w)} {ι : Type w}
+    [CommRing R] [AddCommMonoid V] [Module R V] (b : Basis ι R V) (m : ℤ)
+    (L : InvertibleSheaf (Proj (MvPolynomial.homogeneousSubmodule ι R)))
+    (hL : L.obj = twistingSheaf _ m) :
+    pullback b.polynomialProjIso.hom (LineBundleClass.mk (symmetricAlgebraTwistingBundle R V m)) =
+      LineBundleClass.mk L := by
+  rw [pullback_mk, mk_eq_mk_iff]
   refine ⟨?_⟩
-  rw [InvertibleSheaf.pullback_obj_obj, symmetricAlgebraTwistingBundle_obj]
+  rw [InvertibleSheaf.pullback_obj_obj, symmetricAlgebraTwistingBundle_obj, hL]
   exact b.polynomialProjIsoPullbackTwistingSheafIso m
 
 private theorem mk_symmetricAlgebraTwistingBundle_eq_zpow (m : ℤ) :
@@ -425,7 +453,10 @@ private theorem exists_zpow_symmetricAlgebraTwistingBundle (b : Basis (Fin (n + 
   let e := pullbackEquiv (polynomialProjIso b)
   obtain ⟨m, hm⟩ := exists_zpow_polynomialTwistingBundle (e a)
   refine ⟨m, e.injective ?_⟩
-  rw [map_zpow, pullbackEquiv_polynomialProjIso_twist]
+  have hb := b.pullback_mk_symmetricAlgebraTwistingBundle 1
+    (polynomialTwistingBundle (k := k) (n := n + 1) 1)
+    (polynomialTwistingBundle_obj (k := k) (n := n + 1) 1)
+  rw [map_zpow, pullbackEquiv_apply, hb]
   exact hm
 
 private theorem mk_symmetricAlgebraTwistingBundle_ne_one_of_neg
