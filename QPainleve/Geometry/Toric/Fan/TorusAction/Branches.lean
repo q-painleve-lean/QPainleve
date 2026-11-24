@@ -5,6 +5,8 @@ Authors: The QPainleve contributors
 -/
 module
 
+public import Mathlib.Analysis.Complex.Polynomial.Basic
+public import QPainleve.AlgebraicGeometry.Curves.Node.CycleAction
 public import QPainleve.Geometry.Toric.Fan.Boundary.Branches
 public import QPainleve.Geometry.Toric.Fan.TorusAction.Automorphism
 
@@ -22,7 +24,7 @@ branch. This supplies the branch comparison for the toric automorphisms in
 
 public section
 
-open AlgebraicGeometry CategoryTheory Multiplicative
+open AlgebraicGeometry CategoryTheory DihedralGroup Multiplicative
 open TauCeti.AlgebraicGeometry Scheme.IdealSheafData QPainleve.BlowupTower
 
 namespace TauCeti.Toric.Fan
@@ -46,6 +48,21 @@ theorem branchSchemeIso_boundaryTranslation (hΦ : Φ.IsRegular) (hc : Φ.IsComp
   branchSchemeIso_eq_refl_of_comap_rayBoundaryIdeal_eq hΦ (Φ.torusTranslation χ)
     (boundaryTranslation χ) (boundaryTranslation_hom_subschemeι χ)
     (Φ.comap_rayBoundaryIdeal_torusTranslation_hom hΦ χ) hc hdim
+
+/-- Torus translation induces the identity on any numbering of the toric boundary cycle. -/
+theorem boundaryCycleAction_boundaryTranslation
+    (hΦ : Φ.IsRegular)
+    (hc : Φ.IsComplete) (hdim : Module.finrank ℤ N = 2)
+    {m : ℕ} [NeZero m] {γ : Type*} {a : γ → (C ↘ base).smoothLocus}
+    (T : Scheme.NodalCycleNumbering a m) (χ : Chars) :
+    (boundaryTranslation (Φ := Φ) χ).boundaryCycleAction T T = 1 := by
+  apply cycleBranchPerm_injective m
+  apply Equiv.ext
+  rintro ⟨j, l⟩
+  apply T.branch.injective
+  rw [map_one, Equiv.Perm.one_apply, Iso.branch_boundaryCycleAction,
+    branchSchemeIso_boundaryTranslation hΦ hc hdim]
+  rfl
 
 variable {n : ℕ} (b : Module.Basis (Fin 2) ℤ N) (s : Fin n → Φ.Ray) {c c' : Fin n → ℂˣ}
 

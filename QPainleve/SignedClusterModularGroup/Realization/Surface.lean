@@ -95,6 +95,15 @@ def surfaceIso (e : M.pair ≅ N.pair) : M.surface ≅ N.surface :=
 def boundaryIso (e : M.pair ≅ N.pair) : M.boundary ≅ N.boundary :=
   (Arrow.leftFunc ⋙ Over.forget S).mapIso e
 
+instance (e : M.pair ≅ N.pair) : (surfaceIso e).hom.IsOver S :=
+  ⟨Over.w e.hom.right⟩
+
+/-- An isomorphism of marked pairs intertwines the two boundary immersions. -/
+@[reassoc]
+theorem boundaryIso_hom_comp (e : M.pair ≅ N.pair) :
+    (boundaryIso e).hom ≫ N.pair.hom.left = M.pair.hom.left ≫ (surfaceIso e).hom :=
+  congrArg (fun f ↦ f.left) (Arrow.w e.hom)
+
 instance (e : M.pair ≅ N.pair) : (boundaryIso e).hom.IsOver S :=
   ⟨Over.w e.hom.left⟩
 
