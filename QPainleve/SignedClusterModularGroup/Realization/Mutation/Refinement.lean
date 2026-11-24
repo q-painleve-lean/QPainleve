@@ -17,7 +17,7 @@ In a complete fan, insert the opposite of the pivot ray by regular subdivision.
 The ordered internal models on the refined fan still contract to the same
 marked surfaces. Their boundary rays above the numbered components are the
 lifts of the original rays, and their charge map is the original charge map.
-The construction uses `Fan.exists_regular_subdivision_containing_ray` and
+The construction uses `Fan.Ray.exists_regular_subdivision_containing_opposite` and
 `ContractedToricFiber.exists_subdivision_family`.
 -/
 
@@ -80,14 +80,9 @@ theorem exists_subdivision_for_pivot (hc : Φ.IsComplete) (k : Fin r)
               ∀ hD : Dₘ[P t].IsEffectiveCartier, ∀ j : ZMod n,
                 q.numberedBoundaryRays hD j = h.liftRay ((p t).numberedBoundaryRays hD j) := by
   have hN := (finrank_eq_card_basis b).trans (Fintype.card_fin 2)
-  have hne := neg_ne_zero.mpr (s k).primitiveGenerator_ne_zero
-  have hmem := Φ.mem_support.mpr ((Φ.isComplete_iff).mp hc (i (-(s k).primitiveGenerator)))
-  obtain ⟨Ψ, h, hΨ, hopp⟩ :=
-    Φ.exists_regular_subdivision_containing_ray hΦ hN hne hmem
-  have hc' := h.isComplete_iff.mpr hc
+  obtain ⟨Ψ, h, hΨ, hc', hopp⟩ := (s k).exists_regular_subdivision_containing_opposite hΦ hc hN
   let : Nonempty Ψ.cones := hc'.nonempty_cones
-  refine ⟨Ψ, h, hΨ, hc', ?_, h.rayChargeMap_liftRay s, ?_⟩
-  · simpa only [h.primitiveGenerator_liftRay] using hopp
+  refine ⟨Ψ, h, hΨ, hc', hopp, h.rayChargeMap_liftRay s, ?_⟩
   obtain ⟨hpre, l, hl, hdata⟩ := exists_subdivision_family (δ := Empty) h χ P p hΨ hc hP
   let : PrestableFamily (D[Ψ,hc'.nonempty_cones] ↘ S) := hpre
   obtain ⟨U, o', _, _, hq⟩ := hdata Empty.elim
