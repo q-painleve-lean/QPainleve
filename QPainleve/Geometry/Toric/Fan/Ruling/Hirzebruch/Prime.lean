@@ -75,6 +75,37 @@ theorem eulerDegree_hirzebruch_ruling_prime (p : CodimensionOnePoint X) :
     ← Chow.intersectionBilinForm_apply]
   exact (Φ.hirzebruchPicardBasis_intersection_repr b e hΦ r hr hc (P p)).1
 
+include hc in
+/-- A prime curve contained in a rational fiber of the Hirzebruch ruling has
+fiber degree zero. -/
+theorem hirzebruch_fiber_degree_eq_zero_of_mem_ruling_fiber {p : CodimensionOnePoint X}
+    {y : S ⟶ projectiveLine ℂ} (hy : y ≫ (projectiveLine ℂ ↘ S) = 𝟙 S)
+    (hp : (p : X) ∈ (y.ker.comap q).support) : (C).repr (P p) 1 = 0 := by
+  let f := g[p]
+  have : IsClosedImmersion y := y.isClosedImmersion_of_comp_eq_id hy
+  have hdim := topologicalKrullDim_eq_of_smoothOfRelativeDimension (X ↘ S) (n := 2)
+  let : (I[p]).subscheme.IsProjectiveOver ℂ :=
+    Scheme.IsProjectiveOver.of_isClosedImmersion ℂ (I[p]).subschemeι
+  let : (I[p]).subscheme.IsCurveOver ℂ := Scheme.isCurveOver_iff.mpr
+    ⟨inferInstance, inferInstance, QPainleve.topologicalKrullDim_vanishingIdeal_subscheme ℂ hdim p⟩
+  have hsub : Set.range f ⊆ Set.range y := by
+    rintro _ ⟨x, rfl⟩
+    have hmem : (I[p]).subschemeι x ∈ (y.ker.comap q).support := by
+      apply closure_minimal (Set.singleton_subset_iff.mpr hp)
+        ((y.ker.comap q).support).isClosed'
+      simpa only [range_subschemeι, coe_support_vanishingIdeal, Closeds.coe_mk]
+        using Set.mem_range_self (f := (I[p]).subschemeι) x
+    rw [← SetLike.mem_coe, support_comap, Closeds.coe_preimage, Set.mem_preimage,
+      y.support_ker, y.isClosedEmbedding.isClosed_range.closure_eq] at hmem
+    exact hmem
+  have himage : Set.range f.imageι ⊆ Set.range y := by
+    rw [f.range_imageι]
+    exact closure_minimal hsub y.isClosedEmbedding.isClosed_range
+  have hf : Subsingleton f.image := ⟨fun x z ↦ f.imageι.injective
+    (Set.subsingleton_range y (himage (Set.mem_range_self x)) (himage (Set.mem_range_self z)))⟩
+  rw [← Φ.eulerDegree_hirzebruch_ruling_prime b e hΦ hc r hr p, ← intersectionNumber_def]
+  exact intersectionNumber_eq_zero_of_subsingleton_image _ f hf
+
 /-- The dominant restriction of the Hirzebruch ruling to a prime curve is finite and flat,
 with rank given by the degree of the pulled-back degree-one line class. -/
 theorem hirzebruch_ruling_prime_degree_of_isDominant
