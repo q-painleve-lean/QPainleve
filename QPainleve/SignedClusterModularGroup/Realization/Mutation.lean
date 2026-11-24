@@ -8,7 +8,6 @@ module
 public import QPainleve.Geometry.Toric.Fan.Picard.Mutation.Contracted.Basic
 public import QPainleve.SignedClusterModularGroup.Realization.Agreement
 
-import QPainleve.AlgebraicGeometry.IdealSheaf.BaseChange
 import QPainleve.Geometry.Toric.Fan.Mutation.CycleAction
 
 /-!
@@ -38,45 +37,6 @@ open MarkedSurface (surfaceIso boundaryIso)
 
 local notation "S" => Spec (CommRingCat.of ℂ)
 local notation "Xtor[" r "]" => Spec (CommRingCat.of (LaurentRing ℂ (Fin r)))
-
-section Pair
-
-variable {r m : ℕ} [NeZero m] {L₀ L₁ : Type} [AddCommGroup L₀] [AddCommGroup L₁]
-  {B₀ : LinearMap.BilinForm ℤ L₀} {B₁ : LinearMap.BilinForm ℤ L₁}
-  (M : MarkedSurface ℂ m B₀ Xtor[r]) (N : MarkedSurface ℂ m B₁ Xtor[r])
-
-private theorem exists_pairIso_of_boundaryIdeal (g : M.surface ≅ N.surface)
-    (hover : g.hom ≫ (N.surface ↘ S) = M.surface ↘ S)
-    (hker : N.pair.hom.left.ker.comap g.hom = M.pair.hom.left.ker) :
-    ∃ e : M.pair ≅ N.pair, (surfaceIso e).hom = g.hom := by
-  have : IsClosedImmersion M.pair.hom.left := M.closedImmersion
-  have : IsClosedImmersion N.pair.hom.left := N.closedImmersion
-  obtain ⟨d, hd⟩ := N.pair.hom.left.ker.exists_iso_of_comap_eq_ker g M.pair.hom.left hker
-  let d' := d ≪≫ (asIso N.pair.hom.left.toImage).symm
-  have hi : N.pair.hom.left.toImage ≫ N.pair.hom.left.ker.subschemeι = N.pair.hom.left :=
-    N.pair.hom.left.toImage_imageι
-  have hd' : d'.hom ≫ N.pair.hom.left = M.pair.hom.left ≫ g.hom := by
-    simpa only [d', Iso.trans_hom, Iso.symm_hom, ← hi, Category.assoc, asIso_inv,
-      IsIso.inv_hom_id_assoc] using hd
-  have hdOver : d'.hom ≫ N.pair.left.hom = M.pair.left.hom := by
-    have hover' : g.hom ≫ N.pair.right.hom = M.pair.right.hom := hover
-    rw [← Over.w N.pair.hom, ← Category.assoc, hd', Category.assoc, hover', Over.w M.pair.hom]
-  let e := Arrow.isoMk (Over.isoMk d' hdOver) (Over.isoMk g hover) (by ext1; exact hd')
-  exact ⟨e, rfl⟩
-
-private theorem boundaryIdeal_nodal :
-    AtWorstNodalOfRelativeDimensionOne
-      (M.pair.hom.left.ker.subschemeι ≫ (M.surface ↘ S)) := by
-  have : IsClosedImmersion M.pair.hom.left := M.closedImmersion
-  have : PrestableFamily M.pair.left.hom := M.prestable
-  have hi : M.pair.hom.left.toImage ≫ M.pair.hom.left.ker.subschemeι = M.pair.hom.left :=
-    M.pair.hom.left.toImage_imageι
-  have hOver : M.pair.hom.left ≫ (M.surface ↘ S) = M.pair.left.hom := Over.w M.pair.hom
-  rw [← MorphismProperty.cancel_left_of_respectsIso (P := @AtWorstNodalOfRelativeDimensionOne)
-    M.pair.hom.left.toImage, ← Category.assoc, hi, hOver]
-  exact PrestableFamily.atWorstNodalOfRelativeDimensionOne
-
-end Pair
 
 section Mutation
 
@@ -249,8 +209,8 @@ theorem FiberRealization.exists_mutate
         congrArg (·.preimage e₀.hom.continuous) p.support_comap.symm)
       (by simpa only [← support_comap, ← comap_comp, hq₁, Iso.hom_inv_id_assoc] using
         congrArg (·.preimage e₁.hom.continuous) q.support_comap.symm)
-      hD hD' (boundaryIdeal_nodal M) (boundaryIdeal_nodal N') hconn hnef hnef' hsq hsq' E hE
-  obtain ⟨f, hf⟩ := exists_pairIso_of_boundaryIdeal M N' g hover hker
+      hD hD' M.boundaryIdeal_nodal N'.boundaryIdeal_nodal hconn hnef hnef' hsq hsq' E hE
+  obtain ⟨f, hf⟩ := M.exists_pairIso_of_boundaryIdeal N' g hover hker
   have hcomm : p.projection ≫ (surfaceIso f).hom = e.hom ≫ q.projection := by
     simpa only [hp₀, hq₁, hf] using hg
   obtain ⟨j, hAction, hj⟩ :=
