@@ -17,6 +17,7 @@ import QPainleve.AlgebraicGeometry.OrderOfVanishing.IsoLocus
 import QPainleve.AlgebraicGeometry.Scheme.FunctionField
 import QPainleve.Geometry.Toric.Fan.Separated
 import QPainleve.Geometry.Toric.Fan.Subdivision.FunctionField
+import TauCeti.AlgebraicGeometry.Noetherian
 
 /-!
 # Factorization of logarithmic morphisms to toric surfaces
@@ -152,6 +153,39 @@ variable [X.Over (Spec (.of ℂ))] [IsIntegral X] [X.IsProjectiveOver ℂ]
   {f : X ⟶ Φ.algebraicRealization} [f.IsOver (Spec (.of ℂ))]
   {P : X.IdealSheafData}
 
+include hΦ in
+/-- A specified birational morphism with a pole ideal equal to the toric boundary
+pullback divided by ramification admits an ordered internal model over a regular
+subdivision. The isomorphism recovers the given morphism and the actual pole ideal. -/
+theorem exists_toric_internal_factorization_of_boundary_comap_eq
+    (hf : Scheme.BirationalOver f (𝟙 Y)) :
+    letI := SmoothOfRelativeDimension.smooth 2 (X ↘ Spec (.of ℂ))
+    (D).comap f = P * ramificationIdealSheaf ℂ f →
+    ∃ (Ψ : Fan i) (_ : Ψ.IsRegular) (H : Ψ.IsSubdivision Φ),
+      letI := H.nonempty_cones_of_nonempty hc.nonempty_cones
+      ∃ (m : ℕ) (ρ : Fin m → Ψ.Ray) (u : Fin m → ℂˣ),
+        let A := Ψ.internalBlowupTower b ρ u
+        ∃ e : A.1 ≅ X,
+          e.hom ≫ f = A.2.toTower.toBase ≫ H.toFanHom.algebraicMap ∧
+          P.comap e.hom = A.2.boundaryι.ker := by
+  intro hpole
+  let : Nonempty Φ.cones := hc.nonempty_cones
+  have hdim : Module.finrank ℤ N = 2 :=
+    (Module.finrank_eq_card_basis b).trans (Fintype.card_fin 2)
+  let : SmoothOfRelativeDimension 2 (Y ↘ Spec (.of ℂ)) :=
+    hdim ▸ Φ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
+  let : Smooth (Y ↘ Spec (.of ℂ)) := SmoothOfRelativeDimension.smooth 2 _
+  let : IsNoetherian Y := isNoetherian_of_finiteType (Y ↘ Spec (.of ℂ))
+  let : Smooth (X ↘ Spec (.of ℂ)) := SmoothOfRelativeDimension.smooth 2 _
+  obtain ⟨_, _, _, e, hT, he⟩ := f.exists_isClosedPointTower_factorization (k := ℂ) hf
+  have hRam : (ramificationIdealSheaf ℂ f).IsEffectiveCartier :=
+    hT.comap_ramificationIdealSheafToBase ℂ e he ▸
+      (hT.isEffectiveCartier_ramificationIdealSheafToBase ℂ).comap e.hom
+  obtain ⟨hle, hP⟩ := (hT.comap_eq_mul_ramificationIdealSheaf_iff hRam e he).mp hpole
+  obtain ⟨m, c, _, Ψ, hΨ, H, ρ, u, g, _, hbase, hboundary, _, _⟩ :=
+    Φ.exists_toric_internal_factorization_of_poleIdeal b hΦ hc hT e he hle hP
+  exact ⟨Ψ, hΨ, H, m, ρ, u, g, hbase, hboundary⟩
+
 /-- A specified birational morphism from a smooth integral projective surface to a
 complete regular toric surface factors through a regular subdivision and an ordered internal
 blowup model if the pulled-back logarithmic top form has divisor `-P`. The model is
@@ -178,12 +212,7 @@ theorem exists_toric_internal_factorization_of_pullbackTopFormDivisor
           e.hom ≫ f = A.2.toTower.toBase ≫ H.toFanHom.algebraicMap ∧
           P.comap e.hom = A.2.boundaryι.ker := by
   intro _ _ hD ω hTotal hRam hdiv
-  have : QuasiCompact (Y ↘ Spec (.of ℂ)) := quasiCompact_of_compactSpace _
-  obtain ⟨_, _, _, e, hT, he, hle, hPole⟩ :=
-    f.exists_isClosedPointTower_factorization_of_pullbackTopFormDivisor
-      hD ω hP hTotal hRam hf hdiv
-  obtain ⟨m, c, _, Ψ, hΨ, H, ρ, u, g, _, hbase, hboundary, _, _⟩ :=
-    Φ.exists_toric_internal_factorization_of_poleIdeal b hΦ hc hT e he hle hPole
-  exact ⟨Ψ, hΨ, H, m, ρ, u, g, hbase, hboundary⟩
+  exact exists_toric_internal_factorization_of_boundary_comap_eq b hΦ hc hf
+    ((QPainleve.pullbackTopFormDivisor_eq_neg_iff ℂ f 2 hD ω hTotal hP hRam).mp hdiv)
 
 end TauCeti.Toric.Fan
