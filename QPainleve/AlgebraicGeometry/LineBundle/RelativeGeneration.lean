@@ -7,6 +7,7 @@ module
 
 public import Mathlib.Topology.JacobsonSpace
 public import QPainleve.AlgebraicGeometry.LineBundle.Pullback
+public import QPainleve.AlgebraicGeometry.Modules.Pullback.Sections
 
 import TauCeti.AlgebraicGeometry.LineBundle.Functoriality
 import TauCeti.AlgebraicGeometry.Modules.Sheaf
@@ -63,20 +64,6 @@ namespace AlgebraicGeometry.Scheme.Hom
 open Scheme.Modules
 
 variable {X Y : Scheme.{u}}
-
-/-- Evaluation on the pullback of a section of the pushforward recovers the original section. -/
-@[simp]
-theorem counit_app_pullbackSections (f : X ⟶ Y) (M : X.Modules) (U : Y.Opens)
-    (s : Γ(M, f ⁻¹ᵁ U)) :
-    dsimp% only [Functor.comp_obj, Functor.id_obj, pushforward_obj_obj]
-      (((pullbackPushforwardAdjunction f).counit.app M).app (f ⁻¹ᵁ U)
-        (f.pullbackSections ((pushforward f).obj M) U s)) = s := by
-  let adj := pullbackPushforwardAdjunction f
-  have h : adj.homEquiv _ _ (adj.counit.app M) = 𝟙 ((pushforward f).obj M) := by
-    rw [Adjunction.homEquiv_unit, Adjunction.right_triangle_components]
-  have h' := pullbackPushforwardAdjunction_homEquiv_app_apply f (adj.counit.app M) U s
-  exact h'.symm.trans ((congrArg (fun p : (pushforward f).obj M ⟶ (pushforward f).obj M ↦
-    p.app U s) h).trans (by rfl))
 
 /-- On a Jacobson source, sections over inverse images of base opens that generate at all
 closed points suffice for surjectivity of the evaluation map. -/
