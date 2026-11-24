@@ -7,6 +7,8 @@ module
 
 public import QPainleve.Geometry.Toric.Fan.InternalBlowup
 public import QPainleve.Geometry.Toric.Fan.Logarithmic.Factorization
+public import QPainleve.Geometry.Toric.Fan.Mutation.Subdivision
+public import QPainleve.Geometry.Toric.Fan.Subdivision.Equiv
 public import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.ProjectiveOver
 
 import Mathlib.Combinatorics.Quiver.Covering
@@ -164,6 +166,68 @@ private theorem exists_tower_in_basis (U : OrderedToricModel A m)
   obtain ⟨u, hu⟩ := exists_internalBlowupTower_eq_of_basis U.basis U.rays U.parameters b
   exact ⟨u, hu.symm ▸ Exists.intro U.iso ⟨U.hom_eq, U.pole_eq, U.hom_def.symm⟩⟩
 
+/-- Transport an ordered model in the mutation frame. The returned link uses the lifted
+mutation ray, and the pivot label and terminal marking record the ordered mutation. -/
+theorem exists_model_of_mutation_in_basis [IsIntegral Z]
+    (U : OrderedToricModel A m)
+    (ρ : A.fan.Ray) (hOpp : hull ℝ {i (-ρ.primitiveGenerator)} ∈ A.fan.cones) (c : ℂˣ)
+    (hFan : B.fan = A.fan.mutationFan U.basis ρ.primitiveGenerator_ne_zero
+      ρ.hull_primitiveGenerator_mem hOpp)
+    (hMap : A.hom.toRationalMap.comp
+      (A.fan.mutationPartialMap U.basis (c : ℂ) ρ.primitiveGenerator_ne_zero
+        ρ.hull_primitiveGenerator_mem hOpp).toRationalMap =
+      (cast (congrArg (fun Φ : Fan i ↦ Z ⟶ X[Φ]) hFan) B.hom).toRationalMap) :
+    let b := U.basis
+    let σ := U.subdivision.liftRay ρ
+    let opp := U.subdivision.hull_neg_primitiveGenerator_liftRay_mem ρ hOpp
+    let Ψ := U.fan.mutationFan b σ.primitiveGenerator_ne_zero σ.hull_primitiveGenerator_mem opp
+    let K : Ψ.IsSubdivision B.fan := hFan.symm ▸ U.subdivision.mutation b
+      (U.subdivision.primitiveGenerator_liftRay ρ) ρ.primitiveGenerator_ne_zero
+      σ.primitiveGenerator_ne_zero ρ.hull_primitiveGenerator_mem hOpp
+      σ.hull_primitiveGenerator_mem opp
+    let hreg : Ψ.IsRegular :=
+      (U.fan.isRegular_mutationFan_iff b σ.primitiveGenerator_ne_zero
+        σ.hull_primitiveGenerator_mem opp).mpr U.regular
+    ∃ (n : ℕ) (hm : n + 1 = m) (k : Fin (n + 1)),
+      let a := U.rays ∘ finCongr hm
+      let u := U.parameters ∘ finCongr hm
+      let rays : Fin (n + 1) → Ψ.Ray :=
+        Fin.cons (U.fan.mutationFanCenterRays b (fun _ : Unit ↦ σ) () opp ())
+          (fun l ↦ U.fan.mutationFanRayEquiv b σ.primitiveGenerator_ne_zero
+            σ.hull_primitiveGenerator_mem opp (a (k.succAbove l)))
+      let params : Fin (n + 1) → ℂˣ := Fin.cons c⁻¹ (fun l ↦ u (k.succAbove l) *
+        c ^ max (b.det ![(a (k.succAbove l)).primitiveGenerator, σ.primitiveGenerator]) 0)
+      let T := tower[K,b,rays,params]
+      a k = σ ∧ u k = c ∧
+        ∃ (e : T.1 ≅ Z) (he : e.hom ≫ B.hom = base[T] ≫ π[K])
+          (hP : D.comap e.hom = T.2.boundaryι.ker),
+          let W : OrderedToricModel B (n + 1) := ⟨Ψ, hreg, K, b, rays, params, e, he, hP⟩
+          ∃ step : SarkisovStep U.refinedProjection W.refinedProjection,
+            step.rationalMap = (U.fan.mutationPartialMap b (c : ℂ)
+              σ.primitiveGenerator_ne_zero σ.hull_primitiveGenerator_mem opp).toRationalMap := by
+  cases B
+  next Φ hΦ hc r hOver hDom hBoundary =>
+    dsimp only at hFan
+    subst Φ
+    simp only [cast_eq] at hMap
+    obtain ⟨n, hm, k, hk, hc', -, g, hproj, hpole, hrat, -, -⟩ :=
+      A.exists_ordered_toric_mutation_model_of_factorization U.basis ρ hOpp c U.regular
+        U.subdivision U.rays U.parameters r hMap U.iso U.hom_eq U.pole_eq
+    refine ⟨n, hm, k, hk, hc', g.symm ≪≫ U.iso, hproj, hpole, ?_⟩
+    intro W
+    refine ⟨⟨_, .mutation U.basis _ c _, ?_⟩, rfl⟩
+    let : IsDominant (base[U.tower]) :=
+      (U.fan.isModification_internalBlowupTower_toBase U.basis U.rays U.parameters
+        U.regular).isDominant
+    let : IsIntegral U.tower.1 :=
+      U.fan.isIntegral_internalBlowupTower U.basis U.rays U.parameters U.regular
+    change U.hom.toRationalMap.comp _ = W.hom.toRationalMap
+    have hWho : W.hom = U.iso.inv ≫ g.hom ≫ base[W.tower] :=
+      W.hom_def.trans (Category.assoc U.iso.inv g.hom _)
+    simp only [U.hom_def, hWho, ← Scheme.Hom.toRationalMap_compHom,
+      ← Scheme.RationalMap.comp_toRationalMap, Scheme.RationalMap.comp_assoc]
+    congr 1
+
 private theorem exists_model_of_mutation [IsIntegral Z]
     (U : OrderedToricModel A m) (b : Module.Basis (Fin 2) ℤ N)
     (ρ : A.fan.Ray) (hOpp : hull ℝ {i (-ρ.primitiveGenerator)} ∈ A.fan.cones) (c : ℂˣ)
@@ -175,82 +239,50 @@ private theorem exists_model_of_mutation [IsIntegral Z]
       (cast (congrArg (fun Φ : Fan i ↦ Z ⟶ X[Φ]) hFan) B.hom).toRationalMap) :
     ∃ W : OrderedToricModel B m,
       Nonempty (SarkisovStep U.refinedProjection W.refinedProjection) := by
-  cases B
-  next Φ hΦ hc r hOver hDom hBoundary =>
-    dsimp only at hFan
-    subst Φ
-    simp only [cast_eq] at hMap
-    obtain ⟨u, e, he, hPole, href⟩ := U.exists_tower_in_basis b
-    obtain ⟨n, hm, k, -, -, -, g, hproj, hpole, hrat, -, -⟩ :=
-      A.exists_ordered_toric_mutation_model_of_factorization b ρ hOpp c U.regular
-        U.subdivision U.rays u r hMap e he hPole
-    subst m
-    let σ := U.subdivision.liftRay ρ
-    let opp := U.subdivision.hull_neg_primitiveGenerator_liftRay_mem ρ hOpp
-    let Ψ := U.fan.mutationFan b σ.primitiveGenerator_ne_zero σ.hull_primitiveGenerator_mem opp
-    let K := U.subdivision.mutation b
-      (U.subdivision.primitiveGenerator_liftRay ρ) ρ.primitiveGenerator_ne_zero
-      σ.primitiveGenerator_ne_zero ρ.hull_primitiveGenerator_mem hOpp
-      σ.hull_primitiveGenerator_mem opp
-    let hreg : Ψ.IsRegular :=
-      (U.fan.isRegular_mutationFan_iff b σ.primitiveGenerator_ne_zero
-        σ.hull_primitiveGenerator_mem opp).mpr U.regular
-    let reverseRay := U.fan.mutationFanCenterRays b (fun _ : Unit ↦ σ) () opp ()
-    let rays : Fin (n + 1) → Ψ.Ray := Fin.cons reverseRay
-      (fun l ↦ U.fan.mutationFanRayEquiv b σ.primitiveGenerator_ne_zero
-        σ.hull_primitiveGenerator_mem opp (U.rays (k.succAbove l)))
-    let params : Fin (n + 1) → ℂˣ := Fin.cons c⁻¹ (fun l ↦ u (k.succAbove l) *
-      c ^ max (b.det ![(U.rays (k.succAbove l)).primitiveGenerator, σ.primitiveGenerator]) 0)
-    let C : LogarithmicProjection i D := ⟨_, hΦ, hc, r, hOver, hDom, hBoundary⟩
-    let W : OrderedToricModel C (n + 1) :=
-      ⟨Ψ, hreg, K, b, rays, params, g.symm ≪≫ e, hproj, hpole⟩
-    let f := (U.fan.mutationPartialMap b (c : ℂ) σ.primitiveGenerator_ne_zero
-      σ.hull_primitiveGenerator_mem opp).toRationalMap
-    refine ⟨W, ⟨⟨f, .mutation b σ c opp, ?_⟩⟩⟩
-    have : IsDominant (base[U.fan.internalBlowupTower b U.rays u]) :=
-      (U.fan.isModification_internalBlowupTower_toBase b U.rays u U.regular).isDominant
-    -- The source reparametrization leaves the refined projection unchanged.
-    change U.hom.toRationalMap.comp f = W.hom.toRationalMap
-    let t := base[U.fan.internalBlowupTower b U.rays u]
-    let : IsIntegral (U.fan.internalBlowupTower b U.rays u).1 :=
-      U.fan.isIntegral_internalBlowupTower b U.rays u U.regular
-    calc
-      _ = (e.inv.toRationalMap.comp t.toRationalMap).comp f := by
-        congr 1
-        simpa only [Scheme.RationalMap.comp_toRationalMap, Scheme.Hom.toRationalMap_compHom]
-          using congrArg Scheme.Hom.toRationalMap href.symm
-      _ = _ := by
-        rw [Scheme.RationalMap.comp_assoc, hrat, Scheme.RationalMap.comp_toRationalMap,
-          Scheme.Hom.toRationalMap_compHom, W.hom_def]
-        rfl
+  obtain ⟨u, e, he, hP, href⟩ := U.exists_tower_in_basis b
+  let U' : OrderedToricModel A m :=
+    ⟨U.fan, U.regular, U.subdivision, b, U.rays, u, e, he, hP⟩
+  have hRef : U'.refinedProjection = U.refinedProjection :=
+    LogarithmicProjection.ext rfl (heq_of_eq (U'.hom_def.trans href))
+  obtain ⟨n, hm, k, -, -, e', he', hP', step, -⟩ :=
+    U'.exists_model_of_mutation_in_basis ρ hOpp c hFan hMap
+  subst m
+  exact ⟨_, ⟨hRef ▸ step⟩⟩
 
-private theorem exists_model_of_iso [IsIntegral Z]
+/-- Transport an ordered model and its marking along a fan equivalence and a translation.
+The refined projections commute with the translated fan map as regular morphisms. -/
+theorem exists_model_of_iso [IsIntegral Z]
     (U : OrderedToricModel A m) (f : FanEquiv A.fan B.fan)
     (χ : Multiplicative (N →+ ℤ) →* ℂˣ)
     (h : A.hom.toRationalMap.comp
       (f.toFanHom.algebraicMap ≫ (B.fan.torusTranslation χ).hom).toRationalMap =
         B.hom.toRationalMap) :
-    ∃ W : OrderedToricModel B m,
-      Nonempty (SarkisovStep U.refinedProjection W.refinedProjection) := by
+    let Θ := U.fan.mapEquiv B.fan.lattice f.latticeEquiv
+    let F := U.fan.mapEquivIso B.fan.lattice f.latticeEquiv
+    let K := f.isSubdivision_mapEquiv U.subdivision
+    let b := U.basis.map F.latticeEquiv.toIntLinearEquiv
+    let s := F.rayEquiv ∘ U.rays
+    let c := fun j ↦ U.parameters j / χ (Multiplicative.ofAdd
+      (b.detDualEquiv (s j).primitiveGenerator).toAddMonoidHom)
+    let T := tower[K,b,s,c]
+    ∃ (e : T.1 ≅ Z) (he : e.hom ≫ B.hom = base[T] ≫ π[K])
+      (hP : D.comap e.hom = T.2.boundaryι.ker),
+      let W : OrderedToricModel B m := ⟨Θ, F.isRegular_iff.mpr U.regular, K, b, s, c, e, he, hP⟩
+      letI : Nonempty Θ.cones := K.nonempty_cones_of_nonempty B.isComplete.nonempty_cones
+      let t := F.toFanHom.algebraicMap ≫ (Θ.torusTranslation χ).hom
+      U.hom ≫ t = W.hom ∧ Nonempty (SarkisovStep U.refinedProjection W.refinedProjection) := by
+  intro Θ F K b s c T
   obtain ⟨g, hg, hproj, hPole, -, -⟩ := exists_ordered_toric_iso_model f χ h
     U.basis U.regular U.subdivision U.rays U.parameters U.iso U.hom_eq U.pole_eq
-  let Θ := U.fan.mapEquiv B.fan.lattice f.latticeEquiv
-  let F := U.fan.mapEquivIso B.fan.lattice f.latticeEquiv
-  let K := f.isSubdivision_mapEquiv U.subdivision
-  let b := U.basis.map F.latticeEquiv.toIntLinearEquiv
-  let s := F.rayEquiv ∘ U.rays
-  let c := fun j ↦ U.parameters j / χ (Multiplicative.ofAdd
-    (b.detDualEquiv (s j).primitiveGenerator).toAddMonoidHom)
-  let W : OrderedToricModel B m :=
-    ⟨Θ, F.isRegular_iff.mpr U.regular, K, b, s, c, g.symm ≪≫ U.iso, hproj, hPole⟩
+  refine ⟨g.symm ≪≫ U.iso, hproj, hPole, ?_⟩
+  intro W t
   let : Nonempty Θ.cones := K.nonempty_cones_of_nonempty B.isComplete.nonempty_cones
-  let f := F.toFanHom.algebraicMap ≫ (Θ.torusTranslation χ).hom
-  refine ⟨W, ⟨⟨f.toRationalMap, .toricIso F χ, ?_⟩⟩⟩
-  -- The ordered tower lift is an equality of regular representatives.
-  change U.hom.toRationalMap.comp f.toRationalMap = W.hom.toRationalMap
-  rw [Scheme.RationalMap.comp_toRationalMap, Scheme.Hom.toRationalMap_compHom,
-    U.hom_def, W.hom_def, Category.assoc]
-  exact congrArg Scheme.Hom.toRationalMap (congrArg (U.iso.inv ≫ ·) hg.hom_toBase.symm)
+  have ht : U.hom ≫ t = W.hom := by
+    simp only [U.hom_def, W.hom_def, W, Iso.trans_inv, Iso.symm_inv, Category.assoc]
+    exact congrArg (U.iso.inv ≫ ·) hg.hom_toBase.symm
+  refine ⟨ht, ⟨⟨t.toRationalMap, .toricIso F χ, ?_⟩⟩⟩
+  change U.hom.toRationalMap.comp t.toRationalMap = W.hom.toRationalMap
+  rw [Scheme.RationalMap.comp_toRationalMap, Scheme.Hom.toRationalMap_compHom, ht]
 
 end OrderedToricModel
 
@@ -295,7 +327,8 @@ theorem SarkisovStep.exists_ordered_toric_model [Z.IsProjectiveOver ℂ] (e : Sa
   | mutation b ρ c hOpp =>
     exact U.exists_model_of_mutation b ρ hOpp c rfl h
   | toricIso f χ =>
-    exact U.exists_model_of_iso f χ h
+    obtain ⟨_, _, _, -, hStep⟩ := U.exists_model_of_iso f χ h
+    exact ⟨_, hStep⟩
 
 /-- The quiver of specified projections together with chosen ordered presentations.
 An edge pairs an original resolved link with a link on the refined fans. -/

@@ -1,0 +1,68 @@
+/-
+Copyright (c) 2026 The QPainleve contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: The QPainleve contributors
+-/
+module
+
+public import QPainleve.Algebra.Cluster.Word.Basic
+public import QPainleve.Geometry.Toric.Fan.Evaluation
+public import QPainleve.Geometry.Toric.Fan.Logarithmic.Presentation
+public import TauCeti.Algebra.Group.FreeAbelianCharacter
+
+/-!
+# X evaluations of ordered toric models
+
+The ordered rays and lattice frame determine the exchange matrix. The center
+parameters scale the torus characters before pullback to the resolving surface.
+-/
+
+public noncomputable section
+
+open AlgebraicGeometry Module Multiplicative
+open QPainleve.Cluster TauCeti TauCeti.AlgebraicGeometry
+
+namespace TauCeti.Toric.Fan.LogarithmicProjection
+
+variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V] {i : N →+ V}
+
+local notation "S" => Spec (CommRingCat.of ℂ)
+
+variable {Z : Scheme} [Z.Over S] [SmoothOfRelativeDimension 2 (Z ↘ S)] [IsIntegral Z]
+  {D : Z.IdealSheafData} {A : LogarithmicProjection i D} {m : ℕ}
+
+/-- Evaluate an exponent vector at the ordered tuple of nonzero center parameters. -/
+abbrev centerCharacter (c : Fin m → ℂˣ) : Multiplicative (Fin m → ℤ) →* ℂˣ :=
+  freeAbelianCharEquiv.symm c |>.comp
+    ((Finsupp.linearEquivFunOnFinite ℤ ℤ (Fin m)).symm.toAddEquiv.toMultiplicative.toMonoidHom)
+
+namespace OrderedToricModel
+
+/-- The exchange matrix determined by the rays and oriented lattice frame of an ordered model. -/
+@[expose]
+def exchangeMatrix (U : OrderedToricModel A m) : SkewExchangeMatrix (Fin m) :=
+  .ofMatrix (chargeExchangeMatrix U.basis.detDualEquiv.toLinearMap (rayChargeMap U.rays))
+    (isSkewSymmetrizer_chargeExchangeMatrix _ (U.basis.detDualEquiv_self) _)
+
+omit [IsIntegral Z] in
+/-- The underlying matrix is the determinant pairing of the ordered ray charges. -/
+@[simp]
+theorem exchangeMatrix_matrix (U : OrderedToricModel A m) :
+    U.exchangeMatrix.matrix =
+      chargeExchangeMatrix U.basis.detDualEquiv.toLinearMap (rayChargeMap U.rays) :=
+  SkewExchangeMatrix.matrix_ofMatrix _ _
+
+/-- The fixed-center rational evaluation on the common resolving surface. -/
+def xEvaluation (U : OrderedToricModel A m) :
+    Z ⤏ Spec (.of (LaurentRing ℂ (Fin m))) :=
+  U.hom.toRationalMap.comp (U.fan.xEvaluation U.basis U.rays (centerCharacter U.parameters))
+
+/-- Evaluation pulls the scaled torus characters back along the ordered projection. -/
+theorem xEvaluation_def (U : OrderedToricModel A m) :
+    U.xEvaluation =
+      U.hom.toRationalMap.comp (U.fan.xEvaluation U.basis U.rays (centerCharacter U.parameters)) :=
+  (rfl)
+
+end OrderedToricModel
+
+end TauCeti.Toric.Fan.LogarithmicProjection

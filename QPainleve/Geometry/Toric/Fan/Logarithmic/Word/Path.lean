@@ -8,8 +8,7 @@ module
 public import QPainleve.Geometry.Toric.Fan.Logarithmic.Word.Star
 
 import QPainleve.Geometry.Toric.Fan.Logarithmic.Evaluation
-import QPainleve.Geometry.Toric.Fan.Logarithmic.Isomorphism
-import QPainleve.Geometry.Toric.Fan.Logarithmic.Word.Mutation
+import QPainleve.Geometry.Toric.Fan.Mutation.ResolvedEvaluation
 
 /-!
 # Cluster words along resolved Sarkisov paths
@@ -38,36 +37,7 @@ local notation "base[" T "]" => QPainleve.BlowupTower.toBase (WithBoundary.toTow
 variable {Z : Scheme} [Z.Over S] [SmoothOfRelativeDimension 2 (Z ↘ S)] [IsIntegral Z]
   {D : Z.IdealSheafData} {A B : LogarithmicProjection i D} {m : ℕ}
 
-private abbrev centerCharacter (c : Fin m → ℂˣ) : Multiplicative (Fin m → ℤ) →* ℂˣ :=
-  freeAbelianCharEquiv.symm c |>.comp
-    ((Finsupp.linearEquivFunOnFinite ℤ ℤ (Fin m)).symm.toAddEquiv.toMultiplicative.toMonoidHom)
-
 namespace OrderedToricModel
-
-/-- The exchange matrix determined by the rays and oriented lattice frame of an ordered model. -/
-def exchangeMatrix (U : OrderedToricModel A m) : SkewExchangeMatrix (Fin m) :=
-  .ofMatrix (chargeExchangeMatrix U.basis.detDualEquiv.toLinearMap (rayChargeMap U.rays))
-    (isSkewSymmetrizer_chargeExchangeMatrix _ (U.basis.detDualEquiv_self) _)
-
-omit [IsIntegral Z] in
-/-- The underlying matrix is the determinant pairing of the ordered ray charges. -/
-@[simp]
-theorem exchangeMatrix_matrix (U : OrderedToricModel A m) :
-    U.exchangeMatrix.matrix =
-      chargeExchangeMatrix U.basis.detDualEquiv.toLinearMap (rayChargeMap U.rays) :=
-  SkewExchangeMatrix.matrix_ofMatrix _ _
-
-/-- The fixed-center rational evaluation on the common resolving surface. -/
-def xEvaluation (U : OrderedToricModel A m) :
-    Z ⤏ Spec (.of (LaurentRing ℂ (Fin m))) :=
-  U.hom.toRationalMap.comp (U.fan.xEvaluation U.basis U.rays (centerCharacter U.parameters))
-
-/-- Evaluation pulls the scaled torus characters back along the ordered projection. -/
-theorem xEvaluation_def (U : OrderedToricModel A m) :
-    U.xEvaluation = U.hom.toRationalMap.comp (U.fan.xEvaluation U.basis U.rays
-      ((freeAbelianCharEquiv.symm U.parameters).comp
-        (AddEquiv.toMultiplicative
-          (Finsupp.linearEquivFunOnFinite ℤ ℤ (Fin m)).symm.toAddEquiv).toMonoidHom)) := (rfl)
 
 private theorem exists_compOfDefined_nil (U : OrderedToricModel A m) :
     let w : Word U.exchangeMatrix U.exchangeMatrix := .nil
@@ -123,7 +93,7 @@ private theorem exists_reframe_of_det_eq (U : OrderedToricModel A m) (b : Basis 
   · ext j k
     simp only [exchangeMatrix_matrix, W, chargeExchangeMatrix_apply, rayChargeMap_single,
       LinearEquiv.coe_coe, hdet]
-  · simp only [xEvaluation, hhom]
+  · simp only [xEvaluation_def, hhom]
     congr 1
     apply Scheme.RationalMap.eq_of_fromFunctionField_eq
     simp only [Fan.fromFunctionField_xEvaluation]
@@ -153,7 +123,7 @@ private theorem exists_reframe_swap (U : OrderedToricModel A m) :
   have hc : centerCharacter U.parameters⁻¹ = (centerCharacter U.parameters)⁻¹ := by
     ext x
     simp [centerCharacter, map_inv]
-  simp only [xEvaluation, hhom]
+  simp only [xEvaluation_def, hhom]
   simp only [W, b, hc, Fan.xEvaluation_reindex_swap, Scheme.RationalMap.comp_compHom]
 
 -- A frame change acts on the X coordinates by its determinant sign.
@@ -210,59 +180,28 @@ private theorem exists_word_of_mutation_in_frame (U : OrderedToricModel A m)
       Nonempty (SarkisovStep U.refinedProjection W.refinedProjection) ∧
         ∃ h, U.xEvaluation.compOfDefined (w.xRationalMap ℂ) h = W.xEvaluation := by
   subst b
-  cases B
-  next Φ hΦ hcomp r hover hdom hPole =>
-    dsimp only at hFan
-    subst Φ
-    simp only [cast_eq] at hMap
-    obtain ⟨n, hm, k, -, -, -, g, hproj, hpole, hrat, -, -, hMatrix, -, hEval⟩ :=
-      A.exists_word_of_resolved_mutation U.basis ρ opp c U.regular U.subdivision
-        U.rays U.parameters r hMap U.iso U.hom_eq U.pole_eq
-    subst m
-    let σ := U.subdivision.liftRay ρ
-    let hσ := U.subdivision.hull_neg_primitiveGenerator_liftRay_mem ρ opp
-    let Ψ := M[U.fan,U.basis,σ,hσ]
-    let K := U.subdivision.mutation U.basis
-      (U.subdivision.primitiveGenerator_liftRay ρ) ρ.primitiveGenerator_ne_zero
-      σ.primitiveGenerator_ne_zero ρ.hull_primitiveGenerator_mem opp
-      σ.hull_primitiveGenerator_mem hσ
-    let hreg : Ψ.IsRegular :=
-      (U.fan.isRegular_mutationFan_iff U.basis σ.primitiveGenerator_ne_zero
-        σ.hull_primitiveGenerator_mem hσ).mpr U.regular
-    let a := U.rays ∘ finCongr (rfl : n + 1 = n + 1)
-    let u := U.parameters ∘ finCongr (rfl : n + 1 = n + 1)
-    let rays : Fin (n + 1) → Ψ.Ray :=
-      Fin.cons (U.fan.mutationFanCenterRays U.basis (fun _ : Unit ↦ σ) () hσ ())
-        (fun l ↦ U.fan.mutationFanRayEquiv U.basis σ.primitiveGenerator_ne_zero
-          σ.hull_primitiveGenerator_mem hσ (a (k.succAbove l)))
-    let params : Fin (n + 1) → ℂˣ := Fin.cons c⁻¹ (fun l ↦ u (k.succAbove l) *
-      c ^ max (U.basis.det ![(a (k.succAbove l)).primitiveGenerator, σ.primitiveGenerator]) 0)
-    let C : LogarithmicProjection i D := ⟨_, hΦ, hcomp, r, hover, hdom, hPole⟩
-    let W : OrderedToricModel C (n + 1) :=
-      ⟨Ψ, hreg, K, U.basis, rays, params, g.symm ≪≫ U.iso, hproj, hpole⟩
-    let E₀ := SkewExchangeMatrix.ofMatrix
-      (chargeExchangeMatrix U.basis.detDualEquiv.toLinearMap (rayChargeMap a))
-      (isSkewSymmetrizer_chargeExchangeMatrix _ (U.basis.detDualEquiv_self) _)
-    let w := (((Generator.mutate k).toStep E₀).toPath).comp
-      (((Generator.permute ((finSuccEquiv _).trans (finSuccEquiv' k).symm)).toStep _).toPath)
-    have hw : W.exchangeMatrix = _ := hMatrix
-    have hWho : W.hom = U.iso.inv ≫ g.hom ≫ base[W.tower] :=
-      W.hom_def.trans (Category.assoc U.iso.inv g.hom _)
-    refine ⟨W, hw.symm ▸ w, ⟨⟨μ[U.fan,U.basis,σ,c,hσ], .mutation _ σ c hσ, ?_⟩⟩, ?_⟩
-    · have hdom : IsDominant (base[U.tower]) :=
-        (U.fan.isModification_internalBlowupTower_toBase U.basis U.rays U.parameters
-          U.regular).isDominant
-      have hInt := U.fan.isIntegral_internalBlowupTower U.basis U.rays U.parameters U.regular
-      -- Both composites use the given identification with the resolving surface.
-      simp only [U.hom_def, hWho,
-        ← Scheme.Hom.toRationalMap_compHom, ← Scheme.RationalMap.comp_toRationalMap,
-        Scheme.RationalMap.comp_assoc]
-      congr 1
-    · -- Transport only the terminal type of the word.
-      generalize W.exchangeMatrix = E at hw ⊢
-      subst E
-      simp only [OrderedToricModel.xEvaluation, U.hom_def, hWho]
-      exact hEval
+  have hModel := U.exists_model_of_mutation_in_basis ρ opp c hFan hMap
+  extract_lets at hModel
+  obtain ⟨n, hm, k, hModel⟩ := hModel
+  extract_lets at hModel
+  obtain ⟨hk, hc, e, he, hp, hStep⟩ := hModel
+  extract_lets W at hStep
+  obtain ⟨step, hStep⟩ := hStep
+  subst m
+  have hrat := step.comp_rationalMap
+  rw [hStep] at hrat
+  obtain ⟨hMatrix, -, hEval⟩ := U.fan.compare_ordered_mutation U.basis
+    (U.rays ∘ finCongr rfl) (U.parameters ∘ finCongr rfl) k _ _ c hk.symm hc.symm
+    U.hom W.hom hrat
+  let w := (((Generator.mutate k).toStep U.exchangeMatrix).toPath).comp
+    (((Generator.permute ((finSuccEquiv _).trans (finSuccEquiv' k).symm)).toStep _).toPath)
+  have hw : W.exchangeMatrix = _ := hMatrix
+  refine ⟨W, hw.symm ▸ w, ⟨step⟩, ?_⟩
+  -- Transport only the terminal type of the word.
+  generalize W.exchangeMatrix = E at hw ⊢
+  subst E
+  simp only [OrderedToricModel.xEvaluation_def]
+  exact hEval
 
 private theorem exists_word_of_star_step [Z.IsProjectiveOver ℂ]
     (U : OrderedToricModel A m) (e : StarStep A B) :
@@ -290,33 +229,23 @@ private theorem exists_word_of_toric_iso (U : OrderedToricModel A m)
     ∃ (W : OrderedToricModel B m) (w : Word U.exchangeMatrix W.exchangeMatrix),
       Nonempty (SarkisovStep U.refinedProjection W.refinedProjection) ∧
         ∃ h, U.xEvaluation.compOfDefined (w.xRationalMap ℂ) h = W.xEvaluation := by
-  obtain ⟨g, hg, hproj, hPole, -, -⟩ := exists_ordered_toric_iso_model f χ hf
-    U.basis U.regular U.subdivision U.rays U.parameters U.iso U.hom_eq U.pole_eq
-  let Θ := U.fan.mapEquiv B.fan.lattice f.latticeEquiv
-  let F := U.fan.mapEquivIso B.fan.lattice f.latticeEquiv
-  let K := f.isSubdivision_mapEquiv U.subdivision
-  let b := U.basis.map F.latticeEquiv.toIntLinearEquiv
-  let s := F.rayEquiv ∘ U.rays
-  let c := fun j ↦ U.parameters j / χ (ofAdd
-    (b.detDualEquiv (s j).primitiveGenerator).toAddMonoidHom)
-  let W : OrderedToricModel B m :=
-    ⟨Θ, F.isRegular_iff.mpr U.regular, K, b, s, c, g.symm ≪≫ U.iso, hproj, hPole⟩
+  have hModel := U.exists_model_of_iso f χ hf
+  extract_lets Θ F K b s c at hModel
+  obtain ⟨e, he, hPole, hModel⟩ := hModel
+  extract_lets W at hModel
+  obtain ⟨hmap, hStep⟩ := hModel
   let : Nonempty Θ.cones := K.nonempty_cones_of_nonempty B.isComplete.nonempty_cones
-  let t := F.toFanHom.algebraicMap ≫ (Θ.torusTranslation χ).hom
-  have hmap : U.hom ≫ t = W.hom := by
-    simp only [U.hom_def, W.hom_def, W, Iso.trans_inv, Iso.symm_inv, Category.assoc]
-    exact congrArg (U.iso.inv ≫ ·) hg.hom_toBase.symm
   have hdet := U.basis.detDualEquiv_map F.latticeEquiv.toIntLinearEquiv
   have hEval := F.comp_xEvaluation_of_toric_iso U.basis b U.rays s id
     (centerCharacter U.parameters) (centerCharacter c) χ (fun _ ↦ rfl) hdet
     (fun j ↦ by simp [c, centerCharacter, Finsupp.linearEquivFunOnFinite_symm_single])
   have hEq : W.xEvaluation = U.xEvaluation := by
-    simp only [OrderedToricModel.xEvaluation, ← hmap,
+    simp only [OrderedToricModel.xEvaluation_def, ← hmap,
       ← Scheme.Hom.toRationalMap_compHom, ← Scheme.RationalMap.comp_toRationalMap,
       Scheme.RationalMap.comp_assoc]
     congr 1
     simpa only [LaurentRing.rename_id, AlgHom.toRingHom_eq_coe, AlgHom.id_toRingHom,
-      CommRingCat.ofHom_id, Spec.map_id, Scheme.RationalMap.compHom_id, W, t, Θ] using hEval
+      CommRingCat.ofHom_id, Spec.map_id, Scheme.RationalMap.compHom_id, W, Θ] using hEval
   have hB : W.exchangeMatrix = U.exchangeMatrix := by
     apply SkewExchangeMatrix.ext
     ext j k
@@ -324,11 +253,7 @@ private theorem exists_word_of_toric_iso (U : OrderedToricModel A m)
       rayChargeMap_single, LinearEquiv.coe_coe, W, s, Function.comp_apply,
       FanEquiv.primitiveGenerator_rayEquiv]
     exact hdet _ _
-  have hStep : SarkisovStep U.refinedProjection W.refinedProjection :=
-    ⟨t.toRationalMap, .toricIso F χ, by
-      simp only [Scheme.RationalMap.comp_toRationalMap,
-        Scheme.Hom.toRationalMap_compHom, hmap]⟩
-  refine ⟨W, hB.symm ▸ Quiver.Path.nil, ⟨hStep⟩, ?_⟩
+  refine ⟨W, hB.symm ▸ Quiver.Path.nil, hStep, ?_⟩
   generalize W.exchangeMatrix = E at hB ⊢
   subst E
   simpa only [hEq] using U.exists_compOfDefined_nil
