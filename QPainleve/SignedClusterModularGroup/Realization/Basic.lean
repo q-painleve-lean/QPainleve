@@ -205,6 +205,38 @@ def orientation : ℤˣ := DihedralGroup.cycleOrientationSign R.boundaryAction
 theorem orientation_def : R.orientation = DihedralGroup.cycleOrientationSign R.boundaryAction :=
   (rfl)
 
+section Congr
+
+variable {C' : T₀.left.PartialMap T₁.left} [IsDominant C'.hom] [C'.IsOver T₀.hom T₁.hom]
+  {F' : X₀ ⤏ X₁} [F'.IsDominant]
+
+/-- View a geometric realization along equal center and rational X maps. -/
+def congrMaps (hC : C = C') (hF : F = F') : GeometricRealization P₀ P₁ C' F' := by
+  subst C' F'
+  exact R
+
+/-- Transport along equal maps preserves the marked Picard pullback. -/
+@[simp]
+theorem congrMaps_picard (hC : C = C') (hF : F = F') :
+    (R.congrMaps hC hF).picard = R.picard := by
+  subst C' F'
+  rfl
+
+/-- Transport along equal maps preserves the action on the numbered branches. -/
+@[simp]
+theorem congrMaps_boundaryAction (hC : C = C') (hF : F = F') :
+    (R.congrMaps hC hF).boundaryAction = R.boundaryAction := by
+  subst C' F'
+  rfl
+
+/-- Transport along equal maps preserves the branch orientation. -/
+@[simp]
+theorem congrMaps_orientation (hC : C = C') (hF : F = F') :
+    (R.congrMaps hC hF).orientation = R.orientation := by
+  simp only [orientation_def, congrMaps_boundaryAction]
+
+end Congr
+
 /-- A single fiber isomorphism determines the forward action on the numbered boundary. -/
 theorem boundaryAction_eq_of_fiberIso_eq
     (R' : GeometricRealization P₀ P₁ C F) (c : CenterPoint C)
