@@ -222,12 +222,12 @@ theorem imagePairIso_hom_comp (e : P.pair ≅ Q.pair) :
     boundaryImageIso_hom_comp_assoc, boundaryImageIso_hom_comp] using
       MarkedSurface.boundaryIso_hom_comp e
 
-/-- An isomorphism fixing the numbered branches also fixes them on the boundary subschemes. -/
-theorem imagePairIso_boundaryAction (e : P.pair ≅ Q.pair)
-    (hact : letI : PrestableFamily (P.boundary ↘ S) := P.prestable
-            letI : PrestableFamily (Q.boundary ↘ S) := Q.prestable
-            (boundaryIso e).boundaryCycleAction P.cycle Q.cycle = 1) :
-    (imagePairIso e).boundaryCycleAction (imageCycle P) (imageCycle Q) = DihedralGroup.r 0 := by
+/-- Transport to the image subschemes preserves the entire action on the numbered branches. -/
+theorem imagePairIso_boundaryAction (e : P.pair ≅ Q.pair) :
+    letI : PrestableFamily (P.boundary ↘ S) := P.prestable
+    letI : PrestableFamily (Q.boundary ↘ S) := Q.prestable
+    (imagePairIso e).boundaryCycleAction (imageCycle P) (imageCycle Q) =
+      (boundaryIso e).boundaryCycleAction P.cycle Q.cycle := by
   let : PrestableFamily (P.boundary ↘ S) := P.prestable
   let : PrestableFamily (Q.boundary ↘ S) := Q.prestable
   let : (boundaryImageIso P).symm.hom.IsOver S :=
@@ -242,7 +242,38 @@ theorem imagePairIso_boundaryAction (e : P.pair ≅ Q.pair)
       have hinv := (boundaryImageIso P).boundaryCycleAction_symm P.cycle (imageCycle P)
       rw [boundaryCycleAction_boundaryImageIso, inv_one] at hinv
       rw [Iso.boundaryCycleAction_trans (boundaryIso e) P.cycle Q.cycle, hinv,
-        boundaryCycleAction_boundaryImageIso, hact, mul_one, mul_one, DihedralGroup.one_def]
+        boundaryCycleAction_boundaryImageIso, one_mul, mul_one]
+
+/-- The numbering enumerates exactly the prime divisors supported on the boundary. -/
+theorem mem_range_boundaryPrime_iff (P : MarkedSurface k n B₀ X₀)
+    (hD : D[P].IsEffectiveCartier) (x : CodimensionOnePoint P.surface) :
+    x ∈ Set.range (P.boundaryPrime hD) ↔ (x : P.surface) ∈ D[P].support := by
+  have hcomp : P.boundaryPrime hD = D[P].boundaryPrimeEmbedding ∘ P.numberedBoundaryPrimes hD := by
+    funext j
+    exact Subtype.ext (by
+      simp only [Function.comp_apply, coe_boundaryPrimeEmbedding, numberedBoundaryPrimes_apply_val])
+  rw [hcomp, (P.numberedBoundaryPrimes_surjective hD).range_comp, range_boundaryPrimeEmbedding]
+  exact Iff.rfl
+
+/-- The Picard marking identifies the orthogonal to the numbered boundary classes with
+the geometric boundary orthogonal. -/
+theorem picardMarking_mem_boundaryOrthogonal_iff (P : MarkedSurface k n B₀ X₀)
+    (hD : D[P].IsEffectiveCartier) (x : L₀) :
+    letI : P.surface.IsProjectiveOver k := P.projective
+    letI : SmoothOfRelativeDimension 2 (P.surface ↘ S) := P.smooth
+    P.picardMarking x ∈ D[P].boundaryOrthogonal k ↔
+      x ∈ B₀.orthogonal (Submodule.span ℤ (Set.range (P.boundaryClass hD))) := by
+  let : P.surface.IsProjectiveOver k := P.projective
+  let : SmoothOfRelativeDimension 2 (P.surface ↘ S) := P.smooth
+  let := (P.surface ↘ S).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two
+  let U : P.surface.Opens := D[P].support.compl
+  have hU (p : CodimensionOnePoint P.surface) :
+      (p : P.surface) ∉ U ↔ p ∈ Set.range (P.boundaryPrime hD) :=
+    not_not.trans (P.mem_range_boundaryPrime_iff hD p).symm
+  rw [IdealSheafData.boundaryOrthogonal_def D[P] k]
+  rw [U.primeDivisorSpanCompl_eq_span_of_mem_iff _ hU]
+  simp only [LinearMap.BilinForm.orthogonal, Submodule.mem_orthogonalBilin_span,
+    Set.forall_mem_range, ← P.picardMarking_boundaryClass hD, P.intersectionBilinForm_picardMarking]
 
 end BoundaryImage
 
