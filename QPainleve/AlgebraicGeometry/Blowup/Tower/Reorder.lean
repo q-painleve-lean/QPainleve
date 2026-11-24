@@ -219,21 +219,18 @@ theorem exists_prepend_closed_point_blowup (hT : IsClosedPointTower X T)
   obtain ⟨⟨R⟩, q, hq, hqp, hA⟩ := hT.exists_rebase_of_notMem_range_baseCenter hp h
   refine ⟨q, _, R.tower, R.iso, R.isClosedPointTower, hq, hqp, hA, R.over_base, R.baseCenter hT, ?_⟩
   intro a x
-  have hmark :
-      pullback R.iso.hom (((BlowupTower.nil.snoc I).append R.tower).picardHom
-        (a, Fin.addCases (fun _ : Fin 1 ↦ 0) x)).toMul =
-        pullback A.blowupToBase (T.picardHom (a, x)).toMul := by
-    rw [picardHom_append, picardHom_apply_toMul, picardHom_snoc_apply_toMul,
-      picardHom_nil, picardHom_apply_toMul T]
-    simp only [Fin.addCases_left, Fin.addCases_right, zpow_zero, mul_one, pullback_mul,
-      pullback_comp]
-    have hbase : R.iso.hom ≫ R.tower.toBase ≫ I.blowupToBase = A.blowupToBase ≫ T.toBase :=
-      R.over_base
-    rw [hbase]
-    rw [← pullbackHom_apply (f := R.iso.hom), ← pullbackHom_apply (f := A.blowupToBase)]
-    simp only [map_prod, map_zpow, pullbackHom_apply, R.exceptional]
-    rfl
-  rw [← pullback_comp R.iso.inv, ← hmark, pullback_comp, Iso.inv_hom_id, pullback_id]
+  have hbase : (R.iso.inv ≫ A.blowupToBase) ≫ T.toBase = R.tower.toBase ≫ I.blowupToBase := by
+    rw [Category.assoc, ← R.over_base, Iso.inv_hom_id_assoc]
+  have hE (j : Fin n) : pullback (R.iso.inv ≫ A.blowupToBase) (T.exceptionalClass j) =
+      R.tower.exceptionalClass j := by
+    rw [← pullback_comp, ← R.exceptional, pullback_comp, Iso.inv_hom_id, pullback_id]
+  have ha : (BlowupTower.nil.snoc I).picardHom (a, 0) =
+      Additive.ofMul (pullback I.blowupToBase a.toMul) := by
+    apply Additive.toMul.injective
+    rw [picardHom_apply_zero, toBase_snoc, toBase_nil, Category.comp_id, toMul_ofMul]
+  rw [pullback_picardHom (T := R.tower) (T' := T) hbase hE, picardHom_append]
+  simp only [Fin.addCases_left, Fin.addCases_right]
+  exact congrArg (fun b ↦ (R.tower.picardHom (b, x)).toMul) ha.symm
 
 /-- Move the first center over a specified closed point to the beginning of a point tower.
 The final isomorphism commutes with the projection to the base and sends the corresponding
