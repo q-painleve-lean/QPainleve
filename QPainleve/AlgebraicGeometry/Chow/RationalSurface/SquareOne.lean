@@ -188,8 +188,10 @@ theorem exists_iso_projectivePlane_of_square_one_linear_system
     hA hsq hcan
   obtain ⟨f, hf, hfin, ha⟩ := L.exists_finite_to_projectivePlane hA hglob hnum
   have : f.IsOver S := ⟨hf⟩
-  have : IsIso f := f.isIso_of_finite_pullback_hyperplane_square_one Equiv.ulift hX H rfl
-    (by rw [ha]; exact hsq)
+  have : IsIso f := (f.isIso_iff_hyperplane_pullback_square_eq_one hX.ge Equiv.ulift).mpr (by
+    change B (pullback f (LineBundleClass.mk H)) (pullback f (LineBundleClass.mk H)) = 1
+    rw [ha]
+    exact hsq)
   exact ⟨asIso f, hf, ha⟩
 
 end AlgebraicGeometry.Scheme.IdealSheafData.IsEffectiveCartier

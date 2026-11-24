@@ -8,7 +8,7 @@ module
 public import TauCeti.AlgebraicGeometry.Cohomology.Basic
 public import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.ProjectiveOver
 public import Mathlib.Algebra.Category.ModuleCat.Sheaf.Quasicoherent
-import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.AffineCover
+import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.AffineCover.Basic
 import TauCeti.AlgebraicGeometry.Cohomology.ClosedImmersion.Basic
 import TauCeti.AlgebraicGeometry.Cohomology.FiniteCover
 import TauCeti.AlgebraicGeometry.Modules.FinitePresentation.Basic

@@ -87,6 +87,13 @@ theorem internalBlowupTower_reindex_swap :
       internalBlowupTower b s c := by
   simp [internalBlowupTower_eq_alongBoundary]
 
+/-- In any lattice basis the same ordered tower is obtained by reparametrizing its
+individual centers. Equality retains the intermediate blowups and the strict boundary. -/
+theorem exists_internalBlowupTower_eq_of_basis (d : Module.Basis (Fin 2) ℤ N) :
+    ∃ a : Fin n → ℂˣ, internalBlowupTower d s a = internalBlowupTower b s c := by
+  choose a ha using fun j ↦ (s j).exists_internalCenter_eq_of_basis d b (c j)
+  exact ⟨a, congrArg (alongBoundary (boundary).subschemeι) (funext ha)⟩
+
 /-- The empty list of internal centers leaves the toric model unchanged. -/
 @[simp]
 theorem internalBlowupTower_zero (s : Fin 0 → Φ.Ray) (c : Fin 0 → ℂˣ) :

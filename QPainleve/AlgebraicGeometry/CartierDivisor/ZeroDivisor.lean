@@ -267,6 +267,16 @@ lemma toLineBundleClass_zeroDivisor {s : Γ(L.obj, ⊤)} (hs : s ≠ 0) :
   exact (congrArg Inv.inv ((dual L).mk_toInvertibleSheaf_imageIdealSheaf _)).trans
     (by rw [← LineBundleClass.inv_mk, inv_inv])
 
+/-- The divisor bundle dual to the zero ideal of a nonzero section has the class of
+the bundle of which it is a section. -/
+@[simp]
+theorem mk_dual_toInvertibleSheaf_zeroIdeal {s : Γ(L.obj, ⊤)} (hs : s ≠ 0) :
+    LineBundleClass.mk (L.isEffectiveCartier_zeroIdeal hs).toInvertibleSheaf.dual =
+      LineBundleClass.mk L := by
+  rw [← LineBundleClass.inv_mk, ←
+    Scheme.IdealSheafData.IsEffectiveCartier.toLineBundleClass_toCartierDivisor]
+  exact L.toLineBundleClass_zeroDivisor hs
+
 /-- Sections cutting out the same divisor differ by multiplication by a global unit. -/
 theorem zeroDivisor_eq_iff_exists_smul {s t : Γ(L.obj, ⊤)} (hs : s ≠ 0) (ht : t ≠ 0) :
     L.zeroDivisor hs = L.zeroDivisor ht ↔ ∃ a : Γ(X, ⊤)ˣ, (a : Γ(X, ⊤)) • t = s := by
