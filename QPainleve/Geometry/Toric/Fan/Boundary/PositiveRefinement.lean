@@ -7,7 +7,7 @@ module
 
 public import QPainleve.Geometry.Toric.Fan.Boundary.Refinement
 
-import QPainleve.AlgebraicGeometry.Curves.Node.Period.Orientation
+import QPainleve.Geometry.Toric.Fan.Boundary.CycleAction
 import QPainleve.Geometry.Toric.Fan.Boundary.Node
 import QPainleve.Geometry.Toric.Fan.Boundary.Period
 import QPainleve.Geometry.Toric.Fan.CyclicOrder
@@ -67,25 +67,15 @@ theorem cycleOrientationSign_refl_of_positive_numberings
     (hpos : ∀ j, b.detDualEquiv (r j).primitiveGenerator (r (j + 1)).primitiveGenerator = 1)
     (hpos' : ∀ j, b.detDualEquiv (r' j).primitiveGenerator (r' (j + 1)).primitiveGenerator = 1) :
     cycleOrientationSign ((Iso.refl C[Φ]).boundaryCycleAction A A') = 1 := by
-  let g := (Iso.refl C[Φ]).boundaryCycleAction A A'
-  have hmap (j : ZMod n) : r' (cycleVertexPerm g j) = r j := by
-    have hr := (Iso.refl C[Φ]).apply_componentGenericPoint A A' j
-    simp only [Iso.refl_hom, Scheme.Hom.id_base, TopCat.coe_id, id_eq] at hr
-    have he : A.componentGenericPoint j = A'.componentGenericPoint (r'.symm (r j)) := by
-      rw [A.componentGenericPoint_def, A'.componentGenericPoint_def, hA, hA',
-        Equiv.apply_symm_apply]
-    rw [A'.componentGenericPoint_injective (hr.symm.trans he), Equiv.apply_symm_apply]
-  cases hg : g with
-  | r j => simpa only [g, cycleOrientationSign_r] using congrArg cycleOrientationSign hg
-  | sr j =>
-    have h₀ : r' (-j) = r 0 := by simpa only [hg, cycleVertexPerm_sr_apply, sub_zero] using hmap 0
-    have h₁ : r' (-j - 1) = r 1 := by simpa only [hg, cycleVertexPerm_sr_apply] using hmap 1
-    have hn := hpos' (-j - 1)
-    rw [sub_add_cancel, h₁, h₀, b.detDualEquiv_swap] at hn
-    have hz := hpos 0
-    rw [zero_add] at hz
-    rw [hz] at hn
-    norm_num at hn
+  have hrefl : (FanEquiv.refl Φ).boundaryIso hΦ₀ hΦ₀ = Iso.refl C[Φ] := by
+    apply Iso.ext
+    apply (cancel_mono (D[Φ]).subschemeι).mp
+    rw [FanEquiv.boundaryIso_hom_subschemeι, FanEquiv.toFanHom_refl, FanHom.algebraicMap_id,
+      Iso.refl_hom, Category.comp_id, Category.id_comp]
+  simpa only [hrefl, Bool.false_eq_true, ↓reduceIte] using
+    (FanEquiv.refl Φ).cycleOrientationSign_boundaryIso hΦ hΦ A A' hA hA' b b hpos hpos'
+      false (fun _ _ ↦ by simp only [FanEquiv.refl_latticeEquiv, AddEquiv.refl_apply,
+        Bool.false_eq_true, ↓reduceIte])
 
 private def twoUnit : ℂˣ := Units.mk0 2 (by norm_num)
 

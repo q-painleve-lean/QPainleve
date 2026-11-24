@@ -95,18 +95,6 @@ variable [PrestableFamily (D[Φ,hΦ₀] ↘ S)] [PrestableFamily (D[Ψ,hΨ₀] �
 local notation "hΩ₀" => Nonempty.map (FanEquiv.coneEquiv e) hΨ₀
 local notation "g" => FanEquiv.boundaryIso e hΨ₀ hΩ₀
 
-omit hΦ₀ hΨ₀ [PrestableFamily (D[Φ,hΦ₀] ↘ S)] [PrestableFamily (D[Ψ,hΨ₀] ↘ S)] in
-include e hcΦ hcΨ hΦ hΨ in
-private theorem FanEquiv.exists_common_regular_subdivision_of_complete (b : Basis (Fin 2) ℤ N) :
-    ∃ Δ : Fan i, Δ.IsSubdivision Φ ∧ Δ.IsSubdivision Ω ∧ Δ.IsRegular := by
-  have hcΩ := e.isComplete_iff.mpr hcΨ
-  have hs : Φ.support = Ω.support := by
-    ext x
-    exact iff_of_true (Φ.mem_support.mpr ((Φ.isComplete_iff).mp hcΦ x))
-      (Ω.mem_support.mpr ((Ω.isComplete_iff).mp hcΩ x))
-  exact Φ.exists_regular_common_subdivision Ω hΦ (e.isRegular_iff.mpr hΨ)
-    ((Module.finrank_eq_card_basis b).trans (Fintype.card_fin 2)) hs
-
 include hcΦ hcΨ hu hv hdet hpos hpos' in
 /-- A common regular refinement of two complete toric surfaces in identified oriented
 lattices has a single numbering that extends both positive boundary numberings.
