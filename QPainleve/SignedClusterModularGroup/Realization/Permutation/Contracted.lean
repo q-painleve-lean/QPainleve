@@ -222,46 +222,64 @@ local notation "G" => fun y ↦ MarkedSurface.compEvaluation
   (F (y ≫ CategoryTheory.Iso.inv (Quiver.Path.centerIsoOver ℂ w))) (renameX(σ))
 local notation "Dₘ(" M ")" => Scheme.Hom.ker (Over.Hom.left (Arrow.hom (MarkedSurface.pair M)))
 
+variable {U : (scheme ℂ (Fin r → ℤ)).Opens}
+
+local notation "C'[" d "," le "]" => Scheme.PartialMap.restrict C U d le
+local notation "src'[" d "," le "](" x ")" =>
+  x ≫ Scheme.PartialMap.domainSource (X := Centers[r]) (Y := Centers[r]) (C'[d,le])
+local notation "dst'[" d "," le "](" x ")" =>
+  x ≫ Scheme.PartialMap.domainTarget (X := Centers[r]) (Y := Centers[r]) (C'[d,le])
+
 /-- Start with the prescribed nodal contractions of a marked family at the source centers.
-A label permutation realizes the independent X relabeling over its simultaneous center
-open, with identity marked Picard pullback and identity action on the numbered branches.
+A label permutation realizes the independent X relabeling on any dense open of its
+simultaneous center domain, with identity marked Picard pullback and branch action.
 At every target center the same nodal tower presents the relabeled marked pair, with the
 toric Picard coordinate fixed and all exceptional coordinates relabeled. -/
 theorem exists_permute_contracted (hcharge : P.charge = rayChargeMap s)
-    (hmodel : ∀ x : CenterPoint (U := Centers[r]) (V := Centers[r]) C,
-      ∃ p : ContractedToricFiber b s hΦ T o J χ(src(x)) (F (src(x))),
-      ∃ (Y : Scheme) (l : ℕ) (Q : BlowupTower (F (src(x))).surface l Y)
-        (e : Y ≅ (model[s,χ(src(x))]).1),
-        IsNodalBoundaryTower Dₘ(F (src(x))) ((F (src(x))).surface ↘ S) (𝟙 _) Q ∧
+    (hU : Dense (U : Set (scheme ℂ (Fin r → ℤ)))) (hle : U ≤ (C).domain)
+    (hmodel : ∀ x : CenterPoint (U := Centers[r]) (V := Centers[r]) (C'[hU,hle]),
+      ∃ p : ContractedToricFiber b s hΦ T o J χ(src'[hU,hle](x)) (F (src'[hU,hle](x))),
+      ∃ (Y : Scheme) (l : ℕ) (Q : BlowupTower (F (src'[hU,hle](x))).surface l Y)
+        (e : Y ≅ (model[s,χ(src'[hU,hle](x))]).1),
+        IsNodalBoundaryTower Dₘ(F (src'[hU,hle](x))) ((F (src'[hU,hle](x))).surface ↘ S) (𝟙 _) Q ∧
         p.projection = e.inv ≫ Q.toBase) :
-    ∃ R : GeometricRealization (T₀ := Centers[r]) (T₁ := Centers[r]) F (G) C
+    ∃ R : GeometricRealization (T₀ := Centers[r]) (T₁ := Centers[r]) F (G) (C'[hU,hle])
         ((w).xRationalMap ℂ),
       R.picard = .refl B ∧ R.boundaryAction = 1 ∧
-      ∀ x : CenterPoint (U := Centers[r]) (V := Centers[r]) C,
-        ∃ q : ContractedToricFiber b (s ∘ σ) hΦ T o J' χ(dst(x)) ((G) (dst(x))),
-        ∃ (Y : Scheme) (l : ℕ) (Q : BlowupTower ((G) (dst(x))).surface l Y)
-          (e : Y ≅ (model[s ∘ σ,χ(dst(x))]).1),
-          IsNodalBoundaryTower Dₘ((G) (dst(x))) (((G) (dst(x))).surface ↘ S) (𝟙 _) Q ∧
+      ∀ x : CenterPoint (U := Centers[r]) (V := Centers[r]) (C'[hU,hle]),
+        ∃ q : ContractedToricFiber b (s ∘ σ) hΦ T o J' χ(dst'[hU,hle](x)) ((G) (dst'[hU,hle](x))),
+        ∃ (Y : Scheme) (l : ℕ) (Q : BlowupTower ((G) (dst'[hU,hle](x))).surface l Y)
+          (e : Y ≅ (model[s ∘ σ,χ(dst'[hU,hle](x))]).1),
+          IsNodalBoundaryTower Dₘ((G) (dst'[hU,hle](x)))
+            (((G) (dst'[hU,hle](x))).surface ↘ S) (𝟙 _) Q ∧
           q.projection = e.inv ≫ Q.toBase := by
-  have : (((w).centerIso ℂ).hom.toPartialMap).IsOver (Centers[r]).hom (Centers[r]).hom :=
-    Scheme.Hom.isOver_toPartialMap ((w).centerIso_hom_structureMap ℂ)
-  let R := permute E σ F
-  have htop : (w).centerOpen ℂ P ≤ (((w).centerIso ℂ).hom.toPartialMap).domain := le_top
-  let R' := R.restrict ((w).centerOpen ℂ P) ((w).dense_centerOpen P) htop
-  let U := R'.congrMaps (Quiver.Path.centerPartialMap_eq_restrict (K := ℂ) w P).symm rfl
-  exact ⟨U, (congrMaps_picard _ _ _).trans
-      ((restrict_picard _ _ _ _).trans (permute_picard E σ F)),
-    (congrMaps_boundaryAction _ _ _).trans
-      ((restrict_boundaryAction _ _ _ _).trans (permute_boundaryAction E σ F)), fun x ↦ by
-      have hx : dst(x) ≫ ((w).centerIsoOver ℂ).inv = src(x) := by
-        rw [permute_target_point σ P x, Category.assoc, Iso.hom_inv_id, Category.comp_id]
-      dsimp only
-      rw [hx]
-      obtain ⟨p, Y, l, Q, e, hQ, hp⟩ := hmodel x
-      obtain ⟨q, f, hq, -⟩ := p.exists_reindex σ (permute_target_centers σ P x)
-        (fun a b hab _ ↦ permute_order_condition σ P hcharge x a b hab)
-      have he := hq.trans (congrArg (f.inv ≫ ·) hp)
-      exact ⟨q, Y, l, Q, e ≪≫ f, hQ, he.trans (Category.assoc _ _ _).symm⟩⟩
+  let lift (x : CenterPoint (U := Centers[r]) (V := Centers[r]) (C'[hU,hle])) :
+      CenterPoint (U := Centers[r]) (V := Centers[r]) C :=
+    x ≫ (C).restrictDomainHom (X := Centers[r]) (Y := Centers[r]) U hU hle
+  have hs (x) : src(lift x) = src'[hU,hle](x) := by
+    simp only [lift, Category.assoc, Scheme.PartialMap.restrictDomainHom_source]
+  have ht (x) : dst(lift x) = dst'[hU,hle](x) := by
+    simp only [lift, Category.assoc, Scheme.PartialMap.restrictDomainHom_target]
+  have hcenter (x : CenterPoint (U := Centers[r]) (V := Centers[r]) (C'[hU,hle])) :
+      dst'[hU,hle](x) ≫ ((w).centerIsoOver ℂ).inv = src'[hU,hle](x) := by
+    rw [← ht x, ← hs x, permute_target_point σ P (lift x), Category.assoc, Iso.hom_inv_id,
+      Category.comp_id]
+  refine ⟨{ picard := .refl B, boundaryAction := 1, fiber := ?_ }, rfl, rfl, ?_⟩
+  · intro x
+    rw [hcenter x, Quiver.Path.xRationalMap_permute]
+    exact FiberRealization.compEvaluation (F (src'[hU,hle](x))) (renameX(σ))
+  intro x
+  dsimp only
+  rw [hcenter x]
+  obtain ⟨p, Y, l, Q, e, hQ, hp⟩ := hmodel x
+  have hc : centers(χ(dst'[hU,hle](x))) = centers(χ(src'[hU,hle](x))) ∘ σ := by
+    rw [← ht x, ← hs x]
+    exact permute_target_centers σ P (lift x)
+  obtain ⟨q, f, hq, -⟩ := p.exists_reindex σ hc (fun a b hab _ ↦ by
+    rw [← hs x]
+    exact permute_order_condition σ P hcharge (lift x) a b hab)
+  have he := hq.trans (congrArg (f.inv ≫ ·) hp)
+  exact ⟨q, Y, l, Q, e ≪≫ f, hQ, he.trans (Category.assoc _ _ _).symm⟩
 
 end GeometricRealization
 
