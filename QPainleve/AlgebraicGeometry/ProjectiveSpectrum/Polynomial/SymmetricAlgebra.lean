@@ -53,12 +53,14 @@ variable {R M : Type (max u v)} [CommRing R] [AddCommMonoid M] [Module R M] {ι 
 local notation "𝒮" => TauCeti.SymmetricAlgebra.homogeneousSubmodule R M
 local notation "𝒫" => MvPolynomial.homogeneousSubmodule ι R
 
-private def toPolynomialGradedHom (b : Basis ι R M) : 𝒮 →+*ᵍ 𝒫 where
+/-- A basis identifies the symmetric algebra with polynomials in the same grading. -/
+def toPolynomialGradedHom (b : Basis ι R M) : 𝒮 →+*ᵍ 𝒫 where
   toRingHom := (SymmetricAlgebra.equivMvPolynomial b).toRingHom
   map_mem {i x} hx := (MvPolynomial.mem_homogeneousSubmodule _ _).mpr
     ((SymmetricAlgebra.equivMvPolynomial_isHomogeneous_iff R M b i x).mpr hx)
 
-private def fromPolynomialGradedHom (b : Basis ι R M) : 𝒫 →+*ᵍ 𝒮 where
+/-- The graded polynomial map sending each variable to its basis vector in the symmetric algebra. -/
+def fromPolynomialGradedHom (b : Basis ι R M) : 𝒫 →+*ᵍ 𝒮 where
   toRingHom := (SymmetricAlgebra.equivMvPolynomial b).symm.toRingHom
   map_mem {i x} hx := (SymmetricAlgebra.equivMvPolynomial_isHomogeneous_iff R M b i _).mp
     (by
@@ -68,9 +70,25 @@ private def fromPolynomialGradedHom (b : Basis ι R M) : 𝒫 →+*ᵍ 𝒮 wher
       rw [h]
       exact (MvPolynomial.mem_homogeneousSubmodule _ _).mp hx)
 
-private theorem toPolynomialGradedHom_surjective (b : Basis ι R M) :
+/-- The forward graded map is the basis-induced algebra equivalence on elements. -/
+@[simp]
+theorem toPolynomialGradedHom_apply (b : Basis ι R M) (x : SymmetricAlgebra R M) :
+    b.toPolynomialGradedHom x = SymmetricAlgebra.equivMvPolynomial b x := (rfl)
+
+/-- The reverse graded map acts by the inverse basis-induced algebra equivalence. -/
+@[simp]
+theorem fromPolynomialGradedHom_apply (b : Basis ι R M) (x : MvPolynomial ι R) :
+    b.fromPolynomialGradedHom x = (SymmetricAlgebra.equivMvPolynomial b).symm x := (rfl)
+
+/-- The graded comparison onto the polynomial algebra is surjective. -/
+theorem toPolynomialGradedHom_surjective (b : Basis ι R M) :
     Function.Surjective (toPolynomialGradedHom b) :=
   (SymmetricAlgebra.equivMvPolynomial b).surjective
+
+/-- The graded comparison onto the symmetric algebra is surjective. -/
+theorem fromPolynomialGradedHom_surjective (b : Basis ι R M) :
+    Function.Surjective (fromPolynomialGradedHom b) :=
+  (SymmetricAlgebra.equivMvPolynomial b).symm.surjective
 
 /-- The isomorphism from polynomial projective space to the projective spectrum of the
 symmetric algebra obtained by choosing a basis of the module. -/
@@ -79,10 +97,17 @@ def polynomialProjIso (b : Basis ι R M) : Proj 𝒫 ≅ Proj 𝒮 :=
     (SymmetricAlgebra.equivMvPolynomial b).apply_symm_apply
     (SymmetricAlgebra.equivMvPolynomial b).symm_apply_apply
 
-private theorem polynomialProjIso_hom (b : Basis ι R M) :
+/-- The forward projective comparison pulls back by the graded map to polynomials. -/
+theorem polynomialProjIso_hom (b : Basis ι R M) :
     b.polynomialProjIso.hom = map (toPolynomialGradedHom b)
       (HomogeneousIdeal.irrelevant_le_map_of_surjective _ (toPolynomialGradedHom_surjective b)) :=
   mapIso_hom _ _ _ _
+
+/-- The inverse projective comparison pulls variables back to the corresponding basis vectors. -/
+theorem polynomialProjIso_inv (b : Basis ι R M) :
+    b.polynomialProjIso.inv = map (fromPolynomialGradedHom b)
+      (HomogeneousIdeal.irrelevant_le_map_of_surjective _ b.fromPolynomialGradedHom_surjective) :=
+  mapIso_inv _ _ _ _
 
 /-- The basis comparison preserves the projective structure morphisms. -/
 @[reassoc (attr := simp)]
