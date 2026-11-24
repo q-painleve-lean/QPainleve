@@ -65,14 +65,14 @@ theorem fixes_codimensionOne_preimage_blowup_iff {p : X} (hp : IsClosed ({p} : S
     {I : X.IdealSheafData} (hI : I = (X.fromSpecResidueField p).ker)
     (e : X ≅ X) (hcenter : I.comap e.hom = I) (B : Set X) :
     (∀ y : CodimensionOnePoint I.blowup, I.blowupToBase y ∈ B →
-      (I.blowupIso e hcenter).hom y = y) ↔
+      (blowupIso e hcenter.symm).hom y = y) ↔
       ∀ x : CodimensionOnePoint X, (x : X) ∈ B → e.hom x = x := by
   have : Smooth s := SmoothOfRelativeDimension.smooth 2 s
   have : IsLocallyNoetherian X := LocallyOfFiniteType.isLocallyNoetherian s
   have : IsRegularLocalRing (X.presheaf.stalk p) := isRegularLocalRing_stalk_of_smooth s p
   have hdim := ((smoothOfRelativeDimension_iff_ringKrullDim_stalk_eq s 2).mp inferInstance).2 p hp
   let π := I.blowupToBase
-  let g := I.blowupIso e hcenter
+  let g := blowupIso e hcenter.symm
   have hsupport : (I.support : Set X) = {p} := by
     rw [hI, Scheme.Hom.support_ker, Scheme.range_fromSpecResidueField, hp.closure_eq]
   have he : e.hom p = p := by
@@ -82,7 +82,7 @@ theorem fixes_codimensionOne_preimage_blowup_iff {p : X} (hp : IsClosed ({p} : S
       Set.mem_singleton_iff] using hh
   have hcomm (y : I.blowup) : π (g.hom y) = e.hom (π y) := by
     simpa only [Scheme.Hom.comp_apply] using
-      congrArg (fun f : I.blowup ⟶ X ↦ f y) (I.blowupIso_hom_blowupToBase e hcenter)
+      congrArg (fun f : I.blowup ⟶ X ↦ f y) (blowupIso_hom_blowupToBase e hcenter.symm)
   have hiso {x : X} (hx : x ≠ p) : x ∈ π.isoLocus :=
     (π.le_isoLocus_iff.mpr (I.isIso_blowupToBase_restrict_compl_support))
       (by simpa only [← SetLike.mem_coe, Closeds.coe_compl, hsupport, Set.mem_compl_iff,

@@ -68,8 +68,8 @@ private theorem Rebase.pullback_exceptional {I : X.IdealSheafData} (R : Rebase I
   rw [pullback_comp, h, pullback_blowupExceptionalClass_blowupMap]
 
 private def Rebase.nil (I : X.IdealSheafData) : Rebase I (.nil (X := X)) := by
-  let e := I.blowupIso (Iso.refl _) (by simp [toBase_nil] :
-    I.comap (Iso.refl X).hom = I.comap (BlowupTower.nil (X := X)).toBase)
+  let e := blowupIso (Iso.refl X) (by simp [toBase_nil] :
+    I.comap (BlowupTower.nil (X := X)).toBase = I.comap (Iso.refl X).hom)
   refine ⟨_, .nil, .nil, e, ?_, fun j ↦ j.elim0, fun _ j ↦ j.elim0⟩
   simp [e, toBase_nil]
 
@@ -89,8 +89,7 @@ private def Rebase.snoc {I : X.IdealSheafData} (R : Rebase I T) (J : Y.IdealShea
     simp [e, E.isLift.hom_toBase, toBase_snoc, toBase_nil]
   have hcomap : I.comap (T.snoc J).toBase = A.comap J.blowupToBase := by
     rw [toBase_snoc, comap_comp]
-  let u := (A.comap J.blowupToBase).blowupIso (Iso.refl _) (by simpa only
-    [Iso.refl_hom, comap_id] using hcomap.symm)
+  let u := blowupIso (Iso.refl _) (hcomap.trans (comap_id _).symm)
   have hu : u.hom ≫ (A.comap J.blowupToBase).blowupToBase =
       (I.comap (T.snoc J).toBase).blowupToBase := by simp [u]
   have hv : u.hom ≫ A.blowupMap J.blowupToBase ≫ (I.comap T.toBase).blowupToBase =
@@ -195,13 +194,15 @@ private theorem exists_move_last_to_front {J : Y.IdealSheafData}
       rw [hI, ← SetLike.mem_coe, Scheme.support_ker_fromSpecResidueField_of_isClosed hr] at hmem
       exact hmem
     rwa [hqr]
-  let d := (J[p].comap T.toBase).blowupIso (Iso.refl _) (by simpa using hqI)
+  have hcenter : (J[p].comap T.toBase).comap (Iso.refl Y).hom = J[q] :=
+    (comap_id _).trans hqI
+  let d := blowupIso (Iso.refl Y) hcenter.symm
   have hd : d.hom ≫ (J[p].comap T.toBase).blowupToBase = J[q].blowupToBase := by simp [d]
   refine ⟨_, R.tower, d ≪≫ R.iso, R.isClosedPointTower, ?_, ?_, ?_, ?_⟩
   · simp only [Iso.trans_hom, Category.assoc, R.over_base, reassoc_of% hd, toBase_snoc]
   · rw [Iso.trans_hom, ← pullback_comp, R.pullback_exceptional, exceptionalClass_snoc_last,
       ← blowupExceptionalClass_def]
-    exact pullback_blowupExceptionalClass _ _ _
+    exact pullback_blowupExceptionalClass _ _ hcenter
   · simpa only [baseCenter_snoc_castSucc] using R.baseCenter hT'
   · intro i
     rw [Iso.trans_hom, ← pullback_comp, R.exceptional, pullback_comp, hd,

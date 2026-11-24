@@ -137,7 +137,7 @@ theorem exists_iso_blowup_projectivePlane_of_hirzebruchOne
   obtain ⟨h₀, f, -, hf, -⟩ := Ψ.exists_iso_blowup_starSubdivisionAlong hΨ σ hN hσ
   let hstar := Ψ.starSubdivisionAlong_isSubdivision hΨ σ.property h₀
   let u := Ψ.starSubdivisionAlongRay hΨ σ.property h₀
-  let e := f ≪≫ p.ker.blowupIso g hcenter
+  let e := f ≪≫ blowupIso g hcenter.symm
   have hproj : e.hom ≫ p.ker.blowupToBase = hstar.toFanHom.algebraicMap ≫ g.hom := by
     rw [Iso.trans_hom, Category.assoc, blowupIso_hom_blowupToBase, ← Category.assoc, hf]
   refine ⟨d, hstar, u, e, hd₀, hd₁, hnew, ?_, ?_, hproj, ?_, ?_, .along hΨ σ hσ⟩

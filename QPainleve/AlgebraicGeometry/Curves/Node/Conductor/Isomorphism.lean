@@ -51,7 +51,7 @@ theorem singularLocusIso_hom_subschemeι :
 
 /-- An isomorphism of relative curves identifies their blowups along the singular locus. -/
 def singularLocusBlowupIso : (X.singularLocus R).blowup ≅ (Y.singularLocus R).blowup :=
-  (Y.singularLocus R).blowupIso e (Scheme.singularLocus_eq_comap_of_etale (R := R) e.hom).symm
+  Scheme.IdealSheafData.blowupIso e (Scheme.singularLocus_eq_comap_of_etale (R := R) e.hom)
 
 /-- The isomorphism of blowups lies over the original curve isomorphism. -/
 @[reassoc (attr := simp)]
@@ -130,7 +130,8 @@ theorem singularLocusIso_trans :
 theorem singularLocusBlowupIso_trans :
     (e ≪≫ f).singularLocusBlowupIso (R := R) =
       e.singularLocusBlowupIso (R := R) ≪≫ f.singularLocusBlowupIso := by
-  simp [singularLocusBlowupIso]
+  unfold singularLocusBlowupIso
+  rw [← Scheme.IdealSheafData.blowupIso_trans]
 
 /-- Induced branch isomorphisms compose. -/
 @[simp]

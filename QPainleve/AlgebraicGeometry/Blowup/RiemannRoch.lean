@@ -8,7 +8,7 @@ module
 public import QPainleve.AlgebraicGeometry.Blowup.Exceptional.Class
 public import QPainleve.AlgebraicGeometry.Blowup.Smooth
 public import QPainleve.AlgebraicGeometry.Modules.Differentials.Canonical
-public import TauCeti.AlgebraicGeometry.Chow.SurfaceIntersection
+public import TauCeti.AlgebraicGeometry.Chow.SurfaceIntersection.Basic
 public import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.ProjectiveOver
 import QPainleve.AlgebraicGeometry.Blowup.Exceptional.EulerCharacteristic
 import QPainleve.AlgebraicGeometry.Blowup.Integral

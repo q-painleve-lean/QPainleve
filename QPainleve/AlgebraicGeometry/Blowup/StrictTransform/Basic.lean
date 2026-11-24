@@ -65,7 +65,7 @@ theorem ker_blowupMap_eq_ker_blowupMap_subschemeι {D X : Scheme.{u}}
   have he : e.hom ≫ i.ker.subschemeι = i := i.toImage_imageι
   let J := I.comap i.ker.subschemeι
   have hJ : J.comap e.hom = I.comap i := by rw [← I.comap_comp, he]
-  let g := J.blowupIso e hJ
+  let g := blowupIso e hJ.symm
   have hcomp : g.hom ≫ I.blowupMap i.ker.subschemeι = I.blowupMap i := by
     apply I.eq_blowupMap
     dsimp only [g, J]
@@ -126,7 +126,7 @@ theorem comap_ker_blowupMap_subschemeι_blowupMap_of_isOpenImmersion
 transforms of the inverse-image ideals. -/
 theorem comap_ker_blowupMap_subschemeι_blowupIso {X Y : Scheme.{u}}
     (J D : Y.IdealSheafData) (e : X ≅ Y) {I : X.IdealSheafData} (hI : J.comap e.hom = I) :
-    (J.blowupMap D.subschemeι).ker.comap (J.blowupIso e hI).hom =
+    (J.blowupMap D.subschemeι).ker.comap (blowupIso e hI.symm).hom =
       (I.blowupMap (D.comap e.hom).subschemeι).ker := by
   let i := (D.comap e.hom).subschemeι
   let d := subschemeMap (D.comap e.hom) D e.hom (D.le_map_comap e.hom)
@@ -139,8 +139,8 @@ theorem comap_ker_blowupMap_subschemeι_blowupIso {X Y : Scheme.{u}}
   have hd : d ≫ D.subschemeι = i ≫ e.hom := subschemeMap_subschemeι _ _ _ _
   have hC : (J.comap D.subschemeι).comap d = I.comap i := by
     rw [← comap_comp, hd, comap_comp, hI]
-  let f := (J.comap D.subschemeι).blowupIso (asIso d) hC
-  have hw : I.blowupMap i ≫ (J.blowupIso e hI).hom = f.hom ≫ J.blowupMap D.subschemeι := by
+  let f := blowupIso (asIso d) hC.symm
+  have hw : I.blowupMap i ≫ (blowupIso e hI.symm).hom = f.hom ≫ J.blowupMap D.subschemeι := by
     apply J.blowup_hom_ext
     · simp only [Category.assoc, blowupIso_hom_blowupToBase,
         blowupMap_blowupToBase_assoc, ← hd, blowupMap_blowupToBase,

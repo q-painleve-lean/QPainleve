@@ -6,7 +6,7 @@ Authors: The QPainleve contributors
 module
 
 public import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.Picard
-public import TauCeti.AlgebraicGeometry.Chow.SurfaceIntersection
+public import TauCeti.AlgebraicGeometry.Chow.SurfaceIntersection.Basic
 
 import QPainleve.AlgebraicGeometry.Cohomology.ProjectiveSpace.EulerCharacteristic
 

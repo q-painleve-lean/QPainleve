@@ -26,6 +26,7 @@ The Cartier property for smooth sections uses Tau Ceti's
 public section
 
 open AlgebraicGeometry CategoryTheory
+open Scheme.IdealSheafData (blowupIso)
 
 universe u
 
@@ -156,7 +157,7 @@ theorem comp_boundaryι_snoc_blowupIso_hom {m : ℕ} {T' : WithBoundary i' m Y'}
     (ha : a ≫ T.boundaryι ≫ g.hom = a' ≫ T'.boundaryι)
     (J' : D'.IdealSheafData) (hJ : (J'.map T'.boundaryι).comap g.hom = J.map T.boundaryι)
     (h : J.IsEffectiveCartier) (h' : J'.IsEffectiveCartier) (hc : (J.comap a).IsEffectiveCartier) :
-    a ≫ (T.snoc J h).boundaryι ≫ ((J'.map T'.boundaryι).blowupIso g hJ).hom =
+    a ≫ (T.snoc J h).boundaryι ≫ (blowupIso g hJ.symm).hom =
       a' ≫ (T'.snoc J' h').boundaryι := by
   apply (J'.map T'.boundaryι).blowup_hom_ext
   · simpa only [Category.assoc, Scheme.IdealSheafData.blowupIso_hom_blowupToBase,
@@ -175,7 +176,7 @@ theorem boundaryι_snoc_blowupIso_hom {m : ℕ} {T' : WithBoundary i' m Y'} (g :
     (J' : D'.IdealSheafData) (hJ : J'.comap d.hom = J)
     (h : J.IsEffectiveCartier) (h' : J'.IsEffectiveCartier) :
     (T.snoc J h).boundaryι ≫
-        ((J'.map T'.boundaryι).blowupIso g (T.comap_center_eq J g d hg J' hJ)).hom =
+        (blowupIso g (T.comap_center_eq J g d hg J' hJ).symm).hom =
       d.hom ≫ (T'.snoc J' h').boundaryι := by
   simpa only [Category.id_comp] using
     T.comp_boundaryι_snoc_blowupIso_hom J g (𝟙 D) d.hom

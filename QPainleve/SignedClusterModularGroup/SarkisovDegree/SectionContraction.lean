@@ -99,7 +99,7 @@ private theorem hirzebruchOne_plane_blowup :
   have hJ : J.comap a.hom = v.ker := by
     dsimp only [J, p]
     rw [← (v ≫ a.hom).ker_eq_ker_fromSpecResidueField, v.comap_ker_comp_of_isClosedImmersion]
-  let e' := e ≪≫ J.blowupIso a hJ
+  let e' := e ≪≫ blowupIso a hJ.symm
   have he' : e'.hom ≫ J.blowupToBase =
       s.toFanHom.algebraicMap ≫ (Fan.projectivePlaneIso d Φ.lattice).hom ≫ a.hom := by
     rw [Iso.trans_hom, Category.assoc, blowupIso_hom_blowupToBase, ← Category.assoc, he,
