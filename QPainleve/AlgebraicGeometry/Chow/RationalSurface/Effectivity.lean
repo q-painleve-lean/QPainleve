@@ -9,7 +9,6 @@ public import QPainleve.AlgebraicGeometry.Chow.RationalSurface.Basic
 public import QPainleve.AlgebraicGeometry.IntersectionNumber.Nef
 public import QPainleve.AlgebraicGeometry.LineBundle.EffectiveClass
 
-import Mathlib.Data.Nat.Order.Lemmas
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Cohomology
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Intersection
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Projective
@@ -373,25 +372,6 @@ theorem anticanonical_mem_effectiveClasses (hK : 0 ≤ B K K) : -K ∈ E := by
       (by simpa only [sub_neg_eq_add, two_nsmul] using h)).elim
 
 variable [∀ x : X, UniqueFactorizationMonoid (X.presheaf.stalk x)]
-
-omit rational in
-/-- If a nef class has negative canonical degree, an effective class has a canonical
-twist that is effective while its next canonical twist is ineffective. -/
-theorem exists_last_effective_adjoint {h a : Pic}
-    (hnef : h.toMul.IsNef k f) (hK : B h K < 0) (ha : a ∈ E) :
-    ∃ n : ℕ, a + n • K ∈ E ∧ a + (n + 1) • K ∉ E := by
-  have hlarge : ∃ n : ℕ, a + n • K ∉ E := by
-    refine ⟨(B h a).toNat + 1, fun he ↦ ?_⟩
-    have hpos : 0 ≤ B h (a + ((B h a).toNat + 1) • K) := by
-      simpa only [intersectionBilinForm_apply] using
-        intersection_nonneg_of_mem_effectiveClasses k dim₂ hnef he
-    rw [map_add, map_nsmul] at hpos
-    have hm := mul_le_mul_of_nonneg_left (show B h K ≤ -1 by omega)
-      (Int.natCast_nonneg ((B h a).toNat + 1))
-    simp only [nsmul_eq_mul, mul_neg, mul_one] at hpos hm
-    omega
-  simpa only [not_not] using
-    Nat.exists_not_and_succ_of_not_zero_of_exists (by simpa using ha) hlarge
 
 omit rational [∀ x : X, UniqueFactorizationMonoid (X.presheaf.stalk x)] in
 private theorem exists_positive_class_of_canonical_square_neg {h : Pic}

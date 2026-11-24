@@ -168,7 +168,8 @@ private theorem exists_prime_with_ineffective_adjoint_of_irreducible_anticanonic
       (by simpa only [intersectionBilinForm_apply, toMul_ofMul] using hnn)
   have hneg : B (-K) K < 0 := by simpa only [neg_left, neg_lt_zero] using hK
   obtain ⟨q, hq⟩ := exists_primeDivisorClass_notMem_zmultiples_canonical (k := k) (X := X)
-  obtain ⟨n, hn₁, hn₂⟩ := exists_last_effective_adjoint k hn hneg
+  obtain ⟨n, hn₁, hn₂⟩ := exists_last_effective_add_nsmul k dim₂ (b := K) hn
+    (by simpa only [intersectionBilinForm_apply] using hneg)
     (primeDivisorClass_mem_effectiveClasses q)
   let c := P(q) + n • K
   have hnonzero : c ≠ 0 := by
@@ -260,7 +261,8 @@ private theorem exists_class_of_canonical_degree_neg_of_canonical_square_nonpos
   have hn := isNef_primeDivisorClass_of_self_nonneg k dim₂ p
     (by simpa only [intersectionBilinForm_apply, toMul_ofMul] using
       primeDivisorClass_self_nonneg_of_canonical_degree_neg k hmin p hneg)
-  obtain ⟨n, hn₁, hn₂⟩ := exists_last_effective_adjoint k hn hneg
+  obtain ⟨n, hn₁, hn₂⟩ := exists_last_effective_add_nsmul k dim₂ (b := K) hn
+    (by simpa only [intersectionBilinForm_apply, toMul_ofMul] using hneg)
     (primeDivisorClass_mem_effectiveClasses p)
   refine ⟨P(p) + n • K, hn₁, ?_, ?_⟩
   · rw [add_left, ← Nat.cast_smul_eq_nsmul ℤ, smul_left]

@@ -64,6 +64,27 @@ theorem intersection_nonneg_of_mem_effectiveClasses
   exact classIntersectionNumber_nonneg_of_isNef_of_isEffectiveCartier k hX hh
     hD.isEffectiveCartier_idealSheaf
 
+omit [AlgebraicGeometry.IsNoetherian X] in
+/-- If a class has negative intersection with a nef class, repeatedly adding it to an
+effective class yields an effective twist whose next twist is ineffective. -/
+theorem exists_last_effective_add_nsmul
+    (hX : topologicalKrullDim X = 2) {h : LineBundleClass X} {a b : Pic}
+    (hnef : h.IsNef k (X ↘ Spec (.of k))) (hneg : I(X) h b.toMul < 0)
+    (ha : a ∈ X.effectiveClasses) :
+    ∃ n : ℕ, a + n • b ∈ X.effectiveClasses ∧ a + (n + 1) • b ∉ X.effectiveClasses := by
+  have hlarge : ∃ n : ℕ, a + n • b ∉ X.effectiveClasses := by
+    let n := (I(X) h a.toMul).toNat + 1
+    refine ⟨n, fun he ↦ ?_⟩
+    have hpos := intersection_nonneg_of_mem_effectiveClasses k hX hnef he
+    rw [toMul_add, toMul_nsmul, classIntersectionNumber_mul_right k hX,
+      classIntersectionNumber_pow_right k hX] at hpos
+    have hm := mul_le_mul_of_nonneg_left (show I(X) h b.toMul ≤ -1 by omega)
+      (Int.natCast_nonneg n)
+    simp only [n, mul_neg, mul_one] at hpos hm
+    omega
+  simpa only [not_not] using
+    Nat.exists_not_and_succ_of_not_zero_of_exists (by simpa using ha) hlarge
+
 /-- An ample class has positive intersection with any nonzero effective Picard class. -/
 theorem intersection_pos_of_mem_effectiveClasses
     (hX : topologicalKrullDim X = 2) {h : LineBundleClass X} {a : Pic}
