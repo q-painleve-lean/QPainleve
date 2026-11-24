@@ -53,6 +53,23 @@ theorem map_comap_ker_of_isSchemeTheoreticallyDominant {Z X : Scheme.{u}}
   rw [← ker_eq_comap_of_isPullback q (isPullback_morphismRestrict q U), ← Scheme.Hom.ker_comp,
     morphismRestrict_ι, Scheme.Hom.ker_comp_of_isSchemeTheoreticallyDominant]
 
+/-- Restricting a closed subscheme to an open containing its support leaves the
+closed subscheme unchanged, including its scheme structure. -/
+theorem isIso_subschemeMap_comap_of_support_subset {X : Scheme.{u}}
+    (I : X.IdealSheafData) {U : X.Opens} (hU : (I.support : Set X) ⊆ U) :
+    IsIso (subschemeMap (I.comap U.ι) I U.ι (I.le_map_comap U.ι)) := by
+  let j := IsOpenImmersion.lift U.ι I.subschemeι (by rwa [Scheme.Opens.range_ι, I.range_subschemeι])
+  have hj : j ≫ U.ι = I.subschemeι := IsOpenImmersion.lift_fac _ _ _
+  have H : IsPullback j (𝟙 I.subscheme) U.ι I.subschemeι :=
+    IsPullback.of_vert_isIso_mono ⟨by rw [hj, Category.id_comp]⟩
+  have : IsIso (H.isoPullback.hom ≫ pullback.snd U.ι I.subschemeι) := by
+    rw [H.isoPullback_hom_snd]
+    infer_instance
+  have : IsIso (pullback.snd U.ι I.subschemeι) :=
+    IsIso.of_isIso_comp_left H.isoPullback.hom _
+  rw [← comapIso_hom_snd]
+  infer_instance
+
 /-- An isomorphism pulls back the scheme-theoretic union of two closed subschemes
 to the union of their pullbacks. -/
 @[simp]
