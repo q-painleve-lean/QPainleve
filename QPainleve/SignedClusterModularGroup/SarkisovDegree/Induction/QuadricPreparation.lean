@@ -177,7 +177,7 @@ theorem exists_marked_quadric_preparation_of_hirzebruch
     (Q.model_regular 0) (Q.model_complete 0) r u hr hu hR.isClosedPointTower hU e
     Q.common_source (Q.common_model 0) q hq hq' g hg
   -- Descend the refinement from the coordinates of the source point tower.
-  obtain ⟨V, J, d, hJ, hbase, hideal⟩ := nodalTower_from_iso k hR
+  obtain ⟨V, J, d, hJ, hbase, hideal⟩ := hR.exists_transport_of_iso (comp_over k.hom S)
   let : V.Over S := over[J]
   let : SmoothOfRelativeDimension 2 (V ↘ S) := smooth[hJ]
   let : IsIntegral V := integral[hJ]
@@ -201,7 +201,7 @@ theorem exists_marked_quadric_preparation_of_hirzebruch
       Iso.hom_inv_id_assoc] using h
   have hEnd := (precomposeSarkisovOfIso_obj_hom rankTwo d hideal.symm C).trans
     (heq_comp rfl rfl (congrArg Fan.algebraicRealization hC) HEq.rfl hhC)
-  refine ⟨0 + m, V, J, hJ, obj[K,C], hStart ▸ mapPath[K,p], Q.model 0, Q.model_regular 0,
+  refine ⟨m, V, J, hJ, obj[K,C], hStart ▸ mapPath[K,p], Q.model 0, Q.model_regular 0,
     Q.model_complete 0, u, hu, l, Z, U, hU, d ≪≫ e, j', g',
     (precomposeSarkisovOfIso_obj_fan ..).trans hC,
     by simpa only [Iso.trans_hom, Category.assoc] using hEnd, ?_, hg', hbirToSource.trans hbir,
