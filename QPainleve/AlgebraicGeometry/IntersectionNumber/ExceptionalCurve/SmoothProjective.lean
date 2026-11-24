@@ -10,10 +10,8 @@ public import QPainleve.AlgebraicGeometry.IntersectionNumber.ExceptionalCurve.No
 public import TauCeti.AlgebraicGeometry.IdealSheaf.Over
 public import TauCeti.AlgebraicGeometry.Morphisms.Smooth.RelativeDimension
 
-import QPainleve.AlgebraicGeometry.Curves.GenusZero
-import QPainleve.AlgebraicGeometry.IdealSheaf.Stalk
 import QPainleve.AlgebraicGeometry.IntersectionNumber.ExceptionalCurve.CompletedStalk
-import QPainleve.AlgebraicGeometry.IntersectionNumber.ExceptionalCurve.Localization
+import QPainleve.AlgebraicGeometry.IntersectionNumber.ExceptionalCurve.Numerical
 import QPainleve.AlgebraicGeometry.Morphisms.IsoLocus
 import TauCeti.AlgebraicGeometry.Morphisms.Smooth.Regular
 
@@ -38,85 +36,12 @@ universe u
 
 namespace AlgebraicGeometry.Scheme.IdealSheafData.IsExceptionalCurveOfFirstKind
 
-variable {k : Type u} [Field k] {X Y : Scheme.{u}} {E : X.IdealSheafData}
-
-section Local
-
-variable [X.Over (Spec (.of k))] [Y.Over (Spec (.of k))] [IsLocallyNoetherian Y]
-
-local notation "A[" p "]" => Y.presheaf.stalk p
-local notation "s[" p "]" => Y.fromSpecStalk p
-local notation "I[" p "]" => Scheme.Hom.ker (Spec.map (Y.residue p))
-
-/-- A proper contraction whose scheme-theoretic fiber is an exceptional projective line
-over the ground field has a regular two-dimensional local ring at its contracted point,
-provided pullback identifies functions and the morphism is an isomorphism off the point. -/
-theorem isRegularLocalRing_and_ringKrullDim_eq_of_contraction
-    (hE : E.IsExceptionalCurveOfFirstKind) (e : projectiveLine k ≅ E.subscheme)
-    [e.hom.IsOver (Spec (.of k))] (f : X ⟶ Y) [f.IsOver (Spec (.of k))] [IsProper f] {p : Y}
-    (hp : IsClosed ({p} : Set Y)) (hF : (Y.fromSpecResidueField p).ker.comap f = E)
-    (hU : ((Y.fromSpecResidueField p).ker.support).compl ≤ f.isoLocus)
-    (hf : ∀ V : Y.affineOpens, IsIso (f.app V)) :
-    IsRegularLocalRing A[p] ∧ ringKrullDim A[p] = 2 := by
-  let a := pullback.fst f s[p]
-  let g := pullback.snd f s[p]
-  let J := I[p].comap g
-  -- Use the algebra structure induced by the target scheme at the contracted point.
-  let : Algebra k A[p] := (Spec.preimage (s[p] ≫ (Y ↘ Spec (.of k)))).hom.toAlgebra
-  let : (pullback f s[p]).Over (Spec (.of k)) := ⟨a ≫ (X ↘ Spec (.of k))⟩
-  have ha : a.IsOver (Spec (.of k)) := ⟨rfl⟩
-  have hg : g.IsOver (Spec (.of k)) := by
-    constructor
-    rw [specOverSpec_over]
-    have h : Spec.map (CommRingCat.ofHom (algebraMap k A[p])) =
-        s[p] ≫ (Y ↘ Spec (.of k)) := Spec.map_preimage _
-    rw [h, ← Category.assoc, ← pullback.condition, Category.assoc, comp_over f]
-    exact ha.comp_over
-  obtain ⟨_, hΓ, hJ, hloc⟩ := hE.localize_contraction hp hF hU hf
-  have : IsIso g.appTop := hΓ ⊤
-  -- The closed fiber of the localization is the original curve over the ground field.
-  have hJE : J = E.comap a := f.comap_ker_residue_pullback_snd_fromSpecStalk hp hF
-  let j := subschemeMap J E a (hJE ▸ E.le_map_comap a)
-  have : IsIso j := f.isIso_subschemeMap_comap_pullback_fst_of_support_le hp hF E le_rfl hJE
-  have hj : j.IsOver (Spec (.of k)) := by
-    constructor
-    rw [J.over_eq_subschemeι_comp, E.over_eq_subschemeι_comp, ← ha.comp_over]
-    exact (reassoc_of% (subschemeMap_subschemeι J E a (hJE ▸ E.le_map_comap a))) (X ↘ Spec (.of k))
-  let e' := e ≪≫ (asIso j).symm
-  have : e'.hom.IsOver (Spec (.of k)) := by
-    dsimp only [e', Iso.trans_hom, Iso.symm_hom]
-    infer_instance
-  have hI := Scheme.Hom.ker_Spec_map (Y.residue p)
-  have hker : RingHom.ker (Y.residue p).hom = IsLocalRing.maximalIdeal A[p] :=
-    IsLocalRing.ker_residue
-  rw [hker] at hI
-  exact hJ.isRegularLocalRing_and_ringKrullDim_eq_of_exceptional_thickenings e' g
-    (congrArg (fun K ↦ K.comap g) hI.symm) (hI ▸ hloc)
-
-end Local
-
-section Projective
+variable {k : Type u} [Field k] {X : Scheme.{u}} {E : X.IdealSheafData}
 
 attribute [local instance] MvPolynomial.gradedAlgebra
 
-variable [IsAlgClosed k] [X.Over (Spec (.of k))]
-
-/-- Over an algebraically closed ground field, an exceptional curve on a proper scheme
-is isomorphic to the projective line over that field. -/
-theorem exists_iso_projectiveLine_over [IsProper (X ↘ Spec (.of k))]
-    (hE : E.IsExceptionalCurveOfFirstKind) :
-    ∃ e : projectiveLine k ≅ E.subscheme, e.hom.IsOver (Spec (.of k)) := by
-  have : E.subscheme.IsCurveOver k := Scheme.isCurveOver_iff.mpr
-    ⟨hE.isIntegral_subscheme, inferInstanceAs (IsProper (E.subschemeι ≫ (X ↘ Spec (.of k)))),
-      hE.topologicalKrullDim_subscheme⟩
-  have hgen : E.subscheme.genus k = 0 := by
-    simpa only [Scheme.genus_def] using hE.finrank_cohomology_one_trivial_eq_zero k
-  obtain ⟨e, he⟩ := Scheme.genus_eq_zero_iff_exists_iso_projectiveLine.mp hgen
-  have : e.hom.IsOver (Spec (.of k)) := he
-  exact ⟨e.symm, by simpa only [Iso.symm_hom] using
-    (inferInstance : e.inv.IsOver (Spec (.of k)))⟩
-
-variable [IsIntegral X] [X.IsProjectiveOver k] [Smooth (X ↘ Spec (.of k))]
+variable [IsAlgClosed k] [X.Over (Spec (.of k))] [IsIntegral X]
+  [X.IsProjectiveOver k] [Smooth (X ↘ Spec (.of k))]
 
 /-- Castelnuovo contraction of an exceptional curve on a smooth integral projective scheme
 over an algebraically closed field. The target is a smooth integral projective surface.
@@ -155,7 +80,5 @@ theorem exists_smooth_projective_contraction (hE : E.IsExceptionalCurveOfFirstKi
   exact ⟨Z, t, f, p, hZ, hproj, hdim, inferInstance, hmod, hp, hc, hF, hΓ,
     asIso (I.blowupLift f (hF.symm ▸ hE.isEffectiveCartier)),
     I.blowupLift_blowupToBase f _⟩
-
-end Projective
 
 end AlgebraicGeometry.Scheme.IdealSheafData.IsExceptionalCurveOfFirstKind
