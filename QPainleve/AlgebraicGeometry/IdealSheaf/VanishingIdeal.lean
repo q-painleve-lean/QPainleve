@@ -26,6 +26,13 @@ namespace AlgebraicGeometry.Scheme.IdealSheafData
 
 universe u
 
+/-- The reduced inverse image depends only on the reduced closed subscheme. -/
+@[simp]
+theorem radical_comap_radical {X Y : Scheme.{u}} (I : X.IdealSheafData) (f : Y ⟶ X) :
+    (I.radical.comap f).radical = (I.comap f).radical := by
+  rw [← vanishingIdeal_support, ← vanishingIdeal_support (I := I.comap f),
+    support_comap, support_comap, support_radical]
+
 /-- The ideal of a reduced point closure at a specialization is the prime of the ambient
 local ring corresponding to the given generization. -/
 theorem stalkIdeal_vanishingIdeal_closure_singleton_of_specializes {X : Scheme.{u}}
