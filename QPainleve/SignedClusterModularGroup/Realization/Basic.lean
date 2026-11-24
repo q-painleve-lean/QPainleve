@@ -180,6 +180,10 @@ def boundaryPerm : Equiv.Perm (ZMod n) := DihedralGroup.cycleVertexPerm R.bounda
 /-- The orientation sign read on the actual ordered branches. -/
 def orientation : ℤˣ := DihedralGroup.cycleOrientationSign R.boundaryAction
 
+/-- The orientation is the sign character of the action on the numbered branches. -/
+theorem orientation_def : R.orientation = DihedralGroup.cycleOrientationSign R.boundaryAction :=
+  (rfl)
+
 /-- A single fiber isomorphism determines the forward action on the numbered boundary. -/
 theorem boundaryAction_eq_of_fiberIso_eq
     (R' : GeometricRealization P₀ P₁ C F) (c : CenterPoint C)
