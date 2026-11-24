@@ -56,3 +56,29 @@ theorem finrank_picard_add_finrank_eq_natCard_ray (hΦ : Φ.IsRegular) (hc : Φ.
   simpa [Nat.card_eq_fintype_card] using h
 
 end TauCeti.Toric.Fan
+
+namespace TauCeti.Toric.FanEquiv
+
+variable {N : Type} {N' V V' : Type*} [AddCommGroup N] [AddCommGroup N']
+  [AddCommGroup V] [AddCommGroup V'] [Module ℝ V] [Module ℝ V']
+  {i : N →+ V} {i' : N' →+ V'} {Φ : Fan i} {Ψ : Fan i'}
+
+/-- Fan equivalences from a complete fan are determined by their action on rays. -/
+theorem eq_of_rayEquiv_eq (hc : Φ.IsComplete) {f g : FanEquiv Φ Ψ}
+    (h : f.rayEquiv = g.rayEquiv) : f = g := by
+  apply FanEquiv.ext
+  have := Ψ.lattice.free
+  let b := Module.Free.chooseBasis ℤ N'
+  apply AddEquiv.ext
+  intro x
+  apply b.ext_elem_iff.mpr
+  intro j
+  let m := (b.coord j).toAddMonoidHom
+  have hm : m.comp f.latticeEquiv.toAddMonoidHom = m.comp g.latticeEquiv.toAddMonoidHom := by
+    apply Φ.characterToRayDivisor_injective hc
+    funext ρ
+    simp only [Fan.characterToRayDivisor_apply, AddMonoidHom.comp_apply,
+      AddEquiv.coe_toAddMonoidHom, ← primitiveGenerator_rayEquiv, h]
+  exact DFunLike.congr_fun hm x
+
+end TauCeti.Toric.FanEquiv
