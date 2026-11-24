@@ -25,7 +25,8 @@ A closed point tower resolving a logarithmic birational map to the plane can hav
 centers of order greater than half the ruling degree. A high-order corner or section
 point gives a proper pivot for an elementary transformation. A high-order center
 above the interior of an invariant fiber excludes every other high order over that
-fiber, including over its corners. This separates the retained pivot from any
+fiber, including over its corners. At most one projected point of any invariant
+fiber can carry high orders. These bounds separate the retained pivot from any
 additional pivot after preparation to the quadric. These estimates are used in
 Lutz's [Proposition 8.11][HKL].
 
@@ -130,6 +131,50 @@ private theorem planeResolution_picardHom_isNef [Nonempty Φ.cones] [SmoothOfRel
   exact (isAmple_twistingSheaf ℂ (Fin 3 → ℂ) Nat.one_pos).isNef.pullback g
 
 include hg in
+/-- Any two base orders greater than half the degree on an invariant Hirzebruch
+fiber project to the same point if both projected centers lie on that fiber.
+This includes the endpoints of the fiber and orders at infinitely near centers. -/
+theorem baseCenter_eq_of_high_base_orders_on_hirzebruch_fiber :
+    let : Nonempty Φ.cones := hc.nonempty_cones
+    let : SmoothOfRelativeDimension 2 f :=
+      d₂ ▸ Φ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
+    let : IsNoetherian X := isNoetherian_of_finiteType f
+    let v := marking
+    let β := (C).repr v.1 1
+    ∀ (t : Fin 2) {j k : Fin n},
+      hT.baseCenter j ∈ (Φ.rayBoundaryIdeal hΦ (fiberRay[t])).support →
+      hT.baseCenter k ∈ (Φ.rayBoundaryIdeal hΦ (fiberRay[t])).support →
+      β < 2 * (-v.2 j) → β < 2 * (-v.2 k) → hT.baseCenter j = hT.baseCenter k := by
+  classical
+  intro hcones hdim hnoeth v β t j k hj hk hjhigh hkhigh
+  let := hcones
+  let := hdim
+  let := hnoeth
+  by_contra hp
+  obtain ⟨j', hj', hjfirst, hjle⟩ := hT.exists_first_baseCenter_ge_of_plane_resolution g hg j
+  obtain ⟨k', hk', hkfirst, hkle⟩ := hT.exists_first_baseCenter_ge_of_plane_resolution g hg k
+  have hne : j' ≠ k' := fun h ↦ hp (hj'.symm.trans (h ▸ hk'))
+  obtain ⟨_, J, -, -, -, -, -, hv⟩ := hT.exists_moving_base_ideal_of_plane_resolution g hg
+  have horders (l : Fin n) : -v.2 l = (baseMultiplicities J hT l : ℤ) := hv l
+  have hnef : (T.picardHom (v.1, fun l ↦ -(baseMultiplicities J hT l : ℤ))).toMul.IsNef
+      ℂ (T.toBase ≫ f) := by
+    simpa only [← horders, neg_neg, Prod.mk.eta] using planeResolution_picardHom_isNef hT g hg
+  have h := (fiberRay[t]).sum_first_base_orders_le_ray_degree b hΦ hT v.1 (baseMultiplicities J hT)
+    {j', k'} (by
+      intro l hl
+      rcases Finset.mem_insert.mp hl with rfl | hl
+      · exact ⟨hj' ▸ hj, hjfirst⟩
+      · obtain rfl := Finset.mem_singleton.mp hl
+        exact ⟨hk' ▸ hk, hkfirst⟩)
+    hnef
+  rw [Finset.sum_pair hne, ← horders, ← horders] at h
+  have hbound : -v.2 j' + -v.2 k' ≤ β := by
+    simpa only [invariant_fiber_degree b e hΦ hc r hr v.1 t] using h
+  have hjle' : -v.2 j ≤ -v.2 j' := hjle
+  have hkle' : -v.2 k ≤ -v.2 k' := hkle
+  omega
+
+include hg in
 /-- In a logarithmic plane resolution, a high base order over the open orbit of an
 invariant Hirzebruch fiber excludes every other high base order over that fiber.
 The competing center may lie above an endpoint or be infinitely near. An order
@@ -151,51 +196,29 @@ theorem eq_of_high_base_orders_on_hirzebruch_fiber :
   let := hcones
   let := hdim
   let := hnoeth
-  let ρ := fiberRay[t]
+  have hjs : hT.baseCenter j ∈ (Φ.rayBoundaryIdeal hΦ (fiberRay[t])).support := by
+    rw [hj]
+    exact ((fiberRay[t]).binomialCenter_mem_support_sdiff_colon hΦ d₂
+      (b.detDualEquiv_self (fiberRay[t]).primitiveGenerator)
+      ((fiberRay[t]).surjective_detCharacter b) c).1
+  have hp := hT.baseCenter_eq_of_high_base_orders_on_hirzebruch_fiber b e hΦ hc r hr g hg
+    t hjs hk hjhigh hkhigh
+  by_contra hne
   obtain ⟨_, J, -, -, -, -, -, hv⟩ := hT.exists_moving_base_ideal_of_plane_resolution g hg
-  have horders (l : Fin n) : -v.2 l = (baseMultiplicities J hT l : ℤ) := hv l
   have hm (l : Fin n) : 0 ≤ -v.2 l := by
-    rw [horders l]
+    rw [show -v.2 l = (baseMultiplicities J hT l : ℤ) from hv l]
     exact Int.natCast_nonneg _
   have hnef := planeResolution_picardHom_isNef hT g hg
-  by_cases hp : hT.baseCenter j = hT.baseCenter k
-  · -- Above the same open-orbit point the logarithmic bound counts both steps.
-    by_contra hne
-    have h := sum_base_orders_le_invariant_fiber b e hΦ hc r hr hT hlog
-      v.1 (fun l ↦ -v.2 l) hm (by simpa only [Pi.neg_def, neg_neg, Prod.mk.eta] using hnef)
-      t {j, k} (by
-        intro l hl
-        rcases Finset.mem_insert.mp hl with rfl | hl
-        · exact ⟨c, hj⟩
-        · obtain rfl := Finset.mem_singleton.mp hl
-          exact ⟨c, hp.symm.trans hj⟩)
-    rw [Finset.sum_pair hne] at h
-    omega
-  · -- At distinct projected points it suffices to count the corresponding first centers.
-    obtain ⟨j', hj', hjfirst, hjle⟩ := hT.exists_first_baseCenter_ge_of_plane_resolution g hg j
-    obtain ⟨k', hk', hkfirst, hkle⟩ := hT.exists_first_baseCenter_ge_of_plane_resolution g hg k
-    have hne : j' ≠ k' := fun h ↦ hp (hj'.symm.trans (h ▸ hk'))
-    have hjs : hT.baseCenter j' ∈ (Φ.rayBoundaryIdeal hΦ ρ).support := by
-      rw [hj', hj]
-      exact (ρ.binomialCenter_mem_support_sdiff_colon hΦ d₂
-        (b.detDualEquiv_self ρ.primitiveGenerator) (ρ.surjective_detCharacter b) c).1
-    have hvnef : (T.picardHom (v.1, fun l ↦ -(baseMultiplicities J hT l : ℤ))).toMul.IsNef
-        ℂ (T.toBase ≫ f) := by
-      simpa only [← horders, neg_neg, Prod.mk.eta] using hnef
-    have h := ρ.sum_first_base_orders_le_ray_degree b hΦ hT v.1 (baseMultiplicities J hT)
-      {j', k'} (by
-        intro l hl
-        rcases Finset.mem_insert.mp hl with rfl | hl
-        · exact ⟨hjs, hjfirst⟩
-        · obtain rfl := Finset.mem_singleton.mp hl
-          exact ⟨hk' ▸ hk, hkfirst⟩)
-      hvnef
-    rw [Finset.sum_pair hne, ← horders, ← horders] at h
-    have hbound : -v.2 j' + -v.2 k' ≤ β := by
-      simpa only [ρ, invariant_fiber_degree b e hΦ hc r hr v.1 t] using h
-    have hjle' : -v.2 j ≤ -v.2 j' := hjle
-    have hkle' : -v.2 k ≤ -v.2 k' := hkle
-    omega
+  have h := sum_base_orders_le_invariant_fiber b e hΦ hc r hr hT hlog
+    v.1 (fun l ↦ -v.2 l) hm (by simpa only [Pi.neg_def, neg_neg, Prod.mk.eta] using hnef)
+    t {j, k} (by
+      intro l hl
+      rcases Finset.mem_insert.mp hl with rfl | hl
+      · exact ⟨c, hj⟩
+      · obtain rfl := Finset.mem_singleton.mp hl
+        exact ⟨c, hp.symm.trans hj⟩)
+  rw [Finset.sum_pair hne] at h
+  omega
 
 include hg in
 /-- If there is a high base order in the interior of ray one's fiber and a
