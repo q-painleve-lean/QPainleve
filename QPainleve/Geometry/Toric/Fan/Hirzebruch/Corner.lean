@@ -115,6 +115,19 @@ theorem exists_cone_of_hirzebruch_section_fiber (hΦ : Φ.IsRegular) (hc : Φ.Is
     · exact Or.inr rfl
   exact ((hirzebruch_section_neighbors_iff b e r hr hΦ hc j (fib k)).mpr hk).2
 
+include hr in
+/-- The supremum of a section ray and a fiber ray is a cone of a complete regular
+Hirzebruch fan. -/
+theorem hirzebruch_corner_mem (hΦ : Φ.IsRegular) (hc : Φ.IsComplete) (j k : Fin 2) :
+    (sec j).toCone.val ⊔ (fib k).toCone.val ∈ Φ.cones := by
+  obtain ⟨σ, hs, hf⟩ := exists_cone_of_hirzebruch_section_fiber b e r hr hΦ hc j k
+  have hne : sec j ≠ fib k := by
+    apply r.injective.ne
+    fin_cases j <;> fin_cases k <;> decide
+  have hd : Module.finrank ℤ N = 2 := by simpa using Module.finrank_eq_card_basis b
+  rw [← Φ.cone_eq_sup_of_ray_ne_of_le hΦ hd hne hs hf]
+  exact σ.property
+
 variable (Φ) in
 include hr in
 /-- The hull of the primitive generators of a chosen section ray and fiber ray is a cone
@@ -122,23 +135,12 @@ of the complete regular Hirzebruch fan. The indices `j` and `k` select the secti
 theorem hirzebruch_chart_corners (hΦ : Φ.IsRegular) (hc : Φ.IsComplete) (j k : Fin 2) :
     hull ℝ {i (if j = 0 then b 0 else -b 0),
       i (if k = 0 then b 1 else e • b 0 - b 1)} ∈ Φ.cones := by
-  let p := r ((![0, 2] : Fin 2 → Fin 4) j)
-  let q := r ((![1, 3] : Fin 2 → Fin 4) k)
-  obtain ⟨σ, hp, hq⟩ := exists_cone_of_hirzebruch_section_fiber b e r hr hΦ hc j k
-  have hne : p ≠ q := by
-    apply r.injective.ne
-    fin_cases j <;> fin_cases k <;> decide
-  have hp' : p.primitiveGenerator = if j = 0 then b 0 else -b 0 := by
-    fin_cases j <;> simp [p, congrFun hr]
-  have hq' : q.primitiveGenerator = if k = 0 then b 1 else e • b 0 - b 1 := by
-    fin_cases k <;> simp [q, congrFun hr]
-  have hdim : finrank ℤ N = 2 := by simpa using finrank_eq_card_basis b
-  have hs := Φ.cone_eq_sup_of_ray_ne_of_le hΦ hdim hne hp hq
-  rw [p.toCone_eq_hull_primitiveGenerator, q.toCone_eq_hull_primitiveGenerator,
-    hp', hq', ← Submodule.span_union, Set.singleton_union] at hs
-  have he : σ.val = hull ℝ {i (if j = 0 then b 0 else -b 0),
-      i (if k = 0 then b 1 else e • b 0 - b 1)} := hs
-  exact he ▸ σ.property
+  have hs : (sec j).primitiveGenerator = if j = 0 then b 0 else -b 0 := by
+    fin_cases j <;> simp [congrFun hr]
+  have hf : (fib k).primitiveGenerator = if k = 0 then b 1 else e • b 0 - b 1 := by
+    fin_cases k <;> simp [congrFun hr]
+  simpa only [Ray.toCone_eq_hull_primitiveGenerator, hs, hf, ← Submodule.span_union,
+    Set.singleton_union] using hirzebruch_corner_mem b e r hr hΦ hc j k
 
 include hr in
 private theorem hirzebruch_fiber_neighbors (hΦ : Φ.IsRegular) (hc : Φ.IsComplete)

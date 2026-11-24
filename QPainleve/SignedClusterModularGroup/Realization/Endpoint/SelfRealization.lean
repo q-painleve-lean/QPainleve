@@ -48,7 +48,8 @@ variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
 /-- A signed loop in a marked toric presentation of a primitive nef square-zero
 anticanonical cycle realizes its independent X map between fibers of the same
 presentation on the entire noncollision open. The orientation of its action on
-the numbered branches equals the sign of the inversion count. -/
+the numbered branches equals the sign of the inversion count. The reached centers
+carry nodal models of the original presentation. -/
 theorem exists_realize_signed_loop
     {B : SkewExchangeMatrix (Fin r)} (w : Word B B) (P : ChargeSeed B N)
     (Q : CompleteToricPresentation i b r L γ)
@@ -68,7 +69,9 @@ theorem exists_realize_signed_loop
     (d : ZMod n → L) (hmark : ∀ c j, (M c).boundaryClass (hD c) j = d j) :
     ∃ R : GeometricRealization (T₀ := Centers[r]) (T₁ := Centers[r])
         M M Cw[w,P] (w.xRationalMap ℂ),
-      R.orientation = (-1 : ℤˣ) ^ w.inversionCount ∧ R.picard (d (R.boundaryPerm 0)) = d 0 := by
+      R.orientation = (-1 : ℤˣ) ^ w.inversionCount ∧ R.picard (d (R.boundaryPerm 0)) = d 0 ∧
+      ∀ c : CenterPoint (U := Centers[r]) (V := Centers[r]) Cw[w,P],
+        Q.HasNodalModel (dst(Cw[w,P],c)) (M (dst(Cw[w,P],c))) := by
   obtain ⟨γ', Q', M', R, -, hact, hmodels, e, hcharges, hdet, -, Δ, hΔQ', hΔΩ,
       hΔ, hpre, l, hlen, U, hleft, hright⟩ :=
     exists_realize_signed_loop_with_oriented_refinement
@@ -88,7 +91,7 @@ theorem exists_realize_signed_loop
     (fun c ↦ (hprop (src(Cw[w,P],c))).2.1) (fun c ↦ (hprop (dst(Cw[w,P],c))).2.1)
     (fun c ↦ (hprop (src(Cw[w,P],c))).2.2) (fun c ↦ (hprop (dst(Cw[w,P],c))).2.2)
     (d 0) d hd (fun c ↦ hmark (src(Cw[w,P],c)) 0) (fun c ↦ hmark (dst(Cw[w,P],c)))
-  refine ⟨T, ?_, hclass⟩
+  refine ⟨T, ?_, hclass, fun c ↦ (hmodels c).2⟩
   rw [hsign, R.orientation_def, hact, map_pow, cycleOrientationSign_sr]
 
 end QPainleve.SignedClusterModularGroup.GeometricRealization
