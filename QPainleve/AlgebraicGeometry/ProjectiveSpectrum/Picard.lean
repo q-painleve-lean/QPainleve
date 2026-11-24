@@ -6,11 +6,8 @@ Authors: The QPainleve contributors
 module
 
 public import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.Invertible
-public import TauCeti.AlgebraicGeometry.LineBundle.Functoriality
 public import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.Polynomial.Chart
 public import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.Polynomial.SymmetricAlgebra
-public import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.TwistingSheaf.LocalTriviality
-public import TauCeti.AlgebraicGeometry.LineBundle.Class
 
 import QPainleve.AlgebraicGeometry.EffectiveCartierDivisor.Integral
 import QPainleve.AlgebraicGeometry.IdealSheaf.Integral
@@ -401,20 +398,6 @@ theorem exists_iso_polynomialTwistingBundle [NeZero n] (L : InvertibleSheaf (Pro
   rw [← mk_polynomialTwistingBundle_eq_zpow] at hm
   exact ⟨m, LineBundleClass.mk_eq_mk_iff.mp hm.symm⟩
 
-/-- The invertible sheaf `𝒪(m)` on the projective spectrum of a symmetric algebra. -/
-@[expose]
-def symmetricAlgebraTwistingBundle (k M : Type u) [CommRing k] [AddCommMonoid M] [Module k M]
-    (m : ℤ) : InvertibleSheaf (Proj (TauCeti.SymmetricAlgebra.homogeneousSubmodule k M)) :=
-  ⟨twistingSheaf _ m, inferInstance⟩
-
-/-- The underlying module sheaf of the bundled twist is the native twisting sheaf. -/
-@[simp]
-theorem symmetricAlgebraTwistingBundle_obj (R M : Type u) [CommRing R] [AddCommMonoid M]
-    [Module R M] (m : ℤ) :
-    (symmetricAlgebraTwistingBundle R M m).obj =
-      twistingSheaf (TauCeti.SymmetricAlgebra.homogeneousSubmodule R M) m :=
-  (rfl)
-
 end AlgebraicGeometry.Proj
 
 namespace Module.Basis
@@ -426,19 +409,6 @@ attribute [local instance] MvPolynomial.gradedAlgebra
 variable {k M : Type u} [Field k] [AddCommMonoid M] [Module k M] {n : ℕ}
 
 local notation "𝒮" => TauCeti.SymmetricAlgebra.homogeneousSubmodule k M
-
-/-- A basis identifies the class of the symmetric-algebra twist with the same twist
-on the polynomial projective spectrum. -/
-theorem pullback_mk_symmetricAlgebraTwistingBundle {R V : Type (max v w)} {ι : Type w}
-    [CommRing R] [AddCommMonoid V] [Module R V] (b : Basis ι R V) (m : ℤ)
-    (L : InvertibleSheaf (Proj (MvPolynomial.homogeneousSubmodule ι R)))
-    (hL : L.obj = twistingSheaf _ m) :
-    pullback b.polynomialProjIso.hom (LineBundleClass.mk (symmetricAlgebraTwistingBundle R V m)) =
-      LineBundleClass.mk L := by
-  rw [pullback_mk, mk_eq_mk_iff]
-  refine ⟨?_⟩
-  rw [InvertibleSheaf.pullback_obj_obj, symmetricAlgebraTwistingBundle_obj, hL]
-  exact b.polynomialProjIsoPullbackTwistingSheafIso m
 
 private theorem mk_symmetricAlgebraTwistingBundle_eq_zpow (m : ℤ) :
     LineBundleClass.mk (symmetricAlgebraTwistingBundle k M m) =
