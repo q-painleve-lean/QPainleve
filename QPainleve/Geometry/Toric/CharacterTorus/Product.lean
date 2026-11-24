@@ -103,6 +103,13 @@ theorem prodIso_hom_snd :
     (prodIso k A N).hom ≫ (Dmap (AddMonoidHom.inr A N)).hom.hom.left = pullback.snd _ _ :=
   (isPullback_prod k A N).isoPullback_inv_snd
 
+/-- The first projection is smooth when the second factor is smooth over the base. -/
+theorem smooth_map_inl [Smooth (D N).X.hom] :
+    Smooth (Dmap (AddMonoidHom.inl A N)).hom.hom.left := by
+  have h : Smooth ((prodIso k A N).inv ≫ pullback.fst (D A).X.hom (D N).X.hom) :=
+    inferInstance
+  simpa only [← prodIso_hom_fst, Iso.inv_hom_id_assoc] using h
+
 /-- The first projection is dominant. -/
 instance isDominant_map_inl : IsDominant (Dmap (AddMonoidHom.inl A N)).hom.hom.left :=
   isDominant_groupSchemeMap k _ (fun _ _ h ↦ congrArg (fun x : A × N ↦ x.1) h)

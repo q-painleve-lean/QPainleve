@@ -89,6 +89,31 @@ theorem affineCenterSlice_comp_map_inr (c : Multiplicative A →* kˣ) :
     simp [f, centerSliceAlgHom_single, AddMonoidAlgebra.mapDomainAlgHom]
   · exact Subsingleton.elim _ _
 
+/-- Changing the independent exponents commutes with specializing the center, provided
+both the center character and the charge map are restricted along the exponent map. -/
+@[reassoc]
+theorem affineCenterSlice_comp_affineEvaluation_naturality {B : Type u} [AddCommGroup B]
+    (c : Multiplicative A →* kˣ) (v : A →+ N) (f : B →+ A) :
+    affineCenterSlice c ≫ affineEvaluation k v ≫ map k f =
+      affineCenterSlice (c.comp f.toMultiplicative) ≫ affineEvaluation k (v.comp f) := by
+  apply Spec.preimage_injective
+  simp only [Spec.preimage_comp]
+  apply CommRingCat.hom_ext
+  apply RingHom.toAddMonoidHom_injective
+  apply AddMonoidAlgebra.addMonoidHom_ext
+  intro a r
+  -- Expose the evaluations of the composed ring homomorphisms on this monomial.
+  change (Spec.preimage (affineCenterSlice c)).hom
+      ((Spec.preimage (affineEvaluation k v)).hom
+        ((Spec.preimage (map k f)).hom (AddMonoidAlgebra.single a r))) =
+    (Spec.preimage (affineCenterSlice (c.comp f.toMultiplicative))).hom
+      ((Spec.preimage (affineEvaluation k (v.comp f))).hom (AddMonoidAlgebra.single a r))
+  have hf : (Spec.preimage (map k f)).hom (AddMonoidAlgebra.single a r) =
+      AddMonoidAlgebra.single (f a) r := by simp [preimage_map, AddMonoidAlgebra.mapDomainAlgHom]
+  rw [hf, preimage_affineEvaluation_single, preimage_affineEvaluation_single,
+    preimage_affineCenterSlice_single, preimage_affineCenterSlice_single]
+  rfl
+
 section Diagonalizable
 
 variable [IsAddFG A] [IsAddFG N]
