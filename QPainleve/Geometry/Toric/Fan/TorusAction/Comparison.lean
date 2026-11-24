@@ -5,13 +5,11 @@ Authors: The QPainleve contributors
 -/
 module
 
-public import QPainleve.Geometry.Toric.Fan.Boundary.Contraction
 public import QPainleve.Geometry.Toric.Fan.Evaluation
 public import QPainleve.Geometry.Toric.Fan.TorusAction.Contraction
 
 import QPainleve.AlgebraicGeometry.RationalMap.Composition.Basic
 import QPainleve.AlgebraicGeometry.RationalMap.Modification
-import QPainleve.Geometry.Toric.Fan.Boundary.Automorphism
 import TauCeti.Geometry.Toric.Algebraic.Fan.Normal
 
 /-!
@@ -112,63 +110,6 @@ theorem fromFunctionField_contractedXEvaluation :
     Scheme.Hom.functionFieldMap_toRationalMap, fromFunctionField_xEvaluation] at h
   rw [Spec.map_comp, Spec.map_comp, Category.assoc, ← h, ← Category.assoc, ← Spec.map_comp,
     IsIso.hom_inv_id, Spec.map_id, Category.id_comp]
-
-section BoundaryPrimes
-
-variable (a a' : Fin n → ℂˣ)
-
-local notation "M" a:arg => internalBlowupTower b s a
-local notation "π₁" => toBase (WithBoundary.toTower (Sigma.snd (M a')))
-
-/-- A translating lift on ordered internal blowups sends the strict prime indexed
-by a ray to the strict prime indexed by that same ray. -/
-theorem apply_internalBlowupBoundaryPrimeEquiv_of_isLift_torusTranslation
-    {χ : Multiplicative (N →+ ℤ) →* ℂˣ} {t : (M a).1 ≅ (M a').1}
-    (ht : IsLift (Φ.torusTranslation χ) ((M a).2.toTower) ((M a').2.toTower) t) (ρ : Φ.Ray) :
-    t.hom (internalBlowupBoundaryPrimeEquiv hΦ b s a ρ).val =
-      (internalBlowupBoundaryPrimeEquiv hΦ b s a' ρ).val := by
-  have := isIntegral_internalBlowupTower b s a' hΦ
-  have := isModification_internalBlowupTower_toBase b s a' hΦ
-  let x := (internalBlowupBoundaryPrimeEquiv hΦ b s a ρ).val
-  let y := (internalBlowupBoundaryPrimeEquiv hΦ b s a' ρ).val
-  have hfix := (Φ.comap_rayBoundaryIdeal_eq_iff hΦ (Φ.torusTranslation χ) ρ).mp
-    (Φ.comap_rayBoundaryIdeal_torusTranslation_hom hΦ χ ρ)
-  have hx : (π₁) (t.hom x) = (Φ.rayBoundaryPoint hΦ ρ).val := by
-    have h := congrArg (fun f : (M a).1 ⟶ F ↦ f x) ht.hom_toBase
-    simpa only [x, Scheme.Hom.comp_apply, toBase_internalBlowupBoundaryPrimeEquiv, hfix]
-      using h
-  have hy : (π₁) y = (Φ.rayBoundaryPoint hΦ ρ).val :=
-    toBase_internalBlowupBoundaryPrimeEquiv hΦ b s a' ρ
-  have hρ := (π₁).mem_isoLocus_of_coheight_eq_one (Φ.rayBoundaryPoint hΦ ρ).property
-  exact (π₁).injOn_preimage_isoLocus (Set.mem_preimage.mpr (hx.symm ▸ hρ))
-    (Set.mem_preimage.mpr (hy.symm ▸ hρ)) (hx.trans hy.symm)
-
-variable {D : X.IdealSheafData} {D' : X'.IdealSheafData}
-  [IsNormalScheme X] [IsNormalScheme X'] [IsLocallyNoetherian X] [IsLocallyNoetherian X']
-variable (p₀ : (internalBlowupTower b s a).1 ⟶ X) [IsModification p₀]
-  (q₀ : (internalBlowupTower b s a').1 ⟶ X') [IsModification q₀]
-
-/-- If an isomorphism of contractions lifts to a translation, the image of a boundary
-prime is characterized by its ray in the common fan. -/
-theorem apply_contractedBoundaryPrime_eq_iff_of_isLift_torusTranslation (e : X ≅ X')
-    (hD : (D.comap p₀).support = (M a).2.boundaryι.ker.support)
-    (hD' : (D'.comap q₀).support = (M a').2.boundaryι.ker.support)
-    {χ : Multiplicative (N →+ ℤ) →* ℂˣ} {t : (M a).1 ≅ (M a').1}
-    (ht : IsLift (Φ.torusTranslation χ) ((M a).2.toTower) ((M a').2.toTower) t)
-    (htq : p₀ ≫ e.hom = t.hom ≫ q₀) (x : D.boundaryPrimes) (y : D'.boundaryPrimes) :
-    e.hom x.val = y.val ↔ contractedBoundaryRayEmbedding hΦ b s a p₀ hD x =
-      contractedBoundaryRayEmbedding hΦ b s a' q₀ hD' y := by
-  let ρ := contractedBoundaryRayEmbedding hΦ b s a p₀ hD x
-  let z := (internalBlowupBoundaryPrimeEquiv hΦ b s a ρ).val
-  have hx : p₀ z = x.val := contraction_internalBlowupBoundaryPrimeEquiv hΦ b s a p₀ hD x
-  have h : e.hom x.val = q₀ (internalBlowupBoundaryPrimeEquiv hΦ b s a' ρ).val := by
-    rw [← hx, ← Scheme.Hom.comp_apply, htq, Scheme.Hom.comp_apply]
-    exact congrArg q₀
-      (apply_internalBlowupBoundaryPrimeEquiv_of_isLift_torusTranslation b s hΦ a a' ht ρ)
-  rw [h]
-  exact (contractedBoundaryRayEmbedding_eq_iff hΦ b s a' q₀ hD' y ρ).symm.trans eq_comm
-
-end BoundaryPrimes
 
 variable {D : X.IdealSheafData} {D' : X'.IdealSheafData}
   [X.Over S] [X'.Over S] [IsSeparated (X' ↘ S)]
