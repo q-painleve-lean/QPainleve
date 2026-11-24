@@ -57,6 +57,13 @@ theorem IsNodeAt.not_formallySmooth_stalkMap {f : C ⟶ S} {x : C} (h : f.IsNode
     ¬ (f.stalkMap x).hom.FormallySmooth :=
   h.1
 
+/-- A node lies in an open neighborhood on which the curve is at worst nodal. -/
+theorem IsNodeAt.exists_nodal_neighbourhood {f : C ⟶ S} {x : C} (h : f.IsNodeAt x) :
+    ∃ (V : Scheme.{u}) (i : V ⟶ C), IsOpenImmersion i ∧ x ∈ Set.range i ∧
+      AtWorstNodalOfRelativeDimensionOne (i ≫ f) := by
+  obtain ⟨V, i, hi, z, hz, hnodal⟩ := h.2
+  exact ⟨V, i, hi, ⟨z, hz⟩, hnodal⟩
+
 /-- On a nodal relative curve, its nodes are precisely its nonsmooth points. -/
 theorem isNodeAt_iff_notMem_smoothLocus (f : C ⟶ S)
     (hf : AtWorstNodalOfRelativeDimensionOne f) (x : C) :
@@ -199,6 +206,32 @@ end AlgebraicGeometry.Scheme
 namespace AlgebraicGeometry.Scheme.IdealSheafData
 
 variable {X Y S : Scheme.{u}}
+
+/-- A common open subscheme on which two closed subschemes agree provides a nodal
+neighborhood on one whenever the other is nodal over the same base. -/
+theorem exists_nodal_neighbourhood_of_comap_eq
+    {X Y U S : Scheme.{u}}
+    (D : X.IdealSheafData) {E : Y.IdealSheafData}
+    {s : X ⟶ S} {t : Y ⟶ S}
+    (j : U ⟶ X) (i : U ⟶ Y) [IsOpenImmersion j] [IsOpenImmersion i]
+    (hbase : j ≫ s = i ≫ t) (hDE : D.comap j = E.comap i)
+    (hE : AtWorstNodalOfRelativeDimensionOne (E.subschemeι ≫ t))
+    (p : D.subscheme) (hp : D.subschemeι p ∈ Set.range j) :
+    ∃ (W : Scheme.{u}) (g : W ⟶ D.subscheme), IsOpenImmersion g ∧ p ∈ Set.range g ∧
+      AtWorstNodalOfRelativeDimensionOne (g ≫ D.subschemeι ≫ s) := by
+  let g := subschemeMap (D.comap j) D j (le_map_comap _ _)
+  let h := subschemeMap (E.comap i) E i (le_map_comap _ _)
+  have hpb : IsPullback (D.comap j).subschemeι g j D.subschemeι :=
+    isPullback_of_isClosedImmersion _ _ _ _ (by simp [g]) (by simp)
+  have hpb' : IsPullback (E.comap i).subschemeι h i E.subschemeι :=
+    isPullback_of_isClosedImmersion _ _ _ _ (by simp [h]) (by simp)
+  have : IsOpenImmersion h := MorphismProperty.of_isPullback (P := @IsOpenImmersion)
+    hpb' inferInstance
+  refine ⟨_, g, MorphismProperty.of_isPullback (P := @IsOpenImmersion) hpb inferInstance, ?_, ?_⟩
+  · rw [Scheme.Pullback.range_snd_of_isPullback hpb]
+    exact hp
+  · rw [← hpb.w_assoc, hbase, hDE, hpb'.w_assoc]
+    exact hE.comp_of_etale h
 
 /-- A closed subscheme ideal, after taking its radical, has a node at the specified
 ambient point if the reduced subscheme has a node above that point. -/
