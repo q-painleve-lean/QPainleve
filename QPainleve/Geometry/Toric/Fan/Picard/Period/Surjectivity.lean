@@ -9,11 +9,6 @@ public import QPainleve.Geometry.Toric.Fan.Picard.Period.CenterVariation
 public import TauCeti.LinearAlgebra.Basis.DiagonalTorus.Basic
 
 import QPainleve.AlgebraicGeometry.Cohomology.Projective
-import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
-import QPainleve.AlgebraicGeometry.IntersectionNumber.ClosedPoint
-import QPainleve.Geometry.Toric.Fan.Boundary.ProjectiveLine
-import TauCeti.AlgebraicGeometry.Cohomology.ProjectiveLine.Basic
-import TauCeti.AlgebraicGeometry.Curves.ProjectiveLine
 import TauCeti.AlgebraicGeometry.LineBundle.BaseChange
 import TauCeti.AlgebraicGeometry.Scheme.DiscreteValuationStalk
 import TauCeti.AlgebraicGeometry.WeilDivisor.Scheme.PicZero
@@ -60,62 +55,6 @@ local notation "I[" ρ "," c "]" =>
 
 variable [PrestableFamily ((Φ.boundaryIdeal inferInstance).subscheme ↘ Spec (.of ℂ))]
 
-include hΦ b in
-private theorem normalizedComponent_genus_eq_zero
-    (v : irreducibleComponents (Scheme.singularLocus ℂ C).blowup) :
-    ((C).blowupComponent v).toScheme.genus ℂ = 0 := by
-  obtain ⟨ρ, rfl⟩ := (Φ.boundaryNormalizationComponentEquiv hΦ).surjective v
-  let e := ρ.boundaryNormalizationComponentIso hΦ
-  let : IsProper ((Φ.rayBoundaryIdeal hΦ ρ).subscheme ↘ S) :=
-    ρ.isProper_boundaryComponent_of_prestableFamily hΦ
-  let p := ρ.boundaryIsoProjectiveLine hΦ hdim (b.detDualEquiv_self _)
-    (ρ.surjective_detCharacter b)
-  let : e.hom.IsOver S := ρ.isOver_boundaryNormalizationComponentIso_hom hΦ
-  let : p.hom.IsOver S := ρ.isOver_boundaryIsoProjectiveLine_hom hΦ hdim
-    (b.detDualEquiv_self _) (ρ.surjective_detCharacter b)
-  have h := (e.hom ≫ p.hom).finrank_cohomology_trivial_of_isIso ℂ 1
-  have hp := projectiveLine.genus_eq_zero ℂ
-  rw [Scheme.genus_def] at hp ⊢
-  exact h.trans hp
-
-include b in
-private theorem ray_isCurveOver (ρ : Φ.Ray) :
-    (Φ.rayBoundaryIdeal hΦ ρ).subscheme.IsCurveOver ℂ := by
-  let : IsProper ((Φ.rayBoundaryIdeal hΦ ρ).subscheme ↘ S) :=
-    ρ.isProper_boundaryComponent_of_prestableFamily hΦ
-  let : (projectiveLine ℂ).IsCurveOver ℂ := projectiveLine.isCurveOver ℂ
-  let p := ρ.boundaryIsoProjectiveLine hΦ hdim (b.detDualEquiv_self _)
-    (ρ.surjective_detCharacter b)
-  have hp := p.hom.topologicalKrullDim_eq_of_isClosedMap_of_surjective p.hom.isClosedMap
-  exact Scheme.isCurveOver_iff.mpr
-    ⟨inferInstance, inferInstance, hp.trans (Scheme.IsCurveOver.topologicalKrullDim_eq_one ℂ)⟩
-
-include b in
-private theorem eulerDegree_pullback_internalCenter (ρ τ : Φ.Ray) (c : ℂˣ) :
-    eulerDegree ℂ (pullback (τ.boundaryComponentι hΦ) (I[ρ,c])) =
-      if ρ = τ then -1 else 0 := by
-  classical
-  have := ray_isCurveOver hΦ b τ
-  let z := ρ.binomialCenterOnBoundary hdim (b.detDualEquiv_self _) (ρ.surjective_detCharacter b) c
-  have : IsClosedImmersion z := ρ.isClosedImmersion_binomialCenterOnBoundary
-    hdim (b.detDualEquiv_self _) (ρ.surjective_detCharacter b) c
-  let q := z (IsLocalRing.closedPoint ℂ)
-  have hq : IsClosed ({q} : Set C) := by
-    have hrange : Set.range z = {q} :=
-      Set.range_eq_singleton fun y ↦ congrArg z (Subsingleton.elim y _)
-    rw [← hrange]
-    exact z.isClosedEmbedding.isClosed_range
-  have hJ : (ρ.internalCenter b c).val = ((C).fromSpecResidueField q).ker :=
-    (ρ.internalCenter_val b c).trans z.ker_eq_ker_fromSpecResidueField
-  have hI : ((C).fromSpecResidueField q).ker.IsEffectiveCartier :=
-    hJ ▸ (ρ.internalCenter b c).property
-  rw [mk_toInvertibleSheaf_congr _ hI hJ, ← intersectionNumber_def,
-    intersectionNumber_mk_ker_fromSpecResidueField (τ.boundaryComponentι hΦ) hq hI]
-  have hmem : q ∈ Set.range (τ.boundaryComponentι hΦ) ↔ ρ = τ :=
-    ρ.binomialCenterOnBoundary_mem_range_boundaryComponentι_iff hΦ hdim
-      (b.detDualEquiv_self _) (ρ.surjective_detCharacter b) c τ
-  simp only [hmem]
-
 variable [Φ.algebraicRealization.IsProjectiveOver ℂ]
   [SmoothOfRelativeDimension 2 (Φ.algebraicRealization ↘ Spec (.of ℂ))]
 
@@ -156,11 +95,13 @@ private theorem orderedRestriction_mem_ker (c : Fin n → ℂˣ) (x : K) :
     orderedRestriction hΦ b s c (Multiplicative.ofAdd x) ∈ PicZero := by
   classical
   rw [MonoidHom.mem_ker, pullbackHom_apply, (C).pullback_blowupToBase_singularLocus_eq_one_iff
-      (normalizedComponent_genus_eq_zero hΦ b), orderedRestriction_apply]
+      (boundaryNormalizationComponent_genus_eq_zero hΦ b), orderedRestriction_apply]
   intro v
   obtain ⟨ρ, rfl⟩ := (Φ.boundaryNormalizationComponentEquiv hΦ).surjective v
   let e := ρ.boundaryNormalizationComponentIso hΦ
-  have := ray_isCurveOver hΦ b ρ
+  let := ρ.isProper_boundaryComponent_of_prestableFamily hΦ
+  have := ρ.isCurveOver_boundaryComponent hΦ hdim (b.detDualEquiv_self _)
+    (ρ.surjective_detCharacter b)
   rw [← ρ.boundaryNormalizationComponentIso_hom_boundaryComponentι hΦ,
     ← pullback_comp, eulerDegree_pullback_of_isIso e.hom (comp_over e.hom S)]
   let R := (Φ.rayBoundaryIdeal hΦ ρ).subscheme
@@ -195,7 +136,7 @@ private theorem orderedRestriction_mem_ker (c : Fin n → ℂˣ) (x : K) :
   rw [← hd]
   rw [pullback_mul, ofMul_mul, map_add, ht, ← pullbackHom_apply, map_prod, ofMul_prod, map_sum]
   simp only [pullbackHom_apply, pullback_zpow, ofMul_zpow, map_zsmul,
-    hd, eulerDegree_pullback_internalCenter hΦ b]
+    hd, Ray.eulerDegree_pullback_internalCenter]
   rw [← Finset.sum_add_distrib]
   apply Finset.sum_eq_zero
   intro j _
