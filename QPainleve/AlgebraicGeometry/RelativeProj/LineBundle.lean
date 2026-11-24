@@ -11,6 +11,7 @@ public import TauCeti.AlgebraicGeometry.RelativeProj.TwistingSheaf.Pullback
 public import TauCeti.AlgebraicGeometry.RelativeProj.TwistingSheaf.Pushforward
 
 import Mathlib.AlgebraicGeometry.Morphisms.IsIso
+import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.TwistingSheaf.Sections
 import TauCeti.AlgebraicGeometry.Modules.Pullback.Basic
 import TauCeti.AlgebraicGeometry.Modules.Pushforward.Basic
 import TauCeti.AlgebraicGeometry.Modules.Sheaf
@@ -125,12 +126,9 @@ private theorem bijective_relativeProjToTwistingSheaf_app
   have he : τ (σ s) = e 1 := by
     refine (π_app_relativeProjToTwistingSheaf_app 𝒜[ℒ[E]] rfl U s).trans ?_
     simp only [e, twistingSheaf.chartSectionsLinearEquiv_apply, one_smul]
-    apply twistingSheaf.ext
-    intro x
-    -- The gluing diagram's chart and the projective spectrum have the same points.
-    erw [toTwistingSheaf_apply_apply, twistingSheaf.chartGenerator_apply]
-    simp [f]
-    rfl
+    exact toTwistingSheaf_one_eq_chartGenerator
+      ⟨f, 𝒜[ℒ[E]].of_mem_gradedSectionsGrading 1 s⟩ W
+      (basicOpen_eq_top_of_rankOne_generator E U s hb.surjective ▸ le_top)
   have h (c : Γ(X, U.toOpens)) :
       τ (σ (c • s)) = e (j.app (p ⁻¹ᵁ U.toOpens) (p.app U.toOpens c)) := by
     have hσ := (𝒜[ℒ[E]].relativeProjToTwistingSheaf (rfl : ((1 : ℕ) : ℤ) = 1)).app_smul c s
