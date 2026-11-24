@@ -6,6 +6,7 @@ Authors: The QPainleve contributors
 module
 
 public import QPainleve.AlgebraicGeometry.Chow.RationalSurface.Basic
+public import QPainleve.AlgebraicGeometry.LineBundle.EffectiveClass
 
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Cohomology
 import QPainleve.AlgebraicGeometry.Blowup.Tower.SecondCohomology
@@ -170,3 +171,37 @@ theorem exists_effectiveCartier_or_canonical_mul_inv_of_eulerCharBelow_pos
     exact ⟨I, hI, Or.inr (by rw [hclass, inv_inv, hN])⟩
 
 end TauCeti.AlgebraicGeometry.LineBundleClass
+
+namespace AlgebraicGeometry.Scheme
+
+open Chow
+
+variable (X : Scheme.{u}) [X.Over (Spec (.of k))] [X.IsProjectiveOver k]
+  [SmoothOfRelativeDimension 2 (X ↘ Spec (.of k))]
+  [rational : Scheme.IsRationalOver (X ↘ Spec (.of k))]
+
+local notation "B" => classIntersectionBilinForm k
+  (topologicalKrullDim_eq_of_smoothOfRelativeDimension (X ↘ S) (n := 2))
+local notation "K" => Additive.ofMul K[X]
+
+include algClosed rational in
+/-- On a smooth projective rational surface, if a class intersects its difference with the
+canonical class nonnegatively, either the class or its canonical complement is effective. -/
+theorem mem_effectiveClasses_or_canonical_sub
+    [IsIntegral X] [∀ x : X, UniqueFactorizationMonoid (X.presheaf.stalk x)]
+    (a : Additive (LineBundleClass X))
+    (h : 0 ≤ B a a - B a K) : a ∈ X.effectiveClasses ∨ K - a ∈ X.effectiveClasses := by
+  have hRR : 2 * (eulerCharBelow k a.toMul 3 - 1) = B a a - B a K := by
+    simpa only [classIntersectionBilinForm_apply, toMul_ofMul] using
+      eulerCharBelow_eq_riemannRoch_of_isRationalOver k a.toMul
+  obtain ⟨I, hI, hclass⟩ :=
+    exists_effectiveCartier_or_canonical_mul_inv_of_eulerCharBelow_pos k a.toMul (by omega)
+  have hm : Additive.ofMul (LineBundleClass.mk hI.toInvertibleSheaf)⁻¹ ∈ X.effectiveClasses :=
+    mem_effectiveClasses.mpr ⟨hI.toCartierDivisor, hI.isEffective_toCartierDivisor,
+      congrArg Additive.ofMul hI.toLineBundleClass_toCartierDivisor⟩
+  rcases hclass with hclass | hclass
+  · exact Or.inl (by simpa only [hclass, ofMul_toMul] using hm)
+  · exact Or.inr (by simpa only [hclass, ofMul_mul, ofMul_inv, ofMul_toMul, sub_eq_add_neg]
+      using hm)
+
+end AlgebraicGeometry.Scheme
