@@ -110,23 +110,6 @@ theorem mem_range_baseCenter_iff_isEffectiveCartier_comap (hT : IsClosedPointTow
 
 end Smooth
 
-/-- Pulling a class through a further closed-point tower retains the existing
-Picard coordinates and gives zero at each newly appended exceptional class. -/
-theorem picardMarking_symm_pullback_append (hT : IsClosedPointTower X T)
-    {r : ℕ} {Z : Scheme.{u}} {R : BlowupTower Y r Z} (hR : IsClosedPointTower Y R)
-    {k : Type u} [Field k] [PerfectField k] [IsIntegral X] [IsNoetherian X]
-    (s : X ⟶ Spec (.of k)) [SmoothOfRelativeDimension 2 s] (L : LineBundleClass Y) :
-    let a := (T.picardMarking hT s).symm (Additive.ofMul L)
-    ((T.append R).picardMarking (hT.append hR) s).symm
-        (Additive.ofMul (pullback R.toBase L)) = (a.1, Fin.append a.2 0) := by
-  intro a
-  apply ((T.append R).picardMarking (hT.append hR) s).injective
-  apply Additive.toMul.injective
-  rw [LinearEquiv.apply_symm_apply, picardMarking_apply, picardHom_append]
-  simp only [Fin.append_left, Fin.append_right, toMul_ofMul]
-  rw [← picardMarking_apply T hT s, LinearEquiv.apply_symm_apply, picardHom_apply_zero,
-    toMul_ofMul]
-
 variable {k : Type u} [Field k] [IsAlgClosed k]
   [X.Over (Spec (.of k))] [X'.Over (Spec (.of k))]
   [SmoothOfRelativeDimension 2 (X ↘ Spec (.of k))]

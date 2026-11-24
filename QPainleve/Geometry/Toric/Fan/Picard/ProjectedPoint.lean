@@ -11,7 +11,6 @@ public import QPainleve.Geometry.Toric.Fan.Boundary.InternalCenter
 public import QPainleve.Geometry.Toric.Fan.Smooth
 
 import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
-import QPainleve.AlgebraicGeometry.Morphisms.Pullback.IsoLocus
 import QPainleve.Geometry.Toric.Fan.Boundary.Subdivision
 import TauCeti.AlgebraicGeometry.RationalPoint.Basic
 
@@ -84,11 +83,11 @@ theorem base_order_eq_of_common_subdivision (hT : IsClosedPointTower X[Φ] T)
   let := hN'
   have hker {A : Fan i} (J : Ω.IsSubdivision A) (r : A.Ray) :
       (center(b,r,c)).ker.comap π[J] = (center(b,J.liftRay r,c)).ker := by
-    have hpb : IsPullback center(b,J.liftRay r,c) (𝟙 S) π[J] center(b,r,c) :=
-      π[J].isPullback_of_isIso_of_range_subset_isoLocus _ _ _
-        (by simpa only [Category.id_comp] using J.binomialCenter_liftRay_comp_algebraicMap r b c)
-        (J.range_binomialCenter_subset_isoLocus r rankTwo(b) (b.detDualEquiv_self _)
-          (r.surjective_detCharacter b) c)
+    have hpb : IsPullback center(b,J.liftRay r,c) (𝟙 S) π[J] center(b,r,c) := by
+      simpa only [J.primitiveGenerator_liftRay] using
+        J.isPullback_binomialCenter r rankTwo(b)
+          (m := (b.detDualEquiv r.primitiveGenerator).toAddMonoidHom)
+          (b.detDualEquiv_self _) (r.surjective_detCharacter b) c
     have := r.isClosedImmersion_binomialCenter rankTwo(b) (b.detDualEquiv_self _)
       (r.surjective_detCharacter b) c
     exact (ker_eq_comap_of_isPullback _ hpb).symm
