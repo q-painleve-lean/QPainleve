@@ -55,6 +55,22 @@ theorem xRationalMap_nil :
   simp only [affineRationalPullback_xRationalMap, affineRationalPullback_id, xPullback_nil]
   rfl
 
+/-- The signed inversion step is induced by the regular torus automorphism
+that negates the Laurent exponents. -/
+theorem xRationalMap_invert (B : SkewExchangeMatrix ι) :
+    ((Generator.invert.toStep B).toPath).xRationalMap k =
+      (map k (AddEquiv.neg (ι →₀ ℤ)).toAddMonoidHom).toRationalMap := by
+  let := isDominant_map k (AddEquiv.neg (ι →₀ ℤ)).toAddMonoidHom
+    (AddEquiv.neg (ι →₀ ℤ)).injective
+  apply (affineRationalPullback_eq_iff _ _).mp
+  rw [affineRationalPullback_xRationalMap, xPullback_toPath, Step.xPullback_toStep,
+    Generator.xPullback_invert,
+    affineRationalPullback_map _ (AddEquiv.neg (ι →₀ ℤ)).injective]
+  apply IsFractionRing.ringHom_ext (A := AddMonoidAlgebra k (ι →₀ ℤ))
+  intro x
+  simp [xInversion, functionFieldMap_algebraMap, AddMonoidAlgebra.domCongr,
+    AddMonoidAlgebra.mapDomainRingEquiv, AddMonoidAlgebra.mapDomainAlgHom]
+
 /-- The rational X map of a concatenation performs the first word before the second. -/
 @[simp]
 theorem xRationalMap_comp (w : Word B C) (v : Word C D) :

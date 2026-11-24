@@ -6,7 +6,7 @@ Authors: The QPainleve contributors
 module
 
 public import QPainleve.SignedClusterModularGroup.Realization.Basic
-public import QPainleve.Geometry.Toric.Fan.TorusAction.Orientation
+public import QPainleve.Geometry.Toric.Fan.TorusAction.Orientation.Basic
 
 import TauCeti.AlgebraicGeometry.Curves.Node.Reduced
 import TauCeti.AlgebraicGeometry.Morphisms.Smooth.RationalPoint

@@ -14,11 +14,11 @@ public import TauCeti.AlgebraicGeometry.Morphisms.Modification.Centre
 public import TauCeti.AlgebraicGeometry.Scheme.Normal
 
 import Mathlib.AlgebraicGeometry.Noetherian
+import QPainleve.AlgebraicGeometry.Normalization.Lift
 import QPainleve.Topology.KrullDimension
 import QPainleve.Topology.NoetherianSpace
 import TauCeti.AlgebraicGeometry.Birational.Irreducible
 import TauCeti.AlgebraicGeometry.Normalization.Basic
-import TauCeti.AlgebraicGeometry.Normalization.IsIso
 import TauCeti.Topology.KrullDimension.Basic
 
 /-!
@@ -107,13 +107,7 @@ is isomorphic to the target. -/
 theorem isIso_fromNormalization_of_isModification [IsReduced X] [IsIntegral Y]
     [IsNormalScheme Y] [IsModification f] : IsIso f.fromNormalization := by
   let g := Y.fromSpecStalk (genericPoint Y)
-  have hg : IsIso g.fromNormalization := by
-    refine IsZariskiLocalAtTarget.of_forall_exists_morphismRestrict
-      (P := MorphismProperty.isomorphisms _) (f := g.fromNormalization) fun y ↦ ?_
-    obtain ⟨U, hU, hy, -⟩ := exists_isAffineOpen_mem_and_subset (Opens.mem_top y)
-    have : Nonempty U := ⟨⟨y, hy⟩⟩
-    have := IsNormalScheme.isIntegrallyClosed_of_isAffineOpen hU
-    exact ⟨U, hy, isIso_morphismRestrict_fromNormalization_of_isIntegrallyClosed hU⟩
+  have hg : IsIso g.fromNormalization := Y.isIso_fromNormalization_fromSpecStalk_genericPoint
   obtain ⟨s, hs, hdom⟩ := f.exists_dominant_generic_section
   let m := g.normalizationMap f s hs
   have hcomp : g.toNormalization ≫ m = s ≫ f.toNormalization :=

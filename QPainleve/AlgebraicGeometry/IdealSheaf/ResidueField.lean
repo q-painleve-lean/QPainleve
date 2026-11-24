@@ -5,21 +5,19 @@ Authors: The QPainleve contributors
 -/
 module
 
-public import Mathlib.AlgebraicGeometry.IdealSheaf.Functorial
 public import Mathlib.AlgebraicGeometry.ResidueField
+public import QPainleve.AlgebraicGeometry.IdealSheaf.ClosedImmersion
 public import TauCeti.AlgebraicGeometry.Morphisms.IsoLocus
 
 import QPainleve.AlgebraicGeometry.Morphisms.IsoLocus
 import TauCeti.AlgebraicGeometry.IdealSheaf.BaseChange
 import TauCeti.AlgebraicGeometry.IdealSheaf.Reduced
-import TauCeti.AlgebraicGeometry.IdealSheaf.VanishingIdeal
 import TauCeti.AlgebraicGeometry.ResidueField
 
 /-!
 # The ideal sheaf of the closure of a point
 
-A morphism from a reduced scheme gives its schematic image the reduced structure.
-The kernel of a field-valued point thus defines the reduced closure of the point.
+The kernel of a field-valued point defines the reduced closure of the point.
 This identifies the reduced-center and residue-field descriptions of point blowups.
 The reduced closed point ideal pulls back to a reduced closed point ideal along a
 morphism that is an isomorphism over a neighborhood of the point.
@@ -30,12 +28,6 @@ public section
 open CategoryTheory Limits TopologicalSpace
 
 namespace AlgebraicGeometry.Scheme
-
-/-- A reduced source determines the reduced scheme structure on its schematic image. -/
-theorem Hom.ker_eq_vanishingIdeal_support {X Y : Scheme} (f : X ⟶ Y) [IsReduced X] :
-    f.ker = IdealSheafData.vanishingIdeal f.ker.support :=
-  le_antisymm (by rw [IdealSheafData.vanishingIdeal_support]; exact f.ker.le_radical)
-    (IdealSheafData.vanishingIdeal_le_ker_of_range_subset f f.range_subset_ker_support)
 
 /-- The kernel of a residue-field morphism is the vanishing ideal of the closure of its point. -/
 theorem ker_fromSpecResidueField_eq_vanishingIdeal {X : Scheme} (p : X) :
