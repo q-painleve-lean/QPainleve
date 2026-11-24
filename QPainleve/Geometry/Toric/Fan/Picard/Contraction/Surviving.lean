@@ -128,17 +128,15 @@ variable {X' Y' : Scheme} [X'.Over S] [X'.IsProjectiveOver ℂ] [IsIntegral X']
 local notation "p'" => (Iso.hom e' ≫ toBase T')
 local notation "P'" => markedExceptionalSpan ℂ (hπ d) T' e'
 
-include hT he hD hT' he' hD' in
-/-- Surjective identification of the marked pullbacks of two nodal contractions
-of the same ordered toric presentation identifies exactly the rays that survive. -/
-theorem mem_boundaryPrimes_iff_of_matching_picard_markings
+include hT he hT' he' in
+/-- The marked exceptional span is determined by the image of Picard pullback
+in the common toric coordinates. -/
+theorem markedExceptionalSpan_eq_of_matching_picard_markings
     (hsep : (F).SeparatingRight)
     (G : LineBundleClass X' → LineBundleClass X) (hG : Function.Surjective G)
     (hPic : ∀ L : LineBundleClass X', (mark c).symm (Additive.ofMul (pullback p (G L))) =
-      (mark d).symm (Additive.ofMul (pullback p' L)))
-    (ρ : Φ.Ray) :
-    p (internalBlowupBoundaryPrimeEquiv hΦ b s c ρ).val ∈ D.boundaryPrimes ↔
-      p' (internalBlowupBoundaryPrimeEquiv hΦ b s d ρ).val ∈ D'.boundaryPrimes := by
+      (mark d).symm (Additive.ofMul (pullback p' L))) :
+    P = P' := by
   let : IsNoetherian Z := isNoetherian_of_finiteType (Z ↘ S)
   have hsymm : (F).IsSymm := by
     refine isSymm_prod_iff.mpr
@@ -153,12 +151,78 @@ theorem mem_boundaryPrimes_iff_of_matching_picard_markings
     rw [← range_marked_pullback_eq_orthogonal hΦ b s c hT e he,
       ← range_marked_pullback_eq_orthogonal hΦ b s d hT' e' he']
     exact (hG.range_comp _).symm.trans (congrArg Set.range (funext hPic))
-  have hspan : P = P' := by
-    rw [← (F).orthogonal_orthogonal_of_isCompl hsymm.isRefl hsep P hc,
-      horth, (F).orthogonal_orthogonal_of_isCompl hsymm.isRefl hsep P' hd]
+  rw [← (F).orthogonal_orthogonal_of_isCompl hsymm.isRefl hsep P hc,
+    horth, (F).orthogonal_orthogonal_of_isCompl hsymm.isRefl hsep P' hd]
+
+include hT he hD hT' he' hD' in
+/-- Surjective identification of the marked pullbacks of two nodal contractions
+of the same ordered toric presentation identifies exactly the rays that survive. -/
+theorem mem_boundaryPrimes_iff_of_matching_picard_markings
+    (hsep : (F).SeparatingRight)
+    (G : LineBundleClass X' → LineBundleClass X) (hG : Function.Surjective G)
+    (hPic : ∀ L : LineBundleClass X', (mark c).symm (Additive.ofMul (pullback p (G L))) =
+      (mark d).symm (Additive.ofMul (pullback p' L)))
+    (ρ : Φ.Ray) :
+    p (internalBlowupBoundaryPrimeEquiv hΦ b s c ρ).val ∈ D.boundaryPrimes ↔
+      p' (internalBlowupBoundaryPrimeEquiv hΦ b s d ρ).val ∈ D'.boundaryPrimes := by
+  let : IsNoetherian Z := isNoetherian_of_finiteType (Z ↘ S)
+  have hspan := markedExceptionalSpan_eq_of_matching_picard_markings hΦ b s
+    c hT e he d hT' e' he' hsep G hG hPic
   have hρ := markedBoundaryMap_single_mem_markedExceptionalSpan_iff hΦ b s c hT e he hD ρ
   have hρ' := markedBoundaryMap_single_mem_markedExceptionalSpan_iff hΦ b s d hT' e' he' hD' ρ
   dsimp only at hρ hρ'
   exact not_iff_not.mp (hρ.symm.trans (hspan ▸ hρ'))
+
+local instance isNoetherian_survivingRayBase : IsNoetherian X :=
+  isNoetherian_of_finiteType (X ↘ S)
+local instance isNoetherian_survivingRayComparisonBase : IsNoetherian X' :=
+  isNoetherian_of_finiteType (X' ↘ S)
+local instance isNormalScheme_survivingRayBase : IsNormalScheme X := by
+  let := (X ↘ S).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two
+  exact IsNormalScheme.of_uniqueFactorizationMonoid_stalk
+local instance isNormalScheme_survivingRayComparisonBase : IsNormalScheme X' := by
+  let := (X' ↘ S).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two
+  exact IsNormalScheme.of_uniqueFactorizationMonoid_stalk
+
+include hT hT' he he' hD hD' in
+/-- The marked pullback coordinates of a surviving prime depend only on its ray and
+the exceptional span. -/
+theorem marked_pullback_prime_eq_of_contractedBoundaryRayEmbedding_eq
+    (hspan : P = P') (x : D.boundaryPrimes) (y : D'.boundaryPrimes)
+    (hxy : letI := isModification_orderedContraction hΦ b s c hT e
+      letI := isModification_orderedContraction hΦ b s d hT' e'
+      contractedBoundaryRayEmbedding hΦ b s c p hD x =
+        contractedBoundaryRayEmbedding hΦ b s d p' hD' y) :
+    let := (X ↘ S).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two
+    let := (X' ↘ S).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two
+    (mark c).symm (Additive.ofMul (pullback p (primeDivisorClass
+      ⟨x.val, (mem_boundaryPrimes.mp x.property).2⟩))) =
+    (mark d).symm (Additive.ofMul (pullback p' (primeDivisorClass
+      ⟨y.val, (mem_boundaryPrimes.mp y.property).2⟩))) := by
+  classical
+  intro _ _
+  let : IsNoetherian Z := isNoetherian_of_finiteType (Z ↘ S)
+  let μ := contractedPicardMarking ℂ hT.isClosedPointTower (hπ c) e he
+  let ν := contractedPicardMarking ℂ hT'.isClosedPointTower (hπ d) e' he'
+  have hc (a : Additive (LineBundleClass X)) :
+      (mark c).symm (Additive.ofMul (pullback p a.toMul)) = (μ.symm a).val := by
+    apply (mark c).injective
+    rw [LinearEquiv.apply_symm_apply, internalBlowupPicardMarking_apply]
+    exact (picardHom_contractedPicardMarking_symm ℂ hT.isClosedPointTower (hπ c) e he a).symm
+  have hd (a : Additive (LineBundleClass X')) :
+      (mark d).symm (Additive.ofMul (pullback p' a.toMul)) = (ν.symm a).val := by
+    apply (mark d).injective
+    rw [LinearEquiv.apply_symm_apply, internalBlowupPicardMarking_apply]
+    exact (picardHom_contractedPicardMarking_symm ℂ hT'.isClosedPointTower (hπ d) e' he' a).symm
+  have hproj (U W : Submodule ℤ _) (h : U = W)
+      (hU : IsCompl ((F).orthogonal U) U) (hW : IsCompl ((F).orthogonal W) W) (a) :
+      ((F).orthogonal U).projection U hU a = ((F).orthogonal W).projection W hW a := by
+    subst W
+    rfl
+  rw [← toMul_ofMul (primeDivisorClass ⟨x.val, (mem_boundaryPrimes.mp x.property).2⟩),
+    ← toMul_ofMul (primeDivisorClass ⟨y.val, (mem_boundaryPrimes.mp y.property).2⟩), hc, hd]
+  rw [contractedPicardMarking_symm_boundaryPrime hΦ b s c hT e he hD x,
+    contractedPicardMarking_symm_boundaryPrime hΦ b s d hT' e' he' hD' y, hxy]
+  exact hproj _ _ hspan _ _ _
 
 end TauCeti.Toric.Fan

@@ -57,6 +57,13 @@ def numberedBoundaryRays (hM : D[M].IsEffectiveCartier) : ZMod n ↪ Φ.Ray :=
   (M.numberedBoundaryPrimes hM).trans
     (Fan.contractedBoundaryRayEmbedding hΦ b s (center c) p.projection p.support_comap)
 
+/-- The ray at a numbered component is the strict transform of its boundary prime. -/
+theorem numberedBoundaryRays_apply (hM : D[M].IsEffectiveCartier) (j : ZMod n) :
+    p.numberedBoundaryRays hM j =
+      Fan.contractedBoundaryRayEmbedding hΦ b s (center c) p.projection p.support_comap
+        (M.numberedBoundaryPrimes hM j) :=
+  (rfl)
+
 /-- The numbered rays are exactly the surviving rays of the contraction. -/
 theorem range_numberedBoundaryRays (hM : D[M].IsEffectiveCartier) :
     Set.range (p.numberedBoundaryRays hM) =
@@ -64,6 +71,14 @@ theorem range_numberedBoundaryRays (hM : D[M].IsEffectiveCartier) :
         p.support_comap) := by
   rw [numberedBoundaryRays, Function.Embedding.coe_trans,
     (M.numberedBoundaryPrimes_surjective hM).range_comp]
+
+/-- A ray occurs in the boundary numbering exactly when its strict prime
+projects to a boundary prime of the contracted surface. -/
+theorem mem_range_numberedBoundaryRays_iff (hM : D[M].IsEffectiveCartier) (ρ : Φ.Ray) :
+    ρ ∈ Set.range (p.numberedBoundaryRays hM) ↔
+      p.projection (Fan.internalBlowupBoundaryPrimeEquiv hΦ b s (center c) ρ).val ∈
+        D[M].boundaryPrimes := by
+  rw [p.range_numberedBoundaryRays, Fan.mem_range_contractedBoundaryRayEmbedding_iff]
 
 /-- A numbered toric component gives the ray of a contracted component exactly
 when its generic point maps to that contracted component's generic point. -/
