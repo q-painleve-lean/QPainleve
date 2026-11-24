@@ -12,7 +12,7 @@ import QPainleve.SignedClusterModularGroup.Realization.BranchAction
 import QPainleve.SignedClusterModularGroup.Realization.Evaluation
 
 /-!
-# The kernel of the unsigned Picard action
+# Identity detection and the unsigned Picard kernel
 
 An orientation-preserving loop whose marked Picard pullback is trivial can be
 compared with the identity realization. Distinct boundary classes determine the
@@ -84,7 +84,10 @@ private theorem isOver_precomp {F : X[r] ⤏ X[r]} [F.IsDominant] [F.IsOver sX[r
   exact RationalMap.isOver_comp e.hom.toRationalMap h F inferInstance
 
 include hvertices hdet hnodes hmodels hmark hc he hchart in
-private theorem xMap_eq_id_of_picard_eq_refl
+/-- A geometric self-realization over a fixed ordered toric presentation with
+distinct marked boundary classes represents the identity X map if its Picard
+pullback is the identity and it preserves the boundary orientation. -/
+theorem xMap_eq_id_of_picard_eq_refl
     {C : T[A].left.PartialMap T[A].left} [IsDominant C.hom] [C.IsOver T[A].hom T[A].hom]
     {F : X[r] ⤏ X[r]} [F.IsDominant] [F.IsOver sX[r] sX[r]]
     (R : GeometricRealization P P C F) (hinj : Function.Injective D)
