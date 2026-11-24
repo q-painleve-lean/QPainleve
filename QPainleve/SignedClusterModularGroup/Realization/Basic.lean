@@ -166,48 +166,6 @@ theorem compEvaluation_iso (M : MarkedSurface k n B₀ X₀) (f : X₀ ⟶ X₁)
 theorem comp_iso (R : FiberRealization M N F I g) (R' : FiberRealization N O G J h) :
     (R.comp R').iso = R.iso ≪≫ R'.iso := (rfl)
 
-section Residual
-
-variable {k : Type u} [Field k] [IsSepClosed k] [Infinite k] {n : ℕ} [NeZero n]
-  {L₀ L₁ : Type u} [AddCommGroup L₀] [AddCommGroup L₁]
-  {B₀ : LinearMap.BilinForm ℤ L₀} {B₁ : LinearMap.BilinForm ℤ L₁}
-  {X Y : Scheme.{u}} [IsIntegral X] [X.IsSeparated] [Y.IsSeparated]
-  {M : MarkedSurface k n B₀ X} {P Q : MarkedSurface k n B₁ Y}
-  {F G : X ⤏ Y} {I J : B₁.IsometryEquiv B₀} {g h : DihedralGroup n}
-  (R : FiberRealization M P F I g) (R' : FiberRealization M Q G J h)
-
-/-- Equality of the Picard actions makes the residual isomorphism identify the two
-target markings. -/
-theorem pullback_picardMarking_targetIso (hI : I = J) (a : L₁) :
-    LineBundleClass.pullback (surfaceIso (R.iso.symm ≪≫ R'.iso)).hom
-      (Q.picardMarking a).toMul = (P.picardMarking a).toMul := by
-  apply (LineBundleClass.pullbackEquiv (surfaceIso R.iso)).injective
-  have ha := congrArg Additive.toMul ((R'.picard_eq a).symm.trans
-    ((congrArg (fun f : B₁.IsometryEquiv B₀ ↦ M.picardMarking (f a)) hI).symm.trans
-      (R.picard_eq a)))
-  simpa only [LineBundleClass.pullbackEquiv_apply, LineBundleClass.pullback_comp,
-    MarkedSurface.surfaceIso_trans, MarkedSurface.surfaceIso_symm, Iso.trans_hom,
-    Iso.symm_hom, Category.assoc, Iso.hom_inv_id_assoc, toMul_ofMul] using ha
-
-/-- Equality of the boundary actions makes the residual isomorphism preserve every
-numbered branch. -/
-theorem boundaryCycleAction_targetIso (hg : g = h) :
-    letI : PrestableFamily (P.boundary ↘ Spec (.of k)) := P.prestable
-    letI : PrestableFamily (Q.boundary ↘ Spec (.of k)) := Q.prestable
-    (boundaryIso (R.iso.symm ≪≫ R'.iso)).boundaryCycleAction P.cycle Q.cycle = 1 := by
-  let : PrestableFamily (M.boundary ↘ Spec (.of k)) := M.prestable
-  let : PrestableFamily (P.boundary ↘ Spec (.of k)) := P.prestable
-  let : PrestableFamily (Q.boundary ↘ Spec (.of k)) := Q.prestable
-  have hpair : R.iso ≪≫ (R.iso.symm ≪≫ R'.iso) = R'.iso := by simp
-  have hcomp := (boundaryIso R.iso).boundaryCycleAction_trans M.cycle P.cycle
-    (boundaryIso (R.iso.symm ≪≫ R'.iso)) Q.cycle
-  have hmul : h = (boundaryIso (R.iso.symm ≪≫ R'.iso)).boundaryCycleAction P.cycle Q.cycle * h := by
-    simpa only [← MarkedSurface.boundaryIso_trans, hpair, R'.boundaryAction_eq,
-      R.boundaryAction_eq, hg] using hcomp
-  exact mul_right_cancel ((one_mul h).trans hmul).symm
-
-end Residual
-
 end FiberRealization
 
 /-- A realization between fixed marked families over a dominant center map `C`.

@@ -80,6 +80,19 @@ theorem comp_targetEvaluation (R' : FiberRealization M Q F J h) :
 
 variable {G : X ⤏ X'} (R' : FiberRealization M Q G J h)
 
+/-- Equality of the Picard actions makes the residual isomorphism identify the two
+target markings. -/
+theorem pullback_picardMarking_targetIso (hI : I = J) (a : L') :
+    LineBundleClass.pullback (surfaceIso (R.iso.symm ≪≫ R'.iso)).hom
+      (Q.picardMarking a).toMul = (P.picardMarking a).toMul := by
+  apply (LineBundleClass.pullbackEquiv (surfaceIso R.iso)).injective
+  have ha := congrArg Additive.toMul ((R'.picard_eq a).symm.trans
+    ((congrArg (fun f : B'.IsometryEquiv B ↦ M.picardMarking (f a)) hI).symm.trans
+      (R.picard_eq a)))
+  simpa only [LineBundleClass.pullbackEquiv_apply, LineBundleClass.pullback_comp,
+    MarkedSurface.surfaceIso_trans, MarkedSurface.surfaceIso_symm, Iso.trans_hom,
+    Iso.symm_hom, Category.assoc, Iso.hom_inv_id_assoc, toMul_ofMul] using ha
+
 /-- If the residual target isomorphism preserves each marked Picard class, the two Picard
 pullbacks agree. -/
 theorem picard_eq_of_pullback_targetIso
@@ -93,6 +106,23 @@ theorem picard_eq_of_pullback_targetIso
   rw [R.picard_eq, R'.picard_eq, ← hp a, LineBundleClass.pullback_comp]
   simp only [MarkedSurface.surfaceIso_trans, MarkedSurface.surfaceIso_symm, Iso.trans_hom,
     Iso.symm_hom, Iso.hom_inv_id_assoc]
+
+/-- Equality of the boundary actions makes the residual isomorphism preserve every
+numbered branch. -/
+theorem boundaryCycleAction_targetIso (hg : g = h) :
+    letI : PrestableFamily (P.boundary ↘ Spec (.of k)) := P.prestable
+    letI : PrestableFamily (Q.boundary ↘ Spec (.of k)) := Q.prestable
+    (boundaryIso (R.iso.symm ≪≫ R'.iso)).boundaryCycleAction P.cycle Q.cycle = 1 := by
+  let : PrestableFamily (M.boundary ↘ Spec (.of k)) := M.prestable
+  let : PrestableFamily (P.boundary ↘ Spec (.of k)) := P.prestable
+  let : PrestableFamily (Q.boundary ↘ Spec (.of k)) := Q.prestable
+  have hpair : R.iso ≪≫ (R.iso.symm ≪≫ R'.iso) = R'.iso := by simp
+  have hcomp := (boundaryIso R.iso).boundaryCycleAction_trans M.cycle P.cycle
+    (boundaryIso (R.iso.symm ≪≫ R'.iso)) Q.cycle
+  have hmul : h = (boundaryIso (R.iso.symm ≪≫ R'.iso)).boundaryCycleAction P.cycle Q.cycle * h := by
+    simpa only [← MarkedSurface.boundaryIso_trans, hpair, R'.boundaryAction_eq,
+      R.boundaryAction_eq, hg] using hcomp
+  exact mul_right_cancel ((one_mul h).trans hmul).symm
 
 /-- If the residual target isomorphism preserves the numbered branches, the two actions
 agree on the entire boundary. -/
