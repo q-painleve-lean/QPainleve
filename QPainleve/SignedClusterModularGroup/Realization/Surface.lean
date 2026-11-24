@@ -116,6 +116,12 @@ def compEvaluation {Y : Scheme.{u}} (g : X ⟶ Y) : MarkedSurface k n B Y :=
 def picardMarking : L ≃ₗ[ℤ] Additive (LineBundleClass M.surface) :=
   M.marking.toLinearEquiv
 
+/-- The underlying Picard marking evaluates to the same class as the intersection marking. -/
+theorem picardMarking_apply (a : L) :
+    letI : SmoothOfRelativeDimension 2 (M.surface ↘ S) := M.smooth
+    M.picardMarking a = M.marking a :=
+  (rfl)
+
 /-- Replacing the evaluation preserves the Picard marking. -/
 @[simp]
 theorem withEvaluation_picardMarking {Y : Scheme.{u}} (f : M.surface ⤏ Y) (a : L) :

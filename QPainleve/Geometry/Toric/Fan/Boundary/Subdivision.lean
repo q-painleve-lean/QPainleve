@@ -77,6 +77,21 @@ theorem boundaryMap_comp_subschemeι :
 
 end Boundary
 
+section Over
+
+variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
+  {i : N →+ V} {Φ Ψ : Fan i} (h : Φ.IsSubdivision Ψ)
+  (hΦ : Nonempty Φ.cones) (hΨ : Nonempty Ψ.cones)
+
+/-- A toric subdivision restricts to a morphism of boundaries over the ground field. -/
+instance isOver_boundaryMap : (h.boundaryMap hΦ hΨ).IsOver (Spec (.of ℂ)) := ⟨by
+  rw [over_eq_subschemeι_comp, ← Category.assoc, boundaryMap_comp_subschemeι,
+    Category.assoc, Ψ.algebraicRealization_over,
+    FanHom.algebraicMap_comp_algebraicRealizationStructureMap,
+    ← Φ.algebraicRealization_over, ← over_eq_subschemeι_comp]⟩
+
+end Over
+
 section RayPoints
 
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]

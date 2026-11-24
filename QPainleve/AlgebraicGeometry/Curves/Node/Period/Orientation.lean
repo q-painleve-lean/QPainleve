@@ -6,6 +6,7 @@ Authors: The QPainleve contributors
 module
 
 public import QPainleve.AlgebraicGeometry.Curves.Node.Conductor.Subdivision
+public import QPainleve.AlgebraicGeometry.Curves.Node.GenericPoint
 public import QPainleve.AlgebraicGeometry.Curves.Node.Period.CycleAction
 public import QPainleve.AlgebraicGeometry.Curves.Node.Period.Subdivision
 
@@ -109,5 +110,25 @@ theorem cycleOrientationSign_eq_of_orientedCycleSubdivisions
     (hpfa.symm.trans
       ((t.nodalPicardCycleMulEquiv_pullback_boundaryCycleAction C D gA).trans
         (congrArg (· ^ (cycleOrientationSign (t.boundaryCycleAction C D) : ℤ)) hpga)))
+
+/-- Two oriented subdivisions of a common numbered cycle determine the rotation
+of a descended boundary isomorphism by the image of component zero. The rotation
+compares the actual ordered branches, including for one and two components. -/
+theorem boundaryCycleAction_eq_r_iff_of_common_subdivision
+    (e : X ≅ Y) [e.hom.IsOver (Spec (.of k))]
+    {f : Z ⟶ X} {g : Z ⟶ Y} [f.IsOver (Spec (.of k))] [g.IsOver (Spec (.of k))]
+    (hf : f.IsOrientedCycleSubdivision C A) (hg : g.IsOrientedCycleSubdivision C B)
+    (h : f ≫ e.hom = g) {x : Z} (hx : f x = A.componentGenericPoint 0) (j : ZMod n) :
+    e.boundaryCycleAction A B = r j ↔ g x = B.componentGenericPoint j := by
+  let t := Iso.refl Z
+  let : t.hom.IsOver (Spec (.of k)) := ⟨Category.id_comp _⟩
+  have ht : CommSq t.hom f g e.hom :=
+    ⟨by simpa only [t, Iso.refl_hom, Category.id_comp] using h.symm⟩
+  have hsign := e.cycleOrientationSign_eq_of_orientedCycleSubdivisions A B C C t hf hg ht
+  simp only [t, boundaryCycleAction_refl, map_one] at hsign
+  have hpoint := congrArg (fun a : Z ⟶ Y ↦ a x) h
+  rw [Scheme.Hom.comp_apply, hx, e.apply_componentGenericPoint] at hpoint
+  rw [eq_r_iff_cycleVertexPerm_zero_eq hsign, ← hpoint,
+    B.componentGenericPoint_injective.eq_iff]
 
 end CategoryTheory.Iso
