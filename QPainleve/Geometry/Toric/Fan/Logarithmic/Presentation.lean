@@ -7,6 +7,7 @@ module
 
 public import QPainleve.Geometry.Toric.Fan.InternalBlowup
 public import QPainleve.Geometry.Toric.Fan.Logarithmic.Factorization
+public import QPainleve.Geometry.Toric.Fan.Mutation.Boundary
 public import QPainleve.Geometry.Toric.Fan.Mutation.Subdivision
 public import QPainleve.Geometry.Toric.Fan.Subdivision.Equiv
 public import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.ProjectiveOver
@@ -167,7 +168,8 @@ private theorem exists_tower_in_basis (U : OrderedToricModel A m)
   exact ⟨u, hu.symm ▸ Exists.intro U.iso ⟨U.hom_eq, U.pole_eq, U.hom_def.symm⟩⟩
 
 /-- Transport an ordered model in the mutation frame. The returned link uses the lifted
-mutation ray, and the pivot label and terminal marking record the ordered mutation. -/
+mutation ray, and the pivot label and terminal marking record the ordered mutation.
+The boundary comparison takes place inside the common resolving surface. -/
 theorem exists_model_of_mutation_in_basis [IsIntegral Z]
     (U : OrderedToricModel A m)
     (ρ : A.fan.Ray) (hOpp : hull ℝ {i (-ρ.primitiveGenerator)} ∈ A.fan.cones) (c : ℂˣ)
@@ -202,6 +204,8 @@ theorem exists_model_of_mutation_in_basis [IsIntegral Z]
         ∃ (e : T.1 ≅ Z) (he : e.hom ≫ B.hom = base[T] ≫ π[K])
           (hP : D.comap e.hom = T.2.boundaryι.ker),
           let W : OrderedToricModel B (n + 1) := ⟨Ψ, hreg, K, b, rays, params, e, he, hP⟩
+          (Ray.mutationBoundaryIso b σ opp c U.regular).hom ≫ W.tower.2.boundaryι ≫ W.iso.hom =
+            U.tower.2.boundaryι ≫ U.iso.hom ∧
           ∃ step : SarkisovStep U.refinedProjection W.refinedProjection,
             step.rationalMap = (U.fan.mutationPartialMap b (c : ℂ)
               σ.primitiveGenerator_ne_zero σ.hull_primitiveGenerator_mem opp).toRationalMap := by
@@ -210,12 +214,15 @@ theorem exists_model_of_mutation_in_basis [IsIntegral Z]
     dsimp only at hFan
     subst Φ
     simp only [cast_eq] at hMap
-    obtain ⟨n, hm, k, hk, hc', -, g, hproj, hpole, hrat, -, -⟩ :=
+    obtain ⟨n, hm, k, hk, hc', -, g, hproj, hpole, hrat, hboundary, -⟩ :=
       A.exists_ordered_toric_mutation_model_of_factorization U.basis ρ hOpp c U.regular
         U.subdivision U.rays U.parameters r hMap U.iso U.hom_eq U.pole_eq
     refine ⟨n, hm, k, hk, hc', g.symm ≪≫ U.iso, hproj, hpole, ?_⟩
     intro W
-    refine ⟨⟨_, .mutation U.basis _ c _, ?_⟩, rfl⟩
+    refine ⟨?_, ⟨_, .mutation U.basis _ c _, ?_⟩, rfl⟩
+    · have hb := congrArg (· ≫ g.inv ≫ U.iso.hom) hboundary.symm
+      dsimp only [W, OrderedToricModel.tower, Function.comp_apply]
+      simpa only [Iso.trans_hom, Iso.symm_hom, Category.assoc, Iso.hom_inv_id_assoc] using hb
     let : IsDominant (base[U.tower]) :=
       (U.fan.isModification_internalBlowupTower_toBase U.basis U.rays U.parameters
         U.regular).isDominant
@@ -244,7 +251,7 @@ private theorem exists_model_of_mutation [IsIntegral Z]
     ⟨U.fan, U.regular, U.subdivision, b, U.rays, u, e, he, hP⟩
   have hRef : U'.refinedProjection = U.refinedProjection :=
     LogarithmicProjection.ext rfl (heq_of_eq (U'.hom_def.trans href))
-  obtain ⟨n, hm, k, -, -, e', he', hP', step, -⟩ :=
+  obtain ⟨n, hm, k, -, -, e', he', hP', -, step, -⟩ :=
     U'.exists_model_of_mutation_in_basis ρ hOpp c hFan hMap
   subst m
   exact ⟨_, ⟨hRef ▸ step⟩⟩
