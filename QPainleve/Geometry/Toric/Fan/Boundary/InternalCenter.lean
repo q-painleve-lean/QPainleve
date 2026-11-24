@@ -135,6 +135,25 @@ theorem Ray.map_internalCenter_subschemeι (ρ : Φ.Ray) (c : ℂˣ) :
   exact congrArg Scheme.Hom.ker (ρ.binomialCenterOnBoundary_comp_subschemeι rankTwo
     (m := χ(ρ)) (b.detDualEquiv_self _) (ρ.surjective_detCharacter b) c)
 
+/-- A change of lattice basis can be absorbed into the parameter of the same
+Cartier center on the toric boundary. -/
+theorem Ray.exists_internalCenter_eq_of_basis (ρ : Φ.Ray)
+    (d : Module.Basis (Fin 2) ℤ N) (c : ℂˣ) :
+    ∃ a : ℂˣ, ρ.internalCenter b a = ρ.internalCenter d c := by
+  obtain ⟨a, ha⟩ := ρ.exists_binomialCenter_eq_of_basis b d c
+  refine ⟨a, Subtype.ext ?_⟩
+  let ι := (Φ.boundaryIdeal h₀).subschemeι
+  have hpoint (e : Module.Basis (Fin 2) ℤ N) (u : ℂˣ) :
+      let h := e.detDualEquiv_self ρ.primitiveGenerator
+      let hs := ρ.surjective_detCharacter e
+      ρ.binomialCenterOnBoundary rankTwo h hs u ≫ ι = ρ.binomialCenter rankTwo h hs u :=
+    ρ.binomialCenterOnBoundary_comp_subschemeι _ _ _ _
+  simp only [Ray.internalCenter_val]
+  apply congrArg Scheme.Hom.ker
+  apply (cancel_mono ι).mp
+  rw [hpoint, hpoint]
+  exact ha
+
 /-- The internal center ideal on a fixed ray determines its parameter. -/
 theorem Ray.internalCenter_injective (ρ : Φ.Ray) :
     Function.Injective (fun c : ℂˣ ↦ (ρ.internalCenter b c).val) := by
