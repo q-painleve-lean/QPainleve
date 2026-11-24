@@ -6,8 +6,8 @@ Authors: The QPainleve contributors
 module
 
 public import QPainleve.AlgebraicGeometry.Blowup.Tower.Boundary.Common
-public import QPainleve.Geometry.Toric.Fan.Mutation.Boundary
 public import QPainleve.Geometry.Toric.Fan.Mutation.InternalBlowup
+public import QPainleve.Geometry.Toric.Fan.Mutation.Transport
 public import TauCeti.AlgebraicGeometry.Morphisms.Modification.Basic
 
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Modification
@@ -21,8 +21,8 @@ import TauCeti.AlgebraicGeometry.RationalPoint.Basic
 
 Blow up the pivot first, then blow up the remaining centers in the prescribed order
 on the successive strict boundaries. The global elementary transformation lifts to
-these models because all the remaining centers match on the complement of the pivot
-fiber. Repeated centers give the same ordered infinitely near lifts.
+these models using the comparison of center ideals on the strict boundaries.
+Repeated centers give ordered infinitely near lifts, also over the pivot fiber.
 
 This extends the elementary transformation of Gross, Hacking and Keel,
 [*Birational geometry of cluster algebras*, §3.1](https://arxiv.org/html/1309.2573v2#S3.SS1).
@@ -80,40 +80,25 @@ local notation "d₁" => subschemeMap (J) (D₁) (Iso.hom (eC) ≫ Scheme.Opens.
   (le_map_iff_comap_le.mpr (Eq.le
     (comap_boundaryIdeal_mutationComplementIso b hv hp hOpp c hΦ₀ hΨ)))
 
-private theorem commonBoundary_comp_mutationBlowupIso
-    (h₀ : (J).subschemeι ≫ (U₀).ι = (d₀) ≫ (D₀).subschemeι)
-    (h₁ : (J).subschemeι ≫ (eC).hom ≫ (U₁).ι = (d₁) ≫ (D₁).subschemeι) :
-    (d₀) ≫ ρ.mutationSourceBoundaryι b c ≫ (eB).hom =
-      (d₁) ≫ ρ.mutationTargetBoundaryι b hOpp c := by
-  let l₀ := (I₀).blowupLift (U₀).ι (by
-    rw [ρ.mutationSourceCenterIdeal_comap_complement b hOpp c]
-    exact isEffectiveCartier_top _)
-  let l₁ := (I₁).blowupLift (U₁).ι (by
-    rw [ρ.mutationTargetCenterIdeal_comap_complement b hOpp c]
-    exact isEffectiveCartier_top _)
-  have he₀ : (d₀) ≫ ρ.mutationSourceBoundaryι b c = (J).subschemeι ≫ l₀ := by
-    apply (I₀).blowup_hom_ext
-    · simpa only [Category.assoc, l₀, blowupLift_blowupToBase,
-        Ray.mutationSourceBoundaryι_blowupToBase] using h₀.symm
-    · simp only [Category.assoc, Ray.mutationSourceBoundaryι_blowupToBase, ← h₀, comap_comp,
-        ρ.mutationSourceCenterIdeal_comap_complement b hOpp c, comap_top]
-      exact isEffectiveCartier_top _
-  have he₁ : (d₁) ≫ ρ.mutationTargetBoundaryι b hOpp c = (J).subschemeι ≫ (eC).hom ≫ l₁ := by
-    apply (I₁).blowup_hom_ext
-    · simpa only [Category.assoc, l₁, blowupLift_blowupToBase,
-        Ray.mutationTargetBoundaryι_blowupToBase] using h₁.symm
-    · simp only [Category.assoc, Ray.mutationTargetBoundaryι_blowupToBase, ← h₁, comap_comp,
-        ρ.mutationTargetCenterIdeal_comap_complement b hOpp c, comap_top]
-      exact isEffectiveCartier_top _
-  rw [← Category.assoc, he₀, Category.assoc, he₁]
-  exact congrArg ((J).subschemeι ≫ ·) (ρ.mutationComplementBlowupι_comp_mutationBlowupIso_hom
-    b hOpp c)
-
 variable {n : ℕ} (s : Fin n → Φ.Ray) (d : Fin n → ℂˣ)
 
 local notation "r" => Φ.mutationFanRayEquiv b hv hp hOpp
 local notation "δ" j:arg =>
   d j * c ^ max (Module.Basis.det b ![Ray.primitiveGenerator (s j), v]) 0
+
+/-- The elementary transformation lifts through the remaining ordered blowups.
+All remaining centers follow the sheared rays, including repeated centers on
+either horizontal component over the pivot fiber. The lift identifies the final
+strict boundaries and preserves the order of the centers. -/
+theorem Ray.exists_isLift_mutation_alongBoundary (hΦ : Φ.IsRegular) :
+    let A := alongBoundary (j₀) (fun j ↦ (s j).internalCenter (h₀ := hΦ₀) b (d j))
+    let B := alongBoundary (j₁) (fun j ↦ ((r) (s j)).internalCenter (h₀ := hΨ) b (δ j))
+    ∃ e : A.1 ≅ B.1, IsLift (eB) A.2.toTower B.2.toTower e ∧
+      A.2.boundaryι ≫ e.hom = (ρ.mutationBoundaryIso b hOpp c hΦ).hom ≫ B.2.boundaryι :=
+  exists_isLift_alongBoundary (eB) (ρ.mutationBoundaryIso b hOpp c hΦ)
+    (ρ.mutationBoundaryIso_hom_comp_boundaryι b hOpp c hΦ).symm _ _
+    (fun j ↦ ρ.mutationBoundaryIso_transports_internal_centers b hOpp c hΦ (s j) (d j))
+
 local notation "rankTwo" => Eq.trans (Module.finrank_eq_card_basis b) (Fintype.card_fin 2)
 local notation "hχ(" τ ")" => Module.Basis.detDualEquiv_self b (Ray.primitiveGenerator τ)
 local notation "center(" τ ", " k ")" =>
@@ -133,7 +118,7 @@ theorem exists_iso_mutation_internal_blowup_tower
       (d₀) ≫ A.2.boundaryι ≫ e.hom = (d₁) ≫ B.2.boundaryι := by
   let : Nonempty Φ.cones := hΦ₀
   let : Nonempty (Ψ).cones := hΨ
-  obtain ⟨t, h₀, h₁, ht₀, ht₁⟩ := exists_common_boundaryCenters_mutationComplement
+  obtain ⟨t, h₀, _, ht₀, ht₁⟩ := exists_common_boundaryCenters_mutationComplement
     b hv hp hOpp c s d ρ.isPrimitiveGenerator.isPrimitive hsame hopp
   have : IsOpenImmersion (d₀) := MorphismProperty.of_isPullback h₀ inferInstance
   let s₀ := fun j ↦ center(s j, d j)
@@ -143,7 +128,7 @@ theorem exists_iso_mutation_internal_blowup_tower
   have hC₁ (j : Fin n) : (s₁ j).ker.IsEffectiveCartier := by
     exact ((r) (s j)).internalCenter_val b (δ j) ▸ (((r) (s j)).internalCenter b (δ j)).property
   have h := exists_isLift_alongBoundary_of_common (eB) (d₀) (d₁)
-    (commonBoundary_comp_mutationBlowupIso b ρ hOpp c h₀.w h₁.w)
+    (ρ.commonBoundary_comp_mutationBlowupIso b hOpp c)
     t s₀ s₁ ht₀ ht₁ hC₀ hC₁ (fun j ↦ (hC₀ j).comap (d₀))
   have hJ₀ : (fun j ↦ ⟨(s₀ j).ker, hC₀ j⟩) = fun j ↦ (s j).internalCenter b (d j) :=
     funext fun j ↦ Subtype.ext ((s j).internalCenter_val b (d j)).symm

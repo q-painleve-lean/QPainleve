@@ -187,6 +187,47 @@ theorem Ray.comap_coordinateSection_characterRulingLaurentIso (ρ : Φ.Ray)
   exact ρ.comap_coordinateSection_characterRulingTorusIso h b hm hp hn hΦ j hr
 
 include hm hp hn in
+/-- On either horizontal ray, a morphism over the base torus is determined by its
+projection to that torus. The kernel conditions express factorization through the
+same reduced ray divisor. -/
+theorem Ray.eq_of_characterRuling_eq_of_le_ker (ρ : Φ.Ray) (hΦ : Φ.IsRegular)
+    (j : Fin 2) (hρ : ρ.primitiveGenerator = if j = 0 then b 0 else -b 0)
+    {W : Scheme} {f g : W ⟶ Φ.algebraicRealization}
+    (hf : Φ.rayBoundaryIdeal hΦ ρ ≤ f.ker) (hg : Φ.rayBoundaryIdeal hΦ ρ ≤ g.ker)
+    (t : W ⟶ projectiveLineTorusFan.algebraicRealization)
+    (htf : f ≫ Φ.characterRuling m h = t ≫ projectiveLineTorusι)
+    (htg : g ≫ Φ.characterRuling m h = t ≫ projectiveLineTorusι) : f = g := by
+  let z := projectiveLine.polynomialPoint (LaurentPolynomial ℂ) (RingHom.id _) j 0
+  let q := projectiveLine (LaurentPolynomial ℂ) ↘ Spec (.of (LaurentPolynomial ℂ))
+  have : IsClosedImmersion z := projectiveLine.isClosedImmersion_coordinateSection j
+  have hz : z ≫ q = 𝟙 _ := by simp [z, q, projectiveLine.polynomialPoint_over]
+  let lift (a : W ⟶ Φ.algebraicRealization)
+      (ha : a ≫ Φ.characterRuling m h = t ≫ projectiveLineTorusι) :=
+    pullback.lift a t ha
+  have hsection (a : W ⟶ Φ.algebraicRealization) (ha₀ : Φ.rayBoundaryIdeal hΦ ρ ≤ a.ker)
+      (ha : a ≫ Φ.characterRuling m h = t ≫ projectiveLineTorusι) :
+      lift a ha ≫ (eL).hom = t ≫ projectiveLineTorusIsoSpecLaurent.hom ≫ z := by
+    have hfst : lift a ha ≫ ι = a := pullback.lift_fst _ _ _
+    have hker : z.ker ≤ (lift a ha ≫ (eL).hom).ker := by
+      rw [← Scheme.IdealSheafData.map_bot (lift a ha ≫ (eL).hom),
+        le_map_iff_comap_le, comap_comp,
+        projectiveLine.ker_coordinateSection,
+        ρ.comap_coordinateSection_characterRulingLaurentIso h b hm hp hn hΦ j hρ,
+        ← comap_comp, hfst, ← le_map_iff_comap_le,
+        Scheme.IdealSheafData.map_bot]
+      exact ha₀
+    let s := IsClosedImmersion.lift z (lift a ha ≫ (eL).hom) hker
+    have hs : s ≫ z = lift a ha ≫ (eL).hom := IsClosedImmersion.lift_fac _ _ _
+    have hsq := congrArg (· ≫ q) hs
+    have hq : (eL).hom ≫ q = pullback.snd _ _ ≫ projectiveLineTorusIsoSpecLaurent.hom :=
+      Φ.characterRulingLaurentIso_hom_comp_toBase m h b hm hp hn
+    simp only [Category.assoc, hz, Category.comp_id, hq, lift, pullback.lift_snd_assoc] at hsq
+    rw [← hs, hsq, Category.assoc]
+  have hfg : lift f htf = lift g htg :=
+    (cancel_mono (eL).hom).mp ((hsection f hf htf).trans (hsection g hg htg).symm)
+  simpa only [lift, pullback.lift_fst] using congrArg (· ≫ ι) hfg
+
+include hm hp hn in
 private theorem ray_eq_of_rayBoundaryPoint_mem_rulingTorus (hΦ : Φ.IsRegular)
     (s : Fin 2 → Φ.Ray) (hs : ∀ j, (s j).primitiveGenerator = rulingSectionGenerator b j)
     (ρ : Φ.Ray) (hx : (Φ.rayBoundaryPoint hΦ ρ).val ∈ Set.range ι) :
