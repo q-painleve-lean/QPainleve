@@ -80,6 +80,15 @@ theorem exists_range_blowupComponent_comp_subschemeι [IsLocallyNoetherian X]
   have he := CodimensionOnePoint.eq_of_specializes (specializes_iff_mem_closure.mpr hqp)
   exact ⟨v, he ▸ hq⟩
 
+/-- Every prime of a Cartier nodal boundary is the image of the generic point of
+a component of its normalization. -/
+theorem exists_subschemeι_blowupComponentGeneric_eq [IsLocallyNoetherian X]
+    (hD : D.IsEffectiveCartier) {p : CodimensionOnePoint X} (hp : (p : X) ∈ D.support) :
+    ∃ v : V, D.subschemeι (ν (η v)) = p.val := by
+  obtain ⟨v, hv⟩ := hD.exists_range_blowupComponent_comp_subschemeι (k := k) hp
+  rw [(C).range_blowupComponent_comp v D.subschemeι D.subschemeι.isClosedMap] at hv
+  exact ⟨v, isGenericPoint_closure.eq (hv.symm ▸ isGenericPoint_closure)⟩
+
 end Components
 
 variable [X.Over (Spec (.of k))] [PrestableFamily (D.subscheme ↘ Spec (.of k))]

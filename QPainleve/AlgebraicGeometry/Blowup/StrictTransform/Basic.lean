@@ -206,6 +206,24 @@ theorem comap_ker_blowupMap_subschemeι_eq_of_factor {X V Z : Scheme.{u}}
     comap_map_of_isPullback_of_isOpenImmersion _ (isPullback_morphismRestrict c W).flip,
     ← comap_comp, ← hcomp, comap_comp, htotal, map_comap_ker_of_isSchemeTheoreticallyDominant]
 
+/-- If the center restricts to an effective Cartier divisor on a closed subscheme,
+its strict transform is isomorphic to it over the base of the blowup. -/
+theorem exists_subschemeIso_of_strictTransform_eq {X : Scheme.{u}} (I : X.IdealSheafData)
+    {D : X.IdealSheafData} {B : I.blowup.IdealSheafData} (h : (I.blowupMap D.subschemeι).ker = B)
+    (hJ : (I.comap D.subschemeι).IsEffectiveCartier) :
+    ∃ e : B.subscheme ≅ D.subscheme, e.hom ≫ D.subschemeι = B.subschemeι ≫ I.blowupToBase := by
+  let g := I.blowupMap D.subschemeι
+  let π := (I.comap D.subschemeι).blowupToBase
+  have : IsIso π := (isIso_blowupToBase_iff _).mpr hJ
+  have hB : B.subschemeι.ker = g.ker := B.ker_subschemeι.trans h.symm
+  let j := IsClosedImmersion.lift B.subschemeι g hB.le
+  have : IsIso j := IsClosedImmersion.isIso_lift _ _ hB
+  refine ⟨(asIso j).symm ≪≫ asIso π, ?_⟩
+  have hj : j ≫ B.subschemeι = I.blowupMap D.subschemeι := IsClosedImmersion.lift_fac _ _ _
+  change (asIso j).inv ≫ π ≫ D.subschemeι = B.subschemeι ≫ I.blowupToBase
+  rw [← I.blowupMap_blowupToBase, ← hj]
+  simp only [Category.assoc, asIso_inv, IsIso.inv_hom_id_assoc]
+
 variable {D X : Scheme.{u}} (I : X.IdealSheafData) (i : D ⟶ X)
 
 /-- The canonical map from the blowup of the inverse image of the center factors through

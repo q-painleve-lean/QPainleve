@@ -86,6 +86,15 @@ theorem hull_neg_primitiveGenerator_mem_of_hirzebruch :
   exact (u 2).hull_primitiveGenerator_mem
 
 include hu in
+/-- The section on ray two of a Hirzebruch fan has ray zero as its opposite ray. -/
+theorem hull_neg_primitiveGenerator_mem_of_hirzebruch_section_two :
+    hull ℝ {i (-(u 2).primitiveGenerator)} ∈ Φ.cones := by
+  have h₀ : (u 0).primitiveGenerator = b 0 := congrFun hu 0
+  have h₂ : (u 2).primitiveGenerator = -b 0 := congrFun hu 2
+  rw [h₂, neg_neg, ← h₀]
+  exact (u 0).hull_primitiveGenerator_mem
+
+include hu in
 /-- Mutation at the chosen section increases the signed parameter by one
 in the same lattice basis. -/
 theorem Ray.mutationFan_hirzebruch_ray_generators_of_section_zero (hρ : ρ = u 0) :

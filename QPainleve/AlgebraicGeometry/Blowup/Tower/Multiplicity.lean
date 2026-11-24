@@ -135,6 +135,18 @@ theorem exists_base_point_stalkOrder_ge_baseMultiplicity
   refine ⟨hT.baseCenter j, hT.isClosed_baseCenter j, (one_le_stalkOrder_iff J _).mp ?_, hle⟩
   exact (by exact_mod_cast hj : (1 : ℕ∞) ≤ _).trans hle
 
+/-- The first center over a base point has at least the multiplicity of any
+subsequent center over that point. -/
+theorem baseMultiplicities_le_of_first_baseCenter
+    (hT : IsClosedPointTower X T) (J : X.IdealSheafData) (hJ : J ≠ ⊥)
+    {i j : Fin n} (hij : hT.baseCenter i = hT.baseCenter j)
+    (hi : ∀ l < i, hT.baseCenter l ≠ hT.baseCenter i) :
+    hT.baseMultiplicities J j ≤ hT.baseMultiplicities J i := by
+  rw [hT.baseMultiplicities_eq_stalkOrder_toNat_of_first J i hi, hij]
+  have hle := ENat.toNat_le_toNat (hT.baseMultiplicities_le_stalkOrder_baseCenter f J j)
+    (J.stalkOrder_lt_top_of_ne_bot hJ (hT.baseCenter j)).ne
+  simpa only [ENat.toNat_natCast] using hle
+
 /-- Move the first blowup over the projected center to the front of the same resolution.
 Its order is at least the given order, and the isomorphism matches every total exceptional
 class in the reordered marking. -/
@@ -156,15 +168,13 @@ theorem exists_move_base_point_blowup_to_front {T : BlowupTower X (n + 1) Y}
   have hp := hT.isClosed_baseCenter j
   have hprevious (l : Fin (n + 1)) (hl : l < i) : hT.baseCenter l ≠ p :=
     fun he ↦ hfirst l he hl
-  have horder := hT.baseMultiplicities_eq_stalkOrder_toNat_of_first J i fun l hl he ↦
-    hprevious l hl (he.trans hip)
+  have hi' (l : Fin (n + 1)) (hl : l < i) : hT.baseCenter l ≠ hT.baseCenter i :=
+    fun he ↦ hprevious l hl (he.trans hip)
+  have horder := hT.baseMultiplicities_eq_stalkOrder_toNat_of_first J i hi'
   rw [hip] at horder
-  have hle := ENat.toNat_le_toNat (hT.baseMultiplicities_le_stalkOrder_baseCenter f J j)
-    (J.stalkOrder_lt_top_of_ne_bot hJ p).ne
-  have hle' : hT.baseMultiplicities J j ≤ hT.baseMultiplicities J i := by
-    rw [horder]
-    simpa only [ENat.toNat_natCast] using hle
-  obtain ⟨W, U, e, he⟩ := hT.exists_move_closed_point_blowup_to_front i hp hip hprevious
-  exact ⟨i, W, U, e, ⟨hi, fun l hl ↦ le_of_not_gt (hfirst l hl)⟩, hle', horder, he⟩
+  have hle := hT.baseMultiplicities_le_of_first_baseCenter f J hJ hip hi'
+  obtain ⟨W, U, e, hU, he, hE, _, htail⟩ :=
+    hT.exists_move_closed_point_blowup_to_front i hp hip hprevious
+  exact ⟨i, W, U, e, ⟨hi, fun l hl ↦ le_of_not_gt (hfirst l hl)⟩, hle, horder, hU, he, hE, htail⟩
 
 end QPainleve.BlowupTower.IsClosedPointTower

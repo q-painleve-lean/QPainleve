@@ -56,19 +56,6 @@ local notation "P[" W "]" => MonoidHom.ker (LineBundleClass.pullbackHom ν[W])
 local notation "F[" W "]" => Scheme.branchSchemeToBlowup ℂ W
 local notation "nodes[" W "]" => IdealSheafData.subscheme (Scheme.singularLocus ℂ W)
 
-private theorem transport_presentation {X Y : Scheme} [X.Over S] {D : X.IdealSheafData}
-    {length : ℕ} {P : QPainleve.BlowupTower X length Y}
-    {U W : Σ Z, WithBoundary (Dtor).subschemeι n Z}
-    (h : U = W) (e : Y ≅ W.1)
-    (he : e.inv ≫ P.toBase ≫ (X ↘ S) = W.2.toTower.toBase ≫ (Φ.algebraicRealization ↘ S))
-    (hD : ((D.comap P.toBase).comap e.inv).support = W.2.boundaryι.ker.support) :
-    let a := e ≪≫ eqToIso (congrArg Sigma.fst h).symm
-    a.inv ≫ P.toBase ≫ (X ↘ S) = U.2.toTower.toBase ≫ Φ.algebraicRealizationStructureMap ∧
-      ((D.comap P.toBase).comap a.inv).support = U.2.boundaryι.ker.support := by
-  subst W
-  simpa only [eqToIso_refl, Iso.trans_refl, ← algebraicRealization_over] using
-    And.intro he hD
-
 variable [Φ.algebraicRealization.IsProjectiveOver ℂ]
 
 section Presentation
@@ -94,19 +81,6 @@ local notation "chargeClass" =>
   (LinearEquiv.trans (LinearEquiv.symm charge)
     (LinearEquiv.ofEq _ _ (Eq.symm (IdealSheafData.boundaryOrthogonal_def D ℂ))))
 
-/-- The charge coordinates identify the boundary-orthogonal classes on the contracted
-surface with the kernel of the charge map of its ordered toric presentation. -/
-def markedBoundaryChargeEquiv : D.boundaryOrthogonal ℂ ≃ₗ[ℤ] ChargeKernel :=
-  (chargeClass).symm
-
-/-- The inverse charge coordinates give the same underlying Picard class as the
-inverse of the span-based comparison. -/
-@[simp]
-theorem coe_markedBoundaryChargeEquiv_symm (x : ChargeKernel) :
-    ((markedBoundaryChargeEquiv hΦ b s hT e he hD).symm x).val = ((charge).symm x).val := by
-  simp only [markedBoundaryChargeEquiv, LinearEquiv.symm_symm, LinearEquiv.trans_apply,
-    LinearEquiv.coe_ofEq_apply]
-
 local notation "g" => toricBoundaryToBase (J[c]) e hD
 
 variable [PrestableFamily (D.subscheme ↘ S)]
@@ -119,21 +93,26 @@ variable [PrestableFamily (D.subscheme ↘ S)]
 /-- The period character written in the charge coordinates of an ordered toric presentation. -/
 def markedBoundaryPeriod : Multiplicative ChargeKernel →* ℂˣ :=
   (hCartier.boundaryPeriod hgenus A.endpoint_eq).comp
-    (chargeClass).toAddMonoidHom.toMultiplicative
+    (markedBoundaryChargeEquiv hΦ b s hT e he hD).symm.toAddMonoidHom.toMultiplicative
 
 /-- Evaluate the marked period on a charge relation by taking its inverse image in
 the boundary-orthogonal Picard lattice. -/
 theorem markedBoundaryPeriod_apply (x : ChargeKernel) :
     markedBoundaryPeriod hΦ b s hT e he hD hCartier hgenus A (Multiplicative.ofAdd x) =
-      hCartier.boundaryPeriod hgenus A.endpoint_eq (Multiplicative.ofAdd (chargeClass x)) :=
-  (rfl)
+      hCartier.boundaryPeriod hgenus A.endpoint_eq (Multiplicative.ofAdd (chargeClass x)) := by
+  have hx : (markedBoundaryChargeEquiv hΦ b s hT e he hD).symm x = chargeClass x := by
+    apply Subtype.ext
+    simpa only [LinearEquiv.trans_apply, LinearEquiv.coe_ofEq_apply] using
+      coe_markedBoundaryChargeEquiv_symm hΦ b s hT e he hD x
+  exact congrArg (fun y ↦ hCartier.boundaryPeriod hgenus A.endpoint_eq (Multiplicative.ofAdd y)) hx
 
 /-- Writing the boundary period in charge coordinates preserves and detects
 injectivity. -/
 theorem markedBoundaryPeriod_injective_iff :
     Function.Injective (markedBoundaryPeriod hΦ b s hT e he hD hCartier hgenus A) ↔
       Function.Injective (hCartier.boundaryPeriod hgenus A.endpoint_eq) :=
-  Function.Injective.of_comp_iff' _ (chargeClass).toAddEquiv.toMultiplicative.bijective
+  Function.Injective.of_comp_iff' _
+    (markedBoundaryChargeEquiv hΦ b s hT e he hD).symm.toAddEquiv.toMultiplicative.bijective
 
 variable [PrestableFamily ((Φ.boundaryIdeal inferInstance).subscheme ↘ Spec (.of ℂ))]
   {β : Type*} {q : β → ((Φ.boundaryIdeal inferInstance).subscheme ↘ S).smoothLocus}
@@ -340,9 +319,9 @@ theorem exists_iso_of_eq_markedBoundaryPeriod
     let := GeometricallyConnected.connectedSpace_of_subsingleton (f := D₀.subscheme ↘ S)
     rw [← D₀.range_subschemeι]
     exact isConnected_range D₀.subschemeι.continuous
-  obtain ⟨he₀', hD₀'⟩ := transport_presentation
+  obtain ⟨he₀', hD₀'⟩ := transport_boundaryPresentation
     (internalBlowupTower_eq_alongBoundary b s c₀) e₀ he₀ hD₀
-  obtain ⟨he₁', hD₁'⟩ := transport_presentation
+  obtain ⟨he₁', hD₁'⟩ := transport_boundaryPresentation
     (internalBlowupTower_eq_alongBoundary b s c₁) e₁ he₁ hD₁
   obtain ⟨f, hf, -⟩ := existsUnique_iso_of_translation_of_nef_square_zero_boundary b s hΦ
     hT₀ hT₁ presentationIso(e₀, c₀) presentationIso(e₁, c₁) he₀' he₁' hD₀' hD₁'

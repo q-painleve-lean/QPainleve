@@ -238,6 +238,24 @@ theorem hirzebruchPicardBasis_intersection (j k : Fin 2) :
       hirzebruchPicardBasis_apply_one, Equiv.apply_eq_iff_eq,
       Φ.intersectionBilinForm_rayDivisorToPicard_single_single hΦ hN] <;> simp [hF, hB, h₀₁, h₁₀]
 
+include hc in
+/-- A class with Hirzebruch Picard coordinates `(a, d)` intersects the fiber
+in degree `d` and the section of square `-e` in degree `a - e * d`. -/
+theorem hirzebruchPicardBasis_intersection_repr [SmoothOfRelativeDimension 2 (X ↘ S)]
+    (x : Pic) :
+    B x (C 0) = (C).repr x 1 ∧ B x (C 1) = (C).repr x 0 - e * (C).repr x 1 := by
+  let a := (C).repr x 0
+  let d := (C).repr x 1
+  have hx : x = a • C 0 + d • C 1 := by
+    simpa only [a, d, Fin.sum_univ_two] using ((C).sum_repr x).symm
+  have h (j : Fin 2) : B x (C j) =
+      a * (!![0, 1; 1, -e] : Matrix (Fin 2) (Fin 2) ℤ) 0 j +
+        d * (!![0, 1; 1, -e] : Matrix (Fin 2) (Fin 2) ℤ) 1 j := by
+    conv_lhs => rw [hx]
+    simp only [map_add, map_zsmul, LinearMap.add_apply, LinearMap.smul_apply, Int.zsmul_eq_mul,
+      hirzebruchPicardBasis_intersection b e hΦ r hr hc]
+  exact ⟨by simpa using h 0, by simpa [sub_eq_add_neg, mul_comm d] using h 1⟩
+
 omit [Nonempty Φ.cones] [Φ.algebraicRealization.IsProjectiveOver ℂ] in
 include hΦ hc hr in
 private theorem isRationalOver_of_hirzebruch :

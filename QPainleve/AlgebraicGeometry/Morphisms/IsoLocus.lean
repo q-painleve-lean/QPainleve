@@ -9,6 +9,7 @@ public import Mathlib.AlgebraicGeometry.Morphisms.QuasiFinite
 public import Mathlib.AlgebraicGeometry.Morphisms.Separated
 public import Mathlib.AlgebraicGeometry.Morphisms.UniversallyClosed
 public import TauCeti.AlgebraicGeometry.Morphisms.IsoLocus
+public import TauCeti.AlgebraicGeometry.Scheme.Regular.Scheme
 
 import Mathlib.AlgebraicGeometry.PullbackCarrier
 import QPainleve.AlgebraicGeometry.Morphisms.Separated
@@ -19,14 +20,15 @@ import QPainleve.AlgebraicGeometry.Morphisms.Separated
 For a surjective first map and a separated, universally closed second map with reduced
 intermediate scheme, the centre of their composite is the union of the second centre and
 the image of the first. Over its isomorphism locus, a morphism is injective, induces
-isomorphisms on stalks, preserves codimension, and is quasi-finite. A dominant section over
-an open of the target of a separated morphism with reduced source places that open in the
-isomorphism locus.
+isomorphisms on stalks, preserves codimension, and is quasi-finite. A regular source gives
+regularity on the isomorphism locus. A dominant section over an open of the target of a
+separated morphism with reduced source places that open in the isomorphism locus.
 -/
 
 public section
 
 open CategoryTheory Limits TopologicalSpace
+open TauCeti.AlgebraicGeometry
 
 namespace AlgebraicGeometry.Scheme.Hom
 
@@ -115,6 +117,22 @@ theorem isIso_stalkMap_of_mem_isoLocus (f : X ⟶ Y) {x : X}
   have : IsIso (f.stalkMap (j xU) ≫ j.stalkMap xU) :=
     (Scheme.Hom.stalkMap_comp j f xU) ▸ hi
   exact IsIso.of_isIso_comp_right (f.stalkMap (j xU)) (j.stalkMap xU)
+
+/-- With regular source, regularity of the target can be checked at the points of the centre. -/
+theorem isRegular_of_isRegularLocalRing_of_mem_centre (f : X ⟶ Y)
+    [IsRegular X] [IsLocallyNoetherian Y]
+    (h : ∀ y ∈ f.centre, IsRegularLocalRing (Y.presheaf.stalk y)) : IsRegular Y := by
+  refine ⟨fun y ↦ ?_⟩
+  by_cases hy : y ∈ f.centre
+  · exact h y hy
+  · have hy' : y ∈ f.isoLocus := by simpa only [centre_def, Set.mem_compl_iff, not_not,
+      SetLike.mem_coe] using hy
+    obtain ⟨x, hx⟩ := (f ∣_ f.isoLocus).surjective ⟨y, hy'⟩
+    have hxy : f x.val = y :=
+      (morphismRestrict_base_coe f f.isoLocus x).symm.trans (congrArg Subtype.val hx)
+    have := f.isIso_stalkMap_of_mem_isoLocus (x := x.val) (hxy.symm ▸ hy')
+    exact hxy ▸ IsRegularLocalRing.of_ringEquiv
+      (asIso (f.stalkMap x.val)).commRingCatIsoToRingEquiv.symm
 
 section
 

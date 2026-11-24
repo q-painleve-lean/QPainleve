@@ -151,7 +151,7 @@ theorem exists_sarkisov_decrease_of_toric_corner
   have hmove := hT.exists_move_closed_point_blowup_to_front j
     (Φ.isClosed_singleton_distinguishedPoint σ) hj hfirst
   rw [← hI] at hmove
-  obtain ⟨W, A, h, hA, hbase, hE, htail⟩ := hmove
+  obtain ⟨W, A, h, hA, hbase, hE, _, htail⟩ := hmove
   obtain ⟨Ψ, F, hΨ, hF, hc', hcF, d, τ, s, t, v, v', r, r', hr, hr', Z, A', k,
       hU, hd₀, hd₁, hτ, hv, hv', hproj, hcoord⟩ :=
     hA.exists_hirzebruch_toric_link_resolution b e hΦ hc hrays σ hσ

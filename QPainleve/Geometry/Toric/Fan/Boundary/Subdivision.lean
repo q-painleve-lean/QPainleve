@@ -6,7 +6,7 @@ Authors: The QPainleve contributors
 module
 
 public import Mathlib.AlgebraicGeometry.IdealSheaf.Functorial
-public import QPainleve.Geometry.Toric.Fan.Boundary.Center
+public import QPainleve.Geometry.Toric.Fan.Boundary.InternalCenter
 public import QPainleve.Geometry.Toric.Fan.Boundary.Ideal
 public import QPainleve.Geometry.Toric.Fan.Subdivision.FunctionField
 public import TauCeti.AlgebraicGeometry.Blowup.StrictTransform
@@ -219,5 +219,32 @@ theorem binomialCenterOnBoundary_comp_boundaryMap :
   exact h.binomialCenter_comp_algebraicMap ρ hdim hm hp c
 
 end Centers
+
+/-- When a subdivision lifts a ray, its binomial center expressed in the determinant
+character of a fixed lattice basis projects to the binomial center with the original
+parameter in that basis. -/
+theorem binomialCenter_liftRay_comp_algebraicMap
+    {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
+    {i : N →+ V} {Φ Ψ : Fan i} (h : Φ.IsSubdivision Ψ) (ρ : Ψ.Ray)
+    (b : Module.Basis (Fin 2) ℤ N) (c : ℂˣ) :
+    let τ := h.liftRay ρ
+    let hdim := (Module.finrank_eq_card_basis b).trans (Fintype.card_fin 2)
+    τ.binomialCenter hdim (b.detDualEquiv_self τ.primitiveGenerator)
+        (τ.surjective_detCharacter b) c ≫ h.toFanHom.algebraicMap =
+      ρ.binomialCenter hdim (b.detDualEquiv_self ρ.primitiveGenerator)
+        (ρ.surjective_detCharacter b) c := by
+  intro τ hdim
+  let χ := (b.detDualEquiv ρ.primitiveGenerator).toAddMonoidHom
+  -- Transport the vanishing and surjectivity proofs together with the orbit character.
+  have lift (m : N →+ ℤ) (hm : m = χ) (hz : m τ.primitiveGenerator = 0)
+      (hs : Function.Surjective m) :
+      τ.binomialCenter hdim hz hs c ≫ h.toFanHom.algebraicMap =
+        ρ.binomialCenter hdim (b.detDualEquiv_self ρ.primitiveGenerator)
+          (ρ.surjective_detCharacter b) c := by
+    subst m
+    exact h.binomialCenter_comp_algebraicMap ρ hdim
+      (b.detDualEquiv_self ρ.primitiveGenerator) (ρ.surjective_detCharacter b) c
+  exact lift _ (congrArg (fun z ↦ (b.detDualEquiv z).toAddMonoidHom)
+    (h.primitiveGenerator_liftRay ρ)) _ _
 
 end TauCeti.Toric.Fan.IsSubdivision

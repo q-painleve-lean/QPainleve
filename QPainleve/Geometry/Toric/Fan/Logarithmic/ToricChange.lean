@@ -9,7 +9,10 @@ public import QPainleve.Geometry.Toric.Fan.Birational
 public import QPainleve.Geometry.Toric.Fan.Logarithmic.Morphism
 public import QPainleve.Geometry.Toric.Fan.StarSubdivision.Factorization
 
+import QPainleve.AlgebraicGeometry.Blowup.Tower.Nodal.PoleIdeal
+import QPainleve.AlgebraicGeometry.IdealSheaf.BaseChange
 import QPainleve.Geometry.Toric.Fan.CommonRefinement
+import QPainleve.Geometry.Toric.Fan.Logarithmic.Subdivision
 import QPainleve.Geometry.Toric.Fan.Subdivision.NodalRefinement
 
 /-!
@@ -19,7 +22,9 @@ A toric change of target factors through a common regular fan. For a specified
 logarithmic morphism to the initial toric surface, a single tower of blowups
 of boundary nodes makes every partial composite of this factorization regular.
 The resulting morphisms agree with the prescribed birational maps on their
-rational domains. The cartesian comparison of the internal blowup models is
+rational domains. Every regular intermediate model has the same pole ideal
+on the resolution, namely the reduced total transform of the original boundary.
+The cartesian comparison of the internal blowup models is
 `IsSubdivision.exists_nodal_refinement_internalBlowupTower`.
 
 This is the toric change of target in the proof of Theorem 8.4 of [Lutz's appendix
@@ -42,6 +47,7 @@ local notation "X[" A "]" => Fan.algebraicRealization A
 local notation "s[" A "]" => Fan.algebraicRealizationStructureMap A
 local notation "π[" H "]" => FanHom.algebraicMap (IsSubdivision.toFanHom H)
 local notation "S" => Spec (CommRingCat.of ℂ)
+local notation "s(" X ")" => (X ↘ S)
 
 section Ordered
 
@@ -128,7 +134,9 @@ variable {X : Scheme} [X.Over S] [IsIntegral X] [X.IsProjectiveOver ℂ]
 a toric logarithmic top form with divisor `-D`, then a single nodal blowup tower of
 `(X, D)` resolves the change to another complete regular toric surface on the
 same lattice. The resolution works for the entire factorization by star subdivisions
-and their inverses and preserves the given morphism to the starting surface. -/
+and their inverses and preserves the given morphism to the starting surface.
+For every regular coarsening of the common fan the resulting morphism pulls back
+the logarithmic poles to the reduced total transform of `D`, with no zeros. -/
 theorem exists_nodal_resolution_of_toric_change_of_pullbackTopFormDivisor
     (b : Module.Basis (Fin 2) ℤ N) (hΦ : Φ.IsRegular) (hcΦ : Φ.IsComplete)
     (hΨ : Ψ.IsRegular) (hcΨ : Ψ.IsComplete)
@@ -150,14 +158,22 @@ theorem exists_nodal_resolution_of_toric_change_of_pullbackTopFormDivisor
         Relation.ReflTransGen IsTwoRayStarSubdivision Φ Ω ∧
         Relation.ReflTransGen IsTwoRayStarSubdivision Ψ Ω ∧
         ∃ (n : ℕ) (Z : Scheme) (T : BlowupTower X n Z) (g : Z ⟶ X[Ω])
-          (_ : IsIntegral Z) (_ : IsDominant g) (_ : IsDominant (T.toBase ≫ f)),
-          IsNodalBoundaryTower D (f ≫ s[Φ]) (𝟙 X) T ∧
+          (_ : IsIntegral Z) (_ : IsDominant g) (_ : IsDominant (T.toBase ≫ f))
+          (hT : IsNodalBoundaryTower D s(X) (𝟙 X) T),
           g ≫ π[J] = T.toBase ≫ f ∧
           ∀ (Δ : Fan i) [Nonempty Δ.cones] (L : Ω.IsSubdivision Δ),
             (T.toBase ≫ f).toRationalMap.comp (Φ.denseTorusPartialIso Δ).toRationalMap =
               (g ≫ π[L]).toRationalMap ∧
-            g ≫ π[L] ≫ s[Δ] = T.toBase ≫ f ≫ s[Φ] := by
+            ∃ hOver : g ≫ π[L] ≫ s[Δ] = T.toBase ≫ s(X),
+              let : Z.Over S := ⟨T.toBase ≫ s(X)⟩
+              let : (g ≫ π[L]).IsOver S := ⟨hOver⟩
+              let : Smooth s(Z) :=
+                (hT.isClosedPointTower.smoothOfRelativeDimension s(X)).smooth
+              Δ.IsRegular →
+              (Δ.boundaryIdeal inferInstance).comap (g ≫ π[L]) =
+                (D.comap T.toBase).radical * ramificationIdealSheaf ℂ (g ≫ π[L]) := by
   intro _ _ B hB ω hTotal hRam hdiv
+  let : Nonempty Φ.cones := hcΦ.nonempty_cones
   obtain ⟨Ξ, hΞ, H, m, ρ, c, e, he, hboundary⟩ :=
     Φ.exists_toric_internal_factorization_of_pullbackTopFormDivisor
       b hΦ hcΦ hf hD ω hTotal hRam hdiv
@@ -165,7 +181,46 @@ theorem exists_nodal_resolution_of_toric_change_of_pullbackTopFormDivisor
     ext x
     exact ⟨fun _ ↦ Ψ.mem_support.mpr (Ψ.isComplete_iff.mp hcΨ x),
       fun _ ↦ Φ.mem_support.mpr (Φ.isComplete_iff.mp hcΦ x)⟩
-  exact exists_nodal_resolution_of_toric_change b hΦ hΨ hs hΞ H ρ c f D e he hboundary
+  obtain ⟨Ω, J, K, hΩ, hchain, hchain', n, Z, T, g, hZ, hg, hDom, hT, hproj, hreg⟩ :=
+    exists_nodal_resolution_of_toric_change b hΦ hΨ hs hΞ H ρ c f D e he hboundary
+  have hfOver : f ≫ s[Φ] = s(X) := by rw [← Φ.algebraicRealization_over, comp_over]
+  have hT' : IsNodalBoundaryTower D s(X) (𝟙 X) T := hfOver ▸ hT
+  have hN : Module.finrank ℤ N = 2 := (Module.finrank_eq_card_basis b).trans (Fintype.card_fin 2)
+  -- Internal blowups leave the boundary curve unchanged.
+  let : Nonempty Ξ.cones := H.nonempty_cones_of_nonempty hcΦ.nonempty_cones
+  let A := Ξ.internalBlowupTower b ρ c
+  obtain ⟨d, hd⟩ := D.exists_iso_of_comap_eq_ker e A.2.boundaryι hboundary
+  have hdOver : d.hom ≫ D.subschemeι ≫ s(X) =
+      (Ξ.boundaryIdeal inferInstance).subschemeι ≫ s[Ξ] := by
+    rw [reassoc_of% hd, ← hfOver, reassoc_of% he, WithBoundary.boundaryι_toBase_assoc,
+      H.toFanHom.algebraicMap_comp_algebraicRealizationStructureMap]
+  have hNΞ := Ξ.atWorstNodalOfRelativeDimensionOne_boundary hΞ (H.isComplete_iff.mpr hcΦ) hN
+  have hND := hNΞ.comp_of_etale d.inv
+  rw [← hdOver, Iso.inv_hom_id_assoc] at hND
+  let : SmoothOfRelativeDimension 2 s(X[Φ]) :=
+    hN ▸ Φ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
+  let : IsNoetherian X := isNoetherian_of_finiteType s(X)
+  have hpole := (QPainleve.pullbackTopFormDivisor_eq_neg_iff ℂ f 2 hB ω hTotal hD hRam).mp hdiv
+  let : Z.Over S := ⟨T.toBase ≫ s(X)⟩
+  let : T.toBase.IsOver S := ⟨rfl⟩
+  let : SmoothOfRelativeDimension 2 s(Z) := hT'.isClosedPointTower.smoothOfRelativeDimension s(X)
+  let : Smooth s(Z) := SmoothOfRelativeDimension.smooth 2 _
+  let : g.IsOver S := ⟨by
+    rw [Ω.algebraicRealization_over,
+      ← J.toFanHom.algebraicMap_comp_algebraicRealizationStructureMap,
+      ← Category.assoc, hproj, Category.assoc, hfOver]
+    rfl⟩
+  let P := (D.comap T.toBase).radical
+  have hpoleRefined := (hT'.comap_eq_mul_ramificationIdealSheaf_iff hD hND f hTotal hRam).mpr hpole
+  have hpoleProjection : B.comap (g ≫ π[J]) = P * ramificationIdealSheaf ℂ (g ≫ π[J]) :=
+    (congrArg B.comap hproj).trans
+      (hpoleRefined.trans (congrArg (P * ·) (ramificationIdealSheaf_congr ℂ hproj.symm)))
+  refine ⟨Ω, J, K, hΩ, hchain, hchain', n, Z, T, g, hZ, hg, hDom, hT', hproj, ?_⟩
+  intro Δ hne L
+  obtain ⟨hrat, hover⟩ := hreg Δ L
+  refine ⟨hrat, hover.trans (congrArg (T.toBase ≫ ·) hfOver), fun hΔ ↦ ?_⟩
+  exact (comap_boundaryIdeal_eq_mul_ramificationIdealSheaf_iff_of_common_subdivision
+    J L hΦ hΔ hΩ hcΦ hN g P).mp hpoleProjection
 
 end Logarithmic
 
