@@ -337,6 +337,17 @@ public theorem classIntersectionNumber_weilToLineBundleClassHom
         classIntersectionBilinForm_apply, LineBundleClass.primeDivisorClass_def, toMul_ofMul,
         Int.zsmul_eq_mul]
 
+/-- An effective Weil divisor meets a prime outside its support nonnegatively. -/
+public theorem classIntersectionNumber_primeDivisorClass_nonneg_of_notMem_support
+    [IsNoetherian X] (hX : topologicalKrullDim X = 2) {D : SchemeWeilDivisor X} (hD : 0 ≤ D)
+    {p : CodimensionOnePoint X} (hp : p ∉ D.support) :
+    0 ≤ classIntersectionNumber k X (Scheme.CartierDivisor.weilToLineBundleClassHom X D).toMul
+      (LineBundleClass.primeDivisorClass p) := by
+  rw [classIntersectionNumber_comm, classIntersectionNumber_weilToLineBundleClassHom k hX]
+  refine Finsupp.sum_nonneg fun q hq ↦ mul_nonneg (hD q) ?_
+  exact classIntersectionNumber_primeDivisorClass_nonneg_of_ne k hX
+    (fun he ↦ hp (he.symm ▸ hq))
+
 end Factorial
 
 end
