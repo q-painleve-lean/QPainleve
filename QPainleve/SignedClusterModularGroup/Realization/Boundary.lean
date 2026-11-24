@@ -10,12 +10,15 @@ public import QPainleve.AlgebraicGeometry.IdealSheaf.Boundary.Primes
 public import QPainleve.AlgebraicGeometry.IntersectionNumber.Nef
 public import QPainleve.SignedClusterModularGroup.Boundary.Isometry
 public import QPainleve.SignedClusterModularGroup.Realization.Basic
+public import TauCeti.Algebra.Module.Primitive
 
 import QPainleve.AlgebraicGeometry.Chow.Isomorphism
+import QPainleve.AlgebraicGeometry.Chow.Nef.Boundary
 import QPainleve.AlgebraicGeometry.Curves.Node.BoundaryRestriction
 import QPainleve.AlgebraicGeometry.EffectiveCartierDivisor.Dimension
 import QPainleve.AlgebraicGeometry.IdealSheaf.Image.Over
 import QPainleve.AlgebraicGeometry.IntersectionNumber.Nef.Pullback
+import TauCeti.AlgebraicGeometry.Curves.Node.Reduced
 
 /-!
 # Boundary classes of geometric realizations
@@ -258,6 +261,86 @@ theorem mem_range_boundaryPrime_iff (P : MarkedSurface k n B₀ X₀)
       simp only [Function.comp_apply, coe_boundaryPrimeEmbedding, numberedBoundaryPrimes_apply_val])
   rw [hcomp, (P.numberedBoundaryPrimes_surjective hD).range_comp, range_boundaryPrimeEmbedding]
   exact Iff.rfl
+
+/-- The marked classes distinguish the components of a nef square-zero boundary. -/
+theorem boundaryClass_injective_of_nef_square_zero (M : MarkedSurface k n B₀ X₀)
+    (hD : D[M].IsEffectiveCartier)
+    (hnef : LineBundleClass.IsNef k (M.surface ↘ S) classOf(hD))
+    (hsq : Chow.classIntersectionNumber k M.surface classOf(hD) classOf(hD) = 0) :
+    Function.Injective (M.boundaryClass hD) := by
+  let : M.surface.IsProjectiveOver k := M.projective
+  let : SmoothOfRelativeDimension 2 (M.surface ↘ S) := M.smooth
+  let : PrestableFamily (D[M].subscheme ↘ S) := M.prestable_boundaryImage
+  let : ConnectedSpace D[M].subscheme :=
+    GeometricallyConnected.connectedSpace_of_subsingleton (D[M].subscheme ↘ S)
+  have hconn : _root_.IsPreconnected (D[M].support : Set M.surface) := by
+    rw [← range_subschemeι]
+    exact isPreconnected_range D[M].subschemeι.continuous
+  intro i j hij
+  have hclass := congrArg M.picardMarking hij
+  rw [M.picardMarking_boundaryClass, M.picardMarking_boundaryClass] at hclass
+  have hp := hD.primeDivisorClass_injOn_of_isPreconnected_of_isNef hconn hnef hsq
+    ((M.mem_range_boundaryPrime_iff hD _).mp (Set.mem_range_self i))
+    ((M.mem_range_boundaryPrime_iff hD _).mp (Set.mem_range_self j))
+    (congrArg Additive.toMul hclass)
+  apply (M.numberedBoundaryPrimes hD).injective
+  apply Subtype.ext
+  rw [M.numberedBoundaryPrimes_apply_val, M.numberedBoundaryPrimes_apply_val, hp]
+
+/-- Equal numbered classes in a common Picard marking transport primitivity,
+nefness and square zero of the total reduced boundary class. -/
+theorem primitive_nef_square_zero_iff_of_boundaryClass_eq
+    (M : MarkedSurface k n B₀ X₀) (N : MarkedSurface k n B₀ X₁)
+    (hD : D[M].IsEffectiveCartier) (hE : D[N].IsEffectiveCartier)
+    (hclass : ∀ j, M.boundaryClass hD j = N.boundaryClass hE j) :
+    (TauCeti.IsPrimitive (Additive.ofMul classOf(hD)) ∧
+      LineBundleClass.IsNef k (M.surface ↘ S) classOf(hD) ∧
+      Chow.classIntersectionNumber k M.surface classOf(hD) classOf(hD) = 0) ↔
+    (TauCeti.IsPrimitive (Additive.ofMul classOf(hE)) ∧
+      LineBundleClass.IsNef k (N.surface ↘ S) classOf(hE) ∧
+      Chow.classIntersectionNumber k N.surface classOf(hE) classOf(hE) = 0) := by
+  let : M.surface.IsProjectiveOver k := M.projective
+  let : N.surface.IsProjectiveOver k := N.projective
+  let : SmoothOfRelativeDimension 2 (M.surface ↘ S) := M.smooth
+  let : SmoothOfRelativeDimension 2 (N.surface ↘ S) := N.smooth
+  let : IsNoetherian M.surface := isNoetherian_of_finiteType (M.surface ↘ S)
+  let : IsNoetherian N.surface := isNoetherian_of_finiteType (N.surface ↘ S)
+  let := (M.surface ↘ S).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two
+  let := (N.surface ↘ S).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two
+  let : PrestableFamily (D[M].subscheme ↘ S) := M.prestable_boundaryImage
+  let : PrestableFamily (D[N].subscheme ↘ S) := N.prestable_boundaryImage
+  let : IsReduced D[M].subscheme :=
+    (PrestableFamily.atWorstNodalOfRelativeDimensionOne (f := D[M].subscheme ↘ S)).isReduced
+  let : IsReduced D[N].subscheme :=
+    (PrestableFamily.atWorstNodalOfRelativeDimensionOne (f := D[N].subscheme ↘ S)).isReduced
+  let p := (M.numberedBoundaryPrimes hD).trans D[M].boundaryPrimeEmbedding
+  let q := (N.numberedBoundaryPrimes hE).trans D[N].boundaryPrimeEmbedding
+  have hp (j : ZMod n) : p j = M.boundaryPrime hD j := Subtype.ext (by simp [p])
+  have hq (j : ZMod n) : q j = N.boundaryPrime hE j := Subtype.ext (by simp [q])
+  let g : (Chow.intersectionBilinForm k M.surface).IsometryEquiv
+      (Chow.intersectionBilinForm k N.surface) := M.marking.symm.trans N.marking
+  have hdimM := topologicalKrullDim_eq_of_smoothOfRelativeDimension (M.surface ↘ S) (n := 2)
+  have hdimN := topologicalKrullDim_eq_of_smoothOfRelativeDimension (N.surface ↘ S) (n := 2)
+  let g' : (Chow.classIntersectionBilinForm k hdimM).IsometryEquiv
+      (Chow.classIntersectionBilinForm k hdimN) :=
+    { g.toLinearEquiv with
+      map_app' := fun x y ↦ by
+        simpa only [Chow.classIntersectionBilinForm_apply, Chow.intersectionBilinForm_apply,
+          LinearMap.toFun_eq_coe, LinearEquiv.coe_coe,
+          LinearMap.BilinForm.IsometryEquiv.coe_toLinearEquiv] using g.map_app y x }
+  refine hD.primitive_nef_square_zero_iff_of_picardIsometry hE hdimM hdimN g' p q ?_ ?_ ?_
+  · intro x
+    rw [funext hp]
+    exact (M.mem_range_boundaryPrime_iff hD x).symm
+  · intro y
+    rw [funext hq]
+    exact (N.mem_range_boundaryPrime_iff hE y).symm
+  · intro j
+    rw [hp, hq, ← M.picardMarking_boundaryClass, ← N.picardMarking_boundaryClass, ← hclass]
+    have hg' (a : Additive (LineBundleClass M.surface)) : g' a = g a := rfl
+    simp only [hg', g, MarkedSurface.picardMarking_apply,
+      LinearMap.BilinForm.IsometryEquiv.trans_apply,
+      LinearMap.BilinForm.IsometryEquiv.symm_apply_apply]
 
 /-- The Picard marking identifies the orthogonal to the numbered boundary classes with
 the geometric boundary orthogonal. -/
