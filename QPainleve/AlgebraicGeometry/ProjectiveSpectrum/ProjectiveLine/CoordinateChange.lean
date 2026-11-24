@@ -5,10 +5,8 @@ Authors: The QPainleve contributors
 -/
 module
 
+public import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.ProjectiveLine.Basic
 public import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.LinearAction
-public import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.ProjectiveLine
-
-import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.ProjectiveLine.Basic
 
 import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.CoordinateMap
 
@@ -35,40 +33,6 @@ local notation "P" => projectiveLine k
 local notation "V" => (Fin 2 → k)
 local notation "p[" i "," a "]" => polynomialPoint k (RingHom.id k) i a
 local notation "χ[" i "," a "]" => pointCoordinates k (RingHom.id k) i a
-
-/-- A rational point of the projective line can be given by a coordinate in one of the
-two standard affine charts. -/
-theorem exists_eq_polynomialPoint (p : S ⟶ P) (hp : p ≫ (P ↘ S) = 𝟙 S) :
-    ∃ (i : Fin 2) (a : k), p = p[i,a] := by
-  have hx : p (IsLocalRing.closedPoint k) ∈
-      Set.range (polynomialChartι k 0) ∪ Set.range (polynomialChartι k 1) := by
-    rw [range_polynomialChartι_union_range_polynomialChartι]
-    trivial
-  obtain ⟨i, hi⟩ : ∃ i : Fin 2, p (IsLocalRing.closedPoint k) ∈
-      Set.range (polynomialChartι k i) :=
-    hx.elim (fun h ↦ ⟨0, h⟩) (fun h ↦ ⟨1, h⟩)
-  have hr : Set.range p ⊆ Set.range (polynomialChartι k i) := by
-    rintro _ ⟨x, rfl⟩
-    rwa [Subsingleton.elim x (IsLocalRing.closedPoint k)]
-  let q := IsOpenImmersion.lift (polynomialChartι k i) p hr
-  have hq : q ≫ polynomialChartι k i = p := IsOpenImmersion.lift_fac _ _ _
-  have hbase : q ≫ Spec.map (CommRingCat.ofHom (algebraMap k k[X])) = 𝟙 S := by
-    rw [← polynomialChartι_over, ← Category.assoc, hq, hp]
-  let f := (Spec.preimage q).hom
-  refine ⟨i, f X, ?_⟩
-  rw [← hq, polynomialPoint_def]
-  congr 1
-  apply Spec.preimage_injective
-  rw [Spec.preimage_map]
-  apply CommRingCat.hom_ext
-  apply Polynomial.ringHom_ext
-  · intro a
-    have h := congrArg (fun g : S ⟶ S ↦ (Spec.preimage g).hom a) hbase
-    rw [Spec.preimage_comp, Spec.preimage_map, Spec.preimage_id] at h
-    simpa only [CommRingCat.hom_comp, RingHom.comp_apply, CommRingCat.hom_ofHom,
-      CommRingCat.hom_id, RingHom.id_apply, Polynomial.algebraMap_eq, coe_eval₂RingHom,
-      eval₂_C] using h
-  · simp [f]
 
 private def coordinateFunctional (i : Fin 2) (a : k) : V →ₗ[k] k where
   toFun v := χ[i,a] (SymmetricAlgebra.ι k V v)
