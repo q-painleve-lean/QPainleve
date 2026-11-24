@@ -138,14 +138,6 @@ theorem WordStepRealizations.last_eq (step : WordStepRealizations P family (p.co
 
 variable (P)
 
-omit [IsSepClosed k] [Infinite k] in
-private theorem nil_domainTarget :
-    ((ε).centerPartialMap k P).domainTarget (X := Centers) (Y := Centers) =
-      ((ε).centerPartialMap k P).domainSource (X := Centers) (Y := Centers) := by
-  apply Over.OverMorphism.ext
-  simp only [domainTarget_left, domainSource_left, centerPartialMap_hom,
-    centerIso_nil, Iso.refl_hom, Category.comp_id]
-
 /-- Compose the realizations of all steps in a typed word. The realization of an
 edge uses the family at the prefix before the edge and the family at the prefix
 after it. The result uses the prescribed monomial center map on the common open
@@ -155,12 +147,16 @@ def ofWord : {E : SkewExchangeMatrix ι} → (w : Word B E) →
     GeometricRealization (n := n) (T₀ := Centers) (T₁ := Centers)
       (B₀ := form ε) (B₁ := form w) (family ε) (family w)
       (w.centerPartialMap k P) (w.xRationalMap k)
-  | _, .nil, _ => {
-    picard := .refl _
-    boundaryAction := 1
-    fiber c := by
-      rw [nil_domainTarget P, xRationalMap_nil]
-      exact FiberRealization.refl _ }
+  | _, .nil, _ =>
+    let C := (Scheme.PartialMap.id (scheme k A)).restrict
+      ((ε).centerOpen k P) ((ε).dense_centerOpen P) le_top
+    have hC : (ε).centerPartialMap k P = C := centerPartialMap_nil P
+    letI : IsDominant C.hom := hC ▸ (inferInstance : IsDominant ((ε).centerPartialMap k P).hom)
+    letI : C.IsOver (Centers).hom (Centers).hom := hC ▸ (inferInstance :
+      ((ε).centerPartialMap k P).IsOver (Centers).hom (Centers).hom)
+    reindexWord (C := C) ((GeometricRealization.refl (family ε)).restrict
+      ((ε).centerOpen k P) ((ε).dense_centerOpen P) le_top)
+      hC.symm (xRationalMap_nil (B := B) k).symm
   | _, .cons p s, step =>
     let R := ofWord p step.prefix
     let T := WordStepRealizations.last (P := P) (family := family) (p := p) (s := s) step
@@ -176,12 +172,17 @@ def ofWord : {E : SkewExchangeMatrix ι} → (w : Word B E) →
 /-- The empty word pulls Picard classes back by the identity. -/
 @[simp]
 theorem ofWord_nil_picard (step : WordStepRealizations P family ε) :
-    (ofWord P ε step).picard = .refl (form ε) := (rfl)
+    (ofWord P ε step).picard = .refl (form ε) := by
+  simp only [ofWord, reindexWord_picard]
+  exact (restrict_picard (refl (family ε)) _ _ _).trans (refl_picard (family ε))
 
 /-- The empty word fixes every numbered branch. -/
 @[simp]
 theorem ofWord_nil_boundaryAction (step : WordStepRealizations P family ε) :
-    (ofWord P ε step).boundaryAction = 1 := (rfl)
+    (ofWord P ε step).boundaryAction = 1 := by
+  simp only [ofWord, reindexWord_boundaryAction]
+  exact (restrict_boundaryAction (refl (family ε)) _ _ _).trans
+    (refl_boundaryAction (family ε))
 
 /-- Appending an arrow composes the Picard pullbacks in reverse execution order. -/
 @[simp]
