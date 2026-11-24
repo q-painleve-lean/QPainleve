@@ -5,10 +5,11 @@ Authors: The QPainleve contributors
 -/
 module
 
-public import Mathlib.AlgebraicGeometry.Birational.RationalMap
+public import QPainleve.AlgebraicGeometry.RationalMap.Composition.Defined
 public import Mathlib.AlgebraicGeometry.Morphisms.Smooth
 public import Mathlib.FieldTheory.IsSepClosed
 
+import QPainleve.AlgebraicGeometry.RationalMap.Composition.Restriction
 import TauCeti.AlgebraicGeometry.Morphisms.Separated
 import TauCeti.AlgebraicGeometry.Morphisms.Smooth.GeometricallyReduced
 import TauCeti.AlgebraicGeometry.Morphisms.Smooth.RationalPoint
@@ -70,5 +71,38 @@ theorem eq_iff_toRationalMap_eq_on_rationalFibers
     -- The rational point of the source lifts to the fiber over its image in the parameter scheme.
     let t := pullback.lift (f := π) (g := c) p.val (𝟙 S) (Category.id_comp c).symm
     simpa only [← Category.assoc, j, t, pullback.lift_fst] using congrArg (t ≫ ·) hfg
+
+/-- If two rational composites agree on an integral fiber, their regular
+representatives agree on the fiber of any open where both representatives apply. -/
+theorem comp_eq_on_fiber_of_compOfDefined_eq
+    {T B : Scheme.{u}} [IsReduced T] [T.IsSeparated] [Y.IsSeparated]
+    (π : X ⟶ C) (c : B ⟶ C) [IsIntegral (pullback π c : Scheme)]
+    [(pullback π c : Scheme).IsSeparated]
+    (e : X ⟶ T) (W : X.Opens) (p q : T.PartialMap Y)
+    (l : W.toScheme ⟶ p.domain.toScheme) (m : W.toScheme ⟶ q.domain.toScheme)
+    (hl : l ≫ p.domain.ι = W.ι ≫ e) (hm : m ≫ q.domain.ι = W.ι ≫ e)
+    (he : let j := (pullback.fst π c ≫ e).toRationalMap
+      let x := j.fromFunctionField (IsLocalRing.closedPoint _)
+      ∃ (hp : x ∈ p.toRationalMap.domain) (hq : x ∈ q.toRationalMap.domain),
+        j.compOfDefined p.toRationalMap hp =
+          j.compOfDefined q.toRationalMap hq) :
+    pullback.fst (W.ι ≫ π) c ≫ l ≫ p.hom =
+      pullback.fst (W.ι ≫ π) c ≫ m ≫ q.hom := by
+  by_cases hne : Nonempty (pullback (W.ι ≫ π) c : Scheme)
+  · let i := pullback.map (W.ι ≫ π) c π c W.ι (𝟙 _) (𝟙 _) (by simp) (by simp)
+    have : IsOpenImmersion i := Scheme.pullback_map_isOpenImmersion _ _ _ _ _ _ _ _ _
+    have : IsIntegral (pullback (W.ι ≫ π) c : Scheme) := isIntegral_of_isOpenImmersion i
+    have hi : i ≫ pullback.fst π c = pullback.fst (W.ι ≫ π) c ≫ W.ι := by
+      simp only [i, pullback.map, pullback.lift_fst]
+    obtain ⟨hp, hq, hpq⟩ := he
+    have ep := i.comp_compOfDefined_eq_of_lift _ p hp (pullback.fst (W.ι ≫ π) c ≫ l)
+      (by rw [Category.assoc, hl, ← reassoc_of% hi])
+    have eq := i.comp_compOfDefined_eq_of_lift _ q hq (pullback.fst (W.ι ≫ π) c ≫ m)
+      (by rw [Category.assoc, hm, ← reassoc_of% hi])
+    apply toRationalMap_injective
+    simpa only [Category.assoc] using
+      ep.symm.trans ((congrArg (i.toRationalMap.comp ·) hpq).trans eq)
+  · let : IsEmpty (pullback (W.ι ≫ π) c : Scheme) := not_nonempty_iff.mp hne
+    exact isInitialOfIsEmpty.hom_ext _ _
 
 end AlgebraicGeometry.Scheme.Hom
