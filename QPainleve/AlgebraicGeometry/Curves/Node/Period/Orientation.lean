@@ -98,14 +98,9 @@ theorem cycleOrientationSign_eq_of_orientedCycleSubdivisions
     let a := Units.mk0 x (fun h ↦ hx (Finset.mem_insert.mpr (Or.inl h)))
     have hne : a ≠ a⁻¹ := by
       intro he
-      have hsq : a ^ 2 = 1 ^ 2 := calc
-        a ^ 2 = a * a⁻¹ := (pow_two a).trans (congrArg (a * ·) he)
-        _ = 1 ^ 2 := by simp
-      have h := (Units.eq_or_eq_neg_of_sq_eq_sq a 1 hsq).imp
-        (congrArg (Units.val : kˣ → k)) (congrArg (Units.val : kˣ → k))
-      exact hx (Finset.mem_insert.mpr (Or.inr (by
-        simpa only [Finset.mem_insert, Finset.mem_singleton, a, Units.val_mk0, Units.val_one,
-          Units.val_neg] using h)))
+      have h : x = x⁻¹ := by
+        simpa only [a, Units.val_inv_eq_inv_val, Units.val_mk0] using congrArg Units.val he
+      rcases self_eq_inv₀.mp h with hx' | hx' | hx' <;> exact hx (by simp [hx'])
     intro η η' h
     have h' := congrFun h a
     rcases Int.units_eq_one_or η with rfl | rfl <;> rcases Int.units_eq_one_or η' with rfl | rfl
