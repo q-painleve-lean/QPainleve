@@ -8,6 +8,7 @@ module
 public import QPainleve.AlgebraicGeometry.Curves.Node.CycleAction
 public import QPainleve.AlgebraicGeometry.Curves.Node.NormalizationComponent
 
+import QPainleve.AlgebraicGeometry.Curves.Node.Conductor.Map
 import QPainleve.AlgebraicGeometry.Morphisms.IsoLocus
 
 /-!
@@ -64,6 +65,51 @@ theorem componentGenericPoint_injective : Function.Injective A.componentGenericP
       (by simpa only [componentGenericPoint_def] using h))
   apply A.component.injective
   simpa only [genericPoints.component_ofComponent] using congrArg genericPoints.component hη
+
+/-- A numbered node lies on a numbered component exactly when that component is an
+endpoint of one of the node's ordered branches. -/
+theorem node_mem_closure_componentGenericPoint_iff (i j : ZMod n) :
+    (X.singularLocus k).subschemeι (A.node i) ∈ closure {A.componentGenericPoint j} ↔
+      ∃ b : Fin 2, (TauCeti.DualGraph.cycle n).endpoint i b = j := by
+  let z := (X.singularLocus k).subschemeι (A.node i)
+  let e := X.branchSchemeToBlowup k
+  have hrange : Set.range ((X.blowupComponent (K := k) (A.component j)).ι ≫ ν[X]) =
+      closure {A.componentGenericPoint j} := by
+    simpa [← A.componentGenericPoint_def] using
+      X.range_blowupComponent_comp (A.component j) (𝟙 X) (𝟙 X : X ⟶ X).isClosedMap
+  rw [← hrange]
+  constructor
+  · rintro ⟨x, hx⟩
+    have hz : (ν[X]) x.val = z := hx
+    have hr : x.val ∈ Set.range e := by
+      dsimp only [e]
+      rw [X.range_branchSchemeToBlowup, Set.mem_preimage, hz,
+        ← (X.singularLocus k).range_subschemeι]
+      exact Set.mem_range_self _
+    obtain ⟨q, hq⟩ := hr
+    obtain ⟨⟨a, b⟩, rfl⟩ := A.branch.surjective q
+    have ha : a = i := by
+      apply A.node.injective
+      apply (X.singularLocus k).subschemeι.injective
+      have h := congrArg (ν[X]) hq
+      dsimp only [e] at h
+      rw [X.blowupToBase_branchSchemeToBlowup_apply,
+        A.branchSchemeToSingularLocus_branch, hz] at h
+      exact h
+    subst a
+    refine ⟨b, A.component.injective
+      ((A.branchSchemeToBlowup_branch_mem_component_iff i b (A.component j)).mp ?_)⟩
+    rw [hq, ← X.coe_blowupComponent]
+    exact x.property
+  · rintro ⟨b, hb⟩
+    have h := (A.branchSchemeToBlowup_branch_mem_component_iff i b (A.component j)).mpr
+      (congrArg A.component hb)
+    rw [← X.coe_blowupComponent] at h
+    refine ⟨⟨e (A.branch (i, b)), h⟩, ?_⟩
+    -- Evaluate the composite on the point represented in the component open.
+    change (ν[X]) (e (A.branch (i, b))) = z
+    dsimp only [e, z]
+    rw [X.blowupToBase_branchSchemeToBlowup_apply, A.branchSchemeToSingularLocus_branch]
 
 end AlgebraicGeometry.Scheme.NodalCycleNumbering
 

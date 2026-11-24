@@ -11,7 +11,6 @@ public import QPainleve.AlgebraicGeometry.IdealSheaf.Boundary.Primes
 public import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.Basic
 
 import QPainleve.AlgebraicGeometry.Curves.Node.BoundaryRestriction
-import QPainleve.AlgebraicGeometry.Curves.Node.Conductor.Map
 import QPainleve.AlgebraicGeometry.Curves.Node.PointBlowup
 import QPainleve.AlgebraicGeometry.EffectiveCartierDivisor.Dimension
 import TauCeti.AlgebraicGeometry.Curves.Node.Reduced
@@ -39,7 +38,6 @@ variable {k : Type u} [Field k] [IsSepClosed k] {X : Scheme.{u}} {D : X.IdealShe
 
 local notation "C" => D.subscheme
 local notation "J" => Scheme.singularLocus k C
-local notation "ν" => blowupToBase J
 
 variable (A : NodalCycleNumbering p n)
 
@@ -122,44 +120,10 @@ theorem boundaryPrimeEquiv_apply_val (hD : D.IsEffectiveCartier) (j : ZMod n) :
 theorem ambientNode_mem_closure_boundaryPrime_iff (hD : D.IsEffectiveCartier) (j l : ZMod n) :
     A.ambientNode j ∈ closure {(A.boundaryPrimeEquiv hD l).val} ↔
       ∃ b : Fin 2, (TauCeti.DualGraph.cycle n).endpoint j b = l := by
-  rw [boundaryPrimeEquiv_apply_val, componentGenericPoint_def,
-    ← (C).range_blowupComponent_comp (A.component l) D.subschemeι (D.subschemeι).isClosedMap]
-  have hnodal : AtWorstNodalOfRelativeDimensionOne (C ↘ Spec (.of k)) :=
-    PrestableFamily.atWorstNodalOfRelativeDimensionOne
-  have := hnodal.syntomic
-  have hbranch (b : (C).branchScheme k) :
-      ν ((C).branchSchemeToBlowup k b) = (J).subschemeι ((C).branchSchemeToSingularLocus k b) := by
-    rw [← Scheme.Hom.comp_apply, ← Scheme.Hom.comp_apply,
-      (C).branchSchemeToSingularLocus_subschemeι k]
-  constructor
-  · rintro ⟨x, hx⟩
-    have hx' : ν x.val = (J).subschemeι (A.node j) := by
-      apply (D.subschemeι).injective
-      have hι : ((C).blowupComponent (A.component l)).ι x = x.val := (rfl)
-      simpa only [Scheme.Hom.comp_apply, hι, ambientNode_def] using hx
-    have hsing : ν x.val ∈ (J).support := hx'.symm ▸ (J).range_subschemeι.le ⟨_, rfl⟩
-    obtain ⟨b, hb⟩ := ((C).range_branchSchemeToBlowup (k := k)).ge hsing
-    obtain ⟨⟨a, i⟩, rfl⟩ := A.branch.surjective b
-    rw [← hb, hbranch, A.branchSchemeToSingularLocus_branch] at hx'
-    have h : a = j := A.node.injective ((J).subschemeι.injective hx')
-    subst a
-    have hm : (C).branchSchemeToBlowup k (A.branch (j, i)) ∈ (A.component l).val := by
-      rw [hb, ← (C).coe_blowupComponent]
-      exact x.property
-    exact ⟨i, A.component.injective
-      ((A.branchSchemeToBlowup_branch_mem_component_iff j i (A.component l)).mp hm)⟩
-  · rintro ⟨b, rfl⟩
-    let y := (C).branchSchemeToBlowup k (A.branch (j, b))
-    have hy : y ∈ ((C).blowupComponent (A.component ((TauCeti.DualGraph.cycle n).endpoint j b)) :
-        Set (J).blowup) := by
-      rw [(C).coe_blowupComponent]
-      exact (A.branchSchemeToBlowup_branch_mem_component_iff j b _).mpr rfl
-    let U := (C).blowupComponent (A.component ((TauCeti.DualGraph.cycle n).endpoint j b))
-    let x : U.toScheme := ⟨y, hy⟩
-    have hι : U.ι x = y := (rfl)
-    exact ⟨x, by
-      rw [Scheme.Hom.comp_apply, Scheme.Hom.comp_apply, hι, hbranch,
-        A.branchSchemeToSingularLocus_branch, ambientNode_def]⟩
+  rw [ambientNode_def, boundaryPrimeEquiv_apply_val, ← Set.image_singleton,
+    D.subschemeι.isClosedEmbedding.closure_image_eq]
+  exact (D.subschemeι.injective.mem_set_image).trans
+    (A.node_mem_closure_componentGenericPoint_iff j l)
 
 private theorem exists_ambientNode_of_mem_closure_boundaryPrimes (hD : D.IsEffectiveCartier)
     {i j : ZMod n} (hij : i ≠ j) {x : X}
@@ -176,7 +140,7 @@ private theorem exists_ambientNode_of_mem_closure_boundaryPrimes (hD : D.IsEffec
   obtain ⟨z, hz⟩ := (hclosure j).symm ▸ hj
   simp only [Scheme.Hom.comp_apply] at hy hz
   have he := D.subschemeι.injective (hy.trans hz.symm)
-  have hs : ν (((C).blowupComponent (A.component i)).ι y) ∈ (J).support := by
+  have hs : (J).blowupToBase (((C).blowupComponent (A.component i)).ι y) ∈ (J).support := by
     apply ((C).mem_support_singularLocus_iff_notMem_smoothLocus _).mpr
     intro hm
     have h := (C).eq_of_blowupToBase_singularLocus_eq_of_mem_smoothLocus he hm

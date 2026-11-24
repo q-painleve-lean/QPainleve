@@ -125,10 +125,10 @@ private theorem hasMatchingNumberings_blowup {Y W : Scheme.{u}}
   let : (I(A'.ambientNode i)).blowup.Over S(k) := ⟨π(A'.ambientNode i) ≫ g(k, Y)⟩
   let : (I(C'.ambientNode i)).blowup.Over S(k) := ⟨π(C'.ambientNode i) ≫ g(k, W)⟩
   obtain ⟨A'', C'', hA', hC', he'⟩ :=
-    picardIsometryCongr_nodal_boundaryPrimes_of_numbered_nodes A' C' hE hG i e he
+    picardIsometryCongr_of_numbered_nodal_blowups A' C' hE hG i e he
       (PEmpty.elim : PEmpty.{v+1} → _) (PEmpty.elim : PEmpty.{w+1} → _)
   exact ⟨_, _, _, _, A'', C'', subschemeMap_comp _ hf (le_radical _) ▸ hA'.comp hA,
-    subschemeMap_comp _ hg (le_radical _) ▸ hC'.comp hC, he'⟩
+    subschemeMap_comp _ hg (le_radical _) ▸ hC'.comp hC, fun a ↦ (he' a).2.2⟩
 
 variable (hD : D.IsEffectiveCartier) (hF : F.IsEffectiveCartier)
   (e : B(k, X).IsometryEquiv B(k, Z))
