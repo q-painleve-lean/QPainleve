@@ -13,7 +13,7 @@ import QPainleve.AlgebraicGeometry.CartierDivisor.Support
 import QPainleve.AlgebraicGeometry.Chow.Ample
 import QPainleve.AlgebraicGeometry.Chow.NegativeCurve
 import QPainleve.AlgebraicGeometry.Chow.Nef.NumericalExceptional
-import QPainleve.AlgebraicGeometry.Chow.PositiveCone
+import QPainleve.AlgebraicGeometry.Chow.RationalSurface.PositiveCone
 import QPainleve.AlgebraicGeometry.IntersectionNumber.ExceptionalCurve.Numerical
 import QPainleve.AlgebraicGeometry.LineBundle.Ample
 import QPainleve.AlgebraicGeometry.Scheme.LocalDimension
@@ -54,11 +54,9 @@ variable (k : Type u) [Field k] [IsAlgClosed k] {X Y : Scheme.{u}}
 
 local notation "S" => Spec (CommRingCat.of k)
 local notation "Pic(" X ")" => Additive (LineBundleClass X)
-local notation "V(" X ")" => (ℝ ⊗[ℤ] Pic(X))
 local notation "B(" X ")" => classIntersectionNumber k X
 local notation "Bℤ(" X ")" => intersectionBilinForm k X
 local notation "Bℝ(" X ")" => realIntersectionBilinForm k X
-local notation "Q(" X ")" => LinearMap.BilinMap.toQuadraticMap (Bℝ(X))
 local notation "K(" X ")" => mk (canonicalBundle k X 2)
 local notation "ι(" a ")" => ((1 : ℝ) ⊗ₜ[ℤ] Additive.ofMul a)
 local notation "P" => primeDivisorClass
@@ -72,62 +70,6 @@ private theorem intersection_map (a b : LineBundleClass X) :
     B(Y) (e (Additive.ofMul a)).toMul (e (Additive.ofMul b)).toMul = B(X) a b := by
   simpa only [intersectionBilinForm_apply, toMul_ofMul] using
     e.map_app (Additive.ofMul b) (Additive.ofMul a)
-
-private theorem classIntersectionNumber_pos_of_nef_isometry
-    {d : LineBundleClass X} {d' : LineBundleClass Y}
-    (hd : d.IsNef k (X ↘ S)) (hd' : d'.IsNef k (Y ↘ S))
-    (hd₀ : ι(d) ≠ 0)
-    (hdd : 0 ≤ B(X) d d) (hdmap : e (Additive.ofMul d) = Additive.ofMul d')
-    {h a : LineBundleClass X} {h' : LineBundleClass Y}
-    (hh : h.IsAmple) (hh' : h'.IsAmple) (haa : 0 ≤ B(X) a a) (hha : 0 < B(X) h a) :
-    0 < B(Y) h' (e (Additive.ofMul a)).toMul := by
-  let : Module.Finite ℤ Pic(X) := X.finite_picard_of_isRationalOver k
-  let : Module.Finite ℤ Pic(Y) := Y.finite_picard_of_isRationalOver k
-  let : TopologicalSpace V(X) := moduleTopology ℝ V(X)
-  let : TopologicalSpace V(Y) := moduleTopology ℝ V(Y)
-  let : IsModuleTopology ℝ V(X) := ⟨rfl⟩
-  let : IsModuleTopology ℝ V(Y) := ⟨rfl⟩
-  let : ContinuousAdd V(Y) := IsModuleTopology.toContinuousAdd ℝ V(Y)
-  obtain ⟨hQ, hsig, _⟩ := signature_realIntersectionBilinForm_of_isRationalOver k X
-  obtain ⟨hQ', hsig', _⟩ := signature_realIntersectionBilinForm_of_isRationalOver k Y
-  have hdd' : 0 ≤ B(Y) d' d' := by
-    have he := intersection_map k e d d
-    rw [hdmap, toMul_ofMul] at he
-    exact he ▸ hdd
-  let C := connectedComponentIn {x : V(X) | 0 < Q(X) x} (ι(h))
-  let C' := connectedComponentIn {x : V(Y) | 0 < Q(Y) x} (ι(h'))
-  let g := e.baseChange ℝ
-  have hpair (x y : V(X)) : Bℝ(Y) (g x) (g y) = Bℝ(X) x y := by
-    simpa only [g, realIntersectionBilinForm_def] using (e.baseChange ℝ).map_app y x
-  have hgd : g (ι(d)) = ι(d') := by
-    simp only [g, LinearMap.BilinForm.IsometryEquiv.baseChange_tmul, hdmap]
-  have hd'₀ : ι(d') ≠ 0 := by
-    rw [← hgd, ← map_zero g]
-    exact g.injective.ne hd₀
-  have hmaps : Set.MapsTo g C C' := by
-    dsimp only [C, C']
-    rw [connectedComponentIn_pos_eq_of_isNef k hQ hsig.le hh hd hd₀ hdd,
-      connectedComponentIn_pos_eq_of_isNef k hQ' hsig'.le hh' hd' hd'₀ hdd']
-    intro x hx
-    simp only [Set.mem_ofPred_eq, LinearMap.BilinMap.toQuadraticMap_apply] at hx ⊢
-    rwa [← hgd, hpair, hpair]
-  have haC : ι(a) ∈ closure C := by
-    dsimp only [C]
-    rw [closure_connectedComponentIn_pos_eq_of_isAmple k hQ hsig.le hh]
-    simp only [Set.mem_ofPred_eq, LinearMap.BilinMap.toQuadraticMap_apply,
-      realIntersectionBilinForm_tmul, one_mul, toMul_ofMul]
-    exact ⟨by exact_mod_cast haa, by exact_mod_cast hha.le⟩
-  have ha₀ : ι(a) ≠ 0 := fun hzero ↦ by
-    have hpos : 0 < Bℝ(X) (ι(h)) (ι(a)) := by
-      simpa only [realIntersectionBilinForm_tmul, one_mul, toMul_ofMul, Int.cast_pos] using hha
-    simp only [hzero, map_zero, lt_self_iff_false] at hpos
-  have hx : g (ι(a)) ∈ closure C' :=
-    hmaps.closure (IsModuleTopology.continuous_of_linearMap g.toLinearEquiv.toLinearMap) haC
-  have hp := realIntersectionBilinForm_pos_of_mem_connectedComponentIn_pos k hQ' hsig'.le hh'
-    (mem_connectedComponentIn (realIntersectionBilinForm_pos_of_isAmple k hh' hh')) hx
-    (fun hz ↦ ha₀ (g.injective (hz.trans (map_zero g).symm)))
-  simpa only [g, LinearMap.BilinForm.IsometryEquiv.baseChange_tmul, realIntersectionBilinForm_tmul,
-    one_mul, toMul_ofMul, Int.cast_pos] using hp
 
 private theorem effective_class_of_cartier {I : Y.IdealSheafData} (hI : I.IsEffectiveCartier) :
     Additive.ofMul (mk hI.toInvertibleSheaf)⁻¹ ∈ Y.effectiveClasses := by
