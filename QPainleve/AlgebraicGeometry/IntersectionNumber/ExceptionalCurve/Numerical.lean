@@ -7,6 +7,7 @@ module
 
 public import QPainleve.AlgebraicGeometry.Chow.SurfaceIntersection
 public import QPainleve.AlgebraicGeometry.Curves.GenusZero
+public import TauCeti.AlgebraicGeometry.IdealSheaf.Over
 public import TauCeti.AlgebraicGeometry.IntersectionNumber.ExceptionalCurve.Basic
 
 import TauCeti.AlgebraicGeometry.Cohomology.ClosedImmersion.Linear
@@ -73,3 +74,29 @@ theorem isExceptionalCurveOfFirstKind_iff_genus_eq_zero_and_classIntersectionNum
   exact hI.isExceptionalCurveOfFirstKind_iff_genus_eq_zero_and_intersectionNumber
 
 end AlgebraicGeometry.Scheme.IdealSheafData.IsEffectiveCartier
+
+namespace AlgebraicGeometry.Scheme.IdealSheafData.IsExceptionalCurveOfFirstKind
+
+universe u
+
+attribute [local instance] MvPolynomial.gradedAlgebra
+
+variable {k : Type u} [Field k] [IsAlgClosed k] {X : Scheme.{u}} [X.Over (Spec (.of k))]
+  {E : X.IdealSheafData}
+
+/-- Over an algebraically closed ground field, an exceptional curve on a proper scheme
+is isomorphic to the projective line over that field. -/
+theorem exists_iso_projectiveLine_over [IsProper (X ↘ Spec (.of k))]
+    (hE : E.IsExceptionalCurveOfFirstKind) :
+    ∃ e : projectiveLine k ≅ E.subscheme, e.hom.IsOver (Spec (.of k)) := by
+  have : E.subscheme.IsCurveOver k := Scheme.isCurveOver_iff.mpr
+    ⟨hE.isIntegral_subscheme, inferInstanceAs (IsProper (E.subschemeι ≫ (X ↘ Spec (.of k)))),
+      hE.topologicalKrullDim_subscheme⟩
+  have hgen : E.subscheme.genus k = 0 := by
+    simpa only [Scheme.genus_def] using hE.finrank_cohomology_one_trivial_eq_zero k
+  obtain ⟨e, he⟩ := Scheme.genus_eq_zero_iff_exists_iso_projectiveLine.mp hgen
+  have : e.hom.IsOver (Spec (.of k)) := he
+  exact ⟨e.symm, by simpa only [Iso.symm_hom] using
+    (inferInstance : e.inv.IsOver (Spec (.of k)))⟩
+
+end AlgebraicGeometry.Scheme.IdealSheafData.IsExceptionalCurveOfFirstKind
