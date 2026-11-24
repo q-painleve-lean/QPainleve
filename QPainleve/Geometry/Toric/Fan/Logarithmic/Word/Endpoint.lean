@@ -16,7 +16,8 @@ import QPainleve.Geometry.Toric.Fan.StarSubdivision.Tower
 
 The word along a resolved path can be read in the labels and frame of a
 prescribed terminal model. The final relabeling preserves each chain of repeated
-centers and matches the full Picard marking on the common resolving surface.
+centers, the boundary orientation, and the full Picard marking on the common
+resolving surface.
 This is the endpoint comparison for the factorization of
 [Lutz, Theorem 8.4](https://arxiv.org/pdf/2005.05010v3#page=68).
 -/
@@ -44,7 +45,8 @@ private theorem compare_relabel {U T : OrderedToricModel B m}
     (σ : Equiv.Perm (Fin m)) (hfan : T.fan = U.fan) (hb : T.basis = U.basis)
     (href : T.refinedProjection = U.refinedProjection)
     (hσ : ∀ j, ((hfan ▸ T.rays) j, T.parameters j) = (U.rays (σ j), U.parameters (σ j))) :
-    T.exchangeMatrix = (Generator.permute σ).target U.exchangeMatrix ∧
+    U.HasBoundarySign T 1 ∧
+      T.exchangeMatrix = (Generator.permute σ).target U.exchangeMatrix ∧
       let w := ((Generator.permute σ).toStep U.exchangeMatrix).toPath
       ∃ h, U.xEvaluation.compOfDefined (w.xRationalMap ℂ) h = T.xEvaluation := by
   cases U with
@@ -64,30 +66,35 @@ private theorem compare_relabel {U T : OrderedToricModel B m}
           b.detDualEquiv x y := by
         simp only [F, FanEquiv.refl_latticeEquiv, AddEquiv.refl_apply]
       have hh : T.hom = U.hom := eq_of_heq (LogarithmicProjection.ext_iff.mp href).2
+      have hHom : U.hom ≫ F.toFanHom.algebraicMap ≫ (Φ.torusTranslation 1).hom = T.hom := by
+        simp only [F, FanEquiv.toFanHom_refl, FanHom.algebraicMap_id,
+          Fan.torusTranslation_one, Iso.refl_hom, Category.comp_id, hh]
+        exact Category.comp_id U.hom
       have hcomp : U.hom.toRationalMap.comp
           (F.toFanHom.algebraicMap ≫ (Φ.torusTranslation 1).hom).toRationalMap =
             T.hom.toRationalMap := by
-        simpa only [F, FanEquiv.toFanHom_refl, FanHom.algebraicMap_id, Fan.torusTranslation_one,
-          Iso.refl_hom, Category.id_comp, Scheme.RationalMap.comp_toRationalMap] using
-          (Scheme.RationalMap.compHom_id U.hom.toRationalMap).trans
-            (congrArg Scheme.Hom.toRationalMap hh.symm)
+        rw [Scheme.RationalMap.comp_toRationalMap, Scheme.Hom.toRationalMap_compHom, hHom]
       obtain ⟨hm, hx⟩ := F.comp_xEvaluation_of_resolved_toric_iso hΦ b b r s σ
         (centerCharacter c) (centerCharacter d) 1 hray hdet (fun j ↦ by
           rw [← hray j]
           apply (F.comap_internalCenter_toricIso_eq_iff b b hdet hΦ (r (σ j)) 1 _ _).mpr
           simpa [centerCharacter, Finsupp.linearEquivFunOnFinite_symm_single] using
             congrArg Prod.snd (hσ j)) U.hom T.hom hcomp U.exchangeMatrix U.exchangeMatrix_matrix
-      refine ⟨SkewExchangeMatrix.ext (T.exchangeMatrix_matrix.trans hm.symm), ?_⟩
-      simpa only [xEvaluation_def] using hx
+      refine ⟨?_, SkewExchangeMatrix.ext (T.exchangeMatrix_matrix.trans hm.symm), ?_⟩
+      · apply U.hasBoundarySign_of_toricIso T F 1 hHom 1
+        intro x y
+        simpa only [Units.val_one, one_mul] using hdet x y
+      · simpa only [xEvaluation_def] using hx
 
 /-- Two ordered models of a specified projection in the same frame have the same refined
 projection. A permutation from target labels to source labels matches their centers,
 preserves the order over every repeated center, and compares their strict boundaries, full
-Picard markings, and fixed-center X evaluations. -/
+Picard markings, and fixed-center X evaluations. It preserves the orientation
+on the resolving boundary. -/
 theorem exists_relabel (U T : OrderedToricModel B m) (hb : T.basis = U.basis) :
     ∃ (hfan : T.fan = U.fan) (σ : Equiv.Perm (Fin m))
       (hmat : T.exchangeMatrix = (Generator.permute σ).target U.exchangeMatrix),
-      T.refinedProjection = U.refinedProjection ∧
+      T.refinedProjection = U.refinedProjection ∧ U.HasBoundarySign T 1 ∧
       (∀ j, ((hfan ▸ T.rays) j, T.parameters j) = (U.rays (σ j), U.parameters (σ j))) ∧
       (∀ a b, a < b → (T.rays a, T.parameters a) = (T.rays b, T.parameters b) → σ a < σ b) ∧
       (U.tower.2.boundaryι ≫ U.iso.hom) ≍ (T.tower.2.boundaryι ≫ T.iso.hom) ∧
@@ -118,8 +125,8 @@ theorem exists_relabel (U T : OrderedToricModel B m) (hb : T.basis = U.basis) :
         (T.hom_comp_subdivision.trans U.hom_comp_subdivision.symm)
       have href : T.refinedProjection = U.refinedProjection :=
         LogarithmicProjection.ext rfl (heq_of_eq hh)
-      obtain ⟨hmat, hw⟩ := compare_relabel (U := U) (T := T) σ rfl rfl href hσ
-      refine ⟨rfl, σ, hmat, href, hσ, horder, hboundary, ?_, ?_⟩
+      obtain ⟨hsign, hmat, hw⟩ := compare_relabel (U := U) (T := T) σ rfl rfl href hσ
+      refine ⟨rfl, σ, hmat, href, hsign, hσ, horder, hboundary, ?_, ?_⟩
       · intro a x
         exact (T.picardMarking_apply _).trans
           ((congrArg Additive.ofMul (hmark a x)).trans (U.picardMarking_apply _).symm)
@@ -133,7 +140,8 @@ end OrderedToricModel
 The lifted path still commutes with the given subdivisions. Its terminal model is
 reframed and relabeled to match the prescribed target, including the strict boundary
 and the pullback of every marked Picard class. The resulting typed word carries the
-source X evaluation to the prescribed target evaluation at the generic point. -/
+source X evaluation to the prescribed target evaluation at the generic point.
+Its inversion sign compares the branch orientations in the prescribed frames. -/
 theorem exists_word_of_resolved_sarkisov_path_to_model [Z.IsProjectiveOver ℂ]
     (p : SarkisovPath A B) (U : OrderedToricModel A m) (T : OrderedToricModel B m) :
     ∃ (W R : OrderedToricModel B m)
@@ -153,16 +161,25 @@ theorem exists_word_of_resolved_sarkisov_path_to_model [Z.IsProjectiveOver ℂ]
         T.picardMarking (Additive.ofMul (LineBundleClass.pullback
           (eqToHom (congrArg Fan.algebraicRealization hfan)) a.toMul), x ∘ σ) =
           R.picardMarking (a, x)) ∧
+      U.HasBoundarySign T ((-1 : ℤˣ) ^ w.inversionCount) ∧
       ∃ h, U.xEvaluation.compOfDefined (w.xRationalMap ℂ) h = T.xEvaluation := by
-  obtain ⟨W, u, q, hq, hcomm, -, hu⟩ := exists_word_of_resolved_sarkisov_path p U
-  obtain ⟨R, v, hb, href, hm, -, hv⟩ := W.exists_word_reframe T.basis
-  obtain ⟨hfan, σ, hmat, href', hσ, horder, hboundary, hmark, ht⟩ :=
+  obtain ⟨W, u, q, hq, hcomm, huSign, hu⟩ := exists_word_of_resolved_sarkisov_path p U
+  obtain ⟨R, v, hb, href, hm, hvSign, hv⟩ := W.exists_word_reframe T.basis
+  obtain ⟨hfan, σ, hmat, href', htSign, hσ, horder, hboundary, hmark, ht⟩ :=
     R.exists_relabel T hb.symm
   let t : Word R.exchangeMatrix T.exchangeMatrix :=
     hmat.symm ▸ ((Generator.permute σ).toStep R.exchangeMatrix).toPath
   refine ⟨W, R, q, (u.comp v).comp t, hfan, σ, hq, hcomm, href, href', hb, hm,
-    hσ, horder, hboundary, hmark, ?_⟩
-  exact U.exists_compOfDefined_word_comp R T (u.comp v) t
-    (U.exists_compOfDefined_word_comp W R u v hu hv) ht
+    hσ, horder, hboundary, hmark, ?_, ?_⟩
+  · have hc : t.inversionCount = 0 := by
+      dsimp only [t]
+      generalize T.exchangeMatrix = E at hmat ⊢
+      subst E
+      rw [Quiver.Path.inversionCount_toPath, Generator.toStep_generator,
+        Generator.inversionCount_permute]
+    simpa only [Quiver.Path.inversionCount_comp, hc, add_zero, pow_add, mul_one] using
+      (huSign.trans hvSign).trans htSign
+  · exact U.exists_compOfDefined_word_comp R T (u.comp v) t
+      (U.exists_compOfDefined_word_comp W R u v hu hv) ht
 
 end TauCeti.Toric.Fan.LogarithmicProjection
