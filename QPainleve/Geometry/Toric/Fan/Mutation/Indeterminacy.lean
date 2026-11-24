@@ -138,12 +138,12 @@ local notation "F" =>
   QPainleve.BlowupTower.toBase (QPainleve.BlowupTower.WithBoundary.toTower (Sigma.snd M))
 
 /-- If the specified elementary transformation becomes regular after the ordered
-internal blowups, the pivot ray and its parameter occur among the prescribed centers.
-Repeated centers are allowed. -/
-theorem Ray.exists_internalBlowupTower_center_of_resolves
+internal blowups, there is a first occurrence of the pivot ray and its parameter
+among the prescribed centers. Repeated centers are allowed. -/
+theorem Ray.exists_first_internalBlowupTower_center_of_resolves
     [IsIntegral (M).1] [IsDominant (F)] (r : (M).1 ⟶ Y)
     (hr : (F).toRationalMap.comp q = r.toRationalMap) :
-    ∃ j, rays j = ρ ∧ parameters j = c := by
+    ∃ k, rays k = ρ ∧ parameters k = c ∧ ∀ j < k, (rays j, parameters j) ≠ (ρ, c) := by
   let J (j : Fin n) := (rays j).internalCenter b (parameters j)
   have hp' := ρ.mutationSourceCenter_mem_centre_of_resolves b hOpp c (F) r hr
   rw [internalBlowupTower_eq_alongBoundary] at hp'
@@ -159,7 +159,10 @@ theorem Ray.exists_internalBlowupTower_center_of_resolves
   have hdisjoint := disjoint_support_map_internalCenter_iff b (D).subschemeι
     (rays j) ρ (parameters j) c
   have he := not_ne_iff.mp (hdisjoint.not.mp hnd)
-  exact ⟨j, congrArg Prod.fst he, congrArg Prod.snd he⟩
+  let pivots : Set (Fin n) := {k | (rays k, parameters k) = (ρ, c)}
+  obtain ⟨k, hk, hmin⟩ := Set.exists_min_image pivots id (Set.toFinite pivots) ⟨j, he⟩
+  exact ⟨k, congrArg Prod.fst hk, congrArg Prod.snd hk,
+    fun l hl hlp ↦ (not_le_of_gt hl) (hmin l hlp)⟩
 
 end Ordered
 
