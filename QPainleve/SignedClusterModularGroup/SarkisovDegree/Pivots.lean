@@ -9,10 +9,12 @@ public import QPainleve.AlgebraicGeometry.Blowup.Tower.PlaneResolution
 public import QPainleve.Geometry.Toric.Fan.Logarithmic.Centres
 public import QPainleve.Geometry.Toric.Fan.Picard.Hirzebruch
 
+import Mathlib.Analysis.Complex.Polynomial.Basic
 import QPainleve.AlgebraicGeometry.Chow.Nef.Basic
 import QPainleve.AlgebraicGeometry.Curves.Degree.Ample
 import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
 import QPainleve.AlgebraicGeometry.IntersectionNumber.Nef.Pullback
+import QPainleve.Geometry.Toric.Fan.Boundary.Node
 import QPainleve.Geometry.Toric.Fan.Logarithmic.Multiplicity
 
 /-!
@@ -55,6 +57,18 @@ local notation "p[" ρ "," c "]" => Fan.Ray.binomialCenter ρ d₂
   (Fan.Ray.surjective_detCharacter ρ b) c (IsLocalRing.closedPoint ℂ)
 local notation "fiberRay[" t "]" => r ((![1, 3] : Fin 2 → Fin 4) t)
 
+include hc in
+open Classical in
+private theorem invariant_fiber_degree [Nonempty Φ.cones] [SmoothOfRelativeDimension 2 f]
+    (a : Additive (LineBundleClass X)) (t : Fin 2) :
+    intersectionBilinForm ℂ X a ((Φ.rayDivisorToPicard hΦ) (Pi.single (fiberRay[t]) 1)) =
+      (C).repr a 1 := by
+  have hclass : (Φ.rayDivisorToPicard hΦ) (Pi.single (fiberRay[t]) 1) = C 0 := by
+    fin_cases t
+    · exact (Fan.hirzebruchPicardBasis_apply_zero b e hΦ r hr).symm
+    · exact (Fan.hirzebruchPicardBasis_apply_zero_eq_ray_three b e hΦ r hr).symm
+  rw [hclass, (Fan.hirzebruchPicardBasis_intersection_repr b e hΦ r hr hc a).1]
+
 variable {Y : Scheme.{0}} {n : ℕ} {T : BlowupTower Φ.algebraicRealization n Y}
   (hT : IsClosedPointTower Φ.algebraicRealization T)
 
@@ -68,11 +82,7 @@ private theorem sum_base_orders_le_invariant_fiber
     (hA : ∀ j ∈ A, ∃ c : ℂˣ, hT.baseCenter j = p[fiberRay[t],c]) :
     ∑ j ∈ A, m j ≤ (C).repr a 1 := by
   have h := (fiberRay[t]).sum_base_orders_le_ray_degree b hΦ hc hT hlog a m A hm hnef hA
-  have hclass : (Φ.rayDivisorToPicard hΦ) (Pi.single (fiberRay[t]) 1) = C 0 := by
-    fin_cases t
-    · exact (Fan.hirzebruchPicardBasis_apply_zero b e hΦ r hr).symm
-    · exact (Fan.hirzebruchPicardBasis_apply_zero_eq_ray_three b e hΦ r hr).symm
-  rwa [hclass, (Fan.hirzebruchPicardBasis_intersection_repr b e hΦ r hr hc a).1] at h
+  rwa [invariant_fiber_degree b e hΦ hc r hr a t] at h
 
 local notation "Corner[" j "]" => (∃! σ : Φ.cones, Nat.card (ToricRay σ.val) = 2 ∧
   Φ.distinguishedPointHom σ (IsLocalRing.closedPoint ℂ) = hT.baseCenter j)
@@ -131,18 +141,26 @@ private theorem hirzebruch_high_fiber_centers
   have hbound := sum_base_orders_le_invariant_fiber b e hΦ hc r hr hT hlog
     v.1 (fun j ↦ -v.2 j) hm hnef
   have hunique {j l : A} {a : ℂˣ} (h : hT.baseCenter l = p[fiberRay[t j],a]) : j = l := by
-    by_contra! hne
-    have hne' : (j : Fin n) ≠ l := fun he ↦ hne (Subtype.ext he)
-    have hsum := hbound (t j) {j.val, l.val} (by
-      intro k hk
-      rcases Finset.mem_insert.mp hk with rfl | hk
-      · exact ⟨c j, hp j⟩
-      · rw [Finset.mem_singleton] at hk
-        exact ⟨a, hk.symm ▸ h⟩)
-    rw [Finset.sum_pair hne'] at hsum
-    have hj := hhigh j
-    have hl := hhigh l
-    omega
+    let ρ := fiberRay[t j]
+    let F := Φ.rayBoundaryIdeal hΦ ρ
+    let hF := Φ.isEffectiveCartier_rayBoundaryIdeal hΦ ρ
+    let : F.subscheme.IsProjectiveOver ℂ :=
+      Scheme.IsProjectiveOver.of_isClosedImmersion ℂ F.subschemeι
+    let : TauCeti.AlgebraicGeometry.IsRegular F.subscheme := Φ.isRegular_rayBoundary hΦ ρ
+    let : F.subscheme.IsCurveOver ℂ := ρ.isCurveOver_boundaryComponent hΦ d₂
+      (b.detDualEquiv_self ρ.primitiveGenerator) (ρ.surjective_detCharacter b)
+    have hsupport (u : ℂˣ) := ρ.binomialCenter_mem_support_sdiff_colon hΦ d₂
+      (b.detDualEquiv_self ρ.primitiveGenerator) (ρ.surjective_detCharacter b) u
+    have hdegree := invariant_fiber_degree b e hΦ hc r hr v.1 (t j)
+    have := Φ.uniqueFactorizationMonoid_stalk_algebraicRealization hΦ
+    rw [intersectionBilinForm_apply, Fan.rayDivisorToPicard_single, one_zsmul, toMul_ofMul,
+      primeDivisorClass_def,
+      mk_toInvertibleSheaf_congr _ hF (Φ.rayBoundaryIdeal_def hΦ ρ).symm] at hdegree
+    exact Subtype.ext (hT.eq_of_intersection_lt_two_mul_baseOrder_of_logarithmic_tower
+      (Φ.isEffectiveCartier_boundaryIdeal hΦ hc d₂) hF (Φ.boundaryIdeal_le_rayBoundaryIdeal ρ hΦ)
+      (Scheme.IsCurveOver.topologicalKrullDim_eq_one ℂ) hlog v.1.toMul (fun k ↦ -v.2 k) hm hnef
+      (by rw [hp j]; exact hsupport (c j)) (by rw [h]; exact hsupport a)
+      (hdegree.symm ▸ hhigh j) (hdegree.symm ▸ hhigh l))
   refine ⟨⟨t, fun j l h ↦ hunique (h.symm ▸ hp l)⟩, fun j ↦ ?_⟩
   have hle := hbound (t j) {j.val} (by
     intro k hk
