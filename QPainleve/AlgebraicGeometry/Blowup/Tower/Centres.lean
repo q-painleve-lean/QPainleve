@@ -28,6 +28,44 @@ namespace QPainleve.BlowupTower
 
 variable {S X Y Z X' Y' : Scheme.{u}} {m n : ℕ}
 
+namespace IsClosedPointTower
+
+/-- The image on the base of the center with the given index in a closed point tower. -/
+noncomputable def baseCenter :
+    {n : ℕ} → {Y : Scheme.{u}} → {T : BlowupTower X n Y} → IsClosedPointTower X T → Fin n → X
+  | _, _, .nil, _ => Fin.elim0
+  | _, _, .snoc U _, hT => Fin.lastCases (U.toBase hT.lastCenter.val)
+      (baseCenter (snoc_iff.mp hT).1)
+termination_by structural _ _ T => T
+
+/-- Appending a blowup preserves the base images of all previous centers. -/
+@[simp]
+theorem baseCenter_snoc_castSucc {T : BlowupTower X n Y} {I : Y.IdealSheafData}
+    (hT : IsClosedPointTower X (T.snoc I)) (j : Fin n) :
+    hT.baseCenter j.castSucc = (snoc_iff.mp hT).1.baseCenter j := by
+  simp [baseCenter]
+
+/-- The last center is mapped to the base by the projection of the preceding tower. -/
+@[simp]
+theorem baseCenter_snoc_last {T : BlowupTower X n Y} {I : Y.IdealSheafData}
+    (hT : IsClosedPointTower X (T.snoc I)) :
+    hT.baseCenter (Fin.last n) = T.toBase hT.lastCenter.val := by
+  simp [baseCenter]
+
+/-- On a locally Noetherian base, every projected center is a closed point. -/
+theorem isClosed_baseCenter [IsLocallyNoetherian X] {T : BlowupTower X n Y}
+    (hT : IsClosedPointTower X T) (j : Fin n) : IsClosed ({hT.baseCenter j} : Set X) := by
+  induction hT with
+  | nil => exact j.elim0
+  | @snoc n Y T I hT q hq hI ih =>
+    refine Fin.lastCases ?_ (fun i ↦ ?_) j
+    · rw [baseCenter_snoc_last, lastCenter_eq _ q hq hI]
+      have := T.isProper_toBase
+      simpa only [Set.image_singleton] using T.toBase.isClosedMap _ hq
+    · simpa only [baseCenter_snoc_castSucc] using ih i
+
+end IsClosedPointTower
+
 /-- A condition on a point of a scheme over a fixed base. -/
 abbrev PointCondition (S : Scheme.{u}) :=
   ∀ ⦃W : Scheme.{u}⦄, (W ⟶ S) → W → Prop
