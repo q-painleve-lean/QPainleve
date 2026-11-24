@@ -23,7 +23,7 @@ standard coordinate opens in polynomial projective space.
 
 public noncomputable section
 
-open AlgebraicGeometry AlgebraicGeometry.Proj CategoryTheory Module
+open AlgebraicGeometry AlgebraicGeometry.Proj CategoryTheory Module PointedCone
 
 namespace TauCeti.Toric.Fan
 
@@ -40,6 +40,78 @@ theorem range_primitiveGenerator_projectivePlane (b : Basis (Fin 2) ℤ N)
   ext v
   simp [Option.exists, Fin.exists_fin_two, Fin.sum_univ_two, neg_add_rev, sub_eq_add_neg, add_comm]
   grind
+
+/-- The two ray generators of a maximal cone of the plane fan form an integral basis. -/
+theorem exists_projectivePlane_vertex_basis (d : Basis (Fin 2) ℤ N)
+    (hi : IsIntegralLattice i) (k : Option (Fin 2)) :
+    ∃ (c : Basis (Fin 2) ℤ N) (a : {j : Option (Fin 2) // j ≠ k} ≃ Fin 2),
+      ∀ j, c (a j) = projectiveSpaceGenerator d j := by
+  classical
+  let σ := projectiveSpaceMaximalCone d hi k
+  let J := {j : Option (Fin 2) // j ≠ k}
+  let v : J → V := fun j ↦ i (projectiveSpaceGenerator d j)
+  have hσ := isRegular_iff.mp (isRegular_projectiveSpace d hi) σ.val σ.property
+  have hv : σ.val = hull ℝ (Set.range v) := by
+    -- The maximal cone uses the complement of the omitted ray index.
+    change projectiveSpaceCone d i {k}ᶜ = _
+    rw [projectiveSpaceCone_def, Set.image_image, Set.image_eq_range]
+    rfl
+  have hvli : LinearIndependent ℝ v :=
+    linearIndepOn_projectiveSpaceGenerator d (hi.linearIndependent_basis d)
+      (Set.compl_ne_univ.mpr (Set.singleton_nonempty k))
+  let e := toricRayEquivOfLinearIndependent v hvli hv
+  have hJ : Fintype.card J = 2 := by simp [J]
+  obtain ⟨c, r, hr⟩ := hσ.exists_basis_finrank
+  have hdim : Module.finrank ℤ N = 2 := by simpa using Module.finrank_eq_card_basis d
+  let a := e.symm.toEmbedding.trans (r.trans (finCongr hdim).toEmbedding)
+  have ha : Function.Surjective a :=
+    (Finite.injective_iff_surjective_of_equiv (Fintype.equivFinOfCardEq hJ)).mp a.injective
+  refine ⟨c.reindex (finCongr hdim), Equiv.ofBijective a ⟨a.injective, ha⟩, fun j ↦ ?_⟩
+  have hgen := hr.isPrimitiveGenerator_apply (e.symm j)
+  obtain ⟨q, hq⟩ := (range_primitiveGenerator_projectiveSpace d hi ▸
+      Set.mem_range_self (f := projectiveSpaceGenerator d) j.val)
+  have hj := (apply_mem_iff_toricRayEquivOfLinearIndependent _ _ hv (e.symm j) j).mpr
+    (e.apply_symm_apply j).symm
+  have hp := isPrimitiveGenerator_iff.mpr ⟨hj, hq ▸ q.isPrimitiveGenerator.isPrimitive⟩
+  simpa [a, Equiv.ofBijective_apply] using (hgen.eq_primitiveGenerator hi hσ.toIsToricCone).trans
+    (hp.eq_primitiveGenerator hi hσ.toIsToricCone).symm
+
+/-- In a basis for the maximal cone at a plane vertex, the third ray generator is
+the negative sum of the two basis vectors. -/
+theorem projectivePlane_vertex_rays (d : Basis (Fin 2) ℤ N) (hi : IsIntegralLattice i)
+    (k : Option (Fin 2)) :
+    let σ := projectiveSpaceMaximalCone d hi k
+    ∃ c : Basis (Fin 2) ℤ N, σ.val = hull ℝ (Set.range (i ∘ c)) ∧
+      Set.range (projectiveSpaceGenerator d) = {c 0, c 1, -c 0 - c 1} := by
+  classical
+  obtain ⟨c, a, ha⟩ := exists_projectivePlane_vertex_basis d hi k
+  have hrange : projectiveSpaceGenerator d '' {k}ᶜ = Set.range c := by
+    rw [Set.image_eq_range, ← a.surjective.range_comp c]
+    exact congrArg Set.range (funext fun j ↦ (ha j).symm)
+  have hrem := Equiv.sum_comp a c
+  simp only [ha, Fin.sum_univ_two] at hrem
+  have hsum := sum_projectiveSpaceGenerator d
+  have hsplit : (∑ j ∈ Finset.univ.erase k, projectiveSpaceGenerator d j) =
+      ∑ j : {j // j ≠ k}, projectiveSpaceGenerator d j := Finset.sum_subtype (Finset.univ.erase k)
+    (p := fun j ↦ j ≠ k) (by simp) (projectiveSpaceGenerator d)
+  rw [← Finset.sum_erase_add _ _ (Finset.mem_univ k), hsplit, hrem] at hsum
+  have hk : projectiveSpaceGenerator d k = -c 0 - c 1 := by
+    calc
+      _ = -(c 0 + c 1) := eq_neg_of_add_eq_zero_right hsum
+      _ = _ := by abel
+  refine ⟨c, ?_, ?_⟩
+  · -- Unfold the maximal cone to apply its hull formula.
+    change projectiveSpaceCone d i {k}ᶜ = _
+    rw [projectiveSpaceCone_def, hrange, Set.range_comp]
+  · have huniv : insert k ({k}ᶜ : Set (Option (Fin 2))) = Set.univ := by
+      ext j
+      simp [em]
+    rw [← Set.image_univ, ← huniv, Set.image_insert_eq,
+      hrange, hk]
+    ext x
+    simp only [Set.mem_insert_iff, Set.mem_singleton_iff, Set.mem_range,
+      Fin.exists_fin_two]
+    tauto
 
 /-- A complete regular rank-two fan with the plane ray generators is the
 projective-space fan in that lattice frame. -/

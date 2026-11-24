@@ -249,6 +249,13 @@ instance (w : Word B C) (P : ChargeSeed B N) :
     (w.centerPartialMap K P).IsOver (structureMap K A) (structureMap K A) where
   over := by simp [centerPartialMap_hom]
 
+/-- The center partial map is over the base for the bundled slice objects.
+The projected structure morphisms need their own instance for typeclass search. -/
+instance (w : Word B C) (P : ChargeSeed B N) :
+    (w.centerPartialMap K P).IsOver
+      (Over.mk (structureMap K A)).hom (Over.mk (structureMap K A)).hom :=
+  inferInstanceAs ((w.centerPartialMap K P).IsOver (structureMap K A) (structureMap K A))
+
 /-- The center map for the empty word is the identity on the initial noncollision open. -/
 theorem centerPartialMap_nil (P : ChargeSeed B N) :
     (Path.nil : Word B B).centerPartialMap K P =

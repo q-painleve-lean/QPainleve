@@ -41,12 +41,6 @@ attribute [local instance] hasUniqueDiv_of_free_int
 local instance : PreirreducibleSpace (Centers).left :=
   inferInstanceAs (PreirreducibleSpace (scheme k A))
 
-/-- The word's partial center map is over the ground field in the slice category. -/
-instance instIsOverCenterPartialMap {E : SkewExchangeMatrix ι} (w : Word B E)
-    (P : ChargeSeed B N) :
-    (w.centerPartialMap k P).IsOver (Centers).hom (Centers).hom :=
-  inferInstanceAs ((w.centerPartialMap k P).IsOver (structureMap k A) (structureMap k A))
-
 variable {L₀ L₁ : Type u} [AddCommGroup L₀] [AddCommGroup L₁]
   {B₀ : LinearMap.BilinForm ℤ L₀} {B₁ : LinearMap.BilinForm ℤ L₁}
   {M₀ : Point (Over.mk (structureMap k (ι → ℤ))) → MarkedSurface k n B₀ (scheme k (ι →₀ ℤ))}
@@ -204,7 +198,7 @@ theorem ofWord_orientation_eq_one (w : Word B E) (step : WordStepRealizations P 
       (hs : ∃ q : Word D' E, (p.cons s).comp q = w), (step p s hs).orientation = 1) :
     (ofWord P w step).orientation = 1 := by
   induction w with
-  | nil => simp [orientation_eq_cycleOrientationSign]
+  | nil => simp [orientation_def]
   | cons p s ih =>
     have hlast : step.last.orientation = 1 := by
       rw [WordStepRealizations.last_eq]
@@ -215,8 +209,8 @@ theorem ofWord_orientation_eq_one (w : Word B E) (step : WordStepRealizations P 
       obtain ⟨r, hr⟩ := ht
       rw [WordStepRealizations.prefix_apply _ _ _ r hr]
       exact h _ _ _
-    rw [orientation_eq_cycleOrientationSign, ofWord_cons_boundaryAction, map_mul]
-    rw [orientation_eq_cycleOrientationSign] at hlast hprefix
+    rw [orientation_def, ofWord_cons_boundaryAction, map_mul]
+    rw [orientation_def] at hlast hprefix
     rw [hlast, hprefix, mul_one]
 
 end QPainleve.SignedClusterModularGroup.GeometricRealization

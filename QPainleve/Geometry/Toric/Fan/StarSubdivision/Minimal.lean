@@ -44,7 +44,7 @@ theorem exists_starSubdivision_chain_from_minimal
   | ind n ih =>
     rcases exists_ray_eq_sum_or_exists_basis_ray_generators b hΦ hc with
       ⟨p, r, q, hp, hq, hr⟩ | hnormal
-    · obtain ⟨Ξ, hΞ, σ, hσ, hΞc, hstar, -, hnmem⟩ :=
+    · obtain ⟨Ξ, hΞ, σ, hσ, hΞc, hstar, -, hnmem, -⟩ :=
         exists_star_subdivision_of_ray_eq_sum b hΦ hc hp hq hr
       have hstep : IsTwoRayStarSubdivision Ξ Φ := hstar ▸ .along hΞ σ hσ
       let f := hstep.isSubdivision.liftRay

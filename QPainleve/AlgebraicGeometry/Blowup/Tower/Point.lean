@@ -84,12 +84,17 @@ theorem lastCenter_eq {I : Y.IdealSheafData} (hT : IsClosedPointTower X (T.snoc 
   simpa [Scheme.Hom.support_ker, Scheme.range_fromSpecResidueField, q.property.1.closure_eq,
     hp.closure_eq] using h
 
+/-- A concatenated tower has closed point centers exactly when both of its parts do. -/
+theorem append_iff {U : BlowupTower Y m Z} :
+    IsClosedPointTower X (T.append U) ↔ IsClosedPointTower X T ∧ IsClosedPointTower Y U := by
+  induction U with
+  | nil => simp only [append_nil, IsClosedPointTower.nil, and_true]
+  | snoc U I ih => simp only [append_snoc, snoc_iff, ih, and_assoc]
+
 /-- Two consecutive towers of closed point blowups give a tower of closed point blowups. -/
 protected theorem append {U : BlowupTower Y m Z} (hT : IsClosedPointTower X T)
-    (hU : IsClosedPointTower Y U) : IsClosedPointTower X (T.append U) := by
-  induction hU with
-  | nil => simpa only [append_nil] using hT
-  | snoc _ p hp hI ih => simpa only [append_snoc] using ih.snoc p hp hI
+    (hU : IsClosedPointTower Y U) : IsClosedPointTower X (T.append U) :=
+  append_iff.mpr ⟨hT, hU⟩
 
 /-- A tower of closed point blowups preserves smoothness of relative dimension two. -/
 theorem smoothOfRelativeDimension {k : Type u} [Field k] [PerfectField k]

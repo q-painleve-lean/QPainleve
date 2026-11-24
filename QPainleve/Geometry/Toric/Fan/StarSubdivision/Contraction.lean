@@ -158,7 +158,8 @@ private lemma exists_coarsening_at_basis_sum (hΦ : Φ.IsRegular) (hc : Φ.IsCom
       (hσ : Nat.card (ToricRay σ.val) = 2),
       Ψ.IsComplete ∧ Ψ.starSubdivisionAlong hΨ σ.property = Φ ∧
         (Ψ.starSubdivisionAlongRay hΨ σ.property (ne_bot_of_card_toricRay_eq_two hσ)).toCone.val =
-          hull ℝ {i (b 0 + b 1)} ∧ hull ℝ {i (b 0 + b 1)} ∉ Ψ.cones := by
+          hull ℝ {i (b 0 + b 1)} ∧ hull ℝ {i (b 0 + b 1)} ∉ Ψ.cones ∧
+        σ.val = hull ℝ (Set.range (i ∘ b)) := by
   obtain ⟨Ψ, hΨ, hcones⟩ := exists_regular_fan_replace_basis_sum hΦ b hr hcharts
   let σ₀ := hull ℝ (Set.range (i ∘ b))
   let σ : Ψ.cones := ⟨σ₀, (hcones σ₀).mpr (Or.inl .rfl)⟩
@@ -170,7 +171,7 @@ private lemma exists_coarsening_at_basis_sum (hΦ : Φ.IsRegular) (hc : Φ.IsCom
   have hΨc : Ψ.IsComplete :=
     (Ψ.starSubdivisionAlong_isSubdivision hΨ σ.property
       (ne_bot_of_card_toricRay_eq_two hcard)).isComplete_iff.mp (hstar.symm ▸ hc)
-  refine ⟨Ψ, hΨ, σ, hcard, hΨc, hstar, ?_, ?_⟩
+  refine ⟨Ψ, hΨ, σ, hcard, hΨc, hstar, ?_, ?_, rfl⟩
   · rw [coe_toCone_starSubdivisionAlongRay,
       hreg.sum_primitiveGenerator_allRays Ψ.lattice b e he]
   · intro h
@@ -217,7 +218,7 @@ private lemma le_or_le_of_ray_neighbors (hΦ : Φ.IsRegular)
 
 /-- A ray whose two adjacent primitive generators sum to its generator can be
 removed by an inverse star subdivision. The coarser fan is complete and regular,
-and the removed ray is absent from it. -/
+and the removed ray is absent from it. The center cone is spanned by the neighbors. -/
 theorem exists_star_subdivision_of_ray_eq_sum
     (b : Basis (Fin 2) ℤ N) (hΦ : Φ.IsRegular) (hc : Φ.IsComplete)
     {p r q : Φ.Ray}
@@ -230,7 +231,8 @@ theorem exists_star_subdivision_of_ray_eq_sum
       (hσ : Nat.card (ToricRay σ.val) = 2),
       Ψ.IsComplete ∧ Ψ.starSubdivisionAlong hΨ σ.property = Φ ∧
         (Ψ.starSubdivisionAlongRay hΨ σ.property (ne_bot_of_card_toricRay_eq_two hσ)).toCone.val =
-          r.toCone.val ∧ r.toCone.val ∉ Ψ.cones := by
+          r.toCone.val ∧ r.toCone.val ∉ Ψ.cones ∧
+        σ.val = p.toCone.val ⊔ q.toCone.val := by
   have hn := ray_neighbors_iff_of_det b hΦ hc hp hq
   obtain ⟨hp, C, hrC, hpC⟩ := (hn p).mpr (Or.inl rfl)
   obtain ⟨hq, D, hrD, hqD⟩ := (hn q).mpr (Or.inr rfl)
@@ -253,17 +255,26 @@ theorem exists_star_subdivision_of_ray_eq_sum
     · rw [hjoin, hr, hc₀, ite_eq_left rfl, Ray.toCone_eq_hull_primitiveGenerator p]
     · rw [hjoin, hr, hc₁, ite_eq_right (by decide : (1 : Fin 2) ≠ 0),
         Ray.toCone_eq_hull_primitiveGenerator q]
-  rw [← hr]
-  refine exists_coarsening_at_basis_sum hΦ hc c (hr ▸ r.toCone.property) (fun j ↦ ?_) ?_
-  · rw [hcharts]
+  have hcharts' (j : Fin 2) : hull ℝ {i (c 0 + c 1), i (c j)} ∈ Φ.cones := by
+    rw [hcharts]
     fin_cases j
     · simpa [cone_eq_sup_of_ray_ne_of_le hΦ hN hp.symm hpC hrC] using C.property
     · simpa [cone_eq_sup_of_ray_ne_of_le hΦ hN hq.symm hqD hrD] using D.property
-  · intro E hE hRE
+  have hcover (E : PointedCone ℝ V) (hE : E ∈ Φ.cones)
+      (hRE : hull ℝ {i (c 0 + c 1)} ≤ E) :
+      ∃ j : Fin 2, E ≤ hull ℝ {i (c 0 + c 1), i (c j)} := by
     have hrE : r.toCone.val ≤ E := hr ▸ hRE
     rcases le_or_le_of_ray_neighbors hΦ hN hn (C := ⟨E, hE⟩) hrE with h | h
     · exact ⟨0, by rw [hcharts 0, ite_eq_left rfl]; exact h⟩
     · exact ⟨1, by rw [hcharts 1, ite_eq_right (by decide : (1 : Fin 2) ≠ 0)]; exact h⟩
+  obtain ⟨Ψ, hΨ, σ, hσ, hc', hstar, hnew, hremoved, hcone⟩ :=
+    exists_coarsening_at_basis_sum hΦ hc c (hr ▸ r.toCone.property) hcharts' hcover
+  refine ⟨Ψ, hΨ, σ, hσ, hc', hstar, hnew.trans hr, hr ▸ hremoved, ?_⟩
+  rw [hcone, p.toCone_eq_hull_primitiveGenerator, q.toCone_eq_hull_primitiveGenerator,
+    ← Submodule.span_union, ← hc₀, ← hc₁]
+  congr 1
+  ext x
+  simp [Fin.exists_fin_succ, eq_comm, or_comm]
 
 end Combinatorial
 

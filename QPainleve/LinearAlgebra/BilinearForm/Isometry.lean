@@ -7,11 +7,14 @@ module
 
 public import Mathlib.LinearAlgebra.BilinearForm.IsometryEquiv
 public import Mathlib.LinearAlgebra.BilinearForm.Orthogonal
+public import Mathlib.Algebra.Module.Submodule.Equiv
 import Mathlib.Tactic.LinearCombination
 
 /-!
-# Isometries determined by the orthogonal complement of an isotropic vector
+# Restrictions of bilinear isometries
 
+An isometry between bilinear forms carries orthogonal complements to orthogonal
+complements and restricts to an isometry on corresponding submodules.
 For a symmetric nondegenerate form over a field of characteristic different from two,
 two isometries agreeing on the orthogonal complement of an isotropic vector agree everywhere.
 -/
@@ -21,6 +24,51 @@ public section
 namespace LinearMap.BilinForm.IsometryEquiv
 
 open LinearMap LinearMap.BilinForm Submodule
+
+section Restriction
+
+variable {R M N : Type*} [CommSemiring R] [AddCommMonoid M] [AddCommMonoid N]
+  [Module R M] [Module R N] {B : LinearMap.BilinForm R M} {C : LinearMap.BilinForm R N}
+
+/-- A bilinear isometry restricts to an isometry on submodules it identifies. -/
+def ofSubmodules (e : B.IsometryEquiv C) (P : Submodule R M) (Q : Submodule R N)
+    (h : P.map e.toLinearMap = Q) : (B.restrict P).IsometryEquiv (C.restrict Q) where
+  __ := e.toLinearEquiv.ofSubmodules P Q h
+  map_app' x y := e.map_app y x
+
+@[simp]
+theorem coe_ofSubmodules_apply (e : B.IsometryEquiv C) {P : Submodule R M} {Q : Submodule R N}
+    (h : P.map e.toLinearMap = Q) (x : P) : (e.ofSubmodules P Q h x : N) = e x :=
+  LinearEquiv.ofSubmodules_apply e.toLinearEquiv h x
+
+@[simp]
+theorem coe_ofSubmodules_symm_apply (e : B.IsometryEquiv C) {P : Submodule R M}
+    {Q : Submodule R N} (h : P.map e.toLinearMap = Q) (x : Q) :
+    ((e.ofSubmodules P Q h).symm x : M) = e.symm x :=
+  LinearEquiv.ofSubmodules_symm_apply e.toLinearEquiv h x
+
+/-- The inverse of a composite acts by the inverses in reverse order. -/
+@[simp]
+theorem symm_trans_apply {L : Type*} [AddCommMonoid L] [Module R L]
+    {D : LinearMap.BilinForm R L} (e : B.IsometryEquiv C) (f : C.IsometryEquiv D) (x : L) :
+    (e.trans f).symm x = e.symm (f.symm x) := (rfl)
+
+/-- An isometry carries the right orthogonal complement onto the right orthogonal
+complement of the image. -/
+theorem map_orthogonal (e : B.IsometryEquiv C) (P : Submodule R M) :
+    (B.orthogonal P).map e.toLinearMap = C.orthogonal (P.map e.toLinearMap) := by
+  ext y
+  obtain ⟨x, rfl⟩ := e.toLinearEquiv.surjective y
+  rw [Submodule.mem_map_equiv, LinearEquiv.symm_apply_apply, mem_orthogonal_iff, mem_orthogonal_iff]
+  constructor
+  · intro hx y hy
+    obtain ⟨z, hz, rfl⟩ := Submodule.mem_map.mp hy
+    simpa only [LinearEquiv.coe_coe, coe_toLinearEquiv, e.map_app] using hx z hz
+  · intro hx y hy
+    simpa only [LinearEquiv.coe_coe, coe_toLinearEquiv, e.map_app] using
+      hx _ (Submodule.mem_map_of_mem hy)
+
+end Restriction
 
 variable {K V : Type*} [Field K] [NeZero (2 : K)] [AddCommGroup V] [Module K V]
   {B : LinearMap.BilinForm K V} {g h : B.IsometryEquiv B} {δ : V}

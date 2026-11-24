@@ -81,6 +81,12 @@ theorem pointsEquiv_symm_apply_val (c : Multiplicative B →* kˣ) :
         ((DiagonalizableGroup.point c).comp
           (AddMonoidAlgebra.toMultiplicativeAlgEquiv k k B).toAlgHom).toRingHom) := (rfl)
 
+/-- The trivial character gives a point of the character scheme over a field,
+viewed as an object of the slice category. -/
+instance {K : Type u} [Field K] {ι : Type u} :
+    Nonempty (Over.mk (structureMap K (ι → ℤ))).left :=
+  ⟨((pointsEquiv K (ι → ℤ)).symm 1).val default⟩
+
 /-- The character scheme on a finite tuple of integer exponents is smooth over the base. -/
 instance smooth_structureMap_pi_int (ι : Type u) [Finite ι] :
     Smooth (structureMap k (ι → ℤ)) := by
@@ -93,6 +99,11 @@ instance smooth_structureMap_pi_int (ι : Type u) [Finite ι] :
   let : Algebra.IsStandardSmooth k (AddMonoidAlgebra k (ι → ℤ)) :=
     Algebra.IsStandardSmoothOfRelativeDimension.isStandardSmooth (n := Nat.card ι)
   infer_instance
+
+/-- Smoothness for the projected structure morphism of the center torus.
+Typeclass search on the projection does not unfold the slice constructor. -/
+instance {ι : Type u} [Finite ι] : Smooth (Over.mk (structureMap k (ι → ℤ))).hom :=
+  smooth_structureMap_pi_int k ι
 
 /-- Over a separably closed field, the characters of the finite center lattice give a
 Zariski-dense family of points. -/

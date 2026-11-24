@@ -79,6 +79,11 @@ instance : M.surface.IsSeparated := by
   rw [Scheme.isSeparated_iff, ← Limits.terminal.comp_from (M.surface ↘ S)]
   infer_instance
 
+instance : IsLocallyNoetherian M.surface := by
+  let : SmoothOfRelativeDimension 2 (M.surface ↘ S) := M.smooth
+  let : Smooth (M.surface ↘ S) := SmoothOfRelativeDimension.smooth 2 _
+  exact LocallyOfFiniteType.isLocallyNoetherian (M.surface ↘ S)
+
 /-- The underlying Picard marking, with tensor product written additively. -/
 def picardMarking : L ≃ₗ[ℤ] Additive (LineBundleClass M.surface) :=
   M.marking.toLinearEquiv
