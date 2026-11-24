@@ -177,6 +177,10 @@ variable {T₀ T₁ T₂ : Over (Spec (CommRingCat.of k))}
 /-- The forward permutation of the numbered boundary components. -/
 def boundaryPerm : Equiv.Perm (ZMod n) := DihedralGroup.cycleVertexPerm R.boundaryAction
 
+/-- The component permutation is the vertex action of the dihedral element. -/
+theorem boundaryPerm_def : R.boundaryPerm = DihedralGroup.cycleVertexPerm R.boundaryAction :=
+  (rfl)
+
 /-- The orientation sign read on the actual ordered branches. -/
 def orientation : ℤˣ := DihedralGroup.cycleOrientationSign R.boundaryAction
 
