@@ -60,14 +60,6 @@ local notation "R[" p "," D "]" => radical (comap D (π[p]))
 local notation "F[" f "," y "]" => comap (J[y]) f
 local notation "K[" Y "]" => LineBundleClass.mk (QPainleve.canonicalBundle k Y 2)
 
-omit [IsAlgClosed k] [IsIntegral X] [X.IsProjectiveOver k]
-  [SmoothOfRelativeDimension 2 (X ↘ Spec (.of k))] in
-private theorem isNodalBoundaryTower_of_node {D : X.IdealSheafData} {p : X}
-    (hp : IsClosed ({p} : Set X)) (hn : D.IsNodeOfReducedBoundary (X ↘ S) p) :
-    IsNodalBoundaryTower D (X ↘ S) (𝟙 X) (BlowupTower.nil.snoc (I[p])) := by
-  refine .snoc .nil p hp (Scheme.ker_fromSpecResidueField_eq_vanishingIdeal p).symm ?_
-  simpa only [toBase_nil, comap_id, Category.id_comp, Category.comp_id] using hn
-
 private theorem numberedCycle_of_transformedBoundary
     {D : X.IdealSheafData} [PrestableFamily (D.subscheme ↘ S)] (hD : D.IsEffectiveCartier)
     {n : ℕ} [NeZero n] {ι : Type v} {marks : ι → (D.subscheme ↘ S).smoothLocus}
@@ -82,7 +74,7 @@ private theorem numberedCycle_of_transformedBoundary
   let p := A.ambientNode j
   let T : BlowupTower X 1 B[p] := BlowupTower.nil.snoc (I[p])
   have hT : IsNodalBoundaryTower D (X ↘ S) (𝟙 X) T :=
-    isNodalBoundaryTower_of_node (A.isClosed_ambientNode j)
+    IsNodalBoundaryTower.of_node (A.isClosed_ambientNode j)
       (A.isNodeOfReducedBoundary_ambientNode j rfl)
   have hπ : T.toBase = π[p] := by simp [T, toBase_snoc, toBase_nil]
   let : B[p].Over S := ⟨π[p] ≫ X ↘ S⟩
@@ -129,7 +121,7 @@ private theorem finite_picard_and_complexity_of_nodal_elementary_transform
   have : IsNoetherian Y := isNoetherian_of_finiteType (Y ↘ S)
   let T : BlowupTower X 1 B[p] := BlowupTower.nil.snoc (I[p])
   let U : BlowupTower Y 1 (J[q]).blowup := BlowupTower.nil.snoc (J[q])
-  have hT : IsNodalBoundaryTower D (X ↘ S) (𝟙 X) T := isNodalBoundaryTower_of_node hp hn
+  have hT : IsNodalBoundaryTower D (X ↘ S) (𝟙 X) T := IsNodalBoundaryTower.of_node hp hn
   have hU : IsClosedPointTower Y U := .snoc .nil q hq rfl
   have : Module.Finite ℤ (Additive (LineBundleClass Y)) :=
     (finite_picard_iff_of_common_resolution k hT.isClosedPointTower hU e.symm).mp inferInstance
@@ -147,21 +139,6 @@ private theorem finite_picard_and_complexity_of_nodal_elementary_transform
   have hπ : T.toBase = π[p] := by simp [T, toBase_snoc, toBase_nil]
   rw [hπ] at hnodal
   exact ⟨inferInstance, hcomplex.symm.trans hnodal⟩
-
-omit [IsIntegral X] [X.IsProjectiveOver k] in
-private theorem exists_projectiveLine_iso_exceptional {p : X}
-    (hp : IsClosed ({p} : Set X)) :
-    ∃ w : P₁ ≅ (I[p].comap π[p]).subscheme,
-      w.hom ≫ (I[p].comap π[p]).subschemeι ≫ π[p] ≫ X ↘ S = P₁ ↘ S := by
-  have hi : I[p] = vanishingIdeal ⟨{p}, hp⟩ :=
-    congrArg vanishingIdeal (SetLike.coe_injective hp.closure_eq)
-  rw [hi]
-  obtain ⟨w, hw⟩ :=
-    SmoothOfRelativeDimension.exists_iso_projectiveLine_exceptional_blowup_closedPoint
-      (X ↘ S) p hp
-  exact ⟨w, by
-    simpa only [Category.assoc, pointOfClosedPoint_comp, Category.comp_id] using
-      congrArg (· ≫ X ↘ S) hw.w⟩
 
 omit [IsIntegral X] [X.IsProjectiveOver k] in
 private theorem exists_projectiveLine_iso_fiber_of_elementary_transform
@@ -185,7 +162,9 @@ private theorem exists_projectiveLine_iso_fiber_of_elementary_transform
       simpa only [Category.assoc, Iso.inv_hom_id_assoc] using ha⟩
   by_cases hzy : z = f p
   · subst z
-    obtain ⟨w, hw⟩ := exists_projectiveLine_iso_exceptional (k := k) hp
+    obtain ⟨w, hw⟩ :=
+      SmoothOfRelativeDimension.exists_iso_projectiveLine_exceptional_blowup_closedPoint_over
+        (X ↘ S) p hp
     refine ⟨w ≪≫ v, ?_⟩
     rw [Iso.trans_hom, Category.assoc, ← Category.assoc v.hom, hv, Category.assoc, hg]
     exact hw
@@ -205,7 +184,7 @@ private theorem birationalOver_of_nodal_elementary_transform
     (hg : g ≫ s = π[p] ≫ X ↘ S) :
     Scheme.BirationalOver (X ↘ S) s := by
   let T : BlowupTower X 1 B[p] := BlowupTower.nil.snoc (I[p])
-  have hT : IsNodalBoundaryTower D (X ↘ S) (𝟙 X) T := isNodalBoundaryTower_of_node hp hn
+  have hT : IsNodalBoundaryTower D (X ↘ S) (𝟙 X) T := IsNodalBoundaryTower.of_node hp hn
   have hπ : T.toBase = π[p] := by simp [T, toBase_snoc, toBase_nil]
   have : IsModification π[p] :=
     hπ ▸ hT.isClosedPointTower.isModification_of_smoothOfRelativeDimension_two (X ↘ S)

@@ -37,6 +37,14 @@ abbrev IsNodalBoundaryTower (D : S.IdealSheafData) (s : S ⟶ K) (π : X ⟶ S)
     (T : BlowupTower X n Y) : Prop :=
   IsPointTowerWith (fun {_} g p ↦ (D.comap g).IsNodeOfReducedBoundary (g ≫ s) p) π T
 
+/-- Blowing up a closed node of the reduced boundary gives a one-step nodal tower. -/
+theorem IsNodalBoundaryTower.of_node {D : X.IdealSheafData} {s : X ⟶ K} {p : X}
+    (hp : IsClosed ({p} : Set X)) (hn : D.IsNodeOfReducedBoundary s p) :
+    IsNodalBoundaryTower D s (𝟙 X)
+      (BlowupTower.nil.snoc (vanishingIdeal ⟨closure ({p} : Set X), isClosed_closure⟩)) := by
+  refine .snoc .nil p hp (Scheme.ker_fromSpecResidueField_eq_vanishingIdeal p).symm ?_
+  simpa only [toBase_nil, comap_id, Category.id_comp, Category.comp_id] using hn
+
 private theorem isLocal_node (D : S.IdealSheafData) (s : S ⟶ K) :
     PointCondition.IsLocal (fun {_} g p ↦ (D.comap g).IsNodeOfReducedBoundary (g ≫ s) p) := by
   constructor
