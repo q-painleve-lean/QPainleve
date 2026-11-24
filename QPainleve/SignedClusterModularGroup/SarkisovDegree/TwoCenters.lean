@@ -9,7 +9,6 @@ public import QPainleve.SignedClusterModularGroup.SarkisovDegree.OppositeSection
 public import QPainleve.SignedClusterModularGroup.SarkisovDegree.Quadric
 
 import QPainleve.Geometry.Toric.Fan.Mutation.Center
-import QPainleve.Geometry.Toric.Fan.Mutation.ProjectedPoint
 import QPainleve.SignedClusterModularGroup.SarkisovDegree.QuadricFiber
 import QPainleve.SignedClusterModularGroup.SarkisovDegree.Decrease
 import TauCeti.Data.Fin.Basic

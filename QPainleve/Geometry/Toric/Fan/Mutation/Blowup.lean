@@ -315,6 +315,51 @@ theorem Ray.mutationBlowupIso_hom_comp_ruling :
     (ρ.mutationBlowupIso b hOpp c).hom ≫ R₁ = R₀ :=
   mutationBlowupHom_comp_ruling b ρ hOpp c
 
+/-- If the reference point projects off the pivot fiber, another point projects to the
+same point on the source exactly when it projects to the same point on the target. -/
+theorem Ray.mutationBlowupIso_projected_eq_iff (ρ : Φ.Ray) (b : Basis (Fin 2) ℤ N)
+    (hOpp : hull ℝ {i (-ρ.primitiveGenerator)} ∈ Φ.cones) (c : ℂˣ)
+    {p q : (ρ.mutationSourceCenterIdeal b c).blowup}
+    (hq : (ρ.mutationSourceCenterIdeal b c).blowupToBase q ∈
+      Φ.mutationComplement b
+        (Φ.detCharacter_nonneg_or_nonpos b ρ.primitiveGenerator_ne_zero
+          ρ.hull_primitiveGenerator_mem hOpp) (c : ℂ)) :
+    (ρ.mutationTargetCenterIdeal b hOpp c).blowupToBase ((ρ.mutationBlowupIso b hOpp c).hom p) =
+      (ρ.mutationTargetCenterIdeal b hOpp c).blowupToBase ((ρ.mutationBlowupIso b hOpp c).hom q) ↔
+        (ρ.mutationSourceCenterIdeal b c).blowupToBase p =
+          (ρ.mutationSourceCenterIdeal b c).blowupToBase q := by
+  let I := ρ.mutationSourceCenterIdeal b c
+  let J := ρ.mutationTargetCenterIdeal b hOpp c
+  let G := ρ.mutationBlowupIso b hOpp c
+  let nonzero := ρ.primitiveGenerator_ne_zero
+  let memCone := ρ.hull_primitiveGenerator_mem
+  let hSource := Φ.detCharacter_nonneg_or_nonpos b nonzero memCone hOpp
+  let hTarget := Φ.mutationDetCharacter_nonneg_or_nonpos b nonzero memCone hOpp
+  let targetFan := Φ.mutationFan b nonzero memCone hOpp
+  let U := Φ.mutationComplement b hSource (c : ℂ)
+  let W := mutationComplement targetFan b hTarget (c : ℂ)
+  let complementIso := Φ.mutationComplementIso b (c : ℂ) nonzero memCone hOpp
+  let character := LinearMap.toAddMonoidHom (b.detDualEquiv ρ.primitiveGenerator)
+  let f := Φ.characterRuling character hSource
+  let g := characterRuling targetFan character hTarget
+  let y : U.toScheme := ⟨I.blowupToBase q, hq⟩
+  have hqy := ρ.mutationBlowupIso_apply_over_complement b hOpp c q y rfl
+  have hr (z : I.blowup) : g (J.blowupToBase (G.hom z)) = f (I.blowupToBase z) :=
+    congrArg (fun a ↦ a z) (ρ.mutationBlowupIso_hom_comp_ruling b hOpp c)
+  constructor
+  · intro he
+    have hf := (hr p).symm.trans ((congrArg (fun z ↦ g z) he).trans (hr q))
+    have hmem : I.blowupToBase p ∈ U := by
+      dsimp only [U]
+      rw [mutationComplement_eq, Scheme.Hom.mem_preimage] at hq ⊢
+      exact hf ▸ hq
+    let x : U.toScheme := ⟨I.blowupToBase p, hmem⟩
+    have hpx := ρ.mutationBlowupIso_apply_over_complement b hOpp c p x rfl
+    have e : W.ι (complementIso.hom x) = W.ι (complementIso.hom y) := hpx.symm.trans (he.trans hqy)
+    exact congrArg Subtype.val (complementIso.hom.injective (W.ι.injective e))
+  · intro he
+    exact (ρ.mutationBlowupIso_apply_over_complement b hOpp c p y he).trans hqy.symm
+
 section ExceptionalDivisor
 
 open Scheme.IdealSheafData
