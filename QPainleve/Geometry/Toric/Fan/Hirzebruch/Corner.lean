@@ -7,7 +7,7 @@ module
 
 public import QPainleve.Geometry.Toric.Fan.Adjacency
 
-import Mathlib.LinearAlgebra.Basis.SMul
+import Mathlib.LinearAlgebra.Transvection.Basic
 
 /-!
 # Corners of a Hirzebruch fan
@@ -52,6 +52,23 @@ theorem exists_rayEquiv_of_hirzebruch_ray_generators
 
 variable (r : Fin 4 ≃ Φ.Ray)
   (hr : (fun j ↦ (r j).primitiveGenerator) = ![b 0, b 1, -b 0, e • b 0 - b 1])
+
+include hr in
+/-- Swapping the two fiber rays of a Hirzebruch marking admits a lattice basis
+with the same signed Hirzebruch parameter. -/
+theorem exists_hirzebruch_marking_swap_fibers :
+    ∃ (d : Basis (Fin 2) ℤ N),
+      (fun j ↦ (r (Equiv.swap 1 3 j)).primitiveGenerator) =
+        ![d 0, d 1, -d 0, e • d 0 - d 1] := by
+  let d := (b.map (LinearEquiv.transvection (f := (-e) • b.coord 1) (v := b 0)
+    (by simp [Basis.coord_apply]))).unitsSMul (fun j ↦ if j = 1 then (-1 : ℤˣ) else 1)
+  have h₀ : d 0 = b 0 := by
+    simp [d, Basis.unitsSMul_apply, LinearMap.transvection.apply, Basis.coord_apply]
+  have h₁ : d 1 = e • b 0 - b 1 := by
+    simp [d, Basis.unitsSMul_apply, LinearMap.transvection.apply, Basis.coord_apply,
+      sub_eq_add_neg, add_comm]
+  refine ⟨d, funext fun j ↦ ?_⟩
+  fin_cases j <;> simp [Equiv.swap_apply_def, h₀, h₁, congrFun hr]
 
 local notation "sec" j:arg => r ((![0, 2] : Fin 2 → Fin 4) j)
 local notation "fib" j:arg => r ((![1, 3] : Fin 2 → Fin 4) j)
