@@ -23,7 +23,7 @@ regular partial composite on the specified resolving surface. The transported
 resolution of the map to the plane has the same pole ideal, the same fiber
 degree, and a smaller total base order. The geometric inputs are
 `Fan.Ray.exists_sarkisov_decrease_of_smooth_section_center` and
-`Fan.Ray.mutation_resolution_poleIdeal_iff`. This is the smooth-section case of
+`Fan.Ray.mutation_projection_poleIdeal`. This is the smooth-section case of
 [Lutz's Proposition 8.11][HKL].
 
 [HKL]: https://arxiv.org/abs/2005.05010v3#page=71
@@ -32,7 +32,7 @@ degree, and a smaller total base order. The geometric inputs are
 public section
 
 open AlgebraicGeometry CategoryTheory Module PointedCone
-open TauCeti.AlgebraicGeometry LineBundleClass Scheme.IdealSheafData TauCeti.SymmetricAlgebra
+open TauCeti.AlgebraicGeometry LineBundleClass TauCeti.SymmetricAlgebra
 open TauCeti.Toric
 
 namespace QPainleve.BlowupTower.IsClosedPointTower
@@ -115,27 +115,6 @@ private theorem section_classes [Nonempty Φ.cones] [Nonempty (Ψ).cones]
 
 variable {n : ℕ} {Y : Scheme} {T : BlowupTower X[Φ] (n + 1) Y}
   (hT : IsClosedPointTower X[Φ] T)
-
-include hΦ hc in
-private theorem mutation_projection_poleIdeal
-    [Nonempty Φ.cones]
-    [SmoothOfRelativeDimension 2 f[Φ]] [SmoothOfRelativeDimension 2 f[Ψ]]
-    [IsIntegral Y] [IsModification T.toBase]
-    {Z : Scheme} {U : BlowupTower X[Ψ] (1 + n) Z} (hU : IsClosedPointTower X[Ψ] U)
-    (k : Y ≅ Z)
-    (hlink : T.toBase.toRationalMap.comp μ = (k.hom ≫ U.toBase).toRationalMap)
-    (D : Y.IdealSheafData) (hD : B[Φ,hc].comap T.toBase = D * hT.ramificationIdealSheafToBase ℂ) :
-    B[Ψ,hcΨ].comap U.toBase = D.comap k.inv * hU.ramificationIdealSheafToBase ℂ := by
-  let : Y.Over S := ⟨T.toBase ≫ f[Φ]⟩
-  let : SmoothOfRelativeDimension 2 (Y ↘ S) := hT.smoothOfRelativeDimension f[Φ]
-  let : Smooth (Y ↘ S) := SmoothOfRelativeDimension.smooth 2 _
-  obtain ⟨hOver, hPole⟩ :=
-    Fan.Ray.mutation_resolution_poleIdeal_iff b ρ hOpp c hT hΦ hc (k.hom ≫ U.toBase) D hlink
-  let := hOver
-  have hram := hU.comap_ramificationIdealSheafToBase ℂ k (f := k.hom ≫ U.toBase) rfl
-  have h := congrArg (fun J : Y.IdealSheafData ↦ J.comap k.inv) (hPole.mp hD)
-  simpa only [hram.symm, comap_mul, ← comap_comp, k.inv_hom_id_assoc, k.inv_hom_id,
-    comap_id] using h
 
 private theorem section_baseOrder_sum_and_bidegree (j : Fin (n + 1)) (x : Fin (n + 1) → ℤ)
     (β : ℤ) (hβ : 0 < β) (hm : ∀ l, 0 ≤ -x l) (hhigh : β < 2 * (-x j)) :
@@ -225,7 +204,7 @@ theorem exists_sarkisov_decrease_of_logarithmic_smooth_section
     Scheme.BirationalOver.trans (sY := g)
       ⟨.ofIso k.symm, by simp [Scheme.PartialIso.IsOver, Scheme.PartialIso.ofIso]⟩ hbir
   refine ⟨d, hr', Z, U, hU, k, hlink, hk, hg', hbir',
-    mutation_projection_poleIdeal b hΦ hc ρ hOpp c hT hU k hlink D hD, ?_⟩
+    ρ.mutation_projection_poleIdeal b hOpp c hT hΦ hc hU k hlink D hD, ?_⟩
   intro C' y
   obtain ⟨hF, hF'⟩ := section_classes b e hΦ r hr onSection ρ hOpp hρ d hd₀ hd₁ hr'
   obtain ⟨hL, -⟩ := hpic onSection a β x.2
