@@ -5,6 +5,7 @@ Authors: The QPainleve contributors
 -/
 module
 
+public import QPainleve.AlgebraicGeometry.Blowup.StrictTransform.Canonical
 public import QPainleve.AlgebraicGeometry.Blowup.StrictTransform.Node
 
 import TauCeti.RingTheory.Etale.Field
@@ -127,7 +128,11 @@ private theorem smoothOfRelativeDimension_exceptional {x : X}
   rw [← Category.assoc e.hom, hpb.w_assoc]
   exact hs
 
-variable [IsIntegral X] [QuasiCompact (X ↘ Spec (.of k))] {D : X.IdealSheafData}
+variable [IsIntegral X] [QuasiCompact (X ↘ Spec (.of k))]
+
+section
+
+variable {D : X.IdealSheafData}
   (hnodal : AtWorstNodalOfRelativeDimensionOne (D.subschemeι ≫ X ↘ Spec (.of k)))
   (hD : D.IsEffectiveCartier) {p : D.subscheme}
   (hp : IsClosed ({D.subschemeι p} : Set X))
@@ -288,5 +293,61 @@ theorem mem_strictTransform_of_notMem_smoothLocus
     rw [Scheme.Hom.smoothLocus_eq_top]
     trivial
   rwa [← Scheme.Hom.preimage_smoothLocus_eq, Scheme.Hom.mem_preimage] at hw
+
+end
+
+variable {D : X.IdealSheafData} {p : X}
+
+local notation "P" => vanishingIdeal (Closeds.mk (closure (Singleton.singleton p)) isClosed_closure)
+local notation "π" => blowupToBase P
+local notation "E" => comap P π
+local notation "R" => radical (D.comap π)
+local notation "K(" Y ")" => LineBundleClass.mk (QPainleve.canonicalBundle k Y 2)
+
+/-- At a closed node of a nodal anticanonical Cartier divisor on a smooth surface,
+the reduced total transform is again nodal and anticanonical. Its ideal is contained
+in the exceptional ideal, and multiplying by the exceptional ideal gives the total transform. -/
+theorem IsEffectiveCartier.isAnticanonical_reducedTotalTransform_of_node
+    (hD : D.IsEffectiveCartier)
+    (hN : AtWorstNodalOfRelativeDimensionOne (D.subschemeι ≫ base))
+    (hK : LineBundleClass.mk hD.toInvertibleSheaf = K(X))
+    (hp : IsClosed ({p} : Set X)) (hn : D.IsNodeOfReducedBoundary base p) :
+    letI : (P).blowup.Over (Spec (.of k)) := ⟨π ≫ base⟩
+    letI : SmoothOfRelativeDimension 2 ((P).blowup ↘ Spec (.of k)) :=
+      smoothOfRelativeDimension_blowup_closed_point base hp
+    ∃ hR : (R).IsEffectiveCartier,
+      LineBundleClass.mk hR.toInvertibleSheaf = K((P).blowup) ∧
+      D.comap π = R * E ∧ R ≤ E ∧
+      AtWorstNodalOfRelativeDimensionOne ((R).subschemeι ≫ π ≫ base) := by
+  have : Smooth base := SmoothOfRelativeDimension.smooth 2 _
+  have : IsNoetherian X := isNoetherian_of_finiteType base
+  have : IsReduced D.subscheme := hN.isReduced
+  have hpD := mem_support_of_isNodeOfReducedBoundary hn
+  have hDI : D ≤ P :=
+    (X.ker_fromSpecResidueField_eq_vanishingIdeal p) ▸
+      (D.le_ker_fromSpecResidueField_iff_mem_support hp).mpr hpD
+  have horder : D.stalkOrder p = 2 := by
+    simpa only [ite_eq_left hn] using hD.stalkOrder_eq_if_isNodeOfReducedBoundary hN hpD
+  have h := hD.exists_anticanonical_strictTransform_mul_exceptional_pow k hp hpD hK
+  dsimp only at h
+  have : IsIntegral (P).blowup := isIntegral_blowup_closed_point base hp
+  have hd := ((smoothOfRelativeDimension_iff_ringKrullDim_stalk_eq base 2).mp
+    inferInstance).2 p hp
+  have := isRegularLocalRing_stalk_of_smooth base p
+  have : Surjective π := surjective_blowupToBase_point hp hd
+  have : IsIntegral (E).subscheme := isIntegral_exceptional_blowup_closed_point hd hp
+  simp only [horder, ENat.toNat_ofNat, Nat.reduceSub, pow_one] at h
+  have hN' : AtWorstNodalOfRelativeDimensionOne ((R).subschemeι ≫ π ≫ base) := by
+    obtain ⟨z, hz, -⟩ := (D.isNodeOfReducedBoundary_iff_of_isReduced _ _).mp hn
+    subst p
+    exact atWorstNodalOfRelativeDimensionOne_radical_comap_blowupToBase_of_node hN hD hp hn
+  have hEq := (P).radical_comap_blowupToBase_eq_ker_blowupMap_subschemeι_mul D hDI
+  have hLe : R ≤ E := hEq.trans_le (mul_le_of_le_one_left' le_top)
+  obtain ⟨hOld, hc, ht⟩ := h
+  refine ⟨hEq.symm ▸ hOld, ?_, ?_, hLe, hN'⟩
+  · rw [LineBundleClass.mk_toInvertibleSheaf_congr _ hOld hEq]
+    exact hc
+  · rw [hEq]
+    exact ht.symm
 
 end AlgebraicGeometry.Scheme.IdealSheafData

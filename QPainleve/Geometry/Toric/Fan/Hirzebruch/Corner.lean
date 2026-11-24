@@ -128,6 +128,20 @@ theorem hirzebruch_corner_mem (hΦ : Φ.IsRegular) (hc : Φ.IsComplete) (j k : F
   rw [← Φ.cone_eq_sup_of_ray_ne_of_le hΦ hd hne hs hf]
   exact σ.property
 
+variable (Φ) in
+include hr in
+/-- The hull of the primitive generators of a chosen section ray and fiber ray is a cone
+of the complete regular Hirzebruch fan. The indices `j` and `k` select the section and fiber. -/
+theorem hirzebruch_chart_corners (hΦ : Φ.IsRegular) (hc : Φ.IsComplete) (j k : Fin 2) :
+    hull ℝ {i (if j = 0 then b 0 else -b 0),
+      i (if k = 0 then b 1 else e • b 0 - b 1)} ∈ Φ.cones := by
+  have hs : (sec j).primitiveGenerator = if j = 0 then b 0 else -b 0 := by
+    fin_cases j <;> simp [congrFun hr]
+  have hf : (fib k).primitiveGenerator = if k = 0 then b 1 else e • b 0 - b 1 := by
+    fin_cases k <;> simp [congrFun hr]
+  simpa only [Ray.toCone_eq_hull_primitiveGenerator, hs, hf, ← Submodule.span_union,
+    Set.singleton_union] using hirzebruch_corner_mem b e r hr hΦ hc j k
+
 include hr in
 private theorem hirzebruch_fiber_neighbors (hΦ : Φ.IsRegular) (hc : Φ.IsComplete)
     (τ : Φ.Ray) :
