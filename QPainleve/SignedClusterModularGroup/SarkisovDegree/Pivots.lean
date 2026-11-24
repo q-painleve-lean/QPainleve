@@ -16,6 +16,7 @@ import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
 import QPainleve.AlgebraicGeometry.IntersectionNumber.Nef.Pullback
 import QPainleve.Geometry.Toric.Fan.Boundary.Node
 import QPainleve.Geometry.Toric.Fan.Logarithmic.Multiplicity
+import QPainleve.Geometry.Toric.Fan.Picard.RetainedFiber
 
 /-!
 # High-order pivots of a logarithmic Hirzebruch resolution
@@ -52,9 +53,11 @@ local notation "H" => mk (Proj.symmetricAlgebraTwistingBundle ℂ (Fin 3 → ℂ
 local notation "C" => Fan.hirzebruchPicardBasis b e hΦ r hr
 local notation "d₂" => Eq.trans (finrank_eq_card_basis b) (Fintype.card_fin 2)
 local notation "D" => Φ.boundaryIdeal hc.nonempty_cones
-local notation "p[" ρ "," c "]" => Fan.Ray.binomialCenter ρ d₂
-  (b.detDualEquiv_self (Fan.Ray.primitiveGenerator ρ))
-  (Fan.Ray.surjective_detCharacter ρ b) c (IsLocalRing.closedPoint ℂ)
+local notation "p[" d "," ρ "," c "]" => Fan.Ray.binomialCenter ρ
+  (Eq.trans (finrank_eq_card_basis d) (Fintype.card_fin 2))
+  (Basis.detDualEquiv_self d (Fan.Ray.primitiveGenerator ρ))
+  (Fan.Ray.surjective_detCharacter ρ d) c (IsLocalRing.closedPoint ℂ)
+local notation "p[" ρ "," c "]" => p[b,ρ,c]
 local notation "fiberRay[" t "]" => r ((![1, 3] : Fin 2 → Fin 4) t)
 
 include hc in
@@ -180,7 +183,9 @@ fiber degree, a proper high-order center is available for a corner or section
 link. A corner pivot also comes with a Hirzebruch basis spanning that corner and
 with the same fiber degree. Otherwise, there are exactly one or two high-order
 steps over the interiors of distinct invariant fibers. Each such step is the first
-above its projected point and has order at most the fiber degree. -/
+above its projected point and has order at most the fiber degree. Either fiber
+pivot can be marked as ray one for the preparation to the quadric, preserving
+both the center and the Picard basis. -/
 theorem hirzebruch_high_baseCenter_cases :
     let : Nonempty Φ.cones := hc.nonempty_cones
     let : SmoothOfRelativeDimension 2 f :=
@@ -200,7 +205,11 @@ theorem hirzebruch_high_baseCenter_cases :
       (A.card = 1 ∨ A.card = 2) ∧ ∃ fiber : (↑A : Type) ↪ Fin 2, ∀ j : A,
         -v.2 j ≤ (C).repr v.1 1 ∧
         (∀ l < (j : Fin n), hT.baseCenter l ≠ hT.baseCenter j) ∧
-        ∃ c : ℂˣ, hT.baseCenter j = p[fiberRay[fiber j],c] := by
+        (∃ c : ℂˣ, hT.baseCenter j = p[fiberRay[fiber j],c]) ∧
+        ∃ (d : Basis (Fin 2) ℤ N) (s : Fin 4 ≃ Φ.Ray)
+          (hs : (fun l ↦ (s l).primitiveGenerator) = ![d 0, d 1, -d 0, e • d 0 - d 1])
+          (a : ℂˣ), s 1 = fiberRay[fiber j] ∧
+          hT.baseCenter j = p[d,s 1,a] ∧ Fan.hirzebruchPicardBasis d e hΦ s hs = C := by
   classical
   intro hcones hdim hnoeth v A hlog hA
   let := hcones
@@ -234,6 +243,12 @@ theorem hirzebruch_high_baseCenter_cases :
   have hcard : A.card ≤ 2 := by
     simpa only [Fintype.card_coe, Fintype.card_fin] using Fintype.card_le_of_embedding fiber
   have hpos := Finset.card_pos.mpr hA
-  exact Or.inr ⟨by omega, fiber, hfiber⟩
+  refine Or.inr ⟨by omega, fiber, fun j ↦ ?_⟩
+  obtain ⟨hle, hfirst, c, hj⟩ := hfiber j
+  obtain ⟨d, s, hs, -, h₁, hpic⟩ :=
+    Fan.exists_hirzebruch_picardBasis_of_fiber b e r hr hΦ (fiber j)
+  obtain ⟨a, ha⟩ := (s 1).exists_binomialCenter_eq_of_basis d b c
+  refine ⟨hle, hfirst, ⟨c, hj⟩, d, s, hs, a, h₁, ?_, hpic⟩
+  rw [hj, ← h₁, ← ha]
 
 end QPainleve.BlowupTower.IsClosedPointTower
