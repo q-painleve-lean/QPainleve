@@ -60,6 +60,16 @@ theorem ker_fromSpecResidueField_comap_fromSpecStalk {X : Scheme.{u}} {p : X}
       ⟨by simp [fromSpecResidueField]⟩).flip
   exact (IdealSheafData.ker_eq_comap_of_isPullback _ h).symm
 
+/-- The closed fiber after localizing at a closed point is the inverse image of
+the original scheme-theoretic fiber. -/
+theorem Hom.comap_ker_residue_pullback_snd_fromSpecStalk
+    {X Y : Scheme.{u}} (f : X ⟶ Y) {p : Y} {E : X.IdealSheafData}
+    (hp : IsClosed ({p} : Set Y)) (hE : (Y.fromSpecResidueField p).ker.comap f = E) :
+    (Spec.map (Y.residue p)).ker.comap (pullback.snd f (Y.fromSpecStalk p)) =
+      E.comap (pullback.fst f (Y.fromSpecStalk p)) := by
+  rw [← ker_fromSpecResidueField_comap_fromSpecStalk hp, ← IdealSheafData.comap_comp,
+    ← pullback.condition, IdealSheafData.comap_comp, hE]
+
 /-- A field-valued point has the same kernel ideal as the map from its residue field. -/
 theorem Hom.ker_eq_ker_fromSpecResidueField {k : Type*} [Field k]
     {X : Scheme} (s : Spec (.of k) ⟶ X) :
