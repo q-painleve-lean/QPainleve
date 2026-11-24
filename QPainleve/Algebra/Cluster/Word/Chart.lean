@@ -146,4 +146,23 @@ theorem exists_lift_xRationalMap_permute (B : SkewExchangeMatrix ι) (σ : Equiv
     (RingHom.id L) (rename (R := k) σ).toRingHom (algebraMap L K) (RingHom.comp_id _) hm
   exact ⟨l, hl.trans hi, hl'⟩
 
+/-- The rational map of a relabeling is the regular Laurent-coordinate renaming. -/
+theorem xRationalMap_permute (B : SkewExchangeMatrix ι) (σ : Equiv.Perm ι) :
+    ((Generator.permute σ).toStep B).toPath.xRationalMap k =
+      (Spec.map (CommRingCat.ofHom (rename (R := k) σ).toRingHom)).toRationalMap := by
+  let f := ((Generator.permute σ).toStep B).toPath.xRationalMap k
+  let g := Spec.map (CommRingCat.ofHom (rename (R := k) σ).toRingHom)
+  obtain ⟨l, hl, hl'⟩ : ∃ l : Xtor ⟶ f.toPartialMap.domain,
+      l ≫ f.toPartialMap.domain.ι = 𝟙 Xtor ∧ l ≫ f.toPartialMap.hom = g :=
+    exists_lift_xRationalMap_permute k B σ
+  have hinv : f.toPartialMap.domain.ι ≫ l = 𝟙 _ := by
+    apply (cancel_mono f.toPartialMap.domain.ι).mp
+    simp only [Category.assoc, hl, Category.comp_id, Category.id_comp]
+  have heq : f = g.toRationalMap := by
+    rw [← f.toRationalMap_toPartialMap, Scheme.PartialMap.toRationalMap_eq_iff]
+    apply (f.toPartialMap.equiv_toPartialMap_iff_of_isSeparated
+      (Limits.terminal.from _) (Limits.terminal.from _) (by simp)).mpr
+    rw [← hl', ← Category.assoc, hinv, Category.id_comp]
+  exact heq
+
 end Quiver.Path

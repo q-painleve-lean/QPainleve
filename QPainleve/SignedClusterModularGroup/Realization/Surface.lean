@@ -79,9 +79,27 @@ instance : M.surface.IsSeparated := by
   rw [Scheme.isSeparated_iff, ← Limits.terminal.comp_from (M.surface ↘ S)]
   infer_instance
 
+/-- Postcompose the evaluation of a marked surface, keeping the same underlying pair
+so that its identity isomorphism can be used for the resulting realization. -/
+@[expose, simps pair evaluation]
+def compEvaluation {Y : Scheme.{u}} (g : X ⟶ Y) : MarkedSurface k n B Y where
+  pair := M.pair
+  closedImmersion := M.closedImmersion
+  integral := M.integral
+  smooth := M.smooth
+  projective := M.projective
+  prestable := M.prestable
+  cycle := M.cycle
+  marking := M.marking
+  evaluation := M.evaluation.compHom g
+
 /-- The underlying Picard marking, with tensor product written additively. -/
 def picardMarking : L ≃ₗ[ℤ] Additive (LineBundleClass M.surface) :=
   M.marking.toLinearEquiv
+
+@[simp]
+theorem compEvaluation_picardMarking {Y : Scheme.{u}} (g : X ⟶ Y) (a : L) :
+    (M.compEvaluation g).picardMarking a = M.picardMarking a := (rfl)
 
 variable {M} {L' : Type u} [AddCommGroup L'] {B' : LinearMap.BilinForm ℤ L'} {X' : Scheme.{u}}
   {N : MarkedSurface k n B' X'}
@@ -107,6 +125,36 @@ theorem surfaceIso_refl : surfaceIso (M := M) (N := M) (Iso.refl M.pair) =
 theorem boundaryIso_refl : boundaryIso (M := M) (N := M) (Iso.refl M.pair) =
     Iso.refl M.boundary :=
   Functor.mapIso_refl _ _
+
+@[simp]
+theorem surfaceIso_compEvaluation_refl {Y : Scheme.{u}} (g : X ⟶ Y) :
+    surfaceIso (M := M) (N := M.compEvaluation g) (Iso.refl M.pair) = Iso.refl M.surface :=
+  Functor.mapIso_refl _ _
+
+@[simp]
+theorem boundaryIso_compEvaluation_refl {Y : Scheme.{u}} (g : X ⟶ Y) :
+    boundaryIso (M := M) (N := M.compEvaluation g) (Iso.refl M.pair) = Iso.refl M.boundary :=
+  Functor.mapIso_refl _ _
+
+/-- Changing the evaluation preserves the action of the identity on the numbered branches. -/
+theorem boundaryCycleAction_compEvaluation_refl {Y : Scheme.{u}} (g : X ⟶ Y) :
+    letI : PrestableFamily (M.boundary ↘ S) := M.prestable
+    letI : PrestableFamily ((M.compEvaluation g).boundary ↘ S) := (M.compEvaluation g).prestable
+    letI : (boundaryIso (M := M) (N := M.compEvaluation g) (Iso.refl M.pair)).hom.IsOver S :=
+      ⟨by erw [boundaryIso_compEvaluation_refl, Iso.refl_hom]; exact Category.id_comp _⟩
+    (boundaryIso (M := M) (N := M.compEvaluation g) (Iso.refl M.pair)).boundaryCycleAction
+      M.cycle (M.compEvaluation g).cycle = 1 := by
+  let : PrestableFamily (M.boundary ↘ S) := M.prestable
+  let e : M.boundary ≅ M.boundary := boundaryIso (M := M) (N := M.compEvaluation g) (.refl M.pair)
+  have he : e = Iso.refl M.boundary := boundaryIso_compEvaluation_refl g
+  let : e.hom.IsOver S := ⟨by
+    rw [he, Iso.refl_hom]
+    exact Category.id_comp _⟩
+  let : (Iso.refl M.boundary).hom.IsOver S := by
+    rw [Iso.refl_hom]
+    infer_instance
+  exact (e.boundaryCycleAction_congr M.cycle M.cycle _ he).trans
+    (Iso.boundaryCycleAction_refl (X := M.boundary) M.cycle)
 
 @[simp]
 theorem surfaceIso_symm (e : M.pair ≅ N.pair) :
@@ -154,9 +202,7 @@ same so its Picard classes and rational maps have the same source. -/
 @[expose]
 def invert : MarkedSurface k n B (QPainleve.CharacterTorus.scheme k (ι →₀ ℤ)) :=
   letI : PrestableFamily (M.boundary ↘ Spec (.of k)) := M.prestable
-  { M with
-    cycle := M.cycle.reverse
-    evaluation := M.evaluation.compHom invX }
+  { M.compEvaluation invX with cycle := M.cycle.reverse }
 
 @[simp]
 theorem invert_pair : M.invert.pair = M.pair := (rfl)
@@ -185,12 +231,6 @@ theorem boundaryCycleAction_invert_refl :
     (boundaryIso (M := M) (N := M.invert) (Iso.refl M.pair)).boundaryCycleAction
       M.cycle M.invert.cycle = DihedralGroup.sr 0 := by
   let : PrestableFamily (M.boundary ↘ Spec (.of k)) := M.prestable
-  have compare (e f : M.boundary ≅ M.boundary)
-      [e.hom.IsOver (Spec (.of k))] [f.hom.IsOver (Spec (.of k))] (h : e = f) :
-      e.boundaryCycleAction M.cycle M.cycle.reverse =
-        f.boundaryCycleAction M.cycle M.cycle.reverse := by
-    subst f
-    rfl
   have he : (boundaryIso (M := M) (N := M.invert) (Iso.refl M.pair)).hom.IsOver
       (Spec (.of k)) := ⟨by
         erw [boundaryIso_refl (M := M), Iso.refl_hom]
@@ -198,7 +238,8 @@ theorem boundaryCycleAction_invert_refl :
   have hf : (Iso.refl M.boundary).hom.IsOver (Spec (.of k)) := by
     rw [Iso.refl_hom]
     infer_instance
-  exact (@compare _ _ he hf (boundaryIso_refl (M := M))).trans
+  exact (Iso.boundaryCycleAction_congr _ M.cycle M.cycle.reverse _
+    (boundaryIso_refl (M := M))).trans
     (Iso.boundaryCycleAction_refl_reverse (X := M.boundary) M.cycle)
 
 end MarkedSurface

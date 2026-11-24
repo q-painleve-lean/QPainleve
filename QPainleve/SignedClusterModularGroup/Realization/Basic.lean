@@ -141,6 +141,28 @@ def comp (R : FiberRealization M N F I g) (R' : FiberRealization N O G J h) :
 @[simp]
 theorem refl_iso : (refl M).iso = Iso.refl M.pair := (rfl)
 
+/-- A regular change in evaluation is realized by the identity on the marked pair. -/
+def compEvaluation (M : MarkedSurface k n B₀ X₀) (f : X₀ ⟶ X₁) :
+    FiberRealization M (M.compEvaluation f) f.toRationalMap (.refl B₀) 1 where
+  iso := Iso.refl _
+  picard_eq a := by
+    have ha : LinearMap.BilinForm.IsometryEquiv.refl B₀ a = a := rfl
+    rw [ha, MarkedSurface.surfaceIso_compEvaluation_refl, Iso.refl_hom,
+      MarkedSurface.compEvaluation_picardMarking]
+    exact congrArg Additive.ofMul (LineBundleClass.pullback_id (M.picardMarking a).toMul).symm
+  boundaryAction_eq := M.boundaryCycleAction_compEvaluation_refl f
+  evaluation_eq := by
+    obtain ⟨h, he⟩ := M.evaluation.compOfDefined_toRationalMap f
+    refine ⟨h, he.trans ?_⟩
+    simp only [MarkedSurface.surfaceIso_compEvaluation_refl, Iso.refl_hom,
+      MarkedSurface.compEvaluation_evaluation]
+    exact (RationalMap.id_comp _).symm
+
+omit [IsIntegral X₁] in
+@[simp]
+theorem compEvaluation_iso (M : MarkedSurface k n B₀ X₀) (f : X₀ ⟶ X₁) :
+    (compEvaluation M f).iso = Iso.refl M.pair := (rfl)
+
 @[simp]
 theorem comp_iso (R : FiberRealization M N F I g) (R' : FiberRealization N O G J h) :
     (R.comp R').iso = R.iso ≪≫ R'.iso := (rfl)
