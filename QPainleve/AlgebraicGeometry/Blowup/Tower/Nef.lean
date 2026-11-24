@@ -5,18 +5,23 @@ Authors: The QPainleve contributors
 -/
 module
 
+public import QPainleve.AlgebraicGeometry.Blowup.Tower.Centres
 public import QPainleve.AlgebraicGeometry.Blowup.Tower.Intersection
 public import QPainleve.AlgebraicGeometry.IntersectionNumber.Nef
 
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Projective
 import QPainleve.AlgebraicGeometry.Chow.Nef.Basic
+import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.Subtraction
+import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.TensorProduct
 
 /-!
 # Nef classes in ordered point-blowup coordinates
 
 The base coordinate of a nef class is nef, and each total-transform exceptional
-coordinate is nonpositive. The tests are the total transforms of prime divisors
-on the base and of the exceptional divisors at their respective blowup stages.
+coordinate is nonpositive. If a base divisor contains the projected center, its
+intersection with the base class bounds the negative exceptional coefficient.
+This follows by subtracting the total exceptional divisor from the total transform
+of the base divisor.
 -/
 
 public section
@@ -83,10 +88,40 @@ theorem exceptionalCoeff_nonpos_of_isNef_picardHom (hT : IsClosedPointTower X T)
   have : SmoothOfRelativeDimension 2 (Y ↘ S) := hT.smoothOfRelativeDimension f
   have := (Y ↘ S).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two
   have hY := topologicalKrullDim_eq_of_smoothOfRelativeDimension (Y ↘ S) (n := 2)
-  obtain ⟨D, hD, hclass⟩ := hT.exists_isEffectiveCartier_exceptionalClass f j
+  obtain ⟨D, hD, hclass, -⟩ := hT.exists_isEffectiveCartier_exceptionalClass f j
   have h := classIntersectionNumber_nonneg_of_isNef_of_isEffectiveCartier k hY ha hD
   rw [hclass, classIntersectionNumber_picardHom_exceptionalClass hT] at h
   exact neg_nonneg.mp h
+
+/-- The intersection of the base part of a nef class with an effective Cartier divisor
+through a projected center bounds the negative of the corresponding exceptional coefficient.
+The center can be infinitely near. -/
+theorem neg_exceptionalCoeff_le_classIntersectionNumber_of_mem_support
+    (hT : IsClosedPointTower X T) {a : Additive (LineBundleClass X) × (Fin n → ℤ)}
+    (ha : (T.picardHom a).toMul.IsNef k (T.toBase ≫ f)) (j : Fin n)
+    {D : X.IdealSheafData} (hD : D.IsEffectiveCartier) (hj : hT.baseCenter j ∈ D.support) :
+    -a.2 j ≤ classIntersectionNumber k X a.1.toMul (mk hD.toInvertibleSheaf)⁻¹ := by
+  let : IsNoetherian X := isNoetherian_of_finiteType f
+  let : Y.Over S := ⟨T.toBase ≫ f⟩
+  have : IsIntegral Y := hT.isIntegral f
+  have : Y.IsProjectiveOver k := T.isProjectiveOver k
+  have : SmoothOfRelativeDimension 2 (Y ↘ S) := hT.smoothOfRelativeDimension f
+  have := (Y ↘ S).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two
+  have hY := topologicalKrullDim_eq_of_smoothOfRelativeDimension (Y ↘ S) (n := 2)
+  obtain ⟨E, hE, hExc, hle⟩ := hT.exists_isEffectiveCartier_exceptionalClass f j
+  have hTotal := hT.isEffectiveCartier_totalTransform f hD
+  obtain ⟨R, hR, hProd⟩ := (hTotal.le_iff_exists_eq_mul hE.locallyPrincipal).mp (hle D hj)
+  have hClass := (mk_toInvertibleSheaf_congr hTotal
+    (TauCeti.isEffectiveCartier_mul hR hE) hProd).trans (mk_toInvertibleSheaf_mul hR hE)
+  have hBound := classIntersectionNumber_nonneg_of_isNef_of_isEffectiveCartier k hY ha hR
+  have hPair := classIntersectionNumber_picardMarking k hT a
+    (Additive.ofMul (mk hD.toInvertibleSheaf)⁻¹, 0)
+  simp only [picardMarking_apply, picardHom_apply_zero, toMul_ofMul, Pi.zero_apply,
+    mul_zero, Finset.sum_const_zero, sub_zero] at hPair
+  rw [pullback_inv, hD.pullback_mk_toInvertibleSheaf hTotal, hClass, mul_inv_rev,
+    classIntersectionNumber_mul_right k hY, hExc,
+    classIntersectionNumber_picardHom_exceptionalClass hT] at hPair
+  omega
 
 end Projective
 
