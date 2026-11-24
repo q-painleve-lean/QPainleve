@@ -90,21 +90,21 @@ variable {c : Fin n → ℂˣ}
 
 local notation "charge" =>
   picardBoundaryOrthogonalEquivChargeKernel hΦ rankTwo s m hm hprim c (J[c]) (hJ[c]) hT e he hD
+local notation "chargeClass" =>
+  (LinearEquiv.trans (LinearEquiv.symm charge)
+    (LinearEquiv.ofEq _ _ (Eq.symm (IdealSheafData.boundaryOrthogonal_def D ℂ))))
 
 /-- The charge coordinates identify the boundary-orthogonal classes on the contracted
 surface with the kernel of the charge map of its ordered toric presentation. -/
 def markedBoundaryChargeEquiv : D.boundaryOrthogonal ℂ ≃ₗ[ℤ] ChargeKernel :=
-  (LinearEquiv.ofEq _ _ (IdealSheafData.boundaryOrthogonal_def D ℂ)).trans charge
-
-local notation "chargeClass" =>
-  LinearEquiv.symm (markedBoundaryChargeEquiv hΦ b s hT e he hD)
+  (chargeClass).symm
 
 /-- The inverse charge coordinates give the same underlying Picard class as the
 inverse of the span-based comparison. -/
 @[simp]
 theorem coe_markedBoundaryChargeEquiv_symm (x : ChargeKernel) :
-    (chargeClass x).val = ((charge).symm x).val := by
-  simp only [markedBoundaryChargeEquiv, LinearEquiv.symm_trans_apply, LinearEquiv.ofEq_symm,
+    ((markedBoundaryChargeEquiv hΦ b s hT e he hD).symm x).val = ((charge).symm x).val := by
+  simp only [markedBoundaryChargeEquiv, LinearEquiv.symm_symm, LinearEquiv.trans_apply,
     LinearEquiv.coe_ofEq_apply]
 
 local notation "g" => toricBoundaryToBase (J[c]) e hD
@@ -165,7 +165,7 @@ theorem exists_pullback_markedBoundaryPeriod
     hν B.endpoint_eq A.endpoint_eq hnodes keep hkeep hcollapse L
   refine ⟨⟨_, hL⟩, ?_, ?_⟩
   · simp only [L, IsEffectiveCartier.restrictBoundaryOrthogonal_apply, toAdd_ofAdd,
-      coe_markedBoundaryChargeEquiv_symm]
+      LinearEquiv.trans_apply, LinearEquiv.coe_ofEq_apply]
   · rw [markedBoundaryPeriod_apply, IsEffectiveCartier.boundaryPeriod_apply]
     exact hperiod
 
