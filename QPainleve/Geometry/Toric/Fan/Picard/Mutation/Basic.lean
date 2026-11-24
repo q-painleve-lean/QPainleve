@@ -56,6 +56,25 @@ theorem mutationFiberClass_eq (ρ₀ : Φ.Ray) (hΦ : Φ.IsRegular) :
         (fun ρ ↦ max (b.det ![ρ.primitiveGenerator, ρ₀.primitiveGenerator]) 0) :=
   (rfl)
 
+/-- In Hirzebruch ray coordinates, mutation at the opposite section (ray two) has
+fiber class given by the divisor of ray one. -/
+theorem mutationFiberClass_of_opposite_section [Nonempty Φ.cones]
+    (hΦ : Φ.IsRegular) (r : Fin 4 ≃ Φ.Ray)
+    (e t : ℤ) (hr : (fun j ↦ Fan.Ray.primitiveGenerator (r j)) =
+      ![b 0, b 1 - t • b 0, -b 0, e • b 0 - (b 1 - t • b 0)]) :
+    mutationFiberClass b (r 2) hΦ = Φ.rayDivisorToPicard hΦ (Pi.single (r 1) 1) := by
+  classical
+  rw [mutationFiberClass_eq]
+  congr 1
+  funext ρ
+  obtain ⟨j, rfl⟩ := r.surjective ρ
+  have hg (k : Fin 4) := congrFun hr k
+  have h₀ := b.detDualEquiv_self (b 0)
+  have h₁ : b.detDualEquiv (b 0) (b 1) = 1 := b.detDualEquiv_apply_basis_zero_one
+  rw [← b.detDualEquiv_apply, b.detDualEquiv_swap]
+  simp only [hg j, hg 2, Matrix.cons_val_two, Pi.single_apply, Equiv.apply_eq_iff_eq]
+  fin_cases j <;> norm_num [← Module.Basis.detDualEquiv_apply, h₀, h₁]
+
 variable (s : ι → Φ.Ray) (k : ι)
 
 local notation "v" => Ray.primitiveGenerator (s k)

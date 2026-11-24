@@ -7,11 +7,15 @@ module
 
 public import QPainleve.AlgebraicGeometry.Blowup.Tower.Point
 public import QPainleve.AlgebraicGeometry.Modules.Differentials.Ramification
+public import TauCeti.AlgebraicGeometry.Morphisms.IsoLocus
 
 import QPainleve.AlgebraicGeometry.Blowup.Ramification
 import QPainleve.AlgebraicGeometry.Blowup.Smooth
+import QPainleve.AlgebraicGeometry.Blowup.Point.Fiber
 import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
+import QPainleve.AlgebraicGeometry.Morphisms.IsoLocus
 import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.Pullback
+import TauCeti.AlgebraicGeometry.Scheme.Regular.Scheme
 
 /-!
 # Ramification of closed point blowup towers
@@ -117,6 +121,54 @@ theorem ramificationIdealSheafToBase_snoc {I : Y.IdealSheafData}
         ((snoc_iff.mp h).1.ramificationIdealSheafToBase k).comap I.blowupToBase := by
   obtain ⟨hT, p, hp, hI⟩ := snoc_iff.mp h
   exact ramificationIdealSheafToBase_snoc_point k hT p hp hI
+
+/-- The support of the ramification ideal of a point-blowup tower is precisely
+the inverse image of the locus where the projection is not an isomorphism. -/
+theorem support_ramificationIdealSheafToBase (hT : IsClosedPointTower X T) :
+    ((hT.ramificationIdealSheafToBase k).support : Set Y) =
+      T.toBase ⁻¹' T.toBase.centre := by
+  induction hT with
+  | nil =>
+    rw [toBase_nil, (Scheme.Hom.centre_eq_empty_iff (𝟙 X)).mpr inferInstance]
+    simp
+  | @snoc m W U I hU p hp hI ih =>
+    let f := U.toBase ≫ X ↘ Spec (.of k)
+    have : SmoothOfRelativeDimension 2 f := hU.smoothOfRelativeDimension _
+    have : Smooth f := SmoothOfRelativeDimension.smooth 2 f
+    have : IsLocallyNoetherian W := LocallyOfFiniteType.isLocallyNoetherian f
+    have : IsRegularLocalRing (W.presheaf.stalk p) := isRegularLocalRing_stalk_of_smooth f p
+    have : IsRegular W := IsRegular.of_smooth f
+    have : Smooth (X ↘ Spec (.of k)) := SmoothOfRelativeDimension.smooth 2 _
+    have : IsLocallyNoetherian X := LocallyOfFiniteType.isLocallyNoetherian (X ↘ Spec (.of k))
+    have hdim := ((smoothOfRelativeDimension_iff_ringKrullDim_stalk_eq f 2).mp
+      inferInstance).2 p hp
+    have hs := hI.trans (W.ker_fromSpecResidueField_eq_vanishingIdeal p)
+    have hc : I.blowupToBase.centre = {p} :=
+      hs ▸ centre_blowupToBase_closed_point hp hdim
+    have : Surjective I.blowupToBase := hs ▸ surjective_blowupToBase_point hp hdim
+    have : IsProper U.toBase := U.isProper_toBase
+    have hsupport : (I.support : Set W) = {p} := by
+      rw [hs, coe_support_vanishingIdeal, TopologicalSpace.Closeds.coe_mk, hp.closure_eq]
+    rw [ramificationIdealSheafToBase_snoc, support_mul, TopologicalSpace.Closeds.coe_sup,
+      support_comap, support_comap, TopologicalSpace.Closeds.coe_preimage,
+      TopologicalSpace.Closeds.coe_preimage, hsupport, ih, toBase_snoc,
+      Scheme.Hom.centre_comp, hc]
+    ext x
+    simp only [Set.mem_union, Set.mem_preimage, Scheme.Hom.comp_apply, Set.image_singleton,
+      Set.mem_singleton_iff]
+    constructor
+    · rintro (h | h)
+      · exact Or.inr (congrArg U.toBase h)
+      · exact Or.inl h
+    · rintro (h | h)
+      · exact Or.inr h
+      · by_cases hx : U.toBase (I.blowupToBase x) ∈ U.toBase.centre
+        · exact Or.inr hx
+        · apply Or.inl
+          have h₁ : U.toBase (I.blowupToBase x) ∈ U.toBase.isoLocus := by
+            simpa [Scheme.Hom.centre_def] using hx
+          have h₂ : U.toBase p ∈ U.toBase.isoLocus := h ▸ h₁
+          exact U.toBase.injOn_preimage_isoLocus h₁ h₂ h
 
 /-- The ramification ideal of the projection of a point tower on a smooth integral
 surface is effective Cartier. -/

@@ -11,6 +11,7 @@ import QPainleve.AlgebraicGeometry.Blowup.Descent
 import QPainleve.AlgebraicGeometry.Blowup.Point.Cohomology
 import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
 import TauCeti.AlgebraicGeometry.Descent.Contraction
+import TauCeti.AlgebraicGeometry.Morphisms.Contraction
 import TauCeti.AlgebraicGeometry.Morphisms.Epi
 import TauCeti.AlgebraicGeometry.Morphisms.Smooth.Regular
 
@@ -76,6 +77,22 @@ theorem existsUnique_comp_eq_toBase (g : Y ⟶ Z) (hg : Function.FactorsThrough 
   have := T.isProper_toBase
   have := hT.surjective f
   exact T.toBase.existsUnique_comp_eq_of_universallyClosed (hT.isIso_app_toBase f) g hg
+
+/-- On an open of the base of a closed point blowup tower, a morphism that is
+constant on the fibers over that open descends uniquely. -/
+theorem existsUnique_comp_eq_morphismRestrict (U : X.Opens) (g : Y ⟶ Z)
+    (hg : Function.FactorsThrough ((T.toBase ⁻¹ᵁ U).ι ≫ g) (T.toBase ∣_ U)) :
+    ∃! a : U.toScheme ⟶ Z, (T.toBase ∣_ U) ≫ a = (T.toBase ⁻¹ᵁ U).ι ≫ g := by
+  have : Smooth f := SmoothOfRelativeDimension.smooth 2 f
+  have := LocallyOfFiniteType.isLocallyNoetherian f
+  have := T.isProper_toBase
+  have := hT.surjective f
+  have : Surjective (T.toBase ∣_ U) :=
+    MorphismProperty.of_isPullback (isPullback_morphismRestrict T.toBase U).flip
+      ‹Surjective T.toBase›
+  have : IsContraction T.toBase := { isIso_app := hT.isIso_app_toBase f }
+  exact (T.toBase ∣_ U).existsUnique_comp_eq_of_universallyClosed
+    (IsContraction.isIso_app (f := T.toBase ∣_ U)) _ hg
 
 /-- The descent of a morphism constant on a surface blowup tower's fibers preserves its
 specified composite to another scheme. -/

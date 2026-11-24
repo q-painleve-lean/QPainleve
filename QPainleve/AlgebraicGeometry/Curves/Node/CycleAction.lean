@@ -316,6 +316,13 @@ theorem branch_boundaryCycleAction (j : ZMod n) (b : Fin 2) :
       (f.branchSchemeIso (R := k)).hom (C.branch (j, b)) :=
   (existsUnique_boundaryCycleAction f C (D := D)).exists.choose_spec j b
 
+/-- Transporting the numbering along an isomorphism gives identity on numbered branches. -/
+@[simp]
+theorem boundaryCycleAction_mapNodalCycleNumbering :
+    f.boundaryCycleAction C (f.mapNodalCycleNumbering C (q := q)) = 1 := by
+  refine (existsUnique_boundaryCycleAction f C).unique (branch_boundaryCycleAction _ _ _) ?_
+  simp
+
 private theorem numberedBranchEquiv_eq_cycleBranchPerm (j : ZMod n) (b : Fin 2) :
     numberedBranchEquiv f C (D := D) (j, b) =
       cycleBranchPerm (f.boundaryCycleAction C D) (j, b) :=

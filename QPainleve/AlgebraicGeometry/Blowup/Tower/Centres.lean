@@ -8,6 +8,7 @@ module
 public import QPainleve.AlgebraicGeometry.Blowup.Tower.Point
 public import TauCeti.AlgebraicGeometry.Morphisms.IsoLocus
 
+import QPainleve.AlgebraicGeometry.Blowup.Descent
 import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
 
 /-!
@@ -87,6 +88,39 @@ theorem isClosed_baseCenter [IsLocallyNoetherian X] {T : BlowupTower X n Y}
       have := T.isProper_toBase
       simpa only [Set.image_singleton] using T.toBase.isClosedMap _ hq
     · simpa only [baseCenter_snoc_castSucc] using ih i
+
+/-- A closed-point tower is injective above the complement of the projected centers. -/
+theorem injOn_toBase_compl_range_baseCenter {T : BlowupTower X n Y}
+    (hT : IsClosedPointTower X T) :
+    Set.InjOn T.toBase (T.toBase ⁻¹' (Set.range hT.baseCenter)ᶜ) := by
+  induction hT with
+  | nil =>
+    rw [toBase_nil]
+    exact Function.injective_id.injOn
+  | @snoc d W U I hU p hp hI ih =>
+    intro x hx y hy hxy
+    have hsupport : (I.support : Set W) = {p} :=
+      (congrArg (fun J : W.IdealSheafData ↦ (J.support : Set W)) hI).trans
+        (W.support_ker_fromSpecResidueField_of_isClosed hp)
+    have hprev (z : I.blowup) (hz : (U.snoc I).toBase z ∉
+        Set.range (hU.snoc p hp hI).baseCenter) :
+        U.toBase (I.blowupToBase z) ∉ Set.range hU.baseCenter := by
+      rintro ⟨j, hj⟩
+      apply hz
+      exact ⟨j.castSucc, by simpa only [baseCenter_snoc_castSucc, toBase_snoc,
+        Scheme.Hom.comp_apply] using hj⟩
+    have hstep (z : I.blowup) (hz : (U.snoc I).toBase z ∉
+        Set.range (hU.snoc p hp hI).baseCenter) :
+        I.blowupToBase z ∉ I.support := by
+      rw [← SetLike.mem_coe, hsupport]
+      intro hz'
+      apply hz
+      refine ⟨Fin.last d, ?_⟩
+      rw [baseCenter_snoc_last, lastCenter_eq _ p hp hI, toBase_snoc, Scheme.Hom.comp_apply,
+        Set.mem_singleton_iff.mp hz']
+    apply I.injOn_blowupToBase_compl_support (hstep x hx) (hstep y hy)
+    exact ih (hprev x hx) (hprev y hy) (by simpa only [toBase_snoc,
+      Scheme.Hom.comp_apply] using hxy)
 
 end IsClosedPointTower
 

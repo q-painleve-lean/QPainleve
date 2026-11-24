@@ -6,8 +6,12 @@ Authors: The QPainleve contributors
 module
 
 public import QPainleve.AlgebraicGeometry.VectorBundle.ProjectionFormula
+public import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.Invertible
 public import TauCeti.AlgebraicGeometry.IdealSheaf.TensorSequence
 public import TauCeti.AlgebraicGeometry.Modules.Pullback.Sections
+import QPainleve.AlgebraicGeometry.IdealSheaf.Quotient
+import QPainleve.AlgebraicGeometry.IdealSheaf.Tensor.Product
+import QPainleve.AlgebraicGeometry.Modules.Pullback.Sections
 
 /-!
 # Restriction of a line bundle to a closed subscheme
@@ -21,7 +25,9 @@ the original map of line bundles.
 public noncomputable section
 
 open CategoryTheory MonoidalCategory Functor.LaxMonoidal
+open TauCeti (isEffectiveCartier_pow)
 open TauCeti.AlgebraicGeometry
+open TauCeti.AlgebraicGeometry.Scheme.Modules (Cohomology cohomologyFunctor)
 
 namespace AlgebraicGeometry.Scheme.IdealSheafData
 
@@ -147,5 +153,63 @@ theorem tensorRestrictionHom_naturality {M N : InvertibleSheaf X} (a : M.obj ⟶
   exact congrArg ((i).tensorPushforwardHom M.obj (𝟙_ I.subscheme.Modules) ≫ ·)
     ((Functor.map_comp _ _ _).symm.trans
       ((congrArg (G).map (rightUnitor_naturality ((F).map a))).trans (Functor.map_comp _ _ _)))
+
+/-- A section of the `n`th power of a Cartier ideal restricts to zero on the
+divisor exactly when its underlying function belongs to the next power. -/
+theorem IsEffectiveCartier.pullbackSections_pow_eq_zero_iff {E : X.IdealSheafData}
+    (hE : E.IsEffectiveCartier) (n : ℕ)
+    (s : Γ((E ^ n).sheaf, ⊤)) :
+    E.subschemeι.pullbackSections (E ^ n).sheaf ⊤ s = 0 ↔
+      (E ^ n).sheafι.app ⊤ s ∈ (E ^ (n + 1)).sections ⊤ := by
+  rw [pow_succ]
+  let N := (isEffectiveCartier_pow hE n).toInvertibleSheaf
+  let a := (E ^ n).sheaf ◁ E.sheafι ≫ (ρ_ (E ^ n).sheaf).hom
+  let b := sheafHomOfLE (mul_le_of_le_one_right' (a := E ^ n) (b := E) le_top)
+  have hab : (E ^ n).sheafMul E ≫ b = a := sheafMul_sheafHomOfLE_mul _ _
+  have hex := E.exact_pullbackSections N
+  rw [IsEffectiveCartier.toInvertibleSheaf_obj] at hex
+  rw [hex s]
+  constructor
+  · rintro ⟨w, rfl⟩
+    let z := ((E ^ n).sheafMul E).app ⊤ w
+    have hb : a.app ⊤ w = b.app ⊤ z :=
+      (ConcreteCategory.congr_hom (congrArg (fun g ↦ g.app ⊤) hab) w).symm
+    rw [hb]
+    exact (ConcreteCategory.congr_hom (congrArg (fun g ↦ g.app ⊤)
+      (sheafHomOfLE_sheafι (mul_le_of_le_one_right' (a := E ^ n) (b := E) le_top))) z).symm ▸
+        (E ^ n * E).sheafι_app_mem ⊤ z
+  · intro hs
+    let z := (E ^ n * E).sectionMk ((E ^ n).sheafι.app ⊤ s) hs
+    have hz : b.app ⊤ z = s := by
+      apply (E ^ n).sheafι_app_injective ⊤
+      have hc := ConcreteCategory.congr_hom (congrArg (fun g ↦ g.app ⊤)
+        (sheafHomOfLE_sheafι (mul_le_of_le_one_right' (a := E ^ n) (b := E) le_top))) z
+      exact hc.trans (sheafι_app_sectionMk _ _ _)
+    have := (E ^ n).isIso_sheafMul_of_isEffectiveCartier E hE
+    obtain ⟨w, hw⟩ := (ConcreteCategory.bijective_of_isIso (((E ^ n).sheafMul E).app ⊤)).2 z
+    refine ⟨w, ?_⟩
+    have hh := ConcreteCategory.congr_hom (congrArg (fun g ↦ g.app ⊤) hab) w
+    exact hh.symm.trans ((congrArg (b.app ⊤) hw).trans hz)
+
+/-- Sections of the `n`th conormal power lift to sections of the ambient Cartier
+ideal power when the next ideal power has vanishing first cohomology. -/
+theorem IsEffectiveCartier.surjective_pullbackSections_pow_of_subsingleton_cohomology_one
+    {E : X.IdealSheafData} (hE : E.IsEffectiveCartier)
+    (n : ℕ) (hvan : Subsingleton (Cohomology (E ^ (n + 1)).sheaf 1)) :
+    Function.Surjective (E.subschemeι.pullbackSections (E ^ n).sheaf ⊤) := by
+  let N := (isEffectiveCartier_pow hE n).toInvertibleSheaf
+  have hmul := (E ^ n).isIso_sheafMul_of_isEffectiveCartier E hE
+  let e : N.obj ⊗ E.sheaf ≅ (E ^ (n + 1)).sheaf :=
+    eqToIso (congrArg (fun M : X.Modules ↦ M ⊗ E.sheaf)
+      (IsEffectiveCartier.toInvertibleSheaf_obj _)) ≪≫
+    asIso ((E ^ n).sheafMul E) ≪≫ eqToIso (congrArg sheaf (pow_succ E n).symm)
+  have hv : Subsingleton (Cohomology (N.obj ⊗ E.sheaf) 1) :=
+    @Function.Injective.subsingleton _ _ _
+      ((cohomologyFunctor _ 1).mapIso e).addCommGroupIsoToAddEquiv.injective hvan
+  have hs : Function.Surjective (E.subschemeι.pullbackSections N.obj ⊤) := by
+    intro y
+    obtain ⟨x, hx⟩ := E.surjective_pullbackSectionsLE_of_subsingleton_cohomology_one N hv y
+    exact ⟨x, by simpa only [Scheme.Hom.pullbackSectionsLE_top] using! hx⟩
+  exact IsEffectiveCartier.toInvertibleSheaf_obj _ ▸ hs
 
 end AlgebraicGeometry.Scheme.IdealSheafData

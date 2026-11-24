@@ -81,6 +81,34 @@ theorem isConnected_preimage_singleton (hT : IsClosedPointTower X T)
 
 variable [IsIntegral X]
 
+/-- Over an open of the base of a closed point blowup tower, a surface modification
+descends if it contracts the exceptional fibers lying over that open. -/
+theorem existsUnique_comp_eq_morphismRestrict_of_preimage_centre_subset
+    (hT : IsClosedPointTower X T) (f : X ⟶ base) [SmoothOfRelativeDimension 2 f]
+    (g : V ⟶ Y) [IsIntegral Y] [IsNormalScheme Y] [IsNoetherian Y] [IsModification g]
+    (hY : topologicalKrullDim Y ≤ 2) (U : X.Opens)
+    (hsub : ∀ z : V, T.toBase z ∈ U → T.toBase z ∈ T.toBase.centre → g z ∈ g.centre) :
+    ∃! a : U.toScheme ⟶ Y, (T.toBase ∣_ U) ≫ a = (T.toBase ⁻¹ᵁ U).ι ≫ g := by
+  have : Smooth f := SmoothOfRelativeDimension.smooth 2 f
+  have hX := topologicalKrullDim_eq_of_smoothOfRelativeDimension f (n := 2)
+  have : IsRegular X := IsRegular.of_smooth f
+  have : IsModification T.toBase := hT.isModification_of_smoothOfRelativeDimension_two f
+  have : Smooth (T.toBase ≫ f) := (hT.smoothOfRelativeDimension f).smooth
+  have : IsRegular V := IsRegular.of_smooth (T.toBase ≫ f)
+  apply hT.existsUnique_comp_eq_morphismRestrict f U g
+  intro x y hxy
+  have he : T.toBase x.val = T.toBase y.val := by
+    simpa only [morphismRestrict_base_coe] using congrArg Subtype.val hxy
+  have hconn (hx : T.toBase x.val ∈ T.toBase.centre) :
+      _root_.IsPreconnected (T.toBase ⁻¹' {T.toBase x.val}) :=
+    (hT.isConnected_preimage_singleton f _ (mem_closedPoints_iff.mp
+      (T.toBase.centre_subset_closedPoints hX.le hx))).isPreconnected
+  simp only [Scheme.Hom.comp_apply]
+  apply T.toBase.eq_of_apply_eq_of_fiber_mapsTo_centre g hY he hconn
+  intro hx z hz
+  have hz' : T.toBase z = T.toBase x.val := hz
+  exact hsub z (hz'.symm ▸ T.toBase.mem_preimage.mp x.property) (hz'.symm ▸ hx)
+
 /-- A surface modification that contracts all the prime divisors contracted by a closed
 point blowup tower descends uniquely to the base of the tower. -/
 theorem existsUnique_comp_eq_toBase_of_exceptional_divisors_subset

@@ -180,16 +180,10 @@ theorem isIso_blowupLift_of_regular_contraction_point [IsRegular X] [IsIntegral 
     have hy' : y ∉ ({p} : Set Y) := fun h ↦ (hmem y).mp hy (Set.mem_singleton_iff.mp h)
     simpa only [← SetLike.mem_coe, ← hc, Scheme.Hom.centre_def,
       Set.mem_compl_iff, not_not] using hy'
-  have : IsRegular Y := by
-    constructor
-    intro y
-    by_cases h : y = p
-    · subst y
-      infer_instance
-    · obtain ⟨x, rfl⟩ := f.surjective y
-      have hx : f x ∈ f.isoLocus := hU ((hmem _).mpr h)
-      have := f.isIso_stalkMap_of_mem_isoLocus hx
-      exact IsRegularLocalRing.of_ringEquiv (asIso (f.stalkMap x)).commRingCatIsoToRingEquiv.symm
+  have : IsRegular Y := f.isRegular_of_isRegularLocalRing_of_mem_centre fun y hy ↦ by
+    rw [hc, Set.mem_singleton_iff] at hy
+    subst y
+    infer_instance
   have : IsRegular (Y.fromSpecResidueField p).ker.blowup :=
     Y.ker_fromSpecResidueField_eq_vanishingIdeal p ▸ isRegular_blowup_closed_point hdim hp
   exact hE.isIso_blowupLift_of_exceptional_contraction f hI hU

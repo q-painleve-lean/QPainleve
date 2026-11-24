@@ -10,6 +10,7 @@ public import QPainleve.AlgebraicGeometry.Curves.Node.CycleAction
 public import QPainleve.Geometry.Toric.CharacterTorus.Scheme
 public import Mathlib.AlgebraicGeometry.Birational.RationalMap
 public import Mathlib.LinearAlgebra.BilinearForm.IsometryEquiv
+public import Mathlib.LinearAlgebra.PerfectPairing.Basic
 
 import QPainleve.AlgebraicGeometry.IdealSheaf.BaseChange
 
@@ -107,6 +108,18 @@ def picardMarking : L ≃ₗ[ℤ] Additive (LineBundleClass M.surface) :=
 @[simp]
 theorem compEvaluation_picardMarking {Y : Scheme.{u}} (g : X ⟶ Y) (a : L) :
     (M.compEvaluation g).picardMarking a = M.picardMarking a := (rfl)
+
+/-- A perfect pairing on the marked lattice gives a perfect Picard intersection pairing. -/
+theorem isPerfPair_intersectionForm [B.IsPerfPair] :
+    letI : SmoothOfRelativeDimension 2 (M.surface ↘ S) := M.smooth
+    letI : M.surface.IsProjectiveOver k := M.projective
+    (Chow.intersectionBilinForm k M.surface).IsPerfPair := by
+  let : SmoothOfRelativeDimension 2 (M.surface ↘ S) := M.smooth
+  let : M.surface.IsProjectiveOver k := M.projective
+  refine LinearMap.IsPerfPair.congr B M.marking.toLinearEquiv.symm
+    M.marking.toLinearEquiv.symm _ (LinearMap.ext₂ fun x y ↦ ?_)
+  simpa only [LinearMap.compl₁₂_apply, LinearEquiv.symm_symm, LinearEquiv.coe_coe,
+    LinearMap.BilinForm.IsometryEquiv.coe_toLinearEquiv] using M.marking.map_app y x
 
 /-- The closed subscheme defined by the boundary ideal is at worst nodal over the ground field. -/
 theorem boundaryIdeal_nodal :
