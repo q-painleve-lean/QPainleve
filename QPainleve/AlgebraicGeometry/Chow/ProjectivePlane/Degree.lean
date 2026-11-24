@@ -7,19 +7,16 @@ module
 
 public import Mathlib.AlgebraicGeometry.Morphisms.FlatRank
 public import QPainleve.AlgebraicGeometry.Chow.ProjectivePlane.Basic
+public import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.Polynomial.Flat
 public import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.Sections.TwistingSheaf
 public import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.Polynomial.Basic
-public import TauCeti.AlgebraicGeometry.Scheme.Normal
 
 import QPainleve.AlgebraicGeometry.Chow.Isomorphism
 import QPainleve.AlgebraicGeometry.Chow.ProperIntersection
-import QPainleve.AlgebraicGeometry.Morphisms.Finite
 import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.Polynomial.Chart.Sections
 import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.Polynomial.Integral
-import TauCeti.AlgebraicGeometry.Morphisms.Flat.Normal
 import TauCeti.AlgebraicGeometry.Morphisms.Flat.Rank
-import TauCeti.AlgebraicGeometry.Scheme.LocalDimension
-import TauCeti.AlgebraicGeometry.Scheme.Regular.Scheme
+import TauCeti.AlgebraicGeometry.Morphisms.Smooth.RelativeDimension
 
 /-!
 # Degree of a finite morphism to the projective plane
@@ -29,10 +26,6 @@ The intersection of the pullbacks of two coordinate lines has length equal to th
 so the square of the pulled-back hyperplane class is the degree. In particular, a finite
 morphism given by a linear system of square one is an isomorphism. This is the degree
 calculation used in Vakil, *Complex Algebraic Surfaces*, Class 17, §2.
-
-Flatness uses the surface case of miracle flatness, supplied by Tau Ceti's
-`Scheme.Hom.flat_of_isDominant_of_locallyQuasiFinite_of_ringKrullDim_le_two`.
-See [Stacks Project, Lemma 10.128.1](https://stacks.math.columbia.edu/tag/00R4).
 -/
 
 public noncomputable section
@@ -91,22 +84,6 @@ private theorem classIntersectionNumber_hyperplane_self :
     Chow.classIntersectionNumber_projectivePlane]
   simp [a, Module.Basis.picardTwistEquiv_apply_twist]
 
-omit [Infinite k] [X.Over (Spec (.of k))] [X.IsProjectiveOver k] in
-private theorem flat_of_isFinite_to_polynomialPlane (f : X ⟶ P[k]) [IsFinite f]
-    (hX : 2 ≤ topologicalKrullDim X) : Flat f := by
-  have : IsIntegral P[k] := Proj.isIntegral_polynomialProj
-  let s := Proj.toSpecCoeff (MvPolynomial.homogeneousSubmodule (Fin 3) k)
-  have : SmoothOfRelativeDimension 2 s := Proj.smoothOfRelativeDimension_polynomial k
-  have : Smooth s := SmoothOfRelativeDimension.smooth 2 s
-  have hP := topologicalKrullDim_eq_of_smoothOfRelativeDimension s (n := 2)
-  have : IsDominant f := f.isDominant_of_isFinite_of_topologicalKrullDim_le
-    (hP ▸ WithBot.coe_lt_coe.mpr (ENat.natCast_lt_top 2)) (hP.symm ▸ hX)
-  have : IsRegular P[k] := IsRegular.of_smooth s
-  have : IsLocallyNoetherian P[k] := LocallyOfFiniteType.isLocallyNoetherian s
-  refine f.flat_of_isDominant_of_locallyQuasiFinite_of_ringKrullDim_le_two fun y ↦ ?_
-  rw [ringKrullDim_stalk_eq_coheight]
-  exact (coheight_le_topologicalKrullDim y).trans_eq hP
-
 omit [IsIntegral X] [IsNormalScheme X] in
 private theorem classIntersectionNumber_pullback_hyperplane_eq_finrank (f : X ⟶ P[k])
     [f.IsOver (Spec (.of k))] [IsFinite f] [Flat f] (y : P[k]) :
@@ -139,19 +116,6 @@ local notation "Q" => Proj 𝒜
 local notation "H'" => LineBundleClass.mk
   (ObjectProperty.FullSubcategory.mk (Proj.twistingSheaf 𝒜 1) inferInstance : InvertibleSheaf Q)
 
-private def polynomialPlaneIso (ε : ι ≃ Fin 3) : Q ≅ P[k] :=
-  let b := Pi.basisFun k (Fin 3)
-  (b.reindex ε.symm).polynomialProjIso ≪≫ b.polynomialProjIso.symm
-
-omit [Infinite k] [X.Over (Spec (.of k))] [X.IsProjectiveOver k] in
-/-- A finite morphism from a normal integral surface to the projective plane is flat. -/
-theorem flat_of_isFinite_to_projectivePlane (f : X ⟶ Q) [IsFinite f]
-    (hX : 2 ≤ topologicalKrullDim X) (ε : ι ≃ Fin 3) : Flat f := by
-  let e := polynomialPlaneIso (k := k) ε
-  have : Flat (f ≫ e.hom) := flat_of_isFinite_to_polynomialPlane _ hX
-  have hf : f = (f ≫ e.hom) ≫ e.inv := by simp
-  exact hf ▸ inferInstance
-
 /-- The square of the pullback of `𝒪(1)` by a finite morphism from a normal projective
 surface to the plane is the degree, computed as the rank at any point of the plane.
 The coordinate index type can be any type equivalent to `Fin 3`. -/
@@ -160,7 +124,7 @@ theorem classIntersectionNumber_pullback_twistingSheaf_projectivePlane (f : X �
     (y : Q) : Chow.classIntersectionNumber k X (pullback f H') (pullback f H') = f.finrank y := by
   let b := Pi.basisFun k (Fin 3)
   let b' := b.reindex ε.symm
-  let e := polynomialPlaneIso (k := k) ε
+  let e := QPainleve.polynomialPlaneIso (k := k) ε
   have heq : e.hom = b'.polynomialProjIso.hom ≫ b.polynomialProjIso.inv := rfl
   have he : e.hom.IsOver (Spec (.of k)) := ⟨by
     rw [Proj.over_polynomial, polynomialPlane_structureMap, ← b.polynomialProjIso_hom_over, heq,
