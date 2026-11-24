@@ -152,8 +152,7 @@ theorem IsEffectiveCartier.eventually_surjective_pullbackSectionsLE_of_trivial_c
       (cohomologyBaseLinearEquivOfIso k e' 1).trans (I.cohomologyTensorRestrictionEquiv k L 1).symm
     exact @Function.Injective.subsingleton _ _ _ h.injective hvan
   let e (n : ℕ) : (M (n + 1)).obj ⊗ I.sheaf ≅ (M n).obj :=
-    whiskerRightIso (L.tensorProductObjIso _) I.sheaf ≪≫ α_ _ _ _ ≪≫
-      whiskerLeftIso L.obj (hI.tensorPowSuccIdealIso n) ≪≫ (L.tensorProductObjIso _).symm
+    hI.tensorProductTensorPowSuccIdealIso L n
   exact eventually_surjective_pullbackSectionsLE_of_eventually_subsingleton_cohomology_quotient
     k M e (Eventually.of_forall hr)
 
