@@ -5,6 +5,7 @@ Authors: The QPainleve contributors
 -/
 module
 
+public import QPainleve.AlgebraicGeometry.Curves.Node.Conductor.Subdivision
 public import QPainleve.Geometry.Toric.Fan.Picard.Period.CenterVariation
 public import TauCeti.LinearAlgebra.Basis.DiagonalTorus.Basic
 
@@ -275,29 +276,17 @@ variable {c : Fin n → ℂˣ} {X Y : Scheme}
   {β : Type*} {q : β → (D₀.subscheme ↘ Spec (.of ℂ)).smoothLocus} {k : ℕ} [NeZero k]
   (B₀ : NodalCycleNumbering q k)
 
-local notation "C₀" => IdealSheafData.subscheme D₀
 local notation "g" => toricBoundaryToBase (J[c]) e hD
-local notation "ν₀" => IdealSheafData.blowupToBase (Scheme.singularLocus ℂ C₀)
-local notation "branch[" W "]" => Scheme.branchSchemeToBlowup ℂ W
-local notation "nodes[" W "]" => IdealSheafData.subscheme (Scheme.singularLocus ℂ W)
 local notation "m" => (fun j ↦
   LinearMap.toAddMonoidHom (b.detDualEquiv (Ray.primitiveGenerator (s j))))
 
 /-- The ordered period agrees with the period on the contracted surface whenever
 the boundary projection is an oriented conductor subdivision. -/
 theorem markedBoundaryPeriod_eq_orderedBoundaryPeriod
-    {gν : ((C).singularLocus ℂ).blowup ⟶ ((C₀).singularLocus ℂ).blowup}
-    (hν : CommSq ν gν g ν₀)
-    (hnode : Set.MapsTo g ((C).singularLocus ℂ).support ((C₀).singularLocus ℂ).support)
-    (keep : nodes[C₀] ↪ nodes[C])
-    (hkeep : ∀ z j,
-      gν (branch[C] ((C).branchOrderOfDualGraph p B.order (keep z) j).val) =
-        branch[C₀] ((C₀).branchOrderOfDualGraph q B₀.order z j).val)
-    (hcollapse : ∀ z ∉ Set.range keep,
-      gν (branch[C] ((C).branchOrderOfDualGraph p B.order z 1).val) =
-        gν (branch[C] ((C).branchOrderOfDualGraph p B.order z 0).val)) :
+    (hsub : Scheme.Hom.IsOrientedCycleSubdivision g B B₀) :
     markedBoundaryPeriod hΦ b s hT e he hD hCartier hgenus B₀ =
       orderedBoundaryPeriod hΦ b s B c := by
+  obtain ⟨_, hν, hnode, keep, hkeep, hcollapse⟩ := hsub
   apply MonoidHom.ext
   intro x
   rw [← ofAdd_toAdd x, orderedBoundaryPeriod_apply]
