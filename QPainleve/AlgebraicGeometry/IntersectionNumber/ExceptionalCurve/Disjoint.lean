@@ -116,19 +116,16 @@ theorem map_pairwise_disjoint_of_contraction {ι : Type*} (C : ι → X.IdealShe
       Scheme.support_ker_fromSpecResidueField_of_isClosed hp, hc]
   have h' (i : {i // i ≠ i₀}) := (hC i).map_of_disjoint_contraction f
     (hpre ▸ hpair i.property)
-  refine ⟨fun i ↦ ⟨(h' i).1, (h' i).2.1, ?_⟩,
-    fun i j hij ↦ Set.disjoint_left.mpr fun y hyi hyj ↦ ?_⟩
+  refine ⟨fun i ↦ ⟨(h' i).1, (h' i).2.1, ?_⟩, ?_⟩
   · intro hi
     have hi' := (h' i).2.2 hi
     rw [← f.compl_centre, hc] at hi'
     exact hi' (Set.mem_singleton p)
-  · obtain ⟨x, rfl⟩ := f.surjective y
-    have hl (l : {i // i ≠ i₀}) (hyl : f x ∈ (((C l).map f).support : Set Y)) :
-        x ∈ ((C l).support : Set X) := by
-      have hx : x ∈ ((((C l).map f).comap f).support : Set X) := by
-        simpa only [support_comap, Closeds.coe_preimage, Set.mem_preimage] using hyl
-      rwa [(h' l).2.1] at hx
-    exact Set.disjoint_left.mp (hpair fun h ↦ hij (Subtype.ext h)) (hl i hyi) (hl j hyj)
+  · intro i j hij
+    apply Disjoint.of_preimage f.surjective
+    rw [← Closeds.coe_preimage _ f.continuous, ← support_comap, (h' i).2.1,
+      ← Closeds.coe_preimage _ f.continuous, ← support_comap, (h' j).2.1]
+    exact hpair fun h ↦ hij (Subtype.ext h)
 
 /-- A further contraction of a disjoint exceptional curve adds one point to the centre
 and preserves all previous scheme-theoretic fibres over closed points. The new fibre
