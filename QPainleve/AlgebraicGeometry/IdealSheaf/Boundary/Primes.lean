@@ -39,6 +39,28 @@ theorem mem_boundaryPrimes {D : X.IdealSheafData} {x : X} :
     x ∈ D.boundaryPrimes ↔ x ∈ D.support ∧ Order.coheight x = 1 :=
   (Iff.rfl)
 
+/-- The inclusion of boundary primes into the codimension-one points of the ambient scheme. -/
+def boundaryPrimeEmbedding (D : X.IdealSheafData) :
+    D.boundaryPrimes ↪ CodimensionOnePoint X where
+  toFun p := ⟨p.val, (mem_boundaryPrimes.mp p.property).2⟩
+  inj' _ _ h := Subtype.ext (congrArg (fun q : CodimensionOnePoint X ↦ (q : X)) h)
+
+/-- The boundary prime and its image have the same underlying point. -/
+@[simp]
+theorem coe_boundaryPrimeEmbedding (D : X.IdealSheafData) (p : D.boundaryPrimes) :
+    (D.boundaryPrimeEmbedding p : X) = p.val := (rfl)
+
+/-- The image of the inclusion of boundary primes consists of the codimension-one points
+in the support of the ideal sheaf. -/
+theorem range_boundaryPrimeEmbedding (D : X.IdealSheafData) :
+    Set.range D.boundaryPrimeEmbedding = {p : CodimensionOnePoint X | (p : X) ∈ D.support} := by
+  ext p
+  constructor
+  · rintro ⟨q, rfl⟩
+    exact (mem_boundaryPrimes.mp q.property).1
+  · intro hp
+    exact ⟨⟨p.val, mem_boundaryPrimes.mpr ⟨hp, p.property⟩⟩, Subtype.ext rfl⟩
+
 /-- If the support is the union of closures of specified codimension-one points,
 those points are exactly its boundary primes. -/
 theorem boundaryPrimes_eq_range_of_iUnion_closure {ι : Type*} (D : X.IdealSheafData)

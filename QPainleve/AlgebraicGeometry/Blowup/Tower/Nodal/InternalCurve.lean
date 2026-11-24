@@ -181,13 +181,7 @@ theorem forall_realPrimeDivisorClass_self_ne_neg_two_iff
   have : IsIntegral Y := hT.isClosedPointTower.isIntegral f₀
   have : SmoothOfRelativeDimension 2 (Y ↘ Spec (.of k)) :=
     hT.isClosedPointTower.smoothOfRelativeDimension f₀
-  have : IsModification π :=
-    hT.isClosedPointTower.isModification_of_smoothOfRelativeDimension_two f₀
-  have hbir : Scheme.BirationalOver (π ≫ f₀) f₀ := by
-    obtain ⟨e, he⟩ := IsModification.birationalOver π
-    refine ⟨e, ?_⟩
-    simpa only [Category.comp_id, Category.assoc] using congrArg (· ≫ f₀) he
-  have : Scheme.IsRationalOver (Y ↘ Spec (.of k)) := hbir.isRationalOver _ _
+  have : Scheme.IsRationalOver (Y ↘ Spec (.of k)) := hT.isClosedPointTower.isRationalOver f₀
   let R := (D.comap π).radical
   have hR : R.IsEffectiveCartier := (hT.radical_comap_toBase hD hN).1
   have hcanR : mk hR.toInvertibleSheaf = mk (QPainleve.canonicalBundle k Y 2) :=

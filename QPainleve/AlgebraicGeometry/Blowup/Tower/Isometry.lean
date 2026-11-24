@@ -47,18 +47,15 @@ variable {X Y Z W : Scheme.{u}} {n : ℕ} {T : BlowupTower X n Y} {U : BlowupTow
 
 local notation "g(" k ", " S ")" => (S ↘ Spec (CommRingCat.of k))
 local notation "Pic(" S ")" => Additive (LineBundleClass S)
-local notation "B(" k ", " S ")" =>
-  (@Chow.classIntersectionBilinForm k _ _ S _ _ _
-    (Scheme.Hom.uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two (g(k, S)))
-    (topologicalKrullDim_eq_of_smoothOfRelativeDimension (g(k, S)) (n := 2)))
+local notation "B(" k ", " S ")" => Chow.intersectionBilinForm k S
 
 /-- Extend a Picard isometry by matching the ordered total exceptional classes. The
 towers may have infinitely near centers and the extension uses the entire Picard group. -/
 def picardIsometryCongr (e : B(k, X).IsometryEquiv B(k, Z)) :
     let : IsNoetherian X := isNoetherian_of_finiteType (g(k, X))
     let : IsNoetherian Z := isNoetherian_of_finiteType (g(k, Z))
-    letI : Y.Over (Spec (.of k)) := ⟨T.toBase ≫ g(k, X)⟩
-    letI : W.Over (Spec (.of k)) := ⟨U.toBase ≫ g(k, Z)⟩
+    let : Y.Over (Spec (.of k)) := ⟨T.toBase ≫ g(k, X)⟩
+    let : W.Over (Spec (.of k)) := ⟨U.toBase ≫ g(k, Z)⟩
     let : Y.IsProjectiveOver k := T.isProjectiveOver k
     let : W.IsProjectiveOver k := U.isProjectiveOver k
     let : IsIntegral Y := hT.isIntegral (g(k, X))
@@ -66,10 +63,7 @@ def picardIsometryCongr (e : B(k, X).IsometryEquiv B(k, Z)) :
     let : SmoothOfRelativeDimension 2 (g(k, Y)) := hT.smoothOfRelativeDimension (g(k, X))
     let : SmoothOfRelativeDimension 2 (g(k, W)) := hU.smoothOfRelativeDimension (g(k, Z))
     B(k, Y).IsometryEquiv B(k, W) := by
-  let : Y.Over (Spec (.of k)) := ⟨T.toBase ≫ g(k, X)⟩
-  let : W.Over (Spec (.of k)) := ⟨U.toBase ≫ g(k, Z)⟩
-  have : IsNoetherian X := isNoetherian_of_finiteType (g(k, X))
-  have : IsNoetherian Z := isNoetherian_of_finiteType (g(k, Z))
+  intro _ _ _ _ _ _ _ _ _ _
   let mT := T.picardMarking hT (g(k, X))
   let mU := U.picardMarking hU (g(k, Z))
   let E := (e : Pic(X) ≃ₗ[ℤ] Pic(Z)).prodCongr (LinearEquiv.refl ℤ (Fin n → ℤ))
@@ -80,10 +74,10 @@ def picardIsometryCongr (e : B(k, X).IsometryEquiv B(k, Z)) :
   simp only [LinearEquiv.toFun_eq_coe, LinearEquiv.trans_apply, LinearEquiv.symm_apply_apply,
     LinearEquiv.prodCongr_apply, LinearEquiv.refl_apply,
     LinearMap.BilinForm.IsometryEquiv.coe_toLinearEquiv,
-    Chow.classIntersectionBilinForm_apply, mT, mU, E]
+    Chow.intersectionBilinForm_apply, mT, mU, E]
   rw [classIntersectionNumber_picardMarking k hU, classIntersectionNumber_picardMarking k hT]
   congr 1
-  simpa only [Chow.classIntersectionBilinForm_apply] using e.map_app b.1 a.1
+  simpa only [Chow.intersectionBilinForm_apply] using e.map_app b.1 a.1
 
 variable (e : B(k, X).IsometryEquiv B(k, Z))
 
