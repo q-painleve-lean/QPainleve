@@ -9,6 +9,7 @@ public import TauCeti.AlgebraicGeometry.IntersectionNumber.ExceptionalCurve.Basi
 public import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.TensorProduct
 import QPainleve.AlgebraicGeometry.IdealSheaf.Tensor.Product
 import QPainleve.AlgebraicGeometry.Modules.Pullback.SectionProducts
+import QPainleve.AlgebraicGeometry.Modules.TensorProduct
 import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.TwistingSheaf.Multiplication
 
 /-!

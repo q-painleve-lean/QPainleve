@@ -11,9 +11,8 @@ import TauCeti.AlgebraicGeometry.Modules.Pullback.Quasicoherent
 /-!
 # Transporting products of sections
 
-The surjectivity of the tensor map on sections is invariant under isomorphism of the
-coefficient sheaves. It can also be tested after pulling back along an open immersion
-whose image contains the open of sections.
+Surjectivity of the tensor map on sections can be tested after pulling back along
+an open immersion whose image contains the open of sections.
 -/
 
 public section
@@ -21,31 +20,6 @@ public section
 open CategoryTheory Functor.LaxMonoidal MonoidalCategory
 
 universe u
-
-namespace AlgebraicGeometry.Scheme.Modules
-
-variable {X : Scheme.{u}} {U : X.Opens} {M N M' N' : X.Modules}
-
-/-- Isomorphic coefficient sheaves give equivalent surjectivity conditions
-for the tensor map on sections. -/
-theorem surjective_sectionsFunctor_μ_iff_of_iso (a : M ≅ M') (b : N ≅ N') :
-    Function.Surjective (μ (sectionsFunctor U) M N) ↔
-      Function.Surjective (μ (sectionsFunctor U) M' N') := by
-  suffices ∀ {A B A' B' : X.Modules}, (A ≅ A') → (B ≅ B') →
-      Function.Surjective (μ (sectionsFunctor U) A B) →
-      Function.Surjective (μ (sectionsFunctor U) A' B') from
-    ⟨this a b, this a.symm b.symm⟩
-  intro A B A' B' c d h x
-  let F := sectionsFunctor U
-  let e := F.mapIso (tensorIso c d)
-  obtain ⟨y, hy⟩ := h (e.inv x)
-  refine ⟨(F.map c.hom ⊗ₘ F.map d.hom) y, ?_⟩
-  have hw := ConcreteCategory.congr_hom (μ_natural F c.hom d.hom) y
-  simp only [ConcreteCategory.comp_apply] at hw
-  refine hw.trans (congrArg e.hom hy |>.trans ?_)
-  exact ConcreteCategory.congr_hom e.inv_hom_id x
-
-end AlgebraicGeometry.Scheme.Modules
 
 namespace AlgebraicGeometry.Scheme.Hom
 
