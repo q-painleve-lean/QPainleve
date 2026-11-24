@@ -42,18 +42,18 @@ common source surface, the induced rational compositions agree on every
 dominant chart of that source. -/
 theorem exists_compOfDefined_eq_of_target_evaluation_eq
     (R : FiberRealization M N F I g) (R' : FiberRealization M N' G J h)
-    (i : W ⟶ M.surface) [IsDominant i]
+    (i : W ⤏ M.surface) [i.IsDominant]
     (heq : (surfaceIso R.iso).hom.toRationalMap.comp N.evaluation =
       (surfaceIso R'.iso).hom.toRationalMap.comp N'.evaluation) :
-    let e := i.toRationalMap.comp M.evaluation
+    let e := i.comp M.evaluation
     let x := e.fromFunctionField (IsLocalRing.closedPoint W.functionField)
     ∃ (hf : x ∈ F.domain) (hg : x ∈ G.domain),
       e.compOfDefined F hf = e.compOfDefined G hg := by
   obtain ⟨hf, hF⟩ := R.evaluation_eq
   obtain ⟨hg, hG⟩ := R'.evaluation_eq
-  obtain ⟨hf', heF⟩ := i.toRationalMap.comp_compOfDefined M.evaluation F hf
-  obtain ⟨hg', heG⟩ := i.toRationalMap.comp_compOfDefined M.evaluation G hg
-  have h := congrArg (i.toRationalMap.comp ·) (hF.trans (heq.trans hG.symm))
+  obtain ⟨hf', heF⟩ := i.comp_compOfDefined M.evaluation F hf
+  obtain ⟨hg', heG⟩ := i.comp_compOfDefined M.evaluation G hg
+  have h := congrArg (i.comp ·) (hF.trans (heq.trans hG.symm))
   exact ⟨hf', hg', heF.trans (h.trans heG.symm)⟩
 
 end SourceChart
