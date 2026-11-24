@@ -7,7 +7,6 @@ module
 
 public import QPainleve.AlgebraicGeometry.RationalMap.FunctionField
 
-import QPainleve.AlgebraicGeometry.RationalMap.Composition.Basic
 import Mathlib.AlgebraicGeometry.PullbackCarrier
 
 /-!
