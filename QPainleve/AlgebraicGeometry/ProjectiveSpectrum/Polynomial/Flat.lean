@@ -38,17 +38,6 @@ attribute [local instance] MvPolynomial.gradedAlgebra
 local notation "P[" k "]" => Proj (MvPolynomial.homogeneousSubmodule (Fin 3) k)
 local notation "Q[" k ", " ι "]" => Proj (MvPolynomial.homogeneousSubmodule ι k)
 
-namespace QPainleve
-
-/-- An equivalence of coordinate indices with `Fin 3` identifies the corresponding
-polynomial projective spectrum with the standard projective plane. -/
-@[expose]
-def polynomialPlaneIso {k ι : Type u} [Field k] (ε : ι ≃ Fin 3) : Q[k, ι] ≅ P[k] :=
-  let b := Pi.basisFun k (Fin 3)
-  (b.reindex ε.symm).polynomialProjIso ≪≫ b.polynomialProjIso.symm
-
-end QPainleve
-
 namespace AlgebraicGeometry.Scheme.Hom
 
 variable {k : Type u} [Field k] {X : Scheme.{u}} [IsIntegral X] [IsNormalScheme X]
