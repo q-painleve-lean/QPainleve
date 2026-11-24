@@ -114,34 +114,17 @@ private theorem anticanonical_mem_effectiveClasses (hK : 0 ≤ B K K) : -K ∈ E
   · exact h
   · exact (two_nsmul_canonical_notMem_effectiveClasses k) (by simpa [two_nsmul] using h) |>.elim
 
-omit rational in
-private theorem intersection_nonneg_of_mem_effectiveClasses {h a : Pic}
-    (hh : h.toMul.IsNef k f) (ha : a ∈ E) : 0 ≤ B h a := by
-  obtain ⟨D, hD, rfl⟩ := mem_effectiveClasses.mp ha
-  rw [intersectionBilinForm_apply, toMul_ofMul, ← inv_inv D.toLineBundleClass,
-    ← hD.mk_idealSheaf_eq_inv]
-  have : ∀ x : X, UniqueFactorizationMonoid (X.presheaf.stalk x) :=
-    (f).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two
-  exact classIntersectionNumber_nonneg_of_isNef_of_isEffectiveCartier k dim₂ hh
-    hD.isEffectiveCartier_idealSheaf
-
 variable [IsNoetherian X] [∀ x : X, UniqueFactorizationMonoid (X.presheaf.stalk x)]
 
-omit rational in
-private theorem intersection_pos_of_mem_effectiveClasses {h a : Pic}
-    (hh : h.toMul.IsAmple) (ha : a ∈ E) (hne : a ≠ 0) : 0 < B h a := by
-  obtain ⟨D, hD, rfl⟩ := mem_effectiveClasses_iff_exists_weilDivisor.mp ha
-  simpa only [intersectionBilinForm_apply] using
-    classIntersectionNumber_weilToLineBundleClassHom_pos_of_isAmple k dim₂ hh hD
-      (fun h ↦ hne (by rw [h, map_zero]))
-
-omit rational [IsNoetherian X] [∀ x : X, UniqueFactorizationMonoid (X.presheaf.stalk x)] in
+omit rational [IsNoetherian X] in
 private theorem exists_last_effective_adjoint {h a : Pic}
     (hnef : h.toMul.IsNef k f) (hK : B h K < 0) (ha : a ∈ E) :
     ∃ n : ℕ, a + n • K ∈ E ∧ a + (n + 1) • K ∉ E := by
   have hlarge : ∃ n : ℕ, a + n • K ∉ E := by
     refine ⟨(B h a).toNat + 1, fun he ↦ ?_⟩
-    have hpos := intersection_nonneg_of_mem_effectiveClasses k hnef he
+    have hpos : 0 ≤ B h (a + ((B h a).toNat + 1) • K) := by
+      simpa only [intersectionBilinForm_apply] using
+        intersection_nonneg_of_mem_effectiveClasses k dim₂ hnef he
     rw [map_add, map_nsmul] at hpos
     have hm := mul_le_mul_of_nonneg_left (show B h K ≤ -1 by omega)
       (Int.natCast_nonneg ((B h a).toNat + 1))
@@ -149,57 +132,6 @@ private theorem exists_last_effective_adjoint {h a : Pic}
     omega
   simpa only [not_not] using
     Nat.exists_not_and_succ_of_not_zero_of_exists (by simpa using ha) hlarge
-
-omit rational in
-private theorem exists_component_of_intersection_nonpos {a b : Pic}
-    (ha : a ∈ E) (hne : a ≠ 0) (hab : B b a ≤ 0) :
-    ∃ p : CodimensionOnePoint X, B b P(p) ≤ 0 ∧ (B b a < 0 → B b P(p) < 0) ∧
-      a - P(p) ∈ E := by
-  classical
-  obtain ⟨D, hD, rfl⟩ := mem_effectiveClasses_iff_exists_weilDivisor.mp ha
-  have hD₀ : D ≠ 0 := fun h ↦ hne (by rw [h, map_zero])
-  have hpos {p : CodimensionOnePoint X} (hp : p ∈ D.support) : 0 < D p :=
-    lt_of_le_of_ne (hD p) (Ne.symm (Finsupp.mem_support_iff.mp hp))
-  have hsum : B b (cl D) = ∑ p ∈ D.support, D p * B b P(p) := by
-    simp only [intersectionBilinForm_apply, classIntersectionNumber_weilToLineBundleClassHom k dim₂,
-      Finsupp.sum, toMul_ofMul]
-  have hex : ∃ p ∈ D.support, B b P(p) ≤ 0 ∧ (B b (cl D) < 0 → B b P(p) < 0) := by
-    by_cases hlt : B b (cl D) < 0
-    · by_contra! h
-      refine hlt.not_ge (hsum ▸ Finset.sum_nonneg fun p hp ↦ mul_nonneg (hD p) ?_)
-      by_contra! hn
-      exact (h p hp hn.le).2.not_gt hn
-    · by_contra! h
-      refine hab.not_gt (hsum ▸ Finset.sum_pos (fun p hp ↦ mul_pos (hpos hp) ?_)
-        (Finsupp.support_nonempty_iff.mpr hD₀))
-      exact lt_of_not_ge fun he ↦ False.elim (hlt (h p hp he).1)
-  obtain ⟨p, hp, hbp, hlt⟩ := hex
-  have hle : Finsupp.single p 1 ≤ D := by
-    intro q
-    by_cases hqp : p = q
-    · subst q
-      simpa only [Finsupp.single_eq_same] using (show 1 ≤ D p by have := hpos hp; omega)
-    · simpa only [Finsupp.single_apply, ite_eq_right hqp, Finsupp.zero_apply] using hD q
-  exact ⟨p, hbp, hlt, mem_effectiveClasses_iff_exists_weilDivisor.mpr
-    ⟨D - Finsupp.single p 1, sub_nonneg.mpr hle, by
-      simp only [map_sub, weilToLineBundleClassHom_single, one_smul, ← primeDivisorClass_def]⟩⟩
-
-omit rational in
-private theorem isNef_primeDivisorClass_of_self_nonneg
-    (p : CodimensionOnePoint X) (hp : 0 ≤ B P(p) P(p)) :
-    (primeDivisorClass p).IsNef k f := by
-  classical
-  have h : cl (Finsupp.single p 1) = P(p) := by
-    rw [weilToLineBundleClassHom_single, one_smul, primeDivisorClass_def]
-  have hn := (isNef_weilToLineBundleClassHom_iff k dim₂
-    (D := Finsupp.single p 1) (by simp)).mpr
-  rw [h, toMul_ofMul] at hn
-  apply hn
-  intro q hq
-  have he : q = p := by simpa only [Finsupp.support_single _ one_ne_zero,
-    Finset.mem_singleton] using hq
-  subst q
-  simpa only [intersectionBilinForm_apply, toMul_ofMul] using hp
 
 omit rational [IsNoetherian X] [∀ x : X, UniqueFactorizationMonoid (X.presheaf.stalk x)] in
 private theorem exists_positive_class_of_canonical_square_neg {h : Pic}
@@ -274,7 +206,9 @@ private theorem exists_effectiveClass_of_canonical_degree_neg (hK : B K K ≤ 0)
     by_contra! hzero
     have heq := le_antisymm hK hzero
     have hA := anticanonical_mem_effectiveClasses k heq.ge
-    have hpos := intersection_pos_of_mem_effectiveClasses k (h := h) hH hA (neg_ne_zero.mpr hkne)
+    have hpos : 0 < B h (-K) := by
+      simpa only [h, intersectionBilinForm_apply, toMul_ofMul] using
+        intersection_pos_of_mem_effectiveClasses k dim₂ hH hA (neg_ne_zero.mpr hkne)
     rw [map_neg] at hpos
     omega
   exact exists_positive_class_of_canonical_square_neg k hh (le_of_not_gt hneg) hn
@@ -321,7 +255,9 @@ private theorem self_add_canonical_degree_eq_neg_two_of_adjoint_notMem_effective
     obtain ⟨H, hh⟩ := X.exists_isAmple_of_isProjectiveOver k
     have hnef : H.IsNef k f := (isNef_iff_classIntersectionNumber_nonneg k dim₂ _).mpr
       fun q ↦ (classIntersectionNumber_primeDivisorClass_pos_of_isAmple k dim₂ hh q).le
-    have hc := intersection_nonneg_of_mem_effectiveClasses k (h := Additive.ofMul H) hnef hneg
+    have hc : 0 ≤ B (Additive.ofMul H) (-P(p)) := by
+      simpa only [intersectionBilinForm_apply, toMul_ofMul] using
+        intersection_nonneg_of_mem_effectiveClasses k dim₂ hnef hneg
     rw [neg_right, intersectionBilinForm_apply, toMul_ofMul, toMul_ofMul, neg_nonneg] at hc
     exact (classIntersectionNumber_primeDivisorClass_pos_of_isAmple k dim₂ hh p).not_ge hc
 
@@ -379,7 +315,9 @@ private theorem exists_prime_with_ineffective_adjoint_of_irreducible_anticanonic
   have hnn : 0 ≤ B P(p) P(p) := by
     rw [heq, neg_left, neg_right, neg_neg]
     exact hK.le
-  have hn : (-K : Pic).toMul.IsNef k f := heq ▸ isNef_primeDivisorClass_of_self_nonneg k p hnn
+  have hn : (-K : Pic).toMul.IsNef k f :=
+    heq ▸ isNef_primeDivisorClass_of_self_nonneg k dim₂ p
+      (by simpa only [intersectionBilinForm_apply, toMul_ofMul] using hnn)
   have hneg : B (-K) K < 0 := by simpa only [neg_left, neg_lt_zero] using hK
   obtain ⟨q, hq⟩ := exists_primeDivisorClass_notMem_zmultiples_canonical (k := k) (X := X)
   obtain ⟨n, hn₁, hn₂⟩ := exists_last_effective_adjoint k hn hneg
@@ -391,15 +329,18 @@ private theorem exists_prime_with_ineffective_adjoint_of_irreducible_anticanonic
     rw [show P(q) = -(n • K) from eq_neg_of_add_eq_zero_left hc]
     exact (AddSubgroup.zmultiples K).neg_mem ((AddSubgroup.zmultiples K).nsmul_mem
       (AddSubgroup.mem_zmultiples K) n)
-  have hnonpos : B K c ≤ 0 := by
-    simpa only [neg_left, neg_nonneg] using
-      intersection_nonneg_of_mem_effectiveClasses k hn (a := c) hn₁
-  obtain ⟨r, hr, -, hres⟩ := exists_component_of_intersection_nonpos k hn₁ hnonzero hnonpos
+  have hnonneg : 0 ≤ B (-K) c := by
+    simpa only [intersectionBilinForm_apply] using
+      intersection_nonneg_of_mem_effectiveClasses k dim₂ hn hn₁
+  have hnonpos : B K c ≤ 0 := by simpa only [neg_left, neg_nonneg] using hnonneg
+  obtain ⟨r, hr, -, hres⟩ := exists_component_of_intersection_nonpos k dim₂
+    (b := (K : Pic).toMul) hn₁ hnonzero (by simpa only [intersectionBilinForm_apply] using hnonpos)
   have hn₃ : K + c ∉ E := by
     rw [show K + c = P(q) + (n + 1) • K by simp only [c, add_nsmul, one_nsmul]; abel]
     exact hn₂
   have hnot := adjoint_notMem_effectiveClasses_of_sub_mem k hn₃ hres
-  exact ⟨r, canonical_degree_neg_of_irreducible_anticanonical k hK hprime r hr hnot, hnot⟩
+  exact ⟨r, canonical_degree_neg_of_irreducible_anticanonical k hK hprime r
+    (by simpa only [intersectionBilinForm_apply, toMul_ofMul] using hr) hnot, hnot⟩
 
 include rational in
 private theorem exists_class_of_canonical_degree_neg_of_canonical_square_pos (hK : 0 < B K K) :
@@ -461,13 +402,16 @@ private theorem exists_class_of_canonical_degree_neg_of_canonical_square_nonpos
   obtain ⟨a, ha, haK⟩ := exists_effectiveClass_of_canonical_degree_neg (X := X) k hK
   have hsym (b : Pic) : B K b = B b K := by
     simp only [intersectionBilinForm_apply, classIntersectionNumber_comm]
-  obtain ⟨p, -, hp, -⟩ := exists_component_of_intersection_nonpos k ha
-    (fun he ↦ by simp [he] at haK) (by rw [hsym]; exact haK.le)
+  have hKa : B K a < 0 := by rwa [hsym]
+  simp only [intersectionBilinForm_apply] at hKa
+  obtain ⟨p, -, hp, -⟩ := exists_component_of_intersection_nonpos k dim₂ ha
+    (fun he ↦ by simp [he] at haK) hKa.le
   have hneg : B P(p) K < 0 := by
     rw [← hsym]
-    exact hp (by rwa [hsym])
-  have hn := isNef_primeDivisorClass_of_self_nonneg k p
-    (primeDivisorClass_self_nonneg_of_canonical_degree_neg k hmin p hneg)
+    simpa only [intersectionBilinForm_apply, toMul_ofMul] using hp hKa
+  have hn := isNef_primeDivisorClass_of_self_nonneg k dim₂ p
+    (by simpa only [intersectionBilinForm_apply, toMul_ofMul] using
+      primeDivisorClass_self_nonneg_of_canonical_degree_neg k hmin p hneg)
   obtain ⟨n, hn₁, hn₂⟩ := exists_last_effective_adjoint k hn hneg
     (primeDivisorClass_mem_effectiveClasses p)
   refine ⟨P(p) + n • K, hn₁, ?_, ?_⟩
@@ -502,11 +446,13 @@ theorem exists_rational_curve_self_intersection_nonneg
   obtain ⟨a, ha, haK, hnot⟩ := hex
   have hsym (b : Pic) : B K b = B b K := by
     simp only [intersectionBilinForm_apply, classIntersectionNumber_comm]
-  obtain ⟨p, -, hp, hres⟩ := exists_component_of_intersection_nonpos k ha
-    (fun he ↦ by simp [he] at haK) (by rw [hsym]; exact haK.le)
+  have hKa : B K a < 0 := by rwa [hsym]
+  simp only [intersectionBilinForm_apply] at hKa
+  obtain ⟨p, -, hp, hres⟩ := exists_component_of_intersection_nonpos k dim₂ ha
+    (fun he ↦ by simp [he] at haK) hKa.le
   have hneg : B P(p) K < 0 := by
     rw [← hsym]
-    exact hp (by rwa [hsym])
+    simpa only [intersectionBilinForm_apply, toMul_ofMul] using hp hKa
   have hnot' := adjoint_notMem_effectiveClasses_of_sub_mem k hnot hres
   have hnum := self_add_canonical_degree_eq_neg_two_of_adjoint_notMem_effectiveClasses k p hnot'
   let I := C(p)

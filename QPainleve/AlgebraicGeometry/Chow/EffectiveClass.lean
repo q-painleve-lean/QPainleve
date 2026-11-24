@@ -50,6 +50,7 @@ variable {X : Scheme.{u}} [IsIntegral X] [IsNoetherian X]
 variable (k : Type u) [Field k] [Infinite k] [X.Over (Spec (.of k))] [X.IsProjectiveOver k]
 
 local notation "I(" Z ")" => classIntersectionNumber k Z
+local notation "Pic" => Additive (LineBundleClass X)
 
 omit [IsIntegral X] [AlgebraicGeometry.IsNoetherian X]
   [∀ x : X, UniqueFactorizationMonoid (X.presheaf.stalk x)] in
@@ -61,6 +62,60 @@ private theorem single_le_of_coeff_pos {D : SchemeWeilDivisor X} (hD : 0 ≤ D)
   split
   · next h => exact h ▸ (by omega : 1 ≤ D p)
   · exact hD q
+
+omit [AlgebraicGeometry.IsNoetherian X] in
+/-- A nef class has nonnegative intersection with any effective Picard class. -/
+theorem intersection_nonneg_of_mem_effectiveClasses
+    (hX : topologicalKrullDim X = 2) {h : LineBundleClass X} {a : Pic}
+    (hh : h.IsNef k (X ↘ Spec (.of k))) (ha : a ∈ X.effectiveClasses) :
+    0 ≤ I(X) h a.toMul := by
+  obtain ⟨D, hD, rfl⟩ := mem_effectiveClasses.mp ha
+  rw [toMul_ofMul, ← inv_inv D.toLineBundleClass, ← hD.mk_idealSheaf_eq_inv]
+  exact classIntersectionNumber_nonneg_of_isNef_of_isEffectiveCartier k hX hh
+    hD.isEffectiveCartier_idealSheaf
+
+/-- An ample class has positive intersection with any nonzero effective Picard class. -/
+theorem intersection_pos_of_mem_effectiveClasses
+    (hX : topologicalKrullDim X = 2) {h : LineBundleClass X} {a : Pic}
+    (hh : h.IsAmple) (ha : a ∈ X.effectiveClasses) (hne : a ≠ 0) :
+    0 < I(X) h a.toMul := by
+  obtain ⟨D, hD, rfl⟩ := mem_effectiveClasses_iff_exists_weilDivisor.mp ha
+  exact classIntersectionNumber_weilToLineBundleClassHom_pos_of_isAmple k hX hh hD
+    (fun h ↦ hne (by rw [h, map_zero]))
+
+/-- A nonzero effective class with nonpositive intersection against a given class has a
+prime component with nonpositive intersection and effective remainder. The component can
+be chosen with negative intersection when the original intersection is negative. -/
+theorem exists_component_of_intersection_nonpos
+    (hX : topologicalKrullDim X = 2) {a : Pic} {b : LineBundleClass X}
+    (ha : a ∈ X.effectiveClasses) (hne : a ≠ 0) (hab : I(X) b a.toMul ≤ 0) :
+    ∃ p : CodimensionOnePoint X, I(X) b (P p) ≤ 0 ∧
+      (I(X) b a.toMul < 0 → I(X) b (P p) < 0) ∧
+      a - Additive.ofMul (P p) ∈ X.effectiveClasses := by
+  classical
+  obtain ⟨D, hD, rfl⟩ := mem_effectiveClasses_iff_exists_weilDivisor.mp ha
+  have hD₀ : D ≠ 0 := fun h ↦ hne (by rw [h, map_zero])
+  have hpos {p : CodimensionOnePoint X} (hp : p ∈ D.support) : 0 < D p :=
+    lt_of_le_of_ne (hD p) (Ne.symm (Finsupp.mem_support_iff.mp hp))
+  have hsum : I(X) b (cl X D).toMul = ∑ p ∈ D.support, D p * I(X) b (P p) := by
+    rw [classIntersectionNumber_weilToLineBundleClassHom k hX, Finsupp.sum]
+  have hex : ∃ p ∈ D.support, I(X) b (P p) ≤ 0 ∧
+      (I(X) b (cl X D).toMul < 0 → I(X) b (P p) < 0) := by
+    by_cases hlt : I(X) b (cl X D).toMul < 0
+    · rw [hsum] at hlt
+      obtain ⟨p, hp, hneg⟩ := Finset.exists_lt_of_sum_lt
+        (hlt.trans_eq Finset.sum_const_zero.symm)
+      have hpneg := neg_of_mul_neg_right hneg (hD p)
+      exact ⟨p, hp, hpneg.le, fun _ ↦ hpneg⟩
+    · rw [hsum] at hab
+      obtain ⟨p, hp, hnonpos⟩ := Finset.exists_le_of_sum_le
+        (Finsupp.support_nonempty_iff.mpr hD₀) (hab.trans_eq Finset.sum_const_zero.symm)
+      exact ⟨p, hp, nonpos_of_mul_nonpos_right hnonpos (hpos hp), fun h ↦ (hlt h).elim⟩
+  obtain ⟨p, hp, hbp, hlt⟩ := hex
+  exact ⟨p, hbp, hlt, mem_effectiveClasses_iff_exists_weilDivisor.mpr
+    ⟨D - Finsupp.single p 1, sub_nonneg.mpr (single_le_of_coeff_pos hD (hpos hp)), by
+      simp only [map_sub, weilToLineBundleClassHom_single, one_smul,
+        ← LineBundleClass.primeDivisorClass_def]⟩⟩
 
 /-- An effective Weil divisor with negative intersection against a prime curve contains
 that curve with positive multiplicity. -/
