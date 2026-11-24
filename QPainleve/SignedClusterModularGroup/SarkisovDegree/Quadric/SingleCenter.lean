@@ -170,7 +170,8 @@ If the pivot is the only order greater than half the original fiber degree,
 and is bounded by that fiber degree, the plane degree is positive and its
 Sarkisov bidegree is strictly smaller. The two new exceptional coordinates
 are those of the contracted section and the reverse pivot. Every other
-coordinate retains its original relative order. -/
+coordinate retains its original relative order. The contraction is a single
+toric star blowdown. -/
 theorem exists_plane_resolution_of_quadric_single_high_center
     (hg : g ≫ fP = T.toBase ≫ fX) (hbir : Scheme.BirationalOver g (𝟙 P))
     (c : ℂˣ) (j : Fin (n + 1)) (hj : hT.baseCenter j = pivotPoint[c])
@@ -222,7 +223,8 @@ theorem exists_plane_resolution_of_quadric_single_high_center
         (∀ l : Fin n, y.2 (Fin.natAdd 1 (l.natAdd 1)) = x.2 (j.succAbove l)) ∧
         0 < degree y.1 ∧
         planeSarkisovBidegree (degree y.1).toNat (∑ l, -y.2 l).toNat <
-          hirzebruchSarkisovBidegree b₀.toNat (∑ l, m l).toNat := by
+          hirzebruchSarkisovBidegree b₀.toNat (∑ l, m l).toNat ∧
+        Plane[d].IsTwoRayStarSubdivision Ψ := by
   intro hcones hcones' hdim hnoeth hY hmod x b₀ a₀ m hb hm hmb hsmall
   let := hcones
   let := hcones'
@@ -241,7 +243,7 @@ theorem exists_plane_resolution_of_quadric_single_high_center
     hm.le hmb hsmall
   obtain ⟨Z, U, hU, e, hmap, hg', hbir', _, _, hα, hβ, hfirst', htail⟩ :=
     hT.exists_hirzebruchOne_resolution_of_quadric_mutation b hΦ hc r hr g hg hbir c j hj hfirst
-  obtain ⟨d, s₀, W, V₀, hV, k, hproj, hg'', hbir'', hdegree, hvertex, hrem, -⟩ :=
+  obtain ⟨d, s₀, W, V₀, hV, k, hproj, hg'', hbir'', hdegree, hvertex, hrem, -, hstar⟩ :=
     hU.exists_plane_resolution_of_hirzebruchOne b hΨ hcΨ s hs (e.inv ≫ g) hg' hbir'
   refine ⟨Z, U, hU, e, d, s₀, W, V₀, hV, k, hmap, hproj,
     by simpa only [Category.assoc] using hg'', by simpa only [Category.assoc] using hbir'',
@@ -253,7 +255,7 @@ theorem exists_plane_resolution_of_quadric_single_high_center
     have h : y.2 (Fin.castAdd (1 + n) (0 : Fin 1)) = a₀ - (b₀ + a₀ - m j) := by
       simpa only [y, Category.assoc, hβ, hα, b₀, a₀, m, sub_neg_eq_add] using hvertex
     omega
-  refine ⟨hy, hf, ?_, ?_, hy ▸ hlt.1, ?_⟩
+  refine ⟨hy, hf, ?_, ?_, hy ▸ hlt.1, ?_, hstar⟩
   · have h : y.2 (Fin.natAdd 1 firstIndex) = -a₀ - x.2 j := by
       simpa only [y, Category.assoc, hfirst', a₀] using hrem firstIndex
     dsimp only [m]
