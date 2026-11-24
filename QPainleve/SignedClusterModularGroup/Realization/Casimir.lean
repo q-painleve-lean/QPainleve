@@ -48,11 +48,6 @@ variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
 
 variable (Q : CompleteToricPresentation i b r L γ)
 
-local instance : Nonempty Q.fan.cones := Q.complete.nonempty_cones
-local instance : NeZero Q.length := Q.neZero
-local instance : PrestableFamily ((Q.fan.boundaryIdeal Q.complete.nonempty_cones).subscheme ↘ S) :=
-  Q.prestable
-
 local notation "orth[" H "," d "]" =>
   LinearMap.BilinForm.orthogonal H (Submodule.span ℤ (Set.range d))
 local notation "fiberAt[" M "," c "]" =>
@@ -61,9 +56,6 @@ local notation "TargetModels[" M "," C "]" =>
   HasToricTargetModels (b := b) (hΦ := Q.regular) (T := Q.cycle) (origin := Q.origin)
     (s := Q.rays) (ι := Q.inclusion) (T₀ := Centers[r]) (T₁ := Centers[r]) (P₁ := M)
     (fun c : Point Centers[r] ↦ χ[c]) C
-
-local instance (w : Loops[E]) : ((End.asHom w).xRationalMap ℂ).IsDominant :=
-  Path.instIsDominantXRationalMap ℂ (End.asHom w)
 
 private theorem sign_eq_one_of_mem_ker_signedOrthogonalRestriction
     (P : MarkedSurface ℂ n H XTor[r]) [IsRationalOver (P.surface ↘ S)]
@@ -93,8 +85,9 @@ private theorem sign_eq_one_of_mem_ker_signedOrthogonalRestriction
 
 variable [Q.fan.algebraicRealization.IsProjectiveOver ℂ]
   [SmoothOfRelativeDimension 2 (Q.fan.algebraicRealization ↘ S)]
-  [LinearMap.IsPerfPair ((Chow.intersectionBilinForm ℂ Q.fan.algebraicRealization).prod
-    (-(dotProductBilin ℤ ℤ : LinearMap.BilinForm ℤ (Fin r → ℤ))))]
+  [LinearMap.IsPerfPair (letI := Q.complete.nonempty_cones
+    (Chow.intersectionBilinForm ℂ Q.fan.algebraicRealization).prod
+      (-(dotProductBilin ℤ ℤ : LinearMap.BilinForm ℤ (Fin r → ℤ))))]
 
 /-- The signed Picard homomorphism characterized by the marked pullbacks of
 loop realizations gives the Casimir action on every independent X map. The
@@ -107,8 +100,14 @@ theorem chargeKernelAction_eq_signedPicardRestriction
     (M : Point Centers[r] → MarkedSurface ℂ n H XTor[r])
     (hD : ∀ c, D[M c].IsEffectiveCartier)
     {c₀ : Point Centers[r]} (hc₀ : c₀.left (default : S) ∈ U₀[P])
-    (p : ∀ (c : Point Centers[r]), c.left (default : S) ∈ U₀[P] → fiberAt[M,c])
-    (hnodal : ∀ c hc, (p c hc).IsNodalContraction)
+    (p : letI := Q.complete.nonempty_cones
+      letI := Q.prestable
+      letI := Q.neZero
+      ∀ (c : Point Centers[r]), c.left (default : S) ∈ U₀[P] → fiberAt[M,c])
+    (hnodal : letI := Q.complete.nonempty_cones
+      letI := Q.prestable
+      letI := Q.neZero
+      ∀ c hc, (p c hc).IsNodalContraction)
     [IsRationalOver ((M c₀).surface ↘ S)]
     (hnef : (classOf(hD c₀)).IsNef ℂ ((M c₀).surface ↘ S))
     (hsq : Chow.classIntersectionNumber ℂ (M c₀).surface classOf(hD c₀) classOf(hD c₀) = 0)
@@ -116,28 +115,40 @@ theorem chargeKernelAction_eq_signedPicardRestriction
       classOf(hD c₀) = (LineBundleClass.mk (canonicalBundle ℂ (M c₀).surface 2))⁻¹)
     (hprim : IsPrimitive (Additive.ofMul classOf(hD c₀)))
     (d : ZMod n → L) (hmark : ∀ c j, (M c).boundaryClass (hD c) j = d j)
-    (hnodes : ∀ j, ∃ σ : Q.fan.cones, (Q.rayOrder j).toCone ≤ σ ∧
-      (Q.rayOrder (j + 1)).toCone ≤ σ ∧
-      (Q.fan.boundaryIdeal Q.complete.nonempty_cones).subschemeι
-        ((Q.fan.boundaryIdeal Q.complete.nonempty_cones).subscheme.dualGraphEdgeEquiv
-          Q.marks (Q.cycle.edge j)).val =
-        Q.fan.distinguishedPointHom σ (IsLocalRing.closedPoint ℂ))
+    (hnodes :
+      letI := Q.prestable
+      letI := Q.neZero
+      ∀ j, ∃ σ : Q.fan.cones, (Q.rayOrder j).toCone ≤ σ ∧
+        (Q.rayOrder (j + 1)).toCone ≤ σ ∧
+        (Q.fan.boundaryIdeal Q.complete.nonempty_cones).subschemeι
+          ((Q.fan.boundaryIdeal Q.complete.nonempty_cones).subscheme.dualGraphEdgeEquiv
+            Q.marks (Q.cycle.edge j)).val =
+          Q.fan.distinguishedPointHom σ (IsLocalRing.closedPoint ℂ))
     (e : orth[H,d] ≃ₗ[ℤ] (Fan.rayChargeMap Q.rays).ker)
-    (he : ∀ x, Q.inclusion (e.symm x).val =
-      ((Fan.boundaryOrthogonalEquivChargeKernel Q.regular Q.rays
-        ((Chow.intersectionBilinForm ℂ Q.fan.algebraicRealization).prod
-          (-(dotProductBilin ℤ ℤ : LinearMap.BilinForm ℤ (Fin r → ℤ))))).symm x).val)
+    (he : letI := Q.complete.nonempty_cones
+      ∀ x, Q.inclusion (e.symm x).val =
+        ((Fan.boundaryOrthogonalEquivChargeKernel Q.regular Q.rays
+          ((Chow.intersectionBilinForm ℂ Q.fan.algebraicRealization).prod
+            (-(dotProductBilin ℤ ℤ : LinearMap.BilinForm ℤ (Fin r → ℤ))))).symm x).val)
     (ρ : (SignedClusterModularGroup ℂ E)ᵐᵒᵖ →* signedBoundaryIsometryGroup H d)
     (hρ : ∀ (w : Loops[E]) {C : Centers[r].left.PartialMap Centers[r].left}
-      [IsDominant C.hom] [C.IsOver Centers[r].hom Centers[r].hom]
-      (R : GeometricRealization M M C ((End.asHom w).xRationalMap ℂ)),
-      TargetModels[M,C] → ρ eval[w] = R.toSignedBoundaryIsometry d hD hmark) :
+      [IsDominant C.hom] [C.IsOver Centers[r].hom Centers[r].hom],
+      letI : ((End.asHom w).xRationalMap ℂ).IsDominant :=
+        Path.instIsDominantXRationalMap ℂ (End.asHom w)
+      letI := Q.complete.nonempty_cones
+      letI := Q.prestable
+      letI := Q.neZero
+      ∀ (R : GeometricRealization M M C ((End.asHom w).xRationalMap ℂ)),
+        TargetModels[M,C] → ρ eval[w] = R.toSignedBoundaryIsometry d hD hmark) :
     ((LinearEquiv.autCongr (LinearEquiv.ofEq _ _ (congrArg LinearMap.ker hcharge))).toMonoidHom.comp
         (chargeKernelAction ℂ P hker) =
       (LinearEquiv.autCongr e).toMonoidHom.comp
         ((H.restrict orth[H,d]).isometryGroup.subtype.comp
           ((signedOrthogonalRestriction H d).comp ρ))) ∧
       (chargeKernelAction ℂ P hker).ker.unop ≤ (clusterModularGroupInclusion ℂ E).range := by
+  let := Q.complete.nonempty_cones
+  let := Q.prestable
+  let := Q.neZero
   -- Use the same geometric realization for the charge action and its sign.
   have comparison (w : Loops[E]) :
       LinearEquiv.autCongr (LinearEquiv.ofEq _ _ (congrArg LinearMap.ker hcharge))
