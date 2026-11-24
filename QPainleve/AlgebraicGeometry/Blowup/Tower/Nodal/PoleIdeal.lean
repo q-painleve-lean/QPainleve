@@ -11,6 +11,7 @@ public import QPainleve.AlgebraicGeometry.Modules.Differentials.PoleIdeal
 import QPainleve.AlgebraicGeometry.Blowup.Tower.IsoLocus
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Modification
 import QPainleve.AlgebraicGeometry.IdealSheaf.Restriction
+import QPainleve.AlgebraicGeometry.IdealSheaf.VanishingIdeal
 import TauCeti.AlgebraicGeometry.IdealSheaf.Comap
 import TauCeti.AlgebraicGeometry.Morphisms.Smooth.Regular
 
@@ -166,40 +167,38 @@ theorem IsNodalBoundaryTower.comap_eq_mul_ramificationIdealSheaf_iff
 
 end
 
-private theorem refinement_comap_eq_radical_mul_ramificationIdealSheaf
-    {a b c : ℕ} {Y Z A : Scheme.{u}}
-    {T : BlowupTower X a Y} {U : BlowupTower X b Z} {L : BlowupTower Y c A}
+/-- The pullback of the reduced boundary of a nodal tower along a specified nodal
+extension is the reduced total boundary times the extension's ramification ideal.
+The extension may be given up to isomorphism of its source. -/
+theorem IsNodalBoundaryTower.comap_radical_comap_eq_mul_ramificationIdealSheaf
+    {a c : ℕ} {Y Z A : Scheme.{u}}
+    {T : BlowupTower X a Y} {L : BlowupTower Y c A}
     (hT : IsNodalBoundaryTower D s (𝟙 X) T)
-    (hU : IsNodalBoundaryTower D s (𝟙 X) U)
-    (hL : IsNodalBoundaryTower D s (T.toBase ≫ 𝟙 X) L)
+    (hL : IsNodalBoundaryTower D s T.toBase L)
     (hD : D.IsEffectiveCartier)
     (hN : AtWorstNodalOfRelativeDimensionOne (D.subschemeι ≫ s))
-    (e : Z ≅ A) (he : U.toBase = e.hom ≫ L.toBase ≫ T.toBase) :
+    (e : Z ≅ A) [Z.Over S] [SmoothOfRelativeDimension 2 (Z ↘ S)]
+    (he : e.hom ≫ L.toBase ≫ T.toBase ≫ s = Z ↘ S) :
     letI : Y.Over S := ⟨T.toBase ≫ s⟩
-    letI : Z.Over S := ⟨U.toBase ≫ s⟩
     let f := e.hom ≫ L.toBase
-    letI : f.IsOver S := ⟨(Category.assoc _ _ _).trans ((reassoc_of% he) s).symm⟩
-    letI : Smooth (Z ↘ S) := (hU.isClosedPointTower.smoothOfRelativeDimension s).smooth
+    letI : f.IsOver S := ⟨(Category.assoc _ _ _).trans he⟩
+    letI : Smooth (Z ↘ S) := SmoothOfRelativeDimension.smooth 2 _
     (D.comap T.toBase).radical.comap f =
-      (D.comap U.toBase).radical * ramificationIdealSheaf k f := by
+      (D.comap (f ≫ T.toBase)).radical * ramificationIdealSheaf k f := by
   let : Y.Over S := ⟨T.toBase ≫ s⟩
-  let : Z.Over S := ⟨U.toBase ≫ s⟩
   have : SmoothOfRelativeDimension 2 (Y ↘ S) := hT.isClosedPointTower.smoothOfRelativeDimension s
-  have : SmoothOfRelativeDimension 2 (Z ↘ S) := hU.isClosedPointTower.smoothOfRelativeDimension s
   let P := (D.comap T.toBase).radical
   let f := e.hom ≫ L.toBase
-  have : f.IsOver S := ⟨(Category.assoc _ _ _).trans ((reassoc_of% he) s).symm⟩
+  have : f.IsOver S := ⟨(Category.assoc _ _ _).trans he⟩
   have : IsIntegral Y := hT.isClosedPointTower.isIntegral s
   have : IsNoetherian Y := T.isNoetherian
   have hL' : IsNodalBoundaryTower P (Y ↘ S) (𝟙 Y) L :=
-    hL.congr (by rw [Category.comp_id, Category.id_comp]; rfl)
-      (by simp only [Category.comp_id, comap_id, P, support_radical])
+    hL.congr (Category.id_comp _).symm (by simp only [comap_id, P, support_radical])
   obtain ⟨hP, hNP⟩ := hT.radical_comap_toBase hD hN
   have hfac := hL'.comap_eq_radical_mul_ramificationIdealSheaf_of_iso hP hNP e f rfl
-  have hrad : (P.comap f).radical = (D.comap U.toBase).radical := by
-    rw [← vanishingIdeal_support, ← vanishingIdeal_support (I := D.comap U.toBase)]
-    simp only [support_comap P, P, support_radical, ← support_comap (D.comap T.toBase),
-      ← comap_comp, f, Category.assoc, ← he]
+  have hrad : (P.comap f).radical = (D.comap (f ≫ T.toBase)).radical := by
+    dsimp only [P]
+    rw [radical_comap_radical, ← comap_comp]
   rwa [hrad] at hfac
 
 /-- A finite family of specified morphisms on nodal refinements admits a common nodal
@@ -244,7 +243,13 @@ theorem exists_common_nodal_boundary_tower_refinement_of_poleIdeals
   have : SmoothOfRelativeDimension 2 (Z ↘ S) := hU.isClosedPointTower.smoothOfRelativeDimension s
   let f := e.hom ≫ L.toBase
   have : f.IsOver S := ⟨(Category.assoc _ _ _).trans ((reassoc_of% he) s).symm⟩
-  have hfac := refinement_comap_eq_radical_mul_ramificationIdealSheaf (hT i hi) hU hL hD hN e he
+  have hL' : IsNodalBoundaryTower D s (T i).toBase L := by
+    simpa only [Category.comp_id] using hL
+  have hfac := (hT i hi).comap_radical_comap_eq_mul_ramificationIdealSheaf hL' hD hN e
+    ((reassoc_of% he) s).symm
+  have hbase : f ≫ (T i).toBase = U.toBase := (Category.assoc ..).trans he.symm
+  dsimp only at hfac
+  rw [hbase] at hfac
   exact comap_eq_mul_ramificationIdealSheaf_comp k f (g i) 2 (hpole i hi) hfac
 
 end QPainleve.BlowupTower
