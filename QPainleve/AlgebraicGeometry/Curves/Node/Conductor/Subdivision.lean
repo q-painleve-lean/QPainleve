@@ -85,6 +85,19 @@ theorem IsOrientedCycleSubdivision.comp {f : Z ⟶ Y} {g : Y ⟶ X}
       exact hgCollapse y hy
     · rw [hfCollapse z h]
 
+/-- Reversing both cycle numberings preserves an oriented subdivision. The same
+normalization lift retains the same nodes and exchanges the two branches on both sides. -/
+theorem IsOrientedCycleSubdivision.reverse {f : Z ⟶ X}
+    {C : NodalCycleNumbering pZ m} {A : NodalCycleNumbering pX n}
+    (hf : f.IsOrientedCycleSubdivision C A) :
+    f.IsOrientedCycleSubdivision C.reverse A.reverse := by
+  obtain ⟨fν, hν, hnodes, keep, hkeep, hcollapse⟩ := hf
+  refine ⟨fν, hν, hnodes, keep, fun z b ↦ ?_, fun z hz ↦ ?_⟩
+  · simpa only [NodalCycleNumbering.reverse_branchOrderOfDualGraph] using hkeep z b.rev
+  · simpa only [NodalCycleNumbering.reverse_branchOrderOfDualGraph,
+      show (1 : Fin 2).rev = 0 from rfl, show (0 : Fin 2).rev = 1 from rfl] using
+      (hcollapse z hz).symm
+
 end AlgebraicGeometry.Scheme.Hom
 
 namespace CategoryTheory.Iso
