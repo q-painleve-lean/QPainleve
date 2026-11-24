@@ -154,8 +154,8 @@ theorem exists_word_of_resolved_sarkisov_path_to_model [Z.IsProjectiveOver ℂ]
           (eqToHom (congrArg Fan.algebraicRealization hfan)) a.toMul), x ∘ σ) =
           R.picardMarking (a, x)) ∧
       ∃ h, U.xEvaluation.compOfDefined (w.xRationalMap ℂ) h = T.xEvaluation := by
-  obtain ⟨W, u, q, hq, hcomm, hu⟩ := exists_word_of_resolved_sarkisov_path p U
-  obtain ⟨R, v, hb, href, hm, hv⟩ := W.exists_word_reframe T.basis
+  obtain ⟨W, u, q, hq, hcomm, -, hu⟩ := exists_word_of_resolved_sarkisov_path p U
+  obtain ⟨R, v, hb, href, hm, -, hv⟩ := W.exists_word_reframe T.basis
   obtain ⟨hfan, σ, hmat, href', hσ, horder, hboundary, hmark, ht⟩ :=
     R.exists_relabel T hb.symm
   let t : Word R.exchangeMatrix T.exchangeMatrix :=
