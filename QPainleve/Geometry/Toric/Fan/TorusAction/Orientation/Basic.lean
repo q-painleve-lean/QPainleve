@@ -5,7 +5,6 @@ Authors: The QPainleve contributors
 -/
 module
 
-public import Mathlib.Analysis.Complex.Polynomial.Basic
 public import QPainleve.AlgebraicGeometry.Curves.Node.GenericPoint
 public import QPainleve.AlgebraicGeometry.Curves.Node.Period.Orientation
 public import QPainleve.Geometry.Toric.Fan.Boundary.Contraction
@@ -46,23 +45,6 @@ local notation "center" a:arg => (fun j : Fin r ↦ a (ofAdd (Pi.single j 1)))
 local notation "M" a:arg => internalBlowupTower b s (center a)
 local notation "π" a:arg => toBase (WithBoundary.toTower (Sigma.snd (M a)))
 local notation "ι" a:arg => WithBoundary.boundaryι (Sigma.snd (M a))
-
-/-- Torus translation induces the identity on any numbering of the toric boundary cycle. -/
-theorem boundaryCycleAction_boundaryTranslation
-    (hΦ : Φ.IsRegular)
-    (hc : Φ.IsComplete) (hdim : Module.finrank ℤ N = 2)
-    [PrestableFamily ((Φ.boundaryIdeal h₀).subscheme ↘ S)]
-    {m : ℕ} [NeZero m] {γ : Type*}
-    {a : γ → ((Φ.boundaryIdeal h₀).subscheme ↘ S).smoothLocus}
-    (T : NodalCycleNumbering a m) (χ : Multiplicative (N →+ ℤ) →* ℂˣ) :
-    (boundaryTranslation (Φ := Φ) χ).boundaryCycleAction T T = 1 := by
-  apply cycleBranchPerm_injective m
-  apply Equiv.ext
-  rintro ⟨j, l⟩
-  apply T.branch.injective
-  rw [map_one, Equiv.Perm.one_apply, Iso.branch_boundaryCycleAction,
-    branchSchemeIso_boundaryTranslation hΦ hc hdim]
-  rfl
 
 /-- A lift of a torus translation that descends to the two surfaces induces
 a commuting square on their specified boundary restrictions. -/
