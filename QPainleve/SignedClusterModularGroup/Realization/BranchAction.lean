@@ -26,6 +26,49 @@ universe u
 
 namespace QPainleve.SignedClusterModularGroup.GeometricRealization
 
+section Rotations
+
+open AlgebraicGeometry.Scheme.PartialMap
+
+variable {k : Type u} [Field k] [IsSepClosed k] [Infinite k] {n : ℕ} [NeZero n]
+  {L₀ L₁ : Type u} [AddCommGroup L₀] [AddCommGroup L₁]
+  {B₀ : LinearMap.BilinForm ℤ L₀} {B₁ : LinearMap.BilinForm ℤ L₁}
+  {X₀ X₁ : Scheme.{u}} [IsIntegral X₀] [X₀.IsSeparated] [X₁.IsSeparated]
+  {T₀ T₁ : Over (Spec (CommRingCat.of k))} [Nonempty T₀.left] [Smooth T₀.hom]
+  {P₀ : Point T₀ → MarkedSurface k n B₀ X₀} {P₁ : Point T₁ → MarkedSurface k n B₁ X₁}
+  {C : T₀.left.PartialMap T₁.left} [IsDominant C.hom] [C.IsOver T₀.hom T₁.hom]
+  {F : X₀ ⤏ X₁} [F.IsDominant]
+
+/-- Fiber realizations with a common Picard pullback and positive orientation assemble
+into a geometric realization when the fixed marked boundary classes determine the image
+of component zero. The source only needs a constant class for that one component. -/
+theorem exists_of_fiber_rotations
+    (I : B₁.IsometryEquiv B₀) (d₀ : L₀) (d₁ : ZMod n → L₁) (hinj : Function.Injective d₁)
+    (h₀ : ∀ c : CenterPoint C, (P₀ (c ≫ C.domainSource)).pair.hom.left.ker.IsEffectiveCartier)
+    (h₁ : ∀ c : CenterPoint C, (P₁ (c ≫ C.domainTarget)).pair.hom.left.ker.IsEffectiveCartier)
+    (hmark₀ : ∀ c, (P₀ (c ≫ C.domainSource)).boundaryClass (h₀ c) 0 = d₀)
+    (hmark₁ : ∀ c j, (P₁ (c ≫ C.domainTarget)).boundaryClass (h₁ c) j = d₁ j)
+    (hf : ∀ c : CenterPoint C, ∃ j : ZMod n, Nonempty
+      (FiberRealization (P₀ (c ≫ C.domainSource)) (P₁ (c ≫ C.domainTarget)) F I (r j))) :
+    ∃ (R : GeometricRealization P₀ P₁ C F) (j : ZMod n),
+      R.picard = I ∧ R.boundaryAction = r j ∧ I (d₁ j) = d₀ := by
+  have hclass (c : CenterPoint C) (j : ZMod n)
+      (R : FiberRealization (P₀ (c ≫ C.domainSource)) (P₁ (c ≫ C.domainTarget)) F I (r j)) :
+      I (d₁ j) = d₀ := by
+    simpa only [inv_r, cycleVertexPerm_r_apply, add_neg_cancel, hmark₀, hmark₁] using
+      R.picard_boundaryClass (h₀ c) (h₁ c) j
+  obtain ⟨c₀⟩ := nonempty_centerPoint C
+  obtain ⟨j, ⟨R₀⟩⟩ := hf c₀
+  have hj := hclass c₀ j R₀
+  have fibers (c : CenterPoint C) : Nonempty
+      (FiberRealization (P₀ (c ≫ C.domainSource)) (P₁ (c ≫ C.domainTarget)) F I (r j)) := by
+    obtain ⟨j', ⟨R⟩⟩ := hf c
+    have he := hinj (I.injective ((hclass c j' R).trans hj.symm))
+    exact ⟨he ▸ R⟩
+  exact ⟨⟨I, r j, fun c ↦ Classical.choice (fibers c)⟩, j, rfl, rfl, hj⟩
+
+end Rotations
+
 variable {k : Type u} [Field k] [IsSepClosed k] [Infinite k] {n : ℕ} [NeZero n]
   {L₀ L₁ : Type u} [AddCommGroup L₀] [AddCommGroup L₁]
   {B₀ : LinearMap.BilinForm ℤ L₀} {B₁ : LinearMap.BilinForm ℤ L₁}

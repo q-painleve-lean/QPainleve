@@ -7,12 +7,15 @@ module
 
 public import QPainleve.AlgebraicGeometry.Curves.Node.GenericPoint
 public import QPainleve.AlgebraicGeometry.IdealSheaf.Boundary.Primes
+public import QPainleve.AlgebraicGeometry.IntersectionNumber.Nef
 public import QPainleve.SignedClusterModularGroup.Boundary.Isometry
 public import QPainleve.SignedClusterModularGroup.Realization.Basic
 
+import QPainleve.AlgebraicGeometry.Chow.Isomorphism
 import QPainleve.AlgebraicGeometry.Curves.Node.BoundaryRestriction
 import QPainleve.AlgebraicGeometry.EffectiveCartierDivisor.Dimension
 import QPainleve.AlgebraicGeometry.IdealSheaf.Image.Over
+import QPainleve.AlgebraicGeometry.IntersectionNumber.Nef.Pullback
 
 /-!
 # Boundary classes of geometric realizations
@@ -44,6 +47,7 @@ variable {k : Type u} [Field k] [IsSepClosed k] [Infinite k] {n : ℕ} [NeZero n
 local notation "S" => Spec (CommRingCat.of k)
 
 local notation "D[" P "]" => Scheme.Hom.ker (Over.Hom.left (Arrow.hom (MarkedSurface.pair P)))
+local notation "classOf(" h ")" => (LineBundleClass.mk (IsEffectiveCartier.toInvertibleSheaf h))⁻¹
 
 namespace MarkedSurface
 
@@ -276,6 +280,32 @@ theorem picardMarking_mem_boundaryOrthogonal_iff (P : MarkedSurface k n B₀ X�
     Set.forall_mem_range, ← P.picardMarking_boundaryClass hD, P.intersectionBilinForm_picardMarking]
 
 end BoundaryImage
+
+variable {M} in
+/-- A marked pair isomorphism transports a Cartier boundary with nef class of
+self-intersection zero to a boundary with the same properties. -/
+theorem exists_nef_square_zero_boundary_of_pairIso
+    (f : M.pair ≅ N.pair) (h : D[M].IsEffectiveCartier)
+    (hnef : LineBundleClass.IsNef k (M.surface ↘ S) classOf(h))
+    (hsq : Chow.classIntersectionNumber k M.surface classOf(h) classOf(h) = 0) :
+    ∃ h' : D[N].IsEffectiveCartier, LineBundleClass.IsNef k (N.surface ↘ S) classOf(h') ∧
+      Chow.classIntersectionNumber k N.surface classOf(h') classOf(h') = 0 := by
+  let e := surfaceIso f.symm
+  let : e.hom.IsOver S := inferInstanceAs ((surfaceIso f.symm).hom.IsOver S)
+  have hker : D[M].comap e.hom = D[N] := by
+    have hb := congrArg Scheme.Hom.ker (boundaryIso_hom_comp f.symm)
+    rw [Scheme.Hom.ker_comp_of_isIso] at hb
+    rw [hb, Scheme.Hom.comap_ker_comp_of_isClosedImmersion]
+  have hc := h.comap e.hom
+  let h' : D[N].IsEffectiveCartier := hker ▸ hc
+  have hclass : LineBundleClass.pullback e.hom classOf(h) = classOf(h') := by
+    rw [LineBundleClass.pullback_inv, h.pullback_mk_toInvertibleSheaf hc,
+      LineBundleClass.mk_toInvertibleSheaf_congr hc h' hker]
+  let : SmoothOfRelativeDimension 2 (M.surface ↘ S) := M.smooth
+  let : Smooth (M.surface ↘ S) := SmoothOfRelativeDimension.smooth 2 _
+  let : M.surface.IsProjectiveOver k := M.projective
+  refine ⟨h', hclass ▸ hnef.pullback e.hom, ?_⟩
+  rw [← hclass, Chow.classIntersectionNumber_pullback_of_isIso, hsq]
 
 end MarkedSurface
 

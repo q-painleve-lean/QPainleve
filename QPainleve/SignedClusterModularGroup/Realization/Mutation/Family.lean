@@ -9,6 +9,8 @@ public import QPainleve.SignedClusterModularGroup.MutationDomain
 public import QPainleve.SignedClusterModularGroup.Realization.Boundary
 public import QPainleve.SignedClusterModularGroup.Realization.Mutation.Basic
 
+import QPainleve.SignedClusterModularGroup.Realization.BranchAction
+
 /-!
 # Mutation realizations over the center open
 
@@ -173,29 +175,17 @@ theorem exists_mutate
     (hD₁inj : Function.Injective D₁) :
     ∃ (R : GeometricRealization (T₀ := Centers) (T₁ := Centers) P₀ P₁ C F) (j : ZMod m),
       R.picard = I ∧ R.boundaryAction = DihedralGroup.r j ∧ I (D₁ j) = D₀ := by
-  have hf (c : DomainPoint) :
-      ∃ j : ZMod m, Nonempty (FiberRealization (M(c)) (M′(c)) F I (DihedralGroup.r j)) ∧
-        I (D₁ j) = D₀ := by
-    obtain ⟨p, _, _, _, e₀, hP, hproj₀⟩ := hmodel₀ c
-    have htarget := hmodel₁ c
-    rw [mutation_target_character b s k P hform hcharge c] at htarget
-    obtain ⟨q, _, _, _, e₁, hQ, hproj₁⟩ := htarget
-    obtain ⟨hsame, hopp⟩ := mutation_center_conditions b s k hOpp P hform hcharge c
-    have hE : E.matrix = ε := by rw [← P.matrix_eq, hform, hcharge]
-    obtain ⟨j, R, -, -, -, -⟩ := FiberRealization.exists_mutate b s k hOpp hΦ χ(src(c))
-      p q hr₀ hr₁ hAdjacent hPositive I hI hsame hopp hP hQ e₀ e₁ hproj₀ hproj₁
-      (hD₀ c) (hD₁ c) (hnef₀ c) (hnef₁ c) (hsq₀ c) (hsq₁ c) E
-      (fun j ↦ congrFun (congrFun hE j) k)
-    refine ⟨j, ⟨R⟩, ?_⟩
-    have h := R.picard_boundaryClass (hD₀ c) (hD₁ c) j
-    simpa only [inv_r, cycleVertexPerm_r_apply, add_neg_cancel, hmark₀, hmark₁] using h
-  obtain ⟨c₀⟩ := nonempty_centerPoint (T₀ := Centers) (T₁ := Centers) C
-  obtain ⟨j, -, hj⟩ := hf c₀
-  have fibers (c : DomainPoint) :
-      Nonempty (FiberRealization (M(c)) (M′(c)) F I (DihedralGroup.r j)) := by
-    obtain ⟨j', R, hj'⟩ := hf c
-    have he := hD₁inj (I.injective (hj'.trans hj.symm))
-    exact he ▸ R
-  exact ⟨⟨I, DihedralGroup.r j, fun c ↦ Classical.choice (fibers c)⟩, j, rfl, rfl, hj⟩
+  refine exists_of_fiber_rotations I D₀ D₁ hD₁inj hD₀ hD₁ hmark₀ hmark₁ fun c ↦ ?_
+  obtain ⟨p, _, _, _, e₀, hP, hproj₀⟩ := hmodel₀ c
+  have htarget := hmodel₁ c
+  rw [mutation_target_character b s k P hform hcharge c] at htarget
+  obtain ⟨q, _, _, _, e₁, hQ, hproj₁⟩ := htarget
+  obtain ⟨hsame, hopp⟩ := mutation_center_conditions b s k hOpp P hform hcharge c
+  have hE : E.matrix = ε := by rw [← P.matrix_eq, hform, hcharge]
+  obtain ⟨j, R, -, -, -, -⟩ := FiberRealization.exists_mutate b s k hOpp hΦ χ(src(c))
+    p q hr₀ hr₁ hAdjacent hPositive I hI hsame hopp hP hQ e₀ e₁ hproj₀ hproj₁
+    (hD₀ c) (hD₁ c) (hnef₀ c) (hnef₁ c) (hsq₀ c) (hsq₁ c) E
+    (fun j ↦ congrFun (congrFun hE j) k)
+  exact ⟨j, ⟨R⟩⟩
 
 end QPainleve.SignedClusterModularGroup.GeometricRealization
