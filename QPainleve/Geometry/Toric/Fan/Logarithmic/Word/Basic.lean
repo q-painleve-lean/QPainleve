@@ -5,7 +5,8 @@ Authors: The QPainleve contributors
 -/
 module
 
-public import QPainleve.Algebra.Cluster.Word.Basic
+public import QPainleve.Algebra.Cluster.Word.RationalMap
+public import QPainleve.AlgebraicGeometry.RationalMap.Composition.Defined
 public import QPainleve.Geometry.Toric.Fan.Evaluation
 public import QPainleve.Geometry.Toric.Fan.Logarithmic.Presentation
 public import TauCeti.Algebra.Group.FreeAbelianCharacter
@@ -29,7 +30,7 @@ variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V] {i : N �
 local notation "S" => Spec (CommRingCat.of ℂ)
 
 variable {Z : Scheme} [Z.Over S] [SmoothOfRelativeDimension 2 (Z ↘ S)] [IsIntegral Z]
-  {D : Z.IdealSheafData} {A : LogarithmicProjection i D} {m : ℕ}
+  {D : Z.IdealSheafData} {A B : LogarithmicProjection i D} {m : ℕ}
 
 /-- Evaluate an exponent vector at the ordered tuple of nonzero center parameters. -/
 abbrev centerCharacter (c : Fin m → ℂˣ) : Multiplicative (Fin m → ℤ) →* ℂˣ :=
@@ -62,6 +63,21 @@ theorem xEvaluation_def (U : OrderedToricModel A m) :
     U.xEvaluation =
       U.hom.toRationalMap.comp (U.fan.xEvaluation U.basis U.rays (centerCharacter U.parameters)) :=
   (rfl)
+
+/-- Successive words carrying one fixed-center evaluation to the next compose
+at the generic point of the same resolving surface. -/
+theorem exists_compOfDefined_word_comp {C : LogarithmicProjection i D}
+    (U : OrderedToricModel A m) (M : OrderedToricModel B m) (W : OrderedToricModel C m)
+    (u : Word U.exchangeMatrix M.exchangeMatrix) (v : Word M.exchangeMatrix W.exchangeMatrix)
+    (h₀ : ∃ h, U.xEvaluation.compOfDefined (u.xRationalMap ℂ) h = M.xEvaluation)
+    (h₁ : ∃ h, M.xEvaluation.compOfDefined (v.xRationalMap ℂ) h = W.xEvaluation) :
+    ∃ h, U.xEvaluation.compOfDefined ((u.comp v).xRationalMap ℂ) h = W.xEvaluation := by
+  obtain ⟨hu, h₀⟩ := h₀
+  obtain ⟨hv, h₁⟩ := h₁
+  obtain ⟨h, he⟩ := U.xEvaluation.compOfDefined_comp (u.xRationalMap ℂ) (v.xRationalMap ℂ)
+    hu (h₀.symm ▸ hv)
+  refine ⟨(Quiver.Path.xRationalMap_comp ℂ u v).symm ▸ h, ?_⟩
+  simpa only [Quiver.Path.xRationalMap_comp, ← he, h₀] using h₁
 
 end OrderedToricModel
 

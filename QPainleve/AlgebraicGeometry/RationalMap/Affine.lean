@@ -8,7 +8,7 @@ module
 public import QPainleve.AlgebraicGeometry.RationalMap.FunctionField
 public import TauCeti.AlgebraicGeometry.Scheme.BaseAlgebra
 
-import TauCeti.AlgebraicGeometry.Morphisms.FiniteType
+import TauCeti.AlgebraicGeometry.Morphisms.FiniteType.Basic
 import TauCeti.AlgebraicGeometry.Scheme.SpecOver
 
 /-!

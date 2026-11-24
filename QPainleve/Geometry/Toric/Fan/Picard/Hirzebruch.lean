@@ -431,6 +431,25 @@ theorem hirzebruch_fiber_degree_nonneg (p : CodimensionOnePoint X) :
       Chow.classIntersectionNumber_primeDivisorClass_nonneg_of_ne ℂ hdim hp
 
 include hc in
+/-- Distinct prime curves of fiber degree zero have disjoint supports. -/
+theorem disjoint_of_hirzebruch_fiber_degree_eq_zero {p q : CodimensionOnePoint X}
+    (hpq : p ≠ q) (hp : (C).repr (P p) 1 = 0) (hq : (C).repr (P q) 1 = 0) :
+    Disjoint (closure {(p : X)}) (closure {(q : X)}) := by
+  let := Φ.uniqueFactorizationMonoid_stalk_algebraicRealization hΦ
+  have hq' : P q = (C).repr (P q) 0 • C 0 := by
+    simpa only [Fin.sum_univ_two, hq, zero_smul, add_zero] using ((C).sum_repr (P q)).symm
+  have hz : B (P p) (P q) = 0 := by
+    calc
+      B (P p) (P q) = B (P p) ((C).repr (P q) 0 • C 0) := congrArg (B (P p)) hq'
+      _ = 0 := by rw [map_smul, (Φ.hirzebruchPicardBasis_intersection_repr b e hΦ r hr hc _).1,
+        hp, smul_zero]
+  have hdim := topologicalKrullDim_eq_of_smoothOfRelativeDimension (X ↘ S) (n := 2)
+  rw [Chow.intersectionBilinForm_apply, toMul_ofMul, toMul_ofMul] at hz
+  refine Set.disjoint_left.mpr fun x hx hy ↦ ?_
+  exact ((Chow.classIntersectionNumber_primeDivisorClass_pos_iff ℂ hdim.le hpq).mpr
+    ⟨x, hx, hy⟩).ne' hz
+
+include hc in
 /-- A prime curve whose fiber coefficient is less than `e` times its section coefficient
 is the distinguished invariant section. -/
 theorem eq_section_of_hirzebruch_fiber_coeff_lt (p : CodimensionOnePoint X)
