@@ -53,6 +53,29 @@ theorem IsEffectiveCartier.comap_of_support_subset_isoLocus {X Y : Scheme.{u}}
     · exact isEffectiveCartier_top _
     · rw [Scheme.Hom.comp_preimage, Scheme.Opens.ι_preimage_self]
 
+/-- If a morphism is an isomorphism over the support of an ideal, its inverse image
+is effective Cartier exactly when the original ideal is effective Cartier. -/
+theorem isEffectiveCartier_comap_iff_of_support_subset_isoLocus {X Y : Scheme.{u}}
+    {I : Y.IdealSheafData} (f : X ⟶ Y) (h : (I.support : Set Y) ⊆ f.isoLocus) :
+    (I.comap f).IsEffectiveCartier ↔ I.IsEffectiveCartier := by
+  refine ⟨fun hI ↦ ?_, fun hI ↦ hI.comap_of_support_subset_isoLocus f h⟩
+  apply isEffectiveCartier_of_forall_exists_isOpenImmersion
+  intro y
+  by_cases hy : y ∈ I.support
+  · let U := f.isoLocus
+    have : IsIso (f ∣_ U) := inferInstanceAs (IsIso (f ∣_ f.isoLocus))
+    let g : U.toScheme ⟶ X := inv (f ∣_ U) ≫ (f ⁻¹ᵁ U).ι
+    have hg : g ≫ f = U.ι := by
+      dsimp only [g]
+      rw [Category.assoc, ← morphismRestrict_ι, IsIso.inv_hom_id_assoc]
+    refine ⟨_, U.ι, inferInstance, ⟨⟨y, h hy⟩, rfl⟩, ?_⟩
+    rw [← hg, comap_comp]
+    exact hI.comap g
+  · let U : Y.Opens := I.support.compl
+    refine ⟨_, U.ι, inferInstance, ⟨⟨y, hy⟩, rfl⟩, ?_⟩
+    rw [(I.comap_eq_top_iff _).mpr (Scheme.Opens.ι_preimage_self U)]
+    exact isEffectiveCartier_top _
+
 /-- The ideal class of an effective Cartier divisor pulls back to the trivial class
 along a morphism whose image avoids its support. -/
 theorem IsEffectiveCartier.pullback_mk_toInvertibleSheaf_eq_one_of_comap_eq_top
