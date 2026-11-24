@@ -174,6 +174,25 @@ theorem negativePrimeDivisorClass_cases [IsIntegral X] (p : CodimensionOnePoint 
     exact Or.inr ⟨by simp [hp', hsq'], hdisjoint⟩
 
 include rational hD hcan in
+/-- On an anticanonical pair without internal `(-2)` curves, every prime
+divisor of self-intersection `-2` is a boundary component. -/
+theorem mem_boundary_of_primeDivisorClass_self_eq_neg_two [IsIntegral X]
+    [IsNoetherian X] [∀ x : X, UniqueFactorizationMonoid (X.presheaf.stalk x)]
+    (hroot : ∀ r : CodimensionOnePoint X, Disjoint (closure {(r : X)}) D.support →
+      b(X) (primeDivisorClass r) (primeDivisorClass r) ≠ -2)
+    (r : CodimensionOnePoint X)
+    (hr : b(X) (primeDivisorClass r) (primeDivisorClass r) = -2) : (r : X) ∈ D.support := by
+  by_contra hoff
+  have hreal : B(X) (c r) (c r) = -2 := by
+    simp [realPrimeDivisorClass_def, realIntersectionBilinForm_tmul, hr]
+  rcases negativePrimeDivisorClass_cases k hD hcan r (by rw [hreal]; norm_num) hoff with
+    ⟨hsq, _⟩ | ⟨_, hdis⟩
+  · have : (-2 : ℝ) = -1 := hreal.symm.trans hsq
+    norm_num at this
+  · rw [coe_support_vanishingIdeal] at hdis
+    exact hroot r hdis hr
+
+include rational hD hcan in
 /-- An anticanonical pair has a prime class of square `-2` off the boundary precisely
 when it has an integral closed curve of square `-2` disjoint from the boundary. -/
 theorem exists_realPrimeDivisorClass_self_eq_neg_two_iff [IsIntegral X] :

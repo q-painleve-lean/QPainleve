@@ -43,13 +43,6 @@ local notation "M" => Submodule.span ℤ (Set.range D)
 local notation "K" => B.orthogonal M
 local notation "δ" => ∑ i, D i
 
-private theorem exists_indexPerm (g : signedBoundaryIsometryGroup B D) :
-    ∃ p : Equiv.Perm (ZMod n), ∀ i, (toIsometry B D g).val (D i) = D (p i) := by
-  obtain ⟨k, hk⟩ := (mem_signedBoundaryIsometryGroup_iff B D).mp g.property
-  refine ⟨(MulAction.toPerm g.val.2).trans (Equiv.addRight k), fun i ↦ ?_⟩
-  simpa only [toIsometry_apply, Equiv.trans_apply, MulAction.toPerm_apply, Equiv.coe_addRight]
-    using hk i
-
 private theorem map_span_eq (g : signedBoundaryIsometryGroup B D) :
     (M).map ((toIsometry B D g).val : L →ₗ[ℤ] L) = M := by
   obtain ⟨p, hp⟩ := exists_indexPerm B D g
@@ -97,13 +90,6 @@ theorem coe_signedOrthogonalRestriction_apply (g : signedBoundaryIsometryGroup B
   coe_signedRestrictionEquiv_apply B D g x
 
 variable [NeZero n]
-
-/-- The unsigned action of a signed boundary isometry fixes the total boundary class. -/
-theorem toIsometry_apply_sum (g : signedBoundaryIsometryGroup B D) :
-    (toIsometry B D g).val δ = δ := by
-  obtain ⟨p, hp⟩ := exists_indexPerm B D g
-  rw [map_sum]
-  simpa only [hp] using Equiv.sum_comp p D
 
 /-- On the total boundary class, the signed restriction acts by the sign. -/
 @[simp]

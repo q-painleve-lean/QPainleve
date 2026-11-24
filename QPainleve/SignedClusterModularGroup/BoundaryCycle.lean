@@ -16,6 +16,8 @@ import Mathlib.RingTheory.Flat.Localization
 import Mathlib.Tactic.Abel
 import Mathlib.Tactic.LinearCombination
 import Mathlib.Tactic.Ring
+import QPainleve.Combinatorics.SimpleGraph.CycleGraph
+import TauCeti.Data.ZMod.Two
 import TauCeti.LinearAlgebra.BilinearForm.BaseChange
 import TauCeti.LinearAlgebra.BilinearForm.Orthogonal
 import TauCeti.LinearAlgebra.IntegralLattice.Overlattice.Index
@@ -54,6 +56,69 @@ private theorem sum_sub_prev {A : Type*} [AddCommGroup A] (a : ZMod n → A) :
   have h : ∑ i : ZMod n, a (i - 1) = ∑ i, a i :=
     Equiv.sum_comp (Equiv.subRight (1 : ZMod n)) a
   rw [Finset.sum_sub_distrib, h, sub_self]
+
+section IntegralGram
+
+variable {L : Type*} [AddCommGroup L] [Module ℤ L]
+
+omit [NeZero n] in
+/-- The diagonal of the cycle intersection matrix is minus two for cycles of
+length at least two. -/
+theorem diagonal_eq_neg_two_of_cycle_gram (B : LinearMap.BilinForm ℤ L) (D : ZMod n → L)
+    (hgram : ∀ i j : ZMod n, B (D i) (D j) = (-2 : ℤ) * (if i = j then 1 else 0) +
+      (if j = i + 1 then 1 else 0) + (if j = i - 1 then 1 else 0))
+    (hn : 2 ≤ n) (i : ZMod n) : B (D i) (D i) = -2 := by
+  let : Fact (1 < n) := ⟨hn⟩
+  rw [hgram]
+  simp [eq_sub_iff_add_eq]
+
+omit [NeZero n] in
+/-- The components of a cycle intersection matrix of length at least two are distinct. -/
+theorem injective_of_cycle_gram (B : LinearMap.BilinForm ℤ L) (D : ZMod n → L)
+    (hgram : ∀ i j : ZMod n, B (D i) (D j) = (-2 : ℤ) * (if i = j then 1 else 0) +
+      (if j = i + 1 then 1 else 0) + (if j = i - 1 then 1 else 0))
+    (hn : 2 ≤ n) : Function.Injective D := by
+  intro i j h
+  by_contra hij
+  have he := congrArg (B (D i)) h
+  rw [diagonal_eq_neg_two_of_cycle_gram B D hgram hn, hgram i j] at he
+  simp only [ite_eq_right hij, mul_zero, zero_add] at he
+  split at he <;> split at he <;> omega
+
+/-- A permutation preserving the cycle intersection matrix is a signed shift.
+For two vertices the sign can always be taken to be positive. -/
+theorem exists_signedShift_of_preserves_cycle_gram {n : ℕ} [NeZero n]
+    (B : LinearMap.BilinForm ℤ L) (D : ZMod n → L)
+    (hgram : ∀ i j : ZMod n, B (D i) (D j) = (-2 : ℤ) * (if i = j then 1 else 0) +
+      (if j = i + 1 then 1 else 0) + (if j = i - 1 then 1 else 0))
+    (σ : Equiv.Perm (ZMod n)) (hσ : ∀ i j, B (D (σ i)) (D (σ j)) = B (D i) (D j))
+    (hn : 2 ≤ n) :
+    ∃ (η : ℤˣ) (a : ZMod n), ∀ j, σ j = η • j + a := by
+  by_cases hlarge : 3 ≤ n
+  · let : Fact (1 < n) := ⟨hn⟩
+    have hadj (i : ZMod n) : σ (i + 1) = σ i + 1 ∨ σ (i + 1) = σ i - 1 := by
+      by_contra! h
+      have hi : i ≠ i + 1 := by simp
+      have hpair := hσ i (i + 1)
+      rw [hgram (σ i) (σ (i + 1)), hgram i (i + 1)] at hpair
+      simp [σ.injective.ne hi, h.1, h.2, hi] at hpair
+      split at hpair <;> omega
+    obtain ⟨d, hd, _⟩ := σ.existsUnique_dihedral_of_map_successors hlarge hadj
+    cases d with
+    | r a => exact ⟨1, a, fun j ↦ by simpa using (Equiv.congr_fun hd j).symm⟩
+    | sr a =>
+      refine ⟨-1, -a, fun j ↦ ?_⟩
+      simpa [Units.smul_def, sub_eq_add_neg, add_comm] using (Equiv.congr_fun hd j).symm
+  · obtain rfl : n = 2 := by omega
+    refine ⟨1, σ 0, fun j ↦ ?_⟩
+    rcases j.eq_zero_or_eq_one with rfl | rfl
+    · simp
+    · have hne := σ.injective.ne (one_ne_zero : (1 : ZMod 2) ≠ 0)
+      rcases (σ 0).eq_zero_or_eq_one with h₀ | h₀ <;>
+        rcases (σ 1).eq_zero_or_eq_one with h₁ | h₁ <;>
+        first | exact (hne (h₁.trans h₀.symm)).elim | rw [h₁, h₀, one_smul]; decide
+
+end IntegralGram
 
 section Gram
 

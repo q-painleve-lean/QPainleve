@@ -78,6 +78,21 @@ def toIsometry : signedBoundaryIsometryGroup B D →* B.isometryGroup :=
 theorem toIsometry_apply (p : signedBoundaryIsometryGroup B D) :
     toIsometry B D p = p.val.1 := (rfl)
 
+/-- A signed boundary isometry permutes the indexed boundary classes. -/
+theorem exists_indexPerm (g : signedBoundaryIsometryGroup B D) :
+    ∃ p : Equiv.Perm (ZMod n), ∀ i, (toIsometry B D g).val (D i) = D (p i) := by
+  obtain ⟨k, hk⟩ := (mem_signedBoundaryIsometryGroup_iff B D).mp g.property
+  refine ⟨(MulAction.toPerm g.val.2).trans (Equiv.addRight k), fun i ↦ ?_⟩
+  simpa only [toIsometry_apply, Equiv.trans_apply, MulAction.toPerm_apply, Equiv.coe_addRight]
+    using hk i
+
+/-- The unsigned action of a signed boundary isometry fixes the total boundary class. -/
+theorem toIsometry_apply_sum [NeZero n] (g : signedBoundaryIsometryGroup B D) :
+    (toIsometry B D g).val (∑ i, D i) = ∑ i, D i := by
+  obtain ⟨p, hp⟩ := exists_indexPerm B D g
+  rw [map_sum]
+  simpa only [hp] using Equiv.sum_comp p D
+
 /-- Projection to the sign of the boundary action. -/
 def sign : signedBoundaryIsometryGroup B D →* ℤˣ :=
   (MonoidHom.snd _ _).domRestrict _
