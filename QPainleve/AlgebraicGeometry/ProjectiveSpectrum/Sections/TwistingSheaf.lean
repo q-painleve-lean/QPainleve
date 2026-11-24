@@ -57,6 +57,13 @@ instance isInvertible_polynomialTwistingSheaf (n : ℤ) :
 def polynomialCoordinateSection (i : ι) : Γ(T, ⊤) :=
   Proj.toTwistingSheaf 𝒜 rfl ⊤ ⟨MvPolynomial.X i, X_mem_degreeOne i⟩
 
+/-- A coordinate section is the image of its homogeneous variable in the first twist. -/
+theorem polynomialCoordinateSection_def (i : ι) :
+    polynomialCoordinateSection (R := R) i =
+      Proj.toTwistingSheaf 𝒜 (rfl : (1 : ℤ) = 1) ⊤
+        ⟨MvPolynomial.X i, (MvPolynomial.mem_homogeneousSubmodule ..).mpr
+          (MvPolynomial.isHomogeneous_X R i)⟩ := (rfl)
+
 /-- A homogeneous coordinate section is nonvanishing exactly on its standard open. -/
 @[simp]
 theorem nonvanishingLocus_polynomialCoordinateSection (i : ι) :
@@ -64,17 +71,9 @@ theorem nonvanishingLocus_polynomialCoordinateSection (i : ι) :
   Proj.twistingSheaf.nonvanishingLocus_toTwistingSheaf _ (X_mem_degreeOne (R := R))
     (iSup_coordinateOpen (R := R) (ι := ι)) 1 _
 
-end Proj
-
-namespace Scheme.Modules
-
-variable {X : Scheme.{u}} (M : X.Modules)
-  [TauCeti.AlgebraicGeometry.SheafOfModules.isInvertible X M]
-  (f : X ⟶ Spec (.of R)) (s : ι → Γ(M, ⊤))
-
-local notation "D[" i "]" => M.nonvanishingLocus (s i)
-
-private theorem coordinateSection_eq_smul (i j : ι) :
+/-- On a standard open, each coordinate section is its normalized ratio times the frame
+section of that open. -/
+theorem res_polynomialCoordinateSection_eq_smul (i j : ι) :
     (T).presheaf.map (U[i]).leTop.op (Proj.polynomialCoordinateSection (R := R) j) =
       Proj.awayToSection 𝒜 (MvPolynomial.X i) (TauCeti.MvPolynomial.awayXRatio i j) •
         (T).presheaf.map (U[i]).leTop.op (Proj.polynomialCoordinateSection (R := R) i) := by
@@ -86,6 +85,16 @@ private theorem coordinateSection_eq_smul (i j : ι) :
   rw [hj, hi]
   simp only [← TauCeti.MvPolynomial.awayXRatio_def, TauCeti.MvPolynomial.awayXRatio_self,
     map_one, one_smul]
+
+end Proj
+
+namespace Scheme.Modules
+
+variable {X : Scheme.{u}} (M : X.Modules)
+  [TauCeti.AlgebraicGeometry.SheafOfModules.isInvertible X M]
+  (f : X ⟶ Spec (.of R)) (s : ι → Γ(M, ⊤))
+
+local notation "D[" i "]" => M.nonvanishingLocus (s i)
 
 private theorem toProjectiveSpace_appLE_awayXRatio
     (h : (⨆ i, M.nonvanishingLocus (s i)) = ⊤) (i j : ι) :
@@ -149,7 +158,7 @@ theorem exists_iso_pullbackTwistingSheaf_toProjectiveSpace
       g.pullbackSectionsLE_apply]
     rfl
   have hc := congrArg (g.pullbackSectionsLE T U[i] D[i] (hD i))
-    (coordinateSection_eq_smul (R := R) i j)
+    (Proj.res_polynomialCoordinateSection_eq_smul (R := R) i j)
   rw [map_smulₛₗ, ← he, ← he] at hc
   have hi : D[i] ≤ L.nonvanishingLocus (L.presheaf.map (D[i]).leTop.op (t i)) := by
     rw [L.nonvanishingLocus_map]
