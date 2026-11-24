@@ -8,6 +8,7 @@ module
 public import QPainleve.AlgebraicGeometry.Blowup.StrictTransform.Branches.Attachments
 public import QPainleve.AlgebraicGeometry.Curves.Node.NormalizationComponent
 
+import QPainleve.AlgebraicGeometry.Blowup.Descent
 import QPainleve.AlgebraicGeometry.Blowup.Exceptional.FirstKind
 import QPainleve.AlgebraicGeometry.Blowup.Smooth
 import QPainleve.AlgebraicGeometry.Blowup.StrictTransform.Cartier
@@ -216,15 +217,6 @@ theorem existsUnique_blowupToBase_eq_and_notMem_exceptionalNormalizationComponen
     exact hy.2 (hv.symm ▸ hx.2)
   exact congrArg Subtype.val (hbuniq y' hne)
 
-omit [IsIntegral X] [IsReduced D.subscheme] in
-include hc in
-private theorem blowupToBase_eq_center_iff_mem_exceptional (a : (I).blowup) :
-    (π) a = D.subschemeι p ↔ a ∈ (E).support := by
-  rw [support_comap, ← SetLike.mem_coe, Closeds.coe_preimage, Set.mem_preimage,
-    coe_support_vanishingIdeal, Closeds.coe_mk]
-  simpa only [Set.mem_singleton_iff] using
-    Iff.of_eq (congrArg (fun s : Set X ↦ (π) a ∈ s) hc.closure_eq.symm)
-
 section AttachmentBranches
 
 local notation "C" => IdealSheafData.subscheme D
@@ -237,16 +229,12 @@ local notation "f" => subschemeMap (R) D (π)
 private theorem bijOn_blowupToBase_exceptionalAttachmentBranches :
     Set.BijOn (ν) {y : (N) | y ∈ (U) ∧ (ν) y ∈ (S[(B)]).support}
       {z : (B) | z ∈ (S[(B)]).support ∧ (f) z = p} := by
-  have hE (z : (B)) : (f) z = p ↔ (j) z ∈ (E).support := by
-    have h := congrArg (fun g : (B) ⟶ X ↦ g z) (subschemeMap_subschemeι (R) D (π)
-      (le_map_iff_comap_le.mpr (le_radical _)))
-    simp only [Scheme.Hom.comp_apply] at h
-    rw [← blowupToBase_eq_center_iff_mem_exceptional hc, ← h, D.subschemeι.injective.eq_iff]
   have h := bijOn_blowupToBase_exceptionalNormalizationComponent (k := k) hD hc
-  refine ⟨fun y hy ↦ ⟨hy.2, (hE ((ν) y)).mpr (h.mapsTo hy.1)⟩, ?_, ?_⟩
+  refine ⟨fun y hy ↦ ⟨hy.2, (mem_exceptional_iff_boundaryMap_eq hc _).mp (h.mapsTo hy.1)⟩,
+    ?_, ?_⟩
   · exact h.injOn.mono fun _ hy ↦ hy.1
   · intro z hz
-    obtain ⟨y, hy, hyz⟩ := h.surjOn ((hE z).mp hz.2)
+    obtain ⟨y, hy, hyz⟩ := h.surjOn ((mem_exceptional_iff_boundaryMap_eq hc z).mpr hz.2)
     exact ⟨y, ⟨hy, hyz.symm ▸ hz.1⟩, hyz⟩
 
 variable [D.subscheme.Over (Spec (.of k))]
@@ -304,7 +292,8 @@ theorem eq_of_mem_exceptionalNormalizationComponent_of_comp_eq
     intro a ha
     have haU : a ∈ (U) := by rwa [← (B).coe_blowupComponent v] at ha
     have he := (bijOn_blowupToBase_exceptionalNormalizationComponent hD hc).mapsTo haU
-    have heq := (blowupToBase_eq_center_iff_mem_exceptional hc ((j) ((ν) a))).mpr he
+    have heq : (j) ((ν) a) ∈ (π) ⁻¹' {D.subschemeι p} :=
+      range_subschemeι_comap_pointBlowup hc ▸ (E).range_subschemeι.ge he
     have h := congrArg (fun t : (N) ⟶ X ↦ t a) hg
     simp only [Scheme.Hom.comp_apply] at h
     exact D.subschemeι.injective (h.trans heq)
