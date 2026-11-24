@@ -6,8 +6,10 @@ Authors: The QPainleve contributors
 module
 
 public import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.Polynomial.Basic
+public import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.TwistingSheaf.Basic
 import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.BaseChange
 import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.CoordinateMap
+import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.TwistingSheaf.Pullback
 import Mathlib.RingTheory.TensorProduct.MvPolynomial
 
 /-!
@@ -74,6 +76,16 @@ theorem isPullback_polynomialBaseChangeProjection :
   Proj.isPullback_map_of_isBaseChange 𝒜 (polynomialGradedMap (R := R) (S := S) ι)
     (polynomialGradedMap_algebraMap (S := S) ι)
       (polynomialGradedMap_isBaseChange (R := R) (S := S) ι)
+
+/-- Extension of coefficients pulls each integral twist back to the same twist on the
+new polynomial projective spectrum. -/
+def polynomialBaseChangeProjectionPullbackTwistingSheafIso (n : ℤ) :
+    (Scheme.Modules.pullback (polynomialBaseChangeProjection (R := R) (S := S) ι)).obj
+      (twistingSheaf 𝒜 n) ≅ twistingSheaf ℬ n := by
+  unfold polynomialBaseChangeProjection
+  refine pullbackTwistingSheafIso _ _ MvPolynomial.X
+    (fun i ↦ (mem_homogeneousSubmodule _ _).mpr (isHomogeneous_X R i)) ?_ n
+  exact iSup_basicOpen_eq_top _ _ (irrelevant_eq_span_X ι R).le
 
 /-- The coefficient map after extension is the original coefficient morphism followed by
 the morphism of affine bases. -/
