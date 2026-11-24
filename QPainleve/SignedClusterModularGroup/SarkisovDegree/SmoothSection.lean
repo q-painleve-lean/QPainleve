@@ -9,7 +9,6 @@ public import QPainleve.AlgebraicGeometry.Blowup.Tower.Modification
 public import QPainleve.AlgebraicGeometry.Blowup.Tower.Reorder
 public import QPainleve.Geometry.Toric.Fan.Mutation.Resolution
 public import QPainleve.Geometry.Toric.Fan.Picard.Mutation.Geometric
-public import QPainleve.Geometry.Toric.Fan.Picard.Mutation.Ruling
 public import QPainleve.Geometry.Toric.Fan.Smooth
 public import QPainleve.SignedClusterModularGroup.SarkisovDegree.ElementaryTransform
 
@@ -59,47 +58,9 @@ local notation "P(" I ")" => BlowupTower.snoc BlowupTower.nil I
 local notation "F" => mutationFiberClass b ρ hΦ
 local notation "F'" => mutationFiberClass b (r ρ) hΨ
 
-variable {n : ℕ} {Y : Scheme.{0}}
-  (T : BlowupTower (Ray.mutationSourceCenterIdeal b ρ c).blowup n Y)
+variable {n : ℕ}
 
 local notation "k" => Fin.castAdd n (0 : Fin 1)
-local notation "s" => (fun _ : Fin (1 + n) ↦ ρ)
-local notation "R₁" => BlowupTower.transport T E
-local notation "U₁" => BlowupTower.append (P(I₁)) (BlowupTower.Transport.tower (R₁))
-local notation "A" => BlowupTower.append (P(I₀)) T
-
-/-- The mutation lift transports a line class with ruling coordinates `(a, d)`
-and ordered exceptional coefficients `x`. Use the pivot ray as section when
-`onSection = true` and the opposite ray otherwise. The new ruling coordinates
-are `(a + x k + if onSection then d else 0, d)`, where `k` is the first stage.
-The new first exceptional coefficient is `-d - x k`, and the tail stays fixed. -/
-private theorem picardHom_transport_mutation (onSection : Bool) (a d : ℤ)
-    (x : Fin (1 + n) → ℤ) :
-    let : Nonempty Φ.cones := ⟨ρ.toCone⟩
-    let : Nonempty (Ψ).cones := ⟨(r ρ).toCone⟩
-    let : ∀ x : X, UniqueFactorizationMonoid ((X).presheaf.stalk x) :=
-      Φ.uniqueFactorizationMonoid_stalk_algebraicRealization hΦ
-    let : ∀ x : X', UniqueFactorizationMonoid ((X').presheaf.stalk x) :=
-      (Ψ).uniqueFactorizationMonoid_stalk_algebraicRealization hΨ
-    let τ := if onSection then ρ else q
-    let S := Additive.ofMul (primeDivisorClass (Φ.rayBoundaryPoint hΦ τ))
-    let S' := Additive.ofMul (primeDivisorClass ((Ψ).rayBoundaryPoint hΨ (r τ)))
-    pullback (R₁).iso.inv ((A).picardHom (a • F + d • S, x)).toMul =
-      ((U₁).picardHom ((a + x k + (if onSection then d else 0)) • F' + d • S',
-        Function.update x k (-d - x k))).toMul := by
-  intro h₀ h₁ huf₀ huf₁ τ S S'
-  let := h₀
-  let := h₁
-  let := huf₀
-  let := huf₁
-  let w := ((a + x k + (if onSection then d else 0)) • F' + d • S',
-        Function.update x k (-d - x k))
-  have hw : (mutationPicardEquiv b s k hOpp hΦ).symm (a • F + d • S, x) = w :=
-    mutationPicardEquiv_symm_apply_ruling b s k hOpp hΦ onSection a d x
-  have h := pullback_mutationBlowupIso_lift_picardHom b c hΦ s hOpp (T := T)
-    (S := (R₁).tower) (e := (R₁).iso) (R₁).isLift w
-  rw [← hw, LinearEquiv.apply_symm_apply, hw] at h
-  rw [← h, pullback_comp, Iso.inv_hom_id, pullback_id]
 
 section Resolution
 
@@ -236,7 +197,7 @@ theorem Ray.exists_sarkisov_decrease_of_smooth_section_center (j : Fin (n + 1))
   constructor
   · rw [Iso.trans_inv, ← pullback_comp,
       T₀.pullback_picardHom_move_to_front j e he hE hTail,
-      picardHom_transport_mutation ρ b hOpp c hΦ T onSection a d (reorder(j,x))]
+      picardHom_transport_mutation b ρ hOpp c hΦ T onSection a d (reorder(j,x))]
     simp only [hfirst', x', U, R, S', τ]
   · exact bidegree_lt_of_section_link j x d
 
