@@ -76,4 +76,22 @@ theorem Ray.mutationFan_hirzebruch_ray_generators (onSection : Bool)
     fin_cases j <;> norm_num [-Basis.detDualEquiv_apply, h00, h10]
     module
 
+include hu in
+/-- The chosen section of a Hirzebruch fan has the other section as its opposite ray. -/
+theorem hull_neg_primitiveGenerator_mem_of_hirzebruch :
+    hull ℝ {i (-(u 0).primitiveGenerator)} ∈ Φ.cones := by
+  have h₀ : (u 0).primitiveGenerator = b 0 := congrFun hu 0
+  have h₂ : (u 2).primitiveGenerator = -b 0 := congrFun hu 2
+  rw [h₀, ← h₂]
+  exact (u 2).hull_primitiveGenerator_mem
+
+include hu in
+/-- Mutation at the chosen section increases the signed parameter by one
+in the same lattice basis. -/
+theorem Ray.mutationFan_hirzebruch_ray_generators_of_section_zero (hρ : ρ = u 0) :
+    (fun j ↦ ((u.trans r) j).primitiveGenerator) =
+      ![b 0, b 1, -b 0, (e + 1) • b 0 - b 1] := by
+  obtain ⟨d, h₀, h₁, hd⟩ := ρ.mutationFan_hirzebruch_ray_generators b hOpp e u hu true hρ
+  simpa only [h₀, h₁, ↓reduceIte, sub_zero] using hd
+
 end TauCeti.Toric.Fan
