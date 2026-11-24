@@ -139,6 +139,13 @@ theorem centerOpen_le_preimage_distinctCentersOpen (w : Word B C) (P : ChargeSee
   | nil => simp
   | cons w s => rw [centerOpen_cons]; exact inf_le_right
 
+/-- The simultaneous noncollision open lies in the noncollision open of the initial seed. -/
+theorem centerOpen_le_centerOpen_nil (w : Word B C) (P : ChargeSeed B N) :
+    w.centerOpen k P ≤ (Path.nil : Word B B).centerOpen k P := by
+  induction w with
+  | nil => exact le_rfl
+  | cons w s ih => exact inf_le_left.trans ih
+
 /-- The domain of a concatenation is the intersection of the first domain with the
 inverse image of the second domain. -/
 theorem centerOpen_comp (w : Word B C) (v : Word C D) (P : ChargeSeed B N) :
@@ -256,6 +263,28 @@ theorem centerPartialMap_opensRange (w : Word B C) (P : ChargeSeed B N) :
     (w.centerPartialMap K P).hom.opensRange = (w.centerIso K).inv ⁻¹ᵁ w.centerOpen K P := by
   simp only [centerPartialMap_hom, Scheme.Hom.opensRange_comp, Scheme.Opens.opensRange_ι,
     centerPartialMap_domain, Scheme.Hom.inv_preimage]
+
+/-- The reached centers of a loop lie in the original noncollision open when the
+initial charge kernel equals the exchange kernel. Equal charges are detected by
+the basis differences in that kernel. -/
+theorem centerPartialMap_opensRange_le_centerOpen_nil (w : Word B B) (P : ChargeSeed B N)
+    (hker : B.matrix.mulVecLin.ker = P.charge.ker) :
+    (w.centerPartialMap K P).hom.opensRange ≤ (Path.nil : Word B B).centerOpen K P := by
+  have h := (w.exchangeKernel_eq_chargeTarget_ker P hker).symm.trans hker
+  have hclasses (i j : ι) : (w.chargeTarget P).charge (e i) = (w.chargeTarget P).charge (e j) ↔
+      P.charge (e i) = P.charge (e j) := by
+    rw [← sub_eq_zero, ← map_sub, ← LinearMap.mem_ker, h, LinearMap.mem_ker, map_sub, sub_eq_zero]
+  have hU : distinctCentersOpen K (fun i ↦ (w.chargeTarget P).charge (e i)) =
+      (Path.nil : Word B B).centerOpen K P := by
+    rw [centerOpen_nil]
+    apply SetLike.ext
+    intro x
+    simp only [mem_distinctCentersOpen_iff, hclasses]
+  have hpre := w.centerOpen_le_preimage_distinctCentersOpen K P
+  rw [hU] at hpre
+  rw [centerPartialMap_opensRange, Scheme.Hom.inv_preimage]
+  exact ((w.centerIso K).hom.image_mono hpre).trans
+    ((w.centerIso K).hom.image_preimage_le _)
 
 instance (w : Word B C) (P : ChargeSeed B N) :
     (w.centerPartialMap K P).IsOver (structureMap K A) (structureMap K A) where
