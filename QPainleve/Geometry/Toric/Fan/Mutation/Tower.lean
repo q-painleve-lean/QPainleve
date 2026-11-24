@@ -199,4 +199,29 @@ theorem Ray.mutation_resolution_poleIdeal_iff (hΦ : Φ.IsRegular) (hc : Φ.IsCo
       (ρ.mutationBlowupIso b hOpp c).hom).comap_of_isDominant f) hD' (Q := D)
   simpa only [hf, hproj, hT.ramificationIdealSheafToBase_def ℂ] using h₁.trans h₂.symm
 
+include hOpp in
+/-- Transport a pole factorization to a closed point tower whose projection represents the
+mutation composite via an isomorphism of resolving surfaces. -/
+theorem Ray.mutation_projection_poleIdeal (hΦ : Φ.IsRegular) (hc : Φ.IsComplete)
+    [Nonempty Φ.cones]
+    [SmoothOfRelativeDimension 2 s[Φ]] [SmoothOfRelativeDimension 2 s[Ψ]]
+    [IsIntegral W] [IsModification T.toBase]
+    {m : ℕ} {Z : Scheme} {T' : BlowupTower X[Ψ] m Z} (hT' : IsClosedPointTower X[Ψ] T')
+    (k : W ≅ Z)
+    (hlink : T.toBase.toRationalMap.comp q = (k.hom ≫ T'.toBase).toRationalMap)
+    (D : W.IdealSheafData)
+    (hD : (Φ.boundaryIdeal hΦ₀).comap T.toBase = D * hT.ramificationIdealSheafToBase ℂ) :
+    ((Ψ).boundaryIdeal hΨ₀).comap T'.toBase =
+      D.comap k.inv * hT'.ramificationIdealSheafToBase ℂ := by
+  let : W.Over S := ⟨T.toBase ≫ s[Φ]⟩
+  let : SmoothOfRelativeDimension 2 (W ↘ S) := hT.smoothOfRelativeDimension s[Φ]
+  let : Smooth (W ↘ S) := SmoothOfRelativeDimension.smooth 2 _
+  obtain ⟨hOver, hPole⟩ :=
+    ρ.mutation_resolution_poleIdeal_iff b hOpp c hT hΦ hc (k.hom ≫ T'.toBase) D hlink
+  let := hOver
+  have hram := hT'.comap_ramificationIdealSheafToBase ℂ k (f := k.hom ≫ T'.toBase) rfl
+  have h := congrArg (fun J : W.IdealSheafData ↦ J.comap k.inv) (hPole.mp hD)
+  simpa only [hram.symm, comap_mul, ← comap_comp, k.inv_hom_id_assoc, k.inv_hom_id,
+    comap_id] using h
+
 end TauCeti.Toric.Fan

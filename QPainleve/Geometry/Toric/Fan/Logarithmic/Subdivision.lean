@@ -88,18 +88,16 @@ theorem IsSubdivision.isEffectiveCartier_ramificationIdealSheaf
   simpa only [hD.mul_colon_cancel_right] using
     hTotal.colon hD.locallyPrincipal (fun U ↦ Ideal.mul_le_right)
 
-/-- Pulling a toric logarithmic form back along a dominant morphism into a
-regular subdivision gives the same pole factorization on the source whether
-computed before or after composing with the subdivision projection. -/
+/-- A dominant map from a smooth integral surface and its composite with a regular toric
+subdivision have the same pole factorizations along the respective toric boundaries. -/
 theorem IsSubdivision.comap_boundaryIdeal_eq_mul_ramificationIdealSheaf_comp_iff
     (H : Ω.IsSubdivision Φ) (hΦ : Φ.IsRegular) (hΩ : Ω.IsRegular)
     (hc : Φ.IsComplete) (hN : Module.finrank ℤ N = 2)
     {Z : Scheme} [Z.Over S] [IsIntegral Z] [SmoothOfRelativeDimension 2 (Z ↘ S)]
     (g : Z ⟶ X[Ω]) [g.IsOver S] [IsDominant g] (P : Z.IdealSheafData) :
-    let hcΩ := H.isComplete_iff.mpr hc
     letI : Smooth (Z ↘ S) := SmoothOfRelativeDimension.smooth 2 _
     (D[Φ, hc]).comap (g ≫ π[H]) = P * ramificationIdealSheaf ℂ (g ≫ π[H]) ↔
-      (D[Ω, hcΩ]).comap g = P * ramificationIdealSheaf ℂ g := by
+      (D[Ω, H.isComplete_iff.mpr hc]).comap g = P * ramificationIdealSheaf ℂ g := by
   let : Nonempty Φ.cones := hc.nonempty_cones
   let : Nonempty Ω.cones := H.nonempty_cones_of_nonempty hc.nonempty_cones
   let : SmoothOfRelativeDimension 2 s[Φ] :=
@@ -107,8 +105,8 @@ theorem IsSubdivision.comap_boundaryIdeal_eq_mul_ramificationIdealSheaf_comp_iff
   let : SmoothOfRelativeDimension 2 s[Ω] :=
     hN ▸ Ω.smoothOfRelativeDimension_algebraicRealizationStructureMap hΩ
   let : Smooth s[Ω] := SmoothOfRelativeDimension.smooth 2 _
-  exact comap_eq_mul_ramificationIdealSheaf_comp_iff ℂ g π[H] 2
-    ((H.isEffectiveCartier_ramificationIdealSheaf hΦ hΩ hc hN).comap_of_isDominant g)
+  have hRam := (H.isEffectiveCartier_ramificationIdealSheaf hΦ hΩ hc hN).comap_of_isDominant g
+  exact TauCeti.AlgebraicGeometry.comap_eq_mul_ramificationIdealSheaf_comp_iff ℂ g π[H] 2 hRam
     (H.comap_boundaryIdeal_eq_mul_ramificationIdealSheaf hΦ hΩ hc hN)
 
 /-- On a smooth integral surface mapping dominantly to a common regular subdivision,
