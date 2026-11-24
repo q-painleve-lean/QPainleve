@@ -13,7 +13,6 @@ public import QPainleve.AlgebraicGeometry.Curves.Node.GenericPoint
 import Mathlib.Logic.Equiv.Fin.Basic
 import Mathlib.Logic.Equiv.Option
 import QPainleve.AlgebraicGeometry.Curves.Node.Conductor.Lift
-import QPainleve.AlgebraicGeometry.Curves.Node.Conductor.Map
 import QPainleve.AlgebraicGeometry.IdealSheaf.BaseChange
 import QPainleve.AlgebraicGeometry.Morphisms.IsoLocus
 import TauCeti.AlgebraicGeometry.Curves.Node.Reduced
