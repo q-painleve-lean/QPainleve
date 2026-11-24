@@ -183,16 +183,6 @@ local notation "swappedBasis" => b.reindex (Equiv.swap 0 1)
 local notation "swappedRays" =>
   Equiv.trans (Equiv.trans (Equiv.swap (0 : Fin 4) 1) (Equiv.swap 2 3)) r
 
-include hr in
-private theorem quadric_swapped_generators :
-    (fun j ↦ ((swappedRays) j).primitiveGenerator) =
-      ![(swappedBasis) 0, (swappedBasis) 1, -(swappedBasis) 0,
-        (0 : ℤ) • (swappedBasis) 0 - (swappedBasis) 1] := by
-  have hj (j : Fin 4) := congrFun hr j
-  funext j
-  fin_cases j <;>
-    simp [Equiv.swap_apply_def, Basis.reindex_apply, Equiv.trans_apply, hj]
-
 private theorem quadric_mutationRuling_ne_of_two_high_orders
     [Φ.algebraicRealization.IsProjectiveOver ℂ]
     {T : BlowupTower X (n + 1) Y} (hT : IsClosedPointTower X T)
@@ -219,20 +209,10 @@ private theorem quadric_mutationRuling_ne_of_two_high_orders
   let := hdim
   let bs := (swappedBasis)
   let rs := (swappedRays)
-  have hrs := quadric_swapped_generators b r hr
-  let Calt := Fan.hirzebruchPicardBasis bs 0 hΦ rs hrs
-  have hC : Calt = (C).reindex (Equiv.swap 0 1) := by
-    have he : Calt.repr.symm = ((C).reindex (Equiv.swap 0 1)).repr.symm := by
-      apply (Finsupp.basisSingleOne : Basis (Fin 2) ℤ (Fin 2 →₀ ℤ)).ext'
-      intro k
-      simp only [Finsupp.coe_basisSingleOne, Basis.repr_symm_single_one]
-      fin_cases k <;> simp [Calt, rs, Basis.reindex_apply, Equiv.swap_apply_def, Equiv.trans_apply]
-    exact Basis.repr_injective (congrArg LinearEquiv.symm he)
-  have hβ : (Fan.hirzebruchPicardBasis bs 0 hΦ rs hrs).repr
-      ((T.picardMarking hT fX).symm (Additive.ofMul (pullback g H))).1 1 = β := by
-    have he : Calt.repr x.1 1 = β := by
-      simp only [hC, Basis.repr_reindex_apply, Equiv.symm_swap, Equiv.swap_apply_right, β]
-    exact he
+  have hrs := Fan.quadric_swapped_generators b r hr
+  have hβ : (Fan.hirzebruchPicardBasis bs 0 hΦ rs hrs).repr x.1 1 = β := by
+    rw [Fan.hirzebruchPicardBasis_quadric_swap b hΦ r hr, Basis.repr_reindex_apply]
+    rfl
   have hv₀ : v = b 0 := congrFun hr 0
   have hm : (bs.coord 0).toAddMonoidHom = m := by
     apply congrArg LinearMap.toAddMonoidHom
@@ -384,8 +364,8 @@ theorem exists_quadric_resolution_of_two_smooth_high_centers
         orders j - α ∧
       (∀ u : Fin n, y.2 (u.natAdd 1 |>.natAdd 1) = x.2 (j.succAbove (l.succAbove u))) ∧
       0 < C''.repr y.1 1 ∧
-      hirzebruchSarkisovBidegree (C''.repr y.1 1).toNat (∑ u, -y.2 u).toNat <
-        hirzebruchSarkisovBidegree β.toNat (∑ u, orders u).toNat := by
+      ∀ M' M, hirzebruchSarkisovBidegree (C''.repr y.1 1).toNat M' <
+        hirzebruchSarkisovBidegree β.toNat M := by
   intro hX hX' hX'' hdim hdim' hdim'' hY hmod x β α orders hjhigh hjle hlhigh hlle hsmall
   let := hX
   let := hX'
@@ -510,7 +490,8 @@ theorem exists_quadric_resolution_of_two_smooth_high_centers
   · intro u
     simpa only [y, g', Iso.trans_inv, Category.assoc, Fin.natAdd_succAbove_natAdd, hmrest] using
       h₂rest (u.natAdd 1)
-  · have hlt := hd.2
+  · intro M' M
+    have hlt := hd.2
     simp only [Prod.Lex.lt_iff, ofLex_hirzebruchSarkisovBidegree, hy]
     exact Or.inl (by omega)
 
