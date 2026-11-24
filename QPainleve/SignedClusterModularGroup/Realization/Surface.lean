@@ -10,6 +10,7 @@ public import QPainleve.AlgebraicGeometry.Curves.Node.CycleAction
 public import QPainleve.Geometry.Toric.CharacterTorus.Scheme
 public import Mathlib.AlgebraicGeometry.Birational.RationalMap
 public import Mathlib.LinearAlgebra.BilinearForm.IsometryEquiv
+public import Mathlib.LinearAlgebra.PerfectPairing.Basic
 
 /-!
 # Marked surfaces with numbered nodal boundary
@@ -87,6 +88,18 @@ instance : IsLocallyNoetherian M.surface := by
 /-- The underlying Picard marking, with tensor product written additively. -/
 def picardMarking : L ≃ₗ[ℤ] Additive (LineBundleClass M.surface) :=
   M.marking.toLinearEquiv
+
+/-- A perfect pairing on the marked lattice gives a perfect Picard intersection pairing. -/
+theorem isPerfPair_intersectionForm [B.IsPerfPair] :
+    letI : SmoothOfRelativeDimension 2 (M.surface ↘ S) := M.smooth
+    letI : M.surface.IsProjectiveOver k := M.projective
+    (Chow.intersectionBilinForm k M.surface).IsPerfPair := by
+  let : SmoothOfRelativeDimension 2 (M.surface ↘ S) := M.smooth
+  let : M.surface.IsProjectiveOver k := M.projective
+  refine LinearMap.IsPerfPair.congr B M.marking.toLinearEquiv.symm
+    M.marking.toLinearEquiv.symm _ (LinearMap.ext₂ fun x y ↦ ?_)
+  simpa only [LinearMap.compl₁₂_apply, LinearEquiv.symm_symm, LinearEquiv.coe_coe,
+    LinearMap.BilinForm.IsometryEquiv.coe_toLinearEquiv] using M.marking.map_app y x
 
 variable {M} {L' : Type u} [AddCommGroup L'] {B' : LinearMap.BilinForm ℤ L'} {X' : Scheme.{u}}
   {N : MarkedSurface k n B' X'}

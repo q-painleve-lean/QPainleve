@@ -30,96 +30,13 @@ open Scheme Scheme.IdealSheafData TopologicalSpace
 
 namespace QPainleve.SignedClusterModularGroup
 
-open MarkedSurface (surfaceIso boundaryIso)
+open MarkedSurface (surfaceIso boundaryIso boundaryImageIso_hom_comp imagePairIso
+  imagePairIso_hom_comp imagePairIso_boundaryAction)
 
 local notation "S" => Spec (CommRingCat.of ℂ)
 local notation "Xtor[" r "]" => Spec (CommRingCat.of (LaurentRing ℂ (Fin r)))
 
-section Residual
-
-universe u
-
-variable {k : Type u} [Field k] [IsSepClosed k] [Infinite k] {n : ℕ} [NeZero n]
-  {L₀ L₁ : Type u} [AddCommGroup L₀] [AddCommGroup L₁]
-  {B₀ : LinearMap.BilinForm ℤ L₀} {B₁ : LinearMap.BilinForm ℤ L₁}
-  {X Y : Scheme.{u}} [IsIntegral X] [X.IsSeparated] [Y.IsSeparated]
-  {M : MarkedSurface k n B₀ X} {P Q : MarkedSurface k n B₁ Y}
-  {F G : X ⤏ Y} {I J : B₁.IsometryEquiv B₀} {g h : DihedralGroup n}
-  (R : FiberRealization M P F I g) (R' : FiberRealization M Q G J h)
-
-namespace FiberRealization
-
-/-- Equality of the Picard actions makes the residual isomorphism identify the two
-target markings. -/
-theorem pullback_picardMarking_targetIso (hI : I = J) (a : L₁) :
-    LineBundleClass.pullback (surfaceIso (R.iso.symm ≪≫ R'.iso)).hom
-      (Q.picardMarking a).toMul = (P.picardMarking a).toMul := by
-  apply (LineBundleClass.pullbackEquiv (surfaceIso R.iso)).injective
-  have ha := congrArg Additive.toMul ((R'.picard_eq a).symm.trans
-    ((congrArg (fun f : B₁.IsometryEquiv B₀ ↦ M.picardMarking (f a)) hI).symm.trans
-      (R.picard_eq a)))
-  simpa only [LineBundleClass.pullbackEquiv_apply, LineBundleClass.pullback_comp,
-    MarkedSurface.surfaceIso_trans, MarkedSurface.surfaceIso_symm, Iso.trans_hom,
-    Iso.symm_hom, Category.assoc, Iso.hom_inv_id_assoc, toMul_ofMul] using ha
-
-/-- Equality of the boundary actions makes the residual isomorphism preserve every
-numbered branch. -/
-theorem boundaryCycleAction_targetIso (hg : g = h) :
-    letI : PrestableFamily (P.boundary ↘ Spec (.of k)) := P.prestable
-    letI : PrestableFamily (Q.boundary ↘ Spec (.of k)) := Q.prestable
-    (boundaryIso (R.iso.symm ≪≫ R'.iso)).boundaryCycleAction P.cycle Q.cycle = 1 := by
-  let : PrestableFamily (M.boundary ↘ Spec (.of k)) := M.prestable
-  let : PrestableFamily (P.boundary ↘ Spec (.of k)) := P.prestable
-  let : PrestableFamily (Q.boundary ↘ Spec (.of k)) := Q.prestable
-  have hpair : R.iso ≪≫ (R.iso.symm ≪≫ R'.iso) = R'.iso := by simp
-  have hcomp := (boundaryIso R.iso).boundaryCycleAction_trans M.cycle P.cycle
-    (boundaryIso (R.iso.symm ≪≫ R'.iso)) Q.cycle
-  have hmul : h = (boundaryIso (R.iso.symm ≪≫ R'.iso)).boundaryCycleAction P.cycle Q.cycle * h := by
-    simpa only [← MarkedSurface.boundaryIso_trans, hpair, R'.boundaryAction_eq,
-      R.boundaryAction_eq, hg] using hcomp
-  exact mul_right_cancel ((one_mul h).trans hmul).symm
-
-end FiberRealization
-
-end Residual
-
 local notation "D[" P "]" => Scheme.Hom.ker (Over.Hom.left (Arrow.hom (MarkedSurface.pair P)))
-
-namespace MarkedSurface
-
-universe u
-
-variable {k : Type u} [Field k] [IsSepClosed k] [Infinite k] {n : ℕ} [NeZero n]
-  {L : Type u} [AddCommGroup L] {B : LinearMap.BilinForm ℤ L} {X : Scheme.{u}}
-  (P : MarkedSurface k n B X)
-
-/-- The specified closed boundary identifies with the subscheme cut out by its ideal. -/
-private def boundaryImageIso : P.boundary ≅ D[P].subscheme :=
-  letI : IsClosedImmersion P.pair.hom.left := P.closedImmersion
-  asIso P.pair.hom.left.toImage
-
-@[reassoc]
-private theorem boundaryImageIso_hom_comp :
-    (boundaryImageIso P).hom ≫ D[P].subschemeι = P.pair.hom.left :=
-  P.pair.hom.left.toImage_imageι
-
-private instance :
-    (boundaryImageIso P).hom.IsOver (Spec (.of k)) := by
-  constructor
-  rw [over_eq_subschemeι_comp, boundaryImageIso_hom_comp_assoc]
-  exact Over.w P.pair.hom
-
-/-- The subscheme cut out by the ideal of a marked surface's boundary is prestable. -/
-theorem prestable_boundaryImage : PrestableFamily (D[P].subscheme ↘ Spec (.of k)) := by
-  have h : (boundaryImageIso P).hom ≫ (D[P].subscheme ↘ Spec (.of k)) =
-      (P.boundary ↘ Spec (.of k)) := HomIsOver.comp_over
-  exact (MorphismProperty.cancel_left_of_respectsIso (P := @PrestableFamily)
-    (boundaryImageIso P).hom _).mp (h.symm ▸ P.prestable)
-
-end MarkedSurface
-
-open MarkedSurface (boundaryImageIso boundaryImageIso_hom_comp boundaryImageIso_hom_comp_assoc)
-
 section Toric
 
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
@@ -161,72 +78,12 @@ structure IsNodalContraction : Prop where
     (_ : IsNodalBoundaryTower D[P] (P.surface ↘ S) (𝟙 P.surface) A)
     (e : W ≅ (Model[b,s,c]).1), e.inv ≫ A.toBase = p.projection
 
-variable (P) in
-private def imageCycle :
-    NodalCycleNumbering (Empty.elim : Empty → (D[P].subscheme ↘ S).smoothLocus) n :=
-  letI : PrestableFamily (P.boundary ↘ S) := P.prestable
-  (boundaryImageIso P).mapNodalCycleNumbering P.cycle
-
-private theorem boundaryCycleAction_boundaryImageIso :
-    letI : PrestableFamily (P.boundary ↘ S) := P.prestable
-    (boundaryImageIso P).boundaryCycleAction P.cycle (imageCycle P) = 1 := by
-  let : PrestableFamily (P.boundary ↘ S) := P.prestable
-  refine ((boundaryImageIso P).existsUnique_boundaryCycleAction P.cycle
-    (D := imageCycle P)).unique (Iso.branch_boundaryCycleAction _ _ _) ?_
-  intro j l
-  simpa only [map_one, Equiv.Perm.one_apply, imageCycle] using
-    ((boundaryImageIso P).branch_mapNodalCycleNumbering P.cycle j l)
-
-private theorem imageCycle_genericPoint (j : ZMod n) :
-    letI : PrestableFamily (P.boundary ↘ S) := P.prestable
-    D[P].subschemeι ((imageCycle P).componentGenericPoint j) =
-      P.pair.hom.left (P.cycle.componentGenericPoint j) := by
-  let : PrestableFamily (P.boundary ↘ S) := P.prestable
-  have h := (boundaryImageIso P).apply_componentGenericPoint P.cycle (imageCycle P) j
-  rw [boundaryCycleAction_boundaryImageIso, map_one, Equiv.Perm.one_apply] at h
-  rw [← h, ← Scheme.Hom.comp_apply, boundaryImageIso_hom_comp]
-
-private def imagePairIso (e : P.pair ≅ Q.pair) : D[P].subscheme ≅ D[Q].subscheme :=
-  (boundaryImageIso P).symm ≪≫ (boundaryIso e ≪≫ boundaryImageIso Q)
-
-private instance (e : P.pair ≅ Q.pair) : (imagePairIso e).hom.IsOver S :=
-  inferInstanceAs (((boundaryImageIso P).inv ≫ (boundaryIso e).hom ≫
-    (boundaryImageIso Q).hom).IsOver S)
-
-private theorem imagePairIso_hom_comp (e : P.pair ≅ Q.pair) :
-    (imagePairIso e).hom ≫ D[Q].subschemeι = D[P].subschemeι ≫ (surfaceIso e).hom := by
-  apply (cancel_epi (boundaryImageIso P).hom).mp
-  simpa only [imagePairIso, Iso.trans_hom, Iso.symm_hom, Category.assoc, Iso.hom_inv_id_assoc,
-    boundaryImageIso_hom_comp_assoc, boundaryImageIso_hom_comp] using
-      MarkedSurface.boundaryIso_hom_comp e
-
-private theorem imagePairIso_boundaryAction (e : P.pair ≅ Q.pair)
-    (hact : letI : PrestableFamily (P.boundary ↘ S) := P.prestable
-            letI : PrestableFamily (Q.boundary ↘ S) := Q.prestable
-            (boundaryIso e).boundaryCycleAction P.cycle Q.cycle = 1) :
-    (imagePairIso e).boundaryCycleAction (imageCycle P) (imageCycle Q) = DihedralGroup.r 0 := by
-  let : PrestableFamily (P.boundary ↘ S) := P.prestable
-  let : PrestableFamily (Q.boundary ↘ S) := Q.prestable
-  let : (boundaryImageIso P).symm.hom.IsOver S :=
-    inferInstanceAs ((boundaryImageIso P).inv.IsOver S)
-  let : (boundaryIso e ≪≫ boundaryImageIso Q).hom.IsOver S :=
-    inferInstanceAs (((boundaryIso e).hom ≫ (boundaryImageIso Q).hom).IsOver S)
-  calc
-    _ = (boundaryIso e ≪≫ boundaryImageIso Q).boundaryCycleAction P.cycle (imageCycle Q) *
-          (boundaryImageIso P).symm.boundaryCycleAction (imageCycle P) P.cycle :=
-      Iso.boundaryCycleAction_trans _ _ _ _ _
-    _ = _ := by
-      have hinv := (boundaryImageIso P).boundaryCycleAction_symm P.cycle (imageCycle P)
-      rw [boundaryCycleAction_boundaryImageIso, inv_one] at hinv
-      rw [Iso.boundaryCycleAction_trans (boundaryIso e) P.cycle Q.cycle, hinv,
-        boundaryCycleAction_boundaryImageIso, hact, mul_one, mul_one, DihedralGroup.one_def]
-
 private theorem isOrientedCycleSubdivision_comp_boundaryImage :
-    (p.boundaryMap ≫ (boundaryImageIso P).hom).IsOrientedCycleSubdivision T (imageCycle P) := by
+    (p.boundaryMap ≫ P.boundaryImageIso.hom).IsOrientedCycleSubdivision T P.imageCycle := by
   let : PrestableFamily (P.boundary ↘ S) := P.prestable
   exact p.orientedSubdivision.comp
-    ((boundaryImageIso P).isOrientedCycleSubdivision_of_cycleOrientationSign_eq_one _ _
-      (by rw [boundaryCycleAction_boundaryImageIso, map_one]))
+    (P.boundaryImageIso.isOrientedCycleSubdivision_of_cycleOrientationSign_eq_one _ _
+      (by rw [P.boundaryCycleAction_boundaryImageIso, map_one]))
 
 variable (u : ZMod m ≃ Φ.Ray)
   (hvertices : ∀ j, Dtor[Φ,h₀].dualGraphVertexEquiv a (T.vertex j) =
@@ -261,28 +118,6 @@ private theorem projection_prime_origin :
   rw [internalBlowupBoundaryPrime_val u hvertices, ← Hom.comp_apply, ← p.boundary_comp,
     Hom.comp_apply, p.component_zero]
 
-private theorem boundaryPrime_mem_boundaryPrimes
-    (hP : D[P].IsEffectiveCartier) : (P.boundaryPrime hP 0 : P.surface) ∈ D[P].boundaryPrimes := by
-  let : PrestableFamily (P.boundary ↘ S) := P.prestable
-  let : IsClosedImmersion P.pair.hom.left := P.closedImmersion
-  refine mem_boundaryPrimes.mpr ⟨?_, (P.boundaryPrime hP 0).property⟩
-  have hs : (D[P].support : Set P.surface) = Set.range P.pair.hom.left :=
-    P.pair.hom.left.support_ker.trans P.pair.hom.left.isClosedEmbedding.isClosed_range.closure_eq
-  rw [P.coe_boundaryPrime]
-  rw [← SetLike.mem_coe, hs]
-  exact Set.mem_range_self _
-
-private theorem isPerfPair_intersectionForm (P : MarkedSurface ℂ n B₁ Xtor[r]) [B₁.IsPerfPair] :
-    letI : SmoothOfRelativeDimension 2 (P.surface ↘ S) := P.smooth
-    letI : P.surface.IsProjectiveOver ℂ := P.projective
-    (Chow.intersectionBilinForm ℂ P.surface).IsPerfPair := by
-  let : SmoothOfRelativeDimension 2 (P.surface ↘ S) := P.smooth
-  let : P.surface.IsProjectiveOver ℂ := P.projective
-  refine LinearMap.IsPerfPair.congr B₁ P.marking.toLinearEquiv.symm
-    P.marking.toLinearEquiv.symm _ (LinearMap.ext₂ fun x y ↦ ?_)
-  simpa only [LinearMap.compl₁₂_apply, LinearEquiv.symm_symm, LinearEquiv.coe_coe,
-    LinearMap.BilinForm.IsometryEquiv.coe_toLinearEquiv] using P.marking.map_app y x
-
 variable [Φ.algebraicRealization.IsProjectiveOver ℂ] [B₁.IsPerfPair]
   (hdet : ∀ j, b.detDualEquiv (u j).primitiveGenerator (u (j + 1)).primitiveGenerator = 1)
   (hnodes : ∀ j, ∃ σ : Φ.cones, (u j).toCone ≤ σ ∧ (u (j + 1)).toCone ≤ σ ∧
@@ -310,27 +145,27 @@ theorem comp_evaluation_eq_of_marked_actions
   let : SmoothOfRelativeDimension 2 (Q.surface ↘ S) := Q.smooth
   let : P.surface.IsProjectiveOver ℂ := P.projective
   let : Q.surface.IsProjectiveOver ℂ := Q.projective
-  let := isPerfPair_intersectionForm P
-  let := isPerfPair_intersectionForm Q
+  let := P.isPerfPair_intersectionForm
+  let := Q.isPerfPair_intersectionForm
   let vB := imagePairIso e
   have hv := imagePairIso_hom_comp e
   have hB := imagePairIso_boundaryAction e hact
   obtain ⟨_, _, A, hA, eP, heP⟩ := hp.exists_tower
   obtain ⟨_, _, B, hB', eQ, heQ⟩ := hq.exists_tower
-  let f := p.boundaryMap ≫ (boundaryImageIso P).hom
-  let g := q.boundaryMap ≫ (boundaryImageIso Q).hom
+  let f := p.boundaryMap ≫ P.boundaryImageIso.hom
+  let g := q.boundaryMap ≫ Q.boundaryImageIso.hom
   have hf : f ≫ D[P].subschemeι = (Model[b,s,c]).2.boundaryι ≫ p.projection := by
     simpa only [f, Category.assoc, boundaryImageIso_hom_comp] using p.boundary_comp
   have hg : g ≫ D[Q].subschemeι = (Model[b,s,d]).2.boundaryι ≫ q.projection := by
     simpa only [g, Category.assoc, boundaryImageIso_hom_comp] using q.boundary_comp
   let x : D[P].boundaryPrimes :=
-    ⟨P.boundaryPrime hp.cartier 0, boundaryPrime_mem_boundaryPrimes hp.cartier⟩
+    ⟨P.boundaryPrime hp.cartier 0, P.boundaryPrime_mem_boundaryPrimes hp.cartier 0⟩
   let y : D[Q].boundaryPrimes :=
-    ⟨Q.boundaryPrime hq.cartier 0, boundaryPrime_mem_boundaryPrimes hq.cartier⟩
+    ⟨Q.boundaryPrime hq.cartier 0, Q.boundaryPrime_mem_boundaryPrimes hq.cartier 0⟩
   rw [p.evaluation_eq, q.evaluation_eq]
   simpa only [heP, heQ] using
     (Fan.comp_contractedXEvaluation_eq_of_matching_markings b s hΦ c d hA hB' eP eQ
-        (imageCycle P) (imageCycle Q) T hc
+        P.imageCycle Q.imageCycle T hc
         (by rw [heP]; exact p.projection_over) (by rw [heQ]; exact q.projection_over)
         (by rw [← comap_comp, heP]; exact p.support_comap)
         (by rw [← comap_comp, heQ]; exact q.support_comap)
@@ -345,8 +180,8 @@ theorem comp_evaluation_eq_of_marked_actions
           have hL : (Q.picardMarking a).toMul = L := congrArg Additive.toMul ha
           simpa only [heP, heQ, ← hL, hPic a] using
             (p.marked_pullback a).trans (q.marked_pullback a).symm) 0 hB x y
-        (by simpa only [x, P.coe_boundaryPrime] using (imageCycle_genericPoint (P := P) 0).symm)
-        (by simpa only [y, Q.coe_boundaryPrime] using (imageCycle_genericPoint (P := Q) 0).symm)
+        (by simpa only [x, P.coe_boundaryPrime] using (P.imageCycle_genericPoint 0).symm)
+        (by simpa only [y, Q.coe_boundaryPrime] using (Q.imageCycle_genericPoint 0).symm)
         (u origin)
         (by simpa only [heP, x, P.coe_boundaryPrime] using p.projection_prime_origin u hvertices)
         (by simpa only [heQ, y, Q.coe_boundaryPrime] using q.projection_prime_origin u hvertices))
