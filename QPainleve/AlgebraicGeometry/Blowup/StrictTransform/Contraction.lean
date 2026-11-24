@@ -211,29 +211,6 @@ private theorem exists_smoothPoint_and_isEffectiveCartier_comap_of_stalkOrder_eq
   rw [Scheme.support_ker_fromSpecResidueField_of_isClosed hqclosed]
   exact Set.singleton_subset_iff.mpr (hU hqS)
 
-omit [IsIntegral X] [IsNoetherian X] in
-private theorem exists_boundaryIso_of_strictTransform_eq {D : X.IdealSheafData}
-    {B : (I).blowup.IdealSheafData} (h : strict(D) = B)
-    (hJ : ((I).comap D.subschemeι).IsEffectiveCartier) :
-    ∃ e : B.subscheme ≅ D.subscheme, e.hom ≫ D.subschemeι = B.subschemeι ≫ π := by
-  let j := (I).blowupLift D.subschemeι hJ
-  have : IsClosedImmersion j := (I).isClosedImmersion_blowupLift D.subschemeι hJ
-  have : IsIso ((I).comap D.subschemeι).blowupToBase := isIso_blowupToBase_iff _ |>.mpr hJ
-  have hker : j.ker = B := by
-    rw [← Scheme.Hom.ker_comp_of_isIso ((I).comap D.subschemeι).blowupToBase j,
-      (I).blowupToBase_comp_blowupLift D.subschemeι hJ]
-    exact h
-  have hB : B.subschemeι.ker = j.ker := B.ker_subschemeι.trans hker.symm
-  let g := IsClosedImmersion.lift B.subschemeι j hB.le
-  have : IsIso g := IsClosedImmersion.isIso_lift _ _ hB
-  refine ⟨(asIso g).symm, ?_⟩
-  have hg : g ≫ B.subschemeι = j := IsClosedImmersion.lift_fac _ _ _
-  calc
-    (asIso g).inv ≫ D.subschemeι = (asIso g).inv ≫ j ≫ π := by
-      rw [(I).blowupLift_blowupToBase]
-    _ = B.subschemeι ≫ π := by
-      simp only [← hg, Category.assoc, asIso_inv, IsIso.inv_hom_id_assoc]
-
 include hp hSmooth in
 /-- A nodal anticanonical boundary on a smooth surface blown up at a closed point,
 omitting the exceptional component, descends isomorphically to its schematic image.
@@ -273,7 +250,7 @@ theorem IsEffectiveCartier.internalBlowdown_of_anticanonical
   obtain ⟨hm, hcanD⟩ := stalkOrder_and_canonical_of_strictTransform k hp hD hB' hcan'
   obtain ⟨q, hq, hqs, hJ⟩ :=
     exists_smoothPoint_and_isEffectiveCartier_comap_of_stalkOrder_eq_one k hp hD hm
-  obtain ⟨e, he⟩ := exists_boundaryIso_of_strictTransform_eq hstrict hJ
+  obtain ⟨e, he⟩ := (I).exists_subschemeIso_of_strictTransform_eq hstrict hJ
   have hmap : D = B.map π := by
     rw [← B.ker_subschemeι, map_ker, ← he, Scheme.Hom.ker_comp_of_isIso, D.ker_subschemeι]
   have hover : e.hom ≫ (D.subschemeι ≫ base[k,X]) =
