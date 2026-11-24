@@ -6,6 +6,7 @@ Authors: The QPainleve contributors
 module
 
 public import QPainleve.Geometry.Toric.Fan.Mutation.Indeterminacy
+public import QPainleve.Geometry.Toric.Fan.Mutation.OrderedBlowup
 
 import QPainleve.AlgebraicGeometry.Morphisms.Modification.Birational
 import QPainleve.AlgebraicGeometry.RationalMap.Composition.Basic
@@ -17,7 +18,9 @@ import QPainleve.Geometry.Toric.Fan.Separated
 If an ordered internal blowup tower resolves a toric elementary transformation,
 the first occurrence of the pivot can be performed first, keeping every other
 center in its original relative order. The projection through this pivot blowup
-recovers the given morphism to the mutated toric surface.
+recovers the given morphism to the mutated toric surface. The ordered remaining
+centers give a tower over the mutated pivot blowup, with the same boundary
+comparison even over the pivot fiber.
 
 The geometry is the elementary transformation of Gross, Hacking and Keel,
 [*Birational geometry of cluster algebras*, §3.1](https://arxiv.org/html/1309.2573v2#S3.SS1).
@@ -36,6 +39,7 @@ variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {Φ : Fan i} [hΦ : Nonempty Φ.cones]
   (b : Module.Basis (Fin 2) ℤ N) (ρ : Φ.Ray) (c : ℂˣ)
 
+local notation "v" => Ray.primitiveGenerator ρ
 local notation "hv" => Ray.primitiveGenerator_ne_zero ρ
 local notation "hp" => Ray.hull_primitiveGenerator_mem ρ
 local notation "J₀" => Ray.mutationSourceCenterIdeal b ρ c
@@ -108,5 +112,40 @@ theorem Ray.exists_ordered_pivot_factorization_of_resolves
   have : IsDominant (p ≫ (J₀).blowupToBase) := hproj ▸ inferInstanceAs (IsDominant F)
   simpa only [p, Category.assoc] using comp_mutationBlowupIso_eq_of_resolves b ρ c hOpp p r
     (by simpa only [hproj] using hr)
+
+local notation "ray(" a ")" => Φ.mutationFanRayEquiv b hv hp hOpp (s a)
+local notation "param(" a ")" =>
+  d a * c ^ max (Module.Basis.det b ![Ray.primitiveGenerator (s a), v]) 0
+local notation "hΨ" => Nonempty.intro (Φ.mutationFanConeEquiv b hv hp hOpp (Subtype.mk _ hp))
+local notation "targetTail(" k ")" => alongBoundary (ρ.mutationTargetBoundaryι b hOpp c)
+  (fun a ↦ Ray.internalCenter (h₀ := hΨ) b (ray(Fin.succAbove k a)) (param(Fin.succAbove k a)))
+
+/-- A specified morphism resolving the elementary transformation is the projection
+of the transported tower followed by the target pivot projection. The first
+source pivot is extracted and the remaining indices keep their relative order.
+The isomorphism of the tails identifies their strict boundaries and matches the
+actual center ideals, including infinitely near centers over the pivot fiber. -/
+theorem Ray.exists_ordered_mutation_factorization_of_resolves
+    (hΦreg : Φ.IsRegular) (r : M.1 ⟶ (Ψ).algebraicRealization)
+    (hr : have := isIntegral_internalBlowupTower b s d hΦreg
+          have := isModification_internalBlowupTower_toBase b s d hΦreg
+          (F).toRationalMap.comp q = r.toRationalMap) :
+    ∃ k : Fin (n + 1), s k = ρ ∧ d k = c ∧
+      (∀ a < k, (s a, d a) ≠ (ρ, c)) ∧
+      ∃ (e : M.1 ≅ (tail(k)).1) (g : (tail(k)).1 ≅ (targetTail(k)).1),
+        IsLift (E) (tail(k)).2.toTower (targetTail(k)).2.toTower g ∧
+        e.hom ≫ (tail(k)).2.toTower.toBase ≫ (J₀).blowupToBase = F ∧
+        M.2.boundaryι ≫ e.hom = (tail(k)).2.boundaryι ∧
+        e.hom ≫ g.hom ≫ (targetTail(k)).2.toTower.toBase ≫ (J₁).blowupToBase = r ∧
+        (tail(k)).2.boundaryι ≫ g.hom =
+          (ρ.mutationBoundaryIso b hOpp c hΦreg).hom ≫ (targetTail(k)).2.boundaryι := by
+  have := isIntegral_internalBlowupTower b s d hΦreg
+  have := isModification_internalBlowupTower_toBase b s d hΦreg
+  obtain ⟨k, hk₀, hk₁, hk, e, he, hb, hr'⟩ :=
+    ρ.exists_ordered_pivot_factorization_of_resolves b c s d hOpp r hr
+  obtain ⟨g, hg, hgb⟩ := ρ.exists_isLift_mutation_alongBoundary b hOpp c
+    (fun a ↦ s (Fin.succAbove k a)) (fun a ↦ d (Fin.succAbove k a)) hΦreg
+  refine ⟨k, hk₀, hk₁, hk, e, g, hg, he, hb, ?_, hgb⟩
+  rw [hg.hom_toBase_assoc, hr']
 
 end TauCeti.Toric.Fan
