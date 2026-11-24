@@ -26,6 +26,19 @@ namespace AlgebraicGeometry.Scheme.IdealSheafData
 
 universe u
 
+/-- A closed embedding with the pulled-back ideal of a closed subscheme identifies
+its source with that subscheme along the ambient isomorphism. -/
+theorem exists_iso_of_comap_eq_ker {X Y Z : Scheme.{u}} (D : Y.IdealSheafData)
+    (e : X ≅ Y) (j : Z ⟶ X) [IsClosedImmersion j] (h : D.comap e.hom = j.ker) :
+    ∃ d : Z ≅ D.subscheme, d.hom ≫ D.subschemeι = j ≫ e.hom := by
+  have hker : D.subschemeι.ker = (j ≫ e.hom).ker := by
+    rw [ker_subschemeι]
+    have h' := h.trans (j.comap_ker_comp_of_isClosedImmersion e.hom).symm
+    simpa only [← comap_comp, Iso.inv_hom_id, comap_id] using congrArg (·.comap e.inv) h'
+  let d := IsClosedImmersion.lift D.subschemeι (j ≫ e.hom) hker.le
+  have : IsIso d := IsClosedImmersion.isIso_lift _ _ hker
+  exact ⟨asIso d, IsClosedImmersion.lift_fac _ _ _⟩
+
 /-- The reduced inverse image of a reduced closed subscheme agrees with that
 subscheme over the isomorphism locus of the ambient morphism. -/
 theorem preimage_isoLocus_le_subschemeMap_radical {X Y : Scheme.{u}}

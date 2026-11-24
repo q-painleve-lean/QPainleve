@@ -320,7 +320,10 @@ local notation "rankTwo" => (Eq.trans (Module.finrank_eq_card_basis b) (Fintype.
 local notation "χ[" τ "]" => LinearMap.toAddMonoidHom (b.detDualEquiv (Ray.primitiveGenerator τ))
 
 include hw hcomp in
-private theorem exists_binomialCenterRatio_of_determinant
+/-- In a positively numbered toric boundary, the quotient of the center ideal classes
+has multidegree zero and period `d / c`. The numbered nodes are the fixed points of
+the cones between successive rays. -/
+theorem exists_internalCenterRatio_nodalPicardCycleMulEquiv
     (hdet : ∀ t, b.detDualEquiv (r t).primitiveGenerator (r (t + 1)).primitiveGenerator = 1)
     (hnodes : ∀ t, ∃ σ : Φ.cones, (r t).toCone ≤ σ ∧ (r (t + 1)).toCone ≤ σ ∧
       (D).subschemeι ((C).dualGraphEdgeEquiv ps (e t)).val = Φ.distinguishedPointHom σ point)
@@ -359,6 +362,32 @@ private theorem exists_binomialCenterRatio_of_determinant
     (LineBundleClass.mk_toInvertibleSheaf_congr _ _ (ρ.internalCenter_val b c).symm)
     (LineBundleClass.mk_toInvertibleSheaf_congr _ _ (ρ.internalCenter_val b d).symm)
 
+include hw hcomp in
+/-- A weighted product of center-ideal quotients belongs to the normalization kernel.
+Its period in the positive determinant orientation is the product of the inverse
+center ratios to the same integer powers. -/
+theorem exists_prod_internalCenterRatio_nodalPicardCycleMulEquiv
+    (hdet : ∀ t, b.detDualEquiv (r t).primitiveGenerator (r (t + 1)).primitiveGenerator = 1)
+    (hnodes : ∀ t, ∃ σ : Φ.cones, (r t).toCone ≤ σ ∧ (r (t + 1)).toCone ≤ σ ∧
+      (D).subschemeι ((C).dualGraphEdgeEquiv ps (e t)).val = Φ.distinguishedPointHom σ point)
+    {κ : Type*} [Fintype κ] (s : κ → Φ.Ray) (c d : κ → ℂˣ) (x : κ → ℤ) :
+    let I (u : κ → ℂˣ) (label : κ) :=
+      LineBundleClass.mk ((s label).internalCenter b (u label)).property.toInvertibleSheaf
+    ∃ ratios : (LineBundleClass.pullbackHom ν).ker,
+      ratios.val = (∏ label, I c label ^ x label) / (∏ label, I d label ^ x label) ∧
+      Scheme.nodalPicardCycleMulEquiv hw ratios = ∏ label, (d label / c label) ^ x label := by
+  dsimp only
+  choose ratios hL hperiod using fun label : κ ↦
+    exists_internalCenterRatio_nodalPicardCycleMulEquiv hΦ r hw hcomp b hdet hnodes
+      (s label) (c label) (d label)
+  refine ⟨∏ label, ratios label ^ x label, ?_, ?_⟩
+  · calc
+      (↑(∏ label, ratios label ^ x label) : LineBundleClass C) =
+          ∏ label, (↑(ratios label ^ x label) : LineBundleClass C) :=
+        map_prod (LineBundleClass.pullbackHom ν).ker.subtype _ _
+      _ = _ := by simp only [Subgroup.coe_zpow, hL, div_zpow, Finset.prod_div_distrib]
+  · simp only [map_prod, map_zpow, hperiod]
+
 include hΦ in
 /-- A positive cyclic numbering of the rays gives a single orientation of the toric
 boundary in which each ratio of binomial center ideal classes has period `d / c`.
@@ -377,8 +406,9 @@ theorem exists_toric_boundary_period_of_cyclicRayNumbering (hc : Φ.IsComplete)
           LineBundleClass.mk (ρ.internalCenter b d).property.toInvertibleSheaf ∧
         Scheme.nodalPicardCycleMulEquiv hw x = d / c := by
   obtain ⟨e, o, v, hv, hcomp, hnodes⟩ := Φ.exists_toric_boundary_dualGraph_cycle hΦ hc ps b r hr
-  refine ⟨e, o, v, hv, hcomp, fun ρ c d ↦ exists_binomialCenterRatio_of_determinant hΦ r hv hcomp b
-    (fun t ↦ (hr t).1) (fun t ↦ ?_) ρ c d⟩
+  refine ⟨e, o, v, hv, hcomp, fun ρ c d ↦
+    exists_internalCenterRatio_nodalPicardCycleMulEquiv hΦ r hv hcomp b
+      (fun t ↦ (hr t).1) (fun t ↦ ?_) ρ c d⟩
   obtain ⟨σ, hσ, hσ', hpoint⟩ := hnodes t
   exact ⟨σ.val, hσ, hσ', hpoint⟩
 

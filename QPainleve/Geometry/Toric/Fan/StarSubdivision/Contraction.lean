@@ -33,7 +33,9 @@ open AlgebraicGeometry CategoryTheory TauCeti.AlgebraicGeometry
 
 namespace TauCeti.Toric.Fan
 
-variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
+section Combinatorial
+
+variable {N V : Type*} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {Φ : Fan i}
 
 private lemma mem_starSubdivision_basisCone_iff (hi : IsIntegralLattice i)
@@ -156,7 +158,7 @@ private lemma exists_coarsening_at_basis_sum (hΦ : Φ.IsRegular) (hc : Φ.IsCom
       (hσ : Nat.card (ToricRay σ.val) = 2),
       Ψ.IsComplete ∧ Ψ.starSubdivisionAlong hΨ σ.property = Φ ∧
         (Ψ.starSubdivisionAlongRay hΨ σ.property (ne_bot_of_card_toricRay_eq_two hσ)).toCone.val =
-          hull ℝ {i (b 0 + b 1)} := by
+          hull ℝ {i (b 0 + b 1)} ∧ hull ℝ {i (b 0 + b 1)} ∉ Ψ.cones := by
   obtain ⟨Ψ, hΨ, hcones⟩ := exists_regular_fan_replace_basis_sum hΦ b hr hcharts
   let σ₀ := hull ℝ (Set.range (i ∘ b))
   let σ : Ψ.cones := ⟨σ₀, (hcones σ₀).mpr (Or.inl .rfl)⟩
@@ -168,9 +170,21 @@ private lemma exists_coarsening_at_basis_sum (hΦ : Φ.IsRegular) (hc : Φ.IsCom
   have hΨc : Ψ.IsComplete :=
     (Ψ.starSubdivisionAlong_isSubdivision hΨ σ.property
       (ne_bot_of_card_toricRay_eq_two hcard)).isComplete_iff.mp (hstar.symm ▸ hc)
-  refine ⟨Ψ, hΨ, σ, hcard, hΨc, hstar, ?_⟩
-  rw [coe_toCone_starSubdivisionAlongRay,
-    hreg.sum_primitiveGenerator_allRays Ψ.lattice b e he]
+  refine ⟨Ψ, hΨ, σ, hcard, hΨc, hstar, ?_, ?_⟩
+  · rw [coe_toCone_starSubdivisionAlongRay,
+      hreg.sum_primitiveGenerator_allRays Ψ.lattice b e he]
+  · intro h
+    rcases (hcones _).mp h with hf | ⟨_, hn⟩
+    · let B := Φ.lattice.isBaseChange.basis b
+      have hb (j : Fin 2) : B j = i (b j) := IsBaseChange.basis_apply _ _ _
+      have hbasis : (B : Fin 2 → V) = i ∘ b := funext hb
+      rw [← hbasis, map_add, ← hb 0, ← hb 1] at hf
+      have hb₀ : B 0 ∈ hull ℝ (Set.range B) := subset_hull (Set.mem_range_self _)
+      have hb₁ : B 1 ∈ hull ℝ (Set.range B) := subset_hull (Set.mem_range_self _)
+      have hsum : B 0 + B 1 ∈ hull ℝ {B 0 + B 1} := subset_hull (Set.mem_singleton _)
+      have hm := (B.mem_hull_sum_iff hb₀).mp (hf.mem_of_add_mem_left hb₀ hb₁ hsum)
+      simp [LinearMap.sub_apply, Basis.coord_apply] at hm
+    · exact hn le_rfl
 
 private lemma exists_basis_of_sum_eq (a : Basis (Fin 2) ℤ N) :
     ∃ b : Basis (Fin 2) ℤ N, b 0 = a 0 ∧ b 0 + b 1 = a 1 := by
@@ -201,25 +215,23 @@ private lemma le_or_le_of_ray_neighbors (hΦ : Φ.IsRegular)
       · exact (ht ⟨t, h, htC⟩).elim
     exact Or.inl (le_trans (show C.val ≤ r.toCone.val from hC) le_sup_right)
 
-/-- A ray of boundary self-intersection `-1` in a complete regular toric surface
-is the inserted ray of a star subdivision of a complete regular fan. The
-subdivision is along a two-ray cone, and recovers the given fan on its lattice. -/
-theorem exists_star_subdivision_of_ray_self_intersection_neg_one
-    [Φ.algebraicRealization.IsProjectiveOver ℂ]
-    (b : Basis (Fin 2) ℤ N) (hΦ : Φ.IsRegular) (hc : Φ.IsComplete) (r : Φ.Ray)
-    (hself : Φ.rayBoundarySelfIntersection hΦ r = -1) :
+/-- A ray whose two adjacent primitive generators sum to its generator can be
+removed by an inverse star subdivision. The coarser fan is complete and regular,
+and the removed ray is absent from it. -/
+theorem exists_star_subdivision_of_ray_eq_sum
+    (b : Basis (Fin 2) ℤ N) (hΦ : Φ.IsRegular) (hc : Φ.IsComplete)
+    {p r q : Φ.Ray}
+    (hp : b.detDualEquiv p.primitiveGenerator r.primitiveGenerator = 1 ∧
+      ∃ C : Φ.cones, p.toCone ≤ C ∧ r.toCone ≤ C)
+    (hq : b.detDualEquiv r.primitiveGenerator q.primitiveGenerator = 1 ∧
+      ∃ C : Φ.cones, r.toCone ≤ C ∧ q.toCone ≤ C)
+    (hsum' : p.primitiveGenerator + q.primitiveGenerator = r.primitiveGenerator) :
     ∃ (Ψ : Fan i) (hΨ : Ψ.IsRegular) (σ : Ψ.cones)
       (hσ : Nat.card (ToricRay σ.val) = 2),
       Ψ.IsComplete ∧ Ψ.starSubdivisionAlong hΨ σ.property = Φ ∧
         (Ψ.starSubdivisionAlongRay hΨ σ.property (ne_bot_of_card_toricRay_eq_two hσ)).toCone.val =
-          r.toCone.val := by
-  obtain ⟨p, q, -, -, hn, hsum⟩ := exists_rayBoundaryPoint_selfIntersection_relation b hΦ hc r
-  rw [← rayBoundarySelfIntersection_def, hself, neg_one_zsmul] at hsum
-  have hsum' : p.primitiveGenerator + q.primitiveGenerator = r.primitiveGenerator := by
-    calc
-      _ = (p.primitiveGenerator + -r.primitiveGenerator + q.primitiveGenerator) +
-          r.primitiveGenerator := by abel
-      _ = _ := by rw [hsum, zero_add]
+          r.toCone.val ∧ r.toCone.val ∉ Ψ.cones := by
+  have hn := ray_neighbors_iff_of_det b hΦ hc hp hq
   obtain ⟨hp, C, hrC, hpC⟩ := (hn p).mpr (Or.inl rfl)
   obtain ⟨hq, D, hrD, hqD⟩ := (hn q).mpr (Or.inr rfl)
   have hN : Module.finrank ℤ N = 2 := by simpa using Module.finrank_eq_card_basis b
@@ -252,6 +264,41 @@ theorem exists_star_subdivision_of_ray_self_intersection_neg_one
     rcases le_or_le_of_ray_neighbors hΦ hN hn (C := ⟨E, hE⟩) hrE with h | h
     · exact ⟨0, by rw [hcharts 0, ite_eq_left rfl]; exact h⟩
     · exact ⟨1, by rw [hcharts 1, ite_eq_right (by decide : (1 : Fin 2) ≠ 0)]; exact h⟩
+
+end Combinatorial
+
+variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
+  {i : N →+ V} {Φ : Fan i}
+
+/-- A ray of boundary self-intersection `-1` in a complete regular toric surface
+is the inserted ray of a star subdivision of a complete regular fan. The
+subdivision is along a two-ray cone, and recovers the given fan on its lattice. -/
+theorem exists_star_subdivision_of_ray_self_intersection_neg_one
+    [Φ.algebraicRealization.IsProjectiveOver ℂ]
+    (b : Basis (Fin 2) ℤ N) (hΦ : Φ.IsRegular) (hc : Φ.IsComplete) (r : Φ.Ray)
+    (hself : Φ.rayBoundarySelfIntersection hΦ r = -1) :
+    ∃ (Ψ : Fan i) (hΨ : Ψ.IsRegular) (σ : Ψ.cones)
+      (hσ : Nat.card (ToricRay σ.val) = 2),
+      Ψ.IsComplete ∧ Ψ.starSubdivisionAlong hΨ σ.property = Φ ∧
+        (Ψ.starSubdivisionAlongRay hΨ σ.property (ne_bot_of_card_toricRay_eq_two hσ)).toCone.val =
+          r.toCone.val := by
+  obtain ⟨p, q, hpDet, hqDet, hn, hsum⟩ :=
+    exists_rayBoundaryPoint_selfIntersection_relation b hΦ hc r
+  rw [← rayBoundarySelfIntersection_def, hself, neg_one_zsmul] at hsum
+  have hsum' : p.primitiveGenerator + q.primitiveGenerator = r.primitiveGenerator := by
+    calc
+      _ = (p.primitiveGenerator + -r.primitiveGenerator + q.primitiveGenerator) +
+          r.primitiveGenerator := by abel
+      _ = _ := by rw [hsum, zero_add]
+  have hp : b.detDualEquiv p.primitiveGenerator r.primitiveGenerator = 1 := by
+    rw [b.detDualEquiv_swap]
+    omega
+  obtain ⟨_, C, hrC, hpC⟩ := (hn p).mpr (Or.inl rfl)
+  obtain ⟨_, D, hrD, hqD⟩ := (hn q).mpr (Or.inr rfl)
+  obtain ⟨Ψ, hΨ, σ, hσ, hc', hstar, hr, -⟩ :=
+    exists_star_subdivision_of_ray_eq_sum b hΦ hc ⟨hp, C, hpC, hrC⟩
+      ⟨hqDet, D, hrD, hqD⟩ hsum'
+  exact ⟨Ψ, hΨ, σ, hσ, hc', hstar, hr⟩
 
 /-- A toric boundary divisor of square `-1` is the exceptional divisor of the
 blowup of a distinguished point of another smooth complete toric surface. The
