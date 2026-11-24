@@ -8,9 +8,12 @@ module
 public import QPainleve.AlgebraicGeometry.Blowup.Exceptional.Class
 public import Mathlib.AlgebraicGeometry.ResidueField
 public import Mathlib.RingTheory.RegularLocalRing.Defs
+public import TauCeti.AlgebraicGeometry.CartierDivisor.Excision
 
 import QPainleve.AlgebraicGeometry.Blowup.Descent
 import QPainleve.AlgebraicGeometry.Blowup.Exceptional.FirstKind
+import QPainleve.AlgebraicGeometry.EffectiveCartierDivisor.Integral
+import QPainleve.AlgebraicGeometry.IdealSheaf.Integral
 import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
 import QPainleve.AlgebraicGeometry.IntersectionNumber.ExceptionalCurve.Picard
 import TauCeti.AlgebraicGeometry.IdealSheaf.VanishingIdeal
@@ -21,6 +24,8 @@ import TauCeti.AlgebraicGeometry.IdealSheaf.VanishingIdeal
 Matching the exceptional Picard classes identifies the exceptional ideals. Contraction
 then recovers the base isomorphism using `existsUnique_iso_of_pointBlowup`. The
 commuting square identifies the reduced center ideals.
+
+The prime divisor over the center has the exceptional class.
 -/
 
 public section
@@ -101,3 +106,39 @@ theorem existsUnique_baseIso_of_pullback_blowupExceptionalClass_eq
   exact huniq g ((I_q).blowupIso_hom_blowupToBase g h).symm
 
 end AlgebraicGeometry.Scheme.IdealSheafData
+
+namespace TauCeti.AlgebraicGeometry.LineBundleClass
+
+open _root_.AlgebraicGeometry _root_.AlgebraicGeometry.Scheme.IdealSheafData
+
+universe u
+
+variable {X : Scheme.{u}} {p : X}
+
+local notation "Iₚ" => Scheme.Hom.ker (Scheme.fromSpecResidueField X p)
+local notation "π" => blowupToBase Iₚ
+
+/-- The prime of a point blowup lying over its center has the class of the
+exceptional divisor. -/
+theorem primeDivisorClass_eq_blowupExceptionalClass_of_over_center
+    [IsLocallyNoetherian X] [IsRegularLocalRing (X.presheaf.stalk p)]
+    [∀ y : (Iₚ).blowup, IsDomain ((Iₚ).blowup.presheaf.stalk y)]
+    [∀ y : (Iₚ).blowup, UniqueFactorizationMonoid ((Iₚ).blowup.presheaf.stalk y)]
+    (s : CodimensionOnePoint (Iₚ).blowup) (hs : π s = p)
+    (hp : IsClosed ({p} : Set X)) (hd : ringKrullDim (X.presheaf.stalk p) = 2) :
+    letI : IsLocallyNoetherian (Iₚ).blowup := LocallyOfFiniteType.isLocallyNoetherian π
+    primeDivisorClass s = (Iₚ).blowupExceptionalClass := by
+  have : IsLocallyNoetherian (Iₚ).blowup := LocallyOfFiniteType.isLocallyNoetherian π
+  let E := (Iₚ).comap π
+  have hE := isExceptionalCurveOfFirstKind_comap_blowupToBase_of_closedPoint p hp hd
+  let : IsIntegral E.subscheme := hE.isIntegral_subscheme
+  have hs' : (s : (Iₚ).blowup) ∈ E.support := by
+    simp only [E, support_comap, ← SetLike.mem_coe, Closeds.coe_preimage, Set.mem_preimage,
+      Scheme.support_ker_fromSpecResidueField_of_isClosed hp, hs, Set.mem_singleton_iff]
+  have he := (hE.isEffectiveCartier.mem_support_iff_eq_subschemeι_genericPoint s.property).mp hs'
+  rw [primeDivisorClass_def, blowupExceptionalClass_def]
+  congr 1
+  exact mk_toInvertibleSheaf_congr _ _ (by
+    rw [he, E.vanishingIdeal_closure_subschemeι_genericPoint])
+
+end TauCeti.AlgebraicGeometry.LineBundleClass

@@ -7,7 +7,10 @@ module
 
 public import QPainleve.AlgebraicGeometry.Blowup.Tower.Picard
 public import QPainleve.AlgebraicGeometry.Blowup.StrictTransform.Residual
+public import QPainleve.AlgebraicGeometry.Morphisms.Smooth.Factorial
+public import TauCeti.AlgebraicGeometry.CartierDivisor.Excision
 
+import QPainleve.AlgebraicGeometry.Blowup.StrictTransform.Reduced
 import QPainleve.AlgebraicGeometry.EffectiveCartierDivisor.Stalk
 import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
 import TauCeti.AlgebraicGeometry.Morphisms.Smooth.Regular
@@ -134,6 +137,67 @@ theorem picardMarking_strictTransform (hT : IsClosedPointTower X T) (hD : D.IsEf
     exact hcalc.symm
 
 end IsClosedPointTower
+
+section PrimeDivisor
+
+open Scheme.IdealSheafData LineBundleClass
+
+variable {k : Type u} [Field k] [PerfectField k]
+  (f : X ⟶ Spec (.of k)) [SmoothOfRelativeDimension 2 f] [IsNoetherian X] [IsIntegral X]
+  {p : X} (hp : IsClosed ({p} : Set X))
+
+local notation "Iₚ" => Scheme.Hom.ker (Scheme.fromSpecResidueField X p)
+local notation "π" => blowupToBase Iₚ
+local notation "T" => (BlowupTower.nil.snoc Iₚ)
+local notation "P(" q ")" => vanishingIdeal (Closeds.mk (closure {(q : X)}) isClosed_closure)
+
+/-- A prime of the point blowup projecting to a prime downstairs is its strict
+transform. In the Picard marking its exceptional coefficient is minus the order
+of the original prime at the center. -/
+theorem picardHom_primeDivisorClass_pointBlowup
+    (r : CodimensionOnePoint X) (s : CodimensionOnePoint (Iₚ).blowup)
+    (hrs : π s = r) :
+    letI : ∀ y : X, UniqueFactorizationMonoid (X.presheaf.stalk y) :=
+      f.uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two
+    letI : IsLocallyNoetherian (Iₚ).blowup := LocallyOfFiniteType.isLocallyNoetherian π
+    letI : IsIntegral (Iₚ).blowup := (IsClosedPointTower.nil.snoc p hp rfl).isIntegral f
+    letI : SmoothOfRelativeDimension 2 (π ≫ f) := by
+      simpa only [toBase_snoc, toBase_nil, Category.comp_id] using
+        (IsClosedPointTower.nil.snoc p hp rfl).smoothOfRelativeDimension f
+    letI : ∀ y : (Iₚ).blowup, UniqueFactorizationMonoid ((Iₚ).blowup.presheaf.stalk y) :=
+      (π ≫ f).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two
+    (T).picardHom (Additive.ofMul (primeDivisorClass r), fun _ ↦
+      -((P(r)).stalkOrder p).toNat) = Additive.ofMul (primeDivisorClass s) := by
+  have ht : IsClosedPointTower X T := .snoc .nil p hp rfl
+  let := f.uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two
+  have : IsLocallyNoetherian (Iₚ).blowup := LocallyOfFiniteType.isLocallyNoetherian π
+  have : IsIntegral (Iₚ).blowup := ht.isIntegral f
+  have : SmoothOfRelativeDimension 2 (π ≫ f) := by
+    simpa only [toBase_snoc, toBase_nil, Category.comp_id] using ht.smoothOfRelativeDimension f
+  let := (π ≫ f).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two
+  have hr := isEffectiveCartier_vanishingIdeal_closure_singleton r.property
+  have hne : (r : X) ≠ p := by
+    intro he
+    have hd := coheight_eq_of_isClosed_of_smoothOfRelativeDimension (n := 2) f hp
+    rw [← he, r.property] at hd
+    exact (by decide : (1 : ℕ∞) ≠ 2) hd
+  have hs : (s : (Iₚ).blowup) ∉ ((Iₚ).comap π).support := by
+    simpa only [support_comap, Closeds.coe_preimage, ← SetLike.mem_coe, Set.mem_preimage,
+      Scheme.support_ker_fromSpecResidueField_of_isClosed hp, Set.mem_singleton_iff, hrs] using hne
+  have hstrict : (T).strictTransform (P(r)) =
+      vanishingIdeal ⟨closure {(s : (Iₚ).blowup)}, isClosed_closure⟩ := by
+    rw [strictTransform_snoc, strictTransform_nil, ← hrs]
+    exact (Iₚ).ker_blowupMap_vanishingIdeal_closure_singleton s hs
+  have hcoeff : ht.strictTransformCoefficients (P(r)) =
+      fun _ ↦ -(((P(r)).stalkOrder p).toNat : ℤ) := by
+    funext j
+    refine Fin.lastCases ?_ (fun i ↦ i.elim0) j
+    rw [ht.strictTransformCoefficients_snoc_last _ p hp rfl, strictTransform_nil]
+  rw [primeDivisorClass_def r, primeDivisorClass_def s, ← hcoeff, ← picardMarking_apply (T) ht f,
+    ht.picardMarking_strictTransform f hr]
+  rw [mk_toInvertibleSheaf_congr _ _ hstrict]
+
+end PrimeDivisor
 
 section AlongBoundary
 
