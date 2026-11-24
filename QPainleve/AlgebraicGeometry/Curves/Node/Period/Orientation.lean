@@ -5,6 +5,7 @@ Authors: The QPainleve contributors
 -/
 module
 
+public import QPainleve.AlgebraicGeometry.Curves.Node.Conductor.Subdivision
 public import QPainleve.AlgebraicGeometry.Curves.Node.Period.CycleAction
 public import QPainleve.AlgebraicGeometry.Curves.Node.Period.Subdivision
 
@@ -35,32 +36,10 @@ variable {k : Type u} [Field k] {X Y Z W : Scheme.{u}}
   {pZ : ι₂ → (Z ↘ Spec (.of k)).smoothLocus} {pW : ι₃ → (W ↘ Spec (.of k)).smoothLocus}
   {n m : ℕ} [NeZero n] [NeZero m]
 
-local notation "N[" T "]" => Scheme.IdealSheafData.subscheme (Scheme.singularLocus k T)
 local notation "ν[" T "]" => Scheme.IdealSheafData.blowupToBase (Scheme.singularLocus k T)
-local notation "j[" T "]" => Scheme.branchSchemeToBlowup k T
 local notation "P[" T "]" => MonoidHom.ker (LineBundleClass.pullbackHom (ν[T]))
 
 namespace AlgebraicGeometry.Scheme.Hom
-
-variable [IsSepClosed k] in
-/-- The oriented conductor condition for a subdivision of numbered nodal cycles.
-A lift to the normalizations sends the two branches of one selected node over each
-target node to the two branches in order. At the other nodes the two branches have
-the same image under the lift. -/
-inductive IsOrientedCycleSubdivision (f : Z ⟶ X)
-    (C : NodalCycleNumbering pZ m) (A : NodalCycleNumbering pX n) : Prop where
-  /-- Choose a lift to the normalizations and the node at which each ordered branch
-  pair survives. -/
-  | intro (fν : (Z.singularLocus k).blowup ⟶ (X.singularLocus k).blowup)
-      (hν : CommSq ν[Z] fν f ν[X])
-      (hnodes : Set.MapsTo f (Z.singularLocus k).support (X.singularLocus k).support)
-      (keep : N[X] ↪ N[Z])
-      (hkeep : ∀ z b, fν (j[Z] (Z.branchOrderOfDualGraph pZ C.order (keep z) b).val) =
-        j[X] (X.branchOrderOfDualGraph pX A.order z b).val)
-      (hcollapse : ∀ z ∉ Set.range keep,
-        fν (j[Z] (Z.branchOrderOfDualGraph pZ C.order z 1).val) =
-        fν (j[Z] (Z.branchOrderOfDualGraph pZ C.order z 0).val)) :
-      IsOrientedCycleSubdivision f C A
 
 /-- Pullback along an oriented subdivision preserves the period of a class in the
 normalization kernel. -/
