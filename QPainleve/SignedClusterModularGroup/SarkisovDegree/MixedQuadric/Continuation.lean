@@ -54,50 +54,6 @@ variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   (hc : Φ.IsComplete) (r : Fin 4 ≃ Φ.Ray)
   (hr : (fun j ↦ (r j).primitiveGenerator) = ![b 0, b 1, -b 0, (0 : ℤ) • b 0 - b 1])
 
-include hc hr in
-private theorem exists_exchanged_marking_at_opposite_corner [Nonempty Φ.cones]
-    (σ : Φ.cones) (hσ : Nat.card (ToricRay σ.val) = 2) (hopp : (r 3).toCone ≤ σ) :
-    ∃ (d : Basis (Fin 2) ℤ N) (s : Fin 4 ≃ Φ.Ray)
-      (hs : (fun j ↦ (s j).primitiveGenerator) = ![d 0, d 1, -d 0, (0 : ℤ) • d 0 - d 1]),
-      σ.val = hull ℝ (Set.range (i ∘ d)) ∧ s 2 = r 1 ∧
-      Φ.hirzebruchPicardBasis d 0 hΦ s hs =
-        (Φ.hirzebruchPicardBasis b 0 hΦ r hr).reindex (Equiv.swap 0 1) := by
-  obtain ⟨a, u, hu, hu₀, hu₂, hpic⟩ := Φ.exists_quadric_picardBasis_of_fiber b hΦ r hr 1
-  have ha : (u 0).toCone ≤ σ := hu₀.symm ▸ hopp
-  obtain ⟨d, e, s, hcone, he, hfib, hsec⟩ :=
-    Φ.exists_hirzebruch_corner_basis a 0 u hu hΦ hc σ hσ
-  have hgen₀ : (s 0).primitiveGenerator = d 0 := congrFun he 0
-  have hmem : i ((s 0).primitiveGenerator) ∈ σ.val := by
-    rw [hgen₀, hcone]
-    exact subset_hull ⟨0, rfl⟩
-  have hs₀ : s 0 = u 0 ∧ e = 0 := by
-    rcases hsec with h | ⟨h, he'⟩
-    · exact h
-    · have hpos : i (a 0) ∈ σ.val := ha (by
-        rw [Fan.Ray.toCone_eq_hull_primitiveGenerator]
-        exact subset_hull (by simp [congrFun hu 0]))
-      have hneg : -(i (a 0)) ∈ σ.val := by
-        have hu₂' : (u 2).primitiveGenerator = -a 0 := congrFun hu 2
-        simpa only [h, hu₂', map_neg] using hmem
-      have hn : i (a 0) ≠ 0 :=
-        fun hz ↦ (a.ne_zero 0) (Φ.lattice.injective (hz.trans (map_zero i).symm))
-      exact ((Φ.isToricCone σ.property).salient _ hpos hn hneg).elim
-  obtain ⟨hs₀, rfl⟩ := hs₀
-  refine ⟨d, s, he, hcone, ?_, ?_⟩
-  · have h : d 0 = a 0 :=
-      hgen₀.symm.trans ((congrArg Fan.Ray.primitiveGenerator hs₀).trans (congrFun hu 0))
-    exact hu₂ ▸ Fan.Ray.primitiveGenerator_injective
-      ((congrFun he 2).trans ((congrArg Neg.neg h).trans (congrFun hu 2).symm))
-  · rw [← hpic]
-    apply DFunLike.ext
-    refine Fin.forall_fin_two.mpr ⟨?_, ?_⟩
-    · rw [Fan.hirzebruchPicardBasis_apply_zero]
-      rcases hfib with h | h
-      · rw [h, ← Fan.hirzebruchPicardBasis_apply_zero a 0 hΦ u hu]
-      · rw [h, ← Fan.hirzebruchPicardBasis_apply_zero_eq_ray_three a 0 hΦ u hu]
-    · rw [Fan.hirzebruchPicardBasis_apply_one, hs₀,
-        ← Fan.hirzebruchPicardBasis_apply_one a 0 hΦ u hu]
-
 variable {Y : Scheme} {n : ℕ} {T : BlowupTower X[Φ] (n + 2) Y}
   (hT : IsClosedPointTower X[Φ] T) (g : Y ⟶ P)
   (hg : g ≫ fP = T.toBase ≫ f[Φ]) (hbir : Scheme.BirationalOver g (𝟙 P))
@@ -151,7 +107,7 @@ theorem exists_sarkisov_path_primary_decrease_of_prepared_quadric
   let : SmoothOfRelativeDimension 2 (Y ↘ S) := hT.smoothOfRelativeDimension f[Φ]
   let : IsIntegral Y := hT.isIntegral f[Φ]
   obtain ⟨d, s, hs, hcone, hs₂, hPic⟩ :=
-    exists_exchanged_marking_at_opposite_corner b hΦ hc r hr σ hσ hopp
+    Φ.exists_exchanged_marking_at_opposite_corner b hΦ hc r hr σ hσ hopp
   obtain ⟨a, ha⟩ := (r 1).exists_binomialCenter_eq_of_basis d b c
   have hl' : hT.baseCenter l = center[d,s 2,a] := by rwa [hs₂, ha]
   have hβ : (Φ.hirzebruchPicardBasis d 0 hΦ s hs).repr (x).1 0 = β := by
