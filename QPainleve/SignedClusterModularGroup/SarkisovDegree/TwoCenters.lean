@@ -7,11 +7,11 @@ module
 
 public import QPainleve.AlgebraicGeometry.Blowup.Tower.Ramification
 public import QPainleve.SignedClusterModularGroup.SarkisovDegree.OppositeSection
-public import QPainleve.SignedClusterModularGroup.SarkisovDegree.Quadric
+public import QPainleve.SignedClusterModularGroup.SarkisovDegree.Quadric.Basic
 
 import QPainleve.Geometry.Toric.Fan.Mutation.Center
 import QPainleve.Geometry.Toric.Fan.Mutation.Logarithmic
-import QPainleve.SignedClusterModularGroup.SarkisovDegree.QuadricFiber
+import QPainleve.SignedClusterModularGroup.SarkisovDegree.Quadric.Fiber
 import QPainleve.SignedClusterModularGroup.SarkisovDegree.Decrease
 import TauCeti.Data.Fin.Basic
 import QPainleve.AlgebraicGeometry.Modules.Differentials.PoleIdeal
