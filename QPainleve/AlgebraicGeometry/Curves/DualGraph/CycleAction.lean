@@ -110,6 +110,17 @@ theorem cycleVertexPerm_apply (g : DihedralGroup n) (j : ZMod n) :
     cycleVertexPerm g j = (cycleOrientationSign g : ℤ) • j + cycleVertexPerm g 0 := by
   cases g <;> simp [sub_eq_add_neg, add_comm]
 
+/-- An orientation-preserving cycle action is the rotation determined by the image
+of vertex zero. This covers the cycles with one or two components. -/
+theorem eq_r_iff_cycleVertexPerm_zero_eq {g : DihedralGroup n} {j : ZMod n}
+    (h : cycleOrientationSign g = 1) :
+    g = r j ↔ cycleVertexPerm g 0 = j := by
+  cases g with
+  | r i => simp
+  | sr i =>
+    rw [cycleOrientationSign_sr] at h
+    exact (by decide : (-1 : ℤˣ) ≠ 1) h |>.elim
+
 /-- A reflection exchanges the two ordered branches at every node. -/
 theorem cycleBranchPerm_snd (g : DihedralGroup n) (j : ZMod n) (b : Fin 2) :
     (cycleBranchPerm g (j, b)).2 = if cycleOrientationSign g = -1 then b.rev else b := by
