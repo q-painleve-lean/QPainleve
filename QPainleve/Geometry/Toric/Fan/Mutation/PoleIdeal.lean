@@ -54,30 +54,20 @@ private theorem stalkOrder_boundary_binomialCenter (hΦ : Φ.IsRegular) (hc : Φ
   let : Nonempty Φ.cones := ⟨ρ.toCone⟩
   let z : B := IsLocalRing.closedPoint ℂ
   let q := ρ.binomialCenterOnBoundary n₂ (b.detDualEquiv_self _) (ρ.surjective_detCharacter b) c
-  let j := ρ.orbitToBoundary n₂ (b.detDualEquiv_self _) (ρ.surjective_detCharacter b)
-  have hq := ρ.range_binomialCenterOnBoundary_subset_range_orbitToBoundary n₂
-    (b.detDualEquiv_self _) (ρ.surjective_detCharacter b) c
-      (Set.mem_range_self (f := q) z)
-  obtain ⟨x, hx⟩ := hq
-  have hp : (D).subschemeι (j x) = (a) (IsLocalRing.closedPoint ℂ) :=
-    (congrArg (fun y ↦ (D).subschemeι y) hx).trans (by
-      have h := ρ.binomialCenterOnBoundary_comp_subschemeι n₂ (b.detDualEquiv_self _)
-        (ρ.surjective_detCharacter b) c
-      simpa only [Scheme.Hom.comp_apply, q] using
-        congrArg (fun f : B ⟶ X ↦ f z) h)
-  have : IsOpenImmersion j :=
-    ρ.isOpenImmersion_orbitToBoundary n₂ (b.detDualEquiv_self _) (ρ.surjective_detCharacter b)
-  have hX := Φ.smooth_algebraicRealizationStructureMap hΦ
-  have hC : Smooth (j ≫ (D).subschemeι ≫ Φ.algebraicRealizationStructureMap) :=
-    (ρ.smoothOfRelativeDimension_orbitToBoundary n₂ (b.detDualEquiv_self _)
-      (ρ.surjective_detCharacter b)).smooth
+  have hp : (D).subschemeι (q z) = (a) z := by
+    rw [← Scheme.Hom.comp_apply]
+    exact congrArg (fun f : B ⟶ X ↦ f z)
+      (ρ.binomialCenterOnBoundary_comp_subschemeι n₂ (b.detDualEquiv_self _)
+        (ρ.surjective_detCharacter b) c)
+  have hq : q z ∈ (ρ.internalCenter b c).val.support := by
+    rw [Ray.internalCenter_val]
+    exact q.range_subset_ker_support (Set.mem_range_self z)
+  have : Smooth Φ.algebraicRealizationStructureMap := Φ.smooth_algebraicRealizationStructureMap hΦ
   have := isRegularLocalRing_stalk_of_smooth Φ.algebraicRealizationStructureMap
-    ((D).subschemeι (j x))
-  have := (isRegularLocalRing_stalk_iff_of_isOpenImmersion j x).mpr
-    (isRegularLocalRing_stalk_of_smooth (j ≫ (D).subschemeι ≫ Φ.algebraicRealizationStructureMap) x)
+    ((D).subschemeι (q z))
   rw [← hp]
   exact ((Φ.isEffectiveCartier_boundaryIdeal hΦ hc n₂).stalkOrder_eq_one_iff_isRegularLocalRing
-    (j x)).mpr ‹_›
+    (q z)).mpr (ρ.isRegularLocalRing_stalk_of_mem_support_internalCenter b c hq)
 
 private theorem isClosed_binomialCenter :
     IsClosed ({(a) (IsLocalRing.closedPoint ℂ)} : Set X) :=
