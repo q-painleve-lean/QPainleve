@@ -10,6 +10,7 @@ public import QPainleve.Geometry.Toric.Fan.StarSubdivision.Picard.Hirzebruch
 public import QPainleve.SignedClusterModularGroup.SarkisovDegree.ElementaryTransform
 
 import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
+import QPainleve.AlgebraicGeometry.Morphisms.IsoLocus
 
 /-!
 # Resolution transport across a toric Hirzebruch link
@@ -139,5 +140,42 @@ theorem exists_hirzebruch_toric_link_resolution
     simp only [Fin.sum_univ_add, Fin.sum_univ_one, Fin.append_left, Fin.append_right, neg_sub,
       sub_neg_eq_add, add_comm c β]
     exact toricLink_bidegree_lt β c m hm hbound hhigh
+
+/-- A retained center that is first over its source point is first over its
+target point as well, provided the common point projects into both isomorphism
+loci and the reverse corner lies outside the target isomorphism locus. -/
+theorem first_center_of_toric_link
+    {Ψ F : Fan i} {σ : Φ.cones} {n : ℕ} {Y Z : Scheme}
+    {T : BlowupTower (I[σ]).blowup n Y} (hT : IsClosedPointTower (I[σ]).blowup T)
+    {U : BlowupTower X[Ψ] (1 + n) Z} (hU : IsClosedPointTower X[Ψ] U)
+    (s : F.IsSubdivision Φ) (t : F.IsSubdivision Ψ)
+    (v : X[F] ≅ (I[σ]).blowup)
+    (hv : v.hom ≫ (I[σ]).blowupToBase = s.toFanHom.algebraicMap)
+    (hcorner : hU.baseCenter (Fin.castAdd n (0 : Fin 1)) ∉ t.toFanHom.algebraicMap.isoLocus)
+    (hretained : ∀ k : Fin n,
+      t.toFanHom.algebraicMap (v.inv (hT.baseCenter k)) = hU.baseCenter (k.natAdd 1))
+    {z : X[F]} (hs : s.toFanHom.algebraicMap z ∈ s.toFanHom.algebraicMap.isoLocus)
+    (ht : t.toFanHom.algebraicMap z ∈ t.toFanHom.algebraicMap.isoLocus)
+    (l : Fin n) (hl : (I[σ]).blowupToBase (hT.baseCenter l) = s.toFanHom.algebraicMap z)
+    (hfirst : ∀ k < l, (I[σ]).blowupToBase (hT.baseCenter k) ≠ s.toFanHom.algebraicMap z) :
+    hU.baseCenter (l.natAdd 1) = t.toFanHom.algebraicMap z ∧
+      ∀ k < l.natAdd 1, hU.baseCenter k ≠ t.toFanHom.algebraicMap z := by
+  have hsrc (k : Fin n) :=
+    congrArg (fun f : X[F] ⟶ X[Φ] ↦ f (v.inv (hT.baseCenter k))) hv
+  simp only [Scheme.Hom.comp_apply, Scheme.inv_hom_apply] at hsrc
+  have hproj := (hsrc l).symm.trans hl
+  have hpt : v.inv (hT.baseCenter l) = z := s.toFanHom.algebraicMap.injOn_preimage_isoLocus
+    (by rwa [Set.mem_preimage, hproj]) hs hproj
+  refine ⟨(hretained l).symm.trans (congrArg t.toFanHom.algebraicMap hpt), ?_⟩
+  refine Fin.addCases ?_ ?_
+  · intro k _ he
+    rw [Subsingleton.elim k (0 : Fin 1)] at he
+    exact hcorner (he ▸ ht)
+  · intro k hk he
+    have e := (hretained k).trans he
+    have e' := t.toFanHom.algebraicMap.injOn_preimage_isoLocus
+      (by rwa [Set.mem_preimage, e]) ht e
+    exact hfirst k (by simpa only [Fin.lt_def, Fin.val_natAdd, Nat.add_lt_add_iff_left] using hk)
+      ((hsrc k).trans (congrArg s.toFanHom.algebraicMap e'))
 
 end QPainleve.BlowupTower.IsClosedPointTower

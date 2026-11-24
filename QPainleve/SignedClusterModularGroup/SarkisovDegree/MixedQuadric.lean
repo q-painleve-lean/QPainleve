@@ -6,16 +6,13 @@ Authors: The QPainleve contributors
 module
 
 public import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.Picard
-public import QPainleve.Geometry.Toric.Fan.StarSubdivision.Picard.Hirzebruch
 public import QPainleve.SignedClusterModularGroup.SarkisovDegree.OppositeSection
 
-import QPainleve.AlgebraicGeometry.Blowup.Point.Fiber
 import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
-import QPainleve.AlgebraicGeometry.Morphisms.IsoLocus
-import QPainleve.Geometry.Toric.Fan.Boundary.InternalCenter
 import QPainleve.Geometry.Toric.Fan.Boundary.Subdivision
 import QPainleve.Geometry.Toric.Fan.Picard.Homaloidal
 import QPainleve.SignedClusterModularGroup.SarkisovDegree.Decrease
+import QPainleve.SignedClusterModularGroup.SarkisovDegree.ToricLink
 
 /-!
 # The quadric Sarkisov block with a corner and a smooth center
@@ -41,7 +38,7 @@ open TauCeti.AlgebraicGeometry LineBundleClass TauCeti.SymmetricAlgebra Scheme.I
 namespace QPainleve.BlowupTower.IsClosedPointTower
 
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
-  {i : N →+ V} {Φ Ψ F : Fan i}
+  {i : N →+ V} {Φ : Fan i}
 
 local notation "X[" Δ "]" => Fan.algebraicRealization Δ
 local notation "f[" Δ "]" => Fan.algebraicRealizationStructureMap Δ
@@ -57,111 +54,6 @@ local notation "p[" b "," ρ "," c "]" =>
   Fan.Ray.binomialCenter ρ dim(b)
     (Module.Basis.detDualEquiv_self b (Fan.Ray.primitiveGenerator ρ))
     (Fan.Ray.surjective_detCharacter ρ b) c
-
-private theorem exists_binomialCenter_lift_of_shared_ray
-    (s : F.IsSubdivision Φ) (t : F.IsSubdivision Ψ)
-    (ρ : Φ.Ray) (ρ' : Ψ.Ray) (hρ : ρ.primitiveGenerator = ρ'.primitiveGenerator)
-    (b d : Basis (Fin 2) ℤ N) (c : ℂˣ) :
-    ∃ (c' : ℂˣ) (z : X[F]),
-      π[s] z = p[b,ρ,c] pt ∧ π[t] z = p[d,ρ',c'] pt ∧
-      p[b,ρ,c] pt ∈ (π[s]).isoLocus ∧ p[d,ρ',c'] pt ∈ (π[t]).isoLocus := by
-  have hl : s.liftRay ρ = t.liftRay ρ' := Fan.Ray.primitiveGenerator_injective (by
-    rw [s.primitiveGenerator_liftRay, t.primitiveGenerator_liftRay, hρ])
-  obtain ⟨c', hc'⟩ := ρ'.exists_binomialCenter_eq_of_basis d b c
-  let z := p[b,s.liftRay ρ,c] pt
-  have hs := s.binomialCenter_liftRay_comp_algebraicMap ρ b c
-  have ht := t.binomialCenter_liftRay_comp_algebraicMap ρ' b c
-  dsimp only at hs ht
-  have hsrc : π[s] z = p[b,ρ,c] pt := congrArg (fun a : S ⟶ X[Φ] ↦ a pt) hs
-  have htgt : π[t] z = p[d,ρ',c'] pt := by
-    rw [hc']
-    exact congrArg (fun a : S ⟶ X[Ψ] ↦ a pt) (hl ▸ ht)
-  refine ⟨c', z, hsrc, htgt, ?_, ?_⟩
-  · exact s.range_binomialCenter_subset_isoLocus ρ dim(b) (b.detDualEquiv_self _)
-      (ρ.surjective_detCharacter b) c (Set.mem_range_self pt)
-  · exact t.range_binomialCenter_subset_isoLocus ρ' dim(d) (d.detDualEquiv_self _)
-      (ρ'.surjective_detCharacter d) c' (Set.mem_range_self pt)
-
-private theorem notMem_isoLocus_distinguishedPoint_of_blowup
-    (b : Basis (Fin 2) ℤ N) (hΨ : Ψ.IsRegular) (τ : Ψ.cones)
-    (f : X[F] ⟶ X[Ψ]) (w : X[F] ≅ (I[τ]).blowup)
-    (hw : w.hom ≫ (I[τ]).blowupToBase = f) :
-    Ψ.distinguishedPointHom τ pt ∉ f.isoLocus := by
-  let : Nonempty Ψ.cones := ⟨τ⟩
-  let : SmoothOfRelativeDimension 2 f[Ψ] :=
-    dim(b) ▸ Ψ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΨ
-  have : Smooth f[Ψ] := SmoothOfRelativeDimension.smooth 2 _
-  have hclosed := Ψ.isClosed_singleton_distinguishedPoint τ
-  have : IsRegularLocalRing (X[Ψ].presheaf.stalk (Ψ.distinguishedPointHom τ pt)) :=
-    isRegularLocalRing_stalk_of_smooth f[Ψ] _
-  have hdim := ((smoothOfRelativeDimension_iff_ringKrullDim_stalk_eq f[Ψ] 2).mp
-    inferInstance).2 _ hclosed
-  have hcentre : f.centre = {Ψ.distinguishedPointHom τ pt} := by
-    rw [← hw, Scheme.Hom.centre_def, Scheme.Hom.isoLocus_comp_of_isIso, ← Scheme.Hom.centre_def,
-      (Ψ.distinguishedPointHom τ).ker_eq_ker_fromSpecResidueField,
-      Scheme.ker_fromSpecResidueField_eq_vanishingIdeal]
-    exact centre_blowupToBase_closed_point hclosed hdim
-  have hmem : Ψ.distinguishedPointHom τ pt ∈ f.centre := by
-    rw [hcentre]
-    exact Set.mem_singleton _
-  simpa only [Scheme.Hom.centre_def, Set.mem_compl_iff, SetLike.mem_coe] using hmem
-
-section CornerLink
-
-variable {n : ℕ} {Y : Scheme} {σ : Φ.cones} {τ : Ψ.cones}
-  {T : BlowupTower (I[σ]).blowup (n + 1) Y}
-  (hT : IsClosedPointTower (I[σ]).blowup T)
-  (s : F.IsSubdivision Φ) (t : F.IsSubdivision Ψ)
-  (v : X[F] ≅ (I[σ]).blowup) (w : X[F] ≅ (I[τ]).blowup)
-  (hv : v.hom ≫ (I[σ]).blowupToBase = π[s])
-  (hw : w.hom ≫ (I[τ]).blowupToBase = π[t])
-
-local notation "R" => BlowupTower.transport T (v.symm ≪≫ w)
-local notation "hW" =>
-  IsClosedPointTower.snoc (IsClosedPointTower.nil (X := X[Ψ])) _
-    (Fan.isClosed_singleton_distinguishedPoint Ψ τ)
-    (Scheme.Hom.ker_eq_ker_fromSpecResidueField (Fan.distinguishedPointHom Ψ τ))
-
-include hv hw in
-private theorem first_center_of_toric_link
-    (b : Basis (Fin 2) ℤ N) (hΨ : Ψ.IsRegular)
-    {z : X[F]} (hs : π[s] z ∈ (π[s]).isoLocus) (ht : π[t] z ∈ (π[t]).isoLocus)
-    (l : Fin (n + 1)) (hl : (I[σ]).blowupToBase (hT.baseCenter l) = π[s] z)
-    (hfirst : ∀ k < l, (I[σ]).blowupToBase (hT.baseCenter k) ≠ π[s] z) :
-    let hR := (R).isLift.isClosedPointTower hT
-    let hU := (hW).append hR
-    hU.baseCenter (l.natAdd 1) = π[t] z ∧
-      ∀ k < l.natAdd 1, hU.baseCenter k ≠ π[t] z := by
-  intro hR hU
-  have hsrc (k : Fin (n + 1)) :=
-    congrArg (fun f : X[F] ⟶ X[Φ] ↦ f (v.inv (hT.baseCenter k))) hv
-  simp only [Scheme.Hom.comp_apply, Scheme.inv_hom_apply] at hsrc
-  have htgt (k : Fin (n + 1)) :
-      hU.baseCenter (k.natAdd 1) = π[t] (v.inv (hT.baseCenter k)) := by
-    rw [baseCenter_append_natAdd (hW) hR, ← (R).isLift.hom_baseCenter hT hR,
-      toBase_snoc, toBase_nil, Category.comp_id]
-    simpa only [Iso.trans_hom, Iso.symm_hom, Scheme.Hom.comp_apply] using
-      (congrArg (fun f : X[F] ⟶ X[Ψ] ↦ f (v.inv (hT.baseCenter k))) hw)
-  have hproj := (hsrc l).symm.trans hl
-  have hpt : v.inv (hT.baseCenter l) = z := (π[s]).injOn_preimage_isoLocus
-    (by simpa only [Set.mem_preimage, hproj, SetLike.mem_coe] using hs) hs hproj
-  refine ⟨(htgt l).trans (congrArg π[t] hpt), ?_⟩
-  refine Fin.addCases ?_ ?_
-  · intro k _ he
-    have hclosed := Ψ.isClosed_singleton_distinguishedPoint τ
-    rw [baseCenter_append_castAdd (hW) hR, Subsingleton.elim k (Fin.last 0),
-      baseCenter_snoc_last, toBase_nil,
-      lastCenter_eq _ _ hclosed (Ψ.distinguishedPointHom τ).ker_eq_ker_fromSpecResidueField] at he
-    apply notMem_isoLocus_distinguishedPoint_of_blowup b hΨ τ π[t] w hw
-    simpa [← he] using ht
-  · intro k hk he
-    have e := (htgt k).symm.trans he
-    have e' := (π[t]).injOn_preimage_isoLocus
-      (by simpa only [Set.mem_preimage, e, SetLike.mem_coe] using ht) ht e
-    exact hfirst k (by simpa only [Fin.lt_def, Fin.val_natAdd, Nat.add_lt_add_iff_left] using hk)
-      ((hsrc k).trans (congrArg π[s] e'))
-
-end CornerLink
 
 section Quadric
 
@@ -214,41 +106,38 @@ private theorem exists_hirzebruchOne_resolution_of_corner_with_smooth_center
     rw [← r.surjective.range_comp, Function.comp_def, hr]
     ext x
     simp [or_comm, or_assoc]
-  obtain ⟨Ψ, F, hΨ, hF, hcΨ, hcF, d, τ, s, t, v, w, r₀, r', hr₀, hr', hd₀, _, _, hv, hw, hC⟩ :=
-    Φ.exists_hirzebruch_toric_elementary_transform_picard_coordinates b 0 hΦ hcΦ hrays σ hσ
+  have hmove := hT.exists_move_closed_point_blowup_to_front j
+    (Φ.isClosed_singleton_distinguishedPoint σ) hj hfirst
+  rw [← (Φ.distinguishedPointHom σ).ker_eq_ker_fromSpecResidueField] at hmove
+  obtain ⟨W, A, e, hA, he, hE, hcenters, htail⟩ := hmove
+  obtain ⟨Ψ, F, hΨ, hF, hcΨ, _, d, τ, s, t, v, w, r₀, r', hr₀, hr', Z, B, e', hU,
+    hd₀, _, _, hv, hw, hproj, hcorner, hretained, hC⟩ :=
+    hA.exists_hirzebruch_toric_link_resolution b 0 hΦ hcΦ hrays σ hσ
   have hr₀' : r₀ = r := Equiv.ext fun k ↦ Fan.Ray.primitiveGenerator_injective
     ((congrFun hr₀ k).trans (congrFun hr k).symm)
   subst r₀
   have hray : (r 2).primitiveGenerator = (r' 2).primitiveGenerator := by
     simp [congrFun hr 2, congrFun hr' 2, hd₀]
-  obtain ⟨c', z, hsrc, htgt, hs, ht⟩ := exists_binomialCenter_lift_of_shared_ray s t _ _ hray b d c
-  -- The corner blowup supplies the common base for reordering and transporting the tail.
-  have hmove := hT.exists_move_closed_point_blowup_to_front j
-    (Φ.isClosed_singleton_distinguishedPoint σ) hj hfirst
-  rw [← (Φ.distinguishedPointHom σ).ker_eq_ker_fromSpecResidueField] at hmove
-  obtain ⟨W, A, e, hA, he, hE, hcenters, htail⟩ := hmove
+  obtain ⟨c', z, hsrc, htgt, hs, ht⟩ := s.exists_binomialCenter_lift_of_shared_ray t _ _ hray b d c
   have hjl : l ≠ j := by
     intro hjl
-    exact notMem_isoLocus_distinguishedPoint_of_blowup b hΦ σ π[s] v hv (by rwa [← hj, ← hjl, hl])
+    exact Φ.notMem_isoLocus_distinguishedPoint_of_blowup hΦ dim(b) σ π[s] v hv
+      (by rwa [← hj, ← hjl, hl])
   obtain ⟨k, hk⟩ := Fin.exists_succAbove_eq hjl
-  let R := A.transport (v.symm ≪≫ w)
-  let U := (BlowupTower.nil.snoc (I[τ])).append R.tower
-  let hR := R.isLift.isClosedPointTower hA
-  let hτ : IsClosedPointTower X[Ψ] (BlowupTower.nil.snoc (I[τ])) :=
-    .snoc .nil _ (Ψ.isClosed_singleton_distinguishedPoint τ)
-      (Ψ.distinguishedPointHom τ).ker_eq_ker_fromSpecResidueField
-  let hU := hτ.append hR
-  obtain ⟨hcenter, hfirst'⟩ := first_center_of_toric_link hA s t v w hv hw d hΨ
+  let U := (BlowupTower.nil.snoc (I[τ])).append B
+  have hcorner' : hU.baseCenter (Fin.castAdd (n + 1) (0 : Fin 1)) ∉ (π[t]).isoLocus := by
+    rw [hcorner]
+    exact Ψ.notMem_isoLocus_distinguishedPoint_of_blowup hΨ dim(d) τ π[t] w hw
+  obtain ⟨hcenter, hfirst'⟩ := hA.first_center_of_toric_link hU s t v hv hcorner' hretained
     (hsrc.symm ▸ hs) (htgt.symm ▸ ht) k (by rw [hcenters, hk, hl, hsrc]) (by
       intro m hm
       rw [hcenters, hsrc]
       exact hlfirst _ (hk ▸ (Fin.strictMono_succAbove j) hm))
   let q := e.hom ≫ A.toBase ≫ v.inv
   have hq : q ≫ π[s] = T.toBase := by simp only [q, Category.assoc, ← hv, Iso.inv_hom_id_assoc, he]
-  have hq' : q ≫ π[t] = (e ≪≫ R.iso).hom ≫ U.toBase := by
-    simp only [q, U, Iso.trans_hom, toBase_append, toBase_snoc, toBase_nil,
-      Category.comp_id, Category.assoc, R.isLift.hom_toBase_assoc, Iso.symm_hom, ← hw]
-  refine ⟨Ψ, F, hΨ, hcΨ, hF, s, t, τ, v, w, d, r', hr', q, _, U, hU, e ≪≫ R.iso, c', k, hv, hw,
+  have hq' : q ≫ π[t] = (e ≪≫ e').hom ≫ U.toBase := by
+    simp only [q, Iso.trans_hom, Category.assoc, hproj, U]
+  refine ⟨Ψ, F, hΨ, hcΨ, hF, s, t, τ, v, w, d, r', hr', q, Z, U, hU, e ≪≫ e', c', k, hv, hw,
     hq, hq', hk, hcenter.trans htgt, fun m hm ↦ htgt ▸ hfirst' m hm, ?_⟩
   intro _ _ y
   let : Nonempty Ψ.cones := hcΨ.nonempty_cones
@@ -264,21 +153,13 @@ private theorem exists_hirzebruchOne_resolution_of_corner_with_smooth_center
   have hx : x.1 = a • C₀ 0 + β • C₀ 1 := by
     simpa only [a, β, Fin.sum_univ_two] using ((C₀).sum_repr x.1).symm
   have hmark := T.pullback_picardHom_move_to_front j e he hE htail x.1 x.2
-  -- Pull the marking back first along the reordering and then across the common blowup.
-  have hclass := congrArg (pullback w.inv) (hC a β (x.2 j))
-  simp only [pullback_comp, Iso.inv_hom_id, pullback_id] at hclass
+  have hclass := congrArg (pullback e'.inv) (hC a β (x.2 j) (x.2 ∘ j.succAbove)).1
+  rw [pullback_comp, Iso.inv_hom_id, pullback_id] at hclass
   have hy : y = ((a + β + x.2 j) • C' 0 + β • C' 1, x') := by
     apply (LinearEquiv.symm_apply_eq _).mpr
     apply Additive.toMul.injective
-    rw [U.picardMarking_apply hU f[Ψ], toMul_ofMul, Iso.trans_inv, ← pullback_comp, ← hL,
-      hmark, picardHom_append, picardHom_append]
-    have hRmark := R.isLift.symm.pullback_picardHom
-    simp only [Iso.symm_hom] at hRmark
-    rw [hRmark]
-    simp only [x', Fin.addCases_left, Fin.addCases_right, Iso.trans_inv, Iso.symm_inv,
-      hx]
-    rw [hclass]
-    rfl
+    rw [U.picardMarking_apply hU f[Ψ], toMul_ofMul, Iso.trans_inv, ← pullback_comp, ← hL, hmark]
+    simpa only [x', Fin.append, ← hx] using! hclass.symm
   rw [hy]
   have hrepr :
       C'.repr ((a + β + x.2 j) • C' 0 + β • C' 1) 0 = a + β + x.2 j ∧
