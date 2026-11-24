@@ -245,6 +245,20 @@ theorem eq_comp_boundaryι_of_comp_toBase_eq {S : Scheme.{u}} (i : D ⟶ X)
         rw [Scheme.IdealSheafData.comap_comp, Scheme.IdealSheafData.comap_map_of_isClosedImmersion]
         exact ha (Fin.last n))
 
+/-- A morphism of boundary blowup towers over the same base intertwines the
+two strict boundary embeddings. -/
+theorem boundaryι_comp_of_alongBoundary (i : D ⟶ X) [IsClosedImmersion i] {m n : ℕ}
+    {J : Fin m → {I : D.IdealSheafData // I.IsEffectiveCartier}}
+    {K : Fin n → {I : D.IdealSheafData // I.IsEffectiveCartier}}
+    (f : (alongBoundary i J).1 ⟶ (alongBoundary i K).1)
+    (hf : f ≫ (alongBoundary i K).2.toTower.toBase = (alongBoundary i J).2.toTower.toBase) :
+    (alongBoundary i J).2.boundaryι ≫ f = (alongBoundary i K).2.boundaryι := by
+  simpa only [Category.id_comp] using
+    eq_comp_boundaryι_of_comp_toBase_eq i K (𝟙 D)
+      (fun j ↦ by simpa only [Scheme.IdealSheafData.comap_id] using (K j).property)
+      ((alongBoundary i J).2.boundaryι ≫ f)
+      (by rw [Category.assoc, hf, WithBoundary.boundaryι_toBase, Category.id_comp])
+
 /-- Isomorphisms matching the original boundary and the ordered centers lift through the
 whole tower and match the final strict transforms. Matching the centers is expressed on
 their ideal sheaves, so the statement applies also when a center occurs more than once. -/

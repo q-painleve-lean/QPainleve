@@ -57,18 +57,6 @@ theorem comap_ramificationIdealSheafToBase_alongBoundary {n : ℕ} (J : Fin n �
       P.comap_exceptional_boundaryι_snoc K.val K.property, ← comap_comp,
       P.boundaryι_snoc_blowupToBase, ih, Fin.prod_univ_castSucc, mul_comm]
 
-/-- A morphism of boundary blowup towers over the same base intertwines the
-two strict boundary embeddings. -/
-theorem boundaryι_comp_of_alongBoundary {m n : ℕ} {J : Fin m → Center}
-    {K : Fin n → Center} (f : (alongBoundary i J).1 ⟶ (alongBoundary i K).1)
-    (hf : f ≫ (alongBoundary i K).2.toTower.toBase = (alongBoundary i J).2.toTower.toBase) :
-    (alongBoundary i J).2.boundaryι ≫ f = (alongBoundary i K).2.boundaryι := by
-  simpa only [Category.id_comp] using
-    eq_comp_boundaryι_of_comp_toBase_eq i K (𝟙 D)
-      (fun j ↦ by simpa only [comap_id] using (K j).property)
-      ((alongBoundary i J).2.boundaryι ≫ f)
-      (by rw [Category.assoc, hf, WithBoundary.boundaryι_toBase, Category.id_comp])
-
 include hSmooth in
 /-- Two ordered towers of closed boundary points with isomorphic projections to
 the same smooth surface have the same center multiplicities. The matched labels
