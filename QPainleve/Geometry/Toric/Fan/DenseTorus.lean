@@ -110,7 +110,9 @@ end TauCeti.Toric.FanHom
 
 namespace TauCeti.Toric.Fan.IsSubdivision
 
-variable {N V : Type u} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
+section Restriction
+
+variable {N : Type u} {V : Type*} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {Φ Ψ : Fan i} (h : Φ.IsSubdivision Ψ)
   (hΦ : Nonempty Φ.cones) (hΨ : Nonempty Ψ.cones)
 
@@ -120,6 +122,12 @@ theorem denseTorusι_comp_algebraicMap :
     Φ.denseTorusι hΦ ≫ h.toFanHom.algebraicMap = Ψ.denseTorusι hΨ := by
   rw [h.toFanHom.denseTorusι_comp_algebraicMap]
   simp only [h.toFanHom_latticeMap, h.toFanHom_realMap, affineToricSchemeMap_id, Category.id_comp]
+
+end Restriction
+
+variable {N V : Type u} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
+  {i : N →+ V} {Φ Ψ : Fan i} (h : Φ.IsSubdivision Ψ)
+  (hΦ : Nonempty Φ.cones) (hΨ : Nonempty Ψ.cones)
 
 /-- A subdivision pulls back the open dense torus to the open dense torus. -/
 theorem preimage_range_denseTorusι :

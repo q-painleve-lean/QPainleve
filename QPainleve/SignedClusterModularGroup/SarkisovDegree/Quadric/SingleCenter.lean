@@ -222,8 +222,8 @@ theorem exists_plane_resolution_of_quadric_single_high_center
         y.2 (Fin.natAdd 1 firstIndex) = m j - a₀ ∧
         (∀ l : Fin n, y.2 (Fin.natAdd 1 (l.natAdd 1)) = x.2 (j.succAbove l)) ∧
         0 < degree y.1 ∧
-        planeSarkisovBidegree (degree y.1).toNat (∑ l, -y.2 l).toNat <
-          hirzebruchSarkisovBidegree b₀.toNat (∑ l, m l).toNat ∧
+        (∀ M' M, planeSarkisovBidegree (degree y.1).toNat M' <
+          hirzebruchSarkisovBidegree b₀.toNat M) ∧
         Plane[d].IsTwoRayStarSubdivision Ψ := by
   intro hcones hcones' hdim hnoeth hY hmod x b₀ a₀ m hb hm hmb hsmall
   let := hcones
@@ -262,7 +262,8 @@ theorem exists_plane_resolution_of_quadric_single_high_center
     omega
   · intro l
     simpa only [y, Category.assoc, htail] using hrem (l.natAdd 1)
-  · rw [Prod.Lex.lt_iff, ofLex_planeSarkisovBidegree, ofLex_hirzebruchSarkisovBidegree]
+  · intro M' M
+    rw [Prod.Lex.lt_iff, ofLex_planeSarkisovBidegree, ofLex_hirzebruchSarkisovBidegree]
     refine Or.inl ?_
     rw [hy]
     omega

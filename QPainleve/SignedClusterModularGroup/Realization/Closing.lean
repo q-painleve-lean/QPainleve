@@ -5,7 +5,7 @@ Authors: The QPainleve contributors
 -/
 module
 
-public import QPainleve.SignedClusterModularGroup.Realization.Endpoint
+public import QPainleve.SignedClusterModularGroup.Realization.Endpoint.Basic
 public import QPainleve.SignedClusterModularGroup.Realization.Iteration
 
 import QPainleve.AlgebraicGeometry.Chow.Isomorphism

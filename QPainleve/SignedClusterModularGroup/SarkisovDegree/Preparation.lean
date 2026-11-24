@@ -6,7 +6,7 @@ Authors: The QPainleve contributors
 module
 
 public import QPainleve.AlgebraicGeometry.Blowup.Tower.Modification
-public import QPainleve.Geometry.Toric.Fan.Logarithmic.QuadricPreparation
+public import QPainleve.Geometry.Toric.Fan.Logarithmic.Quadric.Preparation
 public import QPainleve.Geometry.Toric.Fan.Picard.FiberDegree
 public import QPainleve.Geometry.Toric.Fan.Picard.ProjectedPoint
 
