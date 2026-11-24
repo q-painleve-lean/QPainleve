@@ -10,7 +10,7 @@ public import QPainleve.AlgebraicGeometry.Curves.Node.NormalizationComponent
 
 import QPainleve.AlgebraicGeometry.Curves.Node.Conductor.Rescaling
 import QPainleve.AlgebraicGeometry.Curves.Node.PointBlowup
-import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
+import QPainleve.AlgebraicGeometry.IdealSheaf.ClosedImmersion
 import QPainleve.AlgebraicGeometry.Normalization.Lift
 
 /-!

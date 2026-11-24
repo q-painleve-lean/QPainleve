@@ -5,20 +5,18 @@ Authors: The QPainleve contributors
 -/
 module
 
-public import Mathlib.AlgebraicGeometry.IdealSheaf.Functorial
 public import Mathlib.AlgebraicGeometry.ResidueField
+public import QPainleve.AlgebraicGeometry.IdealSheaf.ClosedImmersion
 public import TauCeti.AlgebraicGeometry.Morphisms.IsoLocus
 
 import QPainleve.AlgebraicGeometry.Morphisms.IsoLocus
 import TauCeti.AlgebraicGeometry.IdealSheaf.BaseChange
-import TauCeti.AlgebraicGeometry.IdealSheaf.VanishingIdeal
 import TauCeti.AlgebraicGeometry.ResidueField
 
 /-!
 # The ideal sheaf of the closure of a point
 
-A morphism from a reduced scheme gives its schematic image the reduced structure.
-The kernel of a field-valued point thus defines the reduced closure of the point.
+The kernel of a field-valued point defines the reduced closure of the point.
 This identifies the reduced-center and residue-field descriptions of point blowups.
 The reduced closed point ideal pulls back to a reduced closed point ideal along a
 morphism that is an isomorphism over a neighborhood of the point.
@@ -29,26 +27,6 @@ public section
 open CategoryTheory Limits TopologicalSpace
 
 namespace AlgebraicGeometry.Scheme
-
-/-- A reduced source determines the reduced scheme structure on its schematic image. -/
-theorem Hom.ker_eq_vanishingIdeal_support {X Y : Scheme} (f : X ⟶ Y) [IsReduced X] :
-    f.ker = IdealSheafData.vanishingIdeal f.ker.support :=
-  le_antisymm (by rw [IdealSheafData.vanishingIdeal_support]; exact f.ker.le_radical)
-    (IdealSheafData.vanishingIdeal_le_ker_of_range_subset f f.range_subset_ker_support)
-
-/-- A map from a reduced scheme with image in a reduced closed section factors
-as its map to the base followed by the section. -/
-theorem Hom.eq_comp_of_range_subset_of_section {C T S : Scheme} [IsReduced C] [IsReduced S]
-    (a : C ⟶ T) (q : T ⟶ S) (r : S ⟶ T) [IsClosedImmersion r] (hr : r ≫ q = 𝟙 S)
-    (ha : Set.range a ⊆ Set.range r) : a = a ≫ q ≫ r := by
-  have hker : r.ker ≤ a.ker := by
-    rw [r.ker_eq_vanishingIdeal_support]
-    exact IdealSheafData.vanishingIdeal_le_ker_of_range_subset a
-      (ha.trans r.range_subset_ker_support)
-  let b := IsClosedImmersion.lift r a hker
-  have hba : b ≫ r = a := IsClosedImmersion.lift_fac _ _ _
-  have hb : b = a ≫ q := by simp only [← hba, Category.assoc, hr, Category.comp_id]
-  simpa only [Category.assoc] using hba.symm.trans (congrArg (· ≫ r) hb)
 
 /-- The kernel of a residue-field morphism is the vanishing ideal of the closure of its point. -/
 theorem ker_fromSpecResidueField_eq_vanishingIdeal {X : Scheme} (p : X) :
