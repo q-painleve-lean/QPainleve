@@ -181,12 +181,6 @@ def relativeProjBaseChange : (B).relativeProj ⟶ A.obj.relativeProj :=
   (projCover A f).glueMorphisms (fun i ↦ chartMap A f i.le ≫ A.obj.relativeProjCover.f i.target)
     (chartMap_glue A f)
 
-@[reassoc]
-private theorem chart_comp_relativeProjBaseChange (i : Chart f) :
-    (B).relativeProjCover.f i.source ≫ A.relativeProjBaseChange f =
-      chartMap A f i.le ≫ A.obj.relativeProjCover.f i.target :=
-  (projCover A f).ι_glueMorphisms _ _ i
-
 /-- On an affine source open lying over an affine target open, the base-change comparison
 is the map of projective spectra induced by pullback of graded sections. -/
 @[reassoc]
@@ -196,7 +190,7 @@ theorem relativeProjCover_f_relativeProjBaseChange (V : X.AffineZariskiSite)
       Proj.map (A.pullbackGradedSectionsGradedHom f h)
         (A.irrelevant_le_map_pullbackGradedSectionsGradedHom f h U.property V.property) ≫
         A.obj.relativeProjCover.f U :=
-  chart_comp_relativeProjBaseChange A f ⟨V, U, h⟩
+  (projCover A f).ι_glueMorphisms _ _ ⟨V, U, h⟩
 
 private theorem chart_isPullback (i : Chart f) :
     IsPullback
@@ -221,8 +215,9 @@ private theorem chart_isPullback (i : Chart f) :
   have h' := h.paste_vert hU.flip
   exact h'.of_iso (Iso.refl _) i.source.property.isoSpec.symm (Iso.refl _) (Iso.refl _)
     (by simp only [Iso.refl_hom, Iso.symm_hom, Category.id_comp])
-    ((Category.comp_id _).trans ((chart_comp_relativeProjBaseChange A f i).symm.trans
-      (Category.id_comp _).symm))
+    ((Category.comp_id _).trans
+      ((A.relativeProjCover_f_relativeProjBaseChange f i.source i.target i.le).symm.trans
+        (Category.id_comp _).symm))
     ((Category.comp_id _).trans
       ((IsAffineOpen.SpecMap_appLE_fromSpec f i.target.property i.source.property i.le).trans
         (Category.assoc ..)))
