@@ -15,6 +15,7 @@ import QPainleve.AlgebraicGeometry.Blowup.StrictTransform.Reduced
 import QPainleve.AlgebraicGeometry.IdealSheaf.Restriction
 import QPainleve.AlgebraicGeometry.Morphisms.Pullback.IsoLocus
 import QPainleve.AlgebraicGeometry.Scheme.FunctionField
+import TauCeti.AlgebraicGeometry.IdealSheaf.BaseChange
 import TauCeti.AlgebraicGeometry.WeilDivisor.Scheme.Order
 import TauCeti.RingTheory.LocalRing.Basic
 
@@ -246,6 +247,53 @@ theorem binomialCenter_liftRay_comp_algebraicMap
       (b.detDualEquiv_self ρ.primitiveGenerator) (ρ.surjective_detCharacter b) c
   exact lift _ (congrArg (fun z ↦ (b.detDualEquiv z).toAddMonoidHom)
     (h.primitiveGenerator_liftRay ρ)) _ _
+
+/-- Pullback to the refined boundary preserves each binomial center ideal on a lifted ray. -/
+theorem comap_internalCenter {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
+    {i : N →+ V} {Φ Ψ : Fan i} [hΦ₀ : Nonempty Φ.cones] [hΨ₀ : Nonempty Ψ.cones]
+    (h : Ψ.IsSubdivision Φ) (b : Module.Basis (Fin 2) ℤ N) (ρ : Φ.Ray) (c : ℂˣ) :
+    (ρ.internalCenter b c).val.comap (h.boundaryMap hΨ₀ hΦ₀) =
+      ((h.liftRay ρ).internalCenter b c).val := by
+  have hdim := (Module.finrank_eq_card_basis b).trans (Fintype.card_fin 2)
+  let τ := h.liftRay ρ
+  let μ := (b.detDualEquiv ρ.primitiveGenerator).toAddMonoidHom
+  have hμ : (b.detDualEquiv τ.primitiveGenerator).toAddMonoidHom = μ :=
+    congrArg (fun v ↦ (b.detDualEquiv v).toAddMonoidHom) (h.primitiveGenerator_liftRay ρ)
+  let p := ρ.binomialCenterOnBoundary hdim (m := μ) (b.detDualEquiv_self _)
+    (ρ.surjective_detCharacter b) c
+  let q := τ.binomialCenterOnBoundary hdim (m := μ)
+    ((congrArg μ (h.primitiveGenerator_liftRay ρ)).trans (b.detDualEquiv_self _))
+    (ρ.surjective_detCharacter b) c
+  have : IsClosedImmersion (ρ.binomialCenter hdim (m := μ) (b.detDualEquiv_self _)
+      (ρ.surjective_detCharacter b) c) :=
+    ρ.isClosedImmersion_binomialCenter hdim (b.detDualEquiv_self _) (ρ.surjective_detCharacter b) c
+  have hpcomp : p ≫ (Φ.boundaryIdeal hΦ₀).subschemeι =
+      ρ.binomialCenter hdim (m := μ) (b.detDualEquiv_self _)
+        (ρ.surjective_detCharacter b) c :=
+    ρ.binomialCenterOnBoundary_comp_subschemeι hdim (b.detDualEquiv_self _)
+      (ρ.surjective_detCharacter b) c
+  have hqcomp : q ≫ (Ψ.boundaryIdeal hΨ₀).subschemeι =
+      τ.binomialCenter hdim (m := μ)
+        ((congrArg μ (h.primitiveGenerator_liftRay ρ)).trans (b.detDualEquiv_self _))
+        (ρ.surjective_detCharacter b) c :=
+    τ.binomialCenterOnBoundary_comp_subschemeι hdim _ _ c
+  have hp : (p ≫ (Φ.boundaryIdeal hΦ₀).subschemeι).ker.comap h.toFanHom.algebraicMap =
+      (q ≫ (Ψ.boundaryIdeal hΨ₀).subschemeι).ker := by
+    rw [hpcomp, hqcomp]
+    exact (ker_eq_comap_of_isPullback _
+      (h.isPullback_binomialCenter ρ hdim (m := μ) (b.detDualEquiv_self _)
+        (ρ.surjective_detCharacter b) c)).symm
+  have hker : p.ker.comap (h.boundaryMap hΨ₀ hΦ₀) = q.ker := by
+    rw [← p.comap_ker_comp_of_isClosedImmersion (Φ.boundaryIdeal hΦ₀).subschemeι, ← comap_comp,
+      h.boundaryMap_comp_subschemeι, comap_comp, hp, q.comap_ker_comp_of_isClosedImmersion]
+  rw [Ray.internalCenter_val, Ray.internalCenter_val]
+  -- Transport the orbit character together with the proofs of vanishing and surjectivity.
+  have hq' (m : N →+ ℤ) (hm : m = μ) (hz : m τ.primitiveGenerator = 0)
+      (hs : Function.Surjective m) :
+      (τ.binomialCenterOnBoundary hdim hz hs c).ker = q.ker := by
+    subst m
+    rfl
+  exact hker.trans (hq' _ hμ _ _).symm
 
 section SharedRay
 

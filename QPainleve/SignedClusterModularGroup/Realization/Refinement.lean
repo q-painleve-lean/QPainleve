@@ -6,7 +6,7 @@ Authors: The QPainleve contributors
 module
 
 public import QPainleve.AlgebraicGeometry.Blowup.Tower.Nodal.Basic
-public import QPainleve.Geometry.Toric.Fan.Boundary.Refinement
+public import QPainleve.Geometry.Toric.Fan.Boundary.PositiveRefinement
 public import QPainleve.SignedClusterModularGroup.Realization.Agreement
 
 import QPainleve.AlgebraicGeometry.Morphisms.Modification.Birational
@@ -182,6 +182,35 @@ private theorem exists_append_nodal_subdivision
   obtain ⟨W, V, d, hV, he, -⟩ := hT₀.exists_append_of_iso hR e₀ hs hD
   exact ⟨W, V, d, hV, by rw [he, he₀]⟩
 
+/-- Refine all members of a marked family using a specified oriented subdivision
+of its auxiliary boundary. The contractions retain the chosen numbering and the
+component over the original origin. -/
+private theorem subdivision_family_of_orientedCycleSubdivision {C : Type*}
+    (χ : C → Multiplicative (Fin r → ℤ) →* ℂˣ)
+    (P : C → MarkedSurface ℂ n B (Spec (CommRingCat.of (LaurentRing ℂ (Fin r)))))
+    (p : ∀ t, ContractedToricFiber b s hΦ T o J (χ t) (P t))
+    (hΨ : Ψ.IsRegular)
+    (hP : ∀ t, ∃ (Y : Scheme) (j : ℕ) (R : BlowupTower (P t).surface j Y)
+        (e : Y ≅ (internalBlowupTower b s (centers(χ t))).1),
+      IsNodalBoundaryTower Dₘ[P t] ((P t).surface ↘ S) (𝟙 _) R ∧
+        (p t).projection = e.inv ≫ R.toBase)
+    [PrestableFamily (D[Ψ,hΨ₀] ↘ S)] {l : ℕ} [NeZero l]
+    {a' : δ → (D[Ψ,hΨ₀] ↘ S).smoothLocus}
+    (U : Scheme.NodalCycleNumbering a' l) (o' : ZMod l)
+    (hU : (β).IsOrientedCycleSubdivision U T)
+    (ho' : β (U.componentGenericPoint o') = T.componentGenericPoint o) :
+    ∀ t, ∃ (q : ContractedToricFiber b (h.liftRay ∘ s) hΨ U o' J' (χ t) (P t))
+      (Y : Scheme) (j : ℕ) (R : BlowupTower (P t).surface j Y)
+      (e : Y ≅ (internalBlowupTower b (h.liftRay ∘ s) (centers(χ t))).1),
+      IsNodalBoundaryTower Dₘ[P t] ((P t).surface ↘ S) (𝟙 _) R ∧
+      q.projection = e.inv ≫ R.toBase ∧ q.boundaryMap = β ≫ (p t).boundaryMap := by
+  intro t
+  obtain ⟨q, _, _, R, e, hR, hq, hb⟩ := (p t).exists_subdivision h hΨ hU ho'
+  obtain ⟨_, _, _, e₀, hT₀, he₀⟩ := hP t
+  obtain ⟨Y, R', e₁, hR', he₁⟩ := exists_append_nodal_subdivision (p t) e₀ hT₀ he₀ hR
+  refine ⟨q, Y, _, R', e₁ ≪≫ e.symm, hR', ?_, hb⟩
+  rw [Iso.trans_inv, Iso.symm_inv, he₁, Category.assoc, Iso.inv_hom_id_assoc, hq]
+
 /-- Refine a fixed presentation over an arbitrary family of center parameters. The refined
 numbering, component above the original origin, and Picard inclusion are common to all
 members of the family. The extended nodal contraction presents each original marked
@@ -214,11 +243,46 @@ theorem exists_subdivision_family {C : Type*} (χ : C → Multiplicative (Fin r 
   intro a'
   obtain ⟨U, hU⟩ := hnumbering a'
   obtain ⟨o', ho'⟩ := h.exists_componentGenericPoint_lift T hΦ hΨ U o
-  refine ⟨U, o', hU, ho', fun t ↦ ?_⟩
-  obtain ⟨q, _, _, R, e, hR, hq, hb⟩ := (p t).exists_subdivision h hΨ hU ho'
-  obtain ⟨_, _, _, e₀, hT₀, he₀⟩ := hP t
-  obtain ⟨Y, R', e₁, hR', he₁⟩ := exists_append_nodal_subdivision (p t) e₀ hT₀ he₀ hR
-  refine ⟨q, Y, _, R', e₁ ≪≫ e.symm, hR', ?_, hb⟩
-  rw [Iso.trans_inv, Iso.symm_inv, he₁, Category.assoc, Iso.inv_hom_id_assoc, hq]
+  exact ⟨U, o', hU, ho',
+    subdivision_family_of_orientedCycleSubdivision h χ P p hΨ hP U o' hU ho'⟩
+
+/-- A regular fan refinement of a family of marked toric presentations can use
+the positive cyclic ray order of the refined fan for its auxiliary numbering.
+The common Picard inclusion and the lifted origin present the same marked
+fibers, with their original order of internal centers. -/
+theorem exists_positive_subdivision_family {C : Type*} (χ : C → Multiplicative (Fin r → ℤ) →* ℂˣ)
+    (P : C → MarkedSurface ℂ n B (Spec (CommRingCat.of (LaurentRing ℂ (Fin r)))))
+    (p : ∀ t, ContractedToricFiber b s hΦ T o J (χ t) (P t))
+    (hΨ : Ψ.IsRegular) (hc : Φ.IsComplete)
+    (hP : ∀ t, ∃ (Y : Scheme) (j : ℕ) (R : BlowupTower (P t).surface j Y)
+        (e : Y ≅ (internalBlowupTower b s (centers(χ t))).1),
+      IsNodalBoundaryTower Dₘ[P t] ((P t).surface ↘ S) (𝟙 _) R ∧
+        (p t).projection = e.inv ≫ R.toBase)
+    (u : ZMod m ≃ Φ.Ray)
+    (hu : ∀ j, T.component j = Φ.boundaryNormalizationComponentEquiv hΦ (u j))
+    (hpos : ∀ j, b.detDualEquiv (u j).primitiveGenerator (u (j + 1)).primitiveGenerator = 1 ∧
+      ∃ σ : Φ.cones, (u j).toCone ≤ σ ∧ (u (j + 1)).toCone ≤ σ) :
+    ∃ (hpre : PrestableFamily (D[Ψ,hΨ₀] ↘ S)) (l : ℕ) (_ : NeZero l),
+      letI := hpre
+      ∀ a' : δ → (D[Ψ,hΨ₀] ↘ S).smoothLocus,
+        ∃ (U : Scheme.NodalCycleNumbering a' l) (o' : ZMod l) (v : ZMod l ≃ Ψ.Ray),
+          (∀ j, U.component j = Ψ.boundaryNormalizationComponentEquiv hΨ (v j)) ∧
+          (∀ j, b.detDualEquiv (v j).primitiveGenerator (v (j + 1)).primitiveGenerator = 1 ∧
+            ∃ σ : Ψ.cones, (v j).toCone ≤ σ ∧ (v (j + 1)).toCone ≤ σ) ∧
+          (β).IsOrientedCycleSubdivision U T ∧
+          β (U.componentGenericPoint o') = T.componentGenericPoint o ∧
+          ∀ t, ∃ (q : ContractedToricFiber b (h.liftRay ∘ s) hΨ U o' J' (χ t) (P t))
+            (Y : Scheme) (j : ℕ) (R : BlowupTower (P t).surface j Y)
+            (e : Y ≅ (internalBlowupTower b (h.liftRay ∘ s) (centers(χ t))).1),
+            IsNodalBoundaryTower Dₘ[P t] ((P t).surface ↘ S) (𝟙 _) R ∧
+            q.projection = e.inv ≫ R.toBase ∧ q.boundaryMap = β ≫ (p t).boundaryMap := by
+  obtain ⟨hpre, l, hl, hnumbering⟩ :=
+    h.exists_positive_boundary_subdivision_numbering b hΦ hΨ hc T u hu hpos (u o)
+  let : PrestableFamily (D[Ψ,hΨ₀] ↘ S) := hpre
+  refine ⟨hpre, l, hl, fun a' ↦ ?_⟩
+  obtain ⟨U, v, hU, -, hv, hpos'⟩ := hnumbering a'
+  obtain ⟨o', ho'⟩ := h.exists_componentGenericPoint_lift T hΦ hΨ U o
+  exact ⟨U, o', v, hv, hpos', hU, ho',
+    subdivision_family_of_orientedCycleSubdivision h χ P p hΨ hP U o' hU ho'⟩
 
 end QPainleve.SignedClusterModularGroup.ContractedToricFiber
