@@ -11,9 +11,9 @@ public import Mathlib.AlgebraicGeometry.Noetherian
 public import Mathlib.Algebra.Category.Ring.Limits
 public import Mathlib.RingTheory.AdicCompletion.LocalRing
 public import Mathlib.CategoryTheory.Functor.OfSequence
+public import TauCeti.AlgebraicGeometry.IdealSheaf.OfIdealTop
 import Mathlib.RingTheory.AdicCompletion.AsTensorProduct
 import TauCeti.AlgebraicGeometry.IdealSheaf.Comap
-import TauCeti.AlgebraicGeometry.IdealSheaf.OfIdealTop
 import TauCeti.AlgebraicGeometry.IdealSheaf.Stalk
 import TauCeti.RingTheory.AdicCompletion.Algebra
 import TauCeti.RingTheory.AdicCompletion.AlgHom
@@ -42,6 +42,13 @@ universe u
 namespace AlgebraicGeometry.Scheme
 
 namespace IdealSheafData
+
+/-- The inverse system of global sections on the positive thickenings of a closed
+subscheme, with restriction as the transition maps. -/
+noncomputable abbrev thickeningSections {X : Scheme.{u}} (I : X.IdealSheafData) :
+    ℕᵒᵖ ⥤ CommRingCat.{u} :=
+  Functor.ofOpSequence (X := fun n ↦ Γ((I ^ (n + 1)).subscheme, ⊤))
+    (fun n ↦ (inclusion (pow_le_pow_of_le_one bot_le le_top (Nat.le_succ (n + 1)))).appTop)
 
 /-- Suppose every point specializes to a point of the closed locus of `I`.
 A global function that restricts to zero on every positive thickening of this locus is zero. -/
@@ -86,6 +93,45 @@ variable {R : Type u} [CommRing R] [IsLocalRing R] {X : Scheme.{u}}
 
 local notation "𝔪" => maximalIdeal R
 local notation "R̂" => AdicCompletion 𝔪 R
+local notation "centerIdeal" =>
+  IdealSheafData.ofIdealTop
+    (Ideal.map (CommRingCat.Hom.hom (Iso.inv (Scheme.ΓSpecIso (CommRingCat.of R)))) 𝔪)
+local notation "quotientSpec" n =>
+  Spec.map (CommRingCat.ofHom (Ideal.Quotient.mk (𝔪 ^ (n + 1))))
+
+private theorem ker_fst_fiberThickening (f : X ⟶ Spec (.of R)) (n : ℕ) :
+    (pullback.fst f (quotientSpec n)).ker = ((centerIdeal).comap f) ^ (n + 1) := by
+  have : IsClosedImmersion (quotientSpec n) :=
+    IsClosedImmersion.spec_of_surjective _ Ideal.Quotient.mk_surjective
+  rw [IdealSheafData.ker_fst_of_isClosedImmersion, Scheme.Hom.ker_Spec_map, CommRingCat.hom_ofHom,
+    Ideal.mk_ker, Ideal.map_pow, IdealSheafData.ofIdealTop_pow, IdealSheafData.comap_pow]
+
+/-- The infinitesimal fiber cut out by a power of the maximal ideal is the
+corresponding thickening of the scheme-theoretic closed fiber. -/
+noncomputable def fiberThickeningIso (f : X ⟶ Spec (.of R)) {E : X.IdealSheafData}
+    (hE : (centerIdeal).comap f = E) (n : ℕ) :
+    pullback f (quotientSpec n) ≅ (E ^ (n + 1)).subscheme := by
+  have : IsClosedImmersion (quotientSpec n) :=
+    IsClosedImmersion.spec_of_surjective _ Ideal.Quotient.mk_surjective
+  have h : (pullback.fst f (quotientSpec n)).ker = (E ^ (n + 1)).subschemeι.ker := by
+    rw [ker_fst_fiberThickening, hE, IdealSheafData.ker_subschemeι]
+  have := IsClosedImmersion.isIso_lift _ _ h
+  exact (asIso (IsClosedImmersion.lift _ _ h.le)).symm
+
+/-- The identification of the fiber thickening commutes with the closed embedding
+in the source of the morphism. -/
+@[reassoc (attr := simp)]
+theorem fiberThickeningIso_hom_subschemeι (f : X ⟶ Spec (.of R)) {E : X.IdealSheafData}
+    (hE : (centerIdeal).comap f = E) (n : ℕ) :
+    (f.fiberThickeningIso hE n).hom ≫ (E ^ (n + 1)).subschemeι =
+      pullback.fst f (quotientSpec n) := by
+  have : IsClosedImmersion (quotientSpec n) :=
+    IsClosedImmersion.spec_of_surjective _ Ideal.Quotient.mk_surjective
+  have h : (f.fiberThickeningIso hE n).inv ≫ pullback.fst f (quotientSpec n) =
+      (E ^ (n + 1)).subschemeι := by
+    unfold fiberThickeningIso
+    exact IsClosedImmersion.lift_fac _ _ _
+  rw [← h, Iso.hom_inv_id_assoc]
 
 /-- The map from the completed base ring to global functions on the infinitesimal fiber
 of order `n + 1`, given by truncation followed by pullback. -/

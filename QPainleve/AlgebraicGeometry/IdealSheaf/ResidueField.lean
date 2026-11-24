@@ -47,6 +47,19 @@ theorem support_ker_fromSpecResidueField_of_isClosed {X : Scheme} {p : X}
   rw [ker_fromSpecResidueField_eq_vanishingIdeal, IdealSheafData.coe_support_vanishingIdeal,
     Closeds.coe_mk, hp.closure_eq]
 
+/-- On the spectrum of the stalk at a closed point, the inverse image of the reduced
+point is cut out by the residue map of that stalk. -/
+theorem ker_fromSpecResidueField_comap_fromSpecStalk {X : Scheme.{u}} {p : X}
+    (hp : IsClosed ({p} : Set X)) :
+    (X.fromSpecResidueField p).ker.comap (X.fromSpecStalk p) = (Spec.map (X.residue p)).ker := by
+  have : IsClosedImmersion (X.fromSpecResidueField p) :=
+    .of_isPreimmersion _ (by simpa [range_fromSpecResidueField] using hp)
+  have h : IsPullback (Spec.map (X.residue p)) (𝟙 _) (X.fromSpecStalk p)
+      (X.fromSpecResidueField p) :=
+    (IsPullback.of_horiz_isIso_mono (fst := 𝟙 _) (snd := Spec.map (X.residue p))
+      ⟨by simp [fromSpecResidueField]⟩).flip
+  exact (IdealSheafData.ker_eq_comap_of_isPullback _ h).symm
+
 /-- A field-valued point has the same kernel ideal as the map from its residue field. -/
 theorem Hom.ker_eq_ker_fromSpecResidueField {k : Type*} [Field k]
     {X : Scheme} (s : Spec (.of k) ⟶ X) :
