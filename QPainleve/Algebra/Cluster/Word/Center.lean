@@ -17,6 +17,8 @@ the center torus. Intersecting the inverse images of the distinct-center opens a
 prefixes gives the open where every intermediate center configuration is noncolliding.
 This open is dense over any field and contains a rational point over a separably closed
 field. It lets successive elementary transformations use a single initial choice of centers.
+When a presentation has been constructed only on the image of a prefix's open, the next step
+uses `centerStepPartialMap` to retain the noncollision conditions inherited from that prefix.
 -/
 
 public noncomputable section
@@ -245,6 +247,16 @@ instance (w : Word B C) (P : ChargeSeed B N) : IsDominant (w.centerPartialMap K 
   rw [centerPartialMap_hom]
   infer_instance
 
+instance (w : Word B C) (P : ChargeSeed B N) : IsOpenImmersion (w.centerPartialMap K P).hom := by
+  rw [centerPartialMap_hom]
+  infer_instance
+
+/-- The centers reached by a word form the image of its simultaneous noncollision open. -/
+theorem centerPartialMap_opensRange (w : Word B C) (P : ChargeSeed B N) :
+    (w.centerPartialMap K P).hom.opensRange = (w.centerIso K).inv ⁻¹ᵁ w.centerOpen K P := by
+  simp only [centerPartialMap_hom, Scheme.Hom.opensRange_comp, Scheme.Opens.opensRange_ι,
+    centerPartialMap_domain, Scheme.Hom.inv_preimage]
+
 instance (w : Word B C) (P : ChargeSeed B N) :
     (w.centerPartialMap K P).IsOver (structureMap K A) (structureMap K A) where
   over := by simp [centerPartialMap_hom]
@@ -283,6 +295,133 @@ theorem centerPartialMap_comp (w : Word B C) (v : Word C D) (P : ChargeSeed B N)
     _ = _ := by
       simp only [centerPartialMap_hom, centerIso_comp, Iso.trans_hom,
         Scheme.isoOfEq_hom, Scheme.homOfLE_ι_assoc]
+
+private theorem dense_centerStepDomain (w : Word B C) (s : C ⟶ D) (P : ChargeSeed B N) :
+    let f := w.centerPartialMap K P
+    let g := s.toPath.centerPartialMap K (w.chargeTarget P)
+    Dense (↑(f.hom.opensRange ⊓ g.domain) : Set (scheme K A)) :=
+  let f := w.centerPartialMap K P
+  let g := s.toPath.centerPartialMap K (w.chargeTarget P)
+  f.hom.denseRange.inter_of_isOpen_right g.dense_domain g.domain.isOpen
+
+variable (K) in
+/-- The center map for the next arrow, restricted to centers reached by the prefix
+and satisfying the noncollision conditions of the arrow. -/
+def centerStepPartialMap (w : Word B C) (s : C ⟶ D) (P : ChargeSeed B N) :
+    (scheme K A).PartialMap (scheme K A) :=
+  let f := w.centerPartialMap K P
+  let g := s.toPath.centerPartialMap K (w.chargeTarget P)
+  g.restrict (f.hom.opensRange ⊓ g.domain) (dense_centerStepDomain w s P) inf_le_right
+
+/-- The input of a step lies in the image of the prefix's open and in the local step domain. -/
+theorem centerStepPartialMap_domain (w : Word B C) (s : C ⟶ D) (P : ChargeSeed B N) :
+    (w.centerStepPartialMap K s P).domain = (w.centerPartialMap K P).hom.opensRange ⊓
+      (s.toPath.centerPartialMap K (w.chargeTarget P)).domain :=
+  (rfl)
+
+/-- The step domain is the image under the prefix of the appended word's open. -/
+theorem centerStepPartialMap_domain_eq_preimage (w : Word B C) (s : C ⟶ D) (P : ChargeSeed B N) :
+    (w.centerStepPartialMap K s P).domain = (w.centerIso K).inv ⁻¹ᵁ (w.cons s).centerOpen K P := by
+  simp only [← Path.comp_toPath_eq_cons w s, centerStepPartialMap_domain,
+    centerPartialMap_opensRange, centerPartialMap_domain, centerOpen_comp,
+    Scheme.Hom.preimage_inf, ← Scheme.Hom.comp_preimage, Iso.inv_hom_id,
+    Scheme.Hom.id_preimage]
+
+/-- Realizations on the local step open can be restricted to the inherited domain. -/
+theorem centerStepPartialMap_eq_restrict (w : Word B C) (s : C ⟶ D) (P : ChargeSeed B N) :
+    let g := s.toPath.centerPartialMap K (w.chargeTarget P)
+    w.centerStepPartialMap K s P =
+      g.restrict (w.centerStepPartialMap K s P).domain (w.centerStepPartialMap K s P).dense_domain
+        (by rw [centerStepPartialMap_domain]; exact inf_le_right) :=
+  (rfl)
+
+/-- The inherited step map has the same monomial formula as the local step map. -/
+theorem centerStepPartialMap_hom (w : Word B C) (s : C ⟶ D) (P : ChargeSeed B N) :
+    (w.centerStepPartialMap K s P).hom =
+      (w.centerStepPartialMap K s P).domain.ι ≫ (s.toPath.centerIso K).hom := by
+  rw [centerStepPartialMap_eq_restrict, Scheme.PartialMap.restrict_hom, centerPartialMap_hom,
+    Scheme.homOfLE_ι_assoc]
+  rfl
+
+instance (w : Word B C) (s : C ⟶ D) (P : ChargeSeed B N) :
+    IsOpenImmersion (w.centerStepPartialMap K s P).hom := by
+  rw [centerStepPartialMap_hom]
+  infer_instance
+
+instance (w : Word B C) (s : C ⟶ D) (P : ChargeSeed B N) :
+    IsDominant (w.centerStepPartialMap K s P).hom := by
+  have := Opens.isDominant_ι (w.centerStepPartialMap K s P).dense_domain
+  rw [centerStepPartialMap_hom]
+  infer_instance
+
+instance (w : Word B C) (s : C ⟶ D) (P : ChargeSeed B N) :
+    (w.centerStepPartialMap K s P).IsOver (Over.mk (structureMap K A)).hom
+      (Over.mk (structureMap K A)).hom where
+  over := by simp [centerStepPartialMap_hom]
+
+variable (K) in
+/-- Applying the prefix identifies the domain of the appended word with the domain
+of its last step. Its inverse recovers the initial center of that word. -/
+def centerStepDomainIso (w : Word B C) (s : C ⟶ D) (P : ChargeSeed B N) :
+    ((w.cons s).centerPartialMap K P).domain.toScheme ≅ (w.centerStepPartialMap K s P).domain :=
+  (w.centerIso K).hom.isoImage ((w.cons s).centerPartialMap K P).domain ≪≫
+    (scheme K A).isoOfEq (by
+      rw [centerPartialMap_domain, centerStepPartialMap_domain_eq_preimage,
+        Scheme.Hom.inv_preimage])
+
+/-- The domain isomorphism evaluates the prefix at the initial center. -/
+@[reassoc (attr := simp)]
+theorem centerStepDomainIso_hom_ι (w : Word B C) (s : C ⟶ D) (P : ChargeSeed B N) :
+    (w.centerStepDomainIso K s P).hom ≫ (w.centerStepPartialMap K s P).domain.ι =
+      ((w.cons s).centerPartialMap K P).domain.ι ≫ (w.centerIso K).hom := by
+  simp only [centerStepDomainIso, Iso.trans_hom, Category.assoc, Scheme.isoOfEq_hom_ι,
+    Scheme.Hom.isoImage_hom_ι]
+
+/-- The inverse domain isomorphism recovers the initial center by the inverse
+monomial isomorphism of the prefix. -/
+@[reassoc (attr := simp)]
+theorem centerStepDomainIso_inv_ι (w : Word B C) (s : C ⟶ D) (P : ChargeSeed B N) :
+    (w.centerStepDomainIso K s P).inv ≫ ((w.cons s).centerPartialMap K P).domain.ι =
+      (w.centerStepPartialMap K s P).domain.ι ≫ (w.centerIso K).inv := by
+  rw [← cancel_mono (w.centerIso K).hom, Category.assoc, Category.assoc,
+    ← centerStepDomainIso_hom_ι, Iso.inv_hom_id_assoc, Iso.inv_hom_id, Category.comp_id]
+
+/-- Executing the step after the domain isomorphism evaluates the appended word. -/
+@[reassoc (attr := simp)]
+theorem centerStepDomainIso_hom_centerStepPartialMap_hom
+    (w : Word B C) (s : C ⟶ D) (P : ChargeSeed B N) :
+    (w.centerStepDomainIso K s P).hom ≫ (w.centerStepPartialMap K s P).hom =
+      ((w.cons s).centerPartialMap K P).hom := by
+  rw [centerStepPartialMap_hom, centerStepDomainIso_hom_ι_assoc, centerPartialMap_hom,
+    ← Iso.trans_hom, ← centerIso_comp, Path.comp_toPath_eq_cons]
+
+/-- The step reaches exactly the centers obtained by executing the appended word. -/
+theorem centerStepPartialMap_opensRange (w : Word B C) (s : C ⟶ D) (P : ChargeSeed B N) :
+    (w.centerStepPartialMap K s P).hom.opensRange =
+      ((w.cons s).centerPartialMap K P).hom.opensRange := by
+  simpa only [centerStepDomainIso_hom_centerStepPartialMap_hom] using
+    (Scheme.Hom.opensRange_comp_of_isIso (w.centerStepDomainIso K s P).hom
+      (w.centerStepPartialMap K s P).hom).symm
+
+/-- Appending a step composes the prefix with the step on its inherited domain.
+The composite is defined on the entire simultaneous noncollision open. -/
+theorem centerPartialMap_cons (w : Word B C) (s : C ⟶ D) (P : ChargeSeed B N) :
+    (w.cons s).centerPartialMap K P = (w.centerPartialMap K P).comp
+      (w.centerStepPartialMap K s P) := by
+  let f := w.centerPartialMap K P
+  let g := s.toPath.centerPartialMap K (w.chargeTarget P)
+  have h := f.comp_restrict_right g (f.hom.opensRange ⊓ g.domain)
+    (dense_centerStepDomain w s P) inf_le_right
+  have hdom : f.domain.ι ''ᵁ (f.hom ⁻¹ᵁ (f.hom.opensRange ⊓ g.domain)) = (f.comp g).domain := by
+    simp only [Scheme.Hom.preimage_inf, Scheme.Hom.preimage_opensRange, top_inf_eq,
+      Scheme.PartialMap.comp_domain]
+  have hrestrict (U : (scheme K A).Opens) (hU : Dense (U : Set (scheme K A)))
+      (hle : U ≤ (f.comp g).domain) (heq : U = (f.comp g).domain) :
+      (f.comp g).restrict U hU hle = f.comp g := by
+    subst U
+    exact (f.comp g).restrict_id
+  rw [← Path.comp_toPath_eq_cons, centerPartialMap_comp, centerStepPartialMap_eq_restrict]
+  exact (h.trans (hrestrict _ _ _ hdom)).symm
 
 /-- Over a separably closed field there is a rational initial center character satisfying
 the noncollision conditions at every step. -/

@@ -12,11 +12,12 @@ public import QPainleve.SignedClusterModularGroup.Realization.Basic
 /-!
 # Composing geometric realizations along cluster words
 
-`GeometricRealization.comp` composes successive generator realizations.
-`Quiver.Path.centerPartialMap_comp` identifies the composition domain with the
-simultaneous noncollision open. The intermediate families are indexed by prefixes
-because visits to the same exchange matrix can have different toric presentations.
-The construction tracks the marked Picard pullback and the numbered branch action.
+`GeometricRealization.comp` composes successive generator realizations on the centers
+reached by each prefix. `Quiver.Path.centerPartialMap_cons` identifies the composition
+domain with the simultaneous noncollision open. The intermediate families are indexed
+by prefixes because visits to the same exchange matrix can have different toric
+presentations. The construction tracks the marked Picard pullback and the numbered
+branch action.
 -/
 
 public noncomputable section
@@ -51,13 +52,14 @@ local notation "ε" => (Path.nil : Word B B)
 
 variable (family) in
 /-- A realization for each arrow occurrence of a word, with the families indexed by
-their prefixes. A suffix witnesses that the specified arrow occurs in the word. -/
+their prefixes. Each arrow is realized on the noncolliding centers reached by its
+prefix. A suffix witnesses that the specified arrow occurs in the word. -/
 abbrev WordStepRealizations {E : SkewExchangeMatrix ι} (w : Word B E) : Type (u + 1) :=
   ∀ {D D' : SkewExchangeMatrix ι} (p : Word B D) (s : D ⟶ D'),
     (∃ q : Word D' E, (p.cons s).comp q = w) →
     GeometricRealization (n := n) (T₀ := Centers) (T₁ := Centers)
       (B₀ := form p) (B₁ := form (p.cons s)) (family p) (family (p.cons s))
-      (s.toPath.centerPartialMap k (p.chargeTarget P)) (s.toPath.xRationalMap k)
+      (p.centerStepPartialMap k s P) (s.toPath.xRationalMap k)
 
 variable {P} {D E : SkewExchangeMatrix ι} {p : Word B D} {s : D ⟶ E}
 
@@ -70,6 +72,33 @@ def WordStepRealizations.nil : WordStepRealizations P family ε := by
   have h := congrArg Path.length hq
   simp only [Path.length_comp, Path.length_cons, Path.length_nil] at h
   omega
+
+/-- Extend step data by realizing one more arrow on the centers reached by the prefix. -/
+def WordStepRealizations.snoc (step : WordStepRealizations P family p)
+    (last : GeometricRealization (n := n) (T₀ := Centers) (T₁ := Centers)
+      (B₀ := form p) (B₁ := form (p.cons s)) (family p) (family (p.cons s))
+      (p.centerStepPartialMap k s P) (s.toPath.xRationalMap k)) :
+    WordStepRealizations P family (p.cons s) := by
+  classical
+  intro D₀ D₁ q t h
+  by_cases hp : ∃ r : Word D₁ D, (q.cons t).comp r = p
+  · exact step q t hp
+  · have hend : ∃ hE : D₁ = E, hE ▸ q.cons t = p.cons s := by
+      obtain ⟨r, hr⟩ := h
+      cases r with
+      | nil => exact ⟨rfl, by simpa using hr⟩
+      | cons r u =>
+        simp only [Path.comp_cons, Path.cons.injEq] at hr
+        obtain ⟨rfl, hq, _⟩ := hr
+        exact (hp ⟨r, hq.eq⟩).elim
+    have hE := hend.choose
+    have hcons := hend.choose_spec
+    subst D₁
+    simp only [Path.cons.injEq] at hcons
+    obtain ⟨rfl, hq, ht⟩ := hcons
+    cases hq.eq
+    cases ht.eq
+    exact last
 
 /-- A word with its final step deleted uses the same realizations of the earlier steps. -/
 def WordStepRealizations.prefix (step : WordStepRealizations P family (p.cons s)) :
@@ -89,12 +118,36 @@ theorem WordStepRealizations.prefix_apply (step : WordStepRealizations P family 
 def WordStepRealizations.last (step : WordStepRealizations P family (p.cons s)) :
     GeometricRealization (n := n) (T₀ := Centers) (T₁ := Centers)
       (B₀ := form p) (B₁ := form (p.cons s)) (family p) (family (p.cons s))
-      (s.toPath.centerPartialMap k (p.chargeTarget P)) (s.toPath.xRationalMap k) :=
+      (p.centerStepPartialMap k s P) (s.toPath.xRationalMap k) :=
   step p s ⟨Path.nil, Path.comp_nil _⟩
 
 /-- The final arrow is selected using the empty suffix. -/
 theorem WordStepRealizations.last_eq (step : WordStepRealizations P family (p.cons s)) :
     step.last = step p s ⟨Path.nil, Path.comp_nil _⟩ := (rfl)
+
+/-- Appending a realization retains the step data of the prefix. -/
+@[simp]
+theorem WordStepRealizations.prefix_snoc (step : WordStepRealizations P family p)
+    (last : GeometricRealization (n := n) (T₀ := Centers) (T₁ := Centers)
+      (B₀ := form p) (B₁ := form (p.cons s)) (family p) (family (p.cons s))
+      (p.centerStepPartialMap k s P) (s.toPath.xRationalMap k)) :
+    @Eq (WordStepRealizations P family p) (WordStepRealizations.prefix (step.snoc last)) step := by
+  funext D₀ D₁ q t h
+  simp only [WordStepRealizations.prefix, WordStepRealizations.snoc, dite_eq_left h]
+
+/-- The final realization of the extended word is the appended realization. -/
+@[simp]
+theorem WordStepRealizations.last_snoc (step : WordStepRealizations P family p)
+    (last : GeometricRealization (n := n) (T₀ := Centers) (T₁ := Centers)
+      (B₀ := form p) (B₁ := form (p.cons s)) (family p) (family (p.cons s))
+      (p.centerStepPartialMap k s P) (s.toPath.xRationalMap k)) :
+    WordStepRealizations.last (step.snoc last) = last := by
+  have h : ¬ ∃ r : Word E D, (p.cons s).comp r = p := by
+    rintro ⟨r, hr⟩
+    have hl := congrArg Path.length hr
+    simp only [Path.length_comp, Path.length_cons] at hl
+    omega
+  simp only [WordStepRealizations.last, WordStepRealizations.snoc, dite_eq_right h]
 
 variable (P)
 
@@ -122,10 +175,8 @@ def ofWord : {E : SkewExchangeMatrix ι} → (w : Word B E) →
   | _, .cons p s, step =>
     let R := ofWord p step.prefix
     let T := WordStepRealizations.last (P := P) (family := family) (p := p) (s := s) step
-    let C := (p.centerPartialMap k P).comp (s.toPath.centerPartialMap k (p.chargeTarget P))
-    have hC : (p.cons s).centerPartialMap k P = C :=
-      (congrArg (fun v ↦ v.centerPartialMap k P) (Path.comp_toPath_eq_cons p s)).symm.trans
-        (centerPartialMap_comp p s.toPath P)
+    let C := (p.centerPartialMap k P).comp (p.centerStepPartialMap k s P)
+    have hC : (p.cons s).centerPartialMap k P = C := centerPartialMap_cons p s P
     letI : C.IsOver (Centers).hom (Centers).hom := hC ▸ (inferInstance :
       ((p.cons s).centerPartialMap k P).IsOver (Centers).hom (Centers).hom)
     (R.comp T).congrMaps hC.symm
