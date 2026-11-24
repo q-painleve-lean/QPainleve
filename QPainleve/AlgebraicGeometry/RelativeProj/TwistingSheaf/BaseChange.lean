@@ -349,13 +349,11 @@ theorem relativeProjBaseChangeTwistingSheafMap_app_pullbackSections
           n).app (j₂[U] ⁻¹ᵁ W) (((D₂).π U).app W s)) := by
   let i : BaseChangeChart f := ⟨V, U, h⟩
   let μ := gluedTwistingSheafMap A f n
-  have hu : (ADJ).unit.app ((D₂).glued) ≫ (PUSH).map μ =
-      twistingSheafPushforwardMap A f n :=
-    ((ADJ).homEquiv_unit _ _ μ).symm.trans (Equiv.apply_symm_apply _ _)
   have hsec : μ.app (g ⁻¹ᵁ W) ((g).pullbackSections ((D₂).glued) W s) =
       twistingSheafApp A f n W s := by
-    refine (congrArg (μ.app (g ⁻¹ᵁ W)) (Scheme.Hom.pullbackSections_apply g _ W s)).trans ?_
-    exact congrArg (fun q ↦ q.app W s) hu
+    refine (pullbackPushforwardAdjunction_homEquiv_app_apply g μ W s).symm.trans ?_
+    exact congrArg (fun q ↦ q.app W s)
+      (Equiv.apply_symm_apply ((ADJ).homEquiv _ _) (twistingSheafPushforwardMap A f n))
   exact (congrArg (((D₁).π V).app (g ⁻¹ᵁ W)) hsec).trans
     ((twistingSheafApp_π A f n i W s).trans (twistingSheafChartComponent_app A f n i W s))
 
