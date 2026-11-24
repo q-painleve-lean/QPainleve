@@ -13,11 +13,10 @@ import QPainleve.AlgebraicGeometry.Cohomology.SerreVanishing
 import QPainleve.AlgebraicGeometry.Curves.Degree.Ample
 import QPainleve.AlgebraicGeometry.EffectiveCartierDivisor.GlobalGeneration
 import QPainleve.AlgebraicGeometry.EffectiveCartierDivisor.Twist
-import QPainleve.AlgebraicGeometry.IdealSheaf.Tensor.Restriction
+import QPainleve.AlgebraicGeometry.IntersectionNumber.ExceptionalCurve.Thickening
 import QPainleve.AlgebraicGeometry.Morphisms.Finite
 import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.Sections.Basic
 import QPainleve.AlgebraicGeometry.Scheme.Sections
-import TauCeti.AlgebraicGeometry.Cohomology.ClosedImmersion.Basic
 import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.Proper
 
 /-!
@@ -60,33 +59,6 @@ theorem IsEffectiveCartier.intersectionNumber_tensorPow_dual_of_degree
     intersectionNumber_pow_of_isIntegral, intersectionNumber_inv_of_isIntegral, hdeg]
   ring
 
-private theorem subsingleton_cohomology_exceptional_quotient
-    (M : InvertibleSheaf X) {κ : Type u} [Field κ] (e : projectiveLine κ ≅ E.subscheme)
-    (hdeg : -1 ≤ intersectionNumber κ (e.hom ≫ E.subschemeι) (LineBundleClass.mk M)) :
-    Subsingleton (Cohomology (M.obj ⊗ E.pushforwardSubscheme) 1) := by
-  let i := E.subschemeι
-  let N := (Scheme.Modules.pullback i).obj M.obj
-  let P := (InvertibleSheaf.pullback (e.hom ≫ i)).obj M
-  let d := intersectionNumber κ (e.hom ≫ i) (LineBundleClass.mk M)
-  have hP : InvertibleSheaf.eulerDegree κ P = d := by
-    simp only [d, P, intersectionNumber_def, pullback_mk, eulerDegree_mk]
-  obtain ⟨t⟩ := (projectiveLine.nonempty_iso_twistingSheaf_iff κ P d).mpr hP
-  let t' := ((Scheme.Modules.pullbackComp e.hom i).app M.obj) ≪≫
-    eqToIso (InvertibleSheaf.pullback_obj_obj (e.hom ≫ i) M).symm ≪≫ t
-  have := E.isIso_tensorRestrictionHom M
-  let c := (cohomologyFunctor _ 1).mapIso (asIso (E.tensorRestrictionHom M)) ≪≫
-    cohomologyPushforwardIso i N 1
-  let c' := (cohomologyFunctor _ 1).mapIso ((e.hom.pullbackIsoPushforwardInv).app N) ≪≫
-    cohomologyPushforwardIso (inv e.hom) N 1
-  let b := Pi.basisFun κ (Fin 2)
-  have hd : -1 ≤ d := hdeg
-  have hz : Subsingleton (Cohomology (Proj.twistingSheaf
-      (TauCeti.SymmetricAlgebra.homogeneousSubmodule κ (Fin 2 → κ)) d) 1) :=
-    b.subsingleton_cohomology_twistingSheaf_of_neg_card_lt (by omega : -2 < d)
-      Nat.one_pos
-  let h := c ≪≫ c'.symm ≪≫ (cohomologyFunctor _ 1).mapIso t'
-  exact @Function.Injective.subsingleton _ _ _ h.addCommGroupIsoToAddEquiv.injective hz
-
 /-- If first cohomology vanishes before twisting, it vanishes after each exceptional
 twist whose restriction degree is at least `-1`, starting from a nonnegative
 restriction degree. This is the vanishing in Stacks Project, Lemma 54.16.7(1). -/
@@ -112,7 +84,7 @@ theorem IsEffectiveCartier.subsingleton_cohomology_one_tensorPow_dual_of_le
       exact @Function.Injective.subsingleton _ _ _
         ((cohomologyFunctor _ 1).mapIso h).addCommGroupIsoToAddEquiv.injective hvan
     have h₂ : Subsingleton (Cohomology ((M (j + 1)).obj ⊗ E.pushforwardSubscheme) 1) := by
-      apply subsingleton_cohomology_exceptional_quotient _ e
+      apply subsingleton_cohomology_one_tensor_pushforwardSubscheme_of_projectiveLine _ e
       rw [hE.intersectionNumber_tensorPow_dual_of_degree e hdeg]
       omega
     have hmid := (E.shortExact_tensor_toPushforwardSubscheme (M (j + 1)).obj)
