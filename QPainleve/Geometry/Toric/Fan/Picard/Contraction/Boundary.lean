@@ -105,7 +105,8 @@ variable {X Y : Scheme} [X.Over S] [X.IsProjectiveOver ℂ] [IsIntegral X]
   (hD : (D.comap (e.hom ≫ T.toBase)).support =
     (internalBlowupTower b s c).2.boundaryι.ker.support)
 
-local instance : IsNoetherian X := isNoetherian_of_finiteType (X ↘ S)
+local instance isNoetherian_orderedContractionBase : IsNoetherian X :=
+  isNoetherian_of_finiteType (X ↘ S)
 local instance : IsNormalScheme X := by
   let := (X ↘ S).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two
   exact IsNormalScheme.of_uniqueFactorizationMonoid_stalk
@@ -233,7 +234,8 @@ variable {X' Y' : Scheme} [X'.Over S] [X'.IsProjectiveOver ℂ] [IsIntegral X']
   (hD' : (D'.comap (e'.hom ≫ T'.toBase)).support =
     (internalBlowupTower b s c').2.boundaryι.ker.support)
 
-local instance : IsNoetherian X' := isNoetherian_of_finiteType (X' ↘ S)
+local instance isNoetherian_comparisonContractionBase : IsNoetherian X' :=
+  isNoetherian_of_finiteType (X' ↘ S)
 local instance : IsNormalScheme X' := by
   let := (X' ↘ S).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two
   exact IsNormalScheme.of_uniqueFactorizationMonoid_stalk
