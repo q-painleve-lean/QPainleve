@@ -290,9 +290,12 @@ theorem isEffectiveCartier_coordinateHyperplaneIdeal (j : Fin (n + 1)) :
     (coordinateToUnit j) (mono_coordinateToUnit j)
 
 /-- Two distinct coordinate hyperplanes meet properly. -/
-theorem isEffectiveCartier_comap_coordinateHyperplaneIdeal [NeZero n] {i j : Fin (n + 1)}
+theorem isEffectiveCartier_comap_coordinateHyperplaneIdeal {i j : Fin (n + 1)}
     (hij : i ≠ j) : ((coordinateHyperplaneIdeal (k := k) i).comap
       (coordinateHyperplaneIdeal (k := k) j).subschemeι).IsEffectiveCartier := by
+  have : NeZero n := ⟨by
+    rintro rfl
+    exact hij (Fin.ext (by omega))⟩
   have hη : hyperplaneGenericPoint (k := k) j ∉
       ((coordinateHyperplaneIdeal (k := k) i).support : Set P) := by
     rw [coe_support_coordinateHyperplaneIdeal, Set.notMem_compl_iff]
