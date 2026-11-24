@@ -12,8 +12,6 @@ import QPainleve.AlgebraicGeometry.Chow.NegativeCurve
 import QPainleve.AlgebraicGeometry.Chow.Nef.NumericalExceptional
 import QPainleve.AlgebraicGeometry.Chow.Nef.PositiveCone
 import QPainleve.AlgebraicGeometry.Chow.RationalSurface.PositiveCone
-import QPainleve.AlgebraicGeometry.IntersectionNumber.ExceptionalCurve.Numerical
-import QPainleve.AlgebraicGeometry.Scheme.LocalDimension
 import TauCeti.Topology.Algebra.Module.ModuleTopology
 
 /-!
@@ -53,47 +51,6 @@ variable [rational : Scheme.IsRationalOver (X ↘ Spec (.of k))] {D : X.IdealShe
   (hD : D.IsEffectiveCartier)
   (hcan : LineBundleClass.mk hD.toInvertibleSheaf =
     LineBundleClass.mk (QPainleve.canonicalBundle k X 2))
-
-include rational hD hcan in
-private theorem negativePrimeDivisorClass_cases [IsIntegral X] (p : CodimensionOnePoint X)
-    (hp : B(X) (c p) (c p) < 0) (hdis : (p : X) ∉ D.support) :
-    (B(X) (c p) (c p) = -1 ∧ B(X) (c p) (ι K(X)) = -1) ∨
-      B(X) (c p) (c p) = -2 := by
-  let I := vanishingIdeal (Closeds.mk (closure {(p : X)}) isClosed_closure)
-  have hX := topologicalKrullDim_eq_of_smoothOfRelativeDimension (X ↘ Spec (.of k)) (n := 2)
-  have : IsProper (I.subscheme ↘ Spec (.of k)) := by
-    rw [← comp_over I.subschemeι]
-    infer_instance
-  have : I.subscheme.IsCurveOver k := Scheme.isCurveOver_iff.mpr
-    ⟨inferInstance, inferInstance, QPainleve.topologicalKrullDim_vanishingIdeal_subscheme k hX p⟩
-  have : IsLocallyNoetherian X := LocallyOfFiniteType.isLocallyNoetherian (X ↘ Spec (.of k))
-  let : ∀ x : X, UniqueFactorizationMonoid (X.presheaf.stalk x) :=
-    (X ↘ Spec (.of k)).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two
-  have hI : I.IsEffectiveCartier := isEffectiveCartier_vanishingIdeal_closure_singleton p.property
-  let a := (LineBundleClass.mk hI.toInvertibleSheaf)⁻¹
-  have hp' : c p = ι a := by
-    rw [realPrimeDivisorClass_def, primeDivisorClass_def]
-  have hneg : b(X) a a < 0 := by
-    rw [hp', realIntersectionBilinForm_tmul, one_mul, one_mul, toMul_ofMul, Int.cast_lt_zero] at hp
-    exact hp
-  have hoff : I.subschemeι (genericPoint I.subscheme) ∉ D.support := by
-    simpa only [I, subschemeι_genericPoint_vanishingIdeal_closure_singleton] using hdis
-  rcases (hI.classIntersectionNumber_self_neg_iff_of_anticanonical hD hcan hoff).mp hneg with
-    ⟨he, hd⟩ | ⟨_, hsq, _⟩
-  · have hsq := ((hI.isExceptionalCurveOfFirstKind_iff_genus_eq_zero_and_classIntersectionNumber
-      (k := k) hX.le).mp he).2
-    have hc := (intersectionBilinForm k X (Additive.ofMul a)).map_neg (Additive.ofMul K(X))
-    have hd' : b(X) a K(X) = -1 := by
-      simp only [intersectionBilinForm_apply, toMul_neg, toMul_ofMul] at hc
-      rw [hcan, classIntersectionNumber_comm] at hd
-      have hdeg : b(X) a K(X)⁻¹ = 1 := hd
-      exact neg_eq_iff_eq_neg.mp (hdeg.symm.trans hc).symm
-    have hsq' : b(X) a a = -1 := hsq
-    left
-    simp [hp', hsq', hd']
-  · have hsq' : b(X) a a = -2 := hsq
-    right
-    simp [hp', hsq']
 
 variable [TopologicalSpace V(X)] [IsModuleTopology ℝ V(X)]
 
@@ -156,7 +113,7 @@ theorem coe_nefCone_eq_closure_inter_anticanonical {h : LineBundleClass X} (hh :
       rw [realIntersectionBilinForm_one_tmul_realPrimeDivisorClass, Int.cast_pos] at hdeg
       simp only [realIntersectionBilinForm_tmul, one_mul, toMul_ofMul] at hs hc
       exact hexc _ (by exact_mod_cast hs) (by exact_mod_cast hc) hdeg
-    · exact hint p hmem hs
+    · exact hint p hmem hs.1
 
 section Transport
 
