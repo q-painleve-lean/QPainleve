@@ -47,6 +47,43 @@ local notation "M" a:arg => internalBlowupTower b s (center a)
 local notation "π" a:arg => toBase (WithBoundary.toTower (Sigma.snd (M a)))
 local notation "ι" a:arg => WithBoundary.boundaryι (Sigma.snd (M a))
 
+/-- Torus translation induces the identity on any numbering of the toric boundary cycle. -/
+theorem boundaryCycleAction_boundaryTranslation
+    (hΦ : Φ.IsRegular)
+    (hc : Φ.IsComplete) (hdim : Module.finrank ℤ N = 2)
+    [PrestableFamily ((Φ.boundaryIdeal h₀).subscheme ↘ S)]
+    {m : ℕ} [NeZero m] {γ : Type*}
+    {a : γ → ((Φ.boundaryIdeal h₀).subscheme ↘ S).smoothLocus}
+    (T : NodalCycleNumbering a m) (χ : Multiplicative (N →+ ℤ) →* ℂˣ) :
+    (boundaryTranslation (Φ := Φ) χ).boundaryCycleAction T T = 1 := by
+  apply cycleBranchPerm_injective m
+  apply Equiv.ext
+  rintro ⟨j, l⟩
+  apply T.branch.injective
+  rw [map_one, Equiv.Perm.one_apply, Iso.branch_boundaryCycleAction,
+    branchSchemeIso_boundaryTranslation hΦ hc hdim]
+  rfl
+
+/-- A lift of a torus translation that descends to the two surfaces induces
+a commuting square on their specified boundary restrictions. -/
+theorem commSq_boundaryTranslation_of_isLift
+    {X Y U V : Scheme} {iU : U ⟶ X} {iV : V ⟶ Y} [Mono iV]
+    {p : (M c).1 ⟶ X} {q : (M d).1 ⟶ Y}
+    {f : (Φ.boundaryIdeal h₀).subscheme ⟶ U} {g : (Φ.boundaryIdeal h₀).subscheme ⟶ V}
+    {e : X ⟶ Y} {eB : U ⟶ V}
+    (hf : f ≫ iU = ι c ≫ p) (hg : g ≫ iV = ι d ≫ q)
+    (heB : eB ≫ iV = iU ≫ e)
+    {χ : Multiplicative (N →+ ℤ) →* ℂˣ} {t : (M c).1 ≅ (M d).1}
+    (ht : IsLift (Φ.torusTranslation χ) (M c).2.toTower (M d).2.toTower t)
+    (htq : p ≫ e = t.hom ≫ q) :
+    CommSq (boundaryTranslation (Φ := Φ) χ).hom f g eB := by
+  constructor
+  apply (cancel_mono iV).mp
+  simp only [Category.assoc, hg, heB, reassoc_of% hf]
+  rw [← Category.assoc, ←
+    boundaryι_comp_of_isLift_internalBlowupTower_torusTranslation b s (center c) (center d) χ ht,
+    Category.assoc, htq]
+
 variable {X Y : Scheme} [X.Over S] [Y.Over S] {D : X.IdealSheafData} {E : Y.IdealSheafData}
   {p : (internalBlowupTower b s (fun j : Fin r ↦ c (ofAdd (Pi.single j 1)))).1 ⟶ X}
   {q : (internalBlowupTower b s (fun j : Fin r ↦ d (ofAdd (Pi.single j 1)))).1 ⟶ Y}
@@ -77,24 +114,10 @@ theorem cycleOrientationSign_eq_one_of_isLift_torusTranslation
     (htq : p ≫ e.hom = t.hom ≫ q) :
     cycleOrientationSign (eB.boundaryCycleAction A B) = 1 := by
   let τ := boundaryTranslation (Φ := Φ) χ
-  have hτ : CommSq τ.hom f g eB.hom := by
-    constructor
-    apply (cancel_mono E.subschemeι).mp
-    simp only [Category.assoc, hg, heB, reassoc_of% hf]
-    rw [← Category.assoc τ.hom, ←
-      boundaryι_comp_of_isLift_internalBlowupTower_torusTranslation b s (center c) (center d) χ ht,
-      Category.assoc, htq]
+  have hτ := commSq_boundaryTranslation_of_isLift b s c d hf hg heB ht htq
   have hsign := eB.cycleOrientationSign_eq_of_orientedCycleSubdivisions A B T T τ hfs hgs hτ
-  have htB : τ.boundaryCycleAction T T = 1 := by
-    apply cycleBranchPerm_injective m
-    apply Equiv.ext
-    rintro ⟨j, l⟩
-    apply T.branch.injective
-    rw [map_one, Equiv.Perm.one_apply, τ.branch_boundaryCycleAction T T,
-      branchSchemeIso_boundaryTranslation hΦ hc
-        ((Module.finrank_eq_card_basis b).trans (Fintype.card_fin 2)) χ]
-    rfl
-  rw [hsign, htB, map_one]
+  rw [hsign, boundaryCycleAction_boundaryTranslation hΦ hc
+    ((Module.finrank_eq_card_basis b).trans (Fintype.card_fin 2)), map_one]
 
 variable [IsIntegral X] [IsIntegral Y] [IsNormalScheme X] [IsNormalScheme Y]
   [IsLocallyNoetherian X] [IsLocallyNoetherian Y] [IsModification p] [IsModification q]
