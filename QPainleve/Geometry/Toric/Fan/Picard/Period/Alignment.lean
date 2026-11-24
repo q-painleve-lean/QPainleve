@@ -93,11 +93,7 @@ theorem exists_iso_of_eq_orderedBoundaryPeriod
         (mark c).symm (Additive.ofMul (LineBundleClass.pullback p[e]
           (LineBundleClass.pullback j.hom L))) =
         (mark d).symm (Additive.ofMul (LineBundleClass.pullback q[e'] L)) := by
-  apply exists_iso_of_eq_center_character hΦ b s c d hT hU e e' hc hd hD hD' hkeep
-  intro x hx
-  have h := orderedBoundaryPeriod_mul_torusCharacter hΦ b s A r hcomp hdet hnodes
-    (center c) (center d) ⟨x, hx⟩
-  rw [hperiod, mul_right_inj] at h
-  simpa only [torusCharacter_def] using h
+  exact exists_iso_of_eq_center_character hΦ b s c d hT hU e e' hc hd hD hD' hkeep
+    ((orderedBoundaryPeriod_eq_iff hΦ b s A r hcomp hdet hnodes (center c) (center d)).mp hperiod)
 
 end TauCeti.Toric.Fan

@@ -98,7 +98,36 @@ theorem cycleOrientationSign_eq_one_of_isLift_torusTranslation
 
 variable [IsIntegral X] [IsIntegral Y] [IsNormalScheme X] [IsNormalScheme Y]
   [IsLocallyNoetherian X] [IsLocallyNoetherian Y] [IsModification p] [IsModification q]
-  [IsSeparated (Y ↘ S)] [e.hom.IsOver S]
+
+include hΦ hf hg hfs hgs heB in
+/-- A translating lift acts by rotation by `j` exactly when component zero
+of the source and component `j` of the target represent the same surviving ray. -/
+theorem boundaryCycleAction_eq_r_iff_of_isLift_torusTranslation
+    (hc : Φ.IsComplete) {χ : Multiplicative (N →+ ℤ) →* ℂˣ} {t : (M c).1 ≅ (M d).1}
+    (ht : IsLift (Φ.torusTranslation χ) ((M c).2.toTower) ((M d).2.toTower) t)
+    (htq : p ≫ e.hom = t.hom ≫ q)
+    (hD : (D.comap p).support = (ι c).ker.support)
+    (hE : (E.comap q).support = (ι d).ker.support)
+    (j : ZMod n) (x : D.boundaryPrimes) (y : E.boundaryPrimes)
+    (hx : x.val = D.subschemeι (A.componentGenericPoint 0))
+    (hy : y.val = E.subschemeι (B.componentGenericPoint j)) :
+    eB.boundaryCycleAction A B = DihedralGroup.r j ↔
+      contractedBoundaryRayEmbedding hΦ b s (center c) p hD x =
+        contractedBoundaryRayEmbedding hΦ b s (center d) q hE y := by
+  have hsign := cycleOrientationSign_eq_one_of_isLift_torusTranslation b s c d hΦ A B T
+    hf hg hfs hgs heB hc ht htq
+  let a := eB.boundaryCycleAction A B
+  have hxy : e.hom x.val = E.subschemeι (B.componentGenericPoint (cycleVertexPerm a 0)) := by
+    rw [hx, ← Scheme.Hom.comp_apply, ← heB, Scheme.Hom.comp_apply,
+      eB.apply_componentGenericPoint]
+  have hvertex : e.hom x.val = y.val ↔ cycleVertexPerm a 0 = j := by
+    rw [hxy, hy]
+    exact (E.subschemeι.injective.comp B.componentGenericPoint_injective).eq_iff
+  exact (eq_r_iff_cycleVertexPerm_zero_eq hsign).trans (hvertex.symm.trans
+    (apply_contractedBoundaryPrime_eq_iff_of_isLift_torusTranslation b s hΦ
+      (center c) (center d) p q e hD hE ht htq x y))
+
+variable [IsSeparated (Y ↘ S)] [e.hom.IsOver S]
 
 include hf hg hfs hgs heB in
 /-- Equality of the rational X evaluations determines the entire boundary action.
@@ -126,17 +155,7 @@ theorem boundaryCycleAction_eq_r_iff_of_comp_contractedXEvaluation_eq
   obtain ⟨χ, ⟨t, ht, htq, -, -⟩, -⟩ :=
     existsUnique_translation_of_comp_contractedXEvaluation_eq b s c d hΦ p q e
       hindex hp hq hD hE heval
-  have hsign := cycleOrientationSign_eq_one_of_isLift_torusTranslation b s c d hΦ A B T
-    hf hg hfs hgs heB hc ht htq
-  let a := eB.boundaryCycleAction A B
-  have hxy : e.hom x.val = E.subschemeι (B.componentGenericPoint (cycleVertexPerm a 0)) := by
-    rw [hx, ← Scheme.Hom.comp_apply, ← heB, Scheme.Hom.comp_apply,
-      eB.apply_componentGenericPoint]
-  have hvertex : e.hom x.val = y.val ↔ cycleVertexPerm a 0 = j := by
-    rw [hxy, hy]
-    exact (E.subschemeι.injective.comp B.componentGenericPoint_injective).eq_iff
-  exact (eq_r_iff_cycleVertexPerm_zero_eq hsign).trans (hvertex.symm.trans
-    (apply_contractedBoundaryPrime_eq_iff_of_isLift_torusTranslation b s hΦ
-      (center c) (center d) p q e hD hE ht htq x y))
+  exact boundaryCycleAction_eq_r_iff_of_isLift_torusTranslation b s c d hΦ A B T
+    hf hg hfs hgs heB hc ht htq hD hE j x y hx hy
 
 end TauCeti.Toric.Fan
