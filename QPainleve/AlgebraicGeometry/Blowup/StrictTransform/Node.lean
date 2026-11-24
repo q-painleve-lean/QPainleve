@@ -100,6 +100,42 @@ theorem isNodeOfReducedBoundary_ker_blowupMap_iff_of_notMem_support
   have h := hstrict.symm.trans htotal
   rwa [hleft, hright] at h
 
+/-- At a closed node of a nodal Cartier boundary, the total transform is the
+reduced total transform times the exceptional ideal. This includes self-nodes. -/
+theorem IsEffectiveCartier.comap_blowupToBase_eq_radical_mul_exceptional_of_node
+    {k : Type u} [Field k] [IsIntegral X] {s : X ⟶ Spec (.of k)}
+    [SmoothOfRelativeDimension 2 s] [QuasiCompact s] {D : X.IdealSheafData} {p : X}
+    (hD : D.IsEffectiveCartier)
+    (hN : AtWorstNodalOfRelativeDimensionOne (D.subschemeι ≫ s))
+    (hp : IsClosed ({p} : Set X)) (hn : D.IsNodeOfReducedBoundary s p) :
+    let I := vanishingIdeal (Closeds.mk (closure {p}) isClosed_closure)
+    D.comap I.blowupToBase = (D.comap I.blowupToBase).radical * I.comap I.blowupToBase := by
+  classical
+  let I := vanishingIdeal (Closeds.mk (closure {p}) isClosed_closure)
+  have : Smooth s := SmoothOfRelativeDimension.smooth 2 s
+  have : IsLocallyNoetherian X := LocallyOfFiniteType.isLocallyNoetherian s
+  have : IsRegularLocalRing (X.presheaf.stalk p) := isRegularLocalRing_stalk_of_smooth s p
+  have hdim := ((smoothOfRelativeDimension_iff_ringKrullDim_stalk_eq s 2).mp
+    inferInstance).2 p hp
+  have : IsIntegral I.blowup := isIntegral_blowup_closed_point s hp
+  have : Surjective I.blowupToBase := surjective_blowupToBase_point hp hdim
+  have : IsReduced (I.comap I.blowupToBase).subscheme :=
+    @isReduced_of_isIntegral _ (isIntegral_exceptional_blowup_closed_point hdim hp)
+  have : IsReduced D.subscheme := hN.isReduced
+  have hpD := mem_support_of_isNodeOfReducedBoundary hn
+  have hI : (X.fromSpecResidueField p).ker = I := X.ker_fromSpecResidueField_eq_vanishingIdeal p
+  have hDI : D ≤ I := hI ▸
+    (D.le_ker_fromSpecResidueField_iff_mem_support hp).mpr hpD
+  have horder : D.stalkOrder p = 2 := by
+    simpa only [ite_eq_left hn] using hD.stalkOrder_eq_if_isNodeOfReducedBoundary hN hpD
+  calc
+    D.comap I.blowupToBase =
+        (I.blowupMap D.subschemeι).ker * (I.comap I.blowupToBase) ^ 2 := by
+      simpa only [horder, ENat.toNat_ofNat] using
+        hD.totalTransform_eq_strictTransform_mul_pow_closedPoint hp hdim
+    _ = (D.comap I.blowupToBase).radical * I.comap I.blowupToBase := by
+      rw [I.radical_comap_blowupToBase_eq_ker_blowupMap_subschemeι_mul D hDI, pow_two, mul_assoc]
+
 /-- At each attachment point over the blown-up node, the first Fitting ideal
 of the differentials of the reduced total transform is the maximal ideal.
 The attachment is between a branch of the strict transform and the one

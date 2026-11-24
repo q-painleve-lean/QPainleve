@@ -5,9 +5,15 @@ Authors: The QPainleve contributors
 -/
 module
 
+public import Mathlib.AlgebraicGeometry.Birational.Birational
 public import QPainleve.AlgebraicGeometry.Blowup.Tower.Boundary.Quotient
 public import QPainleve.AlgebraicGeometry.Blowup.Tower.Intersection
+public import QPainleve.AlgebraicGeometry.Blowup.Tower.Nodal.Canonical
+public import QPainleve.AlgebraicGeometry.Blowup.Tower.Projective
+public import QPainleve.AlgebraicGeometry.Chow.CurveCone
 
+import QPainleve.AlgebraicGeometry.Blowup.Tower.Modification
+import QPainleve.AlgebraicGeometry.Chow.Nef.Anticanonical
 import QPainleve.AlgebraicGeometry.EffectiveCartierDivisor.ClosedImmersion
 import QPainleve.AlgebraicGeometry.Morphisms.ClosedImmersion.IsoLocus
 import QPainleve.AlgebraicGeometry.Morphisms.Pullback.IsoLocus
@@ -147,5 +153,49 @@ theorem exists_internal_minus_two_curve_iff (hT : IsNodalBoundaryTower D f₀ (�
     have hcomm : i ≫ π = j := by simpa only [Category.id_comp] using hpb.w
     exact ⟨C, i, hi, hC, hiC, hdim, (hdisjComp i).mp (hcomm.symm ▸ hdisj),
       (hsq hiC hjC (ker_eq_comap_of_isPullback j hpb).symm).trans hneg⟩
+
+/-- For an anticanonical pair, the real Picard criterion excluding internal
+`(-2)`-curves is invariant under nodal blowups. This is the criterion on
+prime classes used in the nef cone of the auxiliary pair. -/
+theorem forall_realPrimeDivisorClass_self_ne_neg_two_iff
+    [Scheme.IsRationalOver f₀]
+    (hT : IsNodalBoundaryTower D f₀ (𝟙 X) T)
+    (hD : D.IsEffectiveCartier)
+    (hN : AtWorstNodalOfRelativeDimensionOne (D.subschemeι ≫ f₀))
+    (hcan : mk hD.toInvertibleSheaf = mk (QPainleve.canonicalBundle k X 2)) :
+    letI : IsNoetherian X := isNoetherian_of_finiteType f₀
+    letI : Y.Over (Spec (.of k)) := ⟨π ≫ f₀⟩
+    letI : Y.IsProjectiveOver k := T.isProjectiveOver k
+    letI : IsIntegral Y := hT.isClosedPointTower.isIntegral f₀
+    letI : SmoothOfRelativeDimension 2 (Y ↘ Spec (.of k)) :=
+      hT.isClosedPointTower.smoothOfRelativeDimension f₀
+    (∀ p : CodimensionOnePoint Y, (p : Y) ∉ (D.comap π).support →
+      Chow.realIntersectionBilinForm k Y (Chow.realPrimeDivisorClass k p)
+        (Chow.realPrimeDivisorClass k p) ≠ -2) ↔
+    (∀ q : CodimensionOnePoint X, (q : X) ∉ D.support →
+      Chow.realIntersectionBilinForm k X (Chow.realPrimeDivisorClass k q)
+        (Chow.realPrimeDivisorClass k q) ≠ -2) := by
+  let : Y.Over (Spec (.of k)) := ⟨π ≫ f₀⟩
+  have : IsNoetherian X := isNoetherian_of_finiteType f₀
+  have : Y.IsProjectiveOver k := T.isProjectiveOver k
+  have : IsIntegral Y := hT.isClosedPointTower.isIntegral f₀
+  have : SmoothOfRelativeDimension 2 (Y ↘ Spec (.of k)) :=
+    hT.isClosedPointTower.smoothOfRelativeDimension f₀
+  have : IsModification π :=
+    hT.isClosedPointTower.isModification_of_smoothOfRelativeDimension_two f₀
+  have hbir : Scheme.BirationalOver (π ≫ f₀) f₀ := by
+    obtain ⟨e, he⟩ := IsModification.birationalOver π
+    refine ⟨e, ?_⟩
+    simpa only [Category.comp_id, Category.assoc] using congrArg (· ≫ f₀) he
+  have : Scheme.IsRationalOver (Y ↘ Spec (.of k)) := hbir.isRationalOver _ _
+  let R := (D.comap π).radical
+  have hR : R.IsEffectiveCartier := (hT.radical_comap_toBase hD hN).1
+  have hcanR : mk hR.toInvertibleSheaf = mk (QPainleve.canonicalBundle k Y 2) :=
+    (hT.canonicalClass_radical_comap_toBase_iff hD hN).mpr hcan
+  have hX := Chow.exists_realPrimeDivisorClass_self_eq_neg_two_iff k hD hcan
+  have hY := Chow.exists_realPrimeDivisorClass_self_eq_neg_two_iff k hR hcanR
+  simp only [R, support_radical] at hY
+  simpa only [not_exists, not_and] using
+    (hY.trans ((hT.exists_internal_minus_two_curve_iff k).trans hX.symm)).not
 
 end QPainleve.BlowupTower.IsNodalBoundaryTower
