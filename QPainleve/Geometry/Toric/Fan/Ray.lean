@@ -221,6 +221,17 @@ theorem Ray.primitiveGenerator_injective : Function.Injective (Ray.primitiveGene
     apply Subtype.ext
     rw [Ray.toCone_eq_hull_primitiveGenerator ρ, Ray.toCone_eq_hull_primitiveGenerator τ, h]
 
+/-- Labelled rays with matching primitive generators lift to the same rays on a
+common subdivision. -/
+theorem IsSubdivision.liftRay_comp_eq_of_primitiveGenerator_eq {Ω : Fan i} {ι : Type*}
+    (hΦ : Ω.IsSubdivision Φ) (hΨ : Ω.IsSubdivision Ψ)
+    (ρ : ι → Φ.Ray) (τ : ι → Ψ.Ray)
+    (h : ∀ j, (ρ j).primitiveGenerator = (τ j).primitiveGenerator) :
+    hΦ.liftRay ∘ ρ = hΨ.liftRay ∘ τ := by
+  funext j
+  apply Ray.primitiveGenerator_injective
+  simpa only [Function.comp_apply, IsSubdivision.primitiveGenerator_liftRay] using h j
+
 /-- On a complete fan, a lattice character nonnegative on every primitive ray
 generator is zero. -/
 theorem character_eq_zero_of_nonneg_primitiveGenerator (Φ : Fan i) (hc : Φ.IsComplete) (m : N →+ ℤ)
