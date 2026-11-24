@@ -5,7 +5,7 @@ Authors: The QPainleve contributors
 -/
 module
 
-public import QPainleve.SignedClusterModularGroup.Realization.Basic
+public import QPainleve.SignedClusterModularGroup.Realization.Comparison
 public import QPainleve.Geometry.Toric.Fan.TorusAction.Orientation.Basic
 
 import TauCeti.AlgebraicGeometry.Curves.Node.Reduced
@@ -30,65 +30,6 @@ open TauCeti QPainleve.BlowupTower TauCeti.AlgebraicGeometry TauCeti.Toric
 namespace QPainleve.SignedClusterModularGroup
 
 open MarkedSurface (surfaceIso boundaryIso)
-
-universe u
-
-namespace FiberRealization
-
-variable {k : Type u} [Field k] [IsSepClosed k] [Infinite k] {n : ℕ} [NeZero n]
-  {L L' : Type u} [AddCommGroup L] [AddCommGroup L']
-  {B : LinearMap.BilinForm ℤ L} {B' : LinearMap.BilinForm ℤ L'}
-  {X X' : Scheme.{u}} [IsIntegral X] [X.IsSeparated] [X'.IsSeparated]
-  {M : MarkedSurface k n B X} {P Q : MarkedSurface k n B' X'}
-  {F : X ⤏ X'} {I J : B'.IsometryEquiv B} {g h : DihedralGroup n}
-  (R : FiberRealization M P F I g)
-
-/-- The residual isomorphism of the target pairs intertwines their X evaluations when the
-source realization uses the same rational map. -/
-theorem comp_targetEvaluation (R' : FiberRealization M Q F J h) :
-    (surfaceIso (R.iso.symm ≪≫ R'.iso)).hom.toRationalMap.comp Q.evaluation = P.evaluation := by
-  obtain ⟨_, hR⟩ := R.evaluation_eq
-  obtain ⟨_, hR'⟩ := R'.evaluation_eq
-  apply Scheme.RationalMap.comp_left_injective (surfaceIso R.iso).hom.toRationalMap
-  simpa only [← Scheme.RationalMap.comp_assoc, Scheme.RationalMap.comp_toRationalMap,
-    Scheme.Hom.toRationalMap_compHom, MarkedSurface.surfaceIso_trans,
-    MarkedSurface.surfaceIso_symm, Iso.trans_hom, Iso.symm_hom, Iso.hom_inv_id_assoc]
-    using hR'.symm.trans hR
-
-variable {G : X ⤏ X'} (R' : FiberRealization M Q G J h)
-
-/-- If the residual target isomorphism preserves each marked Picard class, the two Picard
-pullbacks agree. -/
-theorem picard_eq_of_pullback_targetIso
-    (hp : ∀ a, LineBundleClass.pullback (surfaceIso (R.iso.symm ≪≫ R'.iso)).hom
-      (Q.picardMarking a).toMul =
-      (P.picardMarking a).toMul) :
-    I = J := by
-  apply DFunLike.ext
-  intro a
-  apply M.picardMarking.injective
-  rw [R.picard_eq, R'.picard_eq, ← hp a, LineBundleClass.pullback_comp]
-  simp only [MarkedSurface.surfaceIso_trans, MarkedSurface.surfaceIso_symm, Iso.trans_hom,
-    Iso.symm_hom, Iso.hom_inv_id_assoc]
-
-/-- If the residual target isomorphism preserves the numbered branches, the two actions
-agree on the entire boundary. -/
-theorem boundaryAction_eq_of_targetIso
-    (hb : letI : PrestableFamily (P.boundary ↘ Spec (.of k)) := P.prestable
-          letI : PrestableFamily (Q.boundary ↘ Spec (.of k)) := Q.prestable
-          (boundaryIso (R.iso.symm ≪≫ R'.iso)).boundaryCycleAction P.cycle Q.cycle = 1) :
-    g = h := by
-  let : PrestableFamily (M.boundary ↘ Spec (.of k)) := M.prestable
-  let : PrestableFamily (P.boundary ↘ Spec (.of k)) := P.prestable
-  let : PrestableFamily (Q.boundary ↘ Spec (.of k)) := Q.prestable
-  have hpair : R.iso ≪≫ (R.iso.symm ≪≫ R'.iso) = R'.iso := by simp
-  have hcomp := (boundaryIso R.iso).boundaryCycleAction_trans M.cycle P.cycle
-    (boundaryIso (R.iso.symm ≪≫ R'.iso)) Q.cycle
-  simpa only [← MarkedSurface.boundaryIso_trans, hpair, R'.boundaryAction_eq,
-    hb, R.boundaryAction_eq, one_mul] using hcomp.symm
-
-
-end FiberRealization
 
 section ContractedToric
 
