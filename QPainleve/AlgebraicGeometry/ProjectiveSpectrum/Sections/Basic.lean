@@ -403,31 +403,22 @@ theorem genericProjectiveChart_preimage_awayXRatio [IsIntegral X] (i j : ι)
   have h := toProjectiveSpaceChart_appTop_awayXRatio M f s i j
   erw [h, Iso.inv_hom_id_apply]
 
-private theorem isClosedImmersion_toProjectiveSpace_iff_chart
-    (h : ⨆ i, Dₛ[i] = ⊤) :
-    IsClosedImmersion (M.toProjectiveSpace f s h) ↔
-      ∀ i : ι, IsClosedImmersion (M.toProjectiveSpaceChart f s i) := by
-  let D (i : ι) : (ℙ).Opens := Proj.basicOpen (homogeneousSubmodule ι R) (.X i)
-  have hD : ⨆ i, D i = ⊤ := Proj.iSup_basicOpen_eq_top _ _ (irrelevant_eq_span_X ι R).le
-  have he (i : ι) :
-      IsClosedImmersion (M.toProjectiveSpace f s h ∣_ (D i)) ↔
-        IsClosedImmersion (M.toProjectiveSpaceChart f s i) := by
-    let j := Proj.awayι (homogeneousSubmodule ι R) (MvPolynomial.X i)
-      ((mem_homogeneousSubmodule _ _).mpr (isHomogeneous_X R i)) one_pos
-    have hj : j.opensRange = D i := Proj.opensRange_awayι _ _ _ _
-    have hp : M.toProjectiveSpace f s h ⁻¹ᵁ j.opensRange = (Dₛ[i]).ι.opensRange := by
-      rw [hj, Scheme.Opens.opensRange_ι]
-      exact M.toProjectiveSpace_preimage_basicOpen f s h i
-    let e := (M.toProjectiveSpace f s h).morphismRestrictArrowIso
-      (j := j) (M.toProjectiveSpaceChart f s i) (M.toProjectiveSpaceChart_awayι f s h i).symm hp
-    rw [← hj]
-    exact MorphismProperty.arrow_mk_iso_iff @IsClosedImmersion e
-  constructor
-  · intro _ i
-    exact (he i).mp inferInstance
-  · intro H
-    exact IsZariskiLocalAtTarget.of_iSup_eq_top (P := @IsClosedImmersion) D hD
-      (fun i ↦ (he i).mpr (H i))
+private theorem isClosedImmersion_morphismRestrict_toProjectiveSpace_iff
+    (h : ⨆ i, Dₛ[i] = ⊤) (i : ι) :
+    IsClosedImmersion (M.toProjectiveSpace f s h ∣_
+      (Proj.basicOpen (homogeneousSubmodule ι R) (.X i))) ↔
+      IsClosedImmersion (M.toProjectiveSpaceChart f s i) := by
+  let j := Proj.awayι (homogeneousSubmodule ι R) (MvPolynomial.X i)
+    ((mem_homogeneousSubmodule _ _).mpr (isHomogeneous_X R i)) one_pos
+  have hj := Proj.opensRange_awayι (homogeneousSubmodule ι R) (MvPolynomial.X i)
+    ((mem_homogeneousSubmodule _ _).mpr (isHomogeneous_X R i)) one_pos
+  have hp : M.toProjectiveSpace f s h ⁻¹ᵁ j.opensRange = (Dₛ[i]).ι.opensRange := by
+    rw [hj, Scheme.Opens.opensRange_ι]
+    exact M.toProjectiveSpace_preimage_basicOpen f s h i
+  let e := (M.toProjectiveSpace f s h).morphismRestrictArrowIso
+    (j := j) (M.toProjectiveSpaceChart f s i) (M.toProjectiveSpaceChart_awayι f s h i).symm hp
+  rw [← hj]
+  exact MorphismProperty.arrow_mk_iso_iff @IsClosedImmersion e
 
 private theorem surjective_chartRingHom_iff (i : ι) :
     Function.Surjective (chartRingHom M f s i) ↔ Function.Surjective (chartEval M f s i) := by
@@ -442,19 +433,9 @@ private theorem surjective_chartRingHom_iff (i : ι) :
     Units.ext ((chartEval_isUnit M f s i).unit_spec.trans (chartEval_X_self M f s i))
   simp [hu]
 
-/-- The projective morphism is a closed immersion exactly when each nonvanishing
-open is affine and its sections are generated over the base by the normalized
-coordinates. The evaluation map in the criterion sends `Xⱼ` to the ratio of
-the restrictions of `s j` and `s i`. -/
-theorem isClosedImmersion_toProjectiveSpace_iff (h : ⨆ i, Dₛ[i] = ⊤) :
-    IsClosedImmersion (M.toProjectiveSpace f s h) ↔
-      ∀ i : ι, IsAffine (Dₛ[i]).toScheme ∧
-        Function.Surjective (eval₂Hom
-          ((Scheme.ΓSpecIso (.of R)).inv ≫ ((Dₛ[i]).ι ≫ f).appTop).hom
-          (fun j ↦ (Dₛ[i]).topIso.inv (M.sectionRatio (res[i] (s j)) (res[i] (s i))
-            (by rw [M.nonvanishingLocus_map, inf_idem])))) := by
-  rw [isClosedImmersion_toProjectiveSpace_iff_chart]
-  refine forall_congr' fun i ↦ ?_
+private theorem isClosedImmersion_toProjectiveSpaceChart_iff (i : ι) :
+    IsClosedImmersion (M.toProjectiveSpaceChart f s i) ↔
+      IsAffine (Dₛ[i]).toScheme ∧ Function.Surjective (chartEval M f s i) := by
   have hs : Function.Surjective (M.toProjectiveSpaceChart f s i).appTop ↔
       Function.Surjective (chartRingHom M f s i) := by
     let e := Scheme.ΓSpecIso (.of (Away (homogeneousSubmodule ι R) (MvPolynomial.X i)))
@@ -470,6 +451,72 @@ theorem isClosedImmersion_toProjectiveSpace_iff (h : ⨆ i, Dₛ[i] = ⊤) :
     exact ⟨ha, (surjective_chartRingHom_iff M f s i).mp (hs.mp hsurj)⟩
   · exact IsClosedImmersion.of_surjective_of_isAffine _
       (hs.mpr ((surjective_chartRingHom_iff M f s i).mpr hsurj))
+
+/-- The projective morphism is a closed immersion exactly when each nonvanishing
+open is affine and its sections are generated over the base by the normalized
+coordinates. The evaluation map in the criterion sends `Xⱼ` to the ratio of
+the restrictions of `s j` and `s i`. -/
+theorem isClosedImmersion_toProjectiveSpace_iff (h : ⨆ i, Dₛ[i] = ⊤) :
+    IsClosedImmersion (M.toProjectiveSpace f s h) ↔
+      ∀ i : ι, IsAffine (Dₛ[i]).toScheme ∧
+        Function.Surjective (eval₂Hom
+          ((Scheme.ΓSpecIso (.of R)).inv ≫ ((Dₛ[i]).ι ≫ f).appTop).hom
+          (fun j ↦ (Dₛ[i]).topIso.inv (M.sectionRatio (res[i] (s j)) (res[i] (s i))
+            (by rw [M.nonvanishingLocus_map, inf_idem])))) := by
+  let D (i : ι) : (ℙ).Opens := Proj.basicOpen (homogeneousSubmodule ι R) (.X i)
+  have hD : ⨆ i, D i = ⊤ := Proj.iSup_basicOpen_eq_top _ _ (irrelevant_eq_span_X ι R).le
+  rw [IsZariskiLocalAtTarget.iff_of_iSup_eq_top (P := @IsClosedImmersion) D hD]
+  exact forall_congr' fun i ↦
+    (isClosedImmersion_morphismRestrict_toProjectiveSpace_iff M f s h i).trans
+      (isClosedImmersion_toProjectiveSpaceChart_iff M f s i)
+
+/-- When the projective morphism has closed image, it suffices to check a collection of
+charts whose preimages cover the source. On each selected chart the nonvanishing open
+must be affine, and the section ratios must generate its ring. -/
+theorem isClosedImmersion_toProjectiveSpace_of_cover
+    (h : ⨆ i, Dₛ[i] = ⊤) (hclosed : IsClosed (Set.range (M.toProjectiveSpace f s h)))
+    {κ : Type*} (i : κ → ι)
+    (hcover : ⨆ k, Dₛ[i k] = ⊤)
+    (hchart : ∀ k, IsAffine (Dₛ[i k]).toScheme ∧
+      Function.Surjective (eval₂Hom
+        ((Scheme.ΓSpecIso (.of R)).inv ≫ ((Dₛ[i k]).ι ≫ f).appTop).hom
+        (fun j ↦ (Dₛ[i k]).topIso.inv (M.sectionRatio (res[i k] (s j)) (res[i k] (s (i k)))
+          (by rw [M.nonvanishingLocus_map, inf_idem]))))) :
+    IsClosedImmersion (M.toProjectiveSpace f s h) := by
+  let g := M.toProjectiveSpace f s h
+  let D (k : κ) : (ℙ).Opens := Proj.basicOpen (homogeneousSubmodule ι R) (.X (i k))
+  let V : (ℙ).Opens := ⟨(Set.range g)ᶜ, hclosed.isOpen_compl⟩
+  have hV : g ⁻¹ᵁ V = ⊥ := by
+    apply bot_unique
+    intro x hx
+    exact False.elim (hx (Set.mem_range_self x))
+  have hcov : (⨆ k, D k) ⊔ V = ⊤ := by
+    apply top_unique
+    rintro y -
+    by_cases hy : y ∈ Set.range g
+    · obtain ⟨x, rfl⟩ := hy
+      have hx : x ∈ ⨆ k, Dₛ[i k] := by simp [hcover]
+      obtain ⟨k, hk⟩ := Opens.mem_iSup.mp hx
+      apply Opens.mem_sup.mpr (Or.inl (Opens.mem_iSup.mpr ⟨k, g.mem_preimage.mp ?_⟩))
+      rw [M.toProjectiveSpace_preimage_basicOpen f s h]
+      exact hk
+    · exact Opens.mem_sup.mpr (Or.inr hy)
+  let W : Option κ → (ℙ).Opens := fun k ↦ k.elim V D
+  apply IsZariskiLocalAtTarget.of_iSup_eq_top (P := @IsClosedImmersion) W
+  · simpa [W, iSup_option, sup_comm] using hcov
+  · intro k
+    cases k with
+    | none =>
+      have : IsEmpty ((g ⁻¹ᵁ W none).toScheme) := ⟨fun x ↦ by
+        have hx := Set.mem_range_self (f := (g ⁻¹ᵁ W none).ι) x
+        rw [Scheme.Opens.range_ι] at hx
+        have hx : (g ⁻¹ᵁ W none).ι x ∈ g ⁻¹ᵁ V := hx
+        rw [hV] at hx
+        exact Opens.mem_bot.mp hx⟩
+      exact inferInstanceAs (IsClosedImmersion (g ∣_ W none))
+    | some k =>
+      exact (isClosedImmersion_morphismRestrict_toProjectiveSpace_iff M f s h (i k)).mpr
+        ((isClosedImmersion_toProjectiveSpaceChart_iff M f s (i k)).mpr (hchart k))
 
 private theorem span_eq_top_of_frame_coordinates (h : ⨆ i, Dₛ[i] = ⊤)
     {W : X.Opens} (hW : IsAffineOpen W) (e : Γ(M, W)) (he : W ≤ M.nonvanishingLocus e)

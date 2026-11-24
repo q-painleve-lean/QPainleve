@@ -11,6 +11,7 @@ public import QPainleve.Geometry.Toric.Fan.Picard.Mutation.Pivot
 
 import QPainleve.AlgebraicGeometry.Blowup.StrictTransform.Reduced
 import QPainleve.Geometry.Toric.Fan.InternalBlowup
+import QPainleve.Geometry.Toric.Fan.Picard.Mutation.Ruling
 import QPainleve.Geometry.Toric.Fan.Picard.StrictTransform
 import QPainleve.Geometry.Toric.Fan.Smooth
 import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.TensorProduct
@@ -227,5 +228,59 @@ theorem pullback_mutationBlowupIso_lift_picardHom (hOppₙ : oppositeMem) {X Y :
       (funext fun j ↦ (hrest _ (hnext j)).symm))
 
 end Ordered
+
+section Ruling
+
+open QPainleve
+
+local notation "X" => Φ.algebraicRealization
+local notation "X'" => Fan.algebraicRealization Ψ
+local notation "q" => Ray.ofPrimitiveGenerator ρ.isPrimitiveGenerator.isPrimitive.neg hOpp
+local notation "F" => mutationFiberClass b ρ hΦ
+local notation "F'" => mutationFiberClass b (r ρ) hΨ
+
+variable {n : ℕ} {Y : Scheme.{0}}
+  (T : BlowupTower (Ray.mutationSourceCenterIdeal b ρ c).blowup n Y)
+
+local notation "k" => Fin.castAdd n (0 : Fin 1)
+local notation "s" => (fun _ : Fin (1 + n) ↦ ρ)
+local notation "R₁" => BlowupTower.transport T G
+local notation "U₁" => BlowupTower.append (P(I₁)) (BlowupTower.Transport.tower (R₁))
+local notation "A" => BlowupTower.append (P(I₀)) T
+
+/-- The mutation lift transports a line class with ruling coordinates `(a, d)`
+and ordered exceptional coefficients `x`. Use the pivot ray as section when
+`onSection = true` and the opposite ray otherwise. The new ruling coordinates
+are `(a + x k + if onSection then d else 0, d)`, where `k` is the first stage.
+The new first exceptional coefficient is `-d - x k`, and the tail stays fixed. -/
+theorem picardHom_transport_mutation (onSection : Bool) (a d : ℤ)
+    (x : Fin (1 + n) → ℤ) :
+    let : Nonempty Φ.cones := ⟨ρ.toCone⟩
+    let : Nonempty (Ψ).cones := ⟨(r ρ).toCone⟩
+    let : ∀ x : X, UniqueFactorizationMonoid ((X).presheaf.stalk x) :=
+      Φ.uniqueFactorizationMonoid_stalk_algebraicRealization hΦ
+    let : ∀ x : X', UniqueFactorizationMonoid ((X').presheaf.stalk x) :=
+      (Ψ).uniqueFactorizationMonoid_stalk_algebraicRealization hΨ
+    let τ := if onSection then ρ else q
+    let S := Additive.ofMul (primeDivisorClass (Φ.rayBoundaryPoint hΦ τ))
+    let S' := Additive.ofMul (primeDivisorClass ((Ψ).rayBoundaryPoint hΨ (r τ)))
+    pullback (R₁).iso.inv ((A).picardHom (a • F + d • S, x)).toMul =
+      ((U₁).picardHom ((a + x k + (if onSection then d else 0)) • F' + d • S',
+        Function.update x k (-d - x k))).toMul := by
+  intro h₀ h₁ huf₀ huf₁ τ S S'
+  let := h₀
+  let := h₁
+  let := huf₀
+  let := huf₁
+  let w := ((a + x k + (if onSection then d else 0)) • F' + d • S',
+        Function.update x k (-d - x k))
+  have hw : (mutationPicardEquiv b s k hOpp hΦ).symm (a • F + d • S, x) = w :=
+    mutationPicardEquiv_symm_apply_ruling b s k hOpp hΦ onSection a d x
+  have h := pullback_mutationBlowupIso_lift_picardHom b c hΦ s hOpp (T := T)
+    (S := (R₁).tower) (e := (R₁).iso) (R₁).isLift w
+  rw [← hw, LinearEquiv.apply_symm_apply, hw] at h
+  rw [← h, pullback_comp, Iso.inv_hom_id, pullback_id]
+
+end Ruling
 
 end TauCeti.Toric.Fan

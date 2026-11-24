@@ -11,6 +11,7 @@ public import QPainleve.AlgebraicGeometry.Normalization.Proper
 public import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.Polynomial.Basic
 
 import QPainleve.AlgebraicGeometry.CartierDivisor.Support
+import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.Sections.Ample
 import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.Proper
 import TauCeti.AlgebraicGeometry.SchemeTheoreticImage.Basic
 import TauCeti.Topology.KrullDimension.Basic
@@ -21,7 +22,8 @@ import TauCeti.Topology.KrullDimension.Basic
 A morphism collapsing an exceptional curve of the first kind factors through the
 relative normalization of its scheme-theoretic image. The new target is normal and
 finite over projective space, and the morphism to it is an isomorphism away from the
-curve. The scheme-theoretic fiber over the collapsed point is the exceptional curve.
+curve. The new target is projective, and the scheme-theoretic fiber over the
+collapsed point is the exceptional curve.
 This gives the normal model in the contraction argument of the
 [Stacks Project, Lemma 54.16.4](https://stacks.math.columbia.edu/tag/0C2L).
 -/
@@ -52,8 +54,8 @@ variable [IsIntegral X] [IsNormalScheme X]
 
 /-- An exceptional curve of the first kind on a normal integral projective scheme is the
 scheme-theoretic fiber of a modification to a normal integral scheme finite over projective
-space. The contracted point is the entire non-isomorphism locus. Pullback induces an
-isomorphism on sections over every open of the target. -/
+space. The target is projective over the coefficient field. The contracted point is the entire
+non-isomorphism locus. Pullback induces an isomorphism on sections over every open of the target. -/
 theorem IsExceptionalCurveOfFirstKind.exists_normal_model_collapsing_exceptional_curve
     (hE : E.IsExceptionalCurveOfFirstKind)
     (k : Type u) [Field k] [X.Over (Spec (.of k))] [X.IsProjectiveOver k] :
@@ -63,7 +65,10 @@ theorem IsExceptionalCurveOfFirstKind.exists_normal_model_collapsing_exceptional
       f ≫ j ≫ Proj.toSpecCoeff (MvPolynomial.homogeneousSubmodule ι k) = X ↘ Spec (.of k) ∧
       IsModification f ∧ IsClosed ({p} : Set Z) ∧ f ⁻¹' {p} = (E.support : Set X) ∧
       (Z.fromSpecResidueField p).ker.comap f = E ∧
-      f.centre = {p} ∧ ∀ U : Z.Opens, IsIso (f.app U) := by
+      f.centre = {p} ∧ (∀ U : Z.Opens, IsIso (f.app U)) ∧
+      (letI : Z.Over (Spec (.of k)) :=
+        ⟨j ≫ Proj.toSpecCoeff (MvPolynomial.homogeneousSubmodule ι k)⟩
+       Z.IsProjectiveOver k) := by
   obtain ⟨ι, hι, g, p, hg, hproper, hp, hpre, hideal, hq⟩ :=
     hE.exists_projective_morphism_with_exceptional_fiber k
   let g' := g.toImage
@@ -112,7 +117,11 @@ theorem IsExceptionalCurveOfFirstKind.exists_normal_model_collapsing_exceptional
   refine ⟨ι, hι, g'.normalization, j, f, q, inferInstance,
     g'.isNormalScheme_normalization_of_isNormalScheme, inferInstance, ?_,
     g'.isModification_toNormalization_of_quasiFiniteAt hη, hclosed, hF, heq.trans hideal', hcentre,
-    g'.isIso_app_toNormalization⟩
-  rwa [← Category.assoc, hf]
+    g'.isIso_app_toNormalization, ?_⟩
+  · rwa [← Category.assoc, hf]
+  · let : g'.normalization.Over (Spec (.of k)) :=
+      ⟨j ≫ Proj.toSpecCoeff (MvPolynomial.homogeneousSubmodule ι k)⟩
+    have : j.IsOver (Spec (.of k)) := ⟨rfl⟩
+    exact Scheme.IsProjectiveOver.of_isFinite k j
 
 end AlgebraicGeometry.Scheme.IdealSheafData

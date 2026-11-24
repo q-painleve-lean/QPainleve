@@ -76,12 +76,6 @@ namespace GeometricRealization
 
 local notation "Centers" => Over.mk (structureMap k A)
 
-local instance : Nonempty (Over.mk (structureMap k (ι → ℤ))).left :=
-  ⟨((pointsEquiv k (ι → ℤ)).symm 1).val default⟩
-
-local instance [Finite ι] : Smooth (Over.mk (structureMap k (ι → ℤ))).hom :=
-  smooth_structureMap_pi_int k ι
-
 variable [Fintype ι] [DecidableEq ι]
 
 local notation "invertStep" E:arg => Quiver.Hom.toPath (Generator.invert.toStep E)

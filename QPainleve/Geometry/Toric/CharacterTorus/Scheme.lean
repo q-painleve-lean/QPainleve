@@ -47,9 +47,28 @@ def diagonalizableGroupSchemeIso (G : FGCommGrpCat.{u}) :
     Scheme.Spec.mapIso
       (AddMonoidAlgebra.toMultiplicativeAlgEquiv k k (Additive G)).toRingEquiv.toCommRingCatIso.op
 
+/-- The additive coordinate identification is induced by the conversion of group algebras. -/
+theorem diagonalizableGroupSchemeIso_hom (G : FGCommGrpCat.{u}) :
+    (diagonalizableGroupSchemeIso k G).hom =
+      eqToHom (groupScheme_X_left k G) ≫ Spec.map (CommRingCat.ofHom
+        (AddMonoidAlgebra.toMultiplicativeAlgEquiv k k (Additive G)).toRingHom) := (rfl)
+
 /-- The structure morphism of the character scheme over its coefficient ring. -/
 abbrev structureMap : scheme k B ⟶ Spec (CommRingCat.of k) :=
   Spec.algebraMap k (AddMonoidAlgebra k B)
+
+/-- The additive coordinate identification commutes with the structure morphism. -/
+@[reassoc (attr := simp)]
+theorem diagonalizableGroupSchemeIso_hom_structureMap (G : FGCommGrpCat.{u}) :
+    (diagonalizableGroupSchemeIso k G).hom ≫ structureMap k (Additive G) =
+      (groupScheme k G).X.hom := by
+  rw [diagonalizableGroupSchemeIso_hom, groupScheme_X_hom, Category.assoc,
+    Spec.algebraMap, ← Spec.map_comp]
+  congr 2
+  apply CommRingCat.hom_ext
+  apply RingHom.ext
+  intro x
+  exact (AddMonoidAlgebra.toMultiplicativeAlgEquiv k k (Additive G)).commutes x
 
 variable {k B} in
 /-- A finitely generated character lattice gives a scheme locally of finite type over the base. -/
@@ -81,6 +100,12 @@ theorem pointsEquiv_symm_apply_val (c : Multiplicative B →* kˣ) :
         ((DiagonalizableGroup.point c).comp
           (AddMonoidAlgebra.toMultiplicativeAlgEquiv k k B).toAlgHom).toRingHom) := (rfl)
 
+/-- The trivial character gives a point of the character scheme over a field,
+viewed as an object of the slice category. -/
+instance {K : Type u} [Field K] {ι : Type u} :
+    Nonempty (Over.mk (structureMap K (ι → ℤ))).left :=
+  ⟨((pointsEquiv K (ι → ℤ)).symm 1).val default⟩
+
 /-- The character scheme on a finite tuple of integer exponents is smooth over the base. -/
 instance smooth_structureMap_pi_int (ι : Type u) [Finite ι] :
     Smooth (structureMap k (ι → ℤ)) := by
@@ -93,6 +118,11 @@ instance smooth_structureMap_pi_int (ι : Type u) [Finite ι] :
   let : Algebra.IsStandardSmooth k (AddMonoidAlgebra k (ι → ℤ)) :=
     Algebra.IsStandardSmoothOfRelativeDimension.isStandardSmooth (n := Nat.card ι)
   infer_instance
+
+/-- Smoothness for the projected structure morphism of the center torus.
+Typeclass search on the projection does not unfold the slice constructor. -/
+instance {ι : Type u} [Finite ι] : Smooth (Over.mk (structureMap k (ι → ℤ))).hom :=
+  smooth_structureMap_pi_int k ι
 
 /-- Over a separably closed field, the characters of the finite center lattice give a
 Zariski-dense family of points. -/
@@ -139,6 +169,57 @@ theorem map_comp {D : Type u} [AddCommGroup D] (f : B →+ C) (g : C →+ D) :
     map k (g.comp f) = map k g ≫ map k f := by
   rw [map, map, map, AddMonoidAlgebra.mapDomainAlgHom_comp, ← Spec.map_comp]
   congr 1
+
+/-- The additive coordinate identification intertwines the two character maps. -/
+@[reassoc]
+theorem groupSchemeMap_comp_diagonalizableGroupSchemeIso [IsAddFG B] [IsAddFG C]
+    (f : B →+ C) :
+    (groupSchemeMap k (FGCommGrpCat.ofHom f.toMultiplicative)).hom.hom.left ≫
+        (diagonalizableGroupSchemeIso k (FGCommGrpCat.of (Multiplicative B))).hom =
+      (diagonalizableGroupSchemeIso k (FGCommGrpCat.of (Multiplicative C))).hom ≫ map k f := by
+  simp only [diagonalizableGroupSchemeIso_hom, Category.assoc,
+    groupSchemeMap_comp_toSpec_assoc]
+  congr 1
+  simp only [map, ← Spec.map_comp]
+  apply congrArg Spec.map
+  apply CommRingCat.hom_ext
+  let a := AddMonoidAlgebra.toMultiplicativeAlgEquiv k k B
+  let b := AddMonoidAlgebra.toMultiplicativeAlgEquiv k k C
+  let F := (MonoidAlgebra.mapDomainAlgHom k k f.toMultiplicative).comp a.toAlgHom
+  let H := b.toAlgHom.comp (AddMonoidAlgebra.mapDomainAlgHom k k f)
+  suffices F = H by exact congrArg AlgHom.toRingHom this
+  apply AddMonoidAlgebra.algHom_ext
+  · intro x
+    simp [F, H, a, b]
+  · exact Subsingleton.elim _ _
+
+open scoped CategoryTheory.MonObj in
+/-- A point of a diagonalizable group and its additive-coordinate point have the same
+character. -/
+@[reassoc]
+theorem schemePointsMulEquiv_symm_comp_diagonalizableGroupSchemeIso [IsAddFG B]
+    (c : Multiplicative B →* kˣ) :
+    ((schemePointsMulEquiv (R := k) (A := k) (FGCommGrpCat.of (Multiplicative B))).symm c).left ≫
+        (diagonalizableGroupSchemeIso k (FGCommGrpCat.of (Multiplicative B))).hom =
+      ((pointsEquiv k B).symm c).val := by
+  let G := FGCommGrpCat.of (Multiplicative B)
+  let f : Spec (CommRingCat.of k) ⟶ Spec (CommRingCat.of (MonoidAlgebra k G)) :=
+    Spec.map (CommRingCat.ofHom (point c).toRingHom)
+  have hp : ((schemePointsMulEquiv (R := k) (A := k) G).symm c).left =
+      f ≫ eqToHom (groupScheme_X_left k G).symm := by
+    rw [schemePointsMulEquiv_symm_apply, groupSchemePointsMulEquiv_symm_apply_left,
+      pointsMulEquiv_symm_apply, WithConv.ofConv_toConv]
+    rfl
+  calc
+    _ = (f ≫ eqToHom (groupScheme_X_left k G).symm) ≫
+        (diagonalizableGroupSchemeIso k G).hom :=
+      congrArg (· ≫ (diagonalizableGroupSchemeIso k G).hom) hp
+    _ = _ := by
+      rw [diagonalizableGroupSchemeIso_hom, Category.assoc, eqToHom_trans_assoc, eqToHom_refl,
+        Category.id_comp, pointsEquiv_symm_apply_val]
+      dsimp only [f]
+      erw [← Spec.map_comp]
+      rfl
 
 /-- The map of character schemes restricts a point character along the lattice map. -/
 theorem pointsEquiv_symm_comp_map (f : B →+ C) (c : Multiplicative C →* kˣ) :

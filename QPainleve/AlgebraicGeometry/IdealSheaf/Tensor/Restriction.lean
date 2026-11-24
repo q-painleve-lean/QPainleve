@@ -66,6 +66,46 @@ theorem tensorRestrictionHom_unit (M : InvertibleSheaf X) :
   rw [← Functor.LaxMonoidal.right_unitality G ((F).obj M.obj),
     rightUnitor_naturality u, Iso.inv_hom_id_assoc]
 
+/-- A global section of a line bundle restricts to zero on the closed subscheme
+exactly when it comes from the ideal-sheaf twist. -/
+theorem exact_pullbackSections (M : InvertibleSheaf X) :
+    Function.Exact
+      ((M.obj ◁ (I.sheafι : I.sheaf ⟶ 𝟙_ X.Modules) ≫ (ρ_ M.obj).hom).app ⊤)
+      ((i).pullbackSections M.obj ⊤) := by
+  let N := M.obj
+  have : N.IsLocallyFree := inferInstanceAs M.obj.IsLocallyFree
+  have : N.IsFiniteType := inferInstanceAs M.obj.IsFiniteType
+  have : IsIso (I.tensorRestrictionHom M) := I.isIso_tensorRestrictionHom M
+  intro s
+  let t := ((I.tensorRestrictionHom M).app ⊤).hom
+  have ht : Function.Injective t :=
+    (ConcreteCategory.bijective_of_isIso ((I.tensorRestrictionHom M).app ⊤)).injective
+  have he : t ((N ◁ I.toPushforwardSubscheme).app ⊤ ((ρ_ N).inv.app ⊤ s)) =
+      (i).pullbackSections M.obj ⊤ s := by
+    rw [pullbackSections_apply]
+    exact congrArg (fun g ↦ g.app ⊤ s) (I.tensorRestrictionHom_unit M)
+  have hex : Function.Exact ((N ◁ (I.sheafι : I.sheaf ⟶ 𝟙_ X.Modules)).app ⊤)
+      ((N ◁ I.toPushforwardSubscheme).app ⊤) :=
+    (TauCeti.AlgebraicGeometry.Scheme.Modules.exact_sections
+      (I.shortExact_tensor_toPushforwardSubscheme N))
+  refine (he.symm.congr_left.trans (map_eq_zero_iff t ht)).trans
+    ((hex ((ρ_ N).inv.app ⊤ s)).trans ?_)
+  constructor
+  · rintro ⟨a, ha⟩
+    refine ⟨a, ?_⟩
+    rw [Scheme.Modules.Hom.comp_app, ConcreteCategory.comp_apply, ha]
+    have he' := ConcreteCategory.congr_hom
+      (congrArg (fun g : N ⟶ N ↦ g.app ⊤) (ρ_ N).inv_hom_id) s
+    simpa only [Scheme.Modules.Hom.comp_app, ConcreteCategory.comp_apply,
+      Scheme.Modules.Hom.id_app, ConcreteCategory.id_apply] using he'
+  · rintro ⟨a, rfl⟩
+    refine ⟨a, ?_⟩
+    have he' := ConcreteCategory.congr_hom
+      (congrArg (fun g : N ⊗ 𝟙_ X.Modules ⟶ N ⊗ 𝟙_ X.Modules ↦ g.app ⊤)
+        (ρ_ N).hom_inv_id) ((N ◁ I.sheafι).app ⊤ a)
+    simpa only [Scheme.Modules.Hom.comp_app, ConcreteCategory.comp_apply,
+      Scheme.Modules.Hom.id_app, ConcreteCategory.id_apply] using he'.symm
+
 /-- Global sections of a line bundle lift from a closed subscheme if the first
 cohomology of the ideal-sheaf twist vanishes. -/
 theorem surjective_pullbackSectionsLE_of_subsingleton_cohomology_one (M : InvertibleSheaf X)

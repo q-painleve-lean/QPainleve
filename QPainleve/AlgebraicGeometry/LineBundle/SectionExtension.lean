@@ -290,6 +290,22 @@ theorem eventually_exists_nonvanishingLocus_tensorPow_eq [CompactSpace X]
     rw [nonvanishingLocus_hom_app, nonvanishingLocus_tmulRight, inf_comm]
     exact hz'⟩
 
+/-- Each function on the nonvanishing locus of a global section extends as a global line bundle
+section after multiplication by any sufficiently high tensor power of the section. -/
+theorem eventually_exists_section_mul_tensorPow [CompactSpace X] [QuasiSeparatedSpace X]
+    (L : TauCeti.AlgebraicGeometry.InvertibleSheaf X) (e : Γ(L.obj, ⊤))
+    (a : Γ(X, L.obj.nonvanishingLocus e)) :
+    ∀ᶠ n : ℕ in Filter.atTop, ∃ s : Γ(tensorPow L.obj n, ⊤),
+      (tensorPow L.obj n).presheaf.map (L.obj.nonvanishingLocus e).leTop.op s =
+        a • tensorPowSection (L.obj.presheaf.map (L.obj.nonvanishingLocus e).leTop.op e) n := by
+  let D := L.obj.nonvanishingLocus e
+  filter_upwards [eventually_exists_map_eq_tmulRight_tensorPowSection (𝟙_ X.Modules)
+    isCompact_univ (isQuasiSeparated_univ_iff.mpr inferInstance) e a] with n hn
+  obtain ⟨t, ht⟩ := hn
+  let φ := (λ_ (tensorPow L.obj n)).hom
+  refine ⟨φ.app ⊤ t, (φ.mapPresheaf.naturality_apply D.leTop.op t).symm.trans ?_⟩
+  exact (congrArg (φ.app D) ht).trans (leftUnitor_hom_app_tmulRight _ _)
+
 /-- A finite family of functions on the nonvanishing locus of a global line bundle section
 extends to global sections after multiplying by a common positive tensor power of that section. -/
 theorem exists_sections_mul_tensorPow [CompactSpace X] [QuasiSeparatedSpace X]
@@ -298,15 +314,10 @@ theorem exists_sections_mul_tensorPow [CompactSpace X] [QuasiSeparatedSpace X]
     ∃ (n : ℕ) (_ : 0 < n) (s : ι → Γ(tensorPow L.obj n, ⊤)),
       ∀ i, (tensorPow L.obj n).presheaf.map (L.obj.nonvanishingLocus e).leTop.op (s i) =
         a i • tensorPowSection (L.obj.presheaf.map (L.obj.nonvanishingLocus e).leTop.op e) n := by
-  have h (i : ι) := eventually_exists_map_eq_tmulRight_tensorPowSection (𝟙_ X.Modules)
-    isCompact_univ (isQuasiSeparated_univ_iff.mpr inferInstance) e (a i)
-  obtain ⟨n, hn, h⟩ := (Filter.eventually_all.mpr h |>.and (Filter.eventually_gt_atTop 0)).exists
-  choose t ht using hn
-  refine ⟨n, h, fun i ↦ (λ_ (tensorPow L.obj n)).hom.app ⊤ (t i), fun i ↦ ?_⟩
-  have hnat := ((λ_ (tensorPow L.obj n)).hom.mapPresheaf.naturality_apply
-    (L.obj.nonvanishingLocus e).leTop.op (t i)).symm
-  refine hnat.trans ((congrArg ((λ_ (tensorPow L.obj n)).hom.app _) (ht i)).trans ?_)
-  exact leftUnitor_hom_app_tmulRight _ _
+  obtain ⟨n, h, hn⟩ := ((Filter.eventually_all.mpr fun i ↦
+    eventually_exists_section_mul_tensorPow L e (a i)).and (Filter.eventually_gt_atTop 0)).exists
+  choose t ht using h
+  exact ⟨n, hn, t, ht⟩
 
 open TauCeti.AlgebraicGeometry in
 /-- A finite family of rational functions with a chosen entry equal to one is realized
