@@ -87,8 +87,14 @@ theorem exists_iso_of_matching_toric_models_chargeKernel
     letI := hP.isClosedPointTower.isModification_of_smoothOfRelativeDimension_two (X ↘ S)
     letI := hQ.isClosedPointTower.isModification_of_smoothOfRelativeDimension_two (X' ↘ S)
     let g := Ψ.mapEquivIso Φ.lattice e.symm
-    let κ := internalBlowupChargeKernelEquiv hΦ b ρ centers(c) hP a ha hb
-    let κ' := internalBlowupChargeKernelEquiv hΨ b' τ centers(d) hQ a' ha' hb'
+    let hcModel := internalBlowupTower_eq_alongBoundary b ρ centers(c)
+    let hdModel := internalBlowupTower_eq_alongBoundary b' τ centers(d)
+    let pc := transport_boundaryPresentation hcModel.symm a ha hb
+    let pd := transport_boundaryPresentation hdModel.symm a' ha' hb'
+    let κ := markedBoundaryChargeEquiv hΦ b ρ hP
+      (a ≪≫ eqToIso (congrArg Sigma.fst hcModel)) pc.1 pc.2
+    let κ' := markedBoundaryChargeEquiv hΨ b' τ hQ
+      (a' ≪≫ eqToIso (congrArg Sigma.fst hdModel)) pd.1 pd.2
     ∃ f : X ≅ X', f.hom ≫ (X' ↘ S) = (X ↘ S) ∧ E.comap f.hom = D ∧
       f.hom.toRationalMap.comp (contractedXEvaluation b' τ d hΨ (a'.inv ≫ Q.toBase)) =
         (contractedXEvaluation b ρ c hΦ (a.inv ≫ P.toBase)).compHom (renameX(σ.symm)) ∧
@@ -105,6 +111,7 @@ theorem exists_iso_of_matching_toric_models_chargeKernel
       ∀ x : (rayChargeMap τ).ker,
         pullback f.hom (κ'.symm x).val.toMul =
           (κ.symm (rayChargeKernelReindex σ e.toLinearMap e.injective hρτ x)).val.toMul := by
+  intro g hcModel hdModel pc pd κ κ'
   let := hP.isClosedPointTower.isModification_of_smoothOfRelativeDimension_two (X ↘ S)
   let := hQ.isClosedPointTower.isModification_of_smoothOfRelativeDimension_two (X' ↘ S)
   have hbase := congrArg (fun g ↦ a.hom ≫ g) ha
@@ -123,8 +130,6 @@ theorem exists_iso_of_matching_toric_models_chargeKernel
     hs.symm hs'.symm hD hE hnodalD hnodalE hconn hnefD hnefE hsqD hsqE
   refine ⟨f, hf, hfD, hfX, hpic horder, fun x ↦ ?_⟩
   let : f.hom.IsOver S := ⟨hf⟩
-  let κ := internalBlowupChargeKernelEquiv hΦ b ρ centers(c) hP a ha hb
-  let κ' := internalBlowupChargeKernelEquiv hΨ b' τ centers(d) hQ a' ha' hb'
   let L' := κ'.symm x
   have hsupport := congrArg (fun I : X.IdealSheafData ↦ I.support) hfD
   have hmem : Additive.ofMul (pullback f.hom L'.val.toMul) ∈ D.boundaryOrthogonal ℂ :=
@@ -134,9 +139,9 @@ theorem exists_iso_of_matching_toric_models_chargeKernel
   have hcoords := congrArg Prod.snd ((hpic horder L.val.toMul L'.val.toMul).mp (by
     simp only [L, toMul_ofMul]))
   have hsource := internalBlowupPicardMarking_symm_pullback_snd_eq_neg_charge
-    hΦ b ρ centers(c) hP a ha hb L
+    hΦ b ρ hP (a := a) ha hb L
   have htarget := internalBlowupPicardMarking_symm_pullback_snd_eq_neg_charge
-    hΨ b' τ centers(d) hQ a' ha' hb' L'
+    hΨ b' τ hQ (a := a') ha' hb' L'
   dsimp only at hcoords
   rw [hsource, htarget] at hcoords
   have hκ' : κ' L' = x := κ'.apply_symm_apply x
