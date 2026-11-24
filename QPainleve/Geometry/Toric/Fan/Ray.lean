@@ -221,6 +221,18 @@ theorem Ray.primitiveGenerator_injective : Function.Injective (Ray.primitiveGene
     apply Subtype.ext
     rw [Ray.toCone_eq_hull_primitiveGenerator ρ, Ray.toCone_eq_hull_primitiveGenerator τ, h]
 
+/-- Lifting along the identity subdivision fixes the ray. -/
+@[simp]
+theorem IsSubdivision.liftRay_refl (ρ : Φ.Ray) :
+    (IsSubdivision.refl Φ).liftRay ρ = ρ :=
+  Ray.primitiveGenerator_injective ((IsSubdivision.refl Φ).primitiveGenerator_liftRay ρ)
+
+/-- Lifting along a composite subdivision lifts through both fans in order. -/
+theorem IsSubdivision.liftRay_trans {Ω : Fan i} (h : Φ.IsSubdivision Ψ)
+    (g : Ψ.IsSubdivision Ω) (ρ : Ω.Ray) :
+    (h.trans g).liftRay ρ = h.liftRay (g.liftRay ρ) :=
+  Ray.primitiveGenerator_injective (by simp only [IsSubdivision.primitiveGenerator_liftRay])
+
 /-- Labelled rays with matching primitive generators lift to the same rays on a
 common subdivision. -/
 theorem IsSubdivision.liftRay_comp_eq_of_primitiveGenerator_eq {Ω : Fan i} {ι : Type*}
