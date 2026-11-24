@@ -128,7 +128,7 @@ theorem subsingleton_cohomology_one_ideal_pow_of_contraction
 
 /-- Every regular function on a finite thickening of the exceptional fiber extends to the
 source of the contraction over the affine Noetherian base. -/
-private theorem surjective_appTop_subschemeι_pow_of_contraction
+theorem surjective_appTop_subschemeι_pow_of_contraction
     (hE : E.IsExceptionalCurveOfFirstKind)
     (f : X ⟶ Y) [IsProper f] (hI : I.comap f = E)
     (hU : I.support.compl ≤ f.isoLocus) (n : ℕ) :
