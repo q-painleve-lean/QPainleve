@@ -34,14 +34,7 @@ universe u
 
 namespace QPainleve.SignedClusterModularGroup
 
-variable {k : Type u} [Field k] [IsSepClosed k] [Infinite k] {n : ℕ} [NeZero n]
-  {L₀ L₁ L₂ : Type u} [AddCommGroup L₀] [AddCommGroup L₁] [AddCommGroup L₂]
-  {B₀ : LinearMap.BilinForm ℤ L₀} {B₁ : LinearMap.BilinForm ℤ L₁}
-  {B₂ : LinearMap.BilinForm ℤ L₂}
-  {X₀ X₁ X₂ : Scheme.{u}} [IsIntegral X₀]
-  [X₀.IsSeparated] [X₁.IsSeparated] [X₂.IsSeparated]
-
-local notation "S" => Spec (CommRingCat.of k)
+variable {k : Type u} [Field k]
 
 namespace GeometricRealization
 
@@ -57,7 +50,26 @@ abbrev CenterPoint := Point C.domainOver
 
 end Points
 
+/-- The center torus, viewed as an object over the ground field, is nonempty. -/
+theorem nonempty_centerTorus (ι : Type u) :
+    Nonempty (Over.mk (CharacterTorus.structureMap k (ι → ℤ))).left :=
+  inferInstanceAs (Nonempty (CharacterTorus.scheme k (ι → ℤ)))
+
+/-- The center torus on a finite set of labels is smooth over the ground field. -/
+theorem smooth_centerTorus (ι : Type u) [Finite ι] :
+    Smooth (Over.mk (CharacterTorus.structureMap k (ι → ℤ))).hom :=
+  CharacterTorus.smooth_structureMap_pi_int k ι
+
 end GeometricRealization
+
+variable [IsSepClosed k] [Infinite k] {n : ℕ} [NeZero n]
+  {L₀ L₁ L₂ : Type u} [AddCommGroup L₀] [AddCommGroup L₁] [AddCommGroup L₂]
+  {B₀ : LinearMap.BilinForm ℤ L₀} {B₁ : LinearMap.BilinForm ℤ L₁}
+  {B₂ : LinearMap.BilinForm ℤ L₂}
+  {X₀ X₁ X₂ : Scheme.{u}} [IsIntegral X₀]
+  [X₀.IsSeparated] [X₁.IsSeparated] [X₂.IsSeparated]
+
+local notation "S" => Spec (CommRingCat.of k)
 
 open GeometricRealization (Point CenterPoint)
 

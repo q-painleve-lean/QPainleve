@@ -43,8 +43,7 @@ local notation "centerOver" E:arg σ:arg => Quiver.Path.centerIsoOver k (permute
 local notation "centerMap" E:arg σ:arg => Scheme.Hom.toPartialMap
   (CategoryTheory.Iso.hom (Quiver.Path.centerIso k (permuteWord E σ)))
 
-local instance : Nonempty (Centers).left := inferInstanceAs (Nonempty (scheme k A))
-local instance [Finite ι] : Smooth (Centers).hom := smooth_structureMap_pi_int k ι
+attribute [local instance] nonempty_centerTorus smooth_centerTorus
 
 variable [Fintype ι] [DecidableEq ι]
 
