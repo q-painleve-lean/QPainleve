@@ -31,6 +31,8 @@ variable {S X Y Z X' Y' : Scheme.{u}} {m n : ℕ}
 
 namespace IsClosedPointTower
 
+open Scheme.IdealSheafData
+
 /-- The image on the base of the center with the given index in a closed point tower. -/
 noncomputable def baseCenter :
     {n : ℕ} → {Y : Scheme.{u}} → {T : BlowupTower X n Y} → IsClosedPointTower X T → Fin n → X
@@ -121,6 +123,50 @@ theorem injOn_toBase_compl_range_baseCenter {T : BlowupTower X n Y}
     apply I.injOn_blowupToBase_compl_support (hstep x hx) (hstep y hy)
     exact ih (hprev x hx) (hprev y hy) (by simpa only [toBase_snoc,
       Scheme.Hom.comp_apply] using hxy)
+
+/-- With distinct projected centers, the last projected center lies outside the range
+of the prefix tower's projected centers. -/
+theorem baseCenter_last_notMem_range {T : BlowupTower X n Y} {I : Y.IdealSheafData}
+    (hT : IsClosedPointTower X (T.snoc I)) (hinj : Function.Injective hT.baseCenter) :
+    hT.baseCenter (Fin.last n) ∉ Set.range (snoc_iff.mp hT).1.baseCenter := by
+  rintro ⟨i, hi⟩
+  exact Fin.castSucc_ne_last i (hinj ((baseCenter_snoc_castSucc hT i).trans hi))
+
+/-- If the base images of the centers are distinct, the last center is the entire
+fiber of the prefix projection over its image. -/
+private theorem preimage_singleton_baseCenter_last
+    {T : BlowupTower X n Y} {I : Y.IdealSheafData}
+    (hT : IsClosedPointTower X (T.snoc I)) (hinj : Function.Injective hT.baseCenter) :
+    T.toBase ⁻¹' {hT.baseCenter (Fin.last n)} = {hT.lastCenter.val} := by
+  have havoid := baseCenter_last_notMem_range hT hinj
+  ext y
+  simp only [Set.mem_preimage, Set.mem_singleton_iff]
+  constructor
+  · intro hy
+    exact (snoc_iff.mp hT).1.injOn_toBase_compl_range_baseCenter
+      (by simpa only [Set.mem_preimage, Set.mem_compl_iff, hy] using havoid)
+      (by simpa only [Set.mem_preimage, Set.mem_compl_iff, baseCenter_snoc_last] using havoid)
+      (hy.trans (baseCenter_snoc_last hT))
+  · rintro rfl
+    exact (baseCenter_snoc_last hT).symm
+
+/-- With distinct projected centers, the fiber over the last projected center is the
+exceptional support of the final blowup. -/
+theorem support_comap_baseCenter_snoc_last
+    {T : BlowupTower X n Y} {I : Y.IdealSheafData}
+    (hT : IsClosedPointTower X (T.snoc I)) (hinj : Function.Injective hT.baseCenter)
+    [IsLocallyNoetherian X] :
+    (((X.fromSpecResidueField (hT.baseCenter (Fin.last n))).ker.comap
+      (T.snoc I).toBase).support : Set I.blowup) =
+      (I.comap I.blowupToBase).support := by
+  obtain ⟨hU, p, hp, hI⟩ := snoc_iff.mp hT
+  have hfiber := preimage_singleton_baseCenter_last hT hinj
+  rw [hT.lastCenter_eq p hp hI] at hfiber
+  rw [toBase_snoc, comap_comp, support_comap, support_comap, support_comap,
+    Closeds.coe_preimage, Closeds.coe_preimage, Closeds.coe_preimage,
+    X.support_ker_fromSpecResidueField_of_isClosed (hT.isClosed_baseCenter (Fin.last n)),
+    hfiber]
+  rw [hI, Y.support_ker_fromSpecResidueField_of_isClosed hp]
 
 end IsClosedPointTower
 

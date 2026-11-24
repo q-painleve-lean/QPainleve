@@ -8,12 +8,9 @@ module
 public import QPainleve.AlgebraicGeometry.Blowup.StrictTransform.Contraction
 public import QPainleve.AlgebraicGeometry.Blowup.Tower.Centres
 public import QPainleve.AlgebraicGeometry.Blowup.Tower.Ramification
-public import QPainleve.AlgebraicGeometry.IdealSheaf.Boundary.Complexity
 
 import QPainleve.AlgebraicGeometry.Blowup.Descent
 import QPainleve.AlgebraicGeometry.Blowup.Isomorphism
-import QPainleve.AlgebraicGeometry.Blowup.Tower.Picard
-import QPainleve.AlgebraicGeometry.EffectiveCartierDivisor.BoundaryPrimes
 import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
 
 /-!
@@ -39,44 +36,6 @@ universe u
 namespace QPainleve.BlowupTower.IsClosedPointTower
 
 variable {X Y : Scheme.{u}} {n : ℕ} {T : BlowupTower X n Y}
-
-private theorem baseCenter_last_notMem_range {I : Y.IdealSheafData}
-    (hT : IsClosedPointTower X (T.snoc I)) (hinj : Function.Injective hT.baseCenter) :
-    hT.baseCenter (Fin.last n) ∉ Set.range (snoc_iff.mp hT).1.baseCenter := by
-  rintro ⟨i, hi⟩
-  exact Fin.castSucc_ne_last i (hinj ((baseCenter_snoc_castSucc hT i).trans hi))
-
-/-- If the base images of the centers are distinct, the last center is the entire
-fiber of the prefix projection over its image. -/
-private theorem preimage_singleton_baseCenter_last {I : Y.IdealSheafData}
-    (hT : IsClosedPointTower X (T.snoc I)) (hinj : Function.Injective hT.baseCenter) :
-    T.toBase ⁻¹' {hT.baseCenter (Fin.last n)} = {hT.lastCenter.val} := by
-  have havoid := baseCenter_last_notMem_range hT hinj
-  ext y
-  simp only [Set.mem_preimage, Set.mem_singleton_iff]
-  constructor
-  · intro hy
-    exact (snoc_iff.mp hT).1.injOn_toBase_compl_range_baseCenter
-      (by simpa only [Set.mem_preimage, Set.mem_compl_iff, hy] using havoid)
-      (by simpa only [Set.mem_preimage, Set.mem_compl_iff, baseCenter_snoc_last] using havoid)
-      (hy.trans (baseCenter_snoc_last hT))
-  · rintro rfl
-    exact (baseCenter_snoc_last hT).symm
-
-private theorem support_comap_baseCenter_snoc_last {I : Y.IdealSheafData}
-    (hT : IsClosedPointTower X (T.snoc I)) (hinj : Function.Injective hT.baseCenter)
-    [IsLocallyNoetherian X] :
-    (((X.fromSpecResidueField (hT.baseCenter (Fin.last n))).ker.comap
-      (T.snoc I).toBase).support : Set I.blowup) =
-      (I.comap I.blowupToBase).support := by
-  obtain ⟨hU, p, hp, hI⟩ := snoc_iff.mp hT
-  have hfiber := preimage_singleton_baseCenter_last hT hinj
-  rw [hT.lastCenter_eq p hp hI] at hfiber
-  rw [toBase_snoc, comap_comp, support_comap, support_comap, support_comap,
-    Closeds.coe_preimage, Closeds.coe_preimage, Closeds.coe_preimage,
-    X.support_ker_fromSpecResidueField_of_isClosed (hT.isClosed_baseCenter (Fin.last n)),
-    hfiber]
-  rw [hI, Y.support_ker_fromSpecResidueField_of_isClosed hp]
 
 private theorem omits_prefix_fibers {I B : Y.IdealSheafData} {A : I.blowup.IdealSheafData}
     (hT : IsClosedPointTower X (T.snoc I)) (hinj : Function.Injective hT.baseCenter)
@@ -242,23 +201,5 @@ theorem internalBlowdown_tower_of_anticanonical (hT : IsClosedPointTower X T)
           exact Scheme.Hom.mem_smoothLocus.mp hqs
       · simpa only [baseCenter_snoc_castSucc] using hpoints j
     · rw [Iso.trans_hom, Category.assoc, hd, ← Category.assoc, he, Category.assoc, toBase_snoc]
-
-include k in
-/-- A point blowup projection that identifies two effective Cartier boundaries
-increases the boundary complexity by the number of blowups. In particular,
-contracting an internal exceptional configuration of that size removes the
-same amount of complexity. -/
-theorem boundaryComplexity_eq_add_length_of_subschemeIso
-    [Module.Finite ℤ (Additive (LineBundleClass X))]
-    (hT : IsClosedPointTower X T) {D : X.IdealSheafData} {B : Y.IdealSheafData}
-    (hD : D.IsEffectiveCartier) (hB : B.IsEffectiveCartier)
-    (e : B.subscheme ≅ D.subscheme)
-    (he : e.hom ≫ D.subschemeι = B.subschemeι ≫ T.toBase) :
-    B.boundaryComplexity = D.boundaryComplexity + n := by
-  have : IsNoetherian Y := T.isNoetherian
-  have hprimes := (hB.bijOn_boundaryPrimes_of_subschemeIso hD T.toBase e he).ncard_eq
-  rw [boundaryComplexity_def, boundaryComplexity_def, finrank_picard k hT, hprimes]
-  push_cast
-  ring
 
 end QPainleve.BlowupTower.IsClosedPointTower
