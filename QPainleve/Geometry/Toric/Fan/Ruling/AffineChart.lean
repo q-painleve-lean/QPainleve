@@ -313,28 +313,6 @@ variable (a : ℤ) (hΦ : Φ.IsRegular) (hc : Φ.IsComplete) (r : Fin 4 ≃ Φ.R
   (hr : (fun j ↦ (r j).primitiveGenerator) = ![b 0, b 1, -b 0, a • b 0 - b 1])
 
 include hΦ hc hr in
-private theorem hirzebruch_chart_corners (j k : Fin 2) :
-    hull ℝ {i (if j = 0 then b 0 else -b 0),
-      i (if k = 0 then b 1 else a • b 0 - b 1)} ∈ Φ.cones := by
-  let p := r ((![0, 2] : Fin 2 → Fin 4) j)
-  let q := r ((![1, 3] : Fin 2 → Fin 4) k)
-  obtain ⟨σ, hp, hq⟩ := exists_cone_of_hirzebruch_section_fiber b a r hr hΦ hc j k
-  have hne : p ≠ q := by
-    apply r.injective.ne
-    fin_cases j <;> fin_cases k <;> decide
-  have hp' : p.primitiveGenerator = if j = 0 then b 0 else -b 0 := by
-    fin_cases j <;> simp [p, congrFun hr]
-  have hq' : q.primitiveGenerator = if k = 0 then b 1 else a • b 0 - b 1 := by
-    fin_cases k <;> simp [q, congrFun hr]
-  have hdim : finrank ℤ N = 2 := by simpa using finrank_eq_card_basis b
-  have hs := Φ.cone_eq_sup_of_ray_ne_of_le hΦ hdim hne hp hq
-  rw [p.toCone_eq_hull_primitiveGenerator, q.toCone_eq_hull_primitiveGenerator,
-    hp', hq', ← Submodule.span_union, Set.singleton_union] at hs
-  have he : σ.val = hull ℝ {i (if j = 0 then b 0 else -b 0),
-      i (if k = 0 then b 1 else a • b 0 - b 1)} := hs
-  exact he ▸ σ.property
-
-include hΦ hc hr in
 /-- The character ruling of a complete regular Hirzebruch fan is a product over
 each of the two standard affine charts of the base projective line. The first
 fiber coordinate is the monomial of the first dual basis vector. In the
@@ -354,7 +332,7 @@ theorem exists_hirzebruch_characterRuling_affine_chart_product :
   let h := nonneg_or_nonpos_hirzebruch_ruling_character b a r hr
   rcases eq_or_ne k 0 with rfl | hk
   · simpa [f, c, n] using Φ.exists_characterRuling_affine_chart_product _ h b rfl 0
-      (by simpa using fun j ↦ hirzebruch_chart_corners Φ b a hΦ hc r hr j 0)
+      (by simpa using fun j ↦ Φ.hirzebruch_chart_corners b a r hr hΦ hc j 0)
   · let e := LinearEquiv.transvection (f := (-a) • b.coord 1) (v := b 0)
         (by simp [Basis.coord_apply])
     let d := b.map e
@@ -383,7 +361,7 @@ theorem exists_hirzebruch_characterRuling_affine_chart_product :
     have hcorners (j : Fin 2) : hull ℝ {i (if j = 0 then d 0 else -d 0),
         i (if k = 0 then d 1 else -d 1)} ∈ Φ.cones := by
       simpa only [hd₀, ite_eq_right hk, hd₁, neg_sub] using
-        hirzebruch_chart_corners Φ b a hΦ hc r hr j k
+        Φ.hirzebruch_chart_corners b a r hr hΦ hc j k
     simpa only [f, c, hfirst] using
       Φ.exists_characterRuling_affine_chart_product _ h d hcoord k hcorners
 
