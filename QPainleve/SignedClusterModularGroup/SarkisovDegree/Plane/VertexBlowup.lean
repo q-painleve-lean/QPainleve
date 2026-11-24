@@ -6,10 +6,11 @@ Authors: The QPainleve contributors
 module
 
 public import QPainleve.AlgebraicGeometry.Blowup.Tower.Centres
+public import QPainleve.AlgebraicGeometry.Blowup.Tower.Modification
+public import QPainleve.Geometry.Toric.Fan.Birational
 public import QPainleve.SignedClusterModularGroup.SarkisovDegree.SectionContraction
 
 import QPainleve.AlgebraicGeometry.Blowup.Projective.Global
-import QPainleve.AlgebraicGeometry.Blowup.Tower.Modification
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Reorder
 import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
 import Mathlib.Analysis.Complex.Polynomial.Basic
@@ -17,10 +18,12 @@ import Mathlib.Analysis.Complex.Polynomial.Basic
 /-!
 # Sarkisov degree under a plane vertex blowup
 
-When a specified plane resolution begins at a torus-fixed vertex, the first
-blowup becomes the Hirzebruch-one base and the tail of the resolution transports
-over that base. The new fiber degree is the plane degree minus the order at
-the vertex. This is the torus-fixed plane case of Proposition 8.11 in
+The first center over a specified torus-fixed vertex can be moved to the
+front of a plane resolution. Its blowup becomes the Hirzebruch-one base and the
+other centers retain their relative order. The new projection realizes the
+toric change on the original resolving surface. The new fiber degree is the
+plane degree minus the order at the vertex. This is the torus-fixed plane case
+of Proposition 8.11 in
 [Lutz's appendix to Hacking and Keating][HKL].
 When a vertex is absent from the projected centers, a single blowup of its
 inverse image on the final scheme gives the corresponding Hirzebruch-one
@@ -219,6 +222,127 @@ private theorem birationalOver_prepend_vertex {Y Z : Scheme} {n : ℕ}
   have he : Scheme.BirationalOver (e.inv ≫ A.blowupToBase ≫ g) (A.blowupToBase ≫ g) :=
     ⟨.ofIso e.symm, by simp [Scheme.PartialIso.IsOver, Scheme.PartialIso.ofIso]⟩
   exact he.trans (hπ.trans hg)
+
+private theorem comp_vertexLink_eq {Y : Scheme} [PreirreducibleSpace Y]
+    (hσ : (σ).val ≠ ⊥) (q : Y ⟶ X) [IsDominant q] {f : Y ⟶ P} [IsDominant f]
+    (hf : q ≫ ((Ψ).starSubdivisionAlong_isSubdivision hΨ (σ).property hσ).toFanHom.algebraicMap ≫
+      (D).hom = f) :
+    let : Nonempty (Ψ).cones := (Fan.isComplete_projectiveSpace d hi).nonempty_cones
+    let : Nonempty (Φ).cones :=
+      (((Ψ).starSubdivisionAlong_isSubdivision hΨ (σ).property hσ).isComplete_iff.mpr
+        (Fan.isComplete_projectiveSpace d hi)).nonempty_cones
+    f.toRationalMap.comp ((D).inv.toRationalMap.comp ((Ψ).denseTorusPartialIso Φ).toRationalMap) =
+      q.toRationalMap := by
+  intro hΨ₀ hΦ₀
+  let := hΨ₀
+  let := hΦ₀
+  let s := (Ψ).starSubdivisionAlong_isSubdivision hΨ (σ).property hσ
+  have hf' : f ≫ (D).inv = q ≫ s.toFanHom.algebraicMap := by
+    simp only [← hf, Category.assoc, Iso.hom_inv_id, Category.comp_id]
+  calc
+    _ = (f ≫ (D).inv).toRationalMap.comp ((Ψ).denseTorusPartialIso Φ).toRationalMap := by
+      simp only [← Scheme.RationalMap.comp_assoc, Scheme.RationalMap.comp_toRationalMap,
+        Scheme.Hom.toRationalMap_compHom]
+    _ = q.toRationalMap := ?_
+  have h := s.comp_denseTorusPartialIso (Fan.IsSubdivision.refl Φ) q
+  simpa only [← hf', Fan.IsSubdivision.toFanHom_refl, FanHom.algebraicMap_id, Category.comp_id]
+    using h
+
+/-- Perform the toric link at the first center over the specified plane vertex.
+The original resolving surface already resolves the prescribed toric rational map.
+The link transports the given morphism to the plane and retains all other exceptional
+coefficients in their relative order, including those of infinitely near centers.
+If the selected order exceeds one third of the positive plane degree, the new fiber
+degree is positive and the Sarkisov bidegree strictly decreases. -/
+theorem exists_sarkisov_decrease_of_plane_vertex {Y : Scheme} {n : ℕ}
+    {T : BlowupTower P (n + 1) Y} (hT : IsClosedPointTower P T)
+    (j : Fin (n + 1)) (hj : hT.baseCenter j = p)
+    (hfirst : ∀ l < j, hT.baseCenter l ≠ p)
+    (g : Y ⟶ P) (hg : g ≫ fP = T.toBase ≫ fP)
+    (hbir : Scheme.BirationalOver g (𝟙 P)) :
+    let : IsIntegral Y := hT.isIntegral fP
+    let : IsModification T.toBase := hT.isModification_of_smoothOfRelativeDimension_two fP
+    let w := (T.picardMarking hT fP).symm (Additive.ofMul (pullback g H))
+    let δ := degree w.1
+    let m := fun l ↦ -w.2 l
+    ∃ (hσ : (σ).val ≠ ⊥) (b : Basis (Fin 2) ℤ N) (r : Fin 4 ≃ (Φ).Ray)
+      (hr : (fun l ↦ (r l).primitiveGenerator) = ![b 0, b 1, -b 0, ((1 : ℕ) : ℤ) • b 0 - b 1])
+      (Z : Scheme) (U : BlowupTower X n Z) (hU : IsClosedPointTower X U) (k : Y ≅ Z),
+      let s := (Ψ).starSubdivisionAlong_isSubdivision hΨ (σ).property hσ
+      let q := k.hom ≫ U.toBase
+      let : Nonempty (Ψ).cones := (Fan.isComplete_projectiveSpace d hi).nonempty_cones
+      let hc := s.isComplete_iff.mpr (Fan.isComplete_projectiveSpace d hi)
+      let : Nonempty (Φ).cones := hc.nonempty_cones
+      q ≫ s.toFanHom.algebraicMap ≫ (D).hom = T.toBase ∧
+      T.toBase.toRationalMap.comp
+        ((D).inv.toRationalMap.comp ((Ψ).denseTorusPartialIso Φ).toRationalMap) =
+        q.toRationalMap ∧
+      (k.inv ≫ g) ≫ fP = U.toBase ≫ fX ∧
+      Scheme.BirationalOver (k.inv ≫ g) (𝟙 P) ∧
+      let : SmoothOfRelativeDimension 2 fX := by
+        have hdim := (Module.finrank_eq_card_basis b).trans (Fintype.card_fin 2)
+        simpa only [hdim, Fan.algebraicRealization_over] using
+          (Φ).smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
+      let : Smooth fX := (Φ).smooth_algebraicRealizationStructureMap hΦ
+      let : IsNoetherian X := isNoetherian_of_finiteType fX
+      let v := (U.picardMarking hU fX).symm (Additive.ofMul (pullback (k.inv ≫ g) H))
+      let C := (Φ).hirzebruchPicardBasis b 1 hΦ r hr
+      C.repr v.1 0 = δ ∧ C.repr v.1 1 = δ - m j ∧
+      (∀ l : Fin n, -v.2 l = m (j.succAbove l)) ∧
+      (0 < δ → δ < 3 * m j →
+        0 < C.repr v.1 1 ∧
+        hirzebruchSarkisovBidegree (C.repr v.1 1).toNat (∑ l, (-v.2 l).toNat) <
+          planeSarkisovBidegree δ.toNat (∑ l, (m l).toNat)) := by
+  intro hY hmod w δ m
+  let := hY
+  let := hmod
+  obtain ⟨W', A, e, hA, hbase, hE, -, htail⟩ :=
+    hT.exists_move_closed_point_blowup_to_front j (isClosed_projectivePlane_vertex d hi a) hj hfirst
+  let T' := (U₀).append A
+  have hT' : IsClosedPointTower P T' :=
+    (IsClosedPointTower.nil.snoc p (isClosed_projectivePlane_vertex d hi a) rfl).append hA
+  have he : e.hom ≫ T'.toBase = T.toBase := by
+    simpa only [T', toBase_append, toBase_snoc, toBase_nil, Category.comp_id, Category.assoc]
+      using hbase
+  have hg' : (e.inv ≫ g) ≫ fP = T'.toBase ≫ fP := by
+    rw [Category.assoc, hg, ← reassoc_of% he, Iso.inv_hom_id_assoc]
+  have hbir' : Scheme.BirationalOver (e.inv ≫ g) (𝟙 P) := by
+    refine Scheme.BirationalOver.trans (sY := g) ⟨.ofIso e.symm, ?_⟩ hbir
+    simp [Scheme.PartialIso.IsOver, Scheme.PartialIso.ofIso]
+  obtain ⟨hσ, b, r, hr, Z, U, hU, _, k, _, _, hk, hkg, hkb, hcoords⟩ :=
+    exists_hirzebruch_resolution_of_plane_vertex d hi a hT' (e.inv ≫ g) hg' hbir'
+  let x : Fin (1 + n) → ℤ := Fin.addCases (fun _ : Fin 1 ↦ w.2 j) (w.2 ∘ j.succAbove)
+  have hw : (T'.picardMarking hT' fP).symm (Additive.ofMul (pullback (e.inv ≫ g) H)) =
+      (w.1, x) := by
+    apply (LinearEquiv.symm_apply_eq _).mpr
+    apply Additive.toMul.injective
+    rw [picardMarking_apply, ← T.pullback_picardHom_move_to_front j e hbase hE htail,
+      ← picardMarking_apply T hT fP, Prod.mk.eta, LinearEquiv.apply_symm_apply]
+    simp only [toMul_ofMul, pullback_comp]
+  let s := (Ψ).starSubdivisionAlong_isSubdivision hΨ (σ).property hσ
+  let q := (e ≪≫ k).hom ≫ U.toBase
+  have hq : q ≫ s.toFanHom.algebraicMap ≫ (D).hom = T.toBase := by
+    simpa only [q, Iso.trans_hom, Category.assoc] using
+      (congrArg (e.hom ≫ ·) hk).trans he
+  have : IsDominant q := by
+    let := (s.isComplete_iff.mpr (Fan.isComplete_projectiveSpace d hi)).nonempty_cones
+    have hdim := (Module.finrank_eq_card_basis b).trans (Fintype.card_fin 2)
+    let : SmoothOfRelativeDimension 2 fX := by
+      simpa only [hdim, Fan.algebraicRealization_over] using
+        (Φ).smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
+    let : IsModification U.toBase := hU.isModification_of_smoothOfRelativeDimension_two fX
+    infer_instance
+  refine ⟨hσ, b, r, hr, Z, U, hU, e ≪≫ k, hq, comp_vertexLink_eq d hi a hσ q hq, ?_, ?_, ?_⟩
+  · simpa only [Iso.trans_inv, Category.assoc] using hkg
+  · simpa only [Iso.trans_inv, Category.assoc] using hkb
+  · rw [hw] at hcoords
+    intro _ _ _ v C
+    have hsum : (∑ l, (-x l).toNat) = ∑ l, (m l).toNat := by
+      rw [Fin.sum_univ_add (a := 1) (b := n), Fin.sum_univ_succAbove (fun l ↦ (m l).toNat) j]
+      simp only [Fin.sum_univ_one, x, Fin.addCases_left, Fin.addCases_right, Function.comp_apply, m]
+    simp only [hsum] at hcoords
+    simpa only [v, C, Iso.trans_inv, Category.assoc, x,
+      Fin.addCases_left, Fin.addCases_right, Function.comp_apply] using hcoords
 
 /-- Blow up a torus-fixed plane vertex absent from the projected centers of a specified
 resolution, and transport the tower over the resulting Hirzebruch-one surface.
