@@ -6,12 +6,16 @@ Authors: The QPainleve contributors
 module
 
 public import QPainleve.AlgebraicGeometry.Blowup.StrictTransform.Contraction
+public import QPainleve.AlgebraicGeometry.Blowup.Tower.Boundary.Complexity
 public import QPainleve.AlgebraicGeometry.Blowup.Tower.Centres
 public import QPainleve.AlgebraicGeometry.Blowup.Tower.Ramification
 
 import QPainleve.AlgebraicGeometry.Blowup.Descent
 import QPainleve.AlgebraicGeometry.Blowup.Isomorphism
+import QPainleve.AlgebraicGeometry.IdealSheaf.BaseChange
 import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
+import QPainleve.AlgebraicGeometry.Modules.Differentials.Restriction
+import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.Pullback
 
 /-!
 # Internal blowdown towers of anticanonical pairs
@@ -201,5 +205,63 @@ theorem internalBlowdown_tower_of_anticanonical (hT : IsClosedPointTower X T)
           exact Scheme.Hom.mem_smoothLocus.mp hqs
       · simpa only [baseCenter_snoc_castSucc] using hpoints j
     · rw [Iso.trans_hom, Category.assoc, hd, ← Category.assoc, he, Category.assoc, toBase_snoc]
+
+/-- An internal blowdown given by a point tower up to isomorphism descends the
+boundary of the original surface to its schematic image. The projection identifies
+the two boundary schemes, the images of the centers are smooth, and the total
+transform and complexity are computed in the specified tower. -/
+theorem internalBlowdown_tower_of_anticanonical_of_iso
+    [Module.Finite ℤ (Additive (LineBundleClass X))]
+    (hT : IsClosedPointTower X T) (hinj : Function.Injective hT.baseCenter)
+    {Z : Scheme.{u}} [Z.Over S] [SmoothOfRelativeDimension 2 (Z ↘ S)]
+    (a : Z ≅ Y) (ha : (a.hom ≫ T.toBase).IsOver S)
+    {B : Z.IdealSheafData} (hB : B.IsEffectiveCartier)
+    (homit : ∀ j, ¬ ((X.fromSpecResidueField (hT.baseCenter j)).ker.comap
+      T.toBase).support ≤ (B.comap a.inv).support)
+    (hnodal : AtWorstNodalOfRelativeDimensionOne (B.subschemeι ≫ (Z ↘ S)))
+    (hcan : mk hB.toInvertibleSheaf = K(Z)) :
+    let f := a.hom ≫ T.toBase
+    let D := B.map f
+    ∃ hD : D.IsEffectiveCartier, mk hD.toInvertibleSheaf = K(X) ∧
+      ∃ hN : AtWorstNodalOfRelativeDimensionOne (D.subschemeι ≫ s),
+        D.comap f = B * (hT.ramificationIdealSheafToBase k).comap a.hom ∧
+        (let : LocallyOfFinitePresentation (D.subschemeι ≫ s) :=
+          hN.syntomic.locallyOfFinitePresentation
+         ∀ j, ∃ q : D.subscheme, D.subschemeι q = hT.baseCenter j ∧
+           q ∈ (D.subschemeι ≫ s).smoothLocus) ∧
+        B.boundaryComplexity = D.boundaryComplexity + n ∧
+        ∃ e : B.subscheme ≅ D.subscheme, e.hom ≫ D.subschemeι = B.subschemeι ≫ f := by
+  let : Y.Over S := ⟨T.toBase ≫ s⟩
+  let : SmoothOfRelativeDimension 2 (Y ↘ S) := hT.smoothOfRelativeDimension s
+  let : (a.hom ≫ T.toBase).IsOver S := ha
+  have hover : a.inv ≫ (Z ↘ S) = T.toBase ≫ s := by
+    rw [← comp_over (a.hom ≫ T.toBase) S, ← Category.assoc, Iso.inv_hom_id_assoc]
+  have : a.inv.IsOver S := ⟨hover⟩
+  let B' := B.comap a.inv
+  have hB' : B'.IsEffectiveCartier := hB.comap a.inv
+  obtain ⟨d, hd⟩ := B.exists_iso_of_comap_eq_ker a.symm B'.subschemeι B'.ker_subschemeι.symm
+  simp only [Iso.symm_hom] at hd
+  have hN' := hnodal.comp_of_etale d.hom
+  rw [← Category.assoc, hd, Category.assoc, hover] at hN'
+  have hK' : mk hB'.toInvertibleSheaf = K(Y) := by
+    rw [← hB.pullback_mk_toInvertibleSheaf hB', hcan, pullback_mk, mk_pullback_canonicalBundle]
+  obtain ⟨hD, hK, hN, ht, hp, e, he⟩ :=
+    hT.internalBlowdown_tower_of_anticanonical k hinj hB' homit hN' hK'
+  have hd' : d.inv ≫ B'.subschemeι = B.subschemeι ≫ a.hom := by
+    apply (cancel_mono a.inv).mp
+    rw [Category.assoc, ← hd, Iso.inv_hom_id_assoc, Category.assoc, Iso.hom_inv_id,
+      Category.comp_id]
+  have hπ : d.inv ≫ B'.subschemeι ≫ T.toBase = B.subschemeι ≫ a.hom ≫ T.toBase := by
+    rw [← Category.assoc, hd', Category.assoc]
+  have hmap : B'.map T.toBase = B.map (a.hom ≫ T.toBase) := by
+    rw [map, ← Scheme.Hom.ker_comp_of_isIso d.inv, hπ, map]
+  have hq := hT.boundaryComplexity_eq_add_length_of_subschemeIso k hD hB' e he
+  dsimp only
+  rw [← hmap]
+  refine ⟨hD, hK, hN, ?_, hp, (boundaryComplexity_comap_iso a.symm B).symm.trans hq,
+    d.symm ≪≫ e, ?_⟩
+  · simpa only [comap_mul, ← comap_comp, B', Iso.hom_inv_id, comap_id] using
+      congrArg (·.comap a.hom) ht
+  · rw [Iso.trans_hom, Iso.symm_hom, Category.assoc, he, hπ]
 
 end QPainleve.BlowupTower.IsClosedPointTower
