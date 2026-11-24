@@ -6,15 +6,17 @@ Authors: The QPainleve contributors
 module
 
 public import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.Basic
+public import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.Invertible
 public import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.Polynomial.Chart
+public import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.Polynomial.SymmetricAlgebra
 public import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.TwistingSheaf.LocalTriviality
 public import TauCeti.AlgebraicGeometry.LineBundle.Class
+public import TauCeti.AlgebraicGeometry.LineBundle.Functoriality
 
 import QPainleve.AlgebraicGeometry.EffectiveCartierDivisor.Integral
 import QPainleve.AlgebraicGeometry.IdealSheaf.Integral
 import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.Polynomial.Chart.Sections
 import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.Polynomial.Integral
-import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.Polynomial.SymmetricAlgebra
 import TauCeti.AlgebraicGeometry.CartierDivisor.Excision
 import TauCeti.AlgebraicGeometry.IdealSheaf.Reduced
 import TauCeti.AlgebraicGeometry.LineBundle.Affine.Picard
@@ -289,6 +291,42 @@ theorem isEffectiveCartier_coordinateHyperplaneIdeal (j : Fin (n + 1)) :
   @InvertibleSheaf.isEffectiveCartier_imageIdealSheaf _ (polynomialTwistingBundle (-1))
     (coordinateToUnit j) (mono_coordinateToUnit j)
 
+/-- The line bundle associated to a coordinate hyperplane is `𝒪(1)`. -/
+theorem coordinateHyperplaneIdeal_class (j : Fin (n + 1)) :
+    (LineBundleClass.mk
+      (isEffectiveCartier_coordinateHyperplaneIdeal (k := k) j).toInvertibleSheaf)⁻¹ =
+        LineBundleClass.mk (polynomialTwistingBundle 1) := by
+  have h : LineBundleClass.mk
+      (isEffectiveCartier_coordinateHyperplaneIdeal (k := k) j).toInvertibleSheaf =
+        LineBundleClass.mk (polynomialTwistingBundle (-1)) :=
+    @InvertibleSheaf.mk_toInvertibleSheaf_imageIdealSheaf _
+      (polynomialTwistingBundle (k := k) (-1)) (coordinateToUnit j) (mono_coordinateToUnit j)
+  rw [h, mk_polynomialTwistingBundle_eq_zpow, zpow_neg_one, inv_inv]
+
+/-- Different coordinate hyperplanes meet properly. In particular their intersection
+is an effective Cartier divisor on either hyperplane. -/
+theorem isEffectiveCartier_comap_coordinateHyperplaneIdeal {i j : Fin (n + 1)} (hij : i ≠ j) :
+    ((coordinateHyperplaneIdeal (k := k) i).comap
+      (coordinateHyperplaneIdeal (k := k) j).subschemeι).IsEffectiveCartier := by
+  have : NeZero n := ⟨by
+    rintro rfl
+    exact hij (Fin.ext (by omega))⟩
+  let J := coordinateHyperplaneIdeal (k := k) j
+  have : IsIntegral J.subscheme := isIntegral_subscheme_coordinateHyperplaneIdeal j
+  refine (isEffectiveCartier_coordinateHyperplaneIdeal i).comap_of_isIntegral J.subschemeι ?_
+  let p : P := hyperplaneGenericPoint (k := k) j
+  have hη : J.subschemeι (genericPoint J.subscheme) = p := by
+    have hs : (J.support : Set P) = closure ({p} : Set P) :=
+      coe_support_coordinateHyperplaneIdeal_eq_closure j
+    apply ((genericPoint_spec J.subscheme).image J.subschemeι.continuous).eq
+    rw [Set.image_univ, J.range_subschemeι, hs, closure_closure]
+    exact isGenericPoint_closure
+  rw [hη, ← SetLike.mem_coe, coe_support_coordinateHyperplaneIdeal, Set.notMem_compl_iff]
+  -- At the generic point of `Xⱼ = 0`, the chart condition is `Xᵢ ∉ (Xⱼ)`.
+  change MvPolynomial.X i ∉ (Ideal.span {MvPolynomial.X j} : Ideal (MvPolynomial (Fin (n + 1)) k))
+  rw [← Set.image_singleton (f := MvPolynomial.X), MvPolynomial.span_X_image_eq_ker_aeval_ite_mem]
+  simp [hij]
+
 private theorem uniqueFactorizationMonoid_stalk_polynomialProj (x : P) :
     UniqueFactorizationMonoid ((Proj 𝒜).presheaf.stalk x) := by
   obtain ⟨i, hi⟩ := TopologicalSpace.Opens.mem_iSup.mp
@@ -356,13 +394,7 @@ private theorem exists_zpow_polynomialTwistingBundle [NeZero n] (a : LineBundleC
   have hc : primeDivisorClass η = mk (polynomialTwistingBundle (k := k) (n := n) 1) := by
     rw [primeDivisorClass_def, mk_toInvertibleSheaf_congr _ hI
       I.vanishingIdeal_closure_subschemeι_genericPoint]
-    have he : mk hI.toInvertibleSheaf = mk (polynomialTwistingBundle (-1)) :=
-      @InvertibleSheaf.mk_toInvertibleSheaf_imageIdealSheaf _ (polynomialTwistingBundle (-1))
-        (coordinateToUnit i) (mono_coordinateToUnit i)
-    have hz : mk (polynomialTwistingBundle (k := k) (n := n) (-1)) =
-        mk (polynomialTwistingBundle 1) ^ (-1 : ℤ) :=
-      mk_polynomialTwistingBundle_eq_zpow (-1)
-    rw [he, hz, zpow_neg_one, inv_inv]
+    exact coordinateHyperplaneIdeal_class i
   have := subsingleton_picard_coordinateChart (k := k) i
   have h : pullback (U[i]).ι a = 1 := Subsingleton.elim _ _
   rw [pullback_eq_one_iff_mem_closure_of_isOpenImmersion, hset, hc,
@@ -399,6 +431,23 @@ open AlgebraicGeometry AlgebraicGeometry.Proj LineBundleClass
 
 attribute [local instance] MvPolynomial.gradedAlgebra
 
+universe v
+
+/-- The basis comparison identifies the Picard classes of the symmetric-algebra
+and polynomial twists of the same degree. -/
+theorem pullback_mk_symmetricAlgebraTwistingBundle
+    {k M : Type (max u v)} [CommRing k] [AddCommMonoid M] [Module k M] {ι : Type v}
+    (b : Basis ι k M) (m : ℤ)
+    [SheafOfModules.isInvertible (Proj (MvPolynomial.homogeneousSubmodule ι k))
+      (twistingSheaf (MvPolynomial.homogeneousSubmodule ι k) m)] :
+    pullback b.polynomialProjIso.hom (LineBundleClass.mk (symmetricAlgebraTwistingBundle k M m)) =
+      LineBundleClass.mk
+        ⟨twistingSheaf (MvPolynomial.homogeneousSubmodule ι k) m, inferInstance⟩ := by
+  rw [pullback_mk, mk_eq_mk_iff]
+  refine ⟨?_⟩
+  rw [InvertibleSheaf.pullback_obj_obj, symmetricAlgebraTwistingBundle_obj]
+  exact b.polynomialProjIsoPullbackTwistingSheafIso m
+
 variable {k M : Type u} [Field k] [AddCommMonoid M] [Module k M] {n : ℕ}
 
 local notation "𝒮" => TauCeti.SymmetricAlgebra.homogeneousSubmodule k M
@@ -407,10 +456,11 @@ private theorem pullbackEquiv_polynomialProjIso_twist (b : Basis (Fin (n + 2)) k
     pullbackEquiv (polynomialProjIso b)
         (LineBundleClass.mk (symmetricAlgebraTwistingBundle k M m)) =
       LineBundleClass.mk (polynomialTwistingBundle m) := by
-  rw [pullbackEquiv_apply, pullback_mk, mk_eq_mk_iff]
-  refine ⟨?_⟩
-  rw [InvertibleSheaf.pullback_obj_obj, symmetricAlgebraTwistingBundle_obj]
-  exact b.polynomialProjIsoPullbackTwistingSheafIso m
+  rw [pullbackEquiv_apply]
+  have : SheafOfModules.isInvertible (Proj (MvPolynomial.homogeneousSubmodule (Fin (n + 2)) k))
+      (twistingSheaf (MvPolynomial.homogeneousSubmodule (Fin (n + 2)) k) m) :=
+    (polynomialTwistingBundle (k := k) (n := n + 1) m).property
+  exact b.pullback_mk_symmetricAlgebraTwistingBundle m
 
 private theorem mk_symmetricAlgebraTwistingBundle_eq_zpow (m : ℤ) :
     LineBundleClass.mk (symmetricAlgebraTwistingBundle k M m) =

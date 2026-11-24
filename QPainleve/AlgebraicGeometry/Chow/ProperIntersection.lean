@@ -13,7 +13,9 @@ import QPainleve.AlgebraicGeometry.IdealSheaf.EulerCharacteristic
 import QPainleve.AlgebraicGeometry.RationalPoint
 import Mathlib.Data.Set.Card.Arithmetic
 import TauCeti.AlgebraicGeometry.Cohomology.ClosedImmersion.Linear
+import TauCeti.AlgebraicGeometry.IdealSheaf.BaseChange
 import TauCeti.AlgebraicGeometry.IdealSheaf.Rank
+import TauCeti.AlgebraicGeometry.Morphisms.LocallyQuasiFinite
 
 /-!
 # Local lengths of proper Cartier intersections
@@ -24,6 +26,8 @@ intersection. In local rings this is a sum of quotient lengths weighted by resid
 degrees. Over an algebraically closed field each nonzero term has weight one.
 The comparison uses `IsEffectiveCartier.eulerCharBelow_eq_add_restriction`
 and Tau Ceti's `Scheme.Hom.finrank_comp_eq_finsum_of_isClosedImmersion`.
+For a finite flat pullback, Tau Ceti's `finrank_comap_subschemeι_comp` computes
+the rank of the inverse image of the intersection scheme.
 
 The local multiplicity formula for a Cartier divisor and an integral curve is
 [The Stacks Project, Lemma 43.16.4](https://stacks.math.columbia.edu/tag/0B05).
@@ -95,6 +99,51 @@ public theorem classIntersectionNumber_eq_finrank_intersection (hX : topological
       (K.subschemeι.eulerCharBelow_pushforward_structureSheaf k s 2)
   rw [classIntersectionNumber_eq, inv_inv, inv_inv]
   linear_combination h₁ - h₂ + h₃ + hχ
+
+/-- A finite flat map of constant rank multiplies the intersection number of two properly
+meeting effective Cartier divisors by its rank. The pullback divisors still meet properly
+because the restriction of the map to the inverse image of either divisor is flat. -/
+public theorem classIntersectionNumber_pullback_of_cartierIntersection {Y : Scheme.{u}}
+    [Y.Over (Spec (.of k))] [Y.IsProjectiveOver k]
+    (f : X ⟶ Y) [f.IsOver (Spec (.of k))] [IsFinite f] [Flat f]
+    (hY : topologicalKrullDim Y ≤ 2)
+    {A B : Y.IdealSheafData} (hA : A.IsEffectiveCartier) (hB : B.IsEffectiveCartier)
+    (hAB : (A.comap B.subschemeι).IsEffectiveCartier) {d : ℕ} (hd : ∀ y, f.finrank y = d) :
+    classIntersectionNumber k X
+        (LineBundleClass.pullback f (LineBundleClass.mk hA.toInvertibleSheaf)⁻¹)
+        (LineBundleClass.pullback f (LineBundleClass.mk hB.toInvertibleSheaf)⁻¹) =
+      d * classIntersectionNumber k Y (LineBundleClass.mk hA.toInvertibleSheaf)⁻¹
+        (LineBundleClass.mk hB.toInvertibleSheaf)⁻¹ := by
+  let B' := B.comap f
+  let g := subschemeMap B' B f (B.le_map_comap f)
+  have hg : IsPullback g B'.subschemeι B.subschemeι f := by
+    simpa only [Category.comp_id] using
+      B.isPullback_subschemeMap_comap (𝟙 Y)
+        (IsPullback.of_vert_isIso (snd := 𝟙 X) (f := 𝟙 Y) ⟨by simp⟩)
+  have : Flat g := MorphismProperty.of_isPullback hg.flip inferInstance
+  have : IsFinite g := MorphismProperty.of_isPullback hg.flip inferInstance
+  have hclass (C : Y.IdealSheafData) (hC : C.IsEffectiveCartier) :=
+    hC.pullback_mk_toInvertibleSheaf (hC.comap f)
+  have hcomap : (A.comap f).comap B'.subschemeι = (A.comap B.subschemeι).comap g := by
+    rw [← comap_comp, ← comap_comp, hg.w]
+  have hAB' : ((A.comap f).comap B'.subschemeι).IsEffectiveCartier := hcomap ▸ hAB.comap g
+  let L := A.comap B.subschemeι
+  let s : Spec (.of k) := default
+  have hbase : L.subschemeι ≫ B.subscheme ↘ Spec (.of k) = L.subscheme ↘ Spec (.of k) :=
+    comp_over _ _
+  have : IsFinite (L.subschemeι ≫ B.subscheme ↘ Spec (.of k)) :=
+    hbase ▸ isFinite_cartierIntersection k hY hB hAB
+  have : g.IsOver (Spec (.of k)) := ⟨by
+    rw [over_eq_subschemeι_comp (I := B), hg.w_assoc, comp_over, ← over_eq_subschemeι_comp]⟩
+  have hrank := L.finrank_comap_subschemeι_comp (B.subscheme ↘ Spec (.of k)) g
+    (fun z ↦ (Scheme.Hom.finrank_of_isPullback _ _ _ _ hg.flip z).trans (hd _)) s
+  simp only [comp_over] at hrank
+  simp only [LineBundleClass.pullback_inv, hclass,
+    classIntersectionNumber_eq_finrank_intersection k (f.topologicalKrullDim_le.trans hY)
+      (hA.comap f) (hB.comap f) hAB' s,
+    classIntersectionNumber_eq_finrank_intersection k hY hA hB hAB s, ← Nat.cast_mul]
+  exact_mod_cast (congrArg (fun C : B'.subscheme.IdealSheafData ↦
+    (C.subscheme ↘ Spec (.of k)).finrank s) hcomap).trans hrank
 
 /-- Properly meeting effective Cartier divisors have positive intersection number exactly
 when their supports meet. -/
