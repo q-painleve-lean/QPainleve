@@ -176,12 +176,9 @@ private theorem exists_toric_boundary_valuation_transport_mutate {B : SkewExchan
             l ≫ F.toPartialMap.hom = fieldPoint(Φ,Ψ,q c) ≫
               eval(Ψ,b,t,center(c,((Generator.mutate p).toStep B).toPath)) := by
   have hrank : finrank ℤ N = 2 := by simpa using Module.finrank_eq_card_basis b
-  have hv := (s p).isPrimitiveGenerator.ne_zero
-  obtain ⟨Ω, hΩ, hreg, hopp⟩ := Φ.exists_regular_subdivision_containing_ray hΦ hrank
-    (neg_ne_zero.mpr hv) (Φ.mem_support.mpr (Φ.isComplete_iff.mp hc _))
+  obtain ⟨Ω, hΩ, hreg, hcomp, hopp₀⟩ :=
+    (s p).exists_regular_subdivision_containing_opposite hΦ hc hrank
   let s₀ := hΩ.liftRay ∘ s
-  have hopp₀ : hull ℝ {i (-(s₀ p).primitiveGenerator)} ∈ Ω.cones := by
-    simpa only [s₀, Function.comp_apply, hΩ.primitiveGenerator_liftRay] using hopp
   let h₀ := (s₀ p).isPrimitiveGenerator.ne_zero
   let h₁ := (s₀ p).hull_primitiveGenerator_mem
   let Ψ := Ω.mutationFan b h₀ h₁ hopp₀
@@ -197,7 +194,7 @@ private theorem exists_toric_boundary_valuation_transport_mutate {B : SkewExchan
     rw [← P.matrix_eq, chargeExchangeMatrix_apply, hform, hcharge]
     simp [s₀, Basis.detDualEquiv_apply]
   refine ⟨Ψ, (Ω.isRegular_mutationFan_iff b h₀ h₁ hopp₀).2 hreg,
-    (Ω.isComplete_mutationFan_iff b h₀ h₁ hopp₀).2 (hΩ.isComplete_iff.2 hc), t, f, ?_, ?_, ?_⟩
+    (Ω.isComplete_mutationFan_iff b h₀ h₁ hopp₀).2 hcomp, t, f, ?_, ?_, ?_⟩
   · rw [Step.chargeTarget_mutate_charge, hform, hcharge,
       ← hΩ.rayChargeMap_liftRay s, ← rayChargeMap_mutationFanCenterRays b s₀ p hopp₀]
   · intro ρ
