@@ -13,7 +13,6 @@ import QPainleve.AlgebraicGeometry.Chow.RationalSurface.RankOne
 import QPainleve.AlgebraicGeometry.Chow.RationalSurface.RiemannRoch
 import QPainleve.AlgebraicGeometry.LineBundle.Ample
 import QPainleve.AlgebraicGeometry.Chow.RationalSurface.Pluricanonical
-import TauCeti.AlgebraicGeometry.Cohomology.Module.Base
 
 /-!
 # Smooth rational curves on minimal rational surfaces
@@ -35,7 +34,6 @@ public section
 
 open AlgebraicGeometry CategoryTheory TopologicalSpace QPainleve
 open AlgebraicGeometry.Scheme AlgebraicGeometry.Scheme.IdealSheafData
-open AlgebraicGeometry.Scheme.Modules (cohomologyZeroBaseLinearEquiv)
 open TauCeti.AlgebraicGeometry TauCeti.AlgebraicGeometry.Chow
 open TauCeti.AlgebraicGeometry.LineBundleClass TauCeti.AlgebraicGeometry.Scheme.CartierDivisor
 open TauCeti.AlgebraicGeometry.Scheme.Modules
@@ -72,48 +70,6 @@ section EffectiveClasses
 
 variable [IsIntegral X] [IsNoetherian X]
   [∀ x : X, UniqueFactorizationMonoid (X.presheaf.stalk x)]
-
-include rational in
-omit [IsNoetherian X] in
-private theorem mem_effectiveClasses_or_canonical_sub (a : Pic)
-    (h : 0 ≤ B a a - B a K) : a ∈ E ∨ K - a ∈ E := by
-  have hRR : 2 * (eulerCharBelow k a.toMul 3 - 1) = B a a - B a K := by
-    simpa only [classIntersectionBilinForm_apply, toMul_ofMul] using
-      eulerCharBelow_eq_riemannRoch_of_isRationalOver k a.toMul
-  obtain ⟨I, hI, hclass⟩ :=
-    exists_effectiveCartier_or_canonical_mul_inv_of_eulerCharBelow_pos k a.toMul (by omega)
-  have hm : Additive.ofMul (LineBundleClass.mk hI.toInvertibleSheaf)⁻¹ ∈ E :=
-    mem_effectiveClasses.mpr ⟨hI.toCartierDivisor, hI.isEffective_toCartierDivisor,
-      congrArg Additive.ofMul hI.toLineBundleClass_toCartierDivisor⟩
-  rcases hclass with hclass | hclass
-  · exact Or.inl (by simpa only [hclass, ofMul_toMul] using hm)
-  · exact Or.inr (by simpa only [hclass, ofMul_mul, ofMul_inv, ofMul_toMul, sub_eq_add_neg]
-      using hm)
-
-include rational in
-omit [IsNoetherian X] [∀ x : X, UniqueFactorizationMonoid (X.presheaf.stalk x)] in
-private theorem not_mem_effectiveClasses_nsmul_canonical {m : ℕ} (hm : 0 < m) :
-    m • K ∉ E := by
-  intro h
-  obtain ⟨D, hD, hclass⟩ := mem_effectiveClasses.mp h
-  let L := (canonicalBundle k X 2).tensorPow m
-  have hL : LineBundleClass.mk L = D.toLineBundleClass := by
-    simpa only [L, mk_tensorPow, toMul_nsmul, toMul_ofMul] using congrArg Additive.toMul hclass.symm
-  obtain ⟨e⟩ := toLineBundleClass_eq_mk_iff.mp hL.symm
-  have hvan := X.subsingleton_cohomology_zero_pluricanonical_of_isRationalOver k hm
-  have : Subsingleton Γ(L.obj, ⊤) :=
-    (cohomologyZeroBaseLinearEquiv k X L.obj).surjective.subsingleton
-  let t := Scheme.Modules.Hom.app (Scheme.toRationalFunctions X) ⊤ (1 : Γ(X, ⊤))
-  let s := Scheme.CartierDivisor.sectionMk (U := ⊤) t (isEffective_iff_one_mem_sections.mp hD)
-  have hsub : Subsingleton Γ(D.sheaf, ⊤) :=
-    (ConcreteCategory.bijective_of_isIso (e.inv.app ⊤)).surjective.subsingleton
-  have hs : s = 0 := Subsingleton.elim _ _
-  have hz := congrArg (Scheme.Modules.Hom.app D.sheafι ⊤) hs
-  simp only [s, Scheme.CartierDivisor.sheafι_app_sectionMk, map_zero] at hz
-  have heq : (1 : Γ(X, (⊤ : X.Opens))) = 0 :=
-    (Scheme.toRationalFunctions_app_injective ⊤)
-      (hz.trans ((Scheme.Modules.Hom.app (Scheme.toRationalFunctions X) ⊤).hom.map_zero).symm)
-  exact one_ne_zero heq
 
 omit rational [IsNoetherian X] in
 private theorem exists_mem_effectiveClasses_add_canonical_notMem
