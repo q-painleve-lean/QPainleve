@@ -55,3 +55,26 @@ theorem nodalPicardCycleMulEquiv_pullback_boundaryCycleAction
       (by simpa only [hη, ite_true] using horder) a
 
 end CategoryTheory.Iso
+
+namespace AlgebraicGeometry.Scheme.NodalCycleNumbering
+
+variable {k : Type u} [Field k] [IsAlgClosed k] {X : Scheme.{u}}
+  [X.Over (Spec (.of k))] [PrestableFamily (X ↘ Spec (.of k))]
+  {ι : Type v} {p : ι → (X ↘ Spec (.of k)).smoothLocus} {n : ℕ} [NeZero n]
+
+/-- Reversing a numbered boundary with its initial component fixed inverts its Picard period. -/
+@[simp]
+theorem nodalPicardCycleMulEquiv_reverse (C : NodalCycleNumbering p n)
+    (a : MonoidHom.ker (LineBundleClass.pullbackHom (X.singularLocus k).blowupToBase)) :
+    Scheme.nodalPicardCycleMulEquiv C.reverse.endpoint_eq a =
+      (Scheme.nodalPicardCycleMulEquiv C.endpoint_eq a)⁻¹ := by
+  have horder : Fin.revPerm = Equiv.swap (0 : Fin 2) 1 := by
+    ext b
+    fin_cases b <;> decide
+  have hvertex : cycleVertexPerm (.sr (0 : ZMod n)) = Equiv.subLeft (-1 + 1) := by
+    ext j
+    simp [cycleVertexPerm_sr_apply]
+  simpa only [reverse, horder, hvertex] using
+    Scheme.nodalPicardCycleMulEquiv_reverse C.endpoint_eq (-1) a
+
+end AlgebraicGeometry.Scheme.NodalCycleNumbering
