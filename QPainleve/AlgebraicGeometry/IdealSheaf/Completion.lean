@@ -11,6 +11,7 @@ public import Mathlib.AlgebraicGeometry.Noetherian
 public import Mathlib.Algebra.Category.Ring.Limits
 public import Mathlib.RingTheory.AdicCompletion.LocalRing
 public import Mathlib.CategoryTheory.Functor.OfSequence
+public import TauCeti.AlgebraicGeometry.IdealSheaf.Module
 public import TauCeti.AlgebraicGeometry.IdealSheaf.OfIdealTop
 import Mathlib.RingTheory.AdicCompletion.AsTensorProduct
 import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
@@ -101,15 +102,24 @@ local notation "R̂" => AdicCompletion 𝔪 R
 local notation "centerIdeal" =>
   IdealSheafData.ofIdealTop
     (Ideal.map (CommRingCat.Hom.hom (Iso.inv (Scheme.ΓSpecIso (CommRingCat.of R)))) 𝔪)
-local notation "quotientSpec" n =>
-  Spec.map (CommRingCat.ofHom (Ideal.Quotient.mk (𝔪 ^ (n + 1))))
+local notation "quotientSpecPow" n =>
+  Spec.map (CommRingCat.ofHom (Ideal.Quotient.mk (𝔪 ^ n)))
+local notation "quotientSpec" n => quotientSpecPow (n + 1)
+local notation "fiberSectionsMap(" f ", " n ")" =>
+  CommRingCat.Hom.hom
+    (Iso.inv (Scheme.ΓSpecIso _) ≫ Scheme.Hom.appTop (pullback.snd f (quotientSpecPow n)))
+local notation "baseSectionsMap(" f ")" =>
+  Iso.inv (Scheme.ΓSpecIso (CommRingCat.of R)) ≫ Scheme.Hom.appTop f
 
-private theorem ker_fst_fiberThickening (f : X ⟶ Spec (.of R)) (n : ℕ) :
-    (pullback.fst f (quotientSpec n)).ker = ((centerIdeal).comap f) ^ (n + 1) := by
-  have : IsClosedImmersion (quotientSpec n) :=
+/-- The ideal of the fiber cut out by the `n`th power of the base maximal ideal
+is the `n`th power of the closed-fiber ideal. -/
+theorem ker_fst_fiberThickening (f : X ⟶ Spec (.of R)) {E : X.IdealSheafData}
+    (hE : (centerIdeal).comap f = E) (n : ℕ) :
+    (pullback.fst f (quotientSpecPow n)).ker = E ^ n := by
+  have : IsClosedImmersion (quotientSpecPow n) :=
     IsClosedImmersion.spec_of_surjective _ Ideal.Quotient.mk_surjective
   rw [IdealSheafData.ker_fst_of_isClosedImmersion, Scheme.Hom.ker_Spec_map, CommRingCat.hom_ofHom,
-    Ideal.mk_ker, Ideal.map_pow, IdealSheafData.ofIdealTop_pow, IdealSheafData.comap_pow]
+    Ideal.mk_ker, Ideal.map_pow, IdealSheafData.ofIdealTop_pow, IdealSheafData.comap_pow, hE]
 
 /-- The infinitesimal fiber cut out by a power of the maximal ideal is the
 corresponding thickening of the scheme-theoretic closed fiber. -/
@@ -119,7 +129,7 @@ noncomputable def fiberThickeningIso (f : X ⟶ Spec (.of R)) {E : X.IdealSheafD
   have : IsClosedImmersion (quotientSpec n) :=
     IsClosedImmersion.spec_of_surjective _ Ideal.Quotient.mk_surjective
   have h : (pullback.fst f (quotientSpec n)).ker = (E ^ (n + 1)).subschemeι.ker := by
-    rw [ker_fst_fiberThickening, hE, IdealSheafData.ker_subschemeι]
+    rw [f.ker_fst_fiberThickening hE, IdealSheafData.ker_subschemeι]
   have := IsClosedImmersion.isIso_lift _ _ h
   exact (asIso (IsClosedImmersion.lift _ _ h.le)).symm
 
@@ -153,6 +163,72 @@ theorem completionToFiberThickening_apply (f : X ⟶ Spec (.of R)) (n : ℕ) (a 
       (pullback.snd f (Spec.map (CommRingCat.ofHom (Ideal.Quotient.mk (𝔪 ^ (n + 1)))))).appTop
         ((Scheme.ΓSpecIso _).inv (AdicCompletion.evalₐ 𝔪 (n + 1) a)) :=
   (rfl)
+
+/-- Pulling a base function back to an infinitesimal fiber factors through the
+corresponding quotient of the base ring. -/
+theorem fiberSectionsMap_comp_quotient (f : X ⟶ Spec (.of R)) (n : ℕ) :
+    fiberSectionsMap(f, n).comp (Ideal.Quotient.mk (𝔪 ^ n)) =
+      (baseSectionsMap(f) ≫ (pullback.fst f (quotientSpecPow n)).appTop).hom := by
+  let q := CommRingCat.ofHom (Ideal.Quotient.mk (𝔪 ^ n))
+  let a := pullback.fst f (Spec.map q)
+  let b := pullback.snd f (Spec.map q)
+  have h : baseSectionsMap(f) ≫ a.appTop = q ≫ (Scheme.ΓSpecIso _).inv ≫ b.appTop := by
+    rw [Category.assoc, ← Scheme.Hom.comp_appTop, pullback.condition, Scheme.Hom.comp_appTop,
+      ← Scheme.ΓSpecIso_inv_naturality_assoc]
+  exact congrArg CommRingCat.Hom.hom h.symm
+
+/-- The base functions killed on an infinitesimal fiber are those whose pullbacks
+belong to the corresponding power of the closed-fiber ideal. -/
+theorem ker_fiberSectionsMap_comp_quotient (f : X ⟶ Spec (.of R)) {E : X.IdealSheafData}
+    (hE : (centerIdeal).comap f = E) (n : ℕ) :
+    RingHom.ker (fiberSectionsMap(f, n).comp (Ideal.Quotient.mk (𝔪 ^ n))) =
+      ((E ^ n).sections ⊤).comap (baseSectionsMap(f)).hom := by
+  have : IsClosedImmersion (quotientSpecPow n) :=
+    IsClosedImmersion.spec_of_surjective _ Ideal.Quotient.mk_surjective
+  ext r
+  rw [f.fiberSectionsMap_comp_quotient n, RingHom.mem_ker, Ideal.mem_comap,
+    ← f.ker_fst_fiberThickening hE n, Hom.mem_ker_sections_iff]
+  rfl
+
+/-- For an element of the base ring, completion followed by restriction to an
+infinitesimal fiber is ordinary pullback from the base to that fiber. -/
+theorem completionToFiberThickening_algebraMap (f : X ⟶ Spec (.of R)) (n : ℕ) (r : R) :
+    f.completionToFiberThickening n (algebraMap R R̂ r) =
+      (pullback.fst f (quotientSpec n)).appTop (f.appTop ((Scheme.ΓSpecIso (.of R)).inv r)) := by
+  rw [completionToFiberThickening_apply, AdicCompletion.algebraMap_apply, AdicCompletion.evalₐ_of]
+  exact DFunLike.congr_fun (f.fiberSectionsMap_comp_quotient (n + 1)) r
+
+/-- The kernel on the completed base is the extension of the ideal of base functions
+whose pullbacks vanish on the corresponding infinitesimal fiber. -/
+theorem ker_completionToFiberThickening_eq_map [IsNoetherianRing R]
+    (f : X ⟶ Spec (.of R)) {E : X.IdealSheafData} (hE : (centerIdeal).comap f = E) (n : ℕ) :
+    RingHom.ker (f.completionToFiberThickening n) =
+      (((E ^ (n + 1)).sections ⊤).comap ((Scheme.ΓSpecIso (.of R)).inv ≫ f.appTop).hom).map
+        (algebraMap R R̂) := by
+  let e := (AdicCompletion.evalₐ 𝔪 (n + 1)).toRingHom
+  let q := Ideal.Quotient.mk (𝔪 ^ (n + 1))
+  let J := RingHom.ker fiberSectionsMap(f, n + 1)
+  have he : e.comp (algebraMap R R̂) = q := by
+    ext r
+    exact AdicCompletion.evalₐ_of 𝔪 (n + 1) r
+  have hk : RingHom.ker (f.completionToFiberThickening n) = J.comap e := rfl
+  rw [hk, ← f.ker_fiberSectionsMap_comp_quotient hE (n + 1), ← RingHom.comap_ker]
+  change J.comap e = (J.comap q).map (algebraMap R R̂)
+  let K := (J.comap q).map (algebraMap R R̂)
+  have hmap : K.map e = J := by
+    dsimp only [K]
+    rw [Ideal.map_map, he, Ideal.map_comap_of_surjective _ Ideal.Quotient.mk_surjective]
+  have hle : RingHom.ker e ≤ K := by
+    have heker : RingHom.ker e = (𝔪 ^ (n + 1)).map (algebraMap R R̂) :=
+      AdicCompletion.ker_evalₐ_eq_map_pow (Ideal.fg_of_isNoetherianRing 𝔪) (n + 1)
+    have hqker : RingHom.ker q = 𝔪 ^ (n + 1) := Ideal.mk_ker
+    rw [heker, ← hqker]
+    exact Ideal.map_mono (Ideal.ker_le_comap (K := J) q)
+  calc
+    J.comap e = (K.map e).comap e := congrArg (Ideal.comap e) hmap.symm
+    _ = K := by
+      rw [Ideal.comap_map_of_surjective e (AdicCompletion.surjective_evalₐ 𝔪 (n + 1)),
+        ← RingHom.ker_eq_comap_bot, sup_eq_left.mpr hle]
 
 private theorem pullback_appTop_pow_subschemeι_eq_zero [IsNoetherianRing R]
     (f : X ⟶ Spec (.of R)) (n : ℕ) (d : R̂)
@@ -265,7 +341,9 @@ noncomputable abbrev fiberThickeningSections (f : X ⟶ Spec (.of R)) : ℕᵒ�
     Γ(pullback f (Spec.map (CommRingCat.ofHom (Ideal.Quotient.mk (𝔪 ^ (n + 1))))), ⊤))
       (fun n ↦ (fiberThickeningι f n).appTop)
 
-private theorem completionToFiberThickening_naturality (f : X ⟶ Spec (.of R)) (n : ℕ) :
+/-- Restriction from one infinitesimal fiber to the preceding fiber commutes with
+pullback from the completed base. -/
+theorem completionToFiberThickening_naturality (f : X ⟶ Spec (.of R)) (n : ℕ) :
     CommRingCat.ofHom (f.completionToFiberThickening (n + 1)) ≫
         (fiberThickeningι f n).appTop =
       CommRingCat.ofHom (f.completionToFiberThickening n) := by

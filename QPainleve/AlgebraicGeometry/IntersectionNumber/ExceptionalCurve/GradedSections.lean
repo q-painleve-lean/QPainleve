@@ -7,7 +7,6 @@ module
 
 public import QPainleve.AlgebraicGeometry.IntersectionNumber.ExceptionalCurve.Cohomology
 import QPainleve.AlgebraicGeometry.IntersectionNumber.ExceptionalCurve.Conormal
-import QPainleve.AlgebraicGeometry.IdealSheaf.Quotient
 import QPainleve.AlgebraicGeometry.IdealSheaf.Tensor.Product
 import QPainleve.AlgebraicGeometry.IdealSheaf.Tensor.Restriction
 
@@ -24,9 +23,7 @@ This is the multiplication step in the formal neighborhood calculation of
 public noncomputable section
 
 open CategoryTheory Functor.LaxMonoidal MonoidalCategory
-open TauCeti (isEffectiveCartier_pow)
 open TauCeti.AlgebraicGeometry
-open TauCeti.AlgebraicGeometry.Scheme.Modules
 open AlgebraicGeometry.Scheme.Modules
 
 universe u
@@ -49,47 +46,9 @@ private theorem surjective_restrict_power
     {Y : Scheme.{u}} [IsAffine Y] [IsLocallyNoetherian Y] {I : Y.IdealSheafData}
     (f : X ⟶ Y) [IsProper f] (hI : I.comap f = E)
     (hU : I.support.compl ≤ f.isoLocus) (n : ℕ) :
-    Function.Surjective (r(n)) := by
-  let H := isEffectiveCartier_pow hE.isEffectiveCartier n
-  have h := hE.subsingleton_cohomology_one_ideal_pow_of_contraction f hI hU (n + 1)
-  have he : IsIso ((E ^ n).sheafMul E) :=
-    (E ^ n).isIso_sheafMul_of_isEffectiveCartier E hE.isEffectiveCartier
-  have hvan : Subsingleton (Cohomology (H.toInvertibleSheaf.obj ⊗ E.sheaf) 1) := by
-    rw [H.toInvertibleSheaf_obj]
-    let d := (cohomologyFunctor X 1).mapIso
-      (asIso ((E ^ n).sheafMul E) ≪≫ eqToIso (congrArg sheaf (pow_succ E n).symm))
-    exact @Function.Injective.subsingleton _ _ _ d.addCommGroupIsoToAddEquiv.injective h
-  have hs : Function.Surjective
-      (E.subschemeι.pullbackSectionsLE H.toInvertibleSheaf.obj ⊤ (E.subschemeι ⁻¹ᵁ ⊤) le_rfl) :=
-    E.surjective_pullbackSectionsLE_of_subsingleton_cohomology_one H.toInvertibleSheaf hvan
-  have hs' : Function.Surjective (E.subschemeι.pullbackSections H.toInvertibleSheaf.obj ⊤) := by
-    intro y
-    obtain ⟨x, hx⟩ := hs y
-    exact ⟨x, (E.subschemeι.pullbackSectionsLE_self H.toInvertibleSheaf.obj ⊤ x).symm.trans hx⟩
-  rw [H.toInvertibleSheaf_obj] at hs'
-  exact hs'
-
-include hE in
-private theorem mem_next_sections_of_restrict_power_eq_zero (n : ℕ)
-    (s : Γ((E ^ n).sheaf, ⊤)) (hs : r(n) s = 0) :
-    asFunction (E ^ n) s ∈ (E ^ (n + 1)).sections ⊤ := by
-  let H := isEffectiveCartier_pow hE.isEffectiveCartier n
-  have hex := E.exact_pullbackSections H.toInvertibleSheaf
-  rw [H.toInvertibleSheaf_obj] at hex
-  obtain ⟨t, ht⟩ := (hex s).mp hs
-  let a := ((E ^ n).sheafMul E).app ⊤ t
-  let h : E ^ n * E ≤ E ^ n := mul_le_of_le_one_right' le_top
-  have heq : (sheafHomOfLE h).app ⊤ a = s := by
-    have hh : (sheafHomOfLE h).app ⊤ a =
-        ((E ^ n).sheaf ◁ (E.sheafι : E.sheaf ⟶ 𝟙_ X.Modules) ≫ (ρ_ (E ^ n).sheaf).hom).app ⊤ t :=
-      congrArg (fun g ↦ g.app ⊤ t) (sheafMul_sheafHomOfLE_mul (E ^ n) E)
-    exact hh.trans ht
-  have heq' : asFunction (E ^ n) s = asFunction (E ^ n * E) a := by
-    have hh : asFunction (E ^ n) ((sheafHomOfLE h).app ⊤ a) = asFunction (E ^ n * E) a :=
-      congrArg (fun g ↦ g.app ⊤ a) (sheafHomOfLE_sheafι h)
-    exact (congrArg (asFunction (E ^ n)) heq.symm).trans hh
-  rw [pow_succ, heq']
-  exact (E ^ n * E).sheafι_app_mem ⊤ a
+    Function.Surjective (r(n)) :=
+  hE.isEffectiveCartier.surjective_pullbackSections_pow_of_subsingleton_cohomology_one n
+    (hE.subsingleton_cohomology_one_ideal_pow_of_contraction f hI hU (n + 1))
 
 private def conormalProduct (m n : ℕ) :
     TensorProduct Γ(E.subscheme, ⊤) Γ((P).obj (E ^ m).sheaf, ⊤)
@@ -197,7 +156,8 @@ theorem sections_mul_sup_of_exceptional_contraction
     have hzero : r(m + n) (s - t) = 0 := by rw [map_sub, ht', hw, sub_self]
     let b := asFunction (E ^ (m + n)) t
     have hab : a - b ∈ (E ^ (m + n + 1)).sections ⊤ := by
-      have h := hE.mem_next_sections_of_restrict_power_eq_zero (m + n) (s - t) hzero
+      have h : asFunction (E ^ (m + n)) (s - t) ∈ (E ^ (m + n + 1)).sections ⊤ :=
+        (hE.isEffectiveCartier.pullbackSections_pow_eq_zero_iff (m + n) (s - t)).mp hzero
       have hs : asFunction (E ^ (m + n)) s = a :=
         (E ^ (m + n)).sheafι_app_sectionMk a ha
       rw [map_sub, hs] at h
