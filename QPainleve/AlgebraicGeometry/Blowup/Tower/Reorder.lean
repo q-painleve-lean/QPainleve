@@ -165,17 +165,26 @@ private theorem exists_rebase_of_notMem_range_baseCenter (hT : IsClosedPointTowe
     · rw [toBase_snoc, Scheme.Hom.comp_apply, hq'q, hqp]
     · rw [toBase_snoc, comap_comp, hA, hA']
 
-private theorem exists_move_last_to_front (hT : IsClosedPointTower X T)
-    {p : X} (hp : IsClosed ({p} : Set X)) (h : p ∉ Set.range hT.baseCenter)
-    {q : Y} (hq : T.toBase q = p) :
-    ∃ (W : Scheme.{u}) (U : BlowupTower J[p].blowup n W) (e : J[q].blowup ≅ W),
-      IsClosedPointTower J[p].blowup U ∧ e.hom ≫ U.toBase ≫ J[p].blowupToBase =
-        (T.snoc J[q]).toBase ∧
+private theorem exists_move_last_to_front {J : Y.IdealSheafData}
+    (hT : IsClosedPointTower X (T.snoc J)) {p : X} (hp : IsClosed ({p} : Set X))
+    (hj : hT.baseCenter (Fin.last n) = p)
+    (hfirst : ∀ i : Fin (n + 1), i < Fin.last n → hT.baseCenter i ≠ p) :
+    ∃ (W : Scheme.{u}) (U : BlowupTower J[p].blowup n W) (e : J.blowup ≅ W),
+      ∃ hU : IsClosedPointTower J[p].blowup U, e.hom ≫ U.toBase ≫ J[p].blowupToBase =
+        (T.snoc J).toBase ∧
       pullback e.hom (pullback U.toBase J[p].blowupExceptionalClass) =
-        (T.snoc J[q]).exceptionalClass (Fin.last n) ∧
+        (T.snoc J).exceptionalClass (Fin.last n) ∧
+      (∀ i : Fin n, J[p].blowupToBase (hU.baseCenter i) = hT.baseCenter i.castSucc) ∧
       ∀ i : Fin n, pullback e.hom (U.exceptionalClass i) =
-        (T.snoc J[q]).exceptionalClass i.castSucc := by
-  obtain ⟨⟨R⟩, r, hr, -, hI⟩ := hT.exists_rebase_of_notMem_range_baseCenter hp h
+        (T.snoc J).exceptionalClass i.castSucc := by
+  obtain ⟨hT', q, hqClosed, rfl⟩ := snoc_iff.mp hT
+  have hq : T.toBase q = p := by
+    simpa only [baseCenter_snoc_last, lastCenter_eq _ q hqClosed rfl] using hj
+  have h : p ∉ Set.range hT'.baseCenter := by
+    rintro ⟨i, hi⟩
+    exact hfirst i.castSucc (Fin.castSucc_lt_last i)
+      (by simpa only [baseCenter_snoc_castSucc] using hi)
+  obtain ⟨⟨R⟩, r, hr, -, hI⟩ := hT'.exists_rebase_of_notMem_range_baseCenter hp h
   have hqI : J[p].comap T.toBase = J[q] := by
     have hqr : q = r := by
       -- The ideal of the fiber is the ideal of the single lifted point.
@@ -188,11 +197,12 @@ private theorem exists_move_last_to_front (hT : IsClosedPointTower X T)
     rwa [hqr]
   let d := (J[p].comap T.toBase).blowupIso (Iso.refl _) (by simpa using hqI)
   have hd : d.hom ≫ (J[p].comap T.toBase).blowupToBase = J[q].blowupToBase := by simp [d]
-  refine ⟨_, R.tower, d ≪≫ R.iso, R.isClosedPointTower, ?_, ?_, ?_⟩
+  refine ⟨_, R.tower, d ≪≫ R.iso, R.isClosedPointTower, ?_, ?_, ?_, ?_⟩
   · simp only [Iso.trans_hom, Category.assoc, R.over_base, reassoc_of% hd, toBase_snoc]
   · rw [Iso.trans_hom, ← pullback_comp, R.pullback_exceptional, exceptionalClass_snoc_last,
       ← blowupExceptionalClass_def]
     exact pullback_blowupExceptionalClass _ _ _
+  · simpa only [baseCenter_snoc_castSucc] using R.baseCenter hT'
   · intro i
     rw [Iso.trans_hom, ← pullback_comp, R.exceptional, pullback_comp, hd,
       exceptionalClass_snoc_castSucc]
@@ -234,55 +244,60 @@ theorem exists_prepend_closed_point_blowup (hT : IsClosedPointTower X T)
 
 /-- Move the first center over a specified closed point to the beginning of a point tower.
 The final isomorphism commutes with the projection to the base and sends the corresponding
-total exceptional classes to one another. The remaining classes retain their relative order,
-including those of centers infinitely near the selected point. -/
+total exceptional classes to one another. The remaining classes and projected centers retain
+their relative order, including for centers infinitely near the selected point. -/
 theorem exists_move_closed_point_blowup_to_front {T : BlowupTower X (n + 1) Y}
     (hT : IsClosedPointTower X T) (j : Fin (n + 1)) {p : X}
     (hp : IsClosed ({p} : Set X)) (hj : hT.baseCenter j = p)
     (hfirst : ∀ i : Fin (n + 1), i < j → hT.baseCenter i ≠ p) :
     ∃ (W : Scheme.{u}) (U : BlowupTower J[p].blowup n W) (e : Y ≅ W),
-      IsClosedPointTower J[p].blowup U ∧ e.hom ≫ U.toBase ≫ J[p].blowupToBase = T.toBase ∧
+      ∃ hU : IsClosedPointTower J[p].blowup U, e.hom ≫ U.toBase ≫ J[p].blowupToBase = T.toBase ∧
       pullback e.hom (pullback U.toBase J[p].blowupExceptionalClass) = T.exceptionalClass j ∧
+      (∀ i : Fin n, J[p].blowupToBase (hU.baseCenter i) = hT.baseCenter (j.succAbove i)) ∧
       ∀ i : Fin n, pullback e.hom (U.exceptionalClass i) = T.exceptionalClass (j.succAbove i) := by
   induction n generalizing Y with
   | zero =>
     cases T with
     | snoc V I =>
-      obtain ⟨hV, q, hq, rfl⟩ := snoc_iff.mp hT
       have hjlast : j = Fin.last 0 := Fin.ext (by omega)
       subst j
-      rw [baseCenter_snoc_last, lastCenter_eq _ q hq rfl] at hj
-      simpa only [Fin.succAbove_last_apply] using
-        hV.exists_move_last_to_front hp (fun ⟨i, _⟩ ↦ i.elim0) hj
+      simpa only [Fin.succAbove_last_apply] using hT.exists_move_last_to_front hp hj hfirst
   | succ n ih =>
     cases T with
     | snoc T J =>
-      obtain ⟨hT', q, hq, rfl⟩ := snoc_iff.mp hT
       by_cases hjlast : j = Fin.last (n + 1)
       · subst j
-        rw [baseCenter_snoc_last, lastCenter_eq _ q hq rfl] at hj
-        simpa only [Fin.succAbove_last_apply] using hT'.exists_move_last_to_front hp
-          (fun ⟨i, hi⟩ ↦ hfirst i.castSucc (Fin.castSucc_lt_last i)
-            (by simpa only [baseCenter_snoc_castSucc] using hi)) hj
+        simpa only [Fin.succAbove_last_apply] using hT.exists_move_last_to_front hp hj hfirst
       · let j' := j.castPred hjlast
+        obtain ⟨hT', q, hq, rfl⟩ := snoc_iff.mp hT
         have hcast : j'.castSucc = j := Fin.castSucc_castPred _ _
         rw [← hcast, baseCenter_snoc_castSucc] at hj
-        obtain ⟨W, U, e, hU, he, hE, htail⟩ := ih hT' j' hj fun i hi ↦ by
+        obtain ⟨W, U, e, hU, he, hE, hcenters, htail⟩ := ih hT' j' hj fun i hi ↦ by
           simpa only [baseCenter_snoc_castSucc] using
             hfirst i.castSucc (hcast ▸ Fin.castSucc_lt_castSucc_iff.mpr hi)
         let V := (BlowupTower.nil.snoc J[q]).transport e
-        have hV : IsClosedPointTower W V.tower :=
-          V.isLift.isClosedPointTower (.snoc .nil q hq rfl)
+        have hQ : IsClosedPointTower _ (BlowupTower.nil.snoc J[q]) := .snoc .nil q hq rfl
+        have hV := V.isLift.isClosedPointTower hQ
         have hproj : V.iso.hom ≫ V.tower.toBase = J[q].blowupToBase ≫ e.hom := by
           simp only [V.isLift.hom_toBase, toBase_snoc, toBase_nil, Category.comp_id]
-        refine ⟨_, U.append V.tower, V.iso, hU.append hV, ?_, ?_, ?_⟩
+        have hlast : (Fin.last 0).natAdd n = Fin.last n := Fin.natAdd_last
+        refine ⟨_, U.append V.tower, V.iso, hU.append hV, ?_, ?_, ?_, ?_⟩
         · simp only [toBase_append, Category.assoc, reassoc_of% hproj, he, toBase_snoc]
         · rw [← hcast, exceptionalClass_snoc_castSucc, ← hE, toBase_append]
           simp only [pullback_comp, reassoc_of% hproj]
         · rw [← hcast]
           refine Fin.lastCases ?_ (fun i ↦ ?_)
-          · have hh : (Fin.last 0).natAdd n = Fin.last n := Fin.natAdd_last
-            rw [← hh, exceptionalClass_append_natAdd, hh,
+          · rw [← hlast, baseCenter_append_natAdd hU hV, hlast,
+              Fin.succAbove_ne_last_last (Fin.castSucc_ne_last j'), ← V.isLift.hom_baseCenter hQ hV,
+              hQ.baseCenter_snoc_last, hQ.lastCenter_eq q hq rfl, toBase_nil,
+              hT.baseCenter_snoc_last, hT.lastCenter_eq q hq rfl]
+            exact congrArg (fun f : _ ⟶ X ↦ f q) ((Category.assoc _ _ _).trans he)
+          · have hi : i.castAdd 1 = i.castSucc := (rfl)
+            rw [Fin.castSucc_succAbove_castSucc, ← hi, baseCenter_append_castAdd hU hV,
+              baseCenter_snoc_castSucc, hcenters]
+        · rw [← hcast]
+          refine Fin.lastCases ?_ (fun i ↦ ?_)
+          · rw [← hlast, exceptionalClass_append_natAdd, hlast,
               Fin.succAbove_ne_last_last (Fin.castSucc_ne_last j'),
               V.isLift.pullback_exceptionalClass, exceptionalClass_snoc_last,
               exceptionalClass_snoc_last]
