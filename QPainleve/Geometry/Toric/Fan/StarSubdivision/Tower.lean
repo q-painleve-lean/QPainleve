@@ -8,11 +8,15 @@ module
 public import QPainleve.AlgebraicGeometry.Blowup.Tower.Nodal.Basic
 public import QPainleve.Geometry.Toric.Fan.StarSubdivision.Boundary
 public import QPainleve.Geometry.Toric.Fan.Subdivision
+public import TauCeti.AlgebraicGeometry.Morphisms.Modification.Basic
 
+import QPainleve.AlgebraicGeometry.Blowup.Tower.Modification
 import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
 import QPainleve.Geometry.Toric.Fan.Boundary.Node
 import QPainleve.Geometry.Toric.Fan.Boundary.Subdivision
+import QPainleve.Geometry.Toric.Fan.Smooth
 import QPainleve.Geometry.Toric.Fan.StarSubdivision.Factorization
+import TauCeti.AlgebraicGeometry.Morphisms.Modification.Composition
 
 /-!
 # Nodal blowup towers from toric subdivisions
@@ -130,5 +134,21 @@ theorem IsSubdivision.exists_toric_subdivision_blowup_tower
       rw [exceptionalClass_snoc_castSucc, LineBundleClass.pullback_comp, hg,
         ← LineBundleClass.pullback_comp, hclass, LineBundleClass.pullback_comp,
         IsSubdivision.toFanHom_trans F hΔΩ, FanHom.algebraicMap_comp]
+
+/-- The morphism induced by a subdivision of nonempty regular surface fans
+is proper and birational, since it factors into blowups of boundary nodes. -/
+theorem IsSubdivision.isModification_algebraicMap (h : Ψ.IsSubdivision Φ)
+    (hΦ : Φ.IsRegular) (hΨ : Ψ.IsRegular) (hΦ₀ : Nonempty Φ.cones)
+    (hN : Module.finrank ℤ N = 2) : IsModification h.toFanHom.algebraicMap := by
+  let : Nonempty Φ.cones := hΦ₀
+  obtain ⟨_, _, T, e, hT, he, -, -⟩ :=
+    h.exists_toric_subdivision_blowup_tower hΦ hΨ hΦ₀ hN
+  let s := Φ.algebraicRealizationStructureMap
+  let : SmoothOfRelativeDimension 2 s :=
+    hN ▸ Φ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
+  have : IsModification T.toBase :=
+    hT.isClosedPointTower.isModification_of_smoothOfRelativeDimension_two s
+  rw [← he]
+  infer_instance
 
 end TauCeti.Toric.Fan
