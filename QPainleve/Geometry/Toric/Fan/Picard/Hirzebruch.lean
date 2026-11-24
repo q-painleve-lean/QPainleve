@@ -75,12 +75,8 @@ private theorem hirzebruch_character_relation (m : N →+ ℤ) :
   let := Fintype.ofFinite Φ.Ray
   have h := (Φ.exact_characterToRayDivisor_rayDivisorToPicard hΦ _).mpr ⟨m, rfl⟩
   have hsum (a : Φ.Ray → ℤ) : R a = ∑ j : Fin 4, a (r j) • D j := by
-    have ha : (∑ ρ : Φ.Ray, Pi.single ρ (a ρ)) = a := Finset.univ_sum_single a
-    rw [← r.sum_comp (fun ρ ↦ Pi.single ρ (a ρ))] at ha
-    rw [← ha, map_sum]
-    simp only [ha]
-    refine Finset.sum_congr rfl fun j _ ↦ ?_
-    rw [← map_zsmul, ← Pi.single_smul, smul_eq_mul, mul_one]
+    rw [Φ.rayDivisorToPicard_apply hΦ a, ← r.sum_comp]
+    simp only [rayDivisorToPicard_single, one_zsmul]
   rw [hsum, Fin.sum_univ_four] at h
   simpa [congrFun hr, ← rayDivisorToPicard_single] using h
 
