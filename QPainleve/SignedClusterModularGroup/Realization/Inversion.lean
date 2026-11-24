@@ -50,19 +50,21 @@ original and opposite frames. Its Picard pullback is the identity and its action
 on the numbered branches is the reflection fixing component zero. -/
 def invert (M : MarkedSurface k n B XTor) (E : SkewExchangeMatrix ι) :
     FiberRealization M M.invert
-      ((Generator.invert.toStep E).toPath.xRationalMap k) (.refl B) (.sr 0) where
-  iso := Iso.refl M.pair
-  picard_eq a := by
-    have ha : LinearMap.BilinForm.IsometryEquiv.refl B a = a := rfl
-    rw [ha, MarkedSurface.surfaceIso_invert_refl, Iso.refl_hom, MarkedSurface.invert_picardMarking]
-    exact congrArg Additive.ofMul (LineBundleClass.pullback_id (M.picardMarking a).toMul).symm
-  boundaryAction_eq := M.boundaryCycleAction_invert_refl
-  evaluation_eq := by
-    rw [Quiver.Path.xRationalMap_invert]
-    obtain ⟨h, he⟩ := M.evaluation.compOfDefined_toRationalMap invX
-    refine ⟨h, he.trans ?_⟩
-    simp only [MarkedSurface.surfaceIso_invert_refl, Iso.refl_hom, MarkedSurface.invert_evaluation]
-    exact (RationalMap.id_comp (M.evaluation.compHom invX)).symm
+      ((Generator.invert.toStep E).toPath.xRationalMap k) (.refl B) (.sr 0) :=
+  have hIso : MarkedSurface.surfaceIso (M := M) (N := M.invert) (Iso.refl M.pair) =
+      Iso.refl M.surface := MarkedSurface.surfaceIso_refl (M := M)
+  { iso := Iso.refl M.pair
+    picard_eq a := by
+      have ha : LinearMap.BilinForm.IsometryEquiv.refl B a = a := rfl
+      rw [ha, hIso, Iso.refl_hom, MarkedSurface.invert_picardMarking]
+      exact congrArg Additive.ofMul (LineBundleClass.pullback_id (M.picardMarking a).toMul).symm
+    boundaryAction_eq := M.boundaryCycleAction_invert_refl
+    evaluation_eq := by
+      rw [Quiver.Path.xRationalMap_invert]
+      obtain ⟨h, he⟩ := M.evaluation.compOfDefined_toRationalMap invX
+      refine ⟨h, he.trans ?_⟩
+      simp only [hIso, Iso.refl_hom, MarkedSurface.invert_evaluation]
+      exact (RationalMap.id_comp (M.evaluation.compHom invX)).symm }
 
 @[simp]
 theorem invert_iso (M : MarkedSurface k n B XTor) (E : SkewExchangeMatrix ι) :

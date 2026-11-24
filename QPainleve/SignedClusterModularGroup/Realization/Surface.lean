@@ -87,6 +87,7 @@ variable {M} {L' : Type u} [AddCommGroup L'] {B' : LinearMap.BilinForm ℤ L'} {
   {N : MarkedSurface k n B' X'}
 
 /-- The surface isomorphism underlying an isomorphism of marked surface pairs. -/
+@[expose]
 def surfaceIso (e : M.pair ≅ N.pair) : M.surface ≅ N.surface :=
   (Arrow.rightFunc ⋙ Over.forget S).mapIso e
 
@@ -159,16 +160,6 @@ theorem invert_picardMarking (a : L) :
     M.invert.picardMarking a = M.picardMarking a := (rfl)
 
 @[simp]
-theorem surfaceIso_invert_refl :
-    surfaceIso (M := M) (N := M.invert) (Iso.refl M.pair) = Iso.refl M.surface := by
-  exact surfaceIso_refl (M := M)
-
-@[simp]
-theorem boundaryIso_invert_refl :
-    boundaryIso (M := M) (N := M.invert) (Iso.refl M.pair) = Iso.refl M.boundary := by
-  exact boundaryIso_refl (M := M)
-
-@[simp]
 theorem invert_cycle :
     let : PrestableFamily (M.boundary ↘ Spec (.of k)) := M.prestable
     M.invert.cycle = M.cycle.reverse := (rfl)
@@ -179,7 +170,7 @@ theorem boundaryCycleAction_invert_refl :
     letI : PrestableFamily (M.invert.boundary ↘ Spec (.of k)) := M.invert.prestable
     letI : (boundaryIso (M := M) (N := M.invert) (Iso.refl M.pair)).hom.IsOver
         (Spec (.of k)) := ⟨by
-          rw [boundaryIso_invert_refl, Iso.refl_hom]
+          erw [boundaryIso_refl (M := M), Iso.refl_hom]
           exact Category.id_comp (M.boundary ↘ Spec (.of k))⟩
     (boundaryIso (M := M) (N := M.invert) (Iso.refl M.pair)).boundaryCycleAction
       M.cycle M.invert.cycle = DihedralGroup.sr 0 := by
@@ -192,12 +183,12 @@ theorem boundaryCycleAction_invert_refl :
     rfl
   have he : (boundaryIso (M := M) (N := M.invert) (Iso.refl M.pair)).hom.IsOver
       (Spec (.of k)) := ⟨by
-        rw [boundaryIso_invert_refl, Iso.refl_hom]
+        erw [boundaryIso_refl (M := M), Iso.refl_hom]
         exact Category.id_comp (M.boundary ↘ Spec (.of k))⟩
   have hf : (Iso.refl M.boundary).hom.IsOver (Spec (.of k)) := by
     rw [Iso.refl_hom]
     infer_instance
-  exact (@compare _ _ he hf (boundaryIso_invert_refl M)).trans
+  exact (@compare _ _ he hf (boundaryIso_refl (M := M))).trans
     (Iso.boundaryCycleAction_refl_reverse (X := M.boundary) M.cycle)
 
 end MarkedSurface

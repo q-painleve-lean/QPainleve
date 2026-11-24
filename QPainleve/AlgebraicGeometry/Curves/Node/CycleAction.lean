@@ -90,6 +90,7 @@ theorem branchSchemeToBlowup_branch_mem_component_iff (j : ZMod n) (b : Fin 2)
 
 /-- Reverse the orientation of the numbering, keeping component zero fixed. Node `j`
 becomes the old node `-1 - j` with its two branches exchanged. -/
+@[expose]
 def reverse : NodalCycleNumbering p n where
   vertex := (DihedralGroup.cycleVertexPerm (.sr 0)).trans C.vertex
   edge := (Equiv.subLeft (-1 : ZMod n)).trans C.edge
