@@ -177,6 +177,34 @@ theorem toWeilDivisor_eq_sum_single_of_isReduced [IsNoetherian X] (hI : I.IsEffe
     have hn (i : ι) : p i ≠ x := fun he ↦ hx ⟨i, he⟩
     simp [hn]
 
+open TauCeti.AlgebraicGeometry in
+/-- On a locally factorial integral Noetherian scheme, the ideal of a reduced effective
+Cartier divisor is the product of the ideals of its distinct prime components. -/
+theorem eq_prod_vanishingIdeal_of_isReduced [IsNoetherian X]
+    [∀ x : X, UniqueFactorizationMonoid (X.presheaf.stalk x)]
+    (hI : I.IsEffectiveCartier) [IsReduced I.subscheme]
+    (s : Finset (CodimensionOnePoint X))
+    (hs : ∀ q : CodimensionOnePoint X, q ∈ s ↔ (q : X) ∈ I.support) :
+    I = ∏ q ∈ s, vanishingIdeal ⟨closure {(q : X)}, isClosed_closure⟩ := by
+  classical
+  have : IsNormalScheme X := IsNormalScheme.of_uniqueFactorizationMonoid_stalk
+  let : ∀ q : CodimensionOnePoint X, IsDiscreteValuationRing (X.presheaf.stalk (q : X)) :=
+    fun q ↦ IsNormalScheme.isDiscreteValuationRing_stalk q.val q.property
+  let J (q : CodimensionOnePoint X) := vanishingIdeal ⟨closure {(q : X)}, isClosed_closure⟩
+  have hJ (q : CodimensionOnePoint X) : (J q).IsEffectiveCartier :=
+    isEffectiveCartier_vanishingIdeal_closure_singleton q.property
+  apply (hI.toCartierDivisor_eq_iff (TauCeti.isEffectiveCartier_prod fun q _ ↦ hJ q)).mp
+  apply Scheme.CartierDivisor.toWeilDivisorHom_injective
+  have hemb : ∀ q : CodimensionOnePoint X, (q : X) ∈ I.support ↔
+      q ∈ Set.range (Function.Embedding.subtype fun p ↦ p ∈ s) := by
+    intro q
+    simpa using (hs q).symm
+  rw [Scheme.CartierDivisor.toWeilDivisorHom_apply,
+    Scheme.CartierDivisor.toWeilDivisorHom_apply,
+    hI.toWeilDivisor_eq_sum_single_of_isReduced _ hemb, toCartierDivisor_prod s (fun q _ ↦ hJ q),
+    ← Scheme.CartierDivisor.toWeilDivisorHom_apply, map_sum]
+  simp [J, WeilDivisor.single_eq_zsmul_ofPoint, Scheme.CartierDivisor.toWeilDivisorHom_apply]
+
 open TauCeti.AlgebraicGeometry LineBundleClass in
 /-- The Picard class of a reduced effective Cartier divisor is the sum of the classes
 of its distinct prime components. -/

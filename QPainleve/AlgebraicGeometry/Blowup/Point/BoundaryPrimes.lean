@@ -34,14 +34,18 @@ namespace AlgebraicGeometry.Scheme.IdealSheafData
 
 variable {X : Scheme.{u}}
 
-/-- Blowing up a closed point on a smooth Noetherian surface adds one boundary prime
-to the pullback of an ideal sheaf whose support contains the center. -/
-theorem encard_boundaryPrimes_comap_pointBlowup
+/-- The boundary primes after blowing up a closed point on the boundary are the
+strict transforms of the original primes and one exceptional prime. The projection
+sends each strict-transform prime back to its original prime. -/
+theorem exists_equiv_boundaryPrimes_comap_pointBlowup
     {k : Type u} [Field k] [IsNoetherian X] (D : X.IdealSheafData)
     (f : X ⟶ Spec (.of k)) [SmoothOfRelativeDimension 2 f]
     {p : X} (hp : IsClosed ({p} : Set X)) (hD : p ∈ D.support) :
     let I := (X.fromSpecResidueField p).ker
-    (D.comap I.blowupToBase).boundaryPrimes.encard = D.boundaryPrimes.encard + 1 := by
+    ∃ e : D.boundaryPrimes ⊕ PUnit.{u + 1} ≃ (D.comap I.blowupToBase).boundaryPrimes,
+      (∀ q, I.blowupToBase (e (.inl q)).val = q.val) ∧
+      I.blowupToBase (e (.inr PUnit.unit)).val = p := by
+  classical
   dsimp only
   let I := (X.fromSpecResidueField p).ker
   let π := I.blowupToBase
@@ -81,6 +85,20 @@ theorem encard_boundaryPrimes_comap_pointBlowup
     · exact Set.mem_insert_iff.mpr (Or.inl ((hE' y (mem_boundaryPrimes.mp hy).2).mp he))
     · exact Set.mem_insert_of_mem _ ⟨hy, he⟩
   have hηS : η ∉ S := fun h ↦ h.2 hη
-  rw [hdecomp, Set.encard_insert_of_notMem hηS, Set.encard_congr hb.equiv]
+  let e := (Equiv.sumCongr hb.equiv.symm (Equiv.refl PUnit)).trans
+    ((Equiv.Set.insert hηS).symm.trans (Set.equivOfEq hdecomp.symm))
+  refine ⟨e, fun q ↦ ?_, hη⟩
+  exact congrArg Subtype.val (hb.equiv.apply_symm_apply q)
+
+/-- Blowing up a closed point on a smooth Noetherian surface adds one boundary prime
+to the pullback of an ideal sheaf whose support contains the center. -/
+theorem encard_boundaryPrimes_comap_pointBlowup
+    {k : Type u} [Field k] [IsNoetherian X] (D : X.IdealSheafData)
+    (f : X ⟶ Spec (.of k)) [SmoothOfRelativeDimension 2 f]
+    {p : X} (hp : IsClosed ({p} : Set X)) (hD : p ∈ D.support) :
+    let I := (X.fromSpecResidueField p).ker
+    (D.comap I.blowupToBase).boundaryPrimes.encard = D.boundaryPrimes.encard + 1 := by
+  obtain ⟨e, -⟩ := D.exists_equiv_boundaryPrimes_comap_pointBlowup f hp hD
+  simpa using (ENat.card_congr e).symm
 
 end AlgebraicGeometry.Scheme.IdealSheafData

@@ -27,6 +27,13 @@ namespace AlgebraicGeometry.Scheme.IdealSheafData
 
 variable {X : Scheme.{u}}
 
+/-- The stalk of a finite product of ideal sheaves is the product of their stalk ideals. -/
+@[simp]
+theorem stalkIdeal_prod {ι : Type*} (s : Finset ι) (I : ι → X.IdealSheafData) (x : X) :
+    (∏ i ∈ s, I i).stalkIdeal x = ∏ i ∈ s, (I i).stalkIdeal x :=
+  map_prod (⟨⟨fun J : X.IdealSheafData ↦ J.stalkIdeal x, by simp [Ideal.one_eq_top]⟩,
+    fun J K ↦ stalkIdeal_mul J K x⟩ : X.IdealSheafData →* Ideal (X.presheaf.stalk x)) I s
+
 /-- A reduced locally Artinian closed subscheme cuts out the maximal ideal in the
 ambient local ring at each point of its support. -/
 theorem stalkIdeal_eq_maximalIdeal_of_isLocallyArtinian
