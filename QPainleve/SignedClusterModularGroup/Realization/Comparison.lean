@@ -66,17 +66,25 @@ variable {k : Type u} [Field k] [IsSepClosed k] [Infinite k] {n : ℕ} [NeZero n
   {F : X ⤏ X'} {I J : B'.IsometryEquiv B} {g h : DihedralGroup n}
   (R : FiberRealization M P F I g)
 
-/-- The residual isomorphism of the target pairs intertwines their X evaluations when the
-source realization uses the same rational map. -/
-theorem comp_targetEvaluation (R' : FiberRealization M Q F J h) :
-    (surfaceIso (R.iso.symm ≪≫ R'.iso)).hom.toRationalMap.comp Q.evaluation = P.evaluation := by
+/-- A specified isomorphism satisfying the evaluation square of a realized X map
+induces a residual isomorphism intertwining the two target evaluations. -/
+theorem comp_targetEvaluation_of_evaluation_eq (e : M.pair ≅ Q.pair)
+    (he : ∃ h, M.evaluation.compOfDefined F h =
+      (surfaceIso e).hom.toRationalMap.comp Q.evaluation) :
+    (surfaceIso (R.iso.symm ≪≫ e)).hom.toRationalMap.comp Q.evaluation = P.evaluation := by
   obtain ⟨_, hR⟩ := R.evaluation_eq
-  obtain ⟨_, hR'⟩ := R'.evaluation_eq
+  obtain ⟨_, hR'⟩ := he
   apply Scheme.RationalMap.comp_left_injective (surfaceIso R.iso).hom.toRationalMap
   simpa only [← Scheme.RationalMap.comp_assoc, Scheme.RationalMap.comp_toRationalMap,
     Scheme.Hom.toRationalMap_compHom, MarkedSurface.surfaceIso_trans,
     MarkedSurface.surfaceIso_symm, Iso.trans_hom, Iso.symm_hom, Iso.hom_inv_id_assoc]
     using hR'.symm.trans hR
+
+/-- The residual isomorphism of the target pairs intertwines their X evaluations when the
+source realization uses the same rational map. -/
+theorem comp_targetEvaluation (R' : FiberRealization M Q F J h) :
+    (surfaceIso (R.iso.symm ≪≫ R'.iso)).hom.toRationalMap.comp Q.evaluation = P.evaluation :=
+  R.comp_targetEvaluation_of_evaluation_eq R'.iso R'.evaluation_eq
 
 variable {G : X ⤏ X'} (R' : FiberRealization M Q G J h)
 
