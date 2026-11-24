@@ -13,17 +13,14 @@ public import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.Polynomial.Smooth
 public import QPainleve.Geometry.Toric.Fan.ProjectiveSpace.Boundary
 
 import QPainleve.AlgebraicGeometry.CartierDivisor.Support
-import QPainleve.AlgebraicGeometry.CartierDivisor.ZeroDivisor
 import QPainleve.AlgebraicGeometry.Chow.Ample
 import QPainleve.AlgebraicGeometry.Chow.ProjectivePlane.Numerical
 import QPainleve.AlgebraicGeometry.Modules.Differentials.Restriction
-import QPainleve.AlgebraicGeometry.Morphisms.Smooth.Factorial
+import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.PlanePrimeDivisor
 import TauCeti.AlgebraicGeometry.Curves.Node.Reduced
 import TauCeti.AlgebraicGeometry.IdealSheaf.Product
 import TauCeti.AlgebraicGeometry.IdealSheaf.Reduced
-import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.SymmetricAlgebra
 import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.TwistingSheaf.Ample
-import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.TwistingSheaf.GlobalSections
 
 /-!
 # Toric recognition on the projective plane
@@ -111,42 +108,6 @@ private theorem planeCycle_primeDegree (A : Scheme.NodalCycleNumbering a 3)
   · exact h1
   · exact h2
 
-private theorem exists_linearForm_of_planePrime (p : CodimensionOnePoint P)
-    (hp : degree (Additive.ofMul (primeDivisorClass p)) = 1) :
-    ∃ v : V₃, ∀ x : P, x ∈ Proj.basicOpen 𝒜 (linearForm v) ↔
-      x ∉ closure {(p : P)} := by
-  let I : (P).IdealSheafData := vanishingIdeal ⟨closure {(p : P)}, isClosed_closure⟩
-  let hI : I.IsEffectiveCartier := isEffectiveCartier_vanishingIdeal_closure_singleton p.property
-  have hclass : LineBundleClass.mk hI.toInvertibleSheaf.dual = LineBundleClass.mk L := by
-    rw [← inv_mk, ← primeDivisorClass_def]
-    apply Additive.ofMul.injective
-    apply (degree).injective
-    rwa [(std).picardTwistEquiv_apply_twist]
-  obtain ⟨u, hu⟩ := hI.exists_zeroIdeal_eq_dual
-  obtain ⟨f⟩ := mk_eq_mk_iff.mp hclass
-  let s := f.hom.app ⊤ u
-  have hI' : (L).zeroIdeal s = I :=
-    (hI.toInvertibleSheaf.dual.zeroIdeal_hom_app f u).trans hu
-  let e := TauCeti.SymmetricAlgebra.homogeneousSubmoduleLinearEquivTwistingSheafTop 1 std
-  let v := TauCeti.SymmetricAlgebra.homogeneousSubmoduleOneEquiv ℂ V₃ (e.symm s)
-  refine ⟨v, fun x ↦ ?_⟩
-  have hopen : (L).obj.nonvanishingLocus s = Proj.basicOpen 𝒜 (linearForm v) := by
-    let w := e.symm s
-    have hw : Proj.toTwistingSheaf 𝒜 rfl ⊤ w = s := by
-      simpa only [e, TauCeti.SymmetricAlgebra.homogeneousSubmoduleLinearEquivTwistingSheafTop_apply]
-        using e.apply_symm_apply s
-    rw [← hw]
-    have h := Proj.twistingSheaf.nonvanishingLocus_toTwistingSheaf
-      (fun i ↦ linearForm (std i))
-      (fun i ↦ TauCeti.SymmetricAlgebra.ι_mem_homogeneousSubmodule ℂ V₃ _)
-      (TauCeti.SymmetricAlgebra.iSup_basicOpen_ι_eq_top ℂ V₃ std (std).span_eq) 1 w
-    -- The section formula is stated for the underlying twisting sheaf.
-    change (Proj.twistingSheaf 𝒜 ((1 : ℕ) : ℤ)).nonvanishingLocus
-      (Proj.toTwistingSheaf 𝒜 rfl ⊤ w) = _
-    simpa only [v, w, TauCeti.SymmetricAlgebra.ι_homogeneousSubmoduleOneEquiv_apply] using! h
-  rw [← hopen, (L).mem_nonvanishingLocus_iff_notMem_support_zeroIdeal, hI']
-  simp only [I, ← SetLike.mem_coe, coe_support_vanishingIdeal, Closeds.coe_mk]
-
 private theorem planeCycle_linearIndependent (A : Scheme.NodalCycleNumbering a 3)
     (hD : D.IsEffectiveCartier) (v : ZMod 3 → V₃)
     (hv : ∀ (j : ZMod 3) (x : P), x ∈ Proj.basicOpen 𝒜 (linearForm (v j)) ↔
@@ -207,8 +168,8 @@ private theorem exists_toric_of_standardPlane_boundaryComplexity_zero
         (isComplete_projectiveSpace b hi).nonempty_cones := by
   have hn := planeCycle_length A hD hzero
   subst n
-  choose v hv using fun j ↦ exists_linearForm_of_planePrime
-    (D.boundaryPrimeEmbedding (A.boundaryPrimeEquiv hD j)) (planeCycle_primeDegree A hD hcan j)
+  choose v hv using fun j ↦ (D.boundaryPrimeEmbedding (A.boundaryPrimeEquiv hD j))
+    |>.exists_linearForm_of_projectivePlane_degree_eq_one (planeCycle_primeDegree A hD hcan j)
   simp only [coe_boundaryPrimeEmbedding] at hv
   let a := (ZMod.finEquiv 3).toEquiv
   let c := basisOfLinearIndependentOfCardEqFinrank ((planeCycle_linearIndependent A hD v hv).comp
