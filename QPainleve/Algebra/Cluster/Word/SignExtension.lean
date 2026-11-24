@@ -16,9 +16,9 @@ import Mathlib.GroupTheory.Index
 # The sign extension of cluster modular groups
 
 The unsigned group is included in the signed group by retaining the same X map.
-At a nonzero exchange matrix, an odd loop makes the descended inversion sign
-surjective. Its kernel is canonically the unsigned cluster modular group, so the
-inclusion has index two.
+At a nonzero exchange matrix, the range of this inclusion is the kernel of the
+descended inversion sign. An odd loop makes the sign surjective and gives the
+unsigned inclusion index two.
 -/
 
 public noncomputable section
@@ -65,6 +65,15 @@ private def unsignedEquivSignKer (hB : B.matrix ≠ 0) :
   ((Subgroup.subgroupOfEquivOfLe (unsignedLoopPullbacks_le_signedLoopPullbacks k B)).symm.op.trans
     (Subgroup.mopMulEquivOp _)).trans (MulEquiv.subgroupCongr (ker_signedInversionSign k B hB).symm)
 
+/-- The inclusion of unsigned point maps has range equal to the kernel of the inversion sign. -/
+theorem range_clusterModularGroupInclusion (hB : B.matrix ≠ 0) :
+    (clusterModularGroupInclusion k B).range = (signedInversionSign k B hB).ker := by
+  change ((signedInversionSign k B hB).ker.subtype.comp
+    (unsignedEquivSignKer k B hB).toMonoidHom).range = _
+  rw [MonoidHom.range_comp,
+    MonoidHom.range_eq_top_of_surjective _ (unsignedEquivSignKer k B hB).surjective,
+    Subgroup.map_top, Subgroup.range_subtype]
+
 /-- The exact sequence of unsigned maps, signed maps, and inversion signs. -/
 def signedInversionSignExtension (hB : B.matrix ≠ 0)
     (hs : Function.Surjective (signedInversionSign k B hB)) :
@@ -88,9 +97,7 @@ theorem signedInversionSignExtension_rightHom (hB : B.matrix ≠ 0)
 theorem index_range_clusterModularGroupInclusion (hB : B.matrix ≠ 0) {w : Word B B}
     (hw : Odd w.inversionCount) : (clusterModularGroupInclusion k B).range.index = 2 := by
   have hs := signedInversionSign_surjective k B hB hw
-  have hker := (signedInversionSignExtension k B hB hs).range_inl_eq_ker_rightHom
-  rw [signedInversionSignExtension_inl, signedInversionSignExtension_rightHom] at hker
-  rw [hker, Subgroup.index_ker, MonoidHom.range_eq_top.mpr hs,
+  rw [range_clusterModularGroupInclusion k B hB, Subgroup.index_ker, MonoidHom.range_eq_top.mpr hs,
     Nat.card_congr (Subgroup.topEquiv : (⊤ : Subgroup ℤˣ) ≃* ℤˣ).toEquiv,
     Nat.card_eq_fintype_card, Fintype.card_units_int]
 
