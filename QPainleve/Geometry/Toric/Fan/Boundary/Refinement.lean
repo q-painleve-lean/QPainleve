@@ -5,9 +5,7 @@ Authors: The QPainleve contributors
 -/
 module
 
-public import Mathlib.Analysis.Complex.Polynomial.Basic
 public import QPainleve.AlgebraicGeometry.Curves.Node.Conductor.Subdivision
-public import QPainleve.AlgebraicGeometry.Curves.Node.GenericPoint
 public import QPainleve.Geometry.Toric.Fan.Boundary.Normalization
 public import QPainleve.Geometry.Toric.Fan.Boundary.Subdivision
 
@@ -29,7 +27,7 @@ component under the boundary projection. The comparison uses
 
 public section
 
-open AlgebraicGeometry CategoryTheory TopologicalSpace
+open AlgebraicGeometry CategoryTheory
 open QPainleve.BlowupTower TauCeti.AlgebraicGeometry Scheme.IdealSheafData
 
 namespace TauCeti.Toric.Fan
@@ -45,34 +43,7 @@ variable [PrestableFamily (C[Φ,hΦ₀] ↘ S)]
   {γ δ : Type*} {p : γ → (C[Φ,hΦ₀] ↘ S).smoothLocus}
   {n : ℕ} [NeZero n] (A : Scheme.NodalCycleNumbering p n)
 
-variable (hΦ : Φ.IsRegular)
-
-/-- The generic point of a numbered toric boundary component is the prime of
-the corresponding ray, viewed in the ambient surface. -/
-theorem subschemeι_componentGenericPoint_eq_rayBoundaryPoint (j : ZMod n) (ρ : Φ.Ray)
-    (hρ : A.component j = Φ.boundaryNormalizationComponentEquiv hΦ ρ) :
-    (D[Φ,hΦ₀]).subschemeι (A.componentGenericPoint j) = (Φ.rayBoundaryPoint hΦ ρ).val := by
-  let ν := (Scheme.singularLocus ℂ C[Φ,hΦ₀]).blowupToBase
-  let ι := (D[Φ,hΦ₀]).subschemeι
-  have h := (genericPoints.isGenericPoint_ofComponent (A.component j)).image (ν ≫ ι).continuous
-  let jρ := (C[Φ,hΦ₀].blowupComponent (Φ.boundaryNormalizationComponentEquiv hΦ ρ)).ι
-  have himage : (ν ≫ ι) '' (A.component j : Set _) = closure {((Φ.rayBoundaryPoint hΦ ρ).val)} := by
-    calc
-      _ = Set.range ((jρ ≫ ν) ≫ ι) := by
-        rw [hρ, ← Scheme.coe_blowupComponent, ← Scheme.Opens.range_ι, ← Set.range_comp,
-          ← TopCat.coe_comp, ← Scheme.Hom.comp_base, Category.assoc]
-      _ = Set.range (ρ.boundaryComponentι hΦ ≫ ι) := by
-        have hrange : Set.range (jρ ≫ ν) = Set.range (ρ.boundaryComponentι hΦ) :=
-          Φ.range_boundaryNormalizationComponentEquiv hΦ ρ
-        simpa only [Scheme.Hom.comp_base, TopCat.coe_comp, Set.range_comp] using
-          congrArg (fun t : Set C[Φ,hΦ₀] ↦ ι '' t) hrange
-      _ = _ := by
-        rw [Ray.boundaryComponentι_subschemeι, range_subschemeι, coe_support_rayBoundaryIdeal]
-  rw [himage, closure_closure, Scheme.Hom.comp_apply] at h
-  simpa only [Scheme.NodalCycleNumbering.componentGenericPoint_def] using
-    h.eq isGenericPoint_closure
-
-variable (h : Ψ.IsSubdivision Φ) (hΨ : Ψ.IsRegular)
+variable (hΦ : Φ.IsRegular) (h : Ψ.IsSubdivision Φ) (hΨ : Ψ.IsRegular)
 
 local notation "β" => h.boundaryMap hΨ₀ hΦ₀
 
