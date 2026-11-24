@@ -84,6 +84,18 @@ theorem radical_comap_of_isOpenImmersion {X Y : Scheme.{u}}
     ← vanishingIdeal_support (I := D.comap f), support_comap]
   rfl
 
+/-- Equality of the supports of two inverse images along a surjective morphism
+determines the radicals of the original ideals. -/
+theorem radical_eq_of_support_comap_eq {X Y : Scheme.{u}}
+    (f : X ⟶ Y) [Surjective f] {I J : Y.IdealSheafData}
+    (h : (I.comap f).support = (J.comap f).support) : I.radical = J.radical := by
+  have hs : I.support = J.support := by
+    apply SetLike.coe_injective
+    apply f.surjective.preimage_injective
+    simpa only [support_comap, TopologicalSpace.Closeds.coe_preimage] using
+      congrArg (fun Z : TopologicalSpace.Closeds X ↦ (Z : Set X)) h
+  simpa only [vanishingIdeal_support] using congrArg vanishingIdeal hs
+
 /-- The reduced inverse image of an invariant closed subscheme under an equivariant
 morphism is invariant under the source automorphism. -/
 theorem exists_radicalComapSubschemeIso {X Y : Scheme.{u}}
