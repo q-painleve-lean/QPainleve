@@ -5,7 +5,7 @@ Authors: The QPainleve contributors
 -/
 module
 
-public import TauCeti.AlgebraicGeometry.Chow.SurfaceIntersection
+public import QPainleve.AlgebraicGeometry.Chow.SurfaceIntersection
 public import TauCeti.AlgebraicGeometry.LineBundle.Functoriality
 public import QPainleve.AlgebraicGeometry.Modules.Differentials.Canonical
 
@@ -78,3 +78,43 @@ theorem eulerCharBelow_eq_riemannRoch_pullback_iff_of_isIso (a : LineBundleClass
 end LineBundleClass
 
 end TauCeti.AlgebraicGeometry
+
+namespace AlgebraicGeometry.Scheme.IdealSheafData
+
+open TauCeti.AlgebraicGeometry LineBundleClass LinearMap.BilinForm
+
+variable {k : Type u} [Field k] [Infinite k] {X Y : Scheme.{u}}
+  [IsIntegral X] [IsIntegral Y] [X.Over (Spec (.of k))] [Y.Over (Spec (.of k))]
+  [X.IsProjectiveOver k] [Y.IsProjectiveOver k]
+  [SmoothOfRelativeDimension 2 (X ↘ Spec (.of k))]
+  [SmoothOfRelativeDimension 2 (Y ↘ Spec (.of k))]
+
+/-- Pullback along an isomorphism over the ground field identifies the two boundary
+orthogonals when the boundary supports correspond. -/
+theorem pullback_mem_boundaryOrthogonal_iff (D : X.IdealSheafData) (E : Y.IdealSheafData)
+    (f : X ⟶ Y) [IsIso f] [f.IsOver (Spec (.of k))]
+    (h : (E.comap f).support = D.support) (L : LineBundleClass Y) :
+    Additive.ofMul (pullback f L) ∈ D.boundaryOrthogonal k ↔
+      Additive.ofMul L ∈ E.boundaryOrthogonal k := by
+  let : IsNoetherian X := isNoetherian_of_finiteType (X ↘ Spec (.of k))
+  let : IsNoetherian Y := isNoetherian_of_finiteType (Y ↘ Spec (.of k))
+  let := (X ↘ Spec (.of k)).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two
+  let := (Y ↘ Spec (.of k)).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two
+  let U := E.support.compl
+  have hU : f ⁻¹ᵁ U = D.support.compl := (E.compl_support_comap f).symm.trans (congrArg _ h)
+  have hspan (M : LineBundleClass Y) :
+      Additive.ofMul (pullback f M) ∈ Scheme.Opens.primeDivisorSpanCompl D.support.compl ↔
+        Additive.ofMul M ∈ Scheme.Opens.primeDivisorSpanCompl U := by
+    rw [← hU, ← Submodule.Quotient.mk_eq_zero, ← Submodule.Quotient.mk_eq_zero,
+      ← f.quotientPrimeDivisorSpanComplEquiv_mk, LinearEquiv.map_eq_zero_iff]
+  have hsurj : Function.Surjective
+      (fun M : LineBundleClass Y ↦ Additive.ofMul (pullback f M)) :=
+    Additive.ofMul.surjective.comp (pullback_surjective_of_isOpenImmersion f)
+  have hsurj' : Function.Surjective (Additive.ofMul : LineBundleClass Y → _) :=
+    Additive.ofMul.surjective
+  rw [D.boundaryOrthogonal_def, E.boundaryOrthogonal_def, mem_orthogonal_iff, mem_orthogonal_iff,
+    hsurj.forall, hsurj'.forall]
+  simp only [hspan, U, Chow.intersectionBilinForm_apply, toMul_ofMul,
+    Chow.classIntersectionNumber_pullback_of_isIso k f]
+
+end AlgebraicGeometry.Scheme.IdealSheafData

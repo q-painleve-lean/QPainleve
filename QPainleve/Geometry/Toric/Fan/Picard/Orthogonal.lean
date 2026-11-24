@@ -529,3 +529,70 @@ theorem pullback_picardBoundaryOrthogonalEquivChargeKernel_symm
   exact hinj hclass
 
 end TauCeti.Toric.Fan
+
+namespace TauCeti.Toric.Fan
+
+variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
+  {i : N →+ V} {Φ : Fan i} [Nonempty Φ.cones] [Φ.algebraicRealization.IsProjectiveOver ℂ]
+  {n : ℕ} (hΦ : Φ.IsRegular) (b : Module.Basis (Fin 2) ℤ N)
+  (s : Fin n → Φ.Ray) (c : Fin n → ℂˣ)
+  {X Y : Scheme} [IsIntegral X] [X.Over (Spec (.of ℂ))] [X.IsProjectiveOver ℂ]
+  [SmoothOfRelativeDimension 2 (X ↘ Spec (.of ℂ))]
+  [LinearMap.IsPerfPair (Chow.intersectionBilinForm ℂ X)]
+  {D : X.IdealSheafData} {d : ℕ} {T : QPainleve.BlowupTower X d Y}
+  (hT : IsNodalBoundaryTower D (X ↘ Spec (.of ℂ)) (𝟙 X) T)
+  (e : Y ≅ (internalBlowupTower b s c).1)
+  (he : e.inv ≫ T.toBase ≫ (X ↘ Spec (.of ℂ)) =
+    (internalBlowupTower b s c).2.toTower.toBase ≫ (Φ.algebraicRealization ↘ Spec (.of ℂ)))
+  (hD : ((D.comap T.toBase).comap e.inv).support =
+    (internalBlowupTower b s c).2.boundaryι.ker.support)
+
+include hΦ hT he hD in
+private def internalBlowupChargeKernelEquivWithCoords :
+    { χ : D.boundaryOrthogonal ℂ ≃ₗ[ℤ] (rayChargeMap s).ker //
+      ∀ (κ : D.boundaryOrthogonal ℂ)
+        (z : Additive (LineBundleClass Φ.algebraicRealization) × (Fin n → ℤ)),
+        (internalBlowupTower b s c).2.toTower.picardHom z =
+          Additive.ofMul (pullback (e.inv ≫ T.toBase) κ.val.toMul) →
+        z.2 = -(χ κ : Fin n → ℤ) } := by
+  revert e he hD
+  rw [internalBlowupTower_eq_alongBoundary]
+  intro a ha hb
+  let hdim := (Module.finrank_eq_card_basis b).trans (Fintype.card_fin 2)
+  let m (j : Fin n) := (b.detDualEquiv (s j).primitiveGenerator).toAddMonoidHom
+  let hm (j : Fin n) := b.detDualEquiv_self (s j).primitiveGenerator
+  let hprim (j : Fin n) := (s j).surjective_detCharacter b
+  let J (j : Fin n) := (s j).internalCenter b (c j)
+  let hJ (j : Fin n) := (s j).internalCenter_val b (c j)
+  let K := picardBoundaryOrthogonalEquivChargeKernel hΦ hdim s m hm hprim c J hJ hT a ha hb
+  let Q := LinearEquiv.ofEq _ _ (D.boundaryOrthogonal_def ℂ)
+  refine ⟨Q.trans K, fun κ z hz ↦ ?_⟩
+  obtain ⟨H, hH, -⟩ := exists_picardBoundaryOrthogonalEquivChargeKernel_symm_marking
+    hΦ hdim s m hm hprim c J hJ hT a ha hb (K (Q κ))
+  rw [LinearEquiv.symm_apply_apply] at hH
+  let f := Φ.algebraicRealization ↘ Spec (.of ℂ)
+  let : SmoothOfRelativeDimension 2 f :=
+    hdim ▸ Φ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
+  have hU := isClosedPointTower_alongBoundary_binomialCenters hdim s m hm hprim c J hJ
+  have heq := (hU.bijective_picardHom f).injective (hz.trans (by
+    simpa only [ofMul_toMul, Q, LinearEquiv.coe_ofEq_apply] using congrArg Additive.ofMul hH.symm))
+  exact congrArg Prod.snd heq
+
+include hΦ hT he hD in
+/-- The boundary orthogonal of the original pair in the charge coordinates of its
+ordered internal blowups, using the basis to specify the binomial centers. -/
+def internalBlowupChargeKernelEquiv : D.boundaryOrthogonal ℂ ≃ₗ[ℤ] (rayChargeMap s).ker :=
+  (internalBlowupChargeKernelEquivWithCoords hΦ b s c hT e he hD).val
+
+include hT he hD in
+/-- The total exceptional coefficients of a pulled-back boundary-orthogonal class
+are the negatives of its charge coordinates. -/
+theorem internalBlowupPicardMarking_symm_pullback_snd_eq_neg_charge
+    (κ : D.boundaryOrthogonal ℂ) :
+    ((internalBlowupPicardMarking b s c hΦ).symm
+        (Additive.ofMul (pullback (e.inv ≫ T.toBase) κ.val.toMul))).2 =
+      -(internalBlowupChargeKernelEquiv hΦ b s c hT e he hD κ : Fin n → ℤ) := by
+  apply (internalBlowupChargeKernelEquivWithCoords hΦ b s c hT e he hD).property κ
+  rw [← internalBlowupPicardMarking_apply b s c hΦ, LinearEquiv.apply_symm_apply]
+
+end TauCeti.Toric.Fan
