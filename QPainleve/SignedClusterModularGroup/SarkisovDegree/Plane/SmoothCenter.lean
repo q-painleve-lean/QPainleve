@@ -66,7 +66,9 @@ private theorem exists_plane_edge_preparation {p : P} (hp : IsClosed ({p} : Set 
       (hB : IsClosedPointTower P ((single[J[p]]).append L))
       (q : W ⟶ Y) (j' : Fin (m + 1)),
       (p ∈ Set.range hT.baseCenter → IsIso q) ∧
-      (p ∉ Set.range hT.baseCenter → ∃ e : W ≅ ((J[p]).comap T.toBase).blowup,
+      (p ∉ Set.range hT.baseCenter → ∃ (z : Y) (e : W ≅ ((J[p]).comap T.toBase).blowup),
+        IsClosed ({z} : Set Y) ∧ T.toBase z = p ∧
+        (J[p]).comap T.toBase = (Y.fromSpecResidueField z).ker ∧
         q = e.hom ≫ ((J[p]).comap T.toBase).blowupToBase) ∧
       L.toBase ≫ (J[p]).blowupToBase = q ≫ T.toBase ∧
       Scheme.BirationalOver (q ≫ g) (𝟙 P) ∧
@@ -114,10 +116,10 @@ private theorem exists_plane_edge_preparation {p : P} (hp : IsClosed ({p} : Set 
           Fin.sum_univ_succAbove _ a]
         simp only [Fin.addCases_left, Fin.addCases_right, Function.comp_apply]
         rfl
-  · obtain ⟨x, W, L, e, hL, hx, -, hI, he, hcenter, hmark⟩ :=
+  · obtain ⟨x, W, L, e, hL, hx, hxp, hI, he, hcenter, hmark⟩ :=
       hT.exists_prepend_closed_point_blowup hp h
     refine ⟨n, W, L, hL, hP.append hL, e.inv ≫ ((J[p]).comap T.toBase).blowupToBase, j,
-      fun hm ↦ (h hm).elim, fun _ ↦ ⟨e.symm, rfl⟩, ?_, ?_, hcenter j,
+      fun hm ↦ (h hm).elim, fun _ ↦ ⟨x, e.symm, hx, hxp, hI, rfl⟩, ?_, ?_, hcenter j,
       fun l hl ↦ hcenter l ▸ hfirst l hl, ?_⟩
     · rw [Category.assoc, ← he, Iso.inv_hom_id_assoc]
     · rw [Category.assoc]
@@ -231,7 +233,8 @@ and exchange the rulings. All three partial composites are regular on the same
 refinement of the given resolution. This refinement is an isomorphism when the
 opposite vertex is already blown up and otherwise blows up its inverse image.
 The final quadric resolution carries the given resolving map and has strictly
-smaller Sarkisov bidegree. -/
+smaller Sarkisov bidegree. The projection to the prepared Hirzebruch surface
+is also identified with a closed-point tower. -/
 theorem exists_sarkisov_decrease_of_plane_edge
     (hπ : π ≫ fP = f[Φ]) (hE : (J[p₀]).comap π = Φ.rayBoundaryIdeal regΦ (r 0))
     (hj : hT.baseCenter j = π u)
@@ -242,15 +245,20 @@ theorem exists_sarkisov_decrease_of_plane_edge
     let : SmoothOfRelativeDimension 2 f[Ψ] :=
       Eq.mp (congrArg (fun n ↦ SmoothOfRelativeDimension n f[Ψ]) rankTwo)
         ((Ψ).smoothOfRelativeDimension_algebraicRealizationStructureMap regΨ)
-    ∃ (A : Scheme) (q : A ⟶ Y) (a : A ⟶ X[Φ])
+    ∃ (A : Scheme) (q : A ⟶ Y) (k : ℕ) (R : BlowupTower X[Φ] k A)
+      (_ : IsClosedPointTower X[Φ] R)
       (d' : Basis (Fin 2) ℤ N)
       (hd' : (fun l ↦ (s l).primitiveGenerator) = ![d' 0, d' 1, -d' 0, (0 : ℤ) • d' 0 - d' 1])
       (m : ℕ) (Z : Scheme) (U : BlowupTower X[Ψ] m Z) (hU : IsClosedPointTower X[Ψ] U)
-      (e : A ≅ Z) (p : A ⟶ X[Ψ]) (_ : IsIntegral A) (_ : IsDominant a),
+      (e : A ≅ Z) (p : A ⟶ X[Ψ]) (_ : IsIntegral A) (_ : IsDominant R.toBase),
+      let a := R.toBase
       let τ := (Fan.quadricRulingExchange d' regΨ hcΨ s hd').toFanHom.algebraicMap
       let g' := e.inv ≫ q ≫ g
       (p₀ ∈ Set.range hT.baseCenter → IsIso q) ∧
-      (p₀ ∉ Set.range hT.baseCenter → ∃ e₁ : A ≅ ((J[p₀]).comap T.toBase).blowup,
+      (p₀ ∉ Set.range hT.baseCenter → ∃ (z : Y)
+        (e₁ : A ≅ ((J[p₀]).comap T.toBase).blowup),
+        IsClosed ({z} : Set Y) ∧ T.toBase z = p₀ ∧
+        (J[p₀]).comap T.toBase = (Y.fromSpecResidueField z).ker ∧
         q = e₁.hom ≫ ((J[p₀]).comap T.toBase).blowupToBase) ∧
       a ≫ π = q ≫ T.toBase ∧
       a.toRationalMap.comp μ = p.toRationalMap ∧
@@ -298,7 +306,6 @@ theorem exists_sarkisov_decrease_of_plane_edge
   let : (J[p₀]).blowup.IsProjectiveOver ℂ :=
     (J[p₀]).isProjectiveOver_blowup_of_isNoetherianRing ℂ
   let : (X[Φ]).IsProjectiveOver ℂ := Scheme.IsProjectiveOver.of_isClosedImmersion ℂ e₀.hom
-  have hA : IsIntegral A := hB.isIntegral fP
   let : IsIntegral R.top := hR.isIntegral f[Φ]
   let : IsModification R.tower.toBase := hR.isModification_of_smoothOfRelativeDimension_two f[Φ]
   let g₁ := R.iso.inv ≫ q ≫ g
@@ -323,23 +330,22 @@ theorem exists_sarkisov_decrease_of_plane_edge
   obtain ⟨d', hd', Z, U, hU, e, p, hmut, -, hτ, -, hUover, hUbir, _, hdegree, _, _, hlt⟩ :=
     exists_quadric_resolution_of_plane_edge_link b regΦ hcΦ r hr ρ c rfl hR j'
       hpivot hpivotFirst g₁ hg₁ hb₁
-  let a := R.iso.hom ≫ R.tower.toBase
-  refine ⟨A, q, a, d', hd', _, Z, U, hU, R.iso ≪≫ e, R.iso.hom ≫ p, hA, inferInstance,
-    hqIso, hqBlowup, hTri, ?_, ?_, ?_, ?_, ?_, ?_⟩
-  · calc
-      _ = (R.iso.hom.toRationalMap.comp R.tower.toBase.toRationalMap).comp μ := by
-        simp only [a, Scheme.RationalMap.comp_toRationalMap, Scheme.Hom.toRationalMap_compHom]
-      _ = R.iso.hom.toRationalMap.comp (R.tower.toBase.toRationalMap.comp μ) :=
-        Scheme.RationalMap.comp_assoc ..
-      _ = R.iso.hom.toRationalMap.comp p.toRationalMap :=
-        congrArg (R.iso.hom.toRationalMap.comp ·) hmut
-      _ = _ := by
-        rw [Scheme.RationalMap.comp_toRationalMap, Scheme.Hom.toRationalMap_compHom]
-  · simpa only [Iso.trans_hom, Category.assoc] using congrArg (R.iso.hom ≫ ·) hτ
-  · simpa only [g₁, Iso.trans_inv, Category.assoc] using hUover
-  · simpa only [g₁, Iso.trans_inv, Category.assoc] using hUbir
+  let q' := R.iso.inv ≫ q
+  have hbase' : R.tower.toBase ≫ π = q' ≫ T.toBase := by
+    simpa only [Category.assoc, Iso.inv_hom_id_assoc, q'] using congrArg (R.iso.inv ≫ ·) hTri
+  refine ⟨R.top, q', _, R.tower, hR, d', hd', _, Z, U, hU, e, p, inferInstance, inferInstance,
+    ?_, ?_, hbase', hmut, hτ, ?_, ?_, ?_, ?_⟩
+  · intro h
+    let := hqIso h
+    exact inferInstanceAs (IsIso (R.iso.inv ≫ q))
+  · intro h
+    obtain ⟨z, e₁, hz, hzp, hI, he₁⟩ := hqBlowup h
+    exact ⟨z, R.iso.symm ≪≫ e₁, hz, hzp, hI, by simp only [q', he₁, Iso.trans_hom,
+      Iso.symm_hom, Category.assoc]⟩
+  · simpa only [g₁, q', Category.assoc] using hUover
+  · simpa only [g₁, q', Category.assoc] using hUbir
   · rw [ha.symm, hw, ← horders j', hj'] at hdegree
-    simpa only [g₁, Iso.trans_inv, Category.assoc] using hdegree
+    simpa only [g₁, q', Category.assoc] using hdegree
   · let x := (R.tower.picardMarking hR f[Φ]).symm (Additive.ofMul (pullback g₁ H))
     let w := mark[((single[J[p₀]]).append L),hB,(q ≫ g)]
     have ha' : (C).repr x.1 0 = degree (mark[T,hT,g]).1 :=
@@ -350,7 +356,7 @@ theorem exists_sarkisov_decrease_of_plane_edge
       ((C).repr x.1 0) ((C).repr x.1 1) hβ horders hsum
     dsimp only [x] at ha' hplane
     rw [hplane, ha'] at hlt'
-    simpa only [g₁, Iso.trans_inv, Category.assoc] using And.intro hpositive hlt'
+    simpa only [g₁, q', Category.assoc] using And.intro hpositive hlt'
 
 end Edge
 
