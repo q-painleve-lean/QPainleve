@@ -77,9 +77,7 @@ variable {c : Fin n → ℂˣ}
 
 local notation "charge" =>
   picardBoundaryOrthogonalEquivChargeKernel hΦ rankTwo s m hm hprim c (J[c]) (hJ[c]) hT e he hD
-local notation "chargeClass" =>
-  (LinearEquiv.trans (LinearEquiv.symm charge)
-    (LinearEquiv.ofEq _ _ (Eq.symm (IdealSheafData.boundaryOrthogonal_def D ℂ))))
+local notation "chargeClass" => LinearEquiv.symm (markedBoundaryChargeEquiv hΦ b s hT e he hD)
 
 local notation "g" => toricBoundaryToBase (J[c]) e hD
 
@@ -99,12 +97,8 @@ def markedBoundaryPeriod : Multiplicative ChargeKernel →* ℂˣ :=
 the boundary-orthogonal Picard lattice. -/
 theorem markedBoundaryPeriod_apply (x : ChargeKernel) :
     markedBoundaryPeriod hΦ b s hT e he hD hCartier hgenus A (Multiplicative.ofAdd x) =
-      hCartier.boundaryPeriod hgenus A.endpoint_eq (Multiplicative.ofAdd (chargeClass x)) := by
-  have hx : (markedBoundaryChargeEquiv hΦ b s hT e he hD).symm x = chargeClass x := by
-    apply Subtype.ext
-    simpa only [LinearEquiv.trans_apply, LinearEquiv.coe_ofEq_apply] using
-      coe_markedBoundaryChargeEquiv_symm hΦ b s hT e he hD x
-  exact congrArg (fun y ↦ hCartier.boundaryPeriod hgenus A.endpoint_eq (Multiplicative.ofAdd y)) hx
+      hCartier.boundaryPeriod hgenus A.endpoint_eq (Multiplicative.ofAdd (chargeClass x)) :=
+  (rfl)
 
 /-- Writing the boundary period in charge coordinates preserves and detects
 injectivity. -/
@@ -144,7 +138,7 @@ theorem exists_pullback_markedBoundaryPeriod
     hν B.endpoint_eq A.endpoint_eq hnodes keep hkeep hcollapse L
   refine ⟨⟨_, hL⟩, ?_, ?_⟩
   · simp only [L, IsEffectiveCartier.restrictBoundaryOrthogonal_apply, toAdd_ofAdd,
-      LinearEquiv.trans_apply, LinearEquiv.coe_ofEq_apply]
+      coe_markedBoundaryChargeEquiv_symm]
   · rw [markedBoundaryPeriod_apply, IsEffectiveCartier.boundaryPeriod_apply]
     exact hperiod
 

@@ -1,0 +1,164 @@
+/-
+Copyright (c) 2026 The QPainleve contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: The QPainleve contributors
+-/
+module
+
+public import QPainleve.Geometry.Toric.Fan.Picard.Contraction.Boundary
+
+import QPainleve.AlgebraicGeometry.Chow.Ample
+import QPainleve.AlgebraicGeometry.LineBundle.Ample
+import TauCeti.LinearAlgebra.BilinearForm.Isometry.Basic
+import TauCeti.LinearAlgebra.BilinearForm.Orthogonal
+import TauCeti.LinearAlgebra.Matrix.Dual
+
+/-!
+# Surviving rays from Picard pullback
+
+A ray of an ordered toric presentation is contracted exactly when its strict
+boundary class lies in the marked exceptional summand. The pullback lattice in the
+same coordinates thus determines which rays survive a nodal contraction.
+-/
+
+public section
+
+open AlgebraicGeometry CategoryTheory QPainleve QPainleve.BlowupTower TauCeti.AlgebraicGeometry
+open Additive TauCeti LineBundleClass Scheme.IdealSheafData LinearMap.BilinForm
+
+namespace TauCeti.Toric.Fan
+
+variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
+  {i : N →+ V} {Φ : Fan i} [Nonempty Φ.cones] {n : ℕ}
+  (hΦ : Φ.IsRegular) (b : Module.Basis (Fin 2) ℤ N) (s : Fin n → Φ.Ray)
+
+local notation "S" => Spec (CommRingCat.of ℂ)
+local notation "Z" => Φ.algebraicRealization
+local notation "mark" c:arg => internalBlowupPicardMarking b s c hΦ
+local notation "hπ" c:arg => isClosedPointTower_internalBlowupTower b s c
+
+variable [Φ.algebraicRealization.IsProjectiveOver ℂ]
+  [SmoothOfRelativeDimension 2 (Φ.algebraicRealization ↘ S)]
+  {X Y : Scheme} [X.Over S] [X.IsProjectiveOver ℂ] [IsIntegral X]
+  [SmoothOfRelativeDimension 2 (X ↘ S)] {D : X.IdealSheafData}
+  {l : ℕ} {T : BlowupTower X l Y}
+  (c : Fin n → ℂˣ) (hT : IsNodalBoundaryTower D (X ↘ S) (𝟙 X) T)
+  (e : (internalBlowupTower b s c).1 ≅ Y)
+  (he : e.hom ≫ T.toBase ≫ (X ↘ S) =
+    (internalBlowupTower b s c).2.toTower.toBase ≫ Φ.algebraicRealizationStructureMap)
+  (hD : (D.comap (e.hom ≫ T.toBase)).support = (internalBlowupTower b s c).2.boundaryι.ker.support)
+
+local notation "p" => (Iso.hom e ≫ toBase T)
+local notation "P" => markedExceptionalSpan ℂ (hπ c) T e
+local notation "F" => LinearMap.BilinForm.prod (Chow.intersectionBilinForm ℂ Z)
+  (-(dotProductBilin ℤ ℤ : LinearMap.BilinForm ℤ (Fin n → ℤ)))
+
+include b hT he hD in
+/-- A strict ray class is in the exceptional summand exactly when the ray's prime
+divisor is contracted. A surviving prime has nonzero class by ample positivity. -/
+theorem markedBoundaryMap_single_mem_markedExceptionalSpan_iff (ρ : Φ.Ray) :
+    let : IsNoetherian Z := isNoetherian_of_finiteType (Z ↘ S)
+    markedBoundaryMap hΦ s (Pi.single ρ 1) ∈ P ↔
+      p (internalBlowupBoundaryPrimeEquiv hΦ b s c ρ).val ∉ D.boundaryPrimes := by
+  classical
+  intro _
+  let : IsNoetherian X := isNoetherian_of_finiteType (X ↘ S)
+  let := (X ↘ S).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two
+  let : IsNormalScheme X := IsNormalScheme.of_uniqueFactorizationMonoid_stalk
+  let : IsModification p := isModification_orderedContraction hΦ b s c hT e
+  rw [← mem_range_contractedBoundaryRayEmbedding_iff hΦ b s c p hD]
+  refine ⟨?_, fun h ↦ ?_⟩
+  · rintro h ⟨x, rfl⟩
+    let μ := contractedPicardMarking ℂ hT.isClosedPointTower (hπ c) e he
+    let z := D.boundaryPrimeEmbedding x
+    have hproj := contractedPicardMarking_symm_boundaryPrime hΦ b s c hT e he hD x
+    dsimp only at hproj
+    have hz' : z = ⟨x.val, (mem_boundaryPrimes.mp x.property).2⟩ :=
+      Subtype.ext (coe_boundaryPrimeEmbedding D x)
+    have hzero : μ.symm (Additive.ofMul (primeDivisorClass z)) = 0 := by
+      rw [hz']
+      exact hproj.trans (Submodule.projectionOnto_apply_of_mem_right
+        (isCompl_orthogonal_markedExceptionalSpan ℂ hT.isClosedPointTower (hπ c) e he) h)
+    have hz : Additive.ofMul (primeDivisorClass z) = 0 :=
+      μ.symm.injective (hzero.trans μ.symm.map_zero.symm)
+    obtain ⟨H, hH⟩ := X.exists_isAmple_of_isProjectiveOver ℂ
+    have hpos : 0 < Chow.intersectionBilinForm ℂ X (Additive.ofMul H)
+        (Additive.ofMul (primeDivisorClass z)) := by
+      simpa only [Chow.intersectionBilinForm_apply, toMul_ofMul] using
+        (Chow.classIntersectionNumber_primeDivisorClass_pos_of_isAmple ℂ
+          (topologicalKrullDim_eq_of_smoothOfRelativeDimension (X ↘ S) (n := 2)) hH z)
+    rw [hz, LinearMap.map_zero] at hpos
+    exact (lt_irrefl 0) hpos
+  · rw [markedExceptionalSpan_eq_span_compl_survivingRays hΦ b s c hT e hD]
+    exact Submodule.subset_span ⟨ρ, h, rfl⟩
+
+include hT he in
+/-- The range of the pullback from a contracted surface in the ordered toric marking
+is the orthogonal complement of the exceptional summand. -/
+theorem range_marked_pullback_eq_orthogonal :
+    let : IsNoetherian Z := isNoetherian_of_finiteType (Z ↘ S)
+    Set.range (fun L : LineBundleClass X ↦ (mark c).symm (Additive.ofMul (pullback p L))) =
+      ((F).orthogonal P : Set _) := by
+  intro _
+  let μ := contractedPicardMarking ℂ hT.isClosedPointTower (hπ c) e he
+  have hcoords (L : LineBundleClass X) :
+      (mark c).symm (Additive.ofMul (pullback p L)) = (μ.symm (Additive.ofMul L)).val := by
+    apply (mark c).injective
+    rw [LinearEquiv.apply_symm_apply, internalBlowupPicardMarking_apply]
+    exact (picardHom_contractedPicardMarking_symm ℂ hT.isClosedPointTower (hπ c) e he _).symm
+  ext a
+  constructor
+  · rintro ⟨L, rfl⟩
+    simpa only [hcoords, SetLike.mem_coe] using (μ.symm (Additive.ofMul L)).property
+  · intro ha
+    refine ⟨(μ ⟨a, ha⟩).toMul, ?_⟩
+    simpa only [hcoords, ofMul_toMul] using
+      congrArg Subtype.val (LinearMap.BilinForm.IsometryEquiv.symm_apply_apply μ ⟨a, ha⟩)
+
+variable {X' Y' : Scheme} [X'.Over S] [X'.IsProjectiveOver ℂ] [IsIntegral X']
+  [SmoothOfRelativeDimension 2 (X' ↘ S)] {D' : X'.IdealSheafData}
+  {l' : ℕ} {T' : BlowupTower X' l' Y'}
+  (d : Fin n → ℂˣ) (hT' : IsNodalBoundaryTower D' (X' ↘ S) (𝟙 X') T')
+  (e' : (internalBlowupTower b s d).1 ≅ Y')
+  (he' : e'.hom ≫ T'.toBase ≫ (X' ↘ S) =
+    (internalBlowupTower b s d).2.toTower.toBase ≫ Φ.algebraicRealizationStructureMap)
+  (hD' : (D'.comap (e'.hom ≫ T'.toBase)).support =
+    (internalBlowupTower b s d).2.boundaryι.ker.support)
+
+local notation "p'" => (Iso.hom e' ≫ toBase T')
+local notation "P'" => markedExceptionalSpan ℂ (hπ d) T' e'
+
+include hT he hD hT' he' hD' in
+/-- Surjective identification of the marked pullbacks of two nodal contractions
+of the same ordered toric presentation identifies exactly the rays that survive. -/
+theorem mem_boundaryPrimes_iff_of_matching_picard_markings
+    (hsep : (F).SeparatingRight)
+    (G : LineBundleClass X' → LineBundleClass X) (hG : Function.Surjective G)
+    (hPic : ∀ L : LineBundleClass X', (mark c).symm (Additive.ofMul (pullback p (G L))) =
+      (mark d).symm (Additive.ofMul (pullback p' L)))
+    (ρ : Φ.Ray) :
+    p (internalBlowupBoundaryPrimeEquiv hΦ b s c ρ).val ∈ D.boundaryPrimes ↔
+      p' (internalBlowupBoundaryPrimeEquiv hΦ b s d ρ).val ∈ D'.boundaryPrimes := by
+  let : IsNoetherian Z := isNoetherian_of_finiteType (Z ↘ S)
+  have hsymm : (F).IsSymm := by
+    refine isSymm_prod_iff.mpr
+      ⟨⟨fun a b ↦ ?_⟩, (TauCeti.isSymm_dotProductBilin (R := ℤ) (ι := Fin n)).neg⟩
+    simp only [Chow.intersectionBilinForm_apply, Chow.classIntersectionNumber_comm]
+  have hc : IsCompl P ((F).orthogonal P) :=
+    (isCompl_orthogonal_markedExceptionalSpan ℂ hT.isClosedPointTower (hπ c) e he).symm
+  have hd : IsCompl P' ((F).orthogonal P') :=
+    (isCompl_orthogonal_markedExceptionalSpan ℂ hT'.isClosedPointTower (hπ d) e' he').symm
+  have horth : (F).orthogonal P = (F).orthogonal P' := by
+    apply SetLike.coe_injective
+    rw [← range_marked_pullback_eq_orthogonal hΦ b s c hT e he,
+      ← range_marked_pullback_eq_orthogonal hΦ b s d hT' e' he']
+    exact (hG.range_comp _).symm.trans (congrArg Set.range (funext hPic))
+  have hspan : P = P' := by
+    rw [← (F).orthogonal_orthogonal_of_isCompl hsymm.isRefl hsep P hc,
+      horth, (F).orthogonal_orthogonal_of_isCompl hsymm.isRefl hsep P' hd]
+  have hρ := markedBoundaryMap_single_mem_markedExceptionalSpan_iff hΦ b s c hT e he hD ρ
+  have hρ' := markedBoundaryMap_single_mem_markedExceptionalSpan_iff hΦ b s d hT' e' he' hD' ρ
+  dsimp only at hρ hρ'
+  exact not_iff_not.mp (hρ.symm.trans (hspan ▸ hρ'))
+
+end TauCeti.Toric.Fan

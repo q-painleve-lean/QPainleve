@@ -8,6 +8,7 @@ module
 public import QPainleve.Geometry.Toric.Fan.Picard.Period.Comparison
 public import QPainleve.Geometry.Toric.Fan.TorusAction.MarkedEvaluation
 
+import QPainleve.Geometry.Toric.Fan.Picard.Period.Presentation
 import QPainleve.Geometry.Toric.Fan.Picard.Period.Surjectivity
 
 /-!
@@ -49,68 +50,10 @@ local notation "mark" t:arg => internalBlowupPicardMarking b s (center t) hΦ
 local notation "prime" t:arg => internalBlowupBoundaryPrimeEquiv hΦ b s (center t)
 local notation "Dtor" => Scheme.IdealSheafData.subscheme (Φ.boundaryIdeal h₀)
 
-local notation "Dideal" => Φ.boundaryIdeal h₀
 local notation "base" => Φ.algebraicRealizationStructureMap
 local notation "rankTwo" => (Eq.trans (Module.finrank_eq_card_basis b) (Fintype.card_fin 2))
 local notation "smoothBase" => cast (congrArg (fun n ↦ SmoothOfRelativeDimension n base) rankTwo)
     (Fan.smoothOfRelativeDimension_algebraicRealizationStructureMap Φ hΦ)
-local notation "model[" t "]" => alongBoundary (subschemeι Dideal) (J[t])
-local notation "hModel[" t "]" => isClosedPointTower_alongBoundary_binomialCenters
-  rankTwo s (fun j ↦ LinearMap.toAddMonoidHom (b.detDualEquiv (Ray.primitiveGenerator (s j))))
-    (fun j ↦ b.detDualEquiv_self (Ray.primitiveGenerator (s j)))
-    (fun j ↦ Ray.surjective_detCharacter (s j) b) (center t) (J[t])
-    (fun j ↦ Ray.internalCenter_val b (s j) (t (ofAdd (Pi.single j 1))))
-
-/-- Transport the specified contraction and its Picard coordinates to the presentation
-used to define the marked boundary period. -/
-private theorem exists_period_presentation
-    {X W : Scheme} [X.Over S] {D : X.IdealSheafData}
-    {l : ℕ} {P : BlowupTower X l W} (e : W ≅ (M c).1)
-    (he : e.inv ≫ P.toBase ≫ X ↘ S = π c ≫ base)
-    (hD : ((D.comap P.toBase).comap e.inv).support = (ι c).ker.support)
-    (f : Dtor ⟶ D.subscheme) (hf : f ≫ D.subschemeι = ι c ≫ e.inv ≫ P.toBase) :
-    letI : SmoothOfRelativeDimension 2 base := smoothBase
-    ∃ (a : W ≅ (model[c]).1)
-      (_ : a.inv ≫ P.toBase ≫ X ↘ S = (model[c]).2.toTower.toBase ≫ (Φ.algebraicRealization ↘ S))
-      (ha : ((D.comap P.toBase).comap a.inv).support = (model[c]).2.boundaryι.ker.support),
-      f = toricBoundaryToBase (J[c]) a ha ∧
-      ∀ L : LineBundleClass X,
-        ((model[c]).2.toTower.picardMarking (hModel[c]) base).symm
-          (Additive.ofMul (pullback (a.inv ≫ P.toBase) L)) =
-        (mark c).symm (Additive.ofMul (pullback (e.inv ≫ P.toBase) L)) := by
-  let : SmoothOfRelativeDimension 2 base := smoothBase
-  have transport (U V : Σ Z, WithBoundary (subschemeι Dideal) r Z) (h : U = V)
-      (hU : IsClosedPointTower Φ.algebraicRealization U.2.toTower)
-      (hV : IsClosedPointTower Φ.algebraicRealization V.2.toTower) (i : W ≅ U.1)
-      (hi : i.inv ≫ P.toBase ≫ X ↘ S = U.2.toTower.toBase ≫ base)
-      (hs : ((D.comap P.toBase).comap i.inv).support = U.2.boundaryι.ker.support)
-      (hf' : f ≫ D.subschemeι = U.2.boundaryι ≫ i.inv ≫ P.toBase) :
-      ∃ (a : W ≅ V.1),
-        (a.inv ≫ P.toBase ≫ X ↘ S = V.2.toTower.toBase ≫ base) ∧
-        (((D.comap P.toBase).comap a.inv).support = V.2.boundaryι.ker.support) ∧
-        (f ≫ D.subschemeι = V.2.boundaryι ≫ a.inv ≫ P.toBase) ∧
-        ∀ L : LineBundleClass X,
-          (V.2.toTower.picardMarking hV base).symm
-            (Additive.ofMul (pullback (a.inv ≫ P.toBase) L)) =
-          (U.2.toTower.picardMarking hU base).symm
-            (Additive.ofMul (pullback (i.inv ≫ P.toBase) L)) := by
-    subst V
-    exact ⟨i, hi, hs, hf', fun _ ↦ rfl⟩
-  obtain ⟨a, ha, hs, hb, hm⟩ := transport (M c) (model[c])
-    (internalBlowupTower_eq_alongBoundary b s (center c))
-    (isClosedPointTower_internalBlowupTower b s (center c)) (hModel[c]) e he hD hf
-  have hmark :
-      (M c).2.toTower.picardMarking (isClosedPointTower_internalBlowupTower b s (center c)) base =
-        mark c := by
-    ext z : 1
-    rw [picardMarking_apply, internalBlowupPicardMarking_apply]
-  refine ⟨a, ?_, hs, ?_, fun L ↦ (hm L).trans ?_⟩
-  · rw [algebraicRealization_over]
-    exact ha
-  · apply (cancel_mono D.subschemeι).mp
-    rw [toricBoundaryToBase_comp_subschemeι]
-    exact hb
-  · rw [hmark]
 
 variable {X Y W Z : Scheme} [X.Over S] [Y.Over S] [IsIntegral X] [IsIntegral Y]
   [X.IsProjectiveOver ℂ] [Y.IsProjectiveOver ℂ] [Φ.algebraicRealization.IsProjectiveOver ℂ]
