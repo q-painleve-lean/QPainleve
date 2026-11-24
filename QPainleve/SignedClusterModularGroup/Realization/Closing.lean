@@ -15,15 +15,15 @@ import QPainleve.SignedClusterModularGroup.Realization.BranchAction
 
 At a reached center, an oriented common toric refinement identifies two ordered
 models with matching charges. Pullback to the common refinement describes the
-graph of the Picard isometry independently of the center. The class of the first
-boundary component then determines the common branch rotation. Composing the
-fiber comparisons closes a realization on its original center domain.
+graph of the Picard isometry independently of the center. Composing the fiber
+comparisons closes a realization on its original center domain. Its orientation
+and the image of the first component determine the action on the ordered branches.
 -/
 
 public noncomputable section
 
 open AlgebraicGeometry CategoryTheory Multiplicative
-open DihedralGroup (cycleVertexPerm eq_r_iff_cycleVertexPerm_zero_eq r_mul_r)
+open DihedralGroup
 open Module (Basis)
 open QPainleve.CharacterTorus
 open Scheme Scheme.PartialMap Scheme.IdealSheafData
@@ -57,7 +57,7 @@ local notation "src(" c ")" => (c) ≫ domainSource (X := Centers[m]) (Y := Cent
 local notation "dst(" c ")" => (c) ≫ domainTarget (X := Centers[m]) (Y := Centers[m]) C
 
 private theorem exists_comp_fiber_rotations
-    (R : GeometricRealization P₀ P₁ C F) (hR : R.orientation = 1)
+    (R : GeometricRealization P₀ P₁ C F)
     (d₀ : L₀) (d : ZMod n → L₂) (hd : Function.Injective d)
     (hcart₀ : ∀ c : PointC, D[P₀ (src(c))].IsEffectiveCartier)
     (hcart₂ : ∀ c : PointC, D[P₂ (dst(c))].IsEffectiveCartier)
@@ -67,32 +67,25 @@ private theorem exists_comp_fiber_rotations
     (h : ∀ c : PointC, ∃ (I : B₂.IsometryEquiv B₁) (j : ZMod n),
       Nonempty (FiberRealization (P₁ (dst(c))) (P₂ (dst(c))) (RationalMap.id XTor)
         I (DihedralGroup.r j)) ∧ ∀ x y, I y = x ↔ compare x y) :
-    ∃ (I : B₂.IsometryEquiv B₁) (j : ZMod n) (T : GeometricRealization P₀ P₂ C F),
-      T.picard = I.trans R.picard ∧ T.boundaryAction = DihedralGroup.r j ∧
-      (∀ x y, I y = x ↔ compare x y) ∧ T.picard (d j) = d₀ := by
+    ∃ (I : B₂.IsometryEquiv B₁) (T : GeometricRealization P₀ P₂ C F),
+      T.picard = I.trans R.picard ∧ T.orientation = R.orientation ∧
+      (∀ x y, I y = x ↔ compare x y) ∧ T.picard (d (T.boundaryPerm 0)) = d₀ := by
   obtain ⟨c₀⟩ := nonempty_centerPoint (T₀ := Centers[m]) (T₁ := Centers[m]) C
   obtain ⟨I, _, _, hI⟩ := h c₀
-  let j₀ := cycleVertexPerm R.boundaryAction 0
-  have hr : R.boundaryAction = DihedralGroup.r j₀ := by
-    rw [orientation_def] at hR
-    exact (eq_r_iff_cycleVertexPerm_zero_eq (j := j₀) hR).mpr rfl
   have hf (c : PointC) :
-      ∃ j : ZMod n, Nonempty (FiberRealization (P₀ (src(c))) (P₂ (dst(c))) F
-        (I.trans R.picard) (DihedralGroup.r j)) := by
+      ∃ g : DihedralGroup n, cycleOrientationSign g = R.orientation ∧
+        Nonempty (FiberRealization (P₀ (src(c))) (P₂ (dst(c))) F (I.trans R.picard) g) := by
     obtain ⟨I', l, ⟨T⟩, hI'⟩ := h c
     have he : I = I' := DFunLike.ext _ _ fun y ↦ (hI (I' y) y).mpr ((hI' (I' y) y).mp rfl)
     subst I'
-    let j := l + j₀
-    have hmap : F.comp (RationalMap.id XTor) = F := F.comp_id
-    have hact : DihedralGroup.r l * R.boundaryAction = DihedralGroup.r j := by
-      rw [hr, r_mul_r]
-    refine ⟨j, ⟨?_⟩⟩
-    simpa only [hmap, hact] using FiberRealization.comp (M := P₀ (src(c)))
+    refine ⟨DihedralGroup.r l * R.boundaryAction, by simp [R.orientation_def], ⟨?_⟩⟩
+    simpa only [F.comp_id] using FiberRealization.comp (M := P₀ (src(c)))
       (N := P₁ (dst(c))) (O := P₂ (dst(c))) (F := F) (G := RationalMap.id XTor)
       (I := R.picard) (J := I) (g := R.boundaryAction) (h := DihedralGroup.r l) (R.fiber c) T
-  obtain ⟨U, j, hpic, hact, hj⟩ :=
-    exists_of_fiber_rotations (I.trans R.picard) d₀ d hd hcart₀ hcart₂ hmark₀ hmark₂ hf
-  exact ⟨I, j, U, hpic, hact, hI, hpic.symm ▸ hj⟩
+  obtain ⟨U, hpic, hsign, hfirst⟩ :=
+    exists_of_fiber_boundary_actions (I.trans R.picard) R.orientation
+      d₀ d hd hcart₀ hcart₂ hmark₀ hmark₂ hf
+  exact ⟨I, U, hpic, hsign, hI, hpic.symm ▸ hfirst⟩
 
 variable {N N' V V' : Type} [AddCommGroup N] [AddCommGroup N']
   [AddCommGroup V] [AddCommGroup V'] [Module ℝ V] [Module ℝ V']
@@ -123,11 +116,11 @@ private theorem rename_refl_toRationalMap :
 /-- Close a geometric realization by identifying its reached toric models with the
 desired endpoint models at the same centers. The charge identification and oriented
 common refinement are fixed across the fibers. The new realization is defined on
-the entire original center domain, with the same rational X map. Its marked pullback
-composes with the isometry computed in the common refinement and its branch rotation
-sends component zero to the unique component with the required pullback class. -/
+the entire original center domain, with the same rational X map and orientation.
+Its marked pullback composes with the isometry computed in the common refinement
+and sends the class of the image of component zero to its original class. -/
 theorem exists_comp_marked_toric_endpoint_comparison
-    (R : GeometricRealization P₀ P₁ C F) (hR : R.orientation = 1)
+    (R : GeometricRealization P₀ P₁ C F)
     (hΔ : Δ.IsRegular)
     (hcharge : ∀ j, e (Q.rays j).primitiveGenerator = (Q'.rays j).primitiveGenerator)
     (hdet : ∀ x y, b'.detDualEquiv (e x) (e y) = b.detDualEquiv x y)
@@ -150,20 +143,21 @@ theorem exists_comp_marked_toric_endpoint_comparison
     (d₀ : L₀) (d : ZMod n → L₂) (hd : Function.Injective d)
     (hmark₀ : ∀ c : PointC, (P₀ (src(c))).boundaryClass (hcart₀ c) 0 = d₀)
     (hmark₂ : ∀ (c : PointC) j, (P₂ (dst(c))).boundaryClass (hcart₂ c) j = d j) :
-    ∃ (I : B₂.IsometryEquiv B₁) (j : ZMod n) (T : GeometricRealization P₀ P₂ C F),
-      T.picard = I.trans R.picard ∧ T.boundaryAction = DihedralGroup.r j ∧
+    ∃ (I : B₂.IsometryEquiv B₁) (T : GeometricRealization P₀ P₂ C F),
+      T.picard = I.trans R.picard ∧ T.orientation = R.orientation ∧
       (∀ (x : L₁) (y : L₂), I y = x ↔
         (Additive.ofMul (pullback hΔQ.toFanHom.algebraicMap (Q.inclusion x).1.toMul),
           (Q.inclusion x).2) =
         (Additive.ofMul (pullback (hΔQ'.toFanHom.algebraicMap ≫ (g).symm.toFanHom.algebraicMap)
-          (Q'.inclusion y).1.toMul), (Q'.inclusion y).2)) ∧ T.picard (d j) = d₀ := by
+            (Q'.inclusion y).1.toMul), (Q'.inclusion y).2)) ∧
+      T.picard (d (T.boundaryPerm 0)) = d₀ := by
   let : Nonempty Q.fan.cones := Q₀
   let : Nonempty Q'.fan.cones := Q₀'
   let : PrestableFamily (Dtor[Q.fan,Q₀] ↘ S) := Q.prestable
   let : PrestableFamily (Dtor[Q'.fan,Q₀'] ↘ S) := Q'.prestable
   let : NeZero Q.length := Q.neZero
   let : NeZero Q'.length := Q'.neZero
-  refine exists_comp_fiber_rotations R hR d₀ d hd hcart₀ hcart₂ hmark₀ hmark₂ _ fun c ↦ ?_
+  refine exists_comp_fiber_rotations R d₀ d hd hcart₀ hcart₂ hmark₀ hmark₂ _ fun c ↦ ?_
   obtain ⟨p, _, _, _, u, hp, hpu⟩ := (Q.hasNodalModel_iff _ _).mp (hmodel₁ c)
   obtain ⟨q, _, _, _, v, hq, hqv⟩ := (Q'.hasNodalModel_iff _ _).mp (hmodel₂ c)
   obtain ⟨hcart₁, hnef₁, hsq₁⟩ := MarkedSurface.exists_nef_square_zero_boundary_of_pairIso

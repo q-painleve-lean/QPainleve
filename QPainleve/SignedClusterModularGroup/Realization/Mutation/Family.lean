@@ -175,17 +175,25 @@ theorem exists_mutate
     (hD₁inj : Function.Injective D₁) :
     ∃ (R : GeometricRealization (T₀ := Centers) (T₁ := Centers) P₀ P₁ C F) (j : ZMod m),
       R.picard = I ∧ R.boundaryAction = DihedralGroup.r j ∧ I (D₁ j) = D₀ := by
-  refine exists_of_fiber_rotations I D₀ D₁ hD₁inj hD₀ hD₁ hmark₀ hmark₁ fun c ↦ ?_
-  obtain ⟨p, _, _, _, e₀, hP, hproj₀⟩ := hmodel₀ c
-  have htarget := hmodel₁ c
-  rw [mutation_target_character b s k P hform hcharge c] at htarget
-  obtain ⟨q, _, _, _, e₁, hQ, hproj₁⟩ := htarget
-  obtain ⟨hsame, hopp⟩ := mutation_center_conditions b s k hOpp P hform hcharge c
-  have hE : E.matrix = ε := by rw [← P.matrix_eq, hform, hcharge]
-  obtain ⟨j, R, -, -, -, -⟩ := FiberRealization.exists_mutate b s k hOpp hΦ χ(src(c))
-    p q hr₀ hr₁ hAdjacent hPositive I hI hsame hopp hP hQ e₀ e₁ hproj₀ hproj₁
-    (hD₀ c) (hD₁ c) (hnef₀ c) (hnef₁ c) (hsq₀ c) (hsq₁ c) E
-    (fun j ↦ congrFun (congrFun hE j) k)
-  exact ⟨j, ⟨R⟩⟩
+  have hf (c : DomainPoint) : ∃ g : DihedralGroup m,
+      DihedralGroup.cycleOrientationSign g = 1 ∧
+      Nonempty (FiberRealization (M(c)) (M′(c)) F I g) := by
+    obtain ⟨p, _, _, _, e₀, hP, hproj₀⟩ := hmodel₀ c
+    have htarget := hmodel₁ c
+    rw [mutation_target_character b s k P hform hcharge c] at htarget
+    obtain ⟨q, _, _, _, e₁, hQ, hproj₁⟩ := htarget
+    obtain ⟨hsame, hopp⟩ := mutation_center_conditions b s k hOpp P hform hcharge c
+    have hE : E.matrix = ε := by rw [← P.matrix_eq, hform, hcharge]
+    obtain ⟨j, R, -, -, -, -⟩ := FiberRealization.exists_mutate b s k hOpp hΦ χ(src(c))
+      p q hr₀ hr₁ hAdjacent hPositive I hI hsame hopp hP hQ e₀ e₁ hproj₀ hproj₁
+      (hD₀ c) (hD₁ c) (hnef₀ c) (hnef₁ c) (hsq₀ c) (hsq₁ c) E
+      (fun j ↦ congrFun (congrFun hE j) k)
+    exact ⟨DihedralGroup.r j, DihedralGroup.cycleOrientationSign_r j, ⟨R⟩⟩
+  obtain ⟨R, hpic, hsign, hfirst⟩ :=
+    exists_of_fiber_boundary_actions I 1 D₀ D₁ hD₁inj hD₀ hD₁ hmark₀ hmark₁ hf
+  rw [R.orientation_def] at hsign
+  exact ⟨R, R.boundaryPerm 0, hpic,
+    (DihedralGroup.eq_r_iff_cycleVertexPerm_zero_eq hsign).mpr (by rw [R.boundaryPerm_def]),
+    hfirst⟩
 
 end QPainleve.SignedClusterModularGroup.GeometricRealization
