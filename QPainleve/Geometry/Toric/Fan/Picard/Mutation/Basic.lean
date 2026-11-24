@@ -56,6 +56,35 @@ theorem mutationFiberClass_eq (ρ₀ : Φ.Ray) (hΦ : Φ.IsRegular) :
         (fun ρ ↦ max (b.det ![ρ.primitiveGenerator, ρ₀.primitiveGenerator]) 0) :=
   (rfl)
 
+/-- The mutation fiber class depends on the ruling character up to sign.
+The positive and negative parts of its principal divisor have the same Picard class. -/
+theorem mutationFiberClass_eq_of_detDualEquiv_eq_or_eq_neg
+    (d : Module.Basis (Fin 2) ℤ N) (ρ τ : Φ.Ray) (hΦ : Φ.IsRegular)
+    (h : b.detDualEquiv ρ.primitiveGenerator = d.detDualEquiv τ.primitiveGenerator ∨
+      b.detDualEquiv ρ.primitiveGenerator = -d.detDualEquiv τ.primitiveGenerator) :
+    mutationFiberClass b ρ hΦ = mutationFiberClass d τ hΦ := by
+  classical
+  let : Nonempty Φ.cones := ⟨ρ.toCone⟩
+  let m := d.detDualEquiv τ.primitiveGenerator
+  let a : Φ.Ray → ℤ := fun u ↦ max (-(m u.primitiveGenerator)) 0
+  have hdet (c : Module.Basis (Fin 2) ℤ N) (u v : Φ.Ray) :
+      c.det ![u.primitiveGenerator, v.primitiveGenerator] =
+        -(c.detDualEquiv v.primitiveGenerator u.primitiveGenerator) := by
+    rw [← c.detDualEquiv_apply, c.detDualEquiv_swap]
+  simp only [mutationFiberClass_eq, hdet]
+  rcases h with h | h
+  · rw [h]
+  · rw [h]
+    simp only [LinearMap.neg_apply, neg_neg]
+    have hcoeff : (fun u : Φ.Ray ↦ max (m u.primitiveGenerator) 0) =
+        a + Φ.characterToRayDivisor m.toAddMonoidHom := by
+      funext u
+      simp only [a, Pi.add_apply, characterToRayDivisor_apply, toAddMonoidHom_coe]
+      omega
+    have hprincipal :=
+      (Φ.exact_characterToRayDivisor_rayDivisorToPicard hΦ _).mpr ⟨m.toAddMonoidHom, rfl⟩
+    rw [hcoeff, map_add, hprincipal, add_zero]
+
 variable (s : ι → Φ.Ray) (k : ι)
 
 local notation "v" => Ray.primitiveGenerator (s k)
