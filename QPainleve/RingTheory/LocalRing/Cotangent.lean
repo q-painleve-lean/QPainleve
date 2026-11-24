@@ -8,6 +8,7 @@ module
 public import Mathlib.RingTheory.Ideal.Cotangent
 import Mathlib.Algebra.Module.SpanRankOperations
 import Mathlib.LinearAlgebra.FiniteDimensional.Lemmas
+import Mathlib.RingTheory.Ideal.Quotient.PowTransition
 
 /-!
 # Dimensions of the cotangent space of a local algebra
@@ -28,22 +29,13 @@ private theorem exact_cotangentToQuotientSquare_factor :
       ((maximalIdeal R).cotangentToQuotientSquare.restrictScalars k)
       (Ideal.Quotient.factorₐ k
         (Ideal.pow_le_self (I := maximalIdeal R) two_ne_zero)).toLinearMap := by
-  rw [LinearMap.exact_iff]
-  ext a
-  obtain ⟨r, rfl⟩ := Ideal.Quotient.mk_surjective a
-  -- Evaluate the quotient factor and the kernel condition on a representative.
-  change Ideal.Quotient.mk (maximalIdeal R) r = 0 ↔
-    Ideal.Quotient.mk (maximalIdeal R ^ 2) r ∈
-      LinearMap.range ((maximalIdeal R).cotangentToQuotientSquare.restrictScalars k)
-  rw [Ideal.Quotient.eq_zero_iff_mem]
-  constructor
-  · intro hr
-    exact ⟨(maximalIdeal R).toCotangent ⟨r, hr⟩,
-      (maximalIdeal R).toCotangent_to_quotient_square ⟨r, hr⟩⟩
-  · rintro ⟨t, ht⟩
-    obtain ⟨x, rfl⟩ := (maximalIdeal R).toCotangent_surjective t
-    rw [LinearMap.restrictScalars_apply, Ideal.toCotangent_to_quotient_square] at ht
-    exact (Ideal.mk_mem_cotangentIdeal.mp (ht ▸ Ideal.mk_mem_cotangentIdeal.mpr x.property))
+  rw [LinearMap.exact_iff, LinearMap.range_restrictScalars, Ideal.range_cotangentToQuotientSquare]
+  apply Submodule.ext
+  intro a
+  change a ∈ RingHom.ker (Ideal.Quotient.factor
+      (Ideal.pow_le_self (I := maximalIdeal R) two_ne_zero)) ↔
+    a ∈ (maximalIdeal R).cotangentIdeal
+  rw [Ideal.Quotient.factor_ker, Ideal.map_eq_submodule_map, Ideal.cotangentIdeal]
 
 /-- The quotient by the squared maximal ideal of a Noetherian local algebra is
 finite over the base field when its residue field is finite over the base field. -/
