@@ -9,11 +9,8 @@ public import QPainleve.AlgebraicGeometry.Blowup.StrictTransform.Branches.Contra
 public import QPainleve.AlgebraicGeometry.Curves.Node.Locus
 
 import QPainleve.AlgebraicGeometry.Blowup.Integral
-import QPainleve.AlgebraicGeometry.Blowup.StrictTransform.TangentCone
-import QPainleve.AlgebraicGeometry.Curves.Node.Discriminant
+import QPainleve.AlgebraicGeometry.Blowup.StrictTransform.Node
 import QPainleve.AlgebraicGeometry.Curves.Node.Order
-import QPainleve.AlgebraicGeometry.IdealSheaf.PointOrder
-import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
 import TauCeti.AlgebraicGeometry.Blowup.Restriction
 import TauCeti.AlgebraicGeometry.Curves.Node.Reduced
 import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.Subtraction
@@ -49,54 +46,6 @@ local notation "strict(" D ")" => Scheme.Hom.ker (blowupMap I (subschemeι D))
 local notation "S" => Spec (CommRingCat.of k)
 local notation "s" => (X ↘ S)
 local notation "K(" W ")" => LineBundleClass.mk (QPainleve.canonicalBundle k W 2)
-
-/-- A double point on a Cartier divisor of a smooth surface is a node if its
-strict transform meets the exceptional curve in at least two distinct points. -/
-theorem IsEffectiveCartier.isNodeAt_of_stalkOrder_eq_two_of_two_exceptional_attachments
-    [PerfectField k] [NeZero (2 : k)] {D : X.IdealSheafData} (hD : D.IsEffectiveCartier)
-    (q : D.subscheme) (hq : D.subschemeι q = p) (hp : IsClosed ({p} : Set X))
-    (hm : D.stalkOrder p = 2)
-    (hattach : ¬ (((strict(D)).support : Set (I).blowup) ∩
-      ((E).support : Set (I).blowup)).Subsingleton) :
-    (D.subschemeι ≫ s).IsNodeAt q := by
-  have : Smooth s := SmoothOfRelativeDimension.smooth 2 _
-  have : IsLocallyNoetherian X := LocallyOfFiniteType.isLocallyNoetherian s
-  have := isRegularLocalRing_stalk_of_smooth s p
-  have hdim := ((smoothOfRelativeDimension_iff_ringKrullDim_stalk_eq s 2).mp
-    inferInstance).2 p hp
-  obtain ⟨V, -, hpV, f₀, -, hf₀⟩ := hD.exists_eq_span_singleton_le ⊤ (Opens.mem_top p)
-  obtain ⟨U, hpU, hUV, x, y, hspan, hreg, -⟩ :=
-    exists_mem_le_span_pair_vanishingIdeal_closure_singleton hdim hpV
-  let f : Γ(X, U) := X.presheaf.map (homOfLE hUV).op f₀
-  let J := (I).ideal U
-  have hf : D.ideal U = Ideal.span {f} := D.ideal_eq_span_singleton_of_le hUV hf₀
-  have hJ : J = (U.property.primeIdealOf ⟨p, hpU⟩).asIdeal :=
-    vanishingIdeal_closure_singleton_ideal p U hpU
-  let : J.IsMaximal := hJ.symm ▸ U.property.primeIdealOf_isMaximal_of_isClosed ⟨p, hpU⟩ hp
-  have hpow (n : ℕ) : f ∈ J ^ n ↔ (n : ℕ∞) ≤ D.stalkOrder p := by
-    rw [D.natCast_le_stalkOrder_iff_ideal_le_pow p hp U hpU n,
-      X.ker_fromSpecResidueField_eq_vanishingIdeal, hf, Ideal.span_singleton_le_iff_mem]
-  have hf₂ : f ∈ Ideal.span {x, y} ^ 2 := hspan.symm ▸ (hpow 2).mpr (by simp [hm])
-  have hf₃ : f ∉ J ^ 3 := by
-    intro h
-    have hle := (hpow 3).mp h
-    rw [hm] at hle
-    exact (by decide : ¬ (3 : ℕ∞) ≤ 2) hle
-  obtain ⟨a, b, c, heq⟩ := Ideal.mem_span_pair_sq.mp hf₂
-  have hcover : ((I).support : Set X) ⊆ U.val := by
-    rw [coe_support_vanishingIdeal, Closeds.coe_mk, hp.closure_eq]
-    exact Set.singleton_subset_iff.mpr hpU
-  let ι : k →+* Γ(X, U) := ((X.baseRingToStructurePresheaf k).app (Opposite.op U.val)).hom
-  let ψ := (Ideal.Quotient.mk J).comp ι
-  let : NeZero (2 : Γ(X, U) ⧸ J) :=
-    ⟨fun hz ↦ two_ne_zero (ψ.injective ((map_ofNat ψ 2).trans (hz.trans (map_zero ψ).symm)))⟩
-  have hlist : Ideal.ofList [x, y] = (I).ideal U := by
-    rwa [Ideal.ofList_cons, Ideal.ofList_singleton, ← Ideal.span_insert]
-  have hdisc := (I).discrim_notMem_of_two_exceptional_attachments D U hreg hlist hcover
-    hf hf₃ heq.symm hattach
-  subst p
-  exact hD.isNodeAt_of_discrim_notMem q hp U hpU (hspan.trans hJ)
-    (hf.trans (congrArg (fun g ↦ Ideal.span {g}) heq.symm)) (hJ ▸ hdisc)
 
 omit [SmoothOfRelativeDimension 2 (X ↘ Spec (.of k))] in
 private theorem atWorstNodalOfRelativeDimensionOne_of_pointBlowdown
