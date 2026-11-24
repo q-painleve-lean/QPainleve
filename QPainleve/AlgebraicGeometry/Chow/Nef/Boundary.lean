@@ -5,7 +5,9 @@ Authors: The QPainleve contributors
 -/
 module
 
+public import Mathlib.LinearAlgebra.BilinearForm.IsometryEquiv
 public import QPainleve.AlgebraicGeometry.Chow.Nef.Basic
+public import TauCeti.Algebra.Module.Primitive
 
 import QPainleve.AlgebraicGeometry.CartierDivisor.Support
 import QPainleve.AlgebraicGeometry.Chow.BoundaryMultiplicity
@@ -33,6 +35,91 @@ universe u
 namespace AlgebraicGeometry.Scheme.IdealSheafData.IsEffectiveCartier
 
 open TauCeti.AlgebraicGeometry.Chow
+
+section LocallyFactorial
+
+variable {k : Type u} [Field k] [Infinite k] {X : Scheme.{u}}
+  [X.Over (Spec (.of k))] [X.IsProjectiveOver k] [IsIntegral X] [IsNoetherian X]
+  [∀ x : X, UniqueFactorizationMonoid (X.presheaf.stalk x)]
+
+/-- An effective Cartier divisor is nef exactly when its class pairs nonnegatively with each
+prime divisor in its support. -/
+theorem isNef_inv_mk_toInvertibleSheaf_iff {D : X.IdealSheafData} (hD : D.IsEffectiveCartier)
+    (hX : topologicalKrullDim X = 2) :
+    (LineBundleClass.mk hD.toInvertibleSheaf)⁻¹.IsNef k (X ↘ Spec (.of k)) ↔
+      ∀ p : CodimensionOnePoint X, (p : X) ∈ D.support →
+        classIntersectionNumber k X (LineBundleClass.mk hD.toInvertibleSheaf)⁻¹
+          (primeDivisorClass p) ≥ 0 := by
+  let : IsNormalScheme X := IsNormalScheme.of_uniqueFactorizationMonoid_stalk
+  let W := hD.toCartierDivisor.toWeilDivisor
+  have hW : 0 ≤ W := (Scheme.CartierDivisor.isEffective_iff_toWeilDivisor_nonneg _).mp
+    hD.isEffective_toCartierDivisor
+  have hclass : (Scheme.CartierDivisor.weilToLineBundleClassHom X W).toMul =
+      (LineBundleClass.mk hD.toInvertibleSheaf)⁻¹ := by
+    rw [Scheme.CartierDivisor.weilToLineBundleClassHom_toWeilDivisor, toMul_ofMul,
+      hD.toLineBundleClass_toCartierDivisor]
+  have h := isNef_weilToLineBundleClassHom_iff k hX hW
+  rw [hclass] at h
+  refine h.trans (forall_congr' fun p ↦ ?_)
+  rw [Finsupp.mem_support_iff, ← WeilDivisor.coeff]
+  exact imp_congr ((not_congr (hD.coeff_toWeilDivisor_eq_zero_iff p)).trans not_not) Iff.rfl
+
+variable {Y : Scheme.{u}} [Y.Over (Spec (.of k))] [Y.IsProjectiveOver k] [IsIntegral Y]
+  [IsNoetherian Y] [∀ y : Y, UniqueFactorizationMonoid (Y.presheaf.stalk y)]
+
+local notation "δ(" h ")" => ((LineBundleClass.mk (IsEffectiveCartier.toInvertibleSheaf h))⁻¹)
+local notation "χ(" X ")" => (classIntersectionNumber k X)
+
+/-- A Picard isometry matching the prime components of reduced effective divisors
+preserves primitivity, nefness, and square zero of their total classes. -/
+theorem primitive_nef_square_zero_iff_of_picardIsometry
+    {D : X.IdealSheafData} {E : Y.IdealSheafData}
+    (hD : D.IsEffectiveCartier) (hE : E.IsEffectiveCartier)
+    [IsReduced D.subscheme] [IsReduced E.subscheme]
+    (hX : topologicalKrullDim X = 2) (hY : topologicalKrullDim Y = 2)
+    (g : LinearMap.BilinForm.IsometryEquiv (classIntersectionBilinForm k hX)
+      (classIntersectionBilinForm k hY))
+    {ι : Type*} [Finite ι] (p : ι ↪ CodimensionOnePoint X) (q : ι ↪ CodimensionOnePoint Y)
+    (hp : ∀ x : CodimensionOnePoint X, (x : X) ∈ D.support ↔ x ∈ Set.range p)
+    (hq : ∀ y : CodimensionOnePoint Y, (y : Y) ∈ E.support ↔ y ∈ Set.range q)
+    (hclass : ∀ i, g (Additive.ofMul (primeDivisorClass (p i))) =
+      Additive.ofMul (primeDivisorClass (q i))) :
+    (TauCeti.IsPrimitive (Additive.ofMul δ(hD)) ∧
+      δ(hD).IsNef k (X ↘ Spec (.of k)) ∧ χ(X) δ(hD) δ(hD) = 0) ↔
+    (TauCeti.IsPrimitive (Additive.ofMul δ(hE)) ∧
+      δ(hE).IsNef k (Y ↘ Spec (.of k)) ∧ χ(Y) δ(hE) δ(hE) = 0) := by
+  let : Fintype ι := Fintype.ofFinite ι
+  have hδ : g (Additive.ofMul δ(hD)) = Additive.ofMul δ(hE) := by
+    rw [hD.ofMul_inv_toInvertibleSheaf_eq_sum_primeDivisorClass p hp,
+      hE.ofMul_inv_toInvertibleSheaf_eq_sum_primeDivisorClass q hq, map_sum]
+    exact Finset.sum_congr rfl fun i _ ↦ hclass i
+  have hsquare : χ(X) δ(hD) δ(hD) = χ(Y) δ(hE) δ(hE) := by
+    have h := g.map_app (Additive.ofMul δ(hD)) (Additive.ofMul δ(hD))
+    rw [hδ] at h
+    simpa only [Chow.classIntersectionBilinForm_apply, toMul_ofMul] using h.symm
+  have hnef : δ(hD).IsNef k (X ↘ Spec (.of k)) ↔ δ(hE).IsNef k (Y ↘ Spec (.of k)) := by
+    rw [hD.isNef_inv_mk_toInvertibleSheaf_iff hX, hE.isNef_inv_mk_toInvertibleSheaf_iff hY]
+    have hPair (i : ι) : χ(X) δ(hD) (primeDivisorClass (p i)) =
+        χ(Y) δ(hE) (primeDivisorClass (q i)) := by
+      have h := g.map_app (Additive.ofMul (primeDivisorClass (p i))) (Additive.ofMul δ(hD))
+      rw [hδ, hclass i] at h
+      simpa only [Chow.classIntersectionBilinForm_apply, toMul_ofMul] using h.symm
+    constructor
+    · intro h y hy
+      obtain ⟨i, rfl⟩ := (hq y).mp hy
+      rw [← hPair]
+      exact h _ ((hp _).mpr (Set.mem_range_self i))
+    · intro h x hx
+      obtain ⟨i, rfl⟩ := (hp x).mp hx
+      rw [hPair]
+      exact h _ ((hq _).mpr (Set.mem_range_self i))
+  have hprim : TauCeti.IsPrimitive (Additive.ofMul δ(hE)) ↔
+      TauCeti.IsPrimitive (Additive.ofMul δ(hD)) := by
+    rw [← hδ]
+    exact g.toLinearEquiv.isPrimitive_iff
+  rw [← hsquare, ← hnef, hprim]
+
+end LocallyFactorial
 
 variable {k : Type u} [Field k] [Infinite k] {X : Scheme.{u}}
   [X.Over (Spec (.of k))] [X.IsProjectiveOver k] [IsIntegral X]

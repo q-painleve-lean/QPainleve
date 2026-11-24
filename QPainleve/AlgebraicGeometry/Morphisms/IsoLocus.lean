@@ -34,6 +34,19 @@ universe u
 
 variable {X Y Z : Scheme.{u}}
 
+/-- Precomposing with an isomorphism preserves the isomorphism locus. -/
+theorem isoLocus_comp_of_isIso (f : X ⟶ Y) [IsIso f] (g : Y ⟶ Z) :
+    (f ≫ g).isoLocus = g.isoLocus := by
+  apply le_antisymm
+  · apply g.le_isoLocus_iff.mpr
+    have : IsIso (f ∣_ g ⁻¹ᵁ (f ≫ g).isoLocus ≫ g ∣_ (f ≫ g).isoLocus) :=
+      morphismRestrict_comp f g _ ▸ (f ≫ g).le_isoLocus_iff.mp le_rfl
+    exact IsIso.of_isIso_comp_left (f ∣_ g ⁻¹ᵁ (f ≫ g).isoLocus) _
+  · apply (f ≫ g).le_isoLocus_iff.mpr
+    rw [morphismRestrict_comp]
+    exact IsIso.comp_isIso' (inferInstance : IsIso (f ∣_ g ⁻¹ᵁ g.isoLocus))
+      (g.le_isoLocus_iff.mp le_rfl)
+
 /-- For a surjective first map and a separated, universally closed second map, the centre of
 the composite is the union of the second centre and the image of the first, provided the
 intermediate scheme is reduced. -/

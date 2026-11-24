@@ -10,6 +10,7 @@ public import TauCeti.AlgebraicGeometry.Curves.Node.Blowup
 import TauCeti.AlgebraicGeometry.Curves.Node.FiniteEtale
 import TauCeti.AlgebraicGeometry.IdealSheaf.Reduced
 import TauCeti.AlgebraicGeometry.Morphisms.Smooth.GeometricallyReduced
+import TauCeti.AlgebraicGeometry.Pullback.Carrier
 
 /-!
 # Morphisms of nodal conductor squares
@@ -24,6 +25,19 @@ public noncomputable section
 open AlgebraicGeometry CategoryTheory TauCeti.AlgebraicGeometry
 
 universe u
+
+namespace AlgebraicGeometry.Scheme
+
+/-- The image of the branch scheme in the normalization is the inverse image of the
+singular locus of the curve. -/
+theorem range_branchSchemeToBlowup {k : Type u} [Field k] (X : Scheme.{u})
+    [X.Over (Spec (.of k))] [SyntomicOfRelativeDimension 1 (X ↘ Spec (.of k))] :
+    Set.range (X.branchSchemeToBlowup k) =
+      (X.singularLocus k).blowupToBase ⁻¹' ((X.singularLocus k).support : Set X) := by
+  rw [← IdealSheafData.range_subschemeι]
+  exact Scheme.Pullback.range_snd_of_isPullback (X.isPullback_branchScheme k)
+
+end AlgebraicGeometry.Scheme
 
 namespace AlgebraicGeometry.Scheme.Hom
 

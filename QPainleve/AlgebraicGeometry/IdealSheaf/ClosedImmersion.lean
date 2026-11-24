@@ -13,6 +13,8 @@ import TauCeti.AlgebraicGeometry.IdealSheaf.Reduced
 /-!
 # Ideal sheaves under closed immersions
 
+A morphism from a reduced scheme gives its scheme-theoretic image the reduced structure.
+This gives a factorization through a reduced closed section when the image lies in that section.
 The kernel ideal of a closed immersion from an integral scheme is the vanishing ideal
 of the closure of the image of its generic point. A closed immersion takes the support
 of an ideal sheaf to the support of its scheme-theoretic image.
@@ -23,6 +25,26 @@ open CategoryTheory AlgebraicGeometry TopologicalSpace
 universe u
 
 namespace AlgebraicGeometry.Scheme.Hom
+
+/-- A reduced source determines the reduced scheme structure on its schematic image. -/
+public theorem ker_eq_vanishingIdeal_support {X Y : Scheme} (f : X ⟶ Y) [IsReduced X] :
+    f.ker = IdealSheafData.vanishingIdeal f.ker.support :=
+  le_antisymm (by rw [IdealSheafData.vanishingIdeal_support]; exact f.ker.le_radical)
+    (IdealSheafData.vanishingIdeal_le_ker_of_range_subset f f.range_subset_ker_support)
+
+/-- A map from a reduced scheme with image in a reduced closed section factors
+as its map to the base followed by the section. -/
+public theorem eq_comp_of_range_subset_of_section {C T S : Scheme} [IsReduced C] [IsReduced S]
+    (a : C ⟶ T) (q : T ⟶ S) (r : S ⟶ T) [IsClosedImmersion r] (hr : r ≫ q = 𝟙 S)
+    (ha : Set.range a ⊆ Set.range r) : a = a ≫ q ≫ r := by
+  have hker : r.ker ≤ a.ker := by
+    rw [r.ker_eq_vanishingIdeal_support]
+    exact IdealSheafData.vanishingIdeal_le_ker_of_range_subset a
+      (ha.trans r.range_subset_ker_support)
+  let b := IsClosedImmersion.lift r a hker
+  have hba : b ≫ r = a := IsClosedImmersion.lift_fac _ _ _
+  have hb : b = a ≫ q := by simp only [← hba, Category.assoc, hr, Category.comp_id]
+  simpa only [Category.assoc] using hba.symm.trans (congrArg (· ≫ r) hb)
 
 /-- The ideal of a closed integral subscheme is the vanishing ideal of the closure of the
 image of its generic point. -/

@@ -430,3 +430,102 @@ theorem finrank_rayChargeMap_range_of_isotropic {x : (v).ker} (hx : x ≠ 0) (hx
 end Isotropic
 
 end TauCeti.Toric.Fan
+
+namespace TauCeti.Toric.Fan
+
+variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
+  {i : N →+ V} {Φ : Fan i} [Nonempty Φ.cones] {n : ℕ}
+  (hΦ : Φ.IsRegular) (b : Module.Basis (Fin 2) ℤ N) (s : Fin n → Φ.Ray)
+
+local notation "S" => Spec (CommRingCat.of ℂ)
+local notation "dim" => (Eq.trans (Module.finrank_eq_card_basis b) (Fintype.card_fin 2))
+local notation "J[" c "]" => (fun j ↦ Ray.internalCenter b (s j) (c j))
+local notation "hJ[" c "]" => (fun j ↦ Ray.internalCenter_val b (s j) (c j))
+local notation "M[" c "]" =>
+  alongBoundary (subschemeι (Fan.boundaryIdeal Φ inferInstance)) (J[c])
+local notation "U[" c "]" => WithBoundary.toTower (Sigma.snd (M[c]))
+local notation "m" =>
+  (fun j ↦ LinearMap.toAddMonoidHom (Module.Basis.detDualEquiv b (Ray.primitiveGenerator (s j))))
+local notation "hm" => (fun j ↦ Module.Basis.detDualEquiv_self b (Ray.primitiveGenerator (s j)))
+local notation "hprim" => (fun j ↦ Ray.surjective_detCharacter (s j) b)
+local notation "hU[" z "]" =>
+  isClosedPointTower_alongBoundary_binomialCenters dim s m hm hprim z (J[z]) (hJ[z])
+local notation "fZ" => Fan.algebraicRealizationStructureMap Φ
+local notation "smoothZ" =>
+  cast (congrArg (fun d ↦ SmoothOfRelativeDimension d fZ) dim)
+    (Fan.smoothOfRelativeDimension_algebraicRealizationStructureMap Φ hΦ)
+
+variable [Φ.algebraicRealization.IsProjectiveOver ℂ]
+  {c d : Fin n → ℂˣ}
+  {X Y W W' : Scheme} [X.Over S] [Y.Over S]
+  [X.IsProjectiveOver ℂ] [Y.IsProjectiveOver ℂ] [IsIntegral X] [IsIntegral Y]
+  [SmoothOfRelativeDimension 2 (X ↘ S)] [SmoothOfRelativeDimension 2 (Y ↘ S)]
+  [LinearMap.IsPerfPair (Chow.intersectionBilinForm ℂ X)]
+  [LinearMap.IsPerfPair (Chow.intersectionBilinForm ℂ Y)]
+  {D : X.IdealSheafData} {E : Y.IdealSheafData} {l l' : ℕ}
+  {P : QPainleve.BlowupTower X l W} {Q : QPainleve.BlowupTower Y l' W'}
+  (hP : IsNodalBoundaryTower D (X ↘ S) (𝟙 X) P)
+  (hQ : IsNodalBoundaryTower E (Y ↘ S) (𝟙 Y) Q)
+  (p : W ≅ (alongBoundary (Φ.boundaryIdeal inferInstance).subschemeι
+    (fun j ↦ (s j).internalCenter b (c j))).1)
+  (q : W' ≅ (alongBoundary (Φ.boundaryIdeal inferInstance).subschemeι
+    (fun j ↦ (s j).internalCenter b (d j))).1)
+  (hp : p.inv ≫ P.toBase ≫ (X ↘ S) =
+    (alongBoundary (Φ.boundaryIdeal inferInstance).subschemeι
+      (fun j ↦ (s j).internalCenter b (c j))).2.toTower.toBase ≫ (Φ.algebraicRealization ↘ S))
+  (hq : q.inv ≫ Q.toBase ≫ (Y ↘ S) =
+    (alongBoundary (Φ.boundaryIdeal inferInstance).subschemeι
+      (fun j ↦ (s j).internalCenter b (d j))).2.toTower.toBase ≫ (Φ.algebraicRealization ↘ S))
+  (hDs : ((D.comap P.toBase).comap p.inv).support =
+    (alongBoundary (Φ.boundaryIdeal inferInstance).subschemeι
+      (fun j ↦ (s j).internalCenter b (c j))).2.boundaryι.ker.support)
+  (hEs : ((E.comap Q.toBase).comap q.inv).support =
+    (alongBoundary (Φ.boundaryIdeal inferInstance).subschemeι
+      (fun j ↦ (s j).internalCenter b (d j))).2.boundaryι.ker.support)
+
+local notation "a" => (Iso.inv p ≫ QPainleve.BlowupTower.toBase P)
+local notation "a'" => (Iso.inv q ≫ QPainleve.BlowupTower.toBase Q)
+
+local notation "ChargeKernel" => LinearMap.ker (rayChargeMap s)
+local notation "kD" =>
+  picardBoundaryOrthogonalEquivChargeKernel hΦ dim s m hm hprim c (J[c]) (hJ[c]) hP p hp hDs
+local notation "kE" =>
+  picardBoundaryOrthogonalEquivChargeKernel hΦ dim s m hm hprim d (J[d]) (hJ[d]) hQ q hq hEs
+local notation "mark[" z "]" => picardMarking (U[z]) (hU[z]) fZ
+
+variable {f : X ⟶ Y}
+
+/-- If pullback preserves the marked Picard coordinates of the class of a charge
+relation, it gives the class of the same relation on the source. -/
+theorem pullback_picardBoundaryOrthogonalEquivChargeKernel_symm
+    (x : ChargeKernel)
+    (hmark : letI : SmoothOfRelativeDimension 2 fZ := smoothZ
+      let L := ((kE).symm x).val.toMul
+      (mark[c]).symm (Additive.ofMul (pullback a (pullback f L))) =
+        (mark[d]).symm (Additive.ofMul (pullback a' L))) :
+    pullback f ((kE).symm x).val.toMul = ((kD).symm x).val.toMul := by
+  let : SmoothOfRelativeDimension 2 fZ := smoothZ
+  let L := ((kE).symm x).val.toMul
+  obtain ⟨H, hH, hdeg⟩ := exists_picardBoundaryOrthogonalEquivChargeKernel_symm_marking
+    hΦ dim s m hm hprim c (J[c]) (hJ[c]) hP p hp hDs x
+  obtain ⟨G, hG, hdeg'⟩ := exists_picardBoundaryOrthogonalEquivChargeKernel_symm_marking
+    hΦ dim s m hm hprim d (J[d]) (hJ[d]) hQ q hq hEs x
+  have hGH : G = H := (hdeg G).mp ((hdeg' G).mpr rfl)
+  have hcoords : (mark[d]).symm (Additive.ofMul (pullback a' L)) =
+      (G, -(x : Fin n → ℤ)) := by
+    apply (mark[d]).injective
+    rw [LinearEquiv.apply_symm_apply, picardMarking_apply]
+    exact (congrArg Additive.ofMul hG).symm
+  have hclass : pullback a (pullback f L) = pullback a ((kD).symm x).val.toMul := by
+    have h := congrArg (fun z ↦ ((mark[c]) z).toMul) (hmark.trans hcoords)
+    simpa only [LinearEquiv.apply_symm_apply, toMul_ofMul, hGH, picardMarking_apply, hH] using h
+  have hinj : Function.Injective (pullback a) := by
+    intro L₁ L₂ h
+    simp only [← pullback_comp] at h
+    let : IsNoetherian X := isNoetherian_of_finiteType (X ↘ S)
+    apply hP.isClosedPointTower.injective_pullback_toBase (X ↘ S)
+    apply (pullbackEquiv p.symm).injective
+    simpa only [pullbackEquiv_apply, Iso.symm_hom] using h
+  exact hinj hclass
+
+end TauCeti.Toric.Fan

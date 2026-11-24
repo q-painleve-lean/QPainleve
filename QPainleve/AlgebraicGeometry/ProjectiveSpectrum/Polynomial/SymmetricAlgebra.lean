@@ -78,6 +78,15 @@ theorem polynomialProjIso_hom_over (b : Basis ι R M) :
     SetLike.GradeZero.coe_algebraMap]
   exact (SymmetricAlgebra.equivMvPolynomial b).commutes r
 
+/-- The projective comparison identifies the basic open of a basis vector with the
+basic open of the corresponding polynomial variable. -/
+@[simp]
+theorem polynomialProjIso_hom_preimage_basicOpen_ι (b : Basis ι R M) (j : ι) :
+    b.polynomialProjIso.hom ⁻¹ᵁ basicOpen 𝒮 (SymmetricAlgebra.ι R M (b j)) =
+      basicOpen 𝒫 (MvPolynomial.X j) := by
+  rw [polynomialProjIso_hom, map_preimage_basicOpen]
+  simp [toPolynomialGradedHom]
+
 /-- The basis comparison pulls the symmetric-algebra twist back to the same polynomial twist. -/
 def polynomialProjIsoPullbackTwistingSheafIso (b : Basis ι R M) (m : ℤ) :
     (Scheme.Modules.pullback b.polynomialProjIso.hom).obj (twistingSheaf 𝒮 m) ≅

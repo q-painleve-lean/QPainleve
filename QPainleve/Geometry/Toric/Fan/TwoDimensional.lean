@@ -80,6 +80,80 @@ theorem exists_le_cone_of_card_toricRay_eq_two (hΦ : Φ.IsRegular) (hc : Φ.IsC
   rw [hρ τ hτ]
   exact hρυ
 
+private theorem mem_cones_of_range_primitiveGenerator_eq
+    {Ψ : Fan i} (b : Module.Basis (Fin 2) ℤ N) (hΦ : Φ.IsRegular) (hΨ : Ψ.IsRegular)
+    (hc : Ψ.IsComplete)
+    (hrays : Set.range (Ray.primitiveGenerator (Phi := Φ)) =
+      Set.range (Ray.primitiveGenerator (Phi := Ψ)))
+    {σ : Φ.cones} (hσ : Nat.card (ToricRay σ.val) = 2) : σ.val ∈ Ψ.cones := by
+  have hdim : Module.finrank ℤ N = 2 := by simpa using Module.finrank_eq_card_basis b
+  have hreg := isRegular_iff.mp hΦ _ σ.property
+  obtain ⟨p, q, hp, hq, hd⟩ := exists_ray_pair_le_det_eq_one b hreg hσ
+  have hpq : p ≠ q := by
+    rintro rfl
+    simp [b.detDualEquiv_self] at hd
+  obtain ⟨p', hp'⟩ := hrays.le (Set.mem_range_self p)
+  obtain ⟨q', hq'⟩ := hrays.le (Set.mem_range_self q)
+  obtain ⟨t', ⟨ht', τ, hpt, htt⟩, -⟩ :=
+    (exists_unique_ray_neighbor_on_each_side b hΨ hc p').1
+  obtain ⟨t, ht⟩ := hrays.ge (Set.mem_range_self t')
+  have hdt : b.detDualEquiv p.primitiveGenerator t.primitiveGenerator = 1 := by rwa [ht, ← hp']
+  obtain ⟨c, hc₀, hc₁⟩ := exists_basis_of_ray_ne_of_le hreg hdim hpq hp hq
+  let k := c.repr t.primitiveGenerator 0
+  have hrepr := c.sum_repr t.primitiveGenerator
+  rw [Fin.sum_univ_two, hc₀, hc₁] at hrepr
+  have htcoord : c.repr t.primitiveGenerator 1 = 1 := by
+    simpa only [map_add, map_zsmul, hd, hdt, b.detDualEquiv_self, smul_zero, zero_add,
+      Int.zsmul_eq_mul, mul_one] using
+      congrArg (b.detDualEquiv p.primitiveGenerator) hrepr
+  have hsum : k • p.primitiveGenerator + q.primitiveGenerator = t.primitiveGenerator := by
+    simpa only [k, htcoord, one_smul] using hrepr
+  have hne : p' ≠ t' := fun h ↦ by simp [← h, b.detDualEquiv_self] at ht'
+  have he : t = q := by
+    -- The two candidate successors have determinant one with the same ray.
+    -- The sign of their displacement puts one in the cone bounded by the other.
+    rcases le_total 0 k with hk | hk
+    · have hm : t.toCone ≤ σ := by
+        rw [t.toCone_le_iff, ← hsum, map_add, map_zsmul, ← Int.cast_smul_eq_zsmul ℝ]
+        exact σ.val.add_mem (σ.val.smul_mem (by exact_mod_cast hk) (hp p.primitiveGenerator_mem))
+          (hq q.primitiveGenerator_mem)
+      exact (Φ.ray_eq_or_eq_of_le hreg hdim hpq hp hq hm).resolve_left (by
+        rintro rfl
+        simp [b.detDualEquiv_self] at hdt)
+    · have hqsum : q'.primitiveGenerator = (-k) • p'.primitiveGenerator +
+          t'.primitiveGenerator := by rw [hq', hp', ← ht, ← hsum, ← add_assoc, ← add_smul]; simp
+      have hm : q'.toCone ≤ τ := by
+        rw [q'.toCone_le_iff, hqsum, map_add, map_zsmul, ← Int.cast_smul_eq_zsmul ℝ]
+        exact τ.val.add_mem (τ.val.smul_mem (by exact_mod_cast neg_nonneg.mpr hk)
+          (hpt p'.primitiveGenerator_mem)) (htt t'.primitiveGenerator_mem)
+      rcases Ψ.ray_eq_or_eq_of_le (isRegular_iff.mp hΨ _ τ.property) hdim hne hpt htt hm with h | h
+      · exact (hpq (Ray.primitiveGenerator_injective (by rw [← hp', ← hq', h]))).elim
+      · exact Ray.primitiveGenerator_injective (by rw [ht, ← h, hq'])
+  have hpt' : p'.toCone.val = p.toCone.val := by
+    rw [p'.toCone_eq_hull_primitiveGenerator, p.toCone_eq_hull_primitiveGenerator, hp']
+  have htt' : t'.toCone.val = q.toCone.val := by
+    rw [t'.toCone_eq_hull_primitiveGenerator, q.toCone_eq_hull_primitiveGenerator, ← ht, he]
+  rw [cone_eq_sup_of_ray_ne_of_le hΦ hdim hpq hp hq, ← hpt', ← htt',
+    ← cone_eq_sup_of_ray_ne_of_le hΨ hdim hne hpt htt]
+  exact τ.property
+
+/-- On a fixed rank-two lattice, complete regular fans with the same primitive ray generators
+have the same cones. -/
+theorem eq_of_range_primitiveGenerator_eq {Ψ : Fan i} (b : Module.Basis (Fin 2) ℤ N)
+    (hΦ : Φ.IsRegular) (hΨ : Ψ.IsRegular) (hcΦ : Φ.IsComplete) (hcΨ : Ψ.IsComplete)
+    (hrays : Set.range (Ray.primitiveGenerator (Phi := Φ)) =
+      Set.range (Ray.primitiveGenerator (Phi := Ψ))) : Φ = Ψ := by
+  have hdim : Module.finrank ℤ N = 2 := by simpa using Module.finrank_eq_card_basis b
+  have hsub {A B : Fan i} (hA : A.IsRegular) (hB : B.IsRegular)
+      (hcA : A.IsComplete) (hcB : B.IsComplete)
+      (h : Set.range (Ray.primitiveGenerator (Phi := A)) =
+        Set.range (Ray.primitiveGenerator (Phi := B))) : A.cones ⊆ B.cones := by
+    intro σ hσ
+    obtain ⟨τ, hστ, hτ⟩ := exists_le_cone_of_card_toricRay_eq_two hA hcA hdim ⟨σ, hσ⟩
+    exact B.mem_of_isFaceOf (mem_cones_of_range_primitiveGenerator_eq b hA hB hcB h hτ)
+      (A.isFaceOf_of_le τ.property hσ hστ)
+  exact Fan.ext (Set.Subset.antisymm (hsub hΦ hΨ hcΦ hcΨ hrays) (hsub hΨ hΦ hcΨ hcΦ hrays.symm))
+
 end Fan
 
 end TauCeti.Toric

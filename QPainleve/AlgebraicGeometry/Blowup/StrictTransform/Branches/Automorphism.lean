@@ -11,13 +11,12 @@ public import QPainleve.AlgebraicGeometry.Curves.Node.Conductor.FixedBranches
 import QPainleve.AlgebraicGeometry.Blowup.Descent
 import QPainleve.AlgebraicGeometry.Blowup.Integral
 import QPainleve.AlgebraicGeometry.Blowup.Smooth
+import QPainleve.AlgebraicGeometry.Blowup.StrictTransform.Branches.Attachments
 import QPainleve.AlgebraicGeometry.Blowup.StrictTransform.Nodality
 import QPainleve.AlgebraicGeometry.Blowup.StrictTransform.Reduced
-import QPainleve.AlgebraicGeometry.CartierDivisor.Support
 import QPainleve.AlgebraicGeometry.Curves.Node.Conductor.Locality
 import QPainleve.AlgebraicGeometry.IdealSheaf.BaseChange
 import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
-import QPainleve.AlgebraicGeometry.EffectiveCartierDivisor.Integral
 import TauCeti.AlgebraicGeometry.Blowup.Pullback
 import TauCeti.AlgebraicGeometry.Curves.Node.Reduced
 import TauCeti.AlgebraicGeometry.Pullback.Carrier
@@ -66,69 +65,6 @@ local notation "totalBoundary" => radical (D.comap (π))
 
 local notation "B" => subscheme (totalBoundary)
 local notation "j" => subschemeι (totalBoundary)
-
-section Surface
-
-variable [X.Over (Spec (.of k))] [IsIntegral X] [QuasiCompact (X ↘ Spec (.of k))]
-  [SmoothOfRelativeDimension 2 (X ↘ Spec (.of k))]
-
-include hD hc hnodal in
-private theorem attachment_mem_closure_sides {z : B} (hzS : (j) z ∈ (S).support)
-    (hzE : (j) z ∈ (E).support) :
-    let U := (j) ⁻¹ᵁ (E).support.compl
-    let V := (j) ⁻¹ᵁ (S).support.compl
-    Disjoint U V ∧ z ∈ closure (U : Set B) ∧ z ∈ closure (V : Set B) := by
-  have : Smooth s := SmoothOfRelativeDimension.smooth 2 _
-  have : IsLocallyNoetherian X := LocallyOfFiniteType.isLocallyNoetherian s
-  have := isRegularLocalRing_stalk_of_smooth s (D.subschemeι p)
-  have hdim := ((smoothOfRelativeDimension_iff_ringKrullDim_stalk_eq s 2).mp
-    inferInstance).2 _ hc
-  let : IsIntegral (vanishingIdeal
-      ⟨closure (singleton (D.subschemeι p)), isClosed_closure⟩).blowup :=
-    isIntegral_blowup_closed_point s hc
-  have : Surjective (π) := surjective_blowupToBase_point hc hdim
-  have : IsLocallyNoetherian (I).blowup := LocallyOfFiniteType.isLocallyNoetherian (π)
-  have : IsIntegral (E).subscheme := isIntegral_exceptional_blowup_closed_point hdim hc
-  have : IsReduced D.subscheme := hnodal.isReduced
-  have hDI : D ≤ (I) := (X.ker_fromSpecResidueField_eq_vanishingIdeal (D.subschemeι p)) ▸
-    (D.le_ker_fromSpecResidueField_iff_mem_support hc).mpr
-      (D.range_subschemeι.le (Set.mem_range_self _))
-  have hcover : (totalBoundary).support = (S).support ⊔ (E).support := by
-    rw [(I).radical_comap_blowupToBase_eq_ker_blowupMap_subschemeι_mul D hDI, support_mul]
-  have hdiv := hD.exists_strictTransform_cartierDivisor hc hdim (hD.comap_of_isDominant (π))
-  let q := (E).subschemeι (genericPoint (E).subscheme)
-  have hq : q ∈ (E).support := (E).range_subschemeι.le (Set.mem_range_self _)
-  have hq' : q ∉ (S).support :=
-    hdiv.choose_spec.2 ⟨q, (I).isEffectiveCartier_comap_blowupToBase
-      |>.coheight_subschemeι_genericPoint⟩ hq
-  have hE : IsIrreducible ((E).support : Set (I).blowup) := by
-    rw [← (E).range_subschemeι]
-    simpa only [Set.image_univ] using
-      (IrreducibleSpace.isIrreducible_univ (↥(E).subscheme)).image
-        (E).subschemeι (E).subschemeι.continuous.continuousOn
-  have hEcl := subset_closure_inter_of_isPreirreducible_of_isOpen hE.isPreirreducible
-    (S).support.isClosed.isOpen_compl ⟨q, hq, hq'⟩ hzE
-  have hScl : (j) z ∈ closure (((totalBoundary).support : Set (I).blowup) \ (E).support) := by
-    have hS := congrArg (fun J : (I).blowup.IdealSheafData ↦
-      (J.support : Set (I).blowup)) ((I).ker_blowupMap_subschemeι_eq_vanishingIdeal D)
-    rw [coe_support_vanishingIdeal, Closeds.coe_closure] at hS
-    rw [support_radical, ← hS]
-    exact hzS
-  refine ⟨Opens.coe_disjoint.mp ?_, ?_⟩
-  · apply Set.disjoint_left.mpr
-    intro x hxU hxV
-    have hx := (totalBoundary).range_subschemeι.le (Set.mem_range_self x)
-    rw [hcover, Closeds.coe_sup, Set.mem_union] at hx
-    exact hx.elim hxV hxU
-  simp only [Scheme.Hom.coe_preimage, Closeds.coe_compl,
-    (j).isClosedEmbedding.isEmbedding.closure_eq_preimage_closure_image,
-    Set.image_preimage_eq_inter_range, (totalBoundary).range_subschemeι, Set.inter_comm (_ᶜ)]
-  refine ⟨hScl, ?_⟩
-  apply closure_mono _ hEcl
-  rw [hcover, Closeds.coe_sup]
-  exact Set.inter_subset_inter_left _ Set.subset_union_right
-
-end Surface
 
 variable (e : X ≅ X) (d : D.subscheme ≅ D.subscheme) [d.hom.IsOver (Spec (.of k))]
   (hd : d.hom ≫ D.subschemeι = D.subschemeι ≫ e.hom) (hfix : d.hom p = p)
@@ -236,7 +172,7 @@ theorem singularLocusBlowupIso_fixes_over_attachment [IsSepClosed k] [PerfectFie
       Set.mem_compl_iff] at hx ⊢
     rw [hw]
     exact fun h ↦ hx (hpre ▸ (h : (j) x ∈ (l).hom ⁻¹' (J.support : Set (I).blowup)))
-  obtain ⟨hdisj, hU, hV⟩ := attachment_mem_closure_sides hD hnodal hc hzS hzE
+  obtain ⟨hdisj, hU, hV⟩ := attachment_mem_closure_sides (k := k) hD hc hzS hzE
   exact r.singularLocusBlowupIso_fixes_over_of_mem_closure hN U V hdisj
     (hmap hEcomap) (hmap hScomap) hU hV
     (fixes_attachment_of_fixes_branches hnodal hp hc e d hd hfix r hr hbranches hzS hzE)
@@ -377,7 +313,7 @@ private theorem fixes_branches_over_center
       Set.mem_preimage, hπ]
     exact D.range_subschemeι.le (Set.mem_range_self _)
   obtain ⟨z, hz⟩ := (totalBoundary).range_subschemeι.ge hfB
-  obtain ⟨hUV, hU, hV⟩ := attachment_mem_closure_sides hD hnodal hc (hz.symm ▸ hS) (hz.symm ▸ hE)
+  obtain ⟨hUV, hU, hV⟩ := attachment_mem_closure_sides (k := k) hD hc (hz.symm ▸ hS) (hz.symm ▸ hE)
   have hzSing := (B).mem_support_singularLocus_of_mem_closures hN _ _ hUV hU hV
   have : Surjective ((B).singularLocus k).blowupToBase :=
     (B).surjective_blowupToBase_singularLocus hN

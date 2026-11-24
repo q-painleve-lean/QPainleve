@@ -12,7 +12,7 @@ public import TauCeti.AlgebraicGeometry.Curves.Node.DualGraph
 import Mathlib.Algebra.Group.Pi.Units
 import Mathlib.Algebra.Group.Units.Equiv
 import Mathlib.AlgebraicGeometry.AlgClosed.Basic
-import TauCeti.AlgebraicGeometry.Pullback.Carrier
+import QPainleve.AlgebraicGeometry.Curves.Node.Conductor.Map
 
 /-!
 # Global functions in the nodal conductor square
@@ -44,12 +44,6 @@ private instance : IsRegular (X.singularLocus k).blowup :=
 private instance : IsClosedImmersion (X.branchSchemeToBlowup k) :=
   MorphismProperty.of_isPullback (X.isPullback_branchScheme k) inferInstance
 
-private theorem range_branchSchemeToBlowup :
-    Set.range (X.branchSchemeToBlowup k) =
-      (X.singularLocus k).blowupToBase ⁻¹' (((X ↘ Spec (.of k)).smoothLocus : Set X)ᶜ) := by
-  rw [← X.support_singularLocus_eq_compl_smoothLocus, ← IdealSheafData.range_subschemeι]
-  exact Scheme.Pullback.range_snd_of_isPullback (X.isPullback_branchScheme k)
-
 section NodesAndBranches
 
 variable [IsSepClosed k]
@@ -73,7 +67,8 @@ private def branchInBlowup (e : (X.dualGraph p).Edge) (i : Fin 2) :
 
 private theorem branchInBlowup_mem_range (e : (X.dualGraph p).Edge) (i : Fin 2) :
     branchInBlowup X p e i ∈ Set.range (X.branchSchemeToBlowup k) := by
-  rw [range_branchSchemeToBlowup, Set.mem_preimage]
+  rw [X.range_branchSchemeToBlowup, Set.mem_preimage,
+    X.support_singularLocus_eq_compl_smoothLocus]
   simpa only [branchInBlowup, blowupToBase_branchPointEquiv] using
     (X.dualGraphEdgeEquiv p e).property
 
@@ -100,7 +95,7 @@ private theorem branchOfEdge_bijective : Function.Bijective (branchOfEdge X p) :
   · intro z
     let b := X.branchSchemeToBlowup k z
     have hb : b ∈ Set.range (X.branchSchemeToBlowup k) := ⟨z, rfl⟩
-    rw [range_branchSchemeToBlowup] at hb
+    rw [X.range_branchSchemeToBlowup, X.support_singularLocus_eq_compl_smoothLocus] at hb
     obtain ⟨e, he⟩ := (X.dualGraphEdgeEquiv p).surjective
       ⟨(X.singularLocus k).blowupToBase b, hb⟩
     obtain ⟨i, hi⟩ := (X.branchPointEquiv (X.dualGraphEdgeEquiv p e)).surjective
