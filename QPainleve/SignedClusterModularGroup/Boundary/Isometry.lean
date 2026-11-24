@@ -352,7 +352,7 @@ theorem exists_signedShift_of_preserves_cycle_gram [NeZero n]
     | r a => exact ⟨1, a, fun j ↦ by simpa using (Equiv.congr_fun hd j).symm⟩
     | sr a =>
       refine ⟨-1, -a, fun j ↦ ?_⟩
-      simpa [Units.smul_def, sub_eq_add_neg] using (Equiv.congr_fun hd j).symm
+      simpa [Units.smul_def, sub_eq_add_neg, add_comm] using (Equiv.congr_fun hd j).symm
   · obtain rfl : n = 2 := by omega
     refine ⟨1, σ 0, fun j ↦ ?_⟩
     rcases j.eq_zero_or_eq_one with rfl | rfl

@@ -6,7 +6,7 @@ Authors: The QPainleve contributors
 module
 
 public import Mathlib.Combinatorics.SimpleGraph.CycleGraph
-public import Mathlib.GroupTheory.SpecificGroups.Dihedral
+public import QPainleve.GroupTheory.SpecificGroups.Dihedral
 
 import Mathlib.Tactic.Abel
 import TauCeti.Combinatorics.SimpleGraph.CycleGraph
@@ -21,50 +21,6 @@ by its values at zero and one.
 -/
 
 public section
-
-namespace DihedralGroup
-
-variable {n : ℕ}
-
-/-- The dihedral action on residue classes by rotations and reflections. -/
-def toPerm : DihedralGroup n →* Equiv.Perm (ZMod n) where
-  toFun
-    | r a => Equiv.addRight a
-    | sr a => (Equiv.neg _).trans (Equiv.addRight (-a))
-  map_one' := by
-    ext x
-    rw [one_def]
-    exact add_zero x
-  map_mul' := by
-    rintro (a | a) (b | b) <;> ext x <;> simp <;> abel
-
-@[simp]
-theorem toPerm_r (a x : ZMod n) : toPerm (r a) x = x + a := (rfl)
-
-@[simp]
-theorem toPerm_sr (a x : ZMod n) : toPerm (sr a) x = -x - a := by
-  simp [toPerm, sub_eq_add_neg]
-
-/-- A cycle of length at least three distinguishes every rotation and reflection. -/
-theorem toPerm_injective (hn : 3 ≤ n) :
-    Function.Injective (toPerm (n := n)) := by
-  let : Fact (2 < n) := ⟨hn⟩
-  intro a b hab
-  have h₀ := Equiv.congr_fun hab 0
-  have h₁ := Equiv.congr_fun hab 1
-  have hdiff := congrArg₂ (· - ·) h₁ h₀
-  have hne := ZMod.neg_one_ne_one (n := n)
-  rcases a with a | a <;> rcases b with b | b
-  · exact congrArg r (by simpa using h₀)
-  · simp only [toPerm_r, toPerm_sr] at hdiff
-    abel_nf at hdiff
-    exact (hne (by simpa using hdiff.symm)).elim
-  · simp only [toPerm_r, toPerm_sr] at hdiff
-    abel_nf at hdiff
-    exact (hne (by simpa using hdiff)).elim
-  · exact congrArg sr (neg_injective (by simpa using h₀))
-
-end DihedralGroup
 
 namespace SimpleGraph
 
@@ -122,9 +78,9 @@ neighbors is induced by a unique dihedral element when the cycle has length at l
 theorem _root_.Equiv.Perm.existsUnique_dihedral_of_map_successors (f : Equiv.Perm (ZMod n))
     (hn : 3 ≤ n)
     (hf : ∀ x, f (x + 1) = f x + 1 ∨ f (x + 1) = f x - 1) :
-    ∃! d : DihedralGroup n, DihedralGroup.toPerm d = f := by
+    ∃! d : DihedralGroup n, DihedralGroup.cycleVertexPerm d = f := by
   have h₁ : f 1 = f 0 + 1 ∨ f 1 = f 0 - 1 := by simpa using hf 0
-  have hex : ∃ d : DihedralGroup n, DihedralGroup.toPerm d = f := by
+  have hex : ∃ d : DihedralGroup n, DihedralGroup.cycleVertexPerm d = f := by
     rcases h₁ with h | h
     · refine ⟨DihedralGroup.r (f 0), perm_eq_of_map_cycle_successors hn ?_ hf (by simp) ?_⟩
       · intro x
@@ -134,16 +90,16 @@ theorem _root_.Equiv.Perm.existsUnique_dihedral_of_map_successors (f : Equiv.Per
         perm_eq_of_map_cycle_successors hn ?_ hf (by simp) ?_⟩
       · intro x
         exact Or.inr (by simp; abel)
-      · rw [DihedralGroup.toPerm_sr, h]
+      · rw [DihedralGroup.cycleVertexPerm_sr_apply, h]
         abel
   obtain ⟨d, hd⟩ := hex
-  exact ⟨d, hd, fun e he ↦ DihedralGroup.toPerm_injective hn (he.trans hd.symm)⟩
+  exact ⟨d, hd, fun e he ↦ DihedralGroup.cycleVertexPerm_injective hn (he.trans hd.symm)⟩
 
 /-- Every automorphism of the cycle graph on at least three vertices acts by a unique
 rotation or reflection on the residue classes. -/
 theorem cycleGraph_existsUnique_dihedral (hn : 3 ≤ n) (f : cycleGraph n ≃g cycleGraph n) :
     ∃! d : DihedralGroup n, ∀ x : ZMod n,
-      DihedralGroup.toPerm d x = ZMod.finEquiv n (f ((ZMod.finEquiv n).symm x)) := by
+      DihedralGroup.cycleVertexPerm d x = ZMod.finEquiv n (f ((ZMod.finEquiv n).symm x)) := by
   let e := ZMod.finEquiv n
   let p : Equiv.Perm (ZMod n) := e.toEquiv.permCongr f.toEquiv
   have hp (x : ZMod n) : p x = e (f (e.symm x)) := rfl

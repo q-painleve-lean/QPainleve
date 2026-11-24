@@ -6,7 +6,7 @@ Authors: The QPainleve contributors
 module
 
 public import Mathlib.Data.Fin.Rev
-public import Mathlib.GroupTheory.SpecificGroups.Dihedral
+public import QPainleve.GroupTheory.SpecificGroups.Dihedral
 public import TauCeti.AlgebraicGeometry.Curves.DualGraph.Cycle
 import Mathlib.Tactic.Abel
 
@@ -26,30 +26,6 @@ open TauCeti
 namespace DihedralGroup
 
 variable {n : ℕ}
-
-/-- The dihedral action on the vertices of the numbered cycle. The reflection `sr i`
-acts by `j ↦ -i - j`, in the multiplication convention of `DihedralGroup`. -/
-def cycleVertexPerm : DihedralGroup n →* Equiv.Perm (ZMod n) where
-  toFun
-    | r i => Equiv.addRight i
-    | sr i => Equiv.subLeft (-i)
-  map_one' := by
-    rw [one_def]
-    ext j
-    simp
-  map_mul' := by
-    rintro (i | i) (j | j) <;> ext x <;>
-      simp [Equiv.Perm.mul_apply] <;> abel
-
-@[simp]
-theorem cycleVertexPerm_r_apply (i j : ZMod n) :
-    cycleVertexPerm (r i) j = j + i :=
-  (rfl)
-
-@[simp]
-theorem cycleVertexPerm_sr_apply (i j : ZMod n) :
-    cycleVertexPerm (sr i) j = -i - j :=
-  (rfl)
 
 /-- The dihedral action on the branches of the numbered cycle. A branch is a pair
 consisting of the edge index and its endpoint number. -/
