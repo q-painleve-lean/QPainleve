@@ -58,6 +58,19 @@ theorem centerIso_hom_structureMap (w : Word B C) :
     (w.centerIso k).hom ≫ structureMap k A = structureMap k A := by
   rw [centerIso_hom, map_structureMap]
 
+/-- The center isomorphism as an isomorphism over the coefficient ring. -/
+def centerIsoOver (w : Word B C) :
+    Over.mk (structureMap k A) ≅ Over.mk (structureMap k A) :=
+  Over.isoMk (w.centerIso k) (w.centerIso_hom_structureMap k)
+
+@[simp]
+theorem centerIsoOver_hom_left (w : Word B C) :
+    (w.centerIsoOver k).hom.left = (w.centerIso k).hom := (rfl)
+
+@[simp]
+theorem centerIsoOver_inv_left (w : Word B C) :
+    (w.centerIsoOver k).inv.left = (w.centerIso k).inv := (rfl)
+
 /-- The empty word fixes the center torus. -/
 @[simp]
 theorem centerIso_nil : (Path.nil : Word B B).centerIso k = Iso.refl _ := by

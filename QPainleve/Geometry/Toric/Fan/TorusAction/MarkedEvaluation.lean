@@ -6,7 +6,7 @@ Authors: The QPainleve contributors
 module
 
 public import QPainleve.Geometry.Toric.Fan.TorusAction.Alignment
-public import QPainleve.Geometry.Toric.Fan.TorusAction.Orientation
+public import QPainleve.Geometry.Toric.Fan.TorusAction.Orientation.Basic
 
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Picard
 import QPainleve.AlgebraicGeometry.Curves.Node.Conductor.Orientation

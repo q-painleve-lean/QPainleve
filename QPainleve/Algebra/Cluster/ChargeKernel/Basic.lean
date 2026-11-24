@@ -95,6 +95,19 @@ theorem ker_chargeExchangeMatrix (ω : BilinForm ℤ N) (v : (ι → ℤ) →ₗ
   rw [nsmul_eq_mul] at hy
   exact (mul_eq_zero.mp hy).resolve_left (Int.natCast_ne_zero.mpr hn.ne')
 
+/-- Full-rank charges in a nonzero lattice with a right-separating pairing have a
+nonzero exchange matrix. -/
+theorem chargeExchangeMatrix_ne_zero_of_finrank_range_eq
+    (ω : BilinForm ℤ N) (v : (ι → ℤ) →ₗ[ℤ] N)
+    [Module.Free ℤ N] [Module.Finite ℤ N] [Nontrivial N] (hω : ω.SeparatingRight)
+    (hrank : Module.finrank ℤ v.range = Module.finrank ℤ N) : chargeExchangeMatrix ω v ≠ 0 := by
+  intro hzero
+  have hv : v = 0 := by
+    rw [← LinearMap.ker_eq_top, ← ker_chargeExchangeMatrix ω v hω hrank, hzero,
+      Matrix.mulVecLin_zero, LinearMap.ker_zero]
+  rw [hv, LinearMap.range_zero, finrank_bot] at hrank
+  exact (Module.finrank_pos (R := ℤ) (M := N)).ne' hrank.symm
+
 /-- Equal exchange matrices identify the images of two finite-index charge maps
 for right-separating forms. The equivalence matches charges and preserves their pairings. -/
 theorem exists_charge_range_equiv {N₁ N₂ : Type*} [AddCommGroup N₁] [AddCommGroup N₂]
