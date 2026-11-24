@@ -10,6 +10,7 @@ import QPainleve.Topology.NoetherianSpace
 import TauCeti.AlgebraicGeometry.Fibers.Composition
 import TauCeti.AlgebraicGeometry.IdealSheaf.VanishingIdeal
 import TauCeti.AlgebraicGeometry.Morphisms.Finite.Basic
+import TauCeti.AlgebraicGeometry.Morphisms.LocallyQuasiFinite
 import TauCeti.AlgebraicGeometry.Noetherian
 import TauCeti.AlgebraicGeometry.Scheme.LocalDimension
 
@@ -28,6 +29,25 @@ open CategoryTheory TopologicalSpace TauCeti TauCeti.AlgebraicGeometry
 universe u
 
 namespace AlgebraicGeometry.Scheme.Hom
+
+/-- A finite morphism to an irreducible scheme of finite dimension is dominant
+if the source has dimension at least that of the target. -/
+theorem isDominant_of_isFinite_of_topologicalKrullDim_le {X Y : Scheme.{u}} (f : X ⟶ Y)
+    [IsFinite f] [IrreducibleSpace Y] (hY : topologicalKrullDim Y ≠ ⊤)
+    (hXY : topologicalKrullDim Y ≤ topologicalKrullDim X) : IsDominant f := by
+  have hclosed := f.isClosedMap.isClosed_range
+  have : IsFinite (f.toImage ≫ f.imageι) := by rw [f.toImage_imageι]; infer_instance
+  have : IsFinite f.toImage := .of_comp f.toImage f.imageι
+  have hdim : topologicalKrullDim (Set.range f) = topologicalKrullDim f.image := by
+    rw [← topologicalKrullDim_range_of_isPreimmersion f.imageι, IdealSheafData.range_subschemeι,
+      Hom.support_ker, hclosed.closure_eq]
+  refine ⟨denseRange_iff_closure_range.mpr ?_⟩
+  rw [hclosed.closure_eq]
+  by_contra hproper
+  have hlt := hclosed.topologicalKrullDim_lt hproper
+    (ne_top_of_le_ne_top hY (topologicalKrullDim_subspace_le Y _))
+  rw [hdim] at hlt
+  exact (hXY.trans f.toImage.topologicalKrullDim_le).not_gt hlt
 
 /-- A proper morphism is quasi-finite at a point if that point lies over an
 affine open with affine preimage. -/

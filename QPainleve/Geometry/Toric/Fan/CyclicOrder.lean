@@ -201,9 +201,9 @@ theorem exists_cyclicConeNumbering (b : Module.Basis (Fin 2) ℤ N)
 The initial ray and the cones at which successive rays meet are preserved. -/
 theorem cyclicRayNumbering_neg {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
     {l : N →+ V} {Φ : Fan l} (b : Module.Basis (Fin 2) ℤ N)
-    (u : ZMod (Nat.card Φ.Ray) ≃ Φ.Ray)
+    {n : ℕ} (u : ZMod n → Φ.Ray)
     (hu : ∀ j, b.detDualEquiv (u j).primitiveGenerator (u (j + 1)).primitiveGenerator = 1 ∧
-      ∃ σ : Φ.cones, (u j).toCone ≤ σ ∧ (u (j + 1)).toCone ≤ σ) (j : ZMod (Nat.card Φ.Ray)) :
+      ∃ σ : Φ.cones, (u j).toCone ≤ σ ∧ (u (j + 1)).toCone ≤ σ) (j : ZMod n) :
     (b.reindex (Equiv.swap 0 1)).detDualEquiv (u (-j)).primitiveGenerator
         (u (-(j + 1))).primitiveGenerator = 1 ∧
       ∃ σ : Φ.cones, (u (-j)).toCone ≤ σ ∧ (u (-(j + 1))).toCone ≤ σ := by

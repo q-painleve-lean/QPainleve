@@ -10,8 +10,10 @@ public import QPainleve.Geometry.Toric.Fan.Mutation.Resolution
 public import QPainleve.Geometry.Toric.Fan.TorusAction.Translation
 
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Modification
+import QPainleve.AlgebraicGeometry.IdealSheaf.VanishingIdeal
 import QPainleve.AlgebraicGeometry.RationalMap.Composition.Basic
 import QPainleve.Geometry.Toric.Fan.Scheme
+import TauCeti.Combinatorics.Quiver.Prefunctor
 
 /-!
 # Resolved Sarkisov links between toric surfaces
@@ -70,6 +72,8 @@ theorem IsSarkisovLink.isDominant {Φ Ψ : Fan i} {f : X[Φ] ⤏ X[Ψ]}
 
 namespace LogarithmicProjection
 
+section
+
 variable {Z : Scheme} [Z.Over S] [SmoothOfRelativeDimension 2 (Z ↘ S)]
   [PreirreducibleSpace Z]
   {D : Z.IdealSheafData} {A B C : LogarithmicProjection i D}
@@ -116,6 +120,12 @@ def ofStar (p : @Quiver.Path _ instQuiver A B) : SarkisovPath A B :=
   let F := @Prefunctor.mk (LogarithmicProjection i D) instQuiver
     (LogarithmicProjection i D) sarkisovQuiver id (fun e ↦ StarStep.toSarkisovStep e)
   @Prefunctor.mapPath _ instQuiver _ sarkisovQuiver F _ _ p
+
+/-- Including a toric star path preserves its number of edges. -/
+@[simp]
+theorem length_ofStar (p : @Quiver.Path _ instQuiver A B) :
+    (ofStar p).length = @Quiver.Path.length _ instQuiver _ _ p := by
+  simp only [ofStar, Prefunctor.length_mapPath]
 
 /-- The composite of the links along a resolved path, in execution order. -/
 def rationalMap (p : SarkisovPath A B) : X[A.fan] ⤏ X[B.fan] :=
@@ -254,6 +264,193 @@ theorem SarkisovPath.exists_precompose_of_nodalTower [IsIntegral Z] [IsNoetheria
     fun a ↦ precomposeSarkisov_map_rationalMap hRank q hPole a, ?_⟩
   subst C
   exact p.rationalMap_mapPath_precompose hRank q hPole
+
+end
+
+section ResolvedFactorization
+
+open QPainleve QPainleve.BlowupTower
+
+variable {Z : Scheme} [Z.Over S] [IsIntegral Z] [SmoothOfRelativeDimension 2 (Z ↘ S)]
+  {D : Z.IdealSheafData}
+
+/-- The two specified projections admit a Sarkisov path on a nodal blowup
+tower of their common source. The endpoints are the pullbacks of the specified
+projections and all vertices share the reduced total boundary as pole ideal. -/
+def HasResolvedSarkisovFactorization [IsNoetherian Z] (A B : LogarithmicProjection i D) : Prop :=
+  ∃ (n : ℕ) (W : Scheme) (T : BlowupTower Z n W)
+    (hT : IsNodalBoundaryTower D (Z ↘ S) (𝟙 Z) T),
+    letI : W.Over S := ⟨T.toBase ≫ Z ↘ S⟩
+    letI : IsIntegral W := hT.isClosedPointTower.isIntegral (Z ↘ S)
+    letI : SmoothOfRelativeDimension 2 (W ↘ S) :=
+      hT.isClosedPointTower.smoothOfRelativeDimension (Z ↘ S)
+    ∃ A' B' : LogarithmicProjection i (D.comap T.toBase).radical,
+      A'.fan = A.fan ∧ A'.hom ≍ T.toBase ≫ A.hom ∧
+      B'.fan = B.fan ∧ B'.hom ≍ T.toBase ≫ B.hom ∧ Nonempty (SarkisovPath A' B')
+
+variable {A B : LogarithmicProjection i D}
+
+/-- A resolved Sarkisov factorization is witnessed by one nodal tower and a path
+between the two lifted projections. -/
+theorem hasResolvedSarkisovFactorization_iff [IsNoetherian Z] :
+    HasResolvedSarkisovFactorization A B ↔
+      ∃ (n : ℕ) (W : Scheme) (T : BlowupTower Z n W)
+        (hT : IsNodalBoundaryTower D (Z ↘ S) (𝟙 Z) T),
+        letI : W.Over S := ⟨T.toBase ≫ Z ↘ S⟩
+        letI : IsIntegral W := hT.isClosedPointTower.isIntegral (Z ↘ S)
+        letI : SmoothOfRelativeDimension 2 (W ↘ S) :=
+          hT.isClosedPointTower.smoothOfRelativeDimension (Z ↘ S)
+        ∃ A' B' : LogarithmicProjection i (D.comap T.toBase).radical,
+          A'.fan = A.fan ∧ A'.hom ≍ T.toBase ≫ A.hom ∧
+          B'.fan = B.fan ∧ B'.hom ≍ T.toBase ≫ B.hom ∧ Nonempty (SarkisovPath A' B') := Iff.rfl
+
+/-- A resolved factorization has the specified rational map whenever its original
+projections realize that map. The lifted projections determine this equality
+by dominance, independently of the chosen nodal tower. -/
+theorem HasResolvedSarkisovFactorization.exists_path_of_comp_eq [IsNoetherian Z]
+    (h : HasResolvedSarkisovFactorization A B) {f : X[A.fan] ⤏ X[B.fan]}
+    (hf : A.hom.toRationalMap.comp f = B.hom.toRationalMap) :
+    ∃ (n : ℕ) (W : Scheme) (T : BlowupTower Z n W)
+      (hT : IsNodalBoundaryTower D (Z ↘ S) (𝟙 Z) T),
+      letI : W.Over S := ⟨T.toBase ≫ Z ↘ S⟩
+      letI : IsIntegral W := hT.isClosedPointTower.isIntegral (Z ↘ S)
+      letI : SmoothOfRelativeDimension 2 (W ↘ S) :=
+        hT.isClosedPointTower.smoothOfRelativeDimension (Z ↘ S)
+      ∃ (A' B' : LogarithmicProjection i (D.comap T.toBase).radical)
+        (p : SarkisovPath A' B'),
+        A'.fan = A.fan ∧ A'.hom ≍ T.toBase ≫ A.hom ∧
+        B'.fan = B.fan ∧ B'.hom ≍ T.toBase ≫ B.hom ∧ p.rationalMap ≍ f := by
+  obtain ⟨n, W, T, hT, A', B', hA, hAcomp, hB, hBcomp, ⟨p⟩⟩ :=
+    hasResolvedSarkisovFactorization_iff.mp h
+  refine ⟨n, W, T, hT, A', B', p, hA, hAcomp, hB, hBcomp, ?_⟩
+  let : W.Over S := ⟨T.toBase ≫ Z ↘ S⟩
+  let : IsIntegral W := hT.isClosedPointTower.isIntegral (Z ↘ S)
+  let : SmoothOfRelativeDimension 2 (W ↘ S) :=
+    hT.isClosedPointTower.smoothOfRelativeDimension (Z ↘ S)
+  let : IsModification T.toBase :=
+    hT.isClosedPointTower.isModification_of_smoothOfRelativeDimension_two (Z ↘ S)
+  rcases A' with ⟨Φ, hΦ, hcΦ, a, ha, hda, hpa⟩
+  rcases B' with ⟨Ψ, hΨ, hcΨ, b, hb, hdb, hpb⟩
+  dsimp only at hA hB
+  subst Φ Ψ
+  apply heq_of_eq
+  refine (p.rationalMap_eq_iff f).mpr ?_
+  have lift_eq (a' : W ⟶ X[A.fan]) [IsDominant a'] (b' : W ⟶ X[B.fan])
+      (ha' : a' = T.toBase ≫ A.hom) (hb' : b' = T.toBase ≫ B.hom) :
+      a'.toRationalMap.comp f = b'.toRationalMap := by
+    subst a' b'
+    have h := congrArg (fun g ↦ T.toBase.toRationalMap.comp g) hf
+    simpa only [← Scheme.RationalMap.comp_assoc, Scheme.RationalMap.comp_toRationalMap,
+      Scheme.Hom.toRationalMap_compHom] using h
+  exact lift_eq a b (eq_of_heq hAcomp) (eq_of_heq hBcomp)
+
+private theorem hasResolvedSarkisovFactorization_of_append [IsNoetherian Z]
+    (A B : LogarithmicProjection i D) {m n : ℕ} {Y W : Scheme}
+    {T : BlowupTower Z m Y} {U : BlowupTower Y n W}
+    (hT : IsNodalBoundaryTower D (Z ↘ S) (𝟙 Z) T)
+    (hU : IsNodalBoundaryTower (D.comap T.toBase).radical (T.toBase ≫ Z ↘ S) (𝟙 Y) U) :
+    letI : Y.Over S := ⟨T.toBase ≫ Z ↘ S⟩
+    letI : SmoothOfRelativeDimension 2 (Y ↘ S) :=
+      hT.isClosedPointTower.smoothOfRelativeDimension (Z ↘ S)
+    letI : IsNoetherian Y := T.isNoetherian
+    letI : IsIntegral Y := hT.isClosedPointTower.isIntegral (Z ↘ S)
+    letI : W.Over S := ⟨U.toBase ≫ Y ↘ S⟩
+    letI : SmoothOfRelativeDimension 2 (W ↘ S) :=
+      hU.isClosedPointTower.smoothOfRelativeDimension (Y ↘ S)
+    letI : IsIntegral W := hU.isClosedPointTower.isIntegral (Y ↘ S)
+    ∀ (A' B' : LogarithmicProjection i (((D.comap T.toBase).radical).comap U.toBase).radical),
+      A'.fan = A.fan → A'.hom ≍ U.toBase ≫ T.toBase ≫ A.hom →
+      B'.fan = B.fan → B'.hom ≍ U.toBase ≫ T.toBase ≫ B.hom →
+      SarkisovPath A' B' → HasResolvedSarkisovFactorization A B := by
+  intro A' B' hA hAcomp hB hBcomp p
+  let : IsNoetherian Y := T.isNoetherian
+  let : IsIntegral Y := hT.isClosedPointTower.isIntegral (Z ↘ S)
+  let : SmoothOfRelativeDimension 2 (T.toBase ≫ Z ↘ S) :=
+    hT.isClosedPointTower.smoothOfRelativeDimension (Z ↘ S)
+  let : IsIntegral W := hU.isClosedPointTower.isIntegral (T.toBase ≫ Z ↘ S)
+  have hAppend : IsNodalBoundaryTower D (Z ↘ S) (𝟙 Z) (T.append U) := hT.append
+    (hU.congr (by simp only [Category.id_comp, Category.comp_id])
+      (by simp only [comap_id, support_radical, Category.comp_id]))
+  let P (f : W ⟶ Z) (s : W ⟶ S) (hs : SmoothOfRelativeDimension 2 s)
+      (R : W.IdealSheafData) : Prop :=
+    letI : W.Over S := ⟨s⟩
+    letI : SmoothOfRelativeDimension 2 (W ↘ S) := hs
+    ∃ A' B' : LogarithmicProjection i R,
+      A'.fan = A.fan ∧ A'.hom ≍ f ≫ A.hom ∧
+      B'.fan = B.fan ∧ B'.hom ≍ f ≫ B.hom ∧ Nonempty (SarkisovPath A' B')
+  have hTransport {f g : W ⟶ Z} {s t : W ⟶ S} {hs : SmoothOfRelativeDimension 2 s}
+      {ht : SmoothOfRelativeDimension 2 t} {R R' : W.IdealSheafData}
+      (hfg : f = g) (hst : s = t) (hR : R = R') : P f s hs R = P g t ht R' := by
+    subst g t R'
+    rfl
+  have hs : (T.append U).toBase ≫ Z ↘ S = U.toBase ≫ T.toBase ≫ Z ↘ S := by
+    rw [toBase_append, Category.assoc]
+  have hR : (D.comap (T.append U).toBase).radical =
+      ((D.comap T.toBase).radical.comap U.toBase).radical := by
+    rw [toBase_append, radical_comap_radical, comap_comp]
+  refine hasResolvedSarkisovFactorization_iff.mpr ⟨m + n, W, T.append U, hAppend, ?_⟩
+  exact (hTransport (hs := hAppend.isClosedPointTower.smoothOfRelativeDimension (Z ↘ S))
+    (ht := hU.isClosedPointTower.smoothOfRelativeDimension _) (toBase_append T U) hs hR).mpr
+    ⟨A', B', hA, by simpa only [Category.assoc] using hAcomp,
+      hB, by simpa only [Category.assoc] using hBcomp, ⟨p⟩⟩
+
+/-- Extend a resolved middle factorization along toric star paths from the two
+specified endpoint projections on a common nodal tower. -/
+theorem hasResolvedSarkisovFactorization_of_star_paths
+    (A B : LogarithmicProjection i D) (hRank : Module.finrank ℤ N = 2)
+    (hD : D.IsEffectiveCartier)
+    (hNode : AtWorstNodalOfRelativeDimensionOne (D.subschemeι ≫ Z ↘ S))
+    [IsNoetherian Z] {m : ℕ} {Y : Scheme} {T : BlowupTower Z m Y}
+    (hT : IsNodalBoundaryTower D (Z ↘ S) (𝟙 Z) T) :
+    letI : Y.Over S := ⟨T.toBase ≫ Z ↘ S⟩
+    letI : IsIntegral Y := hT.isClosedPointTower.isIntegral (Z ↘ S)
+    letI : SmoothOfRelativeDimension 2 (Y ↘ S) :=
+      hT.isClosedPointTower.smoothOfRelativeDimension (Z ↘ S)
+    letI : IsNoetherian Y := T.isNoetherian
+    ∀ {A₀ B₀ A₁ B₁ : LogarithmicProjection i (D.comap T.toBase).radical},
+      A₀.fan = A.fan → A₀.hom ≍ T.toBase ≫ A.hom →
+      B₀.fan = B.fan → B₀.hom ≍ T.toBase ≫ B.hom →
+      @Quiver.Path _ instQuiver A₀ A₁ → @Quiver.Path _ instQuiver B₀ B₁ →
+      HasResolvedSarkisovFactorization A₁ B₁ → HasResolvedSarkisovFactorization A B := by
+  intro A₀ B₀ A₁ B₁ hA₀ hA hB₀ hB p q hMiddle
+  let : Y.Over S := ⟨T.toBase ≫ Z ↘ S⟩
+  let : IsIntegral Y := hT.isClosedPointTower.isIntegral (Z ↘ S)
+  let : SmoothOfRelativeDimension 2 (Y ↘ S) :=
+    hT.isClosedPointTower.smoothOfRelativeDimension (Z ↘ S)
+  let : IsNoetherian Y := T.isNoetherian
+  obtain ⟨n, W, U, hU, A₂, B₂, hA₂, hAcomp, hB₂, hBcomp, ⟨r⟩⟩ :=
+    hasResolvedSarkisovFactorization_iff.mp hMiddle
+  let : W.Over S := ⟨U.toBase ≫ Y ↘ S⟩
+  let : IsIntegral W := hU.isClosedPointTower.isIntegral (Y ↘ S)
+  let : SmoothOfRelativeDimension 2 (W ↘ S) :=
+    hU.isClosedPointTower.smoothOfRelativeDimension (Y ↘ S)
+  let : U.toBase.IsOver S := ⟨rfl⟩
+  obtain ⟨hR, hNodeR⟩ := hT.radical_comap_toBase hD hNode
+  obtain ⟨F, hAEnd, hObj, -, -⟩ := (SarkisovPath.ofStar p).exists_precompose_of_nodalTower
+    hRank hU hR hNodeR (Iso.refl W) U.toBase (Category.id_comp _) A₂ hA₂ hAcomp
+  let : Quiver (LogarithmicProjection i (D.comap T.toBase).radical) := sarkisovQuiver
+  let : Quiver (LogarithmicProjection i ((D.comap T.toBase).radical.comap U.toBase).radical) :=
+    sarkisovQuiver
+  have hBEnd : F.obj B₁ = B₂ :=
+    LogarithmicProjection.ext ((hObj B₁).1.trans hB₂.symm) ((hObj B₁).2.trans hBcomp.symm)
+  let p' : SarkisovPath (F.obj A₀) A₂ := hAEnd ▸ F.mapPath (SarkisovPath.ofStar p)
+  let qRev : @Quiver.Path _ instQuiver B₁ B₀ := @Quiver.Path.reverse _ instQuiver _ _ _ q
+  let q' : SarkisovPath B₂ (F.obj B₀) := hBEnd ▸ F.mapPath (SarkisovPath.ofStar qRev)
+  have hEnds (L : LogarithmicProjection i (D.comap T.toBase).radical)
+      (M : LogarithmicProjection i D) (hFan : L.fan = M.fan)
+      (h : L.hom ≍ T.toBase ≫ M.hom) :
+      (F.obj L).hom ≍ U.toBase ≫ T.toBase ≫ M.hom := by
+    apply (hObj L).2.trans
+    congr 1
+    exact congrArg Fan.algebraicRealization hFan
+  let path : SarkisovPath (F.obj A₀) (F.obj B₀) :=
+    @Quiver.Path.comp _ sarkisovQuiver _ _ _ p'
+      (@Quiver.Path.comp _ sarkisovQuiver _ _ _ r q')
+  exact hasResolvedSarkisovFactorization_of_append A B hT hU _ _
+    ((hObj A₀).1.trans hA₀) (hEnds A₀ A hA₀ hA)
+    ((hObj B₀).1.trans hB₀) (hEnds B₀ B hB₀ hB) path
+
+end ResolvedFactorization
 
 end LogarithmicProjection
 

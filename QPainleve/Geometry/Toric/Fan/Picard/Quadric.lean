@@ -6,10 +6,12 @@ Authors: The QPainleve contributors
 module
 
 public import QPainleve.AlgebraicGeometry.Blowup.Tower.CurveIntersection
+public import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.Picard
 public import QPainleve.Geometry.Toric.Fan.Picard.Hirzebruch
 public import QPainleve.Geometry.Toric.Fan.Ruling.Basic
 public import QPainleve.Geometry.Toric.Fan.Ruling.Quadric
 
+import QPainleve.Geometry.Toric.Fan.Picard.FiberDegree
 import QPainleve.Geometry.Toric.Fan.Picard.Ruling
 import QPainleve.Geometry.Toric.Fan.Ruling.Torus
 import TauCeti.AlgebraicGeometry.Curves.ProjectiveLine
@@ -39,6 +41,49 @@ variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
 
 local notation "E" => quadricRulingExchange b hΦ hc r hr
 local notation "τ" => FanHom.algebraicMap (FanEquiv.toFanHom (E))
+
+include hr in
+/-- Reindexing the quadric rays with the exchanged lattice basis exchanges the
+two vectors of the Hirzebruch Picard basis. -/
+theorem hirzebruchPicardBasis_quadric_swap [Nonempty Φ.cones] :
+    let p := Equiv.swap (0 : Fin 2) 1
+    let s := ((Equiv.swap (0 : Fin 4) 1).trans (Equiv.swap 2 3)).trans r
+    hirzebruchPicardBasis (b.reindex p) 0 hΦ s (quadric_swapped_generators b r hr) =
+      (hirzebruchPicardBasis b 0 hΦ r hr).reindex p := by
+  intro p s
+  have hp₀ : p.symm 0 = 1 := rfl
+  have hp₁ : p.symm 1 = 0 := rfl
+  apply DFunLike.ext
+  refine Fin.forall_fin_two.mpr ⟨?_, ?_⟩
+  · rw [hirzebruchPicardBasis_apply_zero (b.reindex p) 0 hΦ s _,
+      Basis.reindex_apply, hp₀, hirzebruchPicardBasis_apply_one]
+    rfl
+  · rw [hirzebruchPicardBasis_apply_one (b.reindex p) 0 hΦ s _,
+      Basis.reindex_apply, hp₁, hirzebruchPicardBasis_apply_zero]
+    rfl
+
+include hr in
+/-- Reframe a quadric so that the specified invariant fiber and its opposite become
+the section rays. The two Picard basis vectors exchange places. -/
+theorem exists_quadric_picardBasis_of_fiber [Nonempty Φ.cones] (t : Fin 2) :
+    ∃ (d : Basis (Fin 2) ℤ N) (s : Fin 4 ≃ Φ.Ray)
+      (hs : (fun j ↦ (s j).primitiveGenerator) = ![d 0, d 1, -d 0, (0 : ℤ) • d 0 - d 1]),
+      s 0 = r ((![1, 3] : Fin 2 → Fin 4) t) ∧
+      s 2 = r ((![1, 3] : Fin 2 → Fin 4) (Equiv.swap 0 1 t)) ∧
+      hirzebruchPicardBasis d 0 hΦ s hs =
+        (hirzebruchPicardBasis b 0 hΦ r hr).reindex (Equiv.swap 0 1) := by
+  obtain ⟨a, u, hu, -, h₁, hpic⟩ := exists_hirzebruch_picardBasis_of_fiber b 0 r hr hΦ t
+  have hop (j : Fin 2) :
+      (r ((![1, 3] : Fin 2 → Fin 4) (Equiv.swap 0 1 j))).primitiveGenerator =
+        -(r ((![1, 3] : Fin 2 → Fin 4) j)).primitiveGenerator := by
+    fin_cases j <;> simp [congrFun hr]
+  have h₃ : u 3 = r ((![1, 3] : Fin 2 → Fin 4) (Equiv.swap 0 1 t)) := by
+    apply Ray.primitiveGenerator_injective
+    rw [hop, ← h₁, congrFun hu 3, congrFun hu 1]
+    simp
+  refine ⟨a.reindex (Equiv.swap 0 1), ((Equiv.swap 0 1).trans (Equiv.swap 2 3)).trans u,
+    quadric_swapped_generators a u hu, h₁, h₃, ?_⟩
+  rw [hirzebruchPicardBasis_quadric_swap a hΦ u hu, hpic]
 
 variable [Nonempty Φ.cones]
 
@@ -121,6 +166,35 @@ theorem picardMarking_symm_rulingExchange (L : LineBundleClass Y) :
     simpa only [Iso.symm_hom, hτ, hv, Prod.mk.eta] using q.isLift.symm.pullback_picardHom v.1 v.2
   rw [hw]
   exact ⟨Fan.hirzebruchPicardBasis_repr_pullback_quadricRulingExchange b hΦ hc r hr v.1, rfl⟩
+
+local notation "Plane" => Proj (TauCeti.SymmetricAlgebra.homogeneousSubmodule ℂ (Fin 3 → ℂ))
+
+omit [Nonempty Φ.cones] in
+/-- Every base order of a resolved plane line system on a toric quadric is bounded
+by its fiber degree in the exchanged ruling. This degree is the first Hirzebruch
+Picard coordinate in the given frame. -/
+theorem base_order_le_quadric_exchanged_fiber_degree [Φ.algebraicRealization.IsProjectiveOver ℂ]
+    (g : Y ⟶ Plane) (hg : g ≫ (Plane ↘ S) = T.toBase ≫ f) (j : Fin n) :
+    let : Nonempty Φ.cones := hc.nonempty_cones
+    let : SmoothOfRelativeDimension 2 f :=
+      rankTwo ▸ Φ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
+    let H := mk (Proj.symmetricAlgebraTwistingBundle ℂ (Fin 3 → ℂ) 1)
+    let v := (T.picardMarking hT f).symm (Additive.ofMul (pullback g H))
+    (-v.2 j) ≤ (C).repr v.1 0 := by
+  intro hcones hSmooth H v
+  let := hcones
+  let := hSmooth
+  let q := Q(T)
+  let hQ := q.isLift.isClosedPointTower hT
+  have hg' : (q.iso.inv ≫ g) ≫ (Plane ↘ S) = q.tower.toBase ≫ f := by
+    apply (cancel_epi q.iso.hom).mp
+    rw [← Category.assoc, Iso.hom_inv_id_assoc, hg, ← Category.assoc, q.isLift.hom_toBase,
+      Category.assoc, asIso_hom, comp_over τ S]
+  have hbound := hQ.base_order_le_hirzebruch_fiber_degree b 0 hΦ r hr hc (q.iso.inv ≫ g) hg' j
+  have ⟨hBase, hOrders⟩ := hT.picardMarking_symm_rulingExchange b hΦ hc r hr (pullback g H)
+  dsimp only at hbound hBase hOrders
+  rw [← pullback_comp, hOrders, hBase, Equiv.swap_apply_right] at hbound
+  exact hbound
 
 section
 

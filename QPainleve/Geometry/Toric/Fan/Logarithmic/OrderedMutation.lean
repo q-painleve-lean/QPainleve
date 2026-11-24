@@ -5,13 +5,9 @@ Authors: The QPainleve contributors
 -/
 module
 
-public import QPainleve.Geometry.Toric.Fan.Logarithmic.StarFactorization
-public import QPainleve.Geometry.Toric.Fan.Mutation.Subdivision
-public import QPainleve.Geometry.Toric.Fan.Mutation.TargetModel
+public import QPainleve.Geometry.Toric.Fan.Logarithmic.ResolvedMutation
 public import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.ProjectiveOver
 
-import Mathlib.Analysis.Complex.Polynomial.Basic
-import QPainleve.AlgebraicGeometry.RationalMap.Composition.Basic
 import QPainleve.Geometry.Toric.Fan.Logarithmic.Morphism
 
 /-!
@@ -25,9 +21,8 @@ scheme and gives the full Picard pullback in the two ordered models.
 
 This is the elementary transformation of [Gross, Hacking and Keel, §3.1][GHK]
 in the specified factorization of [Lutz, Theorem 8.4][HKL]. The proof uses
-`IsSubdivision.existsUnique_mutation_resolution` to refine the specified target
-projection and `Ray.exists_ordered_target_model_of_resolves` to transport the
-ordered centers and their Picard coordinates.
+`exists_ordered_toric_mutation_model_of_factorization` to transport the ordered
+centers and their Picard coordinates from the normalized source projection.
 
 [GHK]: https://arxiv.org/html/1309.2573v2#S3.SS1
 [HKL]: https://arxiv.org/pdf/2005.05010v3#page=68
@@ -109,24 +104,12 @@ theorem exists_ordered_toric_mutation_models
     A.fan.exists_toric_internal_factorization_of_boundary_comap_eq b A.isRegular A.isComplete
       hf A.comap_boundaryIdeal
   let : Nonempty Ω.cones := H.nonempty_cones_of_nonempty A.isComplete.nonempty_cones
-  let U := Ω.internalBlowupTower b a u
-  let := isIntegral_internalBlowupTower b a u hΩ
-  let := isModification_internalBlowupTower_toBase b a u hΩ
-  have hres : (base[U] ≫ π[H]).toRationalMap.comp μ[A.fan,ρ,hOpp] =
-      (e.hom ≫ r).toRationalMap := by
-    simp only [U, ← hsource, ← Scheme.RationalMap.comp_toRationalMap,
-      ← Scheme.Hom.toRationalMap_compHom, Scheme.RationalMap.comp_assoc, hr]
-  obtain ⟨q, ⟨hq, hproj⟩, -⟩ := H.existsUnique_mutation_resolution b ρ hOpp c
-    (isClosedPointTower_internalBlowupTower b a u) A.isRegular hΩ (e.hom ≫ r) hres
-  cases m with
-  | zero =>
-    obtain ⟨k, -⟩ := (liftRay(H)).exists_first_internalBlowupTower_center_of_resolves
-      b (oppositeRayMem(H)) c a u q hq
-    exact Fin.elim0 k
-  | succ n =>
-    obtain ⟨k, hk, hu, hfirst, g, hg, hb, hpic⟩ :=
-      (liftRay(H)).exists_ordered_target_model_of_resolves b (oppositeRayMem(H)) c a u hΩ q hq
-    exact ⟨Ω, hΩ, H, n, a, u, k, hk, hu, hfirst, e, g, hsource,
-      hproj.symm.trans (by rw [← hg, Category.assoc]), hboundary, hb, hpic⟩
+  obtain ⟨n, hm, k, hk, hu, hfirst, g, htarget, _, _, hb, hpic⟩ :=
+    A.exists_ordered_toric_mutation_model_of_factorization b ρ hOpp c hΩ H a u r hr
+      e hsource hboundary
+  subst m
+  refine ⟨Ω, hΩ, H, n, a, u, k, hk, hu, hfirst, e, g, hsource, ?_, hboundary, hb, hpic⟩
+  have h := congrArg (fun f ↦ g.hom ≫ f) htarget
+  rwa [Iso.hom_inv_id_assoc] at h
 
 end TauCeti.Toric.Fan.LogarithmicProjection

@@ -14,6 +14,7 @@ import QPainleve.AlgebraicGeometry.RationalPoint
 import Mathlib.Data.Set.Card.Arithmetic
 import TauCeti.AlgebraicGeometry.Cohomology.ClosedImmersion.Linear
 import TauCeti.AlgebraicGeometry.IdealSheaf.Rank
+import TauCeti.AlgebraicGeometry.IdealSheaf.BaseChange
 
 /-!
 # Local lengths of proper Cartier intersections
@@ -22,6 +23,8 @@ If two effective Cartier divisors on a projective surface meet properly, the Eul
 intersection number of their Picard classes is the rank of their scheme-theoretic
 intersection. In local rings this is a sum of quotient lengths weighted by residue
 degrees. Over an algebraically closed field each nonzero term has weight one.
+Finite flat pullback multiplies the intersection number by the rank of the map,
+as in the [projection formula for flat proper morphisms](https://stacks.math.columbia.edu/tag/0B0C).
 The comparison uses `IsEffectiveCartier.eulerCharBelow_eq_add_restriction`
 and Tau Ceti's `Scheme.Hom.finrank_comp_eq_finsum_of_isClosedImmersion`.
 
@@ -31,7 +34,7 @@ Here the successive Cartier exact sequences also apply to nonreduced divisors
 when the inverse image of one on the other is effective Cartier.
 -/
 
-open CategoryTheory AlgebraicGeometry
+open CategoryTheory CategoryTheory.Limits AlgebraicGeometry
 open TauCeti TauCeti.AlgebraicGeometry
 open AlgebraicGeometry.Scheme.IdealSheafData
 
@@ -95,6 +98,47 @@ public theorem classIntersectionNumber_eq_finrank_intersection (hX : topological
       (K.subschemeι.eulerCharBelow_pushforward_structureSheaf k s 2)
   rw [classIntersectionNumber_eq, inv_inv, inv_inv]
   linear_combination h₁ - h₂ + h₃ + hχ
+
+/-- Under a finite flat morphism of projective surfaces, the intersection number of
+two properly meeting Cartier divisors is multiplied by the rank of the morphism.
+The two pulled-back divisors meet properly by flatness. -/
+public theorem classIntersectionNumber_pullback_of_finite_flat (hX : topologicalKrullDim X ≤ 2)
+    {Y : Scheme.{u}} [Y.Over (Spec (.of k))] [Y.IsProjectiveOver k]
+    (hY : topologicalKrullDim Y ≤ 2) (f : X ⟶ Y) [f.IsOver (Spec (.of k))]
+    [IsFinite f] [Flat f] {A B : Y.IdealSheafData} (hA : A.IsEffectiveCartier)
+    (hB : B.IsEffectiveCartier) (hAB : (A.comap B.subschemeι).IsEffectiveCartier)
+    (d : ℕ) (hd : ∀ y, f.finrank y = d) :
+    classIntersectionNumber k X
+      (LineBundleClass.pullback f (LineBundleClass.mk hA.toInvertibleSheaf)⁻¹)
+      (LineBundleClass.pullback f (LineBundleClass.mk hB.toInvertibleSheaf)⁻¹) =
+    (d : ℤ) * classIntersectionNumber k Y
+      (LineBundleClass.mk hA.toInvertibleSheaf)⁻¹ (LineBundleClass.mk hB.toInvertibleSheaf)⁻¹ := by
+  let J := B.comap f
+  let g := subschemeMap J B f (B.le_map_comap f)
+  have hB' : IsPullback J.subschemeι g f B.subschemeι :=
+    isPullback_of_isClosedImmersion _ _ _ _ (by simp [g]) (by simp [J])
+  let K := A.comap B.subschemeι
+  let q := subschemeMap (K.comap g) K g (K.le_map_comap g)
+  have hK : IsPullback q ((K.comap g).subschemeι ≫ J.subschemeι) (K.subschemeι ≫ B.subschemeι) f :=
+    K.isPullback_subschemeMap_comap B.subschemeι hB'.flip
+  have : Flat g := MorphismProperty.of_isPullback hB' inferInstance
+  have : IsFinite q := MorphismProperty.of_isPullback hK.flip inferInstance
+  have : Flat q := MorphismProperty.of_isPullback hK.flip inferInstance
+  have hq (z : K.subscheme) : q.finrank z = d :=
+    (Scheme.Hom.finrank_of_isPullback _ _ _ _ hK.flip z).trans (hd _)
+  have : IsFinite (K.subscheme ↘ Spec (.of k)) := isFinite_cartierIntersection k hY hB hAB
+  have hbase : ((K.comap g).subscheme ↘ Spec (.of k)) = q ≫ K.subscheme ↘ Spec (.of k) := by
+    simp only [over_eq_subschemeι_comp, q, subschemeMap_subschemeι_assoc, g]
+    rw [comp_over f]
+  have hcomap : (A.comap f).comap J.subschemeι = K.comap g := by
+    rw [← comap_comp, hB'.w, comap_comp]
+  have hAB' : ((A.comap f).comap J.subschemeι).IsEffectiveCartier :=
+    hcomap ▸ hAB.comap g
+  rw [LineBundleClass.pullback_inv, LineBundleClass.pullback_inv,
+    hA.pullback_mk_toInvertibleSheaf (hA.comap f), hB.pullback_mk_toInvertibleSheaf (hB.comap f),
+    classIntersectionNumber_eq_finrank_intersection k hX (hA.comap f) (hB.comap f) hAB' default,
+    classIntersectionNumber_eq_finrank_intersection k hY hA hB hAB default]
+  rw [hcomap, hbase, q.finrank_comp _ hq, Nat.cast_mul]
 
 /-- Properly meeting effective Cartier divisors have positive intersection number exactly
 when their supports meet. -/
