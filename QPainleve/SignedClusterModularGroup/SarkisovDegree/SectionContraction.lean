@@ -206,7 +206,9 @@ private theorem prepend_picard_coordinates {Y Z : Scheme} {n : ℕ}
   simp only [toMul_ofMul, pullback_comp, Iso.hom_inv_id_assoc]
 
 include hc in
-private theorem hirzebruchOne_contraction_coordinates {Y Z : Scheme} {n : ℕ}
+/-- A resolving morphism and its transport across the blowup of a plane vertex have
+matching Picard coordinates in the plane and Hirzebruch-one markings. -/
+theorem hirzebruchOne_resolution_coordinates {Y Z : Scheme} {n : ℕ}
     {T : BlowupTower X n Y} {U : BlowupTower W n Z}
     (hT : IsClosedPointTower X T) (hp : IsClosed ({p} : Set P))
     (e : X ≅ W) (he : e.hom ≫ π ≫ fP = fX)
@@ -323,7 +325,7 @@ theorem exists_plane_resolution_of_hirzebruchOne {Y : Scheme} {n : ℕ}
   refine ⟨d, s, _, U, hU, R.iso, hproj.trans (by rw [he]), hf, hbir', ?_⟩
   dsimp only
   obtain ⟨hdegree, hfirst, hrest⟩ :=
-    hirzebruchOne_contraction_coordinates b hΦ hc r hr hT hp e hover hE
+    hirzebruchOne_resolution_coordinates b hΦ hc r hr hT hp e hover hE
       R.isLift g hg hbir hU hf hbir'
   refine ⟨hdegree, hfirst, hrest, fun hβ hm ↦ ?_⟩
   have hH := hT.homaloidal_intersection_identities_of_hirzebruch b 1 hΦ hc r hr g hg hbir
