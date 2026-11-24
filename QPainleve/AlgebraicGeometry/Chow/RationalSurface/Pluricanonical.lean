@@ -9,6 +9,7 @@ public import QPainleve.AlgebraicGeometry.Chow.RationalSurface.Basic
 public import QPainleve.AlgebraicGeometry.LineBundle.EffectiveClass
 
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Pluricanonical
+import QPainleve.AlgebraicGeometry.CartierDivisor.ZeroDivisor
 import QPainleve.AlgebraicGeometry.Modules.Differentials.Restriction
 import TauCeti.AlgebraicGeometry.Cohomology.ProjectiveSpace.TwistingSheaf
 
@@ -84,7 +85,6 @@ theorem subsingleton_cohomology_zero_pluricanonical_of_isRationalOver {m : ℕ} 
   exact (eT.trans (eVW.trans (eU.symm.trans
     (cohomologyBaseLinearEquivOfIso k eH 0)))).injective.subsingleton
 
-open TauCeti.AlgebraicGeometry.Scheme.CartierDivisor in
 /-- Positive multiples of the canonical class of a smooth projective rational surface
 over an algebraically closed field are ineffective. -/
 theorem not_mem_effectiveClasses_nsmul_canonical [IsIntegral X] {m : ℕ}
@@ -94,20 +94,10 @@ theorem not_mem_effectiveClasses_nsmul_canonical [IsIntegral X] {m : ℕ}
   let L := (ω[X]).tensorPow m
   have hL : LineBundleClass.mk L = D.toLineBundleClass := by
     simpa only [L, mk_tensorPow, toMul_nsmul, toMul_ofMul] using congrArg Additive.toMul hclass.symm
-  obtain ⟨e⟩ := toLineBundleClass_eq_mk_iff.mp hL.symm
   have hvan := X.subsingleton_cohomology_zero_pluricanonical_of_isRationalOver k hm
   have : Subsingleton Γ(L.obj, ⊤) :=
     (cohomologyZeroBaseLinearEquiv k X L.obj).surjective.subsingleton
-  let t := Scheme.Modules.Hom.app (Scheme.toRationalFunctions X) ⊤ (1 : Γ(X, ⊤))
-  let s := Scheme.CartierDivisor.sectionMk (U := ⊤) t (isEffective_iff_one_mem_sections.mp hD)
-  have hsub : Subsingleton Γ(D.sheaf, ⊤) :=
-    (ConcreteCategory.bijective_of_isIso (e.inv.app ⊤)).surjective.subsingleton
-  have hs : s = 0 := Subsingleton.elim _ _
-  have hz := congrArg (Scheme.Modules.Hom.app D.sheafι ⊤) hs
-  simp only [s, Scheme.CartierDivisor.sheafι_app_sectionMk, map_zero] at hz
-  have heq : (1 : Γ(X, (⊤ : X.Opens))) = 0 :=
-    (Scheme.toRationalFunctions_app_injective ⊤)
-      (hz.trans ((Scheme.Modules.Hom.app (Scheme.toRationalFunctions X) ⊤).hom.map_zero).symm)
-  exact one_ne_zero heq
+  obtain ⟨s, hs, _⟩ := L.exists_zeroDivisor_eq hD hL.symm
+  exact hs (Subsingleton.elim s 0)
 
 end AlgebraicGeometry.Scheme
