@@ -176,24 +176,15 @@ private theorem hasNodalModel_appended (Q : CompleteToricPresentation i b r L γ
     {M : Point Centers → MarkedSurface ℂ n H XTor} :
     NodalModelsOn (n := n) (H := H) Q M Cstep[w,s,P] →
     NodalModelsOn (n := n) (H := H) Q M Cnext[w,s,P] := by
-  intro models c
-  let f := (w.centerStepDomainIso ℂ s P).hom
-  have hf : f ≫ (Cstep[w,s,P]).hom = (Cnext[w,s,P]).hom :=
-    Path.centerStepDomainIso_hom_centerStepPartialMap_hom w s P
-  have ho : f ≫ ((Cstep[w,s,P]).domainOver (X := Centers) (Y := Centers)).hom =
-      ((Cnext[w,s,P]).domainOver (X := Centers) (Y := Centers)).hom := by
-    -- Expose the structure morphisms of the two domains to use the over-base equations.
-    change f ≫ (Cstep[w,s,P]).domain.ι ≫ (Centers).hom =
-      (Cnext[w,s,P]).domain.ι ≫ (Centers).hom
-    rw [← (Cstep[w,s,P]).over (Centers).hom (Centers).hom, ← Category.assoc, hf,
-      (Cnext[w,s,P]).over (Centers).hom (Centers).hom]
-  let a : (Cnext[w,s,P]).domainOver (X := Centers) (Y := Centers) ⟶
-      (Cstep[w,s,P]).domainOver (X := Centers) (Y := Centers) := Over.homMk f ho
-  have ha : a ≫ (Cstep[w,s,P]).domainTarget (X := Centers) (Y := Centers) =
-      (Cnext[w,s,P]).domainTarget (X := Centers) (Y := Centers) := by
-    ext : 1
-    simpa only [Over.comp_left, Over.homMk_left, domainTarget_left, a] using hf
-  simpa only [Category.assoc, ha] using models (c ≫ a)
+  intro models
+  have hC := Path.centerPartialMap_cons (K := ℂ) w s P
+  let : ((Cw[w,P]).comp (Cstep[w,s,P])).IsOver (Centers).hom (Centers).hom :=
+    hC ▸ inferInstanceAs ((Cnext[w,s,P]).IsOver (Centers).hom (Centers).hom)
+  refine (nodalModelsOn_congr Q M hC).mpr ?_
+  intro c
+  simpa only [Category.assoc, compDomainRight_target] using
+    models (c ≫ (Cw[w,P]).compDomainRight (X := Centers) (Y := Centers) (Z := Centers)
+      (Cstep[w,s,P]))
 
 private abbrev StepResult (w : Word B E) (s : E ⟶ D) (P : ChargeSeed B N)
     (M : Point Centers → MarkedSurface ℂ n H XTor) :=
