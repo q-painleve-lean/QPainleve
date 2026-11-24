@@ -6,15 +6,22 @@ Authors: The QPainleve contributors
 module
 
 public import QPainleve.AlgebraicGeometry.Blowup.Tower.Intersection
+public import QPainleve.AlgebraicGeometry.Blowup.Tower.Nef
+public import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.Picard
+public import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.Polynomial.SymmetricAlgebra
 public import QPainleve.Geometry.Toric.Fan.Picard.Hirzebruch
 public import QPainleve.Geometry.Toric.Fan.Ruling.Basic
 public import QPainleve.Geometry.Toric.Fan.Ruling.Hirzebruch
 public import TauCeti.AlgebraicGeometry.LineBundle.ProjectiveLine
 
+import Mathlib.AlgebraicGeometry.AlgClosed.Basic
 import Mathlib.Analysis.Complex.Polynomial.Basic
 import QPainleve.AlgebraicGeometry.Chow.Isomorphism
+import QPainleve.AlgebraicGeometry.Curves.Degree.Ample
+import QPainleve.AlgebraicGeometry.IntersectionNumber.Nef.Pullback
 import QPainleve.Geometry.Toric.Fan.Picard.Ruling
 import QPainleve.Geometry.Toric.Fan.Ruling.Subdivision
+import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.TwistingSheaf.Ample
 import TauCeti.AlgebraicGeometry.RationalPoint.IdealSheaf
 
 /-!
@@ -26,6 +33,8 @@ a common resolved ruling therefore give the same fiber degree, even when their
 closed-point towers have different exceptional coordinates. This is the numerical
 comparison used in the preparation of a Hirzebruch surface for the quadric case in
 [Lutz's appendix to Hacking and Keating][HKL], Proposition 8.11, Case C.
+A ruling fiber through the projected center also bounds each base order of a nef class,
+including at infinitely near centers.
 
 [HKL]: https://arxiv.org/abs/2005.05010v3
 -/
@@ -37,45 +46,57 @@ open TauCeti.AlgebraicGeometry LineBundleClass TauCeti.Toric
 
 local notation "S" => Spec (CommRingCat.of ℂ)
 local notation "X[" Δ "]" => Fan.algebraicRealization Δ
-local notation "H" => Additive.toMul (AddEquiv.symm (projectiveLine.picardDegreeEquiv ℂ) 1)
+local notation "rulingLineClass" =>
+  Additive.toMul (AddEquiv.symm (projectiveLine.picardDegreeEquiv ℂ) 1)
 
 namespace TauCeti.Toric.Fan
 
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
-  {i : N →+ V} {Φ : Fan i} [Nonempty Φ.cones]
+  {i : N →+ V} {Φ : Fan i}
   (b : Basis (Fin 2) ℤ N) (e : ℤ) (hΦ : Φ.IsRegular) (r : Fin 4 ≃ Φ.Ray)
   (hr : (fun j ↦ (r j).primitiveGenerator) = ![b 0, b 1, -b 0, e • b 0 - b 1])
 
 local notation "m" => LinearMap.toAddMonoidHom (b.coord 1)
+local notation "C" => Φ.hirzebruchPicardBasis b e hΦ r hr
+
+private theorem hirzebruch_ruling_character_ne_zero : m ≠ 0 := by
+  intro hz
+  have ha := DFunLike.congr_fun hz (b 1)
+  simp [Basis.coord_apply] at ha
+
+open scoped Classical in
+include hr in
+private theorem hirzebruch_ruling_fiber_coefficients :
+    (fun ρ : Φ.Ray ↦ max (m ρ.primitiveGenerator) 0) = Pi.single (r 1) 1 := by
+  funext ρ
+  obtain ⟨j, rfl⟩ := r.surjective ρ
+  have hj := congrFun hr j
+  simp only [Equiv.apply_eq_iff_eq, Pi.single_apply]
+  rw [hj]
+  fin_cases j <;> norm_num [Basis.coord_apply]
+
+variable [Nonempty Φ.cones]
 
 /-- The first Hirzebruch Picard basis vector is the pullback of `𝒪(1)`
 under the ruling defined by the second basis character. -/
 theorem hirzebruchPicardBasis_zero_eq_pullback_characterRuling :
     (Φ.hirzebruchPicardBasis b e hΦ r hr 0).toMul =
-      pullback (Φ.characterRuling m (nonneg_or_nonpos_hirzebruch_ruling_character b e r hr)) H := by
+      pullback (Φ.characterRuling m (nonneg_or_nonpos_hirzebruch_ruling_character b e r hr))
+        rulingLineClass := by
   classical
   let h := nonneg_or_nonpos_hirzebruch_ruling_character b e r hr
   let p := projectiveLine.polynomialPoint ℂ (RingHom.id ℂ) 0 0
   have hp : p ≫ (projectiveLine ℂ ↘ S) = 𝟙 S := by
     simp [p, projectiveLine.polynomialPoint_over]
-  have hm : m ≠ 0 := by
-    intro hz
-    have ha := DFunLike.congr_fun hz (b 1)
-    simp [Basis.coord_apply] at ha
-  have hcoeff : (fun ρ : Φ.Ray ↦ max (m ρ.primitiveGenerator) 0) = Pi.single (r 1) 1 := by
-    funext ρ
-    obtain ⟨j, rfl⟩ := r.surjective ρ
-    have hj := congrFun hr j
-    simp only [Equiv.apply_eq_iff_eq, Pi.single_apply]
-    rw [hj]
-    fin_cases j <;> norm_num [Basis.coord_apply]
+  have hm := hirzebruch_ruling_character_ne_zero b
   have hI := Φ.isEffectiveCartier_characterRuling_fiber m h hm p hp
   have hclass := congrArg Additive.toMul
     (Φ.toLineBundleClass_characterRuling_fiber m h hm p hp hΦ)
-  simp only [toMul_ofMul, hcoeff, ← hirzebruchPicardBasis_apply_zero b e hΦ r hr] at hclass
+  simp only [toMul_ofMul, hirzebruch_ruling_fiber_coefficients b e r hr,
+    ← hirzebruchPicardBasis_apply_zero b e hΦ r hr] at hclass
   let hP := (Scheme.Hom.isRelativeEffectiveCartier_ker_of_smoothOfRelativeDimension p hp)
     |>.isEffectiveCartier
-  have hH : (LineBundleClass.mk hP.toInvertibleSheaf)⁻¹ = H := by
+  have hH : (LineBundleClass.mk hP.toInvertibleSheaf)⁻¹ = rulingLineClass := by
     apply Additive.ofMul.injective
     apply (projectiveLine.picardDegreeEquiv ℂ).injective
     rw [projectiveLine.picardDegreeEquiv_apply, toMul_ofMul, projectiveLine.eulerDegree_inv,
@@ -83,6 +104,36 @@ theorem hirzebruchPicardBasis_zero_eq_pullback_characterRuling :
     simp only [ofMul_toMul, AddEquiv.apply_symm_apply, neg_neg]
   rw [← hH, ← hclass, hI.toLineBundleClass_toCartierDivisor, pullback_inv,
     hP.pullback_mk_toInvertibleSheaf hI]
+
+/-- The fiber class of a Hirzebruch fan has an effective Cartier representative through
+every closed point, obtained as the scheme-theoretic fiber of the ruling at the point's image. -/
+theorem exists_isEffectiveCartier_mem_support_hirzebruchPicardBasis_zero
+    (x : X[Φ]) (hx : IsClosed ({x} : Set X[Φ])) :
+    ∃ (D : (X[Φ]).IdealSheafData) (hD : D.IsEffectiveCartier), x ∈ D.support ∧
+      Additive.ofMul (LineBundleClass.mk hD.toInvertibleSheaf)⁻¹ = C 0 := by
+  classical
+  let h := nonneg_or_nonpos_hirzebruch_ruling_character b e r hr
+  have hm := hirzebruch_ruling_character_ne_zero b
+  let f := (X[Φ] ↘ S)
+  have hdim : SmoothOfRelativeDimension 2 f :=
+    (Eq.trans (Module.finrank_eq_card_basis b) (Fintype.card_fin 2)) ▸
+      Φ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
+  let : Smooth f := hdim.smooth
+  let q := Φ.characterRuling m h
+  let p := pointOfClosedPoint f x hx ≫ q
+  have hp : p ≫ (projectiveLine ℂ ↘ S) = 𝟙 S := by
+    simpa only [p, Category.assoc, comp_over q S] using pointOfClosedPoint_comp f x hx
+  have : IsClosedImmersion p := p.isClosedImmersion_of_comp_eq_id hp
+  let hD := Φ.isEffectiveCartier_characterRuling_fiber m h hm p hp
+  refine ⟨p.ker.comap q, hD, ?_, ?_⟩
+  · rw [← SetLike.mem_coe, Scheme.IdealSheafData.support_comap,
+      TopologicalSpace.Closeds.coe_preimage, Set.mem_preimage, Scheme.Hom.support_ker,
+      p.isClosedEmbedding.isClosed_range.closure_eq]
+    refine ⟨IsLocalRing.closedPoint ℂ, (Scheme.Hom.comp_apply _ _ _).trans ?_⟩
+    exact congrArg q (pointOfClosedPoint_apply f x hx (IsLocalRing.closedPoint ℂ))
+  · have hclass := Φ.toLineBundleClass_characterRuling_fiber m h hm p hp hΦ
+    simpa only [Scheme.IdealSheafData.IsEffectiveCartier.toLineBundleClass_toCartierDivisor,
+      hirzebruch_ruling_fiber_coefficients b e r hr, hirzebruchPicardBasis_apply_zero] using hclass
 
 end TauCeti.Toric.Fan
 
@@ -118,7 +169,7 @@ theorem hirzebruch_fiber_degree_eq_classIntersectionNumber
     let v := (T.picardMarking hT f[Φ]).symm (Additive.ofMul L)
     (C[Φ,e,hΦ,r,hr]).repr v.1 1 =
       Chow.classIntersectionNumber ℂ Y L
-        (pullback (T.toBase ≫ ruling[Φ,e,r,hr]) H) := by
+        (pullback (T.toBase ≫ ruling[Φ,e,r,hr]) rulingLineClass) := by
   intro hDim hOver v
   let := hDim
   let := hOver
@@ -233,5 +284,73 @@ theorem hirzebruch_fiber_degree_eq_of_common_subdivision
   dsimp only at heq
   rw [pullback_comp k.hom, Iso.hom_inv_id_assoc] at heq
   exact (hT.hirzebruch_fiber_degree_eq_of_append b e hΦ r hr hA L).trans heq
+
+end QPainleve.BlowupTower.IsClosedPointTower
+
+namespace QPainleve.BlowupTower.IsClosedPointTower
+
+open Chow
+
+variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
+  {i : N →+ V} {Φ : Fan i} (b : Basis (Fin 2) ℤ N) (e : ℤ) (hΦ : Φ.IsRegular)
+  (r : Fin 4 ≃ Φ.Ray)
+  (hr : (fun j ↦ (r j).primitiveGenerator) = ![b 0, b 1, -b 0, e • b 0 - b 1])
+
+local notation "f" => (X[Φ] ↘ S)
+local notation "C" => Φ.hirzebruchPicardBasis b e hΦ r hr
+local notation "rankTwo" => Eq.trans (Module.finrank_eq_card_basis b) (Fintype.card_fin 2)
+
+variable [Φ.algebraicRealization.IsProjectiveOver ℂ] (hc : Φ.IsComplete)
+  {Y : Scheme} {n : ℕ} {T : BlowupTower Φ.algebraicRealization n Y}
+  (hT : IsClosedPointTower Φ.algebraicRealization T)
+
+include hT in
+/-- The fiber degree of the base class bounds each base order of a marked nef class
+on a point blowup tower of a complete regular Hirzebruch fan. -/
+theorem neg_exceptionalCoeff_le_hirzebruch_fiber_degree
+    (v : Additive (LineBundleClass X[Φ]) × (Fin n → ℤ))
+    (hv : (T.picardHom v).toMul.IsNef ℂ (T.toBase ≫ f)) (j : Fin n) :
+    let := hc.nonempty_cones
+    (-v.2 j) ≤ (C).repr v.1 1 := by
+  intro hcones
+  let := hcones
+  let : SmoothOfRelativeDimension 2 f :=
+    rankTwo ▸ Φ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
+  let : IsNoetherian X[Φ] := isNoetherian_of_finiteType f
+  obtain ⟨D, hD, hj, hClass⟩ := Φ.exists_isEffectiveCartier_mem_support_hirzebruchPicardBasis_zero
+    b e hΦ r hr _ (hT.isClosed_baseCenter j)
+  have hBound := hT.neg_exceptionalCoeff_le_classIntersectionNumber_of_mem_support hv j hD hj
+  rw [← toMul_ofMul (mk hD.toInvertibleSheaf)⁻¹, ← intersectionBilinForm_apply, hClass,
+    (Φ.hirzebruchPicardBasis_intersection_repr b e hΦ r hr hc v.1).1] at hBound
+  exact hBound
+
+open TauCeti.SymmetricAlgebra
+
+local notation "P" => Proj (homogeneousSubmodule ℂ (Fin 3 → ℂ))
+local notation "H" => mk (Proj.symmetricAlgebraTwistingBundle ℂ (Fin 3 → ℂ) 1)
+
+/-- Every base order of a resolved plane line system on a Hirzebruch surface is at most
+the fiber degree of the system. The bound holds at corners, at smooth points on
+sections and fibers, and at infinitely near centers. -/
+theorem base_order_le_hirzebruch_fiber_degree
+    (g : Y ⟶ P) (hg : g ≫ (P ↘ S) = T.toBase ≫ f) (j : Fin n) :
+    let : Nonempty Φ.cones := hc.nonempty_cones
+    let : SmoothOfRelativeDimension 2 f :=
+      rankTwo ▸ Φ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
+    let : IsNoetherian X[Φ] := isNoetherian_of_finiteType f
+    let v : Additive (LineBundleClass X[Φ]) × (Fin n → ℤ) :=
+      (T.picardMarking hT f).symm (Additive.ofMul (pullback g H))
+    (-v.2 j) ≤ (C).repr v.1 1 := by
+  intro hcones hdim hnoeth v
+  let := hcones
+  let := hdim
+  let := hnoeth
+  let : Y.Over S := ⟨T.toBase ≫ f⟩
+  have : g.IsOver S := ⟨hg⟩
+  have hH : (H).IsAmple := isAmple_twistingSheaf ℂ (Fin 3 → ℂ) Nat.one_pos
+  have hClass : (T.picardHom v).toMul = pullback g H := by
+    rw [← picardMarking_apply _ hT f, LinearEquiv.apply_symm_apply, toMul_ofMul]
+  exact hT.neg_exceptionalCoeff_le_hirzebruch_fiber_degree b e hΦ r hr hc v
+    (hClass.symm ▸ hH.isNef.pullback g) j
 
 end QPainleve.BlowupTower.IsClosedPointTower

@@ -80,7 +80,10 @@ structure IsNodalContraction : Prop where
     (_ : IsNodalBoundaryTower D[P] (P.surface ↘ S) (𝟙 P.surface) A)
     (e : W ≅ (Model[b,s,c]).1), e.inv ≫ A.toBase = p.projection
 
-private theorem isOrientedCycleSubdivision_comp_boundaryImage :
+/-- The toric boundary projection remains an oriented subdivision after identifying the
+marked boundary with the closed subscheme cut out by its ideal. -/
+theorem isOrientedCycleSubdivision_comp_boundaryImage :
+    letI : PrestableFamily (D[P].subscheme ↘ S) := P.prestable_boundaryImage
     (p.boundaryMap ≫ P.boundaryImageIso.hom).IsOrientedCycleSubdivision T P.imageCycle := by
   let : PrestableFamily (P.boundary ↘ S) := P.prestable
   exact p.orientedSubdivision.comp
@@ -132,7 +135,8 @@ theorem comp_evaluation_eq_of_marked_actions
   let := Q.isPerfPair_intersectionForm
   let vB := imagePairIso e
   have hv := imagePairIso_hom_comp e
-  have hB := imagePairIso_boundaryAction e hact
+  have hB : vB.boundaryCycleAction P.imageCycle Q.imageCycle = DihedralGroup.r 0 :=
+    (imagePairIso_boundaryAction e).trans (hact.trans DihedralGroup.one_def)
   obtain ⟨_, _, A, hA, eP, heP⟩ := hp.exists_tower
   obtain ⟨_, _, B, hB', eQ, heQ⟩ := hq.exists_tower
   let f := p.boundaryMap ≫ P.boundaryImageIso.hom
