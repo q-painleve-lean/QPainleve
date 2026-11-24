@@ -12,6 +12,7 @@ public import QPainleve.Geometry.Toric.Fan.TorusAction.Translation
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Modification
 import QPainleve.AlgebraicGeometry.RationalMap.Composition.Basic
 import QPainleve.Geometry.Toric.Fan.Scheme
+import TauCeti.Combinatorics.Quiver.Prefunctor
 
 /-!
 # Resolved Sarkisov links between toric surfaces
@@ -116,6 +117,12 @@ def ofStar (p : @Quiver.Path _ instQuiver A B) : SarkisovPath A B :=
   let F := @Prefunctor.mk (LogarithmicProjection i D) instQuiver
     (LogarithmicProjection i D) sarkisovQuiver id (fun e ↦ StarStep.toSarkisovStep e)
   @Prefunctor.mapPath _ instQuiver _ sarkisovQuiver F _ _ p
+
+/-- Including a toric star path as a Sarkisov path preserves its number of links. -/
+@[simp]
+theorem length_ofStar (p : @Quiver.Path _ instQuiver A B) :
+    (ofStar p).length = @Quiver.Path.length _ instQuiver A B p :=
+  @Prefunctor.length_mapPath _ _ instQuiver sarkisovQuiver _ A B p
 
 /-- The composite of the links along a resolved path, in execution order. -/
 def rationalMap (p : SarkisovPath A B) : X[A.fan] ⤏ X[B.fan] :=

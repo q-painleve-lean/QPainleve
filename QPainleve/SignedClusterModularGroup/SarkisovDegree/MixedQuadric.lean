@@ -122,7 +122,7 @@ private theorem exists_hirzebruchOne_resolution_of_corner_with_smooth_center
   rw [← (Φ.distinguishedPointHom σ).ker_eq_ker_fromSpecResidueField] at hmove
   obtain ⟨W, A, e, hA, he, hE, hcenters, htail⟩ := hmove
   obtain ⟨Ψ, F, hΨ, hF, hcΨ, _, d, τ, s, t, v, w, r₀, r', hr₀, hr', Z, B, e', hU,
-    hd₀, _, _, hv, hw, hproj, hcorner, hretained, hC⟩ :=
+    hd₀, _, _, hv, hw, -, -, hproj, hcorner, hretained, hC⟩ :=
     hA.exists_hirzebruch_toric_link_resolution b 0 hΦ hcΦ hrays σ hσ
   have hr₀' : r₀ = r := Equiv.ext fun k ↦ Fan.Ray.primitiveGenerator_injective
     ((congrFun hr₀ k).trans (congrFun hr k).symm)
