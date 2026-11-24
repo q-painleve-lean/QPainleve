@@ -126,7 +126,7 @@ path on the original resolution. The input quadric is marked in the exchanged
 ruling. The returned quadric tower resolves the same map to the target plane
 and its projection agrees with the last vertex of the path. The Picard
 coordinates record the two reverse pivots and the order of the retained
-centers, including infinitely near centers. -/
+centers, including infinitely near centers. The fiber degree strictly decreases. -/
 theorem exists_sarkisov_path_decrease_of_quadric_corner_and_smooth_centers
     (hg : g ≫ (P ↘ S) = T.toBase ≫ f[Φ]) (hbir : Scheme.BirationalOver g (𝟙 P))
     (j l : Fin (n + 2))
@@ -167,7 +167,7 @@ theorem exists_sarkisov_path_decrease_of_quadric_corner_and_smooth_centers
       y.2 = Fin.addCases (fun _ : Fin 1 ↦ -a - x.2 l)
         ((Fin.addCases (fun _ : Fin 1 ↦ -a - x.2 j) (x.2 ∘ j.succAbove) :
           Fin (1 + (n + 1)) → ℤ) ∘ (l'.natAdd 1).succAbove) ∧
-      0 < β' ∧
+      0 < β' ∧ β' < β ∧
       hirzebruchSarkisovBidegree β'.toNat (∑ k, -y.2 k).toNat <
         hirzebruchSarkisovBidegree β.toNat (∑ k, m k).toNat := by
   intro hcones hdim hY hdimY hIntegral x β a m A hA hAt hjbig hjle hlbig hlle hsmall
@@ -208,7 +208,7 @@ theorem exists_sarkisov_path_decrease_of_quadric_corner_and_smooth_centers
     exact Θ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΘ
   let : IsIntegral Z := hU.isIntegral f[Ψ]
   let : IsModification U.toBase := hU.isModification_of_smoothOfRelativeDimension_two f[Ψ]
-  obtain ⟨b', hr₂, _, U₀, k₀, W, U', hU', k₁, hμ, hτ, hg', hbir', ha', hβ', horders, hpos,
+  obtain ⟨b', hr₂, _, U₀, k₀, W, U', hU', k₁, hμ, hτ, hg', hbir', ha', hβ', horders, hpos, hdegree,
       hlt, _, hLOver, hMOver, hBOver, hpole⟩ := hreturn
   obtain ⟨_, hLpole, hMpole, hBpole, hUpole⟩ := hpole D hfPole
   -- Read the mutation and the ruling exchange on the original resolving surface.
@@ -246,6 +246,6 @@ theorem exists_sarkisov_path_decrease_of_quadric_corner_and_smooth_centers
   refine ⟨B, path, b', r₂, hr₂, W, U', hU', e', l', hidx, rfl,
     Θ.isProjectiveOver_quadric b' hΘ hcΘ r₂ hr₂, ?_⟩
   simpa only [e', Iso.trans_inv, Category.assoc, Fan.algebraicRealization_over] using
-    And.intro hg' (And.intro hbir' (And.intro hUpole ⟨ha', hβ', horders, hpos, hlt⟩))
+    And.intro hg' (And.intro hbir' (And.intro hUpole ⟨ha', hβ', horders, hpos, hdegree, hlt⟩))
 
 end QPainleve.BlowupTower.IsClosedPointTower
