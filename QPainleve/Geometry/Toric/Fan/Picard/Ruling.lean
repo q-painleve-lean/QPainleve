@@ -180,12 +180,6 @@ local notation "zeroPoint_over" =>
 
 local notation "D₀" => (Φ.isEffectiveCartier_characterRuling_fiber m h hm p₀ zeroPoint_over)
 
-/-- The fiber over zero has the ray multiplicities given by the positive part of the character. -/
-theorem toWeilDivisor_characterRuling_zeroFiber (hΦ : Φ.IsRegular) :
-    (D₀).toCartierDivisor.toWeilDivisor =
-      Φ.rayDivisorToWeilDivisor hΦ (fun ρ ↦ max (m ρ.primitiveGenerator) 0) :=
-  Φ.toWeilDivisor_characterRuling_coordinateFiber m h hm 0 hΦ
-
 /-- The class of any rational fiber of the ruling is represented by the ray divisor whose
 coefficients are the positive parts of the character evaluations. -/
 theorem toLineBundleClass_characterRuling_fiber (hΦ : Φ.IsRegular) :
@@ -210,7 +204,9 @@ theorem toLineBundleClass_characterRuling_fiber (hΦ : Φ.IsRegular) :
   rw [h₁.pullback_mk_toInvertibleSheaf (Φ.isEffectiveCartier_characterRuling_fiber m h hm p hp),
     h₀.pullback_mk_toInvertibleSheaf (D₀)] at hc
   have := Φ.uniqueFactorizationMonoid_stalk_algebraicRealization hΦ
-  rw [Φ.rayDivisorToPicard_def, ← toWeilDivisor_characterRuling_zeroFiber Φ m h hm,
+  have hzero := Φ.toWeilDivisor_characterRuling_coordinateFiber m h hm 0 hΦ
+  simp only [ite_true] at hzero
+  rw [Φ.rayDivisorToPicard_def, ← hzero,
     weilToLineBundleClassHom_toWeilDivisor]
   rw [Scheme.IdealSheafData.IsEffectiveCartier.toLineBundleClass_toCartierDivisor,
     Scheme.IdealSheafData.IsEffectiveCartier.toLineBundleClass_toCartierDivisor, hc]

@@ -59,12 +59,6 @@ variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
 local notation "m" => LinearMap.toAddMonoidHom (b.coord 1)
 local notation "C" => Φ.hirzebruchPicardBasis b e hΦ r hr
 
-open scoped Classical in
-include hr in
-private theorem hirzebruch_ruling_fiber_coefficients :
-    (fun ρ : Φ.Ray ↦ max (m ρ.primitiveGenerator) 0) = Pi.single (r 1) 1 :=
-  hirzebruch_ruling_coordinateFiber_coefficients b e r hr 0
-
 variable [Nonempty Φ.cones]
 
 /-- The first Hirzebruch Picard basis vector is the pullback of `𝒪(1)`
@@ -82,7 +76,9 @@ theorem hirzebruchPicardBasis_zero_eq_pullback_characterRuling :
   have hI := Φ.isEffectiveCartier_characterRuling_fiber m h hm p hp
   have hclass := congrArg Additive.toMul
     (Φ.toLineBundleClass_characterRuling_fiber m h hm p hp hΦ)
-  simp only [toMul_ofMul, hirzebruch_ruling_fiber_coefficients b e r hr,
+  have hcoeff := hirzebruch_ruling_coordinateFiber_coefficients b e r hr 0
+  simp only [ite_true, Matrix.cons_val_zero] at hcoeff
+  simp only [toMul_ofMul, hcoeff,
     ← hirzebruchPicardBasis_apply_zero b e hΦ r hr] at hclass
   let hP := (Scheme.Hom.isRelativeEffectiveCartier_ker_of_smoothOfRelativeDimension p hp)
     |>.isEffectiveCartier
@@ -122,8 +118,10 @@ theorem exists_isEffectiveCartier_mem_support_hirzebruchPicardBasis_zero
     refine ⟨IsLocalRing.closedPoint ℂ, (Scheme.Hom.comp_apply _ _ _).trans ?_⟩
     exact congrArg q (pointOfClosedPoint_apply f x hx (IsLocalRing.closedPoint ℂ))
   · have hclass := Φ.toLineBundleClass_characterRuling_fiber m h hm p hp hΦ
+    have hcoeff := hirzebruch_ruling_coordinateFiber_coefficients b e r hr 0
+    simp only [ite_true, Matrix.cons_val_zero] at hcoeff
     simpa only [Scheme.IdealSheafData.IsEffectiveCartier.toLineBundleClass_toCartierDivisor,
-      hirzebruch_ruling_fiber_coefficients b e r hr, hirzebruchPicardBasis_apply_zero] using hclass
+      hcoeff, hirzebruchPicardBasis_apply_zero] using hclass
 
 end TauCeti.Toric.Fan
 
