@@ -167,17 +167,4 @@ theorem isIso_iff_hyperplane_pullback_square_eq_one (f : X ⟶ Q)
   · have h₁ (p : Q) : f.finrank p = 1 := by exact_mod_cast (hrank p).symm.trans h
     exact (f.isIso_iff_finrank_eq).mpr (funext h₁)
 
-/-- A finite morphism from a normal projective surface to the projective plane is
-an isomorphism if the pullback of the hyperplane class has self-intersection one.
-The coordinate indexing can be any type equipped with a bijection to `Fin 3`. -/
-theorem isIso_of_finite_pullback_hyperplane_square_one (f : X ⟶ Q) [f.IsOver S] [IsFinite f]
-    (e : ι ≃ Fin 3) (hX : topologicalKrullDim X = 2) (L : InvertibleSheaf Q)
-    (hL : L.obj = Proj.twistingSheaf _ 1)
-    (h : classIntersectionNumber k X (pullback f (LineBundleClass.mk L))
-      (pullback f (LineBundleClass.mk L)) = 1) :
-    IsIso f := by
-  have hclass : LineBundleClass.mk L = H₀ := mk_eq_mk_iff.mpr ⟨eqToIso hL⟩
-  apply (f.isIso_iff_hyperplane_pullback_square_eq_one hX.ge e).mpr
-  simpa only [hclass] using h
-
 end AlgebraicGeometry.Scheme.Hom
