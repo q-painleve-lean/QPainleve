@@ -88,6 +88,22 @@ instance (U : OrderedToricModel A m) : Nonempty U.fan.cones :=
 abbrev tower (U : OrderedToricModel A m) :=
   U.fan.internalBlowupTower U.basis U.rays U.parameters
 
+/-- The toric and total exceptional coordinates mark the Picard group of the
+common resolving surface in the given ordered model. -/
+def picardMarking (U : OrderedToricModel A m) :
+    (Additive (LineBundleClass X[U.fan]) × (Fin m → ℤ)) ≃ₗ[ℤ] Additive (LineBundleClass Z) :=
+  (U.fan.internalBlowupPicardMarking U.basis U.rays U.parameters U.regular).trans
+    (LineBundleClass.pullbackEquiv U.iso.symm).toAdditive.toIntLinearEquiv
+
+/-- The ordered marking pulls the marked classes of the internal blowup tower
+to the specified resolving surface. -/
+@[simp]
+theorem picardMarking_apply (U : OrderedToricModel A m)
+    (a : Additive (LineBundleClass X[U.fan]) × (Fin m → ℤ)) :
+    U.picardMarking a = Additive.ofMul (LineBundleClass.pullback U.iso.inv
+      (U.fan.internalBlowupPicardMarking U.basis U.rays U.parameters U.regular a).toMul) := by
+  simp [picardMarking]
+
 /-- The regular projection to the intermediate fan of the ordered model. -/
 def hom (U : OrderedToricModel A m) : Z ⟶ X[U.fan] :=
   U.iso.inv ≫ base[U.tower]

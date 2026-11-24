@@ -5,8 +5,6 @@ Authors: The QPainleve contributors
 -/
 module
 
-public import QPainleve.Algebra.Cluster.Word.RationalMap
-public import QPainleve.AlgebraicGeometry.RationalMap.Composition.Defined
 public import QPainleve.Geometry.Toric.Fan.Logarithmic.Word.Basic
 
 import QPainleve.Geometry.Toric.Fan.Logarithmic.OrderedStarPath

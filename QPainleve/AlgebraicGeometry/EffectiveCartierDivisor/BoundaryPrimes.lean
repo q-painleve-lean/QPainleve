@@ -41,6 +41,25 @@ theorem IsEffectiveCartier.finite_boundaryPrimes [IsIntegral X] [IsNoetherian X]
   exact fun h ↦ hD.genericPoint_notMem_support
     (show genericPoint X ∈ (D.support : Set X) from h.symm ▸ Set.mem_univ _)
 
+/-- The ideal of a reduced effective Cartier divisor with exactly two prime
+components is the product of their vanishing ideals. -/
+theorem IsEffectiveCartier.eq_mul_vanishingIdeal_of_boundaryPrimes
+    [IsIntegral X] [IsNoetherian X]
+    [∀ x : X, UniqueFactorizationMonoid (X.presheaf.stalk x)]
+    {D : X.IdealSheafData} [IsReduced D.subscheme] (hD : D.IsEffectiveCartier)
+    {s t : D.boundaryPrimes} (hst : s ≠ t) (hall : ∀ j : D.boundaryPrimes, j = s ∨ j = t) :
+    D = vanishingIdeal ⟨closure {(s : X)}, isClosed_closure⟩ *
+      vanishingIdeal ⟨closure {(t : X)}, isClosed_closure⟩ := by
+  classical
+  let p := D.boundaryPrimeEmbedding
+  have hmem (a : CodimensionOnePoint X) :
+      a ∈ ({p s, p t} : Finset _) ↔ (a : X) ∈ D.support := by
+    refine Iff.trans ?_ (Set.ext_iff.mp D.range_boundaryPrimeEmbedding a)
+    simp only [Finset.mem_insert, Finset.mem_singleton, Set.mem_range]
+    grind
+  simpa only [Finset.prod_pair (p.injective.ne hst), p, coe_boundaryPrimeEmbedding] using
+    hD.eq_prod_vanishingIdeal_of_isReduced _ hmem
+
 /-- A morphism restricting to an isomorphism of effective Cartier divisors
 gives a bijection of their ambient boundary primes. -/
 theorem IsEffectiveCartier.bijOn_boundaryPrimes_of_subschemeIso
