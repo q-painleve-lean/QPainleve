@@ -139,7 +139,63 @@ theorem hirzebruchPicardBasis_apply_zero_eq_ray_three :
     hirzebruchPicardBasis b e hΦ r hr 0 = D 3 := by
   rw [hirzebruchPicardBasis_apply_zero, (hirzebruch_ray_classes b e hΦ r hr).2]
 
+include hr in
+/-- Either invariant fiber can be placed first among the fiber rays in a
+Hirzebruch marking. The section at index zero and the entire Picard basis are
+unchanged, so every fiber degree and section coefficient is preserved. -/
+theorem exists_hirzebruch_picardBasis_of_fiber (hΦ : Φ.IsRegular) (t : Fin 2) :
+    ∃ (d : Basis (Fin 2) ℤ N) (s : Fin 4 ≃ Φ.Ray)
+      (hs : (fun j ↦ (s j).primitiveGenerator) = ![d 0, d 1, -d 0, e • d 0 - d 1]),
+      s 0 = r 0 ∧ s 1 = r ((![1, 3] : Fin 2 → Fin 4) t) ∧
+      hirzebruchPicardBasis d e hΦ s hs = hirzebruchPicardBasis b e hΦ r hr := by
+  classical
+  fin_cases t
+  · exact ⟨b, r, hr, rfl, rfl, rfl⟩
+  obtain ⟨d, hd⟩ := exists_hirzebruch_marking_swap_fibers b e r hr
+  let s := (Equiv.swap 1 3).trans r
+  have hs : (fun j ↦ (s j).primitiveGenerator) = ![d 0, d 1, -d 0, e • d 0 - d 1] := hd
+  have h₀ : s 0 = r 0 := by simp [s, Equiv.swap_apply_def]
+  have h₁ : s 1 = r 3 := by simp [s]
+  refine ⟨d, s, hs, h₀, h₁, DFunLike.ext _ _ (Fin.forall_fin_two.mpr ⟨?_, ?_⟩)⟩
+  · simp only [hirzebruchPicardBasis_apply_zero d, h₁,
+      hirzebruchPicardBasis_apply_zero_eq_ray_three b]
+  · simp only [hirzebruchPicardBasis_apply_one, h₀]
+
 local notation "C" => hirzebruchPicardBasis b e hΦ r hr
+
+include hr in
+/-- A signed Hirzebruch marking can be replaced by one of index `e.natAbs`,
+with the same fiber class and fiber-degree coordinate on every Picard class. -/
+theorem exists_hirzebruchPicardBasis_natAbs :
+    ∃ (d : Basis (Fin 2) ℤ N) (t : Fin 4 ≃ Φ.Ray)
+      (ht : (fun j ↦ (t j).primitiveGenerator) =
+        ![d 0, d 1, -d 0, (e.natAbs : ℤ) • d 0 - d 1]),
+      hirzebruchPicardBasis d (e.natAbs : ℤ) hΦ t ht 0 = (C) 0 ∧
+      ∀ x : Pic, (hirzebruchPicardBasis d (e.natAbs : ℤ) hΦ t ht).repr x 1 = (C).repr x 1 := by
+  by_cases he : 0 ≤ e
+  · have h : (e.natAbs : ℤ) = e := by omega
+    simp only [h]
+    exact ⟨b, r, hr, rfl, fun _ ↦ rfl⟩
+  have hs : (e.natAbs : ℤ) = -e := by omega
+  obtain ⟨d, t, ht, hf, hs'⟩ := exists_hirzebruch_opposite_section_basis b e r hr
+  simp only [hs]
+  let C' := hirzebruchPicardBasis d (-e) hΦ t ht
+  have h₀ : C' 0 = (C) 0 := by simp only [C', hirzebruchPicardBasis_apply_zero, hf]
+  have h₁ : C' 1 = (C) 1 + e • (C) 0 := by
+    simp only [C', hirzebruchPicardBasis_apply_one, hirzebruchPicardBasis_apply_zero, hs']
+    exact (hirzebruch_ray_classes b e hΦ r hr).1
+  refine ⟨d, t, ht, h₀, fun x ↦ ?_⟩
+  have hzero : C'.repr ((C) 0) 1 = 0 := by
+    rw [← h₀]
+    simp [Basis.repr_self]
+  have hone : C'.repr ((C) 1) 1 = 1 := by
+    have h := congrArg (fun y ↦ C'.repr y 1) h₁
+    simpa [Basis.repr_self, hzero, -hirzebruchPicardBasis_apply_zero,
+      -hirzebruchPicardBasis_apply_one] using h.symm
+  have hx := (C).sum_repr x
+  rw [Fin.sum_univ_two] at hx
+  simpa [hzero, hone, -hirzebruchPicardBasis_apply_zero, -hirzebruchPicardBasis_apply_one] using
+    congrArg (fun y ↦ C'.repr y 1) hx.symm
 
 include hr in
 open Classical in

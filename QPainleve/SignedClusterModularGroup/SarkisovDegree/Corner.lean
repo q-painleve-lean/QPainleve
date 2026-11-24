@@ -6,16 +6,18 @@ Authors: The QPainleve contributors
 module
 
 public import QPainleve.AlgebraicGeometry.Blowup.Tower.Modification
+public import QPainleve.AlgebraicGeometry.Blowup.Tower.Ramification
 public import QPainleve.AlgebraicGeometry.Blowup.Tower.Reorder
+public import QPainleve.Geometry.Toric.Fan.Birational
+public import QPainleve.Geometry.Toric.Fan.Boundary.Basic
 public import QPainleve.Geometry.Toric.Fan.Ruling.Basic
 public import QPainleve.Geometry.Toric.Fan.Smooth
-public import QPainleve.Geometry.Toric.Fan.Subdivision.FunctionField
 public import QPainleve.SignedClusterModularGroup.SarkisovDegree.ToricLink
 
 import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
 import QPainleve.AlgebraicGeometry.Morphisms.Modification.Birational
-import QPainleve.AlgebraicGeometry.RationalMap.Composition.Basic
-import QPainleve.AlgebraicGeometry.RationalMap.Modification
+import QPainleve.AlgebraicGeometry.RationalMap.FunctionField
+import QPainleve.Geometry.Toric.Fan.Logarithmic.Subdivision
 import QPainleve.Geometry.Toric.Fan.Ruling.FixedPoint
 import QPainleve.Geometry.Toric.Fan.Ruling.Subdivision
 import TauCeti.AlgebraicGeometry.Morphisms.Modification.Composition
@@ -49,14 +51,16 @@ local notation "f[" Δ "]" => Fan.algebraicRealizationStructureMap Δ
 local notation "rays[" Δ "]" => Set.range (Fan.Ray.primitiveGenerator (Phi := Δ))
 local notation "I[" σ "]" => Scheme.Hom.ker (Fan.distinguishedPointHom _ σ)
 local notation "S" => Spec (CommRingCat.of ℂ)
+local notation "π[" s "]" => FanHom.algebraicMap (Fan.IsSubdivision.toFanHom s)
+local notation "B[" F "," hc "]" => Fan.boundaryIdeal F (Fan.IsComplete.nonempty_cones hc)
 local notation "rankTwo(" b ")" =>
   Eq.trans (Module.finrank_eq_card_basis b) (Fintype.card_fin 2)
 
 private theorem isModification_corner_projection {F : Fan i} [Nonempty Φ.cones]
     [SmoothOfRelativeDimension 2 f[Φ]] (σ : Φ.cones) (s : F.IsSubdivision Φ)
     (v : X[F] ≅ (I[σ]).blowup)
-    (hv : v.hom ≫ (I[σ]).blowupToBase = s.toFanHom.algebraicMap) :
-    IsModification s.toFanHom.algebraicMap := by
+    (hv : v.hom ≫ (I[σ]).blowupToBase = π[s]) :
+    IsModification π[s] := by
   have hσ : IsClosedPointTower X[Φ] (BlowupTower.nil.snoc (I[σ])) :=
     .snoc .nil _ (Φ.isClosed_singleton_distinguishedPoint σ)
       (Φ.distinguishedPointHom σ).ker_eq_ker_fromSpecResidueField
@@ -65,28 +69,6 @@ private theorem isModification_corner_projection {F : Fan i} [Nonempty Φ.cones]
       hσ.isModification_of_smoothOfRelativeDimension_two f[Φ]
   rw [← hv]
   infer_instance
-
-private theorem existsUnique_rationalMap_toric_corner
-    {F Ψ : Fan i} [Nonempty Φ.cones] [Nonempty F.cones] [PreirreducibleSpace Y]
-    (s : F.IsSubdivision Φ) (t : F.IsSubdivision Ψ) [IsModification s.toFanHom.algebraicMap]
-    (q : Y ⟶ X[F]) (u : Y ⟶ X[Φ]) [IsDominant u] (v : Y ⟶ X[Ψ])
-    (hu : q ≫ s.toFanHom.algebraicMap = u) (hv : q ≫ t.toFanHom.algebraicMap = v) :
-    ∃! φ : X[Φ] ⤏ X[Ψ], s.toFanHom.algebraicMap.toRationalMap.comp φ =
-      t.toFanHom.algebraicMap.toRationalMap ∧ u.toRationalMap.comp φ = v.toRationalMap := by
-  have : IsDominant (q ≫ s.toFanHom.algebraicMap) := hu ▸ inferInstance
-  have : IsDominant q := IsModification.isDominant_of_comp q s.toFanHom.algebraicMap
-  obtain ⟨φ, hφ, huniq⟩ :=
-    s.toFanHom.algebraicMap.existsUnique_rationalMap_comp_eq_of_isModification
-      t.toFanHom.algebraicMap.toRationalMap
-  refine ⟨φ, ⟨hφ, ?_⟩, fun ψ hψ ↦ huniq ψ hψ.1⟩
-  subst u
-  calc
-    _ = (q.toRationalMap.comp s.toFanHom.algebraicMap.toRationalMap).comp φ := by
-      simp only [Scheme.RationalMap.comp_toRationalMap, Scheme.Hom.toRationalMap_compHom]
-    _ = q.toRationalMap.comp t.toFanHom.algebraicMap.toRationalMap := by
-      rw [Scheme.RationalMap.comp_assoc, hφ]
-    _ = _ := by
-      simp only [Scheme.RationalMap.comp_toRationalMap, Scheme.Hom.toRationalMap_compHom, hv]
 
 private theorem toric_corner_baseCenter_ruling {F Ψ : Fan i}
     (b d : Basis (Fin 2) ℤ N) (σ : Φ.cones) (τ : Ψ.cones)
@@ -121,6 +103,11 @@ private theorem toric_corner_baseCenter_ruling {F Ψ : Fan i}
 /-- Perform the toric elementary link at the first center over the selected
 corner of a specified Hirzebruch resolution. The two projections from the
 common toric blowup are regular lifts of the link on the original resolution.
+The map to the common blowup is a modification. Both partial composites
+represent the corresponding canonical dense-torus changes.
+Any pole ideal for the original projection is also the pole ideal for both
+partial composites. On the returned tower it pulls back along the inverse of
+the resolving isomorphism.
 The new point tower retains the specified birational morphism up to the
 displayed isomorphism over the base field. Each retained center comes from a
 point of the common blowup. The reverse center lies over the same point of the
@@ -142,7 +129,7 @@ theorem exists_sarkisov_decrease_of_toric_corner
     (g : Y ⟶ P) (p : P ⟶ S) (hg : g ≫ p = T.toBase ≫ f[Φ])
     (hbir : Scheme.BirationalOver g (𝟙 P)) :
     let : Nonempty Φ.cones := hc.nonempty_cones
-    let : SmoothOfRelativeDimension 2 f[Φ] :=
+    let hdim : SmoothOfRelativeDimension 2 f[Φ] :=
       rankTwo(b) ▸ Φ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
     let : IsIntegral Y := hT.isIntegral f[Φ]
     let : IsModification T.toBase := hT.isModification_of_smoothOfRelativeDimension_two f[Φ]
@@ -174,11 +161,29 @@ theorem exists_sarkisov_decrease_of_toric_corner
             (Fin.addCases (fun _ : Fin 1 ↦ hT.baseCenter j) (hT.baseCenter ∘ j.succAbove) l)) ∧
       (k.inv ≫ g) ≫ p = U.toBase ≫ f[Ψ] ∧
       Scheme.BirationalOver (k.inv ≫ g) (𝟙 P) ∧
+      IsModification q ∧
       let : Nonempty F.cones := hcF.nonempty_cones
-      (∃! φ : X[Φ] ⤏ X[Ψ], s.toFanHom.algebraicMap.toRationalMap.comp φ =
-        t.toFanHom.algebraicMap.toRationalMap ∧
-        T.toBase.toRationalMap.comp φ = (k.hom ≫ U.toBase).toRationalMap) ∧
       let : Nonempty Ψ.cones := hc'.nonempty_cones
+      T.toBase.toRationalMap.comp (Φ.denseTorusPartialIso F).toRationalMap = q.toRationalMap ∧
+      T.toBase.toRationalMap.comp (Φ.denseTorusPartialIso Ψ).toRationalMap =
+        (k.hom ≫ U.toBase).toRationalMap ∧
+      (∃! φ : X[Φ] ⤏ X[Ψ], (π[s]).toRationalMap.comp φ = (π[t]).toRationalMap ∧
+        T.toBase.toRationalMap.comp φ = (k.hom ≫ U.toBase).toRationalMap) ∧
+      (letI : SmoothOfRelativeDimension 2 (X[Φ] ↘ S) := by
+         rw [Fan.algebraicRealization_over]
+         exact hdim
+       letI : SmoothOfRelativeDimension 2 (X[Ψ] ↘ S) := by
+         rw [Fan.algebraicRealization_over]
+         exact rankTwo(b) ▸ Ψ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΨ
+       letI : Y.Over S := ⟨T.toBase ≫ X[Φ] ↘ S⟩
+       letI : Smooth (Y ↘ S) := (hT.smoothOfRelativeDimension (X[Φ] ↘ S)).smooth
+       ∃ (_ : q.IsOver S) (_ : (k.hom ≫ U.toBase).IsOver S),
+         ∀ D : Y.IdealSheafData,
+           B[Φ,hc].comap T.toBase = D * hT.ramificationIdealSheafToBase ℂ →
+             B[F,hcF].comap q = D * ramificationIdealSheaf ℂ q ∧
+             B[Ψ,hc'].comap (k.hom ≫ U.toBase) =
+               D * ramificationIdealSheaf ℂ (k.hom ≫ U.toBase) ∧
+             B[Ψ,hc'].comap U.toBase = D.comap k.inv * hU.ramificationIdealSheafToBase ℂ) ∧
       let C := Fan.hirzebruchPicardBasis b e hΦ r hr
       let C' := Fan.hirzebruchPicardBasis d (e + 1) hΨ r' hr'
       ∀ (a β : ℤ) (x : Fin (n + 1) → ℤ),
@@ -225,12 +230,32 @@ theorem exists_sarkisov_decrease_of_toric_corner
   refine ⟨Ψ, F, hΨ, hF, hc', hcF, d, τ, s, t, v, v', q, r, r', hr, hr', Z, U, hU, k',
     hd₀, hd₁, hτ, hv, hv', hq, hq', hpts,
     toric_corner_baseCenter_ruling b d σ τ hσ hτ hd₀ hd₁ s t j hj hhead hpts, hover, hbir', ?_⟩
+  -- Identify the rational partial composites and their poles on the same resolution.
   let : Nonempty F.cones := hcF.nonempty_cones
-  have : IsModification s.toFanHom.algebraicMap := isModification_corner_projection σ s v hv
-  refine ⟨existsUnique_rationalMap_toric_corner s t q T.toBase (k'.hom ≫ U.toBase) hq hq', ?_⟩
+  let : Nonempty Ψ.cones := hc'.nonempty_cones
+  have : IsModification π[s] := isModification_corner_projection σ s v hv
+  have : IsModification (q ≫ π[s]) := hq ▸ inferInstance
+  have hmodq : IsModification q := IsModification.of_comp_right q π[s]
+  have hmiddle := s.comp_denseTorusPartialIso (Fan.IsSubdivision.refl F) q
+  have hlink : T.toBase.toRationalMap.comp (Φ.denseTorusPartialIso Ψ).toRationalMap =
+      (k'.hom ≫ U.toBase).toRationalMap := by
+    simpa only [hq, hq'] using s.comp_denseTorusPartialIso t q
+  have htoric : (π[s]).toRationalMap.comp (Φ.denseTorusPartialIso Ψ).toRationalMap =
+      (π[t]).toRationalMap := by
+    simpa only [Category.id_comp] using s.comp_denseTorusPartialIso t (𝟙 X[F])
+  refine ⟨hmodq, ?_, hlink, ⟨_, ⟨htoric, hlink⟩, fun φ hφ ↦
+    (π[s]).toRationalMap.comp_left_injective (hφ.1.trans htoric.symm)⟩, ?_⟩
+  · simpa only [hq, Fan.IsSubdivision.toFanHom_refl, FanHom.algebraicMap_id, Category.comp_id]
+      using hmiddle
+  let : SmoothOfRelativeDimension 2 (X[Φ] ↘ S) := by
+    rw [Fan.algebraicRealization_over]
+    exact hdim
+  let : SmoothOfRelativeDimension 2 (X[Ψ] ↘ S) := by
+    rw [Fan.algebraicRealization_over]
+    exact rankTwo(b) ▸ Ψ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΨ
+  refine ⟨s.pole_ideal_of_blowup_towers t hΦ hF hΨ hc hcF hc' rankTwo(b) hT hU q k' hq hq', ?_⟩
   -- Read the degree in the new marking and undo the permutation in the old order sum.
-  intro hcones' C C' a β x x'
-  let := hcones'
+  intro C C' a β x x'
   obtain ⟨hclass, hsum, hlt⟩ := hcoord a β (x j) (x ∘ j.succAbove)
   have hsumOld : (∑ l, -Fin.append (fun _ : Fin 1 ↦ x j) (x ∘ j.succAbove) l) =
       ∑ l, -x l := by

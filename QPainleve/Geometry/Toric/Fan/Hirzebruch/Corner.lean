@@ -7,6 +7,8 @@ module
 
 public import QPainleve.Geometry.Toric.Fan.Adjacency
 
+import Mathlib.LinearAlgebra.Transvection.Basic
+
 /-!
 # Corners of a Hirzebruch fan
 
@@ -50,6 +52,23 @@ theorem exists_rayEquiv_of_hirzebruch_ray_generators
 
 variable (r : Fin 4 ≃ Φ.Ray)
   (hr : (fun j ↦ (r j).primitiveGenerator) = ![b 0, b 1, -b 0, e • b 0 - b 1])
+
+include hr in
+/-- Swapping the two fiber rays of a Hirzebruch marking admits a lattice basis
+with the same signed Hirzebruch parameter. -/
+theorem exists_hirzebruch_marking_swap_fibers :
+    ∃ (d : Basis (Fin 2) ℤ N),
+      (fun j ↦ (r (Equiv.swap 1 3 j)).primitiveGenerator) =
+        ![d 0, d 1, -d 0, e • d 0 - d 1] := by
+  let d := (b.map (LinearEquiv.transvection (f := (-e) • b.coord 1) (v := b 0)
+    (by simp [Basis.coord_apply]))).unitsSMul (fun j ↦ if j = 1 then (-1 : ℤˣ) else 1)
+  have h₀ : d 0 = b 0 := by
+    simp [d, Basis.unitsSMul_apply, LinearMap.transvection.apply, Basis.coord_apply]
+  have h₁ : d 1 = e • b 0 - b 1 := by
+    simp [d, Basis.unitsSMul_apply, LinearMap.transvection.apply, Basis.coord_apply,
+      sub_eq_add_neg, add_comm]
+  refine ⟨d, funext fun j ↦ ?_⟩
+  fin_cases j <;> simp [Equiv.swap_apply_def, h₀, h₁, congrFun hr]
 
 local notation "sec" j:arg => r ((![0, 2] : Fin 2 → Fin 4) j)
 local notation "fib" j:arg => r ((![1, 3] : Fin 2 → Fin 4) j)
@@ -165,6 +184,27 @@ private theorem hirzebruch_corner_ray_order {d : Basis (Fin 2) ℤ N} (j k : Fin
       simp [p, q, h₀, h₁, congrFun hr, Equiv.swap_apply_def, smul_neg, neg_smul]
   · fin_cases k <;> fin_cases j <;> simp [p, q, Equiv.swap_apply_def]
   · fin_cases j <;> fin_cases k <;> simp [p, q, Equiv.swap_apply_def]
+
+include hr in
+/-- Keeping the first fiber ray and choosing the opposite section negates the
+Hirzebruch parameter in the ray presentation of the same fan. -/
+theorem exists_hirzebruch_opposite_section_basis :
+    ∃ (d : Basis (Fin 2) ℤ N) (t : Fin 4 ≃ Φ.Ray),
+      (fun l ↦ (t l).primitiveGenerator) = ![d 0, d 1, -d 0, (-e) • d 0 - d 1] ∧
+      t 1 = r 1 ∧ t 0 = r 2 := by
+  let d := b.unitsSMul ![-1, 1]
+  have h₀ : d 0 = (r 2).primitiveGenerator := by
+    simp [d, Basis.unitsSMul_apply, congrFun hr 2]
+  have h₁ : d 1 = (r 1).primitiveGenerator := by
+    simp [d, Basis.unitsSMul_apply, congrFun hr 1]
+  obtain ⟨a, t, ht, -, ha⟩ := hirzebruch_corner_ray_order b e r hr (d := d) 1 0 h₀ h₁
+  have ht₂ : t 0 = r 2 :=
+    Ray.primitiveGenerator_injective ((congrFun ht 0).trans h₀)
+  have ht₁ : t 1 = r 1 :=
+    Ray.primitiveGenerator_injective ((congrFun ht 1).trans h₁)
+  rcases ha with ⟨he, -⟩ | ⟨-, rfl⟩
+  · exact (r.injective.ne (by decide : (0 : Fin 4) ≠ 2) (he.symm.trans ht₂)).elim
+  · exact ⟨d, t, ht, ht₁, ht₂⟩
 
 include hr in
 /-- At any corner of a complete regular Hirzebruch fan, the section and fiber

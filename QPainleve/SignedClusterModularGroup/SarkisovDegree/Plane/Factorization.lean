@@ -101,7 +101,9 @@ theorem PlaneSarkisovDecrease.exists_path (R : PlaneSarkisovDecrease d hi hT g D
       comap_boundaryIdeal := R.first_pole }
   have hRank := (finrank_eq_card_basis d).trans (Fintype.card_fin 2)
   let A := B.coarsen hstar.isSubdivision reg hRank
-  let start := B.coarsenBlowup hstar reg hRank
+  have start : StarStep A B := by
+    have step := B.coarsenBlowup hRank reg B.isRegular hstar (.refl B.fan)
+    rwa [B.coarsen_refl hRank] at step
   obtain ⟨C, path, hfan, hhom, hlength⟩ := exists_continuation_path B R.link
   let p : SarkisovPath A B := Quiver.Hom.toPath start.toSarkisovStep
   refine ⟨A, C, p.comp path, coarsen_fan .., ?_, hfan, hhom, ?_⟩
