@@ -8,7 +8,6 @@ module
 public import QPainleve.Geometry.Toric.Fan.Logarithmic.StarFactorization
 
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Modification
-import QPainleve.AlgebraicGeometry.Blowup.Tower.Nodal.PoleIdeal
 import TauCeti.AlgebraicGeometry.Morphisms.Modification.Composition
 
 /-!
