@@ -206,24 +206,6 @@ theorem exists_hirzebruch_resolution_of_plane_vertex {Y : Scheme} {n : ℕ}
       simpa only [δ, m, w, neg_sq, toMul_ofMul, ofMul_toMul, ← pow_two] using hsq
     simpa only [hβ] using hirzebruchSarkisovBidegree_lt_plane_of_high_order hδ _ hsq' hhigh _ _
 
-/-- Adding one closed-point blowup to a plane resolution preserves birationality of
-the resolving map to the plane. -/
-theorem birationalOver_blowupToBase_comp {Y : Scheme} {n : ℕ}
-    {T : BlowupTower P n Y} (hT : IsClosedPointTower P T) {A : Y.IdealSheafData}
-    {q : Y} (hq : IsClosed ({q} : Set Y)) (hA : A = (Y.fromSpecResidueField q).ker)
-    {g : Y ⟶ P} (hg : Scheme.BirationalOver g (𝟙 P)) :
-    Scheme.BirationalOver (A.blowupToBase ≫ g) (𝟙 P) := by
-  let := hT.isIntegral fP
-  let := hT.smoothOfRelativeDimension fP
-  have hU : IsClosedPointTower Y (BlowupTower.nil.snoc A) := .snoc .nil q hq hA
-  have : IsModification A.blowupToBase := by
-    simpa only [toBase_snoc, toBase_nil, Category.comp_id] using
-      hU.isModification_of_smoothOfRelativeDimension_two (T.toBase ≫ fP)
-  obtain ⟨u, hu⟩ := IsModification.birationalOver A.blowupToBase
-  have hπ : Scheme.BirationalOver (A.blowupToBase ≫ g) g :=
-    ⟨u, by simpa only [Category.assoc, Category.comp_id] using congrArg (· ≫ g) hu⟩
-  exact hπ.trans hg
-
 /-- Blow up a torus-fixed plane vertex absent from the projected centers of a specified
 resolution, and transport the tower over the resulting Hirzebruch-one surface.
 The comparison uses one extra blowup on the original resolved surface, at the inverse
@@ -272,7 +254,7 @@ theorem exists_prepend_plane_vertex_blowup {Y : Scheme} {n : ℕ}
       toBase_nil, Category.id_comp, reassoc_of% he']
   have hb₁ : Scheme.BirationalOver g₁ (𝟙 P) :=
     (e.inv.birationalOver (A.blowupToBase ≫ g) g₁ rfl).trans
-      (hT.birationalOver_blowupToBase_comp hq hA hbir)
+      (hT.birationalOver_blowupToBase_comp fP hq hA hbir)
   obtain ⟨hσ, b, r, hr, Z, U, hU, f, k, hLift, hf, hproj, hover, hb, hcoord⟩ :=
     exists_hirzebruch_resolution_of_plane_vertex d hi a hV g₁ hg₁ hb₁
   let π := ((Ψ).starSubdivisionAlong_isSubdivision hΨ (σ).property hσ).toFanHom.algebraicMap ≫

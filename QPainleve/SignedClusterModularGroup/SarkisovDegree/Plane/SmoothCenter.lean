@@ -14,6 +14,7 @@ import QPainleve.Geometry.Toric.Fan.Boundary.Component
 import QPainleve.Geometry.Toric.Fan.Mutation.Hirzebruch
 import QPainleve.LinearAlgebra.Determinant.Dual
 import QPainleve.AlgebraicGeometry.Blowup.Projective.Global
+import QPainleve.AlgebraicGeometry.Blowup.Tower.Modification
 import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
 import QPainleve.AlgebraicGeometry.Morphisms.IsoLocus
 import TauCeti.AlgebraicGeometry.Blowup.Restriction
@@ -121,7 +122,7 @@ private theorem exists_plane_edge_preparation {p : P} (hp : IsClosed ({p} : Set 
     · rw [Category.assoc, ← he, Iso.inv_hom_id_assoc]
     · rw [Category.assoc]
       exact (e.inv.birationalOver _ _ rfl).trans
-        (hT.birationalOver_blowupToBase_comp hx hI hbir)
+        (hT.birationalOver_blowupToBase_comp fP hx hI hbir)
     · have hv' := hmark v.1 v.2
       rw [Prod.mk.eta, hv] at hv'
       intro v' w
