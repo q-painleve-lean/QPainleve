@@ -9,6 +9,7 @@ public import QPainleve.AlgebraicGeometry.Curves.Degree.Basic
 public import QPainleve.AlgebraicGeometry.IntersectionNumber.Nef
 public import TauCeti.AlgebraicGeometry.LineBundle.Ample
 
+import QPainleve.AlgebraicGeometry.IntersectionNumber.CurveImage
 import QPainleve.AlgebraicGeometry.LineBundle.Ample
 import TauCeti.AlgebraicGeometry.CartierDivisor.Effective.Degree
 import TauCeti.AlgebraicGeometry.Curves.Normalization
@@ -63,6 +64,23 @@ theorem intersectionNumber_pos (ha : a.IsAmple)
     0 < intersectionNumber k i a := by
   rw [intersectionNumber_def]
   exact (ha.pullback_of_isAffineHom i).eulerDegree_pos
+
+variable {C : Scheme.{u}}
+  [C.Over (Spec (.of k))] [C.IsCurveOver k] [X.Over (Spec (.of k))]
+  [IsSeparated (X ↘ Spec (.of k))] [LocallyOfFiniteType (X ↘ Spec (.of k))] in
+/-- The degree of an ample class along a proper integral curve vanishes exactly when
+its scheme-theoretic image is a point. -/
+theorem intersectionNumber_eq_zero_iff_subsingleton_image
+    (ha : a.IsAmple) (i : C ⟶ X) [i.IsOver (Spec (.of k))] :
+    intersectionNumber k i a = 0 ↔ Subsingleton i.image := by
+  refine ⟨fun h ↦ ?_, fun hi ↦ ?_⟩
+  · by_contra hi
+    have := i.isCurveOver_image_of_not_subsingleton (k := k) hi
+    obtain ⟨n, hn, hdeg⟩ :=
+      i.exists_pos_intersectionNumber_eq_mul_of_not_subsingleton_image (k := k) hi
+    rw [hdeg] at h
+    exact (mul_pos (Int.natCast_pos.mpr hn) (ha.intersectionNumber_pos i.imageι)).ne' h
+  · exact a.intersectionNumber_eq_zero_of_subsingleton_image i hi
 
 /-- An ample class has nonnegative degree along every closed integral curve over
 the base field. -/

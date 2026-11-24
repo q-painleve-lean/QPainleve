@@ -7,7 +7,7 @@ module
 
 public import QPainleve.Geometry.Toric.Fan.Picard.Homaloidal
 public import QPainleve.Geometry.Toric.Fan.StarSubdivision.ProjectivePlane
-public import QPainleve.SignedClusterModularGroup.SarkisovDegree.PlaneLink
+public import QPainleve.SignedClusterModularGroup.SarkisovDegree.Plane.Link
 
 import QPainleve.AlgebraicGeometry.Blowup.Exceptional.Class
 import QPainleve.AlgebraicGeometry.Blowup.Intersection

@@ -12,6 +12,7 @@ public import TauCeti.AlgebraicGeometry.IdealSheaf.OfIdealTop
 public import TauCeti.AlgebraicGeometry.Morphisms.IsoLocus
 
 import QPainleve.AlgebraicGeometry.IntersectionNumber.ExceptionalCurve.Cohomology
+import QPainleve.AlgebraicGeometry.IntersectionNumber.ExceptionalCurve.LocalFiltration
 
 /-!
 # The completed local ring of an exceptional contraction
@@ -48,9 +49,7 @@ local notation "𝔫" => ofIdealTop (Ideal.map
 private theorem finrank_quotient_pow_of_exceptional_thickening
     (hE : E.IsExceptionalCurveOfFirstKind) (e : projectiveLine k ≅ E.subscheme)
     [e.hom.IsOver (Spec (.of k))] (f : X ⟶ Y) [f.IsOver (Spec (.of k))] [IsProper f]
-    [IsIso f.appTop] (hI : (𝔫).comap f = E) (hU : (𝔫).support.compl ≤ f.isoLocus) (n : ℕ)
-    (hK : ((E ^ (n + 1)).sections ⊤).comap
-      ((Scheme.ΓSpecIso (.of R)).inv ≫ f.appTop).hom = 𝔪 ^ (n + 1)) :
+    [IsIso f.appTop] (hI : (𝔫).comap f = E) (hU : (𝔫).support.compl ≤ f.isoLocus) (n : ℕ) :
     Module.finrank k (R ⧸ 𝔪 ^ (n + 1)) = (n + 2).choose 2 := by
   let Z := (E ^ (n + 1)).subscheme
   let i := (E ^ (n + 1)).subschemeι
@@ -59,20 +58,16 @@ private theorem finrank_quotient_pow_of_exceptional_thickening
   have hker : RingHom.ker a = 𝔪 ^ (n + 1) := by
     dsimp only [a]
     rw [Scheme.Hom.comp_appTop, ← Category.assoc, CommRingCat.hom_comp, ← RingHom.comap_ker]
-    refine (congrArg (Ideal.comap ((Scheme.ΓSpecIso (.of R)).inv ≫ f.appTop).hom) ?_).trans hK
+    rw [← comap_sections_pow_of_exceptional_contraction f hE hI hU (n + 1)]
+    congr 1
     ext r
     exact (mem_sections_iff (E ^ (n + 1))).symm
   have hsurj : Function.Surjective a := by
-    let j := subschemeMap (E ^ (n + 1)) (𝔫 ^ (n + 1)) f (pow_le_map_pow hI.le (n + 1))
-    have happ : IsIso (f.app ⊤) := ‹IsIso f.appTop›
-    have hj := hE.surjective_appTop_subschemeMap_pow_of_contraction f hI hU
-      (U := ⊤) (isAffineOpen_top _) le_top n
-    have hi := IsClosedImmersion.isAffine_surjective_of_isAffine (𝔫 ^ (n + 1)).subschemeι
-    have hΓ := (ConcreteCategory.bijective_of_isIso (Scheme.ΓSpecIso (.of R)).inv).surjective
-    have ha : i ≫ f = j ≫ (𝔫 ^ (n + 1)).subschemeι := (subschemeMap_subschemeι _ _ _ _).symm
     dsimp only [a]
-    rw [ha, Scheme.Hom.comp_appTop]
-    exact hj.comp (hi.2.comp hΓ)
+    rw [Scheme.Hom.comp_appTop, ← Category.assoc, CommRingCat.hom_comp]
+    exact (hE.surjective_appTop_subschemeι_pow_of_contraction f hI hU (n + 1)).comp
+      (ConcreteCategory.bijective_of_isIso
+        ((Scheme.ΓSpecIso (.of R)).inv ≫ f.appTop)).surjective
   have hbase (c : k) : a (algebraMap k R c) = algebraMap k Γ(Z, ⊤) c := by
     have hf : (i ≫ f) ≫ Spec.map (CommRingCat.ofHom (algebraMap k R)) =
         Z ↘ Spec (.of k) := by
@@ -90,33 +85,28 @@ private theorem finrank_quotient_pow_of_exceptional_thickening
     (Ideal.quotientKerAlgEquivOfSurjective (f := g) hsurj)
   exact q.toLinearEquiv.finrank_eq.trans (hE.finrank_globalSections_thickening e (n + 1))
 
-/-- Suppose pullback along a proper exceptional contraction over a Noetherian local
-`k`-algebra identifies global functions, and the map from the base ring to the
-functions on the `n`th exceptional thickening has kernel `𝔪 ^ n` for every positive `n`.
-Its completed local base is the two-variable formal power series ring over `k`.
+/-- If pullback along a proper exceptional contraction over a Noetherian local `k`-algebra
+identifies global functions, its completed local base is the two-variable formal power
+series ring over `k`.
 The variables map to the images of generators of the maximal ideal of the original local ring. -/
 theorem exists_algEquiv_mvPowerSeries_of_exceptional_thickenings
     (hE : E.IsExceptionalCurveOfFirstKind) (e : projectiveLine k ≅ E.subscheme)
     [e.hom.IsOver (Spec (.of k))] (f : X ⟶ Y) [f.IsOver (Spec (.of k))] [IsProper f]
-    [IsIso f.appTop] (hI : (𝔫).comap f = E) (hU : (𝔫).support.compl ≤ f.isoLocus)
-    (hK : ∀ n : ℕ, ((E ^ (n + 1)).sections ⊤).comap
-      ((Scheme.ΓSpecIso (.of R)).inv ≫ f.appTop).hom = 𝔪 ^ (n + 1)) :
+    [IsIso f.appTop] (hI : (𝔫).comap f = E) (hU : (𝔫).support.compl ≤ f.isoLocus) :
     ∃ (φ : MvPowerSeries (Fin 2) k ≃ₐ[k] AdicCompletion 𝔪 R) (x : Fin 2 → R),
       Ideal.span (Set.range x) = 𝔪 ∧
         ∀ i, φ (MvPowerSeries.X i) = algebraMap R (AdicCompletion 𝔪 R) (x i) := by
   apply AdicCompletion.exists_algEquiv_mvPowerSeries_of_finrank_quotient_pow
-  exact fun n ↦ finrank_quotient_pow_of_exceptional_thickening hE e f hI hU n (hK n)
+  exact finrank_quotient_pow_of_exceptional_thickening hE e f hI hU
 
-/-- Under the exceptional thickening kernel comparison, the local ring at the contracted
-point is regular of dimension two. -/
+/-- If pullback along a proper exceptional contraction identifies global functions, the
+local ring at the contracted point is regular of dimension two. -/
 theorem isRegularLocalRing_and_ringKrullDim_eq_of_exceptional_thickenings
     (hE : E.IsExceptionalCurveOfFirstKind) (e : projectiveLine k ≅ E.subscheme)
     [e.hom.IsOver (Spec (.of k))] (f : X ⟶ Y) [f.IsOver (Spec (.of k))] [IsProper f]
-    [IsIso f.appTop] (hI : (𝔫).comap f = E) (hU : (𝔫).support.compl ≤ f.isoLocus)
-    (hK : ∀ n : ℕ, ((E ^ (n + 1)).sections ⊤).comap
-      ((Scheme.ΓSpecIso (.of R)).inv ≫ f.appTop).hom = 𝔪 ^ (n + 1)) :
+    [IsIso f.appTop] (hI : (𝔫).comap f = E) (hU : (𝔫).support.compl ≤ f.isoLocus) :
     IsRegularLocalRing R ∧ ringKrullDim R = 2 :=
   AdicCompletion.isRegularLocalRing_and_ringKrullDim_eq_of_finrank_quotient_pow
-    (k := k) 2 fun n ↦ finrank_quotient_pow_of_exceptional_thickening hE e f hI hU n (hK n)
+    (k := k) 2 (finrank_quotient_pow_of_exceptional_thickening hE e f hI hU)
 
 end AlgebraicGeometry.Scheme.IdealSheafData.IsExceptionalCurveOfFirstKind
