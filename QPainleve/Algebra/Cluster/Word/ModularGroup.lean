@@ -141,6 +141,27 @@ theorem clusterModularGroupMap_surjective :
   obtain ⟨w, hw, he⟩ := (mem_unsignedLoopPullbacks_iff k B _).1 f.unop.property
   exact ⟨⟨End.of w, (mem_inversionFreeLoops_iff B _).2 hw⟩, unop_injective (Subtype.ext he)⟩
 
+/-- Include the inversion-free X maps in the signed point-map group. -/
+@[expose]
+def clusterModularGroupInclusion : ClusterModularGroup k B →* SignedClusterModularGroup k B :=
+  (Subgroup.inclusion (unsignedLoopPullbacks_le_signedLoopPullbacks k B)).op
+
+@[simp]
+theorem clusterModularGroupInclusion_clusterModularGroupMap (w : inversionFreeLoops B) :
+    clusterModularGroupInclusion k B (clusterModularGroupMap k B w) =
+      signedClusterModularGroupMap k B w.val := by
+  apply unop_injective
+  apply Subtype.coe_injective
+  simp only [clusterModularGroupInclusion, MonoidHom.op_apply_apply, Function.comp_apply,
+    unop_op, Subgroup.coe_inclusion, clusterModularGroupMap_unop_coe,
+    signedClusterModularGroupMap_unop_coe]
+
+theorem clusterModularGroupInclusion_injective :
+    Function.Injective (clusterModularGroupInclusion k B) :=
+  op_injective.comp
+    ((Subgroup.inclusion_injective (unsignedLoopPullbacks_le_signedLoopPullbacks k B)).comp
+      unop_injective)
+
 /-- Two signed loops give the same group element exactly when their X pullbacks agree. -/
 theorem signedClusterModularGroupMap_eq_iff (w v : Loops) :
     signedClusterModularGroupMap k B w = signedClusterModularGroupMap k B v ↔
