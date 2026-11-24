@@ -11,6 +11,7 @@ public import TauCeti.AlgebraicGeometry.Morphisms.IsoLocus
 
 import QPainleve.AlgebraicGeometry.Morphisms.IsoLocus
 import TauCeti.AlgebraicGeometry.IdealSheaf.BaseChange
+import TauCeti.AlgebraicGeometry.IdealSheaf.Reduced
 import TauCeti.AlgebraicGeometry.ResidueField
 
 /-!
@@ -142,5 +143,32 @@ theorem IdealSheafData.le_ker_fromSpecResidueField_iff_mem_support {X : Scheme}
   rw [ker_fromSpecResidueField_eq_vanishingIdeal, ← IdealSheafData.le_support_iff_le_vanishingIdeal]
   rw [← SetLike.coe_subset_coe, Closeds.coe_mk, hp.closure_eq, Set.singleton_subset_iff]
   rfl
+
+/-- If a composite fibre over a closed point is reduced and has the same support as the
+fibre over a closed point of the intermediate scheme, the two scheme-theoretic fibres
+have the same defining ideal in the source. -/
+theorem Hom.comap_ker_fromSpecResidueField_eq_of_comp {X Y Z : Scheme.{u}}
+    (f : X ⟶ Y) (g : Y ⟶ Z) {q : Y}
+    (hq : IsClosed ({q} : Set Y)) (hp : IsClosed ({g q} : Set Z))
+    (hpre : f ⁻¹' {q} = (f ≫ g) ⁻¹' {g q})
+    [IsReduced (((Z.fromSpecResidueField (g q)).ker.comap (f ≫ g)).subscheme)] :
+    (Y.fromSpecResidueField q).ker.comap f =
+      (Z.fromSpecResidueField (g q)).ker.comap (f ≫ g) := by
+  let I := (Y.fromSpecResidueField q).ker.comap f
+  let J := (Z.fromSpecResidueField (g q)).ker.comap (f ≫ g)
+  have hsupport : I.support = J.support := SetLike.coe_injective <| by
+    simpa only [I, J, IdealSheafData.support_comap, Closeds.coe_preimage,
+      support_ker_fromSpecResidueField_of_isClosed hq,
+      support_ker_fromSpecResidueField_of_isClosed hp] using hpre
+  have hIJ : I ≤ J := by
+    rw [← (J.isReduced_subscheme_iff_radical_eq).mp inferInstance,
+      ← IdealSheafData.vanishingIdeal_support, ← hsupport]
+    exact IdealSheafData.le_support_iff_le_vanishingIdeal.mp le_rfl
+  have hqmem : q ∈ ((Z.fromSpecResidueField (g q)).ker.comap g).support := by
+    rw [IdealSheafData.support_comap, ← SetLike.mem_coe, Closeds.coe_preimage,
+      support_ker_fromSpecResidueField_of_isClosed hp]
+    exact Set.mem_singleton _
+  have hle := (IdealSheafData.le_ker_fromSpecResidueField_iff_mem_support _ hq).mpr hqmem
+  exact le_antisymm hIJ (by rw [IdealSheafData.comap_comp]; exact IdealSheafData.comap_mono f hle)
 
 end AlgebraicGeometry.Scheme

@@ -7,6 +7,7 @@ module
 
 public import QPainleve.Geometry.Toric.Fan.Boundary.Component
 public import QPainleve.Geometry.Toric.Fan.Point
+public import TauCeti.AlgebraicGeometry.Curves.Basic
 public import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.ProjectiveLine.Scaling
 
 import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.ProjectiveLine.Basic
@@ -75,6 +76,14 @@ instance Ray.isOver_boundaryIsoProjectiveLine_hom :
   let := Φ.isRegular_rayBoundary hΦ ρ
   unfold Ray.boundaryIsoProjectiveLine
   infer_instance
+
+include hdim hm hprim in
+/-- A proper ray divisor of a regular toric surface is a curve over `ℂ`. -/
+theorem Ray.isCurveOver_boundaryComponent : (D).subscheme.IsCurveOver ℂ := by
+  let p := ρ.boundaryIsoProjectiveLine hΦ hdim hm hprim
+  have hp := p.hom.homeomorph.isHomeomorph.topologicalKrullDim_eq
+  exact Scheme.isCurveOver_iff.mpr
+    ⟨inferInstance, inferInstance, hp.trans (Scheme.IsCurveOver.topologicalKrullDim_eq_one ℂ)⟩
 
 /-- The projective coordinate restricts to the prescribed Laurent coordinate on the ray orbit. -/
 @[reassoc (attr := simp)]

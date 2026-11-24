@@ -94,6 +94,27 @@ theorem contractedBoundaryRayEmbedding_eq_iff (x : D.boundaryPrimes) (ρ : Φ.Ra
     exact p.injOn_preimage_isoLocus (Set.mem_preimage.mpr (h'.symm ▸ hx))
       (Set.mem_preimage.mpr (h.symm ▸ hx)) (h'.trans h.symm)
 
+/-- A ray survives the contraction exactly when its strict prime projects to a
+boundary prime downstairs. -/
+theorem mem_range_contractedBoundaryRayEmbedding_iff (ρ : Φ.Ray) :
+    ρ ∈ Set.range (contractedBoundaryRayEmbedding hΦ b s c p hD) ↔
+      p ((R) ρ).val ∈ D.boundaryPrimes := by
+  constructor
+  · rintro ⟨x, rfl⟩
+    simpa only [contraction_internalBlowupBoundaryPrimeEquiv] using x.property
+  · intro h
+    exact ⟨⟨_, h⟩, (contractedBoundaryRayEmbedding_eq_iff hΦ b s c p hD ⟨_, h⟩ ρ).mpr rfl⟩
+
+/-- The uncontracted rays are exactly the strict primes over the isomorphism locus. -/
+theorem mem_range_contractedBoundaryRayEmbedding_iff_mem_isoLocus (ρ : Φ.Ray) :
+    ρ ∈ Set.range (contractedBoundaryRayEmbedding hΦ b s c p hD) ↔
+      p ((R) ρ).val ∈ p.isoLocus := by
+  have := isIntegral_internalBlowupTower b s c hΦ
+  rw [mem_range_contractedBoundaryRayEmbedding_iff]
+  apply D.mem_boundaryPrimes_iff_mem_isoLocus_of_mem_boundaryPrimes_comap
+  rw [boundaryPrimes_eq_of_support_eq hD]
+  exact ((R) ρ).property
+
 local notation "ρₓ" x:arg => contractedBoundaryRayEmbedding hΦ b s c p hD x
 
 /-- A function on the toric surface, transported to the contraction via the ordered

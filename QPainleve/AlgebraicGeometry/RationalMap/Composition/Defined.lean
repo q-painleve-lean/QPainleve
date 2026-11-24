@@ -236,6 +236,17 @@ theorem compOfDefined_toRationalMap (f : X ⤏ Y) (g : Y ⟶ Z) :
 
 end
 
+/-- An evaluation composed with the rational identity at a defined generic value is unchanged. -/
+@[simp]
+theorem compOfDefined_id {A : Scheme.{u}} [IsIntegral X] [IsReduced A] [A.IsSeparated]
+    (a : X ⤏ A)
+    (ha : a.fromFunctionField (IsLocalRing.closedPoint X.functionField) ∈ (id A).domain) :
+    a.compOfDefined (id A) ha = a := by
+  obtain ⟨h, he⟩ := a.compOfDefined_toRationalMap (𝟙 A)
+  refine he.trans ?_
+  obtain ⟨p, rfl⟩ := a.exists_rep
+  rw [← compHom_toRationalMap, PartialMap.compHom_id]
+
 section Associativity
 
 variable {W : Scheme.{u}} [IsIntegral X] [IsIntegral Y]

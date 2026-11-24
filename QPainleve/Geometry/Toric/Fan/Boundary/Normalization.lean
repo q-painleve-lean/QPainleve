@@ -10,8 +10,13 @@ public import QPainleve.AlgebraicGeometry.Curves.Node.NormalizationComponent
 public import QPainleve.Geometry.Toric.Fan.Boundary.Component
 public import QPainleve.Geometry.Toric.Fan.Boundary.Equiv
 public import QPainleve.Geometry.Toric.Fan.Point
+public import TauCeti.AlgebraicGeometry.Cohomology.Genus
 
+import QPainleve.Geometry.Toric.Fan.Boundary.InternalCenter
 import QPainleve.Geometry.Toric.Fan.Boundary.Node
+import QPainleve.Geometry.Toric.Fan.Boundary.ProjectiveLine
+import TauCeti.AlgebraicGeometry.Cohomology.ClosedImmersion.Linear
+import TauCeti.AlgebraicGeometry.Cohomology.ProjectiveLine.Basic
 import TauCeti.AlgebraicGeometry.Curves.Node.Reduced
 import TauCeti.AlgebraicGeometry.IdealSheaf.Reduced
 import TauCeti.AlgebraicGeometry.Morphisms.Smooth.GeometricallyReduced
@@ -251,6 +256,27 @@ theorem Ray.isProper_boundaryComponent_of_prestableFamily : IsProper (R ↘ base
   let e := ρ.boundaryNormalizationComponentIso hΦ
   rw [← MorphismProperty.cancel_left_of_respectsIso @IsProper e.hom, comp_over e.hom base]
   infer_instance
+
+variable (b : Module.Basis (Fin 2) ℤ N) in
+include hΦ b in
+/-- Every component of the normalization of a prestable rank-two toric boundary
+has genus zero. -/
+theorem boundaryNormalizationComponent_genus_eq_zero (v : W) :
+    ((C).blowupComponent v).toScheme.genus ℂ = 0 := by
+  obtain ⟨ρ, rfl⟩ := (Φ.boundaryNormalizationComponentEquiv hΦ).surjective v
+  let e := ρ.boundaryNormalizationComponentIso hΦ
+  let : IsProper ((Φ.rayBoundaryIdeal hΦ ρ).subscheme ↘ base) :=
+    ρ.isProper_boundaryComponent_of_prestableFamily hΦ
+  have hdim : Module.finrank ℤ N = 2 := by simpa using Module.finrank_eq_card_basis b
+  let p := ρ.boundaryIsoProjectiveLine hΦ hdim (b.detDualEquiv_self _)
+    (ρ.surjective_detCharacter b)
+  let : e.hom.IsOver base := ρ.isOver_boundaryNormalizationComponentIso_hom hΦ
+  let : p.hom.IsOver base := ρ.isOver_boundaryIsoProjectiveLine_hom hΦ hdim
+    (b.detDualEquiv_self _) (ρ.surjective_detCharacter b)
+  have h := (e.hom ≫ p.hom).finrank_cohomology_trivial_of_isIso ℂ 1
+  have hp := projectiveLine.genus_eq_zero ℂ
+  rw [Scheme.genus_def] at hp ⊢
+  exact h.trans hp
 
 end TauCeti.Toric.Fan
 

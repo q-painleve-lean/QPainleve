@@ -10,6 +10,7 @@ public import QPainleve.AlgebraicGeometry.Blowup.Tower.Point
 public import TauCeti.AlgebraicGeometry.Birational.Irreducible
 public import TauCeti.AlgebraicGeometry.Morphisms.Modification.Basic
 
+import QPainleve.AlgebraicGeometry.AffineSpace.Dimension
 import QPainleve.AlgebraicGeometry.Blowup.Modification
 import QPainleve.AlgebraicGeometry.Morphisms.Modification.Birational
 import TauCeti.AlgebraicGeometry.Morphisms.Modification.Composition
@@ -89,5 +90,18 @@ theorem isModification_of_smoothOfRelativeDimension_two
       topologicalKrullDim_eq_of_smoothOfRelativeDimension f (n := 2)]
     decide
   exact hT.isModification
+
+/-- The final surface of a closed point blowup tower over a rational smooth surface is
+rational over the same field. -/
+theorem isRationalOver (hT : IsClosedPointTower X T)
+    {k : Type u} [Field k] (f : X ⟶ Spec (.of k))
+    [SmoothOfRelativeDimension 2 f] [hRat : Scheme.IsRationalOver f] :
+    Scheme.IsRationalOver (T.toBase ≫ f) := by
+  have : Smooth f := SmoothOfRelativeDimension.smooth 2 f
+  have : IsIntegral X := hRat.isIntegral_of_smooth
+  have := hT.isModification_of_smoothOfRelativeDimension_two f
+  obtain ⟨e, he⟩ := IsModification.birationalOver T.toBase
+  exact Scheme.BirationalOver.isRationalOver (T.toBase ≫ f) f
+    ⟨e, by simpa only [Category.comp_id, Category.assoc] using congrArg (· ≫ f) he⟩
 
 end QPainleve.BlowupTower.IsClosedPointTower
