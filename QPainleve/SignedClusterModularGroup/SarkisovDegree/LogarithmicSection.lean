@@ -72,47 +72,6 @@ local notation "center" =>
 local notation "μ" =>
   Scheme.PartialMap.toRationalMap (Φ.mutationPartialMap b (c : ℂ) (v := pivot) hv hp hOpp)
 
-include hr in
-private theorem chosen_section_ray (hρ : ρ = r (pivotIndex)) :
-    (if onSection then ρ else Fan.Ray.ofPrimitiveGenerator ρ.isPrimitiveGenerator.isPrimitive.neg
-      hOpp) = r 0 := by
-  cases onSection
-  · apply Fan.Ray.primitiveGenerator_injective
-    simp only [ite_false, Bool.false_eq_true, Fan.Ray.primitiveGenerator_ofPrimitiveGenerator]
-    have hρ₂ : ρ = r 2 := hρ
-    rw [congrArg Fan.Ray.primitiveGenerator hρ₂, congrFun hr 2, congrFun hr 0]
-    exact neg_neg _
-  · exact hρ
-
-private theorem section_classes [Nonempty Φ.cones] [Nonempty (Ψ).cones]
-    (hρ : ρ = r (pivotIndex))
-    (d : Basis (Fin 2) ℤ N) (hd₀ : d 0 = b 0)
-    (hd₁ : d 1 = b 1 - (if onSection then 0 else b 0))
-    (hr' : (fun l ↦ (r' l).primitiveGenerator) = ![d 0, d 1, -d 0, e' • d 0 - d 1]) :
-    let C' := Fan.hirzebruchPicardBasis d e' hΨ r' hr'
-    Fan.mutationFiberClass b ρ hΦ = (C) 0 ∧
-    Fan.mutationFiberClass b (rayEquiv ρ) hΨ = C' 0 := by
-  intro C'
-  cases onSection
-  · have hρ₂ : ρ = r 2 := hρ
-    have hρ₂' : rayEquiv ρ = r' 2 := congrArg rayEquiv hρ₂
-    rw [hρ₂', Fan.hirzebruchPicardBasis_apply_zero, Fan.hirzebruchPicardBasis_apply_zero]
-    exact ⟨hρ₂.symm ▸ Fan.mutationFiberClass_of_opposite_section b hΦ r e 0 (by simpa using hr),
-      Fan.mutationFiberClass_of_opposite_section b hΨ r' ((e : ℤ) - 1) 1
-        (by simpa only [hd₀, hd₁, Bool.false_eq_true, ite_false, one_zsmul] using hr')⟩
-  · have hρ₀ : ρ = r 0 := hρ
-    have hρ₀' : rayEquiv ρ = r' 0 := congrArg rayEquiv hρ₀
-    have hd₁' : d 1 = b 1 := by simpa only [ite_true, sub_zero] using hd₁
-    have hdb : d = b := by
-      apply DFunLike.ext
-      intro l
-      fin_cases l
-      · exact hd₀
-      · exact hd₁'
-    subst d
-    exact ⟨hρ₀.symm ▸ Fan.mutationFiberClass_eq_hirzebruchPicardBasis_zero b e hΦ r hr,
-      hρ₀'.symm ▸ Fan.mutationFiberClass_eq_hirzebruchPicardBasis_zero b ((e : ℤ) + 1) hΨ r' hr'⟩
-
 variable {n : ℕ} {Y : Scheme} {T : BlowupTower X[Φ] (n + 1) Y}
   (hT : IsClosedPointTower X[Φ] T)
 
@@ -206,7 +165,8 @@ theorem exists_sarkisov_decrease_of_logarithmic_smooth_section
   refine ⟨d, hr', Z, U, hU, k, hlink, hk, hg', hbir',
     ρ.mutation_projection_poleIdeal b hOpp c hT hΦ hc hU k hlink D hD, ?_⟩
   intro C' y
-  obtain ⟨hF, hF'⟩ := section_classes b e hΦ r hr onSection ρ hOpp hρ d hd₀ hd₁ hr'
+  obtain ⟨hF, hF'⟩ :=
+    ρ.mutationFiberClasses_eq_hirzebruchPicardBasis_zero b hOpp e hΦ r hr onSection hρ d hd₀ hd₁ hr'
   obtain ⟨hL, -⟩ := hpic onSection a β x.2
   -- Read the pullback in the transported marking, using the two Hirzebruch basis vectors.
   let := Φ.uniqueFactorizationMonoid_stalk_algebraicRealization hΦ
@@ -219,7 +179,8 @@ theorem exists_sarkisov_decrease_of_logarithmic_smooth_section
     classical
     simp only [C', Fan.hirzebruchPicardBasis_apply_one, Fan.rayDivisorToPicard_single,
       one_zsmul, Equiv.trans_apply]
-  simp only [chosen_section_ray b e r hr onSection ρ hOpp hρ, hF, hF', ← hS, ← hS'] at hL
+  simp only [ρ.hirzebruch_section_ray_eq_zero b hOpp e r hr onSection hρ,
+    hF, hF', ← hS, ← hS'] at hL
   have hx : a • (C) 0 + β • (C) 1 = x.1 := by
     simpa only [Fin.sum_univ_two] using (C).sum_repr x.1
   rw [hx, ← T.picardMarking_apply hT f[Φ],

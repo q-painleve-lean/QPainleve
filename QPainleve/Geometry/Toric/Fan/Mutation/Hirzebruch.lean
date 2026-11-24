@@ -77,6 +77,21 @@ theorem Ray.mutationFan_hirzebruch_ray_generators (onSection : Bool)
     module
 
 include hu in
+/-- For a mutation at either section of a Hirzebruch fan, ray zero is the pivot when
+`onSection = true` and its opposite otherwise. -/
+theorem Ray.hirzebruch_section_ray_eq_zero (onSection : Bool)
+    (hρ : ρ = u (if onSection then 0 else 2)) :
+    (if onSection then ρ else Ray.ofPrimitiveGenerator ρ.isPrimitiveGenerator.isPrimitive.neg
+      hOpp) = u 0 := by
+  cases onSection
+  · apply Ray.primitiveGenerator_injective
+    simp only [ite_false, Bool.false_eq_true, Ray.primitiveGenerator_ofPrimitiveGenerator]
+    have hρ₂ : ρ = u 2 := hρ
+    rw [congrArg Ray.primitiveGenerator hρ₂, congrFun hu 2, congrFun hu 0]
+    exact neg_neg _
+  · exact hρ
+
+include hu in
 /-- The chosen section of a Hirzebruch fan has the other section as its opposite ray. -/
 theorem hull_neg_primitiveGenerator_mem_of_hirzebruch :
     hull ℝ {i (-(u 0).primitiveGenerator)} ∈ Φ.cones := by
