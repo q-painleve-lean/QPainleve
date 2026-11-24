@@ -83,24 +83,12 @@ theorem comp_contractedXEvaluation_of_isLift_torusTranslation
     rw [hd]
     exact Φ.torusTranslation_comp_xEvaluation b s c χ
   have := isIntegral_internalBlowupTower b s (center c) hΦ
-  have := isIntegral_internalBlowupTower b s (center d) hΦ
   have := isModification_internalBlowupTower_toBase b s (center c) hΦ
-  have := isModification_internalBlowupTower_toBase b s (center d) hΦ
-  have hpq : p.toRationalMap.comp f.toRationalMap = t.hom.toRationalMap.comp q.toRationalMap := by
-    simpa only [comp_toRationalMap, Scheme.Hom.toRationalMap_compHom] using
-      congrArg Scheme.Hom.toRationalMap hf
-  have htπ : t.hom.toRationalMap.comp (π d).toRationalMap =
-      (π c).toRationalMap.comp (Φ.torusTranslation χ).hom.toRationalMap := by
-    simpa only [comp_toRationalMap, Scheme.Hom.toRationalMap_compHom] using
-      congrArg Scheme.Hom.toRationalMap ht.hom_toBase
-  apply comp_left_injective p.toRationalMap
-  calc
-    _ = t.hom.toRationalMap.comp (q.toRationalMap.comp (contractedXEvaluation b s d hΦ q)) := by
-      simp only [← comp_assoc, hpq]
-    _ = ((π c).toRationalMap.comp (Φ.torusTranslation χ).hom.toRationalMap).comp
-          (Φ.xEvaluation b s d) := by
-      simp only [comp_contractedXEvaluation, ← comp_assoc, htπ]
-    _ = _ := by simp only [comp_assoc, heval, comp_contractedXEvaluation]
+  simpa only [compHom_id] using
+    comp_contractedXEvaluation_of_common_model b s c hΦ p b s d hΦ q (𝟙 _) t.hom f
+      (by simpa only [Category.id_comp] using hf) (𝟙 _) (by
+        simp only [Category.id_comp, compHom_id, ht.hom_toBase, ← Scheme.Hom.toRationalMap_compHom,
+          ← comp_toRationalMap, comp_assoc, heval])
 
 /-- Every quotient-character automorphism of a contracted toric presentation
 fixes its fixed-center rational X evaluation. -/

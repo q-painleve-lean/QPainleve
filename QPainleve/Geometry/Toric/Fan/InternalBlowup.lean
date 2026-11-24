@@ -132,6 +132,15 @@ theorem isClosedPointTower_internalBlowupTower :
     (fun j ↦ b.detDualEquiv_self (s j).primitiveGenerator)
     (fun j ↦ (s j).surjective_detCharacter b) c _ (fun j ↦ (s j).internalCenter_val b (c j))
 
+/-- Ordered internal blowups of a regular toric surface form a smooth surface. -/
+theorem smoothOfRelativeDimension_internalBlowupTower (hΦ : Φ.IsRegular) :
+    SmoothOfRelativeDimension 2 ((internalBlowupTower b s c).2.toTower.toBase ≫
+      Φ.algebraicRealizationStructureMap) := by
+  have : SmoothOfRelativeDimension 2 Φ.algebraicRealizationStructureMap :=
+    rankTwo ▸ Φ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
+  exact (isClosedPointTower_internalBlowupTower b s c).smoothOfRelativeDimension
+    Φ.algebraicRealizationStructureMap
+
 /-- The ordered internal blowup model of a regular toric surface is integral. -/
 theorem isIntegral_internalBlowupTower (hΦ : Φ.IsRegular) :
     IsIntegral (internalBlowupTower b s c).1 := by
