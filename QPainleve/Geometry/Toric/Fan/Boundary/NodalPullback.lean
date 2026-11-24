@@ -33,8 +33,9 @@ variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
 local notation "D₀" => Φ.boundaryIdeal hΦ
 local notation "base" => Φ.algebraicRealizationStructureMap
 
-private theorem not_isNodeAt_mem_support_internalCenter (b : Module.Basis (Fin 2) ℤ N)
-    (ρ : Φ.Ray) (c : ℂˣ) {x : (D₀).subscheme}
+/-- An internal binomial center on the toric boundary is disjoint from the nodes. -/
+theorem Ray.not_isNodeAt_mem_support_internalCenter (ρ : Φ.Ray)
+    (b : Module.Basis (Fin 2) ℤ N) (c : ℂˣ) {x : (D₀).subscheme}
     (hx : x ∈ (ρ.internalCenter b c).val.support) :
     ¬ ((D₀).subschemeι ≫ base).IsNodeAt x := by
   have hdim := (Module.finrank_eq_card_basis b).trans (Fintype.card_fin 2)
@@ -80,6 +81,6 @@ theorem exists_isPullback_nodalBoundaryTower_internalBlowupTower
   dsimp only
   rw [internalBlowupTower_eq_alongBoundary]
   exact IsNodalBoundaryTower.exists_isPullback_alongBoundary_of_avoids_nodes
-    (D₀).subschemeι hb _ (fun j _ hp ↦ not_isNodeAt_mem_support_internalCenter b (ρ j) (c j) hp)
+    (D₀).subschemeι hb _ (fun j _ hp ↦ (ρ j).not_isNodeAt_mem_support_internalCenter b (c j) hp)
 
 end TauCeti.Toric.Fan
