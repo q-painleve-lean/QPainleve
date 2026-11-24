@@ -6,6 +6,7 @@ Authors: The QPainleve contributors
 module
 
 public import QPainleve.AlgebraicGeometry.Blowup.Tower.Isometry.Basic
+import QPainleve.AlgebraicGeometry.Blowup.Tower.Polarization
 
 /-!
 # Descending Picard isometries through point blowups
@@ -13,6 +14,8 @@ public import QPainleve.AlgebraicGeometry.Blowup.Tower.Isometry.Basic
 An isometry that matches the total exceptional classes of two ordered point-blowup
 towers descends uniquely to their base surfaces. The descent preserves the class
 and the center multiplicities of a divisor when the strict-transform classes match.
+A geometric realization of an extended isometry also descends when the original
+isometry matches a pair of ample classes.
 
 This is the lattice comparison after contracting the matched exceptional curves
 in the proof of [Gross, Hacking and Keel, *Moduli of surfaces with an anti-canonical
@@ -154,5 +157,29 @@ theorem existsUnique_picardIsometryCongr_eq :
       have h := DFunLike.congr_fun he₁ (T.picardHom (a, 0))
       rw [picardIsometryCongr_picardHom, hf] at h
       exact congrArg Prod.fst ((hU.bijective_picardHom (g(k, Z))).injective h)
+
+omit e in
+/-- An isomorphism realizing an extended Picard isometry descends to an isomorphism
+realizing the prescribed base isometry if that isometry matches a pair of ample classes.
+The isomorphism downstairs is unique among those compatible with the given lift. -/
+theorem existsUnique_iso_over_of_picardIsometryCongr
+    (g : B(k, Z).IsometryEquiv B(k, X)) (a : Y ≅ W)
+    (ha : T.toBase ≫ g(k, X) = a.hom ≫ U.toBase ≫ g(k, Z))
+    {H : LineBundleClass Z} (hH : H.IsAmple) (hG : (g (Additive.ofMul H)).toMul.IsAmple)
+    (hpic : ∀ L : LineBundleClass W,
+      pullback a.hom L = (picardIsometryCongr k hU hT g (Additive.ofMul L)).toMul) :
+    ∃! d : X ≅ Z, T.toBase ≫ d.hom = a.hom ≫ U.toBase ∧
+      d.hom ≫ g(k, Z) = g(k, X) ∧
+      ∀ L : LineBundleClass Z, pullback d.hom L = (g (Additive.ofMul L)).toMul := by
+  have hp (L : LineBundleClass Z) :
+      pullback (a.hom ≫ U.toBase) L = pullback T.toBase (g (Additive.ofMul L)).toMul := by
+    rw [← pullback_comp, hpic, picardIsometryCongr_pullback, toMul_ofMul]
+  obtain ⟨d, ⟨hd, hdOver⟩, hdUnique⟩ :=
+    hT.existsUnique_iso_over_of_pullback_eq hU a ha hG hH (hp H).symm
+  refine ⟨d, ⟨hd, hdOver, ?_⟩, fun d' hd' ↦ hdUnique d' ⟨hd'.1, hd'.2.1⟩⟩
+  have : IsNoetherian X := isNoetherian_of_finiteType (g(k, X))
+  intro L
+  apply hT.injective_pullback_toBase (g(k, X))
+  rw [pullback_comp, hd, hp]
 
 end QPainleve.BlowupTower
