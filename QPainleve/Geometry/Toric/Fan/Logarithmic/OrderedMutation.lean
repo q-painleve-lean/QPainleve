@@ -60,27 +60,6 @@ local notation "μ[" Δ "," r "," h "]" =>
   Scheme.PartialMap.toRationalMap (Fan.mutationPartialMap Δ b (c : ℂ)
     (Ray.primitiveGenerator_ne_zero r) (Ray.hull_primitiveGenerator_mem r) h)
 
-private theorem exists_source_model (hf : Scheme.BirationalOver A.hom (𝟙 X[A.fan])) :
-    ∃ (Ω : Fan i) (_ : Ω.IsRegular) (H : Ω.IsSubdivision A.fan),
-      letI : Nonempty Ω.cones := H.nonempty_cones_of_nonempty A.isComplete.nonempty_cones
-      ∃ (n : ℕ) (a : Fin n → Ω.Ray) (u : Fin n → ℂˣ)
-        (e : (Ω.internalBlowupTower b a u).1 ≅ Z),
-        e.hom ≫ A.hom = base[Ω.internalBlowupTower b a u] ≫ π[H] ∧
-        P.comap e.hom = (Ω.internalBlowupTower b a u).2.boundaryι.ker := by
-  let Φ := A.fan
-  have hdim : Module.finrank ℤ N = 2 :=
-    (Module.finrank_eq_card_basis b).trans (Fintype.card_fin 2)
-  let : Nonempty Φ.cones := A.isComplete.nonempty_cones
-  let : SmoothOfRelativeDimension 2 (X[Φ] ↘ S) :=
-    hdim ▸ Φ.smoothOfRelativeDimension_algebraicRealizationStructureMap A.isRegular
-  let : Smooth (Z ↘ S) := SmoothOfRelativeDimension.smooth 2 _
-  obtain ⟨n, W, T, e, hT, he⟩ := A.hom.exists_isClosedPointTower_factorization (k := ℂ) hf
-  obtain ⟨hle, hP⟩ := (hT.comap_eq_mul_ramificationIdealSheaf_iff e he
-    (hT.isEffectiveCartier_ramificationIdealSheafToBase ℂ)).mp A.comap_boundaryIdeal
-  obtain ⟨_, _, _, Ω, hΩ, H, a, u, g, _, hg, hboundary, _, _⟩ :=
-    Φ.exists_toric_internal_factorization_of_poleIdeal b A.isRegular A.isComplete hT e he hle hP
-  exact ⟨Ω, hΩ, H, _, a, u, g, hg, hboundary⟩
-
 local notation "liftRay(" H ")" => IsSubdivision.liftRay H ρ
 local notation "oppositeRayMem(" H ")" =>
   IsSubdivision.hull_neg_primitiveGenerator_liftRay_mem H ρ hOpp
@@ -126,7 +105,9 @@ theorem exists_ordered_toric_mutation_models
             let y := mutationPicardEquiv b (fun _ : Fin 1 ↦ σ) 0 opp hΩ (d, fun _ ↦ z)
             pullback g.hom (W.2.toTower.picardHom (d, Fin.cons z x)).toMul =
               (U.2.toTower.picardHom (y.1, k.insertNth (y.2 0) x)).toMul := by
-  obtain ⟨Ω, hΩ, H, m, a, u, e, hsource, hboundary⟩ := A.exists_source_model b hf
+  obtain ⟨Ω, hΩ, H, m, a, u, e, hsource, hboundary⟩ :=
+    A.fan.exists_toric_internal_factorization_of_boundary_comap_eq b A.isRegular A.isComplete
+      hf A.comap_boundaryIdeal
   let : Nonempty Ω.cones := H.nonempty_cones_of_nonempty A.isComplete.nonempty_cones
   let U := Ω.internalBlowupTower b a u
   let := isIntegral_internalBlowupTower b a u hΩ

@@ -8,8 +8,7 @@ module
 public import QPainleve.Algebra.Cluster.Word.Center
 public import QPainleve.Algebra.Cluster.Word.ModularGroup
 public import QPainleve.Algebra.Cluster.Word.Monomial
-
-import TauCeti.Algebra.Module.Equiv.AutCongr
+public import TauCeti.Algebra.Module.Equiv.AutCongr
 
 /-!
 # Casimir action of the signed cluster modular group
@@ -99,6 +98,13 @@ local notation "K" => P.charge.ker
 def chargeKernelAction (h : E = K) : Γᵐᵒᵖ →* (K ≃ₗ[ℤ] K) :=
   (LinearEquiv.autCongr (LinearEquiv.ofEq _ _ h)).toMonoidHom.comp (exchangeKernelAction k B)
 
+/-- The charge-kernel action is the exchange-kernel action in the coordinates supplied
+by the equality of their kernels. -/
+theorem chargeKernelAction_apply (h : E = K) (f : Γᵐᵒᵖ) :
+    chargeKernelAction k P h f =
+      LinearEquiv.autCongr (LinearEquiv.ofEq _ _ h) (exchangeKernelAction k B f) :=
+  (rfl)
+
 private theorem chargeKernelEquiv_autCongr (h : E = K) (w : Word B B) :
     LinearEquiv.autCongr (LinearEquiv.ofEq _ _ h) w.exchangeKernelEquiv =
       (LinearEquiv.ofEq _ _ (h.symm.trans (w.exchangeKernel_eq_chargeTarget_ker P h))).trans
@@ -117,8 +123,7 @@ theorem chargeKernelAction_op_loop (h : E = K) (w : Word B B) :
     chargeKernelAction k P h (op (evalLoop (End.of w))) =
       (LinearEquiv.ofEq _ _ (h.symm.trans (w.exchangeKernel_eq_chargeTarget_ker P h))).trans
         (w.chargeKernelEquiv P) := by
-  rw [chargeKernelAction, MonoidHom.comp_apply, MulEquiv.coe_toMonoidHom,
-    exchangeKernelAction_op_loop]
+  rw [chargeKernelAction_apply, exchangeKernelAction_op_loop]
   exact chargeKernelEquiv_autCongr P h w
 
 /-- Pullback by any signed loop takes a Casimir monomial to the monomial indexed by
