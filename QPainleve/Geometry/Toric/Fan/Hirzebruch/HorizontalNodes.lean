@@ -11,7 +11,6 @@ public import QPainleve.Geometry.Toric.Fan.Hirzebruch.Anticanonical
 import Mathlib.AlgebraicGeometry.AlgClosed.Basic
 import QPainleve.AlgebraicGeometry.EffectiveCartierDivisor.BoundaryPrimes
 import QPainleve.AlgebraicGeometry.EffectiveCartierDivisor.Dimension
-import QPainleve.AlgebraicGeometry.IntersectionNumber.CurveImage
 import QPainleve.Geometry.Toric.Fan.Picard.Ruling
 import TauCeti.AlgebraicGeometry.Curves.Node.Reduced
 
@@ -46,7 +45,6 @@ variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
 local notation "X" => Φ.algebraicRealization
 local notation "S" => Spec (CommRingCat.of ℂ)
 local notation "C" => Φ.hirzebruchPicardBasis b e hΦ r hr
-local notation "B" => Chow.intersectionBilinForm ℂ X
 local notation "P" p:arg =>
   Additive.ofMul
     (@primeDivisorClass X _ _ (Φ.uniqueFactorizationMonoid_stalk_algebraicRealization hΦ) p)
@@ -54,60 +52,9 @@ local notation "deg" p:arg => Basis.repr C (P p) (1 : Fin 2)
 local notation "m" => LinearMap.toAddMonoidHom (b.coord 1)
 local notation "hR" => nonneg_or_nonpos_hirzebruch_ruling_character b e r hr
 local notation "ruling" => Φ.characterRuling m hR
-local notation "I[" p "]" => vanishingIdeal (Closeds.mk (closure {(p : X)}) isClosed_closure)
 
 variable [(Φ.algebraicRealization).IsProjectiveOver ℂ]
   [SmoothOfRelativeDimension 2 (Φ.algebraicRealization ↘ Spec (CommRingCat.of ℂ))]
-
-include hc in
-/-- Distinct prime curves of fiber degree zero have disjoint supports. -/
-theorem disjoint_of_hirzebruch_fiber_degree_eq_zero {p q : CodimensionOnePoint X}
-    (hpq : p ≠ q) (hp : deg p = 0) (hq : deg q = 0) :
-    Disjoint (closure {(p : X)}) (closure {(q : X)}) := by
-  let := Φ.uniqueFactorizationMonoid_stalk_algebraicRealization hΦ
-  have hq' : P q = (C).repr (P q) 0 • C 0 := by
-    simpa only [Fin.sum_univ_two, hq, zero_smul, add_zero] using ((C).sum_repr (P q)).symm
-  have hz : B (P p) (P q) = 0 := by
-    calc
-      B (P p) (P q) = B (P p) ((C).repr (P q) 0 • C 0) := congrArg (B (P p)) hq'
-      _ = 0 := by rw [map_smul, (Φ.hirzebruchPicardBasis_intersection_repr b e hΦ r hr hc _).1,
-        hp, smul_zero]
-  have hdim := topologicalKrullDim_eq_of_smoothOfRelativeDimension (X ↘ S) (n := 2)
-  rw [Chow.intersectionBilinForm_apply, toMul_ofMul, toMul_ofMul] at hz
-  refine Set.disjoint_left.mpr fun x hx hy ↦ ?_
-  exact ((Chow.classIntersectionNumber_primeDivisorClass_pos_iff ℂ hdim.le hpq).mpr
-    ⟨x, hx, hy⟩).ne' hz
-
-include hc in
-/-- A prime curve contained in a rational fiber of the Hirzebruch ruling has
-fiber degree zero. -/
-theorem hirzebruch_fiber_degree_eq_zero_of_mem_ruling_fiber {p : CodimensionOnePoint X}
-    {y : S ⟶ projectiveLine ℂ} (hy : y ≫ (projectiveLine ℂ ↘ S) = 𝟙 S)
-    (hp : (p : X) ∈ (y.ker.comap ruling).support) : deg p = 0 := by
-  let f := (I[p]).subschemeι ≫ ruling
-  have : IsClosedImmersion y := y.isClosedImmersion_of_comp_eq_id hy
-  have hdim := topologicalKrullDim_eq_of_smoothOfRelativeDimension (X ↘ S) (n := 2)
-  let : (I[p]).subscheme.IsProjectiveOver ℂ :=
-    Scheme.IsProjectiveOver.of_isClosedImmersion ℂ (I[p]).subschemeι
-  let : (I[p]).subscheme.IsCurveOver ℂ := Scheme.isCurveOver_iff.mpr
-    ⟨inferInstance, inferInstance, QPainleve.topologicalKrullDim_vanishingIdeal_subscheme ℂ hdim p⟩
-  have hsub : Set.range f ⊆ Set.range y := by
-    rintro _ ⟨x, rfl⟩
-    have hmem : (I[p]).subschemeι x ∈ (y.ker.comap ruling).support := by
-      apply closure_minimal (Set.singleton_subset_iff.mpr hp)
-        ((y.ker.comap ruling).support).isClosed'
-      simpa only [range_subschemeι, coe_support_vanishingIdeal, Closeds.coe_mk]
-        using Set.mem_range_self (f := (I[p]).subschemeι) x
-    rw [← SetLike.mem_coe, support_comap, Closeds.coe_preimage, Set.mem_preimage,
-      y.support_ker, y.isClosedEmbedding.isClosed_range.closure_eq] at hmem
-    exact hmem
-  have himage : Set.range f.imageι ⊆ Set.range y := by
-    rw [f.range_imageι]
-    exact closure_minimal hsub y.isClosedEmbedding.isClosed_range
-  have hf : Subsingleton f.image := ⟨fun x z ↦ f.imageι.injective
-    (Set.subsingleton_range y (himage (Set.mem_range_self x)) (himage (Set.mem_range_self z)))⟩
-  rw [← Φ.eulerDegree_hirzebruch_ruling_prime b e hΦ hc r hr p, ← intersectionNumber_def]
-  exact intersectionNumber_eq_zero_of_subsingleton_image _ f hf
 
 variable {D : Φ.algebraicRealization.IdealSheafData}
   [D.subscheme.Over (Spec (.of ℂ))] [PrestableFamily (D.subscheme ↘ Spec (.of ℂ))]
@@ -142,7 +89,7 @@ private theorem fiber_degree_pos_or_pos_at_node (j : ZMod n) : 0 < d[j] ∨ 0 < 
   have hz : d[j] = 0 := le_antisymm h.1 (hdeg j)
   have hz' : d[j + 1] = 0 := le_antisymm h.2 (hdeg (j + 1))
   by_cases hne : j ≠ j + 1
-  · have hdis := Φ.disjoint_of_hirzebruch_fiber_degree_eq_zero b e hΦ hc r hr
+  · have hdis := Φ.disjoint_of_hirzebruch_fiber_degree_eq_zero b e hΦ r hr hc
       (D.boundaryPrimeEmbedding.injective.ne ((A.boundaryPrimeEquiv hD).injective.ne hne)) hz hz'
     have hleft := (A.ambientNode_mem_closure_boundaryPrime_iff hD j j).mpr ⟨0, by simp⟩
     have hright := (A.ambientNode_mem_closure_boundaryPrime_iff hD j (j + 1)).mpr ⟨1, by simp⟩
