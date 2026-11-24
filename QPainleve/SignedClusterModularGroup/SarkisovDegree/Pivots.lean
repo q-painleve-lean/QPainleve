@@ -177,8 +177,9 @@ private theorem hirzebruch_high_fiber_centers
 include hg in
 /-- If a logarithmic Hirzebruch resolution has an order greater than half the
 fiber degree, a proper high-order center is available for a corner or section
-link, or there are exactly one or two high-order steps over the interiors of
-distinct invariant fibers. In the fiber case every high-order step is the first
+link. A corner pivot also comes with a Hirzebruch basis spanning that corner and
+with the same fiber degree. Otherwise, there are exactly one or two high-order
+steps over the interiors of distinct invariant fibers. Each such step is the first
 above its projected point and has order at most the fiber degree. -/
 theorem hirzebruch_high_baseCenter_cases :
     let : Nonempty Φ.cones := hc.nonempty_cones
@@ -189,7 +190,13 @@ theorem hirzebruch_high_baseCenter_cases :
     let A := Finset.univ.filter (fun j ↦ (C).repr v.1 1 < 2 * (-v.2 j))
     (D).comap T.toBase ≤ hT.ramificationIdealSheafToBase ℂ →
     A.Nonempty →
-    (∃ j ∈ A, (∀ l < j, hT.baseCenter l ≠ hT.baseCenter j) ∧ (Corner[j] ∨ Section[j])) ∨
+    (∃ j ∈ A, (∀ l < j, hT.baseCenter l ≠ hT.baseCenter j) ∧
+      ((∃! σ : Φ.cones, Nat.card (ToricRay σ.val) = 2 ∧
+        Φ.distinguishedPointHom σ (IsLocalRing.closedPoint ℂ) = hT.baseCenter j ∧
+        ∃ (d : Basis (Fin 2) ℤ N) (e' : ℤ) (r' : Fin 4 ≃ Φ.Ray)
+          (hr' : (fun l ↦ (r' l).primitiveGenerator) = ![d 0, d 1, -d 0, e' • d 0 - d 1]),
+          σ.val = hull ℝ (Set.range (i ∘ d)) ∧
+          (Φ.hirzebruchPicardBasis d e' hΦ r' hr').repr v.1 1 = (C).repr v.1 1) ∨ Section[j])) ∨
       (A.card = 1 ∨ A.card = 2) ∧ ∃ fiber : (↑A : Type) ↪ Fin 2, ∀ j : A,
         -v.2 j ≤ (C).repr v.1 1 ∧
         (∀ l < (j : Fin n), hT.baseCenter l ≠ hT.baseCenter j) ∧
@@ -200,7 +207,14 @@ theorem hirzebruch_high_baseCenter_cases :
   let := hdim
   let := hnoeth
   by_cases hshort : ∃ j ∈ A, (∀ l < j, hT.baseCenter l ≠ hT.baseCenter j) ∧ (Corner[j] ∨ Section[j])
-  · exact Or.inl hshort
+  · obtain ⟨j, hj, hfirst, hcorner | hsection⟩ := hshort
+    · refine Or.inl ⟨j, hj, hfirst, Or.inl ?_⟩
+      obtain ⟨σ, ⟨hcard, hpoint⟩, huniq⟩ := hcorner
+      obtain ⟨d, e', r', hr', _, hcone, _, _, hrepr⟩ :=
+        Φ.exists_hirzebruch_corner_picardBasis b e hΦ r hr hc σ hcard
+      exact ⟨σ, ⟨hcard, hpoint, d, e', r', hr', hcone, (hrepr v.1).2⟩,
+        fun τ hτ ↦ huniq τ ⟨hτ.1, hτ.2.1⟩⟩
+    · exact Or.inl ⟨j, hj, hfirst, Or.inr hsection⟩
   have hcenter (j : Fin n) (hj : (C).repr v.1 1 < 2 * (-v.2 j)) :
       ∃ t : Fin 2, ∃ c : ℂˣ, hT.baseCenter j = p[fiberRay[t],c] := by
     obtain ⟨l, hl, hfirst, hle⟩ := hT.exists_first_baseCenter_ge_of_plane_resolution g hg j
