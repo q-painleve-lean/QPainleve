@@ -111,7 +111,14 @@ theorem existsUnique_ordered_toric_model_of_disjoint_blowup_tower
     revert hk k
     dsimp only [A]
     rw [internalBlowupTower_eq_alongBoundary]
-    exact eq_boundaryι_of_comp_toBase_alongBoundary _ _
+    intro k hk
+    simpa only [Category.id_comp] using
+      eq_comp_boundaryι_of_comp_toBase_eq (D[hc]).subschemeι
+        (fun j ↦ ((Prod.fst ∘ a) j).internalCenter b ((Prod.snd ∘ a) j)) (𝟙 (D[hc]).subscheme)
+        (fun j ↦ by
+          simpa only [comap_id, Function.comp_apply] using
+            ((a j).1.internalCenter b (a j).2).property)
+        k (by simpa only [Category.id_comp] using hk)
   exact hsection _ hcomm
 
 end TauCeti.Toric.Fan

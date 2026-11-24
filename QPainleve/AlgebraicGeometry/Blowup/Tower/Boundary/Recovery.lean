@@ -8,20 +8,17 @@ module
 public import QPainleve.AlgebraicGeometry.Blowup.Tower.Centres
 
 import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
-import TauCeti.AlgebraicGeometry.IdealSheaf.BaseChange
 
 /-!
-# Recovering boundary lift data from the projection
+# Projected centers of boundary blowup towers
 
 The point centers of an ordered boundary tower project to their original
-boundary points. The projection also determines the strict boundary embedding
-among lifts of the original boundary inclusion.
+boundary points.
 -/
 
 public section
 
 open AlgebraicGeometry CategoryTheory
-open Scheme.IdealSheafData
 
 universe u
 
@@ -59,30 +56,5 @@ theorem baseCenter_alongBoundary {i : D ⟶ X} [IsClosedImmersion i]
       exact ih _ (fun a ↦ p a.castSucc) (fun a ↦ hJ a.castSucc) l
 
 end IsClosedPointTower
-
-/-- The lift of the boundary inclusion through an ordered boundary tower is unique. -/
-theorem eq_boundaryι_of_comp_toBase_alongBoundary (i : D ⟶ X) [IsClosedImmersion i]
-    (J : Fin n → {I : D.IdealSheafData // I.IsEffectiveCartier})
-    (g : D ⟶ (alongBoundary i J).1) (hg : g ≫ (alongBoundary i J).2.toTower.toBase = i) :
-    g = (alongBoundary i J).2.boundaryι := by
-  induction n with
-  | zero =>
-    revert hg g
-    rw [alongBoundary_zero, WithBoundary.toTower_nil, toBase_nil, WithBoundary.boundaryι_nil]
-    simp
-  | succ d ih =>
-    -- Expose the last blowup in the codomain before applying its universal property.
-    revert hg g
-    rw [alongBoundary_succ, WithBoundary.toTower_snoc, toBase_snoc]
-    intro g hg
-    let P := (alongBoundary i (fun j : Fin d ↦ J j.castSucc)).2
-    let A := J (Fin.last d)
-    let I := A.val.map P.boundaryι
-    have hbase : g ≫ I.blowupToBase = P.boundaryι :=
-      ih _ _ (by simpa only [Category.assoc] using hg)
-    apply I.blowup_hom_ext
-    · exact hbase.trans (P.boundaryι_snoc_blowupToBase A.val A.property).symm
-    · rw [hbase, comap_map_of_isClosedImmersion]
-      exact A.property
 
 end QPainleve.BlowupTower
