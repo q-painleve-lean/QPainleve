@@ -51,7 +51,8 @@ variable {X X' : Scheme} {D : X.IdealSheafData} {D' : X'.IdealSheafData}
 
 local notation "base" => Φ.algebraicRealizationStructureMap
 
-private theorem support_comap_contraction_of_translation
+/-- A translating lift identifies the reduced total boundary supports on the ordered models. -/
+theorem support_comap_contraction_of_translation
     {χ : Multiplicative (N →+ ℤ) →* ℂˣ} {t : Y c ≅ Y d}
     (ht : IsLift (Φ.torusTranslation χ) (T c) (T d) t)
     (hD : (D.comap p).support = (ι c).ker.support)
@@ -86,7 +87,9 @@ private theorem comap_boundary_of_translation_descends
     D'.isReduced_subscheme_iff_radical_eq.mp ‹IsReduced D'.subscheme›] using
     congrArg (vanishingIdeal (X := X)) hsupport
 
-private theorem pullback_marking_of_translation_descends (hΦ : Φ.IsRegular)
+/-- When a translating lift descends to the base surfaces, its pullback identifies
+their Picard classes in the coordinates on the ordered models. -/
+theorem pullback_marking_of_translation_descends (hΦ : Φ.IsRegular)
     {χ : Multiplicative (N →+ ℤ) →* ℂˣ} {t : Y c ≅ Y d} {e : X ≅ X'}
     (ht : IsLift (Φ.torusTranslation χ) (T c) (T d) t)
     (htq : p ≫ e.hom = t.hom ≫ q) (a : LineBundleClass X') :

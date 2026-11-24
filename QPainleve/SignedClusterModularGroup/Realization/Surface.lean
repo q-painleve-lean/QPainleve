@@ -108,6 +108,16 @@ theorem boundaryIso_refl : boundaryIso (M := M) (N := M) (Iso.refl M.pair) =
     Iso.refl M.boundary :=
   Functor.mapIso_refl _ _
 
+@[simp]
+theorem surfaceIso_symm (e : M.pair ≅ N.pair) :
+    surfaceIso (M := N) (N := M) e.symm = (surfaceIso e).symm :=
+  Functor.mapIso_symm (Arrow.rightFunc ⋙ Over.forget S) e
+
+@[simp]
+theorem boundaryIso_symm (e : M.pair ≅ N.pair) :
+    boundaryIso (M := N) (N := M) e.symm = (boundaryIso e).symm :=
+  Functor.mapIso_symm (Arrow.leftFunc ⋙ Over.forget S) e
+
 variable {L'' : Type u} [AddCommGroup L''] {B'' : LinearMap.BilinForm ℤ L''} {X'' : Scheme.{u}}
   {O : MarkedSurface k n B'' X''}
 

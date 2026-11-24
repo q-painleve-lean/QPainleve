@@ -9,8 +9,10 @@ public import QPainleve.AlgebraicGeometry.Blowup.Point.Basic
 public import QPainleve.AlgebraicGeometry.Morphisms.Modification.ExceptionalDivisors
 
 import QPainleve.AlgebraicGeometry.Blowup.Integral
+import QPainleve.AlgebraicGeometry.Blowup.Point.Fiber
 import QPainleve.AlgebraicGeometry.EffectiveCartierDivisor.Dimension
 import TauCeti.AlgebraicGeometry.Blowup.ExceptionalDivisor
+import TauCeti.AlgebraicGeometry.Morphisms.Smooth.Regular
 
 /-!
 # Extracting a point blowup decreases the exceptional divisor count
@@ -32,7 +34,7 @@ open Scheme.IdealSheafData
 
 universe u
 
-variable {k : Type u} [Field k] [IsAlgClosed k] {X Y : Scheme.{u}}
+variable {k : Type u} [Field k] {X Y : Scheme.{u}}
 variable {p : Y} (hp : IsClosed ({p} : Set Y))
 
 local notation "Iₚ" => vanishingIdeal (Closeds.mk (Set.singleton p) hp)
@@ -56,46 +58,35 @@ theorem ncard_exceptional_divisors_lt_comp_pointBlowup [IsIntegral Y] [IsNoether
   have hE : (E.support : Set (Iₚ).blowup) = β ⁻¹' {p} := by
     dsimp only [E]
     rw [support_comap, Closeds.coe_preimage, hs]
-  obtain ⟨e, _⟩ :=
-    SmoothOfRelativeDimension.exists_iso_projectiveLine_exceptional_blowup_closedPoint π p hp
-  let j : projectiveLine k ⟶ (Iₚ).blowup := e.hom ≫ E.subschemeι
-  have hpoint (z : projectiveLine k) : β (j z) = p := by
-    have hmem : E.subschemeι (e.hom z) ∈ (E.support : Set (Iₚ).blowup) :=
-      E.range_subschemeι ▸ Set.mem_range_self _
-    rw [hE] at hmem
-    exact hmem
-  have hpcentre : p ∈ β.centre := by
-    rw [centre_def, Set.mem_compl_iff]
-    intro hpi
-    let a := projectiveLine.infinity k
-    let c := projectiveLine.polynomialChartι k 0 (genericPoint (Spec (.of (Polynomial k))))
-    have ha : β (j a) ∈ (β.isoLocus : Set Y) := by
-      rw [hpoint a]
-      exact hpi
-    have hc : β (j c) ∈ (β.isoLocus : Set Y) := by
-      rw [hpoint c]
-      exact hpi
-    have heq := β.injOn_preimage_isoLocus ha hc ((hpoint a).trans (hpoint c).symm)
-    have : IsClosedImmersion j := inferInstance
-    have hac : a = c := j.isClosedEmbedding.injective heq
-    have hne : a ∉ Set.range (projectiveLine.polynomialChartι k 0) :=
-      projectiveLine.infinity_notMem_range_polynomialChartι k
-    exact hne ⟨_, hac.symm⟩
+  have : Smooth π := SmoothOfRelativeDimension.smooth 2 π
+  let : IsRegularLocalRing (Y.presheaf.stalk p) :=
+    isRegularLocalRing_stalk_of_smooth π p
+  have hdim := ((smoothOfRelativeDimension_iff_ringKrullDim_stalk_eq π 2).mp
+    inferInstance).2 p hp
+  have hclosure : (⟨closure (Set.singleton p), isClosed_closure⟩ : Closeds Y) =
+      ⟨Set.singleton p, hp⟩ := SetLike.coe_injective hp.closure_eq
+  have hcentre : β.centre = {p} := by
+    dsimp only [β]
+    rw [← hclosure]
+    exact centre_blowupToBase_closed_point hp hdim
   have : IsIntegral (Iₚ).blowup := by
-    have hclosure : (⟨closure (Set.singleton p), isClosed_closure⟩ : Closeds Y) =
-        ⟨Set.singleton p, hp⟩ := SetLike.coe_injective hp.closure_eq
-    have h := isIntegral_blowup_closed_point π hp
-    rwa [hclosure] at h
+    rw [← hclosure]
+    exact isIntegral_blowup_closed_point π hp
   have : IsLocallyNoetherian (Iₚ).blowup := LocallyOfFiniteType.isLocallyNoetherian β
-  have hmem : j (projectiveLine.infinity k) ∈ E.support :=
-    SetLike.mem_coe.mp (hE.symm ▸ (hpoint _ : j (projectiveLine.infinity k) ∈ β ⁻¹' {p}))
+  have : Surjective β := by
+    dsimp only [β]
+    rw [← hclosure]
+    exact surjective_blowupToBase_point hp hdim
+  obtain ⟨x, hx⟩ := β.surjective p
+  have hmem : x ∈ E.support := by
+    rw [← SetLike.mem_coe, hE]
+    exact hx
   obtain ⟨y, hy, _⟩ :=
     (Iₚ).isEffectiveCartier_comap_blowupToBase.mem_support_iff_exists_codimensionOnePoint.mp hmem
   have hy' : (y : (Iₚ).blowup) ∈ β ⁻¹' {p} := hE ▸ (SetLike.mem_coe.mpr hy)
   have hyimage : β (y : (Iₚ).blowup) = p := hy'
   have hycentre : β (y : (Iₚ).blowup) ∈ β.centre := by
-    rw [hyimage]
-    exact hpcentre
+    simp only [hyimage, hcentre, Set.mem_singleton_iff]
   exact f.ncard_exceptional_divisors_lt_comp β (hiso y y.property) hycentre y.property
 
 end AlgebraicGeometry.Scheme.Hom

@@ -100,6 +100,12 @@ theorem range_rayComponent_internalBlowupBoundaryPrimeEquiv (ρ : Φ.Ray) :
     Set.range (e ρ) = closure {((internalBlowupBoundaryPrimeEquiv hΦ b s c ρ).val : (P).1)} :=
   range_rayComponent_internalBlowupRayPoint hΦ b s c ρ
 
+/-- The strict boundary is the union of the closures of the labeled ray primes. -/
+theorem coe_support_ker_boundaryι_eq_iUnion_closure :
+    ((j).ker.support : Set (P).1) =
+      ⋃ ρ : Φ.Ray, closure {((internalBlowupBoundaryPrimeEquiv hΦ b s c ρ).val : (P).1)} :=
+  support_internalBlowup_boundary hΦ b s c
+
 /-- The strict boundary prime indexed by a ray projects to the original toric ray prime. -/
 @[simp]
 theorem toBase_internalBlowupBoundaryPrimeEquiv (ρ : Φ.Ray) :

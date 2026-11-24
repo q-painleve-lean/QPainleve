@@ -7,10 +7,12 @@ module
 
 public import Mathlib.AlgebraicGeometry.IdealSheaf.Functorial
 public import TauCeti.AlgebraicGeometry.Morphisms.IsoLocus
+public import TauCeti.AlgebraicGeometry.Morphisms.Modification.Basic
 public import TauCeti.AlgebraicGeometry.Scheme.CodimensionOnePoint
+public import TauCeti.AlgebraicGeometry.Scheme.Normal
 
 import Mathlib.Data.Set.Card
-import QPainleve.AlgebraicGeometry.Morphisms.IsoLocus
+import QPainleve.AlgebraicGeometry.Morphisms.Modification.IsoLocus
 
 /-!
 # Boundary primes of ideal sheaves
@@ -36,6 +38,28 @@ def boundaryPrimes (D : X.IdealSheafData) : Set X :=
 theorem mem_boundaryPrimes {D : X.IdealSheafData} {x : X} :
     x ∈ D.boundaryPrimes ↔ x ∈ D.support ∧ Order.coheight x = 1 :=
   (Iff.rfl)
+
+/-- The inclusion of boundary primes into the codimension-one points of the ambient scheme. -/
+def boundaryPrimeEmbedding (D : X.IdealSheafData) :
+    D.boundaryPrimes ↪ CodimensionOnePoint X where
+  toFun p := ⟨p.val, (mem_boundaryPrimes.mp p.property).2⟩
+  inj' _ _ h := Subtype.ext (congrArg (fun q : CodimensionOnePoint X ↦ (q : X)) h)
+
+/-- The boundary prime and its image have the same underlying point. -/
+@[simp]
+theorem coe_boundaryPrimeEmbedding (D : X.IdealSheafData) (p : D.boundaryPrimes) :
+    (D.boundaryPrimeEmbedding p : X) = p.val := (rfl)
+
+/-- The image of the inclusion of boundary primes consists of the codimension-one points
+in the support of the ideal sheaf. -/
+theorem range_boundaryPrimeEmbedding (D : X.IdealSheafData) :
+    Set.range D.boundaryPrimeEmbedding = {p : CodimensionOnePoint X | (p : X) ∈ D.support} := by
+  ext p
+  constructor
+  · rintro ⟨q, rfl⟩
+    exact (mem_boundaryPrimes.mp q.property).1
+  · intro hp
+    exact ⟨⟨p.val, mem_boundaryPrimes.mpr ⟨hp, p.property⟩⟩, Subtype.ext rfl⟩
 
 /-- If the support is the union of closures of specified codimension-one points,
 those points are exactly its boundary primes. -/
@@ -130,6 +154,18 @@ theorem bijOn_boundaryPrimes_comap_of_subset_isoLocus (D : X.IdealSheafData) (π
     refine ⟨_, ⟨mem_boundaryPrimes.mpr ⟨?_,
       (π.coheight_eq_of_apply_mem_isoLocus (hU hyU)).symm.trans (hxy.symm ▸ hxc)⟩, hyU⟩, hxy⟩
     simpa only [← SetLike.mem_coe, support_comap, Closeds.coe_preimage, Set.mem_preimage] using hyD
+
+/-- A boundary prime of the inverse image under a modification projects to a
+boundary prime exactly when its image lies in the isomorphism locus. -/
+theorem mem_boundaryPrimes_iff_mem_isoLocus_of_mem_boundaryPrimes_comap
+    (D : X.IdealSheafData) (π : Y ⟶ X) [IsIntegral X] [IsNormalScheme X]
+    [IsLocallyNoetherian X] [IsReduced Y] [IsModification π] {y : Y}
+    (hy : y ∈ (D.comap π).boundaryPrimes) :
+    π y ∈ D.boundaryPrimes ↔ π y ∈ π.isoLocus := by
+  have h := D.bijOn_boundaryPrimes_comap_of_subset_isoLocus π
+    (U := π.isoLocus) Set.Subset.rfl
+  exact ⟨fun hp ↦ π.mem_isoLocus_of_coheight_eq_one (mem_boundaryPrimes.mp hp).2,
+    fun hp ↦ (h.mapsTo (Set.mem_inter hy hp)).1⟩
 
 /-- If a morphism is an isomorphism away from a point of coheight other than one,
 its point map bijects the pulled-back boundary primes away from that point with the

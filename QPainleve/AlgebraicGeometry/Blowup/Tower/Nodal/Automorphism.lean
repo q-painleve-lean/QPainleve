@@ -6,10 +6,12 @@ Authors: The QPainleve contributors
 module
 
 public import QPainleve.AlgebraicGeometry.Blowup.Tower.Nodal.Boundary
-public import QPainleve.AlgebraicGeometry.Curves.Node.Conductor.Isomorphism
-public import TauCeti.AlgebraicGeometry.Curves.Node.Normalization
+public import QPainleve.AlgebraicGeometry.Chow.Nef.Basic
+public import QPainleve.AlgebraicGeometry.Curves.Node.CycleAction
 
 import QPainleve.AlgebraicGeometry.Blowup.StrictTransform.Branches.Automorphism
+import QPainleve.AlgebraicGeometry.Chow.Nef.Boundary
+import QPainleve.AlgebraicGeometry.Curves.Node.Conductor.Orientation
 import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
 import QPainleve.AlgebraicGeometry.IdealSheaf.Restriction
 import TauCeti.AlgebraicGeometry.Curves.Node.Reduced
@@ -23,6 +25,8 @@ import TauCeti.AlgebraicGeometry.Noetherian
 An automorphism of a surface and its nodal boundary which fixes all boundary
 branches lifts through any specified tower of blowups at boundary nodes. The
 induction retains fixation of the branches of the reduced total boundary.
+For a nef square-zero boundary cycle, Picard triviality and orientation
+preservation suffice for this lift.
 
 This supplies the lift through toric blowups in the proof of Proposition 2.6 of
 [Gross, Hacking and Keel, *Moduli of surfaces with an anti-canonical cycle*][GHK].
@@ -35,7 +39,7 @@ public section
 open AlgebraicGeometry CategoryTheory Limits TopologicalSpace TauCeti.AlgebraicGeometry
 open Scheme.IdealSheafData Scheme.Hom
 
-universe u
+universe u v
 
 namespace QPainleve.BlowupTower
 
@@ -208,3 +212,56 @@ theorem IsNodalBoundaryTower.exists_isLift_of_fixes_nodal_branches
 end Tower
 
 end QPainleve.BlowupTower
+
+namespace QPainleve.BlowupTower.IsNodalBoundaryTower
+
+open DihedralGroup LineBundleClass
+
+
+variable {k : Type u} [Field k] {X : Scheme.{u}}
+  {D : X.IdealSheafData} {n : ℕ} [NeZero n]
+
+local notation "s" => (X ↘ Spec (CommRingCat.of k))
+
+variable [IsAlgClosed k] [X.Over (Spec (.of k))] [X.IsProjectiveOver k] [IsIntegral X]
+  [SmoothOfRelativeDimension 2 (X ↘ Spec (.of k))]
+
+/-- A Picard-trivial, orientation-preserving automorphism of a nef square-zero nodal
+boundary cycle lifts uniquely through any specified tower of blowups at boundary nodes. -/
+theorem existsUnique_isLift_of_picard_trivial_of_preserves_orientation
+    {Y : Scheme.{u}} {m : ℕ} {T : BlowupTower X m Y}
+    (hT : IsNodalBoundaryTower D s (𝟙 X) T)
+    (hD : D.IsEffectiveCartier) (e : X ≅ X) [e.hom.IsOver (Spec (.of k))]
+    (d : D.subscheme ≅ D.subscheme) (hd : d.hom ≫ D.subschemeι = D.subschemeι ≫ e.hom)
+    (hPic : ∀ L, LineBundleClass.pullback e.hom L = L)
+    (hnef : ((mk hD.toInvertibleSheaf)⁻¹).IsNef k s)
+    (hsq : Chow.classIntersectionNumber k X (mk hD.toInvertibleSheaf)⁻¹
+      (mk hD.toInvertibleSheaf)⁻¹ = 0) :
+    letI : d.hom.IsOver (Spec (.of k)) := ⟨by
+      rw [D.over_eq_subschemeι_comp, reassoc_of% hd, comp_over]⟩
+    ∀ [PrestableFamily (D.subscheme ↘ Spec (.of k))] {ι : Type v}
+      {marks : ι → (D.subscheme ↘ Spec (.of k)).smoothLocus}
+      (numbering : Scheme.NodalCycleNumbering marks n),
+      cycleOrientationSign (d.boundaryCycleAction numbering numbering) = 1 →
+      ∃! g : Y ≅ Y, IsLift e T T g := by
+  have : d.hom.IsOver (Spec (.of k)) :=
+    ⟨by rw [D.over_eq_subschemeι_comp, reassoc_of% hd, comp_over]⟩
+  intro _ ι marks numbering horient
+  have : IsNoetherian X := isNoetherian_of_finiteType s
+  have hN := PrestableFamily.atWorstNodalOfRelativeDimensionOne
+    (f := D.subscheme ↘ Spec (.of k))
+  have hpb : IsPullback D.subschemeι d.hom e.hom D.subschemeι :=
+    .of_vert_isIso ⟨hd.symm⟩
+  have hmap : D.comap e.hom = D := by
+    simpa only [ker_subschemeι] using (ker_eq_comap_of_isPullback D.subschemeι hpb).symm
+  have : ConnectedSpace D.subscheme :=
+    GeometricallyConnected.connectedSpace_of_subsingleton (f := D.subscheme ↘ Spec (.of k))
+  have hconn : _root_.IsPreconnected (D.support : Set X) := by
+    simpa only [Set.image_univ, D.range_subschemeι] using
+      isPreconnected_univ.image D.subschemeι D.subschemeι.continuous.continuousOn
+  have hfix := hD.fixes_boundary_components_of_picard_trivial hconn hnef hsq e hmap hPic
+  have ha := hD.boundaryCycleAction_eq_one_of_fixes_components e d hd numbering hfix horient
+  exact hT.exists_isLift_of_fixes_nodal_branches hD hN e d (comp_over e.hom _) hd
+    (d.fixes_normalization_branches_of_boundaryCycleAction_eq_one numbering ha)
+
+end QPainleve.BlowupTower.IsNodalBoundaryTower

@@ -40,14 +40,10 @@ namespace QPainleve.BlowupTower
 local notation "pointIdeal(" p ")" => Scheme.Hom.ker (Scheme.fromSpecResidueField _ p)
 local notation "pointTower(" p ")" => (BlowupTower.nil.snoc (pointIdeal(p)))
 local notation "P(" q ")" => vanishingIdeal (Closeds.mk (closure {(q : _)}) isClosed_closure)
-local notation "prime(" a ")" => (Subtype.mk (Subtype.val a)
-  (And.right (mem_boundaryPrimes.mp (Subtype.property a))) : CodimensionOnePoint _)
+local notation "prime(" a ")" => Scheme.IdealSheafData.boundaryPrimeEmbedding _ a
 local notation "S(" k ")" => Spec (CommRingCat.of k)
 local notation "g(" k ", " X ")" => (X ↘ S(k))
-local notation "B(" k ", " X ")" =>
-  (@Chow.classIntersectionBilinForm k _ _ X _ _ _
-    (Scheme.Hom.uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two (g(k, X)))
-    (topologicalKrullDim_eq_of_smoothOfRelativeDimension (g(k, X)) (n := 2)))
+local notation "B(" k ", " S ")" => Chow.intersectionBilinForm k S
 
 variable {k : Type u} [Field k] {X Z : Scheme.{u}} [IsIntegral X] [IsIntegral Z]
   [X.Over S(k)] [Z.Over S(k)]
@@ -75,9 +71,11 @@ private theorem stalkOrder_prime_eq_of_matching_nodes [QuasiCompact (g(k, X))]
     · rintro ⟨b, hba, hb⟩
       obtain ⟨b, rfl⟩ := σ.surjective b
       exact ⟨b, fun h ↦ hba (congrArg σ h), (hcenter b).mpr hb⟩
-  have hD' := hD.stalkOrder_prime_eq_of_node hnd hp prime(a) (mem_boundaryPrimes.mp a.property).1
+  have hD' := hD.stalkOrder_prime_eq_of_node hnd hp prime(a)
+    (by simpa only [coe_boundaryPrimeEmbedding] using (mem_boundaryPrimes.mp a.property).1)
   have hF' := hF.stalkOrder_prime_eq_of_node hnf hq prime(σ a)
-    (mem_boundaryPrimes.mp (σ a).property).1
+    (by simpa only [coe_boundaryPrimeEmbedding] using (mem_boundaryPrimes.mp (σ a).property).1)
+  simp only [coe_boundaryPrimeEmbedding] at hD' hF'
   rw [hD', hF']
   have hex {Y : Scheme.{u}} (J : Y.IdealSheafData) (x : Y) (a : J.boundaryPrimes) :
       (∃ r : CodimensionOnePoint Y, r ≠ prime(a) ∧ (r : Y) ∈ J.support ∧
@@ -85,11 +83,16 @@ private theorem stalkOrder_prime_eq_of_matching_nodes [QuasiCompact (g(k, X))]
     constructor
     · rintro ⟨r, hr, hs, hx⟩
       exact ⟨⟨r, mem_boundaryPrimes.mpr ⟨hs, r.property⟩⟩,
-        fun h ↦ hr (Subtype.ext (congrArg (fun t : J.boundaryPrimes ↦ t.val) h)), hx⟩
+        fun h ↦ hr (Subtype.ext (by
+          simpa only [coe_boundaryPrimeEmbedding] using
+            congrArg (fun t : J.boundaryPrimes ↦ t.val) h)), hx⟩
     · rintro ⟨b, hba, hb⟩
       exact ⟨prime(b),
-        fun h ↦ hba (Subtype.ext (congrArg (fun t : CodimensionOnePoint Y ↦ t.val) h)),
-        (mem_boundaryPrimes.mp b.property).1, hb⟩
+        fun h ↦ hba (Subtype.ext (by
+          simpa only [coe_boundaryPrimeEmbedding] using
+            congrArg (fun t : CodimensionOnePoint Y ↦ t.val) h)),
+        by simpa only [coe_boundaryPrimeEmbedding] using (mem_boundaryPrimes.mp b.property).1,
+        by simpa only [coe_boundaryPrimeEmbedding] using hb⟩
   rw [if_congr (hcenter a) (if_congr ((hex D p a).trans (hother.trans (hex F q (σ a)).symm))
     rfl rfl) rfl]
 
@@ -165,9 +168,11 @@ theorem picardIsometryCongr_nodal_boundaryPrimes
   obtain ⟨b | ⟨⟩, rfl⟩ := l.surjective a
   · simp only [Equiv.trans_apply, Equiv.symm_apply_apply, Equiv.sumCongr_apply, Sum.map_inl]
     refine ⟨?_, Or.inr ⟨b, hl b, hr (σ b)⟩⟩
-    rw [← picardHom_primeDivisorClass_pointBlowup (g(k, X)) hp prime(b) prime(l (.inl b)) (hl b),
+    rw [← picardHom_primeDivisorClass_pointBlowup (g(k, X)) hp prime(b) prime(l (.inl b))
+        (by simpa only [coe_boundaryPrimeEmbedding] using hl b),
       ← picardHom_primeDivisorClass_pointBlowup (g(k, Z)) hq prime(σ b)
-        prime(r (.inl (σ b))) (hr (σ b)), picardIsometryCongr_picardHom, he b,
+        prime(r (.inl (σ b))) (by simpa only [coe_boundaryPrimeEmbedding] using hr (σ b)),
+      picardIsometryCongr_picardHom, he b, coe_boundaryPrimeEmbedding, coe_boundaryPrimeEmbedding,
       stalkOrder_prime_eq_of_matching_nodes σ hcenter hD hF hnd hnf hpn hqn b]
   · simp only [Equiv.trans_apply, Equiv.symm_apply_apply, Equiv.sumCongr_apply,
       Equiv.refl_apply, Sum.map_inr]
@@ -179,9 +184,9 @@ theorem picardIsometryCongr_nodal_boundaryPrimes
     have hdq := ((smoothOfRelativeDimension_iff_ringKrullDim_stalk_eq
       (g(k, Z)) 2).mp inferInstance).2 q hq
     rw [primeDivisorClass_eq_blowupExceptionalClass_of_over_center
-        prime(l (.inr PUnit.unit)) hlp hp hdp,
+        prime(l (.inr PUnit.unit)) (by simpa only [coe_boundaryPrimeEmbedding] using hlp) hp hdp,
       primeDivisorClass_eq_blowupExceptionalClass_of_over_center
-        prime(r (.inr PUnit.unit)) hrq hq hdq]
+        prime(r (.inr PUnit.unit)) (by simpa only [coe_boundaryPrimeEmbedding] using hrq) hq hdq]
     simpa only [T, U, exceptionalClass_snoc_last, ← blowupExceptionalClass_def] using
       picardIsometryCongr_exceptionalClass k hT hU e (Fin.last 0)
 
