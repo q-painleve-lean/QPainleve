@@ -52,6 +52,20 @@ section Components
 variable [PrestableFamily (C[Ψ,hΨ₀] ↘ S)] {q : δ → (C[Ψ,hΨ₀] ↘ S).smoothLocus}
 
 include hΦ hΨ in
+/-- If two numbered components correspond to a ray and its lift, the boundary
+projection sends the refined component's generic point to the old generic point. -/
+theorem IsSubdivision.boundaryMap_componentGenericPoint_of_liftRay
+    {l : ℕ} [NeZero l] (U : Scheme.NodalCycleNumbering q l) {j : ZMod n} {j' : ZMod l}
+    {ρ : Φ.Ray} (hρ : A.component j = Φ.boundaryNormalizationComponentEquiv hΦ ρ)
+    (hρ' : U.component j' = Ψ.boundaryNormalizationComponentEquiv hΨ (h.liftRay ρ)) :
+    β (U.componentGenericPoint j') = A.componentGenericPoint j := by
+  apply (D[Φ,hΦ₀]).subschemeι.injective
+  rw [← Scheme.Hom.comp_apply, h.boundaryMap_comp_subschemeι,
+    Scheme.Hom.comp_apply, subschemeι_componentGenericPoint_eq_rayBoundaryPoint U hΨ j' _ hρ',
+    h.algebraicMap_rayBoundaryPoint_liftRay hΨ hΦ,
+    subschemeι_componentGenericPoint_eq_rayBoundaryPoint A hΦ j ρ hρ]
+
+include hΦ hΨ in
 /-- Any numbering of the refined boundary contains a component above each old
 numbered component. Its ray is the lift of the original ray. -/
 theorem IsSubdivision.exists_componentGenericPoint_lift
@@ -60,11 +74,7 @@ theorem IsSubdivision.exists_componentGenericPoint_lift
   obtain ⟨ρ, hρ⟩ := (Φ.boundaryNormalizationComponentEquiv hΦ).surjective (A.component j)
   obtain ⟨j', hj'⟩ :=
     U.component.surjective (Ψ.boundaryNormalizationComponentEquiv hΨ (h.liftRay ρ))
-  refine ⟨j', (D[Φ,hΦ₀]).subschemeι.injective ?_⟩
-  rw [← Scheme.Hom.comp_apply, h.boundaryMap_comp_subschemeι,
-    Scheme.Hom.comp_apply, subschemeι_componentGenericPoint_eq_rayBoundaryPoint U hΨ j' _ hj',
-    h.algebraicMap_rayBoundaryPoint_liftRay hΨ hΦ,
-    subschemeι_componentGenericPoint_eq_rayBoundaryPoint A hΦ j ρ hρ.symm]
+  exact ⟨j', h.boundaryMap_componentGenericPoint_of_liftRay A hΦ hΨ U hρ.symm hj'⟩
 
 end Components
 
