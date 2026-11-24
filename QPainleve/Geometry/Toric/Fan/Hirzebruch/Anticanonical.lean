@@ -6,23 +6,11 @@ Authors: The QPainleve contributors
 module
 
 public import QPainleve.AlgebraicGeometry.IdealSheaf.Boundary.Complexity
-public import QPainleve.Geometry.Toric.Fan.Picard.Hirzebruch
-public import QPainleve.Geometry.Toric.Fan.Ruling.Basic
-public import QPainleve.Geometry.Toric.Fan.Ruling.Hirzebruch
+public import QPainleve.Geometry.Toric.Fan.Ruling.Hirzebruch.Prime
 
 import Mathlib.AlgebraicGeometry.AlgClosed.Basic
 import Mathlib.Analysis.Complex.Polynomial.Basic
-import QPainleve.AlgebraicGeometry.Chow.EffectiveClass
-import QPainleve.AlgebraicGeometry.Chow.ProperIntersection
-import QPainleve.AlgebraicGeometry.Cohomology.Projective
-import QPainleve.AlgebraicGeometry.Curves.Morphism
 import QPainleve.AlgebraicGeometry.EffectiveCartierDivisor.BoundaryPrimes
-import QPainleve.AlgebraicGeometry.IntersectionNumber.CurveImage
-import QPainleve.AlgebraicGeometry.LineBundle.Ample
-import QPainleve.AlgebraicGeometry.WeilDivisor.Basic
-import QPainleve.Geometry.Toric.Fan.Picard.FiberDegree
-import QPainleve.Geometry.Toric.Fan.Picard.Ruling
-import TauCeti.AlgebraicGeometry.Curves.Degree.Pullback
 import TauCeti.AlgebraicGeometry.RationalPoint.IdealSheaf
 
 /-!
@@ -143,23 +131,11 @@ variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
 local notation "X" => Φ.algebraicRealization
 local notation "S" => Spec (CommRingCat.of ℂ)
 local notation "C" => Φ.hirzebruchPicardBasis b e hΦ r hr
-local notation "B" => Chow.intersectionBilinForm ℂ X
 local notation "P" p:arg =>
   Additive.ofMul
     (@primeDivisorClass X _ _ (Φ.uniqueFactorizationMonoid_stalk_algebraicRealization hΦ) p)
-local notation "F₁" => Φ.rayBoundaryPoint hΦ (r 1)
-local notation "F₃" => Φ.rayBoundaryPoint hΦ (r 3)
 local notation "S₀" => Φ.rayBoundaryPoint hΦ (r 0)
 local notation "K" => Additive.ofMul (LineBundleClass.mk (QPainleve.canonicalBundle ℂ X 2))
-
-private theorem hirzebruch_section_coordinates :
-    (C).repr (P S₀) 0 = 0 ∧ (C).repr (P S₀) 1 = 1 := by
-  classical
-  let := Φ.uniqueFactorizationMonoid_stalk_algebraicRealization hΦ
-  have h : C 1 = P S₀ := by
-    rw [hirzebruchPicardBasis_apply_one, rayDivisorToPicard_single, one_zsmul]
-  rw [← h, Basis.repr_self]
-  simp
 
 include b e hΦ r hr in
 private theorem card_boundaryPrimes_of_hirzebruch_boundaryComplexity_zero
@@ -171,91 +147,6 @@ private theorem card_boundaryPrimes_of_hirzebruch_boundaryComplexity_zero
 
 variable [(Φ.algebraicRealization).IsProjectiveOver ℂ]
   [SmoothOfRelativeDimension 2 (Φ.algebraicRealization ↘ Spec (CommRingCat.of ℂ))]
-
-include hc in
-private theorem hirzebruch_fiber_degree_nonneg (p : CodimensionOnePoint X) :
-    0 ≤ (C).repr (P p) 1 := by
-  classical
-  let := Φ.uniqueFactorizationMonoid_stalk_algebraicRealization hΦ
-  have hdim := topologicalKrullDim_eq_of_smoothOfRelativeDimension (X ↘ S) (n := 2)
-  rw [← (Φ.hirzebruchPicardBasis_intersection_repr b e hΦ r hr hc (P p)).1]
-  by_cases hp : p = F₁
-  · have hne : F₁ ≠ F₃ :=
-      (Φ.rayBoundaryPoint_injective hΦ).ne (r.injective.ne (by decide))
-    rw [hp, hirzebruchPicardBasis_apply_zero_eq_ray_three, rayDivisorToPicard_single, one_zsmul]
-    simpa only [Chow.intersectionBilinForm_apply, toMul_ofMul] using
-      Chow.classIntersectionNumber_primeDivisorClass_nonneg_of_ne ℂ hdim hne
-  · rw [hirzebruchPicardBasis_apply_zero, rayDivisorToPicard_single, one_zsmul]
-    simpa only [Chow.intersectionBilinForm_apply, toMul_ofMul] using
-      Chow.classIntersectionNumber_primeDivisorClass_nonneg_of_ne ℂ hdim hp
-
-include hc in
-private theorem eq_section_of_hirzebruch_fiber_coeff_lt (p : CodimensionOnePoint X)
-    (hp : (C).repr (P p) 0 < e * (C).repr (P p) 1) : p = S₀ := by
-  classical
-  let := Φ.uniqueFactorizationMonoid_stalk_algebraicRealization hΦ
-  have hdim := topologicalKrullDim_eq_of_smoothOfRelativeDimension (X ↘ S) (n := 2)
-  by_contra hn
-  have hnonneg := Chow.classIntersectionNumber_primeDivisorClass_nonneg_of_ne ℂ hdim hn
-  have h := (Φ.hirzebruchPicardBasis_intersection_repr b e hΦ r hr hc (P p)).2
-  rw [hirzebruchPicardBasis_apply_one, rayDivisorToPicard_single, one_zsmul,
-    Chow.intersectionBilinForm_apply, toMul_ofMul, toMul_ofMul] at h
-  omega
-
-include hc in
-private theorem hirzebruch_fiber_coeff_nonneg (he : 0 ≤ e) (p : CodimensionOnePoint X) :
-    0 ≤ (C).repr (P p) 0 := by
-  by_cases hp : (C).repr (P p) 0 < e * (C).repr (P p) 1
-  · rw [eq_section_of_hirzebruch_fiber_coeff_lt b e hΦ hc r hr p hp,
-      (hirzebruch_section_coordinates b e hΦ r hr).1]
-  · exact (mul_nonneg he (hirzebruch_fiber_degree_nonneg b e hΦ hc r hr p)).trans (le_of_not_gt hp)
-
-include hc in
-private theorem hirzebruch_fiber_coeff_pos_of_degree_zero (he : 0 ≤ e) (p : CodimensionOnePoint X)
-    (hp : (C).repr (P p) 1 = 0) : 1 ≤ (C).repr (P p) 0 := by
-  let := Φ.uniqueFactorizationMonoid_stalk_algebraicRealization hΦ
-  have hn := hirzebruch_fiber_coeff_nonneg b e hΦ hc r hr he p
-  by_contra! h
-  have hz : (C).repr (P p) 0 = 0 := by omega
-  have hzero : P p = 0 := by
-    apply (C).repr.injective
-    apply Finsupp.ext
-    intro j
-    fin_cases j <;> simp [hz, hp]
-  obtain ⟨L, hL⟩ := (X).exists_isAmple_of_isProjectiveOver ℂ
-  have hdim := topologicalKrullDim_eq_of_smoothOfRelativeDimension (X ↘ S) (n := 2)
-  have hpos := Chow.classIntersectionNumber_primeDivisorClass_pos_of_isAmple ℂ hdim hL p
-  have hvanish : primeDivisorClass p = 1 := Additive.ofMul.injective hzero
-  simp [hvanish, Chow.classIntersectionNumber_one_right] at hpos
-
-include hc in
-private theorem hirzebruch_anticanonical_coordinates :
-    (C).repr (-K) 0 = e + 2 ∧ (C).repr (-K) 1 = 2 := by
-  have hflip (j : Fin 2) : B K (C j) = B (C j) K := by
-    simpa only [Chow.intersectionBilinForm_apply] using
-      Chow.classIntersectionNumber_comm (k := ℂ) (K).toMul (Additive.toMul (C j))
-  have hcanon (j : Fin 2) := Φ.hirzebruchPicardBasis_intersection_canonical b e hΦ r hr hc j
-  have hd := (Φ.hirzebruchPicardBasis_intersection_repr b e hΦ r hr hc K).1
-  have ha := (Φ.hirzebruchPicardBasis_intersection_repr b e hΦ r hr hc K).2
-  rw [hflip, hcanon] at hd ha
-  have h₁ : (C).repr K 1 = -2 := by simpa using hd.symm
-  have h₀ : (C).repr K 0 = -e - 2 := by rw [h₁] at ha; simp at ha; linarith
-  simp [h₀, h₁, add_comm]
-
-include hc in
-private theorem disjoint_of_hirzebruch_section_classes (s t : CodimensionOnePoint X)
-    (hne : s ≠ t) (hs : P s = C 1) (ht : P t = e • C 0 + C 1) :
-    Disjoint (closure {(s : X)}) (closure {(t : X)}) := by
-  let := Φ.uniqueFactorizationMonoid_stalk_algebraicRealization hΦ
-  have hdim := topologicalKrullDim_eq_of_smoothOfRelativeDimension (X ↘ S) (n := 2)
-  have hzero : B (P t) (P s) = 0 := by
-    rw [hs, (Φ.hirzebruchPicardBasis_intersection_repr b e hΦ r hr hc _).2, ht, map_add, map_smul]
-    simp only [Finsupp.add_apply, Finsupp.smul_apply, Basis.repr_self]
-    simp
-  have hpos := Chow.classIntersectionNumber_primeDivisorClass_pos_iff ℂ hdim.le hne.symm
-  rw [Chow.intersectionBilinForm_apply, toMul_ofMul, toMul_ofMul] at hzero
-  exact Set.disjoint_left.mpr fun x hx hy ↦
-    (lt_irrefl (0 : ℤ)) (hzero ▸ hpos.mpr ⟨x, hy, hx⟩)
 
 omit [SmoothOfRelativeDimension 2 (Φ.algebraicRealization ↘ Spec (CommRingCat.of ℂ))] in
 include hc in
@@ -293,14 +184,14 @@ theorem exists_boundaryPrimes_of_hirzebruch_boundaryComplexity_zero (he : 0 ≤ 
     rfl
   have hsums (j : Fin 2) : ∑ k, (C).repr (P (p k)) j = (C).repr (-K) j := by
     rw [← Finsupp.finsetSum_apply, ← map_sum, hsum]
-  have ⟨hcan₀, hcan₁⟩ := hirzebruch_anticanonical_coordinates b e hΦ hc r hr
+  have ⟨hcan₀, hcan₁⟩ := hirzebruch_anticanonical_coordinates b e hΦ r hr hc
   have hsection (j : D.boundaryPrimes) (hj : a j < e * d j) : p j = S₀ :=
-    eq_section_of_hirzebruch_fiber_coeff_lt b e hΦ hc r hr (p j) hj
+    eq_section_of_hirzebruch_fiber_coeff_lt b e hΦ r hr hc (p j) hj
   obtain ⟨s, t, hst, hs, ht, hsa, hta, hf⟩ :=
     exists_anticanonical_coordinate_split hcard he ((hsums 0).trans hcan₀) ((hsums 1).trans hcan₁)
-      (fun j ↦ hirzebruch_fiber_coeff_nonneg b e hΦ hc r hr he (p j))
-      (fun j ↦ hirzebruch_fiber_degree_nonneg b e hΦ hc r hr (p j))
-      (fun j ↦ hirzebruch_fiber_coeff_pos_of_degree_zero b e hΦ hc r hr he (p j))
+      (fun j ↦ hirzebruch_fiber_coeff_nonneg b e hΦ r hr hc he (p j))
+      (fun j ↦ hirzebruch_fiber_degree_nonneg b e hΦ r hr hc (p j))
+      (fun j ↦ hirzebruch_fiber_coeff_pos_of_degree_zero b e hΦ r hr hc he (p j))
       (fun j hj ↦ by
         have h := hirzebruch_section_coordinates b e hΦ r hr
         exact ⟨by simpa only [d, hsection j hj] using h.2,
@@ -318,161 +209,14 @@ theorem exists_boundaryPrimes_of_hirzebruch_boundaryComplexity_zero (he : 0 ≤ 
     obtain ⟨hj, hj'⟩ := hf j hjs hjt
     simpa only [a, d, hj, hj', zero_smul, one_smul, add_zero] using hrepr j
   · simpa only [p, D.coe_boundaryPrimeEmbedding] using
-      disjoint_of_hirzebruch_section_classes b e hΦ hc r hr (p s) (p t)
+      disjoint_of_hirzebruch_section_classes b e hΦ r hr hc (p s) (p t)
         (p.injective.ne hst) hsClass htClass
 
 local notation "m" => LinearMap.toAddMonoidHom (b.coord 1)
 local notation "q" =>
   Φ.characterRuling m (nonneg_or_nonpos_hirzebruch_ruling_character b e r hr)
-local notation "H" => Additive.toMul (AddEquiv.symm (projectiveLine.picardDegreeEquiv ℂ) 1)
 local notation "I[" p "]" => vanishingIdeal (Closeds.mk (closure {(p : X)}) isClosed_closure)
 local notation "g[" p "]" => Scheme.IdealSheafData.subschemeι (I[p]) ≫ q
-
-include hc in
-private theorem eulerDegree_hirzebruch_ruling_prime (p : CodimensionOnePoint X) :
-    eulerDegree ℂ (pullback g[p] H) = (C).repr (P p) 1 := by
-  let := Φ.uniqueFactorizationMonoid_stalk_algebraicRealization hΦ
-  have hdim := topologicalKrullDim_eq_of_smoothOfRelativeDimension (X ↘ S) (n := 2)
-  rw [← intersectionNumber_def, ← intersectionNumber_pullback,
-    ← Φ.hirzebruchPicardBasis_zero_eq_pullback_characterRuling b e hΦ r hr,
-    ← Chow.classIntersectionNumber_primeDivisorClass_eq_intersectionNumber ℂ hdim,
-    Chow.classIntersectionNumber_comm, ← toMul_ofMul (primeDivisorClass p),
-    ← Chow.intersectionBilinForm_apply]
-  exact (Φ.hirzebruchPicardBasis_intersection_repr b e hΦ r hr hc (P p)).1
-
-private theorem hirzebruch_ruling_prime_degree_of_isDominant
-    (p : CodimensionOnePoint X) [IsDominant g[p]] :
-    IsFinite g[p] ∧ Flat g[p] ∧
-      ∀ y : projectiveLine ℂ, eulerDegree ℂ (pullback g[p] H) = (g[p].finrank y : ℤ) := by
-  let Y := (I[p]).subscheme
-  have : Y.IsProjectiveOver ℂ := Scheme.IsProjectiveOver.of_isClosedImmersion ℂ (I[p]).subschemeι
-  have hdim := topologicalKrullDim_eq_of_smoothOfRelativeDimension (X ↘ S) (n := 2)
-  have : Y.IsCurveOver ℂ := Scheme.isCurveOver_iff.mpr
-    ⟨inferInstance, inferInstance, QPainleve.topologicalKrullDim_vanishingIdeal_subscheme ℂ hdim p⟩
-  let : (projectiveLine ℂ).IsCurveOver ℂ := projectiveLine.isCurveOver ℂ
-  let : ∀ z : projectiveLine ℂ, ValuationRing ((projectiveLine ℂ).presheaf.stalk z) :=
-    Scheme.IsCurveOver.valuationRing_stalk ℂ _
-  have : IsFinite g[p] := g[p].isFinite_of_isDominant_of_isCurveOver (k := ℂ)
-  have : Flat g[p] := g[p].flat_of_isDominant_of_valuationRing
-  have (j : ℕ) := Scheme.Modules.moduleFinite_cohomology_of_isProjectiveOver ℂ
-    (InvertibleSheaf.trivial Y).obj j
-  refine ⟨inferInstance, inferInstance, fun y ↦ ?_⟩
-  rw [eulerDegree_pullback_of_isDominant ℂ g[p],
-    g[p].finrank_eq_finrank_fieldRange_functionFieldMap]
-  have hH : eulerDegree ℂ H = 1 := by
-    simpa only [projectiveLine.picardDegreeEquiv_apply] using
-      (projectiveLine.picardDegreeEquiv ℂ).apply_symm_apply 1
-  rw [hH, mul_one]
-
-include hc in
-private theorem isIso_hirzebruch_ruling_prime_of_degree_one (p : CodimensionOnePoint X)
-    (hp : (C).repr (P p) 1 = 1) : IsIso g[p] := by
-  let Y := (I[p]).subscheme
-  have : Y.IsProjectiveOver ℂ := Scheme.IsProjectiveOver.of_isClosedImmersion ℂ (I[p]).subschemeι
-  have hdim := topologicalKrullDim_eq_of_smoothOfRelativeDimension (X ↘ S) (n := 2)
-  have : Y.IsCurveOver ℂ := Scheme.isCurveOver_iff.mpr
-    ⟨inferInstance, inferInstance, QPainleve.topologicalKrullDim_vanishingIdeal_subscheme ℂ hdim p⟩
-  have hdeg := (eulerDegree_hirzebruch_ruling_prime b e hΦ hc r hr p).trans hp
-  have : IsDominant g[p] := by
-    apply isDominant_iff_genericPoint_eq.mpr
-    by_contra h
-    have hd : topologicalKrullDim (projectiveLine ℂ) = 1 :=
-      Scheme.IsCurveOver.topologicalKrullDim_eq_one ℂ
-    have hy := TauCeti.AlgebraicGeometry.Scheme.isClosed_singleton_of_ne_genericPoint hd.le h
-    have hrange : Subsingleton (g[p]).image := by
-      constructor
-      intro x y
-      apply (g[p]).imageι.isEmbedding.injective
-      have hr : Set.range (g[p]).imageι ⊆ {g[p] (genericPoint Y)} := by
-        rw [Scheme.Hom.range_imageι]
-        exact closure_minimal (Set.range_subset_iff.mpr fun z ↦
-          ((genericPoint_specializes z).map (g[p]).continuous).mem_closed hy rfl) hy
-      exact (hr (Set.mem_range_self x)).trans (hr (Set.mem_range_self y)).symm
-    have hz := intersectionNumber_eq_zero_of_subsingleton_image (k := ℂ) H g[p] hrange
-    rw [intersectionNumber_def, hdeg] at hz
-    exact one_ne_zero hz
-  obtain ⟨hfinite, hflat, hrank⟩ := hirzebruch_ruling_prime_degree_of_isDominant b e r hr p
-  let := hfinite
-  let := hflat
-  refine (g[p].isIso_iff_finrank_eq).mpr (funext fun y ↦ ?_)
-  exact_mod_cast (hrank y).symm.trans hdeg
-
-private theorem eq_hirzebruch_ruling_fiber_of_prime_class_eq
-    (p : CodimensionOnePoint X) (hp : P p = C 0) {y : Spec (CommRingCat.of ℂ) ⟶ projectiveLine ℂ}
-    (hy : y ≫ (projectiveLine ℂ ↘ S) = 𝟙 S) (hz : (p : X) ∈ (y.ker.comap q).support) :
-    I[p] = y.ker.comap q := by
-  let := Φ.uniqueFactorizationMonoid_stalk_algebraicRealization hΦ
-  have hdim := topologicalKrullDim_eq_of_smoothOfRelativeDimension (X ↘ S) (n := 2)
-  have hm : m ≠ 0 := by
-    intro hz
-    have hh := DFunLike.congr_fun hz (b 1)
-    simp [Basis.coord_apply] at hh
-  let hI := Φ.isEffectiveCartier_characterRuling_fiber m
-    (nonneg_or_nonpos_hirzebruch_ruling_character b e r hr) hm y hy
-  have hyC := (Scheme.Hom.isRelativeEffectiveCartier_ker_of_smoothOfRelativeDimension y hy)
-    |>.isEffectiveCartier
-  have hyH : (LineBundleClass.mk hyC.toInvertibleSheaf)⁻¹ = H := by
-    apply Additive.ofMul.injective
-    apply (projectiveLine.picardDegreeEquiv ℂ).injective
-    rw [projectiveLine.picardDegreeEquiv_apply, toMul_ofMul, projectiveLine.eulerDegree_inv,
-      LineBundleClass.eulerDegree_mk, y.eulerDegree_ker_of_smooth hy]
-    simp only [ofMul_toMul, AddEquiv.apply_symm_apply, neg_neg]
-  have hclass : (LineBundleClass.mk hI.toInvertibleSheaf)⁻¹ = (Additive.toMul (C 0)) := by
-    rw [Φ.hirzebruchPicardBasis_zero_eq_pullback_characterRuling b e hΦ r hr, ← hyH, pullback_inv,
-      hyC.pullback_mk_toInvertibleSheaf hI]
-  let W := hI.toCartierDivisor.toWeilDivisor
-  let cl := Scheme.CartierDivisor.weilToLineBundleClassHom X
-  have hW : 0 ≤ W :=
-    (Scheme.CartierDivisor.isEffective_iff_toWeilDivisor_nonneg _).mp
-      hI.isEffective_toCartierDivisor
-  have hpW : 0 < W p := lt_of_le_of_ne (hW p)
-    (fun h ↦ (hI.coeff_toWeilDivisor_eq_zero_iff p).mp h.symm hz)
-  have hle := WeilDivisor.single_one_le_of_coeff_pos hW hpW
-  have hcl : cl W = cl (Finsupp.single p 1) := by
-    rw [Scheme.CartierDivisor.weilToLineBundleClassHom_single, one_smul, ← primeDivisorClass_def,
-      hp, Scheme.CartierDivisor.weilToLineBundleClassHom_toWeilDivisor,
-      hI.toLineBundleClass_toCartierDivisor, hclass, ofMul_toMul]
-  have hW_eq := (Chow.weilToLineBundleClassHom_eq_zero_iff_of_nonneg ℂ hdim
-    (sub_nonneg.mpr hle)).mp (by rw [map_sub, hcl, sub_self])
-  refine ((hI.toCartierDivisor_eq_iff
-    (isEffectiveCartier_vanishingIdeal_closure_singleton p.property)).mp ?_).symm
-  apply Scheme.CartierDivisor.toWeilDivisor_injective
-  rw [toWeilDivisor_toCartierDivisor_vanishingIdeal_closure_singleton,
-    ← one_smul ℤ (WeilDivisor.ofPoint p), ← WeilDivisor.single_eq_zsmul_ofPoint]
-  exact sub_eq_zero.mp hW_eq
-
-include hc in
-private theorem exists_hirzebruch_ruling_fiber_of_prime_class_eq
-    (p : CodimensionOnePoint X) (hp : P p = C 0) :
-    ∃ y : Spec (CommRingCat.of ℂ) ⟶ projectiveLine ℂ,
-      y ≫ (projectiveLine ℂ ↘ S) = 𝟙 S ∧ I[p] = y.ker.comap q := by
-  let Y := (I[p]).subscheme
-  have hdeg := eulerDegree_hirzebruch_ruling_prime b e hΦ hc r hr p
-  rw [hp, Basis.repr_self] at hdeg
-  have hdeg₀ : eulerDegree ℂ (pullback g[p] H) = 0 := by simpa using hdeg
-  let y₀ := q (p : X)
-  have hgeneric : g[p] (genericPoint Y) = y₀ := by
-    rw [Scheme.Hom.comp_apply, subschemeι_genericPoint_vanishingIdeal_closure_singleton]
-  have hy₀ : IsClosed ({y₀} : Set (projectiveLine ℂ)) := by
-    have hd : topologicalKrullDim (projectiveLine ℂ) = 1 :=
-      Scheme.IsCurveOver.topologicalKrullDim_eq_one ℂ
-    apply TauCeti.AlgebraicGeometry.Scheme.isClosed_singleton_of_ne_genericPoint hd.le
-    intro hy
-    have : IsDominant g[p] := isDominant_iff_genericPoint_eq.mpr (hgeneric.trans hy)
-    obtain ⟨hfinite, hflat, hrank⟩ := hirzebruch_ruling_prime_degree_of_isDominant b e r hr p
-    let := hfinite
-    let := hflat
-    have hn : g[p].finrank y₀ = 0 := by exact_mod_cast (hrank y₀).symm.trans hdeg₀
-    exact ((g[p]).finrank_eq_zero_iff_notMem_range y₀).mp hn ⟨genericPoint Y, hgeneric⟩
-  let y := pointOfClosedPoint (projectiveLine ℂ ↘ S) y₀ hy₀
-  have hy : y ≫ (projectiveLine ℂ ↘ S) = 𝟙 S :=
-    pointOfClosedPoint_comp (projectiveLine ℂ ↘ S) y₀ hy₀
-  refine ⟨y, hy, ?_⟩
-  have hz : (p : X) ∈ (y.ker.comap q).support := by
-    rw [← SetLike.mem_coe, support_comap, TopologicalSpace.Closeds.coe_preimage, Set.mem_preimage,
-      Scheme.Hom.support_ker]
-    exact subset_closure ⟨IsLocalRing.closedPoint ℂ, pointOfClosedPoint_apply _ _ _ _⟩
-  exact eq_hirzebruch_ruling_fiber_of_prime_class_eq b e hΦ r hr p hp hy hz
 
 include hc in
 private theorem exists_ruling_fiber_pair_of_hirzebruch_boundary
