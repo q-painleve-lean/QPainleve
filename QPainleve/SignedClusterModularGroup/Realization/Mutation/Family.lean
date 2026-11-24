@@ -72,7 +72,9 @@ local notation "src(" c ")" => (c) ≫ Scheme.PartialMap.domainSource (X := Cent
 local notation "dst(" c ")" => (c) ≫ Scheme.PartialMap.domainTarget (X := Centers) (Y := Centers) C
 
 include hform hcharge in
-private theorem mutation_target_character (c : DomainPoint) :
+/-- At a center in the domain of a mutation, the target character is the source
+character precomposed with the integral exponent mutation. -/
+theorem mutation_target_character (c : DomainPoint) :
     χ(dst(c)) = χ′(src(c)) := by
   have hE : E.matrix = ε := by rw [← P.matrix_eq, hform, hcharge]
   apply (pointsEquiv ℂ A).symm.injective
@@ -84,7 +86,9 @@ private theorem mutation_target_character (c : DomainPoint) :
   simpa only [Equiv.symm_apply_apply, Over.comp_left, Scheme.PartialMap.domainSource_left] using h
 
 include hOpp hform hcharge in
-private theorem mutation_center_conditions (c : DomainPoint) :
+/-- The center open separates the pivot from every other center on the pivot ray
+and from the inverse of each center on the opposite ray. -/
+theorem mutation_center_conditions (c : DomainPoint) :
     (∀ j, j ≠ k → (s j).primitiveGenerator = (ρ).primitiveGenerator →
       center(χ(src(c))) j ≠ center(χ(src(c))) k) ∧
     (∀ j, j ≠ k → (s j).primitiveGenerator = -(ρ).primitiveGenerator →
