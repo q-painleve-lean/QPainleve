@@ -45,6 +45,24 @@ local notation "S" => Spec (CommRingCat.of k)
 
 namespace GeometricRealization
 
+section CenterTorus
+
+open CharacterTorus
+
+variable {ι : Type u}
+
+/-- The center torus over the field has the identity character as a point. -/
+instance instNonemptyCenterTorus :
+    Nonempty (Over.mk (structureMap k (ι → ℤ))).left :=
+  ⟨((pointsEquiv k (ι → ℤ)).symm 1).val default⟩
+
+/-- The structure morphism of the center torus is smooth. -/
+instance instSmoothCenterTorus [Finite ι] :
+    Smooth (Over.mk (structureMap k (ι → ℤ))).hom :=
+  smooth_structureMap_pi_int k ι
+
+end CenterTorus
+
 section Points
 
 variable {S₀ : Scheme.{u}} {U V : Over S₀} (C : U.left.PartialMap V.left)
@@ -179,6 +197,10 @@ def boundaryPerm : Equiv.Perm (ZMod n) := DihedralGroup.cycleVertexPerm R.bounda
 
 /-- The orientation sign read on the actual ordered branches. -/
 def orientation : ℤˣ := DihedralGroup.cycleOrientationSign R.boundaryAction
+
+/-- The orientation is the sign of the numbered branch action. -/
+theorem orientation_eq_cycleOrientationSign :
+    R.orientation = DihedralGroup.cycleOrientationSign R.boundaryAction := (rfl)
 
 /-- A single fiber isomorphism determines the forward action on the numbered boundary. -/
 theorem boundaryAction_eq_of_fiberIso_eq
