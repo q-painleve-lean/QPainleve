@@ -11,10 +11,10 @@ public import QPainleve.AlgebraicGeometry.Normalization.Proper
 public import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.Polynomial.Basic
 
 import QPainleve.AlgebraicGeometry.CartierDivisor.Support
+import QPainleve.AlgebraicGeometry.IntersectionNumber.ExceptionalCurve.Comparison
 import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.Sections.Ample
 import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.Proper
 import TauCeti.AlgebraicGeometry.SchemeTheoreticImage.Basic
-import TauCeti.Topology.KrullDimension.Basic
 
 /-!
 # A normal model collapsing an exceptional curve
@@ -30,7 +30,6 @@ This gives the normal model in the contraction argument of the
 
 public section
 
-open TauCeti (topologicalKrullDim_eq_zero_iff_subsingleton)
 open CategoryTheory TopologicalSpace TauCeti.AlgebraicGeometry
 
 namespace AlgebraicGeometry.Scheme.IdealSheafData
@@ -40,15 +39,6 @@ universe u
 attribute [local instance] MvPolynomial.gradedAlgebra
 
 variable {X : Scheme.{u}} {E : X.IdealSheafData}
-
-private theorem IsExceptionalCurveOfFirstKind.not_subsingleton_support
-    (hE : E.IsExceptionalCurveOfFirstKind) : ¬ (E.support : Set X).Subsingleton := by
-  have := hE.isIntegral_subscheme
-  intro h
-  have hsub : Subsingleton E.subscheme := ⟨fun x y ↦ E.subschemeι.injective
-    (h (E.range_subschemeι ▸ Set.mem_range_self x) (E.range_subschemeι ▸ Set.mem_range_self y))⟩
-  exact zero_ne_one ((topologicalKrullDim_eq_zero_iff_subsingleton.mpr hsub).symm.trans
-    hE.topologicalKrullDim_subscheme)
 
 variable [IsIntegral X] [IsNormalScheme X]
 

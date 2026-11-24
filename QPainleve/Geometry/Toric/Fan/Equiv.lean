@@ -56,6 +56,33 @@ def mapEquiv : Fan i' where
 /-- The set of cones of the transported fan is the image of the original set of cones. -/
 theorem mapEquiv_cones : (Φ.mapEquiv hi' e).cones = PointedCone.map F '' Φ.cones := (rfl)
 
+/-- A complete fan contains every cone of any fan that contains all its cones. -/
+theorem cones_eq_of_isComplete_of_subset {Ψ : Fan i} (hc : Φ.IsComplete)
+    (h : Φ.cones ⊆ Ψ.cones) : Φ.cones = Ψ.cones := by
+  classical
+  refine Set.Subset.antisymm h fun σ hσ ↦ ?_
+  let ht := Ψ.isToricCone hσ
+  let a := ∑ ρ ∈ ToricRay.faceFinset (PointedCone.IsFaceOf.refl σ) ht.fg,
+    primitiveGenerator Ψ.lattice ht ρ
+  obtain ⟨τ, hτ, ha⟩ := Φ.isComplete_iff.mp hc (i a)
+  have haσ : i a ∈ σ := by
+    dsimp only [a]
+    rw [map_sum]
+    exact Submodule.sum_mem σ fun ρ _ ↦
+      ρ.val.isFaceOf.le (primitiveGenerator_mem Ψ.lattice ht ρ)
+  have hface := Ψ.inf_isFaceOf_left hσ (h hτ)
+  have hle : σ ≤ τ :=
+    (ht.le_of_isFaceOf_of_sum_primitiveGenerator_mem Ψ.lattice hface ⟨haσ, ha⟩).trans inf_le_right
+  exact Φ.mem_of_isFaceOf hτ (Ψ.isFaceOf_of_le (h hτ) hσ hle)
+
+/-- Transporting a complete fan along an integral equivalence gives a complete fan. -/
+theorem IsComplete.mapEquiv {Φ : Fan i} (hc : Φ.IsComplete) :
+    (Φ.mapEquiv hi' e).IsComplete := by
+  rw [isComplete_iff]
+  intro x
+  obtain ⟨σ, hσ, hx⟩ := Φ.isComplete_iff.mp hc ((Φ.lattice.extendEquiv hi' e).symm x)
+  exact ⟨σ.map _, ⟨σ, hσ, rfl⟩, _, hx, LinearEquiv.apply_symm_apply _ _⟩
+
 /-- An integral equivalence induces a fan equivalence onto the transported fan. -/
 def mapEquivIso : FanEquiv Φ (Φ.mapEquiv hi' e) where
   latticeEquiv := e

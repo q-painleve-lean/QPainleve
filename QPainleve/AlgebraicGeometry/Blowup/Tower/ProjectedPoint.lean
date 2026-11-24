@@ -12,6 +12,7 @@ public import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.ProjectiveOver
 
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Intersection
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Reorder
+import QPainleve.AlgebraicGeometry.Chow.Isomorphism
 import QPainleve.AlgebraicGeometry.EffectiveCartierDivisor.Dimension
 import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
 import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.Pullback
@@ -118,48 +119,56 @@ variable {k : Type u} [Field k] [IsAlgClosed k]
 
 local notation "S" => Spec (CommRingCat.of k)
 
-/-- If two point towers on a common resolution pull back the same closed-point ideal,
-their first centers over the respective points give the same negative exceptional
-coefficient for any line bundle on the resolution. The second tower has such a center
-whenever the first does. -/
+variable {Z : Scheme.{u}} {U' : BlowupTower X' m Z}
+
+/-- If two point towers with isomorphic resolving surfaces pull back the same
+closed-point ideal, the first centers over the respective points give corresponding
+total exceptional classes and equal orders for a line bundle transported along the
+isomorphism. The second tower has such a center whenever the first does. -/
 theorem base_order_eq_of_comap_point_ideal_eq (hT : IsClosedPointTower X T)
-    (hU : IsClosedPointTower X' U)
-    (hs : T.toBase ≫ (X ↘ S) = U.toBase ≫ (X' ↘ S))
+    (hU : IsClosedPointTower X' U') (e : Y ≅ Z)
+    (hs : e.hom ≫ U'.toBase ≫ (X' ↘ S) = T.toBase ≫ (X ↘ S))
     {p : X} {p' : X'} (hp : IsClosed ({p} : Set X)) (hp' : IsClosed ({p'} : Set X'))
-    (heq : I[p].comap T.toBase = I[p'].comap U.toBase)
+    (heq : I[p].comap T.toBase = I[p'].comap (e.hom ≫ U'.toBase))
     (j : Fin n) (hj : hT.baseCenter j = p) (hfirst : ∀ l < j, hT.baseCenter l ≠ p)
     (L : LineBundleClass Y) :
     let : IsNoetherian X := isNoetherian_of_finiteType (X ↘ S)
     let : IsNoetherian X' := isNoetherian_of_finiteType (X' ↘ S)
     let a := (T.picardMarking hT (X ↘ S)).symm (Additive.ofMul L)
-    let a' := (U.picardMarking hU (X' ↘ S)).symm (Additive.ofMul L)
+    let a' := (U'.picardMarking hU (X' ↘ S)).symm (Additive.ofMul (pullback e.inv L))
     ∃ j' : Fin m, hU.baseCenter j' = p' ∧ (∀ l < j', hU.baseCenter l ≠ p') ∧
-      T.exceptionalClass j = U.exceptionalClass j' ∧ -a.2 j = -a'.2 j' := by
+      T.exceptionalClass j = pullback e.hom (U'.exceptionalClass j') ∧ -a.2 j = -a'.2 j' := by
   intro hN hN' a a'
   let := hN
   let := hN'
   obtain ⟨hE, hEj⟩ := hT.exists_isEffectiveCartier_comap_eq_exceptionalClass (X ↘ S) hp j hj hfirst
+  have hComap : (I[p].comap T.toBase).comap e.inv = I[p'].comap U'.toBase := by
+    rw [heq, ← comap_comp, Iso.inv_hom_id_assoc]
   have hpU := (hU.mem_range_baseCenter_iff_isEffectiveCartier_comap (X' ↘ S) hp').mpr
-    (heq ▸ hE)
+    (hComap ▸ hE.comap e.inv)
   obtain ⟨j', hj', hmin⟩ := (wellFounded_lt (α := Fin m)).has_min
     {l | hU.baseCenter l = p'} hpU
   have hfirst' (l : Fin m) (hl : l < j') : hU.baseCenter l ≠ p' := fun h ↦ hmin l h hl
   obtain ⟨hE', hEj'⟩ :=
     hU.exists_isEffectiveCartier_comap_eq_exceptionalClass (X' ↘ S) hp' j' hj' hfirst'
-  have hclass := hEj.symm.trans ((congrArg Inv.inv
-    (mk_toInvertibleSheaf_congr hE hE' heq)).trans hEj')
+  have hclass : T.exceptionalClass j = pullback e.hom (U'.exceptionalClass j') := by
+    rw [← hEj, ← hEj', pullback_inv, hE'.pullback_mk_toInvertibleSheaf (hE'.comap e.hom)]
+    exact congrArg Inv.inv (mk_toInvertibleSheaf_congr _ _ (heq.trans (comap_comp _ _ _)))
   refine ⟨j', hj', hfirst', hclass, ?_⟩
   have ha : (T.picardHom a).toMul = L := by
     rw [← picardMarking_apply T hT (X ↘ S), LinearEquiv.apply_symm_apply, toMul_ofMul]
-  have ha' : (U.picardHom a').toMul = L := by
-    rw [← picardMarking_apply U hU (X' ↘ S), LinearEquiv.apply_symm_apply, toMul_ofMul]
+  have ha' : (U'.picardHom a').toMul = pullback e.inv L := by
+    rw [← picardMarking_apply U' hU (X' ↘ S), LinearEquiv.apply_symm_apply, toMul_ofMul]
   have hTj := classIntersectionNumber_picardHom_exceptionalClass (k := k) hT a j
   have hUj := classIntersectionNumber_picardHom_exceptionalClass (k := k) hU a' j'
   rw [ha, hclass] at hTj
   rw [ha'] at hUj
-  have hover : (⟨T.toBase ≫ (X ↘ S)⟩ : Y.Over S) = ⟨U.toBase ≫ (X' ↘ S)⟩ :=
-    congrArg (fun f : Y ⟶ S ↦ (⟨f⟩ : Y.Over S)) hs
-  exact hTj.symm.trans ((congrArg (fun o : Y.Over S ↦
-    @Chow.classIntersectionNumber k _ Y o L (U.exceptionalClass j')) hover).trans hUj)
+  let : Y.Over S := ⟨T.toBase ≫ (X ↘ S)⟩
+  let : Z.Over S := ⟨U'.toBase ≫ (X' ↘ S)⟩
+  let : e.hom.IsOver S := ⟨hs⟩
+  have hpull := Chow.classIntersectionNumber_pullback_of_isIso k e.hom
+    (pullback e.inv L) (U'.exceptionalClass j')
+  rw [pullback_comp, Iso.hom_inv_id, pullback_id] at hpull
+  exact hTj.symm.trans (hpull.trans hUj)
 
 end QPainleve.BlowupTower.IsClosedPointTower

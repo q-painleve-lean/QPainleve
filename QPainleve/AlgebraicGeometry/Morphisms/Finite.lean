@@ -13,8 +13,6 @@ import TauCeti.AlgebraicGeometry.Morphisms.Finite.Basic
 import TauCeti.AlgebraicGeometry.Morphisms.LocallyQuasiFinite
 import TauCeti.AlgebraicGeometry.Noetherian
 import TauCeti.AlgebraicGeometry.Scheme.LocalDimension
-import TauCeti.AlgebraicGeometry.SchemeTheoreticImage.Basic
-import TauCeti.Topology.KrullDimension.Irreducible
 
 /-!
 # Curves in fibers of proper morphisms
@@ -22,9 +20,6 @@ import TauCeti.Topology.KrullDimension.Irreducible
 A proper morphism to a quasi-compact scheme is finite if its fibers over closed points
 are finite. If it is not finite, a reduced point closure in one of these fibers
 gives a closed integral curve contracted by the morphism.
-
-A finite morphism to an irreducible scheme of finite dimension is dominant whenever
-the source has at least the dimension of the target.
 -/
 
 public section
@@ -35,21 +30,24 @@ universe u
 
 namespace AlgebraicGeometry.Scheme.Hom
 
-/-- A finite morphism to an irreducible scheme of finite dimension is dominant if the
-source has at least the dimension of the target. -/
-theorem isDominant_of_isFinite_of_topologicalKrullDim_le {X Y : Scheme.{u}}
-    (f : X ⟶ Y) [IsFinite f] [IrreducibleSpace Y]
-    (hY : topologicalKrullDim Y < ⊤) (h : topologicalKrullDim Y ≤ topologicalKrullDim X) :
-    IsDominant f := by
-  have : LocallyQuasiFinite (f.toImage ≫ f.imageι) := f.toImage_imageι.symm ▸ inferInstance
-  have : LocallyQuasiFinite f.toImage := .of_comp f.toImage f.imageι
-  have hdim := topologicalKrullDim_range_of_isPreimmersion f.imageι
-  rw [f.range_imageι, f.isClosedMap.isClosed_range.closure_eq] at hdim
-  rw [isDominant_iff, denseRange_iff_closure_range, f.isClosedMap.isClosed_range.closure_eq]
+/-- A finite morphism to an irreducible scheme of finite dimension is dominant
+if the source has dimension at least that of the target. -/
+theorem isDominant_of_isFinite_of_topologicalKrullDim_le {X Y : Scheme.{u}} (f : X ⟶ Y)
+    [IsFinite f] [IrreducibleSpace Y] (hY : topologicalKrullDim Y ≠ ⊤)
+    (hXY : topologicalKrullDim Y ≤ topologicalKrullDim X) : IsDominant f := by
+  have hclosed := f.isClosedMap.isClosed_range
+  have : IsFinite (f.toImage ≫ f.imageι) := by rw [f.toImage_imageι]; infer_instance
+  have : IsFinite f.toImage := .of_comp f.toImage f.imageι
+  have hdim : topologicalKrullDim (Set.range f) = topologicalKrullDim f.image := by
+    rw [← topologicalKrullDim_range_of_isPreimmersion f.imageι, IdealSheafData.range_subschemeι,
+      Hom.support_ker, hclosed.closure_eq]
+  refine ⟨denseRange_iff_closure_range.mpr ?_⟩
+  rw [hclosed.closure_eq]
   by_contra hproper
-  have hfinite := ((topologicalKrullDim_subspace_le Y (Set.range f)).trans_lt hY).ne
-  exact (f.isClosedMap.isClosed_range.topologicalKrullDim_lt hproper hfinite).not_ge
-    (h.trans <| f.toImage.topologicalKrullDim_le.trans hdim.symm.le)
+  have hlt := hclosed.topologicalKrullDim_lt hproper
+    (ne_top_of_le_ne_top hY (topologicalKrullDim_subspace_le Y _))
+  rw [hdim] at hlt
+  exact (hXY.trans f.toImage.topologicalKrullDim_le).not_gt hlt
 
 /-- A proper morphism is quasi-finite at a point if that point lies over an
 affine open with affine preimage. -/

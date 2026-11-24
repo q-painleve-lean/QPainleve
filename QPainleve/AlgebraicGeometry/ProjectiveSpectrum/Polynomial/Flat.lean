@@ -11,8 +11,8 @@ public import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.Polynomial.Symmetri
 public import TauCeti.AlgebraicGeometry.Scheme.Normal
 
 import QPainleve.AlgebraicGeometry.Morphisms.Finite
-import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.Polynomial.Chart.Sections
 import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.Polynomial.Integral
+import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.Polynomial.Smooth
 import TauCeti.AlgebraicGeometry.Morphisms.Flat.Normal
 import TauCeti.AlgebraicGeometry.Morphisms.Smooth.RelativeDimension
 import TauCeti.AlgebraicGeometry.Scheme.Regular.Scheme
@@ -42,15 +42,17 @@ namespace AlgebraicGeometry.Scheme.Hom
 
 variable {k : Type u} [Field k] {X : Scheme.{u}} [IsIntegral X] [IsNormalScheme X]
 
-private theorem flat_of_isFinite_to_polynomialPlane (f : X ⟶ P[k]) [IsFinite f]
+/-- A finite morphism from a normal integral surface to the standard polynomial
+projective plane is flat. -/
+theorem flat_of_isFinite_to_polynomialPlane (f : X ⟶ P[k]) [IsFinite f]
     (hX : 2 ≤ topologicalKrullDim X) : Flat f := by
   have : IsIntegral P[k] := Proj.isIntegral_polynomialProj
   let s := Proj.toSpecCoeff (MvPolynomial.homogeneousSubmodule (Fin 3) k)
-  have : SmoothOfRelativeDimension 2 s := Proj.smoothOfRelativeDimension_polynomial k
+  have : SmoothOfRelativeDimension 2 s := Proj.smoothOfRelativeDimension_toSpecCoeff k 2
   have : Smooth s := SmoothOfRelativeDimension.smooth 2 s
   have hP := topologicalKrullDim_eq_of_smoothOfRelativeDimension s (n := 2)
   have : IsDominant f := f.isDominant_of_isFinite_of_topologicalKrullDim_le
-    (hP ▸ WithBot.coe_lt_coe.mpr (ENat.natCast_lt_top 2)) (hP.symm ▸ hX)
+    (by rw [hP]; decide) (hP.symm ▸ hX)
   have : IsRegular P[k] := IsRegular.of_smooth s
   have : IsLocallyNoetherian P[k] := LocallyOfFiniteType.isLocallyNoetherian s
   refine f.flat_of_isDominant_of_locallyQuasiFinite_of_ringKrullDim_le_two fun y ↦ ?_

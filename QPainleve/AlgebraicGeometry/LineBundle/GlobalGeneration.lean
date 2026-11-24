@@ -7,9 +7,12 @@ module
 
 public import QPainleve.AlgebraicGeometry.LineBundle.Power
 public import TauCeti.AlgebraicGeometry.LineBundle.Ample
+public import TauCeti.AlgebraicGeometry.LineBundle.GlobalGeneration.Basic
 public import Mathlib.Algebra.Category.ModuleCat.Sheaf.Generators
 import Mathlib.Algebra.Order.BigOperators.GroupWithZero.Finset
 import Mathlib.Order.Filter.AtTopBot.Finite
+import QPainleve.AlgebraicGeometry.LineBundle.NonvanishingLocus
+import QPainleve.AlgebraicGeometry.LineBundle.Pullback
 import TauCeti.Algebra.Category.ModuleCat.Sheaf.GeneratingSections
 import TauCeti.AlgebraicGeometry.LineBundle.TwistedSections
 import TauCeti.AlgebraicGeometry.Modules.FiniteType
@@ -21,6 +24,7 @@ A finite affine nonvanishing cover for an ample line bundle can be realized by s
 positive tensor power. Applying Tau Ceti's
 `Scheme.Modules.eventually_exists_generatingSections_tensor_tensorPow` to that power, separately
 in each exponent residue class, gives finite global generation for all sufficiently high twists.
+A basis of global sections of a globally generated line bundle also gives a nonvanishing cover.
 
 ## References
 
@@ -33,6 +37,46 @@ open CategoryTheory MonoidalCategory Filter TopologicalSpace
 open TauCeti.AlgebraicGeometry
 
 universe u
+
+namespace TauCeti.AlgebraicGeometry.InvertibleSheaf
+
+open _root_.AlgebraicGeometry Scheme.Modules
+
+/-- The nonvanishing loci of a basis of sections of a globally generated line bundle
+cover the scheme. -/
+theorem IsGloballyGenerated.iSup_nonvanishingLocus_basis_eq_top
+    {k : Type u} [Field k] {X : Scheme.{u}} [X.Over (Spec (.of k))]
+    {L : InvertibleSheaf X} (hL : L.IsGloballyGenerated)
+    {ι : Type*} (b : Module.Basis ι k Γ(L.obj, ⊤)) :
+    (⨆ i, L.obj.nonvanishingLocus (b i)) = ⊤ := by
+  classical
+  apply top_unique
+  intro x _
+  apply Opens.mem_iSup.mpr
+  by_contra! hx
+  let g := X.fromSpecResidueField x
+  let M := (InvertibleSheaf.pullback g).obj L
+  let η := genericPoint (Spec (X.residueField x))
+  let p := g.pullbackSectionsLE L.obj ⊤ ⊤ (Scheme.Hom.preimage_top g).ge
+  have hmem (s : Γ(L.obj, ⊤)) : η ∈ M.obj.nonvanishingLocus (p s) ↔
+      x ∈ L.obj.nonvanishingLocus s := by
+    -- The pullback sheaf is the underlying sheaf of the pulled-back line bundle.
+    change η ∈ ((Scheme.Modules.pullback g).obj L.obj).nonvanishingLocus (p s) ↔ _
+    dsimp only [p]
+    rw [nonvanishingLocus_pullbackSectionsLE, top_inf_eq, Scheme.Hom.mem_preimage,
+      Scheme.fromSpecResidueField_apply]
+  have hzero (i : ι) : p (b i) = 0 := by
+    by_contra hi
+    exact hx i ((hmem _).mp ((M.genericPoint_mem_nonvanishingLocus_iff _).mpr hi))
+  obtain ⟨s, hs⟩ := isGloballyGenerated_iff.mp hL x
+  have hne := (M.genericPoint_mem_nonvanishingLocus_iff _).mp ((hmem s).mpr hs)
+  apply hne
+  rw [← b.linearCombination_repr s, Finsupp.linearCombination_apply, Finsupp.sum, map_sum]
+  exact Finset.sum_eq_zero fun i _ ↦ by
+    rw [base_smul_globalSections, map_smulₛₗ, hzero, smul_zero]
+    rfl
+
+end TauCeti.AlgebraicGeometry.InvertibleSheaf
 
 namespace TauCeti.AlgebraicGeometry.LineBundleClass.IsAmple
 
