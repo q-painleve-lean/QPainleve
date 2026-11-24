@@ -10,6 +10,7 @@ public import QPainleve.SignedClusterModularGroup.SarkisovDegree.MixedQuadric.Pa
 import QPainleve.Geometry.Toric.Fan.Picard.FiberDegree
 import QPainleve.Geometry.Toric.Fan.Picard.Homaloidal
 import QPainleve.Geometry.Toric.Fan.Picard.Quadric
+import QPainleve.SignedClusterModularGroup.SarkisovDegree.Pivots
 
 /-!
 # Mixed continuation of a Hirzebruch preparation
@@ -65,15 +66,16 @@ local notation "β" => Basis.repr (C) (Prod.fst x) 1
 local notation "order[" k "]" => -(Prod.snd x) k
 
 include hg hbir hr in
-/-- A high proper corner on the fiber opposite a high proper smooth center
-gives a resolved path to a quadric of strictly smaller fiber degree. Both
-orders are measured in the original ruling. The new marked tower carries the
-same map to the target plane and its pole factorization. -/
+/-- A high proper corner and a distinct high proper smooth fiber center give a
+resolved path to a quadric of strictly smaller fiber degree when all other orders
+are at most half the original degree. The two centers lie on opposite fibers.
+The new marked tower carries the same map to the target plane and its pole
+factorization. -/
 theorem exists_sarkisov_path_primary_decrease_of_prepared_quadric
-    (j l : Fin (n + 2)) (c : ℂˣ)
+    (j l : Fin (n + 2)) (hjl : j ≠ l) (c : ℂˣ)
     (hl : hT.baseCenter l = center[b,r 1,c])
     (hlfirst : ∀ k < l, hT.baseCenter k ≠ hT.baseCenter l)
-    (σ : Φ.cones) (hσ : Nat.card (ToricRay σ.val) = 2) (hopp : (r 3).toCone ≤ σ)
+    (σ : Φ.cones) (hσ : Nat.card (ToricRay σ.val) = 2)
     (hj : hT.baseCenter j = Φ.distinguishedPointHom σ pt)
     (hjfirst : ∀ k < j, hT.baseCenter k ≠ hT.baseCenter j) :
     letI : Nonempty Φ.cones := hc.nonempty_cones
@@ -106,6 +108,16 @@ theorem exists_sarkisov_path_primary_decrease_of_prepared_quadric
   let : Y.Over S := ⟨T.toBase ≫ f[Φ]⟩
   let : SmoothOfRelativeDimension 2 (Y ↘ S) := hT.smoothOfRelativeDimension f[Φ]
   let : IsIntegral Y := hT.isIntegral f[Φ]
+  let : X[Φ].IsProjectiveOver ℂ := Φ.isProjectiveOver_quadric b hΦ hc r hr
+  have hlog : B[Φ,hc].comap T.toBase ≤ hT.ramificationIdealSheafToBase ℂ := by
+    rcases A with ⟨Ψ, hreg, hcomplete, f, hover, hdom, hpole⟩
+    dsimp only at hA hAh
+    subst Ψ
+    obtain rfl : f = T.toBase := eq_of_heq hAh
+    rw [hT.ramificationIdealSheafToBase_def ℂ, hpole]
+    exact mul_le_of_le_one_left' le_top
+  have hopp := hT.opposite_hirzebruch_fiber_le_of_high_corner b 0 hΦ hc r hr g hg σ hσ
+    hlog c hl hj hllarge hjlarge hjl
   obtain ⟨d, s, hs, hcone, hs₂, hPic⟩ :=
     Φ.exists_exchanged_marking_at_opposite_corner b hΦ hc r hr σ hσ hopp
   obtain ⟨a, ha⟩ := (r 1).exists_binomialCenter_eq_of_basis d b c
@@ -113,7 +125,6 @@ theorem exists_sarkisov_path_primary_decrease_of_prepared_quadric
   have hβ : (Φ.hirzebruchPicardBasis d 0 hΦ s hs).repr (x).1 0 = β := by
     rw [hPic, Basis.repr_reindex_apply]
     rfl
-  let : X[Φ].IsProjectiveOver ℂ := Φ.isProjectiveOver_quadric b hΦ hc r hr
   have hu := hT.base_order_le_hirzebruch_fiber_degree b 0 hΦ r hr hc g hg
   have hb := hT.hirzebruch_resolution_degree_bounds b 0 hΦ hc r hr g hg hbir
   obtain ⟨Q, path, d', t, ht, Z, U, hU, e, _, _, hQ, hProj, hg', hbir', hpole,
