@@ -106,6 +106,26 @@ theorem rayChargeEquiv_ext {N' : Type*} [AddCommGroup N'] [Module.IsTorsionFree 
     nsmulAddMonoidHom_apply] using LinearMap.congr_fun hcomp a
 
 open QPainleve.Cluster in
+/-- If the labeled ray charges span a finite-index sublattice of the rank-two lattice,
+the determinant exchange matrix has exactly the ray-charge kernel. -/
+theorem ker_chargeExchangeMatrix_rayChargeMap [Fintype ι] [DecidableEq ι]
+    (b : Module.Basis (Fin 2) ℤ N) (s : ι → Φ.Ray)
+    (hindex : (rayChargeMap s).range.toAddSubgroup.index ≠ 0) :
+    (chargeExchangeMatrix b.detDualEquiv.toLinearMap (rayChargeMap s)).mulVecLin.ker =
+      (rayChargeMap s).ker := by
+  let : Module.Free ℤ N := Module.Free.of_basis b
+  let : Module.Finite ℤ N := Module.Finite.of_basis b
+  let : (rayChargeMap s).range.toAddSubgroup.FiniteIndex :=
+    AddSubgroup.finiteIndex_iff.mpr hindex
+  refine ker_chargeExchangeMatrix _ _ (fun z hz ↦ ?_) ?_
+  · have hz' (t : N) : b.detDualEquiv t z = 0 := hz t
+    apply b.detDualEquiv.injective
+    rw [map_zero]
+    ext t
+    simp only [b.detDualEquiv_swap z t, hz' t, neg_zero, LinearMap.zero_apply]
+  · exact AddSubgroup.finrank_eq_of_finiteIndex (rayChargeMap s).range.toAddSubgroup
+
+open QPainleve.Cluster in
 /-- Orientation reversal negates the exchange matrix without changing the ray charges. -/
 @[simp]
 theorem chargeExchangeMatrix_reindex_swap {N V : Type} [AddCommGroup N] [AddCommGroup V]

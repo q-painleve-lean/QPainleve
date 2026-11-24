@@ -10,7 +10,6 @@ public import QPainleve.SignedClusterModularGroup.Realization.ChargeKernel
 public import QPainleve.SignedClusterModularGroup.Realization.Endpoint.SelfRealization
 public import QPainleve.SignedClusterModularGroup.Realization.NumberedRays
 
-import Mathlib.GroupTheory.IndexNSmul
 import Mathlib.LinearAlgebra.Matrix.ToLin
 import QPainleve.Geometry.Toric.Fan.Evaluation.CenterFiber
 import QPainleve.SignedClusterModularGroup.BoundaryCycle
@@ -265,28 +264,6 @@ variable
   [LinearMap.IsPerfPair ((Chow.intersectionBilinForm ℂ Φ.algebraicRealization).prod
     (-(dotProductBilin ℤ ℤ : LinearMap.BilinForm ℤ (Fin l → ℤ))))]
 
-omit hΦ₀ [PrestableFamily ((Φ.boundaryIdeal hΦ₀).subscheme ↘ S)]
-  [Φ.algebraicRealization.IsProjectiveOver ℂ]
-  [SmoothOfRelativeDimension 2 (Φ.algebraicRealization ↘ S)]
-  [LinearMap.IsPerfPair Qform] in
-private theorem exchangeKernel_eq_of_rayChargeMap (Q : ChargeSeed E N)
-    (hform : Q.form = b.detDualEquiv.toLinearMap) (hcharge : Q.charge = Fan.rayChargeMap s)
-    (hindex : (Fan.rayChargeMap s).range.toAddSubgroup.index ≠ 0) :
-    E.matrix.mulVecLin.ker = Q.charge.ker := by
-  let : Module.Free ℤ N := Module.Free.of_basis b
-  let : Module.Finite ℤ N := Module.Finite.of_basis b
-  let : (Fan.rayChargeMap s).range.toAddSubgroup.FiniteIndex :=
-    AddSubgroup.finiteIndex_iff.mpr hindex
-  refine Q.exchangeKernel_eq (fun z hz ↦ ?_) ?_
-  · have hz' (t : N) : b.detDualEquiv t z = 0 := by
-      simpa only [hform, LinearEquiv.coe_coe] using hz t
-    apply b.detDualEquiv.injective
-    rw [map_zero]
-    ext t
-    simp only [b.detDualEquiv_swap z t, hz' t, neg_zero, LinearMap.zero_apply]
-  · rw [hcharge]
-    exact AddSubgroup.finrank_eq_of_finiteIndex (Fan.rayChargeMap s).range.toAddSubgroup
-
 include hmark in
 /-- Two signed words with geometric realizations in a fixed ordered toric presentation
 have equal X pullbacks exactly when their finite integer invariants agree. The sign
@@ -347,7 +324,9 @@ theorem xPullback_eq_iff_signedLoopInvariants_eq
     (by rw [hrays c hc])
   let Q : ChargeSeed E N :=
     ⟨b.detDualEquiv.toLinearMap, Fan.rayChargeMap s, b.detDualEquiv_self, hE.symm⟩
-  have hker := exchangeKernel_eq_of_rayChargeMap Q rfl rfl hindex
+  have hker : E.matrix.mulVecLin.ker = Q.charge.ker := by
+    rw [hE]
+    exact Fan.ker_chargeExchangeMatrix_rayChargeMap b s hindex
   have hcharge₁ := chargeKernelAction_eq_signedOrthogonalRestriction u hvertices hdet hnodes
     D hD hmark w R hC Q rfl hker e he hU (fun t ht ↦ (hnodal t ht).genus_zero)
     (fun t ht ↦ ⟨p t ht⟩)
@@ -495,7 +474,9 @@ theorem xPullback_eq_iff_signedLoopInvariants_eq_of_presentation
       let start := Fan.rayBoundaryOrders b Q.rays (Q.rayOrder Q.origin)
       w.signedLoopInvariants (fun j ↦ (β j : Fin r → ℤ)) orders start =
         v.signedLoopInvariants (fun j ↦ (β j : Fin r → ℤ)) orders start := by
-  have hker := exchangeKernel_eq_of_rayChargeMap P hform hcharge hindex
+  have hker : E.matrix.mulVecLin.ker = P.charge.ker := by
+    rw [← P.matrix_eq, hform, hcharge]
+    exact Fan.ker_chargeExchangeMatrix_rayChargeMap b Q.rays hindex
   have hmodel (c : Point Centers[r]) (hc : c.left (default : S) ∈ U₀[P]) :
       Q.HasNodalModel c (M c) := by
     obtain ⟨l, Y, A, hA, f, hf⟩ := (hnodal c hc).exists_tower
