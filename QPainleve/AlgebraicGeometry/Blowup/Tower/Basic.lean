@@ -63,6 +63,16 @@ theorem toBase_nil : (nil (X := X)).toBase = 𝟙 X := (rfl)
 theorem toBase_snoc (T : BlowupTower X n Y) (I : Y.IdealSheafData) :
     (T.snoc I).toBase = I.blowupToBase ≫ T.toBase := (rfl)
 
+/-- The isomorphism between transported tower tops commutes with their structure maps. -/
+theorem transported_tower_hom_comp {S : Scheme.{u}} [X.Over S] [X'.Over S]
+    {T : BlowupTower X m Y} {U : BlowupTower X' n Y'}
+    (k : X ≅ X') [k.hom.IsOver S] (e : Y ≅ Y')
+    (hT : T.toBase = e.hom ≫ U.toBase ≫ k.inv) :
+    e.hom ≫ (U.toBase ≫ X' ↘ S) = T.toBase ≫ X ↘ S := by
+  have : k.inv.IsOver S := inferInstance
+  rw [hT]
+  simp only [Category.assoc, comp_over k.inv S]
+
 /-- The projection of a blowup tower over a locally Noetherian scheme is proper. -/
 theorem isProper_toBase (T : BlowupTower X n Y) [IsLocallyNoetherian X] :
     IsProper T.toBase := by
