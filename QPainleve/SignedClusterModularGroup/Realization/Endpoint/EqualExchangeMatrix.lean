@@ -90,10 +90,10 @@ theorem isProjectiveOver_toricBase {l : ℕ} {Y : Scheme} {A : BlowupTower M.sur
   exact (isClosedPointTower_internalBlowupTower b s centers(c)).isProjectiveOver_base hP
 
 include p in
-/-- An equal exchange matrix identifies the ambient lattice of an ordered presentation
-of a primitive nef square-zero anticanonical cycle. The equivalence is unique,
-sends each labeled primitive ray to its counterpart, and preserves the determinant. -/
-theorem existsUnique_rayChargeEquiv_of_equal_exchange_matrix
+/-- The charge lattice of a contracted nodal toric model of a primitive nef
+square-zero anticanonical cycle has rank two and index at most three. The
+number of centers and the rank of the charge kernel are fixed by the cycle length. -/
+theorem chargeIndex_bounds_of_anticanonical_cycle
     [Scheme.IsRationalOver (M.surface ↘ S)]
     (hcΦ : Φ.IsComplete)
     {l : ℕ} {Y : Scheme} {A : BlowupTower M.surface l Y}
@@ -102,11 +102,13 @@ theorem existsUnique_rayChargeEquiv_of_equal_exchange_matrix
     (hD : D[M].IsEffectiveCartier) (hnefD : IsNef ℂ (M.surface ↘ S) classOf(hD))
     (hsqD : Chow.classIntersectionNumber ℂ M.surface classOf(hD) classOf(hD) = 0)
     (hcan : classOf(hD) = (LineBundleClass.mk (canonicalBundle ℂ M.surface 2))⁻¹)
-    (hδ : IsPrimitive (Additive.ofMul classOf(hD)))
-    (hmat : chargeExchangeMatrix b.detDualEquiv.toLinearMap (rayChargeMap s) =
-      chargeExchangeMatrix b'.detDualEquiv.toLinearMap (rayChargeMap s')) :
-    ∃! E : N ≃ₗ[ℤ] N', (∀ j, E (s j).primitiveGenerator = (s' j).primitiveGenerator) ∧
-      ∀ x y, b'.detDualEquiv (E x) (E y) = b.detDualEquiv x y := by
+    (hδ : IsPrimitive (Additive.ofMul classOf(hD))) :
+    r + n = 12 ∧ Module.finrank ℤ (Fan.rayChargeMap s).ker = 10 - n ∧
+      Module.finrank ℤ (Fan.rayChargeMap s).range = 2 ∧
+      n ≤ 9 ∧ (Fan.rayChargeMap s).range.toAddSubgroup.index ^ 2 ∣ n ∧
+      (Fan.rayChargeMap s).range.toAddSubgroup.index ∈ ({1, 2, 3} : Finset ℕ) ∧
+      ∃ x : (Fan.rayChargeMap s).ker, TauCeti.IsPrimitive x ∧
+        ((Fan.rayChargeMap s).range.toAddSubgroup.index : ℤ) ∣ ∑ j, x.val j ^ 2 := by
   let : IsNoetherian M.surface := isNoetherian_of_finiteType (M.surface ↘ S)
   let : ∀ x : M.surface, UniqueFactorizationMonoid (M.surface.presheaf.stalk x) :=
     (M.surface ↘ S).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two
@@ -141,9 +143,31 @@ theorem existsUnique_rayChargeEquiv_of_equal_exchange_matrix
       -Additive.ofMul (LineBundleClass.mk (canonicalBundle ℂ M.surface 2)) := by
     rw [← hsum, hcan, ofMul_inv]
   let : Φ.algebraicRealization.IsProjectiveOver ℂ := p.isProjectiveOver_toricBase u hu
-  exact Fan.existsUnique_rayChargeEquiv_of_anticanonical_cycle s s' b b' centers(c) hΦ hcΦ
+  exact Fan.chargeIndex_bounds_of_internal_anticanonical_cycle s b centers(c) hΦ hcΦ
     hA u (by rw [← Category.assoc, hu, p.projection_over, Fan.algebraicRealization_over])
-    (by rw [← comap_comp, hu, p.support_comap]) C hGram hspan hsumCan (hsum ▸ hδ) hmat
+    (by rw [← comap_comp, hu, p.support_comap]) C hGram hspan hsumCan (hsum ▸ hδ)
+
+include p in
+/-- An equal exchange matrix identifies the ambient lattice of an ordered presentation
+of a primitive nef square-zero anticanonical cycle. The equivalence is unique,
+sends each labeled primitive ray to its counterpart, and preserves the determinant. -/
+theorem existsUnique_rayChargeEquiv_of_equal_exchange_matrix
+    [Scheme.IsRationalOver (M.surface ↘ S)]
+    (hcΦ : Φ.IsComplete)
+    {l : ℕ} {Y : Scheme} {A : BlowupTower M.surface l Y}
+    (hA : IsNodalBoundaryTower D[M] (M.surface ↘ S) (𝟙 _) A)
+    (u : Y ≅ (model[b,s,c]).1) (hu : u.inv ≫ A.toBase = p.projection)
+    (hD : D[M].IsEffectiveCartier) (hnefD : IsNef ℂ (M.surface ↘ S) classOf(hD))
+    (hsqD : Chow.classIntersectionNumber ℂ M.surface classOf(hD) classOf(hD) = 0)
+    (hcan : classOf(hD) = (LineBundleClass.mk (canonicalBundle ℂ M.surface 2))⁻¹)
+    (hδ : IsPrimitive (Additive.ofMul classOf(hD)))
+    (hmat : chargeExchangeMatrix b.detDualEquiv.toLinearMap (rayChargeMap s) =
+      chargeExchangeMatrix b'.detDualEquiv.toLinearMap (rayChargeMap s')) :
+    ∃! E : N ≃ₗ[ℤ] N', (∀ j, E (s j).primitiveGenerator = (s' j).primitiveGenerator) ∧
+      ∀ x y, b'.detDualEquiv (E x) (E y) = b.detDualEquiv x y := by
+  obtain ⟨hcount, _, _, hk, hindex, _, hrel⟩ :=
+    p.chargeIndex_bounds_of_anticanonical_cycle hcΦ hA u hu hD hnefD hsqD hcan hδ
+  exact Fan.existsUnique_rayChargeEquiv_of_index s s' b b' hmat hcount hk hindex hrel
 
 variable [hΨ₀ : Nonempty Ψ.cones] {m' : ℕ} [NeZero m']
   {L' : Type} [AddCommGroup L'] {B' : LinearMap.BilinForm ℤ L'}

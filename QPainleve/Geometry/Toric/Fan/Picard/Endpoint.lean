@@ -36,7 +36,10 @@ open Scheme.IdealSheafData
 
 namespace TauCeti.Toric.Fan
 
-private theorem existsUnique_rayChargeEquiv_of_index
+/-- The numerical bounds for a primitive square-zero cycle ensure that equal exchange
+matrices identify the two ambient lattices by a unique determinant-preserving equivalence.
+The equivalence matches the labelled ray generators. -/
+theorem existsUnique_rayChargeEquiv_of_index
     {N N' V V' : Type*} [AddCommGroup N] [AddCommGroup N']
     [AddCommGroup V] [AddCommGroup V'] [Module ℝ V] [Module ℝ V']
     {i : N →+ V} {i' : N' →+ V'} {Φ : Fan i} {Ψ : Fan i'}
@@ -203,6 +206,39 @@ local instance : IsNoetherian X := isNoetherian_of_finiteType fX
 local instance : ∀ x : X, UniqueFactorizationMonoid (X.presheaf.stalk x) :=
   (fX).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two
 
+/-- Numerical bounds on the center count, charge rank, and charge index of an
+ordered internal blowup presentation of a primitive square-zero anticanonical cycle. -/
+theorem chargeIndex_bounds_of_internal_anticanonical_cycle
+    (hΦ : Φ.IsRegular) (hc : Φ.IsComplete)
+    (hT : IsNodalBoundaryTower D (X ↘ Spec (.of ℂ)) (𝟙 X) T)
+    (e : Y ≅ (P).1)
+    (he : e.inv ≫ T.toBase ≫ (X ↘ Spec (.of ℂ)) =
+      (P).2.toTower.toBase ≫ (Φ.algebraicRealization ↘ Spec (.of ℂ)))
+    (hD : ((D.comap T.toBase).comap e.inv).support = (P).2.boundaryι.ker.support)
+    {k : ℕ} [NeZero k] (C : ZMod k → Pic(X))
+    (hGram : ∀ j l : ZMod k, Chow.intersectionBilinForm ℂ X (C j) (C l) =
+      (-2 : ℤ) * (if j = l then 1 else 0) +
+        (if l = j + 1 then 1 else 0) + (if l = j - 1 then 1 else 0))
+    (hspan : Scheme.Opens.primeDivisorSpanCompl (Closeds.compl D.support) =
+      Submodule.span ℤ (Set.range C))
+    (hcan : ∑ j, C j = -Additive.ofMul (LineBundleClass.mk (QPainleve.canonicalBundle ℂ X 2)))
+    (hδ : IsPrimitive (∑ j, C j)) :
+    n + k = 12 ∧ Module.finrank ℤ (rayChargeMap s).ker = 10 - k ∧
+      Module.finrank ℤ (rayChargeMap s).range = 2 ∧
+      k ≤ 9 ∧ (rayChargeMap s).range.toAddSubgroup.index ^ 2 ∣ k ∧
+      (rayChargeMap s).range.toAddSubgroup.index ∈ ({1, 2, 3} : Finset ℕ) ∧
+      ∃ x : (rayChargeMap s).ker, TauCeti.IsPrimitive x ∧
+        ((rayChargeMap s).range.toAddSubgroup.index : ℤ) ∣ ∑ j, x.val j ^ 2 := by
+  have hrank := (Module.finrank_eq_card_basis b).trans (Fintype.card_fin 2)
+  let m (j : Fin n) := (b.detDualEquiv (s j).primitiveGenerator).toAddMonoidHom
+  revert e he hD
+  rw [internalBlowupTower_eq_alongBoundary]
+  intro e he hD
+  exact chargeIndex_bounds_of_anticanonical_cycle hΦ hrank s m
+    (fun _ ↦ b.detDualEquiv_self _) (fun j ↦ (s j).surjective_detCharacter b) c
+    (fun j ↦ (s j).internalCenter b (c j)) (fun j ↦ (s j).internalCenter_val b (c j))
+    hT e he hD hc C hGram hspan hcan hδ
+
 /-- Equal exchange matrices in a common label order identify the labeled rays of a
 toric presentation of a primitive square-zero anticanonical cycle with their counterparts
 by a unique integral equivalence preserving the determinant pairings. -/
@@ -225,16 +261,9 @@ theorem existsUnique_rayChargeEquiv_of_anticanonical_cycle
       chargeExchangeMatrix b'.detDualEquiv.toLinearMap (rayChargeMap t)) :
     ∃! E : N ≃ₗ[ℤ] N', (∀ j, E (s j).primitiveGenerator = (t j).primitiveGenerator) ∧
       ∀ x y, b'.detDualEquiv (E x) (E y) = b.detDualEquiv x y := by
-  have hrank := (Module.finrank_eq_card_basis b).trans (Fintype.card_fin 2)
-  let m (j : Fin n) := (b.detDualEquiv (s j).primitiveGenerator).toAddMonoidHom
-  revert e he hD
-  rw [internalBlowupTower_eq_alongBoundary]
-  intro e he hD
   obtain ⟨hcount, _, _, hk, hindex, _, hrel⟩ :=
-    chargeIndex_bounds_of_anticanonical_cycle hΦ hrank s m
-      (fun _ ↦ b.detDualEquiv_self _) (fun j ↦ (s j).surjective_detCharacter b) c
-      (fun j ↦ (s j).internalCenter b (c j)) (fun j ↦ (s j).internalCenter_val b (c j))
-      hT e he hD hc C hGram hspan hcan hδ
+    chargeIndex_bounds_of_internal_anticanonical_cycle s b c hΦ hc hT e he hD
+      C hGram hspan hcan hδ
   exact existsUnique_rayChargeEquiv_of_index s t b b' hmat hcount hk hindex hrel
 
 end PicardCycle

@@ -191,6 +191,16 @@ theorem FiberRealization.marked_actions_eq_of_contractedToricFiber
 
 open GeometricRealization (CenterPoint Point)
 
+/-- Every center reached by a partial center map admits a contracted fiber
+in the given ordered toric presentation of the target family. -/
+abbrev GeometricRealization.HasToricTargetModels
+    {T₀ T₁ : Over S} {P₁ : Point T₁ → MarkedSurface ℂ n B₁ Xtor[r]}
+    (centers : Point T₁ → Multiplicative (Fin r → ℤ) →* ℂˣ)
+    (C : T₀.left.PartialMap T₁.left) [C.IsOver T₀.hom T₁.hom] : Prop :=
+  ∀ c : CenterPoint C, Nonempty
+    (ContractedToricFiber b s hΦ T origin ι (centers (c ≫ C.domainTarget))
+      (P₁ (c ≫ C.domainTarget)))
+
 variable
   {T₀ T₁ : Over S} [Nonempty T₀.left] [Smooth T₀.hom]
   {X₀ : Scheme} [IsIntegral X₀] [X₀.IsSeparated]
@@ -208,12 +218,10 @@ theorem GeometricRealization.marked_actions_eq_of_xMap_eq
     (hFG : F = G) (hc : Φ.IsComplete) (hι : Function.Injective ι)
     (hindex : (Fan.rayChargeMap s).range.toAddSubgroup.index ≠ 0)
     (centers : Point T₁ → (Multiplicative (Fin r → ℤ) →* ℂˣ))
-    (hC : ∀ x : CenterPoint C, Nonempty
-      (ContractedToricFiber b s hΦ T origin ι (centers (x ≫ C.domainTarget))
-        (P₁ (x ≫ C.domainTarget))))
-    (hD : ∀ x : CenterPoint D, Nonempty
-      (ContractedToricFiber b s hΦ T origin ι (centers (x ≫ D.domainTarget))
-        (P₁ (x ≫ D.domainTarget)))) :
+    (hC : HasToricTargetModels (b := b) (s := s) (hΦ := hΦ) (T := T)
+      (origin := origin) (ι := ι) (P₁ := P₁) centers C)
+    (hD : HasToricTargetModels (b := b) (s := s) (hΦ := hΦ) (T := T)
+      (origin := origin) (ι := ι) (P₁ := P₁) centers D) :
     R.picard = R'.picard ∧ R.boundaryAction = R'.boundaryAction := by
   subst G
   let W := C.domain ⊓ D.domain
