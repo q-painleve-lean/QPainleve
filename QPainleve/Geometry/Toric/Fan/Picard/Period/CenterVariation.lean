@@ -9,6 +9,7 @@ public import QPainleve.AlgebraicGeometry.Curves.Node.CycleAction
 public import QPainleve.AlgebraicGeometry.Curves.Node.Period.Subdivision
 public import QPainleve.Geometry.Toric.Fan.Boundary.Period
 public import QPainleve.Geometry.Toric.Fan.Picard.Period.Restriction
+public import QPainleve.Geometry.Toric.Fan.TorusAction.ContractedAlignment
 
 /-!
 # Center variation of marked boundary periods
@@ -23,7 +24,8 @@ The center comparison follows
 [Gross, Hacking and Keel, Proposition 2.9](https://arxiv.org/html/1211.6367v5#S2),
 using `Fan.pullback_toricBoundaryToBase_markedCharge_div` for the quotient of
 the marked restrictions and `Fan.exists_internalCenterRatio_nodalPicardCycleMulEquiv`
-for the period of one center quotient.
+for the period of one center quotient. Equal periods then recover the ordered centers
+up to a torus translation, as in Corollary 2.10 of the same paper.
 -/
 
 public noncomputable section
@@ -53,6 +55,19 @@ local notation "ν[" W "]" => IdealSheafData.blowupToBase (Scheme.singularLocus 
 local notation "P[" W "]" => MonoidHom.ker (LineBundleClass.pullbackHom ν[W])
 local notation "F[" W "]" => Scheme.branchSchemeToBlowup ℂ W
 local notation "nodes[" W "]" => IdealSheafData.subscheme (Scheme.singularLocus ℂ W)
+
+private theorem transport_presentation {X Y : Scheme} [X.Over S] {D : X.IdealSheafData}
+    {length : ℕ} {P : QPainleve.BlowupTower X length Y}
+    {U W : Σ Z, WithBoundary (Dtor).subschemeι n Z}
+    (h : U = W) (e : Y ≅ W.1)
+    (he : e.inv ≫ P.toBase ≫ (X ↘ S) = W.2.toTower.toBase ≫ (Φ.algebraicRealization ↘ S))
+    (hD : ((D.comap P.toBase).comap e.inv).support = W.2.boundaryι.ker.support) :
+    let a := e ≪≫ eqToIso (congrArg Sigma.fst h).symm
+    a.inv ≫ P.toBase ≫ (X ↘ S) = U.2.toTower.toBase ≫ Φ.algebraicRealizationStructureMap ∧
+      ((D.comap P.toBase).comap a.inv).support = U.2.boundaryι.ker.support := by
+  subst W
+  simpa only [eqToIso_refl, Iso.trans_refl, ← algebraicRealization_over] using
+    And.intro he hD
 
 variable [Φ.algebraicRealization.IsProjectiveOver ℂ]
 
@@ -166,8 +181,6 @@ variable {c₀ c₁ : Fin n → ℂˣ}
     (alongBoundary (Φ.boundaryIdeal inferInstance).subschemeι
       (fun j ↦ (s j).internalCenter b (c₁ j))).2.boundaryι.ker.support)
 
-local notation "g₀" => toricBoundaryToBase (J[c₀]) e₀ hD₀
-local notation "g₁" => toricBoundaryToBase (J[c₁]) e₁ hD₁
 variable [PrestableFamily (D₀.subscheme ↘ S)] [PrestableFamily (D₁.subscheme ↘ S)]
   (hCartier₀ : D₀.IsEffectiveCartier) (hCartier₁ : D₁.IsEffectiveCartier)
   (hgenus₀ : ∀ v : irreducibleComponents (D₀.subscheme.singularLocus ℂ).blowup,
@@ -193,29 +206,44 @@ variable [PrestableFamily ((Φ.boundaryIdeal inferInstance).subscheme ↘ Spec (
       ((Φ.boundaryIdeal inferInstance).subscheme.dualGraphEdgeEquiv q (B.edge j)).val =
       Φ.distinguishedPointHom σ (IsLocalRing.closedPoint ℂ))
 
-include hcomp hdet hnodes in
+local notation "boundaryOf(" φ ")" => IdealSheafData.subscheme (Fan.boundaryIdeal φ inferInstance)
+
+variable
+    {gν₀ : (boundaryOf(Φ).singularLocus ℂ).blowup ⟶
+      (D₀.subscheme.singularLocus ℂ).blowup}
+    {gν₁ : (boundaryOf(Φ).singularLocus ℂ).blowup ⟶
+      (D₁.subscheme.singularLocus ℂ).blowup}
+    (hν₀ : CommSq ν[boundaryOf(Φ)] gν₀
+      (toricBoundaryToBase (fun j ↦ (s j).internalCenter b (c₀ j)) e₀ hD₀) ν[D₀.subscheme])
+    (hν₁ : CommSq ν[boundaryOf(Φ)] gν₁
+      (toricBoundaryToBase (fun j ↦ (s j).internalCenter b (c₁ j)) e₁ hD₁) ν[D₁.subscheme])
+    (hnodes₀ : Set.MapsTo (toricBoundaryToBase (fun j ↦ (s j).internalCenter b (c₀ j)) e₀ hD₀)
+      (boundaryOf(Φ).singularLocus ℂ).support
+      (D₀.subscheme.singularLocus ℂ).support)
+    (hnodes₁ : Set.MapsTo (toricBoundaryToBase (fun j ↦ (s j).internalCenter b (c₁ j)) e₁ hD₁)
+      (boundaryOf(Φ).singularLocus ℂ).support
+      (D₁.subscheme.singularLocus ℂ).support)
+    (keep₀ : nodes[D₀.subscheme] ↪ nodes[boundaryOf(Φ)])
+    (keep₁ : nodes[D₁.subscheme] ↪ nodes[boundaryOf(Φ)])
+    (hkeep₀ : ∀ z j,
+      gν₀ (F[boundaryOf(Φ)] (boundaryOf(Φ).branchOrderOfDualGraph q B.order (keep₀ z) j).val) =
+        F[D₀.subscheme] (D₀.subscheme.branchOrderOfDualGraph p₀ A₀.order z j).val)
+    (hkeep₁ : ∀ z j,
+      gν₁ (F[boundaryOf(Φ)] (boundaryOf(Φ).branchOrderOfDualGraph q B.order (keep₁ z) j).val) =
+        F[D₁.subscheme] (D₁.subscheme.branchOrderOfDualGraph p₁ A₁.order z j).val)
+    (hcollapse₀ : ∀ z ∉ Set.range keep₀,
+      gν₀ (F[boundaryOf(Φ)] (boundaryOf(Φ).branchOrderOfDualGraph q B.order z 1).val) =
+      gν₀ (F[boundaryOf(Φ)] (boundaryOf(Φ).branchOrderOfDualGraph q B.order z 0).val))
+    (hcollapse₁ : ∀ z ∉ Set.range keep₁,
+      gν₁ (F[boundaryOf(Φ)] (boundaryOf(Φ).branchOrderOfDualGraph q B.order z 1).val) =
+      gν₁ (F[boundaryOf(Φ)] (boundaryOf(Φ).branchOrderOfDualGraph q B.order z 0).val))
+
+include hcomp hdet hnodes hν₀ hν₁ hnodes₀ hnodes₁ keep₀ keep₁ hkeep₀ hkeep₁ hcollapse₀ hcollapse₁
+
 /-- The ratio of two marked periods in the same fan and charge coordinates is the
 inverse center ratio character. The two original boundary orders agree with the positive
 toric one through their respective conductor subdivisions. Centers may be repeated. -/
 theorem markedBoundaryPeriod_div
-    {gν₀ : ((C).singularLocus ℂ).blowup ⟶ (D₀.subscheme.singularLocus ℂ).blowup}
-    {gν₁ : ((C).singularLocus ℂ).blowup ⟶ (D₁.subscheme.singularLocus ℂ).blowup}
-    (hν₀ : CommSq ν[C] gν₀ g₀ ν[D₀.subscheme]) (hν₁ : CommSq ν[C] gν₁ g₁ ν[D₁.subscheme])
-    (hnodes₀ : Set.MapsTo g₀ ((C).singularLocus ℂ).support (D₀.subscheme.singularLocus ℂ).support)
-    (hnodes₁ : Set.MapsTo g₁ ((C).singularLocus ℂ).support (D₁.subscheme.singularLocus ℂ).support)
-    (keep₀ : nodes[D₀.subscheme] ↪ nodes[C]) (keep₁ : nodes[D₁.subscheme] ↪ nodes[C])
-    (hkeep₀ : ∀ z j,
-      gν₀ (F[C] ((C).branchOrderOfDualGraph q B.order (keep₀ z) j).val) =
-        F[D₀.subscheme] (D₀.subscheme.branchOrderOfDualGraph p₀ A₀.order z j).val)
-    (hkeep₁ : ∀ z j,
-      gν₁ (F[C] ((C).branchOrderOfDualGraph q B.order (keep₁ z) j).val) =
-        F[D₁.subscheme] (D₁.subscheme.branchOrderOfDualGraph p₁ A₁.order z j).val)
-    (hcollapse₀ : ∀ z ∉ Set.range keep₀,
-      gν₀ (F[C] ((C).branchOrderOfDualGraph q B.order z 1).val) =
-        gν₀ (F[C] ((C).branchOrderOfDualGraph q B.order z 0).val))
-    (hcollapse₁ : ∀ z ∉ Set.range keep₁,
-      gν₁ (F[C] ((C).branchOrderOfDualGraph q B.order z 1).val) =
-        gν₁ (F[C] ((C).branchOrderOfDualGraph q B.order z 0).val))
     (x : ChargeKernel) :
     period₀ (Multiplicative.ofAdd x) / period₁ (Multiplicative.ofAdd x) =
       ∏ j, (c₁ j / c₀ j) ^ (x : Fin n → ℤ) j := by
@@ -231,6 +259,74 @@ theorem markedBoundaryPeriod_div
     simpa only [Subgroup.coe_div, hL₀, hL₁, hL] using
       pullback_toricBoundaryToBase_markedCharge_div hΦ b s hT₀ hT₁ e₀ e₁ he₀ he₁ hD₀ hD₁ x
   rw [← hp₀, ← hp₁, ← map_div, hratio, hp]
+
+local notation "M" c:arg => internalBlowupTower b s c
+local notation "T" c:arg => WithBoundary.toTower (Sigma.snd (M c))
+local notation "Chars" => (Multiplicative (N →+ ℤ) →* ℂˣ)
+
+/-- Equal marked boundary periods give a translation of the toric surface that aligns
+the labeled centers and lifts to the ordered blowups. The lift permits repeated centers. -/
+theorem exists_translation_lift_of_eq_markedBoundaryPeriod (hperiod : period₀ = period₁) :
+    ∃ (χ : Chars) (g : (M c₀).1 ≅ (M c₁).1),
+      IsLift (Φ.torusTranslation χ) (T c₀) (T c₁) g := by
+  apply (exists_translation_lift_internalBlowupTower_iff b s c₀ c₁).mpr
+  intro x hx
+  have hr := markedBoundaryPeriod_div hΦ b s hT₀ hT₁ e₀ e₁ he₀ he₁ hD₀ hD₁
+    hCartier₀ hCartier₁ hgenus₀ hgenus₁ A₀ A₁ B r hcomp hdet hnodes
+    hν₀ hν₁ hnodes₀ hnodes₁ keep₀ keep₁ hkeep₀ hkeep₁ hcollapse₀ hcollapse₁ ⟨x, hx⟩
+  rw [hperiod, div_self'] at hr
+  have hcenters : (∏ j, c₁ j ^ x j) / (∏ j, c₀ j ^ x j) = 1 := by
+    simpa only [div_zpow, Finset.prod_div_distrib] using hr.symm
+  exact (div_eq_one.mp hcenters).symm
+
+local notation "classOf(" h ")" => (LineBundleClass.mk (IsEffectiveCartier.toInvertibleSheaf h))⁻¹
+
+local notation "presentationIso(" e "," c ")" =>
+  (e ≪≫ eqToIso (Eq.symm (congrArg Sigma.fst (internalBlowupTower_eq_alongBoundary b s c))))
+
+/-- Equal marked periods for two ordered presentations with the same fan and labeled rays
+give an isomorphism of the square-zero pairs over ℂ. Its pullback agrees with the marking
+on the entire Picard group, in the toric and total exceptional coordinates. -/
+theorem exists_iso_of_eq_markedBoundaryPeriod
+    (hperiod : period₀ = period₁)
+    (hnef₀ : LineBundleClass.IsNef ℂ (X₀ ↘ S) classOf(hCartier₀))
+    (hnef₁ : LineBundleClass.IsNef ℂ (X₁ ↘ S) classOf(hCartier₁))
+    (hsq₀ : Chow.classIntersectionNumber ℂ X₀ classOf(hCartier₀) classOf(hCartier₀) = 0)
+    (hsq₁ : Chow.classIntersectionNumber ℂ X₁ classOf(hCartier₁) classOf(hCartier₁) = 0) :
+    let a₀ := presentationIso(e₀, c₀)
+    let a₁ := presentationIso(e₁, c₁)
+    ∃ (χ : Chars) (g : (M c₀).1 ≅ (M c₁).1) (f : X₀ ≅ X₁),
+      IsLift (Φ.torusTranslation χ) (T c₀) (T c₁) g ∧
+      T₀.toBase ≫ f.hom = a₀.hom ≫ g.hom ≫ a₁.inv ≫ T₁.toBase ∧
+      f.hom ≫ (X₁ ↘ S) = (X₀ ↘ S) ∧ D₁.comap f.hom = D₀ ∧
+      ∀ L : LineBundleClass X₁,
+        (internalBlowupPicardMarking b s c₀ hΦ).symm
+          (Additive.ofMul (pullback (a₀.inv ≫ T₀.toBase) (pullback f.hom L))) =
+        (internalBlowupPicardMarking b s c₁ hΦ).symm
+          (Additive.ofMul (pullback (a₁.inv ≫ T₁.toBase) L)) := by
+  dsimp only
+  obtain ⟨χ, g, hg⟩ := exists_translation_lift_of_eq_markedBoundaryPeriod hΦ b s
+    hT₀ hT₁ e₀ e₁ he₀ he₁ hD₀ hD₁ hCartier₀ hCartier₁ hgenus₀ hgenus₁ A₀ A₁ B r
+    hcomp hdet hnodes hν₀ hν₁ hnodes₀ hnodes₁ keep₀ keep₁ hkeep₀ hkeep₁ hcollapse₀ hcollapse₁
+    hperiod
+  have hnodal₀ : AtWorstNodalOfRelativeDimensionOne (D₀.subschemeι ≫ (X₀ ↘ S)) := by
+    rw [← D₀.over_eq_subschemeι_comp]
+    exact PrestableFamily.atWorstNodalOfRelativeDimensionOne
+  have hnodal₁ : AtWorstNodalOfRelativeDimensionOne (D₁.subschemeι ≫ (X₁ ↘ S)) := by
+    rw [← D₁.over_eq_subschemeι_comp]
+    exact PrestableFamily.atWorstNodalOfRelativeDimensionOne
+  have hconn : _root_.IsConnected (D₀.support : Set X₀) := by
+    let := GeometricallyConnected.connectedSpace_of_subsingleton (f := D₀.subscheme ↘ S)
+    rw [← D₀.range_subschemeι]
+    exact isConnected_range D₀.subschemeι.continuous
+  obtain ⟨he₀', hD₀'⟩ := transport_presentation
+    (internalBlowupTower_eq_alongBoundary b s c₀) e₀ he₀ hD₀
+  obtain ⟨he₁', hD₁'⟩ := transport_presentation
+    (internalBlowupTower_eq_alongBoundary b s c₁) e₁ he₁ hD₁
+  obtain ⟨f, hf, -⟩ := existsUnique_iso_of_translation_of_nef_square_zero_boundary b s hΦ
+    hT₀ hT₁ presentationIso(e₀, c₀) presentationIso(e₁, c₁) he₀' he₁' hD₀' hD₁'
+    hg hCartier₀ hCartier₁ hnodal₀ hnodal₁ hconn hnef₀ hnef₁ hsq₀ hsq₁
+  exact ⟨χ, g, f, hg, hf⟩
 
 end CenterRatio
 
