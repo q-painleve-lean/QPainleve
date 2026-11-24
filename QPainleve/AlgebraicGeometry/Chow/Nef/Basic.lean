@@ -92,6 +92,28 @@ public theorem isNef_weilToLineBundleClassHom_iff
   · exact h p hp
   exact classIntersectionNumber_primeDivisorClass_nonneg_of_notMem_support k hX hD hp
 
+/-- A prime divisor of nonnegative self-intersection on a locally factorial projective
+surface is nef. -/
+public theorem isNef_primeDivisorClass_of_self_nonneg
+    (hX : topologicalKrullDim X = 2) (p : CodimensionOnePoint X)
+    (hp : 0 ≤ classIntersectionNumber k X
+      (LineBundleClass.primeDivisorClass p) (LineBundleClass.primeDivisorClass p)) :
+    LineBundleClass.IsNef k (X ↘ Spec (.of k)) (LineBundleClass.primeDivisorClass p) := by
+  classical
+  have h : Scheme.CartierDivisor.weilToLineBundleClassHom X (Finsupp.single p 1) =
+      Additive.ofMul (LineBundleClass.primeDivisorClass p) := by
+    rw [Scheme.CartierDivisor.weilToLineBundleClassHom_single, one_smul,
+      LineBundleClass.primeDivisorClass_def]
+  have hn := (isNef_weilToLineBundleClassHom_iff k hX
+    (D := Finsupp.single p 1) (by simp)).mpr
+  rw [h, toMul_ofMul] at hn
+  apply hn
+  intro q hq
+  have he : q = p := by
+    simpa only [Finsupp.support_single _ one_ne_zero, Finset.mem_singleton] using hq
+  subst q
+  exact hp
+
 /-- A nef effective Weil divisor has square zero exactly when its class is orthogonal to
 each prime divisor in its support. -/
 public theorem classIntersectionNumber_weilToLineBundleClassHom_self_eq_zero_iff

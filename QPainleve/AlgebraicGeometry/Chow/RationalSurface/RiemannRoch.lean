@@ -33,7 +33,7 @@ public section
 open AlgebraicGeometry CategoryTheory QPainleve QPainleve.BlowupTower
 open TauCeti.AlgebraicGeometry TauCeti.SymmetricAlgebra
 open AlgebraicGeometry.Scheme.Modules TauCeti.AlgebraicGeometry.Scheme.Modules
-open TauCeti.AlgebraicGeometry.LineBundleClass
+open TauCeti.AlgebraicGeometry.LineBundleClass TauCeti.AlgebraicGeometry.Scheme.CartierDivisor
 
 universe u
 
@@ -170,6 +170,22 @@ theorem exists_effectiveCartier_or_canonical_mul_inv_of_eulerCharBelow_pos
   · obtain ⟨I, hI, hclass⟩ := N.exists_effectiveCartier_of_eulerCharBelow_pos k χN h
     exact ⟨I, hI, Or.inr (by rw [hclass, inv_inv, hN])⟩
 
+variable [IsIntegral X]
+
+/-- A Picard class of positive Euler characteristic or its canonical complement is effective. -/
+theorem mem_effectiveClasses_or_canonical_sub_of_eulerChar_pos (a : Additive (LineBundleClass X))
+    (ha : 0 < eulerCharBelow k a.toMul 3) :
+    a ∈ X.effectiveClasses ∨ Additive.ofMul K[X] - a ∈ X.effectiveClasses := by
+  obtain ⟨I, hI, hclass | hclass⟩ :=
+    exists_effectiveCartier_or_canonical_mul_inv_of_eulerCharBelow_pos k a.toMul ha
+  · exact Or.inl (Scheme.mem_effectiveClasses.mpr
+      ⟨hI.toCartierDivisor, hI.isEffective_toCartierDivisor, by
+        rw [hI.toLineBundleClass_toCartierDivisor, hclass, ofMul_toMul]⟩)
+  · exact Or.inr (Scheme.mem_effectiveClasses.mpr
+      ⟨hI.toCartierDivisor, hI.isEffective_toCartierDivisor, by
+        rw [hI.toLineBundleClass_toCartierDivisor, hclass, ofMul_mul, ofMul_inv, ofMul_toMul,
+          sub_eq_add_neg]⟩)
+
 end TauCeti.AlgebraicGeometry.LineBundleClass
 
 namespace AlgebraicGeometry.Scheme
@@ -194,14 +210,6 @@ theorem mem_effectiveClasses_or_canonical_sub
   have hRR : 2 * (eulerCharBelow k a.toMul 3 - 1) = B a a - B a K := by
     simpa only [classIntersectionBilinForm_apply, toMul_ofMul] using
       eulerCharBelow_eq_riemannRoch_of_isRationalOver k a.toMul
-  obtain ⟨I, hI, hclass⟩ :=
-    exists_effectiveCartier_or_canonical_mul_inv_of_eulerCharBelow_pos k a.toMul (by omega)
-  have hm : Additive.ofMul (LineBundleClass.mk hI.toInvertibleSheaf)⁻¹ ∈ X.effectiveClasses :=
-    mem_effectiveClasses.mpr ⟨hI.toCartierDivisor, hI.isEffective_toCartierDivisor,
-      congrArg Additive.ofMul hI.toLineBundleClass_toCartierDivisor⟩
-  rcases hclass with hclass | hclass
-  · exact Or.inl (by simpa only [hclass, ofMul_toMul] using hm)
-  · exact Or.inr (by simpa only [hclass, ofMul_mul, ofMul_inv, ofMul_toMul, sub_eq_add_neg]
-      using hm)
+  exact mem_effectiveClasses_or_canonical_sub_of_eulerChar_pos k a (by omega)
 
 end AlgebraicGeometry.Scheme
