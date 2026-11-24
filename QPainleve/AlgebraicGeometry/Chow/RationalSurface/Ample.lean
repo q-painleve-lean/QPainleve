@@ -6,6 +6,7 @@ Authors: The QPainleve contributors
 module
 
 public import QPainleve.AlgebraicGeometry.Chow.RationalSurface.NakaiMoishezon
+public import QPainleve.AlgebraicGeometry.LineBundle.EffectiveClass
 
 import QPainleve.AlgebraicGeometry.Chow.Ample
 import QPainleve.AlgebraicGeometry.Curves.Degree.Ample
@@ -18,7 +19,8 @@ import QPainleve.AlgebraicGeometry.LineBundle.Ample
 A nef class on a smooth projective rational surface has nonnegative square.
 Tensoring an ample class with a nef class is therefore ample by Nakai–Moishezon.
 The ample twists by powers of one nef class also show that any two nef classes
-have nonnegative intersection.
+have nonnegative intersection. A Picard isometry identifying the effective-class
+monoids preserves ampleness in both directions.
 
 See [Debarre, *Introduction to Mori Theory*, §4.2]
 (https://perso.imj-prg.fr/wp-content/uploads/debarre-pub/M22.pdf).
@@ -153,3 +155,118 @@ theorem IsNef.classIntersectionNumber_nonneg {a b : LineBundleClass X}
   omega
 
 end TauCeti.AlgebraicGeometry.LineBundleClass
+
+namespace TauCeti.AlgebraicGeometry.Chow
+
+open LineBundleClass TopologicalSpace
+
+variable (k : Type u) [Field k] [IsAlgClosed k]
+
+local notation "S" => Spec (CommRingCat.of k)
+local notation "Pic(" X ")" => Additive (LineBundleClass X)
+local notation "B(" X ")" => classIntersectionNumber k X
+local notation "Bℤ(" X ")" => intersectionBilinForm k X
+local notation "P" => primeDivisorClass
+local notation "cl(" X ")" => Scheme.CartierDivisor.weilToLineBundleClassHom X
+
+section
+
+variable {X Y : Scheme.{u}}
+  [X.Over (Spec (.of k))] [Y.Over (Spec (.of k))]
+  [X.IsProjectiveOver k] [Y.IsProjectiveOver k] [IsIntegral X] [IsIntegral Y]
+  [SmoothOfRelativeDimension 2 (X ↘ Spec (.of k))]
+  [SmoothOfRelativeDimension 2 (Y ↘ Spec (.of k))]
+
+variable [IsNoetherian X] [IsNoetherian Y]
+  [∀ x : X, UniqueFactorizationMonoid (X.presheaf.stalk x)]
+  [∀ y : Y, UniqueFactorizationMonoid (Y.presheaf.stalk y)]
+
+variable (e : LinearMap.BilinForm.IsometryEquiv (intersectionBilinForm k X)
+  (intersectionBilinForm k Y))
+
+variable [rationalY : Scheme.IsRationalOver (Y ↘ Spec (.of k))]
+
+include rationalY in
+private theorem ample_of_effective_preimage
+    (hmap : Set.MapsTo e.symm (Y.effectiveClasses : Set Pic(Y)) (X.effectiveClasses : Set Pic(X)))
+    {a : LineBundleClass X} (ha : a.IsAmple) : (e (Additive.ofMul a)).toMul.IsAmple := by
+  let b := (e (Additive.ofMul a)).toMul
+  have hX := topologicalKrullDim_eq_of_smoothOfRelativeDimension (X ↘ S) (n := 2)
+  have hY := topologicalKrullDim_eq_of_smoothOfRelativeDimension (Y ↘ S) (n := 2)
+  apply (isAmple_iff_self_pos_and_intersectionNumber_pos (k := k) b).mpr
+  have hself : B(Y) b b = B(X) a a := by
+    simpa only [b, intersectionBilinForm_apply, toMul_ofMul] using
+      e.map_app (Additive.ofMul a) (Additive.ofMul a)
+  refine ⟨hself.symm ▸ classIntersectionNumber_pos_of_isAmple k hX ha ha, ?_⟩
+  intro C _ _ i _ hi
+  let : i.IsOver S := ⟨hi.symm⟩
+  have hC := Scheme.IsCurveOver.topologicalKrullDim_eq_one (X := C) k
+  let r : CodimensionOnePoint Y :=
+    ⟨i (genericPoint C), i.coheight_apply_genericPoint_eq_one_of_dim_eq_two k hY hC⟩
+  rw [← classIntersectionNumber_primeDivisorClass_eq_intersectionNumber_of_isClosedImmersion
+    k hY i hC]
+  obtain ⟨A, hA, hclass⟩ :=
+    Scheme.mem_effectiveClasses_iff_exists_weilDivisor.mp
+      (hmap (Scheme.primeDivisorClass_mem_effectiveClasses r))
+  have hm : e (cl(X) A) = Additive.ofMul (P r) :=
+    (congrArg e hclass).trans (e.apply_symm_apply _)
+  have hne : A ≠ 0 := by
+    rintro rfl
+    have h := congrArg Additive.toMul hm
+    simp only [map_zero, toMul_zero, toMul_ofMul] at h
+    obtain ⟨H, hH⟩ := Y.exists_isAmple_of_isProjectiveOver k
+    have hy : 0 < B(Y) H (P r) :=
+      classIntersectionNumber_primeDivisorClass_pos_of_isAmple k hY hH r
+    rw [← h, classIntersectionNumber_one_right] at hy
+    exact (lt_irrefl 0) hy
+  have hpos := classIntersectionNumber_weilToLineBundleClassHom_pos_of_isAmple k hX ha hA hne
+  have he := e.map_app (cl(X) A) (Additive.ofMul a)
+  simp only [intersectionBilinForm_apply, hm, toMul_ofMul] at he
+  exact he.symm ▸ hpos
+
+end
+
+variable {F G : Scheme.{u}} [F.Over (Spec (.of k))] [G.Over (Spec (.of k))]
+  [F.IsProjectiveOver k] [G.IsProjectiveOver k]
+  [SmoothOfRelativeDimension 2 (F ↘ Spec (.of k))]
+  [SmoothOfRelativeDimension 2 (G ↘ Spec (.of k))]
+  [hF : Scheme.IsRationalOver (F ↘ Spec (.of k))]
+  [hG : Scheme.IsRationalOver (G ↘ Spec (.of k))]
+
+/-- An isometry identifying the effective-class monoids of smooth projective rational surfaces
+preserves ampleness in both directions. -/
+theorem isAmple_iff_of_map_effectiveClasses (a : LineBundleClass F) :
+    let : Smooth (F ↘ S) := SmoothOfRelativeDimension.smooth 2 _
+    let : Smooth (G ↘ S) := SmoothOfRelativeDimension.smooth 2 _
+    let : IsIntegral F := hF.isIntegral_of_smooth
+    let : IsIntegral G := hG.isIntegral_of_smooth
+    let : IsNoetherian F := isNoetherian_of_finiteType (F ↘ S)
+    let : IsNoetherian G := isNoetherian_of_finiteType (G ↘ S)
+    let : ∀ x : F, UniqueFactorizationMonoid (F.presheaf.stalk x) :=
+      (F ↘ S).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two
+    let : ∀ y : G, UniqueFactorizationMonoid (G.presheaf.stalk y) :=
+      (G ↘ S).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two
+    ∀ (e : (Bℤ(F)).IsometryEquiv (Bℤ(G))),
+      F.effectiveClasses.map e.toLinearEquiv.toAddMonoidHom = G.effectiveClasses →
+      ((e (Additive.ofMul a)).toMul.IsAmple ↔ a.IsAmple) := by
+  intro _ _ _ _ _ _ _ _ e h
+  have hf : Set.MapsTo e (F.effectiveClasses : Set Pic(F)) (G.effectiveClasses : Set Pic(G)) := by
+    intro x hx
+    rw [← h]
+    exact ⟨x, hx, rfl⟩
+  have hb : Set.MapsTo e.symm (G.effectiveClasses : Set Pic(G))
+      (F.effectiveClasses : Set Pic(F)) := by
+    intro y hy
+    rw [← h] at hy
+    obtain ⟨x, hx, hxy⟩ := hy
+    have heq : e x = y := hxy
+    have hsymm : e.symm y = x := (congrArg e.symm heq.symm).trans (e.symm_apply_apply x)
+    exact hsymm.symm ▸ hx
+  refine ⟨fun ha ↦ ?_, ample_of_effective_preimage k e hb⟩
+  have hi := ample_of_effective_preimage k e.symm hf ha
+  rw [ofMul_toMul] at hi
+  have heq : (e.symm (e (Additive.ofMul a))).toMul = a :=
+    congrArg Additive.toMul (e.symm_apply_apply (Additive.ofMul a))
+  exact heq ▸ hi
+
+end TauCeti.AlgebraicGeometry.Chow

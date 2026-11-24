@@ -7,14 +7,13 @@ module
 
 public import QPainleve.AlgebraicGeometry.Chow.RationalSurface.Basic
 public import QPainleve.AlgebraicGeometry.IntersectionNumber.Nef
-public import TauCeti.AlgebraicGeometry.LineBundle.Ample
+public import QPainleve.AlgebraicGeometry.LineBundle.EffectiveClass
 
 import QPainleve.AlgebraicGeometry.CartierDivisor.Support
 import QPainleve.AlgebraicGeometry.Chow.Ample
 import QPainleve.AlgebraicGeometry.Chow.NegativeCurve
 import QPainleve.AlgebraicGeometry.Chow.Nef.NumericalExceptional
 import QPainleve.AlgebraicGeometry.Chow.PositiveCone
-import QPainleve.AlgebraicGeometry.Chow.RationalSurface.NakaiMoishezon
 import QPainleve.AlgebraicGeometry.IntersectionNumber.ExceptionalCurve.Numerical
 import QPainleve.AlgebraicGeometry.LineBundle.Ample
 import QPainleve.AlgebraicGeometry.Scheme.LocalDimension
@@ -64,7 +63,6 @@ local notation "K(" X ")" => mk (canonicalBundle k X 2)
 local notation "ι(" a ")" => ((1 : ℝ) ⊗ₜ[ℤ] Additive.ofMul a)
 local notation "P" => primeDivisorClass
 local notation "cl(" X ")" => Scheme.CartierDivisor.weilToLineBundleClassHom X
-local notation "Eff(" X ")" => AddSubmonoid.map (cl(X)) (AddSubmonoid.nonneg (SchemeWeilDivisor X))
 
 variable (e : LinearMap.BilinForm.IsometryEquiv (intersectionBilinForm k X)
   (intersectionBilinForm k Y))
@@ -131,25 +129,17 @@ private theorem classIntersectionNumber_pos_of_nef_isometry
   simpa only [g, LinearMap.BilinForm.IsometryEquiv.baseChange_tmul, realIntersectionBilinForm_tmul,
     one_mul, toMul_ofMul, Int.cast_pos] using hp
 
+private theorem effective_class_of_cartier {I : Y.IdealSheafData} (hI : I.IsEffectiveCartier) :
+    Additive.ofMul (mk hI.toInvertibleSheaf)⁻¹ ∈ Y.effectiveClasses := by
+  exact Scheme.mem_effectiveClasses.mpr
+    ⟨hI.toCartierDivisor, hI.isEffective_toCartierDivisor,
+      by rw [hI.toLineBundleClass_toCartierDivisor]⟩
+
 section Divisors
 
 variable [IsNoetherian X] [IsNoetherian Y]
   [∀ x : X, UniqueFactorizationMonoid (X.presheaf.stalk x)]
   [∀ y : Y, UniqueFactorizationMonoid (Y.presheaf.stalk y)]
-
-private theorem effective_class_of_cartier {I : Y.IdealSheafData} (hI : I.IsEffectiveCartier) :
-    Additive.ofMul (mk hI.toInvertibleSheaf)⁻¹ ∈ Eff(Y) := by
-  have : IsNormalScheme Y := IsNormalScheme.of_uniqueFactorizationMonoid_stalk
-  exact ⟨hI.toCartierDivisor.toWeilDivisor,
-    (Scheme.CartierDivisor.isEffective_iff_toWeilDivisor_nonneg _).mp
-      hI.isEffective_toCartierDivisor,
-    by rw [Scheme.CartierDivisor.weilToLineBundleClassHom_toWeilDivisor,
-      hI.toLineBundleClass_toCartierDivisor]⟩
-
-private theorem prime_mem_effective (p : CodimensionOnePoint Y) :
-    Additive.ofMul (P p) ∈ Eff(Y) := by
-  refine ⟨Finsupp.single p 1, Finsupp.single_nonneg.mpr zero_le_one, ?_⟩
-  rw [Scheme.CartierDivisor.weilToLineBundleClassHom_single, ← primeDivisorClass_def, one_zsmul]
 
 variable {ι : Type*} [Finite ι] [Nonempty ι]
   {D : X.IdealSheafData} {E : Y.IdealSheafData} [IsReduced D.subscheme] [IsReduced E.subscheme]
@@ -191,7 +181,7 @@ private theorem effective_image_of_prime_of_self_nonneg
     (hdd : 0 ≤ B(X) (K(X))⁻¹ (K(X))⁻¹)
     (hdmap : e (Additive.ofMul (K(X))⁻¹) = Additive.ofMul (K(Y))⁻¹)
     (r : CodimensionOnePoint X) (hr : 0 ≤ B(X) (P r) (P r)) :
-    e (Additive.ofMul (P r)) ∈ Eff(Y) := by
+    e (Additive.ofMul (P r)) ∈ Y.effectiveClasses := by
   let a := (e (Additive.ofMul (P r))).toMul
   obtain ⟨h, hh⟩ := X.exists_isAmple_of_isProjectiveOver k
   obtain ⟨h', hh'⟩ := Y.exists_isAmple_of_isProjectiveOver k
@@ -229,7 +219,8 @@ private theorem effective_image_of_prime_of_self_nonneg
       (by omega) hnef hneg
   simpa only [hIa, a, ofMul_toMul] using effective_class_of_cartier hI
 
-omit [IsReduced D.subscheme] in
+omit [IsReduced D.subscheme] [AlgebraicGeometry.IsNoetherian Y]
+  [∀ y : Y, UniqueFactorizationMonoid (Y.presheaf.stalk y)] in
 private theorem effective_image_of_negative_prime_off_boundary
     (hK : mk hD.toInvertibleSheaf = K(X))
     (hd' : (K(Y))⁻¹.IsNef k (Y ↘ S)) (hdd' : B(Y) (K(Y))⁻¹ (K(Y))⁻¹ = 0)
@@ -237,7 +228,7 @@ private theorem effective_image_of_negative_prime_off_boundary
     (hroot : ∀ r : CodimensionOnePoint X,
       Disjoint (closure {(r : X)}) D.support → B(X) (P r) (P r) ≠ -2)
     (r : CodimensionOnePoint X) (hr : B(X) (P r) (P r) < 0) (hrD : (r : X) ∉ D.support) :
-    e (Additive.ofMul (P r)) ∈ Eff(Y) := by
+    e (Additive.ofMul (P r)) ∈ Y.effectiveClasses := by
   let I := vanishingIdeal (X := X) ⟨closure {(r : X)}, isClosed_closure⟩
   have hX := topologicalKrullDim_eq_of_smoothOfRelativeDimension (X ↘ S) (n := 2)
   have : I.subscheme.IsProjectiveOver k :=
@@ -273,22 +264,23 @@ private theorem mapsTo_effective_of_nef_anticanonical_isometry
     (hdd : B(X) (K(X))⁻¹ (K(X))⁻¹ = 0)
     (hroot : ∀ r : CodimensionOnePoint X,
       Disjoint (closure {(r : X)}) D.support → B(X) (P r) (P r) ≠ -2) :
-    Set.MapsTo e (Eff(X) : Set Pic(X)) (Eff(Y) : Set Pic(Y)) := by
+    Set.MapsTo e (X.effectiveClasses : Set Pic(X)) (Y.effectiveClasses : Set Pic(Y)) := by
   obtain ⟨h, hh⟩ := X.exists_isAmple_of_isProjectiveOver k
   have hdmap := map_anticanonical k e hD hE p q hp hq hclass hK hK'
   have hdd' : B(Y) (K(Y))⁻¹ (K(Y))⁻¹ = 0 := by
     simpa only [hdmap, toMul_ofMul, hdd] using intersection_map k e (K(X))⁻¹ (K(X))⁻¹
-  have hprime (r : CodimensionOnePoint X) : e (Additive.ofMul (P r)) ∈ Eff(Y) := by
+  have hprime (r : CodimensionOnePoint X) : e (Additive.ofMul (P r)) ∈ Y.effectiveClasses := by
     by_cases hrD : (r : X) ∈ D.support
     · obtain ⟨i, rfl⟩ := (hp r).mp hrD
       rw [hclass i]
-      exact prime_mem_effective (q i)
+      exact Scheme.primeDivisorClass_mem_effectiveClasses (q i)
     by_cases hr : 0 ≤ B(X) (P r) (P r)
     · exact effective_image_of_prime_of_self_nonneg k e hE hK' hd hd'
         (one_tmul_anticanonical_ne_zero k hD p hp hK hh) hdd.ge hdmap r hr
     · exact effective_image_of_negative_prime_off_boundary k e hD hK hd' hdd' hdmap
         hroot r (lt_of_not_ge hr) hrD
-  rintro a ⟨A, hA, rfl⟩
+  intro a ha
+  obtain ⟨A, hA, rfl⟩ := Scheme.mem_effectiveClasses_iff_exists_weilDivisor.mp ha
   classical
   have heq : e (cl(X) A) = A.sum (fun r m ↦ m • e (Additive.ofMul (P r))) := by
     calc
@@ -298,43 +290,10 @@ private theorem mapsTo_effective_of_nef_anticanonical_isometry
         simp only [Scheme.CartierDivisor.weilToLineBundleClassHom_single,
           ← primeDivisorClass_def, map_zsmul]
   rw [heq, Finsupp.sum]
-  refine (Eff(Y)).sum_mem fun r _ ↦ ?_
+  refine Y.effectiveClasses.sum_mem fun r _ ↦ ?_
   have hcoeff : ((A r).toNat : ℤ) = A r := Int.toNat_of_nonneg (hA r)
   rw [← hcoeff, natCast_zsmul]
-  exact (Eff(Y)).nsmul_mem (hprime r) (A r).toNat
-
-omit [Scheme.IsRationalOver (X ↘ S)] in
-private theorem ample_of_effective_preimage
-    (hmap : Set.MapsTo e.symm (Eff(Y) : Set Pic(Y)) (Eff(X) : Set Pic(X)))
-    {a : LineBundleClass X} (ha : a.IsAmple) : (e (Additive.ofMul a)).toMul.IsAmple := by
-  let b := (e (Additive.ofMul a)).toMul
-  have hX := topologicalKrullDim_eq_of_smoothOfRelativeDimension (X ↘ S) (n := 2)
-  have hY := topologicalKrullDim_eq_of_smoothOfRelativeDimension (Y ↘ S) (n := 2)
-  apply (isAmple_iff_self_pos_and_intersectionNumber_pos (k := k) b).mpr
-  refine ⟨(intersection_map k e a a).symm ▸ classIntersectionNumber_pos_of_isAmple k hX ha ha, ?_⟩
-  intro C _ _ i _ hi
-  let : i.IsOver S := ⟨hi.symm⟩
-  have hC := Scheme.IsCurveOver.topologicalKrullDim_eq_one (X := C) k
-  let r : CodimensionOnePoint Y :=
-    ⟨i (genericPoint C), i.coheight_apply_genericPoint_eq_one_of_dim_eq_two k hY hC⟩
-  rw [← classIntersectionNumber_primeDivisorClass_eq_intersectionNumber_of_isClosedImmersion
-    k hY i hC]
-  obtain ⟨A, hA, hclass⟩ := hmap (prime_mem_effective r)
-  have hm : e (cl(X) A) = Additive.ofMul (P r) :=
-    (congrArg e hclass).trans (e.apply_symm_apply _)
-  have hne : A ≠ 0 := by
-    rintro rfl
-    have h := congrArg Additive.toMul hm
-    simp only [map_zero, toMul_zero, toMul_ofMul] at h
-    obtain ⟨H, hH⟩ := Y.exists_isAmple_of_isProjectiveOver k
-    have hy : 0 < B(Y) H (P r) :=
-      classIntersectionNumber_primeDivisorClass_pos_of_isAmple k hY hH r
-    rw [← h, classIntersectionNumber_one_right] at hy
-    exact (lt_irrefl 0) hy
-  have hpos := classIntersectionNumber_weilToLineBundleClassHom_pos_of_isAmple k hX ha hA hne
-  have he := intersection_map k e a (cl(X) A).toMul
-  rw [ofMul_toMul, hm, toMul_ofMul] at he
-  exact he.symm ▸ hpos
+  exact Y.effectiveClasses.nsmul_mem (hprime r) (A r).toNat
 
 end Divisors
 
@@ -376,7 +335,7 @@ theorem map_effectiveClasses_of_nef_anticanonical_isometry
         B(F) (P r) (P r) ≠ -2) →
       (∀ r : CodimensionOnePoint G, Disjoint (closure {(r : G)}) E.support →
         B(G) (P r) (P r) ≠ -2) →
-      (Eff(F)).map e.toLinearEquiv.toAddMonoidHom = Eff(G) := by
+      F.effectiveClasses.map e.toLinearEquiv.toAddMonoidHom = G.effectiveClasses := by
   intro _ _ _ _ _ _ _ _ e hclass hroot hroot'
   have hdmap := map_anticanonical k e hD hE p q hp hq hclass hK hK'
   have hdd' : B(G) (K(G))⁻¹ (K(G))⁻¹ = 0 := by
@@ -392,41 +351,6 @@ theorem map_effectiveClasses_of_nef_anticanonical_isometry
     exact hforward hb
   · intro ha
     exact ⟨e.symm a, hback ha, e.apply_symm_apply a⟩
-
-/-- An isometry identifying the effective-class monoids of smooth projective rational surfaces
-preserves ampleness in both directions. -/
-theorem isAmple_iff_of_map_effectiveClasses (a : LineBundleClass F) :
-    let : Smooth (F ↘ S) := SmoothOfRelativeDimension.smooth 2 _
-    let : Smooth (G ↘ S) := SmoothOfRelativeDimension.smooth 2 _
-    let : IsIntegral F := hF.isIntegral_of_smooth
-    let : IsIntegral G := hG.isIntegral_of_smooth
-    let : IsNoetherian F := isNoetherian_of_finiteType (F ↘ S)
-    let : IsNoetherian G := isNoetherian_of_finiteType (G ↘ S)
-    let : ∀ x : F, UniqueFactorizationMonoid (F.presheaf.stalk x) :=
-      (F ↘ S).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two
-    let : ∀ y : G, UniqueFactorizationMonoid (G.presheaf.stalk y) :=
-      (G ↘ S).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two
-    ∀ (e : (Bℤ(F)).IsometryEquiv (Bℤ(G))),
-      (Eff(F)).map e.toLinearEquiv.toAddMonoidHom = Eff(G) →
-      ((e (Additive.ofMul a)).toMul.IsAmple ↔ a.IsAmple) := by
-  intro _ _ _ _ _ _ _ _ e h
-  have hf : Set.MapsTo e (Eff(F) : Set Pic(F)) (Eff(G) : Set Pic(G)) := by
-    intro x hx
-    rw [← h]
-    exact ⟨x, hx, rfl⟩
-  have hb : Set.MapsTo e.symm (Eff(G) : Set Pic(G)) (Eff(F) : Set Pic(F)) := by
-    intro y hy
-    rw [← h] at hy
-    obtain ⟨x, hx, hxy⟩ := hy
-    have heq : e x = y := hxy
-    have hsymm : e.symm y = x := (congrArg e.symm heq.symm).trans (e.symm_apply_apply x)
-    exact hsymm.symm ▸ hx
-  refine ⟨fun ha ↦ ?_, ample_of_effective_preimage k e hb⟩
-  have hi := ample_of_effective_preimage k e.symm hf ha
-  rw [ofMul_toMul] at hi
-  have heq : (e.symm (e (Additive.ofMul a))).toMul = a :=
-    congrArg Additive.toMul (e.symm_apply_apply (Additive.ofMul a))
-  exact heq ▸ hi
 
 end Transport
 end TauCeti.AlgebraicGeometry.Chow
