@@ -86,6 +86,11 @@ theorem boundaryTranslation_hom_subschemeι (χ : Chars) :
       (boundary).subschemeι ≫ (Φ.torusTranslation χ).hom :=
   subschemeMap_subschemeι _ _ _ (boundaryIdeal_le_map_torusTranslation_hom χ)
 
+/-- The boundary translation is an isomorphism over the ground field. -/
+instance isOver_boundaryTranslation_hom (χ : Chars) :
+    (boundaryTranslation (Φ := Φ) χ).hom.IsOver (Spec (.of ℂ)) := ⟨by
+  rw [(boundary).over_eq_subschemeι_comp, boundaryTranslation_hom_subschemeι_assoc, comp_over]⟩
+
 /-- Unit translation restricts to the identity of the boundary. -/
 @[simp]
 theorem boundaryTranslation_one :
