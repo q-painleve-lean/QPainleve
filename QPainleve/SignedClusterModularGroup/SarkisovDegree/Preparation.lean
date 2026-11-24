@@ -103,9 +103,11 @@ private theorem exists_quadric_tower_of_resolved_preparation
 than half the Hirzebruch fiber degree to the same binomial point of the quadric,
 with equal order and equal fiber degree. The prepared point tower resolves the
 prescribed rational change of target on the same nodal refinement as the
-resolved Sarkisov path. Its pole ideal is the pulled-back reduced total
-boundary. The line bundle can in particular be the pullback of the plane
-hyperplane bundle along a specified resolving morphism. -/
+resolved Sarkisov path. Over any binomial point on a shared ray, the first order
+in the prepared tower is either zero or equals the first order over the
+corresponding point in the original tower. Its pole ideal is the pulled-back
+reduced total boundary. The line bundle can in particular be the pullback of
+the plane hyperplane bundle along a specified resolving morphism. -/
 theorem exists_prepared_quadric_resolution_of_high_fiber_center
     (j : Fin n) (c : ℂˣ) (hj : hT.baseCenter j = p[r 1,c])
     (hfirst : ∀ l < j, hT.baseCenter l ≠ p[r 1,c]) (L : LineBundleClass Y)
@@ -174,7 +176,13 @@ theorem exists_prepared_quadric_resolution_of_high_fiber_center
         pullback R.toBase (T.exceptionalClass j) = pullback e.hom (U.exceptionalClass j') ∧
         let w := (U.picardMarking hU s[Δ]).symm (Additive.ofMul (pullback (e.inv ≫ R.toBase) L))
         let β' := (Δ.hirzebruchPicardBasis b 0 (P.model_regular 0) u hu).repr w.1 1
-        β' = β ∧ -w.2 j' = -v.2 j ∧ β' < 2 * (-w.2 j') := by
+        β' = β ∧ -w.2 j' = -v.2 j ∧ β' < 2 * (-w.2 j') ∧
+        ∀ (ρ : Φ.Ray) (τ : Δ.Ray), ρ.primitiveGenerator = τ.primitiveGenerator →
+          ∀ (c' : ℂˣ) (k : Fin l), hU.baseCenter k = p[τ,c'] →
+            (∀ h < k, hU.baseCenter h ≠ p[τ,c']) →
+            w.2 k = 0 ∨ ∃ j₀ : Fin n,
+              hT.baseCenter j₀ = p[ρ,c'] ∧ (∀ h < j₀, hT.baseCenter h ≠ p[ρ,c']) ∧
+              -w.2 k = -v.2 j₀ := by
   intro hB v β ω hPole hhigh
   let : Nonempty Φ.cones := hc.nonempty_cones
   let : SmoothOfRelativeDimension 2 s[Φ] :=
@@ -234,17 +242,21 @@ theorem exists_prepared_quadric_resolution_of_high_fiber_center
     exact hfOver
   refine ⟨P, m, W, R, hR, q, hW, hq, hdom, u, hu, inferInstance, l, Z, U, hU, e, j',
     hproj, he.symm, heOver, hreg, by simpa only [he] using hpath, ?_, hj', hfirst', hclass,
-    hdegree.symm, horder.symm, hdegree.symm ▸ horder.symm ▸ hhigh⟩
-  -- Transport the pole factorization to the endpoint of the closed-point tower.
-  let : W.Over S := ⟨R.toBase ≫ s(Y)⟩
-  let : Z.Over S := ⟨U.toBase ≫ s[Δ]⟩
-  let : e.hom.IsOver S := ⟨heOver⟩
-  let : U.toBase.IsOver S := ⟨rfl⟩
-  let : SmoothOfRelativeDimension 2 s(W) := hR.isClosedPointTower.smoothOfRelativeDimension s(Y)
-  let : SmoothOfRelativeDimension 2 s(Z) := hU.smoothOfRelativeDimension s[Δ]
-  have h := comap_eq_mul_ramificationIdealSheaf_comp_iff_of_isIso ℂ e.hom U.toBase 2
-    (D := B[Δ,P.model_complete 0]) (Q := (D.comap R.toBase).radical)
-  rw [IsIso.inv_eq_of_hom_inv_id e.hom_inv_id] at h
-  exact h.mp (by simpa only [he, f] using hpole (P.model_regular 0))
+    hdegree.symm, horder.symm, hdegree.symm ▸ horder.symm ▸ hhigh, ?_⟩
+  · -- Transport the pole factorization to the endpoint of the closed-point tower.
+    let : W.Over S := ⟨R.toBase ≫ s(Y)⟩
+    let : Z.Over S := ⟨U.toBase ≫ s[Δ]⟩
+    let : e.hom.IsOver S := ⟨heOver⟩
+    let : U.toBase.IsOver S := ⟨rfl⟩
+    let : SmoothOfRelativeDimension 2 s(W) := hR.isClosedPointTower.smoothOfRelativeDimension s(Y)
+    let : SmoothOfRelativeDimension 2 s(Z) := hU.smoothOfRelativeDimension s[Δ]
+    have h := comap_eq_mul_ramificationIdealSheaf_comp_iff_of_isIso ℂ e.hom U.toBase 2
+      (D := B[Δ,P.model_complete 0]) (Q := (D.comap R.toBase).radical)
+    rw [IsIso.inv_eq_of_hom_inv_id e.hom_inv_id] at h
+    exact h.mp (by simpa only [he, f] using hpole (P.model_regular 0))
+  · intro ρ τ hρ c' k hk hfirst'
+    exact hT.base_order_eq_zero_or_exists_of_common_subdivision hR.isClosedPointTower hU
+      hΦ (P.model_regular 0) e P.common_source (P.common_model 0) q hproj he.symm
+      b ρ τ hρ c' k hk hfirst' L
 
 end QPainleve.BlowupTower.IsClosedPointTower
