@@ -45,6 +45,7 @@ local notation "center" a:arg => (fun j : Fin r ↦ a (ofAdd (Pi.single j 1)))
 local notation "M" a:arg => internalBlowupTower b s (center a)
 local notation "π" a:arg => toBase (WithBoundary.toTower (Sigma.snd (M a)))
 local notation "ι" a:arg => WithBoundary.boundaryι (Sigma.snd (M a))
+local notation "prime[" a "]" => internalBlowupBoundaryPrimeEquiv hΦ b s (center a)
 
 /-- A lift of a torus translation that descends to the two surfaces induces
 a commuting square on their specified boundary restrictions. -/
@@ -100,6 +101,27 @@ theorem cycleOrientationSign_eq_one_of_isLift_torusTranslation
   have hsign := eB.cycleOrientationSign_eq_of_orientedCycleSubdivisions A B T T τ hfs hgs hτ
   rw [hsign, boundaryCycleAction_boundaryTranslation hΦ hc
     ((Module.finrank_eq_card_basis b).trans (Fintype.card_fin 2)), map_one]
+
+include hΦ hf hg hfs hgs heB in
+/-- A translating lift acts by rotation by `j` if a common ray maps to component
+zero of the source and component `j` of the target under the boundary projections. -/
+theorem boundaryCycleAction_of_translation_of_common_ray
+    (hc : Φ.IsComplete) {χ : Multiplicative (N →+ ℤ) →* ℂˣ} {t : (M c).1 ≅ (M d).1}
+    (ht : IsLift (Φ.torusTranslation χ) (M c).2.toTower (M d).2.toTower t)
+    (htq : p ≫ e.hom = t.hom ≫ q) (j : ZMod n) (ρ : Φ.Ray)
+    (hρ : p (prime[c] ρ).val = D.subschemeι (A.componentGenericPoint 0))
+    (hρ' : q (prime[d] ρ).val = E.subschemeι (B.componentGenericPoint j)) :
+    eB.boundaryCycleAction A B = DihedralGroup.r j := by
+  have hsign := cycleOrientationSign_eq_one_of_isLift_torusTranslation b s c d hΦ A B T
+    hf hg hfs hgs heB hc ht htq
+  apply (DihedralGroup.eq_r_iff_cycleVertexPerm_zero_eq hsign).mpr
+  apply (E.subschemeι.injective.comp B.componentGenericPoint_injective)
+  have hpoint := congrArg (fun k : (M c).1 ⟶ Y ↦ k (prime[c] ρ).val) htq
+  simp only [Function.comp_apply]
+  rw [← eB.apply_componentGenericPoint, ← Scheme.Hom.comp_apply, heB, Scheme.Hom.comp_apply]
+  simpa only [Scheme.Hom.comp_apply, hρ, hρ',
+    apply_internalBlowupBoundaryPrimeEquiv_of_isLift_torusTranslation b s hΦ
+      (center c) (center d) ht] using hpoint
 
 variable [IsIntegral X] [IsIntegral Y] [IsNormalScheme X] [IsNormalScheme Y]
   [IsLocallyNoetherian X] [IsLocallyNoetherian Y] [IsModification p] [IsModification q]

@@ -64,31 +64,6 @@ variable [PrestableFamily ((Φ.boundaryIdeal h₀).subscheme ↘ S)] [PrestableF
   {aT : γ → ((Φ.boundaryIdeal h₀).subscheme ↘ S).smoothLocus}
   (A : NodalCycleNumbering a₀ n) (B : NodalCycleNumbering a₁ n) (C : NodalCycleNumbering aT m)
 
-private theorem boundaryCycleAction_of_translation_of_common_ray
-    (hc : Φ.IsComplete)
-    {f : Btor ⟶ D.subscheme} {g : Btor ⟶ E.subscheme} [f.IsOver S] [g.IsOver S]
-    (hf : f ≫ D.subschemeι = ι c ≫ p) (hg : g ≫ E.subschemeι = ι d ≫ q)
-    (hfs : f.IsOrientedCycleSubdivision C A) (hgs : g.IsOrientedCycleSubdivision C B)
-    {χ : Multiplicative (N →+ ℤ) →* ℂˣ} {t : (M c).1 ≅ (M d).1}
-    (ht : IsLift (Φ.torusTranslation χ) (M c).2.toTower (M d).2.toTower t)
-    {a : X ≅ Y} (ha : p ≫ a.hom = t.hom ≫ q)
-    (aB : D.subscheme ≅ E.subscheme) [aB.hom.IsOver S]
-    (haB : aB.hom ≫ E.subschemeι = D.subschemeι ≫ a.hom)
-    (j : ZMod n) (ρ : Φ.Ray)
-    (hρ : p (prime[c] ρ).val = D.subschemeι (A.componentGenericPoint 0))
-    (hρ' : q (prime[d] ρ).val = E.subschemeι (B.componentGenericPoint j)) :
-    aB.boundaryCycleAction A B = DihedralGroup.r j := by
-  have hsign := cycleOrientationSign_eq_one_of_isLift_torusTranslation b s c d hΦ A B C
-    hf hg hfs hgs haB hc ht ha
-  apply (DihedralGroup.eq_r_iff_cycleVertexPerm_zero_eq hsign).mpr
-  apply (E.subschemeι.injective.comp B.componentGenericPoint_injective)
-  have hpoint := congrArg (fun k : (M c).1 ⟶ Y ↦ k (prime[c] ρ).val) ha
-  simp only [Function.comp_apply]
-  rw [← aB.apply_componentGenericPoint, ← Scheme.Hom.comp_apply, haB, Scheme.Hom.comp_apply]
-  simpa only [Scheme.Hom.comp_apply, hρ, hρ',
-    apply_internalBlowupBoundaryPrimeEquiv_of_isLift_torusTranslation b s hΦ
-      (center c) (center d) ht] using hpoint
-
 variable [IsIntegral X] [IsIntegral Y] [QuasiCompact (X ↘ S)] [QuasiCompact (Y ↘ S)]
   [SmoothOfRelativeDimension 2 (X ↘ S)] [SmoothOfRelativeDimension 2 (Y ↘ S)]
   [Φ.algebraicRealization.IsProjectiveOver ℂ]
@@ -163,16 +138,16 @@ theorem exists_iso_of_eq_period_of_matching_picard_markings
     have hsign : (1 : ℤˣ) ≠ -1 := by decide
     simp only [DihedralGroup.cycleOrientationSign_r, ite_eq_right hsign] at hgs
     simp only [DihedralGroup.cycleVertexPerm_r_apply, zero_add] at hρ'
-    exact boundaryCycleAction_of_translation_of_common_ray hΦ b s c d e e' A B C hc
-      hf hg hfs hgs ht ha aB haB j ρ hρ hρ'
+    exact boundaryCycleAction_of_translation_of_common_ray b s c d hΦ A B C
+      hf hg hfs hgs haB hc ht ha j ρ hρ hρ'
   | sr j =>
     simp only [DihedralGroup.cycleOrientationSign_sr, ite_true] at hgs
     have hρ'' : q (prime[d] ρ).val = E.subschemeι (B.reverse.componentGenericPoint j) := by
       simpa only [DihedralGroup.cycleVertexPerm_sr_apply, sub_zero,
         NodalCycleNumbering.componentGenericPoint_def, NodalCycleNumbering.reverse_component]
         using hρ'
-    have h := boundaryCycleAction_of_translation_of_common_ray hΦ b s c d e e' A B.reverse C hc
-      hf hg hfs hgs ht ha aB haB j ρ hρ hρ''
+    have h := boundaryCycleAction_of_translation_of_common_ray b s c d hΦ A B.reverse C
+      hf hg hfs hgs haB hc ht ha j ρ hρ hρ''
     have : (Iso.refl E.subscheme).hom.IsOver S := by
       rw [Iso.refl_hom]
       infer_instance
