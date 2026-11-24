@@ -45,7 +45,9 @@ private theorem exists_compOfDefined_nil (U : OrderedToricModel A m) :
   simpa only [Quiver.Path.xRationalMap_nil, Scheme.RationalMap.compHom_id] using
     U.xEvaluation.compOfDefined_toRationalMap (𝟙 _)
 
-private theorem exists_compOfDefined_of_comp {C : LogarithmicProjection i D}
+/-- Successive words carrying one fixed-center evaluation to the next compose
+at the generic point of the same resolving surface. -/
+theorem exists_compOfDefined_word_comp {C : LogarithmicProjection i D}
     (U : OrderedToricModel A m) (M : OrderedToricModel B m) (W : OrderedToricModel C m)
     (u : Word U.exchangeMatrix M.exchangeMatrix) (v : Word M.exchangeMatrix W.exchangeMatrix)
     (h₀ : ∃ h, U.xEvaluation.compOfDefined (u.xRationalMap ℂ) h = M.xEvaluation)
@@ -65,13 +67,18 @@ private theorem exists_iso_of_tower_eq (U : OrderedToricModel A m)
     ∃ e : (U.fan.internalBlowupTower b U.rays c).1 ≅ Z,
       e.hom ≫ A.hom = base[U.fan.internalBlowupTower b U.rays c] ≫ π[U.subdivision] ∧
         D.comap e.hom = (U.fan.internalBlowupTower b U.rays c).2.boundaryι.ker ∧
-        e.inv ≫ base[U.fan.internalBlowupTower b U.rays c] = U.hom :=
-  h.symm ▸ Exists.intro U.iso ⟨U.hom_eq, U.pole_eq, U.hom_def.symm⟩
+        e.inv ≫ base[U.fan.internalBlowupTower b U.rays c] = U.hom ∧
+        ∀ a, Additive.ofMul (LineBundleClass.pullback e.inv
+          ((U.fan.internalBlowupTower b U.rays c).2.toTower.picardHom a).toMul) =
+          U.picardMarking a := by
+  simp only [picardMarking_apply, Fan.internalBlowupPicardMarking_apply]
+  exact h.symm ▸ Exists.intro U.iso ⟨U.hom_eq, U.pole_eq, U.hom_def.symm, fun _ ↦ rfl⟩
 
 private theorem exists_reframe_of_det_eq (U : OrderedToricModel A m) (b : Basis (Fin 2) ℤ N)
     (hb : b.det = U.basis.det) :
     ∃ W : OrderedToricModel A m, W.basis = b ∧ W.refinedProjection = U.refinedProjection ∧
-      W.exchangeMatrix = U.exchangeMatrix ∧ W.xEvaluation = U.xEvaluation := by
+      W.picardMarking ≍ U.picardMarking ∧ W.exchangeMatrix = U.exchangeMatrix ∧
+      W.xEvaluation = U.xEvaluation := by
   have hdet (v : N) : b.detDualEquiv v = U.basis.detDualEquiv v := by
     ext y
     simp only [Basis.detDualEquiv_apply, hb]
@@ -83,13 +90,14 @@ private theorem exists_reframe_of_det_eq (U : OrderedToricModel A m) (b : Basis 
     simp only [Fan.Ray.internalCenter_val]
     congr 2
     exact congrArg LinearMap.toAddMonoidHom (hdet _)
-  obtain ⟨e, he, hP, hh⟩ := U.exists_iso_of_tower_eq b U.parameters hTower
+  obtain ⟨e, he, hP, hh, hm⟩ := U.exists_iso_of_tower_eq b U.parameters hTower
   let W : OrderedToricModel A m :=
     ⟨U.fan, U.regular, U.subdivision, b, U.rays, U.parameters, e, he, hP⟩
   have hhom : W.hom = U.hom := W.hom_def.trans hh
   have href : W.refinedProjection = U.refinedProjection :=
     LogarithmicProjection.ext rfl (heq_of_eq hhom)
-  refine ⟨W, rfl, href, SkewExchangeMatrix.ext ?_, ?_⟩
+  refine ⟨W, rfl, href, heq_of_eq (LinearEquiv.ext fun a ↦ ?_), SkewExchangeMatrix.ext ?_, ?_⟩
+  · simpa only [W, picardMarking_apply, Fan.internalBlowupPicardMarking_apply] using hm a
   · ext j k
     simp only [exchangeMatrix_matrix, W, chargeExchangeMatrix_apply, rayChargeMap_single,
       LinearEquiv.coe_coe, hdet]
@@ -105,19 +113,21 @@ private theorem exists_reframe_of_det_eq (U : OrderedToricModel A m) (b : Basis 
 
 private theorem exists_reframe_swap (U : OrderedToricModel A m) :
     ∃ W : OrderedToricModel A m, W.basis = U.basis.reindex (Equiv.swap 0 1) ∧
-      W.refinedProjection = U.refinedProjection ∧ W.exchangeMatrix = -U.exchangeMatrix ∧
+      W.refinedProjection = U.refinedProjection ∧ W.picardMarking ≍ U.picardMarking ∧
+      W.exchangeMatrix = -U.exchangeMatrix ∧
       W.xEvaluation = U.xEvaluation.compHom
         (CharacterTorus.map ℂ (AddEquiv.neg (Fin m →₀ ℤ)).toAddMonoidHom) := by
   let b := U.basis.reindex (Equiv.swap 0 1)
   have hTower : U.fan.internalBlowupTower b U.rays U.parameters⁻¹ = U.tower :=
     Fan.internalBlowupTower_reindex_swap _ _ _
-  obtain ⟨e, he, hP, hh⟩ := U.exists_iso_of_tower_eq b U.parameters⁻¹ hTower
+  obtain ⟨e, he, hP, hh, hm⟩ := U.exists_iso_of_tower_eq b U.parameters⁻¹ hTower
   let W : OrderedToricModel A m :=
     ⟨U.fan, U.regular, U.subdivision, b, U.rays, U.parameters⁻¹, e, he, hP⟩
   have hhom : W.hom = U.hom := W.hom_def.trans hh
   have href : W.refinedProjection = U.refinedProjection :=
     LogarithmicProjection.ext rfl (heq_of_eq hhom)
-  refine ⟨W, rfl, href, SkewExchangeMatrix.ext ?_, ?_⟩
+  refine ⟨W, rfl, href, heq_of_eq (LinearEquiv.ext fun a ↦ ?_), SkewExchangeMatrix.ext ?_, ?_⟩
+  · simpa only [W, picardMarking_apply, Fan.internalBlowupPicardMarking_apply] using hm a
   · simp only [exchangeMatrix_matrix, W, b, Fan.chargeExchangeMatrix_reindex_swap,
       SkewExchangeMatrix.neg_matrix]
   have hc : centerCharacter U.parameters⁻¹ = (centerCharacter U.parameters)⁻¹ := by
@@ -126,35 +136,36 @@ private theorem exists_reframe_swap (U : OrderedToricModel A m) :
   simp only [xEvaluation_def, hhom]
   simp only [W, b, hc, Fan.xEvaluation_reindex_swap, Scheme.RationalMap.comp_compHom]
 
--- A frame change acts on the X coordinates by its determinant sign.
-private theorem exists_word_reframe (U : OrderedToricModel A m) (b : Basis (Fin 2) ℤ N) :
+/-- Express an ordered model in the specified frame, keeping its refined projection and marking.
+The word between the two X evaluations implements the determinant sign of the frame change. -/
+theorem exists_word_reframe (U : OrderedToricModel A m) (b : Basis (Fin 2) ℤ N) :
     ∃ (W : OrderedToricModel A m) (w : Word U.exchangeMatrix W.exchangeMatrix),
-      W.basis = b ∧ W.refinedProjection = U.refinedProjection ∧
+      W.basis = b ∧ W.refinedProjection = U.refinedProjection ∧ W.picardMarking ≍ U.picardMarking ∧
         ∃ h, U.xEvaluation.compOfDefined (w.xRationalMap ℂ) h = W.xEvaluation := by
   have hb := b.det.eq_smul_basis_det U.basis
   rcases Int.isUnit_iff.mp (b.isUnit_det U.basis) with h | h
   · rw [h, one_smul] at hb
-    obtain ⟨W, hW, href, hB, hEval⟩ := U.exists_reframe_of_det_eq b hb
-    refine ⟨W, hB.symm ▸ Quiver.Path.nil, hW, href, ?_⟩
+    obtain ⟨W, hW, href, hm, hB, hEval⟩ := U.exists_reframe_of_det_eq b hb
+    refine ⟨W, hB.symm ▸ Quiver.Path.nil, hW, href, hm, ?_⟩
     generalize W.exchangeMatrix = C at hB ⊢
     subst C
     simpa only [hEval] using
       U.exists_compOfDefined_nil
-  · obtain ⟨M, hM, hMref, hB, hEval⟩ := U.exists_reframe_swap
+  · obtain ⟨M, hM, hMref, hMm, hB, hEval⟩ := U.exists_reframe_swap
     have hb' : b.det = M.basis.det := by
       rw [hb, h, hM]
       apply AlternatingMap.ext
       intro x
       simpa only [neg_one_smul, neg_apply, Basis.det_reindex] using
         (U.basis.det.map_swap x (by decide : (0 : Fin 2) ≠ 1)).symm
-    obtain ⟨W, hW, href, hB', hEval'⟩ := M.exists_reframe_of_det_eq b hb'
+    obtain ⟨W, hW, href, hm, hB', hEval'⟩ := M.exists_reframe_of_det_eq b hb'
     have hEnd := hB'.trans (hB.trans (Generator.target_invert U.exchangeMatrix).symm)
     let f := CharacterTorus.map ℂ (AddEquiv.neg (Fin m →₀ ℤ)).toAddMonoidHom
     let w := (Generator.invert.toStep U.exchangeMatrix).toPath
     have hw : w.xRationalMap ℂ = f.toRationalMap :=
       Quiver.Path.xRationalMap_invert ℂ U.exchangeMatrix
     obtain ⟨hd, he⟩ := U.xEvaluation.compOfDefined_toRationalMap f
-    refine ⟨W, hEnd.symm ▸ w, hW, href.trans hMref, ?_⟩
+    refine ⟨W, hEnd.symm ▸ w, hW, href.trans hMref, hm.trans hMm, ?_⟩
     -- Only the target exchange matrix is transported.
     generalize W.exchangeMatrix = C at hEnd ⊢
     subst C
@@ -290,9 +301,9 @@ theorem SarkisovStep.exists_word [Z.IsProjectiveOver ℂ] (e : SarkisovStep A B)
   | mutation b ρ c hOpp =>
     rename_i hReg hComplete r hOver hDom hPole
     let C : LogarithmicProjection i D := ⟨_, hReg, hComplete, r, hOver, hDom, hPole⟩
-    obtain ⟨U', u, hb, hRef, hu⟩ := U.exists_word_reframe b
+    obtain ⟨U', u, hb, hRef, -, hu⟩ := U.exists_word_reframe b
     obtain ⟨W, w, hStep, hw⟩ := exists_word_of_mutation_in_frame (B := C) U' b hb ρ c hOpp rfl he
-    exact ⟨W, u.comp w, hRef ▸ hStep, U.exists_compOfDefined_of_comp U' W u w hu hw⟩
+    exact ⟨W, u.comp w, hRef ▸ hStep, U.exists_compOfDefined_word_comp U' W u w hu hw⟩
   | toricIso f χ =>
     exact exists_word_of_toric_iso U f χ he
 
@@ -319,7 +330,7 @@ theorem exists_word_of_resolved_sarkisov_path [Z.IsProjectiveOver ℂ] (p : Sark
     | cons p e ih =>
       obtain ⟨M, u, q, rfl, hu⟩ := ih
       obtain ⟨W, v, ⟨f⟩, hv⟩ := SarkisovStep.exists_word e M
-      exact ⟨W, u.comp v, q.cons (e, f), rfl, U.exists_compOfDefined_of_comp M W u v hu hv⟩
+      exact ⟨W, u.comp v, q.cons (e, f), rfl, U.exists_compOfDefined_word_comp M W u v hu hv⟩
   obtain ⟨W, w, q, hq, h⟩ := hLift
   exact ⟨W, w, q, hq, p.subdivision_comp_rationalMap U W _, h⟩
 
