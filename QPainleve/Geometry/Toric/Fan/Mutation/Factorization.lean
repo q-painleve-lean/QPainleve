@@ -23,7 +23,7 @@ comparison even over the pivot fiber.
 
 The geometry is the elementary transformation of Gross, Hacking and Keel,
 [*Birational geometry of cluster algebras*, §3.1](https://arxiv.org/html/1309.2573v2#S3.SS1).
-The extraction combines `Ray.exists_internalBlowupTower_center_of_resolves` with
+The extraction combines `Ray.exists_first_internalBlowupTower_center_of_resolves` with
 `exists_iso_internalBlowupTower_reindex`.
 -/
 
@@ -90,21 +90,13 @@ theorem Ray.exists_ordered_pivot_factorization_of_resolves
         ∀ a x, pullback e.hom ((tail(k)).2.toTower.picardHom
           ((P₀).picardHom (a, fun _ ↦ x k), x ∘ k.succAbove)).toMul =
             (M.2.toTower.picardHom (a, x)).toMul := by
-  classical
-  let S := Finset.univ.filter fun j ↦ (s j, d j) = (ρ, c)
-  obtain ⟨l, hl, hl'⟩ := ρ.exists_internalBlowupTower_center_of_resolves b hOpp c s d r hr
-  have hS : S.Nonempty := ⟨l, Finset.mem_filter.mpr ⟨Finset.mem_univ _, Prod.ext hl hl'⟩⟩
-  let k := S.min' hS
-  have hk : (s k, d k) = (ρ, c) := (Finset.mem_filter.mp (S.min'_mem hS)).2
-  have hk₀ : s k = ρ := congrArg Prod.fst hk
-  have hk₁ : d k = c := congrArg Prod.snd hk
-  have hfirst (a : Fin (n + 1)) (ha : a < k) : (s a, d a) ≠ (ρ, c) := by
-    intro h
-    exact (not_le_of_gt ha) (S.min'_le a (Finset.mem_filter.mpr ⟨Finset.mem_univ _, h⟩))
+  obtain ⟨k, hk₀, hk₁, hfirst⟩ :=
+    ρ.exists_first_internalBlowupTower_center_of_resolves b hOpp c s d r hr
   have hI : ((s k).internalCenter b (d k)).val.map (Φ.boundaryIdeal hΦ).subschemeι = J₀ := by
     rw [hk₀, hk₁, Ray.mutationSourceCenterIdeal_eq, Ray.map_internalCenter_subschemeι]
   obtain ⟨e, he, hb, hpic⟩ := exists_iso_internalBlowupTower_split_at b s d k
-    (fun a ha h ↦ hfirst a ha (h.trans hk)) hI (ρ.mutationSourceBoundaryι_blowupToBase b c)
+    (fun a ha h ↦ hfirst a ha (h.trans (Prod.ext hk₀ hk₁)))
+    hI (ρ.mutationSourceBoundaryι_blowupToBase b c)
   refine ⟨k, hk₀, hk₁, hfirst, e, he, hb, ?_, hpic⟩
   let p := e.hom ≫ (tail(k)).2.toTower.toBase
   have hproj : p ≫ (J₀).blowupToBase = F := (Category.assoc _ _ _).trans he
