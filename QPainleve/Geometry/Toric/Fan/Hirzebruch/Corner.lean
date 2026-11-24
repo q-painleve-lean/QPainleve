@@ -116,6 +116,19 @@ theorem exists_cone_of_hirzebruch_section_fiber (hΦ : Φ.IsRegular) (hc : Φ.Is
   exact ((hirzebruch_section_neighbors_iff b e r hr hΦ hc j (fib k)).mpr hk).2
 
 include hr in
+/-- The supremum of a section ray and a fiber ray is a cone of a complete regular
+Hirzebruch fan. -/
+theorem hirzebruch_corner_mem (hΦ : Φ.IsRegular) (hc : Φ.IsComplete) (j k : Fin 2) :
+    (sec j).toCone.val ⊔ (fib k).toCone.val ∈ Φ.cones := by
+  obtain ⟨σ, hs, hf⟩ := exists_cone_of_hirzebruch_section_fiber b e r hr hΦ hc j k
+  have hne : sec j ≠ fib k := by
+    apply r.injective.ne
+    fin_cases j <;> fin_cases k <;> decide
+  have hd : Module.finrank ℤ N = 2 := by simpa using Module.finrank_eq_card_basis b
+  rw [← Φ.cone_eq_sup_of_ray_ne_of_le hΦ hd hne hs hf]
+  exact σ.property
+
+include hr in
 private theorem hirzebruch_fiber_neighbors (hΦ : Φ.IsRegular) (hc : Φ.IsComplete)
     (τ : Φ.Ray) :
     (r 1 ≠ τ ∧ ∃ σ : Φ.cones, (r 1).toCone ≤ σ ∧ τ.toCone ≤ σ) ↔ τ = r 0 ∨ τ = r 2 := by

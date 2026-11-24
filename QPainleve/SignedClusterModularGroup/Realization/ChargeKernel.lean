@@ -196,12 +196,14 @@ theorem chargeKernelAction_eq_signedOrthogonalRestriction
     (Q : ChargeSeed E N) (hcharge : Q.charge = Fan.rayChargeMap s)
     (hker : Ex = Q.charge.ker) (e : Orth ≃ₗ[ℤ] ChargeKernel)
     (he : ∀ x : ChargeKernel, ι (e.symm x).val = (aux x).val)
-    (hgenus : ∀ c : Point Tcent,
-      letI := (P c).prestable_boundaryImage
-      ∀ v : irreducibleComponents (D[P c].subscheme.singularLocus ℂ).blowup,
-        (D[P c].subscheme.blowupComponent (K := ℂ) v).toScheme.genus ℂ = 0)
-    (hmodel : ∀ c : Point Tcent,
-      Nonempty (ContractedToricFiber (h₀ := h₀) b s hΦ T origin ι (χ[c]) (P c))) :
+    {U : Set (Point Tcent)}
+    (hends : ∀ c : CenterPoint (U := Tcent) (V := Tcent) C, src[c] ∈ U ∧ dst[c] ∈ U)
+    (hgenus : ∀ t ∈ U,
+      letI := (P t).prestable_boundaryImage
+      ∀ v : irreducibleComponents (D[P t].subscheme.singularLocus ℂ).blowup,
+        (D[P t].subscheme.blowupComponent (K := ℂ) v).toScheme.genus ℂ = 0)
+    (hmodel : ∀ t ∈ U,
+      Nonempty (ContractedToricFiber (h₀ := h₀) b s hΦ T origin ι (χ[t]) (P t))) :
     LinearEquiv.autCongr
       (LinearEquiv.ofEq Q.charge.ker ChargeKernel (congrArg LinearMap.ker hcharge))
       (chargeKernelAction ℂ Q hker (op (signedClusterModularGroupMap ℂ E (End.of w)))) =
@@ -227,8 +229,9 @@ theorem chargeKernelAction_eq_signedOrthogonalRestriction
   obtain ⟨p, hp⟩ := exists_centerPoint (C := C) c hc
   let c₀ := src[p]
   let c₁ := dst[p]
-  obtain ⟨M⟩ := hmodel c₀
-  obtain ⟨N⟩ := hmodel c₁
+  obtain ⟨h₀, h₁⟩ := hends p
+  obtain ⟨M⟩ := hmodel c₀ h₀
+  obtain ⟨N⟩ := hmodel c₁ h₁
   have hz : χ[c₁] (ofAdd (x : A)) = c (ofAdd (z : A)) := by
     rw [centerCharacter_domainTarget w hC, MonoidHom.comp_apply, hp]
     simp only [z, j, AddMonoidHom.coe_toMultiplicative, Function.comp_apply, toAdd_ofAdd,
@@ -237,7 +240,7 @@ theorem chargeKernelAction_eq_signedOrthogonalRestriction
       LinearEquiv.ofEq_symm, LinearEquiv.coe_ofEq_apply]
     rfl
   have hperiod := period_eq_of_signedPicard D hD hmark R p e he M N
-    (hgenus c₀) (hgenus c₁) x
+    (hgenus c₀ h₀) (hgenus c₁ h₁) x
   rw [hp] at hperiod
   have hs := period_mul_centerCharacter u hvertices hdet hnodes c y
   have ht := period_mul_centerCharacter u hvertices hdet hnodes (χ[c₁]) x

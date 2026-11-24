@@ -24,6 +24,7 @@ public section
 noncomputable section
 
 open AlgebraicGeometry CategoryTheory TauCeti.AlgebraicGeometry
+open Scheme.IdealSheafData (blowupIso)
 
 universe u
 
@@ -150,7 +151,7 @@ def IsLift (e : X ≅ X') :
       BlowupTower X n Y → BlowupTower X' n Y' → (Y ≅ Y') → Prop
   | _, _, _, .nil, .nil, g => g = e
   | _, _, _, .snoc T I, .snoc T' I', g =>
-    ∃ (f : _ ≅ _) (_ : IsLift e T T' f) (hI : I'.comap f.hom = I), g = I'.blowupIso f hI
+    ∃ (f : _ ≅ _) (_ : IsLift e T T' f) (hI : I'.comap f.hom = I), g = blowupIso f hI.symm
 
 namespace IsLift
 
@@ -165,11 +166,11 @@ stages and equals the induced isomorphism of the last blowups. -/
 theorem snoc_iff {I : Y.IdealSheafData} {I' : Y'.IdealSheafData} {k : I.blowup ≅ I'.blowup} :
     IsLift e (T.snoc I) (T'.snoc I') k ↔
       ∃ (f : Y ≅ Y') (_ : IsLift e T T' f) (hI : I'.comap f.hom = I),
-        k = I'.blowupIso f hI := (Iff.rfl)
+        k = blowupIso f hI.symm := (Iff.rfl)
 
 /-- Extend a lift by blowing up matching scheme-theoretic centers. -/
 theorem snoc (h : IsLift e T T' g) {I : Y.IdealSheafData} {I' : Y'.IdealSheafData}
-    (hI : I'.comap g.hom = I) : IsLift e (T.snoc I) (T'.snoc I') (I'.blowupIso g hI) :=
+    (hI : I'.comap g.hom = I) : IsLift e (T.snoc I) (T'.snoc I') (blowupIso g hI.symm) :=
   snoc_iff.mpr ⟨g, h, hI, rfl⟩
 
 /-- An isomorphism lifting through the towers commutes with their projections. -/
@@ -207,7 +208,7 @@ protected theorem symm (h : IsLift e T T' g) : IsLift e.symm T' T g.symm := by
       have hI' : I.comap f.inv = I' := by
         rw [← hI, ← Scheme.IdealSheafData.comap_comp, f.inv_hom_id,
           Scheme.IdealSheafData.comap_id]
-      rw [Scheme.IdealSheafData.blowupIso_symm]
+      rw [← Scheme.IdealSheafData.blowupIso_symm]
       exact (ih hf).snoc hI'
 
 /-- Center-preserving lifts through towers compose stage by stage. -/
@@ -223,7 +224,7 @@ protected theorem trans {X'' Y'' : Scheme.{u}} {T'' : BlowupTower X'' n Y''}
       | snoc T'' I'' =>
         obtain ⟨f, hf, hI, rfl⟩ := snoc_iff.mp h
         obtain ⟨f', hf', hI', rfl⟩ := snoc_iff.mp h'
-        rw [Scheme.IdealSheafData.blowupIso_trans]
+        rw [← Scheme.IdealSheafData.blowupIso_trans]
         exact (ih hf hf').snoc (by
           rw [Iso.trans_hom, Scheme.IdealSheafData.comap_comp, hI', hI])
 
@@ -288,7 +289,7 @@ def Transport.snoc {T : BlowupTower X n Y} {e : X ≅ X'}
     (p : Transport T e) (I : Y.IdealSheafData) : Transport (T.snoc I) e :=
   have hI : (I.comap p.iso.inv).comap p.iso.hom = I := by
     rw [← Scheme.IdealSheafData.comap_comp, Iso.hom_inv_id, Scheme.IdealSheafData.comap_id]
-  ⟨_, p.tower.snoc (I.comap p.iso.inv), (I.comap p.iso.inv).blowupIso p.iso hI, p.isLift.snoc hI⟩
+  ⟨_, p.tower.snoc (I.comap p.iso.inv), blowupIso p.iso hI.symm, p.isLift.snoc hI⟩
 
 /-- Transport the ordered centers along the successive lifts of the base isomorphism. -/
 def transport {n : ℕ} {Y : Scheme.{u}} (T : BlowupTower X n Y) (e : X ≅ X') : Transport T e :=

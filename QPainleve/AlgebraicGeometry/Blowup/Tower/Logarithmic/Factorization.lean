@@ -252,7 +252,7 @@ private theorem exists_node (F : OrderedFactorization D s T P c)
       congrArg (vanishingIdeal (X := K.blowup)) hSupport
   -- Compose the interchange with the lift of the previous comparison to the original tower.
   let B := alongBoundary E.subschemeι (fun j ↦ ⟨(a j).ker, ha j⟩)
-  let e' := e ≪≫ I.blowupIso F.iso hJ
+  let e' := e ≪≫ blowupIso F.iso hJ.symm
   have hbase : e'.hom ≫ (T.snoc I).toBase = B.2.toTower.toBase ≫ (F.tower.snoc K).toBase := by
     dsimp only [e']
     rw [Iso.trans_hom, toBase_snoc, Category.assoc, blowupIso_hom_blowupToBase_assoc,
@@ -354,7 +354,7 @@ private theorem extend_internalTower (F : OrderedFactorization D s T P c)
     (hC : a.ker.IsEffectiveCartier)
     (hs : ∀ y, ((F.boundary.subschemeι ≫ F.tower.toBase ≫ s).stalkMap (a y)).hom.FormallySmooth)
     {I : Y.IdealSheafData} (hI : I.comap F.iso.hom = a.ker.map F.internalTower.2.boundaryι)
-    (hP : (I.blowupMap P.subschemeι).ker.comap (I.blowupIso F.iso hI).hom =
+    (hP : (I.blowupMap P.subschemeι).ker.comap (blowupIso F.iso hI.symm).hom =
       (F.internalTower.2.snoc a.ker hC).boundaryι.ker)
     {f : V ⟶ X} (hf : a ≫ F.boundary.subschemeι ≫ F.tower.toBase = f) :
     Nonempty (OrderedFactorization D s (T.snoc I) (I.blowupMap P.subschemeι).ker
@@ -381,7 +381,7 @@ private theorem extend_internalTower (F : OrderedFactorization D s T P c)
         (alongBoundary F.boundary.subschemeι (fun j ↦ ⟨(a' j).ker, hC' j⟩)).2.boundaryι.ker := by
     generalize alongBoundary F.boundary.subschemeι (fun j ↦ ⟨(a' j).ker, hC' j⟩) = A at hA ⊢
     subst A
-    refine ⟨I.blowupIso F.iso hI, ?_, hP⟩
+    refine ⟨blowupIso F.iso hI.symm, ?_, hP⟩
     rw [toBase_snoc, WithBoundary.toTower_snoc, toBase_snoc, blowupIso_hom_blowupToBase_assoc,
       Category.assoc, F.iso_hom_toBase]
   obtain ⟨e, he, hB⟩ := hiso

@@ -35,13 +35,20 @@ local notation "B" => ObjectProperty.FullSubcategory.obj (Functor.obj (pullback 
 local notation "P[" a "," U "]" =>
   Proj (CommMon.gradedSectionsGrading a (AffineZariskiSite.toOpens U))
 
-private structure Chart (f : X ⟶ Y) where
+/-- A pair of affine opens on which the base-change projection is computed by the
+pullback of graded sections. -/
+@[ext]
+structure BaseChangeChart (f : X ⟶ Y) where
+  /-- The affine open in the source. -/
   source : X.AffineZariskiSite
+  /-- The affine open in the target. -/
   target : Y.AffineZariskiSite
+  /-- The source open lies over the target open. -/
   le : source.toOpens ≤ f ⁻¹ᵁ target.toOpens
 
-private theorem Chart.exists_mem (x : X) :
-    ∃ i : Chart f, x ∈ i.source.toOpens := by
+/-- The source opens of base-change chart pairs cover the source scheme. -/
+theorem BaseChangeChart.exists_mem (x : X) :
+    ∃ i : BaseChangeChart f, x ∈ i.source.toOpens := by
   obtain ⟨_, ⟨U, hU, rfl⟩, hxU, _⟩ := Y.isBasis_affineOpens.exists_subset_of_mem_open
     (Set.mem_univ (f x)) (⊤ : Y.Opens).is_open'
   obtain ⟨_, ⟨V, hV, rfl⟩, hxV, hVU⟩ :=
@@ -49,9 +56,11 @@ private theorem Chart.exists_mem (x : X) :
       hxU (f ⁻¹ᵁ U).is_open'
   exact ⟨⟨⟨V, hV⟩, ⟨U, hU⟩, hVU⟩, hxV⟩
 
-private theorem Chart.exists_refinement (i j : Chart f) (x : X)
+/-- Two base-change chart pairs admit a common refinement near any point in their
+source overlap, by basic opens in both source and target. -/
+theorem BaseChangeChart.exists_refinement (i j : BaseChangeChart f) (x : X)
     (hi : x ∈ i.source.toOpens) (hj : x ∈ j.source.toOpens) :
-    ∃ k : Chart f, k.source ≤ i.source ∧ k.source ≤ j.source ∧
+    ∃ k : BaseChangeChart f, k.source ≤ i.source ∧ k.source ≤ j.source ∧
       k.target ≤ i.target ∧ k.target ≤ j.target ∧ x ∈ k.source.toOpens := by
   obtain ⟨a, b, hab, hfx⟩ :=
     exists_basicOpen_le_affine_inter i.target.property j.target.property (f x)
@@ -66,7 +75,10 @@ private theorem Chart.exists_refinement (i j : Chart f) (x : X)
     (W.basicOpen_le e).trans ⟨d, hcd.symm⟩,
     i.target.basicOpen_le a, ⟨b, hab.symm⟩, hxe⟩
 
-private def chartMap {V : X.AffineZariskiSite} {U : Y.AffineZariskiSite}
+/-- The affine chart of the base-change projection is the projective map induced by
+pullback of graded sections. -/
+@[expose]
+def relativeProjBaseChangeChartMap {V : X.AffineZariskiSite} {U : Y.AffineZariskiSite}
     (h : V.toOpens ≤ f ⁻¹ᵁ U.toOpens) : P[B,V] ⟶ P[A.obj,U] :=
   Proj.map (A.pullbackGradedSectionsGradedHom f h)
     (A.irrelevant_le_map_pullbackGradedSectionsGradedHom f h U.property V.property)
@@ -75,13 +87,13 @@ private def chartMap {V : X.AffineZariskiSite} {U : Y.AffineZariskiSite}
 private theorem chartMap_naturality {V V' : X.AffineZariskiSite} {U U' : Y.AffineZariskiSite}
     (v : V' ⟶ V) (u : U' ⟶ U) (h : V.toOpens ≤ f ⁻¹ᵁ U.toOpens)
     (h' : V'.toOpens ≤ f ⁻¹ᵁ U'.toOpens) :
-    (B).relativeProjFunctor.map v ≫ chartMap A f h =
-      chartMap A f h' ≫ A.obj.relativeProjFunctor.map u := by
+    (B).relativeProjFunctor.map v ≫ relativeProjBaseChangeChartMap A f h =
+      relativeProjBaseChangeChartMap A f h' ≫ A.obj.relativeProjFunctor.map u := by
   -- The gluing transition exposes the graded ring map used by the functor.
-  change (B).relativeProjGluingData.functor.map v ≫ chartMap A f h =
-    chartMap A f h' ≫ A.obj.relativeProjGluingData.functor.map u
+  change (B).relativeProjGluingData.functor.map v ≫ relativeProjBaseChangeChartMap A f h =
+    relativeProjBaseChangeChartMap A f h' ≫ A.obj.relativeProjGluingData.functor.map u
   rw [CommMon.relativeProjGluingData_functor_map, CommMon.relativeProjGluingData_functor_map]
-  unfold chartMap
+  unfold relativeProjBaseChangeChartMap
   erw [← Proj.map_comp, ← Proj.map_comp]
   apply Proj.map_congr
   exact (restrictGradedSectionsGradedHom_comp_pullbackGradedSectionsGradedHom
@@ -90,40 +102,42 @@ private theorem chartMap_naturality {V V' : X.AffineZariskiSite} {U U' : Y.Affin
         f A ((toOpensFunctor Y).map u) h').symm
 
 private def baseCover : X.OpenCover where
-  I₀ := Chart f
+  I₀ := BaseChangeChart f
   X i := i.source.toOpens
   f i := i.source.toOpens.ι
   mem₀ := by
     rw [Scheme.presieve₀_mem_precoverage_iff]
     refine ⟨fun x ↦ ?_, fun i ↦ inferInstance⟩
-    obtain ⟨i, hi⟩ := Chart.exists_mem f x
+    obtain ⟨i, hi⟩ := BaseChangeChart.exists_mem f x
     exact ⟨i, ⟨⟨x, hi⟩, rfl⟩⟩
 
 private def projCover : (B).relativeProj.OpenCover where
-  I₀ := Chart f
+  I₀ := BaseChangeChart f
   X i := P[B,i.source]
   f i := (B).relativeProjCover.f i.source
   mem₀ := by
     rw [Scheme.presieve₀_mem_precoverage_iff]
     refine ⟨fun x ↦ ?_, fun i ↦ CommMon.isOpenImmersion_relativeProjCover_f B i.source⟩
-    obtain ⟨i, hi⟩ := Chart.exists_mem f ((B).relativeProjToBase x)
+    obtain ⟨i, hi⟩ := BaseChangeChart.exists_mem f ((B).relativeProjToBase x)
     refine ⟨i, ?_⟩
     have hRange : x ∈ ((B).relativeProjCover.f i.source).opensRange := by
       rwa [← (B).relativeProjToBase_preimage]
     exact hRange
 
-private theorem chartMap_comp_cover {i k : Chart f}
+private theorem chartMap_comp_cover {i k : BaseChangeChart f}
     (v : k.source ⟶ i.source) (u : k.target ⟶ i.target) :
-    (B).relativeProjFunctor.map v ≫ chartMap A f i.le ≫ A.obj.relativeProjCover.f i.target =
-      chartMap A f k.le ≫ A.obj.relativeProjCover.f k.target := by
+    (B).relativeProjFunctor.map v ≫ relativeProjBaseChangeChartMap A f i.le ≫
+      A.obj.relativeProjCover.f i.target =
+      relativeProjBaseChangeChartMap A f k.le ≫ A.obj.relativeProjCover.f k.target := by
   exact (chartMap_naturality_assoc A f v u i.le k.le _).trans
-    (congrArg (chartMap A f k.le ≫ ·) (colimit.w A.obj.relativeProjGluingData.functor u))
+    (congrArg (relativeProjBaseChangeChartMap A f k.le ≫ ·)
+      (colimit.w A.obj.relativeProjGluingData.functor u))
 
-private theorem chartMap_glue (i j : Chart f) :
+private theorem chartMap_glue (i j : BaseChangeChart f) :
     pullback.fst ((projCover A f).f i) ((projCover A f).f j) ≫
-      chartMap A f i.le ≫ A.obj.relativeProjCover.f i.target =
+      relativeProjBaseChangeChartMap A f i.le ≫ A.obj.relativeProjCover.f i.target =
     pullback.snd ((projCover A f).f i) ((projCover A f).f j) ≫
-      chartMap A f j.le ≫ A.obj.relativeProjCover.f j.target := by
+      relativeProjBaseChangeChartMap A f j.le ≫ A.obj.relativeProjCover.f j.target := by
   let p := (projCover A f).f i
   let q := (projCover A f).f j
   -- Refine the two pairs of affine opens at each point of the overlap.
@@ -138,7 +152,7 @@ private theorem chartMap_glue (i j : Chart f) :
   have hj : y ∈ ((B).relativeProjToBase ⁻¹ᵁ j.source.toOpens) := by
     rw [(B).relativeProjToBase_preimage, hy]
     exact ⟨pullback.snd p q z, rfl⟩
-  obtain ⟨k, vi, vj, ui, uj, hk⟩ := Chart.exists_refinement f i j ((B).relativeProjToBase y) hi hj
+  obtain ⟨k, vi, vj, ui, uj, hk⟩ := BaseChangeChart.exists_refinement f i j _ hi hj
   let pi := (B).relativeProjFunctor.map (homOfLE vi)
   let pj := (B).relativeProjFunctor.map (homOfLE vj)
   have hpi : pi ≫ p = (B).relativeProjCover.f k.source :=
@@ -164,8 +178,8 @@ private theorem chartMap_glue (i j : Chart f) :
     ⟨z', (@Scheme.Hom.isOpenEmbedding _ _ _ hOverlap).injective
       ((congrArg (fun g : P[B,k.source] ⟶ (B).relativeProj ↦ g z') hl).trans hz')⟩
   refine ⟨_, hz, (cancel_epi (@Scheme.Hom.isoOpensRange _ _ l hLift).hom).mp ?_⟩
-  let F := chartMap A f i.le ≫ A.obj.relativeProjCover.f i.target
-  let G := chartMap A f j.le ≫ A.obj.relativeProjCover.f j.target
+  let F := relativeProjBaseChangeChartMap A f i.le ≫ A.obj.relativeProjCover.f i.target
+  let G := relativeProjBaseChangeChartMap A f j.le ≫ A.obj.relativeProjCover.f j.target
   have hi' : l ≫ pullback.fst p q ≫ F = pi ≫ F :=
     (Category.assoc ..).symm.trans (congrArg (· ≫ F) hfst)
   have hj' : l ≫ pullback.snd p q ≫ G = pj ≫ G :=
@@ -178,7 +192,8 @@ private theorem chartMap_glue (i j : Chart f) :
 /-- The comparison from the relative projective spectrum of the pulled-back graded algebra
 to the original projective spectrum. On affine charts it is given by pullback of sections. -/
 def relativeProjBaseChange : (B).relativeProj ⟶ A.obj.relativeProj :=
-  (projCover A f).glueMorphisms (fun i ↦ chartMap A f i.le ≫ A.obj.relativeProjCover.f i.target)
+  (projCover A f).glueMorphisms
+    (fun i ↦ relativeProjBaseChangeChartMap A f i.le ≫ A.obj.relativeProjCover.f i.target)
     (chartMap_glue A f)
 
 /-- On an affine source open lying over an affine target open, the base-change comparison
@@ -187,9 +202,7 @@ is the map of projective spectra induced by pullback of graded sections. -/
 theorem relativeProjCover_f_relativeProjBaseChange (V : X.AffineZariskiSite)
     (U : Y.AffineZariskiSite) (h : V.toOpens ≤ f ⁻¹ᵁ U.toOpens) :
     (B).relativeProjCover.f V ≫ A.relativeProjBaseChange f =
-      Proj.map (A.pullbackGradedSectionsGradedHom f h)
-        (A.irrelevant_le_map_pullbackGradedSectionsGradedHom f h U.property V.property) ≫
-        A.obj.relativeProjCover.f U :=
+      A.relativeProjBaseChangeChartMap f h ≫ A.obj.relativeProjCover.f U :=
   (projCover A f).ι_glueMorphisms _ _ ⟨V, U, h⟩
 
 /-- Maps from the base-changed relative projective spectrum agree if they agree
@@ -200,7 +213,7 @@ theorem relativeProjBaseChange_hom_ext {Z : Scheme.{u}} (g h : (B).relativeProj 
         (B).relativeProjCover.f V ≫ g = (B).relativeProjCover.f V ≫ h) : g = h :=
   (projCover A f).hom_ext g h fun i ↦ he i.source i.target i.le
 
-private theorem chart_isPullback (i : Chart f) :
+private theorem chart_isPullback (i : BaseChangeChart f) :
     IsPullback
       (Proj.toSpecCoeff (CommMon.gradedSectionsGrading B i.source.toOpens) ≫
         i.source.property.isoSpec.inv)

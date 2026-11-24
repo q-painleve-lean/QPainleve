@@ -69,6 +69,13 @@ def affineBlowupAssociatedGradedι : Proj G ⟶ Proj (grade I) :=
     (HomogeneousIdeal.irrelevant_le_map_of_surjective _
       (gradedToAssociatedGraded_surjective I))
 
+/-- Restricting a Rees basic open to the exceptional divisor takes its Rees symbol. -/
+@[simp]
+theorem affineBlowupAssociatedGradedι_preimage_basicOpen (s : reesAlgebra I) :
+    affineBlowupAssociatedGradedι I ⁻¹ᵁ Proj.basicOpen (grade I) s =
+      Proj.basicOpen G (toAssociatedGraded I s) := by
+  rw [affineBlowupAssociatedGradedι, Proj.map_preimage_basicOpen, gradedToAssociatedGraded_apply]
+
 private theorem reesSymbol_commutes (r : R) :
     gradedToAssociatedGraded I (algebraMap R (reesAlgebra I) r) =
       algebraMap R I.AssociatedGraded r :=
@@ -161,37 +168,40 @@ local notation "S" => R ⧸ I
 local notation "P" => _root_.SymmetricAlgebra S (Fin 2 → S)
 local notation "𝒜ₚ" => TauCeti.SymmetricAlgebra.homogeneousSubmodule S (Fin 2 → S)
 
-private def parameterAlgebraEquiv : P ≃ₐ[S] I.AssociatedGraded :=
+/-- Homogeneous functions on the exceptional line in the coordinates of the ordered
+weakly regular pair. -/
+def affineBlowupParameterAlgebraEquiv : P ≃ₐ[S] I.AssociatedGraded :=
   (_root_.SymmetricAlgebra.equivMvPolynomial (Pi.basisFun S (Fin 2))).trans
     (h.associatedGradedEquiv hI)
 
 private theorem parameterAlgebraEquiv_mem_grade_iff (n : ℕ) (p : P) :
-    parameterAlgebraEquiv h hI p ∈ G n ↔ p ∈ 𝒜ₚ n := by
-  rw [parameterAlgebraEquiv, AlgEquiv.trans_apply, Ideal.AssociatedGraded.mem_grade_iff,
+    affineBlowupParameterAlgebraEquiv h hI p ∈ G n ↔ p ∈ 𝒜ₚ n := by
+  rw [affineBlowupParameterAlgebraEquiv, AlgEquiv.trans_apply, Ideal.AssociatedGraded.mem_grade_iff,
     ← h.isHomogeneous_iff_associatedGradedEquiv_mem_range hI,
     _root_.SymmetricAlgebra.equivMvPolynomial_isHomogeneous_iff]
 
 private def parameterGradedAlgHom : 𝒜ₚ →ₐᵍ[S] G where
-  toAlgHom := (parameterAlgebraEquiv h hI).toAlgHom
+  toAlgHom := (affineBlowupParameterAlgebraEquiv h hI).toAlgHom
   map_mem {n} p hp := (parameterAlgebraEquiv_mem_grade_iff h hI n p).2 hp
 
 private def parameterGradedAlgHomInv : G →ₐᵍ[S] 𝒜ₚ where
-  toAlgHom := (parameterAlgebraEquiv h hI).symm.toAlgHom
+  toAlgHom := (affineBlowupParameterAlgebraEquiv h hI).symm.toAlgHom
   map_mem {n} p hp := by
     apply (parameterAlgebraEquiv_mem_grade_iff h hI n _).1
     -- The graded map uses the underlying ring homomorphism of the inverse equivalence.
-    change parameterAlgebraEquiv h hI ((parameterAlgebraEquiv h hI).symm p) ∈ G n
+    change affineBlowupParameterAlgebraEquiv h hI
+      ((affineBlowupParameterAlgebraEquiv h hI).symm p) ∈ G n
     rwa [AlgEquiv.apply_symm_apply]
 
 private theorem parameterGradedAlgHom_rightInverse :
     Function.RightInverse (parameterGradedAlgHomInv h hI).toGradedRingHom
       (parameterGradedAlgHom h hI).toGradedRingHom :=
-  fun p ↦ (parameterAlgebraEquiv h hI).apply_symm_apply p
+  fun p ↦ (affineBlowupParameterAlgebraEquiv h hI).apply_symm_apply p
 
 private theorem parameterGradedAlgHom_leftInverse :
     Function.LeftInverse (parameterGradedAlgHomInv h hI).toGradedRingHom
       (parameterGradedAlgHom h hI).toGradedRingHom :=
-  fun p ↦ (parameterAlgebraEquiv h hI).symm_apply_apply p
+  fun p ↦ (affineBlowupParameterAlgebraEquiv h hI).symm_apply_apply p
 
 private def parameterProjIso : Proj G ≅ projectiveLine S :=
   Proj.mapIso (parameterGradedAlgHom h hI).toGradedRingHom
@@ -275,6 +285,35 @@ def affineBlowupExceptionalPullbackTwistingSheafIso (n : ℤ) :
     (Scheme.Modules.pullbackCongr e.inv_hom_id).app L ≪≫
     (Scheme.Modules.pullbackId _).app L
 
+/-- The coordinates of the exceptional projective line are the degree-one classes of
+the ordered generators of the center ideal. -/
+@[simp]
+theorem affineBlowupParameterAlgebraEquiv_coord (j : Fin 2) :
+    let hj : ([a, b] : List R)[(j : ℕ)] ∈ I := by
+      rw [← hI]
+      exact Ideal.subset_span (List.getElem_mem _)
+    affineBlowupParameterAlgebraEquiv h hI (projectiveLine.coord S j) =
+      Ideal.AssociatedGraded.mk I 1 ⟨[a, b][(j : ℕ)], by simpa only [pow_one] using hj⟩ := by
+  intro hj
+  have hι : _root_.SymmetricAlgebra.ι S (Fin 2 → S) (Pi.single j 1) =
+      projectiveLine.coord S j := by
+    fin_cases j <;> simp [projectiveLine.ι_eq_smul_coord_add_smul_coord S 0]
+  rw [affineBlowupParameterAlgebraEquiv, AlgEquiv.trans_apply, ← hι, ← Pi.basisFun_apply,
+    _root_.SymmetricAlgebra.equivMvPolynomial_ι_apply, h.associatedGradedEquiv_X]
+
+/-- The restriction of a Rees basic open to the exceptional line is the basic open
+of the homogeneous polynomial representing its symbol in the ordered parameters. -/
+theorem preimage_basicOpen_affineBlowupExceptionalIsoProjectiveLine_of_symbol
+    (s : reesAlgebra I) (p : P)
+    (hp : affineBlowupParameterAlgebraEquiv h hI p = toAssociatedGraded I s) :
+    ((affineBlowupExceptionalIsoProjectiveLine h hI).inv ≫ (E).subschemeι) ⁻¹ᵁ
+      Proj.basicOpen (grade I) s = Proj.basicOpen 𝒜ₚ p := by
+  rw [affineBlowupExceptionalIsoProjectiveLine_inv_ι, Scheme.Hom.comp_preimage,
+    affineBlowupAssociatedGradedι_preimage_basicOpen, ← hp,
+    parameterProjIso, Proj.mapIso_inv, Proj.map_preimage_basicOpen]
+  congr 1
+  exact (affineBlowupParameterAlgebraEquiv h hI).symm_apply_apply p
+
 /-- The blowup chart of each parameter restricts on the exceptional line to the standard
 open where its corresponding homogeneous coordinate is nonzero. -/
 theorem preimage_basicOpen_affineBlowupExceptionalIsoProjectiveLine (j : Fin 2) :
@@ -285,20 +324,8 @@ theorem preimage_basicOpen_affineBlowupExceptionalIsoProjectiveLine (j : Fin 2) 
       Proj.basicOpen (grade I) (monomialDegreeOne hj) =
       Proj.basicOpen 𝒜ₚ (projectiveLine.coord S j) := by
   intro hj
-  have hι : _root_.SymmetricAlgebra.ι S (Fin 2 → S) (Pi.single j 1) =
-      projectiveLine.coord S j := by
-    fin_cases j <;> simp [projectiveLine.ι_eq_smul_coord_add_smul_coord S 0]
-  have hcoord : parameterAlgebraEquiv h hI (projectiveLine.coord S j) =
-      gradedToAssociatedGraded I (monomialDegreeOne hj) := by
-    rw [gradedToAssociatedGraded_apply, parameterAlgebraEquiv, AlgEquiv.trans_apply,
-      ← hι, ← Pi.basisFun_apply,
-      _root_.SymmetricAlgebra.equivMvPolynomial_ι_apply, h.associatedGradedEquiv_X,
-      toAssociatedGraded_monomialDegreeOne I hj]
-  rw [affineBlowupExceptionalIsoProjectiveLine_inv_ι, Scheme.Hom.comp_preimage,
-    affineBlowupAssociatedGradedι, Proj.map_preimage_basicOpen,
-    parameterProjIso, Proj.mapIso_inv, Proj.map_preimage_basicOpen]
-  congr 1
-  exact (parameterAlgebraEquiv h hI).symm_apply_eq.mpr hcoord.symm
+  apply preimage_basicOpen_affineBlowupExceptionalIsoProjectiveLine_of_symbol
+  rw [affineBlowupParameterAlgebraEquiv_coord, toAssociatedGraded_monomialDegreeOne]
 
 end RegularPair
 

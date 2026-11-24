@@ -12,7 +12,7 @@ public import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.Sections.Resolution
 import QPainleve.AlgebraicGeometry.Blowup.Tower.BaseIdeal
 import QPainleve.AlgebraicGeometry.LineBundle.Ample
 import QPainleve.AlgebraicGeometry.RationalMap.Restriction
-import TauCeti.AlgebraicGeometry.Birational.RationalMap
+import TauCeti.AlgebraicGeometry.Birational.RationalMap.ValuationRing
 import TauCeti.AlgebraicGeometry.Noetherian
 
 /-!

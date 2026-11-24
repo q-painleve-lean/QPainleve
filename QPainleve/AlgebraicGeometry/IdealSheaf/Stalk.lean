@@ -61,6 +61,24 @@ theorem stalkIdeal_eq_maximalIdeal_of_isLocallyArtinian
     exact IsLocalRing.maximalIdeal_comap h.hom
   simpa only [h, Hom.ker_stalkMap_of_isClosedImmersion, IdealSheafData.ker_subschemeι] using hmax
 
+/-- A closed subscheme whose ideal cuts out the ambient maximal ideal at every
+point of its support is reduced. -/
+theorem isReduced_subscheme_of_stalkIdeal_eq_maximalIdeal (I : X.IdealSheafData)
+    (h : ∀ x ∈ I.support, I.stalkIdeal x = IsLocalRing.maximalIdeal (X.presheaf.stalk x)) :
+    IsReduced I.subscheme := by
+  let (z : I.subscheme) : _root_.IsReduced (I.subscheme.presheaf.stalk z) := by
+    let f := (I.subschemeι.stalkMap z).hom
+    have hf : Function.Surjective f := I.subschemeι.stalkMap_surjective z
+    have hmax : RingHom.ker f = IsLocalRing.maximalIdeal (X.presheaf.stalk (I.subschemeι z)) := by
+      rw [I.subschemeι.ker_stalkMap_of_isClosedImmersion, ker_subschemeι]
+      exact h _ (I.range_subschemeι.le (Set.mem_range_self z))
+    have hbot : IsLocalRing.maximalIdeal (I.subscheme.presheaf.stalk z) = ⊥ := by
+      rw [← Ideal.map_comap_of_surjective f hf (IsLocalRing.maximalIdeal _),
+        IsLocalRing.maximalIdeal_comap f, ← hmax, RingHom.map_ker]
+    let := (IsLocalRing.isField_iff_maximalIdeal_eq.mpr hbot).isDomain
+    infer_instance
+  exact isReduced_of_isReduced_stalk I.subscheme
+
 /-- An ideal sheaf is determined by its pullbacks to the spectra of the local rings. -/
 theorem eq_of_comap_fromSpecStalk_eq {I J : X.IdealSheafData}
     (h : ∀ x : X, I.comap (X.fromSpecStalk x) = J.comap (X.fromSpecStalk x)) : I = J := by

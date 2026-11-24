@@ -100,9 +100,9 @@ private theorem exists_snoc_tower (E : Fin (n + 1) → X.IdealSheafData)
   have hJ : J.comap a.hom = (Y.fromSpecResidueField p).ker :=
     a.hom.comap_ker_fromSpecResidueField_of_mem_isoLocus hclosed
       (by simp [a.hom.isoLocus_eq_top_iff.mpr inferInstance])
-  let b := e ≪≫ J.blowupIso a hJ
+  let b := e ≪≫ blowupIso a hJ.symm
   have hb : b.hom ≫ J.blowupToBase = f ≫ a.hom := by
-    rw [Iso.trans_hom, Category.assoc, J.blowupIso_hom_blowupToBase, ← Category.assoc, he]
+    rw [Iso.trans_hom, Category.assoc, blowupIso_hom_blowupToBase, ← Category.assoc, he]
   let hS := hT.snoc (a.hom p) hclosed (I := J) rfl
   refine ⟨J.blowup, T.snoc J, b, hS, ?_, ?_,
     Fin.lastCases ?_ fun i ↦ ?_⟩

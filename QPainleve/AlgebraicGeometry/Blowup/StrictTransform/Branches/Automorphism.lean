@@ -70,7 +70,7 @@ variable (e : X ≅ X) (d : D.subscheme ≅ D.subscheme) [d.hom.IsOver (Spec (.o
   (hd : d.hom ≫ D.subschemeι = D.subschemeι ≫ e.hom) (hfix : d.hom p = p)
 
 local notation "he" => comap_nodeIdeal_eq_of_iso D.subschemeι D.subschemeι d e hd hfix
-local notation "l" => blowupIso I e he
+local notation "l" => blowupIso e (Eq.symm he)
 
 variable (r :
     (D.comap
@@ -158,7 +158,7 @@ theorem singularLocusBlowupIso_fixes_over_attachment [IsSepClosed k] [PerfectFie
       _ = D := by rw [hd, comap_ker_comp_of_isClosedImmersion, ker_subschemeι]
   have hEcomap : (E).comap (l).hom = E := comap_blowupIso_hom _ _ he
   have hScomap : (S).comap (l).hom = S := by
-    rw [comap_ker_blowupMap_subschemeι_blowupIso, hDcomap]
+    rw [comap_ker_blowupMap_subschemeι_blowupIso I D e he, hDcomap]
   let U := (j) ⁻¹ᵁ (E).support.compl
   let V := (j) ⁻¹ᵁ (S).support.compl
   have hmap {J : (I).blowup.IdealSheafData} (hJ : J.comap (l).hom = J) :

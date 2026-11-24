@@ -11,19 +11,20 @@ public import QPainleve.SignedClusterModularGroup.SarkisovDegree.Induction.Marki
 
 import QPainleve.AlgebraicGeometry.Blowup.Tower.PlaneResolution
 import QPainleve.AlgebraicGeometry.Curves.Node.Comap
+import QPainleve.SignedClusterModularGroup.SarkisovDegree.Induction.NegativeSection
 import QPainleve.SignedClusterModularGroup.SarkisovDegree.Plane.Induction
 import QPainleve.SignedClusterModularGroup.SarkisovDegree.Quadric.Factorization
 import TauCeti.AlgebraicGeometry.Curves.Node.Reduced
 import TauCeti.AlgebraicGeometry.IdealSheaf.Reduced
 
 /-!
-# Marked plane and quadric steps of Sarkisov factorization
+# Marked steps of plane-target Sarkisov factorization
 
-The terminal plane step and the decreasing plane and quadric blocks apply in
-the coordinates of a marked point tower. Transporting the block back to the specified resolution
-keeps its two projections and the pole ideal, including when one further
-nodal blowup is needed. The new marking computes the decrease for the same
-target map.
+The terminal plane step and the decreasing plane, quadric and negative-section
+blocks apply in the coordinates of a marked point tower. Transporting the block
+back to the specified resolution keeps its two projections and the pole ideal,
+including when one further nodal blowup is needed. The new marking computes the
+decrease for the same target map.
 
 See [Lutz, Theorem 8.4][HKL].
 
@@ -158,12 +159,16 @@ private theorem HasPlaneTargetDecrease.of_iso {m : ℕ} {W : Scheme} {U : Blowup
     (precomposeSarkisovOfIso_obj_hom ..) (precomposeSarkisovOfIso_obj_hom ..)
 
 include hD hNode in
-private theorem HasPlaneTargetDecrease.of_path_on_iso
-    (hn : AtWorstNodalOfRelativeDimensionOne ((D₁).subschemeι ≫ Y ↘ S))
+/-- Transport a decreasing marked path on an isomorphic resolving surface
+to the specified source and target projections. -/
+theorem HasPlaneTargetDecrease.of_path_on_iso
     {d next : ℕ ×ₗ ℕ} (hlt : next < d) {A' C B' : LogarithmicProjection i D₁}
     (p : SarkisovPath A' C) (hA' : A'.fan = A.fan) (hhA : A'.hom ≍ k.inv ≫ A.hom)
     (hB' : B'.fan = B.fan) (hhB : B'.hom ≍ k.inv ≫ B.hom)
     (hm : HasPlaneTargetMarking C B' next) : HasPlaneTargetDecrease A B hRank hD hNode d := by
+  let : k.inv.IsOver S := inferInstance
+  have hn : AtWorstNodalOfRelativeDimensionOne ((D₁).subschemeι ≫ Y ↘ S) := by
+    simpa only [comp_over k.inv S] using hNode.comap_of_etale k.inv
   let U : BlowupTower Y 0 Y := .nil
   let hU : IsNodalBoundaryTower D₁ (Y ↘ S) (𝟙 Y) U := .nil
   have hrad : (D₁).radical = D₁ := (isReduced_subscheme_iff_radical_eq _).mp hn.isReduced
@@ -413,16 +418,69 @@ theorem exists_sarkisov_step_of_quadric_marking
     precomposeSarkisovOfIso_obj_hom_of_comp rankTwo k.symm rfl A rfl (heq_of_eq hAh)
   have hR : (obj[F,B]).hom ≍ g ≫ (planeIso[b',hi]).inv :=
     precomposeSarkisovOfIso_obj_hom_of_comp rankTwo k.symm rfl B hB hBh
-  have hn : AtWorstNodalOfRelativeDimensionOne ((D.comap k.inv).subschemeι ≫ Y ↘ S) := by
-    simpa only [comp_over k.inv S] using hNode.comap_of_etale k.inv
   obtain ⟨next, hlt, C, ⟨p⟩, hm⟩ :=
     exists_path_with_smaller_marking_of_quadric r hr hT g hg hbir (D.comap k.inv)
       (obj[F,A]) (obj[F,B]) (precomposeSarkisovOfIso_obj_fan ..) hL
       ((precomposeSarkisovOfIso_obj_fan ..).trans hB) hR
-  exact HasPlaneTargetDecrease.of_path_on_iso rankTwo hD hNode k hn hlt p
+  exact HasPlaneTargetDecrease.of_path_on_iso rankTwo hD hNode k hlt p
     (precomposeSarkisovOfIso_obj_fan ..) (precomposeSarkisovOfIso_obj_hom ..)
     (precomposeSarkisovOfIso_obj_fan ..) (precomposeSarkisovOfIso_obj_hom ..) hm
 
 end Quadric
+
+section NegativeSection
+
+variable [A.fan.algebraicRealization.IsProjectiveOver ℂ]
+  {Y : Scheme} {b b' : Basis (Fin 2) ℤ N} {hi : IsIntegralLattice i}
+  {a : ℕ} (r : Fin 4 ≃ A.fan.Ray)
+  (hr : (fun j ↦ (r j).primitiveGenerator) = ![b 0, b 1, -b 0, (a : ℤ) • b 0 - b 1])
+  {n : ℕ} {T : BlowupTower A.fan.algebraicRealization n Y}
+  (hT : IsClosedPointTower A.fan.algebraicRealization T) (g : Y ⟶ P)
+
+local notation "rankTwo" => Eq.trans (finrank_eq_card_basis b) (Fintype.card_fin 2)
+local notation "fA" => (A.fan.algebraicRealization ↘ S)
+local notation "sourceSmooth" =>
+  Eq.mp (congrArg (fun n ↦ SmoothOfRelativeDimension n fA) rankTwo)
+    (A.fan.smoothOfRelativeDimension_algebraicRealizationStructureMap A.isRegular)
+
+/-- A marked positive-index Hirzebruch-to-plane resolution with all orders at most
+half the ruling degree gives a strictly decreasing plane-target induction step.
+The negative-section contraction keeps the original resolving surface and target. -/
+theorem exists_sarkisov_step_of_hirzebruch_marking_of_no_high_order
+    (ha : 0 < a) (hD : D.IsEffectiveCartier)
+    (hNode : AtWorstNodalOfRelativeDimensionOne (D.subschemeι ≫ X ↘ S))
+    (hB : B.fan = plane[b',hi]) (k : X ≅ Y)
+    (hAh : A.hom = k.hom ≫ T.toBase) (hBh : B.hom ≍ k.hom ≫ g ≫ (planeIso[b',hi]).inv)
+    (hg : g ≫ s = T.toBase ≫ fA) (hbir : Scheme.BirationalOver g (𝟙 P)) :
+    let : SmoothOfRelativeDimension 2 fA := sourceSmooth
+    let x := mark[T,hT,fA,g]
+    let β := (A.fan.hirzebruchPicardBasis b a A.isRegular r hr).repr x.1 1
+    (∀ j, 2 * (-x.2 j) ≤ β) →
+      HasPlaneTargetDecrease A B rankTwo hD hNode
+        (hirzebruchSarkisovBidegree β.toNat (∑ j, -x.2 j).toNat) := by
+  intro hSmoothA x β hlow
+  let := hSmoothA
+  let : Smooth fA := hSmoothA.smooth
+  let : IsNoetherian A.fan.algebraicRealization := isNoetherian_of_finiteType fA
+  let : Y.Over S := ⟨T.toBase ≫ fA⟩
+  let : SmoothOfRelativeDimension 2 (Y ↘ S) := hT.smoothOfRelativeDimension fA
+  let : IsIntegral Y := hT.isIntegral fA
+  let : IsNoetherian Y := T.isNoetherian
+  let : k.hom.IsOver S := ⟨(Category.assoc k.hom T.toBase fA).symm.trans
+    (hAh ▸ comp_over A.hom S)⟩
+  let : k.inv.IsOver S := inferInstance
+  let : k.symm.hom.IsOver S := inferInstanceAs (k.inv.IsOver S)
+  have hL := precomposeSarkisovOfIso_obj_fan rankTwo k.symm rfl A
+  have hhL := precomposeSarkisovOfIso_obj_hom_of_comp rankTwo k.symm rfl A rfl (heq_of_eq hAh)
+  have hR := (precomposeSarkisovOfIso_obj_fan rankTwo k.symm rfl B).trans hB
+  have hhR := precomposeSarkisovOfIso_obj_hom_of_comp rankTwo k.symm rfl B hB hBh
+  obtain ⟨next, hlt, C, _, _, ⟨p⟩, hm⟩ :=
+    exists_sarkisov_path_with_smaller_plane_marking_of_no_high_order a A.isRegular A.isComplete
+      r hr hT g ha hg hbir hlow hL hhL hR hhR
+  exact HasPlaneTargetDecrease.of_path_on_iso rankTwo hD hNode k hlt p hL
+    (precomposeSarkisovOfIso_obj_hom ..) (precomposeSarkisovOfIso_obj_fan ..)
+    (precomposeSarkisovOfIso_obj_hom ..) hm
+
+end NegativeSection
 
 end TauCeti.Toric.Fan.LogarithmicProjection

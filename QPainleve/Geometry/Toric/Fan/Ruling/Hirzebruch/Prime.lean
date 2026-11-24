@@ -17,6 +17,7 @@ import QPainleve.AlgebraicGeometry.Chow.EffectiveClass
 import QPainleve.AlgebraicGeometry.Cohomology.Projective
 import QPainleve.AlgebraicGeometry.Curves.Morphism
 import QPainleve.AlgebraicGeometry.IntersectionNumber.CurveImage
+import QPainleve.AlgebraicGeometry.LineBundle.Ample
 import QPainleve.AlgebraicGeometry.WeilDivisor.Basic
 import QPainleve.Geometry.Toric.Fan.Picard.FiberDegree
 import QPainleve.Geometry.Toric.Fan.Picard.Ruling
@@ -134,12 +135,47 @@ theorem isIso_hirzebruch_ruling_prime_of_degree_one (p : CodimensionOnePoint X)
   refine (g[p].isIso_iff_finrank_eq).mpr (funext fun y ↦ ?_)
   exact_mod_cast (hrank y).symm.trans hdeg
 
-/-- A prime curve in the fiber class that lies over a given rational point equals
-that scheme-theoretic fiber. -/
-theorem eq_hirzebruch_ruling_fiber_of_prime_class_eq
-    (p : CodimensionOnePoint X) (hp : P p = C 0) {y : Spec (CommRingCat.of ℂ) ⟶ projectiveLine ℂ}
+private theorem primeClass_eq_fiber_of_le (p : CodimensionOnePoint X)
+    (hp : (C).repr (P p) 1 = 0) (W : SchemeWeilDivisor X)
+    (hle : Finsupp.single p 1 ≤ W)
+    (hW : let := Φ.uniqueFactorizationMonoid_stalk_algebraicRealization hΦ
+      Scheme.CartierDivisor.weilToLineBundleClassHom X W = C 0) :
+    P p = C 0 := by
+  let := Φ.uniqueFactorizationMonoid_stalk_algebraicRealization hΦ
+  let cl := Scheme.CartierDivisor.weilToLineBundleClassHom X
+  let a := (C).repr (P p) 0
+  have hrepr : P p = a • C 0 := by
+    simpa only [Fin.sum_univ_two, hp, zero_smul, add_zero] using ((C).sum_repr (P p)).symm
+  have hs : cl (Finsupp.single p 1) = P p := by
+    rw [Scheme.CartierDivisor.weilToLineBundleClassHom_single, one_smul, ← primeDivisorClass_def]
+  obtain ⟨A, hA⟩ := Scheme.exists_isAmple_of_isProjectiveOver X ℂ
+  have hdim := topologicalKrullDim_eq_of_smoothOfRelativeDimension (X ↘ S) (n := 2)
+  let B := Chow.classIntersectionBilinForm ℂ hdim (Additive.ofMul A)
+  have hpos (a : CodimensionOnePoint X) : 0 < B (P a) := by
+    simpa only [B, Chow.classIntersectionBilinForm_apply, toMul_ofMul] using
+      Chow.classIntersectionNumber_primeDivisorClass_pos_of_isAmple ℂ hdim hA a
+  have hres : 0 ≤ B (cl (W - Finsupp.single p 1)) :=
+    Chow.classIntersectionBilinForm_nonneg_of_mem_effectiveClasses ℂ hdim
+      (fun a ↦ (hpos a).le)
+      (Scheme.mem_effectiveClasses_iff_exists_weilDivisor.mpr ⟨_, sub_nonneg.mpr hle, rfl⟩)
+  have hclass : cl W = C 0 := hW
+  rw [map_sub, hclass, hs, map_sub, sub_nonneg] at hres
+  have hp_pos := hpos p
+  have hF : 0 < B (C 0) := hp_pos.trans_le hres
+  rw [hrepr, map_zsmul, zsmul_eq_mul, Int.cast_id] at hp_pos hres
+  have ha₀ := pos_of_mul_pos_left hp_pos hF.le
+  have ha₁ : a ≤ 1 := by
+    exact (mul_le_mul_iff_left₀ hF).mp (by simpa only [one_mul] using hres)
+  have ha : a = 1 := by omega
+  exact hrepr.trans (by rw [ha, one_smul])
+
+/-- A vertical prime curve over a rational point of a Hirzebruch ruling
+has fiber class and equals the scheme-theoretic fiber over that point. -/
+theorem hirzebruch_ruling_fiber_of_degree_zero
+    (p : CodimensionOnePoint X) (hp : (C).repr (P p) 1 = 0)
+    {y : Spec (CommRingCat.of ℂ) ⟶ projectiveLine ℂ}
     (hy : y ≫ (projectiveLine ℂ ↘ S) = 𝟙 S) (hz : (p : X) ∈ (y.ker.comap q).support) :
-    I[p] = y.ker.comap q := by
+    P p = C 0 ∧ I[p] = y.ker.comap q := by
   let := Φ.uniqueFactorizationMonoid_stalk_algebraicRealization hΦ
   have hdim := topologicalKrullDim_eq_of_smoothOfRelativeDimension (X ↘ S) (n := 2)
   have hm : m ≠ 0 := by
@@ -167,30 +203,31 @@ theorem eq_hirzebruch_ruling_fiber_of_prime_class_eq
   have hpW : 0 < W p := lt_of_le_of_ne (hW p)
     (fun h ↦ (hI.coeff_toWeilDivisor_eq_zero_iff p).mp h.symm hz)
   have hle := WeilDivisor.single_one_le_of_coeff_pos hW hpW
-  have hcl : cl W = cl (Finsupp.single p 1) := by
-    rw [Scheme.CartierDivisor.weilToLineBundleClassHom_single, one_smul, ← primeDivisorClass_def,
-      hp, Scheme.CartierDivisor.weilToLineBundleClassHom_toWeilDivisor,
+  have hcl : cl W = C 0 := by
+    rw [Scheme.CartierDivisor.weilToLineBundleClassHom_toWeilDivisor,
       hI.toLineBundleClass_toCartierDivisor, hclass, ofMul_toMul]
+  have hprime := primeClass_eq_fiber_of_le b e hΦ r hr p hp W hle hcl
+  have hzero : cl (W - Finsupp.single p 1) = 0 := by
+    rw [map_sub, Scheme.CartierDivisor.weilToLineBundleClassHom_single, one_smul,
+      ← primeDivisorClass_def, hprime, hcl, sub_self]
   have hW_eq := (Chow.weilToLineBundleClassHom_eq_zero_iff_of_nonneg ℂ hdim
-    (sub_nonneg.mpr hle)).mp (by rw [map_sub, hcl, sub_self])
-  refine ((hI.toCartierDivisor_eq_iff
-    (isEffectiveCartier_vanishingIdeal_closure_singleton p.property)).mp ?_).symm
+    (sub_nonneg.mpr hle)).mp hzero
+  refine ⟨hprime, ((hI.toCartierDivisor_eq_iff
+    (isEffectiveCartier_vanishingIdeal_closure_singleton p.property)).mp ?_).symm⟩
   apply Scheme.CartierDivisor.toWeilDivisor_injective
   rw [toWeilDivisor_toCartierDivisor_vanishingIdeal_closure_singleton,
     ← one_smul ℤ (WeilDivisor.ofPoint p), ← WeilDivisor.single_eq_zsmul_ofPoint]
   exact sub_eq_zero.mp hW_eq
 
 include hc in
-/-- A prime curve in the fiber class is the scheme-theoretic fiber over a rational point
-of the Hirzebruch ruling. -/
-theorem exists_hirzebruch_ruling_fiber_of_prime_class_eq
-    (p : CodimensionOnePoint X) (hp : P p = C 0) :
+/-- A prime curve of fiber degree zero has fiber class and is the
+scheme-theoretic fiber of the Hirzebruch ruling over a rational point. -/
+theorem exists_hirzebruch_ruling_fiber_of_degree_zero
+    (p : CodimensionOnePoint X) (hp : (C).repr (P p) 1 = 0) :
     ∃ y : Spec (CommRingCat.of ℂ) ⟶ projectiveLine ℂ,
-      y ≫ (projectiveLine ℂ ↘ S) = 𝟙 S ∧ I[p] = y.ker.comap q := by
+      y ≫ (projectiveLine ℂ ↘ S) = 𝟙 S ∧ P p = C 0 ∧ I[p] = y.ker.comap q := by
   let Y := (I[p]).subscheme
-  have hdeg := eulerDegree_hirzebruch_ruling_prime b e hΦ hc r hr p
-  rw [hp, Basis.repr_self] at hdeg
-  have hdeg₀ : eulerDegree ℂ (pullback g[p] H) = 0 := by simpa using hdeg
+  have hdeg₀ := (eulerDegree_hirzebruch_ruling_prime b e hΦ hc r hr p).trans hp
   let y₀ := q (p : X)
   have hgeneric : g[p] (genericPoint Y) = y₀ := by
     rw [Scheme.Hom.comp_apply, subschemeι_genericPoint_vanishingIdeal_closure_singleton]
@@ -213,6 +250,6 @@ theorem exists_hirzebruch_ruling_fiber_of_prime_class_eq
     rw [← SetLike.mem_coe, support_comap, TopologicalSpace.Closeds.coe_preimage, Set.mem_preimage,
       Scheme.Hom.support_ker]
     exact subset_closure ⟨IsLocalRing.closedPoint ℂ, pointOfClosedPoint_apply _ _ _ _⟩
-  exact eq_hirzebruch_ruling_fiber_of_prime_class_eq b e hΦ r hr p hp hy hz
+  exact hirzebruch_ruling_fiber_of_degree_zero b e hΦ r hr p hp hy hz
 
 end TauCeti.Toric.Fan

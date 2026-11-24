@@ -23,7 +23,7 @@ convention of [Stacks, Section 27.21](https://stacks.math.columbia.edu/tag/01OA)
 
 public noncomputable section
 
-open AlgebraicGeometry CategoryTheory
+open AlgebraicGeometry CategoryTheory Limits
 open CategoryTheory.CommMon
 
 universe u
@@ -55,11 +55,10 @@ theorem relativeProjBaseChange_naturality {A B : GradedQuasicoherentAlgebra Y} (
   have hcomm :
       Proj.map (gradedSectionsGradedHom ((pullback f).map g).hom V.toOpens)
           (hg' V.toOpens V.property) ≫
-        Proj.map (pullbackGradedSectionsGradedHom f A hVU)
-          (A.irrelevant_le_map_pullbackGradedSectionsGradedHom f hVU U.property V.property) =
-      Proj.map (pullbackGradedSectionsGradedHom f B hVU)
-          (B.irrelevant_le_map_pullbackGradedSectionsGradedHom f hVU U.property V.property) ≫
+        A.relativeProjBaseChangeChartMap f hVU =
+      B.relativeProjBaseChangeChartMap f hVU ≫
         Proj.map (gradedSectionsGradedHom g.hom U.toOpens) (hg U.toOpens U.property) := by
+    unfold relativeProjBaseChangeChartMap
     rw [← Proj.map_comp, ← Proj.map_comp]
     exact Proj.map_congr hring _ _
   calc
@@ -74,6 +73,33 @@ theorem relativeProjBaseChange_naturality {A B : GradedQuasicoherentAlgebra Y} (
       exact ((Category.assoc ..).symm.trans (congrArg (· ≫ relativeProjMap g.hom hg) hB)).trans
         ((Category.assoc ..).trans ((congrArg (_ ≫ ·) hU).trans (Category.assoc ..).symm))
 
+section Projection
+
+variable {A : GradedQuasicoherentAlgebra X} {B : GradedQuasicoherentAlgebra Y}
+  (i : A ≅ (pullback f).obj B)
+
+private def relativeProjMapIsoOfPullback :
+    A.obj.relativeProj ≅ ((pullback f).obj B).obj.relativeProj :=
+  relativeProjMapIso ((ObjectProperty.ι _).mapIso i.symm)
+
+/-- The base-change projection, computed using an identification of the source algebra
+with the pulled-back algebra. -/
+def relativeProjProjectionOfPullback : A.obj.relativeProj ⟶ B.obj.relativeProj :=
+  (relativeProjMapIsoOfPullback f i).hom ≫ B.relativeProjBaseChange f
+
+/-- An identification with the pulled-back algebra gives a Cartesian square on relative Proj. -/
+theorem isPullback_relativeProjProjectionOfPullback :
+    IsPullback A.obj.relativeProjToBase (relativeProjProjectionOfPullback f i)
+      f B.obj.relativeProjToBase := by
+  refine (B.isPullback_relativeProjBaseChange f).of_iso (relativeProjMapIsoOfPullback f i).symm
+    (Iso.refl _) (Iso.refl _) (Iso.refl _) ?_ ?_ ?_ ?_
+  · simp [relativeProjMapIsoOfPullback]
+  · simp [relativeProjProjectionOfPullback]
+  · simp
+  · simp
+
+end Projection
+
 section Iso
 
 variable (e : X ≅ Y) {A : GradedQuasicoherentAlgebra X} {B : GradedQuasicoherentAlgebra Y}
@@ -82,9 +108,8 @@ variable (e : X ≅ Y) {A : GradedQuasicoherentAlgebra X} {B : GradedQuasicohere
 /-- A graded algebra identified with the pullback of another along an isomorphism
 of bases induces an isomorphism of their relative projective spectra. -/
 def relativeProjIsoOfPullback : A.obj.relativeProj ≅ B.obj.relativeProj := by
-  letI := (B.isPullback_relativeProjBaseChange e.hom).isIso_snd_of_isIso
-  let j : ((pullback e.hom).obj B).obj ≅ A.obj := (ObjectProperty.ι _).mapIso i.symm
-  exact relativeProjMapIso j ≪≫ asIso (B.relativeProjBaseChange e.hom)
+  letI := (isPullback_relativeProjProjectionOfPullback e.hom i).isIso_snd_of_isIso
+  exact asIso (relativeProjProjectionOfPullback e.hom i)
 
 /-- The forward map is the projective map of the algebra comparison followed
 by the base-change comparison. -/
