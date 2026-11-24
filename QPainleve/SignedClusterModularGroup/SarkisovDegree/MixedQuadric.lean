@@ -192,60 +192,6 @@ local notation "rays[" Ψ "," d "," r "," hr "]" =>
 local notation "μ[" Ψ "," d "," r "," hr "," c "]" =>
   Scheme.PartialMap.toRationalMap (Fan.mutationPartialMap Ψ d (c : ℂ) hv[r] hp[r] opp[d,r,hr])
 
-private theorem poleIdeals_through_corner
-    {Ψ F : Fan i} (hΨ : Ψ.IsRegular) (hcΨ : Ψ.IsComplete) (hF : F.IsRegular)
-    (s : F.IsSubdivision Φ) (t : F.IsSubdivision Ψ)
-    (q : Y ⟶ X[F]) (hq : q ≫ π[s] = T.toBase) (D : Y.IdealSheafData) :
-    letI : Nonempty Φ.cones := hcΦ.nonempty_cones
-    letI : SmoothOfRelativeDimension 2 (X[Φ] ↘ S) :=
-      dim(b) ▸ Φ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
-    letI : Y.Over S := ⟨T.toBase ≫ (X[Φ] ↘ S)⟩
-    letI : SmoothOfRelativeDimension 2 (Y ↘ S) := hT.smoothOfRelativeDimension (X[Φ] ↘ S)
-    letI : Smooth (Y ↘ S) := SmoothOfRelativeDimension.smooth 2 _
-    letI : T.toBase.IsOver S := ⟨rfl⟩
-    letI : q.IsOver S := ⟨by
-      rw [← comp_over π[s] S, ← Category.assoc, hq]
-      rfl⟩
-    D[Φ,hcΦ].comap T.toBase = D * R[T.toBase] →
-      D[F,s.isComplete_iff.mpr hcΦ].comap q = D * R[q] ∧
-      D[Ψ,hcΨ].comap (q ≫ π[t]) = D * R[q ≫ π[t]] := by
-  intro hpole
-  let : Nonempty Φ.cones := hcΦ.nonempty_cones
-  let : SmoothOfRelativeDimension 2 (X[Φ] ↘ S) :=
-    dim(b) ▸ Φ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
-  let : Y.Over S := ⟨T.toBase ≫ (X[Φ] ↘ S)⟩
-  let : T.toBase.IsOver S := ⟨rfl⟩
-  let : SmoothOfRelativeDimension 2 (Y ↘ S) := hT.smoothOfRelativeDimension (X[Φ] ↘ S)
-  let : Smooth (Y ↘ S) := SmoothOfRelativeDimension.smooth 2 _
-  let : q.IsOver S := ⟨by
-    rw [← comp_over π[s] S, ← Category.assoc, hq]
-    rfl⟩
-  let : IsIntegral Y := hT.isIntegral (X[Φ] ↘ S)
-  let : IsModification T.toBase := hT.isModification_of_smoothOfRelativeDimension_two (X[Φ] ↘ S)
-  have : IsDominant (q ≫ π[s]) := hq ▸ inferInstanceAs (IsDominant T.toBase)
-  obtain ⟨_, _, A, a, hA, ha, -, -⟩ :=
-    s.exists_toric_subdivision_blowup_tower hΦ hF hcΦ.nonempty_cones dim(b)
-  have : IsModification A.toBase :=
-    hA.isClosedPointTower.isModification_of_smoothOfRelativeDimension_two (X[Φ] ↘ S)
-  have : IsModification π[s] := ha ▸ inferInstanceAs (IsModification (a.hom ≫ A.toBase))
-  have : IsDominant q := IsModification.isDominant_of_comp q π[s]
-  let : Nonempty F.cones := s.nonempty_cones_of_nonempty hcΦ.nonempty_cones
-  let : SmoothOfRelativeDimension 2 (X[F] ↘ S) :=
-    dim(b) ▸ F.smoothOfRelativeDimension_algebraicRealizationStructureMap hF
-  let : Smooth (X[F] ↘ S) := SmoothOfRelativeDimension.smooth 2 _
-  have hbase : D[Φ,hcΦ].comap (q ≫ π[s]) = D * R[q ≫ π[s]] := by
-    exact (congrArg (D[Φ,hcΦ].comap ·) hq).trans
-      (hpole.trans (congrArg (D * ·) (ramificationIdealSheaf_congr ℂ hq).symm))
-  -- Cancel the ramification of the first subdivision before composing with the second.
-  have hram := (s.isEffectiveCartier_ramificationIdealSheaf hΦ hF hcΦ dim(b)).comap_of_isDominant q
-  have hFpole := (comap_eq_mul_ramificationIdealSheaf_comp_iff ℂ q π[s] 2 hram
-    (s.comap_boundaryIdeal_eq_mul_ramificationIdealSheaf hΦ hF hcΦ dim(b))).mp hbase
-  let : Nonempty Ψ.cones := hcΨ.nonempty_cones
-  let : SmoothOfRelativeDimension 2 (X[Ψ] ↘ S) :=
-    dim(b) ▸ Ψ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΨ
-  exact ⟨hFpole, comap_eq_mul_ramificationIdealSheaf_comp ℂ q π[t] 2
-    (t.comap_boundaryIdeal_eq_mul_ramificationIdealSheaf hΨ hF hcΨ dim(b)) hFpole⟩
-
 variable [X[Φ].IsProjectiveOver ℂ]
 
 include hσ in
@@ -453,7 +399,22 @@ theorem exists_quadric_resolution_of_corner_and_smooth_high_centers
     have hmutation : (e.hom ≫ k₀.hom ≫ V₀.toBase).IsOver S := ⟨by
       rw [← comp_over τq S, ← Category.assoc, hstep, comp_over]⟩
     refine ⟨‹_›, ‹_›, hmutation, hfinal, fun D hpole ↦ ?_⟩
-    obtain ⟨hFpole, hΨpole⟩ := poleIdeals_through_corner b hΦ hcΦ hT hΨ hcΨ hF s t q hq D hpole
+    let : IsIntegral Y := hT.isIntegral (X[Φ] ↘ S)
+    let : IsModification T.toBase := hT.isModification_of_smoothOfRelativeDimension_two (X[Φ] ↘ S)
+    have : IsDominant (q ≫ π[s]) := hq ▸ inferInstanceAs (IsDominant T.toBase)
+    obtain ⟨_, _, A, a, hA, ha, -, -⟩ :=
+      s.exists_toric_subdivision_blowup_tower hΦ hF hcΦ.nonempty_cones dim(b)
+    have : IsModification A.toBase :=
+      hA.isClosedPointTower.isModification_of_smoothOfRelativeDimension_two (X[Φ] ↘ S)
+    have : IsModification π[s] := ha ▸ inferInstanceAs (IsModification (a.hom ≫ A.toBase))
+    have : IsDominant q := IsModification.isDominant_of_comp q π[s]
+    have hbase : D[Φ,hcΦ].comap (q ≫ π[s]) = D * R[q ≫ π[s]] :=
+      (congrArg (D[Φ,hcΦ].comap ·) hq).trans
+        (hpole.trans (congrArg (D * ·) (ramificationIdealSheaf_congr ℂ hq).symm))
+    have hFpole :=
+      (s.comap_boundaryIdeal_eq_mul_ramificationIdealSheaf_comp_iff hΦ hF hcΦ dim(b) q D).mp hbase
+    have hΨpole :=
+      (t.comap_boundaryIdeal_eq_mul_ramificationIdealSheaf_comp_iff hΨ hF hcΨ dim(b) q D).mpr hFpole
     have hbefore : D[Ψ,hcΨ].comap (e.hom ≫ U.toBase) = D * R[e.hom ≫ U.toBase] :=
       (congrArg (D[Ψ,hcΨ].comap ·) hq'.symm).trans
         (hΨpole.trans (congrArg (D * ·) (ramificationIdealSheaf_congr ℂ hq')))

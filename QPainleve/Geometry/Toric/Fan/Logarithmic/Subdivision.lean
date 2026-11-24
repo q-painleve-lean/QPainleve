@@ -88,6 +88,27 @@ theorem IsSubdivision.isEffectiveCartier_ramificationIdealSheaf
   simpa only [hD.mul_colon_cancel_right] using
     hTotal.colon hD.locallyPrincipal (fun U ↦ Ideal.mul_le_right)
 
+/-- A dominant map from a smooth integral surface and its composite with a regular toric
+subdivision have the same pole factorizations along the respective toric boundaries. -/
+theorem IsSubdivision.comap_boundaryIdeal_eq_mul_ramificationIdealSheaf_comp_iff
+    (H : Ω.IsSubdivision Φ) (hΦ : Φ.IsRegular) (hΩ : Ω.IsRegular)
+    (hc : Φ.IsComplete) (hN : Module.finrank ℤ N = 2)
+    {Z : Scheme} [Z.Over S] [IsIntegral Z] [SmoothOfRelativeDimension 2 (Z ↘ S)]
+    (g : Z ⟶ X[Ω]) [g.IsOver S] [IsDominant g] (P : Z.IdealSheafData) :
+    letI : Smooth (Z ↘ S) := SmoothOfRelativeDimension.smooth 2 _
+    (D[Φ, hc]).comap (g ≫ π[H]) = P * ramificationIdealSheaf ℂ (g ≫ π[H]) ↔
+      (D[Ω, H.isComplete_iff.mpr hc]).comap g = P * ramificationIdealSheaf ℂ g := by
+  let : Nonempty Φ.cones := hc.nonempty_cones
+  let : Nonempty Ω.cones := H.nonempty_cones_of_nonempty hc.nonempty_cones
+  let : SmoothOfRelativeDimension 2 s[Φ] :=
+    hN ▸ Φ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
+  let : SmoothOfRelativeDimension 2 s[Ω] :=
+    hN ▸ Ω.smoothOfRelativeDimension_algebraicRealizationStructureMap hΩ
+  let : Smooth s[Ω] := SmoothOfRelativeDimension.smooth 2 _
+  have hRam := (H.isEffectiveCartier_ramificationIdealSheaf hΦ hΩ hc hN).comap_of_isDominant g
+  exact TauCeti.AlgebraicGeometry.comap_eq_mul_ramificationIdealSheaf_comp_iff ℂ g π[H] 2 hRam
+    (H.comap_boundaryIdeal_eq_mul_ramificationIdealSheaf hΦ hΩ hc hN)
+
 /-- On a smooth integral surface mapping dominantly to a common regular subdivision,
 the two composites with the toric projections have the same pole ideal whenever
 either has a pole factorization. This comparison is for the specified morphisms over
@@ -103,19 +124,7 @@ theorem comap_boundaryIdeal_eq_mul_ramificationIdealSheaf_iff_of_common_subdivis
     (D[Φ, hc]).comap (g ≫ π[H]) = P * ramificationIdealSheaf ℂ (g ≫ π[H]) ↔
       (D[Ψ, hc']).comap (g ≫ π[K]) = P * ramificationIdealSheaf ℂ (g ≫ π[K]) := by
   let hc' := K.isComplete_iff.mp (H.isComplete_iff.mpr hc)
-  let : Nonempty Ω.cones := H.nonempty_cones_of_nonempty hc.nonempty_cones
-  let : SmoothOfRelativeDimension 2 s[Φ] :=
-    hN ▸ Φ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
-  let : SmoothOfRelativeDimension 2 s[Ψ] :=
-    hN ▸ Ψ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΨ
-  let : SmoothOfRelativeDimension 2 s[Ω] :=
-    hN ▸ Ω.smoothOfRelativeDimension_algebraicRealizationStructureMap hΩ
-  let : Smooth s[Ω] := SmoothOfRelativeDimension.smooth 2 _
-  have hH := H.comap_boundaryIdeal_eq_mul_ramificationIdealSheaf hΦ hΩ hc hN
-  have hK := K.comap_boundaryIdeal_eq_mul_ramificationIdealSheaf hΨ hΩ hc' hN
-  have hRamH := (H.isEffectiveCartier_ramificationIdealSheaf hΦ hΩ hc hN).comap_of_isDominant g
-  have hRamK := (K.isEffectiveCartier_ramificationIdealSheaf hΨ hΩ hc' hN).comap_of_isDominant g
-  exact (comap_eq_mul_ramificationIdealSheaf_comp_iff ℂ g π[H] 2 hRamH hH).trans
-    (comap_eq_mul_ramificationIdealSheaf_comp_iff ℂ g π[K] 2 hRamK hK).symm
+  exact (H.comap_boundaryIdeal_eq_mul_ramificationIdealSheaf_comp_iff hΦ hΩ hc hN g P).trans
+    (K.comap_boundaryIdeal_eq_mul_ramificationIdealSheaf_comp_iff hΨ hΩ hc' hN g P).symm
 
 end TauCeti.Toric.Fan
