@@ -11,9 +11,9 @@ public import TauCeti.AlgebraicGeometry.Curves.Node.Normalization
 
 import QPainleve.AlgebraicGeometry.Blowup.StrictTransform.Branches.Automorphism
 import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
+import QPainleve.AlgebraicGeometry.IdealSheaf.Restriction
 import TauCeti.AlgebraicGeometry.Curves.Node.Reduced
 import TauCeti.AlgebraicGeometry.Curves.SingularLocus.Smooth
-import TauCeti.AlgebraicGeometry.IdealSheaf.BaseChange
 import TauCeti.AlgebraicGeometry.IdealSheaf.Reduced
 import TauCeti.AlgebraicGeometry.Noetherian
 
@@ -89,25 +89,11 @@ private theorem exists_blowupIso_fixesBranches
   let : d.hom.IsOver (Spec (.of k)) := ⟨hdOver⟩
   have hqfix := fixes_node_of_fixesBranches hb p hpN
   have hI : (I).comap e.hom = I := comap_nodeIdeal_eq_of_iso D.subschemeι D.subschemeι d e hd hqfix
-  let g := (I).blowupIso e hI
-  have hpb : IsPullback D.subschemeι d.hom e.hom D.subschemeι :=
-    (IsPullback.of_horiz_isIso ⟨hd⟩).flip
-  have hDcomap : D.comap e.hom = D := by
-    simpa only [ker_subschemeι] using (ker_eq_comap_of_isPullback D.subschemeι hpb).symm
-  have hcomap : (R).comap g.hom = R := by
-    rw [← radical_comap_of_isOpenImmersion, ← comap_comp, blowupIso_hom_blowupToBase,
-      comap_comp, hDcomap]
-  let r₀ := subschemeMap (R) (R) g.hom (le_map_iff_comap_le.mpr hcomap.le)
-  have hr₀ : r₀ ≫ (R).subschemeι = (R).subschemeι ≫ g.hom := subschemeMap_subschemeι _ _ _ _
-  have hpull : IsPullback (R).subschemeι r₀ g.hom (R).subschemeι :=
-    isPullback_of_isClosedImmersion _ _ _ _ hr₀.symm (by simpa only [ker_subschemeι] using hcomap)
-  have : IsIso r₀ := hpull.isIso_snd_of_isIso
-  let r := asIso r₀
+  obtain ⟨r, hr⟩ := D.exists_radicalComapSubschemeIso (π) hd (blowupIso_hom_blowupToBase I e hI)
   have hover : r.hom ≫ (R).subschemeι ≫ (π) ≫ X ↘ Spec (.of k) =
       (R).subschemeι ≫ (π) ≫ X ↘ Spec (.of k) := by
-    rw [← Category.assoc r.hom, asIso_hom, hr₀, Category.assoc,
-      blowupIso_hom_blowupToBase_assoc, he]
-  refine ⟨hI, r, hr₀, hover, ?_⟩
+    rw [reassoc_of% hr, blowupIso_hom_blowupToBase_assoc, he]
+  refine ⟨hI, r, hr, hover, ?_⟩
   let : (R).subscheme.Over (Spec (.of k)) := ⟨(R).subschemeι ≫ (π) ≫ X ↘ Spec (.of k)⟩
   let : r.hom.IsOver (Spec (.of k)) := ⟨hover⟩
   have : SyntomicOfRelativeDimension 1 (D.subscheme ↘ Spec (.of k)) := hN.syntomic
@@ -116,7 +102,7 @@ private theorem exists_blowupIso_fixesBranches
       (((D.subschemeι ≫ X ↘ Spec (.of k)).isNodeAt_iff_notMem_smoothLocus hN p).mp hpN)
   apply (r.fixesNodalBranches_iff _ hR hover).mpr
   exact hD.singularLocusBlowupIso_fixes_over_nodeBlowup hN hqsing hp e d hd hqfix r hR
-    hr₀ rfl rfl ((d.fixesNodalBranches_iff _ hN hdOver).mp hb)
+    hr rfl rfl ((d.fixesNodalBranches_iff _ hN hdOver).mp hb)
 
 end Step
 

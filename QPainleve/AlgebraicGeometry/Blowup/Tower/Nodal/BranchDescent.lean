@@ -10,6 +10,7 @@ public import QPainleve.AlgebraicGeometry.Curves.Node.Conductor.FixedBranches
 
 import QPainleve.AlgebraicGeometry.Blowup.StrictTransform.Branches.Automorphism
 import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
+import QPainleve.AlgebraicGeometry.IdealSheaf.Restriction
 import TauCeti.AlgebraicGeometry.Curves.Node.Reduced
 import TauCeti.AlgebraicGeometry.Curves.SingularLocus.Smooth
 import TauCeti.AlgebraicGeometry.IdealSheaf.Reduced
@@ -39,28 +40,6 @@ namespace QPainleve.BlowupTower
 
 variable {k : Type u} [Field k] [PerfectField k]
   {X Y : Scheme.{u}} [X.Over (Spec (.of k))]
-
-private theorem exists_reducedBoundaryIso_of_isLift {n : ℕ} {T : BlowupTower X n Y}
-    {D : X.IdealSheafData} {e : X ≅ X} (d : D.subscheme ≅ D.subscheme)
-    (hd : d.hom ≫ D.subschemeι = D.subschemeι ≫ e.hom)
-    {g : Y ≅ Y} (hg : IsLift e T T g) :
-    let R := (D.comap T.toBase).radical
-    ∃ r : R.subscheme ≅ R.subscheme, r.hom ≫ R.subschemeι = R.subschemeι ≫ g.hom := by
-  have hboundary : IsPullback D.subschemeι d.hom e.hom D.subschemeι :=
-    (IsPullback.of_horiz_isIso ⟨hd⟩).flip
-  have hD : D.comap e.hom = D := by
-    simpa only [ker_subschemeι] using (ker_eq_comap_of_isPullback D.subschemeι hboundary).symm
-  let R := (D.comap T.toBase).radical
-  have hR : R.comap g.hom = R := by
-    dsimp only [R]
-    rw [← radical_comap_of_isOpenImmersion, ← comap_comp, hg.hom_toBase, comap_comp, hD]
-  let r := R.subschemeMap R g.hom (le_map_iff_comap_le.mpr hR.le)
-  have hr : r ≫ R.subschemeι = R.subschemeι ≫ g.hom := subschemeMap_subschemeι _ _ _ _
-  have hpb : IsPullback R.subschemeι r g.hom R.subschemeι :=
-    isPullback_of_isClosedImmersion _ _ _ _ hr.symm
-    (by simpa only [ker_subschemeι] using hR)
-  have : IsIso r := hpb.isIso_snd_of_isIso
-  exact ⟨asIso r, hr⟩
 
 variable [IsIntegral X] [IsNoetherian X] [QuasiCompact (X ↘ Spec (.of k))]
   [SmoothOfRelativeDimension 2 (X ↘ Spec (.of k))] {D : X.IdealSheafData}
@@ -103,7 +82,7 @@ private theorem fixes_branches_at_prefix {m : ℕ} {U : BlowupTower X m Y}
   have : IsReduced Q.subscheme := hNQ.isReduced
   obtain ⟨q, hq, hqn⟩ := (Q.isNodeOfReducedBoundary_iff_of_isReduced _ _).mp hpN
   subst p
-  obtain ⟨a, ha⟩ := exists_reducedBoundaryIso_of_isLift d hd hg
+  obtain ⟨a, ha⟩ := D.exists_radicalComapSubschemeIso U.toBase hd hg.hom_toBase
   refine ⟨a, ha, ?_⟩
   let J' := vanishingIdeal (Closeds.mk (closure ({Q.subschemeι q} : Set Y)) isClosed_closure)
   have hJJ' : J = J' := hJ.trans (Y.ker_fromSpecResidueField_eq_vanishingIdeal (Q.subschemeι q))
