@@ -10,6 +10,7 @@ public import QPainleve.Geometry.Toric.Fan.StarSubdivision.Boundary
 
 import QPainleve.AlgebraicGeometry.Blowup.Isomorphism
 import QPainleve.Geometry.Toric.Fan.Boundary.Subdivision
+import QPainleve.Geometry.Toric.Fan.ProjectiveSpace.Ray
 import QPainleve.Geometry.Toric.Fan.StarSubdivision.Generators
 import QPainleve.Geometry.Toric.Cone.Coordinates
 import QPainleve.Geometry.Toric.Cone.TwoDimensional
@@ -19,10 +20,11 @@ import Mathlib.LinearAlgebra.Transvection.Basic
 /-!
 # Contracting the negative section of the toric Hirzebruch surface of index one
 
-The fan of `𝔽₁` is the subdivision of the plane fan at the cone for the
-coordinate vertex `[1 : 0 : 0]`. The blowup comparison identifies its inserted
-ray divisor with the scheme-theoretic exceptional divisor. This gives the
-negative-section contraction in Wendelin Lutz's proof of Theorem 8.4 in
+The star subdivision of the plane fan at any coordinate vertex has the rays
+of `𝔽₁`. The blowup comparison identifies the inserted ray divisor with the
+scheme-theoretic exceptional divisor. This gives the torus-fixed plane link
+and its inverse, the negative-section contraction, in Wendelin Lutz's
+Proposition 8.11 and Theorem 8.4 in
 [the appendix to Hacking and Keating][HKL].
 
 [HKL]: https://api.repository.cam.ac.uk/server/api/core/bitstreams/14b8f6c3-49a3-4961-a139-d11093383ddc/content
@@ -97,6 +99,75 @@ local notation "vertex[" d "]" =>
 local notation "triangle" =>
   Scheme.IdealSheafData.radical (∏ j : Fin 3, coordinateHyperplaneIdeal (k := ℂ) (n := 2) j)
 
+private theorem exists_projectivePlane_vertex_basis (d : Basis (Fin 2) ℤ N)
+    (hi : IsIntegralLattice i) (k : Option (Fin 2)) :
+    ∃ (c : Basis (Fin 2) ℤ N) (a : {j : Option (Fin 2) // j ≠ k} ≃ Fin 2),
+      ∀ j, c (a j) = projectiveSpaceGenerator d j := by
+  classical
+  let σ := projectiveSpaceMaximalCone d hi k
+  let J := {j : Option (Fin 2) // j ≠ k}
+  let v : J → V := fun j ↦ i (projectiveSpaceGenerator d j)
+  have hσ := isRegular_iff.mp (isRegular_projectiveSpace d hi) σ.val σ.property
+  have hv : σ.val = hull ℝ (Set.range v) := by
+    -- The maximal cone uses the complement of the omitted ray index.
+    change projectiveSpaceCone d i {k}ᶜ = _
+    rw [projectiveSpaceCone_def, Set.image_image, Set.image_eq_range]
+    rfl
+  have hvli : LinearIndependent ℝ v :=
+    linearIndepOn_projectiveSpaceGenerator d (hi.linearIndependent_basis d)
+      (Set.compl_ne_univ.mpr (Set.singleton_nonempty k))
+  let e := toricRayEquivOfLinearIndependent v hvli hv
+  have hJ : Fintype.card J = 2 := by simp [J]
+  obtain ⟨c, r, hr⟩ := hσ.exists_basis_finrank
+  have hdim : Module.finrank ℤ N = 2 := by simpa using Module.finrank_eq_card_basis d
+  let a := e.symm.toEmbedding.trans (r.trans (finCongr hdim).toEmbedding)
+  have ha : Function.Surjective a :=
+    (Finite.injective_iff_surjective_of_equiv (Fintype.equivFinOfCardEq hJ)).mp a.injective
+  refine ⟨c.reindex (finCongr hdim), Equiv.ofBijective a ⟨a.injective, ha⟩, fun j ↦ ?_⟩
+  have hgen := hr.isPrimitiveGenerator_apply (e.symm j)
+  obtain ⟨q, hq⟩ := (range_primitiveGenerator_projectiveSpace d hi ▸
+      Set.mem_range_self (f := projectiveSpaceGenerator d) j.val)
+  have hj := (apply_mem_iff_toricRayEquivOfLinearIndependent _ _ hv (e.symm j) j).mpr
+    (e.apply_symm_apply j).symm
+  have hp := isPrimitiveGenerator_iff.mpr ⟨hj, hq ▸ q.isPrimitiveGenerator.isPrimitive⟩
+  simpa [a, Equiv.ofBijective_apply] using (hgen.eq_primitiveGenerator hi hσ.toIsToricCone).trans
+    (hp.eq_primitiveGenerator hi hσ.toIsToricCone).symm
+
+private theorem projectivePlane_vertex_rays (d : Basis (Fin 2) ℤ N) (hi : IsIntegralLattice i)
+    (k : Option (Fin 2)) :
+    let σ := projectiveSpaceMaximalCone d hi k
+    ∃ c : Basis (Fin 2) ℤ N, σ.val = hull ℝ (Set.range (i ∘ c)) ∧
+      Set.range (projectiveSpaceGenerator d) = {c 0, c 1, -c 0 - c 1} := by
+  classical
+  obtain ⟨c, a, ha⟩ := exists_projectivePlane_vertex_basis d hi k
+  have hrange : projectiveSpaceGenerator d '' {k}ᶜ = Set.range c := by
+    rw [Set.image_eq_range, ← a.surjective.range_comp c]
+    exact congrArg Set.range (funext fun j ↦ (ha j).symm)
+  have hrem := Equiv.sum_comp a c
+  simp only [ha, Fin.sum_univ_two] at hrem
+  have hsum := sum_projectiveSpaceGenerator d
+  have hsplit : (∑ j ∈ Finset.univ.erase k, projectiveSpaceGenerator d j) =
+      ∑ j : {j // j ≠ k}, projectiveSpaceGenerator d j := Finset.sum_subtype (Finset.univ.erase k)
+    (p := fun j ↦ j ≠ k) (by simp) (projectiveSpaceGenerator d)
+  rw [← Finset.sum_erase_add _ _ (Finset.mem_univ k), hsplit, hrem] at hsum
+  have hk : projectiveSpaceGenerator d k = -c 0 - c 1 := by
+    calc
+      _ = -(c 0 + c 1) := eq_neg_of_add_eq_zero_right hsum
+      _ = _ := by abel
+  refine ⟨c, ?_, ?_⟩
+  · -- Unfold the maximal cone to apply its hull formula.
+    change projectiveSpaceCone d i {k}ᶜ = _
+    rw [projectiveSpaceCone_def, hrange, Set.range_comp]
+  · have huniv : insert k ({k}ᶜ : Set (Option (Fin 2))) = Set.univ := by
+      ext j
+      simp [em]
+    rw [← Set.image_univ, ← huniv, Set.image_insert_eq,
+      hrange, hk]
+    ext x
+    simp only [Set.mem_insert_iff, Set.mem_singleton_iff, Set.mem_range,
+      Fin.exists_fin_two]
+    tauto
+
 /-- The complete regular fan of `𝔽₁` realizes the blowup of the polynomial projective
 plane at its vertex `[1 : 0 : 0]`. The projection is the toric contraction followed
 by the plane comparison. The pullback of the vertex ideal is the boundary
@@ -145,5 +216,65 @@ theorem exists_iso_blowup_projectivePlane_of_hirzebruchOne
     exact Ψ.comap_ker_distinguishedPointHom_eq_rayBoundaryIdeal hΨ σ h₀ hN hσ
   · rw [hproj, comap_comp, projectivePlaneIso_comap_coordinateTriangle d hi ⟨σ⟩]
     exact hstar.radical_comap_boundaryIdeal hc.nonempty_cones ⟨σ⟩
+
+private theorem projectivePlane_vertex_starSubdivision_rays
+    (d : Basis (Fin 2) ℤ N) (hi : IsIntegralLattice i) (k : Option (Fin 2)) :
+    let Ψ := projectiveSpace d hi
+    let hΨ := isRegular_projectiveSpace d hi
+    let σ := projectiveSpaceMaximalCone d hi k
+    let Γ := Ψ.starSubdivisionAlong hΨ σ.property
+    ∃ (hσ : Nat.card (ToricRay σ.val) = 2) (b : Basis (Fin 2) ℤ N),
+      (Ψ.starSubdivisionAlongRay hΨ σ.property
+        (ne_bot_of_card_toricRay_eq_two hσ)).primitiveGenerator = b 0 ∧
+      Set.range (Ray.primitiveGenerator (Phi := Γ)) = {b 0, b 1, -b 0, b 0 - b 1} := by
+  intro Ψ hΨ σ Γ
+  obtain ⟨c, hc, hrays⟩ := projectivePlane_vertex_rays d hi k
+  let hreg := isRegular_iff.mp hΨ σ.val σ.property
+  obtain ⟨e, he⟩ := hreg.exists_rayEquiv_of_basis hi c hc
+  have hσ : Nat.card (ToricRay σ.val) = 2 := by rw [← Nat.card_congr e, Nat.card_fin]
+  have hzero : c.coord 0 (c 1) = 0 := by simp
+  let b := c.map (LinearEquiv.transvection hzero)
+  have hb₀ : b 0 = c 0 + c 1 := by
+    simp [b, LinearMap.transvection.apply, Basis.coord_apply]
+  have hb₁ : b 1 = c 1 := by simp [b, LinearMap.transvection.apply, hzero]
+  have hnew : (Ψ.starSubdivisionAlongRay hΨ σ.property
+      (ne_bot_of_card_toricRay_eq_two hσ)).primitiveGenerator = b 0 := by
+    apply Ray.primitiveGenerator_eq_of_mem_of_isPrimitive _ _ (b.isPrimitive 0)
+    rw [coe_toCone_starSubdivisionAlongRay, hreg.sum_primitiveGenerator_allRays hi c e he, hb₀]
+    exact subset_hull (Set.mem_singleton _)
+  refine ⟨hσ, b, hnew, ?_⟩
+  rw [range_primitiveGenerator_starSubdivisionAlong hΨ σ (ne_bot_of_card_toricRay_eq_two hσ),
+    hnew, range_primitiveGenerator_projectiveSpace d hi, hrays, hb₀, hb₁]
+  have hneg : -(c 0 + c 1) = -c 0 - c 1 := by abel
+  have hsub : c 0 + c 1 - c 1 = c 0 := add_sub_cancel_right _ _
+  rw [hneg, hsub]
+  ext x
+  simp only [Set.mem_insert_iff, Set.mem_singleton_iff]
+  tauto
+
+/-- Blowing up any specified torus-fixed vertex of the plane is the star subdivision
+with Hirzebruch-one rays. The projection and the exceptional ideal agree with those
+of the actual blowup at the distinguished point. -/
+theorem exists_blowup_projectivePlane_vertex_hirzebruchOne
+    (d : Basis (Fin 2) ℤ N) (hi : IsIntegralLattice i) (k : Option (Fin 2)) :
+    let Ψ := projectiveSpace d hi
+    let hΨ := isRegular_projectiveSpace d hi
+    let σ := projectiveSpaceMaximalCone d hi k
+    let Γ := Ψ.starSubdivisionAlong hΨ σ.property
+    let J := (Ψ.distinguishedPointHom σ).ker
+    ∃ (hσ : σ.val ≠ ⊥) (b : Basis (Fin 2) ℤ N) (e : Γ.algebraicRealization ≅ J.blowup),
+      Set.range (Ray.primitiveGenerator (Phi := Γ)) = {b 0, b 1, -b 0, b 0 - b 1} ∧
+      (Ψ.starSubdivisionAlongRay hΨ σ.property hσ).primitiveGenerator = b 0 ∧
+      e.hom ≫ J.blowupToBase =
+        (Ψ.starSubdivisionAlong_isSubdivision hΨ σ.property hσ).toFanHom.algebraicMap ∧
+      J.comap (e.hom ≫ J.blowupToBase) =
+        Γ.rayBoundaryIdeal (Ψ.isRegular_starSubdivisionAlong hΨ σ.property)
+          (Ψ.starSubdivisionAlongRay hΨ σ.property hσ) := by
+  intro Ψ hΨ σ Γ J
+  have hdim : Module.finrank ℤ N = 2 := by simpa using Module.finrank_eq_card_basis d
+  obtain ⟨hcard, b, hnew, hrays⟩ := projectivePlane_vertex_starSubdivision_rays d hi k
+  obtain ⟨hσ, e, -, he, -⟩ := Ψ.exists_iso_blowup_starSubdivisionAlong hΨ σ hdim hcard
+  exact ⟨hσ, b, e, hrays, hnew, he,
+    he ▸ Ψ.comap_ker_distinguishedPointHom_eq_rayBoundaryIdeal hΨ σ hσ hdim hcard⟩
 
 end TauCeti.Toric.Fan
