@@ -6,18 +6,13 @@ Authors: The QPainleve contributors
 module
 
 public import QPainleve.AlgebraicGeometry.Blowup.Tower.Modification
-public import QPainleve.AlgebraicGeometry.Blowup.Tower.Nodal.Contraction
 public import QPainleve.Geometry.Toric.Fan.Boundary.NodalPullback
-public import QPainleve.Geometry.Toric.Fan.Evaluation.Contraction
 public import QPainleve.Geometry.Toric.Fan.Subdivision.InternalBlowup
 
 import Mathlib.Analysis.Complex.Polynomial.Basic
 import QPainleve.AlgebraicGeometry.IdealSheaf.BaseChange
 import QPainleve.AlgebraicGeometry.IdealSheaf.Restriction
-import QPainleve.AlgebraicGeometry.RationalMap.Composition.Basic
-import QPainleve.Geometry.Toric.Fan.CommonRefinement
 import QPainleve.Geometry.Toric.Fan.StarSubdivision.Tower
-import QPainleve.Geometry.Toric.Fan.Subdivision.FunctionField
 import TauCeti.AlgebraicGeometry.IdealSheaf.Reduced
 
 /-!
@@ -99,165 +94,39 @@ theorem IsSubdivision.exists_nodal_refinement_internalBlowupTower
   rw [← radical_comap_of_isOpenImmersion, ← comap_comp, he]
   exact hboundary
 
-omit hΦ₀ hΨ₀ in
-private theorem liftRay_comp_eq {Ω : Fan i}
-    (hΩΦ : Ω.IsSubdivision Φ) (hΩΨ : Ω.IsSubdivision Ψ)
-    (ρ : Fin n → Φ.Ray) (τ : Fin n → Ψ.Ray)
-    (hρτ : ∀ j, (ρ j).primitiveGenerator = (τ j).primitiveGenerator) :
-    hΩΦ.liftRay ∘ ρ = hΩΨ.liftRay ∘ τ := by
-  funext j
-  apply Ray.primitiveGenerator_injective
-  simpa only [Function.comp_apply, IsSubdivision.primitiveGenerator_liftRay] using hρτ j
-
-/-- Ordered internal models on regular surface fans with the same support have a
-common nodal refinement when the labeled primitive generators and parameters agree.
-The refined model has nodal projections to both internal models and is the cartesian
-pullback of each along the corresponding fan subdivision. Both reduced total
-boundaries are its strict boundary. -/
+/-- For matching labelled generators and center parameters, the ordered model on a
+specified common regular subdivision projects to both original internal models by
+nodal blowup towers. Each projection is cartesian over the corresponding fan
+subdivision and identifies the reduced total boundary with the strict boundary. -/
 theorem exists_common_nodal_refinement_internalBlowupTower
-    (hΦ : Φ.IsRegular) (hΨ : Ψ.IsRegular) (hs : Φ.support = Ψ.support)
+    {Ω : Fan i} [hΩ₀ : Nonempty Ω.cones]
+    (hΩΦ : Ω.IsSubdivision Φ) (hΩΨ : Ω.IsSubdivision Ψ)
+    (hΩ : Ω.IsRegular) (hΦ : Φ.IsRegular) (hΨ : Ψ.IsRegular)
     (ρ : Fin n → Φ.Ray) (τ : Fin n → Ψ.Ray) (c : Fin n → ℂˣ)
     (hρτ : ∀ j, (ρ j).primitiveGenerator = (τ j).primitiveGenerator) :
     let B := model ρ c
     let C := model τ c
-    ∃ (Ω : Fan i) (hΩΦ : Ω.IsSubdivision Φ) (hΩΨ : Ω.IsSubdivision Ψ)
-      (_ : Ω.IsRegular) (hΩ₀ : Nonempty Ω.cones),
-      let A := internalBlowupTower (h₀ := hΩ₀) b (hΩΦ.liftRay ∘ ρ) c
-      ∃ (m l : ℕ) (Y Z : Scheme) (T : BlowupTower B.1 m Y) (U : BlowupTower C.1 l Z)
-        (e : A.1 ≅ Y) (f : A.1 ≅ Z),
-        IsNodalBoundaryTower B.2.boundaryι.ker
-          (B.2.toTower.toBase ≫ Φ.algebraicRealizationStructureMap) (𝟙 B.1) T ∧
-        IsNodalBoundaryTower C.2.boundaryι.ker
-          (C.2.toTower.toBase ≫ Ψ.algebraicRealizationStructureMap) (𝟙 C.1) U ∧
-        IsPullback (e.hom ≫ T.toBase) A.2.toTower.toBase
-          B.2.toTower.toBase hΩΦ.toFanHom.algebraicMap ∧
-        IsPullback (f.hom ≫ U.toBase) A.2.toTower.toBase
-          C.2.toTower.toBase hΩΨ.toFanHom.algebraicMap ∧
-        ((B.2.boundaryι.ker.comap T.toBase).radical).comap e.hom = A.2.boundaryι.ker ∧
-        ((C.2.boundaryι.ker.comap U.toBase).radical).comap f.hom = A.2.boundaryι.ker := by
+    let A := internalBlowupTower (h₀ := hΩ₀) b (hΩΦ.liftRay ∘ ρ) c
+    ∃ (m l : ℕ) (Y Z : Scheme) (T : BlowupTower B.1 m Y) (U : BlowupTower C.1 l Z)
+      (e : A.1 ≅ Y) (f : A.1 ≅ Z),
+      IsNodalBoundaryTower B.2.boundaryι.ker
+        (B.2.toTower.toBase ≫ Φ.algebraicRealizationStructureMap) (𝟙 B.1) T ∧
+      IsNodalBoundaryTower C.2.boundaryι.ker
+        (C.2.toTower.toBase ≫ Ψ.algebraicRealizationStructureMap) (𝟙 C.1) U ∧
+      IsPullback (e.hom ≫ T.toBase) A.2.toTower.toBase
+        B.2.toTower.toBase hΩΦ.toFanHom.algebraicMap ∧
+      IsPullback (f.hom ≫ U.toBase) A.2.toTower.toBase
+        C.2.toTower.toBase hΩΨ.toFanHom.algebraicMap ∧
+      ((B.2.boundaryι.ker.comap T.toBase).radical).comap e.hom = A.2.boundaryι.ker ∧
+      ((C.2.boundaryι.ker.comap U.toBase).radical).comap f.hom = A.2.boundaryι.ker := by
   dsimp only
-  have hrank := (Module.finrank_eq_card_basis b).trans (Fintype.card_fin 2)
-  obtain ⟨Ω, hΩΦ, hΩΨ, hΩ⟩ := Φ.exists_regular_common_subdivision Ψ hΦ hΨ hrank hs
-  let hΩ₀ := hΩΦ.nonempty_cones_of_nonempty hΦ₀
-  have hmatch := liftRay_comp_eq hΩΦ hΩΨ ρ τ hρτ
+  have hmatch := hΩΦ.liftRay_comp_eq_of_primitiveGenerator_eq hΩΨ ρ τ hρτ
   obtain ⟨m, Y, T, e, hT, he, hD⟩ :=
     hΩΦ.exists_nodal_refinement_internalBlowupTower b hΩ hΦ ρ c
   have hright := hΩΨ.exists_nodal_refinement_internalBlowupTower b hΩ hΨ τ c
   dsimp only at hright
   rw [← hmatch] at hright
   obtain ⟨l, Z, U, f, hU, hf, hE⟩ := hright
-  exact ⟨Ω, hΩΦ, hΩΨ, hΩ, hΩ₀, m, l, Y, Z, T, U, e, f, hT, hU, he, hf, hD, hE⟩
-
-private theorem evaluation_eq_on_common_subdivision {Ω : Fan i} [Nonempty Ω.cones]
-    (hΩΦ : Ω.IsSubdivision Φ) (hΩΨ : Ω.IsSubdivision Ψ)
-    (ρ : Fin n → Φ.Ray) (τ : Fin n → Ψ.Ray)
-    (hρτ : ∀ j, (ρ j).primitiveGenerator = (τ j).primitiveGenerator)
-    (c : Multiplicative (Fin n → ℤ) →* ℂˣ) {W : Scheme} [IsIntegral W]
-    (a : W ⟶ Ω.algebraicRealization) [IsDominant a] :
-    (a ≫ hΩΦ.toFanHom.algebraicMap).toRationalMap.comp (Φ.xEvaluation b ρ c) =
-      (a ≫ hΩΨ.toFanHom.algebraicMap).toRationalMap.comp (Ψ.xEvaluation b τ c) := by
-  open Scheme.RationalMap in
-    simp only [← Scheme.Hom.toRationalMap_compHom, ← comp_toRationalMap, comp_assoc,
-      hΩΦ.comp_xEvaluation, hΩΨ.comp_xEvaluation, liftRay_comp_eq hΩΦ hΩΨ ρ τ hρτ]
-
-section SquareZero
-
-open TauCeti.AlgebraicGeometry
-
-local notation "centers(" c ")" => (fun j : Fin n ↦ c (ofAdd (Pi.single j 1)))
-
-variable {X X' Y Y' : Scheme} [IsIntegral X] [IsIntegral X']
-  [X.Over (Spec (.of ℂ))] [X'.Over (Spec (.of ℂ))]
-  [X.IsProjectiveOver ℂ] [X'.IsProjectiveOver ℂ]
-  [SmoothOfRelativeDimension 2 (X ↘ Spec (.of ℂ))]
-  [SmoothOfRelativeDimension 2 (X' ↘ Spec (.of ℂ))]
-  {D : X.IdealSheafData} {E : X'.IdealSheafData} {p q : ℕ}
-  {P : BlowupTower X p Y} {Q : BlowupTower X' q Y'}
-
-local notation "s" => (X ↘ Spec (CommRingCat.of ℂ))
-local notation "t" => (X' ↘ Spec (CommRingCat.of ℂ))
-local notation "classOf(" h ")" => (LineBundleClass.mk (IsEffectiveCartier.toInvertibleSheaf h))⁻¹
-
-/-- Two connected nef square-zero nodal pairs with matching ordered toric models
-in a common oriented lattice are isomorphic as pairs over the field. The endpoint
-toric models may use different regular fans of the same support. The descended
-isomorphism intertwines their fixed-center X evaluations. -/
-theorem exists_iso_of_matching_toric_models
-    (hΦ : Φ.IsRegular) (hΨ : Ψ.IsRegular) (hs : Φ.support = Ψ.support)
-    (ρ : Fin n → Φ.Ray) (τ : Fin n → Ψ.Ray) (c : Multiplicative (Fin n → ℤ) →* ℂˣ)
-    (hρτ : ∀ j, (ρ j).primitiveGenerator = (τ j).primitiveGenerator)
-    (hP : IsNodalBoundaryTower D s (𝟙 X) P)
-    (hQ : IsNodalBoundaryTower E t (𝟙 X') Q)
-    (a : Y ≅ (model ρ centers(c)).1) (a' : Y' ≅ (model τ centers(c)).1)
-    (ha : a.hom ≫ (model ρ centers(c)).2.toTower.toBase ≫
-      Φ.algebraicRealizationStructureMap = P.toBase ≫ s)
-    (ha' : a'.hom ≫ (model τ centers(c)).2.toTower.toBase ≫
-      Ψ.algebraicRealizationStructureMap = Q.toBase ≫ t)
-    (hb : ((model ρ centers(c)).2.boundaryι.ker.comap a.hom).support = (D.comap P.toBase).support)
-    (hb' : ((model τ centers(c)).2.boundaryι.ker.comap a'.hom).support = (E.comap Q.toBase).support)
-    (hD : D.IsEffectiveCartier) (hE : E.IsEffectiveCartier)
-    (hnodalD : AtWorstNodalOfRelativeDimensionOne (D.subschemeι ≫ s))
-    (hnodalE : AtWorstNodalOfRelativeDimensionOne (E.subschemeι ≫ t))
-    (hconn : _root_.IsConnected (D.support : Set X))
-    (hnefD : LineBundleClass.IsNef ℂ s classOf(hD))
-    (hnefE : LineBundleClass.IsNef ℂ t classOf(hE))
-    (hsqD : Chow.classIntersectionNumber ℂ X classOf(hD)
-      classOf(hD) = 0)
-    (hsqE : Chow.classIntersectionNumber ℂ X' classOf(hE)
-      classOf(hE) = 0) :
-    letI := hP.isClosedPointTower.isModification_of_smoothOfRelativeDimension_two s
-    letI := hQ.isClosedPointTower.isModification_of_smoothOfRelativeDimension_two t
-    ∃ f : X ≅ X', f.hom ≫ t = s ∧ E.comap f.hom = D ∧
-      f.hom.toRationalMap.comp (contractedXEvaluation b τ c hΨ (a'.inv ≫ Q.toBase)) =
-        contractedXEvaluation b ρ c hΦ (a.inv ≫ P.toBase) := by
-  have := hP.isClosedPointTower.isModification_of_smoothOfRelativeDimension_two s
-  have := hQ.isClosedPointTower.isModification_of_smoothOfRelativeDimension_two t
-  obtain ⟨Ω, hΩΦ, hΩΨ, hΩ, hΩ₀, m, l, W, W', T, U, e, e', hT, hU, hL, hR, hBL, hBR⟩ :=
-    exists_common_nodal_refinement_internalBlowupTower b hΦ hΨ hs ρ τ centers(c) hρτ
-  obtain ⟨V, L, f, hLT, hLf, hLD⟩ := hP.exists_append_of_iso hT a ha hb
-  obtain ⟨V', R, f', hRT, hRf, hRE⟩ := hQ.exists_append_of_iso hU a' ha' hb'
-  let g := f ≪≫ e.symm ≪≫ e' ≪≫ f'.symm
-  have hstructure : L.toBase ≫ s = g.hom ≫ R.toBase ≫ t := by
-    simp only [g, Iso.trans_hom, Iso.symm_hom, hLf, hRf, Category.assoc, ← ha, ← ha',
-      Iso.inv_hom_id_assoc, reassoc_of% hR.w,
-      FanHom.algebraicMap_comp_algebraicRealizationStructureMap]
-    have hleft := (reassoc_of% hL.w) Φ.algebraicRealizationStructureMap
-    rw [FanHom.algebraicMap_comp_algebraicRealizationStructureMap] at hleft
-    rw [← hleft, Iso.inv_hom_id_assoc]
-  have hboundary : (D.comap L.toBase).radical = ((E.comap R.toBase).radical).comap g.hom := by
-    simp only [g, Iso.trans_hom, Iso.symm_hom, hLD, hRE, comap_comp, ← comap_comp _ f'.inv,
-      Iso.inv_hom_id, comap_id, hBR, ← hBL, ← comap_comp _ e.inv, Iso.inv_hom_id, comap_id]
-  have hsupport : (D.comap L.toBase).support = ((E.comap R.toBase).comap g.hom).support := by
-    simpa only [support_radical, support_comap] using congrArg
-      (Scheme.IdealSheafData.support (X := V)) hboundary
-  obtain ⟨iso, ⟨hiso, hfield, hpair⟩, -⟩ := hLT.existsUnique_iso_of_nef_square_zero_boundary
-    ℂ hRT g hstructure hD hE hnodalD hnodalE hconn hsupport hnefD hnefE hsqD hsqE
-  let commonModel := internalBlowupTower (h₀ := hΩ₀) b (hΩΦ.liftRay ∘ ρ) centers(c)
-  let u := e.hom ≫ T.toBase
-  let v := e'.hom ≫ U.toBase
-  let p := a.inv ≫ P.toBase
-  let q := a'.inv ≫ Q.toBase
-  have : IsIntegral commonModel.1 := isIntegral_internalBlowupTower _ _ _ hΩ
-  have := isModification_internalBlowupTower_toBase b (hΩΦ.liftRay ∘ ρ) centers(c) hΩ
-  have := smoothOfRelativeDimension_internalBlowupTower b ρ centers(c) hΦ
-  have := smoothOfRelativeDimension_internalBlowupTower b τ centers(c) hΨ
-  have := hT.isClosedPointTower.surjective
-    ((model ρ centers(c)).2.toTower.toBase ≫ Φ.algebraicRealizationStructureMap)
-  have := hU.isClosedPointTower.surjective
-    ((model τ centers(c)).2.toTower.toBase ≫ Ψ.algebraicRealizationStructureMap)
-  have : IsDominant u := inferInstanceAs (IsDominant (e.hom ≫ T.toBase))
-  have : IsDominant v := inferInstanceAs (IsDominant (e'.hom ≫ U.toBase))
-  have hcomm : (u ≫ p) ≫ iso.hom = v ≫ q := by
-    simpa only [u, v, p, q, hLf, hRf, g, Iso.trans_hom, Iso.symm_hom, Category.assoc,
-      Iso.hom_inv_id_assoc, Iso.inv_hom_id_assoc] using congrArg (e.hom ≫ f.inv ≫ ·) hiso
-  refine ⟨iso, hfield, hpair, ?_⟩
-  simpa only [Scheme.RationalMap.compHom_id] using
-    comp_contractedXEvaluation_of_common_model b ρ c hΦ p b τ c hΨ q u v iso.hom hcomm (𝟙 _) (by
-      have := isModification_internalBlowupTower_toBase b ρ centers(c) hΦ
-      have := isModification_internalBlowupTower_toBase b τ centers(c) hΨ
-      simpa only [u, v, Category.assoc, hL.w, hR.w, Scheme.RationalMap.compHom_id] using
-        (evaluation_eq_on_common_subdivision b hΩΦ hΩΨ ρ τ hρτ c commonModel.2.toTower.toBase).symm)
-
-end SquareZero
+  exact ⟨m, l, Y, Z, T, U, e, f, hT, hU, he, hf, hD, hE⟩
 
 end TauCeti.Toric.Fan

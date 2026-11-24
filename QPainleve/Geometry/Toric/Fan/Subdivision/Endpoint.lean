@@ -6,11 +6,14 @@ Authors: The QPainleve contributors
 module
 
 public import QPainleve.Geometry.Toric.Fan.Boundary.Transport
+public import QPainleve.Geometry.Toric.Fan.Equiv
 public import QPainleve.Geometry.Toric.Fan.Picard.Endpoint
-public import QPainleve.Geometry.Toric.Fan.Subdivision.NodalRefinement
+public import QPainleve.Geometry.Toric.Fan.Subdivision.MatchingModels
 
 import QPainleve.AlgebraicGeometry.RationalMap.Composition.Basic
-import QPainleve.Geometry.Toric.Fan.Equiv
+import QPainleve.Geometry.Toric.Fan.CommonRefinement
+import QPainleve.Geometry.Toric.Fan.Picard.Reindex
+import QPainleve.Geometry.Toric.Fan.Subdivision
 
 /-!
 # Comparison of toric endpoints across lattice equivalences
@@ -25,7 +28,7 @@ public section
 
 open AlgebraicGeometry CategoryTheory QPainleve QPainleve.BlowupTower TauCeti.AlgebraicGeometry
 open QPainleve.Cluster Multiplicative TopologicalSpace TauCeti.LaurentRing
-open Scheme.IdealSheafData
+open Scheme.IdealSheafData LineBundleClass
 
 namespace TauCeti.Toric.Fan
 
@@ -33,6 +36,8 @@ variable {N N' V V' : Type} [AddCommGroup N] [AddCommGroup N']
   [AddCommGroup V] [AddCommGroup V'] [Module ℝ V] [Module ℝ V']
   {i : N →+ V} {i' : N' →+ V'} {Φ : Fan i} {Ψ : Fan i'}
   [hΦ₀ : Nonempty Φ.cones] [hΨ₀ : Nonempty Ψ.cones] {n : ℕ}
+
+local notation "centers(" c ")" => (fun j : Fin n ↦ c (ofAdd (Pi.single j 1)))
 
 section SquareZero
 
@@ -46,22 +51,24 @@ variable {X X' Y Y' : Scheme} [IsIntegral X] [IsIntegral X']
 
 local notation "s" => (X ↘ Spec (CommRingCat.of ℂ))
 local notation "t" => (X' ↘ Spec (CommRingCat.of ℂ))
-local notation "centers(" c ")" => (fun j : Fin n ↦ c (ofAdd (Pi.single j 1)))
 local notation "renameX(" σ ")" => Spec.map
   (CommRingCat.ofHom (AlgHom.toRingHom (rename (R := ℂ) (Equiv.toFun σ))))
 local notation "classOf(" h ")" => (LineBundleClass.mk (IsEffectiveCartier.toInvertibleSheaf h))⁻¹
 
 /-- Identify two nef square-zero nodal pairs when an oriented integral equivalence matches
-the charges of their complete toric models and the two center families agree after
-relabeling. The isomorphism also intertwines the fixed-center X evaluations by that
-relabeling. The order comparison allows repeated centers. -/
+the charges of their regular toric models and the two center families agree after
+relabeling. The isomorphism intertwines the fixed-center X evaluations by that
+relabeling. If the relabeling preserves the order of coincident centers, the
+Picard pullback is characterized in the coordinates of the specified common subdivision. -/
 theorem exists_iso_of_matching_toric_models_of_latticeEquiv
     (b : Module.Basis (Fin 2) ℤ N) (b' : Module.Basis (Fin 2) ℤ N')
-    (hΦ : Φ.IsRegular) (hΨ : Ψ.IsRegular) (hcΦ : Φ.IsComplete) (hcΨ : Ψ.IsComplete)
+    (hΦ : Φ.IsRegular) (hΨ : Ψ.IsRegular)
     (ρ : Fin n → Φ.Ray) (τ : Fin n → Ψ.Ray) (c d : Multiplicative (Fin n → ℤ) →* ℂˣ)
     (σ : Equiv.Perm (Fin n)) (hc : centers(d) ∘ σ = centers(c))
     (e : N ≃ₗ[ℤ] N') (hρτ : ∀ j, e (ρ j).primitiveGenerator = (τ (σ j)).primitiveGenerator)
     (hdet : ∀ x y, b'.detDualEquiv (e x) (e y) = b.detDualEquiv x y)
+    {Δ : Fan i} (hΔΦ : Δ.IsSubdivision Φ)
+    (hΔΩ : Δ.IsSubdivision (Ψ.mapEquiv Φ.lattice e.symm)) (hΔ : Δ.IsRegular)
     (hP : IsNodalBoundaryTower D s (𝟙 X) P) (hQ : IsNodalBoundaryTower E t (𝟙 X') Q)
     (a : Y ≅ (internalBlowupTower b ρ centers(c)).1)
     (a' : Y' ≅ (internalBlowupTower b' τ centers(d)).1)
@@ -83,23 +90,32 @@ theorem exists_iso_of_matching_toric_models_of_latticeEquiv
     (hsqE : Chow.classIntersectionNumber ℂ X' classOf(hE) classOf(hE) = 0) :
     letI := hP.isClosedPointTower.isModification_of_smoothOfRelativeDimension_two s
     letI := hQ.isClosedPointTower.isModification_of_smoothOfRelativeDimension_two t
+    let Ω := Ψ.mapEquiv Φ.lattice e.symm
+    let g : FanEquiv Ψ Ω := Ψ.mapEquivIso Φ.lattice e.symm
     ∃ f : X ≅ X', f.hom ≫ t = s ∧ E.comap f.hom = D ∧
       f.hom.toRationalMap.comp (contractedXEvaluation b' τ d hΨ (a'.inv ≫ Q.toBase)) =
-        (contractedXEvaluation b ρ c hΦ (a.inv ≫ P.toBase)).compHom (renameX(σ.symm)) := by
+        (contractedXEvaluation b ρ c hΦ (a.inv ≫ P.toBase)).compHom (renameX(σ.symm)) ∧
+      ((∀ a b, a < b → σ b < σ a →
+        (τ (σ a), centers(d) (σ a)) ≠ (τ (σ b), centers(d) (σ b))) →
+        ∀ (L : LineBundleClass X) (L' : LineBundleClass X'),
+          let x := (internalBlowupPicardMarking b ρ centers(c) hΦ).symm
+            (Additive.ofMul (pullback (a.inv ≫ P.toBase) L))
+          let y := (internalBlowupPicardMarking b' τ centers(d) hΨ).symm
+            (Additive.ofMul (pullback (a'.inv ≫ Q.toBase) L'))
+          pullback f.hom L' = L ↔
+            (Additive.ofMul (pullback hΔΦ.toFanHom.algebraicMap x.1.toMul), x.2) =
+              (Additive.ofMul (pullback
+                (hΔΩ.toFanHom.algebraicMap ≫ g.symm.toFanHom.algebraicMap) y.1.toMul),
+                y.2 ∘ σ)) := by
   have := hP.isClosedPointTower.isModification_of_smoothOfRelativeDimension_two s
   have := hQ.isClosedPointTower.isModification_of_smoothOfRelativeDimension_two t
   let Ω := Ψ.mapEquiv Φ.lattice e.symm
   let g : FanEquiv Ψ Ω := Ψ.mapEquivIso Φ.lattice e.symm
-  have hΩc : Ω.IsComplete := g.isComplete_iff.mpr hcΨ
-  let hΩ₀ : Nonempty Ω.cones := hΩc.nonempty_cones
+  let hΩ₀ : Nonempty Ω.cones := hΨ₀.map g.coneEquiv
   let τ' := g.rayEquiv ∘ τ ∘ σ
   have hmatch (j : Fin n) : (ρ j).primitiveGenerator = (τ' j).primitiveGenerator := by
     simp only [τ', Function.comp_apply, FanEquiv.primitiveGenerator_rayEquiv, g,
       mapEquivIso_latticeEquiv, LinearEquiv.coe_addEquiv_apply, ← hρτ, LinearEquiv.symm_apply_apply]
-  have hs : Φ.support = Ω.support := by
-    ext x
-    exact iff_of_true (Φ.mem_support.mpr ((Φ.isComplete_iff).mp hcΦ x))
-      (Ω.mem_support.mpr ((Ω.isComplete_iff).mp hΩc x))
   have hdet' (x y : N') : b.detDualEquiv (g.latticeEquiv x) (g.latticeEquiv y) =
       b'.detDualEquiv x y := by
     simpa only [g, mapEquivIso_latticeEquiv, LinearEquiv.coe_addEquiv_apply,
@@ -116,13 +132,23 @@ theorem exists_iso_of_matching_toric_models_of_latticeEquiv
   have hb'' : (B.2.boundaryι.ker.comap (a' ≪≫ f).hom).support = (E.comap Q.toBase).support := by
     rw [Iso.trans_hom, comap_comp, hfB, hb']
   have hΩ := g.isRegular_iff.mpr hΨ
-  obtain ⟨iso, hover, hpair, heval⟩ := exists_iso_of_matching_toric_models b hΦ hΩ hs ρ τ' c
-    hmatch hP hQ a (a' ≪≫ f) ha ha'' hb hb'' hD hE hnodalD hnodalE hconn hnefD hnefE hsqD hsqE
+  let : Nonempty Δ.cones := hΔΦ.nonempty_cones_of_nonempty hΦ₀
+  obtain ⟨iso, hover, hpair, heval, hpic⟩ := exists_iso_of_matching_toric_models b hΔΦ hΔΩ hΔ hΦ hΩ
+    ρ τ' c hmatch hP hQ a (a' ≪≫ f) ha ha'' hb hb'' hD hE hnodalD hnodalE hconn hnefD hnefE
+    hsqD hsqE
   have htransport := g.contractedXEvaluation_eq_of_reindex_transport b' b hΨ hΩ τ d c σ hc hdet'
     (a'.inv ≫ Q.toBase) f hf
-  refine ⟨iso, hover, hpair, ?_⟩
-  simp only [htransport, Scheme.RationalMap.comp_compHom, Iso.trans_inv, Category.assoc] at heval ⊢
-  rw [heval]
+  refine ⟨iso, hover, hpair, ?_, ?_⟩
+  · simp only [htransport, Scheme.RationalMap.comp_compHom, Iso.trans_inv, Category.assoc]
+      at heval ⊢
+    rw [heval]
+  · intro horder L L'
+    have hcoords := g.internalBlowupPicardMarking_symm_pullback_inv_of_reindex b' τ b hΨ hΩ
+      centers(d) centers(c) σ hc hdet' horder f hf (pullback (a'.inv ≫ Q.toBase) L')
+    have h := hpic L L'
+    dsimp only at h
+    rw [Iso.trans_inv, Category.assoc, ← pullback_comp f.inv, hcoords] at h
+    simpa only [Prod.fst, Prod.snd, toMul_ofMul, pullback_comp] using h
 
 local instance : IsNoetherian X := isNoetherian_of_finiteType s
 
@@ -183,9 +209,21 @@ theorem exists_iso_of_equal_endpoint_exchange_matrix
     simpa only [← support_comap, ← comap_comp, Iso.inv_hom_id, comap_id] using h
   obtain ⟨e, ⟨hρτ, hdet⟩, -⟩ := existsUnique_rayChargeEquiv_of_anticanonical_cycle ρ (τ ∘ σ)
     b b' centers(c) hΦ hcΦ hP a haInv hbInv C hGram hspan hcan hδ hmat
-  exact exists_iso_of_matching_toric_models_of_latticeEquiv b b' hΦ hΨ hcΦ hcΨ
-    ρ τ c d σ hc e hρτ hdet hP hQ a a' ha ha' hb hb' hD hE hnodalD hnodalE hconn hnefD hnefE
-    hsqD hsqE
+  let Ω := Ψ.mapEquiv Φ.lattice e.symm
+  let g : FanEquiv Ψ Ω := Ψ.mapEquivIso Φ.lattice e.symm
+  have hΩc : Ω.IsComplete := g.isComplete_iff.mpr hcΨ
+  have hs : Φ.support = Ω.support := by
+    ext x
+    exact iff_of_true (Φ.mem_support.mpr ((Φ.isComplete_iff).mp hcΦ x))
+      (Ω.mem_support.mpr ((Ω.isComplete_iff).mp hΩc x))
+  have hrank := (Module.finrank_eq_card_basis b).trans (Fintype.card_fin 2)
+  obtain ⟨Δ, hΔΦ, hΔΩ, hΔ⟩ :=
+    Φ.exists_regular_common_subdivision Ω hΦ (g.isRegular_iff.mpr hΨ) hrank hs
+  obtain ⟨f, hover, hpair, heval, _⟩ :=
+    exists_iso_of_matching_toric_models_of_latticeEquiv b b' hΦ hΨ
+      ρ τ c d σ hc e hρτ hdet hΔΦ hΔΩ hΔ hP hQ a a' ha ha' hb hb' hD hE
+      hnodalD hnodalE hconn hnefD hnefE hsqD hsqE
+  exact ⟨f, hover, hpair, heval⟩
 
 end SquareZero
 
