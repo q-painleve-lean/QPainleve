@@ -6,7 +6,6 @@ Authors: The QPainleve contributors
 module
 
 public import QPainleve.Algebra.Cluster.Word.Chart
-public import QPainleve.AlgebraicGeometry.RationalMap.Composition.Defined
 public import QPainleve.Geometry.Toric.Fan.Boundary.Transport
 public import QPainleve.Geometry.Toric.Fan.Evaluation.ToricIso
 
