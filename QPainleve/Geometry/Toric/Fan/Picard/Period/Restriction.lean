@@ -35,6 +35,8 @@ variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
 local notation "Dtor" => Φ.boundaryIdeal inferInstance
 local notation "Pic(" S ")" => Additive (LineBundleClass S)
 
+section Presentation
+
 variable {X Y : Scheme} {D : X.IdealSheafData} {d : ℕ} {T : QPainleve.BlowupTower X d Y}
   (J : Fin n →
     {I : (Φ.boundaryIdeal inferInstance).subscheme.IdealSheafData // I.IsEffectiveCartier})
@@ -124,5 +126,81 @@ theorem pullback_toricBoundaryToBase_picardBoundaryOrthogonalEquivChargeKernel_s
   rw [pullback_comp, toricBoundaryToBase_comp_subschemeι, ← pullback_comp, ← hMarking,
     pullback_picardHom_alongBoundary]
   simp only [Pi.neg_apply, neg_neg]
+
+end Presentation
+
+section CenterRatio
+
+variable (hΦ : Φ.IsRegular) (b : Module.Basis (Fin 2) ℤ N) (s : Fin n → Φ.Ray)
+
+local notation "S" => Spec (CommRingCat.of ℂ)
+local notation "ChargeKernel" => LinearMap.ker (rayChargeMap s)
+local notation "rankTwo" => (Eq.trans (Module.finrank_eq_card_basis b) (Fintype.card_fin 2))
+local notation "m" =>
+  (fun j ↦ LinearMap.toAddMonoidHom (Module.Basis.detDualEquiv b (Ray.primitiveGenerator (s j))))
+local notation "hm" => (fun j ↦ Module.Basis.detDualEquiv_self b (Ray.primitiveGenerator (s j)))
+local notation "hprim" => (fun j ↦ Ray.surjective_detCharacter (s j) b)
+local notation "J[" c "]" => (fun j ↦ Ray.internalCenter b (s j) (c j))
+local notation "hJ[" c "]" => (fun j ↦ Ray.internalCenter_val b (s j) (c j))
+
+variable [Φ.algebraicRealization.IsProjectiveOver ℂ]
+  {c₀ c₁ : Fin n → ℂˣ}
+  {X₀ X₁ Y₀ Y₁ : Scheme}
+  [X₀.Over S] [X₀.IsProjectiveOver ℂ] [IsIntegral X₀]
+  [SmoothOfRelativeDimension 2 (X₀ ↘ S)]
+  [LinearMap.IsPerfPair (Chow.intersectionBilinForm ℂ X₀)]
+  [X₁.Over S] [X₁.IsProjectiveOver ℂ] [IsIntegral X₁]
+  [SmoothOfRelativeDimension 2 (X₁ ↘ S)]
+  [LinearMap.IsPerfPair (Chow.intersectionBilinForm ℂ X₁)]
+  {D₀ : X₀.IdealSheafData} {D₁ : X₁.IdealSheafData}
+  {d₀ d₁ : ℕ} {T₀ : QPainleve.BlowupTower X₀ d₀ Y₀} {T₁ : QPainleve.BlowupTower X₁ d₁ Y₁}
+  (hT₀ : IsNodalBoundaryTower D₀ (X₀ ↘ S) (𝟙 X₀) T₀)
+  (hT₁ : IsNodalBoundaryTower D₁ (X₁ ↘ S) (𝟙 X₁) T₁)
+  (e₀ : Y₀ ≅ (alongBoundary (Φ.boundaryIdeal inferInstance).subschemeι
+      (fun j ↦ (s j).internalCenter b (c₀ j))).1)
+  (e₁ : Y₁ ≅ (alongBoundary (Φ.boundaryIdeal inferInstance).subschemeι
+      (fun j ↦ (s j).internalCenter b (c₁ j))).1)
+  (he₀ : e₀.inv ≫ T₀.toBase ≫ (X₀ ↘ S) =
+    (alongBoundary (Φ.boundaryIdeal inferInstance).subschemeι
+      (fun j ↦ (s j).internalCenter b (c₀ j))).2.toTower.toBase ≫ (Φ.algebraicRealization ↘ S))
+  (he₁ : e₁.inv ≫ T₁.toBase ≫ (X₁ ↘ S) =
+    (alongBoundary (Φ.boundaryIdeal inferInstance).subschemeι
+      (fun j ↦ (s j).internalCenter b (c₁ j))).2.toTower.toBase ≫ (Φ.algebraicRealization ↘ S))
+  (hD₀ : ((D₀.comap T₀.toBase).comap e₀.inv).support =
+    (alongBoundary (Φ.boundaryIdeal inferInstance).subschemeι
+      (fun j ↦ (s j).internalCenter b (c₀ j))).2.boundaryι.ker.support)
+  (hD₁ : ((D₁.comap T₁.toBase).comap e₁.inv).support =
+    (alongBoundary (Φ.boundaryIdeal inferInstance).subschemeι
+      (fun j ↦ (s j).internalCenter b (c₁ j))).2.boundaryι.ker.support)
+
+local notation "g₀" => toricBoundaryToBase (J[c₀]) e₀ hD₀
+local notation "g₁" => toricBoundaryToBase (J[c₁]) e₁ hD₁
+local notation "charge₀" =>
+  picardBoundaryOrthogonalEquivChargeKernel hΦ rankTwo s m hm hprim c₀ (J[c₀]) (hJ[c₀])
+    hT₀ e₀ he₀ hD₀
+local notation "charge₁" =>
+  picardBoundaryOrthogonalEquivChargeKernel hΦ rankTwo s m hm hprim c₁ (J[c₁]) (hJ[c₁])
+    hT₁ e₁ he₁ hD₁
+
+include hT₀ he₀ hD₀ hT₁ he₁ hD₁ in
+/-- The quotient of two marked restrictions, pulled back to the same toric boundary,
+is the product of the center ideal quotients with exponents given by the charge relation. -/
+theorem pullback_toricBoundaryToBase_markedCharge_div (x : ChargeKernel) :
+    let I (u : Fin n → ℂˣ) (j : Fin n) :=
+      LineBundleClass.mk ((s j).internalCenter b (u j)).property.toInvertibleSheaf
+    pullback g₀ (pullback D₀.subschemeι ((charge₀).symm x).val.toMul) /
+      pullback g₁ (pullback D₁.subschemeι ((charge₁).symm x).val.toMul) =
+        (∏ j, I c₀ j ^ (x : Fin n → ℤ) j) / (∏ j, I c₁ j ^ (x : Fin n → ℤ) j) := by
+  dsimp only
+  obtain ⟨H, -, hH⟩ := exists_picardBoundaryOrthogonalEquivChargeKernel_symm_marking
+    hΦ rankTwo s m hm hprim c₀ (J[c₀]) (hJ[c₀]) hT₀ e₀ he₀ hD₀ x
+  have hdegree := (hH H).mpr rfl
+  rw [pullback_toricBoundaryToBase_picardBoundaryOrthogonalEquivChargeKernel_symm
+    (J[c₀]) e₀ hD₀ hΦ rankTwo s m hm hprim c₀ (hJ[c₀]) hT₀ he₀ x H hdegree,
+    pullback_toricBoundaryToBase_picardBoundaryOrthogonalEquivChargeKernel_symm
+      (J[c₁]) e₁ hD₁ hΦ rankTwo s m hm hprim c₁ (hJ[c₁]) hT₁ he₁ x H hdegree,
+    mul_div_mul_left_eq_div]
+
+end CenterRatio
 
 end TauCeti.Toric.Fan

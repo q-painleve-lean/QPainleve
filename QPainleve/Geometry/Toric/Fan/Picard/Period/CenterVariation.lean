@@ -21,8 +21,8 @@ original boundaries.
 
 The center comparison follows
 [Gross, Hacking and Keel, Proposition 2.9](https://arxiv.org/html/1211.6367v5#S2),
-using `Fan.pullback_toricBoundaryToBase_picardBoundaryOrthogonalEquivChargeKernel_symm`
-for the marked restriction and `Fan.exists_internalCenterRatio_nodalPicardCycleMulEquiv`
+using `Fan.pullback_toricBoundaryToBase_markedCharge_div` for the quotient of
+the marked restrictions and `Fan.exists_internalCenterRatio_nodalPicardCycleMulEquiv`
 for the period of one center quotient.
 -/
 
@@ -168,32 +168,6 @@ variable {c₀ c₁ : Fin n → ℂˣ}
 
 local notation "g₀" => toricBoundaryToBase (J[c₀]) e₀ hD₀
 local notation "g₁" => toricBoundaryToBase (J[c₁]) e₁ hD₁
-local notation "charge₀" =>
-  picardBoundaryOrthogonalEquivChargeKernel hΦ rankTwo s m hm hprim c₀ (J[c₀]) (hJ[c₀])
-    hT₀ e₀ he₀ hD₀
-local notation "charge₁" =>
-  picardBoundaryOrthogonalEquivChargeKernel hΦ rankTwo s m hm hprim c₁ (J[c₁]) (hJ[c₁])
-    hT₁ e₁ he₁ hD₁
-
-include hT₀ he₀ hD₀ hT₁ he₁ hD₁ in
-/-- The quotient of two marked restrictions, pulled back to the same toric boundary,
-is the product of the center ideal quotients with exponents given by the charge relation. -/
-theorem pullback_toricBoundaryToBase_markedCharge_div (x : ChargeKernel) :
-    let I (u : Fin n → ℂˣ) (j : Fin n) :=
-      LineBundleClass.mk ((s j).internalCenter b (u j)).property.toInvertibleSheaf
-    pullback g₀ (pullback D₀.subschemeι ((charge₀).symm x).val.toMul) /
-      pullback g₁ (pullback D₁.subschemeι ((charge₁).symm x).val.toMul) =
-        (∏ j, I c₀ j ^ (x : Fin n → ℤ) j) / (∏ j, I c₁ j ^ (x : Fin n → ℤ) j) := by
-  dsimp only
-  obtain ⟨H, -, hH⟩ := exists_picardBoundaryOrthogonalEquivChargeKernel_symm_marking
-    hΦ rankTwo s m hm hprim c₀ (J[c₀]) (hJ[c₀]) hT₀ e₀ he₀ hD₀ x
-  have hdegree := (hH H).mpr rfl
-  rw [pullback_toricBoundaryToBase_picardBoundaryOrthogonalEquivChargeKernel_symm
-    (J[c₀]) e₀ hD₀ hΦ rankTwo s m hm hprim c₀ (hJ[c₀]) hT₀ he₀ x H hdegree,
-    pullback_toricBoundaryToBase_picardBoundaryOrthogonalEquivChargeKernel_symm
-      (J[c₁]) e₁ hD₁ hΦ rankTwo s m hm hprim c₁ (hJ[c₁]) hT₁ he₁ x H hdegree,
-    mul_div_mul_left_eq_div]
-
 variable [PrestableFamily (D₀.subscheme ↘ S)] [PrestableFamily (D₁.subscheme ↘ S)]
   (hCartier₀ : D₀.IsEffectiveCartier) (hCartier₁ : D₁.IsEffectiveCartier)
   (hgenus₀ : ∀ v : irreducibleComponents (D₀.subscheme.singularLocus ℂ).blowup,
