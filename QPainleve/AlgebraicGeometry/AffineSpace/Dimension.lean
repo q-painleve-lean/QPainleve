@@ -73,7 +73,7 @@ theorem finite_of_affineSpace {ι : Type u} (h : BirationalOver f (𝔸(ι; Spec
   have : IsDominant e.target.ι := Opens.isDominant_ι e.dense_target
   have : IsDominant g := inferInstanceAs (IsDominant (e.iso.hom ≫ e.target.ι))
   let R := MvPolynomial ι k
-  obtain ⟨E⟩ := Hom.nonempty_functionField_algEquiv_of_isOpenImmersion
+  let E := Hom.functionFieldAlgEquivOfIsOpenImmersion
     (AffineSpace.SpecIso ι (.of k)).inv (AffineSpace.SpecIso_inv_over (n := ι) (.of k))
     (FractionRing R)
   let φ : R →ₐ[k] e.source.toScheme.functionField :=

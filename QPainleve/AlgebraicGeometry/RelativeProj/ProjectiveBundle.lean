@@ -7,6 +7,7 @@ module
 
 public import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.Polynomial.SymmetricAlgebra
 public import QPainleve.AlgebraicGeometry.VectorBundle.Affine
+public import TauCeti.AlgebraicGeometry.RelativeProj.Map
 public import TauCeti.AlgebraicGeometry.RelativeProj.TwistingSheaf
 public import TauCeti.AlgebraicGeometry.VectorBundle.Quasicoherent
 
@@ -108,6 +109,45 @@ def projSymmetricAlgebraSectionsIsoPullbackTwistingSheafIso (n : ℤ) :
   exact iSup_basicOpen_eq_top_of_adjoin_eq_top _
     (CommMon.isGeneratedInDegreeOne_iff.mp
       (isGeneratedInDegreeOne_gradedSymmetricAlgebra F) U.toOpens U.property)
+
+section Map
+
+variable {F} {G : QuasicoherentSheaf X} (q : F ⟶ G)
+
+local notation "φ" =>
+  InducedCategory.Hom.hom (CategoryTheory.Functor.map (gradedSymmetricAlgebra X) q)
+local notation "qΓ" => ModuleCat.Hom.hom (CategoryTheory.Functor.map
+  (Scheme.Modules.sectionsFunctor (Scheme.AffineZariskiSite.toOpens U)) (InducedCategory.Hom.hom q))
+
+private theorem fromGradedSections_comp_map :
+    (fromGradedSections G U).comp (gradedSectionsGradedHom φ U.toOpens) =
+      (SymmetricAlgebra.gradedMap R[U] qΓ).comp (fromGradedSections F U) := by
+  ext a : 1
+  let e := gradedSymmetricAlgebraSectionsEquiv F U.property
+  obtain ⟨x, rfl⟩ := e.surjective a
+  have h := gradedSymmetricAlgebraSectionsEquiv_naturality F q U.property x
+  erw [GradedRingHom.comp_apply, GradedRingHom.comp_apply, gradedSectionsGradedHom_apply,
+    SymmetricAlgebra.gradedMap_apply]
+  exact ((gradedSymmetricAlgebraSectionsEquiv G U.property).symm_apply_eq.mpr h).trans
+    (congrArg (SymmetricAlgebra.map R[U] qΓ) (e.symm_apply_apply x)).symm
+
+/-- On an affine open of the base, the relative projective morphism induced
+by a map of quasicoherent sheaves is the projective spectrum of the symmetric
+algebra map on sections. -/
+@[reassoc]
+theorem projSymmetricAlgebraSectionsIso_hom_comp_relativeProjMap (hφ)
+    (hq : HomogeneousIdeal.irrelevant 𝒮[G,U] ≤
+      (HomogeneousIdeal.irrelevant 𝒮[F,U]).map (SymmetricAlgebra.gradedMap R[U] qΓ)) :
+    (G.projSymmetricAlgebraSectionsIso U).hom ≫
+        (relativeProjFunctorMap φ hφ).app U =
+      Proj.map (SymmetricAlgebra.gradedMap R[U] qΓ) hq ≫
+        (F.projSymmetricAlgebraSectionsIso U).hom := by
+  rw [projSymmetricAlgebraSectionsIso_hom, projSymmetricAlgebraSectionsIso_hom,
+    relativeProjFunctorMap_app]
+  refine (Proj.map_comp _ _ _ _).symm.trans
+    ((Proj.map_congr (fromGradedSections_comp_map U q) _ _).trans (Proj.map_comp _ _ _ _))
+
+end Map
 
 local notation "ι₀[" j "]" =>
   CategoryTheory.Functor.map (Scheme.AffineZariskiSite.toOpensFunctor X) j

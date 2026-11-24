@@ -15,7 +15,7 @@ import QPainleve.AlgebraicGeometry.CartierDivisor.Comparison
 import QPainleve.AlgebraicGeometry.CartierDivisor.Support
 import QPainleve.AlgebraicGeometry.EffectiveCartierDivisor.ClosedImmersion
 import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
-import QPainleve.AlgebraicGeometry.IntersectionNumber.ClosedPoint
+import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.ProjectiveLine.Cartier
 import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.ProjectiveLine.Morphisms
 import QPainleve.AlgebraicGeometry.RationalPoint
 import QPainleve.AlgebraicGeometry.WeilDivisor.Basic
@@ -252,7 +252,7 @@ theorem exists_iso_projectiveLine_of_isNef_of_self_eq_zero
 
 include hRat in
 private theorem exists_projectiveLine_fiber_of_pullback_twistingSheaf
-    [IsIntegral X] (f : X ⟶ projectiveLine k) [IsDominant f]
+    (f : X ⟶ projectiveLine k) [Flat f]
     (hmin : ∀ J : X.IdealSheafData, ¬ J.IsExceptionalCurveOfFirstKind)
     (hnef : (pullback f (LineBundleClass.mk T)).IsNef k (X ↘ S))
     (hsq : B (pullback f (LineBundleClass.mk T)) (pullback f (LineBundleClass.mk T)) = 0)
@@ -262,37 +262,15 @@ private theorem exists_projectiveLine_fiber_of_pullback_twistingSheaf
       e.hom ≫ (projectiveLine k ↘ S) = f.fiberι p ≫ X ↘ S := by
   let j := (projectiveLine k).fromSpecResidueField p
   have : IsClosedImmersion j := isClosed_singleton_iff_isClosedImmersion.mp hp
-  have : TauCeti.AlgebraicGeometry.IsRegular (projectiveLine k) :=
-    ⟨fun _ ↦ inferInstance⟩
-  have hP := (projectiveLine k).isEffectiveCartier_ker_fromSpecResidueField_of_dim_eq_one hp
-    (Scheme.IsCurveOver.topologicalKrullDim_eq_one k)
-  have ht : A(hP) = LineBundleClass.mk T := by
-    refine congrArg Additive.toMul ((projectiveLine.picardDegreeEquiv k).injective
-      (show projectiveLine.picardDegreeEquiv k (Additive.ofMul (A(hP))) =
-        projectiveLine.picardDegreeEquiv k (Additive.ofMul (LineBundleClass.mk T)) from ?_))
-    rw [projectiveLine.picardDegreeEquiv_apply, projectiveLine.picardDegreeEquiv_apply,
-      toMul_ofMul, toMul_ofMul, projectiveLine.eulerDegree_inv,
-      eulerDegree_mk_ker_fromSpecResidueField hp,
-      (projectiveLine k ↘ S).residueDegree_eq_one_of_isClosed hp, Nat.cast_one, neg_neg,
-      eulerDegree_mk, projectiveLine.eulerDegree_twistingSheaf]
-  let J := j.ker.comap f
-  have hJ : J.IsEffectiveCartier := hP.comap_of_isDominant f
-  have ha : A(hJ) = pullback f (LineBundleClass.mk T) := by
-    rw [← ht, pullback_inv, hP.pullback_mk_toInvertibleSheaf hJ]
+  obtain ⟨hJ, ha⟩ := f.exists_cartier_fiber_class_eq_pullback_twistingBundle hp
   obtain ⟨e, he⟩ := hJ.exists_iso_projectiveLine_of_isNef_of_self_eq_zero
     hmin (ha ▸ hnef) (ha ▸ ha ▸ hsq) (ha ▸ hcan)
-  have hker : (f.fiberι p).ker = J := IdealSheafData.ker_fst_of_isClosedImmersion j f
   have : IsClosedImmersion (f.fiberι p) :=
     MorphismProperty.of_isPullback (IsPullback.of_hasPullback f j).flip inferInstance
-  let a := asIso (f.fiberι p).toImage ≪≫ eqToIso (congrArg IdealSheafData.subscheme hker)
-  have ha' : a.hom ≫ J.subschemeι = f.fiberι p := by
-    rw [Iso.trans_hom, asIso_hom, eqToIso.hom, Category.assoc,
-      ← eqToHom_naturality IdealSheafData.subschemeι hker]
-    simp
   have : e.hom.IsOver S := he
-  refine ⟨a ≪≫ e, ?_⟩
+  refine ⟨asIso (f.fiberι p).toImage ≪≫ e, ?_⟩
   rw [Iso.trans_hom, Category.assoc, comp_over e.hom S, IdealSheafData.over_eq_subschemeι_comp,
-    ← Category.assoc, ha']
+    ← Category.assoc, asIso_hom, (f.fiberι p).toImage_imageι]
 
 include hRat in
 /-- The complete pencil of an integral genus-zero Cartier divisor of square zero defines a

@@ -93,7 +93,7 @@ theorem exists_vertex_blowup_comparison :
   have : IsClosedImmersion (z ≫ (D).hom) := inferInstance
   have hJ : (J).comap (D).hom = (z).ker := by
     rw [← (z ≫ (D).hom).ker_eq_ker_fromSpecResidueField, (z).comap_ker_comp_of_isClosedImmersion]
-  let e := e₀ ≪≫ (J).blowupIso D hJ
+  let e := e₀ ≪≫ blowupIso D hJ.symm
   have he : e.hom ≫ (J).blowupToBase =
       ((Ψ).starSubdivisionAlong_isSubdivision hΨ (σ).property hσ).toFanHom.algebraicMap ≫
         (D).hom := by

@@ -10,6 +10,7 @@ public import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.LinearAction
 
 import Mathlib.LinearAlgebra.Dual.Lemmas
 import Mathlib.LinearAlgebra.FiniteDimensional.Basic
+import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.Basic
 import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.ClosedPoints
 
 /-!
@@ -66,29 +67,15 @@ theorem exists_symmetricAlgebraMapIso_hom_apply_eq_of_isClosed (x y : P)
     apply SymmetricAlgebra.algHom_ext
     ext v
     simpa using DFunLike.congr_fun hfg v
-  refine ⟨e, ProjectiveSpectrum.ext (HomogeneousIdeal.ext' fun n s hs ↦ ?_)⟩
-  by_cases hn : n = 0
-  · subst n
-    let r := homogeneousSubmoduleZeroEquiv k M ⟨s, hs⟩
-    have hscalar : algebraMap k (SymmetricAlgebra k M) r = s :=
-      algebraMap_homogeneousSubmoduleZeroEquiv_apply k M ⟨s, hs⟩
-    rw [← hscalar]
-    by_cases hr : r = 0
-    · simp [hr]
-    · have hu : IsUnit (algebraMap k (SymmetricAlgebra k M) r) := (isUnit_iff_ne_zero.mpr hr).map _
-      have hunit (w : ProjectiveSpectrum (homogeneousSubmodule k M)) :
-          algebraMap k (SymmetricAlgebra k M) r ∉ w.asHomogeneousIdeal :=
-        Ideal.notMem_of_isUnit w.asHomogeneousIdeal.toIdeal hu
-      exact iff_of_false (hunit _) (hunit _)
-  · let F := SymmetricAlgebra.gradedMap k e.toLinearMap
-    have hmap : s ∈ ((symmetricAlgebraMapIso k e).hom x).asHomogeneousIdeal ↔
-        F s ∈ x.asHomogeneousIdeal := by
-      rw [← not_iff_not, ← mem_basicOpen, ← Scheme.Hom.mem_preimage,
-        symmetricAlgebraMapIso_hom, map_preimage_basicOpen, mem_basicOpen]
-    have hEval : SymmetricAlgebra.lift f (F s) = SymmetricAlgebra.lift g s := by
-      simpa only [F, SymmetricAlgebra.gradedMap_apply, AlgHom.comp_apply] using
-        DFunLike.congr_fun hLift s
-    exact hmap.trans ((hfx n (Nat.pos_of_ne_zero hn) _ (F.map_mem hs)).trans
-      (hEval ▸ (hgy n (Nat.pos_of_ne_zero hn) _ hs).symm))
+  refine ⟨e, ProjectiveSpectrum.ext_of_mem_pos fun n hn s hs ↦ ?_⟩
+  let F := SymmetricAlgebra.gradedMap k e.toLinearMap
+  have hmap : s ∈ ((symmetricAlgebraMapIso k e).hom x).asHomogeneousIdeal ↔
+      F s ∈ x.asHomogeneousIdeal := by
+    rw [← not_iff_not, ← mem_basicOpen, ← Scheme.Hom.mem_preimage,
+      symmetricAlgebraMapIso_hom, map_preimage_basicOpen, mem_basicOpen]
+  have hEval : SymmetricAlgebra.lift f (F s) = SymmetricAlgebra.lift g s := by
+    simpa only [F, SymmetricAlgebra.gradedMap_apply, AlgHom.comp_apply] using
+      DFunLike.congr_fun hLift s
+  exact hmap.trans ((hfx n hn _ (F.map_mem hs)).trans (hEval ▸ (hgy n hn _ hs).symm))
 
 end AlgebraicGeometry.Proj

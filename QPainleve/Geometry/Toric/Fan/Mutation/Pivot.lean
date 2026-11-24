@@ -473,8 +473,8 @@ private theorem comap_sourceLaurentBlowupIso_strictTransform
       hdim (b.detDualEquiv_self v) (ρ.surjective_detCharacter b) c
   have : IsLocallyNoetherian (projectiveLine L) :=
     LocallyOfFiniteType.isLocallyNoetherian ((E₀).inv ≫ π₀)
-  rw [(J(0)).eq_blowupIso_hom (E₀) hCenter (sourceLaurentBlowupIso_hom_blowupToBase b ρ hOpp c),
-    comap_ker_blowupMap_subschemeι_blowupIso]
+  rw [eq_blowupIso_hom (E₀) hCenter.symm (sourceLaurentBlowupIso_hom_blowupToBase b ρ hOpp c),
+    comap_ker_blowupMap_subschemeι_blowupIso (J(0)) A (E₀) hCenter]
 
 private theorem comap_targetLaurentBlowupIso_strictTransform
     (A : (projectiveLine L).IdealSheafData) :
@@ -485,8 +485,8 @@ private theorem comap_targetLaurentBlowupIso_strictTransform
       (pivotCharacter_apply_opposite b ρ hOpp) (ρ.surjective_detCharacter b) c
   have : IsLocallyNoetherian (projectiveLine L) :=
     LocallyOfFiniteType.isLocallyNoetherian ((E₀).inv ≫ π₀)
-  rw [(J(1)).eq_blowupIso_hom (E₁) hCenter (targetLaurentBlowupIso_hom_blowupToBase b ρ hOpp c),
-    comap_ker_blowupMap_subschemeι_blowupIso]
+  rw [eq_blowupIso_hom (E₁) hCenter.symm (targetLaurentBlowupIso_hom_blowupToBase b ρ hOpp c),
+    comap_ker_blowupMap_subschemeι_blowupIso (J(1)) A (E₁) hCenter]
 
 private theorem mutationFanRayEquiv_primitiveGenerator_eq (j : Fin 2)
     (hτ : τ.primitiveGenerator = if j = 0 then v else -v) :

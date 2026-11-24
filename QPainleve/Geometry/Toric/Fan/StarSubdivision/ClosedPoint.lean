@@ -9,12 +9,12 @@ public import QPainleve.AlgebraicGeometry.Blowup.Tower.Nodal.Canonical
 public import QPainleve.Geometry.Toric.Fan.StarSubdivision.ProjectivePlane
 
 import Mathlib.Analysis.Complex.Polynomial.Basic
-import QPainleve.AlgebraicGeometry.Blowup.Isomorphism
 import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
 import QPainleve.AlgebraicGeometry.Modules.Differentials.Restriction
 import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.ClosedPoints
 import QPainleve.Geometry.Toric.Fan.FunctionField
 import QPainleve.Geometry.Toric.Fan.Smooth
+import TauCeti.AlgebraicGeometry.Blowup.Pullback
 import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.Pullback
 import TauCeti.AlgebraicGeometry.IdealSheaf.Reduced
 import TauCeti.AlgebraicGeometry.Noetherian
@@ -110,13 +110,12 @@ theorem exists_hirzebruch_one_model_of_plane_point_blowup {X : Scheme} [X.Over S
     exists_blowup_projectivePlane_vertex_hirzebruchOne b hi none
   let J := Π₀.starSubdivisionAlong_isSubdivision hPlane σ.property hσ
   let r := Π₀.starSubdivisionAlongRay hPlane σ.property hσ
-  let f := g ≪≫ I.blowupIso e hI
+  have hCenter : I.comap e.hom = (v₀).ker := hI
+  let f := g ≪≫ blowupIso e hCenter.symm
   have hf : f.hom ≫ I.blowupToBase = J.toFanHom.algebraicMap ≫ e.hom := by
-    simp only [f, Iso.trans_hom, Category.assoc, blowupIso_hom_blowupToBase,
-      reassoc_of% hπ]
+    rw [Iso.trans_hom, Category.assoc, blowupIso_hom_blowupToBase, ← Category.assoc, hπ]
   refine ⟨Φ, Π₀.isRegular_starSubdivisionAlong hPlane σ.property,
     J.isComplete_iff.mpr (isComplete_projectiveSpace b hi), d, r, J, e, f, he, hd, hr, hf, ?_⟩
-  have hCenter : I.comap e.hom = (v₀).ker := hI
   rw [hf, comap_comp, hCenter, ← hπ]
   exact hE
 
