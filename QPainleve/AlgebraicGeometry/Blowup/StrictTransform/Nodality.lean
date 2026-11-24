@@ -47,30 +47,6 @@ universe u
 
 namespace AlgebraicGeometry.Scheme.IdealSheafData
 
-private theorem exists_nodal_neighbourhood_of_comap_eq
-    {k : Type u} [Field k] {X Y U : Scheme.{u}}
-    {D : X.IdealSheafData} {E : Y.IdealSheafData}
-    {s : X ⟶ Spec (.of k)} {t : Y ⟶ Spec (.of k)}
-    (j : U ⟶ X) (i : U ⟶ Y) [IsOpenImmersion j] [IsOpenImmersion i]
-    (hbase : j ≫ s = i ≫ t) (hDE : D.comap j = E.comap i)
-    (hE : AtWorstNodalOfRelativeDimensionOne (E.subschemeι ≫ t))
-    (p : D.subscheme) (hp : D.subschemeι p ∈ Set.range j) :
-    ∃ (W : Scheme.{u}) (g : W ⟶ D.subscheme), IsOpenImmersion g ∧ p ∈ Set.range g ∧
-      AtWorstNodalOfRelativeDimensionOne (g ≫ D.subschemeι ≫ s) := by
-  let g := subschemeMap (D.comap j) D j (le_map_comap _ _)
-  let h := subschemeMap (E.comap i) E i (le_map_comap _ _)
-  have hpb : IsPullback (D.comap j).subschemeι g j D.subschemeι :=
-    isPullback_of_isClosedImmersion _ _ _ _ (by simp [g]) (by simp)
-  have hpb' : IsPullback (E.comap i).subschemeι h i E.subschemeι :=
-    isPullback_of_isClosedImmersion _ _ _ _ (by simp [h]) (by simp)
-  have : IsOpenImmersion h := MorphismProperty.of_isPullback (P := @IsOpenImmersion)
-    hpb' inferInstance
-  refine ⟨_, g, MorphismProperty.of_isPullback (P := @IsOpenImmersion) hpb inferInstance, ?_, ?_⟩
-  · rw [Scheme.Pullback.range_snd_of_isPullback hpb]
-    exact hp
-  · rw [← hpb.w_assoc, hbase, hDE, hpb'.w_assoc]
-    exact hE.comp_of_etale h
-
 /-- If a blowup center restricts to a Cartier divisor on a nodal boundary,
 the strict transform is isomorphic to the original boundary over the base and is nodal. -/
 theorem atWorstNodalOfRelativeDimensionOne_strictTransform_of_isEffectiveCartier_comap
@@ -208,7 +184,7 @@ private theorem exists_nodal_neighbourhood_radical_comap (z : (R).subscheme)
       have hU : y ∈ U := hz
       have hS : (S).comap U.ι = ⊤ := (comap_eq_top_iff _ _).mpr (Scheme.Opens.ι_preimage_self _)
       have heq : (R).comap U.ι = (E).comap U.ι := by rw [hR, comap_mul, hS, top_mul]
-      exact exists_nodal_neighbourhood_of_comap_eq U.ι U.ι rfl heq
+      exact (R).exists_nodal_neighbourhood_of_comap_eq U.ι U.ι rfl heq
         (by
           have := smoothOfRelativeDimension_exceptional (k := k) hp
           exact AtWorstNodalOfRelativeDimensionOne.of_smooth _) z ⟨⟨y, hU⟩, rfl⟩
@@ -220,7 +196,7 @@ private theorem exists_nodal_neighbourhood_radical_comap (z : (R).subscheme)
     have heq : (R).comap U.ι = D.comap (U.ι ≫ (π)) := by
       rw [← radical_comap_of_isOpenImmersion, ← comap_comp, radical_comap_of_isOpenImmersion,
         D.isReduced_subscheme_iff_radical_eq.mp inferInstance]
-    exact exists_nodal_neighbourhood_of_comap_eq U.ι (U.ι ≫ (π))
+    exact (R).exists_nodal_neighbourhood_of_comap_eq U.ι (U.ι ≫ (π))
       (by simp only [Category.assoc]) heq hnodal
       z ⟨⟨y, hy⟩, rfl⟩
 
