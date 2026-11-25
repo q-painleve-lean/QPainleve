@@ -119,11 +119,7 @@ theorem existsUnique_picardHom_of_presentation
       Function.comp_apply, unop_op, clusterModularGroupInclusion_clusterModularGroupMap]
       using (hρ w.val).2 R hR
   refine ⟨f, ⟨hf, f.ker_eq_bot_iff.mpr ?_⟩, ?_⟩
-  · intro x y hxy
-    apply op_injective.comp ((clusterModularGroupInclusion_injective ℂ E).comp unop_injective)
-    apply hρinj
-    simpa only [f, rotationInclusion_picardRotationHom_apply, MonoidHom.op_apply_apply,
-      Function.comp_apply] using congrArg (rotationInclusion H d) hxy
+  · exact picardRotationHom_injective ρ hpos.ge hρinj
   · intro f' hf'
     refine MonoidHom.ext fun g ↦ ?_
     obtain ⟨w, hw⟩ := clusterModularGroupMap_surjective ℂ E g.unop

@@ -102,17 +102,7 @@ theorem exists_picardGroupEquivs_of_nodal_model
   obtain ⟨Θ, ⟨hΘ, hsign⟩, -⟩ := existsUnique_signedPicardEquiv_of_presentation
     (Q := Q) (hD := hD) (hmark := hmark) P rfl rfl (fun z _ ↦ (hfamily z).1)
     (hfamily c).1 hprim hnef hsq
-  let ρ := picardRotationHom Θ.toMonoidHom hsign.ge
-  have hinj : Function.Injective ρ := by
-    intro x y hxy
-    have h := congrArg (rotationInclusion B _) hxy
-    simp only [ρ, rotationInclusion_picardRotationHom_apply, MulEquiv.coe_toMonoidHom] at h
-    exact unop_injective
-      (clusterModularGroupInclusion_injective ℂ E (op_injective (Θ.injective h)))
-  have hsurj : Function.Surjective ρ :=
-    (picardRotationHom_surjective_iff Θ.toMonoidHom hsign).mpr
-      (fun g _ ↦ MonoidHom.mem_range.mpr (Θ.surjective g))
-  exact ⟨M, hD, hmark, Θ, MulEquiv.ofBijective ρ ⟨hinj, hsurj⟩, rfl,
-    fun z ↦ (hfamily z).1, hΘ, hsign, rotationInclusion_picardRotationHom_apply _ _⟩
+  exact ⟨M, hD, hmark, Θ, picardRotationEquiv Θ hsign, rfl,
+    fun z ↦ (hfamily z).1, hΘ, hsign, rotationInclusion_picardRotationEquiv_apply Θ hsign⟩
 
 end QPainleve.SignedClusterModularGroup.CompleteToricPresentation
