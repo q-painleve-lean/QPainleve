@@ -294,14 +294,9 @@ theorem classIntersectionNumber_pointBlowdown (f : X ⟶ Y) [f.IsOver S]
     rw [← Category.assoc, he, comp_over]⟩
   let : IsNoetherian Y := isNoetherian_of_finiteType (Y ↘ S)
   have hproj : I.blowup.IsProjectiveOver k := I.isProjectiveOver_blowup_of_isNoetherianRing k
-  let hI := I.isEffectiveCartier_comap_blowupToBase
   have hIe : (I.comap I.blowupToBase).comap e.hom = E := by
     rw [← comap_comp, he, hF]
-  have hc : pullback e.hom I.blowupExceptionalClass =
-      (LineBundleClass.mk hE.toInvertibleSheaf)⁻¹ := by
-    rw [blowupExceptionalClass_def, pullback_inv,
-      hI.pullback_mk_toInvertibleSheaf (hIe.symm ▸ hE),
-      mk_toInvertibleSheaf_congr _ hE hIe]
+  have hc := I.pullback_blowupExceptionalClass_of_comap_eq e.hom hE hIe
   have h := Chow.classIntersectionNumber_pointBlowup p k hp a b m n hproj
   rw [← Chow.classIntersectionNumber_pullback_of_isIso k e.hom] at h
   dsimp only [I] at hc

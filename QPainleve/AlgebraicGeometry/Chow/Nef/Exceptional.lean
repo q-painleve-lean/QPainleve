@@ -9,6 +9,7 @@ public import QPainleve.AlgebraicGeometry.Chow.ExceptionalRay
 public import QPainleve.AlgebraicGeometry.Chow.Nef.Cone
 
 import QPainleve.AlgebraicGeometry.Chow.ProperIntersection
+import QPainleve.AlgebraicGeometry.Chow.RationalSurface.ExceptionalCurve
 import QPainleve.AlgebraicGeometry.EffectiveCartierDivisor.Integral
 import QPainleve.AlgebraicGeometry.IdealSheaf.Integral
 import QPainleve.AlgebraicGeometry.IntersectionNumber.ExceptionalCurve.Numerical
@@ -50,34 +51,6 @@ local notation "B(" S ")" => classIntersectionNumber k S
 local notation "P" => primeDivisorClass
 local notation "curveIdeal" p:arg =>
   vanishingIdeal (Closeds.mk (closure {(p : X)}) isClosed_closure)
-
-section Source
-
-variable [Scheme.IsRationalOver (X ↘ Spec (.of k))] [IsIntegral X] [IsLocallyNoetherian X]
-  [∀ x : X, UniqueFactorizationMonoid (X.presheaf.stalk x)]
-
-private theorem intersectionNumbers_of_exceptionalPrime (p : CodimensionOnePoint X)
-    (hE : (curveIdeal p).IsExceptionalCurveOfFirstKind) :
-    B(X) (P p) (P p) = -1 ∧ B(X) (P p) K(X) = -1 := by
-  let I := curveIdeal p
-  have hX := topologicalKrullDim_eq_of_smoothOfRelativeDimension (X ↘ Spec (.of k)) (n := 2)
-  have : I.subscheme.IsProjectiveOver k :=
-    Scheme.IsProjectiveOver.of_isClosedImmersion k I.subschemeι
-  have : I.subscheme.IsCurveOver k := Scheme.isCurveOver_iff.mpr
-    ⟨inferInstance, inferInstance, QPainleve.topologicalKrullDim_vanishingIdeal_subscheme k hX p⟩
-  have hI : I.IsEffectiveCartier := isEffectiveCartier_vanishingIdeal_closure_singleton p.property
-  have hnum :=
-    hI.isExceptionalCurveOfFirstKind_iff_genus_eq_zero_and_classIntersectionNumber (k := k) hX.le
-  obtain ⟨hg, hsq⟩ := hnum.mp hE
-  have hsq' : B(X) (P p) (P p) = -1 := by
-    simpa only [primeDivisorClass_def] using hsq
-  have hadj := two_mul_genus_sub_two_eq_intersection_primeDivisorClass k p
-  dsimp only at hadj
-  have hg' : (curveIdeal p).subscheme.genus k = 0 := hg
-  rw [hg', hsq'] at hadj
-  exact ⟨hsq', by omega⟩
-
-end Source
 
 variable [hRatX : Scheme.IsRationalOver (X ↘ Spec (.of k))]
   [hRatY : Scheme.IsRationalOver (Y ↘ Spec (.of k))]
@@ -167,7 +140,10 @@ theorem exists_pairwise_disjoint_exceptionalCurves_of_nefCone_isometry {ι : Typ
     exact (E j).vanishingIdeal_closure_subschemeι_genericPoint
   have hP (j : ι) : P (p j) = (mk (hE j).isEffectiveCartier.toInvertibleSheaf)⁻¹ := by
     rw [primeDivisorClass_def, mk_toInvertibleSheaf_congr _ _ (hp j)]
-  have hnum (j : ι) := intersectionNumbers_of_exceptionalPrime k (p j) (by rw [hp]; exact hE j)
+  have hnum (j : ι) := by
+    have h := isExceptionalCurveOfFirstKind_iff_primeDivisorClass k (p j)
+    dsimp only at h
+    exact h.mp (by rw [hp]; exact hE j)
   have horth : Pairwise (fun i j ↦ B(X) (P (p i)) (P (p j)) = 0) := by
     intro i j hij
     have hd : Disjoint ((E i).support : Set X) (E j).support := hdis hij
