@@ -17,6 +17,7 @@ import QPainleve.AlgebraicGeometry.CartierDivisor.Support
 import QPainleve.AlgebraicGeometry.Chow.Isomorphism
 import QPainleve.AlgebraicGeometry.Chow.Nef.Boundary
 import QPainleve.AlgebraicGeometry.Curves.Node.BoundaryRestriction
+import QPainleve.AlgebraicGeometry.Curves.Node.Cartier
 import QPainleve.AlgebraicGeometry.EffectiveCartierDivisor.Dimension
 import QPainleve.AlgebraicGeometry.IdealSheaf.Image.Over
 import QPainleve.AlgebraicGeometry.IntersectionNumber.Nef.Pullback
@@ -57,6 +58,17 @@ local notation "classOf(" h ")" => (LineBundleClass.mk (IsEffectiveCartier.toInv
 namespace MarkedSurface
 
 variable (M)
+
+/-- The closed nodal boundary of a marked surface defines an effective Cartier ideal. -/
+theorem isEffectiveCartier_boundaryIdeal : D[M].IsEffectiveCartier := by
+  let : IsClosedImmersion M.pair.hom.left := M.closedImmersion
+  let : SmoothOfRelativeDimension 2 (M.surface ↘ S) := M.smooth
+  let : PrestableFamily (M.boundary ↘ S) := M.prestable
+  let : CompactSpace M.boundary := QuasiCompact.compactSpace_of_compactSpace (M.boundary ↘ S)
+  apply M.pair.hom.left.isEffectiveCartier_ker_of_atWorstNodalOfRelativeDimensionOne
+    (k := k)
+  rw [comp_over]
+  exact PrestableFamily.atWorstNodalOfRelativeDimensionOne
 
 /-- The ambient codimension-one point of the numbered component of a Cartier boundary. -/
 def boundaryPrime (hM : M.pair.hom.left.ker.IsEffectiveCartier) (j : ZMod n) :

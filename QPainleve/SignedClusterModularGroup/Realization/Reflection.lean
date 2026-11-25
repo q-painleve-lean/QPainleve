@@ -105,23 +105,26 @@ theorem isCharacteristic_sum_boundaryClass (hD : (D).IsEffectiveCartier)
 
 open SignedBoundaryIsometryGroup
 
+local notation "cartier" => M.isEffectiveCartier_boundaryIdeal
+
 /-- A primitive nef square-zero anticanonical cycle on a marked rational surface admits a
 signed Picard involution that reflects the numbered components about a component. It fixes the
 total cycle and a square `-1` class meeting that component once. On the orthogonal complement
 the involution is negation corrected in the direction of the total cycle. -/
-theorem exists_marked_boundary_reversing_involution (hD : (D).IsEffectiveCartier)
+theorem exists_marked_boundary_reversing_involution
     (hcan : letI : SmoothOfRelativeDimension 2 f := M.smooth
-      classOf(hD) = K⁻¹) (hnef : (classOf(hD)).IsNef k f)
-    (hsq : Chow.classIntersectionNumber k M.surface classOf(hD) classOf(hD) = 0)
-    (hprim : IsPrimitive (Additive.ofMul classOf(hD))) :
-    ∃ (j₀ : ZMod n) (a : L) (s : signedBoundaryIsometryGroup B d[hD]),
-      B a a = -1 ∧ (∀ j, B a (d[hD] j) = if j = j₀ then 1 else 0) ∧
-      sign B d[hD] s = -1 ∧ s * s = 1 ∧
-      (toIsometry B d[hD] s).val a = a ∧
-      (toIsometry B d[hD] s).val (δ[hD]) = δ[hD] ∧
-      (∀ j, (toIsometry B d[hD] s).val (d[hD] j) = d[hD] (2 * j₀ - j)) ∧
-      (∀ x, x ∈ B.orthogonal (Submodule.span ℤ (Set.range d[hD])) →
-        (toIsometry B d[hD] s).val x = -x + (2 * B x a) • (δ[hD])) := by
+      classOf(cartier) = K⁻¹) (hnef : (classOf(cartier)).IsNef k f)
+    (hsq : Chow.classIntersectionNumber k M.surface classOf(cartier) classOf(cartier) = 0)
+    (hprim : IsPrimitive (Additive.ofMul classOf(cartier))) :
+    ∃ (j₀ : ZMod n) (a : L) (s : signedBoundaryIsometryGroup B d[cartier]),
+      B a a = -1 ∧ (∀ j, B a (d[cartier] j) = if j = j₀ then 1 else 0) ∧
+      sign B d[cartier] s = -1 ∧ s * s = 1 ∧
+      (toIsometry B d[cartier] s).val a = a ∧
+      (toIsometry B d[cartier] s).val (δ[cartier]) = δ[cartier] ∧
+      (∀ j, (toIsometry B d[cartier] s).val (d[cartier] j) = d[cartier] (2 * j₀ - j)) ∧
+      (∀ x, x ∈ B.orthogonal (Submodule.span ℤ (Set.range d[cartier])) →
+        (toIsometry B d[cartier] s).val x = -x + (2 * B x a) • (δ[cartier])) := by
+  let hD := cartier
   let : M.surface.IsProjectiveOver k := M.projective
   let : SmoothOfRelativeDimension 2 f := M.smooth
   let : B.IsPerfPair := M.isPerfPair_of_isRationalOver
