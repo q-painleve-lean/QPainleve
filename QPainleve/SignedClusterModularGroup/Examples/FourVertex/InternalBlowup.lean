@@ -16,16 +16,15 @@ public import QPainleve.SignedClusterModularGroup.Examples.FourVertex.Words
 import QPainleve.Algebra.Cluster.ChargeKernel.Index
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Intersection
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Modification
-import QPainleve.AlgebraicGeometry.Blowup.Tower.Nodal.Canonical
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Projective
 import QPainleve.AlgebraicGeometry.CartierDivisor.Support
 import QPainleve.AlgebraicGeometry.Curves.Node.CycleAction
 import QPainleve.AlgebraicGeometry.IdealSheaf.Image.Over
-import QPainleve.AlgebraicGeometry.Modules.Differentials.Restriction
+import QPainleve.Geometry.Toric.Fan.Boundary.Canonical
 import QPainleve.Geometry.Toric.Fan.Boundary.DualGraph
 import QPainleve.Geometry.Toric.Fan.Boundary.Prestable
-import QPainleve.Geometry.Toric.Fan.Hirzebruch.Canonical
 import QPainleve.Geometry.Toric.Fan.Logarithmic.InternalBlowup
+import QPainleve.Geometry.Toric.Fan.Picard.Hirzebruch
 import QPainleve.Geometry.Toric.Fan.Subdivision.Projective
 import TauCeti.AlgebraicGeometry.Curves.Node.Reduced
 
@@ -353,12 +352,9 @@ private theorem primitive_nef_square_zero (hD : (D).IsEffectiveCartier) :
       simp only [map_sum, hrow, Finset.sum_const_zero]
     simpa only [Q, classIntersectionBilinForm_apply, toMul_ofMul] using hzero
 
-section Canonical
+section Rational
 
 open LineBundleClass Scheme.IdealSheafData
-
-local notation "K(" Z ")" => mk (QPainleve.canonicalBundle ℂ Z 2)
-local notation "D₀" => Φ.boundaryIdeal inferInstance
 
 variable {Ω : Fan i₂} [Nonempty Ω.cones]
   (hΩ : Ω.IsRegular) (hcΩ : Ω.IsComplete) (r : Fin 4 ≃ Ω.Ray)
@@ -394,35 +390,7 @@ private theorem rational_of_octagon :
   exact Scheme.BirationalOver.isRationalOver f (W ↘ S)
     (a.hom.birationalOver _ _ (comp_over a.hom S))
 
-include hΦ hΩ hcΩ hr a ha hT₀ in
-private theorem canonical_octagon (hD : (D₀).IsEffectiveCartier)
-    (hB : ((P).comap T₀.toBase).radical.comap a.hom = D₀) :
-    let := smooth_base hΦ
-    mk hD.toInvertibleSheaf = K(X) := by
-  intro _
-  let : (Q).IsProjectiveOver ℂ := Ω.isProjectiveOver_algebraicRealization_of_isComplete hΩ hcΩ b₂
-  let : SmoothOfRelativeDimension 2 (Q ↘ S) := smooth_base hΩ
-  have hq : (Q ↘ S) = Ω.algebraicRealizationStructureMap :=
-    Ω.algebraicRealization_over
-  let : IsNoetherian Q := isNoetherian_of_finiteType (Q ↘ S)
-  have hnod : IsNodalBoundaryTower P (Q ↘ S) (𝟙 _) T₀ := hq.symm ▸ hT₀
-  let hP := Ω.isEffectiveCartier_boundaryIdeal hΩ hcΩ rank_two
-  have hN : AtWorstNodalOfRelativeDimensionOne ((P).subschemeι ≫ (Q ↘ S)) := by
-    rw [hq]
-    exact Ω.atWorstNodalOfRelativeDimensionOne_boundary hΩ hcΩ rank_two
-  let hE := (hnod.radical_comap_toBase hP hN).1
-  let : W.Over S := ⟨T₀.toBase ≫ (Q ↘ S)⟩
-  let : SmoothOfRelativeDimension 2 (W ↘ S) := hnod.isClosedPointTower.smoothOfRelativeDimension _
-  let : a.hom.IsOver S := base_over a ha
-  have hKE : mk hE.toInvertibleSheaf = K(W) :=
-    (hnod.canonicalClass_radical_comap_toBase_iff hP hN).mpr
-      (Fan.mk_toInvertibleSheaf_boundaryIdeal_eq_mk_canonicalBundle_of_hirzebruch
-        b₂ 0 hΩ hcΩ r hr hP)
-  rw [mk_toInvertibleSheaf_congr hD (hE.comap a.hom) hB.symm,
-    ← hE.pullback_mk_toInvertibleSheaf (hE.comap a.hom), hKE, pullback_mk,
-    mk_pullback_canonicalBundle]
-
-end Canonical
+end Rational
 
 local notation "Cycle(" C ")" =>
   Scheme.NodalCycleNumbering (Empty.elim : Empty → Scheme.Hom.smoothLocus (C ↘ S)) 8
@@ -505,7 +473,7 @@ theorem exists_four_vertex_internal_blowup (parameters : Fin 4 → ℂˣ) :
               (LineBundleClass.primeDivisorClass (p k)) =
               (-2 : ℤ) * (if j = k then 1 else 0) + (if k = j - 1 then 1 else 0) +
                 (if k = j + 1 then 1 else 0) := by
-  obtain ⟨Ω, hΩ, hcΩ, r, hr, Ψ, hΨ, hcΨ, rays, H, W, T₀, a, hT₀, ha, hB, hv, hnext, -⟩ :=
+  obtain ⟨Ω, hΩ, hcΩ, r, hr, Ψ, hΨ, hcΨ, rays, H, W, T₀, a, hT₀, ha, -, hv, hnext, -⟩ :=
     exists_four_vertex_octagon_blowup
   let : Nonempty Ω.cones := hcΩ.nonempty_cones
   let : Nonempty Ψ.cones := hcΨ.nonempty_cones
@@ -521,7 +489,7 @@ theorem exists_four_vertex_internal_blowup (parameters : Fin 4 → ℂˣ) :
   let hpre := prestable_boundary rays hΨ hcΨ parameters
   let : IsReduced M'.2.boundaryι.ker.subscheme := hpre.atWorstNodalOfRelativeDimensionOne.isReduced
   have hK := Fan.canonicalClass_internalBlowupTower b₂ (diagonalRay rays) parameters hΨ hD₀ hD
-    (canonical_octagon hΨ hΩ hcΩ r hr hT₀ a ha hD₀ hB)
+    (Ψ.canonicalClass_boundaryIdeal hΨ hcΨ b₂ hD₀)
   obtain ⟨hprim, hnef, hsq⟩ := primitive_nef_square_zero rays hv hΨ hcΨ hnext parameters hD
   obtain ⟨A, hA⟩ := exists_numbering_matching_primes rays hΨ hcΨ hnext parameters hD
   have hclosed := Fan.isClosedPointTower_internalBlowupTower b₂ (diagonalRay rays) parameters
