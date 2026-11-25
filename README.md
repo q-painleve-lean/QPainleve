@@ -3,13 +3,24 @@
 A Lean 4 library on q-Painlevé equations, built on
 [Tau Ceti](https://github.com/TauCetiProject/TauCeti) and Mathlib.
 
-Targets live in [QPainleveRoadmap](https://github.com/q-painleve-lean/QPainleveRoadmap).
+QPainleve formalizes theory related to q-Painlevé equations. Its content follows the roadmaps in
+[QPainleveRoadmap](https://github.com/q-painleve-lean/QPainleveRoadmap): each roadmap lays out a
+cohesive body of mathematics related to q-Painlevé equations, and its README is the definitive
+specification.
+
+## Relation to Tau Ceti
+
+QPainleve is downstream of Tau Ceti: it depends on Tau Ceti's `main` branch and follows its
+updates. Mathlib comes in through Tau Ceti.
+
+General theory that is not specific to q-Painlevé equations should preferably be formalized in
+Tau Ceti. This is a guideline for writing QPainleve roadmaps.
 
 ## Main theorems
 
 - **Toric models.** Every numbered anticanonical cycle on a smooth projective rational complex
   surface has a toric presentation:
-  [`TauCeti.Toric.Fan.hasToricPresentation_of_ruled_reduction`](QPainleve/Geometry/Toric/Fan/Presentation/Induction.lean).
+  [`AlgebraicGeometry.Scheme.IdealSheafData.hasToricPresentation_of_anticanonical_cycle`](QPainleve/Geometry/Toric/Fan/Presentation/Induction.lean).
 - **Torelli theorem.** For anticanonical pairs without internal (−2)-curves, a Picard isometry
   that matches the boundary components, intertwines the signed boundary periods and sends an
   ample class to an ample class is induced by an isomorphism of pairs:
