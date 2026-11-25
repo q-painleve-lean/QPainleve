@@ -39,22 +39,6 @@ local notation "P" => CommMon.relativeProj A[F[E]]
 local notation "p" => CommMon.relativeProjToBase A[F[E]]
 local notation "T" => CommMon.relativeProjTwistingSheaf A[F[E]] 1
 
-private theorem exists_quotient_of_section (s : X ⟶ P) (hs : s ≫ p = 𝟙 X)
-    (L : FixedRank X 1) (e : (Scheme.Modules.pullback s).obj T ≅ L.obj.obj) :
-    ∃ q : F[E] ⟶ F[L], ∃ hq : Epi q.hom,
-      letI := hq
-      L.relativeProjSectionOfQuotient q = s := by
-  let φ := F[E].relativeProjLineQuotient s hs
-  let i := (Scheme.Modules.pullbackId X).app (F[E]).obj
-  let q : F[E] ⟶ F[L] := ObjectProperty.homMk (C := X.Modules) (i.inv ≫ φ ≫ e.hom)
-  have : Epi φ := (F[E]).epi_relativeProjLineQuotient s hs
-  have hq : Epi q.hom := by
-    -- The inclusion of quasicoherent sheaves forgets to the specified quotient map.
-    change Epi (i.inv ≫ φ ≫ e.hom)
-    infer_instance
-  refine ⟨q, hq, L.relativeProjSectionOfQuotient_eq_of_relativeProjLineQuotient q s hs e ?_⟩
-  exact (i.hom_inv_id_assoc (φ ≫ e.hom)).symm
-
 /-- Disjoint sections of a rank-two projective bundle give two line quotients inducing
 an isomorphism to their direct sum. Each quotient may be taken with any target line
 bundle identified with the tautological twist restricted to the corresponding section. -/
@@ -69,8 +53,8 @@ theorem exists_split_projective_bundle_iso_of_disjoint_sections
       letI := hr
       IsIso (biprod.lift q r) ∧
         L.relativeProjSectionOfQuotient q = s ∧ M.relativeProjSectionOfQuotient r = t := by
-  obtain ⟨q, hq, hqs⟩ := exists_quotient_of_section E s hs L e
-  obtain ⟨r, hr, hrt⟩ := exists_quotient_of_section E t ht M f
+  obtain ⟨q, hq, hqs⟩ := L.exists_relativeProjLineQuotient_of_section (F := F[E]) s hs e
+  obtain ⟨r, hr, hrt⟩ := M.exists_relativeProjLineQuotient_of_section (F := F[E]) t ht f
   let := hq
   let := hr
   exact ⟨q, r, hq, hr, E.isIso_biprod_lift_of_disjoint_quotient_sections L M q r

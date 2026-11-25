@@ -86,4 +86,22 @@ theorem relativeProjSectionOfQuotient_eq_of_relativeProjLineQuotient
     (by simpa only [Iso.trans_hom, Iso.symm_hom, Category.assoc,
       Iso.hom_inv_id, Category.comp_id] using congrArg (· ≫ e.inv) h')
 
+/-- A section is induced by a line quotient with any target line bundle identified
+with the pullback of the tautological twist along that section. -/
+theorem exists_relativeProjLineQuotient_of_section (E : FixedRank X 1)
+    (s : X ⟶ (A).relativeProj) (hs : s ≫ p = 𝟙 X)
+    (e : (Scheme.Modules.pullback s).obj T ≅ E.obj.obj) :
+    ∃ q : F ⟶ L[E], ∃ hq : Epi q.hom,
+      letI := hq
+      E.relativeProjSectionOfQuotient q = s := by
+  let φ := F.relativeProjLineQuotient s hs
+  let i := (Scheme.Modules.pullbackId X).app F.obj
+  let q : F ⟶ L[E] := ObjectProperty.homMk (C := X.Modules) (i.inv ≫ φ ≫ e.hom)
+  have : Epi φ := F.epi_relativeProjLineQuotient s hs
+  have hq : Epi q.hom := by
+    change Epi (i.inv ≫ φ ≫ e.hom)
+    infer_instance
+  refine ⟨q, hq, E.relativeProjSectionOfQuotient_eq_of_relativeProjLineQuotient q s hs e ?_⟩
+  exact (i.hom_inv_id_assoc (φ ≫ e.hom)).symm
+
 end TauCeti.AlgebraicGeometry.FiniteLocallyFreeSheaf.FixedRank
