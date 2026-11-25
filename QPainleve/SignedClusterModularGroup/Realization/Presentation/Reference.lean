@@ -383,9 +383,10 @@ theorem exists_marked_reference_fiber_of_toric_presentation
       (c : GeometricRealization.Point Centers[r]) (f : X ⤏ XTor[r]),
       (b' = b ∨ b' = b.reindex (Equiv.swap 0 1)) ∧
         Q.HasNodalModel c (MarkedSurface.ofBoundary D A μ f) := by
-  obtain ⟨Φ, hΦ, hc, r, s, u, k, W, T, hT, e, hbase, hker⟩ := (hasToricPresentation_iff ..).mp hP
+  obtain ⟨r, ⟨P⟩⟩ := (hasToricPresentation_iff ..).mp hP
   obtain ⟨b', Q, c, f, hframe, _, hf⟩ :=
-    exists_marked_reference_fiber_of_ordered_towers hΦ hc s u hT e hbase hker hD A μ
+    exists_marked_reference_fiber_of_ordered_towers P.regular P.complete P.rays P.parameters
+      P.isNodal P.iso P.iso_over P.iso_boundary hD A μ
   exact ⟨b', r, Q, c, f, hframe.imp And.left And.left, hf⟩
 
 end FromToricPresentation

@@ -10,7 +10,6 @@ public import QPainleve.SignedClusterModularGroup.Realization.Endpoint.PicardAct
 
 import QPainleve.SignedClusterModularGroup.Realization.Anticanonical
 import QPainleve.SignedClusterModularGroup.Realization.NodalFiber
-import QPainleve.SignedClusterModularGroup.Realization.Specialization
 
 /-!
 # Prescribed Picard actions from resolved changes of presentation
@@ -23,7 +22,8 @@ map to reach a different point of the target presentation.
 
 The word is supplied by
 `Fan.LogarithmicProjection.exists_word_of_resolved_sarkisov_path_to_model`; the marked
-comparison uses `FiberRealization.marked_actions_eq_of_compOfDefined_on_resolution`.
+comparison uses `FiberRealization.marked_actions_eq_of_compOfDefined` after descending
+the evaluation square to the source surface.
 For a factorization on a nodal refinement, the fixed-center evaluation also
 descends to the original marked surface.
 -/
@@ -105,8 +105,8 @@ theorem signedPicardHom_apply_of_pair_iso_on_resolution
     ρ eval[E,w] = g := by
   let : IsIntegral (M (src[C,x])).surface := (M (src[C,x])).integral
   let : (M (src[C,x])).surface.IsProjectiveOver ℂ := (M (src[C,x])).projective
-  obtain ⟨hI, hbranch⟩ := (R.fiber x).marked_actions_eq_of_compOfDefined_on_resolution
-    p q e π Q.complete hι hindex he
+  obtain ⟨hI, hbranch⟩ := (R.fiber x).marked_actions_eq_of_compOfDefined p q e Q.complete hι hindex
+    ((π.compOfDefined_eq_iff_of_dominant _ _ _).mp he)
   rw [hρ]
   apply Subtype.ext
   rw [coe_toSignedBoundaryIsometry]

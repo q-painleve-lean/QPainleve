@@ -201,14 +201,13 @@ private theorem hasToricPresentation_of_plane (hi : IsIntegralLattice i)
       toBase_snoc, toBase_nil, Category.comp_id]
 
 /-- Every numbered anticanonical cycle on a smooth projective rational complex
-surface has a toric presentation in the prescribed lattice basis. The proof
-reduces the ruled cases by boundary complexity and transports the presentation
-through the original point-blowup tower. -/
-theorem hasToricPresentation_of_ruled_reduction (hi : IsIntegralLattice i)
+surface has a toric presentation in the prescribed lattice frame. -/
+theorem _root_.AlgebraicGeometry.Scheme.IdealSheafData.hasToricPresentation_of_anticanonical_cycle
     {X : Scheme} [X.Over S] [X.IsProjectiveOver ℂ] [SmoothOfRelativeDimension 2 (X ↘ S)]
     [Scheme.IsRationalOver (X ↘ S)]
-    {D : X.IdealSheafData} [PrestableFamily (D.subscheme ↘ S)]
+    (D : X.IdealSheafData) [PrestableFamily (D.subscheme ↘ S)]
     {n : ℕ} [NeZero n] {ι : Type} {p : ι → (D.subscheme ↘ S).smoothLocus}
+    (b : Basis (Fin 2) ℤ N) (hi : IsIntegralLattice i)
     (A : Scheme.NodalCycleNumbering p n) (hD : D.IsEffectiveCartier)
     (hK : LineBundleClass.mk hD.toInvertibleSheaf = K[X]) :
     D.HasToricPresentation (X ↘ S) b i := by

@@ -75,11 +75,11 @@ theorem boundaryOrderTable_eq (survivors : Finset (Fin m)) (hcard : survivors.ca
     (charge : Fin r → Fin 2 → ℤ) (ray : Fin m → Fin 2 → ℤ)
     (hcharge : ∀ k, charge k = b.repr (s k).primitiveGenerator)
     (hray : ∀ k ∈ survivors, ray k = b.repr ((RayIndex).symm k).primitiveGenerator) :
-    boundaryOrderTable charge ray survivors hcard = fun j : Fin n ↦
-      Fan.rayBoundaryOrders b s (p.numberedBoundaryRays hD (ZMod.finEquiv n j)) := by
+    boundaryOrderTable charge ray survivors hcard = p.numberedBoundaryOrders hD := by
   funext j k
   have hsurvives l hl := (p.mem_range_numberedBoundaryRays_iff hD _).mpr (hkeep l hl)
-  rw [p.numberedBoundaryRays_eq_orderEmbOfFin hD survivors hcard hsurvives,
+  rw [p.numberedBoundaryOrders_apply, RingEquiv.toEquiv_eq_coe, RingEquiv.coe_toEquiv,
+    p.numberedBoundaryRays_eq_orderEmbOfFin hD survivors hcard hsurvives,
     Fan.rayBoundaryOrders_apply_eq_repr]
   simp only [boundaryOrderTable_apply, hcharge, hray _ (Finset.orderEmbOfFin_mem survivors hcard j)]
 

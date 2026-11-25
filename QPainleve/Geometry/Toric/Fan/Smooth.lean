@@ -5,10 +5,8 @@ Authors: The QPainleve contributors
 -/
 module
 
-public import Mathlib.AlgebraicGeometry.Morphisms.Smooth
+public import QPainleve.Geometry.Toric.RegularChart
 public import TauCeti.Geometry.Toric.Algebraic.Fan.Over
-
-import QPainleve.Geometry.Toric.RegularChart
 
 /-!
 # Smoothness of regular toric fan schemes
@@ -21,10 +19,12 @@ public section
 
 open AlgebraicGeometry CategoryTheory
 
-namespace TauCeti.Toric.Fan
+namespace TauCeti.Toric
 
 variable {N : Type} {V : Type*} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V}
+
+namespace Fan
 
 /-- The realization of a regular fan is smooth over `ℂ` of relative dimension the lattice rank. -/
 theorem smoothOfRelativeDimension_algebraicRealizationStructureMap (Φ : Fan i) (hΦ : Φ.IsRegular) :
@@ -40,14 +40,9 @@ theorem smoothOfRelativeDimension_algebraicRealizationStructureMap (Φ : Fan i) 
   let cone : Φ.cones := σ
   suffices SmoothOfRelativeDimension n
     (Φ.affineToricChartι cone ≫ Φ.algebraicRealizationStructureMap) from this
-  rw [Φ.affineToricChartι_comp_algebraicRealizationStructureMap cone,
-    HasRingHomProperty.Spec_iff (P := @SmoothOfRelativeDimension n)
-      (Q := RingHom.Locally (@RingHom.IsStandardSmoothOfRelativeDimension n)),
-    CommRingCat.hom_ofHom]
-  apply RingHom.locally_of (RingHom.isStandardSmoothOfRelativeDimension_respectsIso (n := n))
-  rw [RingHom.isStandardSmoothOfRelativeDimension_algebraMap (n := n)]
-  have hCone := isRegular_iff.1 hΦ cone.val cone.property
-  exact hCone.isStandardSmoothOfRelativeDimension_affineCoordinateRing Φ.lattice
+  rw [Φ.affineToricChartι_comp_algebraicRealizationStructureMap cone]
+  exact (isRegular_iff.mp hΦ cone.val cone.property).smoothOfRelativeDimension_affineToricScheme
+    Φ.lattice
 
 /-- The structure morphism of a regular toric fan scheme is smooth. -/
 theorem smooth_algebraicRealizationStructureMap (Φ : Fan i) (hΦ : Φ.IsRegular) :
@@ -55,4 +50,6 @@ theorem smooth_algebraicRealizationStructureMap (Φ : Fan i) (hΦ : Φ.IsRegular
   have := Φ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
   SmoothOfRelativeDimension.smooth (Module.finrank ℤ N) _
 
-end TauCeti.Toric.Fan
+end Fan
+
+end TauCeti.Toric

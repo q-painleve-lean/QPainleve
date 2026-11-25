@@ -121,12 +121,12 @@ theorem HasToricPresentation.nodalBlowup
     (h : D.HasToricPresentation s b i) (hp : IsClosed ({p} : Set X))
     (hn : D.IsNodeOfReducedBoundary s p) :
     (D.comap π).radical.HasToricPresentation (π ≫ s) b i := by
-  obtain ⟨Φ, hΦ, hc, m, r, c, n, Z, T, hT, e, he, hD⟩ := (hasToricPresentation_iff ..).mp h
+  obtain ⟨m, ⟨Φ, hΦ, hc, r, c, n, Z, T, hT, e, he, hD⟩⟩ := (hasToricPresentation_iff ..).mp h
   obtain ⟨Ψ, hΨ, H, l, W, U, -, hU, a, _, _, _, ha, hB⟩ :=
     Fan.exists_toric_presentation_of_nodal_boundary_tower b r c hΦ hc hT
       (IsNodalBoundaryTower.of_node hp hn) e he hD
-  refine (hasToricPresentation_iff ..).mpr ⟨Ψ, hΨ, H.isComplete_iff.mpr hc, m, H.liftRay ∘ r, c,
-    l, W, U, ?_, a, ?_, ?_⟩
+  refine ToricPresentation.hasToricPresentation
+    ⟨Ψ, hΨ, H.isComplete_iff.mpr hc, H.liftRay ∘ r, c, l, W, U, ?_, a, ?_, ?_⟩
   · simpa only [toBase_snoc, toBase_nil, Category.comp_id] using hU
   · simpa only [toBase_snoc, toBase_nil, Category.comp_id, Category.assoc] using ha
   · simpa only [toBase_snoc, toBase_nil, Category.comp_id] using hB
@@ -142,11 +142,11 @@ theorem hasToricPresentation_of_nodal_tower (b : Module.Basis (Fin 2) ℤ N)
     (ht : a.hom ≫ t = T.toBase ≫ s)
     (hE : (E.comap a.hom).support = (D.comap T.toBase).support)
     (h : E.HasToricPresentation t b i) : D.HasToricPresentation s b i := by
-  obtain ⟨Φ, hΦ, hc, n, rays, c, l, W, U, hU, e, he, hB⟩ := (hasToricPresentation_iff ..).mp h
+  obtain ⟨n, ⟨Φ, hΦ, hc, rays, c, l, W, U, hU, e, he, hB⟩⟩ := (hasToricPresentation_iff ..).mp h
   obtain ⟨W', Wtower, f, hW, hbase, hrad⟩ := hT.exists_append_of_iso hU a ht hE
   have ht' : a.inv ≫ T.toBase ≫ s = t := by rw [← ht, Iso.inv_hom_id_assoc]
-  refine (hasToricPresentation_iff ..).mpr
-    ⟨Φ, hΦ, hc, n, rays, c, m + l, W', Wtower, hW, e ≪≫ f.symm, ?_, ?_⟩
+  refine ToricPresentation.hasToricPresentation
+    ⟨Φ, hΦ, hc, rays, c, m + l, W', Wtower, hW, e ≪≫ f.symm, ?_, ?_⟩
   · simpa only [Iso.trans_hom, Iso.symm_hom, hbase, Category.assoc, Iso.inv_hom_id_assoc, ht']
       using he
   · simpa only [Iso.trans_hom, Iso.symm_hom, hrad, ← comap_comp, Category.assoc,

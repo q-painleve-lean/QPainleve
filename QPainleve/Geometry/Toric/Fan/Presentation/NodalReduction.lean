@@ -208,13 +208,14 @@ theorem hasToricPresentation_of_nodal_blowup_and_internal_contraction
   let : IsNoetherian X := isNoetherian_of_finiteType (X ↘ S)
   let : IsNoetherian Y := isNoetherian_of_finiteType (Y ↘ S)
   have hπ : T[x].toBase = J[x].blowupToBase := by simp
-  obtain ⟨Φ, hΦ, hc, n, r, c, l, W, U, hU, e, he, hB⟩ := (hasToricPresentation_iff ..).mp h
+  obtain ⟨n, ⟨Φ, hΦ, hc, r, c, l, W, U, hU, e, he, hB⟩⟩ := (hasToricPresentation_iff ..).mp h
   let : Nonempty Φ.cones := hc.nonempty_cones
   obtain ⟨r', c', Z', T', hT', d, hd, hD'⟩ :=
     Fan.exists_toric_presentation_of_internal_contraction_after_nodal_tower b hΦ hc r c hD hN hK
       hT g (by rwa [hπ]) hy u rfl (by simpa only [hπ, R, support_radical] using hOmit)
       (by rwa [hπ]) e he (by rwa [hπ, radical_comap_of_isOpenImmersion])
-  exact (hasToricPresentation_iff ..).mpr ⟨Φ, hΦ, hc, n + 1, Fin.snoc r r', Fin.snoc c c',
-    1 + l, Z', T', hT', d, hd, by rwa [← radical_comap_of_isOpenImmersion]⟩
+  exact ToricPresentation.hasToricPresentation (r := n + 1)
+    ⟨Φ, hΦ, hc, Fin.snoc r r', Fin.snoc c c', 1 + l, Z', T', hT', d, hd,
+      by rwa [← radical_comap_of_isOpenImmersion]⟩
 
 end AlgebraicGeometry.Scheme.IdealSheafData

@@ -9,6 +9,7 @@ public import QPainleve.SignedClusterModularGroup.Realization.MarkedComparison
 public import QPainleve.SignedClusterModularGroup.Realization.Presentation
 
 import QPainleve.Geometry.Toric.Fan.Picard.Contraction.ChargeKernel
+import QPainleve.Geometry.Toric.Fan.Subdivision.Projective
 import QPainleve.SignedClusterModularGroup.Realization.NodalFiber
 import QPainleve.SignedClusterModularGroup.Realization.Presentation.Boundary
 
@@ -21,6 +22,9 @@ kernel. The inverse comparison is characterized by its image in the toric and
 total exceptional coordinates. Thus the comparison is independent of the center
 and of the nodal tower used to construct it.
 
+When the charge and exchange kernels agree, the negative total exceptional
+coefficients give the exchange-kernel coordinates in the same marking.
+
 The construction uses `Fan.existsUnique_contractedPicardMarkingOfRaySet_chargeKernelEquiv`.
 -/
 
@@ -28,7 +32,7 @@ public section
 
 open AlgebraicGeometry CategoryTheory Multiplicative
 open QPainleve.BlowupTower TauCeti TauCeti.AlgebraicGeometry TauCeti.Toric
-open QPainleve.CharacterTorus
+open QPainleve.CharacterTorus QPainleve.Cluster
 open Scheme Scheme.IdealSheafData LineBundleClass
 
 namespace QPainleve.SignedClusterModularGroup
@@ -130,8 +134,7 @@ local notation "Aux" => LinearMap.BilinForm.prod
   (-(dotProductBilin ℤ ℤ : LinearMap.BilinForm ℤ (Fin r → ℤ)))
 
 variable [Q.fan.algebraicRealization.IsProjectiveOver ℂ]
-  [SmoothOfRelativeDimension 2 (Q.fan.algebraicRealization ↘ S)]
-
+  [SmoothOfRelativeDimension 2 (Q.fan.algebraicRealization ↘ S)] in
 /-- One nodal model fixes the unique integral charge coordinates of the boundary orthogonal.
 The auxiliary intersection form is perfect, and the inverse charge coordinates agree with the
 toric and total exceptional coordinates of the presentation. -/
@@ -150,6 +153,46 @@ theorem HasNodalModel.existsUnique_chargeKernelEquiv (h : Q.HasNodalModel c M)
   let : B.IsPerfPair := M.isPerfPair_of_isRationalOver
   let hAux := Q.isPerfPair_auxiliaryPicardForm
   exact ⟨hAux, p.existsUnique_markedBoundaryOrthogonalEquivChargeKernel hnodal hD hd⟩
+
+local notation "Orth[" d "]" => B.orthogonal (Submodule.span ℤ (Set.range d))
+
+omit [NeZero n] in
+/-- The charge coordinates of a class in the marked boundary orthogonal are the negatives
+of its total exceptional coefficients. -/
+theorem exceptionalCoordinates_chargeKernelEquiv [Q.fan.algebraicRealization.IsProjectiveOver ℂ]
+    [SmoothOfRelativeDimension 2 (Q.fan.algebraicRealization ↘ S)] [(Aux).IsPerfPair]
+    {d : ZMod n → L}
+    (e : Orth[d] ≃ₗ[ℤ] (Fan.rayChargeMap Q.rays).ker)
+    (he : ∀ x, Q.inclusion (e.symm x).val =
+      ((Fan.boundaryOrthogonalEquivChargeKernel Q.regular Q.rays Aux).symm x).val)
+    (x : Orth[d]) :
+    (Q.inclusion x.val).2 = -(e x : Fin r → ℤ) := by
+  simpa only [LinearEquiv.symm_apply_apply, Fan.boundaryOrthogonalEquivChargeKernel_symm_snd]
+    using congrArg Prod.snd (he (e x))
+
+/-- A reference nodal model supplies exchange-kernel coordinates in its marked boundary
+orthogonal whenever the exchange and charge kernels agree. These coordinates are uniquely
+determined by the total exceptional coefficients of the marked classes. -/
+theorem HasNodalModel.existsUnique_exchangeKernelEquiv
+    {E : SkewExchangeMatrix (Fin r)} {d : ZMod n → L} (h : Q.HasNodalModel c M)
+    (hd : M.boundaryClass M.isEffectiveCartier_boundaryIdeal = d)
+    (hker : E.matrix.mulVecLin.ker = (Fan.rayChargeMap Q.rays).ker) :
+    ∃! e : Orth[d] ≃ₗ[ℤ] E.matrix.mulVecLin.ker,
+      ∀ x, (Q.inclusion x.val).2 = -(e x : Fin r → ℤ) := by
+  let : Q.fan.algebraicRealization.IsProjectiveOver ℂ :=
+    Q.fan.isProjectiveOver_algebraicRealization_of_isComplete Q.regular Q.complete b
+  let : SmoothOfRelativeDimension 2 (Q.fan.algebraicRealization ↘ S) := by
+    have hrank : Module.finrank ℤ N = 2 := by simpa using Module.finrank_eq_card_basis b
+    rw [← hrank, Q.fan.algebraicRealization_over]
+    exact Q.fan.smoothOfRelativeDimension_algebraicRealizationStructureMap Q.regular
+  obtain ⟨hAux, e, he, _⟩ := h.existsUnique_chargeKernelEquiv M.isEffectiveCartier_boundaryIdeal hd
+  let := hAux
+  let e' := e.trans (LinearEquiv.ofEq _ _ hker.symm)
+  have h' (x : Orth[d]) : (Q.inclusion x.val).2 = -(e' x : Fin r → ℤ) := by
+    simpa only [e', LinearEquiv.trans_apply, LinearEquiv.coe_ofEq_apply]
+      using exceptionalCoordinates_chargeKernelEquiv e he x
+  exact ⟨e', h', fun f hf ↦ LinearEquiv.ext fun x ↦
+    Subtype.ext (neg_injective ((hf x).symm.trans (h' x)))⟩
 
 end CompleteToricPresentation
 

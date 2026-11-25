@@ -12,18 +12,18 @@ import QPainleve.Algebra.Cluster.Word.Parity
 import QPainleve.AlgebraicGeometry.Chow.RationalSurface.Basic
 import QPainleve.SignedClusterModularGroup.Examples.ElevenVertex.Presentation
 import QPainleve.SignedClusterModularGroup.Realization.Presentation.Reference
-import QPainleve.SignedClusterModularGroup.Realization.Relations.OneComponent
+import QPainleve.SignedClusterModularGroup.Realization.Relations.Casimir
 
 /-!
 # Deciding relations of the eleven-vertex seed
 
 The ordered plane blowups give a marked reference model with one boundary component.
-The one-component relation criterion then reduces equality of independent X pullbacks to
+The squarefree-boundary relation criterion then reduces equality of independent X pullbacks to
 transport of the nine explicit integral Casimir basis vectors. The algorithm uses the
 original seed labels, including when the reference model uses the transposed lattice frame.
 
 The proof uses `exists_marked_reference_fiber_of_ordered_towers` and
-`CompleteToricPresentation.xPullback_eq_iff_exponentEquiv_eq_on_basis_of_one_component`.
+`CompleteToricPresentation.xPullback_eq_iff_exponentEquiv_eq_on_basis_of_squarefree`.
 -/
 
 public section
@@ -120,9 +120,9 @@ private theorem xPullback_eq_iff_columns (w v : Word B B) :
     let β := exchangeKernelBasis.map (LinearEquiv.ofEq _ _ hK.symm)
     simpa only [transportedColumns, funext_iff, β, Module.Basis.map_apply,
       LinearEquiv.coe_ofEq_apply, coe_exchangeKernelBasis_apply] using
-      Q.xPullback_eq_iff_exponentEquiv_eq_on_basis_of_one_component href hE
+      Q.xPullback_eq_iff_exponentEquiv_eq_on_basis_of_squarefree href hE
         (by rw [hcls]; exact hprim) (by rw [hcls]; exact hnef)
-        (by rw [hcls]; exact hsq) k p q β
+        (by rw [hcls]; exact hsq) squarefree_one k p q β
   rcases hframe with ⟨rfl, _⟩ | ⟨rfl, _⟩
   · exact criterion (by rw [hcharge]; exact exchangeMatrix_eq_chargeExchangeMatrix) rfl w v
   · apply xPullback_eq_iff_columns_of_neg k _ w v

@@ -5,6 +5,7 @@ Authors: The QPainleve contributors
 -/
 module
 
+public import Mathlib.Algebra.Module.Torsion.Basic
 public import Mathlib.LinearAlgebra.BilinearForm.Orthogonal
 public import Mathlib.LinearAlgebra.PerfectPairing.Basic
 
@@ -51,6 +52,33 @@ theorem orthogonalEquivDualQuotient_apply_mk (x : B.orthogonal S) (y : L) :
   change (↑_ : Dual R L) y = _
   rw [LinearEquiv.ofSubmodules_symm_apply, LinearEquiv.symm_symm, toPerfPair_apply,
     LinearMap.flip_apply]
+
+/-- Over a principal ideal domain, the left orthogonal of the right orthogonal consists
+of the vectors whose classes in the quotient are torsion. -/
+theorem mem_flip_orthogonal_orthogonal_iff_quotient_mem_torsion
+    [IsDomain R] [IsPrincipalIdealRing R] [Module.Finite R L] {x : L} :
+    x ∈ B.flip.orthogonal (B.orthogonal S) ↔
+      Submodule.Quotient.mk x ∈ Submodule.torsion R (L ⧸ S) := by
+  classical
+  let T := Submodule.torsion R (L ⧸ S)
+  rw [mem_orthogonal_iff]
+  constructor
+  · intro hx
+    by_contra h
+    have hq : T.mkQ (Submodule.Quotient.mk x) ≠ 0 :=
+      fun he ↦ h ((Submodule.Quotient.mk_eq_zero T).mp he)
+    obtain ⟨f, hf⟩ := Module.Projective.exists_dual_ne_zero R hq
+    obtain ⟨y, hy⟩ := (B.orthogonalEquivDualQuotient S).surjective (f.comp T.mkQ)
+    apply hf
+    rw [← LinearMap.comp_apply, ← hy, orthogonalEquivDualQuotient_apply_mk]
+    exact hx y y.property
+  · intro hx y hy
+    obtain ⟨a, ha⟩ := (Submodule.mem_torsion_iff _).mp hx
+    let f := B.orthogonalEquivDualQuotient S ⟨y, hy⟩
+    have hz := congrArg f ha
+    simp only [f, Submonoid.smul_def, map_smul, map_zero,
+      orthogonalEquivDualQuotient_apply_mk, smul_eq_mul] at hz
+    exact (mul_eq_zero.mp hz).resolve_left (nonZeroDivisors.coe_ne_zero a)
 
 variable {M : Type*} [AddCommGroup M] [Module.Finite ℤ M]
 

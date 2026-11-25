@@ -54,8 +54,8 @@ theorem hasToricPresentation (h : Q.HasNodalModel c M) :
   let := Q.prestable
   let := Q.neZero
   obtain ⟨p, Y, d, T, e, hT, hp⟩ := (Q.hasNodalModel_iff c M).mp h
-  refine (hasToricPresentation_iff ..).mpr
-    ⟨Q.fan, Q.regular, Q.complete, r, Q.rays, _, d, Y, T, hT, e.symm,
+  refine ToricPresentation.hasToricPresentation
+    ⟨Q.fan, Q.regular, Q.complete, Q.rays, _, d, Y, T, hT, e.symm,
       ?_, ?_⟩
   · simpa only [Iso.symm_hom, Category.assoc] using
       (congrArg (· ≫ M.surface ↘ S) hp).symm.trans p.projection_over
