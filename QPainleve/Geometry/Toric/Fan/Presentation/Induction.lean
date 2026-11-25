@@ -16,7 +16,6 @@ import QPainleve.AlgebraicGeometry.Blowup.Tower.Modification
 import QPainleve.AlgebraicGeometry.Chow.RationalSurface.MinimalModel
 import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.Polynomial.SymmetricAlgebra
 import QPainleve.Geometry.Toric.Fan.Hirzebruch.PositiveComplexity
-import QPainleve.Geometry.Toric.Fan.Hirzebruch.Rationality
 import QPainleve.Geometry.Toric.Fan.Hirzebruch.Recognition
 import QPainleve.Geometry.Toric.Fan.Picard.Hirzebruch
 import QPainleve.Geometry.Toric.Fan.Presentation.NodalReduction
