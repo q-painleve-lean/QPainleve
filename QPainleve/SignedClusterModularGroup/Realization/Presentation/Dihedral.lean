@@ -7,8 +7,7 @@ module
 
 public import QPainleve.SignedClusterModularGroup.Realization.Endpoint.PicardAction
 
-import QPainleve.SignedClusterModularGroup.Realization.Presentation.Family
-import QPainleve.SignedClusterModularGroup.Realization.Surjectivity.PicardAction
+import QPainleve.SignedClusterModularGroup.Realization.Presentation.Group
 
 /-!
 # Picard isometries of a boundary with at least three components
@@ -17,8 +16,8 @@ When the marked boundary components are distinguished by their classes and the c
 has length at least three, the Picard pullback determines the dihedral boundary action.
 In this case the signed cluster modular group is anti-isomorphic to the subgroup
 of Picard isometries acting by rotations or reflections of the numbered boundary.
-The construction uses `CompleteToricPresentation.exists_marked_family_of_nodal_model`
-and `GeometricRealization.existsUnique_signedPicardEquiv_of_presentation`.
+This is the projection of the marked signed Picard equivalence from
+`CompleteToricPresentation.exists_picardGroupEquivs_of_nodal_model`.
 -/
 
 public section
@@ -87,19 +86,13 @@ theorem exists_picardIsometryEquiv_of_nodal_model
           (-1 : ℤˣ) ^ w.inversionCount ∧
           ∀ a' : DihedralGroup n,
             (∀ j, (Ψ x).val.val (d (DihedralGroup.cycleVertexPerm a' j)) = d j) ↔ a' = a := by
-  obtain ⟨M, hD, hM, hfamily⟩ :=
-    Q.exists_marked_family_of_nodal_model href M₀.isEffectiveCartier_boundaryIdeal
+  obtain ⟨M, hD, hmark, Θ, _, hM, hfamily, hΘ, _, _⟩ :=
+    Q.exists_picardGroupEquivs_of_nodal_model href hE hprim hnef hsq
   dsimp only
   subst M₀
-  let P : ChargeSeed E N :=
-    ⟨b.detDualEquiv.toLinearMap, Fan.rayChargeMap Q.rays, b.detDualEquiv_self, hE.symm⟩
-  have hmark (z : Point Centers[r]) (j : ZMod n) := congrFun (hfamily z).2 j
-  obtain ⟨Θ, ⟨hΘ, -⟩, -⟩ := existsUnique_signedPicardEquiv_of_presentation
-    (Q := Q) (hD := hD) (hmark := hmark) P rfl rfl (fun z _ ↦ (hfamily z).1)
-    (hfamily c).1 hprim hnef hsq
   have hd := (M c).boundaryClass_injective_of_nef_square_zero _ hnef hsq
   refine ⟨M, hD, hmark, Θ.trans (MonoidHom.ofInjective (toIsometry_injective B _ hn hd)), rfl,
-    fun z ↦ (hfamily z).1, fun w ↦ ?_⟩
+    hfamily, fun w ↦ ?_⟩
   simp only [MulEquiv.trans_apply, MonoidHom.ofInjective_apply]
   refine ⟨fun R hR ↦ congrArg (toIsometry B _) ((hΘ w).2 R hR), ?_⟩
   let g := Θ (op (signedClusterModularGroupMap ℂ E (End.of w)))
