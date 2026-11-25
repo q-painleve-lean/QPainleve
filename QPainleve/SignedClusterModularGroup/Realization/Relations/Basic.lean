@@ -5,9 +5,8 @@ Authors: The QPainleve contributors
 -/
 module
 
-public import QPainleve.Algebra.Cluster.Word.Relations
 public import QPainleve.SignedClusterModularGroup.Realization.ChargeKernel
-public import QPainleve.SignedClusterModularGroup.Realization.NumberedRays
+public import QPainleve.SignedClusterModularGroup.Realization.Relations.Boundary
 
 import Mathlib.LinearAlgebra.Matrix.ToLin
 import QPainleve.SignedClusterModularGroup.BoundaryCycle
@@ -201,16 +200,13 @@ theorem xPullback_eq_iff_signedLoopInvariants_eq
   -- Read the geometric boundary permutations from the same integer table.
   obtain ⟨x⟩ := nonempty_centerPoint (T₀ := T) (T₁ := T) C
   obtain ⟨y⟩ := nonempty_centerPoint (T₀ := T) (T₁ := T) C'
-  have hfind₁ := R.boundaryRayOfOrders_eq_boundaryPerm x (p _ (hU x).1) (p _ (hU x).2)
-    (hD _) (hD _) hcΦ hE hindex
-  have hfind₂ := R'.boundaryRayOfOrders_eq_boundaryPerm y (p _ (hU' y).1) (p _ (hU' y).2)
-    (hD _) (hD _) hcΦ hE hindex
-  rw [hrays _ (hU x).2] at hfind₁
-  rw [hrays _ (hU' y).2] at hfind₂
+  have hsep : (Qform).SeparatingRight := LinearMap.IsPerfPair.separatingRight inferInstance
+  have hfind₁ := R.signedLoopInvariants_boundary_eq_some hsep x hcΦ hE hindex p₀ hnodal₀
+    (p _ (hU x).1) (p _ (hU x).2) (hnodal _ (hU x).2) (hD _) (fun j ↦ (β j : Cent))
+  have hfind₂ := R'.signedLoopInvariants_boundary_eq_some hsep y hcΦ hE hindex p₀ hnodal₀
+    (p _ (hU' y).1) (p _ (hU' y).2) (hnodal _ (hU' y).2) (hD _) (fun j ↦ (β j : Cent))
+  simp only [Path.signedLoopInvariants_def] at hfind₁ hfind₂
   rw [Path.signedLoopInvariants_eq_iff, ← hmatrix]
-  simp only [Fan.boundaryRayOfOrders_eq_find_coordinates, Function.Embedding.trans_apply,
-    Equiv.toEmbedding_apply, ← Fan.rayBoundaryOrders_apply_eq_repr, ← funext_iff]
-    at hfind₁ hfind₂
   rw [← (Option.map_injective (ZMod.finEquiv n).toEquiv.injective).eq_iff,
     hfind₁, hfind₂, Option.some.injEq]
   constructor
