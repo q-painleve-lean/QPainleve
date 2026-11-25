@@ -12,7 +12,7 @@ public import QPainleve.SignedClusterModularGroup.Realization.Presentation
 
 import QPainleve.Algebra.Cluster.Word.SubtractionFree
 import QPainleve.SignedClusterModularGroup.Boundary.RotationKernel
-import QPainleve.SignedClusterModularGroup.Realization.Endpoint.MonomialImage
+import QPainleve.SignedClusterModularGroup.Realization.Presentation.Casimir
 import QPainleve.SignedClusterModularGroup.Realization.NodalFiber
 import QPainleve.SignedClusterModularGroup.Realization.Reflection
 import TauCeti.LinearAlgebra.SesquilinearForm.TorsionFree
@@ -24,7 +24,7 @@ The Casimir kernel has order dividing the boundary saturation index.
 For a squarefree boundary length the transported exchange-kernel basis alone
 decides equality of signed loop pullbacks, including for two-component boundaries.
 
-The comparison uses `exists_exchangeKernelAction_reflection_of_presentation`
+The comparison uses `CompleteToricPresentation.nonempty_casimirActionComparison_of_nodal_model`
 to transport the signed Picard restriction to the exchange kernel.
 -/
 
@@ -37,7 +37,7 @@ open Scheme Scheme.IdealSheafData
 
 namespace QPainleve.SignedClusterModularGroup.CompleteToricPresentation
 
-open GeometricRealization (Point exists_exchangeKernelAction_reflection_of_presentation)
+open GeometricRealization (Point)
 
 local notation "S" => Spec (CommRingCat.of ℂ)
 local notation "Centers[" r "]" => Over.mk (structureMap ℂ (Fin r → ℤ))
@@ -64,11 +64,7 @@ boundary lattice. -/
 theorem card_ker_exchangeKernelAction_dvd_boundaryTorsion :
     Nat.card (exchangeKernelAction ℂ E).ker ∣
       Nat.card (AddCommGroup.torsion (L ⧸ Submodule.span ℤ (Set.range D))) := by
-  let P : ChargeSeed E N :=
-    ⟨b.detDualEquiv.toLinearMap, Fan.rayChargeMap Q.rays, b.detDualEquiv_self, hE.symm⟩
-  obtain ⟨Θ, e, -, hact, -⟩ :=
-    exists_exchangeKernelAction_reflection_of_presentation
-      Q P rfl rfl href M.isEffectiveCartier_boundaryIdeal hprim hnef hsq
+  obtain ⟨A⟩ := Q.nonempty_casimirActionComparison_of_nodal_model href hE hprim hnef hsq
   let : Scheme.IsRationalOver (M.surface ↘ S) := href.isRationalOver
   let : M.surface.IsProjectiveOver ℂ := M.projective
   let : SmoothOfRelativeDimension 2 (M.surface ↘ S) := M.smooth
@@ -84,10 +80,10 @@ theorem card_ker_exchangeKernelAction_dvd_boundaryTorsion :
     (hpair x y).trans ((Chow.classIntersectionNumber_comm _ _).trans (hpair y x).symm)⟩
   have hδ : IsPrimitive (∑ j, D j) :=
     M.picardMarking.isPrimitive_iff.mp (by rwa [M.picardMarking_sum_boundaryClass])
-  rw [hact, MonoidHom.ker_comp_of_injective _ _
-    ((LinearEquiv.autCongr e).injective.comp Subtype.val_injective),
+  rw [A.exchangeKernelAction_eq, MonoidHom.ker_comp_of_injective _ _
+    ((LinearEquiv.autCongr A.exchangeKernelEquiv).injective.comp Subtype.val_injective),
     MulEquiv.toMonoidHom_eq_coe, MonoidHom.ker_comp_mulEquiv,
-    Subgroup.card_map_of_injective Θ.symm.injective]
+    Subgroup.card_map_of_injective A.picardEquiv.symm.injective]
   exact card_ker_signedOrthogonalRestriction_dvd hSymm
     (M.intersectionForm_boundaryClass M.isEffectiveCartier_boundaryIdeal hnef hsq) hδ
 

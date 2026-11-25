@@ -5,6 +5,7 @@ Authors: The QPainleve contributors
 -/
 module
 
+public import QPainleve.Geometry.Toric.Fan.Boundary.Numbering
 public import QPainleve.SignedClusterModularGroup.Realization.MarkedComparison
 public import QPainleve.SignedClusterModularGroup.Realization.Tropical
 
@@ -46,60 +47,75 @@ variable [PrestableFamily ((Φ.boundaryIdeal h₀).subscheme ↘ S)]
   (p : ContractedToricFiber b s hΦ T origin ι c P)
   (q : ContractedToricFiber b s hΦ T origin ι d Q)
 
-/-- Numbered boundary rays occur in increasing cyclic distance from the toric origin. -/
-theorem strictMono_numberedBoundaryRays (hP : D[P].IsEffectiveCartier) :
-    let e := ((Φ.boundaryNormalizationComponentEquiv hΦ).trans T.component.symm)
-    StrictMono fun j : Fin n ↦
-      (e (p.numberedBoundaryRays hP (ZMod.finEquiv n j)) - origin).val := by
+local notation "rayAt" => Φ.rayFinEquivOfNodalCycleNumbering hΦ T origin
+
+/-- Read each numbered contracted component as the finite offset of its surviving toric ray. -/
+noncomputable def numberedBoundaryRayOffsets (hP : D[P].IsEffectiveCartier) : Fin n ↪ Fin m :=
+  ((ZMod.finEquiv n).toEquiv.toEmbedding.trans (p.numberedBoundaryRays hP)).trans
+    (rayAt).symm.toEmbedding
+
+/-- The offset of a component is the inverse ray index applied to its surviving ray. -/
+@[simp]
+theorem numberedBoundaryRayOffsets_apply (hP : D[P].IsEffectiveCartier) (j : Fin n) :
+    p.numberedBoundaryRayOffsets hP j =
+      (rayAt).symm (p.numberedBoundaryRays hP (ZMod.finEquiv n j)) :=
+  (rfl)
+
+/-- Membership in the offset range is equivalent to survival of the corresponding ray. -/
+theorem mem_range_numberedBoundaryRayOffsets_iff (hP : D[P].IsEffectiveCartier) (k : Fin m) :
+    k ∈ Set.range (p.numberedBoundaryRayOffsets hP) ↔
+      rayAt k ∈ Set.range (p.numberedBoundaryRays hP) := by
+  rw [numberedBoundaryRayOffsets, Function.Embedding.coe_trans, Function.Embedding.coe_trans,
+    Equiv.coe_toEmbedding, Equiv.coe_toEmbedding, Set.range_comp,
+    (ZMod.finEquiv n).toEquiv.surjective.range_comp,
+    Equiv.image_symm_eq_preimage, Set.mem_preimage]
+
+/-- The surviving ray offsets increase in the order of the contracted boundary numbering. -/
+theorem strictMono_numberedBoundaryRayOffsets (hP : D[P].IsEffectiveCartier) :
+    StrictMono (p.numberedBoundaryRayOffsets hP) := by
   let : PrestableFamily (P.boundary ↘ S) := P.prestable
-  let e := (Φ.boundaryNormalizationComponentEquiv hΦ).trans T.component.symm
-  let u := (p.numberedBoundaryRays hP).trans e.toEmbedding
+  let e := Φ.rayEquivOfNodalCycleNumbering hΦ T
+  have he (j : ZMod m) : (Φ.boundaryNormalizationComponentEquiv hΦ).symm (T.component j) =
+      e j :=
+    (Equiv.symm_apply_eq _).mpr (Φ.boundaryNormalizationComponentEquiv_rayEquivOfNodalCycleNumbering
+      hΦ T j).symm
+  let u := (p.numberedBoundaryRays hP).trans e.symm.toEmbedding
   have hzero : u 0 = origin := by
     simp only [u, Function.Embedding.trans_apply, Equiv.toEmbedding_apply,
-      p.numberedBoundaryRays_zero, e, Equiv.trans_apply, Equiv.apply_symm_apply,
-      Equiv.symm_apply_apply]
+      p.numberedBoundaryRays_zero, he, Equiv.symm_apply_apply]
   have hu (j : ZMod n) : p.boundaryMap (T.componentGenericPoint (u j)) =
       P.cycle.componentGenericPoint j := by
     apply (p.numberedBoundaryRays_eq_iff hP j (u j)).mp
-    simp only [u, Function.Embedding.trans_apply, Equiv.toEmbedding_apply, e,
-      Equiv.trans_apply, Equiv.apply_symm_apply, Equiv.symm_apply_apply]
-  simpa only [hzero, u, Function.Embedding.trans_apply, Equiv.toEmbedding_apply] using
-    p.orientedSubdivision.strictMono_componentSection u hu
-
-local notation "RayIndex" =>
-  Equiv.trans (Φ.boundaryNormalizationComponentEquiv hΦ)
-    (Equiv.trans (Equiv.symm (NodalCycleNumbering.component T))
-      (Equiv.trans (Equiv.subRight origin) (Equiv.symm (RingEquiv.toEquiv (ZMod.finEquiv m)))))
+    simp only [he, u, Function.Embedding.trans_apply, Equiv.toEmbedding_apply,
+      Equiv.apply_symm_apply]
+  intro j k hjk
+  simpa only [Fin.lt_def, numberedBoundaryRayOffsets_apply,
+    Fan.rayFinEquivOfNodalCycleNumbering_symm_apply, ZMod.finEquiv_symm_apply_val,
+    hzero, u, Function.Embedding.trans_apply, Equiv.toEmbedding_apply] using
+    p.orientedSubdivision.strictMono_componentSection u hu hjk
 
 /-- The contracted boundary numbering is the increasing enumeration of the surviving
-ray indices, read from the specified initial toric ray. -/
+ray offsets, read from the specified initial toric ray. -/
 theorem numberedBoundaryRays_eq_orderEmbOfFin (hP : D[P].IsEffectiveCartier)
     (survivors : Finset (Fin m))
     (hcard : survivors.card = n)
-    (hkeep : ∀ k ∈ survivors, (RayIndex).symm k ∈ Set.range (p.numberedBoundaryRays hP)) :
+    (hkeep : ∀ k ∈ survivors, rayAt k ∈ Set.range (p.numberedBoundaryRays hP)) :
     ∀ j : Fin n, p.numberedBoundaryRays hP (ZMod.finEquiv n j) =
-      (RayIndex).symm (survivors.orderEmbOfFin hcard j) := by
-  let f (j : Fin n) := RayIndex (p.numberedBoundaryRays hP (ZMod.finEquiv n j))
-  have hmono : StrictMono f := by
-    intro a b hab
-    simpa only [f, Fin.lt_def, Equiv.trans_apply, Equiv.subRight_apply,
-      RingEquiv.toEquiv_eq_coe, RingEquiv.coe_coe_toEquiv_symm, ZMod.finEquiv_symm_apply_val] using
-      p.strictMono_numberedBoundaryRays hP hab
-  have hsubset : survivors ⊆ Finset.univ.image f := by
+      rayAt (survivors.orderEmbOfFin hcard j) := by
+  let f := p.numberedBoundaryRayOffsets hP
+  have hsubset : survivors ⊆ Finset.univ.map f := by
     intro k hk
-    obtain ⟨j, hj⟩ := hkeep k hk
-    obtain ⟨j, rfl⟩ := (ZMod.finEquiv n).surjective j
-    exact Finset.mem_image.mpr ⟨j, Finset.mem_univ _, by
-      simp only [f, hj, Equiv.apply_symm_apply]⟩
-  have hmem (j : Fin n) : f j ∈ survivors := by
-    have heq := Finset.eq_of_subset_of_card_le hsubset (by
-      rw [Finset.card_image_of_injective _ hmono.injective, Finset.card_univ,
-        Fintype.card_fin, hcard])
-    rw [heq]
-    exact Finset.mem_image_of_mem f (Finset.mem_univ j)
+    rw [← Finset.mem_coe, Finset.coe_map, Finset.coe_univ, Set.image_univ]
+    exact (p.mem_range_numberedBoundaryRayOffsets_iff hP k).mpr (hkeep k hk)
+  have heq := Finset.eq_of_subset_of_card_le hsubset (by
+    rw [Finset.card_map, Finset.card_univ, Fintype.card_fin, hcard])
+  have hmem (j : Fin n) : f j ∈ survivors :=
+    heq ▸ Finset.mem_map_of_mem f (Finset.mem_univ j)
   intro j
-  have hj := congrFun (Finset.orderEmbOfFin_unique hcard hmem hmono) j
-  exact (RayIndex).injective (by simpa only [Equiv.apply_symm_apply] using hj)
+  have hj := congrFun (Finset.orderEmbOfFin_unique hcard hmem
+    (p.strictMono_numberedBoundaryRayOffsets hP)) j
+  simpa only [f, numberedBoundaryRayOffsets_apply, Equiv.apply_symm_apply] using
+    congrArg (rayAt) hj
 
 /-- The same set of surviving rays gives the same numbered rays for two contractions
 with the same oriented source cycle and initial component. -/
@@ -107,24 +123,16 @@ theorem numberedBoundaryRays_eq_of_range_eq
     (hP : D[P].IsEffectiveCartier) (hQ : D[Q].IsEffectiveCartier)
     (hrange : Set.range (p.numberedBoundaryRays hP) = Set.range (q.numberedBoundaryRays hQ)) :
     p.numberedBoundaryRays hP = q.numberedBoundaryRays hQ := by
-  let e := (Φ.boundaryNormalizationComponentEquiv hΦ).trans T.component.symm
-  let index (ρ : Φ.Ray) := (e ρ - origin).val
-  have hindex : Function.Injective index :=
-    (ZMod.val_injective m).comp ((Equiv.subRight origin).injective.comp e.injective)
-  let toZMod := fun j : Fin n ↦ ZMod.finEquiv n j
-  have hp : StrictMono (index ∘ p.numberedBoundaryRays hP ∘ toZMod) :=
-    p.strictMono_numberedBoundaryRays hP
-  have hq : StrictMono (index ∘ q.numberedBoundaryRays hQ ∘ toZMod) :=
-    q.strictMono_numberedBoundaryRays hQ
-  have hs : Function.Surjective toZMod := (ZMod.finEquiv n).surjective
-  have hr : Set.range (index ∘ p.numberedBoundaryRays hP ∘ toZMod) =
-      Set.range (index ∘ q.numberedBoundaryRays hQ ∘ toZMod) := by
-    rw [Set.range_comp, Set.range_comp index, hs.range_comp, hs.range_comp, hrange]
-  have h := (hp.range_inj_of_wellFoundedLT hq).mp hr
+  have hr : Set.range (p.numberedBoundaryRayOffsets hP) =
+      Set.range (q.numberedBoundaryRayOffsets hQ) := by
+    ext k
+    simp only [mem_range_numberedBoundaryRayOffsets_iff, hrange]
+  have h := ((p.strictMono_numberedBoundaryRayOffsets hP).range_inj_of_wellFoundedLT
+    (q.strictMono_numberedBoundaryRayOffsets hQ)).mp hr
   apply Function.Embedding.ext
   intro j
-  obtain ⟨j, rfl⟩ := hs j
-  exact hindex (congrFun h j)
+  obtain ⟨k, rfl⟩ := (ZMod.finEquiv n).surjective j
+  exact (rayAt).symm.injective (by simpa only [numberedBoundaryRayOffsets_apply] using congrFun h k)
 
 variable [Φ.algebraicRealization.IsProjectiveOver ℂ]
 

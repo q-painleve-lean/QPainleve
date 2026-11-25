@@ -41,15 +41,14 @@ private theorem eq_centralSign_of_involution_invariants
     (g : signedBoundaryIsometryGroup H d) (orders : Fin 1 → Fin 11 → ℤ)
     (h : involutionWord.signedLoopInvariants (fun j ↦ (exchangeKernelBasis j : Fin 11 → ℤ))
         orders (orders 0) =
-      (sign H d g, Matrix.of (fun i j ↦
+      ⟨sign H d g, Matrix.of (fun i j ↦
         ((LinearEquiv.autCongr e (signedOrthogonalRestriction H d g).val)
-          (exchangeKernelBasis j) : Fin 11 → ℤ) i), some 0)) :
+          (exchangeKernelBasis j) : Fin 11 → ℤ) i), some 0⟩) :
     g = centralSign H d (by decide) := by
   -- The exponent columns do not depend on the table used for the boundary search.
-  let cols (v : ℤˣ × Matrix (Fin 11) (Fin 9) ℤ × Option (Fin 1)) := v.2.1
-  have hcols := congrArg cols h
-  have hneg := congrArg cols involutionWord_signedLoopInvariants
-  simp only [cols, Path.signedLoopInvariants_def, coe_exchangeKernelBasis_apply] at hcols hneg
+  have hcols := congrArg SignedLoopInvariants.kernelColumns h
+  have hneg := congrArg SignedLoopInvariants.kernelColumns involutionWord_signedLoopInvariants
+  simp only [Path.signedLoopInvariants_kernelColumns, coe_exchangeKernelBasis_apply] at hcols hneg
   have hmatrix := hcols.symm.trans hneg
   apply hinj
   apply Subtype.val_injective

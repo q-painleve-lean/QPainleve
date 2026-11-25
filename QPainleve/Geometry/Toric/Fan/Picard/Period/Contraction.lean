@@ -196,11 +196,8 @@ theorem exists_iso_of_signed_boundary_period_of_toric_contractions
     (hj : f(D, T) (C.componentGenericPoint j) = A.componentGenericPoint 0)
     (hj' : f(E, T') (C'.componentGenericPoint j) =
       A'.componentGenericPoint (DihedralGroup.cycleVertexPerm act 0)) :
-    ∃ (a : X ≅ Y) (aB : D.subscheme ≅ E.subscheme) (haB : aB.hom.IsOver S),
-      a.hom ≫ s(Y) = s(X) ∧ E.comap a.hom = D ∧
-      aB.hom ≫ E.subschemeι = D.subschemeι ≫ a.hom ∧
-      (∀ M : LineBundleClass Y, pullback a.hom M = (G (Additive.ofMul M)).toMul) ∧
-      (letI := haB; aB.boundaryCycleAction A A' = act) := by
+    Nonempty (SignedTorelliPairIso (D := D) (E := E) A A'
+      (fun L ↦ (G (Additive.ofMul L)).toMul) act) := by
   let : LinearMap.IsPerfPair B(Y) :=
     LinearMap.IsPerfPair.congr (B(X)) G.toLinearEquiv G.toLinearEquiv (B(Y))
       (LinearMap.ext₂ fun x y ↦ G.symm.map_app y x)

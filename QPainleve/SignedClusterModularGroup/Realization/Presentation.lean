@@ -203,12 +203,8 @@ theorem exchangeMatrix_ne_zero_of_chargeIndex_ne_zero
     (hindex : (Fan.rayChargeMap Q.rays).range.toAddSubgroup.index ≠ 0) :
     E.matrix ≠ 0 := by
   rw [← P.matrix_eq, hform, hcharge]
-  intro hzero
-  apply hindex
-  rw [(Fan.rayChargeMap Q.rays).index_range_eq_gcd_chargeExchangeMatrix b
-    b.detDualEquiv_self b.detDualEquiv_apply_basis_zero_one, Finset.gcd_eq_zero_iff]
-  intro j _
-  simp only [hzero, Matrix.zero_apply, Int.natAbs_zero]
+  exact ((Fan.rayChargeMap Q.rays).chargeExchangeMatrix_eq_zero_iff_index_range_eq_zero b
+    b.detDualEquiv_self b.detDualEquiv_apply_basis_zero_one).not.mpr hindex
 
 /-- The inclusion in the auxiliary Picard lattice is injective whenever the
 presentation has a nodal model. -/

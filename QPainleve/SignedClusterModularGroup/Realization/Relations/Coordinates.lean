@@ -7,7 +7,6 @@ module
 
 public import QPainleve.Algebra.Cluster.ChargeKernel.Coordinates
 public import QPainleve.Algebra.Cluster.Word.LoopComparison.Basic
-public import QPainleve.Geometry.Toric.Fan.Boundary.Numbering
 public import QPainleve.SignedClusterModularGroup.Realization.Presentation
 public import QPainleve.SignedClusterModularGroup.Realization.Relations.RayOrders
 public import QPainleve.SignedClusterModularGroup.Realization.Relations.SurvivingOffsets
@@ -71,18 +70,17 @@ local instance instPrestableCoordinateRelationBoundary :
   Q.prestable
 
 local notation "raysFromOrigin" =>
-  Equiv.trans (Equiv.addRight Q.origin)
-    (Fan.rayEquivOfNodalCycleNumbering Q.fan Q.regular Q.cycle)
-local notation "rayAt" => Equiv.trans (RingEquiv.toEquiv (ZMod.finEquiv Q.length)) raysFromOrigin
+  Q.fan.rayEquivOfNodalCycleNumbering Q.regular (Q.cycle.rotate Q.origin)
+local notation "rayAt" => Q.fan.rayFinEquivOfNodalCycleNumbering Q.regular Q.cycle Q.origin
 local notation "fiber[" M "," c "]" =>
   ContractedToricFiber b Q.rays Q.regular Q.cycle Q.origin Q.inclusion χ[c] M
 
 /-- For a certified ray table of a reference nodal contraction of a primitive nef
 square-zero anticanonical cycle, the three integer invariants computed from the ray table
-decide equality of signed loop pullbacks over a characteristic-zero field. Only the rays
-of centers and surviving boundary primes need certified coordinates. -/
+decide equality of signed loop pullbacks over any field. Only the rays of centers and
+surviving boundary primes need certified coordinates. -/
 theorem compareSignedLoopsOfRayCoordinates_eq_true_iff
-    (k : Type*) [Field k] [CharZero k]
+    (k : Type*) [Field k]
     (p₀ : fiber[M₀,c₀]) (hnodal₀ : p₀.IsNodalContraction)
     (hprim : IsPrimitive (Additive.ofMul classOf(cartier[M₀])))
     (hnef : (classOf(cartier[M₀])).IsNef ℂ (M₀.surface ↘ S))
@@ -104,16 +102,8 @@ theorem compareSignedLoopsOfRayCoordinates_eq_true_iff
     simpa only [Fan.rayChargeMap_single, funext hcharge] using
       SkewExchangeMatrix.ofChargeCoordinates_matrix_eq_chargeExchangeMatrix b
         (Fan.rayChargeMap Q.rays)
-  let idx := (Q.fan.boundaryNormalizationComponentEquiv Q.regular).trans
-    (Q.cycle.component.symm.trans
-      ((Equiv.subRight Q.origin).trans (ZMod.finEquiv Q.length).toEquiv.symm))
-  have hAt (j : Fin Q.length) : idx.symm j = rayAt j := by
-    apply idx.injective
-    simp [idx]
-  have hord := p₀.boundaryOrderTable_eq (Φ := Q.fan) cartier[M₀] survivors hcard
-    (fun j hj ↦ (p₀.mem_range_numberedBoundaryRays_iff (Φ := Q.fan) cartier[M₀] (idx.symm j)).mp
-      (hAt j ▸ hkeep j hj))
-    (ray ∘ centerRay) ray hcharge (fun j hj ↦ (hAt j).symm ▸ hray j (Or.inl hj))
+  have hord := p₀.boundaryOrderTable_eq (Φ := Q.fan) cartier[M₀] survivors hcard hkeep
+    (ray ∘ centerRay) ray hcharge (fun j hj ↦ hray j (Or.inl hj))
   obtain ⟨β, hβ⟩ := (seed[ray,centerRay]).matrix.exists_basis_eq_intKernelBasisVectors
   simp only [compareSignedLoopsOfRayCoordinates, SkewExchangeMatrix.compareSignedLoops_eq_true_iff,
     hord, ← hβ]
@@ -123,7 +113,7 @@ theorem compareSignedLoopsOfRayCoordinates_eq_true_iff
 /-- Decide equality of signed-loop pullbacks by integer computation on the supplied ray table.
 The reference contraction and its certificates justify the answer. -/
 def decidableXPullbackEqOfRayCoordinates
-    (k : Type*) [Field k] [CharZero k]
+    (k : Type*) [Field k]
     (p₀ : fiber[M₀,c₀]) (hnodal₀ : p₀.IsNodalContraction)
     (hprim : IsPrimitive (Additive.ofMul classOf(cartier[M₀])))
     (hnef : (classOf(cartier[M₀])).IsNef ℂ (M₀.surface ↘ S))
@@ -143,7 +133,7 @@ def decidableXPullbackEqOfRayCoordinates
 /-- The integer coefficients of a pulled-back ample class determine the surviving offsets
 for the ray-coordinate checker. Its answer then decides equality of the two X pullbacks. -/
 theorem compareSignedLoopsOfRayCoordinates_eq_true_iff_of_polarization
-    (k : Type*) [Field k] [CharZero k]
+    (k : Type*) [Field k]
     (p₀ : fiber[M₀,c₀]) (hnodal₀ : p₀.IsNodalContraction)
     (hprim : IsPrimitive (Additive.ofMul classOf(cartier[M₀])))
     (hnef : (classOf(cartier[M₀])).IsNef ℂ (M₀.surface ↘ S))
@@ -168,18 +158,18 @@ theorem compareSignedLoopsOfRayCoordinates_eq_true_iff_of_polarization
   intro survivors hray w v
   let : Q.fan.algebraicRealization.IsProjectiveOver ℂ :=
     Q.fan.isProjectiveOver_algebraicRealization_of_isComplete Q.regular Q.complete b
-  let offset := (raysFromOrigin).symm.trans (ZMod.finEquiv Q.length).symm.toEquiv
-  have hs : survivors =
-      Finset.univ.map ((p₀.numberedBoundaryRays cartier[M₀]).trans offset.toEmbedding) :=
-    p₀.survivingRayOffsets_eq_map_numberedBoundaryRays (Φ := Q.fan) hnodal₀ Q.complete hH
-      selfIntersection toricCoeff _ exceptionalCoeff hself hcenter hcoords
+  have hcenter' (j : Fin r) : raysFromOrigin ((ZMod.finEquiv Q.length ∘ centerRay) j) =
+      Q.rays j := by
+    simpa only [Fan.rayFinEquivOfNodalCycleNumbering_apply, Function.comp_apply] using hcenter j
+  have hs : survivors = Finset.univ.map (p₀.numberedBoundaryRayOffsets hnodal₀.cartier) :=
+    p₀.survivingRayOffsets_eq_map_numberedBoundaryRayOffsets (Φ := Q.fan) hnodal₀ Q.complete hH
+      selfIntersection toricCoeff _ exceptionalCoeff hself hcenter' hcoords
   have hcard : survivors.card = n := by
-    rw [hs, Finset.card_map, Finset.card_univ, ZMod.card]
+    rw [hs, Finset.card_map, Finset.card_univ, Fintype.card_fin]
   have hkeep j (hj : j ∈ survivors) : rayAt j ∈ Set.range
       (p₀.numberedBoundaryRays cartier[M₀]) := by
-    rw [hs] at hj
-    obtain ⟨l, -, rfl⟩ := Finset.mem_map.mp hj
-    exact ⟨l, ((rayAt).apply_symm_apply _).symm⟩
+    rw [hs, ← Finset.mem_coe, Finset.coe_map, Finset.coe_univ, Set.image_univ] at hj
+    exact (p₀.mem_range_numberedBoundaryRayOffsets_iff hnodal₀.cartier j).mp hj
   exact ⟨hcard, Q.compareSignedLoopsOfRayCoordinates_eq_true_iff k p₀ hnodal₀
     hprim hnef hsq ray centerRay survivors hcard hray hcenter hkeep w v⟩
 

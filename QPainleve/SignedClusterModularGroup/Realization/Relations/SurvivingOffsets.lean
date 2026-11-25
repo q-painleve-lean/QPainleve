@@ -6,10 +6,8 @@ Authors: The QPainleve contributors
 module
 
 public import QPainleve.AlgebraicGeometry.LineBundle.Ample
-public import QPainleve.Geometry.Toric.Fan.Boundary.Numbering
 public import QPainleve.Geometry.Toric.Fan.Boundary.SelfIntersection
-public import QPainleve.SignedClusterModularGroup.Realization.MarkedComparison
-public import QPainleve.SignedClusterModularGroup.Realization.Tropical
+public import QPainleve.SignedClusterModularGroup.Realization.NumberedRays
 
 import QPainleve.Geometry.Toric.Fan.Picard.Contraction.Polarization
 
@@ -71,9 +69,7 @@ variable {N V L : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V] [AddCom
   {M : MarkedSurface ℂ n B (Spec (CommRingCat.of (LaurentRing ℂ (Fin r))))}
   (p : ContractedToricFiber b s hΦ T origin μ c M)
 
-local notation "u" => Equiv.trans (Equiv.addRight origin) (Φ.rayEquivOfNodalCycleNumbering hΦ T)
-local notation "idx" =>
-  Equiv.trans (Equiv.symm u) (RingEquiv.toEquiv (RingEquiv.symm (ZMod.finEquiv m)))
+local notation "u" => Φ.rayEquivOfNodalCycleNumbering hΦ (T.rotate origin)
 local notation "F" => LinearMap.BilinForm.prod
   (Chow.intersectionBilinForm ℂ Φ.algebraicRealization)
   (-(dotProductBilin ℤ ℤ : LinearMap.BilinForm ℤ (Fin r → ℤ)))
@@ -101,7 +97,7 @@ private theorem markedBoundaryMap_pairing_pos_iff_mem_range
 /-- In a marked nodal contraction, the integer degree filter yields exactly the
 offsets of the numbered surviving boundary rays. The toric divisor representing
 the pullback's toric class may be chosen arbitrarily. -/
-theorem survivingRayOffsets_eq_map_numberedBoundaryRays
+theorem survivingRayOffsets_eq_map_numberedBoundaryRayOffsets
     (hp : p.IsNodalContraction) (hc : Φ.IsComplete)
     {H : LineBundleClass M.surface} (hH : H.IsAmple)
     (selfIntersection toricCoeff : ZMod m → ℤ) (centerRay : Fin r → ZMod m)
@@ -111,19 +107,17 @@ theorem survivingRayOffsets_eq_map_numberedBoundaryRays
     (hcoords : (Φ.rayDivisorToPicard hΦ (toricCoeff ∘ (u).symm), exceptionalCoeff) =
       μ (M.picardMarking.symm (Additive.ofMul H))) :
     survivingRayOffsets selfIntersection toricCoeff centerRay exceptionalCoeff =
-      Finset.univ.map ((p.numberedBoundaryRays hp.cartier).trans (idx).toEmbedding) := by
+      Finset.univ.map (p.numberedBoundaryRayOffsets hp.cartier) := by
   let : SmoothOfRelativeDimension 2 (Φ.algebraicRealization ↘ S) :=
     ((finrank_eq_card_basis b).trans (Fintype.card_fin 2)) ▸
       Φ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
-  obtain ⟨b', -, hdet, hcone⟩ := Φ.exists_positive_ray_numbering_of_nodalCycleNumbering b hΦ hc T
+  obtain ⟨b', -, hdet, hcone⟩ :=
+    Φ.exists_positive_ray_numbering_of_nodalCycleNumbering b hΦ hc (T.rotate origin)
   have hnext (j : ZMod m) :
       b'.detDualEquiv (u j).primitiveGenerator (u (j + 1)).primitiveGenerator = 1 ∧
         ∃ σ : Φ.cones, (u j).toCone ≤ σ ∧ (u (j + 1)).toCone ≤ σ := by
-    have hs : j + 1 + origin = j + origin + 1 := by abel
-    obtain ⟨σ, h₁, h₂, -⟩ := hcone (j + origin)
-    refine ⟨?_, σ.val, h₁, ?_⟩
-    · simpa only [Equiv.trans_apply, Equiv.coe_addRight, hs] using hdet (j + origin)
-    · simpa only [Equiv.trans_apply, Equiv.coe_addRight, hs] using h₂
+    obtain ⟨σ, h₁, h₂, -⟩ := hcone j
+    exact ⟨hdet j, σ.val, h₁, h₂⟩
   ext k
   let j := ZMod.finEquiv m k
   have htoric := Φ.intersectionBilinForm_rayDivisorToPicard_single hΦ b' hc
@@ -139,10 +133,9 @@ theorem survivingRayOffsets_eq_map_numberedBoundaryRays
     simp only [htoric, Function.comp_apply, Equiv.symm_apply_apply, hself, hsum]
   rw [mem_survivingRayOffsets]
   dsimp only
-  rw [← hdegree, p.markedBoundaryMap_pairing_pos_iff_mem_range hp hH]
-  simp only [Set.mem_range, Finset.mem_map, Finset.mem_univ, true_and,
-    Function.Embedding.trans_apply, Equiv.toEmbedding_apply, ← Equiv.eq_symm_apply]
-  rfl
+  rw [← hdegree, p.markedBoundaryMap_pairing_pos_iff_mem_range hp hH,
+    ← Fan.rayFinEquivOfNodalCycleNumbering_apply, ← p.mem_range_numberedBoundaryRayOffsets_iff,
+    ← Finset.mem_coe, Finset.coe_map, Finset.coe_univ, Set.image_univ]
 
 end ContractedToricFiber
 

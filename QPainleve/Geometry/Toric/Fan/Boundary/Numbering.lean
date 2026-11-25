@@ -5,7 +5,7 @@ Authors: The QPainleve contributors
 -/
 module
 
-public import QPainleve.AlgebraicGeometry.Curves.Node.CycleAction
+public import QPainleve.AlgebraicGeometry.Curves.Node.Reindex
 public import QPainleve.Geometry.Toric.Fan.Boundary.DualGraph
 
 /-!
@@ -51,6 +51,38 @@ theorem boundaryNormalizationComponentEquiv_rayEquivOfNodalCycleNumbering
     Φ.boundaryNormalizationComponentEquiv hΦ (Φ.rayEquivOfNodalCycleNumbering hΦ A j) =
       A.component j :=
   Equiv.apply_symm_apply _ _
+
+/-- Rotating the boundary numbering translates the ray labels by the same offset. -/
+@[simp]
+theorem rayEquivOfNodalCycleNumbering_rotate_apply
+    (hΦ : Φ.IsRegular) (A : NodalCycleNumbering p n) (origin j : ZMod n) :
+    Φ.rayEquivOfNodalCycleNumbering hΦ (A.rotate origin) j =
+      Φ.rayEquivOfNodalCycleNumbering hΦ A (j + origin) := by
+  apply (Φ.boundaryNormalizationComponentEquiv hΦ).injective
+  simp
+
+variable (Φ) in
+/-- Enumerate the rays in boundary order by finite offsets from the component at `origin`. -/
+def rayFinEquivOfNodalCycleNumbering (hΦ : Φ.IsRegular) (A : NodalCycleNumbering p n)
+    (origin : ZMod n) : Fin n ≃ Φ.Ray :=
+  (ZMod.finEquiv n).toEquiv.trans (Φ.rayEquivOfNodalCycleNumbering hΦ (A.rotate origin))
+
+/-- A finite offset reads the ray of the rotated cycle at the corresponding cyclic index. -/
+@[simp]
+theorem rayFinEquivOfNodalCycleNumbering_apply
+    (hΦ : Φ.IsRegular) (A : NodalCycleNumbering p n) (origin : ZMod n) (j : Fin n) :
+    Φ.rayFinEquivOfNodalCycleNumbering hΦ A origin j =
+      Φ.rayEquivOfNodalCycleNumbering hΦ (A.rotate origin) (ZMod.finEquiv n j) :=
+  (rfl)
+
+/-- The offset of a ray is the finite representative of its cyclic index minus the origin. -/
+@[simp]
+theorem rayFinEquivOfNodalCycleNumbering_symm_apply
+    (hΦ : Φ.IsRegular) (A : NodalCycleNumbering p n) (origin : ZMod n) (ρ : Φ.Ray) :
+    (Φ.rayFinEquivOfNodalCycleNumbering hΦ A origin).symm ρ =
+      (ZMod.finEquiv n).symm ((Φ.rayEquivOfNodalCycleNumbering hΦ A).symm ρ - origin) := by
+  apply (Φ.rayFinEquivOfNodalCycleNumbering hΦ A origin).injective
+  simp
 
 variable (Φ) in
 /-- Every numbering of the reduced boundary of a complete regular rank-two fan

@@ -72,10 +72,11 @@ theorem signedLoopInvariants_comp_of_nodal_contraction
     let invariant (u : Word E E) :=
       u.signedLoopInvariants (fun j ↦ (β j : Fin r → ℤ)) orders (orders 0)
     invariant (w.comp v) =
-      ((invariant v).1 * (invariant w).1, (invariant w).2.1 * (read * (invariant v).2.1), do
-        let j ← (invariant w).2.2
-        let k ← (invariant v).2.2
-        pure (index.symm ((invariant v).1 • index j + index k))) := by
+      ⟨(invariant v).sign * (invariant w).sign,
+        (invariant w).kernelColumns * (read * (invariant v).kernelColumns), do
+          let j ← (invariant w).boundaryLabel
+          let k ← (invariant v).boundaryLabel
+          pure (index.symm ((invariant v).sign • index j + index k))⟩ := by
   intro index orders invariant
   let d := M₀.boundaryClass cartier[M₀]
   obtain ⟨_, _, _, Θ, _, _, _, _, _, _, hInv⟩ :=
@@ -105,14 +106,17 @@ theorem signedLoopInvariants_comp_of_nodal_contraction
     apply index.injective
     rw [Equiv.apply_symm_apply]
     exact hD ((toIsometry B d (Θ eval[w.comp v])).val.injective (hl₀.trans hp.symm))
-  refine Prod.ext ?_ (Prod.ext ?_ ?_)
-  · simp only [invariant, Path.signedLoopInvariants_def, Path.inversionCount_comp, pow_add]
+  refine SignedLoopInvariants.ext ?_ ?_ ?_
+  · simp only [invariant, Path.signedLoopInvariants_sign, Path.inversionCount_comp, pow_add]
     exact mul_comm _ _
   · exact Path.signedLoopInvariants_comp_matrix w v β orders (orders 0) read hread
-  · have hj' : (invariant w).2.2 = some j := congrArg (fun t ↦ t.2.2) hj
-    have hk' : (invariant v).2.2 = some k := congrArg (fun t ↦ t.2.2) hk
-    have hl' : (invariant (w.comp v)).2.2 = some l := congrArg (fun t ↦ t.2.2) hl
-    have hs : (invariant v).1 = sign B d (Θ eval[v]) := congrArg Prod.fst hk
+  · have hj' : (invariant w).boundaryLabel = some j :=
+      congrArg SignedLoopInvariants.boundaryLabel hj
+    have hk' : (invariant v).boundaryLabel = some k :=
+      congrArg SignedLoopInvariants.boundaryLabel hk
+    have hl' : (invariant (w.comp v)).boundaryLabel = some l :=
+      congrArg SignedLoopInvariants.boundaryLabel hl
+    have hs : (invariant v).sign = sign B d (Θ eval[v]) := congrArg SignedLoopInvariants.sign hk
     rw [hj', hk', hl', hs, hlp]
     rfl
 

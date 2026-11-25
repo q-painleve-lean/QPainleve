@@ -10,6 +10,7 @@ public import QPainleve.Geometry.Toric.Fan.Boundary.Contraction
 public import QPainleve.Geometry.Toric.Fan.Evaluation.Contraction
 public import QPainleve.Geometry.Toric.Fan.Mutation.Word
 
+import QPainleve.Geometry.Toric.Fan.ExchangeMatrix
 import TauCeti.AlgebraicGeometry.WeilDivisor.Scheme.Order
 
 /-!
@@ -126,11 +127,11 @@ theorem rayBoundaryOrders_eq_tropical_of_comp_contractedXEvaluation
     (hy : e.hom x.val = y.val) :
     rayBoundaryOrders b' t (τ y) =
       DFunLike.coe (F := Equiv.Perm (Fin r → ℤ)) ((trop).map w) (rayBoundaryOrders b s (ρ x)) := by
-  let P : ChargeSeed B N :=
-    ⟨b.detDualEquiv.toLinearMap, rayChargeMap s, b.detDualEquiv_self, hB.symm⟩
+  let P := rayChargeSeed b s hB
   let bΩ := if Even w.inversionCount then b else b.reindex (Equiv.swap 0 1)
   obtain ⟨Ω, hΩ, hΩc, u, f, -, -, horders, hfield⟩ :=
-    exists_toric_boundary_valuation_transport b w P hΦ hcΦ s rfl rfl
+    exists_toric_boundary_valuation_transport b w P hΦ hcΦ s
+      (rayChargeSeed_form _ _ _) (rayChargeSeed_charge _ _ _)
   let : Nonempty Ω.cones := hΩc.nonempty_cones
   obtain ⟨g, hg, he⟩ := hfield
   obtain ⟨l, hl, hl'⟩ := he c

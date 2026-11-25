@@ -73,6 +73,17 @@ local instance (M : MarkedSurface ℂ n H XTor) : PrestableFamily (M.boundary �
 
 namespace CompleteToricPresentation
 
+private theorem exists_marked_pair_iso_of_torelli
+    {P₀ P₁ : MarkedSurface ℂ n H XTor}
+    {G : LineBundleClass P₁.surface → LineBundleClass P₀.surface} {act : DihedralGroup n}
+    (e : SignedTorelliPairIso (D := D[P₀]) (E := D[P₁]) P₀.imageCycle P₁.imageCycle G act) :
+    ∃ f : P₀.pair ≅ P₁.pair,
+      (surfaceIso f).hom = e.surfaceIso.hom ∧ MarkedSurface.imagePairIso f = e.boundaryIso := by
+  obtain ⟨f, hf⟩ := P₀.exists_pairIso_of_boundaryIdeal P₁ e.surfaceIso
+    (comp_over e.surfaceIso.hom S) e.comap_surfaceIso_hom
+  refine ⟨f, hf, Iso.ext ((cancel_mono D[P₁].subschemeι).mp ?_)⟩
+  rw [MarkedSurface.imagePairIso_hom_comp, e.boundaryIso_hom_comp, hf]
+
 /-- For two marked fibers of the same ordered toric presentation, a specified
 signed boundary isometry is induced by a pair isomorphism when the boundaries
 are nef, the target boundary has square zero, there are no internal curves of
@@ -140,7 +151,7 @@ theorem exists_marked_pair_iso_of_signed_boundary_isometry
     have heq : (⟨_, hy⟩ : D[P₀].boundaryOrthogonal ℂ) = y :=
       Subtype.ext (hval.symm.trans hxy)
     simpa only [heq, hact] using hy'
-  obtain ⟨a, aB, haB, hover, hideal, hB, hpic, hb⟩ :=
+  obtain ⟨e⟩ :=
     D[P₀].exists_pair_iso_of_root_free_signed_boundary_period_of_toric_presentation_of_nef
       P₀.imageCycle P₁.imageCycle hD hE act G hclass hk₀ hk₁
       (Chow.prime_self_intersection_ne_neg_two_off_boundary ℂ hD hk₀ hroot₀)
@@ -148,15 +159,12 @@ theorem exists_marked_pair_iso_of_signed_boundary_isometry
       g₀ g₁ hperiod hm₀.hasToricPresentation
       (by simpa only [← hk₀] using hn₀) (by simpa only [← hk₁] using hn₁)
       (by simpa only [← hk₁] using hsq)
-  obtain ⟨f, hf⟩ := P₀.exists_pairIso_of_boundaryIdeal P₁ a hover hideal
-  have hfB : (MarkedSurface.imagePairIso f).hom = aB.hom := (cancel_mono D[P₁].subschemeι).mp
-    (by rw [MarkedSurface.imagePairIso_hom_comp, hf, hB])
+  obtain ⟨f, hf, hfB⟩ := exists_marked_pair_iso_of_torelli e
   refine ⟨f, act, hact, hd, ?_, fun z ↦ ?_⟩
   · rw [← MarkedSurface.imagePairIso_boundaryAction]
-    have hIso : MarkedSurface.imagePairIso f = aB := Iso.ext hfB
-    cases hIso
-    exact hb
-  · rw [hf, hpic]
+    exact ((MarkedSurface.imagePairIso f).boundaryCycleAction_congr
+      P₀.imageCycle P₁.imageCycle e.boundaryIso hfB).trans e.boundaryCycleAction_eq
+  · rw [hf, e.pullback_eq]
     simp only [ofMul_toMul, hG]
 
 end CompleteToricPresentation

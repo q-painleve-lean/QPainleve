@@ -128,38 +128,41 @@ theorem exists_cluster_cremona_equivs_of_toric_presentation
   let : IsNoetherian X := isNoetherian_of_finiteType (X ↘ S)
   let := (X ↘ S).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two
   intro hroot
-  let P : D.ToricPresentation (X ↘ S) b i r :=
+  let presentation : D.ToricPresentation (X ↘ S) b i r :=
     ⟨Φ, hΦ, hc, s, u, k, W, T, hT, e, hbase, hker⟩
-  have hK := P.hasToricPresentation.canonicalClass hD (by
+  have hK := presentation.hasToricPresentation.canonicalClass hD (by
     rw [← over_eq_subschemeι_comp]
     exact PrestableFamily.atWorstNodalOfRelativeDimensionOne)
-  obtain ⟨H, μ, b', Q, c, f, E, M, _, Θ, Θrot, hframe, hrays, hE, hM, hmodels, _,
-    hwords, hkerSign, hrot⟩ :=
-    exists_picardGroupEquivs_of_toric_presentation P A hD hprim hnef hsq
+  obtain ⟨P, hframe, hrays⟩ :=
+    exists_picardGroupEquivs_of_toric_presentation presentation A hD hprim hnef hsq
   let d := classes[A,hD]
+  let Θ := P.signedEquiv
   let π := A.cremonaProjection hD hK hnef hsq hroot
   have hsurj := A.cremonaProjection_surjective hD hK hnef hsq hroot
   let φ := π.comp Θ.toMonoidHom
   let η := (sign B d).comp Θ.toMonoidHom
-  refine ⟨H, μ, b', Q, c, f, E, M, φ, η, hframe, hrays, hE, hM, hmodels,
-    hsurj.comp Θ.surjective, ?_, hkerSign, ?_, ?_⟩
+  refine ⟨P.form, P.marking, P.basis, P.presentation, P.center, P.evaluation, P.exchangeMatrix,
+    P.family, φ, η, hframe, hrays, P.matrix_eq, P.family_center, P.hasNodalModel,
+    hsurj.comp Θ.surjective, ?_, P.sign_ker_unop, ?_, ?_⟩
   · intro w
-    refine ⟨(hwords w).1, fun R hR ↦ ?_⟩
-    simpa only [φ, π, η, MonoidHom.comp_apply, MulEquiv.coe_toMonoidHom,
-      Scheme.NodalCycleNumbering.val_cremonaProjection_apply, toIsometry_apply,
-      SignedBoundaryIsometryGroup.sign_apply, Prod.eta] using (hwords w).2 R hR
+    refine ⟨?_, fun R hR ↦ ?_⟩
+    · simpa only [η, Θ, MonoidHom.comp_apply, MulEquiv.coe_toMonoidHom,
+        SignedBoundaryIsometryGroup.sign_apply] using P.sign_signedEquiv_apply_word w
+    · simpa only [φ, π, η, Θ, MonoidHom.comp_apply, MulEquiv.coe_toMonoidHom,
+        Scheme.NodalCycleNumbering.val_cremonaProjection_apply, toIsometry_apply,
+        SignedBoundaryIsometryGroup.sign_apply, Prod.eta] using P.signedEquiv_apply_word w R hR
   · intro hn
     have hinj := A.cremonaProjection_injective hD hK hnef hsq hroot hn
     exact ⟨MulEquiv.ofBijective φ ⟨hinj.comp Θ.injective, hsurj.comp Θ.surjective⟩, rfl⟩
   · intro hn
     let g := Θ.trans (A.signedBoundaryIsometryEquivCremonaProd hD hK hnef hsq hroot hn)
-    let g₀ := Θrot.trans (A.boundaryRotationEquivCremona hD hK hnef hsq hroot hn)
-    have hg (x : Γs[E]) : g x = (φ x, η x) :=
+    let g₀ := P.unsignedEquiv.trans (A.boundaryRotationEquivCremona hD hK hnef hsq hroot hn)
+    have hg (x : Γs[P.exchangeMatrix]) : g x = (φ x, η x) :=
       A.signedBoundaryIsometryEquivCremonaProd_apply hD hK hnef hsq hroot hn (Θ x)
     refine ⟨g, g₀, hg, fun x ↦ ?_⟩
     rw [hg]
-    simp only [g₀, φ, π, η, MulEquiv.trans_apply, MonoidHom.comp_apply, MulEquiv.coe_toMonoidHom,
-      ← hrot x,
+    simp only [g₀, φ, π, η, Θ, MulEquiv.trans_apply, MonoidHom.comp_apply, MulEquiv.coe_toMonoidHom,
+      ← P.rotationInclusion_unsignedEquiv_apply x,
       Scheme.NodalCycleNumbering.boundaryRotationEquivCremona_apply,
       SignedBoundaryIsometryGroup.sign_apply, coe_rotationInclusion]
 

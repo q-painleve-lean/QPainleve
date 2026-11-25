@@ -7,6 +7,7 @@ module
 
 public import QPainleve.Geometry.Toric.Fan.Logarithmic.Word.Endpoint
 public import QPainleve.SignedClusterModularGroup.Realization.Endpoint.PicardAction
+public import QPainleve.SignedClusterModularGroup.Realization.Surjectivity.LoopRealization
 
 import QPainleve.SignedClusterModularGroup.Realization.Anticanonical
 import QPainleve.SignedClusterModularGroup.Realization.NodalFiber
@@ -26,6 +27,9 @@ comparison uses `FiberRealization.marked_actions_eq_of_compOfDefined` after desc
 the evaluation square to the source surface.
 For a factorization on a nodal refinement, the fixed-center evaluation also
 descends to the original marked surface.
+
+A `PicardLoopRealization` records the chosen loop, its signed Picard action,
+and its evaluation equation.
 -/
 
 public section
@@ -123,7 +127,7 @@ theorem signedPicardHom_apply_of_pair_iso_on_resolution
 /-- A loop whose evaluation realizes the specified pair isomorphism on a resolution
 represents the isomorphism's signed Picard action. When that action has positive sign,
 there is an inversion-free representative with the same X pullback. -/
-theorem exists_word_signedPicardHom_eq_of_pair_iso_on_resolution
+theorem exists_picardLoopRealization_of_pair_iso_on_resolution
     (P : ChargeSeed E N) (R : GeometricRealization M M Cw[w,P] (w.xRationalMap ℂ))
     (hρ : ρ eval[E,w] = R.toSignedBoundaryIsometry d hD hmark)
     (hparity : sign B d (ρ eval[E,w]) = (-1 : ℤˣ) ^ w.inversionCount)
@@ -140,8 +144,9 @@ theorem exists_word_signedPicardHom_eq_of_pair_iso_on_resolution
       letI : PrestableFamily ((M c₁).boundary ↘ S) := (M c₁).prestable
       DihedralGroup.cycleOrientationSign ((boundaryIso e).boundaryCycleAction
         (M c₀).cycle (M c₁).cycle) = sign B d g) :
-    ∃ v : Word E E, v.xPullback ℂ = w.xPullback ℂ ∧ ρ eval[E,v] = g ∧
-      (sign B d g = 1 → v.inversionCount = 0) := by
+    ∃ v : PicardLoopRealization ρ g (π.comp (M c₀).evaluation)
+        (π.comp ((surfaceIso e).hom.toRationalMap.comp (M c₁).evaluation)),
+      v.word.xPullback ℂ = w.xPullback ℂ := by
   have hc : c₀.left (default : S) ∈ Cw[w,P].domain := by
     rwa [Quiver.Path.centerPartialMap_domain]
   obtain ⟨x, hx⟩ := (Cw[w,P].exists_section_comp_domainSource_eq_iff
@@ -150,13 +155,17 @@ theorem exists_word_signedPicardHom_eq_of_pair_iso_on_resolution
   subst c₀
   have hvalue := signedPicardHom_apply_of_pair_iso_on_resolution R hρ x p q hι hindex
     e π he hpic hsgn
-  by_cases hpos : sign B d g = 1
-  · have heven := (neg_one_pow_eq_one_iff_even (by decide : (-1 : ℤˣ) ≠ 1)).mp
-      (hparity.symm.trans ((congrArg (sign B d) hvalue).trans hpos))
-    obtain ⟨v, hv, hxv⟩ := w.exists_xPullback_eq_of_even_inversionCount ℂ heven
-    have hvw := (signedClusterModularGroupMap_eq_iff ℂ E (End.of v) (End.of w)).mpr hxv.symm
-    exact ⟨v, hxv.symm, (congrArg (fun z ↦ ρ (op z)) hvw).trans hvalue, fun _ ↦ hv⟩
-  · exact ⟨w, rfl, hvalue, fun hs ↦ (hpos hs).elim⟩
+  obtain ⟨v, hvw, hv⟩ : ∃ v : Word E E, v.xPullback ℂ = w.xPullback ℂ ∧
+      (sign B d g = 1 → v.inversionCount = 0) := by
+    by_cases hpos : sign B d g = 1
+    · have heven := (neg_one_pow_eq_one_iff_even (by decide : (-1 : ℤˣ) ≠ 1)).mp
+        (hparity.symm.trans ((congrArg (sign B d) hvalue).trans hpos))
+      obtain ⟨v, hv, hxv⟩ := w.exists_xPullback_eq_of_even_inversionCount ℂ heven
+      exact ⟨v, hxv.symm, fun _ ↦ hv⟩
+    · exact ⟨w, rfl, fun hs ↦ (hpos hs).elim⟩
+  have hmap := (signedClusterModularGroupMap_eq_iff ℂ E (End.of v) (End.of w)).mpr hvw
+  refine ⟨⟨v, (congrArg (fun z ↦ ρ (op z)) hmap).trans hvalue, hv, ?_⟩, hvw⟩
+  rwa [(Quiver.Path.xRationalMap_eq_iff ℂ v w).mpr hvw]
 
 open Fan Fan.LogarithmicProjection
 open scoped Sarkisov
@@ -169,7 +178,7 @@ gives a loop with the isomorphism's signed Picard action. The source center is c
 all loop noncollision opens before reading the path. The ordered endpoint evaluations
 are compared on the given resolving surface. For a positive action the loop is
 inversion-free. -/
-theorem exists_word_signedPicardHom_eq_of_resolved_sarkisov_path
+theorem nonempty_picardLoopRealization_of_resolved_sarkisov_path
     (P : ChargeSeed E N) (path : SarkisovPath A A')
     (U : OrderedToricModel A r) (U' : OrderedToricModel A' r)
     (hU : U.exchangeMatrix = E) (hU' : U'.exchangeMatrix = E)
@@ -191,8 +200,7 @@ theorem exists_word_signedPicardHom_eq_of_resolved_sarkisov_path
       letI : PrestableFamily ((M c₁).boundary ↘ S) := (M c₁).prestable
       DihedralGroup.cycleOrientationSign ((boundaryIso e).boundaryCycleAction
         (M c₀).cycle (M c₁).cycle) = sign B d g) :
-    ∃ v : Word E E, ρ eval[E,v] = g ∧ (sign B d g = 1 → v.inversionCount = 0) ∧
-      ∃ h, U.xEvaluation.compOfDefined (v.xRationalMap ℂ) h = U'.xEvaluation := by
+    Nonempty (PicardLoopRealization ρ g U.xEvaluation U'.xEvaluation) := by
   obtain ⟨_, _, _, u, _, _, -, -, -, -, -, -, -, -, -, -, -, hu⟩ :=
     exists_word_of_resolved_sarkisov_path_to_model path U U'
   let v : Word E E := cast (congrArg₂ (fun a b ↦ Word a b) hU hU') u
@@ -207,16 +215,15 @@ theorem exists_word_signedPicardHom_eq_of_resolved_sarkisov_path
     rw [hF, ← hev₀, ← hev₁]
     exact hu
   obtain ⟨⟨R⟩, hm⟩ := hreal v
-  obtain ⟨v', hv', hvalue, hfree⟩ := exists_word_signedPicardHom_eq_of_pair_iso_on_resolution
+  obtain ⟨v', -⟩ := exists_picardLoopRealization_of_pair_iso_on_resolution
     P R (hρ v R hm) (hparity v) (hgeneric v) hm q hι hindex e π he hpic hsgn
-  refine ⟨v', hvalue, hfree, ?_⟩
-  rw [(Quiver.Path.xRationalMap_eq_iff ℂ v' v).mpr hv', hF]
-  exact hu
+  rw [hev₀, hev₁]
+  exact ⟨v'⟩
 
 /-- A loop intertwining the fixed-center evaluation of a specified pair isomorphism
 gives the prescribed signed Picard action. For a positive action an inversion-free
 loop has the same fixed-center evaluation. -/
-theorem exists_word_signedPicardHom_eq_of_comp_evaluation_eq
+theorem nonempty_picardLoopRealization_of_comp_evaluation_eq
     (P : ChargeSeed E N) (hform : P.form = b.detDualEquiv.toLinearMap)
     (hcharge : P.charge = Fan.rayChargeMap Q.rays)
     (models : ∀ c : Point Centers[r], c.left (default : S) ∈ Quiver.Path.nil.centerOpen ℂ P →
@@ -241,9 +248,8 @@ theorem exists_word_signedPicardHom_eq_of_comp_evaluation_eq
       DihedralGroup.cycleOrientationSign ((boundaryIso e).boundaryCycleAction
         (M c₀).cycle (M c₁).cycle) = sign B d g) :
     letI : IsIntegral (M c₀).surface := (M c₀).integral
-    ∃ w : Word E E, ρ eval[E,w] = g ∧ (sign B d g = 1 → w.inversionCount = 0) ∧
-      ∃ h, (M c₀).evaluation.compOfDefined (w.xRationalMap ℂ) h =
-        (surfaceIso e).hom.toRationalMap.comp (M c₁).evaluation := by
+    Nonempty (PicardLoopRealization ρ g (M c₀).evaluation
+      ((surfaceIso e).hom.toRationalMap.comp (M c₁).evaluation)) := by
   let : IsIntegral (M c₀).surface := (M c₀).integral
   let := Q.complete.nonempty_cones
   let := Q.neZero
@@ -267,12 +273,10 @@ theorem exists_word_signedPicardHom_eq_of_comp_evaluation_eq
   let π := RationalMap.id (M c₀).surface
   have hw : ∃ h, (π.comp (M c₀).evaluation).compOfDefined (w.xRationalMap ℂ) h =
       π.comp ((surfaceIso e).hom.toRationalMap.comp (M c₁).evaluation) :=
-    (π.compOfDefined_eq_iff_of_dominant _ _ _).mpr heval
-  obtain ⟨v, hvw, hv, hfree⟩ := exists_word_signedPicardHom_eq_of_pair_iso_on_resolution
+    by simpa only [π, RationalMap.id_comp] using heval
+  obtain ⟨v, -⟩ := exists_picardLoopRealization_of_pair_iso_on_resolution
     P R hvalue hparity hc₀ htargets q (Q.inclusion_injective hM)
     hindex e π hw hpic hsgn
-  refine ⟨v, hv, hfree, ?_⟩
-  rw [(Quiver.Path.xRationalMap_eq_iff ℂ v w).mpr hvw]
-  exact heval
+  exact ⟨by simpa only [π, RationalMap.id_comp] using v⟩
 
 end QPainleve.SignedClusterModularGroup.GeometricRealization

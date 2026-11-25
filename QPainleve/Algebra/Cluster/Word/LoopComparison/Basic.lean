@@ -6,7 +6,7 @@ Authors: The QPainleve contributors
 module
 
 public import QPainleve.Algebra.Cluster.Word.Relations
-public import QPainleve.LinearAlgebra.Matrix.Kernel
+public import QPainleve.LinearAlgebra.Matrix.Kernel.Basic
 
 /-!
 # Integer comparison of typed signed loops

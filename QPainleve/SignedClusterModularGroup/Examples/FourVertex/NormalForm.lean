@@ -10,7 +10,7 @@ public import QPainleve.Algebra.Cluster.Word.ModularGroup
 public import QPainleve.SignedClusterModularGroup.Examples.FourVertex.Words
 
 import QPainleve.SignedClusterModularGroup.Examples.FourVertex.MarkedAction
-import QPainleve.SignedClusterModularGroup.Examples.FourVertex.PicardAction
+import QPainleve.SignedClusterModularGroup.Realization.PicardAction
 import TauCeti.Algebra.Group.Action.Pow
 
 /-!
@@ -34,6 +34,8 @@ open CategoryTheory Module MulOpposite
 namespace QPainleve.FourVertex
 
 open Cluster SignedBoundaryIsometryGroup
+open SignedClusterModularGroup.GeometricRealization
+  (picardRotationEquiv rotationInclusion_picardRotationEquiv_apply)
 
 local notation "L" => Fin 10 → ℤ
 local notation "B" => exchangeMatrix
@@ -103,7 +105,7 @@ private theorem rotationRestriction_eq_of_apply (g h : G) (heq : act[g,κ] = act
   intro j
   apply Subtype.ext
   simp only [LinearEquiv.coe_coe, MonoidHom.comp_apply, coe_signedOrthogonalRestriction_apply,
-    sign_apply, coe_rotationInclusion, one_smul, toIsometry_apply]
+    SignedBoundaryIsometryGroup.sign_apply, coe_rotationInclusion, one_smul, toIsometry_apply]
   fin_cases j
   · exact heq
   · exact hsum
@@ -159,7 +161,7 @@ private theorem normalFormPicard_injective :
 
 private theorem reflection_sign_pow (e : Fin 2) :
     sign H D (boundaryReflection ^ (e : ℕ)) = (-1 : ℤˣ) ^ (e : ℕ) := by
-  rw [map_pow, sign_apply, boundaryReflection_sign]
+  rw [map_pow, SignedBoundaryIsometryGroup.sign_apply, boundaryReflection_sign]
 
 private theorem signedNormalFormPicard_bijective :
     Function.Bijective (fun a : Fin 2 × Fin 4 × ℤ ↦
@@ -167,8 +169,8 @@ private theorem signedNormalFormPicard_bijective :
   constructor
   · rintro ⟨e, i, m⟩ ⟨f, j, n⟩ h
     have hs := congrArg (sign H D) h
-    simp only [map_mul, map_pow, sign_apply, boundaryReflection_sign, coe_rotationInclusion,
-      one_pow, mul_one] at hs
+    simp only [map_mul, map_pow, SignedBoundaryIsometryGroup.sign_apply, boundaryReflection_sign,
+      coe_rotationInclusion, one_pow, mul_one] at hs
     have hinj : Function.Injective (fun e : Fin 2 ↦ (-1 : ℤˣ) ^ (e : ℕ)) := by decide
     obtain rfl := hinj hs
     exact Prod.ext rfl (normalFormPicard_injective (rotationInclusion_injective H D
@@ -186,55 +188,27 @@ private theorem signedNormalFormPicard_bijective :
     obtain ⟨⟨i, m⟩, rfl⟩ := normalFormPicard_surjective r
     exact ⟨⟨e, i, m⟩, (eq_mul_of_inv_mul_eq hr.symm).symm⟩
 
-private theorem exists_picardEquiv_with_generators :
-    ∃ ρ : Γ̂ᵐᵒᵖ ≃* Ĝ,
-      ((sign H D).comp ρ.toMonoidHom).ker.unop =
-        (clusterModularGroupInclusion ℂ B).range ∧
-      ρ (op eval[rotationWord]) = incl p ∧
-      ρ (op eval[translationWord]) = incl t ∧
-      ρ (op eval[reflectionWord]) = boundaryReflection := by
-  obtain ⟨ρ, hk, hw⟩ := exists_four_vertex_marked_picard_equiv
-  have hcompare (w : Word B B) :=
-    (picardInvariants_eq_signedLoopInvariants_iff _ w).mpr
-      ⟨(hw w).1, (hw w).2.1, by
-        obtain ⟨j, hj, hj'⟩ := (hw w).2.2
-        exact ⟨j, hj', hj.symm⟩⟩
-  exact ⟨ρ, hk, (picardInvariants_eq_rotationWord_iff _).mp (hcompare _),
-    (picardInvariants_eq_translationWord_iff _).mp (hcompare _),
-    (picardInvariants_eq_reflectionWord_iff _).mp (hcompare _)⟩
-
 /-- Every unsigned four-vertex X map has a unique expression `π₂ ^ i * T ^ m`,
 where `0 ≤ i < 4` and `m` is any integer. Multiplication is point-map composition. -/
 theorem existsUnique_unsigned_normal_form (g : Γ) :
     ∃! a : Fin 4 × ℤ,
       unsigned[rotationWord,inversionCount_rotationWord] ^ (a.1 : ℕ) *
         unsigned[translationWord,inversionCount_translationWord] ^ a.2 = g := by
-  obtain ⟨ρ, hk, hp, ht, -⟩ := exists_picardEquiv_with_generators
-  let f := ρ.toMonoidHom.comp (clusterModularGroupInclusion ℂ B).op
-  have hfinj : Function.Injective f := ρ.injective.comp
-    (op_injective.comp ((clusterModularGroupInclusion_injective ℂ B).comp unop_injective))
-  have hmem : f (op g) ∈ (sign H D).ker := by
-    have hg : clusterModularGroupInclusion ℂ B g ∈
-        ((sign H D).comp ρ.toMonoidHom).ker.unop := by
-      rw [hk]
-      exact ⟨g, rfl⟩
-    exact MonoidHom.mem_ker.mpr (MonoidHom.mem_ker.mp (Subgroup.mem_unop.mp hg))
-  rw [← range_rotationInclusion] at hmem
-  obtain ⟨r, hr⟩ := hmem
+  let e := picardRotationEquiv markedPicardEquiv ker_sign_comp_markedPicardEquiv
   have heval (a : Fin 4 × ℤ) :
-      f (op (unsigned[rotationWord,inversionCount_rotationWord] ^ (a.1 : ℕ) *
+      e (op (unsigned[rotationWord,inversionCount_rotationWord] ^ (a.1 : ℕ) *
         unsigned[translationWord,inversionCount_translationWord] ^ a.2)) =
-      incl (t ^ a.2 * p ^ (a.1 : ℕ)) := by
-    simp only [f, op_mul, op_pow, op_zpow, map_mul, map_pow, map_zpow, MonoidHom.comp_apply,
-      MulEquiv.coe_toMonoidHom, MonoidHom.op_apply_apply, Function.comp_apply, unop_op,
-      clusterModularGroupInclusion_clusterModularGroupMap, hp, ht]
-  obtain ⟨a, ha⟩ := normalFormPicard_surjective r
-  refine ⟨a, op_injective (hfinj ((heval a).trans ((congrArg incl ha).trans hr))), ?_⟩
+      t ^ a.2 * p ^ (a.1 : ℕ) := by
+    apply rotationInclusion_injective H D
+    simp only [e, op_mul, op_pow, op_zpow, map_mul, map_pow, map_zpow,
+      rotationInclusion_picardRotationEquiv_apply, MonoidHom.op_apply_apply, Function.comp_apply,
+      unop_op, clusterModularGroupInclusion_clusterModularGroupMap,
+      markedPicardEquiv_rotationWord, markedPicardEquiv_translationWord]
+  obtain ⟨a, ha⟩ := normalFormPicard_surjective (e (op g))
+  refine ⟨a, op_injective (e.injective ((heval a).trans ha)), ?_⟩
   intro b hb
   apply normalFormPicard_injective
-  apply rotationInclusion_injective H D
-  exact (heval b).symm.trans ((congrArg (fun x ↦ f (op x)) hb).trans
-    (hr.symm.trans (congrArg incl ha).symm))
+  exact (heval b).symm.trans ((congrArg (fun x ↦ e (op x)) hb).trans ha.symm)
 
 /-- Every signed four-vertex X map has a unique expression `π₂ ^ i * T ^ m * π₁ ^ e`,
 where `0 ≤ i < 4`, `m` is any integer and `e` is zero or one. The last exponent records
@@ -243,16 +217,17 @@ theorem existsUnique_signed_normal_form (g : Γ̂) :
     ∃! a : Fin 2 × Fin 4 × ℤ,
       eval[rotationWord] ^ (a.2.1 : ℕ) * eval[translationWord] ^ a.2.2 *
         eval[reflectionWord] ^ (a.1 : ℕ) = g := by
-  obtain ⟨ρ, -, hp, ht, hs⟩ := exists_picardEquiv_with_generators
   have heval (a : Fin 2 × Fin 4 × ℤ) :
-      ρ (op (eval[rotationWord] ^ (a.2.1 : ℕ) * eval[translationWord] ^ a.2.2 *
+      markedPicardEquiv (op (eval[rotationWord] ^ (a.2.1 : ℕ) * eval[translationWord] ^ a.2.2 *
         eval[reflectionWord] ^ (a.1 : ℕ))) =
       boundaryReflection ^ (a.1 : ℕ) * incl (t ^ a.2.2 * p ^ (a.2.1 : ℕ)) := by
-    simp only [op_mul, op_pow, op_zpow, map_mul, map_pow, map_zpow, hp, ht, hs]
-  obtain ⟨a, ha⟩ := signedNormalFormPicard_bijective.surjective (ρ (op g))
-  refine ⟨a, op_injective (ρ.injective ((heval a).trans ha)), ?_⟩
+    simp only [op_mul, op_pow, op_zpow, map_mul, map_pow, map_zpow,
+      markedPicardEquiv_rotationWord, markedPicardEquiv_translationWord,
+      markedPicardEquiv_reflectionWord]
+  obtain ⟨a, ha⟩ := signedNormalFormPicard_bijective.surjective (markedPicardEquiv (op g))
+  refine ⟨a, op_injective (markedPicardEquiv.injective ((heval a).trans ha)), ?_⟩
   intro b hb
   exact signedNormalFormPicard_bijective.injective ((heval b).symm.trans
-    ((congrArg (fun x ↦ ρ (op x)) hb).trans ha.symm))
+    ((congrArg (fun x ↦ markedPicardEquiv (op x)) hb).trans ha.symm))
 
 end QPainleve.FourVertex
