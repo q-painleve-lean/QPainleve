@@ -10,7 +10,6 @@ public import QPainleve.SignedClusterModularGroup.Realization.Presentation.Inter
 
 import QPainleve.Geometry.Toric.Fan.Boundary.DualGraph
 import QPainleve.Geometry.Toric.Fan.Boundary.Prestable
-import QPainleve.SignedClusterModularGroup.Realization.Presentation.Family
 
 /-!
 # Marked toric presentation of the four-vertex seed
@@ -47,8 +46,9 @@ local notation "Aux" => LinearMap.BilinForm.prod
 doubled-square exchange matrix. Any integral isometry to its ordered Picard
 coordinates gives a marking. With this marking, the strict transform of each
 numbered ray gives the same boundary class at every choice of the four centers.
-The numbered nodes and boundary orders use the same labels as the integer
-tables for the generator words. -/
+The presentations retain the exceptional coefficients and the numbered rays
+of the internal blowups. The numbered nodes and orders use the labels of
+the integer tables for the generator words. -/
 theorem exists_four_vertex_marked_presentation
     (v : ZMod 8 ≃ Φ.Ray) (hv : ∀ j, (v j).primitiveGenerator = octagonGenerator j)
     (hnext : ∀ j, (b₂).detDualEquiv (v j).primitiveGenerator (v (j + 1)).primitiveGenerator = 1 ∧
@@ -69,6 +69,7 @@ theorem exists_four_vertex_marked_presentation
       Q.length = 8 ∧ Q.origin = 0 ∧
       (∀ j : ZMod Q.length, (Q.rayOrder j).primitiveGenerator = octagonGenerator (j.val : ZMod 8)) ∧
       (∃ hfan : Q.fan = Φ, hfan ▸ Q.rays = diagonalRay v) ∧
+      (∀ x, (Q.inclusion x).2 = (e x).2) ∧
       P.form = (b₂).detDualEquiv.toLinearMap ∧ P.charge = Fan.rayChargeMap Q.rays ∧
       (Fan.rayChargeMap Q.rays).range.toAddSubgroup.index = 2 ∧
       (∀ j : Fin 8, Fan.rayBoundaryOrders b₂ Q.rays (Q.rayOrder (j.val : ZMod Q.length)) =
@@ -80,9 +81,17 @@ theorem exists_four_vertex_marked_presentation
            ((Q.fan.boundaryIdeal Q.complete.nonempty_cones).subscheme.dualGraphEdgeEquiv
              Q.marks (Q.cycle.edge j)).val =
            Q.fan.distinguishedPointHom σ (IsLocalRing.closedPoint ℂ)) ∧
-      ∀ c, Q.HasNodalModel c (M c) ∧ ∀ j : ZMod 8,
-        (M c).boundaryClass (hD c) j =
-          e.symm (Φ.markedBoundaryMap hΦ (diagonalRay v) (Pi.single (v j) 1)) := by
+      (letI := Q.complete.nonempty_cones
+       letI := Q.prestable
+       letI := Q.neZero
+       ∀ c, Q.HasNodalModel c (M c) ∧
+         (∃ p : ContractedToricFiber b₂ Q.rays Q.regular Q.cycle Q.origin Q.inclusion
+           (pointsEquiv ℂ _ ⟨Over.Hom.left c, Over.w c⟩) (M c),
+           p.IsNodalContraction ∧ ∀ j : Fin 8,
+             p.numberedBoundaryRays (hD c) (ZMod.finEquiv 8 j) =
+               Q.rayOrder (j.val : ZMod Q.length)) ∧
+         ∀ j : ZMod 8, (M c).boundaryClass (hD c) j =
+           e.symm (Φ.markedBoundaryMap hΦ (diagonalRay v) (Pi.single (v j) 1))) := by
   intro L _ H e
   classical
   have hN : Module.finrank ℤ N = 2 := by simp
@@ -116,28 +125,25 @@ theorem exists_four_vertex_marked_presentation
       charge := Fan.rayChargeMap (diagonalRay v)
       isAlt := (b₂).detDualEquiv_self
       matrix_eq := chargeExchangeMatrix_diagonalRay v hv }
-  let c₀ : GeometricRealization.Point Centers := centerPoint (fun _ ↦ 1)
-  obtain ⟨R, _, hR, _, hDR, hclass⟩ := Q.exists_nodal_model_of_internalBlowup c₀ e rfl
-  obtain ⟨M, hD, _, hfiber⟩ := Q.exists_marked_family_of_nodal_model hR hDR
-  refine ⟨Q, P, M, hD, rfl, rfl, ?_, ⟨rfl, rfl⟩, rfl, rfl,
+  choose M p hmodel _ hnodal hD hclass using fun c : GeometricRealization.Point Centers ↦
+    Q.exists_nodal_model_of_internalBlowup c e rfl
+  have hcast : ∀ j : Fin 8, (j.val : ZMod 8) = ZMod.finEquiv 8 j := by decide
+  refine ⟨Q, P, M, hD, rfl, rfl, ?_, ⟨rfl, rfl⟩, fun _ ↦ rfl, rfl, rfl,
     chargeIndex_diagonalRay v hv, ?_, ?_, ?_⟩
   · intro j
     exact (hv j).trans (congrArg octagonGenerator (ZMod.natCast_zmod_val j).symm)
   · intro j
     funext k
     have hj : octagonGenerator (j.val : ZMod 8) = boundaryRay j := by
-      have hj' : (j.val : ZMod 8) = ZMod.finEquiv 8 j := by
-        revert j
-        decide
-      rw [octagonGenerator_apply, boundaryRay_eq, hj', RingEquiv.symm_apply_apply]
+      rw [octagonGenerator_apply, boundaryRay_eq, hcast, RingEquiv.symm_apply_apply]
     simp only [Q, Fan.rayBoundaryOrders_apply_eq_repr, Pi.basisFun_repr,
       primitiveGenerator_diagonalRay v hv, hv, hj, boundaryOrders_apply, Matrix.det_fin_two_of]
   · intro j
     obtain ⟨σ, h₀, h₁, he⟩ := hnodes j
     exact ⟨σ.val, h₀, h₁, he⟩
   · intro c
-    refine ⟨(hfiber c).1, fun j ↦ ?_⟩
-    exact (congrFun (hfiber c).2 j).trans (by
-      simpa only [Q, add_zero] using (hclass j).2)
+    refine ⟨hmodel c, ⟨p c, hnodal c, fun j ↦ ?_⟩, fun j ↦ ?_⟩
+    · simpa only [Q, add_zero, hcast] using (hclass c (ZMod.finEquiv 8 j)).1
+    · simpa only [Q, add_zero] using (hclass c j).2
 
 end QPainleve.FourVertex
