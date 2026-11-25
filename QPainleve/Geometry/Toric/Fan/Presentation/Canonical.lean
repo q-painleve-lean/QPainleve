@@ -40,7 +40,7 @@ variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
 theorem HasToricPresentation.canonicalClass (h : D.HasToricPresentation (X ↘ S) b i)
     (hD : D.IsEffectiveCartier) (hN : AtWorstNodalOfRelativeDimensionOne (D.subschemeι ≫ X ↘ S)) :
     LineBundleClass.mk hD.toInvertibleSheaf = LineBundleClass.mk (canonicalBundle ℂ X 2) := by
-  obtain ⟨Φ, hΦ, hc, n, rays, c, m, Y, T, hT, e, he, hB⟩ := (hasToricPresentation_iff ..).mp h
+  obtain ⟨n, ⟨Φ, hΦ, hc, rays, c, m, Y, T, hT, e, he, hB⟩⟩ := (hasToricPresentation_iff ..).mp h
   let := hc.nonempty_cones
   let rankTwo := (finrank_eq_card_basis b).trans (Fintype.card_fin 2)
   let A := Fan.internalBlowupTower b rays c

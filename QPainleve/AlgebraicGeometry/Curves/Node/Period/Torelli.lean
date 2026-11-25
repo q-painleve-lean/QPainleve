@@ -83,7 +83,7 @@ theorem exists_pair_iso_of_root_free_signed_boundary_period
       aB.hom ≫ E.subschemeι = D.subschemeι ≫ a.hom ∧
       (∀ L : LineBundleClass Y, pullback a.hom L = (G (Additive.ofMul L)).toMul) ∧
       (letI := haB; aB.boundaryCycleAction (k := ℂ) A C = act) := by
-  have hpres := Fan.hasToricPresentation_of_ruled_reduction (b := Pi.basisFun ℤ (Fin 2))
+  have hpres := D.hasToricPresentation_of_anticanonical_cycle (Pi.basisFun ℤ (Fin 2))
     (isIntegralLattice_intCast 2) A hD hcanD
   exact D.exists_pair_iso_of_root_free_signed_boundary_period_of_toric_presentation
     A C hD hE act G hclass hcanD hcanE
@@ -103,7 +103,7 @@ theorem exists_pair_iso_of_root_free_signed_boundary_period_of_nef
       aB.hom ≫ E.subschemeι = D.subschemeι ≫ a.hom ∧
       (∀ L : LineBundleClass Y, pullback a.hom L = (G (Additive.ofMul L)).toMul) ∧
       (letI := haB; aB.boundaryCycleAction (k := ℂ) A C = act) := by
-  have hpres := Fan.hasToricPresentation_of_ruled_reduction (b := Pi.basisFun ℤ (Fin 2))
+  have hpres := D.hasToricPresentation_of_anticanonical_cycle (Pi.basisFun ℤ (Fin 2))
     (isIntegralLattice_intCast 2) A hD hcanD
   exact D.exists_pair_iso_of_root_free_signed_boundary_period_of_toric_presentation_of_nef
     A C hD hE act G hclass hcanD hcanE
