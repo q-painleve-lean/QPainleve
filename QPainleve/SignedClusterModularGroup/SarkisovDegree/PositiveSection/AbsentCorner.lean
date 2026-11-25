@@ -378,10 +378,8 @@ theorem exists_sarkisov_path_of_absent_positive_corner
   let := hdimY
   let := hIntY
   let := hNoethY
-  obtain ⟨b₀, r₀, hr₀, hs, hf, -, -, hrepr⟩ :=
+  obtain ⟨b₀, r₀, hr₀, hb₀, hb₁, -, -, -, -, -, hrepr⟩ :=
     Φ.exists_hirzebruchPicardBasis_opposite_section b (e : ℤ) hΦ r hr
-  have hb₀ : b₀ 0 = -b 0 := by simpa [hs, congrFun hr 2] using (congrFun hr₀ 0).symm
-  have hb₁ : b₀ 1 = b 1 := by simpa [hf, congrFun hr 1] using (congrFun hr₀ 1).symm
   have hcone : σ.val = hull ℝ (Set.range (i ∘ b₀)) := by
     rw [hσ]
     congr 1
@@ -398,10 +396,8 @@ theorem exists_sarkisov_path_of_absent_positive_corner
   let e₀ := -(e : ℤ) + 1
   have he₀ : -e₀ = ((e - 1 : ℕ) : ℤ) := by dsimp only [e₀]; omega
   let : Nonempty B.fan.cones := B.isComplete.nonempty_cones
-  obtain ⟨d, s, ht, ht₀, ht₁, -, -, hrepr'⟩ :=
+  obtain ⟨d, s, ht, hd₀, hd₁, -, -, -, -, -, hrepr'⟩ :=
     B.fan.exists_hirzebruchPicardBasis_opposite_section d₀ e₀ B.isRegular s₀ hs₀
-  have hd₀ : d 0 = -d₀ 0 := by simpa [ht₀, congrFun hs₀ 2] using (congrFun ht 0).symm
-  have hd₁ : d 1 = d₀ 1 := by simpa [ht₁, congrFun hs₀ 1] using (congrFun ht 1).symm
   rw [← he₀]
   refine ⟨hR, A, B, path, d, s, ht, Z, U, hU, k, hA, hAh, hB, hlen, hrat, hg', hbir',
     ⟨τ, by rw [hτ, hd₀, hd₁, Set.pair_comm], hhead⟩, hcenters, hpole', ?_⟩

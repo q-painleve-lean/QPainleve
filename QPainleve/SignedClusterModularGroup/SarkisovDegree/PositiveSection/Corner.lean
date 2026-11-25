@@ -50,33 +50,6 @@ local notation "center[" b "," ρ "," c "]" =>
 local notation "coordinates(" T "," hT "," g "," s ")" =>
   LinearEquiv.symm (BlowupTower.picardMarking T hT s) (Additive.ofMul (pullback g H))
 
-private theorem exists_positiveSection_target_frame {Ψ : Fan i} [Nonempty Ψ.cones]
-    (d₀ : Basis (Fin 2) ℤ N) (e : ℕ) (he : 0 < e) (hΨ : Ψ.IsRegular)
-    (s₀ : Fin 4 ≃ Ψ.Ray)
-    (hs₀ : (fun l ↦ (s₀ l).primitiveGenerator) =
-      ![d₀ 0, d₀ 1, -d₀ 0, (-(e : ℤ) + 1) • d₀ 0 - d₀ 1]) :
-    ∃ (d : Basis (Fin 2) ℤ N) (s : Fin 4 ≃ Ψ.Ray)
-      (hs : (fun l ↦ (s l).primitiveGenerator) =
-        ![d 0, d 1, -d 0, ((e - 1 : ℕ) : ℤ) • d 0 - d 1]),
-      d 0 = -d₀ 0 ∧ d 1 = d₀ 1 ∧ s 2 = s₀ 0 ∧ s 3 = s₀ 3 ∧
-      let C₀' := Ψ.hirzebruchPicardBasis d₀ (-(e : ℤ) + 1) hΨ s₀ hs₀
-      let C' := Ψ.hirzebruchPicardBasis d ((e - 1 : ℕ) : ℤ) hΨ s hs
-      ∀ L, C'.repr L 0 = C₀'.repr L 0 - (-(e : ℤ) + 1) * C₀'.repr L 1 ∧
-        C'.repr L 1 = C₀'.repr L 1 := by
-  -- Swap the sections even at index zero to keep track of the reverse corner.
-  have he' : -(-(e : ℤ) + 1) = ((e - 1 : ℕ) : ℤ) := by omega
-  rw [← he']
-  obtain ⟨d, s, hs, hs₀', hs₁, hs₃, -, hrepr'⟩ :=
-    Ψ.exists_hirzebruchPicardBasis_opposite_section d₀ (-(e : ℤ) + 1) hΨ s₀ hs₀
-  have hd₀ : d 0 = -d₀ 0 := by simpa [hs₀', congrFun hs₀ 2] using (congrFun hs 0).symm
-  have hd₁ : d 1 = d₀ 1 := by simpa [hs₁, congrFun hs₀ 1] using (congrFun hs 1).symm
-  have hs₂ : s 2 = s₀ 0 := Fan.Ray.primitiveGenerator_injective (by
-    calc
-      (s 2).primitiveGenerator = -d 0 := congrFun hs 2
-      _ = d₀ 0 := by rw [hd₀, neg_neg]
-      _ = (s₀ 0).primitiveGenerator := (congrFun hs₀ 0).symm)
-  exact ⟨d, s, hs, hd₀, hd₁, hs₂, hs₃, hrepr'⟩
-
 /-- A pivot at the positive section's corner on fiber `r 1` of a marked
 Hirzebruch surface of index `e > 0` gives a resolved path to index `e - 1`.
 The source marking can place either invariant fiber at `r 1`.
@@ -159,10 +132,8 @@ theorem exists_sarkisov_path_of_positive_corner [X[Φ].IsProjectiveOver ℂ]
   let := hInt
   let := hMod
   -- Put the positive section first to apply the signed corner formula.
-  obtain ⟨b₀, r₀, hr₀, h₀, h₁, h₃, -, hrepr⟩ :=
+  obtain ⟨b₀, r₀, hr₀, hb₀, hb₁, h₀, h₁, -, h₃, -, hrepr⟩ :=
     Φ.exists_hirzebruchPicardBasis_opposite_section b (e : ℤ) hΦ r hr
-  have hb₀ : b₀ 0 = -b 0 := by simpa [h₀, congrFun hr 2] using (congrFun hr₀ 0).symm
-  have hb₁ : b₀ 1 = b 1 := by simpa [h₁, congrFun hr 1] using (congrFun hr₀ 1).symm
   have hcone : σ.val = hull ℝ (Set.range (i ∘ b₀)) := by
     rw [hσ]
     congr 1
@@ -173,8 +144,11 @@ theorem exists_sarkisov_path_of_positive_corner [X[Φ].IsProjectiveOver ℂ]
     hT.exists_sarkisov_path_of_toric_corner b₀ (-(e : ℤ)) hΦ hc r₀ hr₀ g hg hbir σ hcone j
       hj hfirst D hpole
   let : Nonempty B.fan.cones := B.isComplete.nonempty_cones
-  obtain ⟨d, s, hs, hd₀, hd₁, hs₂, hs₃, hrepr'⟩ :=
-    exists_positiveSection_target_frame d₀ e he B.isRegular s₀ hs₀
+  -- Swap the sections even at index zero to keep track of the reverse corner.
+  obtain ⟨d, s, hs, hd₀, hd₁, -, -, hs₂, hs₃, -, hrepr'⟩ :=
+    B.fan.exists_hirzebruchPicardBasis_opposite_section d₀ (-(e : ℤ) + 1) B.isRegular s₀ hs₀
+  have he' : -(-(e : ℤ) + 1) = ((e - 1 : ℕ) : ℤ) := by omega
+  rw [← he']
   refine ⟨B, path, d, s, hs, Z, U, hU, k, hlen, htoric, hB, hproj, hg', hbir', hpole', ?_⟩
   intro y C' first
   have hdimB : SmoothOfRelativeDimension 2 B.fan.algebraicRealizationStructureMap := by
