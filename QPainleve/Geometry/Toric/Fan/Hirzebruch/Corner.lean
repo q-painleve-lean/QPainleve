@@ -159,7 +159,9 @@ private theorem hirzebruch_fiber_neighbors (hΦ : Φ.IsRegular) (hc : Φ.IsCompl
       (fun _ h ↦ h.symm)⟩ τ
 
 include hr in
-private theorem exists_hirzebruch_section_fiber_le (hΦ : Φ.IsRegular) (hc : Φ.IsComplete)
+/-- Every two-ray cone in a complete regular Hirzebruch fan contains a
+section ray and a fiber ray. -/
+theorem exists_hirzebruch_section_fiber_le (hΦ : Φ.IsRegular) (hc : Φ.IsComplete)
     (σ : Φ.cones) (hσ : Nat.card (ToricRay σ.val) = 2) :
     ∃ j k : Fin 2, (sec j).toCone ≤ σ ∧ (fib k).toCone ≤ σ := by
   obtain ⟨p, q, hp, hq, hd⟩ :=
