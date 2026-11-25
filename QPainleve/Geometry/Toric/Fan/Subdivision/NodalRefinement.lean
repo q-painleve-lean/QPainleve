@@ -12,7 +12,6 @@ public import QPainleve.Geometry.Toric.Fan.Subdivision.InternalBlowup
 
 import Mathlib.Analysis.Complex.Polynomial.Basic
 import QPainleve.AlgebraicGeometry.Blowup.Pullback
-import QPainleve.AlgebraicGeometry.IdealSheaf.BaseChange
 import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
 import QPainleve.AlgebraicGeometry.IdealSheaf.Restriction
 import QPainleve.AlgebraicGeometry.IdealSheaf.VanishingIdeal
@@ -50,34 +49,6 @@ section Subdivision
 variable [hΦ₀ : Nonempty Φ.cones] [hΨ₀ : Nonempty Ψ.cones]
 
 local notation "model" => internalBlowupTower b
-
-/-- The reduced inverse image of the strict boundary under a cartesian
-subdivision of ordered internal models is the strict boundary of the refined model. -/
-theorem IsSubdivision.radical_comap_internalBlowupTower_boundary
-    (h : Φ.IsSubdivision Ψ) (ρ : Fin n → Ψ.Ray) (c : Fin n → ℂˣ) :
-    let A := model (h.liftRay ∘ ρ) c
-    let B := model ρ c
-    ∀ (g : A.1 ⟶ B.1),
-      IsPullback g A.2.toTower.toBase B.2.toTower.toBase h.toFanHom.algebraicMap →
-      A.2.boundaryι ≫ g = h.boundaryMap hΦ₀ hΨ₀ ≫ B.2.boundaryι →
-      (B.2.boundaryι.ker.comap g).radical = A.2.boundaryι.ker := by
-  intro A B g hg hb
-  have hred : IsReduced (Φ.boundaryIdeal hΦ₀).subscheme := by
-    rw [Fan.boundaryIdeal_def]
-    infer_instance
-  have hbase :
-      (((B.2.boundaryι ≫ B.2.toTower.toBase).ker).comap h.toFanHom.algebraicMap).radical =
-        (A.2.boundaryι ≫ A.2.toTower.toBase).ker := by
-    simpa only [WithBoundary.boundaryι_toBase, ker_subschemeι] using
-      h.radical_comap_boundaryIdeal hΦ₀ hΨ₀
-  have : IsClosedImmersion (B.2.boundaryι ≫ B.2.toTower.toBase) := by
-    rw [WithBoundary.boundaryι_toBase]
-    infer_instance
-  have : IsClosedImmersion (A.2.boundaryι ≫ A.2.toTower.toBase) := by
-    rw [WithBoundary.boundaryι_toBase]
-    infer_instance
-  exact radical_comap_ker_eq_of_isPullback hg B.2.boundaryι A.2.boundaryι
-    (h.boundaryMap hΦ₀ hΨ₀) hb hbase
 
 /-- A regular subdivision induces a nodal blowup projection of the ordered internal
 model. Its reduced total boundary is the strict boundary of the refined internal model,
