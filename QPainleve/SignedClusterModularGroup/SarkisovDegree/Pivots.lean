@@ -130,19 +130,16 @@ private theorem planeResolution_picardHom_isNef [Nonempty Φ.cones] [SmoothOfRel
   exact (isAmple_twistingSheaf ℂ (Fin 3 → ℂ) Nat.one_pos).isNef.pullback g
 
 include hc hg in
-/-- Two orders greater than half the ruling degree over the same invariant fiber
-have the same projected center. This includes toric corners and infinitely near
-centers. The statement applies to any plane resolution of the Hirzebruch model. -/
-theorem baseCenter_eq_of_high_base_orders_on_hirzebruch_fiber
+/-- The sum of two base orders over distinct points of the same invariant fiber
+is at most the fiber degree. The centers may be toric corners or infinitely near. -/
+theorem add_base_orders_le_hirzebruch_fiber_degree
     [Nonempty Φ.cones] [SmoothOfRelativeDimension 2 f] [IsNoetherian X]
     (t : Fin 2) {j k : Fin n}
     (hj : hT.baseCenter j ∈ (Φ.rayBoundaryIdeal hΦ (fiberRay[t])).support)
     (hk : hT.baseCenter k ∈ (Φ.rayBoundaryIdeal hΦ (fiberRay[t])).support)
-    (hjhigh : (C).repr (marking).1 1 < 2 * (-(marking).2 j))
-    (hkhigh : (C).repr (marking).1 1 < 2 * (-(marking).2 k)) :
-    hT.baseCenter j = hT.baseCenter k := by
+    (hne : hT.baseCenter j ≠ hT.baseCenter k) :
+    -(marking).2 j + -(marking).2 k ≤ (C).repr (marking).1 1 := by
   classical
-  by_contra hne
   obtain ⟨j', hj', hjfirst, hjle⟩ := hT.exists_first_baseCenter_ge_of_plane_resolution g hg j
   obtain ⟨k', hk', hkfirst, hkle⟩ := hT.exists_first_baseCenter_ge_of_plane_resolution g hg k
   have hne' : j' ≠ k' := fun h ↦ hne (hj'.symm.trans (h ▸ hk'))
@@ -161,6 +158,21 @@ theorem baseCenter_eq_of_high_base_orders_on_hirzebruch_fiber
   rw [Finset.sum_pair hne', ← horders, ← horders] at hbound
   have hsum : -(marking).2 j' + -(marking).2 k' ≤ (C).repr (marking).1 1 := by
     simpa only [invariant_fiber_degree b e hΦ hc r hr (marking).1 t] using hbound
+  exact (add_le_add hjle hkle).trans hsum
+
+include hc hg in
+/-- Two orders greater than half the ruling degree over the same invariant fiber
+have the same projected center, including at corners and infinitely near centers. -/
+theorem baseCenter_eq_of_high_base_orders_on_hirzebruch_fiber
+    [Nonempty Φ.cones] [SmoothOfRelativeDimension 2 f] [IsNoetherian X]
+    (t : Fin 2) {j k : Fin n}
+    (hj : hT.baseCenter j ∈ (Φ.rayBoundaryIdeal hΦ (fiberRay[t])).support)
+    (hk : hT.baseCenter k ∈ (Φ.rayBoundaryIdeal hΦ (fiberRay[t])).support)
+    (hjhigh : (C).repr (marking).1 1 < 2 * (-(marking).2 j))
+    (hkhigh : (C).repr (marking).1 1 < 2 * (-(marking).2 k)) :
+    hT.baseCenter j = hT.baseCenter k := by
+  by_contra hne
+  have hbound := hT.add_base_orders_le_hirzebruch_fiber_degree b e hΦ hc r hr g hg t hj hk hne
   omega
 
 include hg in
