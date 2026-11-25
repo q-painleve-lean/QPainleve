@@ -25,7 +25,6 @@ import QPainleve.Geometry.Toric.Fan.Presentation.PointTower
 import QPainleve.Geometry.Toric.Fan.ProjectiveSpace.Reduction
 import QPainleve.Geometry.Toric.Fan.Subdivision.Projective
 import TauCeti.AlgebraicGeometry.IdealSheaf.Reduced
-import TauCeti.AlgebraicGeometry.Morphisms.Modification.Composition
 
 /-!
 # Induction for toric presentations of rational anticanonical pairs
@@ -128,26 +127,6 @@ private theorem hasToricPresentation_of_nodal_blowup_and_internal_contraction
   exact (hasToricPresentation_iff ..).mpr ⟨Φ, hΦ, hc, n + 1, Fin.snoc r r', Fin.snoc c c',
     1 + l, Z', T', hT', d, hd, by rwa [← radical_comap_of_isOpenImmersion]⟩
 
-private theorem isRationalOver_of_common_pointBlowup
-    {X Y : Scheme} {s : X ⟶ S} {t : Y ⟶ S}
-    [SmoothOfRelativeDimension 2 s] [SmoothOfRelativeDimension 2 t]
-    [Scheme.IsRationalOver s] [IsIntegral Y]
-    {m : ℕ} {Z : Scheme} {T : BlowupTower X m Z} (hT : IsClosedPointTower X T)
-    {y : Y} (hy : IsClosed ({y} : Set Y)) (u : Z ≅ J[y].blowup)
-    (hu : u.hom ≫ J[y].blowupToBase ≫ t = T.toBase ≫ s) :
-    Scheme.IsRationalOver t := by
-  have : Scheme.IsRationalOver (T.toBase ≫ s) := hT.isRationalOver s
-  have hU : IsClosedPointTower Y T[y] := .snoc .nil y hy rfl
-  have : IsModification J[y].blowupToBase := by
-    simpa only [toBase_snoc, toBase_nil, Category.comp_id] using
-      hU.isModification_of_smoothOfRelativeDimension_two t
-  let g := u.hom ≫ J[y].blowupToBase
-  have : IsModification g := inferInstanceAs (IsModification (u.hom ≫ J[y].blowupToBase))
-  obtain ⟨d, hd⟩ := IsModification.birationalOver g
-  exact Scheme.BirationalOver.isRationalOver t (T.toBase ≫ s)
-    (Scheme.BirationalOver.symm (sX := T.toBase ≫ s) (sY := t)
-      ⟨d, by simpa only [g, Category.assoc, Category.comp_id, hu] using congrArg (· ≫ t) hd⟩)
-
 variable {b}
 
 private theorem exists_numbering_on_fan_model
@@ -225,8 +204,8 @@ private theorem hasToricPresentation_of_hirzebruch
     let : Y.IsProjectiveOver ℂ := hProj
     let : f.IsOver S := hfOver
     let : Flat f := hfFlat
-    let : Scheme.IsRationalOver (Y ↘ S) := isRationalOver_of_common_pointBlowup
-      hT.isClosedPointTower (t := s) hy u
+    let : Scheme.IsRationalOver (Y ↘ S) :=
+      hT.isClosedPointTower.isRationalOver_of_common_pointBlowup (t := s) hy u
         (by simpa only [Category.assoc, toBase_snoc, toBase_nil, Category.comp_id] using hg)
     obtain ⟨Ψ, hΨ, hcΨ, k', r', hr', e, hruling⟩ :=
       f.exists_hirzebruch_model_of_projectiveLine_fibers b Φ.lattice hfiber
