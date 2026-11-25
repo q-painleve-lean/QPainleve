@@ -7,6 +7,7 @@ module
 
 public import QPainleve.AlgebraicGeometry.Blowup.Tower.Intersection
 public import QPainleve.AlgebraicGeometry.Chow.Nef.Basic
+public import QPainleve.LinearAlgebra.Matrix.Kernel.Generator
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Contraction
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Modification
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Projective
@@ -31,7 +32,9 @@ towers, with the exceptional components included in the support.
 
 For a nonempty reduced divisor, a strict-transform component has multiplicity one.
 This normalizes the total transform of a connected nef divisor of square zero, so
-its support determines it among total transforms of such divisors.
+its support determines it among total transforms of such divisors. The positive
+generator of the integral kernel of its prime intersection matrix also recovers
+the multiplicities in any numbering of the support.
 
 The comparison uses the established Picard marking of a point-blowup tower and
 the projection formula for degrees. See also the intersection calculation in
@@ -46,6 +49,8 @@ open LineBundleClass Scheme.IdealSheafData
 universe u
 
 namespace QPainleve.BlowupTower.IsClosedPointTower
+
+section
 
 variable {X Y : Scheme.{u}} {n : ℕ} {T : BlowupTower X n Y}
   {k : Type u} [Field k] [IsIntegral X]
@@ -220,5 +225,75 @@ theorem totalTransform_eq_of_nef_square_zero {X' W : Scheme.{u}}
       hU.classIntersectionNumber_pullback k, hsqE]
 
 end Nef
+
+end
+
+variable (k : Type u) [Field k] [IsAlgClosed k] {X Y : Scheme.{u}}
+  [X.Over (Spec (.of k))] [X.IsProjectiveOver k] [IsIntegral X]
+  [SmoothOfRelativeDimension 2 (X ↘ Spec (.of k))]
+  {n m : ℕ} {T : BlowupTower X n Y} {D : X.IdealSheafData}
+
+local notation "S" => Spec (CommRingCat.of k)
+local notation "s" => (X ↘ S)
+
+/-- The computed positive kernel generator of the numbered intersection matrix
+of the total transform gives its actual Weil multiplicities. This holds for a
+point blowup tower over a connected reduced nef effective Cartier divisor of
+square zero. -/
+theorem intKernelGenerator_eq_totalTransform
+    (hT : IsClosedPointTower X T) (hD : D.IsEffectiveCartier) [IsReduced D.subscheme]
+    (hconn : _root_.IsConnected (D.support : Set X))
+    (hnef : IsNef k s (mk hD.toInvertibleSheaf)⁻¹)
+    (hsq : Chow.classIntersectionNumber k X (mk hD.toInvertibleSheaf)⁻¹
+      (mk hD.toInvertibleSheaf)⁻¹ = 0) :
+    letI : IsNoetherian X := isNoetherian_of_finiteType s
+    letI := T.isNoetherian
+    letI := hT.isIntegral s
+    letI : Y.Over S := ⟨T.toBase ≫ s⟩
+    letI := (hT.smoothOfRelativeDimension s)
+    letI (y : Y) :=
+      (T.toBase ≫ s).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two y
+    let W := (hT.isEffectiveCartier_totalTransform s hD).toCartierDivisor.toWeilDivisor
+    ∀ (e : Fin m ≃ W.support) (i : Fin m),
+      (Chow.primeIntersectionMatrix k (Subtype.val ∘ e)).intKernelGenerator i =
+        some (fun j ↦ W (e j)) := by
+  intro W e i
+  let f := T.toBase ≫ s
+  let : IsNoetherian X := isNoetherian_of_finiteType s
+  let : IsNoetherian Y := T.isNoetherian
+  let : IsIntegral Y := hT.isIntegral s
+  let : Y.Over S := ⟨f⟩
+  let : SmoothOfRelativeDimension 2 f := hT.smoothOfRelativeDimension s
+  let (y : Y) : UniqueFactorizationMonoid (Y.presheaf.stalk y) :=
+    f.uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two y
+  let : IsNormalScheme Y := IsNormalScheme.of_uniqueFactorizationMonoid_stalk
+  have : Y.IsProjectiveOver k := T.isProjectiveOver k
+  have : T.toBase.IsOver S := ⟨rfl⟩
+  let htotal := hT.isEffectiveCartier_totalTransform s hD
+  have hnonneg : 0 ≤ W :=
+    (Scheme.CartierDivisor.isEffective_iff_toWeilDivisor_nonneg _).mp
+      htotal.isEffective_toCartierDivisor
+  have hconn' : _root_.IsPreconnected ((W.idealSheaf hnonneg).support : Set Y) := by
+    rw [SchemeWeilDivisor.idealSheaf_toWeilDivisor htotal.isEffective_toCartierDivisor,
+      htotal.idealSheaf_toCartierDivisor,
+      support_comap, Closeds.coe_preimage]
+    exact (hT.isConnected_preimage_of_isClosed s D.support.isClosed hconn).isPreconnected
+  have hclass : (Scheme.CartierDivisor.weilToLineBundleClassHom Y W).toMul =
+      pullback T.toBase (mk hD.toInvertibleSheaf)⁻¹ := by
+    rw [Scheme.CartierDivisor.weilToLineBundleClassHom_toWeilDivisor, toMul_ofMul,
+      htotal.toLineBundleClass_toCartierDivisor, pullback_inv,
+      hD.pullback_mk_toInvertibleSheaf htotal]
+  have hdim := topologicalKrullDim_eq_of_smoothOfRelativeDimension f (n := 2)
+  have hzero : Chow.classIntersectionNumber k Y
+      (Scheme.CartierDivisor.weilToLineBundleClassHom Y W).toMul
+      (Scheme.CartierDivisor.weilToLineBundleClassHom Y W).toMul = 0 := by
+    rw [hclass, hT.classIntersectionNumber_pullback k, hsq]
+  obtain ⟨p, hp⟩ := hT.exists_coeff_totalTransform_eq_one s hD hconn.nonempty
+  have hpW : W p = 1 := hp
+  have hp' : p ∈ W.support := Finsupp.mem_support_iff.mpr (hpW.trans_ne one_ne_zero)
+  refine Matrix.intKernelGenerator_eq_some_of_span
+    ((hnonneg (e i)).lt_of_ne (Finsupp.mem_support_iff.mp (e i).property).symm) ?_
+  exact Chow.ker_primeIntersectionMatrix_eq_span_of_nef_square_zero k hdim
+    hnonneg hconn' (hclass.symm ▸ hnef.pullback T.toBase) hzero e ⟨p, hp'⟩ hpW
 
 end QPainleve.BlowupTower.IsClosedPointTower

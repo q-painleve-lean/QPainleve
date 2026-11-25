@@ -49,6 +49,30 @@ namespace TauCeti.AlgebraicGeometry.Chow
 
 section
 
+variable (k : Type u) [Field k] {X : Scheme.{u}}
+  [X.Over (Spec (.of k))] [IsIntegral X] [IsNoetherian X]
+  [∀ x : X, UniqueFactorizationMonoid (X.presheaf.stalk x)]
+
+/-- The integer intersection matrix of an indexed family of prime divisors. -/
+public noncomputable def primeIntersectionMatrix {ι : Type*} (p : ι → CodimensionOnePoint X) :
+    Matrix ι ι ℤ :=
+  Matrix.of fun i j ↦
+    classIntersectionNumber k X (LineBundleClass.primeDivisorClass (p i))
+      (LineBundleClass.primeDivisorClass (p j))
+
+/-- An entry pairs the prime classes at the chosen row and column indices. -/
+@[simp]
+public theorem primeIntersectionMatrix_apply {ι : Type*} (p : ι → CodimensionOnePoint X)
+    (i j : ι) :
+    primeIntersectionMatrix k p i j =
+      classIntersectionNumber k X (LineBundleClass.primeDivisorClass (p i))
+        (LineBundleClass.primeDivisorClass (p j)) :=
+  (rfl)
+
+end
+
+section
+
 variable (k : Type u) [Field k] [Infinite k] {X : Scheme.{u}}
   [X.Over (Spec (.of k))] [X.IsProjectiveOver k]
 
