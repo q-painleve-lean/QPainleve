@@ -44,14 +44,14 @@ theorem compareSignedLoopLists_eq_none_iff (orders : Fin n → Fin r → ℤ)
   simp [compareSignedLoopLists, Option.map₂_eq_none_iff]
 
 /-- A Boolean result certifies that both lists give loops. Its truth value is
-the equality of the signed integer invariants of those loops. -/
+the result of comparing those typed loops. -/
+@[simp]
 theorem compareSignedLoopLists_eq_some_iff (orders : Fin n → Fin r → ℤ)
     (gs hs : List (Generator (Fin r))) (result : Bool) :
     B.compareSignedLoopLists orders gs hs = some result ↔
       ∃ w v : Word B B, w.generators = gs ∧ v.generators = hs ∧
-        (result = true ↔
-          w.signedLoopInvariants B.matrix.intKernelBasisVectors.2 orders (orders 0) =
-            v.signedLoopInvariants B.matrix.intKernelBasisVectors.2 orders (orders 0)) := by
-  cases result <;> simp [compareSignedLoopLists, Option.mem_def, Bool.eq_false_iff]
+        result = B.compareSignedLoops orders w v := by
+  simp only [compareSignedLoopLists, Option.map₂_eq_some_iff, Option.mem_def,
+    Generator.loopOfList?_eq_some_iff, eq_comm (a := result)]
 
 end QPainleve.Cluster.SkewExchangeMatrix

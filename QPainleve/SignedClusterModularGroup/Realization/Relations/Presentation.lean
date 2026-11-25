@@ -243,16 +243,11 @@ def decidableXPullbackEq {k : Type*} [Field k]
     (w v : Word E E) (orders : Fin n → Fin r → ℤ)
     (ho : orders = p₀.numberedBoundaryOrders (cartier(M c₀))) :
     Decidable (w.xPullback k = v.xPullback k) :=
-  let basisVectors := E.matrix.intKernelBasisVectors.2
-  decidable_of_iff
-    (w.signedLoopInvariants basisVectors orders (orders 0) =
-      v.signedLoopInvariants basisVectors orders (orders 0))
-    (by
-      obtain ⟨β, hβ⟩ := E.matrix.exists_basis_eq_intKernelBasisVectors
-      dsimp only [basisVectors]
-      rw [← hβ, ho]
-      exact (xPullback_eq_iff_signedLoopInvariants_eq_of_presentation Q P hform hcharge M
-        p₀ hnodal₀ p hnodal hnef hsq hprim hmark hnodes w v β).symm)
+  decidable_of_iff (E.compareSignedLoops orders w v = true)
+    (E.compareSignedLoops_eq_true_iff_xPullback_eq k orders w v (by
+      rw [ho]
+      exact xPullback_eq_iff_signedLoopInvariants_eq_of_presentation Q P hform hcharge M
+        p₀ hnodal₀ p hnodal hnef hsq hprim hmark hnodes w v))
 
 /-- For the numbered boundary order table of a reference nodal contraction,
 a Boolean comparison result certifies that both lists return to the starting
@@ -282,9 +277,14 @@ theorem compareSignedLoopLists_eq_some_iff_of_presentation
     E.compareSignedLoopLists orders gs hs = some result ↔
       ∃ w v : Word E E, w.generators = gs ∧ v.generators = hs ∧
         (result = true ↔ w.xPullback k = v.xPullback k) := by
-  obtain ⟨β, hβ⟩ := E.matrix.exists_basis_eq_intKernelBasisVectors
-  rw [SkewExchangeMatrix.compareSignedLoopLists_eq_some_iff, ← hβ, ho]
-  simp_rw [← xPullback_eq_iff_signedLoopInvariants_eq_of_presentation (F := k) Q P hform hcharge M
-    p₀ hnodal₀ p hnodal hnef hsq hprim hmark hnodes _ _ β]
+  rw [SkewExchangeMatrix.compareSignedLoopLists_eq_some_iff, ho]
+  have hresult (w v : Word E E) :
+      result = E.compareSignedLoops (p₀.numberedBoundaryOrders (cartier(M c₀))) w v ↔
+        (result = true ↔ w.xPullback k = v.xPullback k) :=
+    Bool.eq_iff_iff.trans <| iff_congr Iff.rfl <|
+      E.compareSignedLoops_eq_true_iff_xPullback_eq k _ w v (fun β ↦
+        xPullback_eq_iff_signedLoopInvariants_eq_of_presentation Q P hform hcharge M
+          p₀ hnodal₀ p hnodal hnef hsq hprim hmark hnodes w v β)
+  simp_rw [hresult]
 
 end QPainleve.SignedClusterModularGroup.GeometricRealization
