@@ -93,7 +93,7 @@ theorem mem_range_baseCenter_iff_isEffectiveCartier_comap (hT : IsClosedPointTow
       (fun l hl he ↦ hmin l he hl)).choose
   · intro hE
     by_contra h
-    obtain ⟨q, _, _, _, _, hq, _, hI, _, _, _⟩ := hT.exists_prepend_closed_point_blowup hp h
+    obtain ⟨q, _, _, _, _, hq, _, hI, _, _, _, _, _⟩ := hT.exists_prepend_closed_point_blowup hp h
     have hdim := hT.smoothOfRelativeDimension s
     have := T.isNoetherian
     have hC : I[q].IsEffectiveCartier := hI ▸ hE

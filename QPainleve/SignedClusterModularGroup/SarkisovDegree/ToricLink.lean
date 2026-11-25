@@ -110,7 +110,7 @@ theorem exists_hirzebruch_toric_link_resolution
           hirzebruchSarkisovBidegree β.toNat M'.toNat <
             hirzebruchSarkisovBidegree β.toNat M.toNat) := by
   obtain ⟨Ψ, F, hΨ, hF, hc', hcF, d, τ, s, t, g, g', r, r', hr, hr',
-      hd₀, hd₁, hτcone, hg, hg', hstar, hstar', hcontract, hcoord⟩ :=
+      hd₀, hd₁, hτcone, hg, hg', hstar, hstar', hcontract, -, hcoord⟩ :=
     Fan.exists_hirzebruch_toric_elementary_transform_picard_coordinates b e hΦ hc hrays σ hσ
   let R := T.transport (g.symm ≪≫ g')
   let U := (tower[I[τ]]).append R.tower
