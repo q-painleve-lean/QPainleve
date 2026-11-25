@@ -6,8 +6,8 @@ Authors: The QPainleve contributors
 module
 
 public import Mathlib.RingTheory.RegularLocalRing.Defs
-public import TauCeti.AlgebraicGeometry.Morphisms.Smooth.Locus
-import TauCeti.AlgebraicGeometry.Morphisms.FiniteType
+public import TauCeti.AlgebraicGeometry.Morphisms.Smooth.Locus.Basic
+import TauCeti.AlgebraicGeometry.Morphisms.FiniteType.Basic
 import TauCeti.RingTheory.RegularLocalRing.Smooth
 
 /-!

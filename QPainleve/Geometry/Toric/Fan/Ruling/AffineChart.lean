@@ -87,6 +87,45 @@ instance (k : Fin 2) : IsAffine (projectiveLineAffineFan k).algebraicRealization
       (mem_projectiveLineAffineFan_cones.mp τ.property).le
   exact IsAffine.of_isIso (inv (U.affineToricChartι σ))
 
+/-- The toric affine chart corresponds to the polynomial chart at the same coordinate. -/
+def projectiveLineAffineFanIso (k : Fin 2) :
+    (projectiveLineAffineFan k).algebraicRealization ≅ Spec (.of (Polynomial ℂ)) := by
+  let U := projectiveLineAffineFan k
+  let σ : U.cones := ⟨projectiveLineAffineRay k, mem_projectiveLineAffineFan_cones.mpr (.refl _)⟩
+  let j := U.affineToricChartι σ
+  let : IsIso j :=
+    U.isIso_affineToricChartι_of_forall_le fun τ ↦
+      (mem_projectiveLineAffineFan_cones.mp τ.property).le
+  let f := j ≫ projectiveLineAffineFanι k
+  let τ := projectiveSpaceMaximalCone (Pi.basisFun ℤ (Fin 1)) (isIntegralLattice_intCast 1)
+    (finSuccEquiv 1 k)
+  let σ' : (P₁).cones := ⟨σ.val, projectiveLineAffineFan_cones_subset k σ.property⟩
+  have hτ : σ' = τ :=
+    Subtype.ext (projectiveSpaceMaximalCone_finOne_val k).symm
+  have hj : j ≫ (projectiveLineAffineFanInclusion k).algebraicMap = (P₁).affineToricChartι σ' :=
+    affineToricChartι_comp_subfanInclusion_algebraicMap P₁ U.cones
+      (projectiveLineAffineFan_cones_subset k) U.mem_of_isFaceOf σ
+  have hf : Set.range f = Set.range (projectiveLine.polynomialChartι ℂ k) := by
+    dsimp only [f]
+    rw [projectiveLineAffineFanι_def, ← Category.assoc, hj]
+    exact (congrArg (fun σ : (P₁).cones ↦
+      Set.range ((P₁).affineToricChartι σ ≫ projectiveLineToricIso.hom)) hτ).trans
+      (range_affineToricChartι_comp_projectiveLineToricIso k)
+  exact (asIso j).symm ≪≫ IsOpenImmersion.isoOfRangeEq f (projectiveLine.polynomialChartι ℂ k) hf
+
+/-- The polynomial chart comparison commutes with the two open immersions. -/
+@[reassoc]
+theorem projectiveLineAffineFanIso_hom_comp_polynomialChartι (k : Fin 2) :
+    (projectiveLineAffineFanIso k).hom ≫ projectiveLine.polynomialChartι ℂ k =
+      projectiveLineAffineFanι k := by
+  simp [projectiveLineAffineFanIso, IsOpenImmersion.isoOfRangeEq_hom_fac]
+
+/-- The affine toric chart and the corresponding polynomial chart have the same image. -/
+theorem range_projectiveLineAffineFanι (k : Fin 2) :
+    Set.range (projectiveLineAffineFanι k) = Set.range (projectiveLine.polynomialChartι ℂ k) := by
+  rw [← projectiveLineAffineFanIso_hom_comp_polynomialChartι]
+  exact (Scheme.homeoOfIso (projectiveLineAffineFanIso k)).surjective.range_comp _
+
 /-- Each point of the projective line belongs to one of the two affine toric charts. -/
 theorem exists_projectiveLineAffineFanι_apply_eq (x : projectiveLine ℂ) :
     ∃ (k : Fin 2) (y : (projectiveLineAffineFan k).algebraicRealization),

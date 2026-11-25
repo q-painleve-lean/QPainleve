@@ -5,7 +5,7 @@ Authors: The QPainleve contributors
 -/
 module
 
-public import TauCeti.AlgebraicGeometry.Birational.RationalMap
+public import TauCeti.AlgebraicGeometry.Birational.RationalMap.ValuationRing
 public import QPainleve.AlgebraicGeometry.RationalMap.Composition.Basic
 public import QPainleve.AlgebraicGeometry.RationalMap.FunctionField
 
@@ -305,18 +305,26 @@ theorem comp_compOfDefined
     (hgh : g.fromFunctionField (IsLocalRing.closedPoint Y.functionField) ∈ h.domain) :
     ∃ hc : (f.comp g).fromFunctionField η ∈ h.domain,
       (f.comp g).compOfDefined h hc = f.comp (g.compOfDefined h hgh) := by
-  let x : Spec X.functionField := η
-  let y : Spec Y.functionField := IsLocalRing.closedPoint _
-  let : Subsingleton (Spec Y.functionField) :=
-    inferInstanceAs (Subsingleton (PrimeSpectrum Y.functionField))
-  have hv : (f.comp g).fromFunctionField x = g.fromFunctionField y := by
-    rw [fromFunctionField_comp, Hom.comp_apply]
-    exact congrArg g.fromFunctionField (Subsingleton.elim _ _)
+  have hv := f.fromFunctionField_comp_apply_closedPoint g
   have hd := f.fromFunctionField_mem_domain_of_isDominant g
   have he := f.compOfDefined_eq_comp g hd
   obtain ⟨hg, _, hz⟩ := f.compOfDefined_assoc g h hd (he.symm ▸ hv.symm ▸ hgh)
   refine ⟨hv.symm ▸ hgh, ?_⟩
   simpa only [compOfDefined_eq_comp] using hz
+
+/-- A dominant pullback detects both the domain condition for generic composition
+and equality of the composite with a prescribed rational map. -/
+theorem compOfDefined_eq_iff_of_dominant
+    (f : X ⤏ Y) [f.IsDominant] (g : Y ⤏ Z) (h : Z ⤏ W) (t : Y ⤏ W) :
+    (∃ hc, (f.comp g).compOfDefined h hc = f.comp t) ↔
+      ∃ hg, g.compOfDefined h hg = t := by
+  constructor
+  · rintro ⟨hc, he⟩
+    have hg := f.fromFunctionField_comp_apply_closedPoint g ▸ hc
+    obtain ⟨_, hcomp⟩ := f.comp_compOfDefined g h hg
+    exact ⟨hg, f.comp_left_injective (hcomp.symm.trans he)⟩
+  · rintro ⟨hg, rfl⟩
+    exact f.comp_compOfDefined g h hg
 
 end Associativity
 

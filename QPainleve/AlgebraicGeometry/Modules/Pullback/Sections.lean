@@ -48,6 +48,18 @@ theorem pullbackSectionsLE_top {X Y : Scheme.{u}} (f : X ⟶ Y) {M : Y.Modules} 
   exact (congrArg (fun h : Γ(N, ⊤) ⟶ Γ(N, ⊤) ↦ h a)
     (N.presheaf.map_id (Opposite.op ⊤))).trans (id_apply a)
 
+open Scheme.Modules in
+/-- The comparison for equal morphisms carries a pulled-back section to the pullback
+along the other morphism, with the induced identification of the inverse image opens. -/
+theorem pullbackCongr_hom_comp_app_pullbackSections {X Y : Scheme.{u}} {f g : X ⟶ Y}
+    (h : f = g) {M : Y.Modules} {N : X.Modules} (φ : (pullback g).obj M ⟶ N)
+    (U : Y.Opens) (s : Γ(M, U)) :
+    ((pullbackCongr h).hom.app M ≫ φ).app (f ⁻¹ᵁ U) (f.pullbackSections M U s) =
+      N.presheaf.map (eqToHom (congrArg (· ⁻¹ᵁ U) h)).op
+        (φ.app (g ⁻¹ᵁ U) (g.pullbackSections M U s)) := by
+  subst g
+  simp [pullbackCongr]
+
 /-- Pulling back the morphism of a global section gives the morphism of its pullback. -/
 theorem unitHomEquivTop_pullback {X Y : Scheme.{u}} (f : X ⟶ Y)
     {M : Y.Modules} (s : 𝟙_ Y.Modules ⟶ M) :

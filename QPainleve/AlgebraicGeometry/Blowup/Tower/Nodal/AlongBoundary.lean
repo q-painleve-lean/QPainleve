@@ -51,11 +51,11 @@ private theorem exists_isPullback_disjoint_step (I : X.IdealSheafData) (f : Y �
   let g := e.hom ≫ F.blowupToBase
   let E := J.comap F.blowupToBase
   let a : (J.comap g).blowup ≅ E.blowup :=
-    E.blowupIso e (J.comap_comp e.hom F.blowupToBase).symm
+    blowupIso e (J.comap_comp e.hom F.blowupToBase)
   let b := F.blowupCommOfDisjoint J h
   let H := I.comap (J.blowupToBase ≫ f)
   let c : (F.comap J.blowupToBase).blowup ≅ H.blowup :=
-    H.blowupIso (Iso.refl _) (by simp [H, F, comap_comp])
+    blowupIso (J := H) (Iso.refl _) (by simp [H, F, comap_comp])
   have hp : IsPullback (J.blowupMap F.blowupToBase) E.blowupToBase J.blowupToBase F.blowupToBase :=
     (J.isPullback_blowupMap_of_disjoint F h.symm).flip
   have hg : (a ≪≫ b ≪≫ c).hom ≫ H.blowupToBase = a.hom ≫ J.blowupMap F.blowupToBase := by
@@ -108,7 +108,7 @@ private theorem exists_isPullback_blowup_aux {T : BlowupTower X n Y} [IsLocallyN
   induction hT with
   | nil =>
     let e : I.blowup ≅ (I.comap (BlowupTower.nil (X := X)).toBase).blowup :=
-      (I.comap (BlowupTower.nil (X := X)).toBase).blowupIso (Iso.refl _) (by simp)
+      blowupIso (J := I.comap (BlowupTower.nil (X := X)).toBase) (Iso.refl _) (by simp)
     refine ⟨_, .nil, e, .nil, ?_⟩
     simp only [toBase_nil]
     exact IsPullback.of_vert_isIso ⟨by simp [e]⟩

@@ -185,8 +185,8 @@ def Ray.characterRulingLaurentBlowupIso (ρ : Φ.Ray)
     (hdim : Module.finrank ℤ N = 2) (hmρ : m ρ.primitiveGenerator = 0)
     (hsurj : Function.Surjective m) (c : ℂˣ) :
     ((ρ.binomialCenter hdim hmρ hsurj c).ker.comap (ι)).blowup ≅ (center[j, c]).blowup :=
-  (center[j, c]).blowupIso (eL) (ρ.comap_coordinateSectionCenter_characterRulingLaurentIso
-    h b hm hpos hneg j hρ hdim hmρ hsurj c)
+  blowupIso (eL) (ρ.comap_coordinateSectionCenter_characterRulingLaurentIso
+    h b hm hpos hneg j hρ hdim hmρ hsurj c).symm
 
 /-- The blowup comparison intertwines the projections by the Laurent ruling isomorphism. -/
 @[reassoc (attr := simp)]
@@ -197,7 +197,7 @@ theorem Ray.characterRulingLaurentBlowupIso_hom_comp_blowupToBase (ρ : Φ.Ray)
     (ρ.characterRulingLaurentBlowupIso h b hm hpos hneg j hρ hdim hmρ hsurj c).hom ≫
         (center[j, c]).blowupToBase =
       ((ρ.binomialCenter hdim hmρ hsurj c).ker.comap (ι)).blowupToBase ≫ (eL).hom :=
-  (center[j, c]).blowupIso_hom_blowupToBase _ _
+  blowupIso_hom_blowupToBase _ _
 
 /-- The Laurent ruling comparison identifies the exceptional ideals of the two blowups. -/
 theorem Ray.comap_exceptionalIdeal_characterRulingLaurentBlowupIso (ρ : Φ.Ray)

@@ -5,7 +5,7 @@ Authors: The QPainleve contributors
 -/
 module
 
-public import TauCeti.AlgebraicGeometry.Curves.Node.DualGraph
+public import TauCeti.AlgebraicGeometry.Curves.Node.DualGraph.Basic
 public import TauCeti.AlgebraicGeometry.LineBundle.Degree
 public import TauCeti.AlgebraicGeometry.LineBundle.Functoriality
 import QPainleve.AlgebraicGeometry.LineBundle.Clopen

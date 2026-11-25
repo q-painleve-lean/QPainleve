@@ -122,7 +122,7 @@ theorem exists_iso_nodal_blowup_alongBoundary (s : X ⟶ S) {n : ℕ}
     (by simpa only [hI, Set.singleton_subset_iff, SetLike.mem_coe] using hπ)
   obtain ⟨a', hC', ha', g, hg', -, hboundary⟩ := exists_isPullback_alongBoundary_radical D f a hC hg
   let e := hg'.isoIsPullback _ _ hpb ≪≫
-    J.blowupIso (Iso.refl _) (by simpa only [Iso.refl_hom, comap_id] using hJ.symm)
+    blowupIso (Iso.refl _) (hJ.trans (comap_id J).symm)
   have he : e.hom ≫ J.blowupToBase = g := by
     simp only [e, Iso.trans_hom, Category.assoc, blowupIso_hom_blowupToBase, Iso.refl_hom,
       Category.comp_id]

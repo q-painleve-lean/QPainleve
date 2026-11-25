@@ -37,6 +37,14 @@ abbrev IsNodalBoundaryTower (D : S.IdealSheafData) (s : S ⟶ K) (π : X ⟶ S)
     (T : BlowupTower X n Y) : Prop :=
   IsPointTowerWith (fun {_} g p ↦ (D.comap g).IsNodeOfReducedBoundary (g ≫ s) p) π T
 
+/-- Blowing up a closed node of the reduced boundary gives a one-step nodal tower. -/
+theorem IsNodalBoundaryTower.of_node {D : X.IdealSheafData} {s : X ⟶ K} {p : X}
+    (hp : IsClosed ({p} : Set X)) (hn : D.IsNodeOfReducedBoundary s p) :
+    IsNodalBoundaryTower D s (𝟙 X)
+      (BlowupTower.nil.snoc (vanishingIdeal ⟨closure ({p} : Set X), isClosed_closure⟩)) := by
+  refine .snoc .nil p hp (Scheme.ker_fromSpecResidueField_eq_vanishingIdeal p).symm ?_
+  simpa only [toBase_nil, comap_id, Category.id_comp, Category.comp_id] using hn
+
 private theorem isLocal_node (D : S.IdealSheafData) (s : S ⟶ K) :
     PointCondition.IsLocal (fun {_} g p ↦ (D.comap g).IsNodeOfReducedBoundary (g ≫ s) p) := by
   constructor
@@ -136,6 +144,27 @@ theorem IsNodalBoundaryTower.exists_append_of_iso
     rw [support_comap (((D.comap T.toBase).comap e.inv).comap U.toBase),
       support_comap ((D.comap T.toBase).comap e.inv), hD',
       support_comap (E.comap U.toBase), support_comap E]
+
+/-- Transport a nodal boundary tower along an isomorphism of bases, preserving its
+projection and identifying the reduced total boundary on the two tower tops. -/
+theorem IsNodalBoundaryTower.exists_transport_of_iso
+    {D : X.IdealSheafData} {s : X ⟶ K} {t : Y ⟶ K} {U : BlowupTower Y n Z}
+    {k : X ≅ Y} (hU : IsNodalBoundaryTower (D.comap k.inv) t (𝟙 Y) U)
+    (hk : k.hom ≫ t = s) :
+    ∃ (W : Scheme.{u}) (T : BlowupTower X n W) (e : W ≅ Z),
+      IsNodalBoundaryTower D s (𝟙 X) T ∧
+      T.toBase = e.hom ≫ U.toBase ≫ k.inv ∧
+      (D.comap T.toBase).radical = (((D.comap k.inv).comap U.toBase).radical).comap e.hom := by
+  let hnil : IsNodalBoundaryTower D s (𝟙 X) (.nil : BlowupTower X 0 X) := .nil
+  have hsupport : ((D.comap k.inv).comap k.hom).support =
+      (D.comap (.nil : BlowupTower X 0 X).toBase).support := by
+    simp [← comap_comp]
+  have h := hnil.exists_append_of_iso hU k
+    (by simpa only [toBase_nil, Category.id_comp] using hk) hsupport
+  generalize hlen : 0 + n = l at h
+  rw [Nat.zero_add] at hlen
+  subst l
+  simpa only [toBase_nil, Category.comp_id] using h
 
 /-- Two nodal boundary towers admit a common refinement through nodal centers.
 Each extension has length at most that of the opposite tower. The final isomorphism

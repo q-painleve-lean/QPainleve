@@ -5,6 +5,7 @@ Authors: The QPainleve contributors
 -/
 module
 
+public import QPainleve.AlgebraicGeometry.Blowup.StrictTransform.Canonical
 public import QPainleve.AlgebraicGeometry.Blowup.StrictTransform.Node
 
 import TauCeti.RingTheory.Etale.Field
@@ -34,7 +35,8 @@ The reduced total transform of a nodal Cartier divisor at a closed node is
 nodal. Near the attachment points the strict and exceptional divisors meet
 transversely, including when the original node is a self-node. The other
 points are covered by the original curve off the center and by the smooth
-exceptional line off the strict transform.
+exceptional line off the strict transform. Nodality also descends along a
+point blowdown when the boundary is nodal over the center.
 -/
 
 public section
@@ -45,30 +47,6 @@ open TauCeti.AlgebraicGeometry
 universe u
 
 namespace AlgebraicGeometry.Scheme.IdealSheafData
-
-private theorem exists_nodal_neighbourhood_of_comap_eq
-    {k : Type u} [Field k] {X Y U : Scheme.{u}}
-    {D : X.IdealSheafData} {E : Y.IdealSheafData}
-    {s : X ⟶ Spec (.of k)} {t : Y ⟶ Spec (.of k)}
-    (j : U ⟶ X) (i : U ⟶ Y) [IsOpenImmersion j] [IsOpenImmersion i]
-    (hbase : j ≫ s = i ≫ t) (hDE : D.comap j = E.comap i)
-    (hE : AtWorstNodalOfRelativeDimensionOne (E.subschemeι ≫ t))
-    (p : D.subscheme) (hp : D.subschemeι p ∈ Set.range j) :
-    ∃ (W : Scheme.{u}) (g : W ⟶ D.subscheme), IsOpenImmersion g ∧ p ∈ Set.range g ∧
-      AtWorstNodalOfRelativeDimensionOne (g ≫ D.subschemeι ≫ s) := by
-  let g := subschemeMap (D.comap j) D j (le_map_comap _ _)
-  let h := subschemeMap (E.comap i) E i (le_map_comap _ _)
-  have hpb : IsPullback (D.comap j).subschemeι g j D.subschemeι :=
-    isPullback_of_isClosedImmersion _ _ _ _ (by simp [g]) (by simp)
-  have hpb' : IsPullback (E.comap i).subschemeι h i E.subschemeι :=
-    isPullback_of_isClosedImmersion _ _ _ _ (by simp [h]) (by simp)
-  have : IsOpenImmersion h := MorphismProperty.of_isPullback (P := @IsOpenImmersion)
-    hpb' inferInstance
-  refine ⟨_, g, MorphismProperty.of_isPullback (P := @IsOpenImmersion) hpb inferInstance, ?_, ?_⟩
-  · rw [Scheme.Pullback.range_snd_of_isPullback hpb]
-    exact hp
-  · rw [← hpb.w_assoc, hbase, hDE, hpb'.w_assoc]
-    exact hE.comp_of_etale h
 
 /-- If a blowup center restricts to a Cartier divisor on a nodal boundary,
 the strict transform is isomorphic to the original boundary over the base and is nodal. -/
@@ -89,6 +67,56 @@ theorem atWorstNodalOfRelativeDimensionOne_strictTransform_of_isEffectiveCartier
     e _).mp
   rw [hcomp]
   exact hD.comp_of_etale π
+
+section
+
+variable {k : Type u} [Field k] {X : Scheme.{u}} {p : X} [X.Over (Spec (.of k))]
+
+local notation "I" => vanishingIdeal (Closeds.mk (closure (Singleton.singleton p)) isClosed_closure)
+local notation "π" => blowupToBase I
+local notation "E" => comap I π
+local notation "s" => (X ↘ Spec (CommRingCat.of k))
+
+/-- A boundary is nodal if its total transform is the product of a nodal boundary
+and the exceptional ideal, and every boundary point over the closed center is a node. -/
+theorem atWorstNodalOfRelativeDimensionOne_of_pointBlowdown
+    {D : X.IdealSheafData} {B : (I).blowup.IdealSheafData}
+    (hD : D.comap π = B * E)
+    (hB : AtWorstNodalOfRelativeDimensionOne (B.subschemeι ≫ π ≫ s))
+    (hp : IsClosed ({p} : Set X))
+    (hnode : ∀ q : D.subscheme, D.subschemeι q = p → (D.subschemeι ≫ s).IsNodeAt q) :
+    AtWorstNodalOfRelativeDimensionOne (D.subschemeι ≫ s) := by
+  classical
+  let V : X.Opens := (I).support.compl
+  let U : (I).blowup.Opens := π ⁻¹ᵁ V
+  have hπ : U.ι ≫ π = (π ∣_ V) ≫ V.ι := (morphismRestrict_ι π V).symm
+  have : IsOpenImmersion (U.ι ≫ π) := hπ ▸ inferInstanceAs (IsOpenImmersion ((π ∣_ V) ≫ V.ι))
+  have hU : (E).support.compl = U := compl_support_comap _ _
+  have hE : (E).comap U.ι = ⊤ :=
+    (comap_eq_top_iff _ _).mpr (hU.symm ▸ Scheme.Opens.ι_preimage_self U)
+  have hDE : D.comap (U.ι ≫ π) = B.comap U.ι := by
+    rw [comap_comp, hD, comap_mul, hE, mul_top]
+  have hRange : Set.range (U.ι ≫ π) = ({p} : Set X)ᶜ := by
+    rw [hπ, Scheme.Hom.comp_base, TopCat.coe_comp, Set.range_comp,
+      Set.range_eq_univ.mpr (ConcreteCategory.bijective_of_isIso _).surjective,
+      Set.image_univ, Scheme.Opens.range_ι, Closeds.coe_compl, coe_support_vanishingIdeal,
+      Closeds.coe_mk, hp.closure_eq]
+  have hlocal (q : D.subscheme) :
+      ∃ (W : Scheme.{u}) (j : W ⟶ D.subscheme), IsOpenImmersion j ∧ q ∈ Set.range j ∧
+        AtWorstNodalOfRelativeDimensionOne (j ≫ D.subschemeι ≫ s) := by
+    by_cases hq : D.subschemeι q = p
+    · exact (hnode q hq).exists_nodal_neighbourhood
+    · exact D.exists_nodal_neighbourhood_of_comap_eq (U.ι ≫ π) U.ι
+        (by simp only [Category.assoc]) hDE hB q (by
+          rw [hRange, Set.mem_compl_iff, Set.mem_singleton_iff]
+          exact hq)
+  choose W j hj hmem hnodal using hlocal
+  let (q : D.subscheme) : IsOpenImmersion (j q) := hj q
+  let cover : D.subscheme.OpenCover := Scheme.Cover.mkOfCovers D.subscheme W j (fun q ↦ ⟨q, hmem q⟩)
+  exact IsZariskiLocalAtSource.of_openCover (P := @AtWorstNodalOfRelativeDimensionOne)
+    cover hnodal
+
+end
 
 variable {k : Type u} [Field k] [PerfectField k] {X : Scheme.{u}} [X.Over (Spec (.of k))]
   [SmoothOfRelativeDimension 2 (X ↘ Spec (.of k))]
@@ -127,7 +155,11 @@ private theorem smoothOfRelativeDimension_exceptional {x : X}
   rw [← Category.assoc e.hom, hpb.w_assoc]
   exact hs
 
-variable [IsIntegral X] [QuasiCompact (X ↘ Spec (.of k))] {D : X.IdealSheafData}
+variable [IsIntegral X] [QuasiCompact (X ↘ Spec (.of k))]
+
+section
+
+variable {D : X.IdealSheafData}
   (hnodal : AtWorstNodalOfRelativeDimensionOne (D.subschemeι ≫ X ↘ Spec (.of k)))
   (hD : D.IsEffectiveCartier) {p : D.subscheme}
   (hp : IsClosed ({D.subschemeι p} : Set X))
@@ -203,7 +235,7 @@ private theorem exists_nodal_neighbourhood_radical_comap (z : (R).subscheme)
       have hU : y ∈ U := hz
       have hS : (S).comap U.ι = ⊤ := (comap_eq_top_iff _ _).mpr (Scheme.Opens.ι_preimage_self _)
       have heq : (R).comap U.ι = (E).comap U.ι := by rw [hR, comap_mul, hS, top_mul]
-      exact exists_nodal_neighbourhood_of_comap_eq U.ι U.ι rfl heq
+      exact (R).exists_nodal_neighbourhood_of_comap_eq U.ι U.ι rfl heq
         (by
           have := smoothOfRelativeDimension_exceptional (k := k) hp
           exact AtWorstNodalOfRelativeDimensionOne.of_smooth _) z ⟨⟨y, hU⟩, rfl⟩
@@ -215,7 +247,7 @@ private theorem exists_nodal_neighbourhood_radical_comap (z : (R).subscheme)
     have heq : (R).comap U.ι = D.comap (U.ι ≫ (π)) := by
       rw [← radical_comap_of_isOpenImmersion, ← comap_comp, radical_comap_of_isOpenImmersion,
         D.isReduced_subscheme_iff_radical_eq.mp inferInstance]
-    exact exists_nodal_neighbourhood_of_comap_eq U.ι (U.ι ≫ (π))
+    exact (R).exists_nodal_neighbourhood_of_comap_eq U.ι (U.ι ≫ (π))
       (by simp only [Category.assoc]) heq hnodal
       z ⟨⟨y, hy⟩, rfl⟩
 
@@ -288,5 +320,61 @@ theorem mem_strictTransform_of_notMem_smoothLocus
     rw [Scheme.Hom.smoothLocus_eq_top]
     trivial
   rwa [← Scheme.Hom.preimage_smoothLocus_eq, Scheme.Hom.mem_preimage] at hw
+
+end
+
+variable {D : X.IdealSheafData} {p : X}
+
+local notation "P" => vanishingIdeal (Closeds.mk (closure (Singleton.singleton p)) isClosed_closure)
+local notation "π" => blowupToBase P
+local notation "E" => comap P π
+local notation "R" => radical (D.comap π)
+local notation "K(" Y ")" => LineBundleClass.mk (QPainleve.canonicalBundle k Y 2)
+
+/-- At a closed node of a nodal anticanonical Cartier divisor on a smooth surface,
+the reduced total transform is again nodal and anticanonical. Its ideal is contained
+in the exceptional ideal, and multiplying by the exceptional ideal gives the total transform. -/
+theorem IsEffectiveCartier.isAnticanonical_reducedTotalTransform_of_node
+    (hD : D.IsEffectiveCartier)
+    (hN : AtWorstNodalOfRelativeDimensionOne (D.subschemeι ≫ base))
+    (hK : LineBundleClass.mk hD.toInvertibleSheaf = K(X))
+    (hp : IsClosed ({p} : Set X)) (hn : D.IsNodeOfReducedBoundary base p) :
+    letI : (P).blowup.Over (Spec (.of k)) := ⟨π ≫ base⟩
+    letI : SmoothOfRelativeDimension 2 ((P).blowup ↘ Spec (.of k)) :=
+      smoothOfRelativeDimension_blowup_closed_point base hp
+    ∃ hR : (R).IsEffectiveCartier,
+      LineBundleClass.mk hR.toInvertibleSheaf = K((P).blowup) ∧
+      D.comap π = R * E ∧ R ≤ E ∧
+      AtWorstNodalOfRelativeDimensionOne ((R).subschemeι ≫ π ≫ base) := by
+  have : Smooth base := SmoothOfRelativeDimension.smooth 2 _
+  have : IsNoetherian X := isNoetherian_of_finiteType base
+  have : IsReduced D.subscheme := hN.isReduced
+  have hpD := mem_support_of_isNodeOfReducedBoundary hn
+  have hDI : D ≤ P :=
+    (X.ker_fromSpecResidueField_eq_vanishingIdeal p) ▸
+      (D.le_ker_fromSpecResidueField_iff_mem_support hp).mpr hpD
+  have horder : D.stalkOrder p = 2 := by
+    simpa only [ite_eq_left hn] using hD.stalkOrder_eq_if_isNodeOfReducedBoundary hN hpD
+  have h := hD.exists_anticanonical_strictTransform_mul_exceptional_pow k hp hpD hK
+  dsimp only at h
+  have : IsIntegral (P).blowup := isIntegral_blowup_closed_point base hp
+  have hd := ((smoothOfRelativeDimension_iff_ringKrullDim_stalk_eq base 2).mp
+    inferInstance).2 p hp
+  have := isRegularLocalRing_stalk_of_smooth base p
+  have : Surjective π := surjective_blowupToBase_point hp hd
+  have : IsIntegral (E).subscheme := isIntegral_exceptional_blowup_closed_point hd hp
+  simp only [horder, ENat.toNat_ofNat, Nat.reduceSub, pow_one] at h
+  have hN' : AtWorstNodalOfRelativeDimensionOne ((R).subschemeι ≫ π ≫ base) := by
+    obtain ⟨z, hz, -⟩ := (D.isNodeOfReducedBoundary_iff_of_isReduced _ _).mp hn
+    subst p
+    exact atWorstNodalOfRelativeDimensionOne_radical_comap_blowupToBase_of_node hN hD hp hn
+  have hEq := (P).radical_comap_blowupToBase_eq_ker_blowupMap_subschemeι_mul D hDI
+  have hLe : R ≤ E := hEq.trans_le (mul_le_of_le_one_left' le_top)
+  obtain ⟨hOld, hc, ht⟩ := h
+  refine ⟨hEq.symm ▸ hOld, ?_, ?_, hLe, hN'⟩
+  · rw [LineBundleClass.mk_toInvertibleSheaf_congr _ hOld hEq]
+    exact hc
+  · rw [hEq]
+    exact ht.symm
 
 end AlgebraicGeometry.Scheme.IdealSheafData

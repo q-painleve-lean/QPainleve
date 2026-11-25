@@ -91,8 +91,8 @@ theorem exists_iso_snoc_snoc_of_disjoint_with_exceptionalClasses
     simpa only [Iso.refl_hom, comap_id] using (T.map_center_snoc_of_disjoint I J hI hd).symm
   have hJ' : (A.comap B.blowupToBase).comap (Iso.refl _).hom = I.map (T.snoc J hJ).boundaryι := by
     simpa only [Iso.refl_hom, comap_id] using (T.map_center_snoc_of_disjoint J I hJ hd.symm).symm
-  let eI := (B.comap A.blowupToBase).blowupIso (Iso.refl _) hI'
-  let eJ := (A.comap B.blowupToBase).blowupIso (Iso.refl _) hJ'
+  let eI := blowupIso (Iso.refl _) hI'.symm
+  let eJ := blowupIso (Iso.refl _) hJ'.symm
   have hIproj : eI.hom ≫ (B.comap A.blowupToBase).blowupToBase =
       (J.map (T.snoc I hI).boundaryι).blowupToBase := by simp [eI]
   have hJproj : eJ.hom ≫ (A.comap B.blowupToBase).blowupToBase =
@@ -153,7 +153,7 @@ private theorem WithBoundary.exists_iso_snoc_of_boundaryι_eq {Y' : Scheme.{u}} 
   have hb' : T.boundaryι ≫ e.hom = (Iso.refl D).hom ≫ U.boundaryι := by simpa using hb
   have hJ : J.val.comap (Iso.refl D).hom = J.val := by simp
   let hK := T.comap_center_eq J.val e (Iso.refl D) hb' J.val hJ
-  refine ⟨K.blowupIso e hK, K.blowupIso_hom_blowupToBase e hK, ?_,
+  refine ⟨blowupIso e hK.symm, blowupIso_hom_blowupToBase e hK.symm, ?_,
     K.pullback_blowupExceptionalClass e hK⟩
   simpa only [Iso.refl_hom, Category.id_comp] using
     T.boundaryι_snoc_blowupIso_hom J.val e (Iso.refl D) hb' J.val hJ J.property J.property

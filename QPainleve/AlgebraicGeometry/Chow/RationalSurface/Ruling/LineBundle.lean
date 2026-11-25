@@ -86,6 +86,29 @@ theorem isPrimitive_of_selfIntersection_eq_zero_of_projectiveLine
 
 include hRat in
 /-- On a smooth projective rational surface, a square-zero projective-line divisor
+has intersection number one with some line bundle. -/
+theorem exists_line_bundle_classIntersectionNumber_eq_one_of_projectiveLine
+    (hI : I.IsEffectiveCartier) (e : I.subscheme ≅ projectiveLine k) [e.hom.IsOver S]
+    (hI₂ : B[X] (A(hI)) (A(hI)) = 0) :
+    ∃ L : InvertibleSheaf X, B[X] (LineBundleClass.mk L) (A(hI)) = 1 := by
+  have : Smooth (X ↘ S) := SmoothOfRelativeDimension.smooth 2 _
+  have : IsIntegral X := hRat.isIntegral_of_smooth
+  have : ∀ x : X, UniqueFactorizationMonoid (X.presheaf.stalk x) :=
+    (X ↘ S).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two
+  have hX := topologicalKrullDim_eq_of_smoothOfRelativeDimension (X ↘ S) (n := 2)
+  let Q := Chow.classIntersectionBilinForm k hX
+  have : Q.IsPerfPair := Chow.isPerfPair_classIntersectionBilinForm_of_isRationalOver k X
+  obtain ⟨φ, hφ⟩ := TauCeti.isPrimitive_def.mp
+    (hI.isPrimitive_of_selfIntersection_eq_zero_of_projectiveLine e hI₂)
+  let a := Q.toPerfPair.symm φ
+  obtain ⟨L, hL⟩ := mk_surjective a.toMul
+  refine ⟨L, ?_⟩
+  have h : Q a (Additive.ofMul (A(hI))) = 1 :=
+    (DFunLike.congr_fun (Q.apply_symm_toPerfPair_self φ) _).trans hφ
+  simpa only [Q, Chow.classIntersectionBilinForm_apply, toMul_ofMul, ← hL] using h
+
+include hRat in
+/-- On a smooth projective rational surface, a square-zero projective-line divisor
 admits a line bundle of fiber degree one. This single bundle restricts to
 `𝒪(1)` on every projective-line divisor in the same class, and sufficiently
 large positive twists along each such divisor lift all its sections. -/
@@ -103,16 +126,7 @@ theorem exists_line_bundle_of_fiber_degree_one (hI : I.IsEffectiveCartier)
   have : ∀ x : X, UniqueFactorizationMonoid (X.presheaf.stalk x) :=
     (X ↘ S).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two
   have hX := topologicalKrullDim_eq_of_smoothOfRelativeDimension (X ↘ S) (n := 2)
-  let Q := Chow.classIntersectionBilinForm k hX
-  have : Q.IsPerfPair := Chow.isPerfPair_classIntersectionBilinForm_of_isRationalOver k X
-  obtain ⟨φ, hφ⟩ := TauCeti.isPrimitive_def.mp
-    (hI.isPrimitive_of_selfIntersection_eq_zero_of_projectiveLine e hI₂)
-  let a := Q.toPerfPair.symm φ
-  obtain ⟨L, hL⟩ := mk_surjective a.toMul
-  have hLF : B[X] (LineBundleClass.mk L) (A(hI)) = 1 := by
-    have h : Q a (Additive.ofMul (A(hI))) = 1 :=
-      (DFunLike.congr_fun (Q.apply_symm_toPerfPair_self φ) _).trans hφ
-    simpa only [Q, Chow.classIntersectionBilinForm_apply, toMul_ofMul, ← hL] using h
+  obtain ⟨L, hLF⟩ := hI.exists_line_bundle_classIntersectionNumber_eq_one_of_projectiveLine e hI₂
   refine ⟨L, fun {J} hJ hJI e' he' ↦ ?_⟩
   let : e'.hom.IsOver S := he'
   let i := e'.hom ≫ J.subschemeι

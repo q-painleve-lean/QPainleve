@@ -83,11 +83,11 @@ theorem pullback_blowupExceptionalClass_blowupMap (I : X.IdealSheafData) (f : Y 
 @[simp]
 theorem pullback_blowupExceptionalClass (J : Y.IdealSheafData) (e : X ≅ Y)
     {I : X.IdealSheafData} (h : J.comap e.hom = I) :
-    LineBundleClass.pullback (J.blowupIso e h).hom J.blowupExceptionalClass =
+    LineBundleClass.pullback (blowupIso e h.symm).hom J.blowupExceptionalClass =
       I.blowupExceptionalClass := by
   let hJ := J.isEffectiveCartier_comap_blowupToBase
   simp only [blowupExceptionalClass, LineBundleClass.pullback_inv]
-  rw [hJ.pullback_mk_toInvertibleSheaf (hJ.comap (J.blowupIso e h).hom)]
+  rw [hJ.pullback_mk_toInvertibleSheaf (hJ.comap (blowupIso e h.symm).hom)]
   exact congrArg Inv.inv
     (LineBundleClass.mk_toInvertibleSheaf_congr _ _ (J.comap_blowupIso_hom e h))
 

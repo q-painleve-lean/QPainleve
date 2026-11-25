@@ -234,7 +234,9 @@ local notation "I[" p "]" => vanishingIdeal (Closeds.mk (closure {(p : X)}) isCl
 local notation "g[" p "]" => Scheme.IdealSheafData.subschemeι (I[p]) ≫ q
 
 include hc in
-private theorem exists_ruling_fiber_pair_of_hirzebruch_boundary
+/-- If the two remaining components of a complexity-zero boundary have fiber class,
+their ideals are the pullbacks of two distinct rational point ideals on the ruling base. -/
+theorem exists_ruling_fiber_pair_of_hirzebruch_boundary
     {D : (X).IdealSheafData} [IsReduced D.subscheme] (hD : D.IsEffectiveCartier)
     (hzero : D.boundaryComplexity = 0) {s t : D.boundaryPrimes} (hst : s ≠ t)
     (hf : ∀ j : D.boundaryPrimes, j ≠ s → j ≠ t → P (D.boundaryPrimeEmbedding j) = C 0) :
@@ -256,10 +258,14 @@ private theorem exists_ruling_fiber_pair_of_hirzebruch_boundary
     simp [V, and_comm]
   have hu := (hmem u).mp (by simp [huvV])
   have hv := (hmem v).mp (by simp [huvV])
-  obtain ⟨y, hy, hY⟩ :=
-    exists_hirzebruch_ruling_fiber_of_prime_class_eq b e hΦ hc r hr (p u) (hf u hu.1 hu.2)
-  obtain ⟨z, hz, hZ⟩ :=
-    exists_hirzebruch_ruling_fiber_of_prime_class_eq b e hΦ hc r hr (p v) (hf v hv.1 hv.2)
+  obtain ⟨y, hy, -, hY⟩ :=
+    exists_hirzebruch_ruling_fiber_of_degree_zero b e hΦ hc r hr (p u) (by
+      rw [hf u hu.1 hu.2, Basis.repr_self]
+      simp)
+  obtain ⟨z, hz, -, hZ⟩ :=
+    exists_hirzebruch_ruling_fiber_of_degree_zero b e hΦ hc r hr (p v) (by
+      rw [hf v hv.1 hv.2, Basis.repr_self]
+      simp)
   have hne : y (IsLocalRing.closedPoint ℂ) ≠ z (IsLocalRing.closedPoint ℂ) := by
     intro h
     have hyz := ext_of_apply_closedPoint_eq (projectiveLine ℂ ↘ S) hy hz h

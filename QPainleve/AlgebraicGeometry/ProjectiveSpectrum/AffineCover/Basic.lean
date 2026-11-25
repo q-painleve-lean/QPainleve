@@ -7,10 +7,14 @@ module
 
 public import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.ProjectiveOver
 import Mathlib.Algebra.Module.Submodule.Union
+import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.Basic
 import TauCeti.Topology.KrullDimension.ClosedCover
 
 /-!
-# Affine covers of projective schemes over infinite fields
+# Affine covers of projective schemes
+
+Any two points of the projective spectrum of an algebra generated in degree one
+lie in a common degree-one standard open.
 
 A projective scheme of dimension at most `d` over an infinite field has an affine cover
 with `d + 1` members. Hyperplane complements provide the opens. At each step one hyperplane
@@ -25,6 +29,41 @@ open AlgebraicGeometry CategoryTheory TopologicalSpace
 open TauCeti.SymmetricAlgebra (homogeneousSubmodule)
 
 universe u
+
+namespace AlgebraicGeometry.Proj
+
+variable {R A : Type u} [CommRing R] [CommRing A] [Algebra R A]
+  {𝒜 : ℕ → Submodule R A} [GradedAlgebra 𝒜]
+
+/-- Any two points of a projective spectrum generated in degree one lie on a
+common degree-one standard chart. -/
+theorem exists_mem_basicOpen_degreeOne_pair
+    (hgen : Algebra.adjoin (𝒜 0) (𝒜 1 : Set A) = ⊤) (x y : Proj 𝒜) :
+    ∃ r : 𝒜 1, x ∈ basicOpen 𝒜 r ∧ y ∈ basicOpen 𝒜 r := by
+  let B (r : 𝒜 1) := basicOpen 𝒜 r
+  have hB (x : Proj 𝒜) : ∃ r : 𝒜 1, x ∈ B r :=
+    Opens.mem_iSup.mp ((iSup_basicOpen_eq_top_of_adjoin_eq_top 𝒜 hgen).ge (Set.mem_univ x))
+  obtain ⟨r, hr⟩ := hB x
+  obtain ⟨s, hs⟩ := hB y
+  by_cases hr' : y ∈ B r
+  · exact ⟨r, hr, hr'⟩
+  by_cases hs' : x ∈ B s
+  · exact ⟨s, hs', hs⟩
+  refine ⟨r + s, ?_, ?_⟩
+  · intro hrs
+    have hs₀ : (s : A) ∈ (x).asHomogeneousIdeal.toIdeal := of_not_not hs'
+    have hsum : (r : A) + s ∈ (x).asHomogeneousIdeal.toIdeal := hrs
+    have hmem := sub_mem hsum hs₀
+    rw [add_sub_cancel_right] at hmem
+    exact hr hmem
+  · intro hrs
+    have hr₀ : (r : A) ∈ (y).asHomogeneousIdeal.toIdeal := of_not_not hr'
+    have hsum : (r : A) + s ∈ (y).asHomogeneousIdeal.toIdeal := hrs
+    have hmem := sub_mem hsum hr₀
+    rw [add_sub_cancel_left] at hmem
+    exact hs hmem
+
+end AlgebraicGeometry.Proj
 
 namespace AlgebraicGeometry.Scheme.Hom
 

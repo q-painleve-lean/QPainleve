@@ -52,7 +52,7 @@ theorem existsUnique_baseIso_of_pullback_blowupExceptionalClass_eq
     (hdq : ringKrullDim (Y.presheaf.stalk q) = 2) (e : (Iₚ).blowup ≅ (I_q).blowup)
     (he : LineBundleClass.pullback e.hom (I_q).blowupExceptionalClass =
       (Iₚ).blowupExceptionalClass) :
-    ∃! f : X ≅ Y, ∃ h : (I_q).comap f.hom = Iₚ, e = (I_q).blowupIso f h := by
+    ∃! f : X ≅ Y, ∃ h : (I_q).comap f.hom = Iₚ, e = blowupIso f h.symm := by
   let E := (Iₚ).comap (Iₚ).blowupToBase
   let F := (I_q).comap (I_q).blowupToBase
   have hE : E.IsExceptionalCurveOfFirstKind :=
@@ -103,7 +103,7 @@ theorem existsUnique_baseIso_of_pullback_blowupExceptionalClass_eq
       _ = Iₚ := (congrArg vanishingIdeal hsupport).trans hpRed.symm
   refine ⟨f, ⟨hcenter', (I_q).blowupIso_unique f hcenter' e hf.symm⟩, ?_⟩
   rintro g ⟨h, rfl⟩
-  exact huniq g ((I_q).blowupIso_hom_blowupToBase g h).symm
+  exact huniq g (blowupIso_hom_blowupToBase g h.symm).symm
 
 end AlgebraicGeometry.Scheme.IdealSheafData
 

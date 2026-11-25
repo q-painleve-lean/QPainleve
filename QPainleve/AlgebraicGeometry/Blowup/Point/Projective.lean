@@ -78,7 +78,7 @@ theorem of_pointBlowup (p : X) (hp : IsClosed ({p} : Set X)) :
     IdealSheafData.existsUnique_baseIso_of_pullback_blowupExceptionalClass_eq
       hp hq hdim hdim' a hclass
   have hg : (I[p]).blowupToBase ≫ g.hom = f :=
-    ((I[q]).blowupIso_hom_blowupToBase g hI).symm.trans ha
+    (IdealSheafData.blowupIso_hom_blowupToBase g hI.symm).symm.trans ha
   have : Epi (I[p]).blowupToBase := by
     rw [X.ker_fromSpecResidueField_eq_vanishingIdeal p]
     exact IdealSheafData.epi_blowupToBase_point hp hdim

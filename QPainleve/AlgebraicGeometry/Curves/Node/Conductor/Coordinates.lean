@@ -7,7 +7,7 @@ module
 
 public import QPainleve.AlgebraicGeometry.Curves.Node.Conductor.Rescaling
 public import QPainleve.AlgebraicGeometry.Curves.Node.Conductor.Units
-public import TauCeti.AlgebraicGeometry.Curves.Node.DualGraph
+public import TauCeti.AlgebraicGeometry.Curves.Node.DualGraph.Basic
 
 import Mathlib.Algebra.Group.Pi.Units
 import Mathlib.Algebra.Group.Units.Equiv

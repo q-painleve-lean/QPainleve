@@ -104,4 +104,21 @@ theorem exists_iso_projectiveLine_exceptional_blowup_closedPoint
   rw [hI] at H
   exact H
 
+/-- The exceptional subscheme of a closed-point blowup of a smooth surface over an
+algebraically closed field is isomorphic to the projective line over the ground field. -/
+theorem exists_iso_projectiveLine_exceptional_blowup_closedPoint_over
+    (π : Y ⟶ Spec (.of k)) [SmoothOfRelativeDimension 2 π] (x : Y) (hx : IsClosed {x}) :
+    let I := vanishingIdeal ⟨closure ({x} : Set Y), isClosed_closure⟩
+    let E := I.comap I.blowupToBase
+    ∃ e : projectiveLine k ≅ E.subscheme,
+      e.hom ≫ E.subschemeι ≫ I.blowupToBase ≫ π = projectiveLine k ↘ Spec (.of k) := by
+  dsimp only
+  have hI : vanishingIdeal ⟨closure ({x} : Set Y), isClosed_closure⟩ = vanishingIdeal ⟨{x}, hx⟩ :=
+    congrArg vanishingIdeal (SetLike.coe_injective hx.closure_eq)
+  rw [hI]
+  obtain ⟨e, he⟩ := exists_iso_projectiveLine_exceptional_blowup_closedPoint π x hx
+  exact ⟨e, by
+    simpa only [Category.assoc, pointOfClosedPoint_comp, Category.comp_id] using
+      congrArg (· ≫ π) he.w⟩
+
 end AlgebraicGeometry.SmoothOfRelativeDimension

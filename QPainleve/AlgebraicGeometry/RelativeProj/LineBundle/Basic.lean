@@ -5,12 +5,15 @@ Authors: The QPainleve contributors
 -/
 module
 
+public import QPainleve.AlgebraicGeometry.RelativeProj.Isomorphism
 public import QPainleve.AlgebraicGeometry.RelativeProj.ProjectiveBundle
+public import QPainleve.AlgebraicGeometry.RelativeProj.Pullback
 public import TauCeti.AlgebraicGeometry.RelativeProj.ClosedImmersion
 public import TauCeti.AlgebraicGeometry.RelativeProj.TwistingSheaf.Pullback
 public import TauCeti.AlgebraicGeometry.RelativeProj.TwistingSheaf.Pushforward
 
 import Mathlib.AlgebraicGeometry.Morphisms.IsIso
+import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.TwistingSheaf.Sections
 import TauCeti.AlgebraicGeometry.Modules.Pullback.Basic
 import TauCeti.AlgebraicGeometry.Modules.Pushforward.Basic
 import TauCeti.AlgebraicGeometry.Modules.Sheaf
@@ -46,9 +49,9 @@ open GradedQuasicoherentAlgebra CategoryTheory.CommMon
 variable {X : Scheme.{u}} (E : FixedRank X 1) {F : QuasicoherentSheaf X}
 
 local notation "ℒ[" E "]" =>
-  Functor.obj (FiniteLocallyFreeSheaf.toQuasicoherent X) (ObjectProperty.FullSubcategory.obj E)
+  Functor.obj (FiniteLocallyFreeSheaf.toQuasicoherent _) (ObjectProperty.FullSubcategory.obj E)
 local notation "𝒜[" F "]" =>
-  ObjectProperty.FullSubcategory.obj (Functor.obj (gradedSymmetricAlgebra X) F)
+  ObjectProperty.FullSubcategory.obj (Functor.obj (gradedSymmetricAlgebra _) F)
 local notation "φ[" q "]" =>
   InducedCategory.Hom.hom (CategoryTheory.Functor.map (gradedSymmetricAlgebra X) q)
 
@@ -125,12 +128,9 @@ private theorem bijective_relativeProjToTwistingSheaf_app
   have he : τ (σ s) = e 1 := by
     refine (π_app_relativeProjToTwistingSheaf_app 𝒜[ℒ[E]] rfl U s).trans ?_
     simp only [e, twistingSheaf.chartSectionsLinearEquiv_apply, one_smul]
-    apply twistingSheaf.ext
-    intro x
-    -- The gluing diagram's chart and the projective spectrum have the same points.
-    erw [toTwistingSheaf_apply_apply, twistingSheaf.chartGenerator_apply]
-    simp [f]
-    rfl
+    exact toTwistingSheaf_one_eq_chartGenerator
+      ⟨f, 𝒜[ℒ[E]].of_mem_gradedSectionsGrading 1 s⟩ W
+      (basicOpen_eq_top_of_rankOne_generator E U s hb.surjective ▸ le_top)
   have h (c : Γ(X, U.toOpens)) :
       τ (σ (c • s)) = e (j.app (p ⁻¹ᵁ U.toOpens) (p.app U.toOpens c)) := by
     have hσ := (𝒜[ℒ[E]].relativeProjToTwistingSheaf (rfl : ((1 : ℕ) : ℤ) = 1)).app_smul c s
@@ -238,5 +238,84 @@ def relativeProjSectionOfQuotientPullbackTwistingSheafOneIso
     (Scheme.Modules.pullback i).mapIso
       (asIso (relativeProjTwistingSheafMap φ[q] (irrelevant_le_map_symmetricQuotient E q) 1)) ≪≫
     E.relativeProjTwistingSheafOneIso
+
+/-- The affine projective morphism of the quotient on sections, followed by
+the source chart, factors through the relative section of the line quotient. -/
+@[reassoc]
+theorem projSymmetricAlgebraSectionsIso_hom_comp_relativeProjSectionOfQuotient
+    (q : F ⟶ ℒ[E]) [Epi q.hom] (U : X.AffineZariskiSite)
+    (hq : let f := ((Scheme.Modules.sectionsFunctor U.toOpens).map q.hom).hom
+      HomogeneousIdeal.irrelevant
+          (TauCeti.SymmetricAlgebra.homogeneousSubmodule Γ(X, U.toOpens)
+            ((Scheme.Modules.sectionsFunctor U.toOpens).obj E.obj.obj)) ≤
+        (HomogeneousIdeal.irrelevant
+          (TauCeti.SymmetricAlgebra.homogeneousSubmodule Γ(X, U.toOpens)
+            ((Scheme.Modules.sectionsFunctor U.toOpens).obj F.obj))).map
+              (SymmetricAlgebra.gradedMap Γ(X, U.toOpens) f)) :
+    let p := 𝒜[ℒ[E]].relativeProjToBase
+    let f := ((Scheme.Modules.sectionsFunctor U.toOpens).map q.hom).hom
+    Proj.map (SymmetricAlgebra.gradedMap Γ(X, U.toOpens) f) hq ≫
+        (F.projSymmetricAlgebraSectionsIso U).hom ≫ 𝒜[F].relativeProjCover.f U =
+      (ℒ[E].projSymmetricAlgebraSectionsIso U).hom ≫ 𝒜[ℒ[E]].relativeProjCover.f U ≫
+        p ≫ E.relativeProjSectionOfQuotient q := by
+  dsimp only
+  let j := (ℒ[E].projSymmetricAlgebraSectionsIso U).hom
+  let c := 𝒜[F].relativeProjCover.f U
+  let c' := 𝒜[ℒ[E]].relativeProjCover.f U
+  let hφ := irrelevant_le_map_symmetricQuotient E q
+  let f := relativeProjMap φ[q] hφ
+  let g := (relativeProjFunctorMap φ[q] hφ).app U
+  have hchart := QuasicoherentSheaf.projSymmetricAlgebraSectionsIso_hom_comp_relativeProjMap
+    U q hφ hq
+  have hcover : c' ≫ f = g ≫ c := relativeProjCover_f_relativeProjMap φ[q] hφ U
+  calc
+    _ = (j ≫ g) ≫ c := (Category.assoc ..).symm.trans (congrArg (· ≫ c) hchart.symm)
+    _ = j ≫ c' ≫ f := (Category.assoc ..).trans (congrArg (j ≫ ·) hcover.symm)
+    _ = _ := by simp only [relativeProjSectionOfQuotient, IsIso.hom_inv_id_assoc, j, c', f]
+
+/-- Taking a quotient section commutes with changing the source bundle by an
+isomorphism. -/
+@[reassoc]
+theorem relativeProjSectionOfQuotient_comp_relativeProjMapIso {G : QuasicoherentSheaf X}
+    (e : G ≅ F) (q : F ⟶ ℒ[E]) [Epi q.hom] :
+    let : Epi (e.hom ≫ q).hom := by
+      let incl : QuasicoherentSheaf X ⥤ SheafOfModules X.ringCatSheaf := ObjectProperty.ι _
+      exact epi_comp' (Functor.map_isIso incl e.hom).epi_of_iso ‹Epi q.hom›
+    let eAlg : 𝒜[G] ≅ 𝒜[F] :=
+      (ObjectProperty.ι _).mapIso ((gradedSymmetricAlgebra X).mapIso e)
+    E.relativeProjSectionOfQuotient q ≫ (relativeProjMapIso eAlg).hom =
+      E.relativeProjSectionOfQuotient (e.hom ≫ q) := by
+  simp only [relativeProjSectionOfQuotient, relativeProjMapIso_hom, Category.assoc]
+  congr 1
+  simp only [Functor.mapIso_hom, ObjectProperty.ι_map, Functor.map_comp]
+  exact (relativeProjMap_comp _ _ _ _ _).symm
+
+section Pullback
+
+variable {Y : Scheme.{u}} (f : X ⟶ Y) (E' : FixedRank Y 1) {F' : QuasicoherentSheaf Y}
+  (i : F ≅ (QuasicoherentSheaf.pullback f).obj F')
+  (j : ℒ[E] ≅ (QuasicoherentSheaf.pullback f).obj ℒ[E'])
+
+/-- The section of a projectivization associated to a line quotient is carried
+to the corresponding section under base change when the quotient maps
+commute with the chosen pullback identifications. -/
+@[reassoc]
+theorem relativeProjSectionOfQuotient_comp_projectionOfPullback
+    (q : F ⟶ ℒ[E]) (q' : F' ⟶ ℒ[E']) [Epi q.hom] [Epi q'.hom]
+    (h : i.hom ≫ (QuasicoherentSheaf.pullback f).map q' = q ≫ j.hom) :
+    E.relativeProjSectionOfQuotient q ≫
+        QuasicoherentSheaf.projectivizationProjectionOfPullback f i =
+      f ≫ E'.relativeProjSectionOfQuotient q' := by
+  let e := QuasicoherentSheaf.projectivizationProjectionOfPullback f j
+  have hbase : inv 𝒜[ℒ[E]].relativeProjToBase ≫ e =
+      f ≫ inv 𝒜[ℒ[E']].relativeProjToBase := by
+    apply (cancel_mono 𝒜[ℒ[E']].relativeProjToBase).mp
+    simp only [e, Category.assoc, QuasicoherentSheaf.projectivizationProjectionOfPullback_toBase,
+      IsIso.inv_hom_id_assoc, IsIso.inv_hom_id, Category.comp_id]
+  rw [relativeProjSectionOfQuotient, relativeProjSectionOfQuotient, Category.assoc,
+    QuasicoherentSheaf.projectivizationProjectionOfPullback_naturality f i j q q' h,
+    ← Category.assoc, hbase, Category.assoc]
+
+end Pullback
 
 end TauCeti.AlgebraicGeometry.FiniteLocallyFreeSheaf.FixedRank

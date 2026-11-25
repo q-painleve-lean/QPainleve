@@ -50,6 +50,19 @@ theorem pullbackTwistingSheafMap_app_top_toTwistingSheaf
   simpa only [Scheme.Modules.mapPresheaf_app, unop_op, ht, res_toTwistingSheaf,
     Scheme.Hom.pullbackSectionsLE_apply, u] using h
 
+/-- A degree-one element gives the standard generator of `𝒪(1)` on every open
+contained in its standard chart. -/
+theorem toTwistingSheaf_one_eq_chartGenerator (r : 𝒜 1) (V : (Proj 𝒜).Opens)
+    (hV : V ≤ basicOpen 𝒜 (r : A)) :
+    toTwistingSheaf 𝒜 rfl V r = twistingSheaf.chartGenerator 1 r.val r.property V hV := by
+  apply twistingSheaf.ext
+  intro x
+  -- Both sides are fractions in the same homogeneous localization at the point.
+  erw [toTwistingSheaf_apply_apply, twistingSheaf.chartGenerator_apply]
+  simp only [Int.toNat_one, Int.reduceNeg, Int.toNat_of_nonpos (by decide : (-1 : ℤ) ≤ 0),
+    pow_one, pow_zero]
+  rfl
+
 section Coefficients
 
 variable {R A : Type u} [CommRing R] [CommRing A] [Algebra R A]
