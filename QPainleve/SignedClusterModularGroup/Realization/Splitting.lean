@@ -18,7 +18,6 @@ import QPainleve.SignedClusterModularGroup.Realization.Presentation.Family
 import QPainleve.SignedClusterModularGroup.Realization.Reflection
 import QPainleve.SignedClusterModularGroup.Realization.Surjectivity.Torelli
 import QPainleve.SignedClusterModularGroup.Realization.Surjectivity.Word
-import TauCeti.GroupTheory.GroupExtension.Splitting
 
 /-!
 # The sign extension of marked cluster modular groups
@@ -31,8 +30,6 @@ boundary cycles.
 
 The word-lifting argument follows [the Picard surjectivity proof]
 (https://github.com/q-painleve-lean/QPainleve/pull/780) for the two involutions used here.
-The computation of the central complement follows [the signed Picard splitting proof]
-(https://github.com/q-painleve-lean/QPainleve/pull/753).
 -/
 
 public noncomputable section
@@ -138,72 +135,6 @@ private theorem exists_word_orderOf_eq_two_of_signed_involution
   rw [hg₁, map_one] at hg
   exact (by decide : (-1 : ℤˣ) ≠ 1) hg.symm
 
-private def oddInvolutionZPowersEquivSign {hE : E.matrix ≠ 0} (w : Word E E)
-    (hw : Odd w.inversionCount) (ho : orderOf (signedClusterModularGroupMap ℂ E (End.of w)) = 2) :
-    Subgroup.zpowers (signedClusterModularGroupMap ℂ E (End.of w)) ≃* ℤˣ := by
-  let z := signedClusterModularGroupMap ℂ E (End.of w)
-  let f := (signedInversionSign ℂ E hE).comp (Subgroup.zpowers z).subtype
-  have hcard : Nat.card (Subgroup.zpowers z) = 2 := (Nat.card_zpowers z).trans ho
-  letI := Nat.finite_of_card_ne_zero (hcard.trans_ne (by decide : (2 : ℕ) ≠ 0))
-  refine MulEquiv.ofBijective f ((Nat.bijective_iff_surjective_and_card f).mpr ⟨?_, ?_⟩)
-  · intro ε
-    rcases Int.units_eq_one_or ε with rfl | rfl
-    · exact ⟨1, map_one f⟩
-    · exact ⟨⟨z, Subgroup.mem_zpowers z⟩,
-        (signedInversionSign_apply ℂ E hE (End.of w)).trans hw.neg_one_pow⟩
-  · rw [hcard, Nat.card_eq_fintype_card, Fintype.card_units_int]
-
-private def signSplittingOfOddInvolution {hE : E.matrix ≠ 0} (w : Word E E)
-    (hw : Odd w.inversionCount) (ho : orderOf (signedClusterModularGroupMap ℂ E (End.of w)) = 2) :
-    (signedInversionSignExtension ℂ E hE (signedInversionSign_surjective ℂ E hE hw)).Splitting where
-  __ := (Subgroup.zpowers _).subtype.comp (oddInvolutionZPowersEquivSign (hE := hE) w hw
-    ho).symm.toMonoidHom
-  rightInverse_rightHom ε := by
-    rw [signedInversionSignExtension_rightHom]
-    exact (oddInvolutionZPowersEquivSign (hE := hE) w hw ho).apply_symm_apply ε
-
-private theorem signSplittingOfOddInvolution_neg_one {hE : E.matrix ≠ 0}
-    (w : Word E E) (hw : Odd w.inversionCount)
-    (ho : orderOf (signedClusterModularGroupMap ℂ E (End.of w)) = 2) :
-    signSplittingOfOddInvolution (hE := hE) w hw ho (-1) =
-      signedClusterModularGroupMap ℂ E (End.of w) := by
-  let z := signedClusterModularGroupMap ℂ E (End.of w)
-  let e := oddInvolutionZPowersEquivSign (hE := hE) w hw ho
-  have h : e ⟨z, Subgroup.mem_zpowers z⟩ = -1 :=
-    (signedInversionSign_apply ℂ E hE (End.of w)).trans hw.neg_one_pow
-  exact congrArg Subtype.val (e.symm_apply_eq.mpr h.symm)
-
-private theorem exists_mulEquiv_prod_zpowers_of_central_odd_loop {hE : E.matrix ≠ 0}
-    (w : Word E E) (hw : Odd w.inversionCount)
-    (ho : orderOf (signedClusterModularGroupMap ℂ E (End.of w)) = 2)
-    (hc : signedClusterModularGroupMap ℂ E (End.of w) ∈ Subgroup.center Γₛ) :
-    let z := signedClusterModularGroupMap ℂ E (End.of w)
-    ∃ e : Γ₀ × Subgroup.zpowers z ≃* Γₛ, ∀ (f : Γ₀) (u : Subgroup.zpowers z),
-      e (f, u) = clusterModularGroupInclusion ℂ E f * u.val := by
-  let z := signedClusterModularGroupMap ℂ E (End.of w)
-  let t := signSplittingOfOddInvolution (hE := hE) w hw ho
-  have hneg : t (-1) = z := signSplittingOfOddInvolution_neg_one w hw ho
-  have hact : t.conjAct = 1 := by
-    ext ε f
-    rcases Int.units_eq_one_or ε with rfl | rfl
-    · simp
-    · apply clusterModularGroupInclusion_injective ℂ E
-      have h := t.inl_conjAct (-1) f
-      rw [signedInversionSignExtension_inl, hneg] at h
-      have hcomm : clusterModularGroupInclusion ℂ E f * z =
-          z * clusterModularGroupInclusion ℂ E f :=
-        Subgroup.mem_center_iff.mp hc (clusterModularGroupInclusion ℂ E f)
-      simpa only [← hcomm, mul_inv_cancel_right, MonoidHom.one_apply, MulAut.one_apply] using h
-  let u := (oddInvolutionZPowersEquivSign (hE := hE) w hw ho).symm
-  let e₀ : Γ₀ ⋊[(1 : ℤˣ →* MulAut Γ₀)] ℤˣ ≃* Γ₀ ⋊[t.conjAct] ℤˣ :=
-    SemidirectProduct.congr (MulEquiv.refl _) (MulEquiv.refl _) (by rw [hact]; intro ε; rfl)
-  refine ⟨(MulEquiv.prodCongr (MulEquiv.refl _) u.symm).trans
-    (SemidirectProduct.mulEquivProd.symm.trans (e₀.trans t.semidirectProductMulEquiv)), ?_⟩
-  intro f y
-  obtain ⟨ε, rfl⟩ := u.surjective y
-  have hu : t ε = (u ε).val := rfl
-  simp [e₀, GroupExtension.Splitting.semidirectProductMulEquiv_apply, hu]
-
 private theorem exists_central_involution {hE : E.matrix ≠ 0}
     {F : Point Centers[r] → MarkedSurface ℂ n B XTor[r]}
     {hF : ∀ t, D[F t].IsEffectiveCartier}
@@ -240,7 +171,8 @@ private theorem exists_central_involution {hE : E.matrix ≠ 0}
     apply hρinj
     simpa only [op_mul, map_mul, hw] using
       (Subgroup.mem_center_iff.mp (centralSign_mem_center B dc hn) (ρ (op f))).symm
-  exact ⟨_, hw, hc, ho, exists_mulEquiv_prod_zpowers_of_central_odd_loop (hE := hE) w hOdd ho hc⟩
+  exact ⟨_, hw, hc, ho,
+    exists_mulEquiv_prod_zpowers_of_central_odd_loop ℂ E (hB := hE) w hOdd ho hc⟩
 
 /-- The signed Picard lift of a boundary reflection has order two and splits
 the inversion-sign extension for a primitive nef square-zero anticanonical cycle.
@@ -304,8 +236,8 @@ theorem exists_signedPicardSplitting_of_nodal_model
   have hη : (-1 : ℤˣ) ^ w.inversionCount = -1 :=
     (hρ (End.of w)).1.symm.trans (by rw [hw, hg])
   have hOdd := (neg_one_pow_eq_neg_one_iff_odd (by decide : (-1 : ℤˣ) ≠ 1)).mp hη
-  let s := signSplittingOfOddInvolution (hE := hE) w hOdd horder
-  have hsect := signSplittingOfOddInvolution_neg_one (hE := hE) w hOdd horder
+  let s := signSplittingOfOddInvolution ℂ E (hB := hE) w hOdd horder
+  have hsect := signSplittingOfOddInvolution_neg_one ℂ E (hB := hE) w hOdd horder
   refine ⟨F, hmark, rfl, fun t ↦ (hfamily t).1, ρ, hE, _, s, hinj,
     fun w ↦ (hρ (End.of w)).2, index_range_clusterModularGroupInclusion ℂ E hE hOdd,
     hsect ▸ horder, ⟨j₀, a, haa, ha, ?_⟩, ?_⟩
