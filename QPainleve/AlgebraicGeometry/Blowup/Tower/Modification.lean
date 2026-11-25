@@ -123,4 +123,25 @@ theorem isRationalOver (hT : IsClosedPointTower X T)
   exact Scheme.BirationalOver.isRationalOver (T.toBase ≫ f) f
     ⟨e, by simpa only [Category.comp_id, Category.assoc] using congrArg (· ≫ f) he⟩
 
+/-- A smooth integral surface is rational if its blowup at a closed point is isomorphic
+over the field to a closed point blowup tower over a rational smooth surface. -/
+theorem isRationalOver_of_common_pointBlowup (hT : IsClosedPointTower X T)
+    {k : Type u} [Field k] {s : X ⟶ Spec (.of k)} {t : Z ⟶ Spec (.of k)}
+    [SmoothOfRelativeDimension 2 s] [SmoothOfRelativeDimension 2 t]
+    [Scheme.IsRationalOver s] [IsIntegral Z]
+    {z : Z} (hz : IsClosed ({z} : Set Z)) (e : Y ≅ (Z.fromSpecResidueField z).ker.blowup)
+    (he : e.hom ≫ (Z.fromSpecResidueField z).ker.blowupToBase ≫ t = T.toBase ≫ s) :
+    Scheme.IsRationalOver t := by
+  have : Scheme.IsRationalOver (T.toBase ≫ s) := hT.isRationalOver s
+  let I := (Z.fromSpecResidueField z).ker
+  have hU : IsClosedPointTower Z (BlowupTower.nil.snoc I) := .snoc .nil z hz rfl
+  have : IsModification I.blowupToBase := by
+    simpa only [toBase_snoc, toBase_nil, Category.comp_id] using
+      hU.isModification_of_smoothOfRelativeDimension_two t
+  have : IsModification (e.hom ≫ I.blowupToBase) := inferInstance
+  obtain ⟨d, hd⟩ := IsModification.birationalOver (e.hom ≫ I.blowupToBase)
+  have hbir : Scheme.BirationalOver (T.toBase ≫ s) t :=
+    ⟨d, by simpa only [I, Category.assoc, Category.comp_id, he] using congrArg (· ≫ t) hd⟩
+  exact hbir.symm.isRationalOver t (T.toBase ≫ s)
+
 end QPainleve.BlowupTower.IsClosedPointTower

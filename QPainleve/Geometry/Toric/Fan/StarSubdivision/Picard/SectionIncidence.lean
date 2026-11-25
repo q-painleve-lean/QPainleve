@@ -14,6 +14,7 @@ import QPainleve.AlgebraicGeometry.Blowup.Tower.StrictTransform.Reorder
 import QPainleve.AlgebraicGeometry.Blowup.Tower.StrictTransform.Transport
 import QPainleve.AlgebraicGeometry.Scheme.LocalDimension
 import QPainleve.Geometry.Toric.Fan.Smooth
+import QPainleve.Geometry.Toric.Fan.Subdivision.StrictTransform
 
 /-!
 # Section incidence after inserting a toric corner blowup
@@ -37,23 +38,6 @@ variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
 local notation "X[" Δ "]" => Fan.algebraicRealization Δ
 local notation "I[" σ "]" => Scheme.Hom.ker (Fan.distinguishedPointHom _ σ)
 local notation "pt" => IsLocalRing.closedPoint ℂ
-
-private theorem rayBoundaryPoint_notMem_cornerIdeal
-    (hΦ : Φ.IsRegular) (hN : finrank ℤ N = 2) (σ : Φ.cones) (ρ : Φ.Ray) :
-    (Φ.rayBoundaryPoint hΦ ρ).val ∉ (I[σ]).support := by
-  let f := Φ.algebraicRealizationStructureMap
-  let : SmoothOfRelativeDimension 2 f :=
-    hN ▸ Φ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
-  let : Smooth f := SmoothOfRelativeDimension.smooth 2 f
-  let : IsLocallyNoetherian X[Φ] := LocallyOfFiniteType.isLocallyNoetherian f
-  have hp := Φ.isClosed_singleton_distinguishedPoint σ
-  rw [(Φ.distinguishedPointHom σ).ker_eq_ker_fromSpecResidueField, ← SetLike.mem_coe,
-    Scheme.support_ker_fromSpecResidueField_of_isClosed hp, Set.mem_singleton_iff]
-  intro he
-  have hc := coheight_eq_of_isClosed_of_smoothOfRelativeDimension (n := 2) f hp
-  have hx := (Φ.rayBoundaryPoint hΦ ρ).property
-  rw [he, hc] at hx
-  norm_num at hx
 
 /-- After a toric link with an inserted corner, each shared ray divisor retains
 its strict-transform coefficients at the transported centers. The first
@@ -111,16 +95,15 @@ theorem strictTransformCoefficients_of_prepended_toric_link
     (by simpa only [exceptionalClass_snoc_last, blowupExceptionalClass_def] using hE)
     (fun l ↦ by rw [Fin.succAbove_last_apply, exceptionalClass_snoc_castSucc]; exact hTail l)
     (Φ.isEffectiveCartier_rayBoundaryIdeal hΦ ρ) hdim
-  have hsrc := s.comap_ker_blowupMap_rayBoundaryIdeal hΩ hΦ g hg ρ
-    (rayBoundaryPoint_notMem_cornerIdeal hΦ hN σ ρ)
-  have htgt := t.comap_ker_blowupMap_rayBoundaryIdeal hΩ hΨ g' hg' ρ'
-    (rayBoundaryPoint_notMem_cornerIdeal hΨ hN τ ρ')
-  have hray : s.liftRay ρ = t.liftRay ρ' := Fan.Ray.primitiveGenerator_injective
-    ((s.primitiveGenerator_liftRay ρ).trans (hρ.trans (t.primitiveGenerator_liftRay ρ').symm))
-  have hstrict : ((I[τ]).blowupMap D'.subschemeι).ker.comap (g.symm ≪≫ g').hom =
-      ((I[σ]).blowupMap (Φ.rayBoundaryIdeal hΦ ρ).subschemeι).ker := by
-    rw [Iso.trans_hom, Iso.symm_hom, comap_comp, htgt, ← hray, ← hsrc, ← comap_comp,
-      Iso.inv_hom_id, comap_id]
+  have hsrc : g.inv ≫ s.toFanHom.algebraicMap = (I[σ]).blowupToBase := by
+    rw [← hg, Iso.inv_hom_id_assoc]
+  have htgt : g.inv ≫ t.toFanHom.algebraicMap = (g.symm ≪≫ g').hom ≫ (I[τ]).blowupToBase := by
+    rw [← hg', Iso.trans_hom, Iso.symm_hom, Category.assoc]
+  have hstrict := s.comap_strictTransform_rayBoundaryIdeal t hΦ hΨ hΩ hN hstart hJ
+    g.inv (g.symm ≪≫ g') (by simpa only [toBase_snoc, toBase_nil, Category.comp_id] using hsrc)
+    (by simpa only [J, toBase_snoc, toBase_nil, Category.comp_id] using htgt) ρ ρ' hρ
+  simp only [J, strictTransform_snoc] at hstrict
+  rw [strictTransform_nil, strictTransform_nil] at hstrict
   have hcoeff := hLift.strictTransformCoefficients_eq hL hU ((I[τ]).blowupMap D'.subschemeι).ker
   rw [hstrict, hmove] at hcoeff
   funext j

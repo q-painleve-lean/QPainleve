@@ -7,10 +7,14 @@ module
 
 public import QPainleve.Geometry.Toric.Fan.Presentation.InternalBlowup
 public import QPainleve.AlgebraicGeometry.Modules.Differentials.Canonical
+public import TauCeti.AlgebraicGeometry.Curves.Prestable
+public import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.ProjectiveOver
 
 import QPainleve.AlgebraicGeometry.Blowup.StrictTransform.Contraction
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Nodal.Canonical
 import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
+import QPainleve.AlgebraicGeometry.IdealSheaf.Restriction
+import TauCeti.AlgebraicGeometry.Noetherian
 
 /-!
 # Toric presentations under nodal reductions
@@ -167,3 +171,50 @@ theorem exists_toric_presentation_of_nodal_blowup_and_strict_transform_contracti
     hD hN hK hU g (hπ.symm ▸ hg) hq u hu hG (by rwa [hπ]) e he (by rwa [hπ])
 
 end TauCeti.Toric.Fan
+
+open TauCeti.Toric
+
+namespace AlgebraicGeometry.Scheme.IdealSheafData
+
+variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V] {i : N →+ V}
+  (b : Module.Basis (Fin 2) ℤ N)
+
+local notation "S" => Spec (CommRingCat.of ℂ)
+local notation "K[" X "]" => LineBundleClass.mk (canonicalBundle ℂ X 2)
+local notation "J[" x "]" => Scheme.Hom.ker (Scheme.fromSpecResidueField _ x)
+local notation "T[" x "]" => BlowupTower.nil.snoc J[x]
+
+/-- If a nodal blowup is followed by an internal contraction, a toric
+presentation of the schematic image of the reduced total boundary gives
+a toric presentation of the original pair. -/
+theorem hasToricPresentation_of_nodal_blowup_and_internal_contraction
+    {X Y : Scheme} [X.Over S] [Y.Over S] [IsIntegral X] [IsIntegral Y]
+    [X.IsProjectiveOver ℂ] [Y.IsProjectiveOver ℂ]
+    [SmoothOfRelativeDimension 2 (X ↘ S)] [SmoothOfRelativeDimension 2 (Y ↘ S)]
+    {D : X.IdealSheafData} [PrestableFamily (D.subscheme ↘ S)] (hD : D.IsEffectiveCartier)
+    (hK : LineBundleClass.mk hD.toInvertibleSheaf = K[X])
+    {x : X} (hT : IsNodalBoundaryTower D (X ↘ S) (𝟙 X) T[x])
+    {y : Y} (hy : IsClosed ({y} : Set Y)) (u : J[x].blowup ≅ J[y].blowup) :
+    let g := u.hom ≫ J[y].blowupToBase
+    let R := (D.comap J[x].blowupToBase).radical
+    g ≫ Y ↘ S = J[x].blowupToBase ≫ X ↘ S →
+    ¬ (J[y].comap g).support ≤ R.support →
+    (R.map g).HasToricPresentation (Y ↘ S) b i →
+    D.HasToricPresentation (X ↘ S) b i := by
+  intro g R hg hOmit h
+  have hN : AtWorstNodalOfRelativeDimensionOne (D.subschemeι ≫ X ↘ S) := by
+    rw [← D.over_eq_subschemeι_comp]
+    exact PrestableFamily.atWorstNodalOfRelativeDimensionOne
+  let : IsNoetherian X := isNoetherian_of_finiteType (X ↘ S)
+  let : IsNoetherian Y := isNoetherian_of_finiteType (Y ↘ S)
+  have hπ : T[x].toBase = J[x].blowupToBase := by simp
+  obtain ⟨Φ, hΦ, hc, n, r, c, l, W, U, hU, e, he, hB⟩ := (hasToricPresentation_iff ..).mp h
+  let : Nonempty Φ.cones := hc.nonempty_cones
+  obtain ⟨r', c', Z', T', hT', d, hd, hD'⟩ :=
+    Fan.exists_toric_presentation_of_internal_contraction_after_nodal_tower b hΦ hc r c hD hN hK
+      hT g (by rwa [hπ]) hy u rfl (by simpa only [hπ, R, support_radical] using hOmit)
+      (by rwa [hπ]) e he (by rwa [hπ, radical_comap_of_isOpenImmersion])
+  exact (hasToricPresentation_iff ..).mpr ⟨Φ, hΦ, hc, n + 1, Fin.snoc r r', Fin.snoc c c',
+    1 + l, Z', T', hT', d, hd, by rwa [← radical_comap_of_isOpenImmersion]⟩
+
+end AlgebraicGeometry.Scheme.IdealSheafData

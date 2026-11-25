@@ -131,4 +131,25 @@ theorem HasToricPresentation.nodalBlowup
   · simpa only [toBase_snoc, toBase_nil, Category.comp_id, Category.assoc] using ha
   · simpa only [toBase_snoc, toBase_nil, Category.comp_id] using hB
 
+/-- A toric presentation of the reduced total boundary at the top of a nodal
+tower gives a toric presentation of the original pair. The boundary at the
+top may be supplied on an isomorphic scheme with the same boundary support. -/
+theorem hasToricPresentation_of_nodal_tower (b : Module.Basis (Fin 2) ℤ N)
+    {X Y Z : Scheme} {D : X.IdealSheafData} {E : Z.IdealSheafData}
+    {s : X ⟶ Spec (CommRingCat.of ℂ)} {t : Z ⟶ Spec (CommRingCat.of ℂ)}
+    {m : ℕ} {T : BlowupTower X m Y}
+    (hT : IsNodalBoundaryTower D s (𝟙 X) T) (a : Y ≅ Z)
+    (ht : a.hom ≫ t = T.toBase ≫ s)
+    (hE : (E.comap a.hom).support = (D.comap T.toBase).support)
+    (h : E.HasToricPresentation t b i) : D.HasToricPresentation s b i := by
+  obtain ⟨Φ, hΦ, hc, n, rays, c, l, W, U, hU, e, he, hB⟩ := (hasToricPresentation_iff ..).mp h
+  obtain ⟨W', Wtower, f, hW, hbase, hrad⟩ := hT.exists_append_of_iso hU a ht hE
+  have ht' : a.inv ≫ T.toBase ≫ s = t := by rw [← ht, Iso.inv_hom_id_assoc]
+  refine (hasToricPresentation_iff ..).mpr
+    ⟨Φ, hΦ, hc, n, rays, c, m + l, W', Wtower, hW, e ≪≫ f.symm, ?_, ?_⟩
+  · simpa only [Iso.trans_hom, Iso.symm_hom, hbase, Category.assoc, Iso.inv_hom_id_assoc, ht']
+      using he
+  · simpa only [Iso.trans_hom, Iso.symm_hom, hrad, ← comap_comp, Category.assoc,
+      Iso.inv_hom_id, Category.comp_id] using hB
+
 end AlgebraicGeometry.Scheme.IdealSheafData
