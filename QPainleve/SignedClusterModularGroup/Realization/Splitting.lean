@@ -6,7 +6,7 @@ Authors: The QPainleve contributors
 module
 
 public import QPainleve.SignedClusterModularGroup.Realization.Presentation.Group
-public import QPainleve.SignedClusterModularGroup.Realization.Presentation.SignExtension
+public import QPainleve.SignedClusterModularGroup.SignExtension
 
 import QPainleve.SignedClusterModularGroup.Realization.Anticanonical
 import QPainleve.SignedClusterModularGroup.Realization.NodalFiber
