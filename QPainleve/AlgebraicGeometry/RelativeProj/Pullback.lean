@@ -8,12 +8,17 @@ module
 public import QPainleve.AlgebraicGeometry.Modules.GradedAlgebra.SymmetricAlgebraPullback
 public import QPainleve.AlgebraicGeometry.RelativeProj.BaseChange
 public import QPainleve.AlgebraicGeometry.RelativeProj.Isomorphism
+public import TauCeti.AlgebraicGeometry.RelativeProj.TwistingSheaf
+
+import QPainleve.AlgebraicGeometry.RelativeProj.TwistingSheaf.Comparison
+import TauCeti.AlgebraicGeometry.RelativeProj.TwistingSheaf.Pullback
 
 /-!
 # Projectivization under base change
 
 An identification of a quasicoherent sheaf with the pullback of another gives
-a Cartesian comparison of their projectivizations. It commutes with the maps
+a Cartesian comparison of their projectivizations. The canonical base-change
+projection preserves all integral twists. The comparison commutes with the maps
 induced by quotients in the convention of
 [Stacks, Section 27.21](https://stacks.math.columbia.edu/tag/01OA).
 -/
@@ -258,6 +263,34 @@ theorem projectivizationProjectionOfPullback_refl :
     projectivizationProjectionOfPullback f (Iso.refl ((pullback f).obj F)) =
       F.relativeProjPullbackProjection f :=
   (rfl)
+
+/-- The projectivization's base-change projection pulls back every integral twist
+to the corresponding twist of the projectivization of the pulled-back sheaf. -/
+def relativeProjPullbackProjectionTwistingSheafIso (n : ℤ) :
+    (Scheme.Modules.pullback (F.relativeProjPullbackProjection f)).obj
+      (A[F].obj.relativeProjTwistingSheaf n) ≅
+        A[(pullback f).obj F].obj.relativeProjTwistingSheaf n := by
+  let G := (pullback f).obj F
+  let A := A[F]
+  let s := (pullbackGradedSymmetricAlgebraIso f F).symm
+  let e : ((GradedQuasicoherentAlgebra.pullback f).obj A).obj ≅ A[G].obj :=
+    (ObjectProperty.ι _).mapIso s
+  let hφ (U : X.Opens) (_ : IsAffineOpen U) :=
+    CommMon.irrelevant_le_map_gradedSectionsGradedHom_of_iso e U
+  let μ := A.relativeProjBaseChangeTwistingSheafMap f n
+  have : IsIso μ :=
+    A.isIso_relativeProjBaseChangeTwistingSheafMap f n
+      (isGeneratedInDegreeOne_gradedSymmetricAlgebra F)
+  have : Epi (e.hom.hom.hom 1) := by
+    exact IsIso.epi_of_iso (f := s.hom.hom.hom.hom 1)
+  let ν := CommMon.relativeProjTwistingSheafMap e.hom hφ n
+  have : IsIso ν := CommMon.isIso_relativeProjTwistingSheafMap_of_epi_one e.hom hφ n
+    (isGeneratedInDegreeOne_gradedSymmetricAlgebra G)
+  rw [relativeProjPullbackProjection_eq,
+    GradedQuasicoherentAlgebra.relativeProjProjectionOfPullback_eq, CommMon.relativeProjMapIso_hom]
+  let j := CommMon.relativeProjMap e.hom hφ
+  exact (Scheme.Modules.pullbackComp j (A.relativeProjBaseChange f)).symm.app _ ≪≫
+    (Scheme.Modules.pullback j).mapIso (asIso μ) ≪≫ asIso ν
 
 end CanonicalProjection
 

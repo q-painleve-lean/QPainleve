@@ -8,8 +8,6 @@ module
 public import QPainleve.AlgebraicGeometry.RelativeProj.LineBundle.Basic
 public import QPainleve.AlgebraicGeometry.RelativeProj.Pullback
 
-import QPainleve.AlgebraicGeometry.RelativeProj.TwistingSheaf.Comparison
-
 /-!
 # Morphisms to projective bundles from line quotients
 
@@ -34,40 +32,6 @@ variable {X Y : Scheme.{u}}
 
 local notation "Sym[" G "]" => Functor.obj (gradedSymmetricAlgebra _) G
 local notation "F⟮" f "," F "⟯" => Functor.obj (QuasicoherentSheaf.pullback f) F
-
-namespace QuasicoherentSheaf
-
-variable (F : QuasicoherentSheaf Y) (f : X ⟶ Y)
-
-/-- The projectivization's base-change projection pulls back every integral twist
-to the corresponding twist of the projectivization of the pulled-back sheaf. -/
-def relativeProjPullbackProjectionTwistingSheafIso (n : ℤ) :
-    (Scheme.Modules.pullback (F.relativeProjPullbackProjection f)).obj
-      (Sym[F].obj.relativeProjTwistingSheaf n) ≅
-        Sym[F⟮f,F⟯].obj.relativeProjTwistingSheaf n := by
-  let G := F⟮f,F⟯
-  let A := Sym[F]
-  let s := (pullbackGradedSymmetricAlgebraIso f F).symm
-  let e : ((GradedQuasicoherentAlgebra.pullback f).obj A).obj ≅ Sym[G].obj :=
-    (ObjectProperty.ι _).mapIso s
-  let hφ (U : X.Opens) (_ : IsAffineOpen U) :=
-    CommMon.irrelevant_le_map_gradedSectionsGradedHom_of_iso e U
-  let μ := A.relativeProjBaseChangeTwistingSheafMap f n
-  have : IsIso μ :=
-    A.isIso_relativeProjBaseChangeTwistingSheafMap f n
-      (isGeneratedInDegreeOne_gradedSymmetricAlgebra F)
-  have : Epi (e.hom.hom.hom 1) := by
-    exact IsIso.epi_of_iso (f := s.hom.hom.hom.hom 1)
-  let ν := CommMon.relativeProjTwistingSheafMap e.hom hφ n
-  have : IsIso ν := CommMon.isIso_relativeProjTwistingSheafMap_of_epi_one e.hom hφ n
-    (isGeneratedInDegreeOne_gradedSymmetricAlgebra G)
-  rw [relativeProjPullbackProjection_eq,
-    GradedQuasicoherentAlgebra.relativeProjProjectionOfPullback_eq, CommMon.relativeProjMapIso_hom]
-  let j := CommMon.relativeProjMap e.hom hφ
-  exact (Scheme.Modules.pullbackComp j (A.relativeProjBaseChange f)).symm.app _ ≪≫
-    (Scheme.Modules.pullback j).mapIso (asIso μ) ≪≫ asIso ν
-
-end QuasicoherentSheaf
 
 namespace FiniteLocallyFreeSheaf.FixedRank
 
