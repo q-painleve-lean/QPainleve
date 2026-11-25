@@ -28,40 +28,13 @@ the boundary origin used when the centers vary.
 
 public noncomputable section
 
-open AlgebraicGeometry CategoryTheory Multiplicative Order TopologicalSpace QPainleve.BlowupTower
+open AlgebraicGeometry CategoryTheory Multiplicative TopologicalSpace QPainleve.BlowupTower
 open QPainleve.CharacterTorus TauCeti TauCeti.AlgebraicGeometry TauCeti.Toric
 open Scheme Scheme.IdealSheafData
 
 namespace QPainleve.SignedClusterModularGroup
 
 local notation "S" => Spec (CommRingCat.of ℂ)
-
-attribute [local instance] specializationOrder
-
-variable {X Y : Scheme} [X.Over S] [Y.Over S]
-  [PrestableFamily (X ↘ S)] [PrestableFamily (Y ↘ S)] {n m : ℕ} [NeZero n] [NeZero m]
-
-private theorem exists_componentGenericPoint_over (A : Scheme.NodalCycleNumbering
-    (X := X) (Empty.elim : Empty → (X ↘ S).smoothLocus) n)
-    (C : Scheme.NodalCycleNumbering (X := Y) (Empty.elim : Empty → (Y ↘ S).smoothLocus) m)
-    (f : Y ⟶ X) [Surjective f] (j : ZMod n) :
-    ∃ l, f (C.componentGenericPoint l) = A.componentGenericPoint j := by
-  obtain ⟨x, hx⟩ := f.surjective (A.componentGenericPoint j)
-  let ν := (Y.singularLocus ℂ).blowupToBase
-  have : Surjective ν := Y.surjective_blowupToBase_singularLocus
-    PrestableFamily.atWorstNodalOfRelativeDimensionOne
-  obtain ⟨y, hy⟩ := ν.surjective x
-  let v := irreducibleComponentOf y
-  refine ⟨C.component.symm v, ?_⟩
-  have hs := (genericPoints.isGenericPoint_ofComponent v).specializes
-    (mem_irreducibleComponentOf y)
-  have h := (hs.map ν.continuous).map f.continuous
-  rw [hy, hx] at h
-  have hmax : IsMax (A.componentGenericPoint j) := by
-    rw [A.componentGenericPoint_def, ← coheight_eq_zero]
-    exact X.coheight_blowupComponentGeneric (A.component j)
-  rw [C.componentGenericPoint_def, Equiv.apply_symm_apply]
-  exact le_antisymm (hmax (Scheme.le_iff_specializes.mpr h)) (Scheme.le_iff_specializes.mpr h)
 
 local notation "Centers[" r "]" => Over.mk (structureMap ℂ (Fin r → ℤ))
 local notation "XTor[" r "]" => scheme ℂ (Fin r →₀ ℤ)
@@ -151,7 +124,7 @@ private theorem exists_boundary_origin [PrestableFamily (TorBoundary ↘ S)] [Ne
     obtain ⟨z, rfl⟩ := hmem
     refine ⟨z, D.subschemeι.isClosedEmbedding.injective ?_⟩
     rwa [← Scheme.Hom.comp_apply, hg, Scheme.Hom.comp_apply]⟩
-  exact exists_componentGenericPoint_over A C g 0
+  exact A.exists_componentGenericPoint_over C g 0
 
 private theorem exists_reference_of_numbered_model
     (hc : Φ.IsComplete) (hT : IsNodalBoundaryTower D (X ↘ S) (𝟙 X) T)
@@ -237,30 +210,7 @@ variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V] {i : N �
   {L : Type} [AddCommGroup L] {B : LinearMap.BilinForm ℤ L}
   {b : Module.Basis (Fin 2) ℤ N}
 
-open Fan.LogarithmicProjection (centerCharacter)
-
-private theorem exists_point_with_parameters {r : ℕ} (u : Fin r → ℂˣ) :
-    ∃ c : GeometricRealization.Point Centers[r], param[c] = u := by
-  let z := (pointsEquiv ℂ (Fin r → ℤ)).symm (centerCharacter u)
-  let c : GeometricRealization.Point Centers[r] := Over.homMk z.val z.property
-  refine ⟨c, ?_⟩
-  have hc : χ[c] = centerCharacter u := (pointsEquiv ℂ _).apply_symm_apply _
-  funext j
-  simp [hc, centerCharacter, Finsupp.linearEquivFunOnFinite_symm_single]
-
-private theorem exists_transposed_tower_iso {Φ : Fan i} [Nonempty Φ.cones]
-    (hΦ : Φ.IsRegular) {r : ℕ} (s : Fin r → Φ.Ray)
-    (u : Fin r → ℂˣ) :
-    let U := Fan.internalBlowupTower b s u
-    let U' := Fan.internalBlowupTower (b.reindex (Equiv.swap 0 1)) s u⁻¹
-    ∃ v : U'.1 ≅ U.1, v.hom ≫ U.2.toTower.toBase = U'.2.toTower.toBase ∧
-      U'.2.boundaryι ≫ v.hom = U.2.boundaryι := by
-  dsimp only
-  let a := eqToIso (congrArg Sigma.fst (Fan.internalBlowupTower_reindex_swap b s u).symm)
-  obtain ⟨hproj, hboundary, _⟩ := Fan.internalBlowupTower_reindex_swap_iso b s u hΦ
-  refine ⟨a.symm, ?_, ?_⟩
-  · rw [Iso.symm_hom, ← hproj, Iso.inv_hom_id_assoc]
-  · rw [Iso.symm_hom, ← hboundary, Category.assoc, Iso.hom_inv_id, Category.comp_id]
+open Fan.LogarithmicProjection (centerPoint centerPoint_parameters)
 
 /-- Equip specified ordered toric and nodal blowup towers with a complete marking
 and use their common surface to obtain the reference fiber. The fan and the ray of
@@ -293,7 +243,8 @@ theorem exists_marked_reference_fiber_of_ordered_towers
     rw [← Φ.algebraicRealization_over]
     infer_instance
   let := Φ.prestableFamily_boundary hΦ hc hdim
-  obtain ⟨c, hcparam⟩ := exists_point_with_parameters u
+  obtain ⟨c, hcparam⟩ : ∃ c : GeometricRealization.Point Centers[r], param[c] = u :=
+    ⟨centerPoint u, centerPoint_parameters u⟩
   subst u
   let : NeZero (n + k) := ⟨by have := NeZero.ne n; omega⟩
   obtain ⟨C, g, hg, hgOver, hsub⟩ := exists_boundary_subdivision A s c hD hT e hbase hker
@@ -311,7 +262,8 @@ theorem exists_marked_reference_fiber_of_ordered_towers
       exists_reference_of_numbered_model A μ hΦ s c hc hT e hbase hker C g hg hsub hpositive
     exact ⟨b, Q, c, f, Or.inl ⟨rfl, rfl⟩, hrays, hf⟩
   · subst a
-    obtain ⟨c', hc'⟩ := exists_point_with_parameters param[c]⁻¹
+    let c' := centerPoint param[c]⁻¹
+    have hc' := centerPoint_parameters param[c]⁻¹
     let U := Fan.internalBlowupTower b s param[c]
     let U' := Fan.internalBlowupTower (b.reindex (Equiv.swap 0 1)) s param[c']
     -- The frame change preserves the two maps from the ordered blowup model.
@@ -319,7 +271,7 @@ theorem exists_marked_reference_fiber_of_ordered_towers
         U'.2.boundaryι ≫ v.hom = U.2.boundaryι := by
       dsimp only [U']
       rw [hc']
-      exact exists_transposed_tower_iso (b := b) hΦ s param[c]
+      exact Fan.exists_iso_internalBlowupTower_reindex_swap b s param[c] hΦ
     obtain ⟨v, hproj, hboundary⟩ := hcompare
     have hb' : (v ≪≫ e).hom ≫ T.toBase ≫ (X ↘ S) =
         U'.2.toTower.toBase ≫ Φ.algebraicRealizationStructureMap := by

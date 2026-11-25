@@ -20,8 +20,8 @@ parameters scale the torus characters before pullback to the resolving surface.
 
 public noncomputable section
 
-open AlgebraicGeometry Module Multiplicative
-open QPainleve.Cluster TauCeti TauCeti.AlgebraicGeometry
+open AlgebraicGeometry CategoryTheory Module Multiplicative
+open QPainleve.CharacterTorus QPainleve.Cluster TauCeti TauCeti.AlgebraicGeometry
 
 namespace TauCeti.Toric.Fan.LogarithmicProjection
 
@@ -46,6 +46,18 @@ theorem centerCharacter_of_pi_single (c : Multiplicative (Fin m → ℤ) →* �
   apply freeAbelianCharEquiv.injective
   funext j
   simp [e, centerCharacter, freeAbelianCharEquiv_apply, Finsupp.linearEquivFunOnFinite_single]
+
+/-- The point of the center torus over `Spec ℂ` with the given ordered parameters. -/
+abbrev centerPoint (c : Fin m → ℂˣ) : Over.mk (𝟙 S) ⟶ Over.mk (structureMap ℂ (Fin m → ℤ)) :=
+  let z := (pointsEquiv ℂ (Fin m → ℤ)).symm (centerCharacter c)
+  Over.homMk z.val z.property
+
+/-- Evaluating the character of `centerPoint` on the coordinate basis recovers its parameters. -/
+theorem centerPoint_parameters (c : Fin m → ℂˣ) :
+    (fun j ↦ pointsEquiv ℂ (Fin m → ℤ) ⟨(centerPoint c).left, Over.w (centerPoint c)⟩
+      (ofAdd (Pi.single j 1))) = c := by
+  funext j
+  simp [centerCharacter, Finsupp.linearEquivFunOnFinite_symm_single]
 
 namespace OrderedToricModel
 

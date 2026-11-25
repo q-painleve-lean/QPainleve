@@ -210,6 +210,20 @@ theorem internalBlowupTower_reindex_swap_iso {l : N →+ V} {Φ : Fan l} [h₀ :
     simp
   exact compare _ _ (internalBlowupTower_reindex_swap b s c).symm
 
+/-- The isomorphism from the model for the transposed basis with inverted parameters
+preserves the projection to the fan and identifies the strict boundaries. -/
+theorem exists_iso_internalBlowupTower_reindex_swap (hΦ : Φ.IsRegular) :
+    let A := internalBlowupTower b s c
+    let B := internalBlowupTower (b.reindex (Equiv.swap 0 1)) s c⁻¹
+    ∃ e : B.1 ≅ A.1, e.hom ≫ A.2.toTower.toBase = B.2.toTower.toBase ∧
+      B.2.boundaryι ≫ e.hom = A.2.boundaryι := by
+  dsimp only
+  let e := eqToIso (congrArg Sigma.fst (internalBlowupTower_reindex_swap b s c).symm)
+  obtain ⟨hproj, hboundary, _⟩ := internalBlowupTower_reindex_swap_iso b s c hΦ
+  refine ⟨e.symm, ?_, ?_⟩
+  · rw [Iso.symm_hom, ← hproj, Iso.inv_hom_id_assoc]
+  · rw [Iso.symm_hom, ← hboundary, Category.assoc, Iso.hom_inv_id, Category.comp_id]
+
 open LineBundleClass in
 /-- Move the first occurrence of a binomial center to the beginning of the marked
 toric blowup tower. The other centers keep their relative order, including later
