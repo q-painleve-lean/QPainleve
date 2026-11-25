@@ -166,6 +166,60 @@ theorem ker_distinguishedPointHom_eq_vanishingIdeal (σ : Φ.cones) :
 
 end TauCeti.Toric.Fan
 
+namespace TauCeti.Toric.FanHom
+
+variable {N N' V V' : Type} [AddCommGroup N] [AddCommGroup N']
+  [AddCommGroup V] [AddCommGroup V'] [Module ℝ V] [Module ℝ V']
+  {i : N →+ V} {i' : N' →+ V'} {Φ : Fan i} {Ψ : Fan i'}
+
+/-- A toric morphism sends the distinguished point of a source cone to that of
+a target cone if the image of the source cone spans the same subspace. -/
+@[reassoc]
+theorem distinguishedPointHom_comp_algebraicMap_of_span_eq (f : FanHom Φ Ψ)
+    (σ : Φ.cones) (τ : Ψ.cones) (hm : Set.MapsTo f.realMap σ.val τ.val)
+    (hspan : Submodule.span ℝ (f.realMap '' (σ.val : Set V)) =
+      Submodule.span ℝ (τ.val : Set V')) :
+    Φ.distinguishedPointHom σ ≫ f.algebraicMap = Ψ.distinguishedPointHom τ := by
+  classical
+  let A := affineCoordinateRingMap Φ.lattice Ψ.lattice f.latticeMap f.realMap f.map_lattice hm
+  have h (m : dualSemigroup Ψ.lattice τ.val) :
+      (∀ x ∈ (⊤ : σ.val.Face), Φ.lattice.realCharacter
+        (dualSemigroupMap Φ.lattice Ψ.lattice f.latticeMap f.realMap f.map_lattice hm m) x = 0) ↔
+      (∀ y ∈ (⊤ : τ.val.Face), Ψ.lattice.realCharacter m y = 0) := by
+    simp only [coe_dualSemigroupMap, Φ.lattice.realCharacter_comp Ψ.lattice f.latticeMap
+      f.realMap f.map_lattice, LinearMap.comp_apply]
+    let χ := Ψ.lattice.realCharacter m
+    -- Top-face membership is cone membership on both sides.
+    change (∀ x ∈ (σ.val : Set V), χ (f.realMap x) = 0) ↔ ∀ y ∈ (τ.val : Set V'), χ y = 0
+    have hχ (s : Set V') : (∀ y ∈ s, χ y = 0) ↔ Submodule.span ℝ s ≤ LinearMap.ker χ := by
+      rw [Submodule.span_le]
+      exact ⟨fun h y hy ↦ LinearMap.mem_ker.mpr (h y hy),
+        fun h y hy ↦ LinearMap.mem_ker.mp (h hy)⟩
+    have himage : (∀ x ∈ (σ.val : Set V), χ (f.realMap x) = 0) ↔
+        ∀ y ∈ f.realMap '' (σ.val : Set V), χ y = 0 := by
+      constructor
+      · intro hz
+        exact Set.forall_mem_image.mpr fun x hx ↦ hz x hx
+      · intro hz x hx
+        exact Set.forall_mem_image.mp hz hx
+    rw [himage, hχ, hχ, hspan]
+  have he : (distinguishedPoint Φ.lattice (⊤ : σ.val.Face)).comp A =
+      distinguishedPoint Ψ.lattice (⊤ : τ.val.Face) := by
+    apply MonoidAlgebra.algHom_ext
+    · intro m
+      rw [← ofAdd_toAdd m, AlgHom.comp_apply, affineCoordinateRingMap_single,
+        distinguishedPoint_apply_single, distinguishedPoint_apply_single, h]
+    · exact Subsingleton.elim _ _
+  rw [Fan.distinguishedPointHom_def, Fan.distinguishedPointHom_def, Category.assoc,
+    f.affineToricChartι_comp_algebraicMap_of_mapsTo _ _ hm,
+    affineToricSchemeMap_def, ← Category.assoc, ← Spec.map_comp, ← CommRingCat.ofHom_comp]
+  have hr : (distinguishedPoint Φ.lattice (⊤ : σ.val.Face)).toRingHom.comp A.toRingHom =
+      (distinguishedPoint Ψ.lattice (⊤ : τ.val.Face)).toRingHom :=
+    congrArg AlgHom.toRingHom he
+  exact congrArg (fun g ↦ Spec.map (CommRingCat.ofHom g) ≫ Ψ.affineToricChartι τ) hr
+
+end TauCeti.Toric.FanHom
+
 namespace TauCeti.Toric.FanEquiv
 
 variable {N N' V V' : Type} [AddCommGroup N] [AddCommGroup N']
@@ -178,36 +232,7 @@ to the distinguished point of the image cone. -/
 theorem distinguishedPointHom_comp_algebraicMap (σ : Φ.cones) :
     Φ.distinguishedPointHom σ ≫ e.toFanHom.algebraicMap =
       Ψ.distinguishedPointHom (e.coneEquiv σ) := by
-  classical
-  let f := e.toFanHom
-  let τ := e.coneEquiv σ
-  let hm := e.mapsTo_coneEquiv σ
-  let A := affineCoordinateRingMap Φ.lattice Ψ.lattice f.latticeMap f.realMap f.map_lattice hm
-  have hset : f.realMap '' (σ.val : Set V) = (τ.val : Set V') := by
-    rw [e.coneEquiv_apply_coe, PointedCone.coe_map, toFanHom_realMap]
-  have h (m : dualSemigroup Ψ.lattice τ.val) :
-      (∀ x ∈ (⊤ : σ.val.Face), Φ.lattice.realCharacter
-        (dualSemigroupMap Φ.lattice Ψ.lattice f.latticeMap f.realMap f.map_lattice hm m) x = 0) ↔
-      (∀ y ∈ (⊤ : τ.val.Face), Ψ.lattice.realCharacter m y = 0) := by
-    simp only [coe_dualSemigroupMap, Φ.lattice.realCharacter_comp Ψ.lattice f.latticeMap
-      f.realMap f.map_lattice, LinearMap.comp_apply]
-    -- The top face is the cone itself, so its points are the image of the source cone.
-    change (∀ x ∈ (σ.val : Set V), _) ↔ ∀ y ∈ (τ.val : Set V'), _
-    simp only [← hset, Set.forall_mem_image]
-  have he : (distinguishedPoint Φ.lattice (⊤ : σ.val.Face)).comp A =
-      distinguishedPoint Ψ.lattice (⊤ : τ.val.Face) := by
-    apply MonoidAlgebra.algHom_ext
-    · intro m
-      rw [← ofAdd_toAdd m, AlgHom.comp_apply, affineCoordinateRingMap_single,
-        distinguishedPoint_apply_single, distinguishedPoint_apply_single, h]
-    · exact Subsingleton.elim _ _
-  rw [Fan.distinguishedPointHom_def, Fan.distinguishedPointHom_def, Category.assoc,
-    e.toFanHom.affineToricChartι_comp_algebraicMap_of_mapsTo _ _ hm,
-    affineToricSchemeMap_def, ← Category.assoc, ← Spec.map_comp, ← CommRingCat.ofHom_comp]
-  have hr : (distinguishedPoint Φ.lattice (⊤ : σ.val.Face)).toRingHom.comp A.toRingHom =
-      (distinguishedPoint Ψ.lattice (⊤ : τ.val.Face)).toRingHom :=
-    congrArg AlgHom.toRingHom he
-  dsimp only [A, f, τ] at hr
-  rw [hr]
+  apply e.toFanHom.distinguishedPointHom_comp_algebraicMap_of_span_eq σ _ (e.mapsTo_coneEquiv σ)
+  rw [e.coneEquiv_apply_coe, PointedCone.coe_map, toFanHom_realMap]
 
 end TauCeti.Toric.FanEquiv

@@ -163,22 +163,9 @@ theorem first_center_of_toric_link
     hU.baseCenter (l.natAdd 1) = t.toFanHom.algebraicMap z ∧
       ((∀ k < l, (I[σ]).blowupToBase (hT.baseCenter k) ≠ s.toFanHom.algebraicMap z) →
         ∀ k < l.natAdd 1, hU.baseCenter k ≠ t.toFanHom.algebraicMap z) := by
-  have hsrc (k : Fin n) :=
-    congrArg (fun f : X[F] ⟶ X[Φ] ↦ f (v.inv (hT.baseCenter k))) hv
-  simp only [Scheme.Hom.comp_apply, Scheme.inv_hom_apply] at hsrc
-  have hproj := (hsrc l).symm.trans hl
-  have hpt : v.inv (hT.baseCenter l) = z := s.toFanHom.algebraicMap.injOn_preimage_isoLocus
-    (by rwa [Set.mem_preimage, hproj]) hs hproj
-  refine ⟨(hretained l).symm.trans (congrArg t.toFanHom.algebraicMap hpt), fun hfirst ↦ ?_⟩
-  refine Fin.addCases ?_ ?_
-  · intro k _ he
-    rw [Subsingleton.elim k (0 : Fin 1)] at he
-    exact hcorner (he ▸ ht)
-  · intro k hk he
-    have e := (hretained k).trans he
-    have e' := t.toFanHom.algebraicMap.injOn_preimage_isoLocus
-      (by rwa [Set.mem_preimage, e]) ht e
-    exact hfirst k (by simpa only [Fin.lt_def, Fin.val_natAdd, Nat.add_lt_add_iff_left] using hk)
-      ((hsrc k).trans (congrArg s.toFanHom.algebraicMap e'))
+  refine s.toFanHom.algebraicMap.first_occurrence_of_projected_points t.toFanHom.algebraicMap
+    hcorner (fun k ↦ ?_) hs ht l hl
+  refine ⟨v.inv (hT.baseCenter k), ?_, hretained k⟩
+  simp only [← hv, Scheme.Hom.comp_apply, Scheme.inv_hom_apply]
 
 end QPainleve.BlowupTower.IsClosedPointTower
