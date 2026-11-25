@@ -51,18 +51,6 @@ local notation "trop[" w "]" =>
 
 local notation "e" => boundaryOrthogonalEquivExchangeKernel
 
-/-- The exchange-kernel basis matched to the two alternating Picard classes. -/
-def exchangeKernelBasis : Basis (Fin 2) ℤ E :=
-  boundaryOrthogonalBasis.map e
-
-/-- The basis is the image of the standard coordinate vectors under the exchange-kernel
-equivalence. -/
-@[simp]
-theorem exchangeKernelBasis_apply (j : Fin 2) :
-    exchangeKernelBasis j = exchangeKernelEquiv (Pi.single j 1) := by
-  simp only [exchangeKernelBasis, Basis.map_apply,
-    boundaryOrthogonalEquivExchangeKernel_apply_basis]
-
 /-- Read a signed octagon isometry in the same integer coordinates as a loop.
 The columns are the signed restrictions of the two basis vectors, written in the
 ambient exponent lattice. The last entry is the forward image of component zero. -/
