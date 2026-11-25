@@ -14,8 +14,8 @@ Targets live in [QPainleveRoadmap](https://github.com/q-painleve-lean/QPainleveR
   that matches the boundary components, intertwines the signed boundary periods and sends an
   ample class to an ample class is induced by an isomorphism of pairs:
   [`AlgebraicGeometry.Scheme.IdealSheafData.exists_pair_iso_of_root_free_signed_boundary_period`](QPainleve/AlgebraicGeometry/Curves/Node/Period/Torelli.lean)
-  (and `exists_pair_iso_of_root_free_signed_boundary_period_of_nef` for a nef boundary of square
-  zero).
+  (and [`AlgebraicGeometry.Scheme.IdealSheafData.exists_pair_iso_of_root_free_signed_boundary_period_of_nef`](QPainleve/AlgebraicGeometry/Curves/Node/Period/Torelli.lean)
+  for a nef boundary of square zero).
 - **Cluster modular groups.** For a primitive, nef, square-zero anticanonical cycle of length n
   on a smooth projective rational complex surface, there is a toric seed on `Fin (12 - n)`
   whose signed and unsigned cluster modular groups (opposite groups) are isomorphic to the
