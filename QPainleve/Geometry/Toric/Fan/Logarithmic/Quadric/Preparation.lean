@@ -92,17 +92,12 @@ theorem exists_nodal_resolution_of_hirzebruch_quadric_preparation
       {b 0, b 1, -b 0, (e : ℤ) • b 0 - b 1})
     (hf : Scheme.BirationalOver f (𝟙 X[Φ])) (hD : D.IsEffectiveCartier) :
     let _ : Nonempty Φ.cones := hc.nonempty_cones
-    let _ : SmoothOfRelativeDimension 2 (X[Φ] ↘ S) :=
-      ((Module.finrank_eq_card_basis b).trans (Fintype.card_fin 2)) ▸
-        Φ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
     let B := Φ.boundaryIdeal hc.nonempty_cones
-    let hB := Φ.isEffectiveCartier_boundaryIdeal hΦ hc
-      ((Module.finrank_eq_card_basis b).trans (Fintype.card_fin 2))
-    ∀ (ω : hB.toInvertibleSheaf ≅ canonicalBundle ℂ X[Φ] 2)
-      (hTotal : (B.comap f).IsEffectiveCartier)
-      (hRam : let _ := SmoothOfRelativeDimension.smooth 2 s(X)
-        (ramificationIdealSheaf ℂ f).IsEffectiveCartier),
-      pullbackTopFormDivisor ℂ f 2 hB ω hTotal hRam = -hD.toCartierDivisor →
+    (B.comap f).IsEffectiveCartier →
+      (let _ := SmoothOfRelativeDimension.smooth 2 s(X)
+       (ramificationIdealSheaf ℂ f).IsEffectiveCartier) →
+      (let _ := SmoothOfRelativeDimension.smooth 2 s(X)
+       B.comap f = D * ramificationIdealSheaf ℂ f) →
       ∃ (P : HirzebruchQuadricPreparation b e Φ) (m : ℕ) (Z : Scheme)
         (T : BlowupTower X m Z) (g : Z ⟶ X[P.common])
         (_ : IsIntegral Z) (_ : IsDominant g) (_ : IsDominant (T.toBase ≫ f))
@@ -127,12 +122,12 @@ theorem exists_nodal_resolution_of_hirzebruch_quadric_preparation
           B.fan = P.model 0 ∧ B.hom ≍ g ≫ π[P.common_model 0] ∧
           p.length = 2 * e ∧
             p.rationalMap = (A.fan.denseTorusPartialIso B.fan).toRationalMap := by
-  intro _ _ B hB ω hTotal hRam hdiv
+  intro _ B hTotal hRam hpole
   obtain ⟨P⟩ := Φ.exists_hirzebruch_quadric_preparation b e hΦ hc hrays
   have hcP : P.common.IsComplete := P.common_source.isComplete_iff.mpr hc
   obtain ⟨Ω, u, v, _, _, _, m, Z, T, q, hZ, hq, hdom, hT, hproj, hregular⟩ :=
-    Φ.exists_nodal_resolution_of_toric_change_of_pullbackTopFormDivisor
-      b hΦ hc P.common_regular hcP hf hD ω hTotal hRam hdiv
+    Φ.exists_nodal_resolution_of_toric_change_of_boundary_comap_eq
+      b hΦ hc P.common_regular hcP hf hD hTotal hRam hpole
   let g := q ≫ π[v]
   let : Nonempty P.common.cones := hcP.nonempty_cones
   let : Nonempty Ω.cones := v.nonempty_cones_of_nonempty inferInstance

@@ -95,31 +95,6 @@ variable {Y : Scheme} [Y.Over S] [SmoothOfRelativeDimension 2 (Y ↘ S)]
 
 local notation "D₁" => Scheme.IdealSheafData.comap D (Iso.inv k)
 
-omit [SmoothOfRelativeDimension 2 (X ↘ S)] [IsIntegral X] [AlgebraicGeometry.IsNoetherian X]
-  [SmoothOfRelativeDimension 2 (Y ↘ S)] [IsIntegral Y] [AlgebraicGeometry.IsNoetherian Y] in
-private theorem transported_tower_hom_comp {m m' : ℕ} {Z W : Scheme}
-    {U : BlowupTower Y m W} {T : BlowupTower X m' Z}
-    (e : Z ≅ W) (hT : T.toBase = e.hom ≫ U.toBase ≫ k.inv) :
-    e.hom ≫ (U.toBase ≫ Y ↘ S) = T.toBase ≫ X ↘ S := by
-  have : k.inv.IsOver S := inferInstance
-  rw [hT]
-  simp only [Category.assoc, comp_over k.inv S]
-
-omit [SmoothOfRelativeDimension 2 (X ↘ S)] [IsIntegral X] [AlgebraicGeometry.IsNoetherian X]
-  [SmoothOfRelativeDimension 2 (Y ↘ S)] [IsIntegral Y] [AlgebraicGeometry.IsNoetherian Y] in
-private theorem nodalTower_from_iso {m : ℕ} {W : Scheme} {U : BlowupTower Y m W}
-    (hU : IsNodalBoundaryTower D₁ (Y ↘ S) (𝟙 Y) U) :
-    ∃ (Z : Scheme) (T : BlowupTower X (0 + m) Z) (e : Z ≅ W),
-      IsNodalBoundaryTower D (X ↘ S) (𝟙 X) T ∧
-      T.toBase = e.hom ≫ U.toBase ≫ k.inv ∧
-      total[D,T] = (total[D₁,U]).comap e.hom := by
-  let hnil : IsNodalBoundaryTower D (X ↘ S) (𝟙 X) (.nil : BlowupTower X 0 X) := .nil
-  have hsup : (Scheme.IdealSheafData.comap D₁ k.hom).support =
-      (D.comap (.nil : BlowupTower X 0 X).toBase).support := by
-    simp [← comap_comp]
-  simpa only [toBase_nil, Category.comp_id] using
-    hnil.exists_append_of_iso hU k (by simp) hsup
-
 include hD hNode in
 private theorem HasPlaneTargetDecrease.of_iso {m : ℕ} {W : Scheme} {U : BlowupTower Y m W}
     (hU : IsNodalBoundaryTower D₁ (Y ↘ S) (𝟙 Y) U)
@@ -135,7 +110,7 @@ private theorem HasPlaneTargetDecrease.of_iso {m : ℕ} {W : Scheme} {U : Blowup
   let := hW
   let := hSmoothW
   let := hIntegralW
-  obtain ⟨Z, T, e, hT, hbase, hE⟩ := nodalTower_from_iso k hU
+  obtain ⟨Z, T, e, hT, hbase, hE⟩ := hU.exists_transport_of_iso (comp_over k.hom S)
   let : Z.Over S := over[T]
   let : SmoothOfRelativeDimension 2 (Z ↘ S) := smooth[hT]
   let : IsIntegral Z := integral[hT]
@@ -153,7 +128,7 @@ private theorem HasPlaneTargetDecrease.of_iso {m : ℕ} {W : Scheme} {U : Blowup
     rw [← Category.assoc e.hom, ← Category.assoc (e.hom ≫ U.toBase),
       Category.assoc e.hom U.toBase k.inv, ← hbase] at h
     exact h.trans (precomposeSarkisovOfNodalTower_obj_hom ..).symm
-  refine ⟨next, hlt, 0 + m, Z, T, hT, obj[F,C], ⟨identify hA' hhA ▸ mapPath[F,p]⟩, ?_⟩
+  refine ⟨next, hlt, m, Z, T, hT, obj[F,C], ⟨identify hA' hhA ▸ mapPath[F,p]⟩, ?_⟩
   rw [← identify hB' hhB]
   exact hmark.of_iso e (precomposeSarkisovOfIso_obj_fan ..) (precomposeSarkisovOfIso_obj_fan ..)
     (precomposeSarkisovOfIso_obj_hom ..) (precomposeSarkisovOfIso_obj_hom ..)

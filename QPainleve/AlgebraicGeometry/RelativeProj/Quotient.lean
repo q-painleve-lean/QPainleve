@@ -5,9 +5,8 @@ Authors: The QPainleve contributors
 -/
 module
 
-public import QPainleve.AlgebraicGeometry.RelativeProj.BaseChange
-public import QPainleve.AlgebraicGeometry.RelativeProj.Isomorphism
 public import QPainleve.AlgebraicGeometry.RelativeProj.LineBundle
+public import QPainleve.AlgebraicGeometry.RelativeProj.Pullback
 
 import QPainleve.AlgebraicGeometry.Modules.GradedAlgebra.SymmetricAlgebraPullback
 import QPainleve.AlgebraicGeometry.RelativeProj.TwistingSheaf.Comparison
@@ -35,36 +34,26 @@ namespace TauCeti.AlgebraicGeometry
 variable {X Y : Scheme.{u}}
 
 local notation "Sym[" G "]" => Functor.obj (gradedSymmetricAlgebra _) G
-local notation "PB[" f "," A "]" => Functor.obj (GradedQuasicoherentAlgebra.pullback f) A
 local notation "F⟮" f "," F "⟯" => Functor.obj (QuasicoherentSheaf.pullback f) F
 
 namespace QuasicoherentSheaf
 
 variable (F : QuasicoherentSheaf Y) (f : X ⟶ Y)
 
-private def projPullbackIso :
-    Sym[F⟮f,F⟯].obj.relativeProj ≅
-      PB[f,Sym[F]].obj.relativeProj :=
-  CommMon.relativeProjMapIso ((ObjectProperty.ι _).mapIso
-    (pullbackGradedSymmetricAlgebraIso f F).symm)
-
 /-- The base-change projection from the projectivization of the pulled-back
 quasicoherent sheaf to that of the original sheaf. -/
 def relativeProjPullbackProjection :
     Sym[F⟮f,F⟯].obj.relativeProj ⟶ Sym[F].obj.relativeProj :=
-  (projPullbackIso F f).hom ≫ Sym[F].relativeProjBaseChange f
+  GradedQuasicoherentAlgebra.relativeProjProjectionOfPullback f
+    (pullbackGradedSymmetricAlgebraIso f F)
 
 /-- Projectivization of the pulled-back sheaf is the scheme-theoretic base change
 of the original projectivization. -/
 theorem isPullback_relativeProjPullbackProjection :
     IsPullback Sym[F⟮f,F⟯].obj.relativeProjToBase (F.relativeProjPullbackProjection f)
-      f Sym[F].obj.relativeProjToBase := by
-  refine (Sym[F].isPullback_relativeProjBaseChange f).of_iso (projPullbackIso F f).symm
-    (Iso.refl _) (Iso.refl _) (Iso.refl _) ?_ ?_ ?_ ?_
-  · simp [projPullbackIso]
-  · simp [relativeProjPullbackProjection]
-  · simp
-  · simp
+      f Sym[F].obj.relativeProjToBase :=
+  GradedQuasicoherentAlgebra.isPullback_relativeProjProjectionOfPullback f
+    (pullbackGradedSymmetricAlgebraIso f F)
 
 /-- The projectivization's base-change projection commutes with the structure maps. -/
 @[reassoc (attr := simp)]
@@ -82,7 +71,8 @@ def relativeProjPullbackProjectionTwistingSheafIso (n : ℤ) :
   let G := F⟮f,F⟯
   let A := Sym[F]
   let s := (pullbackGradedSymmetricAlgebraIso f F).symm
-  let e : PB[f,A].obj ≅ Sym[G].obj := (ObjectProperty.ι _).mapIso s
+  let e : ((GradedQuasicoherentAlgebra.pullback f).obj A).obj ≅ Sym[G].obj :=
+    (ObjectProperty.ι _).mapIso s
   let hφ (U : X.Opens) (_ : IsAffineOpen U) :=
     CommMon.irrelevant_le_map_gradedSectionsGradedHom_of_iso e U
   let μ := A.relativeProjBaseChangeTwistingSheafMap f n
@@ -94,7 +84,8 @@ def relativeProjPullbackProjectionTwistingSheafIso (n : ℤ) :
   let ν := CommMon.relativeProjTwistingSheafMap e.hom hφ n
   have : IsIso ν := CommMon.isIso_relativeProjTwistingSheafMap_of_epi_one e.hom hφ n
     (isGeneratedInDegreeOne_gradedSymmetricAlgebra G)
-  rw [relativeProjPullbackProjection, projPullbackIso, CommMon.relativeProjMapIso_hom]
+  rw [relativeProjPullbackProjection,
+    GradedQuasicoherentAlgebra.relativeProjProjectionOfPullback_eq, CommMon.relativeProjMapIso_hom]
   let j := CommMon.relativeProjMap e.hom hφ
   exact (Scheme.Modules.pullbackComp j (A.relativeProjBaseChange f)).symm.app _ ≪≫
     (Scheme.Modules.pullback j).mapIso (asIso μ) ≪≫ asIso ν

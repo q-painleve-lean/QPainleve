@@ -8,6 +8,9 @@ module
 public import QPainleve.Geometry.Toric.Fan.Logarithmic.Factorization
 public import QPainleve.SignedClusterModularGroup.SarkisovDegree.Induction.Marking
 
+import Mathlib.Analysis.Complex.Polynomial.Basic
+import QPainleve.AlgebraicGeometry.Blowup.Tower.Proximity
+import QPainleve.Geometry.Toric.Fan.Picard.FiberDegree
 import QPainleve.SignedClusterModularGroup.SarkisovDegree.MixedQuadric.Continuation
 import QPainleve.SignedClusterModularGroup.SarkisovDegree.Pivots.OppositeFiber
 import QPainleve.SignedClusterModularGroup.SarkisovDegree.Quadric.HighMultiplicity
@@ -18,8 +21,10 @@ import QPainleve.SignedClusterModularGroup.SarkisovDegree.Quadric.HighMultiplici
 With a high order on the retained open fiber orbit and low orders on the open sections,
 the smooth and mixed quadric links give a primary Sarkisov decrease when at most one
 other order is high. The only remaining configuration has high orders at both the first
-and a later center over one opposite corner. The comparison preserves the marked plane target
-and is independent of the total order introduced by the preparation in
+and a later center over one opposite corner. On the first blowup of that corner,
+all remaining high orders above it project to a single point of the exceptional curve.
+The comparison preserves the marked plane target independently of the total
+order introduced by the preparation in
 [Lutz, Proposition 8.11, Case C][HKL].
 
 [HKL]: https://arxiv.org/pdf/2005.05010v3#page=73
@@ -64,6 +69,7 @@ local notation "center[" u "," c "]" =>
     (Fan.Ray.surjective_detCharacter u b) c pt
 local notation "x" => mark[T,hT,f[Φ],g]
 local notation "β" => Basis.repr (Φ.hirzebruchPicardBasis b 0 hΦ r hr) (Prod.fst x) 1
+local notation "pointIdeal[" p "]" => Scheme.Hom.ker (Scheme.fromSpecResidueField _ p)
 local notation "high" => Finset.univ.filter (fun j ↦ β < 2 * (-(Prod.snd x) j))
 
 local notation "decreasingPath[" L "," R "]" =>
@@ -185,8 +191,10 @@ retained fiber and low first orders on the two open section orbits admits
 one of two continuations. Either there is a resolved path with strictly smaller
 primary bidegree for the same prescribed plane target, or the opposite fiber
 has a toric corner with both a high first order and a high infinitely near order.
-Every high order other than the retained one then lies over that corner.
-The decrease compares against any secondary degree of the original ruling. -/
+Every high order other than the retained one then lies over that corner. After
+extracting its first blowup, all the later high orders above the corner
+project to a single point on the exceptional curve. The decrease compares against
+any secondary degree of the original ruling. -/
 theorem exists_sarkisov_path_primary_decrease_or_infinitely_near_high_corner
     (j : Fin n) (c : ℂˣ) (hj : hT.baseCenter j = center[r 1,c]) :
     let : Nonempty Φ.cones := hc.nonempty_cones
@@ -208,7 +216,18 @@ theorem exists_sarkisov_path_primary_decrease_or_infinitely_near_high_corner
         hT.baseCenter l = hT.baseCenter k ∧ k < l ∧
         (∀ q < k, hT.baseCenter q ≠ hT.baseCenter k) ∧
         β < 2 * (-x.2 k) ∧ β < 2 * (-x.2 l) ∧
-        ∀ q, q ≠ j → β < 2 * (-x.2 q) → hT.baseCenter q = hT.baseCenter k := by
+        (∀ q, q ≠ j → β < 2 * (-x.2 q) → hT.baseCenter q = hT.baseCenter k) ∧
+        let I := pointIdeal[hT.baseCenter k]
+        ∃ (m : ℕ) (W : Scheme) (U : BlowupTower I.blowup m W) (e : Y ≅ W)
+          (hU : IsClosedPointTower I.blowup U) (tail : Fin m ↪o Fin n),
+          Set.range tail = {q | q ≠ k} ∧
+          e.hom ≫ U.toBase ≫ I.blowupToBase = T.toBase ∧
+          pullback e.hom (pullback U.toBase I.blowupExceptionalClass) = T.exceptionalClass k ∧
+          (∀ q, I.blowupToBase (hU.baseCenter q) = hT.baseCenter (tail q)) ∧
+          (∀ q, pullback e.hom (U.exceptionalClass q) = T.exceptionalClass (tail q)) ∧
+          (∃! p : I.blowup, I.blowupToBase p = hT.baseCenter k ∧
+            ∀ q, hT.baseCenter (tail q) = hT.baseCenter k →
+              β < 2 * (-x.2 (tail q)) → hU.baseCenter q = p) := by
   classical
   intro hcones hdim hOver hSmooth hIntegral A B hA hAh hB hBh hjhigh hlow
   let := hcones
@@ -249,8 +268,12 @@ theorem exists_sarkisov_path_primary_decrease_or_infinitely_near_high_corner
     by_cases hex : ∃ l, l ≠ j ∧ l ≠ k ∧ β < 2 * (-x.2 l)
     · obtain ⟨l, hlj, hlk, hlhigh⟩ := hex
       have hl := hs l hlj hlhigh
+      have hbound := hT.base_order_le_hirzebruch_fiber_degree b 0 hΦ r hr hc g hg k
+      have hfocus := hT.exists_unique_high_base_center_on_first_exceptional g hg k hkfirst β
+        hbound ⟨l, hlk, hl, hlhigh⟩
       exact Or.inr ⟨σ, k, l, hσ, hface, hpoint, hl,
-        lt_of_le_of_ne (le_of_not_gt fun h ↦ hkfirst l h hl) hlk.symm, hkfirst, hkhigh, hlhigh, hs⟩
+        lt_of_le_of_ne (le_of_not_gt fun h ↦ hkfirst l h hl) hlk.symm, hkfirst, hkhigh, hlhigh,
+        hs, hfocus⟩
     · exact Or.inl (primary_decrease_of_mixed_fiber_pivots b hΦ hc r hr hT g hg hbir
         hkj.symm c hj hjfirst σ hσ hpoint hkfirst hA hAh hB hBh hjhigh hkhigh
         (fun l hlj hlk ↦ le_of_not_gt fun hh ↦ hex ⟨l, hlj, hlk, hh⟩))

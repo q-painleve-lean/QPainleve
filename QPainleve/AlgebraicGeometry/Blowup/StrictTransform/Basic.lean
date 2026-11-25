@@ -9,6 +9,7 @@ public import TauCeti.AlgebraicGeometry.Blowup.StrictTransform
 public import QPainleve.AlgebraicGeometry.Blowup.Isomorphism
 import QPainleve.AlgebraicGeometry.IdealSheaf.Restriction
 import TauCeti.AlgebraicGeometry.Blowup.ExceptionalDivisor
+import TauCeti.AlgebraicGeometry.Blowup.Restriction
 import TauCeti.AlgebraicGeometry.IdealSheaf.BaseChange
 import TauCeti.AlgebraicGeometry.IdealSheaf.Colon
 import TauCeti.AlgebraicGeometry.IdealSheaf.Extension
@@ -30,7 +31,7 @@ strict and total transforms agree.
 
 public section
 
-open CategoryTheory Limits
+open CategoryTheory Limits TopologicalSpace
 
 universe u
 
@@ -55,6 +56,29 @@ theorem ker_blowupMap_subschemeι_eq_map_comap {X : Scheme.{u}} (I J : X.IdealSh
       (IsPullback.of_hasPullback J.subschemeι I.blowupToBase).flip)
   rw [I.ker_blowupMap, ← hW, ← morphismRestrict_ι, Scheme.Hom.ker_comp]
   rw [ker_eq_comap_of_isPullback f (isPullback_morphismRestrict f W), hTotal]
+
+/-- The strict transform is supported in the total transform of another closed
+subscheme exactly when its original support off the center is contained there. -/
+theorem support_ker_blowupMap_subschemeι_le_comap_iff
+    {X : Scheme.{u}} [IsLocallyNoetherian X] (I F D : X.IdealSheafData) :
+    (I.blowupMap F.subschemeι).ker.support ≤ (D.comap I.blowupToBase).support ↔
+      (F.support : Set X) \ I.support ⊆ D.support := by
+  let π := I.blowupToBase
+  let U : I.blowup.Opens := (I.comap π).support.compl
+  have : IsLocallyNoetherian I.blowup := LocallyOfFiniteType.isLocallyNoetherian π
+  have hU : U = π ⁻¹ᵁ I.support.compl := compl_support_comap I π
+  have hRange : Set.range (U.ι ≫ π) = (I.support : Set X)ᶜ := by
+    have : IsIso (π ∣_ I.support.compl) := I.isIso_blowupToBase_restrict_compl_support
+    rw [hU, ← morphismRestrict_ι, ← Scheme.Hom.coe_opensRange,
+      Scheme.Hom.opensRange_comp_of_isIso, Scheme.Opens.opensRange_ι, Closeds.coe_compl]
+  have hImage : (fun x : U.toScheme ↦ π (U.ι x)) '' ((U.ι ≫ π) ⁻¹' (F.support : Set X)) =
+      (F.support : Set X) \ I.support := by
+    rw [Set.sdiff_eq, ← hRange]
+    exact Set.image_preimage_eq_inter_range (f := ⇑(U.ι ≫ π))
+  rw [ker_blowupMap_subschemeι_eq_map_comap, support_map, ← SetLike.coe_subset_coe,
+    Closeds.coe_closure, (D.comap π).support.isClosed.closure_subset_iff,
+    support_comap D, Closeds.coe_preimage, ← Set.image_subset_iff, Set.image_image,
+    ← comap_comp, support_comap F, Closeds.coe_preimage, hImage]
 
 /-- The kernel defining the strict transform of a closed immersion agrees with the one
 computed using the canonical closed subscheme of its ideal. -/
