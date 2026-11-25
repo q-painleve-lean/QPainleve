@@ -39,17 +39,6 @@ private theorem basisChart_le (b : Basis (Fin 2) ℤ N) (j : Fin 2) :
   exact ⟨add_mem (subset_hull (Set.mem_range_self 0)) (subset_hull (Set.mem_range_self 1)),
     subset_hull (Set.mem_range_self j)⟩
 
-private theorem basisChart_mem_starSubdivisionAlong (hΦ : Φ.IsRegular)
-    (b : Basis (Fin 2) ℤ N) (h : C[b] ∈ Φ.cones) (j : Fin 2) :
-    C[b,j] ∈ (Φ.starSubdivisionAlong hΦ h).cones := by
-  let hreg := isRegular_iff.mp hΦ _ h
-  obtain ⟨e, he⟩ := hreg.exists_rayEquiv_of_basis Φ.lattice b rfl
-  apply (Φ.mem_starSubdivisionAlong_cones hΦ h).mpr
-  refine Or.inr ⟨_, h, le_rfl, ?_⟩
-  have hj := hreg.starSubdivisionCone_pair_mem Φ.lattice e j
-  dsimp only at hj
-  rwa [hreg.starSubdivisionCone_pair_eq_hull Φ.lattice b e he] at hj
-
 private theorem basisCone_card (hi : IsIntegralLattice i) (b : Basis (Fin 2) ℤ N) :
     Nat.card (ToricRay C[b]) = 2 := by
   let e := toricRayEquivOfLinearIndependent (i ∘ b) (hi.linearIndependent_basis b) rfl
@@ -98,8 +87,11 @@ theorem exists_starSubdivisionAlong_basis_list (hΦ : Φ.IsRegular)
     · intro d hd j
       rcases List.mem_cons.mp hd with hd | hd
       · subst d
-        exact hkeep _ (basisChart_mem_starSubdivisionAlong hΦ b hb j) (fun d hd hle ↦
-          hne d hd (basisCone_eq_of_le hΦ (hrest d hd) hb (hle.trans (basisChart_le b j))).symm)
+        have hreg := isRegular_iff.mp hΦ _ hb
+        obtain ⟨e, he⟩ := hreg.exists_rayEquiv_of_basis Φ.lattice b rfl
+        refine hkeep _ (mem_starSubdivisionAlong_hull_sum_pair hΦ ⟨_, hb⟩ b e he j) ?_
+        exact fun d hd hle ↦
+          hne d hd (basisCone_eq_of_le hΦ (hrest d hd) hb (hle.trans (basisChart_le b j))).symm
       · exact hchart d hd j
     · intro σ hσ hnone
       exact hkeep σ (Φ.mem_starSubdivisionAlong_cones_of_not_le hΦ hb hσ
