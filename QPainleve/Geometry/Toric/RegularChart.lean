@@ -5,6 +5,7 @@ Authors: The QPainleve contributors
 -/
 module
 
+public import Mathlib.AlgebraicGeometry.Morphisms.Smooth
 public import QPainleve.Algebra.MonoidAlgebra.Smooth
 public import TauCeti.Geometry.Toric.Algebraic.AffineScheme
 public import TauCeti.Geometry.Toric.Algebraic.DualSemigroup.Regular
@@ -101,5 +102,22 @@ theorem IsRegularCone.isStandardSmoothOfRelativeDimension_affineCoordinateRing
   rw [hdim]
   exact IsStandardSmoothOfRelativeDimension.of_algEquiv _
     (affineCoordinateRingEquivMvPolynomial hi hσ.toIsToricCone hb).symm
+
+open AlgebraicGeometry CategoryTheory in
+/-- The affine scheme of a regular cone is smooth over `ℂ`, of relative dimension
+the lattice rank. -/
+theorem IsRegularCone.smoothOfRelativeDimension_affineToricScheme
+    {N : Type} {V : Type*} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
+    {i : N →+ V} {σ : PointedCone ℝ V} (hσ : IsRegularCone i σ) (hi : IsIntegralLattice i) :
+    SmoothOfRelativeDimension (Module.finrank ℤ N)
+      (Spec.map (CommRingCat.ofHom (algebraMap ℂ (affineCoordinateRing hi σ))) :
+        affineToricScheme hi σ ⟶ Spec (.of ℂ)) := by
+  rw [HasRingHomProperty.Spec_iff (P := @SmoothOfRelativeDimension (Module.finrank ℤ N))
+    (Q := RingHom.Locally (@RingHom.IsStandardSmoothOfRelativeDimension (Module.finrank ℤ N))),
+    CommRingCat.hom_ofHom]
+  apply RingHom.locally_of (RingHom.isStandardSmoothOfRelativeDimension_respectsIso
+    (n := Module.finrank ℤ N))
+  rw [RingHom.isStandardSmoothOfRelativeDimension_algebraMap]
+  exact hσ.isStandardSmoothOfRelativeDimension_affineCoordinateRing hi
 
 end TauCeti.Toric

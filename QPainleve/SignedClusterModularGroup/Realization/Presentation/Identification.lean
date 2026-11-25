@@ -27,7 +27,7 @@ given by `CompleteToricPresentation.exists_picardGroupEquivs_of_nodal_model`.
 public section
 
 open AlgebraicGeometry CategoryTheory Module MulOpposite Quiver
-open QPainleve.BlowupTower QPainleve.CharacterTorus QPainleve.Cluster
+open QPainleve.CharacterTorus QPainleve.Cluster
 open QPainleve.SignedBoundaryIsometryGroup
 open Scheme Scheme.IdealSheafData TauCeti TauCeti.AlgebraicGeometry TauCeti.Toric
 
@@ -44,11 +44,11 @@ local notation "χ[" c "]" => pointsEquiv ℂ _ (Subtype.mk (Over.Hom.left c) (O
 local notation "parameters[" c "]" => (fun j ↦ χ[c] (Multiplicative.ofAdd (Pi.single j 1)))
 
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
-  {i : N →+ V} {b : Basis (Fin 2) ℤ N} {Φ : Fan i}
-  {X W : Scheme} [X.Over S] [X.IsProjectiveOver ℂ]
+  {i : N →+ V} {b : Basis (Fin 2) ℤ N}
+  {X : Scheme} [X.Over S] [X.IsProjectiveOver ℂ]
   [SmoothOfRelativeDimension 2 (X ↘ S)] [Scheme.IsRationalOver (X ↘ S)]
   {D : X.IdealSheafData} [PrestableFamily (D.subscheme ↘ S)]
-  {n r k : ℕ} [NeZero n] {T : BlowupTower X k W}
+  {n r : ℕ} [NeZero n]
 
 local instance : IsIntegral X := by
   let : Smooth (X ↘ S) := SmoothOfRelativeDimension.smooth 2 _
@@ -76,14 +76,7 @@ The oriented frame retains the input fan and all ray labels, and in the
 transposed frame the reference center parameters are inverted. The signed
 equivalence evaluates by geometric Picard pullback and the branch sign. -/
 theorem exists_picardGroupEquivs_of_toric_presentation
-    (hΦ : Φ.IsRegular) (hc : Φ.IsComplete) (s : Fin r → Φ.Ray) (u : Fin r → ℂˣ)
-    (hT : IsNodalBoundaryTower D (X ↘ S) (𝟙 X) T)
-    (e : (Fan.internalBlowupTower (h₀ := hc.nonempty_cones) b s u).1 ≅ W)
-    (hbase : e.hom ≫ T.toBase ≫ (X ↘ S) =
-      (Fan.internalBlowupTower (h₀ := hc.nonempty_cones) b s u).2.toTower.toBase ≫
-        Φ.algebraicRealizationStructureMap)
-    (hker : ((D.comap T.toBase).radical).comap e.hom =
-      (Fan.internalBlowupTower (h₀ := hc.nonempty_cones) b s u).2.boundaryι.ker)
+    (P : D.ToricPresentation (X ↘ S) b i r)
     (A : Scheme.NodalCycleNumbering (X := D.subscheme)
       (Empty.elim : Empty → (D.subscheme ↘ S).smoothLocus) n)
     (hD : D.IsEffectiveCartier)
@@ -102,9 +95,9 @@ theorem exists_picardGroupEquivs_of_toric_presentation
       (hD' : ∀ z, ideal[M z].IsEffectiveCartier)
       (Θ : (SignedClusterModularGroup ℂ E)ᵐᵒᵖ ≃* signedBoundaryIsometryGroup B d)
       (Θrot : (ClusterModularGroup ℂ E)ᵐᵒᵖ ≃* boundaryRotationGroup B d),
-      ((b' = b ∧ parameters[c] = u) ∨
-        (b' = b.reindex (Equiv.swap 0 1) ∧ parameters[c] = u⁻¹)) ∧
-      (∃ hfan : Q.fan = Φ, hfan ▸ Q.rays = s) ∧
+      ((b' = b ∧ parameters[c] = P.parameters) ∨
+        (b' = b.reindex (Equiv.swap 0 1) ∧ parameters[c] = P.parameters⁻¹)) ∧
+      (∃ hfan : Q.fan = P.fan, hfan ▸ Q.rays = P.rays) ∧
       E.matrix = chargeExchangeMatrix b'.detDualEquiv.toLinearMap (Fan.rayChargeMap Q.rays) ∧
       M c = MarkedSurface.ofBoundary D A μ f ∧ (∀ z, Q.HasNodalModel z (M z)) ∧
       (∀ z j, (M z).boundaryClass (hD' z) j = μ.symm (d j)) ∧
@@ -127,7 +120,8 @@ theorem exists_picardGroupEquivs_of_toric_presentation
   let H := (B).comp a.toLinearMap a.toLinearMap
   let μ : H.IsometryEquiv B := ((B).isometryEquivOfCompLinearEquiv a).symm
   obtain ⟨b', Q, c, f, hframe, hrays, href⟩ :=
-    exists_marked_reference_fiber_of_ordered_towers hΦ hc s u hT e hbase hker hD A μ
+    exists_marked_reference_fiber_of_ordered_towers P.regular P.complete P.rays P.parameters
+      P.isNodal P.iso P.iso_over P.iso_boundary hD A μ
   let M₀ := MarkedSurface.ofBoundary D A μ f
   have hδ : δ[M₀.isEffectiveCartier_boundaryIdeal] = δ[hD] :=
     congrArg Inv.inv (LineBundleClass.mk_toInvertibleSheaf_congr _ _

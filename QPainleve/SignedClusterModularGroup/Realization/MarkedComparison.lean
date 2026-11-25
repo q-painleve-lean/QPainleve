@@ -242,14 +242,15 @@ theorem GeometricRealization.xMap_eq_of_marked_actions_eq
     eq_of_cycleVertexPerm_eq_of_cycleOrientationSign_eq
       ((R.boundaryPerm_def.symm.trans hperm).trans R'.boundaryPerm_def)
       ((R.orientation_def.symm.trans horient).trans R'.orientation_def)
-  have h := p.comp_evaluation_eq_of_marked_actions q u hvertices hdet hnodes hc hp hq
-    (fun ρ ↦ (hkeep ρ).trans (hkeep' ρ).symm) ((R.fiber x).iso.symm ≪≫ r.iso)
-    ((R.fiber x).pullback_picardMarking_targetIso r hI)
-    ((R.fiber x).boundaryCycleAction_targetIso r hg)
-  simpa only [← RationalMap.comp_assoc, RationalMap.comp_toRationalMap, Hom.toRationalMap_compHom,
-    MarkedSurface.surfaceIso_trans, MarkedSurface.surfaceIso_symm, Iso.trans_hom, Iso.symm_hom,
-    Iso.hom_inv_id_assoc] using
-      congrArg ((surfaceIso (R.fiber x).iso).hom.toRationalMap.comp ·) h.symm
+  let realized := R.fiber x
+  have hbranch := (realized.boundaryCycleAction_targetIso_eq_one_iff r.iso).mpr
+    (r.boundaryAction_eq.trans hg.symm)
+  have heval := p.comp_evaluation_eq_of_marked_actions q u hvertices hdet hnodes hc hp hq
+    (fun ρ ↦ (hkeep ρ).trans (hkeep' ρ).symm) (realized.targetIso r.iso)
+    (fun a ↦ (realized.pullback_picardMarking_targetIso_eq_iff r.iso a).mpr (by
+      rw [hI]
+      exact r.picard_eq a)) hbranch
+  exact ((realized.comp_targetEvaluation_eq_iff r.iso).mp heval).symm
 
 end Realizations
 

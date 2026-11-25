@@ -13,9 +13,8 @@ public import QPainleve.SignedClusterModularGroup.Realization.Presentation
 import QPainleve.SignedClusterModularGroup.Realization.Anticanonical
 import QPainleve.SignedClusterModularGroup.Realization.Endpoint.Casimir
 import QPainleve.SignedClusterModularGroup.Realization.NodalFiber
-import QPainleve.SignedClusterModularGroup.Realization.Presentation.Family
+import QPainleve.SignedClusterModularGroup.Realization.Presentation.Group
 import QPainleve.SignedClusterModularGroup.Realization.Reflection
-import QPainleve.SignedClusterModularGroup.Realization.Surjectivity.PicardAction
 
 /-!
 # Images of signed cluster actions on Casimir monomials
@@ -24,7 +23,9 @@ The Picard equivalence transports the boundary rotation image to the unsigned Ca
 The full Casimir image contains one further right coset, represented by the restriction of a
 signed Picard reflection. The two cosets act with opposite signs on the total boundary exponent.
 For a marked toric presentation the signed Picard equivalence and exchange-kernel comparison
-supply the geometric actions. The reflection is Mathlib's `Module.reflection`, transported from
+supply the geometric actions. The Picard equivalence is taken from
+`CompleteToricPresentation.exists_picardGroupEquivs_of_nodal_model`.
+The reflection is Mathlib's `Module.reflection`, transported from
 `SignedBoundaryIsometryGroup.exists_signedOrthogonalRestriction_eq_reflection`.
 -/
 
@@ -67,17 +68,12 @@ omit [Fintype ι] in
 include hker in
 private theorem range_picardEquiv_comp_unsignedInclusion :
     (Θ.toMonoidHom.comp incl[k,E]).range = (rotationInclusion B D).range := by
-  have hop : (incl[k,E]).range = (clusterModularGroupInclusion k E).range.op := by
-    ext f
-    simp only [MonoidHom.mem_range, Subgroup.mem_op, MonoidHom.op_apply_apply]
-    constructor
-    · rintro ⟨g, hg⟩
-      exact ⟨g.unop, by simpa only [Function.comp_apply, unop_op] using congrArg unop hg⟩
-    · rintro ⟨g, hg⟩
-      exact ⟨op g, by simpa only [Function.comp_apply, unop_op, op_unop] using congrArg op hg⟩
-  rw [MonoidHom.range_comp, hop, ← hker, Subgroup.op_unop, range_rotationInclusion,
-    ← MonoidHom.comap_ker]
-  exact Subgroup.map_comap_eq_self_of_surjective Θ.surjective _
+  let Θrot := picardRotationEquiv Θ hker
+  have hcomp : (rotationInclusion B D).comp Θrot.toMonoidHom =
+      Θ.toMonoidHom.comp incl[k,E] :=
+    MonoidHom.ext (rotationInclusion_picardRotationEquiv_apply Θ hker)
+  have hrange : Θrot.toMonoidHom.range = ⊤ := MonoidHom.range_eq_top.mpr Θrot.surjective
+  rw [← hcomp, MonoidHom.range_comp, hrange, Subgroup.map_top]
 
 include hCasimir hker in
 /-- The unsigned Casimir image is the image of the boundary rotations, restricted to the
@@ -254,17 +250,13 @@ theorem exists_exchangeKernelAction_reflection_of_presentation
             (↑(act[ℂ,E]).range : Set (exch[E] ≃ₗ[ℤ] exch[E])) = unsigned ∪ (unsigned <• q) ∧
             Disjoint unsigned (unsigned <• q) ∧
             ∀ x, (ℤ ∙ v).mkQ (q x) = (ℤ ∙ v).mkQ x := by
-  obtain ⟨F, hF, -, hmodels⟩ := Q.exists_marked_family_of_nodal_model href hD
-  have hmark d j := congrFun (hmodels d).2 j
-  obtain ⟨hprim', hnef', hsq'⟩ :=
-    (M.primitive_nef_square_zero_iff_of_boundaryClass_eq (F c) hD (hF c)
-      (fun j ↦ (hmark c j).symm)).mp ⟨hprim, hnef, hsq⟩
-  have models (d : Point Centers[r]) (_ : d.left (default : S) ∈ Path.nil.centerOpen ℂ P) :=
-    (hmodels d).1
-  obtain ⟨Θ, ⟨hΘ, hker⟩, _⟩ := existsUnique_signedPicardEquiv_of_presentation
-    (hD := hF) (hmark := hmark) P hform hcharge models (hmodels c).1 hprim' hnef' hsq'
+  have hE := P.matrix_eq.symm.trans (congrArg₂ chargeExchangeMatrix hform hcharge)
+  obtain ⟨F, hF, hmark, Θ, _, hM, hmodels, hΘ, hker, _⟩ :=
+    Q.exists_picardGroupEquivs_of_nodal_model href hE hprim hnef hsq
+  subst M
+  let M := F c
   obtain ⟨e, ⟨he, hact, hCasimirKer⟩, _⟩ := existsUnique_exchangeKernelEquiv_of_presentation
-    Q P hform hcharge F hF (hmodels c).1 models hnef' hsq' hprim' _ hmark
+    Q P hform hcharge F hF (hmodels c) (fun d _ ↦ hmodels d) hnef hsq hprim _ hmark
     Θ.toMonoidHom (fun w {_} _ _ R hR ↦ (hΘ (End.asHom w)).2 R hR)
   have hCasimir : act[ℂ,E] =
       coords[B,M.boundaryClass hD,e].comp (restr[B,M.boundaryClass hD].comp Θ.toMonoidHom) := by

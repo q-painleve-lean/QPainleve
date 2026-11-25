@@ -92,6 +92,17 @@ theorem card_ker_exchangeKernelAction_dvd_boundaryTorsion :
     (M.intersectionForm_boundaryClass M.isEffectiveCartier_boundaryIdeal hnef hsq) hδ
 
 include href hE hprim hnef hsq in
+/-- A saturated marked boundary span gives a faithful action on the integral
+exchange kernel. -/
+theorem exchangeKernelAction_injective_of_saturated_boundary
+    (ht : Nat.card (AddCommGroup.torsion (L ⧸ Submodule.span ℤ (Set.range D))) = 1) :
+    Function.Injective (exchangeKernelAction ℂ E) := by
+  have hd := Q.card_ker_exchangeKernelAction_dvd_boundaryTorsion href hE hprim hnef hsq
+  rw [ht] at hd
+  exact (MonoidHom.ker_eq_bot_iff (exchangeKernelAction ℂ E)).mp
+    ((Subgroup.eq_bot_iff_card _).mpr (Nat.dvd_one.mp hd))
+
+include href hE hprim hnef hsq in
 /-- If the marked boundary span is saturated, signed loop pullbacks agree exactly when
 their transported integral basis columns agree, over any characteristic-zero field. -/
 theorem xPullback_eq_iff_exponentEquiv_eq_on_basis_of_saturated_boundary
@@ -100,21 +111,14 @@ theorem xPullback_eq_iff_exponentEquiv_eq_on_basis_of_saturated_boundary
     {κ : Type*} (β : Module.Basis κ ℤ E.matrix.mulVecLin.ker) :
     w.xPullback k = v.xPullback k ↔
       ∀ j, w.exponentEquiv (β j : Fin r → ℤ) = v.exponentEquiv (β j : Fin r → ℤ) := by
-  have hd := Q.card_ker_exchangeKernelAction_dvd_boundaryTorsion href hE hprim hnef hsq
-  rw [ht] at hd
-  have hinj := (MonoidHom.ker_eq_bot_iff (exchangeKernelAction ℂ E)).mp
-    ((Subgroup.eq_bot_iff_card _).mpr (Nat.dvd_one.mp hd))
   rw [Quiver.Path.xPullback_eq_iff_ySeed_coefficient_eq k w v,
     ← Quiver.Path.xPullback_eq_iff_ySeed_coefficient_eq ℂ w v]
-  exact xPullback_eq_iff_exponentEquiv_eq_on_basis_of_injective ℂ E hinj w v β
+  exact xPullback_eq_iff_exponentEquiv_eq_on_basis_of_injective ℂ E
+    (Q.exchangeKernelAction_injective_of_saturated_boundary href hE hprim hnef hsq ht) w v β
 
-include href hE hprim hnef hsq in
-/-- For squarefree boundary length, Casimir basis columns alone decide signed relations. -/
-theorem xPullback_eq_iff_exponentEquiv_eq_on_basis_of_squarefree
-    (hn : Squarefree n) (k : Type*) [Field k] [CharZero k] (w v : Word E E)
-    {κ : Type*} (β : Module.Basis κ ℤ E.matrix.mulVecLin.ker) :
-    w.xPullback k = v.xPullback k ↔
-      ∀ j, w.exponentEquiv (β j : Fin r → ℤ) = v.exponentEquiv (β j : Fin r → ℤ) := by
+include href hprim hnef hsq in
+private theorem card_boundaryTorsion_eq_one_of_squarefree (hn : Squarefree n) :
+    Nat.card (AddCommGroup.torsion (L ⧸ Submodule.span ℤ (Set.range D))) = 1 := by
   let : Scheme.IsRationalOver (M.surface ↘ S) := href.isRationalOver
   let : M.surface.IsProjectiveOver ℂ := M.projective
   let : SmoothOfRelativeDimension 2 (M.surface ↘ S) := M.smooth
@@ -125,9 +129,26 @@ theorem xPullback_eq_iff_exponentEquiv_eq_on_basis_of_squarefree
     M.picardMarking.isPrimitive_iff.mp (by rwa [M.picardMarking_sum_boundaryClass])
   have hd := BoundaryCycle.natCard_torsion_quotient_sq_dvd
     (M.intersectionForm_boundaryClass M.isEffectiveCartier_boundaryIdeal hnef hsq) hδ
-  have ht := Nat.isUnit_iff.mp (hn _ (by simpa only [pow_two] using hd))
-  exact Q.xPullback_eq_iff_exponentEquiv_eq_on_basis_of_saturated_boundary
-    href hE hprim hnef hsq ht k w v β
+  exact Nat.isUnit_iff.mp (hn _ (by simpa only [pow_two] using hd))
+
+include href hE hprim hnef hsq in
+/-- At squarefree boundary length the signed cluster modular group acts faithfully
+on the integral exchange kernel. -/
+theorem exchangeKernelAction_injective_of_squarefree (hn : Squarefree n) :
+    Function.Injective (exchangeKernelAction ℂ E) :=
+  Q.exchangeKernelAction_injective_of_saturated_boundary href hE hprim hnef hsq
+    (card_boundaryTorsion_eq_one_of_squarefree Q href hprim hnef hsq hn)
+
+include href hE hprim hnef hsq in
+/-- For squarefree boundary length, Casimir basis columns alone decide signed relations. -/
+theorem xPullback_eq_iff_exponentEquiv_eq_on_basis_of_squarefree
+    (hn : Squarefree n) (k : Type*) [Field k] [CharZero k] (w v : Word E E)
+    {κ : Type*} (β : Module.Basis κ ℤ E.matrix.mulVecLin.ker) :
+    w.xPullback k = v.xPullback k ↔
+      ∀ j, w.exponentEquiv (β j : Fin r → ℤ) = v.exponentEquiv (β j : Fin r → ℤ) :=
+  Q.xPullback_eq_iff_exponentEquiv_eq_on_basis_of_saturated_boundary
+    href hE hprim hnef hsq (card_boundaryTorsion_eq_one_of_squarefree Q href hprim hnef hsq hn)
+    k w v β
 
 include href hE hprim hnef hsq in
 /-- Decide signed loop equality at squarefree boundary length by comparing integer

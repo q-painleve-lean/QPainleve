@@ -200,11 +200,7 @@ theorem picardHom_base_change
     (clusterModularGroupMap_eq_congr_iff ℂ w u'
       ((mem_inversionFreeLoops_iff E₀ _).mp u.property) v'
       ((mem_inversionFreeLoops_iff E₁ _).mp v.property)).mp (hu.symm ▸ hv)
-  have hcomp : (w.xRationalMap ℂ).comp xmap[E₁,v] = xmap[E₀,u].comp (w.xRationalMap ℂ) := by
-    have h := (Quiver.Path.xRationalMap_eq_iff ℂ (w.comp v') (u'.comp w)).mpr (by
-      simp only [Quiver.Path.xPullback_comp, hx, Quiver.Path.xPullback_reverse]
-      group)
-    simpa only [Quiver.Path.xRationalMap_comp] using h
+  have hcomp := w.xRationalMap_comp_eq_of_xPullback_eq_conj ℂ hx
   have hpic := (R.picard_conjugation_of_comp_xMap_eq A B hcomp hc hι hindex hC hmodel).1
   have hg : g = eval[E₀,u] := op_unop g ▸ congrArg op hu.symm
   have hv' : MulEquiv.op (clusterModularGroupCongr ℂ w) g = eval[E₁,v] := congrArg op hv.symm

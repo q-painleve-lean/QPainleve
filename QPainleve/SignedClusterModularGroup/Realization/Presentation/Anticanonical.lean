@@ -20,14 +20,14 @@ boundary components. The opposite cluster modular groups of the resulting seed
 act by signed boundary isometries and boundary rotations on the original Picard
 lattice. The moving family retains the original pair as its reference fiber.
 
-The construction combines `Fan.hasToricPresentation_of_ruled_reduction` with
+The construction combines `IdealSheafData.hasToricPresentation_of_anticanonical_cycle` with
 `exists_picardGroupEquivs_of_toric_presentation`.
 -/
 
 public section
 
 open AlgebraicGeometry CategoryTheory Module MulOpposite Quiver
-open QPainleve.BlowupTower QPainleve.CharacterTorus QPainleve.Cluster
+open QPainleve.CharacterTorus QPainleve.Cluster
 open QPainleve.SignedBoundaryIsometryGroup
 open Scheme Scheme.IdealSheafData TauCeti TauCeti.AlgebraicGeometry TauCeti.Toric
 
@@ -110,14 +110,14 @@ theorem exists_picardGroupEquivs_of_anticanonical_cycle
       ((sign B d).comp Θ.toMonoidHom).ker.unop = (clusterModularGroupInclusion ℂ E).range ∧
       (∀ x, rotationInclusion B d (Θrot x) =
         Θ (MonoidHom.op (clusterModularGroupInclusion ℂ E) x)) := by
-  have hP := Fan.hasToricPresentation_of_ruled_reduction (b := b) hi A hD hcan
-  obtain ⟨Φ, hΦ, hc, r, s, u, k, W, T, hT, e, hbase, hker⟩ :=
-    (hasToricPresentation_iff ..).mp hP
-  have hr := Fan.centerCount_eq_of_square_zero hΦ hc s u hT e hker A hD hcan hsq
+  obtain ⟨r, ⟨P⟩⟩ := (hasToricPresentation_iff ..).mp
+    (D.hasToricPresentation_of_anticanonical_cycle b hi A hD hcan)
+  have hr := Fan.centerCount_eq_of_square_zero P.regular P.complete P.rays P.parameters
+    P.isNodal P.iso P.iso_boundary A hD hcan hsq
   subst r
   obtain ⟨H, μ, b', Q, c, f, E, M, hD', Θ, Θrot, hframe, -, hE, hM, hmodels, hmark,
     hwords, hsign, hrot⟩ :=
-    exists_picardGroupEquivs_of_toric_presentation hΦ hc s u hT e hbase hker A hD hprim hnef hsq
+    exists_picardGroupEquivs_of_toric_presentation P A hD hprim hnef hsq
   exact ⟨H, μ, b', Q, c, f, E, M, hD', Θ, Θrot, hframe.imp And.left And.left, hE, hM, hmodels,
     hmark, hwords, hsign, hrot⟩
 

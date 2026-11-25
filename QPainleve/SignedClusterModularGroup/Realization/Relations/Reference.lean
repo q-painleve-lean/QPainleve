@@ -56,9 +56,6 @@ local instance instPrestableReferenceRelationBoundary :
 
 local notation "fiber[" M "," c "]" =>
   ContractedToricFiber b Q.rays Q.regular Q.cycle Q.origin Q.inclusion χ[c] M
-local notation "orders[" p "," M "]" => (fun j : Fin n ↦ Fan.rayBoundaryOrders b Q.rays
-  (ContractedToricFiber.numberedBoundaryRays p cartier[M] (RingEquiv.toEquiv (ZMod.finEquiv n) j)))
-
 variable (k : Type*) [Field k]
 
 /-- For signed loops of a primitive nef square-zero anticanonical cycle, equality of independent
@@ -73,7 +70,7 @@ theorem xPullback_eq_iff_signedLoopInvariants_eq_of_nodal_contraction
     (hsq : Chow.classIntersectionNumber ℂ M₀.surface classOf(cartier[M₀])
       classOf(cartier[M₀]) = 0)
     (w v : Word E E) {m : ℕ} (β : Module.Basis (Fin m) ℤ E.matrix.mulVecLin.ker) :
-    let orders := orders[p₀,M₀]
+    let orders := p₀.numberedBoundaryOrders cartier[M₀]
     w.xPullback k = v.xPullback k ↔
       w.signedLoopInvariants (fun j ↦ (β j : Fin r → ℤ)) orders (orders 0) =
         v.signedLoopInvariants (fun j ↦ (β j : Fin r → ℤ)) orders (orders 0) := by
