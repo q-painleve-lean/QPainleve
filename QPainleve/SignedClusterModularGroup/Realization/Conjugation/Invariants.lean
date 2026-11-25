@@ -126,19 +126,19 @@ theorem signedLoopInvariants_reverse_comp_comp
     let u := (w.reverse.comp v).comp w
     let o := p.numberedBoundaryOrders hp.cartier
     let o' := p'.numberedBoundaryOrders hp'.cartier
-    (u.signedLoopInvariants (fun k ↦ (β' k : Fin r → ℤ)) o' (o' 0)).1 =
-      (v.signedLoopInvariants (fun k ↦ (β k : Fin r → ℤ)) o (o 0)).1 ∧
+    (u.signedLoopInvariants (fun k ↦ (β' k : Fin r → ℤ)) o' (o' 0)).sign =
+      (v.signedLoopInvariants (fun k ↦ (β k : Fin r → ℤ)) o (o 0)).sign ∧
     LinearMap.toMatrix β' β' u.exchangeKernelEquiv.toLinearMap =
       LinearMap.toMatrix β β' w.exchangeKernelEquiv.symm.toLinearMap *
         LinearMap.toMatrix β β v.exchangeKernelEquiv.toLinearMap *
         LinearMap.toMatrix β' β w.exchangeKernelEquiv.toLinearMap ∧
-    ∀ j : Fin n, (u.signedLoopInvariants (fun k ↦ (β' k : Fin r → ℤ)) o' (o' j)).2.2 =
+    ∀ j : Fin n, (u.signedLoopInvariants (fun k ↦ (β' k : Fin r → ℤ)) o' (o' j)).boundaryLabel =
       some ((ZMod.finEquiv n).toEquiv.symm (A.orientation •
         ((ZMod.finEquiv n).toEquiv j - R.boundaryPerm 0) +
           R.orientation • A.boundaryPerm 0 + R.boundaryPerm 0)) := by
   have hinj := p'.numberedBoundaryOrders_injective hp'.cartier hindex
   refine ⟨?_, w.toMatrix_exchangeKernelEquiv_reverse_comp_comp v β β', fun j ↦ ?_⟩
-  · simpa only [Path.signedLoopInvariants_def] using
+  · simpa only [Path.signedLoopInvariants_sign] using
       w.neg_one_pow_inversionCount_reverse_comp_comp v
   · rw [w.signedLoopInvariants_reverse_comp_comp_boundary v
       (fun k ↦ (β' k : Fin r → ℤ)) hinj label[R] label[A]
