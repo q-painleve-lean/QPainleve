@@ -342,13 +342,13 @@ end LocalComparison
 
 local notation "pt" => IsLocalRing.closedPoint ℂ
 
-/-- The center of a blowup at the distinguished point of a regular toric surface
-lies outside the isomorphism locus of the blowup projection. -/
-theorem notMem_isoLocus_distinguishedPoint_of_blowup (Φ : Fan i)
+/-- The complement of the isomorphism locus of a blowup at a distinguished point
+of a regular toric surface is that point. -/
+theorem centre_eq_singleton_distinguishedPoint_of_blowup (Φ : Fan i)
     (hΦ : Φ.IsRegular) (hN : Module.finrank ℤ N = 2) (σ : Φ.cones)
     {Y : Scheme} (f : Y ⟶ Φ.algebraicRealization) (w : Y ≅ (Φ.distinguishedPointHom σ).ker.blowup)
     (hw : w.hom ≫ (Φ.distinguishedPointHom σ).ker.blowupToBase = f) :
-    Φ.distinguishedPointHom σ pt ∉ f.isoLocus := by
+    f.centre = {Φ.distinguishedPointHom σ pt} := by
   let s := Φ.algebraicRealizationStructureMap
   let : SmoothOfRelativeDimension 2 s :=
     hN ▸ Φ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
@@ -358,11 +358,19 @@ theorem notMem_isoLocus_distinguishedPoint_of_blowup (Φ : Fan i)
   have := isRegularLocalRing_stalk_of_smooth s (Φ.distinguishedPointHom σ pt)
   have hdim := ((smoothOfRelativeDimension_iff_ringKrullDim_stalk_eq s 2).mp
     inferInstance).2 _ hclosed
-  have hcentre : f.centre = {Φ.distinguishedPointHom σ pt} := by
-    rw [← hw, Scheme.Hom.centre_def, Scheme.Hom.isoLocus_comp_of_isIso, ← Scheme.Hom.centre_def,
-      (Φ.distinguishedPointHom σ).ker_eq_ker_fromSpecResidueField,
-      Scheme.ker_fromSpecResidueField_eq_vanishingIdeal]
-    exact centre_blowupToBase_closed_point hclosed hdim
+  rw [← hw, Scheme.Hom.centre_def, Scheme.Hom.isoLocus_comp_of_isIso, ← Scheme.Hom.centre_def,
+    (Φ.distinguishedPointHom σ).ker_eq_ker_fromSpecResidueField,
+    Scheme.ker_fromSpecResidueField_eq_vanishingIdeal]
+  exact centre_blowupToBase_closed_point hclosed hdim
+
+/-- The center of a blowup at the distinguished point of a regular toric surface
+lies outside the isomorphism locus of the blowup projection. -/
+theorem notMem_isoLocus_distinguishedPoint_of_blowup (Φ : Fan i)
+    (hΦ : Φ.IsRegular) (hN : Module.finrank ℤ N = 2) (σ : Φ.cones)
+    {Y : Scheme} (f : Y ⟶ Φ.algebraicRealization) (w : Y ≅ (Φ.distinguishedPointHom σ).ker.blowup)
+    (hw : w.hom ≫ (Φ.distinguishedPointHom σ).ker.blowupToBase = f) :
+    Φ.distinguishedPointHom σ pt ∉ f.isoLocus := by
+  have hcentre := Φ.centre_eq_singleton_distinguishedPoint_of_blowup hΦ hN σ f w hw
   have hmem : Φ.distinguishedPointHom σ pt ∈ f.centre := by
     rw [hcentre]
     exact Set.mem_singleton _
