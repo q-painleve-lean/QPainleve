@@ -138,7 +138,23 @@ theorem canonicalClass_internalBlowupTower (hΦ : Φ.IsRegular) (hD : (D).IsEffe
     mul_inv_cancel_right] at hK'
   exact hK'.symm
 
-variable {Z : Scheme} [Z.Over S] [SmoothOfRelativeDimension 2 (Z ↘ S)] {P : Z.IdealSheafData}
+variable {Z : Scheme} {P : Z.IdealSheafData}
+
+/-- An ideal with the same support as the strict boundary of an ordered internal
+model has the pulled-back strict boundary ideal as its radical. -/
+theorem radical_eq_comap_internalBlowupBoundary_of_support_eq
+    (e : Z ≅ (U).1) (hP : P.support = ((U).2.boundaryι.ker.comap e.hom).support) :
+    P.radical = (U).2.boundaryι.ker.comap e.hom := by
+  have : IsReduced (D).subscheme := by
+    rw [boundaryIdeal_def]
+    infer_instance
+  have hker : ((U).2.boundaryι ≫ e.inv).ker = (U).2.boundaryι.ker.comap e.hom := by
+    rw [← Scheme.Hom.comap_ker_comp_of_isClosedImmersion ((U).2.boundaryι ≫ e.inv) e.hom,
+      Category.assoc, Iso.inv_hom_id, Category.comp_id]
+  rw [← vanishingIdeal_support, hP, ← hker]
+  exact (Scheme.Hom.ker_eq_vanishingIdeal_support ((U).2.boundaryι ≫ e.inv)).symm
+
+variable [Z.Over S] [SmoothOfRelativeDimension 2 (Z ↘ S)]
 
 /-- A resolving surface identified with an ordered internal model has a logarithmic
 projection to the original fan. Any ideal with the support of the strict boundary
@@ -156,15 +172,7 @@ theorem exists_internalBlowupLogarithmicProjection (hΦ : Φ.IsRegular) (hc : Φ
   have : SmoothOfRelativeDimension 2 (Φ.algebraicRealization ↘ S) := by
     rw [algebraicRealization_over]
     exact rankTwo ▸ Φ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
-  have : IsReduced (D).subscheme := by
-    rw [boundaryIdeal_def]
-    infer_instance
-  have hker : ((U).2.boundaryι ≫ e.inv).ker = (U).2.boundaryι.ker.comap e.hom := by
-    rw [← Scheme.Hom.comap_ker_comp_of_isClosedImmersion ((U).2.boundaryι ≫ e.inv) e.hom,
-      Category.assoc, Iso.inv_hom_id, Category.comp_id]
-  have hpole : P.radical = (U).2.boundaryι.ker.comap e.hom := by
-    rw [← vanishingIdeal_support, hP, ← hker]
-    exact (Scheme.Hom.ker_eq_vanishingIdeal_support ((U).2.boundaryι ≫ e.inv)).symm
+  have hpole := radical_eq_comap_internalBlowupBoundary_of_support_eq b s c e hP
   let hT := isClosedPointTower_internalBlowupTower b s c
   have hram := hT.comap_ramificationIdealSheafToBase ℂ e (f := g) rfl
   have ht := congrArg (fun I : (U).1.IdealSheafData ↦ I.comap e.hom)
