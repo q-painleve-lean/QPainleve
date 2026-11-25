@@ -9,7 +9,6 @@ public import QPainleve.Algebra.Cluster.Word.SignExtension
 public import QPainleve.SignedClusterModularGroup.Realization.Boundary
 public import QPainleve.SignedClusterModularGroup.Realization.Presentation
 
-import Mathlib.GroupTheory.IndexNSmul
 import QPainleve.SignedClusterModularGroup.Realization.Anticanonical
 import QPainleve.SignedClusterModularGroup.Realization.Endpoint.Kernel
 import QPainleve.SignedClusterModularGroup.Realization.Endpoint.PicardAction
@@ -62,23 +61,6 @@ local notation "δ" => classOf(M.isEffectiveCartier_boundaryIdeal)
 local notation "δL" => ∑ j, d j
 local notation "Γ₀" => ClusterModularGroup ℂ E
 local notation "Γₛ" => SignedClusterModularGroup ℂ E
-
-private theorem exchangeMatrix_ne_zero_of_chargeIndex_ne_zero
-    (hform : P.form = b.detDualEquiv.toLinearMap) (hcharge : P.charge = Fan.rayChargeMap Q.rays)
-    (hindex : (Fan.rayChargeMap Q.rays).range.toAddSubgroup.index ≠ 0) :
-    E.matrix ≠ 0 := by
-  let : Module.Free ℤ N := Module.Free.of_basis b
-  let : Module.Finite ℤ N := Module.Finite.of_basis b
-  let : Nontrivial N := ⟨⟨b 0, 0, b.ne_zero 0⟩⟩
-  let : (Fan.rayChargeMap Q.rays).range.toAddSubgroup.FiniteIndex :=
-    AddSubgroup.finiteIndex_iff.mpr hindex
-  rw [← P.matrix_eq, hform, hcharge]
-  refine chargeExchangeMatrix_ne_zero_of_finrank_range_eq _ _ (fun x hx ↦ ?_)
-    (AddSubgroup.finrank_eq_of_finiteIndex (Fan.rayChargeMap Q.rays).range.toAddSubgroup)
-  apply b.detDualEquiv.injective
-  rw [map_zero]
-  ext y
-  exact (b.detDualEquiv_swap x y).trans (neg_eq_zero.mpr (hx y))
 
 local instance splittingFanNonempty : Nonempty Q.fan.cones := Q.complete.nonempty_cones
 local instance splittingCycleNeZero : NeZero Q.length := Q.neZero
