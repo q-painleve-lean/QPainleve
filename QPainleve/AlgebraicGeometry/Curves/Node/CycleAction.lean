@@ -399,6 +399,35 @@ theorem boundaryCycleAction_refl_reverse :
   have hj : -1 - (-1 - j) = j := by abel
   simp [hj]
 
+/-- Two numberings of the same nodal cycle that agree at vertex zero differ by
+the identity or the reflection fixing zero, with the corresponding action on edges. -/
+theorem _root_.AlgebraicGeometry.Scheme.NodalCycleNumbering.exists_dihedral_of_same_initial_vertex
+    (A B : NodalCycleNumbering p n) (h₀ : A.vertex 0 = B.vertex 0) :
+    ∃ g : DihedralGroup n, (g = .r 0 ∨ g = .sr 0) ∧
+      (∀ j, A.vertex j = B.vertex (cycleVertexPerm g j)) ∧
+      ∀ j, A.edge j = B.edge (cycleBranchPerm g (j, 0)).1 := by
+  let g := (Iso.refl X).boundaryCycleAction A B
+  have hvertex (j : ZMod n) : A.vertex j = B.vertex (cycleVertexPerm g j) := by
+    apply (X.dualGraphVertexEquiv p).injective
+    rw [← A.component_apply, ← B.component_apply]
+    apply Subtype.ext
+    simpa [g] using ((Iso.refl X).component_boundaryCycleAction A B j).symm
+  have hedge (j : ZMod n) : A.edge j = B.edge (cycleBranchPerm g (j, 0)).1 := by
+    apply (X.dualGraphNodeEquiv p).injective
+    change A.node j = B.node (cycleBranchPerm g (j, 0)).1
+    dsimp only [g]
+    rw [node_boundaryCycleAction]
+    simp
+  have hzero : cycleVertexPerm g 0 = 0 := B.vertex.injective ((hvertex 0).symm.trans h₀)
+  refine ⟨g, ?_, hvertex, hedge⟩
+  cases hg : g with
+  | r a =>
+    rw [hg, cycleVertexPerm_r_apply, zero_add] at hzero
+    exact Or.inl (congrArg DihedralGroup.r hzero)
+  | sr a =>
+    rw [hg, cycleVertexPerm_sr_apply, sub_zero, neg_eq_zero] at hzero
+    exact Or.inr (congrArg DihedralGroup.sr hzero)
+
 variable [Z.Over (Spec (.of k))] [PrestableFamily (Z ↘ Spec (.of k))]
   {ι'' : Type z} {r : ι'' → (Z ↘ Spec (.of k)).smoothLocus}
   (g : Y ≅ Z) [g.hom.IsOver (Spec (.of k))] (E : NodalCycleNumbering r n)

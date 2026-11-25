@@ -38,47 +38,6 @@ local notation "S" => Spec (CommRingCat.of ℂ)
 variable [PrestableFamily (C[Φ] ↘ S)]
   {ι : Type*} {p : ι → (C[Φ] ↘ S).smoothLocus} {n : ℕ} [NeZero n]
 
-private theorem exists_dihedral_of_same_initial_vertex (A B : NodalCycleNumbering p n)
-    (h₀ : A.vertex 0 = B.vertex 0) :
-    ∃ g : DihedralGroup n, (g = .r 0 ∨ g = .sr 0) ∧
-      (∀ j, A.vertex j = B.vertex (cycleVertexPerm g j)) ∧
-      ∀ j, A.edge j = B.edge (cycleBranchPerm g (j, 0)).1 := by
-  let coordinates (P : NodalCycleNumbering p n) :=
-    (P.edge.prodCongr (Equiv.refl (Fin 2))).trans (Equiv.prodCongrRight P.order)
-  have hcoordinates (P : NodalCycleNumbering p n) (z : ZMod n × Fin 2) :
-      coordinates P z = (P.edge z.1, P.order (P.edge z.1) z.2) := by
-    obtain ⟨j, a⟩ := z
-    simp only [coordinates, Equiv.trans_apply, Equiv.prodCongr_apply, Prod.map_apply,
-      Equiv.refl_apply, Equiv.prodCongrRight_apply]
-  let f := (coordinates A).trans (coordinates B).symm
-  have hf (j : ZMod n) (a : Fin 2) :
-      (B.edge (f (j, a)).1, B.order (B.edge (f (j, a)).1) (f (j, a)).2) =
-        (A.edge j, A.order (A.edge j) a) := by
-    rw [← hcoordinates B (f (j, a)), ← hcoordinates A (j, a)]
-    exact (coordinates B).apply_symm_apply (coordinates A (j, a))
-  have he (j : ZMod n) (a : Fin 2) : (f (j, a)).1 = B.edge.symm (A.edge j) :=
-    B.edge.eq_symm_apply.mpr (congrArg Prod.fst (hf j a))
-  have hv (j : ZMod n) (a : Fin 2) :
-      (TauCeti.DualGraph.cycle n).endpoint (f (j, a)).1 (f (j, a)).2 =
-        B.vertex.symm (A.vertex ((TauCeti.DualGraph.cycle n).endpoint j a)) := by
-    apply B.vertex.eq_symm_apply.mpr
-    obtain ⟨hedge, horder⟩ := Prod.mk.inj (hf j a)
-    rw [← B.endpoint_eq, horder, hedge, A.endpoint_eq]
-  obtain ⟨g, hg⟩ := (existsUnique_cycleBranchPerm f
-    (fun j ↦ B.edge.symm (A.edge j)) (fun j ↦ B.vertex.symm (A.vertex j)) he hv).exists
-  have hvertex (j : ZMod n) : A.vertex j = B.vertex (cycleVertexPerm g j) := by
-    have h := (cycle_endpoint_cycleBranchPerm g j 0).symm.trans (hg ▸ hv j 0)
-    simpa [TauCeti.DualGraph.cycle] using (B.vertex.eq_symm_apply.mp h).symm
-  have hzero : cycleVertexPerm g 0 = 0 := B.vertex.injective ((hvertex 0).symm.trans h₀)
-  refine ⟨g, ?_, hvertex, fun j ↦ (congrArg Prod.fst (hg ▸ hf j 0)).symm⟩
-  cases g with
-  | r a =>
-    rw [cycleVertexPerm_r_apply, zero_add] at hzero
-    exact Or.inl (congrArg DihedralGroup.r hzero)
-  | sr a =>
-    rw [cycleVertexPerm_sr_apply, sub_zero, neg_eq_zero] at hzero
-    exact Or.inr (congrArg DihedralGroup.sr hzero)
-
 variable (Φ) in
 /-- Read each numbered normalized component of the toric boundary as a ray. -/
 def rayEquivOfNodalCycleNumbering (hΦ : Φ.IsRegular) (A : NodalCycleNumbering p n) :
@@ -132,7 +91,7 @@ theorem exists_positive_ray_numbering_of_nodalCycleNumbering
     apply ((C[Φ]).dualGraphVertexEquiv p).injective
     rw [← A.component_apply, ← B.component_apply, hu]
     exact (congrArg v hr₀).symm.trans (hB 0).symm
-  obtain ⟨g, hg, hAg, hEg⟩ := exists_dihedral_of_same_initial_vertex A B h₀
+  obtain ⟨g, hg, hAg, hEg⟩ := A.exists_dihedral_of_same_initial_vertex B h₀
   have hRay (j : ZMod n) : u j = r (cycleVertexPerm g j) := by
     apply v.injective
     rw [← hu, A.component_apply, hAg]
