@@ -8,7 +8,6 @@ module
 public import QPainleve.SignedClusterModularGroup.Realization.Endpoint.SelfRealization
 public import QPainleve.SignedClusterModularGroup.Realization.PicardAction
 
-import QPainleve.Algebra.Cluster.ChargeKernel.Index
 import QPainleve.Algebra.Cluster.Word.SignExtension
 
 /-!
@@ -114,15 +113,7 @@ theorem existsUnique_signedPicardHom_of_presentation
           obtain ⟨q, _⟩ := (Q.hasNodalModel_iff _ _).mp (hmodels c)
           exact ⟨q⟩⟩)
   refine ⟨ρ, ⟨hρ, ?_⟩, fun ρ' hρ' ↦ huniq ρ' hρ'.1⟩
-  have hE : E.matrix ≠ 0 := by
-    intro hzero
-    have hmat : chargeExchangeMatrix b.detDualEquiv.toLinearMap (Fan.rayChargeMap Q.rays) = 0 := by
-      rw [← hcharge, ← hform, P.matrix_eq, hzero]
-    apply hindex
-    rw [(Fan.rayChargeMap Q.rays).index_range_eq_gcd_chargeExchangeMatrix b
-      b.detDualEquiv_self b.detDualEquiv_apply_basis_zero_one, Finset.gcd_eq_zero_iff]
-    intro j _
-    simp only [hmat, Matrix.zero_apply, Int.natAbs_zero]
+  have hE := Q.exchangeMatrix_ne_zero_of_chargeIndex_ne_zero P hform hcharge hindex
   rw [range_clusterModularGroupInclusion ℂ E hE]
   ext g
   obtain ⟨w, rfl⟩ := signedClusterModularGroupMap_surjective ℂ E g
