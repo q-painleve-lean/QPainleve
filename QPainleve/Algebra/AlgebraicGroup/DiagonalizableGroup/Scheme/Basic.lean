@@ -21,6 +21,7 @@ character-group homomorphism induces a dominant scheme morphism.
 public section
 
 open AlgebraicGeometry CategoryTheory
+open scoped CategoryTheory.MonObj
 
 namespace TauCeti.DiagonalizableGroup
 
@@ -67,5 +68,35 @@ theorem isDominant_groupSchemeMap (f : G ⟶ H) (hf : Function.Injective f.hom.h
       (MonoidAlgebra.mapDomainAlgHom k k f.hom.hom).toRingHom)
     exact RingHom.denseRange_comap_of_injective _ (MonoidAlgebra.mapDomain_injective hf)
   infer_instance
+
+variable {k}
+
+local notation "S" => Spec (CommRingCat.of k)
+
+/-- The point of a diagonalizable group over its coordinate ring corresponding to the
+identity algebra map. -/
+noncomputable def groupSchemeUniversalPoint (G : FGCommGrpCat.{u}) :
+    (Spec (CommRingCat.of (MonoidAlgebra k G))).asOver S ⟶ (groupScheme k G).X :=
+  (groupSchemePointsMulEquiv G).symm (WithConv.toConv (AlgHom.id k (MonoidAlgebra k G)))
+
+instance (G : FGCommGrpCat.{u}) : IsIso (groupSchemeUniversalPoint (k := k) G) := by
+  suffices IsIso ((Over.forget S).map (groupSchemeUniversalPoint (k := k) G)) from
+    isIso_of_reflects_iso _ (Over.forget S)
+  rw [Over.forget_map, groupSchemeUniversalPoint, groupSchemePointsMulEquiv_symm_apply_left]
+  simp only [AlgHom.id_toRingHom, CommRingCat.ofHom_id, Spec.map_id, Category.id_comp]
+  exact (eqToIso (groupScheme_X_left k G).symm).isIso_hom
+
+/-- Pointwise multiplication of character homomorphisms induces pointwise multiplication
+of the corresponding morphisms of diagonalizable schemes. -/
+theorem groupSchemeMap_mul (f g : G →* H) :
+    (groupSchemeMap k (FGCommGrpCat.ofHom (f * g))).hom.hom =
+      (groupSchemeMap k (FGCommGrpCat.ofHom f)).hom.hom *
+        (groupSchemeMap k (FGCommGrpCat.ofHom g)).hom.hom := by
+  let p := groupSchemeUniversalPoint (k := k) H
+  apply (cancel_epi p).mp
+  apply (schemePointsMulEquiv G).injective
+  simp only [MonObj.comp_mul, map_mul, schemePointsMulEquiv_groupSchemeMap,
+    FGCommGrpCat.hom_hom_ofHom]
+  exact MonoidHom.ext fun a ↦ map_mul (schemePointsMulEquiv H p) (f a) (g a)
 
 end TauCeti.DiagonalizableGroup

@@ -7,8 +7,6 @@ module
 
 public import Mathlib.RingTheory.RootsOfUnity.EnoughRootsOfUnity
 public import QPainleve.Geometry.Toric.CharacterTorus.Evaluation
-public import TauCeti.CategoryTheory.Monoidal.Grp.Translation
-import QPainleve.Geometry.Toric.CharacterTorus.Isomorphism
 import QPainleve.Geometry.Toric.CharacterTorus.TranslationKernel
 import TauCeti.Algebra.AlgebraicGroup.DiagonalizableGroup.Scheme.Isogeny
 import TauCeti.Algebra.MonoidAlgebra.FaithfullyFlat
@@ -45,44 +43,6 @@ local notation "D(" G ")" => (Grp.X (C := Over S) (groupScheme k (FGCommGrpCat.o
 local notation "f[" v "]" => groupSchemeMap k (FGCommGrpCat.ofHom v)
 local notation "a[" v "]" => f[AddMonoidHom.toMultiplicative v]
 local notation "c[" c "," hc "]" => (Over.homMk (U := 𝟙_ (Over S)) c hc)
-
-private theorem eval_eq_mul (v : A →+ N) :
-    (evaluation k v).hom.hom =
-      a[AddMonoidHom.inl A N].hom.hom *
-        (a[AddMonoidHom.inr A N].hom.hom ≫ a[v].hom.hom) := by
-  have h : ((AddMonoidHom.id A).prod v).toMultiplicative =
-      (AddMonoidHom.inl A N).toMultiplicative *
-        ((AddMonoidHom.inr A N).comp v).toMultiplicative := by
-    exact MonoidHom.ext fun a ↦
-      Prod.ext (add_zero a.toAdd).symm (zero_add (v a.toAdd)).symm
-  rw [evaluation_def, h, groupSchemeMap_mul (k := k)
-    (G := FGCommGrpCat.of (Multiplicative A)) (H := FGCommGrpCat.of (Multiplicative (A × N)))
-    (AddMonoidHom.inl A N).toMultiplicative
-    ((AddMonoidHom.inr A N).comp v).toMultiplicative,
-    ← Grp.comp_hom_hom, ← groupSchemeMap_comp]
-  rfl
-
-/-- Evaluation at a fixed center is the charge morphism followed by translation
-by the center. -/
-theorem evaluationAtCenter_eq_leftTranslation (v : A →+ N)
-    (c : S ⟶ (D(Multiplicative A)).left) (hc : c ≫ (D(Multiplicative A)).hom = 𝟙 S) :
-    evaluationAtCenter k v c hc =
-      a[v].hom.hom.left ≫ (leftTranslation c[c,hc]).hom.left := by
-  let s : D(Multiplicative N) ⟶ D(Multiplicative (A × N)) :=
-    Over.homMk (pullback.lift ((D(Multiplicative N)).hom ≫ c) (𝟙 _) (by simp [hc]) ≫
-      (prodIso k A N).hom) (by
-        rw [Category.assoc, ← a[AddMonoidHom.inr A N].hom.hom.w,
-          prodIso_hom_snd_assoc, pullback.lift_snd_assoc, Category.id_comp])
-  have h₁ : s ≫ a[AddMonoidHom.inl A N].hom.hom = toUnit _ ≫ c[c,hc] := by
-    ext : 1
-    simp [s]
-  have h₂ : s ≫ a[AddMonoidHom.inr A N].hom.hom = 𝟙 _ := by
-    ext : 1
-    simp [s]
-  have h := congrArg (fun p ↦ s ≫ p) (eval_eq_mul (k := k) v)
-  rw [MonObj.comp_mul, ← Category.assoc, h₁, h₂, Category.id_comp] at h
-  rw [← Over.comp_left, comp_leftTranslation_hom]
-  exact congrArg Over.Hom.left h
 
 local notation "K[" v "]" => AddSubgroup.toSubgroup (AddMonoidHom.ker v)
 local notation "Q[" v "]" => _ ⧸ (MonoidHom.range (Subgroup.subtype K[v]))
