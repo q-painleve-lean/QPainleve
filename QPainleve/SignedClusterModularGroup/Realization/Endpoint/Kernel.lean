@@ -9,7 +9,6 @@ public import QPainleve.SignedClusterModularGroup.Realization.Endpoint.PicardAct
 public import QPainleve.SignedClusterModularGroup.Realization.NumberedRays
 
 import QPainleve.AlgebraicGeometry.Chow.RationalSurface.Basic
-import QPainleve.Geometry.Toric.Fan.Boundary.Numbering
 import QPainleve.Geometry.Toric.Fan.Subdivision.Projective
 import QPainleve.SignedClusterModularGroup.Realization.BranchAction
 import QPainleve.SignedClusterModularGroup.Realization.NodalFiber
@@ -126,19 +125,9 @@ private theorem xMap_eq_of_signedBoundaryIsometry_eq
       (hnodal c hc) (hnodal c₀ hc₀) hsep
   have hkeep c (hc : c ∈ U) ρ := ((p c hc).mem_range_numberedBoundaryRays_iff (hD c) ρ).symm.trans
     (by rw [hrays c hc])
-  have hRay : Q.fan.rayEquivOfNodalCycleNumbering Q.regular Q.cycle = Q.rayOrder := by
-    refine Equiv.ext fun j ↦ ?_
-    apply (Q.fan.boundaryNormalizationComponentEquiv Q.regular).injective
-    rw [Fan.boundaryNormalizationComponentEquiv_rayEquivOfNodalCycleNumbering, Q.component_eq]
-  obtain ⟨_, -, _, hnodes⟩ :=
-    Q.fan.exists_positive_ray_numbering_of_nodalCycleNumbering b Q.regular Q.complete Q.cycle
-  rw [hRay] at hnodes
   exact R.xMap_eq_of_marked_actions_on_center_domains R' Q.complete Q.rayOrder
     (fun j ↦ (Q.cycle.component_apply j).symm.trans (Q.component_eq j))
-    (fun j ↦ (Q.positive j).1)
-    (fun j ↦ by
-      obtain ⟨σ, h₀, h₁, hpoint⟩ := hnodes j
-      exact ⟨σ.val, h₀, h₁, hpoint⟩)
+    (fun j ↦ (Q.positive j).1) Q.exists_cone_of_numbered_node
     (fun x ↦ p _ (hU x).1) (Set.range ((p c₀ hc₀).numberedBoundaryRays (hD c₀)))
     (fun x ↦ ⟨p _ (hU x).2, hnodal _ (hU x).2, hkeep _ (hU x).2⟩)
     (fun x ↦ ⟨p _ (hU' x), hnodal _ (hU' x), hkeep _ (hU' x)⟩) hpic
