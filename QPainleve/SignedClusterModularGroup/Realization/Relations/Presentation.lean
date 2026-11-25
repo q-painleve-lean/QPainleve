@@ -118,10 +118,7 @@ theorem exists_realize_signed_loop_with_boundary_label
     (fun c ↦ cartier(M c)) hnef hsq hprim boundaryClasses[M,c₀] hmark
   let : Q.fan.algebraicRealization.IsProjectiveOver ℂ :=
     Q.fan.isProjectiveOver_algebraicRealization_of_isComplete Q.regular Q.complete b
-  let : SmoothOfRelativeDimension 2 (Q.fan.algebraicRealization ↘ S) := by
-    have hN : Module.finrank ℤ N = 2 := by simpa using Module.finrank_eq_card_basis b
-    rw [← hN, Q.fan.algebraicRealization_over]
-    exact Q.fan.smoothOfRelativeDimension_algebraicRealizationStructureMap Q.regular
+  let := Q.smoothOfRelativeDimension_fan
   let := Q.isPerfPair_auxiliaryPicardForm
   obtain ⟨x⟩ := nonempty_centerPoint (T₀ := Centers[r]) (T₁ := Centers[r]) (w.centerPartialMap ℂ P)
   obtain ⟨hx₀, hx₁⟩ := w.centerPoint_endpoints_mem_noncollision P hker x
@@ -200,13 +197,10 @@ theorem xPullback_eq_iff_signedLoopInvariants_eq_of_presentation {F : Type*} [Fi
   -- Identify the charge coordinates for the common boundary order table.
   let : Q.fan.algebraicRealization.IsProjectiveOver ℂ :=
     Q.fan.isProjectiveOver_algebraicRealization_of_isComplete Q.regular Q.complete b
-  let : SmoothOfRelativeDimension 2 (Q.fan.algebraicRealization ↘ S) := by
-    have hN : Module.finrank ℤ N = 2 := by simpa using Module.finrank_eq_card_basis b
-    rw [← hN, Q.fan.algebraicRealization_over]
-    exact Q.fan.smoothOfRelativeDimension_algebraicRealizationStructureMap Q.regular
+  let := Q.smoothOfRelativeDimension_fan
   let := Q.isPerfPair_auxiliaryPicardForm
-  obtain ⟨e, he, -⟩ := p₀.existsUnique_markedBoundaryOrthogonalEquivChargeKernel
-    hnodal₀ (cartier(M c₀)) rfl
+  let e := p₀.markedBoundaryOrthogonalEquivChargeKernel hnodal₀ (cartier(M c₀)) rfl
+  have he := p₀.markedBoundaryOrthogonalEquivChargeKernel_symm_apply hnodal₀ (cartier(M c₀)) rfl
   have hE := P.matrix_eq.symm.trans (congrArg₂ chargeExchangeMatrix hform hcharge)
   have hvertices j := (Q.cycle.component_apply j).symm.trans (Q.component_eq j)
   exact xPullback_eq_iff_signedLoopInvariants_eq boundaryClasses[M,c₀] (fun c ↦ cartier(M c))

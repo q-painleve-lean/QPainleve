@@ -47,6 +47,13 @@ local instance : NeZero Q.length := Q.neZero
 local instance : PrestableFamily ((Q.fan.boundaryIdeal Q.complete.nonempty_cones).subscheme ↘ S) :=
   Q.prestable
 
+/-- The complete regular toric model is a smooth surface over ℂ. -/
+theorem smoothOfRelativeDimension_fan :
+    SmoothOfRelativeDimension 2 (Q.fan.algebraicRealization ↘ S) := by
+  have hN : Module.finrank ℤ N = 2 := by simpa using Module.finrank_eq_card_basis b
+  rw [← hN, Q.fan.algebraicRealization_over]
+  exact Q.fan.smoothOfRelativeDimension_algebraicRealizationStructureMap Q.regular
+
 /-- The Picard intersection form of the toric surface with one exceptional summand
 per center is perfect. -/
 theorem isPerfPair_auxiliaryPicardForm
