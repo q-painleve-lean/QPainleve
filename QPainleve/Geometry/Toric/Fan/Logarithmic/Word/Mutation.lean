@@ -39,8 +39,7 @@ local notation "χ[" u "]" => MonoidHom.comp (freeAbelianCharEquiv.symm u)
     (LinearEquiv.symm (Finsupp.linearEquivFunOnFinite ℤ ℤ _)))))
 local notation "E[" b "," a "]" => chargeExchangeMatrix
   (LinearEquiv.toLinearMap (Module.Basis.detDualEquiv b)) (rayChargeMap a)
-local notation "B[" b "," a "]" => SkewExchangeMatrix.ofMatrix E[b,a]
-  (isSkewSymmetrizer_chargeExchangeMatrix _ (Module.Basis.detDualEquiv_self b) _)
+local notation "B[" b "," a "]" => rayExchangeMatrix b a
 local notation "σ[" k "]" => Equiv.trans (finSuccEquiv _) (Equiv.symm (finSuccEquiv' k))
 local notation "w[" B "," k "]" => Quiver.Path.comp
   (Quiver.Hom.toPath (Generator.toStep (Generator.mutate k) B))

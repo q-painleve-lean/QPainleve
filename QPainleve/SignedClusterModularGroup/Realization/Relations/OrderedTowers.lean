@@ -9,6 +9,7 @@ public import QPainleve.SignedClusterModularGroup.Realization.Relations.Referenc
 public import QPainleve.SignedClusterModularGroup.Realization.Surface.Boundary
 
 import QPainleve.AlgebraicGeometry.Chow.RationalSurface.Basic
+import QPainleve.Geometry.Toric.Fan.ExchangeMatrix
 import QPainleve.SignedClusterModularGroup.Realization.NodalFiber
 import QPainleve.SignedClusterModularGroup.Realization.Presentation.Reference
 
@@ -106,12 +107,8 @@ theorem exists_xPullback_eq_iff_signedLoopInvariants_eq_of_ordered_towers
   have hδ : classOf(hD') = classOf(hD) :=
     congrArg Inv.inv (LineBundleClass.mk_toInvertibleSheaf_congr _ _
       (MarkedSurface.ofBoundary_ker D A μ f))
-  let E : SkewExchangeMatrix (Fin r) :=
-    .ofMatrix (chargeExchangeMatrix b'.detDualEquiv.toLinearMap (Fan.rayChargeMap Q.rays))
-      (isSkewSymmetrizer_chargeExchangeMatrix _ b'.detDualEquiv_self _)
-  have hE : E.matrix =
-      chargeExchangeMatrix b'.detDualEquiv.toLinearMap (Fan.rayChargeMap Q.rays) :=
-    SkewExchangeMatrix.matrix_ofMatrix _ _
+  let E := Fan.rayExchangeMatrix b' Q.rays
+  have hE := Fan.rayExchangeMatrix_matrix b' Q.rays
   refine ⟨H, μ, b', Q, c, f, E, p₀, hnodal₀, hframe, hrays, hE, fun k _ _ w v _ β ↦ ?_⟩
   exact Q.xPullback_eq_iff_signedLoopInvariants_eq_of_nodal_contraction k p₀ hnodal₀ hE
     (by rwa [hδ]) (by rwa [hδ]) (by rwa [hδ]) w v β

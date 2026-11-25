@@ -8,6 +8,7 @@ module
 public import QPainleve.Algebra.Cluster.Word.RationalMap
 public import QPainleve.AlgebraicGeometry.RationalMap.Composition.Defined
 public import QPainleve.Geometry.Toric.Fan.Evaluation
+public import QPainleve.Geometry.Toric.Fan.ExchangeMatrix
 public import QPainleve.Geometry.Toric.Fan.Logarithmic.Presentation
 
 /-!
@@ -37,8 +38,7 @@ namespace OrderedToricModel
 /-- The exchange matrix determined by the rays and oriented lattice frame of an ordered model. -/
 @[expose]
 def exchangeMatrix (U : OrderedToricModel A m) : SkewExchangeMatrix (Fin m) :=
-  .ofMatrix (chargeExchangeMatrix U.basis.detDualEquiv.toLinearMap (rayChargeMap U.rays))
-    (isSkewSymmetrizer_chargeExchangeMatrix _ (U.basis.detDualEquiv_self) _)
+  rayExchangeMatrix U.basis U.rays
 
 omit [IsIntegral Z] in
 /-- The underlying matrix is the determinant pairing of the ordered ray charges. -/
@@ -46,7 +46,7 @@ omit [IsIntegral Z] in
 theorem exchangeMatrix_matrix (U : OrderedToricModel A m) :
     U.exchangeMatrix.matrix =
       chargeExchangeMatrix U.basis.detDualEquiv.toLinearMap (rayChargeMap U.rays) :=
-  SkewExchangeMatrix.matrix_ofMatrix _ _
+  rayExchangeMatrix_matrix _ _
 
 /-- The fixed-center rational evaluation on the common resolving surface. -/
 def xEvaluation (U : OrderedToricModel A m) :

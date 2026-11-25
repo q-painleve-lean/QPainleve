@@ -11,6 +11,7 @@ public import QPainleve.SignedClusterModularGroup.Boundary.Restriction
 public import QPainleve.SignedClusterModularGroup.Realization.Presentation
 public import QPainleve.SignedClusterModularGroup.Realization.Tropical
 
+import QPainleve.Geometry.Toric.Fan.ExchangeMatrix
 import QPainleve.SignedClusterModularGroup.Realization.Endpoint.Casimir
 import QPainleve.SignedClusterModularGroup.Realization.NodalFiber
 import QPainleve.SignedClusterModularGroup.Realization.Presentation.Group
@@ -115,15 +116,16 @@ theorem exists_picardEquiv_signedLoopInvariants_of_nodal_contraction
   subst M₀
   dsimp only
   let d := (M c₀).boundaryClass cartier[M c₀]
-  let P : ChargeSeed E N :=
-    ⟨b.detDualEquiv.toLinearMap, Fan.rayChargeMap Q.rays, b.detDualEquiv_self, hE.symm⟩
+  let P := Fan.rayChargeSeed b Q.rays hE
+  have hform : P.form = b.detDualEquiv.toLinearMap := Fan.rayChargeSeed_form _ _ _
+  have hcharge : P.charge = Fan.rayChargeMap Q.rays := Fan.rayChargeSeed_charge _ _ _
   obtain ⟨e, ⟨hcoords, hCasimir, -⟩, -⟩ := existsUnique_exchangeKernelEquiv_of_presentation
-    Q P rfl rfl M (fun c ↦ cartier[M c]) (hfamily c₀) (fun c _ ↦ hfamily c)
+    Q P hform hcharge M (fun c ↦ cartier[M c]) (hfamily c₀) (fun c _ ↦ hfamily c)
     hnef hsq hprim d hmark Θ.toMonoidHom (fun w ↦ (hΘ (End.asHom w)).2)
   choose p hp using fun c ↦ (hfamily c).exists_isNodalContraction (cartier[M c])
   refine ⟨M, hD, hmark, Θ, e, rfl, hfamily, hΘ, hcoords, hsignker, fun w _ vectors ↦ ?_⟩
   obtain ⟨R, _, _, j, hfind, hboundary⟩ :=
-    exists_realize_signed_loop_with_boundary_label Q P rfl rfl M p₀ hnodal₀
+    exists_realize_signed_loop_with_boundary_label Q P hform hcharge M p₀ hnodal₀
       (fun c _ ↦ p c) (fun c _ ↦ hp c) hnef hsq hprim hmark w (fun k ↦ vectors k)
   have hR := (hΘ w).2 R fun _ ↦ ⟨p _⟩
   have hsign := (hΘ w).1
