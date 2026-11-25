@@ -205,7 +205,6 @@ theorem xPullback_eq_iff_signedLoopInvariants_eq {k : Type*} [Field k]
     (p _ (hU x).1) (p _ (hU x).2) (hnodal _ (hU x).2) (hD _) (fun j ↦ (β j : Cent))
   have hfind₂ := R'.signedLoopInvariants_boundary_eq_some hsep y hcΦ hE hindex p₀ hnodal₀
     (p _ (hU' y).1) (p _ (hU' y).2) (hnodal _ (hU' y).2) (hD _) (fun j ↦ (β j : Cent))
-  simp only [Path.signedLoopInvariants_def] at hfind₁ hfind₂
   rw [Path.signedLoopInvariants_eq_iff, ← hmatrix,
     ← (Option.map_injective (ZMod.finEquiv n).toEquiv.injective).eq_iff,
     hfind₁, hfind₂, Option.some.injEq] at h

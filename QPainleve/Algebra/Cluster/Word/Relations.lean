@@ -12,7 +12,6 @@ public import QPainleve.Algebra.Cluster.Word.Pullback
 import QPainleve.Algebra.Cluster.Tropical.Valuation
 import QPainleve.Algebra.Cluster.Word.Monomial
 import QPainleve.Algebra.Cluster.Word.Parity
-import QPainleve.LinearAlgebra.Matrix.CoordinateExtension
 
 /-!
 # Integer data of a signed cluster loop
@@ -26,6 +25,26 @@ orders of the surviving rays in boundary order.
 public section
 
 open CategoryTheory QPainleve.Cluster
+
+namespace QPainleve.Cluster
+
+/-- The integer data used to compare signed loops. The columns use ambient coordinates,
+and the boundary label is the result of the forward search in the order table. -/
+@[ext]
+structure SignedLoopInvariants (ι κ : Type*) (n : ℕ) where
+  /-- The sign of the inversion count. -/
+  sign : ℤˣ
+  /-- The transported exponent vectors, indexed by column. -/
+  kernelColumns : Matrix ι κ ℤ
+  /-- The first matching label in the target order table, if one exists. -/
+  boundaryLabel : Option (Fin n)
+
+/-- For finite row and column index types, equality is decidable by comparing the three fields. -/
+instance {ι κ : Type*} {n : ℕ} [Fintype ι] [Fintype κ] :
+    DecidableEq (SignedLoopInvariants ι κ n) :=
+  fun x y ↦ decidable_of_iff _ (SignedLoopInvariants.ext_iff (x := x) (y := y)).symm
+
+end QPainleve.Cluster
 
 namespace Quiver.Path
 
@@ -42,24 +61,50 @@ tropical image of the source vector. Given a basis of the exchange kernel as
 integer vectors, the matrix determines the action on the entire kernel. -/
 def signedLoopInvariants (w : Word E E) (basisVectors : κ → ι → ℤ)
     (orders : Fin n → ι → ℤ) (source : ι → ℤ) :
-    ℤˣ × Matrix ι κ ℤ × Option (Fin n) :=
-  ((-1) ^ w.inversionCount, Matrix.of (fun i j ↦ w.exponentEquiv (basisVectors j) i),
-    Fin.find? fun j ↦ decide (orders j = trop[w] source))
+    SignedLoopInvariants ι κ n where
+  sign := (-1) ^ w.inversionCount
+  kernelColumns := Matrix.of (fun i j ↦ w.exponentEquiv (basisVectors j) i)
+  boundaryLabel := Fin.find? fun j ↦ decide (orders j = trop[w] source)
 
-/-- The components of the finite comparison, in the order sign, exponent
-matrix, and boundary label. -/
-theorem signedLoopInvariants_def (w : Word E E) (basisVectors : κ → ι → ℤ)
+/-- The sign records the parity of the number of inversions. -/
+@[simp]
+theorem signedLoopInvariants_sign (w : Word E E) (vectors : κ → ι → ℤ)
     (orders : Fin n → ι → ℤ) (source : ι → ℤ) :
-    w.signedLoopInvariants basisVectors orders source =
-      ((-1) ^ w.inversionCount, Matrix.of (fun i j ↦ w.exponentEquiv (basisVectors j) i),
-        Fin.find? fun j ↦ decide (orders j = trop[w] source)) :=
+    (w.signedLoopInvariants vectors orders source).sign = (-1) ^ w.inversionCount :=
   (rfl)
+
+/-- The exponent action sends each supplied vector to a column of the integer invariant. -/
+@[simp]
+theorem signedLoopInvariants_kernelColumns (w : Word E E) (vectors : κ → ι → ℤ)
+    (orders : Fin n → ι → ℤ) (source : ι → ℤ) :
+    (w.signedLoopInvariants vectors orders source).kernelColumns =
+      Matrix.of (fun i j ↦ w.exponentEquiv (vectors j) i) :=
+  (rfl)
+
+/-- The boundary label is the first row matching the tropical image of the source orders. -/
+theorem signedLoopInvariants_boundaryLabel (w : Word E E) (vectors : κ → ι → ℤ)
+    (orders : Fin n → ι → ℤ) (source : ι → ℤ) :
+    (w.signedLoopInvariants vectors orders source).boundaryLabel =
+      Fin.find? fun j ↦ decide (orders j = trop[w] source) :=
+  (rfl)
+
+/-- For distinct rows, the label search returns precisely the row with the transported
+orders. -/
+@[simp]
+theorem signedLoopInvariants_boundaryLabel_eq_some_iff (w : Word E E)
+    (vectors : κ → ι → ℤ) {orders : Fin n → ι → ℤ} (source : ι → ℤ)
+    (hinj : Function.Injective orders) (j : Fin n) :
+    (w.signedLoopInvariants vectors orders source).boundaryLabel = some j ↔
+      orders j = trop[w] source := by
+  simp only [signedLoopInvariants_boundaryLabel, ← Option.mem_def, Fin.mem_find?_iff,
+    decide_eq_true_eq]
+  exact ⟨And.left, fun h ↦ ⟨h, fun k hk h' ↦ hk.ne (hinj (h'.trans h.symm))⟩⟩
 
 /-- The transported ambient columns are obtained by multiplying the matrix of kernel
 coordinates by the matrix of the basis inclusion on the left. -/
 theorem signedLoopInvariants_matrix [Fintype κ] [DecidableEq κ]
     (w : Word E E) (b : Module.Basis κ ℤ K) (orders : Fin n → ι → ℤ) (source : ι → ℤ) :
-    (w.signedLoopInvariants (fun j ↦ (b j : ι → ℤ)) orders source).2.1 =
+    (w.signedLoopInvariants (fun j ↦ (b j : ι → ℤ)) orders source).kernelColumns =
       Matrix.of (fun i j ↦ (b j : ι → ℤ) i) * w.exchangeKernelMatrix b b := by
   have hleft : LinearMap.toMatrix b (Pi.basisFun ℤ ι) (K).subtype =
       Matrix.of (fun i j ↦ (b j : ι → ℤ) i) := by
@@ -67,14 +112,14 @@ theorem signedLoopInvariants_matrix [Fintype κ] [DecidableEq κ]
     simp [LinearMap.toMatrix_apply]
   rw [← hleft, exchangeKernelMatrix_def, ← LinearMap.toMatrix_comp b b (Pi.basisFun ℤ ι)]
   ext i j
-  simp [signedLoopInvariants_def, LinearMap.toMatrix_apply]
+  simp [LinearMap.toMatrix_apply]
 
 /-- A left inverse of the basis inclusion reads the square matrix of the kernel action
 from the transported ambient columns. -/
 theorem leftInverse_mul_signedLoopInvariants_matrix [Fintype κ] [DecidableEq κ]
     (w : Word E E) (b : Module.Basis κ ℤ K) (orders : Fin n → ι → ℤ) (source : ι → ℤ)
     (read : Matrix κ ι ℤ) (hread : read * Matrix.of (fun i j ↦ (b j : ι → ℤ) i) = 1) :
-    read * (w.signedLoopInvariants (fun j ↦ (b j : ι → ℤ)) orders source).2.1 =
+    read * (w.signedLoopInvariants (fun j ↦ (b j : ι → ℤ)) orders source).kernelColumns =
       w.exchangeKernelMatrix b b := by
   rw [signedLoopInvariants_matrix, ← Matrix.mul_assoc, hread, Matrix.one_mul]
 
@@ -84,7 +129,8 @@ inclusion matrix, so only its values on the exchange kernel enter the computatio
 theorem signedLoopInvariants_comp_matrix [Fintype κ] [DecidableEq κ]
     (w v : Word E E) (b : Module.Basis κ ℤ K) (orders : Fin n → ι → ℤ) (source : ι → ℤ)
     (read : Matrix κ ι ℤ) (hread : read * Matrix.of (fun i j ↦ (b j : ι → ℤ) i) = 1) :
-    let cols (u : Word E E) := (u.signedLoopInvariants (fun j ↦ (b j : ι → ℤ)) orders source).2.1
+    let cols (u : Word E E) :=
+      (u.signedLoopInvariants (fun j ↦ (b j : ι → ℤ)) orders source).kernelColumns
     cols (w.comp v) = cols w * (read * cols v) := by
   dsimp only
   rw [v.leftInverse_mul_signedLoopInvariants_matrix b orders source read hread,
@@ -102,25 +148,23 @@ theorem signedLoopInvariants_eq_iff [Fintype κ] [DecidableEq κ]
     ((-1 : ℤˣ) ^ w.inversionCount = (-1 : ℤˣ) ^ v.inversionCount) ∧
       LinearMap.toMatrixAlgEquiv b w.exchangeKernelEquiv.toLinearMap =
         LinearMap.toMatrixAlgEquiv b v.exchangeKernelEquiv.toLinearMap ∧
-      (Fin.find? fun j ↦ decide (orders j = trop[w] source)) =
-        (Fin.find? fun j ↦ decide (orders' j = trop[v] source)) := by
-  obtain ⟨read, hread⟩ := E.matrix.exists_leftInverse_ker_basis b
-  let cols (u : Word E E) (o : Fin n → ι → ℤ) :=
-    (u.signedLoopInvariants (fun j ↦ (b j : ι → ℤ)) o source).2.1
-  have hmatrix : cols w orders = cols v orders' ↔
-      w.exchangeKernelMatrix b b = v.exchangeKernelMatrix b b := by
+      (w.signedLoopInvariants (fun j ↦ (b j : ι → ℤ)) orders source).boundaryLabel =
+        (v.signedLoopInvariants (fun j ↦ (b j : ι → ℤ)) orders' source).boundaryLabel := by
+  have hmatrix :
+      Matrix.of (fun i j ↦ w.exponentEquiv (b j : ι → ℤ) i) =
+        Matrix.of (fun i j ↦ v.exponentEquiv (b j : ι → ℤ) i) ↔
+      w.exchangeKernelEquiv = v.exchangeKernelEquiv := by
     constructor
     · intro h
-      have hcols := congrArg (read * ·) h
-      simpa only [cols, leftInverse_mul_signedLoopInvariants_matrix _ b _ _ read hread] using hcols
+      apply LinearEquiv.toLinearMap_injective
+      refine b.ext fun j ↦ Subtype.ext (funext fun i ↦ ?_)
+      simpa only [Matrix.of_apply, ← coe_exchangeKernelEquiv_apply, LinearEquiv.coe_coe]
+        using congrFun (congrFun h i) j
     · intro h
-      simp only [cols, signedLoopInvariants_matrix, h]
-  have hSquare (u : Word E E) : u.exchangeKernelMatrix b b =
-      LinearMap.toMatrixAlgEquiv b u.exchangeKernelEquiv.toLinearMap := by
-    ext i j
-    simp only [exchangeKernelMatrix_apply, LinearMap.toMatrixAlgEquiv_apply, LinearEquiv.coe_coe]
-  simp only [cols, signedLoopInvariants_def] at hmatrix
-  simp only [signedLoopInvariants_def, Prod.mk.injEq, hmatrix, hSquare]
+      simp only [← coe_exchangeKernelEquiv_apply, h]
+  simp only [SignedLoopInvariants.ext_iff, signedLoopInvariants_sign,
+    signedLoopInvariants_kernelColumns, hmatrix, (LinearMap.toMatrixAlgEquiv b).injective.eq_iff,
+    LinearEquiv.toLinearMap_injective.eq_iff]
 
 /-- Over any field, equal X pullbacks of loops at a nonzero exchange matrix
 give equal integer invariants for every supplied family of exchange-kernel vectors
@@ -134,7 +178,9 @@ theorem signedLoopInvariants_eq_of_xPullback_eq {k : Type*} [Field k]
   have hkernel := exchangeKernelEquiv_eq_of_xPullback_eq k h
   have htrop := congrFun (tropical_eq_of_xPullback_eq_of_linearOrder (Γ := ℤ) h) source
   simp only [Equiv.toFun_as_coe] at htrop
-  simp only [signedLoopInvariants_def, ← coe_exchangeKernelEquiv_apply, hsign, hkernel, htrop]
+  simp only [SignedLoopInvariants.ext_iff, signedLoopInvariants_sign,
+    signedLoopInvariants_kernelColumns, signedLoopInvariants_boundaryLabel,
+    ← coe_exchangeKernelEquiv_apply, hsign, hkernel, htrop, and_self]
 
 section Conjugation
 
@@ -165,8 +211,8 @@ theorem signedLoopInvariants_reverse_comp_comp_boundary
     (hinj : Function.Injective orders') (p q : Equiv.Perm (Fin n))
     (hw : ∀ j, trop[w] (orders j) = orders' (p j))
     (hv : ∀ j, trop[v] (orders j) = orders (q j)) (j : Fin n) :
-    (((w.reverse.comp v).comp w).signedLoopInvariants basisVectors orders' (orders' j)).2.2 =
-      some (p (q (p.symm j))) := by
+    (((w.reverse.comp v).comp w).signedLoopInvariants basisVectors orders'
+      (orders' j)).boundaryLabel = some (p (q (p.symm j))) := by
   have hreverse : trop[w.reverse] (orders' j) = orders (p.symm j) := by
     rw [tropical_reverse, SingleObj.inv_as_inv]
     exact (Equiv.symm_apply_eq _).mpr (by
@@ -186,12 +232,6 @@ theorem signedLoopInvariants_reverse_comp_comp_boundary
       _ = action w (action v (orders (p.symm j))) := congrArg (action w ∘ action v) hreverse
       _ = action w (orders (q (p.symm j))) := congrArg (action w) (hv (p.symm j))
       _ = _ := hw (q (p.symm j))
-  rw [signedLoopInvariants_def]
-  have hmem : p (q (p.symm j)) ∈ Fin.find?
-      (fun i ↦ decide (orders' i = trop[(w.reverse.comp v).comp w] (orders' j))) := by
-    rw [Fin.mem_find?_iff, himage]
-    simp only [decide_eq_true_eq, hinj.eq_iff]
-    exact ⟨trivial, fun i hi heq ↦ hi.ne heq⟩
-  exact hmem
+  exact (signedLoopInvariants_boundaryLabel_eq_some_iff _ _ _ hinj _).mpr himage.symm
 
 end Quiver.Path

@@ -88,7 +88,9 @@ private theorem point_eq_one_of_actions (w : Word B B)
     LinearEquiv.ext fun x ↦ by
       obtain ⟨y, rfl⟩ := exchangeKernelEquiv.surjective x
       simpa only [Path.exchangeKernelEquiv_nil, LinearEquiv.refl_apply] using hKernel y
-  simp only [Path.signedLoopInvariants_def, Prod.mk.injEq, Path.inversionCount_nil,
+  simp only [SignedLoopInvariants.ext_iff, Path.signedLoopInvariants_sign,
+    Path.signedLoopInvariants_kernelColumns, Path.signedLoopInvariants_boundaryLabel,
+    Path.inversionCount_nil,
     hSign.neg_one_pow, pow_zero, ← Path.coe_exchangeKernelEquiv_apply, hK, true_and,
     ← Equiv.toFun_as_coe, hBoundary, Paths.lift_nil, SingleObj.id_as_one, Equiv.Perm.one_apply]
   rfl

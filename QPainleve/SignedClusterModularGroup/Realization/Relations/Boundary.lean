@@ -74,11 +74,11 @@ theorem signedLoopInvariants_boundary_eq_some
     (h₀ : D[P (src[C,x])].IsEffectiveCartier)
     {κ : Type*} (basisVectors : κ → Fin r → ℤ) :
     let orders := p₀.numberedBoundaryOrders hnodal₀.cartier
-    ((w.signedLoopInvariants basisVectors orders (orders 0)).2.2).map (ZMod.finEquiv n).toEquiv =
-      some (R.boundaryPerm 0) := by
+    (w.signedLoopInvariants basisVectors orders (orders 0)).boundaryLabel.map
+      (ZMod.finEquiv n).toEquiv = some (R.boundaryPerm 0) := by
   have h := R.boundaryRayOfOrders_eq_boundaryPerm x p q h₀ hnodal.cartier hcΦ hE hindex
   rw [q.numberedBoundaryRays_eq_of_nodalContractions p₀ hnodal hnodal₀ hsep] at h
-  simpa only [Quiver.Path.signedLoopInvariants_def, p₀.numberedBoundaryOrders_zero,
+  simpa only [Quiver.Path.signedLoopInvariants_boundaryLabel, p₀.numberedBoundaryOrders_zero,
     p₀.numberedBoundaryOrders_apply, Fan.boundaryRayOfOrders_eq_find_coordinates,
     Function.Embedding.trans_apply, Equiv.toEmbedding_apply, ← Fan.rayBoundaryOrders_apply_eq_repr,
     ← funext_iff] using h

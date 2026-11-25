@@ -103,9 +103,9 @@ theorem exists_picardEquiv_signedLoopInvariants_of_nodal_contraction
         let η := sign B d g
         ∃ j : Fin n,
           w.signedLoopInvariants (fun k ↦ (vectors k : Fin r → ℤ)) orders (orders 0) =
-            (η, Matrix.of (fun i k ↦
+            ⟨η, Matrix.of (fun i k ↦
               ((LinearEquiv.autCongr e (signedOrthogonalRestriction B d g).val)
-                (vectors k) : Fin r → ℤ) i), some j) ∧
+                (vectors k) : Fin r → ℤ) i), some j⟩ ∧
           ∀ l, (toIsometry B d g).val (d l) =
             d (η • (l - (ZMod.finEquiv n).toEquiv j)) := by
   -- Use the same marked family for the Picard, Casimir, and boundary comparisons.
@@ -131,10 +131,10 @@ theorem exists_picardEquiv_signedLoopInvariants_of_nodal_contraction
   simp only [exchangeKernelAction_op_loop, MonoidHom.comp_apply, MulEquiv.coe_toMonoidHom,
     Subgroup.subtype_apply] at haction
   refine ⟨j, ?_, ?_⟩
-  · refine Prod.ext ?_ (Prod.ext ?_ hfind)
-    · simpa only [Path.signedLoopInvariants_def] using hsign.symm
+  · refine SignedLoopInvariants.ext ?_ ?_ hfind
+    · simpa only [Path.signedLoopInvariants_sign] using hsign.symm
     · rw [← haction]
-      simp only [Path.signedLoopInvariants_def, Path.coe_exchangeKernelEquiv_apply]
+      simp only [Path.signedLoopInvariants_kernelColumns, Path.coe_exchangeKernelEquiv_apply]
   · simpa only [← hR, hsign] using hboundary
 
 end QPainleve.SignedClusterModularGroup.CompleteToricPresentation

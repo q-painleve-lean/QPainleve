@@ -94,7 +94,8 @@ theorem exists_realize_signed_loop_with_boundary_label
       (∀ x : CenterPoint (U := Centers[r]) (V := Centers[r]) C,
         let c := x ≫ PartialMap.domainTarget (X := Centers[r]) (Y := Centers[r]) C
         Q.HasNodalModel c (M c)) ∧
-      ∃ j : Fin n, (w.signedLoopInvariants basisVectors orders (orders 0)).2.2 = some j ∧
+      ∃ j : Fin n,
+        (w.signedLoopInvariants basisVectors orders (orders 0)).boundaryLabel = some j ∧
         ∀ l, (SignedBoundaryIsometryGroup.toIsometry H d
           (R.toSignedBoundaryIsometry d (fun c ↦ cartier(M c)) hmark)).val (d l) =
             d (η • (l - (ZMod.finEquiv n).toEquiv j)) := by
