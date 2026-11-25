@@ -120,7 +120,7 @@ theorem exists_realize_signed_loop_with_boundary_label
     let hx := (Path.nil.centerPoint_endpoints_mem_noncollision P hker x).2
     Q.hasNodalModel_of_contraction (hnodal _ hx)
   obtain ⟨R, hη, -, hmodels⟩ := exists_realize_signed_loop w P Q hform hcharge M models hreference
-    (fun c ↦ cartier(M c)) hnef hsq hcan hprim boundaryClasses[M,c₀] hmark
+    (fun c ↦ cartier(M c)) hnef hsq hprim boundaryClasses[M,c₀] hmark
   let : Q.fan.algebraicRealization.IsProjectiveOver ℂ :=
     Q.fan.isProjectiveOver_algebraicRealization_of_isComplete Q.regular Q.complete b
   let : SmoothOfRelativeDimension 2 (Q.fan.algebraicRealization ↘ S) := by
@@ -203,7 +203,7 @@ theorem xPullback_eq_iff_signedLoopInvariants_eq_of_presentation
     Q.hasNodalModel_of_contraction (hnodal _ hx)
   -- Realize both words on their noncollision domains.
   have hreal (u : Word E E) := exists_realize_signed_loop u P Q hform hcharge M models
-    hreference (fun c ↦ cartier(M c)) hnef hsq hcan hprim boundaryClasses[M,c₀] hmark
+    hreference (fun c ↦ cartier(M c)) hnef hsq hprim boundaryClasses[M,c₀] hmark
   obtain ⟨R, hR, -⟩ := hreal w
   obtain ⟨R', hR', -⟩ := hreal v
   -- Identify the charge coordinates and read the starting vector from row zero.

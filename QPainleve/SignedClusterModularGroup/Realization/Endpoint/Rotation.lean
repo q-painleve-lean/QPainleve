@@ -129,7 +129,7 @@ theorem existsUnique_picardHom_of_presentation
     obtain ⟨w, hw⟩ := clusterModularGroupMap_surjective ℂ E g.unop
     rw [← op_unop g, ← hw]
     obtain ⟨R, -, -, hR⟩ := exists_realize_signed_loop (End.asHom w.val) P Q
-      hform hcharge M hmodels hmodel hD hnef hsq hcan hprim d hmark
+      hform hcharge M hmodels hmodel hD hnef hsq hprim d hmark
     let C := Path.centerPartialMap ℂ (End.asHom w.val) P
     let : C.IsOver Centers[r].hom Centers[r].hom :=
       Path.instIsOverCenterPartialMapHomSchemeMkStructureMapForallInt (K := ℂ) (End.asHom w.val) P
@@ -137,8 +137,7 @@ theorem existsUnique_picardHom_of_presentation
       Path.instIsDominantHomCenterPartialMap (K := ℂ) (End.asHom w.val) P
     have htargets : Models[M,C] := fun x ↦ by
       have hx : Q.HasNodalModel (dst(C,x)) (M (dst(C,x))) := hR x
-      obtain ⟨q, _⟩ := (Q.hasNodalModel_iff (dst(C,x)) (M (dst(C,x)))).mp hx
-      exact ⟨q⟩
+      exact hx.nonempty_contractedToricFiber
     exact rotationInclusion_injective H d
       ((hf'.1 w (C := C) R htargets).trans (hf w (C := C) R htargets).symm)
 

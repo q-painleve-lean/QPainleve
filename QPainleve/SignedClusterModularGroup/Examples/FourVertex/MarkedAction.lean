@@ -12,7 +12,6 @@ public import QPainleve.SignedClusterModularGroup.Boundary.Restriction
 import QPainleve.AlgebraicGeometry.Chow.Nef.Boundary
 import QPainleve.SignedClusterModularGroup.Examples.FourVertex.Marking
 import QPainleve.SignedClusterModularGroup.Examples.FourVertex.Presentation
-import QPainleve.SignedClusterModularGroup.Realization.Anticanonical
 import QPainleve.SignedClusterModularGroup.Realization.ChargeKernel
 import QPainleve.SignedClusterModularGroup.Realization.NodalFiber
 import QPainleve.SignedClusterModularGroup.Realization.Orthogonal
@@ -221,9 +220,7 @@ theorem exists_four_vertex_marked_picard_equiv :
   let c₀ : Point Centers := centerPoint (fun _ ↦ 1)
   have hmodel := (hfiber c₀).1
   let : IsRationalOver ((M c₀).surface ↘ S) := hmodel.isRationalOver
-  let : SmoothOfRelativeDimension 2 ((M c₀).surface ↘ S) := (M c₀).smooth
   obtain ⟨hprim, hnef, hsq⟩ := markedBoundaryNumerics (M c₀) (hD c₀) (hmark c₀)
-  have hcan := congrArg Inv.inv (hmodel.canonicalClass (hD c₀))
   obtain ⟨ρ, ⟨hρ, hk⟩, -⟩ := existsUnique_signedPicardEquiv_of_presentation (Q := Q)
     (hmark := hmark) P hform hcharge (fun c _ ↦ (hfiber c).1) hmodel hprim hnef hsq
   refine ⟨ρ, hk, fun w ↦ ?_⟩
@@ -239,7 +236,7 @@ theorem exists_four_vertex_marked_picard_equiv :
   have hker : (B).matrix.mulVecLin.ker = P.charge.ker :=
     hker'.trans (congrArg LinearMap.ker hcharge).symm
   obtain ⟨R, _, hR₀, _⟩ := exists_realize_signed_loop w P Q
-    hform hcharge M (fun x ↦ (hfiber _).1) hmodel hD hnef hsq hcan hprim boundaryClass hmark
+    hform hcharge M (fun x ↦ (hfiber _).1) hmodel hD hnef hsq hprim boundaryClass hmark
   have hR := (hρ w).2 R (fun x ↦ ⟨p _⟩)
   refine ⟨(hρ w).1, ?_, ?_⟩
   · have h := chargeKernelAction_eq_signedOrthogonalRestriction Q.rayOrder

@@ -93,6 +93,17 @@ private theorem rotationRestriction_smul_coe (g : G) (x : K) :
   simp only [MonoidHom.comp_apply, coe_signedOrthogonalRestriction_apply, sign_apply,
     coe_rotationInclusion, one_smul, toIsometry_apply]
 
+/-- A boundary rotation acts on the first orthogonal generator by a sign and an
+integral multiple of the total boundary class. These two coefficients are unique. -/
+theorem existsUnique_rotation_apply_boundaryOrthogonalBasis_zero (g : G) :
+    ∃! p : ℤˣ × ℤ, g.val.val (κ : L) = (p.1 : ℤ) • (κ : L) + p.2 • (δ : L) := by
+  have h := BilinForm.existsUnique_radicalGeneratorStabilizer_smul_basis_zero B radicalBasis
+    toMatrix_restrict_radicalBasis (by decide : (-2 : ℤ) ≠ 0) (rotationRestriction g)
+  refine (existsUnique_congr fun p ↦ ?_).mp h
+  rw [← Subtype.coe_inj]
+  simp only [radicalBasis_zero, radicalBasis_one, Submodule.coe_add, Submodule.coe_smul,
+    rotationRestriction_smul_coe]
+
 /-- A lift of the reflection on the orthogonal lattice and a lift of its unit translation
 generate all four-vertex boundary rotations if the square of the reflection lift is the
 boundary half-turn. Only the action on the first orthogonal basis vector needs to be checked,

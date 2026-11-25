@@ -12,7 +12,7 @@ public import TauCeti.AlgebraicGeometry.Noetherian
 public import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.ProjectiveOver
 import Mathlib.AlgebraicGeometry.AlgClosed.Basic
 import QPainleve.AlgebraicGeometry.Blowup.Exceptional.EulerCharacteristic
-import QPainleve.AlgebraicGeometry.Blowup.Tower.Canonical
+import QPainleve.AlgebraicGeometry.Blowup.Tower.Canonical.Basic
 import QPainleve.AlgebraicGeometry.Chow.Isomorphism
 import QPainleve.AlgebraicGeometry.Cohomology.Projective
 import QPainleve.AlgebraicGeometry.Cohomology.Support

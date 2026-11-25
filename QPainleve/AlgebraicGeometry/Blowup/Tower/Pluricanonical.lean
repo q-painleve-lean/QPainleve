@@ -7,7 +7,7 @@ module
 
 public import QPainleve.AlgebraicGeometry.Blowup.Canonical
 public import QPainleve.AlgebraicGeometry.Blowup.Tower.Point
-import QPainleve.AlgebraicGeometry.Blowup.Tower.Canonical
+import QPainleve.AlgebraicGeometry.Blowup.Tower.Canonical.Basic
 import QPainleve.AlgebraicGeometry.Blowup.Tower.GlobalSections
 
 /-!
