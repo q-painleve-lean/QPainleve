@@ -145,7 +145,9 @@ coefficient changes by `-m` for a pivot of order `m` on the second section,
 or by `β - m` on the first section. The reverse base order comes first,
 and the other exceptional coordinates keep their order. With nonnegative
 signed index, a marked open-orbit center on either invariant fiber stays
-on that fiber's open orbit, and its first occurrence remains first. A pivot order greater
+on that fiber's open orbit, and its first occurrence remains first. The indices
+on the successive strict transforms of the pivot section are exactly the
+reindexed original section indices with the pivot removed. A pivot order greater
 than half the fiber degree strictly lowers the Sarkisov bidegree. -/
 theorem exists_sarkisov_path_of_smooth_section
     (c : ℂˣ) (j : Fin (n + 1))
@@ -189,6 +191,11 @@ theorem exists_sarkisov_path_of_smooth_section
         ∃ a' : ℂˣ, hU.baseCenter (m.natAdd 1) = center[d,t (fiber[l]),a'] ∧
           ((∀ u < j.succAbove m, hT.baseCenter u ≠ hT.baseCenter (j.succAbove m)) →
             ∀ u < m.natAdd 1, hU.baseCenter u ≠ hU.baseCenter (m.natAdd 1))) ∧
+      hU.strictTransformCenterIndices
+          (Ψ.rayBoundaryIdeal (reg[hOpp]) ((Φ.mutationFanRayEquiv b hv hp hOpp) ρ)) =
+        (Finset.univ.filter fun l : Fin n ↦
+          j.succAbove l ∈ hT.strictTransformCenterIndices (Φ.rayBoundaryIdeal hΦ ρ)).map
+            (Fin.natAddEmb 1) ∧
       let y := (U.picardMarking hU f[Ψ]).symm (Additive.ofMul (pullback (k.inv ≫ g) H))
       let C := Fan.hirzebruchPicardBasis b e hΦ r hr
       let C' := Fan.hirzebruchPicardBasis d (Int.natAbs e' : ℤ) (reg[hOpp]) t ht
@@ -211,13 +218,14 @@ theorem exists_sarkisov_path_of_smooth_section
   let := hnoeth'
   have hρ : ρ = r (if onSection = true then (0 : Fin 4) else 2) := by
     fin_cases s <;> rfl
-  obtain ⟨hproj, d₀, ht₀, Z, U, hU, k, hlink, hOver, hg', hbir', hPole, hcenters, hDecrease⟩ :=
+  obtain ⟨hproj, d₀, ht₀, Z, U, hU, k, hlink, hOver, hg', hbir', hPole, hcenters, hsection,
+    hDecrease⟩ :=
     hT.exists_sarkisov_link_of_logarithmic_smooth_section b e hΦ hc r hr onSection
       ρ hOpp c g hg hbir hρ j hj (by simpa only [← hj] using hfirst) D hD
   obtain ⟨d, t, ht, -, hmark, hfiber⟩ :=
     Fan.exists_hirzebruchPicardBasis_natAbs d₀ e' (reg[hOpp]) _ ht₀
   refine ⟨hproj, Z, U, hU, k, d, t, ht, hg', hbir', hPole, ?_,
-    fun he ↦ (hmark he).1, ?_, ?_⟩
+    fun he ↦ (hmark he).1, ?_, hsection, ?_⟩
   · exact exists_sarkisov_path_of_resolved_section b hΦ hc r s hT c hOpp hU k hOver D hD hPole hlink
   · intro he l a m hm
     let τ := r (fiber[l])
