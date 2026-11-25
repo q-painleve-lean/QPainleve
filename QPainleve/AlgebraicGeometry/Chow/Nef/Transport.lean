@@ -8,9 +8,9 @@ module
 public import QPainleve.AlgebraicGeometry.Chow.Nef.Cone
 public import QPainleve.AlgebraicGeometry.Chow.Nef.EffectiveTransport
 public import QPainleve.AlgebraicGeometry.IdealSheaf.Boundary.Primes
+public import TauCeti.Topology.Algebra.Module.ModuleTopology
 
 import QPainleve.AlgebraicGeometry.EffectiveCartierDivisor.BoundaryPrimes
-import TauCeti.Topology.Algebra.Module.ModuleTopology
 
 /-!
 # Transport of nef cones by Picard isometries
@@ -103,12 +103,6 @@ variable (k : Type u) [Field k] [IsAlgClosed k] {X Y : Scheme.{u}}
 variable [TopologicalSpace V(X)] [IsModuleTopology ℝ V(X)]
   [TopologicalSpace V(Y)] [IsModuleTopology ℝ V(Y)]
 
-local instance : IsTopologicalAddGroup V(X) := IsModuleTopology.isTopologicalAddGroup ℝ _
-local instance : IsTopologicalAddGroup V(Y) := IsModuleTopology.isTopologicalAddGroup ℝ _
-
-local instance : T2Space V(X) := TauCeti.ModuleTopology.t2Space (Module.Free.chooseBasis ℝ _)
-local instance : T2Space V(Y) := TauCeti.ModuleTopology.t2Space (Module.Free.chooseBasis ℝ _)
-
 local notation "K(" X ")" => mk (canonicalBundle k X 2)
 local notation "I(" X ")" => classIntersectionNumber k X
 
@@ -131,6 +125,10 @@ theorem image_nefCone_eq_of_nef_anticanonical_isometry
     let := (Y ↘ S(k)).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two
     let : Module.Finite ℤ Pic(X) := X.finite_picard_of_isRationalOver k
     let : Module.Finite ℤ Pic(Y) := Y.finite_picard_of_isRationalOver k
+    let : IsTopologicalAddGroup V(X) := IsModuleTopology.isTopologicalAddGroup ℝ V(X)
+    let : IsTopologicalAddGroup V(Y) := IsModuleTopology.isTopologicalAddGroup ℝ V(Y)
+    let : T2Space V(X) := TauCeti.ModuleTopology.t2Space (Module.Free.chooseBasis ℝ V(X))
+    let : T2Space V(Y) := TauCeti.ModuleTopology.t2Space (Module.Free.chooseBasis ℝ V(Y))
     ∀ (e : (intersectionBilinForm k X).IsometryEquiv (intersectionBilinForm k Y)),
       (∀ p, e (Additive.ofMul (P (D.boundaryPrimeEmbedding p))) =
         Additive.ofMul (P (E.boundaryPrimeEmbedding (σ p)))) →
@@ -139,7 +137,7 @@ theorem image_nefCone_eq_of_nef_anticanonical_isometry
       (∀ p : CodimensionOnePoint Y, Disjoint (closure {(p : Y)}) E.support →
         I(Y) (P p) (P p) ≠ -2) →
       (e.baseChange ℝ) '' (nefCone k (X := X) : Set V(X)) = nefCone k (X := Y) := by
-  intro _ _ _ _ _ _ _ _ _ _ e hclass hrootD hrootE
+  intro _ _ _ _ _ _ _ _ _ _ _ _ _ _ e hclass hrootD hrootE
   let : Finite D.boundaryPrimes := hD.finite_boundaryPrimes
   let q := σ.toEmbedding.trans E.boundaryPrimeEmbedding
   have hp (p : CodimensionOnePoint X) :
