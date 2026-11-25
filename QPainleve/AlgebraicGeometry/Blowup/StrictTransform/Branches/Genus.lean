@@ -19,7 +19,7 @@ import TauCeti.AlgebraicGeometry.IdealSheaf.Section
 
 Blowing up a node retains the original normalized components and inserts a
 projective line. In particular the reduced total boundary still has genus-zero
-normalization components if the original boundary did. The components are the
+normalization components exactly when the original boundary does. The components are the
 ones identified by `strictNormalizationComponentEquiv` and
 `IsEffectiveCartier.exceptionalNormalizationComponent`.
 -/
@@ -160,48 +160,60 @@ theorem exists_iso_strictNormalizationComponent (v : irreducibleComponents N[k,C
       rw [reassoc_of% D.normalizationToNodalBlowup_blowupToBase_boundaryMap hc hp hCOver hBOver]
       exact ((C).blowupComponent_over v).symm
 
+include hBOver in
+private theorem genus_exceptionalNormalizationComponent :
+    let : IsReduced C :=
+      (PrestableFamily.atWorstNodalOfRelativeDimensionOne (f := C ↘ S)).isReduced
+    ((B).blowupComponent (exc)).toScheme.genus k = 0 := by
+  intro _
+  let t := hD.exceptionalNormalizationIso (k := k) hc
+  have hI : vanishingIdeal ⟨{D.subschemeι p}, hc⟩ = (I) :=
+    congrArg vanishingIdeal (SetLike.coe_injective hc.closure_eq.symm)
+  have hex := SmoothOfRelativeDimension.exists_iso_projectiveLine_exceptional_blowup_closedPoint
+    (X ↘ S) (D.subschemeι p) hc
+  dsimp only at hex
+  rw [hI] at hex
+  obtain ⟨e, he⟩ := hex
+  let q := t ≪≫ e.symm
+  have hq : q.inv ≫ (((B).blowupComponent (exc)).toScheme ↘ S) =
+      projectiveLine k ↘ S := by
+    let V := (B).blowupComponent (exc)
+    rw [(B).blowupComponent_over]
+    calc
+      _ = q.inv ≫ V.ι ≫ ν[k,B] ≫ (R).subschemeι ≫ (π) ≫ X ↘ S :=
+        congrArg (fun g ↦ q.inv ≫ V.ι ≫ ν[k,B] ≫ g) hBOver
+      _ = e.hom ≫ (E).subschemeι ≫ (π) ≫ X ↘ S := by
+        rw [← hD.exceptionalNormalizationIso_hom_subschemeι_assoc hc]
+        simp only [q, Iso.trans_inv, Iso.symm_inv, Category.assoc, Iso.inv_hom_id_assoc, t]
+      _ = projectiveLine k ↘ S := by
+        rw [reassoc_of% he.w, pointOfClosedPoint_comp, Category.comp_id]
+  let : q.inv.IsOver S := ⟨hq⟩
+  rw [← genus_eq_of_isIso k q.inv]
+  exact projectiveLine.genus_eq_zero k
+
 include hD hc hp hCOver hBOver in
-/-- The reduced total boundary after a nodal point blowup has genus-zero
-normalized components if the original boundary does. -/
-theorem genus_blowupComponent_radical_comap_eq_zero
-    (hgenus : ∀ v : irreducibleComponents N[k,C], ((C).blowupComponent v).toScheme.genus k = 0)
-    (w : irreducibleComponents N[k,B]) : ((B).blowupComponent w).toScheme.genus k = 0 := by
+/-- The normalized components of the reduced total boundary of a nodal point blowup
+all have genus zero exactly when the original normalized components do. -/
+theorem forall_genus_blowupComponent_radical_comap_eq_zero_iff :
+    (∀ w : irreducibleComponents N[k,B], ((B).blowupComponent w).toScheme.genus k = 0) ↔
+      ∀ v : irreducibleComponents N[k,C], ((C).blowupComponent v).toScheme.genus k = 0 := by
   classical
-  have : IsReduced C :=
+  let : IsReduced C :=
     (PrestableFamily.atWorstNodalOfRelativeDimensionOne (f := C ↘ S)).isReduced
+  have hgenus (v : irreducibleComponents N[k,C]) :
+      ((C).blowupComponent v).toScheme.genus k =
+        ((B).blowupComponent ((strict) v).val).toScheme.genus k := by
+    obtain ⟨e, he, -⟩ := exists_iso_strictNormalizationComponent hD hc hp hCOver hBOver v
+    let : e.hom.IsOver S := he
+    exact genus_eq_of_isIso k e.hom
+  refine ⟨fun h v ↦ (hgenus v).trans (h _), fun h w ↦ ?_⟩
   by_cases hw : w = (exc)
   · subst w
-    let t := hD.exceptionalNormalizationIso (k := k) hc
-    have hI : vanishingIdeal ⟨{D.subschemeι p}, hc⟩ = (I) :=
-      congrArg vanishingIdeal (SetLike.coe_injective hc.closure_eq.symm)
-    have hex := SmoothOfRelativeDimension.exists_iso_projectiveLine_exceptional_blowup_closedPoint
-      (X ↘ S) (D.subschemeι p) hc
-    dsimp only at hex
-    rw [hI] at hex
-    obtain ⟨e, he⟩ := hex
-    let q := t ≪≫ e.symm
-    have hq : q.inv ≫ (((B).blowupComponent (exc)).toScheme ↘ S) =
-        projectiveLine k ↘ S := by
-      let V := (B).blowupComponent (exc)
-      rw [(B).blowupComponent_over]
-      calc
-        _ = q.inv ≫ V.ι ≫ ν[k,B] ≫ (R).subschemeι ≫ (π) ≫ X ↘ S :=
-          congrArg (fun g ↦ q.inv ≫ V.ι ≫ ν[k,B] ≫ g) hBOver
-        _ = e.hom ≫ (E).subschemeι ≫ (π) ≫ X ↘ S := by
-          rw [← hD.exceptionalNormalizationIso_hom_subschemeι_assoc hc]
-          simp only [q, Iso.trans_inv, Iso.symm_inv, Category.assoc, Iso.inv_hom_id_assoc, t]
-        _ = projectiveLine k ↘ S := by
-          rw [reassoc_of% he.w, pointOfClosedPoint_comp, Category.comp_id]
-    let : q.inv.IsOver S := ⟨hq⟩
-    rw [Scheme.genus_def, ← q.inv.finrank_cohomology_trivial_of_isIso k 1]
-    simpa only [Scheme.genus_def] using projectiveLine.genus_eq_zero k
+    exact genus_exceptionalNormalizationComponent hD hc hBOver
   · obtain ⟨v, hv⟩ := (strict).surjective ⟨w, hw⟩
-    obtain ⟨e, hover, -⟩ := exists_iso_strictNormalizationComponent hD hc hp hCOver hBOver v
-    have he : e.hom.IsOver S := hover
-    have h := hgenus v
-    rw [Scheme.genus_def, e.hom.finrank_cohomology_trivial_of_isIso k 1, ← Scheme.genus_def] at h
     have hv' : ((strict) v).val = w := congrArg Subtype.val hv
-    exact (congrArg (fun z ↦ ((B).blowupComponent z).toScheme.genus k) hv').symm.trans h
+    rw [← hv', ← hgenus v]
+    exact h v
 
 end IsEffectiveCartier
 

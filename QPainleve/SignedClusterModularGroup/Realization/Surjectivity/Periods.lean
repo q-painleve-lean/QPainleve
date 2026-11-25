@@ -13,8 +13,10 @@ public import QPainleve.SignedClusterModularGroup.Realization.Presentation
 
 import QPainleve.AlgebraicGeometry.Curves.Node.Period.Roots
 import QPainleve.Geometry.Toric.Fan.Boundary.Numbering
+import QPainleve.Geometry.Toric.Fan.Presentation.Genus
 import QPainleve.Geometry.Toric.Fan.Smooth
 import QPainleve.Geometry.Toric.Fan.Subdivision.Projective
+import QPainleve.SignedClusterModularGroup.Realization.Anticanonical
 import TauCeti.AlgebraicGeometry.RationalPoint.Image
 
 /-!
@@ -91,8 +93,6 @@ private theorem exists_charge_coordinates
     [B.IsPerfPair] [Q.fan.algebraicRealization.IsProjectiveOver ℂ]
     [SmoothOfRelativeDimension 2 (Q.fan.algebraicRealization ↘ S)]
     (hD : ∀ c, D[M c].IsEffectiveCartier)
-    (hgenus : ∀ (c) (v : irreducibleComponents (D[M c].subscheme.singularLocus ℂ).blowup),
-      (D[M c].subscheme.blowupComponent (K := ℂ) v).toScheme.genus ℂ = 0)
     {d : ZMod n → L} (hmark : ∀ c, (M c).boundaryClass (hD c) = d)
     (hmodels : ∀ c : GeometricRealization.Point Centers[r],
       c.left (default : S) ∈ (Path.nil : Word E E).centerOpen ℂ P → Q.HasNodalModel c (M c)) :
@@ -108,9 +108,11 @@ private theorem exists_charge_coordinates
   have hc : c.left (default : S) ∈ U := by
     rw [Subsingleton.elim (default : S) (IsLocalRing.closedPoint ℂ)]
     exact hzU
-  obtain ⟨p, Y, _, T, u, hT, hp⟩ := (Q.hasNodalModel_iff c (M c)).mp (hmodels c hc)
-  have hnodal : p.IsNodalContraction := ⟨hD c, hgenus c, _, _, T, hT, u, hp.symm⟩
   let : IsIntegral (M c).surface := (M c).integral
+  have hmodel := hmodels c hc
+  obtain ⟨p, Y, _, T, u, hT, hp⟩ := (Q.hasNodalModel_iff c (M c)).mp hmodel
+  have hg := hmodel.hasToricPresentation.genus_blowupComponent_eq_zero (hD c)
+  have hnodal : p.IsNodalContraction := ⟨hD c, hg, _, _, T, hT, u, hp.symm⟩
   let : (Chow.intersectionBilinForm ℂ (M c).surface).IsPerfPair := (M c).isPerfPair_intersectionForm
   have hcomparison : ∃ a : Y ≅ (internalBlowupTower b Q.rays center[χ[c]]).1,
       a.inv ≫ T.toBase ≫ (M c).surface ↘ S =
@@ -171,14 +173,13 @@ private theorem exists_compatible_ordered_periods
 
 /-- A prescribed signed boundary isometry has compatible geometric periods at
 two root-free fibers of the same presentation. Both centers belong to every
-finite word's noncollision domain. The surface models are required only on the
-noncollision open of the empty word. -/
+finite word's noncollision domain. The geometric periods use the genus-zero
+normalized components of the selected fibers. The surface models are required
+only on the noncollision open of the empty word. -/
 theorem exists_root_free_fibers_with_compatible_periods
     {E : SkewExchangeMatrix (Fin r)} (P : ChargeSeed E N) (hcharge : P.charge.ker ≤ ChargeKernel)
     [B.IsPerfPair]
     (hD : ∀ c, D[M c].IsEffectiveCartier)
-    (hgenus : ∀ (c) (v : irreducibleComponents (D[M c].subscheme.singularLocus ℂ).blowup),
-      (D[M c].subscheme.blowupComponent (K := ℂ) v).toScheme.genus ℂ = 0)
     {d : ZMod n → L} (hmark : ∀ c, (M c).boundaryClass (hD c) = d)
     (g : signedBoundaryIsometryGroup B d)
     (hmodels : ∀ c : GeometricRealization.Point Centers[r],
@@ -191,13 +192,17 @@ theorem exists_root_free_fibers_with_compatible_periods
         (D[M c₀].support : Set (M c₀).surface)) ∧
       (∀ z : CodimensionOnePoint (M c₁).surface, ¬Disjoint (closure {(z : (M c₁).surface)})
         (D[M c₁].support : Set (M c₁).surface)) ∧
-      ∀ x : D[M c₁].boundaryOrthogonal ℂ,
-        let y := (M c₀).picardMarking
-          ((toIsometry B d g).val ((M c₁).picardMarking.symm x.val))
-        ∃ hy : y ∈ D[M c₀].boundaryOrthogonal ℂ,
-          (hD c₁).boundaryPeriod (hgenus c₁) (M c₁).imageCycle.endpoint_eq (ofAdd x) =
-            ((hD c₀).boundaryPeriod (hgenus c₀) (M c₀).imageCycle.endpoint_eq
-              (ofAdd ⟨y, hy⟩)) ^ (sign B d g : ℤ) := by
+      ∃ (hg₀ : ∀ v : irreducibleComponents (D[M c₀].subscheme.singularLocus ℂ).blowup,
+          (D[M c₀].subscheme.blowupComponent v).toScheme.genus ℂ = 0)
+        (hg₁ : ∀ v : irreducibleComponents (D[M c₁].subscheme.singularLocus ℂ).blowup,
+          (D[M c₁].subscheme.blowupComponent v).toScheme.genus ℂ = 0),
+        ∀ x : D[M c₁].boundaryOrthogonal ℂ,
+          let y := (M c₀).picardMarking
+            ((toIsometry B d g).val ((M c₁).picardMarking.symm x.val))
+          ∃ hy : y ∈ D[M c₀].boundaryOrthogonal ℂ,
+            (hD c₁).boundaryPeriod hg₁ (M c₁).imageCycle.endpoint_eq (ofAdd x) =
+              ((hD c₀).boundaryPeriod hg₀ (M c₀).imageCycle.endpoint_eq
+                (ofAdd ⟨y, hy⟩)) ^ (sign B d g : ℤ) := by
   classical
   let : Q.fan.algebraicRealization.IsProjectiveOver ℂ :=
     Q.fan.isProjectiveOver_algebraicRealization_of_isComplete Q.regular Q.complete b
@@ -206,7 +211,7 @@ theorem exists_root_free_fibers_with_compatible_periods
     rw [← hrank, Q.fan.algebraicRealization_over]
     exact Q.fan.smoothOfRelativeDimension_algebraicRealizationStructureMap Q.regular
   obtain ⟨hAux, e, he⟩ :=
-    Q.exists_charge_coordinates P hrank hD hgenus hmark hmodels
+    Q.exists_charge_coordinates P hrank hD hmark hmodels
   let := hAux
   -- The charge action already incorporates the boundary sign.
   let action := (e.symm.trans (signedOrthogonalRestriction B d g).val).trans e
@@ -217,15 +222,17 @@ theorem exists_root_free_fibers_with_compatible_periods
   obtain ⟨p₁, _⟩ := (Q.hasNodalModel_iff c₁ (M c₁)).mp hm₁
   let : IsIntegral (M c₀).surface := (M c₀).integral
   let : IsIntegral (M c₁).surface := (M c₁).integral
-  refine ⟨c₀, c₁, hm₀, hm₁, fun _ w ↦ hword w, ?_, ?_, ?_⟩
+  have hg₀ := hm₀.hasToricPresentation.genus_blowupComponent_eq_zero (hD c₀)
+  have hg₁ := hm₁.hasToricPresentation.genus_blowupComponent_eq_zero (hD c₁)
+  refine ⟨c₀, c₁, hm₀, hm₁, fun _ w ↦ hword w, ?_, ?_, hg₀, hg₁, ?_⟩
   · exact (hD c₀).not_disjoint_primeDivisor_of_boundaryPeriod_injective
-      (hgenus c₀) (M c₀).imageCycle.endpoint_eq
-      ((p₀.orderedBoundaryPeriod_injective_iff (hD c₀) (hgenus c₀) (hmark c₀) e he).mp hi₀)
+      hg₀ (M c₀).imageCycle.endpoint_eq
+      ((p₀.orderedBoundaryPeriod_injective_iff (hD c₀) hg₀ (hmark c₀) e he).mp hi₀)
   · exact (hD c₁).not_disjoint_primeDivisor_of_boundaryPeriod_injective
-      (hgenus c₁) (M c₁).imageCycle.endpoint_eq
-      ((p₁.orderedBoundaryPeriod_injective_iff (hD c₁) (hgenus c₁) (hmark c₁) e he).mp hi₁)
+      hg₁ (M c₁).imageCycle.endpoint_eq
+      ((p₁.orderedBoundaryPeriod_injective_iff (hD c₁) hg₁ (hmark c₁) e he).mp hi₁)
   · exact p₀.boundaryPeriod_eq_of_orderedBoundaryPeriod_eq p₁ (hD c₀) (hD c₁)
-      (hgenus c₀) (hgenus c₁) (hmark c₀) (hmark c₁) e he g (fun x ↦ hperiod x)
+      hg₀ hg₁ (hmark c₀) (hmark c₁) e he g (fun x ↦ hperiod x)
 
 end CompleteToricPresentation
 

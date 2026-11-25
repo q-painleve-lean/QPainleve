@@ -154,8 +154,10 @@ theorem boundaryPeriod_congr_iff_of_nodal_towers
     let hF' := (IsNodalBoundaryTower.radical_comap_toBase hU hF
       (F.over_eq_subschemeι_comp (S := S[k]) ▸
         PrestableFamily.atWorstNodalOfRelativeDimensionOne)).1
-    let hgD' := IsNodalBoundaryTower.genus_blowupComponent_radical_comap_toBase_eq_zero hT hD hgD
-    let hgF' := IsNodalBoundaryTower.genus_blowupComponent_radical_comap_toBase_eq_zero hU hF hgF
+    let hgD' :=
+      (hT.forall_genus_blowupComponent_radical_comap_toBase_eq_zero_iff hD).mpr hgD
+    let hgF' :=
+      (hU.forall_genus_blowupComponent_radical_comap_toBase_eq_zero_iff hF).mpr hgF
     let e' : B[k,Y].IsometryEquiv B[k,W] :=
       picardIsometryCongr k hT.isClosedPointTower hU.isClosedPointTower e
     ∀ {γ : Type v₂} {δ : Type v₃}
