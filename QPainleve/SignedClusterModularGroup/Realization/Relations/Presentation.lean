@@ -5,6 +5,7 @@ Authors: The QPainleve contributors
 -/
 module
 
+public import QPainleve.LinearAlgebra.Matrix.Kernel
 public import QPainleve.SignedClusterModularGroup.Realization.Relations.Basic
 public import QPainleve.SignedClusterModularGroup.Realization.Presentation
 
@@ -21,9 +22,10 @@ import QPainleve.SignedClusterModularGroup.Realization.Reflection
 # Deciding relations in a marked toric presentation
 
 A reference nodal contraction determines the boundary orders used to compare signed
-loops. The reference center can have repeated blowup centers. Given integer vectors
-for an exchange-kernel basis and the boundary orders, the decision procedure compares
-inversion signs, transported basis vectors, and the results of finite boundary searches.
+loops. The reference center can have repeated blowup centers. The decision procedure
+computes an integral kernel basis from the exchange matrix and takes the boundary
+orders as integer input. It compares inversion signs, transported basis vectors, and
+the results of finite boundary searches.
 -/
 
 public section
@@ -235,8 +237,8 @@ theorem xPullback_eq_iff_signedLoopInvariants_eq_of_presentation
       (v.centerPoint_endpoints_mem_noncollision P hker) β
 
 /-- Decide equality of signed loop pullbacks by comparing the three finite invariants.
-Supply the kernel basis and the boundary orders as integer data. The geometric
-presentation and the identifications of the input vectors are used in the correctness proof. -/
+The kernel basis is computed from the exchange matrix. Supply the boundary orders
+as integer data, with their identification supplied by the reference model. -/
 def decidableXPullbackEq
     (Q : CompleteToricPresentation i b r L γ) (P : ChargeSeed E N)
     (hform : P.form = b.detDualEquiv.toLinearMap) (hcharge : P.charge = Fan.rayChargeMap Q.rays)
@@ -255,17 +257,17 @@ def decidableXPullbackEq
         ((Q.fan.boundaryIdeal Q.complete.nonempty_cones).subscheme.dualGraphEdgeEquiv
           Q.marks (Q.cycle.edge j)).val =
         Q.fan.distinguishedPointHom σ (IsLocalRing.closedPoint ℂ))
-    (w v : Word E E) {k : ℕ}
-    (β : Basis (Fin k) ℤ E.matrix.mulVecLin.ker) (basisVectors : Fin k → Fin r → ℤ)
-    (orders : Fin n → Fin r → ℤ)
-    (hb : basisVectors = fun j ↦ (β j : Fin r → ℤ))
+    (w v : Word E E) (orders : Fin n → Fin r → ℤ)
     (ho : orders = orders[Q,M,c₀,p₀]) :
     Decidable (w.xPullback ℂ = v.xPullback ℂ) :=
+  let basisVectors := E.matrix.intKernelBasisVectors.2
   decidable_of_iff
     (w.signedLoopInvariants basisVectors orders (orders 0) =
       v.signedLoopInvariants basisVectors orders (orders 0))
     (by
-      rw [hb, ho]
+      obtain ⟨β, hβ⟩ := E.matrix.exists_basis_eq_intKernelBasisVectors
+      dsimp only [basisVectors]
+      rw [← hβ, ho]
       exact (xPullback_eq_iff_signedLoopInvariants_eq_of_presentation Q P hform hcharge M
         p₀ hnodal₀ p hnodal hnef hsq hprim hmark hnodes w v β).symm)
 
