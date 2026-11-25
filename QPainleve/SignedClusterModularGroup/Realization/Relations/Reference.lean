@@ -9,7 +9,6 @@ public import QPainleve.Algebra.Cluster.Word.Relations
 public import QPainleve.SignedClusterModularGroup.Realization.Presentation
 public import QPainleve.SignedClusterModularGroup.Realization.Tropical
 
-import QPainleve.Algebra.Cluster.Word.SubtractionFree
 import QPainleve.SignedClusterModularGroup.Realization.NodalFiber
 import QPainleve.SignedClusterModularGroup.Realization.Presentation.Family
 import QPainleve.SignedClusterModularGroup.Realization.Relations.Presentation
@@ -18,8 +17,8 @@ import QPainleve.SignedClusterModularGroup.Realization.Relations.Presentation
 # Deciding signed loop relations from a reference contraction
 
 A single reference nodal contraction supplies the boundary orders and the moving
-models used in the geometric criterion. The comparison applies over any
-characteristic-zero field by interpreting the same universal Y-seed coefficients.
+models used in the geometric criterion. The resulting integer comparison decides
+equality of independent X pullbacks over any field.
 It combines `CompleteToricPresentation.exists_marked_family_of_nodal_model` with
 `GeometricRealization.xPullback_eq_iff_signedLoopInvariants_eq_of_presentation`.
 -/
@@ -60,12 +59,12 @@ local notation "fiber[" M "," c "]" =>
 local notation "orders[" p "," M "]" => (fun j : Fin n ↦ Fan.rayBoundaryOrders b Q.rays
   (ContractedToricFiber.numberedBoundaryRays p cartier[M] (RingEquiv.toEquiv (ZMod.finEquiv n) j)))
 
-variable (k : Type*) [Field k] [CharZero k]
+variable (k : Type*) [Field k]
 
 /-- For signed loops of a primitive nef square-zero anticanonical cycle, equality of independent
-X pullbacks is equivalent to agreement of the inversion sign, transported exchange-kernel
-basis columns, and the forward boundary label of component zero. The reference contraction
-may have repeated centers. -/
+X pullbacks over any field is equivalent to agreement of the inversion sign, transported
+exchange-kernel basis columns, and the forward boundary label of component zero. The reference
+contraction may have repeated centers. -/
 theorem xPullback_eq_iff_signedLoopInvariants_eq_of_nodal_contraction
     (p₀ : fiber[M₀,c₀]) (hnodal₀ : p₀.IsNodalContraction)
     (hE : E.matrix = chargeExchangeMatrix b.detDualEquiv.toLinearMap (Fan.rayChargeMap Q.rays))
@@ -88,12 +87,8 @@ theorem xPullback_eq_iff_signedLoopInvariants_eq_of_nodal_contraction
   have hmark (c : Point Centers[r]) (j : ZMod n) :
       (M c).boundaryClass cartier[M c] j = (M c₀).boundaryClass cartier[M c₀] j :=
     congrFun (hfamily c).2 j
-  calc
-    w.xPullback k = v.xPullback k ↔ w.xPullback ℂ = v.xPullback ℂ :=
-      (w.xPullback_eq_iff_ySeed_coefficient_eq k v).trans
-        (w.xPullback_eq_iff_ySeed_coefficient_eq ℂ v).symm
-    _ ↔ _ := GeometricRealization.xPullback_eq_iff_signedLoopInvariants_eq_of_presentation
-      Q P rfl rfl M p₀ hnodal₀ (fun c _ ↦ p c) (fun c _ ↦ hp c) hnef hsq hprim hmark
-      Q.exists_cone_of_numbered_node w v β
+  exact GeometricRealization.xPullback_eq_iff_signedLoopInvariants_eq_of_presentation
+    Q P rfl rfl M p₀ hnodal₀ (fun c _ ↦ p c) (fun c _ ↦ hp c) hnef hsq hprim hmark
+    Q.exists_cone_of_numbered_node w v β
 
 end QPainleve.SignedClusterModularGroup.CompleteToricPresentation

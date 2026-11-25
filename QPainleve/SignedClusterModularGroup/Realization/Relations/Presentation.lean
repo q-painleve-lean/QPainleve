@@ -146,11 +146,11 @@ theorem exists_realize_signed_loop_with_boundary_label
       LinearMap.BilinForm.coe_isometryGroupEquivIsometryEquiv_symm] using
       R.picard_apply_boundaryClass boundaryClasses[M,c₀] (fun c ↦ cartier(M c)) hmark l
 
-/-- The integer comparison decides equality of independent X pullbacks of signed loops
-of a primitive nef square-zero cycle. Nodal models are needed on the initial noncollision
-open for the realizations. The reference fiber supplying the boundary order table can be
-at any center, including a center outside that open. -/
-theorem xPullback_eq_iff_signedLoopInvariants_eq_of_presentation
+/-- The integer comparison decides equality over any field of independent X pullbacks
+of signed loops of a primitive nef square-zero cycle. Nodal models are needed on the
+initial noncollision open for the realizations. The reference fiber supplying the
+boundary order table can be at any center, including a center outside that open. -/
+theorem xPullback_eq_iff_signedLoopInvariants_eq_of_presentation {F : Type*} [Field F]
     (Q : CompleteToricPresentation i b r L γ) (P : ChargeSeed E N)
     (hform : P.form = b.detDualEquiv.toLinearMap) (hcharge : P.charge = Fan.rayChargeMap Q.rays)
     (M : Point Centers[r] → MarkedSurface ℂ n H XTor[r]) {c₀ : Point Centers[r]}
@@ -171,7 +171,7 @@ theorem xPullback_eq_iff_signedLoopInvariants_eq_of_presentation
     (w v : Word E E)
     {k : ℕ} (β : Basis (Fin k) ℤ E.matrix.mulVecLin.ker) :
     let orders := orders[Q,M,c₀,p₀]
-    w.xPullback ℂ = v.xPullback ℂ ↔
+    w.xPullback F = v.xPullback F ↔
       w.signedLoopInvariants (fun j ↦ (β j : Fin r → ℤ)) orders (orders 0) =
         v.signedLoopInvariants (fun j ↦ (β j : Fin r → ℤ)) orders (orders 0) := by
   dsimp only
@@ -231,15 +231,15 @@ theorem xPullback_eq_iff_signedLoopInvariants_eq_of_presentation
       ((M c₀).intersectionForm_boundaryClass (cartier(M c₀)) hnef hsq) hR hR'
       (w.centerPartialMap_hom (K := ℂ) P) (v.centerPartialMap_hom (K := ℂ) P)
       Q.complete hE hindex Q.rayOrder hvertices (fun j ↦ (Q.positive j).1) hnodes
-      e he (Q.inclusion_injective hreference) p₀ hnodal₀
+      e he p₀ hnodal₀
       (U := {c : Point Centers[r] | c.left (default : S) ∈ U₀[P]}) p hnodal
       (w.centerPoint_endpoints_mem_noncollision P hker)
       (v.centerPoint_endpoints_mem_noncollision P hker) β
 
-/-- Decide equality of signed loop pullbacks by comparing the three finite invariants.
-The kernel basis is computed from the exchange matrix. Supply the boundary orders
-as integer data, with their identification supplied by the reference model. -/
-def decidableXPullbackEq
+/-- Decide equality of signed loop pullbacks over any field by comparing their integer invariants.
+The kernel basis is computed from the exchange matrix. Supply the boundary orders as integer
+data and identify them with the order table of the reference model. -/
+def decidableXPullbackEq {k : Type*} [Field k]
     (Q : CompleteToricPresentation i b r L γ) (P : ChargeSeed E N)
     (hform : P.form = b.detDualEquiv.toLinearMap) (hcharge : P.charge = Fan.rayChargeMap Q.rays)
     (M : Point Centers[r] → MarkedSurface ℂ n H XTor[r]) {c₀ : Point Centers[r]}
@@ -259,7 +259,7 @@ def decidableXPullbackEq
         Q.fan.distinguishedPointHom σ (IsLocalRing.closedPoint ℂ))
     (w v : Word E E) (orders : Fin n → Fin r → ℤ)
     (ho : orders = orders[Q,M,c₀,p₀]) :
-    Decidable (w.xPullback ℂ = v.xPullback ℂ) :=
+    Decidable (w.xPullback k = v.xPullback k) :=
   let basisVectors := E.matrix.intKernelBasisVectors.2
   decidable_of_iff
     (w.signedLoopInvariants basisVectors orders (orders 0) =
