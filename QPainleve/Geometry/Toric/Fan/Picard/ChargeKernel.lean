@@ -114,6 +114,18 @@ has exceptional coefficients equal to the negatives of the kernel coordinates. -
   simpa [LinearMap.BilinForm.prod_apply, dotProductBilin_apply_apply, single_dotProduct, e]
     using (congrArg Neg.neg h).symm
 
+omit [Finite ι] in
+/-- For an orthogonal marked class, the toric boundary degrees are the sums of the
+negatives of its exceptional coefficients over the corresponding rays. -/
+theorem markedBoundary_orthogonal_fst_pairing
+    (y : (A.prod negDot).orthogonal M) (a : Φ.Ray → ℤ) :
+    A (Φ.rayDivisorToPicard hΦ a) y.val.1 = ∑ j, a (s j) * (-y.val.2 j) := by
+  have hz := LinearMap.BilinForm.mem_orthogonal_iff.mp y.property (markedBoundaryMap hΦ s a)
+    (LinearMap.mem_range_self _ a)
+  simp only [markedBoundaryMap_apply, LinearMap.BilinForm.prod_apply, LinearMap.neg_apply,
+    dotProductBilin_apply_apply, dotProduct, neg_mul, Finset.sum_neg_distrib, neg_neg] at hz
+  simpa only [mul_neg, Finset.sum_neg_distrib] using eq_neg_of_add_eq_zero_left hz
+
 /-- The toric part of the inverse pairs with each toric boundary class by the sum of the kernel
 coordinates at its centers. The identity is linear in the coefficients of the toric divisor. -/
 theorem boundaryOrthogonalEquivChargeKernel_symm_fst_pairing
@@ -123,13 +135,9 @@ theorem boundaryOrthogonalEquivChargeKernel_symm_fst_pairing
     A (Φ.rayDivisorToPicard hΦ a)
         ((boundaryOrthogonalEquivChargeKernel hΦ s (A.prod negDot)).symm x : Mark).1 =
       ∑ j, a (s j) * (x : ι → ℤ) j := by
-  let y := (boundaryOrthogonalEquivChargeKernel hΦ s (A.prod negDot)).symm x
-  have hz := LinearMap.BilinForm.mem_orthogonal_iff.mp y.property (markedBoundaryMap hΦ s a)
-    (LinearMap.mem_range_self _ a)
-  rw [LinearMap.BilinForm.prod_apply, markedBoundaryMap_apply,
-    boundaryOrthogonalEquivChargeKernel_symm_snd hΦ s A x] at hz
-  apply sub_eq_zero.mp
-  simpa [dotProductBilin_apply_apply, dotProduct, sub_eq_add_neg, y] using hz
+  simpa only [boundaryOrthogonalEquivChargeKernel_symm_snd, Pi.neg_apply, neg_neg] using
+    markedBoundary_orthogonal_fst_pairing hΦ s A
+      ((boundaryOrthogonalEquivChargeKernel hΦ s (A.prod negDot)).symm x) a
 
 /-- The prescribed boundary degrees of a kernel vector determine a unique toric class. -/
 theorem existsUnique_rayDivisorToPicard_pairing_eq_charge
