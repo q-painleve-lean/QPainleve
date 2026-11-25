@@ -360,33 +360,6 @@ open LineBundleClass Scheme.IdealSheafData
 local notation "K(" Z ")" => mk (QPainleve.canonicalBundle ℂ Z 2)
 local notation "D₀" => Φ.boundaryIdeal inferInstance
 
-private theorem canonical_internal (hD₀ : (D₀).IsEffectiveCartier)
-    (hD : (D).IsEffectiveCartier) :
-    letI : (Y).Over S := ⟨g⟩
-    letI : SmoothOfRelativeDimension 2 f := smooth_base hΦ
-    letI : SmoothOfRelativeDimension 2 (Y ↘ S) := smooth_model v hΦ c
-    mk hD₀.toInvertibleSheaf = K(X) → mk hD.toInvertibleSheaf = K(Y) := by
-  intro hK
-  let : (Y).Over S := ⟨g⟩
-  let : SmoothOfRelativeDimension 2 (Y ↘ S) := smooth_model v hΦ c
-  let := smooth_base hΦ
-  let : Smooth f := SmoothOfRelativeDimension.smooth 2 f
-  let : IsNoetherian X := isNoetherian_of_finiteType f
-  let : (T).toBase.IsOver S := ⟨rfl⟩
-  let hRam := (hT).isEffectiveCartier_ramificationIdealSheafToBase ℂ
-  let hTot := (hT).isEffectiveCartier_totalTransform f hD₀
-  have hI := Fan.comap_boundaryIdeal_internalBlowupTower b₂ s c hΦ hD₀
-  have hPic : pullback (T).toBase (mk hD₀.toInvertibleSheaf) =
-      mk hD.toInvertibleSheaf * mk hRam.toInvertibleSheaf := by
-    rw [hD₀.pullback_mk_toInvertibleSheaf hTot,
-      mk_toInvertibleSheaf_congr hTot (TauCeti.isEffectiveCartier_mul hD hRam) hI,
-      mk_toInvertibleSheaf_mul]
-  have hR := (hT).ramificationIdealSheafToBase_def ℂ
-  have hK' := QPainleve.mk_canonicalBundle_eq_pullback_mul_inv_ramification ℂ (T).toBase 2
-    (hR ▸ hRam)
-  rw [← mk_toInvertibleSheaf_congr hRam _ hR, ← hK, hPic, mul_inv_cancel_right] at hK'
-  exact hK'.symm
-
 variable {Ω : Fan i₂} [Nonempty Ω.cones]
   (hΩ : Ω.IsRegular) (hcΩ : Ω.IsComplete) (r : Fin 4 ≃ Ω.Ray)
   (hr : (fun j ↦ (r j).primitiveGenerator) = ![b₂ 0, b₂ 1, -b₂ 0, (0 : ℤ) • b₂ 0 - b₂ 1])
@@ -547,7 +520,7 @@ theorem exists_four_vertex_internal_blowup (parameters : Fin 4 → ℂˣ) :
   let hD := isEffectiveCartier_boundary rays hΨ parameters hD₀
   let hpre := prestable_boundary rays hΨ hcΨ parameters
   let : IsReduced M'.2.boundaryι.ker.subscheme := hpre.atWorstNodalOfRelativeDimensionOne.isReduced
-  have hK := canonical_internal rays hΨ parameters hD₀ hD
+  have hK := Fan.canonicalClass_internalBlowupTower b₂ (diagonalRay rays) parameters hΨ hD₀ hD
     (canonical_octagon hΨ hΩ hcΩ r hr hT₀ a ha hD₀ hB)
   obtain ⟨hprim, hnef, hsq⟩ := primitive_nef_square_zero rays hv hΨ hcΨ hnext parameters hD
   obtain ⟨A, hA⟩ := exists_numbering_matching_primes rays hΨ hcΨ hnext parameters hD

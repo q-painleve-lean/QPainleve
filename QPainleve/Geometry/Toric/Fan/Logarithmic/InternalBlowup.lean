@@ -44,6 +44,7 @@ local notation "S" => Spec (CommRingCat.of ℂ)
 local notation "D" => Φ.boundaryIdeal h₀
 local notation "U" => internalBlowupTower b s c
 local notation "π" => toBase (WithBoundary.toTower (Sigma.snd U))
+local notation "closedTower" => isClosedPointTower_internalBlowupTower b s c
 local notation "base" => Φ.algebraicRealizationStructureMap
 local notation "rankTwo" => (Eq.trans (Module.finrank_eq_card_basis b) (Fintype.card_fin 2))
 
@@ -96,6 +97,46 @@ theorem comap_boundaryIdeal_internalBlowupTower
   simp only [Scheme.Hom.id_base, TopCat.coe_id, Set.range_id, Set.mem_univ, ite_true] at hcoeff
   exact (hT.comap_eq_strictTransform_mul_ramification_of_coefficients_eq_neg_one
     hcart (congrFun hcoeff)).trans (congrArg (· * hT.ramificationIdealSheafToBase ℂ) hstrict)
+
+/-- Ordered internal blowups preserve the anticanonical boundary. The ideal of
+the strict boundary represents the canonical class if the original boundary ideal does. -/
+theorem canonicalClass_internalBlowupTower (hΦ : Φ.IsRegular) (hD : (D).IsEffectiveCartier)
+    (hStrict : (U).2.boundaryι.ker.IsEffectiveCartier) :
+    letI : SmoothOfRelativeDimension 2 (Φ.algebraicRealization ↘ S) := by
+      rw [algebraicRealization_over]
+      exact rankTwo ▸ Φ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
+    letI : (U).1.Over S := ⟨π ≫ (Φ.algebraicRealization ↘ S)⟩
+    letI : SmoothOfRelativeDimension 2 ((U).1 ↘ S) :=
+      (closedTower).smoothOfRelativeDimension (Φ.algebraicRealization ↘ S)
+    LineBundleClass.mk hD.toInvertibleSheaf =
+        LineBundleClass.mk (QPainleve.canonicalBundle ℂ Φ.algebraicRealization 2) →
+      LineBundleClass.mk hStrict.toInvertibleSheaf =
+        LineBundleClass.mk (QPainleve.canonicalBundle ℂ (U).1 2) := by
+  intro hK
+  have : SmoothOfRelativeDimension 2 (Φ.algebraicRealization ↘ S) := by
+    rw [algebraicRealization_over]
+    exact rankTwo ▸ Φ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
+  let : (U).1.Over S := ⟨π ≫ (Φ.algebraicRealization ↘ S)⟩
+  let : SmoothOfRelativeDimension 2 ((U).1 ↘ S) :=
+    (closedTower).smoothOfRelativeDimension (Φ.algebraicRealization ↘ S)
+  let : (π).IsOver S := ⟨rfl⟩
+  let : Smooth (Φ.algebraicRealization ↘ S) := SmoothOfRelativeDimension.smooth 2 _
+  let : IsNoetherian Φ.algebraicRealization := isNoetherian_of_finiteType
+    (Φ.algebraicRealization ↘ S)
+  let hRam := (closedTower).isEffectiveCartier_ramificationIdealSheafToBase ℂ
+  let hTot := (closedTower).isEffectiveCartier_totalTransform (Φ.algebraicRealization ↘ S) hD
+  have hI := comap_boundaryIdeal_internalBlowupTower b s c hΦ hD
+  have hPic : LineBundleClass.pullback π (LineBundleClass.mk hD.toInvertibleSheaf) =
+      LineBundleClass.mk hStrict.toInvertibleSheaf * LineBundleClass.mk hRam.toInvertibleSheaf := by
+    rw [hD.pullback_mk_toInvertibleSheaf hTot,
+      LineBundleClass.mk_toInvertibleSheaf_congr hTot
+        (TauCeti.isEffectiveCartier_mul hStrict hRam) hI,
+      LineBundleClass.mk_toInvertibleSheaf_mul]
+  have hR := (closedTower).ramificationIdealSheafToBase_def ℂ
+  have hK' := QPainleve.mk_canonicalBundle_eq_pullback_mul_inv_ramification ℂ π 2 (hR ▸ hRam)
+  rw [← LineBundleClass.mk_toInvertibleSheaf_congr hRam _ hR, ← hK, hPic,
+    mul_inv_cancel_right] at hK'
+  exact hK'.symm
 
 variable {Z : Scheme} [Z.Over S] [SmoothOfRelativeDimension 2 (Z ↘ S)] {P : Z.IdealSheafData}
 
