@@ -92,6 +92,35 @@ theorem branchSchemeToBlowup_branch_mem_component_iff (j : ZMod n) (b : Fin 2)
   simpa [branch, component, C.endpoint_eq] using
     (X.dualGraphVertexEquiv_endpoint_eq_iff p (C.edge j) (C.order (C.edge j) b) a).symm
 
+/-- Agreement on all numbered branches determines the vertex, node and branch labels. -/
+@[ext]
+theorem ext {A B : NodalCycleNumbering p n}
+    (h : ∀ j b, A.branch (j, b) = B.branch (j, b)) : A = B := by
+  have flag (C : NodalCycleNumbering p n) (j : ZMod n) (b : Fin 2) :
+      C.branch (j, b) = X.dualGraphBranchEquiv p (C.edge j, C.order (C.edge j) b) := by
+    rw [C.branch_eq_branchOrderOfDualGraph]
+    -- Evaluate the node before applying the dependent branch ordering.
+    exact (congrArg (fun z ↦ (X.branchOrderOfDualGraph p C.order z b).val)
+      (C.node_apply j)).trans (X.branchOrderOfDualGraph_apply_val p C.order (C.edge j) b)
+  have flags (j : ZMod n) (b : Fin 2) :
+      (A.edge j, A.order (A.edge j) b) = (B.edge j, B.order (B.edge j) b) :=
+    (X.dualGraphBranchEquiv p).injective (by simpa only [flag] using h j b)
+  have he : A.edge = B.edge := Equiv.ext fun j ↦ congrArg Prod.fst (flags j 0)
+  have ho : A.order = B.order := funext fun e ↦ Equiv.ext fun b ↦ by
+    obtain ⟨j, rfl⟩ := A.edge.surjective e
+    simpa only [← he] using congrArg Prod.snd (flags j b)
+  have hv : A.vertex = B.vertex := Equiv.ext fun j ↦ by
+    have hA := A.endpoint_eq j 0
+    have hB := B.endpoint_eq j 0
+    rw [← he, ← ho] at hB
+    simpa only [DualGraph.cycle, reduceIte] using hA.symm.trans hB
+  cases A
+  cases B
+  cases he
+  cases ho
+  cases hv
+  rfl
+
 /-- Reverse the orientation of the numbering, keeping component zero fixed. Node `j`
 becomes the old node `-1 - j` with its two branches exchanged. -/
 @[expose]
