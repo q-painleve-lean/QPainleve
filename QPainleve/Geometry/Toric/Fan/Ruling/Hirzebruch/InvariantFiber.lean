@@ -52,14 +52,7 @@ value is the corresponding coordinate point of the projective line. -/
 theorem mem_support_hirzebruch_fiber_iff (j : Fin 2) (x : X) :
     x ∈ I[fib[j]].support ↔ q x = p[j] z := by
   let : Nonempty Φ.cones := ⟨(r 0).toCone⟩
-  have hp := (projectiveLine.polynomialPoint_over ℂ (RingHom.id ℂ) j (0 : ℂ)).trans
-    (Spec.map_id (CommRingCat.of ℂ))
-  have : IsClosedImmersion p[j] := (p[j]).isClosedImmersion_of_comp_eq_id hp
-  rw [Φ.rayBoundaryIdeal_hirzebruch_eq_coordinateFiber b e hΦ r hr j, ← SetLike.mem_coe,
-    support_comap, TopologicalSpace.Closeds.coe_preimage, Set.mem_preimage,
-    (p[j]).support_ker, (p[j]).isClosedEmbedding.isClosed_range.closure_eq]
-  exact ⟨fun ⟨y, hy⟩ ↦ hy.symm.trans (congrArg p[j] (Subsingleton.elim y z)),
-    fun hx ↦ ⟨z, hx.symm⟩⟩
+  exact Φ.mem_support_rayBoundaryIdeal_hirzebruch_coordinateFiber_iff b e hΦ r hr j x
 
 include hc in
 /-- On a complete regular Hirzebruch surface, a closed point over a ruling
