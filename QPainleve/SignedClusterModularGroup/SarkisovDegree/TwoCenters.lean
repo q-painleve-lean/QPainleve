@@ -12,7 +12,7 @@ public import QPainleve.SignedClusterModularGroup.SarkisovDegree.Quadric.Basic
 import QPainleve.Geometry.Toric.Fan.Mutation.Center
 import QPainleve.Geometry.Toric.Fan.Mutation.Logarithmic
 import QPainleve.Geometry.Toric.Fan.Mutation.PointTower
-import QPainleve.SignedClusterModularGroup.SarkisovDegree.Quadric.Fiber
+import QPainleve.Geometry.Toric.Fan.Picard.Quadric
 import TauCeti.Data.Fin.Basic
 import QPainleve.AlgebraicGeometry.Modules.Differentials.PoleIdeal
 import QPainleve.AlgebraicGeometry.RationalMap.Composition.Basic
