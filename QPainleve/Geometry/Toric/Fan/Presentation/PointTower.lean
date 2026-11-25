@@ -5,9 +5,8 @@ Authors: The QPainleve contributors
 -/
 module
 
-public import QPainleve.AlgebraicGeometry.Blowup.Tower.Nodal.Basic
 public import QPainleve.AlgebraicGeometry.Modules.Differentials.Canonical
-public import QPainleve.Geometry.Toric.Fan.InternalBlowup
+public import QPainleve.Geometry.Toric.Fan.Presentation.Basic
 public import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.ProjectiveOver
 
 import Mathlib.Analysis.Complex.Polynomial.Basic
@@ -15,7 +14,6 @@ import QPainleve.AlgebraicGeometry.Blowup.StrictTransform.Branches.NodalContract
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Projective
 import QPainleve.AlgebraicGeometry.Curves.Node.Comap
 import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
-import QPainleve.AlgebraicGeometry.IdealSheaf.VanishingIdeal
 import QPainleve.AlgebraicGeometry.Modules.Differentials.Restriction
 import QPainleve.Geometry.Toric.Fan.Presentation.InternalBlowup
 import QPainleve.Geometry.Toric.Fan.Presentation.NodalBlowup
@@ -40,7 +38,7 @@ Proposition 1.3][GHK].
 
 public section
 
-open AlgebraicGeometry CategoryTheory TopologicalSpace TauCeti.Toric
+open AlgebraicGeometry CategoryTheory TopologicalSpace
 open QPainleve QPainleve.BlowupTower TauCeti.AlgebraicGeometry
 open Scheme.IdealSheafData LineBundleClass
 
@@ -49,95 +47,6 @@ variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
 
 local notation "S" => Spec (CommRingCat.of ℂ)
 local notation "K(" W ")" => LineBundleClass.mk (QPainleve.canonicalBundle ℂ W 2)
-
-namespace AlgebraicGeometry.Scheme.IdealSheafData
-
-/-- A pair has a toric presentation if a nodal blowup tower over the pair is
-isomorphic over the ground field to an ordered internal blowup model of a regular
-complete fan. The isomorphism identifies the reduced total boundary with the
-strict toric boundary. The center parameters may repeat. -/
-def HasToricPresentation (D : X.IdealSheafData) (s : X ⟶ S)
-    (b : Module.Basis (Fin 2) ℤ N) (i : N →+ V) : Prop :=
-  ∃ (Φ : Fan i) (_ : Φ.IsRegular) (hc : Φ.IsComplete)
-    (m : ℕ) (rays : Fin m → Φ.Ray) (c : Fin m → ℂˣ)
-    (n : ℕ) (Y : Scheme) (T : BlowupTower X n Y),
-    IsNodalBoundaryTower D s (𝟙 X) T ∧
-    let A := Fan.internalBlowupTower (h₀ := hc.nonempty_cones) b rays c
-    ∃ e : A.1 ≅ Y,
-      e.hom ≫ T.toBase ≫ s = A.2.toTower.toBase ≫ Φ.algebraicRealizationStructureMap ∧
-      ((D.comap T.toBase).radical).comap e.hom = A.2.boundaryι.ker
-
-/-- The existence of a toric presentation is witnessed by the fan, the ordered
-internal centers, the nodal tower, and the boundary-preserving comparison. -/
-theorem hasToricPresentation_iff (D : X.IdealSheafData) (s : X ⟶ S)
-    (b : Module.Basis (Fin 2) ℤ N) (i : N →+ V) :
-    D.HasToricPresentation s b i ↔
-      ∃ (Φ : Fan i) (_ : Φ.IsRegular) (hc : Φ.IsComplete)
-        (m : ℕ) (rays : Fin m → Φ.Ray) (c : Fin m → ℂˣ)
-        (n : ℕ) (Y : Scheme) (T : BlowupTower X n Y),
-        IsNodalBoundaryTower D s (𝟙 X) T ∧
-        let A := Fan.internalBlowupTower (h₀ := hc.nonempty_cones) b rays c
-        ∃ e : A.1 ≅ Y,
-          e.hom ≫ T.toBase ≫ s = A.2.toTower.toBase ≫ Φ.algebraicRealizationStructureMap ∧
-          ((D.comap T.toBase).radical).comap e.hom = A.2.boundaryι.ker :=
-  Iff.rfl
-
-variable {b}
-
-/-- A toric presentation transports along an isomorphism over the ground field. -/
-theorem HasToricPresentation.of_comap_iso {D : X.IdealSheafData} {s : X ⟶ S} {t : Y ⟶ S}
-    {e : X ≅ Y} (h : (D.comap e.inv).HasToricPresentation t b i) (he : e.hom ≫ t = s) :
-    D.HasToricPresentation s b i := by
-  obtain ⟨Φ, hΦ, hc, m, r, c, n, Z, U, hU, a, ha, hD⟩ := (hasToricPresentation_iff ..).mp h
-  obtain ⟨W, T, f, hT, hf, hB⟩ := hU.exists_transport_of_iso he
-  have he' : e.inv ≫ s = t := by rw [← he, Iso.inv_hom_id_assoc]
-  refine (hasToricPresentation_iff ..).mpr ⟨Φ, hΦ, hc, m, r, c, n, W, T, hT,
-    a ≪≫ f.symm, ?_, ?_⟩
-  · simpa only [Iso.trans_hom, Iso.symm_hom, hf, Category.assoc, Iso.inv_hom_id_assoc, he']
-      using ha
-  · simpa only [hB, Iso.trans_hom, Iso.symm_hom, ← comap_comp, Category.assoc,
-      Iso.inv_hom_id, Category.comp_id] using hD
-
-variable {D : X.IdealSheafData} {s : X ⟶ S} {p : X}
-local notation "I" => vanishingIdeal (Closeds.mk (closure (Singleton.singleton p)) isClosed_closure)
-local notation "π" => blowupToBase I
-
-private theorem HasToricPresentation.nodalBlowup
-    (h : D.HasToricPresentation s b i) (hp : IsClosed ({p} : Set X))
-    (hn : D.IsNodeOfReducedBoundary s p) :
-    (D.comap π).radical.HasToricPresentation (π ≫ s) b i := by
-  obtain ⟨Φ, hΦ, hc, m, r, c, n, Z, T, hT, e, he, hD⟩ := (hasToricPresentation_iff ..).mp h
-  obtain ⟨Ψ, hΨ, H, l, W, U, -, hU, a, _, _, _, ha, hB⟩ :=
-    Fan.exists_toric_presentation_of_nodal_boundary_tower b r c hΦ hc hT
-      (IsNodalBoundaryTower.of_node hp hn) e he hD
-  refine (hasToricPresentation_iff ..).mpr ⟨Ψ, hΨ, H.isComplete_iff.mpr hc, m, H.liftRay ∘ r, c,
-    l, W, U, ?_, a, ?_, ?_⟩
-  · simpa only [toBase_snoc, toBase_nil, Category.comp_id] using hU
-  · simpa only [toBase_snoc, toBase_nil, Category.comp_id, Category.assoc] using ha
-  · simpa only [toBase_snoc, toBase_nil, Category.comp_id] using hB
-
-private theorem HasToricPresentation.internalBlowup [IsLocallyNoetherian X]
-    (h : D.HasToricPresentation s b i) (hN : AtWorstNodalOfRelativeDimensionOne (D.subschemeι ≫ s))
-    (hp : IsClosed ({p} : Set X)) {q : D.subscheme} (hq : D.subschemeι q = p)
-    (hs : ((D.subschemeι ≫ s).stalkMap q).hom.FormallySmooth) :
-    ((I).blowupMap D.subschemeι).ker.HasToricPresentation (π ≫ s) b i := by
-  have hqclosed : IsClosed ({q} : Set D.subscheme) :=
-    D.subschemeι.isClosedEmbedding.isClosed_iff_image_isClosed.mpr (by
-      rw [Set.image_singleton, hq]
-      exact hp)
-  have hI : ((D.subscheme.fromSpecResidueField q).ker).map D.subschemeι = I := by
-    rw [D.subschemeι.map_ker_fromSpecResidueField, hq,
-      Scheme.ker_fromSpecResidueField_eq_vanishingIdeal]
-  obtain ⟨Φ, hΦ, hc, m, r, c, n, Z, T, hT, e, he, hD⟩ := (hasToricPresentation_iff ..).mp h
-  let := hc.nonempty_cones
-  obtain ⟨r', a, W, U, _, hU, _, d, _, hd, hB⟩ :=
-    Fan.exists_toric_presentation_of_internal_blowup b hΦ hc r c hT e he
-      ((radical_comap_of_isOpenImmersion _ _).trans hD) hN hqclosed hs
-  rw [← hI]
-  exact (hasToricPresentation_iff ..).mpr
-    ⟨Φ, hΦ, hc, m + 1, Fin.snoc r r', Fin.snoc c a, n, W, U, hU, d, hd, hB⟩
-
-end AlgebraicGeometry.Scheme.IdealSheafData
 
 namespace QPainleve.BlowupTower.IsClosedPointTower
 
