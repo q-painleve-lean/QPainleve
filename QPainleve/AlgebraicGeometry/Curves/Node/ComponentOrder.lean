@@ -5,6 +5,7 @@ Authors: The QPainleve contributors
 -/
 module
 
+public import QPainleve.AlgebraicGeometry.Curves.Node.NumberedPrime
 public import QPainleve.AlgebraicGeometry.Curves.Node.Order
 public import TauCeti.AlgebraicGeometry.Scheme.CodimensionOnePoint
 
@@ -26,7 +27,7 @@ public section
 
 open CategoryTheory TopologicalSpace TauCeti.AlgebraicGeometry
 
-universe u
+universe u v
 
 namespace AlgebraicGeometry.Scheme.IdealSheafData.IsEffectiveCartier
 
@@ -96,3 +97,63 @@ theorem stalkOrder_prime_eq_of_node
     rw [stalkOrder_def, ← hstalk, ← stalkOrder_def, htwo]
 
 end AlgebraicGeometry.Scheme.IdealSheafData.IsEffectiveCartier
+
+namespace AlgebraicGeometry.Scheme.NodalCycleNumbering
+
+open IdealSheafData
+
+variable {k : Type u} [Field k] [IsSepClosed k] {X : Scheme.{u}} [IsIntegral X]
+  [X.Over (Spec (.of k))] [QuasiCompact (X ↘ Spec (.of k))]
+  [SmoothOfRelativeDimension 2 (X ↘ Spec (.of k))]
+  {B : X.IdealSheafData} [PrestableFamily (B.subscheme ↘ Spec (.of k))]
+  {ι : Type v} {p : ι → (B.subscheme ↘ Spec (.of k)).smoothLocus} {n : ℕ} [NeZero n]
+
+local notation "s" => (X ↘ Spec (CommRingCat.of k))
+local notation "prime(" A "," h "," l ")" =>
+  (B.boundaryPrimeEmbedding (NodalCycleNumbering.boundaryPrimeEquiv A h l))
+local notation "ideal(" q ")" => vanishingIdeal (Closeds.mk (closure {(q : X)}) isClosed_closure)
+
+/-- The order of a numbered prime at a node counts how many of the node's two
+branches lie on that component. Both branches count at a self-node. -/
+theorem stalkOrder_prime_eq_branch_count [IsLocallyNoetherian X]
+    (A : NodalCycleNumbering p n) (hB : B.IsEffectiveCartier) (j l : ZMod n) :
+    (ideal(prime(A,hB,l))).stalkOrder (A.ambientNode j) =
+      (((if l = j then 1 else 0) + (if l = j + 1 then 1 else 0) : ℕ) : ℕ∞) := by
+  classical
+  let e := B.boundaryPrimeEmbedding ∘ A.boundaryPrimeEquiv hB
+  have hinj : Function.Injective e :=
+    B.boundaryPrimeEmbedding.injective.comp (A.boundaryPrimeEquiv hB).injective
+  have hmem (a : ZMod n) : A.ambientNode j ∈ closure {(e a : X)} ↔ a = j ∨ a = j + 1 := by
+    simpa [e, Fin.exists_fin_two, eq_comm] using A.ambientNode_mem_closure_boundaryPrime_iff hB j a
+  have hsupp (q : CodimensionOnePoint X) : (q : X) ∈ B.support ↔ q ∈ Set.range e := by
+    rw [Set.range_comp, Equiv.range_eq_univ, Set.image_univ, range_boundaryPrimeEmbedding]
+    exact Iff.rfl
+  have hother :
+      (∃ q : CodimensionOnePoint X, q ≠ e l ∧ (q : X) ∈ B.support ∧
+        A.ambientNode j ∈ closure {(q : X)}) ↔ l ≠ j ∨ l ≠ j + 1 := by
+    constructor
+    · rintro ⟨q, hq, hBq, hjq⟩
+      obtain ⟨a, rfl⟩ := (hsupp q).mp hBq
+      rcases (hmem a).mp hjq with rfl | rfl
+      · exact Or.inl (ne_of_apply_ne e hq).symm
+      · exact Or.inr (ne_of_apply_ne e hq).symm
+    · intro h
+      rcases h with h | h
+      · exact ⟨e j, hinj.ne h.symm, (hsupp _).mpr (Set.mem_range_self j), (hmem j).mpr (Or.inl rfl)⟩
+      · exact ⟨e (j + 1), hinj.ne h.symm, (hsupp _).mpr (Set.mem_range_self (j + 1)),
+          (hmem _).mpr (Or.inr rfl)⟩
+  have hN : AtWorstNodalOfRelativeDimensionOne (B.subschemeι ≫ s) := by
+    rw [← B.over_eq_subschemeι_comp]
+    exact PrestableFamily.atWorstNodalOfRelativeDimensionOne
+  calc
+    _ = if A.ambientNode j ∈ closure {(e l : X)} then
+        if ∃ q : CodimensionOnePoint X, q ≠ e l ∧ (q : X) ∈ B.support ∧
+            A.ambientNode j ∈ closure {(q : X)} then 1 else 2 else 0 :=
+      hB.stalkOrder_prime_eq_of_node hN
+        (A.isNodeOfReducedBoundary_ambientNode j B.over_eq_subschemeι_comp)
+        (e l) ((hsupp _).mpr (Set.mem_range_self l))
+    _ = _ := by
+      rw [hmem l, hother]
+      split_ifs <;> norm_num <;> grind
+
+end AlgebraicGeometry.Scheme.NodalCycleNumbering
