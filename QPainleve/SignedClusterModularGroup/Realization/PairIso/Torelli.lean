@@ -71,22 +71,6 @@ local instance instPrestableTorelliBoundaryImage (M : MarkedSurface ℂ n H XTor
     PrestableFamily (D[M].subscheme ↘ S) := M.prestable_boundaryImage
 local instance (M : MarkedSurface ℂ n H XTor) : PrestableFamily (M.boundary ↘ S) := M.prestable
 
-private theorem realPrimeDivisorClass_self_ne_neg_two {M : MarkedSurface ℂ n H XTor}
-    [IsRationalOver (M.surface ↘ S)] (hD : D[M].IsEffectiveCartier)
-    (hcan : LineBundleClass.mk hD.toInvertibleSheaf =
-      LineBundleClass.mk (canonicalBundle ℂ M.surface 2))
-    (hroot : ∀ z : CodimensionOnePoint M.surface,
-      Disjoint (closure {(z : M.surface)}) D[M].support →
-      Chow.classIntersectionNumber ℂ M.surface (primeDivisorClass z) (primeDivisorClass z) ≠ -2)
-    (z : CodimensionOnePoint M.surface) (hz : (z : M.surface) ∉ D[M].support) :
-    Chow.realIntersectionBilinForm ℂ M.surface (Chow.realPrimeDivisorClass ℂ z)
-      (Chow.realPrimeDivisorClass ℂ z) ≠ -2 := by
-  intro hsq
-  apply hz (Chow.mem_boundary_of_primeDivisorClass_self_eq_neg_two ℂ hD hcan hroot z ?_)
-  simp only [Chow.realPrimeDivisorClass_def, Chow.realIntersectionBilinForm_tmul,
-    one_mul, toMul_ofMul] at hsq
-  exact_mod_cast hsq
-
 namespace CompleteToricPresentation
 
 /-- For two marked fibers of the same ordered toric presentation, a specified
@@ -159,8 +143,8 @@ theorem exists_marked_pair_iso_of_signed_boundary_isometry
   obtain ⟨a, aB, haB, hover, hideal, hB, hpic, hb⟩ :=
     D[P₀].exists_pair_iso_of_root_free_signed_boundary_period_of_toric_presentation_of_nef
       P₀.imageCycle P₁.imageCycle hD hE act G hclass hk₀ hk₁
-      (realPrimeDivisorClass_self_ne_neg_two hD hk₀ hroot₀)
-      (realPrimeDivisorClass_self_ne_neg_two hE hk₁ hroot₁)
+      (Chow.realPrimeDivisorClass_self_ne_neg_two ℂ hD hk₀ hroot₀)
+      (Chow.realPrimeDivisorClass_self_ne_neg_two ℂ hE hk₁ hroot₁)
       g₀ g₁ hperiod hm₀.hasToricPresentation
       (by simpa only [← hk₀] using hn₀) (by simpa only [← hk₁] using hn₁)
       (by simpa only [← hk₁] using hsq)
