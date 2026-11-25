@@ -59,9 +59,6 @@ theorem exists_root_free_pair_iso_of_signed_boundary_isometry
     (Q : CompleteToricPresentation i b r L γ) {E : SkewExchangeMatrix (Fin r)}
     (P : ChargeSeed E N) (hcharge : P.charge.ker ≤ (Fan.rayChargeMap Q.rays).ker)
     (hD : ∀ c, D[M c].IsEffectiveCartier)
-    (hgenus : ∀ c, letI : PrestableFamily (D[M c].subscheme ↘ S) := (M c).prestable_boundaryImage
-      ∀ v : irreducibleComponents (D[M c].subscheme.singularLocus ℂ).blowup,
-        (D[M c].subscheme.blowupComponent (K := ℂ) v).toScheme.genus ℂ = 0)
     {d : ZMod n → L} (hmark : ∀ c, (M c).boundaryClass (hD c) = d)
     {c : Point Centers[r]} (href : Q.HasNodalModel c (M c))
     (hprim : IsPrimitive (Additive.ofMul classOf(hD c)))
@@ -91,8 +88,8 @@ theorem exists_root_free_pair_iso_of_signed_boundary_isometry
             (LineBundleClass.pullback (surfaceIso e).hom ((M c₁).picardMarking z).toMul) := by
   let : IsRationalOver ((M c).surface ↘ S) := href.isRationalOver
   let : B.IsPerfPair := (M c).isPerfPair_of_isRationalOver
-  obtain ⟨c₀, c₁, hm₀, hm₁, hword, hroot₀, hroot₁, hperiod⟩ :=
-    Q.exists_root_free_fibers_with_compatible_periods P hcharge hD hgenus hmark g hmodels
+  obtain ⟨c₀, c₁, hm₀, hm₁, hword, hroot₀, hroot₁, hg₀, hg₁, hperiod⟩ :=
+    Q.exists_root_free_fibers_with_compatible_periods P hcharge hD hmark g hmodels
   have hnum (c' : Point Centers[r]) :=
     ((M c).primitive_nef_square_zero_iff_of_boundaryClass_eq (M c') (hD c) (hD c')
       (fun j ↦ congrFun ((hmark c).trans (hmark c').symm) j)).mp ⟨hprim, hnef, hsq⟩
@@ -100,7 +97,7 @@ theorem exists_root_free_pair_iso_of_signed_boundary_isometry
   obtain ⟨_, hnef₁, hsq₁⟩ := hnum c₁
   exact ⟨c₀, c₁, hm₀, hm₁, fun _ w ↦ hword w, hprim₀, hnef₀, hsq₀, hroot₀, hroot₁,
     Q.exists_marked_pair_iso_of_signed_boundary_isometry hm₀ hm₁ (hD c₀) (hD c₁)
-      (hmark c₀) (hmark c₁) hnef₀ hnef₁ hsq₁ g (hgenus c₀) (hgenus c₁)
+      (hmark c₀) (hmark c₁) hnef₀ hnef₁ hsq₁ g hg₀ hg₁
       (fun z hz ↦ (hroot₀ z hz).elim) (fun z hz ↦ (hroot₁ z hz).elim) hperiod⟩
 
 end QPainleve.SignedClusterModularGroup.CompleteToricPresentation

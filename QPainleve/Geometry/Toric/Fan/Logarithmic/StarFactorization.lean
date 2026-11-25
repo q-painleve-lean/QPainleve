@@ -308,6 +308,29 @@ end Factorization
 
 section Refinement
 
+/-- If a logarithmic projection factors through an isomorphism of resolving surfaces,
+its pole ideal on the new source is the pullback along the inverse isomorphism. -/
+theorem comap_boundaryIdeal_of_eq_iso_comp
+    {X W : Scheme} [X.Over S] [W.Over S]
+    [SmoothOfRelativeDimension 2 (X ↘ S)] [SmoothOfRelativeDimension 2 (W ↘ S)]
+    {D : X.IdealSheafData} (A : LogarithmicProjection i D)
+    (hRank : Module.finrank ℤ N = 2) (k : X ≅ W) [k.hom.IsOver S]
+    {Φ : Fan i} (hc : Φ.IsComplete) (p : W ⟶ Φ.algebraicRealization) [p.IsOver S]
+    (hfan : A.fan = Φ) (hhom : A.hom ≍ k.hom ≫ p) :
+    letI : Smooth (W ↘ S) := SmoothOfRelativeDimension.smooth 2 _
+    (Φ.boundaryIdeal hc.nonempty_cones).comap p =
+      D.comap k.inv * ramificationIdealSheaf ℂ p := by
+  subst Φ
+  let : SmoothOfRelativeDimension 2 (A.fan.algebraicRealization ↘ S) :=
+    hRank ▸ A.fan.smoothOfRelativeDimension_algebraicRealizationStructureMap A.isRegular
+  let : Smooth (X ↘ S) := SmoothOfRelativeDimension.smooth 2 _
+  have heq := eq_of_heq hhom
+  have h := comap_eq_mul_ramificationIdealSheaf_comp_iff_of_isIso ℂ k.hom p 2
+    (D := A.fan.boundaryIdeal hc.nonempty_cones) (Q := D)
+  rw [IsIso.inv_eq_of_hom_inv_id k.hom_inv_id] at h
+  exact h.mp ((congrArg (A.fan.boundaryIdeal hc.nonempty_cones).comap heq).symm.trans
+    (A.comap_boundaryIdeal.trans (congrArg (D * ·) (ramificationIdealSheaf_congr ℂ heq))))
+
 variable {W : Scheme} [W.Over S] [SmoothOfRelativeDimension 2 (W ↘ S)]
   {E : W.IdealSheafData} (hN : Module.finrank ℤ N = 2) (f : W ⟶ Z) [f.IsOver S] [IsDominant f]
   (hf : letI : Smooth (W ↘ S) := SmoothOfRelativeDimension.smooth 2 _

@@ -22,6 +22,7 @@ import QPainleve.AlgebraicGeometry.Curves.Node.CycleAction
 import QPainleve.AlgebraicGeometry.IdealSheaf.Image.Over
 import QPainleve.Geometry.Toric.Fan.Boundary.Canonical
 import QPainleve.Geometry.Toric.Fan.Boundary.DualGraph
+import QPainleve.Geometry.Toric.Fan.Boundary.InternalBlowup
 import QPainleve.Geometry.Toric.Fan.Boundary.Prestable
 import QPainleve.Geometry.Toric.Fan.Logarithmic.InternalBlowup
 import QPainleve.Geometry.Toric.Fan.Picard.Hirzebruch
@@ -173,21 +174,6 @@ private theorem isProjectiveOver_model :
     (Y).IsProjectiveOver ℂ := by
   let : (X).IsProjectiveOver ℂ := Φ.isProjectiveOver_algebraicRealization_of_isComplete hΦ hc b₂
   exact (T).isProjectiveOver ℂ
-
-include hΦ in
-private theorem isEffectiveCartier_boundary
-    (hD : (Φ.boundaryIdeal inferInstance).IsEffectiveCartier) :
-    (D).IsEffectiveCartier := by
-  let := smooth_base hΦ
-  let I := Φ.boundaryIdeal inferInstance
-  let J (j : Fin 4) := (s j).internalCenter b₂ (c j)
-  have h := strictTransform_ker_comp_alongBoundary I.subschemeι (𝟙 I.subscheme) J
-    (fun j ↦ by simpa only [Scheme.IdealSheafData.comap_id] using (J j).property)
-  simp only [Category.id_comp, Scheme.IdealSheafData.ker_subschemeι] at h
-  have he : (T).strictTransform I = D := by
-    rw [Fan.internalBlowupTower_eq_alongBoundary]
-    exact h
-  exact he ▸ (hT).isEffectiveCartier_strictTransform f hD
 
 open Classical in
 private theorem marking_boundaryPrime (j : ZMod 8) :
@@ -485,7 +471,7 @@ theorem exists_four_vertex_internal_blowup (parameters : Fin 4 → ℂˣ) :
     rational_of_octagon hΩ hcΩ r hr hT₀ a ha
   let := smooth_base hΨ
   let hD₀ := Ψ.isEffectiveCartier_boundaryIdeal hΨ hcΨ rank_two
-  let hD := isEffectiveCartier_boundary rays hΨ parameters hD₀
+  let hD := Fan.isEffectiveCartier_internalBlowupBoundary b₂ (diagonalRay rays) hΨ parameters hD₀
   let hpre := prestable_boundary rays hΨ hcΨ parameters
   let : IsReduced M'.2.boundaryι.ker.subscheme := hpre.atWorstNodalOfRelativeDimensionOne.isReduced
   have hK := Fan.canonicalClass_internalBlowupTower b₂ (diagonalRay rays) parameters hΨ hD₀ hD
