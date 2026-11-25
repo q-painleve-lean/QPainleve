@@ -82,6 +82,20 @@ namespace Fan
 
 open PointedCone
 
+/-- The cone spanned by the sum of the two basis generators and one of those
+generators belongs to the star subdivision along their cone. -/
+theorem mem_starSubdivisionAlong_hull_sum_pair {Φ : Fan i} (hΦ : Φ.IsRegular)
+    (σ : Φ.cones) (b : Module.Basis (Fin 2) ℤ N) (e : Fin 2 ≃ ToricRay σ.val)
+    (hb : ∀ j, b j = primitiveGenerator Φ.lattice (Φ.isToricCone σ.property) (e j))
+    (j : Fin 2) :
+    hull ℝ {i (b 0 + b 1), i (b j)} ∈ (Φ.starSubdivisionAlong hΦ σ.property).cones := by
+  let hσ := (isRegular_iff.1 hΦ) _ σ.property
+  have hmem := hσ.starSubdivisionCone_pair_mem Φ.lattice e j
+  dsimp only at hmem
+  rw [hσ.starSubdivisionCone_pair_eq_hull Φ.lattice b e hb] at hmem
+  exact (Φ.mem_starSubdivisionAlong_cones hΦ σ.property).mpr
+    (.inr ⟨σ.val, σ.property, le_rfl, hmem⟩)
+
 /-- A chart of the star subdivision of a two-dimensional basis cone has a basis
 obtained by adding one basis vector to the other. -/
 theorem exists_starSubdivisionAlong_basis (Φ : Fan i) (hΦ : Φ.IsRegular) {σ : PointedCone ℝ V}
@@ -97,13 +111,9 @@ theorem exists_starSubdivisionAlong_basis (Φ : Fan i) (hΦ : Φ.IsRegular) {σ 
   have hc' : c j.rev = b j.rev := by
     simp [c, LinearMap.transvection.apply, hj]
   refine ⟨c, hc, hc', ?_⟩
-  apply (Φ.mem_starSubdivisionAlong_cones hΦ hσ).mpr
-  refine Or.inr ⟨σ, hσ, le_rfl, ?_⟩
   let hreg := isRegular_iff.mp hΦ _ hσ
   obtain ⟨r, hb'⟩ := hreg.exists_rayEquiv_of_basis Φ.lattice b hcone
-  have hchart := hreg.starSubdivisionCone_pair_mem Φ.lattice r j.rev
-  dsimp only at hchart
-  rw [hreg.starSubdivisionCone_pair_eq_hull Φ.lattice b r hb'] at hchart
+  have hchart := mem_starSubdivisionAlong_hull_sum_pair hΦ ⟨σ, hσ⟩ b r hb' j.rev
   have hsum : b 0 + b 1 = c j := by
     rw [hc]
     fin_cases j <;> simp [add_comm]

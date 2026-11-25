@@ -196,18 +196,6 @@ private theorem exists_ray_or_eq_of_basis_sum_mem
       · exact hmem 0 hp0
       · exact hmem 1 hp1
 
-private theorem mem_starSubdivisionAlong_hull_sum_pair (hΦ : Φ.IsRegular)
-    (σ : Φ.cones) (b : Basis (Fin 2) ℤ N) (e : Fin 2 ≃ ToricRay σ.val)
-    (hb : ∀ j, b j = primitiveGenerator Φ.lattice (Φ.isToricCone σ.property) (e j))
-    (j : Fin 2) :
-    hull ℝ {i (b 0 + b 1), i (b j)} ∈ (Φ.starSubdivisionAlong hΦ σ.property).cones := by
-  let hσ := (isRegular_iff.1 hΦ) _ σ.property
-  have hmem := hσ.starSubdivisionCone_pair_mem Φ.lattice e j
-  dsimp only at hmem
-  rw [hσ.starSubdivisionCone_pair_eq_hull Φ.lattice b e hb] at hmem
-  exact (Φ.mem_starSubdivisionAlong_cones hΦ σ.property).mpr
-    (.inr ⟨σ.val, σ.property, le_rfl, hmem⟩)
-
 -- Only the chosen maximal cone can be removed. It was already absent from the
 -- final fan, and the inserted ray is a new common cone.
 private theorem sdiff_starSubdivisionAlong_ssubset (hΦ : Φ.IsRegular)
