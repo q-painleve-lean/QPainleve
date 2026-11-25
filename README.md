@@ -3,7 +3,18 @@
 A Lean 4 library on q-Painlevé equations, built on
 [Tau Ceti](https://github.com/TauCetiProject/TauCeti) and Mathlib.
 
-Targets live in [QPainleveRoadmap](https://github.com/q-painleve-lean/QPainleveRoadmap).
+QPainleve formalizes theory related to q-Painlevé equations. Its content follows the roadmaps in
+[QPainleveRoadmap](https://github.com/q-painleve-lean/QPainleveRoadmap): each roadmap lays out a
+cohesive body of mathematics related to q-Painlevé equations, and its README is the definitive
+specification.
+
+## Relation to Tau Ceti
+
+QPainleve is downstream of Tau Ceti: it depends on Tau Ceti's `main` branch and follows its
+updates. Mathlib comes in through Tau Ceti.
+
+General theory that is not specific to q-Painlevé equations should preferably be formalized in
+Tau Ceti. This is a guideline for writing QPainleve roadmaps.
 
 ## Main theorems
 
