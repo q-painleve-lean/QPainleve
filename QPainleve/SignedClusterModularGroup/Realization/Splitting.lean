@@ -68,48 +68,6 @@ local notation "models[" F "," C "]" =>
 
 local notation "D[" M "]" => Scheme.Hom.ker (Over.Hom.left (Arrow.hom (MarkedSurface.pair M)))
 
-omit [NeZero n] in
-private theorem exists_odd_word_of_picard_involution
-    {dc : ZMod n → L} (Θ : (Γₛ)ᵐᵒᵖ ≃* signedBoundaryIsometryGroup B dc)
-    (hΘ : ∀ (w : Word E E), sign B dc (Θ eval[w]) = (-1 : ℤˣ) ^ w.inversionCount)
-    (g : signedBoundaryIsometryGroup B dc) (hg : sign B dc g = -1) (hgg : g * g = 1) :
-    ∃ w : Word E E, Θ eval[w] = g ∧ Odd w.inversionCount ∧
-      orderOf (signedClusterModularGroupMap ℂ E (End.of w)) = 2 := by
-  obtain ⟨w, hw⟩ := signedClusterModularGroupMap_surjective ℂ E (Θ.symm g).unop
-  have hwg : Θ eval[End.asHom w] = g := by
-    simp only [hw, op_unop, MulEquiv.apply_symm_apply]
-  have hodd := (neg_one_pow_eq_neg_one_iff_odd (by decide : (-1 : ℤˣ) ≠ 1)).mp
-    ((hΘ (End.asHom w)).symm.trans (hwg ▸ hg))
-  let e := (MulEquiv.inv' Γₛ).trans Θ
-  have he : e (signedClusterModularGroupMap ℂ E w) = g⁻¹ := by
-    rw [MulEquiv.trans_apply, MulEquiv.inv'_apply, Function.comp_apply, MulOpposite.op_inv,
-      map_inv, hwg]
-  have horder := (e.orderOf_eq (signedClusterModularGroupMap ℂ E w)).symm.trans
-    (he.symm ▸ (orderOf_inv g).trans (orderOf_eq_two_of_sign_eq_neg_one B dc g hg hgg))
-  exact ⟨End.asHom w, hwg, hodd, horder⟩
-
-private theorem exists_central_involution
-    {dc : ZMod n → L} (Θ : (Γₛ)ᵐᵒᵖ ≃* signedBoundaryIsometryGroup B dc)
-    (hΘ : ∀ (w : Word E E), sign B dc (Θ eval[w]) = (-1 : ℤˣ) ^ w.inversionCount)
-    (hE : E.matrix ≠ 0) (hn : n ≤ 2) :
-    ∃ z : Γₛ, Θ (op z) = centralSign B dc hn ∧ z ∈ Subgroup.center Γₛ ∧ orderOf z = 2 ∧
-      ∃ e : Γ₀ × Subgroup.zpowers z ≃* Γₛ, ∀ (f : Γ₀) (u : Subgroup.zpowers z),
-        e (f, u) = clusterModularGroupInclusion ℂ E f * u.val := by
-  let g := centralSign B dc hn
-  have hgg : g * g = 1 := by
-    rw [← pow_two, ← orderOf_centralSign B dc hn]
-    exact pow_orderOf_eq_one _
-  obtain ⟨w, hw, hodd, horder⟩ := exists_odd_word_of_picard_involution Θ hΘ g (by simp [g]) hgg
-  have hc : signedClusterModularGroupMap ℂ E (End.of w) ∈ Subgroup.center Γₛ := by
-    rw [Subgroup.mem_center_iff]
-    intro f
-    apply op_injective
-    apply Θ.injective
-    simpa only [op_mul, map_mul, hw] using
-      (Subgroup.mem_center_iff.mp (centralSign_mem_center B dc hn) (Θ (op f))).symm
-  exact ⟨_, hw, hc, horder,
-    exists_mulEquiv_prod_zpowers_of_central_odd_loop ℂ E (hB := hE) w hodd horder hc⟩
-
 /-- The signed Picard lift of a boundary reflection has order two and splits
 the inversion-sign extension for a primitive nef square-zero anticanonical cycle.
 The unsigned subgroup has index two. The signed and unsigned Picard equivalences
@@ -177,7 +135,7 @@ theorem exists_signedPicardSplitting_of_nodal_model
   exact ⟨F, hmark, hFc, hfamily, Θ, Θrot, hE, hs, s, hrot, hΘ,
     index_range_clusterModularGroupInclusion ℂ E hE hodd, hsect ▸ horder,
     ⟨j₀, a, g, hg, hgg, haa, ha, hfix, hsum, hreflect, horth, hsection, hconj, hsemi⟩,
-    exists_central_involution Θ hsign hE⟩
+    exists_central_involution_of_picardEquiv Θ hsign hE⟩
 
 end CompleteToricPresentation
 
