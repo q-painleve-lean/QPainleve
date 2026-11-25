@@ -175,6 +175,51 @@ theorem rationalMap_ofStar [IsIntegral Z] (p : @Quiver.Path _ instQuiver A B) :
 
 end SarkisovPath
 
+/-- A common two-ray star subdivision gives a resolved Sarkisov path consisting of
+a blowup followed by a blowdown. Its composite is the dense torus identification. -/
+theorem exists_sarkisovPath_of_twoRayStarSubdivisions {Φ Ψ F : Fan i}
+    (hRank : Module.finrank ℤ N = 2)
+    (hΦ : Φ.IsRegular) (hc : Φ.IsComplete) (hΨ : Ψ.IsRegular) (hF : F.IsRegular)
+    (s : F.IsSubdivision Φ) (t : F.IsSubdivision Ψ)
+    (hs : Φ.IsTwoRayStarSubdivision F) (ht : Ψ.IsTwoRayStarSubdivision F)
+    {W : Scheme} [W.Over S] [IsIntegral W] [SmoothOfRelativeDimension 2 (W ↘ S)]
+    {D : W.IdealSheafData} (a : W ⟶ X[F]) [a.IsOver S] [IsDominant a]
+    (hpole : letI : Smooth (W ↘ S) := SmoothOfRelativeDimension.smooth 2 _
+      (Φ.boundaryIdeal hc.nonempty_cones).comap (a ≫ s.toFanHom.algebraicMap) =
+        D * ramificationIdealSheaf ℂ (a ≫ s.toFanHom.algebraicMap)) :
+    ∃ (A B : LogarithmicProjection i D) (path : SarkisovPath A B),
+      A.fan = Φ ∧ A.hom ≍ a ≫ s.toFanHom.algebraicMap ∧
+      B.fan = Ψ ∧ B.hom ≍ a ≫ t.toFanHom.algebraicMap ∧
+      path.length = 2 ∧ path.rationalMap = toricMap[A.fan,B.fan] := by
+  let hcF := s.isComplete_iff.mpr hc
+  let : Smooth (W ↘ S) := SmoothOfRelativeDimension.smooth 2 _
+  have ha := (s.comap_boundaryIdeal_eq_mul_ramificationIdealSheaf_comp_iff
+    hΦ hF hc hRank a D).mp hpole
+  let M : LogarithmicProjection i D :=
+    ⟨F, hF, hcF, a, inferInstance, inferInstance, ha⟩
+  let K := Fan.IsSubdivision.refl M.fan
+  let A := M.coarsen (K.trans hs.isSubdivision) hΦ hRank
+  let B := M.coarsen (K.trans ht.isSubdivision) hΨ hRank
+  let : Quiver (LogarithmicProjection i D) := instQuiver
+  let up := M.coarsenBlowup hRank hΦ hF hs K
+  let down := Quiver.reverse (a := B) (b := M.coarsen K hF hRank)
+    (M.coarsenBlowup hRank hΨ hF ht K)
+  let p : @Quiver.Path _ instQuiver A B :=
+    (Quiver.Path.nil.cons up).cons down
+  have hA : A.hom ≍ a ≫ s.toFanHom.algebraicMap := by
+    simpa only [K, Fan.IsSubdivision.toFanHom_trans, FanHom.algebraicMap_comp,
+      Fan.IsSubdivision.toFanHom_refl, FanHom.algebraicMap_id, Category.id_comp] using
+      M.coarsen_hom (K.trans hs.isSubdivision) hΦ hRank
+  have hB : B.hom ≍ a ≫ t.toFanHom.algebraicMap := by
+    simpa only [K, Fan.IsSubdivision.toFanHom_trans, FanHom.algebraicMap_comp,
+      Fan.IsSubdivision.toFanHom_refl, FanHom.algebraicMap_id, Category.id_comp] using
+      M.coarsen_hom (K.trans ht.isSubdivision) hΨ hRank
+  let path := SarkisovPath.ofStar p
+  refine ⟨A, B, path, M.coarsen_fan .., hA, M.coarsen_fan .., hB, ?_, ?_⟩
+  · exact (SarkisovPath.length_ofStar p).trans rfl
+  · exact (SarkisovPath.rationalMap_ofStar p).trans
+      (pathRationalMap_eq_denseTorusPartialIso p)
+
 section Refinement
 
 variable {W : Scheme} [W.Over S] [SmoothOfRelativeDimension 2 (W ↘ S)]
