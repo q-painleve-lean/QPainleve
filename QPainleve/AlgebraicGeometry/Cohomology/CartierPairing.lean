@@ -79,6 +79,55 @@ theorem cohomologyRestrictionConnecting_cohomologyTensorRestrictionEquiv
         x := by
   simp [cohomologyRestrictionConnecting]
 
+/-- The Cartier connecting map is exact with the following map induced by the
+ideal-sheaf inclusion. -/
+theorem exact_cohomologyRestrictionConnecting_inclusion (M : InvertibleSheaf X)
+    (q : ℕ) :
+    Function.Exact (I.cohomologyRestrictionConnecting R M q)
+      (cohomologyMapBaseLinear R X (I.tensorIdealInclusion M.obj) (q + 1)) := by
+  let S := (ShortComplex.mk _ _ I.sheafι_toPushforwardSubscheme).map (tensorLeft M.obj)
+  have hS : S.ShortExact := I.shortExact_tensor_toPushforwardSubscheme M.obj
+  intro x
+  rw [tensorIdealInclusion_def, cohomologyMapBaseLinear_comp, LinearMap.comp_apply,
+    ← cohomologyBaseLinearEquivOfIso_apply,
+    ← map_zero (cohomologyBaseLinearEquivOfIso R (ρ_ M.obj) (q + 1)),
+    (cohomologyBaseLinearEquivOfIso R (ρ_ M.obj) (q + 1)).injective.eq_iff]
+  rw [congrFun (coe_cohomologyMapBaseLinear R X (M.obj ◁ I.sheafι) (q + 1)) x]
+  refine (exact_cohomologyδ_cohomologyMap hS q (q + 1) rfl x).trans ?_
+  simp only [← coe_cohomologyδBaseLinear R X hS]
+  constructor
+  · rintro ⟨y, rfl⟩
+    refine ⟨I.cohomologyTensorRestrictionEquiv R M q y, ?_⟩
+    rw [cohomologyRestrictionConnecting_cohomologyTensorRestrictionEquiv]
+  · rintro ⟨y, rfl⟩
+    obtain ⟨z, rfl⟩ := (I.cohomologyTensorRestrictionEquiv R M q).surjective y
+    refine ⟨z, ?_⟩
+    rw [cohomologyRestrictionConnecting_cohomologyTensorRestrictionEquiv]
+
+/-- The ideal-sheaf inclusion induces a surjection in a degree where the cohomology
+of the restricted line bundle vanishes. -/
+theorem surjective_cohomologyMapBaseLinear_inclusion (M : InvertibleSheaf X) (n : ℕ)
+    (hvan : Subsingleton (Cohomology ((F).obj M.obj) n)) :
+    Function.Surjective (cohomologyMapBaseLinear R X (I.tensorIdealInclusion M.obj) n) := by
+  let S := (ShortComplex.mk _ _ I.sheafι_toPushforwardSubscheme).map (tensorLeft M.obj)
+  have hS : S.ShortExact := I.shortExact_tensor_toPushforwardSubscheme M.obj
+  have hsub : Subsingleton (Cohomology (M.obj ⊗ I.pushforwardSubscheme) n) :=
+    @Function.Injective.subsingleton _ _ _
+      (I.cohomologyTensorRestrictionEquiv R M n).injective hvan
+  have hsurj : Function.Surjective (cohomologyMapBaseLinear R X S.f n) := by
+    intro y
+    obtain ⟨x, hx⟩ := (exact_cohomologyMap_cohomologyMap hS n y).mp (hsub.allEq _ _)
+    exact ⟨x, (congrFun (coe_cohomologyMapBaseLinear R X S.f n) x).trans hx⟩
+  have hf : S.f = M.obj ◁ I.sheafι := rfl
+  have hunit :
+      Function.Surjective (cohomologyMapBaseLinear R X (ρ_ M.obj).hom n) := by
+    have he := (cohomologyBaseLinearEquivOfIso R (ρ_ M.obj) n).surjective
+    intro y
+    obtain ⟨x, hx⟩ := he y
+    exact ⟨x, (cohomologyBaseLinearEquivOfIso_apply R (ρ_ M.obj) n x).symm.trans hx⟩
+  rw [tensorIdealInclusion_def, cohomologyMapBaseLinear_comp, ← hf]
+  exact hunit.comp hsurj
+
 /-- The connecting map for a line bundle commutes with a morphism on the ambient twist
 and its actual restriction to the closed subscheme. -/
 theorem cohomologyRestrictionConnecting_naturality {M N : InvertibleSheaf X}

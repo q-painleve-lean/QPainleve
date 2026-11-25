@@ -75,51 +75,6 @@ theorem IsEffectiveCartier.cohomologyTracePairing_connecting (M W : InvertibleSh
 
 variable {k : Type u} [Field k] [X.Over (Spec (.of k))]
 
-private theorem exact_cohomologyRestrictionConnecting_inclusion (M : InvertibleSheaf X)
-    (q : ℕ) :
-    Function.Exact (I.cohomologyRestrictionConnecting k M q)
-      (cohomologyMapBaseLinear k X incl[M.obj] (q + 1)) := by
-  let S := (ShortComplex.mk _ _ I.sheafι_toPushforwardSubscheme).map (tensorLeft M.obj)
-  have hS : S.ShortExact := I.shortExact_tensor_toPushforwardSubscheme M.obj
-  intro x
-  rw [tensorIdealInclusion_def, cohomologyMapBaseLinear_comp, LinearMap.comp_apply,
-    ← cohomologyBaseLinearEquivOfIso_apply,
-    ← map_zero (cohomologyBaseLinearEquivOfIso k (ρ_ M.obj) (q + 1)),
-    (cohomologyBaseLinearEquivOfIso k (ρ_ M.obj) (q + 1)).injective.eq_iff]
-  rw [congrFun (coe_cohomologyMapBaseLinear k X (M.obj ◁ I.sheafι) (q + 1)) x]
-  refine (exact_cohomologyδ_cohomologyMap hS q (q + 1) rfl x).trans ?_
-  simp only [← coe_cohomologyδBaseLinear k X hS]
-  constructor
-  · rintro ⟨y, rfl⟩
-    refine ⟨I.cohomologyTensorRestrictionEquiv k M q y, ?_⟩
-    rw [cohomologyRestrictionConnecting_cohomologyTensorRestrictionEquiv]
-  · rintro ⟨y, rfl⟩
-    obtain ⟨z, rfl⟩ := (I.cohomologyTensorRestrictionEquiv k M q).surjective y
-    refine ⟨z, ?_⟩
-    rw [cohomologyRestrictionConnecting_cohomologyTensorRestrictionEquiv]
-
-private theorem surjective_cohomologyMapBaseLinear_inclusion (M : InvertibleSheaf X) (n : ℕ)
-    (hvan : Subsingleton (Cohomology ((F).obj M.obj) n)) :
-    Function.Surjective (cohomologyMapBaseLinear k X incl[M.obj] n) := by
-  let S := (ShortComplex.mk _ _ I.sheafι_toPushforwardSubscheme).map (tensorLeft M.obj)
-  have hS : S.ShortExact := I.shortExact_tensor_toPushforwardSubscheme M.obj
-  have hsub : Subsingleton (Cohomology (M.obj ⊗ I.pushforwardSubscheme) n) :=
-    @Function.Injective.subsingleton _ _ _
-      (I.cohomologyTensorRestrictionEquiv k M n).injective hvan
-  have hsurj : Function.Surjective (cohomologyMapBaseLinear k X S.f n) := by
-    intro y
-    obtain ⟨x, hx⟩ := (exact_cohomologyMap_cohomologyMap hS n y).mp (hsub.allEq _ _)
-    exact ⟨x, (congrFun (coe_cohomologyMapBaseLinear k X S.f n) x).trans hx⟩
-  have hf : S.f = M.obj ◁ I.sheafι := rfl
-  have hunit :
-      Function.Surjective (cohomologyMapBaseLinear k X (ρ_ M.obj).hom n) := by
-    have he := (cohomologyBaseLinearEquivOfIso k (ρ_ M.obj) n).surjective
-    intro y
-    obtain ⟨x, hx⟩ := he y
-    exact ⟨x, (cohomologyBaseLinearEquivOfIso_apply k (ρ_ M.obj) n x).symm.trans hx⟩
-  rw [tensorIdealInclusion_def, cohomologyMapBaseLinear_comp, ← hf]
-  exact hunit.comp hsurj
-
 /-- A perfect ambient pairing for the smaller twist descends to a perfect pairing
 for the larger twist if the divisor pairing is perfect and the next cohomology
 of the restricted line bundle vanishes. -/
@@ -134,7 +89,7 @@ theorem IsEffectiveCartier.isPerfPair_cohomologyTracePairing_of_cartier_twist
   let f := cohomologyMapBaseLinear k X incl[M.obj] (q + 1)
   let p := cohomologyTracePairing (M := M.obj) k (q + 1) tr
   let prev := cohomologyTracePairing (M := M.obj ⊗ I.sheaf) k (q + 1) tr
-  have hsurj : Function.Surjective f := surjective_cohomologyMapBaseLinear_inclusion M _ hvan
+  have hsurj : Function.Surjective f := I.surjective_cohomologyMapBaseLinear_inclusion k M _ hvan
   have hcomm (s : Γ((ihom M.obj).obj W.obj, ⊤)) (x : Cohomology (M.obj ⊗ I.sheaf) (q + 1)) :
       p (f x) s = prev x
         (internalHomSectionsEquiv.symm (incl[M.obj] ≫ internalHomSectionsEquiv s)) := by
@@ -159,7 +114,7 @@ theorem IsEffectiveCartier.isPerfPair_cohomologyTracePairing_of_cartier_twist
       intro x
       rw [← hI.cohomologyTracePairing_connecting k M W q tr x s]
       have hδ :=
-        (exact_cohomologyRestrictionConnecting_inclusion (k := k) M q).apply_apply_eq_zero x
+        (I.exact_cohomologyRestrictionConnecting_inclusion k M q).apply_apply_eq_zero x
       simpa only [LinearMap.flip_apply, LinearMap.comp_apply, f, hδ, map_zero] using
         DFunLike.congr_fun hs (I.cohomologyRestrictionConnecting k M q x)
     have ha : (F).map (hI.dualSectionTwist M.obj W a) = 0 := by
