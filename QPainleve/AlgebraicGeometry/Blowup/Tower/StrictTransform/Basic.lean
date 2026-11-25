@@ -95,6 +95,21 @@ theorem strictTransformCoefficients_snoc_last (D : X.IdealSheafData)
       -(ENat.toNat ((T.strictTransform D).stalkOrder p) : ℤ) := by
   simp only [strictTransformCoefficients, Fin.lastCases_last, lastCenter_eq h p hp hI]
 
+/-- A strict-transform coefficient in the prefix of a tower is independent of the
+appended blowups. -/
+@[simp]
+theorem strictTransformCoefficients_append_castAdd {X Y Z : Scheme.{u}} {m n : ℕ}
+    {T : BlowupTower X m Y} {U : BlowupTower Y n Z}
+    (hT : IsClosedPointTower X T) (hU : IsClosedPointTower Y U)
+    (C : X.IdealSheafData) (j : Fin m) :
+    (hT.append hU).strictTransformCoefficients C (j.castAdd n) =
+      hT.strictTransformCoefficients C j := by
+  induction hU with
+  | nil => simp only [append_nil, Fin.castAdd_zero, Fin.cast_eq_self]
+  | @snoc n Z U I hU p hp hI ih =>
+    simpa only [← Fin.castSucc_castAdd, append_snoc, strictTransformCoefficients_snoc_castSucc]
+      using ih
+
 /-- A strict-transform coefficient in the tail of a tower can be computed using
 the strict transform on the prefix as the initial ideal for the tail. -/
 @[simp]

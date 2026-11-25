@@ -112,6 +112,8 @@ and carries the transported pole ideal. The fiber degree stays fixed, the revers
 order is the fiber degree minus the pivot order, and every other order retains
 its relative position. A center off the pivot fiber projects to its image
 under the complement isomorphism, and any first occurrence remains first.
+The pivot section's strict-transform center indices are transported in order
+after deleting the pivot index.
 The bidegree decreases when the pivot order exceeds half the fiber degree. -/
 theorem exists_sarkisov_link_of_logarithmic_smooth_section
     (hρ : ρ = r (pivotIndex)) (j : Fin (n + 1))
@@ -146,6 +148,10 @@ theorem exists_sarkisov_link_of_logarithmic_smooth_section
         hU.baseCenter (l.natAdd 1) = (targetOpen).ι ((complementIso).hom z) ∧
           ((∀ a < j.succAbove l, hT.baseCenter a ≠ hT.baseCenter (j.succAbove l)) →
             ∀ a < l.natAdd 1, hU.baseCenter a ≠ hU.baseCenter (l.natAdd 1))) ∧
+      hU.strictTransformCenterIndices ((Ψ).rayBoundaryIdeal hΨ (rayEquiv ρ)) =
+        (Finset.univ.filter fun l : Fin n ↦
+          j.succAbove l ∈ hT.strictTransformCenterIndices (Φ.rayBoundaryIdeal hΦ ρ)).map
+            (Fin.natAddEmb 1) ∧
       let C' := Fan.hirzebruchPicardBasis d e' hΨ r' hr'
       let y := (U.picardMarking hU f[Ψ]).symm (Additive.ofMul (pullback (k.inv ≫ g) H))
       (C').repr y.1 0 = a + x.2 j + (if onSection then β else 0) ∧
@@ -167,7 +173,7 @@ theorem exists_sarkisov_link_of_logarithmic_smooth_section
   refine ⟨Fan.Ray.isProjectiveOver_mutationFan ρ b hOpp hΦ, ?_⟩
   obtain ⟨d, hd₀, hd₁, hr'⟩ :=
     Fan.Ray.mutationFan_hirzebruch_ray_generators ρ b hOpp e r hr onSection hρ
-  obtain ⟨Z, U, k, hU, hk, hlink, hreverse, hcenters, hpic⟩ :=
+  obtain ⟨Z, U, k, hU, hk, hlink, hreverse, hcenters, hsection, hpic⟩ :=
     Fan.Ray.exists_sarkisov_decrease_of_smooth_section_center ρ b hOpp c hΦ hT j hj hfirst
   have hg' : (k.inv ≫ g) ≫ (P ↘ S) = U.toBase ≫ f[Ψ] := by
     rw [Category.assoc, hg, ← hk, k.inv_hom_id_assoc]
@@ -176,7 +182,8 @@ theorem exists_sarkisov_link_of_logarithmic_smooth_section
       ⟨.ofIso k.symm, by simp [Scheme.PartialIso.IsOver, Scheme.PartialIso.ofIso]⟩ hbir
   refine ⟨d, hr', Z, U, hU, k, hlink, hk, hg', hbir',
     ρ.mutation_projection_poleIdeal b hOpp c hT hΦ hc hU k hlink D hD,
-    fun l ↦ ρ.baseCenter_of_mutation_of_mem_complement b hOpp c hT hU j l hreverse hcenters, ?_⟩
+    fun l ↦ ρ.baseCenter_of_mutation_of_mem_complement b hOpp c hT hU j l hreverse hcenters,
+    hsection, ?_⟩
   intro C' y
   obtain ⟨hF, hF'⟩ :=
     ρ.mutationFiberClasses_eq_hirzebruchPicardBasis_zero b hOpp e hΦ r hr onSection hρ d hd₀ hd₁ hr'

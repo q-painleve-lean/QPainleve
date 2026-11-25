@@ -94,7 +94,8 @@ private theorem hirzebruchLink_pullback_classes
     (r : Fin 4 ≃ Φ.Ray) (r' : Fin 4 ≃ Ψ.Ray)
     (hr : (fun j ↦ (r j).primitiveGenerator) = ![b 0, b 1, -b 0, e • b 0 - b 1])
     (hr' : (fun j ↦ (r' j).primitiveGenerator) = ![d 0, d 1, -d 0, (e + 1) • d 0 - d 1])
-    (hs : σ.val = hull ℝ (Set.range (i ∘ b))) (ht : τ.val = hull ℝ {i (d 1), i (-d 0)})
+    (hCorners : (r 0).toCone ≤ σ ∧ (r 1).toCone ≤ σ ∧ (r' 1).toCone ≤ τ ∧
+      ¬ (r' 0).toCone ≤ τ)
     (hd₀ : d 0 = b 0) (hd₁ : d 1 = b 0 + b 1)
     (ha : a.primitiveGenerator = b 0 + b 1) (hf : f.primitiveGenerator = b 1)
     (hg : g.hom ≫ (I[σ]).blowupToBase = s.toFanHom.algebraicMap)
@@ -114,8 +115,7 @@ private theorem hirzebruchLink_pullback_classes
   have hr₁ : (r 1).primitiveGenerator = b 1 := congrFun hr 1
   have hr'₀ : (r' 0).primitiveGenerator = d 0 := congrFun hr' 0
   have hr'₁ : (r' 1).primitiveGenerator = d 1 := congrFun hr' 1
-  obtain ⟨h₀, h₁, h'₁, h'₀⟩ :=
-    hirzebruchLink_cornerMembership b d σ τ r r' hs ht hr₀ hr₁ hr'₀ hr'₁
+  obtain ⟨h₀, h₁, h'₁, h'₀⟩ := hCorners
   have hN : finrank ℤ N = 2 := by simpa using finrank_eq_card_basis b
   have hsrc (j : Fin 4) := s.pullback_rayDivisorToPicard_single_of_pointBlowup hΦ hF hN σ (r j) g hg
   have htgt (j : Fin 4) :=
@@ -140,7 +140,7 @@ local notation "rays[" Δ "]" => Set.range (Ray.primitiveGenerator (Phi := Δ))
 blowup markings on the same surface. With source coefficients `(a, b, c)`
 in the fiber, section and exceptional classes, the target coefficients are
 `(a + b + c, b, -b - c)`. The source and target morphisms are the toric
-subdivision maps. -/
+subdivision maps, and the reverse corner lies off the chosen section. -/
 theorem exists_hirzebruch_toric_elementary_transform_picard_coordinates
     (b : Basis (Fin 2) ℤ N) (e : ℤ) (hΦ : Φ.IsRegular) (hc : Φ.IsComplete)
     (hrays : rays[Φ] = {b 0, b 1, -b 0, e • b 0 - b 1})
@@ -158,6 +158,7 @@ theorem exists_hirzebruch_toric_elementary_transform_picard_coordinates
       g'.hom ≫ (I[τ]).blowupToBase = t.toFanHom.algebraicMap ∧
       Φ.IsTwoRayStarSubdivision F ∧ Ψ.IsTwoRayStarSubdivision F ∧
       (I[τ]).comap t.toFanHom.algebraicMap = F.rayBoundaryIdeal hF (s.liftRay (r 1)) ∧
+      ¬ (r' 0).toCone ≤ τ ∧
       letI : Nonempty Ψ.cones := hc'.nonempty_cones
       let C := hirzebruchPicardBasis b e hΦ r hr
       let C' := hirzebruchPicardBasis d (e + 1) hΨ r' hr'
@@ -176,10 +177,12 @@ theorem exists_hirzebruch_toric_elementary_transform_picard_coordinates
   let := hc'.nonempty_cones
   let := hcF.nonempty_cones
   have hf' : f = r 1 := Ray.primitiveGenerator_injective (hf.trans (congrFun hr 1).symm)
+  have hCorners := hirzebruchLink_cornerMembership b d σ τ r r' hσ hτ
+    (congrFun hr 0) (congrFun hr 1) (congrFun hr' 0) (congrFun hr' 1)
   refine ⟨Ψ, F, hΨ, hF, hc', hcF, d, τ, s, t, g, g', r, r', hr, hr',
-    hd₀, hd₁, hτ, hg, hg', hstar, hstar', hf' ▸ hE', fun α β c ↦ ?_⟩
+    hd₀, hd₁, hτ, hg, hg', hstar, hstar', hf' ▸ hE', hCorners.2.2.2, fun α β c ↦ ?_⟩
   obtain ⟨hs, ht, hst⟩ := hirzebruchLink_pullback_classes b d e hΦ hΨ hF σ τ s t g g' a f
-    r r' hr hr' hσ hτ hd₀ hd₁ ha hf hg hg' hE hE'
+    r r' hr hr' hCorners hd₀ hd₁ ha hf hg hg' hE hE'
   apply Additive.ofMul.injective
   simp only [picardHom_snoc_apply_toMul, picardHom_nil, pullback_mul, pullback_comp, hg, hg',
     pullback_zpow, ofMul_mul, ofMul_zpow]

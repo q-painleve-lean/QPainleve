@@ -210,9 +210,10 @@ private theorem exists_move_last_to_front {J : Y.IdealSheafData}
 
 /-- Insert a blowup of a closed point absent from the projected centers of a tower.
 Blowing up its inverse image on the resolved scheme gives the same refinement as
-blowing it up first and carrying along the original tower. The original centers
-project to the same points in the same order, and the pullback of a marked Picard
-class has coefficient zero at the inserted center. -/
+blowing it up first and carrying along the original tower. The comparison
+identifies the total exceptional classes and preserves the original projected
+centers in order. The pullback of a marked Picard class has coefficient zero at
+the inserted center. -/
 theorem exists_prepend_closed_point_blowup (hT : IsClosedPointTower X T)
     {p : X} (hp : IsClosed ({p} : Set X)) (h : p ∉ Set.range hT.baseCenter) :
     let I := J[p]
@@ -222,13 +223,17 @@ theorem exists_prepend_closed_point_blowup (hT : IsClosedPointTower X T)
       IsClosed ({q} : Set Y) ∧ T.toBase q = p ∧ A = J[q] ∧
       e.hom ≫ U.toBase ≫ I.blowupToBase = A.blowupToBase ≫ T.toBase ∧
       (∀ j, I.blowupToBase (hU.baseCenter j) = hT.baseCenter j) ∧
+      pullback e.hom (pullback U.toBase I.blowupExceptionalClass) = A.blowupExceptionalClass ∧
+      (∀ j, pullback e.hom (U.exceptionalClass j) =
+        pullback A.blowupToBase (T.exceptionalClass j)) ∧
       ∀ (a : Additive (LineBundleClass X)) (x : Fin n → ℤ),
         pullback (e.inv ≫ A.blowupToBase) (T.picardHom (a, x)).toMul =
           (((BlowupTower.nil.snoc I).append U).picardHom
             (a, Fin.addCases (fun _ : Fin 1 ↦ 0) x)).toMul := by
   intro I A
   obtain ⟨⟨R⟩, q, hq, hqp, hA⟩ := hT.exists_rebase_of_notMem_range_baseCenter hp h
-  refine ⟨q, _, R.tower, R.iso, R.isClosedPointTower, hq, hqp, hA, R.over_base, R.baseCenter hT, ?_⟩
+  refine ⟨q, _, R.tower, R.iso, R.isClosedPointTower, hq, hqp, hA, R.over_base,
+    R.baseCenter hT, R.pullback_exceptional, R.exceptional, ?_⟩
   intro a x
   have hbase : (R.iso.inv ≫ A.blowupToBase) ≫ T.toBase = R.tower.toBase ≫ I.blowupToBase := by
     rw [Category.assoc, ← R.over_base, Iso.inv_hom_id_assoc]
