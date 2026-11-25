@@ -65,7 +65,9 @@ local notation "center[" ρ "," c "]" => Fan.Ray.binomialCenter ρ rankTwo
   (Fan.Ray.surjective_detCharacter ρ b) c z
 
 include hc in
-private theorem disjoint_sectionCenters_of_fiberCenters
+/-- Centers over open invariant fiber orbits are disjoint from the stages on
+the successive strict transforms of the marked positive section. -/
+theorem disjoint_sectionCenters_of_fiberCenters
     [IsNoetherian X] [SmoothOfRelativeDimension 2 f] (J : Finset (Fin n))
     (hJ : ∀ j ∈ J, ∃ t : Fin 2, ∃ c : ℂˣ, hT.baseCenter j = center[fiberRay[t],c]) :
     Disjoint (hT.strictTransformCenterIndices C) J := by
