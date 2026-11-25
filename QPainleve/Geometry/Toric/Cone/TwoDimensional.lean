@@ -53,6 +53,20 @@ theorem hull_eq_of_basis_primitiveGenerators {σ : PointedCone ℝ V}
   have he : (b : Fin 2 → N) = primitiveGenerator hi hσ.toIsToricCone ∘ e := funext hb
   rw [he, e.surjective.range_comp, hσ.toIsToricCone.hull_primitiveGenerator hi]
 
+/-- A two-ray regular cone in a rank-two lattice spans the ambient real vector space. -/
+theorem span_eq_top_of_card_toricRay_eq_two {σ : PointedCone ℝ V}
+    (hσ : IsRegularCone i σ) (hi : IsIntegralLattice i) (hN : Module.finrank ℤ N = 2)
+    (hc : Nat.card (ToricRay σ) = 2) : Submodule.span ℝ (σ : Set V) = ⊤ := by
+  obtain ⟨e, b, hb⟩ := hσ.exists_basis_primitiveGenerators hi hN hc
+  let d := hi.isBaseChange.basis b
+  have hd : Set.range d = i '' Set.range b := by
+    rw [← Set.range_comp]
+    exact congrArg Set.range (funext (hi.isBaseChange.basis_apply b))
+  have hsub : Set.range d ⊆ (σ : Set V) := by
+    rw [hd, ← hσ.hull_eq_of_basis_primitiveGenerators hi b e hb]
+    exact PointedCone.subset_hull
+  exact top_unique (d.span_eq ▸ Submodule.span_mono hsub)
+
 /-- The sum of the generators of a two-ray cone is the sum of the two basis vectors. -/
 theorem sum_primitiveGenerator_allRays {σ : PointedCone ℝ V}
     (hσ : IsRegularCone i σ) (hi : IsIntegralLattice i)

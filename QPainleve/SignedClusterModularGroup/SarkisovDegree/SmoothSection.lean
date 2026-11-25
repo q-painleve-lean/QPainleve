@@ -13,7 +13,6 @@ public import QPainleve.Geometry.Toric.Fan.Picard.Mutation.Geometric
 public import QPainleve.Geometry.Toric.Fan.Smooth
 public import QPainleve.SignedClusterModularGroup.SarkisovDegree.ElementaryTransform
 
-import QPainleve.AlgebraicGeometry.Blowup.Tower.StrictTransform.BaseMultiplicity
 import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
 import QPainleve.Geometry.Toric.Fan.Mutation.SectionIncidence
 import TauCeti.AlgebraicGeometry.RationalPoint.Basic
@@ -161,56 +160,6 @@ private theorem baseCenters_mutationTarget {Y : Scheme} {T : BlowupTower (I₀).
     rw [IsClosedPointTower.baseCenter_append_natAdd hPivot hR, ← R.isLift.hom_baseCenter hT hR,
       toBase_snoc, toBase_nil, Category.comp_id]
 
-private theorem sectionCenters_mutationTarget {Y : Scheme} {T : BlowupTower (I₀).blowup n Y}
-    (hT : IsClosedPointTower (I₀).blowup T) (j : Fin (n + 1)) (e : W ≅ Y)
-    (he : e.hom ≫ T.toBase ≫ (I₀).blowupToBase = T₀.toBase)
-    (hE : pullback e.hom (pullback T.toBase (I₀).blowupExceptionalClass) = T₀.exceptionalClass j)
-    (hTail : ∀ l, pullback e.hom (T.exceptionalClass l) = T₀.exceptionalClass (j.succAbove l))
-    (h₀ : IsClosedPointTower X (P(I₀))) :
-    let R := T.transport (E)
-    let hR := R.isLift.isClosedPointTower hT
-    let h₁ := isClosedPointTower_mutationTarget ρ b hOpp c
-    let hU := h₁.append hR
-    hU.baseCenter k = reverseCenter (IsLocalRing.closedPoint ℂ) →
-    sectionCenters(hU,hΨ,r ρ) =
-      (Finset.univ.filter fun l : Fin n ↦
-        j.succAbove l ∈ sectionCenters(hT₀,hΦ,ρ)).map (Fin.natAddEmb 1) := by
-  intro R hR h₁ hU hreverse
-  let : Nonempty (Ψ).cones := ⟨(r ρ).toCone⟩
-  let : SmoothOfRelativeDimension 2 (X' ↘ B) := by
-    rw [Fan.algebraicRealization_over]
-    exact rankTwo ▸ (Ψ).smoothOfRelativeDimension_algebraicRealizationStructureMap hΨ
-  let : Smooth (X' ↘ B) := SmoothOfRelativeDimension.smooth 2 _
-  let : IsNoetherian X' := isNoetherian_of_finiteType (X' ↘ B)
-  -- The reverse center lies on the image of the opposite ray.
-  have hhead : k ∉ sectionCenters(hU,hΨ,r ρ) := by
-    intro hm
-    have hs := hU.baseCenter_mem_support_of_strictTransformCoefficients_ne_zero (X' ↘ B)
-      ((Ψ).isEffectiveCartier_rayBoundaryIdeal hΨ (r ρ))
-      ((hU.mem_strictTransformCenterIndices _ k).mp hm)
-    rw [hreverse] at hs
-    have heq := ((reverseRay).binomialCenter_mem_support_rayBoundaryIdeal_iff hΨ rankTwo
-      (b.detDualEquiv_self (reverseRay).primitiveGenerator)
-      ((reverseRay).surjective_detCharacter b) c⁻¹ (r ρ)).mp hs
-    have hq : reverseRay = r q := Φ.mutationFanCenterRays_self b (fun _ : Unit ↦ ρ) () hOpp
-    have hneg := congrArg Ray.primitiveGenerator ((r).injective (hq.symm.trans heq))
-    rw [Ray.primitiveGenerator_ofPrimitiveGenerator] at hneg
-    obtain ⟨ℓ, hℓ⟩ := TauCeti.isPrimitive_def.mp ρ.isPrimitiveGenerator.isPrimitive
-    have h := congrArg ℓ hneg
-    rw [map_neg, hℓ] at h
-    omega
-  refine Finset.ext (Fin.addCases (m := 1) (fun a ↦ ?_) (fun l ↦ ?_))
-  · rw [Fin.fin_one_eq_zero a]
-    simp only [Finset.mem_map, Fin.natAddEmb_apply]
-    exact iff_of_false hhead (fun ⟨l, _, hl⟩ ↦ by
-      have := congrArg Fin.val hl
-      simp only [Fin.val_natAdd, Fin.val_castAdd, Fin.val_zero] at this
-      omega)
-  · simpa only [Fin.natAddEmb_apply, Finset.mem_map, Fin.natAdd_inj, exists_eq_right,
-      Finset.mem_filter, Finset.mem_univ, true_and] using
-      ρ.mem_strictTransformCenterIndices_mutation_iff b hOpp c hΦ ρ
-        hT₀ h₀ h₁ hT hR j e R.iso R.isLift he hE hTail l
-
 /-- A specified point resolution with a center at the binomial point of a ruling
 section transports across the smooth elementary link. Move the first center
 over that point to the front and retain the relative order of every other
@@ -281,12 +230,14 @@ theorem Ray.exists_sarkisov_decrease_of_smooth_section_center (j : Fin (n + 1))
   obtain ⟨Z, T, e, hT, he, hE, hcenter, hTail⟩ := hmove
   let R := T.transport E
   let U := (P(I₁)).append R.tower
-  have hU : IsClosedPointTower X' U :=
-    (isClosedPointTower_mutationTarget ρ b hOpp c).append (R.isLift.isClosedPointTower hT)
+  have hTarget := isClosedPointTower_mutationTarget ρ b hOpp c
+  have hR := R.isLift.isClosedPointTower hT
+  have hU : IsClosedPointTower X' U := hTarget.append hR
   obtain ⟨hreverse, hcenters⟩ := baseCenters_mutationTarget ρ b hOpp c hT₀ hT j hcenter
-  have h₀ : IsClosedPointTower X (P(I₀)) :=
+  have hSource : IsClosedPointTower X (P(I₀)) :=
     .snoc .nil _ (isClosed_mutationSourcePoint ρ b c) hI
-  have hsection := sectionCenters_mutationTarget ρ b hOpp c hΦ hT₀ hT j e he hE hTail h₀ hreverse
+  have hsection := ρ.strictTransformCenterIndices_mutation_pivot b hOpp c hΦ
+    hT₀ hSource hTarget hT hR j e R.iso R.isLift he hE hTail hreverse
   let f := e.hom ≫ T.toBase
   have hf : f ≫ (I₀).blowupToBase = T₀.toBase := (Category.assoc _ _ _).trans he
   have hlink := ρ.mutationPartialMap_resolved_of_comp_eq b hOpp c f T₀.toBase hf
