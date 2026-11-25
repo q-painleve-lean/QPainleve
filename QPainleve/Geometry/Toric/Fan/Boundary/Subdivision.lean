@@ -13,6 +13,7 @@ public import TauCeti.AlgebraicGeometry.Blowup.StrictTransform
 
 import QPainleve.AlgebraicGeometry.Blowup.StrictTransform.Reduced
 import QPainleve.AlgebraicGeometry.IdealSheaf.Restriction
+import QPainleve.AlgebraicGeometry.Morphisms.IsoLocus
 import QPainleve.AlgebraicGeometry.Morphisms.Pullback.IsoLocus
 import QPainleve.AlgebraicGeometry.Scheme.FunctionField
 import TauCeti.AlgebraicGeometry.IdealSheaf.BaseChange
@@ -310,7 +311,7 @@ theorem comap_internalCenter {N V : Type} [AddCommGroup N] [AddCommGroup V] [Mod
     rfl
   exact hker.trans (hq' _ hμ _ _).symm
 
-section SharedRay
+section CenterTransport
 
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {Φ Ψ F : Fan i}
@@ -325,6 +326,33 @@ local notation "p[" b "," ρ "," c "]" =>
   Fan.Ray.binomialCenter ρ dim(b)
     (Module.Basis.detDualEquiv_self b (Fan.Ray.primitiveGenerator ρ))
     (Fan.Ray.surjective_detCharacter ρ b) c
+
+/-- A lift of a binomial center to a common refinement projects to the distinguished
+point on the other fan if the second subdivision contracts the lifted ray to that point. -/
+theorem algebraicMap_eq_distinguishedPoint_of_binomialCenter
+    (s : F.IsSubdivision Φ) (t : F.IsSubdivision Ψ) [Nonempty F.cones]
+    (b : Module.Basis (Fin 2) ℤ N) (hF : F.IsRegular) (τ : Ψ.cones) (ρ : Φ.Ray)
+    (hcontract : (Ψ.distinguishedPointHom τ).ker.comap π[t] =
+      F.rayBoundaryIdeal hF (s.liftRay ρ))
+    (c : ℂˣ) {z : X[F]} (hz : π[s] z = p[b,ρ,c] pt) :
+    π[t] z = Ψ.distinguishedPointHom τ pt := by
+  let q := p[b,s.liftRay ρ,c] pt
+  have hq : π[s] q = p[b,ρ,c] pt := congrArg (fun f : S ⟶ X[Φ] ↦ f pt)
+    (s.binomialCenter_liftRay_comp_algebraicMap ρ b c)
+  have hi : p[b,ρ,c] pt ∈ (π[s]).isoLocus :=
+    s.range_binomialCenter_subset_isoLocus ρ dim(b) (b.detDualEquiv_self _)
+      (ρ.surjective_detCharacter b) c (Set.mem_range_self pt)
+  have hqz : q = z := (π[s]).injOn_preimage_isoLocus (by rwa [Set.mem_preimage, hq])
+    (by rwa [Set.mem_preimage, hz]) (hq.trans hz.symm)
+  have hs := ((s.liftRay ρ).binomialCenter_mem_support_sdiff_colon hF dim(b)
+    (b.detDualEquiv_self _) ((s.liftRay ρ).surjective_detCharacter b) c).1
+  let : IsClosedImmersion (Ψ.distinguishedPointHom τ) :=
+    Ψ.isClosedImmersion_distinguishedPointHom τ
+  rw [← hcontract, support_comap, Closeds.coe_preimage, Set.mem_preimage,
+    Scheme.Hom.support_ker, (Ψ.distinguishedPointHom τ).isClosedEmbedding.isClosed_range.closure_eq]
+    at hs
+  obtain ⟨x, hx⟩ := hs
+  rw [← hqz, ← hx, Subsingleton.elim pt x]
 
 /-- Binomial centers on a shared ray of two subdivisions lift to the same point of the
 common refinement after expressing the parameter in the target basis. Both centers lie
@@ -353,6 +381,6 @@ theorem exists_binomialCenter_lift_of_shared_ray
   · exact t.range_binomialCenter_subset_isoLocus ρ' dim(d) (d.detDualEquiv_self _)
       (ρ'.surjective_detCharacter d) c' (Set.mem_range_self pt)
 
-end SharedRay
+end CenterTransport
 
 end TauCeti.Toric.Fan.IsSubdivision

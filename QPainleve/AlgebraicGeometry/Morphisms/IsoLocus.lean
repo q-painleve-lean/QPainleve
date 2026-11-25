@@ -111,15 +111,14 @@ theorem first_occurrence_of_projected_points (f : X ⟶ Y) (g : X ⟶ Z) {n : �
     (hlifts : ∀ k : Fin n, ∃ z : X,
       f z = sourcePoints k ∧ g z = targetPoints (k.natAdd 1))
     {z : X} (hs : f z ∈ f.isoLocus) (ht : g z ∈ g.isoLocus)
-    (l : Fin n) (hl : sourcePoints l = f z)
-    (hfirst : ∀ k < l, sourcePoints k ≠ f z) :
+    (l : Fin n) (hl : sourcePoints l = f z) :
     targetPoints (l.natAdd 1) = g z ∧
-      ∀ k < l.natAdd 1, targetPoints k ≠ g z := by
+      ((∀ k < l, sourcePoints k ≠ f z) → ∀ k < l.natAdd 1, targetPoints k ≠ g z) := by
   obtain ⟨u, hu, hu'⟩ := hlifts l
   have hproj := hu.trans hl
   have hpt : u = z := f.injOn_preimage_isoLocus
     (by rwa [Set.mem_preimage, hproj]) hs hproj
-  refine ⟨hu'.symm.trans (congrArg g hpt), ?_⟩
+  refine ⟨hu'.symm.trans (congrArg g hpt), fun hfirst ↦ ?_⟩
   refine Fin.addCases ?_ ?_
   · intro k _ he
     rw [Subsingleton.elim k (0 : Fin 1)] at he

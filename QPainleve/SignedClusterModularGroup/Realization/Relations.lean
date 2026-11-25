@@ -13,6 +13,7 @@ public import QPainleve.SignedClusterModularGroup.Realization.NumberedRays
 import Mathlib.LinearAlgebra.Matrix.ToLin
 import QPainleve.SignedClusterModularGroup.BoundaryCycle
 import QPainleve.SignedClusterModularGroup.Faithfulness
+import QPainleve.SignedClusterModularGroup.Realization.Orthogonal
 
 /-!
 # Integer invariants for relations between signed cluster loops
@@ -312,13 +313,6 @@ theorem xPullback_eq_iff_signedLoopInvariants_eq_of_presentation
         ((Q.fan.boundaryIdeal Q.complete.nonempty_cones).subscheme.dualGraphEdgeEquiv
           Q.marks (Q.cycle.edge j)).val =
         Q.fan.distinguishedPointHom σ (IsLocalRing.closedPoint ℂ))
-    (hindex : (Fan.rayChargeMap Q.rays).range.toAddSubgroup.index ≠ 0)
-    (hι : Function.Injective Q.inclusion)
-    (e : H.orthogonal (Submodule.span ℤ (Set.range d)) ≃ₗ[ℤ] (Fan.rayChargeMap Q.rays).ker)
-    (he : ∀ x, Q.inclusion (e.symm x).val =
-      ((Fan.boundaryOrthogonalEquivChargeKernel Q.regular Q.rays
-        ((Chow.intersectionBilinForm ℂ Q.fan.algebraicRealization).prod
-          (-(dotProductBilin ℤ ℤ : LinearMap.BilinForm ℤ (Fin r → ℤ))))).symm x).val)
     {k : ℕ} (β : Module.Basis (Fin k) ℤ E.matrix.mulVecLin.ker) :
     w.xPullback ℂ = v.xPullback ℂ ↔
       let orders (j : Fin n) := Fan.rayBoundaryOrders b Q.rays
@@ -326,19 +320,25 @@ theorem xPullback_eq_iff_signedLoopInvariants_eq_of_presentation
       let start := Fan.rayBoundaryOrders b Q.rays (Q.rayOrder Q.origin)
       w.signedLoopInvariants (fun j ↦ (β j : Fin r → ℤ)) orders start =
         v.signedLoopInvariants (fun j ↦ (β j : Fin r → ℤ)) orders start := by
-  have hker : E.matrix.mulVecLin.ker = P.charge.ker := by
-    rw [← P.matrix_eq, hform, hcharge]
-    exact Fan.ker_chargeExchangeMatrix_rayChargeMap b Q.rays hindex
   have hmodel (c : Point Centers[r]) (hc : c.left (default : S) ∈ U₀[P]) :
       Q.HasNodalModel c (M c) := by
     obtain ⟨l, Y, A, hA, f, hf⟩ := (hnodal c hc).exists_tower
     exact (Q.hasNodalModel_iff c (M c)).mpr ⟨p c hc, Y, l, A, f, hA, hf.symm⟩
+  have hreference := hmodel c₀ hc₀
+  have hindex := Q.chargeIndex_ne_zero_of_anticanonical_cycle (M := M) hreference
+    (hD c₀) hnef hsq hcan hprim
+  have hι := Q.inclusion_injective hreference
+  obtain ⟨e, he, -⟩ := (p c₀ hc₀).existsUnique_markedBoundaryOrthogonalEquivChargeKernel
+    (hnodal c₀ hc₀) (hD c₀) (funext (hmark c₀))
+  have hker : E.matrix.mulVecLin.ker = P.charge.ker := by
+    rw [← P.matrix_eq, hform, hcharge]
+    exact Fan.ker_chargeExchangeMatrix_rayChargeMap b Q.rays hindex
   have models (x : CenterPoint (U := Centers[r]) (V := Centers[r]) Cnil[P]) :=
     hmodel _ (Path.nil.centerPoint_endpoints_mem_noncollision P hker x).2
   obtain ⟨R, hR, -⟩ := exists_realize_signed_loop w P Q hform hcharge M models
-    (hmodel c₀ hc₀) hD hnef hsq hcan hprim d hmark
+    hreference hD hnef hsq hcan hprim d hmark
   obtain ⟨R', hR', -⟩ := exists_realize_signed_loop v P Q hform hcharge M models
-    (hmodel c₀ hc₀) hD hnef hsq hcan hprim d hmark
+    hreference hD hnef hsq hcan hprim d hmark
   have hE := P.matrix_eq.symm.trans (congrArg₂ chargeExchangeMatrix hform hcharge)
   have hvertices j := (Q.cycle.component_apply j).symm.trans (Q.component_eq j)
   have hstart := Q.component_eq Q.origin

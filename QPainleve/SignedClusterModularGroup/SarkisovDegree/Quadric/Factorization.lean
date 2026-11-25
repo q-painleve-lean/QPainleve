@@ -116,17 +116,17 @@ private theorem exists_quadric_corner_decrease
   let : X[Φ].IsProjectiveOver ℂ := Φ.isProjectiveOver_quadric b hΦ hc r hr
   have hn : 1 ≤ n := by have := j.isLt; omega
   obtain ⟨n, rfl⟩ := Nat.exists_eq_add_of_le' hn
-  obtain ⟨Q, p, d', s', hs', Z, U, hU, k, -, -, hQ, hproj, hg', hbir', hpole', -,
+  obtain ⟨Q, p, d', s', hs', Z, U, hU, k, -, -, hQ, hproj, hg', hbir', hpole', -, -, -, -,
     hβ', -, -, hlt⟩ :=
-    exists_sarkisov_path_decrease_of_toric_corner d e hΦ hc s hs hT g hg hbir σ hcone j hj hfirst
-      D ((hT.ramificationIdealSheafToBase_def ℂ) ▸ hpole) (hβ.symm ▸ hhigh)
+    exists_sarkisov_path_of_toric_corner d e hΦ hc s hs hT g hg hbir σ hcone j hj hfirst
+      D ((hT.ramificationIdealSheafToBase_def ℂ) ▸ hpole)
   let : Nonempty Q.fan.cones := Q.isComplete.nonempty_cones
   obtain ⟨d₀, t, ht, -, -, hrepr⟩ :=
     Fan.exists_hirzebruchPicardBasis_natAbs d' (e + 1) Q.isRegular s' hs'
   have hpos := (hirzebruch_resolution_degree_bounds b 0 hΦ hc r hr hT g hg hbir).1
   refine ⟨_, Q, p, rfl, HEq.rfl, _, d₀, t, ht, Z, _, U, hU, k, hQ, hproj, hg', hbir',
     hpole', ?_⟩
-  simpa only [hrepr] using And.intro (hβ'.symm ▸ hβ.symm ▸ hpos) (hβ ▸ hlt)
+  simpa only [hrepr] using And.intro (hβ'.symm ▸ hβ.symm ▸ hpos) (hβ ▸ hlt (hβ.symm ▸ hhigh))
 
 include hg hbir in
 private theorem exists_quadric_section_decrease

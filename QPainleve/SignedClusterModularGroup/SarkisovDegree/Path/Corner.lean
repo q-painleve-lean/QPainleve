@@ -17,11 +17,11 @@ import QPainleve.Geometry.Toric.Fan.StarSubdivision.Descent
 /-!
 # Resolved Sarkisov path at a Hirzebruch corner
 
-The first blowup above a high-order toric corner determines two successive
+The first blowup above a specified toric corner determines two successive
 links on the original resolution, a star subdivision and a reverse star
 subdivision. The endpoint is a projective Hirzebruch surface. Its point tower
-resolves the given plane map with the same fiber degree and smaller total base
-order. This is the toric corner case of [Lutz's Proposition 8.11][HKL].
+resolves the given plane map with the same fiber degree. A high pivot order
+gives a smaller total base order. This is the toric corner case of [Lutz's Proposition 8.11][HKL].
 
 [HKL]: https://arxiv.org/pdf/2005.05010v3#page=72
 -/
@@ -45,6 +45,11 @@ local notation "rankTwo(" b ")" => Eq.trans (finrank_eq_card_basis b) (Fintype.c
 local notation "P" => Proj (homogeneousSubmodule ℂ (Fin 3 → ℂ))
 local notation "H" => mk (Proj.symmetricAlgebraTwistingBundle ℂ (Fin 3 → ℂ) 1)
 local notation "L[" D "]" => Fan.LogarithmicProjection i D
+local notation "pt" => IsLocalRing.closedPoint ℂ
+local notation "center[" b "," ρ "," c "]" =>
+  Fan.Ray.binomialCenter ρ rankTwo(b)
+    (Module.Basis.detDualEquiv_self b (Fan.Ray.primitiveGenerator ρ))
+    (Fan.Ray.surjective_detCharacter ρ b) c pt
 local notation "coordinates(" U "," hU "," g "," s ")" =>
   LinearEquiv.symm (BlowupTower.picardMarking U hU s) (Additive.ofMul (pullback g H))
 
@@ -96,14 +101,14 @@ private theorem corner_bidegree_comparison
     ((∀ l, 0 ≤ -x.2 l) → -x.2 j ≤ β → β < 2 * (-x.2 j) →
       hirzebruchSarkisovBidegree β.toNat (∑ l, -x' l).toNat <
         hirzebruchSarkisovBidegree β.toNat (∑ l, -x.2 l).toNat) →
-    β < 2 * (-x.2 j) →
     let y := coordinates(U,hU,k.inv ≫ g,f[Ψ])
     let β' := C'.repr y.1 1
     C'.repr y.1 0 = a + β + x.2 j ∧ β' = β ∧ y.2 = x' ∧
     (∑ l, -y.2 l) = (∑ l, -x.2 l) + β + 2 * x.2 j ∧
-    hirzebruchSarkisovBidegree β'.toNat (∑ l, -y.2 l).toNat <
-      hirzebruchSarkisovBidegree β.toNat (∑ l, -x.2 l).toNat := by
-  intro x a β x' hclass hsum hlt hhigh y β'
+    (β < 2 * (-x.2 j) →
+      hirzebruchSarkisovBidegree β'.toNat (∑ l, -y.2 l).toNat <
+        hirzebruchSarkisovBidegree β.toNat (∑ l, -x.2 l).toNat) := by
+  intro x a β x' hclass hsum hlt y β'
   have hsum_repr : a • C 0 + β • C 1 = x.1 := by
     simpa only [Fin.sum_univ_two] using (C).sum_repr x.1
   have hsrc : (T.picardHom x).toMul = pullback g H := by
@@ -112,25 +117,26 @@ private theorem corner_bidegree_comparison
   have hcoeff : C'.repr y.1 0 = a + β + x.2 j ∧ β' = β ∧ y.2 = x' :=
     corner_coordinates_of_pullback_eq hU C' k g a β x.2 j hclass
   obtain ⟨ha', hβ', hy⟩ := hcoeff
+  refine ⟨ha', hβ', hy, hy.symm ▸ hsum, fun hhigh ↦ ?_⟩
   obtain ⟨_, J, -, -, -, -, -, horders⟩ := hT.exists_moving_base_ideal_of_plane_resolution g hg
   have hnonneg (l : Fin (n + 1)) : 0 ≤ -x.2 l := by
     rw [horders l]
     exact Int.natCast_nonneg _
   have hbound := hT.base_order_le_hirzebruch_fiber_degree b e hΦ r hr hc g hg j
-  refine ⟨ha', hβ', hy, ?_, ?_⟩
-  · rwa [hy]
-  · rw [hβ', hy]
-    exact hlt hnonneg hbound hhigh
+  rw [hβ', hy]
+  exact hlt hnonneg hbound hhigh
 
 include hg hbir in
-/-- A first blowup above a specified Hirzebruch corner of order greater than half
-the fiber degree gives a two-link resolved Sarkisov path on the original surface.
-The path blows up the corner and contracts the strict transform of its fiber.
-Every vertex carries the same pole ideal. The endpoint projection identifies the
-transported point tower, with its pole ideal and prescribed morphism to the plane.
-In the transported marking the fiber degree is unchanged, the remaining orders
-keep their relative order, and the Sarkisov bidegree strictly decreases. -/
-theorem exists_sarkisov_path_decrease_of_toric_corner [X[Φ].IsProjectiveOver ℂ]
+/-- The first blowup over a specified Hirzebruch corner gives a two-link Sarkisov
+path on the original resolution. Every vertex carries the same pole ideal and the
+target tower resolves the same plane map. Centers from the contracted fiber's open
+orbit lie over the first reverse center. Those from the other invariant fiber's
+open orbit stay in its open orbit and preserve first occurrences.
+
+The signed Hirzebruch parameter increases by one. The fiber degree is unchanged,
+the transported base orders keep their relative order, and the Sarkisov bidegree
+decreases when the selected order is greater than half the fiber degree. -/
+theorem exists_sarkisov_path_of_toric_corner [X[Φ].IsProjectiveOver ℂ]
     (σ : Φ.cones) (hσ : σ.val = hull ℝ (Set.range (i ∘ b))) (j : Fin (n + 1))
     (hj : hT.baseCenter j = Φ.distinguishedPointHom σ (IsLocalRing.closedPoint ℂ))
     (hfirst : ∀ l < j, hT.baseCenter l ≠ hT.baseCenter j) (D : Y.IdealSheafData) :
@@ -147,7 +153,6 @@ theorem exists_sarkisov_path_decrease_of_toric_corner [X[Φ].IsProjectiveOver �
     let x := coordinates(T,hT,g,f[Φ])
     let β := (C).repr x.1 1
     ∀ hpole : B[Φ,hc].comap T.toBase = D * ramificationIdealSheaf ℂ T.toBase,
-    β < 2 * (-x.2 j) →
     let A : L[D] := ⟨Φ, hΦ, hc, T.toBase, inferInstance, inferInstance, hpole⟩
     ∃ (B : L[D]) (path : Fan.LogarithmicProjection.SarkisovPath A B)
       (d : Basis (Fin 2) ℤ N) (r' : Fin 4 ≃ B.fan.Ray)
@@ -166,15 +171,24 @@ theorem exists_sarkisov_path_decrease_of_toric_corner [X[Φ].IsProjectiveOver �
         exact isNoetherian_of_finiteType f[B.fan]
       B[B.fan,B.isComplete].comap U.toBase =
         D.comap k.inv * hU.ramificationIdealSheafToBase ℂ ∧
+      (∃ τ : B.fan.cones, τ.val = hull ℝ {i (d 1), i (-d 0)} ∧
+        hU.baseCenter (Fin.castAdd n (0 : Fin 1)) = B.fan.distinguishedPointHom τ pt) ∧
+      (∀ (l : Fin n) (c : ℂˣ), hT.baseCenter (j.succAbove l) = center[b,r 1,c] →
+        hU.baseCenter (l.natAdd 1) = hU.baseCenter (Fin.castAdd n (0 : Fin 1))) ∧
+      (∀ (l : Fin n) (c : ℂˣ), hT.baseCenter (j.succAbove l) = center[b,r 3,c] →
+        ∃ c' : ℂˣ, hU.baseCenter (l.natAdd 1) = center[d,r' 3,c'] ∧
+          ((∀ m < j.succAbove l, hT.baseCenter m ≠ hT.baseCenter (j.succAbove l)) →
+            ∀ m < l.natAdd 1, hU.baseCenter m ≠ hU.baseCenter (l.natAdd 1))) ∧
       let y := coordinates(U,hU,k.inv ≫ g,f[B.fan])
       let C' := B.fan.hirzebruchPicardBasis d (e + 1) B.isRegular r' hr'
       let β' := C'.repr y.1 1
       C'.repr y.1 0 = (C).repr x.1 0 + β + x.2 j ∧ β' = β ∧
       y.2 = Fin.append (fun _ : Fin 1 ↦ -β - x.2 j) (x.2 ∘ j.succAbove) ∧
       (∑ l, -y.2 l) = (∑ l, -x.2 l) + β + 2 * x.2 j ∧
-      hirzebruchSarkisovBidegree β'.toNat (∑ l, -y.2 l).toNat <
-        hirzebruchSarkisovBidegree β.toNat (∑ l, -x.2 l).toNat := by
-  intro hcones hdim hNoeth hOver hToBase hdimY hSmoothY hInt hMod x β hpole hhigh A
+      (β < 2 * (-x.2 j) →
+        hirzebruchSarkisovBidegree β'.toNat (∑ l, -y.2 l).toNat <
+          hirzebruchSarkisovBidegree β.toNat (∑ l, -x.2 l).toNat) := by
+  intro hcones hdim hNoeth hOver hToBase hdimY hSmoothY hInt hMod x β hpole A
   let := hcones
   let := hdim
   let := hNoeth
@@ -189,7 +203,8 @@ theorem exists_sarkisov_path_decrease_of_toric_corner [X[Φ].IsProjectiveOver �
     rw [← r.surjective.range_comp, Function.comp_def, hr]
     simp only [Matrix.range_cons, Matrix.range_empty, Set.union_empty, Set.singleton_union]
   obtain ⟨Ψ, F, hΨ, hF, hcΨ, hcF, d, τ, s, t, v, w, q, r₀, r', hr₀, hr', Z, U, hU, k,
-    -, -, -, hv, hw, hs, ht, hq, hq', -, -, hg', hbir', hmodq, -, -, -, hp, hcoord⟩ :=
+    -, -, hτ, hv, hw, hs, ht, hq, hq', -, hhead, hcoll, hstay, -, hg', hbir', hmodq, -, -, -, hp,
+    hcoord⟩ :=
     exists_sarkisov_decrease_of_toric_corner b e hΦ hc hrays σ hσ hT j hj
       (by simpa only [← hj] using hfirst) g (P ↘ S) hg hbir
   have hr₀' : r₀ = r := Equiv.ext fun l ↦ Fan.Ray.primitiveGenerator_injective
@@ -218,12 +233,12 @@ theorem exists_sarkisov_path_decrease_of_toric_corner [X[Φ].IsProjectiveOver �
   let path := Fan.LogarithmicProjection.SarkisovPath.ofStar p
   refine ⟨B, path, d, r', hr', Z, U, hU, k, ?_, ?_, rfl,
     t.isProjectiveOver_of_common_pointBlowup s σ τ v w hv hw,
-    hg', hbir', hpU, ?_⟩
+    hg', hbir', hpU, ⟨τ, hτ, hhead⟩, hcoll, hstay, ?_⟩
   · exact (Fan.LogarithmicProjection.SarkisovPath.length_ofStar p).trans rfl
   · exact (Fan.LogarithmicProjection.SarkisovPath.rationalMap_ofStar p).trans
       (Fan.LogarithmicProjection.pathRationalMap_eq_denseTorusPartialIso p)
   · obtain ⟨hclass, hsum, hlt⟩ := hcoord ((C).repr x.1 0) β x.2
     exact corner_bidegree_comparison b e hΦ hc r hr hT g hg hU
-      (Ψ.hirzebruchPicardBasis d (e + 1) hΨ r' hr') k j hclass hsum hlt hhigh
+      (Ψ.hirzebruchPicardBasis d (e + 1) hΨ r' hr') k j hclass hsum hlt
 
 end QPainleve.BlowupTower.IsClosedPointTower

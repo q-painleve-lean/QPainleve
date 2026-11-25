@@ -92,8 +92,8 @@ theorem retained_corner_of_toric_link
       rw [hhead]
       exact Ψ.notMem_isoLocus_distinguishedPoint_of_blowup hΨ hN τ _ w hw
     obtain ⟨himage, hf⟩ := (π[s]).first_occurrence_of_projected_points (π[t])
-      hheadOff hretained hoff htarget l (hl.trans hsrc.symm) (by simpa only [hsrc, hl] using hfirst)
+      hheadOff hretained hoff htarget l (hl.trans hsrc.symm)
     exact ⟨himage.trans htgt, _, Or.inr rfl, himage.trans htgt,
-      fun a ha heq ↦ hf a ha (heq.trans himage)⟩
+      fun a ha heq ↦ hf (by simpa only [hsrc, hl] using hfirst) a ha (heq.trans himage)⟩
 
 end QPainleve

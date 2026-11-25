@@ -136,46 +136,6 @@ private theorem exists_sarkisov_path_of_resolved_section (c : ℂˣ)
       Scheme.RationalMap.id_comp]
     rfl⟩
 
-include hΦ in
-private theorem retained_corner_of_smooth_section (c : ℂˣ)
-    (hOpp : hull ℝ {i (-pivot)} ∈ Φ.cones)
-    {σ : Φ.cones} (hσ : Nat.card (ToricRay σ.val) = 2)
-    {x : X[Φ]} {y : X[Ψ[hOpp]]} {p q : Prop} (hx : x = node[Φ,σ])
-    (hcenter : ∀ (hmem : x ∈ sourceOpen[c,hOpp]),
-      y = (targetOpen[c,hOpp]).ι ((complementIso[c,hOpp]).hom ⟨x, hmem⟩) ∧ (p → q)) :
-    let σ' := Φ.mutationFanConeEquiv b hv hp hOpp σ
-    Nat.card (ToricRay σ'.val) = 2 ∧ y = node[Ψ[hOpp],σ'] ∧ (p → q) := by
-  intro σ'
-  obtain ⟨v, w, hvσ, hwσ, hdet⟩ := Φ.exists_ray_pair_le_det_eq_one b
-    ((Fan.isRegular_iff.mp hΦ) _ σ.property) hσ
-  have hne : v ≠ w := by
-    rintro rfl
-    exact zero_ne_one ((b.detDualEquiv_self v.primitiveGenerator).symm.trans hdet)
-  have hnode : Set.range (Φ.distinguishedPointHom σ) ⊆ Set.range (sourceOpen[c,hOpp]).ι := by
-    rw [(sourceOpen[c,hOpp]).range_ι]
-    rintro _ ⟨z, rfl⟩
-    exact Φ.distinguishedPointHom_mem_mutationComplement b c hΦ hv _ hne hvσ hwσ z
-  let f := IsOpenImmersion.lift (sourceOpen[c,hOpp]).ι (Φ.distinguishedPointHom σ) hnode
-  have hf : f ≫ (sourceOpen[c,hOpp]).ι = Φ.distinguishedPointHom σ :=
-    IsOpenImmersion.lift_fac _ _ _
-  have hf' := Φ.mutationComplementIso_comp_distinguishedPointHom b hv hp hOpp c hΦ hne hvσ hwσ hf
-  let z : S := IsLocalRing.closedPoint ℂ
-  have hsrc : (sourceOpen[c,hOpp]).ι (f z) = x :=
-    (congrArg (fun g : S ⟶ X[Φ] ↦ g z) hf).trans hx.symm
-  have hz : x ∈ sourceOpen[c,hOpp] := hsrc ▸ (f z).property
-  obtain ⟨hy, hfirst⟩ := hcenter hz
-  have hlift : (⟨x, hz⟩ : (sourceOpen[c,hOpp]).toScheme) = f z := Subtype.ext hsrc.symm
-  rw [hlift] at hy
-  let R := Φ.mutationFanRayEquiv b hv hp hOpp
-  have hle {u : Φ.Ray} (hu : u.toCone ≤ σ) : (R u).toCone ≤ σ' := by
-    rw [Fan.mutationFanRayEquiv_toCone, OrderIso.le_iff_le]
-    exact hu
-  refine ⟨(Ψ[hOpp]).card_toricRay_eq_two_of_ray_ne_of_le (reg[hOpp]) rankTwo
-    (R.injective.ne hne) (hle hvσ) (hle hwσ), ?_, hfirst⟩
-  exact hy.trans (by
-    rw [← Scheme.Hom.comp_apply (complementIso[c,hOpp]).hom _,
-      ← Scheme.Hom.comp_apply f _, hf'])
-
 variable [X[Φ].IsProjectiveOver ℂ]
 
 include hg hbir in
@@ -291,9 +251,13 @@ theorem exists_sarkisov_path_of_smooth_section
     refine ⟨a', himage.trans ?_, hfirst'⟩
     exact congrArg (fun f : S ⟶ X[Ψ] ↦ f pt) (hp₁.trans ha'.symm)
   · intro σ m hσ hm σ'
-    obtain ⟨hcard, himage, hfirst'⟩ := retained_corner_of_smooth_section b hΦ r s c hOpp hσ hm
-      (hcenters m)
-    refine ⟨hcard, himage, fun u ↦ ?_, hfirst'⟩
+    obtain ⟨hmem, hcard, himage⟩ := Φ.mutationComplementIso_apply_distinguishedPointHom
+      b hv hp hOpp c hΦ hσ (IsLocalRing.closedPoint ℂ)
+    obtain ⟨hcenter, hfirst'⟩ := hcenters m (hm.symm ▸ hmem)
+    have hlift : (⟨hT.baseCenter (j.succAbove m), hm.symm ▸ hmem⟩ :
+        (sourceOpen[c,hOpp]).toScheme) = ⟨node[Φ,σ], hmem⟩ := Subtype.ext hm
+    rw [hlift] at hcenter
+    refine ⟨hcard, hcenter.trans himage, fun u ↦ ?_, hfirst'⟩
     rw [Fan.mutationFanRayEquiv_toCone, OrderIso.le_iff_le]
   · obtain ⟨ha, hβ, horders, -, hlt⟩ := hDecrease
     dsimp only
