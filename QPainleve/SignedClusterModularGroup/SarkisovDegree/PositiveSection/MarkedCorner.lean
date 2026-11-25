@@ -8,7 +8,6 @@ module
 public import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.ProjectiveLine.Inversion
 public import QPainleve.SignedClusterModularGroup.SarkisovDegree.PositiveSection.Corner
 
-import Mathlib.Combinatorics.Quiver.Cast
 import QPainleve.AlgebraicGeometry.Modules.Differentials.PoleIdeal
 import QPainleve.Geometry.Toric.Fan.Logarithmic.Factorization.Iso
 import QPainleve.Geometry.Toric.Fan.Ruling.Hirzebruch.Marking
@@ -52,7 +51,6 @@ local notation "baseMap[" t "]" =>
 local notation "rankTwo[" b "]" => Eq.trans (finrank_eq_card_basis b) (Fintype.card_fin 2)
 local notation "X[" Φ "]" => Fan.algebraicRealization Φ
 local notation "f[" Φ "]" => (X[Φ] ↘ S)
-local notation "obj[" F "," A "]" => @Prefunctor.obj _ sarkisovQuiver _ sarkisovQuiver F A
 local notation "ruling[" Φ "," b "," e "," r "," hr "]" =>
   Fan.characterRuling Φ (LinearMap.toAddMonoidHom (Basis.coord b 1))
     (Fan.nonneg_or_nonpos_hirzebruch_ruling_character b e r hr)
@@ -68,22 +66,6 @@ private theorem coordinatePoint_baseMap (t : Fin 2) :
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V] {i : N →+ V}
   {X : Scheme} [X.Over S] [SmoothOfRelativeDimension 2 (X ↘ S)] [PreirreducibleSpace X]
   {D : X.IdealSheafData} {n : ℕ} {ι : Type*}
-
-private theorem exists_path_on_resolving_surface {A : LogarithmicProjection i D}
-    {Y : Scheme} [Y.Over S] [SmoothOfRelativeDimension 2 (Y ↘ S)] [PreirreducibleSpace Y]
-    (hRank : finrank ℤ N = 2) (k : X ≅ Y) [k.hom.IsOver S]
-    {L R : LogarithmicProjection i (D.comap k.inv)}
-    (hFan : L.fan = A.fan) (hHom : A.hom ≍ k.hom ≫ L.hom)
-    (p : SarkisovPath L R) :
-    ∃ C : LogarithmicProjection i D, Nonempty (SarkisovPath A C) ∧
-      C.fan = R.fan ∧ C.hom ≍ k.hom ≫ R.hom := by
-  have hE : (D.comap k.inv).comap k.hom = D := by simp [← comap_comp]
-  let G := precomposeSarkisovOfIso (i := i) hRank k hE
-  have hSrc : obj[G,L] = A := LogarithmicProjection.ext
-    ((precomposeSarkisovOfIso_obj_fan hRank k hE L).trans hFan)
-    ((precomposeSarkisovOfIso_obj_hom hRank k hE L).trans hHom.symm)
-  exact ⟨obj[G,R], ⟨(G.mapPath p).cast hSrc rfl⟩,
-    precomposeSarkisovOfIso_obj_fan hRank k hE R, precomposeSarkisovOfIso_obj_hom hRank k hE R⟩
 
 private theorem exists_marked_centers_of_corner
     {Φ Ψ : Fan i} {Y Z : Scheme}
