@@ -83,20 +83,6 @@ private theorem smooth_fan :
   rw [← hN, Q.fan.algebraicRealization_over]
   exact Q.fan.smoothOfRelativeDimension_algebraicRealizationStructureMap Q.regular
 
-private theorem isPerfPair_of_rational {X : Scheme} (M : MarkedSurface ℂ n H X)
-    [IsRationalOver (M.surface ↘ S)] : H.IsPerfPair := by
-  let : M.surface.IsProjectiveOver ℂ := M.projective
-  let : SmoothOfRelativeDimension 2 (M.surface ↘ S) := M.smooth
-  let := Chow.isPerfPair_intersectionBilinForm_of_isRationalOver ℂ M.surface
-  apply LinearMap.IsPerfPair.congr (Chow.intersectionBilinForm ℂ M.surface)
-    M.picardMarking M.picardMarking H
-  apply LinearMap.ext₂
-  intro x y
-  simp only [LinearMap.compl₁₂_apply, LinearEquiv.coe_coe]
-  simpa only [LinearEquiv.apply_symm_apply] using
-    (M.intersectionBilinForm_picardMarking (M.picardMarking.symm x)
-      (M.picardMarking.symm y)).symm
-
 private theorem rational_fan : IsRationalOver (Q.fan.algebraicRealization ↘ S) := by
   obtain ⟨hdet, σ, h₀, h₁⟩ := Q.positive 0
   have hne : Q.rayOrder 0 ≠ Q.rayOrder (0 + 1) := by
@@ -249,7 +235,7 @@ theorem signedPicardHom_ker_eq_bot_of_presentation
   let : Q.fan.algebraicRealization.IsProjectiveOver ℂ :=
     Q.fan.isProjectiveOver_algebraicRealization_of_isComplete Q.regular Q.complete b
   let : SmoothOfRelativeDimension 2 (Q.fan.algebraicRealization ↘ S) := smooth_fan Q
-  let : H.IsPerfPair := isPerfPair_of_rational (M c₀)
+  let : H.IsPerfPair := (M c₀).isPerfPair_of_isRationalOver
   obtain ⟨c⟩ := nonempty_centerPoint (T₀ := Centers[r]) (T₁ := Centers[r]) Cnil[P]
   have hc := (Path.nil.centerPoint_endpoints_mem_noncollision P hker c).2
   refine ker_eq_bot_of_realized_actions Q
