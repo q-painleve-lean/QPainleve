@@ -12,6 +12,7 @@ public import QPainleve.SignedClusterModularGroup.Boundary.Isometry
 public import QPainleve.SignedClusterModularGroup.Realization.Basic
 public import TauCeti.Algebra.Module.Primitive
 
+import QPainleve.AlgebraicGeometry.CartierDivisor.Support
 import QPainleve.AlgebraicGeometry.Chow.Isomorphism
 import QPainleve.AlgebraicGeometry.Chow.Nef.Boundary
 import QPainleve.AlgebraicGeometry.Curves.Node.BoundaryRestriction
@@ -261,6 +262,26 @@ theorem mem_range_boundaryPrime_iff (P : MarkedSurface k n B₀ X₀)
       simp only [Function.comp_apply, coe_boundaryPrimeEmbedding, numberedBoundaryPrimes_apply_val])
   rw [hcomp, (P.numberedBoundaryPrimes_surjective hD).range_comp, range_boundaryPrimeEmbedding]
   exact Iff.rfl
+
+/-- In the Picard marking the sum of the numbered boundary classes is the
+class of the reduced Cartier boundary. -/
+theorem picardMarking_sum_boundaryClass (P : MarkedSurface k n B₀ X₀)
+    (hD : D[P].IsEffectiveCartier) :
+    P.picardMarking (∑ j, P.boundaryClass hD j) = Additive.ofMul classOf(hD) := by
+  let : P.surface.IsProjectiveOver k := P.projective
+  let : SmoothOfRelativeDimension 2 (P.surface ↘ S) := P.smooth
+  let : IsNoetherian P.surface := isNoetherian_of_finiteType (P.surface ↘ S)
+  let := (P.surface ↘ S).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two
+  let : PrestableFamily (D[P].subscheme ↘ S) := P.prestable_boundaryImage
+  let : IsReduced D[P].subscheme :=
+    (PrestableFamily.atWorstNodalOfRelativeDimensionOne (f := D[P].subscheme ↘ S)).isReduced
+  let p := (P.numberedBoundaryPrimes hD).trans D[P].boundaryPrimeEmbedding
+  have hp (j : ZMod n) : p j = P.boundaryPrime hD j := Subtype.ext (by simp [p])
+  rw [map_sum]
+  simpa only [P.picardMarking_boundaryClass hD, hp] using
+    (hD.ofMul_inv_toInvertibleSheaf_eq_sum_primeDivisorClass p (fun x ↦ by
+      rw [funext hp]
+      exact (P.mem_range_boundaryPrime_iff hD x).symm)).symm
 
 /-- The marked classes distinguish the components of a nef square-zero boundary. -/
 theorem boundaryClass_injective_of_nef_square_zero (M : MarkedSurface k n B₀ X₀)

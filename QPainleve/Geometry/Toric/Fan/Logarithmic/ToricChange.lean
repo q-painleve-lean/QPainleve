@@ -130,29 +130,24 @@ variable {X : Scheme} [X.Over S] [IsIntegral X] [X.IsProjectiveOver ℂ]
   [SmoothOfRelativeDimension 2 (X ↘ S)]
   {f : X ⟶ X[Φ]} [f.IsOver S] {D : X.IdealSheafData}
 
-/-- If a specified birational morphism to a complete regular toric surface pulls back
-a toric logarithmic top form with divisor `-D`, then a single nodal blowup tower of
+/-- If a specified birational morphism to a complete regular toric surface has
+pole ideal `D`, then a single nodal blowup tower of
 `(X, D)` resolves the change to another complete regular toric surface on the
 same lattice. The resolution works for the entire factorization by star subdivisions
 and their inverses and preserves the given morphism to the starting surface.
 For every regular coarsening of the common fan the resulting morphism pulls back
 the logarithmic poles to the reduced total transform of `D`, with no zeros. -/
-theorem exists_nodal_resolution_of_toric_change_of_pullbackTopFormDivisor
+theorem exists_nodal_resolution_of_toric_change_of_boundary_comap_eq
     (b : Module.Basis (Fin 2) ℤ N) (hΦ : Φ.IsRegular) (hcΦ : Φ.IsComplete)
     (hΨ : Ψ.IsRegular) (hcΨ : Ψ.IsComplete)
     (hf : Scheme.BirationalOver f (𝟙 X[Φ])) (hD : D.IsEffectiveCartier) :
     let _ : Nonempty Φ.cones := hcΦ.nonempty_cones
-    let _ : SmoothOfRelativeDimension 2 (X[Φ] ↘ S) :=
-      ((Module.finrank_eq_card_basis b).trans (Fintype.card_fin 2)) ▸
-        Φ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
     let B := Φ.boundaryIdeal hcΦ.nonempty_cones
-    let hB := Φ.isEffectiveCartier_boundaryIdeal hΦ hcΦ
-      ((Module.finrank_eq_card_basis b).trans (Fintype.card_fin 2))
-    ∀ (ω : hB.toInvertibleSheaf ≅ canonicalBundle ℂ X[Φ] 2)
-      (hTotal : (B.comap f).IsEffectiveCartier)
-      (hRam : let _ := SmoothOfRelativeDimension.smooth 2 (X ↘ S)
-        (ramificationIdealSheaf ℂ f).IsEffectiveCartier),
-      pullbackTopFormDivisor ℂ f 2 hB ω hTotal hRam = -hD.toCartierDivisor →
+    (B.comap f).IsEffectiveCartier →
+      (let _ := SmoothOfRelativeDimension.smooth 2 s(X)
+       (ramificationIdealSheaf ℂ f).IsEffectiveCartier) →
+      (let _ := SmoothOfRelativeDimension.smooth 2 s(X)
+       B.comap f = D * ramificationIdealSheaf ℂ f) →
       ∃ (Ω : Fan i) (J : Ω.IsSubdivision Φ) (_ : Ω.IsSubdivision Ψ),
         Ω.IsRegular ∧
         Relation.ReflTransGen IsTwoRayStarSubdivision Φ Ω ∧
@@ -172,11 +167,10 @@ theorem exists_nodal_resolution_of_toric_change_of_pullbackTopFormDivisor
               Δ.IsRegular →
               (Δ.boundaryIdeal inferInstance).comap (g ≫ π[L]) =
                 (D.comap T.toBase).radical * ramificationIdealSheaf ℂ (g ≫ π[L]) := by
-  intro _ _ B hB ω hTotal hRam hdiv
+  intro _ B hTotal hRam hpole
   let : Nonempty Φ.cones := hcΦ.nonempty_cones
   obtain ⟨Ξ, hΞ, H, m, ρ, c, e, he, hboundary⟩ :=
-    Φ.exists_toric_internal_factorization_of_pullbackTopFormDivisor
-      b hΦ hcΦ hf hD ω hTotal hRam hdiv
+    Φ.exists_toric_internal_factorization_of_boundary_comap_eq b hΦ hcΦ hf hpole
   have hs : Φ.support = Ψ.support := by
     ext x
     exact ⟨fun _ ↦ Ψ.mem_support.mpr (Ψ.isComplete_iff.mp hcΨ x),
@@ -200,7 +194,6 @@ theorem exists_nodal_resolution_of_toric_change_of_pullbackTopFormDivisor
   let : SmoothOfRelativeDimension 2 s(X[Φ]) :=
     hN ▸ Φ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
   let : IsNoetherian X := isNoetherian_of_finiteType s(X)
-  have hpole := (QPainleve.pullbackTopFormDivisor_eq_neg_iff ℂ f 2 hB ω hTotal hD hRam).mp hdiv
   let : Z.Over S := ⟨T.toBase ≫ s(X)⟩
   let : T.toBase.IsOver S := ⟨rfl⟩
   let : SmoothOfRelativeDimension 2 s(Z) := hT'.isClosedPointTower.smoothOfRelativeDimension s(X)

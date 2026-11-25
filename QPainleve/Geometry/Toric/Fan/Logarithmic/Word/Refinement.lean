@@ -55,17 +55,19 @@ private theorem exists_refined_tower
   have hs : U.iso.hom ≫ Z ↘ S = base[U.tower] ≫ s[U.fan] := by
     rw [← U.fan.algebraicRealization_over, ← comp_over U.hom S, ← Category.assoc,
       U.hom_def, Iso.hom_inv_id_assoc]
-  let hnil : IsNodalBoundaryTower (boundary[U.tower]).ker (base[U.tower] ≫ s[U.fan])
-      (𝟙 _) (.nil : QPainleve.BlowupTower U.tower.1 0 U.tower.1) := .nil
-  obtain ⟨Y, L, a, hL, ha, hD⟩ := hnil.exists_append_of_iso hT U.iso
-    (by simpa only [toBase_nil, Category.id_comp] using hs)
-    (by rw [U.pole_eq, toBase_nil, comap_id])
+  have hPole : (boundary[U.tower]).ker.comap U.iso.inv = D := by
+    rw [← U.pole_eq, ← comap_comp, Iso.inv_hom_id, comap_id]
+  have hT' : IsNodalBoundaryTower ((boundary[U.tower]).ker.comap U.iso.inv)
+      (Z ↘ S) (𝟙 _) T := by
+    rwa [hPole]
+  obtain ⟨Y, L, a, hL, ha, hD⟩ := hT'.exists_transport_of_iso (k := U.iso) hs
+  rw [hPole] at hD
   obtain ⟨Ψ, hΨ, H, d, hd, hB, -⟩ :=
     exists_subdivision_of_nodal_tower_on_internal_model U.basis U.rays U.parameters
       U.regular (U.subdivision.isComplete_iff.mpr A.isComplete) hL
   let e := d ≪≫ a
   have hproj : e.hom ≫ T.toBase ≫ U.hom = d.hom ≫ L.toBase ≫ base[U.tower] := by
-    simp only [e, Iso.trans_hom, U.hom_def, ha, toBase_nil, Category.comp_id, Category.assoc]
+    simp only [e, Iso.trans_hom, U.hom_def, ha, Category.assoc]
   refine ⟨Ψ, hΨ, H, e, hproj.trans ((Category.assoc _ _ _).symm.trans hd.w), ?_⟩
   rw [Iso.trans_hom, comap_comp, ← hD]
   exact hB

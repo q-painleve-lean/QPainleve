@@ -251,6 +251,13 @@ chart of the native relative projective spectrum. -/
 def relativeProjPolynomialChart : Proj 𝒫[U,ι] ⟶ A[F].relativeProj :=
   (polynomialChartIso F U b).hom ≫ A[F].relativeProjCover.f U
 
+/-- The polynomial chart factors through the symmetric algebra of the affine sections. -/
+theorem relativeProjPolynomialChart_def :
+    F.relativeProjPolynomialChart U b =
+      b.polynomialProjIso.hom ≫ (F.projSymmetricAlgebraSectionsIso U).hom ≫
+        A[F].relativeProjCover.f U := by
+  exact Category.assoc _ _ _
+
 /-- The polynomial chart is the scheme-theoretic preimage of its affine base open. -/
 theorem isPullback_relativeProjPolynomialChart :
     IsPullback (toSpecCoeff 𝒫[U,ι] ≫ U.property.isoSpec.inv)

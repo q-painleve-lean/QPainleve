@@ -7,6 +7,7 @@ module
 
 public import QPainleve.AlgebraicGeometry.RelativeProj.Isomorphism
 public import QPainleve.AlgebraicGeometry.RelativeProj.ProjectiveBundle
+public import QPainleve.AlgebraicGeometry.RelativeProj.Pullback
 public import TauCeti.AlgebraicGeometry.RelativeProj.ClosedImmersion
 public import TauCeti.AlgebraicGeometry.RelativeProj.TwistingSheaf.Pullback
 public import TauCeti.AlgebraicGeometry.RelativeProj.TwistingSheaf.Pushforward
@@ -48,9 +49,9 @@ open GradedQuasicoherentAlgebra CategoryTheory.CommMon
 variable {X : Scheme.{u}} (E : FixedRank X 1) {F : QuasicoherentSheaf X}
 
 local notation "ℒ[" E "]" =>
-  Functor.obj (FiniteLocallyFreeSheaf.toQuasicoherent X) (ObjectProperty.FullSubcategory.obj E)
+  Functor.obj (FiniteLocallyFreeSheaf.toQuasicoherent _) (ObjectProperty.FullSubcategory.obj E)
 local notation "𝒜[" F "]" =>
-  ObjectProperty.FullSubcategory.obj (Functor.obj (gradedSymmetricAlgebra X) F)
+  ObjectProperty.FullSubcategory.obj (Functor.obj (gradedSymmetricAlgebra _) F)
 local notation "φ[" q "]" =>
   InducedCategory.Hom.hom (CategoryTheory.Functor.map (gradedSymmetricAlgebra X) q)
 
@@ -288,5 +289,32 @@ theorem relativeProjSectionOfQuotient_comp_relativeProjMapIso {G : Quasicoherent
   congr 1
   simp only [Functor.mapIso_hom, ObjectProperty.ι_map, Functor.map_comp]
   exact (relativeProjMap_comp _ _ _ _ _).symm
+
+section Pullback
+
+variable {Y : Scheme.{u}} (f : X ≅ Y) (E' : FixedRank Y 1) {F' : QuasicoherentSheaf Y}
+  (i : F ≅ (QuasicoherentSheaf.pullback f.hom).obj F')
+  (j : ℒ[E] ≅ (QuasicoherentSheaf.pullback f.hom).obj ℒ[E'])
+
+/-- The section of a projectivization associated to a line quotient is carried
+to the corresponding section by a compatible isomorphism of projective
+bundles over an isomorphism of bases. -/
+@[reassoc]
+theorem relativeProjSectionOfQuotient_comp_projectivizationIsoOfPullback
+    (q : F ⟶ ℒ[E]) (q' : F' ⟶ ℒ[E']) [Epi q.hom] [Epi q'.hom]
+    (h : i.hom ≫ (QuasicoherentSheaf.pullback f.hom).map q' = q ≫ j.hom) :
+    E.relativeProjSectionOfQuotient q ≫ (QuasicoherentSheaf.projectivizationIsoOfPullback f i).hom =
+      f.hom ≫ E'.relativeProjSectionOfQuotient q' := by
+  let e := QuasicoherentSheaf.projectivizationIsoOfPullback f j
+  have hbase : inv 𝒜[ℒ[E]].relativeProjToBase ≫ e.hom =
+      f.hom ≫ inv 𝒜[ℒ[E']].relativeProjToBase := by
+    apply (cancel_mono 𝒜[ℒ[E']].relativeProjToBase).mp
+    simp only [e, Category.assoc, QuasicoherentSheaf.projectivizationIsoOfPullback_hom_toBase,
+      IsIso.inv_hom_id_assoc, IsIso.inv_hom_id, Category.comp_id]
+  rw [relativeProjSectionOfQuotient, relativeProjSectionOfQuotient, Category.assoc,
+    QuasicoherentSheaf.projectivizationIsoOfPullback_naturality f i j q q' h,
+    ← Category.assoc, hbase, Category.assoc]
+
+end Pullback
 
 end TauCeti.AlgebraicGeometry.FiniteLocallyFreeSheaf.FixedRank

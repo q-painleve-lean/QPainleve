@@ -8,6 +8,7 @@ module
 public import QPainleve.AlgebraicGeometry.Blowup.Tower.Nodal.AlongBoundary
 public import QPainleve.Geometry.Toric.Fan.InternalBlowup
 
+import QPainleve.AlgebraicGeometry.Blowup.Tower.Boundary.Pullback
 import QPainleve.Geometry.Toric.Fan.FunctionField
 import TauCeti.AlgebraicGeometry.IdealSheaf.Reduced
 
@@ -60,6 +61,19 @@ theorem Ray.not_isNodeAt_mem_support_internalCenter (ρ : Φ.Ray)
   apply (j ≫ f).not_isNodeAt_of_mem_smoothLocus _ hn'
   rw [(j ≫ f).smoothLocus_eq_top]
   trivial
+
+/-- The ordered internal blowup projection is an isomorphism over every node of
+the toric boundary. -/
+theorem mem_isoLocus_internalBlowupTower_toBase_of_isNodeAt
+    {m : ℕ} (b : Module.Basis (Fin 2) ℤ N) (ρ : Fin m → Φ.Ray) (c : Fin m → ℂˣ)
+    {p : (D₀).subscheme} (hp : ((D₀).subschemeι ≫ base).IsNodeAt p) :
+    (D₀).subschemeι p ∈ (internalBlowupTower b ρ c).2.toTower.toBase.isoLocus := by
+  rw [internalBlowupTower_eq_alongBoundary]
+  apply mem_isoLocus_toBase_alongBoundary
+  intro j h
+  obtain ⟨q, hq, he⟩ := h
+  obtain rfl := (D₀).subschemeι.injective he
+  exact (ρ j).not_isNodeAt_mem_support_internalCenter b (c j) hq hp
 
 /-- A nodal blowup tower of the toric boundary pulls back to a nodal tower of the
 strict boundary of the ordered internal model, with the same number of nodal blowups.

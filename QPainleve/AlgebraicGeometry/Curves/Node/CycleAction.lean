@@ -5,7 +5,7 @@ Authors: The QPainleve contributors
 -/
 module
 
-public import QPainleve.AlgebraicGeometry.Curves.DualGraph.CycleAction
+public import QPainleve.AlgebraicGeometry.Curves.DualGraph.Cycle.Action
 public import QPainleve.AlgebraicGeometry.Curves.Node.Conductor.Coordinates
 public import QPainleve.AlgebraicGeometry.Curves.Node.Conductor.Isomorphism
 
@@ -62,6 +62,10 @@ theorem component_apply (j : ZMod n) : C.component j = X.dualGraphVertexEquiv p 
 /-- The numbering of the points of the singular subscheme. -/
 def node : ZMod n ≃ (X.singularLocus k).subscheme :=
   C.edge.trans (X.dualGraphNodeEquiv p)
+
+/-- The numbered node is the singular point of the corresponding dual graph edge. -/
+theorem node_apply (j : ZMod n) : C.node j = X.dualGraphNodeEquiv p (C.edge j) :=
+  (rfl)
 
 /-- The numbering of the points of the branch scheme by node and ordered endpoint. -/
 def branch : (ZMod n × Fin 2) ≃ X.branchScheme k :=
