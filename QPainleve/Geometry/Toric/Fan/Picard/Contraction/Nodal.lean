@@ -10,7 +10,6 @@ public import QPainleve.AlgebraicGeometry.Blowup.Tower.Nodal.Matching
 public import QPainleve.Geometry.Toric.Fan.Picard.Contraction.Transport
 
 import QPainleve.AlgebraicGeometry.Chow.NegativeCurve
-import QPainleve.AlgebraicGeometry.Curves.Node.Reindex
 import TauCeti.AlgebraicGeometry.Curves.Node.Reduced
 import TauCeti.Topology.Algebra.Module.ModuleTopology
 

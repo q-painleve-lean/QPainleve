@@ -142,3 +142,28 @@ theorem IsOrientedCycleSubdivision.id (A : NodalCycleNumbering pX n) :
     (Iso.refl X).isOrientedCycleSubdivision_of_cycleOrientationSign_eq_one A A (by simp)
 
 end AlgebraicGeometry.Scheme.Hom
+
+namespace AlgebraicGeometry.Scheme.NodalCycleNumbering
+
+open CategoryTheory.Iso
+
+/-- A dihedral reindexing has the same branch orientation as the original cycle
+for a rotation, and as the reversed cycle for a reflection. -/
+theorem isOrientedCycleSubdivision_reindex (A : NodalCycleNumbering pX n)
+    (g : DihedralGroup n) :
+    (𝟙 X : X ⟶ X).IsOrientedCycleSubdivision (A.reindex g)
+      (if cycleOrientationSign g = -1 then A.reverse else A) := by
+  let e := Iso.refl X
+  let : e.hom.IsOver (Spec (.of k)) := ⟨Category.id_comp _⟩
+  have rotation (B : NodalCycleNumbering pX n) (t : ZMod n) :
+      (𝟙 X : X ⟶ X).IsOrientedCycleSubdivision (B.reindex (.r t)) B :=
+    e.isOrientedCycleSubdivision_of_cycleOrientationSign_eq_one (B.reindex (.r t)) B
+      ((congrArg cycleOrientationSign (boundaryCycleAction_reindex B (.r t))).trans
+        (cycleOrientationSign_r t))
+  cases g with
+  | r t =>
+    simpa only [cycleOrientationSign_r, ite_eq_right (by decide : (1 : ℤˣ) ≠ -1)] using
+      rotation A t
+  | sr t => simpa only [cycleOrientationSign_sr, ite_true, reindex_sr] using rotation A.reverse t
+
+end AlgebraicGeometry.Scheme.NodalCycleNumbering

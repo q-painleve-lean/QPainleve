@@ -55,6 +55,12 @@ theorem reverse_componentGenericPoint (j : ZMod n) :
     A.reverse.componentGenericPoint j = A.componentGenericPoint (-j) := by
   simp only [componentGenericPoint_def, reverse_component]
 
+/-- The generic point of a reindexed component is the original generic point at
+the corresponding vertex. -/
+@[simp] theorem reindex_componentGenericPoint (g : DihedralGroup n) (j : ZMod n) :
+    (A.reindex g).componentGenericPoint j = A.componentGenericPoint (cycleVertexPerm g j) := by
+  simp only [componentGenericPoint_def, reindex_component]
+
 /-- Distinct numbered components have distinct generic points in the nodal curve. -/
 theorem componentGenericPoint_injective : Function.Injective A.componentGenericPoint := by
   intro j l h

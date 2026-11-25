@@ -151,6 +151,82 @@ theorem reverse_branchOrderOfDualGraph (z : (X.singularLocus k).subscheme) (b : 
   apply Subtype.ext
   simp only [Scheme.branchOrderOfDualGraph_apply_val, reverse, Equiv.trans_apply, Fin.revPerm_apply]
 
+open DihedralGroup
+
+variable (A : NodalCycleNumbering p n)
+
+private def rotate (t : ZMod n) : NodalCycleNumbering p n where
+  vertex := (Equiv.addRight t).trans A.vertex
+  edge := (Equiv.addRight t).trans A.edge
+  order := A.order
+  endpoint_eq j b := by
+    have h := cycle_endpoint_cycleBranchPerm (.r t) j b
+    simp only [cycleBranchPerm_r_apply, cycleVertexPerm_r_apply] at h
+    simp only [Equiv.trans_apply, Equiv.coe_addRight, A.endpoint_eq, h]
+
+private theorem rotate_component (t j : ZMod n) :
+    (A.rotate t).component j = A.component (j + t) := by
+  simp only [component_apply, rotate, Equiv.trans_apply, Equiv.coe_addRight]
+
+private theorem rotate_node (t j : ZMod n) :
+    (A.rotate t).node j = A.node (j + t) := by
+  simp only [node_apply, rotate, Equiv.trans_apply, Equiv.coe_addRight]
+
+private theorem rotate_branch (t j : ZMod n) (b : Fin 2) :
+    (A.rotate t).branch (j, b) = A.branch (j + t, b) := by
+  rw [(A.rotate t).branch_eq_branchOrderOfDualGraph, A.rotate_node,
+    A.branch_eq_branchOrderOfDualGraph]
+  rfl
+
+/-- Read the original numbering at the image of each index under a dihedral element. -/
+def reindex (g : DihedralGroup n) : NodalCycleNumbering p n :=
+  match g with
+  | .r t => A.rotate t
+  | .sr t => A.reverse.rotate t
+
+/-- Reindexing by a reflection reverses the numbering and then rotates it. -/
+theorem reindex_sr (t : ZMod n) : A.reindex (.sr t) = A.reverse.reindex (.r t) :=
+  (rfl)
+
+/-- Reindexing acts on the components by the vertex permutation. -/
+@[simp] theorem reindex_component (g : DihedralGroup n) (j : ZMod n) :
+    (A.reindex g).component j = A.component (cycleVertexPerm g j) := by
+  cases g with
+  | r t => simpa only [reindex, cycleVertexPerm_r_apply] using A.rotate_component t j
+  | sr t =>
+    have h : -(j + t) = -t - j := by abel
+    simp only [reindex, rotate_component, reverse_component, cycleVertexPerm_sr_apply, h]
+
+/-- Reindexing acts on the points of the branch scheme by the branch permutation. -/
+@[simp] theorem reindex_branch (g : DihedralGroup n) (j : ZMod n) (b : Fin 2) :
+    (A.reindex g).branch (j, b) = A.branch (cycleBranchPerm g (j, b)) := by
+  cases g with
+  | r t => simpa only [reindex, cycleBranchPerm_r_apply] using A.rotate_branch t j b
+  | sr t =>
+    have h : -1 - (j + t) = -t - 1 - j := by abel
+    simp only [reindex, rotate_branch, reverse_branch, cycleBranchPerm_sr_apply, h]
+
+/-- Reindexing acts on the nodes by the edge coordinate of the branch permutation. -/
+@[simp] theorem reindex_node (g : DihedralGroup n) (j : ZMod n) :
+    (A.reindex g).node j = A.node (cycleBranchPerm g (j, 0)).1 := by
+  cases g with
+  | r t => simpa only [reindex, cycleBranchPerm_r_apply] using A.rotate_node t j
+  | sr t =>
+    have h : -1 - (j + t) = -t - 1 - j := by abel
+    simp only [reindex, rotate_node, reverse_node, cycleBranchPerm_sr_apply, h]
+
+/-- Reindexing by the identity preserves the numbering. -/
+@[simp] theorem reindex_one : A.reindex 1 = A := by
+  ext j b
+  simp
+
+/-- Reindexing first by `g` and then by `h` reads the original indices at `g * h`. -/
+theorem reindex_mul (g h : DihedralGroup n) : A.reindex (g * h) = (A.reindex g).reindex h := by
+  ext j b
+  simp only [reindex_branch, map_mul, Equiv.Perm.mul_apply]
+  cases cycleBranchPerm h (j, b)
+  rw [reindex_branch]
+
 end NodalCycleNumbering
 
 end AlgebraicGeometry.Scheme
@@ -415,6 +491,14 @@ theorem boundaryCycleAction_refl :
     (Iso.refl X).boundaryCycleAction C C = 1 := by
   refine (existsUnique_boundaryCycleAction (Iso.refl X) C (D := C)).unique
     (branch_boundaryCycleAction _ _ _) fun j b ↦ ?_
+  simp
+
+/-- The identity from the reindexed cycle to the original cycle realizes the
+specified dihedral element on the ordered branches. -/
+@[simp] theorem boundaryCycleAction_reindex (A : NodalCycleNumbering p n) (g : DihedralGroup n) :
+    (Iso.refl X).boundaryCycleAction (A.reindex g) A = g := by
+  refine (existsUnique_boundaryCycleAction (Iso.refl X) (A.reindex g) (D := A)).unique
+    (branch_boundaryCycleAction _ _ _) ?_
   simp
 
 /-- The identity of the underlying curve induces the reflection fixing component zero
