@@ -12,7 +12,6 @@ public import QPainleve.Geometry.Toric.Fan.Picard.ProjectedPoint
 
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Factorization
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Projective
-import QPainleve.AlgebraicGeometry.Modules.Differentials.PoleIdeal
 import QPainleve.AlgebraicGeometry.Morphisms.Modification.Birational
 import QPainleve.Geometry.Toric.Fan.Ruling.Quadric
 import TauCeti.Topology.KrullDimension.Irreducible
@@ -122,11 +121,9 @@ theorem exists_prepared_quadric_resolution_of_high_fiber_center
     letI : Smooth s(Y) := SmoothOfRelativeDimension.smooth 2 _
     letI : T.toBase.IsOver S := ⟨rfl⟩
     letI : IsModification T.toBase := hT.isModification_of_smoothOfRelativeDimension_two s[Φ]
-    let hB := Φ.isEffectiveCartier_boundaryIdeal hΦ hc rankTwo
     let v := (T.picardMarking hT s[Φ]).symm (Additive.ofMul L)
     let β := (Φ.hirzebruchPicardBasis b a hΦ r hr).repr v.1 1
-    (hB.toInvertibleSheaf ≅ canonicalBundle ℂ X[Φ] 2) →
-      B[Φ,hc].comap T.toBase = D * ramificationIdealSheaf ℂ T.toBase →
+    B[Φ,hc].comap T.toBase = D * ramificationIdealSheaf ℂ T.toBase →
       β < 2 * (-v.2 j) →
       ∃ (P : Fan.HirzebruchQuadricPreparation b a Φ)
         (m : ℕ) (W : Scheme) (R : BlowupTower Y m W)
@@ -183,7 +180,7 @@ theorem exists_prepared_quadric_resolution_of_high_fiber_center
             w.2 k = 0 ∨ ∃ j₀ : Fin n,
               hT.baseCenter j₀ = p[ρ,c'] ∧ (∀ h < j₀, hT.baseCenter h ≠ p[ρ,c']) ∧
               -w.2 k = -v.2 j₀ := by
-  intro hB v β ω hPole hhigh
+  intro v β hPole hhigh
   let : Nonempty Φ.cones := hc.nonempty_cones
   let : SmoothOfRelativeDimension 2 s[Φ] :=
     rankTwo ▸ Φ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
@@ -195,12 +192,10 @@ theorem exists_prepared_quadric_resolution_of_high_fiber_center
   let : T.toBase.IsOver S := ⟨rfl⟩
   let : IsModification T.toBase := hT.isModification_of_smoothOfRelativeDimension_two s[Φ]
   let : Y.IsProjectiveOver ℂ := T.isProjectiveOver ℂ
-  have hTotal := hB.comap_of_isDominant T.toBase
+  have hTotal := (Φ.isEffectiveCartier_boundaryIdeal hΦ hc rankTwo).comap_of_isDominant T.toBase
   have hRam : (ramificationIdealSheaf ℂ T.toBase).IsEffectiveCartier := by
     rw [← hT.ramificationIdealSheafToBase_def ℂ]
     exact hT.isEffectiveCartier_ramificationIdealSheafToBase ℂ
-  have hdiv :=
-    (QPainleve.pullbackTopFormDivisor_eq_neg_iff ℂ T.toBase 2 hB ω hTotal hD hRam).mpr hPole
   have hrays : Set.range (Fan.Ray.primitiveGenerator (Phi := Φ)) =
       {b 0, b 1, -b 0, (a : ℤ) • b 0 - b 1} := by
     rw [← r.surjective.range_comp, Function.comp_def, hr]
@@ -208,7 +203,7 @@ theorem exists_prepared_quadric_resolution_of_high_fiber_center
   -- Keep the single nodal refinement that resolves all the toric stages.
   obtain ⟨P, m, W, R, q, hW, hq, hdom, hR, hproj, hreg, hpath⟩ :=
     Φ.exists_nodal_resolution_of_hirzebruch_quadric_preparation b a hΦ hc hrays
-      (IsModification.birationalOver T.toBase) hD ω hTotal hRam hdiv
+      (IsModification.birationalOver T.toBase) hD hTotal hRam hPole
   let Δ := P.model 0
   let : Nonempty Δ.cones := (P.model_complete 0).nonempty_cones
   have hrays' : Set.range (Fan.Ray.primitiveGenerator (Phi := Δ)) =

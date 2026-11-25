@@ -64,7 +64,7 @@ theorem exists_word_of_resolved_sarkisov_path_to_model_of_orientedCycleSubdivisi
           g x = C₁.componentGenericPoint ((((-1 : ℤˣ) ^ w.inversionCount : ℤˣ) : ℤ) • j + j₀) := by
   intro R₀ R₁ h₀ h₁ hf hg
   let := U.prestableFamily_resolvingBoundary
-  obtain ⟨_, _, _, w, _, _, -, -, -, -, -, -, -, -, -, -, hw, hEval⟩ :=
+  obtain ⟨_, _, _, w, _, _, -, -, -, -, -, -, -, -, -, hw, -, hEval⟩ :=
     exists_word_of_resolved_sarkisov_path_to_model p U T
   let t := Iso.refl D.subscheme
   let : t.hom.IsOver S := ⟨Category.id_comp _⟩

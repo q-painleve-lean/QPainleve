@@ -55,17 +55,30 @@ def projectiveLineTorusFan : Fan ((Int.castAddHom ℝ).compLeft (Fin 1)) :=
     σ ∈ projectiveLineTorusFan.cones ↔ σ = ⊥ := by
   rw [projectiveLineTorusFan, Fan.subfan_cones, Set.mem_singleton_iff]
 
-private abbrev torusInclusion : FanHom projectiveLineTorusFan P :=
+/-- The zero-cone subfan included in the fan of the projective line. -/
+def projectiveLineTorusFanInclusion : FanHom projectiveLineTorusFan P :=
   (P).subfanInclusion S₀ zeroCone_subset_projectiveLine zeroCone_closedUnderFaces
+
+/-- The inclusion of the zero-cone subfan is the identity on its lattice. -/
+@[simp]
+theorem projectiveLineTorusFanInclusion_latticeMap :
+    projectiveLineTorusFanInclusion.latticeMap = AddMonoidHom.id (Fin 1 → ℤ) := by
+  rw [projectiveLineTorusFanInclusion, Fan.subfanInclusion_latticeMap]
 
 /-- The inclusion of the dense torus of the projective line, with homogeneous coordinates
 numbered by `Fin 2`. -/
 def projectiveLineTorusι : projectiveLineTorusFan.algebraicRealization ⟶ projectiveLine ℂ :=
-  torusInclusion.algebraicMap ≫ Fan.projectiveLineToricIso.hom
+  projectiveLineTorusFanInclusion.algebraicMap ≫ Fan.projectiveLineToricIso.hom
+
+/-- The base torus immersion is the realization of the zero-cone inclusion. -/
+theorem projectiveLineTorusι_def :
+    projectiveLineTorusι =
+      projectiveLineTorusFanInclusion.algebraicMap ≫ Fan.projectiveLineToricIso.hom :=
+  (rfl)
 
 instance : IsOpenImmersion projectiveLineTorusι := by
   rw [projectiveLineTorusι]
-  let : IsOpenImmersion torusInclusion.algebraicMap :=
+  let : IsOpenImmersion projectiveLineTorusFanInclusion.algebraicMap :=
     Fan.isOpenImmersion_subfanInclusion_algebraicMap P S₀ zeroCone_subset_projectiveLine
       zeroCone_closedUnderFaces
   infer_instance
@@ -79,12 +92,13 @@ theorem range_projectiveLineTorusι :
     Set.range projectiveLineTorusι = Set.range (projectiveLine.polynomialChartι ℂ 0) ∩
       Set.range (projectiveLine.polynomialChartι ℂ 1) := by
   have h₀ : Nonempty (P).cones := ⟨⟨⊥, zeroCone_subset_projectiveLine (Set.mem_singleton _)⟩⟩
-  have hr : Set.range torusInclusion.algebraicMap = Set.range ((P).denseTorusι h₀) :=
+  have hr : Set.range projectiveLineTorusFanInclusion.algebraicMap =
+      Set.range ((P).denseTorusι h₀) :=
     (P).range_subfanInclusion_algebraicMap_of_eq_singleton_bot h₀ zeroCone_subset_projectiveLine
       zeroCone_closedUnderFaces rfl
   rw [projectiveLineTorusι, ← Fan.range_denseTorusι_comp_projectiveLineToricIso h₀]
   -- Both composites apply the same projective comparison to the image of the zero-cone chart.
-  change Set.range (Fan.projectiveLineToricIso.hom ∘ torusInclusion.algebraicMap) =
+  change Set.range (Fan.projectiveLineToricIso.hom ∘ projectiveLineTorusFanInclusion.algebraicMap) =
     Set.range (Fan.projectiveLineToricIso.hom ∘ (P).denseTorusι h₀)
   rw [Set.range_comp, Set.range_comp, hr]
 
@@ -211,12 +225,12 @@ theorem isPullback_characterRulingTorusSubfan :
     IsPullback (Φ.characterRulingTorusSubfanInclusion m h).algebraicMap
       (Φ.characterRulingTorusFanHom m h).algebraicMap
       (Φ.characterRuling m h) projectiveLineTorusι := by
-  have hbase : IsPullback torusInclusion.algebraicMap (𝟙 _)
+  have hbase : IsPullback projectiveLineTorusFanInclusion.algebraicMap (𝟙 _)
       projectiveLineToricIso.hom projectiveLineTorusι :=
     IsPullback.of_vert_isIso ⟨by rw [Category.id_comp, projectiveLineTorusι]⟩
   have hpre : IsPullback (Φ.characterRulingTorusSubfanInclusion m h).algebraicMap
       (Φ.characterRulingTorusFanHom m h).algebraicMap (f).algebraicMap
-      torusInclusion.algebraicMap :=
+      projectiveLineTorusFanInclusion.algebraicMap :=
     (f).isPullback_preimageSubfan_algebraicMap S₀ zeroCone_subset_projectiveLine
       zeroCone_closedUnderFaces
   simpa only [Category.comp_id, characterRuling_def] using hpre.paste_vert hbase
