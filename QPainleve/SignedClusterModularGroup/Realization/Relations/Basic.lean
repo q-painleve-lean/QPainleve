@@ -7,7 +7,6 @@ module
 
 public import QPainleve.Algebra.Cluster.Word.Relations
 public import QPainleve.SignedClusterModularGroup.Realization.ChargeKernel
-public import QPainleve.SignedClusterModularGroup.Realization.Endpoint.SelfRealization
 public import QPainleve.SignedClusterModularGroup.Realization.NumberedRays
 
 import Mathlib.LinearAlgebra.Matrix.ToLin
@@ -136,8 +135,9 @@ include hmark in
 have equal X pullbacks exactly when their finite integer invariants agree. The sign
 retains the action on the ordered branches, the matrix records exponent transport on
 a basis of the charge kernel, and the search returns the forward image of component
-zero. Both searches use the boundary order table of one reference fiber. The
-nodal models need only be available at the centers reached by the two realizations.
+zero. Both searches use the boundary order table of one reference fiber, which can
+lie outside the centers reached by the two realizations. Nodal contractions at the
+reached centers identify their numbered boundary rays with that reference table.
 With the basis vectors and order table supplied as integers, `decidable_of_iff`
 transfers decidable equality of the computed invariants to equality of the X pullbacks. -/
 theorem xPullback_eq_iff_signedLoopInvariants_eq
@@ -163,7 +163,8 @@ theorem xPullback_eq_iff_signedLoopInvariants_eq
     (he : ∀ x : Charge, ι (e.symm x).val =
       ((Fan.boundaryOrthogonalEquivChargeKernel hΦ s Qform).symm x).val)
     (hι : Function.Injective ι)
-    {U : Set (Point T)} {c₀ : Point T} (hc₀ : c₀ ∈ U)
+    {c₀ : Point T} (p₀ : fiberAt c₀) (hnodal₀ : p₀.IsNodalContraction)
+    {U : Set (Point T)}
     (p : ∀ c ∈ U, fiberAt c)
     (hnodal : ∀ c (hc : c ∈ U), (p c hc).IsNodalContraction)
     (hU : ∀ x : CenterPoint (U := T) (V := T) C, src[C,x] ∈ U ∧ dst[C,x] ∈ U)
@@ -171,13 +172,13 @@ theorem xPullback_eq_iff_signedLoopInvariants_eq
     {d : ℕ} (β : Module.Basis (Fin d) ℤ E.matrix.mulVecLin.ker) :
     w.xPullback ℂ = v.xPullback ℂ ↔
       w.signedLoopInvariants (fun j ↦ (β j : Cent))
-          orders[p c₀ hc₀, hD c₀] startOrders =
+          orders[p₀, hD c₀] startOrders =
         v.signedLoopInvariants (fun j ↦ (β j : Cent))
-          orders[p c₀ hc₀, hD c₀] startOrders := by
+          orders[p₀, hD c₀] startOrders := by
   have hrays c (hc : c ∈ U) : (p c hc).numberedBoundaryRays (hD c) =
-      (p c₀ hc₀).numberedBoundaryRays (hD c₀) :=
-    (p c hc).numberedBoundaryRays_eq_of_nodalContractions (p c₀ hc₀)
-      (hnodal c hc) (hnodal c₀ hc₀) (LinearMap.IsPerfPair.separatingRight inferInstance)
+      p₀.numberedBoundaryRays (hD c₀) :=
+    (p c hc).numberedBoundaryRays_eq_of_nodalContractions (p₀)
+      (hnodal c hc) hnodal₀ (LinearMap.IsPerfPair.separatingRight inferInstance)
   have hkeep c (hc : c ∈ U) ρ := ((p c hc).mem_range_numberedBoundaryRays_iff (hD c) ρ).symm.trans
     (by rw [hrays c hc])
   let Q : ChargeSeed E N :=
@@ -231,115 +232,8 @@ theorem xPullback_eq_iff_signedLoopInvariants_eq
       horient ((LinearEquiv.autCongr e).injective hres) hj
     exact (Path.xRationalMap_eq_iff ℂ w v).mp
       (R.xMap_eq_of_marked_actions_on_center_domains R' hcΦ u hvertices hdet hnodes
-        (fun x ↦ p _ (hU x).1) (Set.range ((p c₀ hc₀).numberedBoundaryRays (hD c₀)))
+        (fun x ↦ p _ (hU x).1) (Set.range (p₀.numberedBoundaryRays (hD c₀)))
         (fun x ↦ ⟨p _ (hU x).2, hnodal _ (hU x).2, hkeep _ (hU x).2⟩)
         (fun x ↦ ⟨p _ (hU' x).2, hnodal _ (hU' x).2, hkeep _ (hU' x).2⟩) hpic hperm horient)
-
-end QPainleve.SignedClusterModularGroup.GeometricRealization
-
-namespace QPainleve.SignedClusterModularGroup.GeometricRealization
-
-variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
-  {i : N →+ V} {b : Module.Basis (Fin 2) ℤ N}
-  {r n : ℕ} [NeZero n] {L γ : Type} [AddCommGroup L]
-  {H : LinearMap.BilinForm ℤ L} {E : SkewExchangeMatrix (Fin r)}
-
-local notation "Centers[" r "]" => Over.mk (structureMap ℂ (Fin r → ℤ))
-local notation "XTor[" r "]" => scheme ℂ (Fin r →₀ ℤ)
-local notation "Cw[" w "," P "]" => Path.centerPartialMap ℂ w P
-local notation "Cnil[" P "]" => Path.centerPartialMap ℂ Path.nil P
-local notation "S" => Spec (CommRingCat.of ℂ)
-local notation "D[" M "]" => Scheme.Hom.ker (Over.Hom.left (Arrow.hom (MarkedSurface.pair M)))
-local notation "U₀[" P "]" => Path.centerOpen ℂ Path.nil P
-local notation "src(" C "," c ")" =>
-  c ≫ PartialMap.domainSource (X := Centers[_]) (Y := Centers[_]) C
-local notation "dst(" C "," c ")" =>
-  c ≫ PartialMap.domainTarget (X := Centers[_]) (Y := Centers[_]) C
-
-variable (Q : CompleteToricPresentation i b r L γ)
-local instance : Nonempty Q.fan.cones := Q.complete.nonempty_cones
-local instance : NeZero Q.length := Q.neZero
-local instance : PrestableFamily ((Q.fan.boundaryIdeal Q.complete.nonempty_cones).subscheme ↘ S) :=
-  Q.prestable
-
-local notation "pointChar(" c ")" => pointsEquiv ℂ _
-  (Subtype.mk (Over.Hom.left c) (Over.w c))
-local notation "classOf(" h ")" =>
-  (LineBundleClass.mk (Scheme.IdealSheafData.IsEffectiveCartier.toInvertibleSheaf h))⁻¹
-
-variable [Q.fan.algebraicRealization.IsProjectiveOver ℂ]
-  [SmoothOfRelativeDimension 2 (Q.fan.algebraicRealization ↘ S)]
-variable [LinearMap.IsPerfPair (LinearMap.BilinForm.prod
-  (Chow.intersectionBilinForm ℂ Q.fan.algebraicRealization)
-  (-(dotProductBilin ℤ ℤ : LinearMap.BilinForm ℤ (Fin r → ℤ))))]
-  [Module.Free ℤ L] [Module.Finite ℤ L] [H.IsPerfPair]
-
-/-- Two signed loops in an ordered presentation of a primitive nef square-zero
-anticanonical cycle have the same independent X pullback exactly when their
-integer invariants agree. A reference fiber supplies the order table for both
-words. The comparison includes one- and two-component boundaries and uses the
-models on the initial noncollision open. -/
-theorem xPullback_eq_iff_signedLoopInvariants_eq_of_presentation
-    (w v : Word E E) (P : ChargeSeed E N)
-    (hform : P.form = b.detDualEquiv.toLinearMap) (hcharge : P.charge = Fan.rayChargeMap Q.rays)
-    (M : Point Centers[r] → MarkedSurface ℂ n H XTor[r])
-    (hD : ∀ c, D[M c].IsEffectiveCartier)
-    {c₀ : Point Centers[r]} (hc₀ : c₀.left (default : S) ∈ U₀[P])
-    (p : ∀ (c : Point Centers[r]) (_ : c.left (default : S) ∈ U₀[P]),
-      ContractedToricFiber b Q.rays Q.regular Q.cycle Q.origin Q.inclusion (pointChar(c)) (M c))
-    (hnodal : ∀ c hc, (p c hc).IsNodalContraction)
-    [IsRationalOver ((M c₀).surface ↘ S)]
-    (hnef : (classOf(hD c₀)).IsNef ℂ ((M c₀).surface ↘ S))
-    (hsq : Chow.classIntersectionNumber ℂ (M c₀).surface classOf(hD c₀) classOf(hD c₀) = 0)
-    (hcan : letI : SmoothOfRelativeDimension 2 ((M c₀).surface ↘ S) := (M c₀).smooth
-      classOf(hD c₀) = (LineBundleClass.mk (canonicalBundle ℂ (M c₀).surface 2))⁻¹)
-    (hprim : IsPrimitive (Additive.ofMul classOf(hD c₀)))
-    (d : ZMod n → L) (hmark : ∀ c j, (M c).boundaryClass (hD c) j = d j)
-    (hSymm : H.IsSymm)
-    (hGram : ∀ j k, H (d j) (d k) = (-2 : ℤ) * (if j = k then 1 else 0) +
-      (if k = j + 1 then 1 else 0) + (if k = j - 1 then 1 else 0))
-    (hnodes : ∀ j, ∃ σ : Q.fan.cones, (Q.rayOrder j).toCone ≤ σ ∧
-      (Q.rayOrder (j + 1)).toCone ≤ σ ∧
-      (Q.fan.boundaryIdeal Q.complete.nonempty_cones).subschemeι
-        ((Q.fan.boundaryIdeal Q.complete.nonempty_cones).subscheme.dualGraphEdgeEquiv
-          Q.marks (Q.cycle.edge j)).val =
-        Q.fan.distinguishedPointHom σ (IsLocalRing.closedPoint ℂ))
-    {k : ℕ} (β : Module.Basis (Fin k) ℤ E.matrix.mulVecLin.ker) :
-    w.xPullback ℂ = v.xPullback ℂ ↔
-      let orders (j : Fin n) := Fan.rayBoundaryOrders b Q.rays
-        ((p c₀ hc₀).numberedBoundaryRays (hD c₀) ((ZMod.finEquiv n).toEquiv j))
-      let start := Fan.rayBoundaryOrders b Q.rays (Q.rayOrder Q.origin)
-      w.signedLoopInvariants (fun j ↦ (β j : Fin r → ℤ)) orders start =
-        v.signedLoopInvariants (fun j ↦ (β j : Fin r → ℤ)) orders start := by
-  have hmodel (c : Point Centers[r]) (hc : c.left (default : S) ∈ U₀[P]) :
-      Q.HasNodalModel c (M c) := by
-    obtain ⟨l, Y, A, hA, f, hf⟩ := (hnodal c hc).exists_tower
-    exact (Q.hasNodalModel_iff c (M c)).mpr ⟨p c hc, Y, l, A, f, hA, hf.symm⟩
-  have hreference := hmodel c₀ hc₀
-  have hindex := Q.chargeIndex_ne_zero_of_anticanonical_cycle (M := M) hreference
-    (hD c₀) hnef hsq hcan hprim
-  have hι := Q.inclusion_injective hreference
-  obtain ⟨e, he, -⟩ := (p c₀ hc₀).existsUnique_markedBoundaryOrthogonalEquivChargeKernel
-    (hnodal c₀ hc₀) (hD c₀) (funext (hmark c₀))
-  have hker : E.matrix.mulVecLin.ker = P.charge.ker := by
-    rw [← P.matrix_eq, hform, hcharge]
-    exact Fan.ker_chargeExchangeMatrix_rayChargeMap b Q.rays hindex
-  have models (x : CenterPoint (U := Centers[r]) (V := Centers[r]) Cnil[P]) :=
-    hmodel _ (Path.nil.centerPoint_endpoints_mem_noncollision P hker x).2
-  obtain ⟨R, hR, -⟩ := exists_realize_signed_loop w P Q hform hcharge M models
-    hreference hD hnef hsq hcan hprim d hmark
-  obtain ⟨R', hR', -⟩ := exists_realize_signed_loop v P Q hform hcharge M models
-    hreference hD hnef hsq hcan hprim d hmark
-  have hE := P.matrix_eq.symm.trans (congrArg₂ chargeExchangeMatrix hform hcharge)
-  have hvertices j := (Q.cycle.component_apply j).symm.trans (Q.component_eq j)
-  have hstart := Q.component_eq Q.origin
-  have horigin := (Q.fan.boundaryNormalizationComponentEquiv Q.regular).symm_apply_eq.mpr hstart
-  simpa only [horigin] using
-    xPullback_eq_iff_signedLoopInvariants_eq d hD hmark R R' hSymm hGram hR hR'
-      (w.centerPartialMap_hom (K := ℂ) P) (v.centerPartialMap_hom (K := ℂ) P)
-      Q.complete hE hindex Q.rayOrder hvertices (fun j ↦ (Q.positive j).1) hnodes
-      e he hι (U := {c : Point Centers[r] | c.left (default : S) ∈ U₀[P]}) hc₀ p hnodal
-      (w.centerPoint_endpoints_mem_noncollision P hker)
-      (v.centerPoint_endpoints_mem_noncollision P hker) β
 
 end QPainleve.SignedClusterModularGroup.GeometricRealization

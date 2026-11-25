@@ -221,7 +221,7 @@ theorem signedPicardHom_ker_eq_bot_of_presentation
   have hc := (Path.nil.centerPoint_endpoints_mem_noncollision P hker c).2
   refine ker_eq_bot_of_realized_actions Q
     (U := {c : Point Centers[r] | c.left (default : S) ∈ U₀[P]})
-    p hnodal hD d hmark Q.separatingRight_auxiliaryPicardForm hd hc ρ
+    p hnodal hD d hmark Q.isPerfPair_auxiliaryPicardForm.separatingRight hd hc ρ
     (fun w ↦ (End.asHom w).centerPoint_endpoints_mem_noncollision P hker) ?_
   intro w
   obtain ⟨R, -, _, hmodels⟩ := exists_realize_signed_loop (End.asHom w) P Q
