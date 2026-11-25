@@ -5,7 +5,8 @@ Authors: The QPainleve contributors
 -/
 module
 
-public import QPainleve.Geometry.Toric.Fan.Logarithmic.Factorization.Iso
+public import QPainleve.Geometry.Toric.Fan.Logarithmic.StarFactorization
+public import QPainleve.Geometry.Toric.Fan.Ruling.Basic
 public import QPainleve.Geometry.Toric.Fan.Ruling.Hirzebruch
 public import QPainleve.SignedClusterModularGroup.SarkisovDegree.PositiveSection.HighFibers
 public import QPainleve.SignedClusterModularGroup.SarkisovDegree.PositiveSection.Selection
