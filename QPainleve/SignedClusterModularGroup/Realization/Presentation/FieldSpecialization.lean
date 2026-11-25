@@ -9,7 +9,6 @@ public import QPainleve.Algebra.Cluster.Word.Specialization
 public import QPainleve.SignedClusterModularGroup.Realization.Presentation.Group
 
 import QPainleve.Algebra.Cluster.Word.SignExtension
-import QPainleve.SignedClusterModularGroup.Realization.Anticanonical
 import QPainleve.SignedClusterModularGroup.Realization.NodalFiber
 import QPainleve.SignedClusterModularGroup.Realization.Relations.Reference
 
@@ -61,22 +60,6 @@ local notation "δ" => (LineBundleClass.mk (IsEffectiveCartier.toInvertibleSheaf
 
 variable (k : Type*) [Field k]
 
-/-- The exchange matrix of a marked primitive nef square-zero anticanonical
-cycle is nonzero over the exponent ring `ℤ`. -/
-private theorem exchangeMatrix_ne_zero_of_nodal_model
-    (href : Q.HasNodalModel c M₀)
-    (hE : E.matrix = chargeExchangeMatrix b.detDualEquiv.toLinearMap (Fan.rayChargeMap Q.rays))
-    (hprim : IsPrimitive (Additive.ofMul δ))
-    (hnef : LineBundleClass.IsNef ℂ (M₀.surface ↘ S) δ)
-    (hsq : Chow.classIntersectionNumber ℂ M₀.surface δ δ = 0) :
-    E.matrix ≠ 0 := by
-  let : IsRationalOver (M₀.surface ↘ S) := href.isRationalOver
-  let P : ChargeSeed E N :=
-    ⟨b.detDualEquiv.toLinearMap, Fan.rayChargeMap Q.rays, b.detDualEquiv_self, hE.symm⟩
-  have hindex := Q.chargeIndex_ne_zero_of_anticanonical_cycle (M := fun _ ↦ M₀)
-    href cartier hnef hsq (congrArg Inv.inv (href.canonicalClass cartier)) hprim
-  exact Q.exchangeMatrix_ne_zero_of_chargeIndex_ne_zero P rfl rfl hindex
-
 /-- Specialization from complex coefficients is bijective on signed point maps of
 a marked primitive nef square-zero anticanonical cycle. -/
 theorem signedClusterModularGroupSpecialization_bijective_of_nodal_model
@@ -97,7 +80,7 @@ theorem signedClusterModularGroupSpecialization_bijective_of_nodal_model
   let := Q.neZero
   obtain ⟨p, hp⟩ := href.exists_isNodalContraction cartier
   let β := Module.finBasis ℤ E.matrix.mulVecLin.ker
-  have hnonzero := Q.exchangeMatrix_ne_zero_of_nodal_model href hE hprim hnef hsq
+  have hnonzero := href.exchangeMatrix_ne_zero hE hprim hnef hsq
   exact (Q.xPullback_eq_iff_signedLoopInvariants_eq_of_nodal_contraction
     ℂ p hp hE hprim hnef hsq w.asHom v.asHom β).mpr
       (Path.signedLoopInvariants_eq_of_xPullback_eq hnonzero hg β _ _)
@@ -163,7 +146,7 @@ theorem exists_picardGroupEquivs_over_field_of_nodal_model
     (MulEquiv.op unsignedEquiv.symm).trans Θrot, hM, hmodels, ?_, ?_, ?_⟩
   · intro w
     simpa only [MulEquiv.trans_apply, hsop, unop_op, hsword] using hΘ w
-  · have hnonzero := Q.exchangeMatrix_ne_zero_of_nodal_model href hE hprim hnef hsq
+  · have hnonzero := href.exchangeMatrix_ne_zero hE hprim hnef hsq
     rw [range_clusterModularGroupInclusion k E hnonzero]
     ext g
     obtain ⟨w, rfl⟩ := signedClusterModularGroupMap_surjective k E g
