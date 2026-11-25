@@ -267,6 +267,24 @@ theorem Ray.binomialCenterOnBoundary_mem_range_boundaryComponentι_iff :
   rintro rfl
   exact ⟨_, boundaryComponentι_binomialCenterOnComponent_apply ρ hΦ hdim hm hprim c z⟩
 
+/-- In the ambient toric surface a binomial center belongs exactly to its own ray divisor. -/
+@[simp]
+theorem Ray.binomialCenter_mem_support_rayBoundaryIdeal_iff :
+    ρ.binomialCenter hdim hm hprim c z ∈ (Φ.rayBoundaryIdeal hΦ τ).support ↔ ρ = τ := by
+  let q : Spec (.of ℂ) := z
+  have h : (D).subschemeι (center q) = ρ.binomialCenter hdim hm hprim c q :=
+    (Scheme.Hom.comp_apply (center) (D).subschemeι q).symm.trans
+      (congrArg (fun f : Spec (.of ℂ) ⟶ Φ.algebraicRealization ↦ f q)
+        (ρ.binomialCenterOnBoundary_comp_subschemeι hdim hm hprim c))
+  have hrange : Set.range (τ.boundaryComponentι hΦ ≫ (D).subschemeι) =
+      (D).subschemeι '' Set.range (τ.boundaryComponentι hΦ) := by
+    rw [← Set.range_comp']
+    exact congrArg Set.range (funext (Scheme.Hom.comp_apply (τ.boundaryComponentι hΦ)
+      (D).subschemeι))
+  rw [← SetLike.mem_coe, ← range_subschemeι, ← τ.boundaryComponentι_subschemeι hΦ, hrange,
+    ← h, (D).subschemeι.isClosedEmbedding.injective.mem_set_image]
+  exact ρ.binomialCenterOnBoundary_mem_range_boundaryComponentι_iff hΦ hdim hm hprim c τ
+
 /-- A binomial point lies on its ray divisor away from the residual toric boundary. -/
 theorem Ray.binomialCenter_mem_support_sdiff_colon :
     ρ.binomialCenter hdim hm hprim c (z : Spec (.of ℂ)) ∈
@@ -283,16 +301,8 @@ theorem Ray.binomialCenter_mem_support_sdiff_colon :
       ker_eq_comap_of_isPullback _ (ρ.isPullback_orbitToBoundary hdim hm hprim) |>.symm
   have hres : ((D).colon C).comap j = ⊤ := by
     rw [comap_colon _ _ hC.locallyPrincipal hDC j hcart, heq, colon_self]
-  have hin := (ρ.binomialCenterOnBoundary_mem_range_boundaryComponentι_iff
-    hΦ hdim hm hprim c ρ).mpr rfl
-  obtain ⟨q, hq⟩ := hin
   constructor
-  · rw [← range_subschemeι]
-    refine ⟨q, ?_⟩
-    have hbin := congrArg (fun f : Spec (.of ℂ) ⟶ Φ.algebraicRealization ↦ f z)
-      (ρ.binomialCenterOnBoundary_comp_subschemeι hdim hm hprim c)
-    rw [← ρ.boundaryComponentι_subschemeι hΦ, Scheme.Hom.comp_apply, hq]
-    exact hbin
+  · exact (ρ.binomialCenter_mem_support_rayBoundaryIdeal_iff hΦ hdim hm hprim c ρ).mpr rfl
   · have hx : ρ.binomialCenter hdim hm hprim c (z : Spec (.of ℂ)) ∈ Set.range j := by
       rw [Ray.binomialCenter_def]
       exact Set.mem_range_self _
