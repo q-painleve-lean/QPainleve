@@ -6,8 +6,8 @@ Authors: The QPainleve contributors
 module
 
 public import Mathlib.Basic.Complex.Basic
-public import QPainleve.SignedClusterModularGroup.Examples.FourVertex.AffineA1
 public import QPainleve.SignedClusterModularGroup.Boundary.Restriction
+public import QPainleve.SignedClusterModularGroup.Examples.FourVertex.PicardAction
 
 import QPainleve.AlgebraicGeometry.Chow.Nef.Boundary
 import QPainleve.SignedClusterModularGroup.Examples.FourVertex.Marking
@@ -22,10 +22,11 @@ import TauCeti.AlgebraicGeometry.Curves.Prestable
 /-!
 # The geometric Picard action of the four-vertex seed
 
-The ordered octagon blowups give a faithful signed Picard action on the
-explicit integral lattice. Its sign, Casimir action, and pullback of the
-forward boundary image are determined by the inversion count, kernel
-transport, and tropical order vector of a loop.
+The ordered octagon blowups give `markedPicardEquiv` on the explicit integral
+lattice. Its sign, Casimir action, and pullback of the forward boundary image
+are determined by the inversion count, kernel transport, and tropical order
+vector of a loop. Its evaluations at the three standard words identify the
+generators used in the group normal forms.
 -/
 
 open AlgebraicGeometry CategoryTheory MulOpposite Quiver
@@ -48,6 +49,7 @@ local notation "Orth" =>
   LinearMap.BilinForm.orthogonal H (Submodule.span ℤ (Set.range boundaryClass))
 local notation "G" => signedBoundaryIsometryGroup H boundaryClass
 local notation "Γ" => (SignedClusterModularGroup ℂ B)ᵐᵒᵖ
+local notation "Γ₀" => (ClusterModularGroup ℂ B)ᵐᵒᵖ
 local notation "η" => sign H boundaryClass
 local notation "act[" g "]" => Subtype.val (signedOrthogonalRestriction H boundaryClass g)
 local notation "eval[" w "]" => op (signedClusterModularGroupMap ℂ B (End.of w))
@@ -179,14 +181,7 @@ private theorem boundary_pullback
   simpa only [hj, toIsometry_apply, coe_toSignedBoundaryIsometry,
     LinearMap.BilinForm.coe_isometryGroupEquivIsometryEquiv_symm] using hR
 
-public section
-
-/-- The doubled-square seed has a signed Picard equivalence from its marked
-octagon. The sign kernel is the unsigned subgroup. For each loop the signed
-orthogonal restriction is exchange-kernel transport in the explicit Casimir
-basis, and tropicalizing the order vector at component zero identifies the
-boundary class whose pullback is component zero. -/
-theorem exists_four_vertex_marked_picard_equiv :
+private theorem exists_markedPicardEquiv :
     ∃ ρ : Γ ≃* G,
       ((η).comp ρ.toMonoidHom).ker.unop = (clusterModularGroupInclusion ℂ B).range ∧
       ∀ w : Word B B, η (ρ eval[w]) = (-1 : ℤˣ) ^ w.inversionCount ∧
@@ -249,6 +244,79 @@ theorem exists_four_vertex_marked_picard_equiv :
     exact exchangeKernel_action Q P hcharge hker hker' (ρ eval[w]) w h
   · rw [hR]
     exact boundary_pullback Q M hD hmark p horders' hE w R hR₀
+
+public section
+
+/-- The opposite signed cluster modular group of the doubled-square seed is the
+signed boundary isometry group of its marked octagon. -/
+noncomputable def markedPicardEquiv : Γ ≃* G :=
+  exists_markedPicardEquiv.choose
+
+/-- In point-map order, the sign kernel of the marked Picard action is the unsigned subgroup. -/
+theorem ker_sign_comp_markedPicardEquiv :
+    ((η).comp markedPicardEquiv.toMonoidHom).ker.unop =
+      (clusterModularGroupInclusion ℂ B).range :=
+  exists_markedPicardEquiv.choose_spec.1
+
+/-- The sign of a loop's marked Picard action is its inversion parity. -/
+@[simp]
+theorem sign_markedPicardEquiv_loop (w : Word B B) :
+    (markedPicardEquiv eval[w]).val.2 = (-1 : ℤˣ) ^ w.inversionCount := by
+  rw [← SignedBoundaryIsometryGroup.sign_apply H boundaryClass]
+  exact (exists_markedPicardEquiv.choose_spec.2 w).1
+
+/-- In exchange-kernel coordinates the signed orthogonal Picard action is loop transport. -/
+@[simp]
+theorem signedOrthogonalRestriction_markedPicardEquiv_loop (w : Word B B) :
+    LinearEquiv.autCongr eK act[markedPicardEquiv eval[w]] = w.exchangeKernelEquiv :=
+  (exists_markedPicardEquiv.choose_spec.2 w).2.1
+
+/-- Tropical transport from boundary component zero finds the class that the marked
+Picard action pulls back to component zero. -/
+theorem exists_boundary_pullback_markedPicardEquiv_loop (w : Word B B) :
+    ∃ j : Fin 8, boundaryOrders j = trop[w] (boundaryOrders 0) ∧
+      (toIsometry H boundaryClass (markedPicardEquiv eval[w])).val
+        (boundaryClass (ZMod.finEquiv 8 j)) = boundaryClass 0 :=
+  (exists_markedPicardEquiv.choose_spec.2 w).2.2
+
+/-- The marked Picard action of an unsigned cluster map has positive sign. -/
+@[simp]
+theorem sign_markedPicardEquiv_inclusion (g : Γ₀) :
+    (markedPicardEquiv (op (clusterModularGroupInclusion ℂ B g.unop))).val.2 = 1 := by
+  have h := congrArg (fun p : G ↦ p.val.2) (rotationInclusion_picardRotationEquiv_apply
+    markedPicardEquiv ker_sign_comp_markedPicardEquiv g)
+  simpa only [MonoidHom.op_apply_apply, Function.comp_apply, coe_rotationInclusion] using h.symm
+
+/-- The marked Picard action has the same sign, Casimir columns and forward
+boundary label as the loop. -/
+@[simp]
+theorem picardInvariants_markedPicardEquiv_loop (w : Word B B) :
+    picardInvariants (markedPicardEquiv eval[w]) =
+      w.signedLoopInvariants (fun j ↦ (exchangeKernelBasis j : Fin 4 → ℤ))
+        boundaryOrders (boundaryOrders 0) := by
+  obtain ⟨j, htrop, hpullback⟩ := exists_boundary_pullback_markedPicardEquiv_loop w
+  refine (picardInvariants_eq_signedLoopInvariants_iff _ w).mpr
+    ⟨?_, signedOrthogonalRestriction_markedPicardEquiv_loop w, j, hpullback, htrop.symm⟩
+  rw [SignedBoundaryIsometryGroup.sign_apply]
+  exact sign_markedPicardEquiv_loop w
+
+/-- The rotation word acts by the marked octagon's quarter-turn pullback. -/
+@[simp]
+theorem markedPicardEquiv_rotationWord :
+    markedPicardEquiv eval[rotationWord] = rotationInclusion H boundaryClass quarterTurn :=
+  (picardInvariants_eq_rotationWord_iff _).mp (picardInvariants_markedPicardEquiv_loop _)
+
+/-- The translation word acts by the marked Picard translation. -/
+@[simp]
+theorem markedPicardEquiv_translationWord :
+    markedPicardEquiv eval[translationWord] = rotationInclusion H boundaryClass picardTranslation :=
+  (picardInvariants_eq_translationWord_iff _).mp (picardInvariants_markedPicardEquiv_loop _)
+
+/-- The signed reflection word acts by the marked boundary reflection. -/
+@[simp]
+theorem markedPicardEquiv_reflectionWord :
+    markedPicardEquiv eval[reflectionWord] = boundaryReflection :=
+  (picardInvariants_eq_reflectionWord_iff _).mp (picardInvariants_markedPicardEquiv_loop _)
 
 end
 

@@ -10,7 +10,6 @@ public import QPainleve.SignedClusterModularGroup.Examples.FourVertex.Words
 
 import QPainleve.Algebra.Cluster.Word.SubtractionFree
 import QPainleve.SignedClusterModularGroup.Examples.FourVertex.MarkedAction
-import QPainleve.SignedClusterModularGroup.Examples.FourVertex.PicardAction
 
 /-!
 # Deciding relations for the four-vertex seed
@@ -19,7 +18,7 @@ For the doubled-square seed of Bershtein, Gavrylenko and Marshakov,
 *Cluster integrable systems, q-Painlevé equations and their quantization*, §3.1,
 the inversion sign, two Casimir exponent columns, and the forward octagon label
 decide equality of independent X pullbacks. The proof uses
-`exists_four_vertex_marked_picard_equiv` and `picardInvariants_injective`.
+`markedPicardEquiv` and `picardInvariants_injective`.
 Subtraction-free evaluation extends the criterion to every characteristic-zero field.
 -/
 
@@ -35,15 +34,12 @@ local notation "invariants[" w "]" =>
 
 private theorem xPullback_eq_iff_invariants_eq_complex (w v : Word B B) :
     w.xPullback ℂ = v.xPullback ℂ ↔ invariants[w] = invariants[v] := by
-  obtain ⟨ρ, -, hρ⟩ := exists_four_vertex_marked_picard_equiv
-  let act (u : Word B B) := ρ (op (signedClusterModularGroupMap ℂ B (End.of u)))
-  have hcompare (u : Word B B) : picardInvariants (act u) = invariants[u] := by
-    obtain ⟨hsign, hkernel, j, horder, hboundary⟩ := hρ u
-    simpa only [exchangeKernelBasis_apply] using
-      (picardInvariants_eq_signedLoopInvariants_iff (act u) u).mpr
-        ⟨hsign, hkernel, j, hboundary, horder.symm⟩
-  rw [← hcompare w, ← hcompare v, picardInvariants_injective.eq_iff, ρ.injective.eq_iff,
-    op_injective.eq_iff, signedClusterModularGroupMap_eq_iff]
+  have hcompare (u : Word B B) :
+      picardInvariants (markedPicardEquiv (op (signedClusterModularGroupMap ℂ B (End.of u)))) =
+        invariants[u] := by
+    simpa only [exchangeKernelBasis_apply] using picardInvariants_markedPicardEquiv_loop u
+  rw [← hcompare w, ← hcompare v, picardInvariants_injective.eq_iff,
+    markedPicardEquiv.injective.eq_iff, op_injective.eq_iff, signedClusterModularGroupMap_eq_iff]
   rfl
 
 public section
