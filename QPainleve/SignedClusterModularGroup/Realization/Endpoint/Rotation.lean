@@ -96,7 +96,8 @@ variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {b : Basis (Fin 2) ℤ N} {r n : ℕ} [NeZero n]
   {L γ : Type} [AddCommGroup L] {H : LinearMap.BilinForm ℤ L} {E : SkewExchangeMatrix (Fin r)}
 
-local instance (w : inversionFreeLoops E) : ((End.asHom w.val).xRationalMap ℂ).IsDominant :=
+local instance instIsDominantRotationLoopXRationalMap (w : inversionFreeLoops E) :
+    ((End.asHom w.val).xRationalMap ℂ).IsDominant :=
   Path.instIsDominantXRationalMap ℂ (End.asHom w.val)
 
 local notation "LoopX[" w "]" => Path.xRationalMap ℂ (End.asHom (Subtype.val w))
