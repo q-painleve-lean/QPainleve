@@ -8,7 +8,7 @@ module
 public import QPainleve.AlgebraicGeometry.Chow.Nef.Cone
 public import QPainleve.AlgebraicGeometry.Chow.RationalSurface.NakaiMoishezon
 
-import QPainleve.AlgebraicGeometry.Chow.RationalSurface.Ample
+import QPainleve.AlgebraicGeometry.Chow.RationalSurface.AmpleCone.Interior
 import TauCeti.Topology.Algebra.Module.ModuleTopology
 
 /-!
@@ -110,8 +110,8 @@ local instance : T2Space V(Y) := TauCeti.ModuleTopology.t2Space (Module.Free.cho
 
 include rational rationalY in
 /-- An integral Picard isometry identifying the real nef cones identifies the
-ample classes as soon as it takes one ample class to an ample class. -/
-theorem isAmple_iff_of_image_nefCone_eq {h : LineBundleClass X} (hh : h.IsAmple) :
+ample classes. -/
+theorem isAmple_iff_of_image_nefCone_eq :
     let : Smooth (X ↘ Spec (.of k)) := SmoothOfRelativeDimension.smooth 2 _
     let : Smooth (Y ↘ Spec (.of k)) := SmoothOfRelativeDimension.smooth 2 _
     let : IsIntegral X := rational.isIntegral_of_smooth
@@ -122,29 +122,22 @@ theorem isAmple_iff_of_image_nefCone_eq {h : LineBundleClass X} (hh : h.IsAmple)
       Y.finite_picard_of_isRationalOver k
     ∀ (e : (Chow.intersectionBilinForm k X).IsometryEquiv (Chow.intersectionBilinForm k Y)),
       (e.baseChange ℝ) '' (Chow.nefCone k (X := X) : Set V(X)) = Chow.nefCone k (X := Y) →
-      (e (Additive.ofMul h)).toMul.IsAmple →
       ∀ a : LineBundleClass X, a.IsAmple ↔ (e (Additive.ofMul a)).toMul.IsAmple := by
-  intro _ _ _ _ _ _ e hnef hhY a
-  let g : LineBundleClass X ≃* LineBundleClass Y :=
-    (MulEquiv.multiplicativeAdditive _).symm.trans
-      (AddEquiv.toMultiplicativeLeft e.toLinearEquiv.toAddEquiv)
-  have hg (b : LineBundleClass X) : g b = (e (Additive.ofMul b)).toMul := (rfl)
-  have hmem (b : LineBundleClass X) :
-      b.IsNef k (X ↘ Spec (.of k)) ↔ (g b).IsNef k (Y ↘ Spec (.of k)) := by
-    rw [← Chow.one_tmul_mem_nefCone_iff k b, ← Chow.one_tmul_mem_nefCone_iff k (g b)]
-    simp only [← SetLike.mem_coe]
-    rw [← hnef, hg, ofMul_toMul, ← e.baseChange_tmul (1 : ℝ) (Additive.ofMul b)]
-    have hinj : Function.Injective ((e.baseChange ℝ) : V(X) → V(Y)) := (e.baseChange ℝ).injective
-    exact hinj.mem_set_image.symm
-  rw [← hg] at hhY ⊢
-  refine ⟨fun ha ↦ ha.map_of_isNef_preserving (X ↘ Spec (.of k)) g.toMonoidHom
-    (fun b ↦ (hmem b).mp) hhY, fun ha ↦ ?_⟩
-  have hi (b : LineBundleClass Y) (hb : b.IsNef k (Y ↘ Spec (.of k))) :
-      (g.symm b).IsNef k (X ↘ Spec (.of k)) :=
-    (hmem (g.symm b)).mpr (by simpa only [g.apply_symm_apply] using hb)
-  have hhX : (g.symm (g h)).IsAmple := by simpa only [g.symm_apply_apply] using hh
-  simpa only [MulEquiv.coe_toMonoidHom, g.symm_apply_apply] using
-    ha.map_of_isNef_preserving (Y ↘ Spec (.of k)) g.symm.toMonoidHom hi hhX
+  intro _ _ _ _ _ _ e hnef a
+  let g := (e.baseChange ℝ).toLinearEquiv.toContinuousLinearEquivOfIsModuleTopology.toHomeomorph
+  have hg : (g : V(X) → V(Y)) = e.baseChange ℝ := by
+    simp only [g, ContinuousLinearEquiv.coe_toHomeomorph,
+      LinearEquiv.coe_toContinuousLinearEquivOfIsModuleTopology,
+      LinearMap.BilinForm.IsometryEquiv.coe_toLinearEquiv]
+  have hmap : g '' interior (Chow.nefCone k (X := X) : Set V(X)) =
+      interior (Chow.nefCone k (X := Y) : Set V(Y)) := by
+    rw [g.image_interior, hg, hnef]
+  have htmul : g (ι a) = (1 : ℝ) ⊗ₜ[ℤ] e (Additive.ofMul a) :=
+    congrFun hg (ι a) |>.trans (e.baseChange_tmul (1 : ℝ) (Additive.ofMul a))
+  rw [← Chow.one_tmul_mem_interior_nefCone_iff k a,
+    ← Chow.one_tmul_mem_interior_nefCone_iff k ((e (Additive.ofMul a)).toMul),
+    ofMul_toMul, ← hmap, ← htmul]
+  exact g.injective.mem_set_image.symm
 
 end Transport
 
