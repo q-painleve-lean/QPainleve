@@ -94,6 +94,30 @@ theorem exists_equiv_boundaryPrimes_comap_pointBlowup
   refine ⟨e, fun q ↦ ?_, hη⟩
   exact congrArg Subtype.val (hb.equiv.apply_symm_apply q)
 
+/-- A point blowup on the boundary extends a finite labeling of its primes.
+The original labels lift to the strict transforms, and the last label denotes
+the exceptional prime over the center. -/
+theorem exists_equiv_boundaryPrimes_snoc
+    {k : Type u} [Field k] [IsNoetherian X] (D : X.IdealSheafData)
+    {f : X ⟶ Spec (.of k)} [SmoothOfRelativeDimension 2 f] {m : ℕ}
+    {x : X} (hx : IsClosed ({x} : Set X)) (hxD : x ∈ D.support)
+    {I : X.IdealSheafData} (hI : (X.fromSpecResidueField x).ker = I)
+    (e : Fin m ≃ D.boundaryPrimes) :
+    ∃ e' : Fin (m + 1) ≃ (D.comap I.blowupToBase).boundaryPrimes,
+      (∀ i, I.blowupToBase (e' i.castSucc).val = (e i).val) ∧
+      I.blowupToBase (e' (Fin.last m)).val = x := by
+  subst I
+  obtain ⟨b, hb, hb₀⟩ := D.exists_equiv_boundaryPrimes_comap_pointBlowup f hx hxD
+  let e' := (finSumFinEquiv (m := m) (n := 1)).symm.trans
+    ((Equiv.sumCongr e (Equiv.equivPUnit (Fin 1))).trans b)
+  refine ⟨e', fun i ↦ ?_, ?_⟩
+  · simpa only [e', Equiv.trans_apply, finSumFinEquiv_symm_apply_castSucc,
+      Equiv.sumCongr_apply, Sum.map_inl] using hb (e i)
+  · have hp : Equiv.equivPUnit (Fin 1) 0 = (PUnit.unit : PUnit.{u + 1}) :=
+      Subsingleton.elim _ _
+    simpa only [e', Equiv.trans_apply, finSumFinEquiv_symm_last, Equiv.sumCongr_apply,
+      Sum.map_inr, hp] using hb₀
+
 /-- The projection of a point blowup distinguishes the boundary primes of the
 total transform. The only prime projecting to the center is exceptional. -/
 theorem injOn_blowupToBase_boundaryPrimes_comap_pointBlowup

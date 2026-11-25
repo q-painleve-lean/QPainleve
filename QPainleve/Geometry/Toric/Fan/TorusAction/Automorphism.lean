@@ -187,6 +187,19 @@ private theorem existsUnique_lift_fixed_centres (χ : Chars) (hχ : ∀ k, χ (o
   intro g' hg'
   exact Subtype.ext (Aut.ext (hg'.unique hg))
 
+/-- An ordered lift of a torus translation from an internal blowup tower to itself
+acts trivially on Picard classes and fixes each strict ray divisor. -/
+theorem mem_internalBlowupPicardBoundaryAut_of_isLift_torusTranslation
+    {χ : Chars} {g : Aut Y} (hg : IsLift (Φ.torusTranslation χ) T T g.asIso) :
+    g ∈ internalBlowupPicardBoundaryAut b s c hΦ := by
+  have hcentres := (exists_isLift_internalBlowupTower_torusTranslation_iff b s c c χ).mp
+    ⟨g.asIso, hg⟩
+  have hχ (k : Fin n) : χ (ofAdd (m k)) = 1 :=
+    mul_left_cancel ((hcentres k).trans (mul_one (c k)).symm)
+  obtain ⟨g', hg', -⟩ := existsUnique_lift_fixed_centres b s c hΦ χ hχ
+  have he : g = g'.val := Aut.ext (hg.unique hg')
+  exact he.symm ▸ g'.property
+
 private theorem existsUnique_translation_of_internalBlowupAut (hc : Φ.IsComplete)
     (g : internalBlowupPicardBoundaryAut b s c hΦ) :
     ∃! χ : Chars, IsLift (Φ.torusTranslation χ) T T (g : Aut Y).asIso ∧

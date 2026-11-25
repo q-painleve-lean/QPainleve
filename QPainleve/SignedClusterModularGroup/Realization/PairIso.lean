@@ -18,7 +18,7 @@ import TauCeti.AlgebraicGeometry.Morphisms.Modification.Composition
 /-!
 # Common ordered toric models of a specified pair isomorphism
 
-The marked fibers of a toric presentation supply the two endpoint projections
+The marked fibers of two toric presentations supply the endpoint projections
 for [Lutz's resolved factorization](https://arxiv.org/pdf/2005.05010v3#page=68).
 On a common nodal refinement their ordered models give the two original
 X evaluations, with the target evaluation pulled back by the given pair isomorphism.
@@ -178,15 +178,20 @@ end ContractedToricFiber
 
 namespace CompleteToricPresentation
 
-/-- Two marked nodal models of the same ordered toric presentation, related by a
-specified pair isomorphism, give logarithmic projections on one nodal refinement.
-The ordered models retain the common exchange matrix. Their evaluations are the
+/-- Two marked nodal models related by a specified pair isomorphism give
+logarithmic projections on one nodal refinement. Each ordered model retains
+the exchange matrix of its own frame and center labels. Their evaluations are the
 two marked evaluations pulled back through the common projection and through its
 composite with the specified pair isomorphism, respectively. -/
-theorem exists_common_ordered_models_of_pair_iso {γ : Type}
+theorem exists_common_ordered_models_of_pair_iso
+    {N' V' : Type} [AddCommGroup N'] [AddCommGroup V'] [Module ℝ V'] {i' : N' →+ V'}
+    {b' : Module.Basis (Fin 2) ℤ N'} {r' : ℕ} {L' : Type} [AddCommGroup L']
+    {H' : LinearMap.BilinForm ℤ L'} {γ γ' : Type}
     (Q : CompleteToricPresentation i b r L γ)
-    {c d : Point Centers[r]} {M P : MarkedSurface ℂ n H X[r]}
-    (hM : Q.HasNodalModel c M) (hP : Q.HasNodalModel d P)
+    (Q' : CompleteToricPresentation i' b' r' L' γ')
+    {c : Point Centers[r]} {d : Point Centers[r']}
+    {M : MarkedSurface ℂ n H X[r]} {P : MarkedSurface ℂ n H' X[r']}
+    (hM : Q.HasNodalModel c M) (hP : Q'.HasNodalModel d P)
     (e : M.pair ≅ P.pair) (hD : D[M].IsEffectiveCartier) (hE : D[P].IsEffectiveCartier) :
     ∃ (k : ℕ) (W : Scheme) (T : BlowupTower M.surface k W)
       (hT : IsNodalBoundaryTower D[M] (M.surface ↘ S) (𝟙 _) T)
@@ -202,16 +207,19 @@ theorem exists_common_ordered_models_of_pair_iso {γ : Type}
       let : IsIntegral W := hT.isClosedPointTower.isIntegral (M.surface ↘ S)
       ∃ (_ : IsModification π), π = T.toBase ∧ s = π ≫ M.surface ↘ S ∧
         let R := R[D[M],π]
-        ∃ (A B : Fan.LogarithmicProjection i R)
-          (U : OrderedToricModel A r) (V : OrderedToricModel B r),
-          R.IsEffectiveCartier ∧ A.fan = Q.fan ∧ B.fan = Q.fan ∧
+        ∃ (A : Fan.LogarithmicProjection i R) (B : Fan.LogarithmicProjection i' R)
+          (U : OrderedToricModel A r) (V : OrderedToricModel B r'),
+          R.IsEffectiveCartier ∧ A.fan = Q.fan ∧ B.fan = Q'.fan ∧
           IsModification A.hom ∧ IsModification B.hom ∧
-          U.exchangeMatrix.matrix = E[b,Q.rays] ∧ V.exchangeMatrix.matrix = E[b,Q.rays] ∧
+          U.exchangeMatrix.matrix = E[b,Q.rays] ∧ V.exchangeMatrix.matrix = E[b',Q'.rays] ∧
           U.xEvaluation = π.toRationalMap.comp M.evaluation ∧
           V.xEvaluation = (π ≫ (surfaceIso e).hom).toRationalMap.comp P.evaluation := by
   let := Q.complete.nonempty_cones
   let := Q.prestable
   let := Q.neZero
+  let := Q'.complete.nonempty_cones
+  let := Q'.prestable
+  let := Q'.neZero
   let : IsIntegral M.surface := M.integral
   let : IsIntegral P.surface := P.integral
   let : SmoothOfRelativeDimension 2 (M.surface ↘ S) := M.smooth
@@ -223,7 +231,7 @@ theorem exists_common_ordered_models_of_pair_iso {γ : Type}
   let : IsNoetherian M.surface := isNoetherian_of_finiteType (M.surface ↘ S)
   let : IsNoetherian P.surface := isNoetherian_of_finiteType (P.surface ↘ S)
   obtain ⟨p, Y, k, T, a, hT, ha⟩ := (Q.hasNodalModel_iff c M).mp hM
-  obtain ⟨q, Z, l, U, b', hU, hb⟩ := (Q.hasNodalModel_iff d P).mp hP
+  obtain ⟨q, Z, l, U, a', hU, hb⟩ := (Q'.hasNodalModel_iff d P).mp hP
   have he : D[P].comap (surfaceIso e).hom = D[M] := by
     rw [← Scheme.Hom.comap_ker_comp_of_isClosedImmersion M.pair.hom.left (surfaceIso e).hom,
       ← MarkedSurface.boundaryIso_hom_comp,
@@ -267,7 +275,7 @@ theorem exists_common_ordered_models_of_pair_iso {γ : Type}
   obtain ⟨A, A', hAf, _, hmodA, hmatA, hEvalA⟩ :=
     p.exists_ordered_model_on_nodal_extension Q.complete hD hT hJ a ha
   obtain ⟨B, B', hBf, _, hmodB, hmatB, hEvalB⟩ :=
-    q.exists_ordered_model_on_nodal_extension Q.complete hE hU hK b' hb
+    q.exists_ordered_model_on_nodal_extension Q'.complete hE hU hK a' hb
   let := hmodB
   obtain ⟨C, C', hCf, _, hmodC, hmatC, hEvalC⟩ := B'.exists_precomposeIso f hPole
   have hR : R[D[M],π].IsEffectiveCartier := by

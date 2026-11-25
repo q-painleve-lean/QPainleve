@@ -5,8 +5,9 @@ Authors: The QPainleve contributors
 -/
 module
 
-public import QPainleve.Algebra.MonoidAlgebra.Isomorphism
 import Mathlib.CategoryTheory.HomCongr
+import QPainleve.Algebra.AlgebraicGroup.DiagonalizableGroup.Scheme.Basic
+public import QPainleve.Algebra.MonoidAlgebra.Isomorphism
 public import TauCeti.Algebra.AlgebraicGroup.DiagonalizableGroup.Scheme.Points
 public import TauCeti.CategoryTheory.Monoidal.Grp.Translation
 
@@ -109,23 +110,12 @@ theorem schemePointsMulEquiv_toUnit_comp_pointOfCharacter
     (phi := Algebra.ofId k A), MulEquiv.apply_symm_apply]
   rfl
 
-private def universalPoint (G : FGCommGrpCat.{u}) :
-    (Spec (CommRingCat.of R[G])).asOver S ⟶ D(G) :=
-  (groupSchemePointsMulEquiv G).symm (WithConv.toConv (AlgHom.id k R[G]))
-
-private instance (G : FGCommGrpCat.{u}) : IsIso (universalPoint (k := k) G) := by
-  suffices IsIso ((Over.forget S).map (universalPoint (k := k) G)) from
-    isIso_of_reflects_iso _ (Over.forget S)
-  rw [Over.forget_map, universalPoint, groupSchemePointsMulEquiv_symm_apply_left]
-  simp only [AlgHom.id_toRingHom, CommRingCat.ofHom_id, Spec.map_id, Category.id_comp]
-  exact (eqToIso (groupScheme_X_left k G).symm).isIso_hom
-
 /-- Twisting by a character on the coordinate ring gives translation by that point
 on the diagonalizable group scheme. -/
 theorem algEquivToSchemeIso_charTwist (χ : G →* kˣ) :
     algEquivToSchemeIso (MonoidAlgebra.charTwist χ) =
       leftTranslation (pointOfCharacter χ) := by
-  let p := universalPoint (k := k) G
+  let p := groupSchemeUniversalPoint (k := k) G
   apply Iso.ext
   apply (cancel_epi p).mp
   apply (schemePointsMulEquiv G).injective
@@ -137,9 +127,8 @@ theorem algEquivToSchemeIso_charTwist (χ : G →* kˣ) :
     MonoidAlgebra.charTwist_single,
     comp_leftTranslation_hom, map_mul, schemePointsMulEquiv_toUnit_comp_pointOfCharacter]
   simp only [MonoidHom.mul_apply, MonoidHom.comp_apply, Units.val_mul, Units.coe_map,
-    schemePointsMulEquiv_apply_coe, p, universalPoint, MulEquiv.apply_symm_apply,
-    WithConv.ofConv_toConv, AlgHom.id_apply, mul_one]
-  rw [MonoidAlgebra.single_eq_algebraMap_mul_of, MonoidAlgebra.of_apply]
+    schemePointsMulEquiv_apply_coe, mul_one]
+  rw [MonoidAlgebra.single_eq_algebraMap_mul_of, MonoidAlgebra.of_apply, map_mul, AlgHom.commutes]
   rfl
 
 /-- Transporting exponents on the coordinate ring gives the group-scheme map induced by
@@ -147,7 +136,7 @@ the exponent isomorphism. -/
 theorem algEquivToSchemeIso_domCongr_hom (σ : G ≃* H) :
     (algEquivToSchemeIso (MonoidAlgebra.domCongr k k σ)).hom =
       (groupSchemeMap k (FGCommGrpCat.ofHom σ.toMonoidHom)).hom.hom := by
-  let p := universalPoint (k := k) H
+  let p := groupSchemeUniversalPoint (k := k) H
   apply (cancel_epi p).mp
   apply (schemePointsMulEquiv G).injective
   apply MonoidHom.ext

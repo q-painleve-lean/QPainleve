@@ -59,6 +59,35 @@ section
 
 variable (e : X ≅ X') [e.hom.IsOver S]
 
+/-- If a specified isomorphism of contractions identifies the fixed-center
+evaluations, it lifts to an ordered torus translation with a unique character.
+The charge sublattice has finite index. -/
+theorem existsUnique_torusTranslation_isLift_of_comp_contractedXEvaluation_eq
+    (hindex : (rayChargeMap s).range.toAddSubgroup.index ≠ 0)
+    (hc : p ≫ (X ↘ S) = π c ≫ Φ.algebraicRealizationStructureMap)
+    (hd : q ≫ (X' ↘ S) = π d ≫ Φ.algebraicRealizationStructureMap)
+    (heval : e.hom.toRationalMap.comp (contractedXEvaluation b s d hΦ q) =
+      contractedXEvaluation b s c hΦ p) :
+    ∃! χ : Multiplicative (N →+ ℤ) →* ℂˣ, ∃ t : Y c ≅ Y d,
+      IsLift (Φ.torusTranslation χ) (T c) (T d) t ∧ p ≫ e.hom = t.hom ≫ q := by
+  apply existsUnique_isLift_of_eq_scaled_characters_of_contractions b s (center c) (center d)
+    hΦ hindex e hc hd
+  dsimp only
+  have := isIntegral_internalBlowupTower b s (center c) hΦ
+  have := isIntegral_internalBlowupTower b s (center d) hΦ
+  have := isModification_internalBlowupTower_toBase b s (center c) hΦ
+  have := isModification_internalBlowupTower_toBase b s (center d) hΦ
+  have := p.isIso_functionFieldMap_of_isModification
+  have := q.isIso_functionFieldMap_of_isModification
+  have h := congrArg Scheme.RationalMap.fromFunctionField heval
+  simp only [Scheme.RationalMap.fromFunctionField_comp,
+    Scheme.Hom.functionFieldMap_toRationalMap, fromFunctionField_contractedXEvaluation,
+    ← Spec.map_comp, Spec.map_inj] at h
+  intro j
+  simpa only [Category.assoc, CommRingCat.comp_apply, CommRingCat.hom_comp,
+    RingHom.comp_apply, CommRingCat.hom_ofHom, AlgHom.toRingHom_eq_coe, AlgHom.coe_toRingHom,
+    xEval_X] using ConcreteCategory.congr_hom h (LaurentRing.X j : L)
+
 /-- Equality of fixed-center rational evaluations along a specified isomorphism of
 contractions determines a unique translating character. Its ordered lift compares the
 contraction projections and the Picard markings, and the isomorphism identifies the
@@ -80,23 +109,14 @@ theorem existsUnique_translation_of_comp_contractedXEvaluation_eq
             (Additive.ofMul (LineBundleClass.pullback p (LineBundleClass.pullback e.hom a))) =
           (internalBlowupPicardMarking b s (center d) hΦ).symm
             (Additive.ofMul (LineBundleClass.pullback q a)) := by
-  apply existsUnique_isLift_of_eq_scaled_characters_of_contractions b s (center c) (center d)
-    hΦ hindex e hc hd hD hD'
-  dsimp only
-  have := isIntegral_internalBlowupTower b s (center c) hΦ
-  have := isIntegral_internalBlowupTower b s (center d) hΦ
-  have := isModification_internalBlowupTower_toBase b s (center c) hΦ
-  have := isModification_internalBlowupTower_toBase b s (center d) hΦ
-  have := p.isIso_functionFieldMap_of_isModification
-  have := q.isIso_functionFieldMap_of_isModification
-  have h := congrArg Scheme.RationalMap.fromFunctionField heval
-  simp only [Scheme.RationalMap.fromFunctionField_comp,
-    Scheme.Hom.functionFieldMap_toRationalMap, fromFunctionField_contractedXEvaluation,
-    ← Spec.map_comp, Spec.map_inj] at h
-  intro j
-  simpa only [Category.assoc, CommRingCat.comp_apply, CommRingCat.hom_comp,
-    RingHom.comp_apply, CommRingCat.hom_ofHom, AlgHom.toRingHom_eq_coe, AlgHom.coe_toRingHom,
-    xEval_X] using ConcreteCategory.congr_hom h (LaurentRing.X j : L)
+  obtain ⟨χ, ⟨t, ht, hcomm⟩, huniq⟩ :=
+    existsUnique_torusTranslation_isLift_of_comp_contractedXEvaluation_eq
+      b s c d hΦ p q e hindex hc hd heval
+  refine ⟨χ, ⟨t, ht, hcomm,
+    comap_boundary_of_translation_descends b s (center c) (center d) ht hcomm hD hD',
+    pullback_marking_of_translation_descends b s (center c) (center d) hΦ ht hcomm⟩, ?_⟩
+  rintro ψ ⟨u, hu, hcomm', -⟩
+  exact huniq ψ ⟨u, hu, hcomm'⟩
 
 end
 
