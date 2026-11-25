@@ -5,7 +5,7 @@ Authors: The QPainleve contributors
 -/
 module
 
-public import QPainleve.Algebra.Cluster.Word.LoopComparison
+public import QPainleve.Algebra.Cluster.Word.LoopComparison.List
 public import QPainleve.SignedClusterModularGroup.Realization.Relations.Basic
 public import QPainleve.SignedClusterModularGroup.Realization.Presentation
 
