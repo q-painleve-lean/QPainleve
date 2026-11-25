@@ -83,6 +83,16 @@ theorem Hom.ker_eq_ker_fromSpecResidueField {k : Type*} [Field k]
   rw [s.support_ker, hrange]
   rfl
 
+/-- At a point of the support of a closed field-valued point, the residue-field map
+has the same kernel ideal as the field-valued point. -/
+theorem Hom.ker_eq_ker_fromSpecResidueField_of_mem_support {k : Type*} [Field k]
+    {X : Scheme} (s : Spec (.of k) ⟶ X) [IsClosedImmersion s] {p : X}
+    (hp : p ∈ s.ker.support) : s.ker = (X.fromSpecResidueField p).ker := by
+  rw [← SetLike.mem_coe, s.support_ker, s.isClosedEmbedding.isClosed_range.closure_eq] at hp
+  obtain ⟨q, rfl⟩ := hp
+  rw [Subsingleton.elim q (IsLocalRing.closedPoint k)]
+  exact s.ker_eq_ker_fromSpecResidueField
+
 /-- Reduced point ideals distinguish points of a scheme. -/
 @[simp]
 theorem ker_fromSpecResidueField_inj {X : Scheme} {p q : X} :
