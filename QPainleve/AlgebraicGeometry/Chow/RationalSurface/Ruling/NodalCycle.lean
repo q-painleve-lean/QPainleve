@@ -203,8 +203,9 @@ variable [C.Over (Spec (.of k))] [IsIntegral C] [IsSeparated (C ↘ Spec (.of k)
 elementary transformation gives a proper flat ruling with projective-line
 closed fibers over the same base. The contracted surface has a numbered
 anticanonical cycle with one more component and complexity one less than
-the original cycle. The new surface is birational to the original over the
-ground field and the replaced fiber is a component of the new boundary. -/
+the original cycle. The reduced total boundary omits the contracted curve. The
+new surface is birational to the original over the ground field and the
+replaced fiber is a component of its boundary. -/
 theorem exists_elementary_transform_of_numbered_nodal_fiber
     [Module.Finite ℤ (Additive (LineBundleClass X))]
     (f : X ⟶ C) [f.IsOver S] [IsDominant f]
@@ -229,6 +230,7 @@ theorem exists_elementary_transform_of_numbered_nodal_fiber
         a.hom ≫ f'.fiberι z ≫ Y ↘ S = P₁ ↘ S) ∧
       IsClosed ({q} : Set Y) ∧
       (∃ e : B[p] ≅ (J[q]).blowup, e.hom ≫ (J[q]).blowupToBase = g) ∧
+      ¬ ((J[q]).comap g).support ≤ (R[p,D]).support ∧
       D'.comap g = R[p,D] * (J[q]).comap g ∧ D' ≤ F[f',f p] ∧
       ∃ hD' : D'.IsEffectiveCartier,
         LineBundleClass.mk hD'.toInvertibleSheaf = K[Y] ∧
@@ -260,7 +262,7 @@ theorem exists_elementary_transform_of_numbered_nodal_fiber
       rw [Iso.trans_hom, IdealSheafData.over_eq_subschemeι_comp, Category.assoc,
         ← Category.assoc b.hom, hb, ha]
     rw [← hab, Iso.inv_hom_id_assoc]⟩
-  obtain ⟨Y, s, g, q, f', hSmooth, hY, hProj, hmod, hg, hdom, hf', hcomp, hq, -, hqF,
+  obtain ⟨Y, s, g, q, f', hSmooth, hY, hProj, hmod, hg, hdom, hf', hcomp, hq, -, hqF, homit,
     -, hnew, -, ⟨v, hv⟩, -, htotal, haway, ⟨e, he⟩, hD', hK', -, d, hd⟩ :=
     f.exists_elementary_transform_of_nodal_fiber hD hN hK hp hn hy rfl hJ (a ≪≫ b).symm ha' hF
   let : Y.Over S := ⟨s⟩
@@ -273,7 +275,7 @@ theorem exists_elementary_transform_of_numbered_nodal_fiber
   have : IsProper (f' ≫ C ↘ S) := hf'.comp_over.symm ▸ inferInstanceAs (IsProper (Y ↘ S))
   refine ⟨Y, s, g, q, f', hSmooth, hY, hProj, hbir, hmod, hg, hdom, hf', hcomp,
     IsProper.of_comp f' (C ↘ S), f'.flat_of_isDominant_of_smooth (C ↘ S), ?_,
-    hq, ⟨e, he⟩, hqF.symm ▸ htotal, hnew, hD', hK', ?_⟩
+    hq, ⟨e, he⟩, homit, hqF.symm ▸ htotal, hnew, hD', hK', ?_⟩
   · exact exists_projectiveLine_iso_fiber_of_elementary_transform f hf hp g hg.comp_over f' v hv
       (fun z hz hzy ↦ by
         obtain ⟨a, ha, -⟩ := haway z hz hzy

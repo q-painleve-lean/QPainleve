@@ -253,6 +253,67 @@ theorem IsEffectiveCartier.anticanonical_boundary_point_blowdown
   · exact Or.inr ⟨by simpa only [Nat.cast_one, one_add_one_eq_two] using hm,
       haE.mp rfl, by simpa only [pow_one] using hstrict⟩
 
+omit [PerfectField k] [IsIntegral X] in
+include hp hSmooth in
+/-- The schematic image of a reduced Cartier divisor's strict transform under
+the blowup of a closed point of a smooth surface recovers the original divisor. -/
+theorem IsEffectiveCartier.map_strictTransform_blowupToBase
+    {D : X.IdealSheafData} (hD : D.IsEffectiveCartier) [IsReduced D.subscheme] :
+    (strict(D)).map π = D := by
+  let U : X.Opens := (I).support.compl
+  have : IsIso (π ∣_ U) := (I).isIso_blowupToBase_restrict_compl_support
+  have : IsOpenImmersion (j ≫ π) := by
+    rw [compl_support_comap, ← morphismRestrict_ι]
+    infer_instance
+  rw [ker_blowupMap_subschemeι_eq_map_comap, ← map_comp, ← comap_comp]
+  apply hD.map_comap_eq_of_codimensionOne_mem_range (j ≫ π)
+  intro x _
+  have hx : x.val ≠ p := by
+    intro h
+    have htwo := coheight_eq_of_isClosed_of_smoothOfRelativeDimension (n := 2) (base[k,X]) hp
+    rw [← h, x.property] at htwo
+    norm_num at htwo
+  have hxU : x.val ∈ U := by
+    have hI := X.support_ker_fromSpecResidueField_of_isClosed hp
+    rw [X.ker_fromSpecResidueField_eq_vanishingIdeal] at hI
+    simpa only [← SetLike.mem_coe, U, Closeds.coe_compl, hI, Set.mem_compl_iff,
+      Set.mem_singleton_iff] using hx
+  rw [compl_support_comap, ← morphismRestrict_ι]
+  obtain ⟨z, hz⟩ := (π ∣_ U).surjective (⟨x.val, hxU⟩ : U)
+  exact ⟨z, by rw [Scheme.Hom.comp_apply, hz]; rfl⟩
+
+include hp hSmooth in
+/-- If a reduced anticanonical divisor on a point blowup is a strict transform,
+it omits the exceptional curve, and taking its image recovers the divisor downstairs. -/
+theorem IsEffectiveCartier.map_eq_and_not_le_support_of_eq_strictTransform
+    {B : (I).blowup.IdealSheafData} (hB : B.IsEffectiveCartier) [IsReduced B.subscheme]
+    {D : X.IdealSheafData} (hD : D.IsEffectiveCartier) [IsReduced D.subscheme]
+    (hstrict : strict(D) = B) :
+    let : (I).blowup.Over S(k) := ⟨π ≫ base[k,X]⟩
+    let : SmoothOfRelativeDimension 2 (base[k,(I).blowup]) :=
+      smoothOfRelativeDimension_blowup_closed_point (base[k,X]) hp
+    LineBundleClass.mk hB.toInvertibleSheaf = K(k,(I).blowup) →
+    B.map π = D ∧ ¬ (E).support ≤ B.support := by
+  intro _ _ hK
+  have hmap := hstrict ▸ hD.map_strictTransform_blowupToBase k hp
+  refine ⟨hmap, ?_⟩
+  obtain ⟨_, _, _, _, hcases⟩ := hB.anticanonical_boundary_point_blowdown k hp hK
+  rw [hmap, hstrict] at hcases
+  rcases hcases with h | h
+  · exact h.2.1
+  · have he : E = ⊤ :=
+      hB.mul_left_cancel (h.2.2.trans (mul_top B).symm)
+    have hnonempty : Nonempty (E).subscheme := by
+      have : Smooth (base[k,X]) := hSmooth.smooth
+      have := isRegularLocalRing_stalk_of_smooth (base[k,X]) p
+      have hdim := ((smoothOfRelativeDimension_iff_ringKrullDim_stalk_eq
+        (base[k,X]) 2).mp hSmooth).2 p hp
+      have : IsIntegral (E).subscheme := isIntegral_exceptional_blowup_closed_point hdim hp
+      exact inferInstance
+    have hempty := ((E).subschemeι.ker_eq_top_iff_isEmpty).mp
+      ((E).ker_subschemeι.trans he)
+    exact (hempty.false (Classical.choice hnonempty)).elim
+
 include hp hSmooth in
 private theorem exists_smoothPoint_and_isEffectiveCartier_comap_of_stalkOrder_eq_one
     {D : X.IdealSheafData} (hD : D.IsEffectiveCartier) (hm : D.stalkOrder p = 1) :
