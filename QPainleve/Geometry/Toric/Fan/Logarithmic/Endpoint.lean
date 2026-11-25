@@ -11,8 +11,10 @@ public import QPainleve.Geometry.Toric.Fan.Picard.Reindex
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Boundary.Ramification
 import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
 import QPainleve.AlgebraicGeometry.Morphisms.Modification.IsoLocus
+import QPainleve.AlgebraicGeometry.RationalMap.Composition.Basic
 import QPainleve.AlgebraicGeometry.Scheme.FunctionField
 import QPainleve.Geometry.Toric.Fan.Separated
+import QPainleve.Geometry.Toric.Fan.StarSubdivision.Tower
 import QPainleve.Geometry.Toric.Fan.Subdivision.FunctionField
 
 /-!
@@ -29,7 +31,8 @@ near centers. This identifies the last ordered model of a resolved path as in
 
 public section
 
-open AlgebraicGeometry CategoryTheory Module QPainleve.BlowupTower
+open AlgebraicGeometry CategoryTheory Module Multiplicative QPainleve.BlowupTower
+open TauCeti.LaurentRing
 open Scheme.IdealSheafData TauCeti.AlgebraicGeometry LineBundleClass
 
 namespace TauCeti.Toric.Fan
@@ -194,5 +197,84 @@ theorem exists_reindex_of_toric_internal_factorizations (hc : Φ.IsComplete)
       using congrArg (fun j ↦ j ≫ e'.hom) hb
   · simpa only [g, pullback_comp, Iso.trans_hom, Iso.symm_hom, Iso.inv_hom_id_assoc, eqToHom_refl,
       pullback_id, ofMul_toMul] using congrArg (pullback e.inv) (hmark a x)
+
+local notation "proj[" A "]" => toBase (WithBoundary.toTower (Sigma.snd A))
+local notation "ι[" A "]" => WithBoundary.boundaryι (Sigma.snd A)
+local notation "χ[" c "," j "]" => (c (ofAdd (Pi.single j 1)))
+
+/-- Two ordered internal factorizations of the same logarithmic projection with the same pole
+boundary have the same intermediate fan. The resolving isomorphisms identify the strict
+boundaries, and all toric and exceptional Picard coordinates agree after the induced
+reindexing. On the common resolving surface the fixed-center X evaluations differ by the
+same renaming. Coincident centers match in the order in which they are blown up. -/
+theorem exists_reindex_of_toric_internal_factorizations_with_xEvaluation
+    (hc : Φ.IsComplete) (hΦ : Φ.IsRegular) (hΘ : Θ.IsRegular) (hΩ : Ω.IsRegular)
+    (J : Θ.IsSubdivision Φ) (K : Ω.IsSubdivision Φ)
+    (r : Fin m → Θ.Ray) (s : Fin n → Ω.Ray)
+    (c : Multiplicative (Fin m → ℤ) →* ℂˣ)
+    (d : Multiplicative (Fin n → ℤ) →* ℂˣ) :
+    let c₀ := fun j ↦ χ[c,j]
+    let d₀ := fun j ↦ χ[d,j]
+    letI : Nonempty _ := hc.nonempty_cones
+    letI : Nonempty _ := J.nonempty_cones_of_nonempty hc.nonempty_cones
+    letI : Nonempty _ := K.nonempty_cones_of_nonempty hc.nonempty_cones
+    let A := Θ.internalBlowupTower b r c₀
+    let B := Ω.internalBlowupTower b s d₀
+    ∀ (e : A.1 ≅ Z) (e' : B.1 ≅ Z), e.hom ≫ f = proj[A] ≫ π[J] →
+      e'.hom ≫ f = proj[B] ≫ π[K] → P.comap e.hom = ι[A].ker → P.comap e'.hom = ι[B].ker →
+      letI : IsModification proj[A] :=
+        Θ.isModification_internalBlowupTower_toBase b r c₀ hΘ
+      letI : IsModification proj[B] :=
+        Ω.isModification_internalBlowupTower_toBase b s d₀ hΩ
+      ∃ h : Ω = Θ, ∃ σ : Fin n ≃ Fin m,
+        (∀ j, (s j).primitiveGenerator = (r (σ j)).primitiveGenerator) ∧ c₀ ∘ σ = d₀ ∧
+        (∀ j l, j < l → (s j, d₀ j) = (s l, d₀ l) → σ j < σ l) ∧
+        (∃ a : (Θ.boundaryIdeal inferInstance).subscheme ≅
+            (Ω.boundaryIdeal inferInstance).subscheme,
+          ι[A] ≫ e.hom = a.hom ≫ ι[B] ≫ e'.hom) ∧
+        (∀ (a : Additive (LineBundleClass Θ.algebraicRealization)) (x : Fin n → ℤ),
+          pullback (e.hom ≫ e'.inv) (Ω.internalBlowupPicardMarking b s d₀ hΩ
+            (Additive.ofMul (pullback (eqToHom (congrArg Fan.algebraicRealization h)) a.toMul),
+              x)).toMul = (Θ.internalBlowupPicardMarking b r c₀ hΘ (a, x ∘ σ.symm)).toMul) ∧
+        (e'.inv ≫ proj[B]).toRationalMap.comp (Ω.xEvaluation b s d) =
+          ((e.inv ≫ proj[A]).toRationalMap.comp (Θ.xEvaluation b r c)).compHom
+            (Spec.map (CommRingCat.ofHom (rename (R := ℂ) σ).toRingHom)) := by
+  intro c₀ d₀
+  let : Nonempty Φ.cones := hc.nonempty_cones
+  let : Nonempty Θ.cones := J.nonempty_cones_of_nonempty hc.nonempty_cones
+  let : Nonempty Ω.cones := K.nonempty_cones_of_nonempty hc.nonempty_cones
+  intro A B e e' he he' hA hB
+  obtain ⟨h, σ, hσ, hord, hb, hp⟩ :=
+    exists_reindex_of_toric_internal_factorizations b hc hΘ hΩ J K r s c₀ d₀ e e' he he' hA hB
+  subst Ω
+  have hr (j : Fin n) : s j = r (σ j) := congrArg Prod.fst (hσ j)
+  have hd : c₀ ∘ σ = d₀ := funext fun j ↦ (congrArg Prod.snd (hσ j)).symm
+  refine ⟨rfl, σ, fun j ↦ congrArg Ray.primitiveGenerator (hr j), hd, hord,
+    ⟨Iso.refl _, ?_⟩, ?_, ?_⟩
+  · simpa only [Iso.refl_hom, Category.id_comp] using eq_of_heq hb
+  · intro a x
+    simpa only [eqToHom_refl, pullback_id, ofMul_toMul, Function.comp_assoc,
+      Equiv.symm_comp_self, Function.comp_id, pullback_comp, Iso.hom_inv_id]
+      using congrArg (pullback e.hom) (hp a (x ∘ σ.symm))
+  · let : IsModification proj[A] := Θ.isModification_internalBlowupTower_toBase b r c₀ hΘ
+    let : IsModification proj[B] := Θ.isModification_internalBlowupTower_toBase b s d₀ hΩ
+    let : IsModification π[J] := J.isModification_algebraicMap hΦ hΘ hc.nonempty_cones rankTwo
+    have hπ : e'.inv ≫ proj[B] = e.inv ≫ proj[A] := by
+      apply (π[J]).eq_of_comp_eq_of_isModification
+      simp only [Category.assoc, ← he', ← he, Iso.inv_hom_id_assoc]
+    have hdom : IsDominant (FanHom.id Θ).algebraicMap := by
+      rw [FanHom.algebraicMap_id]
+      infer_instance
+    have hev := (FanHom.id Θ).comp_xEvaluation b b r s σ c d
+      (fun j ↦ (congrFun hd j).symm) (fun j ↦ by
+        rw [← hr j, FanHom.id_latticeMap, AddMonoidHom.comp_id])
+    have hev' : Θ.xEvaluation b s d =
+        (Θ.xEvaluation b r c).compHom
+          (Spec.map (CommRingCat.ofHom (rename (R := ℂ) σ).toRingHom)) := by
+      simpa only [FanHom.algebraicMap_id, Scheme.Hom.toRationalMap, Scheme.RationalMap.id_comp,
+        Scheme.PartialMap.id] using hev
+    rw [hev', Scheme.RationalMap.comp_compHom]
+    congr 2
+    exact congrArg Scheme.Hom.toRationalMap hπ
 
 end TauCeti.Toric.Fan

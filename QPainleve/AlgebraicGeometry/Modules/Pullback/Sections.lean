@@ -83,4 +83,18 @@ theorem unitHomEquivTop_symm_pullbackSections {X Y : Scheme.{u}} (f : X ⟶ Y)
     ((f.unitHomEquivTop_pullback t).trans
       (congrArg (f.pullbackSections M ⊤) (M.unitHomEquivTop.apply_symm_apply s))).symm
 
+open Scheme.Modules in
+/-- Pullback along an open immersion identifies sections over an open contained in its image
+with sections over the inverse image. -/
+theorem bijective_pullbackSections_of_isOpenImmersion {A B : Scheme.{u}}
+    (j : A ⟶ B) [IsOpenImmersion j] (M : B.Modules) (W : B.Opens) (hW : W ≤ j.opensRange) :
+    Function.Bijective (j.pullbackSections M W) := by
+  let F := (pullback j).obj M
+  have h := isIso_pullbackPushforwardAdjunction_homEquiv_app j M F (𝟙 F) W hW
+  have hu := (pullbackPushforwardAdjunction j).homEquiv_id M
+  have : IsIso (((pullbackPushforwardAdjunction j).unit.app M).app W) :=
+    (congrArg (fun m ↦ m.app W) hu) ▸ h
+  rw [funext (Scheme.Hom.pullbackSections_apply j M W)]
+  exact ConcreteCategory.bijective_of_isIso (((pullbackPushforwardAdjunction j).unit.app M).app W)
+
 end AlgebraicGeometry.Scheme.Hom

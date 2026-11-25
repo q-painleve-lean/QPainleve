@@ -7,9 +7,12 @@ module
 
 public import QPainleve.Algebra.Cluster.Tropical.Basic
 public import QPainleve.Algebra.Cluster.Word.Exponent
+public import QPainleve.Algebra.Cluster.Word.Pullback
 
 import Mathlib.LinearAlgebra.Matrix.ToLin
+import QPainleve.Algebra.Cluster.Tropical.Valuation
 import QPainleve.Algebra.Cluster.Word.Monomial
+import QPainleve.Algebra.Cluster.Word.Parity
 
 /-!
 # Integer data of a signed cluster loop
@@ -83,6 +86,20 @@ theorem signedLoopInvariants_eq_iff [Fintype κ] [DecidableEq κ]
         congrArg (fun e : K ≃ₗ[ℤ] K ↦ (e (b j) : ι → ℤ) i) h
   simp only [signedLoopInvariants_def, Prod.mk.injEq, hmatrix,
     (LinearMap.toMatrixAlgEquiv b).injective.eq_iff, LinearEquiv.toLinearMap_injective.eq_iff]
+
+/-- Over any field, equal X pullbacks of loops at a nonzero exchange matrix
+give equal integer invariants for every supplied family of exchange-kernel vectors
+and every boundary order table. -/
+theorem signedLoopInvariants_eq_of_xPullback_eq {k : Type*} [Field k]
+    (hE : E.matrix ≠ 0) {w v : Word E E} (h : w.xPullback k = v.xPullback k)
+    (vectors : κ → K) (orders : Fin n → ι → ℤ) (source : ι → ℤ) :
+    w.signedLoopInvariants (fun j => (vectors j : ι → ℤ)) orders source =
+      v.signedLoopInvariants (fun j => (vectors j : ι → ℤ)) orders source := by
+  have hsign := neg_one_pow_congr (R := ℤˣ) (even_inversionCount_iff_of_xPullback_eq hE h)
+  have hkernel := exchangeKernelEquiv_eq_of_xPullback_eq k h
+  have htrop := congrFun (tropical_eq_of_xPullback_eq_of_linearOrder (Γ := ℤ) h) source
+  simp only [Equiv.toFun_as_coe] at htrop
+  simp only [signedLoopInvariants_def, ← coe_exchangeKernelEquiv_apply, hsign, hkernel, htrop]
 
 section Conjugation
 

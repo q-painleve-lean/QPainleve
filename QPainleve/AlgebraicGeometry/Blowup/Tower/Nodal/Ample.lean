@@ -10,7 +10,7 @@ public import QPainleve.AlgebraicGeometry.Blowup.Tower.Nodal.Isometry
 public import QPainleve.AlgebraicGeometry.Blowup.Tower.Nodal.InternalCurve
 public import QPainleve.AlgebraicGeometry.Chow.Nef.Anticanonical
 
-import QPainleve.AlgebraicGeometry.Chow.RationalSurface.AmpleCone
+import QPainleve.AlgebraicGeometry.Chow.RationalSurface.AmpleCone.Basic
 import QPainleve.AlgebraicGeometry.EffectiveCartierDivisor.BoundaryPrimes
 import TauCeti.AlgebraicGeometry.Curves.Node.Reduced
 import TauCeti.Topology.Algebra.Module.ModuleTopology
@@ -152,7 +152,7 @@ theorem image_nefCone_eq_and_isAmple_iff_picardIsometryCongr_of_nodal
     (hU.forall_realPrimeDivisorClass_self_ne_neg_two_iff k hF hnf hcanF).mpr hrootF
   have hnef := Chow.image_nefCone_eq_of_anticanonical k hD' hcanD' hF' hcanF'
     hA e' hAe (congrArg Additive.toMul hK') hboundary hrD hrF
-  exact ⟨hK', hnef, isAmple_iff_of_image_nefCone_eq k hA e' hnef hAe⟩
+  exact ⟨hK', hnef, isAmple_iff_of_image_nefCone_eq k e' hnef⟩
 
 end Towers
 

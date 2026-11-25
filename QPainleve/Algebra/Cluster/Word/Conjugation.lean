@@ -96,7 +96,7 @@ theorem signedClusterModularGroupCongr_map (w : Word B C)
 
 /-- At nonzero exchange matrices, transport by a connecting word preserves the descended sign. -/
 @[simp]
-theorem signedInversionSign_signedClusterModularGroupCongr [CharZero k] [Finite ι]
+theorem signedInversionSign_signedClusterModularGroupCongr [Finite ι]
     (w : Word B C) (hB : B.matrix ≠ 0) (hC : C.matrix ≠ 0) (f : SignedClusterModularGroup k B) :
     signedInversionSign k C hC (signedClusterModularGroupCongr k w f) =
       signedInversionSign k B hB f := by
