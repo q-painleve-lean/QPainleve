@@ -99,6 +99,19 @@ theorem hirzebruchRulingAffineFanInclusion_latticeMap (k : Fin 2) (x : N) :
   rw [hirzebruchRulingAffineFanInclusion, subfanInclusion_latticeMap]
   rfl
 
+include hr in
+/-- An affine cone chart of the ruling subfan maps to the same cone chart
+of the ambient Hirzebruch fan. -/
+@[reassoc]
+theorem affineToricChartι_comp_hirzebruchRulingAffineFanInclusion (k : Fin 2)
+    (σ : (hirzebruchRulingAffineFan b e r hr k).cones) :
+    (hirzebruchRulingAffineFan b e r hr k).affineToricChartι σ ≫
+      (hirzebruchRulingAffineFanInclusion b e r hr k).algebraicMap =
+      Φ.affineToricChartι ⟨σ.val, by
+        exact (rulingFanHom b e r hr).preimageCones_subset
+          (projectiveLineAffineFan k).cones σ.property⟩ :=
+  affineToricChartι_comp_subfanInclusion_algebraicMap _ _ _ _ σ
+
 private abbrev productFan (k : Fin 2) := (P₁).prod (projectiveLineAffineFan k)
 
 private abbrev shearParameter (k : Fin 2) (e : ℤ) := if k = 0 then 0 else e
