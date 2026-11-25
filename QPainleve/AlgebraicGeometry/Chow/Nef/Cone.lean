@@ -18,8 +18,10 @@ import QPainleve.Topology.Algebra.Module.PerfectPairing
 # Duality between nef classes and curves on a surface
 
 The real nef cone consists of classes pairing nonnegatively with every prime curve,
-or equivalently with every integral effective class. A Picard isometry identifying
-the integral effective-class monoids carries the real nef cones onto one another.
+or equivalently with every integral effective class. On a surface with a finitely generated
+free Picard group, every ample integral class lies in the interior of the real nef cone.
+A Picard isometry identifying the integral effective-class monoids carries the real
+nef cones onto one another.
 For a finite-dimensional real Picard space with nondegenerate intersection pairing,
 the nef cone and the closed cone of curves are dual. In particular, an intersection
 isometry carrying nef cones onto one another also carries the closed curve cones
@@ -34,7 +36,7 @@ Lemma 2.15 and the proof of Theorem 1.8.
 public noncomputable section
 
 open AlgebraicGeometry CategoryTheory TopologicalSpace
-open scoped TensorProduct
+open scoped TensorProduct Topology
 
 namespace TauCeti.AlgebraicGeometry.Chow
 
@@ -50,6 +52,8 @@ local notation "f" => (X ↘ Spec (CommRingCat.of k))
 
 variable [TopologicalSpace V(X)] [IsTopologicalAddGroup V(X)] [ContinuousSMul ℝ V(X)]
   [T2Space V(X)]
+
+section Definitions
 
 variable [FiniteDimensional ℝ V(X)]
 
@@ -79,6 +83,62 @@ theorem one_tmul_mem_nefCone_iff (a : LineBundleClass X) :
   refine forall_congr' fun p ↦ ?_
   rw [realIntersectionBilinForm_one_tmul_realPrimeDivisorClass]
   norm_cast
+
+end Definitions
+
+section Interior
+
+local notation "Pic(" X ")" => Additive (LineBundleClass X)
+local notation "ι(" a ")" => ((1 : ℝ) ⊗ₜ[ℤ] Additive.ofMul a)
+local notation "c" => realPrimeDivisorClass k (X := X)
+
+variable [Module.Free ℤ Pic(X)] [Module.Finite ℤ Pic(X)]
+
+/-- An ample integral class is an interior point of the nef cone. -/
+theorem one_tmul_mem_interior_nefCone {a : LineBundleClass X} (ha : a.IsAmple) :
+    ι(a) ∈ interior (nefCone k (X := X) : Set V(X)) := by
+  classical
+  let b := Module.finBasis ℤ Pic(X)
+  let e := (b.baseChange ℝ).equivFunL
+  choose n hn using fun j ↦ exists_abs_realIntersectionBilinForm_le k ha ((b j).toMul)
+  -- This neighborhood controls the intersection with every prime curve at once.
+  let size (y : V(X)) : ℝ := ∑ j, |e (y - ι(a)) j| * (n j : ℝ)
+  have hsize : Continuous size := by
+    apply continuous_finsetSum
+    intro j _
+    have hcoord : Continuous (fun y : V(X) ↦ e (y - ι(a)) j) :=
+      (continuous_apply j).comp (e.continuous.comp (continuous_id.sub continuous_const))
+    exact hcoord.abs.mul continuous_const
+  apply mem_interior_iff_mem_nhds.mpr
+  refine Filter.mem_of_superset ((isOpen_lt hsize continuous_const).mem_nhds
+    (show size ι(a) < 1 by simp [size])) ?_
+  intro y hy
+  rw [SetLike.mem_coe, mem_nefCone]
+  intro p
+  have hpos := (realIntersectionBilinForm_realPrimeDivisorClass_pos k ha p).le
+  have hbound (j : Fin (Module.finrank ℤ Pic(X))) :
+      -(|e (y - ι(a)) j| * (n j : ℝ)) * B(X) (ι(a)) (c p) ≤
+        e (y - ι(a)) j * B(X) ((b.baseChange ℝ) j) (c p) := by
+    have hj : |B(X) ((b.baseChange ℝ) j) (c p)| ≤ (n j : ℝ) * B(X) (ι(a)) (c p) := by
+      simpa only [Module.Basis.baseChange_apply, toMul_ofMul, ofMul_toMul] using hn j p
+    have h := mul_le_mul_of_nonneg_left hj (abs_nonneg (e (y - ι(a)) j))
+    rw [← abs_mul, ← mul_assoc] at h
+    simpa only [neg_mul] using (abs_le.mp h).1
+  have hsum := Finset.sum_le_sum fun j (_ : j ∈ Finset.univ) ↦ hbound j
+  simp only [neg_mul, Finset.sum_neg_distrib, ← Finset.sum_mul] at hsum
+  have hrepr : (∑ j, e (y - ι(a)) j * B(X) ((b.baseChange ℝ) j) (c p)) =
+      B(X) (y - ι(a)) (c p) := by
+    conv_rhs => rw [← (b.baseChange ℝ).sum_repr (y - ι(a))]
+    simp only [e, LinearMap.BilinForm.sum_left, LinearMap.BilinForm.smul_left,
+      Module.Basis.equivFunL_apply]
+  rw [hrepr, LinearMap.BilinForm.sub_left] at hsum
+  have hnonneg := mul_nonneg (sub_nonneg.mpr (le_of_lt (show size y < 1 from hy))) hpos
+  dsimp only [size] at hnonneg
+  linarith only [hsum, hnonneg]
+
+end Interior
+
+variable [FiniteDimensional ℝ V(X)]
 
 section EffectiveClasses
 
