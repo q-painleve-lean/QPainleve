@@ -29,6 +29,56 @@ open AlgebraicGeometry.Scheme
 
 namespace QPainleve.SignedClusterModularGroup.GeometricRealization
 
+section Rotation
+
+open SignedBoundaryIsometryGroup
+
+variable {k : Type*} [Field k] {ι : Type*} [DecidableEq ι] {E : SkewExchangeMatrix ι}
+  {L : Type*} [AddCommGroup L] {B : LinearMap.BilinForm ℤ L} {n : ℕ} {d : ZMod n → L}
+  (ρ : (SignedClusterModularGroup k E)ᵐᵒᵖ →* signedBoundaryIsometryGroup B d)
+
+local notation "incl" => clusterModularGroupInclusion k E
+local notation "rot" => rotationInclusion B d
+local notation "Positive" => Subgroup.unop (MonoidHom.ker (MonoidHom.comp (sign B d) ρ))
+
+/-- Restrict a signed Picard homomorphism to unsigned X maps with positive
+Picard sign, taking values in the boundary rotations. -/
+noncomputable def picardRotationHom (hpos : MonoidHom.range incl ≤ Positive) :
+    (ClusterModularGroup k E)ᵐᵒᵖ →* boundaryRotationGroup B d :=
+  (MonoidHom.ofInjective (rotationInclusion_injective B d)).symm.toMonoidHom.comp
+    ((ρ.comp (MonoidHom.op incl)).codRestrict (MonoidHom.range rot) fun x ↦ by
+      rw [range_rotationInclusion]
+      exact hpos ⟨x.unop, rfl⟩)
+
+/-- Including the rotation recovers the signed action on the given unsigned X map. -/
+@[simp]
+theorem rotationInclusion_picardRotationHom_apply (hpos : MonoidHom.range incl ≤ Positive)
+    (x : (ClusterModularGroup k E)ᵐᵒᵖ) :
+    rot (picardRotationHom ρ hpos x) = ρ (MonoidHom.op incl x) :=
+  MonoidHom.apply_ofInjective_symm (rotationInclusion_injective B d) _
+
+/-- If positive sign characterizes unsigned maps, the rotation action is
+surjective exactly when the signed action realizes every rotation. -/
+theorem picardRotationHom_surjective_iff (hpos : Positive = MonoidHom.range incl) :
+    Function.Surjective (picardRotationHom ρ hpos.ge) ↔ MonoidHom.range rot ≤ ρ.range := by
+  constructor
+  · intro hs g hg
+    obtain ⟨y, rfl⟩ := hg
+    obtain ⟨x, rfl⟩ := hs y
+    exact ⟨MonoidHom.op incl x, (rotationInclusion_picardRotationHom_apply ρ hpos.ge x).symm⟩
+  · intro hs y
+    have hy : rot y ∈ MonoidHom.range rot := ⟨y, rfl⟩
+    obtain ⟨x, hx⟩ := hs hy
+    have hxpos : x.unop ∈ Positive := by
+      rw [Subgroup.mem_unop, op_unop, MonoidHom.mem_ker, MonoidHom.comp_apply, hx]
+      rwa [range_rotationInclusion, MonoidHom.mem_ker] at hy
+    obtain ⟨u, hu⟩ := hpos ▸ hxpos
+    refine ⟨op u, rotationInclusion_injective B d ?_⟩
+    simpa only [rotationInclusion_picardRotationHom_apply, MonoidHom.op_apply_apply,
+      Function.comp_apply, unop_op, hu, op_unop] using hx
+
+end Rotation
+
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {Φ : Fan i} [hΦ₀ : Nonempty Φ.cones]
   {r m n : ℕ} [NeZero m] [NeZero n] {L : Type} [AddCommGroup L]
