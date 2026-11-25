@@ -5,10 +5,11 @@ Authors: The QPainleve contributors
 -/
 module
 
-public import QPainleve.LinearAlgebra.Matrix.Kernel
+public import QPainleve.Algebra.Cluster.Word.LoopComparison
 public import QPainleve.SignedClusterModularGroup.Realization.Relations.Basic
 public import QPainleve.SignedClusterModularGroup.Realization.Presentation
 
+import QPainleve.Algebra.Cluster.Word.SubtractionFree
 import QPainleve.AlgebraicGeometry.Chow.RationalSurface.Basic
 import QPainleve.Geometry.Toric.Fan.Subdivision.Projective
 import QPainleve.SignedClusterModularGroup.Realization.Anticanonical
@@ -270,5 +271,39 @@ def decidableXPullbackEq
       rw [← hβ, ho]
       exact (xPullback_eq_iff_signedLoopInvariants_eq_of_presentation Q P hform hcharge M
         p₀ hnodal₀ p hnodal hnef hsq hprim hmark hnodes w v β).symm)
+
+/-- For the numbered boundary order table of a reference nodal contraction,
+a Boolean comparison result certifies that both lists return to the starting
+exchange matrix. The result is true exactly when their independent X pullbacks
+agree over the given characteristic-zero field. -/
+theorem compareSignedLoopLists_eq_some_iff_of_presentation
+    (k : Type*) [Field k] [CharZero k]
+    (Q : CompleteToricPresentation i b r L γ) (P : ChargeSeed E N)
+    (hform : P.form = b.detDualEquiv.toLinearMap) (hcharge : P.charge = Fan.rayChargeMap Q.rays)
+    (M : Point Centers[r] → MarkedSurface ℂ n H XTor[r]) {c₀ : Point Centers[r]}
+    (p₀ : fiber[Q,M,c₀]) (hnodal₀ : p₀.IsNodalContraction)
+    (p : ∀ (c : Point Centers[r]) (_ : c.left (default : S) ∈ U₀[P]), fiber[Q,M,c])
+    (hnodal : ∀ c hc, (p c hc).IsNodalContraction)
+    (hnef : classOf(cartier(M c₀)).IsNef ℂ ((M c₀).surface ↘ S))
+    (hsq : Chow.classIntersectionNumber ℂ (M c₀).surface
+      classOf(cartier(M c₀)) classOf(cartier(M c₀)) = 0)
+    (hprim : IsPrimitive (Additive.ofMul classOf(cartier(M c₀))))
+    (hmark : ∀ c j, (M c).boundaryClass (cartier(M c)) j = boundaryClasses[M,c₀] j)
+    (hnodes : ∀ j, ∃ σ : Q.fan.cones, (Q.rayOrder j).toCone ≤ σ ∧
+      (Q.rayOrder (j + 1)).toCone ≤ σ ∧
+      (Q.fan.boundaryIdeal Q.complete.nonempty_cones).subschemeι
+        ((Q.fan.boundaryIdeal Q.complete.nonempty_cones).subscheme.dualGraphEdgeEquiv
+          Q.marks (Q.cycle.edge j)).val =
+        Q.fan.distinguishedPointHom σ (IsLocalRing.closedPoint ℂ))
+    (orders : Fin n → Fin r → ℤ) (ho : orders = orders[Q,M,c₀,p₀])
+    (gs hs : List (Generator (Fin r))) (result : Bool) :
+    E.compareSignedLoopLists orders gs hs = some result ↔
+      ∃ w v : Word E E, w.generators = gs ∧ v.generators = hs ∧
+        (result = true ↔ w.xPullback k = v.xPullback k) := by
+  obtain ⟨β, hβ⟩ := E.matrix.exists_basis_eq_intKernelBasisVectors
+  rw [SkewExchangeMatrix.compareSignedLoopLists_eq_some_iff, ← hβ, ho]
+  simp_rw [← xPullback_eq_iff_signedLoopInvariants_eq_of_presentation Q P hform hcharge M
+    p₀ hnodal₀ p hnodal hnef hsq hprim hmark hnodes _ _ β,
+    Path.xPullback_eq_iff_ySeed_coefficient_eq]
 
 end QPainleve.SignedClusterModularGroup.GeometricRealization
