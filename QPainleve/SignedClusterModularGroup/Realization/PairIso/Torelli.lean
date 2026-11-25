@@ -58,16 +58,17 @@ local instance : PrestableFamily ((Q.fan.boundaryIdeal Q.complete.nonempty_cones
 variable {d : ZMod n → L}
 
 local instance (M : MarkedSurface ℂ n H XTor) : IsIntegral M.surface := M.integral
-local instance (M : MarkedSurface ℂ n H XTor) : M.surface.IsProjectiveOver ℂ := M.projective
-local instance (M : MarkedSurface ℂ n H XTor) :
+local instance instProjectiveTorelliSurface (M : MarkedSurface ℂ n H XTor) :
+    M.surface.IsProjectiveOver ℂ := M.projective
+local instance instSmoothTorelliSurface (M : MarkedSurface ℂ n H XTor) :
     SmoothOfRelativeDimension 2 (M.surface ↘ S) := M.smooth
 local instance (M : MarkedSurface ℂ n H XTor) : IsNoetherian M.surface :=
   isNoetherian_of_finiteType (M.surface ↘ S)
 local instance (M : MarkedSurface ℂ n H XTor) (p : M.surface) :
     UniqueFactorizationMonoid (M.surface.presheaf.stalk p) :=
   (M.surface ↘ S).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two p
-local instance (M : MarkedSurface ℂ n H XTor) : PrestableFamily (D[M].subscheme ↘ S) :=
-  M.prestable_boundaryImage
+local instance instPrestableTorelliBoundaryImage (M : MarkedSurface ℂ n H XTor) :
+    PrestableFamily (D[M].subscheme ↘ S) := M.prestable_boundaryImage
 local instance (M : MarkedSurface ℂ n H XTor) : PrestableFamily (M.boundary ↘ S) := M.prestable
 
 private theorem realPrimeDivisorClass_self_ne_neg_two {M : MarkedSurface ℂ n H XTor}
