@@ -33,54 +33,6 @@ local notation "Φ" => projectiveSpace b hi
 local notation "hΦ" => isRegular_projectiveSpace b hi
 local notation "hc" => isComplete_projectiveSpace b hi
 
-private theorem injective_projectivePlaneGenerator :
-    Function.Injective (projectiveSpaceGenerator b) := by
-  intro j k h
-  rcases j with _ | j <;> rcases k with _ | k
-  · rfl
-  · have hh := congrArg (b.coord k) h
-    fin_cases k <;> norm_num [Fin.sum_univ_two, Basis.coord_apply] at hh
-  · have hh := congrArg (b.coord j) h
-    fin_cases j <;> norm_num [Fin.sum_univ_two, Basis.coord_apply] at hh
-  · exact congrArg some (b.injective (by simpa only [projectiveSpaceGenerator_some] using h))
-
-/-- The two basis rays of the plane fan are indexed by `some` and their negative
-sum is indexed by `none`. -/
-def projectivePlaneRayEquiv : Option (Fin 2) ≃ (Φ).Ray :=
-  ((Equiv.ofInjective _ (injective_projectivePlaneGenerator b)).trans
-    (Set.equivOfEq (range_primitiveGenerator_projectiveSpace b hi).symm)).trans
-      (Equiv.ofInjective _ Ray.primitiveGenerator_injective).symm
-
-/-- A labelled ray has the corresponding primitive generator of the plane fan. -/
-@[simp]
-theorem primitiveGenerator_projectivePlaneRayEquiv (j : Option (Fin 2)) :
-    (projectivePlaneRayEquiv b hi j).primitiveGenerator = projectiveSpaceGenerator b j := by
-  exact congrArg Subtype.val
-    ((Equiv.ofInjective _ Ray.primitiveGenerator_injective).apply_symm_apply _)
-
-/-- Any two distinct rays of the plane fan belong to a common cone. -/
-theorem exists_cone_projectivePlane_of_ray_ne {ρ τ : (Φ).Ray} (hne : ρ ≠ τ) :
-    ∃ σ : (Φ).cones, ρ.toCone ≤ σ ∧ τ.toCone ≤ σ := by
-  classical
-  let e := projectivePlaneRayEquiv b hi
-  obtain ⟨a, rfl⟩ := e.surjective ρ
-  obtain ⟨c, rfl⟩ := e.surjective τ
-  have hn : a ≠ c := fun h ↦ hne (congrArg e h)
-  have hs : ({a, c} : Set (Option (Fin 2))) ≠ Set.univ := by
-    intro h
-    have he := Set.ncard_pair hn
-    rw [h, Set.ncard_univ] at he
-    simp at he
-  have hcone : projectiveSpaceCone b i {a, c} ∈ (Φ).cones :=
-    (mem_projectiveSpace_cones b hi).mpr ⟨_, hs, rfl⟩
-  have hle (j : Option (Fin 2)) (hj : j ∈ ({a, c} : Set (Option (Fin 2)))) :
-      (e j).toCone.val ≤ projectiveSpaceCone b i {a, c} := by
-    rw [Ray.toCone_eq_hull_primitiveGenerator, primitiveGenerator_projectivePlaneRayEquiv,
-      projectiveSpaceCone_def]
-    exact Submodule.span_mono (Set.singleton_subset_iff.mpr
-      (Set.mem_image_of_mem _ (Set.mem_image_of_mem _ hj)))
-  exact ⟨⟨_, hcone⟩, hle a (by simp), hle c (by simp)⟩
-
 /-- Each ray divisor on the toric projective plane has self-intersection one. -/
 @[simp]
 theorem rayBoundarySelfIntersection_projectivePlane (ρ : (Φ).Ray) :

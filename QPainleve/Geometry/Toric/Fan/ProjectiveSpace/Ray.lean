@@ -60,4 +60,31 @@ theorem range_primitiveGenerator_projectiveSpace [Fintype ι] [Nonempty ι]
     exact ⟨r, r.primitiveGenerator_eq_of_mem_of_isPrimitive
       (subset_hull (Set.mem_singleton _)) (hprim k)⟩
 
+variable (b : Basis (Fin 2) ℤ N) (hi : IsIntegralLattice i)
+
+private theorem injective_projectivePlaneGenerator :
+    Function.Injective (projectiveSpaceGenerator b) := by
+  intro j k h
+  rcases j with _ | j <;> rcases k with _ | k
+  · rfl
+  · have hh := congrArg (b.coord k) h
+    fin_cases k <;> norm_num [Fin.sum_univ_two, Basis.coord_apply] at hh
+  · have hh := congrArg (b.coord j) h
+    fin_cases j <;> norm_num [Fin.sum_univ_two, Basis.coord_apply] at hh
+  · exact congrArg some (b.injective (by simpa only [projectiveSpaceGenerator_some] using h))
+
+/-- The two basis rays of the plane fan are indexed by `some` and their negative
+sum is indexed by `none`. -/
+noncomputable def projectivePlaneRayEquiv : Option (Fin 2) ≃ (projectiveSpace b hi).Ray :=
+  ((Equiv.ofInjective _ (injective_projectivePlaneGenerator b)).trans
+    (Set.equivOfEq (range_primitiveGenerator_projectiveSpace b hi).symm)).trans
+      (Equiv.ofInjective _ Ray.primitiveGenerator_injective).symm
+
+/-- A labelled ray has the corresponding primitive generator of the plane fan. -/
+@[simp]
+theorem primitiveGenerator_projectivePlaneRayEquiv (j : Option (Fin 2)) :
+    (projectivePlaneRayEquiv b hi j).primitiveGenerator = projectiveSpaceGenerator b j := by
+  exact congrArg Subtype.val
+    ((Equiv.ofInjective _ Ray.primitiveGenerator_injective).apply_symm_apply _)
+
 end TauCeti.Toric.Fan
