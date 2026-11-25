@@ -82,13 +82,14 @@ theorem exists_picardGroupEquivs_of_toric_presentation
   let a : L ≃ₗ[ℤ] Pic := (Module.finBasis ℤ Pic).equivFun.symm
   let H := (B).comp a.toLinearMap a.toLinearMap
   let μ : H.IsometryEquiv B := ((B).isometryEquivOfCompLinearEquiv a).symm
-  obtain ⟨b', Q, c, f, hframe, hrays, href⟩ :=
+  obtain ⟨b', R, hframe, hrays⟩ :=
     exists_marked_reference_fiber_of_ordered_towers P.regular P.complete P.rays P.parameters
       P.isNodal P.iso P.iso_over P.iso_boundary hD A μ
-  let M₀ := MarkedSurface.ofBoundary D A μ f
+  let Q := R.presentation
+  let M₀ := MarkedSurface.ofBoundary D A μ R.evaluation
   have hδ : δ[M₀.isEffectiveCartier_boundaryIdeal] = δ[hD] :=
     congrArg Inv.inv (LineBundleClass.mk_toInvertibleSheaf_congr _ _
-      (MarkedSurface.ofBoundary_ker D A μ f))
+      (MarkedSurface.ofBoundary_ker D A μ R.evaluation))
   let m := chargeExchangeMatrix b'.detDualEquiv.toLinearMap (Fan.rayChargeMap Q.rays)
   let skew :=
     isSkewSymmetrizer_chargeExchangeMatrix _ b'.detDualEquiv_self (Fan.rayChargeMap Q.rays)
@@ -98,8 +99,8 @@ theorem exists_picardGroupEquivs_of_toric_presentation
   let := (X ↘ S).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two
   let d := classes[A,hD]
   have hd : M₀.boundaryClass M₀.isEffectiveCartier_boundaryIdeal = μ.symm ∘ d :=
-    funext (MarkedSurface.boundaryClass_ofBoundary D A μ f hD)
-  have hgroups := Q.exists_picardGroupEquivs_of_nodal_model (M₀ := M₀) href hE
+    funext (MarkedSurface.boundaryClass_ofBoundary D A μ R.evaluation hD)
+  have hgroups := Q.exists_picardGroupEquivs_of_nodal_model (M₀ := M₀) R.hasNodalModel hE
     (by rwa [hδ]) (by rwa [hδ]) (by rwa [hδ])
   rw [hd] at hgroups
   obtain ⟨identification, hM⟩ := hgroups
@@ -113,7 +114,8 @@ theorem exists_picardGroupEquivs_of_toric_presentation
       simp only [MonoidHom.comp_apply, MulEquiv.coe_toMonoidHom, MulEquiv.trans_apply,
         α, SignedBoundaryIsometryGroup.sign_apply, coe_congr]
   refine ⟨{ form := H, marking := μ, basis := b', presentation := Q
-            center := c, evaluation := f, exchangeMatrix := E, family := identification.family
+            center := R.center, evaluation := R.evaluation, exchangeMatrix := E
+            family := identification.family
             signedEquiv := Θ.trans α, unsignedEquiv := identification.unsignedEquiv.trans β
             matrix_eq := hE
             family_center := hM, hasNodalModel := identification.hasNodalModel
