@@ -67,18 +67,19 @@ theorem totalBoundaryExponent_def (d : ZMod n → L) :
     Q.totalBoundaryExponent d = -(Q.inclusion (total[d])).2 :=
   (rfl)
 
-local instance : Nonempty Q.fan.cones := Q.complete.nonempty_cones
-local instance : NeZero Q.length := Q.neZero
-local instance : PrestableFamily ((Q.fan.boundaryIdeal Q.complete.nonempty_cones).subscheme ↘ S) :=
-  Q.prestable
+attribute [local instance] CompleteToricPresentation.neZero CompleteToricPresentation.prestable
+
+private local instance : Nonempty Q.fan.cones := Q.complete.nonempty_cones
 
 /-- In a contracted fiber the exponent at a center is the multiplicity of its ray
 in the actual total boundary transform. -/
 theorem totalBoundaryExponent_eq_totalBoundaryRayMultiplicity
     {c : GeometricRealization.Point Centers[r]} {M : MarkedSurface ℂ n H XTor[r]}
-    (p : ContractedToricFiber b Q.rays Q.regular Q.cycle Q.origin Q.inclusion χ[c] M)
+    (p : ContractedToricFiber (h₀ := Q.complete.nonempty_cones)
+      b Q.rays Q.regular Q.cycle Q.origin Q.inclusion χ[c] M)
     (d : ZMod n → L) (hd : M.boundaryClass (cartier(M)) = d) :
-    Q.totalBoundaryExponent d = fun j ↦ p.totalBoundaryRayMultiplicity (cartier(M)) (Q.rays j) := by
+    Q.totalBoundaryExponent d = fun j ↦
+      p.totalBoundaryRayMultiplicity (h₀ := Q.complete.nonempty_cones) (cartier(M)) (Q.rays j) := by
   rw [← hd, Q.totalBoundaryExponent_def, p.inclusion_sum_boundaryClass (cartier(M)),
     Fan.markedBoundaryMap_apply]
   funext j
