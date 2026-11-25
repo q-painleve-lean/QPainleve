@@ -83,9 +83,10 @@ private theorem exchangeMatrix_ne_zero_of_chargeIndex_ne_zero
   ext y
   exact (b.detDualEquiv_swap x y).trans (neg_eq_zero.mpr (hx y))
 
-local instance : Nonempty Q.fan.cones := Q.complete.nonempty_cones
-local instance : NeZero Q.length := Q.neZero
-local instance : PrestableFamily ((Q.fan.boundaryIdeal Q.complete.nonempty_cones).subscheme ↘ S) :=
+local instance splittingFanNonempty : Nonempty Q.fan.cones := Q.complete.nonempty_cones
+local instance splittingCycleNeZero : NeZero Q.length := Q.neZero
+local instance splittingBoundaryPrestable :
+    PrestableFamily ((Q.fan.boundaryIdeal Q.complete.nonempty_cones).subscheme ↘ S) :=
   Q.prestable
 
 local notation "χ[" t "]" => pointsEquiv ℂ _ (Subtype.mk (Over.Hom.left t) (Over.w t))
