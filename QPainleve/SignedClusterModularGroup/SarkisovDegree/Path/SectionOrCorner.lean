@@ -140,7 +140,7 @@ theorem exists_sarkisov_path_decrease_of_hirzebruch_corner_or_section
       simpa only [Fin.append] using horders
     · simpa only [hβ] using hlt (hβ.symm ▸ hq)
   · obtain ⟨hproj, Z, U, hU, k, d, t, ht, hg', hbir', hpole',
-        ⟨A, B, p, hA, hAh, hB, hBh, hlen, _⟩, -, -, -, -, hdegree, horders, hlt⟩ :=
+        ⟨A, B, p, hA, hAh, hB, hBh, hlen, _⟩, -, -, -, -, -, hdegree, horders, hlt⟩ :=
       hT.exists_sarkisov_path_of_smooth_section b e hΦ hc r hr s g hg hbir
         c q hp hfirst D ((hT.ramificationIdealSheafToBase_def ℂ).symm ▸ hpole)
     let A₀ : LogarithmicProjection i D := ⟨Φ, hreg, hcomplete, T.toBase, hf, hdom, hpole⟩
