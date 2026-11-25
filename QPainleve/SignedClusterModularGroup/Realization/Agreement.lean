@@ -172,6 +172,30 @@ theorem ContractedToricFiber.marked_actions_of_comp_evaluation_eq
   rw [ha] at ha'
   exact congrArg Additive.toMul ha'.symm
 
+/-- A pair isomorphism satisfying the same fixed-center X-evaluation square as a
+realization has the same marked Picard pullback and ordered boundary action when both
+targets belong to one ordered toric presentation with finite-index charges. -/
+theorem FiberRealization.marked_actions_eq_of_compOfDefined
+    {X₀ : Scheme} [IsIntegral X₀] [X₀.IsSeparated]
+    {M : MarkedSurface ℂ n B₀ X₀} {F : X₀ ⤏ Xtor[r]}
+    {I : B₁.IsometryEquiv B₀} {g : DihedralGroup n}
+    (R : FiberRealization M P F I g)
+    (p : ContractedToricFiber b s hΦ T origin ι c P)
+    (q : ContractedToricFiber b s hΦ T origin ι d Q)
+    (e : M.pair ≅ Q.pair) (hc : Φ.IsComplete) (hι : Function.Injective ι)
+    (hindex : (Fan.rayChargeMap s).range.toAddSubgroup.index ≠ 0)
+    (he : ∃ h, M.evaluation.compOfDefined F h =
+      (surfaceIso e).hom.toRationalMap.comp Q.evaluation) :
+    (∀ a, M.picardMarking (I a) =
+      Additive.ofMul (LineBundleClass.pullback (surfaceIso e).hom (Q.picardMarking a).toMul)) ∧
+    (letI : PrestableFamily (M.boundary ↘ S) := M.prestable
+     letI : PrestableFamily (Q.boundary ↘ S) := Q.prestable
+     (boundaryIso e).boundaryCycleAction M.cycle Q.cycle = g) := by
+  obtain ⟨hpic, hbranch⟩ := p.marked_actions_of_comp_evaluation_eq q (R.targetIso e) hc hι hindex
+    (R.comp_targetEvaluation_of_evaluation_eq e he)
+  exact ⟨fun a ↦ (R.pullback_picardMarking_targetIso_eq_iff e a).mp (hpic a),
+    (R.boundaryCycleAction_targetIso_eq_one_iff e).mp hbranch⟩
+
 /-- At a common source center, the marked actions of two realizations of the same X map
 coincide if their targets come from the same ordered toric presentation. -/
 theorem FiberRealization.marked_actions_eq_of_contractedToricFiber
@@ -184,9 +208,10 @@ theorem FiberRealization.marked_actions_eq_of_contractedToricFiber
     (hc : Φ.IsComplete) (hι : Function.Injective ι)
     (hindex : (Fan.rayChargeMap s).range.toAddSubgroup.index ≠ 0) :
     I = J ∧ g = h := by
-  obtain ⟨hp, hb⟩ := p.marked_actions_of_comp_evaluation_eq q
-    (R.iso.symm ≪≫ R'.iso) hc hι hindex (R.comp_targetEvaluation R')
-  exact ⟨R.picard_eq_of_pullback_targetIso R' hp, R.boundaryAction_eq_of_targetIso R' hb⟩
+  obtain ⟨hp, hb⟩ :=
+    R.marked_actions_eq_of_compOfDefined p q R'.iso hc hι hindex R'.evaluation_eq
+  exact ⟨DFunLike.ext _ _ fun a ↦ M.picardMarking.injective ((hp a).trans (R'.picard_eq a).symm),
+    hb.symm.trans R'.boundaryAction_eq⟩
 
 
 open GeometricRealization (CenterPoint Point)

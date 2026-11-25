@@ -9,7 +9,6 @@ public import QPainleve.SignedClusterModularGroup.Realization.Endpoint.Connectin
 
 import QPainleve.SignedClusterModularGroup.Realization.Anticanonical
 import QPainleve.SignedClusterModularGroup.Realization.NodalFiber
-import QPainleve.SignedClusterModularGroup.Realization.Specialization
 
 /-!
 # Prescribed actions of words between marked toric presentations
@@ -18,8 +17,8 @@ At a source center in a word's noncollision open, its fixed-center X evaluation
 determines its marked Picard pullback and action on ordered boundary branches.
 The word can reach a different target center from the one in the prescribed
 isomorphism. The comparison uses
-`FiberRealization.marked_actions_eq_of_compOfDefined_on_resolution` on the source
-fiber itself, with the two target models supplied by the target presentation.
+`FiberRealization.marked_actions_eq_of_compOfDefined`, with both target models
+supplied by the target presentation.
 -/
 
 public section
@@ -126,10 +125,8 @@ theorem exists_realize_signed_word_with_pair_iso_action
   obtain ⟨q⟩ := hm₁.nonempty_contractedToricFiber
   subst c₀
   let : IsIntegral (M₀ (src(Cw[w,P₀],c))).surface := (M₀ (src(Cw[w,P₀],c))).integral
-  let π := Scheme.RationalMap.id (M₀ (src(Cw[w,P₀],c))).surface
-  have hcomp := (π.compOfDefined_eq_iff_of_dominant _ _ _).mpr heval
-  obtain ⟨hpic, hb⟩ := (R.fiber c).marked_actions_eq_of_compOfDefined_on_resolution
-    p q e π Q₁.complete (Q₁.inclusion_injective hm₁) hindex hcomp
+  obtain ⟨hpic, hb⟩ := (R.fiber c).marked_actions_eq_of_compOfDefined
+    p q e Q₁.complete (Q₁.inclusion_injective hm₁) hindex heval
   have hsign' := (congrArg cycleOrientationSign hb).trans (R.orientation_def.symm.trans hsign)
   exact ⟨R, hpic, ⟨hb, hsign'⟩, hmodels⟩
 
