@@ -8,6 +8,7 @@ module
 public import QPainleve.Algebra.Cluster.ChargeKernel.Action
 public import QPainleve.SignedClusterModularGroup.Boundary.Restriction
 public import QPainleve.SignedClusterModularGroup.Realization.Boundary
+public import QPainleve.SignedClusterModularGroup.Realization.Endpoint.BoundaryExponent
 public import QPainleve.SignedClusterModularGroup.Realization.Presentation
 
 import QPainleve.SignedClusterModularGroup.Realization.Anticanonical
@@ -201,6 +202,8 @@ local notation "XTor[" r "]" => scheme ℂ (Fin r →₀ ℤ)
 local notation "boundary[" M "]" =>
   Scheme.Hom.ker (Over.Hom.left (Arrow.hom (MarkedSurface.pair M)))
 local notation "classOf(" h ")" => (LineBundleClass.mk (IsEffectiveCartier.toInvertibleSheaf h))⁻¹
+local notation "χ[" c "]" => pointsEquiv ℂ _
+  (Subtype.mk (Over.Hom.left c) (Over.w c))
 
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {b : Module.Basis (Fin 2) ℤ N} {r : ℕ}
@@ -211,7 +214,9 @@ variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
 kernel has integral charge coordinates. The signed Casimir image consists of the
 boundary rotation image and its disjoint right coset by the action of a reversing loop.
 The reversing action is reflection along the total boundary exponent and fixes its
-quotient. For a cycle of length at most two the central sign acts by negation.
+quotient. This exponent is primitive and its entries are the multiplicities of the
+total boundary transform on the rays of the ordered centers. For a cycle of length
+at most two the central sign acts by negation.
 The exponent comparison computes monomial pullback via `Cluster.exchangeKernelAction_monomial`. -/
 theorem exists_exchangeKernelAction_reflection_of_presentation
     (Q : CompleteToricPresentation i b r L γ)
@@ -235,6 +240,12 @@ theorem exists_exchangeKernelAction_reflection_of_presentation
       (∀ (hn : n ≤ 2) x, act[ℂ,E] (Θ.symm (centralSign B D hn)) x = -x) ∧
       ∃ (hδ : total[D] ∈ orth[B,D]) (a : L) (s : signedBoundaryIsometryGroup B D),
         let v := e ⟨total[D], hδ⟩
+        IsPrimitive v ∧
+        (letI := Q.complete.nonempty_cones
+         letI := Q.prestable
+         letI := Q.neZero
+         ∀ p : ContractedToricFiber b Q.rays Q.regular Q.cycle Q.origin Q.inclusion χ[c] M,
+           (v : Fin r → ℤ) = fun j ↦ p.totalBoundaryRayMultiplicity hD (Q.rays j)) ∧
         let ℓ := ((2 : ℤ) • (B.flip a).comp orth[B,D].subtype).comp
           (e.symm : exch[E] →ₗ[ℤ] orth[B,D])
         ∃ hℓ : ℓ v = 2,
@@ -244,7 +255,6 @@ theorem exists_exchangeKernelAction_reflection_of_presentation
             (↑(act[ℂ,E]).range : Set (exch[E] ≃ₗ[ℤ] exch[E])) = unsigned ∪ (unsigned <• q) ∧
             Disjoint unsigned (unsigned <• q) ∧
             ∀ x, (ℤ ∙ v).mkQ (q x) = (ℤ ∙ v).mkQ x := by
-  dsimp only
   obtain ⟨F, hF, -, hmodels⟩ := Q.exists_marked_family_of_nodal_model href hD
   have hmark d j := congrFun (hmodels d).2 j
   obtain ⟨hprim', hnef', hsq'⟩ :=
@@ -274,17 +284,25 @@ theorem exists_exchangeKernelAction_reflection_of_presentation
     M.surface.finite_picard_of_isRationalOver ℂ
   let : Module.Free ℤ L := Module.Free.of_equiv M.picardMarking.symm
   let : Module.Finite ℤ L := Module.Finite.of_surjective _ M.picardMarking.symm.surjective
-  have hpair (x y : L) : B x y =
-      Chow.classIntersectionNumber ℂ M.surface (M.picardMarking x).toMul
-        (M.picardMarking y).toMul :=
-    (M.intersectionBilinForm_picardMarking x y).symm.trans (Chow.intersectionBilinForm_apply ..)
+  have hpair (x y : L) := (M.intersectionBilinForm_picardMarking x y).symm.trans
+    (Chow.intersectionBilinForm_apply ..)
   have hSymm : B.IsSymm := ⟨fun x y ↦
     (hpair x y).trans ((Chow.classIntersectionNumber_comm _ _).trans (hpair y x).symm)⟩
   have hPrimitive : IsPrimitive (total[M.boundaryClass hD]) :=
     M.picardMarking.isPrimitive_iff.mp (by rwa [M.picardMarking_sum_boundaryClass])
-  exact exists_exchangeKernelAction_reflection Θ e hCasimir hker hSymm
-    (M.intersectionForm_boundaryClass hD hnef hsq) hPrimitive
-    (M.isCharacteristic_sum_boundaryClass hD (congrArg Inv.inv (href.canonicalClass hD)))
+  obtain ⟨hδ, a, s, hℓ, hreflection⟩ :=
+    exists_exchangeKernelAction_reflection Θ e hCasimir hker hSymm
+      (M.intersectionForm_boundaryClass hD hnef hsq) hPrimitive
+      (M.isCharacteristic_sum_boundaryClass hD (congrArg Inv.inv (href.canonicalClass hD)))
+  refine ⟨hδ, a, s, e.isPrimitive_iff.mpr (hPrimitive.of_map
+    (g := orth[B,M.boundaryClass hD].subtype)), ?_, hℓ, hreflection⟩
+  intro p
+  let := Q.complete.nonempty_cones
+  let := Q.prestable
+  let := Q.neZero
+  have hw := congrArg Prod.snd (p.inclusion_sum_boundaryClass hD)
+  rw [he ⟨_, hδ⟩, Fan.markedBoundaryMap_apply] at hw
+  exact neg_injective hw
 
 end Presentation
 
