@@ -289,25 +289,28 @@ theorem exists_first_high_baseCenter_of_high_base_order_on_hirzebruch_fiber :
     · exact Or.inr (Or.inl ⟨c', h⟩)
 
 include hg in
-private theorem hirzebruch_high_fiber_centers
+/-- When all high orders project to open orbits of invariant fibers, they occur
+at first centers on distinct fibers and are bounded by the ruling degree. -/
+theorem exists_fiber_embedding_of_hirzebruch_high_base_orders
     [Nonempty Φ.cones] [SmoothOfRelativeDimension 2 f] [IsNoetherian X]
-    (hlog : (D).comap T.toBase ≤ hT.ramificationIdealSheafToBase ℂ)
-    (v : Additive (LineBundleClass X) × (Fin n → ℤ))
-    (hv : v = (T.picardMarking hT f).symm (Additive.ofMul (pullback g H)))
-    (hm : ∀ j, 0 ≤ -v.2 j)
-    (hcenters : ∀ j, (C).repr v.1 1 < 2 * (-v.2 j) →
-      ∃ t : Fin 2, ∃ c : ℂˣ, hT.baseCenter j = p[fiberRay[t],c]) :
+    (hlog : (D).comap T.toBase ≤ hT.ramificationIdealSheafToBase ℂ) :
+    let v := marking
     let A := Finset.univ.filter (fun j ↦ (C).repr v.1 1 < 2 * (-v.2 j))
+    (∀ j ∈ A, ∃ t : Fin 2, ∃ c : ℂˣ, hT.baseCenter j = p[fiberRay[t],c]) →
     ∃ fiber : (↑A : Type) ↪ Fin 2, ∀ j : A,
       -v.2 j ≤ (C).repr v.1 1 ∧
       (∀ l < (j : Fin n), hT.baseCenter l ≠ hT.baseCenter j) ∧
       ∃ c : ℂˣ, hT.baseCenter j = p[fiberRay[fiber j],c] := by
   classical
-  intro A
+  intro v A hcenters
+  obtain ⟨_, J, -, -, -, -, -, horders⟩ := hT.exists_moving_base_ideal_of_plane_resolution g hg
+  have hm (j : Fin n) : 0 ≤ -v.2 j := by
+    rw [horders j]
+    exact Int.natCast_nonneg _
   have hhigh (j : A) := (Finset.mem_filter.mp j.property).2
-  choose t c hp using fun j : A ↦ hcenters j (hhigh j)
+  choose t c hp using fun j : A ↦ hcenters j j.property
   have hnef : (T.picardHom (v.1, -(fun j ↦ -v.2 j))).toMul.IsNef ℂ (T.toBase ≫ f) := by
-    simpa only [Pi.neg_def, neg_neg, Prod.mk.eta, hv] using
+    simpa only [Pi.neg_def, neg_neg, Prod.mk.eta, v] using
       planeResolution_picardHom_isNef hT g hg
   have hbound := sum_base_orders_le_invariant_fiber b e hΦ hc r hr hT hlog
     v.1 (fun j ↦ -v.2 j) hm hnef
@@ -317,7 +320,7 @@ private theorem hirzebruch_high_fiber_centers
       (ρ.binomialCenter_mem_support_sdiff_colon hΦ d₂
         (b.detDualEquiv_self ρ.primitiveGenerator) (ρ.surjective_detCharacter b) a).1
     exact Subtype.ext (hT.eq_of_high_base_orders_on_hirzebruch_fiber b e hΦ hc r hr g hg
-      hlog (t j) (c j) (hp j) hs (hv ▸ hhigh j) (hv ▸ hhigh l))
+      hlog (t j) (c j) (hp j) hs (hhigh j) (hhigh l))
   refine ⟨⟨t, fun j l h ↦ hunique (h.symm ▸ hp l)⟩, fun j ↦ ?_⟩
   have hle := hbound (t j) {j.val} (by
     intro k hk
@@ -325,7 +328,7 @@ private theorem hirzebruch_high_fiber_centers
     exact ⟨c j, hp j⟩)
   refine ⟨by simpa only [Finset.sum_singleton] using hle, ?_, c j, hp j⟩
   obtain ⟨l, hl, hfirst, hle⟩ := hT.exists_first_baseCenter_ge_of_plane_resolution g hg j
-  have hle' : -v.2 j ≤ -v.2 l := by simpa only [hv] using hle
+  have hle' : -v.2 j ≤ -v.2 l := hle
   have hlhigh : (C).repr v.1 1 < 2 * (-v.2 l) := lt_of_lt_of_le (hhigh j) (by omega)
   let l' : A := ⟨l, Finset.mem_filter.mpr ⟨Finset.mem_univ _, hlhigh⟩⟩
   have he : j = l' := hunique (l := l') (hl.trans (hp j))
@@ -388,12 +391,9 @@ theorem hirzebruch_high_baseCenter_cases :
     · exact (hshort ⟨l, hl', hfirst, Or.inl hc⟩).elim
     · exact (hshort ⟨l, hl', hfirst, Or.inr hs⟩).elim
     · simpa only [hl] using hf
-  obtain ⟨_, _, -, -, -, -, -, horders⟩ := hT.exists_moving_base_ideal_of_plane_resolution g hg
-  have hm (j : Fin n) : 0 ≤ -v.2 j := by
-    rw [horders j]
-    exact Int.natCast_nonneg _
   obtain ⟨fiber, hfiber⟩ :=
-    hirzebruch_high_fiber_centers b e hΦ hc r hr hT g hg hlog v rfl hm hcenter
+    hT.exists_fiber_embedding_of_hirzebruch_high_base_orders b e hΦ hc r hr g hg hlog
+      (fun j hj ↦ hcenter j (Finset.mem_filter.mp hj).2)
   have hcard : A.card ≤ 2 := by
     simpa only [Fintype.card_coe, Fintype.card_fin] using Fintype.card_le_of_embedding fiber
   have hpos := Finset.card_pos.mpr hA

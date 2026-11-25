@@ -64,9 +64,10 @@ include hΦ hc in
 transports a given nodal tower followed by its ordered internal contraction.
 The new contraction has complexity zero and matches the ordered exceptional
 classes. The sign determines the orientation of the target subdivision, even
-when the boundary has only one or two components. The input isometry sends
-source classes to target classes, so it is the inverse of the prescribed
-Picard pullback in a reconstruction. -/
+when the boundary has only one or two components. Each original component
+and its image under the dihedral action have strict transforms with a common
+new number. The input isometry sends source classes to target classes, so it
+is the inverse of the prescribed Picard pullback in a reconstruction. -/
 theorem exists_transported_toric_contraction_of_signed_boundary_isometry
     (act : DihedralGroup n)
     (hT : IsNodalBoundaryTower D g(X) (𝟙 X) T)
@@ -132,6 +133,9 @@ theorem exists_transported_toric_contraction_of_signed_boundary_isometry
         β(G, F, U).IsOrientedCycleSubdivision C'
           (if cycleOrientationSign act = -1 then C.reverse else C) ∧
         (∀ j, e' P(E, A'.boundaryPrimeEquiv hE j) = P(G, C'.boundaryPrimeEquiv hG j)) ∧
+        (∀ j, ∃ a, β(E, D, T) (A'.componentGenericPoint a) = A.componentGenericPoint j ∧
+          β(G, F, U) (C'.componentGenericPoint a) =
+            C.componentGenericPoint (cycleVertexPerm act j)) ∧
         ∃ (Z₀ : Scheme) (t : Z₀ ⟶ SpecC) (W₀ : Scheme) (L : BlowupTower Z₀ r W₀)
           (d : W ≅ W₀) (hL : L.IsClosedPointTower Z₀),
           let : Z₀.Over SpecC := ⟨t⟩
@@ -157,8 +161,10 @@ theorem exists_transported_toric_contraction_of_signed_boundary_isometry
     (by simpa only [Scheme.NodalCycleNumbering.reindex_boundaryPrimeEquiv] using he)
   refine ⟨W, U, hU, ?_⟩
   intro E G _ _ _ _ _ _ _ nd nf hE hG _ _ _ _ _ _ _ _ _ _ _ _ e'
-  obtain ⟨ι', κ', p', q', A', C', hA', hC', hclasses, hcontraction⟩ := h
-  exact ⟨ι', κ', p', q', A', C', hA',
-    (Scheme.Hom.isOrientedCycleSubdivision_reindex_target_iff act).mp hC', hclasses, hcontraction⟩
+  obtain ⟨ι', κ', p', q', A', C', hA', hC', hclasses, hlift, hcontraction⟩ := h
+  refine ⟨ι', κ', p', q', A', C', hA',
+    (Scheme.Hom.isOrientedCycleSubdivision_reindex_target_iff act).mp hC',
+    hclasses, ?_, hcontraction⟩
+  simpa only [Scheme.NodalCycleNumbering.reindex_componentGenericPoint] using hlift
 
 end TauCeti.Toric.Fan

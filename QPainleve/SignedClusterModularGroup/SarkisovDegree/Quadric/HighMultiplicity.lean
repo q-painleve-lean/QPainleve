@@ -9,6 +9,7 @@ public import QPainleve.SignedClusterModularGroup.SarkisovDegree.Quadric.PlanePa
 public import QPainleve.SignedClusterModularGroup.SarkisovDegree.Quadric.TwoCenterPath
 
 import QPainleve.Geometry.Toric.Fan.Picard.Quadric
+import QPainleve.SignedClusterModularGroup.SarkisovDegree.Decrease
 
 /-!
 # Sarkisov decrease at smooth points of the quadric fibers
@@ -61,6 +62,32 @@ local notation "mark[" U "," hU "," f "," g "]" =>
 
 variable {Y : Scheme} {n : ℕ} {T : BlowupTower X[Φ] n Y}
   (hT : IsClosedPointTower X[Φ] T) (g : Y ⟶ P)
+
+private theorem two_mul_plane_degree_lt_of_unique_high_order
+    [Φ.algebraicRealization.IsProjectiveOver ℂ]
+    (hg : g ≫ fP = T.toBase ≫ f[Φ]) (hbir : Scheme.BirationalOver g (𝟙 P))
+    (j : Fin n) :
+    let : Nonempty Φ.cones := hc.nonempty_cones
+    let : SmoothOfRelativeDimension 2 f[Φ] :=
+      rankTwo ▸ Φ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
+    let x := mark[T,hT,f[Φ],g]
+    let β := (Φ.hirzebruchPicardBasis b 0 hΦ r hr).repr x.1 0
+    let α := (Φ.hirzebruchPicardBasis b 0 hΦ r hr).repr x.1 1
+    let m := fun k ↦ -x.2 k
+    β < 2 * m j → (∀ k ≠ j, 2 * m k ≤ β) → 2 * (β + α - m j) < 3 * β := by
+  intro hcones hdim x β α m hhigh hsmall
+  let := hcones
+  let := hdim
+  have hUpper : m j ≤ β := hT.base_order_le_quadric_exchanged_fiber_degree b hΦ hc r hr g hg j
+  have hNonneg : ∀ k, 0 ≤ m k :=
+    (hT.hirzebruch_resolution_degree_bounds b 0 hΦ hc r hr g hg hbir).2.2
+  obtain ⟨hsq, hsum⟩ := hT.homaloidal_intersection_identities_of_hirzebruch b 0 hΦ hc r hr g hg hbir
+  have hsq' : ∑ k, m k ^ 2 = 2 * α * β - 1 := by
+    simpa only [m, neg_sq, Nat.cast_zero, zero_mul, sub_zero, mul_right_comm 2 α β] using hsq
+  have hsum' : ∑ k, m k = 2 * α + 2 * β - 3 := by
+    simpa only [m, Nat.cast_zero, sub_zero, add_comm (2 * α) (2 * β)] using hsum
+  exact (quadric_sarkisov_degree_decrease_of_single (by omega) j hsq' hsum' hhigh.le hUpper
+    (fun k hk ↦ ⟨hNonneg k, hsmall k hk⟩)).2
 
 /-- Suppose the high base orders of a logarithmic quadric-to-plane resolution
 are first centers over the interiors of distinct invariant fibers and there is
@@ -163,12 +190,20 @@ theorem exists_sarkisov_path_decrease_of_quadric_high_fiber_centers
   · have hnothigh (k : Fin n) (hkj : k ≠ j) : k ∉ high := fun hk ↦ hex ⟨⟨k, hk⟩, hkj⟩
     have hn : 1 ≤ n := by have := j.isLt; omega
     obtain ⟨n, rfl⟩ := Nat.exists_eq_add_of_le' hn
+    have hlt :=
+      hT.two_mul_plane_degree_lt_of_unique_high_order d hΦ hc s hs g hg hbir j
+        (hβ.symm ▸ hlarge j₀) (fun u hu ↦ hβ.symm ▸ hsmall u (hnothigh u hu))
     obtain ⟨e, -, A, B, p, Z, U, hU, f, hA, hAh, hB, hBh, -, -, hg', hbir', hpole',
-      -, -, -, -, hpos, hlt⟩ :=
-      hT.exists_sarkisov_path_decrease_of_quadric_single_high_center d hΦ hc s hs g hg hbir
-        a j hjc (hjc ▸ (hfiber j₀).1) D hpole (hβ.symm ▸ hlarge j₀)
-        (fun u hu ↦ hβ.symm ▸ hsmall u (hnothigh u hu))
-    refine ⟨A, B, p, hA, hAh, Or.inl ⟨e, Z, _, U, hU, f, hB, hBh, hg', hbir', hpole', hpos, ?_⟩⟩
-    rwa [← hβ]
+      hdegree, -, -, -, hpos⟩ :=
+      hT.exists_sarkisov_path_of_quadric_smooth_center d hΦ hc s hs g hg hbir
+        a j hjc (hjc ▸ (hfiber j₀).1) D hpole
+    refine ⟨A, B, p, hA, hAh, Or.inl ⟨e, Z, _, U, hU, f, hB, hBh, hg', hbir', hpole', hpos,
+      fun M' M ↦ ?_⟩⟩
+    rw [Prod.Lex.lt_iff, ofLex_planeSarkisovBidegree, ofLex_hirzebruchSarkisovBidegree]
+    refine Or.inl ?_
+    have hLess : 2 * degree (mark[U,hU,fP,f.inv ≫ g]).1 < 3 * β := by
+      rw [hdegree, ← hβ]
+      exact hlt
+    omega
 
 end QPainleve.BlowupTower.IsClosedPointTower
