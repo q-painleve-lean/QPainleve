@@ -16,6 +16,8 @@ import QPainleve.AlgebraicGeometry.Curves.Node.Reindex
 import QPainleve.AlgebraicGeometry.IdealSheaf.Image.Over
 import QPainleve.Geometry.Toric.Fan.Boundary.InternalBlowup
 import QPainleve.Geometry.Toric.Fan.Boundary.Node
+import QPainleve.Geometry.Toric.Fan.Presentation.Genus
+import QPainleve.SignedClusterModularGroup.Realization.Anticanonical
 import QPainleve.SignedClusterModularGroup.Realization.Surface.Boundary
 import TauCeti.AlgebraicGeometry.Curves.Node.Reduced
 import TauCeti.AlgebraicGeometry.Morphisms.Modification.Basic
@@ -113,13 +115,14 @@ private theorem isOver_internalBoundary :
   exact (U).2.boundaryι_toBase_assoc _
 
 /-- The ordered internal blowup realizes a marked fiber when the marking identifies
-its Picard lattice with all the toric and exceptional coordinates. Its numbered
-boundary rays and classes are the strict rays in order from the presentation origin. -/
+its Picard lattice with all the toric and exceptional coordinates. The identity
+projection is a nodal contraction with empty tower. Its numbered boundary rays
+and classes are the strict rays in order from the presentation origin. -/
 theorem exists_nodal_model_of_internalBlowup
     (e : H.IsometryEquiv (Aux)) (he : e.toLinearEquiv.toLinearMap = Q.inclusion) :
     ∃ (M : MarkedSurface ℂ Q.length H XTor[r])
       (p : ContractedToricFiber b Q.rays Q.regular Q.cycle Q.origin Q.inclusion χ[c] M),
-      Q.HasNodalModel c M ∧ IsIso p.projection ∧
+      Q.HasNodalModel c M ∧ IsIso p.projection ∧ p.IsNodalContraction ∧
         ∃ hD : D[M].IsEffectiveCartier, ∀ j,
           p.numberedBoundaryRays hD j = Q.rayOrder (j + Q.origin) ∧
             M.boundaryClass hD j =
@@ -201,13 +204,22 @@ theorem exists_nodal_model_of_internalBlowup
       (Q.fan.isEffectiveCartier_boundaryIdeal Q.regular Q.complete hN)
   have hker : D[M] = D := MarkedSurface.ofBoundary_ker ..
   have hM : D[M].IsEffectiveCartier := hker.symm ▸ hD
-  refine ⟨M, p, (Q.hasNodalModel_iff c M).mpr ⟨p, Y, 0, .nil, Iso.refl _, ?_, by
+  have htower : IsNodalBoundaryTower D[M] (M.surface ↘ S) (𝟙 M.surface)
+      (BlowupTower.nil : BlowupTower M.surface 0 M.surface) := .nil
+  have hprojection : p.projection = (Iso.refl Y).inv ≫
+      (BlowupTower.nil : BlowupTower Y 0 Y).toBase := by
     dsimp only [p]
-    have hnil : (.nil : BlowupTower Y 0 Y).toBase = 𝟙 Y := toBase_nil
-    exact ((Category.id_comp (𝟙 Y)).symm).trans
-      (congrArg (fun g : Y ⟶ Y ↦ 𝟙 Y ≫ g) hnil.symm)⟩,
-    inferInstanceAs (IsIso (𝟙 Y)), hM, fun j ↦ ⟨?_, ?_⟩⟩
-  · exact .nil
+    rw [Iso.refl_inv, Category.id_comp, BlowupTower.toBase_nil]
+  have hmodel : Q.HasNodalModel c M :=
+    (Q.hasNodalModel_iff c M).mpr ⟨p, Y, 0, .nil, Iso.refl _, htower, hprojection⟩
+  have hnodal : p.IsNodalContraction := by
+    let : IsIntegral M.surface := M.integral
+    let : M.surface.IsProjectiveOver ℂ := M.projective
+    let : SmoothOfRelativeDimension 2 (M.surface ↘ S) := M.smooth
+    let : PrestableFamily (D[M].subscheme ↘ S) := M.prestable_boundaryImage
+    exact ⟨hM, hmodel.hasToricPresentation.genus_blowupComponent_eq_zero hM,
+      0, Y, .nil, htower, Iso.refl _, hprojection.symm⟩
+  refine ⟨M, p, hmodel, inferInstanceAs (IsIso (𝟙 Y)), hnodal, hM, fun j ↦ ⟨?_, ?_⟩⟩
   · rw [← Equiv.symm_apply_apply (Q.fan.boundaryNormalizationComponentEquiv Q.regular)
       (Q.rayOrder (j + Q.origin)), ← Q.component_eq]
     exact (p.numberedBoundaryRays_eq_iff hM j (j + Q.origin)).mpr (hgen j)
