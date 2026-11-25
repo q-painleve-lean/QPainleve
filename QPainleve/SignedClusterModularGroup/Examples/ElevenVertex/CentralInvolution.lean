@@ -81,7 +81,7 @@ private theorem exists_marked_reference (u : Fin 11 → ℂˣ) :
   let H : LinearMap.BilinForm ℤ (Fin (Module.finrank ℤ (Additive (LineBundleClass W))) → ℤ) :=
     H₀.compl₁₂ e.toLinearMap e.toLinearMap
   let μ : H.IsometryEquiv H₀ := ⟨e, fun _ _ ↦ rfl⟩
-  obtain ⟨A'', Q, c, f, _, hparams, hrays, hm⟩ :=
+  obtain ⟨A'', ⟨Q, c, f, hm⟩, _, hparams, hrays⟩ :=
     exists_marked_reference_fiber_of_ordered_towers_fixed_basis
       (isRegular_projectiveSpace b (isIntegralLattice_intCast 2))
       (isComplete_projectiveSpace b (isIntegralLattice_intCast 2))

@@ -98,21 +98,23 @@ theorem exists_xPullback_eq_iff_signedLoopInvariants_eq_of_ordered_towers
   let a : L ≃ₗ[ℤ] Pic := (Module.finBasis ℤ Pic).equivFun.symm
   let H := (B).comp a.toLinearMap a.toLinearMap
   let μ : H.IsometryEquiv B := ((B).isometryEquivOfCompLinearEquiv a).symm
-  obtain ⟨b', Q, c, f, hframe, hrays, href⟩ :=
+  obtain ⟨b', R, hframe, hrays⟩ :=
     exists_marked_reference_fiber_of_ordered_towers hΦ hc s u hT e hbase hker hD A μ
-  let M := MarkedSurface.ofBoundary D A μ f
+  let Q := R.presentation
+  let M := MarkedSurface.ofBoundary D A μ R.evaluation
   let hD' := M.isEffectiveCartier_boundaryIdeal
-  obtain ⟨p₀, hnodal₀⟩ := href.exists_isNodalContraction hD'
+  obtain ⟨p₀, hnodal₀⟩ := R.hasNodalModel.exists_isNodalContraction hD'
   have hδ : classOf(hD') = classOf(hD) :=
     congrArg Inv.inv (LineBundleClass.mk_toInvertibleSheaf_congr _ _
-      (MarkedSurface.ofBoundary_ker D A μ f))
+      (MarkedSurface.ofBoundary_ker D A μ R.evaluation))
   let E : SkewExchangeMatrix (Fin r) :=
     .ofMatrix (chargeExchangeMatrix b'.detDualEquiv.toLinearMap (Fan.rayChargeMap Q.rays))
       (isSkewSymmetrizer_chargeExchangeMatrix _ b'.detDualEquiv_self _)
   have hE : E.matrix =
       chargeExchangeMatrix b'.detDualEquiv.toLinearMap (Fan.rayChargeMap Q.rays) :=
     SkewExchangeMatrix.matrix_ofMatrix _ _
-  refine ⟨H, μ, b', Q, c, f, E, p₀, hnodal₀, hframe, hrays, hE, fun k _ _ w v _ β ↦ ?_⟩
+  refine ⟨H, μ, b', Q, R.center, R.evaluation, E, p₀, hnodal₀, hframe, hrays, hE,
+    fun k _ _ w v _ β ↦ ?_⟩
   exact Q.xPullback_eq_iff_signedLoopInvariants_eq_of_nodal_contraction k p₀ hnodal₀ hE
     (by rwa [hδ]) (by rwa [hδ]) (by rwa [hδ]) w v β
 

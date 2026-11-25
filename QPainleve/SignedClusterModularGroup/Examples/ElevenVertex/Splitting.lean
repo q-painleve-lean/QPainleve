@@ -66,7 +66,7 @@ private theorem exchangeKernelAction_injective_or_neg :
   let H := (Chow.intersectionBilinForm ℂ W).comp coordinates.toLinearMap coordinates.toLinearMap
   let μ : H.IsometryEquiv (Chow.intersectionBilinForm ℂ W) :=
     ((Chow.intersectionBilinForm ℂ W).isometryEquivOfCompLinearEquiv coordinates).symm
-  obtain ⟨b', Q, c, f, hframe, ⟨hfan, hrays⟩, href⟩ :=
+  obtain ⟨b', ⟨Q, c, f, href⟩, hframe, ⟨hfan, hrays⟩⟩ :=
     exists_marked_reference_fiber_of_ordered_towers (isRegular_projectiveSpace b hi)
       (isComplete_projectiveSpace b hi) planeCenterRay 1 hR a hbase hker hD numbering μ
   let M := MarkedSurface.ofBoundary D numbering μ f
