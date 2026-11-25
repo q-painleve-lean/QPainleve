@@ -116,6 +116,33 @@ theorem exists_cone_of_hirzebruch_section_fiber (hΦ : Φ.IsRegular) (hc : Φ.Is
   exact ((hirzebruch_section_neighbors_iff b e r hr hΦ hc j (fib k)).mpr hk).2
 
 include hr in
+/-- The supremum of a section ray and a fiber ray is a cone of a complete regular
+Hirzebruch fan. -/
+theorem hirzebruch_corner_mem (hΦ : Φ.IsRegular) (hc : Φ.IsComplete) (j k : Fin 2) :
+    (sec j).toCone.val ⊔ (fib k).toCone.val ∈ Φ.cones := by
+  obtain ⟨σ, hs, hf⟩ := exists_cone_of_hirzebruch_section_fiber b e r hr hΦ hc j k
+  have hne : sec j ≠ fib k := by
+    apply r.injective.ne
+    fin_cases j <;> fin_cases k <;> decide
+  have hd : Module.finrank ℤ N = 2 := by simpa using Module.finrank_eq_card_basis b
+  rw [← Φ.cone_eq_sup_of_ray_ne_of_le hΦ hd hne hs hf]
+  exact σ.property
+
+variable (Φ) in
+include hr in
+/-- The hull of the primitive generators of a chosen section ray and fiber ray is a cone
+of the complete regular Hirzebruch fan. The indices `j` and `k` select the section and fiber. -/
+theorem hirzebruch_chart_corners (hΦ : Φ.IsRegular) (hc : Φ.IsComplete) (j k : Fin 2) :
+    hull ℝ {i (if j = 0 then b 0 else -b 0),
+      i (if k = 0 then b 1 else e • b 0 - b 1)} ∈ Φ.cones := by
+  have hs : (sec j).primitiveGenerator = if j = 0 then b 0 else -b 0 := by
+    fin_cases j <;> simp [congrFun hr]
+  have hf : (fib k).primitiveGenerator = if k = 0 then b 1 else e • b 0 - b 1 := by
+    fin_cases k <;> simp [congrFun hr]
+  simpa only [Ray.toCone_eq_hull_primitiveGenerator, hs, hf, ← Submodule.span_union,
+    Set.singleton_union] using hirzebruch_corner_mem b e r hr hΦ hc j k
+
+include hr in
 private theorem hirzebruch_fiber_neighbors (hΦ : Φ.IsRegular) (hc : Φ.IsComplete)
     (τ : Φ.Ray) :
     (r 1 ≠ τ ∧ ∃ σ : Φ.cones, (r 1).toCone ≤ σ ∧ τ.toCone ≤ σ) ↔ τ = r 0 ∨ τ = r 2 := by
@@ -132,7 +159,9 @@ private theorem hirzebruch_fiber_neighbors (hΦ : Φ.IsRegular) (hc : Φ.IsCompl
       (fun _ h ↦ h.symm)⟩ τ
 
 include hr in
-private theorem exists_hirzebruch_section_fiber_le (hΦ : Φ.IsRegular) (hc : Φ.IsComplete)
+/-- Every two-ray cone in a complete regular Hirzebruch fan contains a
+section ray and a fiber ray. -/
+theorem exists_hirzebruch_section_fiber_le (hΦ : Φ.IsRegular) (hc : Φ.IsComplete)
     (σ : Φ.cones) (hσ : Nat.card (ToricRay σ.val) = 2) :
     ∃ j k : Fin 2, (sec j).toCone ≤ σ ∧ (fib k).toCone ≤ σ := by
   obtain ⟨p, q, hp, hq, hd⟩ :=
@@ -168,6 +197,28 @@ private theorem exists_hirzebruch_section_fiber_le (hΦ : Φ.IsRegular) (hc : Φ
   · exact (noBoth hp hq).elim
   · exact (noBoth hq hp).elim
   · exact (hpq rfl).elim
+
+include hr in
+/-- A two-ray cone containing a specified section ray of a Hirzebruch fan is
+the hull of that section and one of the two invariant fiber rays. -/
+theorem exists_hirzebruch_corner_eq_hull_of_section_le (hΦ : Φ.IsRegular) (hc : Φ.IsComplete)
+    (σ : Φ.cones) (hσ : Nat.card (ToricRay σ.val) = 2) (j : Fin 2) (hj : (sec j).toCone ≤ σ) :
+    ∃ k : Fin 2, σ.val = hull ℝ {i (sec j).primitiveGenerator, i (fib k).primitiveGenerator} := by
+  obtain ⟨l, k, hl, hk⟩ := exists_hirzebruch_section_fiber_le b e r hr hΦ hc σ hσ
+  have heq : sec l = sec j := by
+    by_contra hne
+    rcases (hirzebruch_section_neighbors_iff b e r hr hΦ hc j (sec l)).mp
+        ⟨Ne.symm hne, σ, hj, hl⟩ with h | h
+    · fin_cases l <;> simp at h
+    · fin_cases l <;> simp at h
+  have hne : sec l ≠ fib k := by
+    apply r.injective.ne
+    fin_cases l <;> fin_cases k <;> decide
+  have hN : Module.finrank ℤ N = 2 := by simpa using Module.finrank_eq_card_basis b
+  refine ⟨k, ?_⟩
+  rw [Φ.cone_eq_sup_of_ray_ne_of_le hΦ hN hne hl hk, heq,
+    (sec j).toCone_eq_hull_primitiveGenerator, (fib k).toCone_eq_hull_primitiveGenerator,
+    ← Submodule.span_union, Set.singleton_union]
 
 include hr in
 private theorem hirzebruch_corner_ray_order {d : Basis (Fin 2) ℤ N} (j k : Fin 2)

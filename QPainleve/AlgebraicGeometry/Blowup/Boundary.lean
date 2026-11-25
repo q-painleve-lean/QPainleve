@@ -26,6 +26,7 @@ The Cartier property for smooth sections uses Tau Ceti's
 public section
 
 open AlgebraicGeometry CategoryTheory
+open Scheme.IdealSheafData (blowupIso)
 
 universe u
 
@@ -156,7 +157,7 @@ theorem comp_boundaryι_snoc_blowupIso_hom {m : ℕ} {T' : WithBoundary i' m Y'}
     (ha : a ≫ T.boundaryι ≫ g.hom = a' ≫ T'.boundaryι)
     (J' : D'.IdealSheafData) (hJ : (J'.map T'.boundaryι).comap g.hom = J.map T.boundaryι)
     (h : J.IsEffectiveCartier) (h' : J'.IsEffectiveCartier) (hc : (J.comap a).IsEffectiveCartier) :
-    a ≫ (T.snoc J h).boundaryι ≫ ((J'.map T'.boundaryι).blowupIso g hJ).hom =
+    a ≫ (T.snoc J h).boundaryι ≫ (blowupIso g hJ.symm).hom =
       a' ≫ (T'.snoc J' h').boundaryι := by
   apply (J'.map T'.boundaryι).blowup_hom_ext
   · simpa only [Category.assoc, Scheme.IdealSheafData.blowupIso_hom_blowupToBase,
@@ -175,7 +176,7 @@ theorem boundaryι_snoc_blowupIso_hom {m : ℕ} {T' : WithBoundary i' m Y'} (g :
     (J' : D'.IdealSheafData) (hJ : J'.comap d.hom = J)
     (h : J.IsEffectiveCartier) (h' : J'.IsEffectiveCartier) :
     (T.snoc J h).boundaryι ≫
-        ((J'.map T'.boundaryι).blowupIso g (T.comap_center_eq J g d hg J' hJ)).hom =
+        (blowupIso g (T.comap_center_eq J g d hg J' hJ).symm).hom =
       d.hom ≫ (T'.snoc J' h').boundaryι := by
   simpa only [Category.id_comp] using
     T.comp_boundaryι_snoc_blowupIso_hom J g (𝟙 D) d.hom
@@ -244,6 +245,20 @@ theorem eq_comp_boundaryι_of_comp_toBase_eq {S : Scheme.{u}} (i : D ⟶ X)
     · exact h.symm ▸ (by
         rw [Scheme.IdealSheafData.comap_comp, Scheme.IdealSheafData.comap_map_of_isClosedImmersion]
         exact ha (Fin.last n))
+
+/-- A morphism of boundary blowup towers over the same base intertwines the
+two strict boundary embeddings. -/
+theorem boundaryι_comp_of_alongBoundary (i : D ⟶ X) [IsClosedImmersion i] {m n : ℕ}
+    {J : Fin m → {I : D.IdealSheafData // I.IsEffectiveCartier}}
+    {K : Fin n → {I : D.IdealSheafData // I.IsEffectiveCartier}}
+    (f : (alongBoundary i J).1 ⟶ (alongBoundary i K).1)
+    (hf : f ≫ (alongBoundary i K).2.toTower.toBase = (alongBoundary i J).2.toTower.toBase) :
+    (alongBoundary i J).2.boundaryι ≫ f = (alongBoundary i K).2.boundaryι := by
+  simpa only [Category.id_comp] using
+    eq_comp_boundaryι_of_comp_toBase_eq i K (𝟙 D)
+      (fun j ↦ by simpa only [Scheme.IdealSheafData.comap_id] using (K j).property)
+      ((alongBoundary i J).2.boundaryι ≫ f)
+      (by rw [Category.assoc, hf, WithBoundary.boundaryι_toBase, Category.id_comp])
 
 /-- Isomorphisms matching the original boundary and the ordered centers lift through the
 whole tower and match the final strict transforms. Matching the centers is expressed on

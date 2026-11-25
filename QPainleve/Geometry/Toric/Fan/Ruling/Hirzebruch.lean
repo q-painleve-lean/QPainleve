@@ -29,6 +29,26 @@ variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
 
 local notation "m" => LinearMap.toAddMonoidHom (b.coord 1)
 
+/-- The second basis character defining the Hirzebruch ruling is nonzero. -/
+theorem hirzebruch_ruling_character_ne_zero : m ≠ 0 := by
+  intro hz
+  have ha := DFunLike.congr_fun hz (b 1)
+  simp [Basis.coord_apply] at ha
+
+include hr in
+open Classical in
+/-- The positive part of the chart character is one on the corresponding fiber
+ray and zero on the other rays. -/
+theorem hirzebruch_ruling_coordinateFiber_coefficients (k : Fin 2) :
+    (fun ρ : Φ.Ray ↦ max ((if k = 0 then m else -m) ρ.primitiveGenerator) 0) =
+      Pi.single (r ((![1, 3] : Fin 2 → Fin 4) k)) (1 : ℤ) := by
+  funext ρ
+  obtain ⟨j, rfl⟩ := r.surjective ρ
+  have hj := congrFun hr j
+  simp only [Equiv.apply_eq_iff_eq, Pi.single_apply]
+  rw [hj]
+  fin_cases k <;> fin_cases j <;> norm_num [Basis.coord_apply]
+
 include hr in
 /-- The second coordinate character has constant weak sign on each cone of a
 Hirzebruch fan, so it defines the ruling to the projective line. -/

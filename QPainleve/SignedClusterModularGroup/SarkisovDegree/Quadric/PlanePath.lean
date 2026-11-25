@@ -8,20 +8,15 @@ module
 public import QPainleve.Geometry.Toric.Fan.Logarithmic.Factorization
 public import QPainleve.SignedClusterModularGroup.SarkisovDegree.Quadric.SingleCenter
 
-import Mathlib.Analysis.Complex.Polynomial.Basic
-import QPainleve.AlgebraicGeometry.Blowup.Tower.Nef
-import QPainleve.AlgebraicGeometry.Curves.Degree.Ample
-import QPainleve.AlgebraicGeometry.IntersectionNumber.Nef.Pullback
 import QPainleve.AlgebraicGeometry.RationalMap.Composition.Basic
-import QPainleve.Geometry.Toric.Fan.Boundary.Component
 
 /-!
 # The resolved path from a quadric to a plane
 
-In the ruling in which the unique high-order center lies on a section,
-mutation at that center and contraction of the negative section form a
-resolved path on the original surface. The terminal projection comes with
-a plane point tower of smaller bidegree and its ordered Picard coordinates.
+Mutation at a smooth point of a section and contraction of the negative
+section form a resolved path on the original surface. The terminal plane
+point tower carries the prescribed target map and has degree equal to the
+sum of the two ruling coefficients minus the selected base order.
 
 See Case A of Proposition 8.11 in [Lutz's appendix to Hacking and Keating][HKL].
 
@@ -120,47 +115,12 @@ private theorem exists_quadric_plane_sarkisov_path
 
 end Path
 
-variable [X[Φ].IsProjectiveOver ℂ]
-
-include hc in
-private theorem quadric_base_order_le_of_section_center [Nonempty Φ.cones]
-    [SmoothOfRelativeDimension 2 f[Φ]]
-    (hg : g ≫ fP = T.toBase ≫ f[Φ]) (c : ℂˣ) (j : Fin (n + 1))
-    (hj : hT.baseCenter j = pivotPoint[c]) :
-    let x := (T.picardMarking hT f[Φ]).symm (Additive.ofMul (pullback g H))
-    (-x.2 j) ≤ (Φ.hirzebruchPicardBasis b 0 hΦ r hr).repr x.1 0 := by
-  classical
-  intro x
-  let : Y.Over S := ⟨T.toBase ≫ f[Φ]⟩
-  let : g.IsOver S := ⟨hg⟩
-  let := Φ.uniqueFactorizationMonoid_stalk_algebraicRealization hΦ
-  have hClass : (T.picardHom x).toMul = pullback g H := by
-    rw [← T.picardMarking_apply hT f[Φ], LinearEquiv.apply_symm_apply, toMul_ofMul]
-  have hH : (H).IsAmple := isAmple_twistingSheaf ℂ (Fin 3 → ℂ) Nat.one_pos
-  have hnef : (T.picardHom x).toMul.IsNef ℂ (T.toBase ≫ f[Φ]) :=
-    hClass.symm ▸ hH.isNef.pullback g
-  have hcart := Φ.isEffectiveCartier_rayBoundaryIdeal hΦ (r 0)
-  have hsupport := (r 0).binomialCenter_mem_support_sdiff_colon hΦ rankTwo
-    (b.detDualEquiv_self v) ((r 0).surjective_detCharacter b) c
-  have hbound := hT.neg_exceptionalCoeff_le_classIntersectionNumber_of_mem_support hnef j
-    hcart (hj.symm ▸ hsupport.1)
-  have hRay : (mk hcart.toInvertibleSheaf)⁻¹ = primeDivisorClass (Φ.rayBoundaryPoint hΦ (r 0)) := by
-    rw [primeDivisorClass_def, mk_toInvertibleSheaf_congr _ _ (Φ.rayBoundaryIdeal_def hΦ (r 0))]
-  have hBasis : Φ.hirzebruchPicardBasis b 0 hΦ r hr 1 =
-      Additive.ofMul (mk hcart.toInvertibleSheaf)⁻¹ := by
-    rw [Fan.hirzebruchPicardBasis_apply_one, Fan.rayDivisorToPicard_single, one_zsmul, hRay]
-  have hIntersection := (Φ.hirzebruchPicardBasis_intersection_repr b 0 hΦ r hr hc x.1).2
-  rw [hBasis, Chow.intersectionBilinForm_apply, toMul_ofMul, zero_mul, sub_zero] at hIntersection
-  exact hbound.trans_eq hIntersection
-
-/-- If exactly one base order exceeds half the original fiber degree, the
-mutation at the first center over that section point and the negative-section
-contraction give a two-step Sarkisov path on the specified resolving surface.
-The final projection identifies the smaller plane resolution, retaining the
-prescribed morphism to the target plane, its pole factorization, and all
-ordered exceptional coordinates. The quadric is marked in the exchanged ruling,
-so the original fiber degree is the coefficient of its fiber in this frame. -/
-theorem exists_sarkisov_path_decrease_of_quadric_single_high_center
+/-- Mutation at the first center over a smooth point of the chosen quadric
+section, followed by contraction of the negative section, gives a two-step
+Sarkisov path on the specified resolving surface. Its final plane resolution
+retains the prescribed target map and pole ideal. The new degree is positive,
+and the exceptional coordinates away from the pivot keep their original order. -/
+theorem exists_sarkisov_path_of_quadric_smooth_center
     (hg : g ≫ fP = T.toBase ≫ f[Φ]) (hbir : Scheme.BirationalOver g (𝟙 P))
     (c : ℂˣ) (j : Fin (n + 1)) (hj : hT.baseCenter j = pivotPoint[c])
     (hfirst : ∀ l < j, hT.baseCenter l ≠ pivotPoint[c]) (D : Y.IdealSheafData) :
@@ -171,14 +131,15 @@ theorem exists_sarkisov_path_decrease_of_quadric_single_high_center
       exact rankTwo ▸ Φ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
     letI : Y.Over S := ⟨T.toBase ≫ f[Φ]⟩
     letI : SmoothOfRelativeDimension 2 (Y ↘ S) := hT.smoothOfRelativeDimension f[Φ]
-    letI : IsNoetherian X[Φ] := isNoetherian_of_finiteType f[Φ]
+    letI : IsNoetherian X[Φ] := by
+      let : Smooth f[Φ] := SmoothOfRelativeDimension.smooth 2 _
+      exact isNoetherian_of_finiteType f[Φ]
     letI : IsIntegral Y := hT.isIntegral f[Φ]
     let x := (T.picardMarking hT f[Φ]).symm (Additive.ofMul (pullback g H))
     let b₀ := (Φ.hirzebruchPicardBasis b 0 hΦ r hr).repr x.1 0
     let a₀ := (Φ.hirzebruchPicardBasis b 0 hΦ r hr).repr x.1 1
     let m := fun l ↦ -x.2 l
     B[Φ,hc].comap T.toBase = D * hT.ramificationIdealSheafToBase ℂ →
-    b₀ < 2 * m j → (∀ l ≠ j, 2 * m l ≤ b₀) →
     ∃ (d : Basis (Fin 2) ℤ N) (hs : (Π[d]).IsTwoRayStarSubdivision Ψ)
       (A B : LogarithmicProjection i D) (p : SarkisovPath A B)
       (Z : Scheme) (U : BlowupTower P (1 + (1 + n)) Z) (hU : IsClosedPointTower P U)
@@ -195,9 +156,7 @@ theorem exists_sarkisov_path_decrease_of_quadric_single_high_center
       y.2 (Fin.castAdd (1 + n) (0 : Fin 1)) = m j - b₀ ∧
       y.2 (Fin.natAdd 1 (Fin.castAdd n (0 : Fin 1))) = m j - a₀ ∧
       (∀ l : Fin n, y.2 (Fin.natAdd 1 (l.natAdd 1)) = x.2 (j.succAbove l)) ∧
-      0 < degree y.1 ∧
-      planeSarkisovBidegree (degree y.1).toNat (∑ l, -y.2 l).toNat <
-        hirzebruchSarkisovBidegree b₀.toNat (∑ l, m l).toNat := by
+      0 < degree y.1 := by
   let : Nonempty Φ.cones := hc.nonempty_cones
   let : Nonempty (Fan.cones Ψ) := (hcΨ).nonempty_cones
   let : SmoothOfRelativeDimension 2 f[Φ] := by
@@ -205,27 +164,24 @@ theorem exists_sarkisov_path_decrease_of_quadric_single_high_center
     exact rankTwo ▸ Φ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
   let : Y.Over S := ⟨T.toBase ≫ f[Φ]⟩
   let : SmoothOfRelativeDimension 2 (Y ↘ S) := hT.smoothOfRelativeDimension f[Φ]
-  let : IsNoetherian X[Φ] := isNoetherian_of_finiteType f[Φ]
+  let : IsNoetherian X[Φ] := by
+    let : Smooth f[Φ] := SmoothOfRelativeDimension.smooth 2 _
+    exact isNoetherian_of_finiteType f[Φ]
   let : IsIntegral Y := hT.isIntegral f[Φ]
-  intro x b₀ a₀ m hPole hm hsmall
+  intro x b₀ a₀ m hPole
   let : T.toBase.IsOver S := ⟨rfl⟩
   let : Smooth (Y ↘ S) := SmoothOfRelativeDimension.smooth 2 _
   let : IsModification T.toBase := hT.isModification_of_smoothOfRelativeDimension_two f[Φ]
   have hA := (hT.ramificationIdealSheafToBase_def ℂ) ▸ hPole
   let A : LogarithmicProjection i D := ⟨Φ, hΦ, hc, T.toBase, inferInstance, inferInstance, hA⟩
-  have hmb : m j ≤ b₀ := quadric_base_order_le_of_section_center b hΦ hc r hr hT g hg c j hj
-  have hb : 0 < b₀ := by omega
-  have hnonneg : ∀ l, 0 ≤ m l :=
-    (hT.hirzebruch_resolution_degree_bounds b 0 hΦ hc r hr g hg hbir).2.2
-  obtain ⟨W, U, hU, e, d, s, Z, V₀, hV, k, hmap, hproj, hg', hbir', hpole, hcoords⟩ :=
-    hT.exists_plane_resolution_of_quadric_single_high_center b hΦ hc r hr g hg hbir
-      c j hj hfirst hb hm hmb (fun l hl ↦ ⟨hnonneg l, hsmall l hl⟩)
-  obtain ⟨hdegree, hvertex, hpivot, hrest, hpos, hlt, hstar⟩ := hcoords
+  obtain ⟨W, U, hU, e, d, hstar, Z, V₀, hV, k, hmap, hproj, hg', hbir', hpole, hcoords⟩ :=
+    hT.exists_plane_resolution_of_quadric_mutation b hΦ hc r hr g hg hbir c j hj hfirst
+  obtain ⟨hdegree, hvertex, hpivot, hrest, hpos⟩ := hcoords
   let : Nonempty (Π[d]).cones := (hcΠ[d]).nonempty_cones
   obtain ⟨hmOver, hpOver, hPoles⟩ := hpole D
   let m' := e.hom ≫ U.toBase
   let : m'.IsOver S := hmOver
-  let : (m' ≫ π[s]).IsOver S := hpOver
+  let : (m' ≫ π[hstar.isSubdivision]).IsOver S := hpOver
   obtain ⟨hMutPole, hContractPole, hPlanePole⟩ := hPoles hPole
   let : SmoothOfRelativeDimension 2 f[Ψ] := by
     rw [Fan.algebraicRealization_over]
@@ -236,16 +192,15 @@ theorem exists_sarkisov_path_decrease_of_quadric_single_high_center
     exists_quadric_plane_sarkisov_path b hΦ hc r hr T.toBase hA c m' hmap hMutPole
       d hstar hContractPole
   let a := planeIso[d]
-  -- Both subdivision proofs induce the same map. Use the one carried by the path.
-  have hproj' : k.hom ≫ V₀.toBase = U.toBase ≫ π[hstar.isSubdivision] ≫ a.hom := hproj
   have hEndpoint : m' ≫ π[hstar.isSubdivision] = (e ≪≫ k).hom ≫ V₀.toBase ≫ a.inv := by
-    have h := congrArg (fun f ↦ e.hom ≫ f ≫ a.inv) hproj'
+    have hToPlane : k.hom ≫ V₀.toBase = U.toBase ≫ π[hstar.isSubdivision] ≫ a.hom := hproj
+    have h := congrArg (fun f ↦ e.hom ≫ f ≫ a.inv) hToPlane
     simpa only [m', Iso.trans_hom, Category.assoc, a.hom_inv_id, Category.comp_id] using h.symm
   refine ⟨d, hstar, A, B, p, Z, V₀, hV, e ≪≫ k, rfl, HEq.rfl, hB,
     hBhom.trans (heq_of_eq hEndpoint), hlen, hpath, ?_, ?_, hPlanePole, ?_⟩
   · simpa only [Iso.trans_inv, Category.assoc] using hg'
   · simpa only [Iso.trans_inv, Category.assoc] using hbir'
   · simpa only [Iso.trans_inv, Category.assoc] using
-      And.intro hdegree ⟨hvertex, hpivot, hrest, hpos, hlt⟩
+      And.intro hdegree ⟨hvertex, hpivot, hrest, hpos⟩
 
 end QPainleve.BlowupTower.IsClosedPointTower

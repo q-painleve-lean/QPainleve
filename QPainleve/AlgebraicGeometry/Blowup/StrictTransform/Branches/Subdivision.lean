@@ -192,16 +192,10 @@ theorem range_normalizationToNodalBlowup :
     exact ((genericPoints.isGenericPoint_ofComponent v).specializes (mem_irreducibleComponentOf y))
       |>.mem_closed (isClosed_range_strictNormalization hc hp hCOver hBOver) hη
 
-private theorem branch_projection (T : Scheme.{u}) [T.Over S] [PrestableFamily (T ↘ S)]
-    (q : T.branchScheme k) :
-    ν[T] (b[T] q) = (J[T]).subschemeι (T.branchSchemeToSingularLocus k q) := by
-  rw [← Scheme.Hom.comp_apply, ← Scheme.Hom.comp_apply,
-    branchSchemeToSingularLocus_subschemeι]
-
 private theorem branchPoint_mem_singular (T : Scheme.{u}) [T.Over S]
     [PrestableFamily (T ↘ S)] (q : T.branchScheme k) :
     ν[T] (b[T] q) ∈ (J[T]).support :=
-  (J[T]).range_subschemeι.le ⟨_, (branch_projection T q).symm⟩
+  (J[T]).range_subschemeι.le ⟨_, (T.blowupToBase_branchSchemeToBlowup_apply q).symm⟩
 
 private instance {T : Scheme.{u}} [T.Over S] [PrestableFamily (T ↘ S)] :
     IsClosedImmersion b[T] :=
@@ -222,7 +216,7 @@ private theorem strictBranch_mem_range (q : (C).branchScheme k) :
   rw [(B).range_branchSchemeToBlowup, Set.mem_preimage]
   let y := ν[B] ((s) (b[C] q))
   have hy := boundaryMap_normalizationToNodalBlowup_apply hc hp hCOver hBOver (b[C] q)
-  rw [branch_projection] at hy
+  rw [Scheme.blowupToBase_branchSchemeToBlowup_apply] at hy
   have hn : (β) y ∈ (J[C]).support :=
     (J[C]).range_subschemeι.le ⟨_, hy.symm⟩
   by_cases h : (β) y = p
@@ -283,7 +277,7 @@ private theorem exists_lift_with_exceptional_value (q : centerBranch) :
   obtain ⟨g, ⟨hg, hgq⟩, _⟩ := (β).existsUnique_nodal_normalization_lift
     (fun _ _ ↦ q.val) (fun w hw ↦ by
       obtain rfl := hcomp w hw
-      rw [branch_projection, q.property]
+      rw [Scheme.blowupToBase_branchSchemeToBlowup_apply, q.property]
       exact (he _).symm)
   refine ⟨g, hg, fun y hy ↦ ?_⟩
   have hy' : y ∈ (B).blowupComponent (K := k) v := by
@@ -401,7 +395,8 @@ theorem branchSchemeToSingularLocus_exceptionalSideBranch (q : centerBranch) :
       (B).branchSchemeToSingularLocus k
         (D.strictNormalizationBranch hc hp hCOver hBOver hD q.val) := by
   apply (J[B]).subschemeι.injective
-  rw [← branch_projection, ← branch_projection, branchSchemeToBlowup_exceptionalSideBranch,
+  rw [← Scheme.blowupToBase_branchSchemeToBlowup_apply,
+    ← Scheme.blowupToBase_branchSchemeToBlowup_apply, branchSchemeToBlowup_exceptionalSideBranch,
     branchSchemeToBlowup_strictNormalizationBranch,
     hD.blowupToBase_exceptionalNormalizationBranchEquiv hc hCOver hBOver hp,
     D.blowupToBase_normalizationToNodalBlowup_branch hc hp hCOver hBOver hD]
@@ -493,11 +488,14 @@ theorem exists_nodalBlowupNormalizationLift (q : centerBranch) :
     rw [branchSchemeToBlowup_exceptionalSideBranch, ← (B).coe_blowupComponent]
     exact ((excBranch) a).property.1
 
-private theorem branchProjection_strict_apply (q : (C).branchScheme k) :
+/-- The projection of a strict branch lands at its original node. -/
+theorem boundaryMap_strictBranch_node (q : (C).branchScheme k) :
     (β) ((J[B]).subschemeι ((B).branchSchemeToSingularLocus k ((strBranch) q))) =
       (J[C]).subschemeι ((C).branchSchemeToSingularLocus k q) := by
-  rw [← branch_projection, branchSchemeToBlowup_strictNormalizationBranch,
-    boundaryMap_normalizationToNodalBlowup_apply hc hp hCOver hBOver, branch_projection]
+  rw [← Scheme.blowupToBase_branchSchemeToBlowup_apply,
+    branchSchemeToBlowup_strictNormalizationBranch,
+    boundaryMap_normalizationToNodalBlowup_apply hc hp hCOver hBOver,
+    Scheme.blowupToBase_branchSchemeToBlowup_apply]
 
 omit [X.Over S] [(C).Over S] [PrestableFamily (C ↘ S)] [IsIntegral X] [QuasiCompact (X ↘ S)]
   [SmoothOfRelativeDimension 2 (X ↘ S)] [IsAlgClosed k] in
@@ -530,7 +528,7 @@ local notation "nodeAt" => D.numberedStrictNode hc hp hCOver hBOver hD A
 private theorem boundaryMap_numberedStrictNode (a : ZMod n) (b : Fin 2) :
     (β) ((J[B]).subschemeι ((nodeAt) a b)) = (J[C]).subschemeι ((oldNode) a) := by
   unfold numberedStrictNode
-  rw [branchProjection_strict_apply, Scheme.NodalCycleNumbering.branchSchemeToSingularLocus_branch]
+  rw [boundaryMap_strictBranch_node, Scheme.NodalCycleNumbering.branchSchemeToSingularLocus_branch]
 
 include hi in
 private theorem numberedStrictNode_eq_of_ne (a : ZMod n) (ha : a ≠ i) (b : Fin 2) :
@@ -551,7 +549,7 @@ private theorem numberedStrictNode_center_ne :
   let v := D.centerBranchAt A i hi 1
   intro heq
   have h := congrArg ((J[B]).subschemeι) heq
-  simp only [numberedStrictNode, ← branch_projection,
+  simp only [numberedStrictNode, ← Scheme.blowupToBase_branchSchemeToBlowup_apply,
     branchSchemeToBlowup_strictNormalizationBranch] at h
   have hu := D.blowupToBase_normalizationToNodalBlowup_branch hc hp hCOver hBOver hD u
   have hv := D.blowupToBase_normalizationToNodalBlowup_branch hc hp hCOver hBOver hD v

@@ -41,6 +41,14 @@ theorem mem_effectiveClasses {a : Pic(X)} :
   simp only [effectiveClasses, AddSubmonoid.mem_map, mem_effectiveSubmonoid,
     toLineBundleClassHom_apply]
 
+/-- If the difference of two classes is effective, ineffectivity of a twist of the first
+class implies ineffectivity of the same twist of the second. -/
+theorem notMem_effectiveClasses_add_of_sub_mem {a b c : Pic(X)}
+    (ha : c + a ∉ X.effectiveClasses) (hab : a - b ∈ X.effectiveClasses) :
+    c + b ∉ X.effectiveClasses := fun h ↦ ha (by
+  have hsum := X.effectiveClasses.add_mem hab h
+  rwa [show a - b + (c + b) = c + a by abel] at hsum)
+
 variable [IsNoetherian X] [∀ x : X, UniqueFactorizationMonoid (X.presheaf.stalk x)]
 
 /-- On a Noetherian locally factorial scheme, a Picard class is effective exactly when

@@ -7,12 +7,12 @@ module
 
 import Mathlib.AlgebraicGeometry.Artinian
 import TauCeti.AlgebraicGeometry.Cohomology.LongExactSequence
-public import TauCeti.AlgebraicGeometry.Cohomology.Module.Base
+public import Mathlib.LinearAlgebra.PerfectPairing.Basic
 public import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.ProjectiveOver
 public import QPainleve.AlgebraicGeometry.Modules.InternalHom.Sections
-public import TauCeti.AlgebraicGeometry.LineBundle.Dual
 import QPainleve.AlgebraicGeometry.EffectiveCartierDivisor.Dimension
 import QPainleve.AlgebraicGeometry.CartierDivisor.Support
+import QPainleve.AlgebraicGeometry.Cohomology.Projective
 import QPainleve.AlgebraicGeometry.Cohomology.Support
 import TauCeti.AlgebraicGeometry.Cohomology.PushforwardAcyclic.Affine
 import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.ZeroLocus
@@ -32,7 +32,7 @@ Consequently a nonzero trace separates global sections of the internal Hom.
 
 public noncomputable section
 
-open AlgebraicGeometry CategoryTheory Limits TopologicalSpace MonoidalClosed
+open AlgebraicGeometry CategoryTheory Limits MonoidalCategory MonoidalClosed TopologicalSpace
 open TauCeti TauCeti.AlgebraicGeometry TauCeti.AlgebraicGeometry.Scheme.Modules
 
 universe u
@@ -178,5 +178,23 @@ theorem cohomologyTracePairing_injective_flip (L K : InvertibleSheaf X)
     Function.Injective (cohomologyTracePairing (M := L.obj) k q tr).flip := by
   exact cohomologyTracePairing_injective_flip_of_surjective k tr htr fun f hf ↦
     surjective_cohomologyMap_of_ne_zero k L K f hf hdim
+
+/-- On a projective integral scheme, a nonzero trace in top degree yields a perfect
+pairing exactly when the cohomology and the dual section space have equal dimensions. -/
+theorem isPerfPair_cohomologyTracePairing_iff_finrank (L K : InvertibleSheaf X)
+    (hdim : topologicalKrullDim X ≤ q) (tr : Cohomology K.obj q →ₗ[k] k) (htr : tr ≠ 0) :
+    (cohomologyTracePairing (M := L.obj) k q tr).IsPerfPair ↔
+      Module.finrank k (Cohomology L.obj q) = Module.finrank k Γ((ihom L.obj).obj K.obj, ⊤) := by
+  have := moduleFinite_cohomology_of_isProjectiveOver k L.obj q
+  have := moduleFinite_cohomology_of_isProjectiveOver k (K.tensorProduct L.dual).obj 0
+  have := Module.Finite.equiv (L.sectionsInternalHomLinearEquiv k K).symm
+  constructor
+  · intro h
+    exact Module.finrank_of_isPerfPair (cohomologyTracePairing (M := L.obj) k q tr)
+  · intro h
+    have hi := L.cohomologyTracePairing_injective_flip k K hdim tr htr
+    have hd := h.symm.trans (Subspace.dual_finrank_eq (K := k) (V := Cohomology L.obj q)).symm
+    have hs := (LinearMap.injective_iff_surjective_of_finrank_eq_finrank hd).mp hi
+    exact (LinearMap.IsPerfPair.of_bijective _ ⟨hi, hs⟩).flip
 
 end TauCeti.AlgebraicGeometry.InvertibleSheaf

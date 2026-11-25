@@ -5,15 +5,20 @@ Authors: The QPainleve contributors
 -/
 module
 
+public import TauCeti.AlgebraicGeometry.Cohomology.Module.Base
+public import TauCeti.AlgebraicGeometry.LineBundle.Dual
 public import TauCeti.AlgebraicGeometry.Modules.InternalHom.GlobalSections
 public import TauCeti.AlgebraicGeometry.Modules.Sections
+import TauCeti.AlgebraicGeometry.Modules.Dual
 
 /-!
 # Global sections of internal Hom sheaves
 
 The unit-section equivalence and the closed monoidal adjunction identify global sections
 of the internal Hom with sheaf morphisms. Addition and multiplication by global functions
-correspond to the additive and scalar operations on morphisms.
+correspond to the additive and scalar operations on morphisms. For line bundles, these
+sections also identify with the zeroth cohomology of the target tensored with the dual
+of the source.
 -/
 
 public noncomputable section
@@ -87,3 +92,21 @@ theorem internalHomSectionsEquiv_smul (r : Γ(X, ⊤)) (s : Γ((ihom M).obj N, �
     (uncurry_natural_right (C := X.Modules) (e.symm s) (N.globalSectionsSmul r))
 
 end AlgebraicGeometry.Scheme.Modules
+
+namespace TauCeti.AlgebraicGeometry.InvertibleSheaf
+
+open _root_.AlgebraicGeometry _root_.AlgebraicGeometry.Scheme.Modules
+open TauCeti.AlgebraicGeometry.Scheme.Modules
+
+/-- The sections of the internal Hom between line bundles identify with the zeroth
+cohomology of the target tensored with the dual of the source. -/
+def sectionsInternalHomLinearEquiv {X : Scheme.{u}} (R : Type u) [CommRing R]
+    [X.Over (Spec (.of R))] (L W : InvertibleSheaf X) :
+    Γ((ihom L.obj).obj W.obj, ⊤) ≃ₗ[R] Cohomology (W.tensorProduct L.dual).obj 0 :=
+  let e : (ihom L.obj).obj W.obj ≅ (W.tensorProduct L.dual).obj :=
+    ((asIso (dualTensorIhom L.obj)).app W.obj).symm ≪≫
+      (eqToIso (congrArg (· ⊗ W.obj) (dual_obj L))).symm ≪≫
+      (β_ L.dual.obj W.obj) ≪≫ (tensorProductObjIso W L.dual).symm
+  (cohomologyZeroBaseLinearEquiv R X _).symm.trans (cohomologyBaseLinearEquivOfIso R e 0)
+
+end TauCeti.AlgebraicGeometry.InvertibleSheaf

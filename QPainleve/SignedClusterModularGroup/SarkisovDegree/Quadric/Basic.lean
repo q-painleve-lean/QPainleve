@@ -135,7 +135,7 @@ theorem exists_hirzebruchOne_resolution_of_quadric_mutation
   let := hnoeth'
   let := hY
   let := hmod
-  obtain ⟨Z, U, e, hU, hover, hmap, hreverse, hcenters, hcoords⟩ :=
+  obtain ⟨Z, U, e, hU, hover, hmap, hreverse, hcenters, -, hcoords⟩ :=
     Fan.Ray.exists_sarkisov_decrease_of_smooth_section_center (r 0) b hop c hΦ hT j hj hfirst
   have hg' : (e.inv ≫ g) ≫ fP = U.toBase ≫ fX' := by
     apply (cancel_epi e.hom).mp

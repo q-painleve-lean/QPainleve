@@ -13,6 +13,7 @@ public import TauCeti.AlgebraicGeometry.IdealSheaf.Over
 public import TauCeti.AlgebraicGeometry.IdealSheaf.Stalk
 public import TauCeti.AlgebraicGeometry.Scheme.Regular.Scheme
 
+import QPainleve.AlgebraicGeometry.CartierDivisor.Support
 import QPainleve.AlgebraicGeometry.EffectiveCartierDivisor.Stalk
 import QPainleve.Geometry.Toric.Fan.Picard.Basic
 import QPainleve.Geometry.Toric.Fan.Smooth
@@ -73,6 +74,32 @@ theorem isEffectiveCartier_rayBoundaryIdeal (ρ : Φ.Ray) :
   have := Φ.uniqueFactorizationMonoid_stalk_algebraicRealization hΦ
   rw [rayBoundaryIdeal_def]
   exact isEffectiveCartier_vanishingIdeal_closure_singleton (Φ.rayBoundaryPoint hΦ ρ).property
+
+/-- When the reduced toric boundary is effective Cartier, its ideal is the
+product of the prime ray ideals. -/
+theorem boundaryIdeal_eq_prod_rayBoundaryIdeal [Nonempty Φ.cones] [Fintype Φ.Ray]
+    (hD : (Φ.boundaryIdeal inferInstance).IsEffectiveCartier) :
+    Φ.boundaryIdeal inferInstance = ∏ ρ : Φ.Ray, Φ.rayBoundaryIdeal hΦ ρ := by
+  let X := Φ.algebraicRealization
+  let D := Φ.boundaryIdeal inferInstance
+  have : IsReduced D.subscheme := by
+    dsimp only [D]
+    rw [boundaryIdeal_def]
+    infer_instance
+  have := Φ.uniqueFactorizationMonoid_stalk_algebraicRealization hΦ
+  let p := (⟨Φ.rayBoundaryPoint hΦ, Φ.rayBoundaryPoint_injective hΦ⟩ :
+    Φ.Ray ↪ TauCeti.AlgebraicGeometry.CodimensionOnePoint X)
+  let T := Finset.univ.map p
+  have hT (x : TauCeti.AlgebraicGeometry.CodimensionOnePoint X) :
+      x ∈ T ↔ (x : X) ∈ D.support := by
+    -- Express support as a set to use the description by the torus complement.
+    change x ∈ T ↔ (x : X) ∈ ((Φ.boundaryIdeal inferInstance).support : Set X)
+    rw [support_boundaryIdeal]
+    simpa only [T, p, Finset.mem_map, Finset.mem_univ, true_and, Function.Embedding.coeFn_mk,
+      Set.mem_compl_iff, Set.mem_range, Set.mem_ofPred_eq] using
+      Set.ext_iff.mp (Φ.range_rayBoundaryPoint hΦ inferInstance) x
+  simpa only [T, Finset.prod_map, p, Function.Embedding.coeFn_mk, ← rayBoundaryIdeal_def] using
+    hD.eq_prod_vanishingIdeal_of_isReduced T hT
 
 /-- The support of the ray divisor is the closure of its generic point. -/
 @[simp]

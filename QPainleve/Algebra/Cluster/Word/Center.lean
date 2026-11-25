@@ -6,8 +6,8 @@ Authors: The QPainleve contributors
 module
 
 public import QPainleve.Algebra.Cluster.ChargeKernel.Word
+public import QPainleve.AlgebraicGeometry.RationalMap.Composition.Sections
 public import QPainleve.Geometry.Toric.CharacterTorus.Noncollision
-public import Mathlib.AlgebraicGeometry.Birational.Composition
 
 /-!
 # Center parameters along a cluster word
@@ -139,6 +139,13 @@ theorem centerOpen_le_preimage_distinctCentersOpen (w : Word B C) (P : ChargeSee
   | nil => simp
   | cons w s => rw [centerOpen_cons]; exact inf_le_right
 
+/-- The simultaneous noncollision open lies in the noncollision open of the initial seed. -/
+theorem centerOpen_le_centerOpen_nil (w : Word B C) (P : ChargeSeed B N) :
+    w.centerOpen k P ≤ (Path.nil : Word B B).centerOpen k P := by
+  induction w with
+  | nil => exact le_rfl
+  | cons w s ih => exact inf_le_left.trans ih
+
 /-- The domain of a concatenation is the intersection of the first domain with the
 inverse image of the second domain. -/
 theorem centerOpen_comp (w : Word B C) (v : Word C D) (P : ChargeSeed B N) :
@@ -257,6 +264,33 @@ theorem centerPartialMap_opensRange (w : Word B C) (P : ChargeSeed B N) :
   simp only [centerPartialMap_hom, Scheme.Hom.opensRange_comp, Scheme.Opens.opensRange_ι,
     centerPartialMap_domain, Scheme.Hom.inv_preimage]
 
+/-- Every center reached by a word is noncolliding for its transported charges. -/
+theorem centerPartialMap_opensRange_le_distinctCentersOpen (w : Word B C) (P : ChargeSeed B N) :
+    (w.centerPartialMap K P).hom.opensRange ≤
+      distinctCentersOpen K (fun j ↦ (w.chargeTarget P).charge (e j)) := by
+  rw [centerPartialMap_opensRange, Scheme.Hom.inv_preimage]
+  exact ((w.centerIso K).hom.image_mono (w.centerOpen_le_preimage_distinctCentersOpen K P)).trans
+    ((w.centerIso K).hom.image_preimage_le _)
+
+/-- The reached centers of a loop lie in the original noncollision open when the
+initial charge kernel equals the exchange kernel. Equal charges are detected by
+the basis differences in that kernel. -/
+theorem centerPartialMap_opensRange_le_centerOpen_nil (w : Word B B) (P : ChargeSeed B N)
+    (hker : B.matrix.mulVecLin.ker = P.charge.ker) :
+    (w.centerPartialMap K P).hom.opensRange ≤ (Path.nil : Word B B).centerOpen K P := by
+  have h := (w.exchangeKernel_eq_chargeTarget_ker P hker).symm.trans hker
+  have hclasses (i j : ι) : (w.chargeTarget P).charge (e i) = (w.chargeTarget P).charge (e j) ↔
+      P.charge (e i) = P.charge (e j) := by
+    rw [← sub_eq_zero, ← map_sub, ← LinearMap.mem_ker, h, LinearMap.mem_ker, map_sub, sub_eq_zero]
+  have hU : distinctCentersOpen K (fun i ↦ (w.chargeTarget P).charge (e i)) =
+      (Path.nil : Word B B).centerOpen K P := by
+    rw [centerOpen_nil]
+    apply SetLike.ext
+    intro x
+    simp only [mem_distinctCentersOpen_iff, hclasses]
+  rw [← hU]
+  exact w.centerPartialMap_opensRange_le_distinctCentersOpen P
+
 instance (w : Word B C) (P : ChargeSeed B N) :
     (w.centerPartialMap K P).IsOver (structureMap K A) (structureMap K A) where
   over := by simp [centerPartialMap_hom]
@@ -267,6 +301,27 @@ instance (w : Word B C) (P : ChargeSeed B N) :
     (w.centerPartialMap K P).IsOver
       (Over.mk (structureMap K A)).hom (Over.mk (structureMap K A)).hom :=
   inferInstanceAs ((w.centerPartialMap K P).IsOver (structureMap K A) (structureMap K A))
+
+local notation "S" => Spec (CommRingCat.of K)
+local notation "T" => Over.mk (structureMap K A)
+
+/-- Both ends of a loop's center map lie in the initial noncollision open
+when the exchange kernel is the charge kernel. -/
+theorem centerPoint_endpoints_mem_noncollision (w : Word B B) (P : ChargeSeed B N)
+    (hker : B.matrix.mulVecLin.ker = P.charge.ker)
+    (x : Over.mk (𝟙 S) ⟶ (w.centerPartialMap K P).domainOver (X := T) (Y := T)) :
+    (x ≫ (w.centerPartialMap K P).domainSource (X := T) (Y := T)).left (default : S) ∈
+        (Path.nil : Word B B).centerOpen K P ∧
+      (x ≫ (w.centerPartialMap K P).domainTarget (X := T) (Y := T)).left (default : S) ∈
+        (Path.nil : Word B B).centerOpen K P := by
+  constructor
+  · rw [Over.comp_left, Scheme.PartialMap.domainSource_left, Scheme.Hom.comp_apply]
+    apply w.centerOpen_le_centerOpen_nil K P
+    rw [← w.centerPartialMap_domain (K := K) P]
+    exact (x.left (default : S)).property
+  · rw [Over.comp_left, Scheme.PartialMap.domainTarget_left, Scheme.Hom.comp_apply]
+    exact w.centerPartialMap_opensRange_le_centerOpen_nil P hker
+      ((w.centerPartialMap K P).hom.mem_opensRange.mpr (Set.mem_range_self _))
 
 /-- The center map for the empty word is the identity on the initial noncollision open. -/
 theorem centerPartialMap_nil (P : ChargeSeed B N) :

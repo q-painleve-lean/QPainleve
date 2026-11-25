@@ -9,10 +9,11 @@ public import TauCeti.AlgebraicGeometry.Modules.Pullback.Sections
 public import TauCeti.AlgebraicGeometry.Modules.Sections
 
 /-!
-# Pullback of global sections as morphisms
+# Pullback of sections
 
 The equivalence between global sections of a sheaf of modules and morphisms from
-the structure sheaf commutes with pullback.
+the structure sheaf commutes with pullback. The counit recovers a section over
+an inverse image open from its pullback as a section of the pushforward.
 -/
 
 public section
@@ -23,6 +24,21 @@ universe u
 
 namespace AlgebraicGeometry.Scheme.Hom
 
+open Scheme.Modules in
+/-- Evaluation on the pullback of a section of the pushforward recovers the original section. -/
+@[simp]
+theorem counit_app_pullbackSections {X Y : Scheme.{u}} (f : X ⟶ Y) (M : X.Modules)
+    (U : Y.Opens) (s : Γ(M, f ⁻¹ᵁ U)) :
+    dsimp% only [Functor.comp_obj, Functor.id_obj, pushforward_obj_obj]
+      (((pullbackPushforwardAdjunction f).counit.app M).app (f ⁻¹ᵁ U)
+        (f.pullbackSections ((pushforward f).obj M) U s)) = s := by
+  let adj := pullbackPushforwardAdjunction f
+  have h : adj.homEquiv _ _ (adj.counit.app M) = 𝟙 ((pushforward f).obj M) := by
+    rw [Adjunction.homEquiv_unit, Adjunction.right_triangle_components]
+  have h' := pullbackPushforwardAdjunction_homEquiv_app_apply f (adj.counit.app M) U s
+  exact h'.symm.trans ((congrArg (fun p : (pushforward f).obj M ⟶ (pushforward f).obj M ↦
+    p.app U s) h).trans (by rfl))
+
 /-- Pulling a global section back to the top open agrees with its canonical pullback. -/
 theorem pullbackSectionsLE_top {X Y : Scheme.{u}} (f : X ⟶ Y) {M : Y.Modules} (s : Γ(M, ⊤)) :
     f.pullbackSectionsLE M ⊤ ⊤ f.preimage_top.ge s = f.pullbackSections M ⊤ s := by
@@ -31,6 +47,18 @@ theorem pullbackSectionsLE_top {X Y : Scheme.{u}} (f : X ⟶ Y) {M : Y.Modules} 
   refine (f.pullbackSectionsLE_apply M ⊤ ⊤ f.preimage_top.ge s).trans ?_
   exact (congrArg (fun h : Γ(N, ⊤) ⟶ Γ(N, ⊤) ↦ h a)
     (N.presheaf.map_id (Opposite.op ⊤))).trans (id_apply a)
+
+open Scheme.Modules in
+/-- The comparison for equal morphisms carries a pulled-back section to the pullback
+along the other morphism, with the induced identification of the inverse image opens. -/
+theorem pullbackCongr_hom_comp_app_pullbackSections {X Y : Scheme.{u}} {f g : X ⟶ Y}
+    (h : f = g) {M : Y.Modules} {N : X.Modules} (φ : (pullback g).obj M ⟶ N)
+    (U : Y.Opens) (s : Γ(M, U)) :
+    ((pullbackCongr h).hom.app M ≫ φ).app (f ⁻¹ᵁ U) (f.pullbackSections M U s) =
+      N.presheaf.map (eqToHom (congrArg (· ⁻¹ᵁ U) h)).op
+        (φ.app (g ⁻¹ᵁ U) (g.pullbackSections M U s)) := by
+  subst g
+  simp [pullbackCongr]
 
 /-- Pulling back the morphism of a global section gives the morphism of its pullback. -/
 theorem unitHomEquivTop_pullback {X Y : Scheme.{u}} (f : X ⟶ Y)

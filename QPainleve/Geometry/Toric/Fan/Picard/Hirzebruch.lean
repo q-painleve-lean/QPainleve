@@ -5,13 +5,17 @@ Authors: The QPainleve contributors
 -/
 module
 
+public import Mathlib.AlgebraicGeometry.Birational.Birational
 public import QPainleve.AlgebraicGeometry.Modules.Differentials.Canonical
 public import QPainleve.Geometry.Toric.Fan.Boundary.SelfIntersection
 public import QPainleve.Geometry.Toric.Fan.Hirzebruch.Corner
 public import QPainleve.Geometry.Toric.Fan.Smooth
 
 import Mathlib.Analysis.Complex.Polynomial.Basic
+import QPainleve.AlgebraicGeometry.Chow.Ample
+import QPainleve.AlgebraicGeometry.Chow.ProperIntersection
 import QPainleve.AlgebraicGeometry.Chow.RationalSurface.Basic
+import QPainleve.AlgebraicGeometry.LineBundle.Ample
 import QPainleve.Geometry.Toric.Fan.Boundary.ProjectiveLine
 import QPainleve.Geometry.Toric.Fan.Rationality
 import TauCeti.AlgebraicGeometry.Cohomology.ProjectiveLine.Basic
@@ -32,7 +36,7 @@ Definition 8.5.
 public noncomputable section
 
 open AlgebraicGeometry CategoryTheory Module
-open TauCeti.AlgebraicGeometry (LineBundleClass InvertibleSheaf projectiveLine)
+open TauCeti.AlgebraicGeometry LineBundleClass
 open TauCeti.AlgebraicGeometry.Chow
 
 namespace TauCeti.Toric.Fan
@@ -163,39 +167,75 @@ theorem exists_hirzebruch_picardBasis_of_fiber (hΦ : Φ.IsRegular) (t : Fin 2) 
 
 local notation "C" => hirzebruchPicardBasis b e hΦ r hr
 
+omit [Nonempty Φ.cones] in
+private theorem repr_change_section (C₀ C' : Basis (Fin 2) ℤ Pic) (shift : ℤ)
+    (hfiber : C' 0 = C₀ 0) (hsection : C' 1 = C₀ 1 + shift • C₀ 0) (L : Pic) :
+    C'.repr L 0 = C₀.repr L 0 - shift * C₀.repr L 1 ∧ C'.repr L 1 = C₀.repr L 1 := by
+  have hL : L = (C₀.repr L 0 - shift * C₀.repr L 1) • C' 0 + C₀.repr L 1 • C' 1 := by
+    have hsum := C₀.sum_repr L
+    rw [Fin.sum_univ_two] at hsum
+    calc
+      L = C₀.repr L 0 • C₀ 0 + C₀.repr L 1 • C₀ 1 := hsum.symm
+      _ = _ := by
+        rw [hfiber, hsection, smul_add, sub_smul, smul_smul, mul_comm (C₀.repr L 1) shift]
+        abel
+  exact ⟨by simpa [Basis.repr_self] using congrArg (fun x ↦ C'.repr x 0) hL,
+    by simpa [Basis.repr_self] using congrArg (fun x ↦ C'.repr x 1) hL⟩
+
+include hr in
+/-- Choosing the opposite invariant section negates the signed Hirzebruch parameter
+and subtracts that parameter times the section coefficient from the fiber coefficient.
+The two section rays swap, the fiber rays keep their order, and the first lattice basis
+vector changes sign. -/
+theorem exists_hirzebruchPicardBasis_opposite_section :
+    ∃ (d : Basis (Fin 2) ℤ N) (t : Fin 4 ≃ Φ.Ray)
+      (ht : (fun j ↦ (t j).primitiveGenerator) = ![d 0, d 1, -d 0, (-e) • d 0 - d 1]),
+      d 0 = -b 0 ∧ d 1 = b 1 ∧
+      t 0 = r 2 ∧ t 1 = r 1 ∧ t 2 = r 0 ∧ t 3 = r 3 ∧
+      let C' := hirzebruchPicardBasis d (-e) hΦ t ht
+      C' 0 = (C) 0 ∧ ∀ L : Pic,
+        C'.repr L 0 = (C).repr L 0 - e * (C).repr L 1 ∧ C'.repr L 1 = (C).repr L 1 := by
+  obtain ⟨d, t, ht, hf, hs⟩ := exists_hirzebruch_opposite_section_basis b e r hr
+  let C' := hirzebruchPicardBasis d (-e) hΦ t ht
+  have h₀ : C' 0 = (C) 0 := by simp only [C', hirzebruchPicardBasis_apply_zero, hf]
+  have h₁ : C' 1 = (C) 1 + e • (C) 0 := by
+    simp only [C', hirzebruchPicardBasis_apply_one, hirzebruchPicardBasis_apply_zero, hs]
+    exact (hirzebruch_ray_classes b e hΦ r hr).1
+  have hd₀ : d 0 = -b 0 := by
+    simpa [hs, congrFun hr 2] using (congrFun ht 0).symm
+  have hd₁ : d 1 = b 1 := by
+    simpa [hf, congrFun hr 1] using (congrFun ht 1).symm
+  have hs' : t 2 = r 0 := Ray.primitiveGenerator_injective (by
+    simp [congrFun ht 2, congrFun hr 0, hd₀])
+  have hf' : t 3 = r 3 := Ray.primitiveGenerator_injective (by
+    simp [congrFun ht 3, congrFun hr 3, hd₀, hd₁])
+  exact ⟨d, t, ht, hd₀, hd₁, hs, hf, hs', hf', h₀, repr_change_section (C) C' e h₀ h₁⟩
+
 include hr in
 /-- A signed Hirzebruch marking can be replaced by one of index `e.natAbs`,
-with the same fiber class and fiber-degree coordinate on every Picard class. -/
+with the same fiber class, ruling character, and fiber-degree coordinate on every Picard class.
+When the signed index is already nonnegative, the ray numbering and the
+entire Picard basis are preserved. -/
 theorem exists_hirzebruchPicardBasis_natAbs :
     ∃ (d : Basis (Fin 2) ℤ N) (t : Fin 4 ≃ Φ.Ray)
       (ht : (fun j ↦ (t j).primitiveGenerator) =
         ![d 0, d 1, -d 0, (e.natAbs : ℤ) • d 0 - d 1]),
       hirzebruchPicardBasis d (e.natAbs : ℤ) hΦ t ht 0 = (C) 0 ∧
+      (0 ≤ e → t = r ∧ hirzebruchPicardBasis d (e.natAbs : ℤ) hΦ t ht = (C)) ∧
+      d.coord 1 = b.coord 1 ∧
       ∀ x : Pic, (hirzebruchPicardBasis d (e.natAbs : ℤ) hΦ t ht).repr x 1 = (C).repr x 1 := by
   by_cases he : 0 ≤ e
   · have h : (e.natAbs : ℤ) = e := by omega
     simp only [h]
-    exact ⟨b, r, hr, rfl, fun _ ↦ rfl⟩
+    exact ⟨b, r, hr, rfl, fun _ ↦ ⟨rfl, rfl⟩, rfl, fun _ ↦ rfl⟩
   have hs : (e.natAbs : ℤ) = -e := by omega
-  obtain ⟨d, t, ht, hf, hs'⟩ := exists_hirzebruch_opposite_section_basis b e r hr
+  obtain ⟨d, t, ht, hd₀, hd₁, -, -, -, -, h₀, hrepr⟩ :=
+    exists_hirzebruchPicardBasis_opposite_section b e hΦ r hr
+  have hcoord : d.coord 1 = b.coord 1 := d.ext fun l ↦ by
+    simp only [Basis.coord_apply, Basis.repr_self]
+    fin_cases l <;> simp [hd₀, hd₁]
   simp only [hs]
-  let C' := hirzebruchPicardBasis d (-e) hΦ t ht
-  have h₀ : C' 0 = (C) 0 := by simp only [C', hirzebruchPicardBasis_apply_zero, hf]
-  have h₁ : C' 1 = (C) 1 + e • (C) 0 := by
-    simp only [C', hirzebruchPicardBasis_apply_one, hirzebruchPicardBasis_apply_zero, hs']
-    exact (hirzebruch_ray_classes b e hΦ r hr).1
-  refine ⟨d, t, ht, h₀, fun x ↦ ?_⟩
-  have hzero : C'.repr ((C) 0) 1 = 0 := by
-    rw [← h₀]
-    simp [Basis.repr_self]
-  have hone : C'.repr ((C) 1) 1 = 1 := by
-    have h := congrArg (fun y ↦ C'.repr y 1) h₁
-    simpa [Basis.repr_self, hzero, -hirzebruchPicardBasis_apply_zero,
-      -hirzebruchPicardBasis_apply_one] using h.symm
-  have hx := (C).sum_repr x
-  rw [Fin.sum_univ_two] at hx
-  simpa [hzero, hone, -hirzebruchPicardBasis_apply_zero, -hirzebruchPicardBasis_apply_one] using
-    congrArg (fun y ↦ C'.repr y 1) hx.symm
+  exact ⟨d, t, ht, h₀, fun h ↦ (he h).elim, hcoord, fun L ↦ (hrepr L).2⟩
 
 include hr in
 open Classical in
@@ -228,17 +268,34 @@ theorem exists_hirzebruch_corner_picardBasis (hc : Φ.IsComplete)
     · exact ⟨e, Or.inr rfl, by omega, by
         rw [h, (hirzebruch_ray_classes b e hΦ r hr).1]⟩
   obtain ⟨shift, hshift, ha, hsection⟩ := hsection
-  refine ⟨d, a, t, ht, shift, hcone, hshift, ha, fun L ↦ ?_⟩
-  have hL : L = ((C).repr L 0 - shift * (C).repr L 1) • C' 0 + (C).repr L 1 • C' 1 := by
-    have hsum := (C).sum_repr L
-    rw [Fin.sum_univ_two] at hsum
-    calc
-      L = (C).repr L 0 • (C) 0 + (C).repr L 1 • (C) 1 := hsum.symm
-      _ = _ := by
-        rw [hfiber, hsection, smul_add, sub_smul, smul_smul, mul_comm ((C).repr L 1) shift]
-        abel
-  exact ⟨by simpa [Basis.repr_self] using congrArg (fun x ↦ C'.repr x 0) hL,
-    by simpa [Basis.repr_self] using congrArg (fun x ↦ C'.repr x 1) hL⟩
+  exact ⟨d, a, t, ht, shift, hcone, hshift, ha,
+    repr_change_section (C) C' shift hfiber hsection⟩
+
+local notation "P" p:arg =>
+  Additive.ofMul
+    (@primeDivisorClass X _ _ (Φ.uniqueFactorizationMonoid_stalk_algebraicRealization hΦ) p)
+local notation "S₀" => Φ.rayBoundaryPoint hΦ (r 0)
+
+/-- The distinguished invariant section has Hirzebruch Picard coordinates `(0, 1)`. -/
+theorem hirzebruch_section_coordinates :
+    (C).repr (P S₀) 0 = 0 ∧ (C).repr (P S₀) 1 = 1 := by
+  classical
+  let := Φ.uniqueFactorizationMonoid_stalk_algebraicRealization hΦ
+  have h : C 1 = P S₀ := by
+    rw [hirzebruchPicardBasis_apply_one, rayDivisorToPicard_single, one_zsmul]
+  rw [← h, Basis.repr_self]
+  simp
+
+/-- The opposite invariant section has Hirzebruch Picard coordinates `(e, 1)`. -/
+theorem hirzebruch_opposite_section_coordinates :
+    (C).repr (P (Φ.rayBoundaryPoint hΦ (r 2))) 0 = e ∧
+      (C).repr (P (Φ.rayBoundaryPoint hΦ (r 2))) 1 = 1 := by
+  classical
+  let := Φ.uniqueFactorizationMonoid_stalk_algebraicRealization hΦ
+  have h : P (Φ.rayBoundaryPoint hΦ (r 2)) = C 1 + e • C 0 := by
+    rw [hirzebruchPicardBasis_apply_one, hirzebruchPicardBasis_apply_zero,
+      ← (hirzebruch_ray_classes b e hΦ r hr).1, rayDivisorToPicard_single, one_zsmul]
+  simp [h, Basis.repr_self, -hirzebruchPicardBasis_apply_one, -hirzebruchPicardBasis_apply_zero]
 
 section Intersection
 
@@ -319,23 +376,13 @@ theorem hirzebruchPicardBasis_intersection_repr [SmoothOfRelativeDimension 2 (X 
 
 omit [Nonempty Φ.cones] [Φ.algebraicRealization.IsProjectiveOver ℂ] in
 include hΦ hc hr in
-private theorem isRationalOver_of_hirzebruch :
+/-- The algebraic realization of a complete regular Hirzebruch fan is rational over `ℂ`. -/
+theorem isRationalOver_of_hirzebruch :
     Scheme.IsRationalOver (X ↘ S) := by
   obtain ⟨σ, h₀, h₁⟩ := exists_cone_of_hirzebruch_section_fiber b e r hr hΦ hc 0 0
   have hN : Module.finrank ℤ N = 2 := by simpa using Module.finrank_eq_card_basis b
-  have hcone := Φ.cone_eq_sup_of_ray_ne_of_le hΦ hN
+  exact Φ.isRationalOver_of_ray_ne_of_le hΦ hN
     (r.injective.ne (by decide : (0 : Fin 4) ≠ 1)) h₀ h₁
-  have h₀' : (r 0).primitiveGenerator = b 0 := congrFun hr 0
-  have h₁' : (r 1).primitiveGenerator = b 1 := congrFun hr 1
-  rw [Ray.toCone_eq_hull_primitiveGenerator, Ray.toCone_eq_hull_primitiveGenerator,
-    h₀', h₁', ← Submodule.span_union] at hcone
-  apply Φ.isRationalOver_of_hull_basis_mem b
-  have hpair : Set.range (fun j : Fin 2 ↦ i (b j)) = {i (b 0)} ∪ {i (b 1)} := by
-    ext x
-    simp [Fin.exists_fin_succ, eq_comm, or_comm]
-  have hcone' : σ.val = PointedCone.hull ℝ ({i (b 0)} ∪ {i (b 1)}) := hcone
-  rw [hpair, ← hcone']
-  exact σ.property
 
 include hc in
 open Classical in
@@ -377,6 +424,122 @@ theorem hirzebruchPicardBasis_intersection_canonical (j : Fin 2) :
       Matrix.cons_val_zero] using hadj (r 1)
   · simpa [hirzebruchPicardBasis_apply_one, hsec, sub_neg_eq_add, add_comm, sub_eq_add_neg]
       using hadj (r 0)
+
+variable [SmoothOfRelativeDimension 2 (Φ.algebraicRealization ↘ Spec (CommRingCat.of ℂ))]
+
+local notation "F₁" => Φ.rayBoundaryPoint hΦ (r 1)
+local notation "F₃" => Φ.rayBoundaryPoint hΦ (r 3)
+
+include hc in
+/-- A prime curve has nonnegative degree against the Hirzebruch fiber class. -/
+theorem hirzebruch_fiber_degree_nonneg (p : CodimensionOnePoint X) :
+    0 ≤ (C).repr (P p) 1 := by
+  classical
+  let := Φ.uniqueFactorizationMonoid_stalk_algebraicRealization hΦ
+  have hdim := topologicalKrullDim_eq_of_smoothOfRelativeDimension (X ↘ S) (n := 2)
+  rw [← (Φ.hirzebruchPicardBasis_intersection_repr b e hΦ r hr hc (P p)).1]
+  by_cases hp : p = F₁
+  · have hne : F₁ ≠ F₃ :=
+      (Φ.rayBoundaryPoint_injective hΦ).ne (r.injective.ne (by decide))
+    rw [hp, hirzebruchPicardBasis_apply_zero_eq_ray_three, rayDivisorToPicard_single, one_zsmul]
+    simpa only [Chow.intersectionBilinForm_apply, toMul_ofMul] using
+      Chow.classIntersectionNumber_primeDivisorClass_nonneg_of_ne ℂ hdim hne
+  · rw [hirzebruchPicardBasis_apply_zero, rayDivisorToPicard_single, one_zsmul]
+    simpa only [Chow.intersectionBilinForm_apply, toMul_ofMul] using
+      Chow.classIntersectionNumber_primeDivisorClass_nonneg_of_ne ℂ hdim hp
+
+include hc in
+/-- Distinct prime curves of fiber degree zero have disjoint supports. -/
+theorem disjoint_of_hirzebruch_fiber_degree_eq_zero {p q : CodimensionOnePoint X}
+    (hpq : p ≠ q) (hp : (C).repr (P p) 1 = 0) (hq : (C).repr (P q) 1 = 0) :
+    Disjoint (closure {(p : X)}) (closure {(q : X)}) := by
+  let := Φ.uniqueFactorizationMonoid_stalk_algebraicRealization hΦ
+  have hq' : P q = (C).repr (P q) 0 • C 0 := by
+    simpa only [Fin.sum_univ_two, hq, zero_smul, add_zero] using ((C).sum_repr (P q)).symm
+  have hz : B (P p) (P q) = 0 := by
+    calc
+      B (P p) (P q) = B (P p) ((C).repr (P q) 0 • C 0) := congrArg (B (P p)) hq'
+      _ = 0 := by rw [map_smul, (Φ.hirzebruchPicardBasis_intersection_repr b e hΦ r hr hc _).1,
+        hp, smul_zero]
+  have hdim := topologicalKrullDim_eq_of_smoothOfRelativeDimension (X ↘ S) (n := 2)
+  rw [Chow.intersectionBilinForm_apply, toMul_ofMul, toMul_ofMul] at hz
+  refine Set.disjoint_left.mpr fun x hx hy ↦ ?_
+  exact ((Chow.classIntersectionNumber_primeDivisorClass_pos_iff ℂ hdim.le hpq).mpr
+    ⟨x, hx, hy⟩).ne' hz
+
+include hc in
+/-- A prime curve whose fiber coefficient is less than `e` times its section coefficient
+is the distinguished invariant section. -/
+theorem eq_section_of_hirzebruch_fiber_coeff_lt (p : CodimensionOnePoint X)
+    (hp : (C).repr (P p) 0 < e * (C).repr (P p) 1) : p = S₀ := by
+  classical
+  let := Φ.uniqueFactorizationMonoid_stalk_algebraicRealization hΦ
+  have hdim := topologicalKrullDim_eq_of_smoothOfRelativeDimension (X ↘ S) (n := 2)
+  by_contra hn
+  have hnonneg := Chow.classIntersectionNumber_primeDivisorClass_nonneg_of_ne ℂ hdim hn
+  have h := (Φ.hirzebruchPicardBasis_intersection_repr b e hΦ r hr hc (P p)).2
+  rw [hirzebruchPicardBasis_apply_one, rayDivisorToPicard_single, one_zsmul,
+    Chow.intersectionBilinForm_apply, toMul_ofMul, toMul_ofMul] at h
+  omega
+
+include hc in
+/-- For nonnegative Hirzebruch index, the fiber coefficient of a prime curve is nonnegative. -/
+theorem hirzebruch_fiber_coeff_nonneg (he : 0 ≤ e) (p : CodimensionOnePoint X) :
+    0 ≤ (C).repr (P p) 0 := by
+  by_cases hp : (C).repr (P p) 0 < e * (C).repr (P p) 1
+  · rw [eq_section_of_hirzebruch_fiber_coeff_lt b e hΦ r hr hc p hp,
+      (hirzebruch_section_coordinates b e hΦ r hr).1]
+  · exact (mul_nonneg he (hirzebruch_fiber_degree_nonneg b e hΦ r hr hc p)).trans (le_of_not_gt hp)
+
+include hc in
+/-- A prime curve of fiber degree zero has fiber coefficient at least one. -/
+theorem hirzebruch_fiber_coeff_pos_of_degree_zero (he : 0 ≤ e) (p : CodimensionOnePoint X)
+    (hp : (C).repr (P p) 1 = 0) : 1 ≤ (C).repr (P p) 0 := by
+  let := Φ.uniqueFactorizationMonoid_stalk_algebraicRealization hΦ
+  have hn := hirzebruch_fiber_coeff_nonneg b e hΦ r hr hc he p
+  by_contra! h
+  have hz : (C).repr (P p) 0 = 0 := by omega
+  have hzero : P p = 0 := by
+    apply (C).repr.injective
+    apply Finsupp.ext
+    intro j
+    fin_cases j <;> simp [hz, hp]
+  obtain ⟨L, hL⟩ := (X).exists_isAmple_of_isProjectiveOver ℂ
+  have hdim := topologicalKrullDim_eq_of_smoothOfRelativeDimension (X ↘ S) (n := 2)
+  have hpos := Chow.classIntersectionNumber_primeDivisorClass_pos_of_isAmple ℂ hdim hL p
+  have hvanish : primeDivisorClass p = 1 := Additive.ofMul.injective hzero
+  simp [hvanish, Chow.classIntersectionNumber_one_right] at hpos
+
+include hc in
+/-- The anticanonical class has Hirzebruch Picard coordinates `(e + 2, 2)`. -/
+theorem hirzebruch_anticanonical_coordinates :
+    (C).repr (-K) 0 = e + 2 ∧ (C).repr (-K) 1 = 2 := by
+  have hflip (j : Fin 2) : B K (C j) = B (C j) K := by
+    simpa only [Chow.intersectionBilinForm_apply] using
+      Chow.classIntersectionNumber_comm (k := ℂ) (K).toMul (Additive.toMul (C j))
+  have hcanon (j : Fin 2) := Φ.hirzebruchPicardBasis_intersection_canonical b e hΦ r hr hc j
+  have hd := (Φ.hirzebruchPicardBasis_intersection_repr b e hΦ r hr hc K).1
+  have ha := (Φ.hirzebruchPicardBasis_intersection_repr b e hΦ r hr hc K).2
+  rw [hflip, hcanon] at hd ha
+  have h₁ : (C).repr K 1 = -2 := by simpa using hd.symm
+  have h₀ : (C).repr K 0 = -e - 2 := by rw [h₁] at ha; simp at ha; linarith
+  simp [h₀, h₁, add_comm]
+
+include hc in
+/-- Distinct prime curves of classes `S` and `S + eF` have disjoint supports. -/
+theorem disjoint_of_hirzebruch_section_classes (s t : CodimensionOnePoint X)
+    (hne : s ≠ t) (hs : P s = C 1) (ht : P t = e • C 0 + C 1) :
+    Disjoint (closure {(s : X)}) (closure {(t : X)}) := by
+  let := Φ.uniqueFactorizationMonoid_stalk_algebraicRealization hΦ
+  have hdim := topologicalKrullDim_eq_of_smoothOfRelativeDimension (X ↘ S) (n := 2)
+  have hzero : B (P t) (P s) = 0 := by
+    rw [hs, (Φ.hirzebruchPicardBasis_intersection_repr b e hΦ r hr hc _).2, ht, map_add, map_smul]
+    simp only [Finsupp.add_apply, Finsupp.smul_apply, Basis.repr_self]
+    simp
+  have hpos := Chow.classIntersectionNumber_primeDivisorClass_pos_iff ℂ hdim.le hne.symm
+  rw [Chow.intersectionBilinForm_apply, toMul_ofMul, toMul_ofMul] at hzero
+  exact Set.disjoint_left.mpr fun x hx hy ↦
+    (lt_irrefl (0 : ℤ)) (hzero ▸ hpos.mpr ⟨x, hy, hx⟩)
 
 end Intersection
 

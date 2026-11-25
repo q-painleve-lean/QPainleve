@@ -11,12 +11,16 @@ public import QPainleve.Geometry.Toric.Fan.Picard.Hirzebruch
 public import QPainleve.Geometry.Toric.Fan.Ruling.Basic
 public import QPainleve.Geometry.Toric.Fan.Ruling.Quadric
 
+import Mathlib.Analysis.Complex.Polynomial.Basic
+import QPainleve.AlgebraicGeometry.Curves.Degree.Ample
+import QPainleve.AlgebraicGeometry.IntersectionNumber.Nef.Pullback
 import QPainleve.Geometry.Toric.Fan.Picard.FiberDegree
 import QPainleve.Geometry.Toric.Fan.Picard.Ruling
 import QPainleve.Geometry.Toric.Fan.Ruling.Torus
 import TauCeti.AlgebraicGeometry.Curves.ProjectiveLine
 import TauCeti.AlgebraicGeometry.IdealSheaf.BaseChange
 import TauCeti.AlgebraicGeometry.Morphisms.Smooth.Regular
+import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.TwistingSheaf.Ample
 
 /-!
 # Picard coordinates and fiber degrees of the toric quadric
@@ -24,7 +28,8 @@ import TauCeti.AlgebraicGeometry.Morphisms.Smooth.Regular
 The ruling exchange of the Hirzebruch fan of index zero interchanges the two
 integral Picard coordinates. Transport of a closed point blowup tower by this exchange
 preserves its ordered exceptional coefficients. The Picard coordinates also give the degree
-on a nonzero fiber of the exchanged ruling, which bounds the orders of first centers on it.
+on a nonzero fiber of the exchanged ruling. This bounds the orders of first centers on it
+and separates two first centers whose combined order exceeds that degree.
 -/
 
 public noncomputable section
@@ -41,6 +46,97 @@ variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
 
 local notation "E" => quadricRulingExchange b hΦ hc r hr
 local notation "τ" => FanHom.algebraicMap (FanEquiv.toFanHom (E))
+
+include hr in
+/-- Reindexing the quadric rays with the exchanged lattice basis exchanges the
+two vectors of the Hirzebruch Picard basis. -/
+theorem hirzebruchPicardBasis_quadric_swap [Nonempty Φ.cones] :
+    let p := Equiv.swap (0 : Fin 2) 1
+    let s := ((Equiv.swap (0 : Fin 4) 1).trans (Equiv.swap 2 3)).trans r
+    hirzebruchPicardBasis (b.reindex p) 0 hΦ s (quadric_swapped_generators b r hr) =
+      (hirzebruchPicardBasis b 0 hΦ r hr).reindex p := by
+  intro p s
+  have hp₀ : p.symm 0 = 1 := rfl
+  have hp₁ : p.symm 1 = 0 := rfl
+  apply DFunLike.ext
+  refine Fin.forall_fin_two.mpr ⟨?_, ?_⟩
+  · rw [hirzebruchPicardBasis_apply_zero (b.reindex p) 0 hΦ s _,
+      Basis.reindex_apply, hp₀, hirzebruchPicardBasis_apply_one]
+    rfl
+  · rw [hirzebruchPicardBasis_apply_one (b.reindex p) 0 hΦ s _,
+      Basis.reindex_apply, hp₁, hirzebruchPicardBasis_apply_zero]
+    rfl
+
+include hr in
+/-- Reframe a quadric so that the specified invariant fiber and its opposite become
+the section rays. The two Picard basis vectors exchange places. -/
+theorem exists_quadric_picardBasis_of_fiber [Nonempty Φ.cones] (t : Fin 2) :
+    ∃ (d : Basis (Fin 2) ℤ N) (s : Fin 4 ≃ Φ.Ray)
+      (hs : (fun j ↦ (s j).primitiveGenerator) = ![d 0, d 1, -d 0, (0 : ℤ) • d 0 - d 1]),
+      s 0 = r ((![1, 3] : Fin 2 → Fin 4) t) ∧
+      s 2 = r ((![1, 3] : Fin 2 → Fin 4) (Equiv.swap 0 1 t)) ∧
+      hirzebruchPicardBasis d 0 hΦ s hs =
+        (hirzebruchPicardBasis b 0 hΦ r hr).reindex (Equiv.swap 0 1) := by
+  obtain ⟨a, u, hu, -, h₁, hpic⟩ := exists_hirzebruch_picardBasis_of_fiber b 0 r hr hΦ t
+  have hop (j : Fin 2) :
+      (r ((![1, 3] : Fin 2 → Fin 4) (Equiv.swap 0 1 j))).primitiveGenerator =
+        -(r ((![1, 3] : Fin 2 → Fin 4) j)).primitiveGenerator := by
+    fin_cases j <;> simp [congrFun hr]
+  have h₃ : u 3 = r ((![1, 3] : Fin 2 → Fin 4) (Equiv.swap 0 1 t)) := by
+    apply Ray.primitiveGenerator_injective
+    rw [hop, ← h₁, congrFun hu 3, congrFun hu 1]
+    simp
+  refine ⟨a.reindex (Equiv.swap 0 1), ((Equiv.swap 0 1).trans (Equiv.swap 2 3)).trans u,
+    quadric_swapped_generators a u hu, h₁, h₃, ?_⟩
+  rw [hirzebruchPicardBasis_quadric_swap a hΦ u hu, hpic]
+
+include hc hr in
+open PointedCone in
+/-- At a corner on the opposite invariant fiber (ray `r 3`), choose a quadric marking
+whose generators span the corner cone and whose opposite section is the original
+fiber ray `r 1`. The two Picard basis vectors exchange places. -/
+theorem exists_exchanged_marking_at_opposite_corner [Nonempty Φ.cones]
+    (σ : Φ.cones) (hσ : Nat.card (ToricRay σ.val) = 2) (hopp : (r 3).toCone ≤ σ) :
+    ∃ (d : Basis (Fin 2) ℤ N) (s : Fin 4 ≃ Φ.Ray)
+      (hs : (fun j ↦ (s j).primitiveGenerator) = ![d 0, d 1, -d 0, (0 : ℤ) • d 0 - d 1]),
+      σ.val = hull ℝ (Set.range (i ∘ d)) ∧ s 2 = r 1 ∧
+      Φ.hirzebruchPicardBasis d 0 hΦ s hs =
+        (Φ.hirzebruchPicardBasis b 0 hΦ r hr).reindex (Equiv.swap 0 1) := by
+  obtain ⟨a, u, hu, hu₀, hu₂, hpic⟩ := Φ.exists_quadric_picardBasis_of_fiber b hΦ r hr 1
+  have ha : (u 0).toCone ≤ σ := hu₀.symm ▸ hopp
+  obtain ⟨d, e, s, hcone, he, hfib, hsec⟩ :=
+    Φ.exists_hirzebruch_corner_basis a 0 u hu hΦ hc σ hσ
+  have hgen₀ : (s 0).primitiveGenerator = d 0 := congrFun he 0
+  have hmem : i ((s 0).primitiveGenerator) ∈ σ.val := by
+    rw [hgen₀, hcone]
+    exact subset_hull ⟨0, rfl⟩
+  have hs₀ : s 0 = u 0 ∧ e = 0 := by
+    rcases hsec with h | ⟨h, he'⟩
+    · exact h
+    · have hpos : i (a 0) ∈ σ.val := ha (by
+        rw [Fan.Ray.toCone_eq_hull_primitiveGenerator]
+        exact subset_hull (by simp [congrFun hu 0]))
+      have hneg : -(i (a 0)) ∈ σ.val := by
+        have hu₂' : (u 2).primitiveGenerator = -a 0 := congrFun hu 2
+        simpa only [h, hu₂', map_neg] using hmem
+      have hn : i (a 0) ≠ 0 :=
+        fun hz ↦ (a.ne_zero 0) (Φ.lattice.injective (hz.trans (map_zero i).symm))
+      exact ((Φ.isToricCone σ.property).salient _ hpos hn hneg).elim
+  obtain ⟨hs₀, rfl⟩ := hs₀
+  refine ⟨d, s, he, hcone, ?_, ?_⟩
+  · have h : d 0 = a 0 :=
+      hgen₀.symm.trans ((congrArg Fan.Ray.primitiveGenerator hs₀).trans (congrFun hu 0))
+    exact hu₂ ▸ Fan.Ray.primitiveGenerator_injective
+      ((congrFun he 2).trans ((congrArg Neg.neg h).trans (congrFun hu 2).symm))
+  · rw [← hpic]
+    apply DFunLike.ext
+    refine Fin.forall_fin_two.mpr ⟨?_, ?_⟩
+    · rw [Fan.hirzebruchPicardBasis_apply_zero]
+      rcases hfib with h | h
+      · rw [h, ← Fan.hirzebruchPicardBasis_apply_zero a 0 hΦ u hu]
+      · rw [h, ← Fan.hirzebruchPicardBasis_apply_zero_eq_ray_three a 0 hΦ u hu]
+    · rw [Fan.hirzebruchPicardBasis_apply_one, hs₀,
+        ← Fan.hirzebruchPicardBasis_apply_one a 0 hΦ u hu]
 
 variable [Nonempty Φ.cones]
 
@@ -264,6 +360,50 @@ theorem sum_first_base_orders_le_quadric_transverse_fiber_degree
   rw [← hjdeg L]
   exact hT.sum_first_base_orders_le_curve_intersection j (X ↘ S) hjbase.symm L.toMul orders s
     (fun l hl ↦ ⟨hjrange.symm ▸ (hs l hl).1, (hs l hl).2⟩) hnef
+
+local notation "H" => mk (Proj.symmetricAlgebraTwistingBundle ℂ (Fin 3 → ℂ) 1)
+
+include hc in
+/-- Two first centers of a resolved quadric-to-plane map lie on different
+transverse fibers if their combined order exceeds the transverse fiber degree
+and the first center lies over the base torus. -/
+theorem ne_quadric_transverse_ruling_of_lt_sum_first_base_orders
+    (g : Y ⟶ Plane) (hg : g ≫ (Plane ↘ S) = T.toBase ≫ f)
+    {j l : Fin n} (hjl : j ≠ l)
+    (hj : ∀ i < j, hT.baseCenter i ≠ hT.baseCenter j)
+    (hl : ∀ i < l, hT.baseCenter i ≠ hT.baseCenter l)
+    (t : ℂˣ) (ht : ruling (hT.baseCenter j) ∈ Set.range (p(t))) :
+    let : SmoothOfRelativeDimension 2 f :=
+      (by simpa using Module.finrank_eq_card_basis b : Module.finrank ℤ N = 2) ▸
+        Φ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
+    let v := (T.picardMarking hT f).symm (Additive.ofMul (pullback g H))
+    (C).repr v.1 0 < -v.2 j + -v.2 l →
+    ruling (hT.baseCenter j) ≠ ruling (hT.baseCenter l) := by
+  intro hSmooth v hsum heq
+  let : SmoothOfRelativeDimension 2 f := hSmooth
+  have hmark : (T.picardHom v).toMul = pullback g H := by
+    rw [← picardMarking_apply _ hT f, LinearEquiv.apply_symm_apply, toMul_ofMul]
+  have hample : (H).IsAmple :=
+    TauCeti.SymmetricAlgebra.isAmple_twistingSheaf ℂ (Fin 3 → ℂ) Nat.one_pos
+  let : Y.Over S := ⟨T.toBase ≫ f⟩
+  let : g.IsOver S := ⟨hg⟩
+  have hnef : (T.picardHom v).toMul.IsNef ℂ (T.toBase ≫ f) := hmark.symm ▸ hample.isNef.pullback g
+  let orders (i : Fin n) := (-v.2 i).toNat
+  have horders (i : Fin n) : (orders i : ℤ) = -v.2 i :=
+    Int.toNat_of_nonneg (neg_nonneg.mpr (hT.exceptionalCoeff_nonpos_of_isNef_picardHom hnef i))
+  have hneg : (fun i ↦ -(orders i : ℤ)) = v.2 := funext fun i ↦ by rw [horders, neg_neg]
+  have hnef' : (T.picardHom (v.1, fun i ↦ -(orders i : ℤ))).toMul.IsNef ℂ (T.toBase ≫ f) := by
+    rwa [hneg, Prod.mk.eta]
+  classical
+  have hbound := hT.sum_first_base_orders_le_quadric_transverse_fiber_degree
+    b hΦ hc r hr v.1 orders {j, l} t (by
+      intro i hi
+      simp only [Finset.mem_insert, Finset.mem_singleton] at hi
+      rcases hi with rfl | rfl
+      · exact ⟨ht, hj⟩
+      · exact ⟨heq ▸ ht, hl⟩) hnef'
+  rw [Finset.sum_pair hjl, horders, horders] at hbound
+  exact (not_lt_of_ge hbound) hsum
 
 end
 

@@ -8,7 +8,9 @@ module
 public import QPainleve.AlgebraicGeometry.Blowup.StrictTransform.Branches.Subdivision
 public import QPainleve.AlgebraicGeometry.Blowup.Tower.Nodal.Boundary
 
+import QPainleve.AlgebraicGeometry.IdealSheaf.BaseChange
 import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
+import QPainleve.AlgebraicGeometry.IdealSheaf.Restriction
 import TauCeti.AlgebraicGeometry.Curves.Node.Reduced
 import TauCeti.AlgebraicGeometry.IdealSheaf.Reduced
 import TauCeti.AlgebraicGeometry.Noetherian
@@ -197,5 +199,60 @@ theorem exists_isOrientedCycleSubdivision_nodalBoundaryTower
   refine ⟨B, ⟨?_⟩, hB⟩
   rw [D.over_eq_subschemeι_comp, ← Category.assoc, subschemeMap_subschemeι, Category.assoc]
   rfl
+
+/-- A model isomorphic over the field to the top of a nodal blowup tower inherits
+the oriented subdivision numbering on its reduced total boundary. The
+subdivision morphism is the restriction of the specified composite projection. -/
+theorem exists_isOrientedCycleSubdivision_nodalBoundaryTower_of_iso
+    {Z : Scheme.{u}} [Z.Over (Spec (.of k))]
+    (hT : IsNodalBoundaryTower D (X ↘ Spec (.of k)) (𝟙 X) T)
+    (hD : D.IsEffectiveCartier) (A : Scheme.NodalCycleNumbering (k := k) (X := D.subscheme) p n)
+    (e : Z ≅ Y) {π : Z ⟶ X} (hπ : e.hom ≫ T.toBase = π) (he : π.IsOver (Spec (.of k))) :
+    let E := (D.comap π).radical
+    letI : NeZero (n + m) := ⟨by have := NeZero.ne n; omega⟩
+    ∃ hpre : PrestableFamily (E.subscheme ↘ Spec (.of k)),
+      letI := hpre
+      ∀ {ι' : Type v} (p' : ι' → (E.subscheme ↘ Spec (.of k)).smoothLocus),
+        ∃ C : Scheme.NodalCycleNumbering (k := k) (X := E.subscheme) p' (n + m),
+          (boundaryMap(D,π)).IsOver (Spec (.of k)) ∧
+          (boundaryMap(D,π)).IsOrientedCycleSubdivision C A := by
+  subst π
+  intro E
+  let : NeZero (n + m) := ⟨by have := NeZero.ne n; omega⟩
+  let S := Spec (CommRingCat.of k)
+  let : Y.Over S := ⟨T.toBase ≫ X ↘ S⟩
+  let R := R[T]
+  let : PrestableFamily (R.subscheme ↘ S) := hT.prestableFamily_radical_comap_toBase hD
+  have hE : R.comap e.hom = E := by
+    dsimp only [E, R]
+    rw [comap_comp, radical_comap_of_isOpenImmersion (D.comap T.toBase) e.hom]
+  obtain ⟨a, ha⟩ := R.exists_iso_of_comap_eq_ker e E.subschemeι
+    (hE.trans (ker_subschemeι E).symm)
+  have he' : e.hom ≫ Y ↘ S = Z ↘ S :=
+    (Category.assoc e.hom T.toBase (X ↘ S)).symm.trans he.comp_over
+  have hbase : a.hom ≫ R.subscheme ↘ S = E.subscheme ↘ S := by
+    rw [R.over_eq_subschemeι_comp, E.over_eq_subschemeι_comp, reassoc_of% ha, he']
+  let : a.hom.IsOver S := ⟨hbase⟩
+  have hpre : PrestableFamily (E.subscheme ↘ S) := hbase ▸
+    (MorphismProperty.cancel_left_of_respectsIso (P := @PrestableFamily) a.hom _).mpr
+      inferInstance
+  refine ⟨hpre, ?_⟩
+  intro ι' p'
+  let : PrestableFamily (E.subscheme ↘ S) := hpre
+  let : a.symm.hom.IsOver S := inferInstanceAs (a.inv.IsOver S)
+  obtain ⟨B, hBover, hB⟩ :=
+    hT.exists_isOrientedCycleSubdivision_nodalBoundaryTower hD A
+      (PEmpty.elim : PEmpty.{v + 1} → (R.subscheme ↘ S).smoothLocus)
+  let C := a.symm.mapNodalCycleNumbering B (q := p')
+  have hact := a.symm.boundaryCycleAction_symm B C
+  rw [a.symm.boundaryCycleAction_mapNodalCycleNumbering B, inv_one] at hact
+  have hsub := a.isOrientedCycleSubdivision_of_cycleOrientationSign_eq_one C B
+    (by exact congrArg DihedralGroup.cycleOrientationSign hact |>.trans (map_one _))
+  have hcomp : a.hom ≫ boundaryMap(D,T.toBase) = boundaryMap(D,e.hom ≫ T.toBase) := by
+    rw [← cancel_mono D.subschemeι]
+    simp only [Category.assoc, subschemeMap_subschemeι]
+    exact (reassoc_of% ha) T.toBase
+  let : (boundaryMap(D,T.toBase)).IsOver S := hBover
+  exact ⟨C, hcomp ▸ inferInstance, hcomp ▸ hsub.comp hB⟩
 
 end QPainleve.BlowupTower.IsNodalBoundaryTower

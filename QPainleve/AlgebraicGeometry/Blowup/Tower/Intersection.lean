@@ -7,21 +7,24 @@ module
 
 public import QPainleve.AlgebraicGeometry.Blowup.Canonical
 public import QPainleve.AlgebraicGeometry.Blowup.Tower.Picard
-public import TauCeti.AlgebraicGeometry.Chow.SurfaceIntersection
+public import TauCeti.AlgebraicGeometry.Chow.SurfaceIntersection.Basic
 public import TauCeti.AlgebraicGeometry.Noetherian
 public import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.ProjectiveOver
 import Mathlib.AlgebraicGeometry.AlgClosed.Basic
 import QPainleve.AlgebraicGeometry.Blowup.Exceptional.EulerCharacteristic
+import QPainleve.AlgebraicGeometry.Chow.Isomorphism
 import QPainleve.AlgebraicGeometry.Cohomology.Projective
 import QPainleve.AlgebraicGeometry.Cohomology.Support
 import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
+import QPainleve.AlgebraicGeometry.Modules.Differentials.Restriction
 
 /-!
 # The Picard pairing of a tower of point blowups
 
 The Picard marking of a tower of point blowups identifies the intersection pairing with
 the base pairing and one orthogonal summand of square `-1` per blowup. In the same marking
-the canonical class has every exceptional coefficient equal to one.
+the canonical class has every exceptional coefficient equal to one. For two markings
+of the same resolved class, this compares the canonical intersections on their bases.
 
 The calculation iterates the exceptional twist formula for Euler characteristics. Finiteness
 and vanishing for line-bundle cohomology propagate along the tower from its projective base.
@@ -264,6 +267,84 @@ theorem canonical_complement_picardHom [IsIntegral X] [IsNoetherian X]
 
 end CanonicalClass
 
+/-- Intersecting a marked class with the canonical class subtracts the sum of its
+total exceptional coefficients from the canonical intersection on the base. -/
+theorem IsClosedPointTower.classIntersectionNumber_picardHom_canonicalBundle
+    [IsAlgClosed k] [IsIntegral X] [X.IsProjectiveOver k] (hT : IsClosedPointTower X T)
+    (a : Additive (LineBundleClass X) × (Fin n → ℤ)) :
+    let : Y.Over (Spec (.of k)) := ⟨T.toBase ≫ f⟩
+    let : SmoothOfRelativeDimension 2 (Y ↘ Spec (.of k)) :=
+      hT.smoothOfRelativeDimension f
+    Chow.classIntersectionNumber k Y (T.picardHom a).toMul (mk (canonicalBundle k Y 2)) =
+      Chow.classIntersectionNumber k X a.1.toMul (mk (canonicalBundle k X 2)) -
+        ∑ j, a.2 j := by
+  let : IsNoetherian X := isNoetherian_of_finiteType f
+  have h := classIntersectionNumber_picardMarking k hT a
+    (Additive.ofMul (mk (canonicalBundle k X 2)), fun _ ↦ 1)
+  dsimp only at h
+  simpa only [picardMarking_canonicalClass, picardMarking_apply T hT f a,
+    toMul_ofMul, mul_one] using h
+
+/-- If two marked classes identify under an isomorphism of the resolved surfaces,
+the change in anticanonical degree on their bases equals the change in the sum
+of their orders. Each order is the negative of the total exceptional coefficient.
+The two towers can have different lengths. -/
+theorem IsClosedPointTower.classIntersectionNumber_canonicalBundle_sub_of_pullback_picardHom_eq
+    [IsAlgClosed k] [IsIntegral X] [X.IsProjectiveOver k]
+    {Z W : Scheme.{u}} {m : ℕ} {U : BlowupTower Z m W}
+    [Z.Over (Spec (.of k))] [SmoothOfRelativeDimension 2 (Z ↘ Spec (.of k))]
+    [IsIntegral Z] [Z.IsProjectiveOver k] (hT : IsClosedPointTower X T)
+    (hU : IsClosedPointTower Z U) (e : Y ≅ W)
+    (he : e.hom ≫ U.toBase ≫ (Z ↘ Spec (.of k)) = T.toBase ≫ f)
+    (a : Additive (LineBundleClass X) × (Fin n → ℤ))
+    (b : Additive (LineBundleClass Z) × (Fin m → ℤ))
+    (hab : pullback e.hom (U.picardHom b).toMul = (T.picardHom a).toMul) :
+    Chow.classIntersectionNumber k X a.1.toMul (mk (canonicalBundle k X 2)) -
+        Chow.classIntersectionNumber k Z b.1.toMul (mk (canonicalBundle k Z 2)) =
+      (∑ j, a.2 j) - ∑ j, b.2 j := by
+  let : Y.Over (Spec (.of k)) := ⟨T.toBase ≫ f⟩
+  let : W.Over (Spec (.of k)) := ⟨U.toBase ≫ (Z ↘ Spec (.of k))⟩
+  let : SmoothOfRelativeDimension 2 (Y ↘ Spec (.of k)) := hT.smoothOfRelativeDimension f
+  let : SmoothOfRelativeDimension 2 (W ↘ Spec (.of k)) :=
+    hU.smoothOfRelativeDimension (Z ↘ Spec (.of k))
+  let : e.hom.IsOver (Spec (.of k)) := ⟨he⟩
+  have h := Chow.classIntersectionNumber_pullback_of_isIso k e.hom
+    (U.picardHom b).toMul (mk (canonicalBundle k W 2))
+  rw [hab, pullback_mk, mk_pullback_canonicalBundle] at h
+  rw [hT.classIntersectionNumber_picardHom_canonicalBundle k a,
+    hU.classIntersectionNumber_picardHom_canonicalBundle k b] at h
+  omega
+
+/-- When a resolved elementary link preserves the resolved line class and replaces
+the order at stage `j` by `b - m` at the first reverse center, the anticanonical
+degree of the base line class changes by `b - 2 * m`. The remaining orders keep
+their relative positions. The formula includes a zero pivot order and applies
+regardless of the self-intersections of the two ruling sections. See
+[Lutz, Proposition 8.11](https://arxiv.org/pdf/2005.05010v3#page=72). -/
+theorem IsClosedPointTower.classIntersectionNumber_canonicalBundle_sub_of_elementaryTransform
+    {k : Type u} [Field k] [IsAlgClosed k]
+    {X X' Y Y' : Scheme.{u}} [X.Over (Spec (.of k))] [X'.Over (Spec (.of k))]
+    [SmoothOfRelativeDimension 2 (X ↘ Spec (.of k))]
+    [SmoothOfRelativeDimension 2 (X' ↘ Spec (.of k))]
+    [IsIntegral X] [IsIntegral X'] [X.IsProjectiveOver k] [X'.IsProjectiveOver k]
+    {n : ℕ} {T : BlowupTower X (n + 1) Y} {U : BlowupTower X' (1 + n) Y'}
+    (hT : IsClosedPointTower X T) (hU : IsClosedPointTower X' U) (e : Y ≅ Y')
+    (he : e.hom ≫ U.toBase ≫ (X' ↘ Spec (.of k)) = T.toBase ≫ (X ↘ Spec (.of k)))
+    (a : Additive (LineBundleClass X)) (a' : Additive (LineBundleClass X'))
+    (x : Fin (n + 1) → ℤ) (j : Fin (n + 1)) (b : ℤ)
+    (hclass : pullback e.hom
+      (U.picardHom (a', Fin.append (fun _ : Fin 1 ↦ -b - x j) (x ∘ j.succAbove))).toMul =
+      (T.picardHom (a, x)).toMul) :
+    Chow.classIntersectionNumber k X a.toMul (mk (canonicalBundle k X 2)) -
+      Chow.classIntersectionNumber k X' a'.toMul (mk (canonicalBundle k X' 2)) =
+      b + 2 * x j := by
+  have h := hT.classIntersectionNumber_canonicalBundle_sub_of_pullback_picardHom_eq
+    k hU e he _ _ hclass
+  rw [Fin.sum_univ_succAbove x j] at h
+  simp only [Fin.sum_univ_add, Fin.sum_univ_one, Fin.append_left, Fin.append_right,
+    Function.comp_apply] at h
+  omega
+
 /-- A class pulled back from the base pairs trivially with the exceptional correction
 to the canonical class of a closed-point blowup tower. -/
 theorem IsClosedPointTower.classIntersectionNumber_pullback_canonicalBundle
@@ -274,13 +355,8 @@ theorem IsClosedPointTower.classIntersectionNumber_pullback_canonicalBundle
       hT.smoothOfRelativeDimension f
     Chow.classIntersectionNumber k Y (pullback T.toBase a) (mk (canonicalBundle k Y 2)) =
       Chow.classIntersectionNumber k X a (mk (canonicalBundle k X 2)) := by
-  have : IsNoetherian X := isNoetherian_of_finiteType (X ↘ Spec (.of k))
-  have h := classIntersectionNumber_picardMarking k hT (Additive.ofMul a, 0)
-    (Additive.ofMul (mk (canonicalBundle k X 2)), fun _ ↦ 1)
-  have hK := picardMarking_canonicalClass k hT
-  dsimp only at h hK ⊢
-  rw [hK, picardMarking_apply, picardHom_apply_zero] at h
-  simpa only [toMul_ofMul, Pi.zero_apply, zero_mul, Finset.sum_const_zero, sub_zero] using h
+  simpa only [picardHom_apply_zero, toMul_ofMul, Pi.zero_apply, Finset.sum_const_zero, sub_zero]
+    using hT.classIntersectionNumber_picardHom_canonicalBundle k (Additive.ofMul a, 0)
 
 /-- The canonical self-intersection falls by the length of a tower of point blowups. -/
 theorem classIntersectionNumber_canonicalBundle [IsAlgClosed k] [IsIntegral X]
@@ -292,10 +368,10 @@ theorem classIntersectionNumber_canonicalBundle [IsAlgClosed k] [IsIntegral X]
       Chow.classIntersectionNumber k X (mk (canonicalBundle k X 2)) (mk (canonicalBundle k X 2)) -
         n := by
   have : IsNoetherian X := isNoetherian_of_finiteType f
-  have h := classIntersectionNumber_picardMarking k hT
+  have h := hT.classIntersectionNumber_picardHom_canonicalBundle k
     (Additive.ofMul (mk (canonicalBundle k X 2)), fun _ ↦ 1)
-    (Additive.ofMul (mk (canonicalBundle k X 2)), fun _ ↦ 1)
-  simpa only [picardMarking_canonicalClass, toMul_ofMul, mul_one, Finset.sum_const,
-    Finset.card_univ, Fintype.card_fin, nsmul_eq_mul] using h
+  rw [← picardMarking_apply T hT f, picardMarking_canonicalClass] at h
+  simpa only [toMul_ofMul, Finset.sum_const,
+    Finset.card_univ, Fintype.card_fin, nsmul_eq_mul, mul_one] using h
 
 end QPainleve.BlowupTower

@@ -10,6 +10,7 @@ public import QPainleve.LinearAlgebra.Determinant.Dual
 
 import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
 import TauCeti.AlgebraicGeometry.IdealSheaf.Section
+import TauCeti.AlgebraicGeometry.Morphisms.Smooth.Regular
 
 /-!
 # Internal centers on toric boundaries
@@ -94,6 +95,62 @@ theorem Ray.internalCenter_val (ρ : Φ.Ray) (c : ℂˣ) :
       (ρ.binomialCenterOnBoundary rankTwo (m := χ(ρ)) (b.detDualEquiv_self _)
         (ρ.surjective_detCharacter b) c).ker := (rfl)
 
+/-- A binomial center is the reduced ideal of a closed point in the smooth
+locus of the toric boundary. -/
+theorem Ray.exists_closedPoint_formallySmooth_internalCenter (ρ : Φ.Ray) (c : ℂˣ) :
+    ∃ p : (boundary).subscheme, IsClosed ({p} : Set (boundary).subscheme) ∧
+      (((boundary).subschemeι ≫ Φ.algebraicRealizationStructureMap).stalkMap p).hom.FormallySmooth ∧
+      (ρ.internalCenter b c).val = ((boundary).subscheme.fromSpecResidueField p).ker := by
+  let z := ρ.binomialCenterOnBoundary rankTwo (b.detDualEquiv_self ρ.primitiveGenerator)
+    (ρ.surjective_detCharacter b) c
+  let j := ρ.orbitToBoundary rankTwo (b.detDualEquiv_self ρ.primitiveGenerator)
+    (ρ.surjective_detCharacter b)
+  have : IsClosedImmersion z := ρ.isClosedImmersion_binomialCenterOnBoundary rankTwo _ _ c
+  have : IsOpenImmersion j := ρ.isOpenImmersion_orbitToBoundary rankTwo _ _
+  obtain ⟨p, hp, hi⟩ := ρ.exists_closedPoint_ker_binomialCenterOnBoundary rankTwo
+    (b.detDualEquiv_self _) (ρ.surjective_detCharacter b) c
+  refine ⟨p, hp, ?_, (ρ.internalCenter_val b c).trans hi⟩
+  have hzp : p ∈ Set.range z := by
+    rw [← z.isClosedEmbedding.isClosed_range.closure_eq, ← z.support_ker, hi,
+      Scheme.support_ker_fromSpecResidueField_of_isClosed hp]
+    exact Set.mem_singleton _
+  obtain ⟨q, rfl⟩ := ρ.range_binomialCenterOnBoundary_subset_range_orbitToBoundary rankTwo
+    (b.detDualEquiv_self _) (ρ.surjective_detCharacter b) c hzp
+  have : SmoothOfRelativeDimension 1 (j ≫ (boundary).subschemeι ≫
+      Φ.algebraicRealizationStructureMap) :=
+    ρ.smoothOfRelativeDimension_orbitToBoundary rankTwo _ _
+  have : Smooth (j ≫ (boundary).subschemeι ≫ Φ.algebraicRealizationStructureMap) :=
+    SmoothOfRelativeDimension.smooth 1 _
+  apply (RingHom.FormallySmooth.respectsIso.cancel_right_isIso _ (j.stalkMap q)).mp
+  rw [← CommRingCat.hom_comp, ← Scheme.Hom.stalkMap_comp]
+  apply Scheme.Hom.mem_smoothLocus.mp
+  rw [Scheme.Hom.smoothLocus_eq_top]
+  exact TopologicalSpace.Opens.mem_top q
+
+/-- The reduced toric boundary has a regular stalk at each binomial center. -/
+theorem Ray.isRegularLocalRing_stalk_of_mem_support_internalCenter (ρ : Φ.Ray) (c : ℂˣ)
+    {p : (boundary).subscheme} (hp : p ∈ (ρ.internalCenter b c).val.support) :
+    IsRegularLocalRing ((boundary).subscheme.presheaf.stalk p) := by
+  let z := ρ.binomialCenterOnBoundary rankTwo (b.detDualEquiv_self ρ.primitiveGenerator)
+    (ρ.surjective_detCharacter b) c
+  let j := ρ.orbitToBoundary rankTwo (b.detDualEquiv_self ρ.primitiveGenerator)
+    (ρ.surjective_detCharacter b)
+  have : IsClosedImmersion z := ρ.isClosedImmersion_binomialCenterOnBoundary rankTwo _ _ c
+  have : IsOpenImmersion j := ρ.isOpenImmersion_orbitToBoundary rankTwo _ _
+  have hz : p ∈ Set.range z := by
+    rwa [Ray.internalCenter_val, ← SetLike.mem_coe, Scheme.Hom.support_ker,
+      z.isClosedEmbedding.isClosed_range.closure_eq] at hp
+  obtain ⟨q, rfl⟩ := ρ.range_binomialCenterOnBoundary_subset_range_orbitToBoundary rankTwo
+    (b.detDualEquiv_self ρ.primitiveGenerator) (ρ.surjective_detCharacter b) c hz
+  have : SmoothOfRelativeDimension 1 (j ≫ (boundary).subschemeι ≫
+      Φ.algebraicRealizationStructureMap) :=
+    ρ.smoothOfRelativeDimension_orbitToBoundary rankTwo _ _
+  have : Smooth (j ≫ (boundary).subschemeι ≫ Φ.algebraicRealizationStructureMap) :=
+    SmoothOfRelativeDimension.smooth 1 _
+  exact (isRegularLocalRing_stalk_iff_of_isOpenImmersion j q).mpr
+    (isRegularLocalRing_stalk_of_smooth (j ≫ (boundary).subschemeι ≫
+      Φ.algebraicRealizationStructureMap) q)
+
 /-- An internal center restricts to an effective Cartier ideal on every ray divisor. -/
 theorem Ray.isEffectiveCartier_comap_internalCenter (ρ : Φ.Ray) (c : ℂˣ)
     (hΦ : Φ.IsRegular) (τ : Φ.Ray) :
@@ -134,6 +191,25 @@ theorem Ray.map_internalCenter_subschemeι (ρ : Φ.Ray) (c : ℂˣ) :
   rw [Ray.internalCenter_val, Scheme.IdealSheafData.map_ker]
   exact congrArg Scheme.Hom.ker (ρ.binomialCenterOnBoundary_comp_subschemeι rankTwo
     (m := χ(ρ)) (b.detDualEquiv_self _) (ρ.surjective_detCharacter b) c)
+
+/-- A change of lattice basis can be absorbed into the parameter of the same
+Cartier center on the toric boundary. -/
+theorem Ray.exists_internalCenter_eq_of_basis (ρ : Φ.Ray)
+    (d : Module.Basis (Fin 2) ℤ N) (c : ℂˣ) :
+    ∃ a : ℂˣ, ρ.internalCenter b a = ρ.internalCenter d c := by
+  obtain ⟨a, ha⟩ := ρ.exists_binomialCenter_eq_of_basis b d c
+  refine ⟨a, Subtype.ext ?_⟩
+  let ι := (Φ.boundaryIdeal h₀).subschemeι
+  have hpoint (e : Module.Basis (Fin 2) ℤ N) (u : ℂˣ) :
+      let h := e.detDualEquiv_self ρ.primitiveGenerator
+      let hs := ρ.surjective_detCharacter e
+      ρ.binomialCenterOnBoundary rankTwo h hs u ≫ ι = ρ.binomialCenter rankTwo h hs u :=
+    ρ.binomialCenterOnBoundary_comp_subschemeι _ _ _ _
+  simp only [Ray.internalCenter_val]
+  apply congrArg Scheme.Hom.ker
+  apply (cancel_mono ι).mp
+  rw [hpoint, hpoint]
+  exact ha
 
 /-- The internal center ideal on a fixed ray determines its parameter. -/
 theorem Ray.internalCenter_injective (ρ : Φ.Ray) :

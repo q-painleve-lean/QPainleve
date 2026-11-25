@@ -43,6 +43,17 @@ local notation "R(" E ", " x ")" => radical (comap E (π(x)))
 local notation "P(" E ", " a ")" => Additive.ofMul (primeDivisorClass
   (boundaryPrimeEmbedding E a))
 
+/-- Blowing up a numbered node gives a one-step nodal boundary tower. -/
+theorem isNodalBoundaryTower_numbered_node
+    {k : Type u} [Field k] [IsSepClosed k] {X : Scheme.{u}} [X.Over S(k)]
+    {D : X.IdealSheafData} [PrestableFamily (D.subscheme ↘ S(k))]
+    {n : ℕ} [NeZero n] {ι : Type v} {p : ι → (D.subscheme ↘ S(k)).smoothLocus}
+    (A : Scheme.NodalCycleNumbering p n) (i : ZMod n) :
+    IsNodalBoundaryTower D (g(k, X)) (𝟙 X) T(A.ambientNode i) := by
+  refine .snoc .nil _ (A.isClosed_ambientNode i) rfl ?_
+  simpa only [toBase_nil, comap_id, Category.comp_id, Category.id_comp] using
+    A.isNodeOfReducedBoundary_ambientNode i rfl
+
 variable {k : Type u} [Field k] [IsAlgClosed k] {X Z : Scheme.{u}}
   [X.Over S(k)] [Z.Over S(k)] [IsIntegral X] [IsIntegral Z]
   [X.IsProjectiveOver k] [Z.IsProjectiveOver k]
@@ -81,73 +92,12 @@ private theorem exists_numbering_pointBlowup (A : Scheme.NodalCycleNumbering p n
   have : PrestableFamily ((D.comap J.blowupToBase).radical.subscheme ↘ S(k)) := hpre
   exact D.exists_isOrientedCycleSubdivision_nodalBlowup_at hc hs rfl rfl hD A i rfl p'
 
-omit [IsIntegral X] [X.IsProjectiveOver k] in
-private theorem numbered_prime_ne_ambientNode (A : Scheme.NodalCycleNumbering p n)
-    (i : ZMod n) (a : D.boundaryPrimes) : a.val ≠ node(A, i) := by
-  have hx := coheight_eq_of_isClosed_of_smoothOfRelativeDimension (n := 2) (g(k, X))
-    (A.isClosed_ambientNode i)
-  have ha := (mem_boundaryPrimes.mp a.property).2
-  intro h
-  rw [h, hx] at ha
-  exact (by decide : (2 : ℕ∞) ≠ 1) ha
-
-omit [IsIntegral X] [IsIntegral Z] in
-private theorem mapped_prime_projection (σ : D.boundaryPrimes ≃ F.boundaryPrimes)
-    {x a : X} {z b : Z} (hx : ∀ c : D.boundaryPrimes, c.val ≠ x)
-    (h : (a = x ∧ b = z) ∨ ∃ c : D.boundaryPrimes, a = c.val ∧ b = (σ c).val)
-    (c : Option D.boundaryPrimes) (ha : a = c.elim x Subtype.val) :
-    b = c.elim z (fun d ↦ (σ d).val) := by
-  cases c with
-  | none =>
-    rcases h with ⟨_, hz⟩ | ⟨d, hd, _⟩
-    · exact hz
-    · exact (hx d (hd.symm.trans ha)).elim
-  | some c =>
-    rcases h with ⟨hp, _⟩ | ⟨d, hd, rfl⟩
-    · exact (hx c (ha.symm.trans hp)).elim
-    · exact congrArg (fun t ↦ (σ t).val) (Subtype.ext (hd.symm.trans ha))
-
-omit [IsIntegral X] [X.IsProjectiveOver k] in
-private theorem eq_of_numbered_prime_projections (A : Scheme.NodalCycleNumbering p n)
-    (i : ZMod n) {Y : Scheme.{u}} (f : Y ⟶ X) (E : Y.IdealSheafData)
-    [IsNoetherian X] [IsLocallyNoetherian Y]
-    [E.subscheme.Over S(k)] [PrestableFamily (E.subscheme ↘ S(k))]
-    {ι' : Type v'} {p' : ι' → (E.subscheme ↘ S(k)).smoothLocus}
-    (A' : Scheme.NodalCycleNumbering p' (n + 1))
-    (hD : D.IsEffectiveCartier) (hE : E.IsEffectiveCartier)
-    (hA' : ∀ a, f (E.subschemeι (A'.componentGenericPoint a)) =
-      if a.val < n then D.subschemeι (A.componentGenericPoint ((a.val : ZMod n) + (i + 1)))
-      else node(A, i)) :
-    Function.Injective (fun a : E.boundaryPrimes ↦ f a.val) := by
-  intro a b hab
-  obtain ⟨a, rfl⟩ := (A'.boundaryPrimeEquiv hE).surjective a
-  obtain ⟨b, rfl⟩ := (A'.boundaryPrimeEquiv hE).surjective b
-  apply congrArg (A'.boundaryPrimeEquiv hE)
-  apply ZMod.val_injective (n + 1)
-  simp only [Scheme.NodalCycleNumbering.boundaryPrimeEquiv_apply_val, hA'] at hab
-  have ha := ZMod.val_lt a
-  have hb := ZMod.val_lt b
-  have hne (j : ZMod n) : D.subschemeι (A.componentGenericPoint j) ≠ node(A, i) := by
-    rw [← A.boundaryPrimeEquiv_apply_val hD j]
-    exact numbered_prime_ne_ambientNode A i (A.boundaryPrimeEquiv hD j)
-  by_cases ha' : a.val < n <;> by_cases hb' : b.val < n
-  · simp only [ha', hb', ite_true] at hab
-    have hadd := A.componentGenericPoint_injective (D.subschemeι.injective hab)
-    have hcast := add_right_cancel hadd
-    simpa only [ZMod.val_natCast_of_lt ha', ZMod.val_natCast_of_lt hb'] using
-      congrArg (ZMod.val (n := n)) hcast
-  · simp only [ha', hb', ite_true, ite_false] at hab
-    exact (hne _ hab).elim
-  · simp only [ha', hb', ite_true, ite_false] at hab
-    exact (hne _ hab.symm).elim
-  · omega
-
 /-- An isometry matching the numbered boundary prime classes extends through blowups
 at the corresponding numbered node. Both reduced total boundaries have oriented
 subdivision numberings and the extended isometry matches every new numbered class.
-The new exceptional primes are matched, including when the center is a self-node
-or one of two nodes shared by the same pair of components. -/
-theorem picardIsometryCongr_nodal_boundaryPrimes_of_numbered_nodes
+The surface projections identify each strict transform and the exceptional
+prime at the same index, including for self-nodes and two-component cycles. -/
+theorem picardIsometryCongr_of_numbered_nodal_blowups
     (A : Scheme.NodalCycleNumbering p n) (B : Scheme.NodalCycleNumbering q n)
     (hD : D.IsEffectiveCartier) (hF : F.IsEffectiveCartier) (i : ZMod n)
     (e : (Chow.intersectionBilinForm k X).IsometryEquiv (Chow.intersectionBilinForm k Z)) :
@@ -160,14 +110,10 @@ theorem picardIsometryCongr_nodal_boundaryPrimes_of_numbered_nodes
     (∀ a, e P(D, A.boundaryPrimeEquiv hD a) = P(F, B.boundaryPrimeEquiv hF a)) →
     let x := node(A, i)
     let z := node(B, i)
-    let hT : IsNodalBoundaryTower D (g(k, X)) (𝟙 X) T(x) := .snoc .nil x
-      (A.isClosed_ambientNode i) rfl (by
-        simpa only [toBase_nil, comap_id, Category.comp_id, Category.id_comp] using
-          A.isNodeOfReducedBoundary_ambientNode i rfl)
-    let hU : IsNodalBoundaryTower F (g(k, Z)) (𝟙 Z) T(z) := .snoc .nil z
-      (B.isClosed_ambientNode i) rfl (by
-        simpa only [toBase_nil, comap_id, Category.comp_id, Category.id_comp] using
-          B.isNodeOfReducedBoundary_ambientNode i rfl)
+    let hT : IsNodalBoundaryTower D (g(k, X)) (𝟙 X) T(x) :=
+      isNodalBoundaryTower_numbered_node A i
+    let hU : IsNodalBoundaryTower F (g(k, Z)) (𝟙 Z) T(z) :=
+      isNodalBoundaryTower_numbered_node B i
     let : (I(x)).blowup.Over S(k) := ⟨π(x) ≫ g(k, X)⟩
     let : (I(z)).blowup.Over S(k) := ⟨π(z) ≫ g(k, Z)⟩
     let R := R(D, x)
@@ -208,7 +154,13 @@ theorem picardIsometryCongr_nodal_boundaryPrimes_of_numbered_nodes
       ∃ (A' : Scheme.NodalCycleNumbering p' (n + 1)) (B' : Scheme.NodalCycleNumbering q' (n + 1)),
         (β(D, x)).IsOrientedCycleSubdivision A' A ∧
         (β(F, z)).IsOrientedCycleSubdivision B' B ∧
-        ∀ a, picardIsometryCongr k hT.isClosedPointTower hU.isClosedPointTower e
+        ∀ a : ZMod (n + 1),
+          let j := (a.val : ZMod n) + (i + 1)
+          (π(x)) (R.subschemeι (A'.componentGenericPoint a)) =
+            (if a.val < n then D.subschemeι (A.componentGenericPoint j) else x) ∧
+          (π(z)) (W.subschemeι (B'.componentGenericPoint a)) =
+            (if a.val < n then F.subschemeι (B.componentGenericPoint j) else z) ∧
+          picardIsometryCongr k hT.isClosedPointTower hU.isClosedPointTower e
           P(R, A'.boundaryPrimeEquiv hR a) = P(W, B'.boundaryPrimeEquiv hW a) := by
   intro _ _ _ _ _ _ he x z hT hU _ _ R W hπ hτ hnd hnf hR hW _ _ _ _ _ _ _ _ _ _ _ _ ι' κ' p' q'
   obtain ⟨A', hA', hA⟩ := exists_numbering_pointBlowup A hD i p'
@@ -224,38 +176,20 @@ theorem picardIsometryCongr_nodal_boundaryPrimes_of_numbered_nodes
     obtain ⟨a, rfl⟩ := (A.boundaryPrimeEquiv hD).surjective a
     rw [hσ]
     exact he a
-  obtain ⟨σ', hσ'⟩ := picardIsometryCongr_nodal_boundaryPrimes σ hcenter e he'
-    (A.isClosed_ambientNode i) (B.isClosed_ambientNode i) hD hF hnd hnf
+  refine ⟨A', B', hA', hB', fun a ↦ ⟨hA a, hB a, ?_⟩⟩
+  apply picardIsometryCongr_nodal_boundaryPrimes_of_projection σ hcenter hD hF
+    (A.isClosed_ambientNode i) (B.isClosed_ambientNode i)
     (A.isNodeOfReducedBoundary_ambientNode i rfl) (B.isNodeOfReducedBoundary_ambientNode i rfl)
-  refine ⟨A', B', hA', hB', fun a ↦ ?_⟩
-  let d := Set.equivOfEq (boundaryPrimes_eq_of_support_eq (support_radical (D.comap (π(x)))))
-  let f := Set.equivOfEq (boundaryPrimes_eq_of_support_eq (support_radical (F.comap (π(z)))))
-  let a' := A'.boundaryPrimeEquiv hR a
-  let b' := B'.boundaryPrimeEquiv hW a
-  have hproj := (hσ' (d a')).2
-  have hpa : (π(x)) (d a').val = if a.val < n then
-      (A.boundaryPrimeEquiv hD ((a.val : ZMod n) + (i + 1))).val else x := by
-    simpa only [d, a', Set.equivOfEq_apply, Scheme.NodalCycleNumbering.boundaryPrimeEquiv_apply_val]
-      using hA a
-  have hpb : (π(z)) (b').val = if a.val < n then
-      (B.boundaryPrimeEquiv hF ((a.val : ZMod n) + (i + 1))).val else z := by
-    simpa only [b', Scheme.NodalCycleNumbering.boundaryPrimeEquiv_apply_val] using hB a
-  have hmatch : (π(z)) (σ' (d a')).val = (π(z)) b'.val := by
-    rw [hpb]
-    split_ifs at hpa ⊢ with ha
-    · simpa only [Option.elim_some, hσ] using
-        mapped_prime_projection σ (numbered_prime_ne_ambientNode A i) hproj
-          (some (A.boundaryPrimeEquiv hD ((a.val : ZMod n) + (i + 1)))) hpa
-    · exact mapped_prime_projection σ (numbered_prime_ne_ambientNode A i) hproj none hpa
-  have hbc : f.symm (σ' (d a')) = b' :=
-    eq_of_numbered_prime_projections B i (π(z)) W B' hF hW hB hmatch
-  have hX : boundaryPrimeEmbedding (D.comap (π(x))) (d a') = boundaryPrimeEmbedding R a' :=
-    Subtype.ext (by simp only [coe_boundaryPrimeEmbedding, d, Set.equivOfEq_apply])
-  have hZ : boundaryPrimeEmbedding (F.comap (π(z))) (σ' (d a')) = boundaryPrimeEmbedding W b' := by
-    apply Subtype.ext
-    rw [← hbc]
-    simp only [coe_boundaryPrimeEmbedding, f, Set.equivOfEq_symm_apply]
-  rw [← hX, ← hZ]
-  exact (hσ' (d a')).1
+    hnd hnf e he'
+  simp only [Scheme.NodalCycleNumbering.boundaryPrimeEquiv_apply_val]
+  by_cases ha : a.val < n
+  · let j : ZMod n := (a.val : ZMod n) + (i + 1)
+    refine Or.inr ⟨A.boundaryPrimeEquiv hD j, ?_, ?_⟩
+    · simpa only [Scheme.NodalCycleNumbering.boundaryPrimeEquiv_apply_val, ha, ite_true]
+        using hA a
+    · simpa only [hσ, Scheme.NodalCycleNumbering.boundaryPrimeEquiv_apply_val, ha, ite_true]
+        using hB a
+  · exact Or.inl ⟨by simpa only [ha, ite_false] using hA a,
+      by simpa only [ha, ite_false] using hB a⟩
 
 end QPainleve.BlowupTower

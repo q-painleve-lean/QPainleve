@@ -165,9 +165,64 @@ theorem polynomialPoint_rev {A : Type u} [CommRing A] (f : R →+* A) (i : Fin 2
   rw [← he]
   exact RingHom.ext fun x ↦ congrArg eval (e.symm_apply_apply x).symm
 
+/-- Over a field, a polynomial point has singleton support. -/
+theorem support_ker_polynomialPoint (K : Type u) [Field K] (j : Fin 2) (a : K) :
+    ((polynomialPoint K (RingHom.id K) j a).ker.support : Set (projectiveLine K)) =
+      {polynomialPoint K (RingHom.id K) j a (IsLocalRing.closedPoint K)} := by
+  let p := polynomialPoint K (RingHom.id K) j a
+  have hP := (polynomialPoint_over K (RingHom.id K) j a).trans (Spec.map_id (CommRingCat.of K))
+  have : IsClosedImmersion p :=
+    isClosedImmersion_of_comp_eq_id (projectiveLine K ↘ Spec (.of K)) p hP
+  exact p.support_ker.trans (p.isClosedEmbedding.isClosed_range.closure_eq.trans
+    (Set.range_eq_singleton (fun y ↦ congrArg (⇑p) (Subsingleton.elim y _))))
+
+/-- Over a field, the support of the inverse-image ideal of a polynomial point
+is the fiber over that point. -/
+theorem mem_support_comap_ker_polynomialPoint_iff (K : Type u) [Field K]
+    {X : Scheme.{u}} (q : X ⟶ projectiveLine K) (x : X) (j : Fin 2) (a : K) :
+    x ∈ ((polynomialPoint K (RingHom.id K) j a).ker.comap q).support ↔
+      q x = polynomialPoint K (RingHom.id K) j a (IsLocalRing.closedPoint K) := by
+  rw [← SetLike.mem_coe, Scheme.IdealSheafData.support_comap, TopologicalSpace.Closeds.coe_preimage,
+    Set.mem_preimage, support_ker_polynomialPoint, Set.mem_singleton_iff]
+
 section Field
 
 variable {K : Type*} [Field K]
+
+/-- A rational point of the projective line can be given by a coordinate in one of the
+two standard affine charts. -/
+theorem exists_eq_polynomialPoint (p : Spec (.of K) ⟶ projectiveLine K)
+    (hp : p ≫ (projectiveLine K ↘ Spec (.of K)) = 𝟙 _) :
+    ∃ (i : Fin 2) (a : K), p = polynomialPoint K (RingHom.id K) i a := by
+  have hx : p (IsLocalRing.closedPoint K) ∈
+      Set.range (polynomialChartι K 0) ∪ Set.range (polynomialChartι K 1) := by
+    rw [range_polynomialChartι_union_range_polynomialChartι]
+    trivial
+  obtain ⟨i, hi⟩ : ∃ i : Fin 2, p (IsLocalRing.closedPoint K) ∈
+      Set.range (polynomialChartι K i) :=
+    hx.elim (fun h ↦ ⟨0, h⟩) (fun h ↦ ⟨1, h⟩)
+  have hr : Set.range p ⊆ Set.range (polynomialChartι K i) := by
+    rintro _ ⟨x, rfl⟩
+    rwa [Subsingleton.elim x (IsLocalRing.closedPoint K)]
+  let q := IsOpenImmersion.lift (polynomialChartι K i) p hr
+  have hq : q ≫ polynomialChartι K i = p := IsOpenImmersion.lift_fac _ _ _
+  have hbase : q ≫ Spec.map (CommRingCat.ofHom (algebraMap K K[X])) = 𝟙 _ := by
+    rw [← polynomialChartι_over, ← Category.assoc, hq, hp]
+  let f := (Spec.preimage q).hom
+  refine ⟨i, f X, ?_⟩
+  rw [← hq, polynomialPoint_def]
+  congr 1
+  apply Spec.preimage_injective
+  rw [Spec.preimage_map]
+  apply CommRingCat.hom_ext
+  apply Polynomial.ringHom_ext
+  · intro a
+    have h := congrArg (fun g : Spec (.of K) ⟶ Spec (.of K) ↦ (Spec.preimage g).hom a) hbase
+    rw [Spec.preimage_comp, Spec.preimage_map, Spec.preimage_id] at h
+    simpa only [CommRingCat.hom_comp, RingHom.comp_apply, CommRingCat.hom_ofHom,
+      CommRingCat.hom_id, RingHom.id_apply, Polynomial.algebraMap_eq, coe_eval₂RingHom,
+      eval₂_C] using h
+  · simp [f]
 
 local notation "𝒜K" => TauCeti.SymmetricAlgebra.homogeneousSubmodule K (Fin 2 → K)
 

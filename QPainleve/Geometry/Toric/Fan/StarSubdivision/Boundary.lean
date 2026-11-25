@@ -291,7 +291,7 @@ theorem IsSubdivision.exists_iso_starSubdivision_of_isNodeOfReducedBoundary
     rw [hI, ← hx, e.hom.comap_ker_fromSpecResidueField_apply,
       q.ker_eq_ker_fromSpecResidueField, hpoint]
   obtain ⟨_, d, _, hd, _⟩ := exists_iso_blowup_starSubdivisionAlong hΨ σ hN hσ
-  let g := d ≪≫ I.blowupIso e hcenter
+  let g := d ≪≫ blowupIso e hcenter.symm
   refine ⟨σ, hσ, hcenter, g, ?_, ?_⟩
   · rw [Iso.trans_hom, Category.assoc, blowupIso_hom_blowupToBase, ← Category.assoc, hd]
   · rw [Iso.trans_hom, ← LineBundleClass.pullback_comp,

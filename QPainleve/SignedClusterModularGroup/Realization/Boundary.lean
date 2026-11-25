@@ -6,13 +6,22 @@ Authors: The QPainleve contributors
 module
 
 public import QPainleve.AlgebraicGeometry.Curves.Node.GenericPoint
+public import QPainleve.AlgebraicGeometry.Curves.Node.NumberedPrime
 public import QPainleve.AlgebraicGeometry.IdealSheaf.Boundary.Primes
+public import QPainleve.AlgebraicGeometry.IntersectionNumber.Nef
 public import QPainleve.SignedClusterModularGroup.Boundary.Isometry
 public import QPainleve.SignedClusterModularGroup.Realization.Basic
+public import TauCeti.Algebra.Module.Primitive
 
+import QPainleve.AlgebraicGeometry.CartierDivisor.Support
+import QPainleve.AlgebraicGeometry.Chow.Isomorphism
+import QPainleve.AlgebraicGeometry.Chow.Nef.Boundary
 import QPainleve.AlgebraicGeometry.Curves.Node.BoundaryRestriction
+import QPainleve.AlgebraicGeometry.Curves.Node.Cartier
 import QPainleve.AlgebraicGeometry.EffectiveCartierDivisor.Dimension
 import QPainleve.AlgebraicGeometry.IdealSheaf.Image.Over
+import QPainleve.AlgebraicGeometry.IntersectionNumber.Nef.Pullback
+import TauCeti.AlgebraicGeometry.Curves.Node.Reduced
 
 /-!
 # Boundary classes of geometric realizations
@@ -44,10 +53,22 @@ variable {k : Type u} [Field k] [IsSepClosed k] [Infinite k] {n : ℕ} [NeZero n
 local notation "S" => Spec (CommRingCat.of k)
 
 local notation "D[" P "]" => Scheme.Hom.ker (Over.Hom.left (Arrow.hom (MarkedSurface.pair P)))
+local notation "classOf(" h ")" => (LineBundleClass.mk (IsEffectiveCartier.toInvertibleSheaf h))⁻¹
 
 namespace MarkedSurface
 
 variable (M)
+
+/-- The closed nodal boundary of a marked surface defines an effective Cartier ideal. -/
+theorem isEffectiveCartier_boundaryIdeal : D[M].IsEffectiveCartier := by
+  let : IsClosedImmersion M.pair.hom.left := M.closedImmersion
+  let : SmoothOfRelativeDimension 2 (M.surface ↘ S) := M.smooth
+  let : PrestableFamily (M.boundary ↘ S) := M.prestable
+  let : CompactSpace M.boundary := QuasiCompact.compactSpace_of_compactSpace (M.boundary ↘ S)
+  apply M.pair.hom.left.isEffectiveCartier_ker_of_atWorstNodalOfRelativeDimensionOne
+    (k := k)
+  rw [comp_over]
+  exact PrestableFamily.atWorstNodalOfRelativeDimensionOne
 
 /-- The ambient codimension-one point of the numbered component of a Cartier boundary. -/
 def boundaryPrime (hM : M.pair.hom.left.ker.IsEffectiveCartier) (j : ZMod n) :
@@ -188,6 +209,18 @@ theorem imageCycle_genericPoint (j : ZMod n) :
   rw [boundaryCycleAction_boundaryImageIso, map_one, Equiv.Perm.one_apply] at h
   rw [← h, ← Scheme.Hom.comp_apply, boundaryImageIso_hom_comp]
 
+/-- The two numberings of the ambient boundary primes agree after identifying the
+marked boundary with its image subscheme. -/
+theorem boundaryPrimeEmbedding_imageCycle (hD : D[P].IsEffectiveCartier)
+    [IsLocallyNoetherian P.surface] (j : ZMod n) :
+    letI := P.prestable_boundaryImage
+    D[P].boundaryPrimeEmbedding (P.imageCycle.boundaryPrimeEquiv hD j) = P.boundaryPrime hD j := by
+  let : PrestableFamily (P.boundary ↘ S) := P.prestable
+  let : PrestableFamily (D[P].subscheme ↘ S) := P.prestable_boundaryImage
+  apply Subtype.ext
+  rw [coe_boundaryPrimeEmbedding, NodalCycleNumbering.boundaryPrimeEquiv_apply_val,
+    P.imageCycle_genericPoint, P.coe_boundaryPrime]
+
 /-- Every ambient boundary prime is the generic point of a numbered component. -/
 theorem numberedBoundaryPrimes_surjective (hP : D[P].IsEffectiveCartier) :
     Function.Surjective (P.numberedBoundaryPrimes hP) := by
@@ -255,6 +288,106 @@ theorem mem_range_boundaryPrime_iff (P : MarkedSurface k n B₀ X₀)
   rw [hcomp, (P.numberedBoundaryPrimes_surjective hD).range_comp, range_boundaryPrimeEmbedding]
   exact Iff.rfl
 
+/-- In the Picard marking the sum of the numbered boundary classes is the
+class of the reduced Cartier boundary. -/
+theorem picardMarking_sum_boundaryClass (P : MarkedSurface k n B₀ X₀)
+    (hD : D[P].IsEffectiveCartier) :
+    P.picardMarking (∑ j, P.boundaryClass hD j) = Additive.ofMul classOf(hD) := by
+  let : P.surface.IsProjectiveOver k := P.projective
+  let : SmoothOfRelativeDimension 2 (P.surface ↘ S) := P.smooth
+  let : IsNoetherian P.surface := isNoetherian_of_finiteType (P.surface ↘ S)
+  let := (P.surface ↘ S).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two
+  let : PrestableFamily (D[P].subscheme ↘ S) := P.prestable_boundaryImage
+  let : IsReduced D[P].subscheme :=
+    (PrestableFamily.atWorstNodalOfRelativeDimensionOne (f := D[P].subscheme ↘ S)).isReduced
+  let p := (P.numberedBoundaryPrimes hD).trans D[P].boundaryPrimeEmbedding
+  have hp (j : ZMod n) : p j = P.boundaryPrime hD j := Subtype.ext (by simp [p])
+  rw [map_sum]
+  simpa only [P.picardMarking_boundaryClass hD, hp] using
+    (hD.ofMul_inv_toInvertibleSheaf_eq_sum_primeDivisorClass p (fun x ↦ by
+      rw [funext hp]
+      exact (P.mem_range_boundaryPrime_iff hD x).symm)).symm
+
+/-- The marked classes distinguish the components of a nef square-zero boundary. -/
+theorem boundaryClass_injective_of_nef_square_zero (M : MarkedSurface k n B₀ X₀)
+    (hD : D[M].IsEffectiveCartier)
+    (hnef : LineBundleClass.IsNef k (M.surface ↘ S) classOf(hD))
+    (hsq : Chow.classIntersectionNumber k M.surface classOf(hD) classOf(hD) = 0) :
+    Function.Injective (M.boundaryClass hD) := by
+  let : M.surface.IsProjectiveOver k := M.projective
+  let : SmoothOfRelativeDimension 2 (M.surface ↘ S) := M.smooth
+  let : PrestableFamily (D[M].subscheme ↘ S) := M.prestable_boundaryImage
+  let : ConnectedSpace D[M].subscheme :=
+    GeometricallyConnected.connectedSpace_of_subsingleton (D[M].subscheme ↘ S)
+  have hconn : _root_.IsPreconnected (D[M].support : Set M.surface) := by
+    rw [← range_subschemeι]
+    exact isPreconnected_range D[M].subschemeι.continuous
+  intro i j hij
+  have hclass := congrArg M.picardMarking hij
+  rw [M.picardMarking_boundaryClass, M.picardMarking_boundaryClass] at hclass
+  have hp := hD.primeDivisorClass_injOn_of_isPreconnected_of_isNef hconn hnef hsq
+    ((M.mem_range_boundaryPrime_iff hD _).mp (Set.mem_range_self i))
+    ((M.mem_range_boundaryPrime_iff hD _).mp (Set.mem_range_self j))
+    (congrArg Additive.toMul hclass)
+  apply (M.numberedBoundaryPrimes hD).injective
+  apply Subtype.ext
+  rw [M.numberedBoundaryPrimes_apply_val, M.numberedBoundaryPrimes_apply_val, hp]
+
+/-- Equal numbered classes in a common Picard marking transport primitivity,
+nefness and square zero of the total reduced boundary class. -/
+theorem primitive_nef_square_zero_iff_of_boundaryClass_eq
+    (M : MarkedSurface k n B₀ X₀) (N : MarkedSurface k n B₀ X₁)
+    (hD : D[M].IsEffectiveCartier) (hE : D[N].IsEffectiveCartier)
+    (hclass : ∀ j, M.boundaryClass hD j = N.boundaryClass hE j) :
+    (TauCeti.IsPrimitive (Additive.ofMul classOf(hD)) ∧
+      LineBundleClass.IsNef k (M.surface ↘ S) classOf(hD) ∧
+      Chow.classIntersectionNumber k M.surface classOf(hD) classOf(hD) = 0) ↔
+    (TauCeti.IsPrimitive (Additive.ofMul classOf(hE)) ∧
+      LineBundleClass.IsNef k (N.surface ↘ S) classOf(hE) ∧
+      Chow.classIntersectionNumber k N.surface classOf(hE) classOf(hE) = 0) := by
+  let : M.surface.IsProjectiveOver k := M.projective
+  let : N.surface.IsProjectiveOver k := N.projective
+  let : SmoothOfRelativeDimension 2 (M.surface ↘ S) := M.smooth
+  let : SmoothOfRelativeDimension 2 (N.surface ↘ S) := N.smooth
+  let : IsNoetherian M.surface := isNoetherian_of_finiteType (M.surface ↘ S)
+  let : IsNoetherian N.surface := isNoetherian_of_finiteType (N.surface ↘ S)
+  let := (M.surface ↘ S).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two
+  let := (N.surface ↘ S).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two
+  let : PrestableFamily (D[M].subscheme ↘ S) := M.prestable_boundaryImage
+  let : PrestableFamily (D[N].subscheme ↘ S) := N.prestable_boundaryImage
+  let : IsReduced D[M].subscheme :=
+    (PrestableFamily.atWorstNodalOfRelativeDimensionOne (f := D[M].subscheme ↘ S)).isReduced
+  let : IsReduced D[N].subscheme :=
+    (PrestableFamily.atWorstNodalOfRelativeDimensionOne (f := D[N].subscheme ↘ S)).isReduced
+  let p := (M.numberedBoundaryPrimes hD).trans D[M].boundaryPrimeEmbedding
+  let q := (N.numberedBoundaryPrimes hE).trans D[N].boundaryPrimeEmbedding
+  have hp (j : ZMod n) : p j = M.boundaryPrime hD j := Subtype.ext (by simp [p])
+  have hq (j : ZMod n) : q j = N.boundaryPrime hE j := Subtype.ext (by simp [q])
+  let g : (Chow.intersectionBilinForm k M.surface).IsometryEquiv
+      (Chow.intersectionBilinForm k N.surface) := M.marking.symm.trans N.marking
+  have hdimM := topologicalKrullDim_eq_of_smoothOfRelativeDimension (M.surface ↘ S) (n := 2)
+  have hdimN := topologicalKrullDim_eq_of_smoothOfRelativeDimension (N.surface ↘ S) (n := 2)
+  let g' : (Chow.classIntersectionBilinForm k hdimM).IsometryEquiv
+      (Chow.classIntersectionBilinForm k hdimN) :=
+    { g.toLinearEquiv with
+      map_app' := fun x y ↦ by
+        simpa only [Chow.classIntersectionBilinForm_apply, Chow.intersectionBilinForm_apply,
+          LinearMap.toFun_eq_coe, LinearEquiv.coe_coe,
+          LinearMap.BilinForm.IsometryEquiv.coe_toLinearEquiv] using g.map_app y x }
+  refine hD.primitive_nef_square_zero_iff_of_picardIsometry hE hdimM hdimN g' p q ?_ ?_ ?_
+  · intro x
+    rw [funext hp]
+    exact (M.mem_range_boundaryPrime_iff hD x).symm
+  · intro y
+    rw [funext hq]
+    exact (N.mem_range_boundaryPrime_iff hE y).symm
+  · intro j
+    rw [hp, hq, ← M.picardMarking_boundaryClass, ← N.picardMarking_boundaryClass, ← hclass]
+    have hg' (a : Additive (LineBundleClass M.surface)) : g' a = g a := rfl
+    simp only [hg', g, MarkedSurface.picardMarking_apply,
+      LinearMap.BilinForm.IsometryEquiv.trans_apply,
+      LinearMap.BilinForm.IsometryEquiv.symm_apply_apply]
+
 /-- The Picard marking identifies the orthogonal to the numbered boundary classes with
 the geometric boundary orthogonal. -/
 theorem picardMarking_mem_boundaryOrthogonal_iff (P : MarkedSurface k n B₀ X₀)
@@ -275,7 +408,56 @@ theorem picardMarking_mem_boundaryOrthogonal_iff (P : MarkedSurface k n B₀ X�
   simp only [LinearMap.BilinForm.orthogonal, Submodule.mem_orthogonalBilin_span,
     Set.forall_mem_range, ← P.picardMarking_boundaryClass hD, P.intersectionBilinForm_picardMarking]
 
+/-- The Picard marking restricts to the orthogonal of the numbered boundary classes. -/
+def boundaryOrthogonalMarking (hD : D[P].IsEffectiveCartier) :
+    letI : P.surface.IsProjectiveOver k := P.projective
+    letI : SmoothOfRelativeDimension 2 (P.surface ↘ S) := P.smooth
+    B₀.orthogonal (Submodule.span ℤ (Set.range (P.boundaryClass hD))) ≃ₗ[ℤ]
+      D[P].boundaryOrthogonal k := by
+  let : P.surface.IsProjectiveOver k := P.projective
+  let : SmoothOfRelativeDimension 2 (P.surface ↘ S) := P.smooth
+  exact P.picardMarking.ofSubmodules _ _
+    (Submodule.ext fun x ↦ by
+      obtain ⟨y, rfl⟩ := P.picardMarking.surjective x
+      rw [Submodule.mem_map_equiv, LinearEquiv.symm_apply_apply,
+        P.picardMarking_mem_boundaryOrthogonal_iff hD])
+
+/-- The restricted marking acts by the Picard marking on the underlying classes. -/
+@[simp]
+theorem coe_boundaryOrthogonalMarking_apply (hD : D[P].IsEffectiveCartier)
+    (x : B₀.orthogonal (Submodule.span ℤ (Set.range (P.boundaryClass hD)))) :
+    letI : P.surface.IsProjectiveOver k := P.projective
+    letI : SmoothOfRelativeDimension 2 (P.surface ↘ S) := P.smooth
+    (P.boundaryOrthogonalMarking hD x).val = P.picardMarking x.val :=
+  LinearEquiv.ofSubmodules_apply _ _ x
+
 end BoundaryImage
+
+variable {M} in
+/-- A marked pair isomorphism transports a Cartier boundary with nef class of
+self-intersection zero to a boundary with the same properties. -/
+theorem exists_nef_square_zero_boundary_of_pairIso
+    (f : M.pair ≅ N.pair) (h : D[M].IsEffectiveCartier)
+    (hnef : LineBundleClass.IsNef k (M.surface ↘ S) classOf(h))
+    (hsq : Chow.classIntersectionNumber k M.surface classOf(h) classOf(h) = 0) :
+    ∃ h' : D[N].IsEffectiveCartier, LineBundleClass.IsNef k (N.surface ↘ S) classOf(h') ∧
+      Chow.classIntersectionNumber k N.surface classOf(h') classOf(h') = 0 := by
+  let e := surfaceIso f.symm
+  let : e.hom.IsOver S := inferInstanceAs ((surfaceIso f.symm).hom.IsOver S)
+  have hker : D[M].comap e.hom = D[N] := by
+    have hb := congrArg Scheme.Hom.ker (boundaryIso_hom_comp f.symm)
+    rw [Scheme.Hom.ker_comp_of_isIso] at hb
+    rw [hb, Scheme.Hom.comap_ker_comp_of_isClosedImmersion]
+  have hc := h.comap e.hom
+  let h' : D[N].IsEffectiveCartier := hker ▸ hc
+  have hclass : LineBundleClass.pullback e.hom classOf(h) = classOf(h') := by
+    rw [LineBundleClass.pullback_inv, h.pullback_mk_toInvertibleSheaf hc,
+      LineBundleClass.mk_toInvertibleSheaf_congr hc h' hker]
+  let : SmoothOfRelativeDimension 2 (M.surface ↘ S) := M.smooth
+  let : Smooth (M.surface ↘ S) := SmoothOfRelativeDimension.smooth 2 _
+  let : M.surface.IsProjectiveOver k := M.projective
+  refine ⟨h', hclass ▸ hnef.pullback e.hom, ?_⟩
+  rw [← hclass, Chow.classIntersectionNumber_pullback_of_isIso, hsq]
 
 end MarkedSurface
 
@@ -333,18 +515,24 @@ variable {P : Point T₀ → MarkedSurface k n B₀ X₀}
   (hmark : ∀ c j, (P c).boundaryClass (hD c) j = D j)
 
 include hmark in
+/-- Pullback in the common marking subtracts the forward boundary shift before
+applying the branch sign to the index. -/
+theorem picard_apply_boundaryClass (j : ZMod n) :
+    A.picard (D j) = D (A.orientation • (j - A.boundaryPerm 0)) := by
+  obtain ⟨c⟩ := nonempty_centerPoint C₀
+  have h := A.picard_boundaryClass c (hD _) (hD _) j
+  rwa [hmark, hmark, cycleVertexPerm_inv_apply, ← A.orientation_def, ← A.boundaryPerm_def] at h
+
+include hmark in
 /-- For a fixed marked boundary, the Picard pullback together with the branch orientation
 of a geometric self-realization belongs to the signed boundary isometry group. -/
 theorem picard_mem_signedBoundaryIsometryGroup :
     (B₀.isometryGroupEquivIsometryEquiv.symm A.picard, A.orientation) ∈
       signedBoundaryIsometryGroup B₀ D := by
-  obtain ⟨c⟩ := nonempty_centerPoint C₀
   refine (mem_signedBoundaryIsometryGroup_iff B₀ D).2
-    ⟨cycleVertexPerm A.boundaryAction⁻¹ 0, fun j ↦ ?_⟩
-  have h := A.picard_boundaryClass c (hD _) (hD _) j
-  rw [hmark, hmark, cycleVertexPerm_apply, map_inv, Int.units_inv_eq_self] at h
-  simpa only [LinearMap.BilinForm.coe_isometryGroupEquivIsometryEquiv_symm, orientation_def,
-    Units.smul_def] using h
+    ⟨-(A.orientation • A.boundaryPerm 0), fun j ↦ ?_⟩
+  simpa only [LinearMap.BilinForm.coe_isometryGroupEquivIsometryEquiv_symm, sub_eq_add_neg,
+    smul_add, smul_neg] using A.picard_apply_boundaryClass D hD hmark j
 
 include hmark in
 /-- An orientation-preserving geometric self-realization of a fixed marked boundary

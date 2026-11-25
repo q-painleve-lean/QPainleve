@@ -5,16 +5,17 @@ Authors: The QPainleve contributors
 -/
 module
 
+public import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.Sections.TwistingSheaf
 public import TauCeti.AlgebraicGeometry.Curves.Basic
 public import TauCeti.AlgebraicGeometry.IntersectionNumber.Basic
 public import TauCeti.AlgebraicGeometry.LineBundle.Ample
 public import TauCeti.AlgebraicGeometry.LineBundle.GlobalGeneration.Basic
 public import TauCeti.AlgebraicGeometry.LineBundle.Power
+import QPainleve.AlgebraicGeometry.Curves.Degree.Ample
 import QPainleve.AlgebraicGeometry.LineBundle.Ample
+import QPainleve.AlgebraicGeometry.LineBundle.GlobalGeneration
 import QPainleve.AlgebraicGeometry.Morphisms.Finite
-import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.Sections.TwistingSheaf
 import TauCeti.AlgebraicGeometry.Curves.Normalization
-import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.Polynomial.Basic
 
 /-!
 # Ampleness of globally generated line bundles positive on curves
@@ -69,6 +70,64 @@ namespace TauCeti.AlgebraicGeometry.InvertibleSheaf
 
 attribute [local instance] MvPolynomial.gradedAlgebra
 
+/-- Generating sections of a line bundle that has positive degree on every integral closed
+curve give a finite morphism to projective space, with the original class as the pullback
+of the hyperplane class. -/
+theorem exists_finite_toProjectiveSpace_of_intersectionNumber_pos
+    {k : Type u} [Field k] {X : Scheme.{u}} [X.Over (Spec (.of k))]
+    [IsProper (X ↘ Spec (.of k))] (L : InvertibleSheaf X) {ι : Type u} [Finite ι]
+    (s : ι → Γ(L.obj, ⊤)) (hcover : (⨆ i, L.obj.nonvanishingLocus (s i)) = ⊤)
+    (hpos : ∀ {C : Scheme.{u}} [C.Over (Spec (.of k))] [C.IsCurveOver k]
+      (i : C ⟶ X) [IsClosedImmersion i], C ↘ Spec (.of k) = i ≫ X ↘ Spec (.of k) →
+        0 < LineBundleClass.intersectionNumber k i (LineBundleClass.mk L)) :
+    let A := MvPolynomial.homogeneousSubmodule ι k
+    let H : InvertibleSheaf (Proj A) := ⟨Proj.twistingSheaf A 1, inferInstance⟩
+    ∃ p : X ⟶ Proj A, p ≫ Proj.toSpecCoeff A = X ↘ Spec (.of k) ∧ IsFinite p ∧
+      LineBundleClass.pullback p (LineBundleClass.mk H) = LineBundleClass.mk L := by
+  intro A H
+  let f := X ↘ Spec (.of k)
+  let p := L.obj.toProjectiveSpace f s hcover
+  let q := Proj.toSpecCoeff A
+  have : IsProper q := by
+    dsimp only [q, A]
+    rw [← Proj.over_polynomial]
+    infer_instance
+  have hcomp : p ≫ q = f := L.obj.toProjectiveSpace_toSpecCoeff f s hcover
+  have : IsProper (p ≫ q) := hcomp.symm ▸ ‹IsProper f›
+  have : IsProper p := .of_comp p q
+  have : CompactSpace (Proj A) := QuasiCompact.compactSpace_of_compactSpace q
+  obtain ⟨e, -⟩ := L.obj.exists_iso_pullbackTwistingSheaf_toProjectiveSpace f s hcover
+  have hclass : LineBundleClass.pullback p (LineBundleClass.mk H) = LineBundleClass.mk L := by
+    rw [LineBundleClass.pullback_mk]
+    exact LineBundleClass.mk_eq_mk_iff.mpr ⟨
+      eqToIso (InvertibleSheaf.pullback_obj_obj p H) ≪≫ e⟩
+  refine ⟨p, hcomp, p.isFinite_of_intersectionNumber_pullback_pos (k := k)
+    (LineBundleClass.mk H) ?_, hclass⟩
+  intro C _ _ i _ hi
+  rw [hclass]
+  exact hpos i hi
+
+/-- A globally generated ample line bundle with a three-dimensional space of global
+sections on a proper scheme defines a finite morphism to the projective plane, with pullback
+of the hyperplane bundle equal to the original bundle. -/
+theorem exists_finite_to_projectivePlane
+    {k : Type u} [Field k] {X : Scheme.{u}} [X.Over (Spec (.of k))]
+    [IsProper (X ↘ Spec (.of k))] (L : InvertibleSheaf X)
+    (hA : (LineBundleClass.mk L).IsAmple) (hglob : L.IsGloballyGenerated)
+    (hnum : Module.finrank k Γ(L.obj, ⊤) = 3) :
+    let 𝒜 := MvPolynomial.homogeneousSubmodule (ULift.{u} (Fin 3)) k
+    let H : InvertibleSheaf (Proj 𝒜) := ⟨Proj.twistingSheaf 𝒜 1, inferInstance⟩
+    ∃ f : X ⟶ Proj 𝒜, f ≫ Proj.toSpecCoeff 𝒜 = X ↘ Spec (.of k) ∧ IsFinite f ∧
+      LineBundleClass.pullback f (LineBundleClass.mk H) = LineBundleClass.mk L := by
+  intro 𝒜 H
+  have : Module.Finite k Γ(L.obj, ⊤) := Module.finite_of_finrank_pos (hnum.symm ▸ by decide)
+  let b : Module.Basis (ULift.{u} (Fin 3)) k Γ(L.obj, ⊤) :=
+    (Module.finBasisOfFinrankEq k Γ(L.obj, ⊤) hnum).reindex Equiv.ulift.symm
+  have hcover := hglob.iSup_nonvanishingLocus_basis_eq_top b
+  refine L.exists_finite_toProjectiveSpace_of_intersectionNumber_pos b hcover ?_
+  intro C _ _ i _ _
+  exact hA.intersectionNumber_pos i
+
 /-- A globally generated line bundle on a proper scheme over a field is ample if
 its intersection number with every integral closed curve is positive. -/
 theorem isAmple_of_isGloballyGenerated_of_intersectionNumber_pos
@@ -87,32 +146,20 @@ theorem isAmple_of_isGloballyGenerated_of_intersectionNumber_pos
     (isGloballyGenerated_iff_iSup_nonvanishingLocus_eq_top.mp hL).ge
   have hcover : (⨆ s : T, U s) = ⊤ := top_le_iff.mp (by
     simpa only [iSup_subtype, Finset.sup_eq_iSup] using hT)
+  obtain ⟨p, -, hp, hclass⟩ := L.exists_finite_toProjectiveSpace_of_intersectionNumber_pos
+    Subtype.val hcover hpos
   let A := MvPolynomial.homogeneousSubmodule (↑T) k
-  let p : X ⟶ Proj A := L.obj.toProjectiveSpace f Subtype.val hcover
-  let q := Proj.toSpecCoeff A
-  have : IsProper q := by
-    dsimp only [q, A]
+  have : IsProper (Proj.toSpecCoeff A) := by
     rw [← Proj.over_polynomial]
     infer_instance
-  have hcomp : p ≫ q = f := L.obj.toProjectiveSpace_toSpecCoeff f Subtype.val hcover
-  have : IsProper (p ≫ q) := hcomp.symm ▸ ‹IsProper f›
-  have : IsProper p := .of_comp p q
-  have : CompactSpace (Proj A) := QuasiCompact.compactSpace_of_compactSpace q
-  obtain ⟨e, -⟩ := L.obj.exists_iso_pullbackTwistingSheaf_toProjectiveSpace f Subtype.val hcover
-  let M : InvertibleSheaf (Proj A) := ⟨Proj.twistingSheaf A 1, inferInstance⟩
-  have hclass : LineBundleClass.mk L = LineBundleClass.pullback p (LineBundleClass.mk M) := by
-    rw [LineBundleClass.pullback_mk]
-    exact LineBundleClass.mk_eq_mk_iff.mpr ⟨e.symm⟩
-  have : IsFinite p := p.isFinite_of_intersectionNumber_pullback_pos (LineBundleClass.mk M)
-    (by
-      intro C _ _ i _ hi
-      rw [← hclass]
-      exact hpos i hi)
+  have : CompactSpace (Proj A) := QuasiCompact.compactSpace_of_compactSpace (Proj.toSpecCoeff A)
+  let M : InvertibleSheaf (Proj A) := ⟨Proj.twistingSheaf _ 1, inferInstance⟩
   have hM : (LineBundleClass.mk M).IsAmple :=
     Proj.isAmple_twistingSheaf (fun s : T ↦ MvPolynomial.X s)
       (fun s ↦ (MvPolynomial.mem_homogeneousSubmodule ..).mpr (MvPolynomial.isHomogeneous_X k s))
       (Proj.iSup_basicOpen_eq_top _ _ (MvPolynomial.irrelevant_eq_span_X _ _).le) Nat.one_pos
-  exact hclass.symm ▸ hM.pullback_of_isAffineHom p
+  have hclass' : LineBundleClass.pullback p (LineBundleClass.mk M) = LineBundleClass.mk L := hclass
+  exact hclass' ▸ hM.pullback_of_isAffineHom p
 
 /-- A line bundle with a globally generated positive tensor power is ample if
 its intersection number with every integral closed curve is positive. -/

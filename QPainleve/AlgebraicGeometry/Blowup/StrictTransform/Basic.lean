@@ -9,6 +9,7 @@ public import TauCeti.AlgebraicGeometry.Blowup.StrictTransform
 public import QPainleve.AlgebraicGeometry.Blowup.Isomorphism
 import QPainleve.AlgebraicGeometry.IdealSheaf.Restriction
 import TauCeti.AlgebraicGeometry.Blowup.ExceptionalDivisor
+import TauCeti.AlgebraicGeometry.Blowup.Restriction
 import TauCeti.AlgebraicGeometry.IdealSheaf.BaseChange
 import TauCeti.AlgebraicGeometry.IdealSheaf.Colon
 import TauCeti.AlgebraicGeometry.IdealSheaf.Extension
@@ -30,7 +31,7 @@ strict and total transforms agree.
 
 public section
 
-open CategoryTheory Limits
+open CategoryTheory Limits TopologicalSpace
 
 universe u
 
@@ -56,6 +57,29 @@ theorem ker_blowupMap_subschemeι_eq_map_comap {X : Scheme.{u}} (I J : X.IdealSh
   rw [I.ker_blowupMap, ← hW, ← morphismRestrict_ι, Scheme.Hom.ker_comp]
   rw [ker_eq_comap_of_isPullback f (isPullback_morphismRestrict f W), hTotal]
 
+/-- The strict transform is supported in the total transform of another closed
+subscheme exactly when its original support off the center is contained there. -/
+theorem support_ker_blowupMap_subschemeι_le_comap_iff
+    {X : Scheme.{u}} [IsLocallyNoetherian X] (I F D : X.IdealSheafData) :
+    (I.blowupMap F.subschemeι).ker.support ≤ (D.comap I.blowupToBase).support ↔
+      (F.support : Set X) \ I.support ⊆ D.support := by
+  let π := I.blowupToBase
+  let U : I.blowup.Opens := (I.comap π).support.compl
+  have : IsLocallyNoetherian I.blowup := LocallyOfFiniteType.isLocallyNoetherian π
+  have hU : U = π ⁻¹ᵁ I.support.compl := compl_support_comap I π
+  have hRange : Set.range (U.ι ≫ π) = (I.support : Set X)ᶜ := by
+    have : IsIso (π ∣_ I.support.compl) := I.isIso_blowupToBase_restrict_compl_support
+    rw [hU, ← morphismRestrict_ι, ← Scheme.Hom.coe_opensRange,
+      Scheme.Hom.opensRange_comp_of_isIso, Scheme.Opens.opensRange_ι, Closeds.coe_compl]
+  have hImage : (fun x : U.toScheme ↦ π (U.ι x)) '' ((U.ι ≫ π) ⁻¹' (F.support : Set X)) =
+      (F.support : Set X) \ I.support := by
+    rw [Set.sdiff_eq, ← hRange]
+    exact Set.image_preimage_eq_inter_range (f := ⇑(U.ι ≫ π))
+  rw [ker_blowupMap_subschemeι_eq_map_comap, support_map, ← SetLike.coe_subset_coe,
+    Closeds.coe_closure, (D.comap π).support.isClosed.closure_subset_iff,
+    support_comap D, Closeds.coe_preimage, ← Set.image_subset_iff, Set.image_image,
+    ← comap_comp, support_comap F, Closeds.coe_preimage, hImage]
+
 /-- The kernel defining the strict transform of a closed immersion agrees with the one
 computed using the canonical closed subscheme of its ideal. -/
 theorem ker_blowupMap_eq_ker_blowupMap_subschemeι {D X : Scheme.{u}}
@@ -65,7 +89,7 @@ theorem ker_blowupMap_eq_ker_blowupMap_subschemeι {D X : Scheme.{u}}
   have he : e.hom ≫ i.ker.subschemeι = i := i.toImage_imageι
   let J := I.comap i.ker.subschemeι
   have hJ : J.comap e.hom = I.comap i := by rw [← I.comap_comp, he]
-  let g := J.blowupIso e hJ
+  let g := blowupIso e hJ.symm
   have hcomp : g.hom ≫ I.blowupMap i.ker.subschemeι = I.blowupMap i := by
     apply I.eq_blowupMap
     dsimp only [g, J]
@@ -126,7 +150,7 @@ theorem comap_ker_blowupMap_subschemeι_blowupMap_of_isOpenImmersion
 transforms of the inverse-image ideals. -/
 theorem comap_ker_blowupMap_subschemeι_blowupIso {X Y : Scheme.{u}}
     (J D : Y.IdealSheafData) (e : X ≅ Y) {I : X.IdealSheafData} (hI : J.comap e.hom = I) :
-    (J.blowupMap D.subschemeι).ker.comap (J.blowupIso e hI).hom =
+    (J.blowupMap D.subschemeι).ker.comap (blowupIso e hI.symm).hom =
       (I.blowupMap (D.comap e.hom).subschemeι).ker := by
   let i := (D.comap e.hom).subschemeι
   let d := subschemeMap (D.comap e.hom) D e.hom (D.le_map_comap e.hom)
@@ -139,8 +163,8 @@ theorem comap_ker_blowupMap_subschemeι_blowupIso {X Y : Scheme.{u}}
   have hd : d ≫ D.subschemeι = i ≫ e.hom := subschemeMap_subschemeι _ _ _ _
   have hC : (J.comap D.subschemeι).comap d = I.comap i := by
     rw [← comap_comp, hd, comap_comp, hI]
-  let f := (J.comap D.subschemeι).blowupIso (asIso d) hC
-  have hw : I.blowupMap i ≫ (J.blowupIso e hI).hom = f.hom ≫ J.blowupMap D.subschemeι := by
+  let f := blowupIso (asIso d) hC.symm
+  have hw : I.blowupMap i ≫ (blowupIso e hI.symm).hom = f.hom ≫ J.blowupMap D.subschemeι := by
     apply J.blowup_hom_ext
     · simp only [Category.assoc, blowupIso_hom_blowupToBase,
         blowupMap_blowupToBase_assoc, ← hd, blowupMap_blowupToBase,

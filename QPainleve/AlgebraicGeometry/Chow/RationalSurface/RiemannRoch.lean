@@ -6,6 +6,7 @@ Authors: The QPainleve contributors
 module
 
 public import QPainleve.AlgebraicGeometry.Chow.RationalSurface.Basic
+public import QPainleve.AlgebraicGeometry.LineBundle.EffectiveClass
 
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Cohomology
 import QPainleve.AlgebraicGeometry.Blowup.Tower.SecondCohomology
@@ -32,7 +33,7 @@ public section
 open AlgebraicGeometry CategoryTheory QPainleve QPainleve.BlowupTower
 open TauCeti.AlgebraicGeometry TauCeti.SymmetricAlgebra
 open AlgebraicGeometry.Scheme.Modules TauCeti.AlgebraicGeometry.Scheme.Modules
-open TauCeti.AlgebraicGeometry.LineBundleClass
+open TauCeti.AlgebraicGeometry.LineBundleClass TauCeti.AlgebraicGeometry.Scheme.CartierDivisor
 
 universe u
 
@@ -169,4 +170,46 @@ theorem exists_effectiveCartier_or_canonical_mul_inv_of_eulerCharBelow_pos
   · obtain ⟨I, hI, hclass⟩ := N.exists_effectiveCartier_of_eulerCharBelow_pos k χN h
     exact ⟨I, hI, Or.inr (by rw [hclass, inv_inv, hN])⟩
 
+variable [IsIntegral X]
+
+/-- A Picard class of positive Euler characteristic or its canonical complement is effective. -/
+theorem mem_effectiveClasses_or_canonical_sub_of_eulerChar_pos (a : Additive (LineBundleClass X))
+    (ha : 0 < eulerCharBelow k a.toMul 3) :
+    a ∈ X.effectiveClasses ∨ Additive.ofMul K[X] - a ∈ X.effectiveClasses := by
+  obtain ⟨I, hI, hclass | hclass⟩ :=
+    exists_effectiveCartier_or_canonical_mul_inv_of_eulerCharBelow_pos k a.toMul ha
+  · exact Or.inl (Scheme.mem_effectiveClasses.mpr
+      ⟨hI.toCartierDivisor, hI.isEffective_toCartierDivisor, by
+        rw [hI.toLineBundleClass_toCartierDivisor, hclass, ofMul_toMul]⟩)
+  · exact Or.inr (Scheme.mem_effectiveClasses.mpr
+      ⟨hI.toCartierDivisor, hI.isEffective_toCartierDivisor, by
+        rw [hI.toLineBundleClass_toCartierDivisor, hclass, ofMul_mul, ofMul_inv, ofMul_toMul,
+          sub_eq_add_neg]⟩)
+
 end TauCeti.AlgebraicGeometry.LineBundleClass
+
+namespace AlgebraicGeometry.Scheme
+
+open Chow
+
+variable (X : Scheme.{u}) [X.Over (Spec (.of k))] [X.IsProjectiveOver k]
+  [SmoothOfRelativeDimension 2 (X ↘ Spec (.of k))]
+  [rational : Scheme.IsRationalOver (X ↘ Spec (.of k))]
+
+local notation "B" => classIntersectionBilinForm k
+  (topologicalKrullDim_eq_of_smoothOfRelativeDimension (X ↘ S) (n := 2))
+local notation "K" => Additive.ofMul K[X]
+
+include algClosed rational in
+/-- On a smooth projective rational surface, if a class intersects its difference with the
+canonical class nonnegatively, either the class or its canonical complement is effective. -/
+theorem mem_effectiveClasses_or_canonical_sub
+    [IsIntegral X] [∀ x : X, UniqueFactorizationMonoid (X.presheaf.stalk x)]
+    (a : Additive (LineBundleClass X))
+    (h : 0 ≤ B a a - B a K) : a ∈ X.effectiveClasses ∨ K - a ∈ X.effectiveClasses := by
+  have hRR : 2 * (eulerCharBelow k a.toMul 3 - 1) = B a a - B a K := by
+    simpa only [classIntersectionBilinForm_apply, toMul_ofMul] using
+      eulerCharBelow_eq_riemannRoch_of_isRationalOver k a.toMul
+  exact mem_effectiveClasses_or_canonical_sub_of_eulerChar_pos k a (by omega)
+
+end AlgebraicGeometry.Scheme

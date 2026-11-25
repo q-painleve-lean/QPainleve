@@ -6,15 +6,8 @@ Authors: The QPainleve contributors
 module
 
 public import QPainleve.Geometry.Toric.Fan.Boundary.CommonRefinement
+public import QPainleve.SignedClusterModularGroup.Realization.ContractionNumerics
 public import QPainleve.SignedClusterModularGroup.Realization.Endpoint.Basic
-
-import QPainleve.AlgebraicGeometry.Blowup.Tower.Projective
-import QPainleve.AlgebraicGeometry.CartierDivisor.Excision
-import QPainleve.AlgebraicGeometry.CartierDivisor.Support
-import QPainleve.AlgebraicGeometry.Curves.Node.NumberedPrime
-import QPainleve.SignedClusterModularGroup.Boundary.Intersection
-import QPainleve.SignedClusterModularGroup.Realization.Boundary
-import TauCeti.AlgebraicGeometry.Curves.Node.Reduced
 
 /-!
 # Marked endpoints with equal exchange matrices
@@ -65,29 +58,6 @@ variable {N N' V V' : Type} [AddCommGroup N] [AddCommGroup N']
   (p : ContractedToricFiber b s hΦ T o J c M)
 
 local instance : SmoothOfRelativeDimension 2 (M.surface ↘ S) := M.smooth
-local instance : M.surface.IsProjectiveOver ℂ := M.projective
-local instance : PrestableFamily (D[M].subscheme ↘ S) := M.prestable_boundaryImage
-
-include p in
-/-- The toric base of a marked presentation is projective when its contraction
-is identified with a specified blowup tower over the projective pair. -/
-theorem isProjectiveOver_toricBase {l : ℕ} {Y : Scheme} {A : BlowupTower M.surface l Y}
-    (u : Y ≅ (model[b,s,c]).1) (hu : u.inv ≫ A.toBase = p.projection) :
-    Φ.algebraicRealization.IsProjectiveOver ℂ := by
-  let P := model[b,s,c]
-  let : Y.Over S := ⟨A.toBase ≫ (M.surface ↘ S)⟩
-  let : Y.IsProjectiveOver ℂ := A.isProjectiveOver ℂ
-  let : P.1.Over S := ⟨P.2.toTower.toBase ≫ (Φ.algebraicRealization ↘ S)⟩
-  have hover : u.inv ≫ A.toBase ≫ (M.surface ↘ S) =
-      P.2.toTower.toBase ≫ (Φ.algebraicRealization ↘ S) := by
-    rw [← Category.assoc, hu, p.projection_over, algebraicRealization_over]
-  let : u.inv.IsOver S := ⟨hover⟩
-  have hP : P.1.IsProjectiveOver ℂ := Scheme.IsProjectiveOver.of_isClosedImmersion ℂ u.inv
-  have hdim := (Module.finrank_eq_card_basis b).trans (Fintype.card_fin 2)
-  let : SmoothOfRelativeDimension 2 (Φ.algebraicRealization ↘ S) := by
-    rw [algebraicRealization_over]
-    exact hdim ▸ Φ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
-  exact (isClosedPointTower_internalBlowupTower b s centers(c)).isProjectiveOver_base hP
 
 include p in
 /-- An equal exchange matrix identifies the ambient lattice of an ordered presentation
@@ -107,43 +77,9 @@ theorem existsUnique_rayChargeEquiv_of_equal_exchange_matrix
       chargeExchangeMatrix b'.detDualEquiv.toLinearMap (rayChargeMap s')) :
     ∃! E : N ≃ₗ[ℤ] N', (∀ j, E (s j).primitiveGenerator = (s' j).primitiveGenerator) ∧
       ∀ x y, b'.detDualEquiv (E x) (E y) = b.detDualEquiv x y := by
-  let : IsNoetherian M.surface := isNoetherian_of_finiteType (M.surface ↘ S)
-  let : ∀ x : M.surface, UniqueFactorizationMonoid (M.surface.presheaf.stalk x) :=
-    (M.surface ↘ S).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two
-  let D := M.imageCycle
-  let P := (D.boundaryPrimeEquiv hD).toEmbedding.trans (D[M]).boundaryPrimeEmbedding
-  let Q : ZMod n ↪ M.surface := ⟨D.ambientNode, D.ambientNode_injective⟩
-  let C (j : ZMod n) := Additive.ofMul (primeDivisorClass (P j))
-  have hp (x : CodimensionOnePoint M.surface) :
-      (x : M.surface) ∈ D[M].support ↔ x ∈ Set.range P := by
-    simp only [P, Function.Embedding.coe_trans, Equiv.coe_toEmbedding,
-      (D.boundaryPrimeEquiv hD).surjective.range_comp, range_boundaryPrimeEmbedding]
-    rfl
-  have hinc (i j : ZMod n) (hij : i ≠ j) :
-      closure {(P i : M.surface)} ∩ closure {(P j : M.surface)} =
-        Q '' {a | (a = i ∧ j = i + 1) ∨ (a = j ∧ i = j + 1)} := by
-    simpa only [P, Q, Function.Embedding.trans_apply, Equiv.toEmbedding_apply,
-      Function.Embedding.coeFn_mk, coe_boundaryPrimeEmbedding] using
-      D.closure_boundaryPrime_inter_of_ne hD hij
-  have hnodal : AtWorstNodalOfRelativeDimensionOne (D[M].subscheme ↘ S) :=
-    PrestableFamily.atWorstNodalOfRelativeDimensionOne
-  have hGram := BoundaryCycle.intersectionBilinForm_eq_of_nodal_cycle
-    hD hnodal hnefD hsqD P Q hp hinc
-  have hspan : Scheme.Opens.primeDivisorSpanCompl (D[M].support.compl) =
-      Submodule.span ℤ (Set.range C) := by
-    apply Scheme.Opens.primeDivisorSpanCompl_eq_span_of_mem_iff _ P
-    intro x
-    simpa only [C, ← SetLike.mem_coe, Closeds.coe_compl, Set.mem_compl_iff, not_not] using hp x
-  let : IsReduced D[M].subscheme := hnodal.isReduced
-  have hsum : Additive.ofMul classOf(hD) = ∑ j, C j :=
-    hD.ofMul_inv_toInvertibleSheaf_eq_sum_primeDivisorClass P hp
-  have hsumCan : ∑ j, C j =
-      -Additive.ofMul (LineBundleClass.mk (canonicalBundle ℂ M.surface 2)) := by
-    rw [← hsum, hcan, ofMul_inv]
-  let : Φ.algebraicRealization.IsProjectiveOver ℂ := p.isProjectiveOver_toricBase u hu
-  exact Fan.existsUnique_rayChargeEquiv_of_anticanonical_cycle s s' b b' centers(c) hΦ hcΦ
-    hA u (by rw [← Category.assoc, hu, p.projection_over, Fan.algebraicRealization_over])
-    (by rw [← comap_comp, hu, p.support_comap]) C hGram hspan hsumCan (hsum ▸ hδ) hmat
+  obtain ⟨hcount, _, _, hk, hindex, _, hrel⟩ :=
+    p.chargeIndex_bounds_of_anticanonical_cycle hcΦ hA u hu hD hnefD hsqD hcan hδ
+  exact Fan.existsUnique_rayChargeEquiv_of_index s s' b b' hmat hcount hk hindex hrel
 
 variable [hΨ₀ : Nonempty Ψ.cones] {m' : ℕ} [NeZero m']
   {L' : Type} [AddCommGroup L'] {B' : LinearMap.BilinForm ℤ L'}

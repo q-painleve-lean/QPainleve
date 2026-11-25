@@ -6,6 +6,7 @@ Authors: The QPainleve contributors
 module
 
 public import QPainleve.Geometry.Toric.Fan.Picard.Period.Surjectivity
+public import QPainleve.SignedClusterModularGroup.Boundary.Restriction
 public import QPainleve.SignedClusterModularGroup.Realization.MarkedComparison
 
 import QPainleve.AlgebraicGeometry.Curves.Node.Period.Orientation
@@ -106,6 +107,36 @@ theorem orderedBoundaryPeriod_eq_boundaryPeriod (hD : D[P].IsEffectiveCartier)
     rw [pullback_comp f, hf, pullback_comp]
   rw [Fan.orderedBoundaryPeriod_apply, hclass, hperiod, IsEffectiveCartier.boundaryPeriod_apply]
 
+include p in
+/-- Under the integral charge coordinates of a contracted toric fiber, the ordered
+toric period is injective exactly when the period on its Picard orthogonal is. -/
+theorem orderedBoundaryPeriod_injective_iff
+    (hD : D[P].IsEffectiveCartier)
+    (hgenus : ∀ v : irreducibleComponents (D[P].subscheme.singularLocus ℂ).blowup,
+      (D[P].subscheme.blowupComponent (K := ℂ) v).toScheme.genus ℂ = 0)
+    {d : ZMod n → L} (hd : P.boundaryClass hD = d)
+    (e : B.orthogonal (Submodule.span ℤ (Set.range d)) ≃ₗ[ℤ] ChargeKernel)
+    (he : ∀ x : ChargeKernel, ι (e.symm x).val = (aux x).val) :
+    Function.Injective (period[c]) ↔
+      Function.Injective (hD.boundaryPeriod hgenus P.imageCycle.endpoint_eq) := by
+  let f := (e.symm.trans ((LinearEquiv.ofEq _ _ (by rw [hd])).trans
+    (P.boundaryOrthogonalMarking hD))).toAddEquiv.toMultiplicative
+  have h (x : Multiplicative ChargeKernel) :
+      period[c] x =
+        hD.boundaryPeriod hgenus P.imageCycle.endpoint_eq (f x) := by
+    let z := e.symm x.toAdd
+    have hz : P.picardMarking z.val ∈ D[P].boundaryOrthogonal ℂ := by
+      rw [P.picardMarking_mem_boundaryOrthogonal_iff hD, hd]
+      exact z.property
+    have hf : f x = ofAdd ⟨P.picardMarking z.val, hz⟩ := by
+      apply toAdd.injective
+      apply Subtype.ext
+      simp [f, z]
+    rw [hf]
+    exact p.orderedBoundaryPeriod_eq_boundaryPeriod hD hgenus z.val hz x.toAdd (he x.toAdd)
+  rw [funext h]
+  exact Function.Injective.of_comp_iff' _ f.bijective
+
 include p q in
 /-- An isomorphism of marked fibers transports the toric period of a target charge
 class by its marked Picard pullback and its action on the actual boundary branches. -/
@@ -147,6 +178,57 @@ theorem orderedBoundaryPeriod_apply_of_pullback
       η, zpow_one] using hperiod
   · simpa only [swap, h, decide_true, ite_true, Units.val_neg, Units.val_one, η, zpow_neg_one]
       using hperiod
+
+include p q in
+open SignedBoundaryIsometryGroup in
+/-- Compatible ordered toric periods give the signed period equality on the actual
+boundary-orthogonal Picard groups. The prescribed Picard pullback is transported by
+the two markings, and its sign is already included in the ordered charge action. -/
+theorem boundaryPeriod_eq_of_orderedBoundaryPeriod_eq
+    (hp : D[P].IsEffectiveCartier) (hq : D[Q].IsEffectiveCartier)
+    (gp : ∀ v : irreducibleComponents (D[P].subscheme.singularLocus ℂ).blowup,
+      (D[P].subscheme.blowupComponent (K := ℂ) v).toScheme.genus ℂ = 0)
+    (gq : ∀ v : irreducibleComponents (D[Q].subscheme.singularLocus ℂ).blowup,
+      (D[Q].subscheme.blowupComponent (K := ℂ) v).toScheme.genus ℂ = 0)
+    {D : ZMod n → L} (hP : P.boundaryClass hp = D) (hQ : Q.boundaryClass hq = D)
+    (e : B.orthogonal (Submodule.span ℤ (Set.range D)) ≃ₗ[ℤ] ChargeKernel)
+    (he : ∀ x, ι (e.symm x).val = (aux x).val)
+    (g : signedBoundaryIsometryGroup B D)
+    (h : ∀ x : ChargeKernel, period[d] (ofAdd x) =
+      period[c] (ofAdd (e ((signedOrthogonalRestriction B D g).val (e.symm x)))))
+    (x : D[Q].boundaryOrthogonal ℂ) :
+    let y := P.picardMarking ((toIsometry B D g).val (Q.picardMarking.symm x.val))
+    ∃ hy : y ∈ D[P].boundaryOrthogonal ℂ,
+      hq.boundaryPeriod gq Q.imageCycle.endpoint_eq (ofAdd x) =
+        (hp.boundaryPeriod gp P.imageCycle.endpoint_eq (ofAdd ⟨y, hy⟩)) ^ (sign B D g : ℤ) := by
+  let z := Q.picardMarking.symm x.val
+  have hz : z ∈ B.orthogonal (Submodule.span ℤ (Set.range D)) := by
+    rw [← hQ, ← Q.picardMarking_mem_boundaryOrthogonal_iff hq, LinearEquiv.apply_symm_apply]
+    exact x.property
+  let z' : B.orthogonal (Submodule.span ℤ (Set.range D)) := ⟨z, hz⟩
+  let t := (signedOrthogonalRestriction B D g).val z'
+  let η := sign B D g
+  let v := η • t
+  have hv : v.val = (toIsometry B D g).val z := by
+    simp only [v, t, η, Units.smul_def, Submodule.coe_smul,
+      coe_signedOrthogonalRestriction_apply, smul_smul, ← Units.val_mul,
+      Int.units_mul_self, Units.val_one, one_smul, z']
+  have hvP : P.picardMarking v.val ∈ D[P].boundaryOrthogonal ℂ := by
+    rw [P.picardMarking_mem_boundaryOrthogonal_iff hp, hP]
+    exact v.property
+  have hzQ : Q.picardMarking z = x.val := Q.picardMarking.apply_symm_apply _
+  have hQz : Q.picardMarking z ∈ D[Q].boundaryOrthogonal ℂ := hzQ ▸ x.property
+  have hq' := q.orderedBoundaryPeriod_eq_boundaryPeriod hq gq z hQz
+    (e z') (by simpa only [LinearEquiv.symm_apply_apply] using he (e z'))
+  have hp' := p.orderedBoundaryPeriod_eq_boundaryPeriod hp gp v.val hvP
+    (e v) (by simpa only [LinearEquiv.symm_apply_apply] using he (e v))
+  have hpow : period[c] (ofAdd (e v)) ^ (η : ℤ) = period[c] (ofAdd (e t)) := by
+    simp only [v, Units.smul_def, map_zsmul, ofAdd_zsmul, map_zpow, ← zpow_mul, ← Units.val_mul,
+      Int.units_mul_self, Units.val_one, zpow_one]
+  have heq := h (e z')
+  rw [LinearEquiv.symm_apply_apply, ← hpow, hp', hq'] at heq
+  have hx : (⟨Q.picardMarking z, hQz⟩ : D[Q].boundaryOrthogonal ℂ) = x := Subtype.ext hzQ
+  exact ⟨hv ▸ hvP, by simpa only [hx, hv] using heq⟩
 
 end ContractedToricFiber
 

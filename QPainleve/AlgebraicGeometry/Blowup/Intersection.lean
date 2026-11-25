@@ -15,6 +15,7 @@ import QPainleve.AlgebraicGeometry.Blowup.Point.Cohomology
 import QPainleve.AlgebraicGeometry.Blowup.Projective.Global
 import QPainleve.AlgebraicGeometry.Blowup.StrictTransform.Residual
 import QPainleve.AlgebraicGeometry.Blowup.Smooth
+import QPainleve.AlgebraicGeometry.Chow.Isomorphism
 import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
 import TauCeti.AlgebraicGeometry.Cohomology.EulerCharacteristic
 import TauCeti.AlgebraicGeometry.Curves.Normalization
@@ -41,6 +42,8 @@ open AlgebraicGeometry.Scheme.IdealSheafData
 
 universe u
 
+namespace TauCeti.AlgebraicGeometry.Chow
+
 variable {X : Scheme.{u}} (p : X)
 
 local notation "Iₚ" => Scheme.Hom.ker (Scheme.fromSpecResidueField X p)
@@ -49,8 +52,6 @@ local notation "E" => comap Iₚ π
 local notation "eₚ" =>
   (LineBundleClass.mk
     (IsEffectiveCartier.toInvertibleSheaf (isEffectiveCartier_comap_blowupToBase Iₚ)))⁻¹
-
-namespace TauCeti.AlgebraicGeometry.Chow
 
 open LineBundleClass
 
@@ -263,3 +264,43 @@ theorem sub_classIntersectionNumber_pointBlowup_exceptional_twist [X.IsProjectiv
   omega
 
 end TauCeti.AlgebraicGeometry.Chow
+
+namespace AlgebraicGeometry.Scheme.Hom
+
+open LineBundleClass
+
+variable {k : Type u} [Field k] [IsAlgClosed k] {X Y : Scheme.{u}}
+variable [X.Over (Spec (.of k))] [Y.Over (Spec (.of k))]
+variable [Y.IsProjectiveOver k] [SmoothOfRelativeDimension 2 (Y ↘ Spec (.of k))]
+
+local notation "S" => Spec (CommRingCat.of k)
+
+/-- The intersection formula in pullback and exceptional coordinates, transported
+to the source of a specified closed-point blowdown. -/
+theorem classIntersectionNumber_pointBlowdown (f : X ⟶ Y) [f.IsOver S]
+    {p : Y} (hp : IsClosed ({p} : Set Y)) (e : X ≅ (Y.fromSpecResidueField p).ker.blowup)
+    (he : e.hom ≫ (Y.fromSpecResidueField p).ker.blowupToBase = f)
+    {E : X.IdealSheafData} (hE : E.IsEffectiveCartier)
+    (hF : (Y.fromSpecResidueField p).ker.comap f = E)
+    (a b : LineBundleClass Y) (m n : ℤ) :
+    let c := (LineBundleClass.mk hE.toInvertibleSheaf)⁻¹
+    Chow.classIntersectionNumber k X (pullback f a * c ^ m) (pullback f b * c ^ n) =
+      Chow.classIntersectionNumber k Y a b - m * n := by
+  let I := (Y.fromSpecResidueField p).ker
+  let : I.blowup.Over S := ⟨I.blowupToBase ≫ (Y ↘ S)⟩
+  let : e.hom.IsOver S := ⟨by
+    -- The blowup carries the structure morphism obtained from its projection.
+    change e.hom ≫ I.blowupToBase ≫ (Y ↘ S) = _
+    rw [← Category.assoc, he, comp_over]⟩
+  let : IsNoetherian Y := isNoetherian_of_finiteType (Y ↘ S)
+  have hproj : I.blowup.IsProjectiveOver k := I.isProjectiveOver_blowup_of_isNoetherianRing k
+  have hIe : (I.comap I.blowupToBase).comap e.hom = E := by
+    rw [← comap_comp, he, hF]
+  have hc := I.pullback_blowupExceptionalClass_of_comap_eq e.hom hE hIe
+  have h := Chow.classIntersectionNumber_pointBlowup p k hp a b m n hproj
+  rw [← Chow.classIntersectionNumber_pullback_of_isIso k e.hom] at h
+  dsimp only [I] at hc
+  simpa only [← blowupExceptionalClass_def, pullback_mul, pullback_zpow, hc,
+    pullback_comp, he] using h
+
+end AlgebraicGeometry.Scheme.Hom

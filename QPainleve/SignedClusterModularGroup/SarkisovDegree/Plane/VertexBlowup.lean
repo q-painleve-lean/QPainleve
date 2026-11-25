@@ -93,7 +93,7 @@ theorem exists_vertex_blowup_comparison :
   have : IsClosedImmersion (z ≫ (D).hom) := inferInstance
   have hJ : (J).comap (D).hom = (z).ker := by
     rw [← (z ≫ (D).hom).ker_eq_ker_fromSpecResidueField, (z).comap_ker_comp_of_isClosedImmersion]
-  let e := e₀ ≪≫ (J).blowupIso D hJ
+  let e := e₀ ≪≫ blowupIso D hJ.symm
   have he : e.hom ≫ (J).blowupToBase =
       ((Ψ).starSubdivisionAlong_isSubdivision hΨ (σ).property hσ).toFanHom.algebraicMap ≫
         (D).hom := by
@@ -366,7 +366,7 @@ theorem exists_prepend_plane_vertex_blowup {Y : Scheme} {n : ℕ}
       let C := (Φ).hirzebruchPicardBasis b 1 hΦ r hr
       C.repr w.1 0 = degree v.1 ∧ C.repr w.1 1 = degree v.1 ∧ w.2 = v.2 := by
   intro A v
-  obtain ⟨q, _, tail, e, hTail, hq, hqp, hA, he, hcenters, hmark⟩ :=
+  obtain ⟨q, _, tail, e, hTail, hq, hqp, hA, he, hcenters, -, -, hmark⟩ :=
     hT.exists_prepend_closed_point_blowup (isClosed_projectivePlane_vertex d hi a) hp
   have hV : IsClosedPointTower P ((U₀).append tail) :=
     (IsClosedPointTower.nil.snoc p (isClosed_projectivePlane_vertex d hi a) rfl).append hTail

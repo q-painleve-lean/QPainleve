@@ -6,7 +6,9 @@ Authors: The QPainleve contributors
 module
 
 public import QPainleve.AlgebraicGeometry.Blowup.Tower.StrictTransform.Basic
+public import QPainleve.AlgebraicGeometry.Curves.Node.NumberedPrime
 public import QPainleve.Geometry.Toric.Fan.Boundary.Component
+public import QPainleve.Geometry.Toric.Fan.Boundary.NumberedPrime
 public import QPainleve.Geometry.Toric.Fan.Boundary.Prime
 public import QPainleve.Geometry.Toric.Fan.Picard.BoundaryQuotient
 public import QPainleve.Geometry.Toric.Fan.Smooth
@@ -22,7 +24,9 @@ The strict transform of a ray component has its original toric divisor class and
 exceptional coefficient of `-1` for each center on that ray. This identifies the
 Picard quotient by the actual strict-transform boundary classes with the cokernel of
 the dual charge map. The centers are ordered and may repeat, in which case the
-associated blowups use the successive strict transforms of the boundary.
+associated blowups use the successive strict transforms of the boundary. Along a boundary
+identification, the strict ray classes are the pullbacks of the corresponding boundary prime
+classes, including those given by a nodal cycle numbering.
 
 The boundary marking is the calculation used in the proof of Gross, Hacking and Keel,
 *Birational geometry of cluster algebras*, Theorem 5.5. The comparison uses
@@ -40,8 +44,6 @@ namespace TauCeti.Toric.Fan
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {Φ : Fan i} [Nonempty Φ.cones]
 
-local notation "D" => Φ.boundaryIdeal inferInstance
-
 section Marking
 
 variable {n : ℕ} (hΦ : Φ.IsRegular) (hdim : Module.finrank ℤ N = 2)
@@ -49,7 +51,7 @@ variable {n : ℕ} (hΦ : Φ.IsRegular) (hdim : Module.finrank ℤ N = 2)
   (hm : ∀ j, m j (s j).primitiveGenerator = 0) (hprim : ∀ j, Function.Surjective (m j))
   (c : Fin n → ℂˣ)
 
-local notation "b" => subschemeι D
+local notation "b" => subschemeι (Φ.boundaryIdeal inferInstance)
 local notation "f" => Φ.algebraicRealizationStructureMap
 local notation "Pic" Y => Additive (LineBundleClass Y)
 local notation "C" j:arg => Ray.binomialCenterOnBoundary (s j) hdim (hm j) (hprim j) (c j)
@@ -252,5 +254,96 @@ theorem picardHom_markedBoundaryMap_single_eq_primeDivisorClass [DecidableEq Φ.
     mk_toInvertibleSheaf_congr _ _ (hI.symm.trans hker)]
 
 end OrderedModel
+
+section BoundaryClasses
+
+variable {Y : Scheme} {n : ℕ} (b : Module.Basis (Fin 2) ℤ N) (hΦ : Φ.IsRegular)
+  (s : Fin n → Φ.Ray) (c : Fin n → ℂˣ)
+
+local notation "S" => Spec (CommRingCat.of ℂ)
+local notation "rankTwo" => Eq.trans (Module.finrank_eq_card_basis b) (Fintype.card_fin 2)
+local notation "M" => internalBlowupTower b s c
+local notation "J" => WithBoundary.toTower (Sigma.snd M)
+local notation "hJ" => isClosedPointTower_internalBlowupTower b s c
+local notation "ι" => WithBoundary.boundaryι (Sigma.snd M)
+local notation "f" => Φ.algebraicRealization ↘ S
+
+open LineBundleClass
+
+/-- A strict ray in an ordered toric model corresponds to an actual prime of
+the identified boundary. Pullback along the model isomorphism identifies that
+prime's Picard class with the strict ray class, in the same ray order. -/
+theorem exists_boundaryPrimeEquiv_pullback_eq_strictRayBoundaryClass
+    [IsLocallyNoetherian Y] [∀ y : Y, IsDomain (Y.presheaf.stalk y)]
+    [∀ y : Y, UniqueFactorizationMonoid (Y.presheaf.stalk y)]
+    {D : Y.IdealSheafData} (e : M.1 ≅ Y) (he : D.comap e.hom = (ι).ker) :
+    ∃ σ : Φ.Ray ≃ D.boundaryPrimes,
+      (∀ ρ, (σ ρ).val = e.hom (internalBlowupBoundaryPrimeEquiv hΦ b s c ρ).val) ∧
+      ∀ ρ, Additive.ofMul (pullback e.hom (primeDivisorClass (D.boundaryPrimeEmbedding (σ ρ)))) =
+        strictRayBoundaryClass hΦ rankTwo J hJ ρ := by
+  classical
+  let : IsIntegral M.1 := isIntegral_internalBlowupTower b s c hΦ
+  let : IsNoetherian M.1 := (J).isNoetherian
+  let : SmoothOfRelativeDimension 2 f :=
+    rankTwo ▸ Φ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
+  let : SmoothOfRelativeDimension 2 ((J).toBase ≫ f) := (hJ).smoothOfRelativeDimension f
+  let := ((J).toBase ≫ f).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two
+  let α := internalBlowupBoundaryPrimeEquiv hΦ b s c
+  let t : (ι).ker.boundaryPrimes ≃ (D.comap e.hom).boundaryPrimes :=
+    Set.equivOfEq (congrArg boundaryPrimes he.symm)
+  let σ := α.trans (t.trans (D.boundaryPrimesEquivOfIso e))
+  have hσ (ρ : Φ.Ray) : (σ ρ).val = e.hom (α ρ).val := by
+    simp [σ, t]
+  refine ⟨σ, hσ, fun ρ ↦ ?_⟩
+  have hp : CodimensionOnePoint.mapOfIsOpenImmersion e.hom
+      ((ι).ker.boundaryPrimeEmbedding (α ρ)) = D.boundaryPrimeEmbedding (σ ρ) := by
+    apply Subtype.ext
+    simpa only [CodimensionOnePoint.coe_mapOfIsOpenImmersion, coe_boundaryPrimeEmbedding]
+      using (hσ ρ).symm
+  rw [← hp, pullback_primeDivisorClass_mapOfIsOpenImmersion,
+    ← picardHom_markedBoundaryMap_single_internalBlowupTower hΦ b s c ρ]
+  have hα : (ι).ker.boundaryPrimeEmbedding (α ρ) =
+      ⟨(α ρ).val, (mem_boundaryPrimes.mp (α ρ).property).2⟩ :=
+    Subtype.ext (coe_boundaryPrimeEmbedding _ _)
+  rw [hα]
+  exact (picardHom_markedBoundaryMap_single_eq_primeDivisorClass hΦ b s c ρ).symm
+
+local notation "Dtor" => Φ.boundaryIdeal inferInstance
+
+/-- If the boundary identification sends the component of a ray to a numbered
+component, the numbered Picard class pulls back to that ray's strict class.
+The component matching uses the actual boundary isomorphism. -/
+theorem pullback_numbered_boundaryPrime_eq_strictRayBoundaryClass
+    [IsLocallyNoetherian Y] [∀ y : Y, IsDomain (Y.presheaf.stalk y)]
+    [∀ y : Y, UniqueFactorizationMonoid (Y.presheaf.stalk y)]
+    {D : Y.IdealSheafData} [D.subscheme.Over S] [PrestableFamily (D.subscheme ↘ S)]
+    [PrestableFamily ((Dtor).subscheme ↘ S)]
+    {m l : ℕ} [NeZero m] [NeZero l] {γ δ : Type*}
+    {p : γ → ((Dtor).subscheme ↘ S).smoothLocus} {q : δ → (D.subscheme ↘ S).smoothLocus}
+    (C : Scheme.NodalCycleNumbering p m) (A : Scheme.NodalCycleNumbering q l)
+    (hD : D.IsEffectiveCartier) (e : M.1 ≅ Y)
+    (eB : (Dtor).subscheme ≅ D.subscheme) (heB : eB.hom ≫ D.subschemeι = (ι) ≫ e.hom)
+    (ρ : Φ.Ray) (j : ZMod m) (j' : ZMod l)
+    (hρ : C.component j = Φ.boundaryNormalizationComponentEquiv hΦ ρ)
+    (hj : eB.hom (C.componentGenericPoint j) = A.componentGenericPoint j') :
+    Additive.ofMul (pullback e.hom (primeDivisorClass (D.boundaryPrimeEmbedding
+      (A.boundaryPrimeEquiv hD j')))) = strictRayBoundaryClass hΦ rankTwo J hJ ρ := by
+  have he : D.comap e.hom = (ι).ker := by
+    have hk : ((ι) ≫ e.hom).ker = D := by
+      rw [← heB, Scheme.Hom.ker_comp_of_isIso, D.ker_subschemeι]
+    rw [← hk, Scheme.Hom.comap_ker_comp_of_isClosedImmersion]
+  obtain ⟨σ, hσ, hclass⟩ := exists_boundaryPrimeEquiv_pullback_eq_strictRayBoundaryClass
+    b hΦ s c e he
+  have hpoint : (internalBlowupBoundaryPrimeEquiv hΦ b s c ρ).val =
+      (ι) (C.componentGenericPoint j) := by
+    rw [internalBlowupBoundaryPrime_val, Scheme.NodalCycleNumbering.componentGenericPoint_def, hρ]
+  have hPrime : σ ρ = A.boundaryPrimeEquiv hD j' := by
+    apply Subtype.ext
+    rw [hσ, hpoint, ← Scheme.Hom.comp_apply, ← heB, Scheme.Hom.comp_apply, hj,
+      A.boundaryPrimeEquiv_apply_val]
+  rw [← hPrime]
+  exact hclass ρ
+
+end BoundaryClasses
 
 end TauCeti.Toric.Fan

@@ -16,11 +16,11 @@ import QPainleve.Geometry.Toric.Fan.Picard.Quadric
 /-!
 # The resolved Sarkisov path for two smooth quadric centers
 
-Two high-order centers on opposite sections of a quadric give a resolved path
+Two selected centers on opposite sections of a quadric give a resolved path
 consisting of two elementary transformations and a ruling exchange. The path
 joins the original projection to the projection of a strictly lower degree
 quadric resolution on the same resolving surface. It uses
-`BlowupTower.IsClosedPointTower.exists_quadric_resolution_of_two_smooth_high_centers`
+`BlowupTower.IsClosedPointTower.exists_quadric_resolution_of_two_smooth_centers`
 to obtain the regular projections and their common pole ideal.
 
 This is the two-smooth-center block of Proposition 8.11, Case B, in
@@ -125,14 +125,14 @@ private theorem exists_two_smooth_center_path
       simp only [Quiver.Hom.toPath, SarkisovPath.rationalMap_cons, SarkisovPath.rationalMap_nil,
         e₁, e₂, e₃, Scheme.RationalMap.id_comp])
 
-/-- Two smooth high-order centers on opposite sections of a logarithmic
-quadric-to-plane resolution give a resolved, degree-decreasing Sarkisov path.
-Its intermediate projections are the two successive mutations at the specified
-centers, and its composite ends with the ruling exchange. The terminal projection
+/-- Two first centers on opposite smooth sections of a logarithmic quadric give
+a resolved, degree-decreasing Sarkisov path when their combined order exceeds
+the degree on a fiber of the mutation ruling. The intermediate projections are
+the two successive mutations, and the composite ends with the ruling exchange.
+The terminal projection
 is identified with a new quadric tower carrying the transported map to the plane
-and pole ideal. The two selected orders are measured against the fiber degree
-in the exchanged ruling. -/
-theorem exists_sarkisov_path_decrease_of_quadric_two_smooth_centers
+and pole ideal. The Sarkisov degree decreases for any total base orders. -/
+theorem exists_sarkisov_path_of_quadric_two_smooth_centers
     [X[Φ].IsProjectiveOver ℂ] {n : ℕ} {T : BlowupTower X[Φ] (n + 2) Y}
     (hT : IsClosedPointTower X[Φ] T) (g : Y ⟶ P) (hg : g ≫ fP = T.toBase ≫ f[Φ])
     (hbir : Scheme.BirationalOver g (𝟙 P)) (c d : ℂˣ) (j : Fin (n + 2)) (l : Fin (n + 1))
@@ -157,8 +157,7 @@ theorem exists_sarkisov_path_decrease_of_quadric_two_smooth_centers
     let β := (Φ.hirzebruchPicardBasis b 0 hΦ r hr).repr x.1 0
     let orders := fun k ↦ -x.2 k
     B[Φ,hc].comap T.toBase = D * ramificationIdealSheaf ℂ T.toBase →
-    β < 2 * orders j → β < 2 * orders (j.succAbove l) →
-    (∀ k, k ≠ j → k ≠ j.succAbove l → 2 * orders k ≤ β) →
+    (Φ.hirzebruchPicardBasis b 0 hΦ r hr).repr x.1 1 < orders j + orders (j.succAbove l) →
     ∃ (a : Basis (Fin 2) ℤ N)
       (ht : (fun k ↦ ((t) k).primitiveGenerator) = ![a 0, a 1, -a 0, (0 : ℤ) • a 0 - a 1])
       (Z : Scheme) (U : BlowupTower X[Ω] (1 + (1 + n)) Z) (hU : IsClosedPointTower X[Ω] U)
@@ -176,10 +175,12 @@ theorem exists_sarkisov_path_decrease_of_quadric_two_smooth_centers
       g' ≫ fP = U.toBase ≫ f[Ω] ∧ Scheme.BirationalOver g' (𝟙 P) ∧
       B[Ω,hcΩ].comap U.toBase = D.comap e.inv * hU.ramificationIdealSheafToBase ℂ ∧
       0 < β' ∧
-      hirzebruchSarkisovBidegree β'.toNat (∑ k, -y.2 k).toNat <
-        hirzebruchSarkisovBidegree β.toNat (∑ k, orders k).toNat := by
+      β' = β + (Φ.hirzebruchPicardBasis b 0 hΦ r hr).repr x.1 1 - orders j -
+        orders (j.succAbove l) ∧
+      ∀ M' M, hirzebruchSarkisovBidegree β'.toNat M' <
+        hirzebruchSarkisovBidegree β.toNat M := by
   intro hcones₀ hcones₁ hcones₂ hdim₀ hdim₂ hY hOver hdimY hSmooth hIntegral hMod
-    x β orders hpole hjhigh hlhigh hsmall
+    x β orders hpole hsum
   let := hcones₀
   let := hcones₁
   let := hcones₂
@@ -191,12 +192,9 @@ theorem exists_sarkisov_path_decrease_of_quadric_two_smooth_centers
   let := hSmooth
   let := hIntegral
   let := hMod
-  have hUpper := hT.base_order_le_quadric_exchanged_fiber_degree b hΦ hc r hr g hg
-  have hNonneg := (hT.hirzebruch_resolution_degree_bounds b 0 hΦ hc r hr g hg hbir).2.2
   obtain ⟨a, ht, Z, U, hU, e, W, V₀, hV, k, h₁, h₂, h₃, hg', hbir', hpoles, hcoords⟩ :=
-    hT.exists_quadric_resolution_of_two_smooth_high_centers b hΦ hc r hr g hg hbir c d j l
-      hj hl hjfirst hlfirst hjhigh (hUpper j) hlhigh (hUpper (j.succAbove l))
-      (fun u hu hu' ↦ ⟨hNonneg u, hsmall u hu hu'⟩)
+    hT.exists_quadric_resolution_of_two_smooth_centers b hΦ hc r hr g hg hbir c d j l
+      hj hl hjfirst hlfirst hsum
   let τ := Fan.quadricRulingExchange a hΩ hcΩ t ht
   let q := V₀.transport (asIso τ.toFanHom.algebraicMap)
   let E := e ≪≫ k ≪≫ q.iso
@@ -217,8 +215,17 @@ theorem exists_sarkisov_path_decrease_of_quadric_two_smooth_centers
       (e.hom ≫ k.hom ≫ V₀.toBase) (E.hom ≫ q.tower.toBase) h₁ h₂ h₃ ⟨hpole, hp₁, hp₂, hp₃⟩
   let : X[Ψ].IsProjectiveOver ℂ := (r 0).isProjectiveOver_mutationFan b opp₀ hΦ
   have hProjective : X[Ω].IsProjectiveOver ℂ := (s 2).isProjectiveOver_mutationFan b opp₁ hΨ
-  obtain ⟨-, -, -, -, -, hβ', hlt⟩ := hcoords
-  exact ⟨a, ht, _, q.tower, hQ, E, A, A₁, A₂, C, path, hFan₀, hHom₀, hFan₃, hHom₃, hVertices,
-    hFirst, hSecond, hMap, hProjective, hg', hbir', hpQ, hβ', hlt⟩
+  let y := (q.tower.picardMarking hQ f[Ω]).symm (Additive.ofMul (pullback (E.inv ≫ g) H))
+  let β' := ((Ω).hirzebruchPicardBasis a 0 hΩ t ht).repr y.1 1
+  have hpos : 0 < β' :=
+    (hQ.hirzebruch_resolution_degree_bounds a 0 hΩ hcΩ t ht _ hg' hbir').1
+  have hdegree : β' = β + (Φ.hirzebruchPicardBasis b 0 hΦ r hr).repr x.1 1 -
+      orders j - orders (j.succAbove l) := hcoords.2.1
+  have hlt : β' < β := by linarith only [hdegree, hsum]
+  refine ⟨a, ht, _, q.tower, hQ, E, A, A₁, A₂, C, path, hFan₀, hHom₀, hFan₃, hHom₃, hVertices,
+    hFirst, hSecond, hMap, hProjective, hg', hbir', hpQ, hpos, hdegree, fun M' M ↦ ?_⟩
+  simp only [Prod.Lex.lt_iff, ofLex_hirzebruchSarkisovBidegree]
+  have hnat := (Int.toNat_lt_toNat (hpos.trans hlt)).mpr hlt
+  exact Or.inl (Nat.mul_lt_mul_of_pos_left hnat (by decide))
 
 end QPainleve.BlowupTower.IsClosedPointTower

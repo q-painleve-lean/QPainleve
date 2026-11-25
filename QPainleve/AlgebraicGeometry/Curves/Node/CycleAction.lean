@@ -5,7 +5,7 @@ Authors: The QPainleve contributors
 -/
 module
 
-public import QPainleve.AlgebraicGeometry.Curves.DualGraph.CycleAction
+public import QPainleve.AlgebraicGeometry.Curves.DualGraph.Cycle.Action
 public import QPainleve.AlgebraicGeometry.Curves.Node.Conductor.Coordinates
 public import QPainleve.AlgebraicGeometry.Curves.Node.Conductor.Isomorphism
 
@@ -63,6 +63,10 @@ theorem component_apply (j : ZMod n) : C.component j = X.dualGraphVertexEquiv p 
 def node : ZMod n ≃ (X.singularLocus k).subscheme :=
   C.edge.trans (X.dualGraphNodeEquiv p)
 
+/-- The numbered node is the singular point of the corresponding dual graph edge. -/
+theorem node_apply (j : ZMod n) : C.node j = X.dualGraphNodeEquiv p (C.edge j) :=
+  (rfl)
+
 /-- The numbering of the points of the branch scheme by node and ordered endpoint. -/
 def branch : (ZMod n × Fin 2) ≃ X.branchScheme k :=
   ((C.edge.prodCongr (.refl _)).trans (Equiv.prodCongrRight C.order)).trans
@@ -87,6 +91,35 @@ theorem branchSchemeToBlowup_branch_mem_component_iff (j : ZMod n) (b : Fin 2)
       C.component ((DualGraph.cycle n).endpoint j b) = a := by
   simpa [branch, component, C.endpoint_eq] using
     (X.dualGraphVertexEquiv_endpoint_eq_iff p (C.edge j) (C.order (C.edge j) b) a).symm
+
+/-- Agreement on all numbered branches determines the vertex, node and branch labels. -/
+@[ext]
+theorem ext {A B : NodalCycleNumbering p n}
+    (h : ∀ j b, A.branch (j, b) = B.branch (j, b)) : A = B := by
+  have flag (C : NodalCycleNumbering p n) (j : ZMod n) (b : Fin 2) :
+      C.branch (j, b) = X.dualGraphBranchEquiv p (C.edge j, C.order (C.edge j) b) := by
+    rw [C.branch_eq_branchOrderOfDualGraph]
+    -- Evaluate the node before applying the dependent branch ordering.
+    exact (congrArg (fun z ↦ (X.branchOrderOfDualGraph p C.order z b).val)
+      (C.node_apply j)).trans (X.branchOrderOfDualGraph_apply_val p C.order (C.edge j) b)
+  have flags (j : ZMod n) (b : Fin 2) :
+      (A.edge j, A.order (A.edge j) b) = (B.edge j, B.order (B.edge j) b) :=
+    (X.dualGraphBranchEquiv p).injective (by simpa only [flag] using h j b)
+  have he : A.edge = B.edge := Equiv.ext fun j ↦ congrArg Prod.fst (flags j 0)
+  have ho : A.order = B.order := funext fun e ↦ Equiv.ext fun b ↦ by
+    obtain ⟨j, rfl⟩ := A.edge.surjective e
+    simpa only [← he] using congrArg Prod.snd (flags j b)
+  have hv : A.vertex = B.vertex := Equiv.ext fun j ↦ by
+    have hA := A.endpoint_eq j 0
+    have hB := B.endpoint_eq j 0
+    rw [← he, ← ho] at hB
+    simpa only [DualGraph.cycle, reduceIte] using hA.symm.trans hB
+  cases A
+  cases B
+  cases he
+  cases ho
+  cases hv
+  rfl
 
 /-- Reverse the orientation of the numbering, keeping component zero fixed. Node `j`
 becomes the old node `-1 - j` with its two branches exchanged. -/
@@ -398,6 +431,35 @@ theorem boundaryCycleAction_refl_reverse :
     (branch_boundaryCycleAction _ _ _) fun j b ↦ ?_
   have hj : -1 - (-1 - j) = j := by abel
   simp [hj]
+
+/-- Two numberings of the same nodal cycle that agree at vertex zero differ by
+the identity or the reflection fixing zero, with the corresponding action on edges. -/
+theorem _root_.AlgebraicGeometry.Scheme.NodalCycleNumbering.exists_dihedral_of_same_initial_vertex
+    (A B : NodalCycleNumbering p n) (h₀ : A.vertex 0 = B.vertex 0) :
+    ∃ g : DihedralGroup n, (g = .r 0 ∨ g = .sr 0) ∧
+      (∀ j, A.vertex j = B.vertex (cycleVertexPerm g j)) ∧
+      ∀ j, A.edge j = B.edge (cycleBranchPerm g (j, 0)).1 := by
+  let g := (Iso.refl X).boundaryCycleAction A B
+  have hvertex (j : ZMod n) : A.vertex j = B.vertex (cycleVertexPerm g j) := by
+    apply (X.dualGraphVertexEquiv p).injective
+    rw [← A.component_apply, ← B.component_apply]
+    apply Subtype.ext
+    simpa [g] using ((Iso.refl X).component_boundaryCycleAction A B j).symm
+  have hedge (j : ZMod n) : A.edge j = B.edge (cycleBranchPerm g (j, 0)).1 := by
+    apply (X.dualGraphNodeEquiv p).injective
+    change A.node j = B.node (cycleBranchPerm g (j, 0)).1
+    dsimp only [g]
+    rw [node_boundaryCycleAction]
+    simp
+  have hzero : cycleVertexPerm g 0 = 0 := B.vertex.injective ((hvertex 0).symm.trans h₀)
+  refine ⟨g, ?_, hvertex, hedge⟩
+  cases hg : g with
+  | r a =>
+    rw [hg, cycleVertexPerm_r_apply, zero_add] at hzero
+    exact Or.inl (congrArg DihedralGroup.r hzero)
+  | sr a =>
+    rw [hg, cycleVertexPerm_sr_apply, sub_zero, neg_eq_zero] at hzero
+    exact Or.inr (congrArg DihedralGroup.sr hzero)
 
 variable [Z.Over (Spec (.of k))] [PrestableFamily (Z ↘ Spec (.of k))]
   {ι'' : Type z} {r : ι'' → (Z ↘ Spec (.of k)).smoothLocus}

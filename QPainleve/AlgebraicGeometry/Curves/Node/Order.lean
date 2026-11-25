@@ -11,6 +11,7 @@ public import TauCeti.AlgebraicGeometry.Curves.Node.Relative
 public import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.Stalk
 public import TauCeti.AlgebraicGeometry.IdealSheaf.Stalk
 public import TauCeti.AlgebraicGeometry.Morphisms.Smooth.RelativeDimension
+import QPainleve.AlgebraicGeometry.Curves.SingularLocus.Stalk
 import QPainleve.AlgebraicGeometry.EffectiveCartierDivisor.Stalk
 import QPainleve.AlgebraicGeometry.Modules.Differentials.Stalk
 import QPainleve.RingTheory.Node.Order
@@ -65,19 +66,16 @@ theorem fittingIdeal_stalk_of_atWorstNodal
   have : Algebra.FormallyEtale A L := .of_isLocalization q.primeCompl
   have : Algebra.FiniteType k A := finiteType_sections_of_locallyOfFiniteType k C V
   have : Algebra.EssFiniteType k L := C.essFiniteType_stalk k p
-  have hfit := (KaehlerDifferential.isBaseChange_of_formallyEtale k A L).fittingIdeal_eq_map 1
   have haff := C.singularLocus_ideal (R := k) V
-  refine ⟨?_, ?_⟩
-  · rw [(C.singularLocus k).stalkIdeal_eq_map V p hpU, haff, hfit]
-    rw [C.presheaf.stalk_open_algebraMap ⟨p, hpU⟩]
-  · have : Algebra.FormallyUnramified k (A ⧸ fittingIdeal A Ω[A⁄k] 1) :=
-      haff ▸ C.formallyUnramified_quotient_singularLocus_ideal hnodal V
-    have : Algebra.FormallyUnramified k (Localization q.primeCompl ⧸
-        fittingIdeal (Localization q.primeCompl) Ω[Localization q.primeCompl⁄k] 1) :=
-      formallyUnramified_localization_quotient_fittingIdeal q.primeCompl
-    let e := (IsLocalization.algEquiv q.primeCompl (Localization q.primeCompl) L).restrictScalars k
-    exact .of_equiv (Ideal.quotientEquivAlg _ _ e
-      (fittingIdeal_kaehlerDifferential_eq_map_algEquiv e 1))
+  refine ⟨C.singularLocus_stalkIdeal_eq_fittingIdeal p, ?_⟩
+  have : Algebra.FormallyUnramified k (A ⧸ fittingIdeal A Ω[A⁄k] 1) :=
+    haff ▸ C.formallyUnramified_quotient_singularLocus_ideal hnodal V
+  have : Algebra.FormallyUnramified k (Localization q.primeCompl ⧸
+      fittingIdeal (Localization q.primeCompl) Ω[Localization q.primeCompl⁄k] 1) :=
+    formallyUnramified_localization_quotient_fittingIdeal q.primeCompl
+  let e := (IsLocalization.algEquiv q.primeCompl (Localization q.primeCompl) L).restrictScalars k
+  exact .of_equiv (Ideal.quotientEquivAlg _ _ e
+    (fittingIdeal_kaehlerDifferential_eq_map_algEquiv e 1))
 
 namespace Hom
 

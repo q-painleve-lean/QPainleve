@@ -16,15 +16,17 @@ import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
 import QPainleve.AlgebraicGeometry.IntersectionNumber.Nef.Pullback
 import QPainleve.Geometry.Toric.Fan.Boundary.Node
 import QPainleve.Geometry.Toric.Fan.Logarithmic.Multiplicity
+import QPainleve.Geometry.Toric.Fan.Picard.CurveIntersection
 
 /-!
 # High-order pivots of a logarithmic Hirzebruch resolution
 
 A closed point tower resolving a logarithmic birational map to the plane can have
 centers of order greater than half the ruling degree. A high-order corner or section
-point gives a proper pivot for an elementary transformation. In the remaining case
-there is at most one high-order center above the interior of each invariant fiber,
-and these centers are proper. This is the selection of the Hirzebruch cases in
+point gives a proper pivot for an elementary transformation. A high-order center
+above the interior of an invariant fiber excludes every other high order over that
+fiber, including over its corners. This separates the retained pivot from any
+additional pivot after preparation to the quadric. These estimates are used in
 Lutz's [Proposition 8.11][HKL].
 
 [HKL]: https://arxiv.org/pdf/2005.05010v3#page=71
@@ -115,54 +117,222 @@ variable (g : Y ⟶ Proj (homogeneousSubmodule ℂ (Fin 3 → ℂ)))
   (hg : g ≫ (Proj (homogeneousSubmodule ℂ (Fin 3 → ℂ)) ↘ Spec (.of ℂ)) =
     T.toBase ≫ (Φ.algebraicRealization ↘ Spec (.of ℂ)))
 
+local notation "marking" =>
+  LinearEquiv.symm (BlowupTower.picardMarking T hT f) (Additive.ofMul (pullback g H))
+
+omit [Φ.algebraicRealization.IsProjectiveOver ℂ] in
 include hg in
-private theorem hirzebruch_high_fiber_centers
+private theorem planeResolution_picardHom_isNef [Nonempty Φ.cones] [SmoothOfRelativeDimension 2 f] :
+    (T.picardHom (marking)).toMul.IsNef ℂ (T.toBase ≫ f) := by
+  let : Y.Over S := ⟨T.toBase ≫ f⟩
+  let : g.IsOver S := ⟨hg⟩
+  rw [← T.picardMarking_apply hT f, LinearEquiv.apply_symm_apply, toMul_ofMul]
+  exact (isAmple_twistingSheaf ℂ (Fin 3 → ℂ) Nat.one_pos).isNef.pullback g
+
+include hc hg in
+/-- The sum of two base orders over distinct points of the same invariant fiber
+is at most the fiber degree. The centers may be toric corners or infinitely near. -/
+theorem add_base_orders_le_hirzebruch_fiber_degree
     [Nonempty Φ.cones] [SmoothOfRelativeDimension 2 f] [IsNoetherian X]
-    (hlog : (D).comap T.toBase ≤ hT.ramificationIdealSheafToBase ℂ)
-    (v : Additive (LineBundleClass X) × (Fin n → ℤ))
-    (hv : v = (T.picardMarking hT f).symm (Additive.ofMul (pullback g H)))
-    (hm : ∀ j, 0 ≤ -v.2 j)
-    (hcenters : ∀ j, (C).repr v.1 1 < 2 * (-v.2 j) →
-      ∃ t : Fin 2, ∃ c : ℂˣ, hT.baseCenter j = p[fiberRay[t],c]) :
+    (t : Fin 2) {j k : Fin n}
+    (hj : hT.baseCenter j ∈ (Φ.rayBoundaryIdeal hΦ (fiberRay[t])).support)
+    (hk : hT.baseCenter k ∈ (Φ.rayBoundaryIdeal hΦ (fiberRay[t])).support)
+    (hne : hT.baseCenter j ≠ hT.baseCenter k) :
+    -(marking).2 j + -(marking).2 k ≤ (C).repr (marking).1 1 := by
+  classical
+  obtain ⟨j', hj', hjfirst, hjle⟩ := hT.exists_first_baseCenter_ge_of_plane_resolution g hg j
+  obtain ⟨k', hk', hkfirst, hkle⟩ := hT.exists_first_baseCenter_ge_of_plane_resolution g hg k
+  have hne' : j' ≠ k' := fun h ↦ hne (hj'.symm.trans (h ▸ hk'))
+  obtain ⟨_, J, -, -, -, -, -, horders⟩ := hT.exists_moving_base_ideal_of_plane_resolution g hg
+  have hnef := planeResolution_picardHom_isNef hT g hg
+  have hnef' : (T.picardHom ((marking).1, fun l ↦ -(baseMultiplicities J hT l : ℤ))).toMul.IsNef
+      ℂ (T.toBase ≫ f) := by
+    simpa only [← horders, neg_neg, Prod.mk.eta] using hnef
+  have hbound := (fiberRay[t]).sum_first_base_orders_le_ray_degree b hΦ hT (marking).1
+    (baseMultiplicities J hT) {j', k'} (by
+      intro l hl
+      rcases Finset.mem_insert.mp hl with rfl | hl
+      · exact ⟨hj' ▸ hj, hjfirst⟩
+      · obtain rfl := Finset.mem_singleton.mp hl
+        exact ⟨hk' ▸ hk, hkfirst⟩) hnef'
+  rw [Finset.sum_pair hne', ← horders, ← horders] at hbound
+  have hsum : -(marking).2 j' + -(marking).2 k' ≤ (C).repr (marking).1 1 := by
+    simpa only [invariant_fiber_degree b e hΦ hc r hr (marking).1 t] using hbound
+  exact (add_le_add hjle hkle).trans hsum
+
+include hc hg in
+/-- Two orders greater than half the ruling degree over the same invariant fiber
+have the same projected center, including at corners and infinitely near centers. -/
+theorem baseCenter_eq_of_high_base_orders_on_hirzebruch_fiber
+    [Nonempty Φ.cones] [SmoothOfRelativeDimension 2 f] [IsNoetherian X]
+    (t : Fin 2) {j k : Fin n}
+    (hj : hT.baseCenter j ∈ (Φ.rayBoundaryIdeal hΦ (fiberRay[t])).support)
+    (hk : hT.baseCenter k ∈ (Φ.rayBoundaryIdeal hΦ (fiberRay[t])).support)
+    (hjhigh : (C).repr (marking).1 1 < 2 * (-(marking).2 j))
+    (hkhigh : (C).repr (marking).1 1 < 2 * (-(marking).2 k)) :
+    hT.baseCenter j = hT.baseCenter k := by
+  by_contra hne
+  have hbound := hT.add_base_orders_le_hirzebruch_fiber_degree b e hΦ hc r hr g hg t hj hk hne
+  omega
+
+include hg in
+/-- In a logarithmic plane resolution, a high base order over the open orbit of an
+invariant Hirzebruch fiber excludes every other high base order over that fiber.
+The competing center may lie above an endpoint or be infinitely near. An order
+is high when it exceeds half the degree on the ruling fiber. -/
+theorem eq_of_high_base_orders_on_hirzebruch_fiber :
+    let : Nonempty Φ.cones := hc.nonempty_cones
+    let : SmoothOfRelativeDimension 2 f :=
+      d₂ ▸ Φ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
+    let : IsNoetherian X := isNoetherian_of_finiteType f
+    let v := marking
+    let β := (C).repr v.1 1
+    (D).comap T.toBase ≤ hT.ramificationIdealSheafToBase ℂ →
+    ∀ (t : Fin 2) (c : ℂˣ) {j k : Fin n},
+      hT.baseCenter j = p[fiberRay[t],c] →
+      hT.baseCenter k ∈ (Φ.rayBoundaryIdeal hΦ (fiberRay[t])).support →
+      β < 2 * (-v.2 j) → β < 2 * (-v.2 k) → j = k := by
+  classical
+  intro hcones hdim hnoeth v β hlog t c j k hj hk hjhigh hkhigh
+  let := hcones
+  let := hdim
+  let := hnoeth
+  let ρ := fiberRay[t]
+  have hjs : hT.baseCenter j ∈ (Φ.rayBoundaryIdeal hΦ ρ).support := by
+    rw [hj]
+    exact (ρ.binomialCenter_mem_support_sdiff_colon hΦ d₂
+      (b.detDualEquiv_self ρ.primitiveGenerator) (ρ.surjective_detCharacter b) c).1
+  have hp := hT.baseCenter_eq_of_high_base_orders_on_hirzebruch_fiber b e hΦ hc r hr g hg
+    t hjs hk hjhigh hkhigh
+  -- Above one open-orbit point the logarithmic bound counts both steps.
+  by_contra hne
+  obtain ⟨_, J, -, -, -, -, -, hv⟩ := hT.exists_moving_base_ideal_of_plane_resolution g hg
+  have horders (l : Fin n) : -v.2 l = (baseMultiplicities J hT l : ℤ) := hv l
+  have hm (l : Fin n) : 0 ≤ -v.2 l := by
+    rw [horders l]
+    exact Int.natCast_nonneg _
+  have hnef := planeResolution_picardHom_isNef hT g hg
+  have h := sum_base_orders_le_invariant_fiber b e hΦ hc r hr hT hlog
+    v.1 (fun l ↦ -v.2 l) hm (by simpa only [Pi.neg_def, neg_neg, Prod.mk.eta] using hnef)
+    t {j, k} (by
+      intro l hl
+      rcases Finset.mem_insert.mp hl with rfl | hl
+      · exact ⟨c, hj⟩
+      · obtain rfl := Finset.mem_singleton.mp hl
+        exact ⟨c, hp.symm.trans hj⟩)
+  rw [Finset.sum_pair hne] at h
+  omega
+
+include hg in
+/-- If there is a high base order in the interior of ray one's fiber and a
+distinct high order over a toric corner, the corner is on ray three's fiber.
+Both orders are measured in the same Hirzebruch ruling. -/
+theorem opposite_hirzebruch_fiber_le_of_high_corner
+    (σ : Φ.cones) (hσ : Nat.card (ToricRay σ.val) = 2) :
+    let : Nonempty Φ.cones := hc.nonempty_cones
+    let : SmoothOfRelativeDimension 2 f :=
+      d₂ ▸ Φ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
+    let : IsNoetherian X := isNoetherian_of_finiteType f
+    let v := marking
+    let β := (C).repr v.1 1
+    (D).comap T.toBase ≤ hT.ramificationIdealSheafToBase ℂ →
+    ∀ (c : ℂˣ) {j k : Fin n}, hT.baseCenter j = p[r 1,c] →
+      hT.baseCenter k = Φ.distinguishedPointHom σ (IsLocalRing.closedPoint ℂ) →
+      β < 2 * (-v.2 j) → β < 2 * (-v.2 k) → k ≠ j → (r 3).toCone ≤ σ := by
+  intro hcones hdim hnoeth v β hlog c j k hj hk hjhigh hkhigh hne
+  obtain ⟨d, a, s, hcone, hs, hfiber, -⟩ :=
+    Φ.exists_hirzebruch_corner_basis b e r hr hΦ hc σ hσ
+  have hface : (s 1).toCone ≤ σ := by
+    rw [(s 1).toCone_le_iff, hcone, congrFun hs (1 : Fin 4)]
+    exact subset_hull ⟨1, rfl⟩
+  rcases hfiber with he | he
+  · have hmem := (Φ.distinguishedPoint_mem_support_rayBoundaryIdeal_iff hΦ σ (r 1)).mpr
+      (he ▸ hface)
+    exact (hne (hT.eq_of_high_base_orders_on_hirzebruch_fiber b e hΦ hc r hr g hg
+      hlog 0 c hj (hk.symm ▸ hmem) hjhigh hkhigh).symm).elim
+  · exact he ▸ hface
+
+include hg in
+/-- In a logarithmic plane resolution with a high-order center in the interior
+of ray one's fiber, every other high-order center has a distinct projected
+point. The first center over that point has at least the same order and lies on
+an open section orbit, the open orbit of the opposite fiber, or a corner of the
+opposite fiber. The corner case records the incidence needed for the mixed
+quadric link. -/
+theorem exists_first_high_baseCenter_of_high_base_order_on_hirzebruch_fiber :
+    let : Nonempty Φ.cones := hc.nonempty_cones
+    let : SmoothOfRelativeDimension 2 f :=
+      d₂ ▸ Φ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
+    let : IsNoetherian X := isNoetherian_of_finiteType f
+    let v := marking
+    let β := (C).repr v.1 1
+    (D).comap T.toBase ≤ hT.ramificationIdealSheafToBase ℂ →
+    ∀ (c : ℂˣ) {j k : Fin n}, hT.baseCenter j = p[r 1,c] →
+      β < 2 * (-v.2 j) → β < 2 * (-v.2 k) → k ≠ j →
+      ∃ l : Fin n, hT.baseCenter l = hT.baseCenter k ∧
+        (∀ a < l, hT.baseCenter a ≠ hT.baseCenter l) ∧
+        hT.baseCenter l ≠ hT.baseCenter j ∧ -v.2 k ≤ -v.2 l ∧
+        ((∃ σ : Φ.cones, Nat.card (ToricRay σ.val) = 2 ∧
+          hT.baseCenter l = Φ.distinguishedPointHom σ (IsLocalRing.closedPoint ℂ) ∧
+          (r 3).toCone ≤ σ) ∨
+        (∃ c' : ℂˣ, hT.baseCenter l = p[r 3,c']) ∨ Section[l]) := by
+  intro hcones hdim hnoeth v β hlog c j k hj hjhigh hkhigh hne
+  let := hcones
+  let := hdim
+  let := hnoeth
+  obtain ⟨l, hl, hfirst, hle⟩ := hT.exists_first_baseCenter_ge_of_plane_resolution g hg k
+  have hmem (a : ℂˣ) : p[r 1,a] ∈ (Φ.rayBoundaryIdeal hΦ (r 1)).support :=
+    ((r 1).binomialCenter_mem_support_sdiff_colon hΦ d₂
+      (b.detDualEquiv_self (r 1).primitiveGenerator) ((r 1).surjective_detCharacter b) a).1
+  have havoid : hT.baseCenter l ∉ (Φ.rayBoundaryIdeal hΦ (r 1)).support := by
+    intro h
+    exact hne (hT.eq_of_high_base_orders_on_hirzebruch_fiber b e hΦ hc r hr g hg
+      hlog 0 c hj (hl ▸ h) hjhigh hkhigh).symm
+  refine ⟨l, hl, hfirst, fun h ↦ havoid ((h.trans hj).symm ▸ hmem c), hle, ?_⟩
+  rcases baseCenter_hirzebruch_cases b hΦ hc r hT hlog l with hcorner | hsection | hfiber
+  · obtain ⟨σ, ⟨hcard, hpoint⟩, -⟩ := hcorner
+    exact Or.inl ⟨σ, hcard, hpoint.symm,
+      hT.opposite_hirzebruch_fiber_le_of_high_corner b e hΦ hc r hr g hg σ hcard
+        hlog c hj (hl.symm ▸ hpoint.symm) hjhigh hkhigh hne⟩
+  · exact Or.inr (Or.inr hsection)
+  · obtain ⟨t, c', h⟩ := hfiber
+    fin_cases t
+    · exact (havoid (h.symm ▸ hmem c')).elim
+    · exact Or.inr (Or.inl ⟨c', h⟩)
+
+include hg in
+/-- When all high orders project to open orbits of invariant fibers, they occur
+at first centers on distinct fibers and are bounded by the ruling degree. -/
+theorem exists_fiber_embedding_of_hirzebruch_high_base_orders
+    [Nonempty Φ.cones] [SmoothOfRelativeDimension 2 f] [IsNoetherian X]
+    (hlog : (D).comap T.toBase ≤ hT.ramificationIdealSheafToBase ℂ) :
+    let v := marking
     let A := Finset.univ.filter (fun j ↦ (C).repr v.1 1 < 2 * (-v.2 j))
+    (∀ j ∈ A, ∃ t : Fin 2, ∃ c : ℂˣ, hT.baseCenter j = p[fiberRay[t],c]) →
     ∃ fiber : (↑A : Type) ↪ Fin 2, ∀ j : A,
       -v.2 j ≤ (C).repr v.1 1 ∧
       (∀ l < (j : Fin n), hT.baseCenter l ≠ hT.baseCenter j) ∧
       ∃ c : ℂˣ, hT.baseCenter j = p[fiberRay[fiber j],c] := by
   classical
-  intro A
+  intro v A hcenters
+  obtain ⟨_, J, -, -, -, -, -, horders⟩ := hT.exists_moving_base_ideal_of_plane_resolution g hg
+  have hm (j : Fin n) : 0 ≤ -v.2 j := by
+    rw [horders j]
+    exact Int.natCast_nonneg _
   have hhigh (j : A) := (Finset.mem_filter.mp j.property).2
-  choose t c hp using fun j : A ↦ hcenters j (hhigh j)
-  let : Y.Over S := ⟨T.toBase ≫ f⟩
-  have : g.IsOver S := ⟨hg⟩
-  have hH : (H).IsAmple := isAmple_twistingSheaf ℂ (Fin 3 → ℂ) Nat.one_pos
+  choose t c hp using fun j : A ↦ hcenters j j.property
   have hnef : (T.picardHom (v.1, -(fun j ↦ -v.2 j))).toMul.IsNef ℂ (T.toBase ≫ f) := by
-    simp only [Pi.neg_def, neg_neg, Prod.mk.eta, hv, ← T.picardMarking_apply hT f,
-      LinearEquiv.apply_symm_apply, toMul_ofMul]
-    exact hH.isNef.pullback g
+    simpa only [Pi.neg_def, neg_neg, Prod.mk.eta, v] using
+      planeResolution_picardHom_isNef hT g hg
   have hbound := sum_base_orders_le_invariant_fiber b e hΦ hc r hr hT hlog
     v.1 (fun j ↦ -v.2 j) hm hnef
   have hunique {j l : A} {a : ℂˣ} (h : hT.baseCenter l = p[fiberRay[t j],a]) : j = l := by
     let ρ := fiberRay[t j]
-    let F := Φ.rayBoundaryIdeal hΦ ρ
-    let hF := Φ.isEffectiveCartier_rayBoundaryIdeal hΦ ρ
-    let : F.subscheme.IsProjectiveOver ℂ :=
-      Scheme.IsProjectiveOver.of_isClosedImmersion ℂ F.subschemeι
-    let : TauCeti.AlgebraicGeometry.IsRegular F.subscheme := Φ.isRegular_rayBoundary hΦ ρ
-    let : F.subscheme.IsCurveOver ℂ := ρ.isCurveOver_boundaryComponent hΦ d₂
-      (b.detDualEquiv_self ρ.primitiveGenerator) (ρ.surjective_detCharacter b)
-    have hsupport (u : ℂˣ) := ρ.binomialCenter_mem_support_sdiff_colon hΦ d₂
-      (b.detDualEquiv_self ρ.primitiveGenerator) (ρ.surjective_detCharacter b) u
-    have hdegree := invariant_fiber_degree b e hΦ hc r hr v.1 (t j)
-    have := Φ.uniqueFactorizationMonoid_stalk_algebraicRealization hΦ
-    rw [intersectionBilinForm_apply, Fan.rayDivisorToPicard_single, one_zsmul, toMul_ofMul,
-      primeDivisorClass_def,
-      mk_toInvertibleSheaf_congr _ hF (Φ.rayBoundaryIdeal_def hΦ ρ).symm] at hdegree
-    exact Subtype.ext (hT.eq_of_intersection_lt_two_mul_baseOrder_of_logarithmic_tower
-      (Φ.isEffectiveCartier_boundaryIdeal hΦ hc d₂) hF (Φ.boundaryIdeal_le_rayBoundaryIdeal ρ hΦ)
-      (Scheme.IsCurveOver.topologicalKrullDim_eq_one ℂ) hlog v.1.toMul (fun k ↦ -v.2 k) hm hnef
-      (by rw [hp j]; exact hsupport (c j)) (by rw [h]; exact hsupport a)
-      (hdegree.symm ▸ hhigh j) (hdegree.symm ▸ hhigh l))
+    have hs : hT.baseCenter l ∈ (Φ.rayBoundaryIdeal hΦ ρ).support := h.symm ▸
+      (ρ.binomialCenter_mem_support_sdiff_colon hΦ d₂
+        (b.detDualEquiv_self ρ.primitiveGenerator) (ρ.surjective_detCharacter b) a).1
+    exact Subtype.ext (hT.eq_of_high_base_orders_on_hirzebruch_fiber b e hΦ hc r hr g hg
+      hlog (t j) (c j) (hp j) hs (hhigh j) (hhigh l))
   refine ⟨⟨t, fun j l h ↦ hunique (h.symm ▸ hp l)⟩, fun j ↦ ?_⟩
   have hle := hbound (t j) {j.val} (by
     intro k hk
@@ -170,7 +340,7 @@ private theorem hirzebruch_high_fiber_centers
     exact ⟨c j, hp j⟩)
   refine ⟨by simpa only [Finset.sum_singleton] using hle, ?_, c j, hp j⟩
   obtain ⟨l, hl, hfirst, hle⟩ := hT.exists_first_baseCenter_ge_of_plane_resolution g hg j
-  have hle' : -v.2 j ≤ -v.2 l := by simpa only [hv] using hle
+  have hle' : -v.2 j ≤ -v.2 l := hle
   have hlhigh : (C).repr v.1 1 < 2 * (-v.2 l) := lt_of_lt_of_le (hhigh j) (by omega)
   let l' : A := ⟨l, Finset.mem_filter.mpr ⟨Finset.mem_univ _, hlhigh⟩⟩
   have he : j = l' := hunique (l := l') (hl.trans (hp j))
@@ -233,12 +403,9 @@ theorem hirzebruch_high_baseCenter_cases :
     · exact (hshort ⟨l, hl', hfirst, Or.inl hc⟩).elim
     · exact (hshort ⟨l, hl', hfirst, Or.inr hs⟩).elim
     · simpa only [hl] using hf
-  obtain ⟨_, _, -, -, -, -, -, horders⟩ := hT.exists_moving_base_ideal_of_plane_resolution g hg
-  have hm (j : Fin n) : 0 ≤ -v.2 j := by
-    rw [horders j]
-    exact Int.natCast_nonneg _
   obtain ⟨fiber, hfiber⟩ :=
-    hirzebruch_high_fiber_centers b e hΦ hc r hr hT g hg hlog v rfl hm hcenter
+    hT.exists_fiber_embedding_of_hirzebruch_high_base_orders b e hΦ hc r hr g hg hlog
+      (fun j hj ↦ hcenter j (Finset.mem_filter.mp hj).2)
   have hcard : A.card ≤ 2 := by
     simpa only [Fintype.card_coe, Fintype.card_fin] using Fintype.card_le_of_embedding fiber
   have hpos := Finset.card_pos.mpr hA

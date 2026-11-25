@@ -112,15 +112,12 @@ theorem exact_pullbackSections (M : InvertibleSheaf X) :
     simpa only [Scheme.Modules.Hom.comp_app, ConcreteCategory.comp_apply,
       Scheme.Modules.Hom.id_app, ConcreteCategory.id_apply] using he'.symm
 
-/-- Global sections of a line bundle lift from a closed subscheme if the first
-cohomology of the ideal-sheaf twist vanishes. -/
-theorem surjective_pullbackSectionsLE_of_subsingleton_cohomology_one (M : InvertibleSheaf X)
-    (h : Subsingleton (TauCeti.AlgebraicGeometry.Scheme.Modules.Cohomology (M.obj ⊗ I.sheaf) 1)) :
+/-- Surjectivity of the quotient arrow on global sections is sufficient for lifting
+global sections of the restricted line bundle. -/
+theorem surjective_pullbackSectionsLE_of_surjective_tensorRestriction (M : InvertibleSheaf X)
+    (hquot : Function.Surjective
+      (((ρ_ M.obj).inv ≫ M.obj ◁ I.toPushforwardSubscheme).app ⊤)) :
     Function.Surjective ((i).pullbackSectionsLE M.obj ⊤ ⊤ (by simp)) := by
-  let N := M.obj
-  have : M.obj.IsLocallyFree := inferInstanceAs N.IsLocallyFree
-  have : M.obj.IsFiniteType := inferInstanceAs N.IsFiniteType
-  have hquot := I.surjective_tensorRestriction_of_subsingleton_cohomology_one M.obj h
   have : IsIso (I.tensorRestrictionHom M) := I.isIso_tensorRestrictionHom M
   have hcompare := (ConcreteCategory.bijective_of_isIso ((I.tensorRestrictionHom M).app ⊤)).2
   -- The preimage of the full open is the full open of the closed subscheme.
@@ -141,6 +138,17 @@ theorem surjective_pullbackSectionsLE_of_subsingleton_cohomology_one (M : Invert
     exact he.symm.trans hx
   refine ⟨x, ?_⟩
   rw [pullbackSectionsLE_apply, hu, hv]
+
+/-- Global sections of a line bundle lift from a closed subscheme if the first
+cohomology of the ideal-sheaf twist vanishes. -/
+theorem surjective_pullbackSectionsLE_of_subsingleton_cohomology_one (M : InvertibleSheaf X)
+    (h : Subsingleton (TauCeti.AlgebraicGeometry.Scheme.Modules.Cohomology (M.obj ⊗ I.sheaf) 1)) :
+    Function.Surjective ((i).pullbackSectionsLE M.obj ⊤ ⊤ (by simp)) := by
+  let N := M.obj
+  have : M.obj.IsLocallyFree := inferInstanceAs N.IsLocallyFree
+  have : M.obj.IsFiniteType := inferInstanceAs N.IsFiniteType
+  have hquot := I.surjective_tensorRestriction_of_subsingleton_cohomology_one M.obj h
+  exact I.surjective_pullbackSectionsLE_of_surjective_tensorRestriction M hquot
 
 /-- Under the quotient comparison, the map of quotients is the direct image of the
 pullback of the original morphism. -/

@@ -52,6 +52,18 @@ theorem strictTransform_snoc (T : BlowupTower X n Y) (I : Y.IdealSheafData)
     (D : X.IdealSheafData) :
     (T.snoc I).strictTransform D = (I.blowupMap (T.strictTransform D).subschemeι).ker := (rfl)
 
+/-- In a concatenated blowup tower one first takes the strict transform on the
+prefix, then takes its strict transform on the tail. -/
+@[simp]
+theorem strictTransform_append {X Y Z : Scheme.{u}} {m n : ℕ}
+    (T : BlowupTower X m Y) (U : BlowupTower Y n Z) (C : X.IdealSheafData) :
+    (T.append U).strictTransform C = U.strictTransform (T.strictTransform C) := by
+  induction U with
+  | nil => simp
+  | @snoc n Z U I ih =>
+    simp only [append_snoc, strictTransform_snoc]
+    exact congrArg (fun D : Z.IdealSheafData ↦ (I.blowupMap D.subschemeι).ker) ih
+
 namespace IsClosedPointTower
 
 variable {T : BlowupTower X n Y}
@@ -82,6 +94,39 @@ theorem strictTransformCoefficients_snoc_last (D : X.IdealSheafData)
     h.strictTransformCoefficients D (Fin.last n) =
       -(ENat.toNat ((T.strictTransform D).stalkOrder p) : ℤ) := by
   simp only [strictTransformCoefficients, Fin.lastCases_last, lastCenter_eq h p hp hI]
+
+/-- A strict-transform coefficient in the prefix of a tower is independent of the
+appended blowups. -/
+@[simp]
+theorem strictTransformCoefficients_append_castAdd {X Y Z : Scheme.{u}} {m n : ℕ}
+    {T : BlowupTower X m Y} {U : BlowupTower Y n Z}
+    (hT : IsClosedPointTower X T) (hU : IsClosedPointTower Y U)
+    (C : X.IdealSheafData) (j : Fin m) :
+    (hT.append hU).strictTransformCoefficients C (j.castAdd n) =
+      hT.strictTransformCoefficients C j := by
+  induction hU with
+  | nil => simp only [append_nil, Fin.castAdd_zero, Fin.cast_eq_self]
+  | @snoc n Z U I hU p hp hI ih =>
+    simpa only [← Fin.castSucc_castAdd, append_snoc, strictTransformCoefficients_snoc_castSucc]
+      using ih
+
+/-- A strict-transform coefficient in the tail of a tower can be computed using
+the strict transform on the prefix as the initial ideal for the tail. -/
+@[simp]
+theorem strictTransformCoefficients_append_natAdd {X Y Z : Scheme.{u}} {m n : ℕ}
+    {T : BlowupTower X m Y} {U : BlowupTower Y n Z}
+    (hT : IsClosedPointTower X T) (hU : IsClosedPointTower Y U)
+    (C : X.IdealSheafData) (j : Fin n) :
+    (hT.append hU).strictTransformCoefficients C (j.natAdd m) =
+      hU.strictTransformCoefficients (T.strictTransform C) j := by
+  induction hU with
+  | nil => exact j.elim0
+  | @snoc n Z U I hU p hp hI ih =>
+    refine Fin.lastCases ?_ (fun i ↦ ?_) j
+    · simp only [Fin.natAdd_last, append_snoc,
+        strictTransformCoefficients_snoc_last _ _ p hp hI, strictTransform_append]
+    · simpa only [Fin.natAdd_castSucc, append_snoc, strictTransformCoefficients_snoc_castSucc]
+        using ih i
 
 variable {k : Type u} [Field k] [PerfectField k] [hX : IsIntegral X] [hNX : IsNoetherian X]
   (f : X ⟶ Spec (.of k)) [hf : SmoothOfRelativeDimension 2 f]

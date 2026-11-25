@@ -6,7 +6,6 @@ Authors: The QPainleve contributors
 module
 
 public import QPainleve.Algebra.Cluster.XMutation.Basic
-import TauCeti.Algebra.Group.FreeAbelianCharacter
 
 /-!
 # Inversion and relabeling of cluster X coordinates
@@ -30,22 +29,6 @@ variable (k : Type*) [Field k] {ι κ ρ : Type*}
 
 local notation:max "Laurent" ι:arg => AddMonoidAlgebra k (ι →₀ ℤ)
 local notation:max "Functions" ι:arg => FractionRing (AddMonoidAlgebra k (ι →₀ ℤ))
-
-private theorem algEquiv_ext_xCoordinate
-    {f g : Functions ι ≃ₐ[k] Functions κ}
-    (h : ∀ i : ι, f (xCoordinate k i) = g (xCoordinate k i)) : f = g := by
-  -- Restrict to Laurent polynomials and compare the characters on the standard generators.
-  apply AlgEquiv.coe_toAlgHom_injective
-  apply IsLocalization.algHom_ext (nonZeroDivisors (Laurent ι))
-  apply (AddMonoidAlgebra.lift k (Functions κ) (ι →₀ ℤ)).symm.injective
-  apply MonoidHom.toHomUnitsMulEquiv.injective
-  apply TauCeti.freeAbelianCharEquiv.injective
-  funext i
-  apply Units.ext
-  simpa only [TauCeti.freeAbelianCharEquiv_apply, MonoidHom.toHomUnitsMulEquiv_apply,
-    MonoidHom.coe_toHomUnits,
-    AddMonoidAlgebra.lift_symm_apply, toAdd_ofAdd, AlgHom.comp_apply, Algebra.algHom,
-    IsScalarTower.toAlgHom_apply, AlgEquiv.coe_toAlgHom, xCoordinate_def] using h i
 
 /-- Pullback for simultaneous inversion of all independent cluster X coordinates. -/
 @[expose]

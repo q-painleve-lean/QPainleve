@@ -12,16 +12,17 @@ public import QPainleve.SignedClusterModularGroup.SarkisovDegree.SectionContract
 import QPainleve.AlgebraicGeometry.Modules.Differentials.PoleIdeal
 import QPainleve.Geometry.Toric.Fan.Logarithmic.Subdivision
 import QPainleve.Geometry.Toric.Fan.Mutation.Tower
-import QPainleve.SignedClusterModularGroup.SarkisovDegree.Decrease
+import QPainleve.Geometry.Toric.Fan.Subdivision.Projective
 
 /-!
 # The one-center Sarkisov block from a quadric
 
-A high-order smooth center on a quadric becomes a section center in the
-exchanged ruling. Mutating there and contracting the negative section gives
-a plane resolution of strictly smaller Sarkisov bidegree. Both links preserve
-the pole factorization on the original resolution, and the returned point
-tower carries its pullback along the inverse resolving isomorphism.
+A smooth center on a quadric becomes a section center in the exchanged ruling.
+Mutating there and contracting the negative section gives a plane resolution
+whose degree is the sum of the ruling coefficients minus the pivot order.
+Both links preserve the pole factorization on the original resolution, and
+the returned tower carries its pullback along the inverse resolving
+isomorphism.
 
 This is Case A of Proposition 8.11 in [Lutz's appendix to Hacking and Keating][HKL].
 
@@ -85,7 +86,7 @@ section PoleIdeal
 variable [Nonempty Φ.cones] [IsIntegral Y] [IsDominant T.toBase]
 
 include hΦ in
-private theorem single_high_center_poleIdeal (c : ℂˣ)
+private theorem quadric_mutation_poleIdeal (c : ℂˣ)
     {Z W : Scheme} {U : BlowupTower X' (1 + n) Z} (e : Y ≅ Z)
     (d : Basis (Fin 2) ℤ N) (s₀ : (Ψ).IsSubdivision Plane[d])
     {V₀ : BlowupTower P (1 + (1 + n)) W} (hV : IsClosedPointTower P V₀) (k : Z ≅ W)
@@ -155,8 +156,6 @@ private theorem single_high_center_poleIdeal (c : ℂˣ)
 
 end PoleIdeal
 
-variable [Φ.algebraicRealization.IsProjectiveOver ℂ]
-
 /-- The one-point block from a quadric carries a specified plane resolution
 across the mutation and the subsequent toric contraction to the plane.
 The quadric is written in the frame of the exchanged ruling, so its original
@@ -166,13 +165,12 @@ On the original resolving surface, the regular partial composites after the
 mutation and the contraction preserve the pole ideal. In the plane point
 tower the pole ideal is its pullback along the inverse resolving isomorphism.
 
-If the pivot is the only order greater than half the original fiber degree,
-and is bounded by that fiber degree, the plane degree is positive and its
-Sarkisov bidegree is strictly smaller. The two new exceptional coordinates
+The plane degree is positive and equals the sum of the two quadric ruling
+coefficients minus the selected order. The two new exceptional coordinates
 are those of the contracted section and the reverse pivot. Every other
 coordinate retains its original relative order. The contraction is a single
 toric star blowdown. -/
-theorem exists_plane_resolution_of_quadric_single_high_center
+theorem exists_plane_resolution_of_quadric_mutation
     (hg : g ≫ fP = T.toBase ≫ fX) (hbir : Scheme.BirationalOver g (𝟙 P))
     (c : ℂˣ) (j : Fin (n + 1)) (hj : hT.baseCenter j = pivotPoint[c])
     (hfirst : ∀ l < j, hT.baseCenter l ≠ pivotPoint[c]) :
@@ -192,62 +190,50 @@ theorem exists_plane_resolution_of_quadric_single_high_center
     let b₀ := (C).repr x.1 0
     let a₀ := (C).repr x.1 1
     let m := fun l ↦ -x.2 l
-    0 < b₀ → b₀ < 2 * m j → m j ≤ b₀ →
-      (∀ l ≠ j, 0 ≤ m l ∧ 2 * m l ≤ b₀) →
-      ∃ (Z : Scheme) (U : BlowupTower X' (1 + n) Z) (_ : IsClosedPointTower X' U)
-        (e : Y ≅ Z) (d : Basis (Fin 2) ℤ N)
-        (s₀ : (Ψ).IsSubdivision (Fan.projectiveSpace d (Ψ).lattice))
-        (W : Scheme) (V₀ : BlowupTower P (1 + (1 + n)) W) (hV : IsClosedPointTower P V₀)
-        (k : Z ≅ W),
-        T.toBase.toRationalMap.comp mutationMap[c] = (e.hom ≫ U.toBase).toRationalMap ∧
-        k.hom ≫ V₀.toBase = U.toBase ≫ s₀.toFanHom.algebraicMap ≫ planeIso[d].hom ∧
-        (k.inv ≫ e.inv ≫ g) ≫ fP = V₀.toBase ≫ fP ∧
-        Scheme.BirationalOver (k.inv ≫ e.inv ≫ g) (𝟙 P) ∧
-        (letI : Y.Over S := ⟨T.toBase ≫ fX⟩
-         letI : Smooth (Y ↘ S) := (hT.smoothOfRelativeDimension fX).smooth
-         let p₁ := e.hom ≫ U.toBase
-         let p₂ := p₁ ≫ s₀.toFanHom.algebraicMap
-         ∀ D : Y.IdealSheafData,
-           ∃ (hp₁ : p₁.IsOver S) (hp₂ : p₂.IsOver S),
-             letI := hp₁
-             letI := hp₂
-             B[Φ,hc].comap T.toBase = D * hT.ramificationIdealSheafToBase ℂ →
-               B[Ψ,hcΨ].comap p₁ = D * ramificationIdealSheaf ℂ p₁ ∧
-               B[Plane[d],hcPlane[d]].comap p₂ = D * ramificationIdealSheaf ℂ p₂ ∧
-               (B[Plane[d],hcPlane[d]].comap planeIso[d].inv).comap V₀.toBase =
-                 D.comap (e ≪≫ k).inv * hV.ramificationIdealSheafToBase ℂ) ∧
-        let y := (V₀.picardMarking hV fP).symm (Additive.ofMul (pullback (k.inv ≫ e.inv ≫ g) H))
-        degree y.1 = b₀ + a₀ - m j ∧
-        y.2 (Fin.castAdd (1 + n) (0 : Fin 1)) = m j - b₀ ∧
-        y.2 (Fin.natAdd 1 firstIndex) = m j - a₀ ∧
-        (∀ l : Fin n, y.2 (Fin.natAdd 1 (l.natAdd 1)) = x.2 (j.succAbove l)) ∧
-        0 < degree y.1 ∧
-        planeSarkisovBidegree (degree y.1).toNat (∑ l, -y.2 l).toNat <
-          hirzebruchSarkisovBidegree b₀.toNat (∑ l, m l).toNat ∧
-        Plane[d].IsTwoRayStarSubdivision Ψ := by
-  intro hcones hcones' hdim hnoeth hY hmod x b₀ a₀ m hb hm hmb hsmall
+    ∃ (Z : Scheme) (U : BlowupTower X' (1 + n) Z) (_ : IsClosedPointTower X' U)
+      (e : Y ≅ Z) (d : Basis (Fin 2) ℤ N)
+      (hstar : Plane[d].IsTwoRayStarSubdivision Ψ)
+      (W : Scheme) (V₀ : BlowupTower P (1 + (1 + n)) W) (hV : IsClosedPointTower P V₀)
+      (k : Z ≅ W),
+      let s₀ := hstar.isSubdivision
+      T.toBase.toRationalMap.comp mutationMap[c] = (e.hom ≫ U.toBase).toRationalMap ∧
+      k.hom ≫ V₀.toBase = U.toBase ≫ s₀.toFanHom.algebraicMap ≫ planeIso[d].hom ∧
+      (k.inv ≫ e.inv ≫ g) ≫ fP = V₀.toBase ≫ fP ∧
+      Scheme.BirationalOver (k.inv ≫ e.inv ≫ g) (𝟙 P) ∧
+      (letI : Y.Over S := ⟨T.toBase ≫ fX⟩
+       letI : Smooth (Y ↘ S) := (hT.smoothOfRelativeDimension fX).smooth
+       let p₁ := e.hom ≫ U.toBase
+       let p₂ := p₁ ≫ s₀.toFanHom.algebraicMap
+       ∀ D : Y.IdealSheafData,
+         ∃ (hp₁ : p₁.IsOver S) (hp₂ : p₂.IsOver S),
+           letI := hp₁
+           letI := hp₂
+           B[Φ,hc].comap T.toBase = D * hT.ramificationIdealSheafToBase ℂ →
+             B[Ψ,hcΨ].comap p₁ = D * ramificationIdealSheaf ℂ p₁ ∧
+             B[Plane[d],hcPlane[d]].comap p₂ = D * ramificationIdealSheaf ℂ p₂ ∧
+             (B[Plane[d],hcPlane[d]].comap planeIso[d].inv).comap V₀.toBase =
+               D.comap (e ≪≫ k).inv * hV.ramificationIdealSheafToBase ℂ) ∧
+      let y := (V₀.picardMarking hV fP).symm (Additive.ofMul (pullback (k.inv ≫ e.inv ≫ g) H))
+      degree y.1 = b₀ + a₀ - m j ∧
+      y.2 (Fin.castAdd (1 + n) (0 : Fin 1)) = m j - b₀ ∧
+      y.2 (Fin.natAdd 1 firstIndex) = m j - a₀ ∧
+      (∀ l : Fin n, y.2 (Fin.natAdd 1 (l.natAdd 1)) = x.2 (j.succAbove l)) ∧
+      0 < degree y.1 := by
+  intro hcones hcones' hdim hnoeth hY hmod x b₀ a₀ m
   let := hcones
   let := hcones'
   let := hdim
   let := hnoeth
   let := hY
   let := hmod
-  have ⟨hsq, hsum⟩ := hT.homaloidal_intersection_identities_of_hirzebruch b 0 hΦ hc r hr g hg hbir
-  have hlt := quadric_sarkisov_degree_decrease_of_single (a := a₀) (m := m) hb j
-    (by
-      have hmul : 2 * a₀ * b₀ = 2 * b₀ * a₀ := mul_right_comm 2 a₀ b₀
-      simpa only [m, neg_sq, Nat.cast_zero, zero_mul, sub_zero, hmul] using hsq)
-    (by
-      have hadd : 2 * a₀ + 2 * b₀ = 2 * b₀ + 2 * a₀ := add_comm _ _
-      simpa only [m, Nat.cast_zero, sub_zero, hadd] using hsum)
-    hm.le hmb hsmall
+  let : (X).IsProjectiveOver ℂ := Φ.isProjectiveOver_algebraicRealization_of_isComplete hΦ hc b
   obtain ⟨Z, U, hU, e, hmap, hg', hbir', _, _, hα, hβ, hfirst', htail⟩ :=
     hT.exists_hirzebruchOne_resolution_of_quadric_mutation b hΦ hc r hr g hg hbir c j hj hfirst
-  obtain ⟨d, s₀, W, V₀, hV, k, hproj, hg'', hbir'', hdegree, hvertex, hrem, -, hstar⟩ :=
+  obtain ⟨d, _, W, V₀, hV, k, hproj, hg'', hbir'', hdegree, hvertex, hrem, -, hstar⟩ :=
     hU.exists_plane_resolution_of_hirzebruchOne b hΨ hcΨ s hs (e.inv ≫ g) hg' hbir'
-  refine ⟨Z, U, hU, e, d, s₀, W, V₀, hV, k, hmap, hproj,
+  refine ⟨Z, U, hU, e, d, hstar, W, V₀, hV, k, hmap, hproj,
     by simpa only [Category.assoc] using hg'', by simpa only [Category.assoc] using hbir'',
-    single_high_center_poleIdeal b hΦ hc r hr hT c e d s₀ hV k hmap hproj, ?_⟩
+    quadric_mutation_poleIdeal b hΦ hc r hr hT c e d hstar.isSubdivision hV k hmap hproj, ?_⟩
   intro y
   have hy : degree y.1 = b₀ + a₀ - m j := by
     simpa only [y, Category.assoc, hα, b₀, a₀, m, sub_neg_eq_add] using hdegree
@@ -255,16 +241,19 @@ theorem exists_plane_resolution_of_quadric_single_high_center
     have h : y.2 (Fin.castAdd (1 + n) (0 : Fin 1)) = a₀ - (b₀ + a₀ - m j) := by
       simpa only [y, Category.assoc, hβ, hα, b₀, a₀, m, sub_neg_eq_add] using hvertex
     omega
-  refine ⟨hy, hf, ?_, ?_, hy ▸ hlt.1, ?_, hstar⟩
+  have hpos : 0 < degree y.1 := by
+    rw [hdegree]
+    let : (X').IsProjectiveOver ℂ :=
+      (Ψ).isProjectiveOver_algebraicRealization_of_isComplete hΨ hcΨ b
+    obtain ⟨hFiber, hSection, -⟩ :=
+      hU.hirzebruch_resolution_degree_bounds b 1 hΨ hcΨ s hs (e.inv ≫ g) hg' hbir'
+    exact hFiber.trans_le (by simpa only [Nat.cast_one, one_mul] using hSection)
+  refine ⟨hy, hf, ?_, ?_, hpos⟩
   · have h : y.2 (Fin.natAdd 1 firstIndex) = -a₀ - x.2 j := by
       simpa only [y, Category.assoc, hfirst', a₀] using hrem firstIndex
     dsimp only [m]
     omega
   · intro l
     simpa only [y, Category.assoc, htail] using hrem (l.natAdd 1)
-  · rw [Prod.Lex.lt_iff, ofLex_planeSarkisovBidegree, ofLex_hirzebruchSarkisovBidegree]
-    refine Or.inl ?_
-    rw [hy]
-    omega
 
 end QPainleve.BlowupTower.IsClosedPointTower

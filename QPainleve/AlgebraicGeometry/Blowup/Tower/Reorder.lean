@@ -68,8 +68,8 @@ private theorem Rebase.pullback_exceptional {I : X.IdealSheafData} (R : Rebase I
   rw [pullback_comp, h, pullback_blowupExceptionalClass_blowupMap]
 
 private def Rebase.nil (I : X.IdealSheafData) : Rebase I (.nil (X := X)) := by
-  let e := I.blowupIso (Iso.refl _) (by simp [toBase_nil] :
-    I.comap (Iso.refl X).hom = I.comap (BlowupTower.nil (X := X)).toBase)
+  let e := blowupIso (Iso.refl X) (by simp [toBase_nil] :
+    I.comap (BlowupTower.nil (X := X)).toBase = I.comap (Iso.refl X).hom)
   refine ⟨_, .nil, .nil, e, ?_, fun j ↦ j.elim0, fun _ j ↦ j.elim0⟩
   simp [e, toBase_nil]
 
@@ -89,8 +89,7 @@ private def Rebase.snoc {I : X.IdealSheafData} (R : Rebase I T) (J : Y.IdealShea
     simp [e, E.isLift.hom_toBase, toBase_snoc, toBase_nil]
   have hcomap : I.comap (T.snoc J).toBase = A.comap J.blowupToBase := by
     rw [toBase_snoc, comap_comp]
-  let u := (A.comap J.blowupToBase).blowupIso (Iso.refl _) (by simpa only
-    [Iso.refl_hom, comap_id] using hcomap.symm)
+  let u := blowupIso (Iso.refl _) (hcomap.trans (comap_id _).symm)
   have hu : u.hom ≫ (A.comap J.blowupToBase).blowupToBase =
       (I.comap (T.snoc J).toBase).blowupToBase := by simp [u]
   have hv : u.hom ≫ A.blowupMap J.blowupToBase ≫ (I.comap T.toBase).blowupToBase =
@@ -195,13 +194,15 @@ private theorem exists_move_last_to_front {J : Y.IdealSheafData}
       rw [hI, ← SetLike.mem_coe, Scheme.support_ker_fromSpecResidueField_of_isClosed hr] at hmem
       exact hmem
     rwa [hqr]
-  let d := (J[p].comap T.toBase).blowupIso (Iso.refl _) (by simpa using hqI)
+  have hcenter : (J[p].comap T.toBase).comap (Iso.refl Y).hom = J[q] :=
+    (comap_id _).trans hqI
+  let d := blowupIso (Iso.refl Y) hcenter.symm
   have hd : d.hom ≫ (J[p].comap T.toBase).blowupToBase = J[q].blowupToBase := by simp [d]
   refine ⟨_, R.tower, d ≪≫ R.iso, R.isClosedPointTower, ?_, ?_, ?_, ?_⟩
   · simp only [Iso.trans_hom, Category.assoc, R.over_base, reassoc_of% hd, toBase_snoc]
   · rw [Iso.trans_hom, ← pullback_comp, R.pullback_exceptional, exceptionalClass_snoc_last,
       ← blowupExceptionalClass_def]
-    exact pullback_blowupExceptionalClass _ _ _
+    exact pullback_blowupExceptionalClass _ _ hcenter
   · simpa only [baseCenter_snoc_castSucc] using R.baseCenter hT'
   · intro i
     rw [Iso.trans_hom, ← pullback_comp, R.exceptional, pullback_comp, hd,
@@ -209,9 +210,10 @@ private theorem exists_move_last_to_front {J : Y.IdealSheafData}
 
 /-- Insert a blowup of a closed point absent from the projected centers of a tower.
 Blowing up its inverse image on the resolved scheme gives the same refinement as
-blowing it up first and carrying along the original tower. The original centers
-project to the same points in the same order, and the pullback of a marked Picard
-class has coefficient zero at the inserted center. -/
+blowing it up first and carrying along the original tower. The comparison
+identifies the total exceptional classes and preserves the original projected
+centers in order. The pullback of a marked Picard class has coefficient zero at
+the inserted center. -/
 theorem exists_prepend_closed_point_blowup (hT : IsClosedPointTower X T)
     {p : X} (hp : IsClosed ({p} : Set X)) (h : p ∉ Set.range hT.baseCenter) :
     let I := J[p]
@@ -221,13 +223,17 @@ theorem exists_prepend_closed_point_blowup (hT : IsClosedPointTower X T)
       IsClosed ({q} : Set Y) ∧ T.toBase q = p ∧ A = J[q] ∧
       e.hom ≫ U.toBase ≫ I.blowupToBase = A.blowupToBase ≫ T.toBase ∧
       (∀ j, I.blowupToBase (hU.baseCenter j) = hT.baseCenter j) ∧
+      pullback e.hom (pullback U.toBase I.blowupExceptionalClass) = A.blowupExceptionalClass ∧
+      (∀ j, pullback e.hom (U.exceptionalClass j) =
+        pullback A.blowupToBase (T.exceptionalClass j)) ∧
       ∀ (a : Additive (LineBundleClass X)) (x : Fin n → ℤ),
         pullback (e.inv ≫ A.blowupToBase) (T.picardHom (a, x)).toMul =
           (((BlowupTower.nil.snoc I).append U).picardHom
             (a, Fin.addCases (fun _ : Fin 1 ↦ 0) x)).toMul := by
   intro I A
   obtain ⟨⟨R⟩, q, hq, hqp, hA⟩ := hT.exists_rebase_of_notMem_range_baseCenter hp h
-  refine ⟨q, _, R.tower, R.iso, R.isClosedPointTower, hq, hqp, hA, R.over_base, R.baseCenter hT, ?_⟩
+  refine ⟨q, _, R.tower, R.iso, R.isClosedPointTower, hq, hqp, hA, R.over_base,
+    R.baseCenter hT, R.pullback_exceptional, R.exceptional, ?_⟩
   intro a x
   have hbase : (R.iso.inv ≫ A.blowupToBase) ≫ T.toBase = R.tower.toBase ≫ I.blowupToBase := by
     rw [Category.assoc, ← R.over_base, Iso.inv_hom_id_assoc]

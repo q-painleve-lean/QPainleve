@@ -17,8 +17,9 @@ import TauCeti.AlgebraicGeometry.IdealSheaf.Reduced
 A tower of blowups at boundary nodes can be reproduced on another numbered
 cycle by blowing up the corresponding node at each stage. The reduced total
 boundaries carry compatible oriented subdivisions, and the extension of the
-base Picard isometry matches their numbered prime classes. This is the
-auxiliary-model step in [Gross, Hacking and Keel, Theorem 4.7][GHK].
+base Picard isometry matches their numbered prime classes. Strict transforms
+of original components of the same number receive a common new number.
+This is the auxiliary-model step in [Gross, Hacking and Keel, Theorem 4.7][GHK].
 
 [GHK]: https://arxiv.org/html/1211.6367v5#S4.Thmtheorem7
 -/
@@ -78,7 +79,9 @@ private abbrev HasMatchingNumberings {Y W : Scheme.{u}}
       (A' : Scheme.NodalCycleNumbering p' l) (C' : Scheme.NodalCycleNumbering q' l),
       (β(E, D, f, h)).IsOrientedCycleSubdivision A' A ∧
       (β(G, F, g, h')).IsOrientedCycleSubdivision C' C ∧
-      ∀ a, e P(E, A'.boundaryPrimeEquiv hE a) = P(G, C'.boundaryPrimeEquiv hG a)
+      (∀ a, e P(E, A'.boundaryPrimeEquiv hE a) = P(G, C'.boundaryPrimeEquiv hG a)) ∧
+      ∀ j, ∃ a, (β(E, D, f, h)) (A'.componentGenericPoint a) = A.componentGenericPoint j ∧
+        (β(G, F, g, h')) (C'.componentGenericPoint a) = C.componentGenericPoint j
 
 private theorem hasMatchingNumberings_nil (e : Pic(X) → Pic(Z))
     (hD : D.IsEffectiveCartier) (hF : F.IsEffectiveCartier)
@@ -90,8 +93,8 @@ private theorem hasMatchingNumberings_nil (e : Pic(X) → Pic(Z))
       ∀ a, e P(D, A.boundaryPrimeEquiv hD a) = P(F, C.boundaryPrimeEquiv hF a)) :
     HasMatchingNumberings A C (𝟙 X) (𝟙 Z) ‹X.Over S(k)› ‹Z.Over S(k)› D F n e := by
   intro _ _ _ _ _ _ _ _ _ h h' _ _ _ _ _ _
-  exact ⟨ι, κ, p, q, A, C, (D.subschemeMap_id _).symm ▸ .id A,
-    (F.subschemeMap_id _).symm ▸ .id C, he⟩
+  rw [D.subschemeMap_id, F.subschemeMap_id]
+  exact ⟨ι, κ, p, q, A, C, .id A, .id C, he, fun j ↦ ⟨j, rfl, rfl⟩⟩
 
 omit [IsIntegral X] [IsIntegral Z] [X.IsProjectiveOver k] [Z.IsProjectiveOver k]
   [SmoothOfRelativeDimension 2 (g(k, X))] [SmoothOfRelativeDimension 2 (g(k, Z))] in
@@ -113,7 +116,7 @@ private theorem hasMatchingNumberings_blowup {Y W : Scheme.{u}}
         (picardIsometryCongr k (IsClosedPointTower.snoc .nil x hx' rfl)
           (IsClosedPointTower.snoc .nil z hz' rfl) e) := by
   have : NeZero (l + 1) := ⟨Nat.succ_ne_zero l⟩
-  obtain ⟨α, γ, a, c, A', C', hA, hC, he⟩ := @ih
+  obtain ⟨α, γ, a, c, A', C', hA, hC, he, hlift⟩ := @ih
     ‹IsIntegral Y› ‹IsIntegral W›
     ‹SmoothOfRelativeDimension 2 (g(k, Y))› ‹SmoothOfRelativeDimension 2 (g(k, W))›
     ‹PrestableFamily (E.subscheme ↘ S(k))› ‹PrestableFamily (G.subscheme ↘ S(k))›
@@ -125,10 +128,30 @@ private theorem hasMatchingNumberings_blowup {Y W : Scheme.{u}}
   let : (I(A'.ambientNode i)).blowup.Over S(k) := ⟨π(A'.ambientNode i) ≫ g(k, Y)⟩
   let : (I(C'.ambientNode i)).blowup.Over S(k) := ⟨π(C'.ambientNode i) ≫ g(k, W)⟩
   obtain ⟨A'', C'', hA', hC', he'⟩ :=
-    picardIsometryCongr_nodal_boundaryPrimes_of_numbered_nodes A' C' hE hG i e he
+    picardIsometryCongr_of_numbered_nodal_blowups A' C' hE hG i e he
       (PEmpty.elim : PEmpty.{v+1} → _) (PEmpty.elim : PEmpty.{w+1} → _)
-  exact ⟨_, _, _, _, A'', C'', subschemeMap_comp _ hf (le_radical _) ▸ hA'.comp hA,
-    subschemeMap_comp _ hg (le_radical _) ▸ hC'.comp hC, he'⟩
+  rw [← subschemeMap_comp _ hf (le_radical _), ← subschemeMap_comp _ hg (le_radical _)]
+  refine ⟨_, _, _, _, A'', C'', hA'.comp hA, hC'.comp hC, fun a ↦ (he' a).2.2, ?_⟩
+  intro j
+  obtain ⟨a, ha, hc⟩ := hlift j
+  -- The numbering of each blowup starts at the successor of the blown-up node.
+  let t : ZMod (l + 1) := (a - (i + 1)).cast
+  have hval : t.val = (a - (i + 1)).val :=
+    ZMod.val_cast_eq_val_of_lt ((a - (i + 1)).val_lt.trans (Nat.lt_succ_self l))
+  have ht : t.val < l := hval ▸ (a - (i + 1)).val_lt
+  have hidx : (t.val : ZMod l) + (i + 1) = a := by
+    rw [hval, ZMod.natCast_zmod_val, sub_add_cancel]
+  obtain ⟨ha', hc', -⟩ := he' t
+  simp only [ite_eq_left ht, hidx] at ha' hc'
+  refine ⟨t, ?_, ?_⟩
+  · rw [Scheme.Hom.comp_apply, ← ha]
+    congr 1
+    apply E.subschemeι.injective
+    simpa only [← Scheme.Hom.comp_apply, subschemeMap_subschemeι] using ha'
+  · rw [Scheme.Hom.comp_apply, ← hc]
+    congr 1
+    apply G.subschemeι.injective
+    simpa only [← Scheme.Hom.comp_apply, subschemeMap_subschemeι] using hc'
 
 variable (hD : D.IsEffectiveCartier) (hF : F.IsEffectiveCartier)
   (e : B(k, X).IsometryEquiv B(k, Z))
@@ -228,7 +251,8 @@ private theorem hasMatchingTower {m : ℕ} {Y : Scheme.{u}} {T : BlowupTower X m
 /-- A specified nodal blowup tower on one numbered Cartier boundary can be matched
 by a nodal blowup tower on the other. Both projections induce oriented subdivisions,
 and the Picard extension matching the ordered total exceptional classes also matches
-every numbered prime of the reduced total boundaries. -/
+every numbered prime of the reduced total boundaries. Each pair of original components with
+the same number has strict transforms with a common new number. -/
 theorem exists_matching_numbered_nodal_boundary_tower {m : ℕ} {Y : Scheme.{u}}
     {T : BlowupTower X m Y} (hT : IsNodalBoundaryTower D (g(k, X)) (𝟙 X) T)
     (he :
@@ -274,8 +298,13 @@ theorem exists_matching_numbered_nodal_boundary_tower {m : ℕ} {Y : Scheme.{u}}
         (A' : Scheme.NodalCycleNumbering p' (n + m)) (C' : Scheme.NodalCycleNumbering q' (n + m)),
         (β(E, D, T.toBase, le_radical _)).IsOrientedCycleSubdivision A' A ∧
         (β(G, F, U.toBase, le_radical _)).IsOrientedCycleSubdivision C' C ∧
-        ∀ a, picardIsometryCongr k hT.isClosedPointTower hU.isClosedPointTower e
-          P(E, A'.boundaryPrimeEquiv hE a) = P(G, C'.boundaryPrimeEquiv hG a) := by
+        (∀ a, picardIsometryCongr k hT.isClosedPointTower hU.isClosedPointTower e
+          P(E, A'.boundaryPrimeEquiv hE a) = P(G, C'.boundaryPrimeEquiv hG a)) ∧
+        ∀ j, ∃ a,
+          (β(E, D, T.toBase, le_radical _)) (A'.componentGenericPoint a) =
+            A.componentGenericPoint j ∧
+          (β(G, F, U.toBase, le_radical _)) (C'.componentGenericPoint a) =
+            C.componentGenericPoint j := by
   obtain ⟨W, U, hU, h⟩ := hasMatchingTower A C hD hF e hT he
   refine ⟨W, U, hU, ?_⟩
   intro E G _ _ hEpre hGpre hlen _ _ hE hG s t hY hW hs ht _ _ _ _ _ _

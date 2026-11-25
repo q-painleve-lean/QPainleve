@@ -40,6 +40,18 @@ theorem blowupExceptionalClass_def (I : X.IdealSheafData) :
     I.blowupExceptionalClass =
       (LineBundleClass.mk I.isEffectiveCartier_comap_blowupToBase.toInvertibleSheaf)⁻¹ := (rfl)
 
+/-- Pullback identifies the positive exceptional class with the inverse class
+of the pulled-back exceptional ideal. -/
+theorem pullback_blowupExceptionalClass_of_comap_eq (I : X.IdealSheafData)
+    (g : Y ⟶ I.blowup) {E : Y.IdealSheafData} (hE : E.IsEffectiveCartier)
+    (he : (I.comap I.blowupToBase).comap g = E) :
+    LineBundleClass.pullback g I.blowupExceptionalClass =
+      (LineBundleClass.mk hE.toInvertibleSheaf)⁻¹ := by
+  let h := I.isEffectiveCartier_comap_blowupToBase
+  rw [blowupExceptionalClass_def, LineBundleClass.pullback_inv,
+    h.pullback_mk_toInvertibleSheaf (he.symm ▸ hE),
+    LineBundleClass.mk_toInvertibleSheaf_congr _ _ he]
+
 /-- If a Cartier divisor is the sum of the source and pulled-back target exceptional
 divisors, the pulled-back target class is the quotient of its class by the source class. -/
 theorem pullback_blowupExceptionalClass_eq_div_of_eq_mul (J : Y.IdealSheafData)
@@ -83,11 +95,11 @@ theorem pullback_blowupExceptionalClass_blowupMap (I : X.IdealSheafData) (f : Y 
 @[simp]
 theorem pullback_blowupExceptionalClass (J : Y.IdealSheafData) (e : X ≅ Y)
     {I : X.IdealSheafData} (h : J.comap e.hom = I) :
-    LineBundleClass.pullback (J.blowupIso e h).hom J.blowupExceptionalClass =
+    LineBundleClass.pullback (blowupIso e h.symm).hom J.blowupExceptionalClass =
       I.blowupExceptionalClass := by
   let hJ := J.isEffectiveCartier_comap_blowupToBase
   simp only [blowupExceptionalClass, LineBundleClass.pullback_inv]
-  rw [hJ.pullback_mk_toInvertibleSheaf (hJ.comap (J.blowupIso e h).hom)]
+  rw [hJ.pullback_mk_toInvertibleSheaf (hJ.comap (blowupIso e h.symm).hom)]
   exact congrArg Inv.inv
     (LineBundleClass.mk_toInvertibleSheaf_congr _ _ (J.comap_blowupIso_hom e h))
 

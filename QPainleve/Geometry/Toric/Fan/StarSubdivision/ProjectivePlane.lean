@@ -14,7 +14,6 @@ import QPainleve.AlgebraicGeometry.Blowup.Isomorphism
 import QPainleve.AlgebraicGeometry.Blowup.Projective.Global
 import QPainleve.Geometry.Toric.Fan.Boundary.Subdivision
 import QPainleve.Geometry.Toric.Fan.StarSubdivision.Generators
-import QPainleve.Geometry.Toric.Cone.Coordinates
 import QPainleve.Geometry.Toric.Cone.TwoDimensional
 import QPainleve.Geometry.Toric.Fan.TwoDimensional
 import Mathlib.LinearAlgebra.Transvection.Basic
@@ -66,17 +65,12 @@ theorem exists_eq_starSubdivision_projectivePlane_of_hirzebruchOne
     simp [d, LinearMap.transvection.apply, sub_eq_add_neg]
   have hd₁ : d 1 = b 1 := by simp [d, LinearMap.transvection.apply, hzero]
   have hsum : d 0 + d 1 = b 0 := by rw [hd₀, hd₁, sub_add_cancel]
-  have hσ := isRegularCone_projectiveSpaceCone d Φ.lattice
-    (show ({none}ᶜ : Set (Option (Fin 2))) ≠ Set.univ by simp)
-  obtain ⟨e, he⟩ := hσ.exists_rayEquiv_of_basis Φ.lattice d
-    (by rw [projectiveSpaceCone_compl_none]; rfl)
-  have hcard : Nat.card (ToricRay (centerCone[d]).val) = 2 := by
-    rw [← Nat.card_congr e, Nat.card_fin]
-  have hnew : newRay[d, hcard].primitiveGenerator = b 0 := by
-    apply Fan.Ray.primitiveGenerator_eq_of_mem_of_isPrimitive _ _ (b.isPrimitive 0)
-    rw [coe_toCone_starSubdivisionAlongRay,
-      hσ.sum_primitiveGenerator_allRays Φ.lattice d e he, hsum]
-    exact subset_hull (Set.mem_singleton _)
+  have hcone : (centerCone[d]).val = hull ℝ (Set.range (i ∘ d)) :=
+    projectiveSpaceCone_compl_none (i := i) d
+  have hcard := card_toricRay_projectiveSpaceMaximalCone d Φ.lattice none
+  have hnew : newRay[d, hcard].primitiveGenerator = b 0 :=
+    (primitiveGenerator_starSubdivisionAlongRay_of_basis reg[d] (centerCone[d]) d hcone _).trans
+      hsum
   refine ⟨d, hcard, hd₀, hd₁, ?_, hnew⟩
   let hs := (plane[d]).starSubdivisionAlong_isSubdivision reg[d] (centerCone[d]).property
     (ne_bot_of_card_toricRay_eq_two hcard)
@@ -137,7 +131,7 @@ theorem exists_iso_blowup_projectivePlane_of_hirzebruchOne
   obtain ⟨h₀, f, -, hf, -⟩ := Ψ.exists_iso_blowup_starSubdivisionAlong hΨ σ hN hσ
   let hstar := Ψ.starSubdivisionAlong_isSubdivision hΨ σ.property h₀
   let u := Ψ.starSubdivisionAlongRay hΨ σ.property h₀
-  let e := f ≪≫ p.ker.blowupIso g hcenter
+  let e := f ≪≫ blowupIso g hcenter.symm
   have hproj : e.hom ≫ p.ker.blowupToBase = hstar.toFanHom.algebraicMap ≫ g.hom := by
     rw [Iso.trans_hom, Category.assoc, blowupIso_hom_blowupToBase, ← Category.assoc, hf]
   refine ⟨d, hstar, u, e, hd₀, hd₁, hnew, ?_, ?_, hproj, ?_, ?_, .along hΨ σ hσ⟩
@@ -164,8 +158,6 @@ private theorem projectivePlane_vertex_starSubdivision_rays
       b 0 = -projectiveSpaceGenerator d k := by
   intro Ψ hΨ σ Γ
   obtain ⟨c, hc, hrays, hk⟩ := projectivePlane_vertex_rays d hi k
-  let hreg := isRegular_iff.mp hΨ σ.val σ.property
-  obtain ⟨e, he⟩ := hreg.exists_rayEquiv_of_basis hi c hc
   have hσ : Nat.card (ToricRay σ.val) = 2 := card_toricRay_projectiveSpaceMaximalCone d hi k
   have hzero : c.coord 0 (c 1) = 0 := by simp
   let b := c.map (LinearEquiv.transvection hzero)
@@ -173,10 +165,8 @@ private theorem projectivePlane_vertex_starSubdivision_rays
     simp [b, LinearMap.transvection.apply, Basis.coord_apply]
   have hb₁ : b 1 = c 1 := by simp [b, LinearMap.transvection.apply, hzero]
   have hnew : (Ψ.starSubdivisionAlongRay hΨ σ.property
-      (ne_bot_of_card_toricRay_eq_two hσ)).primitiveGenerator = b 0 := by
-    apply Ray.primitiveGenerator_eq_of_mem_of_isPrimitive _ _ (b.isPrimitive 0)
-    rw [coe_toCone_starSubdivisionAlongRay, hreg.sum_primitiveGenerator_allRays hi c e he, hb₀]
-    exact subset_hull (Set.mem_singleton _)
+      (ne_bot_of_card_toricRay_eq_two hσ)).primitiveGenerator = b 0 :=
+    (primitiveGenerator_starSubdivisionAlongRay_of_basis hΨ σ c hc _).trans hb₀.symm
   refine ⟨hσ, b, hnew, ?_, by rw [hb₀, hk]; abel⟩
   rw [range_primitiveGenerator_starSubdivisionAlong hΨ σ (ne_bot_of_card_toricRay_eq_two hσ),
     hnew, range_primitiveGenerator_projectiveSpace d hi, hrays, hb₀, hb₁]
