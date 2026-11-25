@@ -6,6 +6,7 @@ Authors: Yuma Mizuno
 module
 
 public import Mathlib.GroupTheory.GroupExtension.Basic
+public import QPainleve.AlgebraicGeometry.Curves.DualGraph.Cycle.Action
 public import QPainleve.SignedClusterModularGroup.BoundaryReflection
 public import TauCeti.LinearAlgebra.BilinearForm.Isometry
 
@@ -100,6 +101,22 @@ def sign : signedBoundaryIsometryGroup B D →* ℤˣ :=
 @[simp]
 theorem sign_apply (p : signedBoundaryIsometryGroup B D) :
     sign B D p = p.val.2 := (rfl)
+
+/-- A signed boundary isometry acts by pullback along a dihedral action with its
+specified branch sign. This uses the inverse of its permutation of the classes. -/
+theorem exists_cycleAction_pullback (g : signedBoundaryIsometryGroup B D) :
+    ∃ a : DihedralGroup n, DihedralGroup.cycleOrientationSign a = sign B D g ∧
+      ∀ j, (toIsometry B D g).val (D (DihedralGroup.cycleVertexPerm a j)) = D j := by
+  obtain ⟨k, hk⟩ := (mem_signedBoundaryIsometryGroup_iff B D).mp g.property
+  rcases Int.units_eq_one_or (sign B D g) with h | h
+  · refine ⟨DihedralGroup.r (-k), (DihedralGroup.cycleOrientationSign_r _).trans h.symm, ?_⟩
+    intro j
+    simpa only [toIsometry_apply, DihedralGroup.cycleVertexPerm_r_apply, ← sign_apply,
+      h, one_smul, neg_add_cancel_right] using hk (j + -k)
+  · refine ⟨DihedralGroup.sr (-k), (DihedralGroup.cycleOrientationSign_sr _).trans h.symm, ?_⟩
+    intro j
+    simpa only [toIsometry_apply, DihedralGroup.cycleVertexPerm_sr_apply, neg_neg, ← sign_apply,
+      h, Units.neg_smul, one_smul, neg_sub, sub_add_cancel] using hk (k - j)
 
 /-- Include a boundary rotation with positive sign. -/
 def rotationInclusion : boundaryRotationGroup B D →* signedBoundaryIsometryGroup B D :=

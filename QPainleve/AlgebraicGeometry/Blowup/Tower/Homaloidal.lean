@@ -131,18 +131,17 @@ theorem homaloidal_intersection_identities (hT : IsClosedPointTower X T)
   have hv : (T.picardMarking hT f v).toMul = pullback g H :=
     congrArg Additive.toMul ((T.picardMarking hT f).apply_symm_apply _)
   have hsq := classIntersectionNumber_picardMarking k hT v v
-  have hcanon := classIntersectionNumber_picardMarking k hT v (Additive.ofMul K(X), fun _ ↦ 1)
-  have hK := picardMarking_canonicalClass k hT
-  dsimp only at hsq hcanon hK
+  have hcanon := hT.classIntersectionNumber_picardHom_canonicalBundle k v
+  dsimp only at hsq hcanon
   rw [hv, g.classIntersectionNumber_pullback_of_birational hbir,
     classIntersectionNumber_projectivePlane, Module.Basis.picardTwistEquiv_apply_twist] at hsq
-  rw [hv, hK, toMul_ofMul] at hcanon
+  rw [← picardMarking_apply T hT f, hv] at hcanon
   have hproj := g.classIntersectionNumber_pullback_canonicalBundle_of_birational (k := k) hbir H
   rw [classIntersectionNumber_projectivePlane, mk_canonicalBundle_projectivePlane,
     Module.Basis.picardTwistEquiv_apply_twist, Module.Basis.picardTwistEquiv_apply_twist] at hproj
   have hdegree := hproj.symm.trans hcanon
   simp only [← pow_two] at hsq
-  simp only [one_mul, mul_one, toMul_ofMul] at hdegree
+  simp only [one_mul] at hdegree
   have h₁ : (∑ j, v.2 j ^ 2) = B(X) v.1.toMul v.1.toMul - 1 := by omega
   have h₂ : (∑ j, -v.2 j) = -B(X) v.1.toMul K(X) - 3 := by
     rw [Finset.sum_neg_distrib]

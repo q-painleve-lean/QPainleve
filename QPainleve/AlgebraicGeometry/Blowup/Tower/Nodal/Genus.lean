@@ -16,8 +16,8 @@ import TauCeti.AlgebraicGeometry.Noetherian
 # Genus-zero boundary components in nodal blowup towers
 
 The normalization of the reduced total boundary of a nodal blowup tower has
-genus-zero components if the original boundary does. This permits using the
-boundary period character at every stage.
+genus-zero components exactly when the original boundary does. This permits using
+the boundary period character at every stage.
 -/
 
 public section
@@ -39,17 +39,17 @@ local notation "S" => Spec (CommRingCat.of k)
 local notation "R[" D "," T "]" => radical (comap D (BlowupTower.toBase T))
 
 /-- The normalized components of the reduced total boundary of a nodal blowup
-tower over an algebraically closed field all have genus zero when the normalized
-components of the original boundary do. -/
-theorem genus_blowupComponent_radical_comap_toBase_eq_zero
+tower over an algebraically closed field all have genus zero exactly when the
+normalized components of the original boundary do. -/
+theorem forall_genus_blowupComponent_radical_comap_toBase_eq_zero_iff
     (hT : IsNodalBoundaryTower D (X ↘ S) (𝟙 X) T)
-    (hD : D.IsEffectiveCartier)
-    (hgenus : ∀ v : irreducibleComponents (D.subscheme.singularLocus k).blowup,
-      (D.subscheme.blowupComponent v).toScheme.genus k = 0) :
+    (hD : D.IsEffectiveCartier) :
     letI : Y.Over S := ⟨T.toBase ≫ X ↘ S⟩
-    ∀ [PrestableFamily ((R[D,T]).subscheme ↘ S)]
-      (v : irreducibleComponents ((R[D,T]).subscheme.singularLocus k).blowup),
-      ((R[D,T]).subscheme.blowupComponent v).toScheme.genus k = 0 := by
+    ∀ [PrestableFamily ((R[D,T]).subscheme ↘ S)],
+      (∀ v : irreducibleComponents ((R[D,T]).subscheme.singularLocus k).blowup,
+        ((R[D,T]).subscheme.blowupComponent v).toScheme.genus k = 0) ↔
+      ∀ v : irreducibleComponents (D.subscheme.singularLocus k).blowup,
+        (D.subscheme.blowupComponent v).toScheme.genus k = 0 := by
   have hN : AtWorstNodalOfRelativeDimensionOne (D.subschemeι ≫ X ↘ S) := by
     rw [← D.over_eq_subschemeι_comp]
     exact PrestableFamily.atWorstNodalOfRelativeDimensionOne
@@ -60,7 +60,7 @@ theorem genus_blowupComponent_radical_comap_toBase_eq_zero
   | nil =>
     rw [toBase_nil, comap_id, Category.id_comp,
       D.isReduced_subscheme_iff_radical_eq.mp ‹IsReduced D.subscheme›]
-    exact fun _ ↦ hgenus
+    exact fun _ ↦ Iff.rfl
   | @snoc m Z U I hU x hx hI hnode ih =>
     let : Z.Over S := ⟨U.toBase ≫ X ↘ S⟩
     have := hU.isClosedPointTower.isIntegral (X ↘ S)
@@ -88,7 +88,7 @@ theorem genus_blowupComponent_radical_comap_toBase_eq_zero
         simp only [support_comap, support_radical]
       simpa only [vanishingIdeal_support] using congrArg vanishingIdeal hs
     rw [← hrad]
-    intro hpre v
+    intro hpre
     let : J.blowup.Over S := ⟨g ≫ Z ↘ S⟩
     let : (((R[D,U]).comap g).radical.subscheme).Over S :=
       ⟨((R[D,U]).comap g).radical.subschemeι ≫ g ≫ Z ↘ S⟩
@@ -96,7 +96,7 @@ theorem genus_blowupComponent_radical_comap_toBase_eq_zero
     have hsing : z ∈ ((R[D,U]).subscheme.singularLocus k).support :=
       ((R[D,U]).subscheme.mem_support_singularLocus_iff_notMem_smoothLocus z).mpr
         (fun hs ↦ hn.not_formallySmooth_stalkMap (Scheme.Hom.mem_smoothLocus.mp hs))
-    exact IsEffectiveCartier.genus_blowupComponent_radical_comap_eq_zero
-      (radical_comap_toBase hU hD hN).1 hx hsing rfl rfl ih v
+    exact (IsEffectiveCartier.forall_genus_blowupComponent_radical_comap_eq_zero_iff
+      (radical_comap_toBase hU hD hN).1 hx hsing rfl rfl).trans ih
 
 end QPainleve.BlowupTower.IsNodalBoundaryTower
