@@ -9,6 +9,7 @@ public import QPainleve.Algebra.Cluster.Tropical.Basic
 public import QPainleve.Algebra.Cluster.Word.Exponent
 
 import Mathlib.LinearAlgebra.Matrix.ToLin
+import QPainleve.Algebra.Cluster.Word.Monomial
 
 /-!
 # Integer data of a signed cluster loop
@@ -82,5 +83,63 @@ theorem signedLoopInvariants_eq_iff [Fintype κ] [DecidableEq κ]
         congrArg (fun e : K ≃ₗ[ℤ] K ↦ (e (b j) : ι → ℤ) i) h
   simp only [signedLoopInvariants_def, Prod.mk.injEq, hmatrix,
     (LinearMap.toMatrixAlgEquiv b).injective.eq_iff, LinearEquiv.toLinearMap_injective.eq_iff]
+
+section Conjugation
+
+variable {E' : SkewExchangeMatrix ι}
+variable {κ' : Type*} [Fintype κ] [DecidableEq κ] [Fintype κ'] [DecidableEq κ']
+
+/-- The Casimir matrix of a loop transported along a connecting word is conjugated
+by the matrix of the connecting word's exchange-kernel pullback. The two bases can
+have different index types. -/
+theorem toMatrix_exchangeKernelEquiv_reverse_comp_comp (w : Word E E') (v : Word E E)
+    (b : Module.Basis κ ℤ K) (b' : Module.Basis κ' ℤ E'.matrix.mulVecLin.ker) :
+    LinearMap.toMatrix b' b' ((w.reverse.comp v).comp w).exchangeKernelEquiv.toLinearMap =
+      LinearMap.toMatrix b b' w.exchangeKernelEquiv.symm.toLinearMap *
+        LinearMap.toMatrix b b v.exchangeKernelEquiv.toLinearMap *
+        LinearMap.toMatrix b' b w.exchangeKernelEquiv.toLinearMap := by
+  rw [exchangeKernelEquiv_comp, exchangeKernelEquiv_comp, exchangeKernelEquiv_reverse]
+  simp only [LinearEquiv.coe_trans]
+  rw [LinearMap.toMatrix_comp b' b b', LinearMap.toMatrix_comp b b b']
+
+end Conjugation
+
+/-- If a connecting word transports one table of boundary orders by `p`, and a
+loop permutes the original table by `q`, then the transported loop's boundary
+search at any target label `j` returns `p (q (p.symm j))`. -/
+theorem signedLoopInvariants_reverse_comp_comp_boundary
+    {E' : SkewExchangeMatrix ι} (w : Word E E') (v : Word E E)
+    (basisVectors : κ → ι → ℤ) {orders orders' : Fin n → ι → ℤ}
+    (hinj : Function.Injective orders') (p q : Equiv.Perm (Fin n))
+    (hw : ∀ j, trop[w] (orders j) = orders' (p j))
+    (hv : ∀ j, trop[v] (orders j) = orders (q j)) (j : Fin n) :
+    (((w.reverse.comp v).comp w).signedLoopInvariants basisVectors orders' (orders' j)).2.2 =
+      some (p (q (p.symm j))) := by
+  have hreverse : trop[w.reverse] (orders' j) = orders (p.symm j) := by
+    rw [tropical_reverse, SingleObj.inv_as_inv]
+    exact (Equiv.symm_apply_eq _).mpr (by
+      simpa only [Equiv.apply_symm_apply] using (hw (p.symm j)).symm)
+  have himage : trop[(w.reverse.comp v).comp w] (orders' j) = orders' (p (q (p.symm j))) := by
+    let F := Paths.lift (tropicalPrefunctor (A := ℤ) ι)
+    -- Read the morphisms of the one-object category as permutations.
+    let action {B C : SkewExchangeMatrix ι} (s : Word B C) : Equiv.Perm (ι → ℤ) :=
+      F.map (X := (Paths.of _).obj B) (Y := (Paths.of _).obj C) s
+    have hcomp {B C D : SkewExchangeMatrix ι} (s : Word B C) (t : Word C D) :
+        action (s.comp t) = action t * action s :=
+      F.map_comp (X := (Paths.of _).obj B) (Y := (Paths.of _).obj C) (Z := (Paths.of _).obj D) s t
+    calc
+      _ = action ((w.reverse.comp v).comp w) (orders' j) := rfl
+      _ = action w (action v (action w.reverse (orders' j))) := by
+        rw [hcomp, hcomp, Equiv.Perm.mul_apply, Equiv.Perm.mul_apply]
+      _ = action w (action v (orders (p.symm j))) := congrArg (action w ∘ action v) hreverse
+      _ = action w (orders (q (p.symm j))) := congrArg (action w) (hv (p.symm j))
+      _ = _ := hw (q (p.symm j))
+  rw [signedLoopInvariants_def]
+  have hmem : p (q (p.symm j)) ∈ Fin.find?
+      (fun i ↦ decide (orders' i = trop[(w.reverse.comp v).comp w] (orders' j))) := by
+    rw [Fin.mem_find?_iff, himage]
+    simp only [decide_eq_true_eq, hinj.eq_iff]
+    exact ⟨trivial, fun i hi heq ↦ hi.ne heq⟩
+  exact hmem
 
 end Quiver.Path

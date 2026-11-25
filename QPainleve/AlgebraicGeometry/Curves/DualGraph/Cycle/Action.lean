@@ -95,6 +95,17 @@ theorem cycleVertexPerm_inv_apply (g : DihedralGroup n) (j : ZMod n) :
     cycleVertexPerm_apply g, ← Units.smul_def, smul_smul, Int.units_mul_self, one_smul,
     sub_add_cancel]
 
+/-- Changing the boundary numbering by a dihedral map conjugates the forward
+action. In the new numbering the origin shifts by the forward image of zero. -/
+theorem cycleVertexPerm_mul_mul_inv_apply (g h : DihedralGroup n) (j : ZMod n) :
+    cycleVertexPerm (g * h * g⁻¹) j =
+      cycleOrientationSign h • (j - cycleVertexPerm g 0) +
+        cycleOrientationSign g • cycleVertexPerm h 0 + cycleVertexPerm g 0 := by
+  rw [map_mul, map_mul, Equiv.Perm.mul_apply, Equiv.Perm.mul_apply,
+    cycleVertexPerm_apply g, cycleVertexPerm_apply h, cycleVertexPerm_inv_apply]
+  simp only [← Units.smul_def, smul_add, smul_smul]
+  rw [mul_left_comm, Int.units_mul_self, mul_one]
+
 /-- An orientation-preserving cycle action is the rotation determined by the image
 of vertex zero. This covers the cycles with one or two components. -/
 theorem eq_r_iff_cycleVertexPerm_zero_eq {g : DihedralGroup n} {j : ZMod n}
