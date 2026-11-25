@@ -8,9 +8,8 @@ module
 public import QPainleve.AlgebraicGeometry.RelativeProj.ProjectiveLineCharts
 public import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.ProjectiveLine.Scaling
 
-import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.Polynomial.GlobalSections
+import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.ProjectiveLine.PolynomialComparison
 import TauCeti.AlgebraicGeometry.Morphisms.SchemeTheoreticallyDominant
-import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.CoordinateMap
 
 /-!
 # The projective overlap of a split bundle over the projective line
@@ -26,6 +25,8 @@ public noncomputable section
 
 open AlgebraicGeometry AlgebraicGeometry.Proj CategoryTheory Limits Opposite
 
+open QPainleve (map_comp_coordinateComparison projectiveLineCoordinateBasis)
+
 universe u
 
 namespace TauCeti.AlgebraicGeometry.projectiveLine
@@ -38,80 +39,6 @@ private abbrev CoordinateIndex := ULift.{u} (Fin 2)
 
 local notation "𝒫[" A "]" => MvPolynomial.homogeneousSubmodule CoordinateIndex A
 local notation "𝒮[" A "]" => TauCeti.SymmetricAlgebra.homogeneousSubmodule A (Fin 2 → A)
-
-private abbrev coordinateBasis (A : Type u) [CommRing A] :=
-  (Pi.basisFun A (Fin 2)).reindex (Equiv.ulift.symm : Fin 2 ≃ ULift.{u} (Fin 2))
-
-private theorem fromPolynomialGradedHom_X (i : ULift.{u} (Fin 2)) :
-    (coordinateBasis R).fromPolynomialGradedHom (MvPolynomial.X i) = coord R i.down := by
-  simp only [Module.Basis.fromPolynomialGradedHom_apply, SymmetricAlgebra.equivMvPolynomial_symm_X,
-    coordinateBasis, Module.Basis.reindex_apply, Equiv.symm_symm, Equiv.ulift_apply,
-    Pi.basisFun_apply]
-  have hrev : i.down.rev ≠ i.down := by
-    rcases i with ⟨i⟩
-    fin_cases i <;> decide
-  rw [ι_eq_smul_coord_add_smul_coord R i.down]
-  simp [Pi.single_eq_of_ne hrev]
-
-private theorem fromPolynomialGradedHom_C (r : R) :
-    (coordinateBasis R).fromPolynomialGradedHom (MvPolynomial.C r) =
-      algebraMap R (SymmetricAlgebra R (Fin 2 → R)) r := by
-  rw [Module.Basis.fromPolynomialGradedHom_apply, ← MvPolynomial.algebraMap_eq,
-    AlgEquiv.commutes]
-
-private theorem polynomialChartι_eq_polynomialPoint (i : Fin 2) :
-    polynomialChartι R i = polynomialPoint R Polynomial.C i Polynomial.X := by
-  have h : Polynomial.eval₂RingHom (Polynomial.C (R := R)) Polynomial.X = RingHom.id _ := by
-    apply Polynomial.ringHom_ext <;> simp
-  rw [polynomialPoint_def, h]
-  have hid : CommRingCat.ofHom (RingHom.id (Polynomial R)) =
-      𝟙 (CommRingCat.of (Polynomial R)) := rfl
-  rw [hid, Spec.map_id, Category.id_comp]
-
-private theorem map_comp_coordinateComparison {A B : Type u}
-    [CommRing A] [CommRing B] [Algebra A B] (f : 𝒫[A] →+*ᵍ 𝒫[B])
-    (hf : HomogeneousIdeal.irrelevant 𝒫[B] ≤ (HomogeneousIdeal.irrelevant 𝒫[A]).map f)
-    (v w : Bˣ)
-    (hC : ∀ r, f (MvPolynomial.C r) = MvPolynomial.C (algebraMap A B r))
-    (hX : ∀ i, f (MvPolynomial.X i) =
-      (w : B) • (if i.down = 0 then (v : B) else 1) • MvPolynomial.X i) :
-    (coordinateBasis B).polynomialProjIso.inv ≫ Proj.map f hf =
-      (scalingBy B v).hom ≫ baseChangeProjection A B ≫
-        (coordinateBasis A).polynomialProjIso.inv := by
-  have : IsSeparated (terminal.from (Proj 𝒫[A])) := by
-    rw [← terminal.comp_from (toSpecCoeff 𝒫[A])]
-    infer_instance
-  refine TauCeti.ext_of_isSchemeTheoreticallyDominant (polynomialChartι B 1)
-    (terminal.from _) (terminal.hom_ext _ _) ?_
-  rw [polynomialChartι_eq_polynomialPoint]
-  simp only [← Category.assoc, polynomialPoint_comp_scalingBy,
-    polynomialPoint_comp_baseChangeProjection]
-  rw [polynomialPoint_eq_fromGlobalSections, polynomialPoint_eq_fromGlobalSections,
-    Module.Basis.polynomialProjIso_inv, Module.Basis.polynomialProjIso_inv,
-    fromOfGlobalSections_map, fromOfGlobalSections_map, fromOfGlobalSections_map]
-  let e := (Scheme.ΓSpecIso (.of (Polynomial B))).inv.hom
-  let w' := w.map (e.comp Polynomial.C).toMonoidHom
-  let p := e.comp (pointCoordinates A (Polynomial.C.comp (algebraMap A B)) 1
-    (Polynomial.C (v : B) * Polynomial.X))
-  let q := e.comp (pointCoordinates B Polynomial.C 1 Polynomial.X)
-  let P := p.comp (coordinateBasis A).fromPolynomialGradedHom.toRingHom
-  let Q := (q.comp (coordinateBasis B).fromPolynomialGradedHom.toRingHom).comp f.toRingHom
-  apply (fromOfGlobalSections_eq_of_X_unit_rescaling P Q w' ?_ ?_ _ _).symm
-  · apply RingHom.ext
-    intro r
-    simp only [P, Q, p, q, RingHom.comp_apply, GradedRingHom.coe_toRingHom, hC,
-      fromPolynomialGradedHom_C, pointCoordinates_algebraMap]
-  · intro i
-    simp only [P, Q, p, q, RingHom.comp_apply, GradedRingHom.coe_toRingHom, hX,
-      Algebra.smul_def, MvPolynomial.algebraMap_eq, map_mul, fromPolynomialGradedHom_C,
-      pointCoordinates_algebraMap, fromPolynomialGradedHom_X, w', Units.coe_map]
-    obtain ⟨i⟩ := i
-    have hA := pointCoordinates_coord_rev A (Polynomial.C.comp (algebraMap A B)) 1
-      (Polynomial.C (v : B) * Polynomial.X)
-    have hB := pointCoordinates_coord_rev B Polynomial.C 1 Polynomial.X
-    have hrev : (1 : Fin 2).rev = 0 := rfl
-    rw [hrev] at hA hB
-    fin_cases i <;> simp [hA, hB, map_mul]
 
 variable (R)
 
@@ -137,7 +64,7 @@ local notation "q[" U "]" => (PL[U] ↘ Spec (CommRingCat.of Γ[U]))
 of `𝒪(a) ⊞ 𝒪(b)`, with the indicated twisting frames as homogeneous coordinates. -/
 def relativeProjSplitTwistingChart (a b : ℤ) (i : Fin 2) (U : (P).AffineZariskiSite)
     (h : U.toOpens ≤ U[i]) : PL[U] ⟶ A[a,b].relativeProj :=
-  (coordinateBasis Γ[U]).polynomialProjIso.inv ≫
+  (projectiveLineCoordinateBasis Γ[U]).polynomialProjIso.inv ≫
     (F[a,b]).relativeProjPolynomialChart U (splitTwistingFrame R a b i h)
 
 local notation "chart[" a "," b ";" i "," U "," h "]" =>
@@ -157,9 +84,9 @@ theorem relativeProjSplitTwistingChart_def (a b : ℤ) (i : Fin 2)
 theorem isPullback_relativeProjSplitTwistingChart (a b : ℤ) (i : Fin 2)
     (U : (P).AffineZariskiSite) (h : U.toOpens ≤ U[i]) :
     IsPullback chart[a,b;i,U,h] q[U] A[a,b].relativeProjToBase U.property.fromSpec := by
-  let e := (coordinateBasis Γ[U]).polynomialProjIso
+  let e := (projectiveLineCoordinateBasis Γ[U]).polynomialProjIso
   have he : e.inv ≫ toSpecCoeff 𝒫[Γ[U]] = q[U] := by
-    rw [← (coordinateBasis Γ[U]).polynomialProjIso_hom_over, ← Category.assoc,
+    rw [← (projectiveLineCoordinateBasis Γ[U]).polynomialProjIso_hom_over, ← Category.assoc,
       Iso.inv_hom_id, Category.id_comp]
     exact (TauCeti.SymmetricAlgebra.over_eq_projToSpec Γ[U] (Fin 2 → Γ[U])).symm
   have hchart := (F[a,b]).isPullback_relativeProjPolynomialChart U (splitTwistingFrame R a b i h)
@@ -226,7 +153,7 @@ theorem baseChangeProjection_comp_relativeProjSplitTwistingChart
       infer_instance
     refine TauCeti.ext_of_isSchemeTheoreticallyDominant (polynomialChartι Γ[V] 1)
       (terminal.from _) (terminal.hom_ext _ _) ?_
-    rw [Category.comp_id, polynomialChartι_eq_polynomialPoint, polynomialPoint_comp_scalingBy]
+    rw [Category.comp_id, ← polynomialPoint_X, polynomialPoint_comp_scalingBy]
     simp
   rw [← Category.id_comp (baseChangeProjection Γ[U] Γ[V] ≫ chart[a,b;i,U,hi]), ← hscale]
   apply scaling_comp_baseChangeProjection_relativeProjSplitTwistingChart R j a b i i hi _ 1 1
