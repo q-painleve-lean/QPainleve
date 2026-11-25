@@ -10,7 +10,9 @@ public import QPainleve.Geometry.Toric.Fan.Boundary.Ideal
 public import QPainleve.Geometry.Toric.Fan.Ruling.Hirzebruch.Gluing
 
 import QPainleve.Geometry.Toric.Fan.Hirzebruch.CoordinateBoundary
+import QPainleve.Geometry.Toric.Fan.Hirzebruch.Construction
 import QPainleve.Geometry.Toric.Fan.Ruling.Hirzebruch.Sections
+import QPainleve.Geometry.Toric.Fan.Ruling.Hirzebruch.SplitTransition
 import TauCeti.AlgebraicGeometry.IdealSheaf.BaseChange
 import TauCeti.AlgebraicGeometry.IdealSheaf.Locality
 
@@ -217,13 +219,21 @@ private theorem comap_ker_splitTwistingSection_of_chart_comparison (a b' : ℤ)
 
 local notation "d[" k "]" => projectiveLineTorusProductToAffine k
 
+/-- The two standard split product charts glue by the Hirzebruch transition of
+parameter `b - a` on the base torus. -/
+theorem splitTwistingProductChart_overlap (a b : ℤ) :
+    d[0] ≫ u[a,b;0] = (hirzebruchRulingOverlapTransition (b - a)).hom ≫ d[1] ≫ u[a,b;1] :=
+  split_twisting_product_chart_overlap a b affineSite affineSite_toOpens
+    (fun k ↦ (affineSiteIso k).hom) affineSiteIso_hom_comp_fromSpec
+    (fun k ↦ (affineProductIso k).hom)
+    (fun k ↦ (isPullback_affineSiteProduct k).isoPullback_inv_fst)
+    affineProductIso_hom_toBase
+
 include hr in
-/-- If the split bundle charts have the Hirzebruch overlap, the resulting isomorphism
-over the base identifies each horizontal ray with its summand section and the full
-toric boundary with the two summand sections and the two coordinate fibers. -/
-theorem exists_hirzebruch_boundary_iso_of_split_twisting_overlap (a b' : ℤ)
-    (hoverlap : d[0] ≫ u[a,b';0] =
-      (hirzebruchRulingOverlapTransition e).hom ≫ d[1] ≫ u[a,b';1]) :
+/-- For summand degrees whose difference is the signed Hirzebruch parameter, the
+isomorphism over the base identifies the product charts, each horizontal ray with
+its summand section, and the toric boundary with the two sections and coordinate fibers. -/
+theorem exists_hirzebruch_boundary_iso_of_split_twisting (a b' : ℤ) (he : e = b' - a) :
     ∃ f : X ≅ B[a,b'].relativeProj, f.hom ≫ B[a,b'].relativeProjToBase = q ∧
       (∀ k : Fin 2, v[k] ≫ f.hom = u[a,b';k]) ∧
       (∀ l : Fin 2, (σ[a,b';l]).ker.comap f.hom = I[l]) ∧
@@ -233,10 +243,61 @@ theorem exists_hirzebruch_boundary_iso_of_split_twisting_overlap (a b' : ℤ)
   let := hc.nonempty_cones
   obtain ⟨f, ⟨hbase, hcharts⟩, -⟩ := existsUnique_hirzebruch_ruling_iso_of_overlap_transition
     B[a,b'].relativeProjToBase b e r hr hΦ hc (fun k ↦ u[a,b';k])
-    (isPullback_splitTwistingProductChart a b') hoverlap
+    (isPullback_splitTwistingProductChart a b')
+    (by rw [he]; exact splitTwistingProductChart_overlap a b')
   have hsec := comap_ker_splitTwistingSection_of_chart_comparison b e r hr hΦ hc a b' f.hom hcharts
   refine ⟨f, hbase, hcharts, hsec, ?_⟩
   obtain ⟨s', -, hs', -, hD⟩ := exists_hirzebruch_toric_boundary_sections_and_fibers b e hΦ r hr hc
   simp only [comap_mul, hsec, ← comap_comp, hbase, hD, hs']
+
+/-- The projectivization of two twists has a Hirzebruch model of index `|b' - a|`
+in the prescribed lattice basis. The isomorphism is over the projective line and
+identifies the toric boundary with the two summand sections and coordinate fibers. -/
+theorem exists_hirzebruch_model_of_split_twisting (hi : IsIntegralLattice i) (a b' : ℤ) :
+    let n := (b' - a).natAbs
+    ∃ (Ψ : Fan i) (_ : Ψ.IsRegular) (hΨc : Ψ.IsComplete) (s : Fin 4 ≃ Ψ.Ray)
+      (hs : (fun j ↦ (s j).primitiveGenerator) = ![b 0, b 1, -b 0, (n : ℤ) • b 0 - b 1])
+      (f : Ψ.algebraicRealization ≅ B[a,b'].relativeProj),
+      f.hom ≫ B[a,b'].relativeProjToBase = Ψ.characterRuling (b.coord 1).toAddMonoidHom
+        (nonneg_or_nonpos_hirzebruch_ruling_character b (n : ℤ) s hs) ∧
+      let π := B[a,b'].relativeProjToBase
+      let D := (σ[a,b';0]).ker * (σ[a,b';1]).ker * (p₀[0].ker.comap π) * (p₀[1].ker.comap π)
+      D.comap f.hom = Ψ.boundaryIdeal hΨc.nonempty_cones := by
+  dsimp only
+  let n := (b' - a).natAbs
+  obtain ⟨Ψ, ⟨hΨ, hΨc, hrange⟩, -⟩ := existsUnique_hirzebruch_fan b hi n
+  obtain ⟨s, hs⟩ := exists_rayEquiv_of_hirzebruch_ray_generators b (n : ℤ) hrange
+  -- Choose the section marking with the sign prescribed by the order of the summands.
+  have hmark : ∃ (c : Basis (Fin 2) ℤ N) (t : Fin 4 ≃ Ψ.Ray),
+      (fun j ↦ (t j).primitiveGenerator) = ![c 0, c 1, -c 0, (b' - a) • c 0 - c 1] ∧
+      c.coord 1 = b.coord 1 := by
+    rcases le_total a b' with hab | hba
+    · have he : (n : ℤ) = b' - a := by omega
+      exact ⟨b, s, he ▸ hs, rfl⟩
+    have he : -(n : ℤ) = b' - a := by omega
+    obtain ⟨c, t, ht, ht₁, ht₀⟩ := exists_hirzebruch_opposite_section_basis b (n : ℤ) s hs
+    have h₀ : c 0 = -b 0 := calc
+      c 0 = (t 0).primitiveGenerator := (congrFun ht 0).symm
+      _ = -b 0 := by rw [ht₀]; exact congrFun hs 2
+    have h₁ : c 1 = b 1 := calc
+      c 1 = (t 1).primitiveGenerator := (congrFun ht 1).symm
+      _ = b 1 := by rw [ht₁]; exact congrFun hs 1
+    have hcoord : c.coord 1 = b.coord 1 := by
+      apply c.ext
+      intro j
+      fin_cases j
+      · calc
+          c.coord 1 (c 0) = 0 := by simp [Basis.coord_apply]
+          _ = b.coord 1 (c 0) := by simp [h₀, Basis.coord_apply]
+      · calc
+          c.coord 1 (c 1) = 1 := by simp [Basis.coord_apply]
+          _ = b.coord 1 (c 1) := by simp [h₁, Basis.coord_apply]
+    exact ⟨c, t, he ▸ ht, hcoord⟩
+  obtain ⟨c, t, ht, hcoord⟩ := hmark
+  obtain ⟨f, hf, -, -, hD⟩ :=
+    exists_hirzebruch_boundary_iso_of_split_twisting c (b' - a) t ht hΨ hΨc a b' rfl
+  refine ⟨Ψ, hΨ, hΨc, s, hs, f, hf.trans ?_, hD⟩
+  congr 1
+  exact congrArg LinearMap.toAddMonoidHom hcoord
 
 end TauCeti.Toric.Fan

@@ -11,6 +11,7 @@ public import QPainleve.SignedClusterModularGroup.SarkisovDegree.Quadric.Basic
 
 import QPainleve.Geometry.Toric.Fan.Mutation.Center
 import QPainleve.Geometry.Toric.Fan.Mutation.Logarithmic
+import QPainleve.Geometry.Toric.Fan.Mutation.PointTower
 import QPainleve.SignedClusterModularGroup.SarkisovDegree.Quadric.Fiber
 import QPainleve.SignedClusterModularGroup.SarkisovDegree.Decrease
 import TauCeti.Data.Fin.Basic
@@ -122,37 +123,16 @@ private theorem first_oppositeCenter_of_mutation
     hU.baseCenter (l.natAdd 1) = center[s 2,d] pt ∧
       ∀ k < l.natAdd 1, hU.baseCenter k ≠ center[s 2,d] pt := by
   obtain ⟨x, hx, hx'⟩ := oppositeCenter_mutationComplement b r hr c d hcd
-  obtain ⟨p, hp₀, hp₁⟩ := hcenters l
-  have htarget := hp₁.symm.trans (((r 0).mutationBlowupIso_apply_over_complement b hop c p x
-     (hp₀.trans (hl.trans hx.symm))).trans hx')
-  refine ⟨htarget, fun k hk ↦ ?_⟩
-  induction k using Fin.addCases with
-  | left k =>
-    have hk₀ : k = 0 := Subsingleton.elim _ _
-    subst k
-    rw [hreverse, ← hx']
-    intro heq
-    have hmem : center[reverseRay,c⁻¹] pt ∈ (J[c]).support := by
-      rw [Fan.Ray.mutationTargetCenterIdeal_eq]
-      exact (center[reverseRay,c⁻¹]).range_subset_ker_support ⟨pt, rfl⟩
-    have hdis := (Scheme.IdealSheafData.comap_eq_top_iff (J[c]) (targetOpen[c]).ι).mp
-      ((r 0).mutationTargetCenterIdeal_comap_complement b hop c)
-    have hout : (targetOpen[c]).ι ((Φ.mutationComplementIso b (c : ℂ) hv hp hop).hom x) ∉
-        (J[c]).support := by
-      have h : (Φ.mutationComplementIso b (c : ℂ) hv hp hop).hom x ∈
-          (targetOpen[c]).ι ⁻¹ᵁ (J[c]).support.compl := by
-        rw [hdis]
-        trivial
-      exact h
-    exact hout (heq ▸ hmem)
-  | right k =>
-    obtain ⟨q, hq₀, hq₁⟩ := hcenters k
-    intro heq
-    have hqp := ((r 0).mutationBlowupIso_projected_eq_iff b hop c
-      (q := p) (by rw [hp₀, hl, ← hx]; exact x.property)).mp
-        (hq₁.trans (heq.trans (htarget.symm.trans hp₁.symm)))
-    exact hlfirst _ (Fin.strictMono_succAbove _ ((Fin.natAdd_lt_natAdd_iff 1).mp hk))
-      (hq₀.symm.trans (hqp.trans (hp₀.trans hl)))
+  have hmem : hT.baseCenter (j.succAbove l) ∈ compOpen[c] := by
+    rw [hl, ← hx]
+    exact x.property
+  obtain ⟨htarget, hfirst⟩ :=
+    (r 0).baseCenter_of_mutation_of_mem_complement b hop c hT hU j l hreverse hcenters hmem
+  have heq : (⟨hT.baseCenter (j.succAbove l), hmem⟩ : (compOpen[c]).toScheme) = x :=
+    Subtype.ext (hl.trans hx.symm)
+  have hImage := htarget.trans (heq.symm ▸ hx')
+  refine ⟨hImage, ?_⟩
+  simpa only [hImage] using hfirst (by simpa only [hl] using hlfirst)
 
 local notation "m" => LinearMap.toAddMonoidHom (b.detDualEquiv v)
 local notation "hru" => Φ.detCharacter_nonneg_or_nonpos b hv hp hop

@@ -9,10 +9,8 @@ public import QPainleve.AlgebraicGeometry.RelativeProj.Ruling.Sections
 public import QPainleve.Geometry.Toric.Fan.Hirzebruch.Anticanonical
 
 import Mathlib.Analysis.Complex.Polynomial.Basic
-import QPainleve.Geometry.Toric.Fan.Hirzebruch.Construction
 import QPainleve.Geometry.Toric.Fan.Ruling.Hirzebruch.Fiber
 import QPainleve.Geometry.Toric.Fan.Ruling.Hirzebruch.SplitBundle
-import QPainleve.Geometry.Toric.Fan.Ruling.Hirzebruch.SplitTransition
 import QPainleve.Geometry.Toric.Fan.Subdivision.Projective
 
 /-!
@@ -118,29 +116,6 @@ theorem exists_split_relativeProj_of_hirzebruch_boundaryComplexity_zero (he : 0 
       hy hz (fun h ↦ hyz (congrArg (fun p : S ⟶ P ↦ p (IsLocalRing.closedPoint ℂ)) h))
   exact ⟨a, d, g, f, hg, hfπ, hfD.trans (by rw [hB, hsK, htK])⟩
 
-private theorem split_twisting_productChart_overlap (a d : ℤ) :
-    projectiveLineTorusProductToAffine 0 ≫ splitTwistingProductChart a d 0 =
-      (hirzebruchRulingOverlapTransition (d - a)).hom ≫
-        projectiveLineTorusProductToAffine 1 ≫ splitTwistingProductChart a d 1 := by
-  choose U hU f v hf hv₂ hv₁ hchart using
-    exists_relativeProjSplitTwistingChart_eq_splitTwistingProductChart
-  have h := split_twisting_product_chart_overlap a d U hU (fun k ↦ (f k).hom) hf
-    (fun k ↦ (v k).hom) hv₁ hv₂
-  simpa only [hchart] using h
-
-private theorem exists_hirzebruch_fan_with_index (b : Basis (Fin 2) ℤ N)
-    (hi : IsIntegralLattice i) (d : ℤ) :
-    ∃ (Ψ : Fan i) (_ : Ψ.IsRegular) (_ : Ψ.IsComplete) (c : Basis (Fin 2) ℤ N)
-      (s : Fin 4 ≃ Ψ.Ray),
-      (fun j ↦ (s j).primitiveGenerator) = ![c 0, c 1, -c 0, d • c 0 - c 1] := by
-  obtain ⟨Ψ, ⟨hΨ, hΨc, hgen⟩, -⟩ := existsUnique_hirzebruch_fan b hi d.natAbs
-  obtain ⟨s, hs⟩ := exists_rayEquiv_of_hirzebruch_ray_generators b (d.natAbs : ℤ) hgen
-  by_cases hd : 0 ≤ d
-  · exact ⟨Ψ, hΨ, hΨc, b, s, by simpa only [Int.natAbs_of_nonneg hd] using hs⟩
-  · obtain ⟨c, t, ht, -, -⟩ := exists_hirzebruch_opposite_section_basis b (d.natAbs : ℤ) s hs
-    have hd' : -(d.natAbs : ℤ) = d := by omega
-    exact ⟨Ψ, hΨ, hΨc, c, t, by simpa only [hd'] using ht⟩
-
 include hc r hr in
 /-- A reduced anticanonical divisor of complexity zero on a complete regular
 Hirzebruch surface gives a toric pair over `ℂ`, with its actual boundary ideal. -/
@@ -158,9 +133,8 @@ theorem exists_toric_of_hirzebruch_boundaryComplexity_zero (he : 0 ≤ e)
   intro _ hK
   obtain ⟨a, d, g, u, hg, hu, hDu⟩ :=
     exists_split_relativeProj_of_hirzebruch_boundaryComplexity_zero b e hΦ hc r hr he hD hzero hK
-  obtain ⟨Ψ, hΨ, hΨc, c, s, hs⟩ := exists_hirzebruch_fan_with_index b Φ.lattice (d - a)
-  obtain ⟨v, hv, -, -, hDv⟩ := exists_hirzebruch_boundary_iso_of_split_twisting_overlap
-    c (d - a) s hs hΨ hΨc a d (split_twisting_productChart_overlap a d)
+  obtain ⟨Ψ, hΨ, hΨc, _, _, v, hv, hDv⟩ :=
+    exists_hirzebruch_model_of_split_twisting b Φ.lattice a d
   have hfield : u.inv ≫ X ↘ S = π[a,d] ≫ P ↘ S := by
     apply (cancel_epi u.hom).mp
     rw [Iso.hom_inv_id_assoc, ← Category.assoc, hu, Category.assoc, hg, comp_over (q) S]
