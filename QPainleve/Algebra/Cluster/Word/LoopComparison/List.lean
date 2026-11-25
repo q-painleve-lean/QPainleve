@@ -6,8 +6,7 @@ Authors: The QPainleve contributors
 module
 
 public import QPainleve.Algebra.Cluster.Word.GeneratorList
-public import QPainleve.Algebra.Cluster.Word.Relations
-public import QPainleve.LinearAlgebra.Matrix.Kernel
+public import QPainleve.Algebra.Cluster.Word.LoopComparison.Basic
 
 import Mathlib.Data.Option.NAry
 
@@ -33,11 +32,7 @@ computed kernel basis and the first row of the supplied boundary orders as the s
 vector. Return `none` if either list fails to return to `B`. -/
 def compareSignedLoopLists (orders : Fin n → Fin r → ℤ)
     (gs hs : List (Generator (Fin r))) : Option Bool :=
-  Option.map₂
-    (fun w v ↦
-      let basisVectors := B.matrix.intKernelBasisVectors.2
-      decide (w.signedLoopInvariants basisVectors orders (orders 0) =
-        v.signedLoopInvariants basisVectors orders (orders 0)))
+  Option.map₂ (B.compareSignedLoops orders)
     (Generator.loopOfList? B gs) (Generator.loopOfList? B hs)
 
 /-- The comparison fails exactly when at least one computed endpoint differs from `B`. -/
@@ -57,6 +52,6 @@ theorem compareSignedLoopLists_eq_some_iff (orders : Fin n → Fin r → ℤ)
         (result = true ↔
           w.signedLoopInvariants B.matrix.intKernelBasisVectors.2 orders (orders 0) =
             v.signedLoopInvariants B.matrix.intKernelBasisVectors.2 orders (orders 0)) := by
-  cases result <;> simp [compareSignedLoopLists, Option.mem_def]
+  cases result <;> simp [compareSignedLoopLists, Option.mem_def, Bool.eq_false_iff]
 
 end QPainleve.Cluster.SkewExchangeMatrix
