@@ -12,7 +12,7 @@ public import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.ProjectiveOver
 
 import QPainleve.AlgebraicGeometry.Blowup.StrictTransform.Contraction
 import QPainleve.AlgebraicGeometry.Blowup.StrictTransform.Reduced
-import QPainleve.AlgebraicGeometry.Blowup.Tower.BoundaryPrimes
+import QPainleve.AlgebraicGeometry.Blowup.Tower.Boundary.Primes
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Contraction
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Modification
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Nodal.InternalCurve

@@ -9,7 +9,7 @@ public import QPainleve.AlgebraicGeometry.Blowup.Tower.Nodal.Basic
 public import QPainleve.AlgebraicGeometry.CartierDivisor.Support
 public import QPainleve.AlgebraicGeometry.IdealSheaf.Boundary.Primes
 import QPainleve.AlgebraicGeometry.Blowup.Descent
-import QPainleve.AlgebraicGeometry.Blowup.Tower.BoundaryPrimes
+import QPainleve.AlgebraicGeometry.Blowup.Tower.Boundary.Primes
 import QPainleve.AlgebraicGeometry.CartierDivisor.BoundaryPrimes
 import QPainleve.AlgebraicGeometry.Curves.Node.Order
 import QPainleve.AlgebraicGeometry.IdealSheaf.Stalk
