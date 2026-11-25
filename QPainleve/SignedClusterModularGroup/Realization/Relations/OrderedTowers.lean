@@ -50,10 +50,10 @@ variable {L γ : Type} [AddCommGroup L] {B : LinearMap.BilinForm ℤ L}
   {E : SkewExchangeMatrix (Fin r)} (Q : CompleteToricPresentation i b r L γ)
   {c : Point Centers[r]} {M : MarkedSurface ℂ n B XTor[r]}
 
-local instance : Nonempty Q.fan.cones := Q.complete.nonempty_cones
-local instance : NeZero Q.length := Q.neZero
-local instance : PrestableFamily ((Q.fan.boundaryIdeal Q.complete.nonempty_cones).subscheme ↘ S) :=
-  Q.prestable
+local instance instNonemptyOrderedTowersCones : Nonempty Q.fan.cones := Q.complete.nonempty_cones
+local instance instNeZeroOrderedTowersBoundaryLength : NeZero Q.length := Q.neZero
+local instance instPrestableOrderedTowersToricBoundary :
+    PrestableFamily ((Q.fan.boundaryIdeal Q.complete.nonempty_cones).subscheme ↘ S) := Q.prestable
 
 local notation "Fiber" =>
   ContractedToricFiber b Q.rays Q.regular Q.cycle Q.origin Q.inclusion χ[c] M
@@ -103,7 +103,7 @@ local notation "B" => Chow.intersectionBilinForm ℂ X
 local notation "Pic" => Additive (LineBundleClass X)
 local notation "L" => Fin (Module.finrank ℤ Pic) → ℤ
 
-local instance : IsIntegral X := by
+local instance instIsIntegralOrderedTowersSurface : IsIntegral X := by
   let : Smooth (X ↘ S) := SmoothOfRelativeDimension.smooth 2 _
   exact Scheme.IsRationalOver.isIntegral_of_smooth (f := X ↘ S) inferInstance
 
