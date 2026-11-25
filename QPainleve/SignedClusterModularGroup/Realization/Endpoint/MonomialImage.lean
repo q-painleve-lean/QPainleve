@@ -13,9 +13,8 @@ public import QPainleve.SignedClusterModularGroup.Realization.Presentation
 import QPainleve.SignedClusterModularGroup.Realization.Anticanonical
 import QPainleve.SignedClusterModularGroup.Realization.Endpoint.Casimir
 import QPainleve.SignedClusterModularGroup.Realization.NodalFiber
-import QPainleve.SignedClusterModularGroup.Realization.Presentation.Family
+import QPainleve.SignedClusterModularGroup.Realization.Presentation.Group
 import QPainleve.SignedClusterModularGroup.Realization.Reflection
-import QPainleve.SignedClusterModularGroup.Realization.Surjectivity.PicardAction
 
 /-!
 # Images of signed cluster actions on Casimir monomials
@@ -24,7 +23,9 @@ The Picard equivalence transports the boundary rotation image to the unsigned Ca
 The full Casimir image contains one further right coset, represented by the restriction of a
 signed Picard reflection. The two cosets act with opposite signs on the total boundary exponent.
 For a marked toric presentation the signed Picard equivalence and exchange-kernel comparison
-supply the geometric actions. The reflection is Mathlib's `Module.reflection`, transported from
+supply the geometric actions. The Picard equivalence is taken from
+`CompleteToricPresentation.exists_picardGroupEquivs_of_nodal_model`.
+The reflection is Mathlib's `Module.reflection`, transported from
 `SignedBoundaryIsometryGroup.exists_signedOrthogonalRestriction_eq_reflection`.
 -/
 
@@ -254,17 +255,13 @@ theorem exists_exchangeKernelAction_reflection_of_presentation
             (↑(act[ℂ,E]).range : Set (exch[E] ≃ₗ[ℤ] exch[E])) = unsigned ∪ (unsigned <• q) ∧
             Disjoint unsigned (unsigned <• q) ∧
             ∀ x, (ℤ ∙ v).mkQ (q x) = (ℤ ∙ v).mkQ x := by
-  obtain ⟨F, hF, -, hmodels⟩ := Q.exists_marked_family_of_nodal_model href hD
-  have hmark d j := congrFun (hmodels d).2 j
-  obtain ⟨hprim', hnef', hsq'⟩ :=
-    (M.primitive_nef_square_zero_iff_of_boundaryClass_eq (F c) hD (hF c)
-      (fun j ↦ (hmark c j).symm)).mp ⟨hprim, hnef, hsq⟩
-  have models (d : Point Centers[r]) (_ : d.left (default : S) ∈ Path.nil.centerOpen ℂ P) :=
-    (hmodels d).1
-  obtain ⟨Θ, ⟨hΘ, hker⟩, _⟩ := existsUnique_signedPicardEquiv_of_presentation
-    (hD := hF) (hmark := hmark) P hform hcharge models (hmodels c).1 hprim' hnef' hsq'
+  have hE := P.matrix_eq.symm.trans (congrArg₂ chargeExchangeMatrix hform hcharge)
+  obtain ⟨F, hF, hmark, Θ, _, hM, hmodels, hΘ, hker, _⟩ :=
+    Q.exists_picardGroupEquivs_of_nodal_model href hE hprim hnef hsq
+  subst M
+  let M := F c
   obtain ⟨e, ⟨he, hact, hCasimirKer⟩, _⟩ := existsUnique_exchangeKernelEquiv_of_presentation
-    Q P hform hcharge F hF (hmodels c).1 models hnef' hsq' hprim' _ hmark
+    Q P hform hcharge F hF (hmodels c) (fun d _ ↦ hmodels d) hnef hsq hprim _ hmark
     Θ.toMonoidHom (fun w {_} _ _ R hR ↦ (hΘ (End.asHom w)).2 R hR)
   have hCasimir : act[ℂ,E] =
       coords[B,M.boundaryClass hD,e].comp (restr[B,M.boundaryClass hD].comp Θ.toMonoidHom) := by
