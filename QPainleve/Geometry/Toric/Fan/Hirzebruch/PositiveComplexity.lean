@@ -11,12 +11,9 @@ public import QPainleve.Geometry.Toric.Fan.Hirzebruch.NodalReplacement
 public import QPainleve.Geometry.Toric.Fan.Hirzebruch.Quadric
 public import QPainleve.Geometry.Toric.Fan.Ruling.Hirzebruch.Fiber
 
-import QPainleve.AlgebraicGeometry.Blowup.StrictTransform.Contraction
-import QPainleve.AlgebraicGeometry.Blowup.StrictTransform.Reduced
-import QPainleve.AlgebraicGeometry.Blowup.Tower.Nodal.Canonical
+import QPainleve.AlgebraicGeometry.Blowup.Tower.Nodal.Contraction
 import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
 import QPainleve.AlgebraicGeometry.IdealSheaf.Restriction
-import QPainleve.AlgebraicGeometry.Modules.Differentials.Restriction
 import QPainleve.Geometry.Toric.Fan.Subdivision.Projective
 import TauCeti.AlgebraicGeometry.Morphisms.Flat.Dominant
 import TauCeti.AlgebraicGeometry.Curves.Node.Reduced
@@ -50,23 +47,8 @@ local notation "I[" x "]" => Scheme.Hom.ker (Scheme.fromSpecResidueField _ x)
 local notation "J[" x "]" => vanishingIdeal (Closeds.mk (closure ({x} : Set _)) isClosed_closure)
 local notation "π[" x "]" => blowupToBase (I[x])
 local notation "T[" x "]" => BlowupTower.nil.snoc (I[x])
-local notation "St[" I "," E "]" => Scheme.Hom.ker (blowupMap I (subschemeι E))
 local notation "R[" D "," x "]" => radical (comap D (π[x]))
 local notation "K[" X "]" => LineBundleClass.mk (canonicalBundle ℂ X 2)
-
-private theorem fiber_not_le_boundary_of_omitted_point {Y : Scheme}
-    {D : Y.IdealSheafData} {f : Y ⟶ P₁} {x : Y}
-    {y : S ⟶ P₁} (hy : y ≫ (P₁ ↘ S) = 𝟙 S) (hx : x ∈ (y.ker.comap f).support)
-    (hF : ¬ (y.ker.comap f).support ≤ D.support) :
-    ¬ (I[f x].comap f).support ≤ D.support := by
-  have : IsClosedImmersion y := y.isClosedImmersion_of_comp_eq_id hy
-  have hyx : y (IsLocalRing.closedPoint ℂ) = f x := by
-    rw [← SetLike.mem_coe, support_comap, Closeds.coe_preimage, Set.mem_preimage,
-      y.support_ker, y.isClosedEmbedding.isClosed_range.closure_eq,
-      Set.range_eq_singleton (y := y (IsLocalRing.closedPoint ℂ))
-        (fun z ↦ congrArg y (Subsingleton.elim z _)), Set.mem_singleton_iff] at hx
-    exact hx.symm
-  rwa [y.ker_eq_ker_fromSpecResidueField, hyx] at hF
 
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {Φ : Fan i} [Nonempty Φ.cones]
@@ -154,7 +136,9 @@ private theorem exists_omitted_fiber_of_quadric_bisection (he : e = 0) (hn : n =
     simpa using hj
   rcases exists_hirzebruch_horizontal_node_or_boundary_cases b' 0 hΦ hc r' hr' A hD hK rfl with
     ⟨j, y, -, -, hy, hx, hF⟩ | hzero | ⟨-, j, hj⟩
-  · exact ⟨j, fiber_not_le_boundary_of_omitted_point hy hx hF⟩
+  · have : IsClosedImmersion y := y.isClosedImmersion_of_comp_eq_id hy
+    rw [support_comap] at hx
+    exact ⟨j, by simpa only [y.ker_eq_ker_fromSpecResidueField_of_mem_support hx] using hF⟩
   · exact (hpos hzero).elim
   · rcases hall j with rfl | rfl <;> omega
 
@@ -169,8 +153,10 @@ private theorem exists_omitted_fiber_or_hirzebruch_one_bisection (he : 0 ≤ e)
   rcases exists_hirzebruch_horizontal_node_or_boundary_cases b e hΦ hc r hr A hD hK rfl with
     ⟨j, y, -, -, hy, hx, hF⟩ | hzero | ⟨hn, s, hs⟩
   · obtain ⟨hdom, hfiber⟩ := characterRuling_closed_fibers b e hΦ hc r hr
-    exact Or.inl ⟨f[b, e, r, hr], inferInstance, hdom, hfiber,
-      j, fiber_not_le_boundary_of_omitted_point hy hx hF⟩
+    have : IsClosedImmersion y := y.isClosedImmersion_of_comp_eq_id hy
+    rw [support_comap] at hx
+    exact Or.inl ⟨f[b, e, r, hr], inferInstance, hdom, hfiber, j,
+      by simpa only [y.ker_eq_ker_fromSpecResidueField_of_mem_support hx] using hF⟩
   · exact (hpos.ne' hzero).elim
   · have : IsReduced D.subscheme :=
       (PrestableFamily.atWorstNodalOfRelativeDimensionOne (f := D.subscheme ↘ S)).isReduced
@@ -190,61 +176,6 @@ private theorem exists_omitted_fiber_or_hirzebruch_one_bisection (he : 0 ≤ e)
       obtain ⟨hdom, hfiber⟩ := characterRuling_closed_fibers b' 0 hΦ hc r' hr'
       exact Or.inl ⟨f[b', 0, r', hr'], inferInstance, hdom, hfiber, j, hj⟩
     · exact Or.inr ⟨by omega, s, hs⟩
-
-omit [Φ.algebraicRealization.IsProjectiveOver ℂ] in
-include hD hK in
-private theorem boundary_image_of_replacement
-    {x : X} (hT : IsNodalBoundaryTower D (X ↘ S) (𝟙 X) T[x])
-    {Y : Scheme} [Y.Over S] [IsIntegral Y] [Y.IsProjectiveOver ℂ]
-    [SmoothOfRelativeDimension 2 (Y ↘ S)] {y : Y} (hy : IsClosed ({y} : Set Y))
-    {E : Y.IdealSheafData} (hE : E.IsEffectiveCartier) [IsReduced E.subscheme]
-    (u : (I[x]).blowup ≅ (I[y]).blowup)
-    (hu : u.hom ≫ π[y] ≫ Y ↘ S = π[x] ≫ X ↘ S)
-    (hstrict : (St[I[y],E]).comap u.hom = R[D,x]) :
-    (R[D,x]).map (u.hom ≫ π[y]) = E ∧
-      ¬ ((I[y]).comap (u.hom ≫ π[y])).support ≤ (R[D,x]).support := by
-  have hN : AtWorstNodalOfRelativeDimensionOne (D.subschemeι ≫ X ↘ S) := by
-    rw [← D.over_eq_subschemeι_comp]
-    exact PrestableFamily.atWorstNodalOfRelativeDimensionOne
-  let W := (I[x]).blowup
-  let : W.Over S := ⟨T[x].toBase ≫ X ↘ S⟩
-  let : SmoothOfRelativeDimension 2 (W ↘ S) := hT.isClosedPointTower.smoothOfRelativeDimension _
-  have hπ : T[x].toBase = π[x] := by simp
-  obtain ⟨hCartier, hNodal⟩ := hT.radical_comap_toBase hD hN
-  have hKtotal := (hT.canonicalClass_radical_comap_toBase_iff hD hN).mpr hK
-  generalize hI : I[y] = J at u hu hstrict ⊢
-  have hJ : J = J[y] := hI.symm.trans (Y.ker_fromSpecResidueField_eq_vanishingIdeal y)
-  clear hI
-  subst J
-  let B := St[J[y],E]
-  let : (J[y]).blowup.Over S := ⟨(J[y]).blowupToBase ≫ Y ↘ S⟩
-  let : SmoothOfRelativeDimension 2 ((J[y]).blowup ↘ S) :=
-    smoothOfRelativeDimension_blowup_closed_point (Y ↘ S) hy
-  have hWover : W ↘ S = T[x].toBase ≫ X ↘ S := rfl
-  have hBover : (J[y]).blowup ↘ S = (J[y]).blowupToBase ≫ Y ↘ S := rfl
-  have huOver : u.hom ≫ ((J[y]).blowup ↘ S) = W ↘ S := by
-    rwa [hWover, hBover, hπ]
-  have : u.inv.IsOver S := ⟨by rw [← huOver, Iso.inv_hom_id_assoc]⟩
-  have hBcomap : (D.comap T[x].toBase).radical.comap u.inv = B := by
-    rw [hπ, ← hstrict, ← comap_comp, Iso.inv_hom_id, comap_id]
-  have hB : B.IsEffectiveCartier := hBcomap ▸ hCartier.comap u.inv
-  have : IsLocallyNoetherian Y := LocallyOfFiniteType.isLocallyNoetherian (Y ↘ S)
-  have : IsNoetherian Y := isNoetherian_of_finiteType (Y ↘ S)
-  have : IsReduced B.subscheme := isReduced_subscheme_ker_blowupMap (J[y]) E
-  have hKB : LineBundleClass.mk hB.toInvertibleSheaf = K[(J[y]).blowup] := by
-    have hclass := (hCartier.pullback_mk_toInvertibleSheaf (hCartier.comap u.inv)).trans
-      (mk_toInvertibleSheaf_congr _ hB hBcomap)
-    rw [hKtotal, pullback_mk] at hclass
-    exact hclass.symm.trans (mk_pullback_canonicalBundle ℂ u.inv 2)
-  obtain ⟨hmap, homit⟩ :=
-    hB.map_eq_and_not_le_support_of_eq_strictTransform ℂ hy hE rfl hKB
-  refine ⟨?_, ?_⟩
-  · rw [← hstrict, map_comp, map_comap_of_isClosedImmersion,
-      Scheme.Hom.ker_eq_bot_of_isIso u.hom, sup_bot_eq]
-    exact hmap
-  · rw [← hstrict, comap_comp, support_comap _ u.hom, support_comap _ u.hom]
-    exact fun h ↦ homit (SetLike.coe_subset_coe.mp
-      (u.hom.surjective.preimage_subset_preimage_iff.mp (SetLike.coe_subset_coe.mpr h)))
 
 omit [Φ.algebraicRealization.IsProjectiveOver ℂ] in
 include b hΦ hc r hr hD hK A in
@@ -341,8 +272,13 @@ theorem exists_hirzebruch_positive_complexity_reduction (he : 0 ≤ e)
     let E := (D.map (a.hom ≫ π[p])).comap T[q].toBase |>.radical.comap v.hom
     have : IsReduced E.subscheme :=
       (PrestableFamily.atWorstNodalOfRelativeDimensionOne (f := E.subscheme ↘ S)).isReduced
-    let : Y.IsProjectiveOver ℂ := hproj
-    obtain ⟨hImage, homit⟩ := boundary_image_of_replacement hD hK hT hy hE u hbase hstrict
+    have hN : AtWorstNodalOfRelativeDimensionOne (D.subschemeι ≫ X ↘ S) := by
+      rw [← D.over_eq_subschemeι_comp]
+      exact PrestableFamily.atWorstNodalOfRelativeDimensionOne
+    have hπ : T[x].toBase = π[x] := by simp
+    obtain ⟨hImage, homit⟩ := hT.map_radical_comap_toBase_of_eq_strictTransform hD hN hK hy hE u
+      (by rwa [hπ]) (by rwa [hπ])
+    rw [hπ] at hImage homit
     refine ⟨t, Y, Y ↘ S, y, u, f, inferInstance, hT,
       inferInstance, hproj, hy, ?_, homit, hf, hFlat, hfiber, ?_⟩
     · exact (Category.assoc _ _ _).trans hbase
