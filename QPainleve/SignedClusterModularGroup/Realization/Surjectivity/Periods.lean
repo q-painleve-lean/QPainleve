@@ -17,6 +17,7 @@ import QPainleve.Geometry.Toric.Fan.Presentation.Genus
 import QPainleve.Geometry.Toric.Fan.Smooth
 import QPainleve.Geometry.Toric.Fan.Subdivision.Projective
 import QPainleve.SignedClusterModularGroup.Realization.Anticanonical
+import QPainleve.SignedClusterModularGroup.Realization.NodalFiber
 import TauCeti.AlgebraicGeometry.RationalPoint.Image
 
 /-!
@@ -110,15 +111,14 @@ private theorem exists_charge_coordinates
     exact hzU
   let : IsIntegral (M c).surface := (M c).integral
   have hmodel := hmodels c hc
-  obtain ⟨p, Y, _, T, u, hT, hp⟩ := (Q.hasNodalModel_iff c (M c)).mp hmodel
-  have hg := hmodel.hasToricPresentation.genus_blowupComponent_eq_zero (hD c)
-  have hnodal : p.IsNodalContraction := ⟨hD c, hg, _, _, T, hT, u, hp.symm⟩
+  obtain ⟨p, hnodal⟩ := hmodel.exists_isNodalContraction (hD c)
+  obtain ⟨_, Y, T, hT, u, hp⟩ := hnodal.exists_tower
   let : (Chow.intersectionBilinForm ℂ (M c).surface).IsPerfPair := (M c).isPerfPair_intersectionForm
   have hcomparison : ∃ a : Y ≅ (internalBlowupTower b Q.rays center[χ[c]]).1,
       a.inv ≫ T.toBase ≫ (M c).surface ↘ S =
         (internalBlowupTower b Q.rays center[χ[c]]).2.toTower.toBase ≫
           (Q.fan.algebraicRealization ↘ S) := ⟨u, by
-            rw [← Category.assoc, ← hp, p.projection_over, algebraicRealization_over]⟩
+            rw [← Category.assoc, hp, p.projection_over, algebraicRealization_over]⟩
   rw [internalBlowupTower_eq_alongBoundary] at hcomparison
   obtain ⟨v, hv⟩ := hcomparison
   let hAux := isPerfPair_internal_markedForm Q.regular hrank Q.rays
