@@ -69,6 +69,65 @@ theorem relativeProjEvaluation_app_pullbackSectionsLE (U : X.Opens)
   exact (A.relativeProjEvaluation.mapPresheaf.naturality_apply (homOfLE hle).op
     ((p).pullbackSections (A.X 1) U s)).trans (congrArg _ hU)
 
+section EvaluationAlong
+
+open AlgebraicGeometry.Scheme.Modules
+
+variable {Y : Scheme.{u}} {f : Y ⟶ X} (g : Y ⟶ A.relativeProj)
+  (hg : g ≫ A.relativeProjToBase = f)
+
+local notation "a₁" => (A.X 1)
+
+/-- The pullback of degree-one evaluation along a morphism to relative Proj,
+viewed as a map from the pullback of the degree-one component along its base map. -/
+def relativeProjEvaluationAlong :
+    (Scheme.Modules.pullback f).obj a₁ ⟶ (Scheme.Modules.pullback g).obj L :=
+  (pullbackCongr hg).inv.app a₁ ≫ (pullbackComp g p).inv.app a₁ ≫
+    (Scheme.Modules.pullback g).map A.relativeProjEvaluation
+
+/-- Evaluation along a map uses the pullback comparison over the specified
+base morphism and the pullback of the original evaluation. -/
+theorem relativeProjEvaluationAlong_def :
+    A.relativeProjEvaluationAlong g hg =
+      (pullbackCongr hg).inv.app a₁ ≫ (pullbackComp g p).inv.app a₁ ≫
+        (Scheme.Modules.pullback g).map A.relativeProjEvaluation :=
+  (rfl)
+
+/-- Evaluation along a morphism sends a local degree-one section to the pullback of
+its associated twisting section. -/
+theorem relativeProjEvaluationAlong_app (U : X.Opens) (W : Y.Opens)
+    (hW : W ≤ f ⁻¹ᵁ U) (s : Γ(a₁, U)) :
+    (A.relativeProjEvaluationAlong g hg).app W (f.pullbackSectionsLE a₁ U W hW s) =
+      g.pullbackSectionsLE L (p ⁻¹ᵁ U) W
+        (by simpa only [← hg, Scheme.Hom.comp_preimage] using hW) ((σ).app U s) := by
+  subst f
+  simp only [relativeProjEvaluationAlong, pullbackCongr, eqToIso_refl, Iso.refl_inv,
+    NatTrans.id_app, Category.id_comp, Hom.comp_app, ConcreteCategory.comp_apply]
+  erw [Scheme.Hom.pullbackSectionsLE_comp p a₁ U g (p ⁻¹ᵁ U) le_rfl
+      (by simpa only [Scheme.Hom.comp_preimage] using hW),
+    Scheme.Hom.pullbackSectionsLE_self, Scheme.Hom.pullbackSectionsLE_naturality]
+  congr 1
+  rw [← pullbackPushforwardAdjunction_homEquiv_app_apply, A.homEquiv_relativeProjEvaluation]
+
+/-- Pulling back evaluation along a composite agrees with pulling back in two steps,
+under the canonical pullback composition isomorphisms. -/
+theorem relativeProjEvaluationAlong_comp {Z : Scheme.{u}} (i : Z ⟶ Y)
+    {f' : Z ⟶ X} (hi : i ≫ f = f') :
+    A.relativeProjEvaluationAlong (i ≫ g) (((Category.assoc i g p).trans
+      (congrArg (i ≫ ·) hg)).trans hi) ≫ (pullbackComp i g).inv.app L =
+      (pullbackCongr hi).inv.app a₁ ≫ (pullbackComp i f).inv.app a₁ ≫
+        (Scheme.Modules.pullback i).map (A.relativeProjEvaluationAlong g hg) := by
+  subst f'
+  subst f
+  simp only [relativeProjEvaluationAlong, pullbackCongr, eqToIso_refl, Iso.refl_inv,
+    NatTrans.id_app, Category.id_comp, Category.assoc, Functor.map_comp]
+  have hn := ((pullbackComp i g).inv.naturality A.relativeProjEvaluation).symm
+  rw [Functor.comp_map] at hn
+  rw [← hn, pullbackComp_inv_app_comp_pullback_map_pullbackComp_inv_app_assoc]
+  rfl
+
+end EvaluationAlong
+
 private theorem surjective_relativeProjEvaluation_app (U : X.AffineZariskiSite)
     (r : 𝒢[U] 1) :
     Function.Surjective (A.relativeProjEvaluation.app (j[U] ''ᵁ Proj.basicOpen 𝒢[U] r)) := by

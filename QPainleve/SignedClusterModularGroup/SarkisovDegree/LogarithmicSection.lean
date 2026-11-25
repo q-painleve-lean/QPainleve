@@ -11,6 +11,7 @@ public import QPainleve.Geometry.Toric.Fan.Mutation.Tower
 public import QPainleve.Geometry.Toric.Fan.Picard.Mutation.Hirzebruch
 public import QPainleve.SignedClusterModularGroup.SarkisovDegree.SmoothSection
 
+import QPainleve.Geometry.Toric.Fan.Mutation.PointTower
 import QPainleve.Geometry.Toric.Fan.Mutation.Projective
 import QPainleve.Geometry.Toric.Fan.Picard.Homaloidal
 import TauCeti.Data.Fin.Tuple.Basic
@@ -18,10 +19,10 @@ import TauCeti.Data.Fin.Tuple.Basic
 /-!
 # Logarithmic Sarkisov reduction at a smooth section point
 
-A smooth section pivot of order greater than half the fiber degree gives a
-regular partial composite on the specified resolving surface. The transported
-resolution of the map to the plane has the same pole ideal, the same fiber
-degree, and a smaller total base order. The geometric inputs are
+A smooth section pivot gives a regular partial composite on the specified
+resolving surface. The transported resolution of the map to the plane has
+the same pole ideal and fiber degree. Its total base order decreases when
+the pivot order exceeds half the fiber degree. The geometric inputs are
 `Fan.Ray.exists_sarkisov_decrease_of_smooth_section_center` and
 `Fan.Ray.mutation_projection_poleIdeal`. This is the smooth-section case of
 [Lutz's Proposition 8.11][HKL].
@@ -69,6 +70,11 @@ local notation "e'" => (ite (onSection = true) ((e : ℤ) + 1) ((e : ℤ) - 1))
 local notation "center" =>
   Fan.Ray.binomialCenter ρ rankTwo (b.detDualEquiv_self pivot)
     (Fan.Ray.surjective_detCharacter ρ b) c
+local notation "sourceOpen" => Φ.mutationComplement b
+  (Φ.detCharacter_nonneg_or_nonpos b hv hp hOpp) (c : ℂ)
+local notation "targetOpen" => Fan.mutationComplement Ψ b
+  (Φ.mutationDetCharacter_nonneg_or_nonpos b hv hp hOpp) (c : ℂ)
+local notation "complementIso" => Φ.mutationComplementIso b (c : ℂ) hv hp hOpp
 local notation "μ" =>
   Scheme.PartialMap.toRationalMap (Φ.mutationPartialMap b (c : ℂ) (v := pivot) hv hp hOpp)
 
@@ -76,20 +82,20 @@ variable {n : ℕ} {Y : Scheme} {T : BlowupTower X[Φ] (n + 1) Y}
   (hT : IsClosedPointTower X[Φ] T)
 
 private theorem section_baseOrder_sum_and_bidegree (j : Fin (n + 1)) (x : Fin (n + 1) → ℤ)
-    (β : ℤ) (hβ : 0 < β) (hm : ∀ l, 0 ≤ -x l) (hhigh : β < 2 * (-x j)) :
+    (β : ℤ) (hβ : 0 < β) (hm : ∀ l, 0 ≤ -x l) :
     let x' : Fin (1 + n) → ℤ := Fin.addCases (fun _ : Fin 1 ↦ -β - x j) (x ∘ j.succAbove)
     (∑ l, -x' l) = (∑ l, -x l) + β + 2 * x j ∧
-    hirzebruchSarkisovBidegree β.toNat (∑ l, -x' l).toNat <
-      hirzebruchSarkisovBidegree β.toNat (∑ l, -x l).toNat := by
+    (β < 2 * (-x j) → hirzebruchSarkisovBidegree β.toNat (∑ l, -x' l).toNat <
+      hirzebruchSarkisovBidegree β.toNat (∑ l, -x l).toNat) := by
   intro x'
   have hsum : (∑ l, -x' l) = (∑ l, -x l) + β + 2 * x j := by
     rw [Fin.sum_univ_add (a := 1), Fin.sum_univ_one, Fin.sum_univ_succAbove _ j]
     simp only [x', Fin.addCases_left, Fin.addCases_right, Function.comp_apply]
     ring
+  refine ⟨hsum, fun hhigh ↦ ?_⟩
   have hpos : 0 < ∑ l, -x l :=
     lt_of_lt_of_le (by omega : 0 < -x j)
       (Finset.single_le_sum (fun l _ ↦ hm l) (Finset.mem_univ j))
-  refine ⟨hsum, ?_⟩
   rw [hsum, Prod.Lex.lt_iff, ofLex_hirzebruchSarkisovBidegree, ofLex_hirzebruchSarkisovBidegree]
   exact Or.inr ⟨rfl, by omega⟩
 
@@ -98,15 +104,16 @@ variable [Φ.algebraicRealization.IsProjectiveOver ℂ]
   (hbir : Scheme.BirationalOver g (𝟙 P))
 
 include hg hbir in
-/-- A proper smooth section pivot of order greater than half the fiber degree
-gives a Sarkisov decrease for a logarithmic Hirzebruch-to-plane resolution.
+/-- A proper smooth section pivot transports a logarithmic Hirzebruch-to-plane resolution.
 Mutation transports the specified tower, including infinitely near centers,
 and identifies the regular composite on the original resolving surface. The
 transported tower is over a projective surface, resolves the same plane map,
 and carries the transported pole ideal. The fiber degree stays fixed, the reverse
 order is the fiber degree minus the pivot order, and every other order retains
-its relative position. -/
-theorem exists_sarkisov_decrease_of_logarithmic_smooth_section
+its relative position. A center off the pivot fiber projects to its image
+under the complement isomorphism, and any first occurrence remains first.
+The bidegree decreases when the pivot order exceeds half the fiber degree. -/
+theorem exists_sarkisov_link_of_logarithmic_smooth_section
     (hρ : ρ = r (pivotIndex)) (j : Fin (n + 1))
     (hj : hT.baseCenter j = center (IsLocalRing.closedPoint ℂ))
     (hfirst : ∀ l < j, hT.baseCenter l ≠ center (IsLocalRing.closedPoint ℂ))
@@ -121,7 +128,6 @@ theorem exists_sarkisov_decrease_of_logarithmic_smooth_section
     let a := (C).repr x.1 0
     let β := (C).repr x.1 1
     B[Φ,hc].comap T.toBase = D * hT.ramificationIdealSheafToBase ℂ →
-    β < 2 * (-x.2 j) →
     let : Nonempty (Ψ).cones := (hcΨ).nonempty_cones
     let : SmoothOfRelativeDimension 2 f[Ψ] :=
       rankTwo ▸ (Ψ).smoothOfRelativeDimension_algebraicRealizationStructureMap hΨ
@@ -135,15 +141,21 @@ theorem exists_sarkisov_decrease_of_logarithmic_smooth_section
       (k.inv ≫ g) ≫ (P ↘ S) = U.toBase ≫ f[Ψ] ∧
       Scheme.BirationalOver (k.inv ≫ g) (𝟙 P) ∧
       B[Ψ,hcΨ].comap U.toBase = D.comap k.inv * hU.ramificationIdealSheafToBase ℂ ∧
+      (∀ (l : Fin n) (hl : hT.baseCenter (j.succAbove l) ∈ sourceOpen),
+        let z : (sourceOpen).toScheme := ⟨hT.baseCenter (j.succAbove l), hl⟩
+        hU.baseCenter (l.natAdd 1) = (targetOpen).ι ((complementIso).hom z) ∧
+          ((∀ a < j.succAbove l, hT.baseCenter a ≠ hT.baseCenter (j.succAbove l)) →
+            ∀ a < l.natAdd 1, hU.baseCenter a ≠ hU.baseCenter (l.natAdd 1))) ∧
       let C' := Fan.hirzebruchPicardBasis d e' hΨ r' hr'
       let y := (U.picardMarking hU f[Ψ]).symm (Additive.ofMul (pullback (k.inv ≫ g) H))
       (C').repr y.1 0 = a + x.2 j + (if onSection then β else 0) ∧
       (C').repr y.1 1 = β ∧
       y.2 = Fin.addCases (fun _ : Fin 1 ↦ -β - x.2 j) (x.2 ∘ j.succAbove) ∧
       (∑ l, -y.2 l) = (∑ l, -x.2 l) + β + 2 * x.2 j ∧
-      hirzebruchSarkisovBidegree ((C').repr y.1 1).toNat (∑ l, -y.2 l).toNat <
-        hirzebruchSarkisovBidegree β.toNat (∑ l, -x.2 l).toNat := by
-  intro hcones hdim hnoeth hintegral hmod x a β hD hhigh hcones' hdim' hnoeth'
+      (β < 2 * (-x.2 j) →
+        hirzebruchSarkisovBidegree ((C').repr y.1 1).toNat (∑ l, -y.2 l).toNat <
+          hirzebruchSarkisovBidegree β.toNat (∑ l, -x.2 l).toNat) := by
+  intro hcones hdim hnoeth hintegral hmod x a β hD hcones' hdim' hnoeth'
   let := hcones
   let := hdim
   let := hnoeth
@@ -155,7 +167,7 @@ theorem exists_sarkisov_decrease_of_logarithmic_smooth_section
   refine ⟨Fan.Ray.isProjectiveOver_mutationFan ρ b hOpp hΦ, ?_⟩
   obtain ⟨d, hd₀, hd₁, hr'⟩ :=
     Fan.Ray.mutationFan_hirzebruch_ray_generators ρ b hOpp e r hr onSection hρ
-  obtain ⟨Z, U, k, hU, hk, hlink, -, -, hpic⟩ :=
+  obtain ⟨Z, U, k, hU, hk, hlink, hreverse, hcenters, hpic⟩ :=
     Fan.Ray.exists_sarkisov_decrease_of_smooth_section_center ρ b hOpp c hΦ hT j hj hfirst
   have hg' : (k.inv ≫ g) ≫ (P ↘ S) = U.toBase ≫ f[Ψ] := by
     rw [Category.assoc, hg, ← hk, k.inv_hom_id_assoc]
@@ -163,7 +175,8 @@ theorem exists_sarkisov_decrease_of_logarithmic_smooth_section
     Scheme.BirationalOver.trans (sY := g)
       ⟨.ofIso k.symm, by simp [Scheme.PartialIso.IsOver, Scheme.PartialIso.ofIso]⟩ hbir
   refine ⟨d, hr', Z, U, hU, k, hlink, hk, hg', hbir',
-    ρ.mutation_projection_poleIdeal b hOpp c hT hΦ hc hU k hlink D hD, ?_⟩
+    ρ.mutation_projection_poleIdeal b hOpp c hT hΦ hc hU k hlink D hD,
+    fun l ↦ ρ.baseCenter_of_mutation_of_mem_complement b hOpp c hT hU j l hreverse hcenters, ?_⟩
   intro C' y
   obtain ⟨hF, hF'⟩ :=
     ρ.mutationFiberClasses_eq_hirzebruchPicardBasis_zero b hOpp e hΦ r hr onSection hρ d hd₀ hd₁ hr'
@@ -205,6 +218,6 @@ theorem exists_sarkisov_decrease_of_logarithmic_smooth_section
   obtain ⟨hβpos, -, hm⟩ := hT.hirzebruch_resolution_degree_bounds b e hΦ hc r hr g hg hbir
   refine ⟨ha', hβ', horders', ?_⟩
   rw [hβ', horders']
-  exact section_baseOrder_sum_and_bidegree j x.2 β hβpos hm hhigh
+  exact section_baseOrder_sum_and_bidegree j x.2 β hβpos hm
 
 end QPainleve.BlowupTower.IsClosedPointTower
