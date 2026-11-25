@@ -92,22 +92,8 @@ theorem exists_first_max_base_order_on_ray (ρ : Φ.Ray) {Y : Scheme} {n : ℕ}
       b hΦ hc (hT.isClosed_baseCenter a) hd hn
     rw [Ray.map_internalCenter_subschemeι, Scheme.Hom.ker_eq_ker_fromSpecResidueField,
       Scheme.ker_fromSpecResidueField_inj] at hτ
-    let q := τ.binomialCenterOnBoundary rankTwo (b.detDualEquiv_self τ.primitiveGenerator)
-      (τ.surjective_detCharacter b) c
-    have hq : (D).subschemeι (q z) = p[τ,c] :=
-      (Scheme.Hom.comp_apply q (D).subschemeι z).symm.trans
-        (congrArg (fun a : S ⟶ X ↦ a z)
-          (τ.binomialCenterOnBoundary_comp_subschemeι rankTwo (b.detDualEquiv_self _)
-            (τ.surjective_detCharacter b) c))
-    have hmem' : hT.baseCenter a ∈ (C.support : Set X) := hmem
-    rw [← C.range_subschemeι] at hmem'
-    obtain ⟨w, hw⟩ := hmem'
-    have hr : q z ∈ Set.range (ρ.boundaryComponentι hΦ) := by
-      refine ⟨w, (D).subschemeι.isClosedEmbedding.injective ?_⟩
-      have he := congrArg (fun a : C.subscheme ⟶ X ↦ a w) (ρ.boundaryComponentι_subschemeι hΦ)
-      exact he.trans (hw.trans (hτ.symm.trans hq.symm))
-    have heq : τ = ρ := (τ.binomialCenterOnBoundary_mem_range_boundaryComponentι_iff
-      hΦ rankTwo (b.detDualEquiv_self _) (τ.surjective_detCharacter b) c ρ).mp hr
+    have heq : τ = ρ := (τ.binomialCenter_mem_support_rayBoundaryIdeal_iff
+      hΦ rankTwo (b.detDualEquiv_self _) (τ.surjective_detCharacter b) c ρ).mp (hτ.symm ▸ hmem)
     exact Or.inr ⟨c, heq ▸ hτ.symm⟩
 
 end TauCeti.Toric.Fan
