@@ -6,20 +6,25 @@ Authors: The QPainleve contributors
 module
 
 public import QPainleve.SignedClusterModularGroup.Realization.Endpoint.PicardAction
-public import QPainleve.SignedClusterModularGroup.Realization.NumberedRays
 
+import QPainleve.Algebra.Cluster.Word.SignExtension
 import QPainleve.AlgebraicGeometry.Chow.RationalSurface.Basic
 import QPainleve.Geometry.Toric.Fan.Subdivision.Projective
+import QPainleve.SignedClusterModularGroup.Realization.Anticanonical
 import QPainleve.SignedClusterModularGroup.Realization.BranchAction
 import QPainleve.SignedClusterModularGroup.Realization.NodalFiber
+import QPainleve.SignedClusterModularGroup.Realization.NumberedRays
+import QPainleve.SignedClusterModularGroup.Realization.PicardAction
 import QPainleve.SignedClusterModularGroup.Realization.Presentation.Boundary
 
 /-!
-# Faithfulness of the signed Picard action of a toric presentation
+# The faithful signed Picard action of a toric presentation
 
-On the common noncollision domain, the marked Picard pullback determines the
-permutation of boundary components. The sign retains the branch action even
-for cycles with one or two components. The marked comparison then recovers
+A single family of signed loop realizations gives the descended Picard
+homomorphism and shows that its kernel is trivial. On the common noncollision
+domain, the marked Picard pullback determines the permutation of boundary
+components. The sign retains the branch action even for cycles with one or two
+components. The marked comparison then recovers
 the independent rational X map from these actions. The comparison uses
 `ContractedToricFiber.numberedBoundaryRays_eq_of_nodalContractions` to read the
 same surviving rays at every reached center.
@@ -28,7 +33,7 @@ same surviving rays at every reached center.
 public section
 
 open AlgebraicGeometry CategoryTheory Module MulOpposite Multiplicative Quiver
-open QPainleve.CharacterTorus QPainleve.Cluster
+open QPainleve.CharacterTorus QPainleve.Cluster QPainleve.SignedBoundaryIsometryGroup
 open TauCeti TauCeti.AlgebraicGeometry TauCeti.Toric
 open Scheme Scheme.IdealSheafData
 
@@ -58,6 +63,11 @@ variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
 
 variable (Q : CompleteToricPresentation i b r L γ)
 
+local notation "Models[" M "," C "]" =>
+  HasToricTargetModels (T₀ := Centers[r]) (T₁ := Centers[r]) (b := b) (s := Q.rays)
+    (hΦ := Q.regular) (T := Q.cycle) (origin := Q.origin) (ι := Q.inclusion) (P₁ := M)
+    (fun z : Point Centers[r] ↦ χ[z]) C
+
 local instance instNonemptyKernelCones : Nonempty Q.fan.cones := Q.complete.nonempty_cones
 local instance instNeZeroKernelBoundaryLength : NeZero Q.length := Q.neZero
 local instance instPrestableKernelBoundary :
@@ -73,9 +83,6 @@ private theorem smooth_fan :
   have hN : Module.finrank ℤ N = 2 := by simpa using Module.finrank_eq_card_basis b
   rw [← hN, Q.fan.algebraicRealization_over]
   exact Q.fan.smoothOfRelativeDimension_algebraicRealizationStructureMap Q.regular
-
-variable [Q.fan.algebraicRealization.IsProjectiveOver ℂ]
-  [SmoothOfRelativeDimension 2 (Q.fan.algebraicRealization ↘ S)]
 
 local instance instIsDominantKernelLoopXRationalMap (w : Loops[E]) :
     ((End.asHom w).xRationalMap ℂ).IsDominant :=
@@ -93,6 +100,11 @@ local instance instIsDominantKernelLoopCenterMap (w : Loops[E]) (P : ChargeSeed 
 local instance instIsOverKernelLoopCenterMap (w : Loops[E]) (P : ChargeSeed E N) :
     Cw[End.asHom w,P].IsOver Centers[r].hom Centers[r].hom :=
   Path.instIsOverCenterPartialMapHomSchemeMkStructureMapForallInt (K := ℂ) (End.asHom w) P
+
+section Faithfulness
+
+variable [Q.fan.algebraicRealization.IsProjectiveOver ℂ]
+  [SmoothOfRelativeDimension 2 (Q.fan.algebraicRealization ↘ S)]
 
 variable {P : ChargeSeed E N} {M : Point (Over.mk (structureMap ℂ (Fin r → ℤ))) →
     MarkedSurface ℂ n H (scheme ℂ (Fin r →₀ ℤ))}
@@ -161,60 +173,74 @@ private theorem ker_eq_bot_of_realized_actions [H.IsPerfPair]
       ((Path.xRationalMap_eq_iff ℂ (End.asHom w) (End.asHom (1 : Loops[E]))).mp hx)
   rw [← hw', hgroup, map_one, op_one]
 
-omit [Q.fan.algebraicRealization.IsProjectiveOver ℂ]
-  [SmoothOfRelativeDimension 2 (Q.fan.algebraicRealization ↘ S)] in
-/-- The descended signed Picard homomorphism of a fixed marked toric presentation
-has trivial kernel. The nodal models of the rational boundary are required on
-the initial noncollision open. The reference fiber may lie outside this open.
-The sign is part of the recorded action, including when the boundary has one or
-two components. -/
-theorem signedPicardHom_ker_eq_bot_of_presentation
+end Faithfulness
+
+/-- A marked toric presentation of a primitive nef square-zero anticanonical cycle
+has a unique faithful signed Picard action. The action is determined by loop
+realizations on their noncollision opens, and the reference fiber may carry
+repeated centers. -/
+theorem existsUnique_faithful_signedPicardHom_of_presentation
     (P : ChargeSeed E N) (hform : P.form = b.detDualEquiv.toLinearMap)
     (hcharge : P.charge = Fan.rayChargeMap Q.rays)
     (M : Point Centers[r] → MarkedSurface ℂ n H XTor[r])
     (models : ∀ c : Point Centers[r], c.left (default : S) ∈ U₀[P] →
       Q.HasNodalModel c (M c))
+    {c₀ : Point Centers[r]} (href : Q.HasNodalModel c₀ (M c₀))
     (hD : ∀ c, D[M c].IsEffectiveCartier)
-    {c₀ : Point Centers[r]} (hmodel : Q.HasNodalModel c₀ (M c₀))
-    [IsRationalOver ((M c₀).surface ↘ S)]
     (hnef : classOf(hD c₀).IsNef ℂ ((M c₀).surface ↘ S))
     (hsq : Chow.classIntersectionNumber ℂ (M c₀).surface classOf(hD c₀) classOf(hD c₀) = 0)
-    (hcan : letI : SmoothOfRelativeDimension 2 ((M c₀).surface ↘ S) := (M c₀).smooth
-      classOf(hD c₀) = (LineBundleClass.mk (canonicalBundle ℂ (M c₀).surface 2))⁻¹)
     (hprim : IsPrimitive (Additive.ofMul classOf(hD c₀)))
-    (d : ZMod n → L) (hmark : ∀ c j, (M c).boundaryClass (hD c) j = d j)
-    (ρ : (SignedClusterModularGroup ℂ E)ᵐᵒᵖ →* signedBoundaryIsometryGroup H d)
-    (hρ : ∀ (w : Loops[E])
-      {C : Centers[r].left.PartialMap Centers[r].left} [IsDominant C.hom]
-      [C.IsOver Centers[r].hom Centers[r].hom]
-      (R : GeometricRealization M M C ((End.asHom w).xRationalMap ℂ)),
-      HasToricTargetModels (b := b) (hΦ := Q.regular) (T := Q.cycle) (origin := Q.origin)
-        (s := Q.rays) (ι := Q.inclusion) (P₁ := M) (fun c : Point Centers[r] ↦ χ[c]) C →
-      ρ (op (loopMap E w)) = R.toSignedBoundaryIsometry d hD hmark) :
-    ρ.ker = ⊥ := by
-  have hindex := Q.chargeIndex_ne_zero_of_anticanonical_cycle hmodel (hD c₀) hnef hsq hcan hprim
+    (d : ZMod n → L) (hmark : ∀ c j, (M c).boundaryClass (hD c) j = d j) :
+    ∃! ρ : (SignedClusterModularGroup ℂ E)ᵐᵒᵖ →* signedBoundaryIsometryGroup H d,
+      IsSignedPicardAction Q M hD hmark ρ ∧ ρ.ker = ⊥ := by
+  let : IsRationalOver ((M c₀).surface ↘ S) := href.isRationalOver
+  have hcan := congrArg Inv.inv (href.canonicalClass (hD c₀))
+  have hindex := Q.chargeIndex_ne_zero_of_anticanonical_cycle href (hD c₀) hnef hsq hcan hprim
   have hker : E.matrix.mulVecLin.ker = P.charge.ker := by
     rw [← P.matrix_eq, hform, hcharge]
     exact Fan.ker_chargeExchangeMatrix_rayChargeMap b Q.rays hindex
   have hmodels (x : CenterPoint (U := Centers[r]) (V := Centers[r]) Cnil[P]) :=
     models _ (Path.nil.centerPoint_endpoints_mem_noncollision P hker x).2
-  choose p hnodal using fun c hc ↦ (models c hc).exists_isNodalContraction (hD c)
-  have hd : Function.Injective d := by
-    rw [← funext (hmark c₀)]
-    exact (M c₀).boundaryClass_injective_of_nef_square_zero (hD c₀) hnef hsq
-  let : Q.fan.algebraicRealization.IsProjectiveOver ℂ :=
-    Q.fan.isProjectiveOver_algebraicRealization_of_isComplete Q.regular Q.complete b
-  let : SmoothOfRelativeDimension 2 (Q.fan.algebraicRealization ↘ S) := smooth_fan Q
-  let : H.IsPerfPair := (M c₀).isPerfPair_of_isRationalOver
-  obtain ⟨c⟩ := nonempty_centerPoint (T₀ := Centers[r]) (T₁ := Centers[r]) Cnil[P]
-  have hc := (Path.nil.centerPoint_endpoints_mem_noncollision P hker c).2
-  refine ker_eq_bot_of_realized_actions Q
-    (U := {c : Point Centers[r] | c.left (default : S) ∈ U₀[P]})
-    p hnodal hD d hmark Q.isPerfPair_auxiliaryPicardForm.separatingRight hd hc ρ
-    (fun w ↦ (End.asHom w).centerPoint_endpoints_mem_noncollision P hker) ?_
-  intro w
-  obtain ⟨R, -, _, hmodels⟩ := exists_realize_signed_loop (End.asHom w) P Q
-    hform hcharge M hmodels hmodel hD hnef hsq hprim d hmark
-  exact ⟨R, hρ w R (fun x ↦ (hmodels x).nonempty_contractedToricFiber)⟩
+  -- Descent and faithfulness use the same realizations over the noncollision opens.
+  choose R hη _ htarget using fun w : Loops[E] ↦
+    exists_realize_signed_loop (End.asHom w) P Q hform hcharge M hmodels
+      href hD hnef hsq hprim d hmark
+  have htargets (w : Loops[E]) : Models[M,Cw[End.asHom w,P]] :=
+    fun x ↦ (htarget w x).nonempty_contractedToricFiber
+  let : PreirreducibleSpace Centers[r].left :=
+    inferInstanceAs (PreirreducibleSpace (scheme ℂ (Fin r → ℤ)))
+  obtain ⟨ρ, hρ, huniq⟩ := existsUnique_signedPicardHom_of_realizations (E := E) d hD hmark
+    Q.complete (Q.inclusion_injective href) hindex (centers := fun c : Point Centers[r] ↦ χ[c])
+    (fun w ↦ ⟨_, inferInstance, inferInstance, R w, hη w, htargets w⟩)
+  have hsign : ((sign H d).comp ρ).ker.unop = (clusterModularGroupInclusion ℂ E).range := by
+    rw [range_clusterModularGroupInclusion ℂ E
+      (Q.exchangeMatrix_ne_zero_of_chargeIndex_ne_zero P hform hcharge hindex)]
+    ext g
+    obtain ⟨w, rfl⟩ := signedClusterModularGroupMap_surjective ℂ E g
+    simpa only [Subgroup.mem_unop, MonoidHom.mem_ker, MonoidHom.comp_apply,
+      signedInversionSign_apply] using Iff.of_eq (congrArg (· = 1) (hρ w).1)
+  have haction : IsSignedPicardAction Q M hD hmark ρ :=
+    { sign_apply_word := fun w ↦ (hρ (End.of w)).1
+      apply_of_realization := fun w ↦ (hρ (End.of w)).2
+      sign_ker_unop := hsign }
+  refine ⟨ρ, ⟨haction, ?_⟩, ?_⟩
+  · choose p hnodal using fun c hc ↦ (models c hc).exists_isNodalContraction (hD c)
+    have hd : Function.Injective d := by
+      rw [← funext (hmark c₀)]
+      exact (M c₀).boundaryClass_injective_of_nef_square_zero (hD c₀) hnef hsq
+    let : Q.fan.algebraicRealization.IsProjectiveOver ℂ :=
+      Q.fan.isProjectiveOver_algebraicRealization_of_isComplete Q.regular Q.complete b
+    let : SmoothOfRelativeDimension 2 (Q.fan.algebraicRealization ↘ S) := smooth_fan Q
+    let : H.IsPerfPair := (M c₀).isPerfPair_of_isRationalOver
+    obtain ⟨c⟩ := nonempty_centerPoint (T₀ := Centers[r]) (T₁ := Centers[r]) Cnil[P]
+    refine ker_eq_bot_of_realized_actions Q
+      (U := {c : Point Centers[r] | c.left (default : S) ∈ U₀[P]})
+      p hnodal hD d hmark Q.isPerfPair_auxiliaryPicardForm.separatingRight hd
+      (Path.nil.centerPoint_endpoints_mem_noncollision P hker c).2 ρ
+      (fun w ↦ (End.asHom w).centerPoint_endpoints_mem_noncollision P hker)
+      (fun w ↦ ⟨R w, (hρ w).2 (R w) (htargets w)⟩)
+  · intro ρ' hρ'
+    exact huniq ρ' (fun w ↦ ⟨hρ'.1.sign_apply_word (End.asHom w),
+      hρ'.1.apply_of_realization (End.asHom w)⟩)
 
 end QPainleve.SignedClusterModularGroup.GeometricRealization
