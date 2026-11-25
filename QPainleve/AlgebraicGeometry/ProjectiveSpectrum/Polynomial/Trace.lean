@@ -411,4 +411,14 @@ def polynomialPlaneCanonicalTrace :
   (cohomologyBaseLinearEquivOfIso R (differentialFormsTwoIsoTwistingSheaf R) 2).trans
     (polynomialPlaneTwistingTraceEquiv R)
 
+/-- In canonical-bundle cohomology, the class corresponding to the reciprocal
+coordinate product still has trace one. -/
+@[simp]
+theorem polynomialPlaneCanonicalTrace_inverseCoordinateProduct :
+    polynomialPlaneCanonicalTrace R
+      ((cohomologyBaseLinearEquivOfIso R (differentialFormsTwoIsoTwistingSheaf R) 2).symm
+        (polynomialPlaneCechClass R (T) (polynomialPlaneInverseCoordinateProduct R))) = 1 := by
+  simp only [polynomialPlaneCanonicalTrace, LinearEquiv.trans_apply, LinearEquiv.apply_symm_apply,
+    polynomialPlaneTwistingTraceEquiv_inverseCoordinateProduct]
+
 end AlgebraicGeometry.Proj

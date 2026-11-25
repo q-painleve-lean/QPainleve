@@ -9,6 +9,7 @@ public import QPainleve.AlgebraicGeometry.Blowup.Point.CanonicalCohomology
 public import QPainleve.AlgebraicGeometry.Blowup.Tower.Point
 
 import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
+import QPainleve.AlgebraicGeometry.Modules.Differentials.Cohomology
 
 /-!
 # Canonical cohomology along towers of point blowups
@@ -16,6 +17,8 @@ import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
 The comparison on canonical cohomology composes along a specified tower of closed point
 blowups, including towers with infinitely near centers. In degree two its inverse
 transports a trace from the original surface to the blown-up model.
+A specified common resolution identifies the canonical cohomology of the
+two base surfaces through the top-form pullbacks on both sides.
 -/
 
 public noncomputable section
@@ -78,5 +81,25 @@ def cohomologyCanonicalBundleLinearEquiv
   cohomologyCanonicalBundleLinearEquivOfComp k hT q (Z ↘ Spec (.of k))
     (comp_over T.toBase (Spec (.of k))).symm
     (comp_over T.toBase (Spec (.of k)) ▸ hT.smoothOfRelativeDimension (X ↘ Spec (.of k)))
+
+/-- The canonical cohomology comparison through a specified common resolution of two
+smooth surfaces by towers of closed point blowups. -/
+def cohomologyCanonicalBundleLinearEquivOfCommonResolution
+    {Y W : Scheme.{u}} {m : ℕ} {U : BlowupTower Y m W}
+    [Y.Over (Spec (.of k))] [SmoothOfRelativeDimension 2 (Y ↘ Spec (.of k))]
+    (hT : IsClosedPointTower X T) (hU : IsClosedPointTower Y U) (e : W ≅ Z)
+    (he : e.hom ≫ T.toBase ≫ X ↘ Spec (.of k) = U.toBase ≫ Y ↘ Spec (.of k)) (q : ℕ) :
+    Cohomology (canonicalBundle k X 2).obj q ≃ₗ[k] Cohomology (canonicalBundle k Y 2).obj q := by
+  let S := Spec (CommRingCat.of k)
+  let : Z.Over S := ⟨T.toBase ≫ X ↘ S⟩
+  let : W.Over S := ⟨U.toBase ≫ Y ↘ S⟩
+  let : T.toBase.IsOver S := ⟨rfl⟩
+  let : U.toBase.IsOver S := ⟨rfl⟩
+  let : e.hom.IsOver S := ⟨he⟩
+  let : SmoothOfRelativeDimension 2 (Z ↘ S) := hT.smoothOfRelativeDimension (X ↘ S)
+  let : SmoothOfRelativeDimension 2 (W ↘ S) := hU.smoothOfRelativeDimension (Y ↘ S)
+  exact (hT.cohomologyCanonicalBundleLinearEquiv k q).trans
+    ((e.hom.cohomologyCanonicalBundleLinearEquivOfIsIso k 2 q).trans
+      (hU.cohomologyCanonicalBundleLinearEquiv k q).symm)
 
 end QPainleve.BlowupTower.IsClosedPointTower
