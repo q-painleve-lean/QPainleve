@@ -11,6 +11,7 @@ public import QPainleve.AlgebraicGeometry.Chow.CurveCone
 public import QPainleve.AlgebraicGeometry.Chow.Nef.Basic
 public import QPainleve.AlgebraicGeometry.Curves.Node.CycleAction
 public import QPainleve.AlgebraicGeometry.Curves.Node.NumberedPrime
+public import QPainleve.AlgebraicGeometry.Curves.Node.Period.PairIso
 public import QPainleve.AlgebraicGeometry.Curves.Node.Period.Restriction
 public import QPainleve.Geometry.Toric.Fan.Presentation.Basic
 
@@ -140,11 +141,8 @@ is induced by a pair isomorphism with the given action on the ordered branches. 
 theorem exists_pair_iso_of_root_free_signed_boundary_period_of_toric_presentation
     (hpres : D.HasToricPresentation g(X) b i)
     {H : LineBundleClass Y} (hH : H.IsAmple) (hGH : (G (Additive.ofMul H)).toMul.IsAmple) :
-    ∃ (a : X ≅ Y) (aB : D.subscheme ≅ E.subscheme) (haB : aB.hom.IsOver S),
-      a.hom ≫ g(Y) = g(X) ∧ E.comap a.hom = D ∧
-      aB.hom ≫ E.subschemeι = D.subschemeι ≫ a.hom ∧
-      (∀ L : LineBundleClass Y, pullback a.hom L = (G (Additive.ofMul L)).toMul) ∧
-      (letI := haB; aB.boundaryCycleAction (k := ℂ) A C = act) := by
+    Nonempty (SignedTorelliPairIso (D := D) (E := E) A C
+      (fun L ↦ (G (Additive.ofMul L)).toMul) act) := by
   -- The inverse of the prescribed pullback transports the source contraction.
   obtain ⟨Φ, hΦ, hc, r, s, c, m, W, T, hT, a, ha, hB, hdistinct, hcenters, v, hv⟩ :=
     D.exists_toric_contraction_of_root_free_presentation hpres hD hcanD hrootD
@@ -242,11 +240,8 @@ theorem exists_pair_iso_of_root_free_signed_boundary_period_of_toric_presentatio
     (hpres : D.HasToricPresentation g(X) b i)
     (hnefD : (K(X))⁻¹.IsNef ℂ g(X)) (hnefE : (K(Y))⁻¹.IsNef ℂ g(Y))
     (hsq : Chow.classIntersectionNumber ℂ Y (K(Y))⁻¹ (K(Y))⁻¹ = 0) :
-    ∃ (a : X ≅ Y) (aB : D.subscheme ≅ E.subscheme) (haB : aB.hom.IsOver S),
-      a.hom ≫ g(Y) = g(X) ∧ E.comap a.hom = D ∧
-      aB.hom ≫ E.subschemeι = D.subschemeι ≫ a.hom ∧
-      (∀ L : LineBundleClass Y, pullback a.hom L = (G (Additive.ofMul L)).toMul) ∧
-      (letI := haB; aB.boundaryCycleAction (k := ℂ) A C = act) := by
+    Nonempty (SignedTorelliPairIso (D := D) (E := E) A C
+      (fun L ↦ (G (Additive.ofMul L)).toMul) act) := by
   let : IsReduced D.subscheme :=
     (PrestableFamily.atWorstNodalOfRelativeDimensionOne (f := g(D.subscheme))).isReduced
   let : IsReduced E.subscheme :=

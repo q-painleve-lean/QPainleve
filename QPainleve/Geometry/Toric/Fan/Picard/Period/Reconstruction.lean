@@ -5,6 +5,7 @@ Authors: The QPainleve contributors
 -/
 module
 
+public import QPainleve.AlgebraicGeometry.Curves.Node.Period.PairIso
 public import QPainleve.Geometry.Toric.Fan.Picard.Period.Alignment
 public import QPainleve.Geometry.Toric.Fan.TorusAction.Orientation.Basic
 
@@ -107,11 +108,7 @@ theorem exists_iso_of_eq_period_of_matching_picard_markings
     (hρ : p (prime[c] ρ).val = D.subschemeι (A.componentGenericPoint 0))
     (hρ' : q (prime[d] ρ).val =
       E.subschemeι (B.componentGenericPoint (DihedralGroup.cycleVertexPerm act 0))) :
-    ∃ (a : X ≅ Y) (aB : D.subscheme ≅ E.subscheme) (haB : aB.hom.IsOver S),
-      a.hom ≫ (Y ↘ S) = (X ↘ S) ∧ E.comap a.hom = D ∧
-      aB.hom ≫ E.subschemeι = D.subschemeι ≫ a.hom ∧
-      (∀ L : LineBundleClass Y, pullback a.hom L = G L) ∧
-      (letI := haB; aB.boundaryCycleAction A B = act) := by
+    Nonempty (SignedTorelliPairIso (D := D) (E := E) A B G act) := by
   have : IsReduced D.subscheme :=
     (PrestableFamily.atWorstNodalOfRelativeDimensionOne (f := D.subscheme ↘ S)).isReduced
   have : IsReduced E.subscheme :=
@@ -130,9 +127,11 @@ theorem exists_iso_of_eq_period_of_matching_picard_markings
       (haMark L).trans (hPic L).symm
   obtain ⟨aB, haB⟩ := E.exists_iso_of_comap_eq_ker a D.subschemeι
     (haD.trans D.ker_subschemeι.symm)
+  let : a.hom.IsOver S := ⟨haOver⟩
   let hover : aB.hom.IsOver S := ⟨by
     rw [E.over_eq_subschemeι_comp, reassoc_of% haB, haOver, D.over_eq_subschemeι_comp]⟩
-  refine ⟨a, aB, hover, haOver, haD, haB, haPic, ?_⟩
+  suffices hAction : aB.boundaryCycleAction A B = act from
+    ⟨SignedTorelliPairIso.ofIsos a aB haB haPic hAction⟩
   cases act with
   | r j =>
     have hsign : (1 : ℤˣ) ≠ -1 := by decide

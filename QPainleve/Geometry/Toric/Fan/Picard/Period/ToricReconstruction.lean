@@ -147,11 +147,8 @@ theorem exists_iso_of_signed_boundary_period_of_toric_presentations
     (hj : f (C.componentGenericPoint j) = A.componentGenericPoint 0)
     (hj' : g (C'.componentGenericPoint j) =
       A'.componentGenericPoint (DihedralGroup.cycleVertexPerm act 0)) :
-    ∃ (a : X ≅ Y) (aB : D.subscheme ≅ E.subscheme) (haB : aB.hom.IsOver S),
-      a.hom ≫ (Y ↘ S) = (X ↘ S) ∧ E.comap a.hom = D ∧
-      aB.hom ≫ E.subschemeι = D.subschemeι ≫ a.hom ∧
-      (∀ L : LineBundleClass Y, pullback a.hom L = (G (Additive.ofMul L)).toMul) ∧
-      (letI := haB; aB.boundaryCycleAction A A' = act) := by
+    Nonempty (SignedTorelliPairIso (D := D) (E := E) A A'
+      (fun L ↦ (G (Additive.ofMul L)).toMul) act) := by
   have hu j := And.intro (hdet j) ((hnodes j).imp fun _ h ↦ And.intro h.1 h.2.1)
   obtain ⟨F, ⟨hF, -, t, ht, htB, hmark⟩, -⟩ :=
     exists_common_toric_presentation_of_picard_isometry b b' s s' (center c) (center d)
