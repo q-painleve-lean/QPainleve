@@ -407,4 +407,30 @@ theorem rotationWord_comp_rotationWord_tropical_boundaryOrders (j : Fin 8) :
   rw [h, h, add_assoc]
   rfl
 
+open CategoryTheory in
+/-- The tropical point action of `T` moves each octagon ray back two positions. -/
+theorem translationWord_tropical_boundaryOrders (j : Fin 8) :
+    Equiv.toFun ((Paths.lift (tropicalPrefunctor (A := ℤ) (Fin 4))).map translationWord)
+      (boundaryOrders j) = boundaryOrders (j - 2) := by
+  simp only [translationWord, Equiv.toFun_as_coe, tropical_map_cons_apply, Paths.lift_nil,
+    SingleObj.id_as_one, Equiv.Perm.one_apply, Step.tropical_apply]
+  funext i
+  simp only [Generator.tropical_permute_apply]
+  fin_cases i <;>
+    norm_num [Equiv.Perm.mul_apply, Equiv.swap_apply_def, Generator.tropical_mutate_of_ne,
+      mutate_zero_matrix_col_two, exchangeMatrix_matrix]
+  all_goals revert j; decide
+
+open CategoryTheory in
+/-- The tropical point action of `π₁` reflects the octagon by `j ↦ 6 - j`. -/
+theorem reflectionWord_tropical_boundaryOrders (j : Fin 8) :
+    Equiv.toFun ((Paths.lift (tropicalPrefunctor (A := ℤ) (Fin 4))).map reflectionWord)
+      (boundaryOrders j) = boundaryOrders (6 - j) := by
+  simp only [reflectionWord, Equiv.toFun_as_coe, tropical_map_cons_apply, Paths.lift_nil,
+    SingleObj.id_as_one, Equiv.Perm.one_apply, Step.tropical_apply]
+  funext i
+  simp only [Generator.tropical_permute_apply, Generator.tropical_invert_apply]
+  revert j i
+  decide
+
 end QPainleve.FourVertex
