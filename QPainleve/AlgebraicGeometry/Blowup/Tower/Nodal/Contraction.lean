@@ -12,6 +12,7 @@ public import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.ProjectiveOver
 
 import QPainleve.AlgebraicGeometry.Blowup.StrictTransform.Contraction
 import QPainleve.AlgebraicGeometry.Blowup.StrictTransform.Reduced
+import QPainleve.AlgebraicGeometry.Blowup.Tower.BoundaryPrimes
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Contraction
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Modification
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Nodal.InternalCurve
@@ -126,18 +127,6 @@ variable {k : Type u} [Field k] [PerfectField k] {X Y V W : Scheme.{u}}
   {m n : ℕ} {T : BlowupTower X m V} {U : BlowupTower Y n W}
   {D : X.IdealSheafData} {E : Y.IdealSheafData}
 
-private theorem toBase_mem_centre_iff_of_mem_boundaryPrimes
-    (hT : IsNodalBoundaryTower D f (𝟙 X) T) [QuasiCompact f] {x : V}
-    (hx : x ∈ (D.comap T.toBase).boundaryPrimes) :
-    T.toBase x ∈ T.toBase.centre ↔ T.toBase x ∉ D.boundaryPrimes := by
-  have : Smooth f := SmoothOfRelativeDimension.smooth 2 f
-  have : IsRegular X := IsRegular.of_smooth f
-  have : IsNoetherian X := isNoetherian_of_finiteType f
-  have : IsIntegral V := hT.isClosedPointTower.isIntegral f
-  have := hT.isClosedPointTower.isModification_of_smoothOfRelativeDimension_two f
-  rw [Scheme.Hom.centre_def, Set.mem_compl_iff, SetLike.mem_coe]
-  exact not_congr (D.mem_boundaryPrimes_iff_mem_isoLocus_of_mem_boundaryPrimes_comap _ hx).symm
-
 /-- An isomorphism of two nodal models descends uniquely when the upper boundary
 supports match and every surviving boundary prime on either side survives on the
 other. The descended isomorphism identifies the reduced boundary ideals. -/
@@ -149,6 +138,10 @@ theorem existsUnique_iso_of_eq_surviving_boundaryPrimes
     (hkeep : ∀ x ∈ (D.comap T.toBase).boundaryPrimes,
       T.toBase x ∈ D.boundaryPrimes ↔ U.toBase (e.hom x) ∈ E.boundaryPrimes) :
     ∃! a : X ≅ Y, T.toBase ≫ a.hom = e.hom ≫ U.toBase ∧ a.hom ≫ g = f ∧ E.comap a.hom = D := by
+  have : Smooth f := SmoothOfRelativeDimension.smooth 2 f
+  have : Smooth g := SmoothOfRelativeDimension.smooth 2 g
+  have : IsNoetherian X := isNoetherian_of_finiteType f
+  have : IsNoetherian Y := isNoetherian_of_finiteType g
   have hs (x : V) : x ∈ (D.comap T.toBase).support ↔ e.hom x ∈ (E.comap U.toBase).support := by
     rw [hsupp, support_comap]
     rfl
@@ -164,8 +157,8 @@ theorem existsUnique_iso_of_eq_surviving_boundaryPrimes
     · have hp := mem_boundaryPrimes.mpr ⟨hb, hx⟩
       have hq := mem_boundaryPrimes.mpr
         ⟨(hs x).mp hb, (coheight_eq_of_isOpenImmersion e.hom).trans hx⟩
-      rw [hT.toBase_mem_centre_iff_of_mem_boundaryPrimes hp,
-        hU.toBase_mem_centre_iff_of_mem_boundaryPrimes hq, hkeep x hp]
+      rw [hT.isClosedPointTower.toBase_mem_centre_iff_notMem_boundaryPrimes f hp,
+        hU.isClosedPointTower.toBase_mem_centre_iff_notMem_boundaryPrimes g hq, hkeep x hp]
     · exact iff_of_false (hnot hT.boundaryCompl_le_isoLocus hb)
         (hnot hU.boundaryCompl_le_isoLocus (fun h ↦ hb ((hs x).mpr h)))
   obtain ⟨a, ⟨ha, haOver⟩, hu⟩ :=
