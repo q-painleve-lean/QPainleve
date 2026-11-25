@@ -8,8 +8,6 @@ module
 public import Mathlib.GroupTheory.Coset.Basic
 public import Mathlib.LinearAlgebra.Reflection
 public import QPainleve.SignedClusterModularGroup.Boundary.Isometry
-public import TauCeti.Algebra.Module.Primitive
-public import TauCeti.LinearAlgebra.BilinearForm.Characteristic
 import QPainleve.SignedClusterModularGroup.BoundaryCycle
 import QPainleve.SignedClusterModularGroup.Faithfulness
 
@@ -228,37 +226,25 @@ theorem exists_signedOrthogonalRestriction_eq_reflection [Module.Free ℤ L] [Mo
   classical
   have hδ : δ ∈ K := Submodule.mem_orthogonalBilin_span.mpr
     (by rintro _ ⟨i, rfl⟩; exact (hSymm.eq _ _).trans (BoundaryCycle.pairing_sum hGram i))
-  have hEven (x : L) : Even (B x x - B x δ) := by
-    rw [even_iff_two_dvd, dvd_sub_comm, hSymm.eq x δ]
-    exact (BilinForm.isCharacteristic_iff.mp hCharacteristic) x
-  have hPrimitive' : ∃ ℓ : L →ₗ[ℤ] ℤ, ℓ δ = 1 := by
-    have hscalar : scalar = AddCommGroup.toIntModule L := Subsingleton.elim _ _
-    rw [hscalar]
-    exact TauCeti.isPrimitive_def.mp hPrimitive
-  obtain ⟨j₀, f, g, _, hfD, hgInv, _, _, hgD, hgK⟩ :=
-    exists_cycle_reversing_involution L B hSymm (IsPerfPair.bijective_left B) n D
-      hGram hPrimitive' hEven
-  let hrev : ∃ k : ZMod n, ∀ j, g (D j) = D (-j + k) :=
-    ⟨2 * j₀, fun j ↦ by simpa only [sub_eq_neg_add] using hgD j⟩
-  let ℓ : K →ₗ[ℤ] ℤ := (2 : ℤ) • (B.flip f).comp (K).subtype
-  have hℓ_eval (x : K) : ℓ x = 2 * B x f := by simp [ℓ]
+  obtain ⟨r⟩ := nonempty_cycleReversingInvolution B D hSymm hGram hPrimitive hCharacteristic
+  let ℓ : K →ₗ[ℤ] ℤ := (2 : ℤ) • (B.flip r.cutClass).comp (K).subtype
+  have hℓ_eval (x : K) : ℓ x = 2 * B x r.cutClass := by simp [ℓ]
   have hℓ : ℓ ⟨δ, hδ⟩ = 2 := by
-    have hfδ : B f δ = 1 := by simp [map_sum, hfD]
-    have hδf : B δ f = 1 := (hSymm.eq δ f).trans hfδ
+    have hfδ : B r.cutClass δ = 1 := by simp [map_sum]
+    have hδf : B δ r.cutClass = 1 := (hSymm.eq _ _).trans hfδ
     simp only [hℓ_eval, hδf, mul_one]
-  have hr : (ρ (reversal g hrev)).val = Module.reflection hℓ := by
+  have hr : (ρ r.element).val = Module.reflection hℓ := by
     apply LinearEquiv.ext
     intro x
     apply Subtype.ext
-    have hx (j : ZMod n) : B x (D j) = 0 :=
-      (hSymm.eq _ _).trans (B.mem_orthogonal_iff.mp x.property _ (Submodule.subset_span
-        (Set.mem_range_self j)))
-    have hrev_apply : ((ρ (reversal g hrev)).val x : L) = -g x := by
+    have hnegative : ((ρ r.element).val x : L) = -(toIsometry B D r.element).val x := by
+      rw [coe_signedOrthogonalRestriction_apply, sign_apply, r.sign_element]
       simp [Units.smul_def]
-    rw [hrev_apply, hgK x hx, neg_add_rev, neg_neg, neg_add_eq_sub, Module.reflection_apply,
+    rw [hnegative, toIsometry_apply, r.toIsometry_apply_orthogonal x x.property,
+      neg_add_rev, neg_neg, neg_add_eq_sub, Module.reflection_apply,
       hℓ_eval, Submodule.coe_sub, Submodule.coe_smul]
     exact congrArg ((x : L) - ·) (int_smul_eq_zsmul scalar _ _).symm
-  refine ⟨hδ, f, reversal g hrev, hℓ, by simp, reversal_mul_self g hrev hgInv, hr, ?_⟩
+  refine ⟨hδ, r.cutClass, r.element, hℓ, by simp, r.element_mul_self, hr, ?_⟩
   intro x
   rw [hr, Module.reflection_apply, map_sub, sub_eq_self, ← LinearMap.mem_ker, Submodule.ker_mkQ]
   exact Submodule.smul_mem _ _ (Submodule.mem_span_singleton_self _)

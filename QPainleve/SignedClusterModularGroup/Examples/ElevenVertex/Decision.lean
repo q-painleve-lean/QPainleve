@@ -95,7 +95,7 @@ private theorem xPullback_eq_iff_columns (w v : Word B B) :
   let : Module.Finite ℤ (Additive (LineBundleClass X)) := X.finite_picard_of_isRationalOver ℂ
   let ePic := (Module.finBasis ℤ (Additive (LineBundleClass X))).equivFun.symm
   let μ := ((Chow.intersectionBilinForm ℂ X).isometryEquivOfCompLinearEquiv ePic).symm
-  obtain ⟨b', Q, c, g, hframe, ⟨hfan, hrays⟩, href⟩ :=
+  obtain ⟨b', ⟨Q, c, g, href⟩, hframe, ⟨hfan, hrays⟩⟩ :=
     exists_marked_reference_fiber_of_ordered_towers
       (Fan.isRegular_projectiveSpace b hi) hc planeCenterRay (fun _ ↦ 1)
       hT e hbase hker hD A' μ

@@ -5,11 +5,10 @@ Authors: The QPainleve contributors
 -/
 module
 
-public import QPainleve.AlgebraicGeometry.Chow.Cremona
-public import QPainleve.SignedClusterModularGroup.Realization.Presentation.Identification
+public import QPainleve.SignedClusterModularGroup.Realization.Presentation.Cremona.Identification
 
 import QPainleve.Geometry.Toric.Fan.Presentation.Canonical
-import QPainleve.SignedClusterModularGroup.Boundary.Cremona
+import QPainleve.SignedClusterModularGroup.Realization.Presentation.Identification
 
 /-!
 # Cremona isometries from ordered toric presentations
@@ -17,27 +16,21 @@ import QPainleve.SignedClusterModularGroup.Boundary.Cremona
 For an ordered toric presentation of a primitive nef square-zero anticanonical
 cycle without internal `(-2)` curves, Picard pullback projects the opposite
 signed cluster modular group onto the Cremona isometries of the original
-surface. The group identification
-`exists_picardGroupEquivs_of_toric_presentation` fixes the original Picard
-lattice, and `Scheme.NodalCycleNumbering.cremonaProjection`
-identifies the image. With one or two boundary components, the signed group
-retains the branch sign and the unsigned group identifies with the Cremona group.
+surface. The identification records the marked family and the specified
+toric data. With one or two boundary components, the signed group retains
+the branch sign and the unsigned group identifies with the Cremona group.
 -/
 
 public section
 
-open AlgebraicGeometry CategoryTheory Module MulOpposite Quiver
-open QPainleve.BlowupTower QPainleve.CharacterTorus QPainleve.Cluster
-open QPainleve.SignedBoundaryIsometryGroup
+open AlgebraicGeometry CategoryTheory Module
+open QPainleve.BlowupTower QPainleve.CharacterTorus
 open Scheme Scheme.IdealSheafData TauCeti TauCeti.AlgebraicGeometry TauCeti.Toric
 
 namespace QPainleve.SignedClusterModularGroup
 
-open GeometricRealization
-
 local notation "S" => Spec (CommRingCat.of ℂ)
 local notation "Centers[" r "]" => Over.mk (structureMap ℂ (Fin r → ℤ))
-local notation "XTor[" r "]" => scheme ℂ (Fin r →₀ ℤ)
 local notation "δ[" h "]" => (LineBundleClass.mk (IsEffectiveCartier.toInvertibleSheaf h))⁻¹
 local notation "χ[" c "]" => pointsEquiv ℂ _ (Subtype.mk (Over.Hom.left c) (Over.w c))
 local notation "parameters[" c "]" => (fun j ↦ χ[c] (Multiplicative.ofAdd (Pi.single j 1)))
@@ -52,25 +45,6 @@ variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
 local instance instIntegralOrderedCremona : IsIntegral X := by
   let : Smooth (X ↘ S) := SmoothOfRelativeDimension.smooth 2 _
   exact Scheme.IsRationalOver.isIntegral_of_smooth (f := X ↘ S) inferInstance
-
-local notation "Pic" => Additive (LineBundleClass X)
-local notation "L" => (Fin (Module.finrank ℤ Pic) → ℤ)
-local notation "B" => Chow.intersectionBilinForm ℂ X
-local notation "Cr" => Chow.cremonaIsometryGroup ℂ X
-local notation "classes[" A "," hD "]" =>
-  (fun j ↦ Additive.ofMul (LineBundleClass.primeDivisorClass
-    (D.boundaryPrimeEmbedding (Scheme.NodalCycleNumbering.boundaryPrimeEquiv A hD j))))
-
-local notation "Models[" b₀ "," Q "," M "," C "]" =>
-  HasToricTargetModels (T₀ := Centers[r]) (T₁ := Centers[r]) (b := b₀)
-    (s := CompleteToricPresentation.rays Q)
-    (hΦ := CompleteToricPresentation.regular Q) (T := CompleteToricPresentation.cycle Q)
-    (origin := CompleteToricPresentation.origin Q) (ι := CompleteToricPresentation.inclusion Q)
-    (P₁ := M) (fun z : Point Centers[r] ↦ χ[z]) C
-
-local notation "Γ[" E "]" => (ClusterModularGroup ℂ E)ᵐᵒᵖ
-local notation "Γs[" E "]" => (SignedClusterModularGroup ℂ E)ᵐᵒᵖ
-local notation "incl[" E "]" => MonoidHom.op (clusterModularGroupInclusion ℂ E)
 
 /-- The opposite signed cluster modular group of specified ordered toric and
 nodal blowup towers projects onto the Cremona isometries of the original surface
@@ -98,33 +72,10 @@ theorem exists_cluster_cremona_equivs_of_toric_presentation
     (∀ p : CodimensionOnePoint X, Disjoint (closure {(p : X)}) D.support →
       Chow.classIntersectionNumber ℂ X (LineBundleClass.primeDivisorClass p)
         (LineBundleClass.primeDivisorClass p) ≠ -2) →
-    ∃ (H : LinearMap.BilinForm ℤ L) (μ : H.IsometryEquiv B)
-      (b' : Basis (Fin 2) ℤ N) (Q : CompleteToricPresentation i b' r L Empty),
-    letI := Q.complete.nonempty_cones
-    letI := Q.prestable
-    letI := Q.neZero
-    ∃ (c : Point Centers[r]) (f : X ⤏ XTor[r]) (E : SkewExchangeMatrix (Fin r))
-      (M : Point Centers[r] → MarkedSurface ℂ n H XTor[r])
-      (φ : Γs[E] →* Cr) (η : Γs[E] →* ℤˣ),
-      ((b' = b ∧ parameters[c] = u) ∨
-        (b' = b.reindex (Equiv.swap 0 1) ∧ parameters[c] = u⁻¹)) ∧
-      (∃ hfan : Q.fan = Φ, hfan ▸ Q.rays = s) ∧
-      E.matrix = chargeExchangeMatrix b'.detDualEquiv.toLinearMap (Fan.rayChargeMap Q.rays) ∧
-      M c = MarkedSurface.ofBoundary D A μ f ∧ (∀ z, Q.HasNodalModel z (M z)) ∧
-      Function.Surjective φ ∧
-      (∀ (w : Word E E),
-        let x := op (signedClusterModularGroupMap ℂ E (End.of w))
-        η x = (-1 : ℤˣ) ^ w.inversionCount ∧
-        ∀ {C : Centers[r].left.PartialMap Centers[r].left} [IsDominant C.hom]
-          [C.IsOver Centers[r].hom Centers[r].hom]
-          (R : GeometricRealization M M C (w.xRationalMap ℂ)), Models[b',Q,M,C] →
-          ((φ x).val, η x) =
-            (μ.isometryGroupCongr (H.isometryGroupEquivIsometryEquiv.symm R.picard),
-              R.orientation)) ∧
-      η.ker.unop = (clusterModularGroupInclusion ℂ E).range ∧
-      (3 ≤ n → ∃ g : Γs[E] ≃* Cr, g.toMonoidHom = φ) ∧
-      (n ≤ 2 → ∃ (g : Γs[E] ≃* Cr × ℤˣ) (g₀ : Γ[E] ≃* Cr),
-        (∀ x, g x = (φ x, η x)) ∧ ∀ x, g (incl[E] x) = (g₀ x, 1)) := by
+    ∃ P : CremonaGroupIdentification i r A hD,
+      ((P.picard.basis = b ∧ parameters[P.picard.center] = u) ∨
+        (P.picard.basis = b.reindex (Equiv.swap 0 1) ∧ parameters[P.picard.center] = u⁻¹)) ∧
+      ∃ hfan : P.picard.presentation.fan = Φ, hfan ▸ P.picard.presentation.rays = s := by
   let : IsNoetherian X := isNoetherian_of_finiteType (X ↘ S)
   let := (X ↘ S).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two
   intro hroot
@@ -135,35 +86,6 @@ theorem exists_cluster_cremona_equivs_of_toric_presentation
     exact PrestableFamily.atWorstNodalOfRelativeDimensionOne)
   obtain ⟨P, hframe, hrays⟩ :=
     exists_picardGroupEquivs_of_toric_presentation presentation A hD hprim hnef hsq
-  let d := classes[A,hD]
-  let Θ := P.signedEquiv
-  let π := A.cremonaProjection hD hK hnef hsq hroot
-  have hsurj := A.cremonaProjection_surjective hD hK hnef hsq hroot
-  let φ := π.comp Θ.toMonoidHom
-  let η := (sign B d).comp Θ.toMonoidHom
-  refine ⟨P.form, P.marking, P.basis, P.presentation, P.center, P.evaluation, P.exchangeMatrix,
-    P.family, φ, η, hframe, hrays, P.matrix_eq, P.family_center, P.hasNodalModel,
-    hsurj.comp Θ.surjective, ?_, P.sign_ker_unop, ?_, ?_⟩
-  · intro w
-    refine ⟨?_, fun R hR ↦ ?_⟩
-    · simpa only [η, Θ, MonoidHom.comp_apply, MulEquiv.coe_toMonoidHom,
-        SignedBoundaryIsometryGroup.sign_apply] using P.sign_signedEquiv_apply_word w
-    · simpa only [φ, π, η, Θ, MonoidHom.comp_apply, MulEquiv.coe_toMonoidHom,
-        Scheme.NodalCycleNumbering.val_cremonaProjection_apply, toIsometry_apply,
-        SignedBoundaryIsometryGroup.sign_apply, Prod.eta] using P.signedEquiv_apply_word w R hR
-  · intro hn
-    have hinj := A.cremonaProjection_injective hD hK hnef hsq hroot hn
-    exact ⟨MulEquiv.ofBijective φ ⟨hinj.comp Θ.injective, hsurj.comp Θ.surjective⟩, rfl⟩
-  · intro hn
-    let g := Θ.trans (A.signedBoundaryIsometryEquivCremonaProd hD hK hnef hsq hroot hn)
-    let g₀ := P.unsignedEquiv.trans (A.boundaryRotationEquivCremona hD hK hnef hsq hroot hn)
-    have hg (x : Γs[P.exchangeMatrix]) : g x = (φ x, η x) :=
-      A.signedBoundaryIsometryEquivCremonaProd_apply hD hK hnef hsq hroot hn (Θ x)
-    refine ⟨g, g₀, hg, fun x ↦ ?_⟩
-    rw [hg]
-    simp only [g₀, φ, π, η, Θ, MulEquiv.trans_apply, MonoidHom.comp_apply, MulEquiv.coe_toMonoidHom,
-      ← P.rotationInclusion_unsignedEquiv_apply x,
-      Scheme.NodalCycleNumbering.boundaryRotationEquivCremona_apply,
-      SignedBoundaryIsometryGroup.sign_apply, coe_rotationInclusion]
+  exact ⟨⟨P, hK, hnef, hsq, hroot⟩, hframe, hrays⟩
 
 end QPainleve.SignedClusterModularGroup

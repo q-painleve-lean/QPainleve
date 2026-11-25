@@ -17,8 +17,8 @@ import QPainleve.SignedClusterModularGroup.Boundary.Intersection
 The actual numbered components and nodes of a nef square-zero boundary give the
 negative cycle Laplacian in the Picard marking. For a primitive anticanonical
 boundary on a rational surface, the marked lattice then contains an involution
-with negative sign. Its action on the boundary and its orthogonal complement
-are supplied by the integral construction `exists_cycle_reversing_involution`.
+with negative sign. Its actions on the boundary and its orthogonal complement
+are supplied by `SignedBoundaryIsometryGroup.nonempty_cycleReversingInvolution`.
 -/
 
 public section
@@ -142,22 +142,12 @@ theorem exists_marked_boundary_reversing_involution
     (hpair x y).trans ((Chow.classIntersectionNumber_comm _ _).trans (hpair y x).symm)⟩
   have hprimitive : IsPrimitive (δ[hD]) :=
     M.picardMarking.isPrimitive_iff.mp (by rwa [M.picardMarking_sum_boundaryClass])
-  have hchar (x : L) : Even (B x x - B x (δ[hD])) := by
-    rw [even_iff_two_dvd, dvd_sub_comm, hSymm.eq x (δ[hD])]
-    exact (BilinForm.isCharacteristic_iff.mp (M.isCharacteristic_sum_boundaryClass hD hcan)) x
-  obtain ⟨j₀, a, g, haa, ha, hg, hga, hgδ, hgd, hgK⟩ :=
-    exists_cycle_reversing_involution L B hSymm (IsPerfPair.bijective_left B) n d[hD]
-      (M.intersectionForm_boundaryClass hD hnef hsq) (isPrimitive_def.mp hprimitive) hchar
-  have hrev : ∃ t : ZMod n, ∀ j, g (d[hD] j) = d[hD] (-j + t) :=
-    ⟨2 * j₀, fun j ↦ by simpa only [sub_eq_neg_add] using hgd j⟩
-  let s := reversal g hrev
-  have hs : ⇑(toIsometry B d[hD] s).val = ⇑g := by
-    simp only [s, toIsometry_apply, coe_reversal,
-      BilinForm.coe_isometryGroupEquivIsometryEquiv_symm]
-  refine ⟨j₀, a, s, haa, ha, by simp [s], reversal_mul_self g hrev hg, ?_⟩
-  simp only [hs]
-  refine ⟨hga, hgδ, hgd, fun x hx ↦ hgK x fun j ↦ ?_⟩
-  exact (hSymm.eq _ _).trans
-    (B.mem_orthogonal_iff.mp hx _ (Submodule.subset_span (Set.mem_range_self j)))
+  obtain ⟨r⟩ := nonempty_cycleReversingInvolution B d[hD] hSymm
+    (M.intersectionForm_boundaryClass hD hnef hsq) hprimitive
+    (M.isCharacteristic_sum_boundaryClass hD hcan)
+  refine ⟨r.cut, r.cutClass, r.element, r.cutClass_sq, r.pairing_cutClass,
+    by simp, r.element_mul_self, by simp, toIsometry_apply_sum B d[hD] r.element,
+    fun j ↦ by simp, ?_⟩
+  simpa only [toIsometry_apply] using r.toIsometry_apply_orthogonal
 
 end QPainleve.SignedClusterModularGroup.MarkedSurface
