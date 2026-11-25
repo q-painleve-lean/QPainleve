@@ -10,7 +10,6 @@ public import QPainleve.Geometry.Toric.Fan.StarSubdivision.Global
 
 import QPainleve.AlgebraicGeometry.Morphisms.IsoLocus
 import QPainleve.Geometry.Toric.Fan.TwoDimensional
-import QPainleve.SignedClusterModularGroup.SarkisovDegree.ToricLink
 
 /-!
 # Retained corner centers of a toric pivot
@@ -92,8 +91,8 @@ theorem retained_corner_of_toric_link
     have hheadOff : targetCenters (Fin.castAdd n (0 : Fin 1)) ∉ π[t].isoLocus := by
       rw [hhead]
       exact Ψ.notMem_isoLocus_distinguishedPoint_of_blowup hΨ hN τ _ w hw
-    obtain ⟨himage, hf⟩ := first_center_of_toric_link_of_projected_centers s t hheadOff hretained
-      hoff htarget l (hl.trans hsrc.symm) (by simpa only [hsrc, hl] using hfirst)
+    obtain ⟨himage, hf⟩ := (π[s]).first_occurrence_of_projected_points (π[t])
+      hheadOff hretained hoff htarget l (hl.trans hsrc.symm) (by simpa only [hsrc, hl] using hfirst)
     exact ⟨himage.trans htgt, _, Or.inr rfl, himage.trans htgt,
       fun a ha heq ↦ hf a ha (heq.trans himage)⟩
 

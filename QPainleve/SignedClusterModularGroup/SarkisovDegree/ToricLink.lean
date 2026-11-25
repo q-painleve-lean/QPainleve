@@ -142,39 +142,6 @@ theorem exists_hirzebruch_toric_link_resolution
       sub_neg_eq_add, add_comm c β]
     exact toricLink_bidegree_lt β c m hm hbound hhigh
 
-/-- Through the common projections of a toric link, a retained center keeps its
-first occurrence when its common lift projects into both isomorphism loci.
-The target order starts with the reverse pivot and then the retained centers. -/
-theorem _root_.QPainleve.first_center_of_toric_link_of_projected_centers
-    {Ψ F : Fan i} {n : ℕ} (s : F.IsSubdivision Φ) (t : F.IsSubdivision Ψ)
-    {sourceCenters : Fin n → X[Φ]} {targetCenters : Fin (1 + n) → X[Ψ]}
-    (hcorner : targetCenters (Fin.castAdd n (0 : Fin 1)) ∉ t.toFanHom.algebraicMap.isoLocus)
-    (hretained : ∀ k : Fin n, ∃ z : X[F],
-      s.toFanHom.algebraicMap z = sourceCenters k ∧
-      t.toFanHom.algebraicMap z = targetCenters (k.natAdd 1))
-    {z : X[F]} (hs : s.toFanHom.algebraicMap z ∈ s.toFanHom.algebraicMap.isoLocus)
-    (ht : t.toFanHom.algebraicMap z ∈ t.toFanHom.algebraicMap.isoLocus)
-    (l : Fin n) (hl : sourceCenters l = s.toFanHom.algebraicMap z)
-    (hfirst : ∀ k < l, sourceCenters k ≠ s.toFanHom.algebraicMap z) :
-    targetCenters (l.natAdd 1) = t.toFanHom.algebraicMap z ∧
-      ∀ k < l.natAdd 1, targetCenters k ≠ t.toFanHom.algebraicMap z := by
-  obtain ⟨u, hu, hu'⟩ := hretained l
-  have hproj := hu.trans hl
-  have hpt : u = z := s.toFanHom.algebraicMap.injOn_preimage_isoLocus
-    (by rwa [Set.mem_preimage, hproj]) hs hproj
-  refine ⟨hu'.symm.trans (congrArg t.toFanHom.algebraicMap hpt), ?_⟩
-  refine Fin.addCases ?_ ?_
-  · intro k _ he
-    rw [Subsingleton.elim k (0 : Fin 1)] at he
-    exact hcorner (he ▸ ht)
-  · intro k hk he
-    obtain ⟨w, hw, hw'⟩ := hretained k
-    have hproj' := hw'.trans he
-    have hpt' := t.toFanHom.algebraicMap.injOn_preimage_isoLocus
-      (by rwa [Set.mem_preimage, hproj']) ht hproj'
-    exact hfirst k (by simpa only [Fin.lt_def, Fin.val_natAdd, Nat.add_lt_add_iff_left] using hk)
-      (hw.symm.trans (congrArg s.toFanHom.algebraicMap hpt'))
-
 /-- A retained center that is first over its source point is first over its
 target point as well, provided the common point projects into both isomorphism
 loci and the reverse corner lies outside the target isomorphism locus. -/
@@ -194,7 +161,8 @@ theorem first_center_of_toric_link
     (hfirst : ∀ k < l, (I[σ]).blowupToBase (hT.baseCenter k) ≠ s.toFanHom.algebraicMap z) :
     hU.baseCenter (l.natAdd 1) = t.toFanHom.algebraicMap z ∧
       ∀ k < l.natAdd 1, hU.baseCenter k ≠ t.toFanHom.algebraicMap z := by
-  refine first_center_of_toric_link_of_projected_centers s t hcorner (fun k ↦ ?_) hs ht l hl hfirst
+  refine s.toFanHom.algebraicMap.first_occurrence_of_projected_points t.toFanHom.algebraicMap
+    hcorner (fun k ↦ ?_) hs ht l hl hfirst
   refine ⟨v.inv (hT.baseCenter k), ?_, hretained k⟩
   simp only [← hv, Scheme.Hom.comp_apply, Scheme.inv_hom_apply]
 

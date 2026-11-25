@@ -102,6 +102,36 @@ theorem injOn_preimage_isoLocus (f : X ⟶ Y) :
     (morphismRestrict_base_coe f U a).trans (hxy.trans (morphismRestrict_base_coe f U b).symm)
   exact congrArg Subtype.val ((f ∣_ U).isOpenEmbedding.injective hab)
 
+/-- If two point sequences come from common lifts under `f` and `g`, a first
+occurrence over the isomorphism loci of both maps is preserved after prepending
+a point outside the isomorphism locus of `g` to the target sequence. -/
+theorem first_occurrence_of_projected_points (f : X ⟶ Y) (g : X ⟶ Z) {n : ℕ}
+    {sourcePoints : Fin n → Y} {targetPoints : Fin (1 + n) → Z}
+    (hhead : targetPoints (Fin.castAdd n (0 : Fin 1)) ∉ g.isoLocus)
+    (hlifts : ∀ k : Fin n, ∃ z : X,
+      f z = sourcePoints k ∧ g z = targetPoints (k.natAdd 1))
+    {z : X} (hs : f z ∈ f.isoLocus) (ht : g z ∈ g.isoLocus)
+    (l : Fin n) (hl : sourcePoints l = f z)
+    (hfirst : ∀ k < l, sourcePoints k ≠ f z) :
+    targetPoints (l.natAdd 1) = g z ∧
+      ∀ k < l.natAdd 1, targetPoints k ≠ g z := by
+  obtain ⟨u, hu, hu'⟩ := hlifts l
+  have hproj := hu.trans hl
+  have hpt : u = z := f.injOn_preimage_isoLocus
+    (by rwa [Set.mem_preimage, hproj]) hs hproj
+  refine ⟨hu'.symm.trans (congrArg g hpt), ?_⟩
+  refine Fin.addCases ?_ ?_
+  · intro k _ he
+    rw [Subsingleton.elim k (0 : Fin 1)] at he
+    exact hhead (he ▸ ht)
+  · intro k hk he
+    obtain ⟨w, hw, hw'⟩ := hlifts k
+    have hproj' := hw'.trans he
+    have hpt' := g.injOn_preimage_isoLocus
+      (by rwa [Set.mem_preimage, hproj']) ht hproj'
+    exact hfirst k (by simpa only [Fin.lt_def, Fin.val_natAdd, Nat.add_lt_add_iff_left] using hk)
+      (hw.symm.trans (congrArg f hpt'))
+
 /-- The stalk map of a morphism at any point lying over its isomorphism locus is an isomorphism. -/
 theorem isIso_stalkMap_of_mem_isoLocus (f : X ⟶ Y) {x : X}
     (hx : f x ∈ f.isoLocus) : IsIso (f.stalkMap x) := by
