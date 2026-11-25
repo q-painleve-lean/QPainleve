@@ -77,15 +77,6 @@ theorem projectiveLineTorusToAffine_algebraicMap_comp_affineFanIso (k : Fin 2) :
         (projectiveLine.polynomialPoint_rev (algebraMap ℂ L) (0 : Fin 2) (genericUnit ℂ)).symm
   rw [hchart, hzero, projectiveLineTorusIsoSpecLaurent_hom_comp_chart]
 
-/-- The polynomial chart comparison respects the structure morphism over `ℂ`. -/
-@[reassoc (attr := simp)]
-theorem projectiveLineAffineFanIso_hom_comp_toBase (k : Fin 2) :
-    (U[k]).hom ≫ Spec.algebraMap ℂ A = s[k] := by
-  rw [Spec.algebraMap, ← projectiveLine.polynomialChartι_over ℂ k,
-    projectiveLineAffineFanIso_hom_comp_polynomialChartι_assoc,
-    projectiveLineAffineFanι_def, Category.assoc, CategoryTheory.comp_over,
-    Fan.algebraicRealization_over, FanHom.algebraicMap_comp_algebraicRealizationStructureMap]
-
 private theorem isPullback_projectiveLinePolynomialProduct (k : Fin 2) :
     IsPullback (projectiveLine.baseChangeProjection ℂ A)
       ((projectiveLine A ↘ Spec (.of A)) ≫ (U[k]).inv) p s[k] := by

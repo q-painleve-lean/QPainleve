@@ -120,6 +120,16 @@ theorem projectiveLineAffineFanIso_hom_comp_polynomialChartι (k : Fin 2) :
       projectiveLineAffineFanι k := by
   simp [projectiveLineAffineFanIso, IsOpenImmersion.isoOfRangeEq_hom_fac]
 
+/-- The polynomial chart comparison respects the structure morphism over `ℂ`. -/
+@[reassoc (attr := simp)]
+theorem projectiveLineAffineFanIso_hom_comp_toBase (k : Fin 2) :
+    (projectiveLineAffineFanIso k).hom ≫ Spec.algebraMap ℂ (Polynomial ℂ) =
+      Fan.algebraicRealizationStructureMap (projectiveLineAffineFan k) := by
+  rw [Spec.algebraMap, ← projectiveLine.polynomialChartι_over ℂ k,
+    projectiveLineAffineFanIso_hom_comp_polynomialChartι_assoc,
+    projectiveLineAffineFanι_def, Category.assoc, CategoryTheory.comp_over,
+    Fan.algebraicRealization_over, FanHom.algebraicMap_comp_algebraicRealizationStructureMap]
+
 /-- The affine toric chart and the corresponding polynomial chart have the same image. -/
 theorem range_projectiveLineAffineFanι (k : Fin 2) :
     Set.range (projectiveLineAffineFanι k) = Set.range (projectiveLine.polynomialChartι ℂ k) := by
