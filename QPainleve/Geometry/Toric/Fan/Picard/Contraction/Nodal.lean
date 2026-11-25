@@ -75,7 +75,8 @@ and transport its ordered toric exceptional configuration. The target
 auxiliary surface contracts to a smooth projective rational surface with
 anticanonical boundary of complexity zero. The contracted tower retains the
 ordered exceptional classes, and the reduced total boundaries of the paired
-nodal towers retain their oriented subdivisions. -/
+nodal towers retain their oriented subdivisions. Each pair of original components with
+the same number has strict transforms with a common new number. -/
 theorem exists_transported_toric_contraction_of_numbered_nodal_tower
     (hT : IsNodalBoundaryTower D g(X) (𝟙 X) T)
     (hD : D.IsEffectiveCartier) (hF : F.IsEffectiveCartier)
@@ -138,6 +139,8 @@ theorem exists_transported_toric_contraction_of_numbered_nodal_tower
         β(E, D, T).IsOrientedCycleSubdivision A' A ∧
         β(G, F, U).IsOrientedCycleSubdivision C' C ∧
         (∀ j, e' P(E, A'.boundaryPrimeEquiv hE j) = P(G, C'.boundaryPrimeEquiv hG j)) ∧
+        (∀ j, ∃ a, β(E, D, T) (A'.componentGenericPoint a) = A.componentGenericPoint j ∧
+          β(G, F, U) (C'.componentGenericPoint a) = C.componentGenericPoint j) ∧
         ∃ (Z₀ : Scheme) (t : Z₀ ⟶ SpecC) (W₀ : Scheme) (L : BlowupTower Z₀ r W₀)
           (d : W ≅ W₀) (hL : L.IsClosedPointTower Z₀),
           let : Z₀.Over SpecC := ⟨t⟩
@@ -161,8 +164,8 @@ theorem exists_transported_toric_contraction_of_numbered_nodal_tower
   obtain ⟨W, U, hU, hmatch⟩ := exists_matching_numbered_nodal_boundary_tower A C hD hF e hT he
   refine ⟨W, U, hU, ?_⟩
   intro E G _ _ _ _ _ _ _ nd nf hE hG _ _ _ _ _ _ _ _ _ _ _ _ e'
-  obtain ⟨_, _, _, _, A', C', hA', hC', hclasses⟩ := hmatch
-  refine ⟨_, _, _, _, A', C', hA', hC', hclasses, ?_⟩
+  obtain ⟨_, _, _, _, A', C', hA', hC', hclasses, hlift⟩ := hmatch
+  refine ⟨_, _, _, _, A', C', hA', hC', hclasses, hlift, ?_⟩
   let : TopologicalSpace V(Y) := moduleTopology ℝ V(Y)
   let : TopologicalSpace V(W) := moduleTopology ℝ V(W)
   let : IsModuleTopology ℝ V(Y) := ⟨rfl⟩
