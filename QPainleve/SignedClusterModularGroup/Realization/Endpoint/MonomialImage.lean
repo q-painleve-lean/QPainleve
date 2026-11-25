@@ -8,7 +8,6 @@ module
 public import QPainleve.Algebra.Cluster.ChargeKernel.Action
 public import QPainleve.SignedClusterModularGroup.Boundary.Restriction
 public import QPainleve.SignedClusterModularGroup.Realization.Boundary
-public import QPainleve.SignedClusterModularGroup.Realization.Endpoint.BoundaryExponent
 public import QPainleve.SignedClusterModularGroup.Realization.Presentation
 
 import QPainleve.SignedClusterModularGroup.Realization.Anticanonical
