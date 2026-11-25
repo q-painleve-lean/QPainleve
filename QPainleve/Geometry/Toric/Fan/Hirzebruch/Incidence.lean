@@ -5,7 +5,6 @@ Authors: The QPainleve contributors
 -/
 module
 
-public import Mathlib.Data.Fin.Embedding
 public import QPainleve.AlgebraicGeometry.Blowup.Tower.StrictTransform.Incidence
 public import QPainleve.Geometry.Toric.Fan.Picard.Hirzebruch
 public import QPainleve.Geometry.Toric.Fan.Subdivision.StrictTransform
@@ -141,21 +140,8 @@ theorem strictTransformCenterIndices_toric_corner :
     hU.strictTransformCenterIndices (D[hΨ,r']) =
       (Finset.univ.filter fun l : Fin n ↦
         j.succAbove l ∈ hT.strictTransformCenterIndices (D[hΦ,r])).map (Fin.natAddEmb 1) := by
-  have hcoeff := hT.strictTransformCoefficients_toric_corner hU b d a hΦ hΨ r r' hr hr'
-    hΩ s t g e hg hg' hd σ hσ j hj hfirst hmark
-  ext l
-  rw [mem_strictTransformCenterIndices, hcoeff, Finset.mem_map]
-  refine Fin.addCases (fun k ↦ ?_) (fun k ↦ ?_) l
-  · rw [Fin.append_left, Pi.zero_apply, ne_self_iff_false, false_iff]
-    rintro ⟨l, -, hl⟩
-    have h := congrArg Fin.val hl
-    simp only [Fin.natAddEmb_apply, Fin.val_natAdd, Fin.val_castAdd] at h
-    omega
-  · simp only [Fin.append_right, Function.comp_apply, Finset.mem_filter, Finset.mem_univ, true_and]
-    constructor
-    · exact fun hk ↦ ⟨k, (mem_strictTransformCenterIndices ..).mpr hk, rfl⟩
-    · rintro ⟨l, hl, hkl⟩
-      have he : l = k := (Fin.natAddEmb 1).injective hkl
-      exact (mem_strictTransformCenterIndices ..).mp (he ▸ hl)
+  exact hT.strictTransformCenterIndices_eq_map_of_coefficients_eq_append_zero hU j.succAbove
+    (hT.strictTransformCoefficients_toric_corner hU b d a hΦ hΨ r r' hr hr'
+      hΩ s t g e hg hg' hd σ hσ j hj hfirst hmark)
 
 end QPainleve.BlowupTower.IsClosedPointTower
