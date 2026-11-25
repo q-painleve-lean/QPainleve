@@ -6,14 +6,10 @@ Authors: The QPainleve contributors
 module
 
 public import Mathlib.AlgebraicGeometry.Birational.Birational
-public import TauCeti.AlgebraicGeometry.Blowup.IdealSheaf
 public import QPainleve.AlgebraicGeometry.Chow.Isomorphism
 public import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.ProjectiveOver
 
-import QPainleve.AlgebraicGeometry.Blowup.Intersection
-import QPainleve.AlgebraicGeometry.Blowup.Projective.Global
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Factorization
-import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Intersection
 import QPainleve.AlgebraicGeometry.Modules.Differentials.Restriction
 
@@ -28,7 +24,7 @@ mixed intersection because the canonical correction is exceptional.
 
 public section
 
-open AlgebraicGeometry CategoryTheory Scheme.IdealSheafData
+open AlgebraicGeometry CategoryTheory
 open QPainleve
 open TauCeti.AlgebraicGeometry LineBundleClass
 
@@ -71,40 +67,5 @@ theorem classIntersectionNumber_pullback_canonicalBundle_of_birational (f : X �
     rw [pullback_mk, mk_pullback_canonicalBundle]
   rw [← he, ← pullback_comp, ← hK, Chow.classIntersectionNumber_pullback_of_isIso k]
   exact hT.classIntersectionNumber_pullback_canonicalBundle k a
-
-omit [X.IsProjectiveOver k] [IsIntegral X] [IsIntegral Y]
-  [SmoothOfRelativeDimension 2 (X ↘ Spec (.of k))] in
-/-- The intersection formula in pullback and exceptional coordinates, transported
-to the source of a specified closed-point blowdown. -/
-theorem classIntersectionNumber_pointBlowdown (f : X ⟶ Y) [f.IsOver S]
-    {p : Y} (hp : IsClosed ({p} : Set Y)) (e : X ≅ (Y.fromSpecResidueField p).ker.blowup)
-    (he : e.hom ≫ (Y.fromSpecResidueField p).ker.blowupToBase = f)
-    {E : X.IdealSheafData} (hE : E.IsEffectiveCartier)
-    (hF : (Y.fromSpecResidueField p).ker.comap f = E)
-    (a b : LineBundleClass Y) (m n : ℤ) :
-    let c := (LineBundleClass.mk hE.toInvertibleSheaf)⁻¹
-    Chow.classIntersectionNumber k X (pullback f a * c ^ m) (pullback f b * c ^ n) =
-      Chow.classIntersectionNumber k Y a b - m * n := by
-  let I := (Y.fromSpecResidueField p).ker
-  let : I.blowup.Over S := ⟨I.blowupToBase ≫ (Y ↘ S)⟩
-  let : e.hom.IsOver S := ⟨by
-    -- The blowup carries the structure morphism obtained from its projection.
-    change e.hom ≫ I.blowupToBase ≫ (Y ↘ S) = _
-    rw [← Category.assoc, he, comp_over]⟩
-  let : IsNoetherian Y := isNoetherian_of_finiteType (Y ↘ S)
-  have hproj : I.blowup.IsProjectiveOver k := I.isProjectiveOver_blowup_of_isNoetherianRing k
-  let hI := I.isEffectiveCartier_comap_blowupToBase
-  have hIe : (I.comap I.blowupToBase).comap e.hom = E := by
-    rw [← comap_comp, he, hF]
-  have hc : pullback e.hom I.blowupExceptionalClass =
-      (LineBundleClass.mk hE.toInvertibleSheaf)⁻¹ := by
-    rw [blowupExceptionalClass_def, pullback_inv,
-      hI.pullback_mk_toInvertibleSheaf (hIe.symm ▸ hE),
-      mk_toInvertibleSheaf_congr _ hE hIe]
-  have h := Chow.classIntersectionNumber_pointBlowup p k hp a b m n hproj
-  rw [← Chow.classIntersectionNumber_pullback_of_isIso k e.hom] at h
-  dsimp only [I] at hc
-  simpa only [← blowupExceptionalClass_def, pullback_mul, pullback_zpow, hc,
-    pullback_comp, he] using h
 
 end AlgebraicGeometry.Scheme.Hom

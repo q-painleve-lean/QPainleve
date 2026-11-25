@@ -11,6 +11,7 @@ public import QPainleve.AlgebraicGeometry.IntersectionNumber.ExceptionalCurve.Sm
 public import QPainleve.AlgebraicGeometry.IntersectionNumber.Nef
 public import QPainleve.SignedClusterModularGroup.Examples.ElevenVertex.Model
 
+import QPainleve.AlgebraicGeometry.Blowup.Intersection
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Modification
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Projective
 import QPainleve.AlgebraicGeometry.Chow.Birational
