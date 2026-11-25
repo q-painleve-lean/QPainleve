@@ -26,8 +26,9 @@ public section
 
 open AlgebraicGeometry CategoryTheory Multiplicative
 open Module (Basis)
-open Scheme
-open QPainleve.CharacterTorus TauCeti TauCeti.AlgebraicGeometry TauCeti.Toric
+open Scheme Scheme.IdealSheafData
+open QPainleve.CharacterTorus QPainleve.Cluster
+open TauCeti TauCeti.AlgebraicGeometry TauCeti.Toric
 
 namespace QPainleve.SignedClusterModularGroup
 
@@ -86,6 +87,26 @@ theorem HasNodalModel.isRationalOver (h : Q.HasNodalModel c M) :
     IsRationalOver (M.surface ↘ S) := by
   obtain ⟨p, _⟩ := (Q.hasNodalModel_iff c M).mp h
   exact Q.isRationalOver_fiber p
+
+local notation "cartier" => M.isEffectiveCartier_boundaryIdeal
+local notation "δ" => (LineBundleClass.mk (IsEffectiveCartier.toInvertibleSheaf cartier))⁻¹
+
+variable {Q} in
+/-- The exchange matrix of a marked primitive nef square-zero anticanonical
+cycle is nonzero over the exponent ring `ℤ`. -/
+theorem HasNodalModel.exchangeMatrix_ne_zero (h : Q.HasNodalModel c M)
+    {E : SkewExchangeMatrix (Fin r)}
+    (hE : E.matrix = chargeExchangeMatrix b.detDualEquiv.toLinearMap (Fan.rayChargeMap Q.rays))
+    (hprim : IsPrimitive (Additive.ofMul δ))
+    (hnef : LineBundleClass.IsNef ℂ (M.surface ↘ S) δ)
+    (hsq : Chow.classIntersectionNumber ℂ M.surface δ δ = 0) :
+    E.matrix ≠ 0 := by
+  let : IsRationalOver (M.surface ↘ S) := h.isRationalOver
+  let P : ChargeSeed E N :=
+    ⟨b.detDualEquiv.toLinearMap, Fan.rayChargeMap Q.rays, b.detDualEquiv_self, hE.symm⟩
+  have hindex := Q.chargeIndex_ne_zero_of_anticanonical_cycle (M := fun _ ↦ M)
+    h cartier hnef hsq (congrArg Inv.inv (h.canonicalClass cartier)) hprim
+  exact Q.exchangeMatrix_ne_zero_of_chargeIndex_ne_zero P rfl rfl hindex
 
 variable {Q} in
 /-- With Cartier boundary, an ordered nodal model gives a nodal contraction,
