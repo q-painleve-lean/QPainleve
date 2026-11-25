@@ -93,12 +93,7 @@ theorem signedPicardHom_base_change
   let := hDO
   let := hJ
   let := hJO
-  have hcomp : (w.xRationalMap ℂ).comp (u.xRationalMap ℂ) =
-      (v.xRationalMap ℂ).comp (w.xRationalMap ℂ) := by
-    have h := (Quiver.Path.xRationalMap_eq_iff ℂ (w.comp u) (v.comp w)).mpr (by
-      simp only [u, Quiver.Path.xPullback_comp, Quiver.Path.xPullback_reverse]
-      group)
-    simpa only [Quiver.Path.xRationalMap_comp] using h
+  have hcomp := w.xRationalMap_comp_eq_of_xPullback_eq_conj ℂ (v := v) (u := u) rfl
   obtain ⟨hpic, hsign⟩ := R.picard_conjugation_of_comp_xMap_eq A B hcomp hc hι hindex hC hmodel
   rw [← op_unop g, ← hloop]
   simp only [MonoidHom.comp_apply, MulEquiv.coe_toMonoidHom]
