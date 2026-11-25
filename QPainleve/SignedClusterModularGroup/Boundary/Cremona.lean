@@ -17,6 +17,7 @@ import QPainleve.AlgebraicGeometry.Chow.EffectiveClass
 import QPainleve.AlgebraicGeometry.Chow.Nef.EffectiveTransport
 import QPainleve.AlgebraicGeometry.Chow.NegativeCurve
 import QPainleve.SignedClusterModularGroup.BoundaryCycle
+import TauCeti.Algebra.Group.Prod
 import TauCeti.AlgebraicGeometry.Curves.Node.Reduced
 
 /-!
@@ -26,7 +27,9 @@ For a root-free nef square-zero anticanonical cycle, the Cremona isometry group 
 the projection of the signed boundary isometry group to the Picard isometries.
 Effectivity and negative self-intersection recover the boundary primes when there
 are at least two components. The canonical class determines the single component
-in the remaining case.
+in the remaining case. A numbering gives a canonical projection, which is
+bijective for at least three components. For one or two components the signed
+isometry group is the product of the Cremona isometries and the branch sign.
 -/
 
 public noncomputable section
@@ -36,6 +39,13 @@ open LineBundleClass Scheme.IdealSheafData
 
 universe u
 
+local notation "B(" k ", " X ")" => Chow.intersectionBilinForm k X
+local notation "K(" k ", " X ")" => LineBundleClass.mk (QPainleve.canonicalBundle k X 2)
+local notation "I(" k ", " X ")" => Chow.classIntersectionNumber k X
+local notation "P" => primeDivisorClass
+local notation "δ(" k ", " X ")" => Additive.ofMul (K(k, X))⁻¹
+local notation "Cr(" k ", " X ")" => Chow.cremonaIsometryGroup k X
+
 namespace QPainleve.BoundaryCycle
 
 variable {n : ℕ} [NeZero n]
@@ -44,13 +54,6 @@ variable (k : Type u) [Field k] [IsAlgClosed k] {X : Scheme.{u}}
   [X.Over (Spec (.of k))] [X.IsProjectiveOver k] [IsIntegral X]
   [SmoothOfRelativeDimension 2 (X ↘ Spec (.of k))]
   [Scheme.IsRationalOver (X ↘ Spec (.of k))]
-
-local notation "B(" k ", " X ")" => Chow.intersectionBilinForm k X
-local notation "K(" k ", " X ")" => mk (canonicalBundle k X 2)
-local notation "I(" k ", " X ")" => Chow.classIntersectionNumber k X
-local notation "P" => primeDivisorClass
-local notation "δ(" k ", " X ")" => Additive.ofMul (K(k, X))⁻¹
-local notation "Cr(" k ", " X ")" => Chow.cremonaIsometryGroup k X
 
 section LocallyFactorial
 
@@ -213,87 +216,137 @@ theorem range_toIsometry_eq_cremonaIsometryGroup {D : X.IdealSheafData}
     (intersectionBilinForm_eq_of_nodal_cycle hD hnodal (hK.symm ▸ hnef)
       (hK.symm ▸ hsq) p node hp hinc) hroot
 
-open SignedBoundaryIsometryGroup in
-omit [Scheme.IsRationalOver (X ↘ Spec (.of k))] in
-private theorem exists_cremonaProjection {d : ZMod n → Additive (LineBundleClass X)}
-    (hrange : (toIsometry B(k, X) d).range = Cr(k, X))
-    (hinj : 3 ≤ n → Function.Injective d) :
-    ∃ π : signedBoundaryIsometryGroup B(k, X) d →* Cr(k, X),
-      (∀ x, (π x).val = toIsometry B(k, X) d x) ∧ Function.Surjective π ∧
-      (3 ≤ n → Function.Injective π) ∧
-      (n ≤ 2 → ∃ e : boundaryRotationGroup B(k, X) d ≃* Cr(k, X),
-        ∀ x, e x = π (rotationInclusion B(k, X) d x)) := by
-  let f := toIsometry B(k, X) d
-  let π := (MulEquiv.subgroupCongr hrange).toMonoidHom.comp f.rangeRestrict
-  have hπ (x : signedBoundaryIsometryGroup B(k, X) d) : (π x).val = f x := by
-    simp only [π, MonoidHom.comp_apply, MulEquiv.coe_toMonoidHom,
-      MulEquiv.subgroupCongr_apply, MonoidHom.coe_rangeRestrict]
-  have hsurj : Function.Surjective π :=
-    (MulEquiv.subgroupCongr hrange).surjective.comp f.rangeRestrict_surjective
-  refine ⟨π, hπ, hsurj, fun hn x y h ↦ ?_, fun hn ↦ ?_⟩
-  · apply toIsometry_injective B(k, X) d hn (hinj hn)
-    simpa only [hπ] using congrArg Subtype.val h
-  · have hrot : boundaryRotationGroup B(k, X) d = Cr(k, X) := by
-      rw [← hrange]
-      ext g
-      constructor
-      · intro hg
-        exact ⟨rotationInclusion B(k, X) d ⟨g, hg⟩, by
-          simp only [toIsometry_apply, coe_rotationInclusion]⟩
-      · rintro ⟨x, rfl⟩
-        let y := mulEquivProdOfLeTwo B(k, X) d hn x
-        have hy : y.1.val = x.val.1 :=
-          congrArg Prod.fst (coe_mulEquivProdOfLeTwo_apply B(k, X) d hn x)
-        rw [toIsometry_apply, ← hy]
-        exact y.1.property
-    refine ⟨MulEquiv.subgroupCongr hrot, fun x ↦ Subtype.ext ?_⟩
-    rw [MulEquiv.subgroupCongr_apply, hπ, toIsometry_apply, coe_rotationInclusion]
+end QPainleve.BoundaryCycle
 
-open SignedBoundaryIsometryGroup in
-/-- The signed boundary group of a numbered nef square-zero anticanonical cycle
-without internal `(-2)` curves projects onto its Cremona isometries. The projection
-is injective for at least three components and restricts to a rotation group
-isomorphism for one or two components. -/
-theorem exists_cremonaProjection_of_numbering
-    {D : X.IdealSheafData} [PrestableFamily (D.subscheme ↘ Spec (.of k))]
-    {ι : Type*} {marks : ι → (D.subscheme ↘ Spec (.of k)).smoothLocus}
-    (A : Scheme.NodalCycleNumbering marks n)
-    (hD : D.IsEffectiveCartier)
-    (hK : mk hD.toInvertibleSheaf = K(k, X))
-    (hnef : (mk hD.toInvertibleSheaf)⁻¹.IsNef k (X ↘ Spec (.of k)))
-    (hsq : I(k, X) (mk hD.toInvertibleSheaf)⁻¹ (mk hD.toInvertibleSheaf)⁻¹ = 0) :
-    letI : IsNoetherian X := isNoetherian_of_finiteType (X ↘ Spec (.of k))
-    letI := (X ↘ Spec (.of k)).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two
-    let d := fun j ↦ Additive.ofMul (P (D.boundaryPrimeEmbedding (A.boundaryPrimeEquiv hD j)))
-    (∀ p : CodimensionOnePoint X, Disjoint (closure {(p : X)}) D.support →
-      I(k, X) (P p) (P p) ≠ -2) →
-    ∃ π : signedBoundaryIsometryGroup B(k, X) d →* Cr(k, X),
-      (∀ x, (π x).val = toIsometry B(k, X) d x) ∧ Function.Surjective π ∧
-      (3 ≤ n → Function.Injective π) ∧
-      (n ≤ 2 → ∃ e : boundaryRotationGroup B(k, X) d ≃* Cr(k, X),
-        ∀ x, e x = π (rotationInclusion B(k, X) d x)) := by
-  let : IsNoetherian X := isNoetherian_of_finiteType (X ↘ Spec (.of k))
-  let := (X ↘ Spec (.of k)).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two
-  dsimp only
-  intro hroot
-  let p := (A.boundaryPrimeEquiv hD).toEmbedding.trans D.boundaryPrimeEmbedding
-  have hp (q : CodimensionOnePoint X) : (q : X) ∈ D.support ↔ q ∈ Set.range p := by
-    have hprimes : Set.range p = Set.range D.boundaryPrimeEmbedding :=
-      (A.boundaryPrimeEquiv hD).surjective.range_comp _
-    rw [hprimes, range_boundaryPrimeEmbedding]
-    rfl
+namespace AlgebraicGeometry.Scheme.NodalCycleNumbering
+
+open QPainleve QPainleve.BoundaryCycle QPainleve.SignedBoundaryIsometryGroup
+
+variable {k : Type u} [Field k] [IsAlgClosed k] {X : Scheme.{u}}
+  [X.Over (Spec (.of k))] {D : X.IdealSheafData}
+  [PrestableFamily (D.subscheme ↘ Spec (.of k))]
+  {ι : Type*} {marks : ι → (D.subscheme ↘ Spec (.of k)).smoothLocus} {n : ℕ} [NeZero n]
+  [IsNoetherian X] (A : NodalCycleNumbering marks n) (hD : D.IsEffectiveCartier)
+
+local notation "primes" =>
+  Function.Embedding.trans (Equiv.toEmbedding (A.boundaryPrimeEquiv hD)) D.boundaryPrimeEmbedding
+
+private theorem mem_support_iff_mem_range_numberedPrime (r : CodimensionOnePoint X) :
+    (r : X) ∈ D.support ↔ r ∈ Set.range primes := by
+  have hprimes : Set.range primes = Set.range D.boundaryPrimeEmbedding :=
+    (A.boundaryPrimeEquiv hD).surjective.range_comp _
+  rw [hprimes, range_boundaryPrimeEmbedding]
+  rfl
+
+variable [X.IsProjectiveOver k] [IsIntegral X]
+  [SmoothOfRelativeDimension 2 (X ↘ Spec (.of k))]
+  [∀ x : X, UniqueFactorizationMonoid (X.presheaf.stalk x)]
+  (hK : LineBundleClass.mk hD.toInvertibleSheaf = K(k, X))
+  (hnef : (LineBundleClass.mk hD.toInvertibleSheaf)⁻¹.IsNef k (X ↘ Spec (.of k)))
+  (hsq : let a := (LineBundleClass.mk hD.toInvertibleSheaf)⁻¹
+    I(k, X) a a = 0)
+  (hroot : ∀ r : CodimensionOnePoint X, Disjoint (closure {(r : X)}) D.support →
+    I(k, X) (P r) (P r) ≠ -2)
+
+local notation "d" =>
+  (fun j ↦ Additive.ofMul (P (D.boundaryPrimeEmbedding (A.boundaryPrimeEquiv hD j))))
+local notation "G" => signedBoundaryIsometryGroup B(k, X) d
+local notation "Rot" => boundaryRotationGroup B(k, X) d
+
+include hnef hsq in
+private theorem intersectionBilinForm_numberedPrime (i j : ZMod n) :
+    B(k, X) (d i) (d j) = (-2 : ℤ) * (if i = j then 1 else 0) +
+      (if j = i + 1 then 1 else 0) + (if j = i - 1 then 1 else 0) := by
   have hN : AtWorstNodalOfRelativeDimensionOne (D.subscheme ↘ Spec (.of k)) :=
     PrestableFamily.atWorstNodalOfRelativeDimensionOne
-  let : IsReduced D.subscheme := hN.isReduced
-  have hgram := intersectionBilinForm_eq_of_nodal_cycle hD hN hnef hsq p
-    ⟨A.ambientNode, A.ambientNode_injective⟩ hp
+  exact intersectionBilinForm_eq_of_nodal_cycle hD hN hnef hsq primes
+    ⟨A.ambientNode, A.ambientNode_injective⟩ (A.mem_support_iff_mem_range_numberedPrime hD)
     (fun _ _ hij ↦ by
-      simpa only [p, Function.Embedding.trans_apply, Equiv.toEmbedding_apply,
+      simpa only [Function.Embedding.trans_apply, Equiv.toEmbedding_apply,
         coe_boundaryPrimeEmbedding, Function.Embedding.coeFn_mk] using
-        A.closure_boundaryPrime_inter_of_ne hD hij)
-  have hrange := range_toIsometry_eq_cremonaIsometryGroup_of_cycle_gram
-    k hD p hp hK (hK ▸ hnef) (hK ▸ hsq) hgram hroot
-  exact exists_cremonaProjection k hrange
-    (fun hn ↦ injective_of_cycle_gram B(k, X) _ hgram (by omega))
+        A.closure_boundaryPrime_inter_of_ne hD hij) i j
 
-end QPainleve.BoundaryCycle
+variable [Scheme.IsRationalOver (X ↘ Spec (.of k))]
+
+include hK hnef hsq hroot in
+private theorem range_toIsometry_eq_cremonaIsometryGroup :
+    (toIsometry B(k, X) d).range = Cr(k, X) := by
+  let : IsReduced D.subscheme :=
+    (PrestableFamily.atWorstNodalOfRelativeDimensionOne (f := D.subscheme ↘ Spec (.of k))).isReduced
+  exact range_toIsometry_eq_cremonaIsometryGroup_of_cycle_gram k hD primes
+    (A.mem_support_iff_mem_range_numberedPrime hD) hK (hK ▸ hnef) (hK ▸ hsq)
+    (A.intersectionBilinForm_numberedPrime hD hnef hsq) hroot
+
+/-- Forget the branch sign of a signed boundary isometry of a nef square-zero
+anticanonical cycle without internal `(-2)` curves, giving a Cremona isometry. -/
+def cremonaProjection : G →* Cr(k, X) :=
+  (MulEquiv.subgroupCongr
+    (A.range_toIsometry_eq_cremonaIsometryGroup hD hK hnef hsq hroot)).toMonoidHom.comp
+    (toIsometry B(k, X) d).rangeRestrict
+
+local notation "π" => A.cremonaProjection hD hK hnef hsq hroot
+
+/-- The Cremona projection acts on Picard classes by the original isometry. -/
+@[simp]
+theorem val_cremonaProjection_apply (g : G) : (π g).val = toIsometry B(k, X) d g :=
+  (rfl)
+
+include hK hnef hsq hroot in
+/-- Every Cremona isometry comes from a signed boundary isometry. -/
+theorem cremonaProjection_surjective : Function.Surjective π :=
+  (MulEquiv.subgroupCongr
+    (A.range_toIsometry_eq_cremonaIsometryGroup hD hK hnef hsq hroot)).surjective.comp
+    (toIsometry B(k, X) d).rangeRestrict_surjective
+
+include hK hnef hsq hroot in
+/-- With at least three boundary components, the Cremona isometry determines the branch sign. -/
+theorem cremonaProjection_injective (hn : 3 ≤ n) : Function.Injective π := by
+  intro x y h
+  apply toIsometry_injective B(k, X) d hn
+    (injective_of_cycle_gram B(k, X) d (A.intersectionBilinForm_numberedPrime hD hnef hsq)
+      (by omega))
+  simpa only [val_cremonaProjection_apply] using congrArg Subtype.val h
+
+/-- For a cycle of one or two components, the boundary rotations identify with the Cremona group. -/
+def boundaryRotationEquivCremona (hn : n ≤ 2) : Rot ≃* Cr(k, X) := by
+  refine MulEquiv.ofBijective ((π).comp (rotationInclusion B(k, X) d)) ⟨?_, ?_⟩
+  · intro g h hgh
+    apply Subtype.ext
+    simpa only [MonoidHom.comp_apply, val_cremonaProjection_apply, toIsometry_apply,
+      coe_rotationInclusion] using congrArg Subtype.val hgh
+  · intro g
+    obtain ⟨s, rfl⟩ := A.cremonaProjection_surjective hD hK hnef hsq hroot g
+    let t := mulEquivProdOfLeTwo B(k, X) d hn s
+    refine ⟨t.1, Subtype.ext ?_⟩
+    simpa only [MonoidHom.comp_apply, val_cremonaProjection_apply, toIsometry_apply,
+      coe_rotationInclusion] using
+      congrArg Prod.fst (coe_mulEquivProdOfLeTwo_apply B(k, X) d hn s)
+
+/-- The rotation equivalence is the Cremona projection restricted to sign one. -/
+@[simp]
+theorem boundaryRotationEquivCremona_apply (hn : n ≤ 2) (g : Rot) :
+    A.boundaryRotationEquivCremona hD hK hnef hsq hroot hn g =
+      π (rotationInclusion B(k, X) d g) :=
+  (rfl)
+
+/-- For a cycle of one or two components, the signed isometry group identifies with the
+product of the Cremona group and the branch sign group. -/
+def signedBoundaryIsometryEquivCremonaProd (hn : n ≤ 2) : G ≃* Cr(k, X) × ℤˣ :=
+  (mulEquivProdOfLeTwo B(k, X) d hn).trans
+    ((A.boundaryRotationEquivCremona hD hK hnef hsq hroot hn).prodCongr (MulEquiv.refl _))
+
+/-- The two coordinates are the Cremona projection and the branch sign. -/
+@[simp]
+theorem signedBoundaryIsometryEquivCremonaProd_apply (hn : n ≤ 2) (g : G) :
+    A.signedBoundaryIsometryEquivCremonaProd hD hK hnef hsq hroot hn g =
+      (π g, sign B(k, X) d g) := by
+  have h := coe_mulEquivProdOfLeTwo_apply B(k, X) d hn g
+  simp only [signedBoundaryIsometryEquivCremonaProd, MulEquiv.trans_apply, MulEquiv.prodCongr_apply,
+    MulEquiv.refl_apply, boundaryRotationEquivCremona_apply,
+    SignedBoundaryIsometryGroup.sign_apply]
+  refine Prod.ext (Subtype.ext ?_) ?_
+  · simpa only [val_cremonaProjection_apply, toIsometry_apply, coe_rotationInclusion] using
+      congrArg Prod.fst h
+  · exact congrArg (Prod.snd : (B(k, X)).isometryGroup × ℤˣ → ℤˣ) h
+
+end AlgebraicGeometry.Scheme.NodalCycleNumbering
