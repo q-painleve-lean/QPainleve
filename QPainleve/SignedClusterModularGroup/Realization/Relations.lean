@@ -174,19 +174,10 @@ theorem xPullback_eq_iff_signedLoopInvariants_eq
           orders[p c₀ hc₀, hD c₀] startOrders =
         v.signedLoopInvariants (fun j ↦ (β j : Cent))
           orders[p c₀ hc₀, hD c₀] startOrders := by
-  -- Use the marked classes to transport every target's numbering to the reference fiber.
-  have hinj : Function.Injective D := by
-    by_cases hn : 2 ≤ n
-    · exact BoundaryCycle.injective_of_cycle_gram B D hGram hn
-    · have hn' : n = 1 := by have := NeZero.ne n; omega
-      subst n
-      exact Function.injective_of_subsingleton _
   have hrays c (hc : c ∈ U) : (p c hc).numberedBoundaryRays (hD c) =
       (p c₀ hc₀).numberedBoundaryRays (hD c₀) :=
-    (p c hc).numberedBoundaryRays_eq_of_boundaryClass_eq (p c₀ hc₀)
+    (p c hc).numberedBoundaryRays_eq_of_nodalContractions (p c₀ hc₀)
       (hnodal c hc) (hnodal c₀ hc₀) (LinearMap.IsPerfPair.separatingRight inferInstance)
-      (fun j ↦ (hmark c j).trans (hmark c₀ j).symm)
-      (fun i j hij ↦ hinj ((hmark c i).symm.trans (hij.trans (hmark c j)))) hι
   have hkeep c (hc : c ∈ U) ρ := ((p c hc).mem_range_numberedBoundaryRays_iff (hD c) ρ).symm.trans
     (by rw [hrays c hc])
   let Q : ChargeSeed E N :=
