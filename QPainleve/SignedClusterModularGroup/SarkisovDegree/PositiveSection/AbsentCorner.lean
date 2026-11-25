@@ -78,45 +78,6 @@ private theorem absent_corner_nodal_refinement
   have h := hT.isNodeOfReducedBoundary_of_notMem_range_baseCenter hp hqp hnode hpole
   exact .snoc .nil q hq hI (by simpa only [toBase_nil, Category.id_comp, comap_id] using h)
 
-private theorem exists_absent_corner_path {Ψ F : Fan i} (b : Basis (Fin 2) ℤ N)
-    (hΦ : Φ.IsRegular) (hc : Φ.IsComplete) (hΨ : Ψ.IsRegular) (hF : F.IsRegular)
-    (s : F.IsSubdivision Φ) (t : F.IsSubdivision Ψ)
-    (hs : Φ.IsTwoRayStarSubdivision F) (ht : Ψ.IsTwoRayStarSubdivision F)
-    {W : Scheme} [W.Over S] [IsIntegral W] [SmoothOfRelativeDimension 2 (W ↘ S)]
-    {D : W.IdealSheafData} (a : W ⟶ X[F]) [a.IsOver S] [IsDominant a]
-    (hpole : letI : Smooth (W ↘ S) := SmoothOfRelativeDimension.smooth 2 _
-      B[Φ,hc].comap (a ≫ π[s]) = D * ramificationIdealSheaf ℂ (a ≫ π[s])) :
-    ∃ (A B : Fan.LogarithmicProjection i D) (path : Fan.LogarithmicProjection.SarkisovPath A B),
-      A.fan = Φ ∧ A.hom ≍ a ≫ π[s] ∧ B.fan = Ψ ∧ B.hom ≍ a ≫ π[t] ∧
-      length path = 2 ∧ path.rationalMap = (A.fan.denseTorusPartialIso B.fan).toRationalMap := by
-  let hcF := s.isComplete_iff.mpr hc
-  let : Smooth (W ↘ S) := SmoothOfRelativeDimension.smooth 2 _
-  have ha := (s.comap_boundaryIdeal_eq_mul_ramificationIdealSheaf_comp_iff
-    hΦ hF hc rankTwo(b) a D).mp hpole
-  let M : Fan.LogarithmicProjection i D :=
-    ⟨F, hF, hcF, a, inferInstance, inferInstance, ha⟩
-  let K := Fan.IsSubdivision.refl M.fan
-  let A := M.coarsen (K.trans hs.isSubdivision) hΦ rankTwo(b)
-  let B := M.coarsen (K.trans ht.isSubdivision) hΨ rankTwo(b)
-  let up := M.coarsenBlowup rankTwo(b) hΦ hF hs K
-  let down := Quiver.reverse (a := B) (b := M.coarsen K hF rankTwo(b))
-    (M.coarsenBlowup rankTwo(b) hΨ hF ht K)
-  let p : @Quiver.Path _ Fan.LogarithmicProjection.instQuiver A B :=
-    (Quiver.Path.nil.cons up).cons down
-  have hA : A.hom ≍ a ≫ π[s] := by
-    simpa only [K, Fan.IsSubdivision.toFanHom_trans, FanHom.algebraicMap_comp,
-      Fan.IsSubdivision.toFanHom_refl, FanHom.algebraicMap_id, Category.id_comp] using
-      M.coarsen_hom (K.trans hs.isSubdivision) hΦ rankTwo(b)
-  have hB : B.hom ≍ a ≫ π[t] := by
-    simpa only [K, Fan.IsSubdivision.toFanHom_trans, FanHom.algebraicMap_comp,
-      Fan.IsSubdivision.toFanHom_refl, FanHom.algebraicMap_id, Category.id_comp] using
-      M.coarsen_hom (K.trans ht.isSubdivision) hΨ rankTwo(b)
-  let path := Fan.LogarithmicProjection.SarkisovPath.ofStar p
-  refine ⟨A, B, path, M.coarsen_fan .., hA, M.coarsen_fan .., hB, ?_, ?_⟩
-  · exact (Fan.LogarithmicProjection.SarkisovPath.length_ofStar p).trans rfl
-  · exact (Fan.LogarithmicProjection.SarkisovPath.rationalMap_ofStar p).trans
-      (Fan.LogarithmicProjection.pathRationalMap_eq_denseTorusPartialIso p)
-
 private theorem absent_corner_target_marking {Ψ : Fan i} [Nonempty Ψ.cones]
     {Y Z W : Scheme} (p : W ⟶ Y) (k : W ≅ Z) (g : Y ⟶ P)
     {n : ℕ} {T : BlowupTower X[Ψ] n Z} (hT : IsClosedPointTower X[Ψ] T)
@@ -277,7 +238,8 @@ theorem exists_sarkisov_path_of_absent_corner
     simpa only [hq₀, ramificationIdealSheaf_congr ℂ hq₀] using
       (congrArg (B[Φ,hc]).comap hq₀).trans hLog
   obtain ⟨A, B, path, hA, hAq, hB, hBq, hlen, hrat⟩ :=
-    exists_absent_corner_path b hΦ hc hΨ hF s t hs ht q' hqLog
+    Fan.LogarithmicProjection.exists_sarkisovPath_of_twoRayStarSubdivisions
+      rankTwo(b) hΦ hc hΨ hF s t hs ht q' hqLog
   subst Ψ
   have hg' : (k.inv ≫ R.toBase ≫ g) ≫ (P ↘ S) = U'.toBase ≫ f[B.fan] := by
     apply (cancel_epi k.hom).mp
