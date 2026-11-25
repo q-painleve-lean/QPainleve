@@ -10,8 +10,6 @@ public import QPainleve.SignedClusterModularGroup.Realization.Presentation.Ident
 
 import QPainleve.Geometry.Toric.Fan.Presentation.Canonical
 import QPainleve.SignedClusterModularGroup.Boundary.Cremona
-import QPainleve.SignedClusterModularGroup.BoundaryCycle
-import TauCeti.AlgebraicGeometry.Curves.Node.Reduced
 
 /-!
 # Cremona isometries from ordered toric presentations
@@ -21,7 +19,7 @@ cycle without internal `(-2)` curves, Picard pullback projects the opposite
 signed cluster modular group onto the Cremona isometries of the original
 surface. The group identification
 `exists_picardGroupEquivs_of_toric_presentation` fixes the original Picard
-lattice, and `BoundaryCycle.range_toIsometry_eq_cremonaIsometryGroup_of_cycle_gram`
+lattice, and `BoundaryCycle.exists_cremonaProjection_of_numbering`
 identifies the image. With one or two boundary components, the signed group
 retains the branch sign and the unsigned group identifies with the Cremona group.
 -/
@@ -73,83 +71,6 @@ local notation "Models[" b₀ "," Q "," M "," C "]" =>
 local notation "Γ[" E "]" => (ClusterModularGroup ℂ E)ᵐᵒᵖ
 local notation "Γs[" E "]" => (SignedClusterModularGroup ℂ E)ᵐᵒᵖ
 local notation "incl[" E "]" => MonoidHom.op (clusterModularGroupInclusion ℂ E)
-
-private theorem exists_cremonaProjection {d : ZMod n → Pic}
-    (hrange : (toIsometry B d).range = Cr)
-    (hinj : 3 ≤ n → Function.Injective d) :
-    ∃ π : signedBoundaryIsometryGroup B d →* Cr,
-      (∀ x, (π x).val = toIsometry B d x) ∧ Function.Surjective π ∧
-      (3 ≤ n → Function.Injective π) ∧
-      (n ≤ 2 → ∃ e : boundaryRotationGroup B d ≃* Cr,
-        ∀ x, e x = π (rotationInclusion B d x)) := by
-  let f := toIsometry B d
-  let π := (MulEquiv.subgroupCongr hrange).toMonoidHom.comp f.rangeRestrict
-  have hπ (x : signedBoundaryIsometryGroup B d) : (π x).val = f x := by
-    simp only [π, MonoidHom.comp_apply, MulEquiv.coe_toMonoidHom,
-      MulEquiv.subgroupCongr_apply, MonoidHom.coe_rangeRestrict]
-  have hsurj : Function.Surjective π :=
-    (MulEquiv.subgroupCongr hrange).surjective.comp f.rangeRestrict_surjective
-  refine ⟨π, hπ, hsurj, fun hn x y h ↦ ?_, fun hn ↦ ?_⟩
-  · apply toIsometry_injective B d hn (hinj hn)
-    simpa only [hπ] using congrArg Subtype.val h
-  · have hrot : boundaryRotationGroup B d = Cr := by
-      rw [← hrange]
-      ext g
-      constructor
-      · intro hg
-        exact ⟨rotationInclusion B d ⟨g, hg⟩, by
-          simp only [toIsometry_apply, coe_rotationInclusion]⟩
-      · rintro ⟨x, rfl⟩
-        let y := mulEquivProdOfLeTwo B d hn x
-        have hy : y.1.val = x.val.1 :=
-          congrArg Prod.fst (coe_mulEquivProdOfLeTwo_apply B d hn x)
-        rw [toIsometry_apply, ← hy]
-        exact y.1.property
-    refine ⟨MulEquiv.subgroupCongr hrot, fun x ↦ Subtype.ext ?_⟩
-    rw [MulEquiv.subgroupCongr_apply, hπ, toIsometry_apply, coe_rotationInclusion]
-
-private theorem exists_cremonaProjection_of_numbering
-    (A : Scheme.NodalCycleNumbering (X := D.subscheme)
-      (Empty.elim : Empty → (D.subscheme ↘ S).smoothLocus) n)
-    (hD : D.IsEffectiveCartier)
-    (hK : LineBundleClass.mk hD.toInvertibleSheaf =
-      LineBundleClass.mk (canonicalBundle ℂ X 2))
-    (hnef : δ[hD].IsNef ℂ (X ↘ S))
-    (hsq : Chow.classIntersectionNumber ℂ X δ[hD] δ[hD] = 0) :
-    letI : IsNoetherian X := isNoetherian_of_finiteType (X ↘ S)
-    letI := (X ↘ S).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two
-    let d := classes[A,hD]
-    (∀ p : CodimensionOnePoint X, Disjoint (closure {(p : X)}) D.support →
-      Chow.classIntersectionNumber ℂ X (LineBundleClass.primeDivisorClass p)
-        (LineBundleClass.primeDivisorClass p) ≠ -2) →
-    ∃ π : signedBoundaryIsometryGroup B d →* Cr,
-      (∀ x, (π x).val = toIsometry B d x) ∧ Function.Surjective π ∧
-      (3 ≤ n → Function.Injective π) ∧
-      (n ≤ 2 → ∃ e : boundaryRotationGroup B d ≃* Cr,
-        ∀ x, e x = π (rotationInclusion B d x)) := by
-  let : IsNoetherian X := isNoetherian_of_finiteType (X ↘ S)
-  let := (X ↘ S).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two
-  dsimp only
-  intro hroot
-  let p := (A.boundaryPrimeEquiv hD).toEmbedding.trans D.boundaryPrimeEmbedding
-  have hp (q : CodimensionOnePoint X) : (q : X) ∈ D.support ↔ q ∈ Set.range p := by
-    have hprimes : Set.range p = Set.range D.boundaryPrimeEmbedding :=
-      (A.boundaryPrimeEquiv hD).surjective.range_comp _
-    rw [hprimes, range_boundaryPrimeEmbedding]
-    rfl
-  have hN : AtWorstNodalOfRelativeDimensionOne (D.subscheme ↘ S) :=
-    PrestableFamily.atWorstNodalOfRelativeDimensionOne
-  let : IsReduced D.subscheme := hN.isReduced
-  have hgram := BoundaryCycle.intersectionBilinForm_eq_of_nodal_cycle hD hN hnef hsq p
-    ⟨A.ambientNode, A.ambientNode_injective⟩ hp
-    (fun _ _ hij ↦ by
-      simpa only [p, Function.Embedding.trans_apply, Equiv.toEmbedding_apply,
-        coe_boundaryPrimeEmbedding, Function.Embedding.coeFn_mk] using
-        A.closure_boundaryPrime_inter_of_ne hD hij)
-  have hrange := BoundaryCycle.range_toIsometry_eq_cremonaIsometryGroup_of_cycle_gram
-    ℂ hD p hp hK (hK ▸ hnef) (hK ▸ hsq) hgram hroot
-  exact exists_cremonaProjection hrange
-    (fun hn ↦ BoundaryCycle.injective_of_cycle_gram B _ hgram (by omega))
 
 /-- The opposite signed cluster modular group of specified ordered toric and
 nodal blowup towers projects onto the Cremona isometries of the original surface
@@ -213,7 +134,7 @@ theorem exists_cluster_cremona_equivs_of_toric_presentation
     rw [← over_eq_subschemeι_comp]
     exact PrestableFamily.atWorstNodalOfRelativeDimensionOne)
   obtain ⟨π, hπ, hsurj, hinj, hsmall⟩ :=
-    exists_cremonaProjection_of_numbering A hD hK hnef hsq hroot
+    BoundaryCycle.exists_cremonaProjection_of_numbering ℂ A hD hK hnef hsq hroot
   obtain ⟨H, μ, b', Q, c, f, E, M, _, Θ, Θrot, hframe, hrays, hE, hM, hmodels, _,
     hwords, hkerSign, hrot⟩ :=
     exists_picardGroupEquivs_of_toric_presentation hΦ hc s u hT e hbase hker A hD hprim hnef hsq
