@@ -315,6 +315,36 @@ theorem IsClosedPointTower.classIntersectionNumber_canonicalBundle_sub_of_pullba
     hU.classIntersectionNumber_picardHom_canonicalBundle k b] at h
   omega
 
+/-- When a resolved elementary link preserves the resolved line class and replaces
+the order at stage `j` by `b - m` at the first reverse center, the anticanonical
+degree of the base line class changes by `b - 2 * m`. The remaining orders keep
+their relative positions. The formula includes a zero pivot order and applies
+regardless of the self-intersections of the two ruling sections. See
+[Lutz, Proposition 8.11](https://arxiv.org/pdf/2005.05010v3#page=72). -/
+theorem IsClosedPointTower.classIntersectionNumber_canonicalBundle_sub_of_elementaryTransform
+    {k : Type u} [Field k] [IsAlgClosed k]
+    {X X' Y Y' : Scheme.{u}} [X.Over (Spec (.of k))] [X'.Over (Spec (.of k))]
+    [SmoothOfRelativeDimension 2 (X ↘ Spec (.of k))]
+    [SmoothOfRelativeDimension 2 (X' ↘ Spec (.of k))]
+    [IsIntegral X] [IsIntegral X'] [X.IsProjectiveOver k] [X'.IsProjectiveOver k]
+    {n : ℕ} {T : BlowupTower X (n + 1) Y} {U : BlowupTower X' (1 + n) Y'}
+    (hT : IsClosedPointTower X T) (hU : IsClosedPointTower X' U) (e : Y ≅ Y')
+    (he : e.hom ≫ U.toBase ≫ (X' ↘ Spec (.of k)) = T.toBase ≫ (X ↘ Spec (.of k)))
+    (a : Additive (LineBundleClass X)) (a' : Additive (LineBundleClass X'))
+    (x : Fin (n + 1) → ℤ) (j : Fin (n + 1)) (b : ℤ)
+    (hclass : pullback e.hom
+      (U.picardHom (a', Fin.append (fun _ : Fin 1 ↦ -b - x j) (x ∘ j.succAbove))).toMul =
+      (T.picardHom (a, x)).toMul) :
+    Chow.classIntersectionNumber k X a.toMul (mk (canonicalBundle k X 2)) -
+      Chow.classIntersectionNumber k X' a'.toMul (mk (canonicalBundle k X' 2)) =
+      b + 2 * x j := by
+  have h := hT.classIntersectionNumber_canonicalBundle_sub_of_pullback_picardHom_eq
+    k hU e he _ _ hclass
+  rw [Fin.sum_univ_succAbove x j] at h
+  simp only [Fin.sum_univ_add, Fin.sum_univ_one, Fin.append_left, Fin.append_right,
+    Function.comp_apply] at h
+  omega
+
 /-- A class pulled back from the base pairs trivially with the exceptional correction
 to the canonical class of a closed-point blowup tower. -/
 theorem IsClosedPointTower.classIntersectionNumber_pullback_canonicalBundle
