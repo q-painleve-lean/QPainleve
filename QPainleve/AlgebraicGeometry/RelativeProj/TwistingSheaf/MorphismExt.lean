@@ -30,6 +30,29 @@ universe u
 
 namespace CategoryTheory.CommMon
 
+private theorem homEquiv_restrictGluedHom {J : Type u} [SmallCategory J]
+    {F : J ⥤ Scheme.{u}} (D : ModulesGlueData F)
+    [∀ {i j} (f : i ⟶ j), IsOpenImmersion (F.map f)]
+    [(F ⋙ Scheme.forget).IsLocallyDirected] [Quiver.IsThin J] (i : J) :
+    let j := Limits.colimit.ι F i
+    (pullbackPushforwardAdjunction j).homEquiv _ _
+      ((restrictFunctorIsoPullback j).inv.app D.glued ≫ D.restrictGluedHom i) = D.π i := by
+  intro j
+  let a := pullbackPushforwardAdjunction j
+  let r := restrictAdjunction j
+  have he : D.restrictGluedHom i = (r.homEquiv _ _).symm (D.π i) := by
+    rw [Adjunction.homEquiv_counit]
+    exact Scheme.Modules.hom_ext _ _ fun W ↦
+      ConcreteCategory.hom_ext _ _ (D.restrictGluedHom_app_apply i W)
+  calc
+    _ = a.homEquiv _ _ ((restrictFunctorIsoPullback j).inv.app D.glued) ≫
+        (pushforward j).map (D.restrictGluedHom i) := a.homEquiv_naturality_right _ _
+    _ = r.homEquiv _ _ (D.restrictGluedHom i) := by
+      rw [restrictFunctorIsoPullback, Adjunction.leftAdjointUniq_inv_app,
+        a.homEquiv_leftAdjointUniq_hom_app]
+      exact (r.homEquiv_unit _ _ _).symm
+    _ = D.π i := by rw [he, Equiv.apply_symm_apply]
+
 variable {X Y : Scheme.{u}} (A : CommMon (GradedObject ℕ X.Modules))
   [∀ n, (A.X n).IsQuasicoherent]
 
@@ -42,67 +65,23 @@ variable {f : Y ⟶ X} (g : Y ⟶ A.relativeProj) (hg : g ≫ A.relativeProjToBa
 
 include hg
 
-/-- The pullback of degree-one evaluation along a morphism to relative Proj,
-viewed as a map from the pullback of the degree-one component along its base map. -/
-def relativeProjEvaluationAlong :
-    (pullback f).obj a₁ ⟶ (pullback g).obj T :=
-  (pullbackCongr hg).inv.app a₁ ≫ (pullbackComp g p).inv.app a₁ ≫
-    (pullback g).map A.relativeProjEvaluation
-
-/-- Evaluation along a map uses the pullback comparison over the specified
-base morphism and the pullback of the original evaluation. -/
-theorem relativeProjEvaluationAlong_def :
-    A.relativeProjEvaluationAlong g hg =
-      (pullbackCongr hg).inv.app a₁ ≫ (pullbackComp g p).inv.app a₁ ≫
-        (pullback g).map A.relativeProjEvaluation :=
-  (rfl)
-
-/-- Evaluation along a morphism sends a local degree-one section to the pullback of
-its associated twisting section. -/
-theorem relativeProjEvaluationAlong_app (U : X.Opens) (W : Y.Opens)
-    (hW : W ≤ f ⁻¹ᵁ U) (s : Γ(a₁, U)) :
-    (A.relativeProjEvaluationAlong g hg).app W (f.pullbackSectionsLE a₁ U W hW s) =
-      g.pullbackSectionsLE T (p ⁻¹ᵁ U) W
-        (by simpa only [← hg, Scheme.Hom.comp_preimage] using hW) ((σ).app U s) := by
-  subst f
-  simp only [relativeProjEvaluationAlong, pullbackCongr, eqToIso_refl, Iso.refl_inv,
-    NatTrans.id_app, Category.id_comp, Hom.comp_app, ConcreteCategory.comp_apply]
-  erw [Scheme.Hom.pullbackSectionsLE_comp p a₁ U g (p ⁻¹ᵁ U) le_rfl
-      (by simpa only [Scheme.Hom.comp_preimage] using hW),
-    Scheme.Hom.pullbackSectionsLE_self, Scheme.Hom.pullbackSectionsLE_naturality]
-  congr 1
-  rw [← pullbackPushforwardAdjunction_homEquiv_app_apply, A.homEquiv_relativeProjEvaluation]
-
-/-- Pulling back evaluation along a composite agrees with pulling back in two steps,
-under the canonical pullback composition isomorphisms. -/
-theorem relativeProjEvaluationAlong_comp {Z : Scheme.{u}} (i : Z ⟶ Y)
-    {f' : Z ⟶ X} (hi : i ≫ f = f') :
-    A.relativeProjEvaluationAlong (i ≫ g) (((Category.assoc i g p).trans
-      (congrArg (i ≫ ·) hg)).trans hi) ≫ (pullbackComp i g).inv.app T =
-      (pullbackCongr hi).inv.app a₁ ≫ (pullbackComp i f).inv.app a₁ ≫
-        (pullback i).map (A.relativeProjEvaluationAlong g hg) := by
-  subst f'
-  subst f
-  simp only [relativeProjEvaluationAlong, pullbackCongr, eqToIso_refl, Iso.refl_inv,
-    NatTrans.id_app, Category.id_comp, Category.assoc, Functor.map_comp]
-  have hn := ((pullbackComp i g).inv.naturality A.relativeProjEvaluation).symm
-  rw [Functor.comp_map] at hn
-  rw [← hn, pullbackComp_inv_app_comp_pullback_map_pullbackComp_inv_app_assoc]
-  rfl
-
 omit hg in
 private def chartTwistIso (U : X.AffineZariskiSite) :
     (pullback (A.relativeProjCover.f U)).obj T ≅ Proj.twistingSheaf
-      (A.gradedSectionsGrading U.toOpens) 1 := by
-  -- Use the adjoint of the gluing projection to read the degree-one sections on this chart.
-  let j := A.relativeProjCover.f U
-  let M := Proj.twistingSheaf (A.gradedSectionsGrading U.toOpens) 1
-  let π : T ⟶ (pushforward j).obj M := (A.relativeProjTwistingSheafGlueData 1).π U
-  let e := ((pullbackPushforwardAdjunction j).homEquiv T M).symm π
-  have : IsIso e := isIso_pullbackPushforwardAdjunction_homEquiv_symm_of_bijective
-    j T M π (fun V hV ↦ (A.relativeProjTwistingSheafGlueData 1).bijective_π_app
-      (A.bijective_relativeProjTwistingSheafGlueData_map_app 1) hV)
-  exact asIso e
+      (A.gradedSectionsGrading U.toOpens) 1 :=
+  (restrictFunctorIsoPullback (A.relativeProjCover.f U)).symm.app T ≪≫
+    A.restrictRelativeProjTwistingSheafIso 1 U
+
+omit hg in
+private theorem chartTwistIso_homEquiv (U : X.AffineZariskiSite) :
+    let j := A.relativeProjCover.f U
+    (pullbackPushforwardAdjunction j).homEquiv _ _ (A.chartTwistIso U).hom =
+      (A.relativeProjTwistingSheafGlueData 1).π U := by
+  intro j
+  refine (congrArg (fun e ↦ (pullbackPushforwardAdjunction j).homEquiv _ _
+    ((restrictFunctorIsoPullback j).inv.app T ≫ e))
+    (A.restrictRelativeProjTwistingSheafIso_hom 1 U)).trans ?_
+  exact homEquiv_restrictGluedHom (A.relativeProjTwistingSheafGlueData 1) U
 
 omit hg in
 private theorem top_le_chart_preimage (U : X.AffineZariskiSite) :
@@ -119,9 +98,7 @@ private theorem chartTwistIso_app (U : X.AffineZariskiSite) (s : Γ(a₁, U.toOp
       Proj.toTwistingSheaf (A.gradedSectionsGrading U.toOpens) Nat.cast_one ⊤
         ⟨DirectSum.of _ 1 s, A.of_mem_gradedSectionsGrading 1 s⟩ := by
   intro j V
-  have hπ : (pullbackPushforwardAdjunction j).homEquiv _ _ (A.chartTwistIso U).hom =
-      (A.relativeProjTwistingSheafGlueData 1).π U :=
-    Equiv.apply_symm_apply _ _
+  have hπ := A.chartTwistIso_homEquiv U
   have h := A.π_app_relativeProjToTwistingSheaf_app Nat.cast_one U s
   let t : Γ(T, V) := (σ).app U.toOpens s
   have ht := pullbackPushforwardAdjunction_homEquiv_app_apply j (A.chartTwistIso U).hom V t
