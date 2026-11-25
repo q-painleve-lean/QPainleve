@@ -59,10 +59,11 @@ variable {r n : ℕ} [NeZero n] {E E' : SkewExchangeMatrix (Fin r)}
   [IsDominant D.hom] [D.IsOver Centers[r].hom Centers[r].hom]
   {w : Word E E'} {v : Word E E}
 
-local instance (Q : CompleteToricPresentation i b r L γ) : Nonempty Q.fan.cones :=
-  Q.complete.nonempty_cones
-local instance (Q : CompleteToricPresentation i b r L γ) : NeZero Q.length := Q.neZero
-local instance (Q : CompleteToricPresentation i b r L γ) :
+local instance instNonemptyConjugationCones (Q : CompleteToricPresentation i b r L γ) :
+    Nonempty Q.fan.cones := Q.complete.nonempty_cones
+local instance instNeZeroConjugationBoundaryLength (Q : CompleteToricPresentation i b r L γ) :
+    NeZero Q.length := Q.neZero
+local instance instPrestableConjugationBoundary (Q : CompleteToricPresentation i b r L γ) :
     PrestableFamily ((Q.fan.boundaryIdeal Q.complete.nonempty_cones).subscheme ↘ S) :=
   Q.prestable
 
