@@ -19,7 +19,7 @@ cycle without internal `(-2)` curves, Picard pullback projects the opposite
 signed cluster modular group onto the Cremona isometries of the original
 surface. The group identification
 `exists_picardGroupEquivs_of_toric_presentation` fixes the original Picard
-lattice, and `BoundaryCycle.exists_cremonaProjection_of_numbering`
+lattice, and `Scheme.NodalCycleNumbering.cremonaProjection`
 identifies the image. With one or two boundary components, the signed group
 retains the branch sign and the unsigned group identifies with the Cremona group.
 -/
@@ -133,40 +133,34 @@ theorem exists_cluster_cremona_equivs_of_toric_presentation
   have hK := P.hasToricPresentation.canonicalClass hD (by
     rw [← over_eq_subschemeι_comp]
     exact PrestableFamily.atWorstNodalOfRelativeDimensionOne)
-  obtain ⟨π, hπ, hsurj, hinj, hsmall⟩ :=
-    BoundaryCycle.exists_cremonaProjection_of_numbering ℂ A hD hK hnef hsq hroot
   obtain ⟨H, μ, b', Q, c, f, E, M, _, Θ, Θrot, hframe, hrays, hE, hM, hmodels, _,
     hwords, hkerSign, hrot⟩ :=
     exists_picardGroupEquivs_of_toric_presentation P A hD hprim hnef hsq
   let d := classes[A,hD]
+  let π := A.cremonaProjection hD hK hnef hsq hroot
+  have hsurj := A.cremonaProjection_surjective hD hK hnef hsq hroot
   let φ := π.comp Θ.toMonoidHom
   let η := (sign B d).comp Θ.toMonoidHom
   refine ⟨H, μ, b', Q, c, f, E, M, φ, η, hframe, hrays, hE, hM, hmodels,
     hsurj.comp Θ.surjective, ?_, hkerSign, ?_, ?_⟩
   · intro w
     refine ⟨(hwords w).1, fun R hR ↦ ?_⟩
-    simpa only [φ, η, MonoidHom.comp_apply, MulEquiv.coe_toMonoidHom, hπ, toIsometry_apply,
+    simpa only [φ, π, η, MonoidHom.comp_apply, MulEquiv.coe_toMonoidHom,
+      Scheme.NodalCycleNumbering.val_cremonaProjection_apply, toIsometry_apply,
       SignedBoundaryIsometryGroup.sign_apply, Prod.eta] using (hwords w).2 R hR
   · intro hn
-    exact ⟨MulEquiv.ofBijective φ ⟨(hinj hn).comp Θ.injective, hsurj.comp Θ.surjective⟩, rfl⟩
+    have hinj := A.cremonaProjection_injective hD hK hnef hsq hroot hn
+    exact ⟨MulEquiv.ofBijective φ ⟨hinj.comp Θ.injective, hsurj.comp Θ.surjective⟩, rfl⟩
   · intro hn
-    obtain ⟨g₀, hg₀⟩ := hsmall hn
-    let p := mulEquivProdOfLeTwo B d hn
-    let g := Θ.trans (p.trans (g₀.prodCongr (MulEquiv.refl ℤˣ)))
-    have hg (x : Γs[E]) : g x = (φ x, η x) := by
-      have hx : ((p (Θ x)).1.val, (p (Θ x)).2) = (Θ x).val :=
-        coe_mulEquivProdOfLeTwo_apply B d hn (Θ x)
-      simp only [g, MulEquiv.trans_apply, MulEquiv.prodCongr_apply, MulEquiv.refl_apply]
-      refine Prod.ext ((hg₀ _).trans (Subtype.ext ?_)) ?_
-      · simp only [φ, MonoidHom.comp_apply, MulEquiv.coe_toMonoidHom, hπ, toIsometry_apply,
-          coe_rotationInclusion]
-        exact congrArg Prod.fst hx
-      · simpa only [η, MonoidHom.comp_apply, MulEquiv.coe_toMonoidHom,
-          SignedBoundaryIsometryGroup.sign_apply] using congrArg Prod.snd hx
-    refine ⟨g, Θrot.trans g₀, hg, fun x ↦ ?_⟩
+    let g := Θ.trans (A.signedBoundaryIsometryEquivCremonaProd hD hK hnef hsq hroot hn)
+    let g₀ := Θrot.trans (A.boundaryRotationEquivCremona hD hK hnef hsq hroot hn)
+    have hg (x : Γs[E]) : g x = (φ x, η x) :=
+      A.signedBoundaryIsometryEquivCremonaProd_apply hD hK hnef hsq hroot hn (Θ x)
+    refine ⟨g, g₀, hg, fun x ↦ ?_⟩
     rw [hg]
-    refine Prod.ext ((congrArg π (hrot x).symm).trans (hg₀ _).symm) ?_
-    exact (congrArg (sign B d) (hrot x).symm).trans (by
-      simp only [SignedBoundaryIsometryGroup.sign_apply, coe_rotationInclusion])
+    simp only [g₀, φ, π, η, MulEquiv.trans_apply, MonoidHom.comp_apply, MulEquiv.coe_toMonoidHom,
+      ← hrot x,
+      Scheme.NodalCycleNumbering.boundaryRotationEquivCremona_apply,
+      SignedBoundaryIsometryGroup.sign_apply, coe_rotationInclusion]
 
 end QPainleve.SignedClusterModularGroup
