@@ -116,7 +116,7 @@ private theorem exists_quadric_corner_decrease
   let : X[Φ].IsProjectiveOver ℂ := Φ.isProjectiveOver_quadric b hΦ hc r hr
   have hn : 1 ≤ n := by have := j.isLt; omega
   obtain ⟨n, rfl⟩ := Nat.exists_eq_add_of_le' hn
-  obtain ⟨Q, p, d', s', hs', Z, U, hU, k, -, -, hQ, hproj, hg', hbir', hpole', -, -, -, -,
+  obtain ⟨Q, p, d', s', hs', Z, U, hU, k, -, -, hQ, hproj, hg', hbir', hpole', -, -, -, -, -,
     hβ', -, -, hlt⟩ :=
     exists_sarkisov_path_of_toric_corner d e hΦ hc s hs hT g hg hbir σ hcone j hj hfirst
       D ((hT.ramificationIdealSheafToBase_def ℂ) ▸ hpole)

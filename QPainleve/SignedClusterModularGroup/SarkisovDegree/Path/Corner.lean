@@ -5,12 +5,14 @@ Authors: The QPainleve contributors
 -/
 module
 
+public import QPainleve.AlgebraicGeometry.Blowup.Tower.StrictTransform.Basic
 public import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.Picard
 public import QPainleve.Geometry.Toric.Fan.Logarithmic.Factorization
 public import QPainleve.SignedClusterModularGroup.SarkisovDegree.Corner
 
 import Mathlib.Analysis.Complex.Polynomial.Basic
 import QPainleve.AlgebraicGeometry.Blowup.Tower.PlaneResolution
+import QPainleve.Geometry.Toric.Fan.Hirzebruch.Incidence
 import QPainleve.Geometry.Toric.Fan.Picard.FiberDegree
 import QPainleve.Geometry.Toric.Fan.StarSubdivision.Descent
 
@@ -134,7 +136,9 @@ orbit lie over the first reverse center. Those from the other invariant fiber's
 open orbit stay in its open orbit and preserve first occurrences.
 
 The signed Hirzebruch parameter increases by one. The fiber degree is unchanged,
-the transported base orders keep their relative order, and the Sarkisov bidegree
+the transported base orders keep their relative order, and the strict section
+through the pivot retains its coefficients at all surviving centers. The reverse
+center has zero coefficient for this section. The Sarkisov bidegree
 decreases when the selected order is greater than half the fiber degree. -/
 theorem exists_sarkisov_path_of_toric_corner [X[Φ].IsProjectiveOver ℂ]
     (σ : Φ.cones) (hσ : σ.val = hull ℝ (Set.range (i ∘ b))) (j : Fin (n + 1))
@@ -179,6 +183,9 @@ theorem exists_sarkisov_path_of_toric_corner [X[Φ].IsProjectiveOver ℂ]
         ∃ c' : ℂˣ, hU.baseCenter (l.natAdd 1) = center[d,r' 3,c'] ∧
           ((∀ m < j.succAbove l, hT.baseCenter m ≠ hT.baseCenter (j.succAbove l)) →
             ∀ m < l.natAdd 1, hU.baseCenter m ≠ hU.baseCenter (l.natAdd 1))) ∧
+      hU.strictTransformCoefficients (B.fan.rayBoundaryIdeal B.isRegular (r' 0)) =
+        Fin.append (0 : Fin 1 → ℤ)
+          (hT.strictTransformCoefficients (Φ.rayBoundaryIdeal hΦ (r 0)) ∘ j.succAbove) ∧
       let y := coordinates(U,hU,k.inv ≫ g,f[B.fan])
       let C' := B.fan.hirzebruchPicardBasis d (e + 1) B.isRegular r' hr'
       let β' := C'.repr y.1 1
@@ -203,7 +210,7 @@ theorem exists_sarkisov_path_of_toric_corner [X[Φ].IsProjectiveOver ℂ]
     rw [← r.surjective.range_comp, Function.comp_def, hr]
     simp only [Matrix.range_cons, Matrix.range_empty, Set.union_empty, Set.singleton_union]
   obtain ⟨Ψ, F, hΨ, hF, hcΨ, hcF, d, τ, s, t, v, w, q, r₀, r', hr₀, hr', Z, U, hU, k,
-    -, -, hτ, hv, hw, hs, ht, hq, hq', -, hhead, hcoll, hstay, -, hg', hbir', hmodq, -, -, -, hp,
+    hd₀, -, hτ, hv, hw, hs, ht, hq, hq', -, hhead, hcoll, hstay, -, hg', hbir', hmodq, -, -, -, hp,
     hcoord⟩ :=
     exists_sarkisov_decrease_of_toric_corner b e hΦ hc hrays σ hσ hT j hj
       (by simpa only [← hj] using hfirst) g (P ↘ S) hg hbir
@@ -233,10 +240,16 @@ theorem exists_sarkisov_path_of_toric_corner [X[Φ].IsProjectiveOver ℂ]
   let path := Fan.LogarithmicProjection.SarkisovPath.ofStar p
   refine ⟨B, path, d, r', hr', Z, U, hU, k, ?_, ?_, rfl,
     t.isProjectiveOver_of_common_pointBlowup s σ τ v w hv hw,
-    hg', hbir', hpU, ⟨τ, hτ, hhead⟩, hcoll, hstay, ?_⟩
+    hg', hbir', hpU, ⟨τ, hτ, hhead⟩, hcoll, hstay, ?_, ?_⟩
   · exact (Fan.LogarithmicProjection.SarkisovPath.length_ofStar p).trans rfl
   · exact (Fan.LogarithmicProjection.SarkisovPath.rationalMap_ofStar p).trans
       (Fan.LogarithmicProjection.pathRationalMap_eq_denseTorusPartialIso p)
+  · have hσ₀ : (r 0).toCone ≤ σ := ((r 0).toCone_le_iff σ).mpr (by
+      rw [congrFun hr 0, hσ]
+      exact subset_hull (Set.mem_range_self (0 : Fin 2)))
+    exact hT.strictTransformCoefficients_toric_corner hU b d e hΦ hΨ r r' hr hr'
+      hF s t q k hq hq' hd₀ σ hσ₀ j hj hfirst
+      (fun x ↦ by simpa only [zero_smul, zero_add, one_smul] using (hcoord 0 1 x).1)
   · obtain ⟨hclass, hsum, hlt⟩ := hcoord ((C).repr x.1 0) β x.2
     exact corner_bidegree_comparison b e hΦ hc r hr hT g hg hU
       (Ψ.hirzebruchPicardBasis d (e + 1) hΨ r' hr') k j hclass hsum hlt

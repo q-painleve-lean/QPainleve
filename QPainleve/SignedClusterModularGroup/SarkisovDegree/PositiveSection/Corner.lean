@@ -50,6 +50,33 @@ local notation "center[" b "," ρ "," c "]" =>
 local notation "coordinates(" T "," hT "," g "," s ")" =>
   LinearEquiv.symm (BlowupTower.picardMarking T hT s) (Additive.ofMul (pullback g H))
 
+private theorem exists_positiveSection_target_frame {Ψ : Fan i} [Nonempty Ψ.cones]
+    (d₀ : Basis (Fin 2) ℤ N) (e : ℕ) (he : 0 < e) (hΨ : Ψ.IsRegular)
+    (s₀ : Fin 4 ≃ Ψ.Ray)
+    (hs₀ : (fun l ↦ (s₀ l).primitiveGenerator) =
+      ![d₀ 0, d₀ 1, -d₀ 0, (-(e : ℤ) + 1) • d₀ 0 - d₀ 1]) :
+    ∃ (d : Basis (Fin 2) ℤ N) (s : Fin 4 ≃ Ψ.Ray)
+      (hs : (fun l ↦ (s l).primitiveGenerator) =
+        ![d 0, d 1, -d 0, ((e - 1 : ℕ) : ℤ) • d 0 - d 1]),
+      d 0 = -d₀ 0 ∧ d 1 = d₀ 1 ∧ s 2 = s₀ 0 ∧ s 3 = s₀ 3 ∧
+      let C₀' := Ψ.hirzebruchPicardBasis d₀ (-(e : ℤ) + 1) hΨ s₀ hs₀
+      let C' := Ψ.hirzebruchPicardBasis d ((e - 1 : ℕ) : ℤ) hΨ s hs
+      ∀ L, C'.repr L 0 = C₀'.repr L 0 - (-(e : ℤ) + 1) * C₀'.repr L 1 ∧
+        C'.repr L 1 = C₀'.repr L 1 := by
+  -- Swap the sections even at index zero to keep track of the reverse corner.
+  have he' : -(-(e : ℤ) + 1) = ((e - 1 : ℕ) : ℤ) := by omega
+  rw [← he']
+  obtain ⟨d, s, hs, hs₀', hs₁, hs₃, -, hrepr'⟩ :=
+    Ψ.exists_hirzebruchPicardBasis_opposite_section d₀ (-(e : ℤ) + 1) hΨ s₀ hs₀
+  have hd₀ : d 0 = -d₀ 0 := by simpa [hs₀', congrFun hs₀ 2] using (congrFun hs 0).symm
+  have hd₁ : d 1 = d₀ 1 := by simpa [hs₁, congrFun hs₀ 1] using (congrFun hs 1).symm
+  have hs₂ : s 2 = s₀ 0 := Fan.Ray.primitiveGenerator_injective (by
+    calc
+      (s 2).primitiveGenerator = -d 0 := congrFun hs 2
+      _ = d₀ 0 := by rw [hd₀, neg_neg]
+      _ = (s₀ 0).primitiveGenerator := (congrFun hs₀ 0).symm)
+  exact ⟨d, s, hs, hd₀, hd₁, hs₂, hs₃, hrepr'⟩
+
 /-- A pivot at the positive section's corner on fiber `r 1` of a marked
 Hirzebruch surface of index `e > 0` gives a resolved path to index `e - 1`.
 The source marking can place either invariant fiber at `r 1`.
@@ -57,9 +84,10 @@ The source marking can place either invariant fiber at `r 1`.
 In the nonnegative-index markings the fiber coefficient drops by the pivot
 order and the fiber degree stays constant. The first reverse center is at
 the corner on the target's distinguished section, of square zero when `e = 1`.
-Its order is at least that of any
-retained center originally in the contracted fiber's open orbit. The remaining
-invariant fiber's open-orbit centers retain their orders and first occurrences. -/
+Its order is at least that of any retained center originally in the contracted
+fiber's open orbit. The remaining invariant fiber's open-orbit centers retain
+their orders and first occurrences. The strict positive section retains its
+coefficients at every surviving center and misses the reverse center. -/
 theorem exists_sarkisov_path_of_positive_corner [X[Φ].IsProjectiveOver ℂ]
     (b : Basis (Fin 2) ℤ N) (e : ℕ) (he : 0 < e) (hΦ : Φ.IsRegular) (hc : Φ.IsComplete)
     (r : Fin 4 ≃ Φ.Ray)
@@ -116,7 +144,10 @@ theorem exists_sarkisov_path_of_positive_corner [X[Φ].IsProjectiveOver ℂ]
       (∀ (l : Fin n) (c : ℂˣ), hT.baseCenter (j.succAbove l) = center[b,r 3,c] →
         ∃ c' : ℂˣ, hU.baseCenter (l.natAdd 1) = center[d,s 3,c'] ∧
           ((∀ m < j.succAbove l, hT.baseCenter m ≠ hT.baseCenter (j.succAbove l)) →
-            ∀ m < l.natAdd 1, hU.baseCenter m ≠ hU.baseCenter (l.natAdd 1))) := by
+            ∀ m < l.natAdd 1, hU.baseCenter m ≠ hU.baseCenter (l.natAdd 1))) ∧
+      hU.strictTransformCoefficients (B.fan.rayBoundaryIdeal B.isRegular (s 2)) =
+        Fin.append (0 : Fin 1 → ℤ)
+          (hT.strictTransformCoefficients (Φ.rayBoundaryIdeal hΦ (r 2)) ∘ j.succAbove) := by
   intro hcones hdim hnoeth hOver hProjection hdimY hSmoothY hInt hMod x C hpole A
   let := hcones
   let := hdim
@@ -138,28 +169,12 @@ theorem exists_sarkisov_path_of_positive_corner [X[Φ].IsProjectiveOver ℂ]
     ext u
     simp [Fin.exists_fin_succ, hb₀, hb₁, eq_comm]
   obtain ⟨B, path, d₀, s₀, hs₀, Z, U, hU, k, hlen, htoric, hB, hproj, hg', hbir', hpole',
-    ⟨τ, hτ, hhead⟩, hcoll, hstay, ha, hβ, horders, -, -⟩ :=
+    ⟨τ, hτ, hhead⟩, hcoll, hstay, hsection, ha, hβ, horders, -, -⟩ :=
     hT.exists_sarkisov_path_of_toric_corner b₀ (-(e : ℤ)) hΦ hc r₀ hr₀ g hg hbir σ hcone j
       hj hfirst D hpole
   let : Nonempty B.fan.cones := B.isComplete.nonempty_cones
-  -- Return to the nonnegative marking, including the marked zero-index limit.
-  have he' : -(-(e : ℤ) + 1) = ((e - 1 : ℕ) : ℤ) := by omega
-  have hmark :
-      ∃ (d : Basis (Fin 2) ℤ N) (s : Fin 4 ≃ B.fan.Ray)
-        (hs : (fun l ↦ (s l).primitiveGenerator) =
-          ![d 0, d 1, -d 0, ((e - 1 : ℕ) : ℤ) • d 0 - d 1]),
-        d 0 = -d₀ 0 ∧ d 1 = d₀ 1 ∧ s 3 = s₀ 3 ∧
-        let C₀' := B.fan.hirzebruchPicardBasis d₀ (-(e : ℤ) + 1) B.isRegular s₀ hs₀
-        let C' := B.fan.hirzebruchPicardBasis d ((e - 1 : ℕ) : ℤ) B.isRegular s hs
-        ∀ L, C'.repr L 0 = C₀'.repr L 0 - (-(e : ℤ) + 1) * C₀'.repr L 1 ∧
-          C'.repr L 1 = C₀'.repr L 1 := by
-    rw [← he']
-    obtain ⟨d, s, hs, hs₀', hs₁, hs₃, -, hrepr'⟩ :=
-      B.fan.exists_hirzebruchPicardBasis_opposite_section d₀ (-(e : ℤ) + 1) B.isRegular s₀ hs₀
-    have hd₀ : d 0 = -d₀ 0 := by simpa [hs₀', congrFun hs₀ 2] using (congrFun hs 0).symm
-    have hd₁ : d 1 = d₀ 1 := by simpa [hs₁, congrFun hs₀ 1] using (congrFun hs 1).symm
-    exact ⟨d, s, hs, hd₀, hd₁, hs₃, hrepr'⟩
-  obtain ⟨d, s, hs, hd₀, hd₁, hs₃, hrepr'⟩ := hmark
+  obtain ⟨d, s, hs, hd₀, hd₁, hs₂, hs₃, hrepr'⟩ :=
+    exists_positiveSection_target_frame d₀ e he B.isRegular s₀ hs₀
   refine ⟨B, path, d, s, hs, Z, U, hU, k, hlen, htoric, hB, hproj, hg', hbir', hpole', ?_⟩
   intro y C' first
   have hdimB : SmoothOfRelativeDimension 2 B.fan.algebraicRealizationStructureMap := by
@@ -172,7 +187,7 @@ theorem exists_sarkisov_path_of_positive_corner [X[Φ].IsProjectiveOver ℂ]
   have horders' : y.2 = Fin.append (fun _ : Fin 1 ↦ -C.repr x.1 1 - x.2 j)
       (x.2 ∘ j.succAbove) := by
     simpa only [x, y, C, hβ₀] using horders
-  refine ⟨by ring, rfl, horders', ⟨τ, by rw [hτ, hd₀, hd₁, Set.pair_comm], hhead⟩, ?_, ?_⟩
+  refine ⟨by ring, rfl, horders', ⟨τ, by rw [hτ, hd₀, hd₁, Set.pair_comm], hhead⟩, ?_, ?_, ?_⟩
   · intro l c hl
     obtain ⟨c₀, hc₀⟩ := (r₀ 1).exists_binomialCenter_eq_of_basis b₀ b c
     have hl' : hT.baseCenter (j.succAbove l) = center[b₀,r₀ 1,c₀] := by
@@ -196,5 +211,6 @@ theorem exists_sarkisov_path_of_positive_corner [X[Φ].IsProjectiveOver ℂ]
     refine ⟨c'', ?_, hfirst'⟩
     rw [hc'', hs₃]
     exact hc'
+  · simpa only [h₀, hs₂] using hsection
 
 end QPainleve.BlowupTower.IsClosedPointTower
