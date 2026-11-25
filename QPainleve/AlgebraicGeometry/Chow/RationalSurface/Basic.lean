@@ -197,6 +197,17 @@ theorem isPerfPair_classIntersectionBilinForm_of_isRationalOver :
   exact (isPerfPair_classIntersectionBilinForm_iff_of_common_resolution k hT hU e he).mpr
     (isPerfPair_classIntersectionBilinForm_projectivePlane k)
 
+/-- The Picard intersection form of a smooth projective rational surface
+is a perfect pairing. -/
+theorem isPerfPair_intersectionBilinForm_of_isRationalOver [IsIntegral X] :
+    (intersectionBilinForm k X).IsPerfPair := by
+  let : IsNoetherian X := isNoetherian_of_finiteType f
+  let := (f).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two
+  have hform : intersectionBilinForm k X = classIntersectionBilinForm k dim₂ := by
+    ext x y
+    simp only [intersectionBilinForm_apply, classIntersectionBilinForm_apply]
+  exact hform ▸ isPerfPair_classIntersectionBilinForm_of_isRationalOver k X
+
 /-- The canonical class of a smooth projective rational surface is characteristic for
 the integral Picard form. -/
 theorem isCharacteristic_canonicalBundle_of_isRationalOver :

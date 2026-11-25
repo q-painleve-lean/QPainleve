@@ -56,6 +56,7 @@ theorem intersectionForm_nondegenerate : intersectionForm.Nondegenerate := by
   exact ⟨h, fun x hx ↦ h x fun y ↦ (intersectionForm_isSymm.eq x y).trans (hx y)⟩
 
 /-- The strict boundary classes in cyclic order, starting with `H₁ - E₁ - E₄`. -/
+@[expose]
 def boundaryClass (j : ZMod 8) : L :=
   ![![1, 0, -1, 0, 0, -1, 0, 0, 0, 0], ![0, 0, 1, 0, 0, 0, -1, 0, 0, 0],
     ![0, 1, -1, -1, 0, 0, 0, 0, 0, 0], ![0, 0, 0, 1, 0, 0, 0, -1, 0, 0],

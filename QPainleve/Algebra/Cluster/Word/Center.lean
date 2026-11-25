@@ -6,8 +6,8 @@ Authors: The QPainleve contributors
 module
 
 public import QPainleve.Algebra.Cluster.ChargeKernel.Word
+public import QPainleve.AlgebraicGeometry.RationalMap.Composition.Sections
 public import QPainleve.Geometry.Toric.CharacterTorus.Noncollision
-public import Mathlib.AlgebraicGeometry.Birational.Composition
 
 /-!
 # Center parameters along a cluster word
@@ -296,6 +296,27 @@ instance (w : Word B C) (P : ChargeSeed B N) :
     (w.centerPartialMap K P).IsOver
       (Over.mk (structureMap K A)).hom (Over.mk (structureMap K A)).hom :=
   inferInstanceAs ((w.centerPartialMap K P).IsOver (structureMap K A) (structureMap K A))
+
+local notation "S" => Spec (CommRingCat.of K)
+local notation "T" => Over.mk (structureMap K A)
+
+/-- Both ends of a loop's center map lie in the initial noncollision open
+when the exchange kernel is the charge kernel. -/
+theorem centerPoint_endpoints_mem_noncollision (w : Word B B) (P : ChargeSeed B N)
+    (hker : B.matrix.mulVecLin.ker = P.charge.ker)
+    (x : Over.mk (𝟙 S) ⟶ (w.centerPartialMap K P).domainOver (X := T) (Y := T)) :
+    (x ≫ (w.centerPartialMap K P).domainSource (X := T) (Y := T)).left (default : S) ∈
+        (Path.nil : Word B B).centerOpen K P ∧
+      (x ≫ (w.centerPartialMap K P).domainTarget (X := T) (Y := T)).left (default : S) ∈
+        (Path.nil : Word B B).centerOpen K P := by
+  constructor
+  · rw [Over.comp_left, Scheme.PartialMap.domainSource_left, Scheme.Hom.comp_apply]
+    apply w.centerOpen_le_centerOpen_nil K P
+    rw [← w.centerPartialMap_domain (K := K) P]
+    exact (x.left (default : S)).property
+  · rw [Over.comp_left, Scheme.PartialMap.domainTarget_left, Scheme.Hom.comp_apply]
+    exact w.centerPartialMap_opensRange_le_centerOpen_nil P hker
+      ((w.centerPartialMap K P).hom.mem_opensRange.mpr (Set.mem_range_self _))
 
 /-- The center map for the empty word is the identity on the initial noncollision open. -/
 theorem centerPartialMap_nil (P : ChargeSeed B N) :
