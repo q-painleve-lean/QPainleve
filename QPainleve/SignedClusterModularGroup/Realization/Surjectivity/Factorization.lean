@@ -121,11 +121,6 @@ variable {Q : CompleteToricPresentation i b r L γ}
   {d : ZMod n → L} {hD : ∀ c, D[M c].IsEffectiveCartier}
   {hmark : ∀ c j, (M c).boundaryClass (hD c) j = d j}
 
-local instance : Nonempty Q.fan.cones := Q.complete.nonempty_cones
-local instance : NeZero Q.length := Q.neZero
-local instance : PrestableFamily ((Q.fan.boundaryIdeal Q.complete.nonempty_cones).subscheme ↘ S) :=
-  Q.prestable
-
 local notation "Models[" C "]" =>
   HasToricTargetModels (T₀ := Centers[r]) (T₁ := Centers[r]) (b := b) (s := Q.rays)
     (hΦ := Q.regular) (T := Q.cycle) (origin := Q.origin) (ι := Q.inclusion) (P₁ := M)
@@ -158,8 +153,11 @@ theorem exists_word_signedPicardHom_eq_of_pair_iso_of_high_fiber_steps
     (hprim : IsPrimitive (Additive.ofMul classOf(hD c₀)))
     (hgeneric : ∀ w : Word E E, c₀.left (default : S) ∈ w.centerOpen ℂ P)
     (ρ : (SignedClusterModularGroup ℂ E)ᵐᵒᵖ →* signedBoundaryIsometryGroup B d)
-    (hρ : ∀ (w : Word E E) (R : GeometricRealization M M Cw[w,P] (w.xRationalMap ℂ)),
-      Models[Cw[w,P]] → ρ eval[E,w] = R.toSignedBoundaryIsometry d hD hmark)
+    (hρ : letI := Q.complete.nonempty_cones
+      letI := Q.neZero
+      letI := Q.prestable
+      ∀ (w : Word E E) (R : GeometricRealization M M Cw[w,P] (w.xRationalMap ℂ)),
+        Models[Cw[w,P]] → ρ eval[E,w] = R.toSignedBoundaryIsometry d hD hmark)
     (g : signedBoundaryIsometryGroup B d) (e : (M c₀).pair ≅ (M c₁).pair)
     (hpic : ∀ a, (M c₀).picardMarking ((toIsometry B d g).val a) =
       Additive.ofMul (LineBundleClass.pullback (surfaceIso e).hom ((M c₁).picardMarking a).toMul))
@@ -172,6 +170,9 @@ theorem exists_word_signedPicardHom_eq_of_pair_iso_of_high_fiber_steps
       ∃ h, (M c₀).evaluation.compOfDefined (w.xRationalMap ℂ) h =
         (surfaceIso e).hom.toRationalMap.comp (M c₁).evaluation := by
   let : IsIntegral (M c₀).surface := (M c₀).integral
+  let := Q.complete.nonempty_cones
+  let := Q.neZero
+  let := Q.prestable
   have hE := P.matrix_eq.symm.trans (congrArg₂ chargeExchangeMatrix hform hcharge)
   have hM := models c₀ (hgeneric Quiver.Path.nil)
   have hindex := Q.chargeIndex_ne_zero_of_anticanonical_cycle hM (hD c₀) hnef hsq hcan hprim
