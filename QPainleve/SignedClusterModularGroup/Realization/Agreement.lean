@@ -226,6 +226,32 @@ abbrev GeometricRealization.HasToricTargetModels
     (ContractedToricFiber b s hΦ T origin ι (centers (c ≫ C.domainTarget))
       (P₁ (c ≫ C.domainTarget)))
 
+namespace GeometricRealization.HasToricTargetModels
+
+variable {T₀ T₁ T₂ : Over S}
+  {P₂ : Point T₂ → MarkedSurface ℂ n B₁ Xtor[r]}
+  {centers : Point T₂ → Multiplicative (Fin r → ℤ) →* ℂˣ}
+  {D : T₁.left.PartialMap T₂.left} [D.IsOver T₁.hom T₂.hom]
+
+/-- A toric model at every target center supplies models for any partial center map. -/
+theorem of_forall
+    (h : ∀ c, Nonempty (ContractedToricFiber b s hΦ T origin ι (centers c) (P₂ c))) :
+    HasToricTargetModels (T₀ := T₁) (T₁ := T₂) (b := b) (s := s) (hΦ := hΦ) (T := T)
+      (origin := origin) (ι := ι) (P₁ := P₂) centers D :=
+  fun c ↦ h (c ≫ D.domainTarget (X := T₁) (Y := T₂))
+
+/-- Precomposing a partial center map preserves the target model condition. -/
+theorem comp [PreirreducibleSpace T₀.left] [Nonempty T₁.left]
+    (hD : HasToricTargetModels (T₀ := T₁) (T₁ := T₂) (b := b) (s := s) (hΦ := hΦ) (T := T)
+      (origin := origin) (ι := ι) (P₁ := P₂) centers D)
+    (C : T₀.left.PartialMap T₁.left) [IsDominant C.hom] [C.IsOver T₀.hom T₁.hom] :
+    HasToricTargetModels (T₀ := T₀) (T₁ := T₂) (b := b) (s := s) (hΦ := hΦ) (T := T)
+      (origin := origin) (ι := ι) (P₁ := P₂) centers (C.comp D) :=
+  C.forall_comp_domainTarget (X := T₀) (Y := T₁) (Z := T₂) D
+    (fun c ↦ Nonempty (ContractedToricFiber b s hΦ T origin ι (centers c) (P₂ c))) hD
+
+end GeometricRealization.HasToricTargetModels
+
 variable
   {T₀ T₁ : Over S} [Nonempty T₀.left] [Smooth T₀.hom]
   {X₀ : Scheme} [IsIntegral X₀] [X₀.IsSeparated]

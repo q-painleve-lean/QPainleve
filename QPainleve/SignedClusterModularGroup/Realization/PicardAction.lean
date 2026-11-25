@@ -186,13 +186,9 @@ private noncomputable def loopSignedAction
         (xMap[E,toLoop w.unop]).comp (xMap[E,toLoop v.unop]) := by
       rw [map_mul toLoop]
       exact Quiver.Path.xRationalMap_comp ℂ _ _
-    have hcomp : Models[(C w.unop).comp (C v.unop)] := by
-      intro c
-      simpa only [Category.assoc, Scheme.PartialMap.compDomainRight_target] using
-        hC v.unop (c ≫ (C w.unop).compDomainRight (C v.unop))
     exact (signedAction_eq_of_xMap_eq D hD hmark hc hι hindex
       (R (v.unop * w.unop)) ((R w.unop).comp (R v.unop)) h
-        (hC (v.unop * w.unop)) hcomp).trans
+        (hC (v.unop * w.unop)) ((hC v.unop).comp (C w.unop))).trans
       ((R w.unop).toSignedBoundaryIsometry_comp D hD hmark (R v.unop))
 
 include hmark hc hι hindex in
@@ -244,7 +240,7 @@ theorem existsUnique_picardHom
   let : ∀ w : inversionFreeLoops E, IsDominant (C w).hom := hC
   let : ∀ w : inversionFreeLoops E, (C w).IsOver T₀.hom T₀.hom := hCO
   obtain ⟨ρ, hρ⟩ := exists_signedAction_of_loopMap D hD hmark hc hι hindex
-    (inversionFreeLoops E).subtype C R (fun w c ↦ hmodels (c ≫ (C w).domainTarget))
+    (inversionFreeLoops E).subtype C R (fun _ ↦ HasToricTargetModels.of_forall hmodels)
     evalLoop[E] (clusterModularGroupMap_surjective ℂ E)
     (fun w v h ↦ (Quiver.Path.xRationalMap_eq_iff ℂ word(w.val) word(v.val)).mpr
       ((clusterModularGroupMap_eq_iff ℂ E w v).mp h))
@@ -254,7 +250,7 @@ theorem existsUnique_picardHom
       toIsometry B D (ρ (op (evalLoop[E] w))) = asIsometry[B] R'.picard := by
     calc
       _ = toIsometry B D (R'.toSignedBoundaryIsometry D hD hmark) :=
-        congrArg (toIsometry B D) (hρ w R' (fun c ↦ hmodels (c ≫ C'.domainTarget)))
+        congrArg (toIsometry B D) (hρ w R' (HasToricTargetModels.of_forall hmodels))
       _ = _ := (toIsometry_apply B D _).trans
         (congrArg Prod.fst (coe_toSignedBoundaryIsometry R' D hD hmark))
   have hmem (g : (PointMaps[E])ᵐᵒᵖ) : toIsometry B D (ρ g) ∈ PicardRotations[B,D] := by
@@ -338,11 +334,11 @@ theorem existsUnique_signedPicardHom
       ∃ R : GeometricRealization P P C xMap[E,w],
         R.orientation = (-1 : ℤˣ) ^ (word(w)).inversionCount ∧ Models[C] := by
     obtain ⟨C, hC, hCO, R, hsign⟩ := hreal w
-    exact ⟨C, hC, hCO, R, hsign, fun c ↦ hmodels (c ≫ C.domainTarget)⟩
+    exact ⟨C, hC, hCO, R, hsign, HasToricTargetModels.of_forall hmodels⟩
   obtain ⟨ρ, hρ, huniq⟩ :=
     existsUnique_signedPicardHom_of_realizations D hD hmark hc hι hindex (centers := centers) hreal'
   refine ⟨ρ, fun w ↦ ⟨(hρ w).1, fun R' ↦ ?_⟩, fun ρ' hρ' ↦ ?_⟩
-  · exact (hρ w).2 R' (fun c ↦ hmodels (c ≫ _))
+  · exact (hρ w).2 R' (HasToricTargetModels.of_forall hmodels)
   · exact huniq ρ' (fun w ↦ ⟨(hρ' w).1, fun R' _ ↦ (hρ' w).2 R'⟩)
 
 end QPainleve.SignedClusterModularGroup.GeometricRealization

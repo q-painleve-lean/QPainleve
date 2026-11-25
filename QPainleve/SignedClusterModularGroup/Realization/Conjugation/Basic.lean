@@ -138,15 +138,9 @@ theorem picard_conjugation_of_comp_xMap_eq
     (hC : Models[C]) (hJ : Models[J]) :
     (∀ x, B.picard x = R.picard.symm (A.picard (R.picard x))) ∧
       B.orientation = A.orientation := by
-  have hmodels₁ : Models[C.comp J] := fun c ↦ by
-    simpa only [Category.assoc, PartialMap.compDomainRight_target] using
-      hJ (c ≫ C.compDomainRight J)
-  have hmodels₀ : Models[D.comp C] := fun c ↦ by
-    simpa only [Category.assoc, PartialMap.compDomainRight_target] using
-      hC (c ≫ D.compDomainRight C)
   let : (F.comp (w.xRationalMap ℂ)).IsDominant := RationalMap.instIsDominantComp _ _
   obtain ⟨hpic, hact⟩ := (R.comp B).marked_actions_eq_of_xMap_eq (A.comp R)
-    hcomp hc hι hindex centers hmodels₁ hmodels₀
+    hcomp hc hι hindex centers (hJ.comp C) (hC.comp D)
   refine ⟨fun x ↦ ?_, ?_⟩
   · have h := congrArg (fun e : B₁.IsometryEquiv B₀ ↦ e x) hpic
     simp only [comp_picard, BilinForm.IsometryEquiv.trans_apply] at h
