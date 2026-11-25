@@ -5,10 +5,9 @@ Authors: The QPainleve contributors
 -/
 module
 
-public import QPainleve.AlgebraicGeometry.RelativeProj.LineBundle
+public import QPainleve.AlgebraicGeometry.RelativeProj.LineBundle.Basic
 public import QPainleve.AlgebraicGeometry.RelativeProj.Pullback
 
-import QPainleve.AlgebraicGeometry.Modules.GradedAlgebra.SymmetricAlgebraPullback
 import QPainleve.AlgebraicGeometry.RelativeProj.TwistingSheaf.Comparison
 
 /-!
@@ -40,28 +39,6 @@ namespace QuasicoherentSheaf
 
 variable (F : QuasicoherentSheaf Y) (f : X ⟶ Y)
 
-/-- The base-change projection from the projectivization of the pulled-back
-quasicoherent sheaf to that of the original sheaf. -/
-def relativeProjPullbackProjection :
-    Sym[F⟮f,F⟯].obj.relativeProj ⟶ Sym[F].obj.relativeProj :=
-  GradedQuasicoherentAlgebra.relativeProjProjectionOfPullback f
-    (pullbackGradedSymmetricAlgebraIso f F)
-
-/-- Projectivization of the pulled-back sheaf is the scheme-theoretic base change
-of the original projectivization. -/
-theorem isPullback_relativeProjPullbackProjection :
-    IsPullback Sym[F⟮f,F⟯].obj.relativeProjToBase (F.relativeProjPullbackProjection f)
-      f Sym[F].obj.relativeProjToBase :=
-  GradedQuasicoherentAlgebra.isPullback_relativeProjProjectionOfPullback f
-    (pullbackGradedSymmetricAlgebraIso f F)
-
-/-- The projectivization's base-change projection commutes with the structure maps. -/
-@[reassoc (attr := simp)]
-theorem relativeProjPullbackProjection_toBase :
-    F.relativeProjPullbackProjection f ≫ Sym[F].obj.relativeProjToBase =
-      Sym[F⟮f,F⟯].obj.relativeProjToBase ≫ f :=
-  (F.isPullback_relativeProjPullbackProjection f).w.symm
-
 /-- The projectivization's base-change projection pulls back every integral twist
 to the corresponding twist of the projectivization of the pulled-back sheaf. -/
 def relativeProjPullbackProjectionTwistingSheafIso (n : ℤ) :
@@ -84,7 +61,7 @@ def relativeProjPullbackProjectionTwistingSheafIso (n : ℤ) :
   let ν := CommMon.relativeProjTwistingSheafMap e.hom hφ n
   have : IsIso ν := CommMon.isIso_relativeProjTwistingSheafMap_of_epi_one e.hom hφ n
     (isGeneratedInDegreeOne_gradedSymmetricAlgebra G)
-  rw [relativeProjPullbackProjection,
+  rw [relativeProjPullbackProjection_eq,
     GradedQuasicoherentAlgebra.relativeProjProjectionOfPullback_eq, CommMon.relativeProjMapIso_hom]
   let j := CommMon.relativeProjMap e.hom hφ
   exact (Scheme.Modules.pullbackComp j (A.relativeProjBaseChange f)).symm.app _ ≪≫

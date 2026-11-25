@@ -5,7 +5,7 @@ Authors: The QPainleve contributors
 -/
 module
 
-public import QPainleve.AlgebraicGeometry.RelativeProj.LineBundle
+public import QPainleve.AlgebraicGeometry.RelativeProj.LineBundle.Basic
 public import QPainleve.AlgebraicGeometry.RelativeProj.TwistingSheaf.GradedMap
 
 /-!

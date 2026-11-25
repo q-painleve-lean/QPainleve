@@ -5,7 +5,7 @@ Authors: The QPainleve contributors
 -/
 module
 
-public import QPainleve.AlgebraicGeometry.RelativeProj.LineBundle
+public import QPainleve.AlgebraicGeometry.RelativeProj.LineBundle.Basic
 public import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.ProjectiveLine
 
 import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.SymmetricAlgebra.DisjointSections
