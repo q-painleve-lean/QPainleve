@@ -10,6 +10,7 @@ public import QPainleve.SignedClusterModularGroup.Realization.Presentation
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Boundary.Numbering
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Nodal.Canonical
 import QPainleve.AlgebraicGeometry.Curves.Node.Reindex
+import QPainleve.AlgebraicGeometry.IdealSheaf.Image.Over
 import QPainleve.AlgebraicGeometry.IdealSheaf.VanishingIdeal
 import QPainleve.Geometry.Toric.Fan.Boundary.Canonical
 import QPainleve.Geometry.Toric.Fan.Logarithmic.InternalBlowup
@@ -190,22 +191,6 @@ private theorem exists_nodal_model_of_numbered_contraction
 local notation "Z" => Sigma.fst (A[d])
 local notation "ιd" => WithBoundary.boundaryι (Sigma.snd (A[d]))
 local notation "πd" => toBase (WithBoundary.toTower (Sigma.snd (A[d])))
-local notation "ToricIdeal" => Fan.boundaryIdeal Q.fan Q.complete.nonempty_cones
-
-variable (d) in
-/-- The closed strict boundary has its original toric boundary structure over the field. -/
-private theorem strict_boundary_imageIso_isOver :
-    let : (Z).Over SpecC := ⟨πd ≫ (Q.fan.algebraicRealization ↘ SpecC)⟩
-    ((asIso (ιd).toImage).hom).IsOver SpecC := by
-  intro hZ
-  let iB : ToricBoundary ≅ R[d].subscheme := asIso (ιd).toImage
-  have hBcomp : iB.hom ≫ R[d].subschemeι = ιd := (ιd).toImage_imageι
-  have hstructure : (Z) ↘ SpecC = πd ≫ (Q.fan.algebraicRealization ↘ SpecC) := rfl
-  refine ⟨?_⟩
-  -- The scheme-theoretic image model is the closed subscheme cut out by the kernel.
-  change iB.hom ≫ (R[d].subscheme ↘ SpecC) = ToricBoundary ↘ SpecC
-  rw [R[d].over_eq_subschemeι_comp, reassoc_of% hBcomp, hstructure,
-    WithBoundary.boundaryι_toBase_assoc, (ToricIdeal).over_eq_subschemeι_comp]
 
 include hU he hE in
 private theorem exists_descended_numbering [PrestableFamily (E.subscheme ↘ SpecC)]
@@ -225,9 +210,13 @@ private theorem exists_descended_numbering [PrestableFamily (E.subscheme ↘ Spe
     (Fan.isClosedPointTower_internalBlowupTower b Q.rays centers[d]).smoothOfRelativeDimension _
   let : (proj).IsOver SpecC := ⟨he.trans
     (congrArg (πd ≫ ·) (Fan.algebraicRealization_over Q.fan).symm)⟩
+  let : (ιd).IsOver SpecC := ⟨by
+    change ιd ≫ πd ≫ (Q.fan.algebraicRealization ↘ SpecC) = ToricBoundary ↘ SpecC
+    rw [WithBoundary.boundaryι_toBase_assoc,
+      (Fan.boundaryIdeal Q.fan Q.complete.nonempty_cones).over_eq_subschemeι_comp]⟩
   let isoB : ToricBoundary ≅ R[d].subscheme := asIso (ιd).toImage
   have hBcomp : isoB.hom ≫ R[d].subschemeι = ιd := (ιd).toImage_imageι
-  let hB : isoB.hom.IsOver SpecC := strict_boundary_imageIso_isOver Q d
+  let hB : isoB.hom.IsOver SpecC := inferInstanceAs ((ιd).toImage.IsOver SpecC)
   let : PrestableFamily (R[d].subscheme ↘ SpecC) :=
     (MorphismProperty.cancel_left_of_respectsIso (P := @PrestableFamily)
       isoB.hom _).mp (hB.comp_over.symm ▸ Q.prestable)
