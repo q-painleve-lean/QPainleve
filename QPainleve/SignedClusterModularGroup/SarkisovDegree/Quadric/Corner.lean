@@ -56,7 +56,7 @@ variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
 local notation "rankTwo" => Eq.trans (finrank_eq_card_basis b) (Fintype.card_fin 2)
 local notation "C" => Φ.hirzebruchPicardBasis b 0 hΦ r hr
 
-/-- Blow up the first center over a high-order quadric corner, contract the strict transform
+/-- Blow up the first center over a quadric corner, contract the strict transform
 of its fiber, and contract the resulting negative section. The three links are
 resolved by the given tower and end at the marked plane projection, retaining the
 specified target morphism. For quadric coefficients `a, β` and selected order `m`,
@@ -75,7 +75,6 @@ theorem exists_sarkisov_path_of_quadric_corner
     let : IsIntegral Y := hT.isIntegral f[Φ]
     let x := mark[T,hT,f[Φ],g]
     ∀ (A : LogarithmicProjection i D), A.fan = Φ → A.hom ≍ T.toBase →
-      (C).repr x.1 1 < 2 * (-x.2 j) →
       ∃ (B : LogarithmicProjection i D) (p : SarkisovPath A B)
         (d : Basis (Fin 2) ℤ N) (Z : Scheme) (U : BlowupTower P (1 + (1 + n)) Z)
         (hU : IsClosedPointTower P U) (k : Y ≅ Z),
@@ -90,7 +89,7 @@ theorem exists_sarkisov_path_of_quadric_corner
         y.2 (Fin.castAdd (1 + n) (0 : Fin 1)) = -((C).repr x.1 0) - x.2 j ∧
         y.2 (Fin.natAdd 1 (Fin.castAdd n (0 : Fin 1))) = -((C).repr x.1 1) - x.2 j ∧
         (∀ l : Fin n, y.2 (Fin.natAdd 1 (Fin.natAdd 1 l)) = x.2 (j.succAbove l)) := by
-  intro hcones hdim hOver hSmooth hIntegral x A hA hAh _
+  intro hcones hdim hOver hSmooth hIntegral x A hA hAh
   let := hcones
   let := hdim
   let := hOver
@@ -176,7 +175,7 @@ variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
 local notation "rankTwo" => Eq.trans (finrank_eq_card_basis b) (Fintype.card_fin 2)
 local notation "fA" => (A.fan.algebraicRealization ↘ S)
 
-/-- A retained high order at a quadric corner gives a marked plane exit whenever
+/-- A retained first center at a quadric corner gives a marked plane exit whenever
 its plane degree `a + β - m` satisfies `2 * (a + β - m) < 3 * β`. The comparison
 uses only the primary degree of the reference marking and preserves the specified
 plane target. -/
@@ -196,11 +195,10 @@ theorem exists_sarkisov_step_of_quadric_corner
     let x := mark[T,hT,fA,g]
     let C := A.fan.hirzebruchPicardBasis b 0 A.isRegular r hr
     let β := C.repr x.1 1
-    β < 2 * (-x.2 j) →
     2 * (C.repr x.1 0 + β + x.2 j) < 3 * β →
     3 * β.toNat ≤ (ofLex d).1 →
     HasPlaneTargetDecrease A B rankTwo hD hNode d := by
-  intro hcones hSmoothA x C β hhigh hdrop hd
+  intro hcones hSmoothA x C β hdrop hd
   let := hcones
   let := hSmoothA
   let : Y.Over S := ⟨T.toBase ≫ fA⟩
@@ -215,7 +213,7 @@ theorem exists_sarkisov_step_of_quadric_corner
   have hR := precomposeSarkisovOfIso_obj_hom_of_comp rankTwo k.symm rfl B hB hBh
   obtain ⟨Q, p, a, Z, U, hU, e, hQ, hQh, -, -, hg', hbir', hdeg, hpos, -⟩ :=
     hT.exists_sarkisov_path_of_quadric_corner b A.isRegular A.isComplete r hr g hg hbir
-      σ hσ j hj hfirst (obj[F,A]) (precomposeSarkisovOfIso_obj_fan ..) hL hhigh
+      σ hσ j hj hfirst (obj[F,A]) (precomposeSarkisovOfIso_obj_fan ..) hL
   have htarget : (obj[F,B]).hom ≍ e.hom ≫ (e.inv ≫ g) ≫ (planeIso[b',hi]).inv := by
     simpa only [Category.assoc, Iso.hom_inv_id_assoc] using hR
   let : IsNoetherian P := isNoetherian_of_finiteType fP
