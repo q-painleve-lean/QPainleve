@@ -14,7 +14,14 @@ public import QPainleve.Geometry.Toric.Fan.ProjectiveSpace.Plane
 public import QPainleve.Geometry.Toric.Fan.Ruling.Hirzebruch
 public import QPainleve.SignedClusterModularGroup.SarkisovDegree.PositiveSection.Selection
 
+import QPainleve.AlgebraicGeometry.Modules.Differentials.PoleIdeal
 import QPainleve.Geometry.Toric.Fan.Hirzebruch.Corner
+import QPainleve.Geometry.Toric.Fan.Logarithmic.Factorization.Iso
+import QPainleve.Geometry.Toric.Fan.Ruling.Hirzebruch.InvariantFiber
+import QPainleve.Geometry.Toric.Fan.Ruling.Hirzebruch.Marking
+import QPainleve.Geometry.Toric.Fan.Subdivision.Projective
+import QPainleve.SignedClusterModularGroup.SarkisovDegree.PositiveSection.Corner
+import QPainleve.SignedClusterModularGroup.SarkisovDegree.ResolvedSection
 
 /-!
 # Iterating marked positive-section pivots
@@ -36,6 +43,7 @@ public noncomputable section
 open AlgebraicGeometry CategoryTheory Module PointedCone
 open QPainleve QPainleve.BlowupTower
 open TauCeti.AlgebraicGeometry LineBundleClass TauCeti.SymmetricAlgebra
+open Scheme.IdealSheafData
 
 namespace TauCeti.Toric.Fan.LogarithmicProjection
 
@@ -56,6 +64,9 @@ local notation "fiberRay[" r "," j "]" => r ((![1, 3] : Fin 2 → Fin 4) j)
 local notation "center[" b "," ρ "," c "]" =>
   Fan.Ray.binomialCenter ρ rankTwo[b] (Basis.detDualEquiv_self b (Fan.Ray.primitiveGenerator ρ))
     (Fan.Ray.surjective_detCharacter ρ b) c pt
+local notation "obj[" F "," A "]" => @Prefunctor.obj _ sarkisovQuiver _ sarkisovQuiver F A
+local notation "mapPath[" F "," p "]" =>
+  @Prefunctor.mapPath _ sarkisovQuiver _ sarkisovQuiver F _ _ p
 
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {X : Scheme} [X.Over S] [SmoothOfRelativeDimension 2 (X ↘ S)]
@@ -305,35 +316,307 @@ private theorem exists_of_pivot {C : LogarithmicProjection i D}
 
 end PositiveSectionMarking
 
-/-- Compose the resolved positive-section pivots on the common surface from
-the single-pivot comparisons of the towers. The earliest maximal proper
-center is chosen at each positive index. The resulting quadric keeps the
-ruling degree and reaches the prepared fiber coefficient. Each original
-mark is still first over its point and has at least its initial order. -/
+section Pivot
+
+variable {A B : LogarithmicProjection i D} {b' : Basis (Fin 2) ℤ N}
+  {hi : IsIntegralLattice i} {e n : ℕ} {ι : Type*}
+
+local notation "head" => Fin.castAdd n (0 : Fin 1)
+
+private theorem HirzebruchPlaneResolution.iso_isOver
+    (M : HirzebruchPlaneResolution A B b' hi e n) :
+    let : M.top.Over S := ⟨M.tower.toBase ≫ f[A]⟩
+    M.iso.hom.IsOver S := by
+  intro hover
+  let := hover
+  exact ⟨(Category.assoc M.iso.hom M.tower.toBase f[A]).symm.trans
+    (M.source_hom ▸ comp_over A.hom S)⟩
+
+private theorem HirzebruchPlaneResolution.source_pole
+    (M : HirzebruchPlaneResolution A B b' hi e n) :
+    let : SmoothOfRelativeDimension 2 f[A] := M.smooth
+    (A.fan.boundaryIdeal A.isComplete.nonempty_cones).comap M.tower.toBase =
+      (D.comap M.iso.inv) * M.closed.ramificationIdealSheafToBase ℂ := by
+  intro hdim
+  let := hdim
+  let : M.top.Over S := ⟨M.tower.toBase ≫ f[A]⟩
+  let : M.tower.toBase.IsOver S := ⟨rfl⟩
+  let : SmoothOfRelativeDimension 2 (M.top ↘ S) := M.closed.smoothOfRelativeDimension f[A]
+  let : M.iso.hom.IsOver S := M.iso_isOver
+  let : Smooth (X ↘ S) := SmoothOfRelativeDimension.smooth 2 _
+  have h := comap_eq_mul_ramificationIdealSheaf_comp_iff_of_isIso ℂ M.iso.hom M.tower.toBase 2
+    (D := A.fan.boundaryIdeal A.isComplete.nonempty_cones) (Q := D)
+  rw [IsIso.inv_eq_of_hom_inv_id M.iso.hom_inv_id] at h
+  rw [M.closed.ramificationIdealSheafToBase_def ℂ]
+  have hcomap := congrArg (A.fan.boundaryIdeal A.isComplete.nonempty_cones).comap M.source_hom
+  exact h.mp (hcomap.symm.trans (A.comap_boundaryIdeal.trans
+    (congrArg (D * ·) (ramificationIdealSheaf_congr ℂ M.source_hom))))
+
+private theorem HirzebruchPlaneResolution.exists_lift_pivot_path [PreirreducibleSpace X]
+    (M : HirzebruchPlaneResolution A B b' hi e n)
+    {Φ : Fan i} {Z : Scheme} {m : ℕ} (T : BlowupTower Φ.algebraicRealization m Z)
+    (k : M.top ≅ Z) :
+    let : SmoothOfRelativeDimension 2 f[A] := M.smooth
+    let : M.top.Over S := ⟨M.tower.toBase ≫ f[A]⟩
+    let : SmoothOfRelativeDimension 2 (M.top ↘ S) := M.closed.smoothOfRelativeDimension f[A]
+    let : IsIntegral M.top := M.closed.isIntegral f[A]
+    ∀ {L R : LogarithmicProjection i (D.comap M.iso.inv)}, SarkisovPath L R →
+      L.fan = A.fan → L.hom ≍ M.tower.toBase → R.fan = Φ → R.hom ≍ k.hom ≫ T.toBase →
+      ∃ C : LogarithmicProjection i D, C.fan = Φ ∧
+        C.hom ≍ (M.iso ≪≫ k).hom ≫ T.toBase ∧ Nonempty (SarkisovPath A C) := by
+  intro hdim hover hdimTop hIntegral L R p hL hLhom hR hRhom
+  let := hdim
+  let := hover
+  let := hdimTop
+  let := hIntegral
+  let : M.iso.hom.IsOver S := M.iso_isOver
+  have hD : (D.comap M.iso.inv).comap M.iso.hom = D := by
+    rw [← comap_comp, Iso.hom_inv_id, Scheme.IdealSheafData.comap_id]
+  let F := precomposeSarkisovOfIso (i := i) rankTwo[M.basis] M.iso hD
+  have hStart : obj[F,L] = A := by
+    refine LogarithmicProjection.ext ((precomposeSarkisovOfIso_obj_fan ..).trans hL) ?_
+    exact (precomposeSarkisovOfIso_obj_hom ..).trans
+      ((heq_comp rfl rfl (congrArg Fan.algebraicRealization hL) HEq.rfl hLhom).trans
+        (heq_of_eq M.source_hom.symm))
+  refine ⟨obj[F,R], (precomposeSarkisovOfIso_obj_fan ..).trans hR, ?_,
+    ⟨Eq.mp (congrArg (fun L' ↦ SarkisovPath L' obj[F,R]) hStart) mapPath[F,p]⟩⟩
+  simpa only [Iso.trans_hom, Category.assoc] using
+    (precomposeSarkisovOfIso_obj_hom ..).trans
+      (heq_comp rfl rfl (congrArg Fan.algebraicRealization hR) HEq.rfl hRhom)
+
+private def HirzebruchPlaneResolution.afterPivot
+    (M : HirzebruchPlaneResolution A B b' hi e n) {C : LogarithmicProjection i D}
+    {k m : ℕ} {Z : Scheme} (d : Basis (Fin 2) ℤ N) (r : Fin 4 ≃ C.fan.Ray)
+    (hr : (fun j ↦ (r j).primitiveGenerator) = ![d 0, d 1, -d 0, (k : ℤ) • d 0 - d 1])
+    {T : BlowupTower C.fan.algebraicRealization m Z} (hT : IsClosedPointTower _ T)
+    (u : M.top ≅ Z) (hC : C.hom = (M.iso ≪≫ u).hom ≫ T.toBase)
+    (hg : (u.inv ≫ M.planeMap) ≫ (P ↘ S) = T.toBase ≫ f[C])
+    (hbir : Scheme.BirationalOver (u.inv ≫ M.planeMap) (𝟙 P)) :
+    HirzebruchPlaneResolution C B b' hi k m where
+  basis := d
+  rays := r
+  rays_eq := hr
+  target_fan := M.target_fan
+  top := Z
+  tower := T
+  closed := hT
+  iso := M.iso ≪≫ u
+  planeMap := u.inv ≫ M.planeMap
+  source_hom := hC
+  target_hom := by
+    simpa only [Iso.trans_hom, Category.assoc, Iso.hom_inv_id_assoc] using M.target_hom
+  planeMap_over := hg
+  planeMap_birational := hbir
+
+private theorem sectionCenters_afterPivot
+    {M : HirzebruchPlaneResolution A B b' hi (e + 1) (n + 1)}
+    {C : LogarithmicProjection i D} {W : HirzebruchPlaneResolution C B b' hi e (1 + n)}
+    {j : Fin (n + 1)}
+    (h : W.sectionCenters =
+      (Finset.univ.filter fun p : Fin n ↦ j.succAbove p ∈ M.sectionCenters).map (Fin.natAddEmb 1)) :
+    head ∉ W.sectionCenters ∧
+      ∀ p : Fin n, p.natAdd 1 ∈ W.sectionCenters ↔ j.succAbove p ∈ M.sectionCenters := by
+  rw [h]
+  refine ⟨?_, fun p ↦ ?_⟩
+  · simp only [Finset.mem_map, not_exists, not_and]
+    intro p _ hp
+    have hv := congrArg Fin.val hp
+    simp only [Fin.natAddEmb_apply, Fin.val_natAdd, Fin.val_castAdd, Fin.val_zero] at hv
+    omega
+  · rw [← Fin.natAddEmb_apply, Finset.mem_map']
+    simp
+
+private structure PositiveSectionPivot [PreirreducibleSpace X]
+    (M : HirzebruchPlaneResolution A B b' hi (e + 1) (n + 1))
+    (s : PositiveSectionMarking M ι) (j : Fin (n + 1)) where
+  target : LogarithmicProjection i D
+  resolution : HirzebruchPlaneResolution target B b' hi e (1 + n)
+  path : SarkisovPath A target
+  degree : resolution.fiberDegree = M.fiberDegree
+  coefficient : resolution.fiberCoefficient = M.fiberCoefficient - M.order j
+  reverse_off_section : head ∉ resolution.sectionCenters
+  section_iff : ∀ p : Fin n, p.natAdd 1 ∈ resolution.sectionCenters ↔
+    j.succAbove p ∈ M.sectionCenters
+  order : ∀ p : Fin n, resolution.order (p.natAdd 1) = M.order (j.succAbove p)
+  fiber : ι ↪ Fin 2
+  retained : ∀ a, ∃ p : Fin (1 + n),
+    (∀ l < p, resolution.closed.baseCenter l ≠ resolution.closed.baseCenter p) ∧
+    resolution.ruling (resolution.closed.baseCenter p) = coordPoint[fiber a] pt ∧
+    p ∉ resolution.sectionCenters ∧ M.order (s.index a) ≤ resolution.order p
+
+private theorem exists_positive_section_pivot_of_smooth [PreirreducibleSpace X]
+    (M : HirzebruchPlaneResolution A B b' hi (e + 1) (n + 1))
+    (s : PositiveSectionMarking M ι) (j : Fin (n + 1)) (hj : j ∈ M.sectionCenters)
+    (hfirst : ∀ p < j, M.closed.baseCenter p ≠ M.closed.baseCenter j)
+    (c : ℂˣ) (hc : M.closed.baseCenter j = center[M.basis,M.rays 2,c]) :
+    Nonempty (PositiveSectionPivot M s j) := by
+  let : SmoothOfRelativeDimension 2 f[A] := M.smooth
+  let : M.top.Over S := ⟨M.tower.toBase ≫ f[A]⟩
+  let : SmoothOfRelativeDimension 2 (M.top ↘ S) := M.closed.smoothOfRelativeDimension f[A]
+  let : A.fan.algebraicRealization.IsProjectiveOver ℂ :=
+    A.fan.isProjectiveOver_algebraicRealization_of_isComplete A.isRegular A.isComplete M.basis
+  obtain ⟨_, Z, T, hT, u, d, r, hr, hg, hbir, _, ⟨L, R, p, hL, hhL, hR, hhR, -, -⟩,
+      hmark, hbinomial, hcorner, hinc, hcoef, hdeg, horders, _⟩ :=
+    M.closed.exists_sarkisov_path_of_smooth_section M.basis (e + 1) A.isRegular A.isComplete
+      M.rays M.rays_eq 1 M.planeMap M.planeMap_over M.planeMap_birational c j hc hfirst
+      (D.comap M.iso.inv) M.source_pole
+  have hsign : decide ((1 : Fin 2) = 0) ≠ true := by decide
+  have he' : ((e + 1 : ℕ) : ℤ) - 1 = (e : ℤ) := by omega
+  have hindex :
+      (if decide ((1 : Fin 2) = 0) = true then ((e + 1 : ℕ) : ℤ) + 1
+        else ((e + 1 : ℕ) : ℤ) - 1).natAbs = e := by
+    simp only [ite_eq_right hsign, he', Int.natAbs_natCast]
+  generalize hk : (if decide ((1 : Fin 2) = 0) = true then ((e + 1 : ℕ) : ℤ) + 1
+      else ((e + 1 : ℕ) : ℤ) - 1).natAbs = k at hr hcoef hdeg
+  have hke : k = e := hk.symm.trans hindex
+  clear hk
+  subst k
+  obtain ⟨C, hC, hhC, ⟨q⟩⟩ := M.exists_lift_pivot_path T u p hL hhL hR hhR
+  rcases C with ⟨Φ, hreg, hcomplete, g, hOver, hDom, hPole⟩
+  dsimp only at hC hhC
+  subst Φ
+  let C : LogarithmicProjection i D := ⟨_, hreg, hcomplete, g, hOver, hDom, hPole⟩
+  let : Nonempty C.fan.cones := C.isComplete.nonempty_cones
+  let W := M.afterPivot (C := C) (k := e) d r hr hT u (eq_of_heq hhC) hg hbir
+  have he : 0 ≤ ((e + 1 : ℕ) : ℤ) - 1 := by omega
+  have hsection : W.sectionCenters =
+      (Finset.univ.filter fun p : Fin n ↦ j.succAbove p ∈ M.sectionCenters).map
+        (Fin.natAddEmb 1) := by
+    simpa only [HirzebruchPlaneResolution.sectionCenters_def, W,
+      HirzebruchPlaneResolution.afterPivot, hmark he, Equiv.trans_apply] using! hinc
+  obtain ⟨hhead, htail⟩ := sectionCenters_afterPivot hsection
+  have horder (l : Fin n) : W.order (l.natAdd 1) = M.order (j.succAbove l) := by
+    simpa only [Fin.addCases_right, Function.comp_apply] using!
+      congrArg (fun x : Fin (1 + n) → ℤ ↦ -x (l.natAdd 1)) horders
+  refine ⟨⟨C, W, q, hdeg, ?_, hhead, htail, horder, s.fiber, ?_⟩⟩
+  · simpa only [ite_eq_right hsign, add_zero, HirzebruchPlaneResolution.fiberCoefficient,
+      HirzebruchPlaneResolution.order, sub_neg_eq_add] using! hcoef he
+  intro a
+  have hne : s.index a ≠ j := fun h ↦ s.off_section a (h ▸ hj)
+  obtain ⟨l, hl⟩ := Fin.exists_succAbove_eq_iff.mpr hne
+  have hmem := (A.fan.mem_support_hirzebruch_fiber_iff M.basis (e + 1 : ℕ) A.isRegular
+    M.rays M.rays_eq (s.fiber a) _).mpr (hl.symm ▸ s.ruling_eq a)
+  have hcases := (A.fan.mem_support_rayBoundaryIdeal_iff M.basis A.isRegular A.isComplete
+    (fiberRay[M.rays,s.fiber a]) (M.closed.isClosed_baseCenter (j.succAbove l))).mp hmem
+  have hfirstOld := hl.symm ▸ s.first a
+  have hnew : (∀ k < l.natAdd 1, hT.baseCenter k ≠ hT.baseCenter (l.natAdd 1)) ∧
+      hT.baseCenter (l.natAdd 1) ∈
+        (C.fan.rayBoundaryIdeal C.isRegular (fiberRay[r,s.fiber a])).support := by
+    rcases hcases with ⟨a', ha'⟩ | ⟨σ, hσ, hfiber, hpoint⟩
+    · obtain ⟨z, hz, hfirst'⟩ := hbinomial he (s.fiber a) a' l ha'
+      refine ⟨hfirst' hfirstOld, ?_⟩
+      rw [hz]
+      exact ((fiberRay[r,s.fiber a]).binomialCenter_mem_support_rayBoundaryIdeal_iff
+        C.isRegular rankTwo[d] (d.detDualEquiv_self _)
+        ((fiberRay[r,s.fiber a]).surjective_detCharacter d) z (fiberRay[r,s.fiber a])).mpr rfl
+    · obtain ⟨_, hpoint', hcone, hfirst'⟩ := hcorner σ l hσ hpoint
+      refine ⟨hfirst' hfirstOld, ?_⟩
+      rw [hpoint']
+      apply (C.fan.distinguishedPoint_mem_support_rayBoundaryIdeal_iff C.isRegular _ _).mpr
+      rw [hmark he, Equiv.trans_apply]
+      exact (hcone (fiberRay[M.rays,s.fiber a])).mpr hfiber
+  refine ⟨l.natAdd 1, hnew.1, ?_, fun h ↦ s.off_section a (hl ▸ (htail l).mp h), ?_⟩
+  · exact (C.fan.mem_support_hirzebruch_fiber_iff d e C.isRegular r hr (s.fiber a) _).mp hnew.2
+  · rw [horder, hl]
+
+private theorem ruling_coordinate_of_reframing
+    {M : HirzebruchPlaneResolution A B b' hi e n} (s : PositiveSectionMarking M ι)
+    (q : A.fan.algebraicRealization ⟶ projectiveLine ℂ) (t : Fin 2)
+    (h : q ≫ ite (t = 0) (𝟙 _) (projectiveLine.coordinateSwap ℂ).hom = M.ruling) :
+    let flip : Fin 2 ≃ Fin 2 := if t = 0 then Equiv.refl _ else Fin.revPerm
+    ∀ a, q (M.closed.baseCenter (s.index a)) = coordPoint[flip (s.fiber a)] pt := by
+  intro flip a
+  by_cases ht : t = 0
+  · rw [ite_eq_left ht, Category.comp_id] at h
+    simpa only [flip, ht, ite_true, Equiv.refl_apply] using
+      (congrArg (fun q' : A.fan.algebraicRealization ⟶ projectiveLine ℂ ↦
+        q' (M.closed.baseCenter (s.index a))) h).trans (s.ruling_eq a)
+  have hv := congrArg (fun q' : A.fan.algebraicRealization ⟶ projectiveLine ℂ ↦
+    q' (M.closed.baseCenter (s.index a))) h
+  rw [Scheme.Hom.comp_apply, ite_eq_right ht, s.ruling_eq] at hv
+  have hswap := (Scheme.Hom.comp_apply (coordPoint[(s.fiber a).rev])
+      (projectiveLine.coordinateSwap ℂ).hom pt).symm.trans
+    (congrArg (fun g : S ⟶ projectiveLine ℂ ↦ g pt)
+      (projectiveLine.polynomialPoint_comp_coordinateSwap ℂ (RingHom.id ℂ) (s.fiber a).rev 0))
+  rw [Fin.rev_rev] at hswap
+  simpa only [flip, ite_eq_right ht, Fin.revPerm_apply] using
+    (projectiveLine.coordinateSwap ℂ).hom.injective (hv.trans hswap.symm)
+
+private theorem exists_positive_section_pivot_of_corner [PreirreducibleSpace X]
+    (M : HirzebruchPlaneResolution A B b' hi (e + 1) (n + 1))
+    (s : PositiveSectionMarking M ι) (j : Fin (n + 1)) (hj : j ∈ M.sectionCenters)
+    (hfirst : ∀ p < j, M.closed.baseCenter p ≠ M.closed.baseCenter j)
+    (σ : A.fan.cones) (hσ : Nat.card (ToricRay σ.val) = 2) (hsec : (M.rays 2).toCone ≤ σ)
+    (hc : M.closed.baseCenter j = A.fan.distinguishedPointHom σ pt) :
+    Nonempty (PositiveSectionPivot M s j) := by
+  let : SmoothOfRelativeDimension 2 f[A] := M.smooth
+  let : M.top.Over S := ⟨M.tower.toBase ≫ f[A]⟩
+  let : SmoothOfRelativeDimension 2 (M.top ↘ S) := M.closed.smoothOfRelativeDimension f[A]
+  let : Smooth (M.top ↘ S) := SmoothOfRelativeDimension.smooth 2 _
+  let : A.fan.algebraicRealization.IsProjectiveOver ℂ :=
+    A.fan.isProjectiveOver_algebraicRealization_of_isComplete A.isRegular A.isComplete M.basis
+  obtain ⟨t, b, r, hr, hcone, _, _, hpos, hpic, hruling⟩ :=
+    A.fan.exists_hirzebruch_section_corner_picardBasis_ruling M.basis (e + 1 : ℕ) M.rays M.rays_eq
+      A.isRegular A.isComplete σ hσ hsec
+  obtain ⟨R, p, d, r', hr', Z, T, hT, u, _, _, hhR, _, hg, hbir, _, hcoef, hdeg, horders,
+      _, _, _, hinc, hretained⟩ :=
+    M.closed.exists_sarkisov_path_of_positive_corner b (e + 1) (Nat.succ_pos e) A.isRegular
+      A.isComplete r hr M.planeMap M.planeMap_over M.planeMap_birational σ hcone j hc hfirst
+      (D.comap M.iso.inv) ((M.closed.ramificationIdealSheafToBase_def ℂ) ▸ M.source_pole)
+  obtain ⟨C, hC, hhC, ⟨q⟩⟩ := M.exists_lift_pivot_path T u p rfl HEq.rfl rfl (heq_of_eq hhR)
+  rcases C with ⟨Φ, hreg, hcomplete, g, hOver, hDom, hPole⟩
+  dsimp only at hC hhC
+  subst Φ
+  let C : LogarithmicProjection i D := ⟨_, hreg, hcomplete, g, hOver, hDom, hPole⟩
+  let W := M.afterPivot (C := C) (k := e) d r' hr' hT u (eq_of_heq hhC) hg hbir
+  have hsection : W.sectionCenters =
+      (Finset.univ.filter fun p : Fin n ↦ j.succAbove p ∈ M.sectionCenters).map
+        (Fin.natAddEmb 1) := by
+    simpa only [HirzebruchPlaneResolution.sectionCenters_def, W,
+      HirzebruchPlaneResolution.afterPivot, hpos] using
+      M.closed.strictTransformCenterIndices_eq_map_of_coefficients_eq_append_zero
+        hT j.succAbove hinc
+  obtain ⟨hhead, htail⟩ := sectionCenters_afterPivot hsection
+  have horder (l : Fin n) : W.order (l.natAdd 1) = M.order (j.succAbove l) := by
+    simpa only [Fin.append_right, Function.comp_apply] using!
+      congrArg (fun x : Fin (1 + n) → ℤ ↦ -x (l.natAdd 1)) horders
+  let flip : Fin 2 ≃ Fin 2 := if t = 0 then Equiv.refl _ else Fin.revPerm
+  refine ⟨⟨C, W, q, ?_, ?_, hhead, htail, horder, s.fiber.trans flip.toEmbedding, ?_⟩⟩
+  · simpa only [HirzebruchPlaneResolution.fiberDegree, W,
+      HirzebruchPlaneResolution.afterPivot, HirzebruchPlaneResolution.lineClass, C, hpic,
+      Nat.add_sub_cancel] using! hdeg
+  · simpa only [HirzebruchPlaneResolution.fiberCoefficient, HirzebruchPlaneResolution.order,
+      W, HirzebruchPlaneResolution.afterPivot, HirzebruchPlaneResolution.lineClass, hpic,
+      C, Nat.add_sub_cancel, sub_neg_eq_add] using! hcoef
+  intro a
+  have hne : s.index a ≠ j := fun h ↦ s.off_section a (h ▸ hj)
+  obtain ⟨l, hl⟩ := Fin.exists_succAbove_eq_iff.mpr hne
+  have hne' : M.closed.baseCenter (s.index a) ≠ M.closed.baseCenter j := by
+    intro h
+    rcases lt_or_gt_of_ne hne with hlt | hlt
+    · exact hfirst _ hlt h
+    · exact s.first a _ hlt h.symm
+  obtain ⟨v, hfirst', hval, hle, hreverse, hstay⟩ :=
+    hretained l (hl.symm ▸ hne') (hl.symm ▸ s.first a)
+  refine ⟨v, hfirst', hval.trans (hl.symm ▸ ruling_coordinate_of_reframing s _ t hruling a), ?_, ?_⟩
+  · let ruling := A.fan.characterRuling (b.coord 1).toAddMonoidHom
+      (Fan.nonneg_or_nonpos_hirzebruch_ruling_character b (e + 1 : ℕ) r hr)
+    by_cases h : ruling (M.closed.baseCenter (j.succAbove l)) = ruling (M.closed.baseCenter j)
+    · exact hreverse h ▸ hhead
+    · exact (hstay h).1 ▸ fun hm ↦ s.off_section a (hl ▸ (htail l).mp hm)
+  · exact hl ▸ hle
+
+end Pivot
+
+/-- Compose the resolved positive-section pivots on the common surface.
+The earliest maximal proper center is chosen at each positive index. The
+resulting quadric keeps the ruling degree and reaches the prepared fiber
+coefficient. Each original mark is still first over its point and has at
+least its initial order. -/
 theorem exists_marked_quadric_of_positive_section_pivots [PreirreducibleSpace X]
     {A B : LogarithmicProjection i D} {b' : Basis (Fin 2) ℤ N}
     {hi : IsIntegralLattice i} {e n : ℕ} {ι : Type*}
-    (M : HirzebruchPlaneResolution A B b' hi e n) (s : PositiveSectionMarking M ι)
-    (hstep : ∀ {A : LogarithmicProjection i D} {k l : ℕ}
-      (U : HirzebruchPlaneResolution A B b' hi (k + 1) (l + 1)) (t : PositiveSectionMarking U ι)
-      (j : Fin (l + 1)), j ∈ U.positiveCenters →
-      (∀ p < j, U.closed.baseCenter p ≠ U.closed.baseCenter j) →
-      ((∃ (σ : A.fan.cones) (q : Fin 2),
-          Nat.card (ToricRay σ.val) = 2 ∧ (U.rays 2).toCone ≤ σ ∧
-          σ.val = hull ℝ {i (-U.basis 0), i (fiberRay[U.rays,q]).primitiveGenerator} ∧
-          A.fan.distinguishedPointHom σ pt = U.closed.baseCenter j) ∨
-        ∃ c : ℂˣ, U.closed.baseCenter j = center[U.basis,U.rays 2,c]) →
-      ∃ (C : LogarithmicProjection i D) (W : HirzebruchPlaneResolution C B b' hi k (1 + l))
-        (fiber : ι ↪ Fin 2) (index : ι → Fin (1 + l)), Nonempty (SarkisovPath A C) ∧
-        W.fiberDegree = U.fiberDegree ∧ W.fiberCoefficient = U.fiberCoefficient - U.order j ∧
-        Fin.castAdd l (0 : Fin 1) ∉ W.positiveCenters ∧
-        (∀ p : Fin l, p.natAdd 1 ∈ W.sectionCenters ↔ j.succAbove p ∈ U.sectionCenters) ∧
-        (∀ p : Fin l, j.succAbove p ∈ U.sectionCenters →
-          W.order (p.natAdd 1) = U.order (j.succAbove p)) ∧
-        (∀ a, ∀ p < index a, W.closed.baseCenter p ≠ W.closed.baseCenter (index a)) ∧
-        (∀ a, W.ruling (W.closed.baseCenter (index a)) = coordPoint[fiber a] pt) ∧
-        (∀ a, index a ∉ W.sectionCenters) ∧
-        ∀ a, U.order (t.index a) ≤ W.order (index a)) :
+    (M : HirzebruchPlaneResolution A B b' hi e n) (s : PositiveSectionMarking M ι) :
     ∃ (C : LogarithmicProjection i D) (m : ℕ) (W : HirzebruchPlaneResolution C B b' hi 0 m)
       (u : PositiveSectionMarking W ι), Nonempty (SarkisovPath A C) ∧ m = n ∧
       W.fiberDegree = M.fiberDegree ∧ W.fiberCoefficient = s.remainingCoefficient ∧
@@ -351,13 +634,19 @@ theorem exists_marked_quadric_of_positive_section_pivots [PreirreducibleSpace X]
     | succ l =>
       obtain ⟨p, hp, hmax, hearly, hfirst, hcase⟩ :=
         M.exists_first_max_of_positiveCenters_nonempty ⟨j, s.selection.subset hj⟩
-      obtain ⟨C, U, fiber, index, ⟨q⟩, hdeg, hcoef, hhead, hsection, horder, hfirst', hvalue,
-        hoff, hretained⟩ := hstep M s p hp hfirst hcase
-      obtain ⟨t, ht, hremain⟩ := s.exists_of_pivot p hp hmax hearly hhead hsection horder
-        hcoef fiber index hfirst' hvalue hoff
-      obtain ⟨E, m, W, u, ⟨w⟩, hm, hdeg', hcoef', hretained'⟩ := ih U t
-      refine ⟨E, m, W, u, ⟨Quiver.Path.comp q w⟩, hm.trans (Nat.add_comm 1 l),
-        hdeg'.trans hdeg, hcoef'.trans hremain, fun a ↦ (hretained a).trans ?_⟩
+      have hpsec := ((M.mem_positiveCenters p).mp hp).1
+      obtain ⟨pivot⟩ : Nonempty (PositiveSectionPivot M s p) := by
+        rcases hcase with ⟨σ, _, hσ, hsec, _, hc⟩ | ⟨c, hc⟩
+        · exact exists_positive_section_pivot_of_corner M s p hpsec hfirst σ hσ hsec hc.symm
+        · exact exists_positive_section_pivot_of_smooth M s p hpsec hfirst c hc
+      choose index hfirst' hvalue hoff hretained using pivot.retained
+      have hhead : Fin.castAdd l (0 : Fin 1) ∉ pivot.resolution.positiveCenters :=
+        fun h ↦ pivot.reverse_off_section ((pivot.resolution.mem_positiveCenters _).mp h).1
+      obtain ⟨t, ht, hremain⟩ := s.exists_of_pivot p hp hmax hearly hhead pivot.section_iff
+        (fun q _ ↦ pivot.order q) pivot.coefficient pivot.fiber index hfirst' hvalue hoff
+      obtain ⟨E, m, W, u, ⟨w⟩, hm, hdeg', hcoef', hretained'⟩ := ih pivot.resolution t
+      refine ⟨E, m, W, u, ⟨Quiver.Path.comp pivot.path w⟩, hm.trans (Nat.add_comm 1 l),
+        hdeg'.trans pivot.degree, hcoef'.trans hremain, fun a ↦ (hretained a).trans ?_⟩
       simpa only [ht] using hretained' a
 
 end TauCeti.Toric.Fan.LogarithmicProjection
