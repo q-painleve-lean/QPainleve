@@ -128,21 +128,15 @@ theorem isPerfPair_polynomialPlaneCanonicalPairing [Infinite k] (L : InvertibleS
   obtain ⟨eΩ⟩ := nonempty_iso_internalHom_planeCanonicalTwist k L m e
   let Liso : L.obj ≅ twistingSheaf 𝒜 m :=
     e ≪≫ eqToIso (polynomialTwistingBundle_obj m)
-  let b := Pi.basisFun k (Fin 3)
   let e₂ := cohomologyBaseLinearEquivOfIso (X := P) k Liso 2
   let e₀ := (cohomologyZeroBaseLinearEquiv k P ((ihom L.obj).obj Ω₂)).symm.trans
     (cohomologyBaseLinearEquivOfIso k eΩ 0)
-  let e₂' := b.cohomologyPolynomialTwistingSheafLinearEquiv (plane_over_eq_toSpecCoeff k) m 2
-  let e₀' := b.cohomologyPolynomialTwistingSheafLinearEquiv (plane_over_eq_toSpecCoeff k) (-3 - m) 0
-  have := b.finite_cohomology_top_twistingSheaf m (n := 1) (Fintype.card_fin 3)
-  have := Module.Finite.equiv (e₂.trans e₂').symm
-  have := SymmetricAlgebra.finite_cohomology_zero_twistingSheaf (-3 - m) b
-  have := Module.Finite.equiv (e₀.trans e₀').symm
-  have hdim : Module.finrank k Γ((ihom L.obj).obj Ω₂, ⊤) =
-      Module.finrank k (Module.Dual k (Cohomology L.obj 2)) :=
-    e₀.finrank_eq.trans ((cohomologyTwoTwist_finrank_eq_cohomologyZeroTwist k m).symm.trans
-      (e₂.finrank_eq.symm.trans Subspace.dual_finrank_eq.symm))
+  have hdim : Module.finrank k (Cohomology L.obj 2) =
+      Module.finrank k Γ((ihom L.obj).obj Ω₂, ⊤) :=
+    e₂.finrank_eq.trans ((cohomologyTwoTwist_finrank_eq_cohomologyZeroTwist k m).trans
+      e₀.finrank_eq.symm)
   have : IsIntegral P := isIntegral_polynomialProj (R := k) (σ := Fin 3)
+  let b := Pi.basisFun k (Fin 3)
   let eP := b.polynomialProjIso
   have : eP.hom.IsOver (Spec (.of k)) := ⟨by
     rw [SymmetricAlgebra.over_eq_projToSpec, plane_over_eq_toSpecCoeff]
@@ -154,10 +148,7 @@ theorem isPerfPair_polynomialPlaneCanonicalPairing [Infinite k] (L : InvertibleS
     intro he
     have h := DFunLike.congr_fun he ((polynomialPlaneCanonicalTrace k).symm 1)
     exact one_ne_zero ((LinearEquiv.apply_symm_apply _ _).symm.trans h)
-  have hi := InvertibleSheaf.cohomologyTracePairing_injective_flip k L
-    (planeCanonicalBundle k) hdimP _ htr
-  have hp := (LinearMap.injective_iff_surjective_of_finrank_eq_finrank hdim
-    (f := (polynomialPlaneCanonicalPairing k L).flip)).mp hi
-  exact (LinearMap.IsPerfPair.of_bijective _ ⟨hi, hp⟩).flip
+  exact (L.isPerfPair_cohomologyTracePairing_iff_finrank k
+    (planeCanonicalBundle k) hdimP _ htr).mpr hdim
 
 end AlgebraicGeometry.Proj

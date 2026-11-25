@@ -65,12 +65,7 @@ theorem isPerfPair_cohomologyResiduePairing (k : Type u) [Field k]
   have hK : K = InvertibleSheaf.relativeDifferentials k (projectiveLine k) :=
     ObjectProperty.FullSubcategory.ext (InvertibleSheaf.relativeDifferentials_obj k _).symm
   let M := K.tensorProduct L.dual
-  let e : (ihom L.obj).obj K.obj ≅ M.obj :=
-    ((asIso (dualTensorIhom L.obj)).app K.obj).symm ≪≫
-      (eqToIso (congrArg (· ⊗ K.obj) (InvertibleSheaf.dual_obj L))).symm ≪≫
-      (β_ L.dual.obj K.obj) ≪≫ (InvertibleSheaf.tensorProductObjIso K L.dual).symm
-  let e₀ := (cohomologyZeroBaseLinearEquiv k (projectiveLine k) _).symm.trans
-    (cohomologyBaseLinearEquivOfIso k e 0)
+  let e₀ := L.sectionsInternalHomLinearEquiv k K
   have := finite_cohomology_one k L.obj
   have := finite_cohomology_zero k M.obj
   have := Module.Finite.equiv e₀.symm
