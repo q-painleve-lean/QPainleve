@@ -90,8 +90,7 @@ theorem exists_xPullback_eq_iff_signedLoopInvariants_eq_of_ordered_towers
       E.matrix = chargeExchangeMatrix b'.detDualEquiv.toLinearMap (Fan.rayChargeMap Q.rays) ∧
       ∀ (k : Type*) [Field k] [CharZero k] (w v : Word E E)
         {d : ℕ} (β : Basis (Fin d) ℤ E.matrix.mulVecLin.ker),
-        let orders (j : Fin n) := Fan.rayBoundaryOrders b' Q.rays
-          (p₀.numberedBoundaryRays M.isEffectiveCartier_boundaryIdeal (ZMod.finEquiv n j))
+        let orders := p₀.numberedBoundaryOrders M.isEffectiveCartier_boundaryIdeal
         w.xPullback k = v.xPullback k ↔
           w.signedLoopInvariants (fun j ↦ (β j : Fin r → ℤ)) orders (orders 0) =
             v.signedLoopInvariants (fun j ↦ (β j : Fin r → ℤ)) orders (orders 0) := by

@@ -75,13 +75,14 @@ theorem signedInversionSignExtension_rightHom (hB : B.matrix ≠ 0)
     (signedInversionSignExtension k B hB hs).rightHom = signedInversionSign k B hB :=
   GroupExtension.ofMulEquivKer_rightHom hs _
 
-/-- If there is an odd loop, the unsigned cluster modular group has index two. -/
-theorem index_range_clusterModularGroupInclusion (hB : B.matrix ≠ 0) {w : Word B B}
-    (hw : Odd w.inversionCount) : (clusterModularGroupInclusion k B).range.index = 2 := by
-  have hs := signedInversionSign_surjective k B hB hw
-  rw [range_clusterModularGroupInclusion k B hB, Subgroup.index_ker, MonoidHom.range_eq_top.mpr hs,
-    Nat.card_congr (Subgroup.topEquiv : (⊤ : Subgroup ℤˣ) ≃* ℤˣ).toEquiv,
-    Nat.card_eq_fintype_card, Fintype.card_units_int]
+/-- If the inversion sign is surjective, the unsigned cluster modular group has index two. -/
+theorem index_range_clusterModularGroupInclusion (hB : B.matrix ≠ 0)
+    (hs : Function.Surjective (signedInversionSign k B hB)) :
+    (clusterModularGroupInclusion k B).range.index = 2 := by
+  let S := signedInversionSignExtension k B hB hs
+  rw [← signedInversionSignExtension_inl k B hB hs, Subgroup.index_eq_card]
+  exact (Nat.card_congr S.quotientRangeInlEquivRight.toEquiv).trans
+    (Nat.card_eq_fintype_card.trans Fintype.card_units_int)
 
 private def oddInvolutionZPowersEquivSign {hB : B.matrix ≠ 0} (w : Word B B)
     (hw : Odd w.inversionCount) (ho : orderOf (signedClusterModularGroupMap k B (End.of w)) = 2) :

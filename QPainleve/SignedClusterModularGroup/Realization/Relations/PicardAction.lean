@@ -84,8 +84,7 @@ theorem exists_picardEquiv_signedLoopInvariants_of_nodal_contraction
     (hsq : Chow.classIntersectionNumber ℂ M₀.surface classOf(cartier[M₀])
       classOf(cartier[M₀]) = 0) :
     let d := M₀.boundaryClass cartier[M₀]
-    let orders (j : Fin n) := Fan.rayBoundaryOrders b Q.rays
-      (p₀.numberedBoundaryRays cartier[M₀] ((ZMod.finEquiv n).toEquiv j))
+    let orders := p₀.numberedBoundaryOrders cartier[M₀]
     ∃ (M : Point Centers[r] → MarkedSurface ℂ n B XTor[r])
       (hD : ∀ z, D[M z].IsEffectiveCartier)
       (hmark : ∀ z j, (M z).boundaryClass (hD z) j = d j)

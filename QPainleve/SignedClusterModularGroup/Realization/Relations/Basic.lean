@@ -117,13 +117,6 @@ local notation "dst[" C "," x "]" =>
 local notation "src[" C "," x "]" =>
   x ≫ PartialMap.domainSource (X := T) (Y := T) C
 local notation "fiberAt" c:arg => ContractedToricFiber b s hΦ τ origin ι (χ[c]) (P c)
-local notation "orders[" q "," hd "]" => (fun j : Fin n ↦
-  Fan.rayBoundaryOrders b s (ContractedToricFiber.numberedBoundaryRays q hd
-    (RingEquiv.toEquiv (ZMod.finEquiv n) j)))
-local notation "startOrders" => Fan.rayBoundaryOrders b s
-  (Equiv.symm (Fan.boundaryNormalizationComponentEquiv Φ hΦ) (τ.component origin))
-
-
 variable
   [Φ.algebraicRealization.IsProjectiveOver ℂ]
   [SmoothOfRelativeDimension 2 (Φ.algebraicRealization ↘ S)]
@@ -170,11 +163,11 @@ theorem xPullback_eq_iff_signedLoopInvariants_eq
     (hU : ∀ x : CenterPoint (U := T) (V := T) C, src[C,x] ∈ U ∧ dst[C,x] ∈ U)
     (hU' : ∀ x : CenterPoint (U := T) (V := T) C', src[C',x] ∈ U ∧ dst[C',x] ∈ U)
     {d : ℕ} (β : Module.Basis (Fin d) ℤ E.matrix.mulVecLin.ker) :
+    let orders := p₀.numberedBoundaryOrders (hD c₀)
     w.xPullback ℂ = v.xPullback ℂ ↔
-      w.signedLoopInvariants (fun j ↦ (β j : Cent))
-          orders[p₀, hD c₀] startOrders =
-        v.signedLoopInvariants (fun j ↦ (β j : Cent))
-          orders[p₀, hD c₀] startOrders := by
+      w.signedLoopInvariants (fun j ↦ (β j : Cent)) orders (orders 0) =
+        v.signedLoopInvariants (fun j ↦ (β j : Cent)) orders (orders 0) := by
+  dsimp only
   have hrays c (hc : c ∈ U) : (p c hc).numberedBoundaryRays (hD c) =
       p₀.numberedBoundaryRays (hD c₀) :=
     (p c hc).numberedBoundaryRays_eq_of_nodalContractions (p₀)
