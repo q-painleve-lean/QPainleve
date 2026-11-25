@@ -16,7 +16,7 @@ import QPainleve.AlgebraicGeometry.Chow.ProperIntersection
 import QPainleve.AlgebraicGeometry.Chow.RationalSurface.Basic
 import QPainleve.AlgebraicGeometry.LineBundle.Ample
 import QPainleve.Geometry.Toric.Fan.Boundary.ProjectiveLine
-import QPainleve.Geometry.Toric.Fan.Rationality
+import QPainleve.Geometry.Toric.Fan.Hirzebruch.Rationality
 import TauCeti.AlgebraicGeometry.Cohomology.ProjectiveLine.Basic
 
 /-!
@@ -345,26 +345,6 @@ theorem hirzebruchPicardBasis_intersection_repr [SmoothOfRelativeDimension 2 (X 
     simp only [map_add, map_zsmul, LinearMap.add_apply, LinearMap.smul_apply, Int.zsmul_eq_mul,
       hirzebruchPicardBasis_intersection b e hΦ r hr hc]
   exact ⟨by simpa using h 0, by simpa [sub_eq_add_neg, mul_comm d] using h 1⟩
-
-omit [Nonempty Φ.cones] [Φ.algebraicRealization.IsProjectiveOver ℂ] in
-include hΦ hc hr in
-private theorem isRationalOver_of_hirzebruch :
-    Scheme.IsRationalOver (X ↘ S) := by
-  obtain ⟨σ, h₀, h₁⟩ := exists_cone_of_hirzebruch_section_fiber b e r hr hΦ hc 0 0
-  have hN : Module.finrank ℤ N = 2 := by simpa using Module.finrank_eq_card_basis b
-  have hcone := Φ.cone_eq_sup_of_ray_ne_of_le hΦ hN
-    (r.injective.ne (by decide : (0 : Fin 4) ≠ 1)) h₀ h₁
-  have h₀' : (r 0).primitiveGenerator = b 0 := congrFun hr 0
-  have h₁' : (r 1).primitiveGenerator = b 1 := congrFun hr 1
-  rw [Ray.toCone_eq_hull_primitiveGenerator, Ray.toCone_eq_hull_primitiveGenerator,
-    h₀', h₁', ← Submodule.span_union] at hcone
-  apply Φ.isRationalOver_of_hull_basis_mem b
-  have hpair : Set.range (fun j : Fin 2 ↦ i (b j)) = {i (b 0)} ∪ {i (b 1)} := by
-    ext x
-    simp [Fin.exists_fin_succ, eq_comm, or_comm]
-  have hcone' : σ.val = PointedCone.hull ℝ ({i (b 0)} ∪ {i (b 1)}) := hcone
-  rw [hpair, ← hcone']
-  exact σ.property
 
 include hc in
 open Classical in
