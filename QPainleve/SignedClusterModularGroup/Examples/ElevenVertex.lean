@@ -7,6 +7,7 @@ module
 
 public import Mathlib.GroupTheory.OrderOfElement
 public import QPainleve.Algebra.Cluster.ChargeKernel.Basic
+public import QPainleve.Algebra.Cluster.Tropical.Basic
 public import QPainleve.Algebra.Cluster.Word.Exponent
 public import QPainleve.Algebra.Cluster.Word.Pullback
 public import QPainleve.LinearAlgebra.Determinant.Dual
@@ -162,6 +163,42 @@ theorem inversionCount_oddWord : oddWord.inversionCount = 1 := by
 @[simp]
 theorem inversionCount_involutionWord : involutionWord.inversionCount = 1 := by
   simp [involutionWord, swapStep]
+
+/-- The order table for the surviving ray `(-1,-1)`, in the seed orientation. -/
+def boundaryOrders (_ : Fin 1) (i : I) : ℤ := (![-1, 1, 0] : Fin 3 → ℤ) (rayIndex i)
+
+/-- The three charge blocks have orders minus one, one, and zero. -/
+theorem boundaryOrders_apply (j : Fin 1) (i : I) :
+    boundaryOrders j i = (![-1, 1, 0] : Fin 3 → ℤ) (rayIndex i) :=
+  (rfl)
+
+/-- Tropical transport by the inversion–mutation–transposition word fixes the
+order vector of the unique boundary component. -/
+theorem involutionWord_tropical_boundaryOrders :
+    Equiv.toFun ((CategoryTheory.Paths.lift (tropicalPrefunctor (A := ℤ) I)).map
+      involutionWord) (boundaryOrders 0) = boundaryOrders 0 := by
+  have hsecond (v : I → ℤ) :
+      (Generator.mutate 1).tropical ((-B).mutate 0) v = (Generator.mutate 1).tropical (-B) v := by
+    funext i
+    rcases eq_or_ne i 1 with rfl | hi
+    · simp
+    · rw [Generator.tropical_mutate_of_ne _ _ hi, Generator.tropical_mutate_of_ne _ _ hi,
+        inverted_mutate_zero_col_one]
+  rw [Equiv.toFun_as_coe]
+  simp only [involutionWord, oddWord, tropical_map_cons_apply, CategoryTheory.Paths.lift_nil,
+    CategoryTheory.SingleObj.id_as_one, Equiv.Perm.one_apply, Step.tropical_apply,
+    inversionStep, firstMutationStep, secondMutationStep, swapStep, Step.generator_cast,
+    Generator.toStep_generator, hsecond]
+  funext i
+  simp only [Generator.tropical_permute_apply]
+  fin_cases i <;> norm_num [Equiv.swap_apply_def]
+  all_goals
+    simp (disch := decide) only [Generator.tropical_mutate_self, Generator.tropical_mutate_of_ne,
+      Generator.tropical_invert_apply]
+    simp only [boundaryOrders,
+      SkewExchangeMatrix.neg_matrix, Matrix.neg_apply, exchangeMatrix,
+      SkewExchangeMatrix.matrix_ofMatrix, Matrix.submatrix_apply]
+    decide
 
 /-- The three sums of the exponents over the three rays. -/
 def raySum (x : I → ℤ) (r : Fin 3) : ℤ :=
