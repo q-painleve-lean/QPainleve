@@ -6,6 +6,7 @@ Authors: The QPainleve contributors
 module
 
 public import Mathlib.AlgebraicGeometry.Birational.Birational
+public import QPainleve.AlgebraicGeometry.Chow.Ample
 public import QPainleve.AlgebraicGeometry.Chow.Nef.Cone
 public import QPainleve.AlgebraicGeometry.Chow.RationalSurface.Ample
 
@@ -41,71 +42,10 @@ local notation "Pic(" X ")" => Additive (LineBundleClass X)
 local notation "V(" X ")" => (ℝ ⊗[ℤ] Pic(X))
 local notation "ι(" a ")" => ((1 : ℝ) ⊗ₜ[ℤ] Additive.ofMul a)
 
-/-- The ample cone consists of positive real conical combinations of ample
-integral classes. -/
-def ampleCone (X : Scheme.{u}) : ConvexCone ℝ (ℝ ⊗[ℤ] Additive (LineBundleClass X)) :=
-  ConvexCone.hull ℝ ((fun a : LineBundleClass X ↦ ι(a)) '' {a | a.IsAmple})
-
-/-- An ample integral class belongs to the real ample cone. -/
-theorem one_tmul_mem_ampleCone {X : Scheme.{u}} {a : LineBundleClass X} (ha : a.IsAmple) :
-    ι(a) ∈ ampleCone X :=
-  ConvexCone.subset_hull ⟨a, ha, rfl⟩
-
 variable (k : Type u) [Field k] {X : Scheme.{u}}
   [X.Over (Spec (.of k))] [X.IsProjectiveOver k]
   [SmoothOfRelativeDimension 2 (X ↘ Spec (.of k))]
   [TopologicalSpace V(X)] [IsTopologicalAddGroup V(X)] [ContinuousSMul ℝ V(X)] [T2Space V(X)]
-
-local notation "B" => realIntersectionBilinForm k X
-local notation "c" => realPrimeDivisorClass k (X := X)
-
-section Integral
-
-variable [Infinite k] [IsIntegral X] [Module.Free ℤ Pic(X)] [Module.Finite ℤ Pic(X)]
-
-/-- An ample integral class is an interior point of the nef cone. -/
-theorem one_tmul_mem_interior_nefCone {a : LineBundleClass X} (ha : a.IsAmple) :
-    ι(a) ∈ interior (nefCone k (X := X) : Set V(X)) := by
-  classical
-  let b := Module.finBasis ℤ Pic(X)
-  let e := (b.baseChange ℝ).equivFunL
-  choose n hn using fun j ↦ exists_abs_realIntersectionBilinForm_le k ha ((b j).toMul)
-  -- This neighborhood controls the intersection with every prime curve at once.
-  let size (y : V(X)) : ℝ := ∑ j, |e (y - ι(a)) j| * (n j : ℝ)
-  have hsize : Continuous size := by
-    apply continuous_finsetSum
-    intro j _
-    have hcoord : Continuous (fun y : V(X) ↦ e (y - ι(a)) j) :=
-      (continuous_apply j).comp (e.continuous.comp (continuous_id.sub continuous_const))
-    exact hcoord.abs.mul continuous_const
-  apply mem_interior_iff_mem_nhds.mpr
-  refine Filter.mem_of_superset ((isOpen_lt hsize continuous_const).mem_nhds
-    (show size ι(a) < 1 by simp [size])) ?_
-  intro y hy
-  rw [SetLike.mem_coe, mem_nefCone]
-  intro p
-  have hpos := (realIntersectionBilinForm_realPrimeDivisorClass_pos k ha p).le
-  have hbound (j : Fin (Module.finrank ℤ Pic(X))) :
-      -(|e (y - ι(a)) j| * (n j : ℝ)) * B (ι(a)) (c p) ≤
-        e (y - ι(a)) j * B ((b.baseChange ℝ) j) (c p) := by
-    have hj : |B ((b.baseChange ℝ) j) (c p)| ≤ (n j : ℝ) * B (ι(a)) (c p) := by
-      simpa only [Module.Basis.baseChange_apply, toMul_ofMul, ofMul_toMul] using hn j p
-    have h := mul_le_mul_of_nonneg_left hj (abs_nonneg (e (y - ι(a)) j))
-    rw [← abs_mul, ← mul_assoc] at h
-    simpa only [neg_mul] using (abs_le.mp h).1
-  have hsum := Finset.sum_le_sum fun j (_ : j ∈ Finset.univ) ↦ hbound j
-  simp only [neg_mul, Finset.sum_neg_distrib, ← Finset.sum_mul] at hsum
-  have hrepr : (∑ j, e (y - ι(a)) j * B ((b.baseChange ℝ) j) (c p)) =
-      B (y - ι(a)) (c p) := by
-    conv_rhs => rw [← (b.baseChange ℝ).sum_repr (y - ι(a))]
-    simp only [e, LinearMap.BilinForm.sum_left, LinearMap.BilinForm.smul_left,
-      Module.Basis.equivFunL_apply]
-  rw [hrepr, LinearMap.BilinForm.sub_left] at hsum
-  have hnonneg := mul_nonneg (sub_nonneg.mpr (le_of_lt (show size y < 1 from hy))) hpos
-  dsimp only [size] at hnonneg
-  linarith only [hsum, hnonneg]
-
-end Integral
 
 variable [IsAlgClosed k] [rational : Scheme.IsRationalOver (X ↘ Spec (.of k))]
 
