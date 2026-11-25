@@ -10,6 +10,7 @@ public import QPainleve.SignedClusterModularGroup.Realization.Presentation
 
 import QPainleve.Geometry.Toric.Fan.Presentation.Genus
 import QPainleve.Geometry.Toric.Fan.Subdivision.Projective
+import QPainleve.LinearAlgebra.BilinearForm.Prod
 import QPainleve.SignedClusterModularGroup.Realization.Anticanonical
 import QPainleve.SignedClusterModularGroup.Realization.NodalFiber
 import TauCeti.LinearAlgebra.Matrix.Dual
@@ -50,18 +51,28 @@ local instance : PrestableFamily ((Q.fan.boundaryIdeal Q.complete.nonempty_cones
   Q.prestable
 
 /-- The Picard intersection form of the toric surface with one exceptional summand
-per center is right-separating. -/
-theorem separatingRight_auxiliaryPicardForm
+per center is perfect. -/
+theorem isPerfPair_auxiliaryPicardForm
     [Q.fan.algebraicRealization.IsProjectiveOver ℂ]
     [SmoothOfRelativeDimension 2 (Q.fan.algebraicRealization ↘ S)] :
     (LinearMap.BilinForm.prod (Chow.intersectionBilinForm ℂ Q.fan.algebraicRealization)
-      (-(dotProductBilin ℤ ℤ : LinearMap.BilinForm ℤ (Fin r → ℤ)))).SeparatingRight := by
+      (-(dotProductBilin ℤ ℤ : LinearMap.BilinForm ℤ (Fin r → ℤ)))).IsPerfPair := by
   let : IsRationalOver (Q.fan.algebraicRealization ↘ S) := Q.isRationalOver_fan
-  have hperf := Chow.isPerfPair_intersectionBilinForm_of_isRationalOver ℂ Q.fan.algebraicRealization
-  refine LinearMap.BilinForm.separatingRight_prod_iff.mpr ⟨hperf.separatingRight, ?_⟩
-  intro y hy
-  exact (dotProductBilin_isPerfPair ℤ (Fin r)).separatingRight y
-    (fun x ↦ by simpa only [LinearMap.neg_apply, neg_eq_zero] using hy x)
+  refine LinearMap.BilinForm.isPerfPair_prod_iff.mpr
+    ⟨Chow.isPerfPair_intersectionBilinForm_of_isRationalOver ℂ Q.fan.algebraicRealization, ?_⟩
+  convert LinearMap.IsPerfPair.compl₁₂
+    (dotProductBilin ℤ ℤ : LinearMap.BilinForm ℤ (Fin r → ℤ))
+    (LinearEquiv.neg ℤ) (LinearEquiv.refl ℤ _) using 1
+  ext x y
+  simp
+
+/-- A nodal contraction of a marked toric fiber supplies a nodal model at its center. -/
+theorem hasNodalModel_of_contraction {c : GeometricRealization.Point Centers[r]}
+    {M : MarkedSurface ℂ n H XTor[r]}
+    {p : ContractedToricFiber b Q.rays Q.regular Q.cycle Q.origin Q.inclusion χ[c] M}
+    (hp : p.IsNodalContraction) : Q.HasNodalModel c M := by
+  obtain ⟨l, Y, W, hW, e, he⟩ := hp.exists_tower
+  exact (Q.hasNodalModel_iff c M).mpr ⟨p, Y, l, W, e, hW, he.symm⟩
 
 private theorem exists_nodalContraction {c : GeometricRealization.Point Centers[r]}
     {M : MarkedSurface ℂ n H XTor[r]} (h : Q.HasNodalModel c M) (hD : D[M].IsEffectiveCartier) :
@@ -90,7 +101,7 @@ theorem boundaryClass_eq_of_matching_nodal_models {c d : GeometricRealization.Po
   obtain ⟨p, hp⟩ := Q.exists_nodalContraction hc hM
   obtain ⟨q, hq⟩ := Q.exists_nodalContraction hd hP
   have hrays := p.numberedBoundaryRays_eq_of_nodalContractions q hp hq
-    Q.separatingRight_auxiliaryPicardForm
+    Q.isPerfPair_auxiliaryPicardForm.separatingRight
   exact p.boundaryClass_eq_of_range_numberedBoundaryRays_eq q hp hq
     (Q.inclusion_injective hc) (congrArg (fun e : ZMod n ↪ Q.fan.Ray ↦ Set.range e) hrays)
 

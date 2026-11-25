@@ -69,14 +69,6 @@ local notation "Aux" => LinearMap.BilinForm.prod
   (Chow.intersectionBilinForm ℂ Q.fan.algebraicRealization)
   (-(dotProductBilin ℤ ℤ : LinearMap.BilinForm ℤ (Fin r → ℤ)))
 
-private theorem hasNodalModel_of_contraction
-    {M : Point Centers[r] → MarkedSurface ℂ n H XTor[r]} {c : Point Centers[r]}
-    (p : ContractedToricFiber b Q.rays Q.regular Q.cycle Q.origin Q.inclusion (χ[c]) (M c))
-    (hp : p.IsNodalContraction) : Q.HasNodalModel c (M c) := by
-  obtain ⟨l, Y, W, hW, e, he⟩ := hp.exists_tower
-  exact (Q.hasNodalModel_iff c (M c)).mpr ⟨p, Y, l, W, e, hW, he.symm⟩
-
-
 private theorem smooth_fan :
     SmoothOfRelativeDimension 2 (Q.fan.algebraicRealization ↘ S) := by
   have hN : Module.finrank ℤ N = 2 := by simpa using Module.finrank_eq_card_basis b
@@ -218,7 +210,7 @@ theorem signedPicardHom_ker_eq_bot_of_presentation
     exact Fan.ker_chargeExchangeMatrix_rayChargeMap b Q.rays hindex
   have models (x : CenterPoint (U := Centers[r]) (V := Centers[r]) Cnil[P]) :=
     let hx := (Path.nil.centerPoint_endpoints_mem_noncollision P hker x).2
-    hasNodalModel_of_contraction Q (p _ hx) (hnodal _ hx)
+    Q.hasNodalModel_of_contraction (hnodal _ hx)
   have hd : Function.Injective d := by
     rw [← funext (hmark c₀)]
     exact (M c₀).boundaryClass_injective_of_nef_square_zero (hD c₀) hnef hsq
@@ -230,7 +222,7 @@ theorem signedPicardHom_ker_eq_bot_of_presentation
   have hc := (Path.nil.centerPoint_endpoints_mem_noncollision P hker c).2
   refine ker_eq_bot_of_realized_actions Q
     (U := {c : Point Centers[r] | c.left (default : S) ∈ U₀[P]})
-    p hnodal hD d hmark Q.separatingRight_auxiliaryPicardForm hd hc ρ
+    p hnodal hD d hmark Q.isPerfPair_auxiliaryPicardForm.separatingRight hd hc ρ
     (fun w ↦ (End.asHom w).centerPoint_endpoints_mem_noncollision P hker) ?_
   intro w
   obtain ⟨R, -, _, hmodels⟩ := exists_realize_signed_loop (End.asHom w) P Q
