@@ -125,7 +125,7 @@ theorem exists_sarkisov_path_decrease_of_hirzebruch_corner_or_section
     have hβ : (Φ.hirzebruchPicardBasis d a hΦ t ht).repr
         (coords[T,hT,f[Φ],g]).1 1 = β := (hrepr x.1).2
     obtain ⟨B, p, d', t', ht', Z, U, hU, k, hlen, _, hh, hproj, hg', hbir',
-        hpole', -, -, -, _, hdegree, horders, _, hlt⟩ :=
+        hpole', -, -, -, _, hdegree, horders, _, hlt, -⟩ :=
       hT.exists_sarkisov_path_of_toric_corner d a hΦ hc t ht g hg hbir σ hcone q hp
         hfirst D hpole
     let : Nonempty B.fan.cones := B.isComplete.nonempty_cones
