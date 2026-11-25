@@ -6,6 +6,7 @@ Authors: The QPainleve contributors
 module
 
 public import TauCeti.AlgebraicGeometry.Modules.Pullback.Sections
+import QPainleve.AlgebraicGeometry.Modules.Pullback.Sections
 import TauCeti.AlgebraicGeometry.Modules.Pullback.Quasicoherent
 
 /-!
@@ -38,14 +39,7 @@ theorem surjective_sectionsFunctor_μ_iff_pullback (f : Y ⟶ X) [IsOpenImmersio
   let G := sectionsFunctor (f ⁻¹ᵁ U)
   let μ₀ := (μ F M N).hom.toAddMonoidHom
   let μ₁ := (μ G ((pullback f).obj M) ((pullback f).obj N)).hom.toAddMonoidHom
-  have hpb (P : X.Modules) : Function.Bijective (f.pullbackSections P U) := by
-    have := isIso_pullbackPushforwardAdjunction_homEquiv_app f P _ (𝟙 _) U hU
-    rw [Adjunction.homEquiv_id] at this
-    have heq : (f.pullbackSections P U : Γ(P, U) → _) =
-        (((pullbackPushforwardAdjunction f).unit.app P).app U : Γ(P, U) → _) :=
-      funext (f.pullbackSections_apply P U)
-    rw [heq]
-    exact ConcreteCategory.bijective_of_isIso (((pullbackPushforwardAdjunction f).unit.app P).app U)
+  have hpb (P : X.Modules) := f.bijective_pullbackSections_of_isOpenImmersion P U hU
   let δ := (Functor.OplaxMonoidal.δ (pullback f) M N).app (f ⁻¹ᵁ U)
   let a := δ.hom.comp (f.pullbackSections (M ⊗ N) U).toAddMonoidHom
   have ha : Function.Bijective a :=

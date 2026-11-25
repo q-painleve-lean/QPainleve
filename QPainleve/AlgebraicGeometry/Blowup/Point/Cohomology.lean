@@ -15,13 +15,13 @@ public import TauCeti.AlgebraicGeometry.VectorBundle.FiniteLocallyFree
 import QPainleve.AlgebraicGeometry.Blowup.Cohomology
 import QPainleve.AlgebraicGeometry.Blowup.RegularPair
 import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
+import QPainleve.AlgebraicGeometry.Modules.Pullback.FiniteLocallyFree
 import TauCeti.AlgebraicGeometry.Cohomology.HigherDirectImage.Affine
 import TauCeti.AlgebraicGeometry.Cohomology.HigherDirectImage.ProjectionFormula
 import TauCeti.AlgebraicGeometry.Cohomology.OpenImmersion
 import TauCeti.AlgebraicGeometry.Cohomology.PushforwardAcyclic.Linear
 import TauCeti.AlgebraicGeometry.IdealSheaf.Affine
 import TauCeti.AlgebraicGeometry.Morphisms.Flat.StructureSheaf
-import TauCeti.AlgebraicGeometry.VectorBundle.ProjectionFormula
 
 /-!
 # Structure-sheaf direct images for a point blowup
@@ -163,26 +163,25 @@ a regular closed point of local dimension two is an isomorphism. -/
 theorem isIso_unitToPushforwardObjUnit_pointBlowup
     (hp : IsClosed ({p} : Set X)) [IsRegularLocalRing (X.presheaf.stalk p)]
     (hdim : ringKrullDim (X.presheaf.stalk p) = 2) :
-    IsIso (SheafOfModules.unitToPushforwardObjUnit (π).toRingCatSheafHom) := by
-  apply Scheme.Modules.Hom.isIso_iff_isIso_app.mpr
-  intro U
-  apply (ConcreteCategory.isIso_iff_bijective _).2
-  have := isIso_app_pointBlowup hp hdim U
-  exact ConcreteCategory.bijective_of_isIso ((π).app U)
+    IsIso (SheafOfModules.unitToPushforwardObjUnit (π).toRingCatSheafHom) :=
+  (π).isIso_unitToPushforwardObjUnit_of_isIso_app (isIso_app_pointBlowup hp hdim)
 
-open MonoidalCategory
-
-/-- Direct image along the blowup of a regular closed point of local dimension two recovers
-each finite locally free sheaf from its pullback. -/
+/-- The adjunction unit identifies a finite locally free sheaf with the direct image of its
+pullback to the blowup of a regular closed point of local dimension two. -/
 noncomputable def pointBlowupPushforwardPullbackIso
     (hp : IsClosed ({p} : Set X)) [IsRegularLocalRing (X.presheaf.stalk p)]
     (hdim : ringKrullDim (X.presheaf.stalk p) = 2) (E : FiniteLocallyFreeSheaf X) :
-    E.obj ≅ (pushforward π).obj ((Scheme.Modules.pullback π).obj E.obj) := by
-  have := isIso_unitToPushforwardObjUnit_pointBlowup hp hdim
-  let e := asIso (SheafOfModules.unitToPushforwardObjUnit (π).toRingCatSheafHom)
-  simpa only [FiniteLocallyFreeSheaf.pullback_obj_obj] using
-    (ρ_ E.obj).symm ≪≫ (tensorLeft E.obj).mapIso e ≪≫
-      FiniteLocallyFreeSheaf.tensorPushforwardUnitIso π E
+    E.obj ≅ (pushforward π).obj ((Scheme.Modules.pullback π).obj E.obj) :=
+  have := (π).isIso_unit_app_of_isFiniteLocallyFree (isIso_app_pointBlowup hp hdim) E
+  asIso ((pullbackPushforwardAdjunction π).unit.app E.obj)
+
+/-- The forward point-blowup comparison is the adjunction unit. -/
+@[simp]
+theorem pointBlowupPushforwardPullbackIso_hom
+    (hp : IsClosed ({p} : Set X)) [IsRegularLocalRing (X.presheaf.stalk p)]
+    (hdim : ringKrullDim (X.presheaf.stalk p) = 2) (E : FiniteLocallyFreeSheaf X) :
+    (pointBlowupPushforwardPullbackIso hp hdim E).hom =
+      (pullbackPushforwardAdjunction π).unit.app E.obj := (rfl)
 
 /-- Blowup at a regular closed point of local dimension two preserves cohomology of finite
 locally free sheaves as modules over the base ring, in every degree. -/
@@ -201,6 +200,28 @@ noncomputable def pointBlowupCohomologyLinearEquiv
         (isZero_higherDirectImage_succ_unit_pointBlowup hp hdim q)
   exact (cohomologyBaseLinearEquivOfIso R (pointBlowupPushforwardPullbackIso hp hdim E) n).trans
     ((π).cohomologyPushforwardBaseLinearEquivOfIsZeroHigherDirectImage R _ hvan n)
+
+/-- The cohomology comparison for a point blowup commutes with a map between finite locally
+free coefficient sheaves. -/
+theorem pointBlowupCohomologyLinearEquiv_naturality
+    (R : Type u) [CommRing R] [X.Over (Spec (.of R))]
+    (hp : IsClosed ({p} : Set X)) [IsRegularLocalRing (X.presheaf.stalk p)]
+    (hdim : ringKrullDim (X.presheaf.stalk p) = 2) {E F : FiniteLocallyFreeSheaf X}
+    (a : E.obj ⟶ F.obj) (q : ℕ) (x : Cohomology E.obj q) :
+    let : ((Iₚ).blowup).Over (Spec (.of R)) := ⟨π ≫ X ↘ Spec (.of R)⟩
+    pointBlowupCohomologyLinearEquiv R hp hdim F q (cohomologyMapBaseLinear R X a q x) =
+      cohomologyMapBaseLinear R (Iₚ).blowup ((Scheme.Modules.pullback π).map a) q
+        (pointBlowupCohomologyLinearEquiv R hp hdim E q x) := by
+  intro _
+  let : (π).IsOver (Spec (.of R)) := ⟨rfl⟩
+  simp only [pointBlowupCohomologyLinearEquiv, LinearEquiv.trans_apply,
+    cohomologyBaseLinearEquivOfIso_apply, pointBlowupPushforwardPullbackIso_hom]
+  have h := (pullbackPushforwardAdjunction π).unit.naturality a
+  simp only [Functor.id_map, Functor.comp_map] at h
+  have hc := congrArg (fun b ↦ cohomologyMapBaseLinear R X b q x) h
+  simp only [cohomologyMapBaseLinear_comp, LinearMap.comp_apply] at hc
+  rw [hc]
+  exact (π).cohomologyPushforwardBaseLinearEquivOfIsZeroHigherDirectImage_naturality R _ _ _ q _
 
 end Point
 
