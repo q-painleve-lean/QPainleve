@@ -45,7 +45,8 @@ variable [PrestableFamily ((Φ.boundaryIdeal h₀).subscheme ↘ S)]
   (p : ContractedToricFiber b s hΦ T origin ι c P)
   (q : ContractedToricFiber b s hΦ T origin ι d Q)
 
-private theorem strictMono_numberedBoundaryRays (hP : D[P].IsEffectiveCartier) :
+/-- Numbered boundary rays occur in increasing cyclic distance from the toric origin. -/
+theorem strictMono_numberedBoundaryRays (hP : D[P].IsEffectiveCartier) :
     let e := ((Φ.boundaryNormalizationComponentEquiv hΦ).trans T.component.symm)
     StrictMono fun j : Fin n ↦
       (e (p.numberedBoundaryRays hP (ZMod.finEquiv n j)) - origin).val := by
