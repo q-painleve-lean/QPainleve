@@ -181,4 +181,21 @@ theorem primitiveGenerator_add_selfIntersection_smul_add_eq_zero
     omega
   exact relation_of_neighbors hΦ hN hne (ray_neighbors_iff_of_det b hΦ hc hprev hnext)
 
+/-- The self-intersection of a toric boundary ray in positive cyclic order is the
+negative determinant of its predecessor and successor. -/
+theorem rayBoundarySelfIntersection_eq_neg_det_of_neighbors
+    [Φ.algebraicRealization.IsProjectiveOver ℂ]
+    (b : Module.Basis (Fin 2) ℤ N) (hΦ : Φ.IsRegular) (hc : Φ.IsComplete)
+    {prev ρ next : Φ.Ray}
+    (hprev : b.detDualEquiv prev.primitiveGenerator ρ.primitiveGenerator = 1 ∧
+      ∃ σ : Φ.cones, prev.toCone ≤ σ ∧ ρ.toCone ≤ σ)
+    (hnext : b.detDualEquiv ρ.primitiveGenerator next.primitiveGenerator = 1 ∧
+      ∃ σ : Φ.cones, ρ.toCone ≤ σ ∧ next.toCone ≤ σ) :
+    Φ.rayBoundarySelfIntersection hΦ ρ =
+      -b.detDualEquiv prev.primitiveGenerator next.primitiveGenerator := by
+  have h := congrArg (b.detDualEquiv prev.primitiveGenerator)
+    (primitiveGenerator_add_selfIntersection_smul_add_eq_zero b hΦ hc hprev hnext)
+  simpa only [map_add, map_smul, map_zero, b.detDualEquiv_self, hprev.1,
+    zero_add, smul_eq_mul, mul_one, eq_neg_iff_add_eq_zero] using h
+
 end TauCeti.Toric.Fan
