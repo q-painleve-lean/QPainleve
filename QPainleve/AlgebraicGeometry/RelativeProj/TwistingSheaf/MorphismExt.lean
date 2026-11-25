@@ -8,6 +8,7 @@ module
 public import QPainleve.AlgebraicGeometry.RelativeProj.Evaluation
 public import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.TwistingSheaf.MorphismExt
 
+import QPainleve.AlgebraicGeometry.Modules.Gluing
 import QPainleve.AlgebraicGeometry.Modules.Pullback.Composites
 import TauCeti.AlgebraicGeometry.Sites.SmallAffineZariski
 
@@ -29,29 +30,6 @@ open AlgebraicGeometry.Scheme.Modules
 universe u
 
 namespace CategoryTheory.CommMon
-
-private theorem homEquiv_restrictGluedHom {J : Type u} [SmallCategory J]
-    {F : J ⥤ Scheme.{u}} (D : ModulesGlueData F)
-    [∀ {i j} (f : i ⟶ j), IsOpenImmersion (F.map f)]
-    [(F ⋙ Scheme.forget).IsLocallyDirected] [Quiver.IsThin J] (i : J) :
-    let j := Limits.colimit.ι F i
-    (pullbackPushforwardAdjunction j).homEquiv _ _
-      ((restrictFunctorIsoPullback j).inv.app D.glued ≫ D.restrictGluedHom i) = D.π i := by
-  intro j
-  let a := pullbackPushforwardAdjunction j
-  let r := restrictAdjunction j
-  have he : D.restrictGluedHom i = (r.homEquiv _ _).symm (D.π i) := by
-    rw [Adjunction.homEquiv_counit]
-    exact Scheme.Modules.hom_ext _ _ fun W ↦
-      ConcreteCategory.hom_ext _ _ (D.restrictGluedHom_app_apply i W)
-  calc
-    _ = a.homEquiv _ _ ((restrictFunctorIsoPullback j).inv.app D.glued) ≫
-        (pushforward j).map (D.restrictGluedHom i) := a.homEquiv_naturality_right _ _
-    _ = r.homEquiv _ _ (D.restrictGluedHom i) := by
-      rw [restrictFunctorIsoPullback, Adjunction.leftAdjointUniq_inv_app,
-        a.homEquiv_leftAdjointUniq_hom_app]
-      exact (r.homEquiv_unit _ _ _).symm
-    _ = D.π i := by rw [he, Equiv.apply_symm_apply]
 
 variable {X Y : Scheme.{u}} (A : CommMon (GradedObject ℕ X.Modules))
   [∀ n, (A.X n).IsQuasicoherent]
@@ -81,7 +59,7 @@ private theorem chartTwistIso_homEquiv (U : X.AffineZariskiSite) :
   refine (congrArg (fun e ↦ (pullbackPushforwardAdjunction j).homEquiv _ _
     ((restrictFunctorIsoPullback j).inv.app T ≫ e))
     (A.restrictRelativeProjTwistingSheafIso_hom 1 U)).trans ?_
-  exact homEquiv_restrictGluedHom (A.relativeProjTwistingSheafGlueData 1) U
+  exact (A.relativeProjTwistingSheafGlueData 1).homEquiv_restrictGluedHom U
 
 omit hg in
 private theorem top_le_chart_preimage (U : X.AffineZariskiSite) :
