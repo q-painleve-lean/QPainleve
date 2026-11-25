@@ -66,35 +66,6 @@ local notation "Models[" b₀ "," Q "," M "," C "]" =>
     (origin := CompleteToricPresentation.origin Q) (ι := CompleteToricPresentation.inclusion Q)
     (P₁ := M) (fun z : Point Centers[12 - n] ↦ χ[z]) C
 
-private theorem centerCount_eq_of_square_zero
-    {Φ : Fan i} (hΦ : Φ.IsRegular) (hc : Φ.IsComplete) {r k : ℕ}
-    (s : Fin r → Φ.Ray) (u : Fin r → ℂˣ) {W : Scheme} {T : BlowupTower X k W}
-    (hT : IsNodalBoundaryTower D (X ↘ S) (𝟙 X) T)
-    (e : (Fan.internalBlowupTower (h₀ := hc.nonempty_cones) b s u).1 ≅ W)
-    (hker : ((D.comap T.toBase).radical).comap e.hom =
-      (Fan.internalBlowupTower (h₀ := hc.nonempty_cones) b s u).2.boundaryι.ker)
-    (A : Scheme.NodalCycleNumbering (Empty.elim : Empty → (D.subscheme ↘ S).smoothLocus) n)
-    (hD : D.IsEffectiveCartier) (hcan : LineBundleClass.mk hD.toInvertibleSheaf = K)
-    (hsq : Chow.classIntersectionNumber ℂ X δ[hD] δ[hD] = 0) : r = 12 - n := by
-  let : IsNoetherian X := isNoetherian_of_finiteType (X ↘ S)
-  let : Module.Finite ℤ Pic := X.finite_picard_of_isRationalOver ℂ
-  let : Nonempty Φ.cones := hc.nonempty_cones
-  have hcount := Fan.boundaryComplexity_eq_length_of_toricPresentation hΦ b s u hc hD hT
-    e.symm (by
-      simpa only [Iso.symm_inv, support_comap, support_radical] using congrArg support hker)
-  have hcard : D.boundaryPrimes.ncard = n := by
-    rw [← Nat.card_coe_set_eq, ← Nat.card_congr (A.boundaryPrimeEquiv hD), Nat.card_zmod]
-  have hz : Chow.classIntersectionNumber ℂ X K K = 0 := by
-    rw [congrArg Inv.inv hcan] at hsq
-    have hneg : B (-Additive.ofMul K) (-Additive.ofMul K) = 0 := by
-      simpa only [Chow.intersectionBilinForm_apply, toMul_neg, toMul_ofMul] using hsq
-    simpa only [LinearMap.BilinForm.neg_left, LinearMap.BilinForm.neg_right, neg_neg,
-      Chow.intersectionBilinForm_apply, toMul_ofMul] using hneg
-  have hrank := Chow.finrank_picard_add_canonical_square_of_isRationalOver ℂ X
-  rw [hz, add_zero] at hrank
-  rw [boundaryComplexity_def, hcard, hrank] at hcount
-  omega
-
 /-- A numbered primitive nef square-zero anticanonical cycle on a smooth projective
 rational complex surface admits a toric seed on `Fin (12 - n)`. Its signed and
 unsigned opposite cluster modular groups identify with the signed boundary
@@ -142,7 +113,7 @@ theorem exists_picardGroupEquivs_of_anticanonical_cycle
   have hP := Fan.hasToricPresentation_of_ruled_reduction (b := b) hi A hD hcan
   obtain ⟨Φ, hΦ, hc, r, s, u, k, W, T, hT, e, hbase, hker⟩ :=
     (hasToricPresentation_iff ..).mp hP
-  have hr := centerCount_eq_of_square_zero hΦ hc s u hT e hker A hD hcan hsq
+  have hr := Fan.centerCount_eq_of_square_zero hΦ hc s u hT e hker A hD hcan hsq
   subst r
   obtain ⟨H, μ, b', Q, c, f, E, M, hD', Θ, Θrot, hframe, -, hE, hM, hmodels, hmark,
     hwords, hsign, hrot⟩ :=
