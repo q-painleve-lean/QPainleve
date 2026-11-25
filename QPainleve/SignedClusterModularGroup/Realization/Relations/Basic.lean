@@ -9,6 +9,8 @@ public import QPainleve.SignedClusterModularGroup.Realization.ChargeKernel.Basic
 public import QPainleve.SignedClusterModularGroup.Realization.Relations.Boundary
 
 import Mathlib.LinearAlgebra.Matrix.ToLin
+import QPainleve.Algebra.Cluster.ChargeKernel.Index
+import QPainleve.Algebra.Cluster.Word.CoefficientChange
 import QPainleve.SignedClusterModularGroup.BoundaryCycle
 import QPainleve.SignedClusterModularGroup.Faithfulness
 import QPainleve.SignedClusterModularGroup.Realization.Orthogonal
@@ -18,9 +20,10 @@ import QPainleve.SignedClusterModularGroup.Realization.Orthogonal
 
 For loops realized in a fixed marked toric presentation, inversion parity, the action on
 the charge kernel, and the forward image of component zero determine the X pullback.
-The proof compares the marked Picard and ordered boundary actions in both directions.
-The kernel action is compared using a finite integral basis, and tropical evaluation
-gives the forward index by a finite search among the surviving rays.
+The tropical and monomial actions give necessity over any field. For sufficiency,
+the marked Picard and ordered boundary actions give equality over ℂ, which specializes
+to any field. The kernel action is compared on a finite integral basis, and tropical
+evaluation gives the forward index by a finite search among the surviving rays.
 -/
 
 public section
@@ -124,7 +127,7 @@ variable
 
 include hmark in
 /-- Two signed words with geometric realizations in a fixed ordered toric presentation
-have equal X pullbacks exactly when their finite integer invariants agree. The sign
+have equal X pullbacks over any field exactly when their finite integer invariants agree. The sign
 retains the action on the ordered branches, the matrix records exponent transport on
 a basis of the charge kernel, and the search returns the forward image of component
 zero. Both searches use the boundary order table of one reference fiber, which can
@@ -132,7 +135,7 @@ lie outside the centers reached by the two realizations. Nodal contractions at t
 reached centers identify their numbered boundary rays with that reference table.
 With the basis vectors and order table supplied as integers, `decidable_of_iff`
 transfers decidable equality of the computed invariants to equality of the X pullbacks. -/
-theorem xPullback_eq_iff_signedLoopInvariants_eq
+theorem xPullback_eq_iff_signedLoopInvariants_eq {k : Type*} [Field k]
     [Module.Free ℤ L] [Module.Finite ℤ L] [B.IsPerfPair] (hSymm : B.IsSymm)
     (hGram : ∀ j k, B (D j) (D k) =
       (-2 : ℤ) * (if j = k then 1 else 0) + (if k = j + 1 then 1 else 0) +
@@ -154,7 +157,6 @@ theorem xPullback_eq_iff_signedLoopInvariants_eq
     (e : Orth ≃ₗ[ℤ] Charge)
     (he : ∀ x : Charge, ι (e.symm x).val =
       ((Fan.boundaryOrthogonalEquivChargeKernel hΦ s Qform).symm x).val)
-    (hι : Function.Injective ι)
     {c₀ : Point T} (p₀ : fiberAt c₀) (hnodal₀ : p₀.IsNodalContraction)
     {U : Set (Point T)}
     (p : ∀ c ∈ U, fiberAt c)
@@ -163,10 +165,15 @@ theorem xPullback_eq_iff_signedLoopInvariants_eq
     (hU' : ∀ x : CenterPoint (U := T) (V := T) C', src[C',x] ∈ U ∧ dst[C',x] ∈ U)
     {d : ℕ} (β : Module.Basis (Fin d) ℤ E.matrix.mulVecLin.ker) :
     let orders := p₀.numberedBoundaryOrders (hD c₀)
-    w.xPullback ℂ = v.xPullback ℂ ↔
+    w.xPullback k = v.xPullback k ↔
       w.signedLoopInvariants (fun j ↦ (β j : Cent)) orders (orders 0) =
         v.signedLoopInvariants (fun j ↦ (β j : Cent)) orders (orders 0) := by
   dsimp only
+  have hne : E.matrix ≠ 0 := hE.symm ▸
+    ((Fan.rayChargeMap s).chargeExchangeMatrix_eq_zero_iff_index_range_eq_zero b
+      b.detDualEquiv_self b.detDualEquiv_apply_basis_zero_one).not.mpr hindex
+  refine ⟨fun h ↦ Path.signedLoopInvariants_eq_of_xPullback_eq hne h β _ _, fun h ↦ ?_⟩
+  apply Path.xPullback_eq_of_charZero k ℂ
   have hrays c (hc : c ∈ U) : (p c hc).numberedBoundaryRays (hD c) =
       p₀.numberedBoundaryRays (hD c₀) :=
     (p c hc).numberedBoundaryRays_eq_of_nodalContractions (p₀)
@@ -199,30 +206,21 @@ theorem xPullback_eq_iff_signedLoopInvariants_eq
   have hfind₂ := R'.signedLoopInvariants_boundary_eq_some hsep y hcΦ hE hindex p₀ hnodal₀
     (p _ (hU' y).1) (p _ (hU' y).2) (hnodal _ (hU' y).2) (hD _) (fun j ↦ (β j : Cent))
   simp only [Path.signedLoopInvariants_def] at hfind₁ hfind₂
-  rw [Path.signedLoopInvariants_eq_iff, ← hmatrix]
-  rw [← (Option.map_injective (ZMod.finEquiv n).toEquiv.injective).eq_iff,
-    hfind₁, hfind₂, Option.some.injEq]
-  constructor
-  · intro h
-    have ⟨_, hbranch⟩ := R.marked_actions_eq_of_xMap_eq R'
-      ((Path.xRationalMap_eq_iff ℂ w v).mpr h) hcΦ hι hindex (fun c ↦ χ[c])
-      (fun c ↦ ⟨p _ (hU c).2⟩) (fun c ↦ ⟨p _ (hU' c).2⟩)
-    have hact := (signedClusterModularGroupMap_eq_iff ℂ E (End.of w) (End.of v)).mpr h
-    refine ⟨?_, congrArg (fun g ↦ chargeKernelAction ℂ Q hker (op g)) hact, ?_⟩
-    · rw [← hηw, ← hηv, R.orientation_def, R'.orientation_def, hbranch]
-    · rw [R.boundaryPerm_def, R'.boundaryPerm_def, hbranch]
-  · rintro ⟨hη, hact, hj⟩
-    have hres := congrArg (LinearEquiv.autCongr (LinearEquiv.ofEq Q.charge.ker Charge rfl)) hact
-    rw [hcharge₁, hcharge₂] at hres
-    have horient := hηw.trans (hη.trans hηv.symm)
-    have hB : B.Nondegenerate := LinearMap.IsPerfPair.nondegenerate inferInstance
-    obtain ⟨hpic, hperm⟩ := marked_actions_eq_of_restriction_eq D hD hmark R R'
-      hSymm hB.1 (BoundaryCycle.span_sup_orthogonal_rat hGram hSymm hB)
-      horient ((LinearEquiv.autCongr e).injective hres) hj
-    exact (Path.xRationalMap_eq_iff ℂ w v).mp
-      (R.xMap_eq_of_marked_actions_on_center_domains R' hcΦ u hvertices hdet hnodes
-        (fun x ↦ p _ (hU x).1) (Set.range (p₀.numberedBoundaryRays (hD c₀)))
-        (fun x ↦ ⟨p _ (hU x).2, hnodal _ (hU x).2, hkeep _ (hU x).2⟩)
-        (fun x ↦ ⟨p _ (hU' x).2, hnodal _ (hU' x).2, hkeep _ (hU' x).2⟩) hpic hperm horient)
+  rw [Path.signedLoopInvariants_eq_iff, ← hmatrix,
+    ← (Option.map_injective (ZMod.finEquiv n).toEquiv.injective).eq_iff,
+    hfind₁, hfind₂, Option.some.injEq] at h
+  obtain ⟨hη, hact, hj⟩ := h
+  have hres := congrArg (LinearEquiv.autCongr (LinearEquiv.ofEq Q.charge.ker Charge rfl)) hact
+  rw [hcharge₁, hcharge₂] at hres
+  have horient := hηw.trans (hη.trans hηv.symm)
+  have hB : B.Nondegenerate := LinearMap.IsPerfPair.nondegenerate inferInstance
+  obtain ⟨hpic, hperm⟩ := marked_actions_eq_of_restriction_eq D hD hmark R R'
+    hSymm hB.1 (BoundaryCycle.span_sup_orthogonal_rat hGram hSymm hB)
+    horient ((LinearEquiv.autCongr e).injective hres) hj
+  exact (Path.xRationalMap_eq_iff ℂ w v).mp
+    (R.xMap_eq_of_marked_actions_on_center_domains R' hcΦ u hvertices hdet hnodes
+      (fun x ↦ p _ (hU x).1) (Set.range (p₀.numberedBoundaryRays (hD c₀)))
+      (fun x ↦ ⟨p _ (hU x).2, hnodal _ (hU x).2, hkeep _ (hU x).2⟩)
+      (fun x ↦ ⟨p _ (hU' x).2, hnodal _ (hU' x).2, hkeep _ (hU' x).2⟩) hpic hperm horient)
 
 end QPainleve.SignedClusterModularGroup.GeometricRealization
