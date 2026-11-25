@@ -122,7 +122,7 @@ private theorem exists_hirzebruchOne_resolution_of_corner_with_smooth_center
   rw [← (Φ.distinguishedPointHom σ).ker_eq_ker_fromSpecResidueField] at hmove
   obtain ⟨W, A, e, hA, he, hE, hcenters, htail⟩ := hmove
   obtain ⟨Ψ, F, hΨ, hF, hcΨ, _, d, τ, s, t, v, w, r₀, r', hr₀, hr', Z, B, e', hU,
-    hd₀, _, _, hv, hw, -, -, hproj, hcorner, hretained, hC⟩ :=
+    hd₀, _, _, hv, hw, -, -, -, hproj, hcorner, hretained, hC⟩ :=
     hA.exists_hirzebruch_toric_link_resolution b 0 hΦ hcΦ hrays σ hσ
   have hr₀' : r₀ = r := Equiv.ext fun k ↦ Fan.Ray.primitiveGenerator_injective
     ((congrFun hr₀ k).trans (congrFun hr k).symm)
@@ -140,16 +140,17 @@ private theorem exists_hirzebruchOne_resolution_of_corner_with_smooth_center
     rw [hcorner]
     exact Ψ.notMem_isoLocus_distinguishedPoint_of_blowup hΨ dim(d) τ π[t] w hw
   obtain ⟨hcenter, hfirst'⟩ := hA.first_center_of_toric_link hU s t v hv hcorner' hretained
-    (hsrc.symm ▸ hs) (htgt.symm ▸ ht) k (by rw [hcenters, hk, hl, hsrc]) (by
-      intro m hm
-      rw [hcenters, hsrc]
-      exact hlfirst _ (hk ▸ (Fin.strictMono_succAbove j) hm))
+    (hsrc.symm ▸ hs) (htgt.symm ▸ ht) k (by rw [hcenters, hk, hl, hsrc])
+  have hfirst'' : ∀ m < k, (I[σ]).blowupToBase (hA.baseCenter m) ≠ π[s] z := by
+    intro m hm
+    rw [hcenters, hsrc]
+    exact hlfirst _ (hk ▸ (Fin.strictMono_succAbove j) hm)
   let q := e.hom ≫ A.toBase ≫ v.inv
   have hq : q ≫ π[s] = T.toBase := by simp only [q, Category.assoc, ← hv, Iso.inv_hom_id_assoc, he]
   have hq' : q ≫ π[t] = (e ≪≫ e').hom ≫ U.toBase := by
     simp only [q, Iso.trans_hom, Category.assoc, hproj, U]
   refine ⟨Ψ, F, hΨ, hcΨ, hF, s, t, τ, v, w, d, r', hr', q, Z, U, hU, e ≪≫ e', c', k, hv, hw,
-    hq, hq', hk, hcenter.trans htgt, fun m hm ↦ htgt ▸ hfirst' m hm, ?_⟩
+    hq, hq', hk, hcenter.trans htgt, fun m hm ↦ htgt ▸ hfirst' hfirst'' m hm, ?_⟩
   intro _ _ y
   let : Nonempty Ψ.cones := hcΨ.nonempty_cones
   let : SmoothOfRelativeDimension 2 f[Ψ] :=

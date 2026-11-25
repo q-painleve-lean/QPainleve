@@ -9,15 +9,18 @@ public import QPainleve.AlgebraicGeometry.Blowup.Tower.Modification
 public import QPainleve.AlgebraicGeometry.Blowup.Tower.Ramification
 public import QPainleve.AlgebraicGeometry.Blowup.Tower.Reorder
 public import QPainleve.Geometry.Toric.Fan.Birational
-public import QPainleve.Geometry.Toric.Fan.Boundary.Basic
+public import QPainleve.Geometry.Toric.Fan.Boundary.InternalCenter
 public import QPainleve.Geometry.Toric.Fan.Ruling.Basic
 public import QPainleve.Geometry.Toric.Fan.Smooth
 public import QPainleve.SignedClusterModularGroup.SarkisovDegree.ToricLink
 
 import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
+import QPainleve.AlgebraicGeometry.Morphisms.IsoLocus
 import QPainleve.AlgebraicGeometry.Morphisms.Modification.Birational
 import QPainleve.AlgebraicGeometry.RationalMap.FunctionField
+import QPainleve.Geometry.Toric.Fan.Boundary.Subdivision
 import QPainleve.Geometry.Toric.Fan.Logarithmic.Subdivision
+import QPainleve.Geometry.Toric.Fan.StarSubdivision.Global
 import QPainleve.Geometry.Toric.Fan.Ruling.FixedPoint
 import QPainleve.Geometry.Toric.Fan.Ruling.Subdivision
 import TauCeti.AlgebraicGeometry.Morphisms.Modification.Composition
@@ -38,7 +41,7 @@ This is the torus-fixed case of Proposition 8.11 in
 
 public noncomputable section
 
-open AlgebraicGeometry CategoryTheory Module PointedCone TauCeti.Toric
+open AlgebraicGeometry CategoryTheory Module PointedCone TauCeti.Toric TopologicalSpace
 open TauCeti.AlgebraicGeometry LineBundleClass Scheme.IdealSheafData
 
 namespace QPainleve.BlowupTower.IsClosedPointTower
@@ -55,6 +58,11 @@ local notation "π[" s "]" => FanHom.algebraicMap (Fan.IsSubdivision.toFanHom s)
 local notation "B[" F "," hc "]" => Fan.boundaryIdeal F (Fan.IsComplete.nonempty_cones hc)
 local notation "rankTwo(" b ")" =>
   Eq.trans (Module.finrank_eq_card_basis b) (Fintype.card_fin 2)
+local notation "pt" => IsLocalRing.closedPoint ℂ
+local notation "center[" b "," ρ "," c "]" =>
+  Fan.Ray.binomialCenter ρ rankTwo(b)
+    (Module.Basis.detDualEquiv_self b (Fan.Ray.primitiveGenerator ρ))
+    (Fan.Ray.surjective_detCharacter ρ b) c pt
 
 private theorem isModification_corner_projection {F : Fan i} [Nonempty Φ.cones]
     [SmoothOfRelativeDimension 2 f[Φ]] (σ : Φ.cones) (s : F.IsSubdivision Φ)
@@ -100,6 +108,30 @@ private theorem toric_corner_baseCenter_ruling {F Ψ : Fan i}
     simpa only [Fin.addCases_right, Function.comp_apply, Scheme.Hom.comp_apply, hz, hz'] using
       congrArg (fun f ↦ f z) h.symm
 
+private theorem toric_corner_center_on_contracted_ray {F Ψ : Fan i} [Nonempty F.cones]
+    (b : Basis (Fin 2) ℤ N) (s : F.IsSubdivision Φ) (t : F.IsSubdivision Ψ)
+    (hF : F.IsRegular) (τ : Ψ.cones) (ρ : Φ.Ray)
+    (hcontract : (I[τ]).comap π[t] = F.rayBoundaryIdeal hF (s.liftRay ρ))
+    (c : ℂˣ) {z : X[F]} (hz : π[s] z = center[b,ρ,c]) :
+    π[t] z = Ψ.distinguishedPointHom τ pt := by
+  let q := center[b,s.liftRay ρ,c]
+  have hq : π[s] q = center[b,ρ,c] := congrArg (fun f : S ⟶ X[Φ] ↦ f pt)
+    (s.binomialCenter_liftRay_comp_algebraicMap ρ b c)
+  have hi : center[b,ρ,c] ∈ (π[s]).isoLocus :=
+    s.range_binomialCenter_subset_isoLocus ρ rankTwo(b) (b.detDualEquiv_self _)
+      (ρ.surjective_detCharacter b) c (Set.mem_range_self pt)
+  have hqz : q = z := (π[s]).injOn_preimage_isoLocus (by rwa [Set.mem_preimage, hq])
+    (by rwa [Set.mem_preimage, hz]) (hq.trans hz.symm)
+  have hs := ((s.liftRay ρ).binomialCenter_mem_support_sdiff_colon hF rankTwo(b)
+    (b.detDualEquiv_self _) ((s.liftRay ρ).surjective_detCharacter b) c).1
+  let : IsClosedImmersion (Ψ.distinguishedPointHom τ) :=
+    Ψ.isClosedImmersion_distinguishedPointHom τ
+  rw [← hcontract, support_comap, Closeds.coe_preimage, Set.mem_preimage,
+    Scheme.Hom.support_ker, (Ψ.distinguishedPointHom τ).isClosedEmbedding.isClosed_range.closure_eq]
+    at hs
+  obtain ⟨x, hx⟩ := hs
+  rw [← hqz, ← hx, Subsingleton.elim pt x]
+
 /-- Perform the toric elementary link at the first center over the selected
 corner of a specified Hirzebruch resolution. The two projections from the
 common toric blowup are single star subdivisions at two-ray cones. Their
@@ -113,6 +145,8 @@ The new point tower retains the specified birational morphism up to the
 displayed isomorphism over the base field. Each retained center comes from a
 point of the common blowup. The reverse center lies over the same point of the
 ruling as the selected center, and every other center retains its ruling value.
+Centers in the open orbit of the contracted fiber project to the reverse corner.
+Those on the other invariant fiber stay on its open orbit and preserve first occurrences.
 
 For a class with fiber and section coefficients `a, β` and selected base order
 `m`, the new coordinates are `a + β - m, β` with reverse order `β - m`.
@@ -152,6 +186,15 @@ theorem exists_sarkisov_decrease_of_toric_corner
       (∀ l : Fin n, ∃ z : X[F],
         s.toFanHom.algebraicMap z = hT.baseCenter (j.succAbove l) ∧
         t.toFanHom.algebraicMap z = hU.baseCenter (l.natAdd 1)) ∧
+      hU.baseCenter (Fin.castAdd n (0 : Fin 1)) = Ψ.distinguishedPointHom τ pt ∧
+      (∀ (l : Fin n) (c : ℂˣ),
+        hT.baseCenter (j.succAbove l) = center[b,r 1,c] →
+        hU.baseCenter (l.natAdd 1) = hU.baseCenter (Fin.castAdd n (0 : Fin 1))) ∧
+      (∀ (l : Fin n) (c : ℂˣ),
+        hT.baseCenter (j.succAbove l) = center[b,r 3,c] →
+        ∃ c' : ℂˣ, hU.baseCenter (l.natAdd 1) = center[d,r' 3,c'] ∧
+          ((∀ m < j.succAbove l, hT.baseCenter m ≠ hT.baseCenter (j.succAbove l)) →
+            ∀ m < l.natAdd 1, hU.baseCenter m ≠ hU.baseCenter (l.natAdd 1))) ∧
       (∀ (h₀ : ∀ γ : Φ.cones, (∀ x ∈ γ.val, 0 ≤ Φ.lattice.realCharacter
         (b.coord 1).toAddMonoidHom x) ∨ ∀ x ∈ γ.val,
           Φ.lattice.realCharacter (b.coord 1).toAddMonoidHom x ≤ 0)
@@ -207,7 +250,7 @@ theorem exists_sarkisov_decrease_of_toric_corner
   rw [← hI] at hmove
   obtain ⟨W, A, h, hA, hbase, hE, hcenters, htail⟩ := hmove
   obtain ⟨Ψ, F, hΨ, hF, hc', hcF, d, τ, s, t, v, v', r, r', hr, hr', Z, A', k,
-      hU, hd₀, hd₁, hτ, hv, hv', hstar, hstar', hproj, hhead, htarget, hcoord⟩ :=
+      hU, hd₀, hd₁, hτ, hv, hv', hstar, hstar', hcontract, hproj, hhead, htarget, hcoord⟩ :=
     hA.exists_hirzebruch_toric_link_resolution b e hΦ hc hrays σ hσ
   let U := (BlowupTower.nil.snoc (I[τ])).append A'
   -- The common blowup gives both projections and hence the ruling comparison.
@@ -229,11 +272,38 @@ theorem exists_sarkisov_decrease_of_toric_corner
       t.toFanHom.algebraicMap z = hU.baseCenter (l.natAdd 1) := by
     refine ⟨v.inv (hA.baseCenter l), ?_, htarget l⟩
     rw [← Scheme.Hom.comp_apply, ← hv, Iso.inv_hom_id_assoc, hcenters]
+  let : Nonempty F.cones := hcF.nonempty_cones
+  have hcoll (l : Fin n) (c : ℂˣ) (hl : hT.baseCenter (j.succAbove l) = center[b,r 1,c]) :
+      hU.baseCenter (l.natAdd 1) = hU.baseCenter (Fin.castAdd n (0 : Fin 1)) := by
+    obtain ⟨z, hs, ht⟩ := hpts l
+    rw [← ht, hhead]
+    exact toric_corner_center_on_contracted_ray b s t hF τ (r 1) hcontract c (hs.trans hl)
+  have hshared : (r 3).primitiveGenerator = (r' 3).primitiveGenerator := by
+    simp [congrFun hr 3, congrFun hr' 3, hd₀, hd₁, add_zsmul]
+    abel
+  have hreverse : hU.baseCenter (Fin.castAdd n (0 : Fin 1)) ∉ (π[t]).isoLocus := by
+    rw [hhead]
+    exact Ψ.notMem_isoLocus_distinguishedPoint_of_blowup hΨ rankTwo(d) τ π[t] v' hv'
+  have hstay (l : Fin n) (c : ℂˣ) (hl : hT.baseCenter (j.succAbove l) = center[b,r 3,c]) :
+      ∃ c' : ℂˣ, hU.baseCenter (l.natAdd 1) = center[d,r' 3,c'] ∧
+        ((∀ m < j.succAbove l, hT.baseCenter m ≠ hT.baseCenter (j.succAbove l)) →
+          ∀ m < l.natAdd 1, hU.baseCenter m ≠ hU.baseCenter (l.natAdd 1)) := by
+    obtain ⟨c', z, hs, ht, hsi, hti⟩ := s.exists_binomialCenter_lift_of_shared_ray t
+      (r 3) (r' 3) hshared b d c
+    have hl' : (I[σ]).blowupToBase (hA.baseCenter l) = π[s] z := by
+      rw [hcenters, hl, hs]
+    obtain ⟨h, hfirst'⟩ := hA.first_center_of_toric_link hU s t v hv hreverse htarget
+      (hs.symm ▸ hsi) (ht.symm ▸ hti) l hl'
+    refine ⟨c', h.trans ht, fun hfirst'' ↦ ?_⟩
+    rw [h]
+    apply hfirst'
+    intro m hm
+    rw [hcenters, hs, ← hl]
+    exact hfirst'' _ ((Fin.strictMono_succAbove j) hm)
   refine ⟨Ψ, F, hΨ, hF, hc', hcF, d, τ, s, t, v, v', q, r, r', hr, hr', Z, U, hU, k',
-    hd₀, hd₁, hτ, hv, hv', hstar, hstar', hq, hq', hpts,
+    hd₀, hd₁, hτ, hv, hv', hstar, hstar', hq, hq', hpts, hhead, hcoll, hstay,
     toric_corner_baseCenter_ruling b d σ τ hσ hτ hd₀ hd₁ s t j hj hhead hpts, hover, hbir', ?_⟩
   -- Identify the rational partial composites and their poles on the same resolution.
-  let : Nonempty F.cones := hcF.nonempty_cones
   let : Nonempty Ψ.cones := hc'.nonempty_cones
   have : IsModification π[s] := isModification_corner_projection σ s v hv
   have : IsModification (q ≫ π[s]) := hq ▸ inferInstance
