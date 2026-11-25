@@ -19,7 +19,7 @@ enumeration with the actual boundary numbering of a marked contraction.
 
 public section
 
-open AlgebraicGeometry CategoryTheory Module Multiplicative
+open AlgebraicGeometry CategoryTheory Module
 open TauCeti TauCeti.AlgebraicGeometry TauCeti.Toric
 open Scheme Scheme.IdealSheafData
 
@@ -60,26 +60,20 @@ variable {N V L : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V] [AddCom
   {M : MarkedSurface ℂ n B (Spec (CommRingCat.of (LaurentRing ℂ (Fin r))))}
   (p : ContractedToricFiber b s hΦ T origin μ c M) (hD : D[M].IsEffectiveCartier)
 
-local notation "RayIndex" =>
-  Equiv.trans (Φ.boundaryNormalizationComponentEquiv hΦ)
-    (Equiv.trans (Equiv.symm (NodalCycleNumbering.component T))
-      (Equiv.trans (Equiv.subRight origin) (Equiv.symm (RingEquiv.toEquiv (ZMod.finEquiv m)))))
+local notation "rayAt" => Φ.rayFinEquivOfNodalCycleNumbering hΦ T origin
 
 /-- The determinant table computed from the surviving offsets and integer coordinates
 is the order table of the numbered components of the marked surface. A set of the correct
-size suffices when every listed ray's strict prime maps to a boundary prime. -/
+size suffices when every listed ray occurs in that boundary numbering. -/
 theorem boundaryOrderTable_eq (survivors : Finset (Fin m)) (hcard : survivors.card = n)
-    (hkeep : ∀ k ∈ survivors,
-      p.projection (Fan.internalBlowupBoundaryPrimeEquiv hΦ b s
-        (fun j ↦ c (ofAdd (Pi.single j 1))) ((RayIndex).symm k)).val ∈ D[M].boundaryPrimes)
+    (hkeep : ∀ k ∈ survivors, rayAt k ∈ Set.range (p.numberedBoundaryRays hD))
     (charge : Fin r → Fin 2 → ℤ) (ray : Fin m → Fin 2 → ℤ)
     (hcharge : ∀ k, charge k = b.repr (s k).primitiveGenerator)
-    (hray : ∀ k ∈ survivors, ray k = b.repr ((RayIndex).symm k).primitiveGenerator) :
+    (hray : ∀ k ∈ survivors, ray k = b.repr (rayAt k).primitiveGenerator) :
     boundaryOrderTable charge ray survivors hcard = p.numberedBoundaryOrders hD := by
   funext j k
-  have hsurvives l hl := (p.mem_range_numberedBoundaryRays_iff hD _).mpr (hkeep l hl)
   rw [p.numberedBoundaryOrders_apply, RingEquiv.toEquiv_eq_coe, RingEquiv.coe_toEquiv,
-    p.numberedBoundaryRays_eq_orderEmbOfFin hD survivors hcard hsurvives,
+    p.numberedBoundaryRays_eq_orderEmbOfFin hD survivors hcard hkeep,
     Fan.rayBoundaryOrders_apply_eq_repr]
   simp only [boundaryOrderTable_apply, hcharge, hray _ (Finset.orderEmbOfFin_mem survivors hcard j)]
 
