@@ -111,7 +111,9 @@ private theorem subschemeIso_planeBlowup_boundary (c : Fin 11 → ℂˣ) :
     ((WithBoundary.boundaryι (Sigma.snd (planeBlowup c))).IsOver S)
   exact ⟨asIso f.toImage, inferInstanceAs (f.toImage.IsOver S)⟩
 
-private theorem canonical_planeBlowup_boundary (c : Fin 11 → ℂˣ)
+/-- The ideal line bundle of the strict triangle is the canonical bundle of the
+ordered plane blowup. -/
+theorem mk_toInvertibleSheaf_planeBlowup_boundary (c : Fin 11 → ℂˣ)
     (hB : (B(c)).IsEffectiveCartier) : LineBundleClass.mk hB.toInvertibleSheaf = K(Y(c)) := by
   let hD := (Φ).isEffectiveCartier_boundaryIdeal hΦ hc (by simp)
   let : IsNoetherian Plane := isNoetherian_of_finiteType (Plane ↘ S)
@@ -238,7 +240,7 @@ theorem exists_first_boundary_contraction (c : Fin 11 → ℂˣ) :
     hF.symm ▸ support_antitone (boundary_le_line c 0)
   obtain ⟨hD, hPre', hK, htotal, n, hn, hlen, A', g, hg, hsub⟩ :=
     hB.exists_numbering_of_exceptional_boundary_contraction A
-      (canonical_planeBlowup_boundary c hB) hp e he hs
+      (mk_toInvertibleSheaf_planeBlowup_boundary c hB) hp e he hs
   have hn' : n = 2 := by omega
   subst n
   exact ⟨Z, s, f, p, hSm, hZ, hProj, hRat, hf, hMod, hp, hF, e, he,
@@ -326,7 +328,8 @@ private theorem classIntersectionNumber_second_canonical (c : Fin 11 → ℂˣ)
       ((Φ).isEffectiveCartier_boundaryIdeal hΦ hc (by simp))
   let F := Chow.intersectionBilinForm ℂ (Y(c))
   have hK : Additive.ofMul (K(Y(c))) = -(∑ j : Fin 3, L(c, j)) := by
-    rw [← planeBlowup_boundary_class c hB, ofMul_inv, neg_neg, canonical_planeBlowup_boundary]
+    rw [← planeBlowup_boundary_class c hB, ofMul_inv, neg_neg,
+      mk_toInvertibleSheaf_planeBlowup_boundary]
   have hp (i j : Fin 3) : F (L(c, i)) (L(c, j)) =
       if i = j then (![(-1 : ℤ), -2, -5] : Fin 3 → ℤ) i else 1 := by
     rw [← planeBlowup_line_class c i (isEffectiveCartier_planeBlowup_line c i),

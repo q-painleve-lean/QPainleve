@@ -5,16 +5,21 @@ Authors: The QPainleve contributors
 -/
 module
 
+public import QPainleve.SignedClusterModularGroup.Realization.MarkedComparison
 public import QPainleve.SignedClusterModularGroup.Realization.Presentation
 
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Modification
+import QPainleve.Geometry.Toric.Fan.Presentation.Genus
 import QPainleve.Geometry.Toric.Fan.Rationality
+import QPainleve.SignedClusterModularGroup.Realization.Anticanonical
 
 /-!
-# Rationality of marked toric fibers
+# Geometry of marked toric fibers
 
 The toric base has a chart isomorphic to the affine plane. The ordered internal
 blowups and the projection to a marked fiber preserve its birational type.
+The presentation also identifies the projection as a nodal contraction
+with rational boundary normalization.
 -/
 
 public section
@@ -81,6 +86,24 @@ theorem HasNodalModel.isRationalOver (h : Q.HasNodalModel c M) :
     IsRationalOver (M.surface ↘ S) := by
   obtain ⟨p, _⟩ := (Q.hasNodalModel_iff c M).mp h
   exact Q.isRationalOver_fiber p
+
+variable {Q} in
+/-- With Cartier boundary, an ordered nodal model gives a nodal contraction,
+including genus zero for every component of the boundary normalization. -/
+theorem HasNodalModel.exists_isNodalContraction (h : Q.HasNodalModel c M)
+    (hD : (Scheme.Hom.ker (Over.Hom.left (Arrow.hom M.pair))).IsEffectiveCartier) :
+    letI := Q.complete.nonempty_cones
+    letI := Q.prestable
+    letI := Q.neZero
+    ∃ p : Fiber, p.IsNodalContraction := by
+  let : IsIntegral M.surface := M.integral
+  let : M.surface.IsProjectiveOver ℂ := M.projective
+  let : SmoothOfRelativeDimension 2 (M.surface ↘ S) := M.smooth
+  let : PrestableFamily ((Scheme.Hom.ker (Over.Hom.left (Arrow.hom M.pair))).subscheme ↘ S) :=
+    M.prestable_boundaryImage
+  obtain ⟨p, Y, l, T, e, hT, hp⟩ := (Q.hasNodalModel_iff c M).mp h
+  exact ⟨p, hD, h.hasToricPresentation.genus_blowupComponent_eq_zero hD,
+    l, Y, T, hT, e, hp.symm⟩
 
 end CompleteToricPresentation
 

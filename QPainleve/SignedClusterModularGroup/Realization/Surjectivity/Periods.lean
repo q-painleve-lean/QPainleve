@@ -9,10 +9,8 @@ public import QPainleve.Geometry.Toric.Fan.Picard.Period.Noncollision
 public import QPainleve.SignedClusterModularGroup.Boundary.Restriction
 public import QPainleve.SignedClusterModularGroup.Realization.Orthogonal
 public import QPainleve.SignedClusterModularGroup.Realization.Period
-public import QPainleve.SignedClusterModularGroup.Realization.Presentation
 
 import QPainleve.AlgebraicGeometry.Curves.Node.Period.Roots
-import QPainleve.Geometry.Toric.Fan.Boundary.Numbering
 import QPainleve.Geometry.Toric.Fan.Presentation.Genus
 import QPainleve.Geometry.Toric.Fan.Smooth
 import QPainleve.Geometry.Toric.Fan.Subdivision.Projective
@@ -35,7 +33,7 @@ This uses the toric center description of periods from Gross, Hacking and Keel,
 public section
 
 open AlgebraicGeometry CategoryTheory Multiplicative Quiver
-open QPainleve.BlowupTower QPainleve.CharacterTorus QPainleve.Cluster
+open QPainleve.CharacterTorus QPainleve.Cluster
 open TauCeti TauCeti.AlgebraicGeometry TauCeti.Toric
 open Scheme Scheme.IdealSheafData
 
@@ -87,50 +85,6 @@ local notation "Aux" => LinearMap.BilinForm.prod
   (-(dotProductBilin ℤ ℤ : LinearMap.BilinForm ℤ (Fin r → ℤ)))
 local notation "period[" c "]" => orderedBoundaryPeriod Q.regular b Q.rays Q.cycle center[χ[c]]
 
-private theorem exists_charge_coordinates
-    {E : SkewExchangeMatrix (Fin r)} (P : ChargeSeed E N) (hrank : Module.finrank ℤ N = 2)
-    [B.IsPerfPair] [Q.fan.algebraicRealization.IsProjectiveOver ℂ]
-    [SmoothOfRelativeDimension 2 (Q.fan.algebraicRealization ↘ S)]
-    (hD : ∀ c, D[M c].IsEffectiveCartier)
-    {d : ZMod n → L} (hmark : ∀ c, (M c).boundaryClass (hD c) = d)
-    (hmodels : ∀ c : GeometricRealization.Point Centers[r],
-      c.left (default : S) ∈ (Path.nil : Word E E).centerOpen ℂ P → Q.HasNodalModel c (M c)) :
-    ∃ hAux : (Aux).IsPerfPair, letI := hAux
-      ∃ e : B.orthogonal (Submodule.span ℤ (Set.range d)) ≃ₗ[ℤ] ChargeKernel,
-        ∀ x : ChargeKernel, Q.inclusion (e.symm x).val =
-          ((boundaryOrthogonalEquivChargeKernel Q.regular Q.rays Aux).symm x).val := by
-  -- Read the fixed charge coordinates from one fiber in the empty word's domain.
-  let U := (Path.nil : Word E E).centerOpen ℂ P
-  obtain ⟨z, hz, hzU⟩ := U.isOpen.isLocallyClosed.exists_rationalPoint_mem
-    (structureMap ℂ (Fin r → ℤ)) ((Path.nil : Word E E).nonempty_centerOpen (K := ℂ) P)
-  let c : GeometricRealization.Point Centers[r] := Over.homMk z hz
-  have hc : c.left (default : S) ∈ U := by
-    rw [Subsingleton.elim (default : S) (IsLocalRing.closedPoint ℂ)]
-    exact hzU
-  let : IsIntegral (M c).surface := (M c).integral
-  have hmodel := hmodels c hc
-  obtain ⟨p, Y, _, T, u, hT, hp⟩ := (Q.hasNodalModel_iff c (M c)).mp hmodel
-  have hg := hmodel.hasToricPresentation.genus_blowupComponent_eq_zero (hD c)
-  have hnodal : p.IsNodalContraction := ⟨hD c, hg, _, _, T, hT, u, hp.symm⟩
-  let : (Chow.intersectionBilinForm ℂ (M c).surface).IsPerfPair := (M c).isPerfPair_intersectionForm
-  have hcomparison : ∃ a : Y ≅ (internalBlowupTower b Q.rays center[χ[c]]).1,
-      a.inv ≫ T.toBase ≫ (M c).surface ↘ S =
-        (internalBlowupTower b Q.rays center[χ[c]]).2.toTower.toBase ≫
-          (Q.fan.algebraicRealization ↘ S) := ⟨u, by
-            rw [← Category.assoc, ← hp, p.projection_over, algebraicRealization_over]⟩
-  rw [internalBlowupTower_eq_alongBoundary] at hcomparison
-  obtain ⟨v, hv⟩ := hcomparison
-  let hAux := isPerfPair_internal_markedForm Q.regular hrank Q.rays
-    (fun j ↦ (b.detDualEquiv (Q.rays j).primitiveGenerator).toAddMonoidHom)
-    (fun j ↦ b.detDualEquiv_self (Q.rays j).primitiveGenerator)
-    (fun j ↦ (Q.rays j).surjective_detCharacter b) center[χ[c]]
-    (fun j ↦ (Q.rays j).internalCenter b (center[χ[c]] j))
-    (fun j ↦ (Q.rays j).internalCenter_val b (center[χ[c]] j)) hT v hv
-  let := hAux
-  obtain ⟨e, he, -⟩ :=
-    p.existsUnique_markedBoundaryOrthogonalEquivChargeKernel hnodal (hD c) (hmark c)
-  exact ⟨hAux, e, he⟩
-
 private theorem exists_compatible_ordered_periods
     {E : SkewExchangeMatrix (Fin r)} (P : ChargeSeed E N) (hcharge : P.charge.ker ≤ ChargeKernel)
     [Q.fan.algebraicRealization.IsProjectiveOver ℂ]
@@ -141,21 +95,11 @@ private theorem exists_compatible_ordered_periods
       (∀ x : ChargeKernel, period[c₁] (ofAdd x) = period[c₀] (ofAdd (f x))) ∧
       ∀ ⦃C : SkewExchangeMatrix (Fin r)⦄ (w : Word E C),
         c₀.left (default : S) ∈ w.centerOpen ℂ P ∧ c₁.left (default : S) ∈ w.centerOpen ℂ P := by
-  have hRay : Q.fan.rayEquivOfNodalCycleNumbering Q.regular Q.cycle = Q.rayOrder := by
-    apply Equiv.ext
-    intro j
-    apply (Q.fan.boundaryNormalizationComponentEquiv Q.regular).injective
-    rw [boundaryNormalizationComponentEquiv_rayEquivOfNodalCycleNumbering, Q.component_eq]
-  obtain ⟨_, -, _, hnodes⟩ :=
-    Q.fan.exists_positive_ray_numbering_of_nodalCycleNumbering b Q.regular Q.complete Q.cycle
-  rw [hRay] at hnodes
   obtain ⟨t₀, t₁, hi₀, hi₁, hper, hword⟩ :=
     exists_ordered_boundary_periods_mem_all_center_opens Q.regular b Q.rays Q.cycle Q.rayOrder
       (fun j ↦ (Q.cycle.component_apply j).symm.trans (Q.component_eq j))
       (fun j ↦ (Q.positive j).1)
-      (fun j ↦ by
-        obtain ⟨σ, h₀, h₁, hz⟩ := hnodes j
-        exact ⟨σ.val, h₀, h₁, hz⟩) P hcharge f 1
+      Q.exists_cone_of_numbered_node P hcharge f 1
   refine ⟨centerPoint t₀, centerPoint t₁, ?_, ?_, ?_, fun _ w ↦ hword w⟩
   · simpa only [centerPoint_parameters] using hi₀
   · simpa only [centerPoint_parameters] using hi₁
@@ -169,7 +113,6 @@ normalized components of the selected fibers. The surface models are required
 only on the noncollision open of the empty word. -/
 theorem exists_root_free_fibers_with_compatible_periods
     {E : SkewExchangeMatrix (Fin r)} (P : ChargeSeed E N) (hcharge : P.charge.ker ≤ ChargeKernel)
-    [B.IsPerfPair]
     (hD : ∀ c, D[M c].IsEffectiveCartier)
     {d : ZMod n → L} (hmark : ∀ c, (M c).boundaryClass (hD c) = d)
     (g : signedBoundaryIsometryGroup B d)
@@ -201,8 +144,14 @@ theorem exists_root_free_fibers_with_compatible_periods
   let : SmoothOfRelativeDimension 2 (Q.fan.algebraicRealization ↘ S) := by
     rw [← hrank, Q.fan.algebraicRealization_over]
     exact Q.fan.smoothOfRelativeDimension_algebraicRealizationStructureMap Q.regular
-  obtain ⟨hAux, e, he⟩ :=
-    Q.exists_charge_coordinates P hrank hD hmark hmodels
+  let U := (Path.nil : Word E E).centerOpen ℂ P
+  obtain ⟨z, hz, hzU⟩ := U.isOpen.isLocallyClosed.exists_rationalPoint_mem
+    (structureMap ℂ (Fin r → ℤ)) ((Path.nil : Word E E).nonempty_centerOpen (K := ℂ) P)
+  let c : GeometricRealization.Point Centers[r] := Over.homMk z hz
+  have hc : c.left (default : S) ∈ U := by
+    rw [Subsingleton.elim (default : S) (IsLocalRing.closedPoint ℂ)]
+    exact hzU
+  obtain ⟨hAux, e, he, _⟩ := (hmodels c hc).existsUnique_chargeKernelEquiv (hD c) (hmark c)
   let := hAux
   -- The charge action already incorporates the boundary sign.
   let action := (e.symm.trans (signedOrthogonalRestriction B d g).val).trans e

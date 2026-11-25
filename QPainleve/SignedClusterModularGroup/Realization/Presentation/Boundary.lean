@@ -8,9 +8,8 @@ module
 public import QPainleve.SignedClusterModularGroup.Realization.NumberedRays
 public import QPainleve.SignedClusterModularGroup.Realization.Presentation
 
-import QPainleve.Geometry.Toric.Fan.Presentation.Genus
 import QPainleve.Geometry.Toric.Fan.Subdivision.Projective
-import QPainleve.SignedClusterModularGroup.Realization.Anticanonical
+import QPainleve.LinearAlgebra.BilinearForm.Prod
 import QPainleve.SignedClusterModularGroup.Realization.NodalFiber
 import TauCeti.LinearAlgebra.Matrix.Dual
 
@@ -36,7 +35,6 @@ local notation "S" => Spec (CommRingCat.of ℂ)
 local notation "Centers[" r "]" => Over.mk (structureMap ℂ (Fin r → ℤ))
 local notation "XTor[" r "]" => scheme ℂ (Fin r →₀ ℤ)
 local notation "D[" M "]" => Scheme.Hom.ker (Over.Hom.left (Arrow.hom (MarkedSurface.pair M)))
-local notation "χ[" c "]" => pointsEquiv ℂ _ (Subtype.mk (Over.Hom.left c) (Over.w c))
 
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {b : Basis (Fin 2) ℤ N} {r n : ℕ} [NeZero n]
@@ -50,29 +48,20 @@ local instance : PrestableFamily ((Q.fan.boundaryIdeal Q.complete.nonempty_cones
   Q.prestable
 
 /-- The Picard intersection form of the toric surface with one exceptional summand
-per center is right-separating. -/
-theorem separatingRight_auxiliaryPicardForm
+per center is perfect. -/
+theorem isPerfPair_auxiliaryPicardForm
     [Q.fan.algebraicRealization.IsProjectiveOver ℂ]
     [SmoothOfRelativeDimension 2 (Q.fan.algebraicRealization ↘ S)] :
     (LinearMap.BilinForm.prod (Chow.intersectionBilinForm ℂ Q.fan.algebraicRealization)
-      (-(dotProductBilin ℤ ℤ : LinearMap.BilinForm ℤ (Fin r → ℤ)))).SeparatingRight := by
+      (-(dotProductBilin ℤ ℤ : LinearMap.BilinForm ℤ (Fin r → ℤ)))).IsPerfPair := by
   let : IsRationalOver (Q.fan.algebraicRealization ↘ S) := Q.isRationalOver_fan
-  have hperf := Chow.isPerfPair_intersectionBilinForm_of_isRationalOver ℂ Q.fan.algebraicRealization
-  refine LinearMap.BilinForm.separatingRight_prod_iff.mpr ⟨hperf.separatingRight, ?_⟩
-  intro y hy
-  exact (dotProductBilin_isPerfPair ℤ (Fin r)).separatingRight y
-    (fun x ↦ by simpa only [LinearMap.neg_apply, neg_eq_zero] using hy x)
-
-private theorem exists_nodalContraction {c : GeometricRealization.Point Centers[r]}
-    {M : MarkedSurface ℂ n H XTor[r]} (h : Q.HasNodalModel c M) (hD : D[M].IsEffectiveCartier) :
-    ∃ p : ContractedToricFiber b Q.rays Q.regular Q.cycle Q.origin Q.inclusion χ[c] M,
-      p.IsNodalContraction := by
-  let : IsIntegral M.surface := M.integral
-  let : M.surface.IsProjectiveOver ℂ := M.projective
-  let : SmoothOfRelativeDimension 2 (M.surface ↘ S) := M.smooth
-  let : PrestableFamily (D[M].subscheme ↘ S) := M.prestable_boundaryImage
-  obtain ⟨p, _, _, T, e, hT, he⟩ := (Q.hasNodalModel_iff c M).mp h
-  exact ⟨p, hD, h.hasToricPresentation.genus_blowupComponent_eq_zero hD, _, _, T, hT, e, he.symm⟩
+  refine LinearMap.BilinForm.isPerfPair_prod_iff.mpr
+    ⟨Chow.isPerfPair_intersectionBilinForm_of_isRationalOver ℂ Q.fan.algebraicRealization, ?_⟩
+  convert LinearMap.IsPerfPair.compl₁₂
+    (dotProductBilin ℤ ℤ : LinearMap.BilinForm ℤ (Fin r → ℤ))
+    (LinearEquiv.neg ℤ) (LinearEquiv.refl ℤ _) using 1
+  ext x y
+  simp
 
 /-- Two marked nodal models of one complete toric presentation have the same
 boundary class at every label. This holds also for repeated centers and cycles
@@ -87,10 +76,10 @@ theorem boundaryClass_eq_of_matching_nodal_models {c d : GeometricRealization.Po
   let : SmoothOfRelativeDimension 2 (Q.fan.algebraicRealization ↘ S) := by
     rw [← hN, Q.fan.algebraicRealization_over]
     exact Q.fan.smoothOfRelativeDimension_algebraicRealizationStructureMap Q.regular
-  obtain ⟨p, hp⟩ := Q.exists_nodalContraction hc hM
-  obtain ⟨q, hq⟩ := Q.exists_nodalContraction hd hP
+  obtain ⟨p, hp⟩ := hc.exists_isNodalContraction hM
+  obtain ⟨q, hq⟩ := hd.exists_isNodalContraction hP
   have hrays := p.numberedBoundaryRays_eq_of_nodalContractions q hp hq
-    Q.separatingRight_auxiliaryPicardForm
+    Q.isPerfPair_auxiliaryPicardForm.separatingRight
   exact p.boundaryClass_eq_of_range_numberedBoundaryRays_eq q hp hq
     (Q.inclusion_injective hc) (congrArg (fun e : ZMod n ↪ Q.fan.Ray ↦ Set.range e) hrays)
 

@@ -98,6 +98,12 @@ exponents. This identifies the Picard basis with the alternating exponent pairs.
 def boundaryOrthogonalEquivExchangeKernel : K ≃ₗ[ℤ] E :=
   boundaryOrthogonalBasis.equivFun.trans exchangeKernelEquiv
 
+/-- Convert the coordinates in the boundary-orthogonal basis to Casimir exponents. -/
+theorem boundaryOrthogonalEquivExchangeKernel_apply (x : K) :
+    boundaryOrthogonalEquivExchangeKernel x =
+      exchangeKernelEquiv (boundaryOrthogonalBasis.equivFun x) := by
+  rw [boundaryOrthogonalEquivExchangeKernel, LinearEquiv.trans_apply]
+
 /-- Each orthogonal basis vector gives the Casimir supported at the corresponding
 pair of opposite vertices. -/
 @[simp]
@@ -108,6 +114,19 @@ theorem boundaryOrthogonalEquivExchangeKernel_apply_basis (i : Fin 2) :
   apply congrArg exchangeKernelEquiv
   funext j
   simp only [Basis.equivFun_self, Pi.single_apply, eq_comm]
+
+/-- The exchange-kernel basis matched to the two alternating Picard classes. -/
+@[expose]
+def exchangeKernelBasis : Basis (Fin 2) ℤ E :=
+  boundaryOrthogonalBasis.map boundaryOrthogonalEquivExchangeKernel
+
+/-- The basis is the image of the standard coordinate vectors under the exchange-kernel
+equivalence. -/
+@[simp]
+theorem exchangeKernelBasis_apply (j : Fin 2) :
+    exchangeKernelBasis j = exchangeKernelEquiv (Pi.single j 1) := by
+  simp only [exchangeKernelBasis, Basis.map_apply,
+    boundaryOrthogonalEquivExchangeKernel_apply_basis]
 
 /-- The exponent at each vertex is the intersection with its internal exceptional
 class, which is the negative of the coefficient of that class in the Picard marking. -/
