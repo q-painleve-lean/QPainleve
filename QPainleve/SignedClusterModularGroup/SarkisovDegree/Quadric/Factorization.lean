@@ -117,7 +117,7 @@ private theorem exists_quadric_corner_decrease
   have hn : 1 ≤ n := by have := j.isLt; omega
   obtain ⟨n, rfl⟩ := Nat.exists_eq_add_of_le' hn
   obtain ⟨Q, p, d', s', hs', Z, U, hU, k, -, -, hQ, hproj, hg', hbir', hpole', -, -, -, -,
-    hβ', -, -, hlt⟩ :=
+    hβ', -, -, hlt, -⟩ :=
     exists_sarkisov_path_of_toric_corner d e hΦ hc s hs hT g hg hbir σ hcone j hj hfirst
       D ((hT.ramificationIdealSheafToBase_def ℂ) ▸ hpole)
   let : Nonempty Q.fan.cones := Q.isComplete.nonempty_cones
@@ -150,7 +150,7 @@ private theorem exists_quadric_section_decrease
   have hn : 1 ≤ n := by have := j.isLt; omega
   obtain ⟨n, rfl⟩ := Nat.exists_eq_add_of_le' hn
   obtain ⟨hproj, Z, U, hU, k, d, t, ht, hg', hbir', hpole', ⟨A, Q, p, hA, hAh, hQ, hQh,
-    -, -⟩, -, -, -, hβ', -, hlt⟩ :=
+    -, -⟩, -, -, -, -, -, hβ', -, hlt⟩ :=
     hT.exists_sarkisov_path_of_smooth_section b 0 hΦ hc r hr s g hg hbir
       c j hj hfirst D hpole
   have hpos := (hirzebruch_resolution_degree_bounds b 0 hΦ hc r hr hT g hg hbir).1

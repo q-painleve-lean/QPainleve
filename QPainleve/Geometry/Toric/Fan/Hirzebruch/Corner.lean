@@ -197,6 +197,28 @@ private theorem exists_hirzebruch_section_fiber_le (hΦ : Φ.IsRegular) (hc : Φ
   · exact (hpq rfl).elim
 
 include hr in
+/-- A two-ray cone containing a specified section ray of a Hirzebruch fan is
+the hull of that section and one of the two invariant fiber rays. -/
+theorem exists_hirzebruch_corner_eq_hull_of_section_le (hΦ : Φ.IsRegular) (hc : Φ.IsComplete)
+    (σ : Φ.cones) (hσ : Nat.card (ToricRay σ.val) = 2) (j : Fin 2) (hj : (sec j).toCone ≤ σ) :
+    ∃ k : Fin 2, σ.val = hull ℝ {i (sec j).primitiveGenerator, i (fib k).primitiveGenerator} := by
+  obtain ⟨l, k, hl, hk⟩ := exists_hirzebruch_section_fiber_le b e r hr hΦ hc σ hσ
+  have heq : sec l = sec j := by
+    by_contra hne
+    rcases (hirzebruch_section_neighbors_iff b e r hr hΦ hc j (sec l)).mp
+        ⟨Ne.symm hne, σ, hj, hl⟩ with h | h
+    · fin_cases l <;> simp at h
+    · fin_cases l <;> simp at h
+  have hne : sec l ≠ fib k := by
+    apply r.injective.ne
+    fin_cases l <;> fin_cases k <;> decide
+  have hN : Module.finrank ℤ N = 2 := by simpa using Module.finrank_eq_card_basis b
+  refine ⟨k, ?_⟩
+  rw [Φ.cone_eq_sup_of_ray_ne_of_le hΦ hN hne hl hk, heq,
+    (sec j).toCone_eq_hull_primitiveGenerator, (fib k).toCone_eq_hull_primitiveGenerator,
+    ← Submodule.span_union, Set.singleton_union]
+
+include hr in
 private theorem hirzebruch_corner_ray_order {d : Basis (Fin 2) ℤ N} (j k : Fin 2)
     (h₀ : d 0 = (sec j).primitiveGenerator) (h₁ : d 1 = (fib k).primitiveGenerator) :
     ∃ (a : ℤ) (t : Fin 4 ≃ Φ.Ray),

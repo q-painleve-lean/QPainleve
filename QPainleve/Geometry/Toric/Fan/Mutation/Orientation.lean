@@ -177,6 +177,40 @@ theorem mutationComplementIso_comp_distinguishedPointHom (hΦ : Φ.IsRegular)
       Category.comp_id] using (congrArg (· ≫ (Ψ).algebraicRealizationStructureMap) hl).trans hbase
   exact hl.symm.trans (by rw [hl', Category.id_comp])
 
+/-- The pivot-fiber complement contains the distinguished point of every two-ray
+cone. Mutation takes it to the distinguished point of the sheared two-ray cone. -/
+theorem mutationComplementIso_apply_distinguishedPointHom (hΦ : Φ.IsRegular)
+    {σ : Φ.cones} (hσ : Nat.card (ToricRay σ.val) = 2) (x : Spec (.of ℂ)) :
+    let σ' := Φ.mutationFanConeEquiv b hv hp hn σ
+    ∃ hx : Φ.distinguishedPointHom σ x ∈ U₀,
+      Nat.card (ToricRay σ'.val) = 2 ∧
+        (U₁).ι ((e).hom ⟨Φ.distinguishedPointHom σ x, hx⟩) = (Ψ).distinguishedPointHom σ' x := by
+  intro σ'
+  obtain ⟨u, w, hu, hw, hdet⟩ := Φ.exists_ray_pair_le_det_eq_one b
+    ((Fan.isRegular_iff.mp hΦ) _ σ.property) hσ
+  have hne : u ≠ w := by
+    rintro rfl
+    exact zero_ne_one ((b.detDualEquiv_self u.primitiveGenerator).symm.trans hdet)
+  have hmem (z : Spec (.of ℂ)) : Φ.distinguishedPointHom σ z ∈ U₀ :=
+    Φ.distinguishedPointHom_mem_mutationComplement b c hΦ hv h₀ hne hu hw z
+  have hsubset : Set.range (Φ.distinguishedPointHom σ) ⊆ Set.range (U₀).ι := by
+    rw [(U₀).range_ι]
+    rintro _ ⟨z, rfl⟩
+    exact hmem z
+  let f := IsOpenImmersion.lift (U₀).ι (Φ.distinguishedPointHom σ) hsubset
+  have hf : f ≫ (U₀).ι = Φ.distinguishedPointHom σ := IsOpenImmersion.lift_fac _ _ _
+  have himage := Φ.mutationComplementIso_comp_distinguishedPointHom b hv hp hn c hΦ hne hu hw hf
+  have hx : (⟨Φ.distinguishedPointHom σ x, hmem x⟩ : (U₀).toScheme) = f x :=
+    Subtype.ext (congrArg (fun g : Spec (.of ℂ) ⟶ Φ.algebraicRealization ↦ g x) hf).symm
+  have hle {a : Φ.Ray} (ha : a.toCone ≤ σ) : (r a).toCone ≤ σ' := by
+    rw [mutationFanRayEquiv_toCone, OrderIso.le_iff_le]
+    exact ha
+  have hΨ := (Φ.isRegular_mutationFan_iff b hv hp hn).mpr hΦ
+  have hdim := (Module.finrank_eq_card_basis b).trans (Fintype.card_fin 2)
+  refine ⟨hmem x, (Ψ).card_toricRay_eq_two_of_ray_ne_of_le hΨ hdim ((r).injective.ne hne)
+    (hle hu) (hle hw), ?_⟩
+  rw [hx, ← Scheme.Hom.comp_apply (e).hom _, ← Scheme.Hom.comp_apply f _, himage]
+
 end Complement
 
 section PivotBlowup

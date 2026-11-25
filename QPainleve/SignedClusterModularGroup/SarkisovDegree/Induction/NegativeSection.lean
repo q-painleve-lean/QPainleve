@@ -8,6 +8,7 @@ module
 public import QPainleve.Geometry.Toric.Fan.Logarithmic.Factorization
 public import QPainleve.SignedClusterModularGroup.SarkisovDegree.Induction.Marking
 
+import Mathlib.Analysis.Complex.Polynomial.Basic
 import QPainleve.SignedClusterModularGroup.SarkisovDegree.NoHighMultiplicity.Path
 
 /-!
@@ -57,7 +58,8 @@ local notation "x" => mark[T,hT,f,g]
 local notation "β" => Basis.repr (Fan.hirzebruchPicardBasis b a hΦ r hr) (Prod.fst x) 1
 local notation "order[" j "]" => -(Prod.snd x) j
 local notation "measure" =>
-  hirzebruchSarkisovBidegree (Int.toNat β) (Int.toNat (∑ j : Fin n, order[j]))
+  hirzebruchSarkisovBidegree (Int.toNat β)
+    (Int.toNat (sarkisovSecondaryDegree ℂ (Additive.toMul (Prod.fst x))))
 
 variable [Φ.algebraicRealization.IsProjectiveOver ℂ] [Nonempty Φ.cones]
   [SmoothOfRelativeDimension 2 (Φ.algebraicRealization ↘ S)] [IsNoetherian Φ.algebraicRealization]
@@ -91,8 +93,10 @@ theorem exists_sarkisov_path_with_smaller_plane_marking_of_no_high_order
     let : IsNoetherian P := isNoetherian_of_finiteType s
     let y := mark[U,hU,s,k.inv ≫ g]
     let degree := (Basis.picardTwistEquiv coords y.1).toNat
-    refine ⟨planeSarkisovBidegree degree (∑ j, (-y.2 j).toNat), hlt _,
+    refine ⟨planeSarkisovBidegree degree (sarkisovSecondaryDegree ℂ y.1.toMul).toNat, ?_,
       C, d, hC, ⟨p⟩, .plane d b' hi hC hR U hU k (k.inv ≫ g) hhC ?_ hg' hb'⟩
-    simpa only [Category.assoc, Iso.hom_inv_id_assoc] using hhR
+    · rw [hT.sarkisovSecondaryDegree_eq_sum g hg hbir]
+      exact hlt _
+    · simpa only [Category.assoc, Iso.hom_inv_id_assoc] using hhR
 
 end TauCeti.Toric.Fan.LogarithmicProjection

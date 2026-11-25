@@ -143,8 +143,8 @@ theorem exists_marked_pair_iso_of_signed_boundary_isometry
   obtain ⟨a, aB, haB, hover, hideal, hB, hpic, hb⟩ :=
     D[P₀].exists_pair_iso_of_root_free_signed_boundary_period_of_toric_presentation_of_nef
       P₀.imageCycle P₁.imageCycle hD hE act G hclass hk₀ hk₁
-      (Chow.realPrimeDivisorClass_self_ne_neg_two ℂ hD hk₀ hroot₀)
-      (Chow.realPrimeDivisorClass_self_ne_neg_two ℂ hE hk₁ hroot₁)
+      (Chow.prime_self_intersection_ne_neg_two_off_boundary ℂ hD hk₀ hroot₀)
+      (Chow.prime_self_intersection_ne_neg_two_off_boundary ℂ hE hk₁ hroot₁)
       g₀ g₁ hperiod hm₀.hasToricPresentation
       (by simpa only [← hk₀] using hn₀) (by simpa only [← hk₁] using hn₁)
       (by simpa only [← hk₁] using hsq)

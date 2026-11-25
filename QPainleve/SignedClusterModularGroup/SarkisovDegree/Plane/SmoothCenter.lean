@@ -116,7 +116,7 @@ private theorem exists_plane_edge_preparation {p : P} (hp : IsClosed ({p} : Set 
           Fin.sum_univ_succAbove _ a]
         simp only [Fin.addCases_left, Fin.addCases_right, Function.comp_apply]
         rfl
-  · obtain ⟨x, W, L, e, hL, hx, hxp, hI, he, hcenter, hmark⟩ :=
+  · obtain ⟨x, W, L, e, hL, hx, hxp, hI, he, hcenter, -, -, hmark⟩ :=
       hT.exists_prepend_closed_point_blowup hp h
     refine ⟨n, W, L, hL, hP.append hL, e.inv ≫ ((J[p]).comap T.toBase).blowupToBase, j,
       fun hm ↦ (h hm).elim, fun _ ↦ ⟨x, e.symm, hx, hxp, hI, rfl⟩, ?_, ?_, hcenter j,

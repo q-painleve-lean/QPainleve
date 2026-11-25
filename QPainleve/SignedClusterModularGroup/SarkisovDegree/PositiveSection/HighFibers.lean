@@ -11,9 +11,11 @@ public import QPainleve.SignedClusterModularGroup.SarkisovDegree.Induction.Secti
 public import QPainleve.SignedClusterModularGroup.SarkisovDegree.PositiveSection.Resolution
 
 import QPainleve.Geometry.Toric.Fan.Boundary.PlanePivot
+import QPainleve.Geometry.Toric.Fan.Hirzebruch.Corner
 import QPainleve.Geometry.Toric.Fan.Subdivision.Projective
 import QPainleve.SignedClusterModularGroup.SarkisovDegree.Pivots
 import QPainleve.SignedClusterModularGroup.SarkisovDegree.PositiveSection.Basic
+import QPainleve.SignedClusterModularGroup.SarkisovDegree.PositiveSection.PivotCount
 
 /-!
 # Positive-section pivots when the high orders lie on open fibers
@@ -30,7 +32,7 @@ The fiber estimates use [Lutz, Proposition 8.7][HKL].
 
 public section
 
-open AlgebraicGeometry CategoryTheory Module QPainleve.BlowupTower
+open AlgebraicGeometry CategoryTheory Module PointedCone QPainleve.BlowupTower
 open TauCeti.AlgebraicGeometry LineBundleClass TauCeti.SymmetricAlgebra TauCeti.Toric
 open Scheme.IdealSheafData
 
@@ -82,11 +84,12 @@ private theorem disjoint_sectionCenters_of_fiberCenters
 /-- Choose the positive-section pivots of a marked Hirzebruch-to-plane
 resolution in the high-fiber case. The high centers lie first over their
 points on one or two different invariant fibers. The Hirzebruch index is at
-most one more than their number. Choose up to that index many largest
+most one more than their number. Choose exactly that index many largest
 positive orders on the successive strict transforms of the section, giving
-earlier stages priority in a tie. When the index is positive and the section
-has a positive order, the earliest maximal order is selected and gives a
-proper corner or smooth pivot. The prepared degree strictly decreases after
+earlier stages priority in a tie. When the index is positive, the earliest
+maximal order is selected and gives a proper corner or smooth pivot. For a
+corner the corresponding invariant fiber specifies the cone. The prepared
+degree strictly decreases after
 the one-center plane link or two-center quadric link if the transported high
 orders are at least as large as the original ones. -/
 theorem exists_positiveSection_preparation_of_high_fiber_centers
@@ -117,14 +120,15 @@ theorem exists_positiveSection_preparation_of_high_fiber_centers
       (∃ fiber : (↑high : Type) ↪ Fin 2, ∀ j : high,
         order j ≤ β ∧ (∀ l < (j : Fin n), hT.baseCenter l ≠ hT.baseCenter j) ∧
         ∃ c : ℂˣ, hT.baseCenter j = center[fiberRay[fiber j],c]) ∧
-      ∃ top ⊆ positive, top.card = min e positive.card ∧
+      ∃ top ⊆ positive, top.card = e ∧
         (∀ j ∈ top, ∀ l ∈ sectionCenters, l < j → order j ≤ order l → l ∈ top) ∧
         (∀ j ∈ top, ∀ l ∈ sectionCenters, l ∉ top → order l ≤ order j) ∧
-        (0 < e → positive.Nonempty →
+        (0 < e →
           ∃ j ∈ top, (∀ l ∈ sectionCenters, order l ≤ order j) ∧
             (∀ l ∈ sectionCenters, l < j → order l < order j) ∧
             (∀ l < j, hT.baseCenter l ≠ hT.baseCenter j) ∧
-            ((∃ σ : Φ.cones, Nat.card (ToricRay σ.val) = 2 ∧ (r 2).toCone ≤ σ ∧
+            ((∃ (σ : Φ.cones) (t : Fin 2), Nat.card (ToricRay σ.val) = 2 ∧ (r 2).toCone ≤ σ ∧
+                σ.val = hull ℝ {i (-b 0), i (fiberRay[t]).primitiveGenerator} ∧
                 Φ.distinguishedPointHom σ z = hT.baseCenter j) ∨
               ∃ c : ℂˣ, hT.baseCenter j = center[r 2,c])) ∧
         ∀ μ : Fin n → ℤ, (∀ j ∈ high, order j ≤ μ j) →
@@ -151,33 +155,45 @@ theorem exists_positiveSection_preparation_of_high_fiber_centers
   obtain ⟨hβ, ha, hm⟩ := hT.hirzebruch_resolution_degree_bounds b e hΦ hc r hr g hg hbir
   obtain ⟨hsq, hsum⟩ :=
     hT.homaloidal_intersection_identities_of_hirzebruch b e hΦ hc r hr g hg hbir
+  have hsq' : ∑ j, order j ^ 2 = 2 * a * β - (e : ℤ) * β ^ 2 - 1 := by
+    simpa only [order, neg_sq] using hsq
+  have hlow (j) (hj : j ∉ high) : 2 * order j ≤ β :=
+    le_of_not_gt fun h ↦ hj (Finset.mem_filter.mpr ⟨Finset.mem_univ _, h⟩)
   have hindex : e ≤ high.card + 1 :=
     hirzebruch_index_le_card_high_add_one high order e hβ ha hm
-      (fun j hj ↦ ⟨(Finset.mem_filter.mp hj).2, hcap j hj⟩)
-      (fun j hj ↦ le_of_not_gt fun h ↦ hj (Finset.mem_filter.mpr ⟨Finset.mem_univ _, h⟩))
-      (by simpa only [order, neg_sq] using hsq) hsum
+      (fun j hj ↦ ⟨(Finset.mem_filter.mp hj).2, hcap j hj⟩) hlow hsq' hsum
+  have hdisj := disjoint_sectionCenters_of_fiberCenters b hΦ hc r hT high hcenters
+  obtain ⟨j, hj⟩ := hnonempty
+  have hcountPositive : 2 * e ≤ positive.card + 1 :=
+    two_mul_index_le_card_positiveSection_add_one sectionCenters order e hβ ha (fun j _ ↦ hm j)
+      (fun j hj ↦ hlow j (Finset.disjoint_left.mp hdisj hj))
+      ⟨j, (Finset.mem_filter.mp hj).2⟩ hline.1 hsq'
+  have heCard : e ≤ positive.card := by omega
   obtain ⟨top, hsub, hcount, hpriority, horder, hdrop⟩ :=
     hT.exists_positiveSection_pivots_with_bidegree_drop b e hΦ hc r hr g hg hbir
-      sectionCenters hsize hcap (disjoint_sectionCenters_of_fiberCenters b hΦ hc r hT high hcenters)
-      hline.1
+      sectionCenters hsize hcap hdisj hline.1
+  rw [min_eq_left heCard] at hcount
   refine ⟨hsize, hindex, ⟨fiber, hfiber⟩, top, hsub, hcount, hpriority, horder, ?_, hdrop⟩
-  intro he hpositive
+  intro he
   have hcoeff (j : Fin n) : j ∈ sectionCenters ↔ hT.strictTransformCoefficients C j ≠ 0 :=
     hT.mem_strictTransformCenterIndices C j
-  obtain ⟨l, hl⟩ := hpositive
-  obtain ⟨hlsec, hlpos⟩ := Finset.mem_filter.mp hl
+  obtain ⟨l, hl⟩ := Finset.card_pos.mp (hcount.symm ▸ he)
+  obtain ⟨hlsec, hlpos⟩ := Finset.mem_filter.mp (hsub hl)
   obtain ⟨j, hj, -, hmax, hleast, hfirst, hp⟩ :=
     Fan.exists_first_max_base_order_on_ray b hΦ hc (r 2) hT g hg ⟨l, (hcoeff l).mp hlsec, hlpos⟩
   have hjsec := (hcoeff j).mpr hj
   have hmem : j ∈ top := by
     by_contra hj'
-    have htpos : 0 < top.card := hcount.symm ▸ lt_min he (Finset.card_pos.mpr ⟨l, hl⟩)
-    obtain ⟨t, ht⟩ := Finset.card_pos.mp htpos
-    have htsec := (hcoeff t).mp (Finset.mem_filter.mp (hsub ht)).1
-    have hle := horder t ht j hjsec hj'
-    have hjt : j ≤ t := le_of_not_gt fun h ↦ (not_lt_of_ge hle) (hleast t h htsec)
-    exact hj' (hpriority t ht j hjsec (lt_of_le_of_ne hjt fun h ↦ hj' (h.symm ▸ ht)) (hmax t htsec))
-  exact ⟨j, hmem, fun l hl ↦ hmax l ((hcoeff l).mp hl),
-    fun l hl hlj ↦ hleast l hlj ((hcoeff l).mp hl), hfirst, hp⟩
+    have hle := horder l hl j hjsec hj'
+    have hjl : j ≤ l := le_of_not_gt fun h ↦ (not_lt_of_ge hle) (hleast l h ((hcoeff l).mp hlsec))
+    exact hj' (hpriority l hl j hjsec (lt_of_le_of_ne hjl fun h ↦ hj' (h.symm ▸ hl))
+      (hmax l ((hcoeff l).mp hlsec)))
+  refine ⟨j, hmem, fun l hl ↦ hmax l ((hcoeff l).mp hl),
+    fun l hl hlj ↦ hleast l hlj ((hcoeff l).mp hl), hfirst, ?_⟩
+  refine hp.imp (fun ⟨σ, hσ, hle, hp⟩ ↦ ?_) id
+  obtain ⟨t, ht⟩ := Φ.exists_hirzebruch_corner_eq_hull_of_section_le b e r hr hΦ hc σ hσ 1 hle
+  have ht' : σ.val = hull ℝ {i (r 2).primitiveGenerator, i (fiberRay[t]).primitiveGenerator} := ht
+  have hgen : (r 2).primitiveGenerator = -b 0 := congrFun hr 2
+  exact ⟨σ, t, hσ, hle, hgen ▸ ht', hp⟩
 
 end QPainleve.BlowupTower.IsClosedPointTower

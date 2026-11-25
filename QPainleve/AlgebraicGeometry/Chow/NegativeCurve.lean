@@ -193,19 +193,13 @@ theorem mem_boundary_of_primeDivisorClass_self_eq_neg_two [IsIntegral X]
     exact hroot r hdis hr
 
 include rational hD hcan in
-/-- On an anticanonical pair without internal `(-2)` curves, the real class of a
-prime divisor off the boundary has self-intersection different from `-2`. -/
-theorem realPrimeDivisorClass_self_ne_neg_two [IsIntegral X]
-    (hroot :
-      let : IsNoetherian X := isNoetherian_of_finiteType (X ↘ Spec (.of k))
-      let : ∀ x : X, UniqueFactorizationMonoid (X.presheaf.stalk x) :=
-        (X ↘ Spec (.of k)).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two
-      ∀ r : CodimensionOnePoint X, Disjoint (closure {(r : X)}) D.support →
-        b(X) (primeDivisorClass r) (primeDivisorClass r) ≠ -2)
+/-- On an anticanonical pair without internal `(-2)` curves, a prime divisor whose
+generic point lies off the boundary has real self-intersection different from `-2`. -/
+theorem prime_self_intersection_ne_neg_two_off_boundary [IsIntegral X]
+    [IsNoetherian X] [∀ x : X, UniqueFactorizationMonoid (X.presheaf.stalk x)]
+    (hroot : ∀ r : CodimensionOnePoint X, Disjoint (closure {(r : X)}) D.support →
+      b(X) (primeDivisorClass r) (primeDivisorClass r) ≠ -2)
     (r : CodimensionOnePoint X) (hr : (r : X) ∉ D.support) : B(X) (c r) (c r) ≠ -2 := by
-  let : IsNoetherian X := isNoetherian_of_finiteType (X ↘ Spec (.of k))
-  let : ∀ x : X, UniqueFactorizationMonoid (X.presheaf.stalk x) :=
-    (X ↘ Spec (.of k)).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two
   intro hsq
   apply hr (mem_boundary_of_primeDivisorClass_self_eq_neg_two k hD hcan hroot r ?_)
   simp only [realPrimeDivisorClass_def, realIntersectionBilinForm_tmul,
