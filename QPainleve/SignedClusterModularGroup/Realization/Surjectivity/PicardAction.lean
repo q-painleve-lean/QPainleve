@@ -71,7 +71,7 @@ cluster loop. The witness records the two centers, the pair isomorphism and its
 X-evaluation equation. The source center lies in the loop's noncollision open,
 and an orientation-preserving action has an inversion-free representative.
 The reference fiber may lie outside the initial noncollision open. -/
-theorem exists_picardLoopRealization_of_presentation
+theorem nonempty_presentationPicardLoopRealization
     (P : ChargeSeed E N) (hform : P.form = b.detDualEquiv.toLinearMap)
     (hcharge : P.charge = Fan.rayChargeMap Q.rays)
     (models : ∀ c : Point Centers[r], c.left (default : S) ∈ Path.nil.centerOpen ℂ P →
@@ -85,11 +85,7 @@ theorem exists_picardLoopRealization_of_presentation
       (R : GeometricRealization M M (w.centerPartialMap ℂ P) (w.xRationalMap ℂ)),
       Models[w.centerPartialMap ℂ P] → ρ eval[E,w] = R.toSignedBoundaryIsometry d hD hmark)
     (g : signedBoundaryIsometryGroup B d) :
-    ∃ (c₀ c₁ : Point Centers[r]) (e : (M c₀).pair ≅ (M c₁).pair),
-      letI : IsIntegral (M c₀).surface := (M c₀).integral
-      ∃ R : PicardLoopRealization ρ g (M c₀).evaluation
-          ((surfaceIso e).hom.toRationalMap.comp (M c₁).evaluation),
-        c₀.left (default : S) ∈ R.word.centerOpen ℂ P := by
+    Nonempty (PresentationPicardLoopRealization M P ρ g) := by
   have hK : P.charge.ker ≤ (Fan.rayChargeMap Q.rays).ker :=
     le_of_eq (congrArg LinearMap.ker hcharge)
   obtain ⟨c₀, c₁, -, hm₁, hword, hprim₀, hnef₀, hsq₀, -, -, e, act, hsign, -, hact, hpic⟩ :=
@@ -103,7 +99,7 @@ theorem exists_picardLoopRealization_of_presentation
     rw [hact, hsign]
   obtain ⟨R⟩ := nonempty_picardLoopRealization_of_pair_iso P hform hcharge
     models hm₁ hnef₀ hsq₀ hprim₀ (fun w ↦ (hword w).1) ρ hρ e hpic hsgn
-  exact ⟨c₀, c₁, e, R, (hword R.word).1⟩
+  exact ⟨⟨c₀, c₁, e, R, (hword R.word).1⟩⟩
 
 /-- The marked Picard pullback identifies the opposite signed cluster modular
 group with the signed boundary isometry group. The comparison computes the
@@ -143,9 +139,9 @@ theorem existsUnique_signedPicardEquiv_of_presentation
       href hnef hsq hcan hprim d hmark ρ (fun w _ _ _ ↦ (hρ w).2))
   have hsurj : Function.Surjective ρ := by
     intro g
-    obtain ⟨_, _, _, R, _⟩ := exists_picardLoopRealization_of_presentation
+    obtain ⟨R⟩ := nonempty_presentationPicardLoopRealization
       P hform hcharge models href hprim hnef hsq ρ (fun w ↦ (hρ (End.of w)).2) g
-    exact ⟨eval[E,R.word], R.picard_eq⟩
+    exact ⟨eval[E,R.loop.word], R.loop.picard_eq⟩
   let Θ := MulEquiv.ofBijective ρ ⟨hinj, hsurj⟩
   refine ⟨Θ, ⟨fun w ↦ hρ (End.of w), hsignker⟩, fun Θ' hΘ' ↦ ?_⟩
   exact MulEquiv.toMonoidHom_injective (huniq Θ'.toMonoidHom
