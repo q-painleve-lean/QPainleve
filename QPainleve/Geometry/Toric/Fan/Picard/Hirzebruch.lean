@@ -169,17 +169,20 @@ local notation "C" => hirzebruchPicardBasis b e hΦ r hr
 
 include hr in
 /-- A signed Hirzebruch marking can be replaced by one of index `e.natAbs`,
-with the same fiber class and fiber-degree coordinate on every Picard class. -/
+with the same fiber class and fiber-degree coordinate on every Picard class.
+When the signed index is already nonnegative, the ray numbering and the
+entire Picard basis are preserved. -/
 theorem exists_hirzebruchPicardBasis_natAbs :
     ∃ (d : Basis (Fin 2) ℤ N) (t : Fin 4 ≃ Φ.Ray)
       (ht : (fun j ↦ (t j).primitiveGenerator) =
         ![d 0, d 1, -d 0, (e.natAbs : ℤ) • d 0 - d 1]),
       hirzebruchPicardBasis d (e.natAbs : ℤ) hΦ t ht 0 = (C) 0 ∧
+      (0 ≤ e → t = r ∧ hirzebruchPicardBasis d (e.natAbs : ℤ) hΦ t ht = (C)) ∧
       ∀ x : Pic, (hirzebruchPicardBasis d (e.natAbs : ℤ) hΦ t ht).repr x 1 = (C).repr x 1 := by
   by_cases he : 0 ≤ e
   · have h : (e.natAbs : ℤ) = e := by omega
     simp only [h]
-    exact ⟨b, r, hr, rfl, fun _ ↦ rfl⟩
+    exact ⟨b, r, hr, rfl, fun _ ↦ ⟨rfl, rfl⟩, fun _ ↦ rfl⟩
   have hs : (e.natAbs : ℤ) = -e := by omega
   obtain ⟨d, t, ht, hf, hs'⟩ := exists_hirzebruch_opposite_section_basis b e r hr
   simp only [hs]
@@ -188,7 +191,7 @@ theorem exists_hirzebruchPicardBasis_natAbs :
   have h₁ : C' 1 = (C) 1 + e • (C) 0 := by
     simp only [C', hirzebruchPicardBasis_apply_one, hirzebruchPicardBasis_apply_zero, hs']
     exact (hirzebruch_ray_classes b e hΦ r hr).1
-  refine ⟨d, t, ht, h₀, fun x ↦ ?_⟩
+  refine ⟨d, t, ht, h₀, fun h ↦ (he h).elim, fun x ↦ ?_⟩
   have hzero : C'.repr ((C) 0) 1 = 0 := by
     rw [← h₀]
     simp [Basis.repr_self]

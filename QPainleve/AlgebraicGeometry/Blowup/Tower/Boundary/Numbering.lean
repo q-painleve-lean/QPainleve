@@ -8,8 +8,11 @@ module
 public import QPainleve.AlgebraicGeometry.Blowup.StrictTransform.Branches.Numbering
 public import QPainleve.AlgebraicGeometry.Blowup.Tower.Boundary.Nodality
 
+import QPainleve.AlgebraicGeometry.Blowup.Point.BoundaryPrimes
+import QPainleve.AlgebraicGeometry.Blowup.Tower.Modification
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Projective
 import QPainleve.AlgebraicGeometry.Curves.Node.Image
+import QPainleve.AlgebraicGeometry.Curves.Node.NumberedPrime
 import QPainleve.AlgebraicGeometry.IdealSheaf.BaseChange
 import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
 import QPainleve.AlgebraicGeometry.Modules.Differentials.Restriction
@@ -242,3 +245,90 @@ theorem exists_numbering_of_anticanonical_boundary_tower_blowdown_of_iso
     by rw [Category.assoc, hg, ← hd', Iso.inv_hom_id_assoc], hA'.comp hC⟩
 
 end QPainleve.BlowupTower.IsClosedPointTower
+
+namespace AlgebraicGeometry.Scheme.IdealSheafData.IsEffectiveCartier
+
+open QPainleve.BlowupTower
+
+variable {k : Type u} [Field k] [IsAlgClosed k] [NeZero (2 : k)]
+
+variable {X Z : Scheme.{u}} [X.Over (Spec (.of k))] [X.IsProjectiveOver k] [IsIntegral X]
+  [SmoothOfRelativeDimension 2 (X ↘ Spec (.of k))]
+  [Z.Over (Spec (.of k))] [SmoothOfRelativeDimension 2 (Z ↘ Spec (.of k))]
+  {p : X} {f : Z ⟶ X} [f.IsOver (Spec (.of k))] {B : Z.IdealSheafData}
+
+local notation "S" => Spec (CommRingCat.of k)
+local notation "K[" Y "]" => LineBundleClass.mk (QPainleve.canonicalBundle k Y 2)
+
+local notation "I" => Scheme.Hom.ker (X.fromSpecResidueField p)
+
+/-- Contracting a boundary component of a numbered nodal anticanonical cycle by
+a closed-point blowdown removes exactly one component and preserves the oriented
+subdivision on the remaining branches. -/
+theorem exists_numbering_of_exceptional_boundary_contraction
+    (hB : B.IsEffectiveCartier) [PrestableFamily (B.subscheme ↘ S)]
+    {m : ℕ} [NeZero m] {ι : Type v} {a : ι → (B.subscheme ↘ S).smoothLocus}
+    (A : Scheme.NodalCycleNumbering a m) (hcan : LineBundleClass.mk hB.toInvertibleSheaf = K[Z])
+    (hp : IsClosed ({p} : Set X)) (e : Z ≅ (I).blowup)
+    (he : e.hom ≫ (I).blowupToBase = f) (hF : ((I).comap f).support ≤ B.support) :
+    let D := B.map f
+    ∃ (hD : D.IsEffectiveCartier) (_ : PrestableFamily (D.subscheme ↘ S)),
+      LineBundleClass.mk hD.toInvertibleSheaf = K[X] ∧
+      D.comap f = B * (I).comap f ∧
+      ∃ (l : ℕ) (_ : NeZero l),
+        m = l + 1 ∧
+        ∃ (C : Scheme.NodalCycleNumbering
+            (fun x : PEmpty.{v + 1} ↦ x.elim : PEmpty.{v + 1} → (D.subscheme ↘ S).smoothLocus) l)
+          (g : B.subscheme ⟶ D.subscheme),
+          g ≫ D.subschemeι = B.subschemeι ≫ f ∧ g.IsOrientedCycleSubdivision A C := by
+  let T := QPainleve.BlowupTower.nil.snoc (I)
+  have hT : IsClosedPointTower X T := .snoc .nil p hp rfl
+  have hπ : T.toBase = (I).blowupToBase := by simp [T]
+  have h : e.hom ≫ T.toBase = f := by simpa only [hπ] using he
+  obtain ⟨hD, hpre, hK, l, hl, C, g, hg, hC⟩ :=
+    hT.exists_numbering_of_anticanonical_boundary_tower_blowdown_of_iso e h hB A hcan
+  let : NeZero l := hl
+  let D := B.map f
+  let : PrestableFamily (D.subscheme ↘ S) := hpre
+  let π := (I).blowupToBase
+  have hN : AtWorstNodalOfRelativeDimensionOne (B.subschemeι ≫ Z ↘ S) := by
+    rw [← B.over_eq_subschemeι_comp]
+    exact PrestableFamily.atWorstNodalOfRelativeDimensionOne
+  obtain ⟨_, -, -, htotal⟩ := hT.anticanonical_nodal_boundary_blowdown k e h hB hN hcan
+  have hr : hT.ramificationIdealSheafToBase k = (I).comap π := by
+    rw [IsClosedPointTower.ramificationIdealSheafToBase_snoc,
+      IsClosedPointTower.ramificationIdealSheafToBase_nil, comap_top, ← one_eq_top, mul_one]
+  rw [hr, ← comap_comp, he] at htotal
+  have : IsNoetherian X := isNoetherian_of_finiteType (X ↘ S)
+  have : IsModification T.toBase := hT.isModification_of_smoothOfRelativeDimension_two (X ↘ S)
+  have : IsProper f := h ▸ inferInstanceAs (IsProper (e.hom ≫ T.toBase))
+  have : Smooth (Z ↘ S) := SmoothOfRelativeDimension.smooth 2 _
+  have : IsLocallyNoetherian Z := LocallyOfFiniteType.isLocallyNoetherian (Z ↘ S)
+  have hsurj : Function.Surjective f := h ▸ (e.hom ≫ T.toBase).surjective
+  obtain ⟨z, hz⟩ := hsurj p
+  have hzB : z ∈ B.support := hF (by
+    rw [support_comap, ← SetLike.mem_coe, Closeds.coe_preimage, Set.mem_preimage, hz,
+      X.support_ker_fromSpecResidueField_of_isClosed hp]
+    exact Set.mem_singleton p)
+  have hpD : p ∈ D.support := by
+    dsimp only [D]
+    rw [← hz, ← SetLike.mem_coe, support_map, Closeds.coe_closure]
+    exact subset_closure (Set.mem_image_of_mem f hzB)
+  have htot' := congrArg (fun J : Z.IdealSheafData ↦ J.comap e.inv) htotal
+  have hf : e.inv ≫ f = π := by rw [← he, e.inv_hom_id_assoc]
+  simp only [← comap_comp, comap_mul, hf] at htot'
+  have hF' : ((I).comap π).support ≤ (B.comap e.inv).support := by
+    rw [← hf, comap_comp, support_comap ((I).comap f), support_comap B]
+    apply SetLike.coe_subset_coe.mp
+    rw [Closeds.coe_preimage, Closeds.coe_preimage]
+    exact Set.preimage_mono (SetLike.coe_subset_coe.mpr hF)
+  have hcard := D.ncard_boundaryPrimes_of_totalTransform (X ↘ S) hp hpD hD
+    (hB.comap e.inv) htot'
+  have hBcard := ncard_boundaryPrimes_eq_of_iso e.symm B
+  rw [Iso.symm_hom] at hBcard
+  rw [ite_eq_left hF', add_zero, hBcard] at hcard
+  rw [← Nat.card_coe_set_eq, ← Nat.card_congr (A.boundaryPrimeEquiv hB), Nat.card_zmod,
+    ← Nat.card_coe_set_eq, ← Nat.card_congr (C.boundaryPrimeEquiv hD), Nat.card_zmod] at hcard
+  exact ⟨hD, hpre, hK, htotal, l, hl, hcard, C, g, hg, hC⟩
+
+end AlgebraicGeometry.Scheme.IdealSheafData.IsEffectiveCartier
