@@ -383,6 +383,29 @@ theorem picardMarking_mem_boundaryOrthogonal_iff (P : MarkedSurface k n B₀ X�
   simp only [LinearMap.BilinForm.orthogonal, Submodule.mem_orthogonalBilin_span,
     Set.forall_mem_range, ← P.picardMarking_boundaryClass hD, P.intersectionBilinForm_picardMarking]
 
+/-- The Picard marking restricts to the orthogonal of the numbered boundary classes. -/
+def boundaryOrthogonalMarking (hD : D[P].IsEffectiveCartier) :
+    letI : P.surface.IsProjectiveOver k := P.projective
+    letI : SmoothOfRelativeDimension 2 (P.surface ↘ S) := P.smooth
+    B₀.orthogonal (Submodule.span ℤ (Set.range (P.boundaryClass hD))) ≃ₗ[ℤ]
+      D[P].boundaryOrthogonal k := by
+  let : P.surface.IsProjectiveOver k := P.projective
+  let : SmoothOfRelativeDimension 2 (P.surface ↘ S) := P.smooth
+  exact P.picardMarking.ofSubmodules _ _
+    (Submodule.ext fun x ↦ by
+      obtain ⟨y, rfl⟩ := P.picardMarking.surjective x
+      rw [Submodule.mem_map_equiv, LinearEquiv.symm_apply_apply,
+        P.picardMarking_mem_boundaryOrthogonal_iff hD])
+
+/-- The restricted marking acts by the Picard marking on the underlying classes. -/
+@[simp]
+theorem coe_boundaryOrthogonalMarking_apply (hD : D[P].IsEffectiveCartier)
+    (x : B₀.orthogonal (Submodule.span ℤ (Set.range (P.boundaryClass hD)))) :
+    letI : P.surface.IsProjectiveOver k := P.projective
+    letI : SmoothOfRelativeDimension 2 (P.surface ↘ S) := P.smooth
+    (P.boundaryOrthogonalMarking hD x).val = P.picardMarking x.val :=
+  LinearEquiv.ofSubmodules_apply _ _ x
+
 end BoundaryImage
 
 variable {M} in
