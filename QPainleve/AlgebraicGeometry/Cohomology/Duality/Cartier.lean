@@ -7,7 +7,6 @@ module
 
 public import QPainleve.AlgebraicGeometry.Cohomology.CartierPairing
 public import QPainleve.AlgebraicGeometry.Cohomology.TracePairing
-public import QPainleve.AlgebraicGeometry.IdealSheaf.Tensor.Inclusion
 
 /-!
 # Descent of trace duality along a Cartier sequence
@@ -74,45 +73,6 @@ theorem IsEffectiveCartier.cohomologyTracePairing_connecting (M W : InvertibleSh
     IsEffectiveCartier.cohomologyRestrictionTrace_apply]
   exact congrArg tr (hI.cohomologyMap_connecting_eq_of_dualRestriction R M W _ q x)
 
-/-- Twisting a section precomposed with the Cartier inclusion gives the original
-section followed by the inclusion into the positively twisted trace bundle. -/
-theorem IsEffectiveCartier.dualSectionTwist_comp_inclusion
-    {M : X.Modules} (W : InvertibleSheaf X) (b : M ⟶ W.obj) :
-    hI.dualSectionTwist M W (incl[M] ≫ b) =
-      b ≫ (hI.tensorDualCancelIso W).inv ≫ incl[(twist[hI, W]).obj] := by
-  let N := twist[hI, W]
-  let e := hI.tensorDualCancelIso W
-  let t := hI.dualSectionTwist M W
-  let c := b ≫ e.inv
-  have : Mono incl[N.obj] := mono_tensorIdealInclusion I N.obj
-  have hshift : incl[N.obj] ▷ I.sheaf = incl[N.obj ⊗ I.sheaf] :=
-    (cancel_mono incl[N.obj]).mp (tensorIdealInclusion_naturality I incl[N.obj]).symm
-  have hcomp : (c ≫ incl[N.obj]) ▷ I.sheaf ≫ e.hom = incl[M] ≫ b := by
-    rw [comp_whiskerRight, hshift, Category.assoc, ← tensorIdealInclusion_naturality_assoc]
-    simp [c]
-  have he (a : M ⟶ N.obj) : t.symm a = a ▷ I.sheaf ≫ e.hom := by
-    rw [← IsEffectiveCartier.dualSectionTwist_whiskerRight hI M W (t.symm a),
-      Equiv.apply_symm_apply]
-  exact t.symm.injective ((t.symm_apply_apply _).trans ((he _).trans hcomp).symm)
-
-/-- Twisted dual sections vanishing on the divisor are exactly those obtained by
-precomposing an ambient dual section with the Cartier inclusion. -/
-theorem IsEffectiveCartier.pullback_dualSectionTwist_eq_zero_iff
-    (M : X.Modules) (W : InvertibleSheaf X) (a : M ⊗ I.sheaf ⟶ W.obj) :
-    (F).map (hI.dualSectionTwist M W a) = 0 ↔
-      ∃ b : M ⟶ W.obj, a = incl[M] ≫ b := by
-  let N := twist[hI, W]
-  let e := hI.tensorDualCancelIso W
-  rw [I.pullback_map_eq_zero_iff_exists_comp_tensorIdealInclusion N]
-  constructor
-  · rintro ⟨c, hc⟩
-    refine ⟨c ≫ e.hom, (hI.dualSectionTwist M W).injective ?_⟩
-    refine hc.trans ?_
-    simp only [hI.dualSectionTwist_comp_inclusion, Category.assoc, e, Iso.hom_inv_id_assoc]
-    rfl
-  · rintro ⟨b, rfl⟩
-    exact ⟨b ≫ e.inv, by rw [hI.dualSectionTwist_comp_inclusion, Category.assoc]⟩
-
 variable {k : Type u} [Field k] [X.Over (Spec (.of k))]
 
 private theorem exact_cohomologyRestrictionConnecting_inclusion (M : InvertibleSheaf X)
@@ -159,18 +119,6 @@ private theorem surjective_cohomologyMapBaseLinear_inclusion (M : InvertibleShea
     exact ⟨x, (cohomologyBaseLinearEquivOfIso_apply k (ρ_ M.obj) n x).symm.trans hx⟩
   rw [tensorIdealInclusion_def, cohomologyMapBaseLinear_comp, ← hf]
   exact hunit.comp hsurj
-
-include hI in
-private theorem IsEffectiveCartier.injective_precomp_inclusion
-    (M : X.Modules) (W : InvertibleSheaf X) :
-    Function.Injective (fun b : M ⟶ W.obj ↦ incl[M] ≫ b) := by
-  let N := twist[hI, W]
-  let e := hI.tensorDualCancelIso W
-  have : Mono incl[N.obj] := mono_tensorIdealInclusion I N.obj
-  intro b c h
-  have ht := congrArg (hI.dualSectionTwist M W) h
-  simp only [hI.dualSectionTwist_comp_inclusion, ← Category.assoc] at ht
-  exact (cancel_mono e.inv).mp ((cancel_mono incl[N.obj]).mp ht)
 
 /-- A perfect ambient pairing for the smaller twist descends to a perfect pairing
 for the larger twist if the divisor pairing is perfect and the next cohomology

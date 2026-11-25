@@ -10,7 +10,6 @@ public import QPainleve.AlgebraicGeometry.Cohomology.Duality.Cartier
 
 import QPainleve.AlgebraicGeometry.Blowup.Exceptional.Restriction
 import QPainleve.AlgebraicGeometry.Blowup.Projective.Global
-import QPainleve.AlgebraicGeometry.Cohomology.Duality.Transport
 import QPainleve.AlgebraicGeometry.Cohomology.Projective
 import QPainleve.AlgebraicGeometry.Cohomology.Support
 import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
