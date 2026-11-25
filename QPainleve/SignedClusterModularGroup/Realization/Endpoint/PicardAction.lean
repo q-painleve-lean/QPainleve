@@ -26,7 +26,6 @@ open Scheme
 
 namespace QPainleve.SignedClusterModularGroup.GeometricRealization
 
-local notation "S" => Spec (CommRingCat.of ℂ)
 local notation "Centers[" r "]" => Over.mk (structureMap ℂ (Fin r → ℤ))
 local notation "XTor[" r "]" => scheme ℂ (Fin r →₀ ℤ)
 local notation "D[" M "]" => Scheme.Hom.ker (Over.Hom.left (Arrow.hom (MarkedSurface.pair M)))
@@ -38,16 +37,6 @@ variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {L γ : Type} [AddCommGroup L] {H : LinearMap.BilinForm ℤ L} {E : SkewExchangeMatrix (Fin r)}
 
 variable (Q : CompleteToricPresentation i b r L γ)
-
-local instance : Nonempty Q.fan.cones := Q.complete.nonempty_cones
-local instance : NeZero Q.length := Q.neZero
-local instance : PrestableFamily ((Q.fan.boundaryIdeal Q.complete.nonempty_cones).subscheme ↘ S) :=
-  Q.prestable
-
-local notation "Models[" M "," C "]" =>
-  HasToricTargetModels (T₀ := Centers[r]) (T₁ := Centers[r]) (b := b) (s := Q.rays)
-    (hΦ := Q.regular) (T := Q.cycle) (origin := Q.origin) (ι := Q.inclusion) (P₁ := M)
-    (fun z : Point Centers[r] ↦ χ[z]) C
 
 /-- A signed Picard action agrees with marked geometric pullback on compatible
 realizations, has the inversion sign of each representative, and has the unsigned
@@ -65,7 +54,14 @@ structure IsSignedPicardAction
   apply_of_realization (w : Word E E)
       {C : Centers[r].left.PartialMap Centers[r].left} [IsDominant C.hom]
       [C.IsOver Centers[r].hom Centers[r].hom]
-      (R : GeometricRealization M M C (w.xRationalMap ℂ)) (hC : Models[M,C]) :
+      (R : GeometricRealization M M C (w.xRationalMap ℂ))
+      (hC :
+        letI := Q.complete.nonempty_cones
+        letI := Q.prestable
+        letI := Q.neZero
+        HasToricTargetModels (T₀ := Centers[r]) (T₁ := Centers[r]) (b := b) (s := Q.rays)
+          (hΦ := Q.regular) (T := Q.cycle) (origin := Q.origin) (ι := Q.inclusion) (P₁ := M)
+          (fun z : Point Centers[r] ↦ χ[z]) C) :
     ρ eval[E,w] = R.toSignedBoundaryIsometry d hD hmark
   /-- On point maps, the sign kernel is the image of the unsigned group. -/
   sign_ker_unop : ((sign H d).comp ρ).ker.unop = (clusterModularGroupInclusion ℂ E).range
