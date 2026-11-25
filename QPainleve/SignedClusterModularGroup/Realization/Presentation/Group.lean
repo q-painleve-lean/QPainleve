@@ -73,7 +73,7 @@ theorem exists_picardGroupEquivs_of_nodal_model
   let P := Fan.rayChargeSeed b Q.rays hE
   have hmark (z : Point Centers[r]) (j : ZMod n) :=
     congrFun (hfamily z).2 j
-  obtain ⟨Θ, ⟨hΘ, hsign⟩, -⟩ := existsUnique_signedPicardEquiv_of_presentation
+  obtain ⟨Θ, hΘ, -⟩ := existsUnique_signedPicardEquiv_of_presentation
     (Q := Q) (hD := hD) (hmark := hmark) P
     (Fan.rayChargeSeed_form _ _ _) (Fan.rayChargeSeed_charge _ _ _)
     (fun z _ ↦ (hfamily z).1) (hfamily c).1 hprim hnef hsq
@@ -82,8 +82,9 @@ theorem exists_picardGroupEquivs_of_nodal_model
            boundaryClass_eq := hmark
            signedEquiv := Θ
            sign_signedEquiv_apply_word := fun w ↦ by
-             simpa only [SignedBoundaryIsometryGroup.sign_apply] using (hΘ w).1
-           signedEquiv_apply_word := fun w ↦ (hΘ w).2
-           sign_ker_unop := hsign }, rfl⟩
+             simpa only [SignedBoundaryIsometryGroup.sign_apply, MulEquiv.coe_toMonoidHom]
+               using hΘ.sign_apply_word w
+           signedEquiv_apply_word := hΘ.apply_of_realization
+           sign_ker_unop := hΘ.sign_ker_unop }, rfl⟩
 
 end QPainleve.SignedClusterModularGroup.CompleteToricPresentation
