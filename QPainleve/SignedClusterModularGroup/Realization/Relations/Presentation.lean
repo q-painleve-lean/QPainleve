@@ -277,14 +277,10 @@ theorem compareSignedLoopLists_eq_some_iff_of_presentation
     E.compareSignedLoopLists orders gs hs = some result ↔
       ∃ w v : Word E E, w.generators = gs ∧ v.generators = hs ∧
         (result = true ↔ w.xPullback k = v.xPullback k) := by
-  rw [SkewExchangeMatrix.compareSignedLoopLists_eq_some_iff, ho]
-  have hresult (w v : Word E E) :
-      result = E.compareSignedLoops (p₀.numberedBoundaryOrders (cartier(M c₀))) w v ↔
-        (result = true ↔ w.xPullback k = v.xPullback k) :=
-    Bool.eq_iff_iff.trans <| iff_congr Iff.rfl <|
-      E.compareSignedLoops_eq_true_iff_xPullback_eq k _ w v (fun β ↦
-        xPullback_eq_iff_signedLoopInvariants_eq_of_presentation Q P hform hcharge M
-          p₀ hnodal₀ p hnodal hnef hsq hprim hmark hnodes w v β)
-  simp_rw [hresult]
+  rw [ho]
+  exact E.compareSignedLoopLists_eq_some_iff_xPullback_eq k _ (fun w v ↦
+    E.compareSignedLoops_eq_true_iff_xPullback_eq k _ w v
+      (xPullback_eq_iff_signedLoopInvariants_eq_of_presentation Q P hform hcharge M
+        p₀ hnodal₀ p hnodal hnef hsq hprim hmark hnodes w v)) gs hs result
 
 end QPainleve.SignedClusterModularGroup.GeometricRealization

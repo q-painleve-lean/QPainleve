@@ -5,35 +5,30 @@ Authors: The QPainleve contributors
 -/
 module
 
+public import QPainleve.Geometry.Toric.Fan.ExchangeMatrix
+public import QPainleve.SignedClusterModularGroup.Realization.Presentation.Reference
 public import QPainleve.SignedClusterModularGroup.Realization.Relations.Reference
-public import QPainleve.SignedClusterModularGroup.Realization.Surface.Boundary
 
 import QPainleve.AlgebraicGeometry.Chow.RationalSurface.Basic
-import QPainleve.Geometry.Toric.Fan.ExchangeMatrix
 import QPainleve.SignedClusterModularGroup.Realization.NodalFiber
-import QPainleve.SignedClusterModularGroup.Realization.Presentation.Reference
 
 /-!
 # Signed cluster relations from ordered blowup towers
 
-Specified ordered toric and nodal blowup towers supply the reference contraction for
-`CompleteToricPresentation.xPullback_eq_iff_signedLoopInvariants_eq_of_nodal_contraction`,
-retaining the original surface, numbering and center labels.
+A specified toric presentation supplies a marked reference fiber and a contraction for the
+integer relation criterion. The reference fiber retains the original surface, numbering and
+center labels. Its boundary orders also certify the Boolean comparison of signed generator lists.
 -/
 
 public section
 
 open AlgebraicGeometry CategoryTheory Module Quiver
-open QPainleve.BlowupTower QPainleve.CharacterTorus QPainleve.Cluster
+open QPainleve.CharacterTorus QPainleve.Cluster
 open Scheme Scheme.IdealSheafData TauCeti TauCeti.AlgebraicGeometry TauCeti.Toric
 
 namespace QPainleve.SignedClusterModularGroup
 
-open GeometricRealization (Point)
-
 local notation "S" => Spec (CommRingCat.of ℂ)
-local notation "Centers[" r "]" => Over.mk (structureMap ℂ (Fin r → ℤ))
-local notation "XTor[" r "]" => scheme ℂ (Fin r →₀ ℤ)
 local notation "χ[" c "]" => pointsEquiv ℂ _ (Subtype.mk (Over.Hom.left c) (Over.w c))
 local notation "parameters[" c "]" => (fun j ↦ χ[c] (Multiplicative.ofAdd (Pi.single j 1)))
 local notation "classOf(" h ")" => (LineBundleClass.mk (IsEffectiveCartier.toInvertibleSheaf h))⁻¹
@@ -41,12 +36,9 @@ local notation "classOf(" h ")" => (LineBundleClass.mk (IsEffectiveCartier.toInv
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {b : Basis (Fin 2) ℤ N} {n r : ℕ} [NeZero n]
 
-section OrderedTowers
-
-variable {Φ : Fan i} {X W : Scheme} [X.Over S] [X.IsProjectiveOver ℂ]
+variable {X : Scheme} [X.Over S] [X.IsProjectiveOver ℂ]
   [SmoothOfRelativeDimension 2 (X ↘ S)] [Scheme.IsRationalOver (X ↘ S)]
   {D : X.IdealSheafData} [PrestableFamily (D.subscheme ↘ S)]
-  {m : ℕ} {T : BlowupTower X m W}
 
 local notation "B" => Chow.intersectionBilinForm ℂ X
 local notation "Pic" => Additive (LineBundleClass X)
@@ -56,39 +48,32 @@ local instance instIsIntegralOrderedTowersSurface : IsIntegral X := by
   let : Smooth (X ↘ S) := SmoothOfRelativeDimension.smooth 2 _
   exact Scheme.IsRationalOver.isIntegral_of_smooth (f := X ↘ S) inferInstance
 
-/-- Specified ordered toric and nodal blowup towers of a numbered primitive nef square-zero
-anticanonical cycle supply a seed and a complete relation criterion. The order table is
-the determinant table of the surviving rays in the original boundary numbering.
-The fan and ray labels stay fixed. Transposing the frame to agree with the numbering
-inverts all reference center parameters. -/
-theorem exists_xPullback_eq_iff_signedLoopInvariants_eq_of_ordered_towers
-    (hΦ : Φ.IsRegular) (hc : Φ.IsComplete) (s : Fin r → Φ.Ray) (u : Fin r → ℂˣ)
-    (hT : IsNodalBoundaryTower D (X ↘ S) (𝟙 X) T)
-    (e : (Fan.internalBlowupTower (h₀ := hc.nonempty_cones) b s u).1 ≅ W)
-    (hbase : e.hom ≫ T.toBase ≫ (X ↘ S) =
-      (Fan.internalBlowupTower (h₀ := hc.nonempty_cones) b s u).2.toTower.toBase ≫
-        Φ.algebraicRealizationStructureMap)
-    (hker : ((D.comap T.toBase).radical).comap e.hom =
-      (Fan.internalBlowupTower (h₀ := hc.nonempty_cones) b s u).2.boundaryι.ker)
+/-- A specified toric presentation of a numbered primitive nef square-zero anticanonical
+cycle supplies a reference contraction and the complete integer criterion over every field.
+The order table uses the surviving rays in the original boundary numbering. The fan and
+ray labels stay fixed. Transposing the frame to agree with the numbering inverts all reference
+center parameters. -/
+theorem exists_xPullback_eq_iff_signedLoopInvariants_eq_of_toric_presentation
+    (P : D.ToricPresentation (X ↘ S) b i r)
     (A : Scheme.NodalCycleNumbering (X := D.subscheme)
       (Empty.elim : Empty → (D.subscheme ↘ S).smoothLocus) n)
     (hD : D.IsEffectiveCartier)
     (hprim : IsPrimitive (Additive.ofMul classOf(hD))) (hnef : classOf(hD).IsNef ℂ (X ↘ S))
     (hsq : Chow.classIntersectionNumber ℂ X classOf(hD) classOf(hD) = 0) :
     ∃ (H : LinearMap.BilinForm ℤ L) (μ : H.IsometryEquiv B)
-      (b' : Basis (Fin 2) ℤ N) (Q : CompleteToricPresentation i b' r L Empty),
+      (b' : Basis (Fin 2) ℤ N) (R : MarkedReferenceFiber i b' r A μ),
+    let Q := R.presentation
     letI := Q.complete.nonempty_cones
     letI := Q.prestable
     letI := Q.neZero
-    ∃ (c : Point Centers[r]) (f : X ⤏ XTor[r]) (E : SkewExchangeMatrix (Fin r)),
-    let M := MarkedSurface.ofBoundary D A μ f
-    ∃ p₀ : ContractedToricFiber b' Q.rays Q.regular Q.cycle Q.origin Q.inclusion χ[c] M,
+    let M := MarkedSurface.ofBoundary D A μ R.evaluation
+    ∃ p₀ : ContractedToricFiber b' Q.rays Q.regular Q.cycle Q.origin Q.inclusion χ[R.center] M,
       p₀.IsNodalContraction ∧
-      ((b' = b ∧ parameters[c] = u) ∨
-        (b' = b.reindex (Equiv.swap 0 1) ∧ parameters[c] = u⁻¹)) ∧
-      (∃ hfan : Q.fan = Φ, hfan ▸ Q.rays = s) ∧
-      E.matrix = chargeExchangeMatrix b'.detDualEquiv.toLinearMap (Fan.rayChargeMap Q.rays) ∧
-      ∀ (k : Type*) [Field k] [CharZero k] (w v : Word E E)
+      ((b' = b ∧ parameters[R.center] = P.parameters) ∨
+        (b' = b.reindex (Equiv.swap 0 1) ∧ parameters[R.center] = P.parameters⁻¹)) ∧
+      (∃ hfan : Q.fan = P.fan, hfan ▸ Q.rays = P.rays) ∧
+      let E := Fan.rayExchangeMatrix b' Q.rays
+      ∀ (k : Type*) [Field k] (w v : Word E E)
         {d : ℕ} (β : Basis (Fin d) ℤ E.matrix.mulVecLin.ker),
         let orders := p₀.numberedBoundaryOrders M.isEffectiveCartier_boundaryIdeal
         w.xPullback k = v.xPullback k ↔
@@ -100,21 +85,17 @@ theorem exists_xPullback_eq_iff_signedLoopInvariants_eq_of_ordered_towers
   let H := (B).comp a.toLinearMap a.toLinearMap
   let μ : H.IsometryEquiv B := ((B).isometryEquivOfCompLinearEquiv a).symm
   obtain ⟨b', R, hframe, hrays⟩ :=
-    exists_marked_reference_fiber_of_ordered_towers hΦ hc s u hT e hbase hker hD A μ
-  let Q := R.presentation
+    exists_marked_reference_fiber_of_ordered_towers P.regular P.complete P.rays P.parameters
+      P.isNodal P.iso P.iso_over P.iso_boundary hD A μ
   let M := MarkedSurface.ofBoundary D A μ R.evaluation
   let hD' := M.isEffectiveCartier_boundaryIdeal
   obtain ⟨p₀, hnodal₀⟩ := R.hasNodalModel.exists_isNodalContraction hD'
   have hδ : classOf(hD') = classOf(hD) :=
     congrArg Inv.inv (LineBundleClass.mk_toInvertibleSheaf_congr _ _
       (MarkedSurface.ofBoundary_ker D A μ R.evaluation))
-  let E := Fan.rayExchangeMatrix b' Q.rays
-  have hE := Fan.rayExchangeMatrix_matrix b' Q.rays
-  refine ⟨H, μ, b', Q, R.center, R.evaluation, E, p₀, hnodal₀, hframe, hrays, hE,
-    fun k _ _ w v _ β ↦ ?_⟩
-  exact Q.xPullback_eq_iff_signedLoopInvariants_eq_of_nodal_contraction k p₀ hnodal₀ hE
+  refine ⟨H, μ, b', R, p₀, hnodal₀, hframe, hrays, fun k _ w v _ β ↦ ?_⟩
+  exact R.presentation.xPullback_eq_iff_signedLoopInvariants_eq_of_nodal_contraction k p₀ hnodal₀
+    (Fan.rayExchangeMatrix_matrix b' R.presentation.rays)
     (by rwa [hδ]) (by rwa [hδ]) (by rwa [hδ]) w v β
-
-end OrderedTowers
 
 end QPainleve.SignedClusterModularGroup

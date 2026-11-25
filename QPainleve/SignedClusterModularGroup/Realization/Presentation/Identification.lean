@@ -9,6 +9,7 @@ public import QPainleve.SignedClusterModularGroup.Realization.Presentation.Picar
 public import QPainleve.SignedClusterModularGroup.Realization.Presentation.Reference
 
 import QPainleve.AlgebraicGeometry.Chow.RationalSurface.Basic
+import QPainleve.Geometry.Toric.Fan.ExchangeMatrix
 import QPainleve.SignedClusterModularGroup.Boundary.Conjugation
 import QPainleve.SignedClusterModularGroup.Realization.Presentation.Group
 
@@ -90,11 +91,7 @@ theorem exists_picardGroupEquivs_of_toric_presentation
   have hδ : δ[M₀.isEffectiveCartier_boundaryIdeal] = δ[hD] :=
     congrArg Inv.inv (LineBundleClass.mk_toInvertibleSheaf_congr _ _
       (MarkedSurface.ofBoundary_ker D A μ R.evaluation))
-  let m := chargeExchangeMatrix b'.detDualEquiv.toLinearMap (Fan.rayChargeMap Q.rays)
-  let skew :=
-    isSkewSymmetrizer_chargeExchangeMatrix _ b'.detDualEquiv_self (Fan.rayChargeMap Q.rays)
-  let E := SkewExchangeMatrix.ofMatrix m skew
-  have hE : E.matrix = m := SkewExchangeMatrix.matrix_ofMatrix _ _
+  have hE := Fan.rayExchangeMatrix_matrix b' Q.rays
   let : IsNoetherian X := isNoetherian_of_finiteType (X ↘ S)
   let := (X ↘ S).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two
   let d := classes[A,hD]
@@ -114,7 +111,8 @@ theorem exists_picardGroupEquivs_of_toric_presentation
       simp only [MonoidHom.comp_apply, MulEquiv.coe_toMonoidHom, MulEquiv.trans_apply,
         α, SignedBoundaryIsometryGroup.sign_apply, coe_congr]
   refine ⟨{ form := H, marking := μ, basis := b', presentation := Q
-            center := R.center, evaluation := R.evaluation, exchangeMatrix := E, family := M
+            center := R.center, evaluation := R.evaluation
+            exchangeMatrix := Fan.rayExchangeMatrix b' Q.rays, family := M
             signedEquiv := Θ.trans α, unsignedEquiv := Θrot.trans β, matrix_eq := hE
             family_center := hM, hasNodalModel := hmodels, boundaryClass_eq := hmark
             sign_signedEquiv_apply_word := fun w ↦ by
