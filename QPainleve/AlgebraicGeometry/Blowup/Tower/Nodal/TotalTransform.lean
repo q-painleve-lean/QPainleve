@@ -127,27 +127,6 @@ local notation "weight(" h "," q ")" =>
 local notation "original(" A "," hD ")" =>
   (fun i ↦ Subtype.val (Scheme.NodalCycleNumbering.boundaryPrimeEquiv A hD (ZMod.finEquiv _ i)))
 
-omit [IsSepClosed k] [PerfectField k] [NeZero n] in
-private theorem exists_equiv_boundaryPrimes_snoc
-    {Z : Scheme.{u}} [IsNoetherian Z] {f : Z ⟶ Spec (.of k)} [SmoothOfRelativeDimension 2 f]
-    (P : Z.IdealSheafData) (x : Z) (hx : IsClosed ({x} : Set Z)) (hxP : x ∈ P.support)
-    {I : Z.IdealSheafData} (hI : (Z.fromSpecResidueField x).ker = I)
-    (e : Fin (n + m) ≃ P.boundaryPrimes) :
-    ∃ e' : Fin (n + (m + 1)) ≃ (P.comap I.blowupToBase).boundaryPrimes,
-      (∀ i, I.blowupToBase (e' i.castSucc).val = (e i).val) ∧
-        I.blowupToBase (e' (Fin.last (n + m))).val = x := by
-  subst I
-  obtain ⟨b, hb, hb₀⟩ := P.exists_equiv_boundaryPrimes_comap_pointBlowup f hx hxP
-  let e' := (finSumFinEquiv (m := n + m) (n := 1)).symm.trans
-    ((Equiv.sumCongr e (Equiv.equivPUnit (Fin 1))).trans b)
-  refine ⟨e', fun i ↦ ?_, ?_⟩
-  · simpa only [e', Equiv.trans_apply, finSumFinEquiv_symm_apply_castSucc,
-      Equiv.sumCongr_apply, Sum.map_inl] using hb (e i)
-  · have hp : Equiv.equivPUnit (Fin 1) 0 = (PUnit.unit : PUnit.{u + 1}) :=
-      Subsingleton.elim _ _
-    simpa only [e', Equiv.trans_apply, finSumFinEquiv_symm_last, Equiv.sumCongr_apply,
-      Sum.map_inr, hp] using hb₀
-
 private abbrev HasBoundaryWeights (hD : D.IsEffectiveCartier)
     (A : Scheme.NodalCycleNumbering p n) (T : BlowupTower X m Y)
     [IsIntegral Y] [IsNoetherian Y] (hP : (P[T]).IsEffectiveCartier) : Prop :=
@@ -222,7 +201,7 @@ private theorem exists_boundaryWeights_snoc_of_numbering
     rw [hsupport, C.ambientNode_def]
     exact (B[U]).range_subschemeι.le (Set.mem_range_self _)
   obtain ⟨e', he', he'₀⟩ :=
-    exists_equiv_boundaryPrimes_snoc (f := f) (P[U]) _ hx hxP hI.symm e
+    (P[U]).exists_equiv_boundaryPrimes_snoc (f := f) hx hxP hI.symm e
   let b := Set.equivOfEq (boundaryPrimes_eq_of_support_eq hsupport)
   let l := (C.boundaryPrimeEquiv hB).trans (b.symm.trans e.symm)
   have hl (d : ZMod (n + m)) : (e (l d)).val = (C.boundaryPrimeEquiv hB d).val := by
