@@ -86,6 +86,15 @@ theorem cycleVertexPerm_apply (g : DihedralGroup n) (j : ZMod n) :
     cycleVertexPerm g j = (cycleOrientationSign g : ℤ) • j + cycleVertexPerm g 0 := by
   cases g <;> simp [sub_eq_add_neg, add_comm]
 
+/-- The inverse vertex permutation subtracts the forward image of zero before
+applying the orientation sign. -/
+theorem cycleVertexPerm_inv_apply (g : DihedralGroup n) (j : ZMod n) :
+    cycleVertexPerm g⁻¹ j = cycleOrientationSign g • (j - cycleVertexPerm g 0) := by
+  apply (cycleVertexPerm g).injective
+  rw [← Equiv.Perm.mul_apply, ← map_mul, mul_inv_cancel, map_one, Equiv.Perm.one_apply,
+    cycleVertexPerm_apply g, ← Units.smul_def, smul_smul, Int.units_mul_self, one_smul,
+    sub_add_cancel]
+
 /-- An orientation-preserving cycle action is the rotation determined by the image
 of vertex zero. This covers the cycles with one or two components. -/
 theorem eq_r_iff_cycleVertexPerm_zero_eq {g : DihedralGroup n} {j : ZMod n}
