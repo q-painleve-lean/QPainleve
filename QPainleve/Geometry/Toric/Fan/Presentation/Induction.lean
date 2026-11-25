@@ -5,18 +5,20 @@ Authors: The QPainleve contributors
 -/
 module
 
+public import Mathlib.AlgebraicGeometry.Birational.Birational
 public import Mathlib.Analysis.Complex.Polynomial.Basic
 public import Mathlib.FieldTheory.IsSepClosed
-public import QPainleve.AlgebraicGeometry.Chow.RationalSurface.Ruling.ProjectiveBundle
 public import QPainleve.AlgebraicGeometry.IdealSheaf.Boundary.Cycle
+public import QPainleve.AlgebraicGeometry.Modules.Differentials.Canonical
 public import QPainleve.Geometry.Toric.Fan.Presentation.Basic
 
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Boundary.Numbering
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Modification
 import QPainleve.AlgebraicGeometry.Chow.RationalSurface.MinimalModel
 import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.Polynomial.SymmetricAlgebra
+import QPainleve.Geometry.Toric.Fan.Hirzebruch.BoundarySplit
+import QPainleve.Geometry.Toric.Fan.Hirzebruch.Classification
 import QPainleve.Geometry.Toric.Fan.Hirzebruch.PositiveComplexity
-import QPainleve.Geometry.Toric.Fan.Hirzebruch.Recognition
 import QPainleve.Geometry.Toric.Fan.Picard.Hirzebruch
 import QPainleve.Geometry.Toric.Fan.Presentation.NodalReduction
 import QPainleve.Geometry.Toric.Fan.Presentation.PointTower
@@ -36,10 +38,8 @@ The presentations obtained at the end of the induction lift through the specifie
 blowups and contractions.
 
 This is the reduction used in [Gross, Hacking and Keel, Proposition 1.3][GHK].
-The two geometric inputs to the induction are the identification of the split
-projective bundles with Hirzebruch surfaces and the recognition of the
-complexity-zero boundaries on the positive-index Hirzebruch surfaces. The
-quadric case uses its existing toric recognition theorem.
+The ruled induction uses the identification of split projective bundles with
+Hirzebruch surfaces and the toric recognition of their complexity-zero boundaries.
 
 [GHK]: https://arxiv.org/html/1106.4977v3#S1.Thmproposition3
 -/
@@ -53,12 +53,9 @@ open Scheme.IdealSheafData
 namespace TauCeti.Toric.Fan
 
 local notation "S" => Spec (CommRingCat.of ℂ)
-local notation "P₁" => projectiveLine ℂ
 local notation "K[" X "]" => LineBundleClass.mk (canonicalBundle ℂ X 2)
 local notation "J[" x "]" => Scheme.Hom.ker (Scheme.fromSpecResidueField _ x)
 local notation "T[" x "]" => BlowupTower.nil.snoc J[x]
-local notation "L[" a "]" => Functor.obj (InvertibleSheaf.toFixedRankOne P₁)
-  (Proj.symmetricAlgebraTwistingBundle ℂ (Fin 2 → ℂ) a)
 local notation "X[" Φ "]" => Fan.algebraicRealization Φ
 
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V] {i : N →+ V}
@@ -151,47 +148,7 @@ private theorem isRationalOver_of_common_pointBlowup
     (Scheme.BirationalOver.symm (sX := T.toBase ≫ s) (sY := t)
       ⟨d, by simpa only [g, Category.assoc, Category.comp_id, hu] using congrArg (· ≫ t) hd⟩)
 
--- The ruled comparison only needs to identify the underlying split projective bundle.
-variable
-  (hsplit : ∀ (a₁ a₂ : ℤ), a₂ ≤ a₁ →
-    let E := FiniteLocallyFreeSheaf.FixedRank.biprod L[a₁] L[a₂]
-    let A := ((gradedSymmetricAlgebra P₁).obj
-      ((FiniteLocallyFreeSheaf.toQuasicoherent P₁).obj E.obj)).obj
-    ∃ (Φ : Fan i) (_ : Φ.IsRegular) (_ : Φ.IsComplete) (d : Basis (Fin 2) ℤ N)
-      (k : ℕ) (r : Fin 4 ≃ Φ.Ray) (e : X[Φ] ≅ A.relativeProj),
-      (fun j ↦ (r j).primitiveGenerator) = ![d 0, d 1, -d 0, (k : ℤ) • d 0 - d 1] ∧
-      e.hom ≫ A.relativeProjToBase ≫ P₁ ↘ S = Φ.algebraicRealizationStructureMap)
-  (hterminal : ∀ {Φ : Fan i} (_ : Φ.IsRegular) (_ : Φ.IsComplete) (d : Basis (Fin 2) ℤ N)
-    (k : ℕ) (r : Fin 4 ≃ Φ.Ray), 0 < k →
-    (fun j ↦ (r j).primitiveGenerator) = ![d 0, d 1, -d 0, (k : ℤ) • d 0 - d 1] →
-    ∀ [SmoothOfRelativeDimension 2 (X[Φ] ↘ S)] {D : (X[Φ]).IdealSheafData}
-      [PrestableFamily (D.subscheme ↘ S)] {n : ℕ} [NeZero n] {ι : Type}
-      {p : ι → (D.subscheme ↘ S).smoothLocus},
-    Scheme.NodalCycleNumbering p n →
-    ∀ (hD : D.IsEffectiveCartier), LineBundleClass.mk hD.toInvertibleSheaf = K[X[Φ]] →
-      D.boundaryComplexity = 0 → D.HasToricPresentation (X[Φ] ↘ S) b i)
-
 variable {b}
-
-include hsplit in
-private theorem exists_split_model_of_ruling
-    {X : Scheme} [X.Over S] [X.IsProjectiveOver ℂ] [SmoothOfRelativeDimension 2 (X ↘ S)]
-    [Scheme.IsRationalOver (X ↘ S)]
-    (f : X ⟶ P₁) [f.IsOver S] [Flat f]
-    (hf : ∀ z : P₁, IsClosed ({z} : Set P₁) →
-      ∃ e : P₁ ≅ f.fiber z, e.hom ≫ f.fiberι z ≫ X ↘ S = P₁ ↘ S) :
-    ∃ (Φ : Fan i) (_ : Φ.IsRegular) (_ : Φ.IsComplete) (d : Basis (Fin 2) ℤ N)
-      (k : ℕ) (r : Fin 4 ≃ Φ.Ray) (e : X[Φ] ≅ X),
-      (fun j ↦ (r j).primitiveGenerator) = ![d 0, d 1, -d 0, (k : ℤ) • d 0 - d 1] ∧
-      e.hom ≫ X ↘ S = Φ.algebraicRealizationStructureMap := by
-  obtain ⟨a₁, a₂, hle, v, hv⟩ := f.exists_iso_split_relativeProj_of_projectiveLine_fibers hf
-  obtain ⟨Φ, hΦ, hc, d, k, r, e, hr, he⟩ := hsplit a₁ a₂ hle
-  refine ⟨Φ, hΦ, hc, d, k, r, e ≪≫ v.symm, hr, ?_⟩
-  have h := congrArg (fun g ↦ g ≫ P₁ ↘ S) hv
-  simp only [Category.assoc] at h
-  rw [comp_over f S] at h
-  rw [Iso.trans_hom, Iso.symm_hom, Category.assoc, ← h, Iso.inv_hom_id_assoc]
-  exact he
 
 private theorem exists_numbering_on_fan_model
     {X : Scheme} [X.Over S] [SmoothOfRelativeDimension 2 (X ↘ S)]
@@ -226,24 +183,6 @@ private theorem exists_numbering_on_fan_model
   intro hE hpre hcan B
   exact ⟨hE, hpre, hcan, m, hm, ⟨B⟩⟩
 
-private theorem hasToricPresentation_of_quadric_complexity_zero
-    (b : Basis (Fin 2) ℤ N) {Φ : Fan i} (hΦ : Φ.IsRegular) (hc : Φ.IsComplete)
-    (d : Basis (Fin 2) ℤ N) (r : Fin 4 ≃ Φ.Ray)
-    (hr : (fun j ↦ (r j).primitiveGenerator) = ![d 0, d 1, -d 0, (0 : ℤ) • d 0 - d 1])
-    [SmoothOfRelativeDimension 2 (X[Φ] ↘ S)]
-    {D : (X[Φ]).IdealSheafData} [PrestableFamily (D.subscheme ↘ S)]
-    (hD : D.IsEffectiveCartier) (hK : LineBundleClass.mk hD.toInvertibleSheaf = K[X[Φ]])
-    (hzero : D.boundaryComplexity = 0) : D.HasToricPresentation (X[Φ] ↘ S) b i := by
-  let : Nonempty Φ.cones := hc.nonempty_cones
-  let : IsReduced D.subscheme :=
-    (PrestableFamily.atWorstNodalOfRelativeDimensionOne (f := D.subscheme ↘ S)).isReduced
-  obtain ⟨a, ha, hDa⟩ :=
-    exists_toric_of_quadric_boundary_complexity_zero d hΦ hc r hr hD hzero hK
-  refine hasToricPresentation_of_toric_boundary b hΦ hc a.symm ?_ ?_
-  · rw [Iso.symm_hom, ← ha, Iso.inv_hom_id_assoc, algebraicRealization_over]
-  · rw [Iso.symm_hom, ← hDa, ← comap_comp, Iso.inv_hom_id, comap_id]
-
-include hsplit hterminal in
 private theorem hasToricPresentation_of_hirzebruch
     {Φ : Fan i} (hΦ : Φ.IsRegular) (hc : Φ.IsComplete) (d : Basis (Fin 2) ℤ N)
     (k : ℕ) (r : Fin 4 ≃ Φ.Ray)
@@ -267,9 +206,13 @@ private theorem hasToricPresentation_of_hirzebruch
     let : Module.Finite ℤ (Additive (LineBundleClass X[Φ])) :=
       Module.Finite.of_basis (Φ.hirzebruchPicardBasis d (k : ℤ) hΦ r hr)
     by_cases hzero : D.boundaryComplexity = 0
-    · rcases Nat.eq_zero_or_pos k with rfl | hk
-      · exact hasToricPresentation_of_quadric_complexity_zero b hΦ hc d r hr hD hK hzero
-      · exact hterminal hΦ hc d k r hk hr (D := D) (n := n) (p := p) A hD hK hzero
+    · let : IsReduced D.subscheme :=
+        (PrestableFamily.atWorstNodalOfRelativeDimensionOne (f := D.subscheme ↘ S)).isReduced
+      obtain ⟨Ψ, hΨ, hcΨ, e, he, hE⟩ :=
+        exists_toric_of_hirzebruch_boundaryComplexity_zero d (k : ℤ) hΦ hc r hr
+          (Int.natCast_nonneg k) hD hzero hK
+      exact hasToricPresentation_of_toric_boundary b hΨ hcΨ e
+        (he.trans (algebraicRealization_over (Φ := Ψ))) hE
     have hq := D.boundaryComplexity_nonneg_of_nodalCycleNumbering hD A
     have hpos := lt_of_le_of_ne hq (Ne.symm hzero)
     obtain ⟨j, Y, s, y, u, f, hSm, hT, hInt, hProj, hy, hg, hOmit, hfOver, hfFlat, hfiber,
@@ -285,11 +228,14 @@ private theorem hasToricPresentation_of_hirzebruch
     let : Scheme.IsRationalOver (Y ↘ S) := isRationalOver_of_common_pointBlowup
       hT.isClosedPointTower (t := s) hy u
         (by simpa only [Category.assoc, toBase_snoc, toBase_nil, Category.comp_id] using hg)
-    obtain ⟨Ψ, hΨ, hcΨ, d', k', r', e, hr', he⟩ := exists_split_model_of_ruling hsplit f hfiber
+    obtain ⟨Ψ, hΨ, hcΨ, k', r', hr', e, hruling⟩ :=
+      f.exists_hirzebruch_model_of_projectiveLine_fibers b Φ.lattice hfiber
+    have he : e.hom ≫ Y ↘ S = Ψ.algebraicRealizationStructureMap := by
+      rw [← comp_over f S, ← Category.assoc, hruling, comp_over, algebraicRealization_over]
     let g := u.hom ≫ J[y].blowupToBase
     let E := ((D.comap J[A.ambientNode j].blowupToBase).radical).map g
     let : PrestableFamily (E.subscheme ↘ S) := hpre
-    obtain ⟨hE', hpre', hK', m, hm, ⟨C⟩⟩ := exists_numbering_on_fan_model B hE hKE hΨ hcΨ d' e he
+    obtain ⟨hE', hpre', hK', m, hm, ⟨C⟩⟩ := exists_numbering_on_fan_model B hE hKE hΨ hcΨ b e he
     let : PrestableFamily ((E.comap e.hom).subscheme ↘ S) := hpre'
     let : NeZero m := hm
     have hover : e.hom ≫ Y ↘ S = X[Ψ] ↘ S := he.trans (algebraicRealization_over (Φ := Ψ)).symm
@@ -298,8 +244,8 @@ private theorem hasToricPresentation_of_hirzebruch
       have hdrop' : E.boundaryComplexity + 1 = D.boundaryComplexity := hdrop
       rw [boundaryComplexity_comap_iso, ← hl]
       omega
-    let : SmoothOfRelativeDimension 2 (X[Ψ] ↘ S) := smoothOfRelativeDimension_two hΨ d'
-    have hEp := (ih _ hlt hΨ hcΨ d' k' r' hr' C hE' hK' rfl).of_comap_iso
+    let : SmoothOfRelativeDimension 2 (X[Ψ] ↘ S) := smoothOfRelativeDimension_two hΨ b
+    have hEp := (ih _ hlt hΨ hcΨ b k' r' hr' C hE' hK' rfl).of_comap_iso
       (e := e.symm) (by rw [Iso.symm_hom, ← hover, Iso.inv_hom_id_assoc])
     exact hasToricPresentation_of_nodal_blowup_and_internal_contraction
       b hD hK hT hy u hg hOmit hEp
@@ -308,7 +254,6 @@ attribute [local instance] MvPolynomial.gradedAlgebra
 
 local notation "Π" => Proj (TauCeti.SymmetricAlgebra.homogeneousSubmodule ℂ (Fin 3 → ℂ))
 
-include hsplit hterminal in
 private theorem hasToricPresentation_of_plane (hi : IsIntegralLattice i)
     {X : Scheme} [X.Over S] [SmoothOfRelativeDimension 2 (X ↘ S)]
     {D : X.IdealSheafData} [PrestableFamily (D.subscheme ↘ S)]
@@ -326,7 +271,7 @@ private theorem hasToricPresentation_of_plane (hi : IsIntegralLattice i)
   · let E := (D.comap (e.hom ≫ J[A.ambientNode 0].blowupToBase)).radical
     let : PrestableFamily (E.subscheme ↘ S) := hpre
     let : SmoothOfRelativeDimension 2 (X[Φ] ↘ S) := smoothOfRelativeDimension_two hΦ d
-    have hEp := hasToricPresentation_of_hirzebruch hsplit hterminal hΦ hc d 1 r
+    have hEp := hasToricPresentation_of_hirzebruch (b := b) hΦ hc d 1 r
       (by simpa only [Int.natCast_one] using hr) B hE hcan
     have hT := isNodalBoundaryTower_numbered_node A (0 : ZMod n)
     have hb : e.inv ≫ X[Φ] ↘ S = T[A.ambientNode 0].toBase ≫ X ↘ S := by
@@ -337,13 +282,10 @@ private theorem hasToricPresentation_of_plane (hi : IsIntegralLattice i)
       ← Category.assoc, Iso.inv_hom_id, Category.id_comp,
       toBase_snoc, toBase_nil, Category.comp_id]
 
-include hsplit hterminal in
-/-- To construct a toric presentation of any numbered anticanonical cycle on a
-smooth projective rational complex surface, it suffices to identify the split
-projective bundles with Hirzebruch fan realizations and supply presentations
-of the complexity-zero cycles on Hirzebruch surfaces of positive index. The
-proof reduces each ruled case by boundary complexity and transports the result through the
-original point-blowup tower. -/
+/-- Every numbered anticanonical cycle on a smooth projective rational complex
+surface has a toric presentation in the prescribed lattice basis. The proof
+reduces the ruled cases by boundary complexity and transports the presentation
+through the original point-blowup tower. -/
 theorem hasToricPresentation_of_ruled_reduction (hi : IsIntegralLattice i)
     {X : Scheme} [X.Over S] [X.IsProjectiveOver ℂ] [SmoothOfRelativeDimension 2 (X ↘ S)]
     [Scheme.IsRationalOver (X ↘ S)]
@@ -372,26 +314,20 @@ theorem hasToricPresentation_of_ruled_reduction (hi : IsIntegralLattice i)
     rw [← D.over_eq_subschemeι_comp]
     exact PrestableFamily.atWorstNodalOfRelativeDimensionOne
   refine hT.hasToricPresentation_of_closedPointTower_of_iso e he hD hN hK ?_
-  rcases Y.exists_iso_projectivePlane_or_ruling ℂ hmin with
-    ⟨a, ha⟩ | ⟨g, hg, -, hflat, -, hfiber⟩
+  rcases Y.exists_iso_projectivePlane_or_hirzebruch b hi hmin with
+    ⟨a, ha⟩ | ⟨Φ, hΦ, hc, k, r, a, -, hr, ha⟩
   · let d := a ≪≫ ((Pi.basisFun ℂ (Fin 3)).reindex Equiv.ulift.symm).polynomialProjIso
     have hd : d.hom ≫ Π ↘ S = Y ↘ S := by
       rw [Iso.trans_hom, Category.assoc, SymmetricAlgebra.over_eq_projToSpec,
         Basis.polynomialProjIso_hom_over, ha]
     let : d.symm.hom.IsOver S := ⟨by rw [Iso.symm_hom, ← hd, Iso.inv_hom_id_assoc]⟩
-    exact hasToricPresentation_of_plane hsplit hterminal hi B hE hKE d.symm
-  · let : g.IsOver S := hg
-    let : Flat g := hflat
-    obtain ⟨Φ, hΦ, hc, d, k, r, a, hr, ha⟩ := exists_split_model_of_ruling hsplit g
-      (fun z hz ↦ by
-        obtain ⟨j, hj⟩ := hfiber z hz
-        exact ⟨j.symm, by rw [Iso.symm_hom, ← hj, Iso.inv_hom_id_assoc]⟩)
-    obtain ⟨hE', hPre', hK', l, hl, ⟨C⟩⟩ := exists_numbering_on_fan_model B hE hKE hΦ hc d a ha
+    exact hasToricPresentation_of_plane hi B hE hKE d.symm
+  · obtain ⟨hE', hPre', hK', l, hl, ⟨C⟩⟩ := exists_numbering_on_fan_model B hE hKE hΦ hc b a ha
     let : PrestableFamily ((E.comap a.hom).subscheme ↘ S) := hPre'
     let : NeZero l := hl
-    let : SmoothOfRelativeDimension 2 (X[Φ] ↘ S) := smoothOfRelativeDimension_two hΦ d
+    let : SmoothOfRelativeDimension 2 (X[Φ] ↘ S) := smoothOfRelativeDimension_two hΦ b
     have hpresentation :=
-      hasToricPresentation_of_hirzebruch hsplit hterminal hΦ hc d k r hr C hE' hK'
+      hasToricPresentation_of_hirzebruch (b := b) hΦ hc b k r hr C hE' hK'
     exact hpresentation.of_comap_iso (e := a.symm)
       (by rw [algebraicRealization_over, ← ha, Iso.symm_hom, Iso.inv_hom_id_assoc])
 
