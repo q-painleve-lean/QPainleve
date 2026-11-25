@@ -8,7 +8,7 @@ module
 public import QPainleve.SignedClusterModularGroup.Realization.Endpoint.SelfRealization
 public import QPainleve.SignedClusterModularGroup.Realization.PicardAction
 
-import QPainleve.Algebra.Cluster.Word.SignExtension
+import QPainleve.SignedClusterModularGroup.SignExtension
 
 /-!
 # The signed Picard action of a marked toric presentation
@@ -112,11 +112,7 @@ theorem existsUnique_signedPicardHom_of_presentation
         exact ⟨Cw[word,P], hdom, hover, R, hη, fun c ↦ (hmodels c).nonempty_contractedToricFiber⟩)
   refine ⟨ρ, ⟨hρ, ?_⟩, fun ρ' hρ' ↦ huniq ρ' hρ'.1⟩
   have hE := Q.exchangeMatrix_ne_zero_of_chargeIndex_ne_zero P hform hcharge hindex
-  rw [range_clusterModularGroupInclusion ℂ E hE]
-  ext g
-  obtain ⟨w, rfl⟩ := signedClusterModularGroupMap_surjective ℂ E g
-  simp only [Subgroup.mem_unop, MonoidHom.mem_ker, MonoidHom.comp_apply, (hρ w).1,
-    signedInversionSign_apply]
+  exact sign_ker_unop_eq_range_of_apply_word ρ (fun w ↦ (hρ (End.of w)).1) hE
 
 end GeometricRealization
 

@@ -251,13 +251,14 @@ theorem exists_exchangeKernelAction_reflection_of_presentation
             Disjoint unsigned (unsigned <• q) ∧
             ∀ x, (ℤ ∙ v).mkQ (q x) = (ℤ ∙ v).mkQ x := by
   have hE := P.matrix_eq.symm.trans (congrArg₂ chargeExchangeMatrix hform hcharge)
-  obtain ⟨F, hF, hmark, Θ, _, hM, hmodels, hΘ, hker, _⟩ :=
-    Q.exists_picardGroupEquivs_of_nodal_model href hE hprim hnef hsq
-  subst M
-  let M := F c
+  obtain ⟨G, hGc⟩ := Q.exists_picardGroupEquivs_of_nodal_model href hE hprim hnef hsq
+  let Θ := G.signedEquiv
+  have hker := G.sign_ker_unop
   obtain ⟨e, ⟨he, hact, hCasimirKer⟩, _⟩ := existsUnique_exchangeKernelEquiv_of_presentation
-    Q P hform hcharge F hF (hmodels c) (fun d _ ↦ hmodels d) hnef hsq hprim _ hmark
-    Θ.toMonoidHom (fun w {_} _ _ R hR ↦ (hΘ (End.asHom w)).2 R hR)
+    Q P hform hcharge G.family (fun z ↦ (G.family z).isEffectiveCartier_boundaryIdeal)
+    (G.hasNodalModel c) (fun z _ ↦ G.hasNodalModel z)
+    (hGc.symm ▸ hnef) (hGc.symm ▸ hsq) (hGc.symm ▸ hprim) _ G.boundaryClass_eq
+    Θ.toMonoidHom (fun w {_} _ _ R hR ↦ G.signedEquiv_apply_word (End.asHom w) R hR)
   have hCasimir : act[ℂ,E] =
       coords[B,M.boundaryClass hD,e].comp (restr[B,M.boundaryClass hD].comp Θ.toMonoidHom) := by
     simpa only [MonoidHom.comp_assoc] using hact
