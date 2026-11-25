@@ -129,14 +129,8 @@ theorem quadric_bisection_transverse_sections
     exists_hirzebruch_ruling_fiber_of_degree_zero b 0 hΦ hc r hr p[t] (hvertical t hst.symm)
   have ht : a[t] = 1 := by rw [hclass, Basis.repr_self, Finsupp.single_eq_same]
   obtain ⟨ha, hall⟩ := quadric_bisection_components b hΦ hc r hr hD hK hs hst ht hvertical
-  have hchar : ((b').coord 1).toAddMonoidHom = (b.coord 0).toAddMonoidHom := by
-    ext x
-    simp [Basis.coord_apply]
-  have hq : Φ.characterRuling ((b').coord 1).toAddMonoidHom
-      (nonneg_or_nonpos_hirzebruch_ruling_character b' 0 r' hr') = q' := by
-    congr
   have hsection (j : D.boundaryPrimes) (hj : a[j] = 1) : IsIso (I[p[j]].subschemeι ≫ q') := by
-    rw [← hq]
+    rw [← characterRuling_quadric_swap b r hr]
     apply isIso_hirzebruch_ruling_prime_of_degree_one b' 0 hΦ hc r' hr'
     rw [hirzebruchPicardBasis_quadric_swap b hΦ r hr, Basis.repr_reindex_apply]
     exact hj

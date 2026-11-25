@@ -234,7 +234,9 @@ local notation "I[" p "]" => vanishingIdeal (Closeds.mk (closure {(p : X)}) isCl
 local notation "g[" p "]" => Scheme.IdealSheafData.subschemeι (I[p]) ≫ q
 
 include hc in
-private theorem exists_ruling_fiber_pair_of_hirzebruch_boundary
+/-- If the two remaining components of a complexity-zero boundary have fiber class,
+their ideals are the pullbacks of two distinct rational point ideals on the ruling base. -/
+theorem exists_ruling_fiber_pair_of_hirzebruch_boundary
     {D : (X).IdealSheafData} [IsReduced D.subscheme] (hD : D.IsEffectiveCartier)
     (hzero : D.boundaryComplexity = 0) {s t : D.boundaryPrimes} (hst : s ≠ t)
     (hf : ∀ j : D.boundaryPrimes, j ≠ s → j ≠ t → P (D.boundaryPrimeEmbedding j) = C 0) :
