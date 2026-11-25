@@ -7,6 +7,7 @@ module
 
 public import QPainleve.Geometry.Toric.Fan.Logarithmic.StarFactorization
 public import QPainleve.SignedClusterModularGroup.SarkisovDegree.Plane.Step
+public import QPainleve.SignedClusterModularGroup.SarkisovDegree.SecondaryDegree
 
 import Mathlib.Analysis.Complex.Polynomial.Basic
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Factorization
@@ -21,7 +22,8 @@ comes with an isomorphism from the resolving surface. This lets the same
 induction use an initial plane marking and the plane or Hirzebruch markings
 returned by decreasing blocks.
 
-The bidegree is the lexicographic measure in [Lutz, Proposition 8.11][HKL].
+The bidegree uses the anticanonical intersection of the moving line class
+for its secondary coordinate, as in [Lutz, Proposition 8.11][HKL].
 
 [HKL]: https://arxiv.org/pdf/2005.05010v3#page=72
 -/
@@ -67,7 +69,7 @@ inductive HasPlaneTargetMarking (A B : LogarithmicProjection i D) : ℕ ×ₗ �
       HasPlaneTargetMarking A B (let : IsNoetherian P := isNoetherian_of_finiteType s
         let x := mark[T,hT,s,g]
         planeSarkisovBidegree ((Basis.picardTwistEquiv coords) x.1).toNat
-          (∑ j, (-x.2 j).toNat))
+          (sarkisovSecondaryDegree ℂ x.1.toMul).toNat)
   /-- A resolution whose source carries a Hirzebruch marking. The second
   Picard coordinate gives the degree on the chosen ruling fiber. -/
   | hirzebruch (b b' : Basis (Fin 2) ℤ N) (e : ℕ) (hi : IsIntegralLattice i)
@@ -88,7 +90,7 @@ inductive HasPlaneTargetMarking (A B : LogarithmicProjection i D) : ℕ ×ₗ �
         let x := mark[T,hT,f,g]
         hirzebruchSarkisovBidegree
           ((A.fan.hirzebruchPicardBasis b e A.isRegular r hr).repr x.1 1).toNat
-          (∑ j, -x.2 j).toNat)
+          (sarkisovSecondaryDegree ℂ x.1.toMul).toNat)
 
 /-- Two specified logarithmic plane projections which are modifications admit
 a plane-target marking. The marked source tower factors the given projection

@@ -11,7 +11,6 @@ public import QPainleve.SignedClusterModularGroup.SarkisovDegree.PositiveSection
 public import QPainleve.SignedClusterModularGroup.SarkisovDegree.PositiveSection.Selection
 
 import QPainleve.Geometry.Toric.Fan.Hirzebruch.CoordinateBoundary
-import QPainleve.Geometry.Toric.Fan.Subdivision.Projective
 
 /-!
 # Initial marks for positive-section preparation
@@ -48,26 +47,6 @@ local notation "coordPoint[" t "]" =>
 local notation "center[" b "," ρ "," c "]" =>
   Fan.Ray.binomialCenter ρ rankTwo[b] (Basis.detDualEquiv_self b (Fan.Ray.primitiveGenerator ρ))
     (Fan.Ray.surjective_detCharacter ρ b) c (IsLocalRing.closedPoint ℂ)
-
-private theorem prepared_order_bound_of_bidegree_lt {a β marks : ℤ} (hβ : 0 ≤ β)
-    {r m : ℕ} (hr : r = 1 ∨ r = 2)
-    (h : if r = 1 then planeSarkisovBidegree (a + β - marks).toNat m <
-        hirzebruchSarkisovBidegree β.toNat m
-      else hirzebruchSarkisovBidegree (a + β - marks).toNat m <
-        hirzebruchSarkisovBidegree β.toNat m) :
-    2 * (a - marks) < (2 - (r : ℤ)) * β := by
-  rcases hr with rfl | rfl
-  · simp only [ite_true, Prod.Lex.lt_iff, ofLex_planeSarkisovBidegree,
-      ofLex_hirzebruchSarkisovBidegree, lt_irrefl, and_false, or_false] at h
-    have hcast : (2 : ℤ) * ((a + β - marks).toNat : ℤ) < 3 * (β.toNat : ℤ) := by
-      exact_mod_cast h
-    omega
-  · simp only [ite_eq_right (by decide : (2 : ℕ) ≠ 1), Prod.Lex.lt_iff,
-      ofLex_hirzebruchSarkisovBidegree, lt_irrefl, and_false, or_false] at h
-    have hcast : (3 : ℤ) * ((a + β - marks).toNat : ℤ) < 3 * (β.toNat : ℤ) := by
-      exact_mod_cast h
-    simp only [Nat.cast_ofNat, sub_self, zero_mul]
-    omega
 
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {X Y : Scheme} [X.Over S] [SmoothOfRelativeDimension 2 (X ↘ S)]
@@ -140,7 +119,7 @@ theorem exists_positiveSection_selection_of_marked_high_fibers
   rw [ramificationIdealSheaf_comp ℂ g (planeIso[b',hi]).inv 2,
     ramificationIdealSheaf_eq_top_of_isOpenImmersion ℂ (planeIso[b',hi]).inv,
     comap_top, mul_top] at htarget
-  obtain ⟨hsize, -, ⟨fiber, hmarks⟩, selected, hsub, hcard, hpriority, hlargest, -, hdrop⟩ :=
+  obtain ⟨hsize, -, ⟨fiber, hmarks⟩, selected, hsub, hcard, hpriority, hlargest, -, hbound⟩ :=
     hT.exists_positiveSection_preparation_of_high_fiber_centers b e A.isRegular A.isComplete r hr
       b' hi g hg hbir (D.comap k.inv) hsource htarget hhigh hcenters
   have hdisj :=
@@ -159,11 +138,6 @@ theorem exists_positiveSection_selection_of_marked_high_fibers
     exact ((fiberRay[r,fiber j]).binomialCenter_mem_support_rayBoundaryIdeal_iff A.isRegular
       rankTwo[b] (b.detDualEquiv_self _) ((fiberRay[r,fiber j]).surjective_detCharacter b)
       c (fiberRay[r,fiber j])).mpr rfl
-  · let : A.fan.algebraicRealization.IsProjectiveOver ℂ :=
-      A.fan.isProjectiveOver_algebraicRealization_of_isComplete A.isRegular A.isComplete b
-    have hβ : 0 < β := (hT.hirzebruch_resolution_degree_bounds b e A.isRegular A.isComplete r hr
-      g hg hbir).1
-    simpa only [Finset.sum_coe_sort, Fintype.card_coe] using
-      prepared_order_bound_of_bidegree_lt hβ.le hsize (hdrop order (fun _ _ ↦ le_rfl) _)
+  · simpa only [Finset.sum_coe_sort, Fintype.card_coe] using (hbound order (fun _ _ ↦ le_rfl)).1
 
 end TauCeti.Toric.Fan.LogarithmicProjection

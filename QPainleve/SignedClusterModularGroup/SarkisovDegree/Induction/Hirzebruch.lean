@@ -7,6 +7,7 @@ module
 
 public import QPainleve.SignedClusterModularGroup.SarkisovDegree.Induction.Step
 
+import Mathlib.Analysis.Complex.Polynomial.Basic
 import QPainleve.Geometry.Toric.Fan.Subdivision.Projective
 import QPainleve.SignedClusterModularGroup.SarkisovDegree.Path.SectionOrCorner
 
@@ -77,7 +78,7 @@ theorem exists_sarkisov_step_of_hirzebruch_corner_or_section_marking
     let β := (A.fan.hirzebruchPicardBasis b a A.isRegular r hr).repr x.1 1
     β < 2 * (-x.2 j) →
       HasPlaneTargetDecrease A B rankTwo hD hNode
-        (hirzebruchSarkisovBidegree β.toNat (∑ l, -x.2 l).toNat) := by
+        (hirzebruchSarkisovBidegree β.toNat (sarkisovSecondaryDegree ℂ x.1.toMul).toNat) := by
   intro hSmoothA x β hhigh
   let := hSmoothA
   let : Y.Over S := ⟨T.toBase ≫ fA⟩
@@ -96,15 +97,24 @@ theorem exists_sarkisov_step_of_hirzebruch_corner_or_section_marking
     precomposeSarkisovOfIso_obj_hom_of_comp rankTwo k.symm rfl A rfl (heq_of_eq hAh)
   have hR : (obj[F,B]).hom ≍ g ≫ (planeIso[b',hi]).inv :=
     precomposeSarkisovOfIso_obj_hom_of_comp rankTwo k.symm rfl B hB hBh
-  obtain ⟨_, C, p, a', d, t, ht, Z, U, hU, e, -, -, -, hCh, -, -, hg', hbir', -, -, -, hlt⟩ :=
+  obtain ⟨_, C, p, a', d, t, ht, Z, U, hU, e, -, -, -, hCh, hproj, -, hg', hbir', -, -, -, hlt⟩ :=
     hT.exists_sarkisov_path_decrease_of_hirzebruch_corner_or_section b a A.isRegular A.isComplete
       r hr g hg hbir j hp (D := E) (obj[F,A]) (precomposeSarkisovOfIso_obj_fan ..) hL hhigh
   have hRh : (obj[F,B]).hom ≍ e.hom ≫ (e.inv ≫ g) ≫ (planeIso[b',hi]).inv := by
     simpa only [Category.assoc, Iso.hom_inv_id_assoc] using hR
   have hm := HasPlaneTargetMarking.hirzebruch (A := C) (B := obj[F,B]) d b' a' hi t ht
     ((precomposeSarkisovOfIso_obj_fan ..).trans hB) U hU e (e.inv ≫ g) hCh hRh hg' hbir'
-  exact HasPlaneTargetDecrease.of_path_on_iso rankTwo hD hNode k hlt p
+  let := hproj
+  let : Nonempty C.fan.cones := C.isComplete.nonempty_cones
+  let : SmoothOfRelativeDimension 2 (C.fan.algebraicRealization ↘ S) := by
+    simpa only [← Fan.algebraicRealization_over, rankTwo] using
+      C.fan.smoothOfRelativeDimension_algebraicRealizationStructureMap C.isRegular
+  refine HasPlaneTargetDecrease.of_path_on_iso rankTwo hD hNode k ?_ p
     (precomposeSarkisovOfIso_obj_fan ..) (precomposeSarkisovOfIso_obj_hom ..)
     (precomposeSarkisovOfIso_obj_fan ..) (precomposeSarkisovOfIso_obj_hom ..) hm
+  dsimp only
+  rw [hT.sarkisovSecondaryDegree_eq_sum g hg hbir,
+    hU.sarkisovSecondaryDegree_eq_sum (e.inv ≫ g) hg' hbir']
+  exact hlt
 
 end TauCeti.Toric.Fan.LogarithmicProjection
