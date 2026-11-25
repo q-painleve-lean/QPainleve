@@ -10,6 +10,7 @@ public import QPainleve.SignedClusterModularGroup.Examples.FourVertex.Basic
 public import QPainleve.SignedClusterModularGroup.Examples.FourVertex.InternalBlowup
 
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Intersection
+import QPainleve.SignedClusterModularGroup.Examples.FourVertex.AffineA1
 
 /-!
 # The Picard marking of the four-vertex octagon
@@ -216,18 +217,6 @@ theorem picardCoordinateIsometry_single_natAdd (j : Fin 4) :
       (0, Pi.single j 1) :=
   auxiliaryPicardMap_single_natAdd hΦ v j
 
-private theorem neg_snd_picardCoordinateIsometry_boundaryOrthogonalBasis (j : Fin 2) :
-    -(picardCoordinateIsometry hΦ v hv hc hnext (boundaryOrthogonalBasis j)).2 =
-      ![![1, 0, 1, 0], ![0, 1, 0, 1]] j := by
-  have h (x : L) : (picardCoordinateIsometry hΦ v hv hc hnext x).2 =
-      fun k ↦ x (k.natAdd 6) := congrArg Prod.snd (auxiliaryPicardMap_apply hΦ v x)
-  have hcases : ∀ j : Fin 2, j = 0 ∨ j = 1 := by decide
-  rcases hcases j with rfl | rfl
-  · rw [h, coe_boundaryOrthogonalBasis_zero]
-    decide
-  · rw [h, coe_boundaryOrthogonalBasis_one]
-    decide
-
 local notation "K" => intersectionForm.orthogonal (Submodule.span ℤ (Set.range boundaryClass))
 
 /-- In the geometric marking, the negative exceptional coefficients of every
@@ -236,23 +225,13 @@ the lattice and Casimir actions in the same ordered basis. -/
 theorem neg_snd_picardCoordinateIsometry (x : K) :
     -(picardCoordinateIsometry hΦ v hv hc hnext x).2 =
       (exchangeKernelEquiv (boundaryOrthogonalBasis.equivFun x) : Fin 4 → ℤ) := by
-  let A := picardCoordinateIsometry hΦ v hv hc hnext
-  let f : K →ₗ[ℤ] E :=
-    -((LinearMap.snd ℤ Pic E).comp (A.toLinearEquiv.toLinearMap.comp (K).subtype))
-  let g : K →ₗ[ℤ] E := exchangeMatrix.matrix.mulVecLin.ker.subtype.comp
-    (exchangeKernelEquiv.toLinearMap.comp boundaryOrthogonalBasis.equivFun.toLinearMap)
-  have he : f = g := by
-    apply boundaryOrthogonalBasis.ext
-    intro j
-    have h := neg_snd_picardCoordinateIsometry_boundaryOrthogonalBasis hΦ v hv hc hnext j
-    have hvec : ∀ j : Fin 2, (exchangeKernelEquiv (Pi.single j 1) : Fin 4 → ℤ) =
-        ![![1, 0, 1, 0], ![0, 1, 0, 1]] j := by
-      simp_rw [coe_exchangeKernelEquiv_apply]
-      decide
-    simpa only [f, g, A, LinearMap.neg_apply, LinearMap.comp_apply, LinearMap.snd_apply,
-      LinearEquiv.coe_coe, BilinForm.IsometryEquiv.coe_toLinearEquiv, Submodule.subtype_apply,
-      Basis.equivFun_apply, Basis.repr_self, Finsupp.single_eq_pi_single, hvec] using h
-  exact LinearMap.congr_fun he x
+  rw [← boundaryOrthogonalEquivExchangeKernel_apply,
+    coe_boundaryOrthogonalEquivExchangeKernel_apply]
+  funext j
+  simpa only [picardCoordinateIsometry_single_natAdd, BilinForm.prod_apply, Prod.fst,
+    Prod.snd, map_zero, zero_add, LinearMap.neg_apply, dotProductBilin_apply_apply,
+    dotProduct_single_one, Pi.neg_apply] using
+    (picardCoordinateIsometry hΦ v hv hc hnext).map_app (Pi.single (j.natAdd 6) 1) x.val
 
 section InternalBlowup
 
