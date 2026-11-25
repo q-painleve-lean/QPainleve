@@ -13,6 +13,7 @@ public import TauCeti.AlgebraicGeometry.RelativeProj.TwistingSheaf.Pullback
 public import TauCeti.AlgebraicGeometry.RelativeProj.TwistingSheaf.Pushforward
 
 import Mathlib.AlgebraicGeometry.Morphisms.IsIso
+import QPainleve.AlgebraicGeometry.Modules.Pullback.DirectImage
 import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.TwistingSheaf.Sections
 import TauCeti.AlgebraicGeometry.Modules.Pullback.Basic
 import TauCeti.AlgebraicGeometry.Modules.Pushforward.Basic
@@ -176,8 +177,10 @@ def relativeProjTwistingSheafOneIso :
     (Scheme.Modules.pullback (inv 𝒜[ℒ[E]].relativeProjToBase)).obj
       (𝒜[ℒ[E]].relativeProjTwistingSheaf 1) ≅ E.obj.obj := by
   let p := 𝒜[ℒ[E]].relativeProjToBase
-  exact (Scheme.Hom.pullbackIsoPushforwardInv (inv p)).app _ ≪≫
-    (Scheme.Modules.pushforwardCongr (IsIso.inv_inv (f := p))).app _ ≪≫
+  let h := IsIso.inv_hom_id p
+  let T := 𝒜[ℒ[E]].relativeProjTwistingSheaf 1
+  let := Scheme.Modules.isIso_pushforwardToPullback_app_of_isIso h T
+  exact (asIso ((Scheme.Modules.pushforwardToPullback h).app T)).symm ≪≫
     (asIso (𝒜[ℒ[E]].relativeProjToTwistingSheaf (rfl : ((1 : ℕ) : ℤ) = 1))).symm ≪≫
     degreeOneIso E
 
@@ -195,7 +198,9 @@ private theorem epi_symmetricQuotient_one (q : F ⟶ ℒ[E]) [Epi q.hom] :
   exact epi_hom_hom_of_epi_degree_map ((gradedSymmetricAlgebra X).map q) 1
     (@epi_of_epi_fac _ _ _ _ _ _ _ _ hq h.symm)
 
-private theorem irrelevant_le_map_symmetricQuotient (q : F ⟶ ℒ[E]) [Epi q.hom]
+/-- A line quotient induces a graded symmetric-algebra map defined on all of the
+projectivization of the quotient line bundle. -/
+theorem irrelevant_le_map_symmetricQuotient (q : F ⟶ ℒ[E]) [Epi q.hom]
     (U : X.Opens) (hU : IsAffineOpen U) :
     HomogeneousIdeal.irrelevant (𝒜[ℒ[E]].gradedSectionsGrading U) ≤
       (HomogeneousIdeal.irrelevant (𝒜[F].gradedSectionsGrading U)).map
@@ -231,13 +236,59 @@ def relativeProjSectionOfQuotientPullbackTwistingSheafOneIso
     (q : F ⟶ ℒ[E]) [Epi q.hom] :
     (Scheme.Modules.pullback (E.relativeProjSectionOfQuotient q)).obj
       (𝒜[F].relativeProjTwistingSheaf 1) ≅ E.obj.obj := by
-  rw [relativeProjSectionOfQuotient]
   let i := inv 𝒜[ℒ[E]].relativeProjToBase
   let g := relativeProjMap φ[q] (irrelevant_le_map_symmetricQuotient E q)
+  -- Read the section as the composite used by the pullback comparison.
+  change (Scheme.Modules.pullback (i ≫ g)).obj (𝒜[F].relativeProjTwistingSheaf 1) ≅ E.obj.obj
   exact (Scheme.Modules.pullbackComp i g).symm.app _ ≪≫
     (Scheme.Modules.pullback i).mapIso
       (asIso (relativeProjTwistingSheafMap φ[q] (irrelevant_le_map_symmetricQuotient E q) 1)) ≪≫
     E.relativeProjTwistingSheafOneIso
+
+/-- Restricting the direct image of the first twist to the section of a line quotient
+amounts to pushing forward the twisting-sheaf comparison along the projective map
+of the quotient. The twist of the quotient projectivization is then identified with
+the quotient line bundle. -/
+theorem pushforwardToPullback_app_relativeProjSectionOfQuotient
+    (q : F ⟶ ℒ[E]) [Epi q.hom] :
+    let A := 𝒜[ℒ[E]]
+    let B := 𝒜[F]
+    let f := B.relativeProjToBase
+    let hq := E.irrelevant_le_map_symmetricQuotient q
+    let g := relativeProjMap φ[q] hq
+    let τ := (Scheme.Modules.pullbackPushforwardAdjunction g).homEquiv _ _
+      (relativeProjTwistingSheafMap φ[q] hq 1)
+    (Scheme.Modules.pushforwardToPullback (E.relativeProjSectionOfQuotient_toBase q)).app
+        (B.relativeProjTwistingSheaf 1) ≫
+      (E.relativeProjSectionOfQuotientPullbackTwistingSheafOneIso q).hom =
+    (Scheme.Modules.pushforward f).map τ ≫
+      (Scheme.Modules.pushforwardComp g f).hom.app (A.relativeProjTwistingSheaf 1) ≫
+      (Scheme.Modules.pushforwardCongr (relativeProjMap_relativeProjToBase φ[q] hq)).hom.app
+        (A.relativeProjTwistingSheaf 1) ≫
+      (asIso (A.relativeProjToTwistingSheaf (rfl : ((1 : ℕ) : ℤ) = 1))).inv ≫
+      (eqToIso (degree_obj_obj ((gradedSymmetricAlgebra X).obj ℒ[E]) 1).symm ≪≫
+        (ObjectProperty.ι _).mapIso ((gradedSymmetricAlgebraDegreeOneIso X).app ℒ[E])).hom := by
+  intro A B f hq g τ
+  let p := A.relativeProjToBase
+  let T := A.relativeProjTwistingSheaf 1
+  let hi := IsIso.inv_hom_id p
+  let := Scheme.Modules.isIso_pushforwardToPullback_app_of_isIso hi T
+  let P := Scheme.Modules.pushforwardToPullback hi
+  let σ := A.relativeProjToTwistingSheaf (rfl : ((1 : ℕ) : ℤ) = 1)
+  have hcancel : P.app T ≫ E.relativeProjTwistingSheafOneIso.hom =
+      (asIso σ).inv ≫ (degreeOneIso E).hom := by
+    simp only [relativeProjTwistingSheafOneIso, Iso.trans_hom, Iso.symm_hom, asIso_inv]
+    exact IsIso.hom_inv_id_assoc _ _
+  have hs : (inv p ≫ g) ≫ f = 𝟙 X := E.relativeProjSectionOfQuotient_toBase q
+  -- Expanding the section and the isomorphism together keeps the pullback types aligned.
+  change (Scheme.Modules.pushforwardToPullback hs).app (B.relativeProjTwistingSheaf 1) ≫
+    (Scheme.Modules.pullbackComp (inv p) g).inv.app (B.relativeProjTwistingSheaf 1) ≫
+    (Scheme.Modules.pullback (inv p)).map (relativeProjTwistingSheafMap φ[q] hq 1) ≫
+    E.relativeProjTwistingSheafOneIso.hom = _
+  rw [Scheme.Modules.pushforwardToPullback_app_comp_pullbackComp_inv_app_assoc
+      (inv p) g (relativeProjMap_relativeProjToBase φ[q] hq) hi _,
+    hcancel]
+  rfl
 
 /-- The affine projective morphism of the quotient on sections, followed by
 the source chart, factors through the relative section of the line quotient. -/
