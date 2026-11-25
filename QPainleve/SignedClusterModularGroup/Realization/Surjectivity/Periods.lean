@@ -70,7 +70,6 @@ local instance periodFiberProjective (M : MarkedSurface ℂ n B Xtor[r]) :
 namespace CompleteToricPresentation
 
 open Fan
-open Fan.LogarithmicProjection (centerPoint centerPoint_parameters)
 
 variable (Q : CompleteToricPresentation i b r L γ)
   {M : GeometricRealization.Point Centers[r] → MarkedSurface ℂ n B Xtor[r]}

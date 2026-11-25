@@ -9,11 +9,11 @@ public import QPainleve.Geometry.Toric.Fan.Presentation.Basic
 public import QPainleve.SignedClusterModularGroup.Realization.Presentation
 public import QPainleve.SignedClusterModularGroup.Realization.Surface.Boundary
 
+import QPainleve.AlgebraicGeometry.Blowup.Tower.Modification
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Nodal.Subdivision
 import QPainleve.AlgebraicGeometry.IdealSheaf.BaseChange
 import QPainleve.Geometry.Toric.Fan.Boundary.Numbering
 import QPainleve.Geometry.Toric.Fan.Boundary.Prestable
-import QPainleve.Geometry.Toric.Fan.Logarithmic.Word.Basic
 import QPainleve.Geometry.Toric.Fan.Subdivision.Projective
 
 /-!
@@ -210,8 +210,6 @@ variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V] {i : N �
   {L : Type} [AddCommGroup L] {B : LinearMap.BilinForm ℤ L}
   {b : Module.Basis (Fin 2) ℤ N}
 
-open Fan.LogarithmicProjection (centerPoint centerPoint_parameters)
-
 /-- Equip specified ordered toric and nodal blowup towers with a complete marking
 and use their common surface to obtain the reference fiber. The fan and the ray of
 each label are retained. If the boundary orientation calls for the transposed
@@ -271,7 +269,11 @@ theorem exists_marked_reference_fiber_of_ordered_towers
         U'.2.boundaryι ≫ v.hom = U.2.boundaryι := by
       dsimp only [U']
       rw [hc']
-      exact Fan.exists_iso_internalBlowupTower_reindex_swap b s param[c] hΦ
+      let w := eqToIso (congrArg Sigma.fst (Fan.internalBlowupTower_reindex_swap b s param[c]).symm)
+      obtain ⟨hproj, hboundary, _⟩ := Fan.internalBlowupTower_reindex_swap_iso b s param[c] hΦ
+      refine ⟨w.symm, ?_, ?_⟩
+      · rw [Iso.symm_hom, ← hproj, Iso.inv_hom_id_assoc]
+      · rw [Iso.symm_hom, ← hboundary, Category.assoc, Iso.hom_inv_id, Category.comp_id]
     obtain ⟨v, hproj, hboundary⟩ := hcompare
     have hb' : (v ≪≫ e).hom ≫ T.toBase ≫ (X ↘ S) =
         U'.2.toTower.toBase ≫ Φ.algebraicRealizationStructureMap := by

@@ -9,7 +9,6 @@ public import QPainleve.Algebra.Cluster.Word.RationalMap
 public import QPainleve.AlgebraicGeometry.RationalMap.Composition.Defined
 public import QPainleve.Geometry.Toric.Fan.Evaluation
 public import QPainleve.Geometry.Toric.Fan.Logarithmic.Presentation
-public import TauCeti.Algebra.Group.FreeAbelianCharacter
 
 /-!
 # X evaluations of ordered toric models
@@ -20,8 +19,9 @@ parameters scale the torus characters before pullback to the resolving surface.
 
 public noncomputable section
 
-open AlgebraicGeometry CategoryTheory Module Multiplicative
-open QPainleve.CharacterTorus QPainleve.Cluster TauCeti TauCeti.AlgebraicGeometry
+open AlgebraicGeometry Module
+open QPainleve.Cluster TauCeti TauCeti.AlgebraicGeometry
+open QPainleve.CharacterTorus (centerCharacter)
 
 namespace TauCeti.Toric.Fan.LogarithmicProjection
 
@@ -31,33 +31,6 @@ local notation "S" => Spec (CommRingCat.of ℂ)
 
 variable {Z : Scheme} [Z.Over S] [SmoothOfRelativeDimension 2 (Z ↘ S)] [IsIntegral Z]
   {D : Z.IdealSheafData} {A B : LogarithmicProjection i D} {m : ℕ}
-
-/-- Evaluate an exponent vector at the ordered tuple of nonzero center parameters. -/
-abbrev centerCharacter (c : Fin m → ℂˣ) : Multiplicative (Fin m → ℤ) →* ℂˣ :=
-  freeAbelianCharEquiv.symm c |>.comp
-    ((Finsupp.linearEquivFunOnFinite ℤ ℤ (Fin m)).symm.toAddEquiv.toMultiplicative.toMonoidHom)
-
-/-- The basis values of a center character recover it on the full exponent lattice. -/
-@[simp]
-theorem centerCharacter_of_pi_single (c : Multiplicative (Fin m → ℤ) →* ℂˣ) :
-    centerCharacter (fun j ↦ c (ofAdd (Pi.single j 1))) = c := by
-  let e := (Finsupp.linearEquivFunOnFinite ℤ ℤ (Fin m)).toAddEquiv.toMultiplicative
-  apply (MonoidHom.cancel_right (f := e.toMonoidHom) e.surjective).mp
-  apply freeAbelianCharEquiv.injective
-  funext j
-  simp [e, centerCharacter, freeAbelianCharEquiv_apply, Finsupp.linearEquivFunOnFinite_single]
-
-/-- The point of the center torus over `Spec ℂ` with the given ordered parameters. -/
-abbrev centerPoint (c : Fin m → ℂˣ) : Over.mk (𝟙 S) ⟶ Over.mk (structureMap ℂ (Fin m → ℤ)) :=
-  let z := (pointsEquiv ℂ (Fin m → ℤ)).symm (centerCharacter c)
-  Over.homMk z.val z.property
-
-/-- Evaluating the character of `centerPoint` on the coordinate basis recovers its parameters. -/
-theorem centerPoint_parameters (c : Fin m → ℂˣ) :
-    (fun j ↦ pointsEquiv ℂ (Fin m → ℤ) ⟨(centerPoint c).left, Over.w (centerPoint c)⟩
-      (ofAdd (Pi.single j 1))) = c := by
-  funext j
-  simp [centerCharacter, Finsupp.linearEquivFunOnFinite_symm_single]
 
 namespace OrderedToricModel
 
