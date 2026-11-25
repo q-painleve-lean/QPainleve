@@ -7,6 +7,7 @@ module
 
 public import QPainleve.Geometry.Toric.Fan.Logarithmic.Word.Endpoint
 public import QPainleve.SignedClusterModularGroup.Realization.Endpoint.PicardAction
+public import QPainleve.SignedClusterModularGroup.Realization.Surjectivity.LoopRealization
 
 import QPainleve.SignedClusterModularGroup.Realization.Anticanonical
 import QPainleve.SignedClusterModularGroup.Realization.NodalFiber
@@ -56,26 +57,6 @@ local notation "Cw[" w "," P "]" => Quiver.Path.centerPartialMap ℂ w P
 
 open MarkedSurface (surfaceIso boundaryIso)
 open SignedBoundaryIsometryGroup (sign toIsometry)
-
-/-- A loop realizing a prescribed signed Picard action and intertwining two
-X evaluations at the generic point. For a positive action the loop has no inversions. -/
-@[ext]
-structure PicardLoopRealization {r n : ℕ} [NeZero n] {L : Type} [AddCommGroup L]
-    {B : LinearMap.BilinForm ℤ L} {d : ZMod n → L} {E : SkewExchangeMatrix (Fin r)}
-    {Z : Scheme} [IsIntegral Z]
-    (ρ : (SignedClusterModularGroup ℂ E)ᵐᵒᵖ →* signedBoundaryIsometryGroup B d)
-    (g : signedBoundaryIsometryGroup B d) (source target : Z ⤏ XTor[r]) where
-  /-- The chosen loop, in execution order. -/
-  word : Word E E
-  /-- The loop induces the prescribed signed Picard action. -/
-  picard_eq : ρ eval[E,word] = g
-  /-- For positive orientation the chosen loop uses no inversions. -/
-  inversionCount_eq_zero : sign B d g = 1 → word.inversionCount = 0
-  /-- Composing the source evaluation with the loop is defined at the generic
-  point and gives the target evaluation. -/
-  evaluation_eq : ∃ h, source.compOfDefined (word.xRationalMap ℂ) h = target
-
-attribute [simp] PicardLoopRealization.picard_eq
 
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {b : Module.Basis (Fin 2) ℤ N} {r n : ℕ} [NeZero n]
@@ -292,11 +273,10 @@ theorem nonempty_picardLoopRealization_of_comp_evaluation_eq
   let π := RationalMap.id (M c₀).surface
   have hw : ∃ h, (π.comp (M c₀).evaluation).compOfDefined (w.xRationalMap ℂ) h =
       π.comp ((surfaceIso e).hom.toRationalMap.comp (M c₁).evaluation) :=
-    (π.compOfDefined_eq_iff_of_dominant _ _ _).mpr heval
+    by simpa only [π, RationalMap.id_comp] using heval
   obtain ⟨v, -⟩ := exists_picardLoopRealization_of_pair_iso_on_resolution
     P R hvalue hparity hc₀ htargets q (Q.inclusion_injective hM)
     hindex e π hw hpic hsgn
-  exact ⟨⟨v.word, v.picard_eq, v.inversionCount_eq_zero,
-    (π.compOfDefined_eq_iff_of_dominant _ _ _).mp v.evaluation_eq⟩⟩
+  exact ⟨by simpa only [π, RationalMap.id_comp] using v⟩
 
 end QPainleve.SignedClusterModularGroup.GeometricRealization

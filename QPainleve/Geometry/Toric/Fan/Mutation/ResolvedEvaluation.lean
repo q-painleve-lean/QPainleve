@@ -5,8 +5,8 @@ Authors: The QPainleve contributors
 -/
 module
 
-public import QPainleve.Algebra.Cluster.Word.Exponent
 public import QPainleve.AlgebraicGeometry.RationalMap.Composition.Defined
+public import QPainleve.Geometry.Toric.Fan.ExchangeMatrix
 public import QPainleve.Geometry.Toric.Fan.Mutation.Evaluation
 public import TauCeti.Algebra.Group.FreeAbelianCharacter
 
@@ -254,8 +254,7 @@ local notation "χ[" u "]" => MonoidHom.comp (freeAbelianCharEquiv.symm u)
     (LinearEquiv.symm (Finsupp.linearEquivFunOnFinite ℤ ℤ _)))))
 local notation "E[" b "," a "]" => chargeExchangeMatrix
   (LinearEquiv.toLinearMap (Module.Basis.detDualEquiv b)) (rayChargeMap a)
-local notation "B[" b "," a "]" => SkewExchangeMatrix.ofMatrix E[b,a]
-  (isSkewSymmetrizer_chargeExchangeMatrix _ (Module.Basis.detDualEquiv_self b) _)
+local notation "B[" b "," a "]" => rayExchangeMatrix b a
 local notation "σ[" k "]" => Equiv.trans (finSuccEquiv _) (Equiv.symm (finSuccEquiv' k))
 local notation "w[" B "," k "]" => Quiver.Path.comp
   (Quiver.Hom.toPath (Generator.toStep (Generator.mutate k) B))
@@ -315,7 +314,7 @@ theorem compare_ordered_mutation (Ω : Fan i) [Nonempty Ω.cones]
     simpa only [hparam] using hr
   obtain ⟨hmat, hcenters, hdom, hEval⟩ :=
     Ω.comp_xEvaluation_of_resolved_mutation_pivot_first b a k (χ[u])
-      opp f g hr' B[b,a] (SkewExchangeMatrix.matrix_ofMatrix _ _).symm
+      opp f g hr' B[b,a] (rayExchangeMatrix_matrix _ _).symm
   intro B w c₀ c₁ a₁ u₁
   have hc₁ : c₁ = χ[u₁] := by
     let e := (Finsupp.linearEquivFunOnFinite ℤ ℤ (Fin (n + 1))).toAddEquiv.toMultiplicative
@@ -326,7 +325,7 @@ theorem compare_ordered_mutation (Ω : Fan i) [Nonempty Ω.cones]
       simp [e, Finsupp.linearEquivFunOnFinite_single]
     simp only [MonoidHom.comp_apply, MulEquiv.coe_toMonoidHom, he, hparam]
     simpa only [hparam] using hcenters j
-  refine ⟨SkewExchangeMatrix.ext ((SkewExchangeMatrix.matrix_ofMatrix _ _).trans hmat), hc₁,
+  refine ⟨SkewExchangeMatrix.ext ((rayExchangeMatrix_matrix _ _).trans hmat), hc₁,
     hdom, ?_⟩
   simpa only [← hc₁] using hEval
 

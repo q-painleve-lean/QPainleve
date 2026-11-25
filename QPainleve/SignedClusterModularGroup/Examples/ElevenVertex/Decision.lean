@@ -7,8 +7,6 @@ module
 
 public import QPainleve.SignedClusterModularGroup.Examples.ElevenVertex.Relations
 
-import QPainleve.Algebra.Cluster.Tropical.Pullback
-import QPainleve.Algebra.Cluster.Word.Parity
 import QPainleve.AlgebraicGeometry.Chow.RationalSurface.Basic
 import QPainleve.SignedClusterModularGroup.Examples.ElevenVertex.Presentation
 import QPainleve.SignedClusterModularGroup.Realization.Presentation.Reference
@@ -154,20 +152,15 @@ theorem xPullback_eq_iff_signedLoopInvariants_eq (w v : Word B B) :
         rw [h₀, h₂, LinearEquiv.coe_coe, Module.Basis.detDualEquiv_apply_basis_zero_one]
         exact one_ne_zero
       exact hentry hm
-    have hsign := neg_one_pow_congr (R := ℤˣ)
-      (Path.even_inversionCount_iff_of_xPullback_eq hB h)
-    have ht := congrFun (Path.tropical_eq_of_xPullback_eq (A := ℤ) h) (boundaryOrders 0)
-    have hcols := (xPullback_eq_iff_columns k w v).mp h
-    simp only [Path.signedLoopInvariants_def, Prod.mk.injEq]
-    exact ⟨hsign, congrArg (fun f : Fin 9 → Fin 11 → ℤ ↦ Matrix.of fun i j ↦ f j i) hcols,
-      congrArg (fun z : Fin 11 → ℤ ↦ Fin.find? fun j ↦ decide (boundaryOrders j = z)) ht⟩
+    simpa only [coe_exchangeKernelBasis_apply] using
+      Path.signedLoopInvariants_eq_of_xPullback_eq hB h exchangeKernelBasis
+        boundaryOrders (boundaryOrders 0)
   · intro h
     apply (xPullback_eq_iff_columns k w v).mpr
-    simp only [Path.signedLoopInvariants_def] at h
     unfold transportedColumns
-    simpa only [Matrix.of_apply] using
-      congrArg (fun t : ℤˣ × Matrix (Fin 11) (Fin 9) ℤ × Option (Fin 1) ↦
-        fun j i ↦ t.2.1 i j) h
+    simpa only [Path.signedLoopInvariants_kernelColumns, Matrix.of_apply] using
+      congrArg (fun t : SignedLoopInvariants (Fin 11) (Fin 9) 1 ↦
+        fun j i ↦ t.kernelColumns i j) h
 
 /-- Decide equality of independent X pullbacks by comparing the nine transported
 integral Casimir basis vectors. -/

@@ -54,19 +54,23 @@ local notation "e" => boundaryOrthogonalEquivExchangeKernel
 /-- Read a signed octagon isometry in the same integer coordinates as a loop.
 The columns are the signed restrictions of the two basis vectors, written in the
 ambient exponent lattice. The last entry is the forward image of component zero. -/
-def picardInvariants (g : G) : ℤˣ × Matrix (Fin 4) (Fin 2) ℤ × Option (Fin 8) :=
-  (η g, Matrix.of (fun i j ↦ (e ((res g).val (boundaryOrthogonalBasis j)) : Fin 4 → ℤ) i),
-    Fin.find? fun j ↦ decide ((picard g).val (boundaryClass (label j)) = boundaryClass 0))
+def picardInvariants (g : G) : SignedLoopInvariants (Fin 4) (Fin 2) 8 where
+  sign := η g
+  kernelColumns :=
+    Matrix.of (fun i j ↦ (e ((res g).val (boundaryOrthogonalBasis j)) : Fin 4 → ℤ) i)
+  boundaryLabel :=
+    Fin.find? fun j ↦ decide ((picard g).val (boundaryClass (label j)) = boundaryClass 0)
 
 /-- The first invariant of a signed Picard isometry is its sign. -/
 @[simp]
-theorem picardInvariants_fst (g : G) : (picardInvariants g).1 = η g :=
+theorem picardInvariants_sign (g : G) : (picardInvariants g).sign = η g :=
   (rfl)
 
 /-- Each column records the signed image of the corresponding orthogonal basis class. -/
 @[simp]
-theorem picardInvariants_matrix_apply (g : G) (i : Fin 4) (j : Fin 2) :
-    (picardInvariants g).2.1 i j = (e ((res g).val (boundaryOrthogonalBasis j)) : Fin 4 → ℤ) i :=
+theorem picardInvariants_kernelColumns_apply (g : G) (i : Fin 4) (j : Fin 2) :
+    (picardInvariants g).kernelColumns i j =
+      (e ((res g).val (boundaryOrthogonalBasis j)) : Fin 4 → ℤ) i :=
   (rfl)
 
 private theorem boundaryClass_injective : Function.Injective boundaryClass := by decide
@@ -74,14 +78,15 @@ private theorem boundaryClass_injective : Function.Injective boundaryClass := by
 /-- A successful search returns precisely the component whose class pulls back to component zero. -/
 @[simp]
 theorem picardInvariants_label_eq_some_iff (g : G) (j : Fin 8) :
-    (picardInvariants g).2.2 = some j ↔
+    (picardInvariants g).boundaryLabel = some j ↔
       (picard g).val (boundaryClass (label j)) = boundaryClass 0 := by
   simp only [picardInvariants, ← Option.mem_def, Fin.mem_find?_iff, decide_eq_true_eq]
   refine ⟨And.left, fun hj ↦ ⟨hj, fun k hk heq ↦ hk.ne ?_⟩⟩
   exact (label).injective (boundaryClass_injective ((picard g).val.injective (heq.trans hj.symm)))
 
 /-- Every signed octagon isometry has a forward boundary label. -/
-theorem exists_picardInvariants_label (g : G) : ∃ j : Fin 8, (picardInvariants g).2.2 = some j := by
+theorem exists_picardInvariants_label (g : G) :
+    ∃ j : Fin 8, (picardInvariants g).boundaryLabel = some j := by
   obtain ⟨a, _, ha⟩ := exists_cycleAction_pullback intersectionForm boundaryClass g
   exact ⟨(label).symm (DihedralGroup.cycleVertexPerm a 0),
     (picardInvariants_label_eq_some_iff _ _).mpr (by
@@ -91,7 +96,8 @@ theorem exists_picardInvariants_label (g : G) : ∃ j : Fin 8, (picardInvariants
 octagon isometry on its entire Picard lattice. -/
 theorem picardInvariants_injective : Function.Injective picardInvariants := by
   intro g h heq
-  have hη : η g = η h := congrArg Prod.fst heq
+  have hη : η g = η h := by
+    simpa only [picardInvariants_sign] using congrArg SignedLoopInvariants.sign heq
   have hres : (res g).val = (res h).val := by
     apply LinearEquiv.toLinearMap_injective
     apply boundaryOrthogonalBasis.ext
@@ -99,12 +105,12 @@ theorem picardInvariants_injective : Function.Injective picardInvariants := by
     apply (e).injective
     apply Subtype.ext
     funext i
-    simpa only [picardInvariants_matrix_apply, LinearEquiv.coe_coe] using
-      congrArg (fun data : ℤˣ × Matrix (Fin 4) (Fin 2) ℤ × Option (Fin 8) ↦ data.2.1 i j) heq
+    simpa only [picardInvariants_kernelColumns_apply, LinearEquiv.coe_coe] using
+      congrArg (fun data : SignedLoopInvariants (Fin 4) (Fin 2) 8 ↦ data.kernelColumns i j) heq
   obtain ⟨j, hj⟩ := exists_picardInvariants_label g
-  have hj' : (picardInvariants h).2.2 = some j :=
-    (congrArg (fun data ↦ data.2.2) heq).symm.trans hj
-  have hforward (a : G) (ha : (picardInvariants a).2.2 = some j) :
+  have hj' : (picardInvariants h).boundaryLabel = some j :=
+    (congrArg SignedLoopInvariants.boundaryLabel heq).symm.trans hj
+  have hforward (a : G) (ha : (picardInvariants a).boundaryLabel = some j) :
       ∀ i, (picard a).val (boundaryClass i) = boundaryClass (η a • (i - label j)) := by
     apply (boundary_pullback_eq_smul_sub_iff boundaryClass_injective ?_).mpr
       ((picardInvariants_label_eq_some_iff _ _).mp ha)
@@ -134,12 +140,6 @@ local notation "invariants[" w "]" =>
   Quiver.Path.signedLoopInvariants w (fun j ↦ (exchangeKernelBasis j : Fin 4 → ℤ))
     boundaryOrders (boundaryOrders 0)
 
-private theorem find?_boundaryOrders_eq_some_iff (v : Fin 4 → ℤ) (j : Fin 8) :
-    (Fin.find? fun k ↦ decide (boundaryOrders k = v)) = some j ↔ boundaryOrders j = v := by
-  simp only [← Option.mem_def, Fin.mem_find?_iff, decide_eq_true_eq]
-  exact ⟨And.left, fun hj ↦ ⟨hj, fun k hk heq ↦
-    hk.ne (boundaryOrders_injective (heq.trans hj.symm))⟩⟩
-
 private theorem restriction_eq_exchangeKernelEquiv_iff (g : G) (w : Word B B) :
     LinearEquiv.autCongr e (res g).val = w.exchangeKernelEquiv ↔
       ∀ j, e ((res g).val (boundaryOrthogonalBasis j)) =
@@ -166,27 +166,28 @@ theorem picardInvariants_eq_signedLoopInvariants_iff (g : G) (w : Word B B) :
       ∃ j : Fin 8, (picard g).val (boundaryClass (label j)) = boundaryClass 0 ∧
         trop[w] (boundaryOrders 0) = boundaryOrders j := by
   have hmatrix :
-      (picardInvariants g).2.1 =
+      (picardInvariants g).kernelColumns =
           Matrix.of (fun i j ↦ w.exponentEquiv (exchangeKernelBasis j : Fin 4 → ℤ) i) ↔
         LinearEquiv.autCongr e (res g).val = w.exchangeKernelEquiv := by
     rw [restriction_eq_exchangeKernelEquiv_iff]
     refine ⟨fun h j ↦ Subtype.ext (funext fun i ↦ ?_), fun h ↦ Matrix.ext fun i j ↦ ?_⟩
-    · simpa only [picardInvariants_matrix_apply, Path.coe_exchangeKernelEquiv_apply,
+    · simpa only [picardInvariants_kernelColumns_apply, Path.coe_exchangeKernelEquiv_apply,
         Matrix.of_apply] using congrFun (congrFun h i) j
-    · simpa only [picardInvariants_matrix_apply, Path.coe_exchangeKernelEquiv_apply,
+    · simpa only [picardInvariants_kernelColumns_apply, Path.coe_exchangeKernelEquiv_apply,
         Matrix.of_apply] using congrArg (fun x : E ↦ (x : Fin 4 → ℤ) i) (h j)
   obtain ⟨j, hj⟩ := exists_picardInvariants_label g
-  rw [Path.signedLoopInvariants_def, ← Prod.mk.eta (p := picardInvariants g),
-    ← Prod.mk.eta (p := (picardInvariants g).2)]
-  simp only [Prod.mk.injEq, picardInvariants_fst, hmatrix]
+  simp only [SignedLoopInvariants.ext_iff, picardInvariants_sign, Path.signedLoopInvariants_sign,
+    Path.signedLoopInvariants_kernelColumns, hmatrix]
+  have hlabel := w.signedLoopInvariants_boundaryLabel_eq_some_iff
+    (fun j ↦ (exchangeKernelBasis j : Fin 4 → ℤ)) (boundaryOrders 0) boundaryOrders_injective
   refine and_congr_right (fun _ ↦ and_congr_right (fun _ ↦ ?_))
   constructor
   · intro heq
     exact ⟨j, (picardInvariants_label_eq_some_iff _ _).mp hj,
-      ((find?_boundaryOrders_eq_some_iff _ _).mp (heq.symm.trans hj)).symm⟩
+      ((hlabel j).mp (heq.symm.trans hj)).symm⟩
   · rintro ⟨k, hk, ht⟩
     exact ((picardInvariants_label_eq_some_iff _ _).mpr hk).trans
-      ((find?_boundaryOrders_eq_some_iff _ _).mpr ht.symm).symm
+      ((hlabel k).mpr ht.symm).symm
 
 /-- The quarter-turn is the unique signed Picard isometry with the integer
 invariants of the rotation word. Its pullback shifts boundary classes by minus two. -/

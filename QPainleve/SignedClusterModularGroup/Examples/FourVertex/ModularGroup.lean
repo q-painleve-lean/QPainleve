@@ -8,7 +8,7 @@ module
 public import Mathlib.Basic.Complex.Basic
 public import QPainleve.SignedClusterModularGroup.Examples.FourVertex.Words
 
-import QPainleve.SignedClusterModularGroup.Examples.FourVertex.MarkedAction
+import QPainleve.SignedClusterModularGroup.Examples.FourVertex.NormalForm
 
 /-!
 # Generators of the four-vertex cluster modular groups
@@ -16,17 +16,18 @@ import QPainleve.SignedClusterModularGroup.Examples.FourVertex.MarkedAction
 The rotation and translation generate the unsigned group of independent X maps.
 Adjoining the reflection generates the signed group. The words are those of
 Bershtein, Gavrylenko and Marshakov, equation (3.1), in reciprocal coordinates.
-Completeness comes from the Picard lattice generation theorem applied to the
-marked octagon.
+Completeness follows from the normal forms in the rotation, translation,
+and reflection.
 -/
 
 public section
 
-open CategoryTheory MulOpposite Quiver
+open CategoryTheory
 
 namespace QPainleve.FourVertex
 
 open Cluster
+open Subgroup (eq_top_iff' mul_mem pow_mem subset_closure zpow_mem)
 
 local notation "B" => exchangeMatrix
 local notation "Γ" => ClusterModularGroup ℂ B
@@ -41,27 +42,22 @@ independent X maps of the four-vertex seed over ℂ. -/
 theorem closure_signedClusterModularGroup_generators :
     Subgroup.closure ({signed[reflectionWord], signed[rotationWord], signed[translationWord]} :
       Set Γ̂) = ⊤ := by
-  have h := closure_four_vertex_signed_words ℂ markedPicardEquiv.toMonoidHom
-    markedPicardEquiv.injective (picardInvariants_markedPicardEquiv_loop rotationWord)
-    (picardInvariants_markedPicardEquiv_loop translationWord)
-    (picardInvariants_markedPicardEquiv_loop reflectionWord)
-  rw [← Subgroup.unop_eq_top, Subgroup.unop_closure, ← Set.image_singleton,
-    ← Set.image_insert_eq, ← Set.image_insert_eq, Set.preimage_image_eq _ op_injective] at h
-  exact h
+  apply (eq_top_iff' _).mpr
+  intro g
+  obtain ⟨a, rfl⟩ := signedNormalFormEquiv.surjective g
+  rw [signedNormalFormEquiv_apply]
+  exact mul_mem (mul_mem (pow_mem (subset_closure (by simp)) _)
+    (zpow_mem (subset_closure (by simp)) _)) (pow_mem (subset_closure (by simp)) _)
 
 /-- The rotation and translation generate the unsigned group of independent X
 maps of the four-vertex seed over ℂ. -/
 theorem closure_clusterModularGroup_generators :
     Subgroup.closure ({unsigned[rotationWord,inversionCount_rotationWord],
       unsigned[translationWord,inversionCount_translationWord]} : Set Γ) = ⊤ := by
-  have h := closure_four_vertex_unsigned_words ℂ markedPicardEquiv.toMonoidHom
-    markedPicardEquiv.injective (fun g ↦ by
-      simpa only [SignedBoundaryIsometryGroup.sign_apply, MonoidHom.op_apply_apply,
-        Function.comp_apply, MulEquiv.coe_toMonoidHom] using sign_markedPicardEquiv_inclusion g)
-    (picardInvariants_markedPicardEquiv_loop rotationWord)
-    (picardInvariants_markedPicardEquiv_loop translationWord)
-  rw [← Subgroup.unop_eq_top, Subgroup.unop_closure, ← Set.image_singleton,
-    ← Set.image_insert_eq, Set.preimage_image_eq _ op_injective] at h
-  exact h
+  apply (eq_top_iff' _).mpr
+  intro g
+  obtain ⟨a, rfl⟩ := unsignedNormalFormEquiv.surjective g
+  rw [unsignedNormalFormEquiv_apply]
+  exact mul_mem (pow_mem (subset_closure (by simp)) _) (zpow_mem (subset_closure (by simp)) _)
 
 end QPainleve.FourVertex

@@ -11,6 +11,7 @@ public import QPainleve.SignedClusterModularGroup.Realization.Relations.Boundary
 import Mathlib.LinearAlgebra.Matrix.ToLin
 import QPainleve.Algebra.Cluster.ChargeKernel.Index
 import QPainleve.Algebra.Cluster.Word.CoefficientChange
+import QPainleve.Geometry.Toric.Fan.ExchangeMatrix
 import QPainleve.SignedClusterModularGroup.BoundaryCycle
 import QPainleve.SignedClusterModularGroup.Faithfulness
 import QPainleve.SignedClusterModularGroup.Realization.Orthogonal
@@ -180,16 +181,16 @@ theorem xPullback_eq_iff_signedLoopInvariants_eq {k : Type*} [Field k]
       (hnodal c hc) hnodal₀ (LinearMap.IsPerfPair.separatingRight inferInstance)
   have hkeep c (hc : c ∈ U) ρ := ((p c hc).mem_range_numberedBoundaryRays_iff (hD c) ρ).symm.trans
     (by rw [hrays c hc])
-  let Q : ChargeSeed E N :=
-    ⟨b.detDualEquiv.toLinearMap, Fan.rayChargeMap s, b.detDualEquiv_self, hE.symm⟩
+  let Q := Fan.rayChargeSeed b s hE
+  have hcharge : Q.charge = Fan.rayChargeMap s := Fan.rayChargeSeed_charge _ _ _
   have hker : E.matrix.mulVecLin.ker = Q.charge.ker := by
-    rw [hE]
+    rw [hE, hcharge]
     exact Fan.ker_chargeExchangeMatrix_rayChargeMap b s hindex
   have hcharge₁ := chargeKernelAction_eq_signedOrthogonalRestriction u hvertices hdet hnodes
-    D hD hmark w R hC Q rfl hker e he hU (fun t ht ↦ (hnodal t ht).genus_zero)
+    D hD hmark w R hC Q hcharge hker e he hU (fun t ht ↦ (hnodal t ht).genus_zero)
     (fun t ht ↦ ⟨p t ht⟩)
   have hcharge₂ := chargeKernelAction_eq_signedOrthogonalRestriction u hvertices hdet hnodes
-    D hD hmark v R' hC' Q rfl hker e he hU' (fun t ht ↦ (hnodal t ht).genus_zero)
+    D hD hmark v R' hC' Q hcharge hker e he hU' (fun t ht ↦ (hnodal t ht).genus_zero)
     (fun t ht ↦ ⟨p t ht⟩)
   have hmatrix : chargeKernelAction ℂ Q hker eval[w] = chargeKernelAction ℂ Q hker eval[v] ↔
       LinearMap.toMatrixAlgEquiv β w.exchangeKernelEquiv.toLinearMap =
@@ -205,12 +206,12 @@ theorem xPullback_eq_iff_signedLoopInvariants_eq {k : Type*} [Field k]
     (p _ (hU x).1) (p _ (hU x).2) (hnodal _ (hU x).2) (hD _) (fun j ↦ (β j : Cent))
   have hfind₂ := R'.signedLoopInvariants_boundary_eq_some hsep y hcΦ hE hindex p₀ hnodal₀
     (p _ (hU' y).1) (p _ (hU' y).2) (hnodal _ (hU' y).2) (hD _) (fun j ↦ (β j : Cent))
-  simp only [Path.signedLoopInvariants_def] at hfind₁ hfind₂
   rw [Path.signedLoopInvariants_eq_iff, ← hmatrix,
     ← (Option.map_injective (ZMod.finEquiv n).toEquiv.injective).eq_iff,
     hfind₁, hfind₂, Option.some.injEq] at h
   obtain ⟨hη, hact, hj⟩ := h
-  have hres := congrArg (LinearEquiv.autCongr (LinearEquiv.ofEq Q.charge.ker Charge rfl)) hact
+  have hres := congrArg
+    (LinearEquiv.autCongr (LinearEquiv.ofEq _ _ (congrArg LinearMap.ker hcharge))) hact
   rw [hcharge₁, hcharge₂] at hres
   have horient := hηw.trans (hη.trans hηv.symm)
   have hB : B.Nondegenerate := LinearMap.IsPerfPair.nondegenerate inferInstance

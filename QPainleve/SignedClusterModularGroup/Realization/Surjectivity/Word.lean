@@ -92,11 +92,9 @@ theorem nonempty_picardLoopRealization_of_pair_iso
   let : IsIntegral (M c₀).surface := (M c₀).integral
   have hM := models c₀ (hgeneric Quiver.Path.nil)
   have hword := Q.exists_connecting_word_of_pair_iso Q hM hP e (hD c₀) (hD c₁)
-  let matrix := chargeExchangeMatrix b.detDualEquiv.toLinearMap (Fan.rayChargeMap Q.rays)
-  have hmatrix : (SkewExchangeMatrix.ofMatrix matrix
-      (isSkewSymmetrizer_chargeExchangeMatrix _ b.detDualEquiv_self _)) = E :=
-    SkewExchangeMatrix.ext ((SkewExchangeMatrix.matrix_ofMatrix _ _).trans
-      ((congrArg₂ chargeExchangeMatrix hform hcharge).symm.trans P.matrix_eq))
+  have hmatrix : Fan.rayExchangeMatrix b Q.rays = E :=
+    SkewExchangeMatrix.ext (by simpa only [Fan.rayExchangeMatrix_matrix, ← hform, ← hcharge]
+      using P.matrix_eq)
   rw [hmatrix] at hword
   obtain ⟨w, hw⟩ := hword
   exact nonempty_picardLoopRealization_of_comp_evaluation_eq
