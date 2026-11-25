@@ -7,13 +7,13 @@ module
 
 public import QPainleve.Algebra.Cluster.Word.ModularGroup
 import QPainleve.Algebra.Cluster.Tropical.ExchangeForm
-import QPainleve.Algebra.Cluster.Tropical.Pullback
+import QPainleve.Algebra.Cluster.Tropical.Valuation
 
 /-!
 # Inversion parity of cluster X maps
 
-For a nonzero exchange matrix over a field of characteristic zero, the parity of
-simultaneous inversions descends to the signed cluster modular group. Tropical
+For a nonzero exchange matrix over any field, the parity of simultaneous
+inversions descends to the signed cluster modular group. Tropical
 evaluation transports the exchange form with the sign of the word. Equality of
 X pullbacks gives equality of these tropical evaluations, so the signed terminal
 exchange matrix can be read from the pullback.
@@ -27,7 +27,7 @@ open CategoryTheory Quiver QPainleve.Cluster
 
 namespace Quiver.Path
 
-variable {k : Type*} [Field k] [CharZero k] {ι : Type*} [Finite ι] [DecidableEq ι]
+variable {k : Type*} [Field k] {ι : Type*} [Finite ι] [DecidableEq ι]
   {B C D : SkewExchangeMatrix ι}
 
 /-- Words with equal X pullbacks have equal signed terminal exchange matrices. -/
@@ -37,7 +37,7 @@ theorem signed_exchangeMatrix_eq_of_xPullback_eq
   let : Fintype ι := Fintype.ofFinite ι
   let e := Fintype.equivFin ι
   let : LinearOrder ι := LinearOrder.lift' e e.injective
-  have ht := tropical_eq_of_xPullback_eq (A := Lex (ι → ℤ)) h
+  have ht := tropical_eq_of_xPullback_eq_of_linearOrder (Γ := Lex (ι → ℤ)) h
   have hw := w.tropical_exchangeForm
   dsimp only at hw
   rw [ht] at hw
@@ -61,7 +61,7 @@ end Quiver.Path
 
 namespace QPainleve.Cluster
 
-variable (k : Type*) [Field k] [CharZero k] {ι : Type*} [Finite ι] [DecidableEq ι]
+variable (k : Type*) [Field k] {ι : Type*} [Finite ι] [DecidableEq ι]
   (B : SkewExchangeMatrix ι)
 
 local notation "Loops" => End (Prefunctor.obj (Paths.of (SkewExchangeMatrix ι)) B)

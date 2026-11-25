@@ -129,7 +129,9 @@ theorem realIntersectionBilinForm_realPrimeDivisorClass_nonneg
   rw [realPrimeDivisorClass_def k p, realIntersectionBilinForm_one_tmul_realPrimeDivisorClass]
   exact_mod_cast classIntersectionNumber_primeDivisorClass_nonneg_of_ne k hX hpq
 
-private theorem exists_abs_realIntersectionBilinForm_le
+/-- The absolute intersection of a fixed integral class with prime curves is
+bounded by a constant times their degree against an ample class. -/
+theorem exists_abs_realIntersectionBilinForm_le
     {a : LineBundleClass X} (ha : a.IsAmple) (b : LineBundleClass X) :
     ∃ n : ℕ, ∀ p, |B (ι b) (c p)| ≤ (n : ℝ) * B (ι a) (c p) := by
   have hX := topologicalKrullDim_eq_of_smoothOfRelativeDimension f (n := 2)
