@@ -107,6 +107,36 @@ theorem orderedBoundaryPeriod_eq_boundaryPeriod (hD : D[P].IsEffectiveCartier)
     rw [pullback_comp f, hf, pullback_comp]
   rw [Fan.orderedBoundaryPeriod_apply, hclass, hperiod, IsEffectiveCartier.boundaryPeriod_apply]
 
+include p in
+/-- Under the integral charge coordinates of a contracted toric fiber, the ordered
+toric period is injective exactly when the period on its Picard orthogonal is. -/
+theorem orderedBoundaryPeriod_injective_iff
+    (hD : D[P].IsEffectiveCartier)
+    (hgenus : ∀ v : irreducibleComponents (D[P].subscheme.singularLocus ℂ).blowup,
+      (D[P].subscheme.blowupComponent (K := ℂ) v).toScheme.genus ℂ = 0)
+    {d : ZMod n → L} (hd : P.boundaryClass hD = d)
+    (e : B.orthogonal (Submodule.span ℤ (Set.range d)) ≃ₗ[ℤ] ChargeKernel)
+    (he : ∀ x : ChargeKernel, ι (e.symm x).val = (aux x).val) :
+    Function.Injective (period[c]) ↔
+      Function.Injective (hD.boundaryPeriod hgenus P.imageCycle.endpoint_eq) := by
+  let f := (e.symm.trans ((LinearEquiv.ofEq _ _ (by rw [hd])).trans
+    (P.boundaryOrthogonalMarking hD))).toAddEquiv.toMultiplicative
+  have h (x : Multiplicative ChargeKernel) :
+      period[c] x =
+        hD.boundaryPeriod hgenus P.imageCycle.endpoint_eq (f x) := by
+    let z := e.symm x.toAdd
+    have hz : P.picardMarking z.val ∈ D[P].boundaryOrthogonal ℂ := by
+      rw [P.picardMarking_mem_boundaryOrthogonal_iff hD, hd]
+      exact z.property
+    have hf : f x = ofAdd ⟨P.picardMarking z.val, hz⟩ := by
+      apply toAdd.injective
+      apply Subtype.ext
+      simp [f, z]
+    rw [hf]
+    exact p.orderedBoundaryPeriod_eq_boundaryPeriod hD hgenus z.val hz x.toAdd (he x.toAdd)
+  rw [funext h]
+  exact Function.Injective.of_comp_iff' _ f.bijective
+
 include p q in
 /-- An isomorphism of marked fibers transports the toric period of a target charge
 class by its marked Picard pullback and its action on the actual boundary branches. -/

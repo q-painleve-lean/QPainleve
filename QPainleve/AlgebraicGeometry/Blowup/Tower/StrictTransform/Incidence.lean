@@ -5,6 +5,7 @@ Authors: The QPainleve contributors
 -/
 module
 
+public import Mathlib.Data.Fin.Embedding
 public import QPainleve.AlgebraicGeometry.Blowup.Tower.StrictTransform.RegularCurve
 
 import QPainleve.AlgebraicGeometry.EffectiveCartierDivisor.Stalk
@@ -22,7 +23,7 @@ public noncomputable section
 open AlgebraicGeometry CategoryTheory TopologicalSpace
 open TauCeti.AlgebraicGeometry
 
-universe u
+universe u v
 
 namespace QPainleve.BlowupTower.IsClosedPointTower
 
@@ -42,6 +43,28 @@ theorem mem_strictTransformCenterIndices (hT : IsClosedPointTower X T)
     j ∈ hT.strictTransformCenterIndices C ↔ hT.strictTransformCoefficients C j ≠ 0 := by
   classical
   simp [strictTransformCenterIndices]
+
+/-- If the new strict-transform coefficients prepend zeros to reindexed old
+coefficients, the incident centers are exactly the corresponding tail indices. -/
+theorem strictTransformCenterIndices_eq_map_of_coefficients_eq_append_zero
+    {X' Y' : Scheme.{v}} {m k : ℕ} {U : BlowupTower X' (k + m) Y'}
+    {C' : X'.IdealSheafData} (hT : IsClosedPointTower X T) (hU : IsClosedPointTower X' U)
+    (f : Fin m → Fin n) (h : hU.strictTransformCoefficients C' =
+      Fin.append (0 : Fin k → ℤ) (hT.strictTransformCoefficients C ∘ f)) :
+    hU.strictTransformCenterIndices C' =
+      (Finset.univ.filter fun l ↦ f l ∈ hT.strictTransformCenterIndices C).map
+        (Fin.natAddEmb k) := by
+  ext l
+  refine Fin.addCases (fun a ↦ ?_) (fun a ↦ ?_) l
+  · simp only [mem_strictTransformCenterIndices, h, Fin.append_left, Pi.zero_apply,
+      ne_self_iff_false, false_iff, Finset.mem_map, not_exists, not_and]
+    intro b _ hab
+    have he := congrArg Fin.val hab
+    simp only [Fin.natAddEmb_apply, Fin.val_natAdd, Fin.val_castAdd] at he
+    omega
+  · rw [← Fin.natAddEmb_apply, Finset.mem_map']
+    simp only [Fin.natAddEmb_apply, mem_strictTransformCenterIndices, h, Fin.append_right,
+      Function.comp_apply, Finset.mem_filter, Finset.mem_univ, true_and]
 
 variable {k : Type u} [Field k] [PerfectField k] [IsIntegral X] [IsNoetherian X]
   [IrreducibleSpace C.subscheme] [TauCeti.AlgebraicGeometry.IsRegular C.subscheme]

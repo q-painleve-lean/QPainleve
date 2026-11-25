@@ -185,11 +185,13 @@ private theorem repr_change_section (C₀ C' : Basis (Fin 2) ℤ Pic) (shift : �
 include hr in
 /-- Choosing the opposite invariant section negates the signed Hirzebruch parameter
 and subtracts that parameter times the section coefficient from the fiber coefficient.
-The two fiber rays keep their order. -/
+The two section rays swap, the fiber rays keep their order, and the first lattice basis
+vector changes sign. -/
 theorem exists_hirzebruchPicardBasis_opposite_section :
     ∃ (d : Basis (Fin 2) ℤ N) (t : Fin 4 ≃ Φ.Ray)
       (ht : (fun j ↦ (t j).primitiveGenerator) = ![d 0, d 1, -d 0, (-e) • d 0 - d 1]),
-      t 0 = r 2 ∧ t 1 = r 1 ∧ t 3 = r 3 ∧
+      d 0 = -b 0 ∧ d 1 = b 1 ∧
+      t 0 = r 2 ∧ t 1 = r 1 ∧ t 2 = r 0 ∧ t 3 = r 3 ∧
       let C' := hirzebruchPicardBasis d (-e) hΦ t ht
       C' 0 = (C) 0 ∧ ∀ L : Pic,
         C'.repr L 0 = (C).repr L 0 - e * (C).repr L 1 ∧ C'.repr L 1 = (C).repr L 1 := by
@@ -203,9 +205,11 @@ theorem exists_hirzebruchPicardBasis_opposite_section :
     simpa [hs, congrFun hr 2] using (congrFun ht 0).symm
   have hd₁ : d 1 = b 1 := by
     simpa [hf, congrFun hr 1] using (congrFun ht 1).symm
+  have hs' : t 2 = r 0 := Ray.primitiveGenerator_injective (by
+    simp [congrFun ht 2, congrFun hr 0, hd₀])
   have hf' : t 3 = r 3 := Ray.primitiveGenerator_injective (by
     simp [congrFun ht 3, congrFun hr 3, hd₀, hd₁])
-  exact ⟨d, t, ht, hs, hf, hf', h₀, repr_change_section (C) C' e h₀ h₁⟩
+  exact ⟨d, t, ht, hd₀, hd₁, hs, hf, hs', hf', h₀, repr_change_section (C) C' e h₀ h₁⟩
 
 include hr in
 /-- A signed Hirzebruch marking can be replaced by one of index `e.natAbs`,
@@ -225,10 +229,8 @@ theorem exists_hirzebruchPicardBasis_natAbs :
     simp only [h]
     exact ⟨b, r, hr, rfl, fun _ ↦ ⟨rfl, rfl⟩, rfl, fun _ ↦ rfl⟩
   have hs : (e.natAbs : ℤ) = -e := by omega
-  obtain ⟨d, t, ht, ht₀, ht₁, -, h₀, hrepr⟩ :=
+  obtain ⟨d, t, ht, hd₀, hd₁, -, -, -, -, h₀, hrepr⟩ :=
     exists_hirzebruchPicardBasis_opposite_section b e hΦ r hr
-  have hd₀ : d 0 = -b 0 := by simpa [ht₀, congrFun hr 2] using (congrFun ht 0).symm
-  have hd₁ : d 1 = b 1 := by simpa [ht₁, congrFun hr 1] using (congrFun ht 1).symm
   have hcoord : d.coord 1 = b.coord 1 := d.ext fun l ↦ by
     simp only [Basis.coord_apply, Basis.repr_self]
     fin_cases l <;> simp [hd₀, hd₁]

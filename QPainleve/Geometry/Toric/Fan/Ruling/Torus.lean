@@ -102,6 +102,22 @@ theorem range_projectiveLineTorusι :
     Set.range (Fan.projectiveLineToricIso.hom ∘ (P).denseTorusι h₀)
   rw [Set.range_comp, Set.range_comp, hr]
 
+/-- A polynomial point with affine coordinate zero lies outside the dense torus. -/
+theorem polynomialPoint_zero_notMem_range_projectiveLineTorusι (j : Fin 2)
+    (x : Spec (CommRingCat.of ℂ)) :
+    (projectiveLine.polynomialPoint ℂ (RingHom.id ℂ) j 0) x ∉ Set.range projectiveLineTorusι := by
+  have hother : (projectiveLine.polynomialPoint ℂ (RingHom.id ℂ) j 0) x ∉
+      Set.range (projectiveLine.polynomialChartι ℂ j.rev) := by
+    rw [projectiveLine.polynomialPoint_def, Scheme.Hom.comp_apply,
+      projectiveLine.polynomialChartι_mem_range_iff]
+    rw [not_not, Spec.map_apply]
+    exact Ideal.mem_comap.mpr (by
+      simp [Polynomial.eval₂RingHom])
+  rw [range_projectiveLineTorusι]
+  fin_cases j
+  · exact fun h ↦ hother h.2
+  · exact fun h ↦ hother h.1
+
 /-- The point `[1 : a]` lies in the torus for each nonzero scalar `a`. -/
 private theorem range_polynomialPoint_subset_projectiveLineTorusι (a : ℂˣ) :
     Set.range (projectiveLine.polynomialPoint ℂ (RingHom.id ℂ) 0 (a : ℂ)) ⊆

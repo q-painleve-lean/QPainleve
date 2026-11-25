@@ -6,12 +6,9 @@ Authors: The QPainleve contributors
 module
 
 public import QPainleve.AlgebraicGeometry.Blowup.Tower.StrictTransform.PlanePivot
-public import QPainleve.Geometry.Toric.Fan.Boundary.SmoothPoint
+public import QPainleve.Geometry.Toric.Fan.Boundary.RayPoint
 public import QPainleve.Geometry.Toric.Fan.Smooth
 
-import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
-import QPainleve.Geometry.Toric.Fan.Boundary.Component
-import QPainleve.Geometry.Toric.Fan.Boundary.Node
 import QPainleve.Geometry.Toric.Fan.Subdivision.Projective
 
 /-!
@@ -43,7 +40,6 @@ local notation "f" => (X ↘ S)
 local notation "P" => Proj (homogeneousSubmodule ℂ (Fin 3 → ℂ))
 local notation "H" => LineBundleClass.mk (Proj.symmetricAlgebraTwistingBundle ℂ (Fin 3 → ℂ) 1)
 local notation "rankTwo" => (Eq.trans (finrank_eq_card_basis b) (Fintype.card_fin 2))
-local notation "D" => Φ.boundaryIdeal hc.nonempty_cones
 local notation "z" => (IsLocalRing.closedPoint ℂ : Spec (CommRingCat.of ℂ))
 local notation "p[" ρ "," c "]" =>
   (Ray.binomialCenter ρ rankTwo (b.detDualEquiv_self (Ray.primitiveGenerator ρ))
@@ -81,19 +77,9 @@ theorem exists_first_max_base_order_on_ray (ρ : Φ.Ray) {Y : Scheme} {n : ℕ}
     hT.exists_first_max_base_order_on_strict_transform (Φ.isEffectiveCartier_rayBoundaryIdeal hΦ ρ)
       g hg hne
   refine ⟨a, ha, hpos, hmax, hleast, hfirst, ?_⟩
-  by_cases hn : (D).IsNodeOfReducedBoundary Φ.algebraicRealizationStructureMap (hT.baseCenter a)
-  · obtain ⟨σ, ⟨hσ, hp⟩, -⟩ :=
-      (Φ.isNodeOfReducedBoundary_iff_existsUnique_twoRayCone hΦ hc rankTwo).mp hn
-    exact Or.inl ⟨σ, hσ, (Φ.distinguishedPoint_mem_support_rayBoundaryIdeal_iff hΦ σ ρ).mp
-      (hp.symm ▸ hmem), hp⟩
-  · have hd : hT.baseCenter a ∈ (D).support :=
-      support_antitone (boundaryIdeal_le_rayBoundaryIdeal ρ hΦ) hmem
-    obtain ⟨⟨τ, c⟩, hτ, -⟩ := Φ.existsUnique_internalCenter_of_mem_boundary_of_not_isNode
-      b hΦ hc (hT.isClosed_baseCenter a) hd hn
-    rw [Ray.map_internalCenter_subschemeι, Scheme.Hom.ker_eq_ker_fromSpecResidueField,
-      Scheme.ker_fromSpecResidueField_inj] at hτ
-    have heq : τ = ρ := (τ.binomialCenter_mem_support_rayBoundaryIdeal_iff
-      hΦ rankTwo (b.detDualEquiv_self _) (τ.surjective_detCharacter b) c ρ).mp (hτ.symm ▸ hmem)
-    exact Or.inr ⟨c, heq ▸ hτ.symm⟩
+  rcases (Φ.mem_support_rayBoundaryIdeal_iff b hΦ hc ρ (hT.isClosed_baseCenter a)).mp hmem with
+    ⟨c, hp⟩ | ⟨σ, hσ, hρ, hp⟩
+  · exact Or.inr ⟨c, hp⟩
+  · exact Or.inl ⟨σ, hσ, hρ, hp.symm⟩
 
 end TauCeti.Toric.Fan

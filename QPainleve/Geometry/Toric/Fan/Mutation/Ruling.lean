@@ -8,7 +8,8 @@ module
 public import QPainleve.Geometry.Toric.Fan.Mutation.Blowup
 
 import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.ProjectiveLine.PointDivisor
-import QPainleve.Geometry.Toric.Fan.Ruling.CoordinateFiber
+import QPainleve.Geometry.Toric.Fan.Ruling.Negation
+import QPainleve.Geometry.Toric.Fan.Ruling.Torus
 
 /-!
 # Invariant fibers under mutation
@@ -61,7 +62,7 @@ private theorem coordinatePoint_mem_mutationRulingComplement (j : Fin 2) :
 invariant ruling value. If the source projection is on the selected
 invariant fiber, the source point lies outside the pivot fiber. -/
 theorem Ray.mutationBlowupIso_apply_ruling_eq_coordinatePoint (m : N →+ ℤ)
-    (hm : m = χ ∨ m = -χ) (hΦ : Φ.IsRegular)
+    (hm : m = χ ∨ m = -χ)
     (h₀ : ∀ σ : Φ.cones, (∀ x ∈ σ.val, 0 ≤ Φ.lattice.realCharacter m x) ∨
       ∀ x ∈ σ.val, Φ.lattice.realCharacter m x ≤ 0)
     (h₁ : ∀ σ : (Ψ).cones, (∀ x ∈ σ.val, 0 ≤ (Ψ).lattice.realCharacter m x) ∨
@@ -82,15 +83,8 @@ theorem Ray.mutationBlowupIso_apply_ruling_eq_coordinatePoint (m : N →+ ℤ)
       coordinatePoint_mem_mutationRulingComplement c k
   rcases hm with hm | hm <;> subst m
   · exact ⟨hval.trans hx, hmem j hx⟩
-  · have hne : χ ≠ 0 := by
-      intro hz
-      obtain ⟨v, hvalOne⟩ := ρ.surjective_detCharacter b 1
-      exact zero_ne_one ((DFunLike.congr_fun hz v).symm.trans hvalOne)
-    let : Nonempty Φ.cones := ⟨ρ.toCone⟩
-    let : Nonempty (Ψ).cones := ⟨(Φ.mutationFanRayEquiv b hv hp hOpp ρ).toCone⟩
-    have hΨ := (Φ.isRegular_mutationFan_iff b hv hp hOpp).mpr hΦ
-    have h₀eq := Φ.comap_ker_coordinatePoint_characterRuling_neg χ hχ h₀ hne hΦ j
-    have h₁eq := (Ψ).comap_ker_coordinatePoint_characterRuling_neg χ hχ' h₁ hne hΨ j
+  · have h₀eq := Φ.comap_ker_coordinatePoint_characterRuling_neg χ hχ h₀ j
+    have h₁eq := (Ψ).comap_ker_coordinatePoint_characterRuling_neg χ hχ' h₁ j
     have hsrc := (projectiveLine.mem_support_comap_ker_polynomialPoint_iff ℂ _ x j 0).mpr hx
     rw [h₀eq] at hsrc
     have hxe := (projectiveLine.mem_support_comap_ker_polynomialPoint_iff ℂ _ x j.rev 0).mp hsrc

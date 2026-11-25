@@ -89,7 +89,8 @@ positive orders on the successive strict transforms of the section, giving
 earlier stages priority in a tie. When the index is positive, the earliest
 maximal order is selected and gives a proper corner or smooth pivot. For a
 corner the corresponding invariant fiber specifies the cone. The prepared
-degree strictly decreases after
+remaining transverse degree satisfies the order-sum inequality for the
+prepared quadric exit. The degree strictly decreases after
 the one-center plane link or two-center quadric link if the transported high
 orders are at least as large as the original ones. -/
 theorem exists_positiveSection_preparation_of_high_fiber_centers
@@ -132,10 +133,12 @@ theorem exists_positiveSection_preparation_of_high_fiber_centers
                 Φ.distinguishedPointHom σ z = hT.baseCenter j) ∨
               ∃ c : ℂˣ, hT.baseCenter j = center[r 2,c])) ∧
         ∀ μ : Fin n → ℤ, (∀ j ∈ high, order j ≤ μ j) →
-          let degree := a - (∑ j ∈ top, order j) + β - (∑ j ∈ high, μ j)
-          let old := hirzebruchSarkisovBidegree β.toNat (∑ j, order j).toNat
-          ∀ M' : ℕ, if high.card = 1 then planeSarkisovBidegree degree.toNat M' < old
-            else hirzebruchSarkisovBidegree degree.toNat M' < old := by
+          let remaining := a - (∑ j ∈ top, order j) - (∑ j ∈ high, μ j)
+          2 * remaining < (2 - (high.card : ℤ)) * β ∧
+            let degree := a - (∑ j ∈ top, order j) + β - (∑ j ∈ high, μ j)
+            let old := hirzebruchSarkisovBidegree β.toNat (∑ j, order j).toNat
+            ∀ M' : ℕ, if high.card = 1 then planeSarkisovBidegree degree.toNat M' < old
+              else hirzebruchSarkisovBidegree degree.toNat M' < old := by
   intro hcones hsmooth hnoeth hsource htarget v a β order high sectionCenters positive
     hnonempty hcenters
   let := hcones

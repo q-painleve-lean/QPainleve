@@ -49,9 +49,11 @@ The one or two high orders are outside that set and are at most the fiber degree
 
 The selected stages have positive orders and take priority over every unselected
 stage on the section, with ties going to the earlier stage. Subtract their orders
-from `a` to obtain the prepared coefficient. The degree formulas for the one-center
-plane link and the two-center quadric link then yield a strictly smaller bidegree
-for any transported high orders at least as large as the original ones. -/
+from `a` to obtain the prepared coefficient. The resulting inequality on the
+sum of retained orders gives the hypothesis for the prepared quadric exit.
+The degree formulas for the one-center plane link and the two-center quadric
+link give a strictly smaller bidegree for any transported high orders at least
+as large as the original ones. -/
 theorem exists_positiveSection_pivots_with_bidegree_drop
     (hT : IsClosedPointTower X T) (g : Y ⟶ P) (hg : g ≫ (P ↘ S) = T.toBase ≫ f)
     (hbir : Scheme.BirationalOver g (𝟙 P)) (sectionCenters : Finset (Fin n)) :
@@ -73,10 +75,12 @@ theorem exists_positiveSection_pivots_with_bidegree_drop
       (∀ i ∈ top, ∀ j ∈ sectionCenters, j < i → order i ≤ order j → j ∈ top) ∧
       (∀ i ∈ top, ∀ j ∈ sectionCenters, j ∉ top → order j ≤ order i) ∧
       ∀ μ : Fin n → ℤ, (∀ j ∈ high, order j ≤ μ j) →
-        let degree := a - (∑ j ∈ top, order j) + d - (∑ j ∈ high, μ j)
-        let old := hirzebruchSarkisovBidegree d.toNat (∑ j, order j).toNat
-        ∀ M' : ℕ, if high.card = 1 then planeSarkisovBidegree degree.toNat M' < old
-          else hirzebruchSarkisovBidegree degree.toNat M' < old := by
+        let remaining := a - (∑ j ∈ top, order j) - (∑ j ∈ high, μ j)
+        2 * remaining < (2 - (high.card : ℤ)) * d ∧
+          let degree := a - (∑ j ∈ top, order j) + d - (∑ j ∈ high, μ j)
+          let old := hirzebruchSarkisovBidegree d.toNat (∑ j, order j).toNat
+          ∀ M' : ℕ, if high.card = 1 then planeSarkisovBidegree degree.toNat M' < old
+            else hirzebruchSarkisovBidegree degree.toNat M' < old := by
   intro hcones hdim hnoeth v a d order high positive hcard hcap hdisj hline
   let := hcones
   let := hdim
@@ -110,8 +114,10 @@ theorem exists_positiveSection_pivots_with_bidegree_drop
     by_cases hjpos : 0 < order j
     · exact hlargest i hi j ((hp j).mpr ⟨hj, hjpos⟩) hj'
     · exact (le_of_not_gt hjpos).trans (hm' i)
-  intro μ hμ degree old M'
+  intro μ hμ remaining
   have h := hdrop μ hμ
+  refine ⟨h, ?_⟩
+  intro degree old M'
   split_ifs with hone
   · rw [Prod.Lex.lt_iff, ofLex_planeSarkisovBidegree, ofLex_hirzebruchSarkisovBidegree]
     refine Or.inl ?_

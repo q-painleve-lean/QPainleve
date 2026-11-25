@@ -236,7 +236,7 @@ theorem exists_sarkisov_link_of_logarithmic_smooth_section
     let hq' := Fan.nonneg_or_nonpos_hirzebruch_ruling_character d e' r' hr'
     obtain ⟨z, hz, hz'⟩ := hcenters l
     have hval := ρ.mutationBlowupIso_apply_ruling_eq_coordinatePoint b hOpp c
-      (b.coord 1).toAddMonoidHom hm hΦ hq (hd ▸ hq') z t (by simpa only [hz, q] using ht)
+      (b.coord 1).toAddMonoidHom hm hq (hd ▸ hq') z t (by simpa only [hz, q] using ht)
     refine ⟨?_, (ρ.baseCenter_of_mutation_of_mem_complement b hOpp c
       hT hU j l hreverse hcenters (hz ▸ hval.2)).2⟩
     simpa only [q', hd, hz'] using hval.1
