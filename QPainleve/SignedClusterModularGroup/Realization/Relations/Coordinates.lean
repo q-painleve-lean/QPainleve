@@ -79,10 +79,10 @@ local notation "fiber[" M "," c "]" =>
 
 /-- For a certified ray table of a reference nodal contraction of a primitive nef
 square-zero anticanonical cycle, the three integer invariants computed from the ray table
-decide equality of signed loop pullbacks over a characteristic-zero field. Only the rays
-of centers and surviving boundary primes need certified coordinates. -/
+decide equality of signed loop pullbacks over any field. Only the rays of centers and
+surviving boundary primes need certified coordinates. -/
 theorem compareSignedLoopsOfRayCoordinates_eq_true_iff
-    (k : Type*) [Field k] [CharZero k]
+    (k : Type*) [Field k]
     (p₀ : fiber[M₀,c₀]) (hnodal₀ : p₀.IsNodalContraction)
     (hprim : IsPrimitive (Additive.ofMul classOf(cartier[M₀])))
     (hnef : (classOf(cartier[M₀])).IsNef ℂ (M₀.surface ↘ S))
@@ -123,7 +123,7 @@ theorem compareSignedLoopsOfRayCoordinates_eq_true_iff
 /-- Decide equality of signed-loop pullbacks by integer computation on the supplied ray table.
 The reference contraction and its certificates justify the answer. -/
 def decidableXPullbackEqOfRayCoordinates
-    (k : Type*) [Field k] [CharZero k]
+    (k : Type*) [Field k]
     (p₀ : fiber[M₀,c₀]) (hnodal₀ : p₀.IsNodalContraction)
     (hprim : IsPrimitive (Additive.ofMul classOf(cartier[M₀])))
     (hnef : (classOf(cartier[M₀])).IsNef ℂ (M₀.surface ↘ S))
@@ -143,7 +143,7 @@ def decidableXPullbackEqOfRayCoordinates
 /-- The integer coefficients of a pulled-back ample class determine the surviving offsets
 for the ray-coordinate checker. Its answer then decides equality of the two X pullbacks. -/
 theorem compareSignedLoopsOfRayCoordinates_eq_true_iff_of_polarization
-    (k : Type*) [Field k] [CharZero k]
+    (k : Type*) [Field k]
     (p₀ : fiber[M₀,c₀]) (hnodal₀ : p₀.IsNodalContraction)
     (hprim : IsPrimitive (Additive.ofMul classOf(cartier[M₀])))
     (hnef : (classOf(cartier[M₀])).IsNef ℂ (M₀.surface ↘ S))
