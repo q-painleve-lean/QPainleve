@@ -70,6 +70,13 @@ local notation "fiber[" l "]" => ((![1, 3] : Fin 2 → Fin 4) l)
 local notation "center[" b "," τ "," c "]" =>
   Fan.Ray.binomialCenter τ rankTwo (Basis.detDualEquiv_self b (Fan.Ray.primitiveGenerator τ))
     (Fan.Ray.surjective_detCharacter τ b) c (IsLocalRing.closedPoint ℂ)
+local notation "coordinatePoint[" t "]" =>
+  TauCeti.AlgebraicGeometry.projectiveLine.polynomialPoint ℂ (RingHom.id ℂ) t 0
+    (IsLocalRing.closedPoint ℂ : S)
+
+local notation "ruling[" Δ "," b "," a "," r "," hr "]" =>
+  Fan.characterRuling Δ (LinearMap.toAddMonoidHom (Basis.coord b 1))
+    (Fan.nonneg_or_nonpos_hirzebruch_ruling_character b a r hr)
 local notation "e'" => ite (onSection = true) ((e : ℤ) + 1) ((e : ℤ) - 1)
 
 variable {n : ℕ} {Y : Scheme} {T : BlowupTower X[Φ] (n + 1) Y}
@@ -152,8 +159,11 @@ on that fiber's open orbit. A retained corner goes to the corner of the sheared
 cone, with the same incidence with each sheared ray. First occurrences in the
 tower remain first for both kinds of center. The indices on the successive
 strict transforms of the pivot section are exactly the reindexed original
-section indices with the pivot removed. A pivot order greater than half the
-fiber degree strictly lowers the Sarkisov bidegree. -/
+section indices with the pivot removed.
+A retained center over either invariant fiber keeps the same ruling value in
+the normalized marking, including at index zero, and preserves its first
+occurrence. A pivot order greater than half the fiber degree strictly lowers
+the Sarkisov bidegree. -/
 theorem exists_sarkisov_path_of_smooth_section
     (c : ℂˣ) (j : Fin (n + 1))
     (hj : hT.baseCenter j = Fan.Ray.binomialCenter ρ rankTwo (b.detDualEquiv_self pivot)
@@ -208,6 +218,12 @@ theorem exists_sarkisov_path_of_smooth_section
         (Finset.univ.filter fun l : Fin n ↦
           j.succAbove l ∈ hT.strictTransformCenterIndices (Φ.rayBoundaryIdeal hΦ ρ)).map
             (Fin.natAddEmb 1) ∧
+      (let q := ruling[Φ,b,e,r,hr]
+       let q' := ruling[Ψ,d,Int.natAbs e',t,ht]
+       ∀ (l : Fin n) (t : Fin 2), q (hT.baseCenter (j.succAbove l)) = coordinatePoint[t] →
+         q' (hU.baseCenter (l.natAdd 1)) = coordinatePoint[t] ∧
+           ((∀ a < j.succAbove l, hT.baseCenter a ≠ hT.baseCenter (j.succAbove l)) →
+             ∀ a < l.natAdd 1, hU.baseCenter a ≠ hU.baseCenter (l.natAdd 1))) ∧
       let y := (U.picardMarking hU f[Ψ]).symm (Additive.ofMul (pullback (k.inv ≫ g) H))
       let C := Fan.hirzebruchPicardBasis b e hΦ r hr
       let C' := Fan.hirzebruchPicardBasis d (Int.natAbs e' : ℤ) (reg[hOpp]) t ht
@@ -230,14 +246,14 @@ theorem exists_sarkisov_path_of_smooth_section
   let := hnoeth'
   have hρ : ρ = r (if onSection = true then (0 : Fin 4) else 2) := by
     fin_cases s <;> rfl
-  obtain ⟨hproj, d₀, ht₀, Z, U, hU, k, hlink, hOver, hg', hbir', hPole, hcenters, hsection,
-    hDecrease⟩ :=
+  obtain ⟨hproj, d₀, ht₀, Z, U, hU, k, hlink, hOver, hg', hbir', hPole,
+    hcenters, hsection, hRuling, hDecrease⟩ :=
     hT.exists_sarkisov_link_of_logarithmic_smooth_section b e hΦ hc r hr onSection
       ρ hOpp c g hg hbir hρ j hj (by simpa only [← hj] using hfirst) D hD
-  obtain ⟨d, t, ht, -, hmark, hfiber⟩ :=
+  obtain ⟨d, t, ht, -, hmark, hcoord, hfiber⟩ :=
     Fan.exists_hirzebruchPicardBasis_natAbs d₀ e' (reg[hOpp]) _ ht₀
   refine ⟨hproj, Z, U, hU, k, d, t, ht, hg', hbir', hPole, ?_,
-    fun he ↦ (hmark he).1, ?_, ?_, hsection, ?_⟩
+    fun he ↦ (hmark he).1, ?_, ?_, hsection, ?_, ?_⟩
   · exact exists_sarkisov_path_of_resolved_section b hΦ hc r s hT c hOpp hU k hOver D hD hPole hlink
   · intro he l a m hm
     let τ := r (fiber[l])
@@ -267,6 +283,9 @@ theorem exists_sarkisov_path_of_smooth_section
     rw [hlift] at hcenter
     refine ⟨hcard, hcenter.trans himage, fun u ↦ ?_, hfirst'⟩
     rw [Fan.mutationFanRayEquiv_toCone, OrderIso.le_iff_le]
+  · intro q q'
+    have hχ := congrArg LinearMap.toAddMonoidHom hcoord
+    simpa only [q, q', hχ] using hRuling
   · obtain ⟨ha, hβ, horders, -, hlt⟩ := hDecrease
     dsimp only
     rw [hfiber]

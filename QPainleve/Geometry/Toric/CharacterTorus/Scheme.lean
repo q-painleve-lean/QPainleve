@@ -11,6 +11,7 @@ public import QPainleve.Algebra.AlgebraicGroup.DiagonalizableGroup.Scheme.Basic
 public import QPainleve.AlgebraicGeometry.RationalMap.FunctionField
 public import QPainleve.Geometry.Toric.CharacterTorus.Basic
 public import TauCeti.Algebra.AlgebraicGroup.DiagonalizableGroup.Scheme.Points
+public import TauCeti.Algebra.Group.FreeAbelianCharacter
 public import TauCeti.AlgebraicGeometry.Scheme.BaseAlgebra
 
 import QPainleve.Algebra.MonoidAlgebra.Smooth
@@ -100,6 +101,42 @@ theorem pointsEquiv_symm_apply_val (c : Multiplicative B →* kˣ) :
       Spec.map (CommRingCat.ofHom
         ((DiagonalizableGroup.point c).comp
           (AddMonoidAlgebra.toMultiplicativeAlgEquiv k k B).toAlgHom).toRingHom) := (rfl)
+
+section CenterPoints
+
+open Multiplicative
+
+variable {k} {ι : Type u} [Finite ι]
+
+/-- Evaluate an exponent vector at the given tuple of units. -/
+abbrev centerCharacter (c : ι → kˣ) : Multiplicative (ι → ℤ) →* kˣ :=
+  freeAbelianCharEquiv.symm c |>.comp
+    ((Finsupp.linearEquivFunOnFinite ℤ ℤ ι).symm.toAddEquiv.toMultiplicative.toMonoidHom)
+
+/-- The basis values of a center character recover it on the full exponent lattice. -/
+@[simp]
+theorem centerCharacter_of_pi_single [DecidableEq ι] (c : Multiplicative (ι → ℤ) →* kˣ) :
+    centerCharacter (fun j ↦ c (ofAdd (Pi.single j 1))) = c := by
+  let e := (Finsupp.linearEquivFunOnFinite ℤ ℤ ι).toAddEquiv.toMultiplicative
+  apply (MonoidHom.cancel_right (f := e.toMonoidHom) e.surjective).mp
+  apply freeAbelianCharEquiv.injective
+  funext j
+  simp [e, centerCharacter, freeAbelianCharEquiv_apply, Finsupp.linearEquivFunOnFinite_single]
+
+/-- The point of the center torus with the given coordinate units, in the slice over `Spec k`. -/
+abbrev centerPoint (c : ι → kˣ) :
+    Over.mk (𝟙 (Spec (CommRingCat.of k))) ⟶ Over.mk (structureMap k (ι → ℤ)) :=
+  let z := (pointsEquiv k (ι → ℤ)).symm (centerCharacter c)
+  Over.homMk z.val z.property
+
+/-- Evaluating the character of `centerPoint` on the coordinate basis recovers its parameters. -/
+theorem centerPoint_parameters [DecidableEq ι] (c : ι → kˣ) :
+    (fun j ↦ pointsEquiv k (ι → ℤ) ⟨(centerPoint c).left, Over.w (centerPoint c)⟩
+      (ofAdd (Pi.single j 1))) = c := by
+  funext j
+  simp [centerCharacter, Finsupp.linearEquivFunOnFinite_symm_single]
+
+end CenterPoints
 
 /-- The trivial character gives a point of the character scheme over a field,
 viewed as an object of the slice category. -/

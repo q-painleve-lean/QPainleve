@@ -8,6 +8,7 @@ module
 public import QPainleve.Geometry.Toric.Fan.CyclicOrder
 public import QPainleve.SignedClusterModularGroup.Realization.ContractionNumerics
 public import QPainleve.SignedClusterModularGroup.Realization.Inversion.Contracted
+public import QPainleve.SignedClusterModularGroup.Realization.MarkedComparison
 
 /-!
 # Complete marked toric presentations
@@ -113,6 +114,21 @@ theorem CompleteToricPresentation.hasNodalModel_iff (Q : CompleteToricPresentati
   (Iff.rfl)
 
 namespace CompleteToricPresentation
+
+/-- A nodal contraction of a marked toric fiber supplies a nodal model at its center. -/
+theorem hasNodalModel_of_contraction (Q : CompleteToricPresentation i b r L γ)
+    {c : Point Centers} {M : MarkedSurface ℂ n H XTor} :
+    letI := Q.complete.nonempty_cones
+    letI := Q.prestable
+    letI := Q.neZero
+    ∀ {p : ContractedToricFiber b Q.rays Q.regular Q.cycle Q.origin Q.inclusion χ(c) M},
+      p.IsNodalContraction → Q.HasNodalModel c M := by
+  intro p hp
+  let := Q.complete.nonempty_cones
+  let := Q.prestable
+  let := Q.neZero
+  obtain ⟨l, Y, W, hW, e, he⟩ := hp.exists_tower
+  exact (Q.hasNodalModel_iff c M).mpr ⟨p, Y, l, W, e, hW, he.symm⟩
 
 /-- The charge lattice of a marked toric presentation of a primitive nef
 square-zero anticanonical cycle has finite index. -/

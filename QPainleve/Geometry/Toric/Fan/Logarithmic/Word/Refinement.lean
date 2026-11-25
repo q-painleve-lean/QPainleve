@@ -24,6 +24,7 @@ full Picard marking pull back under the nodal projection.
 public section
 
 open AlgebraicGeometry CategoryTheory QPainleve.BlowupTower
+open QPainleve.CharacterTorus (centerCharacter)
 open Scheme.IdealSheafData TauCeti.AlgebraicGeometry LineBundleClass
 
 namespace TauCeti.Toric.Fan.LogarithmicProjection.OrderedToricModel

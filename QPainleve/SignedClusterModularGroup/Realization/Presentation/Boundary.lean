@@ -8,10 +8,8 @@ module
 public import QPainleve.SignedClusterModularGroup.Realization.NumberedRays
 public import QPainleve.SignedClusterModularGroup.Realization.Presentation
 
-import QPainleve.Geometry.Toric.Fan.Presentation.Genus
 import QPainleve.Geometry.Toric.Fan.Subdivision.Projective
 import QPainleve.LinearAlgebra.BilinearForm.Prod
-import QPainleve.SignedClusterModularGroup.Realization.Anticanonical
 import QPainleve.SignedClusterModularGroup.Realization.NodalFiber
 import TauCeti.LinearAlgebra.Matrix.Dual
 
@@ -37,7 +35,6 @@ local notation "S" => Spec (CommRingCat.of ℂ)
 local notation "Centers[" r "]" => Over.mk (structureMap ℂ (Fin r → ℤ))
 local notation "XTor[" r "]" => scheme ℂ (Fin r →₀ ℤ)
 local notation "D[" M "]" => Scheme.Hom.ker (Over.Hom.left (Arrow.hom (MarkedSurface.pair M)))
-local notation "χ[" c "]" => pointsEquiv ℂ _ (Subtype.mk (Over.Hom.left c) (Over.w c))
 
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {b : Basis (Fin 2) ℤ N} {r n : ℕ} [NeZero n]
@@ -66,25 +63,6 @@ theorem isPerfPair_auxiliaryPicardForm
   ext x y
   simp
 
-/-- A nodal contraction of a marked toric fiber supplies a nodal model at its center. -/
-theorem hasNodalModel_of_contraction {c : GeometricRealization.Point Centers[r]}
-    {M : MarkedSurface ℂ n H XTor[r]}
-    {p : ContractedToricFiber b Q.rays Q.regular Q.cycle Q.origin Q.inclusion χ[c] M}
-    (hp : p.IsNodalContraction) : Q.HasNodalModel c M := by
-  obtain ⟨l, Y, W, hW, e, he⟩ := hp.exists_tower
-  exact (Q.hasNodalModel_iff c M).mpr ⟨p, Y, l, W, e, hW, he.symm⟩
-
-private theorem exists_nodalContraction {c : GeometricRealization.Point Centers[r]}
-    {M : MarkedSurface ℂ n H XTor[r]} (h : Q.HasNodalModel c M) (hD : D[M].IsEffectiveCartier) :
-    ∃ p : ContractedToricFiber b Q.rays Q.regular Q.cycle Q.origin Q.inclusion χ[c] M,
-      p.IsNodalContraction := by
-  let : IsIntegral M.surface := M.integral
-  let : M.surface.IsProjectiveOver ℂ := M.projective
-  let : SmoothOfRelativeDimension 2 (M.surface ↘ S) := M.smooth
-  let : PrestableFamily (D[M].subscheme ↘ S) := M.prestable_boundaryImage
-  obtain ⟨p, _, _, T, e, hT, he⟩ := (Q.hasNodalModel_iff c M).mp h
-  exact ⟨p, hD, h.hasToricPresentation.genus_blowupComponent_eq_zero hD, _, _, T, hT, e, he.symm⟩
-
 /-- Two marked nodal models of one complete toric presentation have the same
 boundary class at every label. This holds also for repeated centers and cycles
 with one or two components. -/
@@ -98,8 +76,8 @@ theorem boundaryClass_eq_of_matching_nodal_models {c d : GeometricRealization.Po
   let : SmoothOfRelativeDimension 2 (Q.fan.algebraicRealization ↘ S) := by
     rw [← hN, Q.fan.algebraicRealization_over]
     exact Q.fan.smoothOfRelativeDimension_algebraicRealizationStructureMap Q.regular
-  obtain ⟨p, hp⟩ := Q.exists_nodalContraction hc hM
-  obtain ⟨q, hq⟩ := Q.exists_nodalContraction hd hP
+  obtain ⟨p, hp⟩ := hc.exists_isNodalContraction hM
+  obtain ⟨q, hq⟩ := hd.exists_isNodalContraction hP
   have hrays := p.numberedBoundaryRays_eq_of_nodalContractions q hp hq
     Q.isPerfPair_auxiliaryPicardForm.separatingRight
   exact p.boundaryClass_eq_of_range_numberedBoundaryRays_eq q hp hq

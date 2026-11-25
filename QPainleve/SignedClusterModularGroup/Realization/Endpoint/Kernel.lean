@@ -183,9 +183,8 @@ theorem signedPicardHom_ker_eq_bot_of_presentation
     (P : ChargeSeed E N) (hform : P.form = b.detDualEquiv.toLinearMap)
     (hcharge : P.charge = Fan.rayChargeMap Q.rays)
     (M : Point Centers[r] → MarkedSurface ℂ n H XTor[r])
-    (p : ∀ (c : Point Centers[r]) (_ : c.left (default : S) ∈ U₀[P]),
-      ContractedToricFiber b Q.rays Q.regular Q.cycle Q.origin Q.inclusion (χ[c]) (M c))
-    (hnodal : ∀ c hc, (p c hc).IsNodalContraction)
+    (models : ∀ c : Point Centers[r], c.left (default : S) ∈ U₀[P] →
+      Q.HasNodalModel c (M c))
     (hD : ∀ c, D[M c].IsEffectiveCartier)
     {c₀ : Point Centers[r]} (hmodel : Q.HasNodalModel c₀ (M c₀))
     [IsRationalOver ((M c₀).surface ↘ S)]
@@ -208,9 +207,9 @@ theorem signedPicardHom_ker_eq_bot_of_presentation
   have hker : E.matrix.mulVecLin.ker = P.charge.ker := by
     rw [← P.matrix_eq, hform, hcharge]
     exact Fan.ker_chargeExchangeMatrix_rayChargeMap b Q.rays hindex
-  have models (x : CenterPoint (U := Centers[r]) (V := Centers[r]) Cnil[P]) :=
-    let hx := (Path.nil.centerPoint_endpoints_mem_noncollision P hker x).2
-    Q.hasNodalModel_of_contraction (hnodal _ hx)
+  have hmodels (x : CenterPoint (U := Centers[r]) (V := Centers[r]) Cnil[P]) :=
+    models _ (Path.nil.centerPoint_endpoints_mem_noncollision P hker x).2
+  choose p hnodal using fun c hc ↦ (models c hc).exists_isNodalContraction (hD c)
   have hd : Function.Injective d := by
     rw [← funext (hmark c₀)]
     exact (M c₀).boundaryClass_injective_of_nef_square_zero (hD c₀) hnef hsq
@@ -226,7 +225,7 @@ theorem signedPicardHom_ker_eq_bot_of_presentation
     (fun w ↦ (End.asHom w).centerPoint_endpoints_mem_noncollision P hker) ?_
   intro w
   obtain ⟨R, -, _, hmodels⟩ := exists_realize_signed_loop (End.asHom w) P Q
-    hform hcharge M models hmodel hD hnef hsq hcan hprim d hmark
+    hform hcharge M hmodels hmodel hD hnef hsq hcan hprim d hmark
   exact ⟨R, hρ w R (fun x ↦ ⟨((Q.hasNodalModel_iff _ _).mp (hmodels x)).choose⟩)⟩
 
 end QPainleve.SignedClusterModularGroup.GeometricRealization
