@@ -17,7 +17,6 @@ import QPainleve.Geometry.Toric.Fan.Logarithmic.Subdivision
 import QPainleve.Geometry.Toric.Fan.Mutation.Tower
 import QPainleve.Geometry.Toric.Fan.Picard.Homaloidal
 import QPainleve.Geometry.Toric.Fan.StarSubdivision.Tower
-import QPainleve.SignedClusterModularGroup.SarkisovDegree.Decrease
 import QPainleve.SignedClusterModularGroup.SarkisovDegree.ToricLink
 import TauCeti.AlgebraicGeometry.Morphisms.Modification.Composition
 
@@ -28,7 +27,7 @@ In the frame of the exchanged ruling, the first link at the toric corner gives
 a Hirzebruch-one surface. The smooth center on the opposite section lifts
 uniquely to the common toric blowup. It remains the first center over its image
 in the transported tower. The link at this point and the final ruling exchange
-give the degree-decreasing resolution over a quadric.
+give the new resolution over a quadric and compute its Picard coordinates.
 The original logarithmic pole ideal works for each regular projection in this
 block, and its inverse image works on the final transported point tower.
 
@@ -192,25 +191,22 @@ local notation "rays[" Ψ "," d "," r "," hr "]" =>
 local notation "μ[" Ψ "," d "," r "," hr "," c "]" =>
   Scheme.PartialMap.toRationalMap (Fan.mutationPartialMap Ψ d (c : ℂ) hv[r] hp[r] opp[d,r,hr])
 
-variable [X[Φ].IsProjectiveOver ℂ]
-
 include hσ in
-/-- On a quadric written in the frame of the exchanged ruling, suppose that the two
-orders greater than half the original fiber degree are at a corner of the chosen
-section and at a smooth point of the opposite section. The toric link at the
-corner, mutation at the transported smooth point, and ruling exchange give
-regular projections on the specified resolution, transported by isomorphisms.
+/-- On a quadric written in the frame of the exchanged ruling, take the first
+centers at a corner of the chosen section and at a smooth point of the opposite
+section. The toric link at the corner, mutation at the transported smooth point,
+and ruling exchange give regular projections on the specified resolution,
+transported by isomorphisms.
 
 For original fiber and section coefficients β and a in this frame, and base
 orders m and m' at the two points, the final coefficients are a and β + a - m - m'.
-The second final coefficient is positive and strictly less than β, so the
-Sarkisov bidegree decreases.
+The second final coefficient is the positive fiber degree at the endpoint.
 The pole factorization is preserved along the common toric blowup, its contraction,
 the mutation and the final ruling exchange. On the final point tower the pole ideal
 is pulled back along the inverse of the composite resolving isomorphism.
 The exceptional coordinates record the reverse pivots and the order inherited
 from the original tower, including at infinitely near centers. -/
-theorem exists_quadric_resolution_of_corner_and_smooth_high_centers
+theorem exists_quadric_resolution_of_corner_and_smooth_centers
     (g : Y ⟶ P) (hg : g ≫ (P ↘ S) = T.toBase ≫ f[Φ])
     (hbir : Scheme.BirationalOver g (𝟙 P))
     (j l : Fin (n + 2))
@@ -225,8 +221,6 @@ theorem exists_quadric_resolution_of_corner_and_smooth_high_centers
     let β := (C₀).repr x.1 0
     let a := (C₀).repr x.1 1
     let m := fun k ↦ -x.2 k
-    β < 2 * m j → m j ≤ β → β < 2 * m l → m l ≤ β →
-    (∀ k, k ≠ j → k ≠ l → 0 ≤ m k ∧ 2 * m k ≤ β) →
     ∃ (Ψ F : Fan i) (hΨ : Ψ.IsRegular) (hcΨ : Ψ.IsComplete) (_ : F.IsRegular)
       (s : F.IsSubdivision Φ) (t : F.IsSubdivision Ψ) (τ : Ψ.cones)
       (v : X[F] ≅ (I[σ]).blowup) (w : X[F] ≅ (I[τ]).blowup)
@@ -268,9 +262,6 @@ theorem exists_quadric_resolution_of_corner_and_smooth_high_centers
           ((Fin.addCases (fun _ : Fin 1 ↦ -a - x.2 j) (x.2 ∘ j.succAbove) :
             Fin (1 + (n + 1)) → ℤ) ∘ k.succAbove) ∧
         0 < (C[b',0,hΘ,s',hs']).repr z.1 1 ∧
-        (C[b',0,hΘ,s',hs']).repr z.1 1 < β ∧
-        hirzebruchSarkisovBidegree ((C[b',0,hΘ,s',hs']).repr z.1 1).toNat (∑ k, -z.2 k).toNat <
-          hirzebruchSarkisovBidegree β.toNat (∑ k, m k).toNat ∧
         letI : SmoothOfRelativeDimension 2 (X[Φ] ↘ S) := by
           simpa only [Fan.algebraicRealization_over] using
             (dim(b) ▸ Φ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ :
@@ -294,26 +285,15 @@ theorem exists_quadric_resolution_of_corner_and_smooth_high_centers
               D * R[e.hom ≫ k₁.hom ≫ V.toBase] ∧
             D[Θ,hcΘ].comap V.toBase =
               D.comap (e ≪≫ k₁).inv * hV.ramificationIdealSheafToBase ℂ := by
-  intro hcones hdim x β a m hjbig hjle hlbig hlle hsmall
+  intro hcones hdim x β a m
   let := hcones
   let := hdim
+  -- Resolve the first link and find the lifted smooth pivot in the ordered tower.
   obtain ⟨Ψ, F, hΨ, hcΨ, hF, s, t, τ, v, w, d, r', hr', q, Z, U, hU, e, c', l', hv, hw,
       hq, hq', hidx, hk, hkfirst, ha, hβ, horders⟩ :=
     exists_hirzebruchOne_resolution_of_corner_with_smooth_center b hΦ hcΦ r hr σ hσ hT
       j l hj hjfirst c hl hlfirst (pullback g H)
   let k := l'.natAdd 1
-  -- The homaloidal identities compare the initial degree with the final ruling coefficient.
-  have ⟨hsq, hsum⟩ := hT.homaloidal_intersection_identities_of_hirzebruch b 0 hΦ hcΦ r hr g hg hbir
-  have hsq' : ∑ k, m k ^ 2 = 2 * β * a - 1 := by
-    simpa only [m, x, β, a, neg_sq, Nat.cast_zero, zero_mul, sub_zero,
-      Fan.algebraicRealization_over] using hsq
-  have hsum' : ∑ k, m k = 2 * β + 2 * a - 3 := by
-    simpa only [m, x, β, a, Nat.cast_zero, sub_zero, Fan.algebraicRealization_over] using hsum
-  have hlt := quadric_sarkisov_degree_decrease_of_pair (a := a) (b := β) (m := m)
-    (by omega) (hidx ▸ Fin.ne_succAbove j l')
-    (hsq'.trans (by ring))
-    (hsum'.trans (by ring))
-    hjbig.le hjle hlbig.le hlle hsmall
   refine ⟨Ψ, F, hΨ, hcΨ, hF, s, t, τ, v, w, d, r', hr', q, Z, U, hU, e, c', l', hv, hw,
     hq, hq', hidx, hk, hkfirst, ?_⟩
   intro Θ hΘ hcΘ s' hconesΨ hconesΘ hdimΨ hdimΘ hZ hUmod
@@ -345,6 +325,7 @@ theorem exists_quadric_resolution_of_corner_and_smooth_high_centers
     refine Scheme.BirationalOver.trans (sY := g) ⟨.ofIso (e ≪≫ k₁).symm, ?_⟩ hbir
     simp [Scheme.PartialIso.IsOver, Scheme.PartialIso.ofIso]
   refine ⟨hg', hbir', ?_⟩
+  -- Compute the two ruling coefficients and the reverse-pivot orders in the final marking.
   let z := (R.tower.picardMarking (R.isLift.isClosedPointTower hV₀) f[Θ]).symm
     (Additive.ofMul (pullback (k₁.inv ≫ e.inv ≫ g) H))
   have hm : ((U.picardMarking hU f[Ψ]).symm
@@ -357,7 +338,12 @@ theorem exists_quadric_resolution_of_corner_and_smooth_high_centers
   have hz₁' : (C[b',0,hΘ,s',hs']).repr z.1 1 = β + a - m j - m l := by
     simpa only [z, k₁, τq, R, ← pullback_comp, Category.assoc, Fan.algebraicRealization_over,
       ha, hm, m, sub_neg_eq_add, add_comm a β] using hz₁
-  refine ⟨hz₀', hz₁', ?_, hz₁' ▸ hlt.1, hz₁' ▸ hlt.2, ?_, ?_⟩
+  let : X[Θ].IsProjectiveOver ℂ := Θ.isProjectiveOver_quadric b' hΘ hcΘ s' hs'
+  have hpos : 0 < (C[b',0,hΘ,s',hs']).repr z.1 1 :=
+    ((R.isLift.isClosedPointTower hV₀).hirzebruch_resolution_degree_bounds
+      b' 0 hΘ hcΘ s' hs' (k₁.inv ≫ e.inv ≫ g)
+      (by simpa only [Fan.algebraicRealization_over] using hg') hbir').1
+  refine ⟨hz₀', hz₁', ?_, hpos, ?_⟩
   · funext i
     refine Fin.addCases (fun f ↦ ?_) (fun f ↦ ?_) i
     · rw [Subsingleton.elim f (0 : Fin 1), Fin.addCases_left]
@@ -370,8 +356,6 @@ theorem exists_quadric_resolution_of_corner_and_smooth_high_centers
     · simpa only [z, k₁, τq, R, Θ, hΘ, hcΘ, s', ← pullback_comp, Category.assoc,
         Fan.algebraicRealization_over, Fin.addCases_right, Function.comp_apply, horders, k, a, x]
         using hztail f
-  · rw [Prod.Lex.lt_iff, ofLex_hirzebruchSarkisovBidegree, ofLex_hirzebruchSarkisovBidegree]
-    exact Or.inl (by rw [hz₁']; omega)
   · -- Compare the pole ideals on the original resolution before moving to the final tower.
     let : SmoothOfRelativeDimension 2 (X[Φ] ↘ S) := by
       simpa only [Fan.algebraicRealization_over] using hdim
