@@ -60,7 +60,8 @@ local notation "center[" b "," ρ "," c "]" => Fan.Ray.binomialCenter ρ rank[b]
   (Fan.Ray.surjective_detCharacter ρ b) c (IsLocalRing.closedPoint ℂ)
 local notation "fiberRay[" r "," t "]" => r ((![1, 3] : Fin 2 → Fin 4) t)
 local notation "degree[" β "," x "]" =>
-  hirzebruchSarkisovBidegree (Int.toNat β) (Int.toNat (∑ j, -(Prod.snd x) j))
+  hirzebruchSarkisovBidegree (Int.toNat β)
+    (Int.toNat (sarkisovSecondaryDegree ℂ (Additive.toMul (Prod.fst x))))
 
 /-- A marked positive-index Hirzebruch-to-plane resolution with high base orders
 over the open orbits of invariant fibers. The high orders are exactly the indices
