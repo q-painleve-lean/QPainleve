@@ -5,7 +5,7 @@ Authors: The QPainleve contributors
 -/
 module
 
-public import QPainleve.SignedClusterModularGroup.Examples.FourVertex
+public import QPainleve.SignedClusterModularGroup.Examples.FourVertex.Basic
 
 import Mathlib.LinearAlgebra.RootSystem.OfBilinear
 import Mathlib.LinearAlgebra.Transvection.Basic

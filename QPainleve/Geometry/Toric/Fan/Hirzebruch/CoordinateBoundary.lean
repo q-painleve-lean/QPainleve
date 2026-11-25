@@ -6,6 +6,7 @@ Authors: The QPainleve contributors
 module
 
 public import QPainleve.Geometry.Toric.Fan.Ruling.Hirzebruch.Prime
+public import QPainleve.Geometry.Toric.Fan.Ruling.Quadric
 
 import QPainleve.Geometry.Toric.Fan.Boundary.Intersection
 import QPainleve.Geometry.Toric.Fan.Boundary.Node
@@ -19,7 +20,8 @@ import TauCeti.AlgebraicGeometry.IdealSheaf.Product
 The two transverse rays give the scheme-theoretic fibers over the two coordinate
 points of the projective line. The two remaining rays give sections of the ruling.
 Their ideals, together with the two fiber ideals, give the reduced toric boundary
-as a product of ideal sheaves.
+as a product of ideal sheaves. On the quadric, the two sections are the
+coordinate fibers of the exchanged ruling.
 -/
 
 public noncomputable section
@@ -33,6 +35,12 @@ namespace TauCeti.Toric.Fan
 
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {Φ : Fan i} [Nonempty Φ.cones]
+
+local notation "p[" k "]" => projectiveLine.polynomialPoint ℂ (RingHom.id ℂ) k 0
+
+section Hirzebruch
+
+variable
   (b : Basis (Fin 2) ℤ N) (e : ℤ) (hΦ : Φ.IsRegular) (r : Fin 4 ≃ Φ.Ray)
   (hr : (fun j ↦ (r j).primitiveGenerator) = ![b 0, b 1, -b 0, e • b 0 - b 1])
 
@@ -41,7 +49,6 @@ local notation "S" => Spec (CommRingCat.of ℂ)
 local notation "m" => LinearMap.toAddMonoidHom (b.coord 1)
 local notation "signCondition" => nonneg_or_nonpos_hirzebruch_ruling_character b e r hr
 local notation "q" => Φ.characterRuling m signCondition
-local notation "p[" k "]" => projectiveLine.polynomialPoint ℂ (RingHom.id ℂ) k 0
 local notation "I[" j "]" => Φ.rayBoundaryIdeal hΦ (r j)
 
 /-- The scheme-theoretic fibers at the two coordinate points of a Hirzebruch
@@ -129,5 +136,44 @@ theorem exists_hirzebruch_toric_boundary_sections_and_fibers (hc : Φ.IsComplete
       ← rayBoundaryIdeal_hirzebruch_eq_coordinateFiber b e hΦ r hr 1]
     change I[0] * I[1] * I[2] * I[3] = I[0] * I[2] * I[1] * I[3]
     ac_rfl
+
+end Hirzebruch
+
+variable (b : Basis (Fin 2) ℤ N) (hΦ : Φ.IsRegular) (hc : Φ.IsComplete)
+  (r : Fin 4 ≃ Φ.Ray)
+  (hr : (fun j ↦ (r j).primitiveGenerator) = ![b 0, b 1, -b 0, (0 : ℤ) • b 0 - b 1])
+
+local notation "b'" => b.reindex (Equiv.swap 0 1)
+local notation "r'" => Equiv.trans (Equiv.trans (Equiv.swap (0 : Fin 4) 1) (Equiv.swap 2 3)) r
+local notation "hr'" => quadric_swapped_generators b r hr
+local notation "q₀" =>
+  Fan.characterRuling Φ (LinearMap.toAddMonoidHom (Basis.coord b 0))
+    (nonneg_or_nonpos_quadric_transverse_character b r hr)
+local notation "q₁" =>
+  Fan.characterRuling Φ (LinearMap.toAddMonoidHom (Basis.coord b 1))
+    (nonneg_or_nonpos_hirzebruch_ruling_character b 0 r hr)
+
+include hΦ hc hr in
+/-- The toric boundary ideal on the quadric is the product of the two coordinate
+fiber ideals in each of its two rulings. -/
+theorem boundaryIdeal_eq_four_coordinate_fibers :
+    Φ.boundaryIdeal inferInstance =
+      (p[0].ker.comap q₀) * (p[1].ker.comap q₀) *
+        (p[0].ker.comap q₁) * (p[1].ker.comap q₁) := by
+  let := Fintype.ofFinite Φ.Ray
+  have hdim : finrank ℤ N = 2 := (finrank_eq_card_basis b).trans (Fintype.card_fin 2)
+  have h₀ := rayBoundaryIdeal_hirzebruch_eq_coordinateFiber (b') 0 hΦ (r') (hr') 0
+  have h₂ := rayBoundaryIdeal_hirzebruch_eq_coordinateFiber (b') 0 hΦ (r') (hr') 1
+  rw [characterRuling_quadric_swap b r hr] at h₀ h₂
+  have hr₀ : r' (![1, 3] (0 : Fin 2)) = r 0 := congrArg r (by decide)
+  have hr₂ : r' (![1, 3] (1 : Fin 2)) = r 2 := congrArg r (by decide)
+  rw [hr₀] at h₀
+  rw [hr₂] at h₂
+  rw [Φ.boundaryIdeal_eq_prod_rayBoundaryIdeal hΦ (Φ.isEffectiveCartier_boundaryIdeal hΦ hc hdim),
+    ← r.prod_comp, Fin.prod_univ_four, ← h₀, ← h₂,
+    ← rayBoundaryIdeal_hirzebruch_eq_coordinateFiber b 0 hΦ r hr 0,
+    ← rayBoundaryIdeal_hirzebruch_eq_coordinateFiber b 0 hΦ r hr 1]
+  simp only [Matrix.cons_val_zero, Matrix.cons_val_one]
+  ac_rfl
 
 end TauCeti.Toric.Fan

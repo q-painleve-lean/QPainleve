@@ -398,7 +398,8 @@ private theorem exists_iso_fiber_away_from_elementary_transform
 
 /-- At a boundary node on a projective-line fiber that is not a boundary component,
 the strict transform of the fiber contracts after blowing up the node. The reduced
-total boundary descends isomorphically to a nodal anticanonical boundary. The ruling
+total boundary omits the contracted strict transform and descends isomorphically to
+a nodal anticanonical boundary. The ruling
 descends over the same base, with a new boundary component as the scheme-theoretic
 fiber over the chosen point. The other closed fibers keep their boundary restrictions. -/
 theorem exists_elementary_transform_of_nodal_fiber
@@ -420,6 +421,7 @@ theorem exists_elementary_transform_of_nodal_fiber
       IsIntegral Y ∧ Y.IsProjectiveOver k ∧
       IsModification g ∧ g.IsOver S ∧ IsDominant f' ∧ f'.IsOver S ∧ g ≫ f' = π[p] ≫ f ∧
       IsClosed ({q} : Set Y) ∧ g.centre = {q} ∧ (J[q]).comap g = F₁[p,f,y] ∧
+      ¬ ((J[q]).comap g).support ≤ (R[p,D]).support ∧
       (E[p]).map g = F[f',y] ∧ D' ≤ F[f',y] ∧ f' q = y ∧
       (∃ v : (E[p]).subscheme ≅ (F[f',y]).subscheme,
         v.hom ≫ (F[f',y]).subschemeι = (E[p]).subschemeι ≫ g) ∧
@@ -472,7 +474,7 @@ theorem exists_elementary_transform_of_nodal_fiber
   obtain ⟨hdom, hEq, hIso⟩ :=
     f.exists_iso_exceptional_transformed_fiber hp hy hpy hJ a g f' hcomp hq hgF hExc hEmb
   refine ⟨Y, s, g, q, f', hSmooth, hIntegral, hProj, hmod, hg, hdom, hf', hcomp,
-    hq, hc, hgF, hEq, hEq ▸ map_mono g hER, hfq, hIso,
+    hq, hc, hgF, hgF.symm ▸ hnot, hEq, hEq ▸ map_mono g hER, hfq, hIso,
     htotal, hQF ▸ htotal', ?_, ⟨e, he⟩, hD', hK', hN', d, hd⟩
   intro z hz hzy
   exact f.exists_iso_fiber_away_from_elementary_transform hp g f' hcomp (comp_over g S)
