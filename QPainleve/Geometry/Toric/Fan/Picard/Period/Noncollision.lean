@@ -6,7 +6,6 @@ Authors: The QPainleve contributors
 module
 
 public import QPainleve.Algebra.Cluster.Word.Noncollision
-public import QPainleve.Geometry.Toric.Fan.Logarithmic.Word.Basic
 public import QPainleve.Geometry.Toric.Fan.Picard.Period.Surjectivity
 
 import QPainleve.Geometry.Toric.CharacterTorus.Avoidance
@@ -32,8 +31,6 @@ open Scheme (IdealSheafData NodalCycleNumbering)
 open TauCeti.AlgebraicGeometry
 
 namespace TauCeti.Toric.Fan
-
-open LogarithmicProjection (centerCharacter)
 
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {Φ : Fan i} [Nonempty Φ.cones] {n : ℕ}

@@ -23,6 +23,7 @@ public noncomputable section
 
 open AlgebraicGeometry CategoryTheory
 open QPainleve.Cluster QPainleve.BlowupTower TauCeti TauCeti.AlgebraicGeometry
+open QPainleve.CharacterTorus (centerCharacter)
 
 namespace TauCeti.Toric.Fan.LogarithmicProjection
 

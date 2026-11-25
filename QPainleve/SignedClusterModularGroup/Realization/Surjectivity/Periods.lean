@@ -70,7 +70,6 @@ local instance periodFiberProjective (M : MarkedSurface ℂ n B Xtor[r]) :
 namespace CompleteToricPresentation
 
 open Fan
-open Fan.LogarithmicProjection (centerCharacter)
 
 variable (Q : CompleteToricPresentation i b r L γ)
   {M : GeometricRealization.Point Centers[r] → MarkedSurface ℂ n B Xtor[r]}
@@ -157,19 +156,11 @@ private theorem exists_compatible_ordered_periods
       (fun j ↦ by
         obtain ⟨σ, h₀, h₁, hz⟩ := hnodes j
         exact ⟨σ.val, h₀, h₁, hz⟩) P hcharge f 1
-  let point (t : Fin r → ℂˣ) : GeometricRealization.Point Centers[r] :=
-    Over.homMk ((pointsEquiv ℂ (Fin r → ℤ)).symm (centerCharacter t)).val
-      ((pointsEquiv ℂ (Fin r → ℤ)).symm (centerCharacter t)).property
-  have hcenter (t : Fin r → ℂˣ) : center[χ[point t]] = t := by
-    rw [show χ[point t] = centerCharacter t from
-      (pointsEquiv ℂ (Fin r → ℤ)).apply_symm_apply (centerCharacter t)]
-    funext j
-    simp [centerCharacter]
-  refine ⟨point t₀, point t₁, ?_, ?_, ?_, fun _ w ↦ hword w⟩
-  · simpa only [hcenter t₀] using hi₀
-  · simpa only [hcenter t₁] using hi₁
+  refine ⟨centerPoint t₀, centerPoint t₁, ?_, ?_, ?_, fun _ w ↦ hword w⟩
+  · simpa only [centerPoint_parameters] using hi₀
+  · simpa only [centerPoint_parameters] using hi₁
   · intro x
-    simpa only [hcenter t₀, hcenter t₁, Units.val_one, zpow_one] using hper x
+    simpa only [centerPoint_parameters, Units.val_one, zpow_one] using hper x
 
 /-- A prescribed signed boundary isometry has compatible geometric periods at
 two root-free fibers of the same presentation. Both centers belong to every

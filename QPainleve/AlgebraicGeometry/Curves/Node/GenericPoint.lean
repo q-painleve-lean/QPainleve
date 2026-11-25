@@ -10,6 +10,7 @@ public import QPainleve.AlgebraicGeometry.Curves.Node.NormalizationComponent
 
 import QPainleve.AlgebraicGeometry.Curves.Node.Conductor.Map
 import QPainleve.AlgebraicGeometry.Morphisms.IsoLocus
+import TauCeti.Topology.Irreducible
 
 /-!
 # Generic points of numbered boundary components
@@ -65,6 +66,28 @@ theorem componentGenericPoint_injective : Function.Injective A.componentGenericP
       (by simpa only [componentGenericPoint_def] using h))
   apply A.component.injective
   simpa only [genericPoints.component_ofComponent] using congrArg genericPoints.component hη
+
+open Order TauCeti in
+/-- A surjective morphism of numbered nodal curves hits every target component's
+generic point at a source component's generic point. -/
+theorem exists_componentGenericPoint_over {m : ℕ} [NeZero m]
+    (C : NodalCycleNumbering q m) (f : Y ⟶ X) [Surjective f] (j : ZMod n) :
+    ∃ l, f (C.componentGenericPoint l) = A.componentGenericPoint j := by
+  obtain ⟨x, hx⟩ := f.surjective (A.componentGenericPoint j)
+  have : Surjective ν[Y] := Y.surjective_blowupToBase_singularLocus
+    PrestableFamily.atWorstNodalOfRelativeDimensionOne
+  obtain ⟨y, hy⟩ := (ν[Y]).surjective x
+  let v := irreducibleComponentOf y
+  refine ⟨C.component.symm v, ?_⟩
+  have hs := (genericPoints.isGenericPoint_ofComponent v).specializes
+    (mem_irreducibleComponentOf y)
+  have h := (hs.map (ν[Y]).continuous).map f.continuous
+  rw [hy, hx] at h
+  have hmax : IsMax (A.componentGenericPoint j) := by
+    rw [A.componentGenericPoint_def, ← coheight_eq_zero]
+    exact X.coheight_blowupComponentGeneric (A.component j)
+  rw [C.componentGenericPoint_def, Equiv.apply_symm_apply]
+  exact (h.antisymm (Scheme.le_iff_specializes.mp (hmax (Scheme.le_iff_specializes.mpr h)))).eq
 
 /-- A numbered node lies on a numbered component exactly when that component is an
 endpoint of one of the node's ordered branches. -/
