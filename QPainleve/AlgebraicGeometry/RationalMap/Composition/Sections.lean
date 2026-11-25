@@ -36,6 +36,28 @@ def domainSource : f.domainOver ⟶ X :=
 @[simp]
 theorem domainSource_left : f.domainSource.left = f.domain.ι := (rfl)
 
+/-- Over a one-point base, a section factors through the domain of a partial map
+exactly when its value belongs to that domain. -/
+theorem exists_section_comp_domainSource_eq_iff [Subsingleton S]
+    (p : Over.mk (𝟙 S) ⟶ X) (s : S) :
+    (∃ q : Over.mk (𝟙 S) ⟶ f.domainOver, q ≫ f.domainSource = p) ↔ p.left s ∈ f.domain := by
+  constructor
+  · rintro ⟨q, rfl⟩
+    rw [Over.comp_left, domainSource_left, Scheme.Hom.comp_apply]
+    exact (Set.ext_iff.mp (Scheme.Opens.range_ι f.domain) _).mp (Set.mem_range_self _)
+  · intro hp
+    have h : Set.range p.left ⊆ Set.range f.domain.ι := by
+      rw [Scheme.Opens.range_ι]
+      rintro _ ⟨x, rfl⟩
+      rwa [Subsingleton.elim (α := S) x s]
+    let q := IsOpenImmersion.lift f.domain.ι p.left h
+    have hq : q ≫ f.domain.ι = p.left := IsOpenImmersion.lift_fac _ _ _
+    have hover : q ≫ (f.domain.ι ≫ X.hom) = 𝟙 S := by
+      rw [← Category.assoc, hq]
+      exact Over.w p
+    refine ⟨Over.homMk q hover, Over.OverMorphism.ext ?_⟩
+    simpa only [Over.comp_left, domainSource_left, Over.homMk_left] using hq
+
 variable [f.IsOver X.hom Y.hom]
 
 /-- The partial map on its domain as a morphism to the target over the base. -/
