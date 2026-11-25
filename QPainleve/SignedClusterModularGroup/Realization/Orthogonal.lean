@@ -48,10 +48,6 @@ variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {c : Multiplicative (Fin r → ℤ) →* ℂˣ}
   (p : ContractedToricFiber b s hΦ T o J c P)
 
-local instance : IsIntegral P.surface := P.integral
-local instance : P.surface.IsProjectiveOver ℂ := P.projective
-local instance : SmoothOfRelativeDimension 2 (P.surface ↘ S) := P.smooth
-
 local notation "K" => LinearMap.ker (Fan.rayChargeMap s)
 local notation "centers" => (fun j : Fin r ↦ c (ofAdd (Pi.single j 1)))
 local notation "Model" => Fan.internalBlowupTower b s centers
@@ -74,6 +70,8 @@ theorem existsUnique_markedBoundaryOrthogonalEquivChargeKernel (hp : p.IsNodalCo
       ∀ x : K, J (e.symm x).val =
         ((Fan.boundaryOrthogonalEquivChargeKernel hΦ s Btor).symm x).val := by
   classical
+  let : P.surface.IsProjectiveOver ℂ := P.projective
+  let : SmoothOfRelativeDimension 2 (P.surface ↘ S) := P.smooth
   let : (Chow.intersectionBilinForm ℂ P.surface).IsPerfPair := P.isPerfPair_intersectionForm
   obtain ⟨l, Y, W, hW, u, hu⟩ := hp.exists_tower
   have hproj : u.inv ≫ W.toBase ≫ (P.surface ↘ S) =
