@@ -83,11 +83,6 @@ variable {r : ℕ} {E₀ E₁ : SkewExchangeMatrix (Fin r)}
   (hd₀ : ∀ c j, (P₀ c).boundaryClass (h₀ c) j = d₀ j)
   (hd₁ : ∀ c j, (P₁ c).boundaryClass (h₁ c) j = d₁ j)
 
--- The path-category endomorphism projection uses the path-category hom type.
-local instance {E : SkewExchangeMatrix (Fin r)} (v : inversionFreeLoops E) :
-    xmap[E,v].IsDominant :=
-  Quiver.Path.instIsDominantXRationalMap ℂ (End.asHom v.val)
-
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {Φ : Fan i} [hΦ₀ : Nonempty Φ.cones]
   {b : Module.Basis (Fin 2) ℤ N} {s : Fin r → Φ.Ray} {hΦ : Φ.IsRegular}
@@ -114,12 +109,14 @@ theorem picardHom_base_change
       (hD : IsDominant D.hom) (hDO : D.IsOver T₀.hom T₀.hom),
       letI := hD
       letI := hDO
+      letI : xmap[E₀,v].IsDominant := Quiver.Path.instIsDominantXRationalMap ℂ (End.asHom v.val)
       ∃ A : GeometricRealization P₀ P₀ D xmap[E₀,v],
         (ρ₀ eval[E₀,v]).val = asIsometry[B₀] A.picard)
     (hreal₁ : ∀ v : inversionFreeLoops E₁, ∃ (D : T₁.left.PartialMap T₁.left)
       (hD : IsDominant D.hom) (hDO : D.IsOver T₁.hom T₁.hom),
       letI := hD
       letI := hDO
+      letI : xmap[E₁,v].IsDominant := Quiver.Path.instIsDominantXRationalMap ℂ (End.asHom v.val)
       ∃ A : GeometricRealization P₁ P₁ D xmap[E₁,v],
         Models[D] ∧ (ρ₁ eval[E₁,v]).val = asIsometry[B₁] A.picard) :
     ρ₁.comp (MulEquiv.op (clusterModularGroupCongr ℂ w)).toMonoidHom =
@@ -134,6 +131,8 @@ theorem picardHom_base_change
   let := hDO
   let := hJ
   let := hJO
+  let : xmap[E₀,u].IsDominant := Quiver.Path.instIsDominantXRationalMap ℂ (End.asHom u.val)
+  let : xmap[E₁,v].IsDominant := Quiver.Path.instIsDominantXRationalMap ℂ (End.asHom v.val)
   -- The two composites act alike on independent X coordinates.
   let u' : Word E₀ E₀ := u.val.asHom
   let v' : Word E₁ E₁ := v.val.asHom
@@ -152,6 +151,8 @@ theorem picardHom_base_change
   have hmodels₀ : Models[D.comp C] := fun c ↦ by
     simpa only [Category.assoc, PartialMap.compDomainRight_target] using
       hC (c ≫ D.compDomainRight C)
+  let : (xmap[E₀,u].comp (w.xRationalMap ℂ)).IsDominant :=
+    RationalMap.instIsDominantComp _ _
   obtain ⟨hpic, _⟩ := (R.comp B).marked_actions_eq_of_xMap_eq (A.comp R)
     hcomp hc hι hindex centers hmodels₁ hmodels₀
   have hg : g = eval[E₀,u] := op_unop g ▸ congrArg op hu.symm
@@ -164,8 +165,9 @@ theorem picardHom_base_change
   intro x
   rw [boundaryRotationGroupCongr_apply_apply, hA, hB]
   simp only [BilinForm.coe_isometryGroupEquivIsometryEquiv_symm]
-  have h := congrArg (fun e : B₁.IsometryEquiv B₀ ↦ e x) hpic
-  simp only [comp_picard, BilinForm.IsometryEquiv.trans_apply] at h
+  have hpic' := (comp_picard R B).symm.trans (hpic.trans (comp_picard A R))
+  have h := congrArg (fun e : B₁.IsometryEquiv B₀ ↦ e x) hpic'
+  simp only [BilinForm.IsometryEquiv.trans_apply] at h
   simpa only [BilinForm.IsometryEquiv.symm_apply_apply] using congrArg R.picard.symm h
 
 end Words
