@@ -7,7 +7,6 @@ module
 
 public import QPainleve.Geometry.Toric.Fan.Mutation.Blowup
 
-import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.ProjectiveLine.PointDivisor
 import QPainleve.Geometry.Toric.Fan.Ruling.Negation
 import QPainleve.Geometry.Toric.Fan.Ruling.Torus
 

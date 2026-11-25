@@ -194,23 +194,4 @@ theorem zeroIdeal_binomialSection (c : Rˣ) :
       ker_polynomialPoint_comap_chart]
     simp only [map_neg, sub_neg_eq_add]
 
-/-- Over a field, a polynomial point has singleton support. -/
-theorem support_ker_polynomialPoint (K : Type u) [Field K] (j : Fin 2) (a : K) :
-    ((polynomialPoint K (RingHom.id K) j a).ker.support : Set (projectiveLine K)) =
-      {polynomialPoint K (RingHom.id K) j a (IsLocalRing.closedPoint K)} := by
-  let p := polynomialPoint K (RingHom.id K) j a
-  have hP := (polynomialPoint_over K (RingHom.id K) j a).trans (Spec.map_id (CommRingCat.of K))
-  have : IsClosedImmersion p := p.isClosedImmersion_of_comp_eq_id hP
-  exact p.support_ker.trans (p.isClosedEmbedding.isClosed_range.closure_eq.trans
-    (Set.range_eq_singleton (fun y ↦ congrArg (⇑p) (Subsingleton.elim y _))))
-
-/-- Over a field, the support of the inverse-image ideal of a polynomial point
-is the fiber over that point. -/
-theorem mem_support_comap_ker_polynomialPoint_iff (K : Type u) [Field K]
-    {X : Scheme.{u}} (q : X ⟶ projectiveLine K) (x : X) (j : Fin 2) (a : K) :
-    x ∈ ((polynomialPoint K (RingHom.id K) j a).ker.comap q).support ↔
-      q x = polynomialPoint K (RingHom.id K) j a (IsLocalRing.closedPoint K) := by
-  rw [← SetLike.mem_coe, support_comap, TopologicalSpace.Closeds.coe_preimage, Set.mem_preimage,
-    support_ker_polynomialPoint, Set.mem_singleton_iff]
-
 end TauCeti.AlgebraicGeometry.projectiveLine

@@ -8,7 +8,7 @@ module
 public import QPainleve.Geometry.Toric.Fan.Ruling.Hirzebruch.Prime
 public import QPainleve.Geometry.Toric.Fan.Ruling.Quadric
 
-import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.ProjectiveLine.PointDivisor
+import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.ProjectiveLine.Basic
 import QPainleve.Geometry.Toric.Fan.Boundary.Intersection
 import QPainleve.Geometry.Toric.Fan.Boundary.Node
 import QPainleve.Geometry.Toric.Fan.Picard.Ruling
