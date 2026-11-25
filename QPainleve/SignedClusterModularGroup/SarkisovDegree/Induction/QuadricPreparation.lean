@@ -7,7 +7,6 @@ module
 
 public import QPainleve.SignedClusterModularGroup.SarkisovDegree.Induction.Step
 
-import QPainleve.AlgebraicGeometry.Modules.Differentials.PoleIdeal
 import QPainleve.Geometry.Toric.Fan.Subdivision.Projective
 import QPainleve.SignedClusterModularGroup.SarkisovDegree.Preparation
 import QPainleve.SignedClusterModularGroup.SarkisovDegree.Quadric.PreparedSections
@@ -143,14 +142,8 @@ theorem exists_marked_quadric_preparation_of_hirzebruch
   let E := D.comap k.inv
   let : Smooth (Y ↘ S) := SmoothOfRelativeDimension.smooth 2 _
   let : T.toBase.IsOver S := ⟨rfl⟩
-  have hpole : (A.fan.boundaryIdeal A.isComplete.nonempty_cones).comap T.toBase =
-      E * ramificationIdealSheaf ℂ T.toBase := by
-    have h := comap_eq_mul_ramificationIdealSheaf_comp_iff_of_isIso ℂ k.hom T.toBase 2
-      (D := A.fan.boundaryIdeal A.isComplete.nonempty_cones) (Q := D)
-    rw [IsIso.inv_eq_of_hom_inv_id k.hom_inv_id] at h
-    apply h.mp
-    exact (congrArg (A.fan.boundaryIdeal A.isComplete.nonempty_cones).comap hhA).symm.trans
-      (A.comap_boundaryIdeal.trans (congrArg (D * ·) (ramificationIdealSheaf_congr ℂ hhA)))
+  have hpole := A.comap_boundaryIdeal_of_eq_iso_comp rankTwo k A.isComplete T.toBase rfl
+    (heq_of_eq hhA)
   -- Prepare the quadric in the source tower coordinates and transport the plane map.
   obtain ⟨Q, m, W, R, hR, q, hW, _, _, u, hu, hProj, l, Z, U, hU, e, j', hq, hq',
     heOver, _, hpath, _, hj', hfirst', _, hβ, hm, hh, _⟩ :=
