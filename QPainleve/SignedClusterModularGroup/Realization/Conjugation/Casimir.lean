@@ -46,7 +46,7 @@ local notation "K[" E "]" => LinearMap.ker (Matrix.mulVecLin (SkewExchangeMatrix
 
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {b : Basis (Fin 2) ℤ N} {L γ : Type} [AddCommGroup L]
-  {r n : ℕ} [NeZero n] {B : LinearMap.BilinForm ℤ L}
+  {r n : ℕ} [NeZero n]
 
 local instance instNonemptyCasimirCones (Q : CompleteToricPresentation i b r L γ) :
     Nonempty Q.fan.cones := Q.complete.nonempty_cones
@@ -72,52 +72,6 @@ local instance (Q : CompleteToricPresentation i b r L γ) :
     (LinearMap.BilinForm.prod (Chow.intersectionBilinForm ℂ Q.fan.algebraicRealization)
       (-(dotProductBilin ℤ ℤ : LinearMap.BilinForm ℤ (Fin r → ℤ)))).IsPerfPair :=
   Q.isPerfPair_auxiliaryPicardForm
-
-local notation "aux[" Q "]" =>
-  LinearMap.BilinForm.prod
-    (Chow.intersectionBilinForm ℂ (Fan.algebraicRealization (CompleteToricPresentation.fan Q)))
-    (-(dotProductBilin ℤ ℤ : LinearMap.BilinForm ℤ (Fin r → ℤ)))
-
-namespace CompleteToricPresentation.HasNodalModel
-
-variable {Q : CompleteToricPresentation i b r L γ} {E : SkewExchangeMatrix (Fin r)}
-  {c : GeometricRealization.Point Centers[r]} {M : MarkedSurface ℂ n B XTor[r]}
-  {d : ZMod n → L}
-
-private theorem exists_chargeKernelEquiv (h : Q.HasNodalModel c M)
-    (hd : M.boundaryClass M.isEffectiveCartier_boundaryIdeal = d) :
-    ∃ e : Orth[B,d] ≃ₗ[ℤ] (Fan.rayChargeMap Q.rays).ker,
-      ∀ x, Q.inclusion (e.symm x).val =
-        ((Fan.boundaryOrthogonalEquivChargeKernel Q.regular Q.rays aux[Q]).symm x).val := by
-  obtain ⟨_, e, he, _⟩ := h.existsUnique_chargeKernelEquiv M.isEffectiveCartier_boundaryIdeal hd
-  exact ⟨e, he⟩
-
-omit [NeZero n] in
-private theorem exceptionalCoordinates_chargeKernelEquiv
-    (e : Orth[B,d] ≃ₗ[ℤ] (Fan.rayChargeMap Q.rays).ker)
-    (he : ∀ x, Q.inclusion (e.symm x).val =
-      ((Fan.boundaryOrthogonalEquivChargeKernel Q.regular Q.rays aux[Q]).symm x).val)
-    (x : Orth[B,d]) :
-    (Q.inclusion x.val).2 = -(e x : Fin r → ℤ) := by
-  simpa only [LinearEquiv.symm_apply_apply, Fan.boundaryOrthogonalEquivChargeKernel_symm_snd]
-    using congrArg Prod.snd (he (e x))
-
-/-- A reference nodal model supplies exchange-kernel coordinates in its marked boundary
-orthogonal whenever the exchange and charge kernels agree. These coordinates are uniquely
-determined by the total exceptional coefficients of the marked classes. -/
-theorem existsUnique_exchangeKernelEquiv (h : Q.HasNodalModel c M)
-    (hd : M.boundaryClass M.isEffectiveCartier_boundaryIdeal = d)
-    (hker : K[E] = (Fan.rayChargeMap Q.rays).ker) :
-    ∃! e : Orth[B,d] ≃ₗ[ℤ] K[E], ∀ x, (Q.inclusion x.val).2 = -(e x : Fin r → ℤ) := by
-  obtain ⟨e, he⟩ := h.exists_chargeKernelEquiv hd
-  let e' := e.trans (LinearEquiv.ofEq _ _ hker.symm)
-  have h' (x : Orth[B,d]) : (Q.inclusion x.val).2 = -(e' x : Fin r → ℤ) := by
-    simpa only [e', LinearEquiv.trans_apply, LinearEquiv.coe_ofEq_apply]
-      using exceptionalCoordinates_chargeKernelEquiv e he x
-  exact ⟨e', h', fun f hf ↦ LinearEquiv.ext fun x ↦
-    Subtype.ext (neg_injective ((hf x).symm.trans (h' x)))⟩
-
-end CompleteToricPresentation.HasNodalModel
 
 namespace GeometricRealization
 
@@ -159,15 +113,17 @@ theorem exchangeKernelEquiv_toLinearMap_eq_smul_picard_pullback
       (R.orientation : ℤ) •
         ((e₁.symm.trans (R.boundaryOrthogonalEquiv hmark₀ hmark₁)).trans e₀).toLinearMap := by
   obtain ⟨p⟩ := nonempty_centerPoint C
-  obtain ⟨f₀, hf₀⟩ := CompleteToricPresentation.HasNodalModel.exists_chargeKernelEquiv
-    (models₀ p) (funext (hmark₀ _))
-  obtain ⟨f₁, hf₁⟩ := CompleteToricPresentation.HasNodalModel.exists_chargeKernelEquiv
-    (models₁ p) (funext (hmark₁ _))
+  obtain ⟨_, f₀, hf₀, _⟩ :=
+    (models₀ p).existsUnique_chargeKernelEquiv (M₀ _).isEffectiveCartier_boundaryIdeal
+      (funext (hmark₀ _))
+  obtain ⟨_, f₁, hf₁, _⟩ :=
+    (models₁ p).existsUnique_chargeKernelEquiv (M₁ _).isEffectiveCartier_boundaryIdeal
+      (funext (hmark₁ _))
   have h₀ (x : Orth[B₀,d₀]) : (f₀ x : Fin r → ℤ) = e₀ x :=
-    neg_injective ((CompleteToricPresentation.HasNodalModel.exceptionalCoordinates_chargeKernelEquiv
+    neg_injective ((CompleteToricPresentation.exceptionalCoordinates_chargeKernelEquiv
       f₀ hf₀ x).symm.trans (he₀ x))
   have h₁ (x : Orth[B₁,d₁]) : (f₁ x : Fin r → ℤ) = e₁ x :=
-    neg_injective ((CompleteToricPresentation.HasNodalModel.exceptionalCoordinates_chargeKernelEquiv
+    neg_injective ((CompleteToricPresentation.exceptionalCoordinates_chargeKernelEquiv
       f₁ hf₁ x).symm.trans (he₁ x))
   have htransport (x : Orth[B₁,d₁]) :=
     R.exponentEquiv_eq_signed_picard_pullback hmark₀ hmark₁ f₀ f₁ hf₀ hf₁ hC
