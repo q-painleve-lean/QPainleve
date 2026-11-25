@@ -1,0 +1,242 @@
+/-
+Copyright (c) 2026 The QPainleve contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: The QPainleve contributors
+-/
+module
+
+public import QPainleve.AlgebraicGeometry.RelativeProj.ProjectiveLineCharts.Overlap
+public import QPainleve.Geometry.Toric.Fan.Boundary.Ideal
+public import QPainleve.Geometry.Toric.Fan.Ruling.Hirzebruch.Gluing
+
+import QPainleve.Geometry.Toric.Fan.Hirzebruch.CoordinateBoundary
+import QPainleve.Geometry.Toric.Fan.Ruling.Hirzebruch.Sections
+import TauCeti.AlgebraicGeometry.IdealSheaf.BaseChange
+import TauCeti.AlgebraicGeometry.IdealSheaf.Locality
+
+/-!
+# Boundary comparison for split Hirzebruch rulings
+
+The two summand sections and the two coordinate fibers of a split projective
+bundle correspond to the invariant boundary of the Hirzebruch fan under the
+comparison of ruling charts. The comparison is scheme-theoretic, as required
+for the ruled case of [Gross, Hacking and Keel, Proposition 1.3][GHK].
+
+[GHK]: https://arxiv.org/html/1106.4977v3#S1.Thmproposition3
+-/
+
+public noncomputable section
+
+open AlgebraicGeometry CategoryTheory Limits Module Opposite
+open AlgebraicGeometry.Scheme.IdealSheafData
+open TauCeti.AlgebraicGeometry
+
+namespace TauCeti.Toric.Fan
+
+local notation "S" => Spec (CommRingCat.of ℂ)
+local notation "P" => projectiveLine ℂ
+local notation "p" => (P ↘ S)
+local notation "A[" k "]" => Fan.algebraicRealization (projectiveLineAffineFan k)
+local notation "j[" k "]" => projectiveLineAffineFanι k
+local notation "s[" k "]" => Fan.algebraicRealizationStructureMap (projectiveLineAffineFan k)
+local notation "Pₐ[" k "]" => pullback p s[k]
+local notation "p₀[" l "]" => projectiveLine.polynomialPoint ℂ (RingHom.id ℂ) l 0
+local notation "𝒜" => TauCeti.SymmetricAlgebra.homogeneousSubmodule ℂ (Fin 2 → ℂ)
+local notation "line[" n "]" =>
+  Functor.obj (InvertibleSheaf.toFixedRankOne (projectiveLine ℂ))
+    (Proj.symmetricAlgebraTwistingBundle ℂ (Fin 2 → ℂ) n)
+local notation "F[" a "," b "]" =>
+  Functor.obj (FiniteLocallyFreeSheaf.toQuasicoherent (projectiveLine ℂ))
+    (ObjectProperty.FullSubcategory.obj (FiniteLocallyFreeSheaf.FixedRank.biprod line[a] line[b]))
+local notation "B[" a "," b "]" =>
+  ObjectProperty.FullSubcategory.obj
+    (Functor.obj (gradedSymmetricAlgebra (projectiveLine ℂ)) F[a,b])
+
+private def affineSite (k : Fin 2) : (P).AffineZariskiSite :=
+  ⟨(j[k]).opensRange, isAffineOpen_opensRange (j[k])⟩
+
+local notation "V[" k "]" => affineSite k
+
+private abbrev affineSiteRing (k : Fin 2) : CommRingCat := Γ(P, (V[k]).toOpens)
+
+local notation "Γ[" k "]" => affineSiteRing k
+local notation "U[" k "]" => Spec (CommRingCat.of Γ[k])
+
+private abbrev affineSiteFromSpec (k : Fin 2) : U[k] ⟶ P := (V[k]).property.fromSpec
+
+local notation "i[" k "]" => affineSiteFromSpec k
+
+private theorem affineSite_toOpens (k : Fin 2) :
+    (V[k]).toOpens = Proj.basicOpen 𝒜 (projectiveLine.coord ℂ k) := by
+  apply TopologicalSpace.Opens.ext
+  exact (range_projectiveLineAffineFanι k).trans <|
+    congrArg SetLike.coe (projectiveLine.opensRange_polynomialChartι ℂ k)
+
+private def affineSiteIso (k : Fin 2) : A[k] ≅ U[k] :=
+  IsOpenImmersion.isoOfRangeEq j[k] i[k] (IsAffineOpen.range_fromSpec (V[k]).property).symm
+
+@[reassoc]
+private theorem affineSiteIso_hom_comp_fromSpec (k : Fin 2) :
+    (affineSiteIso k).hom ≫ i[k] = j[k] :=
+  IsOpenImmersion.isoOfRangeEq_hom_fac _ _ _
+
+private abbrev affineSiteAlgebra (k : Fin 2) : Algebra ℂ Γ[k] :=
+  (Spec.preimage (i[k] ≫ p)).hom.toAlgebra
+
+private theorem isPullback_affineSiteProduct (k : Fin 2) :
+    let := affineSiteAlgebra k
+    IsPullback (projectiveLine.baseChangeProjection ℂ Γ[k])
+      ((projectiveLine Γ[k] ↘ U[k]) ≫ (affineSiteIso k).inv) p s[k] := by
+  intro
+  refine (projectiveLine.isPullback_baseChangeProjection ℂ Γ[k]).of_iso
+    (Iso.refl _) (Iso.refl _) (affineSiteIso k).symm (Iso.refl _) (by simp) (by simp)
+    (by simp) ?_
+  rw [Iso.refl_hom, Category.comp_id, Iso.symm_hom, ← cancel_epi (affineSiteIso k).hom,
+    Iso.hom_inv_id_assoc, RingHom.algebraMap_toAlgebra]
+  rw [CommRingCat.ofHom_hom, Spec.map_preimage,
+    affineSiteIso_hom_comp_fromSpec_assoc, projectiveLineAffineFanι_def, Category.assoc,
+    comp_over, algebraicRealization_over, FanHom.algebraicMap_comp_algebraicRealizationStructureMap]
+
+private def affineProductIso (k : Fin 2) : Pₐ[k] ≅ projectiveLine Γ[k] :=
+  (isPullback_affineSiteProduct k).isoPullback.symm
+
+@[reassoc]
+private theorem affineProductIso_hom_toBase (k : Fin 2) :
+    (affineProductIso k).hom ≫ (projectiveLine Γ[k] ↘ U[k]) =
+      pullback.snd p s[k] ≫ (affineSiteIso k).hom := by
+  simp only [← cancel_mono (affineSiteIso k).inv, Category.assoc, Iso.hom_inv_id, Category.comp_id]
+  exact (isPullback_affineSiteProduct k).isoPullback_inv_snd
+
+private abbrev splitTwistingSiteChart (a b : ℤ) (k : Fin 2) :
+    projectiveLine Γ[k] ⟶ B[a,b].relativeProj :=
+  projectiveLine.relativeProjSplitTwistingChart ℂ a b k V[k] (affineSite_toOpens k).le
+
+local notation "c[" a "," b ";" k "]" => splitTwistingSiteChart a b k
+
+/-- The split chart over the affine toric base chart, with the two twisting summands
+as fiber coordinates. -/
+def splitTwistingProductChart (a b : ℤ) (k : Fin 2) : Pₐ[k] ⟶ B[a,b].relativeProj :=
+  (affineProductIso k).hom ≫ c[a,b;k]
+
+local notation "u[" a "," b ";" k "]" => splitTwistingProductChart a b k
+local notation "σ[" a "," b ";" l "]" => projectiveLine.relativeProjSplitTwistingSection ℂ a b l
+
+/-- The split product chart is the preimage of its affine toric base chart. -/
+theorem isPullback_splitTwistingProductChart (a b : ℤ) (k : Fin 2) :
+    IsPullback u[a,b;k] (pullback.snd p s[k]) B[a,b].relativeProjToBase j[k] := by
+  refine (projectiveLine.isPullback_relativeProjSplitTwistingChart ℂ a b k V[k]
+    (affineSite_toOpens k).le).of_iso' (affineProductIso k) (Iso.refl _)
+    (affineSiteIso k) (Iso.refl _) (by simp [splitTwistingProductChart]) ?_ (by simp) ?_
+  · exact affineProductIso_hom_toBase k
+  · simpa only [Iso.refl_hom, Category.comp_id] using
+      affineSiteIso_hom_comp_fromSpec k
+
+instance (a b : ℤ) (k : Fin 2) : IsOpenImmersion u[a,b;k] :=
+  MorphismProperty.of_isPullback (isPullback_splitTwistingProductChart a b k).flip inferInstance
+
+/-- The split product chart lies over the prescribed affine toric chart of the base. -/
+@[reassoc (attr := simp)]
+theorem splitTwistingProductChart_toBase (a b : ℤ) (k : Fin 2) :
+    u[a,b;k] ≫ B[a,b].relativeProjToBase = pullback.snd p s[k] ≫ j[k] :=
+  (isPullback_splitTwistingProductChart a b k).w
+
+/-- The split product chart uses the split frame over the ring of sections on
+the corresponding base open. The comparison preserves both product projections,
+so restriction and change of frame can be computed in these affine coordinates. -/
+theorem exists_relativeProjSplitTwistingChart_eq_splitTwistingProductChart (k : Fin 2) :
+    ∃ (U : (P).AffineZariskiSite)
+      (hU : U.toOpens = Proj.basicOpen 𝒜 (projectiveLine.coord ℂ k))
+      (a : A[k] ≅ Spec (.of Γ(P, U.toOpens)))
+      (v : Pₐ[k] ≅ projectiveLine Γ(P, U.toOpens)),
+      a.hom ≫ U.property.fromSpec = j[k] ∧
+      v.hom ≫ (projectiveLine Γ(P, U.toOpens) ↘ Spec (.of Γ(P, U.toOpens))) =
+        pullback.snd p s[k] ≫ a.hom ∧
+      let := (Spec.preimage (U.property.fromSpec ≫ p)).hom.toAlgebra
+      v.hom ≫ projectiveLine.baseChangeProjection ℂ Γ(P, U.toOpens) = pullback.fst p s[k] ∧
+      ∀ m n : ℤ, v.hom ≫ projectiveLine.relativeProjSplitTwistingChart ℂ m n k U hU.le = u[m,n;k] :=
+  ⟨V[k], affineSite_toOpens k, affineSiteIso k, affineProductIso k,
+    affineSiteIso_hom_comp_fromSpec k, affineProductIso_hom_toBase k,
+    (isPullback_affineSiteProduct k).isoPullback_inv_fst, fun _ _ ↦ rfl⟩
+
+private theorem ker_coordinatePoint_comap_affineProductIso (k l : Fin 2) :
+    (projectiveLine.polynomialPoint Γ[k] (RingHom.id _) l 0).ker.comap (affineProductIso k).hom =
+      (p₀[l]).ker.comap (pullback.fst p s[k]) := by
+  let := affineSiteAlgebra k
+  have hp : (p₀[l]) ≫ p = 𝟙 S := by simp [projectiveLine.polynomialPoint_over]
+  let : IsClosedImmersion (p₀[l]) := (p₀[l]).isClosedImmersion_of_comp_eq_id hp
+  have h := (projectiveLine.isPullback_baseChangeProjection ℂ Γ[k]).ker_eq_comap_of_comp_eq_id
+    hp (x' := projectiveLine.polynomialPoint Γ[k] (RingHom.id _) l 0)
+    (by simp [projectiveLine.polynomialPoint_over]) (by
+      rw [projectiveLine.polynomialPoint_comp_baseChangeProjection, RingHom.id_comp]
+      conv_rhs => rw [projectiveLine.polynomialPoint_def]
+      rw [projectiveLine.polynomialPoint_def, ← Spec.map_comp_assoc, ← CommRingCat.ofHom_comp]
+      congr 2
+      apply CommRingCat.hom_ext
+      apply Polynomial.ringHom_ext <;> simp)
+  rw [h, ← comap_comp]
+  exact congrArg ((p₀[l]).ker.comap) (isPullback_affineSiteProduct k).isoPullback_inv_fst
+
+/-- The two summand sections restrict to the constant homogeneous coordinate
+sections on each product chart. -/
+theorem comap_ker_splitTwistingSection_productChart (a b : ℤ) (k l : Fin 2) :
+    (σ[a,b;l]).ker.comap u[a,b;k] = (p₀[l]).ker.comap (pullback.fst p s[k]) := by
+  rw [splitTwistingProductChart, comap_comp, splitTwistingSiteChart,
+    projectiveLine.relativeProjSplitTwistingChart_def,
+    ← projectiveLine.ker_polynomialPoint_eq_comap_relativeProjSplitTwistingSection]
+  exact ker_coordinatePoint_comap_affineProductIso k l
+
+variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
+  {i : N →+ V} {Φ : Fan i} (b : Basis (Fin 2) ℤ N) (e : ℤ) (r : Fin 4 ≃ Φ.Ray)
+  (hr : (fun l ↦ (r l).primitiveGenerator) = ![b 0, b 1, -b 0, e • b 0 - b 1])
+  (hΦ : Φ.IsRegular) (hc : Φ.IsComplete)
+
+local notation "X" => Fan.algebraicRealization Φ
+local notation "q" => Φ.characterRuling (LinearMap.toAddMonoidHom (Basis.coord b 1))
+  (nonneg_or_nonpos_hirzebruch_ruling_character b e r hr)
+local notation "E[" k "]" => hirzebruchRulingAffineIso b e r hr hΦ hc k
+local notation "v[" k "]" => Iso.inv (E[k]) ≫ pullback.fst q j[k]
+local notation "I[" l "]" => Φ.rayBoundaryIdeal hΦ (r ((![0, 2] : Fin 2 → Fin 4) l))
+
+private def rulingCover : (X).OpenCover :=
+  (Scheme.Cover.mkOfCovers (Fin 2) (fun k ↦ A[k]) projectiveLineAffineFanι
+    exists_projectiveLineAffineFanι_apply_eq).pullback₁ q
+
+include hr in
+private theorem comap_ker_splitTwistingSection_of_chart_comparison (a b' : ℤ)
+    (f : X ⟶ B[a,b'].relativeProj) (hf : ∀ k, v[k] ≫ f = u[a,b';k]) (l : Fin 2) :
+    (σ[a,b';l]).ker.comap f = I[l] := by
+  refine ext_of_comap_openCover (rulingCover b e r hr) fun (k : Fin 2) ↦ ?_
+  -- The cover is pulled back along the ruling, with first projection on each chart.
+  change ((σ[a,b';l]).ker.comap f).comap (pullback.fst q j[k]) =
+    I[l].comap (pullback.fst q j[k])
+  rw [← comap_coordinate_section_hirzebruch_ruling_affine_iso b e r hr hΦ hc k l]
+  have h := congrArg ((σ[a,b';l]).ker.comap) (hf k)
+  rw [comap_ker_splitTwistingSection_productChart, Category.assoc, comap_comp, comap_comp] at h
+  simpa only [← comap_comp, Iso.hom_inv_id_assoc] using
+    congrArg (fun J ↦ Scheme.IdealSheafData.comap J (E[k]).hom) h
+
+local notation "d[" k "]" => projectiveLineTorusProductToAffine k
+
+include hr in
+/-- If the split bundle charts have the Hirzebruch overlap, the resulting isomorphism
+over the base identifies each horizontal ray with its summand section and the full
+toric boundary with the two summand sections and the two coordinate fibers. -/
+theorem exists_hirzebruch_boundary_iso_of_split_twisting_overlap (a b' : ℤ)
+    (hoverlap : d[0] ≫ u[a,b';0] =
+      (hirzebruchRulingOverlapTransition e).hom ≫ d[1] ≫ u[a,b';1]) :
+    ∃ f : X ≅ B[a,b'].relativeProj, f.hom ≫ B[a,b'].relativeProjToBase = q ∧
+      (∀ k : Fin 2, v[k] ≫ f.hom = u[a,b';k]) ∧
+      (∀ l : Fin 2, (σ[a,b';l]).ker.comap f.hom = I[l]) ∧
+      let π := B[a,b'].relativeProjToBase
+      let D := (σ[a,b';0]).ker * (σ[a,b';1]).ker * (p₀[0].ker.comap π) * (p₀[1].ker.comap π)
+      D.comap f.hom = Φ.boundaryIdeal hc.nonempty_cones := by
+  let := hc.nonempty_cones
+  obtain ⟨f, ⟨hbase, hcharts⟩, -⟩ := existsUnique_hirzebruch_ruling_iso_of_overlap_transition
+    B[a,b'].relativeProjToBase b e r hr hΦ hc (fun k ↦ u[a,b';k])
+    (isPullback_splitTwistingProductChart a b') hoverlap
+  have hsec := comap_ker_splitTwistingSection_of_chart_comparison b e r hr hΦ hc a b' f.hom hcharts
+  refine ⟨f, hbase, hcharts, hsec, ?_⟩
+  obtain ⟨s', -, hs', -, hD⟩ := exists_hirzebruch_toric_boundary_sections_and_fibers b e hΦ r hr hc
+  simp only [comap_mul, hsec, ← comap_comp, hbase, hD, hs']
+
+end TauCeti.Toric.Fan
