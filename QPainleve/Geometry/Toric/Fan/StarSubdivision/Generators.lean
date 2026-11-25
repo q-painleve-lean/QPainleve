@@ -8,6 +8,9 @@ module
 public import QPainleve.Geometry.Toric.Fan.Ray
 public import TauCeti.Geometry.Toric.Algebraic.Fan.StarSubdivision
 
+import QPainleve.Geometry.Toric.Cone.Coordinates
+import QPainleve.Geometry.Toric.Fan.StarSubdivision.TwoDimensional
+
 /-!
 # Primitive generators of a star subdivision
 
@@ -21,6 +24,19 @@ namespace TauCeti.Toric.Fan
 
 variable {N V : Type*} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {Φ : Fan i}
+
+/-- The new ray of a star subdivision along a rank-two basis cone has primitive
+generator equal to the sum of the basis vectors. -/
+theorem primitiveGenerator_starSubdivisionAlongRay_of_basis (hΦ : Φ.IsRegular)
+    (σ : Φ.cones) (b : Module.Basis (Fin 2) ℤ N)
+    (hσ : σ.val = PointedCone.hull ℝ (Set.range (i ∘ b))) (hne : σ.val ≠ ⊥) :
+    (Φ.starSubdivisionAlongRay hΦ σ.property hne).primitiveGenerator = b 0 + b 1 := by
+  let hreg := isRegular_iff.mp hΦ _ σ.property
+  obtain ⟨e, he⟩ := hreg.exists_rayEquiv_of_basis Φ.lattice b hσ
+  obtain ⟨d, hd, -, -⟩ := Φ.exists_starSubdivisionAlong_basis hΦ σ.property b hσ 0
+  apply Ray.primitiveGenerator_eq_of_mem_of_isPrimitive _ _ (hd ▸ d.isPrimitive 0)
+  rw [coe_toCone_starSubdivisionAlongRay, hreg.sum_primitiveGenerator_allRays Φ.lattice b e he]
+  exact PointedCone.subset_hull (Set.mem_singleton _)
 
 /-- The rays of a star subdivision have the old primitive generators and the primitive
 generator of the inserted ray. This also applies to subdivision along a ray, when the

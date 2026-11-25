@@ -5,6 +5,7 @@ Authors: The QPainleve contributors
 -/
 module
 
+public import QPainleve.Geometry.Toric.Fan.Presentation.Basic
 public import QPainleve.Geometry.Toric.Fan.Subdivision.NodalRefinement
 
 import QPainleve.AlgebraicGeometry.IdealSheaf.VanishingIdeal
@@ -103,3 +104,31 @@ theorem exists_toric_presentation_of_nodal_boundary_tower
       _ = _ := by rwa [hD, comap_comp, radical_comap_of_isOpenImmersion]
 
 end TauCeti.Toric.Fan
+
+open TopologicalSpace TauCeti.Toric
+
+namespace AlgebraicGeometry.Scheme.IdealSheafData
+
+variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
+  {i : N →+ V} {X : Scheme} {b : Module.Basis (Fin 2) ℤ N}
+  {D : X.IdealSheafData} {s : X ⟶ Spec (CommRingCat.of ℂ)} {p : X}
+
+local notation "I" => vanishingIdeal (Closeds.mk (closure (Singleton.singleton p)) isClosed_closure)
+local notation "π" => blowupToBase I
+
+/-- A toric presentation extends to the reduced total boundary after blowing up a closed node. -/
+theorem HasToricPresentation.nodalBlowup
+    (h : D.HasToricPresentation s b i) (hp : IsClosed ({p} : Set X))
+    (hn : D.IsNodeOfReducedBoundary s p) :
+    (D.comap π).radical.HasToricPresentation (π ≫ s) b i := by
+  obtain ⟨Φ, hΦ, hc, m, r, c, n, Z, T, hT, e, he, hD⟩ := (hasToricPresentation_iff ..).mp h
+  obtain ⟨Ψ, hΨ, H, l, W, U, -, hU, a, _, _, _, ha, hB⟩ :=
+    Fan.exists_toric_presentation_of_nodal_boundary_tower b r c hΦ hc hT
+      (IsNodalBoundaryTower.of_node hp hn) e he hD
+  refine (hasToricPresentation_iff ..).mpr ⟨Ψ, hΨ, H.isComplete_iff.mpr hc, m, H.liftRay ∘ r, c,
+    l, W, U, ?_, a, ?_, ?_⟩
+  · simpa only [toBase_snoc, toBase_nil, Category.comp_id] using hU
+  · simpa only [toBase_snoc, toBase_nil, Category.comp_id, Category.assoc] using ha
+  · simpa only [toBase_snoc, toBase_nil, Category.comp_id] using hB
+
+end AlgebraicGeometry.Scheme.IdealSheafData

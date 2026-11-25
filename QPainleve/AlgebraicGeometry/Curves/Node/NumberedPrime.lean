@@ -116,15 +116,6 @@ def boundaryPrimeEquiv (hD : D.IsEffectiveCartier) : ZMod n ≃ D.boundaryPrimes
 theorem boundaryPrimeEquiv_apply_val (hD : D.IsEffectiveCartier) (j : ZMod n) :
     (A.boundaryPrimeEquiv hD j).val = D.subschemeι (A.componentGenericPoint j) := (rfl)
 
-/-- The prime of a reindexed Cartier boundary is the original prime at the
-corresponding vertex. -/
-@[simp] theorem reindex_boundaryPrimeEquiv_apply (B : NodalCycleNumbering p n)
-    (hD : D.IsEffectiveCartier) (g : DihedralGroup n) (j : ZMod n) :
-    (B.reindex g).boundaryPrimeEquiv hD j =
-      B.boundaryPrimeEquiv hD (DihedralGroup.cycleVertexPerm g j) := by
-  apply Subtype.ext
-  simp only [boundaryPrimeEquiv_apply_val, reindex_componentGenericPoint]
-
 /-- The components through node `j` are the endpoints of its two ordered branches. -/
 theorem ambientNode_mem_closure_boundaryPrime_iff (hD : D.IsEffectiveCartier) (j l : ZMod n) :
     A.ambientNode j ∈ closure {(A.boundaryPrimeEquiv hD l).val} ↔

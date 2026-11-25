@@ -5,6 +5,7 @@ Authors: The QPainleve contributors
 -/
 module
 
+public import Mathlib.AlgebraicGeometry.Birational.Birational
 public import QPainleve.AlgebraicGeometry.Modules.Differentials.Canonical
 public import QPainleve.Geometry.Toric.Fan.Boundary.SelfIntersection
 public import QPainleve.Geometry.Toric.Fan.Hirzebruch.Corner
@@ -348,23 +349,13 @@ theorem hirzebruchPicardBasis_intersection_repr [SmoothOfRelativeDimension 2 (X 
 
 omit [Nonempty Φ.cones] [Φ.algebraicRealization.IsProjectiveOver ℂ] in
 include hΦ hc hr in
-private theorem isRationalOver_of_hirzebruch :
+/-- The algebraic realization of a complete regular Hirzebruch fan is rational over `ℂ`. -/
+theorem isRationalOver_of_hirzebruch :
     Scheme.IsRationalOver (X ↘ S) := by
   obtain ⟨σ, h₀, h₁⟩ := exists_cone_of_hirzebruch_section_fiber b e r hr hΦ hc 0 0
   have hN : Module.finrank ℤ N = 2 := by simpa using Module.finrank_eq_card_basis b
-  have hcone := Φ.cone_eq_sup_of_ray_ne_of_le hΦ hN
+  exact Φ.isRationalOver_of_ray_ne_of_le hΦ hN
     (r.injective.ne (by decide : (0 : Fin 4) ≠ 1)) h₀ h₁
-  have h₀' : (r 0).primitiveGenerator = b 0 := congrFun hr 0
-  have h₁' : (r 1).primitiveGenerator = b 1 := congrFun hr 1
-  rw [Ray.toCone_eq_hull_primitiveGenerator, Ray.toCone_eq_hull_primitiveGenerator,
-    h₀', h₁', ← Submodule.span_union] at hcone
-  apply Φ.isRationalOver_of_hull_basis_mem b
-  have hpair : Set.range (fun j : Fin 2 ↦ i (b j)) = {i (b 0)} ∪ {i (b 1)} := by
-    ext x
-    simp [Fin.exists_fin_succ, eq_comm, or_comm]
-  have hcone' : σ.val = PointedCone.hull ℝ ({i (b 0)} ∪ {i (b 1)}) := hcone
-  rw [hpair, ← hcone']
-  exact σ.property
 
 include hc in
 open Classical in

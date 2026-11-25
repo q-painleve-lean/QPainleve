@@ -8,10 +8,11 @@ module
 public import QPainleve.AlgebraicGeometry.Chow.SurfaceIntersection
 public import QPainleve.AlgebraicGeometry.Curves.Node.CycleAction
 public import QPainleve.Geometry.Toric.CharacterTorus.Scheme
-public import Mathlib.AlgebraicGeometry.Birational.RationalMap
+public import Mathlib.AlgebraicGeometry.Birational.Birational
 public import Mathlib.LinearAlgebra.BilinearForm.IsometryEquiv
 public import Mathlib.LinearAlgebra.PerfectPairing.Basic
 
+import QPainleve.AlgebraicGeometry.Chow.RationalSurface.Basic
 import QPainleve.AlgebraicGeometry.IdealSheaf.BaseChange
 
 /-!
@@ -151,6 +152,19 @@ theorem isPerfPair_intersectionForm [B.IsPerfPair] :
     M.marking.toLinearEquiv.symm _ (LinearMap.ext₂ fun x y ↦ ?_)
   simpa only [LinearMap.compl₁₂_apply, LinearEquiv.symm_symm, LinearEquiv.coe_coe,
     LinearMap.BilinForm.IsometryEquiv.coe_toLinearEquiv] using M.marking.map_app y x
+
+/-- The marked lattice of a rational surface over an algebraically closed field has a
+perfect pairing. -/
+theorem isPerfPair_of_isRationalOver [IsAlgClosed k] [Scheme.IsRationalOver (M.surface ↘ S)] :
+    B.IsPerfPair := by
+  let : M.surface.IsProjectiveOver k := M.projective
+  let : SmoothOfRelativeDimension 2 (M.surface ↘ S) := M.smooth
+  let := Chow.isPerfPair_intersectionBilinForm_of_isRationalOver k M.surface
+  refine LinearMap.IsPerfPair.congr (Chow.intersectionBilinForm k M.surface)
+    M.picardMarking M.picardMarking B
+    (LinearMap.ext₂ fun x y ↦ ?_)
+  change B (M.marking.symm x) (M.marking.symm y) = _
+  exact M.marking.symm.map_app y x
 
 /-- The closed subscheme defined by the boundary ideal is at worst nodal over the ground field. -/
 theorem boundaryIdeal_nodal :

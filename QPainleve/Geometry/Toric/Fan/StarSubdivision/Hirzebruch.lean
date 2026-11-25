@@ -75,11 +75,8 @@ private theorem hirzebruch_star_at_corner (hΦ : Φ.IsRegular)
   have hd₀' : d 0 = b 0 := hd₀
   have hd₁' : d 1 = b 0 + b 1 := hd₁.trans (add_comm _ _)
   let hreg := (isRegular_iff.mp hΦ) _ σ.property
-  obtain ⟨u, hu⟩ := hreg.exists_rayEquiv_of_basis Φ.lattice b hcone
-  have ha : a.primitiveGenerator = b 0 + b 1 := by
-    apply a.primitiveGenerator_eq_of_mem_of_isPrimitive _ (hd₁' ▸ d.isPrimitive 1)
-    rw [coe_toCone_starSubdivisionAlongRay, hreg.sum_primitiveGenerator_allRays Φ.lattice b u hu]
-    exact subset_hull (Set.mem_singleton _)
+  have ha : a.primitiveGenerator = b 0 + b 1 :=
+    primitiveGenerator_starSubdivisionAlongRay_of_basis hΦ σ b hcone _
   refine ⟨hσ, d, hcone, hd₀', hd₁', ha, ?_, ?_⟩
   · obtain ⟨c, hc₀, hc₁, hmem⟩ := Φ.exists_starSubdivisionAlong_basis hΦ σ.property b hcone 0
     refine ⟨⟨_, hmem⟩, (a.toCone_le_iff _).mpr ?_, ((hsub.liftRay r).toCone_le_iff _).mpr ?_⟩

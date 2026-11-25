@@ -7,9 +7,11 @@ module
 
 public import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.ProjectiveLine.TwistingTransition
 public import QPainleve.AlgebraicGeometry.RelativeProj.ProjectiveBundle
+public import QPainleve.AlgebraicGeometry.RelativeProj.LineBundle.Basic
 public import TauCeti.RingTheory.MvPolynomial.HomogeneousLocalization
 
 import Mathlib.LinearAlgebra.Basis.Fin
+import QPainleve.AlgebraicGeometry.RelativeProj.SectionCoordinates
 import TauCeti.Algebra.Category.ModuleCat.Biproducts
 
 /-!
@@ -56,12 +58,14 @@ local notation "T[" n "]" => twistingModule R n
 local notation "TS[" a "," b "]" =>
   @biprod (Scheme.Modules (projectiveLine R)) _ _ (twistingModule R a) (twistingModule R b) _
 
+private def twistingModuleIso (n : ℤ) : line[n].obj.obj ≅ T[n] :=
+  eqToIso (by rw [InvertibleSheaf.toFixedRankOne_obj_obj, ObjectProperty.ιOfLE_obj_obj,
+    Proj.symmetricAlgebraTwistingBundle_obj])
+
 private def splitTwistingSheafIso (a b : ℤ) :
     (F[a,b]).obj ≅ TS[a,b] :=
-  line[a].biprodObjIso line[b] ≪≫ eqToIso (by
-    rw [InvertibleSheaf.toFixedRankOne_obj_obj, ObjectProperty.ιOfLE_obj_obj,
-      InvertibleSheaf.toFixedRankOne_obj_obj, ObjectProperty.ιOfLE_obj_obj,
-      Proj.symmetricAlgebraTwistingBundle_obj, Proj.symmetricAlgebraTwistingBundle_obj])
+  line[a].biprodObjIso line[b] ≪≫
+    biprod.mapIso (C := (P).Modules) (twistingModuleIso R a) (twistingModuleIso R b)
 
 private def splitTwistingSectionsIso (a b : ℤ) (V : (P).Opens) :
     (Scheme.Modules.sectionsFunctor V).obj (F[a,b]).obj ≅
@@ -139,6 +143,147 @@ private theorem splitTwistingFrame_one (a b : ℤ) (i : Fin 2) {V : (P).Opens} (
     map_zero (ModuleCat.Hom.hom ((biprod.inl : T[a] ⟶ TS[a,b]).val.app (op V)))
   rw [hz, zero_add] at he
   exact he.trans (Scheme.Modules.Hom.comp_val_app_apply _ _ _ _).symm
+
+local notation "L[" n "]" =>
+  Functor.obj (FiniteLocallyFreeSheaf.toQuasicoherent (projectiveLine R))
+    (ObjectProperty.FullSubcategory.obj line[n])
+private abbrev splitTwistingLineModule (n : ℤ) : (P).Modules := (L[n]).obj
+
+local notation "M[" n "]" => splitTwistingLineModule R n
+
+private def splitTwistingFst (a b : ℤ) : F[a,b] ⟶ L[a] :=
+  ObjectProperty.homMk (C := (P).Modules)
+    ((splitTwistingSheafIso R a b).hom ≫ (biprod.fst : TS[a,b] ⟶ T[a]) ≫
+      (twistingModuleIso R a).inv)
+
+private def splitTwistingSnd (a b : ℤ) : F[a,b] ⟶ L[b] :=
+  ObjectProperty.homMk (C := (P).Modules)
+    ((splitTwistingSheafIso R a b).hom ≫ (biprod.snd : TS[a,b] ⟶ T[b]) ≫
+      (twistingModuleIso R b).inv)
+
+private instance (a b : ℤ) : Epi (splitTwistingFst R a b).hom := by
+  exact @epi_comp (P).Modules _ _ _ _ (splitTwistingSheafIso R a b).hom
+    (@IsIso.epi_of_iso (P).Modules _ _ _ _ (splitTwistingSheafIso R a b).isIso_hom)
+    _ (@epi_comp (P).Modules _ _ _ _ (biprod.fst : TS[a,b] ⟶ T[a]) inferInstance
+      (twistingModuleIso R a).inv
+      (@IsIso.epi_of_iso (P).Modules _ _ _ _ (twistingModuleIso R a).isIso_inv))
+
+private instance (a b : ℤ) : Epi (splitTwistingSnd R a b).hom := by
+  exact @epi_comp (P).Modules _ _ _ _ (splitTwistingSheafIso R a b).hom
+    (@IsIso.epi_of_iso (P).Modules _ _ _ _ (splitTwistingSheafIso R a b).isIso_hom)
+    _ (@epi_comp (P).Modules _ _ _ _ (biprod.snd : TS[a,b] ⟶ T[b]) inferInstance
+      (twistingModuleIso R b).inv
+      (@IsIso.epi_of_iso (P).Modules _ _ _ _ (twistingModuleIso R b).isIso_inv))
+
+/-- The sections of the split projective bundle determined by projection onto each
+twisting summand, indexed in the same order as the two homogeneous coordinates. -/
+def relativeProjSplitTwistingSection (a b : ℤ) (j : Fin 2) :
+    P ⟶ ((gradedSymmetricAlgebra P).obj F[a,b]).obj.relativeProj :=
+  Fin.cases (line[a].relativeProjSectionOfQuotient (splitTwistingFst R a b))
+    (fun _ ↦ line[b].relativeProjSectionOfQuotient (splitTwistingSnd R a b)) j
+
+@[reassoc (attr := simp)]
+theorem relativeProjSplitTwistingSection_toBase (a b : ℤ) (j : Fin 2) :
+    relativeProjSplitTwistingSection R a b j ≫
+      ((gradedSymmetricAlgebra P).obj F[a,b]).obj.relativeProjToBase = 𝟙 _ := by
+  fin_cases j
+  · exact (line[a]).relativeProjSectionOfQuotient_toBase (splitTwistingFst R a b)
+  · exact (line[b]).relativeProjSectionOfQuotient_toBase (splitTwistingSnd R a b)
+
+private def twistingLineFrame (a : ℤ) (i : Fin 2) {V : (P).Opens} (h : V ≤ U[i]) :
+    Module.Basis (ULift.{u} (Fin 1)) Γ(P, V)
+      ((Scheme.Modules.sectionsFunctor V).obj L[a].obj) :=
+  (Module.Basis.singleton (ULift.{u} (Fin 1)) Γ(P, V)).map
+    (Proj.twistingSheaf.chartSectionsLinearEquiv a (coord R i) (coord_mem R i) V h ≪≫ₗ
+      ((Scheme.Modules.sectionsFunctor V).mapIso (twistingModuleIso R a).symm).toLinearEquiv)
+
+private theorem twistingLineFrame_apply (a : ℤ) (i : Fin 2) {V : (P).Opens} (h : V ≤ U[i]) :
+    twistingLineFrame R a i h ⟨0⟩ = ((Scheme.Modules.sectionsFunctor V).map
+        (twistingModuleIso R a).inv)
+      (Proj.twistingSheaf.chartGenerator a (coord R i) (coord_mem R i) V h) := by
+  rw [twistingLineFrame, Module.Basis.map_apply, Module.Basis.singleton_apply]
+  -- The sections functor and section modules have the same underlying sections.
+  change ((Scheme.Modules.sectionsFunctor V).map (twistingModuleIso R a).inv)
+    (Proj.twistingSheaf.chartSectionsLinearEquiv a (coord R i) (coord_mem R i) V h 1) = _
+  rw [Proj.twistingSheaf.chartSectionsLinearEquiv_apply, one_smul]
+
+private theorem splitTwistingFst_frame
+    (a b : ℤ) (i : Fin 2) {V : (P).Opens} (h : V ≤ U[i]) :
+    let S := Scheme.Modules.sectionsFunctor V
+    let q := (S.map (splitTwistingFst R a b).hom).hom
+    let f := splitTwistingFrame R a b i h
+    q (f ⟨0⟩) = twistingLineFrame R a i h ⟨0⟩ ∧ q (f ⟨1⟩) = 0 := by
+  dsimp only
+  let G := splitTwistingSheafIso R a b
+  let S := Scheme.Modules.sectionsFunctor V
+  have hfst : (splitTwistingFst R a b).hom =
+      G.hom ≫ (biprod.fst : TS[a,b] ⟶ T[a]) ≫ (twistingModuleIso R a).inv := rfl
+  constructor
+  · rw [splitTwistingFrame_zero, twistingLineFrame_apply]
+    have he : ((biprod.inl : T[a] ⟶ TS[a,b]) ≫ G.inv) ≫ (splitTwistingFst R a b).hom =
+        (twistingModuleIso R a).inv := by
+      erw [Category.assoc, hfst, G.inv_hom_id_assoc, biprod.inl_fst_assoc]
+    have h := ConcreteCategory.congr_hom (congrArg (fun f : T[a] ⟶ M[a] ↦ S.map f) he)
+      (Proj.twistingSheaf.chartGenerator a (coord R i) (coord_mem R i) V h)
+    erw [S.map_comp, ConcreteCategory.comp_apply] at h
+    exact h
+  · rw [splitTwistingFrame_one]
+    have he : ((biprod.inr : T[b] ⟶ TS[a,b]) ≫ G.inv) ≫ (splitTwistingFst R a b).hom =
+        (0 : T[b] ⟶ M[a]) := by
+      erw [Category.assoc, hfst, G.inv_hom_id_assoc, biprod.inr_fst_assoc, zero_comp]
+    have h := ConcreteCategory.congr_hom (congrArg (fun f : T[b] ⟶ M[a] ↦ S.map f) he)
+      (Proj.twistingSheaf.chartGenerator b (coord R i) (coord_mem R i) V h)
+    erw [S.map_comp, ConcreteCategory.comp_apply, Functor.map_zero] at h
+    exact h
+
+private theorem splitTwistingSnd_frame
+    (a b : ℤ) (i : Fin 2) {V : (P).Opens} (h : V ≤ U[i]) :
+    let S := Scheme.Modules.sectionsFunctor V
+    let q := (S.map (splitTwistingSnd R a b).hom).hom
+    let f := splitTwistingFrame R a b i h
+    q (f ⟨1⟩) = twistingLineFrame R b i h ⟨0⟩ ∧ q (f ⟨0⟩) = 0 := by
+  dsimp only
+  let G := splitTwistingSheafIso R a b
+  let S := Scheme.Modules.sectionsFunctor V
+  have hsnd : (splitTwistingSnd R a b).hom =
+      G.hom ≫ (biprod.snd : TS[a,b] ⟶ T[b]) ≫ (twistingModuleIso R b).inv := rfl
+  constructor
+  · rw [splitTwistingFrame_one, twistingLineFrame_apply]
+    have he : ((biprod.inr : T[b] ⟶ TS[a,b]) ≫ G.inv) ≫ (splitTwistingSnd R a b).hom =
+        (twistingModuleIso R b).inv := by
+      erw [Category.assoc, hsnd, G.inv_hom_id_assoc, biprod.inr_snd_assoc]
+    have h := ConcreteCategory.congr_hom (congrArg (fun f : T[b] ⟶ M[b] ↦ S.map f) he)
+      (Proj.twistingSheaf.chartGenerator b (coord R i) (coord_mem R i) V h)
+    erw [S.map_comp, ConcreteCategory.comp_apply] at h
+    exact h
+  · rw [splitTwistingFrame_zero]
+    have he : ((biprod.inl : T[a] ⟶ TS[a,b]) ≫ G.inv) ≫ (splitTwistingSnd R a b).hom =
+        (0 : T[a] ⟶ M[b]) := by
+      erw [Category.assoc, hsnd, G.inv_hom_id_assoc, biprod.inl_snd_assoc, zero_comp]
+    have h := ConcreteCategory.congr_hom (congrArg (fun f : T[a] ⟶ M[b] ↦ S.map f) he)
+      (Proj.twistingSheaf.chartGenerator a (coord R i) (coord_mem R i) V h)
+    erw [S.map_comp, ConcreteCategory.comp_apply, Functor.map_zero] at h
+    exact h
+
+/-- In a standard affine split frame, projection onto a summand gives the corresponding
+coordinate section, with normalized affine coordinate zero. -/
+theorem ker_polynomialPoint_eq_comap_relativeProjSplitTwistingSection
+    (a b : ℤ) (i j : Fin 2) (V : (P).AffineZariskiSite) (h : V.toOpens ≤ U[i]) :
+    let A := Γ(P, V.toOpens)
+    (polynomialPoint A (RingHom.id A) j 0).ker =
+      (relativeProjSplitTwistingSection R a b j).ker.comap (((Pi.basisFun A (Fin 2)).reindex
+        (Equiv.ulift.symm : Fin 2 ≃ ULift.{u} (Fin 2))).polynomialProjIso.inv ≫
+        (F[a,b]).relativeProjPolynomialChart V (splitTwistingFrame R a b i h)) := by
+  dsimp only
+  fin_cases j
+  · obtain ⟨h₀, h₁⟩ := splitTwistingFst_frame R a b i h
+    exact (line[a]).ker_polynomialPoint_eq_comap_relativeProjSectionOfQuotient
+      (splitTwistingFst R a b) V (splitTwistingFrame R a b i h) (twistingLineFrame R a i h)
+      0 0 h₀ (h₁.trans (zero_smul _ _).symm)
+  · obtain ⟨h₁, h₀⟩ := splitTwistingSnd_frame R a b i h
+    exact (line[b]).ker_polynomialPoint_eq_comap_relativeProjSectionOfQuotient
+      (splitTwistingSnd R a b) V (splitTwistingFrame R a b i h) (twistingLineFrame R b i h)
+      1 0 h₁ (h₀.trans (zero_smul _ _).symm)
 
 /-- Restricting a frame within the same standard chart gives the frame on the smaller open. -/
 theorem restrict_splitTwistingFrame (a b : ℤ) (i : Fin 2) {V W : (P).Opens}

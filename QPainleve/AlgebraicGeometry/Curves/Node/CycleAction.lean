@@ -78,30 +78,6 @@ theorem branch_eq_branchOrderOfDualGraph (j : ZMod n) (b : Fin 2) :
   rw [node, Equiv.trans_apply, X.branchOrderOfDualGraph_apply_val p]
   rfl
 
-/-- The numbering of the actual branches determines the whole cycle numbering. -/
-@[ext] theorem ext_of_branch {A B : NodalCycleNumbering p n}
-    (h : ∀ j b, A.branch (j, b) = B.branch (j, b)) : A = B := by
-  have hcoords (j : ZMod n) (b : Fin 2) :
-      (A.edge j, A.order (A.edge j) b) = (B.edge j, B.order (B.edge j) b) := by
-    apply (X.dualGraphBranchEquiv p).injective
-    have hb := h j b
-    rw [A.branch_eq_branchOrderOfDualGraph j b, B.branch_eq_branchOrderOfDualGraph j b,
-      A.node_apply, B.node_apply, X.branchOrderOfDualGraph_apply_val,
-      X.branchOrderOfDualGraph_apply_val] at hb
-    exact hb
-  have hedge : A.edge = B.edge := Equiv.ext fun j ↦ congrArg Prod.fst (hcoords j 0)
-  have horder : A.order = B.order := by
-    funext z
-    obtain ⟨j, rfl⟩ := A.edge.surjective z
-    exact Equiv.ext fun b ↦ by
-      simpa only [hedge] using congrArg Prod.snd (hcoords j b)
-  have hvertex : A.vertex = B.vertex := Equiv.ext fun j ↦ by
-    simpa only [DualGraph.cycle, ite_true, hedge, horder] using
-      (A.endpoint_eq j 0).symm.trans (by rw [hedge, horder]; exact B.endpoint_eq j 0)
-  cases A
-  cases B
-  exact mk.injEq .. |>.mpr ⟨hvertex, hedge, horder⟩
-
 /-- The projection of a numbered branch to the singular subscheme forgets the endpoint. -/
 @[simp]
 theorem branchSchemeToSingularLocus_branch (j : ZMod n) (b : Fin 2) :
@@ -115,6 +91,35 @@ theorem branchSchemeToBlowup_branch_mem_component_iff (j : ZMod n) (b : Fin 2)
       C.component ((DualGraph.cycle n).endpoint j b) = a := by
   simpa [branch, component, C.endpoint_eq] using
     (X.dualGraphVertexEquiv_endpoint_eq_iff p (C.edge j) (C.order (C.edge j) b) a).symm
+
+/-- Agreement on all numbered branches determines the vertex, node and branch labels. -/
+@[ext]
+theorem ext {A B : NodalCycleNumbering p n}
+    (h : ∀ j b, A.branch (j, b) = B.branch (j, b)) : A = B := by
+  have flag (C : NodalCycleNumbering p n) (j : ZMod n) (b : Fin 2) :
+      C.branch (j, b) = X.dualGraphBranchEquiv p (C.edge j, C.order (C.edge j) b) := by
+    rw [C.branch_eq_branchOrderOfDualGraph]
+    -- Evaluate the node before applying the dependent branch ordering.
+    exact (congrArg (fun z ↦ (X.branchOrderOfDualGraph p C.order z b).val)
+      (C.node_apply j)).trans (X.branchOrderOfDualGraph_apply_val p C.order (C.edge j) b)
+  have flags (j : ZMod n) (b : Fin 2) :
+      (A.edge j, A.order (A.edge j) b) = (B.edge j, B.order (B.edge j) b) :=
+    (X.dualGraphBranchEquiv p).injective (by simpa only [flag] using h j b)
+  have he : A.edge = B.edge := Equiv.ext fun j ↦ congrArg Prod.fst (flags j 0)
+  have ho : A.order = B.order := funext fun e ↦ Equiv.ext fun b ↦ by
+    obtain ⟨j, rfl⟩ := A.edge.surjective e
+    simpa only [← he] using congrArg Prod.snd (flags j b)
+  have hv : A.vertex = B.vertex := Equiv.ext fun j ↦ by
+    have hA := A.endpoint_eq j 0
+    have hB := B.endpoint_eq j 0
+    rw [← he, ← ho] at hB
+    simpa only [DualGraph.cycle, reduceIte] using hA.symm.trans hB
+  cases A
+  cases B
+  cases he
+  cases ho
+  cases hv
+  rfl
 
 /-- Reverse the orientation of the numbering, keeping component zero fixed. Node `j`
 becomes the old node `-1 - j` with its two branches exchanged. -/
@@ -150,82 +155,6 @@ theorem reverse_branchOrderOfDualGraph (z : (X.singularLocus k).subscheme) (b : 
   obtain ⟨e, rfl⟩ := (X.dualGraphNodeEquiv p).surjective z
   apply Subtype.ext
   simp only [Scheme.branchOrderOfDualGraph_apply_val, reverse, Equiv.trans_apply, Fin.revPerm_apply]
-
-open DihedralGroup
-
-variable (A : NodalCycleNumbering p n)
-
-private def rotate (t : ZMod n) : NodalCycleNumbering p n where
-  vertex := (Equiv.addRight t).trans A.vertex
-  edge := (Equiv.addRight t).trans A.edge
-  order := A.order
-  endpoint_eq j b := by
-    have h := cycle_endpoint_cycleBranchPerm (.r t) j b
-    simp only [cycleBranchPerm_r_apply, cycleVertexPerm_r_apply] at h
-    simp only [Equiv.trans_apply, Equiv.coe_addRight, A.endpoint_eq, h]
-
-private theorem rotate_component (t j : ZMod n) :
-    (A.rotate t).component j = A.component (j + t) := by
-  simp only [component_apply, rotate, Equiv.trans_apply, Equiv.coe_addRight]
-
-private theorem rotate_node (t j : ZMod n) :
-    (A.rotate t).node j = A.node (j + t) := by
-  simp only [node_apply, rotate, Equiv.trans_apply, Equiv.coe_addRight]
-
-private theorem rotate_branch (t j : ZMod n) (b : Fin 2) :
-    (A.rotate t).branch (j, b) = A.branch (j + t, b) := by
-  rw [(A.rotate t).branch_eq_branchOrderOfDualGraph, A.rotate_node,
-    A.branch_eq_branchOrderOfDualGraph]
-  rfl
-
-/-- Read the original numbering at the image of each index under a dihedral element. -/
-def reindex (g : DihedralGroup n) : NodalCycleNumbering p n :=
-  match g with
-  | .r t => A.rotate t
-  | .sr t => A.reverse.rotate t
-
-/-- Reindexing by a reflection reverses the numbering and then rotates it. -/
-theorem reindex_sr (t : ZMod n) : A.reindex (.sr t) = A.reverse.reindex (.r t) :=
-  (rfl)
-
-/-- Reindexing acts on the components by the vertex permutation. -/
-@[simp] theorem reindex_component (g : DihedralGroup n) (j : ZMod n) :
-    (A.reindex g).component j = A.component (cycleVertexPerm g j) := by
-  cases g with
-  | r t => simpa only [reindex, cycleVertexPerm_r_apply] using A.rotate_component t j
-  | sr t =>
-    have h : -(j + t) = -t - j := by abel
-    simp only [reindex, rotate_component, reverse_component, cycleVertexPerm_sr_apply, h]
-
-/-- Reindexing acts on the points of the branch scheme by the branch permutation. -/
-@[simp] theorem reindex_branch (g : DihedralGroup n) (j : ZMod n) (b : Fin 2) :
-    (A.reindex g).branch (j, b) = A.branch (cycleBranchPerm g (j, b)) := by
-  cases g with
-  | r t => simpa only [reindex, cycleBranchPerm_r_apply] using A.rotate_branch t j b
-  | sr t =>
-    have h : -1 - (j + t) = -t - 1 - j := by abel
-    simp only [reindex, rotate_branch, reverse_branch, cycleBranchPerm_sr_apply, h]
-
-/-- Reindexing acts on the nodes by the edge coordinate of the branch permutation. -/
-@[simp] theorem reindex_node (g : DihedralGroup n) (j : ZMod n) :
-    (A.reindex g).node j = A.node (cycleBranchPerm g (j, 0)).1 := by
-  cases g with
-  | r t => simpa only [reindex, cycleBranchPerm_r_apply] using A.rotate_node t j
-  | sr t =>
-    have h : -1 - (j + t) = -t - 1 - j := by abel
-    simp only [reindex, rotate_node, reverse_node, cycleBranchPerm_sr_apply, h]
-
-/-- Reindexing by the identity preserves the numbering. -/
-@[simp] theorem reindex_one : A.reindex 1 = A := by
-  ext j b
-  simp
-
-/-- Reindexing first by `g` and then by `h` reads the original indices at `g * h`. -/
-theorem reindex_mul (g h : DihedralGroup n) : A.reindex (g * h) = (A.reindex g).reindex h := by
-  ext j b
-  simp only [reindex_branch, map_mul, Equiv.Perm.mul_apply]
-  cases cycleBranchPerm h (j, b)
-  rw [reindex_branch]
 
 end NodalCycleNumbering
 
@@ -491,14 +420,6 @@ theorem boundaryCycleAction_refl :
     (Iso.refl X).boundaryCycleAction C C = 1 := by
   refine (existsUnique_boundaryCycleAction (Iso.refl X) C (D := C)).unique
     (branch_boundaryCycleAction _ _ _) fun j b ↦ ?_
-  simp
-
-/-- The identity from the reindexed cycle to the original cycle realizes the
-specified dihedral element on the ordered branches. -/
-@[simp] theorem boundaryCycleAction_reindex (A : NodalCycleNumbering p n) (g : DihedralGroup n) :
-    (Iso.refl X).boundaryCycleAction (A.reindex g) A = g := by
-  refine (existsUnique_boundaryCycleAction (Iso.refl X) (A.reindex g) (D := A)).unique
-    (branch_boundaryCycleAction _ _ _) ?_
   simp
 
 /-- The identity of the underlying curve induces the reflection fixing component zero

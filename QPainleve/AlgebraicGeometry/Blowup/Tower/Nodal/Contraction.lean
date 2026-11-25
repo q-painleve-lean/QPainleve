@@ -5,17 +5,21 @@ Authors: The QPainleve contributors
 -/
 module
 
-public import QPainleve.AlgebraicGeometry.Blowup.Tower.Nodal.Basic
+public import QPainleve.AlgebraicGeometry.Blowup.Tower.Nodal.Canonical
 public import QPainleve.AlgebraicGeometry.Chow.Nef.Basic
 public import QPainleve.AlgebraicGeometry.IdealSheaf.Boundary.Primes
 public import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.ProjectiveOver
 
+import QPainleve.AlgebraicGeometry.Blowup.StrictTransform.Contraction
+import QPainleve.AlgebraicGeometry.Blowup.StrictTransform.Reduced
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Contraction
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Modification
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Nodal.InternalCurve
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Nodal.Multiplicity
 import QPainleve.AlgebraicGeometry.Blowup.Tower.TotalTransform
+import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
 import QPainleve.AlgebraicGeometry.IdealSheaf.Restriction
+import QPainleve.AlgebraicGeometry.Modules.Differentials.Restriction
 import TauCeti.AlgebraicGeometry.Curves.Node.Reduced
 import TauCeti.AlgebraicGeometry.IdealSheaf.Reduced
 import TauCeti.AlgebraicGeometry.Morphisms.Smooth.Regular
@@ -23,7 +27,11 @@ import TauCeti.AlgebraicGeometry.Noetherian
 import TauCeti.AlgebraicGeometry.Scheme.Regular.Scheme
 
 /-!
-# Uniqueness of nodal contractions
+# Contractions of nodal blowup models
+
+If the reduced anticanonical boundary on a nodal blowup tower identifies with a strict
+transform on another point blowup, the corresponding blowdown recovers the divisor
+downstairs and contracts a curve omitted by the reduced boundary.
 
 An isomorphism of nodal blowup models that identifies their total boundary supports
 descends to the original pairs if it matches the boundary primes that survive the two
@@ -41,12 +49,74 @@ for the descent.
 
 public section
 
-open AlgebraicGeometry CategoryTheory TauCeti.AlgebraicGeometry
+open AlgebraicGeometry CategoryTheory TopologicalSpace TauCeti.AlgebraicGeometry
 open LineBundleClass Scheme.IdealSheafData
 
 universe u
 
 namespace QPainleve.BlowupTower.IsNodalBoundaryTower
+
+section BoundaryImage
+
+variable {k : Type u} [Field k] [PerfectField k] {X Y W : Scheme.{u}}
+  [X.Over (Spec (.of k))] [Y.Over (Spec (.of k))]
+  [IsIntegral X] [IsIntegral Y] [IsNoetherian X] [IsNoetherian Y]
+  [SmoothOfRelativeDimension 2 (X ↘ Spec (.of k))]
+  [SmoothOfRelativeDimension 2 (Y ↘ Spec (.of k))]
+  {n : ℕ} {T : BlowupTower X n W} {D : X.IdealSheafData} {E : Y.IdealSheafData}
+
+local notation "S" => Spec (CommRingCat.of k)
+local notation "K(" Z ")" => mk (canonicalBundle k Z 2)
+local notation "I(" y ")" => Scheme.Hom.ker (Scheme.fromSpecResidueField _ y)
+local notation "J(" y ")" => vanishingIdeal (Closeds.mk (closure ({y} : Set _)) isClosed_closure)
+
+/-- If an isomorphism over the base field identifies the reduced total boundary of an
+anticanonical nodal tower with a strict transform on a closed-point blowup, the schematic
+image is the original divisor of that strict transform, and the boundary omits the
+exceptional curve of the blowdown. -/
+theorem map_radical_comap_toBase_of_eq_strictTransform
+    (hT : IsNodalBoundaryTower D (X ↘ S) (𝟙 X) T) (hD : D.IsEffectiveCartier)
+    (hN : AtWorstNodalOfRelativeDimensionOne (D.subschemeι ≫ X ↘ S))
+    (hK : mk hD.toInvertibleSheaf = K(X))
+    {y : Y} (hy : IsClosed ({y} : Set Y)) (hE : E.IsEffectiveCartier) [IsReduced E.subscheme]
+    (a : W ≅ (I(y)).blowup) (ha : a.hom ≫ (I(y)).blowupToBase ≫ Y ↘ S = T.toBase ≫ X ↘ S)
+    (hstrict : (blowupMap (I(y)) E.subschemeι).ker.comap a.hom = (D.comap T.toBase).radical) :
+    (D.comap T.toBase).radical.map (a.hom ≫ (I(y)).blowupToBase) = E ∧
+      ¬ ((I(y)).comap (a.hom ≫ (I(y)).blowupToBase)).support ≤
+        (D.comap T.toBase).radical.support := by
+  let : W.Over S := ⟨T.toBase ≫ X ↘ S⟩
+  let : SmoothOfRelativeDimension 2 (W ↘ S) := hT.isClosedPointTower.smoothOfRelativeDimension _
+  have hCartier := (hT.radical_comap_toBase hD hN).1
+  have hKtotal := (hT.canonicalClass_radical_comap_toBase_iff hD hN).mpr hK
+  generalize hI : I(y) = J at a ha hstrict ⊢
+  have hJ : J = J(y) := hI.symm.trans (Y.ker_fromSpecResidueField_eq_vanishingIdeal y)
+  clear hI
+  subst J
+  let B := (blowupMap (J(y)) E.subschemeι).ker
+  let : (J(y)).blowup.Over S := ⟨(J(y)).blowupToBase ≫ Y ↘ S⟩
+  let : SmoothOfRelativeDimension 2 ((J(y)).blowup ↘ S) :=
+    smoothOfRelativeDimension_blowup_closed_point (Y ↘ S) hy
+  have haOver : a.hom ≫ ((J(y)).blowup ↘ S) = W ↘ S := ha
+  have : a.inv.IsOver S := ⟨by rw [← haOver, Iso.inv_hom_id_assoc]⟩
+  have hBcomap : (D.comap T.toBase).radical.comap a.inv = B := by
+    rw [← hstrict, ← comap_comp, Iso.inv_hom_id, comap_id]
+  have hB : B.IsEffectiveCartier := hBcomap ▸ hCartier.comap a.inv
+  have : IsReduced B.subscheme := isReduced_subscheme_ker_blowupMap (J(y)) E
+  have hKB : mk hB.toInvertibleSheaf = K((J(y)).blowup) := by
+    have hclass := (hCartier.pullback_mk_toInvertibleSheaf (hCartier.comap a.inv)).trans
+      (mk_toInvertibleSheaf_congr _ hB hBcomap)
+    rw [hKtotal, pullback_mk] at hclass
+    exact hclass.symm.trans (mk_pullback_canonicalBundle k a.inv 2)
+  obtain ⟨hmap, homit⟩ := hB.map_eq_and_not_le_support_of_eq_strictTransform k hy hE rfl hKB
+  refine ⟨?_, ?_⟩
+  · rw [← hstrict, map_comp, map_comap_of_isClosedImmersion,
+      Scheme.Hom.ker_eq_bot_of_isIso a.hom, sup_bot_eq]
+    exact hmap
+  · rw [← hstrict, comap_comp, support_comap _ a.hom, support_comap _ a.hom]
+    exact fun h ↦ homit (SetLike.coe_subset_coe.mp
+      (a.hom.surjective.preimage_subset_preimage_iff.mp (SetLike.coe_subset_coe.mpr h)))
+
+end BoundaryImage
 
 section SurvivingPrimes
 

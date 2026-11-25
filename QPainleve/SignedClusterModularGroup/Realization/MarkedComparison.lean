@@ -11,6 +11,8 @@ public import QPainleve.SignedClusterModularGroup.Realization.Boundary
 public import QPainleve.SignedClusterModularGroup.Realization.CenterFibers
 
 import QPainleve.Geometry.Toric.Fan.Boundary.NumberedPrime
+import QPainleve.Geometry.Toric.Fan.Evaluation.CenterFiber
+import QPainleve.SignedClusterModularGroup.Realization.Evaluation
 
 /-!
 # Independent X maps determined by marked actions
@@ -252,5 +254,208 @@ theorem GeometricRealization.xMap_eq_of_marked_actions_eq
 end Realizations
 
 end Toric
+
+namespace GeometricRealization
+
+open QPainleve.CharacterTorus
+
+variable {l n : ℕ} [NeZero n] {L : Type} [AddCommGroup L]
+  {B : LinearMap.BilinForm ℤ L}
+
+local notation "Cent" => (Fin l → ℤ)
+local notation "T" => Over.mk (structureMap ℂ Cent)
+local notation "Xtor" => scheme ℂ (Fin l →₀ ℤ)
+local notation "Torus[" U "]" => Grp.X (groupScheme ℂ (FGCommGrpCat.of (Multiplicative U)))
+local notation "centerCoordinates" =>
+  diagonalizableGroupSchemeIso ℂ (FGCommGrpCat.of (Multiplicative Cent))
+local notation "χ[" p "]" => pointsEquiv ℂ Cent
+  (Subtype.mk (Over.Hom.left (p : Point T)) (Over.w (p : Point T)))
+local notation "dst[" C "," x "]" =>
+  x ≫ PartialMap.domainTarget (X := T) (Y := T) C
+local notation "src[" C "," x "]" =>
+  x ≫ PartialMap.domainSource (X := T) (Y := T) C
+
+variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
+  {i : N →+ V} {Φ : Fan i} [hΦ₀ : Nonempty Φ.cones] {m : ℕ} [NeZero m]
+  {b : Module.Basis (Fin 2) ℤ N} {s : Fin l → Φ.Ray} {hΦ : Φ.IsRegular}
+  [PrestableFamily ((Φ.boundaryIdeal hΦ₀).subscheme ↘ S)]
+  {γ : Type*} {a : γ → ((Φ.boundaryIdeal hΦ₀).subscheme ↘ S).smoothLocus}
+  {τ : NodalCycleNumbering a m} {origin : ZMod m}
+  {ι : L →ₗ[ℤ] Additive (LineBundleClass Φ.algebraicRealization) × (Fin l → ℤ)}
+  {P : Point (Over.mk (structureMap ℂ (Fin l → ℤ))) →
+    MarkedSurface ℂ n B (scheme ℂ (Fin l →₀ ℤ))}
+  {C C' : (scheme ℂ (Fin l → ℤ)).PartialMap (scheme ℂ (Fin l → ℤ))}
+  [IsDominant C.hom] [IsDominant C'.hom]
+  [C.IsOver (Over.mk (structureMap ℂ (Fin l → ℤ))).hom
+    (Over.mk (structureMap ℂ (Fin l → ℤ))).hom]
+  [C'.IsOver (Over.mk (structureMap ℂ (Fin l → ℤ))).hom
+    (Over.mk (structureMap ℂ (Fin l → ℤ))).hom]
+  {F G : scheme ℂ (Fin l →₀ ℤ) ⤏ scheme ℂ (Fin l →₀ ℤ)} [F.IsDominant] [G.IsDominant]
+  [F.IsOver (structureMap ℂ (Fin l →₀ ℤ)) (structureMap ℂ (Fin l →₀ ℤ))]
+  [G.IsOver (structureMap ℂ (Fin l →₀ ℤ)) (structureMap ℂ (Fin l →₀ ℤ))]
+
+local notation "fiberAt" c:arg => ContractedToricFiber b s hΦ τ origin ι (χ[c]) (P c)
+
+omit [IsDominant C.hom] in
+private theorem precompCenter_target
+    {A : Over S} [PreirreducibleSpace A.left]
+    (f : A.left.PartialMap (T).left) [IsDominant f.hom]
+    [f.IsOver A.hom (T).hom] [(f.comp C).IsOver A.hom (T).hom]
+    (G : Point T → Prop)
+    (hG : ∀ x : CenterPoint (U := T) (V := T) C, G (dst[C,x]))
+    (x : CenterPoint (U := A) (V := T) (f.comp C)) :
+    G (x ≫ PartialMap.domainTarget (X := A) (Y := T) (f.comp C)) := by
+  have hx := hG (x ≫ f.compDomainRight (Z := T) C)
+  rw [Category.assoc, f.compDomainRight_target] at hx
+  exact hx
+
+omit [IsDominant C.hom]
+  [C.IsOver (Over.mk (structureMap ℂ (Fin l → ℤ))).hom
+    (Over.mk (structureMap ℂ (Fin l → ℤ))).hom] in
+private theorem exists_precompCenter_chart
+    [Module.Free ℤ N] [IsAddFG N] [IsIntegral Torus[Cent].left]
+    (eOver : Torus[Cent] ⟶ T) (eX : Torus[Cent].left ≅ Xtor)
+    (he : eOver.left = (centerCoordinates).hom)
+    (hcoords : eX.hom = (centerCoordinates).hom ≫ CharacterTorus.map ℂ
+      (Finsupp.linearEquivFunOnFinite ℤ ℤ (Fin l)).toAddEquiv.toAddMonoidHom)
+    [IsDominant eOver.left]
+    (pSource : ∀ x : CenterPoint (U := T) (V := T) C, fiberAt (src[C,x]))
+    (c : Point Torus[Cent])
+    (z : S ⟶ (eOver.left.toPartialMap.comp C).domain.toScheme)
+    (hleft : z ≫ (eOver.left.toPartialMap.comp C).domain.ι = c.left) :
+    ∃ (j : Torus[N].left ⤏ ((P (c ≫ eOver)).compEvaluation eX.inv).surface)
+      (_ : j.IsDominant), j.comp ((P (c ≫ eOver)).compEvaluation eX.inv).evaluation =
+        (evaluationAtCenter ℂ (Fan.rayChargeMap s).toAddMonoidHom c.left
+          (Over.w c)).toRationalMap := by
+  let f := eOver.left.toPartialMap
+  let : f.IsOver Torus[Cent].hom (T).hom := Hom.isOver_toPartialMap (Over.w eOver)
+  let t : CenterPoint (U := Torus[Cent]) (V := T) (f.comp C) :=
+    Over.homMk z
+      (by exact (Category.assoc _ _ _).symm.trans ((congrArg (· ≫ _) hleft).trans (Over.w c)))
+  let x := t ≫ f.compDomainRight (Z := T) C
+  have hx : src[C,x] = c ≫ eOver := by
+    have ht : t ≫ PartialMap.domainSource (X := Torus[Cent]) (Y := T) (f.comp C) = c := by
+      apply Over.OverMorphism.ext
+      simpa only [t, Over.comp_left, Over.homMk_left, PartialMap.domainSource_left] using hleft
+    have hf : f.domainTarget = f.domainSource ≫ eOver :=
+      PartialMap.domainTarget_toPartialMap eOver rfl
+    rw [Category.assoc, ← f.compDomainLeft_target (Z := T) C, hf,
+      ← Category.assoc (f.compDomainLeft (Z := T) C), f.compDomainLeft_source (Z := T),
+      ← Category.assoc, ht]
+  let c' : (S).asOver S ⟶ Torus[Cent] :=
+    Over.homMk c.left ((Over.w c).trans (Spec.map_id (CommRingCat.of ℂ)).symm)
+  let χ' := schemePointsMulEquiv (R := ℂ) (A := ℂ) (FGCommGrpCat.of (Multiplicative Cent)) c'
+  have hχ : χ' = χ[c ≫ eOver] := by
+    apply (pointsEquiv ℂ Cent).symm.injective
+    apply Subtype.ext
+    rw [Equiv.symm_apply_apply]
+    -- Expose the underlying scheme map to use the point comparison.
+    change ((pointsEquiv ℂ Cent).symm χ').val = c'.left ≫ eOver.left
+    rw [he]
+    simpa only [χ', MulEquiv.symm_apply_apply] using!
+      (schemePointsMulEquiv_symm_comp_diagonalizableGroupSchemeIso ℂ (B := Cent) χ').symm
+  let q : ContractedToricFiber b s hΦ τ origin ι χ' (P (c ≫ eOver)) :=
+    hχ.symm ▸ hx ▸ pSource x
+  obtain ⟨j, hj, hchart⟩ := @Fan.exists_dominant_chart_comp_evaluationAtCenter
+    N V _ _ _ i Φ hΦ₀ l b s c.left (Over.w c) hΦ
+    (P (c ≫ eOver)).surface (P (c ≫ eOver)).integral q.projection q.modification
+  refine ⟨j, hj, ?_⟩
+  let ev := evaluationAtCenter ℂ (Fan.rayChargeMap s).toAddMonoidHom c.left (Over.w c)
+  have hchart' : j.comp (P (c ≫ eOver)).evaluation = (ev ≫ eX.hom).toRationalMap := by
+    rw [q.evaluation_eq, hcoords]
+    exact hchart
+  -- Undo the coordinate isomorphism used to apply the variable-center comparison.
+  change j.comp ((P (c ≫ eOver)).compEvaluation eX.inv).evaluation = ev.toRationalMap
+  rw [MarkedSurface.compEvaluation_evaluation, RationalMap.comp_compHom, hchart',
+    Hom.toRationalMap_compHom, Category.assoc, eX.hom_inv_id, Category.comp_id]
+
+/-- In character-torus coordinates, equality of the marked actions determines the
+independent rational X maps. The source toric models are needed only on the first
+center domain, and the target models need only agree on which boundary rays survive. -/
+theorem xMap_eq_of_marked_actions_on_center_domains
+    (R : GeometricRealization P P C F) (R' : GeometricRealization P P C' G)
+    [Φ.algebraicRealization.IsProjectiveOver ℂ] [B.IsPerfPair]
+    (hcΦ : Φ.IsComplete) (u : ZMod m ≃ Φ.Ray)
+    (hvertices : ∀ j, (Φ.boundaryIdeal hΦ₀).subscheme.dualGraphVertexEquiv a (τ.vertex j) =
+      Φ.boundaryNormalizationComponentEquiv hΦ (u j))
+    (hdet : ∀ j, b.detDualEquiv (u j).primitiveGenerator (u (j + 1)).primitiveGenerator = 1)
+    (hnodes : ∀ j, ∃ σ : Φ.cones, (u j).toCone ≤ σ ∧ (u (j + 1)).toCone ≤ σ ∧
+      (Φ.boundaryIdeal hΦ₀).subschemeι
+        ((Φ.boundaryIdeal hΦ₀).subscheme.dualGraphEdgeEquiv a (τ.edge j)).val =
+        Φ.distinguishedPointHom σ (IsLocalRing.closedPoint ℂ))
+    (pSource : ∀ x : CenterPoint (U := T) (V := T) C, fiberAt (src[C,x]))
+    (survives : Set Φ.Ray)
+    (pTarget : ∀ x : CenterPoint (U := T) (V := T) C,
+      ∃ p : fiberAt (dst[C,x]), p.IsNodalContraction ∧ ∀ ρ : Φ.Ray,
+        p.projection (Fan.internalBlowupBoundaryPrimeEquiv hΦ b s
+          (fun j ↦ χ[dst[C,x]] (ofAdd (Pi.single j 1))) ρ).val ∈
+          D[P (dst[C,x])].boundaryPrimes ↔ ρ ∈ survives)
+    (qTarget : ∀ x : CenterPoint (U := T) (V := T) C',
+      ∃ p : fiberAt (dst[C',x]), p.IsNodalContraction ∧ ∀ ρ : Φ.Ray,
+        p.projection (Fan.internalBlowupBoundaryPrimeEquiv hΦ b s
+          (fun j ↦ χ[dst[C',x]] (ofAdd (Pi.single j 1))) ρ).val ∈
+          D[P (dst[C',x])].boundaryPrimes ↔ ρ ∈ survives)
+    (hpic : R.picard = R'.picard) (hperm : R.boundaryPerm = R'.boundaryPerm)
+    (hη : R.orientation = R'.orientation) :
+    F = G := by
+  -- The comparison uses the group-scheme coordinates for the joint evaluation map.
+  let : Module.Free ℤ N := Module.Free.of_basis b
+  let : IsAddFG N := Module.Finite.iff_addGroup_fg.mp (.of_basis b)
+  let e := centerCoordinates
+  let coord : (Fin l →₀ ℤ) ≃+ Additive (FGCommGrpCat.of (Multiplicative Cent)) :=
+    (Finsupp.linearEquivFunOnFinite ℤ ℤ (Fin l)).toAddEquiv
+  let eX : Torus[Cent].left ≅ Xtor := e ≪≫ CharacterTorus.mapIso ℂ coord
+  have he : e.hom ≫ (T).hom = Torus[Cent].hom := diagonalizableGroupSchemeIso_hom_structureMap ℂ _
+  have hcoords : eX.hom = e.hom ≫ CharacterTorus.map ℂ coord.toAddMonoidHom := by
+    simp only [eX, Iso.trans_hom, CharacterTorus.mapIso_hom]
+  have heX : eX.hom ≫ structureMap ℂ (Fin l →₀ ℤ) = Torus[Cent].hom := by
+    rw [hcoords, Category.assoc, map_structureMap]
+    exact he
+  let : Nonempty Torus[Cent].left := ⟨e.inv (Classical.choice (inferInstance : Nonempty (T).left))⟩
+  let : IsIntegral Torus[Cent].left := IsIntegral.of_isIso e.inv
+  let : Smooth Torus[Cent].hom := smooth_groupScheme_of_free ℂ Cent
+  let eOver : Torus[Cent] ⟶ T := Over.homMk e.hom he
+  let : IsDominant eOver.left := by
+    -- The underlying arrow of this over-morphism is the center-coordinate isomorphism.
+    change IsDominant e.hom
+    let : IsIso e.hom := Iso.isIso_hom e
+    infer_instance
+  let : eOver.left.toPartialMap.IsOver Torus[Cent].hom (T).hom := Hom.isOver_toPartialMap he
+  let f := eOver.left.toPartialMap
+  let : (f.comp C).IsOver Torus[Cent].hom (T).hom :=
+    PartialMap.instIsOverCompHom_qPainleve (X := Torus[Cent]) (Y := T) (Z := T) f C
+  let : (f.comp C').IsOver Torus[Cent].hom (T).hom :=
+    PartialMap.instIsOverCompHom_qPainleve (X := Torus[Cent]) (Y := T) (Z := T) f C'
+  let R₀ := (R.precompCenter eOver).precompEvaluation eX
+  let R₁ := (R'.precompCenter eOver).precompEvaluation eX
+  have hover : eX.hom.toRationalMap.IsOver Torus[Cent].hom (structureMap ℂ (Fin l →₀ ℤ)) := by
+    rw [RationalMap.isOver_iff, Hom.toRationalMap_compHom, heX]
+  let : (eX.hom.toRationalMap.comp F).IsOver Torus[Cent].hom
+      (structureMap ℂ (Fin l →₀ ℤ)) := RationalMap.isOver_comp _ hover _ inferInstance
+  let : (eX.hom.toRationalMap.comp G).IsOver Torus[Cent].hom
+      (structureMap ℂ (Fin l →₀ ℤ)) := RationalMap.isOver_comp _ hover _ inferInstance
+  let U := (f.comp C).domain ⊓ (f.comp C').domain
+  let : Nonempty U := ((f.comp C).dense_domain.inter_of_isOpen_left
+    (f.comp C').dense_domain (f.comp C).domain.is_open').nonempty.to_subtype
+  let hasFiber (c : Point T) := ∃ p : fiberAt c, p.IsNodalContraction ∧ ∀ ρ : Φ.Ray,
+    p.projection (Fan.internalBlowupBoundaryPrimeEquiv hΦ b s
+      (fun j ↦ χ[c] (ofAdd (Pi.single j 1))) ρ).val ∈ D[P c].boundaryPrimes ↔ ρ ∈ survives
+  apply RationalMap.comp_left_injective eX.hom.toRationalMap
+  refine R₀.xMap_eq_of_marked_actions_eq (s := s) (origin := origin) (ι := ι) R₁
+    (by simpa only [R₀, R₁, precompEvaluation_picard, precompCenter_picard] using hpic)
+    (by simpa only [R₀, R₁, boundaryPerm_def, precompEvaluation_boundaryAction,
+      precompCenter_boundaryAction] using hperm)
+    (by simpa only [R₀, R₁, orientation_def, precompEvaluation_boundaryAction,
+      precompCenter_boundaryAction] using hη)
+    (Fan.rayChargeMap s).toAddMonoidHom (structureMap ℂ (Fin l →₀ ℤ)) U inf_le_left inf_le_right
+    ?_ hcΦ u hvertices hdet hnodes (fun c ↦ χ[c]) survives
+    (precompCenter_target (C := C) f hasFiber pTarget)
+    (precompCenter_target (C := C') f hasFiber qTarget)
+  rintro c ⟨z, hz⟩
+  exact exists_precompCenter_chart eOver eX (by rfl) hcoords pSource c
+    (z ≫ Scheme.homOfLE _ (inf_le_left : U ≤ (f.comp C).domain))
+    (by rwa [Category.assoc, Scheme.homOfLE_ι])
+
+end GeometricRealization
 
 end QPainleve.SignedClusterModularGroup

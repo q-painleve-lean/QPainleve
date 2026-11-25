@@ -41,6 +41,30 @@ theorem range_primitiveGenerator_projectivePlane (b : Basis (Fin 2) ℤ N)
   simp [Option.exists, Fin.exists_fin_two, Fin.sum_univ_two, neg_add_rev, sub_eq_add_neg, add_comm]
   grind
 
+/-- Any two distinct rays of the plane fan belong to a common cone. -/
+theorem exists_cone_projectivePlane_of_ray_ne (b : Basis (Fin 2) ℤ N)
+    (hi : IsIntegralLattice i) {ρ τ : (projectiveSpace b hi).Ray} (hne : ρ ≠ τ) :
+    ∃ σ : (projectiveSpace b hi).cones, ρ.toCone ≤ σ ∧ τ.toCone ≤ σ := by
+  classical
+  let e := projectivePlaneRayEquiv b hi
+  obtain ⟨a, rfl⟩ := e.surjective ρ
+  obtain ⟨c, rfl⟩ := e.surjective τ
+  have hn : a ≠ c := fun h ↦ hne (congrArg e h)
+  have hs : ({a, c} : Set (Option (Fin 2))) ≠ Set.univ := by
+    intro h
+    have he := Set.ncard_pair hn
+    rw [h, Set.ncard_univ] at he
+    simp at he
+  have hcone : projectiveSpaceCone b i {a, c} ∈ (projectiveSpace b hi).cones :=
+    (mem_projectiveSpace_cones b hi).mpr ⟨_, hs, rfl⟩
+  have hle (j : Option (Fin 2)) (hj : j ∈ ({a, c} : Set (Option (Fin 2)))) :
+      (e j).toCone.val ≤ projectiveSpaceCone b i {a, c} := by
+    rw [Ray.toCone_eq_hull_primitiveGenerator, primitiveGenerator_projectivePlaneRayEquiv,
+      projectiveSpaceCone_def]
+    exact Submodule.span_mono (Set.singleton_subset_iff.mpr
+      (Set.mem_image_of_mem _ (Set.mem_image_of_mem _ hj)))
+  exact ⟨⟨_, hcone⟩, hle a (by simp), hle c (by simp)⟩
+
 /-- The two ray generators of a maximal cone of the plane fan form an integral basis. -/
 theorem exists_projectivePlane_vertex_basis (d : Basis (Fin 2) ℤ N)
     (hi : IsIntegralLattice i) (k : Option (Fin 2)) :
