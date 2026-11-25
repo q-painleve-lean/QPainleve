@@ -20,7 +20,7 @@ Tau Ceti. This is a guideline for writing QPainleve roadmaps.
 
 - **Toric models.** Every numbered anticanonical cycle on a smooth projective rational complex
   surface has a toric presentation:
-  [`TauCeti.Toric.Fan.hasToricPresentation_of_ruled_reduction`](QPainleve/Geometry/Toric/Fan/Presentation/Induction.lean).
+  [`AlgebraicGeometry.Scheme.IdealSheafData.hasToricPresentation_of_anticanonical_cycle`](QPainleve/Geometry/Toric/Fan/Presentation/Induction.lean).
 - **Torelli theorem.** For anticanonical pairs without internal (−2)-curves, a Picard isometry
   that matches the boundary components, intertwines the signed boundary periods and sends an
   ample class to an ample class is induced by an isomorphism of pairs:
