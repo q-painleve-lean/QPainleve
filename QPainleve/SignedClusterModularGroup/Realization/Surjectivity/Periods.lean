@@ -14,6 +14,7 @@ import QPainleve.AlgebraicGeometry.Curves.Node.Period.Roots
 import QPainleve.Geometry.Toric.Fan.Presentation.Genus
 import QPainleve.Geometry.Toric.Fan.Subdivision.Projective
 import QPainleve.SignedClusterModularGroup.Realization.Anticanonical
+import QPainleve.SignedClusterModularGroup.Realization.NodalFiber
 import QPainleve.SignedClusterModularGroup.Realization.Presentation.Boundary
 import TauCeti.AlgebraicGeometry.RationalPoint.Image
 
