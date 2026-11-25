@@ -35,38 +35,7 @@ local notation "t" => (projectiveLineTorusFan.algebraicRealization ↘ S)
 local notation "iT" => projectiveLineTorusι
 local notation "a[" k "]" => FanHom.algebraicMap (projectiveLineTorusToAffineFan k)
 local notation "Pₐ[" k "]" => pullback p s[k]
-local notation "Pₜ" => pullback p t
-
-/-- The map from the product over the base torus to the product over an affine chart
-is the identity on the projective-line factor. -/
-def projectiveLineTorusProductToAffine (k : Fin 2) : Pₜ ⟶ Pₐ[k] :=
-  pullback.lift (pullback.fst p t) (pullback.snd p t ≫ a[k])
-    (by rw [Category.assoc, FanHom.algebraicMap_comp_algebraicRealizationStructureMap,
-      ← Fan.algebraicRealization_over, pullback.condition])
-
 local notation "d[" k "]" => projectiveLineTorusProductToAffine k
-
-/-- The product inclusion preserves the fiber projection. -/
-@[reassoc (attr := simp)]
-theorem projectiveLineTorusProductToAffine_fst (k : Fin 2) :
-    d[k] ≫ pullback.fst p s[k] = pullback.fst p t :=
-  pullback.lift_fst _ _ _
-
-/-- The product inclusion induces the torus inclusion on the base projection. -/
-@[reassoc (attr := simp)]
-theorem projectiveLineTorusProductToAffine_snd (k : Fin 2) :
-    d[k] ≫ pullback.snd p s[k] = pullback.snd p t ≫ a[k] :=
-  pullback.lift_snd _ _ _
-
-/-- The product over the base torus is the preimage of that torus in either product chart. -/
-theorem isPullback_projectiveLineTorusProductToAffine (k : Fin 2) :
-    IsPullback d[k] (pullback.snd p t) (pullback.snd p s[k]) a[k] := by
-  have h : a[k] ≫ s[k] = t :=
-    (FanHom.algebraicMap_comp_algebraicRealizationStructureMap _).trans
-      (Fan.algebraicRealization_over _).symm
-  refine IsPullback.of_right ?_ (projectiveLineTorusProductToAffine_snd k)
-    (IsPullback.of_hasPullback p s[k])
-  simpa only [projectiveLineTorusProductToAffine_fst, h] using IsPullback.of_hasPullback p t
 
 local notation "laurentProduct" =>
   Iso.symm (IsPullback.isoPullback isPullback_projectiveLineTorusProduct) ≪≫
@@ -91,11 +60,6 @@ theorem hirzebruchRulingOverlapTransition_hom_comp_laurentProduct (e : ℤ) :
 private def affineCover : Scheme.OpenCover PL :=
   Scheme.Cover.mkOfCovers (Fin 2) (fun k ↦ U[k]) projectiveLineAffineFanι
     exists_projectiveLineAffineFanι_apply_eq
-
-private theorem range_projectiveLineAffineFanι (k : Fin 2) :
-    Set.range j[k] = Set.range (projectiveLine.polynomialChartι ℂ k) := by
-  rw [← projectiveLineAffineFanIso_hom_comp_polynomialChartι]
-  exact (Scheme.homeoOfIso (projectiveLineAffineFanIso k)).surjective.range_comp _
 
 variable {X Y : Scheme} (g : X ⟶ PL) (f : Y ⟶ PL)
 
@@ -150,17 +114,9 @@ private theorem glue_compatibility
   · exact congrArg (· ≫ l 1) ((cancel_mono (pullback.fst g j[1])).mp pullback.condition)
 
 private def productChartCover (u : ∀ k : Fin 2, Pₐ[k] ⟶ Y)
-    (hu : ∀ k, IsPullback (u k) (pullback.snd p s[k]) f j[k]) : Y.OpenCover := by
-  letI (k : Fin 2) : IsOpenImmersion (u k) :=
-    MorphismProperty.of_isPullback (hu k).flip inferInstance
-  refine Scheme.Cover.mkOfCovers (Fin 2) (fun k ↦ Pₐ[k]) u fun y ↦ ?_
-  obtain ⟨k, x, hx⟩ := exists_projectiveLineAffineFanι_apply_eq (f y)
-  refine ⟨k, ?_⟩
-  have hy : y ∈ Set.range (pullback.fst f j[k]) :=
-    (IsOpenImmersion.range_pullbackFst j[k] f).symm ▸ ⟨x, hx⟩
-  obtain ⟨z, hz⟩ := hy
-  exact ⟨(hu k).isoPullback.inv z, by
-    rw [← Scheme.Hom.comp_apply, (hu k).isoPullback_inv_fst, hz]⟩
+    (hu : ∀ k, IsPullback (u k) (pullback.snd p s[k]) f j[k]) : Y.OpenCover :=
+  Scheme.Cover.copy (affineCover.pullback₁ f) (Fin 2) (fun k ↦ Pₐ[k]) u (Equiv.refl _)
+    (fun k ↦ (hu k).isoPullback) (fun k ↦ (hu k).isoPullback_hom_fst.symm)
 
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {Φ : Fan i}
@@ -197,7 +153,13 @@ theorem existsUnique_hirzebruch_ruling_iso_of_overlap_transition
   let l k := (A[k]).hom ≫ u k
   have htorus (k : Fin 2) :
       torusToRulingChart q k ≫ l k = (C[k]).hom ≫ d[k] ≫ u k := by
-    simpa only [l, torusToRulingChart, projectiveLineTorusProductToAffine, Category.assoc] using
+    have hd : pullback.lift (pullback.fst p t) (pullback.snd p t ≫ a[k])
+        (by
+          rw [← projectiveLineTorusProductToAffine_fst k,
+            ← projectiveLineTorusProductToAffine_snd k, Category.assoc, Category.assoc,
+            pullback.condition]) = d[k] :=
+      pullback.hom_ext (by simp) (by simp)
+    simpa only [l, torusToRulingChart, hd, Category.assoc] using
       congrArg (· ≫ u k) (hirzebruchRulingTorusChartIso_comp_pullback b e r hr hΦ hc k).symm
   have hcompat : torusToRulingChart q 0 ≫ l 0 = torusToRulingChart q 1 ≫ l 1 := by
     rw [htorus, htorus, ← hirzebruchRulingTorusChartIso_hom_comp_overlapTransition b e r hr hΦ hc,

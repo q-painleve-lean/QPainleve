@@ -188,6 +188,46 @@ theorem isPullback_projectiveLineTorusProduct :
       ← Fan.algebraicRealization_over, CategoryTheory.comp_over]
   · simp [Fan.algebraicRealization_over]
 
+section
+
+local notation "p" => (projectiveLine ℂ ↘ base)
+local notation "s[" k "]" => Fan.algebraicRealizationStructureMap (projectiveLineAffineFan k)
+local notation "t" => (projectiveLineTorusFan.algebraicRealization ↘ base)
+local notation "a[" k "]" => FanHom.algebraicMap (projectiveLineTorusToAffineFan k)
+
+/-- The map from the product over the base torus to the product over an affine chart
+is the identity on the projective-line factor. -/
+def projectiveLineTorusProductToAffine (k : Fin 2) : pullback p t ⟶ pullback p s[k] :=
+  pullback.lift (pullback.fst p t) (pullback.snd p t ≫ a[k])
+    (by rw [Category.assoc, FanHom.algebraicMap_comp_algebraicRealizationStructureMap,
+      ← Fan.algebraicRealization_over, pullback.condition])
+
+local notation "d[" k "]" => projectiveLineTorusProductToAffine k
+
+/-- The product inclusion preserves the fiber projection. -/
+@[reassoc (attr := simp)]
+theorem projectiveLineTorusProductToAffine_fst (k : Fin 2) :
+    d[k] ≫ pullback.fst p s[k] = pullback.fst p t :=
+  pullback.lift_fst _ _ _
+
+/-- The product inclusion induces the torus inclusion on the base projection. -/
+@[reassoc (attr := simp)]
+theorem projectiveLineTorusProductToAffine_snd (k : Fin 2) :
+    d[k] ≫ pullback.snd p s[k] = pullback.snd p t ≫ a[k] :=
+  pullback.lift_snd _ _ _
+
+/-- The product over the base torus is the preimage of that torus in either product chart. -/
+theorem isPullback_projectiveLineTorusProductToAffine (k : Fin 2) :
+    IsPullback d[k] (pullback.snd p t) (pullback.snd p s[k]) a[k] := by
+  have h : a[k] ≫ s[k] = t :=
+    (FanHom.algebraicMap_comp_algebraicRealizationStructureMap _).trans
+      (Fan.algebraicRealization_over _).symm
+  refine IsPullback.of_right ?_ (projectiveLineTorusProductToAffine_snd k)
+    (IsPullback.of_hasPullback p s[k])
+  simpa only [projectiveLineTorusProductToAffine_fst, h] using IsPullback.of_hasPullback p t
+
+end
+
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} (Φ : Fan i) (m : N →+ ℤ)
   (h : ∀ σ : Φ.cones, (∀ x ∈ σ.val, 0 ≤ Φ.lattice.realCharacter m x) ∨
