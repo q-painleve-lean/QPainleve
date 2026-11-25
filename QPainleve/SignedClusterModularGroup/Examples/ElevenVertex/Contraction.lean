@@ -30,6 +30,7 @@ import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
 import QPainleve.AlgebraicGeometry.IntersectionNumber.ExceptionalCurve.Numerical
 import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.Polynomial.Rationality
 import QPainleve.Geometry.Toric.Fan.Boundary.DualGraph
+import QPainleve.Geometry.Toric.Fan.Boundary.InternalBlowup
 import QPainleve.Geometry.Toric.Fan.Boundary.Prestable
 import QPainleve.Geometry.Toric.Fan.Boundary.StrictTransform
 import QPainleve.Geometry.Toric.Fan.Logarithmic.InternalBlowup
@@ -109,16 +110,6 @@ private theorem subschemeIso_planeBlowup_boundary (c : Fin 11 → ℂˣ) :
   let : f.IsOver S := inferInstanceAs
     ((WithBoundary.boundaryι (Sigma.snd (planeBlowup c))).IsOver S)
   exact ⟨asIso f.toImage, inferInstanceAs (f.toImage.IsOver S)⟩
-
-private theorem isEffectiveCartier_planeBlowup_boundary (c : Fin 11 → ℂˣ) :
-    (B(c)).IsEffectiveCartier := by
-  let J (j : Fin 11) := (planeCenterRay j).internalCenter b (c j)
-  have h := strictTransform_ker_comp_alongBoundary (D₀).subschemeι (𝟙 (D₀).subscheme) J
-    (fun j ↦ by simpa only [comap_id] using (J j).property)
-  simp only [Category.id_comp, ker_subschemeι] at h
-  rw [← internalBlowupTower_eq_alongBoundary b planeCenterRay c] at h
-  exact h ▸ (hT(c)).isEffectiveCartier_strictTransform (Plane ↘ S)
-    ((Φ).isEffectiveCartier_boundaryIdeal hΦ hc (by simp))
 
 private theorem canonical_planeBlowup_boundary (c : Fin 11 → ℂˣ)
     (hB : (B(c)).IsEffectiveCartier) : LineBundleClass.mk hB.toInvertibleSheaf = K(Y(c)) := by
@@ -237,7 +228,9 @@ theorem exists_first_boundary_contraction (c : Fin 11 → ℂˣ) :
   have hover : f ≫ s = Y(c) ↘ S := hf.comp_over
   have hBir := hover ▸ f.birationalOver_of_isIso_morphismRestrict s U hU hfU
   have hRat := hBir.symm.isRationalOver s (Y(c) ↘ S)
-  let hB := isEffectiveCartier_planeBlowup_boundary c
+  let hB : (B(c)).IsEffectiveCartier :=
+    Fan.isEffectiveCartier_internalBlowupBoundary b planeCenterRay hΦ c
+      ((Φ).isEffectiveCartier_boundaryIdeal hΦ hc (by simp))
   let hPre := prestableFamily_planeBlowup_boundary c
   let : PrestableFamily ((B(c)).subscheme ↘ S) := hPre
   obtain ⟨A⟩ := exists_planeBlowup_boundary_numbering c
@@ -328,7 +321,9 @@ private theorem support_first_not_le_second (c : Fin 11 → ℂˣ) :
 private theorem classIntersectionNumber_second_canonical (c : Fin 11 → ℂˣ)
     (h₀ : (C(c, 0)).IsEffectiveCartier) (h₁ : (C(c, 1)).IsEffectiveCartier) :
     Chow.classIntersectionNumber ℂ (Y(c)) (class[h₁] * class[h₀]) (K(Y(c))) = -1 := by
-  let hB := isEffectiveCartier_planeBlowup_boundary c
+  let hB : (B(c)).IsEffectiveCartier :=
+    Fan.isEffectiveCartier_internalBlowupBoundary b planeCenterRay hΦ c
+      ((Φ).isEffectiveCartier_boundaryIdeal hΦ hc (by simp))
   let F := Chow.intersectionBilinForm ℂ (Y(c))
   have hK : Additive.ofMul (K(Y(c))) = -(∑ j : Fin 3, L(c, j)) := by
     rw [← planeBlowup_boundary_class c hB, ofMul_inv, neg_neg, canonical_planeBlowup_boundary]
@@ -552,7 +547,9 @@ private theorem pullback_final_boundary_class
     (hTot₀ : (D).comap f = B(c) * C(c, 0)) (hTot₁ : (F).comap g = D * E)
     (hClass : pullback f class[hE] = class[h₁] * class[h₀]) :
     Additive.ofMul (pullback (f ≫ g) class[hF]) = weightedBoundaryClass c := by
-  let hB := isEffectiveCartier_planeBlowup_boundary c
+  let hB : (B(c)).IsEffectiveCartier :=
+    Fan.isEffectiveCartier_internalBlowupBoundary b planeCenterRay hΦ c
+      ((Φ).isEffectiveCartier_boundaryIdeal hΦ hc (by simp))
   have hProd := TauCeti.isEffectiveCartier_mul hD hE
   have h : pullback g class[hF] = class[hD] * class[hE] := by
     rw [pullback_inv, hF.pullback_mk_toInvertibleSheaf (hTot₁.symm ▸ hProd),

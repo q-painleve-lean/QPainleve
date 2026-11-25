@@ -6,6 +6,7 @@ Authors: The QPainleve contributors
 module
 
 public import QPainleve.AlgebraicGeometry.Curves.Node.GenericPoint
+public import QPainleve.AlgebraicGeometry.Curves.Node.NumberedPrime
 public import QPainleve.AlgebraicGeometry.IdealSheaf.Boundary.Primes
 public import QPainleve.AlgebraicGeometry.IntersectionNumber.Nef
 public import QPainleve.SignedClusterModularGroup.Boundary.Isometry
@@ -195,6 +196,18 @@ theorem imageCycle_genericPoint (j : ZMod n) :
   have h := (boundaryImageIso P).apply_componentGenericPoint P.cycle (imageCycle P) j
   rw [boundaryCycleAction_boundaryImageIso, map_one, Equiv.Perm.one_apply] at h
   rw [← h, ← Scheme.Hom.comp_apply, boundaryImageIso_hom_comp]
+
+/-- The two numberings of the ambient boundary primes agree after identifying the
+marked boundary with its image subscheme. -/
+theorem boundaryPrimeEmbedding_imageCycle (hD : D[P].IsEffectiveCartier)
+    [IsLocallyNoetherian P.surface] (j : ZMod n) :
+    letI := P.prestable_boundaryImage
+    D[P].boundaryPrimeEmbedding (P.imageCycle.boundaryPrimeEquiv hD j) = P.boundaryPrime hD j := by
+  let : PrestableFamily (P.boundary ↘ S) := P.prestable
+  let : PrestableFamily (D[P].subscheme ↘ S) := P.prestable_boundaryImage
+  apply Subtype.ext
+  rw [coe_boundaryPrimeEmbedding, NodalCycleNumbering.boundaryPrimeEquiv_apply_val,
+    P.imageCycle_genericPoint, P.coe_boundaryPrime]
 
 /-- Every ambient boundary prime is the generic point of a numbered component. -/
 theorem numberedBoundaryPrimes_surjective (hP : D[P].IsEffectiveCartier) :

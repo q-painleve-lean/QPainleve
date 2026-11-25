@@ -9,7 +9,7 @@ public import QPainleve.AlgebraicGeometry.Chow.ExceptionalRay
 public import QPainleve.AlgebraicGeometry.Chow.Nef.Cone
 
 import QPainleve.AlgebraicGeometry.Chow.ProperIntersection
-import QPainleve.AlgebraicGeometry.Chow.RationalSurface.ExceptionalPrime
+import QPainleve.AlgebraicGeometry.Chow.RationalSurface.ExceptionalCurve
 import QPainleve.AlgebraicGeometry.EffectiveCartierDivisor.Integral
 import QPainleve.AlgebraicGeometry.IdealSheaf.Integral
 import QPainleve.AlgebraicGeometry.IntersectionNumber.ExceptionalCurve.Numerical
@@ -140,8 +140,10 @@ theorem exists_pairwise_disjoint_exceptionalCurves_of_nefCone_isometry {ι : Typ
     exact (E j).vanishingIdeal_closure_subschemeι_genericPoint
   have hP (j : ι) : P (p j) = (mk (hE j).isEffectiveCartier.toInvertibleSheaf)⁻¹ := by
     rw [primeDivisorClass_def, mk_toInvertibleSheaf_congr _ _ (hp j)]
-  have hnum (j : ι) := (isExceptionalCurveOfFirstKind_vanishingIdeal_iff k (p j)).mp
-    (by rw [hp]; exact hE j)
+  have hnum (j : ι) := by
+    have h := isExceptionalCurveOfFirstKind_iff_primeDivisorClass k (p j)
+    dsimp only at h
+    exact h.mp (by rw [hp]; exact hE j)
   have horth : Pairwise (fun i j ↦ B(X) (P (p i)) (P (p j)) = 0) := by
     intro i j hij
     have hd : Disjoint ((E i).support : Set X) (E j).support := hdis hij

@@ -7,6 +7,7 @@ module
 
 public import QPainleve.Geometry.Toric.Fan.Logarithmic.Factorization
 
+import Mathlib.Combinatorics.Quiver.Cast
 import QPainleve.AlgebraicGeometry.Modules.Differentials.PoleIdeal
 
 /-!
@@ -85,5 +86,25 @@ theorem precomposeSarkisovOfIso_obj_symm (hRank : finrank ℤ N = 2) (k : W ≅ 
   refine LogarithmicProjection.ext (by simp) ?_
   exact precomposeSarkisovOfIso_obj_hom_of_comp hRank k.symm hE _
     (precomposeSarkisovOfIso_obj_fan ..) (precomposeSarkisovOfIso_obj_hom hRank k hD A)
+
+open scoped Sarkisov in
+/-- Transport a Sarkisov path along an isomorphism of resolving surfaces.
+If the prescribed starting projection agrees with the transported source,
+the path starts there and ends at the precomposition of the original target. -/
+theorem exists_path_on_resolving_surface {A : LogarithmicProjection i D}
+    {Y : Scheme} [Y.Over S] [SmoothOfRelativeDimension 2 (Y ↘ S)] [PreirreducibleSpace Y]
+    (hRank : finrank ℤ N = 2) (k : X ≅ Y) [k.hom.IsOver S]
+    {L R : LogarithmicProjection i (D.comap k.inv)}
+    (hFan : L.fan = A.fan) (hHom : A.hom ≍ k.hom ≫ L.hom)
+    (p : SarkisovPath L R) :
+    ∃ C : LogarithmicProjection i D, Nonempty (SarkisovPath A C) ∧
+      C.fan = R.fan ∧ C.hom ≍ k.hom ≫ R.hom := by
+  have hE : (D.comap k.inv).comap k.hom = D := by simp [← comap_comp]
+  let G := precomposeSarkisovOfIso (i := i) hRank k hE
+  have hSrc : obj[G,L] = A := LogarithmicProjection.ext
+    ((precomposeSarkisovOfIso_obj_fan hRank k hE L).trans hFan)
+    ((precomposeSarkisovOfIso_obj_hom hRank k hE L).trans hHom.symm)
+  exact ⟨obj[G,R], ⟨(G.mapPath p).cast hSrc rfl⟩,
+    precomposeSarkisovOfIso_obj_fan hRank k hE R, precomposeSarkisovOfIso_obj_hom hRank k hE R⟩
 
 end TauCeti.Toric.Fan.LogarithmicProjection
