@@ -8,6 +8,7 @@ module
 public import QPainleve.Geometry.Toric.Fan.Ruling.Hirzebruch.Prime
 public import QPainleve.Geometry.Toric.Fan.Ruling.Quadric
 
+import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.ProjectiveLine.PointDivisor
 import QPainleve.Geometry.Toric.Fan.Boundary.Intersection
 import QPainleve.Geometry.Toric.Fan.Boundary.Node
 import QPainleve.Geometry.Toric.Fan.Picard.Ruling
@@ -93,15 +94,8 @@ theorem rayBoundaryIdeal_hirzebruch_eq_coordinateFiber (k : Fin 2) :
 corresponding coordinate point of the projective line. -/
 theorem mem_support_rayBoundaryIdeal_hirzebruch_coordinateFiber_iff (k : Fin 2) (x : X) :
     x ∈ (I[(![1, 3] : Fin 2 → Fin 4) k]).support ↔ q x = p[k] (IsLocalRing.closedPoint ℂ : S) := by
-  have hP := (projectiveLine.polynomialPoint_over ℂ (RingHom.id ℂ) k (0 : ℂ)).trans
-    (Spec.map_id (CommRingCat.of ℂ))
-  let : IsClosedImmersion p[k] := (p[k]).isClosedImmersion_of_comp_eq_id hP
-  have hRange : Set.range ⇑p[k] = {p[k] (IsLocalRing.closedPoint ℂ : S)} :=
-    Set.range_eq_singleton (fun y ↦ congrArg (⇑p[k]) (Subsingleton.elim y _))
-  rw [rayBoundaryIdeal_hirzebruch_eq_coordinateFiber b e hΦ r hr k,
-    ← SetLike.mem_coe, support_comap, TopologicalSpace.Closeds.coe_preimage, Set.mem_preimage,
-    Scheme.Hom.support_ker, (p[k]).isClosedEmbedding.isClosed_range.closure_eq, hRange,
-    Set.mem_singleton_iff]
+  rw [rayBoundaryIdeal_hirzebruch_eq_coordinateFiber b e hΦ r hr k]
+  exact projectiveLine.mem_support_comap_ker_polynomialPoint_iff ℂ q x k 0
 
 private theorem isIso_hirzebruch_ruling_invariant_section (hc : Φ.IsComplete) (k : Fin 2) :
     IsIso (I[(![0, 2] : Fin 2 → Fin 4) k].subschemeι ≫ q) := by

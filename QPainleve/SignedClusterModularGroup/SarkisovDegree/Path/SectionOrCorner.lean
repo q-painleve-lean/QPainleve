@@ -129,7 +129,7 @@ theorem exists_sarkisov_path_decrease_of_hirzebruch_corner_or_section
       hT.exists_sarkisov_path_of_toric_corner d a hΦ hc t ht g hg hbir σ hcone q hp
         hfirst D hpole
     let : Nonempty B.fan.cones := B.isComplete.nonempty_cones
-    obtain ⟨d'', t'', ht'', _, _, hnormalize⟩ :=
+    obtain ⟨d'', t'', ht'', _, _, -, hnormalize⟩ :=
       B.fan.exists_hirzebruchPicardBasis_natAbs d' (a + 1) B.isRegular t' ht'
     refine ⟨q, B, p, (a + 1).natAbs, d'', t'', ht'', Z, U, hU, k, hcenter, hfirst, hq, hh,
       hproj, Or.inr hlen, hg', hbir', hpole', ?_⟩
@@ -140,7 +140,7 @@ theorem exists_sarkisov_path_decrease_of_hirzebruch_corner_or_section
       simpa only [Fin.append] using horders
     · simpa only [hβ] using hlt (hβ.symm ▸ hq)
   · obtain ⟨hproj, Z, U, hU, k, d, t, ht, hg', hbir', hpole',
-        ⟨A, B, p, hA, hAh, hB, hBh, hlen, _⟩, -, -, -, -, -, hdegree, horders, hlt⟩ :=
+        ⟨A, B, p, hA, hAh, hB, hBh, hlen, _⟩, -, -, -, -, -, -, hdegree, horders, hlt⟩ :=
       hT.exists_sarkisov_path_of_smooth_section b e hΦ hc r hr s g hg hbir
         c q hp hfirst D ((hT.ramificationIdealSheafToBase_def ℂ).symm ▸ hpole)
     let A₀ : LogarithmicProjection i D := ⟨Φ, hreg, hcomplete, T.toBase, hf, hdom, hpole⟩

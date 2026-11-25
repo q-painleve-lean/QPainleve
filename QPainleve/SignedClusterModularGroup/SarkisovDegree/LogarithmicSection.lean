@@ -9,10 +9,12 @@ public import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.Picard
 public import QPainleve.Geometry.Toric.Fan.Mutation.Hirzebruch
 public import QPainleve.Geometry.Toric.Fan.Mutation.Tower
 public import QPainleve.Geometry.Toric.Fan.Picard.Mutation.Hirzebruch
+public import QPainleve.Geometry.Toric.Fan.Ruling.Hirzebruch
 public import QPainleve.SignedClusterModularGroup.SarkisovDegree.SmoothSection
 
 import QPainleve.Geometry.Toric.Fan.Mutation.PointTower
 import QPainleve.Geometry.Toric.Fan.Mutation.Projective
+import QPainleve.Geometry.Toric.Fan.Mutation.Ruling
 import QPainleve.Geometry.Toric.Fan.Picard.Homaloidal
 import TauCeti.Data.Fin.Tuple.Basic
 
@@ -78,6 +80,37 @@ local notation "complementIso" => Φ.mutationComplementIso b (c : ℂ) hv hp hOp
 local notation "μ" =>
   Scheme.PartialMap.toRationalMap (Φ.mutationPartialMap b (c : ℂ) (v := pivot) hv hp hOpp)
 
+local notation "coordinatePoint[" t "]" =>
+  TauCeti.AlgebraicGeometry.projectiveLine.polynomialPoint ℂ (RingHom.id ℂ) t 0
+    (IsLocalRing.closedPoint ℂ : S)
+
+local notation "ruling[" Δ "," b "," a "," r "," hr "]" =>
+  Fan.characterRuling Δ (LinearMap.toAddMonoidHom (Basis.coord b 1))
+    (Fan.nonneg_or_nonpos_hirzebruch_ruling_character b a r hr)
+
+include hr in
+private theorem rulingCharacter_eq_or_eq_neg (hρ : ρ = r (pivotIndex)) :
+    let m := (b.coord 1).toAddMonoidHom
+    let χ := (b.detDualEquiv pivot).toAddMonoidHom
+    m = χ ∨ m = -χ := by
+  have he : b.detDualEquiv (b 0) = b.coord 1 := b.ext fun l ↦ by
+    fin_cases l <;> simp [Basis.coord_apply, b.detDualEquiv_self,
+      b.detDualEquiv_apply_basis_zero_one, -Basis.detDualEquiv_apply]
+  cases onSection with
+  | false =>
+    have hpivot : pivot = -b 0 := by
+      simpa [congrFun hr 2] using
+        congrArg (Fan.Ray.primitiveGenerator (Phi := Φ)) hρ
+    right
+    ext x
+    simp [hpivot, he]
+  | true =>
+    have hpivot : pivot = b 0 := by
+      simpa [congrFun hr 0] using
+        congrArg (Fan.Ray.primitiveGenerator (Phi := Φ)) hρ
+    left
+    simp [hpivot, he]
+
 variable {n : ℕ} {Y : Scheme} {T : BlowupTower X[Φ] (n + 1) Y}
   (hT : IsClosedPointTower X[Φ] T)
 
@@ -114,6 +147,8 @@ its relative position. A center off the pivot fiber projects to its image
 under the complement isomorphism, and any first occurrence remains first.
 The pivot section's strict-transform center indices are transported in order
 after deleting the pivot index.
+On either invariant fiber, the retained center keeps its ruling value and
+its first occurrence.
 The bidegree decreases when the pivot order exceeds half the fiber degree. -/
 theorem exists_sarkisov_link_of_logarithmic_smooth_section
     (hρ : ρ = r (pivotIndex)) (j : Fin (n + 1))
@@ -152,6 +187,12 @@ theorem exists_sarkisov_link_of_logarithmic_smooth_section
         (Finset.univ.filter fun l : Fin n ↦
           j.succAbove l ∈ hT.strictTransformCenterIndices (Φ.rayBoundaryIdeal hΦ ρ)).map
             (Fin.natAddEmb 1) ∧
+      (let q := ruling[Φ,b,e,r,hr]
+       let q' := ruling[Ψ,d,e',r',hr']
+       ∀ (l : Fin n) (t : Fin 2), q (hT.baseCenter (j.succAbove l)) = coordinatePoint[t] →
+         q' (hU.baseCenter (l.natAdd 1)) = coordinatePoint[t] ∧
+           ((∀ a < j.succAbove l, hT.baseCenter a ≠ hT.baseCenter (j.succAbove l)) →
+             ∀ a < l.natAdd 1, hU.baseCenter a ≠ hU.baseCenter (l.natAdd 1))) ∧
       let C' := Fan.hirzebruchPicardBasis d e' hΨ r' hr'
       let y := (U.picardMarking hU f[Ψ]).symm (Additive.ofMul (pullback (k.inv ≫ g) H))
       (C').repr y.1 0 = a + x.2 j + (if onSection then β else 0) ∧
@@ -183,10 +224,26 @@ theorem exists_sarkisov_link_of_logarithmic_smooth_section
   refine ⟨d, hr', Z, U, hU, k, hlink, hk, hg', hbir',
     ρ.mutation_projection_poleIdeal b hOpp c hT hΦ hc hU k hlink D hD,
     fun l ↦ ρ.baseCenter_of_mutation_of_mem_complement b hOpp c hT hU j l hreverse hcenters,
-    hsection, ?_⟩
+    hsection, ?ruling, ?_⟩
+  case ruling =>
+    intro q q' l t ht
+    have hcoord : d.coord 1 = b.coord 1 := d.ext fun t ↦ by
+      simp only [Basis.coord_apply, Basis.repr_self]
+      fin_cases t <;> simp [hd₀, hd₁, apply_ite (fun z ↦ b.repr z 1)]
+    have hd := congrArg LinearMap.toAddMonoidHom hcoord
+    have hm := rulingCharacter_eq_or_eq_neg b e r hr onSection ρ hρ
+    let hq := Fan.nonneg_or_nonpos_hirzebruch_ruling_character b e r hr
+    let hq' := Fan.nonneg_or_nonpos_hirzebruch_ruling_character d e' r' hr'
+    obtain ⟨z, hz, hz'⟩ := hcenters l
+    have hval := ρ.mutationBlowupIso_apply_ruling_eq_coordinatePoint b hOpp c
+      (b.coord 1).toAddMonoidHom hm hΦ hq (hd ▸ hq') z t (by simpa only [hz, q] using ht)
+    refine ⟨?_, (ρ.baseCenter_of_mutation_of_mem_complement b hOpp c
+      hT hU j l hreverse hcenters (hz ▸ hval.2)).2⟩
+    simpa only [q', hd, hz'] using hval.1
   intro C' y
   obtain ⟨hF, hF'⟩ :=
-    ρ.mutationFiberClasses_eq_hirzebruchPicardBasis_zero b hOpp e hΦ r hr onSection hρ d hd₀ hd₁ hr'
+    ρ.mutationFiberClasses_eq_hirzebruchPicardBasis_zero b hOpp e hΦ r hr
+      onSection hρ d hd₀ hd₁ hr'
   obtain ⟨hL, -⟩ := hpic onSection a β x.2
   -- Read the pullback in the transported marking, using the two Hirzebruch basis vectors.
   let := Φ.uniqueFactorizationMonoid_stalk_algebraicRealization hΦ

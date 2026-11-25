@@ -209,7 +209,7 @@ theorem exists_hirzebruchPicardBasis_opposite_section :
 
 include hr in
 /-- A signed Hirzebruch marking can be replaced by one of index `e.natAbs`,
-with the same fiber class and fiber-degree coordinate on every Picard class.
+with the same fiber class, ruling character, and fiber-degree coordinate on every Picard class.
 When the signed index is already nonnegative, the ray numbering and the
 entire Picard basis are preserved. -/
 theorem exists_hirzebruchPicardBasis_natAbs :
@@ -218,16 +218,22 @@ theorem exists_hirzebruchPicardBasis_natAbs :
         ![d 0, d 1, -d 0, (e.natAbs : ℤ) • d 0 - d 1]),
       hirzebruchPicardBasis d (e.natAbs : ℤ) hΦ t ht 0 = (C) 0 ∧
       (0 ≤ e → t = r ∧ hirzebruchPicardBasis d (e.natAbs : ℤ) hΦ t ht = (C)) ∧
+      d.coord 1 = b.coord 1 ∧
       ∀ x : Pic, (hirzebruchPicardBasis d (e.natAbs : ℤ) hΦ t ht).repr x 1 = (C).repr x 1 := by
   by_cases he : 0 ≤ e
   · have h : (e.natAbs : ℤ) = e := by omega
     simp only [h]
-    exact ⟨b, r, hr, rfl, fun _ ↦ ⟨rfl, rfl⟩, fun _ ↦ rfl⟩
+    exact ⟨b, r, hr, rfl, fun _ ↦ ⟨rfl, rfl⟩, rfl, fun _ ↦ rfl⟩
   have hs : (e.natAbs : ℤ) = -e := by omega
-  obtain ⟨d, t, ht, -, -, -, h₀, hrepr⟩ :=
+  obtain ⟨d, t, ht, ht₀, ht₁, -, h₀, hrepr⟩ :=
     exists_hirzebruchPicardBasis_opposite_section b e hΦ r hr
+  have hd₀ : d 0 = -b 0 := by simpa [ht₀, congrFun hr 2] using (congrFun ht 0).symm
+  have hd₁ : d 1 = b 1 := by simpa [ht₁, congrFun hr 1] using (congrFun ht 1).symm
+  have hcoord : d.coord 1 = b.coord 1 := d.ext fun l ↦ by
+    simp only [Basis.coord_apply, Basis.repr_self]
+    fin_cases l <;> simp [hd₀, hd₁]
   simp only [hs]
-  exact ⟨d, t, ht, h₀, fun h ↦ (he h).elim, fun L ↦ (hrepr L).2⟩
+  exact ⟨d, t, ht, h₀, fun h ↦ (he h).elim, hcoord, fun L ↦ (hrepr L).2⟩
 
 include hr in
 open Classical in
