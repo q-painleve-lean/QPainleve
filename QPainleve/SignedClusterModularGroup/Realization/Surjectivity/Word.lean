@@ -66,7 +66,7 @@ local notation "Models[" C "]" =>
 /-- A specified isomorphism of two fibers of a marked toric presentation gives a
 loop with the same Picard pullback, branch sign, and fixed-center X evaluation.
 If the specified action preserves orientation, the loop uses no inversions. -/
-theorem exists_word_signedPicardHom_eq_of_pair_iso
+theorem nonempty_picardLoopRealization_of_pair_iso
     (P : ChargeSeed E N) (hform : P.form = b.detDualEquiv.toLinearMap)
     (hcharge : P.charge = Fan.rayChargeMap Q.rays)
     (models : ∀ c : Point Centers[r], c.left (default : S) ∈ Quiver.Path.nil.centerOpen ℂ P →
@@ -87,9 +87,8 @@ theorem exists_word_signedPicardHom_eq_of_pair_iso
       DihedralGroup.cycleOrientationSign ((boundaryIso e).boundaryCycleAction
         (M c₀).cycle (M c₁).cycle) = sign B d g) :
     letI : IsIntegral (M c₀).surface := (M c₀).integral
-    ∃ w : Word E E, ρ eval[E,w] = g ∧ (sign B d g = 1 → w.inversionCount = 0) ∧
-      ∃ h, (M c₀).evaluation.compOfDefined (w.xRationalMap ℂ) h =
-        (surfaceIso e).hom.toRationalMap.comp (M c₁).evaluation := by
+    Nonempty (PicardLoopRealization ρ g (M c₀).evaluation
+      ((surfaceIso e).hom.toRationalMap.comp (M c₁).evaluation)) := by
   let : IsIntegral (M c₀).surface := (M c₀).integral
   have hM := models c₀ (hgeneric Quiver.Path.nil)
   have hword := Q.exists_connecting_word_of_pair_iso Q hM hP e (hD c₀) (hD c₁)
@@ -100,7 +99,7 @@ theorem exists_word_signedPicardHom_eq_of_pair_iso
       ((congrArg₂ chargeExchangeMatrix hform hcharge).symm.trans P.matrix_eq))
   rw [hmatrix] at hword
   obtain ⟨w, hw⟩ := hword
-  exact exists_word_signedPicardHom_eq_of_comp_evaluation_eq
+  exact nonempty_picardLoopRealization_of_comp_evaluation_eq
     P hform hcharge models hP hnef hsq hprim ρ hρ e w (hgeneric w) hw hpic hsgn
 
 end QPainleve.SignedClusterModularGroup.GeometricRealization
