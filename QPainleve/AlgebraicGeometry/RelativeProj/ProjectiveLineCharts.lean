@@ -151,24 +151,50 @@ private abbrev splitTwistingLineModule (n : ℤ) : (P).Modules := (L[n]).obj
 
 local notation "M[" n "]" => splitTwistingLineModule R n
 
-private def splitTwistingFst (a b : ℤ) : F[a,b] ⟶ L[a] :=
+/-- The quotient onto the first twisting summand of the split bundle. -/
+def splitTwistingFst (a b : ℤ) : F[a,b] ⟶ L[a] :=
   ObjectProperty.homMk (C := (P).Modules)
     ((splitTwistingSheafIso R a b).hom ≫ (biprod.fst : TS[a,b] ⟶ T[a]) ≫
       (twistingModuleIso R a).inv)
 
-private def splitTwistingSnd (a b : ℤ) : F[a,b] ⟶ L[b] :=
+/-- The quotient onto the second twisting summand of the split bundle. -/
+def splitTwistingSnd (a b : ℤ) : F[a,b] ⟶ L[b] :=
   ObjectProperty.homMk (C := (P).Modules)
     ((splitTwistingSheafIso R a b).hom ≫ (biprod.snd : TS[a,b] ⟶ T[b]) ≫
       (twistingModuleIso R b).inv)
 
-private instance (a b : ℤ) : Epi (splitTwistingFst R a b).hom := by
+/-- The first quotient is the first projection under the fixed-rank direct sum comparison. -/
+theorem splitTwistingFst_hom (a b : ℤ) :
+    (splitTwistingFst R a b).hom = (line[a].biprodObjIso line[b]).hom ≫ biprod.fst := by
+  calc
+    _ = (splitTwistingSheafIso R a b).hom ≫ (biprod.fst : TS[a,b] ⟶ T[a]) ≫
+        (twistingModuleIso R a).inv := rfl
+    _ = _ := by
+      erw [splitTwistingSheafIso, Iso.trans_hom, Category.assoc,
+        biprod.mapIso_hom (C := (P).Modules), biprod.map_fst_assoc (C := (P).Modules),
+        Iso.hom_inv_id, Category.comp_id]
+      rfl
+
+/-- The second quotient is the second projection under the fixed-rank direct sum comparison. -/
+theorem splitTwistingSnd_hom (a b : ℤ) :
+    (splitTwistingSnd R a b).hom = (line[a].biprodObjIso line[b]).hom ≫ biprod.snd := by
+  calc
+    _ = (splitTwistingSheafIso R a b).hom ≫ (biprod.snd : TS[a,b] ⟶ T[b]) ≫
+        (twistingModuleIso R b).inv := rfl
+    _ = _ := by
+      erw [splitTwistingSheafIso, Iso.trans_hom, Category.assoc,
+        biprod.mapIso_hom (C := (P).Modules), biprod.map_snd_assoc (C := (P).Modules),
+        Iso.hom_inv_id, Category.comp_id]
+      rfl
+
+instance (a b : ℤ) : Epi (splitTwistingFst R a b).hom := by
   exact @epi_comp (P).Modules _ _ _ _ (splitTwistingSheafIso R a b).hom
     (@IsIso.epi_of_iso (P).Modules _ _ _ _ (splitTwistingSheafIso R a b).isIso_hom)
     _ (@epi_comp (P).Modules _ _ _ _ (biprod.fst : TS[a,b] ⟶ T[a]) inferInstance
       (twistingModuleIso R a).inv
       (@IsIso.epi_of_iso (P).Modules _ _ _ _ (twistingModuleIso R a).isIso_inv))
 
-private instance (a b : ℤ) : Epi (splitTwistingSnd R a b).hom := by
+instance (a b : ℤ) : Epi (splitTwistingSnd R a b).hom := by
   exact @epi_comp (P).Modules _ _ _ _ (splitTwistingSheafIso R a b).hom
     (@IsIso.epi_of_iso (P).Modules _ _ _ _ (splitTwistingSheafIso R a b).isIso_hom)
     _ (@epi_comp (P).Modules _ _ _ _ (biprod.snd : TS[a,b] ⟶ T[b]) inferInstance
@@ -181,6 +207,18 @@ def relativeProjSplitTwistingSection (a b : ℤ) (j : Fin 2) :
     P ⟶ ((gradedSymmetricAlgebra P).obj F[a,b]).obj.relativeProj :=
   Fin.cases (line[a].relativeProjSectionOfQuotient (splitTwistingFst R a b))
     (fun _ ↦ line[b].relativeProjSectionOfQuotient (splitTwistingSnd R a b)) j
+
+@[simp]
+theorem relativeProjSplitTwistingSection_zero (a b : ℤ) :
+    relativeProjSplitTwistingSection R a b 0 =
+      line[a].relativeProjSectionOfQuotient (splitTwistingFst R a b) :=
+  (rfl)
+
+@[simp]
+theorem relativeProjSplitTwistingSection_one (a b : ℤ) :
+    relativeProjSplitTwistingSection R a b 1 =
+      line[b].relativeProjSectionOfQuotient (splitTwistingSnd R a b) :=
+  (rfl)
 
 @[reassoc (attr := simp)]
 theorem relativeProjSplitTwistingSection_toBase (a b : ℤ) (j : Fin 2) :

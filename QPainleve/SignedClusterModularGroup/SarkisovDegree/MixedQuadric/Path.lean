@@ -20,7 +20,7 @@ toric portion passes through the common subdivision, and its two remaining
 links are the binomial mutation and the ruling exchange. The endpoint
 projection and its Picard coordinates agree with the returned point tower,
 so the degree induction can continue there. The geometric inputs are
-`exists_quadric_resolution_of_corner_and_smooth_high_centers` and
+`exists_quadric_resolution_of_corner_and_smooth_centers` and
 `LogarithmicProjection.exists_resolved_toric_star_factorization`.
 
 This is the mixed two-center case of [Lutz's Proposition 8.11][HKL].
@@ -120,14 +120,14 @@ variable {Φ : Fan i}
 local notation "C₀" => C[b,0,hΦ,r,hr]
 
 include hσ in
-/-- Two high-order centers of the specified quadric resolution, a proper corner
-and a proper smooth point of the opposite section, give a decreasing Sarkisov
-path on the original resolution. The input quadric is marked in the exchanged
-ruling. The returned quadric tower resolves the same map to the target plane
+/-- The first centers over a corner and a smooth point of the opposite section
+give a Sarkisov path on the specified resolution. The input quadric is marked in
+the exchanged ruling. The returned quadric tower resolves the same map to the target plane
 and its projection agrees with the last vertex of the path. The Picard
 coordinates record the two reverse pivots and the order of the retained
-centers, including infinitely near centers. The fiber degree strictly decreases. -/
-theorem exists_sarkisov_path_decrease_of_quadric_corner_and_smooth_centers
+centers, including infinitely near centers. The terminal fiber degree is the sum of
+the original two ruling coefficients minus the two selected orders. -/
+theorem exists_sarkisov_path_of_quadric_corner_and_smooth_centers
     (hg : g ≫ (P ↘ S) = T.toBase ≫ f[Φ]) (hbir : Scheme.BirationalOver g (𝟙 P))
     (j l : Fin (n + 2))
     (hj : hT.baseCenter j = Φ.distinguishedPointHom σ pt)
@@ -146,8 +146,6 @@ theorem exists_sarkisov_path_decrease_of_quadric_corner_and_smooth_centers
     let a := (C₀).repr x.1 1
     let m := fun k ↦ -x.2 k
     ∀ (A : LogarithmicProjection i D), A.fan = Φ → A.hom ≍ T.toBase →
-    β < 2 * m j → m j ≤ β → β < 2 * m l → m l ≤ β →
-    (∀ k, k ≠ j → k ≠ l → 0 ≤ m k ∧ 2 * m k ≤ β) →
     ∃ (B : LogarithmicProjection i D) (_ : SarkisovPath A B)
       (b' : Basis (Fin 2) ℤ N) (r' : Fin 4 ≃ B.fan.Ray)
       (hr' : (fun k ↦ (r' k).primitiveGenerator) = ![b' 0, b' 1, -b' 0, (0 : ℤ) • b' 0 - b' 1])
@@ -167,10 +165,8 @@ theorem exists_sarkisov_path_decrease_of_quadric_corner_and_smooth_centers
       y.2 = Fin.addCases (fun _ : Fin 1 ↦ -a - x.2 l)
         ((Fin.addCases (fun _ : Fin 1 ↦ -a - x.2 j) (x.2 ∘ j.succAbove) :
           Fin (1 + (n + 1)) → ℤ) ∘ (l'.natAdd 1).succAbove) ∧
-      0 < β' ∧ β' < β ∧
-      hirzebruchSarkisovBidegree β'.toNat (∑ k, -y.2 k).toNat <
-        hirzebruchSarkisovBidegree β.toNat (∑ k, m k).toNat := by
-  intro hcones hdim hY hdimY hIntegral x β a m A hA hAt hjbig hjle hlbig hlle hsmall
+      0 < β' := by
+  intro hcones hdim hY hdimY hIntegral x β a m A hA hAt
   let := hcones
   let := hdim
   let := hY
@@ -178,7 +174,6 @@ theorem exists_sarkisov_path_decrease_of_quadric_corner_and_smooth_centers
   let := hIntegral
   let : T.toBase.IsOver S := ⟨rfl⟩
   let : Smooth (Y ↘ S) := SmoothOfRelativeDimension.smooth 2 _
-  let : X[Φ].IsProjectiveOver ℂ := Φ.isProjectiveOver_quadric b hΦ hc r hr
   -- Keep the supplied starting projection, using the tower's fan and morphism.
   rcases A with ⟨Δ, hΔreg, hΔcomp, f, hfOver, hfDom, hfPole⟩
   dsimp only at hA hAt
@@ -187,8 +182,8 @@ theorem exists_sarkisov_path_decrease_of_quadric_corner_and_smooth_centers
   let A : LogarithmicProjection i D := ⟨Φ, hΔreg, hΔcomp, _, hfOver, hfDom, hfPole⟩
   obtain ⟨Ψ, F, hΨ, hcΨ, hF, s, t, _, _, _, d, r₁, hr₁, q, Z, U, hU, e, c', l',
       _, _, hq, hq', hidx, _, _, hreturn⟩ :=
-    hT.exists_quadric_resolution_of_corner_and_smooth_high_centers b hΦ hc r hr σ hσ
-      g hg hbir j l hj hjfirst c hl hlfirst hjbig hjle hlbig hlle hsmall
+    hT.exists_quadric_resolution_of_corner_and_smooth_centers b hΦ hc r hr σ hσ
+      g hg hbir j l hj hjfirst c hl hlfirst
   let ρ := r₁ (2 : Fin 4)
   let hOpp := Fan.hull_neg_primitiveGenerator_mem_of_hirzebruch_section_two d 1 r₁ hr₁
   let Θ := Ψ.mutationFan d ρ.primitiveGenerator_ne_zero ρ.hull_primitiveGenerator_mem hOpp
@@ -208,8 +203,8 @@ theorem exists_sarkisov_path_decrease_of_quadric_corner_and_smooth_centers
     exact Θ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΘ
   let : IsIntegral Z := hU.isIntegral f[Ψ]
   let : IsModification U.toBase := hU.isModification_of_smoothOfRelativeDimension_two f[Ψ]
-  obtain ⟨b', hr₂, _, U₀, k₀, W, U', hU', k₁, hμ, hτ, hg', hbir', ha', hβ', horders, hpos, hdegree,
-      hlt, _, hLOver, hMOver, hBOver, hpole⟩ := hreturn
+  obtain ⟨b', hr₂, _, U₀, k₀, W, U', hU', k₁, hμ, hτ, hg', hbir', ha', hβ', horders, hpos,
+      _, hLOver, hMOver, hBOver, hpole⟩ := hreturn
   obtain ⟨_, hLpole, hMpole, hBpole, hUpole⟩ := hpole D hfPole
   -- Read the mutation and the ruling exchange on the original resolving surface.
   let τ := Θ.quadricRulingExchange b' hΘ hcΘ r₂ hr₂
@@ -246,6 +241,6 @@ theorem exists_sarkisov_path_decrease_of_quadric_corner_and_smooth_centers
   refine ⟨B, path, b', r₂, hr₂, W, U', hU', e', l', hidx, rfl,
     Θ.isProjectiveOver_quadric b' hΘ hcΘ r₂ hr₂, ?_⟩
   simpa only [e', Iso.trans_inv, Category.assoc, Fan.algebraicRealization_over] using
-    And.intro hg' (And.intro hbir' (And.intro hUpole ⟨ha', hβ', horders, hpos, hdegree, hlt⟩))
+    And.intro hg' (And.intro hbir' (And.intro hUpole ⟨ha', hβ', horders, hpos⟩))
 
 end QPainleve.BlowupTower.IsClosedPointTower

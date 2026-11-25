@@ -5,11 +5,11 @@ Authors: The QPainleve contributors
 -/
 module
 
-public import QPainleve.SignedClusterModularGroup.SarkisovDegree.MixedQuadric.Path
+public import QPainleve.SignedClusterModularGroup.SarkisovDegree.MixedQuadric.Exit
 
 import QPainleve.Geometry.Toric.Fan.Picard.FiberDegree
 import QPainleve.Geometry.Toric.Fan.Picard.Homaloidal
-import QPainleve.Geometry.Toric.Fan.Picard.Quadric
+import QPainleve.SignedClusterModularGroup.SarkisovDegree.Decrease
 import QPainleve.SignedClusterModularGroup.SarkisovDegree.Pivots
 
 /-!
@@ -118,22 +118,18 @@ theorem exists_sarkisov_path_primary_decrease_of_prepared_quadric
     exact mul_le_of_le_one_left' le_top
   have hopp := hT.opposite_hirzebruch_fiber_le_of_high_corner b 0 hΦ hc r hr g hg σ hσ
     hlog c hl hj hllarge hjlarge hjl
-  obtain ⟨d, s, hs, hcone, hs₂, hPic⟩ :=
-    Φ.exists_exchanged_marking_at_opposite_corner b hΦ hc r hr σ hσ hopp
-  obtain ⟨a, ha⟩ := (r 1).exists_binomialCenter_eq_of_basis d b c
-  have hl' : hT.baseCenter l = center[d,s 2,a] := by rwa [hs₂, ha]
-  have hβ : (Φ.hirzebruchPicardBasis d 0 hΦ s hs).repr (x).1 0 = β := by
-    rw [hPic, Basis.repr_reindex_apply]
-    rfl
+  obtain ⟨hsq, hsum⟩ :=
+    hT.homaloidal_intersection_identities_of_hirzebruch b 0 hΦ hc r hr g hg hbir
   have hu := hT.base_order_le_hirzebruch_fiber_degree b 0 hΦ r hr hc g hg
   have hb := hT.hirzebruch_resolution_degree_bounds b 0 hΦ hc r hr g hg hbir
-  obtain ⟨Q, path, d', t, ht, Z, U, hU, e, _, _, hQ, hProj, hg', hbir', hpole,
-      _, _, _, hpos, hlt, _⟩ :=
-    hT.exists_sarkisov_path_decrease_of_quadric_corner_and_smooth_centers d hΦ hc s hs σ hcone
-      g hg hbir j l hj (hj ▸ hjfirst) a hl' (hl' ▸ hlfirst) A hA hAh
-      (hβ.symm ▸ hjlarge) (hβ.symm ▸ hu j) (hβ.symm ▸ hllarge) (hβ.symm ▸ hu l)
-      (fun k hkj hkl ↦ ⟨hb.2.2 k, hβ.symm ▸ hsmall k hkj hkl⟩)
-  refine ⟨Q, path, d', t, ht, Z, _, U, hU, e, hQ, hProj, hg', hbir', hpole, ?_⟩
-  exact ⟨hpos, hβ ▸ hlt⟩
+  have hlt := quadric_sarkisov_degree_decrease_of_pair hb.1 hjl
+    (by simpa only [neg_sq, Nat.cast_zero, zero_mul, sub_zero] using hsq)
+    (by simpa only [Nat.cast_zero, sub_zero] using hsum)
+    hjlarge.le (hu j) hllarge.le (hu l) (fun k hkj hkl ↦ ⟨hb.2.2 k, hsmall k hkj hkl⟩)
+  obtain ⟨Q, path, d, t, ht, Z, U, hU, e, hQ, hProj, hg', hbir', hpole, hpos, hdegree⟩ :=
+    hT.exists_sarkisov_path_of_quadric_opposite_corner_and_smooth_center b hΦ hc r hr g hg hbir
+      j l c hl hlfirst σ hσ hopp hj hjfirst A hA hAh
+  exact ⟨Q, path, d, t, ht, Z, _, U, hU, e, hQ, hProj, hg', hbir', hpole, hpos,
+    hdegree.trans_lt hlt.2⟩
 
 end QPainleve.BlowupTower.IsClosedPointTower

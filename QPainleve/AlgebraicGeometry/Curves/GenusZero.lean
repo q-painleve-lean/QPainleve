@@ -6,6 +6,7 @@ Authors: The QPainleve contributors
 module
 
 public import TauCeti.AlgebraicGeometry.Cohomology.ProjectiveLine.Basic
+public import TauCeti.AlgebraicGeometry.Curves.Genus.Normalization
 public import TauCeti.AlgebraicGeometry.Curves.Normalization
 
 import TauCeti.AlgebraicGeometry.Cohomology.ClosedImmersion.Linear
@@ -35,10 +36,10 @@ universe u
 variable {k : Type u} [Field k] [IsAlgClosed k] {C : Scheme.{u}}
   [C.Over (Spec (.of k))] [C.IsCurveOver k]
 
-/-- A proper integral curve of arithmetic genus zero over an algebraically closed field
-is regular. The genus of the normalization and the dimension of the global sections of
-the normalization cokernel both vanish. -/
-theorem isRegular_of_genus_eq_zero_of_isAlgClosed (hC : C.genus k = 0) : IsRegular C := by
+/-- Normalization strictly lowers the arithmetic genus of a nonregular integral
+proper curve over an algebraically closed field. -/
+theorem normalizationGenus_lt_genus_of_not_isRegular (hreg : ¬ IsRegular C) :
+    C.normalizationGenus k < C.genus k := by
   let g := C.fromSpecStalk (genericPoint C)
   let : g.normalization.Over (Spec (.of k)) := ⟨g.fromNormalization ≫ C ↘ Spec (.of k)⟩
   let : g.fromNormalization.IsOver (Spec (.of k)) := ⟨rfl⟩
@@ -52,9 +53,16 @@ theorem isRegular_of_genus_eq_zero_of_isAlgClosed (hC : C.genus k = 0) : IsRegul
       k).surjective.comp (ΓSpecIso (.of k)).symm.commRingCatIsoToRingEquiv.surjective
   have hgen : g.normalization.genus k ≤ C.genus k :=
     genus_le_of_isModification k g.fromNormalization
-  have hnormalization : g.normalization.genus k = 0 := Nat.eq_zero_of_le_zero (hC ▸ hgen)
-  exact (IsCurveOver.isRegular_iff_genus_eq_genus_normalization k hconstants).mpr
-    (hC.trans hnormalization.symm)
+  have hne : C.genus k ≠ g.normalization.genus k := fun h ↦
+    hreg ((IsCurveOver.isRegular_iff_genus_eq_genus_normalization k hconstants).mpr h)
+  rw [normalizationGenus_def]
+  exact lt_of_le_of_ne hgen hne.symm
+
+/-- A proper integral curve of arithmetic genus zero over an algebraically closed field
+is regular, since normalization cannot lower its genus. -/
+theorem isRegular_of_genus_eq_zero_of_isAlgClosed (hC : C.genus k = 0) : IsRegular C := by
+  by_contra hreg
+  exact Nat.not_lt_zero _ (hC ▸ C.normalizationGenus_lt_genus_of_not_isRegular hreg)
 
 /-- Over an algebraically closed field, a proper integral curve has arithmetic genus zero
 exactly when it is isomorphic to the projective line over the field. -/

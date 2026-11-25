@@ -282,6 +282,65 @@ theorem IsEffectiveCartier.map_strictTransform_blowupToBase
   obtain ⟨z, hz⟩ := (π ∣_ U).surjective (⟨x.val, hxU⟩ : U)
   exact ⟨z, by rw [Scheme.Hom.comp_apply, hz]; rfl⟩
 
+omit [PerfectField k] in
+include hp hSmooth in
+/-- A reduced Cartier divisor that omits the exceptional curve of a closed-point
+blowdown is the strict transform of its schematic image. The total pullback of
+this image is the original divisor times a power of the exceptional ideal. -/
+theorem IsEffectiveCartier.exists_comap_map_eq_mul_pow_of_pointBlowdown
+    {Z : Scheme.{u}} {B : Z.IdealSheafData} (hB : B.IsEffectiveCartier) [IsReduced B.subscheme]
+    (e : Z ≅ (I).blowup) {f : Z ⟶ X} (hf : e.hom ≫ π = f)
+    (hF : ¬ ((I).comap f).support ≤ B.support) :
+    (B.map f).IsEffectiveCartier ∧
+      ∃ m : ℕ, (B.map f).comap f = B * ((I).comap f) ^ m := by
+  let C := B.comap e.inv
+  let hC := hB.comap e.inv
+  have : IsReduced C.subscheme := by
+    rw [isReduced_subscheme_iff_radical_eq, radical_comap_of_isOpenImmersion,
+      B.isReduced_subscheme_iff_radical_eq.mp inferInstance]
+  have hEC : ¬ (E).support ≤ C.support := by
+    intro h
+    have h' : ((E).comap e.hom).support ≤ (C.comap e.hom).support := by
+      rw [support_comap (E), support_comap C]
+      apply SetLike.coe_subset_coe.mp
+      rw [Closeds.coe_preimage, Closeds.coe_preimage]
+      exact Set.preimage_mono (SetLike.coe_subset_coe.mpr h)
+    rw [← comap_comp, ← comap_comp, hf, Iso.hom_inv_id, comap_id] at h'
+    exact hF h'
+  let D := imageOff(C)
+  have : IsNoetherian (I).blowup := isNoetherian_of_finiteType π
+  have hD : D.IsEffectiveCartier := isEffectiveCartier_imageOff k hC
+  obtain ⟨a, ha, haE, hs⟩ := strictTransform_imageOff_pow k hp hC
+  have ha₀ : a = 0 := by
+    by_contra h
+    exact hEC (haE.mp (by omega))
+  have hstrict : strict(D) = C := by simpa only [D, ha₀, pow_zero, mul_one] using hs
+  have : IsReduced (C.comap j).subscheme := by
+    rw [isReduced_subscheme_iff_radical_eq, radical_comap_of_isOpenImmersion,
+      C.isReduced_subscheme_iff_radical_eq.mp inferInstance]
+  have : IsReduced D.subscheme := inferInstanceAs
+    (IsReduced (Scheme.Hom.image ((C.comap j).subschemeι ≫ (j ≫ π))))
+  have hmap : D = B.map f := by
+    rw [← hD.map_strictTransform_blowupToBase k hp, hstrict, ← hf, map_comp]
+    have hCmap : C = B.map e.hom := by
+      dsimp only [C]
+      calc
+        B.comap e.inv = ((B.map e.hom).comap e.hom).comap e.inv :=
+          congrArg (fun J ↦ J.comap e.inv) (B.comap_map_of_isOpenImmersion e.hom).symm
+        _ = B.map e.hom := by rw [← comap_comp, Iso.inv_hom_id, comap_id]
+    rw [hCmap]
+  have : Smooth (base[k,X]) := SmoothOfRelativeDimension.smooth 2 _
+  have := isRegularLocalRing_stalk_of_smooth (base[k,X]) p
+  have hdim := ((smoothOfRelativeDimension_iff_ringKrullDim_stalk_eq (base[k,X]) 2).mp
+    inferInstance).2 p hp
+  have ht := hD.totalTransform_eq_strictTransform_mul_pow_closedPoint hp hdim
+  dsimp only at ht
+  rw [hstrict] at ht
+  refine ⟨hmap ▸ hD, (D.stalkOrder p).toNat, ?_⟩
+  have hh := congrArg (fun J ↦ J.comap e.hom) ht
+  simpa only [← comap_comp, comap_mul, comap_pow, hf, C, Iso.hom_inv_id, comap_id,
+    hmap] using hh
+
 include hp hSmooth in
 /-- If a reduced anticanonical divisor on a point blowup is a strict transform,
 it omits the exceptional curve, and taking its image recovers the divisor downstairs. -/

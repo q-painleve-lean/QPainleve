@@ -153,6 +153,28 @@ private theorem twice_sum_sq_le_of_section_orders [Fintype ι]
     Finset.sum_sub_distrib, ← Finset.mul_sum, Finset.sum_const, nsmul_eq_mul] at total
   linarith only [total]
 
+/-- A Hirzebruch homaloidal system with every high order bounded by the fiber degree
+has index at most one more than the number of high orders. -/
+theorem hirzebruch_index_le_card_high_add_one [Fintype ι]
+    (high : Finset ι) (m : ι → ℤ) (k : ℕ) {a b : ℤ}
+    (hb : 0 < b) (hnef : (k : ℤ) * b ≤ a) (hm : ∀ j, 0 ≤ m j)
+    (hhigh : ∀ j ∈ high, b < 2 * m j ∧ m j ≤ b)
+    (hlow : ∀ j ∉ high, 2 * m j ≤ b)
+    (hsq : ∑ j, m j ^ 2 = 2 * a * b - (k : ℤ) * b ^ 2 - 1)
+    (hsum : ∑ j, m j = 2 * a + (2 - (k : ℤ)) * b - 3) :
+    k ≤ high.card + 1 := by
+  have h := twice_sum_sq_le_of_section_orders ∅ high m b hm hhigh hlow (by simp)
+  rw [Finset.sum_empty, sub_zero, hsq, hsum] at h
+  have hsumHigh : ∑ j ∈ high, m j ≤ (high.card : ℤ) * b := by
+    simpa only [Finset.sum_const, nsmul_eq_mul] using
+      (Finset.sum_le_sum fun j hj ↦ (hhigh j hj).2 : ∑ j ∈ high, m j ≤ ∑ _j ∈ high, b)
+  by_contra! hk
+  have hcard : (high.card : ℤ) + 2 ≤ k := by exact_mod_cast hk
+  nlinarith only [h, (by omega : 1 ≤ b),
+    mul_nonneg hb.le (sub_nonneg.mpr hsumHigh),
+    mul_nonneg hb.le (sub_nonneg.mpr hnef),
+    mul_nonneg (sq_nonneg b) (sub_nonneg.mpr hcard)]
+
 private theorem preparation_degree_drop_of_fiberDegree_eq_one (s high top : Finset ι)
     (m : ι → ℤ) {a : ℤ} (hsub : top ⊆ s) (hpos : ∀ j, 0 ≤ m j)
     (hhigh : ∀ j ∈ high, 1 < 2 * m j ∧ m j ≤ 1) (hsmall : ∀ j ∈ s, 2 * m j ≤ 1)
