@@ -114,6 +114,10 @@ The domain models the product of the center and charge tori via `prodIso`. -/
 def evaluation (v : A →+ N) : (D (A × N)) ⟶ (D A) :=
   Dmap ((AddMonoidHom.id A).prod v)
 
+/-- The evaluation morphism is induced by the graph of the charge homomorphism. -/
+theorem evaluation_def (v : A →+ N) :
+    evaluation k v = Dmap ((AddMonoidHom.id A).prod v) := (rfl)
+
 /-- Evaluate the independent characters on the charge torus at the specified center
 point. This is specialization of the variable-center morphism with the center fixed. -/
 @[expose]

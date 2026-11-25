@@ -120,6 +120,19 @@ private instance (G : FGCommGrpCat.{u}) : IsIso (universalPoint (k := k) G) := b
   simp only [AlgHom.id_toRingHom, CommRingCat.ofHom_id, Spec.map_id, Category.id_comp]
   exact (eqToIso (groupScheme_X_left k G).symm).isIso_hom
 
+/-- Pointwise multiplication of character homomorphisms induces pointwise multiplication
+of the corresponding morphisms of diagonalizable schemes. -/
+theorem groupSchemeMap_mul (f g : G →* H) :
+    (groupSchemeMap k (FGCommGrpCat.ofHom (f * g))).hom.hom =
+      (groupSchemeMap k (FGCommGrpCat.ofHom f)).hom.hom *
+        (groupSchemeMap k (FGCommGrpCat.ofHom g)).hom.hom := by
+  let p := universalPoint (k := k) H
+  apply (cancel_epi p).mp
+  apply (schemePointsMulEquiv G).injective
+  simp only [MonObj.comp_mul, map_mul, schemePointsMulEquiv_groupSchemeMap,
+    FGCommGrpCat.hom_hom_ofHom]
+  exact MonoidHom.ext fun a ↦ map_mul (schemePointsMulEquiv H p) (f a) (g a)
+
 /-- Twisting by a character on the coordinate ring gives translation by that point
 on the diagonalizable group scheme. -/
 theorem algEquivToSchemeIso_charTwist (χ : G →* kˣ) :
