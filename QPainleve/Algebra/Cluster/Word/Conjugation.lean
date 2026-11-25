@@ -20,17 +20,6 @@ connecting word reverses the sign.
 
 public noncomputable section
 
-open QPainleve.Cluster in
-/-- Conjugating a signed loop by a connecting word preserves its inversion sign. -/
-theorem Quiver.Path.neg_one_pow_inversionCount_reverse_comp_comp
-    {ι : Type*} [DecidableEq ι] {B C : SkewExchangeMatrix ι}
-    (w : Word B C) (v : Word B B) :
-    (-1 : ℤˣ) ^ ((w.reverse.comp v).comp w).inversionCount =
-      (-1 : ℤˣ) ^ v.inversionCount := by
-  simp only [Quiver.Path.inversionCount_comp, Quiver.Path.inversionCount_reverse, pow_add]
-  rw [mul_right_comm, ← pow_add, ← two_mul, pow_mul]
-  simp
-
 namespace QPainleve.Cluster
 
 open CategoryTheory MulOpposite Quiver

@@ -9,7 +9,6 @@ public import QPainleve.Algebra.Cluster.Word.Relations
 public import QPainleve.SignedClusterModularGroup.Realization.Presentation
 public import QPainleve.SignedClusterModularGroup.Realization.Tropical
 
-import QPainleve.Algebra.Cluster.Word.Conjugation
 import QPainleve.SignedClusterModularGroup.Realization.NodalFiber
 import QPainleve.SignedClusterModularGroup.Realization.Presentation.Boundary
 
