@@ -135,25 +135,28 @@ theorem exists_cluster_cremona_equivs_of_toric_presentation
     exact PrestableFamily.atWorstNodalOfRelativeDimensionOne)
   obtain ⟨π, hπ, hsurj, hinj, hsmall⟩ :=
     BoundaryCycle.exists_cremonaProjection_of_numbering ℂ A hD hK hnef hsq hroot
-  obtain ⟨H, μ, b', Q, c, f, E, M, _, Θ, Θrot, hframe, hrays, hE, hM, hmodels, _,
-    hwords, hkerSign, hrot⟩ :=
+  obtain ⟨P, hframe, hrays⟩ :=
     exists_picardGroupEquivs_of_toric_presentation hΦ hc s u hT e hbase hker A hD hprim hnef hsq
   let d := classes[A,hD]
+  let Θ := P.signedEquiv
   let φ := π.comp Θ.toMonoidHom
   let η := (sign B d).comp Θ.toMonoidHom
-  refine ⟨H, μ, b', Q, c, f, E, M, φ, η, hframe, hrays, hE, hM, hmodels,
-    hsurj.comp Θ.surjective, ?_, hkerSign, ?_, ?_⟩
+  refine ⟨P.form, P.marking, P.basis, P.presentation, P.center, P.evaluation, P.exchangeMatrix,
+    P.family, φ, η, hframe, hrays, P.matrix_eq, P.family_center, P.hasNodalModel,
+    hsurj.comp Θ.surjective, ?_, P.sign_ker_unop, ?_, ?_⟩
   · intro w
-    refine ⟨(hwords w).1, fun R hR ↦ ?_⟩
-    simpa only [φ, η, MonoidHom.comp_apply, MulEquiv.coe_toMonoidHom, hπ, toIsometry_apply,
-      SignedBoundaryIsometryGroup.sign_apply, Prod.eta] using (hwords w).2 R hR
+    refine ⟨?_, fun R hR ↦ ?_⟩
+    · simpa only [η, Θ, MonoidHom.comp_apply, MulEquiv.coe_toMonoidHom,
+        SignedBoundaryIsometryGroup.sign_apply] using P.sign_signedEquiv_apply_word w
+    · simpa only [φ, η, Θ, MonoidHom.comp_apply, MulEquiv.coe_toMonoidHom, hπ, toIsometry_apply,
+        SignedBoundaryIsometryGroup.sign_apply, Prod.eta] using P.signedEquiv_apply_word w R hR
   · intro hn
     exact ⟨MulEquiv.ofBijective φ ⟨(hinj hn).comp Θ.injective, hsurj.comp Θ.surjective⟩, rfl⟩
   · intro hn
     obtain ⟨g₀, hg₀⟩ := hsmall hn
     let p := mulEquivProdOfLeTwo B d hn
     let g := Θ.trans (p.trans (g₀.prodCongr (MulEquiv.refl ℤˣ)))
-    have hg (x : Γs[E]) : g x = (φ x, η x) := by
+    have hg (x : Γs[P.exchangeMatrix]) : g x = (φ x, η x) := by
       have hx : ((p (Θ x)).1.val, (p (Θ x)).2) = (Θ x).val :=
         coe_mulEquivProdOfLeTwo_apply B d hn (Θ x)
       simp only [g, MulEquiv.trans_apply, MulEquiv.prodCongr_apply, MulEquiv.refl_apply]
@@ -163,10 +166,11 @@ theorem exists_cluster_cremona_equivs_of_toric_presentation
         exact congrArg Prod.fst hx
       · simpa only [η, MonoidHom.comp_apply, MulEquiv.coe_toMonoidHom,
           SignedBoundaryIsometryGroup.sign_apply] using congrArg Prod.snd hx
-    refine ⟨g, Θrot.trans g₀, hg, fun x ↦ ?_⟩
+    refine ⟨g, P.unsignedEquiv.trans g₀, hg, fun x ↦ ?_⟩
     rw [hg]
-    refine Prod.ext ((congrArg π (hrot x).symm).trans (hg₀ _).symm) ?_
-    exact (congrArg (sign B d) (hrot x).symm).trans (by
+    have hx := (P.rotationInclusion_unsignedEquiv_apply x).symm
+    refine Prod.ext ((congrArg π hx).trans (hg₀ _).symm) ?_
+    exact (congrArg (sign B d) hx).trans (by
       simp only [SignedBoundaryIsometryGroup.sign_apply, coe_rotationInclusion])
 
 end QPainleve.SignedClusterModularGroup
