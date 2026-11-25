@@ -132,7 +132,7 @@ theorem xPullback_eq_iff_signedLoopInvariants_eq_of_presentation
     Q.hasNodalModel_of_contraction (hnodal _ hx)
   -- Realize both words on their noncollision domains.
   have hreal (u : Word E E) := exists_realize_signed_loop u P Q hform hcharge M models
-    hreference (fun c ↦ cartier(M c)) hnef hsq hcan hprim boundaryClasses[M,c₀] hmark
+    hreference (fun c ↦ cartier(M c)) hnef hsq hprim boundaryClasses[M,c₀] hmark
   obtain ⟨R, hR, -⟩ := hreal w
   obtain ⟨R', hR', -⟩ := hreal v
   -- Identify the charge coordinates and read the starting vector from row zero.

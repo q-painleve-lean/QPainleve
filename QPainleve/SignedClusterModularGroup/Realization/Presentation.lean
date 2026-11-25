@@ -117,6 +117,20 @@ theorem CompleteToricPresentation.hasNodalModel_iff (Q : CompleteToricPresentati
 
 namespace CompleteToricPresentation
 
+/-- A nodal model supplies the ordered toric contraction in the specified marking. -/
+theorem HasNodalModel.nonempty_contractedToricFiber
+    {Q : CompleteToricPresentation i b r L γ}
+    {c : Point Centers} {M : MarkedSurface ℂ n H XTor} (h : Q.HasNodalModel c M) :
+    letI := Q.complete.nonempty_cones
+    letI := Q.prestable
+    letI := Q.neZero
+    Nonempty (ContractedToricFiber b Q.rays Q.regular Q.cycle Q.origin Q.inclusion χ(c) M) := by
+  let := Q.complete.nonempty_cones
+  let := Q.prestable
+  let := Q.neZero
+  obtain ⟨p, _⟩ := (Q.hasNodalModel_iff c M).mp h
+  exact ⟨p⟩
+
 /-- The numbered node is the toric fixed point of the cone between its consecutive rays. -/
 theorem exists_cone_of_numbered_node (Q : CompleteToricPresentation i b r L γ)
     (j : ZMod Q.length) :

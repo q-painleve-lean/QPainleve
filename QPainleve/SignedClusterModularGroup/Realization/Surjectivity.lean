@@ -266,10 +266,8 @@ theorem exists_word_signedPicardHom_eq_of_resolved_sarkisov_factorization
   rw [hev₀, hev₁] at hw
   obtain ⟨R, hη, _, htarget⟩ := exists_realize_signed_loop w P Q hform hcharge M
     (fun x ↦ models _ (Quiver.Path.nil.centerPoint_endpoints_mem_noncollision P hker x).2)
-    hM hD hnef hsq hcan hprim d hmark
-  have htargets : Models[Cw[w,P]] := fun x ↦ by
-    obtain ⟨q, _⟩ := (Q.hasNodalModel_iff _ _).mp (htarget x)
-    exact ⟨q⟩
+    hM hD hnef hsq hprim d hmark
+  have htargets : Models[Cw[w,P]] := fun x ↦ (htarget x).nonempty_contractedToricFiber
   obtain ⟨q, _⟩ := (Q.hasNodalModel_iff c₁ (M c₁)).mp hP
   have hvalue := hρ w R htargets
   have hparity : sign B d (ρ eval[E,w]) = (-1 : ℤˣ) ^ w.inversionCount := by

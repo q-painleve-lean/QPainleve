@@ -107,12 +107,10 @@ theorem existsUnique_signedPicardHom_of_presentation
         intro w
         let word : Word E E := End.asHom w
         obtain ⟨R, hη, _, hmodels⟩ := exists_realize_signed_loop word P Q
-          hform hcharge M models hmodel hD hnef hsq hcan hprim d hmark
+          hform hcharge M models hmodel hD hnef hsq hprim d hmark
         have hdom : IsDominant Cw[word,P].hom := inferInstance
         have hover : Cw[word,P].IsOver Centers[r].hom Centers[r].hom := inferInstance
-        exact ⟨Cw[word,P], hdom, hover, R, hη, fun c ↦ by
-          obtain ⟨q, _⟩ := (Q.hasNodalModel_iff _ _).mp (hmodels c)
-          exact ⟨q⟩⟩)
+        exact ⟨Cw[word,P], hdom, hover, R, hη, fun c ↦ (hmodels c).nonempty_contractedToricFiber⟩)
   refine ⟨ρ, ⟨hρ, ?_⟩, fun ρ' hρ' ↦ huniq ρ' hρ'.1⟩
   have hE : E.matrix ≠ 0 := by
     intro hzero
