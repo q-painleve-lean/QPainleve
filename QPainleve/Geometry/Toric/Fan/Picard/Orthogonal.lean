@@ -16,7 +16,7 @@ import Mathlib.Data.Fin.Tuple.Reflection
 import QPainleve.Algebra.Cluster.ChargeKernel.Index
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Numerical
 import QPainleve.AlgebraicGeometry.Chow.Isomorphism
-import QPainleve.Geometry.Toric.Fan.Picard.NormCongruence
+import QPainleve.Geometry.Toric.Fan.Picard.Norm.Congruence
 import TauCeti.LinearAlgebra.Matrix.Dual
 
 /-!
@@ -329,6 +329,39 @@ the original surface. -/
     LinearMap.BilinForm.restrict_apply, LinearMap.domRestrict_apply]
 
 include hJ hT he hD in
+private theorem chargeKernelIntersectionForm_eq_internal (x y : (rayChargeMap s).ker) :
+    let _ := isPerfPair_internal_markedForm hΦ hdim s m hm hprim c J hJ hT e he
+    let lift := (boundaryOrthogonalEquivChargeKernel hΦ s B₁).symm
+    chargeKernelIntersectionForm hΦ hdim s m hm hprim c J hJ hT e he hD x y =
+      B₁ (lift x).val (lift y).val := by
+  let := isPerfPair_internal_markedForm hΦ hdim s m hm hprim c J hJ hT e he
+  dsimp only
+  rw [coe_markedChargeKernelEquiv_symm hΦ hdim s m hm hprim c J hJ hT e he hD,
+    coe_markedChargeKernelEquiv_symm hΦ hdim s m hm hprim c J hJ hT e he hD,
+    pairing_resolutionMarking hΦ hdim s m hm hprim c J hJ hT e he]
+  simp only [chargeKernelIntersectionForm_apply, LinearMap.BilinForm.prod_apply,
+    map_zero, add_zero]
+
+include hJ hT he hD in
+/-- In charge coordinates on the original surface, the norm is the negative sum of the
+squared coordinates minus the determinant sum in clockwise order on the presenting fan.
+The orders are read from any positive cyclic ray numbering. -/
+theorem chargeKernelIntersectionForm_norm_eq_sum_det (b : Module.Basis (Fin 2) ℤ N)
+    (hc : Φ.IsComplete) {r : ℕ} [NeZero r] (u : ZMod r ≃ Φ.Ray)
+    (hu : ∀ j, b.detDualEquiv (u j).primitiveGenerator (u (j + 1)).primitiveGenerator = 1 ∧
+      ∃ σ : Φ.cones, (u j).toCone ≤ σ ∧ (u (j + 1)).toCone ≤ σ)
+    (x : (rayChargeMap s).ker) :
+    chargeKernelIntersectionForm hΦ hdim s m hm hprim c J hJ hT e he hD x x =
+      -(∑ k, x.val k ^ 2) - ∑ k, ∑ l with (u.symm (s l)).val < (u.symm (s k)).val,
+        b.detDualEquiv (s k).primitiveGenerator (s l).primitiveGenerator * x.val k * x.val l := by
+  let := isPerfPair_internal_markedForm hΦ hdim s m hm hprim c J hJ hT e he
+  let y := (boundaryOrthogonalEquivChargeKernel hΦ s B₁).symm x
+  have h := boundary_orthogonal_norm_eq_sum_det b hΦ hc u hu s y
+  rw [chargeKernelIntersectionForm_eq_internal hΦ hdim s m hm hprim c J hJ hT e he hD x x]
+  simpa only [y, boundaryOrthogonalEquivChargeKernel_symm_snd, Pi.neg_apply, neg_sq, mul_neg,
+    neg_mul, neg_neg] using h
+
+include hJ hT he hD in
 /-- The square of a charge relation on the original surface is congruent to the
 negative sum of its coordinate squares modulo every common divisor of the charge
 determinants. The congruence survives the nodal contractions. -/
@@ -337,17 +370,9 @@ theorem chargeKernelIntersectionForm_norm_modEq (b : Module.Basis (Fin 2) ℤ N)
     (ha : ∀ j k, a ∣ b.detDualEquiv (s j).primitiveGenerator (s k).primitiveGenerator) :
     chargeKernelIntersectionForm hΦ hdim s m hm hprim c J hJ hT e he hD x x ≡
       -∑ j, x.val j ^ 2 [ZMOD a] := by
-  let : (B₁).IsPerfPair := isPerfPair_internal_markedForm hΦ hdim s m hm hprim c J hJ hT e he
-  let y := (boundaryOrthogonalEquivChargeKernel hΦ s B₁).symm x
-  have hy := coe_markedChargeKernelEquiv_symm hΦ hdim s m hm hprim c J hJ hT e he hD x
-  have hpair := pairing_resolutionMarking hΦ hdim s m hm hprim c J hJ hT e he
-    (((q).symm x).val, 0) (((q).symm x).val, 0)
-  have hnorm := boundaryOrthogonalEquivChargeKernel_symm_norm_modEq b hΦ hc s x ha
-  -- The smoothness and perfect-pairing instances in the two markings are proof-irrelevant.
-  have hnorm' : B₁ y.val y.val ≡ -∑ j, x.val j ^ 2 [ZMOD a] := hnorm
-  rw [hy, hpair] at hnorm'
-  simpa only [chargeKernelIntersectionForm_apply, LinearMap.BilinForm.prod_apply,
-    LinearMap.neg_apply, map_zero, LinearMap.zero_apply, neg_zero, add_zero] using hnorm'
+  rw [chargeKernelIntersectionForm_eq_internal hΦ hdim s m hm hprim c J hJ hT e he hD x x]
+  let := isPerfPair_internal_markedForm hΦ hdim s m hm hprim c J hJ hT e he
+  exact boundaryOrthogonalEquivChargeKernel_symm_norm_modEq b hΦ hc s x ha
 
 include hJ hT he hD in
 /-- In the internal model, the charge pairing is the intersection of the toric coordinates
