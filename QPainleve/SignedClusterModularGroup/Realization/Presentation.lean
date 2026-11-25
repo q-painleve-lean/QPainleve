@@ -8,6 +8,11 @@ module
 public import QPainleve.Geometry.Toric.Fan.CyclicOrder
 public import QPainleve.SignedClusterModularGroup.Realization.ContractionNumerics
 public import QPainleve.SignedClusterModularGroup.Realization.Inversion.Contracted
+public import QPainleve.SignedClusterModularGroup.Realization.MarkedComparison
+
+import QPainleve.Geometry.Toric.Fan.Boundary.Numbering
+
+import QPainleve.Algebra.Cluster.ChargeKernel.Index
 
 /-!
 # Complete marked toric presentations
@@ -114,6 +119,58 @@ theorem CompleteToricPresentation.hasNodalModel_iff (Q : CompleteToricPresentati
 
 namespace CompleteToricPresentation
 
+/-- A nodal model supplies the ordered toric contraction in the specified marking. -/
+theorem HasNodalModel.nonempty_contractedToricFiber
+    {Q : CompleteToricPresentation i b r L γ}
+    {c : Point Centers} {M : MarkedSurface ℂ n H XTor} (h : Q.HasNodalModel c M) :
+    letI := Q.complete.nonempty_cones
+    letI := Q.prestable
+    letI := Q.neZero
+    Nonempty (ContractedToricFiber b Q.rays Q.regular Q.cycle Q.origin Q.inclusion χ(c) M) := by
+  let := Q.complete.nonempty_cones
+  let := Q.prestable
+  let := Q.neZero
+  obtain ⟨p, _⟩ := (Q.hasNodalModel_iff c M).mp h
+  exact ⟨p⟩
+
+/-- The numbered node is the toric fixed point of the cone between its consecutive rays. -/
+theorem exists_cone_of_numbered_node (Q : CompleteToricPresentation i b r L γ)
+    (j : ZMod Q.length) :
+    letI := Q.prestable
+    letI := Q.neZero
+    ∃ σ : Q.fan.cones, (Q.rayOrder j).toCone ≤ σ ∧
+      (Q.rayOrder (j + 1)).toCone ≤ σ ∧
+      (Q.fan.boundaryIdeal Q.complete.nonempty_cones).subschemeι
+        ((Q.fan.boundaryIdeal Q.complete.nonempty_cones).subscheme.dualGraphEdgeEquiv
+          Q.marks (Q.cycle.edge j)).val =
+        Q.fan.distinguishedPointHom σ (IsLocalRing.closedPoint ℂ) := by
+  let := Q.complete.nonempty_cones
+  let := Q.prestable
+  let := Q.neZero
+  have hray : Q.fan.rayEquivOfNodalCycleNumbering Q.regular Q.cycle = Q.rayOrder := by
+    refine Equiv.ext fun k ↦ (Q.fan.boundaryNormalizationComponentEquiv Q.regular).injective ?_
+    rw [Fan.boundaryNormalizationComponentEquiv_rayEquivOfNodalCycleNumbering, Q.component_eq]
+  obtain ⟨_, -, _, hnodes⟩ :=
+    Q.fan.exists_positive_ray_numbering_of_nodalCycleNumbering b Q.regular Q.complete Q.cycle
+  rw [hray] at hnodes
+  obtain ⟨σ, h₀, h₁, hpoint⟩ := hnodes j
+  exact ⟨σ.val, h₀, h₁, hpoint⟩
+
+/-- A nodal contraction of a marked toric fiber supplies a nodal model at its center. -/
+theorem hasNodalModel_of_contraction (Q : CompleteToricPresentation i b r L γ)
+    {c : Point Centers} {M : MarkedSurface ℂ n H XTor} :
+    letI := Q.complete.nonempty_cones
+    letI := Q.prestable
+    letI := Q.neZero
+    ∀ {p : ContractedToricFiber b Q.rays Q.regular Q.cycle Q.origin Q.inclusion χ(c) M},
+      p.IsNodalContraction → Q.HasNodalModel c M := by
+  intro p hp
+  let := Q.complete.nonempty_cones
+  let := Q.prestable
+  let := Q.neZero
+  obtain ⟨l, Y, W, hW, e, he⟩ := hp.exists_tower
+  exact (Q.hasNodalModel_iff c M).mpr ⟨p, Y, l, W, e, hW, he.symm⟩
+
 /-- The charge lattice of a marked toric presentation of a primitive nef
 square-zero anticanonical cycle has finite index. -/
 theorem chargeIndex_ne_zero_of_anticanonical_cycle
@@ -136,6 +193,22 @@ theorem chargeIndex_ne_zero_of_anticanonical_cycle
     p.chargeIndex_bounds_of_anticanonical_cycle Q.complete hW e hp.symm hD hnef hsq hcan hprim
   intro hz
   simp [hz, NeZero.ne n] at hdiv
+
+/-- A charge seed realizing the determinant pairing and rays of a presentation has a
+nonzero exchange matrix when the ray charges span a finite-index sublattice. -/
+theorem exchangeMatrix_ne_zero_of_chargeIndex_ne_zero
+    (Q : CompleteToricPresentation i b r L γ) {E : SkewExchangeMatrix (Fin r)}
+    (P : ChargeSeed E N)
+    (hform : P.form = b.detDualEquiv.toLinearMap) (hcharge : P.charge = Fan.rayChargeMap Q.rays)
+    (hindex : (Fan.rayChargeMap Q.rays).range.toAddSubgroup.index ≠ 0) :
+    E.matrix ≠ 0 := by
+  rw [← P.matrix_eq, hform, hcharge]
+  intro hzero
+  apply hindex
+  rw [(Fan.rayChargeMap Q.rays).index_range_eq_gcd_chargeExchangeMatrix b
+    b.detDualEquiv_self b.detDualEquiv_apply_basis_zero_one, Finset.gcd_eq_zero_iff]
+  intro j _
+  simp only [hzero, Matrix.zero_apply, Int.natAbs_zero]
 
 /-- The inclusion in the auxiliary Picard lattice is injective whenever the
 presentation has a nodal model. -/

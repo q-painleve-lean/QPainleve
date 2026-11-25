@@ -8,18 +8,14 @@ module
 public import QPainleve.SignedClusterModularGroup.Examples.ElevenVertex.Presentation
 public import QPainleve.SignedClusterModularGroup.Realization.Endpoint.PicardAction
 
-import QPainleve.Geometry.Toric.Fan.Boundary.Numbering
+import QPainleve.Algebra.Cluster.ChargeKernel.Action
 import QPainleve.Geometry.Toric.Fan.Subdivision.Projective
-import QPainleve.LinearAlgebra.BilinearForm.Prod
-import QPainleve.SignedClusterModularGroup.Realization.Anticanonical
-import QPainleve.SignedClusterModularGroup.Realization.ChargeKernel
-import QPainleve.SignedClusterModularGroup.Realization.Endpoint.Kernel
-import QPainleve.SignedClusterModularGroup.Realization.Endpoint.SelfRealization
+import QPainleve.SignedClusterModularGroup.Realization.Endpoint.Casimir
 import QPainleve.SignedClusterModularGroup.Realization.NodalFiber
-import QPainleve.SignedClusterModularGroup.Realization.Orthogonal
 import QPainleve.SignedClusterModularGroup.Realization.Presentation.Family
 import QPainleve.SignedClusterModularGroup.Realization.Presentation.Reference
 import QPainleve.SignedClusterModularGroup.Realization.Reflection
+import QPainleve.SignedClusterModularGroup.Realization.Surjectivity.PicardAction
 import TauCeti.LinearAlgebra.Matrix.Dual
 
 /-!
@@ -30,7 +26,7 @@ fiber in the original seed basis. The faithful signed Picard action sends
 `involutionWord` to the identity isometry with negative branch sign.
 On the single boundary component the forward index is unique, so the
 comparison uses the sign and the negation action on the exchange kernel.
-The comparisons use `chargeKernelAction_eq_signedOrthogonalRestriction` and
+The comparisons use `existsUnique_exchangeKernelEquiv_of_presentation` and
 `eq_centralSign_of_signedOrthogonalRestriction`.
 -/
 
@@ -118,69 +114,6 @@ private theorem planeChargeSeed_charge_eq
   rw [← heq hfan Q.rays, hr, rayChargeMap_planeCenterRay]
   rfl
 
-section Involution
-
-variable {L : Type} [AddCommGroup L] {H : LinearMap.BilinForm ℤ L}
-  (Q : CompleteToricPresentation planeLattice b 11 L Empty)
-  {M : Point Centers → MarkedSurface ℂ 1 H XTor}
-
-local instance : Nonempty Q.fan.cones := Q.complete.nonempty_cones
-local instance : NeZero Q.length := Q.neZero
-local instance : PrestableFamily ((Q.fan.boundaryIdeal Q.complete.nonempty_cones).subscheme ↘ S) :=
-  Q.prestable
-
-local notation "Cz" => Path.centerPartialMap ℂ involutionWord planeChargeSeed
-
-private theorem signedOrthogonalRestriction_of_involution_realization [H.IsPerfPair]
-    (hc : planeChargeSeed.charge = Fan.rayChargeMap Q.rays)
-    (models : ∀ a, Q.HasNodalModel a (M a)) (c : Point Centers)
-    (hD : ∀ a, D[M a].IsEffectiveCartier)
-    (d : ZMod 1 → L) (hmark : ∀ a j, (M a).boundaryClass (hD a) j = d j)
-    (R : GeometricRealization M M Cz (involutionWord.xRationalMap ℂ))
-    (x : H.orthogonal (Submodule.span ℤ (Set.range d))) :
-    (signedOrthogonalRestriction H d (R.toSignedBoundaryIsometry d hD hmark)).val x = -x := by
-  classical
-  let : Q.fan.algebraicRealization.IsProjectiveOver ℂ :=
-    Q.fan.isProjectiveOver_algebraicRealization_of_isComplete Q.regular Q.complete b
-  let : SmoothOfRelativeDimension 2 (Q.fan.algebraicRealization ↘ S) := by
-    rw [Q.fan.algebraicRealization_over]
-    simpa using Q.fan.smoothOfRelativeDimension_algebraicRealizationStructureMap Q.regular
-  let : IsRationalOver (Q.fan.algebraicRealization ↘ S) := Q.isRationalOver_fan
-  let hperf := Chow.isPerfPair_intersectionBilinForm_of_isRationalOver ℂ Q.fan.algebraicRealization
-  let G : LinearMap.BilinForm ℤ (Fin 11 → ℤ) := dotProductBilin ℤ ℤ
-  let : G.IsPerfPair := dotProductBilin_isPerfPair ℤ (Fin 11)
-  have hneg : (-G).IsPerfPair := by
-    convert LinearMap.IsPerfPair.compl₁₂ G (LinearEquiv.neg ℤ) (LinearEquiv.refl ℤ _) using 1
-    ext x y
-    simp
-  let := LinearMap.BilinForm.isPerfPair_prod_iff.mpr ⟨hperf, hneg⟩
-  choose p hp using fun a ↦ (models a).exists_isNodalContraction (hD a)
-  obtain ⟨e, he, _⟩ := (p c).existsUnique_markedBoundaryOrthogonalEquivChargeKernel (hp c)
-    (hD c) (funext (hmark c))
-  let u := Q.fan.rayEquivOfNodalCycleNumbering Q.regular Q.cycle
-  have hu (j : ZMod Q.length) : u j = Q.rayOrder j := by
-    apply (Q.fan.boundaryNormalizationComponentEquiv Q.regular).injective
-    rw [Fan.boundaryNormalizationComponentEquiv_rayEquivOfNodalCycleNumbering, Q.component_eq]
-  obtain ⟨_, _, _, hn⟩ :=
-    Q.fan.exists_positive_ray_numbering_of_nodalCycleNumbering b Q.regular Q.complete Q.cycle
-  have hker : exchangeMatrix.matrix.mulVecLin.ker = planeChargeSeed.charge.ker :=
-    exchangeKernel_eq_chargeKernel
-  have hcompare := chargeKernelAction_eq_signedOrthogonalRestriction u
-    (fun j ↦ (Q.cycle.component_apply j).symm.trans
-      (Fan.boundaryNormalizationComponentEquiv_rayEquivOfNodalCycleNumbering ..).symm)
-    (fun j ↦ by simpa only [hu] using (Q.positive j).1)
-    (fun j ↦ let ⟨σ, h₀, h₁, hpoint⟩ := hn j; ⟨σ.val, h₀, h₁, hpoint⟩)
-    d hD hmark involutionWord R (involutionWord.centerPartialMap_hom (K := ℂ) planeChargeSeed)
-    planeChargeSeed hc hker e he (U := Set.univ) (fun _ ↦ ⟨Set.mem_univ _, Set.mem_univ _⟩)
-    (fun a _ ↦ (hp a).genus_zero) (fun a _ ↦ ⟨p a⟩)
-  have hx := DFunLike.congr_fun hcompare (e x)
-  apply e.injective
-  simpa only [chargeKernelAction_apply, exchangeKernelAction_op_loop,
-    LinearEquiv.autCongr_apply_apply, LinearEquiv.symm_apply_apply,
-    involutionWord_exchangeKernelEquiv_apply, map_neg, LinearEquiv.apply_symm_apply] using hx.symm
-
-end Involution
-
 /-- For any ordered center parameters, the plane model gives a marked one-component
 reference fiber whose faithful signed Picard action sends the specified odd loop
 to the central sign element. Its values on loops are the marked pullbacks of their
@@ -221,35 +154,32 @@ theorem exists_eleven_vertex_signedPicardHom (u : Fin 11 → ℂˣ) :
     exact hsq
   let P := planeChargeSeed
   have hc := planeChargeSeed_charge_eq hrays
-  let : IsRationalOver ((M c).surface ↘ S) := (hfamily c).1.isRationalOver
-  have hcan := congrArg Inv.inv ((hfamily c).1.canonicalClass (hD c))
-  obtain ⟨ρ, ⟨hρ, _⟩, _⟩ := existsUnique_signedPicardHom_of_presentation
-    P Q rfl hc M (fun _ ↦ (hfamily _).1) (hfamily c).1 hD hnef' hsq' hcan hprim' d hmark
-  have hinj := ρ.ker_eq_bot_iff.mp (signedPicardHom_ker_eq_bot_of_presentation
-    Q P rfl hc M (fun a _ ↦ (hfamily a).1) hD (hfamily c).1 hnef' hsq' hcan hprim' d hmark
-      ρ (fun w _ _ _ ↦ (hρ w).2))
+  have models (a : Point Centers) (_ : a.left (default : S) ∈ Path.nil.centerOpen ℂ P) :=
+    (hfamily a).1
+  obtain ⟨Θ, ⟨hΘ, _⟩, _⟩ := existsUnique_signedPicardEquiv_of_presentation
+    (Q := Q) (hD := hD) (hmark := hmark) P rfl hc models (hfamily c).1 hprim' hnef' hsq'
   have htarget (w : Word exchangeMatrix exchangeMatrix)
       {C : (Centers).left.PartialMap (Centers).left} [IsDominant C.hom]
       [C.IsOver (Centers).hom (Centers).hom] (R : GeometricRealization M M C (w.xRationalMap ℂ)) :
-      ρ eval[w] = R.toSignedBoundaryIsometry d hD hmark := by
-    let := Q.complete.nonempty_cones
-    let := Q.prestable
-    let := Q.neZero
-    exact (hρ (End.of w)).2 R (fun a ↦ by
-      obtain ⟨p, _⟩ := (Q.hasNodalModel_iff _ _).mp (hfamily (a ≫ C.domainTarget)).1
-      exact ⟨p⟩)
-  obtain ⟨R, _, _, _⟩ := exists_realize_signed_loop involutionWord P Q rfl hc M
-    (fun _ ↦ (hfamily _).1) (hfamily c).1 hD hnef' hsq' hcan hprim' d hmark
+      Θ eval[w] = R.toSignedBoundaryIsometry d hD hmark :=
+    (hΘ w).2 R (fun a ↦ (hfamily (a ≫ C.domainTarget)).1.nonempty_contractedToricFiber)
+  obtain ⟨e, ⟨_, hact, _⟩, _⟩ := existsUnique_exchangeKernelEquiv_of_presentation
+    Q P rfl hc M hD (hfamily c).1 models hnef' hsq' hprim' d hmark Θ.toMonoidHom
+    (fun w {_} _ _ R hR ↦ (hΘ (End.asHom w)).2 R hR)
+  have hneg (x : H.orthogonal (Submodule.span ℤ (Set.range d))) :
+      (signedOrthogonalRestriction H d (Θ eval[involutionWord])).val x = -x := by
+    have h := DFunLike.congr_fun (DFunLike.congr_fun hact eval[involutionWord]) (e x)
+    apply e.injective
+    simpa only [exchangeKernelAction_op_loop, involutionWord_exchangeKernelEquiv_apply,
+      MonoidHom.comp_apply, MulEquiv.coe_toMonoidHom, Subgroup.subtype_apply,
+      LinearEquiv.autCongr_apply_apply, LinearEquiv.symm_apply_apply, map_neg] using h.symm
   have hgram := (M c).intersectionForm_boundaryClass (hD c) hnef' hsq'
-  refine ⟨L, _, H, Q, c, M, hD, hparams, hrays, hfamily, ρ, hinj, ?_, ?_⟩
-  · refine eq_centralSign_of_signedOrthogonalRestriction hSymm
-      (LinearMap.IsPerfPair.nondegenerate inferInstance) hgram _ ?_ ?_
-    · exact (hρ (End.of involutionWord)).1.trans
-        ((congrArg (fun n : ℕ ↦ (-1 : ℤˣ) ^ n) inversionCount_involutionWord).trans (pow_one _))
-    · rw [htarget involutionWord R]
-      exact signedOrthogonalRestriction_of_involution_realization Q hc (fun a ↦ (hfamily a).1)
-        c hD d hmark R
-  · exact fun w ↦ ⟨(hρ (End.of w)).1, htarget w⟩
+  have hsign := (hΘ involutionWord).1
+  rw [inversionCount_involutionWord, pow_one] at hsign
+  have hz := eq_centralSign_of_signedOrthogonalRestriction hSymm
+    (LinearMap.IsPerfPair.nondegenerate inferInstance) hgram _ hsign hneg
+  exact ⟨L, _, H, Q, c, M, hD, hparams, hrays, hfamily, Θ.toMonoidHom, Θ.injective, hz,
+    fun w ↦ ⟨(hΘ w).1, htarget w⟩⟩
 
 /-- The eleven-vertex involution commutes with every independent signed cluster X map. -/
 theorem involutionWord_mem_center :

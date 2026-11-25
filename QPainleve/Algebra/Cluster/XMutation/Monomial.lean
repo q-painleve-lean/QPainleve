@@ -69,6 +69,27 @@ theorem monomial_eq_prod_zpow_xCoordinate (x : ι → ℤ) :
   rw [Finsupp.equivFunOnFinite_symm_eq_sum, ofAdd_sum, map_prod]
   simp only [monomial_finsupp_single]
 
+/-- The pullback induced by a lattice equivalence sends each X coordinate to the
+monomial with exponents given by the corresponding column of its matrix. -/
+theorem functionFieldMatrix_xCoordinate [Fintype κ] [DecidableEq κ]
+    (e : (κ →₀ ℤ) ≃ₗ[ℤ] (ι →₀ ℤ)) (M : Matrix ι κ ℤ)
+    (h : e.toLinearMap = M.toLin Finsupp.basisSingleOne Finsupp.basisSingleOne) (i : κ) :
+    (IsFractionRing.algEquivOfAlgEquiv (AddMonoidAlgebra.domCongr k k e.toAddEquiv) :
+      FunctionField k (κ →₀ ℤ) ≃ₐ[k] FunctionField k (ι →₀ ℤ)) (xCoordinate k i) =
+      ∏ j, xCoordinate k j ^ M j i := by
+  have he : e.toAddEquiv (Finsupp.single i 1) = Finsupp.equivFunOnFinite.symm (M.col i) := by
+    change e.toLinearMap (Finsupp.single i 1) = _
+    rw [h]
+    ext j
+    have hj := Matrix.repr_toLin Finsupp.basisSingleOne Finsupp.basisSingleOne M
+      (Finsupp.single i 1)
+    simpa only [Finsupp.basisSingleOne_repr, LinearEquiv.refl_apply,
+      Finsupp.single_eq_pi_single, Matrix.mulVec_single_one, Finsupp.coe_equivFunOnFinite_symm]
+      using congrFun hj j
+  rw [xCoordinate_def, IsFractionRing.algEquivOfAlgEquiv_algebraMap,
+    AddMonoidAlgebra.domCongr_single, ← monomial_ofAdd, he, monomial_eq_prod_zpow_xCoordinate]
+  rfl
+
 end
 
 open Matrix TauCeti

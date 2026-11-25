@@ -515,18 +515,24 @@ variable {P : Point T₀ → MarkedSurface k n B₀ X₀}
   (hmark : ∀ c j, (P c).boundaryClass (hD c) j = D j)
 
 include hmark in
+/-- Pullback in the common marking subtracts the forward boundary shift before
+applying the branch sign to the index. -/
+theorem picard_apply_boundaryClass (j : ZMod n) :
+    A.picard (D j) = D (A.orientation • (j - A.boundaryPerm 0)) := by
+  obtain ⟨c⟩ := nonempty_centerPoint C₀
+  have h := A.picard_boundaryClass c (hD _) (hD _) j
+  rwa [hmark, hmark, cycleVertexPerm_inv_apply, ← A.orientation_def, ← A.boundaryPerm_def] at h
+
+include hmark in
 /-- For a fixed marked boundary, the Picard pullback together with the branch orientation
 of a geometric self-realization belongs to the signed boundary isometry group. -/
 theorem picard_mem_signedBoundaryIsometryGroup :
     (B₀.isometryGroupEquivIsometryEquiv.symm A.picard, A.orientation) ∈
       signedBoundaryIsometryGroup B₀ D := by
-  obtain ⟨c⟩ := nonempty_centerPoint C₀
   refine (mem_signedBoundaryIsometryGroup_iff B₀ D).2
-    ⟨cycleVertexPerm A.boundaryAction⁻¹ 0, fun j ↦ ?_⟩
-  have h := A.picard_boundaryClass c (hD _) (hD _) j
-  rw [hmark, hmark, cycleVertexPerm_apply, map_inv, Int.units_inv_eq_self] at h
-  simpa only [LinearMap.BilinForm.coe_isometryGroupEquivIsometryEquiv_symm, orientation_def,
-    Units.smul_def] using h
+    ⟨-(A.orientation • A.boundaryPerm 0), fun j ↦ ?_⟩
+  simpa only [LinearMap.BilinForm.coe_isometryGroupEquivIsometryEquiv_symm, sub_eq_add_neg,
+    smul_add, smul_neg] using A.picard_apply_boundaryClass D hD hmark j
 
 include hmark in
 /-- An orientation-preserving geometric self-realization of a fixed marked boundary
