@@ -8,13 +8,13 @@ module
 public import QPainleve.AlgebraicGeometry.RelativeProj.LineBundle.Basic
 public import QPainleve.AlgebraicGeometry.RelativeProj.Pullback
 
-
 /-!
 # Morphisms to projective bundles from line quotients
 
 A line quotient of a pulled-back quasicoherent sheaf gives a morphism to the
 relative projectivization of the original sheaf. Its graph over the base is the
-closed section defined by the quotient on the pulled-back projective bundle.
+closed section defined by the quotient on the pulled-back projective bundle,
+and it pulls the tautological twist back to the quotient line bundle.
 We use the quotient convention of [Stacks, Section 27.21][stacks-01OA].
 
 [stacks-01OA]: https://stacks.math.columbia.edu/tag/01OA
@@ -48,6 +48,18 @@ def relativeProjHomOfQuotient : X ⟶ Sym[F].obj.relativeProj :=
 theorem relativeProjHomOfQuotient_toBase :
     E.relativeProjHomOfQuotient f q ≫ Sym[F].obj.relativeProjToBase = f := by
   simp [relativeProjHomOfQuotient]
+
+/-- The morphism defined by a line quotient pulls the degree-one twist back to
+that quotient line bundle. -/
+def relativeProjHomOfQuotientPullbackTwistingSheafOneIso :
+    (Scheme.Modules.pullback (E.relativeProjHomOfQuotient f q)).obj
+      (Sym[F].obj.relativeProjTwistingSheaf 1) ≅ E.obj.obj := by
+  rw [relativeProjHomOfQuotient]
+  let s := E.relativeProjSectionOfQuotient q
+  let p := F.relativeProjPullbackProjection f
+  exact (Scheme.Modules.pullbackComp s p).symm.app _ ≪≫
+    (Scheme.Modules.pullback s).mapIso (F.relativeProjPullbackProjectionTwistingSheafIso f 1) ≪≫
+    E.relativeProjSectionOfQuotientPullbackTwistingSheafOneIso q
 
 /-- Under the Cartesian comparison, the section defined by the line quotient is
 the graph of its morphism to the original projectivization. -/
