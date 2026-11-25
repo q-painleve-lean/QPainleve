@@ -79,28 +79,6 @@ def painleveCoordinateChange :
     FunctionField k (Fin 4 →₀ ℤ) ≃ₐ[k] FunctionField k (Fin 4 →₀ ℤ) :=
   IsFractionRing.algEquivOfAlgEquiv (AddMonoidAlgebra.domCongr k k painleveExponentEquiv.toAddEquiv)
 
-private theorem functionFieldMatrix_xCoordinate (e : (Fin 4 →₀ ℤ) ≃ₗ[ℤ] (Fin 4 →₀ ℤ))
-    (M : Matrix (Fin 4) (Fin 4) ℤ)
-    (h : e.toLinearMap = M.toLin Finsupp.basisSingleOne Finsupp.basisSingleOne) (i : Fin 4) :
-    (IsFractionRing.algEquivOfAlgEquiv (AddMonoidAlgebra.domCongr k k e.toAddEquiv) :
-      FunctionField k (Fin 4 →₀ ℤ) ≃ₐ[k] FunctionField k (Fin 4 →₀ ℤ)) (X[i]) =
-      ∏ j, X[j] ^ M j i := by
-  have he : e (Finsupp.single i 1) = Finsupp.equivFunOnFinite.symm (M.col i) := by
-    have hi : e (Finsupp.single i 1) =
-        M.toLin Finsupp.basisSingleOne Finsupp.basisSingleOne (Finsupp.single i 1) :=
-      LinearMap.congr_fun h _
-    rw [hi]
-    ext j
-    have hh := Matrix.repr_toLin Finsupp.basisSingleOne Finsupp.basisSingleOne M
-      (Finsupp.single i 1)
-    simpa only [Finsupp.basisSingleOne_repr, LinearEquiv.refl_apply,
-      Finsupp.single_eq_pi_single, Matrix.mulVec_single_one, Finsupp.coe_equivFunOnFinite_symm]
-      using congrFun hh j
-  have he' : e.toAddEquiv (Finsupp.single i 1) = Finsupp.equivFunOnFinite.symm (M.col i) := he
-  rw [xCoordinate_def, IsFractionRing.algEquivOfAlgEquiv_algebraMap,
-    AddMonoidAlgebra.domCongr_single, ← monomial_ofAdd, he', monomial_eq_prod_zpow_xCoordinate]
-  rfl
-
 /-- The pullback of the Painlevé coordinates in terms of the four X coordinates. -/
 @[simp]
 theorem painleveCoordinateChange_xCoordinate (i : Fin 4) :
