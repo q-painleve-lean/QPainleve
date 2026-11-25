@@ -31,7 +31,7 @@ open CategoryTheory MulOpposite Quiver
 namespace QPainleve.Cluster
 
 variable (k : Type*) [Field k] {ι : Type*} [DecidableEq ι] (B : SkewExchangeMatrix ι)
-variable [CharZero k] [Finite ι]
+variable [Finite ι]
 
 /-- The sign homomorphism is onto as soon as an odd loop exists. -/
 theorem signedInversionSign_surjective (hB : B.matrix ≠ 0) {w : Word B B}

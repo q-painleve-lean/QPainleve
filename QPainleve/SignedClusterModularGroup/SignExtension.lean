@@ -30,7 +30,7 @@ open QPainleve.Cluster QPainleve.SignedBoundaryIsometryGroup
 
 namespace QPainleve.SignedClusterModularGroup
 
-variable {k : Type*} [Field k] [CharZero k] {ι : Type*} [DecidableEq ι] [Finite ι]
+variable {k : Type*} [Field k] {ι : Type*} [DecidableEq ι] [Finite ι]
   {E : SkewExchangeMatrix ι} {L : Type*} [AddCommGroup L] {n : ℕ}
   {B : LinearMap.BilinForm ℤ L} {D : ZMod n → L}
 
@@ -103,7 +103,7 @@ theorem exists_signSplitting_of_picardEquivs
         map_mul, ← hinclusion, hsection]
     simpa only [e, er, MulEquiv.trans_apply, MulEquiv.inv'_apply, Function.comp_apply] using hm
 
-omit [CharZero k] [Finite ι] in
+omit [Finite ι] in
 /-- Under a sign-compatible Picard equivalence, a negative-sign involution is represented
 by an odd cluster word whose signed point map has order two. -/
 theorem exists_odd_word_of_picard_involution
