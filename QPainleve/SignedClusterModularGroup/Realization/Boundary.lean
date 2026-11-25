@@ -438,6 +438,21 @@ theorem coe_boundaryOrthogonalMarking_apply (hD : D[P].IsEffectiveCartier)
 end BoundaryImage
 
 variable {M} in
+/-- Picard pullback along an isomorphism of marked pairs takes the line-bundle
+class of the total target boundary to that of the total source boundary. -/
+theorem pullback_boundaryLineBundleClass (e : M.pair ≅ N.pair) :
+    LineBundleClass.pullback (surfaceIso e).hom classOf(N.isEffectiveCartier_boundaryIdeal) =
+      classOf(M.isEffectiveCartier_boundaryIdeal) := by
+  have hb := congrArg Scheme.Hom.ker (boundaryIso_hom_comp e)
+  rw [Scheme.Hom.ker_comp_of_isIso] at hb
+  have hker : D[N].comap (surfaceIso e).hom = D[M] := by
+    rw [hb, Scheme.Hom.comap_ker_comp_of_isClosedImmersion]
+  let hN := N.isEffectiveCartier_boundaryIdeal
+  let hc := hN.comap (surfaceIso e).hom
+  rw [LineBundleClass.pullback_inv, hN.pullback_mk_toInvertibleSheaf hc,
+    LineBundleClass.mk_toInvertibleSheaf_congr hc M.isEffectiveCartier_boundaryIdeal hker]
+
+variable {M} in
 /-- A marked pair isomorphism transports a Cartier boundary with nef class of
 self-intersection zero to a boundary with the same properties. -/
 theorem exists_nef_square_zero_boundary_of_pairIso
@@ -448,15 +463,9 @@ theorem exists_nef_square_zero_boundary_of_pairIso
       Chow.classIntersectionNumber k N.surface classOf(h') classOf(h') = 0 := by
   let e := surfaceIso f.symm
   let : e.hom.IsOver S := inferInstanceAs ((surfaceIso f.symm).hom.IsOver S)
-  have hker : D[M].comap e.hom = D[N] := by
-    have hb := congrArg Scheme.Hom.ker (boundaryIso_hom_comp f.symm)
-    rw [Scheme.Hom.ker_comp_of_isIso] at hb
-    rw [hb, Scheme.Hom.comap_ker_comp_of_isClosedImmersion]
-  have hc := h.comap e.hom
-  let h' : D[N].IsEffectiveCartier := hker ▸ hc
-  have hclass : LineBundleClass.pullback e.hom classOf(h) = classOf(h') := by
-    rw [LineBundleClass.pullback_inv, h.pullback_mk_toInvertibleSheaf hc,
-      LineBundleClass.mk_toInvertibleSheaf_congr hc h' hker]
+  let h' := N.isEffectiveCartier_boundaryIdeal
+  have hclass : LineBundleClass.pullback e.hom classOf(h) = classOf(h') :=
+    pullback_boundaryLineBundleClass f.symm
   let : SmoothOfRelativeDimension 2 (M.surface ↘ S) := M.smooth
   let : Smooth (M.surface ↘ S) := SmoothOfRelativeDimension.smooth 2 _
   let : M.surface.IsProjectiveOver k := M.projective
