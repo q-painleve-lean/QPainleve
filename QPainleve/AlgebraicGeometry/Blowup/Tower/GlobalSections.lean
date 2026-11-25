@@ -71,14 +71,11 @@ theorem nonempty_pushforwardExceptionalTwistIso
 
 /-- A line bundle whose total-transform exceptional coefficients are nonnegative has
 global sections linearly isomorphic to those of its base coordinate. -/
-theorem nonempty_cohomologyZeroLinearEquiv_picardHom
+theorem nonempty_cohomologyZeroLinearEquiv_picardHom [Y.Over S] [T.toBase.IsOver S]
     (hT : IsClosedPointTower X T) (L : InvertibleSheaf X) (b : Fin n → ℤ)
     (hb : ∀ j, 0 ≤ b j) (M : InvertibleSheaf Y)
     (hM : mk M = (T.picardHom (Additive.ofMul (mk L), b)).toMul) :
-    let : Y.Over S := ⟨T.toBase ≫ X ↘ S⟩
     Nonempty (Cohomology L.obj 0 ≃ₗ[k] Cohomology M.obj 0) := by
-  intro _
-  let : T.toBase.IsOver S := ⟨rfl⟩
   obtain ⟨e⟩ := hT.nonempty_pushforwardExceptionalTwistIso k L b hb M hM
   exact ⟨(cohomologyBaseLinearEquivOfIso k e 0).trans
     (T.toBase.cohomologyZeroPushforwardBaseLinearEquiv (R := k) M.obj)⟩

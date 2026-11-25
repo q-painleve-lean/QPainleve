@@ -7,13 +7,15 @@ module
 
 public import QPainleve.AlgebraicGeometry.Blowup.Canonical
 public import QPainleve.AlgebraicGeometry.Blowup.Tower.Point
-import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
+import QPainleve.AlgebraicGeometry.Blowup.Tower.Canonical
+import QPainleve.AlgebraicGeometry.Blowup.Tower.GlobalSections
 
 /-!
 # Pluricanonical sections under point blowups
 
-The comparison of pluricanonical sections for a single closed point blowup iterates along
-towers and identifies the spaces of sections on two smooth surfaces with a common resolution.
+Canonical powers have nonnegative total-transform exceptional coefficients, so the
+global-sections comparison for those coefficients also identifies the pluricanonical
+spaces on two smooth surfaces with a common resolution.
 
 The bicanonical case gives the space used in [Vakil, *Complex Algebraic Surfaces*, Class 16][Vakil].
 
@@ -33,30 +35,6 @@ variable {X Y Z : Scheme.{u}} {n d : ℕ} {T : BlowupTower X n Z}
   (k : Type u) [Field k] [PerfectField k] [X.Over (Spec (.of k))]
   [SmoothOfRelativeDimension 2 (X ↘ Spec (.of k))]
 
-private theorem nonempty_cohomologyZero_pluricanonicalLinearEquiv_of_comp
-    (hT : IsClosedPointTower X T) (m : ℕ) (g : Z ⟶ Spec (.of k))
-    (hg : g = T.toBase ≫ X ↘ Spec (.of k)) (hgSmooth : SmoothOfRelativeDimension 2 g) :
-    letI : Z.Over (Spec (.of k)) := ⟨g⟩
-    letI : SmoothOfRelativeDimension 2 (Z ↘ Spec (.of k)) := hgSmooth
-    Nonempty (Cohomology ((canonicalBundle k X 2).tensorPow m).obj 0 ≃ₗ[k]
-      Cohomology ((canonicalBundle k Z 2).tensorPow m).obj 0) := by
-  induction hT with
-  | nil =>
-    rw [toBase_nil, Category.id_comp] at hg
-    subst g
-    exact ⟨LinearEquiv.refl k _⟩
-  | @snoc _ W S I hS p hp hI ih =>
-    have hcenter := hI.trans (W.ker_fromSpecResidueField_eq_vanishingIdeal p)
-    clear hI
-    subst I
-    rw [toBase_snoc, Category.assoc] at hg
-    subst g
-    let : W.Over (Spec (.of k)) := ⟨S.toBase ≫ X ↘ Spec (.of k)⟩
-    have : SmoothOfRelativeDimension 2 (W ↘ Spec (.of k)) :=
-      hS.smoothOfRelativeDimension (X ↘ Spec (.of k))
-    obtain ⟨e⟩ := ih (W ↘ Spec (.of k)) rfl inferInstance
-    exact ⟨e.trans (Scheme.IdealSheafData.cohomologyZeroPluricanonicalLinearEquiv k hp m)⟩
-
 variable [Z.Over (Spec (.of k))]
 
 /-- A tower of closed point blowups of a smooth surface preserves each pluricanonical
@@ -65,9 +43,12 @@ theorem nonempty_cohomologyZero_pluricanonicalLinearEquiv
     [SmoothOfRelativeDimension 2 (Z ↘ Spec (.of k))]
     (hT : IsClosedPointTower X T) [T.toBase.IsOver (Spec (.of k))] (m : ℕ) :
     Nonempty (Cohomology ((canonicalBundle k X 2).tensorPow m).obj 0 ≃ₗ[k]
-      Cohomology ((canonicalBundle k Z 2).tensorPow m).obj 0) :=
-  nonempty_cohomologyZero_pluricanonicalLinearEquiv_of_comp k hT m (Z ↘ Spec (.of k))
-    (comp_over T.toBase (Spec (.of k))).symm inferInstance
+      Cohomology ((canonicalBundle k Z 2).tensorPow m).obj 0) := by
+  apply hT.nonempty_cohomologyZeroLinearEquiv_picardHom k _ (fun _ ↦ (m : ℤ))
+    (fun _ ↦ Int.natCast_nonneg m)
+  simp only [LineBundleClass.mk_tensorPow, hT.mk_canonicalBundle_picardHom k]
+  rw [← toMul_nsmul, ← map_nsmul, Prod.smul_mk, ← ofMul_pow]
+  simp only [Pi.smul_def, nsmul_eq_mul, mul_one]
 
 variable [Y.Over (Spec (.of k))] [SmoothOfRelativeDimension 2 (Y ↘ Spec (.of k))]
   {U : BlowupTower Y d Z}

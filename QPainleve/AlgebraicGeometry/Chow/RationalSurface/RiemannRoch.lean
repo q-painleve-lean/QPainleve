@@ -108,12 +108,8 @@ theorem subsingleton_cohomology_two_or_canonical_complement_of_isRationalOver
     rw [pullback_mk, mk_pullback_canonicalBundle]
   rcases subsingleton_cohomology_two_or_of_plane_marking k hU (g.obj M) (g.obj N) hN with h | h
   · exact Or.inl (hT.subsingleton_cohomology_two_of_pullback_tower_iso k e L h)
-  · have hM : LineBundleClass.mk M =
-        (T.picardHom (Additive.ofMul (LineBundleClass.mk L), 0)).toMul := by
-      rw [picardHom_apply_zero, toMul_ofMul, pullback_mk]
-    have hNmark := canonical_complement_picardHom k hT L 0 M hM
-    obtain ⟨eL⟩ := hT.nonempty_cohomologyTwoLinearEquiv_picardHom k (L† L) (fun _ ↦ 1)
-      (fun _ ↦ le_rfl) N (by simpa only [Pi.zero_apply, sub_zero] using hNmark)
+  · obtain ⟨eL⟩ := hT.nonempty_cohomologyTwoLinearEquiv_picardHom k (L† L) (fun _ ↦ 1)
+      (fun _ ↦ le_rfl) N (canonical_complement_picardHom k hT L)
     have : Subsingleton (Cohomology N.obj 2) := by
       change Subsingleton (Cohomology ((InvertibleSheaf.pullback e.hom).obj N).obj 2) at h
       rw [InvertibleSheaf.pullback_obj_obj] at h
