@@ -125,9 +125,7 @@ theorem exists_picardGroupEquivs_of_toric_presentation
   let : Module.Finite ℤ Pic := X.finite_picard_of_isRationalOver ℂ
   let a : L ≃ₗ[ℤ] Pic := (Module.finBasis ℤ Pic).equivFun.symm
   let H := (B).comp a.toLinearMap a.toLinearMap
-  let μ : H.IsometryEquiv B :=
-    { toLinearEquiv := a
-      map_app' := fun _ _ ↦ rfl }
+  let μ : H.IsometryEquiv B := ((B).isometryEquivOfCompLinearEquiv a).symm
   obtain ⟨b', Q, c, f, hframe, hrays, href⟩ :=
     exists_marked_reference_fiber_of_ordered_towers hΦ hc s u hT e hbase hker hD A μ
   let M₀ := MarkedSurface.ofBoundary D A μ f
