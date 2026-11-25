@@ -17,12 +17,6 @@ boundary class `δ` is primitive, nef and of square zero), the signed cluster mo
 its seed is isomorphic to the group of signed boundary isometries of `Pic(Y)`.
 
 The challenge is `QPainleveChallenge.Toric.nonempty_mulEquiv_signedBoundaryIsometryGroup`.
-Everything in this file is the specification that `lake comparator` takes on trust; it imports
-only Tau Ceti and Mathlib. A solution restates this file with the proof filled in.
-
-The file has four parts: the signed cluster modular group, the signed boundary isometries, the
-data of a toric presentation with its seed and Picard lattice, and two presentations that
-satisfy the hypotheses, with the challenge applied to them.
 -/
 
 noncomputable section
@@ -46,9 +40,9 @@ its inverse and the exchange matrix by its negative. Running a word from the see
 coordinates `y` at a matrix `B'`. When a relabelling `τ` carries `B'` back to `B`, the
 substitution `X i ↦ y (τ i)` is the pullback of the corresponding birational map. The signed
 cluster modular group is the monoid these substitutions generate under composition. Each
-generator is invertible, by the reversed word, so it is a group. Composition is pullback
-composition, the opposite of composition of point maps. A group is isomorphic to its opposite,
-so this makes no difference to statements that an isomorphism exists.
+generator is invertible, by the reversed word, so it is a group. Its multiplication is
+composition of pullbacks, so it is the opposite `Γ̃ᵒᵖ` of the group `Γ̃` of the birational maps
+under composition of point maps.
 
 ## Signed boundary isometries
 
@@ -155,10 +149,9 @@ The charge of the center `i` is `v i = u (ρ i)`, and the exchange matrix is
 ## The Picard lattice and the boundary
 
 Let `Ȳ` be the toric surface, `Ŷ` its blowup at the centers, and `Y` the result of the
-contractions. The classes below are those of the standard description of the Picard group of a
-smooth complete toric surface (Fulton, *Introduction to toric varieties*, §3.4) and the blowup
-formula; that this is the Picard lattice is the geometric meaning of the statement, not part of
-it.
+contractions. By the description of the Picard group of a smooth complete toric surface (Fulton,
+*Introduction to toric varieties*, §3.4) and the blowup formula, the lattices below are `Pic(Ŷ)`
+and `Pic(Y)` with their intersection forms.
 
 * `V = ℤ^{rays} ⊕ ℤ^{centers}`: `e j` is the toric boundary divisor `D̄ⱼ`, pulled back to `Ŷ`,
   and `f i` is the total transform of the exceptional curve of the center `i`.
@@ -166,15 +159,15 @@ it.
   not at all, `D̄ⱼ² = -bⱼ` with `u (j - 1) + u (j + 1) = bⱼ u j`, `fᵢ² = -1`, and `fᵢ` is
   orthogonal to everything else.
 * `Pic(Ŷ) = V / relations`, where `relations` is spanned by the divisors of the two coordinate
-  characters, `Σⱼ ⟨m, u j⟩ e j`. The form descends: this is the computation of `D̄ⱼ²` from
-  linear equivalence, checked in `relations_le_ker`.
+  characters, `Σⱼ ⟨m, u j⟩ e j`. The relations lie in the kernel of the form
+  (`relations_le_ker`), which is the identity `D̄ⱼ² = -bⱼ`.
 * The boundary components of `Ŷ` are `e j - Σ_{ρ i = j} f i`. Contracting a component of class
   `C` with `C² = -1` replaces every other class `A` by its pullback `A + (A · C) C`.
 * `Pic(Y)` is the sublattice of `Pic(Ŷ)` orthogonal to the contracted classes, and the boundary
   of `Y` consists of the remaining components, in counterclockwise order.
 
-The conditions on the data and the target-pair conditions are stated on `V` before the quotient,
-so that they are decidable for explicit data.
+The target-pair conditions are expressed through `form₀` on lifts to `V` of the classes in
+`Pic(Y)`.
 -/
 
 /-- The determinant of two vectors of `ℤ²`. -/
@@ -361,8 +354,9 @@ structure IsContraction (c : List (ZMod r)) : Prop where
 def delta (c : List (ZMod r)) : V (r := r) I :=
   ((remaining c).map (finalBoundary u ρ c)).sum
 
-/-- The target-pair conditions on `Y`: `δ` is primitive, nef and of square zero. Primitivity is
-stated as `δ · x = 1` for some `x`, which is equivalent since the lattice is unimodular. -/
+/-- The target-pair conditions on `Y`: `δ` is primitive, nef and of square zero. `Pic(Y)` is
+unimodular and `Pic(Ŷ)` is its orthogonal sum with the span of the contracted classes, so `δ` is
+primitive in `Pic(Y)` if and only if `δ · x = 1` for some `x` in `Pic(Ŷ)`. -/
 structure IsTargetPair (c : List (ZMod r)) : Prop where
   sq_delta : form₀ u I (delta u ρ c) (delta u ρ c) = 0
   nef : ∀ j ∈ remaining c, 0 ≤ form₀ u I (delta u ρ c) (finalBoundary u ρ c j)
@@ -428,9 +422,6 @@ theorem nonempty_mulEquiv_signedBoundaryIsometryGroup
 /-!
 ## Two presentations satisfying the hypotheses
 
-These show that the hypotheses of the challenge can be met, with and without contractions.
-The checks are kernel computations.
-
 * `FourVertex`: the `A₇⁽¹⁾′` seed. The fan of `ℙ¹ × ℙ¹` with its four torus-fixed points blown
   up, and one interior center on each of the four new components. No contraction; the boundary
   is a cycle of eight `(-2)`-curves.
@@ -483,9 +474,9 @@ theorem isTargetPair : IsTargetPair rays center contraction :=
 
 end OneComponent
 
-/-! ## The challenge for the two presentations, with no hypothesis left -/
+/-! ## The challenge for the two presentations -/
 
-/-- The challenge for the four-vertex seed, with no hypothesis left. -/
+/-- The challenge for the four-vertex seed. -/
 theorem FourVertex.nonempty_mulEquiv :
     Nonempty (SignedClusterModularGroup (exchangeMatrix FourVertex.rays FourVertex.center) ≃*
       signedBoundaryIsometryGroup (picForm FourVertex.rays FourVertex.center
@@ -494,7 +485,7 @@ theorem FourVertex.nonempty_mulEquiv :
           FourVertex.isContraction)) :=
   nonempty_mulEquiv_signedBoundaryIsometryGroup _ _ _ _ _ FourVertex.isTargetPair
 
-/-- The challenge for the one-component example, with no hypothesis left. -/
+/-- The challenge for the one-component example. -/
 theorem OneComponent.nonempty_mulEquiv :
     Nonempty (SignedClusterModularGroup (exchangeMatrix OneComponent.rays OneComponent.center) ≃*
       signedBoundaryIsometryGroup (picForm OneComponent.rays OneComponent.center
