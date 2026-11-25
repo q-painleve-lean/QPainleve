@@ -366,7 +366,7 @@ theorem exists_prepend_plane_vertex_blowup {Y : Scheme} {n : ℕ}
       let C := (Φ).hirzebruchPicardBasis b 1 hΦ r hr
       C.repr w.1 0 = degree v.1 ∧ C.repr w.1 1 = degree v.1 ∧ w.2 = v.2 := by
   intro A v
-  obtain ⟨q, _, tail, e, hTail, hq, hqp, hA, he, hcenters, hmark⟩ :=
+  obtain ⟨q, _, tail, e, hTail, hq, hqp, hA, he, hcenters, -, -, hmark⟩ :=
     hT.exists_prepend_closed_point_blowup (isClosed_projectivePlane_vertex d hi a) hp
   have hV : IsClosedPointTower P ((U₀).append tail) :=
     (IsClosedPointTower.nil.snoc p (isClosed_projectivePlane_vertex d hi a) rfl).append hTail
