@@ -57,10 +57,11 @@ variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {hmark : ∀ c j, (M c).boundaryClass (hD c) j = d j}
   {Q : CompleteToricPresentation i b r L γ}
 
-local instance : Nonempty Q.fan.cones := Q.complete.nonempty_cones
-local instance : PrestableFamily ((Q.fan.boundaryIdeal Q.complete.nonempty_cones).subscheme ↘ S) :=
+local instance instNonemptySurjectivityCones : Nonempty Q.fan.cones := Q.complete.nonempty_cones
+local instance instPrestableSurjectivityBoundary :
+    PrestableFamily ((Q.fan.boundaryIdeal Q.complete.nonempty_cones).subscheme ↘ S) :=
   Q.prestable
-local instance : NeZero Q.length := Q.neZero
+local instance instNeZeroSurjectivityBoundaryLength : NeZero Q.length := Q.neZero
 
 local notation "Model[" c "]" =>
   ContractedToricFiber b Q.rays Q.regular Q.cycle Q.origin Q.inclusion χ[c] (M c)
