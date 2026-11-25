@@ -10,7 +10,7 @@ public import QPainleve.SignedClusterModularGroup.Boundary.Restriction
 public import QPainleve.SignedClusterModularGroup.Realization.Boundary
 public import QPainleve.SignedClusterModularGroup.Realization.Presentation
 
-import QPainleve.SignedClusterModularGroup.Realization.Endpoint.MonomialImage
+import QPainleve.SignedClusterModularGroup.Realization.Presentation.Casimir
 import QPainleve.SignedClusterModularGroup.Realization.Relations.Casimir
 
 /-!
@@ -66,19 +66,19 @@ theorem exists_picardEquiv_with_faithful_exchangeKernelAction :
       (∀ g, act g = LinearEquiv.autCongr e (signedOrthogonalRestriction B D (Θ g)).val) ∧
       Function.Injective act ∧
         ∀ g : Γ, Θ g = centralSign B D (by decide) ↔ ∀ x, act g x = -x := by
-  let P : ChargeSeed E N :=
-    ⟨b.detDualEquiv.toLinearMap, Fan.rayChargeMap Q.rays, b.detDualEquiv_self, hE.symm⟩
-  obtain ⟨Θ, e, he, hCasimir, -, -, -, -, hcentral, -⟩ :=
-    GeometricRealization.exists_exchangeKernelAction_reflection_of_presentation
-      Q P rfl rfl href M.isEffectiveCartier_boundaryIdeal hprim hnef hsq
+  obtain ⟨A⟩ := Q.nonempty_casimirActionComparison_of_nodal_model href hE hprim hnef hsq
+  have hcentral := GeometricRealization.exchangeKernelAction_picardEquiv_symm_centralSign
+    A.exchangeKernelAction_eq (by decide : 1 ≤ 2)
   have hinj := Q.exchangeKernelAction_injective_of_squarefree href hE hprim hnef hsq squarefree_one
-  refine ⟨Θ, e, he, fun g ↦ DFunLike.congr_fun hCasimir g, hinj, fun g ↦ ⟨?_, ?_⟩⟩
+  refine ⟨A.picardEquiv, A.exchangeKernelEquiv,
+    fun x ↦ neg_eq_iff_eq_neg.mp (A.coe_exchangeKernelEquiv_apply x).symm,
+    A.exchangeKernelAction_apply, hinj, fun g ↦ ⟨?_, ?_⟩⟩
   · intro hg x
-    rw [← Θ.symm_apply_apply g, hg]
-    exact hcentral (by decide) x
+    rw [← A.picardEquiv.symm_apply_apply g, hg]
+    exact hcentral x
   · intro hg
-    have he : act g = act (Θ.symm (centralSign B D (by decide))) :=
-      LinearEquiv.ext fun x ↦ (hg x).trans (hcentral (by decide) x).symm
-    rw [hinj he, Θ.apply_symm_apply]
+    have he : act g = act (A.picardEquiv.symm (centralSign B D (by decide))) :=
+      LinearEquiv.ext fun x ↦ (hg x).trans (hcentral x).symm
+    rw [hinj he, A.picardEquiv.apply_symm_apply]
 
 end QPainleve.SignedClusterModularGroup.CompleteToricPresentation

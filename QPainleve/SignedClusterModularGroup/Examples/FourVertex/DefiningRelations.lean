@@ -88,7 +88,9 @@ private theorem point_eq_one_of_actions (w : Word B B)
     LinearEquiv.ext fun x ↦ by
       obtain ⟨y, rfl⟩ := exchangeKernelEquiv.surjective x
       simpa only [Path.exchangeKernelEquiv_nil, LinearEquiv.refl_apply] using hKernel y
-  simp only [Path.signedLoopInvariants_def, Prod.mk.injEq, Path.inversionCount_nil,
+  simp only [SignedLoopInvariants.ext_iff, Path.signedLoopInvariants_sign,
+    Path.signedLoopInvariants_kernelColumns, Path.signedLoopInvariants_boundaryLabel,
+    Path.inversionCount_nil,
     hSign.neg_one_pow, pow_zero, ← Path.coe_exchangeKernelEquiv_apply, hK, true_and,
     ← Equiv.toFun_as_coe, hBoundary, Paths.lift_nil, SingleObj.id_as_one, Equiv.Perm.one_apply]
   rfl
@@ -328,10 +330,10 @@ def unsignedPresentationMulEquiv : PresentedGroup unsignedRelators ≃* Γ := by
         · exact Subgroup.mem_sup_right (Subgroup.mem_zpowers tu)) g
     obtain ⟨hp, hpt, hppt⟩ := unsignedPresentedGroup_relations
     exact rotationTranslation_normal_form hp hpt hppt hg
-  have hf : Function.Bijective (f ∘ collect) := by
-    rw [Function.bijective_iff_existsUnique]
-    intro g
-    simpa [f, collect, unsignedGenerators] using existsUnique_unsigned_normal_form g
+  have hcomp : f ∘ collect = unsignedNormalFormEquiv := by
+    funext a
+    simp [f, collect, unsignedGenerators]
+  have hf := hcomp ▸ unsignedNormalFormEquiv.bijective
   exact MulEquiv.ofBijective f ⟨hf.injective.of_comp_right hcollect, hf.surjective.of_comp⟩
 
 /-- The signed group of independent X maps is presented by the rotation, translation,
@@ -349,10 +351,10 @@ def signedPresentationMulEquiv : PresentedGroup signedRelators ≃* Γs := by
         · exact Subgroup.mem_sup_right (Subgroup.mem_zpowers ss)) g
     obtain ⟨hp, hpt, hppt, hs, hsp, hspt⟩ := signedPresentedGroup_relations
     exact rotationTranslationReflection_normal_form hp hpt hppt hs hsp hspt hg
-  have hf : Function.Bijective (f ∘ collect) := by
-    rw [Function.bijective_iff_existsUnique]
-    intro g
-    simpa [f, collect, signedGenerators, point] using existsUnique_signed_normal_form g
+  have hcomp : f ∘ collect = signedNormalFormEquiv := by
+    funext a
+    simp [f, collect, signedGenerators, point]
+  have hf := hcomp ▸ signedNormalFormEquiv.bijective
   exact MulEquiv.ofBijective f ⟨hf.injective.of_comp_right hcollect, hf.surjective.of_comp⟩
 
 /-- The unsigned presentation evaluates its generators as the rotation and translation. -/

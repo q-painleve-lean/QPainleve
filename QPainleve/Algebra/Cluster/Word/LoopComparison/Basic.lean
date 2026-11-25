@@ -6,7 +6,7 @@ Authors: The QPainleve contributors
 module
 
 public import QPainleve.Algebra.Cluster.Word.Relations
-public import QPainleve.LinearAlgebra.Matrix.Kernel
+public import QPainleve.LinearAlgebra.Matrix.Kernel.Basic
 
 /-!
 # Integer comparison of typed signed loops
@@ -36,5 +36,18 @@ theorem compareSignedLoops_eq_true_iff (orders : Fin n → Fin r → ℤ) (w v :
       w.signedLoopInvariants B.matrix.intKernelBasisVectors.2 orders (orders 0) =
         v.signedLoopInvariants B.matrix.intKernelBasisVectors.2 orders (orders 0) := by
   simp [compareSignedLoops]
+
+/-- A relation criterion on integral kernel bases certifies the Boolean comparison, which
+uses the basis computed from the exchange matrix. -/
+theorem compareSignedLoops_eq_true_iff_xPullback_eq (k : Type*) [Field k]
+    (orders : Fin n → Fin r → ℤ) (w v : Word B B)
+    (criterion : ∀ {d : ℕ} (β : Module.Basis (Fin d) ℤ B.matrix.mulVecLin.ker),
+      w.xPullback k = v.xPullback k ↔
+        w.signedLoopInvariants (fun j ↦ (β j : Fin r → ℤ)) orders (orders 0) =
+          v.signedLoopInvariants (fun j ↦ (β j : Fin r → ℤ)) orders (orders 0)) :
+    B.compareSignedLoops orders w v = true ↔ w.xPullback k = v.xPullback k := by
+  obtain ⟨β, hβ⟩ := B.matrix.exists_basis_eq_intKernelBasisVectors
+  rw [compareSignedLoops_eq_true_iff, ← hβ]
+  exact (criterion β).symm
 
 end QPainleve.Cluster.SkewExchangeMatrix

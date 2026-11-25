@@ -104,11 +104,10 @@ theorem compareSignedLoopsOfRayCoordinates_eq_true_iff
         (Fan.rayChargeMap Q.rays)
   have hord := p₀.boundaryOrderTable_eq (Φ := Q.fan) cartier[M₀] survivors hcard hkeep
     (ray ∘ centerRay) ray hcharge (fun j hj ↦ hray j (Or.inl hj))
-  obtain ⟨β, hβ⟩ := (seed[ray,centerRay]).matrix.exists_basis_eq_intKernelBasisVectors
-  simp only [compareSignedLoopsOfRayCoordinates, SkewExchangeMatrix.compareSignedLoops_eq_true_iff,
-    hord, ← hβ]
-  exact (Q.xPullback_eq_iff_signedLoopInvariants_eq_of_nodal_contraction k p₀ hnodal₀ hE
-    hprim hnef hsq w v β).symm
+  rw [compareSignedLoopsOfRayCoordinates, hord]
+  exact (seed[ray,centerRay]).compareSignedLoops_eq_true_iff_xPullback_eq k _ w v
+    (fun β ↦ Q.xPullback_eq_iff_signedLoopInvariants_eq_of_nodal_contraction k p₀ hnodal₀ hE
+      hprim hnef hsq w v β)
 
 /-- Decide equality of signed-loop pullbacks by integer computation on the supplied ray table.
 The reference contraction and its certificates justify the answer. -/

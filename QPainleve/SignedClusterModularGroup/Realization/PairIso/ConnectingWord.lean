@@ -36,10 +36,6 @@ local notation "S" => Spec (CommRingCat.of ℂ)
 local notation "Centers[" r "]" => Over.mk (structureMap ℂ (Fin r → ℤ))
 local notation "XTor[" r "]" => scheme ℂ (Fin r →₀ ℤ)
 local notation "D[" M "]" => Scheme.Hom.ker (Over.Hom.left (Arrow.hom (MarkedSurface.pair M)))
-local notation "ε[" b "," Q "]" => SkewExchangeMatrix.ofMatrix
-  (chargeExchangeMatrix (LinearEquiv.toLinearMap (Basis.detDualEquiv b))
-    (Fan.rayChargeMap (CompleteToricPresentation.rays Q)))
-  (isSkewSymmetrizer_chargeExchangeMatrix _ (Basis.detDualEquiv_self b) _)
 
 variable {N₀ V₀ N₁ V₁ : Type} [AddCommGroup N₀] [AddCommGroup V₀] [Module ℝ V₀]
   [AddCommGroup N₁] [AddCommGroup V₁] [Module ℝ V₁] {i₀ : N₀ →+ V₀} {i₁ : N₁ →+ V₁}
@@ -59,7 +55,7 @@ theorem exists_connecting_word_of_pair_iso
     (h₀ : Q₀.HasNodalModel c₀ M₀) (h₁ : Q₁.HasNodalModel c₁ M₁)
     (e : M₀.pair ≅ M₁.pair) (hD₀ : D[M₀].IsEffectiveCartier) (hD₁ : D[M₁].IsEffectiveCartier) :
     letI : IsIntegral M₀.surface := M₀.integral
-    ∃ w : Word ε[b₀,Q₀] ε[b₁,Q₁],
+    ∃ w : Word (Fan.rayExchangeMatrix b₀ Q₀.rays) (Fan.rayExchangeMatrix b₁ Q₁.rays),
       ∃ h, M₀.evaluation.compOfDefined (w.xRationalMap ℂ) h =
         (MarkedSurface.surfaceIso e).hom.toRationalMap.comp M₁.evaluation := by
   let : IsIntegral M₀.surface := M₀.integral
@@ -92,13 +88,12 @@ theorem exists_connecting_word_of_pair_iso
     simp only [← RationalMap.comp_assoc, RationalMap.comp_toRationalMap, Hom.toRationalMap_compHom]
   rw [he] at hw
   have hw' := (T.toBase.toRationalMap.compOfDefined_eq_iff_of_dominant _ _ _).mp hw
-  have hm₀' : U.exchangeMatrix = ε[b₀,Q₀] :=
-    SkewExchangeMatrix.ext (hm₀.trans (SkewExchangeMatrix.matrix_ofMatrix _ _).symm)
-  have hm₁' : U'.exchangeMatrix = ε[b₁,Q₁] :=
-    hmatrix.trans (SkewExchangeMatrix.ext (hm₁.trans
-      (SkewExchangeMatrix.matrix_ofMatrix _ _).symm))
-  generalize ε[b₀,Q₀] = E₀ at hm₀' ⊢
-  generalize ε[b₁,Q₁] = E₁ at hm₁' ⊢
+  have hm₀' : U.exchangeMatrix = Fan.rayExchangeMatrix b₀ Q₀.rays :=
+    SkewExchangeMatrix.ext (hm₀.trans (Fan.rayExchangeMatrix_matrix _ _).symm)
+  have hm₁' : U'.exchangeMatrix = Fan.rayExchangeMatrix b₁ Q₁.rays :=
+    hmatrix.trans (SkewExchangeMatrix.ext (hm₁.trans (Fan.rayExchangeMatrix_matrix _ _).symm))
+  generalize Fan.rayExchangeMatrix b₀ Q₀.rays = E₀ at hm₀' ⊢
+  generalize Fan.rayExchangeMatrix b₁ Q₁.rays = E₁ at hm₁' ⊢
   subst E₀ E₁
   exact ⟨w, hw'⟩
 

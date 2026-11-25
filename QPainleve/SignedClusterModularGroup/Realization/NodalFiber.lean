@@ -9,6 +9,7 @@ public import QPainleve.SignedClusterModularGroup.Realization.MarkedComparison
 public import QPainleve.SignedClusterModularGroup.Realization.Presentation
 
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Modification
+import QPainleve.Geometry.Toric.Fan.ExchangeMatrix
 import QPainleve.Geometry.Toric.Fan.Presentation.Genus
 import QPainleve.Geometry.Toric.Fan.Rationality
 import QPainleve.SignedClusterModularGroup.Realization.Anticanonical
@@ -102,11 +103,11 @@ theorem HasNodalModel.exchangeMatrix_ne_zero (h : Q.HasNodalModel c M)
     (hsq : Chow.classIntersectionNumber ℂ M.surface δ δ = 0) :
     E.matrix ≠ 0 := by
   let : IsRationalOver (M.surface ↘ S) := h.isRationalOver
-  let P : ChargeSeed E N :=
-    ⟨b.detDualEquiv.toLinearMap, Fan.rayChargeMap Q.rays, b.detDualEquiv_self, hE.symm⟩
+  let P := Fan.rayChargeSeed b Q.rays hE
   have hindex := Q.chargeIndex_ne_zero_of_anticanonical_cycle (M := fun _ ↦ M)
     h cartier hnef hsq (congrArg Inv.inv (h.canonicalClass cartier)) hprim
-  exact Q.exchangeMatrix_ne_zero_of_chargeIndex_ne_zero P rfl rfl hindex
+  exact Q.exchangeMatrix_ne_zero_of_chargeIndex_ne_zero P
+    (Fan.rayChargeSeed_form _ _ _) (Fan.rayChargeSeed_charge _ _ _) hindex
 
 variable {Q} in
 /-- With Cartier boundary, an ordered nodal model gives a nodal contraction,

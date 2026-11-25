@@ -37,24 +37,27 @@ universe u
 
 namespace TauCeti.AlgebraicGeometry.Chow
 
-variable (k : Type u) [Field k] [Infinite k] {X : Scheme.{u}}
-  [X.Over (Spec (.of k))] [X.IsProjectiveOver k] [IsIntegral X] [IsNoetherian X]
+variable (k : Type u) [Field k] {X : Scheme.{u}}
+  [X.Over (Spec (.of k))] [IsIntegral X] [IsNoetherian X]
   [∀ x : X, UniqueFactorizationMonoid (X.presheaf.stalk x)]
 
 local notation "cl" => Scheme.CartierDivisor.weilToLineBundleClassHom X
 local notation "primeClass" => (LineBundleClass.primeDivisorClass (X := X))
 
+variable [Infinite k] [X.IsProjectiveOver k]
+
 private theorem intersection_mulVec_eq_zero (hX : topologicalKrullDim X = 2)
     (D E : SchemeWeilDivisor X) (hED : E.support ⊆ D.support)
     (hE : ∀ p ∈ D.support, classIntersectionNumber k X (cl E).toMul (primeClass p) = 0) :
-    (fun p q : D.support ↦ (classIntersectionNumber k X (primeClass p) (primeClass q) : ℚ)) *ᵥ
-      (fun p : D.support ↦ (E p : ℚ)) = 0 := by
+    primeIntersectionMatrix k (Subtype.val : D.support → CodimensionOnePoint X) *ᵥ
+      (fun p : D.support ↦ E p) = 0 := by
   funext p
   have hp := hE p p.property
   rw [classIntersectionNumber_comm, classIntersectionNumber_weilToLineBundleClassHom k hX,
     Finsupp.sum, Finset.sum_subset hED (fun q _ hq ↦ by simp [Finsupp.notMem_support_iff.mp hq]),
     ← Finset.sum_coe_sort] at hp
-  simpa [Matrix.mulVec, dotProduct, mul_comm] using congrArg (Int.castRingHom ℚ) hp
+  simpa only [Matrix.mulVec, dotProduct, Pi.zero_apply, primeIntersectionMatrix_apply, mul_comm]
+    using hp
 
 private theorem intersection_connected (hX : topologicalKrullDim X = 2)
     (D : SchemeWeilDivisor X) (hD : 0 ≤ D)
@@ -86,6 +89,41 @@ private theorem intersection_connected (hX : topologicalKrullDim X = 2)
   · have hne : (a : CodimensionOnePoint X) ≠ b := fun h' ↦ h (Subtype.ext h')
     exact .single ⟨h, (classIntersectionNumber_primeDivisorClass_pos_iff k hX.le hne).mpr hab⟩
 
+private theorem exists_rat_smul_of_intersection_mulVec_eq_zero
+    (hX : topologicalKrullDim X = 2) {D : SchemeWeilDivisor X}
+    (hD : 0 ≤ D) (hconnected : IsPreconnected ((D.idealSheaf hD).support : Set X))
+    (hnef : LineBundleClass.IsNef k (X ↘ Spec (.of k)) (cl D).toMul)
+    (hzero : classIntersectionNumber k X (cl D).toMul (cl D).toMul = 0)
+    {w : D.support → ℤ}
+    (hw : primeIntersectionMatrix k (Subtype.val : D.support → CodimensionOnePoint X) *ᵥ w = 0) :
+    ∃ c : ℚ, ∀ p : D.support, (w p : ℚ) = c * D p := by
+  let B := primeIntersectionMatrix k (Subtype.val : D.support → CodimensionOnePoint X)
+  let A := B.map (Int.castRingHom ℚ)
+  have hsymm : A.IsSymm := by
+    ext a b
+    simp only [transpose_apply, map_apply, A, B, primeIntersectionMatrix_apply,
+      classIntersectionNumber_comm (k := k) (primeClass (b : CodimensionOnePoint X))]
+  have hnonneg (a b : D.support) (hab : a ≠ b) : 0 ≤ A a b :=
+    Int.cast_nonneg (by
+      simpa only [B, primeIntersectionMatrix_apply] using
+        classIntersectionNumber_primeDivisorClass_nonneg_of_ne k hX (fun h ↦ hab (Subtype.ext h)))
+  have hconn (a b : D.support) : Relation.ReflTransGen (fun i j ↦ i ≠ j ∧ 0 < A i j) a b :=
+    (intersection_connected k hX D hD hconnected a b).lift id fun _ _ h ↦
+      ⟨h.1, Int.cast_pos.mpr (by simpa only [id_eq, B, primeIntersectionMatrix_apply] using h.2)⟩
+  have hm (p : D.support) : 0 < (D p : ℚ) :=
+    Int.cast_pos.mpr ((hD p).lt_of_ne (Finsupp.mem_support_iff.mp p.property).symm)
+  have hcast {v : D.support → ℤ} (hv : B *ᵥ v = 0) :
+      A *ᵥ (fun p ↦ (v p : ℚ)) = 0 := by
+    funext p
+    have he := (Int.castRingHom ℚ).map_mulVec B v p
+    rw [hv, Pi.zero_apply, map_zero] at he
+    exact he.symm
+  have hBm := intersection_mulVec_eq_zero k hX D D subset_rfl
+    ((classIntersectionNumber_weilToLineBundleClassHom_self_eq_zero_iff k hX hD hnef).mp hzero)
+  obtain ⟨c, hc⟩ := (Matrix.dotProduct_mulVec_eq_zero_iff_of_mulVec_eq_zero
+    hsymm hnonneg hconn hm (hcast hBm) _).mp (by rw [hcast hw, dotProduct_zero])
+  exact ⟨c, congrFun hc⟩
+
 /-- Let `D` be a nef effective divisor of square zero with preconnected support.
 Any Weil divisor `E` supported on `D` that is orthogonal to its prime components
 has coefficient vector proportional to that of `D`. The cross-product identity
@@ -107,32 +145,52 @@ theorem mul_coeff_eq_mul_coeff_of_orthogonal_of_nef_square_zero
   case neg =>
     have hqE : q ∉ E.support := fun h ↦ hq (hED h)
     simp [Finsupp.notMem_support_iff.mp hq, Finsupp.notMem_support_iff.mp hqE]
-  let A : Matrix D.support D.support ℚ :=
-    fun a b ↦ classIntersectionNumber k X (primeClass a) (primeClass b)
-  let m (a : D.support) : ℚ := D a
-  let w (a : D.support) : ℚ := E a
-  have hsymm : A.IsSymm := by
-    ext a b
-    rw [transpose_apply]
-    exact congrArg (fun z : ℤ ↦ (z : ℚ))
-      (classIntersectionNumber_comm (k := k) (primeClass b) (primeClass a))
-  have hnonneg (a b : D.support) (hab : a ≠ b) : 0 ≤ A a b := by
-    exact Int.cast_nonneg
-      (classIntersectionNumber_primeDivisorClass_nonneg_of_ne k hX (fun h ↦ hab (Subtype.ext h)))
-  have hconn (a b : D.support) : Relation.ReflTransGen (fun i j ↦ i ≠ j ∧ 0 < A i j) a b :=
-    (intersection_connected k hX D hD hconnected a b).lift id fun _ _ h ↦
-      ⟨h.1, by simpa only [A, id_eq, Int.cast_pos] using h.2⟩
-  have hm (a : D.support) : 0 < m a := by
-    have hnonneg : 0 ≤ D a := hD a
-    exact Int.cast_pos.mpr (hnonneg.lt_of_ne (Finsupp.mem_support_iff.mp a.property).symm)
-  have hAm : A *ᵥ m = 0 := intersection_mulVec_eq_zero k hX D D subset_rfl
-    ((classIntersectionNumber_weilToLineBundleClassHom_self_eq_zero_iff k hX hD hnef).mp hzero)
-  have hAw : A *ᵥ w = 0 := intersection_mulVec_eq_zero k hX D E hED hE
-  obtain ⟨c, hc⟩ := (Matrix.dotProduct_mulVec_eq_zero_iff_of_mulVec_eq_zero
-    hsymm hnonneg hconn hm hAm w).mp (by rw [hAw, dotProduct_zero])
-  have hp' : (E p : ℚ) = c * D p := congrFun hc ⟨p, hp⟩
-  have hq' : (E q : ℚ) = c * D q := congrFun hc ⟨q, hq⟩
-  exact_mod_cast (show (D p : ℚ) * E q = (E p : ℚ) * D q by rw [hp', hq']; ring)
+  obtain ⟨c, hc⟩ := exists_rat_smul_of_intersection_mulVec_eq_zero k hX hD hconnected hnef hzero
+    (intersection_mulVec_eq_zero k hX D E hED hE)
+  have hp' := hc ⟨p, hp⟩
+  have hq' := hc ⟨q, hq⟩
+  exact_mod_cast (show (D p : ℚ) * E q = (E p : ℚ) * D q by
+    rw [show (E p : ℚ) = c * D p from hp', show (E q : ℚ) = c * D q from hq']
+    ring)
+
+/-- In any numbering of the prime components of a connected effective nef divisor
+of square zero, its coefficient vector generates the full integral kernel of the
+intersection matrix when some component has multiplicity one. -/
+theorem ker_primeIntersectionMatrix_eq_span_of_nef_square_zero
+    (hX : topologicalKrullDim X = 2) {D : SchemeWeilDivisor X}
+    (hD : 0 ≤ D) (hconnected : IsPreconnected ((D.idealSheaf hD).support : Set X))
+    (hnef : LineBundleClass.IsNef k (X ↘ Spec (.of k)) (cl D).toMul)
+    (hzero : classIntersectionNumber k X (cl D).toMul (cl D).toMul = 0)
+    {ι : Type*} [Fintype ι] (e : ι ≃ D.support) (p : D.support) (hp : D p = 1) :
+    (primeIntersectionMatrix k (Subtype.val ∘ e)).mulVecLin.ker =
+      Submodule.span ℤ {fun i ↦ D (e i)} := by
+  let B := primeIntersectionMatrix k (Subtype.val : D.support → CodimensionOnePoint X)
+  have hB : primeIntersectionMatrix k (Subtype.val ∘ e) = B.submatrix e e := by
+    ext i j
+    simp [B]
+  have hmul (w : ι → ℤ) :
+      (primeIntersectionMatrix k (Subtype.val ∘ e)) *ᵥ w = 0 ↔ (B *ᵥ (w ∘ e.symm)) = 0 := by
+    rw [hB, Matrix.submatrix_mulVec_equiv]
+    exact ⟨fun h ↦ funext fun i ↦ by simpa using congrFun h (e.symm i),
+      fun h ↦ by rw [h]; rfl⟩
+  ext w
+  rw [LinearMap.mem_ker, Matrix.mulVecLin_apply, hmul, Submodule.mem_span_singleton]
+  constructor
+  · intro hw
+    obtain ⟨c, hc⟩ :=
+      exists_rat_smul_of_intersection_mulVec_eq_zero k hX hD hconnected hnef hzero hw
+    have hcp : (w (e.symm p) : ℚ) = c := by simpa [hp] using hc p
+    refine ⟨w (e.symm p), funext fun i ↦ ?_⟩
+    exact_mod_cast (show (w (e.symm p) : ℚ) * D (e i) = w i by
+      rw [hcp]
+      simpa using (hc (e i)).symm)
+  · rintro ⟨a, rfl⟩
+    have hv : (a • (fun i ↦ D (e i))) ∘ e.symm = a • (fun i : D.support ↦ D i) := by
+      funext i
+      simp
+    rw [hv, mulVec_smul, intersection_mulVec_eq_zero k hX D D subset_rfl
+      ((classIntersectionNumber_weilToLineBundleClassHom_self_eq_zero_iff k hX hD hnef).mp hzero),
+      smul_zero]
 
 /-- Two effective nef Weil divisors of square zero with the same preconnected support
 are equal if each has a prime component of multiplicity one. The two components
