@@ -12,9 +12,6 @@ public import QPainleve.Geometry.Toric.Fan.Picard.Hirzebruch
 public import QPainleve.Geometry.Toric.Fan.Ruling.Hirzebruch
 
 import QPainleve.AlgebraicGeometry.Modules.Differentials.PoleIdeal
-import QPainleve.Geometry.Toric.Fan.Boundary.Component
-import QPainleve.Geometry.Toric.Fan.Boundary.RayPoint
-import QPainleve.Geometry.Toric.Fan.Hirzebruch.CoordinateBoundary
 import QPainleve.Geometry.Toric.Fan.Logarithmic.Factorization.Iso
 import QPainleve.Geometry.Toric.Fan.Subdivision.Projective
 import QPainleve.SignedClusterModularGroup.SarkisovDegree.ResolvedSection
@@ -47,7 +44,6 @@ local notation "rankTwo[" b "]" => Eq.trans (finrank_eq_card_basis b) (Fintype.c
 local notation "point" => (IsLocalRing.closedPoint ℂ : S)
 local notation "coordPoint[" t "]" =>
   projectiveLine.polynomialPoint ℂ (RingHom.id ℂ) t 0 point
-local notation "fiberRay[" r "," t "]" => r ((![1, 3] : Fin 2 → Fin 4) t)
 local notation "center[" b "," ρ "," c "]" =>
   Fan.Ray.binomialCenter ρ rankTwo[b] (Basis.detDualEquiv_self b (Fan.Ray.primitiveGenerator ρ))
     (Fan.Ray.surjective_detCharacter ρ b) c point
@@ -148,7 +144,7 @@ theorem exists_sarkisov_path_of_marked_positive_section_smooth_center
   simp only [hsign, Bool.false_eq_true, ite_false, Nat.cast_add, Nat.cast_one,
     add_sub_cancel_right, Int.natAbs_natCast, Int.natCast_nonneg, true_implies, add_zero] at hlink
   obtain ⟨_, Z, U, hU, k, d, t, ht, hg', hbir', _, ⟨L, R, p, hL, hLhom, hR, hRhom, -, -⟩,
-    htEq, hopen, hcorner, hsection, hcoef, hdegree, horders, -⟩ := hlink
+    htEq, -, -, hsection, hRuling, hcoef, hdegree, horders, -⟩ := hlink
   -- Return the path to the original common surface and identify its initial projection.
   have hDE : E.comap u.hom = D := by
     simp only [E, ← comap_comp, Iso.hom_inv_id, Scheme.IdealSheafData.comap_id]
@@ -189,30 +185,8 @@ theorem exists_sarkisov_path_of_marked_positive_section_smooth_center
   have hfirstRetained : ∀ m < j.succAbove (l a),
       hT.baseCenter m ≠ hT.baseCenter (j.succAbove (l a)) := by
     simpa only [hl] using hfirstMark
-  have hfiber := (A.fan.mem_support_rayBoundaryIdeal_hirzebruch_coordinateFiber_iff
-    b (e + 1 : ℕ) A.isRegular r hr (fiber a) (hT.baseCenter (mark a))).mpr hvalue
-  -- Carry the marked point as either an open-orbit point or a corner of its invariant fiber.
-  have hretained : (∀ m < (l a).natAdd 1, hU.baseCenter m ≠ hU.baseCenter ((l a).natAdd 1)) ∧
-      ruling[C,d,e,t,ht] (hU.baseCenter ((l a).natAdd 1)) = coordPoint[fiber a] := by
-    have htargetValue := C.fan.mem_support_rayBoundaryIdeal_hirzebruch_coordinateFiber_iff
-      d e C.isRegular t ht (fiber a) (hU.baseCenter ((l a).natAdd 1))
-    rcases (A.fan.mem_support_rayBoundaryIdeal_iff b A.isRegular A.isComplete
-      (fiberRay[r,fiber a]) (hT.isClosed_baseCenter (mark a))).mp hfiber with
-      ⟨v, hv⟩ | ⟨σ, hσ, hle, hv⟩
-    · obtain ⟨w, hw, hfirst'⟩ := hopen (fiber a) v (l a) (by simpa only [hl] using hv)
-      refine ⟨hfirst' hfirstRetained, htargetValue.mp ?_⟩
-      rw [hw]
-      exact ((fiberRay[t,fiber a]).binomialCenter_mem_support_rayBoundaryIdeal_iff
-        C.isRegular rankTwo[d] (d.detDualEquiv_self _)
-        ((fiberRay[t,fiber a]).surjective_detCharacter d) w (fiberRay[t,fiber a])).mpr rfl
-    · obtain ⟨-, hw, hrays, hfirst'⟩ :=
-        hcorner σ (l a) hσ (by simpa only [hl] using hv)
-      refine ⟨hfirst' hfirstRetained, htargetValue.mp ?_⟩
-      have hρ := congrArg (fun s : Fin 4 ≃ C.fan.Ray ↦ fiberRay[s,fiber a]) htEq
-      rw [hw, hρ]
-      exact (C.fan.distinguishedPoint_mem_support_rayBoundaryIdeal_iff C.isRegular _ _).mpr
-        ((hrays (fiberRay[r,fiber a])).mpr hle)
-  refine ⟨⟨l a, hl a, rfl⟩, hretained.1, hretained.2, ?_, ?_⟩
+  obtain ⟨hvalue', hfirst'⟩ := hRuling (l a) (fiber a) (by simpa only [hl] using hvalue)
+  refine ⟨⟨l a, hl a, rfl⟩, hfirst' hfirstRetained, hvalue', ?_, ?_⟩
   · simpa only [hsec, ← Fin.natAddEmb_apply, Finset.mem_map', Finset.mem_filter, Finset.mem_univ,
       true_and, hl] using hoff
   · have hh := congrFun horders ((l a).natAdd 1)

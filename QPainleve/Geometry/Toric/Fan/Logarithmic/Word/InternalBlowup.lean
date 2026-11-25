@@ -22,6 +22,7 @@ public section
 
 open AlgebraicGeometry CategoryTheory Multiplicative
 open QPainleve.BlowupTower TauCeti TauCeti.AlgebraicGeometry
+open QPainleve.CharacterTorus (centerCharacter_of_pi_single)
 open Scheme.IdealSheafData
 
 namespace TauCeti.Toric.Fan

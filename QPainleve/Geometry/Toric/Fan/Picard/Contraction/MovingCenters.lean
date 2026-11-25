@@ -11,7 +11,6 @@ public import QPainleve.Geometry.Toric.Fan.Boundary.Prime
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Isometry.Basic
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Modification
 import QPainleve.AlgebraicGeometry.Chow.RationalSurface.ExceptionalCurve
-import QPainleve.Geometry.Toric.Fan.Adjacency
 import QPainleve.Geometry.Toric.Fan.Boundary.Canonical
 import QPainleve.Geometry.Toric.Fan.Boundary.InternalBlowup
 import QPainleve.Geometry.Toric.Fan.Logarithmic.InternalBlowup
@@ -63,11 +62,6 @@ theorem isExceptionalCurveOfFirstKind_internalBlowupRay_iff
     (c d : Fin r → ℂˣ) (ρ : Φ.Ray) :
     (C[c,ρ]).IsExceptionalCurveOfFirstKind ↔ (C[d,ρ]).IsExceptionalCurveOfFirstKind := by
   classical
-  obtain ⟨τ, ⟨hdet, σ, hr, ht⟩, -⟩ := (exists_unique_ray_neighbor_on_each_side b hΦ hc ρ).1
-  have hne : ρ ≠ τ := by
-    intro h
-    rw [← h, b.detDualEquiv_self] at hdet
-    exact zero_ne_one hdet
   let : SmoothOfRelativeDimension 2 (Z ↘ S) :=
     (algebraicRealization_over Φ).symm ▸
       (rankTwo ▸ Φ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ)
@@ -83,7 +77,7 @@ theorem isExceptionalCurveOfFirstKind_internalBlowupRay_iff
   let : IsIntegral Y[d] := isIntegral_internalBlowupTower b s d hΦ
   let : Y[c].IsProjectiveOver ℂ := (T[c]).isProjectiveOver ℂ
   let : Y[d].IsProjectiveOver ℂ := (T[d]).isProjectiveOver ℂ
-  let : Scheme.IsRationalOver (Z ↘ S) := Φ.isRationalOver_of_ray_ne_of_le hΦ rankTwo hne hr ht
+  let : Scheme.IsRationalOver (Z ↘ S) := Φ.isRationalOver_of_isComplete hΦ hc b
   let : Scheme.IsRationalOver (Y[c] ↘ S) := (hT[c]).isRationalOver (Z ↘ S)
   let : Scheme.IsRationalOver (Y[d] ↘ S) := (hT[d]).isRationalOver (Z ↘ S)
   let e := picardIsometryCongr ℂ (hT[c]) (hT[d])

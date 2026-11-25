@@ -9,7 +9,6 @@ public import QPainleve.SignedClusterModularGroup.Realization.MarkedComparison
 public import QPainleve.SignedClusterModularGroup.Realization.Presentation
 
 import QPainleve.Geometry.Toric.Fan.Picard.Contraction.ChargeKernel
-import QPainleve.Geometry.Toric.Fan.Presentation.Genus
 import QPainleve.SignedClusterModularGroup.Realization.Anticanonical
 import QPainleve.SignedClusterModularGroup.Realization.NodalFiber
 
@@ -144,13 +143,11 @@ theorem HasNodalModel.existsUnique_chargeKernelEquiv (h : Q.HasNodalModel c M)
           ((Fan.boundaryOrthogonalEquivChargeKernel Q.regular Q.rays Aux).symm x).val := by
   let := Q.prestable
   let := Q.neZero
-  obtain ⟨p, Y, _, T, u, hT, hp⟩ := (Q.hasNodalModel_iff c M).mp h
   let : IsIntegral M.surface := M.integral
   let : M.surface.IsProjectiveOver ℂ := M.projective
   let : SmoothOfRelativeDimension 2 (M.surface ↘ S) := M.smooth
-  let : PrestableFamily (D[M].subscheme ↘ S) := M.prestable_boundaryImage
-  have hg := h.hasToricPresentation.genus_blowupComponent_eq_zero hD
-  have hnodal : p.IsNodalContraction := ⟨hD, hg, _, _, T, hT, u, hp.symm⟩
+  obtain ⟨p, hnodal⟩ := h.exists_isNodalContraction hD
+  obtain ⟨_, Y, T, hT, u, hp⟩ := hnodal.exists_tower
   let : IsRationalOver (M.surface ↘ S) := h.isRationalOver
   let : B.IsPerfPair := M.isPerfPair_of_isRationalOver
   let : (Chow.intersectionBilinForm ℂ M.surface).IsPerfPair := M.isPerfPair_intersectionForm
@@ -161,7 +158,7 @@ theorem HasNodalModel.existsUnique_chargeKernelEquiv (h : Q.HasNodalModel c M)
       e.inv ≫ T.toBase ≫ (M.surface ↘ S) =
         (Fan.internalBlowupTower b Q.rays center).2.toTower.toBase ≫
           (Q.fan.algebraicRealization ↘ S) := ⟨u, by
-            rw [← Category.assoc, ← hp, p.projection_over, Fan.algebraicRealization_over]⟩
+            rw [← Category.assoc, hp, p.projection_over, Fan.algebraicRealization_over]⟩
   rw [Fan.internalBlowupTower_eq_alongBoundary] at hcomparison
   obtain ⟨v, hv⟩ := hcomparison
   let hAux := Fan.isPerfPair_internal_markedForm Q.regular hrank Q.rays
