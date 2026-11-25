@@ -264,6 +264,14 @@ theorem centerPartialMap_opensRange (w : Word B C) (P : ChargeSeed B N) :
   simp only [centerPartialMap_hom, Scheme.Hom.opensRange_comp, Scheme.Opens.opensRange_ι,
     centerPartialMap_domain, Scheme.Hom.inv_preimage]
 
+/-- Every center reached by a word is noncolliding for its transported charges. -/
+theorem centerPartialMap_opensRange_le_distinctCentersOpen (w : Word B C) (P : ChargeSeed B N) :
+    (w.centerPartialMap K P).hom.opensRange ≤
+      distinctCentersOpen K (fun j ↦ (w.chargeTarget P).charge (e j)) := by
+  rw [centerPartialMap_opensRange, Scheme.Hom.inv_preimage]
+  exact ((w.centerIso K).hom.image_mono (w.centerOpen_le_preimage_distinctCentersOpen K P)).trans
+    ((w.centerIso K).hom.image_preimage_le _)
+
 /-- The reached centers of a loop lie in the original noncollision open when the
 initial charge kernel equals the exchange kernel. Equal charges are detected by
 the basis differences in that kernel. -/
@@ -280,11 +288,8 @@ theorem centerPartialMap_opensRange_le_centerOpen_nil (w : Word B B) (P : Charge
     apply SetLike.ext
     intro x
     simp only [mem_distinctCentersOpen_iff, hclasses]
-  have hpre := w.centerOpen_le_preimage_distinctCentersOpen K P
-  rw [hU] at hpre
-  rw [centerPartialMap_opensRange, Scheme.Hom.inv_preimage]
-  exact ((w.centerIso K).hom.image_mono hpre).trans
-    ((w.centerIso K).hom.image_preimage_le _)
+  rw [← hU]
+  exact w.centerPartialMap_opensRange_le_distinctCentersOpen P
 
 instance (w : Word B C) (P : ChargeSeed B N) :
     (w.centerPartialMap K P).IsOver (structureMap K A) (structureMap K A) where

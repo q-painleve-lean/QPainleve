@@ -214,7 +214,7 @@ theorem signedPicardHom_ker_eq_bot_of_presentation
     (fun w ↦ (End.asHom w).centerPoint_endpoints_mem_noncollision P hker) ?_
   intro w
   obtain ⟨R, -, _, hmodels⟩ := exists_realize_signed_loop (End.asHom w) P Q
-    hform hcharge M hmodels hmodel hD hnef hsq hcan hprim d hmark
-  exact ⟨R, hρ w R (fun x ↦ ⟨((Q.hasNodalModel_iff _ _).mp (hmodels x)).choose⟩)⟩
+    hform hcharge M hmodels hmodel hD hnef hsq hprim d hmark
+  exact ⟨R, hρ w R (fun x ↦ (hmodels x).nonempty_contractedToricFiber)⟩
 
 end QPainleve.SignedClusterModularGroup.GeometricRealization

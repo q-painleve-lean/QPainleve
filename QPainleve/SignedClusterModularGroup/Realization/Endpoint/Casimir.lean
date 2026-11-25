@@ -158,15 +158,13 @@ theorem existsUnique_exchangeKernelEquiv_of_presentation
     let word : Word E E := End.asHom w
     obtain ⟨R, hsign, _, htargets⟩ := exists_realize_signed_loop word P Q hform hcharge M
       (fun x ↦ models _ (Path.nil.centerPoint_endpoints_mem_noncollision P hker x).2)
-      href hD hnef hsq hcan hprim d hmark
+      href hD hnef hsq hprim d hmark
     let : IsDominant Cw[word,P].hom := inferInstance
     let : Cw[word,P].IsOver Centers[r].hom Centers[r].hom :=
       inferInstanceAs (Cw[word,P].IsOver
         (structureMap ℂ (Fin r → ℤ)) (structureMap ℂ (Fin r → ℤ)))
-    have hmodels : TargetModels[M,Cw[word,P]] := by
-      intro c
-      obtain ⟨q, _⟩ := (Q.hasNodalModel_iff _ _).mp (htargets c)
-      exact ⟨q⟩
+    have hmodels : TargetModels[M,Cw[word,P]] :=
+      fun c ↦ (htargets c).nonempty_contractedToricFiber
     rw [hρ w (C := Cw[word,P]) R hmodels]
     refine ⟨?_, ?_⟩
     · have h := chargeKernelAction_eq_signedOrthogonalRestriction Q.rayOrder
