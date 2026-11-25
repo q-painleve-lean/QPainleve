@@ -10,12 +10,12 @@ public import QPainleve.SignedClusterModularGroup.Realization.Presentation
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Boundary.Numbering
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Nodal.Canonical
 import QPainleve.AlgebraicGeometry.Curves.Node.Reindex
+import QPainleve.AlgebraicGeometry.IdealSheaf.VanishingIdeal
 import QPainleve.Geometry.Toric.Fan.Boundary.Canonical
 import QPainleve.Geometry.Toric.Fan.Logarithmic.InternalBlowup
 import QPainleve.Geometry.Toric.Fan.Picard.Contraction.Marking
 import QPainleve.Geometry.Toric.Fan.Subdivision.Projective
 import QPainleve.SignedClusterModularGroup.Realization.Boundary
-import TauCeti.AlgebraicGeometry.IdealSheaf.Reduced
 
 /-!
 # Marking a nodal contraction after moving the centers
@@ -192,25 +192,6 @@ local notation "ιd" => WithBoundary.boundaryι (Sigma.snd (A[d]))
 local notation "πd" => toBase (WithBoundary.toTower (Sigma.snd (A[d])))
 local notation "ToricIdeal" => Fan.boundaryIdeal Q.fan Q.complete.nonempty_cones
 
-omit [X.Over SpecC] [IsIntegral X] [X.IsProjectiveOver ℂ]
-  [SmoothOfRelativeDimension 2 (X ↘ SpecC)] in
-/-- The strict boundary is the reduced inverse image of the specified boundary
-and has that boundary as its schematic image. -/
-private theorem strict_boundary_eq_radical_comap_and_map_eq
-    (hE : (E.comap proj).support = R[d].support)
-    [Surjective proj] (hup : IsReduced R[d].subscheme) (hdown : IsReduced E.subscheme) :
-    (E.comap proj).radical = R[d] ∧ R[d].map proj = E := by
-  have heq : vanishingIdeal (E.comap proj).support = R[d] := by
-    rw [hE, vanishingIdeal_support, (R[d]).isReduced_subscheme_iff_radical_eq.mp hup]
-  refine ⟨(vanishingIdeal_support (I := E.comap proj)).symm.trans heq, ?_⟩
-  have hsup : TopologicalSpace.Closeds.closure (proj '' ↑(E.support.preimage (proj).continuous))
-      = E.support := by
-    apply SetLike.coe_injective
-    rw [TopologicalSpace.Closeds.coe_closure, TopologicalSpace.Closeds.coe_preimage,
-      Set.image_preimage_eq _ (Surjective.surj (f := proj)), E.support.isClosed.closure_eq]
-  rw [← heq, map_vanishingIdeal, support_comap, hsup, vanishingIdeal_support,
-    E.isReduced_subscheme_iff_radical_eq.mp hdown]
-
 variable (d) in
 /-- The closed strict boundary has its original toric boundary structure over the field. -/
 private theorem strict_boundary_imageIso_isOver :
@@ -253,7 +234,7 @@ private theorem exists_descended_numbering [PrestableFamily (E.subscheme ↘ Spe
   let hN : AtWorstNodalOfRelativeDimensionOne (E.subschemeι ≫ X ↘ SpecC) :=
     (E.over_eq_subschemeι_comp (S := SpecC)) ▸
       (PrestableFamily.atWorstNodalOfRelativeDimensionOne (f := E.subscheme ↘ SpecC))
-  obtain ⟨hrad, hmap⟩ := strict_boundary_eq_radical_comap_and_map_eq Q e hE
+  obtain ⟨hrad, hmap⟩ := E.radical_comap_eq_and_map_eq_of_support_eq proj hE
     (PrestableFamily.atWorstNodalOfRelativeDimensionOne (f := R[d].subscheme ↘ SpecC)).isReduced
     (PrestableFamily.atWorstNodalOfRelativeDimensionOne (f := E.subscheme ↘ SpecC)).isReduced
   have hR : (E.comap U.toBase).radical.comap e.hom = R[d] := by

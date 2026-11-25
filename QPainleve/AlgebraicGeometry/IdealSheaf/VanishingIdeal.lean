@@ -33,6 +33,22 @@ theorem radical_comap_radical {X Y : Scheme.{u}} (I : X.IdealSheafData) (f : Y �
   rw [← vanishingIdeal_support, ← vanishingIdeal_support (I := I.comap f),
     support_comap, support_comap, support_radical]
 
+/-- Along a surjective morphism, a reduced closed subscheme supported on the inverse image of
+a reduced closed subscheme is its reduced inverse image and has it as its schematic image. -/
+theorem radical_comap_eq_and_map_eq_of_support_eq {X Y : Scheme.{u}} (I : X.IdealSheafData)
+    (f : Y ⟶ X) [Surjective f] {J : Y.IdealSheafData} (h : (I.comap f).support = J.support)
+    (hJ : IsReduced J.subscheme) (hI : IsReduced I.subscheme) :
+    (I.comap f).radical = J ∧ J.map f = I := by
+  have heq : vanishingIdeal (I.comap f).support = J := by
+    rw [h, vanishingIdeal_support, J.isReduced_subscheme_iff_radical_eq.mp hJ]
+  refine ⟨(vanishingIdeal_support (I := I.comap f)).symm.trans heq, ?_⟩
+  have hs : Closeds.closure (f '' ↑(I.support.preimage f.continuous)) = I.support := by
+    apply SetLike.coe_injective
+    rw [Closeds.coe_closure, Closeds.coe_preimage, Set.image_preimage_eq _ f.surjective,
+      I.support.isClosed.closure_eq]
+  rw [← heq, map_vanishingIdeal, support_comap, hs, vanishingIdeal_support,
+    I.isReduced_subscheme_iff_radical_eq.mp hI]
+
 /-- The ideal of a reduced point closure at a specialization is the prime of the ambient
 local ring corresponding to the given generization. -/
 theorem stalkIdeal_vanishingIdeal_closure_singleton_of_specializes {X : Scheme.{u}}
