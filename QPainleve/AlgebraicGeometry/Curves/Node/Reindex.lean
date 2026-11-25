@@ -92,30 +92,6 @@ the corresponding vertex. -/
     (A.reindex g).componentGenericPoint j = A.componentGenericPoint (cycleVertexPerm g j) := by
   simp only [componentGenericPoint_def, reindex_component]
 
-/-- The numbering of the actual branches determines the whole cycle numbering. -/
-@[ext] theorem ext_of_branch {A B : NodalCycleNumbering p n}
-    (h : ∀ j b, A.branch (j, b) = B.branch (j, b)) : A = B := by
-  have hcoords (j : ZMod n) (b : Fin 2) :
-      (A.edge j, A.order (A.edge j) b) = (B.edge j, B.order (B.edge j) b) := by
-    apply (X.dualGraphBranchEquiv p).injective
-    have hb := h j b
-    rw [A.branch_eq_branchOrderOfDualGraph j b, B.branch_eq_branchOrderOfDualGraph j b,
-      A.node_apply, B.node_apply, X.branchOrderOfDualGraph_apply_val,
-      X.branchOrderOfDualGraph_apply_val] at hb
-    exact hb
-  have hedge : A.edge = B.edge := Equiv.ext fun j ↦ congrArg Prod.fst (hcoords j 0)
-  have horder : A.order = B.order := by
-    funext z
-    obtain ⟨j, rfl⟩ := A.edge.surjective z
-    exact Equiv.ext fun b ↦ by
-      simpa only [hedge] using congrArg Prod.snd (hcoords j b)
-  have hvertex : A.vertex = B.vertex := Equiv.ext fun j ↦ by
-    simpa only [DualGraph.cycle, ite_true, hedge, horder] using
-      (A.endpoint_eq j 0).symm.trans (by rw [hedge, horder]; exact B.endpoint_eq j 0)
-  cases A
-  cases B
-  exact mk.injEq .. |>.mpr ⟨hvertex, hedge, horder⟩
-
 /-- Reindexing by the identity preserves the numbering. -/
 @[simp] theorem reindex_one : A.reindex 1 = A := by
   ext j b
