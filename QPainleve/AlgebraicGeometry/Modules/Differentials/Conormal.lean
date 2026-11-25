@@ -200,20 +200,13 @@ private theorem conormalMap_app_affineConormalEquiv (x : Ideal.Cotangent J) :
   exact (Scheme.Hom.pullbackSectionsLE_self i Ωₓ U.val
     ((X.universalDerivation R).d (X := op U.val) (I.sheafι.app U.val s))).symm
 
-private theorem cotangentMap_app_affine (ω : B ⊗[A] Ω[A⁄R]) :
-    (cotangentMap R i).app V
-        (pullbackRelativeDifferentialsSectionsEquiv R i U ⟨V, U.property.preimage i⟩ le_rfl ω) =
-      relativeDifferentialsSectionsEquiv R I.subscheme ⟨V, U.property.preimage i⟩
-        (KaehlerDifferential.mapBaseChange R A B ω) := by
-  exact cotangentMap_app_pullbackRelativeDifferentialsSectionsEquiv R i U
-    ⟨V, U.property.preimage i⟩ le_rfl ω
-
 private theorem conormalMap_exact_on_affine :
     Function.Exact ((I.conormalMap R).app V) ((cotangentMap R i).app V) := by
   intro y
   let e := pullbackRelativeDifferentialsSectionsEquiv R i U ⟨V, U.property.preimage i⟩ le_rfl
   obtain ⟨ω, rfl⟩ := e.surjective y
-  rw [cotangentMap_app_affine, ← map_zero (relativeDifferentialsSectionsEquiv R _
+  rw [cotangentMap_app_pullbackRelativeDifferentialsSectionsEquiv R i U
+    ⟨V, U.property.preimage i⟩ le_rfl, ← map_zero (relativeDifferentialsSectionsEquiv R _
     ⟨V, U.property.preimage i⟩), (relativeDifferentialsSectionsEquiv R _
     ⟨V, U.property.preimage i⟩).injective.eq_iff,
     KaehlerDifferential.exact_kerCotangentToTensor_mapBaseChange R A B
