@@ -8,6 +8,9 @@ module
 public import QPainleve.AlgebraicGeometry.Blowup.Tower.Nodal.Basic
 public import QPainleve.Geometry.Toric.Fan.InternalBlowup
 
+import QPainleve.AlgebraicGeometry.IdealSheaf.Restriction
+import TauCeti.AlgebraicGeometry.IdealSheaf.Reduced
+
 /-!
 # Toric presentations of boundary pairs
 
@@ -56,6 +59,22 @@ theorem hasToricPresentation_iff (D : X.IdealSheafData) (s : X ⟶ S)
           e.hom ≫ T.toBase ≫ s = A.2.toTower.toBase ≫ Φ.algebraicRealizationStructureMap ∧
           ((D.comap T.toBase).radical).comap e.hom = A.2.boundaryι.ker :=
   Iff.rfl
+
+/-- A pair identified over the ground field with a regular complete fan realization
+and its toric boundary has a toric presentation with empty blowup towers. -/
+theorem hasToricPresentation_of_toric_boundary {D : X.IdealSheafData}
+    {s : X ⟶ S} {Φ : Fan i} (hΦ : Φ.IsRegular) (hc : Φ.IsComplete)
+    (e : Φ.algebraicRealization ≅ X) (he : e.hom ≫ s = Φ.algebraicRealizationStructureMap)
+    (hD : D.comap e.hom = Φ.boundaryIdeal hc.nonempty_cones) :
+    D.HasToricPresentation s b i := by
+  refine (hasToricPresentation_iff ..).mpr
+    ⟨Φ, hΦ, hc, 0, Fin.elim0, Fin.elim0, 0, X, .nil, .nil, ?_⟩
+  let : Nonempty Φ.cones := hc.nonempty_cones
+  rw [Fan.internalBlowupTower_zero]
+  refine ⟨e, by simpa using he, ?_⟩
+  simp only [toBase_nil, comap_id, ← radical_comap_of_isOpenImmersion,
+    WithBoundary.boundaryι_nil, ker_subschemeι, hD, Φ.boundaryIdeal_def]
+  exact (isReduced_subscheme_iff_radical_eq _).mp inferInstance
 
 variable {b}
 

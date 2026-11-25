@@ -20,11 +20,11 @@ import QPainleve.Geometry.Toric.Fan.Hirzebruch.BoundarySplit
 import QPainleve.Geometry.Toric.Fan.Hirzebruch.Classification
 import QPainleve.Geometry.Toric.Fan.Hirzebruch.PositiveComplexity
 import QPainleve.Geometry.Toric.Fan.Picard.Hirzebruch
+import QPainleve.Geometry.Toric.Fan.Presentation.NodalBlowup
 import QPainleve.Geometry.Toric.Fan.Presentation.NodalReduction
 import QPainleve.Geometry.Toric.Fan.Presentation.PointTower
 import QPainleve.Geometry.Toric.Fan.ProjectiveSpace.Reduction
 import QPainleve.Geometry.Toric.Fan.Subdivision.Projective
-import TauCeti.AlgebraicGeometry.IdealSheaf.Reduced
 
 /-!
 # Induction for toric presentations of rational anticanonical pairs
@@ -65,67 +65,6 @@ private theorem smoothOfRelativeDimension_two {Φ : Fan i} (hΦ : Φ.IsRegular)
   rw [algebraicRealization_over]
   exact ((finrank_eq_card_basis d).trans (Fintype.card_fin 2)) ▸
     Φ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
-
-private theorem hasToricPresentation_of_toric_boundary {X : Scheme} {D : X.IdealSheafData}
-    {s : X ⟶ S} {Φ : Fan i} (hΦ : Φ.IsRegular) (hc : Φ.IsComplete)
-    (e : X[Φ] ≅ X) (he : e.hom ≫ s = Φ.algebraicRealizationStructureMap)
-    (hD : D.comap e.hom = Φ.boundaryIdeal hc.nonempty_cones) :
-    D.HasToricPresentation s b i := by
-  refine (hasToricPresentation_iff ..).mpr
-    ⟨Φ, hΦ, hc, 0, Fin.elim0, Fin.elim0, 0, X, .nil, .nil, ?_⟩
-  let : Nonempty Φ.cones := hc.nonempty_cones
-  rw [internalBlowupTower_zero]
-  refine ⟨e, by simpa using he, ?_⟩
-  simp only [toBase_nil, comap_id, ← radical_comap_of_isOpenImmersion,
-    WithBoundary.boundaryι_nil, ker_subschemeι, hD, Φ.boundaryIdeal_def]
-  exact (isReduced_subscheme_iff_radical_eq _).mp inferInstance
-
-private theorem hasToricPresentation_of_nodal_tower
-    {X Y Z : Scheme} {D : X.IdealSheafData} {E : Z.IdealSheafData}
-    {s : X ⟶ S} {t : Z ⟶ S} {m : ℕ} {T : BlowupTower X m Y}
-    (hT : IsNodalBoundaryTower D s (𝟙 X) T) (a : Y ≅ Z)
-    (ht : a.hom ≫ t = T.toBase ≫ s)
-    (hE : (E.comap a.hom).support = (D.comap T.toBase).support)
-    (h : E.HasToricPresentation t b i) : D.HasToricPresentation s b i := by
-  obtain ⟨Φ, hΦ, hc, n, rays, c, l, W, U, hU, e, he, hB⟩ := (hasToricPresentation_iff ..).mp h
-  obtain ⟨W', Wtower, f, hW, hbase, hrad⟩ := hT.exists_append_of_iso hU a ht hE
-  have ht' : a.inv ≫ T.toBase ≫ s = t := by rw [← ht, Iso.inv_hom_id_assoc]
-  refine (hasToricPresentation_iff ..).mpr
-    ⟨Φ, hΦ, hc, n, rays, c, m + l, W', Wtower, hW, e ≪≫ f.symm, ?_, ?_⟩
-  · simpa only [Iso.trans_hom, Iso.symm_hom, hbase, Category.assoc, Iso.inv_hom_id_assoc, ht']
-      using he
-  · simpa only [Iso.trans_hom, Iso.symm_hom, hrad, ← comap_comp, Category.assoc,
-      Iso.inv_hom_id, Category.comp_id] using hB
-
-private theorem hasToricPresentation_of_nodal_blowup_and_internal_contraction
-    {X Y : Scheme} [X.Over S] [Y.Over S] [IsIntegral X] [IsIntegral Y]
-    [X.IsProjectiveOver ℂ] [Y.IsProjectiveOver ℂ]
-    [SmoothOfRelativeDimension 2 (X ↘ S)] [SmoothOfRelativeDimension 2 (Y ↘ S)]
-    {D : X.IdealSheafData} [PrestableFamily (D.subscheme ↘ S)] (hD : D.IsEffectiveCartier)
-    (hK : LineBundleClass.mk hD.toInvertibleSheaf = K[X])
-    {x : X} (hT : IsNodalBoundaryTower D (X ↘ S) (𝟙 X) T[x])
-    {y : Y} (hy : IsClosed ({y} : Set Y)) (u : J[x].blowup ≅ J[y].blowup) :
-    let g := u.hom ≫ J[y].blowupToBase
-    let R := (D.comap J[x].blowupToBase).radical
-    g ≫ Y ↘ S = J[x].blowupToBase ≫ X ↘ S →
-    ¬ (J[y].comap g).support ≤ R.support →
-    (R.map g).HasToricPresentation (Y ↘ S) b i →
-    D.HasToricPresentation (X ↘ S) b i := by
-  intro g R hg hOmit h
-  have hN : AtWorstNodalOfRelativeDimensionOne (D.subschemeι ≫ X ↘ S) := by
-    rw [← D.over_eq_subschemeι_comp]
-    exact PrestableFamily.atWorstNodalOfRelativeDimensionOne
-  let : IsNoetherian X := isNoetherian_of_finiteType (X ↘ S)
-  let : IsNoetherian Y := isNoetherian_of_finiteType (Y ↘ S)
-  have hπ : T[x].toBase = J[x].blowupToBase := by simp
-  obtain ⟨Φ, hΦ, hc, n, r, c, l, W, U, hU, e, he, hB⟩ := (hasToricPresentation_iff ..).mp h
-  let : Nonempty Φ.cones := hc.nonempty_cones
-  obtain ⟨r', c', Z', T', hT', d, hd, hD'⟩ :=
-    exists_toric_presentation_of_internal_contraction_after_nodal_tower b hΦ hc r c hD hN hK
-      hT g (by rwa [hπ]) hy u rfl (by simpa only [hπ, R, support_radical] using hOmit)
-      (by rwa [hπ]) e he (by rwa [hπ, radical_comap_of_isOpenImmersion])
-  exact (hasToricPresentation_iff ..).mpr ⟨Φ, hΦ, hc, n + 1, Fin.snoc r r', Fin.snoc c c',
-    1 + l, Z', T', hT', d, hd, by rwa [← radical_comap_of_isOpenImmersion]⟩
 
 variable {b}
 
