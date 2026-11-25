@@ -5,6 +5,7 @@ Authors: The QPainleve contributors
 -/
 module
 
+public import Mathlib.AlgebraicGeometry.Birational.Birational
 public import QPainleve.AlgebraicGeometry.Modules.Differentials.Canonical
 public import QPainleve.Geometry.Toric.Fan.Boundary.SelfIntersection
 public import QPainleve.Geometry.Toric.Fan.Hirzebruch.Corner
@@ -348,7 +349,8 @@ theorem hirzebruchPicardBasis_intersection_repr [SmoothOfRelativeDimension 2 (X 
 
 omit [Nonempty Φ.cones] [Φ.algebraicRealization.IsProjectiveOver ℂ] in
 include hΦ hc hr in
-private theorem isRationalOver_of_hirzebruch :
+/-- The algebraic realization of a complete regular Hirzebruch fan is rational over `ℂ`. -/
+theorem isRationalOver_of_hirzebruch :
     Scheme.IsRationalOver (X ↘ S) := by
   obtain ⟨σ, h₀, h₁⟩ := exists_cone_of_hirzebruch_section_fiber b e r hr hΦ hc 0 0
   have hN : Module.finrank ℤ N = 2 := by simpa using Module.finrank_eq_card_basis b
