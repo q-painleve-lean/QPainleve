@@ -38,20 +38,6 @@ local notation "F[" ι "]" => LinearMap.BilinForm.prod (Chow.intersectionBilinFo
 variable [Φ.algebraicRealization.IsProjectiveOver ℂ]
   [SmoothOfRelativeDimension 2 (Φ.algebraicRealization ↘ S)]
 
-/-- The degree of a class on a strict boundary ray is its degree on the original
-toric boundary plus its total exceptional coefficients at the centers on that ray. -/
-theorem markedBoundaryMap_single_pairing {ι : Type*} [Fintype ι] (s : ι → Φ.Ray)
-    (a : Additive (LineBundleClass Φ.algebraicRealization) × (ι → ℤ)) (ρ : Φ.Ray) :
-    F[ι] (markedBoundaryMap hΦ s (Pi.single ρ 1)) a =
-      Chow.intersectionBilinForm ℂ Z (Φ.rayDivisorToPicard hΦ (Pi.single ρ 1)) a.1 +
-        ∑ j ∈ Finset.univ.filter (fun j ↦ s j = ρ), a.2 j := by
-  simp only [LinearMap.BilinForm.prod_apply, markedBoundaryMap_apply, LinearMap.neg_apply,
-    dotProductBilin_apply_apply, dotProduct, ← Finset.sum_neg_distrib, Finset.sum_filter]
-  congr 1
-  apply Finset.sum_congr rfl
-  intro j _
-  by_cases h : s j = ρ <;> simp [h]
-
 variable (b : Module.Basis (Fin 2) ℤ N) {r : ℕ} (s : Fin r → Φ.Ray)
   {X Y : Scheme} [X.Over S] [X.IsProjectiveOver ℂ] [IsIntegral X]
   [SmoothOfRelativeDimension 2 (X ↘ S)] {D : X.IdealSheafData}
