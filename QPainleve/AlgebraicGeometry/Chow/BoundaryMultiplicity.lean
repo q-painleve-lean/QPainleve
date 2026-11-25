@@ -44,18 +44,6 @@ variable (k : Type u) [Field k] {X : Scheme.{u}}
 local notation "cl" => Scheme.CartierDivisor.weilToLineBundleClassHom X
 local notation "primeClass" => (LineBundleClass.primeDivisorClass (X := X))
 
-/-- The integer intersection matrix of an indexed family of prime divisors. -/
-noncomputable def primeIntersectionMatrix {ι : Type*} (p : ι → CodimensionOnePoint X) :
-    Matrix ι ι ℤ :=
-  Matrix.of fun i j ↦ classIntersectionNumber k X (primeClass (p i)) (primeClass (p j))
-
-/-- An entry pairs the prime classes at the chosen row and column indices. -/
-@[simp]
-theorem primeIntersectionMatrix_apply {ι : Type*} (p : ι → CodimensionOnePoint X) (i j : ι) :
-    primeIntersectionMatrix k p i j = classIntersectionNumber k X (primeClass (p i))
-      (primeClass (p j)) :=
-  (rfl)
-
 variable [Infinite k] [X.IsProjectiveOver k]
 
 private theorem intersection_mulVec_eq_zero (hX : topologicalKrullDim X = 2)
@@ -116,11 +104,12 @@ private theorem exists_rat_smul_of_intersection_mulVec_eq_zero
     simp only [transpose_apply, map_apply, A, B, primeIntersectionMatrix_apply,
       classIntersectionNumber_comm (k := k) (primeClass (b : CodimensionOnePoint X))]
   have hnonneg (a b : D.support) (hab : a ≠ b) : 0 ≤ A a b :=
-    Int.cast_nonneg
-      (classIntersectionNumber_primeDivisorClass_nonneg_of_ne k hX (fun h ↦ hab (Subtype.ext h)))
+    Int.cast_nonneg (by
+      simpa only [B, primeIntersectionMatrix_apply] using
+        classIntersectionNumber_primeDivisorClass_nonneg_of_ne k hX (fun h ↦ hab (Subtype.ext h)))
   have hconn (a b : D.support) : Relation.ReflTransGen (fun i j ↦ i ≠ j ∧ 0 < A i j) a b :=
     (intersection_connected k hX D hD hconnected a b).lift id fun _ _ h ↦
-      ⟨h.1, Int.cast_pos.mpr h.2⟩
+      ⟨h.1, Int.cast_pos.mpr (by simpa only [id_eq, B, primeIntersectionMatrix_apply] using h.2)⟩
   have hm (p : D.support) : 0 < (D p : ℚ) :=
     Int.cast_pos.mpr ((hD p).lt_of_ne (Finsupp.mem_support_iff.mp p.property).symm)
   have hcast {v : D.support → ℤ} (hv : B *ᵥ v = 0) :
