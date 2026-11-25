@@ -6,8 +6,12 @@ Authors: The QPainleve contributors
 module
 
 public import QPainleve.SignedClusterModularGroup.Realization.MarkedComparison
+public import QPainleve.SignedClusterModularGroup.Realization.Presentation
 
 import QPainleve.Geometry.Toric.Fan.Picard.Contraction.ChargeKernel
+import QPainleve.Geometry.Toric.Fan.Presentation.Genus
+import QPainleve.SignedClusterModularGroup.Realization.Anticanonical
+import QPainleve.SignedClusterModularGroup.Realization.NodalFiber
 
 /-!
 # Charge coordinates in a fixed Picard marking
@@ -25,6 +29,7 @@ public section
 
 open AlgebraicGeometry CategoryTheory Multiplicative
 open QPainleve.BlowupTower TauCeti TauCeti.AlgebraicGeometry TauCeti.Toric
+open QPainleve.CharacterTorus
 open Scheme Scheme.IdealSheafData LineBundleClass
 
 namespace QPainleve.SignedClusterModularGroup
@@ -108,5 +113,65 @@ theorem existsUnique_markedBoundaryOrthogonalEquivChargeKernel (hp : p.IsNodalCo
   exact neg_injective ((hcoords e' he').symm.trans (hcoords e he))
 
 end ContractedToricFiber
+
+namespace CompleteToricPresentation
+
+variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
+  {i : N →+ V} {b : Module.Basis (Fin 2) ℤ N} {r n : ℕ} [NeZero n]
+  {L γ : Type} [AddCommGroup L] {B : LinearMap.BilinForm ℤ L}
+  {Q : CompleteToricPresentation i b r L γ}
+  {c : GeometricRealization.Point (Over.mk (structureMap ℂ (Fin r → ℤ)))}
+  {M : MarkedSurface ℂ n B (scheme ℂ (Fin r →₀ ℤ))}
+
+local instance instChargeCoordinateNonemptyCones : Nonempty Q.fan.cones :=
+  Q.complete.nonempty_cones
+
+local notation "Aux" => LinearMap.BilinForm.prod
+  (Chow.intersectionBilinForm ℂ Q.fan.algebraicRealization)
+  (-(dotProductBilin ℤ ℤ : LinearMap.BilinForm ℤ (Fin r → ℤ)))
+
+variable [Q.fan.algebraicRealization.IsProjectiveOver ℂ]
+  [SmoothOfRelativeDimension 2 (Q.fan.algebraicRealization ↘ S)]
+
+/-- One nodal model fixes the unique integral charge coordinates of the boundary orthogonal.
+The auxiliary intersection form is perfect, and the inverse charge coordinates agree with the
+toric and total exceptional coordinates of the presentation. -/
+theorem HasNodalModel.existsUnique_chargeKernelEquiv (h : Q.HasNodalModel c M)
+    (hD : D[M].IsEffectiveCartier) {d : ZMod n → L} (hd : M.boundaryClass hD = d) :
+    ∃ hAux : (Aux).IsPerfPair, letI := hAux
+      ∃! e : B.orthogonal (Submodule.span ℤ (Set.range d)) ≃ₗ[ℤ] (Fan.rayChargeMap Q.rays).ker,
+        ∀ x, Q.inclusion (e.symm x).val =
+          ((Fan.boundaryOrthogonalEquivChargeKernel Q.regular Q.rays Aux).symm x).val := by
+  let := Q.prestable
+  let := Q.neZero
+  obtain ⟨p, Y, _, T, u, hT, hp⟩ := (Q.hasNodalModel_iff c M).mp h
+  let : IsIntegral M.surface := M.integral
+  let : M.surface.IsProjectiveOver ℂ := M.projective
+  let : SmoothOfRelativeDimension 2 (M.surface ↘ S) := M.smooth
+  let : PrestableFamily (D[M].subscheme ↘ S) := M.prestable_boundaryImage
+  have hg := h.hasToricPresentation.genus_blowupComponent_eq_zero hD
+  have hnodal : p.IsNodalContraction := ⟨hD, hg, _, _, T, hT, u, hp.symm⟩
+  let : IsRationalOver (M.surface ↘ S) := h.isRationalOver
+  let : B.IsPerfPair := M.isPerfPair_of_isRationalOver
+  let : (Chow.intersectionBilinForm ℂ M.surface).IsPerfPair := M.isPerfPair_intersectionForm
+  have hrank : Module.finrank ℤ N = 2 := by simpa using Module.finrank_eq_card_basis b
+  let a := pointsEquiv ℂ (Fin r → ℤ) ⟨Over.Hom.left c, Over.w c⟩
+  let center (j : Fin r) := a (ofAdd (Pi.single j 1))
+  have hcomparison : ∃ e : Y ≅ (Fan.internalBlowupTower b Q.rays center).1,
+      e.inv ≫ T.toBase ≫ (M.surface ↘ S) =
+        (Fan.internalBlowupTower b Q.rays center).2.toTower.toBase ≫
+          (Q.fan.algebraicRealization ↘ S) := ⟨u, by
+            rw [← Category.assoc, ← hp, p.projection_over, Fan.algebraicRealization_over]⟩
+  rw [Fan.internalBlowupTower_eq_alongBoundary] at hcomparison
+  obtain ⟨v, hv⟩ := hcomparison
+  let hAux := Fan.isPerfPair_internal_markedForm Q.regular hrank Q.rays
+    (fun j ↦ (b.detDualEquiv (Q.rays j).primitiveGenerator).toAddMonoidHom)
+    (fun j ↦ b.detDualEquiv_self (Q.rays j).primitiveGenerator)
+    (fun j ↦ (Q.rays j).surjective_detCharacter b) center
+    (fun j ↦ (Q.rays j).internalCenter b (center j))
+    (fun j ↦ (Q.rays j).internalCenter_val b (center j)) hT v hv
+  exact ⟨hAux, p.existsUnique_markedBoundaryOrthogonalEquivChargeKernel hnodal hD hd⟩
+
+end CompleteToricPresentation
 
 end QPainleve.SignedClusterModularGroup

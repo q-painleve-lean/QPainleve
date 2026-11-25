@@ -9,6 +9,8 @@ public import QPainleve.Geometry.Toric.Fan.CyclicOrder
 public import QPainleve.SignedClusterModularGroup.Realization.ContractionNumerics
 public import QPainleve.SignedClusterModularGroup.Realization.Inversion.Contracted
 
+import QPainleve.Geometry.Toric.Fan.Boundary.Numbering
+
 /-!
 # Complete marked toric presentations
 
@@ -113,6 +115,29 @@ theorem CompleteToricPresentation.hasNodalModel_iff (Q : CompleteToricPresentati
   (Iff.rfl)
 
 namespace CompleteToricPresentation
+
+/-- The numbered node is the toric fixed point of the cone between its consecutive rays. -/
+theorem exists_cone_of_numbered_node (Q : CompleteToricPresentation i b r L γ)
+    (j : ZMod Q.length) :
+    letI := Q.prestable
+    letI := Q.neZero
+    ∃ σ : Q.fan.cones, (Q.rayOrder j).toCone ≤ σ ∧
+      (Q.rayOrder (j + 1)).toCone ≤ σ ∧
+      (Q.fan.boundaryIdeal Q.complete.nonempty_cones).subschemeι
+        ((Q.fan.boundaryIdeal Q.complete.nonempty_cones).subscheme.dualGraphEdgeEquiv
+          Q.marks (Q.cycle.edge j)).val =
+        Q.fan.distinguishedPointHom σ (IsLocalRing.closedPoint ℂ) := by
+  let := Q.complete.nonempty_cones
+  let := Q.prestable
+  let := Q.neZero
+  have hray : Q.fan.rayEquivOfNodalCycleNumbering Q.regular Q.cycle = Q.rayOrder := by
+    refine Equiv.ext fun k ↦ (Q.fan.boundaryNormalizationComponentEquiv Q.regular).injective ?_
+    rw [Fan.boundaryNormalizationComponentEquiv_rayEquivOfNodalCycleNumbering, Q.component_eq]
+  obtain ⟨_, -, _, hnodes⟩ :=
+    Q.fan.exists_positive_ray_numbering_of_nodalCycleNumbering b Q.regular Q.complete Q.cycle
+  rw [hray] at hnodes
+  obtain ⟨σ, h₀, h₁, hpoint⟩ := hnodes j
+  exact ⟨σ.val, h₀, h₁, hpoint⟩
 
 /-- The charge lattice of a marked toric presentation of a primitive nef
 square-zero anticanonical cycle has finite index. -/
