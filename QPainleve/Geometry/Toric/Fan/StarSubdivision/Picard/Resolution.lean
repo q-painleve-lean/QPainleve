@@ -51,9 +51,11 @@ variable {n : ℕ} {Y : Scheme} {T : BlowupTower X[Φ] n Y}
 
 /-- Transport a specified closed-point resolution across the toric Hirzebruch link
 at a corner absent from its projected centers. The common resolution is obtained by
-blowing up the inverse image of the corner. Each retained center lies over the
-same base point for every character ruling common to the two fans. The inserted
-reverse center lies over the ruling value of the original corner.
+blowing up the inverse image of the corner. The two star subdivision maps send
+each retained center on the intermediate model to its projections on both bases.
+These centers keep their ruling values for every character ruling common to the
+two fans. The first center of the new tower is the reverse corner over the ruling
+value of the original corner.
 
 In the two Picard markings the source coefficients `(a, b)` become `(a + b, b)`.
 The new first exceptional coefficient is `-b`, and all old coefficients retain their
@@ -80,9 +82,14 @@ theorem exists_hirzebruch_toric_link_resolution_of_absent_corner
       d 0 = b 0 ∧ d 1 = b 0 + b 1 ∧ τ.val = hull ℝ {i (d 1), i (-d 0)} ∧
       g.hom ≫ (I[σ]).blowupToBase = s.toFanHom.algebraicMap ∧
       g'.hom ≫ (I[τ]).blowupToBase = t.toFanHom.algebraicMap ∧
+      Φ.IsTwoRayStarSubdivision F ∧ Ψ.IsTwoRayStarSubdivision F ∧
       k.hom ≫ U.toBase ≫ g'.inv ≫ s.toFanHom.algebraicMap = A.blowupToBase ≫ T.toBase ∧
       k.hom ≫ U.toBase ≫ g'.inv ≫ t.toFanHom.algebraicMap = k.hom ≫ U'.toBase ∧
       (∀ j, s.toFanHom.algebraicMap (g'.inv (hU.baseCenter j)) = hT.baseCenter j) ∧
+      hU'.baseCenter (Fin.castAdd n (0 : Fin 1)) =
+        Ψ.distinguishedPointHom τ (IsLocalRing.closedPoint ℂ) ∧
+      (∀ j : Fin n, t.toFanHom.algebraicMap (g'.inv (hU.baseCenter j)) =
+        hU'.baseCenter (j.natAdd 1)) ∧
       (∀ (h₀ : ∀ γ : Φ.cones, (∀ x ∈ γ.val, 0 ≤ Φ.lattice.realCharacter
         (b.coord 1).toAddMonoidHom x) ∨ ∀ x ∈ γ.val,
           Φ.lattice.realCharacter (b.coord 1).toAddMonoidHom x ≤ 0)
@@ -114,7 +121,7 @@ theorem exists_hirzebruch_toric_link_resolution_of_absent_corner
   rw [← hI] at hinsert
   obtain ⟨q, W, L, f, hL, hq, hqp, hA, hf, hcenters, hprep⟩ := hinsert
   obtain ⟨Ψ, F, hΨ, hF, hc', _, d, τ, s, t, g, g', r, r', hr, hr',
-      hd₀, hd₁, hτ, hg, hg', -, -, hcoord⟩ :=
+      hd₀, hd₁, hτ, hg, hg', hstar, hstar', hcoord⟩ :=
     Fan.exists_hirzebruch_toric_elementary_transform_picard_coordinates b e hΦ hc hrays σ hσ
   let R := L.transport (g.symm ≪≫ g')
   let hU : IsClosedPointTower (I[τ]).blowup R.tower := R.isLift.isClosedPointTower hL
@@ -133,24 +140,31 @@ theorem exists_hirzebruch_toric_link_resolution_of_absent_corner
       hsource, hcenters j]
   have htarget : g'.inv ≫ t.toFanHom.algebraicMap = (I[τ]).blowupToBase := by
     rw [← hg', Iso.inv_hom_id_assoc]
+  have hfirst : (hτTower.append hU).baseCenter (Fin.castAdd n (0 : Fin 1)) =
+      Ψ.distinguishedPointHom τ (IsLocalRing.closedPoint ℂ) := by
+    rw [baseCenter_append_castAdd hτTower hU, baseCenter_snoc_nil,
+      hτTower.lastCenter_eq _ (Ψ.isClosed_singleton_distinguishedPoint τ)
+        (Ψ.distinguishedPointHom τ).ker_eq_ker_fromSpecResidueField]
+  have htail (j : Fin n) : t.toFanHom.algebraicMap (g'.inv (hU.baseCenter j)) =
+      (hτTower.append hU).baseCenter (j.natAdd 1) := by
+    rw [← Scheme.Hom.comp_apply, htarget, baseCenter_append_natAdd hτTower hU]
+    simp only [toBase_snoc, toBase_nil, Category.comp_id]
   refine ⟨q, Ψ, F, hΨ, hF, hc', d, τ, s, t, r, r', hr, hr', g, g', _, R.tower, k, hU,
-    hτTower.append hU, hq, hqp, hA, hd₀, hd₁, hτ, hg, hg', ?_, ?_, hpts, ?_, ?_, ?_⟩
+    hτTower.append hU, hq, hqp, hA, hd₀, hd₁, hτ, hg, hg', hstar, hstar',
+    ?_, ?_, hpts, hfirst, htail, ?_, ?_, ?_⟩
   · calc
       _ = f.hom ≫ (R.iso.hom ≫ R.tower.toBase) ≫ g'.inv ≫ s.toFanHom.algebraicMap := by
         simp only [k, Iso.trans_hom, Category.assoc]
       _ = _ := by rw [R.isLift.hom_toBase, Category.assoc L.toBase, hsource, hf]
   · simp only [toBase_append, toBase_snoc, toBase_nil, Category.comp_id, htarget]
   · intro h₀ h₁
-    rw [baseCenter_append_castAdd hτTower hU, baseCenter_snoc_nil,
-      hτTower.lastCenter_eq _ (Ψ.isClosed_singleton_distinguishedPoint τ)
-        (Ψ.distinguishedPointHom τ).ker_eq_ker_fromSpecResidueField]
+    rw [hfirst]
     exact (Fan.characterRuling_distinguishedPointHom_eq_of_hirzebruch_link
       b d hd₀ hd₁ σ τ hσ hτ h₀ h₁ (IsLocalRing.closedPoint ℂ)).symm
   · intro m h₀ h₁ j
-    rw [baseCenter_append_natAdd hτTower hU, toBase_snoc, toBase_nil, Category.comp_id, ← htarget]
     have hpoint := congrArg (fun f : X[F] ⟶ projectiveLine ℂ ↦ f (g'.inv (hU.baseCenter j)))
       (s.comp_characterRuling_eq t m h₀ h₁)
-    simpa only [Scheme.Hom.comp_apply, hpts j] using hpoint.symm
+    simpa only [Scheme.Hom.comp_apply, hpts j, htail j] using hpoint.symm
   · intro C C' a β m
     have h := congrArg (pullback g'.inv) (hcoord a β 0)
     simp only [add_zero, sub_zero, pullback_comp, Iso.inv_hom_id, pullback_id] at h
