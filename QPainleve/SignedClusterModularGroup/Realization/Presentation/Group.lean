@@ -48,11 +48,6 @@ variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   (Q : CompleteToricPresentation i b r L γ)
   {c : Point Centers[r]} {M₀ : MarkedSurface ℂ n B XTor[r]}
 
-local instance : Nonempty Q.fan.cones := Q.complete.nonempty_cones
-local instance : NeZero Q.length := Q.neZero
-local instance : PrestableFamily ((Q.fan.boundaryIdeal Q.complete.nonempty_cones).subscheme ↘ S) :=
-  Q.prestable
-
 local notation "Models[" M "," C "]" =>
   HasToricTargetModels (T₀ := Centers[r]) (T₁ := Centers[r]) (b := b) (s := Q.rays)
     (hΦ := Q.regular) (T := Q.cycle) (origin := Q.origin) (ι := Q.inclusion) (P₁ := M)
@@ -71,6 +66,9 @@ theorem exists_picardGroupEquivs_of_nodal_model
     (hnef : (classOf(M₀.isEffectiveCartier_boundaryIdeal)).IsNef ℂ (M₀.surface ↘ S))
     (hsq : Chow.classIntersectionNumber ℂ M₀.surface classOf(M₀.isEffectiveCartier_boundaryIdeal)
       classOf(M₀.isEffectiveCartier_boundaryIdeal) = 0) :
+    letI := Q.complete.nonempty_cones
+    letI := Q.prestable
+    letI := Q.neZero
     let d := M₀.boundaryClass M₀.isEffectiveCartier_boundaryIdeal
     ∃ (M : Point Centers[r] → MarkedSurface ℂ n B XTor[r])
       (hD : ∀ z, D[M z].IsEffectiveCartier)
@@ -93,6 +91,9 @@ theorem exists_picardGroupEquivs_of_nodal_model
   obtain ⟨M, hD, hM, hfamily⟩ :=
     Q.exists_marked_family_of_nodal_model href M₀.isEffectiveCartier_boundaryIdeal
   dsimp only
+  let := Q.complete.nonempty_cones
+  let := Q.prestable
+  let := Q.neZero
   subst M₀
   let P : ChargeSeed E N :=
     ⟨b.detDualEquiv.toLinearMap, Fan.rayChargeMap Q.rays, b.detDualEquiv_self, hE.symm⟩
