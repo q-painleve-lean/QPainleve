@@ -10,6 +10,7 @@ public import QPainleve.AlgebraicGeometry.LineBundle.EffectiveClass
 
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Pluricanonical
 import QPainleve.AlgebraicGeometry.CartierDivisor.ZeroDivisor
+import QPainleve.AlgebraicGeometry.Cohomology.Isomorphism
 import QPainleve.AlgebraicGeometry.Modules.Differentials.Restriction
 import TauCeti.AlgebraicGeometry.Cohomology.ProjectiveSpace.TwistingSheaf
 
@@ -66,8 +67,7 @@ theorem subsingleton_cohomology_zero_pluricanonical_of_isRationalOver {m : ℕ} 
     rw [← pullback_mk, mk_tensorPow, pullback_pow, mk_tensorPow, pullback_mk,
       mk_pullback_canonicalBundle]
   obtain ⟨eL⟩ := mk_eq_mk_iff.mp hL
-  let eVW := (e.hom.cohomologyPullbackBaseLinearEquivOfIsIso k L.obj 0).symm.trans
-    (cohomologyBaseLinearEquivOfIso k eL 0)
+  let eVW := (e.hom.cohomologyBaseLinearEquivOfPullbackIso k eL 0).symm
   let b := Pi.basisFun k (Fin 3)
   let d : ℤ := (-3) * (m : ℤ)
   let H := Proj.symmetricAlgebraTwistingBundle k (Fin 3 → k) d
