@@ -42,15 +42,12 @@ private theorem xEvaluation_eq_of_reframed_hom (U : OrderedToricModel A m)
     (hhom : U.hom ≫ f.toFanHom.algebraicMap = W.hom) :
     W.xEvaluation = U.xEvaluation := by
   let c := centerCharacter U.parameters
-  have h := f.toFanHom.comp_xEvaluation U.basis W.basis U.rays W.rays id c c
-    (fun _ ↦ rfl) (fun j ↦ by
-      ext x
-      simpa only [hb, ht, Function.comp_apply, FanEquiv.primitiveGenerator_rayEquiv,
-        FanEquiv.toFanHom_latticeMap, AddMonoidHom.coe_comp, LinearMap.toAddMonoidHom_coe,
-        AddMonoidHom.coe_ofClass, id_eq, AddEquiv.coe_toIntLinearEquiv] using
-        U.basis.detDualEquiv_map f.latticeEquiv.toIntLinearEquiv (U.rays j).primitiveGenerator x)
-  have hid : CommRingCat.ofHom (AlgHom.id ℂ (LaurentRing ℂ (Fin m))).toRingHom = 𝟙 _ := rfl
-  rw [rename_id, hid, Spec.map_id, Scheme.RationalMap.compHom_id] at h
+  have h : f.toFanHom.algebraicMap.toRationalMap.comp (W.fan.xEvaluation W.basis W.rays c) =
+      U.fan.xEvaluation U.basis U.rays c := by
+    rw [hb, ht]
+    simpa only [Equiv.coe_refl, Function.comp_id, rename_id, AlgHom.toRingHom_eq_coe,
+      AlgHom.id_toRingHom, CommRingCat.ofHom_id, Spec.map_id, Scheme.RationalMap.compHom_id] using!
+      f.comp_xEvaluation U.basis U.rays (Equiv.refl _) c
   simpa only [W.xEvaluation_def, U.xEvaluation_def, hc, c, ← Scheme.RationalMap.comp_assoc,
     Scheme.RationalMap.comp_toRationalMap, Scheme.Hom.toRationalMap_compHom, hhom] using
     congrArg (U.hom.toRationalMap.comp ·) h
