@@ -128,16 +128,9 @@ theorem xPullback_eq_iff_exponentEquiv_eq_on_basis_of_one_component
       ∀ j, w.exponentEquiv (β j : Fin r → ℤ) = v.exponentEquiv (β j : Fin r → ℤ) := by
   obtain ⟨_, _, _, _, hinj, -⟩ :=
     Q.exists_picardEquiv_with_faithful_exchangeKernelAction href hE hprim hnef hsq
-  have hloop : signedClusterModularGroupMap ℂ E (End.of w) =
-      signedClusterModularGroupMap ℂ E (End.of v) ↔ w.xPullback ℂ = v.xPullback ℂ :=
-    signedClusterModularGroupMap_eq_iff ℂ E (End.of w) (End.of v)
   rw [Path.xPullback_eq_iff_ySeed_coefficient_eq k w v,
-    ← Path.xPullback_eq_iff_ySeed_coefficient_eq ℂ w v, ← hloop,
-    ← op_injective.eq_iff, ← hinj.eq_iff]
-  simp only [exchangeKernelAction_op_loop,
-    ← Path.coe_exchangeKernelEquiv_apply, Subtype.coe_injective.eq_iff]
-  exact ⟨fun h j ↦ DFunLike.congr_fun h (β j),
-    fun h ↦ LinearEquiv.toLinearMap_injective (β.ext h)⟩
+    ← Path.xPullback_eq_iff_ySeed_coefficient_eq ℂ w v]
+  exact xPullback_eq_iff_exponentEquiv_eq_on_basis_of_injective ℂ E hinj w v β
 
 include href hE hprim hnef hsq in
 /-- A decision procedure for signed loop equality in a one-component presentation.
