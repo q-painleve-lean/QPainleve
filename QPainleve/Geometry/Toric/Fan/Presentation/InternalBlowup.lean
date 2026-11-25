@@ -296,13 +296,13 @@ theorem HasToricPresentation.internalBlowup [IsLocallyNoetherian X]
   have hI : ((D.subscheme.fromSpecResidueField q).ker).map D.subschemeι = I := by
     rw [D.subschemeι.map_ker_fromSpecResidueField, hq,
       Scheme.ker_fromSpecResidueField_eq_vanishingIdeal]
-  obtain ⟨Φ, hΦ, hc, m, r, c, n, Z, T, hT, e, he, hD⟩ := (hasToricPresentation_iff ..).mp h
+  obtain ⟨m, ⟨Φ, hΦ, hc, r, c, n, Z, T, hT, e, he, hD⟩⟩ := (hasToricPresentation_iff ..).mp h
   let := hc.nonempty_cones
   obtain ⟨r', a, W, U, _, hU, _, d, _, hd, hB⟩ :=
     Fan.exists_toric_presentation_of_internal_blowup b hΦ hc r c hT e he
       ((radical_comap_of_isOpenImmersion _ _).trans hD) hN hqclosed hs
   rw [← hI]
-  exact (hasToricPresentation_iff ..).mpr
-    ⟨Φ, hΦ, hc, m + 1, Fin.snoc r r', Fin.snoc c a, n, W, U, hU, d, hd, hB⟩
+  exact ToricPresentation.hasToricPresentation (r := m + 1)
+    ⟨Φ, hΦ, hc, Fin.snoc r r', Fin.snoc c a, n, W, U, hU, d, hd, hB⟩
 
 end AlgebraicGeometry.Scheme.IdealSheafData

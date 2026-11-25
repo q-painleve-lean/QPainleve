@@ -6,9 +6,8 @@ Authors: The QPainleve contributors
 module
 
 public import QPainleve.Algebra.Cluster.ChargeKernel.Coordinates
-public import QPainleve.Algebra.Cluster.Word.Relations
+public import QPainleve.Algebra.Cluster.Word.LoopComparison.Basic
 public import QPainleve.Geometry.Toric.Fan.Boundary.Numbering
-public import QPainleve.LinearAlgebra.Matrix.Kernel
 public import QPainleve.SignedClusterModularGroup.Realization.Presentation
 public import QPainleve.SignedClusterModularGroup.Realization.Relations.RayOrders
 public import QPainleve.SignedClusterModularGroup.Realization.Relations.SurvivingOffsets
@@ -44,10 +43,8 @@ def compareSignedLoopsOfRayCoordinates {m n r : ℕ} [NeZero n]
     (ray : Fin m → Fin 2 → ℤ) (centerRay : Fin r → Fin m)
     (survivors : Finset (Fin m)) (hcard : survivors.card = n)
     (w v : Word (seed[ray,centerRay]) (seed[ray,centerRay])) : Bool :=
-  let orders := boundaryOrderTable (ray ∘ centerRay) ray survivors hcard
-  let vectors := (seed[ray,centerRay]).matrix.intKernelBasisVectors.2
-  decide (w.signedLoopInvariants vectors orders (orders 0) =
-    v.signedLoopInvariants vectors orders (orders 0))
+  (seed[ray,centerRay]).compareSignedLoops
+    (boundaryOrderTable (ray ∘ centerRay) ray survivors hcard) w v
 
 namespace CompleteToricPresentation
 
@@ -118,7 +115,8 @@ theorem compareSignedLoopsOfRayCoordinates_eq_true_iff
       (hAt j ▸ hkeep j hj))
     (ray ∘ centerRay) ray hcharge (fun j hj ↦ (hAt j).symm ▸ hray j (Or.inl hj))
   obtain ⟨β, hβ⟩ := (seed[ray,centerRay]).matrix.exists_basis_eq_intKernelBasisVectors
-  simp only [compareSignedLoopsOfRayCoordinates, decide_eq_true_eq, hord, ← hβ]
+  simp only [compareSignedLoopsOfRayCoordinates, SkewExchangeMatrix.compareSignedLoops_eq_true_iff,
+    hord, ← hβ]
   exact (Q.xPullback_eq_iff_signedLoopInvariants_eq_of_nodal_contraction k p₀ hnodal₀ hE
     hprim hnef hsq w v β).symm
 

@@ -20,7 +20,7 @@ boundary components. The opposite cluster modular groups of the resulting seed
 act by signed boundary isometries and boundary rotations on the original Picard
 lattice. The moving family retains the original pair as its reference fiber.
 
-The construction combines `Fan.hasToricPresentation_of_ruled_reduction` with
+The construction combines `IdealSheafData.hasToricPresentation_of_anticanonical_cycle` with
 `exists_picardGroupEquivs_of_toric_presentation`.
 -/
 
@@ -60,13 +60,12 @@ theorem exists_picardGroupEquivs_of_anticanonical_cycle
     (hsq : Chow.classIntersectionNumber ℂ X δ[hD] δ[hD] = 0) :
     ∃ P : PicardGroupIdentification i (12 - n) A hD,
       P.basis = b ∨ P.basis = b.reindex (Equiv.swap 0 1) := by
-  have hP := Fan.hasToricPresentation_of_ruled_reduction (b := b) hi A hD hcan
-  obtain ⟨Φ, hΦ, hc, r, s, u, k, W, T, hT, e, hbase, hker⟩ :=
-    (hasToricPresentation_iff ..).mp hP
-  have hr := Fan.centerCount_eq_of_square_zero hΦ hc s u hT e hker A hD hcan hsq
+  obtain ⟨r, ⟨P⟩⟩ := (hasToricPresentation_iff ..).mp
+    (D.hasToricPresentation_of_anticanonical_cycle b hi A hD hcan)
+  have hr := Fan.centerCount_eq_of_square_zero P.regular P.complete P.rays P.parameters
+    P.isNodal P.iso P.iso_boundary A hD hcan hsq
   subst r
-  obtain ⟨P, hframe, -⟩ :=
-    exists_picardGroupEquivs_of_toric_presentation hΦ hc s u hT e hbase hker A hD hprim hnef hsq
-  exact ⟨P, hframe.imp And.left And.left⟩
+  obtain ⟨Q, hframe, -⟩ := exists_picardGroupEquivs_of_toric_presentation P A hD hprim hnef hsq
+  exact ⟨Q, hframe.imp And.left And.left⟩
 
 end QPainleve.SignedClusterModularGroup

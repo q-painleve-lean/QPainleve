@@ -128,15 +128,15 @@ theorem exists_cluster_cremona_equivs_of_toric_presentation
   let : IsNoetherian X := isNoetherian_of_finiteType (X ↘ S)
   let := (X ↘ S).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two
   intro hroot
-  have hP : D.HasToricPresentation (X ↘ S) b i :=
-    (hasToricPresentation_iff ..).mpr ⟨Φ, hΦ, hc, r, s, u, k, W, T, hT, e, hbase, hker⟩
-  have hK := hP.canonicalClass hD (by
+  let presentation : D.ToricPresentation (X ↘ S) b i r :=
+    ⟨Φ, hΦ, hc, s, u, k, W, T, hT, e, hbase, hker⟩
+  have hK := presentation.hasToricPresentation.canonicalClass hD (by
     rw [← over_eq_subschemeι_comp]
     exact PrestableFamily.atWorstNodalOfRelativeDimensionOne)
   obtain ⟨π, hπ, hsurj, hinj, hsmall⟩ :=
     BoundaryCycle.exists_cremonaProjection_of_numbering ℂ A hD hK hnef hsq hroot
   obtain ⟨P, hframe, hrays⟩ :=
-    exists_picardGroupEquivs_of_toric_presentation hΦ hc s u hT e hbase hker A hD hprim hnef hsq
+    exists_picardGroupEquivs_of_toric_presentation presentation A hD hprim hnef hsq
   let d := classes[A,hD]
   let Θ := P.signedEquiv
   let φ := π.comp Θ.toMonoidHom
