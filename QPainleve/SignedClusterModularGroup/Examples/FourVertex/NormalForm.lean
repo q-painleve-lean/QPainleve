@@ -188,46 +188,64 @@ private theorem signedNormalFormPicard_bijective :
     obtain ⟨⟨i, m⟩, rfl⟩ := normalFormPicard_surjective r
     exact ⟨⟨e, i, m⟩, (eq_mul_of_inv_mul_eq hr.symm).symm⟩
 
-/-- Every unsigned four-vertex X map has a unique expression `π₂ ^ i * T ^ m`,
-where `0 ≤ i < 4` and `m` is any integer. Multiplication is point-map composition. -/
-theorem existsUnique_unsigned_normal_form (g : Γ) :
-    ∃! a : Fin 4 × ℤ,
-      unsigned[rotationWord,inversionCount_rotationWord] ^ (a.1 : ℕ) *
-        unsigned[translationWord,inversionCount_translationWord] ^ a.2 = g := by
-  let e := picardRotationEquiv markedPicardEquiv ker_sign_comp_markedPicardEquiv
-  have heval (a : Fin 4 × ℤ) :
-      e (op (unsigned[rotationWord,inversionCount_rotationWord] ^ (a.1 : ℕ) *
-        unsigned[translationWord,inversionCount_translationWord] ^ a.2)) =
-      t ^ a.2 * p ^ (a.1 : ℕ) := by
+/-- The normal form of an unsigned four-vertex X map, with rotation exponent in `Fin 4`
+and translation exponent in `ℤ`. The forward map multiplies in point-map order. -/
+def unsignedNormalFormEquiv : Fin 4 × ℤ ≃ Γ := by
+  let Θ := picardRotationEquiv markedPicardEquiv ker_sign_comp_markedPicardEquiv
+  let f (a : Fin 4 × ℤ) :=
+    unsigned[rotationWord,inversionCount_rotationWord] ^ (a.1 : ℕ) *
+      unsigned[translationWord,inversionCount_translationWord] ^ a.2
+  refine Equiv.ofBijective f (((Θ.bijective.comp op_bijective).of_comp_iff' f).mp ?_)
+  have hcomp : (⇑Θ ∘ op) ∘ f = fun a ↦ t ^ a.2 * p ^ (a.1 : ℕ) := by
+    funext a
     apply rotationInclusion_injective H D
-    simp only [e, op_mul, op_pow, op_zpow, map_mul, map_pow, map_zpow,
-      rotationInclusion_picardRotationEquiv_apply, MonoidHom.op_apply_apply, Function.comp_apply,
-      unop_op, clusterModularGroupInclusion_clusterModularGroupMap,
-      markedPicardEquiv_rotationWord, markedPicardEquiv_translationWord]
-  obtain ⟨a, ha⟩ := normalFormPicard_surjective (e (op g))
-  refine ⟨a, op_injective (e.injective ((heval a).trans ha)), ?_⟩
-  intro b hb
-  apply normalFormPicard_injective
-  exact (heval b).symm.trans ((congrArg (fun x ↦ e (op x)) hb).trans ha.symm)
+    simp only [Function.comp_apply, f, Θ, op_mul, op_pow, op_zpow, map_mul, map_pow, map_zpow,
+      rotationInclusion_picardRotationEquiv_apply, MonoidHom.op_apply_apply, unop_op,
+      clusterModularGroupInclusion_clusterModularGroupMap, markedPicardEquiv_rotationWord,
+      markedPicardEquiv_translationWord]
+  exact hcomp ▸ ⟨normalFormPicard_injective, normalFormPicard_surjective⟩
 
-/-- Every signed four-vertex X map has a unique expression `π₂ ^ i * T ^ m * π₁ ^ e`,
-where `0 ≤ i < 4`, `m` is any integer and `e` is zero or one. The last exponent records
-the sign. Multiplication is point-map composition. -/
-theorem existsUnique_signed_normal_form (g : Γ̂) :
-    ∃! a : Fin 2 × Fin 4 × ℤ,
-      eval[rotationWord] ^ (a.2.1 : ℕ) * eval[translationWord] ^ a.2.2 *
-        eval[reflectionWord] ^ (a.1 : ℕ) = g := by
-  have heval (a : Fin 2 × Fin 4 × ℤ) :
-      markedPicardEquiv (op (eval[rotationWord] ^ (a.2.1 : ℕ) * eval[translationWord] ^ a.2.2 *
-        eval[reflectionWord] ^ (a.1 : ℕ))) =
-      boundaryReflection ^ (a.1 : ℕ) * incl (t ^ a.2.2 * p ^ (a.2.1 : ℕ)) := by
-    simp only [op_mul, op_pow, op_zpow, map_mul, map_pow, map_zpow,
+/-- The unsigned normal form is the product of the rotation and translation powers,
+with the rotation power on the left. -/
+@[simp]
+theorem unsignedNormalFormEquiv_apply (a : Fin 4 × ℤ) :
+    unsignedNormalFormEquiv a =
+      unsigned[rotationWord,inversionCount_rotationWord] ^ (a.1 : ℕ) *
+        unsigned[translationWord,inversionCount_translationWord] ^ a.2 :=
+  (rfl)
+
+/-- The normal form of a signed four-vertex X map. The exponents are ordered as reflection,
+rotation, and translation. The forward map appends the reflection power on the right in
+point-map order. -/
+def signedNormalFormEquiv : Fin 2 × Fin 4 × ℤ ≃ Γ̂ := by
+  let f (a : Fin 2 × Fin 4 × ℤ) := eval[rotationWord] ^ (a.2.1 : ℕ) *
+    eval[translationWord] ^ a.2.2 * eval[reflectionWord] ^ (a.1 : ℕ)
+  refine Equiv.ofBijective f
+    (((markedPicardEquiv.bijective.comp op_bijective).of_comp_iff' f).mp ?_)
+  have hcomp : (⇑markedPicardEquiv ∘ op) ∘ f =
+      fun a ↦ boundaryReflection ^ (a.1 : ℕ) * incl (t ^ a.2.2 * p ^ (a.2.1 : ℕ)) := by
+    funext a
+    simp only [Function.comp_apply, f, op_mul, op_pow, op_zpow, map_mul, map_pow, map_zpow,
       markedPicardEquiv_rotationWord, markedPicardEquiv_translationWord,
       markedPicardEquiv_reflectionWord]
-  obtain ⟨a, ha⟩ := signedNormalFormPicard_bijective.surjective (markedPicardEquiv (op g))
-  refine ⟨a, op_injective (markedPicardEquiv.injective ((heval a).trans ha)), ?_⟩
-  intro b hb
-  exact signedNormalFormPicard_bijective.injective ((heval b).symm.trans
-    ((congrArg (fun x ↦ markedPicardEquiv (op x)) hb).trans ha.symm))
+  exact hcomp ▸ signedNormalFormPicard_bijective
+
+/-- The signed normal form evaluates to the rotation, translation, and reflection
+powers in that product order. -/
+@[simp]
+theorem signedNormalFormEquiv_apply (a : Fin 2 × Fin 4 × ℤ) :
+    signedNormalFormEquiv a = eval[rotationWord] ^ (a.2.1 : ℕ) *
+      eval[translationWord] ^ a.2.2 * eval[reflectionWord] ^ (a.1 : ℕ) :=
+  (rfl)
+
+/-- The unsigned inclusion preserves the rotation and translation exponents and sets
+the reflection exponent to zero. -/
+@[simp]
+theorem signedNormalFormEquiv_symm_apply_clusterModularGroupInclusion (g : Γ) :
+    signedNormalFormEquiv.symm (clusterModularGroupInclusion ℂ B g) =
+      (0, unsignedNormalFormEquiv.symm g) := by
+  obtain ⟨a, rfl⟩ := unsignedNormalFormEquiv.surjective g
+  rw [Equiv.symm_apply_apply, Equiv.symm_apply_eq]
+  simp [clusterModularGroupInclusion_clusterModularGroupMap]
 
 end QPainleve.FourVertex

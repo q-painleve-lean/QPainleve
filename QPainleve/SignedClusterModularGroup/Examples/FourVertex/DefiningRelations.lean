@@ -328,10 +328,10 @@ def unsignedPresentationMulEquiv : PresentedGroup unsignedRelators ≃* Γ := by
         · exact Subgroup.mem_sup_right (Subgroup.mem_zpowers tu)) g
     obtain ⟨hp, hpt, hppt⟩ := unsignedPresentedGroup_relations
     exact rotationTranslation_normal_form hp hpt hppt hg
-  have hf : Function.Bijective (f ∘ collect) := by
-    rw [Function.bijective_iff_existsUnique]
-    intro g
-    simpa [f, collect, unsignedGenerators] using existsUnique_unsigned_normal_form g
+  have hcomp : f ∘ collect = unsignedNormalFormEquiv := by
+    funext a
+    simp [f, collect, unsignedGenerators]
+  have hf := hcomp ▸ unsignedNormalFormEquiv.bijective
   exact MulEquiv.ofBijective f ⟨hf.injective.of_comp_right hcollect, hf.surjective.of_comp⟩
 
 /-- The signed group of independent X maps is presented by the rotation, translation,
@@ -349,10 +349,10 @@ def signedPresentationMulEquiv : PresentedGroup signedRelators ≃* Γs := by
         · exact Subgroup.mem_sup_right (Subgroup.mem_zpowers ss)) g
     obtain ⟨hp, hpt, hppt, hs, hsp, hspt⟩ := signedPresentedGroup_relations
     exact rotationTranslationReflection_normal_form hp hpt hppt hs hsp hspt hg
-  have hf : Function.Bijective (f ∘ collect) := by
-    rw [Function.bijective_iff_existsUnique]
-    intro g
-    simpa [f, collect, signedGenerators, point] using existsUnique_signed_normal_form g
+  have hcomp : f ∘ collect = signedNormalFormEquiv := by
+    funext a
+    simp [f, collect, signedGenerators, point]
+  have hf := hcomp ▸ signedNormalFormEquiv.bijective
   exact MulEquiv.ofBijective f ⟨hf.injective.of_comp_right hcollect, hf.surjective.of_comp⟩
 
 /-- The unsigned presentation evaluates its generators as the rotation and translation. -/
