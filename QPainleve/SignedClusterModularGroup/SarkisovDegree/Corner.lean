@@ -15,7 +15,6 @@ public import QPainleve.Geometry.Toric.Fan.Smooth
 public import QPainleve.SignedClusterModularGroup.SarkisovDegree.ToricLink
 
 import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
-import QPainleve.AlgebraicGeometry.Morphisms.IsoLocus
 import QPainleve.AlgebraicGeometry.Morphisms.Modification.Birational
 import QPainleve.AlgebraicGeometry.RationalMap.FunctionField
 import QPainleve.Geometry.Toric.Fan.Boundary.Subdivision
@@ -41,7 +40,7 @@ This is the torus-fixed case of Proposition 8.11 in
 
 public noncomputable section
 
-open AlgebraicGeometry CategoryTheory Module PointedCone TauCeti.Toric TopologicalSpace
+open AlgebraicGeometry CategoryTheory Module PointedCone TauCeti.Toric
 open TauCeti.AlgebraicGeometry LineBundleClass Scheme.IdealSheafData
 
 namespace QPainleve.BlowupTower.IsClosedPointTower
@@ -107,30 +106,6 @@ private theorem toric_corner_baseCenter_ruling {F Ψ : Fan i}
     have h := s.comp_characterRuling_eq t (b.coord 1).toAddMonoidHom h₀ h₁
     simpa only [Fin.addCases_right, Function.comp_apply, Scheme.Hom.comp_apply, hz, hz'] using
       congrArg (fun f ↦ f z) h.symm
-
-private theorem toric_corner_center_on_contracted_ray {F Ψ : Fan i} [Nonempty F.cones]
-    (b : Basis (Fin 2) ℤ N) (s : F.IsSubdivision Φ) (t : F.IsSubdivision Ψ)
-    (hF : F.IsRegular) (τ : Ψ.cones) (ρ : Φ.Ray)
-    (hcontract : (I[τ]).comap π[t] = F.rayBoundaryIdeal hF (s.liftRay ρ))
-    (c : ℂˣ) {z : X[F]} (hz : π[s] z = center[b,ρ,c]) :
-    π[t] z = Ψ.distinguishedPointHom τ pt := by
-  let q := center[b,s.liftRay ρ,c]
-  have hq : π[s] q = center[b,ρ,c] := congrArg (fun f : S ⟶ X[Φ] ↦ f pt)
-    (s.binomialCenter_liftRay_comp_algebraicMap ρ b c)
-  have hi : center[b,ρ,c] ∈ (π[s]).isoLocus :=
-    s.range_binomialCenter_subset_isoLocus ρ rankTwo(b) (b.detDualEquiv_self _)
-      (ρ.surjective_detCharacter b) c (Set.mem_range_self pt)
-  have hqz : q = z := (π[s]).injOn_preimage_isoLocus (by rwa [Set.mem_preimage, hq])
-    (by rwa [Set.mem_preimage, hz]) (hq.trans hz.symm)
-  have hs := ((s.liftRay ρ).binomialCenter_mem_support_sdiff_colon hF rankTwo(b)
-    (b.detDualEquiv_self _) ((s.liftRay ρ).surjective_detCharacter b) c).1
-  let : IsClosedImmersion (Ψ.distinguishedPointHom τ) :=
-    Ψ.isClosedImmersion_distinguishedPointHom τ
-  rw [← hcontract, support_comap, Closeds.coe_preimage, Set.mem_preimage,
-    Scheme.Hom.support_ker, (Ψ.distinguishedPointHom τ).isClosedEmbedding.isClosed_range.closure_eq]
-    at hs
-  obtain ⟨x, hx⟩ := hs
-  rw [← hqz, ← hx, Subsingleton.elim pt x]
 
 /-- Perform the toric elementary link at the first center over the selected
 corner of a specified Hirzebruch resolution. The two projections from the
@@ -277,7 +252,8 @@ theorem exists_sarkisov_decrease_of_toric_corner
       hU.baseCenter (l.natAdd 1) = hU.baseCenter (Fin.castAdd n (0 : Fin 1)) := by
     obtain ⟨z, hs, ht⟩ := hpts l
     rw [← ht, hhead]
-    exact toric_corner_center_on_contracted_ray b s t hF τ (r 1) hcontract c (hs.trans hl)
+    exact s.algebraicMap_eq_distinguishedPoint_of_binomialCenter t b hF τ (r 1) hcontract c
+      (hs.trans hl)
   have hshared : (r 3).primitiveGenerator = (r' 3).primitiveGenerator := by
     simp [congrFun hr 3, congrFun hr' 3, hd₀, hd₁, add_zsmul]
     abel
