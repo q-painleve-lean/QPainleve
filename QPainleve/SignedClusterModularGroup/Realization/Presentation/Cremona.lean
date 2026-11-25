@@ -52,10 +52,10 @@ variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   (Q : CompleteToricPresentation i b r L γ)
   {c : Point Centers[r]} {M₀ : MarkedSurface ℂ n B XTor[r]}
 
-local instance : Nonempty Q.fan.cones := Q.complete.nonempty_cones
-local instance : NeZero Q.length := Q.neZero
-local instance : PrestableFamily ((Q.fan.boundaryIdeal Q.complete.nonempty_cones).subscheme ↘ S) :=
-  Q.prestable
+local instance instNonemptyCremonaCones : Nonempty Q.fan.cones := Q.complete.nonempty_cones
+local instance instNeZeroCremonaBoundaryLength : NeZero Q.length := Q.neZero
+local instance instPrestableCremonaBoundary :
+    PrestableFamily ((Q.fan.boundaryIdeal Q.complete.nonempty_cones).subscheme ↘ S) := Q.prestable
 
 local notation "Models[" M "," C "]" =>
   HasToricTargetModels (T₀ := Centers[r]) (T₁ := Centers[r]) (b := b) (s := Q.rays)
