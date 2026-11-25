@@ -60,16 +60,13 @@ local notation "δ" => (LineBundleClass.mk (IsEffectiveCartier.toInvertibleSheaf
 
 variable (k : Type*) [Field k]
 
-/-- Specialization from complex coefficients is bijective on signed point maps of
-a marked primitive nef square-zero anticanonical cycle. -/
-theorem signedClusterModularGroupSpecialization_bijective_of_nodal_model
+private theorem injective_signedSpecialization
     (href : Q.HasNodalModel c M₀)
     (hE : E.matrix = chargeExchangeMatrix b.detDualEquiv.toLinearMap (Fan.rayChargeMap Q.rays))
     (hprim : IsPrimitive (Additive.ofMul δ))
     (hnef : LineBundleClass.IsNef ℂ (M₀.surface ↘ S) δ)
     (hsq : Chow.classIntersectionNumber ℂ M₀.surface δ δ = 0) :
-    Function.Bijective (signedClusterModularGroupSpecialization ℂ k E) := by
-  refine ⟨?_, signedClusterModularGroupSpecialization_surjective ℂ k E⟩
+    Function.Injective (signedClusterModularGroupSpecialization ℂ k E) := by
   intro g g' hg
   obtain ⟨w, rfl⟩ := signedClusterModularGroupMap_surjective ℂ E g
   obtain ⟨v, rfl⟩ := signedClusterModularGroupMap_surjective ℂ E g'
@@ -84,6 +81,55 @@ theorem signedClusterModularGroupSpecialization_bijective_of_nodal_model
   exact (Q.xPullback_eq_iff_signedLoopInvariants_eq_of_nodal_contraction
     ℂ p hp hE hprim hnef hsq w.asHom v.asHom β).mpr
       (Path.signedLoopInvariants_eq_of_xPullback_eq hnonzero hg β _ _)
+
+/-- Specialization identifies the signed point maps of a marked primitive nef square-zero
+anticanonical cycle over the complex numbers with those over the target field. -/
+noncomputable def signedSpecializationEquiv
+    (href : Q.HasNodalModel c M₀)
+    (hE : E.matrix = chargeExchangeMatrix b.detDualEquiv.toLinearMap (Fan.rayChargeMap Q.rays))
+    (hprim : IsPrimitive (Additive.ofMul δ))
+    (hnef : LineBundleClass.IsNef ℂ (M₀.surface ↘ S) δ)
+    (hsq : Chow.classIntersectionNumber ℂ M₀.surface δ δ = 0) :
+    SignedClusterModularGroup ℂ E ≃* SignedClusterModularGroup k E :=
+  MulEquiv.ofBijective (signedClusterModularGroupSpecialization ℂ k E)
+    ⟨injective_signedSpecialization Q k href hE hprim hnef hsq,
+      signedClusterModularGroupSpecialization_surjective ℂ k E⟩
+
+/-- The signed equivalence acts by evaluating signed loops over the target field. -/
+@[simp]
+theorem coe_signedSpecializationEquiv
+    (href : Q.HasNodalModel c M₀)
+    (hE : E.matrix = chargeExchangeMatrix b.detDualEquiv.toLinearMap (Fan.rayChargeMap Q.rays))
+    (hprim : IsPrimitive (Additive.ofMul δ))
+    (hnef : LineBundleClass.IsNef ℂ (M₀.surface ↘ S) δ)
+    (hsq : Chow.classIntersectionNumber ℂ M₀.surface δ δ = 0) :
+    ⇑(Q.signedSpecializationEquiv k href hE hprim hnef hsq) =
+      signedClusterModularGroupSpecialization ℂ k E := (rfl)
+
+/-- Specialization identifies the unsigned point maps of a marked primitive nef square-zero
+anticanonical cycle over the complex numbers with those over the target field. -/
+noncomputable def unsignedSpecializationEquiv
+    (href : Q.HasNodalModel c M₀)
+    (hE : E.matrix = chargeExchangeMatrix b.detDualEquiv.toLinearMap (Fan.rayChargeMap Q.rays))
+    (hprim : IsPrimitive (Additive.ofMul δ))
+    (hnef : LineBundleClass.IsNef ℂ (M₀.surface ↘ S) δ)
+    (hsq : Chow.classIntersectionNumber ℂ M₀.surface δ δ = 0) :
+    ClusterModularGroup ℂ E ≃* ClusterModularGroup k E :=
+  MulEquiv.ofBijective (clusterModularGroupSpecialization ℂ k E)
+    ⟨clusterModularGroupSpecialization_injective_of_signed ℂ k E
+      (injective_signedSpecialization Q k href hE hprim hnef hsq),
+      clusterModularGroupSpecialization_surjective ℂ k E⟩
+
+/-- The unsigned equivalence acts by evaluating inversion-free loops over the target field. -/
+@[simp]
+theorem coe_unsignedSpecializationEquiv
+    (href : Q.HasNodalModel c M₀)
+    (hE : E.matrix = chargeExchangeMatrix b.detDualEquiv.toLinearMap (Fan.rayChargeMap Q.rays))
+    (hprim : IsPrimitive (Additive.ofMul δ))
+    (hnef : LineBundleClass.IsNef ℂ (M₀.surface ↘ S) δ)
+    (hsq : Chow.classIntersectionNumber ℂ M₀.surface δ δ = 0) :
+    ⇑(Q.unsignedSpecializationEquiv k href hE hprim hnef hsq) =
+      clusterModularGroupSpecialization ℂ k E := (rfl)
 
 /-- The Picard identifications of the opposite signed and unsigned cluster
 modular groups hold over every field of X coefficients. They retain the
@@ -120,44 +166,37 @@ theorem exists_picardGroupEquivs_over_field_of_nodal_model
   let := Q.complete.nonempty_cones
   let := Q.prestable
   let := Q.neZero
-  obtain ⟨M, hD, hmark, Θ, Θrot, hM, hmodels, hΘ, _, hinc⟩ :=
+  obtain ⟨M, hD, hmark, Θ, Θrot, hM, hmodels, hΘ, hker, hinc⟩ :=
     Q.exists_picardGroupEquivs_of_nodal_model href hE hprim hnef hsq
-  have hbij := Q.signedClusterModularGroupSpecialization_bijective_of_nodal_model
-    k href hE hprim hnef hsq
-  let signedEquiv := MulEquiv.ofBijective (signedClusterModularGroupSpecialization ℂ k E) hbij
-  let unsignedEquiv := MulEquiv.ofBijective (clusterModularGroupSpecialization ℂ k E)
-    ⟨clusterModularGroupSpecialization_injective_of_signed ℂ k E hbij.1,
-      clusterModularGroupSpecialization_surjective ℂ k E⟩
-  have hsword (w : End (Prefunctor.obj (Paths.of (SkewExchangeMatrix (Fin r))) E)) :
-      signedEquiv.symm (signedClusterModularGroupMap k E w) = signedClusterModularGroupMap ℂ E w :=
-    signedEquiv.symm_apply_eq.mpr (signedClusterModularGroupSpecialization_apply ℂ k E _).symm
-  have hcomm (g : ClusterModularGroup k E) :
-      signedEquiv.symm (clusterModularGroupInclusion k E g) =
-        clusterModularGroupInclusion ℂ E (unsignedEquiv.symm g) := by
-    apply signedEquiv.injective
-    rw [MulEquiv.apply_symm_apply]
-    exact ((signedClusterModularGroupSpecialization_inclusion ℂ k E (unsignedEquiv.symm g)).trans
-      (congrArg (clusterModularGroupInclusion k E) (unsignedEquiv.apply_symm_apply g))).symm
-  have hsop (g : (SignedClusterModularGroup k E)ᵐᵒᵖ) :
-      MulEquiv.op signedEquiv.symm g = op (signedEquiv.symm g.unop) := rfl
-  have huop (g : (ClusterModularGroup k E)ᵐᵒᵖ) :
-      MulEquiv.op unsignedEquiv.symm g = op (unsignedEquiv.symm g.unop) := rfl
-  refine ⟨M, hD, hmark, (MulEquiv.op signedEquiv.symm).trans Θ,
-    (MulEquiv.op unsignedEquiv.symm).trans Θrot, hM, hmodels, ?_, ?_, ?_⟩
+  let signedEquiv := Q.signedSpecializationEquiv k href hE hprim hnef hsq
+  let unsignedEquiv := Q.unsignedSpecializationEquiv k href hE hprim hnef hsq
+  refine ⟨M, hD, hmark, (MulEquiv.op signedEquiv).symm.trans Θ,
+    (MulEquiv.op unsignedEquiv).symm.trans Θrot, hM, hmodels, ?_, ?_, ?_⟩
   · intro w
-    simpa only [MulEquiv.trans_apply, hsop, unop_op, hsword] using hΘ w
+    have hw : signedEquiv.symm (signedClusterModularGroupMap k E (End.of w)) =
+        signedClusterModularGroupMap ℂ E (End.of w) :=
+      signedEquiv.symm_apply_eq.mpr (by simp [signedEquiv])
+    simpa only [MulEquiv.trans_apply, MulEquiv.op_apply_symm_apply, Function.comp_apply,
+      unop_op, hw] using hΘ w
   · have hnonzero := href.exchangeMatrix_ne_zero hE hprim hnef hsq
     rw [range_clusterModularGroupInclusion k E hnonzero]
     ext g
-    obtain ⟨w, rfl⟩ := signedClusterModularGroupMap_surjective k E g
-    have hsign :
-        sign B (M₀.boundaryClass cartier) (Θ (op (signedClusterModularGroupMap ℂ E w))) =
-          (-1 : ℤˣ) ^ w.asHom.inversionCount := (hΘ w.asHom).1
+    obtain ⟨g, rfl⟩ := signedEquiv.surjective g
+    have hg := SetLike.ext_iff.mp
+      (hker.trans (range_clusterModularGroupInclusion ℂ E hnonzero)) g
     simp only [Subgroup.mem_unop, MonoidHom.mem_ker, MonoidHom.comp_apply,
-      MulEquiv.coe_toMonoidHom, MulEquiv.trans_apply, hsop, unop_op, hsword,
-      signedInversionSign_apply, hsign]
+      MulEquiv.coe_toMonoidHom, MulEquiv.trans_apply, MulEquiv.op_apply_symm_apply,
+      Function.comp_apply, unop_op, MulEquiv.symm_apply_apply] at hg ⊢
+    simpa only [signedEquiv, coe_signedSpecializationEquiv, signedInversionSign_specialization]
+      using hg
   · intro g
-    simpa only [MulEquiv.trans_apply, hsop, huop, MonoidHom.op_apply_apply,
-      Function.comp_apply, unop_op, hcomm] using hinc (MulEquiv.op unsignedEquiv.symm g)
+    obtain ⟨g, rfl⟩ := (MulEquiv.op unsignedEquiv).surjective g
+    have hcomm :
+        MonoidHom.op (clusterModularGroupInclusion k E) (MulEquiv.op unsignedEquiv g) =
+          MulEquiv.op signedEquiv (MonoidHom.op (clusterModularGroupInclusion ℂ E) g) := by
+      simp only [MulEquiv.op_apply_apply, MonoidHom.op_apply_apply, Function.comp_apply, unop_op,
+        signedEquiv, unsignedEquiv, coe_signedSpecializationEquiv, coe_unsignedSpecializationEquiv,
+        signedClusterModularGroupSpecialization_inclusion]
+    simpa only [MulEquiv.trans_apply, hcomm, MulEquiv.symm_apply_apply] using hinc g
 
 end QPainleve.SignedClusterModularGroup.CompleteToricPresentation

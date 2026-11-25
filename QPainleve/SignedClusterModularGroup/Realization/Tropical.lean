@@ -104,6 +104,35 @@ theorem numberedBoundaryRays_zero (hM : D[M].IsEffectiveCartier) :
       (Φ.boundaryNormalizationComponentEquiv hΦ).symm (T.component o) :=
   (p.numberedBoundaryRays_eq_iff hM 0 o).mpr p.component_zero
 
+/-- The orders of the independent X coordinates along the numbered boundary
+components, indexed by `Fin n` for finite searches. Each row uses the surviving
+toric ray of that component. -/
+def numberedBoundaryOrders (hM : D[M].IsEffectiveCartier) : Fin n → Fin r → ℤ :=
+  Fan.rayBoundaryOrders b s ∘ p.numberedBoundaryRays hM ∘ (ZMod.finEquiv n).toEquiv
+
+/-- The order vector of a numbered component is the order vector of its surviving ray. -/
+theorem numberedBoundaryOrders_apply (hM : D[M].IsEffectiveCartier) (j : Fin n) :
+    p.numberedBoundaryOrders hM j =
+      Fan.rayBoundaryOrders b s (p.numberedBoundaryRays hM ((ZMod.finEquiv n).toEquiv j)) :=
+  (rfl)
+
+/-- The order vector at component zero is determined by the toric origin. -/
+@[simp]
+theorem numberedBoundaryOrders_zero (hM : D[M].IsEffectiveCartier) :
+    p.numberedBoundaryOrders hM 0 =
+      Fan.rayBoundaryOrders b s
+        ((Φ.boundaryNormalizationComponentEquiv hΦ).symm (T.component o)) := by
+  have hz : (ZMod.finEquiv n).toEquiv 0 = 0 := (ZMod.finEquiv n).map_zero
+  simp only [numberedBoundaryOrders_apply, hz, numberedBoundaryRays_zero]
+
+/-- When the charges span a finite-index sublattice, distinct boundary components
+have distinct order vectors. -/
+theorem numberedBoundaryOrders_injective (hM : D[M].IsEffectiveCartier)
+    (hindex : (Fan.rayChargeMap s).range.toAddSubgroup.index ≠ 0) :
+    Function.Injective (p.numberedBoundaryOrders hM) :=
+  (Fan.rayBoundaryOrders_injective b s hindex).comp
+    ((p.numberedBoundaryRays hM).injective.comp (ZMod.finEquiv n).injective)
+
 end ContractedToricFiber
 
 variable {N' V' : Type} [AddCommGroup N'] [AddCommGroup V'] [Module ℝ V']

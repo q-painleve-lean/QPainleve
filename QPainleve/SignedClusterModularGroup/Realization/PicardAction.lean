@@ -19,6 +19,8 @@ For a fixed marked toric presentation, geometric realizations of cluster loops i
 a homomorphism from the opposite point-map group to the signed boundary isometry group.
 The action on a representative is computed by any geometric realization. For
 orientation-preserving realizations the action takes values in the boundary rotations.
+A signed Picard equivalence whose sign kernel is the unsigned subgroup restricts to
+the Picard equivalence with the boundary rotations.
 -/
 
 public section
@@ -57,6 +59,16 @@ theorem rotationInclusion_picardRotationHom_apply (hpos : MonoidHom.range incl �
     rot (picardRotationHom ρ hpos x) = ρ (MonoidHom.op incl x) :=
   MonoidHom.apply_ofInjective_symm (rotationInclusion_injective B d) _
 
+/-- An injective signed Picard action restricts to an injective rotation action. -/
+theorem picardRotationHom_injective (hpos : MonoidHom.range incl ≤ Positive)
+    (hρ : Function.Injective ρ) : Function.Injective (picardRotationHom ρ hpos) := by
+  intro x y hxy
+  have h := congrArg rot hxy
+  simp only [rotationInclusion_picardRotationHom_apply] at h
+  have hop := congrArg unop (hρ h)
+  exact unop_injective (clusterModularGroupInclusion_injective k E (by
+    simpa only [MonoidHom.op_apply_apply, Function.comp_apply, unop_op] using hop))
+
 /-- If positive sign characterizes unsigned maps, the rotation action is
 surjective exactly when the signed action realizes every rotation. -/
 theorem picardRotationHom_surjective_iff (hpos : Positive = MonoidHom.range incl) :
@@ -76,6 +88,26 @@ theorem picardRotationHom_surjective_iff (hpos : Positive = MonoidHom.range incl
     refine ⟨op u, rotationInclusion_injective B d ?_⟩
     simpa only [rotationInclusion_picardRotationHom_apply, MonoidHom.op_apply_apply,
       Function.comp_apply, unop_op, hu, op_unop] using hx
+
+/-- A signed Picard equivalence restricts to the opposite unsigned cluster modular group
+and the boundary rotations when its sign kernel is the image of the unsigned inclusion. -/
+noncomputable def picardRotationEquiv
+    (Θ : (SignedClusterModularGroup k E)ᵐᵒᵖ ≃* signedBoundaryIsometryGroup B d)
+    (hpos : ((sign B d).comp Θ.toMonoidHom).ker.unop = MonoidHom.range incl) :
+    (ClusterModularGroup k E)ᵐᵒᵖ ≃* boundaryRotationGroup B d :=
+  MulEquiv.ofBijective (picardRotationHom Θ.toMonoidHom hpos.ge)
+    ⟨picardRotationHom_injective Θ.toMonoidHom hpos.ge Θ.injective,
+      (picardRotationHom_surjective_iff Θ.toMonoidHom hpos).mpr
+        (fun g _ ↦ MonoidHom.mem_range.mpr (Θ.surjective g))⟩
+
+/-- Including the boundary rotation recovers the signed equivalence on the unsigned map. -/
+@[simp]
+theorem rotationInclusion_picardRotationEquiv_apply
+    (Θ : (SignedClusterModularGroup k E)ᵐᵒᵖ ≃* signedBoundaryIsometryGroup B d)
+    (hpos : ((sign B d).comp Θ.toMonoidHom).ker.unop = MonoidHom.range incl)
+    (x : (ClusterModularGroup k E)ᵐᵒᵖ) :
+    rot (picardRotationEquiv Θ hpos x) = Θ (MonoidHom.op incl x) :=
+  rotationInclusion_picardRotationHom_apply Θ.toMonoidHom hpos.ge x
 
 end Rotation
 

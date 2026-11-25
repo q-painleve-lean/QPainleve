@@ -8,6 +8,8 @@ module
 public import QPainleve.Algebra.Cluster.ChargeKernel.Action
 public import QPainleve.SignedClusterModularGroup.Boundary.Restriction
 
+import QPainleve.SignedClusterModularGroup.Realization.PicardAction
+
 /-!
 # Images of signed cluster actions on Casimir monomials
 
@@ -57,17 +59,12 @@ omit [Fintype ι] in
 include hker in
 private theorem range_picardEquiv_comp_unsignedInclusion :
     (Θ.toMonoidHom.comp incl[k,E]).range = (rotationInclusion B D).range := by
-  have hop : (incl[k,E]).range = (clusterModularGroupInclusion k E).range.op := by
-    ext f
-    simp only [MonoidHom.mem_range, Subgroup.mem_op, MonoidHom.op_apply_apply]
-    constructor
-    · rintro ⟨g, hg⟩
-      exact ⟨g.unop, by simpa only [Function.comp_apply, unop_op] using congrArg unop hg⟩
-    · rintro ⟨g, hg⟩
-      exact ⟨op g, by simpa only [Function.comp_apply, unop_op, op_unop] using congrArg op hg⟩
-  rw [MonoidHom.range_comp, hop, ← hker, Subgroup.op_unop, range_rotationInclusion,
-    ← MonoidHom.comap_ker]
-  exact Subgroup.map_comap_eq_self_of_surjective Θ.surjective _
+  let Θrot := picardRotationEquiv Θ hker
+  have hcomp : (rotationInclusion B D).comp Θrot.toMonoidHom =
+      Θ.toMonoidHom.comp incl[k,E] :=
+    MonoidHom.ext (rotationInclusion_picardRotationEquiv_apply Θ hker)
+  have hrange : Θrot.toMonoidHom.range = ⊤ := MonoidHom.range_eq_top.mpr Θrot.surjective
+  rw [← hcomp, MonoidHom.range_comp, hrange, Subgroup.map_top]
 
 include hCasimir hker in
 /-- The unsigned Casimir image is the image of the boundary rotations, restricted to the
