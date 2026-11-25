@@ -10,6 +10,7 @@ public import QPainleve.Geometry.Toric.Fan.Adjacency
 public import TauCeti.Geometry.Toric.Algebraic.Fan.Over
 
 import QPainleve.Geometry.Toric.Fan.FunctionField
+import QPainleve.Geometry.Toric.Fan.Ray
 import TauCeti.Geometry.Toric.Algebraic.Fan.AffineSpace.Scheme
 import TauCeti.Geometry.Toric.Algebraic.Fan.SubfanScheme
 
@@ -72,5 +73,19 @@ theorem isRationalOver_of_ray_ne_of_le (hΦ : Φ.IsRegular) (hN : Module.finrank
   have hσ : σ.val = PointedCone.hull ℝ (Set.range fun j : Fin 2 ↦ i (b j)) := hcone
   rw [← hσ]
   exact σ.property
+
+/-- A complete regular rank-two fan realizes a rational surface. -/
+theorem isRationalOver_of_isComplete (hΦ : Φ.IsRegular) (hc : Φ.IsComplete)
+    (b : Basis (Fin 2) ℤ N) :
+    Scheme.IsRationalOver (Φ.algebraicRealization ↘ Spec (CommRingCat.of ℂ)) := by
+  have : Nontrivial N := b.equivFun.toEquiv.nontrivial
+  obtain ⟨ρ⟩ := Φ.nonempty_ray_of_isComplete hc
+  obtain ⟨τ, ⟨hdet, σ, hr, ht⟩, -⟩ := (exists_unique_ray_neighbor_on_each_side b hΦ hc ρ).1
+  have hne : ρ ≠ τ := by
+    intro h
+    rw [← h, b.detDualEquiv_self] at hdet
+    exact zero_ne_one hdet
+  exact Φ.isRationalOver_of_ray_ne_of_le hΦ
+    ((finrank_eq_card_basis b).trans (Fintype.card_fin 2)) hne hr ht
 
 end TauCeti.Toric.Fan
