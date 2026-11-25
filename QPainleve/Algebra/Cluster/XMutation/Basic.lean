@@ -45,6 +45,15 @@ theorem xCoordinate_def (i : ι) :
       algebraMap Laurent Functions (AddMonoidAlgebra.single (Finsupp.single i 1) 1) := by
   rw [xCoordinate, X_def]
 
+/-- A pullback between Laurent function fields is determined by the independent X coordinates. -/
+theorem algEquiv_ext_xCoordinate (k : Type*) [Field k] {ι κ : Type*}
+    {f g : FractionRing (LaurentRing k ι) ≃ₐ[k] FractionRing (LaurentRing k κ)}
+    (h : ∀ i : ι, f (xCoordinate k i) = g (xCoordinate k i)) : f = g := by
+  apply AlgEquiv.coe_toAlgHom_injective
+  apply IsLocalization.algHom_ext (nonZeroDivisors (LaurentRing k ι))
+  apply LaurentRing.algHom_ext
+  exact h
+
 variable [IsDomain k]
 
 /-- Each coordinate is nonzero in the field of independent X coordinates. -/

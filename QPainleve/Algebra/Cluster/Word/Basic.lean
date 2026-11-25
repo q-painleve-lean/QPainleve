@@ -5,6 +5,7 @@ Authors: Yuma Mizuno
 -/
 module
 
+public import Mathlib.Combinatorics.Quiver.Cast
 public import Mathlib.Combinatorics.Quiver.Path.Weight
 public import Mathlib.Combinatorics.Quiver.Symmetric
 public import TauCeti.Algebra.Cluster.ExchangeMatrix.Mutation
@@ -372,6 +373,14 @@ instance : HasInvolutiveReverse (SkewExchangeMatrix ι) where
     exact s.generator.reverse_reverse
 
 namespace Step
+
+/-- Changing a step's endpoints by equality preserves its generator. -/
+@[simp]
+theorem generator_cast {B C B' C' : SkewExchangeMatrix ι} (s : B ⟶ C)
+    (hB : B = B') (hC : C = C') :
+    Step.generator (s.cast hB hC) = Step.generator s := by
+  subst B' C'
+  rfl
 
 @[simp]
 theorem reverse_generator {B C : SkewExchangeMatrix ι} (s : B ⟶ C) :
