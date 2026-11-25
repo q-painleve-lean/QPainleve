@@ -5,15 +5,17 @@ Authors: The QPainleve contributors
 -/
 module
 
+public import QPainleve.AlgebraicGeometry.CartierDivisor.Support
 public import QPainleve.AlgebraicGeometry.Curves.Node.GenericPoint
 public import QPainleve.AlgebraicGeometry.Curves.Node.NumberedPrime
 public import QPainleve.AlgebraicGeometry.IdealSheaf.Boundary.Primes
 public import QPainleve.AlgebraicGeometry.IntersectionNumber.Nef
+public import QPainleve.Geometry.Toric.Fan.Picard.WeightedBoundary
 public import QPainleve.SignedClusterModularGroup.Boundary.Isometry
+public import QPainleve.SignedClusterModularGroup.Realization.Agreement
 public import QPainleve.SignedClusterModularGroup.Realization.Basic
 public import TauCeti.Algebra.Module.Primitive
 
-import QPainleve.AlgebraicGeometry.CartierDivisor.Support
 import QPainleve.AlgebraicGeometry.Chow.Isomorphism
 import QPainleve.AlgebraicGeometry.Chow.Nef.Boundary
 import QPainleve.AlgebraicGeometry.Curves.Node.BoundaryRestriction
@@ -34,7 +36,8 @@ between fibers of a fixed boundary marking gives a signed boundary isometry, or 
 boundary rotation when the action preserves orientation.
 
 The pullback calculation uses `LineBundleClass.pullback_primeDivisorClass_mapOfIsOpenImmersion`
-on the ambient surface isomorphism.
+on the ambient surface isomorphism. The pullback along a toric contraction gives
+the total boundary class in terms of its multiplicities along the strict toric rays.
 -/
 
 public noncomputable section
@@ -625,3 +628,65 @@ theorem toSignedBoundaryIsometry_comp (A' : GeometricRealization P P C₁ F₁) 
 end GeometricRealization
 
 end QPainleve.SignedClusterModularGroup
+
+namespace QPainleve.SignedClusterModularGroup.ContractedToricFiber
+
+open Multiplicative QPainleve.CharacterTorus TauCeti TauCeti.Toric LineBundleClass
+
+variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
+  {i : N →+ V} {Φ : Fan i} [h₀ : Nonempty Φ.cones]
+  {r m n : ℕ} [NeZero m] [NeZero n] {L : Type} [AddCommGroup L]
+  {B : LinearMap.BilinForm ℤ L} {b : Module.Basis (Fin 2) ℤ N}
+  {s : Fin r → Φ.Ray} {hΦ : Φ.IsRegular}
+
+local notation "S" => Spec (CommRingCat.of ℂ)
+local notation "Dtor[" Φ "," h "]" => Scheme.IdealSheafData.subscheme (Fan.boundaryIdeal Φ h)
+local notation "D[" M "]" => Scheme.Hom.ker (Over.Hom.left (Arrow.hom (MarkedSurface.pair M)))
+
+variable [PrestableFamily (Dtor[Φ,h₀] ↘ S)] {γ : Type*}
+  {a : γ → (Dtor[Φ,h₀] ↘ S).smoothLocus}
+  {T : NodalCycleNumbering a m} {origin : ZMod m}
+  {ι : L →ₗ[ℤ] (Additive (LineBundleClass Φ.algebraicRealization) × (Fin r → ℤ))}
+  {c : Multiplicative (Fin r → ℤ) →* ℂˣ} {M : MarkedSurface ℂ n B (scheme ℂ (Fin r →₀ ℤ))}
+  (p : ContractedToricFiber b s hΦ T origin ι c M)
+
+local notation "center" => (fun j : Fin r ↦ c (ofAdd (Pi.single j 1)))
+
+/-- The Weil multiplicity of the total transform of the boundary along a strict toric ray. -/
+def totalBoundaryRayMultiplicity (hD : D[M].IsEffectiveCartier) (ρ : Φ.Ray) : ℤ :=
+  letI := Fan.isIntegral_internalBlowupTower b s center hΦ
+  letI := M.integral
+  Fan.internalBlowupRayMultiplicity hΦ b s center (hD.comap_of_isDominant p.projection) ρ
+
+/-- The contracted boundary multiplicity is the ray coefficient of the pulled-back divisor. -/
+theorem totalBoundaryRayMultiplicity_def (hD : D[M].IsEffectiveCartier) (ρ : Φ.Ray) :
+    letI := Fan.isIntegral_internalBlowupTower b s center hΦ
+    letI := M.integral
+    p.totalBoundaryRayMultiplicity hD ρ =
+      Fan.internalBlowupRayMultiplicity hΦ b s center (hD.comap_of_isDominant p.projection) ρ :=
+  (rfl)
+
+/-- Every ray of the strict toric boundary occurs in the total transform. -/
+theorem totalBoundaryRayMultiplicity_pos (hD : D[M].IsEffectiveCartier) (ρ : Φ.Ray) :
+    0 < p.totalBoundaryRayMultiplicity hD ρ := by
+  rw [p.totalBoundaryRayMultiplicity_def, Fan.internalBlowupRayMultiplicity_pos_iff,
+    p.support_comap]
+  exact (mem_boundaryPrimes.mp
+    (Fan.internalBlowupBoundaryPrimeEquiv hΦ b s center ρ).property).1
+
+/-- The marked inclusion sends the total boundary class to the weighted strict boundary
+class with its actual pullback multiplicities. -/
+theorem inclusion_sum_boundaryClass (hD : D[M].IsEffectiveCartier) :
+    ι (∑ j, M.boundaryClass hD j) =
+      Fan.markedBoundaryMap hΦ s (p.totalBoundaryRayMultiplicity hD) := by
+  let := Fan.isIntegral_internalBlowupTower b s center hΦ
+  let := M.integral
+  have hPullback := hD.comap_of_isDominant p.projection
+  have hclass : pullback p.projection (LineBundleClass.mk hD.toInvertibleSheaf)⁻¹ =
+      (LineBundleClass.mk hPullback.toInvertibleSheaf)⁻¹ := by
+    rw [pullback_inv, hD.pullback_mk_toInvertibleSheaf hPullback]
+  rw [← p.marked_pullback, M.picardMarking_sum_boundaryClass, toMul_ofMul, hclass]
+  exact Fan.internalBlowupPicardMarking_symm_ofMul_inv_toInvertibleSheaf
+    hΦ b s center hPullback p.support_comap.le
+
+end QPainleve.SignedClusterModularGroup.ContractedToricFiber
