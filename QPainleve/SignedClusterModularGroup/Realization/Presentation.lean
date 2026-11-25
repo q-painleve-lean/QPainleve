@@ -12,6 +12,8 @@ public import QPainleve.SignedClusterModularGroup.Realization.MarkedComparison
 
 import QPainleve.Geometry.Toric.Fan.Boundary.Numbering
 
+import QPainleve.Algebra.Cluster.ChargeKernel.Index
+
 /-!
 # Complete marked toric presentations
 
@@ -191,6 +193,22 @@ theorem chargeIndex_ne_zero_of_anticanonical_cycle
     p.chargeIndex_bounds_of_anticanonical_cycle Q.complete hW e hp.symm hD hnef hsq hcan hprim
   intro hz
   simp [hz, NeZero.ne n] at hdiv
+
+/-- A charge seed realizing the determinant pairing and rays of a presentation has a
+nonzero exchange matrix when the ray charges span a finite-index sublattice. -/
+theorem exchangeMatrix_ne_zero_of_chargeIndex_ne_zero
+    (Q : CompleteToricPresentation i b r L γ) {E : SkewExchangeMatrix (Fin r)}
+    (P : ChargeSeed E N)
+    (hform : P.form = b.detDualEquiv.toLinearMap) (hcharge : P.charge = Fan.rayChargeMap Q.rays)
+    (hindex : (Fan.rayChargeMap Q.rays).range.toAddSubgroup.index ≠ 0) :
+    E.matrix ≠ 0 := by
+  rw [← P.matrix_eq, hform, hcharge]
+  intro hzero
+  apply hindex
+  rw [(Fan.rayChargeMap Q.rays).index_range_eq_gcd_chargeExchangeMatrix b
+    b.detDualEquiv_self b.detDualEquiv_apply_basis_zero_one, Finset.gcd_eq_zero_iff]
+  intro j _
+  simp only [hzero, Matrix.zero_apply, Int.natAbs_zero]
 
 /-- The inclusion in the auxiliary Picard lattice is injective whenever the
 presentation has a nodal model. -/

@@ -9,6 +9,8 @@ public import QPainleve.Algebra.Cluster.ChargeKernel.Action
 public import QPainleve.Algebra.Cluster.Tropical.Basic
 public import Mathlib.Logic.Equiv.Fin.Rotate
 
+import QPainleve.Algebra.Cluster.Word.Commute
+
 /-!
 # The four-vertex cluster words of type A₇⁽¹⁾′
 
@@ -294,6 +296,16 @@ theorem translationWord_xPullback_xCoordinate :
   all_goals
     rw [hbinomial, div_pow, inv_div, div_eq_mul_inv]
     simp only [mul_assoc, mul_left_comm, mul_comm]
+
+/-- The translation pullback agrees with the order in (3.1): mutate the third vertex,
+then the first, then swap the first pair and the last pair. Lean labels start at zero. -/
+theorem translationWord_xPullback_mutate_two_first :
+    translationWord.xPullback k =
+      (Generator.mutate 2).xPullback k B * (Generator.mutate 0).xPullback k ((B).mutate 2) *
+        (Generator.permute ρ).xPullback k (((B).mutate 2).mutate 0) := by
+  simp only [translationWord, Path.xPullback_cons, Path.xPullback_nil, one_mul, Step.xPullback_eq]
+  rw [Generator.xPullback_mutate_mul_mutate_comm k B (by rw [exchangeMatrix_matrix]; rfl)]
+  simp only [Generator.xPullback_permute]
 
 /-- The half-turn is nontrivial on the field of independent X coordinates. -/
 theorem rotationWord_comp_rotationWord_xPullback_ne_one :

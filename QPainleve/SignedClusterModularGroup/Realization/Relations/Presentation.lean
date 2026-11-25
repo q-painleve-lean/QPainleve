@@ -73,6 +73,77 @@ local notation "orders[" Q "," M "," c₀ "," p₀ "]" =>
 local notation "start[" Q "]" => Fan.rayBoundaryOrders b (CompleteToricPresentation.rays Q)
   (CompleteToricPresentation.rayOrder Q (CompleteToricPresentation.origin Q))
 
+/-- In a marked toric presentation of a primitive nef square-zero anticanonical
+cycle, the boundary search succeeds for every signed loop. If it returns the
+label `j`, the marked Picard pullback sends `D l` to `D (η • (l - j))`, where
+`η` is the inversion sign. The reference contraction supplies the order table,
+and the reached models allow this realization to compute the descended Picard action. -/
+theorem exists_realize_signed_loop_with_boundary_label
+    (Q : CompleteToricPresentation i b r L γ) (P : ChargeSeed E N)
+    (hform : P.form = b.detDualEquiv.toLinearMap) (hcharge : P.charge = Fan.rayChargeMap Q.rays)
+    (M : Point Centers[r] → MarkedSurface ℂ n H XTor[r]) {c₀ : Point Centers[r]}
+    (p₀ : fiber[Q,M,c₀]) (hnodal₀ : p₀.IsNodalContraction)
+    (p : ∀ (c : Point Centers[r]) (_ : c.left (default : S) ∈ U₀[P]), fiber[Q,M,c])
+    (hnodal : ∀ c hc, (p c hc).IsNodalContraction)
+    (hnef : classOf(cartier(M c₀)).IsNef ℂ ((M c₀).surface ↘ S))
+    (hsq : Chow.classIntersectionNumber ℂ (M c₀).surface
+      classOf(cartier(M c₀)) classOf(cartier(M c₀)) = 0)
+    (hprim : IsPrimitive (Additive.ofMul classOf(cartier(M c₀))))
+    (hmark : ∀ c j, (M c).boundaryClass (cartier(M c)) j = boundaryClasses[M,c₀] j)
+    (w : Word E E) {κ : Type*} (basisVectors : κ → Fin r → ℤ) :
+    let C := w.centerPartialMap ℂ P
+    let orders := orders[Q,M,c₀,p₀]
+    let d := boundaryClasses[M,c₀]
+    let η := (-1 : ℤˣ) ^ w.inversionCount
+    ∃ R : GeometricRealization (T₀ := Centers[r]) (T₁ := Centers[r]) M M C (w.xRationalMap ℂ),
+      R.orientation = η ∧
+      (∀ x : CenterPoint (U := Centers[r]) (V := Centers[r]) C,
+        let c := x ≫ PartialMap.domainTarget (X := Centers[r]) (Y := Centers[r]) C
+        Q.HasNodalModel c (M c)) ∧
+      ∃ j : Fin n, (w.signedLoopInvariants basisVectors orders (orders 0)).2.2 = some j ∧
+        ∀ l, (SignedBoundaryIsometryGroup.toIsometry H d
+          (R.toSignedBoundaryIsometry d (fun c ↦ cartier(M c)) hmark)).val (d l) =
+            d (η • (l - (ZMod.finEquiv n).toEquiv j)) := by
+  dsimp only
+  have hreference := Q.hasNodalModel_of_contraction hnodal₀
+  let : IsRationalOver ((M c₀).surface ↘ S) := hreference.isRationalOver
+  let : (M c₀).surface.IsProjectiveOver ℂ := (M c₀).projective
+  let : SmoothOfRelativeDimension 2 ((M c₀).surface ↘ S) := (M c₀).smooth
+  have hcan := congrArg Inv.inv (hreference.canonicalClass (cartier(M c₀)))
+  have hindex := Q.chargeIndex_ne_zero_of_anticanonical_cycle (M := M) hreference
+    (cartier(M c₀)) hnef hsq hcan hprim
+  have hE := P.matrix_eq.symm.trans (congrArg₂ chargeExchangeMatrix hform hcharge)
+  have hker : E.matrix.mulVecLin.ker = P.charge.ker := by
+    rw [← P.matrix_eq, hform, hcharge]
+    exact Fan.ker_chargeExchangeMatrix_rayChargeMap b Q.rays hindex
+  have models (x : CenterPoint (U := Centers[r]) (V := Centers[r]) Cnil[P]) :=
+    let hx := (Path.nil.centerPoint_endpoints_mem_noncollision P hker x).2
+    Q.hasNodalModel_of_contraction (hnodal _ hx)
+  obtain ⟨R, hη, -, hmodels⟩ := exists_realize_signed_loop w P Q hform hcharge M models hreference
+    (fun c ↦ cartier(M c)) hnef hsq hprim boundaryClasses[M,c₀] hmark
+  let : Q.fan.algebraicRealization.IsProjectiveOver ℂ :=
+    Q.fan.isProjectiveOver_algebraicRealization_of_isComplete Q.regular Q.complete b
+  let : SmoothOfRelativeDimension 2 (Q.fan.algebraicRealization ↘ S) := by
+    have hN : Module.finrank ℤ N = 2 := by simpa using Module.finrank_eq_card_basis b
+    rw [← hN, Q.fan.algebraicRealization_over]
+    exact Q.fan.smoothOfRelativeDimension_algebraicRealizationStructureMap Q.regular
+  let := Q.isPerfPair_auxiliaryPicardForm
+  obtain ⟨x⟩ := nonempty_centerPoint (T₀ := Centers[r]) (T₁ := Centers[r]) (w.centerPartialMap ℂ P)
+  obtain ⟨hx₀, hx₁⟩ := w.centerPoint_endpoints_mem_noncollision P hker x
+  have hfind := R.signedLoopInvariants_boundary_eq_some
+    (LinearMap.IsPerfPair.separatingRight inferInstance) x Q.complete hE hindex
+    p₀ hnodal₀ (p _ hx₀) (p _ hx₁) (hnodal _ hx₁) (cartier(M _)) basisVectors
+  obtain ⟨j, hj, hj₀⟩ := Option.map_eq_some_iff.mp hfind
+  refine ⟨R, hη, hmodels, j, ?_, fun l ↦ ?_⟩
+  · have horigin := (Q.fan.boundaryNormalizationComponentEquiv Q.regular).symm_apply_eq.mpr
+      (Q.component_eq Q.origin)
+    have hz : (ZMod.finEquiv n).toEquiv 0 = 0 := (ZMod.finEquiv n).map_zero
+    simpa only [hz, p₀.numberedBoundaryRays_zero, horigin] using hj
+  · rw [hj₀, ← hη]
+    simpa only [SignedBoundaryIsometryGroup.toIsometry_apply, coe_toSignedBoundaryIsometry,
+      LinearMap.BilinForm.coe_isometryGroupEquivIsometryEquiv_symm] using
+      R.picard_apply_boundaryClass boundaryClasses[M,c₀] (fun c ↦ cartier(M c)) hmark l
+
 /-- The integer comparison decides equality of independent X pullbacks of signed loops
 of a primitive nef square-zero cycle. Nodal models are needed on the initial noncollision
 open for the realizations. The reference fiber supplying the boundary order table can be
