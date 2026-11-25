@@ -37,6 +37,11 @@ local notation "N" => Fin 2 → ℤ
 /-- The ray index of each of the eleven labels, in the three consecutive blocks. -/
 def rayIndex : I → Fin 3 := ![0, 0, 1, 1, 1, 2, 2, 2, 2, 2, 2]
 
+/-- The three consecutive blocks of center labels lie on rays zero, one and two. -/
+theorem rayIndex_eq_ite (i : I) :
+    rayIndex i = if i.val < 2 then 0 else if i.val < 5 then 1 else 2 := by
+  fin_cases i <;> decide
+
 /-- The first ray carries exactly the first two labels. -/
 theorem rayIndex_eq_zero_iff (i : I) : rayIndex i = 0 ↔ i = 0 ∨ i = 1 := by
   fin_cases i <;> decide
