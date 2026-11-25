@@ -137,47 +137,75 @@ theorem orderedBoundaryPeriod_injective_iff
   rw [funext h]
   exact Function.Injective.of_comp_iff' _ f.bijective
 
-include p q in
+section Pullback
+
+variable {N' V' : Type} [AddCommGroup N'] [AddCommGroup V'] [Module ℝ V']
+  {i' : N' →+ V'} {Φ' : Fan i'} [h₀' : Nonempty Φ'.cones]
+  {m' r' : ℕ} [NeZero m'] {L' : Type} [AddCommGroup L']
+  {B' : LinearMap.BilinForm ℤ L'}
+  {b' : Module.Basis (Fin 2) ℤ N'} {s' : Fin r' → Φ'.Ray} {hΦ' : Φ'.IsRegular}
+  [PrestableFamily ((Φ'.boundaryIdeal h₀').subscheme ↘ S)]
+  {γ' : Type*} {a' : γ' → ((Φ'.boundaryIdeal h₀').subscheme ↘ S).smoothLocus}
+  {T' : NodalCycleNumbering a' m'} {origin' : ZMod m'}
+  {ι' : L' →ₗ[ℤ] Additive (LineBundleClass Φ'.algebraicRealization) × (Fin r' → ℤ)}
+  [Φ'.algebraicRealization.IsProjectiveOver ℂ]
+  [SmoothOfRelativeDimension 2 (Φ'.algebraicRealization ↘ S)]
+  [LinearMap.IsPerfPair ((Chow.intersectionBilinForm ℂ Φ'.algebraicRealization).prod
+    (-(dotProductBilin ℤ ℤ : LinearMap.BilinForm ℤ (Fin r' → ℤ))))]
+
+local notation "Aux'" => LinearMap.BilinForm.prod
+  (Chow.intersectionBilinForm ℂ Φ'.algebraicRealization)
+  (-(dotProductBilin ℤ ℤ : LinearMap.BilinForm ℤ (Fin r' → ℤ)))
+local notation "Charge'" => LinearMap.ker (Fan.rayChargeMap s')
+local notation "aux'" => (LinearEquiv.symm (Fan.boundaryOrthogonalEquivChargeKernel hΦ' s' Aux'))
+
+include p in
 /-- An isomorphism of marked fibers transports the toric period of a target charge
 class by its marked Picard pullback and its action on the actual boundary branches. -/
 theorem orderedBoundaryPeriod_apply_of_pullback
-    (hp : D[P].IsEffectiveCartier) (hq : D[Q].IsEffectiveCartier)
+    {Q' : MarkedSurface ℂ n B' Xtor[r']} {d' : Multiplicative (Fin r' → ℤ) →* ℂˣ}
+    (q' : ContractedToricFiber (h₀ := h₀') b' s' hΦ' T' origin' ι' d' Q')
+    (hp : D[P].IsEffectiveCartier) (hq : D[Q'].IsEffectiveCartier)
     (gp : ∀ v : irreducibleComponents (D[P].subscheme.singularLocus ℂ).blowup,
       (D[P].subscheme.blowupComponent (K := ℂ) v).toScheme.genus ℂ = 0)
-    (gq : ∀ v : irreducibleComponents (D[Q].subscheme.singularLocus ℂ).blowup,
-      (D[Q].subscheme.blowupComponent (K := ℂ) v).toScheme.genus ℂ = 0)
-    {F : Xtor[r] ⤏ Xtor[r]} {I : B.IsometryEquiv B} {g : DihedralGroup n}
-    (R : FiberRealization P Q F I g)
-    (z : L) (hz : Q.picardMarking z ∈ D[Q].boundaryOrthogonal ℂ)
-    (x y : ChargeKernel) (hx : ι z = (aux x).val) (hy : ι (I z) = (aux y).val) :
-    period[c] (ofAdd y) = (period[d] (ofAdd x)) ^ (cycleOrientationSign g : ℤ) := by
+    (gq : ∀ v : irreducibleComponents (D[Q'].subscheme.singularLocus ℂ).blowup,
+      (D[Q'].subscheme.blowupComponent (K := ℂ) v).toScheme.genus ℂ = 0)
+    {F : Xtor[r] ⤏ Xtor[r']} {I : B'.IsometryEquiv B} {g : DihedralGroup n}
+    (R : FiberRealization P Q' F I g)
+    (z : L') (hz : Q'.picardMarking z ∈ D[Q'].boundaryOrthogonal ℂ)
+    (x : Charge') (y : ChargeKernel) (hx : ι' z = (aux' x).val) (hy : ι (I z) = (aux y).val) :
+    period[c] (ofAdd y) =
+      (Fan.orderedBoundaryPeriod hΦ' b' s' T' (fun j ↦ d' (ofAdd (Pi.single j 1))) (ofAdd x)) ^
+        (cycleOrientationSign g : ℤ) := by
   let e := MarkedSurface.imagePairIso R.iso
   let η := cycleOrientationSign g
   let swap := decide (η = -1)
-  have hg : e.boundaryCycleAction P.imageCycle Q.imageCycle = g :=
+  have hg : e.boundaryCycleAction P.imageCycle Q'.imageCycle = g :=
     (MarkedSurface.imagePairIso_boundaryAction R.iso).trans R.boundaryAction_eq
-  have horder := e.branchOrder_boundaryCycleAction P.imageCycle Q.imageCycle
+  have horder := e.branchOrder_boundaryCycleAction P.imageCycle Q'.imageCycle
   rw [hg] at horder
   obtain ⟨hs, hperiod⟩ := hp.boundaryPeriod_pullback gp P.imageCycle.endpoint_eq
-    hq gq Q.imageCycle.endpoint_eq (MarkedSurface.surfaceIso R.iso).hom e
+    hq gq Q'.imageCycle.endpoint_eq (MarkedSurface.surfaceIso R.iso).hom e
     (MarkedSurface.imagePairIso_hom_comp R.iso).symm swap
-    (by simpa only [swap, η, decide_eq_true_eq] using horder) (ofAdd ⟨Q.picardMarking z, hz⟩)
+    (by simpa only [swap, η, decide_eq_true_eq] using horder) (ofAdd ⟨Q'.picardMarking z, hz⟩)
   simp only [toAdd_ofAdd, Subtype.coe_mk] at hs hperiod
   have hs' : P.picardMarking (I z) ∈ D[P].boundaryOrthogonal ℂ := R.picard_eq z ▸ hs
   have hclass :
       (⟨Additive.ofMul
-        (pullback (MarkedSurface.surfaceIso R.iso).hom (Q.picardMarking z).toMul), hs⟩ :
+        (pullback (MarkedSurface.surfaceIso R.iso).hom (Q'.picardMarking z).toMul), hs⟩ :
           D[P].boundaryOrthogonal ℂ) = ⟨P.picardMarking (I z), hs'⟩ :=
     Subtype.ext (R.picard_eq z).symm
   rw [hclass] at hperiod
   rw [p.orderedBoundaryPeriod_eq_boundaryPeriod hp gp (I z) hs' y hy,
-    q.orderedBoundaryPeriod_eq_boundaryPeriod hq gq z hz x hx]
+    q'.orderedBoundaryPeriod_eq_boundaryPeriod hq gq z hz x hx]
   rcases Int.units_eq_one_or η with h | h
   · have hne : (1 : ℤˣ) ≠ -1 := by decide
     simpa only [swap, h, hne, decide_false, Bool.false_eq_true, ite_false, Units.val_one,
       η, zpow_one] using hperiod
   · simpa only [swap, h, decide_true, ite_true, Units.val_neg, Units.val_one, η, zpow_neg_one]
       using hperiod
+
+end Pullback
 
 include p q in
 open SignedBoundaryIsometryGroup in

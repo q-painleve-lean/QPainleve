@@ -12,10 +12,10 @@ public import TauCeti.AlgebraicGeometry.Noetherian
 public import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.ProjectiveOver
 import Mathlib.AlgebraicGeometry.AlgClosed.Basic
 import QPainleve.AlgebraicGeometry.Blowup.Exceptional.EulerCharacteristic
+import QPainleve.AlgebraicGeometry.Blowup.Tower.Canonical.Basic
 import QPainleve.AlgebraicGeometry.Chow.Isomorphism
 import QPainleve.AlgebraicGeometry.Cohomology.Projective
 import QPainleve.AlgebraicGeometry.Cohomology.Support
-import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
 import QPainleve.AlgebraicGeometry.Modules.Differentials.Restriction
 
 /-!
@@ -199,38 +199,6 @@ section CanonicalClass
 
 variable [PerfectField k]
 
--- Keep the structure morphism explicit while reassociating the composite at each stage.
-private noncomputable def canonicalClass {Z : Scheme.{u}} (g : Z ⟶ Spec (.of k))
-    (hg : SmoothOfRelativeDimension 2 g) : LineBundleClass Z :=
-  letI : Z.Over (Spec (.of k)) := ⟨g⟩
-  letI : SmoothOfRelativeDimension 2 (Z ↘ Spec (.of k)) := hg
-  mk (canonicalBundle k Z 2)
-
-private theorem mk_canonicalBundle_picardHom (hT : IsClosedPointTower X T) :
-    ∀ (g : Y ⟶ Spec (.of k)), g = T.toBase ≫ f →
-      ∀ (hg : SmoothOfRelativeDimension 2 g),
-        canonicalClass k g hg = (T.picardHom
-          (Additive.ofMul (canonicalClass k f inferInstance), fun _ ↦ 1)).toMul := by
-  induction hT with
-  | nil =>
-    intro g hg _
-    rw [toBase_nil, Category.id_comp] at hg
-    subst g
-    rw [picardHom_nil, toMul_ofMul]
-  | @snoc d W S I hS p hp hI ih =>
-    rw [W.ker_fromSpecResidueField_eq_vanishingIdeal] at hI
-    subst I
-    intro g' hg' hg
-    rw [toBase_snoc, Category.assoc] at hg'
-    subst g'
-    let g := S.toBase ≫ f
-    let : W.Over (Spec (.of k)) := ⟨g⟩
-    have hgsmooth : SmoothOfRelativeDimension 2 g := hS.smoothOfRelativeDimension f
-    let : SmoothOfRelativeDimension 2 (W ↘ Spec (.of k)) := hgsmooth
-    rw [picardHom_snoc_apply_toMul, ← ih g rfl hgsmooth, zpow_one]
-    -- This is the single-blowup comparison on the same reduced center ideal.
-    exact Scheme.IdealSheafData.mk_canonicalBundle_pointBlowup k hp
-
 /-- In an ordered point-blowup marking the canonical class has the base canonical class
 as its first coordinate and coefficient one at each total-transform exceptional divisor. -/
 theorem picardMarking_canonicalClass [IsIntegral X] [IsNoetherian X]
@@ -240,9 +208,11 @@ theorem picardMarking_canonicalClass [IsIntegral X] [IsNoetherian X]
       hT.smoothOfRelativeDimension f
     T.picardMarking hT f (Additive.ofMul (mk (canonicalBundle k X 2)), fun _ ↦ 1) =
       Additive.ofMul (mk (canonicalBundle k Y 2)) := by
-  have h := (mk_canonicalBundle_picardHom k hT (T.toBase ≫ f) rfl
-    (hT.smoothOfRelativeDimension f)).symm
-  exact (T.picardMarking_apply hT f _).trans (congrArg Additive.ofMul h)
+  let : Y.Over (Spec (.of k)) := ⟨T.toBase ≫ f⟩
+  let : T.toBase.IsOver (Spec (.of k)) := ⟨rfl⟩
+  let : SmoothOfRelativeDimension 2 (Y ↘ Spec (.of k)) := hT.smoothOfRelativeDimension f
+  exact (T.picardMarking_apply hT f _).trans
+    (congrArg Additive.ofMul (hT.mk_canonicalBundle_picardHom k).symm)
 
 /-- The canonical complement of a pulled-back line bundle has the base canonical
 complement as its first coordinate and coefficient one at each exceptional divisor

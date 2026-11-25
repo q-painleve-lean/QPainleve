@@ -5,7 +5,7 @@ Authors: The QPainleve contributors
 -/
 module
 
-public import QPainleve.AlgebraicGeometry.Blowup.Tower.CanonicalCohomology
+public import QPainleve.AlgebraicGeometry.Blowup.Tower.Canonical.Cohomology
 public import QPainleve.AlgebraicGeometry.Chow.RationalSurface.Basic
 public import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.Polynomial.Trace
 

@@ -14,6 +14,7 @@ import QPainleve.AlgebraicGeometry.Blowup.Tower.Nodal.Subdivision
 import QPainleve.AlgebraicGeometry.IdealSheaf.BaseChange
 import QPainleve.Geometry.Toric.Fan.Boundary.Numbering
 import QPainleve.Geometry.Toric.Fan.Boundary.Prestable
+import QPainleve.Geometry.Toric.Fan.CyclicOrder
 import QPainleve.Geometry.Toric.Fan.Subdivision.Projective
 
 /-!
@@ -104,6 +105,27 @@ private theorem exists_boundary_subdivision (hD : D.IsEffectiveCartier)
   refine ⟨C', a.hom ≫ β, ?_, inferInstance,
     (a.isOrientedCycleSubdivision_of_cycleOrientationSign_eq_one C' C hsign).comp hsub⟩
   rw [Category.assoc, subschemeMap_subschemeι, ← Category.assoc, ha]
+
+private theorem exists_positive_boundary_subdivision (hD : D.IsEffectiveCartier)
+    (hT : IsNodalBoundaryTower D (X ↘ S) (𝟙 X) T)
+    (e : U.1 ≅ W) (hbase : e.hom ≫ T.toBase ≫ (X ↘ S) =
+      U.2.toTower.toBase ≫ Φ.algebraicRealizationStructureMap)
+    (hker : ((D.comap T.toBase).radical).comap e.hom = U.2.boundaryι.ker)
+    (hc : Φ.IsComplete) [PrestableFamily (TorBoundary ↘ S)] [NeZero (n + k)] :
+    ∃ (C : Scheme.NodalCycleNumbering (X := TorBoundary)
+        (Empty.elim : Empty → (TorBoundary ↘ S).smoothLocus) (n + k))
+      (g : TorBoundary ⟶ D.subscheme) (a : Module.Basis (Fin 2) ℤ N),
+      g ≫ D.subschemeι = U.2.boundaryι ≫ e.hom ≫ T.toBase ∧
+        g.IsOver S ∧ g.IsOrientedCycleSubdivision C A ∧
+        (a = b ∨ a = b.reindex (Equiv.swap 0 1)) ∧
+        ∀ j, let v := Φ.rayEquivOfNodalCycleNumbering hΦ C
+          a.detDualEquiv (v j).primitiveGenerator (v (j + 1)).primitiveGenerator = 1 ∧
+            ∃ σ : Φ.cones, (v j).toCone ≤ σ ∧ (v (j + 1)).toCone ≤ σ := by
+  obtain ⟨C, g, hg, hgOver, hsub⟩ := exists_boundary_subdivision A s c hD hT e hbase hker
+  obtain ⟨a, ha, hpos, hnodes⟩ := Φ.exists_positive_ray_numbering_of_nodalCycleNumbering b hΦ hc C
+  refine ⟨C, g, a, hg, hgOver, hsub, ha, fun j ↦ ?_⟩
+  obtain ⟨σ, h₀, h₁, _⟩ := hnodes j
+  exact ⟨hpos j, σ.val, h₀, h₁⟩
 
 omit [IsIntegral X] [X.IsProjectiveOver ℂ] [SmoothOfRelativeDimension 2 (X ↘ S)] in
 private theorem exists_boundary_origin [PrestableFamily (TorBoundary ↘ S)] [NeZero (n + k)]
@@ -245,15 +267,9 @@ theorem exists_marked_reference_fiber_of_ordered_towers
     ⟨centerPoint u, centerPoint_parameters u⟩
   subst u
   let : NeZero (n + k) := ⟨by have := NeZero.ne n; omega⟩
-  obtain ⟨C, g, hg, hgOver, hsub⟩ := exists_boundary_subdivision A s c hD hT e hbase hker
+  obtain ⟨C, g, a, hg, hgOver, hsub, ha, hpositive⟩ :=
+    exists_positive_boundary_subdivision A hΦ s c hD hT e hbase hker hc
   let := hgOver
-  obtain ⟨a, ha, hpos, hnodes⟩ := Φ.exists_positive_ray_numbering_of_nodalCycleNumbering b hΦ hc C
-  have hpositive (j : ZMod (n + k)) :
-      let u := Φ.rayEquivOfNodalCycleNumbering hΦ C
-      a.detDualEquiv (u j).primitiveGenerator (u (j + 1)).primitiveGenerator = 1 ∧
-        ∃ σ : Φ.cones, (u j).toCone ≤ σ ∧ (u (j + 1)).toCone ≤ σ :=
-    let ⟨σ, h₀, h₁, _⟩ := hnodes j
-    ⟨hpos j, σ.val, h₀, h₁⟩
   rcases ha with ha | ha
   · subst a
     obtain ⟨Q, f, hrays, hf⟩ :=
@@ -289,6 +305,70 @@ theorem exists_marked_reference_fiber_of_ordered_towers
       exists_reference_of_numbered_model A μ hΦ s c' hc hT (v ≪≫ e) hb' hker'
         C g hg' hsub hpositive
     exact ⟨_, Q, c', f, Or.inr ⟨rfl, hc'⟩, hrays, hf⟩
+
+/-- Mark the specified ordered toric and nodal towers in the original lattice basis.
+The boundary numbering downstairs is chosen from the supplied numbering and its
+reverse, so that the fan has positive cyclic order in that basis. -/
+theorem exists_marked_reference_fiber_of_ordered_towers_fixed_basis
+    {Φ : Fan i} (hΦ : Φ.IsRegular) (hc : Φ.IsComplete)
+    {r k : ℕ} (s : Fin r → Φ.Ray) (u : Fin r → ℂˣ)
+    {W : Scheme} {T : BlowupTower X k W}
+    (hT : IsNodalBoundaryTower D (X ↘ S) (𝟙 X) T)
+    (e : (Fan.internalBlowupTower (h₀ := hc.nonempty_cones) b s u).1 ≅ W)
+    (hbase : e.hom ≫ T.toBase ≫ (X ↘ S) =
+      (Fan.internalBlowupTower (h₀ := hc.nonempty_cones) b s u).2.toTower.toBase ≫
+        Φ.algebraicRealizationStructureMap)
+    (hker : ((D.comap T.toBase).radical).comap e.hom =
+      (Fan.internalBlowupTower (h₀ := hc.nonempty_cones) b s u).2.boundaryι.ker)
+    (hD : D.IsEffectiveCartier)
+    (A : Scheme.NodalCycleNumbering (X := D.subscheme)
+      (Empty.elim : Empty → (D.subscheme ↘ S).smoothLocus) n)
+    (μ : B.IsometryEquiv (Chow.intersectionBilinForm ℂ X)) :
+    ∃ (A' : Scheme.NodalCycleNumbering (X := D.subscheme)
+        (Empty.elim : Empty → (D.subscheme ↘ S).smoothLocus) n)
+      (Q : CompleteToricPresentation i b r L Empty)
+      (c : GeometricRealization.Point Centers[r]) (f : X ⤏ XTor[r]),
+      (A' = A ∨ A' = A.reverse) ∧ param[c] = u ∧
+        (∃ hfan : Q.fan = Φ, hfan ▸ Q.rays = s) ∧
+        Q.HasNodalModel c (MarkedSurface.ofBoundary D A' μ f) := by
+  let := hc.nonempty_cones
+  have hdim : Module.finrank ℤ N = 2 := (Module.finrank_eq_card_basis b).trans (Fintype.card_fin 2)
+  let : IsProper Φ.algebraicRealizationStructureMap := by
+    have := Φ.isProjectiveOver_algebraicRealization_of_isComplete hΦ hc b
+    rw [← Φ.algebraicRealization_over]
+    infer_instance
+  let := Φ.prestableFamily_boundary hΦ hc hdim
+  obtain ⟨c, hcparam⟩ : ∃ c : GeometricRealization.Point Centers[r], param[c] = u :=
+    ⟨centerPoint u, centerPoint_parameters u⟩
+  subst u
+  let : NeZero (n + k) := ⟨by have := NeZero.ne n; omega⟩
+  obtain ⟨C, g, a, hg, hgOver, hsub, ha, hpositive⟩ :=
+    exists_positive_boundary_subdivision A hΦ s c hD hT e hbase hker hc
+  let := hgOver
+  rcases ha with rfl | rfl
+  · obtain ⟨Q, f, hrays, hf⟩ :=
+      exists_reference_of_numbered_model A μ hΦ s c hc hT e hbase hker C g hg hsub hpositive
+    exact ⟨A, Q, c, f, Or.inl rfl, rfl, hrays, hf⟩
+  · have hray (j : ZMod (n + k)) :
+        Φ.rayEquivOfNodalCycleNumbering hΦ C.reverse j =
+          Φ.rayEquivOfNodalCycleNumbering hΦ C (-j) := by
+      apply (Φ.boundaryNormalizationComponentEquiv hΦ).injective
+      simp only [Fan.boundaryNormalizationComponentEquiv_rayEquivOfNodalCycleNumbering,
+        NodalCycleNumbering.reverse_component]
+    have hswap : (b.reindex (Equiv.swap 0 1)).reindex (Equiv.swap 0 1) = b := by
+      apply DFunLike.ext
+      intro j
+      simp only [Module.Basis.reindex_apply, Equiv.symm_swap, Equiv.swap_apply_self]
+    have hpositive' (j : ZMod (n + k)) :
+        let u := Φ.rayEquivOfNodalCycleNumbering hΦ C.reverse
+        b.detDualEquiv (u j).primitiveGenerator (u (j + 1)).primitiveGenerator = 1 ∧
+          ∃ σ : Φ.cones, (u j).toCone ≤ σ ∧ (u (j + 1)).toCone ≤ σ := by
+      simpa only [hray, hswap] using
+        Fan.cyclicRayNumbering_neg (b.reindex (Equiv.swap 0 1)) _ hpositive j
+    obtain ⟨Q, f, hrays, hf⟩ :=
+      exists_reference_of_numbered_model A.reverse μ hΦ s c hc hT e hbase hker
+        C.reverse g hg hsub.reverse hpositive'
+    exact ⟨A.reverse, Q, c, f, Or.inr rfl, rfl, hrays, hf⟩
 
 /-- A toric presentation of a numbered Cartier boundary gives a complete marked
 presentation with a reference fiber on the same surface. The given numbering and

@@ -5,7 +5,7 @@ Authors: The QPainleve contributors
 -/
 module
 
-public import QPainleve.SignedClusterModularGroup.Realization.ChargeKernel
+public import QPainleve.SignedClusterModularGroup.Realization.ChargeKernel.Basic
 public import QPainleve.SignedClusterModularGroup.Realization.Relations.Boundary
 
 import Mathlib.LinearAlgebra.Matrix.ToLin

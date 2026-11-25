@@ -5,23 +5,19 @@ Authors: The QPainleve contributors
 -/
 module
 
-public import QPainleve.SignedClusterModularGroup.Realization.Relations.Presentation
+public import QPainleve.SignedClusterModularGroup.Realization.Relations.Reference
 public import QPainleve.SignedClusterModularGroup.Realization.Surface.Boundary
 
-import QPainleve.Algebra.Cluster.Word.SubtractionFree
 import QPainleve.AlgebraicGeometry.Chow.RationalSurface.Basic
 import QPainleve.SignedClusterModularGroup.Realization.NodalFiber
-import QPainleve.SignedClusterModularGroup.Realization.Presentation.Family
 import QPainleve.SignedClusterModularGroup.Realization.Presentation.Reference
 
 /-!
 # Signed cluster relations from ordered blowup towers
 
-One marked nodal contraction determines the order table for comparing signed cluster
-loops in characteristic zero. The comparison extends the reference model using
-`CompleteToricPresentation.exists_marked_family_of_nodal_model`. Specified ordered
-toric and nodal blowup towers supply such a reference, retaining the original
-surface, numbering and center labels.
+Specified ordered toric and nodal blowup towers supply the reference contraction for
+`CompleteToricPresentation.xPullback_eq_iff_signedLoopInvariants_eq_of_nodal_contraction`,
+retaining the original surface, numbering and center labels.
 -/
 
 public section
@@ -43,54 +39,6 @@ local notation "classOf(" h ")" => (LineBundleClass.mk (IsEffectiveCartier.toInv
 
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {b : Basis (Fin 2) ℤ N} {n r : ℕ} [NeZero n]
-
-section Reference
-
-variable {L γ : Type} [AddCommGroup L] {B : LinearMap.BilinForm ℤ L}
-  {E : SkewExchangeMatrix (Fin r)} (Q : CompleteToricPresentation i b r L γ)
-  {c : Point Centers[r]} {M : MarkedSurface ℂ n B XTor[r]}
-
-local instance instNonemptyOrderedTowersCones : Nonempty Q.fan.cones := Q.complete.nonempty_cones
-local instance instNeZeroOrderedTowersBoundaryLength : NeZero Q.length := Q.neZero
-local instance instPrestableOrderedTowersToricBoundary :
-    PrestableFamily ((Q.fan.boundaryIdeal Q.complete.nonempty_cones).subscheme ↘ S) := Q.prestable
-
-local notation "Fiber" =>
-  ContractedToricFiber b Q.rays Q.regular Q.cycle Q.origin Q.inclusion χ[c] M
-local notation "cartier[" M "]" => MarkedSurface.isEffectiveCartier_boundaryIdeal M
-
-/-- For a primitive nef square-zero anticanonical cycle, the determinant orders of the
-numbered surviving rays of a reference contraction give the complete integer relation
-criterion over any characteristic-zero field. The reference center may have repeated
-centers. -/
-theorem CompleteToricPresentation.xPullback_eq_iff_signedLoopInvariants_eq_of_nodal_contraction
-    (p₀ : Fiber) (hnodal₀ : p₀.IsNodalContraction)
-    (hE : E.matrix = chargeExchangeMatrix b.detDualEquiv.toLinearMap (Fan.rayChargeMap Q.rays))
-    (hprim : IsPrimitive (Additive.ofMul classOf(cartier[M])))
-    (hnef : (classOf(cartier[M])).IsNef ℂ (M.surface ↘ S))
-    (hsq : Chow.classIntersectionNumber ℂ M.surface classOf(cartier[M])
-      classOf(cartier[M]) = 0)
-    (k : Type*) [Field k] [CharZero k] (w v : Word E E)
-    {d : ℕ} (β : Basis (Fin d) ℤ E.matrix.mulVecLin.ker) :
-    let orders (j : Fin n) :=
-      Fan.rayBoundaryOrders b Q.rays (p₀.numberedBoundaryRays cartier[M] (ZMod.finEquiv n j))
-    w.xPullback k = v.xPullback k ↔
-      w.signedLoopInvariants (fun j ↦ (β j : Fin r → ℤ)) orders (orders 0) =
-        v.signedLoopInvariants (fun j ↦ (β j : Fin r → ℤ)) orders (orders 0) := by
-  obtain ⟨F, hF, hreference, hfamily⟩ :=
-    Q.exists_marked_family_of_nodal_model (Q.hasNodalModel_of_contraction hnodal₀) cartier[M]
-  subst M
-  choose p hp using fun z ↦ (hfamily z).1.exists_isNodalContraction cartier[F z]
-  let P : ChargeSeed E N :=
-    ⟨b.detDualEquiv.toLinearMap, Fan.rayChargeMap Q.rays, b.detDualEquiv_self, hE.symm⟩
-  dsimp only
-  rw [Path.xPullback_eq_iff_ySeed_coefficient_eq k w v,
-    ← Path.xPullback_eq_iff_ySeed_coefficient_eq ℂ w v]
-  exact GeometricRealization.xPullback_eq_iff_signedLoopInvariants_eq_of_presentation
-    Q P rfl rfl F p₀ hnodal₀ (fun z _ ↦ p z) (fun z _ ↦ hp z)
-    hnef hsq hprim (fun z j ↦ congrFun (hfamily z).2 j) Q.exists_cone_of_numbered_node w v β
-
-end Reference
 
 section OrderedTowers
 
@@ -166,8 +114,8 @@ theorem exists_xPullback_eq_iff_signedLoopInvariants_eq_of_ordered_towers
       chargeExchangeMatrix b'.detDualEquiv.toLinearMap (Fan.rayChargeMap Q.rays) :=
     SkewExchangeMatrix.matrix_ofMatrix _ _
   refine ⟨H, μ, b', Q, c, f, E, p₀, hnodal₀, hframe, hrays, hE, fun k _ _ w v _ β ↦ ?_⟩
-  exact Q.xPullback_eq_iff_signedLoopInvariants_eq_of_nodal_contraction p₀ hnodal₀ hE
-    (by rwa [hδ]) (by rwa [hδ]) (by rwa [hδ]) k w v β
+  exact Q.xPullback_eq_iff_signedLoopInvariants_eq_of_nodal_contraction k p₀ hnodal₀ hE
+    (by rwa [hδ]) (by rwa [hδ]) (by rwa [hδ]) w v β
 
 end OrderedTowers
 

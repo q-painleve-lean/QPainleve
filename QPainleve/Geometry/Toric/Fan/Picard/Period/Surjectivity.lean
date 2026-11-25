@@ -10,6 +10,7 @@ public import QPainleve.Geometry.Toric.Fan.Picard.Period.CenterVariation
 public import TauCeti.LinearAlgebra.Basis.DiagonalTorus.Basic
 
 import QPainleve.AlgebraicGeometry.Cohomology.Projective
+import QPainleve.LinearAlgebra.Basis.DiagonalTorus
 import TauCeti.AlgebraicGeometry.LineBundle.BaseChange
 import TauCeti.AlgebraicGeometry.Scheme.DiscreteValuationStalk
 import TauCeti.AlgebraicGeometry.WeilDivisor.Scheme.PicZero
@@ -316,12 +317,9 @@ theorem orderedBoundaryPeriod_surjective :
   let χ := (orderedBoundaryPeriod hΦ b s B 1 / a).comp
     ((K).projectionOnto T hT).toAddMonoidHom.toMultiplicative
   let c (j : Fin n) := χ (Multiplicative.ofAdd (Pi.single j 1))
-  have hc (μ : Fin n → ℤ) : torusCharacter c μ = χ (Multiplicative.ofAdd μ) := by
-    conv_rhs => rw [pi_eq_sum_univ' μ, ofAdd_sum, map_prod]
-    simp only [torusCharacter_def, c, ofAdd_zsmul, map_zpow]
   refine ⟨c, MonoidHom.ext fun x ↦ ?_⟩
   have h := orderedBoundaryPeriod_mul_torusCharacter hΦ b s B r hcomp hdet hnodes c 1 x.toAdd
-  rw [torusCharacter_one, mul_one, hc] at h
+  rw [torusCharacter_one, mul_one, torusCharacter_of_pi_single] at h
   have hproj : (K).projectionOnto T hT (x.toAdd : Fin n → ℤ) = x.toAdd :=
     Submodule.projectionOnto_apply_left hT x.toAdd
   -- The character extension restricts to the prescribed ratio on the kernel.

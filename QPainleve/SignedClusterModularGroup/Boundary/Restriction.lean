@@ -11,6 +11,7 @@ public import QPainleve.SignedClusterModularGroup.Boundary.Isometry
 public import TauCeti.Algebra.Module.Primitive
 public import TauCeti.LinearAlgebra.BilinearForm.Characteristic
 import QPainleve.SignedClusterModularGroup.BoundaryCycle
+import QPainleve.SignedClusterModularGroup.Faithfulness
 
 /-!
 # Signed action on the boundary orthogonal lattice
@@ -174,6 +175,42 @@ theorem signedOrthogonalRestriction_centralSign_apply (hn : n ≤ 2) (x : K) :
     (signedOrthogonalRestriction B D (centralSign B D hn)).val x = -x := by
   apply Subtype.ext
   simp [Units.smul_def]
+
+variable {B}
+
+/-- For a one-component cycle, a negative signed boundary isometry whose signed restriction
+acts by negation is the central sign element. -/
+theorem eq_centralSign_of_signedOrthogonalRestriction [Module.Free ℤ L] [Module.Finite ℤ L]
+    (hSymm : B.IsSymm) (hnondeg : B.Nondegenerate)
+    {d : ZMod 1 → L} (hgram : ∀ j k, B (d j) (d k) = (-2 : ℤ) * (if j = k then 1 else 0) +
+      (if k = j + 1 then 1 else 0) + (if k = j - 1 then 1 else 0))
+    (g : signedBoundaryIsometryGroup B d)
+    (hsign : sign B d g = -1)
+    (horth : ∀ x : B.orthogonal (Submodule.span ℤ (Set.range d)),
+      (signedOrthogonalRestriction B d g).val x = -x) :
+    g = centralSign B d (by decide) := by
+  have hone (x : L) : (1 : L ≃ₗ[ℤ] L) x = x := rfl
+  apply Subtype.ext
+  apply Prod.ext
+  · rw [coe_centralSign, ← toIsometry_apply]
+    apply B.isometryGroupEquivIsometryEquiv.injective
+    refine boundary_isometry_ext (D := d) hSymm hnondeg.1
+      (BoundaryCycle.span_sup_orthogonal_rat hgram hSymm hnondeg) ?_ ?_
+    · intro j
+      obtain ⟨p, hp⟩ := exists_indexPerm B d g
+      simpa only [BilinForm.coe_isometryGroupEquivIsometryEquiv,
+        OneMemClass.coe_one, hone, Subsingleton.elim (p j) j] using hp j
+    · intro x hx
+      have heq := congrArg Subtype.val
+        ((horth ⟨x, hx⟩).trans
+          (signedOrthogonalRestriction_centralSign_apply B d (by decide) ⟨x, hx⟩).symm)
+      simp only [coe_signedOrthogonalRestriction_apply, hsign, sign_apply, toIsometry_apply,
+        coe_centralSign] at heq
+      simpa only [BilinForm.coe_isometryGroupEquivIsometryEquiv,
+        toIsometry_apply, OneMemClass.coe_one, hone] using smul_left_cancel (-1 : ℤˣ) heq
+  · simpa only [coe_centralSign, sign_apply] using hsign
+
+variable (B)
 
 /-- In a unimodular symmetric cycle lattice with primitive characteristic total class, the
 negative lift of the cycle-reversing involution restricts to the reflection
