@@ -146,7 +146,7 @@ theorem exists_hirzebruch_toric_elementary_transform_picard_coordinates
     (hrays : rays[Φ] = {b 0, b 1, -b 0, e • b 0 - b 1})
     (σ : Φ.cones) (hσ : σ.val = hull ℝ (Set.range (i ∘ b))) :
     letI : Nonempty Φ.cones := hc.nonempty_cones
-    ∃ (Ψ F : Fan i) (hΨ : Ψ.IsRegular) (_ : F.IsRegular)
+    ∃ (Ψ F : Fan i) (hΨ : Ψ.IsRegular) (hF : F.IsRegular)
       (hc' : Ψ.IsComplete) (_ : F.IsComplete) (d : Basis (Fin 2) ℤ N)
       (τ : Ψ.cones) (s : F.IsSubdivision Φ) (t : F.IsSubdivision Ψ)
       (g : X[F] ≅ (I[σ]).blowup) (g' : X[F] ≅ (I[τ]).blowup)
@@ -157,6 +157,7 @@ theorem exists_hirzebruch_toric_elementary_transform_picard_coordinates
       g.hom ≫ (I[σ]).blowupToBase = s.toFanHom.algebraicMap ∧
       g'.hom ≫ (I[τ]).blowupToBase = t.toFanHom.algebraicMap ∧
       Φ.IsTwoRayStarSubdivision F ∧ Ψ.IsTwoRayStarSubdivision F ∧
+      (I[τ]).comap t.toFanHom.algebraicMap = F.rayBoundaryIdeal hF (s.liftRay (r 1)) ∧
       letI : Nonempty Ψ.cones := hc'.nonempty_cones
       let C := hirzebruchPicardBasis b e hΦ r hr
       let C' := hirzebruchPicardBasis d (e + 1) hΨ r' hr'
@@ -174,8 +175,9 @@ theorem exists_hirzebruch_toric_elementary_transform_picard_coordinates
   let := hc.nonempty_cones
   let := hc'.nonempty_cones
   let := hcF.nonempty_cones
+  have hf' : f = r 1 := Ray.primitiveGenerator_injective (hf.trans (congrFun hr 1).symm)
   refine ⟨Ψ, F, hΨ, hF, hc', hcF, d, τ, s, t, g, g', r, r', hr, hr',
-    hd₀, hd₁, hτ, hg, hg', hstar, hstar', fun α β c ↦ ?_⟩
+    hd₀, hd₁, hτ, hg, hg', hstar, hstar', hf' ▸ hE', fun α β c ↦ ?_⟩
   obtain ⟨hs, ht, hst⟩ := hirzebruchLink_pullback_classes b d e hΦ hΨ hF σ τ s t g g' a f
     r r' hr hr' hσ hτ hd₀ hd₁ ha hf hg hg' hE hE'
   apply Additive.ofMul.injective

@@ -6,8 +6,9 @@ Authors: The QPainleve contributors
 module
 
 public import QPainleve.SignedClusterModularGroup.SarkisovDegree.Quadric.PlanePath
-public import QPainleve.SignedClusterModularGroup.SarkisovDegree.Quadric.TwoCenterPath
+public import QPainleve.SignedClusterModularGroup.SarkisovDegree.Quadric.SelectedCenters
 
+import QPainleve.Geometry.Toric.Fan.Picard.FiberDegree
 import QPainleve.Geometry.Toric.Fan.Picard.Quadric
 import QPainleve.SignedClusterModularGroup.SarkisovDegree.Decrease
 
@@ -89,6 +90,31 @@ private theorem two_mul_plane_degree_lt_of_unique_high_order
   exact (quadric_sarkisov_degree_decrease_of_single (by omega) j hsq' hsum' hhigh.le hUpper
     (fun k hk ↦ ⟨hNonneg k, hsmall k hk⟩)).2
 
+private theorem transverse_degree_lt_sum_of_two_high_orders
+    [X[Φ].IsProjectiveOver ℂ]
+    (hg : g ≫ fP = T.toBase ≫ f[Φ]) (hbir : Scheme.BirationalOver g (𝟙 P))
+    {j l : Fin n} (hjl : j ≠ l) :
+    let : Nonempty Φ.cones := hc.nonempty_cones
+    let : SmoothOfRelativeDimension 2 f[Φ] :=
+      rankTwo ▸ Φ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
+    let x := mark[T,hT,f[Φ],g]
+    let β := (Φ.hirzebruchPicardBasis b 0 hΦ r hr).repr x.1 1
+    let α := (Φ.hirzebruchPicardBasis b 0 hΦ r hr).repr x.1 0
+    let m := fun k ↦ -x.2 k
+    β < 2 * m j → β < 2 * m l → (∀ k, k ≠ j → k ≠ l → 2 * m k ≤ β) →
+      α < m j + m l := by
+  intro hcones hdim x β α m hj hl hsmall
+  let := hcones
+  let := hdim
+  have hUpper := hT.base_order_le_hirzebruch_fiber_degree b 0 hΦ r hr hc g hg
+  obtain ⟨hβ, -, hn⟩ := hT.hirzebruch_resolution_degree_bounds b 0 hΦ hc r hr g hg hbir
+  obtain ⟨hsq, hsum⟩ := hT.homaloidal_intersection_identities_of_hirzebruch b 0 hΦ hc r hr g hg hbir
+  have hlt : β + α - m j - m l < β := (quadric_sarkisov_degree_decrease_of_pair hβ hjl
+    (by simpa only [m, neg_sq, Nat.cast_zero, zero_mul, sub_zero] using hsq)
+    (by simpa only [m, Nat.cast_zero, sub_zero] using hsum)
+    hj.le (hUpper j) hl.le (hUpper l) (fun k hkj hkl ↦ ⟨hn k, hsmall k hkj hkl⟩)).2
+  omega
+
 /-- Suppose the high base orders of a logarithmic quadric-to-plane resolution
 are first centers over the interiors of distinct invariant fibers and there is
 at least one such center. There is a resolved Sarkisov path from the specified
@@ -145,19 +171,6 @@ theorem exists_sarkisov_path_decrease_of_quadric_high_fiber_centers
   let : X[Φ].IsProjectiveOver ℂ := Φ.isProjectiveOver_quadric b hΦ hc r hr
   obtain ⟨j, hj⟩ := hhigh
   let j₀ : high := ⟨j, hj⟩
-  -- The exchanged frame places the first pivot on section zero and keeps the
-  -- old degree threshold as the coefficient read by the quadric link lemmas.
-  obtain ⟨d, s, hs, h₀, h₂, hpic⟩ :=
-    Φ.exists_quadric_picardBasis_of_fiber b hΦ r hr (fiber j₀)
-  have hβ : (Φ.hirzebruchPicardBasis d 0 hΦ s hs).repr x.1 0 = β := by
-    rw [hpic, Basis.repr_reindex_apply]
-    rfl
-  have hcenter (k : high) {ρ : Φ.Ray} (hρ : ρ = fiberRay[fiber k]) :
-      ∃ a : ℂˣ, hT.baseCenter k = center[d,ρ,a] := by
-    obtain ⟨c, hc⟩ := (hfiber k).2
-    obtain ⟨a, ha⟩ := ρ.exists_binomialCenter_eq_of_basis d b c
-    exact ⟨a, by rw [ha, hρ, hc]⟩
-  obtain ⟨a, hjc⟩ := hcenter j₀ h₀
   have hlarge (k : high) : β < 2 * m k := (Finset.mem_filter.mp k.property).2
   have hsmall (k : Fin n) (hk : k ∉ high) : 2 * m k ≤ β := by
     simpa only [high, Finset.mem_filter, Finset.mem_univ, true_and, not_lt] using hk
@@ -168,26 +181,33 @@ theorem exists_sarkisov_path_decrease_of_quadric_high_fiber_centers
     have opposite : ∀ a b : Fin 2, a ≠ b → a = Equiv.swap 0 1 b := by decide
     have hfl (k : high) (hk : k.val ≠ j) : fiber k = Equiv.swap 0 1 (fiber j₀) :=
       opposite _ _ (fun he ↦ hk (congrArg Subtype.val (fiber.injective he)))
-    obtain ⟨a', hlc⟩ := hcenter l ((hfl l hne).symm ▸ h₂)
+    obtain ⟨c, hjc⟩ := (hfiber j₀).2
+    obtain ⟨d, hld⟩ := (hfiber l).2
+    have hlc : hT.baseCenter l = center[b,fiberRay[Equiv.swap 0 1 (fiber j₀)],d] := by
+      rw [hld, hfl l hne]
     have hnothigh (k : Fin n) (hkj : k ≠ j) (hkl : k ≠ l) : k ∉ high := by
       intro hk
       exact hkl (congrArg Subtype.val (fiber.injective ((hfl ⟨k, hk⟩ hkj).trans (hfl l hne).symm)))
-    have hn : 2 ≤ n := by
-      have hcard := Finset.one_lt_card.mpr ⟨j, hj, l.val, l.property, Ne.symm hne⟩
-      exact hcard.trans_le (by simpa only [Fintype.card_fin] using Finset.card_le_univ high)
-    obtain ⟨n, rfl⟩ := Nat.exists_eq_add_of_le' hn
-    obtain ⟨k, hk⟩ := Fin.exists_succAbove_eq_iff.mpr hne
-    obtain ⟨e, hs', Z, U, hU, f, A, A₁, A₂, B, p, hA, hAh, hB, hBh, -, -, -, -,
-      hProj, hg', hbir', hpole', hpos, hlt⟩ :=
-      hT.exists_sarkisov_path_decrease_of_quadric_two_smooth_centers d hΦ hc s hs g hg hbir
-        a a' j k hjc (hk.symm ▸ hlc) (hjc ▸ (hfiber j₀).1) (hk.symm ▸ (hlc ▸ (hfiber l).1)) D
-        ((hT.ramificationIdealSheafToBase_def ℂ) ▸ hpole)
-        (hβ.symm ▸ hlarge j₀) (hβ.symm ▸ (hk.symm ▸ hlarge l))
-        (fun u hu hu' ↦ hβ.symm ▸ hsmall u (hnothigh u hu (hk ▸ hu')))
-    refine ⟨A, B, p, hA, hAh, Or.inr ⟨_, hB ▸ B.isRegular, hB ▸ B.isComplete, e, _, hs',
-      Z, _, U, hU, f, hB, hBh, hProj, hg', hbir', hpole', hpos, ?_⟩⟩
-    rwa [← hβ]
+    have hsum := hT.transverse_degree_lt_sum_of_two_high_orders b hΦ hc r hr g hg hbir
+      hne.symm (hlarge j₀) (hlarge l) (fun k hk hl ↦ hsmall k (hnothigh k hk hl))
+    obtain ⟨A, B, p, e, t, ht, Z, _, U, hU, f, -, hA, hAh, hBh, hProj, hg', hbir', hpole',
+      hpos, -, hlt⟩ :=
+      hT.exists_sarkisov_path_of_quadric_two_smooth_fiber_centers b hΦ hc r hr g hg hbir
+        j l hne.symm (fiber j₀) c d hjc hlc (hfiber j₀).1 (hfiber l).1 hpole hsum
+    refine ⟨A, B, p, hA, hAh, Or.inr ⟨_, B.isRegular, B.isComplete, e, t, ht,
+      Z, _, U, hU, f, rfl, heq_of_eq hBh, hProj, hg', hbir', hpole', hpos, fun M' M ↦ ?_⟩⟩
+    simp only [Prod.Lex.lt_iff, ofLex_hirzebruchSarkisovBidegree]
+    have hβpos : 0 < β := hpos.trans hlt
+    exact Or.inl (Nat.mul_lt_mul_of_pos_left ((Int.toNat_lt_toNat hβpos).mpr hlt) (by decide))
   · have hnothigh (k : Fin n) (hkj : k ≠ j) : k ∉ high := fun hk ↦ hex ⟨⟨k, hk⟩, hkj⟩
+    obtain ⟨d, s, hs, h₀, -, hpic⟩ :=
+      Φ.exists_quadric_picardBasis_of_fiber b hΦ r hr (fiber j₀)
+    obtain ⟨c, hcenter⟩ := (hfiber j₀).2
+    obtain ⟨a, ha⟩ := (fiberRay[fiber j₀]).exists_binomialCenter_eq_of_basis d b c
+    have hjc : hT.baseCenter j = center[d,s 0,a] := by rw [h₀, ha, hcenter]
+    have hβ : (Φ.hirzebruchPicardBasis d 0 hΦ s hs).repr x.1 0 = β := by
+      rw [hpic, Basis.repr_reindex_apply]
+      rfl
     have hn : 1 ≤ n := by have := j.isLt; omega
     obtain ⟨n, rfl⟩ := Nat.exists_eq_add_of_le' hn
     have hlt :=

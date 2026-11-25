@@ -126,7 +126,7 @@ theorem exists_hirzebruch_toric_link_resolution_of_absent_corner
   rw [← hI] at hinsert
   obtain ⟨q, W, L, f, hL, hq, hqp, hA, hf, hcenters, hprep⟩ := hinsert
   obtain ⟨Ψ, F, hΨ, hF, hc', _, d, τ, s, t, g, g', r, r', hr, hr',
-      hd₀, hd₁, hτ, hg, hg', hstar, hstar', hcoord⟩ :=
+      hd₀, hd₁, hτ, hg, hg', hstar, hstar', -, hcoord⟩ :=
     Fan.exists_hirzebruch_toric_elementary_transform_picard_coordinates b e hΦ hc hrays σ hσ
   let R := L.transport (g.symm ≪≫ g')
   let hU : IsClosedPointTower (I[τ]).blowup R.tower := R.isLift.isClosedPointTower hL

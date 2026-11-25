@@ -90,7 +90,7 @@ theorem exists_sarkisov_path_of_quadric_corner
         y.2 (Fin.castAdd (1 + n) (0 : Fin 1)) = -((C).repr x.1 0) - x.2 j ∧
         y.2 (Fin.natAdd 1 (Fin.castAdd n (0 : Fin 1))) = -((C).repr x.1 1) - x.2 j ∧
         (∀ l : Fin n, y.2 (Fin.natAdd 1 (Fin.natAdd 1 l)) = x.2 (j.succAbove l)) := by
-  intro hcones hdim hOver hSmooth hIntegral x A hA hAh hhigh
+  intro hcones hdim hOver hSmooth hIntegral x A hA hAh _
   let := hcones
   let := hdim
   let := hOver
@@ -110,9 +110,9 @@ theorem exists_sarkisov_path_of_quadric_corner
   have hshift0 : shift = 0 := hshift.elim id id
   have he0 : e = 0 := by simpa only [hshift0, mul_zero, sub_zero] using he
   subst he0
-  obtain ⟨M, q, b', t, ht, W, R, hR, u, hlen, hmap, hM, hproj, hg', hbir', -, ha, hβ, hy, -, -⟩ :=
-    hT.exists_sarkisov_path_decrease_of_toric_corner a 0 hΦ hc s hs g hg hbir σ hcone j hj
-      hfirst D hpole ((hrepr x.1).2.symm ▸ hhigh)
+  obtain ⟨M, q, b', t, ht, W, R, hR, u, hlen, hmap, hM, hproj, hg', hbir', -, -, -, -,
+    ha, hβ, hy, -, -⟩ :=
+    hT.exists_sarkisov_path_of_toric_corner a 0 hΦ hc s hs g hg hbir σ hcone j hj hfirst D hpole
   let : X[M.fan].IsProjectiveOver ℂ := hproj
   obtain ⟨d, J, Z, U, hU, k, hproj, hg'', hbir'', hdeg, hneg, htail, -, hstar⟩ :=
     hR.exists_plane_resolution_of_hirzebruchOne b' M.isRegular M.isComplete t ht (u.inv ≫ g)

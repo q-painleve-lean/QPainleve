@@ -14,6 +14,7 @@ public import QPainleve.Geometry.Toric.Fan.Smooth
 public import TauCeti.AlgebraicGeometry.Noetherian
 
 import Mathlib.Analysis.Complex.Polynomial.Basic
+import QPainleve.AlgebraicGeometry.Blowup.Tower.Centres.First
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Modification
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Nodal.PoleIdeal
 import QPainleve.AlgebraicGeometry.Morphisms.Modification.Birational
@@ -294,34 +295,6 @@ theorem exists_sarkisov_path_of_absent_corner
   exact absent_corner_target_marking (Ψ := B.fan) R.toBase k g hU' C' _ _ _ (by
     simpa only [R, U', toBase_snoc, toBase_nil, Category.comp_id] using hclass)
 
-private theorem exists_retained_first_center
-    {X X' Y Y' : Scheme} {n : ℕ} {T : BlowupTower X n Y} {U : BlowupTower X' (1 + n) Y'}
-    (hT : IsClosedPointTower X T) (hU : IsClosedPointTower X' U)
-    (f : X ⟶ projectiveLine ℂ) (f' : X' ⟶ projectiveLine ℂ) (p : X)
-    (x : Fin n → ℤ) (y : Fin (1 + n) → ℤ) (β : ℤ)
-    (hOrders : y = Fin.addCases (fun _ : Fin 1 ↦ -β) x)
-    (hhead : f' (hU.baseCenter 0) = f p)
-    (htail : ∀ j, f' (hU.baseCenter (j.natAdd 1)) = f (hT.baseCenter j))
-    (hfirst : ∀ j : Fin n, hU.baseCenter (j.natAdd 1) ≠ hU.baseCenter 0 →
-      (∀ l < j, hT.baseCenter l ≠ hT.baseCenter j) →
-      ∀ l < j.natAdd 1, hU.baseCenter l ≠ hU.baseCenter (j.natAdd 1))
-    (j : Fin n) (hj : ∀ l < j, hT.baseCenter l ≠ hT.baseCenter j) (hbound : -x j ≤ β) :
-    ∃ l : Fin (1 + n), (∀ t < l, hU.baseCenter t ≠ hU.baseCenter l) ∧
-      f' (hU.baseCenter l) = f (hT.baseCenter j) ∧ -x j ≤ -y l ∧ -y l ≤ β ∧
-      (f (hT.baseCenter j) = f p → l = 0) ∧
-      (f (hT.baseCenter j) ≠ f p → l = j.natAdd 1 ∧ y l = x j) := by
-  by_cases heq : f (hT.baseCenter j) = f p
-  · have hl : -y 0 = β := by
-      have hzero : (0 : Fin (1 + n)) = Fin.castAdd n (0 : Fin 1) := rfl
-      simp only [hOrders, hzero, Fin.addCases_left, neg_neg]
-    exact ⟨0, fun t ht ↦ (Fin.not_lt_zero t ht).elim, hhead.trans heq.symm,
-      hl ▸ hbound, hl.le, fun _ ↦ rfl, fun hn ↦ (hn heq).elim⟩
-  · have hne : hU.baseCenter (j.natAdd 1) ≠ hU.baseCenter 0 :=
-      fun h ↦ heq ((htail j).symm.trans ((congrArg f' h).trans hhead))
-    have hl : y (j.natAdd 1) = x j := by simp only [hOrders, Fin.addCases_right]
-    exact ⟨j.natAdd 1, hfirst j hne hj, htail j, by rw [hl], hl.symm ▸ hbound,
-      fun h ↦ (heq h).elim, fun _ ↦ ⟨rfl, hl⟩⟩
-
 /-- An unused corner on the positive section is a zero-order pivot from
 `F_e` to `F_{e-1}`. On a single nodal refinement it gives a two-link
 path carrying the prescribed plane map. In the nonnegative markings both
@@ -405,7 +378,8 @@ theorem exists_sarkisov_path_of_absent_positive_corner
   let := hdimY
   let := hIntY
   let := hNoethY
-  obtain ⟨b₀, r₀, hr₀, hf, hs⟩ := Fan.exists_hirzebruch_opposite_section_basis b (e : ℤ) r hr
+  obtain ⟨b₀, r₀, hr₀, hs, hf, -, -, hrepr⟩ :=
+    Φ.exists_hirzebruchPicardBasis_opposite_section b (e : ℤ) hΦ r hr
   have hb₀ : b₀ 0 = -b 0 := by simpa [hs, congrFun hr 2] using (congrFun hr₀ 0).symm
   have hb₁ : b₀ 1 = b 1 := by simpa [hf, congrFun hr 1] using (congrFun hr₀ 1).symm
   have hcone : σ.val = hull ℝ (Set.range (i ∘ b₀)) := by
@@ -423,56 +397,24 @@ theorem exists_sarkisov_path_of_absent_positive_corner
   -- At index zero the distinction between the two marked sections still matters.
   let e₀ := -(e : ℤ) + 1
   have he₀ : -e₀ = ((e - 1 : ℕ) : ℤ) := by dsimp only [e₀]; omega
-  obtain ⟨d, s, ht, ht₁, ht₀⟩ := Fan.exists_hirzebruch_opposite_section_basis d₀ e₀ s₀ hs₀
+  let : Nonempty B.fan.cones := B.isComplete.nonempty_cones
+  obtain ⟨d, s, ht, ht₀, ht₁, -, -, hrepr'⟩ :=
+    B.fan.exists_hirzebruchPicardBasis_opposite_section d₀ e₀ B.isRegular s₀ hs₀
   have hd₀ : d 0 = -d₀ 0 := by simpa [ht₀, congrFun hs₀ 2] using (congrFun ht 0).symm
   have hd₁ : d 1 = d₀ 1 := by simpa [ht₁, congrFun hs₀ 1] using (congrFun ht 1).symm
-  have ht' : (fun l ↦ (s l).primitiveGenerator) =
-      ![d 0, d 1, -d 0, ((e - 1 : ℕ) : ℤ) • d 0 - d 1] := he₀ ▸ ht
-  refine ⟨hR, A, B, path, d, s, ht', Z, U, hU, k, hA, hAh, hB, hlen, hrat, hg', hbir',
+  rw [← he₀]
+  refine ⟨hR, A, B, path, d, s, ht, Z, U, hU, k, hA, hAh, hB, hlen, hrat, hg', hbir',
     ⟨τ, by rw [hτ, hd₀, hd₁, Set.pair_comm], hhead⟩, hcenters, hpole', ?_⟩
   intro hNoeth' y C'
-  let : Nonempty B.fan.cones := B.isComplete.nonempty_cones
-  let C₀ := Φ.hirzebruchPicardBasis b₀ (-(e : ℤ)) hΦ r₀ hr₀
-  let C₁ := B.fan.hirzebruchPicardBasis d₀ e₀ B.isRegular s₀ hs₀
-  have hC₀ : C₀ 0 = C 0 := by
-    simp only [C₀, C, Fan.hirzebruchPicardBasis_apply_zero, hf]
-  have hC₁ : C₁ 0 = C' 0 := by
-    simp only [C₁, C', Fan.hirzebruchPicardBasis_apply_zero, ht₁]
-  have ht₂ : s 2 = s₀ 0 := Fan.Ray.primitiveGenerator_injective (by
-    simp [congrFun ht 2, congrFun hs₀ 0, hd₀])
-  classical
-  have hxOpp : C.repr (C₀ 1) 0 = e ∧ C.repr (C₀ 1) 1 = 1 := by
-    simpa only [C, C₀, Fan.hirzebruchPicardBasis_apply_one, hs,
-      Fan.rayDivisorToPicard_single, one_zsmul] using
-      Φ.hirzebruch_opposite_section_coordinates b (e : ℤ) hΦ r hr
-  have hyOpp : C'.repr (C₁ 1) 0 = ((e - 1 : ℕ) : ℤ) ∧ C'.repr (C₁ 1) 1 = 1 := by
-    simpa only [C', C₁, Fan.hirzebruchPicardBasis_apply_one, ht₂,
-      Fan.rayDivisorToPicard_single, one_zsmul] using
-      B.fan.hirzebruch_opposite_section_coordinates d ((e - 1 : ℕ) : ℤ) B.isRegular s ht'
   obtain ⟨ha, hβ, hm⟩ := hmark
-  have ha' : C₁.repr y.1 0 = C₀.repr x.1 0 + C₀.repr x.1 1 := ha
-  have hβ' : C₁.repr y.1 1 = C₀.repr x.1 1 := hβ
-  -- Expand each line class in its signed basis, then evaluate in the returned marking.
-  have hxsum := C₀.sum_repr x.1
-  have hysum := C₁.sum_repr y.1
-  rw [Fin.sum_univ_two, hC₀] at hxsum
-  rw [Fin.sum_univ_two, hC₁] at hysum
-  have hx₀ := congrArg (fun L ↦ C.repr L 0) hxsum
-  have hx₁ := congrArg (fun L ↦ C.repr L 1) hxsum
-  have hy₀ := congrArg (fun L ↦ C'.repr L 0) hysum
-  have hy₁ := congrArg (fun L ↦ C'.repr L 1) hysum
-  simp only [map_add, map_smul, Finsupp.add_apply, Finsupp.smul_apply, Basis.repr_self,
-    Finsupp.single_eq_same, Finsupp.single_eq_of_ne (by decide : (1 : Fin 2) ≠ 0),
-    smul_eq_mul, mul_one, mul_zero, zero_add, hxOpp.1, hxOpp.2, hyOpp.1, hyOpp.2] at hx₀ hx₁ hy₀ hy₁
   have hFiber : C'.repr y.1 0 = C.repr x.1 0 := by
-    rw [← hx₀, ← hy₀, ha', hβ']
-    have hIndex : 1 + ((e - 1 : ℕ) : ℤ) = (e : ℤ) := by omega
-    calc
-      _ = C₀.repr x.1 0 + (1 + ((e - 1 : ℕ) : ℤ)) * C₀.repr x.1 1 := by ring
-      _ = _ := by rw [hIndex, mul_comm (e : ℤ)]
-  have hDegree := hy₁.symm.trans (hβ'.trans hx₁)
+    rw [(hrepr' y.1).1, ha, hβ, (hrepr x.1).1, (hrepr x.1).2]
+    dsimp only [e₀]
+    ring
+  have hDegree : C'.repr y.1 1 = C.repr x.1 1 := by
+    rw [(hrepr' y.1).2, hβ, (hrepr x.1).2]
   have hOrders : y.2 = Fin.addCases (fun _ : Fin 1 ↦ -C.repr x.1 1) x.2 := by
-    rw [← hx₁]
+    rw [← (hrepr x.1).2]
     exact hm
   refine ⟨hFiber, hDegree, hOrders, ?_⟩
   intro f₀ f₁

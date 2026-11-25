@@ -58,27 +58,6 @@ local notation "DomainPoint" => CenterPoint (U := Tcent) (V := Tcent) C
 local notation "src[" p "]" => p ≫ PartialMap.domainSource (X := Tcent) (Y := Tcent) C
 local notation "dst[" p "]" => p ≫ PartialMap.domainTarget (X := Tcent) (Y := Tcent) C
 
-omit [IsDominant C.hom]
-  [C.IsOver (Over.mk (structureMap ℂ (Fin r → ℤ))).hom
-    (Over.mk (structureMap ℂ (Fin r → ℤ))).hom] in
-private theorem exists_centerPoint (c : Multiplicative A →* ℂˣ)
-    (hc : ((pointsEquiv ℂ A).symm c).val default ∈ C.domain) :
-    ∃ p : DomainPoint, χ[src[p]] = c := by
-  let t := (pointsEquiv ℂ A).symm c
-  have ht : Set.range t.val ⊆ Set.range C.domain.ι := by
-    rw [Opens.range_ι]
-    rintro _ ⟨x, rfl⟩
-    rwa [Subsingleton.elim x default]
-  let f := IsOpenImmersion.lift C.domain.ι t.val ht
-  have hf : f ≫ C.domain.ι = t.val := IsOpenImmersion.lift_fac _ _ _
-  let p : DomainPoint := Over.homMk f (by
-    -- The structure map of the slice domain is the open inclusion over the base.
-    change f ≫ (C.domain.ι ≫ structureMap ℂ A) = 𝟙 S
-    rw [← Category.assoc, hf]
-    exact t.property)
-  refine ⟨p, (pointsEquiv ℂ A).eq_symm_apply.mp (Subtype.ext ?_)⟩
-  simpa only [p, Over.comp_left, PartialMap.domainSource_left, Over.homMk_left] using hf
-
 omit [IsDominant C.hom] in
 private theorem centerCharacter_domainTarget (w : Word E E)
     (hC : C.hom = C.domain.ι ≫ (w.centerIso ℂ).hom) (p : DomainPoint) :
@@ -226,7 +205,13 @@ theorem chargeKernelAction_eq_signedOrthogonalRestriction
     (a := period[(1 : Multiplicative A →* ℂˣ)] (ofAdd x) /
       period[(1 : Multiplicative A →* ℂˣ)] (ofAdd y))
   intro c hc
-  obtain ⟨p, hp⟩ := exists_centerPoint (C := C) c hc
+  let t := (pointsEquiv ℂ A).symm c
+  let p₀ : Point Tcent := Over.homMk t.val t.property
+  obtain ⟨p, hp₀⟩ := (C.exists_section_comp_domainSource_eq_iff
+    (Y := Tcent) p₀ (default : S)).mpr hc
+  have hp : χ[src[p]] = c := by
+    rw [hp₀]
+    exact (pointsEquiv ℂ A).apply_symm_apply c
   let c₀ := src[p]
   let c₁ := dst[p]
   obtain ⟨h₀, h₁⟩ := hends p

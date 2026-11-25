@@ -11,12 +11,16 @@ public import QPainleve.Geometry.Toric.Fan.Picard.Hirzebruch
 public import QPainleve.Geometry.Toric.Fan.Ruling.Basic
 public import QPainleve.Geometry.Toric.Fan.Ruling.Quadric
 
+import Mathlib.Analysis.Complex.Polynomial.Basic
+import QPainleve.AlgebraicGeometry.Curves.Degree.Ample
+import QPainleve.AlgebraicGeometry.IntersectionNumber.Nef.Pullback
 import QPainleve.Geometry.Toric.Fan.Picard.FiberDegree
 import QPainleve.Geometry.Toric.Fan.Picard.Ruling
 import QPainleve.Geometry.Toric.Fan.Ruling.Torus
 import TauCeti.AlgebraicGeometry.Curves.ProjectiveLine
 import TauCeti.AlgebraicGeometry.IdealSheaf.BaseChange
 import TauCeti.AlgebraicGeometry.Morphisms.Smooth.Regular
+import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.TwistingSheaf.Ample
 
 /-!
 # Picard coordinates and fiber degrees of the toric quadric
@@ -24,7 +28,8 @@ import TauCeti.AlgebraicGeometry.Morphisms.Smooth.Regular
 The ruling exchange of the Hirzebruch fan of index zero interchanges the two
 integral Picard coordinates. Transport of a closed point blowup tower by this exchange
 preserves its ordered exceptional coefficients. The Picard coordinates also give the degree
-on a nonzero fiber of the exchanged ruling, which bounds the orders of first centers on it.
+on a nonzero fiber of the exchanged ruling. This bounds the orders of first centers on it
+and separates two first centers whose combined order exceeds that degree.
 -/
 
 public noncomputable section
@@ -355,6 +360,50 @@ theorem sum_first_base_orders_le_quadric_transverse_fiber_degree
   rw [← hjdeg L]
   exact hT.sum_first_base_orders_le_curve_intersection j (X ↘ S) hjbase.symm L.toMul orders s
     (fun l hl ↦ ⟨hjrange.symm ▸ (hs l hl).1, (hs l hl).2⟩) hnef
+
+local notation "H" => mk (Proj.symmetricAlgebraTwistingBundle ℂ (Fin 3 → ℂ) 1)
+
+include hc in
+/-- Two first centers of a resolved quadric-to-plane map lie on different
+transverse fibers if their combined order exceeds the transverse fiber degree
+and the first center lies over the base torus. -/
+theorem ne_quadric_transverse_ruling_of_lt_sum_first_base_orders
+    (g : Y ⟶ Plane) (hg : g ≫ (Plane ↘ S) = T.toBase ≫ f)
+    {j l : Fin n} (hjl : j ≠ l)
+    (hj : ∀ i < j, hT.baseCenter i ≠ hT.baseCenter j)
+    (hl : ∀ i < l, hT.baseCenter i ≠ hT.baseCenter l)
+    (t : ℂˣ) (ht : ruling (hT.baseCenter j) ∈ Set.range (p(t))) :
+    let : SmoothOfRelativeDimension 2 f :=
+      (by simpa using Module.finrank_eq_card_basis b : Module.finrank ℤ N = 2) ▸
+        Φ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
+    let v := (T.picardMarking hT f).symm (Additive.ofMul (pullback g H))
+    (C).repr v.1 0 < -v.2 j + -v.2 l →
+    ruling (hT.baseCenter j) ≠ ruling (hT.baseCenter l) := by
+  intro hSmooth v hsum heq
+  let : SmoothOfRelativeDimension 2 f := hSmooth
+  have hmark : (T.picardHom v).toMul = pullback g H := by
+    rw [← picardMarking_apply _ hT f, LinearEquiv.apply_symm_apply, toMul_ofMul]
+  have hample : (H).IsAmple :=
+    TauCeti.SymmetricAlgebra.isAmple_twistingSheaf ℂ (Fin 3 → ℂ) Nat.one_pos
+  let : Y.Over S := ⟨T.toBase ≫ f⟩
+  let : g.IsOver S := ⟨hg⟩
+  have hnef : (T.picardHom v).toMul.IsNef ℂ (T.toBase ≫ f) := hmark.symm ▸ hample.isNef.pullback g
+  let orders (i : Fin n) := (-v.2 i).toNat
+  have horders (i : Fin n) : (orders i : ℤ) = -v.2 i :=
+    Int.toNat_of_nonneg (neg_nonneg.mpr (hT.exceptionalCoeff_nonpos_of_isNef_picardHom hnef i))
+  have hneg : (fun i ↦ -(orders i : ℤ)) = v.2 := funext fun i ↦ by rw [horders, neg_neg]
+  have hnef' : (T.picardHom (v.1, fun i ↦ -(orders i : ℤ))).toMul.IsNef ℂ (T.toBase ≫ f) := by
+    rwa [hneg, Prod.mk.eta]
+  classical
+  have hbound := hT.sum_first_base_orders_le_quadric_transverse_fiber_degree
+    b hΦ hc r hr v.1 orders {j, l} t (by
+      intro i hi
+      simp only [Finset.mem_insert, Finset.mem_singleton] at hi
+      rcases hi with rfl | rfl
+      · exact ⟨ht, hj⟩
+      · exact ⟨heq ▸ ht, hl⟩) hnef'
+  rw [Finset.sum_pair hjl, horders, horders] at hbound
+  exact (not_lt_of_ge hbound) hsum
 
 end
 
