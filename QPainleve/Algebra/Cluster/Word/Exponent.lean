@@ -50,6 +50,14 @@ theorem exponentEquiv_invert (B : SkewExchangeMatrix ι) :
     exponentEquiv (Generator.invert.toStep B) = LinearEquiv.neg ℤ := by
   rw [exponentEquiv, Generator.toStep_generator]
 
+/-- Casting the endpoints of a step does not change its exponent substitution. -/
+@[simp]
+theorem exponentEquiv_cast {B' C' : SkewExchangeMatrix ι} (s : B ⟶ C)
+    (hB : B = B') (hC : C = C') :
+    exponentEquiv (s.cast hB hC) = exponentEquiv s := by
+  subst B' C'
+  rfl
+
 private theorem ker_mutate (B : SkewExchangeMatrix ι) (p : ι) :
     (B.mutate p).matrix.mulVecLin.ker =
       B.matrix.mulVecLin.ker.comap (chargeMutationEquiv B.matrix p).toLinearMap := by

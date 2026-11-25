@@ -31,7 +31,8 @@ variable (k : Type*) [Field k] {ι κ ρ : Type*}
 local notation:max "Laurent" ι:arg => AddMonoidAlgebra k (ι →₀ ℤ)
 local notation:max "Functions" ι:arg => FractionRing (AddMonoidAlgebra k (ι →₀ ℤ))
 
-private theorem algEquiv_ext_xCoordinate
+/-- A pullback between Laurent function fields is determined by the independent X coordinates. -/
+theorem algEquiv_ext_xCoordinate
     {f g : Functions ι ≃ₐ[k] Functions κ}
     (h : ∀ i : ι, f (xCoordinate k i) = g (xCoordinate k i)) : f = g := by
   -- Restrict to Laurent polynomials and compare the characters on the standard generators.
