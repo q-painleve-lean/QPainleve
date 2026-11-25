@@ -12,6 +12,7 @@ public import QPainleve.AlgebraicGeometry.Modules.Differentials.Canonical
 
 import QPainleve.AlgebraicGeometry.Blowup.StrictTransform.Node
 import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
+import QPainleve.AlgebraicGeometry.Modules.Differentials.Restriction
 import TauCeti.AlgebraicGeometry.Curves.Node.Reduced
 import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.Pullback
 import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.TensorProduct
@@ -128,5 +129,30 @@ theorem canonicalClass_radical_comap_toBase_iff :
     hT.logCanonicalClass_radical_comap_toBase hD hN]
   rw [← pullback_one T.toBase, (hT.isClosedPointTower.injective_pullback_toBase s).eq_iff,
     mul_inv_eq_one, eq_comm]
+
+include hT hN in
+/-- A boundary identified with the reduced total boundary of a nodal tower
+by an isomorphism over the field is anticanonical exactly when the base
+boundary is anticanonical. -/
+theorem canonicalClass_radical_comap_toBase_iff_of_iso
+    {Z : Scheme.{u}} [Z.Over (Spec (.of k))]
+    [SmoothOfRelativeDimension 2 (Z ↘ Spec (.of k))]
+    (e : Z ≅ Y) (he : e.hom ≫ T.toBase ≫ s = Z ↘ Spec (.of k))
+    {F : Z.IdealSheafData} (hF : F.IsEffectiveCartier)
+    (h : ((D.comap T.toBase).radical).comap e.hom = F) :
+    mk hF.toInvertibleSheaf = K(Z) ↔ mk hD.toInvertibleSheaf = K(X) := by
+  let : Y.Over (Spec (.of k)) := ⟨T.toBase ≫ s⟩
+  let : SmoothOfRelativeDimension 2 (Y ↘ Spec (.of k)) :=
+    hT.isClosedPointTower.smoothOfRelativeDimension s
+  let : e.hom.IsOver (Spec (.of k)) := ⟨he⟩
+  let hR := (hT.radical_comap_toBase hD hN).1
+  have hclass : pullback e.hom (mk hR.toInvertibleSheaf) = mk hF.toInvertibleSheaf :=
+    (hR.pullback_mk_toInvertibleSheaf (hR.comap e.hom)).trans
+      (mk_toInvertibleSheaf_congr _ hF h)
+  have hcan : pullback e.hom K(Y) = K(Z) := by
+    rw [pullback_mk, mk_pullback_canonicalBundle]
+  rw [← hclass, ← hcan, ← pullbackEquiv_apply, ← pullbackEquiv_apply,
+    (pullbackEquiv e).injective.eq_iff]
+  exact hT.canonicalClass_radical_comap_toBase_iff hD hN
 
 end QPainleve.BlowupTower.IsNodalBoundaryTower
