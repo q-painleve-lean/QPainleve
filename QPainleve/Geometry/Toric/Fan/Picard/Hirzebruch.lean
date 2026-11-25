@@ -167,6 +167,46 @@ theorem exists_hirzebruch_picardBasis_of_fiber (hΦ : Φ.IsRegular) (t : Fin 2) 
 
 local notation "C" => hirzebruchPicardBasis b e hΦ r hr
 
+omit [Nonempty Φ.cones] in
+private theorem repr_change_section (C₀ C' : Basis (Fin 2) ℤ Pic) (shift : ℤ)
+    (hfiber : C' 0 = C₀ 0) (hsection : C' 1 = C₀ 1 + shift • C₀ 0) (L : Pic) :
+    C'.repr L 0 = C₀.repr L 0 - shift * C₀.repr L 1 ∧ C'.repr L 1 = C₀.repr L 1 := by
+  have hL : L = (C₀.repr L 0 - shift * C₀.repr L 1) • C' 0 + C₀.repr L 1 • C' 1 := by
+    have hsum := C₀.sum_repr L
+    rw [Fin.sum_univ_two] at hsum
+    calc
+      L = C₀.repr L 0 • C₀ 0 + C₀.repr L 1 • C₀ 1 := hsum.symm
+      _ = _ := by
+        rw [hfiber, hsection, smul_add, sub_smul, smul_smul, mul_comm (C₀.repr L 1) shift]
+        abel
+  exact ⟨by simpa [Basis.repr_self] using congrArg (fun x ↦ C'.repr x 0) hL,
+    by simpa [Basis.repr_self] using congrArg (fun x ↦ C'.repr x 1) hL⟩
+
+include hr in
+/-- Choosing the opposite invariant section negates the signed Hirzebruch parameter
+and subtracts that parameter times the section coefficient from the fiber coefficient.
+The two fiber rays keep their order. -/
+theorem exists_hirzebruchPicardBasis_opposite_section :
+    ∃ (d : Basis (Fin 2) ℤ N) (t : Fin 4 ≃ Φ.Ray)
+      (ht : (fun j ↦ (t j).primitiveGenerator) = ![d 0, d 1, -d 0, (-e) • d 0 - d 1]),
+      t 0 = r 2 ∧ t 1 = r 1 ∧ t 3 = r 3 ∧
+      let C' := hirzebruchPicardBasis d (-e) hΦ t ht
+      C' 0 = (C) 0 ∧ ∀ L : Pic,
+        C'.repr L 0 = (C).repr L 0 - e * (C).repr L 1 ∧ C'.repr L 1 = (C).repr L 1 := by
+  obtain ⟨d, t, ht, hf, hs⟩ := exists_hirzebruch_opposite_section_basis b e r hr
+  let C' := hirzebruchPicardBasis d (-e) hΦ t ht
+  have h₀ : C' 0 = (C) 0 := by simp only [C', hirzebruchPicardBasis_apply_zero, hf]
+  have h₁ : C' 1 = (C) 1 + e • (C) 0 := by
+    simp only [C', hirzebruchPicardBasis_apply_one, hirzebruchPicardBasis_apply_zero, hs]
+    exact (hirzebruch_ray_classes b e hΦ r hr).1
+  have hd₀ : d 0 = -b 0 := by
+    simpa [hs, congrFun hr 2] using (congrFun ht 0).symm
+  have hd₁ : d 1 = b 1 := by
+    simpa [hf, congrFun hr 1] using (congrFun ht 1).symm
+  have hf' : t 3 = r 3 := Ray.primitiveGenerator_injective (by
+    simp [congrFun ht 3, congrFun hr 3, hd₀, hd₁])
+  exact ⟨d, t, ht, hs, hf, hf', h₀, repr_change_section (C) C' e h₀ h₁⟩
+
 include hr in
 /-- A signed Hirzebruch marking can be replaced by one of index `e.natAbs`,
 with the same fiber class and fiber-degree coordinate on every Picard class.
@@ -184,25 +224,10 @@ theorem exists_hirzebruchPicardBasis_natAbs :
     simp only [h]
     exact ⟨b, r, hr, rfl, fun _ ↦ ⟨rfl, rfl⟩, fun _ ↦ rfl⟩
   have hs : (e.natAbs : ℤ) = -e := by omega
-  obtain ⟨d, t, ht, hf, hs'⟩ := exists_hirzebruch_opposite_section_basis b e r hr
+  obtain ⟨d, t, ht, -, -, -, h₀, hrepr⟩ :=
+    exists_hirzebruchPicardBasis_opposite_section b e hΦ r hr
   simp only [hs]
-  let C' := hirzebruchPicardBasis d (-e) hΦ t ht
-  have h₀ : C' 0 = (C) 0 := by simp only [C', hirzebruchPicardBasis_apply_zero, hf]
-  have h₁ : C' 1 = (C) 1 + e • (C) 0 := by
-    simp only [C', hirzebruchPicardBasis_apply_one, hirzebruchPicardBasis_apply_zero, hs']
-    exact (hirzebruch_ray_classes b e hΦ r hr).1
-  refine ⟨d, t, ht, h₀, fun h ↦ (he h).elim, fun x ↦ ?_⟩
-  have hzero : C'.repr ((C) 0) 1 = 0 := by
-    rw [← h₀]
-    simp [Basis.repr_self]
-  have hone : C'.repr ((C) 1) 1 = 1 := by
-    have h := congrArg (fun y ↦ C'.repr y 1) h₁
-    simpa [Basis.repr_self, hzero, -hirzebruchPicardBasis_apply_zero,
-      -hirzebruchPicardBasis_apply_one] using h.symm
-  have hx := (C).sum_repr x
-  rw [Fin.sum_univ_two] at hx
-  simpa [hzero, hone, -hirzebruchPicardBasis_apply_zero, -hirzebruchPicardBasis_apply_one] using
-    congrArg (fun y ↦ C'.repr y 1) hx.symm
+  exact ⟨d, t, ht, h₀, fun h ↦ (he h).elim, fun L ↦ (hrepr L).2⟩
 
 include hr in
 open Classical in
@@ -235,17 +260,8 @@ theorem exists_hirzebruch_corner_picardBasis (hc : Φ.IsComplete)
     · exact ⟨e, Or.inr rfl, by omega, by
         rw [h, (hirzebruch_ray_classes b e hΦ r hr).1]⟩
   obtain ⟨shift, hshift, ha, hsection⟩ := hsection
-  refine ⟨d, a, t, ht, shift, hcone, hshift, ha, fun L ↦ ?_⟩
-  have hL : L = ((C).repr L 0 - shift * (C).repr L 1) • C' 0 + (C).repr L 1 • C' 1 := by
-    have hsum := (C).sum_repr L
-    rw [Fin.sum_univ_two] at hsum
-    calc
-      L = (C).repr L 0 • (C) 0 + (C).repr L 1 • (C) 1 := hsum.symm
-      _ = _ := by
-        rw [hfiber, hsection, smul_add, sub_smul, smul_smul, mul_comm ((C).repr L 1) shift]
-        abel
-  exact ⟨by simpa [Basis.repr_self] using congrArg (fun x ↦ C'.repr x 0) hL,
-    by simpa [Basis.repr_self] using congrArg (fun x ↦ C'.repr x 1) hL⟩
+  exact ⟨d, a, t, ht, shift, hcone, hshift, ha,
+    repr_change_section (C) C' shift hfiber hsection⟩
 
 local notation "P" p:arg =>
   Additive.ofMul

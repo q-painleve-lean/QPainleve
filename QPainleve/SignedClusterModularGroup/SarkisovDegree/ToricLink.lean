@@ -75,7 +75,7 @@ theorem exists_hirzebruch_toric_link_resolution
     {n : ℕ} {Y : Scheme} {T : BlowupTower (I[σ]).blowup n Y}
     (hT : IsClosedPointTower (I[σ]).blowup T) :
     letI : Nonempty Φ.cones := hc.nonempty_cones
-    ∃ (Ψ F : Fan i) (hΨ : Ψ.IsRegular) (_ : F.IsRegular)
+    ∃ (Ψ F : Fan i) (hΨ : Ψ.IsRegular) (hF : F.IsRegular)
       (hc' : Ψ.IsComplete) (_ : F.IsComplete) (d : Basis (Fin 2) ℤ N)
       (τ : Ψ.cones) (s : F.IsSubdivision Φ) (t : F.IsSubdivision Ψ)
       (g : X[F] ≅ (I[σ]).blowup) (g' : X[F] ≅ (I[τ]).blowup)
@@ -89,6 +89,7 @@ theorem exists_hirzebruch_toric_link_resolution
       g.hom ≫ (I[σ]).blowupToBase = s.toFanHom.algebraicMap ∧
       g'.hom ≫ (I[τ]).blowupToBase = t.toFanHom.algebraicMap ∧
       Φ.IsTwoRayStarSubdivision F ∧ Ψ.IsTwoRayStarSubdivision F ∧
+      (I[τ]).comap t.toFanHom.algebraicMap = F.rayBoundaryIdeal hF (s.liftRay (r 1)) ∧
       k.hom ≫ U'.toBase = T.toBase ≫ g.inv ≫ t.toFanHom.algebraicMap ∧
       hU'.baseCenter (Fin.castAdd n (0 : Fin 1)) =
         Ψ.distinguishedPointHom τ (IsLocalRing.closedPoint ℂ) ∧
@@ -109,7 +110,7 @@ theorem exists_hirzebruch_toric_link_resolution
           hirzebruchSarkisovBidegree β.toNat M'.toNat <
             hirzebruchSarkisovBidegree β.toNat M.toNat) := by
   obtain ⟨Ψ, F, hΨ, hF, hc', hcF, d, τ, s, t, g, g', r, r', hr, hr',
-      hd₀, hd₁, hτcone, hg, hg', hstar, hstar', hcoord⟩ :=
+      hd₀, hd₁, hτcone, hg, hg', hstar, hstar', hcontract, hcoord⟩ :=
     Fan.exists_hirzebruch_toric_elementary_transform_picard_coordinates b e hΦ hc hrays σ hσ
   let R := T.transport (g.symm ≪≫ g')
   let U := (tower[I[τ]]).append R.tower
@@ -122,7 +123,8 @@ theorem exists_hirzebruch_toric_link_resolution
     rw [toBase_append, ← Category.assoc, R.isLift.hom_toBase, toBase_snoc, toBase_nil,
       Category.comp_id, Category.assoc, Iso.trans_hom, Iso.symm_hom, Category.assoc, hg']
   refine ⟨Ψ, F, hΨ, hF, hc', hcF, d, τ, s, t, g, g', r, r', hr, hr', _, R.tower, R.iso,
-    hU, hd₀, hd₁, hτcone, hg, hg', hstar, hstar', hproj, ?_, ?_, fun α β c m ↦ ⟨?_, ?_, ?_⟩⟩
+    hU, hd₀, hd₁, hτcone, hg, hg', hstar, hstar', hcontract,
+    hproj, ?_, ?_, fun α β c m ↦ ⟨?_, ?_, ?_⟩⟩
   · rw [baseCenter_append_castAdd hτ hR, baseCenter_snoc_nil,
       hτ.lastCenter_eq _ (Ψ.isClosed_singleton_distinguishedPoint τ)
         (Ψ.distinguishedPointHom τ).ker_eq_ker_fromSpecResidueField]
@@ -142,9 +144,9 @@ theorem exists_hirzebruch_toric_link_resolution
       sub_neg_eq_add, add_comm c β]
     exact toricLink_bidegree_lt β c m hm hbound hhigh
 
-/-- A retained center that is first over its source point is first over its
-target point as well, provided the common point projects into both isomorphism
-loci and the reverse corner lies outside the target isomorphism locus. -/
+/-- A common point in both isomorphism loci identifies the source and target
+positions of a retained center. First occurrences are preserved if the reverse
+corner lies outside the target isomorphism locus. -/
 theorem first_center_of_toric_link
     {Ψ F : Fan i} {σ : Φ.cones} {n : ℕ} {Y Z : Scheme}
     {T : BlowupTower (I[σ]).blowup n Y} (hT : IsClosedPointTower (I[σ]).blowup T)
@@ -157,17 +159,17 @@ theorem first_center_of_toric_link
       t.toFanHom.algebraicMap (v.inv (hT.baseCenter k)) = hU.baseCenter (k.natAdd 1))
     {z : X[F]} (hs : s.toFanHom.algebraicMap z ∈ s.toFanHom.algebraicMap.isoLocus)
     (ht : t.toFanHom.algebraicMap z ∈ t.toFanHom.algebraicMap.isoLocus)
-    (l : Fin n) (hl : (I[σ]).blowupToBase (hT.baseCenter l) = s.toFanHom.algebraicMap z)
-    (hfirst : ∀ k < l, (I[σ]).blowupToBase (hT.baseCenter k) ≠ s.toFanHom.algebraicMap z) :
+    (l : Fin n) (hl : (I[σ]).blowupToBase (hT.baseCenter l) = s.toFanHom.algebraicMap z) :
     hU.baseCenter (l.natAdd 1) = t.toFanHom.algebraicMap z ∧
-      ∀ k < l.natAdd 1, hU.baseCenter k ≠ t.toFanHom.algebraicMap z := by
+      ((∀ k < l, (I[σ]).blowupToBase (hT.baseCenter k) ≠ s.toFanHom.algebraicMap z) →
+        ∀ k < l.natAdd 1, hU.baseCenter k ≠ t.toFanHom.algebraicMap z) := by
   have hsrc (k : Fin n) :=
     congrArg (fun f : X[F] ⟶ X[Φ] ↦ f (v.inv (hT.baseCenter k))) hv
   simp only [Scheme.Hom.comp_apply, Scheme.inv_hom_apply] at hsrc
   have hproj := (hsrc l).symm.trans hl
   have hpt : v.inv (hT.baseCenter l) = z := s.toFanHom.algebraicMap.injOn_preimage_isoLocus
     (by rwa [Set.mem_preimage, hproj]) hs hproj
-  refine ⟨(hretained l).symm.trans (congrArg t.toFanHom.algebraicMap hpt), ?_⟩
+  refine ⟨(hretained l).symm.trans (congrArg t.toFanHom.algebraicMap hpt), fun hfirst ↦ ?_⟩
   refine Fin.addCases ?_ ?_
   · intro k _ he
     rw [Subsingleton.elim k (0 : Fin 1)] at he
