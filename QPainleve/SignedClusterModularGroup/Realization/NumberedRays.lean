@@ -10,6 +10,7 @@ public import QPainleve.SignedClusterModularGroup.Realization.Tropical
 
 import QPainleve.AlgebraicGeometry.Curves.Node.Conductor.ComponentOrder
 import QPainleve.Geometry.Toric.Fan.Picard.Contraction.Surviving
+import TauCeti.Data.ZMod.FinEquiv
 
 /-!
 # Constant numbered boundary rays
@@ -64,6 +65,41 @@ theorem strictMono_numberedBoundaryRays (hP : D[P].IsEffectiveCartier) :
       Equiv.trans_apply, Equiv.apply_symm_apply, Equiv.symm_apply_apply]
   simpa only [hzero, u, Function.Embedding.trans_apply, Equiv.toEmbedding_apply] using
     p.orientedSubdivision.strictMono_componentSection u hu
+
+local notation "RayIndex" =>
+  Equiv.trans (Φ.boundaryNormalizationComponentEquiv hΦ)
+    (Equiv.trans (Equiv.symm (NodalCycleNumbering.component T))
+      (Equiv.trans (Equiv.subRight origin) (Equiv.symm (RingEquiv.toEquiv (ZMod.finEquiv m)))))
+
+/-- The contracted boundary numbering is the increasing enumeration of the surviving
+ray indices, read from the specified initial toric ray. -/
+theorem numberedBoundaryRays_eq_orderEmbOfFin (hP : D[P].IsEffectiveCartier)
+    (survivors : Finset (Fin m))
+    (hcard : survivors.card = n)
+    (hkeep : ∀ k ∈ survivors, (RayIndex).symm k ∈ Set.range (p.numberedBoundaryRays hP)) :
+    ∀ j : Fin n, p.numberedBoundaryRays hP (ZMod.finEquiv n j) =
+      (RayIndex).symm (survivors.orderEmbOfFin hcard j) := by
+  let f (j : Fin n) := RayIndex (p.numberedBoundaryRays hP (ZMod.finEquiv n j))
+  have hmono : StrictMono f := by
+    intro a b hab
+    simpa only [f, Fin.lt_def, Equiv.trans_apply, Equiv.subRight_apply,
+      RingEquiv.toEquiv_eq_coe, RingEquiv.coe_coe_toEquiv_symm, ZMod.finEquiv_symm_apply_val] using
+      p.strictMono_numberedBoundaryRays hP hab
+  have hsubset : survivors ⊆ Finset.univ.image f := by
+    intro k hk
+    obtain ⟨j, hj⟩ := hkeep k hk
+    obtain ⟨j, rfl⟩ := (ZMod.finEquiv n).surjective j
+    exact Finset.mem_image.mpr ⟨j, Finset.mem_univ _, by
+      simp only [f, hj, Equiv.apply_symm_apply]⟩
+  have hmem (j : Fin n) : f j ∈ survivors := by
+    have heq := Finset.eq_of_subset_of_card_le hsubset (by
+      rw [Finset.card_image_of_injective _ hmono.injective, Finset.card_univ,
+        Fintype.card_fin, hcard])
+    rw [heq]
+    exact Finset.mem_image_of_mem f (Finset.mem_univ j)
+  intro j
+  have hj := congrFun (Finset.orderEmbOfFin_unique hcard hmem hmono) j
+  exact (RayIndex).injective (by simpa only [Equiv.apply_symm_apply] using hj)
 
 /-- The same set of surviving rays gives the same numbered rays for two contractions
 with the same oriented source cycle and initial component. -/
