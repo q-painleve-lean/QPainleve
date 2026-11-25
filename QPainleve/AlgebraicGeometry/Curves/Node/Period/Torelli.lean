@@ -43,22 +43,6 @@ local notation "P(" D "," p ")" => Additive.ofMul (primeDivisorClass (boundaryPr
 attribute [local instance] smoothRationalSurface integralRationalSurface noetherianRationalSurface
   factorialRationalSurface
 
--- Reconstruction uses the real prime classes, while disjointness is tested on the curves.
-private theorem prime_self_intersection_ne_neg_two_off_boundary
-    {X : Scheme} [X.Over S] [X.IsProjectiveOver ℂ] [SmoothOfRelativeDimension 2 g(X)]
-    [Scheme.IsRationalOver g(X)] {D : X.IdealSheafData} (hD : D.IsEffectiveCartier)
-    (hcan : LineBundleClass.mk hD.toInvertibleSheaf = K(X))
-    (hroot : ∀ r : CodimensionOnePoint X, Disjoint (closure {(r : X)}) D.support →
-      Chow.classIntersectionNumber ℂ X (primeDivisorClass r) (primeDivisorClass r) ≠ -2)
-    (r : CodimensionOnePoint X) (hr : (r : X) ∉ D.support) :
-    Chow.realIntersectionBilinForm ℂ X (Chow.realPrimeDivisorClass ℂ r)
-      (Chow.realPrimeDivisorClass ℂ r) ≠ -2 := by
-  intro hsq
-  apply hr (Chow.mem_boundary_of_primeDivisorClass_self_eq_neg_two ℂ hD hcan hroot r ?_)
-  simp only [Chow.realPrimeDivisorClass_def, Chow.realIntersectionBilinForm_tmul,
-    one_mul, toMul_ofMul] at hsq
-  exact_mod_cast hsq
-
 variable {X Y : Scheme} [X.Over S] [Y.Over S] [X.IsProjectiveOver ℂ] [Y.IsProjectiveOver ℂ]
   [SmoothOfRelativeDimension 2 g(X)] [SmoothOfRelativeDimension 2 g(Y)]
   [Scheme.IsRationalOver g(X)] [Scheme.IsRationalOver g(Y)]
@@ -103,8 +87,8 @@ theorem exists_pair_iso_of_root_free_signed_boundary_period
     (isIntegralLattice_intCast 2) A hD hcanD
   exact D.exists_pair_iso_of_root_free_signed_boundary_period_of_toric_presentation
     A C hD hE act G hclass hcanD hcanE
-    (prime_self_intersection_ne_neg_two_off_boundary hD hcanD hrootD)
-    (prime_self_intersection_ne_neg_two_off_boundary hE hcanE hrootE)
+    (Chow.prime_self_intersection_ne_neg_two_off_boundary ℂ hD hcanD hrootD)
+    (Chow.prime_self_intersection_ne_neg_two_off_boundary ℂ hE hcanE hrootE)
     gD gE hperiod hpres hH hGH
 
 include A C G act hD hE hcanD hcanE hrootD hrootE hclass gD gE hperiod in
@@ -123,8 +107,8 @@ theorem exists_pair_iso_of_root_free_signed_boundary_period_of_nef
     (isIntegralLattice_intCast 2) A hD hcanD
   exact D.exists_pair_iso_of_root_free_signed_boundary_period_of_toric_presentation_of_nef
     A C hD hE act G hclass hcanD hcanE
-    (prime_self_intersection_ne_neg_two_off_boundary hD hcanD hrootD)
-    (prime_self_intersection_ne_neg_two_off_boundary hE hcanE hrootE)
+    (Chow.prime_self_intersection_ne_neg_two_off_boundary ℂ hD hcanD hrootD)
+    (Chow.prime_self_intersection_ne_neg_two_off_boundary ℂ hE hcanE hrootE)
     gD gE hperiod hpres hnefD hnefE hsq
 
 end AlgebraicGeometry.Scheme.IdealSheafData
