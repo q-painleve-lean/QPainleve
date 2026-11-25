@@ -6,7 +6,6 @@ Authors: The QPainleve contributors
 module
 
 public import QPainleve.AlgebraicGeometry.Blowup.Tower.Nodal.Basic
-public import QPainleve.SignedClusterModularGroup.Examples.ElevenVertex
 public import QPainleve.SignedClusterModularGroup.Examples.ElevenVertex.Contraction
 
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Boundary.InternalIndices
@@ -55,34 +54,6 @@ local notation "J[" x "]" => Scheme.Hom.ker (Scheme.fromSpecResidueField _ x)
 local notation "K[" X "]" => LineBundleClass.mk (canonicalBundle ℂ X 2)
 local notation "δ[" h "]" =>
   (LineBundleClass.mk (IsEffectiveCartier.toInvertibleSheaf h))⁻¹
-
-/-- The ordered centers of the plane presentation have the charges of the
-eleven-vertex seed in the standard lattice basis. -/
-@[simp]
-theorem rayChargeMap_planeCenterRay : Fan.rayChargeMap planeCenterRay = chargeMap := by
-  apply (Pi.basisFun ℤ (Fin 11)).ext
-  intro j
-  simp only [Pi.basisFun_apply, rayChargeMap_single, chargeMap_single, charge_apply,
-    planeCenterRay_apply, primitiveGenerator_planeBoundaryRay, rayIndex_eq_ite]
-
-/-- In the plane marking, the total exceptional coefficients of the weighted
-strict triangle are the negatives of the boundary Casimir exponent. -/
-theorem internalBlowupPicardMarking_symm_weightedBoundaryClass_snd (c : Fin 11 → ℂˣ) :
-    ((internalBlowupPicardMarking b planeCenterRay c hΦ).symm (weightedBoundaryClass c)).2 =
-      -boundaryExponent := by
-  let : (Plane).IsProjectiveOver ℂ :=
-    (Φ).isProjectiveOver_algebraicRealization_of_isComplete hΦ hc b
-  funext j
-  have h := classIntersectionNumber_picardHom_exceptionalClass (k := ℂ)
-    (isClosedPointTower_internalBlowupTower b planeCenterRay c)
-    ((internalBlowupPicardMarking b planeCenterRay c hΦ).symm (weightedBoundaryClass c)) j
-  dsimp only at h
-  rw [← internalBlowupPicardMarking_apply b planeCenterRay c hΦ, LinearEquiv.apply_symm_apply,
-    classIntersectionNumber_weightedBoundaryClass_exceptionalClass] at h
-  have hexp : (if j.val < 2 then (3 : ℤ) else if j.val < 5 then 2 else 1) = boundaryExponent j := by
-    simp only [boundaryExponent_apply, rayIndex_eq_ite]
-    fin_cases j <;> decide
-  exact (neg_eq_iff_eq_neg.mp (h.symm.trans hexp))
 
 section Tower
 

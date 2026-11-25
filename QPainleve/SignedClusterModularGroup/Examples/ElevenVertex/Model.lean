@@ -7,6 +7,7 @@ module
 
 public import QPainleve.Geometry.Toric.Fan.Picard.StrictTransform
 public import QPainleve.Geometry.Toric.Fan.ProjectiveSpace.Intersection
+public import QPainleve.SignedClusterModularGroup.Examples.ElevenVertex
 public import TauCeti.AlgebraicGeometry.IntersectionNumber.ExceptionalCurve.Basic
 
 import Mathlib.Analysis.Complex.Polynomial.Basic
@@ -71,6 +72,15 @@ def planeCenterRay (j : Fin 11) : (Φ).Ray :=
 theorem planeCenterRay_apply (j : Fin 11) :
     planeCenterRay j = planeBoundaryRay (if j.val < 2 then 0 else if j.val < 5 then 1 else 2) :=
   (rfl)
+
+/-- The ordered centers of the plane presentation have the charges of the
+eleven-vertex seed in the standard lattice basis. -/
+@[simp]
+theorem rayChargeMap_planeCenterRay : Fan.rayChargeMap planeCenterRay = chargeMap := by
+  apply (Pi.basisFun ℤ (Fin 11)).ext
+  intro j
+  simp only [Pi.basisFun_apply, rayChargeMap_single, chargeMap_single, charge_apply,
+    planeCenterRay_apply, primitiveGenerator_planeBoundaryRay, rayIndex_eq_ite]
 
 /-- The internal blowups of the plane in seed-label order, with the strict boundary. -/
 abbrev planeBlowup (c : Fin 11 → ℂˣ) :
@@ -262,6 +272,28 @@ theorem classIntersectionNumber_weightedBoundaryClass_exceptionalClass
   simp only [a, two_nsmul, three_nsmul, Prod.snd_add, Pi.add_apply, markedBoundaryMap_apply,
     Pi.single_apply, planeCenterRay_apply, planeBoundaryRay.injective.eq_iff]
   fin_cases j <;> decide
+
+/-- In the plane marking, the total exceptional coefficients of the weighted
+strict triangle are the negatives of the boundary Casimir exponent. -/
+theorem internalBlowupPicardMarking_symm_weightedBoundaryClass_snd (c : Fin 11 → ℂˣ) :
+    ((internalBlowupPicardMarking b planeCenterRay c hΦ).symm (weightedBoundaryClass c)).2 =
+      -boundaryExponent := by
+  let : Scheme.IsProjectiveOver (X := P) ℂ :=
+    (Φ).isProjectiveOver_algebraicRealization_of_isComplete hΦ hc b
+  let : SmoothOfRelativeDimension 2 (P ↘ S) := by
+    rw [algebraicRealization_over]
+    simpa using (Φ).smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
+  funext j
+  have h := classIntersectionNumber_picardHom_exceptionalClass (k := ℂ)
+    (isClosedPointTower_internalBlowupTower b planeCenterRay c)
+    ((internalBlowupPicardMarking b planeCenterRay c hΦ).symm (weightedBoundaryClass c)) j
+  dsimp only at h
+  rw [← internalBlowupPicardMarking_apply b planeCenterRay c hΦ, LinearEquiv.apply_symm_apply,
+    classIntersectionNumber_weightedBoundaryClass_exceptionalClass] at h
+  have hexp : (if j.val < 2 then (3 : ℤ) else if j.val < 5 then 2 else 1) = boundaryExponent j := by
+    simp only [boundaryExponent_apply, rayIndex_eq_ite]
+    fin_cases j <;> decide
+  exact (neg_eq_iff_eq_neg.mp (h.symm.trans hexp))
 
 /-- The weighted class pairs to zero with each strict line. -/
 theorem classIntersectionNumber_weightedBoundaryClass_boundary (c : Fin 11 → ℂˣ) (j : Fin 3) :
