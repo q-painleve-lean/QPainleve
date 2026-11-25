@@ -9,17 +9,17 @@ public import QPainleve.SignedClusterModularGroup.SarkisovDegree.Induction.Step
 
 import QPainleve.Geometry.Toric.Fan.Picard.Quadric
 import QPainleve.SignedClusterModularGroup.SarkisovDegree.Quadric.PlanePath
+import QPainleve.SignedClusterModularGroup.SarkisovDegree.Quadric.SelectedCenters
 
 /-!
-# A marked plane exit at a smooth quadric center
+# Marked exits at selected smooth quadric centers
 
 A retained smooth center on an invariant fiber gives a marked path to a plane
 resolution of the specified target map. Its degree depends on the two ruling
 coefficients and the retained order. A strict bound on this degree suffices
-for a primary bidegree decrease.
-
-The step uses `exists_sarkisov_path_of_quadric_smooth_center` and transports
-the marking through `HasPlaneTargetDecrease.of_path_on_iso`.
+for a primary bidegree decrease. A pair of selected smooth centers on opposite
+fibers gives a marked quadric exit when the sum of their orders exceeds the
+transverse ruling degree.
 -/
 
 public section
@@ -173,5 +173,74 @@ theorem exists_sarkisov_step_of_quadric_smooth_center
     rw [hdegree]
     exact hlt
   omega
+
+/-- Two first centers on opposite invariant quadric fibers give a decreasing
+block for the specified plane target if their combined order exceeds the
+transverse degree. The reference bidegree can have any secondary coordinate
+and any primary coordinate at least three times the original fiber degree. -/
+theorem exists_sarkisov_step_of_quadric_two_smooth_fiber_centers
+    {b b' : Basis (Fin 2) ℤ N} {hi : IsIntegralLattice i}
+    (r : Fin 4 ≃ A.fan.Ray)
+    (hr : (fun l ↦ (r l).primitiveGenerator) = ![b 0, b 1, -b 0, (0 : ℤ) • b 0 - b 1])
+    {T : BlowupTower A.fan.algebraicRealization n Y}
+    (hT : IsClosedPointTower A.fan.algebraicRealization T) (g : Y ⟶ P)
+    (hD : D.IsEffectiveCartier)
+    (hNode : AtWorstNodalOfRelativeDimensionOne (D.subschemeι ≫ X ↘ S))
+    (hB : B.fan = plane[b',hi]) (k : X ≅ Y)
+    (hAh : A.hom = k.hom ≫ T.toBase) (hBh : B.hom ≍ k.hom ≫ g ≫ (planeIso[b',hi]).inv)
+    (hg : g ≫ s = T.toBase ≫ (A.fan.algebraicRealization ↘ S))
+    (hbir : Scheme.BirationalOver g (𝟙 P)) (j l : Fin n) (hjl : j ≠ l)
+    (t : Fin 2) (c c' : ℂˣ)
+    (hj : hT.baseCenter j = point[b,fiberRay[r,t],c])
+    (hl : hT.baseCenter l = point[b,fiberRay[r,Equiv.swap 0 1 t],c'])
+    (hjfirst : ∀ q < j, hT.baseCenter q ≠ hT.baseCenter j)
+    (hlfirst : ∀ q < l, hT.baseCenter q ≠ hT.baseCenter l) (d : ℕ ×ₗ ℕ) :
+    let : SmoothOfRelativeDimension 2 (A.fan.algebraicRealization ↘ S) :=
+      smooth[A.fan,b,A.isRegular]
+    let x := mark[T,hT,(A.fan.algebraicRealization ↘ S),g]
+    let C := A.fan.hirzebruchPicardBasis b 0 A.isRegular r hr
+    C.repr x.1 0 < -x.2 j + -x.2 l →
+    3 * (C.repr x.1 1).toNat ≤ (ofLex d).1 →
+    HasPlaneTargetDecrease A B rankTwo[b] hD hNode d := by
+  intro hSmooth x C hsum hd
+  let := hSmooth
+  let fA := A.fan.algebraicRealization ↘ S
+  let : Y.Over S := ⟨T.toBase ≫ fA⟩
+  let : SmoothOfRelativeDimension 2 (Y ↘ S) := hT.smoothOfRelativeDimension fA
+  let : IsIntegral Y := hT.isIntegral fA
+  let : IsNoetherian Y := T.isNoetherian
+  let : k.hom.IsOver S := ⟨(Category.assoc k.hom T.toBase fA).symm.trans
+    (hAh ▸ comp_over A.hom S)⟩
+  let : k.symm.hom.IsOver S := inferInstanceAs (k.inv.IsOver S)
+  let F := precomposeSarkisovOfIso (i := i) rankTwo[b] k.symm (rfl : D.comap k.inv = D.comap k.inv)
+  have hL := precomposeSarkisovOfIso_obj_hom_of_comp rankTwo[b] k.symm rfl A rfl (heq_of_eq hAh)
+  have hR := precomposeSarkisovOfIso_obj_hom_of_comp rankTwo[b] k.symm rfl B hB hBh
+  have hPole : (A.fan.boundaryIdeal A.isComplete.nonempty_cones).comap T.toBase =
+      D.comap k.inv * hT.ramificationIdealSheafToBase ℂ := by
+    have hF := precomposeSarkisovOfIso_obj_fan rankTwo[b] k.symm rfl A
+    generalize obj[F,A] = L at hL hF
+    rcases L with ⟨Ψ, hΨ, hcΨ, p, hp, hDom, hpole⟩
+    dsimp only at hL hF
+    subst Ψ
+    obtain rfl : p = T.toBase := eq_of_heq hL
+    let : T.toBase.IsOver S := ⟨rfl⟩
+    simpa only [hT.ramificationIdealSheafToBase_def ℂ] using hpole
+  obtain ⟨L, Q, p, a, u, hu, Z, m, U, hU, e, -, hLfan, hLhom, hQ, -, hg', hbir',
+    -, hpos, -, hlt⟩ :=
+    hT.exists_sarkisov_path_of_quadric_two_smooth_fiber_centers b A.isRegular A.isComplete r hr
+      g hg hbir j l hjl t c c' hj hl hjfirst hlfirst hPole hsum
+  have hEq : L = obj[F,A] := LogarithmicProjection.ext
+    (hLfan.trans (precomposeSarkisovOfIso_obj_fan ..).symm) (hLhom.trans hL.symm)
+  have htarget : (obj[F,B]).hom ≍ e.hom ≫ (e.inv ≫ g) ≫ (planeIso[b',hi]).inv := by
+    simpa only [Category.assoc, Iso.hom_inv_id_assoc] using hR
+  have hm := HasPlaneTargetMarking.hirzebruch (A := Q) (B := obj[F,B]) a b' 0 hi u hu
+    ((precomposeSarkisovOfIso_obj_fan ..).trans hB) U hU e (e.inv ≫ g) hQ htarget hg' hbir'
+  refine HasPlaneTargetDecrease.of_path_on_iso rankTwo[b] hD hNode k ?_ (hEq ▸ p)
+    (precomposeSarkisovOfIso_obj_fan ..) (precomposeSarkisovOfIso_obj_hom ..)
+    (precomposeSarkisovOfIso_obj_fan ..) (precomposeSarkisovOfIso_obj_hom ..) hm
+  have hnat := (Int.toNat_lt_toNat (hpos.trans hlt)).mpr hlt
+  refine Prod.Lex.lt_iff.mpr (Or.inl ?_)
+  simpa only [ofLex_hirzebruchSarkisovBidegree, Nat.cast_zero] using
+    (Nat.mul_lt_mul_of_pos_left hnat (by decide : 0 < 3)).trans_le hd
 
 end TauCeti.Toric.Fan.LogarithmicProjection
