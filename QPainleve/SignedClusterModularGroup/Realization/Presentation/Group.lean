@@ -6,6 +6,7 @@ Authors: The QPainleve contributors
 module
 
 public import QPainleve.SignedClusterModularGroup.Realization.Endpoint.PicardAction
+public import QPainleve.SignedClusterModularGroup.Realization.PicardAction
 
 import QPainleve.Geometry.Toric.Fan.ExchangeMatrix
 import QPainleve.SignedClusterModularGroup.Realization.Presentation.Family
@@ -99,11 +100,12 @@ theorem exists_picardGroupEquivs_of_nodal_model
   let P := Fan.rayChargeSeed b Q.rays hE
   have hmark (z : Point Centers[r]) (j : ZMod n) :=
     congrFun (hfamily z).2 j
-  obtain ⟨Θ, ⟨hΘ, hsign⟩, -⟩ := existsUnique_signedPicardEquiv_of_presentation
+  obtain ⟨Θ, hΘ, -⟩ := existsUnique_signedPicardEquiv_of_presentation
     (Q := Q) (hD := hD) (hmark := hmark) P
     (Fan.rayChargeSeed_form _ _ _) (Fan.rayChargeSeed_charge _ _ _)
     (fun z _ ↦ (hfamily z).1) (hfamily c).1 hprim hnef hsq
-  exact ⟨M, hD, hmark, Θ, picardRotationEquiv Θ hsign, rfl,
-    fun z ↦ (hfamily z).1, hΘ, hsign, rotationInclusion_picardRotationEquiv_apply Θ hsign⟩
+  exact ⟨M, hD, hmark, Θ, picardRotationEquiv Θ hΘ.sign_ker_unop, rfl,
+    fun z ↦ (hfamily z).1, fun w ↦ ⟨hΘ.sign_apply_word w, hΘ.apply_of_realization w⟩,
+    hΘ.sign_ker_unop, rotationInclusion_picardRotationEquiv_apply Θ hΘ.sign_ker_unop⟩
 
 end QPainleve.SignedClusterModularGroup.CompleteToricPresentation

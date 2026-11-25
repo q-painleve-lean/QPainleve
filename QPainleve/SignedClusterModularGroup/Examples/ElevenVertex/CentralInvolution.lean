@@ -7,6 +7,7 @@ module
 
 public import QPainleve.SignedClusterModularGroup.Examples.ElevenVertex.PicardAction
 public import QPainleve.SignedClusterModularGroup.Examples.ElevenVertex.Presentation
+public import QPainleve.SignedClusterModularGroup.Realization.Endpoint.PicardAction
 
 import QPainleve.Geometry.Toric.Fan.Subdivision.Projective
 import QPainleve.SignedClusterModularGroup.Realization.NodalFiber
@@ -38,11 +39,13 @@ local notation "XTor" => scheme ℂ (Fin 11 →₀ ℤ)
 local notation "b" => Pi.basisFun ℤ (Fin 2)
 local notation "Φ" => Fan.projectiveSpace b (isIntegralLattice_intCast 2)
 local notation "planeLattice" => AddMonoidHom.compLeft (Int.castAddHom ℝ) (Fin 2)
+local notation "D[" M "]" => Scheme.Hom.ker (Over.Hom.left (Arrow.hom (MarkedSurface.pair M)))
 local notation "cartier[" M "]" => MarkedSurface.isEffectiveCartier_boundaryIdeal M
 local notation "classOf(" h ")" => (LineBundleClass.mk (IsEffectiveCartier.toInvertibleSheaf h))⁻¹
 local notation "χ[" c "]" => pointsEquiv ℂ _ (Subtype.mk (Over.Hom.left c) (Over.w c))
 local notation "params[" c "]" => (fun j : Fin 11 ↦ χ[c] (ofAdd (Pi.single j 1)))
 local notation "Γ" => SignedClusterModularGroup ℂ exchangeMatrix
+local notation "eval[" w "]" => op (signedClusterModularGroupMap ℂ exchangeMatrix (End.of w))
 
 /-- The signed Picard identification for the ordered plane model with center
 parameters `u`. The reference fiber uses the original lattice frame and the
@@ -108,6 +111,37 @@ theorem nonempty_planePicardIdentification (u : Fin 11 → ℂˣ) :
   obtain ⟨I⟩ := nonempty_involutionPicardIdentification_of_nodal_contraction p hp hE
     (hclass.symm ▸ hprim) (hclass.symm ▸ hnef) (hclass.symm ▸ hsq)
   exact ⟨⟨_, _, Q, c, M, hparams, hrays, I⟩⟩
+
+/-- For any ordered center parameters, the plane model gives a marked one-component
+reference fiber whose faithful signed Picard action sends the specified odd loop
+to the central sign element. Its values on loops are the marked pullbacks of their
+geometric realizations, with sign given by inversion parity. -/
+theorem exists_eleven_vertex_signedPicardHom (u : Fin 11 → ℂˣ) :
+    ∃ (L : Type) (_ : AddCommGroup L) (H : LinearMap.BilinForm ℤ L)
+      (Q : CompleteToricPresentation planeLattice b 11 L Empty)
+      (c : Point Centers) (M : Point Centers → MarkedSurface ℂ 1 H XTor)
+      (hD : ∀ a, D[M a].IsEffectiveCartier),
+      params[c] = u ∧ (∃ hfan : Q.fan = Φ, hfan ▸ Q.rays = planeCenterRay) ∧
+      ∃ (hfamily : ∀ a, Q.HasNodalModel a (M a) ∧
+          (M a).boundaryClass (hD a) = (M c).boundaryClass (hD c))
+        (ρ : Γᵐᵒᵖ →* signedBoundaryIsometryGroup H ((M c).boundaryClass (hD c))),
+        Function.Injective ρ ∧
+        ρ eval[involutionWord] = centralSign H ((M c).boundaryClass (hD c)) (by decide) ∧
+        ∀ (w : Word exchangeMatrix exchangeMatrix), sign H ((M c).boundaryClass (hD c))
+            (ρ eval[w]) = (-1 : ℤˣ) ^ w.inversionCount ∧
+          ∀ {C : (Centers).left.PartialMap (Centers).left} [IsDominant C.hom]
+            [C.IsOver (Centers).hom (Centers).hom]
+            (R : GeometricRealization M M C (w.xRationalMap ℂ)),
+            ρ eval[w] = R.toSignedBoundaryIsometry ((M c).boundaryClass (hD c)) hD
+              (fun a j ↦ congrFun (hfamily a).2 j) := by
+  obtain ⟨⟨rank, H, Q, c, M₀, hparams, hrays, I⟩⟩ := nonempty_planePicardIdentification u
+  rcases I with ⟨M, hMc, hmodels, hmark, Θ, hz, hsign, hΘ⟩
+  subst M₀
+  refine ⟨Fin rank → ℤ, inferInstance, H, Q, c, M, (fun a ↦ cartier[M a]), hparams, hrays,
+    fun a ↦ ⟨hmodels a, funext (hmark a)⟩, Θ.toMonoidHom, Θ.injective, hz, fun w ↦ ⟨?_, ?_⟩⟩
+  · simpa only [SignedBoundaryIsometryGroup.sign_apply, MulEquiv.coe_toMonoidHom] using hsign w
+  · intro C _ _ R
+    exact hΘ w R
 
 /-- The eleven-vertex involution commutes with every independent signed cluster X map. -/
 theorem involutionWord_mem_center :

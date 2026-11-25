@@ -16,6 +16,7 @@ import QPainleve.SignedClusterModularGroup.Realization.ChargeKernel.Basic
 import QPainleve.SignedClusterModularGroup.Realization.NodalFiber
 import QPainleve.SignedClusterModularGroup.Realization.Orthogonal
 import QPainleve.SignedClusterModularGroup.Realization.Presentation.Boundary
+import QPainleve.SignedClusterModularGroup.Realization.PicardAction
 import QPainleve.SignedClusterModularGroup.Realization.Surjectivity.PicardAction
 import TauCeti.AlgebraicGeometry.Curves.Prestable
 
@@ -216,9 +217,9 @@ private theorem exists_markedPicardEquiv :
   have hmodel := (hfiber c₀).1
   let : IsRationalOver ((M c₀).surface ↘ S) := hmodel.isRationalOver
   obtain ⟨hprim, hnef, hsq⟩ := markedBoundaryNumerics (M c₀) (hD c₀) (hmark c₀)
-  obtain ⟨ρ, ⟨hρ, hk⟩, -⟩ := existsUnique_signedPicardEquiv_of_presentation (Q := Q)
+  obtain ⟨ρ, hρ, -⟩ := existsUnique_signedPicardEquiv_of_presentation (Q := Q)
     (hmark := hmark) P hform hcharge (fun c _ ↦ (hfiber c).1) hmodel hprim hnef hsq
-  refine ⟨ρ, hk, fun w ↦ ?_⟩
+  refine ⟨ρ, hρ.sign_ker_unop, fun w ↦ ?_⟩
   -- Compare the kernel transport and boundary orders on the same realization.
   let := Q.isPerfPair_auxiliaryPicardForm
   let : (H).IsPerfPair := (M c₀).isPerfPair_of_isRationalOver
@@ -232,8 +233,9 @@ private theorem exists_markedPicardEquiv :
     hker'.trans (congrArg LinearMap.ker hcharge).symm
   obtain ⟨R, _, hR₀, _⟩ := exists_realize_signed_loop w P Q
     hform hcharge M (fun x ↦ (hfiber _).1) hmodel hD hnef hsq hprim boundaryClass hmark
-  have hR := (hρ w).2 R (fun x ↦ ⟨p _⟩)
-  refine ⟨(hρ w).1, ?_, ?_⟩
+  have hR : ρ eval[w] = R.toSignedBoundaryIsometry boundaryClass hD hmark :=
+    hρ.apply_of_realization w R (fun x ↦ ⟨p _⟩)
+  refine ⟨hρ.sign_apply_word w, ?_, ?_⟩
   · have h := chargeKernelAction_eq_signedOrthogonalRestriction Q.rayOrder
       (fun j ↦ (Q.cycle.component_apply j).symm.trans (Q.component_eq j))
       (fun j ↦ (Q.positive j).1) hnodes boundaryClass hD hmark w R
