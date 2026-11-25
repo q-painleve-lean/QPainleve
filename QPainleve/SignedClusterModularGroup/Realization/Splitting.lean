@@ -125,16 +125,17 @@ theorem exists_signedPicardSplitting_of_nodal_model
   obtain ⟨j₀, a, g, haa, ha, hg, hgg, hfix, hsum, hreflect, horth⟩ :=
     M.exists_marked_boundary_reversing_involution hcan hnef hsq hprim
   have hsign (w : Word E E) := (hΘ w).1
-  obtain ⟨hs, s, hsection, hconj, hsemi⟩ :=
-    exists_signSplitting_of_picardEquivs Θ Θrot hsign hrot hE (signSplitting B d g hg hgg)
-  obtain ⟨w, hw, hodd, horder⟩ := exists_odd_word_of_picard_involution Θ hsign g hg hgg
-  have hsect : s (-1) = signedClusterModularGroupMap ℂ E (End.of w) := by
-    apply op_injective
-    apply Θ.injective
-    rw [hsection, signSplitting_neg_one, hw]
+  let t := signSplitting B d g hg hgg
+  have hs := signedInversionSign_surjective_of_picardEquiv Θ hsign hE
+    (sign_surjective B d g hg)
+  let s := picardSignSplitting Θ hsign hE t
+  have horder : orderOf (s (-1)) = 2 :=
+    (orderOf_injective s.toMonoidHom s.rightInverse_rightHom.injective (-1)).trans (by simp)
   exact ⟨F, hmark, hFc, hfamily, Θ, Θrot, hE, hs, s, hrot, hΘ,
-    index_range_clusterModularGroupInclusion ℂ E hE hodd, hsect ▸ horder,
-    ⟨j₀, a, g, hg, hgg, haa, ha, hfix, hsum, hreflect, horth, hsection, hconj, hsemi⟩,
+    index_range_clusterModularGroupInclusion ℂ E hE hs, horder,
+    ⟨j₀, a, g, hg, hgg, haa, ha, hfix, hsum, hreflect, horth, fun ε ↦ by simp [s, t],
+      picardSignSplitting_conjAct Θ hsign hE t Θrot hrot,
+      picardSignSplitting_semidirectProductMulEquiv Θ hsign hE t Θrot hrot⟩,
     exists_central_involution_of_picardEquiv Θ hsign hE⟩
 
 end CompleteToricPresentation

@@ -7,7 +7,6 @@ module
 
 public import QPainleve.Algebra.Cluster.Word.ModularGroup
 public import QPainleve.LinearAlgebra.BilinearForm.Conjugation
-public import QPainleve.SignedClusterModularGroup.Realization.Agreement
 public import QPainleve.SignedClusterModularGroup.Realization.Presentation
 public import QPainleve.SignedClusterModularGroup.Realization.Surface.PrimeClass
 

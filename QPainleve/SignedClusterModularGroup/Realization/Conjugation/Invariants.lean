@@ -71,10 +71,6 @@ local notation "Fiber[" basis "," Q "," M "," c "]" =>
     (CompleteToricPresentation.regular Q) (CompleteToricPresentation.cycle Q)
     (CompleteToricPresentation.origin Q)
     (CompleteToricPresentation.inclusion Q) χ[c] (M c)
-local notation "orders[" basis "," Q "," p "," h "]" =>
-  (fun j : Fin n ↦ Fan.rayBoundaryOrders basis (CompleteToricPresentation.rays Q)
-    (ContractedToricFiber.numberedBoundaryRays p (ContractedToricFiber.IsNodalContraction.cartier h)
-      (RingEquiv.toEquiv (ZMod.finEquiv n) j)))
 local notation "label[" R "]" =>
   (Equiv.trans (RingEquiv.toEquiv (ZMod.finEquiv n))
     (Equiv.trans (GeometricRealization.boundaryPerm R)
@@ -94,14 +90,16 @@ theorem tropical_boundaryOrders_of_nodal_models
     (x : CenterPoint (U := Centers[r]) (V := Centers[r]) C)
     (hx : Q.HasNodalModel (src(C,x)) (M (src(C,x))))
     (hx' : Q'.HasNodalModel (dst(C,x)) (M' (dst(C,x)))) (j : Fin n) :
-    trop[w] (orders[b,Q,p,hp] j) = orders[b',Q',p',hp'] (label[R] j) := by
+    trop[w] (p.numberedBoundaryOrders hp.cartier j) =
+      p'.numberedBoundaryOrders hp'.cartier (label[R] j) := by
   obtain ⟨q, hq⟩ := hx.exists_isNodalContraction (cartier(M (src(C,x))))
   obtain ⟨q', hq'⟩ := hx'.exists_isNodalContraction (cartier(M' (dst(C,x))))
   have h := (R.fiber x).rayBoundaryOrders_tropical (p := q) (q := q')
     hq.cartier hq'.cartier Q.complete hE ((ZMod.finEquiv n).toEquiv j)
   rw [Q.numberedBoundaryRays_eq_of_nodalContractions hq hp,
     Q'.numberedBoundaryRays_eq_of_nodalContractions hq' hp'] at h
-  simpa only [Equiv.trans_apply, Equiv.apply_symm_apply, R.boundaryPerm_def] using h.symm
+  simpa only [ContractedToricFiber.numberedBoundaryOrders_apply, Equiv.trans_apply,
+    Equiv.apply_symm_apply, R.boundaryPerm_def] using h.symm
 
 /-- Conjugation by a realized connecting word preserves the inversion sign,
 conjugates the Casimir matrix in the chosen integral bases, and computes the
@@ -126,8 +124,8 @@ theorem signedLoopInvariants_reverse_comp_comp
     {κ κ' : Type*} [Fintype κ] [DecidableEq κ] [Fintype κ'] [DecidableEq κ']
     (β : Basis κ ℤ E.matrix.mulVecLin.ker) (β' : Basis κ' ℤ E'.matrix.mulVecLin.ker) :
     let u := (w.reverse.comp v).comp w
-    let o := orders[b,Q,p,hp]
-    let o' := orders[b',Q',p',hp']
+    let o := p.numberedBoundaryOrders hp.cartier
+    let o' := p'.numberedBoundaryOrders hp'.cartier
     (u.signedLoopInvariants (fun k ↦ (β' k : Fin r → ℤ)) o' (o' 0)).1 =
       (v.signedLoopInvariants (fun k ↦ (β k : Fin r → ℤ)) o (o 0)).1 ∧
     LinearMap.toMatrix β' β' u.exchangeKernelEquiv.toLinearMap =
@@ -138,9 +136,7 @@ theorem signedLoopInvariants_reverse_comp_comp
       some ((ZMod.finEquiv n).toEquiv.symm (A.orientation •
         ((ZMod.finEquiv n).toEquiv j - R.boundaryPerm 0) +
           R.orientation • A.boundaryPerm 0 + R.boundaryPerm 0)) := by
-  have hinj : Function.Injective orders[b',Q',p',hp'] :=
-    (Fan.rayBoundaryOrders_injective b' Q'.rays hindex).comp
-      ((p'.numberedBoundaryRays hp'.cartier).injective.comp (ZMod.finEquiv n).injective)
+  have hinj := p'.numberedBoundaryOrders_injective hp'.cartier hindex
   refine ⟨?_, w.toMatrix_exchangeKernelEquiv_reverse_comp_comp v β β', fun j ↦ ?_⟩
   · simpa only [Path.signedLoopInvariants_def] using
       w.neg_one_pow_inversionCount_reverse_comp_comp v

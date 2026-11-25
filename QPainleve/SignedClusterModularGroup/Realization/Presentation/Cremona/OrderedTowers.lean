@@ -19,7 +19,7 @@ cycle without internal `(-2)` curves, Picard pullback projects the opposite
 signed cluster modular group onto the Cremona isometries of the original
 surface. The group identification
 `exists_picardGroupEquivs_of_toric_presentation` fixes the original Picard
-lattice, and `BoundaryCycle.exists_cremonaProjection_of_numbering`
+lattice, and `Scheme.NodalCycleNumbering.cremonaProjection`
 identifies the image. With one or two boundary components, the signed group
 retains the branch sign and the unsigned group identifies with the Cremona group.
 -/
@@ -133,12 +133,12 @@ theorem exists_cluster_cremona_equivs_of_toric_presentation
   have hK := presentation.hasToricPresentation.canonicalClass hD (by
     rw [← over_eq_subschemeι_comp]
     exact PrestableFamily.atWorstNodalOfRelativeDimensionOne)
-  obtain ⟨π, hπ, hsurj, hinj, hsmall⟩ :=
-    BoundaryCycle.exists_cremonaProjection_of_numbering ℂ A hD hK hnef hsq hroot
   obtain ⟨P, hframe, hrays⟩ :=
     exists_picardGroupEquivs_of_toric_presentation presentation A hD hprim hnef hsq
   let d := classes[A,hD]
   let Θ := P.signedEquiv
+  let π := A.cremonaProjection hD hK hnef hsq hroot
+  have hsurj := A.cremonaProjection_surjective hD hK hnef hsq hroot
   let φ := π.comp Θ.toMonoidHom
   let η := (sign B d).comp Θ.toMonoidHom
   refine ⟨P.form, P.marking, P.basis, P.presentation, P.center, P.evaluation, P.exchangeMatrix,
@@ -148,29 +148,22 @@ theorem exists_cluster_cremona_equivs_of_toric_presentation
     refine ⟨?_, fun R hR ↦ ?_⟩
     · simpa only [η, Θ, MonoidHom.comp_apply, MulEquiv.coe_toMonoidHom,
         SignedBoundaryIsometryGroup.sign_apply] using P.sign_signedEquiv_apply_word w
-    · simpa only [φ, η, Θ, MonoidHom.comp_apply, MulEquiv.coe_toMonoidHom, hπ, toIsometry_apply,
+    · simpa only [φ, π, η, Θ, MonoidHom.comp_apply, MulEquiv.coe_toMonoidHom,
+        Scheme.NodalCycleNumbering.val_cremonaProjection_apply, toIsometry_apply,
         SignedBoundaryIsometryGroup.sign_apply, Prod.eta] using P.signedEquiv_apply_word w R hR
   · intro hn
-    exact ⟨MulEquiv.ofBijective φ ⟨(hinj hn).comp Θ.injective, hsurj.comp Θ.surjective⟩, rfl⟩
+    have hinj := A.cremonaProjection_injective hD hK hnef hsq hroot hn
+    exact ⟨MulEquiv.ofBijective φ ⟨hinj.comp Θ.injective, hsurj.comp Θ.surjective⟩, rfl⟩
   · intro hn
-    obtain ⟨g₀, hg₀⟩ := hsmall hn
-    let p := mulEquivProdOfLeTwo B d hn
-    let g := Θ.trans (p.trans (g₀.prodCongr (MulEquiv.refl ℤˣ)))
-    have hg (x : Γs[P.exchangeMatrix]) : g x = (φ x, η x) := by
-      have hx : ((p (Θ x)).1.val, (p (Θ x)).2) = (Θ x).val :=
-        coe_mulEquivProdOfLeTwo_apply B d hn (Θ x)
-      simp only [g, MulEquiv.trans_apply, MulEquiv.prodCongr_apply, MulEquiv.refl_apply]
-      refine Prod.ext ((hg₀ _).trans (Subtype.ext ?_)) ?_
-      · simp only [φ, MonoidHom.comp_apply, MulEquiv.coe_toMonoidHom, hπ, toIsometry_apply,
-          coe_rotationInclusion]
-        exact congrArg Prod.fst hx
-      · simpa only [η, MonoidHom.comp_apply, MulEquiv.coe_toMonoidHom,
-          SignedBoundaryIsometryGroup.sign_apply] using congrArg Prod.snd hx
-    refine ⟨g, P.unsignedEquiv.trans g₀, hg, fun x ↦ ?_⟩
+    let g := Θ.trans (A.signedBoundaryIsometryEquivCremonaProd hD hK hnef hsq hroot hn)
+    let g₀ := P.unsignedEquiv.trans (A.boundaryRotationEquivCremona hD hK hnef hsq hroot hn)
+    have hg (x : Γs[P.exchangeMatrix]) : g x = (φ x, η x) :=
+      A.signedBoundaryIsometryEquivCremonaProd_apply hD hK hnef hsq hroot hn (Θ x)
+    refine ⟨g, g₀, hg, fun x ↦ ?_⟩
     rw [hg]
-    have hx := (P.rotationInclusion_unsignedEquiv_apply x).symm
-    refine Prod.ext ((congrArg π hx).trans (hg₀ _).symm) ?_
-    exact (congrArg (sign B d) hx).trans (by
-      simp only [SignedBoundaryIsometryGroup.sign_apply, coe_rotationInclusion])
+    simp only [g₀, φ, π, η, Θ, MulEquiv.trans_apply, MonoidHom.comp_apply, MulEquiv.coe_toMonoidHom,
+      ← P.rotationInclusion_unsignedEquiv_apply x,
+      Scheme.NodalCycleNumbering.boundaryRotationEquivCremona_apply,
+      SignedBoundaryIsometryGroup.sign_apply, coe_rotationInclusion]
 
 end QPainleve.SignedClusterModularGroup

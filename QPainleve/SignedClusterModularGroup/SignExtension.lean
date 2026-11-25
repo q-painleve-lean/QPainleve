@@ -39,69 +39,98 @@ local notation "Γₛ" => SignedClusterModularGroup k E
 local notation "inclusion" => clusterModularGroupInclusion k E
 local notation "eval[" w "]" => op (signedClusterModularGroupMap k E (End.of w))
 
-/-- A sign-compatible pair of Picard equivalences transports a boundary sign section to the
-point-map group. The section values correspond under pullback. The actions and semidirect
-products correspond under the multiplicative equivalences given by inversion followed by
-pullback. -/
-theorem exists_signSplitting_of_picardEquivs
-    (Θ : Γₛᵐᵒᵖ ≃* signedBoundaryIsometryGroup B D)
-    (Θrot : Γ₀ᵐᵒᵖ ≃* boundaryRotationGroup B D)
-    (hΘ : ∀ (w : Word E E), sign B D (Θ (op (signedClusterModularGroupMap k E (End.of w)))) =
-      (-1 : ℤˣ) ^ w.inversionCount)
-    (hrot : ∀ x, rotationInclusion B D (Θrot x) = Θ (MonoidHom.op inclusion x))
-    (hE : E.matrix ≠ 0) {hsign : Function.Surjective (sign B D)}
-    (t : (signExtension B D hsign).Splitting) :
-    ∃ (hs : Function.Surjective (signedInversionSign k E hE))
-      (s : (signedInversionSignExtension k E hE hs).Splitting),
-      (∀ ε, Θ (op (s ε)) = t ε) ∧
-      (∀ ε x, Θrot (op (s.conjAct ε x)⁻¹) = t.conjAct ε (Θrot (op x⁻¹))) ∧
-      ∀ x : Γ₀ ⋊[s.conjAct] ℤˣ,
-        Θ (op (s.semidirectProductMulEquiv x)⁻¹) =
-          t.semidirectProductMulEquiv ⟨Θrot (op x.left⁻¹), x.right⟩ := by
+section Splitting
+
+variable (Θ : (SignedClusterModularGroup k E)ᵐᵒᵖ ≃* signedBoundaryIsometryGroup B D)
+variable (hΘ : ∀ w : Word E E,
+  sign B D (Θ (op (signedClusterModularGroupMap k E (End.of w)))) = (-1 : ℤˣ) ^ w.inversionCount)
+variable (hE : E.matrix ≠ 0) {hsign : Function.Surjective (sign B D)}
+
+include hΘ in
+private theorem picardSign_eq (x : Γₛ) :
+    sign B D (Θ (op x)) = signedInversionSign k E hE x := by
+  obtain ⟨w, rfl⟩ := signedClusterModularGroupMap_surjective k E x
+  exact (hΘ (End.asHom w)).trans (signedInversionSign_apply k E hE w).symm
+
+include hΘ in
+/-- A sign-compatible Picard equivalence transfers surjectivity of the boundary sign to the
+inversion sign of the signed cluster modular group. -/
+theorem signedInversionSign_surjective_of_picardEquiv
+    (hsign : Function.Surjective (sign B D)) :
+    Function.Surjective (signedInversionSign k E hE) := by
+  rw [← funext (picardSign_eq Θ hΘ hE)]
+  exact hsign.comp (Θ.surjective.comp op_surjective)
+
+/-- Transport the boundary sign section to signed point maps through the Picard equivalence
+composed with inversion. -/
+noncomputable def picardSignSplitting (t : (signExtension B D hsign).Splitting) :
+    (signedInversionSignExtension k E hE
+      (signedInversionSign_surjective_of_picardEquiv Θ hΘ hE hsign)).Splitting :=
   let e := (MulEquiv.inv' Γₛ).trans Θ
-  let er := (MulEquiv.inv' Γ₀).trans Θrot
-  have hsignWord (x : Γₛ) : sign B D (Θ (op x)) = signedInversionSign k E hE x := by
-    obtain ⟨w, rfl⟩ := signedClusterModularGroupMap_surjective k E x
-    exact (hΘ (End.asHom w)).trans (signedInversionSign_apply k E hE w).symm
-  have hsignE (x : Γₛ) : sign B D (e x) = signedInversionSign k E hE x := by
-    simpa only [e, MulEquiv.trans_apply, MulEquiv.inv'_apply, Function.comp_apply, map_inv,
-      Int.units_inv_eq_self]
-      using hsignWord x⁻¹
-  have hs : Function.Surjective (signedInversionSign k E hE) := by
-    rw [← funext hsignE]
-    exact hsign.comp e.surjective
-  have hright : (signExtension B D hsign).rightHom.comp e.toMonoidHom =
-      (MulEquiv.refl ℤˣ).toMonoidHom.comp (signedInversionSignExtension k E hE hs).rightHom := by
-    apply MonoidHom.ext
-    intro x
-    simpa only [MonoidHom.comp_apply, MulEquiv.coe_toMonoidHom, signExtension_rightHom,
-      signedInversionSignExtension_rightHom, MulEquiv.refl_apply] using hsignE x
-  let s := ((signedInversionSignExtension k E hE hs).splittingEquivOfMulEquiv
-    (signExtension B D hsign) e (MulEquiv.refl ℤˣ) hright).symm t
-  have hsection (ε : ℤˣ) : e (s ε) = t ε := by simp [s]
-  have hinclusion (x : Γ₀) : rotationInclusion B D (er x) = e (inclusion x) := by
-    simpa only [er, e, MulEquiv.trans_apply, MulEquiv.inv'_apply, MonoidHom.op_apply_apply,
-      map_inv, Function.comp_apply, unop_op] using hrot (op x⁻¹)
-  refine ⟨hs, s, ?_, ?_, ?_⟩
-  · intro ε
-    have hinv : (s ε)⁻¹ = s ε := by rw [← map_inv, Int.units_inv_eq_self]
-    simpa only [e, MulEquiv.trans_apply, MulEquiv.inv'_apply, Function.comp_apply, hinv]
-      using hsection ε
-  · intro ε x
-    have hc : er (s.conjAct ε x) = t.conjAct ε (er x) := by
-      apply rotationInclusion_injective B D
-      have h := congrArg e (s.inl_conjAct ε x)
-      simp only [signedInversionSignExtension_inl, map_mul, map_inv, hsection, ← hinclusion] at h
-      exact h.trans (by simpa only [signExtension_inl] using (t.inl_conjAct ε (er x)).symm)
-    simpa only [er, MulEquiv.trans_apply, MulEquiv.inv'_apply, Function.comp_apply] using hc
-  · intro x
-    have h := GroupExtension.Splitting.semidirectProductMulEquiv_apply s x
-    rw [signedInversionSignExtension_inl] at h
-    have hm : e (s.semidirectProductMulEquiv x) =
-        t.semidirectProductMulEquiv ⟨er x.left, x.right⟩ := by
-      rw [h, GroupExtension.Splitting.semidirectProductMulEquiv_apply, signExtension_inl,
-        map_mul, ← hinclusion, hsection]
-    simpa only [e, er, MulEquiv.trans_apply, MulEquiv.inv'_apply, Function.comp_apply] using hm
+  ((signedInversionSignExtension k E hE
+      (signedInversionSign_surjective_of_picardEquiv Θ hΘ hE hsign)).splittingEquivOfMulEquiv
+    (signExtension B D hsign) e (MulEquiv.refl ℤˣ) (by
+      apply MonoidHom.ext
+      intro x
+      simpa only [e, MonoidHom.comp_apply, MulEquiv.coe_toMonoidHom, MulEquiv.trans_apply,
+        MulEquiv.inv'_apply, Function.comp_apply, MulEquiv.refl_apply, signExtension_rightHom,
+        signedInversionSignExtension_rightHom, map_inv, Int.units_inv_eq_self]
+        using picardSign_eq Θ hΘ hE x⁻¹)).symm t
+
+variable (t : (signExtension B D hsign).Splitting)
+
+private theorem picardSignSplitting_apply_inv (ε : ℤˣ) :
+    Θ (op (picardSignSplitting Θ hΘ hE t ε)⁻¹) = t ε := by
+  have he : ((MulEquiv.inv' Γₛ).trans Θ) (picardSignSplitting Θ hΘ hE t ε) = t ε := by
+    simp [picardSignSplitting]
+  simpa only [MulEquiv.trans_apply, MulEquiv.inv'_apply, Function.comp_apply] using he
+
+/-- The transported section takes a sign to the point map with the prescribed Picard pullback. -/
+@[simp]
+theorem picardSignSplitting_apply (ε : ℤˣ) :
+    picardSignSplitting Θ hΘ hE t ε = (Θ.symm (t ε)).unop := by
+  apply op_injective
+  apply Θ.injective
+  simpa only [← map_inv, Int.units_inv_eq_self, op_unop, MulEquiv.apply_symm_apply]
+    using picardSignSplitting_apply_inv Θ hΘ hE t ε
+
+variable (Θrot : (ClusterModularGroup k E)ᵐᵒᵖ ≃* boundaryRotationGroup B D)
+variable (hrot : ∀ x : (ClusterModularGroup k E)ᵐᵒᵖ,
+  rotationInclusion B D (Θrot x) = Θ (MonoidHom.op (clusterModularGroupInclusion k E) x))
+
+omit [Finite ι] in
+include hrot in
+private theorem picardRotationInclusion_apply (x : Γ₀) :
+    rotationInclusion B D (Θrot (op x⁻¹)) = Θ (op (inclusion x)⁻¹) := by
+  simpa only [MonoidHom.op_apply_apply, map_inv, Function.comp_apply, unop_op]
+    using hrot (op x⁻¹)
+
+include hrot in
+/-- The Picard equivalence after inversion intertwines the conjugation actions of the
+transported section and the boundary section on the unsigned groups. -/
+theorem picardSignSplitting_conjAct (ε : ℤˣ) (x : Γ₀) :
+    Θrot (op ((picardSignSplitting Θ hΘ hE t).conjAct ε x)⁻¹) =
+      t.conjAct ε (Θrot (op x⁻¹)) := by
+  apply rotationInclusion_injective B D
+  have h := congrArg ((MulEquiv.inv' Γₛ).trans Θ)
+    ((picardSignSplitting Θ hΘ hE t).inl_conjAct ε x)
+  simp only [map_mul, map_inv, signedInversionSignExtension_inl, MulEquiv.trans_apply,
+    MulEquiv.inv'_apply, Function.comp_apply, picardSignSplitting_apply_inv,
+    ← picardRotationInclusion_apply Θ Θrot hrot] at h
+  exact h.trans (by simpa only [signExtension_inl] using (t.inl_conjAct ε (Θrot (op x⁻¹))).symm)
+
+include hrot in
+/-- Under Picard pullback after inversion, the semidirect product decomposition sends the
+unsigned coordinate to its Picard rotation and preserves the sign coordinate. -/
+theorem picardSignSplitting_semidirectProductMulEquiv
+    (x : Γ₀ ⋊[(picardSignSplitting Θ hΘ hE t).conjAct] ℤˣ) :
+    Θ (op ((picardSignSplitting Θ hΘ hE t).semidirectProductMulEquiv x)⁻¹) =
+      t.semidirectProductMulEquiv ⟨Θrot (op x.left⁻¹), x.right⟩ := by
+  simp only [GroupExtension.Splitting.semidirectProductMulEquiv_apply,
+    signedInversionSignExtension_inl, signExtension_inl, mul_inv_rev, op_mul, map_mul,
+    picardSignSplitting_apply_inv, picardRotationInclusion_apply Θ Θrot hrot]
+
+end Splitting
 
 omit [Finite ι] in
 /-- Under a sign-compatible Picard equivalence, a negative-sign involution is represented

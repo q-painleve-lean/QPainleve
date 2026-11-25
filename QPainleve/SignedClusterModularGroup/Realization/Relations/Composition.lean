@@ -68,8 +68,7 @@ theorem signedLoopInvariants_comp_of_nodal_contraction
     (read : Matrix κ (Fin r) ℤ) (hread : read * Matrix.of (fun i j ↦ (β j : Fin r → ℤ) i) = 1)
     (w v : Word E E) :
     let index := (ZMod.finEquiv n).toEquiv
-    let orders (j : Fin n) := Fan.rayBoundaryOrders b Q.rays
-      (p₀.numberedBoundaryRays cartier[M₀] (index j))
+    let orders := p₀.numberedBoundaryOrders cartier[M₀]
     let invariant (u : Word E E) :=
       u.signedLoopInvariants (fun j ↦ (β j : Fin r → ℤ)) orders (orders 0)
     invariant (w.comp v) =
