@@ -8,6 +8,7 @@ module
 public import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.TwistingSheaf.Sections
 
 import QPainleve.AlgebraicGeometry.Modules.Pullback.Generator
+import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.AffineCover.Basic
 import QPainleve.RingTheory.GradedAlgebra.HomogeneousLocalization.DegreeOne
 
 /-!
@@ -38,34 +39,6 @@ local notation "L" => twistingSheaf 𝒜 1
 local notation "t[" U "," a "]" => toTwistingSheaf 𝒜 (Nat.cast_one : ((1 : ℕ) : ℤ) = 1) U a
 
 variable {g h : Y ⟶ Proj 𝒜}
-
-/-- Any two points of a projective spectrum generated in degree one lie on a
-common degree-one standard chart. -/
-theorem exists_mem_basicOpen_degreeOne_pair
-    (hgen : Algebra.adjoin (𝒜 0) (𝒜 1 : Set A) = ⊤) (x y : Proj 𝒜) :
-    ∃ r : 𝒜 1, x ∈ basicOpen 𝒜 r ∧ y ∈ basicOpen 𝒜 r := by
-  let B (r : 𝒜 1) := basicOpen 𝒜 r
-  have hB (x : Proj 𝒜) : ∃ r : 𝒜 1, x ∈ B r :=
-    Opens.mem_iSup.mp ((iSup_basicOpen_eq_top_of_adjoin_eq_top 𝒜 hgen).ge (Set.mem_univ x))
-  obtain ⟨r, hr⟩ := hB x
-  obtain ⟨s, hs⟩ := hB y
-  by_cases hr' : y ∈ B r
-  · exact ⟨r, hr, hr'⟩
-  by_cases hs' : x ∈ B s
-  · exact ⟨s, hs', hs⟩
-  refine ⟨r + s, ?_, ?_⟩
-  · intro hrs
-    have hs₀ : (s : A) ∈ (x).asHomogeneousIdeal.toIdeal := of_not_not hs'
-    have hsum : (r : A) + s ∈ (x).asHomogeneousIdeal.toIdeal := hrs
-    have hmem := sub_mem hsum hs₀
-    rw [add_sub_cancel_right] at hmem
-    exact hr hmem
-  · intro hrs
-    have hr₀ : (r : A) ∈ (y).asHomogeneousIdeal.toIdeal := of_not_not hr'
-    have hsum : (r : A) + s ∈ (y).asHomogeneousIdeal.toIdeal := hrs
-    have hmem := sub_mem hsum hr₀
-    rw [add_sub_cancel_left] at hmem
-    exact hs hmem
 
 private theorem resLE_eq_of_pullback_toTwistingSheaf
     (hgen : Algebra.adjoin (𝒜 0) (𝒜 1 : Set A) = ⊤)
