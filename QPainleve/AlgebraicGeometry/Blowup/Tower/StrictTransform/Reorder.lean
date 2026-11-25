@@ -9,7 +9,6 @@ public import QPainleve.AlgebraicGeometry.Blowup.Tower.StrictTransform.Basic
 
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Reorder
 import QPainleve.AlgebraicGeometry.Blowup.Tower.StrictTransform.RegularCurve
-import QPainleve.AlgebraicGeometry.Blowup.Tower.StrictTransform.Transport
 
 /-!
 # Strict transforms under reordering of closed point blowups
