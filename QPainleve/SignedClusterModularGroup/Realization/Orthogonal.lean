@@ -9,8 +9,8 @@ public import QPainleve.SignedClusterModularGroup.Realization.MarkedComparison
 public import QPainleve.SignedClusterModularGroup.Realization.Presentation
 
 import QPainleve.Geometry.Toric.Fan.Picard.Contraction.ChargeKernel
-import QPainleve.SignedClusterModularGroup.Realization.Anticanonical
 import QPainleve.SignedClusterModularGroup.Realization.NodalFiber
+import QPainleve.SignedClusterModularGroup.Realization.Presentation.Boundary
 
 /-!
 # Charge coordinates in a fixed Picard marking
@@ -143,30 +143,12 @@ theorem HasNodalModel.existsUnique_chargeKernelEquiv (h : Q.HasNodalModel c M)
           ((Fan.boundaryOrthogonalEquivChargeKernel Q.regular Q.rays Aux).symm x).val := by
   let := Q.prestable
   let := Q.neZero
-  let : IsIntegral M.surface := M.integral
   let : M.surface.IsProjectiveOver ℂ := M.projective
   let : SmoothOfRelativeDimension 2 (M.surface ↘ S) := M.smooth
   obtain ⟨p, hnodal⟩ := h.exists_isNodalContraction hD
-  obtain ⟨_, Y, T, hT, u, hp⟩ := hnodal.exists_tower
   let : IsRationalOver (M.surface ↘ S) := h.isRationalOver
   let : B.IsPerfPair := M.isPerfPair_of_isRationalOver
-  let : (Chow.intersectionBilinForm ℂ M.surface).IsPerfPair := M.isPerfPair_intersectionForm
-  have hrank : Module.finrank ℤ N = 2 := by simpa using Module.finrank_eq_card_basis b
-  let a := pointsEquiv ℂ (Fin r → ℤ) ⟨Over.Hom.left c, Over.w c⟩
-  let center (j : Fin r) := a (ofAdd (Pi.single j 1))
-  have hcomparison : ∃ e : Y ≅ (Fan.internalBlowupTower b Q.rays center).1,
-      e.inv ≫ T.toBase ≫ (M.surface ↘ S) =
-        (Fan.internalBlowupTower b Q.rays center).2.toTower.toBase ≫
-          (Q.fan.algebraicRealization ↘ S) := ⟨u, by
-            rw [← Category.assoc, hp, p.projection_over, Fan.algebraicRealization_over]⟩
-  rw [Fan.internalBlowupTower_eq_alongBoundary] at hcomparison
-  obtain ⟨v, hv⟩ := hcomparison
-  let hAux := Fan.isPerfPair_internal_markedForm Q.regular hrank Q.rays
-    (fun j ↦ (b.detDualEquiv (Q.rays j).primitiveGenerator).toAddMonoidHom)
-    (fun j ↦ b.detDualEquiv_self (Q.rays j).primitiveGenerator)
-    (fun j ↦ (Q.rays j).surjective_detCharacter b) center
-    (fun j ↦ (Q.rays j).internalCenter b (center j))
-    (fun j ↦ (Q.rays j).internalCenter_val b (center j)) hT v hv
+  let hAux := Q.isPerfPair_auxiliaryPicardForm
   exact ⟨hAux, p.existsUnique_markedBoundaryOrthogonalEquivChargeKernel hnodal hD hd⟩
 
 end CompleteToricPresentation
