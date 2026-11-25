@@ -176,7 +176,8 @@ theorem exists_central_involution_of_picardEquiv [NeZero n]
     apply Θ.injective
     simpa only [op_mul, map_mul, hw] using
       (Subgroup.mem_center_iff.mp (centralSign_mem_center B D hn) (Θ (op f))).symm
-  exact ⟨_, hw, hc, horder,
-    exists_mulEquiv_prod_zpowers_of_central_odd_loop k E (hB := hE) w hodd horder hc⟩
+  refine ⟨_, hw, hc, horder, mulEquivProdZPowersOfCentralOddLoop k E (hB := hE) w hodd horder hc,
+    fun f u ↦ ?_⟩
+  simp
 
 end QPainleve.SignedClusterModularGroup
