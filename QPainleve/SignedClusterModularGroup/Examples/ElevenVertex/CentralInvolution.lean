@@ -11,8 +11,6 @@ public import QPainleve.SignedClusterModularGroup.Realization.Endpoint.PicardAct
 import QPainleve.Geometry.Toric.Fan.Boundary.Numbering
 import QPainleve.Geometry.Toric.Fan.Subdivision.Projective
 import QPainleve.LinearAlgebra.BilinearForm.Prod
-import QPainleve.SignedClusterModularGroup.BoundaryCycle
-import QPainleve.SignedClusterModularGroup.Faithfulness
 import QPainleve.SignedClusterModularGroup.Realization.Anticanonical
 import QPainleve.SignedClusterModularGroup.Realization.ChargeKernel
 import QPainleve.SignedClusterModularGroup.Realization.Endpoint.Kernel
@@ -33,7 +31,7 @@ fiber in the original seed basis. The faithful signed Picard action sends
 On the single boundary component the forward index is unique, so the
 comparison uses the sign and the negation action on the exchange kernel.
 The comparisons use `chargeKernelAction_eq_signedOrthogonalRestriction` and
-`boundary_isometry_ext`.
+`eq_centralSign_of_signedOrthogonalRestriction`.
 -/
 
 public noncomputable section
@@ -57,34 +55,6 @@ local notation "χ[" c "]" => pointsEquiv ℂ _ (Subtype.mk (Over.Hom.left c) (O
 local notation "params[" c "]" => (fun j : Fin 11 ↦ χ[c] (ofAdd (Pi.single j 1)))
 local notation "Γ" => SignedClusterModularGroup ℂ exchangeMatrix
 local notation "eval[" w "]" => op (signedClusterModularGroupMap ℂ exchangeMatrix (End.of w))
-
-private theorem eq_centralSign_of_signedRestriction
-    {L : Type} [AddCommGroup L] [Module.Free ℤ L] [Module.Finite ℤ L]
-    {H : LinearMap.BilinForm ℤ L} (hSymm : H.IsSymm) (hnondeg : H.Nondegenerate)
-    {d : ZMod 1 → L} (hgram : ∀ j k, H (d j) (d k) = (-2 : ℤ) * (if j = k then 1 else 0) +
-      (if k = j + 1 then 1 else 0) + (if k = j - 1 then 1 else 0))
-    (g : signedBoundaryIsometryGroup H d)
-    (hsign : sign H d g = -1)
-    (horth : ∀ x : H.orthogonal (Submodule.span ℤ (Set.range d)),
-      (signedOrthogonalRestriction H d g).val x = -x) :
-    g = centralSign H d (by decide) := by
-  have hone (x : L) : (1 : L ≃ₗ[ℤ] L) x = x := (rfl)
-  apply Subtype.ext
-  apply Prod.ext
-  · rw [coe_centralSign, ← toIsometry_apply]
-    apply H.isometryGroupEquivIsometryEquiv.injective
-    refine boundary_isometry_ext (D := d) hSymm hnondeg.1
-      (BoundaryCycle.span_sup_orthogonal_rat hgram hSymm hnondeg) ?_ ?_
-    · intro j
-      obtain ⟨p, hp⟩ := exists_indexPerm H d g
-      simpa only [LinearMap.BilinForm.coe_isometryGroupEquivIsometryEquiv,
-        OneMemClass.coe_one, hone, Subsingleton.elim (p j) j] using hp j
-    · intro x hx
-      have heq := congrArg Subtype.val (horth ⟨x, hx⟩)
-      simpa only [LinearMap.BilinForm.coe_isometryGroupEquivIsometryEquiv,
-        OneMemClass.coe_one, hone, coe_signedOrthogonalRestriction_apply,
-        hsign, Units.neg_smul, one_smul, Submodule.coe_neg, neg_inj] using heq
-  · simpa only [coe_centralSign, SignedBoundaryIsometryGroup.sign_apply] using hsign
 
 private theorem exists_marked_reference (u : Fin 11 → ℂˣ) :
     ∃ (L : Type) (_ : AddCommGroup L) (H : LinearMap.BilinForm ℤ L)
@@ -272,7 +242,7 @@ theorem exists_eleven_vertex_signedPicardHom (u : Fin 11 → ℂˣ) :
     (fun _ ↦ (hfamily _).1) (hfamily c).1 hD hnef' hsq' hcan hprim' d hmark
   have hgram := (M c).intersectionForm_boundaryClass (hD c) hnef' hsq'
   refine ⟨L, _, H, Q, c, M, hD, hparams, hrays, hfamily, ρ, hinj, ?_, ?_⟩
-  · refine eq_centralSign_of_signedRestriction hSymm
+  · refine eq_centralSign_of_signedOrthogonalRestriction hSymm
       (LinearMap.IsPerfPair.nondegenerate inferInstance) hgram _ ?_ ?_
     · exact (hρ (End.of involutionWord)).1.trans
         ((congrArg (fun n : ℕ ↦ (-1 : ℤˣ) ^ n) inversionCount_involutionWord).trans (pow_one _))
