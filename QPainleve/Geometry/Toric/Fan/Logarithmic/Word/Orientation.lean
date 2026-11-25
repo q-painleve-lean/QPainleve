@@ -32,6 +32,23 @@ local notation "S" => Spec (CommRingCat.of ℂ)
 variable {Z : Scheme} [Z.Over S] [SmoothOfRelativeDimension 2 (Z ↘ S)] [IsIntegral Z]
   {D : Z.IdealSheafData} {A B : LogarithmicProjection i D} {m : ℕ}
 
+/-- A word whose inversion sign agrees with the sign between equally oriented
+models can be replaced by an inversion-free word in their evaluation comparison. -/
+theorem OrderedToricModel.exists_inversionFree_word_of_boundarySign_eq_one
+    (U : OrderedToricModel A m) (T : OrderedToricModel B m)
+    (w : Word U.exchangeMatrix T.exchangeMatrix)
+    (hsign : U.HasBoundarySign T ((-1 : ℤˣ) ^ w.inversionCount))
+    (hOrientation : U.HasBoundarySign T 1)
+    (heval : ∃ h, U.xEvaluation.compOfDefined (w.xRationalMap ℂ) h = T.xEvaluation) :
+    ∃ v : Word U.exchangeMatrix T.exchangeMatrix, v.inversionCount = 0 ∧
+      ∃ h, U.xEvaluation.compOfDefined (v.xRationalMap ℂ) h = T.xEvaluation := by
+  have heven : Even w.inversionCount :=
+    (neg_one_pow_eq_one_iff_even (by decide : (-1 : ℤˣ) ≠ 1)).mp (hsign.unique hOrientation)
+  obtain ⟨v, hv, hpull⟩ := w.exists_xPullback_eq_of_even_inversionCount ℂ heven
+  refine ⟨v, hv, ?_⟩
+  rw [← (Quiver.Path.xRationalMap_eq_iff ℂ w v).mpr hpull]
+  exact heval
+
 /-- A resolved Sarkisov path between prescribed models with the same boundary
 orientation induces an inversion-free word in the prescribed frames and labels.
 The word carries the source X evaluation to the target evaluation at the generic
@@ -43,11 +60,6 @@ theorem exists_inversionFree_word_of_resolved_sarkisov_path_to_model [Z.IsProjec
       ∃ h, U.xEvaluation.compOfDefined (v.xRationalMap ℂ) h = T.xEvaluation := by
   obtain ⟨_, _, _, w, _, _, -, -, -, -, -, -, -, -, -, hsign, -, heval⟩ :=
     exists_word_of_resolved_sarkisov_path_to_model p U T
-  have heven : Even w.inversionCount :=
-    (neg_one_pow_eq_one_iff_even (by decide : (-1 : ℤˣ) ≠ 1)).mp (hsign.unique hOrientation)
-  obtain ⟨v, hv, hpull⟩ := w.exists_xPullback_eq_of_even_inversionCount ℂ heven
-  refine ⟨v, hv, ?_⟩
-  rw [← (Quiver.Path.xRationalMap_eq_iff ℂ w v).mpr hpull]
-  exact heval
+  exact U.exists_inversionFree_word_of_boundarySign_eq_one T w hsign hOrientation heval
 
 end TauCeti.Toric.Fan.LogarithmicProjection

@@ -11,6 +11,7 @@ public import QPainleve.Geometry.Toric.Fan.Boundary.CycleAction
 import QPainleve.AlgebraicGeometry.IdealSheaf.BaseChange
 import QPainleve.Geometry.Toric.Fan.Boundary.DualGraph
 import QPainleve.Geometry.Toric.Fan.Boundary.Prestable
+import QPainleve.Geometry.Toric.Fan.Boundary.PositiveRefinement
 import QPainleve.Geometry.Toric.Fan.Subdivision.Projective
 import QPainleve.Geometry.Toric.Fan.TorusAction.Branches
 
@@ -31,6 +32,7 @@ public noncomputable section
 
 open AlgebraicGeometry CategoryTheory DihedralGroup Module Multiplicative QPainleve.BlowupTower
 open TauCeti.AlgebraicGeometry
+open Scheme.IdealSheafData
 
 namespace TauCeti.Toric.Fan.LogarithmicProjection.OrderedToricModel
 
@@ -156,6 +158,61 @@ theorem exists_isPositiveBoundaryNumbering (U : OrderedToricModel A m) :
     exact hcomp j
   exact ⟨_, inferInstance, _, U.isPositiveBoundaryNumbering_map_boundaryIso P u hP hu⟩
 
+section Subdivision
+
+variable {Y : Scheme} [Y.Over S] [SmoothOfRelativeDimension 2 (Y ↘ S)]
+  {E : Y.IdealSheafData} {B' : LogarithmicProjection i E}
+
+/-- A fan subdivision in the same frame lifts a positive boundary numbering
+to a positive numbering on the finer model. Its map on the resolving
+boundaries is an oriented subdivision. -/
+theorem exists_positiveBoundaryNumbering_of_subdivision
+    [PrestableFamily (E.subscheme ↘ S)]
+    (U : OrderedToricModel A m) (V : OrderedToricModel B' l)
+    (H : V.fan.IsSubdivision U.fan) (hb : V.basis = U.basis)
+    {f : Y ⟶ Z} {g : E.subscheme ⟶ D.subscheme}
+    (hf : f ≫ U.hom = V.hom ≫ H.toFanHom.algebraicMap)
+    (hg : g ≫ D.subschemeι = E.subschemeι ≫ f)
+    {k : ℕ} [NeZero k] {P : Cycle[D.subscheme,k]} (hP : U.IsPositiveBoundaryNumbering P) :
+    ∃ (j : ℕ) (_ : NeZero j) (Q : Cycle[E.subscheme,j]),
+      V.IsPositiveBoundaryNumbering Q ∧ g.IsOrientedCycleSubdivision Q P := by
+  obtain ⟨P₀, u, rfl, hu, hpos⟩ := hP
+  let : PrestableFamily ((U.fan.boundaryIdeal inferInstance).subscheme ↘ S) :=
+    U.prestableFamily_boundary
+  obtain ⟨_, j, hj, hLift⟩ := H.exists_positive_boundary_subdivision_numbering
+    (δ := Empty) U.basis U.regular V.regular (U.subdivision.isComplete_iff.mpr A.isComplete)
+    P₀ u hu hpos (u 0)
+  let : PrestableFamily ((V.fan.boundaryIdeal inferInstance).subscheme ↘ S) :=
+    V.prestableFamily_boundary
+  let : NeZero j := hj
+  obtain ⟨Q₀, v, hQ₀, -, hv, hpos'⟩ := hLift Empty.elim
+  let Q : Cycle[E.subscheme,j] := V.boundaryIso.mapNodalCycleNumbering Q₀
+  have hQ : V.IsPositiveBoundaryNumbering Q :=
+    V.isPositiveBoundaryNumbering_map_boundaryIso Q₀ v hv (by rwa [hb])
+  let : V.boundaryIso.symm.hom.IsOver S := inferInstanceAs (V.boundaryIso.inv.IsOver S)
+  have hact : V.boundaryIso.boundaryCycleAction Q₀ Q = 1 :=
+    V.boundaryIso.boundaryCycleAction_mapNodalCycleNumbering (q := Empty.elim) Q₀
+  have hleft := V.boundaryIso.symm.isOrientedCycleSubdivision_of_cycleOrientationSign_eq_one
+    Q Q₀ (by rw [V.boundaryIso.boundaryCycleAction_symm Q₀ Q, hact, inv_one, map_one])
+  have hp : U.boundaryIso.boundaryCycleAction P₀
+      (U.boundaryIso.mapNodalCycleNumbering P₀ (q := Empty.elim)) = 1 :=
+    U.boundaryIso.boundaryCycleAction_mapNodalCycleNumbering (q := Empty.elim) P₀
+  have hright := U.boundaryIso.isOrientedCycleSubdivision_of_cycleOrientationSign_eq_one
+    P₀ (U.boundaryIso.mapNodalCycleNumbering P₀ (q := Empty.elim)) (by
+      rw [hp, map_one])
+  have hg' :
+      V.boundaryIso.hom ≫ g = H.boundaryMap inferInstance inferInstance ≫ U.boundaryIso.hom := by
+    rw [← cancel_mono U.boundaryIso.inv,
+      ← cancel_mono (U.fan.boundaryIdeal inferInstance).subschemeι]
+    simp only [Category.assoc, Iso.hom_inv_id_assoc, IsSubdivision.boundaryMap_comp_subschemeι]
+    rw [← U.boundaryIso_hom_subschemeι_comp_hom, Iso.inv_hom_id_assoc, reassoc_of% hg, hf,
+      V.boundaryIso_hom_subschemeι_comp_hom_assoc]
+  refine ⟨j, hj, Q, hQ, ?_⟩
+  rw [← V.boundaryIso.inv_hom_id_assoc g, hg']
+  exact hleft.comp (hQ₀.comp hright)
+
+end Subdivision
+
 variable {n : ℕ} [NeZero n] {U : OrderedToricModel A m} {W : OrderedToricModel B l}
   {T T' : Cycle[D.subscheme,n]}
 
@@ -251,6 +308,46 @@ theorem HasBoundarySign.cycleOrientationSign_eq {η : ℤˣ} (h : U.HasBoundaryS
     (hT : U.IsPositiveBoundaryNumbering T) (hT' : W.IsPositiveBoundaryNumbering T') :
     cycleOrientationSign ((Iso.refl D.subscheme).boundaryCycleAction T T') = η :=
   h hT hT'
+
+section CommonSubdivision
+
+variable {Y : Scheme} [Y.Over S] [SmoothOfRelativeDimension 2 (Y ↘ S)]
+  {E : Y.IdealSheafData} {A' B' : LogarithmicProjection i E}
+
+omit [PrestableFamily (D.subscheme ↘ S)] in
+/-- When both models are subdivided above the same map of resolving surfaces,
+the sign comparing the fine models is the sign comparing the original models. -/
+theorem HasBoundarySign.of_common_subdivision
+    {U : OrderedToricModel A m} {T : OrderedToricModel B l}
+    {m' l' : ℕ} {U' : OrderedToricModel A' m'} {T' : OrderedToricModel B' l'}
+    {η : ℤˣ} (hη : U'.HasBoundarySign T' η)
+    (H : U'.fan.IsSubdivision U.fan) (K : T'.fan.IsSubdivision T.fan)
+    (hU : U'.basis = U.basis) (hT : T'.basis = T.basis)
+    {f : Y ⟶ Z} [f.IsOver S] (hle : D.comap f ≤ E)
+    (hfU : f ≫ U.hom = U'.hom ≫ H.toFanHom.algebraicMap)
+    (hfT : f ≫ T.hom = T'.hom ≫ K.toFanHom.algebraicMap) : U.HasBoundarySign T η := by
+  let : PrestableFamily (D.subscheme ↘ S) := U.prestableFamily_resolvingBoundary
+  let : PrestableFamily (E.subscheme ↘ S) := U'.prestableFamily_resolvingBoundary
+  intro k hk P Q hP hQ
+  let g := subschemeMap E D f (le_map_iff_comap_le.mpr hle)
+  have hg := subschemeMap_subschemeι E D f (le_map_iff_comap_le.mpr hle)
+  have : g.IsOver S := ⟨by
+    rw [D.over_eq_subschemeι_comp, ← Category.assoc, hg, Category.assoc, comp_over f S,
+      ← E.over_eq_subschemeι_comp]⟩
+  obtain ⟨r, hr, P', hP', hgP⟩ :=
+    U.exists_positiveBoundaryNumbering_of_subdivision U' H hU hfU hg hP
+  obtain ⟨r', hr', Q', hQ', hgQ⟩ :=
+    T.exists_positiveBoundaryNumbering_of_subdivision T' K hT hfT hg hQ
+  let : (Iso.refl D.subscheme).hom.IsOver S := ⟨Category.id_comp _⟩
+  let : (Iso.refl E.subscheme).hom.IsOver S := ⟨Category.id_comp _⟩
+  obtain rfl := (Iso.refl E.subscheme).nodalCycleNumbering_length_eq P' Q'
+  have hsq : CommSq (Iso.refl E.subscheme).hom g g (Iso.refl D.subscheme).hom := by
+    constructor
+    simp
+  exact ((Iso.refl D.subscheme).cycleOrientationSign_eq_of_orientedCycleSubdivisions P Q P' Q'
+    (Iso.refl E.subscheme) hgP hgQ hsq).trans (hη.cycleOrientationSign_eq hP' hQ')
+
+end CommonSubdivision
 
 omit [PrestableFamily (D.subscheme ↘ S)] in
 /-- A sign comparison on the toric boundaries gives the same sign on the
