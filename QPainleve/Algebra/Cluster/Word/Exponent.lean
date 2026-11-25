@@ -34,21 +34,29 @@ def exponentEquiv (s : B ⟶ C) : (ι → ℤ) ≃ₗ[ℤ] (ι → ℤ) :=
   | .permute σ => LinearEquiv.funCongrLeft ℤ ℤ σ.symm
   | .invert => LinearEquiv.neg ℤ
 
+/-- The exponent substitution depends on the generator and source exchange matrix. -/
+theorem exponentEquiv_eq (s : Step B C) :
+    s.exponentEquiv = match s.generator with
+      | .mutate j => chargeMutationEquiv B.matrix j
+      | .permute σ => LinearEquiv.funCongrLeft ℤ ℤ σ.symm
+      | .invert => LinearEquiv.neg ℤ :=
+  (rfl)
+
 @[simp]
 theorem exponentEquiv_mutate (B : SkewExchangeMatrix ι) (j : ι) :
     exponentEquiv ((Generator.mutate j).toStep B) = chargeMutationEquiv B.matrix j := by
-  rw [exponentEquiv, Generator.toStep_generator]
+  rw [exponentEquiv_eq, Generator.toStep_generator]
 
 @[simp]
 theorem exponentEquiv_permute (B : SkewExchangeMatrix ι) (σ : Equiv.Perm ι) :
     exponentEquiv ((Generator.permute σ).toStep B) =
       LinearEquiv.funCongrLeft ℤ ℤ σ.symm := by
-  rw [exponentEquiv, Generator.toStep_generator]
+  rw [exponentEquiv_eq, Generator.toStep_generator]
 
 @[simp]
 theorem exponentEquiv_invert (B : SkewExchangeMatrix ι) :
     exponentEquiv (Generator.invert.toStep B) = LinearEquiv.neg ℤ := by
-  rw [exponentEquiv, Generator.toStep_generator]
+  rw [exponentEquiv_eq, Generator.toStep_generator]
 
 private theorem ker_mutate (B : SkewExchangeMatrix ι) (p : ι) :
     (B.mutate p).matrix.mulVecLin.ker =
