@@ -9,6 +9,7 @@ public import QPainleve.AlgebraicGeometry.Blowup.Tower.Reorder
 public import QPainleve.Geometry.Toric.Fan.Ruling.Subdivision
 public import QPainleve.Geometry.Toric.Fan.StarSubdivision.Picard.Hirzebruch
 
+import QPainleve.AlgebraicGeometry.Blowup.Tower.Centres.First
 import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
 import QPainleve.Geometry.Toric.Fan.Ruling.FixedPoint
 
@@ -55,7 +56,8 @@ blowing up the inverse image of the corner. The two star subdivision maps send
 each retained center on the intermediate model to its projections on both bases.
 These centers keep their ruling values for every character ruling common to the
 two fans. The first center of the new tower is the reverse corner over the ruling
-value of the original corner.
+value of the original corner. Outside the reverse corner, a retained first
+center stays first over its projected point.
 
 In the two Picard markings the source coefficients `(a, b)` become `(a + b, b)`.
 The new first exceptional coefficient is `-b`, and all old coefficients retain their
@@ -106,6 +108,9 @@ theorem exists_hirzebruch_toric_link_resolution_of_absent_corner
           ∀ x ∈ γ.val, Ψ.lattice.realCharacter m x ≤ 0) (j : Fin n),
         Ψ.characterRuling m h₁ (hU'.baseCenter (j.natAdd 1)) =
           Φ.characterRuling m h₀ (hT.baseCenter j)) ∧
+      (∀ j : Fin n, hU'.baseCenter (j.natAdd 1) ≠ hU'.baseCenter (0 : Fin (1 + n)) →
+        (∀ l < j, hT.baseCenter l ≠ hT.baseCenter j) →
+        ∀ l < j.natAdd 1, hU'.baseCenter l ≠ hU'.baseCenter (j.natAdd 1)) ∧
       letI : Nonempty Ψ.cones := hc'.nonempty_cones
       let C := Fan.hirzebruchPicardBasis b e hΦ r hr
       let C' := Fan.hirzebruchPicardBasis d (e + 1) hΨ r' hr'
@@ -151,7 +156,7 @@ theorem exists_hirzebruch_toric_link_resolution_of_absent_corner
     simp only [toBase_snoc, toBase_nil, Category.comp_id]
   refine ⟨q, Ψ, F, hΨ, hF, hc', d, τ, s, t, r, r', hr, hr', g, g', _, R.tower, k, hU,
     hτTower.append hU, hq, hqp, hA, hd₀, hd₁, hτ, hg, hg', hstar, hstar',
-    ?_, ?_, hpts, hfirst, htail, ?_, ?_, ?_⟩
+    ?_, ?_, hpts, hfirst, htail, ?_, ?_, ?_, ?_⟩
   · calc
       _ = f.hom ≫ (R.iso.hom ≫ R.tower.toBase) ≫ g'.inv ≫ s.toFanHom.algebraicMap := by
         simp only [k, Iso.trans_hom, Category.assoc]
@@ -165,6 +170,16 @@ theorem exists_hirzebruch_toric_link_resolution_of_absent_corner
     have hpoint := congrArg (fun f : X[F] ⟶ projectiveLine ℂ ↦ f (g'.inv (hU.baseCenter j)))
       (s.comp_characterRuling_eq t m h₀ h₁)
     simpa only [Scheme.Hom.comp_apply, hpts j, htail j] using hpoint.symm
+  · intro j hj hleast
+    have hzero : Fin.castAdd n (0 : Fin 1) = 0 := rfl
+    have hj' : (tower[I[τ]]).toBase (hU.baseCenter j) ∉ Set.range hτTower.baseCenter := by
+      rintro ⟨l, hl⟩
+      have hlzero : l = (0 : Fin 1) := Fin.eq_zero l
+      rw [← baseCenter_append_natAdd hτTower hU, hlzero,
+        ← baseCenter_append_castAdd hτTower hU, hzero] at hl
+      exact hj hl.symm
+    exact (hτTower.first_baseCenter_append_natAdd_iff hU j).2
+      ⟨hj', fun l hl he ↦ hleast l hl (by rw [← hpts l, ← hpts j, he])⟩
   · intro C C' a β m
     have h := congrArg (pullback g'.inv) (hcoord a β 0)
     simp only [add_zero, sub_zero, pullback_comp, Iso.inv_hom_id, pullback_id] at h
