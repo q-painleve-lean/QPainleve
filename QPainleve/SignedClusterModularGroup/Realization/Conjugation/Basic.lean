@@ -44,21 +44,50 @@ variable {k : Type} [Field k] [IsSepClosed k] [Infinite k]
   (hd₀ : ∀ c j, (P₀ c).boundaryClass (h₀ c) j = d₀ j)
   (hd₁ : ∀ c j, (P₁ c).boundaryClass (h₁ c) j = d₁ j)
 
+include hd₀ hd₁ in
+/-- In fixed boundary markings, the pullback of a target boundary class uses
+the signed shift of the inverse branch action. -/
+theorem picard_marked_boundaryClass (j : ZMod n) :
+    R.picard (d₁ j) = d₀ (cycleOrientationSign R.boundaryAction⁻¹ • j +
+      cycleVertexPerm R.boundaryAction⁻¹ 0) := by
+  obtain ⟨c⟩ := nonempty_centerPoint C
+  have h := R.picard_boundaryClass c (h₀ _) (h₁ _) j
+  rw [hd₀, hd₁, cycleVertexPerm_apply R.boundaryAction⁻¹ j, ← Units.smul_def] at h
+  exact h
+
 /-- The marked Picard pullback of a realization identifies the two boundary
 rotation groups by conjugation. -/
 def boundaryRotationGroupCongr :
     boundaryRotationGroup B₀ d₀ ≃* boundaryRotationGroup B₁ d₁ :=
   QPainleve.boundaryRotationGroupCongr R.picard (ε := cycleOrientationSign R.boundaryAction⁻¹)
-    (a := cycleVertexPerm R.boundaryAction⁻¹ 0) (fun j ↦ by
-      obtain ⟨c⟩ := nonempty_centerPoint C
-      have h := R.picard_boundaryClass c (h₀ _) (h₁ _) j
-      rw [hd₀, hd₁, cycleVertexPerm_apply R.boundaryAction⁻¹ j, ← Units.smul_def] at h
-      exact h)
+    (a := cycleVertexPerm R.boundaryAction⁻¹ 0) (R.picard_marked_boundaryClass hd₀ hd₁)
 
 @[simp]
 theorem boundaryRotationGroupCongr_apply_apply (g : boundaryRotationGroup B₀ d₀) (x : L₁) :
     (R.boundaryRotationGroupCongr hd₀ hd₁ g).val.val x = R.picard.symm (g.val.val (R.picard x)) :=
   QPainleve.boundaryRotationGroupCongr_apply_apply ..
+
+open SignedBoundaryIsometryGroup
+
+/-- Conjugation by the marked Picard pullback identifies the signed boundary
+isometry groups of the source and target of a realization. -/
+def signedBoundaryIsometryGroupCongr :
+    signedBoundaryIsometryGroup B₀ d₀ ≃* signedBoundaryIsometryGroup B₁ d₁ :=
+  congr R.picard (R.picard_marked_boundaryClass hd₀ hd₁)
+
+@[simp]
+theorem coe_signedBoundaryIsometryGroupCongr (g : signedBoundaryIsometryGroup B₀ d₀) :
+    (↑(R.signedBoundaryIsometryGroupCongr hd₀ hd₁ g) : B₁.isometryGroup × ℤˣ) =
+      (R.picard.symm.isometryGroupCongr g.val.1, g.val.2) :=
+  coe_congr ..
+
+/-- The induced conjugation agrees with change of marking on boundary rotations. -/
+@[simp]
+theorem signedBoundaryIsometryGroupCongr_rotationInclusion (g : boundaryRotationGroup B₀ d₀) :
+    R.signedBoundaryIsometryGroupCongr hd₀ hd₁ (rotationInclusion B₀ d₀ g) =
+      rotationInclusion B₁ d₁ (R.boundaryRotationGroupCongr hd₀ hd₁ g) := by
+  rw [signedBoundaryIsometryGroupCongr, boundaryRotationGroupCongr]
+  exact congr_rotationInclusion R.picard (R.picard_marked_boundaryClass hd₀ hd₁) g
 
 end BoundaryMarking
 
@@ -95,6 +124,37 @@ variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
 local notation "Models[" D "]" =>
   HasToricTargetModels (b := b) (s := s) (hΦ := hΦ) (T := T) (origin := origin)
     (ι := ι) (P₁ := P₁) centers D
+
+/-- When two orders of composition with a connecting realization give the same
+X map, the loop pullbacks are conjugate and the two loop orientations agree. -/
+theorem picard_conjugation_of_comp_xMap_eq
+    {D : T₀.left.PartialMap T₀.left} [IsDominant D.hom] [D.IsOver T₀.hom T₀.hom]
+    {J : T₁.left.PartialMap T₁.left} [IsDominant J.hom] [J.IsOver T₁.hom T₁.hom]
+    {F G : X[r] ⤏ X[r]} [F.IsDominant] [G.IsDominant]
+    (A : GeometricRealization P₀ P₀ D F) (B : GeometricRealization P₁ P₁ J G)
+    (hcomp : (w.xRationalMap ℂ).comp G = F.comp (w.xRationalMap ℂ))
+    (hc : Φ.IsComplete) (hι : Function.Injective ι)
+    (hindex : (Fan.rayChargeMap s).range.toAddSubgroup.index ≠ 0)
+    (hC : Models[C]) (hJ : Models[J]) :
+    (∀ x, B.picard x = R.picard.symm (A.picard (R.picard x))) ∧
+      B.orientation = A.orientation := by
+  have hmodels₁ : Models[C.comp J] := fun c ↦ by
+    simpa only [Category.assoc, PartialMap.compDomainRight_target] using
+      hJ (c ≫ C.compDomainRight J)
+  have hmodels₀ : Models[D.comp C] := fun c ↦ by
+    simpa only [Category.assoc, PartialMap.compDomainRight_target] using
+      hC (c ≫ D.compDomainRight C)
+  let : (F.comp (w.xRationalMap ℂ)).IsDominant := RationalMap.instIsDominantComp _ _
+  obtain ⟨hpic, hact⟩ := (R.comp B).marked_actions_eq_of_xMap_eq (A.comp R)
+    hcomp hc hι hindex centers hmodels₁ hmodels₀
+  refine ⟨fun x ↦ ?_, ?_⟩
+  · have h := congrArg (fun e : B₁.IsometryEquiv B₀ ↦ e x) hpic
+    simp only [comp_picard, BilinForm.IsometryEquiv.trans_apply] at h
+    simpa only [BilinForm.IsometryEquiv.symm_apply_apply] using congrArg R.picard.symm h
+  · have h := congrArg cycleOrientationSign hact
+    rw [← orientation_def, ← orientation_def, comp_orientation, comp_orientation,
+      mul_comm R.orientation A.orientation] at h
+    exact mul_right_cancel h
 
 /-- A realized change of base seed intertwines the two Picard homomorphisms.
 The loop actions are evaluated on realizations at the respective seeds. Only
@@ -145,16 +205,7 @@ theorem picardHom_base_change
       simp only [Quiver.Path.xPullback_comp, hx, Quiver.Path.xPullback_reverse]
       group)
     simpa only [Quiver.Path.xRationalMap_comp] using h
-  have hmodels₁ : Models[C.comp J] := fun c ↦ by
-    simpa only [Category.assoc, PartialMap.compDomainRight_target] using
-      hmodel (c ≫ C.compDomainRight J)
-  have hmodels₀ : Models[D.comp C] := fun c ↦ by
-    simpa only [Category.assoc, PartialMap.compDomainRight_target] using
-      hC (c ≫ D.compDomainRight C)
-  let : (xmap[E₀,u].comp (w.xRationalMap ℂ)).IsDominant :=
-    RationalMap.instIsDominantComp _ _
-  obtain ⟨hpic, _⟩ := (R.comp B).marked_actions_eq_of_xMap_eq (A.comp R)
-    hcomp hc hι hindex centers hmodels₁ hmodels₀
+  have hpic := (R.picard_conjugation_of_comp_xMap_eq A B hcomp hc hι hindex hC hmodel).1
   have hg : g = eval[E₀,u] := op_unop g ▸ congrArg op hu.symm
   have hv' : MulEquiv.op (clusterModularGroupCongr ℂ w) g = eval[E₁,v] := congrArg op hv.symm
   simp only [MonoidHom.comp_apply, MulEquiv.coe_toMonoidHom, hv']
@@ -165,10 +216,7 @@ theorem picardHom_base_change
   intro x
   rw [boundaryRotationGroupCongr_apply_apply, hA, hB]
   simp only [BilinForm.coe_isometryGroupEquivIsometryEquiv_symm]
-  have hpic' := (comp_picard R B).symm.trans (hpic.trans (comp_picard A R))
-  have h := congrArg (fun e : B₁.IsometryEquiv B₀ ↦ e x) hpic'
-  simp only [BilinForm.IsometryEquiv.trans_apply] at h
-  simpa only [BilinForm.IsometryEquiv.symm_apply_apply] using congrArg R.picard.symm h
+  exact hpic x
 
 end Words
 

@@ -17,7 +17,6 @@ public import QPainleve.SignedClusterModularGroup.SarkisovDegree.PositiveSection
 import QPainleve.AlgebraicGeometry.Modules.Differentials.PoleIdeal
 import QPainleve.Geometry.Toric.Fan.Hirzebruch.Corner
 import QPainleve.Geometry.Toric.Fan.Logarithmic.Factorization.Iso
-import QPainleve.Geometry.Toric.Fan.Ruling.Hirzebruch.InvariantFiber
 import QPainleve.Geometry.Toric.Fan.Ruling.Hirzebruch.Marking
 import QPainleve.Geometry.Toric.Fan.Subdivision.Projective
 import QPainleve.SignedClusterModularGroup.SarkisovDegree.PositiveSection.Corner
@@ -456,7 +455,7 @@ private theorem exists_positive_section_pivot_of_smooth [PreirreducibleSpace X]
   let : A.fan.algebraicRealization.IsProjectiveOver ℂ :=
     A.fan.isProjectiveOver_algebraicRealization_of_isComplete A.isRegular A.isComplete M.basis
   obtain ⟨_, Z, T, hT, u, d, r, hr, hg, hbir, _, ⟨L, R, p, hL, hhL, hR, hhR, -, -⟩,
-      hmark, hbinomial, hcorner, hinc, hcoef, hdeg, horders, _⟩ :=
+      hmark, -, -, hinc, hRuling, hcoef, hdeg, horders, _⟩ :=
     M.closed.exists_sarkisov_path_of_smooth_section M.basis (e + 1) A.isRegular A.isComplete
       M.rays M.rays_eq 1 M.planeMap M.planeMap_over M.planeMap_birational c j hc hfirst
       (D.comap M.iso.inv) M.source_pole
@@ -467,7 +466,7 @@ private theorem exists_positive_section_pivot_of_smooth [PreirreducibleSpace X]
         else ((e + 1 : ℕ) : ℤ) - 1).natAbs = e := by
     simp only [ite_eq_right hsign, he', Int.natAbs_natCast]
   generalize hk : (if decide ((1 : Fin 2) = 0) = true then ((e + 1 : ℕ) : ℤ) + 1
-      else ((e + 1 : ℕ) : ℤ) - 1).natAbs = k at hr hcoef hdeg
+      else ((e + 1 : ℕ) : ℤ) - 1).natAbs = k at hr hRuling hcoef hdeg
   have hke : k = e := hk.symm.trans hindex
   clear hk
   subst k
@@ -494,30 +493,10 @@ private theorem exists_positive_section_pivot_of_smooth [PreirreducibleSpace X]
   intro a
   have hne : s.index a ≠ j := fun h ↦ s.off_section a (h ▸ hj)
   obtain ⟨l, hl⟩ := Fin.exists_succAbove_eq_iff.mpr hne
-  have hmem := (A.fan.mem_support_hirzebruch_fiber_iff M.basis (e + 1 : ℕ) A.isRegular
-    M.rays M.rays_eq (s.fiber a) _).mpr (hl.symm ▸ s.ruling_eq a)
-  have hcases := (A.fan.mem_support_rayBoundaryIdeal_iff M.basis A.isRegular A.isComplete
-    (fiberRay[M.rays,s.fiber a]) (M.closed.isClosed_baseCenter (j.succAbove l))).mp hmem
-  have hfirstOld := hl.symm ▸ s.first a
-  have hnew : (∀ k < l.natAdd 1, hT.baseCenter k ≠ hT.baseCenter (l.natAdd 1)) ∧
-      hT.baseCenter (l.natAdd 1) ∈
-        (C.fan.rayBoundaryIdeal C.isRegular (fiberRay[r,s.fiber a])).support := by
-    rcases hcases with ⟨a', ha'⟩ | ⟨σ, hσ, hfiber, hpoint⟩
-    · obtain ⟨z, hz, hfirst'⟩ := hbinomial he (s.fiber a) a' l ha'
-      refine ⟨hfirst' hfirstOld, ?_⟩
-      rw [hz]
-      exact ((fiberRay[r,s.fiber a]).binomialCenter_mem_support_rayBoundaryIdeal_iff
-        C.isRegular rankTwo[d] (d.detDualEquiv_self _)
-        ((fiberRay[r,s.fiber a]).surjective_detCharacter d) z (fiberRay[r,s.fiber a])).mpr rfl
-    · obtain ⟨_, hpoint', hcone, hfirst'⟩ := hcorner σ l hσ hpoint
-      refine ⟨hfirst' hfirstOld, ?_⟩
-      rw [hpoint']
-      apply (C.fan.distinguishedPoint_mem_support_rayBoundaryIdeal_iff C.isRegular _ _).mpr
-      rw [hmark he, Equiv.trans_apply]
-      exact (hcone (fiberRay[M.rays,s.fiber a])).mpr hfiber
-  refine ⟨l.natAdd 1, hnew.1, ?_, fun h ↦ s.off_section a (hl ▸ (htail l).mp h), ?_⟩
-  · exact (C.fan.mem_support_hirzebruch_fiber_iff d e C.isRegular r hr (s.fiber a) _).mp hnew.2
-  · rw [horder, hl]
+  obtain ⟨hvalue, hfirst'⟩ := hRuling l (s.fiber a) (hl.symm ▸ s.ruling_eq a)
+  refine ⟨l.natAdd 1, hfirst' (hl.symm ▸ s.first a), hvalue,
+    fun h ↦ s.off_section a (hl ▸ (htail l).mp h), ?_⟩
+  rw [horder, hl]
 
 private theorem ruling_coordinate_of_reframing
     {M : HirzebruchPlaneResolution A B b' hi e n} (s : PositiveSectionMarking M ι)

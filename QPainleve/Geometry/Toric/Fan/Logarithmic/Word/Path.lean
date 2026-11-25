@@ -26,6 +26,7 @@ public noncomputable section
 
 open AlgebraicGeometry CategoryTheory Module Multiplicative PointedCone
 open QPainleve QPainleve.Cluster QPainleve.BlowupTower TauCeti TauCeti.AlgebraicGeometry
+open QPainleve.CharacterTorus (centerCharacter)
 open scoped Sarkisov
 
 namespace TauCeti.Toric.Fan.LogarithmicProjection

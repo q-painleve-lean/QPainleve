@@ -26,6 +26,7 @@ public noncomputable section
 
 open AlgebraicGeometry CategoryTheory Module Multiplicative
 open QPainleve.Cluster TauCeti TauCeti.AlgebraicGeometry TauCeti.LaurentRing
+open QPainleve.CharacterTorus (centerCharacter)
 open scoped Sarkisov
 
 namespace TauCeti.Toric.Fan.LogarithmicProjection

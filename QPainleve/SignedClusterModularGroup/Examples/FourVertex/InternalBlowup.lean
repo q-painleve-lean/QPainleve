@@ -105,42 +105,6 @@ variable [Nonempty Φ.cones] (hΦ : Φ.IsRegular) (hc : Φ.IsComplete)
     ∃ σ : Φ.cones, (v j).toCone ≤ σ ∧ (v (j + 1)).toCone ≤ σ)
 
 local notation "X" => Φ.algebraicRealization
-local notation "B" => intersectionBilinForm ℂ X
-
-section Intersection
-
-variable [Φ.algebraicRealization.IsProjectiveOver ℂ]
-  [SmoothOfRelativeDimension 2 (Φ.algebraicRealization ↘ S)]
-
-local notation "R" j:arg => Φ.rayDivisorToPicard hΦ (Pi.single (v j) 1)
-
-include hv hΦ hc hnext in
-open Classical in
-private theorem ray_pairing (j k : ZMod 8) :
-    B (R j) (R k) = (if j = k then if j.val % 2 = 0 then -2 else -1 else 0) +
-      (if k = j - 1 ∨ k = j + 1 then 1 else 0) := by
-  rw [Φ.intersectionBilinForm_rayDivisorToPicard_single_single hΦ rank_two]
-  by_cases hjk : j = k
-  · subst k
-    have hne : ¬ (j = j - 1 ∨ j = j + 1) := by
-      revert j
-      decide
-    simp only [ite_eq_right hne, add_zero]
-    exact rayBoundarySelfIntersection_eq_of_octagon hΦ hc v hv (fun l ↦ (hnext l).2) j
-  · have hprev := hnext (j - 1)
-    rw [sub_add_cancel] at hprev
-    have h := Φ.ray_neighbors_iff_of_det b₂ hΦ hc hprev (hnext j) (v k)
-    have hadj : (∃ σ : Φ.cones, (v j).toCone ≤ σ ∧ (v k).toCone ≤ σ) ↔
-        k = j - 1 ∨ k = j + 1 := by
-      constructor
-      · intro hp
-        simpa only [Equiv.apply_eq_iff_eq] using h.mp ⟨v.injective.ne hjk, hp⟩
-      · intro hp
-        exact (h.mpr (by simpa only [Equiv.apply_eq_iff_eq] using hp)).2
-    rw [ite_eq_right (v.injective.ne hjk), ite_eq_right hjk, zero_add]
-    exact if_congr hadj rfl rfl
-
-end Intersection
 
 variable (c : Fin 4 → ℂˣ)
 
@@ -230,7 +194,7 @@ private theorem intersection_boundaryPrime (j k : ZMod 8) :
   rw [hmark j, hmark k] at h
   simp only [toMul_ofMul, Fan.markedBoundaryMap_apply] at h
   rw [← intersectionBilinForm_apply ℂ X (R j) (R k),
-    ray_pairing v hv hΦ hc hnext, dotProduct_exceptional_boundary] at h
+    intersectionBilinForm_octagon_rayClasses hΦ hc v hv hnext, dotProduct_exceptional_boundary] at h
   rw [h]
   clear h
   revert j k

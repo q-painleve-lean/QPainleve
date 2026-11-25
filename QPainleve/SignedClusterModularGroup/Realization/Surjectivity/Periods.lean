@@ -17,6 +17,7 @@ import QPainleve.Geometry.Toric.Fan.Presentation.Genus
 import QPainleve.Geometry.Toric.Fan.Smooth
 import QPainleve.Geometry.Toric.Fan.Subdivision.Projective
 import QPainleve.SignedClusterModularGroup.Realization.Anticanonical
+import QPainleve.SignedClusterModularGroup.Realization.NodalFiber
 import TauCeti.AlgebraicGeometry.RationalPoint.Image
 
 /-!
@@ -70,7 +71,6 @@ local instance periodFiberProjective (M : MarkedSurface ℂ n B Xtor[r]) :
 namespace CompleteToricPresentation
 
 open Fan
-open Fan.LogarithmicProjection (centerCharacter)
 
 variable (Q : CompleteToricPresentation i b r L γ)
   {M : GeometricRealization.Point Centers[r] → MarkedSurface ℂ n B Xtor[r]}
@@ -110,15 +110,14 @@ private theorem exists_charge_coordinates
     exact hzU
   let : IsIntegral (M c).surface := (M c).integral
   have hmodel := hmodels c hc
-  obtain ⟨p, Y, _, T, u, hT, hp⟩ := (Q.hasNodalModel_iff c (M c)).mp hmodel
-  have hg := hmodel.hasToricPresentation.genus_blowupComponent_eq_zero (hD c)
-  have hnodal : p.IsNodalContraction := ⟨hD c, hg, _, _, T, hT, u, hp.symm⟩
+  obtain ⟨p, hnodal⟩ := hmodel.exists_isNodalContraction (hD c)
+  obtain ⟨_, Y, T, hT, u, hp⟩ := hnodal.exists_tower
   let : (Chow.intersectionBilinForm ℂ (M c).surface).IsPerfPair := (M c).isPerfPair_intersectionForm
   have hcomparison : ∃ a : Y ≅ (internalBlowupTower b Q.rays center[χ[c]]).1,
       a.inv ≫ T.toBase ≫ (M c).surface ↘ S =
         (internalBlowupTower b Q.rays center[χ[c]]).2.toTower.toBase ≫
           (Q.fan.algebraicRealization ↘ S) := ⟨u, by
-            rw [← Category.assoc, ← hp, p.projection_over, algebraicRealization_over]⟩
+            rw [← Category.assoc, hp, p.projection_over, algebraicRealization_over]⟩
   rw [internalBlowupTower_eq_alongBoundary] at hcomparison
   obtain ⟨v, hv⟩ := hcomparison
   let hAux := isPerfPair_internal_markedForm Q.regular hrank Q.rays
@@ -157,19 +156,11 @@ private theorem exists_compatible_ordered_periods
       (fun j ↦ by
         obtain ⟨σ, h₀, h₁, hz⟩ := hnodes j
         exact ⟨σ.val, h₀, h₁, hz⟩) P hcharge f 1
-  let point (t : Fin r → ℂˣ) : GeometricRealization.Point Centers[r] :=
-    Over.homMk ((pointsEquiv ℂ (Fin r → ℤ)).symm (centerCharacter t)).val
-      ((pointsEquiv ℂ (Fin r → ℤ)).symm (centerCharacter t)).property
-  have hcenter (t : Fin r → ℂˣ) : center[χ[point t]] = t := by
-    rw [show χ[point t] = centerCharacter t from
-      (pointsEquiv ℂ (Fin r → ℤ)).apply_symm_apply (centerCharacter t)]
-    funext j
-    simp [centerCharacter]
-  refine ⟨point t₀, point t₁, ?_, ?_, ?_, fun _ w ↦ hword w⟩
-  · simpa only [hcenter t₀] using hi₀
-  · simpa only [hcenter t₁] using hi₁
+  refine ⟨centerPoint t₀, centerPoint t₁, ?_, ?_, ?_, fun _ w ↦ hword w⟩
+  · simpa only [centerPoint_parameters] using hi₀
+  · simpa only [centerPoint_parameters] using hi₁
   · intro x
-    simpa only [hcenter t₀, hcenter t₁, Units.val_one, zpow_one] using hper x
+    simpa only [centerPoint_parameters, Units.val_one, zpow_one] using hper x
 
 /-- A prescribed signed boundary isometry has compatible geometric periods at
 two root-free fibers of the same presentation. Both centers belong to every

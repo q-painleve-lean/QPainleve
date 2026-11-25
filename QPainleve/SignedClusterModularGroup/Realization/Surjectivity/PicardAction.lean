@@ -7,7 +7,6 @@ module
 
 public import QPainleve.SignedClusterModularGroup.Realization.Endpoint.PicardAction
 
-import QPainleve.Geometry.Toric.Fan.Presentation.Genus
 import QPainleve.SignedClusterModularGroup.Realization.Anticanonical
 import QPainleve.SignedClusterModularGroup.Realization.Endpoint.Kernel
 import QPainleve.SignedClusterModularGroup.Realization.NodalFiber
@@ -133,21 +132,8 @@ theorem existsUnique_signedPicardEquiv_of_presentation
     existsUnique_signedPicardHom_of_presentation P Q hform hcharge M
       (fun x ↦ models _ (Path.nil.centerPoint_endpoints_mem_noncollision P hker x).2)
       href hD hnef hsq hcan hprim d hmark
-  -- Read the nodal contractions used by the comparison directly from the family models.
-  have hcontract (c' : Point Centers[r]) (hc' : c'.left (default : S) ∈ Path.nil.centerOpen ℂ P) :
-      ∃ p : ContractedToricFiber b Q.rays Q.regular Q.cycle Q.origin Q.inclusion χ[c'] (M c'),
-        p.IsNodalContraction := by
-    have hm := models c' hc'
-    let : (M c').surface.IsProjectiveOver ℂ := (M c').projective
-    let : SmoothOfRelativeDimension 2 ((M c').surface ↘ S) := (M c').smooth
-    let : IsIntegral (M c').surface := (M c').integral
-    let : PrestableFamily (D[M c'].subscheme ↘ S) := (M c').prestable_boundaryImage
-    obtain ⟨p, Y, l, W, e, hW, he⟩ := (Q.hasNodalModel_iff c' (M c')).mp hm
-    refine ⟨p, hD c', ?_, l, Y, W, hW, e, he.symm⟩
-    exact hm.hasToricPresentation.genus_blowupComponent_eq_zero (hD c')
-  choose p hp using hcontract
   have hinj := ρ.ker_eq_bot_iff.mp
-    (signedPicardHom_ker_eq_bot_of_presentation Q P hform hcharge M p hp hD
+    (signedPicardHom_ker_eq_bot_of_presentation Q P hform hcharge M models hD
       href hnef hsq hcan hprim d hmark ρ (fun w _ _ _ ↦ (hρ w).2))
   have hsurj : Function.Surjective ρ := by
     intro g
