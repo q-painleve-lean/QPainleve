@@ -73,15 +73,13 @@ theorem signedLoopInvariants_boundary_eq_some
     (p : fiberAt[src[C,x]]) (q : fiberAt[dst[C,x]]) (hnodal : q.IsNodalContraction)
     (h₀ : D[P (src[C,x])].IsEffectiveCartier)
     {κ : Type*} (basisVectors : κ → Fin r → ℤ) :
-    let orders (j : Fin n) := Fan.rayBoundaryOrders b s
-      (p₀.numberedBoundaryRays hnodal₀.cartier ((ZMod.finEquiv n).toEquiv j))
-    let source := Fan.rayBoundaryOrders b s
-      ((Φ.boundaryNormalizationComponentEquiv hΦ).symm (τ.component origin))
-    ((w.signedLoopInvariants basisVectors orders source).2.2).map (ZMod.finEquiv n).toEquiv =
+    let orders := p₀.numberedBoundaryOrders hnodal₀.cartier
+    ((w.signedLoopInvariants basisVectors orders (orders 0)).2.2).map (ZMod.finEquiv n).toEquiv =
       some (R.boundaryPerm 0) := by
   have h := R.boundaryRayOfOrders_eq_boundaryPerm x p q h₀ hnodal.cartier hcΦ hE hindex
   rw [q.numberedBoundaryRays_eq_of_nodalContractions p₀ hnodal hnodal₀ hsep] at h
-  simpa only [Quiver.Path.signedLoopInvariants_def, Fan.boundaryRayOfOrders_eq_find_coordinates,
+  simpa only [Quiver.Path.signedLoopInvariants_def, p₀.numberedBoundaryOrders_zero,
+    p₀.numberedBoundaryOrders_apply, Fan.boundaryRayOfOrders_eq_find_coordinates,
     Function.Embedding.trans_apply, Equiv.toEmbedding_apply, ← Fan.rayBoundaryOrders_apply_eq_repr,
     ← funext_iff] using h
 

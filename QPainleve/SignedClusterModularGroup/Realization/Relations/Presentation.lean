@@ -68,14 +68,6 @@ local notation "fiber[" Q "," M "," c "]" =>
     (CompleteToricPresentation.inclusion Q) (pointChar(c)) (M c)
 local notation "boundaryClasses[" M "," c₀ "]" => MarkedSurface.boundaryClass (M c₀) (cartier(M c₀))
 
-local notation "orders[" Q "," M "," c₀ "," p₀ "]" =>
-  (fun j : Fin n ↦ Fan.rayBoundaryOrders (Φ := CompleteToricPresentation.fan Q) b
-    (CompleteToricPresentation.rays Q)
-    (ContractedToricFiber.numberedBoundaryRays (Φ := CompleteToricPresentation.fan Q) (M := M c₀)
-      p₀ (cartier(M c₀)) (RingEquiv.toEquiv (ZMod.finEquiv n) j)))
-local notation "start[" Q "]" => Fan.rayBoundaryOrders b (CompleteToricPresentation.rays Q)
-  (CompleteToricPresentation.rayOrder Q (CompleteToricPresentation.origin Q))
-
 /-- In a marked toric presentation of a primitive nef square-zero anticanonical
 cycle, the boundary search succeeds for every signed loop. If it returns the
 label `j`, the marked Picard pullback sends `D l` to `D (η • (l - j))`, where
@@ -95,7 +87,7 @@ theorem exists_realize_signed_loop_with_boundary_label
     (hmark : ∀ c j, (M c).boundaryClass (cartier(M c)) j = boundaryClasses[M,c₀] j)
     (w : Word E E) {κ : Type*} (basisVectors : κ → Fin r → ℤ) :
     let C := w.centerPartialMap ℂ P
-    let orders := orders[Q,M,c₀,p₀]
+    let orders := p₀.numberedBoundaryOrders (cartier(M c₀))
     let d := boundaryClasses[M,c₀]
     let η := (-1 : ℤˣ) ^ w.inversionCount
     ∃ R : GeometricRealization (T₀ := Centers[r]) (T₁ := Centers[r]) M M C (w.xRationalMap ℂ),
@@ -137,15 +129,11 @@ theorem exists_realize_signed_loop_with_boundary_label
     (LinearMap.IsPerfPair.separatingRight inferInstance) x Q.complete hE hindex
     p₀ hnodal₀ (p _ hx₀) (p _ hx₁) (hnodal _ hx₁) (cartier(M _)) basisVectors
   obtain ⟨j, hj, hj₀⟩ := Option.map_eq_some_iff.mp hfind
-  refine ⟨R, hη, hmodels, j, ?_, fun l ↦ ?_⟩
-  · have horigin := (Q.fan.boundaryNormalizationComponentEquiv Q.regular).symm_apply_eq.mpr
-      (Q.component_eq Q.origin)
-    have hz : (ZMod.finEquiv n).toEquiv 0 = 0 := (ZMod.finEquiv n).map_zero
-    simpa only [hz, p₀.numberedBoundaryRays_zero, horigin] using hj
-  · rw [hj₀, ← hη]
-    simpa only [SignedBoundaryIsometryGroup.toIsometry_apply, coe_toSignedBoundaryIsometry,
-      LinearMap.BilinForm.coe_isometryGroupEquivIsometryEquiv_symm] using
-      R.picard_apply_boundaryClass boundaryClasses[M,c₀] (fun c ↦ cartier(M c)) hmark l
+  refine ⟨R, hη, hmodels, j, hj, fun l ↦ ?_⟩
+  rw [hj₀, ← hη]
+  simpa only [SignedBoundaryIsometryGroup.toIsometry_apply, coe_toSignedBoundaryIsometry,
+    LinearMap.BilinForm.coe_isometryGroupEquivIsometryEquiv_symm] using
+    R.picard_apply_boundaryClass boundaryClasses[M,c₀] (fun c ↦ cartier(M c)) hmark l
 
 /-- The integer comparison decides equality of independent X pullbacks of signed loops
 of a primitive nef square-zero cycle. Nodal models are needed on the initial noncollision
@@ -171,7 +159,7 @@ theorem xPullback_eq_iff_signedLoopInvariants_eq_of_presentation
         Q.fan.distinguishedPointHom σ (IsLocalRing.closedPoint ℂ))
     (w v : Word E E)
     {k : ℕ} (β : Basis (Fin k) ℤ E.matrix.mulVecLin.ker) :
-    let orders := orders[Q,M,c₀,p₀]
+    let orders := p₀.numberedBoundaryOrders (cartier(M c₀))
     w.xPullback ℂ = v.xPullback ℂ ↔
       w.signedLoopInvariants (fun j ↦ (β j : Fin r → ℤ)) orders (orders 0) =
         v.signedLoopInvariants (fun j ↦ (β j : Fin r → ℤ)) orders (orders 0) := by
@@ -209,7 +197,7 @@ theorem xPullback_eq_iff_signedLoopInvariants_eq_of_presentation
     hreference (fun c ↦ cartier(M c)) hnef hsq hprim boundaryClasses[M,c₀] hmark
   obtain ⟨R, hR, -⟩ := hreal w
   obtain ⟨R', hR', -⟩ := hreal v
-  -- Identify the charge coordinates and read the starting vector from row zero.
+  -- Identify the charge coordinates for the common boundary order table.
   let : Q.fan.algebraicRealization.IsProjectiveOver ℂ :=
     Q.fan.isProjectiveOver_algebraicRealization_of_isComplete Q.regular Q.complete b
   let : SmoothOfRelativeDimension 2 (Q.fan.algebraicRealization ↘ S) := by
@@ -221,21 +209,15 @@ theorem xPullback_eq_iff_signedLoopInvariants_eq_of_presentation
     hnodal₀ (cartier(M c₀)) rfl
   have hE := P.matrix_eq.symm.trans (congrArg₂ chargeExchangeMatrix hform hcharge)
   have hvertices j := (Q.cycle.component_apply j).symm.trans (Q.component_eq j)
-  have horigin := (Q.fan.boundaryNormalizationComponentEquiv Q.regular).symm_apply_eq.mpr
-    (Q.component_eq Q.origin)
-  have hz : (ZMod.finEquiv n).toEquiv 0 = 0 := (ZMod.finEquiv n).map_zero
-  have hstart : orders[Q,M,c₀,p₀] 0 = start[Q] := by
-    simp only [hz, p₀.numberedBoundaryRays_zero, horigin]
-  simpa only [horigin, hstart] using
-    xPullback_eq_iff_signedLoopInvariants_eq boundaryClasses[M,c₀] (fun c ↦ cartier(M c))
-      hmark R R' hSymm
-      ((M c₀).intersectionForm_boundaryClass (cartier(M c₀)) hnef hsq) hR hR'
-      (w.centerPartialMap_hom (K := ℂ) P) (v.centerPartialMap_hom (K := ℂ) P)
-      Q.complete hE hindex Q.rayOrder hvertices (fun j ↦ (Q.positive j).1) hnodes
-      e he (Q.inclusion_injective hreference) p₀ hnodal₀
-      (U := {c : Point Centers[r] | c.left (default : S) ∈ U₀[P]}) p hnodal
-      (w.centerPoint_endpoints_mem_noncollision P hker)
-      (v.centerPoint_endpoints_mem_noncollision P hker) β
+  exact xPullback_eq_iff_signedLoopInvariants_eq boundaryClasses[M,c₀] (fun c ↦ cartier(M c))
+    hmark R R' hSymm
+    ((M c₀).intersectionForm_boundaryClass (cartier(M c₀)) hnef hsq) hR hR'
+    (w.centerPartialMap_hom (K := ℂ) P) (v.centerPartialMap_hom (K := ℂ) P)
+    Q.complete hE hindex Q.rayOrder hvertices (fun j ↦ (Q.positive j).1) hnodes
+    e he (Q.inclusion_injective hreference) p₀ hnodal₀
+    (U := {c : Point Centers[r] | c.left (default : S) ∈ U₀[P]}) p hnodal
+    (w.centerPoint_endpoints_mem_noncollision P hker)
+    (v.centerPoint_endpoints_mem_noncollision P hker) β
 
 /-- Decide equality of signed loop pullbacks by comparing the three finite invariants.
 The kernel basis is computed from the exchange matrix. Supply the boundary orders
@@ -259,7 +241,7 @@ def decidableXPullbackEq
           Q.marks (Q.cycle.edge j)).val =
         Q.fan.distinguishedPointHom σ (IsLocalRing.closedPoint ℂ))
     (w v : Word E E) (orders : Fin n → Fin r → ℤ)
-    (ho : orders = orders[Q,M,c₀,p₀]) :
+    (ho : orders = p₀.numberedBoundaryOrders (cartier(M c₀))) :
     Decidable (w.xPullback ℂ = v.xPullback ℂ) :=
   let basisVectors := E.matrix.intKernelBasisVectors.2
   decidable_of_iff
@@ -295,7 +277,7 @@ theorem compareSignedLoopLists_eq_some_iff_of_presentation
         ((Q.fan.boundaryIdeal Q.complete.nonempty_cones).subscheme.dualGraphEdgeEquiv
           Q.marks (Q.cycle.edge j)).val =
         Q.fan.distinguishedPointHom σ (IsLocalRing.closedPoint ℂ))
-    (orders : Fin n → Fin r → ℤ) (ho : orders = orders[Q,M,c₀,p₀])
+    (orders : Fin n → Fin r → ℤ) (ho : orders = p₀.numberedBoundaryOrders (cartier(M c₀)))
     (gs hs : List (Generator (Fin r))) (result : Bool) :
     E.compareSignedLoopLists orders gs hs = some result ↔
       ∃ w v : Word E E, w.generators = gs ∧ v.generators = hs ∧
