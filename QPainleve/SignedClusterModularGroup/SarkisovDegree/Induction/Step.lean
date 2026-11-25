@@ -9,8 +9,9 @@ public import QPainleve.Geometry.Toric.Fan.Logarithmic.Factorization.Iso
 public import QPainleve.Geometry.Toric.Fan.Logarithmic.Induction
 public import QPainleve.SignedClusterModularGroup.SarkisovDegree.Induction.Marking
 
-import QPainleve.AlgebraicGeometry.Blowup.Tower.PlaneResolution
+import Mathlib.Analysis.Complex.Polynomial.Basic
 import QPainleve.AlgebraicGeometry.Curves.Node.Comap
+import QPainleve.Geometry.Toric.Fan.Ruling.Quadric
 import QPainleve.SignedClusterModularGroup.SarkisovDegree.Induction.NegativeSection
 import QPainleve.SignedClusterModularGroup.SarkisovDegree.Plane.Induction
 import QPainleve.SignedClusterModularGroup.SarkisovDegree.Quadric.Factorization
@@ -177,9 +178,11 @@ local notation "rankTwo" => Eq.trans (finrank_eq_card_basis b) (Fintype.card_fin
 local macro "planeMeasure[" T:term "," hT:term "," g:term "]" : term =>
   `(let : AlgebraicGeometry.IsNoetherian P := isNoetherian_of_finiteType s
     let x := mark[$T,$hT,s,$g]
-    planeSarkisovBidegree ((Basis.picardTwistEquiv coords) x.1).toNat (∑ j, (-x.2 j).toNat))
+    planeSarkisovBidegree ((Basis.picardTwistEquiv coords) x.1).toNat
+      (sarkisovSecondaryDegree ℂ x.1.toMul).toNat)
 
 private theorem model_marking_of_plane_decrease
+    (hg : g ≫ s = T.toBase ≫ s) (hbir : Scheme.BirationalOver g (𝟙 P))
     (R : IsClosedPointTower.PlaneSarkisovDecrease b hi hT g J) :
     let : Y.Over S := ⟨T.toBase ≫ s⟩
     let : SmoothOfRelativeDimension 2 (Y ↘ S) := hT.smoothOfRelativeDimension s
@@ -214,20 +217,17 @@ private theorem model_marking_of_plane_decrease
   have hB'' : B'.hom ≍ e.hom ≫ g' ≫ (planeIso[b',hi]).inv := by
     rw [← Category.assoc e.hom, hcomp, Category.assoc]
     exact hBh
-  have hm := R.decreases.2
-  obtain ⟨_, I, -, -, -, -, -, horders⟩ :=
-    R.closedPoint.exists_moving_base_ideal_of_plane_resolution g' R.target_over
-  have horder j : -x.2 j = (R.closedPoint.baseMultiplicities I j : ℤ) := horders j
-  have hsum : (∑ j, -x.2 j).toNat = ∑ j, (-x.2 j).toNat := by
-    simp only [horder, ← Nat.cast_sum, Int.toNat_natCast]
   refine ⟨_, ?_, HasPlaneTargetMarking.hirzebruch (A := ⟨_, hreg, hc, c, hcOver, hcDom, hcPole⟩)
     (B := B') R.basis b' R.index hi R.rays R.rayGenerators hB' R.modelTower R.closedPoint
     e g' hC' hB'' R.target_over R.target_birational⟩
-  -- Use the same name for the marking in the sum identity and in the lexicographic comparison.
+  -- Reduce the fan projection of the reconstructed vertex before rewriting the degree.
   change hirzebruchSarkisovBidegree
     ((R.fan.hirzebruchPicardBasis R.basis R.index R.regular R.rays R.rayGenerators).repr
-      x.1 1).toNat (∑ j, -x.2 j).toNat < _
-  rwa [hsum]
+      x.1 1).toNat (sarkisovSecondaryDegree ℂ x.1.toMul).toNat < _
+  dsimp only
+  rw [R.closedPoint.toNat_sarkisovSecondaryDegree_eq_sum g' R.target_over R.target_birational,
+    hT.toNat_sarkisovSecondaryDegree_eq_sum g hg hbir]
+  exact R.decreases.2
 
 include hT in
 /-- A marked plane-to-plane resolution is either terminal or has a decreasing
@@ -290,7 +290,7 @@ theorem exists_sarkisov_step_of_plane_marking
     have hB'plane := hhB.trans (heq_comp rfl rfl
       (congrArg Fan.algebraicRealization ((precomposeSarkisovOfIso_obj_fan ..).trans hB))
       HEq.rfl (hh hB hBh))
-    obtain ⟨next, hlt, hmark⟩ := model_marking_of_plane_decrease R hC hhC hB'fan hB'plane
+    obtain ⟨next, hlt, hmark⟩ := model_marking_of_plane_decrease hg hbir R hC hhC hB'fan hB'plane
     exact Or.inr (HasPlaneTargetDecrease.of_iso rankTwo hD hNode k R.nodal hlt p
       (hA'.trans (precomposeSarkisovOfIso_obj_fan ..)) (refineHom hhA)
       (hB'.trans (precomposeSarkisovOfIso_obj_fan ..)) (refineHom hhB) hmark)
@@ -320,7 +320,7 @@ private theorem exists_path_with_smaller_marking_of_quadric
     let : IsIntegral Y := hT.isIntegral fA
     let x := mark[T,hT,fA,g]
     let β := (A.fan.hirzebruchPicardBasis b 0 A.isRegular r hr).repr x.1 1
-    let d := hirzebruchSarkisovBidegree β.toNat (∑ j, -x.2 j).toNat
+    let d := hirzebruchSarkisovBidegree β.toNat (sarkisovSecondaryDegree ℂ x.1.toMul).toNat
     ∀ (L R : LogarithmicProjection i J),
       L.fan = A.fan → L.hom ≍ T.toBase →
       R.fan = plane[b',hi] → R.hom ≍ g ≫ (planeIso[b',hi]).inv →
@@ -332,6 +332,8 @@ private theorem exists_path_with_smaller_marking_of_quadric
   let := hY
   let := hSmooth
   let := hInt
+  let : A.fan.algebraicRealization.IsProjectiveOver ℂ :=
+    A.fan.isProjectiveOver_quadric b A.isRegular A.isComplete r hr
   have hpole : (A.fan.boundaryIdeal A.isComplete.nonempty_cones).comap T.toBase =
       J * hT.ramificationIdealSheafToBase ℂ := by
     rcases L with ⟨Φ, hreg, hc, l, hl, hdom, hpole⟩
@@ -348,22 +350,25 @@ private theorem exists_path_with_smaller_marking_of_quadric
       R.hom ≍ e.hom ≫ (e.inv ≫ g) ≫ (planeIso[b',hi]).inv := by
     simpa only [Category.assoc, Iso.hom_inv_id_assoc] using hhR
   rcases hresult with ⟨c, Z, m, U, hU, e, hC, hhC, hgo, hgb, -, -, hlt⟩ |
-    ⟨a, c, t, ht, Z, m, U, hU, e, hhC, -, hgo, hgb, -, -, hlt⟩
+    ⟨a, c, t, ht, Z, m, U, hU, e, hhC, hproj, hgo, hgb, -, -, hlt⟩
   · let : IsNoetherian P := isNoetherian_of_finiteType s
-    let y := mark[U,hU,s,e.inv ≫ g]
-    obtain ⟨_, I, -, -, -, -, -, hx⟩ :=
-      hU.exists_moving_base_ideal_of_plane_resolution (e.inv ≫ g) hgo
-    have horder j : -y.2 j = (hU.baseMultiplicities I j : ℤ) := hx j
-    have hsum : (∑ j, (-y.2 j).toNat) = (∑ j, -y.2 j).toNat := by
-      simp only [horder, ← Nat.cast_sum, Int.toNat_natCast]
     refine ⟨_, ?_, C, ⟨hStart ▸ p⟩, .plane c b' hi hC hR U hU e (e.inv ≫ g)
       hhC (targetHom e) hgo hgb⟩
-    -- The two bidegree formulas agree because the exceptional orders are nonnegative.
-    change planeSarkisovBidegree ((Basis.picardTwistEquiv coords) y.1).toNat
-      (∑ j, (-y.2 j).toNat) < d
-    rwa [hsum]
-  · exact ⟨_, hlt, C, ⟨hStart ▸ p⟩,
+    dsimp only [d]
+    rw [hT.sarkisovSecondaryDegree_eq_sum g hg hbir,
+      hU.sarkisovSecondaryDegree_eq_sum (e.inv ≫ g) hgo hgb]
+    exact hlt
+  · let := hproj
+    let : Nonempty C.fan.cones := C.isComplete.nonempty_cones
+    let : SmoothOfRelativeDimension 2 (C.fan.algebraicRealization ↘ S) := by
+      simpa only [← Fan.algebraicRealization_over, rankTwo] using
+        C.fan.smoothOfRelativeDimension_algebraicRealizationStructureMap C.isRegular
+    refine ⟨_, ?_, C, ⟨hStart ▸ p⟩,
       .hirzebruch c b' a hi t ht hR U hU e (e.inv ≫ g) hhC (targetHom e) hgo hgb⟩
+    dsimp only [d]
+    rw [hT.sarkisovSecondaryDegree_eq_sum g hg hbir,
+      hU.sarkisovSecondaryDegree_eq_sum (e.inv ≫ g) hgo hgb]
+    exact hlt
 
 /-- A marked quadric-to-plane resolution gives a strictly decreasing block
 in plane-target induction, with the original resolving surface and target. -/
@@ -377,7 +382,7 @@ theorem exists_sarkisov_step_of_quadric_marking
     let x := mark[T,hT,fA,g]
     let β := (A.fan.hirzebruchPicardBasis b 0 A.isRegular r hr).repr x.1 1
     HasPlaneTargetDecrease A B rankTwo hD hNode
-      (hirzebruchSarkisovBidegree β.toNat (∑ j, -x.2 j).toNat) := by
+      (hirzebruchSarkisovBidegree β.toNat (sarkisovSecondaryDegree ℂ x.1.toMul).toNat) := by
   intro hSmoothA x β
   let := hSmoothA
   let : Y.Over S := ⟨T.toBase ≫ fA⟩
@@ -432,7 +437,7 @@ theorem exists_sarkisov_step_of_hirzebruch_marking_of_no_high_order
     let β := (A.fan.hirzebruchPicardBasis b a A.isRegular r hr).repr x.1 1
     (∀ j, 2 * (-x.2 j) ≤ β) →
       HasPlaneTargetDecrease A B rankTwo hD hNode
-        (hirzebruchSarkisovBidegree β.toNat (∑ j, -x.2 j).toNat) := by
+        (hirzebruchSarkisovBidegree β.toNat (sarkisovSecondaryDegree ℂ x.1.toMul).toNat) := by
   intro hSmoothA x β hlow
   let := hSmoothA
   let : Smooth fA := hSmoothA.smooth
