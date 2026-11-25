@@ -5,7 +5,7 @@ Authors: The QPainleve contributors
 -/
 module
 
-public import QPainleve.LinearAlgebra.Matrix.Kernel
+public import QPainleve.LinearAlgebra.Matrix.Kernel.Basic
 public import QPainleve.SignedClusterModularGroup.Realization.Relations.Basic
 public import QPainleve.SignedClusterModularGroup.Realization.Presentation
 
