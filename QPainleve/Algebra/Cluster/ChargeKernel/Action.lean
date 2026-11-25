@@ -80,6 +80,22 @@ theorem exchangeKernelAction_op_loop (w : Loops) :
   exchangeKernelEquivOfPullback_eq k B _ w.asHom
     (signedClusterModularGroupMap_unop_coe k B w).symm
 
+/-- If the signed action on the exchange kernel is faithful, the transported basis
+vectors determine equality of loop pullbacks. -/
+theorem xPullback_eq_iff_exponentEquiv_eq_on_basis_of_injective
+    (hinj : Function.Injective (exchangeKernelAction k B)) (w v : Word B B)
+    {κ : Type*} (β : Module.Basis κ ℤ E) :
+    w.xPullback k = v.xPullback k ↔
+      ∀ j, w.exponentEquiv (β j : ι → ℤ) = v.exponentEquiv (β j : ι → ℤ) := by
+  have hloop : signedClusterModularGroupMap k B (End.of w) =
+      signedClusterModularGroupMap k B (End.of v) ↔ w.xPullback k = v.xPullback k :=
+    signedClusterModularGroupMap_eq_iff k B (End.of w) (End.of v)
+  rw [← hloop, ← op_injective.eq_iff, ← hinj.eq_iff]
+  simp only [exchangeKernelAction_op_loop, ← Path.coe_exchangeKernelEquiv_apply,
+    Subtype.coe_injective.eq_iff]
+  exact ⟨fun h j ↦ DFunLike.congr_fun h (β j),
+    fun h ↦ LinearEquiv.toLinearMap_injective (β.ext h)⟩
+
 /-- The exchange-kernel action is characterized by the pullback of each Casimir monomial. -/
 theorem exchangeKernelAction_monomial (f : Γᵐᵒᵖ) (x : E) :
     f.unop.unop.val (χ (x : ι → ℤ)) = χ (exchangeKernelAction k B f x : ι → ℤ) := by
