@@ -79,11 +79,11 @@ theorem signedLoopInvariants_comp_of_nodal_contraction
         pure (index.symm ((invariant v).1 • index j + index k))) := by
   intro index orders invariant
   let d := M₀.boundaryClass cartier[M₀]
-  obtain ⟨Θ, _, _, _, hΘ⟩ :=
+  obtain ⟨_, _, _, Θ, _, _, _, _, _, _, hInv⟩ :=
     Q.exists_picardEquiv_signedLoopInvariants_of_nodal_contraction p₀ hnodal₀ hE hprim hnef hsq
-  obtain ⟨j, hj, hw⟩ := hΘ w β
-  obtain ⟨k, hk, hv⟩ := hΘ v β
-  obtain ⟨l, hl, hcomp⟩ := hΘ (w.comp v) β
+  obtain ⟨j, hj, hw⟩ := hInv w β
+  obtain ⟨k, hk, hv⟩ := hInv v β
+  obtain ⟨l, hl, hcomp⟩ := hInv (w.comp v) β
   have hprod : Θ eval[w.comp v] = Θ eval[w] * Θ eval[v] := by
     -- Endomorphism multiplication executes the right-hand path first.
     have hEnd : (End.of (w.comp v) : End ((Paths.of (SkewExchangeMatrix (Fin r))).obj E)) =

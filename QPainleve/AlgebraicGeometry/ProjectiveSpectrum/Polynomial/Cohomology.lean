@@ -8,7 +8,7 @@ module
 public import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.Polynomial.SymmetricAlgebra
 public import TauCeti.AlgebraicGeometry.Cohomology.Module.Base
 public import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.Polynomial.Basic
-import TauCeti.AlgebraicGeometry.Cohomology.ClosedImmersion.Linear
+import QPainleve.AlgebraicGeometry.Cohomology.Isomorphism
 
 /-!
 # Cohomology of polynomial and symmetric-algebra twists
@@ -41,15 +41,10 @@ public noncomputable def cohomologyPolynomialTwistingSheafLinearEquiv
   let polynomialGrading := MvPolynomial.homogeneousSubmodule ι R
   let symmetricGrading := TauCeti.SymmetricAlgebra.homogeneousSubmodule R M
   let e : Proj polynomialGrading ≅ Proj symmetricGrading := b.polynomialProjIso
-  let T : (Proj symmetricGrading).Modules := twistingSheaf symmetricGrading m
   let : e.hom.IsOver (Spec (.of R)) := ⟨by
     rw [hOver, TauCeti.SymmetricAlgebra.over_eq_projToSpec]
     exact b.polynomialProjIso_hom_over⟩
-  let a : Cohomology ((pullback e.hom).obj T) q ≃ₗ[R]
-      Cohomology (twistingSheaf polynomialGrading m) q :=
-    cohomologyBaseLinearEquivOfIso R (b.polynomialProjIsoPullbackTwistingSheafIso m) q
-  let c : Cohomology ((pullback e.hom).obj T) q ≃ₗ[R] Cohomology T q :=
-    e.hom.cohomologyPullbackBaseLinearEquivOfIsIso R T q
-  exact a.symm.trans c
+  exact e.hom.cohomologyBaseLinearEquivOfPullbackIso R
+    (b.polynomialProjIsoPullbackTwistingSheafIso m) q
 
 end Module.Basis
