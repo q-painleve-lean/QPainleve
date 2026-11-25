@@ -56,6 +56,18 @@ theorem range_clusterModularGroupInclusion (hB : B.matrix ≠ 0) :
     MonoidHom.range_eq_top_of_surjective _ (unsignedEquivSignKer k B hB).surjective,
     Subgroup.map_top, Subgroup.range_subtype]
 
+/-- A sign homomorphism on opposite point maps that evaluates by inversion parity
+has the unsigned inclusion as its kernel on point maps. -/
+theorem ker_unop_eq_range_clusterModularGroupInclusion_of_apply (hB : B.matrix ≠ 0)
+    (s : (SignedClusterModularGroup k B)ᵐᵒᵖ →* ℤˣ)
+    (hs : ∀ w : End ((Paths.of (SkewExchangeMatrix ι)).obj B),
+      s (op (signedClusterModularGroupMap k B w)) = (-1 : ℤˣ) ^ w.asHom.inversionCount) :
+    s.ker.unop = (clusterModularGroupInclusion k B).range := by
+  rw [range_clusterModularGroupInclusion k B hB]
+  ext g
+  obtain ⟨w, rfl⟩ := signedClusterModularGroupMap_surjective k B g
+  simp only [Subgroup.mem_unop, MonoidHom.mem_ker, hs, signedInversionSign_apply]
+
 /-- The exact sequence of unsigned maps, signed maps, and inversion signs. -/
 def signedInversionSignExtension (hB : B.matrix ≠ 0)
     (hs : Function.Surjective (signedInversionSign k B hB)) :

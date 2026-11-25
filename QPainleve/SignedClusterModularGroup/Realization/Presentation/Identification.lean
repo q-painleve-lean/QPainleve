@@ -103,10 +103,9 @@ theorem exists_picardGroupEquivs_of_toric_presentation
     (by rwa [hδ]) (by rwa [hδ]) (by rwa [hδ])
   dsimp only at hgroups
   rw [hd] at hgroups
-  obtain ⟨M, hD', hmark, Θ, Θrot, hM, hmodels, hwords, hsign, hrot⟩ := hgroups
+  obtain ⟨M, hD', hmark, Θ, -, hM, hmodels, hwords, hsign, -⟩ := hgroups
   have hmatch (j : ZMod n) : μ.symm (d j) = (μ.symm ∘ d) ((1 : ℤˣ) • j + 0) := by simp
   let α := SignedBoundaryIsometryGroup.congr μ.symm hmatch
-  let β := boundaryRotationGroupCongr μ.symm hmatch
   have hcomp : (sign B d).comp (Θ.trans α).toMonoidHom =
       (sign H (μ.symm ∘ d)).comp Θ.toMonoidHom :=
     MonoidHom.ext fun x ↦ by
@@ -114,19 +113,15 @@ theorem exists_picardGroupEquivs_of_toric_presentation
         α, SignedBoundaryIsometryGroup.sign_apply, coe_congr]
   refine ⟨{ form := H, marking := μ, basis := b', presentation := Q
             center := c, evaluation := f, exchangeMatrix := E, family := M
-            signedEquiv := Θ.trans α, unsignedEquiv := Θrot.trans β, matrix_eq := hE
+            signedEquiv := Θ.trans α, matrix_eq := hE
             family_center := hM, hasNodalModel := hmodels, boundaryClass_eq := hmark
             sign_signedEquiv_apply_word := fun w ↦ by
               simpa only [MonoidHom.comp_apply, SignedBoundaryIsometryGroup.sign_apply,
                 MulEquiv.coe_toMonoidHom] using (DFunLike.congr_fun hcomp _).trans (hwords w).1
-            signedEquiv_apply_word := ?_, sign_ker_unop := ?_
-            rotationInclusion_unsignedEquiv_apply := ?_ }, hframe, hrays⟩
+            signedEquiv_apply_word := ?_, sign_ker_unop := ?_ }, hframe, hrays⟩
   · intro w C _ _ R hR
     simp only [MulEquiv.trans_apply, α, coe_congr, (hwords w).2 R hR, coe_toSignedBoundaryIsometry]
     rfl
   · rw [hcomp, hsign]
-  · intro x
-    simpa only [MulEquiv.trans_apply, α, β, congr_rotationInclusion] using
-      congrArg α (hrot x)
 
 end QPainleve.SignedClusterModularGroup

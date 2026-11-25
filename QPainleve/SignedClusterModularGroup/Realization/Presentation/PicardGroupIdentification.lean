@@ -10,13 +10,16 @@ public import QPainleve.LinearAlgebra.BilinearForm.Conjugation
 public import QPainleve.SignedClusterModularGroup.Realization.Presentation
 public import QPainleve.SignedClusterModularGroup.Realization.Surface.PrimeClass
 
+import QPainleve.SignedClusterModularGroup.Realization.PicardAction
+
 /-!
 # Picard group identifications of numbered anticanonical pairs
 
 A marked toric family with a prescribed numbered reference fiber determines
 signed and unsigned group equivalences on the original Picard lattice. The
 identification records the seed, the family, and the formulas for evaluating
-the equivalences on geometric loop realizations and unsigned maps.
+the signed equivalence on geometric loop realizations. Restricting it to the
+sign kernel gives the unsigned equivalence.
 -/
 
 public section
@@ -78,9 +81,6 @@ structure PicardGroupIdentification (i : N →+ V) (r : ℕ)
   /-- The opposite signed cluster modular group identifies with signed boundary isometries. -/
   signedEquiv : (SignedClusterModularGroup ℂ exchangeMatrix)ᵐᵒᵖ ≃*
     signedBoundaryIsometryGroup B classes[A,hD]
-  /-- The opposite unsigned cluster modular group identifies with boundary rotations. -/
-  unsignedEquiv : (ClusterModularGroup ℂ exchangeMatrix)ᵐᵒᵖ ≃*
-    boundaryRotationGroup B classes[A,hD]
   /-- The exchange matrix comes from the ordered ray charges in the oriented frame. -/
   matrix_eq : exchangeMatrix.matrix =
     chargeExchangeMatrix basis.detDualEquiv.toLinearMap (Fan.rayChargeMap presentation.rays)
@@ -115,13 +115,31 @@ structure PicardGroupIdentification (i : N →+ V) (r : ℕ)
   /-- The sign kernel on point maps is the image of the unsigned group. -/
   sign_ker_unop : ((sign B classes[A,hD]).comp signedEquiv.toMonoidHom).ker.unop =
     (clusterModularGroupInclusion ℂ exchangeMatrix).range
-  /-- The two Picard equivalences agree on unsigned maps via rotation inclusion. -/
-  rotationInclusion_unsignedEquiv_apply (x : (ClusterModularGroup ℂ exchangeMatrix)ᵐᵒᵖ) :
-    rotationInclusion B classes[A,hD] (unsignedEquiv x) =
-      signedEquiv (MonoidHom.op (clusterModularGroupInclusion ℂ exchangeMatrix) x)
 
 attribute [simp] PicardGroupIdentification.family_center
   PicardGroupIdentification.sign_signedEquiv_apply_word
-  PicardGroupIdentification.rotationInclusion_unsignedEquiv_apply
+
+namespace PicardGroupIdentification
+
+variable {i : N →+ V} {r : ℕ}
+  {A : Scheme.NodalCycleNumbering (X := D.subscheme)
+    (Empty.elim : Empty → (D.subscheme ↘ S).smoothLocus) n} {hD : D.IsEffectiveCartier}
+  (P : PicardGroupIdentification i r A hD)
+
+/-- The Picard equivalence on unsigned maps is the restriction to the sign kernel,
+identified with the group of boundary rotations. -/
+noncomputable def unsignedEquiv : (ClusterModularGroup ℂ P.exchangeMatrix)ᵐᵒᵖ ≃*
+    boundaryRotationGroup B classes[A,hD] :=
+  picardRotationEquiv P.signedEquiv P.sign_ker_unop
+
+/-- Including the boundary rotation gives the signed Picard action on the same map. -/
+@[simp]
+theorem rotationInclusion_unsignedEquiv_apply
+    (x : (ClusterModularGroup ℂ P.exchangeMatrix)ᵐᵒᵖ) :
+    rotationInclusion B classes[A,hD] (P.unsignedEquiv x) =
+      P.signedEquiv (MonoidHom.op (clusterModularGroupInclusion ℂ P.exchangeMatrix) x) :=
+  rotationInclusion_picardRotationEquiv_apply P.signedEquiv P.sign_ker_unop x
+
+end PicardGroupIdentification
 
 end QPainleve.SignedClusterModularGroup

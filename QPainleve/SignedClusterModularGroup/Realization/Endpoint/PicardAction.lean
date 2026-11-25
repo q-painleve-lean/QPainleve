@@ -112,11 +112,8 @@ theorem existsUnique_signedPicardHom_of_presentation
         exact ⟨Cw[word,P], hdom, hover, R, hη, fun c ↦ (hmodels c).nonempty_contractedToricFiber⟩)
   refine ⟨ρ, ⟨hρ, ?_⟩, fun ρ' hρ' ↦ huniq ρ' hρ'.1⟩
   have hE := Q.exchangeMatrix_ne_zero_of_chargeIndex_ne_zero P hform hcharge hindex
-  rw [range_clusterModularGroupInclusion ℂ E hE]
-  ext g
-  obtain ⟨w, rfl⟩ := signedClusterModularGroupMap_surjective ℂ E g
-  simp only [Subgroup.mem_unop, MonoidHom.mem_ker, MonoidHom.comp_apply, (hρ w).1,
-    signedInversionSign_apply]
+  exact ker_unop_eq_range_clusterModularGroupInclusion_of_apply ℂ E hE
+    ((SignedBoundaryIsometryGroup.sign H d).comp ρ) fun w ↦ (hρ w).1
 
 end GeometricRealization
 

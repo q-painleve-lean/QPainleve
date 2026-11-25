@@ -166,37 +166,26 @@ theorem exists_picardGroupEquivs_over_field_of_nodal_model
   let := Q.complete.nonempty_cones
   let := Q.prestable
   let := Q.neZero
-  obtain ⟨M, hD, hmark, Θ, Θrot, hM, hmodels, hΘ, hker, hinc⟩ :=
+  obtain ⟨M, hD, hmark, Θ, -, hM, hmodels, hΘ, -, -⟩ :=
     Q.exists_picardGroupEquivs_of_nodal_model href hE hprim hnef hsq
   let signedEquiv := Q.signedSpecializationEquiv k href hE hprim hnef hsq
-  let unsignedEquiv := Q.unsignedSpecializationEquiv k href hE hprim hnef hsq
-  refine ⟨M, hD, hmark, (MulEquiv.op signedEquiv).symm.trans Θ,
-    (MulEquiv.op unsignedEquiv).symm.trans Θrot, hM, hmodels, ?_, ?_, ?_⟩
-  · intro w
+  let Θk := (MulEquiv.op signedEquiv).symm.trans Θ
+  have hmap (w : Word E E) :
+      Θk (op (signedClusterModularGroupMap k E (End.of w))) =
+        Θ (op (signedClusterModularGroupMap ℂ E (End.of w))) := by
     have hw : signedEquiv.symm (signedClusterModularGroupMap k E (End.of w)) =
         signedClusterModularGroupMap ℂ E (End.of w) :=
       signedEquiv.symm_apply_eq.mpr (by simp [signedEquiv])
-    simpa only [MulEquiv.trans_apply, MulEquiv.op_apply_symm_apply, Function.comp_apply,
-      unop_op, hw] using hΘ w
-  · have hnonzero := href.exchangeMatrix_ne_zero hE hprim hnef hsq
-    rw [range_clusterModularGroupInclusion k E hnonzero]
-    ext g
-    obtain ⟨g, rfl⟩ := signedEquiv.surjective g
-    have hg := SetLike.ext_iff.mp
-      (hker.trans (range_clusterModularGroupInclusion ℂ E hnonzero)) g
-    simp only [Subgroup.mem_unop, MonoidHom.mem_ker, MonoidHom.comp_apply,
-      MulEquiv.coe_toMonoidHom, MulEquiv.trans_apply, MulEquiv.op_apply_symm_apply,
-      Function.comp_apply, unop_op, MulEquiv.symm_apply_apply] at hg ⊢
-    simpa only [signedEquiv, coe_signedSpecializationEquiv, signedInversionSign_specialization]
-      using hg
-  · intro g
-    obtain ⟨g, rfl⟩ := (MulEquiv.op unsignedEquiv).surjective g
-    have hcomm :
-        MonoidHom.op (clusterModularGroupInclusion k E) (MulEquiv.op unsignedEquiv g) =
-          MulEquiv.op signedEquiv (MonoidHom.op (clusterModularGroupInclusion ℂ E) g) := by
-      simp only [MulEquiv.op_apply_apply, MonoidHom.op_apply_apply, Function.comp_apply, unop_op,
-        signedEquiv, unsignedEquiv, coe_signedSpecializationEquiv, coe_unsignedSpecializationEquiv,
-        signedClusterModularGroupSpecialization_inclusion]
-    simpa only [MulEquiv.trans_apply, hcomm, MulEquiv.symm_apply_apply] using hinc g
+    simp only [Θk, MulEquiv.trans_apply, MulEquiv.op_apply_symm_apply, Function.comp_apply,
+      unop_op, hw]
+  have hker := ker_unop_eq_range_clusterModularGroupInclusion_of_apply k E
+    (href.exchangeMatrix_ne_zero hE hprim hnef hsq) ((sign B _).comp Θk.toMonoidHom) fun w ↦ by
+      rw [MonoidHom.comp_apply, MulEquiv.coe_toMonoidHom]
+      exact (congrArg (sign B _) (hmap w.asHom)).trans (hΘ w.asHom).1
+  refine ⟨M, hD, hmark, Θk, picardRotationEquiv Θk hker, hM, hmodels, ?_, hker,
+    rotationInclusion_picardRotationEquiv_apply Θk hker⟩
+  intro w
+  rw [hmap]
+  exact hΘ w
 
 end QPainleve.SignedClusterModularGroup.CompleteToricPresentation
