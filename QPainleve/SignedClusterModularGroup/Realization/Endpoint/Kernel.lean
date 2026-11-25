@@ -10,9 +10,9 @@ public import QPainleve.SignedClusterModularGroup.Realization.NumberedRays
 
 import QPainleve.AlgebraicGeometry.Chow.RationalSurface.Basic
 import QPainleve.Geometry.Toric.Fan.Boundary.Numbering
-import QPainleve.Geometry.Toric.Fan.Rationality
 import QPainleve.Geometry.Toric.Fan.Subdivision.Projective
 import QPainleve.SignedClusterModularGroup.Realization.BranchAction
+import QPainleve.SignedClusterModularGroup.Realization.NodalFiber
 import TauCeti.LinearAlgebra.Matrix.Dual
 
 /-!
@@ -83,20 +83,11 @@ private theorem smooth_fan :
   rw [← hN, Q.fan.algebraicRealization_over]
   exact Q.fan.smoothOfRelativeDimension_algebraicRealizationStructureMap Q.regular
 
-private theorem rational_fan : IsRationalOver (Q.fan.algebraicRealization ↘ S) := by
-  obtain ⟨hdet, σ, h₀, h₁⟩ := Q.positive 0
-  have hne : Q.rayOrder 0 ≠ Q.rayOrder (0 + 1) := by
-    intro h
-    rw [← h, b.detDualEquiv_self] at hdet
-    exact zero_ne_one hdet
-  have hN : Module.finrank ℤ N = 2 := by simpa using Module.finrank_eq_card_basis b
-  exact Q.fan.isRationalOver_of_ray_ne_of_le Q.regular hN hne h₀ h₁
-
 variable [Q.fan.algebraicRealization.IsProjectiveOver ℂ]
   [SmoothOfRelativeDimension 2 (Q.fan.algebraicRealization ↘ S)]
 
 private theorem separatingRight_aux : (Aux).SeparatingRight := by
-  let : IsRationalOver (Q.fan.algebraicRealization ↘ S) := rational_fan Q
+  let : IsRationalOver (Q.fan.algebraicRealization ↘ S) := Q.isRationalOver_fan
   have hperf := Chow.isPerfPair_intersectionBilinForm_of_isRationalOver ℂ Q.fan.algebraicRealization
   refine LinearMap.BilinForm.separatingRight_prod_iff.mpr ⟨hperf.separatingRight, ?_⟩
   intro y hy
