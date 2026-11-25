@@ -109,8 +109,8 @@ theorem exists_sarkisov_path_of_quadric_corner
   have hshift0 : shift = 0 := hshift.elim id id
   have he0 : e = 0 := by simpa only [hshift0, mul_zero, sub_zero] using he
   subst he0
-  obtain ⟨M, q, b', t, ht, W, R, hR, u, hlen, hmap, hM, hproj, hg', hbir', -, -, -, -,
-    ha, hβ, hy, -, -⟩ :=
+  obtain ⟨M, q, b', t, ht, W, R, hR, u, hlen, hmap, hM, hproj, hg', hbir', -, -, -, -, -,
+    ha, hβ, hy, -, -, -⟩ :=
     hT.exists_sarkisov_path_of_toric_corner a 0 hΦ hc s hs g hg hbir σ hcone j hj hfirst D hpole
   let : X[M.fan].IsProjectiveOver ℂ := hproj
   obtain ⟨d, J, Z, U, hU, k, hproj, hg'', hbir'', hdeg, hneg, htail, -, hstar⟩ :=

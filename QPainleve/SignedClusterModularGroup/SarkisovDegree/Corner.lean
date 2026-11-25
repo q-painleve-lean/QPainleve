@@ -15,6 +15,7 @@ public import QPainleve.Geometry.Toric.Fan.Smooth
 public import QPainleve.SignedClusterModularGroup.SarkisovDegree.ToricLink
 
 import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
+import QPainleve.AlgebraicGeometry.Morphisms.IsoLocus
 import QPainleve.AlgebraicGeometry.Morphisms.Modification.Birational
 import QPainleve.AlgebraicGeometry.RationalMap.FunctionField
 import QPainleve.Geometry.Toric.Fan.Boundary.Subdivision
@@ -77,6 +78,27 @@ private theorem isModification_corner_projection {F : Fan i} [Nonempty Φ.cones]
   rw [← hv]
   infer_instance
 
+private theorem first_center_off_reverse_corner {F Ψ : Fan i}
+    (s : F.IsSubdivision Φ) (t : F.IsSubdivision Ψ)
+    {p : Fin (n + 1) → X[Φ]} {q : Fin (1 + n) → X[Ψ]} {j : Fin (n + 1)}
+    (hs : (π[s]).centre = {p j}) (ht : (π[t]).centre = {q 0})
+    (hpts : ∀ l : Fin n, ∃ z : X[F], π[s] z = p (j.succAbove l) ∧ π[t] z = q (l.natAdd 1))
+    (l : Fin n) (hl : p (j.succAbove l) ≠ p j) (hl' : q (l.natAdd 1) ≠ q 0)
+    (hfirst : ∀ k < j.succAbove l, p k ≠ p (j.succAbove l)) :
+    ∀ k < l.natAdd 1, q k ≠ q (l.natAdd 1) := by
+  have hs' : p (j.succAbove l) ∉ (π[s]).centre := by simpa only [hs, Set.mem_singleton_iff]
+  have ht' : q (l.natAdd 1) ∉ (π[t]).centre := by simpa only [ht, Set.mem_singleton_iff]
+  have hhead : q (Fin.castAdd n (0 : Fin 1)) ∉ (π[t]).isoLocus := by
+    have hzero : Fin.castAdd n (0 : Fin 1) = 0 := rfl
+    rw [hzero, ← SetLike.mem_coe, ← Set.mem_compl_iff, ← Scheme.Hom.centre_def, ht]
+    exact Set.mem_singleton _
+  obtain ⟨z, hz, hz'⟩ := hpts l
+  rw [← hz, Scheme.Hom.centre_def, Set.mem_compl_iff, not_not, SetLike.mem_coe] at hs'
+  rw [← hz', Scheme.Hom.centre_def, Set.mem_compl_iff, not_not, SetLike.mem_coe] at ht'
+  rw [← hz']
+  exact ((π[s]).first_occurrence_of_projected_points (π[t]) hhead hpts hs' ht' l hz.symm).2
+    (fun k hk ↦ hz.symm ▸ hfirst _ (Fin.strictMono_succAbove j hk))
+
 private theorem toric_corner_baseCenter_ruling {F Ψ : Fan i}
     (b d : Basis (Fin 2) ℤ N) (σ : Φ.cones) (τ : Ψ.cones)
     (hσ : σ.val = hull ℝ (Set.range (i ∘ b))) (hτ : τ.val = hull ℝ {i (d 1), i (-d 0)})
@@ -122,6 +144,8 @@ point of the common blowup. The reverse center lies over the same point of the
 ruling as the selected center, and every other center retains its ruling value.
 Centers in the open orbit of the contracted fiber project to the reverse corner.
 Those on the other invariant fiber stay on its open orbit and preserve first occurrences.
+A retained first center away from the pivot whose image differs from the reverse corner
+is still first.
 
 For a class with fiber and section coefficients `a, β` and selected base order
 `m`, the new coordinates are `a + β - m, β` with reverse order `β - m`.
@@ -179,6 +203,10 @@ theorem exists_sarkisov_decrease_of_toric_corner
         Ψ.characterRuling (b.coord 1).toAddMonoidHom h₁ (hU.baseCenter l) =
           Φ.characterRuling (b.coord 1).toAddMonoidHom h₀
             (Fin.addCases (fun _ : Fin 1 ↦ hT.baseCenter j) (hT.baseCenter ∘ j.succAbove) l)) ∧
+      (∀ l : Fin n, hT.baseCenter (j.succAbove l) ≠ hT.baseCenter j →
+        hU.baseCenter (l.natAdd 1) ≠ hU.baseCenter 0 →
+        (∀ k < j.succAbove l, hT.baseCenter k ≠ hT.baseCenter (j.succAbove l)) →
+        ∀ k < l.natAdd 1, hU.baseCenter k ≠ hU.baseCenter (l.natAdd 1)) ∧
       (k.inv ≫ g) ≫ p = U.toBase ≫ f[Ψ] ∧
       Scheme.BirationalOver (k.inv ≫ g) (𝟙 P) ∧
       IsModification q ∧
@@ -276,9 +304,14 @@ theorem exists_sarkisov_decrease_of_toric_corner
     intro m hm
     rw [hcenters, hs, ← hl]
     exact hfirst'' _ ((Fin.strictMono_succAbove j) hm)
+  have hsrc := Φ.centre_eq_singleton_distinguishedPoint_of_blowup hΦ rankTwo(b) σ π[s] v hv
+  have htgt := Ψ.centre_eq_singleton_distinguishedPoint_of_blowup hΨ rankTwo(d) τ π[t] v' hv'
+  rw [← hj] at hsrc
+  rw [← hhead] at htgt
   refine ⟨Ψ, F, hΨ, hF, hc', hcF, d, τ, s, t, v, v', q, r, r', hr, hr', Z, U, hU, k',
     hd₀, hd₁, hτ, hv, hv', hstar, hstar', hq, hq', hpts, hhead, hcoll, hstay,
-    toric_corner_baseCenter_ruling b d σ τ hσ hτ hd₀ hd₁ s t j hj hhead hpts, hover, hbir', ?_⟩
+    toric_corner_baseCenter_ruling b d σ τ hσ hτ hd₀ hd₁ s t j hj hhead hpts,
+    first_center_off_reverse_corner s t hsrc htgt hpts, hover, hbir', ?_⟩
   -- Identify the rational partial composites and their poles on the same resolution.
   let : Nonempty Ψ.cones := hc'.nonempty_cones
   have : IsModification π[s] := isModification_corner_projection σ s v hv

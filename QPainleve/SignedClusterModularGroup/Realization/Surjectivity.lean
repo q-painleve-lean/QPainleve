@@ -8,6 +8,7 @@ module
 public import QPainleve.Geometry.Toric.Fan.Logarithmic.Word.Endpoint
 public import QPainleve.SignedClusterModularGroup.Realization.Endpoint.PicardAction
 
+import QPainleve.Geometry.Toric.Fan.Logarithmic.Word.Factorization
 import QPainleve.SignedClusterModularGroup.Realization.Specialization
 
 /-!
@@ -22,11 +23,13 @@ map to reach a different point of the target presentation.
 The word is supplied by
 `Fan.LogarithmicProjection.exists_word_of_resolved_sarkisov_path_to_model`; the marked
 comparison uses `FiberRealization.marked_actions_eq_of_compOfDefined_on_resolution`.
+For a factorization on a nodal refinement, the fixed-center evaluation also
+descends to the original marked surface.
 -/
 
 public section
 
-open AlgebraicGeometry CategoryTheory MulOpposite Scheme
+open AlgebraicGeometry CategoryTheory Module MulOpposite Scheme
 open QPainleve.CharacterTorus QPainleve.Cluster
 open TauCeti TauCeti.AlgebraicGeometry TauCeti.Toric
 
@@ -36,6 +39,8 @@ local notation "S" => Spec (CommRingCat.of ℂ)
 local notation "Centers[" r "]" => Over.mk (structureMap ℂ (Fin r → ℤ))
 local notation "XTor[" r "]" => scheme ℂ (Fin r →₀ ℤ)
 local notation "D[" M "]" => Scheme.Hom.ker (Over.Hom.left (Arrow.hom (MarkedSurface.pair M)))
+local notation "classOf(" h ")" =>
+  (LineBundleClass.mk (Scheme.IdealSheafData.IsEffectiveCartier.toInvertibleSheaf h))⁻¹
 local notation "χ[" c "]" => pointsEquiv ℂ _
   (Subtype.mk (Over.Hom.left c) (Over.w c))
 local notation "src[" C "," x "]" =>
@@ -206,5 +211,74 @@ theorem exists_word_signedPicardHom_eq_of_resolved_sarkisov_path
   refine ⟨v', hvalue, hfree, ?_⟩
   rw [(Quiver.Path.xRationalMap_eq_iff ℂ v' v).mpr hv', hF]
   exact hu
+
+variable [IsNoetherian Z] in
+/-- A resolved factorization of two ordered models of a specified pair isomorphism
+gives a loop with the prescribed signed Picard action. The endpoint evaluations
+are compared on a dominating surface and the resulting evaluation square holds
+on the original source fiber. For a positive action the loop is inversion-free. -/
+theorem exists_word_signedPicardHom_eq_of_resolved_sarkisov_factorization
+    (factorization : HasResolvedSarkisovFactorization A A')
+    (U : OrderedToricModel A r) (U' : OrderedToricModel A' r)
+    (hCartier : D.IsEffectiveCartier) (hU : U.exchangeMatrix = E) (hU' : U'.exchangeMatrix = E)
+    (P : ChargeSeed E N) (hform : P.form = b.detDualEquiv.toLinearMap)
+    (hcharge : P.charge = Fan.rayChargeMap Q.rays)
+    (models : ∀ c : Point Centers[r], c.left (default : S) ∈ Quiver.Path.nil.centerOpen ℂ P →
+      Q.HasNodalModel c (M c))
+    {c₀ c₁ : Point Centers[r]}
+    (hP : Q.HasNodalModel c₁ (M c₁)) [IsRationalOver ((M c₀).surface ↘ S)]
+    (hnef : (classOf(hD c₀)).IsNef ℂ ((M c₀).surface ↘ S))
+    (hsq : Chow.classIntersectionNumber ℂ (M c₀).surface classOf(hD c₀) classOf(hD c₀) = 0)
+    (hcan : letI : SmoothOfRelativeDimension 2 ((M c₀).surface ↘ S) := (M c₀).smooth
+      classOf(hD c₀) = (LineBundleClass.mk (canonicalBundle ℂ (M c₀).surface 2))⁻¹)
+    (hprim : IsPrimitive (Additive.ofMul classOf(hD c₀)))
+    (hgeneric : ∀ w : Word E E, c₀.left (default : S) ∈ w.centerOpen ℂ P)
+    (ρ : (SignedClusterModularGroup ℂ E)ᵐᵒᵖ →* signedBoundaryIsometryGroup B d)
+    (hρ : ∀ (w : Word E E) (R : GeometricRealization M M Cw[w,P] (w.xRationalMap ℂ)),
+      Models[Cw[w,P]] → ρ eval[E,w] = R.toSignedBoundaryIsometry d hD hmark)
+    (e : (M c₀).pair ≅ (M c₁).pair) (π : Z ⤏ (M c₀).surface) [π.IsDominant]
+    (hev₀ : U.xEvaluation = π.comp (M c₀).evaluation)
+    (hev₁ : U'.xEvaluation = π.comp ((surfaceIso e).hom.toRationalMap.comp (M c₁).evaluation))
+    (hpic : ∀ a, (M c₀).picardMarking ((toIsometry B d g).val a) =
+      Additive.ofMul (LineBundleClass.pullback (surfaceIso e).hom ((M c₁).picardMarking a).toMul))
+    (hsgn : letI : PrestableFamily ((M c₀).boundary ↘ S) := (M c₀).prestable
+      letI : PrestableFamily ((M c₁).boundary ↘ S) := (M c₁).prestable
+      DihedralGroup.cycleOrientationSign ((boundaryIso e).boundaryCycleAction
+        (M c₀).cycle (M c₁).cycle) = sign B d g) :
+    letI : IsIntegral (M c₀).surface := (M c₀).integral
+    ∃ w : Word E E, ρ eval[E,w] = g ∧ (sign B d g = 1 → w.inversionCount = 0) ∧
+      ∃ h, (M c₀).evaluation.compOfDefined (w.xRationalMap ℂ) h =
+        (surfaceIso e).hom.toRationalMap.comp (M c₁).evaluation := by
+  let : IsIntegral (M c₀).surface := (M c₀).integral
+  let := Q.complete.nonempty_cones
+  let := Q.neZero
+  let := Q.prestable
+  have hE := P.matrix_eq.symm.trans (congrArg₂ chargeExchangeMatrix hform hcharge)
+  have hM := models c₀ (hgeneric Quiver.Path.nil)
+  have hindex := Q.chargeIndex_ne_zero_of_anticanonical_cycle hM (hD c₀) hnef hsq hcan hprim
+  have hker : E.matrix.mulVecLin.ker = P.charge.ker := by
+    rw [hE, hcharge]
+    exact Fan.ker_chargeExchangeMatrix_rayChargeMap b Q.rays hindex
+  obtain ⟨w, _, hw⟩ := exists_word_of_resolved_sarkisov_factorization factorization U U' hCartier
+  generalize U.exchangeMatrix = E₀ at w hU hw
+  generalize U'.exchangeMatrix = E₁ at w hU' hw
+  subst E₀ E₁
+  rw [hev₀, hev₁] at hw
+  obtain ⟨R, hη, _, htarget⟩ := exists_realize_signed_loop w P Q hform hcharge M
+    (fun x ↦ models _ (Quiver.Path.nil.centerPoint_endpoints_mem_noncollision P hker x).2)
+    hM hD hnef hsq hcan hprim d hmark
+  have htargets : Models[Cw[w,P]] := fun x ↦ by
+    obtain ⟨q, _⟩ := (Q.hasNodalModel_iff _ _).mp (htarget x)
+    exact ⟨q⟩
+  obtain ⟨q, _⟩ := (Q.hasNodalModel_iff c₁ (M c₁)).mp hP
+  have hvalue := hρ w R htargets
+  have hparity : sign B d (ρ eval[E,w]) = (-1 : ℤˣ) ^ w.inversionCount := by
+    rw [hvalue, SignedBoundaryIsometryGroup.sign_apply, coe_toSignedBoundaryIsometry, hη]
+  obtain ⟨v, hvw, hv, hfree⟩ := exists_word_signedPicardHom_eq_of_pair_iso_on_resolution
+    P R hvalue hparity (hgeneric w) htargets q (Q.inclusion_injective hM)
+    hindex e π hw hpic hsgn
+  refine ⟨v, hv, hfree, ?_⟩
+  rw [(Quiver.Path.xRationalMap_eq_iff ℂ v w).mpr hvw]
+  exact (π.compOfDefined_eq_iff_of_dominant _ _ _).mp hw
 
 end QPainleve.SignedClusterModularGroup.GeometricRealization

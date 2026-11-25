@@ -89,6 +89,20 @@ theorem rayBoundaryIdeal_hirzebruch_eq_coordinateFiber (k : Fin 2) :
   · rw [Φ.coeff_rayDivisorToWeilDivisor_of_notMem_range hΦ _ hx,
       WeilDivisor.coeff_ofPoint_of_ne (fun h ↦ hx ⟨r j, h.symm⟩)]
 
+/-- A point lies on an invariant fiber exactly when its ruling value is the
+corresponding coordinate point of the projective line. -/
+theorem mem_support_rayBoundaryIdeal_hirzebruch_coordinateFiber_iff (k : Fin 2) (x : X) :
+    x ∈ (I[(![1, 3] : Fin 2 → Fin 4) k]).support ↔ q x = p[k] (IsLocalRing.closedPoint ℂ : S) := by
+  have hP := (projectiveLine.polynomialPoint_over ℂ (RingHom.id ℂ) k (0 : ℂ)).trans
+    (Spec.map_id (CommRingCat.of ℂ))
+  let : IsClosedImmersion p[k] := (p[k]).isClosedImmersion_of_comp_eq_id hP
+  have hRange : Set.range ⇑p[k] = {p[k] (IsLocalRing.closedPoint ℂ : S)} :=
+    Set.range_eq_singleton (fun y ↦ congrArg (⇑p[k]) (Subsingleton.elim y _))
+  rw [rayBoundaryIdeal_hirzebruch_eq_coordinateFiber b e hΦ r hr k,
+    ← SetLike.mem_coe, support_comap, TopologicalSpace.Closeds.coe_preimage, Set.mem_preimage,
+    Scheme.Hom.support_ker, (p[k]).isClosedEmbedding.isClosed_range.closure_eq, hRange,
+    Set.mem_singleton_iff]
+
 private theorem isIso_hirzebruch_ruling_invariant_section (hc : Φ.IsComplete) (k : Fin 2) :
     IsIso (I[(![0, 2] : Fin 2 → Fin 4) k].subschemeι ≫ q) := by
   classical

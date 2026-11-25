@@ -6,6 +6,7 @@ Authors: The QPainleve contributors
 module
 
 public import QPainleve.AlgebraicGeometry.Blowup.Tower.Nodal.Basic
+public import QPainleve.AlgebraicGeometry.Blowup.Tower.StrictTransform.Incidence
 public import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.Picard
 public import QPainleve.Geometry.Toric.Fan.Logarithmic.Factorization
 public import QPainleve.Geometry.Toric.Fan.Picard.Hirzebruch
@@ -126,7 +127,9 @@ The fiber coefficient increases by the fiber degree, which is unchanged.
 The reverse corner has that degree as its order, and every retained center comes
 from a common point of the intermediate toric model and keeps its original order
 and ruling value. A first center remains first if it does not project to the
-reverse corner. -/
+reverse corner.
+The section centers are reindexed by the insertion of the reverse corner,
+which lies off the strict section. -/
 theorem exists_sarkisov_path_of_absent_corner
     (b : Basis (Fin 2) ℤ N) (e : ℤ) (hΦ : Φ.IsRegular) (hc : Φ.IsComplete)
     (r : Fin 4 ≃ Φ.Ray)
@@ -172,6 +175,9 @@ theorem exists_sarkisov_path_of_absent_corner
           Φ.IsTwoRayStarSubdivision F ∧ B.fan.IsTwoRayStarSubdivision F ∧
           ∀ j : Fin n, ∃ z : X[F],
             π[s] z = hT.baseCenter j ∧ π[t] z = hU.baseCenter (j.natAdd 1)) ∧
+        hU.strictTransformCenterIndices (B.fan.rayBoundaryIdeal B.isRegular (r' 0)) =
+          (hT.strictTransformCenterIndices (Φ.rayBoundaryIdeal hΦ (r 0))).map
+            (Fin.natAddEmb 1) ∧
         (let f := ruling[b,e,r,hr]
          let f' := ruling[d,e + 1,r',hr']
          f' (hU.baseCenter 0) = f (Φ.distinguishedPointHom σ pt) ∧
@@ -203,7 +209,7 @@ theorem exists_sarkisov_path_of_absent_corner
     simp only [Matrix.range_cons, Matrix.range_empty, Set.union_empty, Set.singleton_union]
   obtain ⟨q, Ψ, F, hΨ, hF, hc', d, τ, s, t, r₀, r', hr₀, hr', v, w, Z, U, k, hU, hU',
     hq, hqp, hJ, hd₀, hd₁, hτ, -, _, hs, ht, hsource, htarget, hcenters, hhead, htail,
-    hrulingHead, hrulingTail, hfirst, hPic⟩ :=
+    hrulingHead, hrulingTail, hinc, hfirst, hPic⟩ :=
     hT.exists_hirzebruch_toric_link_resolution_of_absent_corner σ b e hΦ hc hrays hσ hp
   have hr₀' : r₀ = r := Equiv.ext fun l ↦ Fan.Ray.primitiveGenerator_injective
     (congrFun (hr₀.trans hr.symm) l)
@@ -267,7 +273,7 @@ theorem exists_sarkisov_path_of_absent_corner
       hT.birationalOver_blowupToBase_comp f[Φ] hq hJ hbir)
   refine ⟨A, B, path, d, r', hr', Z, U', hU', k, hA, hAq.trans (heq_of_eq hq₀),
     (eq_of_heq hBq).trans hq₁, hlen, hrat, hg', hbir', ⟨τ, hτ, hhead⟩,
-    ⟨F, s, t, hs, ht, fun j ↦ ⟨w.inv (hU.baseCenter j), hcenters j, htail j⟩⟩, ?_, hfirst, ?_⟩
+    ⟨F, s, t, hs, ht, fun j ↦ ⟨w.inv (hU.baseCenter j), hcenters j, htail j⟩⟩, hinc, ?_, hfirst, ?_⟩
   · intro f₀ f₁
     have hcoord : d.coord 1 = b.coord 1 := d.ext fun l ↦ by
       simp only [Basis.coord_apply, Basis.repr_self]
@@ -299,7 +305,9 @@ theorem exists_sarkisov_path_of_absent_corner
 `F_e` to `F_{e-1}`. On a single nodal refinement it gives a two-link
 path carrying the prescribed plane map. In the nonnegative markings both
 ruling coefficients and all retained orders stay fixed. The reverse corner
-is on the distinguished section and has order equal to the fiber degree.
+lies on the opposite section and has order equal to the fiber degree.
+The positive-section center indices are the original indices shifted past
+the reverse corner, including at infinitely near centers.
 A marked first center with order at most the fiber degree can be followed
 by a first center of at least that order over the same ruling value. On the
 pivot fiber take the reverse corner. On every other fiber keep the retained
@@ -350,6 +358,9 @@ theorem exists_sarkisov_path_of_absent_positive_corner
           Φ.IsTwoRayStarSubdivision F ∧ B.fan.IsTwoRayStarSubdivision F ∧
           ∀ j : Fin n, ∃ z : X[F],
             π[s] z = hT.baseCenter j ∧ π[t] z = hU.baseCenter (j.natAdd 1)) ∧
+        hU.strictTransformCenterIndices (B.fan.rayBoundaryIdeal B.isRegular (r' 2)) =
+          (hT.strictTransformCenterIndices (Φ.rayBoundaryIdeal hΦ (r 2))).map
+            (Fin.natAddEmb 1) ∧
         let : SmoothOfRelativeDimension 2 f[B.fan] :=
           rankTwo(b) ▸ B.fan.smoothOfRelativeDimension_algebraicRealizationStructureMap B.isRegular
         B[B.fan,B.isComplete].comap U.toBase =
@@ -378,17 +389,15 @@ theorem exists_sarkisov_path_of_absent_positive_corner
   let := hdimY
   let := hIntY
   let := hNoethY
-  obtain ⟨b₀, r₀, hr₀, hs, hf, -, -, hrepr⟩ :=
+  obtain ⟨b₀, r₀, hr₀, hb₀, hb₁, hs, -, -, -, -, hrepr⟩ :=
     Φ.exists_hirzebruchPicardBasis_opposite_section b (e : ℤ) hΦ r hr
-  have hb₀ : b₀ 0 = -b 0 := by simpa [hs, congrFun hr 2] using (congrFun hr₀ 0).symm
-  have hb₁ : b₀ 1 = b 1 := by simpa [hf, congrFun hr 1] using (congrFun hr₀ 1).symm
   have hcone : σ.val = hull ℝ (Set.range (i ∘ b₀)) := by
     rw [hσ]
     congr 1
     ext u
     simp [Fin.exists_fin_succ, hb₀, hb₁, eq_comm]
   obtain ⟨hR, A, B, path, d₀, s₀, hs₀, Z, U, hU, k, hA, hAh, hB, hlen, hrat, hg', hbir',
-    ⟨τ, hτ, hhead⟩, hcenters, hruling, hfirst, hpole', hmark⟩ :=
+    ⟨τ, hτ, hhead⟩, hcenters, hinc, hruling, hfirst, hpole', hmark⟩ :=
     hT.exists_sarkisov_path_of_absent_corner b₀ (-(e : ℤ)) hΦ hc r₀ hr₀ g hg hbir σ hcone
       hp D hD hNode hpole
   let : J.blowup.Over S := ⟨R.toBase ≫ T.toBase ≫ f[Φ]⟩
@@ -398,13 +407,12 @@ theorem exists_sarkisov_path_of_absent_positive_corner
   let e₀ := -(e : ℤ) + 1
   have he₀ : -e₀ = ((e - 1 : ℕ) : ℤ) := by dsimp only [e₀]; omega
   let : Nonempty B.fan.cones := B.isComplete.nonempty_cones
-  obtain ⟨d, s, ht, ht₀, ht₁, -, -, hrepr'⟩ :=
+  obtain ⟨d, s, ht, hd₀, hd₁, -, -, ht₂, -, -, hrepr'⟩ :=
     B.fan.exists_hirzebruchPicardBasis_opposite_section d₀ e₀ B.isRegular s₀ hs₀
-  have hd₀ : d 0 = -d₀ 0 := by simpa [ht₀, congrFun hs₀ 2] using (congrFun ht 0).symm
-  have hd₁ : d 1 = d₀ 1 := by simpa [ht₁, congrFun hs₀ 1] using (congrFun ht 1).symm
+  rw [hs, ← ht₂] at hinc
   rw [← he₀]
   refine ⟨hR, A, B, path, d, s, ht, Z, U, hU, k, hA, hAh, hB, hlen, hrat, hg', hbir',
-    ⟨τ, by rw [hτ, hd₀, hd₁, Set.pair_comm], hhead⟩, hcenters, hpole', ?_⟩
+    ⟨τ, by rw [hτ, hd₀, hd₁, Set.pair_comm], hhead⟩, hcenters, hinc, hpole', ?_⟩
   intro hNoeth' y C'
   obtain ⟨ha, hβ, hm⟩ := hmark
   have hFiber : C'.repr y.1 0 = C.repr x.1 0 := by
