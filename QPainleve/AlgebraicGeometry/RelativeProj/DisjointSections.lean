@@ -5,7 +5,7 @@ Authors: The QPainleve contributors
 -/
 module
 
-public import QPainleve.AlgebraicGeometry.RelativeProj.LineBundle
+public import QPainleve.AlgebraicGeometry.RelativeProj.LineBundle.Basic
 
 import Mathlib.Algebra.Category.ModuleCat.Biproducts
 import Mathlib.CategoryTheory.Preadditive.AdditiveFunctor

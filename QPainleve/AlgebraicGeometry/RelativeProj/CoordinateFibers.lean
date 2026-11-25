@@ -7,7 +7,7 @@ module
 
 public import Mathlib.AlgebraicGeometry.Modules.Sheaf
 public import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.ProjectiveLine.CoordinateChange
-public import QPainleve.AlgebraicGeometry.RelativeProj.LineBundle
+public import QPainleve.AlgebraicGeometry.RelativeProj.LineBundle.Pullback
 
 import TauCeti.AlgebraicGeometry.IdealSheaf.BaseChange
 import TauCeti.AlgebraicGeometry.LineBundle.BaseChange
@@ -167,9 +167,12 @@ theorem exists_split_projective_bundle_iso_normalizing_fibers
   let E := QuasicoherentSheaf.projectivizationIsoOfPullback e h
   have hE : E.hom ≫ π = π ≫ e.hom :=
     QuasicoherentSheaf.projectivizationIsoOfPullback_hom_toBase e h
-  exact ⟨e, E, he, hE,
-    L.relativeProjSectionOfQuotient_comp_projectivizationIsoOfPullback e L h i fst fst hi,
-    M.relativeProjSectionOfQuotient_comp_projectivizationIsoOfPullback e M h j snd snd hj,
+  refine ⟨e, E, he, hE,
+    ?_, ?_,
     comap_fiber_ideal hE p p[0] hp₀, comap_fiber_ideal hE q p[1] hq₁⟩
+  · rw [QuasicoherentSheaf.projectivizationIsoOfPullback_hom]
+    exact (L.isPullback_relativeProjSectionOfQuotient e.hom L h i fst fst hi).w
+  · rw [QuasicoherentSheaf.projectivizationIsoOfPullback_hom]
+    exact (M.isPullback_relativeProjSectionOfQuotient e.hom M h j snd snd hj).w
 
 end TauCeti.AlgebraicGeometry.projectiveLine

@@ -5,10 +5,9 @@ Authors: The QPainleve contributors
 -/
 module
 
-public import QPainleve.AlgebraicGeometry.RelativeProj.LineBundle
+public import QPainleve.AlgebraicGeometry.RelativeProj.LineBundle.Basic
 public import QPainleve.AlgebraicGeometry.RelativeProj.Pullback
 
-import QPainleve.AlgebraicGeometry.Modules.GradedAlgebra.SymmetricAlgebraPullback
 
 /-!
 # Morphisms to projective bundles from line quotients
@@ -33,34 +32,6 @@ variable {X Y : Scheme.{u}}
 
 local notation "Sym[" G "]" => Functor.obj (gradedSymmetricAlgebra _) G
 local notation "F⟮" f "," F "⟯" => Functor.obj (QuasicoherentSheaf.pullback f) F
-
-namespace QuasicoherentSheaf
-
-variable (F : QuasicoherentSheaf Y) (f : X ⟶ Y)
-
-/-- The base-change projection from the projectivization of the pulled-back
-quasicoherent sheaf to that of the original sheaf. -/
-def relativeProjPullbackProjection :
-    Sym[F⟮f,F⟯].obj.relativeProj ⟶ Sym[F].obj.relativeProj :=
-  GradedQuasicoherentAlgebra.relativeProjProjectionOfPullback f
-    (pullbackGradedSymmetricAlgebraIso f F)
-
-/-- Projectivization of the pulled-back sheaf is the scheme-theoretic base change
-of the original projectivization. -/
-theorem isPullback_relativeProjPullbackProjection :
-    IsPullback Sym[F⟮f,F⟯].obj.relativeProjToBase (F.relativeProjPullbackProjection f)
-      f Sym[F].obj.relativeProjToBase :=
-  GradedQuasicoherentAlgebra.isPullback_relativeProjProjectionOfPullback f
-    (pullbackGradedSymmetricAlgebraIso f F)
-
-/-- The projectivization's base-change projection commutes with the structure maps. -/
-@[reassoc (attr := simp)]
-theorem relativeProjPullbackProjection_toBase :
-    F.relativeProjPullbackProjection f ≫ Sym[F].obj.relativeProjToBase =
-      Sym[F⟮f,F⟯].obj.relativeProjToBase ≫ f :=
-  (F.isPullback_relativeProjPullbackProjection f).w.symm
-
-end QuasicoherentSheaf
 
 namespace FiniteLocallyFreeSheaf.FixedRank
 

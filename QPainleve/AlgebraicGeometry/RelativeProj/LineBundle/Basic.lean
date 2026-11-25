@@ -292,27 +292,28 @@ theorem relativeProjSectionOfQuotient_comp_relativeProjMapIso {G : Quasicoherent
 
 section Pullback
 
-variable {Y : Scheme.{u}} (f : X ≅ Y) (E' : FixedRank Y 1) {F' : QuasicoherentSheaf Y}
-  (i : F ≅ (QuasicoherentSheaf.pullback f.hom).obj F')
-  (j : ℒ[E] ≅ (QuasicoherentSheaf.pullback f.hom).obj ℒ[E'])
+variable {Y : Scheme.{u}} (f : X ⟶ Y) (E' : FixedRank Y 1) {F' : QuasicoherentSheaf Y}
+  (i : F ≅ (QuasicoherentSheaf.pullback f).obj F')
+  (j : ℒ[E] ≅ (QuasicoherentSheaf.pullback f).obj ℒ[E'])
 
 /-- The section of a projectivization associated to a line quotient is carried
-to the corresponding section by a compatible isomorphism of projective
-bundles over an isomorphism of bases. -/
+to the corresponding section under base change when the quotient maps
+commute with the chosen pullback identifications. -/
 @[reassoc]
-theorem relativeProjSectionOfQuotient_comp_projectivizationIsoOfPullback
+theorem relativeProjSectionOfQuotient_comp_projectionOfPullback
     (q : F ⟶ ℒ[E]) (q' : F' ⟶ ℒ[E']) [Epi q.hom] [Epi q'.hom]
-    (h : i.hom ≫ (QuasicoherentSheaf.pullback f.hom).map q' = q ≫ j.hom) :
-    E.relativeProjSectionOfQuotient q ≫ (QuasicoherentSheaf.projectivizationIsoOfPullback f i).hom =
-      f.hom ≫ E'.relativeProjSectionOfQuotient q' := by
-  let e := QuasicoherentSheaf.projectivizationIsoOfPullback f j
-  have hbase : inv 𝒜[ℒ[E]].relativeProjToBase ≫ e.hom =
-      f.hom ≫ inv 𝒜[ℒ[E']].relativeProjToBase := by
+    (h : i.hom ≫ (QuasicoherentSheaf.pullback f).map q' = q ≫ j.hom) :
+    E.relativeProjSectionOfQuotient q ≫
+        QuasicoherentSheaf.projectivizationProjectionOfPullback f i =
+      f ≫ E'.relativeProjSectionOfQuotient q' := by
+  let e := QuasicoherentSheaf.projectivizationProjectionOfPullback f j
+  have hbase : inv 𝒜[ℒ[E]].relativeProjToBase ≫ e =
+      f ≫ inv 𝒜[ℒ[E']].relativeProjToBase := by
     apply (cancel_mono 𝒜[ℒ[E']].relativeProjToBase).mp
-    simp only [e, Category.assoc, QuasicoherentSheaf.projectivizationIsoOfPullback_hom_toBase,
+    simp only [e, Category.assoc, QuasicoherentSheaf.projectivizationProjectionOfPullback_toBase,
       IsIso.inv_hom_id_assoc, IsIso.inv_hom_id, Category.comp_id]
   rw [relativeProjSectionOfQuotient, relativeProjSectionOfQuotient, Category.assoc,
-    QuasicoherentSheaf.projectivizationIsoOfPullback_naturality f i j q q' h,
+    QuasicoherentSheaf.projectivizationProjectionOfPullback_naturality f i j q q' h,
     ← Category.assoc, hbase, Category.assoc]
 
 end Pullback
