@@ -48,13 +48,13 @@ variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {b : Basis (Fin 2) ℤ N} {L γ : Type} [AddCommGroup L]
   {r n : ℕ} [NeZero n] {B : LinearMap.BilinForm ℤ L}
 
-local instance (Q : CompleteToricPresentation i b r L γ) : Nonempty Q.fan.cones :=
-  Q.complete.nonempty_cones
+local instance instNonemptyCasimirCones (Q : CompleteToricPresentation i b r L γ) :
+    Nonempty Q.fan.cones := Q.complete.nonempty_cones
 
-local instance (Q : CompleteToricPresentation i b r L γ) : NeZero Q.length :=
-  Q.neZero
+local instance instNeZeroCasimirBoundaryLength (Q : CompleteToricPresentation i b r L γ) :
+    NeZero Q.length := Q.neZero
 
-local instance (Q : CompleteToricPresentation i b r L γ) :
+local instance instPrestableCasimirToricBoundary (Q : CompleteToricPresentation i b r L γ) :
     PrestableFamily ((Q.fan.boundaryIdeal Q.complete.nonempty_cones).subscheme ↘ S) :=
   Q.prestable
 
