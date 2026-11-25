@@ -5,119 +5,69 @@ Authors: The QPainleve contributors
 -/
 module
 
+public import QPainleve.Algebra.Cluster.Word.ModularGroup
 public import QPainleve.SignedClusterModularGroup.Realization.Endpoint.SelfRealization
-public import QPainleve.SignedClusterModularGroup.Realization.PicardAction
-
-import QPainleve.Algebra.Cluster.Word.SignExtension
 
 /-!
 # The signed Picard action of a marked toric presentation
 
-Closing signed loop realizations in a fixed marked toric presentation gives a Picard
-pullback homomorphism on the opposite group of independent X maps. The target models
-are supplied on the noncollision opens of the loop realizations. The sign of the
-Picard action agrees with the descended inversion sign, whose kernel is the unsigned
-group. The construction uses `GeometricRealization.exists_realize_signed_loop`
-and `GeometricRealization.marked_actions_eq_of_xMap_eq`.
+The laws of a signed Picard action describe its evaluation on a realized loop,
+its sign on any loop, and the image of the unsigned group on point maps. The
+homomorphism and the equivalence use the same laws.
 -/
 
 public section
 
 open AlgebraicGeometry CategoryTheory MulOpposite
 open Module (Basis)
-open QPainleve.CharacterTorus QPainleve.Cluster
+open QPainleve.CharacterTorus QPainleve.Cluster QPainleve.SignedBoundaryIsometryGroup
 open TauCeti TauCeti.AlgebraicGeometry TauCeti.Toric
-open Scheme Scheme.IdealSheafData
+open Scheme
 
-namespace QPainleve.SignedClusterModularGroup
+namespace QPainleve.SignedClusterModularGroup.GeometricRealization
 
 local notation "S" => Spec (CommRingCat.of ℂ)
-local notation "A[" r "]" => (Fin r → ℤ)
-local notation "Centers[" r "]" => Over.mk (structureMap ℂ A[r])
+local notation "Centers[" r "]" => Over.mk (structureMap ℂ (Fin r → ℤ))
 local notation "XTor[" r "]" => scheme ℂ (Fin r →₀ ℤ)
 local notation "D[" M "]" => Scheme.Hom.ker (Over.Hom.left (Arrow.hom (MarkedSurface.pair M)))
-local notation "classOf(" h ")" => (LineBundleClass.mk (IsEffectiveCartier.toInvertibleSheaf h))⁻¹
-local notation "Cw[" w "," P "]" => Quiver.Path.centerPartialMap ℂ w P
-local notation "Cnil[" P "]" => Quiver.Path.centerPartialMap ℂ Quiver.Path.nil P
-local notation "dst(" C "," c ")" =>
-  c ≫ Scheme.PartialMap.domainTarget (X := Centers[_]) (Y := Centers[_]) C
-local notation "χ[" c "]" => pointsEquiv ℂ _
-  (Subtype.mk (Over.Hom.left c) (Over.w c))
-local notation "Loops[" E "]" => End (Prefunctor.obj (Paths.of (SkewExchangeMatrix (Fin _))) E)
+local notation "χ[" c "]" => pointsEquiv ℂ _ (Subtype.mk (Over.Hom.left c) (Over.w c))
+local notation "eval[" E "," w "]" => op (signedClusterModularGroupMap ℂ E (End.of w))
 
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {b : Basis (Fin 2) ℤ N} {r n : ℕ} [NeZero n]
-  {L : Type} [AddCommGroup L] {H : LinearMap.BilinForm ℤ L} {γ : Type}
-  {E : SkewExchangeMatrix (Fin r)}
+  {L γ : Type} [AddCommGroup L] {H : LinearMap.BilinForm ℤ L} {E : SkewExchangeMatrix (Fin r)}
 
-namespace GeometricRealization
+variable (Q : CompleteToricPresentation i b r L γ)
 
-local instance instIsDominantPresentationLoopXRationalMap (w : Loops[E]) :
-    ((End.asHom w).xRationalMap ℂ).IsDominant :=
-  Quiver.Path.instIsDominantXRationalMap ℂ (End.asHom w)
+local instance : Nonempty Q.fan.cones := Q.complete.nonempty_cones
+local instance : NeZero Q.length := Q.neZero
+local instance : PrestableFamily ((Q.fan.boundaryIdeal Q.complete.nonempty_cones).subscheme ↘ S) :=
+  Q.prestable
 
-/-- The signed Picard pullback of a fixed marked toric presentation of a
-primitive nef square-zero anticanonical cycle descends to the opposite signed
-cluster modular group. It computes the marked action of every realization whose
-reached centers have models in the presentation. The sign kernel on the point-map
-group is the image of its unsigned subgroup. -/
-theorem existsUnique_signedPicardHom_of_presentation
-    (P : ChargeSeed E N) (Q : CompleteToricPresentation i b r L γ)
-    (hform : P.form = b.detDualEquiv.toLinearMap)
-    (hcharge : P.charge = Fan.rayChargeMap Q.rays)
+local notation "Models[" M "," C "]" =>
+  HasToricTargetModels (T₀ := Centers[r]) (T₁ := Centers[r]) (b := b) (s := Q.rays)
+    (hΦ := Q.regular) (T := Q.cycle) (origin := Q.origin) (ι := Q.inclusion) (P₁ := M)
+    (fun z : Point Centers[r] ↦ χ[z]) C
+
+/-- A signed Picard action agrees with marked geometric pullback on compatible
+realizations, has the inversion sign of each representative, and has the unsigned
+group as its sign kernel on point maps. -/
+structure IsSignedPicardAction
     (M : Point Centers[r] → MarkedSurface ℂ n H XTor[r])
-    (models : ∀ c : CenterPoint (U := Centers[r]) (V := Centers[r]) Cnil[P],
-      Q.HasNodalModel (dst(Cnil[P],c)) (M (dst(Cnil[P],c))))
-    {c₀ : Point Centers[r]} (hmodel : Q.HasNodalModel c₀ (M c₀))
-    [IsRationalOver ((M c₀).surface ↘ S)]
-    (hD : ∀ c, D[M c].IsEffectiveCartier)
-    (hnef : (classOf(hD c₀)).IsNef ℂ ((M c₀).surface ↘ S))
-    (hsq : Chow.classIntersectionNumber ℂ (M c₀).surface classOf(hD c₀) classOf(hD c₀) = 0)
-    (hcan : letI : SmoothOfRelativeDimension 2 ((M c₀).surface ↘ S) := (M c₀).smooth
-      classOf(hD c₀) = (LineBundleClass.mk (canonicalBundle ℂ (M c₀).surface 2))⁻¹)
-    (hprim : IsPrimitive (Additive.ofMul classOf(hD c₀)))
-    (d : ZMod n → L) (hmark : ∀ c j, (M c).boundaryClass (hD c) j = d j) :
-    letI := Q.complete.nonempty_cones
-    letI := Q.prestable
-    letI := Q.neZero
-    ∃! ρ : (SignedClusterModularGroup ℂ E)ᵐᵒᵖ →* signedBoundaryIsometryGroup H d,
-      (∀ (w : Loops[E]),
-        SignedBoundaryIsometryGroup.sign H d (ρ (op (signedClusterModularGroupMap ℂ E w))) =
-          (-1 : ℤˣ) ^ (End.asHom w).inversionCount ∧
-        ∀ {C : Centers[r].left.PartialMap Centers[r].left} [IsDominant C.hom]
-          [C.IsOver Centers[r].hom Centers[r].hom]
-          (R : GeometricRealization M M C ((End.asHom w).xRationalMap ℂ)),
-          HasToricTargetModels (b := b) (hΦ := Q.regular) (T := Q.cycle) (origin := Q.origin)
-            (s := Q.rays) (ι := Q.inclusion) (P₁ := M) (fun c : Point Centers[r] ↦ χ[c]) C →
-          ρ (op (signedClusterModularGroupMap ℂ E w)) =
-            R.toSignedBoundaryIsometry d hD hmark) ∧
-      ((SignedBoundaryIsometryGroup.sign H d).comp ρ).ker.unop =
-        (clusterModularGroupInclusion ℂ E).range := by
-  let := Q.complete.nonempty_cones
-  let := Q.prestable
-  let := Q.neZero
-  have hindex := Q.chargeIndex_ne_zero_of_anticanonical_cycle (M := M) hmodel
-    (hD c₀) hnef hsq hcan hprim
-  let : PreirreducibleSpace Centers[r].left :=
-    inferInstanceAs (PreirreducibleSpace (scheme ℂ A[r]))
-  obtain ⟨ρ, hρ, huniq⟩ :=
-    existsUnique_signedPicardHom_of_realizations (E := E) d hD hmark Q.complete
-      (Q.inclusion_injective hmodel) hindex (centers := fun c : Point Centers[r] ↦ χ[c]) (by
-        intro w
-        let word : Word E E := End.asHom w
-        obtain ⟨R, hη, _, hmodels⟩ := exists_realize_signed_loop word P Q
-          hform hcharge M models hmodel hD hnef hsq hprim d hmark
-        have hdom : IsDominant Cw[word,P].hom := inferInstance
-        have hover : Cw[word,P].IsOver Centers[r].hom Centers[r].hom := inferInstance
-        exact ⟨Cw[word,P], hdom, hover, R, hη, fun c ↦ (hmodels c).nonempty_contractedToricFiber⟩)
-  refine ⟨ρ, ⟨hρ, ?_⟩, fun ρ' hρ' ↦ huniq ρ' hρ'.1⟩
-  have hE := Q.exchangeMatrix_ne_zero_of_chargeIndex_ne_zero P hform hcharge hindex
-  rw [range_clusterModularGroupInclusion ℂ E hE]
-  ext g
-  obtain ⟨w, rfl⟩ := signedClusterModularGroupMap_surjective ℂ E g
-  simp only [Subgroup.mem_unop, MonoidHom.mem_ker, MonoidHom.comp_apply, (hρ w).1,
-    signedInversionSign_apply]
+    {d : ZMod n → L} (hD : ∀ c, D[M c].IsEffectiveCartier)
+    (hmark : ∀ c j, (M c).boundaryClass (hD c) j = d j)
+    (ρ : (SignedClusterModularGroup ℂ E)ᵐᵒᵖ →* signedBoundaryIsometryGroup H d) : Prop where
+  /-- The sign of the Picard action is the inversion parity of the representing word. -/
+  sign_apply_word (w : Word E E) :
+    sign H d (ρ eval[E,w]) = (-1 : ℤˣ) ^ w.inversionCount
+  /-- The action on a word is the marked pullback and branch sign of any realization
+  whose target fibers have models in the presentation. -/
+  apply_of_realization (w : Word E E)
+      {C : Centers[r].left.PartialMap Centers[r].left} [IsDominant C.hom]
+      [C.IsOver Centers[r].hom Centers[r].hom]
+      (R : GeometricRealization M M C (w.xRationalMap ℂ)) (hC : Models[M,C]) :
+    ρ eval[E,w] = R.toSignedBoundaryIsometry d hD hmark
+  /-- On point maps, the sign kernel is the image of the unsigned group. -/
+  sign_ker_unop : ((sign H d).comp ρ).ker.unop = (clusterModularGroupInclusion ℂ E).range
 
-end GeometricRealization
-
-end QPainleve.SignedClusterModularGroup
+end QPainleve.SignedClusterModularGroup.GeometricRealization

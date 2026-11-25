@@ -156,16 +156,17 @@ theorem exists_eleven_vertex_signedPicardHom (u : Fin 11 → ℂˣ) :
   have hc := planeChargeSeed_charge_eq hrays
   have models (a : Point Centers) (_ : a.left (default : S) ∈ Path.nil.centerOpen ℂ P) :=
     (hfamily a).1
-  obtain ⟨Θ, ⟨hΘ, _⟩, _⟩ := existsUnique_signedPicardEquiv_of_presentation
+  obtain ⟨Θ, hΘ, _⟩ := existsUnique_signedPicardEquiv_of_presentation
     (Q := Q) (hD := hD) (hmark := hmark) P rfl hc models (hfamily c).1 hprim' hnef' hsq'
   have htarget (w : Word exchangeMatrix exchangeMatrix)
       {C : (Centers).left.PartialMap (Centers).left} [IsDominant C.hom]
       [C.IsOver (Centers).hom (Centers).hom] (R : GeometricRealization M M C (w.xRationalMap ℂ)) :
       Θ eval[w] = R.toSignedBoundaryIsometry d hD hmark :=
-    (hΘ w).2 R (fun a ↦ (hfamily (a ≫ C.domainTarget)).1.nonempty_contractedToricFiber)
+    hΘ.apply_of_realization w R
+      (fun a ↦ (hfamily (a ≫ C.domainTarget)).1.nonempty_contractedToricFiber)
   obtain ⟨e, ⟨_, hact, _⟩, _⟩ := existsUnique_exchangeKernelEquiv_of_presentation
     Q P rfl hc M hD (hfamily c).1 models hnef' hsq' hprim' d hmark Θ.toMonoidHom
-    (fun w {_} _ _ R hR ↦ (hΘ (End.asHom w)).2 R hR)
+    (fun w {_} _ _ R hR ↦ hΘ.apply_of_realization (End.asHom w) R hR)
   have hneg (x : H.orthogonal (Submodule.span ℤ (Set.range d))) :
       (signedOrthogonalRestriction H d (Θ eval[involutionWord])).val x = -x := by
     have h := DFunLike.congr_fun (DFunLike.congr_fun hact eval[involutionWord]) (e x)
@@ -174,12 +175,12 @@ theorem exists_eleven_vertex_signedPicardHom (u : Fin 11 → ℂˣ) :
       MonoidHom.comp_apply, MulEquiv.coe_toMonoidHom, Subgroup.subtype_apply,
       LinearEquiv.autCongr_apply_apply, LinearEquiv.symm_apply_apply, map_neg] using h.symm
   have hgram := (M c).intersectionForm_boundaryClass (hD c) hnef' hsq'
-  have hsign := (hΘ involutionWord).1
+  have hsign := hΘ.sign_apply_word involutionWord
   rw [inversionCount_involutionWord, pow_one] at hsign
   have hz := eq_centralSign_of_signedOrthogonalRestriction hSymm
     (LinearMap.IsPerfPair.nondegenerate inferInstance) hgram _ hsign hneg
   exact ⟨L, _, H, Q, c, M, hD, hparams, hrays, hfamily, Θ.toMonoidHom, Θ.injective, hz,
-    fun w ↦ ⟨(hΘ w).1, htarget w⟩⟩
+    fun w ↦ ⟨hΘ.sign_apply_word w, htarget w⟩⟩
 
 /-- The eleven-vertex involution commutes with every independent signed cluster X map. -/
 theorem involutionWord_mem_center :
