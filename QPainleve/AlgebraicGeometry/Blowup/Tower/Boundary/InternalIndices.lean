@@ -257,6 +257,29 @@ theorem IsClosedPointTower.isNodalBoundaryTower_of_internalBlowupIndices_eq_empt
       exact B.isReduced_subscheme_iff_radical_eq.mp hnodal.isReduced
 
 variable [Module.Finite ℤ (Pic(X))] in
+/-- If the number of boundary primes increases by the length of a closed-point
+tower, every blowup is nodal and the boundary upstairs is the reduced total
+transform of its schematic image. -/
+theorem IsClosedPointTower.isNodalBoundaryTower_of_ncard_boundaryPrimes_eq_add
+    {T : BlowupTower X n Y} (hT : IsClosedPointTower X T)
+    {B : Y.IdealSheafData} (hB : B.IsEffectiveCartier)
+    (hnodal : AtWorstNodalOfRelativeDimensionOne (B.subschemeι ≫ T.toBase ≫ g[X]))
+    (hcard : B.boundaryPrimes.ncard = (B.map T.toBase).boundaryPrimes.ncard + n) :
+    let : Y.Over S := ⟨T.toBase ≫ g[X]⟩
+    let : SmoothOfRelativeDimension 2 g[Y] := hT.smoothOfRelativeDimension g[X]
+    mk hB.toInvertibleSheaf = K(Y) →
+    IsNodalBoundaryTower (B.map T.toBase) g[X] (𝟙 X) T ∧
+      ((B.map T.toBase).comap T.toBase).radical = B := by
+  intro _ _ hcan
+  have : Smooth g[X] := SmoothOfRelativeDimension.smooth 2 _
+  have : IsNoetherian X := isNoetherian_of_finiteType g[X]
+  let : IsReduced B.subscheme := hnodal.isReduced
+  have hq := hT.boundaryComplexity_eq_add_card_internalBlowupIndices k hB hcan
+  rw [boundaryComplexity_def, boundaryComplexity_def, finrank_picard k hT, hcard] at hq
+  have hempty : T.internalBlowupIndices B = ∅ := Finset.card_eq_zero.mp (by omega)
+  exact hT.isNodalBoundaryTower_of_internalBlowupIndices_eq_empty k hB hnodal hempty hcan
+
+variable [Module.Finite ℤ (Pic(X))] in
 /-- A complexity-zero nodal anticanonical boundary descends along a specified
 closed-point tower to a complexity-zero boundary, provided the image has
 nonnegative complexity. Every step is a nodal blowup of that image, and the
