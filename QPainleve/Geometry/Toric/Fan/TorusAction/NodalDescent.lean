@@ -155,6 +155,23 @@ theorem toricPresentationCharacterHom_injective :
   exact (internalBlowupPicardBoundaryAutMulEquiv b s c hΦ hc).injective
     (Subtype.ext ((toTop).injective (Aut.ext heq)))
 
+/-- The descent of an automorphism in the ordered model's Picard and boundary kernel
+is in the image of the quotient-character action. It suffices to know that the
+square with the projection commutes. -/
+theorem mem_range_toricPresentationCharacterHom_of_comp_eq
+    {a : Aut X} {g : Aut M} (hg : g ∈ A)
+    (ha : (e.inv ≫ T.toBase) ≫ a.asIso.hom = g.asIso.hom ≫ e.inv ≫ T.toBase) :
+    a ∈ (toricPresentationCharacterHom b s c hΦ f e hT hc).range := by
+  obtain ⟨z, hz⟩ :=
+    (internalBlowupPicardBoundaryAutMulEquiv b s c hΦ hc).surjective ⟨g, hg⟩
+  have hlift := toricPresentationCharacterHom_isLift b s c hΦ f e hT hc z
+  rw [hz] at hlift
+  have := hT.epi_toBase f
+  refine ⟨z, Aut.ext (Iso.ext ((cancel_epi (e.inv ≫ T.toBase)).mp ?_))⟩
+  have hcomp := congrArg (e.inv ≫ ·) hlift.hom_toBase.symm
+  simpa only [Category.assoc, Aut.autMulEquivOfIso_apply_asIso, Iso.trans_hom, Iso.symm_hom,
+    Iso.symm_inv, Iso.inv_hom_id_assoc, ← ha] using hcomp
+
 include he hB in
 /-- The image of the character action is precisely the Picard-trivial automorphisms
 over the field that fix the boundary components and lift through the specified tower. -/
@@ -183,11 +200,9 @@ theorem mem_range_toricPresentationCharacterHom_iff (a : Aut X) :
       exact ⟨by rw [hg.hom_toBase_assoc, hover],
         (hg.forall_pullback_eq_iff f hT).mpr hPic,
         (hg.fixes_boundary_components_iff f hT D).mpr hfix⟩
-    obtain ⟨z, hz⟩ := (internalBlowupPicardBoundaryAutMulEquiv b s c hΦ hc).surjective ⟨gM, hmem⟩
-    have hlift := toricPresentationCharacterHom_isLift b s c hΦ f e hT hc z
-    rw [hz, hgM] at hlift
-    have := hT.epi_toBase f
-    exact ⟨z, Aut.ext (Iso.ext ((cancel_epi T.toBase).mp
-      (hlift.hom_toBase.symm.trans hg.hom_toBase)))⟩
+    apply mem_range_toricPresentationCharacterHom_of_comp_eq b s c hΦ f e hT hc hmem
+    have hcomp := congrArg (e.inv ≫ ·) hg.hom_toBase.symm
+    simpa only [Category.assoc, ← hgM, Aut.autMulEquivOfIso_apply_asIso, Iso.trans_hom,
+      Iso.symm_hom, Iso.symm_inv, Iso.inv_hom_id_assoc] using hcomp
 
 end TauCeti.Toric.Fan
