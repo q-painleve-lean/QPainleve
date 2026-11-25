@@ -37,6 +37,16 @@ abbrev centerCharacter (c : Fin m → ℂˣ) : Multiplicative (Fin m → ℤ) �
   freeAbelianCharEquiv.symm c |>.comp
     ((Finsupp.linearEquivFunOnFinite ℤ ℤ (Fin m)).symm.toAddEquiv.toMultiplicative.toMonoidHom)
 
+/-- The basis values of a center character recover it on the full exponent lattice. -/
+@[simp]
+theorem centerCharacter_of_pi_single (c : Multiplicative (Fin m → ℤ) →* ℂˣ) :
+    centerCharacter (fun j ↦ c (ofAdd (Pi.single j 1))) = c := by
+  let e := (Finsupp.linearEquivFunOnFinite ℤ ℤ (Fin m)).toAddEquiv.toMultiplicative
+  apply (MonoidHom.cancel_right (f := e.toMonoidHom) e.surjective).mp
+  apply freeAbelianCharEquiv.injective
+  funext j
+  simp [e, centerCharacter, freeAbelianCharEquiv_apply, Finsupp.linearEquivFunOnFinite_single]
+
 namespace OrderedToricModel
 
 /-- The exchange matrix determined by the rays and oriented lattice frame of an ordered model. -/
