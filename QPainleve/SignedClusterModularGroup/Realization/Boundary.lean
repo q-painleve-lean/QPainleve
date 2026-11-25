@@ -21,6 +21,7 @@ import QPainleve.AlgebraicGeometry.Curves.Node.Cartier
 import QPainleve.AlgebraicGeometry.EffectiveCartierDivisor.Dimension
 import QPainleve.AlgebraicGeometry.IdealSheaf.Image.Over
 import QPainleve.AlgebraicGeometry.IntersectionNumber.Nef.Pullback
+import QPainleve.LinearAlgebra.BilinearForm.Isometry
 import TauCeti.AlgebraicGeometry.Curves.Node.Reduced
 
 /-!
@@ -507,6 +508,39 @@ theorem picard_boundaryClass (c : CenterPoint C)
     R.picard ((P₁ (c ≫ C.domainTarget)).boundaryClass h₁ j) =
       (P₀ (c ≫ C.domainSource)).boundaryClass h₀ (cycleVertexPerm R.boundaryAction⁻¹ j) :=
   (R.fiber c).picard_boundaryClass h₀ h₁ j
+
+section BoundaryOrthogonal
+
+variable {d₀ : ZMod n → L₀} {d₁ : ZMod n → L₁}
+  {h₀ : ∀ c, (P₀ c).pair.hom.left.ker.IsEffectiveCartier}
+  {h₁ : ∀ c, (P₁ c).pair.hom.left.ker.IsEffectiveCartier}
+  (hd₀ : ∀ c j, (P₀ c).boundaryClass (h₀ c) j = d₀ j)
+  (hd₁ : ∀ c j, (P₁ c).boundaryClass (h₁ c) j = d₁ j)
+
+local notation "K₀" => B₀.orthogonal (Submodule.span ℤ (Set.range d₀))
+local notation "K₁" => B₁.orthogonal (Submodule.span ℤ (Set.range d₁))
+
+/-- Marked Picard pullback restricts to an equivalence between the target and source
+boundary orthogonals. -/
+def boundaryOrthogonalEquiv : K₁ ≃ₗ[ℤ] K₀ := by
+  have hspan : (Submodule.span ℤ (Set.range d₁)).map R.picard.toLinearEquiv.toLinearMap =
+      Submodule.span ℤ (Set.range d₀) := by
+    obtain ⟨c⟩ := nonempty_centerPoint C
+    have h (j : ZMod n) : R.picard (d₁ j) = d₀ (cycleVertexPerm R.boundaryAction⁻¹ j) := by
+      simpa only [hd₀, hd₁] using R.picard_boundaryClass c (h₀ _) (h₁ _) j
+    simp only [Submodule.map_span, LinearEquiv.coe_coe,
+      LinearMap.BilinForm.IsometryEquiv.coe_toLinearEquiv, ← Set.range_comp', funext h]
+    exact congrArg (Submodule.span ℤ) (EquivLike.range_comp d₀ (cycleVertexPerm R.boundaryAction⁻¹))
+  exact R.picard.toLinearEquiv.ofSubmodules K₁ K₀
+    ((R.picard.map_orthogonal _).trans (congrArg B₀.orthogonal hspan))
+
+/-- The restricted Picard pullback has the same ambient action. -/
+@[simp]
+theorem coe_boundaryOrthogonalEquiv_apply (x : K₁) :
+    (R.boundaryOrthogonalEquiv hd₀ hd₁ x : L₀) = R.picard x := by
+  simp [boundaryOrthogonalEquiv]
+
+end BoundaryOrthogonal
 
 variable {P : Point T₀ → MarkedSurface k n B₀ X₀}
   {C₀ : T₀.left.PartialMap T₀.left} [IsDominant C₀.hom] [C₀.IsOver T₀.hom T₀.hom]
