@@ -50,9 +50,10 @@ variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V] {i : N �
   {b : Basis (Fin 2) ℤ N} {r : ℕ} {L γ : Type} [AddCommGroup L] {H : LinearMap.BilinForm ℤ L}
   (Q : CompleteToricPresentation i b r L γ)
 
-local instance : Nonempty Q.fan.cones := Q.complete.nonempty_cones
-local instance : NeZero Q.length := Q.neZero
-local instance : PrestableFamily ((Q.fan.boundaryIdeal Q.complete.nonempty_cones).subscheme ↘ S) :=
+local instance instNonemptyInternalModelCones : Nonempty Q.fan.cones := Q.complete.nonempty_cones
+local instance instNeZeroInternalModelBoundaryLength : NeZero Q.length := Q.neZero
+local instance instPrestableInternalModelToricBoundary :
+    PrestableFamily ((Q.fan.boundaryIdeal Q.complete.nonempty_cones).subscheme ↘ S) :=
   Q.prestable
 
 local notation "X" => Q.fan.algebraicRealization
