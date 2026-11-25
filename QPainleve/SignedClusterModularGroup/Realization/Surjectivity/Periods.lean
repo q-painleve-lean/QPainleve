@@ -65,58 +65,6 @@ local instance periodFiberProjective (M : MarkedSurface ℂ n B Xtor[r]) :
     M.surface.IsProjectiveOver ℂ :=
   M.projective
 
-namespace ContractedToricFiber
-
-variable {Φ : Fan i} [h₀ : Nonempty Φ.cones] {s : Fin r → Φ.Ray} {hΦ : Φ.IsRegular}
-  [PrestableFamily ((Φ.boundaryIdeal h₀).subscheme ↘ S)]
-  {a : γ → ((Φ.boundaryIdeal h₀).subscheme ↘ S).smoothLocus}
-  {m : ℕ} [NeZero m] {T : NodalCycleNumbering a m} {o : ZMod m}
-  {J : L →ₗ[ℤ] Additive (LineBundleClass Φ.algebraicRealization) × (Fin r → ℤ)}
-  {c : Multiplicative (Fin r → ℤ) →* ℂˣ} {M : MarkedSurface ℂ n B Xtor[r]}
-  (p : ContractedToricFiber b s hΦ T o J c M)
-  [Φ.algebraicRealization.IsProjectiveOver ℂ]
-  [SmoothOfRelativeDimension 2 (Φ.algebraicRealization ↘ S)]
-  [LinearMap.IsPerfPair ((Chow.intersectionBilinForm ℂ Φ.algebraicRealization).prod
-    (-(dotProductBilin ℤ ℤ : LinearMap.BilinForm ℤ (Fin r → ℤ))))]
-
-local notation "ChargeKernel" => LinearMap.ker (Fan.rayChargeMap s)
-local notation "Aux" => LinearMap.BilinForm.prod
-  (Chow.intersectionBilinForm ℂ Φ.algebraicRealization)
-  (-(dotProductBilin ℤ ℤ : LinearMap.BilinForm ℤ (Fin r → ℤ)))
-
-include p in
-/-- Under the integral charge coordinates of a contracted toric fiber, the ordered
-toric period is injective exactly when the period on its Picard orthogonal is. -/
-theorem orderedBoundaryPeriod_injective_iff
-    (hD : D[M].IsEffectiveCartier)
-    (hgenus : ∀ v : irreducibleComponents (D[M].subscheme.singularLocus ℂ).blowup,
-      (D[M].subscheme.blowupComponent (K := ℂ) v).toScheme.genus ℂ = 0)
-    {d : ZMod n → L} (hd : M.boundaryClass hD = d)
-    (e : B.orthogonal (Submodule.span ℤ (Set.range d)) ≃ₗ[ℤ] ChargeKernel)
-    (he : ∀ x : ChargeKernel, J (e.symm x).val =
-      ((Fan.boundaryOrthogonalEquivChargeKernel hΦ s Aux).symm x).val) :
-    Function.Injective (Fan.orderedBoundaryPeriod hΦ b s T center[c]) ↔
-      Function.Injective (hD.boundaryPeriod hgenus M.imageCycle.endpoint_eq) := by
-  let f := (e.symm.trans ((LinearEquiv.ofEq _ _ (by rw [hd])).trans
-    (M.boundaryOrthogonalMarking hD))).toAddEquiv.toMultiplicative
-  have h (x : Multiplicative ChargeKernel) :
-      Fan.orderedBoundaryPeriod hΦ b s T center[c] x =
-        hD.boundaryPeriod hgenus M.imageCycle.endpoint_eq (f x) := by
-    let z := e.symm x.toAdd
-    have hz : M.picardMarking z.val ∈ D[M].boundaryOrthogonal ℂ := by
-      rw [M.picardMarking_mem_boundaryOrthogonal_iff hD, hd]
-      exact z.property
-    have hf : f x = ofAdd ⟨M.picardMarking z.val, hz⟩ := by
-      apply toAdd.injective
-      apply Subtype.ext
-      simp [f, z]
-    rw [hf]
-    exact p.orderedBoundaryPeriod_eq_boundaryPeriod hD hgenus z.val hz x.toAdd (he x.toAdd)
-  rw [funext h]
-  exact Function.Injective.of_comp_iff' _ f.bijective
-
-end ContractedToricFiber
-
 namespace CompleteToricPresentation
 
 open Fan
