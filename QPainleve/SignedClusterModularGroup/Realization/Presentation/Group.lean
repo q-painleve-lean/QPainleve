@@ -7,6 +7,7 @@ module
 
 public import QPainleve.SignedClusterModularGroup.Realization.Endpoint.PicardAction
 
+import QPainleve.Geometry.Toric.Fan.ExchangeMatrix
 import QPainleve.SignedClusterModularGroup.Realization.Presentation.Family
 import QPainleve.SignedClusterModularGroup.Realization.Surjectivity.PicardAction
 
@@ -95,13 +96,13 @@ theorem exists_picardGroupEquivs_of_nodal_model
   let := Q.prestable
   let := Q.neZero
   subst M₀
-  let P : ChargeSeed E N :=
-    ⟨b.detDualEquiv.toLinearMap, Fan.rayChargeMap Q.rays, b.detDualEquiv_self, hE.symm⟩
+  let P := Fan.rayChargeSeed b Q.rays hE
   have hmark (z : Point Centers[r]) (j : ZMod n) :=
     congrFun (hfamily z).2 j
   obtain ⟨Θ, ⟨hΘ, hsign⟩, -⟩ := existsUnique_signedPicardEquiv_of_presentation
-    (Q := Q) (hD := hD) (hmark := hmark) P rfl rfl (fun z _ ↦ (hfamily z).1)
-    (hfamily c).1 hprim hnef hsq
+    (Q := Q) (hD := hD) (hmark := hmark) P
+    (Fan.rayChargeSeed_form _ _ _) (Fan.rayChargeSeed_charge _ _ _)
+    (fun z _ ↦ (hfamily z).1) (hfamily c).1 hprim hnef hsq
   let ρ := picardRotationHom Θ.toMonoidHom hsign.ge
   have hinj : Function.Injective ρ := by
     intro x y hxy

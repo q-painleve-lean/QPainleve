@@ -9,6 +9,7 @@ public import QPainleve.SignedClusterModularGroup.Realization.ChargeKernel.Basic
 public import QPainleve.SignedClusterModularGroup.Realization.Relations.Boundary
 
 import Mathlib.LinearAlgebra.Matrix.ToLin
+import QPainleve.Geometry.Toric.Fan.ExchangeMatrix
 import QPainleve.SignedClusterModularGroup.BoundaryCycle
 import QPainleve.SignedClusterModularGroup.Faithfulness
 import QPainleve.SignedClusterModularGroup.Realization.Orthogonal
@@ -180,16 +181,16 @@ theorem xPullback_eq_iff_signedLoopInvariants_eq
       (hnodal c hc) hnodal₀ (LinearMap.IsPerfPair.separatingRight inferInstance)
   have hkeep c (hc : c ∈ U) ρ := ((p c hc).mem_range_numberedBoundaryRays_iff (hD c) ρ).symm.trans
     (by rw [hrays c hc])
-  let Q : ChargeSeed E N :=
-    ⟨b.detDualEquiv.toLinearMap, Fan.rayChargeMap s, b.detDualEquiv_self, hE.symm⟩
+  let Q := Fan.rayChargeSeed b s hE
+  have hcharge : Q.charge = Fan.rayChargeMap s := Fan.rayChargeSeed_charge _ _ _
   have hker : E.matrix.mulVecLin.ker = Q.charge.ker := by
-    rw [hE]
+    rw [hE, hcharge]
     exact Fan.ker_chargeExchangeMatrix_rayChargeMap b s hindex
   have hcharge₁ := chargeKernelAction_eq_signedOrthogonalRestriction u hvertices hdet hnodes
-    D hD hmark w R hC Q rfl hker e he hU (fun t ht ↦ (hnodal t ht).genus_zero)
+    D hD hmark w R hC Q hcharge hker e he hU (fun t ht ↦ (hnodal t ht).genus_zero)
     (fun t ht ↦ ⟨p t ht⟩)
   have hcharge₂ := chargeKernelAction_eq_signedOrthogonalRestriction u hvertices hdet hnodes
-    D hD hmark v R' hC' Q rfl hker e he hU' (fun t ht ↦ (hnodal t ht).genus_zero)
+    D hD hmark v R' hC' Q hcharge hker e he hU' (fun t ht ↦ (hnodal t ht).genus_zero)
     (fun t ht ↦ ⟨p t ht⟩)
   have hmatrix : chargeKernelAction ℂ Q hker eval[w] = chargeKernelAction ℂ Q hker eval[v] ↔
       LinearMap.toMatrixAlgEquiv β w.exchangeKernelEquiv.toLinearMap =
@@ -219,7 +220,8 @@ theorem xPullback_eq_iff_signedLoopInvariants_eq
     · rw [← hηw, ← hηv, R.orientation_def, R'.orientation_def, hbranch]
     · rw [R.boundaryPerm_def, R'.boundaryPerm_def, hbranch]
   · rintro ⟨hη, hact, hj⟩
-    have hres := congrArg (LinearEquiv.autCongr (LinearEquiv.ofEq Q.charge.ker Charge rfl)) hact
+    have hres := congrArg
+      (LinearEquiv.autCongr (LinearEquiv.ofEq _ _ (congrArg LinearMap.ker hcharge))) hact
     rw [hcharge₁, hcharge₂] at hres
     have horient := hηw.trans (hη.trans hηv.symm)
     have hB : B.Nondegenerate := LinearMap.IsPerfPair.nondegenerate inferInstance
