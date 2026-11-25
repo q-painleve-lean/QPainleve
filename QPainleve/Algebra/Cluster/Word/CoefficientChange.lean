@@ -53,12 +53,10 @@ private noncomputable def specialize : R[k] →+* F[k] :=
     fun s ↦ isUnit_iff_ne_zero.mpr (Ideal.mem_primeCompl_iff.mp s.property)
 
 private theorem primeCompl_le_comap [CharZero K] :
-    P[k].primeCompl ≤ (nonZeroDivisors (LaurentRing K ι)).comap (changeLaurentCoefficients K) := by
-  intro s hs
-  rw [Submonoid.mem_comap, mem_nonZeroDivisors_iff_ne_zero]
-  intro h
-  have hz := (changeLaurentCoefficients_injective K) (h.trans (map_zero _).symm)
-  exact hs (RingHom.mem_ker.mpr (hz.symm ▸ map_zero (reduceLaurent k)))
+    P[k].primeCompl ≤ (nonZeroDivisors (LaurentRing K ι)).comap (changeLaurentCoefficients K) :=
+  (Ideal.primeCompl_le_nonZeroDivisors P[k]).trans
+    (nonZeroDivisors_le_comap_nonZeroDivisors_of_injective _
+      (changeLaurentCoefficients_injective K))
 
 private noncomputable def generic [CharZero K] : R[k] →+* F[K] :=
   IsLocalization.map (M := P[k].primeCompl) (T := nonZeroDivisors (LaurentRing K ι))
@@ -78,13 +76,6 @@ private theorem isUnit_of_specialize_ne_zero {x : R[k]} (h : specialize k x ≠ 
   intro ha
   apply h
   exact (IsLocalization.lift_mk'_spec _ a 0 s).mpr (by simpa using ha)
-
--- Taking a power in the localization's unit group works for negative exponents as well.
-private theorem map_localization_unit_zpow {F : Type*} [Field F] (f : R[k] →+* F)
-    (u : R[k]ˣ) (a : ℤ) : f (↑(u ^ a) : R[k]) = f (u : R[k]) ^ a := by
-  have h := congrArg Units.val (map_zpow (Units.map f.toMonoidHom) u a)
-  simp only [Units.val_zpow_eq_zpow_val, Units.coe_map] at h
-  exact h
 
 variable [DecidableEq ι] [CharZero K] {B C D : SkewExchangeMatrix ι}
 
@@ -132,8 +123,14 @@ private theorem exists_lift_xPullback_xCoordinate (w : Word B C) :
         · simp [hu, hK]
         · simp [hu, hk]
       · refine ⟨x i * ↑(u p ^ max (C.matrix i p) 0) * ↑(b p ^ (-C.matrix i p)), ?_, ?_⟩
-        · simp [xMutation_apply_of_ne _ _ _ hip, map_localization_unit_zpow, hu, hb, hK]
-        · simp [xMutation_apply_of_ne _ _ _ hip, map_localization_unit_zpow, hu, hb, hk]
+        · have hpow (g : R[k]ˣ) (n : ℤ) :
+              generic k K (↑(g ^ n) : R[k]) = generic k K (g : R[k]) ^ n :=
+            map_zpow ((generic (ι := ι) k K).toMonoidHom.comp (Units.coeHom R[k])) g n
+          simp [xMutation_apply_of_ne _ _ _ hip, hpow, hu, hb, hK]
+        · have hpow (g : R[k]ˣ) (n : ℤ) :
+              specialize k (↑(g ^ n) : R[k]) = specialize k (g : R[k]) ^ n :=
+            map_zpow ((specialize (ι := ι) k).toMonoidHom.comp (Units.coeHom R[k])) g n
+          simp [xMutation_apply_of_ne _ _ _ hip, hpow, hu, hb, hk]
 
 /-- An equality of signed word pullbacks in characteristic zero holds over every
 field. The words have a common source and may have different terminal seeds. -/
