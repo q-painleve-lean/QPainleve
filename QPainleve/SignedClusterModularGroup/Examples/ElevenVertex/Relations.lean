@@ -126,7 +126,8 @@ theorem involutionWord_signedLoopInvariants :
       ← coe_exchangeKernelBasis_apply,
       ← Path.coe_exchangeKernelEquiv_apply, involutionWord_exchangeKernelEquiv_apply,
       Submodule.coe_neg, Pi.neg_apply]
-  · exact (involutionWord.signedLoopInvariants_boundaryLabel_eq_some_iff _ _
+  · rw [Path.signedLoopInvariants_boundaryLabel]
+    exact (involutionWord.tropicalBoundaryLabel_eq_some_iff _
       (Function.injective_of_subsingleton boundaryOrders) 0).mpr
       involutionWord_tropical_boundaryOrders.symm
 

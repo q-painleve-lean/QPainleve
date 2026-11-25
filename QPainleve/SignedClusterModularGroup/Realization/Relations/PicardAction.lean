@@ -126,17 +126,18 @@ theorem exists_picardEquiv_signedLoopInvariants_of_nodal_contraction
   refine ⟨M, hD, hmark, Θ, e, rfl, hfamily, hΘ, hcoords, hsignker, fun w _ vectors ↦ ?_⟩
   obtain ⟨R, _, _, j, hfind, hboundary⟩ :=
     exists_realize_signed_loop_with_boundary_label Q P hform hcharge M p₀ hnodal₀
-      (fun c _ ↦ p c) (fun c _ ↦ hp c) hnef hsq hprim hmark w (fun k ↦ vectors k)
+      (fun c _ ↦ p c) (fun c _ ↦ hp c) hnef hsq hprim hmark w
   have hR := (hΘ w).2 R fun _ ↦ ⟨p _⟩
   have hsign := (hΘ w).1
   have haction := DFunLike.congr_fun hCasimir eval[w]
   simp only [exchangeKernelAction_op_loop, MonoidHom.comp_apply, MulEquiv.coe_toMonoidHom,
     Subgroup.subtype_apply] at haction
   refine ⟨j, ?_, ?_⟩
-  · refine SignedLoopInvariants.ext ?_ ?_ hfind
+  · refine SignedLoopInvariants.ext ?_ ?_ ?_
     · simpa only [Path.signedLoopInvariants_sign] using hsign.symm
     · rw [← haction]
       simp only [Path.signedLoopInvariants_kernelColumns, Path.coe_exchangeKernelEquiv_apply]
+    · simpa only [Path.signedLoopInvariants_boundaryLabel] using hfind
   · simpa only [← hR, hsign] using hboundary
 
 end QPainleve.SignedClusterModularGroup.CompleteToricPresentation

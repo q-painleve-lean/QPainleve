@@ -132,7 +132,7 @@ theorem signedLoopInvariants_reverse_comp_comp
       LinearMap.toMatrix β β' w.exchangeKernelEquiv.symm.toLinearMap *
         LinearMap.toMatrix β β v.exchangeKernelEquiv.toLinearMap *
         LinearMap.toMatrix β' β w.exchangeKernelEquiv.toLinearMap ∧
-    ∀ j : Fin n, (u.signedLoopInvariants (fun k ↦ (β' k : Fin r → ℤ)) o' (o' j)).boundaryLabel =
+    ∀ j : Fin n, u.tropicalBoundaryLabel o' (o' j) =
       some ((ZMod.finEquiv n).toEquiv.symm (A.orientation •
         ((ZMod.finEquiv n).toEquiv j - R.boundaryPerm 0) +
           R.orientation • A.boundaryPerm 0 + R.boundaryPerm 0)) := by
@@ -140,8 +140,7 @@ theorem signedLoopInvariants_reverse_comp_comp
   refine ⟨?_, w.toMatrix_exchangeKernelEquiv_reverse_comp_comp v β β', fun j ↦ ?_⟩
   · simpa only [Path.signedLoopInvariants_sign] using
       w.neg_one_pow_inversionCount_reverse_comp_comp v
-  · rw [w.signedLoopInvariants_reverse_comp_comp_boundary v
-      (fun k ↦ (β' k : Fin r → ℤ)) hinj label[R] label[A]
+  · rw [w.tropicalBoundaryLabel_reverse_comp_comp v hinj label[R] label[A]
       (R.tropical_boundaryOrders_of_nodal_models Q Q' hE hp hp' x hx hx')
       (A.tropical_boundaryOrders_of_nodal_models Q Q hE hp hp y hy hy') j]
     simp only [Equiv.trans_apply, Equiv.symm_trans, Equiv.symm_symm, Equiv.apply_symm_apply,

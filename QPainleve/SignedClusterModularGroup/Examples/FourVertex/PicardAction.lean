@@ -10,6 +10,7 @@ public import QPainleve.Algebra.Cluster.Word.Relations
 public import QPainleve.SignedClusterModularGroup.Examples.FourVertex.AffineA1
 public import QPainleve.SignedClusterModularGroup.Examples.FourVertex.Generation
 
+import QPainleve.Data.Fin.Find
 import QPainleve.SignedClusterModularGroup.BoundaryCycle
 import QPainleve.SignedClusterModularGroup.Faithfulness
 
@@ -80,9 +81,9 @@ private theorem boundaryClass_injective : Function.Injective boundaryClass := by
 theorem picardInvariants_label_eq_some_iff (g : G) (j : Fin 8) :
     (picardInvariants g).boundaryLabel = some j ↔
       (picard g).val (boundaryClass (label j)) = boundaryClass 0 := by
-  simp only [picardInvariants, ← Option.mem_def, Fin.mem_find?_iff, decide_eq_true_eq]
-  refine ⟨And.left, fun hj ↦ ⟨hj, fun k hk heq ↦ hk.ne ?_⟩⟩
-  exact (label).injective (boundaryClass_injective ((picard g).val.injective (heq.trans hj.symm)))
+  exact Fin.find?_decide_eq_some_iff_of_injective
+    (f := fun k ↦ (picard g).val (boundaryClass (label k)))
+    ((picard g).val.injective.comp (boundaryClass_injective.comp (label).injective)) _ j
 
 /-- Every signed octagon isometry has a forward boundary label. -/
 theorem exists_picardInvariants_label (g : G) :
@@ -177,9 +178,8 @@ theorem picardInvariants_eq_signedLoopInvariants_iff (g : G) (w : Word B B) :
         Matrix.of_apply] using congrArg (fun x : E ↦ (x : Fin 4 → ℤ) i) (h j)
   obtain ⟨j, hj⟩ := exists_picardInvariants_label g
   simp only [SignedLoopInvariants.ext_iff, picardInvariants_sign, Path.signedLoopInvariants_sign,
-    Path.signedLoopInvariants_kernelColumns, hmatrix]
-  have hlabel := w.signedLoopInvariants_boundaryLabel_eq_some_iff
-    (fun j ↦ (exchangeKernelBasis j : Fin 4 → ℤ)) (boundaryOrders 0) boundaryOrders_injective
+    Path.signedLoopInvariants_kernelColumns, Path.signedLoopInvariants_boundaryLabel, hmatrix]
+  have hlabel := w.tropicalBoundaryLabel_eq_some_iff (boundaryOrders 0) boundaryOrders_injective
   refine and_congr_right (fun _ ↦ and_congr_right (fun _ ↦ ?_))
   constructor
   · intro heq

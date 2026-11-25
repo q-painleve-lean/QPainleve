@@ -8,7 +8,6 @@ module
 public import QPainleve.SignedClusterModularGroup.Realization.ChargeKernel.Basic
 public import QPainleve.SignedClusterModularGroup.Realization.Relations.Boundary
 
-import Mathlib.LinearAlgebra.Matrix.ToLin
 import QPainleve.Algebra.Cluster.ChargeKernel.Index
 import QPainleve.Algebra.Cluster.Word.CoefficientChange
 import QPainleve.Geometry.Toric.Fan.ExchangeMatrix
@@ -85,13 +84,8 @@ private theorem marked_actions_eq_of_restriction_eq
     rw [hj]
   have hpic : R.picard = R'.picard := by
     refine boundary_isometry_ext hSymm hsep hspan (fun j ↦ ?_) (fun x hx ↦ ?_)
-    · obtain ⟨c⟩ := nonempty_centerPoint (T₀ := T) (T₁ := T) C
-      obtain ⟨c'⟩ := nonempty_centerPoint (T₀ := T) (T₁ := T) C'
-      have h := R.picard_boundaryClass c (hD _) (hD _) j
-      have h' := R'.picard_boundaryClass c' (hD _) (hD _) j
-      rw [hmark, hmark, map_inv, hperm] at h
-      rw [hmark, hmark, map_inv] at h'
-      exact h.trans h'.symm
+    · rw [R.picard_apply_boundaryClass D hD hmark, R'.picard_apply_boundaryClass D hD hmark,
+        hη, hj]
     · have h := congrArg (fun e : Orth ≃ₗ[ℤ] Orth ↦ (e ⟨x, hx⟩ : L)) hK
       simp only [coe_signedOrthogonalRestriction_apply, SignedBoundaryIsometryGroup.sign_apply,
         toIsometry_apply,
@@ -192,27 +186,19 @@ theorem xPullback_eq_iff_signedLoopInvariants_eq {k : Type*} [Field k]
   have hcharge₂ := chargeKernelAction_eq_signedOrthogonalRestriction u hvertices hdet hnodes
     D hD hmark v R' hC' Q hcharge hker e he hU' (fun t ht ↦ (hnodal t ht).genus_zero)
     (fun t ht ↦ ⟨p t ht⟩)
-  have hmatrix : chargeKernelAction ℂ Q hker eval[w] = chargeKernelAction ℂ Q hker eval[v] ↔
-      LinearMap.toMatrixAlgEquiv β w.exchangeKernelEquiv.toLinearMap =
-        LinearMap.toMatrixAlgEquiv β v.exchangeKernelEquiv.toLinearMap := by
-    simp only [chargeKernelAction_apply, exchangeKernelAction_op_loop,
-      (LinearEquiv.autCongr _).injective.eq_iff,
-      (LinearMap.toMatrixAlgEquiv β).injective.eq_iff, LinearEquiv.toLinearMap_injective.eq_iff]
   -- Read the geometric boundary permutations from the same integer table.
   obtain ⟨x⟩ := nonempty_centerPoint (T₀ := T) (T₁ := T) C
   obtain ⟨y⟩ := nonempty_centerPoint (T₀ := T) (T₁ := T) C'
   have hsep : (Qform).SeparatingRight := LinearMap.IsPerfPair.separatingRight inferInstance
-  have hfind₁ := R.signedLoopInvariants_boundary_eq_some hsep x hcΦ hE hindex p₀ hnodal₀
-    (p _ (hU x).1) (p _ (hU x).2) (hnodal _ (hU x).2) (hD _) (fun j ↦ (β j : Cent))
-  have hfind₂ := R'.signedLoopInvariants_boundary_eq_some hsep y hcΦ hE hindex p₀ hnodal₀
-    (p _ (hU' y).1) (p _ (hU' y).2) (hnodal _ (hU' y).2) (hD _) (fun j ↦ (β j : Cent))
-  rw [Path.signedLoopInvariants_eq_iff, ← hmatrix,
-    ← (Option.map_injective (ZMod.finEquiv n).toEquiv.injective).eq_iff,
-    hfind₁, hfind₂, Option.some.injEq] at h
+  have hfind₁ := R.tropicalBoundaryLabel_eq_some hsep x hcΦ hE hindex p₀ hnodal₀
+    (p _ (hU x).1) (p _ (hU x).2) (hnodal _ (hU x).2) (hD _)
+  have hfind₂ := R'.tropicalBoundaryLabel_eq_some hsep y hcΦ hE hindex p₀ hnodal₀
+    (p _ (hU' y).1) (p _ (hU' y).2) (hnodal _ (hU' y).2) (hD _)
+  rw [Path.signedLoopInvariants_eq_iff, hfind₁, hfind₂, Option.some.injEq,
+    (ZMod.finEquiv n).toEquiv.symm.injective.eq_iff] at h
   obtain ⟨hη, hact, hj⟩ := h
-  have hres := congrArg
-    (LinearEquiv.autCongr (LinearEquiv.ofEq _ _ (congrArg LinearMap.ker hcharge))) hact
-  rw [hcharge₁, hcharge₂] at hres
+  simp only [chargeKernelAction_apply, exchangeKernelAction_op_loop, hact] at hcharge₁ hcharge₂
+  have hres := hcharge₁.symm.trans hcharge₂
   have horient := hηw.trans (hη.trans hηv.symm)
   have hB : B.Nondegenerate := LinearMap.IsPerfPair.nondegenerate inferInstance
   obtain ⟨hpic, hperm⟩ := marked_actions_eq_of_restriction_eq D hD hmark R R'
