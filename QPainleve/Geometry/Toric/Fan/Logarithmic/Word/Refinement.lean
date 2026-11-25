@@ -10,7 +10,7 @@ public import QPainleve.Geometry.Toric.Fan.Logarithmic.Word.Basic
 
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Modification
 import QPainleve.Geometry.Toric.Fan.Picard.Subdivision
-import QPainleve.Geometry.Toric.Fan.Subdivision.PrescribedTower
+import QPainleve.Geometry.Toric.Fan.Subdivision.NodalRefinement
 
 /-!
 # Ordered endpoint models on a nodal refinement
@@ -62,8 +62,8 @@ private theorem exists_refined_tower
     rwa [hPole]
   obtain ⟨Y, L, a, hL, ha, hD⟩ := hT'.exists_transport_of_iso (k := U.iso) hs
   rw [hPole] at hD
-  obtain ⟨Ψ, hΨ, H, d, hd, hB, -⟩ :=
-    exists_subdivision_of_nodal_tower_on_internal_model U.basis U.rays U.parameters
+  obtain ⟨Ψ, hΨ, H, d, hd, hB⟩ :=
+    exists_subdivision_of_nodalBoundaryTower_internalBlowupTower U.basis U.rays U.parameters
       U.regular (U.subdivision.isComplete_iff.mpr A.isComplete) hL
   let e := d ≪≫ a
   have hproj : e.hom ≫ T.toBase ≫ U.hom = d.hom ≫ L.toBase ≫ base[U.tower] := by
