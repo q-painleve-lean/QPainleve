@@ -19,6 +19,8 @@ A signed boundary isometry of a cyclic family `D` is an isometry together with a
 The positive-sign kernel consists of rotations. A reversing involution splits the sign
 extension, so Mathlib's `GroupExtension.Splitting.semidirectProductMulEquiv` gives the
 semidirect product with conjugation by that involution.
+For an injectively numbered boundary, `SignedBoundaryIsometryGroup.boundaryAction`
+reads the forward dihedral action from Picard pullback and the branch sign.
 For a unimodular symmetric cycle lattice with primitive characteristic total class,
 `SignedBoundaryIsometryGroup.CycleReversingInvolution` records the signed element and
 its action on the lattice. The same witness supplies the splitting and the action on
@@ -73,6 +75,8 @@ theorem mem_boundaryRotationGroup_iff {g : B.isometryGroup} :
 
 namespace SignedBoundaryIsometryGroup
 
+open DihedralGroup MulOpposite
+
 /-- Projection to the underlying isometry. -/
 def toIsometry : signedBoundaryIsometryGroup B D →* B.isometryGroup :=
   (MonoidHom.fst _ _).domRestrict _
@@ -119,6 +123,68 @@ theorem exists_cycleAction_pullback (g : signedBoundaryIsometryGroup B D) :
     intro j
     simpa only [toIsometry_apply, DihedralGroup.cycleVertexPerm_sr_apply, neg_neg, ← sign_apply,
       h, Units.neg_smul, one_smul, neg_sub, sub_add_cancel] using hk (k - j)
+
+private theorem cycleAction_eq_of_pullback (hD : Function.Injective D)
+    (g : signedBoundaryIsometryGroup B D) {a b : DihedralGroup n}
+    (ha : cycleOrientationSign a = sign B D g ∧
+      ∀ j, (toIsometry B D g).val (D (cycleVertexPerm a j)) = D j)
+    (hb : cycleOrientationSign b = sign B D g ∧
+      ∀ j, (toIsometry B D g).val (D (cycleVertexPerm b j)) = D j) : a = b :=
+  eq_of_cycleVertexPerm_eq_of_cycleOrientationSign_eq
+    (Equiv.ext fun j ↦ hD ((toIsometry B D g).val.injective ((ha.2 j).trans (hb.2 j).symm)))
+    (ha.1.trans hb.1.symm)
+
+/-- The forward dihedral action determined by Picard pullback on an injectively
+numbered boundary and by the specified orientation sign. The opposite group
+accounts for the reversal of composition under pullback. -/
+noncomputable def boundaryAction (hD : Function.Injective D) :
+    (signedBoundaryIsometryGroup B D)ᵐᵒᵖ →* DihedralGroup n where
+  toFun g := (exists_cycleAction_pullback B D g.unop).choose
+  map_one' := by
+    refine cycleAction_eq_of_pullback B D hD _ (exists_cycleAction_pullback B D _).choose_spec
+      ⟨?_, fun j ↦ ?_⟩ <;> simp
+  map_mul' g h := by
+    have hg := (exists_cycleAction_pullback B D g.unop).choose_spec
+    have hh := (exists_cycleAction_pullback B D h.unop).choose_spec
+    refine cycleAction_eq_of_pullback B D hD _ (exists_cycleAction_pullback B D _).choose_spec
+      ⟨?_, fun j ↦ ?_⟩
+    · rw [map_mul, hg.1, hh.1, unop_mul, map_mul, mul_comm]
+    · rw [unop_mul, map_mul, Subgroup.coe_mul, mul_apply_eq_comp, map_mul, Equiv.Perm.mul_apply,
+        hg.2, hh.2]
+
+/-- The forward boundary action retains the sign, even when the vertex
+permutation alone does not distinguish the two orientations. -/
+@[simp]
+theorem cycleOrientationSign_boundaryAction (hD : Function.Injective D)
+    (g : signedBoundaryIsometryGroup B D) :
+    cycleOrientationSign (boundaryAction B D hD (op g)) = sign B D g :=
+  (exists_cycleAction_pullback B D g).choose_spec.1
+
+/-- The class at the forward image of a component pulls back to that component's class. -/
+@[simp↓] -- Simplify the pullback before unfolding `toIsometry`.
+theorem toIsometry_apply_boundaryAction (hD : Function.Injective D)
+    (g : signedBoundaryIsometryGroup B D) (j : ZMod n) :
+    (toIsometry B D g).val (D (cycleVertexPerm (boundaryAction B D hD (op g)) j)) = D j :=
+  (exists_cycleAction_pullback B D g).choose_spec.2 j
+
+/-- A dihedral element gives the forward action exactly when its sign and
+its pullback on boundary classes agree with the signed isometry. -/
+theorem boundaryAction_eq_iff (hD : Function.Injective D)
+    (g : signedBoundaryIsometryGroup B D) (a : DihedralGroup n) :
+    boundaryAction B D hD (op g) = a ↔
+      cycleOrientationSign a = sign B D g ∧
+        ∀ j, (toIsometry B D g).val (D (cycleVertexPerm a j)) = D j := by
+  have h := And.intro (cycleOrientationSign_boundaryAction B D hD g)
+    (toIsometry_apply_boundaryAction B D hD g)
+  exact ⟨fun e ↦ e ▸ h, cycleAction_eq_of_pullback B D hD g h⟩
+
+/-- The forward image of a boundary index can be read by pulling back its class. -/
+theorem cycleVertexPerm_boundaryAction_apply_eq_iff (hD : Function.Injective D)
+    (g : signedBoundaryIsometryGroup B D) (j l : ZMod n) :
+    cycleVertexPerm (boundaryAction B D hD (op g)) j = l ↔
+      (toIsometry B D g).val (D l) = D j := by
+  rw [← toIsometry_apply_boundaryAction B D hD g j, (toIsometry B D g).val.injective.eq_iff,
+    hD.eq_iff, eq_comm]
 
 /-- Include a boundary rotation with positive sign. -/
 def rotationInclusion : boundaryRotationGroup B D →* signedBoundaryIsometryGroup B D :=

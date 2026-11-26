@@ -35,7 +35,7 @@ open Scheme Scheme.IdealSheafData
 namespace QPainleve.SignedClusterModularGroup.GeometricRealization
 
 open MarkedSurface (boundaryIso surfaceIso)
-open SignedBoundaryIsometryGroup (sign)
+open SignedBoundaryIsometryGroup (sign cycleOrientationSign_boundaryAction)
 
 local notation "S" => Spec (CommRingCat.of ℂ)
 local notation "Centers[" r "]" => Over.mk (structureMap ℂ (Fin r → ℤ))
@@ -88,7 +88,7 @@ theorem nonempty_presentationPicardLoopRealization
     Nonempty (PresentationPicardLoopRealization M P ρ g) := by
   have hK : P.charge.ker ≤ (Fan.rayChargeMap Q.rays).ker :=
     le_of_eq (congrArg LinearMap.ker hcharge)
-  obtain ⟨c₀, c₁, -, hm₁, hword, hprim₀, hnef₀, hsq₀, -, -, e, act, hsign, -, hact, hpic⟩ :=
+  obtain ⟨c₀, c₁, -, hm₁, hword, hprim₀, hnef₀, hsq₀, -, -, e, hact, hpic⟩ :=
     Q.exists_root_free_pair_iso_of_signed_boundary_isometry P hK hD
       (fun c' ↦ funext (hmark c')) href hprim hnef hsq models g
   have hsgn :
@@ -96,7 +96,7 @@ theorem nonempty_presentationPicardLoopRealization
       letI : PrestableFamily ((M c₁).boundary ↘ S) := (M c₁).prestable
       DihedralGroup.cycleOrientationSign ((boundaryIso e).boundaryCycleAction
         (M c₀).cycle (M c₁).cycle) = sign B d g := by
-    rw [hact, hsign]
+    rw [hact, cycleOrientationSign_boundaryAction]
   let signedIso : SignedPicardPairIso (M c₀) (M c₁) g := ⟨e, hsgn, hpic⟩
   obtain ⟨R⟩ := nonempty_picardLoopRealization_of_pair_iso P hform hcharge
     models hm₁ hnef₀ hsq₀ hprim₀ (fun w ↦ (hword w).1) ρ hρ signedIso
