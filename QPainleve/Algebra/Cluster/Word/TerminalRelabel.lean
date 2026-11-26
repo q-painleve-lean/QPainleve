@@ -40,6 +40,31 @@ namespace QPainleve.Cluster.Generator
 
 variable [DecidableEq ι] [CoefficientSemifield P]
 
+/-- Appending a relabeling to a generator list reindexes its final Y-seed. -/
+theorem ySeed_wordOfList_append_permute (B : SkewExchangeMatrix ι)
+    (gs : List (Generator ι)) (τ : Equiv.Perm ι) (s : YSeed ι P) :
+    (wordOfList B (gs ++ [.permute τ])).2.ySeed s =
+      (gs.foldl (fun t g ↦ g.ySeed t) s).reindex τ.symm := by
+  simp [Path.ySeed_eq_foldl_generators, List.foldl_append]
+
+/-- A generator list followed by a terminal relabeling closes exactly when its
+relabeled Y-seed matrix agrees entrywise with the initial matrix. -/
+theorem wordOfList_append_permute_fst_eq_iff (B : SkewExchangeMatrix ι)
+    (gs : List (Generator ι)) (τ : Equiv.Perm ι) (s : YSeed ι P)
+    (hs : s.exchangeMatrix = B.val) :
+    (wordOfList B (gs ++ [.permute τ])).1 = B ↔
+      ∀ i j, (gs.foldl (fun t g ↦ g.ySeed t) s).exchangeMatrix.matrix (τ i) (τ j) =
+        B.val.matrix i j := by
+  let w := wordOfList B (gs ++ [.permute τ])
+  have hm (i j : ι) : w.1.val.matrix i j =
+      (gs.foldl (fun t g ↦ g.ySeed t) s).exchangeMatrix.matrix (τ i) (τ j) := by
+    rw [← w.2.ySeed_exchangeMatrix s hs]
+    simp [w, ySeed_wordOfList_append_permute]
+  simp only [← hm]
+  refine ⟨fun h i j ↦ congrArg (fun M : SkewExchangeMatrix ι ↦ M.val.matrix i j) h, ?_⟩
+  intro h
+  exact Subtype.ext (ExchangeMatrix.ext (Matrix.ext h) (w.1.property.trans B.property.symm))
+
 /-- A list of generators acts on a seed as mutations and inversions followed by one relabeling. -/
 theorem exists_foldl_ySeed_eq_reindex (gs : List (Generator ι)) (s : YSeed ι P) :
     ∃ (ps : List (Option ι)) (τ : Equiv.Perm ι),

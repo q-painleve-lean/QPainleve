@@ -35,6 +35,14 @@ def compareSignedLoopLists (orders : Fin n → Fin r → ℤ)
   Option.map₂ (B.compareSignedLoops orders)
     (Generator.loopOfList? B gs) (Generator.loopOfList? B hs)
 
+/-- The list comparison applies the typed comparison when both endpoint tests succeed. -/
+theorem compareSignedLoopLists_def (orders : Fin n → Fin r → ℤ)
+    (gs hs : List (Generator (Fin r))) :
+    B.compareSignedLoopLists orders gs hs =
+      Option.map₂ (B.compareSignedLoops orders)
+        (Generator.loopOfList? B gs) (Generator.loopOfList? B hs) :=
+  (rfl)
+
 /-- The comparison fails exactly when at least one computed endpoint differs from `B`. -/
 @[simp]
 theorem compareSignedLoopLists_eq_none_iff (orders : Fin n → Fin r → ℤ)

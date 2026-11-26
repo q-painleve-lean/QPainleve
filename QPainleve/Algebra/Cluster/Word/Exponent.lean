@@ -21,6 +21,45 @@ public section
 open Quiver
 open scoped Matrix
 
+namespace QPainleve.Cluster.SkewExchangeMatrix
+
+variable {ι κ : Type*} [Fintype ι] [Fintype κ]
+
+/-- The exchange kernel in the new labeling is the preimage of the old kernel
+under the coordinate permutation back to the old labels. -/
+theorem exchangeKernel_reindex (B : SkewExchangeMatrix ι) (e : ι ≃ κ) :
+    (B.reindex e).matrix.mulVecLin.ker =
+      B.matrix.mulVecLin.ker.comap (LinearEquiv.funCongrLeft ℤ ℤ e).toLinearMap := by
+  rw [reindex_matrix, ← Matrix.reindex_apply e e,
+    Matrix.mulVecLin_reindex,
+    LinearMap.ker_comp_of_ker_eq_bot _ (LinearMap.ker_eq_bot.mpr
+      (LinearEquiv.funCongrLeft ℤ ℤ e.symm).injective), LinearMap.ker_comp]
+
+variable [DecidableEq ι] [DecidableEq κ]
+
+/-- Transport exponents in a relabeled exchange kernel back to the original labels. -/
+def exchangeKernelReindex (B : SkewExchangeMatrix ι) (e : ι ≃ κ) :
+    ((reindexPrefunctor e).obj B).matrix.mulVecLin.ker ≃ₗ[ℤ] B.matrix.mulVecLin.ker :=
+  (LinearEquiv.ofEq _ _ (by
+    simpa only [reindexPrefunctor_obj] using B.exchangeKernel_reindex e)).trans
+    ((LinearEquiv.funCongrLeft ℤ ℤ e).ofSubmodule' B.matrix.mulVecLin.ker)
+
+/-- The kernel equivalence reads the exponent at the new label for each old label. -/
+@[simp]
+theorem coe_exchangeKernelReindex_apply (B : SkewExchangeMatrix ι) (e : ι ≃ κ)
+    (x : ((reindexPrefunctor e).obj B).matrix.mulVecLin.ker) :
+    (B.exchangeKernelReindex e x : ι → ℤ) = (x : κ → ℤ) ∘ e :=
+  (rfl)
+
+/-- The inverse kernel equivalence reads the original exponents at the new labels. -/
+@[simp]
+theorem coe_exchangeKernelReindex_symm_apply (B : SkewExchangeMatrix ι) (e : ι ≃ κ)
+    (x : B.matrix.mulVecLin.ker) :
+    ((B.exchangeKernelReindex e).symm x : κ → ℤ) = (x : ι → ℤ) ∘ e.symm :=
+  (rfl)
+
+end QPainleve.Cluster.SkewExchangeMatrix
+
 namespace QPainleve.Cluster.Step
 
 variable {ι : Type*} [Fintype ι] [DecidableEq ι]
@@ -58,6 +97,23 @@ theorem exponentEquiv_invert (B : SkewExchangeMatrix ι) :
     exponentEquiv (Generator.invert.toStep B) = LinearEquiv.neg ℤ := by
   rw [exponentEquiv_eq, Generator.toStep_generator]
 
+/-- A relabeled step transports the relabeled exponents. -/
+theorem exponentEquiv_reindex {κ : Type*} [Fintype κ] [DecidableEq κ]
+    (s : B ⟶ C) (e : ι ≃ κ) (x : ι → ℤ) :
+    exponentEquiv ((SkewExchangeMatrix.reindexPrefunctor e).map s) (x ∘ e.symm) =
+      exponentEquiv s x ∘ e.symm := by
+  simp only [exponentEquiv_eq, SkewExchangeMatrix.reindexPrefunctor_map_generator,
+    SkewExchangeMatrix.reindexPrefunctor_obj]
+  cases s.generator with
+  | mutate j => simpa only [Generator.reindex_mutate, SkewExchangeMatrix.reindex_matrix] using
+      chargeMutationEquiv_reindex B.matrix e j x
+  | permute σ =>
+    funext i
+    simp [LinearEquiv.funCongrLeft_apply, Function.comp_def, Equiv.symm_trans]
+  | invert =>
+    funext i
+    simp [Generator.reindex_invert]
+
 /-- Casting the endpoints of a step does not change its exponent substitution. -/
 @[simp]
 theorem exponentEquiv_cast {B' C' : SkewExchangeMatrix ι} (s : B ⟶ C)
@@ -91,13 +147,7 @@ theorem exchangeKernel_comap (s : B ⟶ C) :
   cases g with
   | mutate p => simpa [exponentEquiv] using ker_mutate B p
   | permute σ =>
-    have h := Matrix.mulVecLin_reindex σ.symm σ.symm B.matrix
-    simp only [Matrix.reindex_apply, Equiv.symm_symm] at h
-    simp only [exponentEquiv, Generator.target_permute, SkewExchangeMatrix.reindex_matrix,
-      Equiv.symm_symm]
-    rw [h, LinearMap.ker_comp_of_ker_eq_bot _
-      (LinearMap.ker_eq_bot.mpr (LinearEquiv.funCongrLeft ℤ ℤ σ).injective),
-      LinearMap.ker_comp]
+    simpa only [exponentEquiv, Generator.target_permute] using B.exchangeKernel_reindex σ.symm
   | invert =>
     ext x
     simp [exponentEquiv, Submodule.mem_comap, LinearMap.mem_ker]
@@ -141,6 +191,17 @@ theorem exponentEquiv_comp (w : Word B C) (w' : Word C D) :
     ext x i
     simp
 
+/-- The exponent substitution of a word commutes with changing its labels. -/
+theorem exponentEquiv_reindex {κ : Type*} [Fintype κ] [DecidableEq κ]
+    (w : Word B C) (e : ι ≃ κ) (x : ι → ℤ) :
+    ((SkewExchangeMatrix.reindexPrefunctor e).mapPath w).exponentEquiv (x ∘ e.symm) =
+      w.exponentEquiv x ∘ e.symm := by
+  induction w generalizing x with
+  | nil => simp
+  | cons w s ih =>
+    rw [Prefunctor.mapPath_cons, exponentEquiv_cons, exponentEquiv_cons, LinearEquiv.trans_apply,
+      LinearEquiv.trans_apply, Step.exponentEquiv_reindex, ih]
+
 /-- The terminal exchange kernel is the preimage of the initial exchange kernel under
 the composite exponent substitution. -/
 theorem exchangeKernel_comap (w : Word B C) :
@@ -167,6 +228,40 @@ theorem coe_exchangeKernelEquiv_apply (w : Word B C) (x : C.matrix.mulVecLin.ker
 theorem coe_exchangeKernelEquiv_symm_apply (w : Word B C) (x : B.matrix.mulVecLin.ker) :
     (w.exchangeKernelEquiv.symm x : ι → ℤ) = w.exponentEquiv.symm (x : ι → ℤ) :=
   (rfl)
+
+/-- Returning to the old labels commutes with transport along a relabeled word. -/
+theorem exchangeKernelEquiv_reindex {κ : Type*} [Fintype κ] [DecidableEq κ]
+    (w : Word B C) (e : ι ≃ κ) :
+    (((SkewExchangeMatrix.reindexPrefunctor e).mapPath w).exchangeKernelEquiv).trans
+      (B.exchangeKernelReindex e) = (C.exchangeKernelReindex e).trans w.exchangeKernelEquiv := by
+  ext x i
+  simp only [LinearEquiv.trans_apply, SkewExchangeMatrix.coe_exchangeKernelReindex_apply,
+    coe_exchangeKernelEquiv_apply]
+  have h := w.exponentEquiv_reindex e ((x : κ → ℤ) ∘ e)
+  have hx : ((x : κ → ℤ) ∘ e) ∘ e.symm = x := by
+    funext j
+    simp
+  rw [hx] at h
+  simpa only [Function.comp_apply, Equiv.symm_apply_apply] using congrFun h (e i)
+
+/-- Equality of exchange-kernel transports is independent of the labels. -/
+theorem exchangeKernelEquiv_reindex_eq_iff {κ : Type*} [Fintype κ] [DecidableEq κ]
+    (w v : Word B C) (e : ι ≃ κ) :
+    ((SkewExchangeMatrix.reindexPrefunctor e).mapPath w).exchangeKernelEquiv =
+      ((SkewExchangeMatrix.reindexPrefunctor e).mapPath v).exchangeKernelEquiv ↔
+      w.exchangeKernelEquiv = v.exchangeKernelEquiv := by
+  constructor
+  · intro h
+    have he := congrArg (fun f ↦ f.trans (B.exchangeKernelReindex e)) h
+    rw [w.exchangeKernelEquiv_reindex, v.exchangeKernelEquiv_reindex] at he
+    simpa only [LinearEquiv.symm_trans_cancel_left] using
+      congrArg (fun f ↦ (C.exchangeKernelReindex e).symm.trans f) he
+  · intro h
+    have he := (w.exchangeKernelEquiv_reindex e).trans
+      ((congrArg ((C.exchangeKernelReindex e).trans) h).trans
+        (v.exchangeKernelEquiv_reindex e).symm)
+    simpa only [LinearEquiv.trans_symm_cancel_right] using
+      congrArg (fun f ↦ f.trans (B.exchangeKernelReindex e).symm) he
 
 @[simp]
 theorem exchangeKernelEquiv_nil :
