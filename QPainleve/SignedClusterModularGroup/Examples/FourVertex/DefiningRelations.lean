@@ -21,7 +21,7 @@ quantization*, equation (3.1), satisfy `p⁴ = (pt)² = (p³t)² = 1`. Adjoining
 the reflection `s` adds the three relations `s² = (sp)² = (spt)² = 1`.
 Together with `p⁴ = 1`, the two mixed relators make the half-turn `p²` commute with `t`.
 
-The integer relation criterion verifies the relators on independent X maps.
+The integer relation criterion verifies the relators on independent X maps over any field.
 The relators collect every element of the presented groups into the power forms
 `pⁱtᵐ` and `pⁱtᵐsᵉ`. Uniqueness of those forms on X maps proves completeness.
 -/
@@ -33,11 +33,13 @@ open QPainleve.Cluster
 
 namespace QPainleve.FourVertex
 
+variable (k : Type*) [Field k]
+
 local notation "B" => exchangeMatrix
-local notation "Γ" => ClusterModularGroup ℂ B
-local notation "Γs" => SignedClusterModularGroup ℂ B
+local notation "Γ" => ClusterModularGroup k B
+local notation "Γs" => SignedClusterModularGroup k B
 local notation "unsigned[" w "," h "]" =>
-  clusterModularGroupMap ℂ B
+  clusterModularGroupMap k B
     (Subtype.mk (End.of w) (Iff.mpr (mem_inversionFreeLoops_iff B (End.of w)) h))
 
 /-- The unsigned relators `p⁴`, `(pt)²`, `(p³t)²`, in point-map multiplication order.
@@ -122,10 +124,10 @@ theorem map_eq_one_on_signedRelators {G : Type*} [Monoid G]
   rfl
 
 private def point (w : Word B B) : Γs :=
-  signedClusterModularGroupMap ℂ B (End.of w)
+  signedClusterModularGroupMap k B (End.of w)
 
-private theorem point_comp (u v : Word B B) : point (u.comp v) = point v * point u :=
-  (signedClusterModularGroupMap ℂ B).map_mul (End.of v) (End.of u)
+private theorem point_comp (u v : Word B B) : point k (u.comp v) = point k v * point k u :=
+  (signedClusterModularGroupMap k B).map_mul (End.of v) (End.of u)
 
 local notation "tropical" => Paths.lift (tropicalPrefunctor (A := ℤ) (Fin 4))
 
@@ -142,11 +144,11 @@ private theorem point_eq_one_of_actions (w : Word B B)
     (hSign : Even w.inversionCount)
     (hKernel : ∀ x, exponents[w,x] = exchangeKernelEquiv x)
     (hBoundary : Equiv.toFun ((tropical).map w) (boundaryOrders 0) = boundaryOrders 0) :
-    point w = 1 := by
+    point k w = 1 := by
   unfold point
-  rw [← map_one (signedClusterModularGroupMap ℂ B)]
-  apply (signedClusterModularGroupMap_eq_iff ℂ B (End.of w) 1).mpr
-  apply (xPullback_eq_iff_signedLoopInvariants_eq ℂ w Path.nil).mpr
+  rw [← map_one (signedClusterModularGroupMap k B)]
+  apply (signedClusterModularGroupMap_eq_iff k B (End.of w) 1).mpr
+  apply (xPullback_eq_iff_signedLoopInvariants_eq k w Path.nil).mpr
   have hK : w.exchangeKernelEquiv = (Path.nil : Word B B).exchangeKernelEquiv :=
     LinearEquiv.ext fun x ↦ by
       obtain ⟨y, rfl⟩ := exchangeKernelEquiv.surjective x
@@ -160,17 +162,17 @@ private theorem point_eq_one_of_actions (w : Word B B)
   rfl
 
 private theorem point_satisfies_relators :
-    let p := point rotationWord
-    let t := point translationWord
-    let s := point reflectionWord
+    let p := point k rotationWord
+    let t := point k translationWord
+    let s := point k reflectionWord
     (p ^ 4 = 1 ∧ (p * t) ^ 2 = 1 ∧ (p ^ 3 * t) ^ 2 = 1) ∧
       s ^ 2 = 1 ∧ (s * p) ^ 2 = 1 ∧ (s * p * t) ^ 2 = 1 := by
   dsimp only
-  have hp4 : point rotationWord ^ 4 = (point rotationWord ^ 2) ^ 2 := pow_mul _ 2 2
+  have hp4 : point k rotationWord ^ 4 = (point k rotationWord ^ 2) ^ 2 := pow_mul _ 2 2
   refine ⟨⟨?_, ?_, ?_⟩, ?_, ?_, ?_⟩
   all_goals
-    simp only [hp4, pow_succ (point rotationWord) 2, pow_two, ← point_comp]
-    apply point_eq_one_of_actions
+    simp only [hp4, pow_succ (point k rotationWord) 2, pow_two, ← point_comp k]
+    apply point_eq_one_of_actions k
     · simp [Path.inversionCount_comp]
     · intro x
       simp only [Path.exchangeKernelEquiv_comp, LinearEquiv.trans_apply,
@@ -314,16 +316,16 @@ end Collection
 open scoped Matrix
 
 private def signedGenerators : Fin 3 → Γs :=
-  ![point rotationWord, point translationWord, point reflectionWord]
+  ![point k rotationWord, point k translationWord, point k reflectionWord]
 
 private def unsignedGenerators : Fin 2 → Γ :=
   ![unsigned[rotationWord,inversionCount_rotationWord],
     unsigned[translationWord,inversionCount_translationWord]]
 
 private theorem lift_signedGenerators : ∀ r ∈ signedRelators,
-    FreeGroup.lift signedGenerators r = 1 :=
-  (map_eq_one_on_signedRelators (FreeGroup.lift signedGenerators)).mpr (by
-    simpa [signedGenerators] using point_satisfies_relators)
+    FreeGroup.lift (signedGenerators k) r = 1 :=
+  (map_eq_one_on_signedRelators (FreeGroup.lift (signedGenerators k))).mpr (by
+    simpa [signedGenerators] using point_satisfies_relators k)
 
 private theorem unsignedRelators_mapsTo_signedRelators :
     Set.MapsTo (FreeGroup.map Fin.castSucc) unsignedRelators signedRelators := by
@@ -331,15 +333,15 @@ private theorem unsignedRelators_mapsTo_signedRelators :
   exact Set.subset_union_left
 
 private theorem lift_unsignedGenerators (r : FreeGroup (Fin 2)) (hr : r ∈ unsignedRelators) :
-    FreeGroup.lift unsignedGenerators r = 1 := by
-  apply clusterModularGroupInclusion_injective ℂ B
-  have hlift : (clusterModularGroupInclusion ℂ B).comp (FreeGroup.lift unsignedGenerators) =
-      (FreeGroup.lift signedGenerators).comp (FreeGroup.map Fin.castSucc) := by
+    FreeGroup.lift (unsignedGenerators k) r = 1 := by
+  apply clusterModularGroupInclusion_injective k B
+  have hlift : (clusterModularGroupInclusion k B).comp (FreeGroup.lift (unsignedGenerators k)) =
+      (FreeGroup.lift (signedGenerators k)).comp (FreeGroup.map Fin.castSucc) := by
     apply FreeGroup.ext_hom
     intro j
     fin_cases j <;> simp [unsignedGenerators, signedGenerators, point]
   rw [map_one, ← MonoidHom.comp_apply, hlift]
-  exact lift_signedGenerators _ (unsignedRelators_mapsTo_signedRelators hr)
+  exact lift_signedGenerators k _ (unsignedRelators_mapsTo_signedRelators hr)
 
 local notation "pu" => PresentedGroup.of (rels := unsignedRelators) (0 : Fin 2)
 local notation "tu" => PresentedGroup.of (rels := unsignedRelators) (1 : Fin 2)
@@ -361,7 +363,7 @@ private theorem signedPresentedGroup_relations :
 /-- The unsigned group of independent X maps is presented by the rotation, translation,
 and `unsignedRelators`. The equivalence sends the abstract generators to the two point maps. -/
 def unsignedPresentationMulEquiv : PresentedGroup unsignedRelators ≃* Γ := by
-  let f := PresentedGroup.toGroup lift_unsignedGenerators
+  let f := PresentedGroup.toGroup (lift_unsignedGenerators k)
   let collect (a : Fin 4 × ℤ) := pu ^ (a.1 : ℕ) * tu ^ a.2
   have hcollect : Function.Surjective collect := by
     intro g
@@ -372,16 +374,16 @@ def unsignedPresentationMulEquiv : PresentedGroup unsignedRelators ≃* Γ := by
         · exact Subgroup.mem_sup_right (Subgroup.mem_zpowers tu)) g
     obtain ⟨hp, hpt, hppt⟩ := unsignedPresentedGroup_relations
     exact rotationTranslation_normal_form hp hpt hppt hg
-  have hcomp : f ∘ collect = unsignedNormalFormEquiv := by
+  have hcomp : f ∘ collect = unsignedNormalFormEquiv k := by
     funext a
     simp [f, collect, unsignedGenerators]
-  have hf := hcomp ▸ unsignedNormalFormEquiv.bijective
+  have hf := hcomp ▸ (unsignedNormalFormEquiv k).bijective
   exact MulEquiv.ofBijective f ⟨hf.injective.of_comp_right hcollect, hf.surjective.of_comp⟩
 
 /-- The signed group of independent X maps is presented by the rotation, translation,
 reflection, and `signedRelators`. The equivalence preserves the point-map product order. -/
 def signedPresentationMulEquiv : PresentedGroup signedRelators ≃* Γs := by
-  let f := PresentedGroup.toGroup lift_signedGenerators
+  let f := PresentedGroup.toGroup (lift_signedGenerators k)
   let collect (a : Fin 2 × Fin 4 × ℤ) := ps ^ (a.2.1 : ℕ) * ts ^ a.2.2 * ss ^ (a.1 : ℕ)
   have hcollect : Function.Surjective collect := by
     intro g
@@ -393,34 +395,34 @@ def signedPresentationMulEquiv : PresentedGroup signedRelators ≃* Γs := by
         · exact Subgroup.mem_sup_right (Subgroup.mem_zpowers ss)) g
     obtain ⟨⟨hp, hpt, hppt⟩, hs, hsp, hspt⟩ := signedPresentedGroup_relations
     exact rotationTranslationReflection_normal_form hp hpt hppt hs hsp hspt hg
-  have hcomp : f ∘ collect = signedNormalFormEquiv := by
+  have hcomp : f ∘ collect = signedNormalFormEquiv k := by
     funext a
     simp [f, collect, signedGenerators, point]
-  have hf := hcomp ▸ signedNormalFormEquiv.bijective
+  have hf := hcomp ▸ (signedNormalFormEquiv k).bijective
   exact MulEquiv.ofBijective f ⟨hf.injective.of_comp_right hcollect, hf.surjective.of_comp⟩
 
 /-- The unsigned presentation evaluates its generators as the rotation and translation. -/
 @[simp]
 theorem unsignedPresentationMulEquiv_apply_of (i : Fin 2) :
-    unsignedPresentationMulEquiv (PresentedGroup.of i) =
+    unsignedPresentationMulEquiv k (PresentedGroup.of i) =
       ![unsigned[rotationWord,inversionCount_rotationWord],
         unsigned[translationWord,inversionCount_translationWord]] i :=
-  PresentedGroup.toGroup.of lift_unsignedGenerators
+  PresentedGroup.toGroup.of (lift_unsignedGenerators k)
 
 /-- The signed presentation evaluates its generators as the rotation, translation and reflection. -/
 @[simp]
 theorem signedPresentationMulEquiv_apply_of (i : Fin 3) :
-    signedPresentationMulEquiv (PresentedGroup.of i) =
-      ![signedClusterModularGroupMap ℂ B (End.of rotationWord),
-        signedClusterModularGroupMap ℂ B (End.of translationWord),
-        signedClusterModularGroupMap ℂ B (End.of reflectionWord)] i :=
-  PresentedGroup.toGroup.of lift_signedGenerators
+    signedPresentationMulEquiv k (PresentedGroup.of i) =
+      ![signedClusterModularGroupMap k B (End.of rotationWord),
+        signedClusterModularGroupMap k B (End.of translationWord),
+        signedClusterModularGroupMap k B (End.of reflectionWord)] i :=
+  PresentedGroup.toGroup.of (lift_signedGenerators k)
 
 /-- The inverse presentation equivalence lifts an unsigned point map in normal form to the
 same product of powers of the abstract generators. -/
 @[simp↓] -- Lift the normal form before its evaluation expands the point-map powers.
 theorem unsignedPresentationMulEquiv_symm_apply_unsignedNormalFormEquiv (a : Fin 4 × ℤ) :
-    unsignedPresentationMulEquiv.symm (unsignedNormalFormEquiv a) =
+    (unsignedPresentationMulEquiv k).symm (unsignedNormalFormEquiv k a) =
       pu ^ (a.1 : ℕ) * tu ^ a.2 := by
   rw [MulEquiv.symm_apply_eq]
   simp
@@ -429,7 +431,7 @@ theorem unsignedPresentationMulEquiv_symm_apply_unsignedNormalFormEquiv (a : Fin
 same product of powers of the abstract generators. -/
 @[simp↓] -- Lift the normal form before its evaluation expands the point-map powers.
 theorem signedPresentationMulEquiv_symm_apply_signedNormalFormEquiv (a : Fin 2 × Fin 4 × ℤ) :
-    signedPresentationMulEquiv.symm (signedNormalFormEquiv a) =
+    (signedPresentationMulEquiv k).symm (signedNormalFormEquiv k a) =
       ps ^ (a.2.1 : ℕ) * ts ^ a.2.2 * ss ^ (a.1 : ℕ) := by
   rw [MulEquiv.symm_apply_eq]
   simp
@@ -449,8 +451,8 @@ theorem unsignedPresentationInclusion_apply_of (i : Fin 2) :
 
 /-- The two presentations identify the inclusion of the unsigned point maps. -/
 theorem signedPresentationMulEquiv_comp_unsignedPresentationInclusion :
-    signedPresentationMulEquiv.toMonoidHom.comp unsignedPresentationInclusion =
-      (clusterModularGroupInclusion ℂ B).comp unsignedPresentationMulEquiv.toMonoidHom := by
+    (signedPresentationMulEquiv k).toMonoidHom.comp unsignedPresentationInclusion =
+      (clusterModularGroupInclusion k B).comp (unsignedPresentationMulEquiv k).toMonoidHom := by
   apply PresentedGroup.ext
   intro i
   fin_cases i <;> simp
