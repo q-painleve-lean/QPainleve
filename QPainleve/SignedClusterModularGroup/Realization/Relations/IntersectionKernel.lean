@@ -202,9 +202,9 @@ private theorem survivingRayOffsetsOfIntersectionMatrix_eq
   refine (survivingRayOffsetsOfIntersectionMatrix_eq_some_iff _ _).mpr ⟨_, hkernel, fun j ↦ ?_⟩
   rw [p₀.mem_survivingBoundaryRayOffsets, p₀.mem_range_numberedBoundaryRays_iff,
     Fan.rayFinEquivOfNodalCycleNumbering_apply]
-  simpa only [enum, Equiv.trans_apply, RingEquiv.toEquiv_eq_coe, RingEquiv.coe_toEquiv,
-    Fan.internalBlowupBoundaryPrimeEquivOfIso_apply_val, Iso.symm_hom, ← Scheme.Hom.comp_apply,
-    he] using hsurvives j
+  simpa only [Function.comp_apply, enum, Equiv.trans_apply, RingEquiv.toEquiv_eq_coe,
+    RingEquiv.coe_toEquiv, Fan.internalBlowupBoundaryPrimeEquivOfIso_apply_val, Iso.symm_hom,
+    ← Scheme.Hom.comp_apply, he] using hsurvives j
 
 /-- The weight-one offsets computed from the ordered toric ray coordinates are exactly
 those of the numbered boundary of the nef square-zero pair. -/
