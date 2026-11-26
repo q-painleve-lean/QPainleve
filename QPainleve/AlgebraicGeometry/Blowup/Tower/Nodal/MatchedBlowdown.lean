@@ -12,13 +12,10 @@ public import QPainleve.AlgebraicGeometry.Curves.Node.Conductor.Subdivision
 public import QPainleve.AlgebraicGeometry.Modules.Differentials.Canonical
 
 import QPainleve.AlgebraicGeometry.Blowup.Exceptional.FirstKind
-import QPainleve.AlgebraicGeometry.Blowup.Tower.Boundary.Numbering
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Isometry.PointBlowdown
-import QPainleve.AlgebraicGeometry.Blowup.Tower.Nodal.Blowdown
+import QPainleve.AlgebraicGeometry.Blowup.Tower.Nodal.PrescribedBlowdown
 import QPainleve.AlgebraicGeometry.Chow.RationalSurface.ExceptionalCurve
 import QPainleve.AlgebraicGeometry.EffectiveCartierDivisor.BoundaryPrimes
-import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
-import QPainleve.AlgebraicGeometry.Morphisms.IsoLocus
 import TauCeti.AlgebraicGeometry.Curves.Node.Reduced
 
 /-!
@@ -51,8 +48,6 @@ local notation "S(" k ")" => Spec (CommRingCat.of k)
 local notation "g(" k ", " X ")" => (X ↘ S(k))
 local notation "K(" k ", " X ")" => LineBundleClass.mk (canonicalBundle k X 2)
 local notation "I(" p ")" => Scheme.Hom.ker (Scheme.fromSpecResidueField _ p)
-local notation "J(" Y ", " p ")" => vanishingIdeal (X := Y)
-  (Closeds.mk (closure {p}) isClosed_closure)
 local notation "P(" D ", " a ")" => Additive.ofMul (primeDivisorClass (boundaryPrimeEmbedding D a))
 local notation "C(" a ")" => vanishingIdeal (Closeds.mk (closure {Subtype.val a}) isClosed_closure)
 
@@ -145,10 +140,8 @@ theorem exists_matched_nodal_boundary_blowdown
                   ∀ x : Additive (LineBundleClass Y₀),
                     e (Additive.ofMul (pullback f₀ x.toMul)) =
                       Additive.ofMul (pullback f (e₀ x).toMul) := by
-  have hN : AtWorstNodalOfRelativeDimensionOne (F.subschemeι ≫ g(k, Z)) := by
-    rw [← F.over_eq_subschemeι_comp]
-    exact PrestableFamily.atWorstNodalOfRelativeDimensionOne
-  let : IsReduced F.subscheme := hN.isReduced
+  let : IsReduced F.subscheme :=
+    (PrestableFamily.atWorstNodalOfRelativeDimensionOne (f := F.subscheme ↘ S(k))).isReduced
   let : Smooth g(k, Y₀) := SmoothOfRelativeDimension.smooth 2 _
   let : IsLocallyNoetherian Y₀ := LocallyOfFiniteType.isLocallyNoetherian g(k, Y₀)
   let : IsRegularLocalRing (Y₀.presheaf.stalk p₀) := isRegularLocalRing_stalk_of_smooth g(k, Y₀) p₀
@@ -159,41 +152,16 @@ theorem exists_matched_nodal_boundary_blowdown
     have hex := isExceptionalCurveOfFirstKind_comap_blowupToBase_of_closedPoint p₀ hp₀ hd₀
     exact hex.comap_of_isIso a₀.hom
   have hcurve := isExceptionalCurveOfFirstKind_of_boundaryPrime_match hD hF hcanD hcanF e σ hσ hq
-  have hsupport : (C(σ q)).support ≤ F.support := by
-    rw [← SetLike.coe_subset_coe, coe_support_vanishingIdeal]
-    exact closure_minimal (Set.singleton_subset_iff.mpr (mem_boundaryPrimes.mp (σ q).property).1)
-      F.support.isClosed
-  obtain ⟨Y, s, f, p, hY, hproj, hsm, hf, hmod, hp, hcentre, hfiberJ, aJ, haJ, _, _, _, hT, _, _⟩ :=
-    hF.exists_nodal_boundary_blowdown hN hcanF hcurve hsupport
+  obtain ⟨Y, s, f, p, hY, hproj, hsm, hRat, hf, hmod, hp, hfiber, a, ha,
+    hE, hpre, hcan, hnode, htotal, _, n, hn, hlen, B, β, hβ, hsub⟩ :=
+    A.exists_numbered_nodal_boundary_blowdown hF hcanF (σ q) hcurve
   let : Y.Over S(k) := ⟨s⟩
   let : IsIntegral Y := hY
   let : Y.IsProjectiveOver k := hproj
   let : SmoothOfRelativeDimension 2 g(k, Y) := hsm
   let : f.IsOver S(k) := hf
-  let : IsModification f := hmod
-  obtain ⟨bir, hbir⟩ := IsModification.birationalOver f
-  have hft : f ≫ g(k, Y) = g(k, Z) := comp_over f _
-  have hBir : BirationalOver g(k, Z) g(k, Y) := ⟨bir, by
-    simpa only [Category.assoc, Category.comp_id, hft] using congrArg (· ≫ g(k, Y)) hbir⟩
-  have hRat := hBir.symm.isRationalOver g(k, Y) g(k, Z)
-  let T := BlowupTower.nil.snoc (J(Y, p))
-  have haJ' : aJ.hom ≫ T.toBase = f := haJ
-  have hnode : (F.map f).IsNodeOfReducedBoundary g(k, Y) p := by
-    let : IsLocallyNoetherian Y := LocallyOfFiniteType.isLocallyNoetherian g(k, Y)
-    apply hT.centre_subset_nodes
-    rw [Scheme.Hom.centre_def, ← Scheme.Hom.isoLocus_comp_of_isIso aJ.hom, haJ',
-      ← Scheme.Hom.centre_def, hcentre]
-    exact Set.mem_singleton p
-  have hI : I(p) = J(Y, p) := Y.ker_fromSpecResidueField_eq_vanishingIdeal p
-  let a := aJ ≪≫ blowupIso (Iso.refl Y) (hI.symm.trans (comap_id _).symm)
-  have ha : a.hom ≫ (I(p)).blowupToBase = f := by
-    simpa only [a, Iso.trans_hom, Category.assoc, blowupIso_hom_blowupToBase,
-      Iso.refl_hom, Category.comp_id, T, toBase_snoc, toBase_nil] using haJ'
-  have hfiber : (I(p)).comap f = C(σ q) := hI.symm ▸ hfiberJ
-  obtain ⟨hE, hpre, hcan, htotal, n, hn, hlen, B, β, hβ, hsub⟩ :=
-    hF.exists_numbering_of_exceptional_boundary_contraction A hcanF hp a ha (hfiber ▸ hsupport)
   refine ⟨Y, s, f, p, hY, hproj, hsm, hRat, hf, hmod, hp, hfiber, a, ha,
-    hE, hpre, hcan, hfiber ▸ htotal, hnode, n, hn, hlen, B, β, hβ, hsub, ?_⟩
+    hE, hpre, hcan, htotal, hnode, n, hn, hlen, B, β, hβ, hsub, ?_⟩
   refine existsUnique_picardIsometry_of_pointBlowdowns hp₀ hp a₀ a ha₀ ha e ?_
   rw [pullback_blowupExceptionalClass_eq_boundaryPrime a₀ ha₀ q hfiber₀,
     pullback_blowupExceptionalClass_eq_boundaryPrime a ha (σ q) hfiber]
