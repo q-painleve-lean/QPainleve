@@ -55,8 +55,8 @@ local notation "dst[" C "," x "]" =>
 local notation "eval[" E "," w "]" => op (signedClusterModularGroupMap ℂ E (End.of w))
 local notation "Cw[" w "," P "]" => Quiver.Path.centerPartialMap ℂ w P
 
-open MarkedSurface (surfaceIso boundaryIso)
-open SignedBoundaryIsometryGroup (sign toIsometry)
+open MarkedSurface (surfaceIso)
+open SignedBoundaryIsometryGroup (sign)
 
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {b : Module.Basis (Fin 2) ℤ N} {r n : ℕ} [NeZero n]
@@ -97,32 +97,28 @@ theorem signedPicardHom_apply_of_pair_iso_on_resolution
     {c₁ : Point Centers[r]} (p : Model[dst[C,x]]) (q : Model[c₁])
     (hι : Function.Injective Q.inclusion)
     (hindex : (Fan.rayChargeMap Q.rays).range.toAddSubgroup.index ≠ 0)
-    (e : (M (src[C,x])).pair ≅ (M c₁).pair) (π : Z ⤏ (M (src[C,x])).surface) [π.IsDominant]
+    (e : SignedPicardPairIso (M (src[C,x])) (M c₁) g)
+    (π : Z ⤏ (M (src[C,x])).surface) [π.IsDominant]
     (he : ∃ h, (π.comp (M (src[C,x])).evaluation).compOfDefined (w.xRationalMap ℂ) h =
-      π.comp ((surfaceIso e).hom.toRationalMap.comp (M c₁).evaluation))
-    (hpic : ∀ a, (M (src[C,x])).picardMarking ((toIsometry B d g).val a) =
-      Additive.ofMul (LineBundleClass.pullback (surfaceIso e).hom ((M c₁).picardMarking a).toMul))
-    (hsgn : letI : PrestableFamily ((M (src[C,x])).boundary ↘ S) := (M (src[C,x])).prestable
-      letI : PrestableFamily ((M c₁).boundary ↘ S) := (M c₁).prestable
-      DihedralGroup.cycleOrientationSign ((boundaryIso e).boundaryCycleAction
-        (M (src[C,x])).cycle (M c₁).cycle) = sign B d g) :
+      π.comp ((surfaceIso e.iso).hom.toRationalMap.comp (M c₁).evaluation)) :
     ρ eval[E,w] = g := by
   let : IsIntegral (M (src[C,x])).surface := (M (src[C,x])).integral
   let : (M (src[C,x])).surface.IsProjectiveOver ℂ := (M (src[C,x])).projective
-  obtain ⟨hI, hbranch⟩ := (R.fiber x).marked_actions_eq_of_compOfDefined p q e Q.complete hι hindex
-    ((π.compOfDefined_eq_iff_of_dominant _ _ _).mp he)
+  obtain ⟨hI, hbranch⟩ := (R.fiber x).marked_actions_eq_of_compOfDefined p q e.iso Q.complete hι
+    hindex ((π.compOfDefined_eq_iff_of_dominant _ _ _).mp he)
   rw [hρ]
   apply Subtype.ext
   rw [coe_toSignedBoundaryIsometry]
-  rw [SignedBoundaryIsometryGroup.sign_apply] at hsgn
+  have hsgn := (SignedBoundaryIsometryGroup.sign_apply B d g) ▸ e.sign_eq
   refine Prod.ext ?_ (R.orientation_def.trans ((congrArg DihedralGroup.cycleOrientationSign
     hbranch).symm.trans hsgn))
   apply Subtype.ext
   apply LinearEquiv.ext
   intro a
   rw [LinearMap.BilinForm.coe_isometryGroupEquivIsometryEquiv_symm]
+  have hpic := e.picard_eq a
   rw [SignedBoundaryIsometryGroup.toIsometry_apply] at hpic
-  exact (M (src[C,x])).picardMarking.injective ((hI a).trans (hpic a).symm)
+  exact (M (src[C,x])).picardMarking.injective ((hI a).trans hpic.symm)
 
 /-- A loop whose evaluation realizes the specified pair isomorphism on a resolution
 represents the isomorphism's signed Picard action. When that action has positive sign,
@@ -135,17 +131,11 @@ theorem exists_picardLoopRealization_of_pair_iso_on_resolution
     (hp : Models[Cw[w,P]])
     (q : Model[c₁]) (hι : Function.Injective Q.inclusion)
     (hindex : (Fan.rayChargeMap Q.rays).range.toAddSubgroup.index ≠ 0)
-    (e : (M c₀).pair ≅ (M c₁).pair) (π : Z ⤏ (M c₀).surface) [π.IsDominant]
+    (e : SignedPicardPairIso (M c₀) (M c₁) g) (π : Z ⤏ (M c₀).surface) [π.IsDominant]
     (he : ∃ h, (π.comp (M c₀).evaluation).compOfDefined (w.xRationalMap ℂ) h =
-      π.comp ((surfaceIso e).hom.toRationalMap.comp (M c₁).evaluation))
-    (hpic : ∀ a, (M c₀).picardMarking ((toIsometry B d g).val a) =
-      Additive.ofMul (LineBundleClass.pullback (surfaceIso e).hom ((M c₁).picardMarking a).toMul))
-    (hsgn : letI : PrestableFamily ((M c₀).boundary ↘ S) := (M c₀).prestable
-      letI : PrestableFamily ((M c₁).boundary ↘ S) := (M c₁).prestable
-      DihedralGroup.cycleOrientationSign ((boundaryIso e).boundaryCycleAction
-        (M c₀).cycle (M c₁).cycle) = sign B d g) :
+      π.comp ((surfaceIso e.iso).hom.toRationalMap.comp (M c₁).evaluation)) :
     ∃ v : PicardLoopRealization ρ g (π.comp (M c₀).evaluation)
-        (π.comp ((surfaceIso e).hom.toRationalMap.comp (M c₁).evaluation)),
+        (π.comp ((surfaceIso e.iso).hom.toRationalMap.comp (M c₁).evaluation)),
       v.word.xPullback ℂ = w.xPullback ℂ := by
   have hc : c₀.left (default : S) ∈ Cw[w,P].domain := by
     rwa [Quiver.Path.centerPartialMap_domain]
@@ -154,7 +144,7 @@ theorem exists_picardLoopRealization_of_pair_iso_on_resolution
   obtain ⟨p⟩ := hp x
   subst c₀
   have hvalue := signedPicardHom_apply_of_pair_iso_on_resolution R hρ x p q hι hindex
-    e π he hpic hsgn
+    e π he
   obtain ⟨v, hvw, hv⟩ : ∃ v : Word E E, v.xPullback ℂ = w.xPullback ℂ ∧
       (sign B d g = 1 → v.inversionCount = 0) := by
     by_cases hpos : sign B d g = 1
@@ -191,15 +181,9 @@ theorem nonempty_picardLoopRealization_of_resolved_sarkisov_path
     (hρ : ∀ (v : Word E E) (R : GeometricRealization M M Cw[v,P] (v.xRationalMap ℂ)),
       Models[Cw[v,P]] → ρ eval[E,v] = R.toSignedBoundaryIsometry d hD hmark)
     (hparity : ∀ v : Word E E, sign B d (ρ eval[E,v]) = (-1 : ℤˣ) ^ v.inversionCount)
-    (e : (M c₀).pair ≅ (M c₁).pair) (π : Z ⤏ (M c₀).surface) [π.IsDominant]
+    (e : SignedPicardPairIso (M c₀) (M c₁) g) (π : Z ⤏ (M c₀).surface) [π.IsDominant]
     (hev₀ : U.xEvaluation = π.comp (M c₀).evaluation)
-    (hev₁ : U'.xEvaluation = π.comp ((surfaceIso e).hom.toRationalMap.comp (M c₁).evaluation))
-    (hpic : ∀ a, (M c₀).picardMarking ((toIsometry B d g).val a) =
-      Additive.ofMul (LineBundleClass.pullback (surfaceIso e).hom ((M c₁).picardMarking a).toMul))
-    (hsgn : letI : PrestableFamily ((M c₀).boundary ↘ S) := (M c₀).prestable
-      letI : PrestableFamily ((M c₁).boundary ↘ S) := (M c₁).prestable
-      DihedralGroup.cycleOrientationSign ((boundaryIso e).boundaryCycleAction
-        (M c₀).cycle (M c₁).cycle) = sign B d g) :
+    (hev₁ : U'.xEvaluation = π.comp ((surfaceIso e.iso).hom.toRationalMap.comp (M c₁).evaluation)) :
     Nonempty (PicardLoopRealization ρ g U.xEvaluation U'.xEvaluation) := by
   obtain ⟨_, _, _, u, _, _, -, -, -, -, -, -, -, -, -, -, -, hu⟩ :=
     exists_word_of_resolved_sarkisov_path_to_model path U U'
@@ -211,12 +195,12 @@ theorem nonempty_picardLoopRealization_of_resolved_sarkisov_path
     subst E₀ E₁
     rfl
   have he : ∃ h, (π.comp (M c₀).evaluation).compOfDefined (v.xRationalMap ℂ) h =
-      π.comp ((surfaceIso e).hom.toRationalMap.comp (M c₁).evaluation) := by
+      π.comp ((surfaceIso e.iso).hom.toRationalMap.comp (M c₁).evaluation) := by
     rw [hF, ← hev₀, ← hev₁]
     exact hu
   obtain ⟨⟨R⟩, hm⟩ := hreal v
   obtain ⟨v', -⟩ := exists_picardLoopRealization_of_pair_iso_on_resolution
-    P R (hρ v R hm) (hparity v) (hgeneric v) hm q hι hindex e π he hpic hsgn
+    P R (hρ v R hm) (hparity v) (hgeneric v) hm q hι hindex e π he
   rw [hev₀, hev₁]
   exact ⟨v'⟩
 
@@ -236,20 +220,14 @@ theorem nonempty_picardLoopRealization_of_comp_evaluation_eq
     (ρ : (SignedClusterModularGroup ℂ E)ᵐᵒᵖ →* signedBoundaryIsometryGroup B d)
     (hρ : ∀ (w : Word E E) (R : GeometricRealization M M Cw[w,P] (w.xRationalMap ℂ)),
       Models[Cw[w,P]] → ρ eval[E,w] = R.toSignedBoundaryIsometry d hD hmark)
-    (e : (M c₀).pair ≅ (M c₁).pair) (w : Word E E)
+    (e : SignedPicardPairIso (M c₀) (M c₁) g) (w : Word E E)
     (hc₀ : c₀.left (default : S) ∈ w.centerOpen ℂ P)
     (heval : letI : IsIntegral (M c₀).surface := (M c₀).integral
       ∃ h, (M c₀).evaluation.compOfDefined (w.xRationalMap ℂ) h =
-        (surfaceIso e).hom.toRationalMap.comp (M c₁).evaluation)
-    (hpic : ∀ a, (M c₀).picardMarking ((toIsometry B d g).val a) =
-      Additive.ofMul (LineBundleClass.pullback (surfaceIso e).hom ((M c₁).picardMarking a).toMul))
-    (hsgn : letI : PrestableFamily ((M c₀).boundary ↘ S) := (M c₀).prestable
-      letI : PrestableFamily ((M c₁).boundary ↘ S) := (M c₁).prestable
-      DihedralGroup.cycleOrientationSign ((boundaryIso e).boundaryCycleAction
-        (M c₀).cycle (M c₁).cycle) = sign B d g) :
+        (surfaceIso e.iso).hom.toRationalMap.comp (M c₁).evaluation) :
     letI : IsIntegral (M c₀).surface := (M c₀).integral
     Nonempty (PicardLoopRealization ρ g (M c₀).evaluation
-      ((surfaceIso e).hom.toRationalMap.comp (M c₁).evaluation)) := by
+      ((surfaceIso e.iso).hom.toRationalMap.comp (M c₁).evaluation)) := by
   let : IsIntegral (M c₀).surface := (M c₀).integral
   let := Q.complete.nonempty_cones
   let := Q.neZero
@@ -270,11 +248,11 @@ theorem nonempty_picardLoopRealization_of_comp_evaluation_eq
     rw [hvalue, SignedBoundaryIsometryGroup.sign_apply, coe_toSignedBoundaryIsometry, hη]
   let π := RationalMap.id (M c₀).surface
   have hw : ∃ h, (π.comp (M c₀).evaluation).compOfDefined (w.xRationalMap ℂ) h =
-      π.comp ((surfaceIso e).hom.toRationalMap.comp (M c₁).evaluation) :=
+      π.comp ((surfaceIso e.iso).hom.toRationalMap.comp (M c₁).evaluation) :=
     by simpa only [π, RationalMap.id_comp] using heval
   obtain ⟨v, -⟩ := exists_picardLoopRealization_of_pair_iso_on_resolution
     P R hvalue hparity hc₀ htargets q (Q.inclusion_injective hM)
-    hindex e π hw hpic hsgn
+    hindex e π hw
   exact ⟨by simpa only [π, RationalMap.id_comp] using v⟩
 
 end QPainleve.SignedClusterModularGroup.GeometricRealization
