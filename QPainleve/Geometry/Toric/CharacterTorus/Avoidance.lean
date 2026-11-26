@@ -9,7 +9,7 @@ public import Mathlib.Data.Set.Countable
 public import Mathlib.LinearAlgebra.FreeModule.Finite.Basic
 
 import Mathlib.Algebra.BigOperators.Fin
-import Mathlib.Algebra.Polynomial.Roots
+import QPainleve.Algebra.Polynomial.Roots
 import Mathlib.LinearAlgebra.Dimension.Free
 import Mathlib.LinearAlgebra.Matrix.Nonsingular
 import TauCeti.Algebra.Group.FreeAbelianCharacter
@@ -24,24 +24,11 @@ excludes only finitely many choices for that coordinate.
 
 public section
 
-open Multiplicative Polynomial
+open Multiplicative
 
 namespace QPainleve.CharacterTorus
 
 variable {k : Type*} [Field k]
-
-private theorem finite_zpow_eq {n : ℤ} (hn : n ≠ 0) (v : kˣ) :
-    {u : kˣ | u ^ n = v}.Finite := by
-  let w := if 0 ≤ n then v else v⁻¹
-  have hp := X_pow_sub_C_ne_zero (Nat.pos_of_ne_zero (Int.natAbs_ne_zero.mpr hn)) (w : k)
-  refine ((finite_setOfPred_isRoot hp).preimage Units.val_injective.injOn).subset ?_
-  intro u hu
-  have h : u ^ n.natAbs = w := by
-    change u ^ n = v at hu
-    cases n with
-    | ofNat m => simpa [w] using hu
-    | negSucc m => simpa [w, zpow_negSucc] using congrArg Inv.inv hu
-  simpa [IsRoot, sub_eq_zero] using congrArg (fun z : kˣ ↦ (z : k)) h
 
 variable [Uncountable k]
 
@@ -58,7 +45,7 @@ private theorem exists_coordinates_avoiding {n : ℕ} {J : Type*} [Countable J]
     let J₁ := {j : J // e j 0 ≠ 0}
     let bad : Set kˣ := ⋃ j : J₁, {u | u ^ e j 0 = v j / ∏ i, a i ^ e j i.succ}
     have hbad : bad.Countable := Set.countable_iUnion fun j : J₁ ↦
-      (finite_zpow_eq j.property _).countable
+      (Units.finite_setOf_zpow_eq j.property _).countable
     have hcount : (insert (0 : k) (Units.val '' bad)).Countable := (hbad.image _).insert _
     have hproper : insert (0 : k) (Units.val '' bad) ≠ Set.univ :=
       fun h ↦ Set.not_countable_univ (h ▸ hcount)
