@@ -9,18 +9,16 @@ public import QPainleve.AlgebraicGeometry.Blowup.Tower.Nodal.Basic
 public import QPainleve.AlgebraicGeometry.Blowup.Tower.TotalTransform
 public import QPainleve.AlgebraicGeometry.IdealSheaf.Boundary.Primes
 
-import QPainleve.AlgebraicGeometry.Blowup.Tower.Modification
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Nodal.Multiplicity
+import QPainleve.AlgebraicGeometry.CartierDivisor.BoundaryPrimes
 import TauCeti.AlgebraicGeometry.Curves.Node.Reduced
-import TauCeti.AlgebraicGeometry.Morphisms.Smooth.Regular
 
 /-!
 # Recovering nodal boundary multiplicities from intersections
 
-The positive kernel generator of the boundary intersection matrix recovers the
-multiplicities of the total transform. The coefficient criterion in
-`IsNodalBoundaryTower.mem_centre_iff_two_le_coeff_totalTransform` identifies the
-weight-one components as the primes that survive the contraction.
+For a numbering of the boundary primes upstairs, the positive kernel generator
+of their intersection matrix gives the total transform multiplicities. The
+weight-one components are the primes that survive the contraction.
 -/
 
 public section
@@ -40,16 +38,16 @@ variable (k : Type u) [Field k] [IsAlgClosed k] {X Y : Scheme.{u}}
 local notation "S" => Spec (CommRingCat.of k)
 local notation "s" => (X ↘ S)
 
-/-- Compute the total boundary weights and identify the surviving prime divisors
-of a nodal contraction from its numbered intersection matrix. A numbered prime
-survives exactly when the corresponding computed weight is one. -/
+/-- Recover the total boundary weights in the given numbering of the primes upstairs.
+A prime survives the nodal contraction exactly when its computed weight is one. -/
 theorem intKernelGenerator_eq_totalTransform_and_surviving
     (hT : IsNodalBoundaryTower D s (𝟙 X) T) (hD : D.IsEffectiveCartier)
     (hnodal : AtWorstNodalOfRelativeDimensionOne (D.subschemeι ≫ s))
     (hconn : _root_.IsConnected (D.support : Set X))
     (hnef : IsNef k s (mk hD.toInvertibleSheaf)⁻¹)
     (hsq : Chow.classIntersectionNumber k X (mk hD.toInvertibleSheaf)⁻¹
-      (mk hD.toInvertibleSheaf)⁻¹ = 0) :
+      (mk hD.toInvertibleSheaf)⁻¹ = 0)
+    (e : Fin m ≃ (D.comap T.toBase).boundaryPrimes) (i : Fin m) :
     letI : IsNoetherian X := isNoetherian_of_finiteType s
     letI := T.isNoetherian
     letI := hT.isClosedPointTower.isIntegral s
@@ -59,11 +57,11 @@ theorem intKernelGenerator_eq_totalTransform_and_surviving
       (T.toBase ≫ s).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two y
     let htotal := hT.isClosedPointTower.isEffectiveCartier_totalTransform s hD
     let W := htotal.toCartierDivisor.toWeilDivisor
-    ∀ (e : Fin m ≃ W.support) (i : Fin m),
-      (Chow.primeIntersectionMatrix k (Subtype.val ∘ e)).intKernelGenerator i =
-          some (fun j ↦ W (e j)) ∧
-        ∀ j, T.toBase ((e j).val : Y) ∈ D.boundaryPrimes ↔ W (e j) = 1 := by
-  intro htotal W e i
+    let E := D.comap T.toBase
+    (Chow.primeIntersectionMatrix k (E.boundaryPrimeEmbedding ∘ e)).intKernelGenerator i =
+        some (fun j ↦ W (E.boundaryPrimeEmbedding (e j))) ∧
+      ∀ j, T.toBase (e j).val ∈ D.boundaryPrimes ↔ W (E.boundaryPrimeEmbedding (e j)) = 1 := by
+  intro htotal W E
   let : IsNoetherian X := isNoetherian_of_finiteType s
   let : IsNoetherian Y := T.isNoetherian
   let : IsIntegral Y := hT.isClosedPointTower.isIntegral s
@@ -72,26 +70,11 @@ theorem intKernelGenerator_eq_totalTransform_and_surviving
     hT.isClosedPointTower.smoothOfRelativeDimension s
   let (y : Y) : UniqueFactorizationMonoid (Y.presheaf.stalk y) :=
     (T.toBase ≫ s).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two y
-  let : IsNormalScheme Y := IsNormalScheme.of_uniqueFactorizationMonoid_stalk
   have : IsReduced D.subscheme := hnodal.isReduced
-  refine ⟨hT.isClosedPointTower.intKernelGenerator_eq_totalTransform k hD hconn hnef hsq e i,
-    fun j ↦ ?_⟩
-  have hnonneg : 0 ≤ W :=
-    (Scheme.CartierDivisor.isEffective_iff_toWeilDivisor_nonneg _).mp
-      (hT.isClosedPointTower.isEffectiveCartier_totalTransform s hD).isEffective_toCartierDivisor
-  have hpos : 0 < W (e j) :=
-    (hnonneg (e j)).lt_of_ne (Finsupp.mem_support_iff.mp (e j).property).symm
-  have hcontract : T.toBase ((e j).val : Y) ∈ T.toBase.centre ↔ 2 ≤ W (e j) :=
-    hT.mem_centre_iff_two_le_coeff_totalTransform hD hnodal (e j).val
-  let : Smooth s := SmoothOfRelativeDimension.smooth 2 s
-  let : IsRegular X := IsRegular.of_smooth s
-  let := hT.isClosedPointTower.isModification_of_smoothOfRelativeDimension_two s
-  have hmem : ((e j).val : Y) ∈ (D.comap T.toBase).support :=
-    by_contra fun h ↦ (Finsupp.mem_support_iff.mp (e j).property)
-      ((htotal.coeff_toWeilDivisor_eq_zero_iff _).mpr h)
-  rw [D.mem_boundaryPrimes_iff_mem_isoLocus_of_mem_boundaryPrimes_comap _
-    (mem_boundaryPrimes.mpr ⟨hmem, (e j).val.property⟩),
-    ← SetLike.mem_coe, ← Set.notMem_compl_iff, ← Scheme.Hom.centre_def, hcontract]
-  omega
+  refine ⟨?_, fun j ↦ hT.toBase_mem_boundaryPrimes_iff_coeff_totalTransform_eq_one hD hnodal (e j)⟩
+  simpa only [Function.comp_def, Equiv.trans_apply,
+    IsEffectiveCartier.boundaryPrimesEquivWeilSupport_apply_val] using
+    hT.isClosedPointTower.intKernelGenerator_eq_totalTransform k hD hconn hnef hsq
+      (e.trans htotal.boundaryPrimesEquivWeilSupport) i
 
 end QPainleve.BlowupTower.IsNodalBoundaryTower
