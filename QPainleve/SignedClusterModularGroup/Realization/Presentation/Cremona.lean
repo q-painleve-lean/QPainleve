@@ -104,34 +104,33 @@ theorem exists_cluster_cremona_equivs_of_nodal_model
       (3 ≤ n → ∃ e : Γs ≃* Cr, e.toMonoidHom = φ) ∧
       (n ≤ 2 → ∃ (e : Γs ≃* Cr × ℤˣ) (e₀ : Γ ≃* Cr),
         (∀ x, e x = (φ x, η x)) ∧ ∀ x, e (incl x) = (e₀ x, 1)) := by
-  obtain ⟨M, hD, hmark, Θ, Θrot, hM, hfamily, hΘ, _, hrot⟩ :=
-    Q.exists_picardGroupEquivs_of_nodal_model href hE hprim hnef hsq
-  subst M₀
-  let : SmoothOfRelativeDimension 2 ((M c).surface ↘ S) := (M c).smooth
-  let : (M c).surface.IsProjectiveOver ℂ := (M c).projective
-  let : IsRationalOver ((M c).surface ↘ S) := (hfamily c).isRationalOver
-  have hcan := congrArg Inv.inv (href.canonicalClass (M c).isEffectiveCartier_boundaryIdeal)
-  let π := (M c).cremonaPicardHom hcan hnef hsq hroot
-  refine ⟨M, hD, hmark, π.comp Θ.toMonoidHom, (sign B _).comp Θ.toMonoidHom,
-    rfl, hfamily,
-    ((M c).cremonaPicardHom_surjective hcan hnef hsq hroot).comp Θ.surjective, ?_, ?_, ?_⟩
+  obtain ⟨P, hP⟩ := Q.exists_picardGroupEquivs_of_nodal_model href hE hprim hnef hsq
+  let : SmoothOfRelativeDimension 2 (M₀.surface ↘ S) := M₀.smooth
+  let : M₀.surface.IsProjectiveOver ℂ := M₀.projective
+  let : IsRationalOver (M₀.surface ↘ S) := href.isRationalOver
+  have hcan := congrArg Inv.inv (href.canonicalClass M₀.isEffectiveCartier_boundaryIdeal)
+  let Θ := P.signedEquiv
+  let π := M₀.cremonaPicardHom hcan hnef hsq hroot
+  refine ⟨P.family, fun z ↦ (P.family z).isEffectiveCartier_boundaryIdeal, P.boundaryClass_eq,
+    π.comp Θ.toMonoidHom, (sign B _).comp Θ.toMonoidHom, hP, P.hasNodalModel,
+    (M₀.cremonaPicardHom_surjective hcan hnef hsq hroot).comp Θ.surjective, ?_, ?_, ?_⟩
   · intro w
-    refine ⟨(hΘ w).1, fun R hR ↦ ?_⟩
-    rw [MonoidHom.comp_apply, MulEquiv.coe_toMonoidHom, (hΘ w).2 R hR]
-    exact (M c).cremonaPicardHom_apply hcan hnef hsq hroot _
+    refine ⟨(sign_apply B _ _).trans (P.sign_signedEquiv_apply_word w), fun R hR ↦ ?_⟩
+    rw [MonoidHom.comp_apply, MulEquiv.coe_toMonoidHom, P.signedEquiv_apply_word w R hR]
+    exact M₀.cremonaPicardHom_apply hcan hnef hsq hroot _
   · intro hn
-    refine ⟨Θ.trans ((M c).signedBoundaryIsometryEquivCremona hcan hnef hsq hroot hn), ?_⟩
+    refine ⟨Θ.trans (M₀.signedBoundaryIsometryEquivCremona hcan hnef hsq hroot hn), ?_⟩
     apply MonoidHom.ext
     intro x
-    exact (M c).signedBoundaryIsometryEquivCremona_apply hcan hnef hsq hroot hn (Θ x)
+    exact M₀.signedBoundaryIsometryEquivCremona_apply hcan hnef hsq hroot hn (Θ x)
   · intro hn
-    let e := Θ.trans ((M c).signedBoundaryIsometryEquivCremonaProd hcan hnef hsq hroot hn)
-    let e₀ := Θrot.trans ((M c).boundaryRotationEquivCremona hcan hnef hsq hroot hn)
+    let e := Θ.trans (M₀.signedBoundaryIsometryEquivCremonaProd hcan hnef hsq hroot hn)
+    let e₀ := P.unsignedEquiv.trans (M₀.boundaryRotationEquivCremona hcan hnef hsq hroot hn)
     have he (x : Γs) : e x = (π (Θ x), sign B _ (Θ x)) :=
-      (M c).signedBoundaryIsometryEquivCremonaProd_apply hcan hnef hsq hroot hn (Θ x)
+      M₀.signedBoundaryIsometryEquivCremonaProd_apply hcan hnef hsq hroot hn (Θ x)
     refine ⟨e, e₀, he, fun x ↦ ?_⟩
-    rw [he, ← hrot x]
-    exact Prod.ext ((M c).boundaryRotationEquivCremona_apply hcan hnef hsq hroot hn _).symm
+    rw [he, ← P.rotationInclusion_unsignedEquiv_apply x]
+    exact Prod.ext (M₀.boundaryRotationEquivCremona_apply hcan hnef hsq hroot hn _).symm
       (by simp only [SignedBoundaryIsometryGroup.sign_apply, coe_rotationInclusion])
 
 end QPainleve.SignedClusterModularGroup.CompleteToricPresentation
