@@ -61,6 +61,53 @@ theorem range_boundaryPrimeEmbedding (D : X.IdealSheafData) :
   · intro hp
     exact ⟨⟨p.val, mem_boundaryPrimes.mpr ⟨hp, p.property⟩⟩, Subtype.ext rfl⟩
 
+/-- A boundary prime lies in the closure of another boundary prime exactly when they agree. -/
+@[simp]
+theorem mem_support_vanishingIdeal_boundaryPrime_iff {D : X.IdealSheafData}
+    (x y : D.boundaryPrimes) :
+    x.val ∈ (vanishingIdeal (Closeds.mk (closure {y.val}) isClosed_closure)).support ↔ x = y := by
+  simp only [← SetLike.mem_coe, coe_support_vanishingIdeal, Closeds.coe_mk]
+  refine ⟨fun h ↦ ?_, fun h ↦ h ▸ subset_closure (Set.mem_singleton _)⟩
+  apply D.boundaryPrimeEmbedding.injective
+  exact (CodimensionOnePoint.eq_of_specializes (x := D.boundaryPrimeEmbedding x)
+    (y := D.boundaryPrimeEmbedding y)
+    (specializes_iff_mem_closure.mpr (by simpa only [coe_boundaryPrimeEmbedding] using h))).symm
+
+/-- A bijection from the boundary primes off one component to the target boundary primes
+induces a numbering of the target primes by the remaining labels. -/
+noncomputable def eraseBoundaryPrimeEquiv (D : X.IdealSheafData) {α : Type*} [DecidableEq α]
+    {s : Finset α} (a : s ≃ D.boundaryPrimes) (j : s)
+    {F : Y.IdealSheafData} {f : X ⟶ Y}
+    (h : Set.BijOn f
+      (D.boundaryPrimes \
+        (vanishingIdeal (Closeds.mk (closure {(a j).val}) isClosed_closure)).support)
+      F.boundaryPrimes) :
+    (s.erase j.val : Finset α) ≃ F.boundaryPrimes := by
+  let e := (Set.equivOfEq (Finset.coe_erase j.val s)).trans
+    (Equiv.subtypeSubtypeEquivSubtypeInter (fun x ↦ x ∈ s) (fun x ↦ x ∉ ({j.val} : Set α))).symm
+  let b := a.subtypeEquiv (p := fun i ↦ i.val ∉ ({j.val} : Set α))
+    (q := fun x ↦
+      x.val ∉ (vanishingIdeal (Closeds.mk (closure {(a j).val}) isClosed_closure)).support)
+    fun i ↦ by
+      rw [Set.mem_singleton_iff, mem_support_vanishingIdeal_boundaryPrime_iff, a.injective.eq_iff]
+      exact not_congr Subtype.ext_iff.symm
+  let d := Equiv.subtypeSubtypeEquivSubtypeInter (fun x ↦ x ∈ D.boundaryPrimes)
+    (fun x ↦ x ∉ (vanishingIdeal (Closeds.mk (closure {(a j).val}) isClosed_closure)).support)
+  exact e.trans (b.trans (d.trans (h.equiv f)))
+
+/-- The surviving label maps to the image of its original boundary prime. -/
+@[simp]
+theorem eraseBoundaryPrimeEquiv_apply_val (D : X.IdealSheafData) {α : Type*} [DecidableEq α]
+    {s : Finset α} (a : s ≃ D.boundaryPrimes) (j : s)
+    {F : Y.IdealSheafData} {f : X ⟶ Y}
+    (h : Set.BijOn f
+      (D.boundaryPrimes \
+        (vanishingIdeal (Closeds.mk (closure {(a j).val}) isClosed_closure)).support)
+      F.boundaryPrimes)
+    (i : (s.erase j.val : Finset α)) :
+    (D.eraseBoundaryPrimeEquiv a j h i).val =
+      f (a ⟨i.val, (Finset.mem_erase.mp i.property).2⟩).val := (rfl)
+
 /-- If the support is the union of closures of specified codimension-one points,
 those points are exactly its boundary primes. -/
 theorem boundaryPrimes_eq_range_of_iUnion_closure {ι : Type*} (D : X.IdealSheafData)
