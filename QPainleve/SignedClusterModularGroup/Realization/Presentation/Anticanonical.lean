@@ -49,9 +49,10 @@ local notation "K" => LineBundleClass.mk (canonicalBundle ℂ X 2)
 /-- A numbered primitive nef square-zero anticanonical cycle on a smooth projective
 rational complex surface admits a toric seed on `Fin (12 - n)`. Its signed and
 unsigned opposite cluster modular groups identify with the signed boundary
-isometries and rotations of the original Picard lattice. The family retains
-the original numbered surface. On loops the signed equivalence evaluates by
-geometric Picard pullback and retains the sign on the ordered branches. -/
+isometries and rotations of the original Picard lattice. The
+`PicardGroupIdentification` records the original numbered fiber and the nodal
+family. On loops the signed equivalence evaluates by geometric Picard pullback
+and retains the sign on the ordered branches. -/
 theorem exists_picardGroupEquivs_of_anticanonical_cycle
     (hi : IsIntegralLattice i)
     (A : Scheme.NodalCycleNumbering (Empty.elim : Empty → (D.subscheme ↘ S).smoothLocus) n)

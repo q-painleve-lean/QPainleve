@@ -79,6 +79,8 @@ variable {i : N →+ V} {r : ℕ}
 
 local notation "E" => P.picard.exchangeMatrix
 local notation "Γs" => (SignedClusterModularGroup ℂ E)ᵐᵒᵖ
+local notation "Q" => P.picard.reference.presentation
+local notation "M" => P.picard.nodal.family
 local notation "π" =>
   A.cremonaProjection hD P.canonicalClass_eq P.nef P.selfIntersection_eq_zero P.noInternalRoots
 
@@ -112,16 +114,15 @@ theorem sign_apply (x : Γs) :
 
 /-- On a realized loop, the Cremona projection evaluates by the marked Picard pullback. -/
 theorem val_projection_apply_word (w : Word E E) :
-    letI := P.picard.presentation.complete.nonempty_cones
-    letI := P.picard.presentation.prestable
-    letI := P.picard.presentation.neZero
+    letI := (Q).complete.nonempty_cones
+    letI := (Q).prestable
+    letI := (Q).neZero
     ∀ {C : Centers[r].left.PartialMap Centers[r].left} [IsDominant C.hom]
       [C.IsOver Centers[r].hom Centers[r].hom]
-      (R : GeometricRealization P.picard.family P.picard.family C (w.xRationalMap ℂ)),
+      (R : GeometricRealization M M C (w.xRationalMap ℂ)),
       HasToricTargetModels (T₀ := Centers[r]) (T₁ := Centers[r]) (b := P.picard.basis)
-        (s := P.picard.presentation.rays) (hΦ := P.picard.presentation.regular)
-        (T := P.picard.presentation.cycle) (origin := P.picard.presentation.origin)
-        (ι := P.picard.presentation.inclusion) (P₁ := P.picard.family)
+        (s := (Q).rays) (hΦ := (Q).regular) (T := (Q).cycle) (origin := (Q).origin)
+        (ι := (Q).inclusion) (P₁ := M)
         (fun z : Point Centers[r] ↦ χ[z]) C →
       (P.comparison.projection (op (signedClusterModularGroupMap ℂ E (End.of w)))).val =
         P.picard.marking.isometryGroupCongr

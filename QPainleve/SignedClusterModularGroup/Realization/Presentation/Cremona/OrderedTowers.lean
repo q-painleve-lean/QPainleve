@@ -73,9 +73,11 @@ theorem exists_cluster_cremona_equivs_of_toric_presentation
       Chow.classIntersectionNumber ℂ X (LineBundleClass.primeDivisorClass p)
         (LineBundleClass.primeDivisorClass p) ≠ -2) →
     ∃ P : CremonaGroupIdentification i r A hD,
-      ((P.picard.basis = b ∧ parameters[P.picard.center] = u) ∨
-        (P.picard.basis = b.reindex (Equiv.swap 0 1) ∧ parameters[P.picard.center] = u⁻¹)) ∧
-      ∃ hfan : P.picard.presentation.fan = Φ, hfan ▸ P.picard.presentation.rays = s := by
+      ((P.picard.basis = b ∧ parameters[P.picard.reference.center] = u) ∨
+        (P.picard.basis = b.reindex (Equiv.swap 0 1) ∧
+          parameters[P.picard.reference.center] = u⁻¹)) ∧
+      ∃ hfan : P.picard.reference.presentation.fan = Φ,
+        hfan ▸ P.picard.reference.presentation.rays = s := by
   let : IsNoetherian X := isNoetherian_of_finiteType (X ↘ S)
   let := (X ↘ S).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two
   intro hroot
