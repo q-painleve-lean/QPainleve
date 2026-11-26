@@ -10,7 +10,6 @@ public import QPainleve.AlgebraicGeometry.IdealSheaf.Boundary.Complexity
 public import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.ProjectiveOver
 
 import QPainleve.AlgebraicGeometry.Chow.NodalIntersection
-import QPainleve.AlgebraicGeometry.Curves.DualGraph.Cycle.Basic
 import QPainleve.LinearAlgebra.BilinearForm.Cycle
 
 /-!
@@ -57,21 +56,10 @@ theorem boundaryComplexity_nonneg_of_nodalCycleNumbering
   let q := D.boundaryPrimeEmbedding ∘ u
   let c : ZMod n → Additive (LineBundleClass X) := fun j ↦
     Additive.ofMul (primeDivisorClass (q j))
-  have hq (j : ZMod n) : (q j : X) ∈ D.support :=
-    D.range_boundaryPrimeEmbedding.le ⟨u j, rfl⟩
   have hpair (i j : ZMod n) (hij : i ≠ j) :
       Chow.intersectionBilinForm k X (c i) (c j) =
-        (if j = i + 1 then 1 else 0) + (if i = j + 1 then 1 else 0) := by
-    rw [Chow.intersectionBilinForm_apply, toMul_ofMul, toMul_ofMul,
-      Chow.classIntersectionNumber_eq_ncard_of_nodal hD
-        PrestableFamily.atWorstNodalOfRelativeDimensionOne
-        ((D.boundaryPrimeEmbedding.injective.comp u.injective).ne hij) (hq i) (hq j)]
-    simp only [Function.comp_apply, coe_boundaryPrimeEmbedding]
-    rw [A.closure_boundaryPrime_inter_of_ne hD hij,
-      Set.ncard_image_of_injective _ A.ambientNode_injective,
-      DualGraph.ncard_cycle_edges_of_ne i j hij]
-    simp only [Nat.cast_add, apply_ite ((↑) : ℕ → ℤ), Nat.cast_zero, Nat.cast_one,
-      eq_sub_iff_add_eq, (eq_comm : j + 1 = i ↔ i = j + 1)]
+        (if j = i + 1 then 1 else 0) + (if i = j + 1 then 1 else 0) :=
+    A.intersectionBilinForm_boundaryPrime_of_ne hD hij
   have hli := (Chow.intersectionBilinForm k X).linearIndependent_cycle_segment c hpair
   have hrank := hli.fintype_card_le_finrank
   rw [Fintype.card_fin] at hrank
