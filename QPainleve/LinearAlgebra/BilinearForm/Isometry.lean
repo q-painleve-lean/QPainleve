@@ -30,6 +30,11 @@ section Restriction
 variable {R M N : Type*} [CommSemiring R] [AddCommMonoid M] [AddCommMonoid N]
   [Module R M] [Module R N] {B : LinearMap.BilinForm R M} {C : LinearMap.BilinForm R N}
 
+/-- Taking the inverse twice recovers the original bilinear isometry. -/
+@[simp]
+theorem symm_symm (e : B.IsometryEquiv C) : e.symm.symm = e :=
+  (rfl)
+
 /-- A bilinear isometry restricts to an isometry on submodules it identifies. -/
 def ofSubmodules (e : B.IsometryEquiv C) (P : Submodule R M) (Q : Submodule R N)
     (h : P.map e.toLinearMap = Q) : (B.restrict P).IsometryEquiv (C.restrict Q) where

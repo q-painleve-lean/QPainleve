@@ -99,7 +99,7 @@ theorem exists_cluster_cremona_equivs_of_nodal_model
           (P.projection x).val = M₀.marking.isometryGroupCongr
             (toIsometry B d (R.toSignedBoundaryIsometry d
               (fun z ↦ (M z).isEffectiveCartier_boundaryIdeal) hmark)) := by
-  obtain ⟨M, hD, hmark, Θ, _, hM, hfamily, hΘ, hsign, _⟩ :=
+  obtain ⟨G, hGc⟩ :=
     Q.exists_picardGroupEquivs_of_nodal_model href hE hprim hnef hsq
   let : SmoothOfRelativeDimension 2 (M₀.surface ↘ S) := M₀.smooth
   let : M₀.surface.IsProjectiveOver ℂ := M₀.projective
@@ -110,13 +110,15 @@ theorem exists_cluster_cremona_equivs_of_nodal_model
     intro x y hxy
     apply (M₀.signedBoundaryIsometryEquivCremona hcan hnef hsq hroot hn).injective
     simpa only [MarkedSurface.signedBoundaryIsometryEquivCremona_apply] using hxy
-  let P := ClusterCremonaComparison.ofPicardEquiv Θ hsign π
+  let P := ClusterCremonaComparison.ofPicardEquiv G.signedEquiv G.sign_ker_unop π
     (M₀.cremonaPicardHom_surjective hcan hnef hsq hroot) hinj
     (M₀.signedBoundaryIsometryEquivCremonaProd hcan hnef hsq hroot)
     (M₀.signedBoundaryIsometryEquivCremonaProd_apply hcan hnef hsq hroot)
-  refine ⟨M, hmark, P, hM, hfamily, fun w ↦ ⟨?_, fun R hR ↦ ?_⟩⟩
-  · simpa only [P, ClusterCremonaComparison.ofPicardEquiv_sign_apply] using (hΘ w).1
-  · simp only [P, ClusterCremonaComparison.ofPicardEquiv_projection_apply, (hΘ w).2 R hR]
+  refine ⟨G.family, G.boundaryClass_eq, P, hGc, G.hasNodalModel, fun w ↦ ⟨?_, fun R hR ↦ ?_⟩⟩
+  · simpa only [P, ClusterCremonaComparison.ofPicardEquiv_sign_apply,
+      SignedBoundaryIsometryGroup.sign_apply] using G.sign_signedEquiv_apply_word w
+  · simp only [P, ClusterCremonaComparison.ofPicardEquiv_projection_apply,
+      G.signedEquiv_apply_word w R hR]
     exact M₀.cremonaPicardHom_apply hcan hnef hsq hroot _
 
 end QPainleve.SignedClusterModularGroup.CompleteToricPresentation

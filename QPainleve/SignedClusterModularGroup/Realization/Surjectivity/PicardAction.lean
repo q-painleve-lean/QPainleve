@@ -66,9 +66,10 @@ local notation "Models[" C "]" =>
 
 /-- Every signed boundary isometry of a marked toric presentation of a primitive
 nef square-zero anticanonical cycle occurs as the Picard action of a signed
-cluster loop. The witness records the two centers, the pair isomorphism and its
-X-evaluation equation. The source center lies in the loop's noncollision open,
-and an orientation-preserving action has an inversion-free representative.
+cluster loop. The witness records the two centers, the pair isomorphism with the
+prescribed signed action, and its X-evaluation equation. The source center lies in
+the loop's noncollision open, and an orientation-preserving action has an
+inversion-free representative.
 The reference fiber may lie outside the initial noncollision open. -/
 theorem nonempty_presentationPicardLoopRealization
     (P : ChargeSeed E N) (hform : P.form = b.detDualEquiv.toLinearMap)
@@ -96,9 +97,10 @@ theorem nonempty_presentationPicardLoopRealization
       DihedralGroup.cycleOrientationSign ((boundaryIso e).boundaryCycleAction
         (M c₀).cycle (M c₁).cycle) = sign B d g := by
     rw [hact, hsign]
+  let signedIso : SignedPicardPairIso (M c₀) (M c₁) g := ⟨e, hsgn, hpic⟩
   obtain ⟨R⟩ := nonempty_picardLoopRealization_of_pair_iso P hform hcharge
-    models hm₁ hnef₀ hsq₀ hprim₀ (fun w ↦ (hword w).1) ρ hρ e hpic hsgn
-  exact ⟨⟨c₀, c₁, e, R, (hword R.word).1⟩⟩
+    models hm₁ hnef₀ hsq₀ hprim₀ (fun w ↦ (hword w).1) ρ hρ signedIso
+  exact ⟨⟨c₀, c₁, signedIso, R, (hword R.word).1⟩⟩
 
 /-- The marked Picard pullback identifies the opposite signed cluster modular
 group with the signed boundary isometry group. The comparison computes the
