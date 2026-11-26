@@ -23,7 +23,7 @@ Consequently the Picard identifications over the complex numbers transport to
 every coefficient field with their evaluation on loop representatives.
 
 The comparison uses `Quiver.Path.signedLoopInvariants_eq_of_xPullback_eq` and
-`CompleteToricPresentation.xPullback_eq_iff_signedLoopInvariants_eq_of_nodal_contraction`.
+`CompleteToricPresentation.IsSignedLoopComparisonInput.xPullback_eq_iff_signedLoopInvariants_eq`.
 -/
 
 public section
@@ -71,8 +71,10 @@ private theorem injective_signedSpecialization
   obtain ⟨p, hp⟩ := href.exists_isNodalContraction cartier
   let β := Module.finBasis ℤ E.matrix.mulVecLin.ker
   have hnonzero := href.exchangeMatrix_ne_zero hE hprim hnef hsq
-  exact (Q.xPullback_eq_iff_signedLoopInvariants_eq_of_nodal_contraction
-    ℂ p hp hE hprim hnef hsq w.asHom v.asHom β).mpr
+  have hinput : Q.IsSignedLoopComparisonInput p E (p.numberedBoundaryOrders cartier) :=
+    ⟨hE, rfl⟩
+  exact (hinput.xPullback_eq_iff_signedLoopInvariants_eq
+    ℂ hp hprim hnef hsq w.asHom v.asHom β).mpr
       (Path.signedLoopInvariants_eq_of_xPullback_eq hnonzero hg β _ _)
 
 /-- Specialization identifies the signed point maps of a marked primitive nef square-zero

@@ -17,7 +17,7 @@ Specified nodal and internal blowup towers determine the seed and the Picard
 group identifications of the original numbered surface. A finite integral
 marking supplies the moving family, and conjugation by that marking recovers
 the group on the actual Picard lattice. The oriented toric basis is chosen by
-`exists_marked_reference_fiber_of_ordered_towers`, and the identifications are
+`exists_fin_marked_reference_fiber_of_toric_presentation`, and the identifications are
 given by `CompleteToricPresentation.exists_picardGroupEquivs_of_nodal_model`.
 -/
 
@@ -49,8 +49,6 @@ local instance : IsIntegral X := by
   exact Scheme.IsRationalOver.isIntegral_of_smooth (f := X ↘ S) inferInstance
 
 local notation "Pic" => Additive (LineBundleClass X)
-local notation "L" => (Fin (Module.finrank ℤ Pic) → ℤ)
-local notation "B" => Chow.intersectionBilinForm ℂ X
 local notation "classes[" A "," hD "]" =>
   (fun j ↦ Additive.ofMul (LineBundleClass.primeDivisorClass
     (D.boundaryPrimeEmbedding (Scheme.NodalCycleNumbering.boundaryPrimeEquiv A hD j))))
@@ -76,16 +74,12 @@ theorem exists_picardGroupEquivs_of_toric_presentation
         hfan ▸ Q.reference.presentation.rays = P.rays) := by
   let : Module.Free ℤ Pic := X.free_picard_of_isRationalOver ℂ
   let : Module.Finite ℤ Pic := X.finite_picard_of_isRationalOver ℂ
-  let a : L ≃ₗ[ℤ] Pic := (Module.finBasis ℤ Pic).equivFun.symm
-  let H := (B).comp a.toLinearMap a.toLinearMap
-  let μ : H.IsometryEquiv B := ((B).isometryEquivOfCompLinearEquiv a).symm
-  obtain ⟨b', R, hframe, hrays⟩ :=
-    exists_marked_reference_fiber_of_ordered_towers P.regular P.complete P.rays P.parameters
-      P.isNodal P.iso P.iso_over P.iso_boundary hD A μ
+  obtain ⟨H, μ, b', R, hframe, hrays⟩ :=
+    exists_fin_marked_reference_fiber_of_toric_presentation P hD A
   let M₀ := MarkedSurface.ofBoundary D A μ R.evaluation
   have hδ : δ[M₀.isEffectiveCartier_boundaryIdeal] = δ[hD] :=
-    congrArg Inv.inv (LineBundleClass.mk_toInvertibleSheaf_congr _ _
-      (MarkedSurface.ofBoundary_ker D A μ R.evaluation))
+    MarkedSurface.ofBoundary_boundaryIdeal_class D A μ R.evaluation
+      M₀.isEffectiveCartier_boundaryIdeal hD
   have hE := Fan.rayExchangeMatrix_matrix b' R.presentation.rays
   let : IsNoetherian X := isNoetherian_of_finiteType (X ↘ S)
   let := (X ↘ S).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two

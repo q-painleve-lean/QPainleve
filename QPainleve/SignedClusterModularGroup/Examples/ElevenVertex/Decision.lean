@@ -109,10 +109,9 @@ private theorem xPullback_eq_iff_columns (w v : Word B B) :
   have hcharge : Fan.rayChargeMap Q.rays = chargeMap :=
     (congrArg chargeOfRays hrayData).trans rayChargeMap_planeCenterRay
   let M := MarkedSurface.ofBoundary D A' μ g
-  have hM : M.pair.hom.left.ker = D := MarkedSurface.ofBoundary_ker ..
   have hcls : (LineBundleClass.mk M.isEffectiveCartier_boundaryIdeal.toInvertibleSheaf)⁻¹ =
-      (LineBundleClass.mk hD.toInvertibleSheaf)⁻¹ := by
-    exact congrArg Inv.inv (LineBundleClass.mk_toInvertibleSheaf_congr _ _ hM)
+      (LineBundleClass.mk hD.toInvertibleSheaf)⁻¹ :=
+    MarkedSurface.ofBoundary_boundaryIdeal_class D A' μ g M.isEffectiveCartier_boundaryIdeal hD
   have criterion {E : SkewExchangeMatrix (Fin 11)}
       (hE : E.matrix = chargeExchangeMatrix b'.detDualEquiv.toLinearMap (Fan.rayChargeMap Q.rays))
       (hK : E.matrix.mulVecLin.ker = K) (p q : Word E E) :

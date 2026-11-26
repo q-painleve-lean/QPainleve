@@ -59,37 +59,6 @@ local instance instPrestableReferenceRelationBoundary :
 
 local notation "fiber[" M "," c "]" =>
   ContractedToricFiber b Q.rays Q.regular Q.cycle Q.origin Q.inclusion χ[c] M
-variable (k : Type*) [Field k]
-
-/-- For signed loops of a primitive nef square-zero anticanonical cycle, equality of independent
-X pullbacks over any field is equivalent to agreement of the inversion sign, transported
-exchange-kernel basis columns, and the forward boundary label of component zero. The reference
-contraction may have repeated centers. -/
-theorem xPullback_eq_iff_signedLoopInvariants_eq_of_nodal_contraction
-    (p₀ : fiber[M₀,c₀]) (hnodal₀ : p₀.IsNodalContraction)
-    (hE : E.matrix = chargeExchangeMatrix b.detDualEquiv.toLinearMap (Fan.rayChargeMap Q.rays))
-    (hprim : IsPrimitive (Additive.ofMul classOf(cartier[M₀])))
-    (hnef : (classOf(cartier[M₀])).IsNef ℂ (M₀.surface ↘ S))
-    (hsq : Chow.classIntersectionNumber ℂ M₀.surface classOf(cartier[M₀])
-      classOf(cartier[M₀]) = 0)
-    (w v : Word E E) {m : ℕ} (β : Module.Basis (Fin m) ℤ E.matrix.mulVecLin.ker) :
-    let orders := p₀.numberedBoundaryOrders cartier[M₀]
-    w.xPullback k = v.xPullback k ↔
-      w.signedLoopInvariants (fun j ↦ (β j : Fin r → ℤ)) orders (orders 0) =
-        v.signedLoopInvariants (fun j ↦ (β j : Fin r → ℤ)) orders (orders 0) := by
-  obtain ⟨M, _, hM, hfamily⟩ :=
-    Q.exists_marked_family_of_nodal_model (Q.hasNodalModel_of_contraction hnodal₀) cartier[M₀]
-  subst M₀
-  dsimp only
-  let P := Fan.rayChargeSeed b Q.rays hE
-  choose p hp using fun c ↦ (hfamily c).1.exists_isNodalContraction cartier[M c]
-  have hmark (c : Point Centers[r]) (j : ZMod n) :
-      (M c).boundaryClass cartier[M c] j = (M c₀).boundaryClass cartier[M c₀] j :=
-    congrFun (hfamily c).2 j
-  exact GeometricRealization.xPullback_eq_iff_signedLoopInvariants_eq_of_presentation
-    Q P (Fan.rayChargeSeed_form _ _ _) (Fan.rayChargeSeed_charge _ _ _)
-    M p₀ hnodal₀ (fun c _ ↦ p c) (fun c _ ↦ hp c) hnef hsq hprim hmark
-    Q.exists_cone_of_numbered_node w v β
 
 /-- The discrete input of the loop checker agrees with a marked reference fiber.
 The exchange matrix is the determinant pairing of the center charges, and the order
@@ -106,6 +75,36 @@ namespace IsSignedLoopComparisonInput
 
 variable {Q} {orders : Fin n → Fin r → ℤ}
 
+/-- For signed loops of a primitive nef square-zero anticanonical cycle, equality of independent
+X pullbacks over any field is equivalent to agreement of the inversion sign, transported
+exchange-kernel basis columns, and the forward boundary label of component zero. The reference
+contraction may have repeated centers. -/
+theorem xPullback_eq_iff_signedLoopInvariants_eq {p₀ : fiber[M₀,c₀]}
+    (h : Q.IsSignedLoopComparisonInput p₀ E orders) (k : Type*) [Field k]
+    (hnodal₀ : p₀.IsNodalContraction)
+    (hprim : IsPrimitive (Additive.ofMul classOf(cartier[M₀])))
+    (hnef : (classOf(cartier[M₀])).IsNef ℂ (M₀.surface ↘ S))
+    (hsq : Chow.classIntersectionNumber ℂ M₀.surface classOf(cartier[M₀])
+      classOf(cartier[M₀]) = 0)
+    (w v : Word E E) {m : ℕ} (β : Module.Basis (Fin m) ℤ E.matrix.mulVecLin.ker) :
+    w.xPullback k = v.xPullback k ↔
+      w.signedLoopInvariants (fun j ↦ (β j : Fin r → ℤ)) orders (orders 0) =
+        v.signedLoopInvariants (fun j ↦ (β j : Fin r → ℤ)) orders (orders 0) := by
+  rw [h.orders_eq]
+  have hE := h.matrix_eq
+  obtain ⟨M, _, hM, hfamily⟩ :=
+    Q.exists_marked_family_of_nodal_model (Q.hasNodalModel_of_contraction hnodal₀) cartier[M₀]
+  subst M₀
+  let P := Fan.rayChargeSeed b Q.rays hE
+  choose p hp using fun c ↦ (hfamily c).1.exists_isNodalContraction cartier[M c]
+  have hmark (c : Point Centers[r]) (j : ZMod n) :
+      (M c).boundaryClass cartier[M c] j = (M c₀).boundaryClass cartier[M c₀] j :=
+    congrFun (hfamily c).2 j
+  exact GeometricRealization.xPullback_eq_iff_signedLoopInvariants_eq_of_presentation
+    Q P (Fan.rayChargeSeed_form _ _ _) (Fan.rayChargeSeed_charge _ _ _)
+    M p₀ hnodal₀ (fun c _ ↦ p c) (fun c _ ↦ hp c) hnef hsq hprim hmark
+    Q.exists_cone_of_numbered_node w v β
+
 /-- A certified exchange matrix and order table for a nodal contraction make the typed
 integer comparison correct over every coefficient field. -/
 theorem compareSignedLoops_eq_true_iff_xPullback_eq {p₀ : fiber[M₀,c₀]}
@@ -117,10 +116,8 @@ theorem compareSignedLoops_eq_true_iff_xPullback_eq {p₀ : fiber[M₀,c₀]}
       classOf(cartier[M₀]) = 0)
     (w v : Word E E) :
     E.compareSignedLoops orders w v = true ↔ w.xPullback k = v.xPullback k := by
-  rw [h.orders_eq]
-  exact SkewExchangeMatrix.compareSignedLoops_eq_true_iff_xPullback_eq E k _ w v
-    (Q.xPullback_eq_iff_signedLoopInvariants_eq_of_nodal_contraction k p₀ hnodal₀
-      h.matrix_eq hprim hnef hsq w v)
+  exact SkewExchangeMatrix.compareSignedLoops_eq_true_iff_xPullback_eq E k orders w v
+    (h.xPullback_eq_iff_signedLoopInvariants_eq k hnodal₀ hprim hnef hsq w v)
 
 /-- Decide equality of signed loop pullbacks from the certified discrete input. -/
 def decidableXPullbackEq {p₀ : fiber[M₀,c₀]}
