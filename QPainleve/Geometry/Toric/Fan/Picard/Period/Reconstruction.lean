@@ -113,7 +113,7 @@ theorem exists_iso_of_eq_period_of_matching_picard_markings
     (PrestableFamily.atWorstNodalOfRelativeDimensionOne (f := D.subscheme ↘ S)).isReduced
   have : IsReduced E.subscheme :=
     (PrestableFamily.atWorstNodalOfRelativeDimensionOne (f := E.subscheme ↘ S)).isReduced
-  obtain ⟨χ, t, a, ht, ha, haOver, haD, -, haMark⟩ :=
+  obtain ⟨a, haOver, haD, ⟨t⟩⟩ :=
     exists_iso_of_eq_orderedBoundaryPeriod hΦ b s c d C u hvertices hdet hnodes
       hT hU e e' hp hq hD hE hkeep hperiod
   have haPic (L : LineBundleClass Y) : pullback a.hom L = G L := by
@@ -124,7 +124,7 @@ theorem exists_iso_of_eq_period_of_matching_picard_markings
     apply Additive.ofMul.injective
     apply (mark c).symm.injective
     simpa only [pullbackEquiv_apply, Iso.symm_hom, pullback_comp, Category.assoc] using
-      (haMark L).trans (hPic L).symm
+      (t.pullback_marking hΦ L).trans (hPic L).symm
   obtain ⟨aB, haB⟩ := E.exists_iso_of_comap_eq_ker a D.subschemeι
     (haD.trans D.ker_subschemeι.symm)
   let : a.hom.IsOver S := ⟨haOver⟩
@@ -138,7 +138,7 @@ theorem exists_iso_of_eq_period_of_matching_picard_markings
     simp only [DihedralGroup.cycleOrientationSign_r, ite_eq_right hsign] at hgs
     simp only [DihedralGroup.cycleVertexPerm_r_apply, zero_add] at hρ'
     exact boundaryCycleAction_of_translation_of_common_ray b s c d hΦ A B C
-      hf hg hfs hgs haB hc ht ha j ρ hρ hρ'
+      hf hg hfs hgs haB hc t.isLift t.commutes j ρ hρ hρ'
   | sr j =>
     simp only [DihedralGroup.cycleOrientationSign_sr, ite_true] at hgs
     have hρ'' : q (prime[d] ρ).val = E.subschemeι (B.reverse.componentGenericPoint j) := by
@@ -146,7 +146,7 @@ theorem exists_iso_of_eq_period_of_matching_picard_markings
         NodalCycleNumbering.componentGenericPoint_def, NodalCycleNumbering.reverse_component]
         using hρ'
     have h := boundaryCycleAction_of_translation_of_common_ray b s c d hΦ A B.reverse C
-      hf hg hfs hgs haB hc ht ha j ρ hρ hρ''
+      hf hg hfs hgs haB hc t.isLift t.commutes j ρ hρ hρ''
     have : (Iso.refl E.subscheme).hom.IsOver S := by
       rw [Iso.refl_hom]
       infer_instance

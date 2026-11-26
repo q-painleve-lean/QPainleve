@@ -5,12 +5,11 @@ Authors: The QPainleve contributors
 -/
 module
 
-public import QPainleve.SignedClusterModularGroup.Realization.Endpoint.PicardAction
+public import QPainleve.Algebra.Cluster.Word.ModularGroup
+public import QPainleve.SignedClusterModularGroup.Realization.Endpoint.SelfRealization
 
-import QPainleve.Algebra.Cluster.ChargeKernel.Index
-import QPainleve.SignedClusterModularGroup.Realization.Anticanonical
 import QPainleve.SignedClusterModularGroup.Realization.Endpoint.Kernel
-import QPainleve.SignedClusterModularGroup.Realization.NodalFiber
+import QPainleve.SignedClusterModularGroup.Realization.PicardAction
 
 /-!
 # The Picard action of unsigned cluster loops in a marked presentation
@@ -94,33 +93,31 @@ theorem existsUnique_picardHom_of_presentation
   let := Q.complete.nonempty_cones
   let := Q.prestable
   let := Q.neZero
-  let : IsRationalOver ((M c₀).surface ↘ S) := hmodel.isRationalOver
-  have hcan := congrArg Inv.inv (hmodel.canonicalClass (hD c₀))
-  have hindex := Q.chargeIndex_ne_zero_of_anticanonical_cycle hmodel (hD c₀) hnef hsq hcan hprim
-  have hker : E.matrix.mulVecLin.ker = P.charge.ker := by
-    rw [← P.matrix_eq, hform, hcharge]
-    exact Fan.ker_chargeExchangeMatrix_rayChargeMap b Q.rays hindex
-  have hmodels (x : CenterPoint (U := Centers[r]) (V := Centers[r]) Cnil[P]) :=
-    models _ (Path.nil.centerPoint_endpoints_mem_noncollision P hker x).2
-  obtain ⟨ρ, ⟨hρ, hpos⟩, -⟩ :=
-    existsUnique_signedPicardHom_of_presentation P Q hform hcharge M hmodels
-      hmodel hD hnef hsq hcan hprim d hmark
-  have hρinj := ρ.ker_eq_bot_iff.mp
-    (signedPicardHom_ker_eq_bot_of_presentation Q P hform hcharge M models hD
-      hmodel hnef hsq hcan hprim d hmark ρ fun w ↦ (hρ w).2)
-  let f := picardRotationHom ρ hpos.ge
+  obtain ⟨ρ, ⟨hρ, hker⟩, -⟩ := existsUnique_faithful_signedPicardHom_of_presentation
+    Q P hform hcharge M models hmodel hD hnef hsq hprim d hmark
+  let f := picardRotationHom ρ hρ.sign_ker_unop.ge
   have hf (w : inversionFreeLoops E)
       {C : Centers[r].left.PartialMap Centers[r].left} [IsDominant C.hom]
       [C.IsOver Centers[r].hom Centers[r].hom] (R : GeometricRealization M M C LoopX[w])
       (hR : Models[M,C]) :
       rotationInclusion H d (f (op (clusterModularGroupMap ℂ E w))) =
         R.toSignedBoundaryIsometry d hD hmark := by
-    simpa only [f, rotationInclusion_picardRotationHom_apply, MonoidHom.op_apply_apply,
+    have hw : End.of (End.asHom w.val) = w.val := End.ext rfl
+    simp only [f, rotationInclusion_picardRotationHom_apply, MonoidHom.op_apply_apply,
       Function.comp_apply, unop_op, clusterModularGroupInclusion_clusterModularGroupMap]
-      using (hρ w.val).2 R hR
+    have h := hρ.apply_of_realization (End.asHom w.val) R hR
+    rw [hw] at h
+    exact h
   refine ⟨f, ⟨hf, f.ker_eq_bot_iff.mpr ?_⟩, ?_⟩
-  · exact picardRotationHom_injective ρ hpos.ge hρinj
+  · exact picardRotationHom_injective ρ hρ.sign_ker_unop.ge (ρ.ker_eq_bot_iff.mp hker)
   · intro f' hf'
+    have hmodels (x : CenterPoint (U := Centers[r]) (V := Centers[r]) Cnil[P]) :
+        Q.HasNodalModel (dst(Cnil[P],x)) (M (dst(Cnil[P],x))) := by
+      apply models
+      rw [Over.comp_left, Scheme.PartialMap.domainTarget_left, Path.centerPartialMap_hom,
+        Path.centerIso_nil, Iso.refl_hom, Category.comp_id, Scheme.Hom.comp_apply,
+        ← Path.centerPartialMap_domain]
+      exact (x.left (default : S)).property
     refine MonoidHom.ext fun g ↦ ?_
     obtain ⟨w, hw⟩ := clusterModularGroupMap_surjective ℂ E g.unop
     rw [← op_unop g, ← hw]

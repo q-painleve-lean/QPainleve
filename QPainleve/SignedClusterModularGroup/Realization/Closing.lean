@@ -162,12 +162,13 @@ theorem exists_comp_marked_toric_endpoint_comparison
   obtain ⟨q, _, _, _, v, hq, hqv⟩ := (Q'.hasNodalModel_iff _ _).mp (hmodel₂ c)
   obtain ⟨hcart₁, hnef₁, hsq₁⟩ := MarkedSurface.exists_nef_square_zero_boundary_of_pairIso
     (R.fiber c).iso (hcart₀ c) (hnef₀ c) (hsq₀ c)
-  obtain ⟨I, j, E, -, hI, -⟩ := p.exists_marked_toric_endpoint_comparison q e hΔQ hΔQ' hΔ
+  obtain ⟨comparison⟩ := p.nonempty_markedToricEndpointComparison q e hΔQ hΔQ' hΔ
     (Equiv.refl _) (Function.comp_id _) (fun j ↦ hcharge j) hdet
     (fun j l hj hl ↦ (not_lt_of_gt hj hl).elim) hp hq u v hpu.symm hqv.symm
     hcart₁ (hcart₂ c) hnef₁ (hnef₂ c) hsq₁ (hsq₂ c) U hleft hright
-  refine ⟨I, j, ⟨?_⟩, ?_⟩
-  · simpa only [Equiv.refl_symm, rename_refl_toRationalMap] using E
-  · simpa only [Equiv.coe_refl, Function.comp_id] using hI
+  refine ⟨comparison.picard, comparison.rotation, ⟨?_⟩, ?_⟩
+  · simpa only [Equiv.refl_symm, rename_refl_toRationalMap] using comparison.fiber
+  · intro x y
+    simpa only [Equiv.coe_refl, Function.comp_id] using comparison.picard_apply_eq_iff x y
 
 end QPainleve.SignedClusterModularGroup.GeometricRealization

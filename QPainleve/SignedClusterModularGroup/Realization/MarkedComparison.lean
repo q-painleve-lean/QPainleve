@@ -297,19 +297,6 @@ variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
 
 local notation "fiberAt" c:arg => ContractedToricFiber b s hΦ τ origin ι (χ[c]) (P c)
 
-omit [IsDominant C.hom] in
-private theorem precompCenter_target
-    {A : Over S} [PreirreducibleSpace A.left]
-    (f : A.left.PartialMap (T).left) [IsDominant f.hom]
-    [f.IsOver A.hom (T).hom] [(f.comp C).IsOver A.hom (T).hom]
-    (G : Point T → Prop)
-    (hG : ∀ x : CenterPoint (U := T) (V := T) C, G (dst[C,x]))
-    (x : CenterPoint (U := A) (V := T) (f.comp C)) :
-    G (x ≫ PartialMap.domainTarget (X := A) (Y := T) (f.comp C)) := by
-  have hx := hG (x ≫ f.compDomainRight (Z := T) C)
-  rw [Category.assoc, f.compDomainRight_target] at hx
-  exact hx
-
 omit [IsDominant C.hom]
   [C.IsOver (Over.mk (structureMap ℂ (Fin l → ℤ))).hom
     (Over.mk (structureMap ℂ (Fin l → ℤ))).hom] in
@@ -450,8 +437,8 @@ theorem xMap_eq_of_marked_actions_on_center_domains
       precompCenter_boundaryAction] using hη)
     (Fan.rayChargeMap s).toAddMonoidHom (structureMap ℂ (Fin l →₀ ℤ)) U inf_le_left inf_le_right
     ?_ hcΦ u hvertices hdet hnodes (fun c ↦ χ[c]) survives
-    (precompCenter_target (C := C) f hasFiber pTarget)
-    (precompCenter_target (C := C') f hasFiber qTarget)
+    (f.forall_comp_domainTarget (X := Torus[Cent]) (Y := T) (Z := T) C hasFiber pTarget)
+    (f.forall_comp_domainTarget (X := Torus[Cent]) (Y := T) (Z := T) C' hasFiber qTarget)
   rintro c ⟨z, hz⟩
   exact exists_precompCenter_chart eOver eX (by rfl) hcoords pSource c
     (z ≫ Scheme.homOfLE _ (inf_le_left : U ≤ (f.comp C).domain))

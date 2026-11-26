@@ -63,10 +63,8 @@ local instance (Q : CompleteToricPresentation i b r L γ) :
   Q.fan.isProjectiveOver_algebraicRealization_of_isComplete Q.regular Q.complete b
 
 local instance (Q : CompleteToricPresentation i b r L γ) :
-    SmoothOfRelativeDimension 2 (Q.fan.algebraicRealization ↘ S) := by
-  have h : Module.finrank ℤ N = 2 := by simpa using Module.finrank_eq_card_basis b
-  rw [← h, Q.fan.algebraicRealization_over]
-  exact Q.fan.smoothOfRelativeDimension_algebraicRealizationStructureMap Q.regular
+    SmoothOfRelativeDimension 2 (Q.fan.algebraicRealization ↘ S) :=
+  Q.smoothOfRelativeDimension_fan
 
 local instance (Q : CompleteToricPresentation i b r L γ) :
     (LinearMap.BilinForm.prod (Chow.intersectionBilinForm ℂ Q.fan.algebraicRealization)
@@ -113,18 +111,16 @@ theorem exchangeKernelEquiv_toLinearMap_eq_smul_picard_pullback
       (R.orientation : ℤ) •
         ((e₁.symm.trans (R.boundaryOrthogonalEquiv hmark₀ hmark₁)).trans e₀).toLinearMap := by
   obtain ⟨p⟩ := nonempty_centerPoint C
-  obtain ⟨_, f₀, hf₀, _⟩ :=
-    (models₀ p).existsUnique_chargeKernelEquiv (M₀ _).isEffectiveCartier_boundaryIdeal
-      (funext (hmark₀ _))
-  obtain ⟨_, f₁, hf₁, _⟩ :=
-    (models₁ p).existsUnique_chargeKernelEquiv (M₁ _).isEffectiveCartier_boundaryIdeal
-      (funext (hmark₁ _))
-  have h₀ (x : Orth[B₀,d₀]) : (f₀ x : Fin r → ℤ) = e₀ x :=
-    neg_injective ((CompleteToricPresentation.exceptionalCoordinates_chargeKernelEquiv
-      f₀ hf₀ x).symm.trans (he₀ x))
-  have h₁ (x : Orth[B₁,d₁]) : (f₁ x : Fin r → ℤ) = e₁ x :=
-    neg_injective ((CompleteToricPresentation.exceptionalCoordinates_chargeKernelEquiv
-      f₁ hf₁ x).symm.trans (he₁ x))
+  let f₀ := (models₀ p).chargeKernelEquiv (M₀ _).isEffectiveCartier_boundaryIdeal
+    (funext (hmark₀ _))
+  let f₁ := (models₁ p).chargeKernelEquiv (M₁ _).isEffectiveCartier_boundaryIdeal
+    (funext (hmark₁ _))
+  have hf₀ := (models₀ p).chargeKernelEquiv_symm_apply (M₀ _).isEffectiveCartier_boundaryIdeal
+    (funext (hmark₀ _))
+  have hf₁ := (models₁ p).chargeKernelEquiv_symm_apply (M₁ _).isEffectiveCartier_boundaryIdeal
+    (funext (hmark₁ _))
+  have h₀ (x : Orth[B₀,d₀]) : (f₀ x : Fin r → ℤ) = e₀ x := by simp [f₀, he₀ x]
+  have h₁ (x : Orth[B₁,d₁]) : (f₁ x : Fin r → ℤ) = e₁ x := by simp [f₁, he₁ x]
   have htransport (x : Orth[B₁,d₁]) :=
     R.exponentEquiv_eq_signed_picard_pullback hmark₀ hmark₁ f₀ f₁ hf₀ hf₁ hC
       Q₀.rayOrder (fun j ↦ (Q₀.cycle.component_apply j).symm.trans (Q₀.component_eq j))

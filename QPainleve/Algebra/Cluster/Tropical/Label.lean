@@ -7,6 +7,8 @@ module
 
 public import QPainleve.Algebra.Cluster.Tropical.Basic
 
+import QPainleve.Data.Fin.Find
+
 /-!
 # Tropical boundary labels of signed cluster words
 
@@ -60,8 +62,8 @@ orders. -/
 theorem tropicalBoundaryLabel_eq_some_iff (w : Word E E') {orders : Fin n → ι → ℤ}
     (source : ι → ℤ) (hinj : Function.Injective orders) (j : Fin n) :
     w.tropicalBoundaryLabel orders source = some j ↔ orders j = trop[w] source := by
-  rw [← Option.mem_def, mem_tropicalBoundaryLabel_iff]
-  exact ⟨And.left, fun hj ↦ ⟨hj, fun k hk ↦ (hinj.ne_iff' hj).2 hk.ne⟩⟩
+  rw [tropicalBoundaryLabel_def]
+  exact Fin.find?_decide_eq_some_iff_of_injective hinj _ j
 
 /-- If a connecting word transports one table of boundary orders by `p`, and a
 loop permutes the original table by `q`, then the transported loop's boundary

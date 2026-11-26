@@ -70,10 +70,8 @@ local notation "Fiber[" c "," M "]" =>
 local instance instProjectiveFan : Q.fan.algebraicRealization.IsProjectiveOver ℂ :=
   Q.fan.isProjectiveOver_algebraicRealization_of_isComplete Q.regular Q.complete b
 
-local instance instSmoothFan : SmoothOfRelativeDimension 2 (Q.fan.algebraicRealization ↘ S) := by
-  have hN : Module.finrank ℤ N = 2 := by simpa using Module.finrank_eq_card_basis b
-  rw [← hN, Q.fan.algebraicRealization_over]
-  exact Q.fan.smoothOfRelativeDimension_algebraicRealizationStructureMap Q.regular
+local instance instSmoothFan : SmoothOfRelativeDimension 2 (Q.fan.algebraicRealization ↘ S) :=
+  Q.smoothOfRelativeDimension_fan
 
 /-- A complete toric presentation determines its surviving rays in boundary order
 at every nodal contraction, including at repeated centers. -/

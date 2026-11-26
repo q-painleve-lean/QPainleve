@@ -110,9 +110,11 @@ theorem exists_picardEquiv_signedLoopInvariants_of_nodal_contraction
           ∀ l, (toIsometry B d g).val (d l) =
             d (η • (l - (ZMod.finEquiv n).toEquiv j)) := by
   -- Use the same marked family for the Picard, Casimir, and boundary comparisons.
-  obtain ⟨M, hD, hmark, Θ, _, hM, hfamily, hΘ, hsignker, -⟩ :=
+  obtain ⟨⟨M, hfamily, hmark, Θ, hparity, hΘ, hsignker⟩, hM⟩ :=
     Q.exists_picardGroupEquivs_of_nodal_model (Q.hasNodalModel_of_contraction hnodal₀)
       hE hprim hnef hsq
+  -- Reduce the family projection before transporting the specified reference contraction.
+  dsimp only at hM
   subst M₀
   dsimp only
   let d := (M c₀).boundaryClass cartier[M c₀]
@@ -121,14 +123,16 @@ theorem exists_picardEquiv_signedLoopInvariants_of_nodal_contraction
   have hcharge : P.charge = Fan.rayChargeMap Q.rays := Fan.rayChargeSeed_charge _ _ _
   obtain ⟨e, ⟨hcoords, hCasimir, -⟩, -⟩ := existsUnique_exchangeKernelEquiv_of_presentation
     Q P hform hcharge M (fun c ↦ cartier[M c]) (hfamily c₀) (fun c _ ↦ hfamily c)
-    hnef hsq hprim d hmark Θ.toMonoidHom (fun w ↦ (hΘ (End.asHom w)).2)
+    hnef hsq hprim d hmark Θ.toMonoidHom (fun w ↦ hΘ (End.asHom w))
   choose p hp using fun c ↦ (hfamily c).exists_isNodalContraction (cartier[M c])
-  refine ⟨M, hD, hmark, Θ, e, rfl, hfamily, hΘ, hcoords, hsignker, fun w _ vectors ↦ ?_⟩
+  refine ⟨M, fun z ↦ cartier[M z], hmark, Θ, e, rfl, hfamily,
+    fun w ↦ ⟨(SignedBoundaryIsometryGroup.sign_apply B _ _).trans (hparity w), hΘ w⟩,
+    hcoords, hsignker, fun w _ vectors ↦ ?_⟩
   obtain ⟨R, _, _, j, hfind, hboundary⟩ :=
     exists_realize_signed_loop_with_boundary_label Q P hform hcharge M p₀ hnodal₀
       (fun c _ ↦ p c) (fun c _ ↦ hp c) hnef hsq hprim hmark w
-  have hR := (hΘ w).2 R fun _ ↦ ⟨p _⟩
-  have hsign := (hΘ w).1
+  have hR := hΘ w R fun _ ↦ ⟨p _⟩
+  have hsign := (SignedBoundaryIsometryGroup.sign_apply B _ _).trans (hparity w)
   have haction := DFunLike.congr_fun hCasimir eval[w]
   simp only [exchangeKernelAction_op_loop, MonoidHom.comp_apply, MulEquiv.coe_toMonoidHom,
     Subgroup.subtype_apply] at haction

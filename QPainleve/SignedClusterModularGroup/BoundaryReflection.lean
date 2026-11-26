@@ -6,13 +6,14 @@ Authors: Yuma Mizuno, Codex
 module
 
 public import Mathlib.LinearAlgebra.BilinearForm.IsometryEquiv
-public import Mathlib.LinearAlgebra.BilinearForm.Properties
 public import Mathlib.Data.ZMod.Basic
-import Mathlib.Algebra.BigOperators.Pi
+public import TauCeti.Algebra.Module.Primitive
+public import TauCeti.LinearAlgebra.BilinearForm.Characteristic
 import Mathlib.Data.Fin.Rev
 import Mathlib.LinearAlgebra.Quotient.Basic
 import Mathlib.Tactic.Abel
 import Mathlib.Tactic.Ring
+import QPainleve.SignedClusterModularGroup.BoundaryCycle
 
 /-!
 # Reflection of an affine type-A boundary cycle
@@ -111,20 +112,6 @@ private theorem exists_boundary_unit_pairing
   obtain ⟨y, hy⟩ := hq
   refine ⟨j₀, y, fun j ↦ ?_⟩
   simpa [hdegrees, e, Pi.single_apply, eq_comm] using congrFun hy j
-
-private theorem boundary_total_pairing
-    (hIntersection : ∀ i j : ZMod n,
-      B (D i) (D j) = (-2 : ℤ) * (if i = j then 1 else 0) +
-        (if j = i + 1 then 1 else 0) + (if j = i - 1 then 1 else 0))
-    (j : ZMod n) : B (∑ i, D i) (D j) = 0 := by
-  classical
-  have hnext (i : ZMod n) : j = i + 1 ↔ i = j - 1 := by
-    rw [eq_sub_iff_add_eq]
-    exact eq_comm
-  have hprev (i : ZMod n) : j = i - 1 ↔ i = j + 1 := by
-    rw [eq_sub_iff_add_eq]
-    exact eq_comm
-  simp [hIntersection, hnext, hprev, Finset.sum_add_distrib]
 
 /-- The sum of the first `k` components after cutting the cycle at `j₀`. -/
 private def boundaryPrefix (D : ZMod n → L) (j₀ : ZMod n) (k : ℕ) : L :=
@@ -251,15 +238,42 @@ private theorem prefixReversal_eq_of_pairing_zero (T : Fin n → L) {x : L}
     prefixReversal B T x = x := by
   simp [prefixReversal_apply, hx]
 
+omit [NeZero n] in
+private theorem prefixReversal_eq_self_of_boundary_pairing_eq_zero (j₀ : ZMod n) {x : L}
+    (hx : ∀ j, j ≠ j₀ → B x (D j) = 0) :
+    prefixReversal B (fun i : Fin n ↦ boundaryPrefix D j₀ i) x = x := by
+  apply prefixReversal_eq_of_pairing_zero
+  intro i
+  let : NeZero n := ⟨Nat.ne_of_gt (Nat.zero_lt_of_lt i.isLt)⟩
+  simp only [boundaryPrefix, map_sum]
+  refine Finset.sum_eq_zero fun k hk ↦ hx _ ?_
+  have hk' : k + 1 < n := by
+    have := Finset.mem_range.mp hk
+    omega
+  have hne : ((k + 1 : ℕ) : ZMod n) ≠ 0 := by
+    intro h
+    have hv := congrArg ZMod.val h
+    simp only [ZMod.val_natCast_of_lt hk', ZMod.val_zero, Nat.add_one_ne_zero] at hv
+  simpa using hne
+
 private theorem prefixReversal_component
-    (j₀ : ZMod n) (k : ℕ) (hk : k + 1 < n)
+    (j₀ j : ZMod n) (hj : j ≠ j₀)
     (hGram : ∀ i j : Fin n, B (boundaryPrefix D j₀ i) (boundaryPrefix D j₀ j) =
       -(if i = j then 1 else 0) + (if i = 0 then 1 else 0) + (if j = 0 then 1 else 0) - 1) :
-    prefixReversal B (fun i : Fin n ↦ boundaryPrefix D j₀ i)
-        (D (j₀ + ((k + 1 : ℕ) : ZMod n))) =
-      -D (j₀ - ((k + 1 : ℕ) : ZMod n)) := by
+    prefixReversal B (fun i : Fin n ↦ boundaryPrefix D j₀ i) (D j) = -D (2 * j₀ - j) := by
+  have hval : 0 < (j - j₀).val :=
+    Nat.pos_of_ne_zero (fun h ↦ hj (sub_eq_zero.mp ((ZMod.val_eq_zero _).mp h)))
+  obtain ⟨k, hk⟩ := Nat.exists_eq_succ_of_ne_zero hval.ne'
+  have hk' : (j - j₀).val = k + 1 := hk
+  have hlt : k + 1 < n := hk' ▸ (j - j₀).val_lt
+  have hj' : j = j₀ + ((k + 1 : ℕ) : ZMod n) := by
+    rw [← hk', ZMod.natCast_zmod_val]
+    abel
+  have hindex : 2 * j₀ - (j₀ + ((k + 1 : ℕ) : ZMod n)) =
+      j₀ - ((k + 1 : ℕ) : ZMod n) := by ring
+  rw [hj', hindex]
   let i : Fin n := ⟨k, by omega⟩
-  let j : Fin n := ⟨k + 1, hk⟩
+  let j : Fin n := ⟨k + 1, hlt⟩
   have hdiff : D (j₀ + ((k + 1 : ℕ) : ZMod n)) =
       boundaryPrefix D j₀ j - boundaryPrefix D j₀ i := by
     simpa [i, j] using (eq_sub_of_add_eq' (boundaryPrefix_succ (D := D) j₀ k).symm)
@@ -303,19 +317,20 @@ private theorem exists_boundary_square_neg_one (hSymm : B.IsSymm)
     (hIntersection : ∀ i j : ZMod n,
       B (D i) (D j) = (-2 : ℤ) * (if i = j then 1 else 0) +
         (if j = i + 1 then 1 else 0) + (if j = i - 1 then 1 else 0))
-    (hCharacteristic : ∀ x : L, Even (B x x - B x (∑ i, D i)))
+    (hCharacteristic : B.IsCharacteristic (∑ i, D i))
     {x : L} (hx : B x (∑ i, D i) = 1) :
     ∃ j₀ : ZMod n, ∃ f : L, B f f = -1 ∧
       ∀ j : ZMod n, B f (D j) = if j = j₀ then 1 else 0 := by
   classical
   let δ := ∑ i, D i
   obtain ⟨j₀, y, hy⟩ := exists_boundary_unit_pairing hIntersection hx
-  have hδD (j : ZMod n) : B δ (D j) = 0 := boundary_total_pairing hIntersection j
-  have hδδ : B δ δ = 0 := by
-    have hf : B δ δ = ∑ j, B δ (D j) := map_sum (B δ) _ _
-    simp [hf, hδD]
+  have hδD (j : ZMod n) : B δ (D j) = 0 := BoundaryCycle.pairing_sum hIntersection j
+  have hδδ : B δ δ = 0 := BoundaryCycle.pairing_sum_sum hIntersection
   have hyδ : B y δ = 1 := by simp [δ, hy]
-  obtain ⟨a, ha⟩ := hCharacteristic y
+  have heven : Even (B y y - B y δ) := by
+    rw [even_iff_two_dvd, dvd_sub_comm, hSymm.eq y δ]
+    exact (isCharacteristic_iff.mp hCharacteristic) y
+  obtain ⟨a, ha⟩ := heven
   let f := y - (a + 1) • δ
   have hfD (j : ZMod n) : B f (D j) = if j = j₀ then 1 else 0 := by
     simp [f, hδD, hy]
@@ -327,23 +342,20 @@ private theorem exists_boundary_square_neg_one (hSymm : B.IsSymm)
     omega
   exact ⟨j₀, f, hff, hfD⟩
 
-private theorem exists_cycle_reversing_isometry_of_cut (hSymm : B.IsSymm)
+private theorem exists_cycle_reversing_isometry_eq (hSymm : B.IsSymm)
     (hIntersection : ∀ i j : ZMod n,
       B (D i) (D j) = (-2 : ℤ) * (if i = j then 1 else 0) +
         (if j = i + 1 then 1 else 0) + (if j = i - 1 then 1 else 0))
     {j₀ : ZMod n} {f : L} (hff : B f f = -1)
     (hfD : ∀ j : ZMod n, B f (D j) = if j = j₀ then 1 else 0) :
-    ∃ g : B.IsometryEquiv B, Function.Involutive g ∧
-      g f = f ∧ g (∑ i : ZMod n, D i) = (∑ i : ZMod n, D i) ∧
-      (∀ j : ZMod n, g (D j) = D (2 * j₀ - j)) ∧
-      (∀ κ : L, (∀ j : ZMod n, B κ (D j) = 0) →
-        g κ = -κ + (2 * B κ f) • (∑ i : ZMod n, D i)) := by
+    let δ := ∑ i, D i
+    let P := boundaryPlaneProjection B δ f
+    let w := prefixReversal B (fun i : Fin n ↦ boundaryPrefix D j₀ i)
+    ∃ g : B.IsometryEquiv B, Function.Involutive g ∧ ∀ z, g z = P z + P z - w z := by
   classical
   let δ := ∑ i, D i
-  have hδD (j : ZMod n) : B δ (D j) = 0 := boundary_total_pairing hIntersection j
-  have hδδ : B δ δ = 0 := by
-    have hf : B δ δ = ∑ j, B δ (D j) := map_sum (B δ) _ _
-    simp [hf, hδD]
+  have hδD (j : ZMod n) : B δ (D j) = 0 := BoundaryCycle.pairing_sum hIntersection j
+  have hδδ : B δ δ = 0 := BoundaryCycle.pairing_sum_sum hIntersection
   have hfδ : B f δ = 1 := by simp [δ, hfD]
   have hδf : B δ f = 1 := (hSymm.eq _ _).trans hfδ
   -- Reverse the type-A coordinates of the chain obtained by cutting at j₀.
@@ -351,19 +363,10 @@ private theorem exists_cycle_reversing_isometry_of_cut (hSymm : B.IsSymm)
   have hGram := boundaryPrefix_pairing hIntersection j₀
   let w := prefixReversal B T
   let P := boundaryPlaneProjection B δ f
-  have hwFix (z : L) (hz : ∀ j, j ≠ j₀ → B z (D j) = 0) : w z = z := by
-    apply prefixReversal_eq_of_pairing_zero
-    intro i
-    simp only [T, boundaryPrefix, map_sum]
-    refine Finset.sum_eq_zero fun k hk ↦ hz _ ?_
-    have hk' : k + 1 < n := by have := Finset.mem_range.mp hk; omega
-    have hne : ((k + 1 : ℕ) : ZMod n) ≠ 0 := by
-      intro h
-      have hv := congrArg ZMod.val h
-      simp only [ZMod.val_natCast_of_lt hk', ZMod.val_zero, Nat.add_one_ne_zero] at hv
-    simpa using hne
-  have hwδ : w δ = δ := hwFix _ fun j _ ↦ hδD j
-  have hwf : w f = f := hwFix _ fun j hj ↦ by simp [hfD, hj]
+  have hwδ : w δ = δ :=
+    prefixReversal_eq_self_of_boundary_pairing_eq_zero j₀ fun j _ ↦ hδD j
+  have hwf : w f = f :=
+    prefixReversal_eq_self_of_boundary_pairing_eq_zero j₀ fun j hj ↦ by simp [hfD, hj]
   have hP (z : L) : P z = B z δ • f + (B z f + B z δ) • δ :=
     boundaryPlaneProjection_apply δ f z
   have hPδ : P δ = δ := by simp [hP, hδδ, hδf]
@@ -388,23 +391,35 @@ private theorem exists_cycle_reversing_isometry_of_cut (hSymm : B.IsSymm)
   let g : B.IsometryEquiv B :=
     { LinearEquiv.ofInvolutive G hGG with
       map_app' := fun z z' ↦ (hGAdj z (G z')).trans (congrArg (B z) (hGG z')) }
-  have hg (z : L) : g z = G z := rfl
-  have hgδ : g δ = δ := by simp [hg, hG, hPδ, hwδ]
+  exact ⟨g, hGG, hG⟩
+
+private theorem exists_cycle_reversing_isometry_of_cut (hSymm : B.IsSymm)
+    (hIntersection : ∀ i j : ZMod n,
+      B (D i) (D j) = (-2 : ℤ) * (if i = j then 1 else 0) +
+        (if j = i + 1 then 1 else 0) + (if j = i - 1 then 1 else 0))
+    {j₀ : ZMod n} {f : L} (hff : B f f = -1)
+    (hfD : ∀ j : ZMod n, B f (D j) = if j = j₀ then 1 else 0) :
+    ∃ g : B.IsometryEquiv B, Function.Involutive g ∧
+      g f = f ∧ g (∑ i : ZMod n, D i) = (∑ i : ZMod n, D i) ∧
+      (∀ j : ZMod n, g (D j) = D (2 * j₀ - j)) ∧
+      (∀ κ : L, (∀ j : ZMod n, B κ (D j) = 0) →
+        g κ = -κ + (2 * B κ f) • (∑ i : ZMod n, D i)) := by
+  classical
+  let δ := ∑ i, D i
+  have hδD (j : ZMod n) : B δ (D j) = 0 := BoundaryCycle.pairing_sum hIntersection j
+  have hδδ : B δ δ = 0 := BoundaryCycle.pairing_sum_sum hIntersection
+  have hfδ : B f δ = 1 := by simp [δ, hfD]
+  have hP (z : L) : boundaryPlaneProjection B (∑ i, D i) f z =
+      B z δ • f + (B z f + B z δ) • δ := boundaryPlaneProjection_apply δ f z
+  obtain ⟨g, hinv, hg⟩ := exists_cycle_reversing_isometry_eq hSymm hIntersection hff hfD
+  have hgδ : g δ = δ := by
+    rw [hg, prefixReversal_eq_self_of_boundary_pairing_eq_zero j₀ fun j _ ↦ hδD j]
+    simp [hP, hδδ, (hSymm.eq δ f).trans hfδ]
   have hgD (j : ZMod n) (hj : j ≠ j₀) : g (D j) = D (2 * j₀ - j) := by
-    have hval : 0 < (j - j₀).val := Nat.pos_of_ne_zero
-      (fun h ↦ hj (sub_eq_zero.mp ((ZMod.val_eq_zero _).mp h)))
-    obtain ⟨k, hk⟩ := Nat.exists_eq_succ_of_ne_zero hval.ne'
-    have hk' : (j - j₀).val = k + 1 := hk
-    have hkn : k + 1 < n := hk' ▸ (j - j₀).val_lt
-    have hj' : j = j₀ + ((k + 1 : ℕ) : ZMod n) := by
-      rw [← hk', ZMod.natCast_zmod_val]
-      abel
-    have hp : P (D j) = 0 := by
-      simp [hP, hSymm.eq (D j), hδD j, hfD, hj]
-    rw [hg, hG, hp, zero_add, zero_sub, hj', prefixReversal_component j₀ k hkn hGram, neg_neg]
-    congr 1
-    rw [two_mul]
-    abel
+    have hjδ : B (D j) δ = 0 := (hSymm.eq _ _).trans (hδD j)
+    have hjf : B (D j) f = 0 := by rw [hSymm.eq (D j), hfD, ite_eq_right hj]
+    rw [hg, prefixReversal_component j₀ j hj (boundaryPrefix_pairing hIntersection j₀)]
+    simp [hP, hjδ, hjf]
   -- The total class determines the remaining component once the chain is reversed.
   have hcut : g (D j₀) = D j₀ := by
     let σ : Equiv.Perm (ZMod n) := (Equiv.neg (ZMod n)).trans (Equiv.addLeft (2 * j₀))
@@ -420,15 +435,18 @@ private theorem exists_cycle_reversing_isometry_of_cut (hSymm : B.IsSymm)
       Finset.sum_congr rfl fun j hj ↦
         (hgD j (Finset.ne_of_mem_erase hj)).trans (congrArg D (hσ j).symm)
     rwa [hrest, add_right_inj] at hs
-  refine ⟨g, hGG, ?_, hgδ, ?_, ?_⟩
-  · simp [hg, hG, hPf, hwf]
+  refine ⟨g, hinv, ?_, hgδ, ?_, ?_⟩
+  · rw [hg, prefixReversal_eq_self_of_boundary_pairing_eq_zero j₀
+      (fun j hj ↦ by simp [hfD, hj])]
+    simp [hP, hfδ, hff]
   · intro j
     by_cases hj : j = j₀
     · simpa [hj, two_mul] using hcut
     · exact hgD j hj
   · intro κ hκ
     have hκδ : B κ δ = 0 := by simp [δ, hκ]
-    rw [hg, hG, hwFix κ (fun j _ ↦ hκ j), hP, hκδ]
+    rw [hg, prefixReversal_eq_self_of_boundary_pairing_eq_zero j₀ (fun j _ ↦ hκ j),
+      hP, hκδ]
     simp only [zero_smul, zero_add, add_zero]
     rw [← add_zsmul, two_mul, sub_eq_neg_add]
 
@@ -441,9 +459,8 @@ The two neighbor terms are counted separately, also for cycles of length one and
 theorem exists_cycle_reversing_involution
     (L : Type*) [AddCommGroup L] [scalar : Module ℤ L]
     [Module.Free ℤ L] [Module.Finite ℤ L]
-    (B : LinearMap.BilinForm ℤ L)
+    (B : LinearMap.BilinForm ℤ L) [B.IsPerfPair]
     (hSymm : B.IsSymm)
-    (hUnimodular : Function.Bijective (B : L → (L →ₗ[ℤ] ℤ)))
     (n : ℕ) [NeZero n]
     (D : ZMod n → L)
     (hIntersection : ∀ i j : ZMod n,
@@ -451,9 +468,8 @@ theorem exists_cycle_reversing_involution
         (-2 : ℤ) * (if i = j then 1 else 0) +
           (if j = i + 1 then 1 else 0) +
           (if j = i - 1 then 1 else 0))
-    (hPrimitive : ∃ ℓ : L →ₗ[ℤ] ℤ, ℓ (∑ i : ZMod n, D i) = 1)
-    (hCharacteristic : ∀ x : L,
-      Even (B x x - B x (∑ i : ZMod n, D i))) :
+    (hPrimitive : TauCeti.IsPrimitive (∑ i : ZMod n, D i))
+    (hCharacteristic : B.IsCharacteristic (∑ i : ZMod n, D i)) :
     ∃ (j₀ : ZMod n) (f : L) (g : B.IsometryEquiv B),
       B f f = -1 ∧
       (∀ j : ZMod n, B f (D j) = if j = j₀ then 1 else 0) ∧
@@ -461,16 +477,21 @@ theorem exists_cycle_reversing_involution
       g f = f ∧
       g (∑ i : ZMod n, D i) = (∑ i : ZMod n, D i) ∧
       (∀ j : ZMod n, g (D j) = D (2 * j₀ - j)) ∧
-      (∀ κ : L, (∀ j : ZMod n, B κ (D j) = 0) →
+      (∀ κ : L, κ ∈ B.orthogonal (Submodule.span ℤ (Set.range D)) →
         g κ = -κ + (2 * B κ f) • (∑ i : ZMod n, D i)) := by
   classical
   -- Use the canonical integer action for arithmetic with lattice vectors.
   have hscalar : scalar = (AddCommGroup.uniqueIntModule (M := L)).default := Subsingleton.elim _ _
   subst scalar
-  obtain ⟨ℓ, hℓ⟩ := hPrimitive
-  obtain ⟨x, rfl⟩ := hUnimodular.surjective ℓ
-  obtain ⟨j₀, f, hff, hfD⟩ := exists_boundary_square_neg_one hSymm hIntersection hCharacteristic hℓ
-  obtain ⟨g, hg⟩ := exists_cycle_reversing_isometry_of_cut hSymm hIntersection hff hfD
-  exact ⟨j₀, f, g, hff, hfD, hg⟩
+  obtain ⟨ℓ, hℓ⟩ := TauCeti.isPrimitive_def.mp hPrimitive
+  have hx : B (B.toPerfPair.symm ℓ) (∑ i, D i) = 1 := by
+    rw [B.apply_symm_toPerfPair_self, hℓ]
+  obtain ⟨j₀, f, hff, hfD⟩ := exists_boundary_square_neg_one hSymm hIntersection hCharacteristic hx
+  obtain ⟨g, hinv, hfix, hsum, hboundary, horthogonal⟩ :=
+    exists_cycle_reversing_isometry_of_cut hSymm hIntersection hff hfD
+  refine ⟨j₀, f, g, hff, hfD, hinv, hfix, hsum, hboundary, fun x hx ↦ horthogonal x ?_⟩
+  intro j
+  rw [hSymm.eq]
+  exact B.mem_orthogonal_iff.mp hx _ (Submodule.subset_span (Set.mem_range_self j))
 
 end QPainleve

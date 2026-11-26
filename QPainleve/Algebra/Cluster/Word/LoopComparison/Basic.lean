@@ -46,8 +46,7 @@ theorem compareSignedLoops_eq_true_iff_xPullback_eq (k : Type*) [Field k]
         w.signedLoopInvariants (fun j ↦ (β j : Fin r → ℤ)) orders (orders 0) =
           v.signedLoopInvariants (fun j ↦ (β j : Fin r → ℤ)) orders (orders 0)) :
     B.compareSignedLoops orders w v = true ↔ w.xPullback k = v.xPullback k := by
-  obtain ⟨β, hβ⟩ := B.matrix.exists_basis_eq_intKernelBasisVectors
-  rw [compareSignedLoops_eq_true_iff, ← hβ]
-  exact (criterion β).symm
+  simpa only [compareSignedLoops_eq_true_iff, Matrix.intKernelBasis_apply]
+    using (criterion B.matrix.intKernelBasis).symm
 
 end QPainleve.Cluster.SkewExchangeMatrix

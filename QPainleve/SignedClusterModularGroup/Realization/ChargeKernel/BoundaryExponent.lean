@@ -16,6 +16,7 @@ import QPainleve.SignedClusterModularGroup.Realization.Anticanonical
 import QPainleve.SignedClusterModularGroup.Realization.Endpoint.ConnectingWord
 import QPainleve.SignedClusterModularGroup.Realization.NodalFiber
 import QPainleve.SignedClusterModularGroup.Realization.Orthogonal
+import QPainleve.SignedClusterModularGroup.Realization.Presentation.Boundary
 
 /-!
 # Transport of the total boundary exponent
@@ -85,27 +86,12 @@ theorem totalBoundaryExponent_eq_totalBoundaryRayMultiplicity
   funext j
   simp only [Pi.neg_apply, neg_neg]
 
-private theorem smoothOfRelativeDimension_fan :
-    SmoothOfRelativeDimension 2 (Q.fan.algebraicRealization ↘ S) := by
-  have hN : Module.finrank ℤ N = 2 := by simpa using Module.finrank_eq_card_basis b
-  rw [← hN, Q.fan.algebraicRealization_over]
-  exact Q.fan.smoothOfRelativeDimension_algebraicRealizationStructureMap Q.regular
-
-local notation "Aux" => LinearMap.BilinForm.prod
-  (Chow.intersectionBilinForm ℂ Q.fan.algebraicRealization)
-  (-(dotProductBilin ℤ ℤ : LinearMap.BilinForm ℤ (Fin r → ℤ)))
-
-private theorem totalBoundaryExponent_eq_of_chargeKernelEquiv
-    [Q.fan.algebraicRealization.IsProjectiveOver ℂ]
-    [SmoothOfRelativeDimension 2 (Q.fan.algebraicRealization ↘ S)] [LinearMap.IsPerfPair Aux]
-    {d : ZMod n → L} (e : orth[H,d] ≃ₗ[ℤ] (Fan.rayChargeMap Q.rays).ker)
-    (he : ∀ y, Q.inclusion (e.symm y).val =
-      ((Fan.boundaryOrthogonalEquivChargeKernel Q.regular Q.rays Aux).symm y).val)
-    (x : orth[H,d]) (hx : x.val = total[d]) :
-    Q.totalBoundaryExponent d = (e x : Fin r → ℤ) := by
-  simpa only [totalBoundaryExponent_def, LinearEquiv.symm_apply_apply, hx,
-    Fan.boundaryOrthogonalEquivChargeKernel_symm_snd, neg_neg]
-    using congrArg (fun p ↦ -p.2) (he (e x))
+private theorem HasNodalModel.coe_chargeKernelEquiv_apply_eq_totalBoundaryExponent
+    {c : GeometricRealization.Point Centers[r]} {M : MarkedSurface ℂ n H XTor[r]}
+    (h : Q.HasNodalModel c M) {d : ZMod n → L}
+    (hd : M.boundaryClass (cartier(M)) = d) (x : orth[H,d]) (hx : x.val = total[d]) :
+    (h.chargeKernelEquiv (cartier(M)) hd x : Fin r → ℤ) = Q.totalBoundaryExponent d := by
+  rw [h.coe_chargeKernelEquiv_apply, hx, Q.totalBoundaryExponent_def]
 
 private theorem HasNodalModel.genus_eq_zero_at_boundary_normalization
     {c : GeometricRealization.Point Centers[r]} {M : MarkedSurface ℂ n H XTor[r]}
@@ -126,13 +112,8 @@ theorem HasNodalModel.totalBoundaryExponent_mem_chargeKernel
     (h : Q.HasNodalModel c M) {d : ZMod n → L}
     (hd : M.boundaryClass (cartier(M)) = d) (hδ : total[d] ∈ orth[H,d]) :
     Q.totalBoundaryExponent d ∈ (Fan.rayChargeMap Q.rays).ker := by
-  let : Q.fan.algebraicRealization.IsProjectiveOver ℂ :=
-    Q.fan.isProjectiveOver_algebraicRealization_of_isComplete Q.regular Q.complete b
-  let := Q.smoothOfRelativeDimension_fan
-  obtain ⟨hAux, e, he, -⟩ := h.existsUnique_chargeKernelEquiv (cartier(M)) hd
-  let := hAux
-  rw [Q.totalBoundaryExponent_eq_of_chargeKernelEquiv e he ⟨total[d], hδ⟩ rfl]
-  exact (e ⟨total[d], hδ⟩).property
+  rw [← h.coe_chargeKernelEquiv_apply_eq_totalBoundaryExponent Q hd ⟨total[d], hδ⟩ rfl]
+  exact (h.chargeKernelEquiv (cartier(M)) hd ⟨total[d], hδ⟩).property
 
 end CompleteToricPresentation
 
@@ -216,19 +197,24 @@ theorem exponentEquiv_totalBoundaryExponent
   let := Q₀.smoothOfRelativeDimension_fan
   let := Q₁.smoothOfRelativeDimension_fan
   obtain ⟨c⟩ := nonempty_centerPoint C
-  obtain ⟨hAux₀, e₀, he₀, -⟩ := (models₀ c).existsUnique_chargeKernelEquiv (cartier(_))
-    (funext (hmark₀ (src[C,c])))
-  obtain ⟨hAux₁, e₁, he₁, -⟩ := (models₁ c).existsUnique_chargeKernelEquiv (cartier(_))
-    (funext (hmark₁ (dst[C,c])))
-  let := hAux₀
-  let := hAux₁
+  let := Q₀.isPerfPair_auxiliaryPicardForm
+  let := Q₁.isPerfPair_auxiliaryPicardForm
+  have hd₀ := funext (hmark₀ (src[C,c]))
+  have hd₁ := funext (hmark₁ (dst[C,c]))
+  let e₀ := (models₀ c).chargeKernelEquiv (cartier(_)) hd₀
+  let e₁ := (models₁ c).chargeKernelEquiv (cartier(_)) hd₁
+  have he₀ := (models₀ c).chargeKernelEquiv_symm_apply (cartier(_)) hd₀
+  have he₁ := (models₁ c).chargeKernelEquiv_symm_apply (cartier(_)) hd₁
   let t₁ : orth[H₁,d₁] := ⟨_, hδ₁⟩
   let t₀ := R.boundaryOrthogonalEquiv hmark₀ hmark₁ t₁
   have ht : t₀.val = total[d₀] :=
     (R.coe_boundaryOrthogonalEquiv_apply hmark₀ hmark₁ t₁).trans
       (R.picard_total_boundary hmark₀ hmark₁)
-  rw [Q₀.totalBoundaryExponent_eq_of_chargeKernelEquiv e₀ he₀ t₀ ht,
-    Q₁.totalBoundaryExponent_eq_of_chargeKernelEquiv e₁ he₁ t₁ rfl]
+  have ht₀ : (e₀ t₀ : Fin r → ℤ) = Q₀.totalBoundaryExponent d₀ :=
+    (models₀ c).coe_chargeKernelEquiv_apply_eq_totalBoundaryExponent Q₀ hd₀ t₀ ht
+  have ht₁ : (e₁ t₁ : Fin r → ℤ) = Q₁.totalBoundaryExponent d₁ :=
+    (models₁ c).coe_chargeKernelEquiv_apply_eq_totalBoundaryExponent Q₁ hd₁ t₁ rfl
+  rw [← ht₀, ← ht₁]
   have h := R.exponentEquiv_eq_signed_picard_pullback hmark₀ hmark₁ e₀ e₁ he₀ he₁ hC
     Q₀.rayOrder (fun j ↦ (Q₀.cycle.component_apply j).symm.trans (Q₀.component_eq j))
     (fun j ↦ (Q₀.positive j).1) Q₀.exists_cone_of_numbered_node

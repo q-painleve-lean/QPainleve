@@ -20,7 +20,7 @@ comparison also applies when the charts are given by birational maps.
 
 public noncomputable section
 
-open AlgebraicGeometry CategoryTheory Limits TauCeti DiagonalizableGroup
+open AlgebraicGeometry CategoryTheory TauCeti DiagonalizableGroup
 open Scheme
 
 universe u
@@ -37,8 +37,6 @@ variable {k : Type u} [Field k] [IsSepClosed k] [Infinite k]
 
 local notation "S" => Spec (CommRingCat.of k)
 local notation "D[" k "," B "]" => groupScheme k (FGCommGrpCat.of (Multiplicative B))
-local notation "πmap" => groupSchemeMap k (FGCommGrpCat.ofHom
-  (AddMonoidHom.toMultiplicative (AddMonoidHom.inl A N)))
 
 variable {T : Over (Spec (CommRingCat.of k))} {Y : Scheme.{u}} [Y.IsSeparated]
   {P₀ : Point D[k,A].X → MarkedSurface k n B₀ D[k,A].X.left}
@@ -71,11 +69,9 @@ theorem xMap_eq_of_target_evaluation_eq_on_center_fibers
       (surfaceIso (R.fiber x).iso).hom.toRationalMap.comp (P₁ (x ≫ C.domainTarget)).evaluation =
         (surfaceIso r.iso).hom.toRationalMap.comp (P₁ (x' ≫ C'.domainTarget)).evaluation) :
     F = G := by
-  refine CharacterTorus.eq_of_compOfDefined_eq_on_center_fibers k U v
+  refine CharacterTorus.eq_of_compOfDefined_eq_at_centers k U v
     D[k,A].X.hom sY (𝟙 _) (Category.id_comp _) ?_
   intro c hc
-  let e := CharacterTorus.centerFiberIso k (N := N) U c hc
-  let : IsIntegral (pullback ((πmap).hom.hom.left ∣_ U) c) := IsIntegral.of_isIso e.inv
   let factor (M : D[k,A].X.left.PartialMap T.left) (hle : U ≤ M.domain) : CenterPoint M :=
     Over.homMk (c ≫ D[k,A].X.left.homOfLE hle) (by simpa using hc)
   have factor_source (M : D[k,A].X.left.PartialMap T.left) (hle : U ≤ M.domain) :
@@ -90,21 +86,17 @@ theorem xMap_eq_of_target_evaluation_eq_on_center_fibers
   let p := x ≫ C.domainSource
   obtain ⟨q, hq, heval⟩ := hchart p ⟨c, hp.symm⟩
   let : q.IsDominant := hq
-  let j := e.hom.toRationalMap.comp q
-  have hj : j.comp (P₀ (x ≫ C.domainSource)).evaluation =
-      (CharacterTorus.centerFiberEvaluation k U v c).toRationalMap := by
-    rw [RationalMap.comp_assoc, heval,
-      RationalMap.comp_toRationalMap, Hom.toRationalMap_compHom,
-      CharacterTorus.evaluationAtCenter_congr _ _ hp
-        (hd := (Category.assoc c U.ι D[k,A].X.hom).trans hc),
-      CharacterTorus.centerFiberIso_hom_comp_evaluationAtCenter]
   let r : FiberRealization (P₀ (x ≫ C.domainSource)) (P₁ (x' ≫ C'.domainTarget)) G
       R'.picard R'.boundaryAction := hs ▸ R'.fiber x'
   have hr : (surfaceIso (R.fiber x).iso).hom.toRationalMap.comp
       (P₁ (x ≫ C.domainTarget)).evaluation =
       (surfaceIso r.iso).hom.toRationalMap.comp (P₁ (x' ≫ C'.domainTarget)).evaluation := by
     exact heq x x' hs ⟨c, hp.symm⟩
-  simpa only [Category.comp_id, hj] using
-    (R.fiber x).exists_compOfDefined_eq_of_target_evaluation_eq r j hr
+  have hfixed := CharacterTorus.evaluationAtCenter_congr k v hp
+    (hc := Over.w p) (hd := by simpa using hc)
+  have hj := heval.trans (congrArg Hom.toRationalMap
+    (hfixed.trans (Category.comp_id _).symm))
+  rw [← hj]
+  exact (R.fiber x).exists_compOfDefined_eq_of_target_evaluation_eq r q hr
 
 end QPainleve.SignedClusterModularGroup.GeometricRealization

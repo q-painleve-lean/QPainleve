@@ -16,6 +16,7 @@ import QPainleve.SignedClusterModularGroup.Realization.ChargeKernel.Basic
 import QPainleve.SignedClusterModularGroup.Realization.NodalFiber
 import QPainleve.SignedClusterModularGroup.Realization.Orthogonal
 import QPainleve.SignedClusterModularGroup.Realization.Presentation.Boundary
+import QPainleve.SignedClusterModularGroup.Realization.PicardAction
 import QPainleve.SignedClusterModularGroup.Realization.Surjectivity.PicardAction
 import TauCeti.AlgebraicGeometry.Curves.Prestable
 
@@ -113,27 +114,11 @@ local instance (Q : CompleteToricPresentation i₂ b₂ 4 L Empty) :
   simpa only [Module.finrank_pi, Fintype.card_fin] using
     Q.fan.smoothOfRelativeDimension_algebraicRealizationStructureMap Q.regular
 
-local notation "Aux" => LinearMap.BilinForm.prod
-  (Chow.intersectionBilinForm ℂ Q.fan.algebraicRealization)
-  (-(dotProductBilin ℤ ℤ : LinearMap.BilinForm ℤ Exponents))
 local notation "χ[" c "]" => pointsEquiv ℂ _ (Subtype.mk (Over.Hom.left c) (Over.w c))
 local notation "fiber[" M "," c "]" => ContractedToricFiber b₂ Q.rays Q.regular Q.cycle
   Q.origin Q.inclusion χ[c] (M c)
 local notation "Charge[" q "]" =>
   LinearMap.ker (Fan.rayChargeMap (CompleteToricPresentation.rays q))
-
-private theorem eq_chargeCoordinates [(Aux).IsPerfPair]
-    (e : Orth ≃ₗ[ℤ] Charge[Q])
-    (he : ∀ x : Charge[Q], Q.inclusion (e.symm x).val =
-      ((Fan.boundaryOrthogonalEquivChargeKernel Q.regular Q.rays Aux).symm x).val)
-    (hcoords : ∀ x : Orth, -(Q.inclusion x.val).2 = (eK x : Exponents))
-    (hker : (B).matrix.mulVecLin.ker = Charge[Q]) :
-    e = (eK).trans (LinearEquiv.ofEq _ _ hker) := by
-  ext x : 1
-  apply Subtype.ext
-  have h := congrArg Prod.snd (he (e x))
-  rw [e.symm_apply_apply, Fan.boundaryOrthogonalEquivChargeKernel_symm_snd] at h
-  simp only [LinearEquiv.trans_apply, LinearEquiv.coe_ofEq_apply, ← hcoords, h, neg_neg]
 
 private theorem exchangeKernel_action
     (P : ChargeSeed B (Fin 2 → ℤ)) (hcharge : P.charge = Fan.rayChargeMap Q.rays)
@@ -216,14 +201,13 @@ private theorem exists_markedPicardEquiv :
   have hmodel := (hfiber c₀).1
   let : IsRationalOver ((M c₀).surface ↘ S) := hmodel.isRationalOver
   obtain ⟨hprim, hnef, hsq⟩ := markedBoundaryNumerics (M c₀) (hD c₀) (hmark c₀)
-  obtain ⟨ρ, ⟨hρ, hk⟩, -⟩ := existsUnique_signedPicardEquiv_of_presentation (Q := Q)
+  obtain ⟨ρ, hρ, -⟩ := existsUnique_signedPicardEquiv_of_presentation (Q := Q)
     (hmark := hmark) P hform hcharge (fun c _ ↦ (hfiber c).1) hmodel hprim hnef hsq
-  refine ⟨ρ, hk, fun w ↦ ?_⟩
+  refine ⟨ρ, hρ.sign_ker_unop, fun w ↦ ?_⟩
   -- Compare the kernel transport and boundary orders on the same realization.
   let := Q.isPerfPair_auxiliaryPicardForm
-  let : (H).IsPerfPair := (M c₀).isPerfPair_of_isRationalOver
-  obtain ⟨e, he, -⟩ := (p c₀).existsUnique_markedBoundaryOrthogonalEquivChargeKernel
-    (hnodal c₀) (hD c₀) (funext (hmark c₀))
+  let e := hmodel.chargeKernelEquiv (hD c₀) (funext (hmark c₀))
+  have he := hmodel.chargeKernelEquiv_symm_apply (hD c₀) (funext (hmark c₀))
   have hE := P.matrix_eq.symm.trans (congrArg₂ chargeExchangeMatrix hform hcharge)
   have hker' : (B).matrix.mulVecLin.ker = Charge[Q] := by
     rw [hE]
@@ -232,15 +216,21 @@ private theorem exists_markedPicardEquiv :
     hker'.trans (congrArg LinearMap.ker hcharge).symm
   obtain ⟨R, _, hR₀, _⟩ := exists_realize_signed_loop w P Q
     hform hcharge M (fun x ↦ (hfiber _).1) hmodel hD hnef hsq hprim boundaryClass hmark
-  have hR := (hρ w).2 R (fun x ↦ ⟨p _⟩)
-  refine ⟨(hρ w).1, ?_, ?_⟩
+  have hR : ρ eval[w] = R.toSignedBoundaryIsometry boundaryClass hD hmark :=
+    hρ.apply_of_realization w R (fun x ↦ ⟨p _⟩)
+  refine ⟨hρ.sign_apply_word w, ?_, ?_⟩
   · have h := chargeKernelAction_eq_signedOrthogonalRestriction Q.rayOrder
       (fun j ↦ (Q.cycle.component_apply j).symm.trans (Q.component_eq j))
       (fun j ↦ (Q.positive j).1) hnodes boundaryClass hD hmark w R
       (w.centerPartialMap_hom (K := ℂ) P) P hcharge hker e he
       (U := Set.univ) (fun _ ↦ ⟨Set.mem_univ _, Set.mem_univ _⟩)
       (fun c _ ↦ (hnodal c).genus_zero) (fun c _ ↦ ⟨p c⟩)
-    rw [← hR, eq_chargeCoordinates Q e he hcoords hker'] at h
+    have heK : e = (eK).trans (LinearEquiv.ofEq _ _ hker') := by
+      ext x : 1
+      apply Subtype.ext
+      simpa only [LinearEquiv.trans_apply, LinearEquiv.coe_ofEq_apply] using
+        (hmodel.coe_chargeKernelEquiv_apply (hD c₀) (funext (hmark c₀)) x).trans (hcoords x)
+    rw [← hR, heK] at h
     exact exchangeKernel_action Q P hcharge hker hker' (ρ eval[w]) w h
   · rw [hR]
     exact boundary_pullback Q M hD hmark p horders' hE w R hR₀

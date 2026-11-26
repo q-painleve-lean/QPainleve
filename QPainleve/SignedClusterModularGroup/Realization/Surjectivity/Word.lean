@@ -30,8 +30,7 @@ open Fan Fan.LogarithmicProjection
 
 namespace QPainleve.SignedClusterModularGroup.GeometricRealization
 
-open MarkedSurface (surfaceIso boundaryIso)
-open SignedBoundaryIsometryGroup (sign toIsometry)
+open MarkedSurface (surfaceIso)
 
 local notation "S" => Spec (CommRingCat.of ℂ)
 local notation "Centers[" r "]" => Over.mk (structureMap ℂ (Fin r → ℤ))
@@ -79,25 +78,19 @@ theorem nonempty_picardLoopRealization_of_pair_iso
     (ρ : (SignedClusterModularGroup ℂ E)ᵐᵒᵖ →* signedBoundaryIsometryGroup B d)
     (hρ : ∀ (w : Word E E) (R : GeometricRealization M M Cw[w,P] (w.xRationalMap ℂ)),
       Models[Cw[w,P]] → ρ eval[E,w] = R.toSignedBoundaryIsometry d hD hmark)
-    (e : (M c₀).pair ≅ (M c₁).pair) {g : signedBoundaryIsometryGroup B d}
-    (hpic : ∀ a, (M c₀).picardMarking ((toIsometry B d g).val a) =
-      Additive.ofMul (LineBundleClass.pullback (surfaceIso e).hom ((M c₁).picardMarking a).toMul))
-    (hsgn : letI : PrestableFamily ((M c₀).boundary ↘ S) := (M c₀).prestable
-      letI : PrestableFamily ((M c₁).boundary ↘ S) := (M c₁).prestable
-      DihedralGroup.cycleOrientationSign ((boundaryIso e).boundaryCycleAction
-        (M c₀).cycle (M c₁).cycle) = sign B d g) :
+    {g : signedBoundaryIsometryGroup B d} (e : SignedPicardPairIso (M c₀) (M c₁) g) :
     letI : IsIntegral (M c₀).surface := (M c₀).integral
     Nonempty (PicardLoopRealization ρ g (M c₀).evaluation
-      ((surfaceIso e).hom.toRationalMap.comp (M c₁).evaluation)) := by
+      ((surfaceIso e.iso).hom.toRationalMap.comp (M c₁).evaluation)) := by
   let : IsIntegral (M c₀).surface := (M c₀).integral
   have hM := models c₀ (hgeneric Quiver.Path.nil)
-  have hword := Q.exists_connecting_word_of_pair_iso Q hM hP e (hD c₀) (hD c₁)
+  have hword := Q.exists_connecting_word_of_pair_iso Q hM hP e.iso (hD c₀) (hD c₁)
   have hmatrix : Fan.rayExchangeMatrix b Q.rays = E :=
     SkewExchangeMatrix.ext (by simpa only [Fan.rayExchangeMatrix_matrix, ← hform, ← hcharge]
       using P.matrix_eq)
   rw [hmatrix] at hword
   obtain ⟨w, hw⟩ := hword
   exact nonempty_picardLoopRealization_of_comp_evaluation_eq
-    P hform hcharge models hP hnef hsq hprim ρ hρ e w (hgeneric w) hw hpic hsgn
+    P hform hcharge models hP hnef hsq hprim ρ hρ e w (hgeneric w) hw
 
 end QPainleve.SignedClusterModularGroup.GeometricRealization

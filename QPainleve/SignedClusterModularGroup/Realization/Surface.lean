@@ -222,6 +222,14 @@ theorem boundaryIso_hom_comp (e : M.pair ≅ N.pair) :
     (boundaryIso e).hom ≫ N.pair.hom.left = M.pair.hom.left ≫ (surfaceIso e).hom :=
   congrArg (fun f ↦ f.left) (Arrow.w e.hom)
 
+/-- A marked pair isomorphism pulls the ideal of the target boundary back to
+the ideal of the source boundary. -/
+@[simp]
+theorem comap_boundaryIdeal_surfaceIso (e : M.pair ≅ N.pair) :
+    N.pair.hom.left.ker.comap (surfaceIso e).hom = M.pair.hom.left.ker := by
+  rw [← Scheme.Hom.comap_ker_comp_of_isClosedImmersion M.pair.hom.left (surfaceIso e).hom,
+    ← boundaryIso_hom_comp, Scheme.Hom.ker_comp_of_isIso]
+
 instance (e : M.pair ≅ N.pair) : (boundaryIso e).hom.IsOver S :=
   ⟨Over.w e.hom.left⟩
 

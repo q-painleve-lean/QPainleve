@@ -28,7 +28,7 @@ public section
 open AlgebraicGeometry CategoryTheory Module
 open QPainleve.CharacterTorus QPainleve.Cluster
 open TauCeti TauCeti.AlgebraicGeometry TauCeti.Toric
-open Scheme Scheme.IdealSheafData Fan.LogarithmicProjection
+open QPainleve.BlowupTower Scheme Scheme.IdealSheafData Fan.LogarithmicProjection
 
 namespace QPainleve.SignedClusterModularGroup.CompleteToricPresentation
 
@@ -64,34 +64,33 @@ theorem exists_connecting_word_of_pair_iso
   let : SmoothOfRelativeDimension 2 (M₀.surface ↘ S) := M₀.smooth
   let : Smooth (M₀.surface ↘ S) := SmoothOfRelativeDimension.smooth 2 _
   let : IsNoetherian M₀.surface := isNoetherian_of_finiteType (M₀.surface ↘ S)
-  obtain ⟨_, W, T, hT, π, s, hSm, hmod, rfl, rfl, A, B, U, W', hCartier, -, -,
-    hA, -, hm₀, hm₁, hEval₀, hEval₁⟩ :=
-    Q₀.exists_common_ordered_models_of_pair_iso Q₁ h₀ h₁ e hD₀ hD₁
-  let : W.Over S := ⟨T.toBase ≫ M₀.surface ↘ S⟩
-  let : SmoothOfRelativeDimension 2 (W ↘ S) := hSm
-  let : W.IsProjectiveOver ℂ := T.isProjectiveOver ℂ
-  let : IsIntegral W := hT.isClosedPointTower.isIntegral (M₀.surface ↘ S)
-  let : IsNoetherian W := isNoetherian_of_finiteType (W ↘ S)
-  let : IsModification T.toBase := hmod
-  let : IsModification A.hom := hA
+  obtain ⟨R⟩ := Q₀.nonempty_commonOrderedModels_of_pair_iso Q₁ h₀ h₁ e hD₀ hD₁
+  let : R.surface.Over S := R.over
+  let : SmoothOfRelativeDimension 2 (R.surface ↘ S) := R.smooth
+  let : R.surface.IsProjectiveOver ℂ := by
+    have h := R.structureMap_eq.trans (congrArg (· ≫ M₀.surface ↘ S) R.projection_eq_toBase)
+    have hover := congrArg (fun f ↦ (⟨f⟩ : R.surface.Over S)) h
+    exact Eq.mp (congrArg (fun o ↦ @Scheme.IsProjectiveOver ℂ _ R.surface o) hover.symm)
+      (R.tower.isProjectiveOver ℂ)
+  let : IsIntegral R.surface := R.integral
+  let : IsNoetherian R.surface := R.tower.isNoetherian
+  let : IsModification R.projection := R.isModification_projection
+  let : IsModification R.sourceProjection.hom := R.isModification_sourceProjection
+  let : IsModification R.targetProjection.hom := R.isModification_targetProjection
   let latticeEquiv := (b₁.equiv b₀ (Equiv.refl _)).toAddEquiv
-  obtain ⟨B', U', _, -, -, -, -, -, hB', hmatrix, hEval⟩ :=
-    W'.exists_reframe_of_latticeEquiv Q₀.fan.lattice latticeEquiv
-  let : IsModification B'.hom := hB'
-  have hN := (hT.radical_comap_toBase hD₀ M₀.boundaryIdeal_nodal).2
-  have hfactor := exists_resolved_sarkisov_factorization b₀ Q₀.fan.lattice A B' hCartier hN
-  obtain ⟨w, -, hw⟩ := exists_word_of_resolved_sarkisov_factorization hfactor U U' hCartier
-  rw [hEval₀, hEval, hEval₁] at hw
-  have he : (T.toBase ≫ (MarkedSurface.surfaceIso e).hom).toRationalMap.comp M₁.evaluation =
-      T.toBase.toRationalMap.comp
-        ((MarkedSurface.surfaceIso e).hom.toRationalMap.comp M₁.evaluation) := by
-    simp only [← RationalMap.comp_assoc, RationalMap.comp_toRationalMap, Hom.toRationalMap_compHom]
-  rw [he] at hw
-  have hw' := (T.toBase.toRationalMap.compOfDefined_eq_iff_of_dominant _ _ _).mp hw
-  have hm₀' : U.exchangeMatrix = Fan.rayExchangeMatrix b₀ Q₀.rays :=
-    SkewExchangeMatrix.ext (hm₀.trans (Fan.rayExchangeMatrix_matrix _ _).symm)
-  have hm₁' : U'.exchangeMatrix = Fan.rayExchangeMatrix b₁ Q₁.rays :=
-    hmatrix.trans (SkewExchangeMatrix.ext (hm₁.trans (Fan.rayExchangeMatrix_matrix _ _).symm))
+  obtain ⟨B, U, _, -, -, -, -, -, hB, hmatrix, hEval⟩ :=
+    R.targetModel.exists_reframe_of_latticeEquiv Q₀.fan.lattice latticeEquiv
+  let : IsModification B.hom := hB
+  have hN := (R.isNodal.radical_comap_toBase hD₀ M₀.boundaryIdeal_nodal).2
+  rw [← R.projection_eq_toBase, ← R.structureMap_eq] at hN
+  have hfactor := exists_resolved_sarkisov_factorization b₀ Q₀.fan.lattice R.sourceProjection
+    B R.isEffectiveCartier hN
+  obtain ⟨w, -, hw⟩ :=
+    exists_word_of_resolved_sarkisov_factorization hfactor R.sourceModel U R.isEffectiveCartier
+  rw [R.sourceModel_xEvaluation, hEval, R.targetModel_xEvaluation] at hw
+  have hw' := (R.projection.toRationalMap.compOfDefined_eq_iff_of_dominant _ _ _).mp hw
+  have hm₀' := R.sourceModel_exchangeMatrix
+  have hm₁' := hmatrix.trans R.targetModel_exchangeMatrix
   generalize Fan.rayExchangeMatrix b₀ Q₀.rays = E₀ at hm₀' ⊢
   generalize Fan.rayExchangeMatrix b₁ Q₁.rays = E₁ at hm₁' ⊢
   subst E₀ E₁
