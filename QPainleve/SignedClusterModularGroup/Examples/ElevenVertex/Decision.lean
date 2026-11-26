@@ -10,7 +10,7 @@ public import QPainleve.SignedClusterModularGroup.Examples.ElevenVertex.Relation
 
 import QPainleve.AlgebraicGeometry.Chow.RationalSurface.Basic
 import QPainleve.SignedClusterModularGroup.Examples.ElevenVertex.Presentation
-import QPainleve.SignedClusterModularGroup.Realization.Presentation.Reference
+import QPainleve.SignedClusterModularGroup.Realization.Presentation.Reference.Finite
 import QPainleve.SignedClusterModularGroup.Realization.Relations.Casimir
 
 /-!
@@ -22,7 +22,7 @@ transport of the nine explicit integral Casimir basis vectors. The algorithm use
 original seed labels, including when the reference model uses the transposed lattice frame.
 The same criterion proves faithfulness of the signed group's exchange-kernel action.
 
-The proof uses `exists_marked_reference_fiber_of_ordered_towers` and
+The proof uses `exists_fin_marked_reference_fiber_of_toric_presentation` and
 `CompleteToricPresentation.xPullback_eq_iff_exponentEquiv_eq_on_basis_of_squarefree`.
 -/
 
@@ -93,25 +93,25 @@ private theorem xPullback_eq_iff_columns (w v : Word B B) :
   let : Scheme.IsRationalOver (X ↘ S) := hrat
   let : Module.Free ℤ (Additive (LineBundleClass X)) := X.free_picard_of_isRationalOver ℂ
   let : Module.Finite ℤ (Additive (LineBundleClass X)) := X.finite_picard_of_isRationalOver ℂ
-  let ePic := (Module.finBasis ℤ (Additive (LineBundleClass X))).equivFun.symm
-  let μ := ((Chow.intersectionBilinForm ℂ X).isometryEquivOfCompLinearEquiv ePic).symm
-  obtain ⟨b', ⟨Q, c, g, href⟩, hframe, ⟨hfan, hrays⟩⟩ :=
-    exists_marked_reference_fiber_of_ordered_towers
-      (Fan.isRegular_projectiveSpace b hi) hc planeCenterRay (fun _ ↦ 1)
-      hT e hbase hker hD A' μ
+  let P : D.ToricPresentation (X ↘ S) b _ 11 :=
+    ⟨_, Fan.isRegular_projectiveSpace b hi, hc, planeCenterRay, fun _ ↦ 1,
+      _, Y, T, hT, e, hbase, hker⟩
+  obtain ⟨⟨_, μ, b', R⟩, hR⟩ := exists_fin_marked_reference_fiber_of_toric_presentation P hD A'
+  let Q := R.presentation
   let chargeOfRays (p : Σ Φ : Fan (AddMonoidHom.compLeft (Int.castAddHom ℝ) (Fin 2)),
       Fin 11 → Φ.Ray) := Fan.rayChargeMap p.2
   have hrayData : (⟨Q.fan, Q.rays⟩ : Σ Φ : Fan _, Fin 11 → Φ.Ray) =
       ⟨Fan.projectiveSpace b hi, planeCenterRay⟩ :=
-    Sigma.ext hfan
-      ((eqRec_heq (φ := fun Φ : Fan _ ↦ Fin 11 → Φ.Ray) hfan Q.rays).symm.trans
-        (heq_of_eq hrays))
+    Sigma.ext hR.fan_eq
+      ((eqRec_heq (φ := fun Φ : Fan _ ↦ Fin 11 → Φ.Ray) hR.fan_eq Q.rays).symm.trans
+        (heq_of_eq hR.rays_eq))
   have hcharge : Fan.rayChargeMap Q.rays = chargeMap :=
     (congrArg chargeOfRays hrayData).trans rayChargeMap_planeCenterRay
-  let M := MarkedSurface.ofBoundary D A' μ g
+  let M := R.markedSurface
   have hcls : (LineBundleClass.mk M.isEffectiveCartier_boundaryIdeal.toInvertibleSheaf)⁻¹ =
       (LineBundleClass.mk hD.toInvertibleSheaf)⁻¹ :=
-    MarkedSurface.ofBoundary_boundaryIdeal_class D A' μ g M.isEffectiveCartier_boundaryIdeal hD
+    MarkedSurface.ofBoundary_boundaryIdeal_class D A' μ R.evaluation
+      M.isEffectiveCartier_boundaryIdeal hD
   have criterion {E : SkewExchangeMatrix (Fin 11)}
       (hE : E.matrix = chargeExchangeMatrix b'.detDualEquiv.toLinearMap (Fan.rayChargeMap Q.rays))
       (hK : E.matrix.mulVecLin.ker = K) (p q : Word E E) :
@@ -119,10 +119,10 @@ private theorem xPullback_eq_iff_columns (w v : Word B B) :
     let β := exchangeKernelBasis.map (LinearEquiv.ofEq _ _ hK.symm)
     simpa only [transportedColumns, funext_iff, β, Module.Basis.map_apply,
       LinearEquiv.coe_ofEq_apply, coe_exchangeKernelBasis_apply] using
-      Q.xPullback_eq_iff_exponentEquiv_eq_on_basis_of_squarefree href hE
+      Q.xPullback_eq_iff_exponentEquiv_eq_on_basis_of_squarefree R.hasNodalModel hE
         (by rw [hcls]; exact hprim) (by rw [hcls]; exact hnef)
         (by rw [hcls]; exact hsq) squarefree_one k p q β
-  rcases hframe with ⟨rfl, _⟩ | ⟨rfl, _⟩
+  rcases hR.basis_parameters with ⟨rfl, _⟩ | ⟨rfl, _⟩
   · exact criterion (by rw [hcharge]; exact exchangeMatrix_eq_chargeExchangeMatrix) rfl w v
   · apply xPullback_eq_iff_columns_of_neg k _ w v
     exact criterion (by rw [hcharge]; exact neg_exchangeMatrix_eq_chargeExchangeMatrix)

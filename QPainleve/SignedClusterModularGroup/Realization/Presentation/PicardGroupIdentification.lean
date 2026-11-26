@@ -5,10 +5,9 @@ Authors: The QPainleve contributors
 -/
 module
 
-public import QPainleve.Geometry.Toric.Fan.ExchangeMatrix
 public import QPainleve.LinearAlgebra.BilinearForm.Conjugation
 public import QPainleve.SignedClusterModularGroup.Realization.Presentation.NodalPicardGroupIdentification
-public import QPainleve.SignedClusterModularGroup.Realization.Presentation.Reference
+public import QPainleve.SignedClusterModularGroup.Realization.Presentation.Reference.Finite
 public import QPainleve.SignedClusterModularGroup.Realization.Surface.PrimeClass
 
 import QPainleve.SignedClusterModularGroup.Boundary.Conjugation
@@ -48,8 +47,6 @@ local instance instFactorialPicardIdentification (x : X) :
     UniqueFactorizationMonoid (X.presheaf.stalk x) :=
   (X ↘ S).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two x
 
-local notation "Pic" => Additive (LineBundleClass X)
-local notation "L" => (Fin (Module.finrank ℤ Pic) → ℤ)
 local notation "B" => Chow.intersectionBilinForm ℂ X
 local notation "classes[" A "," hD "]" =>
   (fun j ↦ Additive.ofMul (LineBundleClass.primeDivisorClass
@@ -60,23 +57,15 @@ numbered anticanonical pair. The reference fiber uses the original surface and
 boundary numbering. The nodal identification computes the group action in the
 moving marking. -/
 @[ext]
-structure PicardGroupIdentification (i : N →+ V) (r : ℕ)
-    (A : Scheme.NodalCycleNumbering (X := D.subscheme)
-      (Empty.elim : Empty → (D.subscheme ↘ S).smoothLocus) n) (hD : D.IsEffectiveCartier) where
-  /-- The intersection form in the coordinates of the moving Picard marking. -/
-  form : LinearMap.BilinForm ℤ L
-  /-- The marking on the original surface's Picard lattice. -/
-  marking : form.IsometryEquiv B
-  /-- The oriented frame of the toric presentation. -/
-  basis : Basis (Fin 2) ℤ N
-  /-- The original surface as a reference fiber in the oriented frame. -/
-  reference : MarkedReferenceFiber i basis r A marking
+structure PicardGroupIdentification {i : N →+ V} {r : ℕ}
+    {A : Scheme.NodalCycleNumbering (X := D.subscheme)
+      (Empty.elim : Empty → (D.subscheme ↘ S).smoothLocus) n}
+    (R : FiniteMarkedReferenceFiber i r A) (hD : D.IsEffectiveCartier) where
   /-- The Picard identification of the family with the numbered classes in the moving marking. -/
-  nodal : CompleteToricPresentation.NodalPicardGroupIdentification reference.presentation ℂ
-    (Fan.rayExchangeMatrix basis reference.presentation.rays) (marking.symm ∘ classes[A,hD])
+  nodal : CompleteToricPresentation.NodalPicardGroupIdentification R.reference.presentation ℂ
+    R.reference.exchangeMatrix (R.marking.symm ∘ classes[A,hD])
   /-- The reference fiber is the original pair with its marking and X evaluation. -/
-  family_center : nodal.family reference.center =
-    MarkedSurface.ofBoundary D A marking reference.evaluation
+  family_center : nodal.family R.reference.center = R.reference.markedSurface
 
 namespace PicardGroupIdentification
 
@@ -85,15 +74,10 @@ attribute [simp] family_center
 variable {i : N →+ V} {r : ℕ}
   {A : Scheme.NodalCycleNumbering (X := D.subscheme)
     (Empty.elim : Empty → (D.subscheme ↘ S).smoothLocus) n} {hD : D.IsEffectiveCartier}
-  (P : PicardGroupIdentification i r A hD)
+  {R₀ : FiniteMarkedReferenceFiber i r A} (P : PicardGroupIdentification R₀ hD)
 
-/-- The exchange matrix of the ordered ray charges in the oriented frame. This abbreviation
-uses the same seed type as the nodal identification. -/
-abbrev exchangeMatrix : SkewExchangeMatrix (Fin r) :=
-  Fan.rayExchangeMatrix P.basis P.reference.presentation.rays
-
-local notation "E" => P.exchangeMatrix
-local notation "Q" => P.reference.presentation
+local notation "E" => R₀.reference.exchangeMatrix
+local notation "Q" => R₀.reference.presentation
 local notation "Γs" => (SignedClusterModularGroup ℂ E)ᵐᵒᵖ
 local notation "Γ" => (ClusterModularGroup ℂ E)ᵐᵒᵖ
 local notation "d" => classes[A,hD]
@@ -101,14 +85,14 @@ local notation "d" => classes[A,hD]
 /-- Opposite signed cluster maps act on the original Picard group by the marked Picard
 action conjugated along the reference marking, with their branch sign. -/
 def signedEquiv : Γs ≃* signedBoundaryIsometryGroup B d :=
-  P.nodal.signedEquiv.trans (SignedBoundaryIsometryGroup.congr P.marking.symm
+  P.nodal.signedEquiv.trans (SignedBoundaryIsometryGroup.congr R₀.marking.symm
     (ε := 1) (a := 0) fun j ↦ by simp)
 
 /-- The signed Picard image on the original surface is the conjugate of the marked image. -/
 @[simp]
 theorem coe_signedEquiv_apply (x : Γs) :
     (P.signedEquiv x).val =
-      (P.marking.isometryGroupCongr (P.nodal.signedEquiv x).val.1,
+      (R₀.marking.isometryGroupCongr (P.nodal.signedEquiv x).val.1,
         (P.nodal.signedEquiv x).val.2) := by
   simp only [signedEquiv, MulEquiv.trans_apply, coe_congr,
     LinearMap.BilinForm.IsometryEquiv.symm_symm]
@@ -122,12 +106,12 @@ theorem signedEquiv_apply_word (w : Word E E) :
     ∀ {C : Centers[r].left.PartialMap Centers[r].left} [IsDominant C.hom]
       [C.IsOver Centers[r].hom Centers[r].hom]
       (R : GeometricRealization P.nodal.family P.nodal.family C (w.xRationalMap ℂ)),
-      HasToricTargetModels (T₀ := Centers[r]) (T₁ := Centers[r]) (b := P.basis)
+      HasToricTargetModels (T₀ := Centers[r]) (T₁ := Centers[r]) (b := R₀.basis)
         (s := (Q).rays) (hΦ := (Q).regular) (T := (Q).cycle)
         (origin := (Q).origin) (ι := (Q).inclusion) (P₁ := P.nodal.family)
         (fun z : Point Centers[r] ↦ χ[z]) C →
       (P.signedEquiv (op (signedClusterModularGroupMap ℂ E (End.of w)))).val =
-        (P.marking.isometryGroupCongr (P.form.isometryGroupEquivIsometryEquiv.symm R.picard),
+        (R₀.marking.isometryGroupCongr (R₀.form.isometryGroupEquivIsometryEquiv.symm R.picard),
           R.orientation) := by
   intro C _ _ R hR
   simp only [coe_signedEquiv_apply, P.nodal.signedEquiv_apply_word w R hR,
@@ -138,7 +122,7 @@ theorem sign_ker_unop :
     ((sign B d).comp P.signedEquiv.toMonoidHom).ker.unop =
       (clusterModularGroupInclusion ℂ E).range := by
   have hsign : (sign B d).comp P.signedEquiv.toMonoidHom =
-      (sign P.form (P.marking.symm ∘ d)).comp P.nodal.signedEquiv.toMonoidHom :=
+      (sign R₀.form (R₀.marking.symm ∘ d)).comp P.nodal.signedEquiv.toMonoidHom :=
     MonoidHom.ext fun x ↦ by simp
   rw [hsign]
   exact P.nodal.sign_ker_unop

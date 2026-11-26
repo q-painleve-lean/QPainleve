@@ -24,23 +24,19 @@ the branch sign and the unsigned group identifies with the Cremona group.
 public section
 
 open AlgebraicGeometry CategoryTheory Module
-open QPainleve.BlowupTower QPainleve.CharacterTorus
 open Scheme Scheme.IdealSheafData TauCeti TauCeti.AlgebraicGeometry TauCeti.Toric
 
 namespace QPainleve.SignedClusterModularGroup
 
 local notation "S" => Spec (CommRingCat.of ℂ)
-local notation "Centers[" r "]" => Over.mk (structureMap ℂ (Fin r → ℤ))
 local notation "δ[" h "]" => (LineBundleClass.mk (IsEffectiveCartier.toInvertibleSheaf h))⁻¹
-local notation "χ[" c "]" => pointsEquiv ℂ _ (Subtype.mk (Over.Hom.left c) (Over.w c))
-local notation "parameters[" c "]" => (fun j ↦ χ[c] (Multiplicative.ofAdd (Pi.single j 1)))
 
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
-  {i : N →+ V} {b : Basis (Fin 2) ℤ N} {Φ : Fan i}
-  {X W : Scheme} [X.Over S] [X.IsProjectiveOver ℂ]
+  {i : N →+ V} {b : Basis (Fin 2) ℤ N}
+  {X : Scheme} [X.Over S] [X.IsProjectiveOver ℂ]
   [SmoothOfRelativeDimension 2 (X ↘ S)] [Scheme.IsRationalOver (X ↘ S)]
   {D : X.IdealSheafData} [PrestableFamily (D.subscheme ↘ S)]
-  {n r k : ℕ} [NeZero n] {T : BlowupTower X k W}
+  {n r : ℕ} [NeZero n]
 
 local instance instIntegralOrderedCremona : IsIntegral X := by
   let : Smooth (X ↘ S) := SmoothOfRelativeDimension.smooth 2 _
@@ -54,14 +50,7 @@ one or two components the projection and the sign form a product equivalence,
 with the unsigned group mapping isomorphically to the Cremona factor. On loops
 the maps evaluate by the realized Picard pullback and inversion sign. -/
 theorem exists_cluster_cremona_equivs_of_toric_presentation
-    (hΦ : Φ.IsRegular) (hc : Φ.IsComplete) (s : Fin r → Φ.Ray) (u : Fin r → ℂˣ)
-    (hT : IsNodalBoundaryTower D (X ↘ S) (𝟙 X) T)
-    (e : (Fan.internalBlowupTower (h₀ := hc.nonempty_cones) b s u).1 ≅ W)
-    (hbase : e.hom ≫ T.toBase ≫ (X ↘ S) =
-      (Fan.internalBlowupTower (h₀ := hc.nonempty_cones) b s u).2.toTower.toBase ≫
-        Φ.algebraicRealizationStructureMap)
-    (hker : ((D.comap T.toBase).radical).comap e.hom =
-      (Fan.internalBlowupTower (h₀ := hc.nonempty_cones) b s u).2.boundaryι.ker)
+    (P : D.ToricPresentation (X ↘ S) b i r)
     (A : Scheme.NodalCycleNumbering (X := D.subscheme)
       (Empty.elim : Empty → (D.subscheme ↘ S).smoothLocus) n)
     (hD : D.IsEffectiveCartier)
@@ -72,22 +61,15 @@ theorem exists_cluster_cremona_equivs_of_toric_presentation
     (∀ p : CodimensionOnePoint X, Disjoint (closure {(p : X)}) D.support →
       Chow.classIntersectionNumber ℂ X (LineBundleClass.primeDivisorClass p)
         (LineBundleClass.primeDivisorClass p) ≠ -2) →
-    ∃ P : CremonaGroupIdentification i r A hD,
-      ((P.picard.basis = b ∧ parameters[P.picard.reference.center] = u) ∨
-        (P.picard.basis = b.reindex (Equiv.swap 0 1) ∧
-          parameters[P.picard.reference.center] = u⁻¹)) ∧
-      ∃ hfan : P.picard.reference.presentation.fan = Φ,
-        hfan ▸ P.picard.reference.presentation.rays = s := by
+    ∃ R : FiniteMarkedReferenceFiber i r A,
+      R.reference.HasToricData P ∧ Nonempty (CremonaGroupIdentification R hD) := by
   let : IsNoetherian X := isNoetherian_of_finiteType (X ↘ S)
   let := (X ↘ S).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two
   intro hroot
-  let presentation : D.ToricPresentation (X ↘ S) b i r :=
-    ⟨Φ, hΦ, hc, s, u, k, W, T, hT, e, hbase, hker⟩
-  have hK := presentation.hasToricPresentation.canonicalClass hD (by
+  have hK := P.hasToricPresentation.canonicalClass hD (by
     rw [← over_eq_subschemeι_comp]
     exact PrestableFamily.atWorstNodalOfRelativeDimensionOne)
-  obtain ⟨P, hframe, hrays⟩ :=
-    exists_picardGroupEquivs_of_toric_presentation presentation A hD hprim hnef hsq
-  exact ⟨⟨P, hK, hnef, hsq, hroot⟩, hframe, hrays⟩
+  obtain ⟨R, hR, ⟨Q⟩⟩ := exists_picardGroupEquivs_of_toric_presentation P A hD hprim hnef hsq
+  exact ⟨R, hR, ⟨⟨Q, hK, hnef, hsq, hroot⟩⟩⟩
 
 end QPainleve.SignedClusterModularGroup

@@ -51,11 +51,12 @@ local notation "Cr" => Chow.cremonaIsometryGroup ℂ X
 without internal `(-2)` curves. The Cremona maps are determined by the Picard
 identification and act on the Picard lattice of the original surface. -/
 @[ext]
-structure CremonaGroupIdentification (i : N →+ V) (r : ℕ)
-    (A : Scheme.NodalCycleNumbering (X := D.subscheme)
-      (Empty.elim : Empty → (D.subscheme ↘ S).smoothLocus) n) (hD : D.IsEffectiveCartier) where
+structure CremonaGroupIdentification {i : N →+ V} {r : ℕ}
+    {A : Scheme.NodalCycleNumbering (X := D.subscheme)
+      (Empty.elim : Empty → (D.subscheme ↘ S).smoothLocus) n}
+    (R : FiniteMarkedReferenceFiber i r A) (hD : D.IsEffectiveCartier) where
   /-- The two Picard equivalences and their marked toric family. -/
-  picard : PicardGroupIdentification i r A hD
+  picard : PicardGroupIdentification R hD
   /-- The boundary ideal represents the canonical class. -/
   canonicalClass_eq : LineBundleClass.mk hD.toInvertibleSheaf =
     LineBundleClass.mk (QPainleve.canonicalBundle ℂ X 2)
@@ -75,11 +76,11 @@ open GeometricRealization
 variable {i : N →+ V} {r : ℕ}
   {A : Scheme.NodalCycleNumbering (X := D.subscheme)
     (Empty.elim : Empty → (D.subscheme ↘ S).smoothLocus) n} {hD : D.IsEffectiveCartier}
-  (P : CremonaGroupIdentification i r A hD)
+  {R₀ : FiniteMarkedReferenceFiber i r A} (P : CremonaGroupIdentification R₀ hD)
 
-local notation "E" => P.picard.exchangeMatrix
+local notation "E" => R₀.reference.exchangeMatrix
 local notation "Γs" => (SignedClusterModularGroup ℂ E)ᵐᵒᵖ
-local notation "Q" => P.picard.reference.presentation
+local notation "Q" => R₀.reference.presentation
 local notation "M" => P.picard.nodal.family
 local notation "π" =>
   A.cremonaProjection hD P.canonicalClass_eq P.nef P.selfIntersection_eq_zero P.noInternalRoots
@@ -120,13 +121,12 @@ theorem val_projection_apply_word (w : Word E E) :
     ∀ {C : Centers[r].left.PartialMap Centers[r].left} [IsDominant C.hom]
       [C.IsOver Centers[r].hom Centers[r].hom]
       (R : GeometricRealization M M C (w.xRationalMap ℂ)),
-      HasToricTargetModels (T₀ := Centers[r]) (T₁ := Centers[r]) (b := P.picard.basis)
+      HasToricTargetModels (T₀ := Centers[r]) (T₁ := Centers[r]) (b := R₀.basis)
         (s := (Q).rays) (hΦ := (Q).regular) (T := (Q).cycle) (origin := (Q).origin)
         (ι := (Q).inclusion) (P₁ := M)
         (fun z : Point Centers[r] ↦ χ[z]) C →
       (P.comparison.projection (op (signedClusterModularGroupMap ℂ E (End.of w)))).val =
-        P.picard.marking.isometryGroupCongr
-          (P.picard.form.isometryGroupEquivIsometryEquiv.symm R.picard) := by
+        R₀.marking.isometryGroupCongr (R₀.form.isometryGroupEquivIsometryEquiv.symm R.picard) := by
   intro C _ _ R hR
   rw [val_projection_apply]
   exact congrArg Prod.fst (P.picard.signedEquiv_apply_word w R hR)

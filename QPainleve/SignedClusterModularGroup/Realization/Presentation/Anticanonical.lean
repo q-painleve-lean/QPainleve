@@ -59,14 +59,15 @@ theorem exists_picardGroupEquivs_of_anticanonical_cycle
     (hD : D.IsEffectiveCartier) (hcan : LineBundleClass.mk hD.toInvertibleSheaf = K)
     (hprim : IsPrimitive (Additive.ofMul δ[hD])) (hnef : δ[hD].IsNef ℂ (X ↘ S))
     (hsq : Chow.classIntersectionNumber ℂ X δ[hD] δ[hD] = 0) :
-    ∃ P : PicardGroupIdentification i (12 - n) A hD,
-      P.basis = b ∨ P.basis = b.reindex (Equiv.swap 0 1) := by
+    ∃ R : FiniteMarkedReferenceFiber i (12 - n) A,
+      (R.basis = b ∨ R.basis = b.reindex (Equiv.swap 0 1)) ∧
+        Nonempty (PicardGroupIdentification R hD) := by
   obtain ⟨r, ⟨P⟩⟩ := (hasToricPresentation_iff ..).mp
     (D.hasToricPresentation_of_anticanonical_cycle b hi A hD hcan)
   have hr := Fan.centerCount_eq_of_square_zero P.regular P.complete P.rays P.parameters
     P.isNodal P.iso P.iso_boundary A hD hcan hsq
   subst r
-  obtain ⟨Q, hframe, -⟩ := exists_picardGroupEquivs_of_toric_presentation P A hD hprim hnef hsq
-  exact ⟨Q, hframe.imp And.left And.left⟩
+  obtain ⟨R, hR, hQ⟩ := exists_picardGroupEquivs_of_toric_presentation P A hD hprim hnef hsq
+  exact ⟨R, hR.basis_parameters.imp And.left And.left, hQ⟩
 
 end QPainleve.SignedClusterModularGroup
