@@ -8,6 +8,8 @@ module
 public import QPainleve.Geometry.Toric.Fan.Boundary.Basic
 public import QPainleve.Geometry.Toric.Fan.Charge
 
+import QPainleve.Data.Fin.Find
+
 /-!
 # Boundary orders of labeled toric characters
 
@@ -107,6 +109,12 @@ The enumeration can select just the rays belonging to the boundary on a contract
 def boundaryRayOfOrders : Option (Fin n) :=
   Fin.find? fun j ↦ decide (rayBoundaryOrders b s (boundary j) = orders)
 
+/-- The boundary-ray search compares the given orders with each ray's order vector. -/
+theorem boundaryRayOfOrders_def :
+    boundaryRayOfOrders b s boundary orders =
+      (Fin.find? fun j ↦ decide (rayBoundaryOrders b s (boundary j) = orders)) :=
+  (rfl)
+
 /-- With the rays given in basis coordinates, the search uses only integer arithmetic and
 equality over the finite set of charge labels. -/
 theorem boundaryRayOfOrders_eq_find_coordinates :
@@ -130,15 +138,9 @@ agrees with the input. The matching ray is unique. -/
 theorem boundaryRayOfOrders_eq_some_iff (hindex : (rayChargeMap s).range.toAddSubgroup.index ≠ 0)
     (j : Fin n) :
     boundaryRayOfOrders b s boundary orders = some j ↔
-      rayBoundaryOrders b s (boundary j) = orders := by
-  have hinj := (rayBoundaryOrders_injective b s hindex).comp boundary.injective
-  have hmem : j ∈ boundaryRayOfOrders b s boundary orders ↔
-      rayBoundaryOrders b s (boundary j) = orders ∧
-        ∀ k, k < j → rayBoundaryOrders b s (boundary k) ≠ orders := by
-    simp only [boundaryRayOfOrders, Fin.mem_find?_iff, decide_eq_true_eq]
-  rw [← Option.mem_def, hmem]
-  refine ⟨And.left, fun hj ↦ ⟨hj, fun k hlt hk ↦ ?_⟩⟩
-  exact hlt.ne (hinj (hk.trans hj.symm))
+      rayBoundaryOrders b s (boundary j) = orders :=
+  Fin.find?_decide_eq_some_iff_of_injective
+    ((rayBoundaryOrders_injective b s hindex).comp boundary.injective) orders j
 
 /-- Reconstruct a boundary label from the actual vanishing orders of its scaled torus
 characters. The nonzero center parameters can be chosen independently of the input vector. -/

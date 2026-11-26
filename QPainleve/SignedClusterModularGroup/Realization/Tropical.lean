@@ -206,7 +206,7 @@ variable {U₀ U₁ : Over S} [Nonempty U₀.left] [Smooth U₀.hom]
 /-- Start the signed tropical word at the fixed toric origin and search the surviving
 target rays at any center in the realization domain. The result is the forward image of
 component zero in the marked boundary numbering. -/
-theorem boundaryRayOfOrders_eq_boundaryPerm
+theorem boundaryRayOfOrders_eq_some_boundaryPerm
     (R : GeometricRealization P₀ P₁ C (w.xRationalMap ℂ)) (x : CenterPoint C)
     (p₀ : ContractedToricFiber b s hΦ T o μ c (P₀ (x ≫ C.domainSource)))
     (p₁ : ContractedToricFiber b' s' hΨ T' o' μ' c' (P₁ (x ≫ C.domainTarget)))
@@ -215,15 +215,14 @@ theorem boundaryRayOfOrders_eq_boundaryPerm
     (hcΦ : Φ.IsComplete)
     (hE : E.matrix = chargeExchangeMatrix b.detDualEquiv.toLinearMap (Fan.rayChargeMap s))
     (hindex : (Fan.rayChargeMap s').range.toAddSubgroup.index ≠ 0) :
-    (Fan.boundaryRayOfOrders b' s'
+    Fan.boundaryRayOfOrders b' s'
       ((ZMod.finEquiv n).toEquiv.toEmbedding.trans (p₁.numberedBoundaryRays h₁))
       (trop[w] (Fan.rayBoundaryOrders b s
-        ((Φ.boundaryNormalizationComponentEquiv hΦ).symm (T.component o))))).map
-      (ZMod.finEquiv n).toEquiv = some (R.boundaryPerm 0) := by
+        ((Φ.boundaryNormalizationComponentEquiv hΦ).symm (T.component o)))) =
+      some ((ZMod.finEquiv n).toEquiv.symm (R.boundaryPerm 0)) := by
   have h := (R.fiber x).boundaryRayOfOrders_eq_some_cycleVertexPerm
     (p := p₀) (q := p₁) h₀ h₁ hcΦ hE hindex 0
-  rw [p₀.numberedBoundaryRays_zero] at h
-  rw [h, Option.map_some, Equiv.apply_symm_apply, R.boundaryPerm_def]
+  simpa only [p₀.numberedBoundaryRays_zero, R.boundaryPerm_def] using h
 
 end GeometricRealization
 

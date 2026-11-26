@@ -83,7 +83,7 @@ theorem exists_realize_signed_loop_with_boundary_label
       classOf(cartier(M c₀)) classOf(cartier(M c₀)) = 0)
     (hprim : IsPrimitive (Additive.ofMul classOf(cartier(M c₀))))
     (hmark : ∀ c j, (M c).boundaryClass (cartier(M c)) j = boundaryClasses[M,c₀] j)
-    (w : Word E E) {κ : Type*} (basisVectors : κ → Fin r → ℤ) :
+    (w : Word E E) :
     let C := w.centerPartialMap ℂ P
     let orders := p₀.numberedBoundaryOrders (cartier(M c₀))
     let d := boundaryClasses[M,c₀]
@@ -94,7 +94,7 @@ theorem exists_realize_signed_loop_with_boundary_label
         let c := x ≫ PartialMap.domainTarget (X := Centers[r]) (Y := Centers[r]) C
         Q.HasNodalModel c (M c)) ∧
       ∃ j : Fin n,
-        (w.signedLoopInvariants basisVectors orders (orders 0)).boundaryLabel = some j ∧
+        w.tropicalBoundaryLabel orders (orders 0) = some j ∧
         ∀ l, (SignedBoundaryIsometryGroup.toIsometry H d
           (R.toSignedBoundaryIsometry d (fun c ↦ cartier(M c)) hmark)).val (d l) =
             d (η • (l - (ZMod.finEquiv n).toEquiv j)) := by
@@ -121,12 +121,11 @@ theorem exists_realize_signed_loop_with_boundary_label
   let := Q.isPerfPair_auxiliaryPicardForm
   obtain ⟨x⟩ := nonempty_centerPoint (T₀ := Centers[r]) (T₁ := Centers[r]) (w.centerPartialMap ℂ P)
   obtain ⟨hx₀, hx₁⟩ := w.centerPoint_endpoints_mem_noncollision P hker x
-  have hfind := R.signedLoopInvariants_boundary_eq_some
+  have hfind := R.tropicalBoundaryLabel_eq_some
     (LinearMap.IsPerfPair.separatingRight inferInstance) x Q.complete hE hindex
-    p₀ hnodal₀ (p _ hx₀) (p _ hx₁) (hnodal _ hx₁) (cartier(M _)) basisVectors
-  obtain ⟨j, hj, hj₀⟩ := Option.map_eq_some_iff.mp hfind
-  refine ⟨R, hη, hmodels, j, hj, fun l ↦ ?_⟩
-  rw [hj₀, ← hη]
+    p₀ hnodal₀ (p _ hx₀) (p _ hx₁) (hnodal _ hx₁) (cartier(M _))
+  refine ⟨R, hη, hmodels, (ZMod.finEquiv n).toEquiv.symm (R.boundaryPerm 0), hfind, fun l ↦ ?_⟩
+  rw [Equiv.apply_symm_apply, ← hη]
   simpa only [SignedBoundaryIsometryGroup.toIsometry_apply, coe_toSignedBoundaryIsometry,
     LinearMap.BilinForm.coe_isometryGroupEquivIsometryEquiv_symm] using
     R.picard_apply_boundaryClass boundaryClasses[M,c₀] (fun c ↦ cartier(M c)) hmark l
