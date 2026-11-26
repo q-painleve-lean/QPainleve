@@ -21,16 +21,3 @@ root = "scripts.Axioms"
 [[lean_exe]]
 name = "module-system"
 root = "scripts.ModuleSystem"
-
-# `lake comparator` challenges (see comparator/README.md). They contain `sorry` by design, so they
-# stay outside the audited `QPainleve` library and the default targets.
-[[lean_lib]]
-name = "Challenge"
-roots = []
-globs = ["Challenge.+"]
-
-# A solution to a challenge goes here, as `Solution/<Challenge>.lean`.
-[[lean_lib]]
-name = "Solution"
-roots = []
-globs = ["Solution.+"]
