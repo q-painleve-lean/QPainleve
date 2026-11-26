@@ -7,9 +7,12 @@ module
 
 public import QPainleve.AlgebraicGeometry.Curves.Node.Conductor.Subdivision
 public import QPainleve.AlgebraicGeometry.Curves.Node.GenericPoint
+public import QPainleve.AlgebraicGeometry.Curves.Node.Reindex
 
+import Mathlib.Order.Preorder.Finite
 import QPainleve.AlgebraicGeometry.Morphisms.IsoLocus
 import QPainleve.Data.ZMod.CyclicOrder
+import TauCeti.Data.ZMod.FinEquiv
 
 /-!
 # Component order under oriented nodal contractions
@@ -136,5 +139,47 @@ theorem strictMono_componentSection (hf : f.IsOrientedCycleSubdivision C A)
   · intro j hj
     simpa only [NodalCycleNumbering.branch_eq_branchOrderOfDualGraph] using
       hcollapse (C.node j) (mt (hretain j).mpr hj)
+
+/-- Rotate the target to start at the first surviving source component in the original
+source numbering. The target's components then correspond in order to the supplied
+increasing enumeration of survivors, with the order of branches at each node preserved. -/
+theorem exists_rotate_numbering_of_surviving_components
+    (hf : f.IsOrientedCycleSubdivision C A) (s : Fin n ↪o Fin m)
+    (hs : ∀ j, ∃ i, f (C.componentGenericPoint (ZMod.finEquiv m (s i))) =
+      A.componentGenericPoint j) :
+    ∃ a : ZMod n, f.IsOrientedCycleSubdivision C (A.rotate a) ∧
+      ∀ j : Fin n, f (C.componentGenericPoint (ZMod.finEquiv m (s j))) =
+        (A.rotate a).componentGenericPoint (ZMod.finEquiv n j) := by
+  classical
+  choose lift hlift using hs
+  have hinj : Function.Injective lift := fun i j hij ↦
+    A.componentGenericPoint_injective ((hlift i).symm.trans (hij ▸ hlift j))
+  obtain ⟨a, ha⟩ := hinj.surjective_of_finite (ZMod.finEquiv n).symm.toEquiv 0
+  have hrot : f.IsOrientedCycleSubdivision C (A.rotate a) := by
+    have h := f.isOrientedCycleSubdivision_reindex_target_iff
+      (A := C) (C := A) (DihedralGroup.r a)
+    simp only [NodalCycleNumbering.reindex_r, DihedralGroup.cycleOrientationSign_r,
+      (by decide : (1 : ℤˣ) ≠ -1), ite_false] at h
+    exact h.mpr hf
+  let t (j : ZMod n) := ZMod.finEquiv m (s (lift (j + a)))
+  have hpoint (j : ZMod n) :
+      f (C.componentGenericPoint (t j)) = (A.rotate a).componentGenericPoint j := by
+    simpa only [NodalCycleNumbering.componentGenericPoint_def,
+      NodalCycleNumbering.rotate_component] using hlift (j + a)
+  have htval (j : ZMod n) : (t j).val = (s (lift (j + a))).val := by
+    simp only [t, ZMod.finEquiv_apply, ZMod.val_natCast_of_lt (s _).isLt]
+  have hmin (j : ZMod n) : (t 0).val ≤ (t j).val := by
+    rw [htval, htval, zero_add, ha]
+    exact s.monotone (Fin.zero_le _)
+  have hmono : StrictMono (fun j : Fin n ↦ lift (ZMod.finEquiv n j + a)) := by
+    intro i j hij
+    have h := hrot.strictMono_componentSection t hpoint hij
+    dsimp only at h ⊢
+    rw [ZMod.val_sub (hmin (ZMod.finEquiv n i)), ZMod.val_sub (hmin (ZMod.finEquiv n j))] at h
+    simp only [htval] at h
+    exact s.lt_iff_lt.mp (Fin.lt_def.mpr (by omega))
+  refine ⟨a, hrot, fun j ↦ ?_⟩
+  have hj := congrFun hmono.eq_id j
+  simpa only [t, hj, id_eq] using hpoint (ZMod.finEquiv n j)
 
 end AlgebraicGeometry.Scheme.Hom.IsOrientedCycleSubdivision
