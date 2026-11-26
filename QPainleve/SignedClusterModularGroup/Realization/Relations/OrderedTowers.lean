@@ -5,7 +5,8 @@ Authors: The QPainleve contributors
 -/
 module
 
-public import QPainleve.Algebra.Cluster.Word.Qsf
+public import QPainleve.Algebra.Cluster.Word.SubtractionFree
+public import QPainleve.Algebra.Cluster.Word.TerminalRelabel
 public import QPainleve.SignedClusterModularGroup.Realization.Presentation.Reference.Finite
 public import QPainleve.SignedClusterModularGroup.Realization.Relations.IntersectionKernel
 

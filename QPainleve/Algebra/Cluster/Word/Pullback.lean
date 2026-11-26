@@ -168,9 +168,10 @@ theorem xPullback_reindex (e : ι ≃ κ) (w : Word B C) :
       AlgEquiv.trans_apply, AlgEquiv.mul_apply] using
       h.trans (congrArg (w.xPullback k) (DFunLike.congr_fun hs x))
 
-/-- Relabeling two words with the same endpoints preserves and reflects equality
-of their X pullbacks over any coefficient field. -/
-theorem xPullback_reindex_eq_iff (e : ι ≃ κ) (w v : Word B C) :
+/-- Relabeling two words preserves and reflects equality of their X pullbacks
+over any coefficient field. -/
+theorem xPullback_reindex_eq_iff {E : SkewExchangeMatrix ι} (e : ι ≃ κ)
+    (w : Word B C) (v : Word D E) :
     ((SkewExchangeMatrix.reindexPrefunctor e).mapPath w).xPullback k =
       ((SkewExchangeMatrix.reindexPrefunctor e).mapPath v).xPullback k ↔
       w.xPullback k = v.xPullback k := by

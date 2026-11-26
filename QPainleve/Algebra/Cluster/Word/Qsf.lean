@@ -35,21 +35,6 @@ variable {ι : Type*} [DecidableEq ι]
 local notation "EndQsf" => Function.End (Qsf ι)
 local notation "XField" k => FractionRing (AddMonoidAlgebra k (ι →₀ ℤ))
 
-namespace Quiver.Path
-
-/-- In characteristic zero, equality of the pullbacks is exactly equality of
-the substitutions of the final universal coefficients. -/
-theorem xPullback_eq_iff_qsf_eval_eq (k : Type*) [Field k] [CharZero k]
-    {B C D : SkewExchangeMatrix ι} (w : Word B C) (v : Word B D) :
-    w.xPullback k = v.xPullback k ↔
-      Qsf.eval (w.ySeed ⟨Qsf.X, B.val⟩).coefficient =
-        Qsf.eval (v.ySeed ⟨Qsf.X, B.val⟩).coefficient := by
-  rw [w.xPullback_eq_iff_ySeed_coefficient_eq k v]
-  refine ⟨congrArg Qsf.eval, fun h ↦ funext fun i ↦ ?_⟩
-  simpa only [Qsf.eval_X] using DFunLike.congr_fun h (Qsf.X i)
-
-end Quiver.Path
-
 namespace QPainleve.Cluster
 
 variable (k : Type*) [Field k] [CharZero k] (B : SkewExchangeMatrix ι)
