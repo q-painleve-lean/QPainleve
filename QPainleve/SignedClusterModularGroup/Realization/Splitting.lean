@@ -115,13 +115,11 @@ theorem exists_signedPicardSplitting_of_nodal_model
           ∃ e : Γ₀ × Subgroup.zpowers z ≃* Γₛ, ∀ (f : Γ₀) (u : Subgroup.zpowers z),
             e (f, u) = clusterModularGroupInclusion ℂ E f * u.val := by
   let : IsRationalOver (M.surface ↘ S) := href.isRationalOver
-  have hcan := congrArg Inv.inv (href.canonicalClass M.isEffectiveCartier_boundaryIdeal)
-  have hindex := Q.chargeIndex_ne_zero_of_anticanonical_cycle
-    (M := fun _ ↦ M) href M.isEffectiveCartier_boundaryIdeal hnef hsq hcan hprim
-  have hE := Q.exchangeMatrix_ne_zero_of_chargeIndex_ne_zero P hform hcharge hindex
   have hmatrix := P.matrix_eq.symm.trans (congrArg₂ chargeExchangeMatrix hform hcharge)
+  have hE := href.exchangeMatrix_ne_zero hmatrix hprim hnef hsq
   obtain ⟨G, hFc⟩ :=
     Q.exists_picardGroupEquivs_of_nodal_model href hmatrix hprim hnef hsq
+  have hcan := congrArg Inv.inv (href.canonicalClass M.isEffectiveCartier_boundaryIdeal)
   obtain ⟨reflection⟩ := M.nonempty_cycleReversingInvolution hcan hnef hsq hprim
   let g := reflection.element
   have hg : sign B d g = -1 := by simp [g]

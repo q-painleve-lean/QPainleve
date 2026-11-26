@@ -234,9 +234,7 @@ theorem nonempty_picardLoopRealization_of_comp_evaluation_eq
   let := Q.prestable
   have hE := P.matrix_eq.symm.trans (congrArg₂ chargeExchangeMatrix hform hcharge)
   have hM := models c₀ (w.centerOpen_le_centerOpen_nil ℂ P hc₀)
-  let := hM.isRationalOver
-  have hcan := congrArg Inv.inv (hM.canonicalClass (hD c₀))
-  have hindex := Q.chargeIndex_ne_zero_of_anticanonical_cycle hM (hD c₀) hnef hsq hcan hprim
+  have hindex := hM.chargeIndex_ne_zero (hD c₀) hnef hsq hprim
   have hker : E.matrix.mulVecLin.ker = P.charge.ker := by
     rw [hE, hcharge]
     exact Fan.ker_chargeExchangeMatrix_rayChargeMap b Q.rays hindex
