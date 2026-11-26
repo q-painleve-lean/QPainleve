@@ -32,13 +32,22 @@ def compareSignedLoops (orders : Fin n → Fin r → ℤ) (w v : Word B B) : Boo
     w.computedExchangeKernelColumns = v.computedExchangeKernelColumns ∧
     w.tropicalBoundaryLabel orders (orders 0) = v.tropicalBoundaryLabel orders (orders 0))
 
+/-- The stored matrices agree exactly when the underlying exchange-kernel
+actions agree, independently of the basis used for the computation. -/
+theorem compareSignedLoops_eq_true_iff_actions (orders : Fin n → Fin r → ℤ) (w v : Word B B) :
+    B.compareSignedLoops orders w v = true ↔
+      ((-1 : ℤˣ) ^ w.inversionCount = (-1 : ℤˣ) ^ v.inversionCount) ∧
+      w.exchangeKernelEquiv = v.exchangeKernelEquiv ∧
+      w.tropicalBoundaryLabel orders (orders 0) = v.tropicalBoundaryLabel orders (orders 0) := by
+  rw [compareSignedLoops, decide_eq_true_eq, Path.computedExchangeKernelColumns_eq_iff]
+
 /-- The comparison returns true exactly when the three signed loop invariants agree. -/
 @[simp]
 theorem compareSignedLoops_eq_true_iff (orders : Fin n → Fin r → ℤ) (w v : Word B B) :
     B.compareSignedLoops orders w v = true ↔
       w.signedLoopInvariants B.matrix.intKernelBasisVectors.2 orders (orders 0) =
         v.signedLoopInvariants B.matrix.intKernelBasisVectors.2 orders (orders 0) := by
-  rw [compareSignedLoops, decide_eq_true_eq, Path.computedExchangeKernelColumns_eq_iff]
+  rw [compareSignedLoops_eq_true_iff_actions]
   simpa only [Matrix.intKernelBasis_apply] using
     (w.signedLoopInvariants_eq_iff v B.matrix.intKernelBasis orders orders (orders 0)).symm
 

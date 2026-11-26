@@ -41,6 +41,17 @@ theorem tropicalBoundaryLabel_def (w : Word E E') (orders : Fin n → ι → ℤ
       (Fin.find? fun j ↦ decide (orders j = trop[w] source)) :=
   (rfl)
 
+/-- Relabeling the cluster coordinates leaves the first matching boundary row unchanged. -/
+@[simp]
+theorem tropicalBoundaryLabel_reindex {κ : Type*} [Fintype κ] [DecidableEq κ]
+    (w : Word E E') (e : ι ≃ κ) (orders : Fin n → ι → ℤ) (source : ι → ℤ) :
+    ((SkewExchangeMatrix.reindexPrefunctor e).mapPath w).tropicalBoundaryLabel
+        (fun j ↦ orders j ∘ e.symm) (source ∘ e.symm) =
+      w.tropicalBoundaryLabel orders source := by
+  have h := tropical_reindex e w source
+  simp only [Equiv.toFun_as_coe] at h
+  simp only [tropicalBoundaryLabel_def, h, e.symm.surjective.injective_comp_right.eq_iff]
+
 /-- The search fails exactly when no target row has the transported orders. -/
 @[simp]
 theorem tropicalBoundaryLabel_eq_none_iff (w : Word E E') (orders : Fin n → ι → ℤ)

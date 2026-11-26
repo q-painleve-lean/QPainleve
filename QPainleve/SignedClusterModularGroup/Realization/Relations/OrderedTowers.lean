@@ -5,6 +5,7 @@ Authors: The QPainleve contributors
 -/
 module
 
+public import QPainleve.Algebra.Cluster.Word.Qsf
 public import QPainleve.SignedClusterModularGroup.Realization.Presentation.Reference.Finite
 public import QPainleve.SignedClusterModularGroup.Realization.Relations.IntersectionKernel
 
@@ -19,6 +20,10 @@ complete integer relation criterion. Its numbered boundary orders and exchange
 matrix give an input to the same comparison theorems used with integer tables
 supplied separately. The intersection kernel of the strict boundary recovers the
 orders from the cyclic ray coordinates and the ordered center labels.
+For terminally relabeled words, the same comparison applies to the universal
+coefficient substitutions of the [signed cluster modular group challenge][challenge].
+
+[challenge]: https://github.com/q-painleve-lean/QPainleve/pull/841
 -/
 
 public noncomputable section
@@ -121,6 +126,90 @@ theorem compareSignedLoopListsFromRays_eq_some_iff_xPullback_eq
     C.boundary_nef C.boundary_square_zero ray centerRay hray hcenter]
   exact C.comparisonInput.compareSignedLoopLists_eq_some_iff_xPullback_eq k C.isNodalContraction
     C.boundary_primitive C.boundary_nef C.boundary_square_zero gs hs result
+
+local notation "P[" e "]" => SkewExchangeMatrix.reindexPrefunctor e
+
+include C in
+/-- A Boolean result for generator lists in any labeling certifies two closed
+words and compares their independent X pullbacks over the chosen field. -/
+theorem compareSignedLoopListsFromRays_reindex_eq_some_iff_xPullback_eq
+    {ι : Type*} [DecidableEq ι] (E : SkewExchangeMatrix ι) (e : ι ≃ Fin r)
+    (hE : E.reindex e = R.reference.exchangeMatrix)
+    (ray : Fin (Q).length → Fin 2 → ℤ) (centerRay : Fin r → Fin (Q).length)
+    (hray : ∀ j, ray j = R.basis.repr (rayAt j).primitiveGenerator)
+    (hcenter : ∀ j, rayAt (centerRay j) = (Q).rays j)
+    (k : Type*) [Field k] (gs hs : List (Generator ι)) (result : Bool) :
+    compareSignedLoopListsFromRays (n := n) ray centerRay
+        (gs.map (Generator.reindex e)) (hs.map (Generator.reindex e)) = some result ↔
+      ∃ w v : Word E E, w.generators = gs ∧ v.generators = hs ∧
+        (result = true ↔ w.xPullback k = v.xPullback k) := by
+  let : Fintype ι := Fintype.ofEquiv (Fin r) e.symm
+  have he : P[e].obj E = R.reference.exchangeMatrix := by
+    simpa only [SkewExchangeMatrix.reindexPrefunctor_obj] using hE
+  rw [C.compareSignedLoopListsFromRays_eq_some_iff_xPullback_eq ray centerRay hray hcenter k,
+    ← he]
+  have hgen (ls : List (Generator ι)) (p : Word (P[e].obj E) (P[e].obj E)) :
+      p.generators = ls.map (Generator.reindex e) ↔
+        ∃ w : Word E E, w.generators = ls ∧ P[e].mapPath w = p := by
+    rw [← Generator.loopOfList?_eq_some_iff, Generator.loopOfList?_reindex,
+      Option.map_eq_some_iff]
+    simp only [Generator.loopOfList?_eq_some_iff]
+  constructor
+  · rintro ⟨p, q, hp, hq, h⟩
+    obtain ⟨w, hw, rfl⟩ := (hgen gs p).mp hp
+    obtain ⟨v, hv, rfl⟩ := (hgen hs q).mp hq
+    exact ⟨w, v, hw, hv, h.trans (Path.xPullback_reindex_eq_iff k e w v)⟩
+  · rintro ⟨w, v, hw, hv, h⟩
+    exact ⟨P[e].mapPath w, P[e].mapPath v, (hgen gs _).mpr ⟨w, hw, rfl⟩,
+      (hgen hs _).mpr ⟨v, hv, rfl⟩, h.trans (Path.xPullback_reindex_eq_iff k e w v).symm⟩
+
+local notation "seed[" E "]" => YSeed.mk Qsf.X (Subtype.val E)
+local notation "signedList[" ps "," τ "]" =>
+  ((List.map Generator.mutationOrInversion ps) ++ [Generator.permute τ])
+local notation "endSeed[" E "," ps "]" =>
+  (List.foldl (fun t g ↦ Generator.ySeed g t) seed[E] (List.map Generator.mutationOrInversion ps))
+
+include C in
+/-- The ray checker for two mutation and inversion lists with terminal relabelings
+returns a Boolean exactly when both relabeled native matrices close. The Boolean
+is true exactly when the two substitutions on the universal semifield agree. -/
+theorem compareSignedLoopListsFromRays_reindex_eq_some_iff_qsf_eval_eq
+    {ι : Type*} [DecidableEq ι] (E : SkewExchangeMatrix ι) (e : ι ≃ Fin r)
+    (hE : E.reindex e = R.reference.exchangeMatrix)
+    (ray : Fin (Q).length → Fin 2 → ℤ) (centerRay : Fin r → Fin (Q).length)
+    (hray : ∀ j, ray j = R.basis.repr (rayAt j).primitiveGenerator)
+    (hcenter : ∀ j, rayAt (centerRay j) = (Q).rays j)
+    (ps qs : List (Option ι)) (τ σ : Equiv.Perm ι) (result : Bool) :
+    compareSignedLoopListsFromRays (n := n) ray centerRay
+        (signedList[ps, τ].map (Generator.reindex e))
+        (signedList[qs, σ].map (Generator.reindex e)) = some result ↔
+      (∀ a b, endSeed[E, ps].exchangeMatrix.matrix (τ a) (τ b) = E.val.matrix a b) ∧
+      (∀ a b, endSeed[E, qs].exchangeMatrix.matrix (σ a) (σ b) = E.val.matrix a b) ∧
+      (result = true ↔ Qsf.eval (fun a ↦ endSeed[E, ps].coefficient (τ a)) =
+        Qsf.eval (fun a ↦ endSeed[E, qs].coefficient (σ a))) := by
+  rw [C.compareSignedLoopListsFromRays_reindex_eq_some_iff_xPullback_eq
+    E e hE ray centerRay hray hcenter ℚ]
+  have hclose (ls : List (Option ι)) (π : Equiv.Perm ι) :
+      (∃ w : Word E E, w.generators = signedList[ls, π]) ↔
+        ∀ a b, endSeed[E, ls].exchangeMatrix.matrix (π a) (π b) = E.val.matrix a b :=
+    (Generator.exists_word_generators_iff E E _).trans
+      (Generator.wordOfList_append_permute_fst_eq_iff E _ π seed[E] rfl)
+  have heval (w v : Word E E) (hw : w.generators = signedList[ps, τ])
+      (hv : v.generators = signedList[qs, σ]) :
+      w.xPullback ℚ = v.xPullback ℚ ↔ Qsf.eval (fun a ↦ endSeed[E, ps].coefficient (τ a)) =
+        Qsf.eval (fun a ↦ endSeed[E, qs].coefficient (σ a)) := by
+    rw [w.xPullback_eq_iff_qsf_eval_eq ℚ v]
+    have hcoeff (s : YSeed ι (Qsf ι)) (π : Equiv.Perm ι) :
+        (s.reindex π.symm).coefficient = fun a ↦ s.coefficient (π a) :=
+      funext fun _ ↦ by simp
+    simp [Path.ySeed_eq_foldl_generators, hw, hv, List.foldl_append, hcoeff]
+  constructor
+  · rintro ⟨w, v, hw, hv, h⟩
+    exact ⟨(hclose ps τ).mp ⟨w, hw⟩, (hclose qs σ).mp ⟨v, hv⟩, h.trans (heval w v hw hv)⟩
+  · rintro ⟨hp, hq, h⟩
+    obtain ⟨w, hw⟩ := (hclose ps τ).mpr hp
+    obtain ⟨v, hv⟩ := (hclose qs σ).mpr hq
+    exact ⟨w, v, hw, hv, h.trans (heval w v hw hv).symm⟩
 
 end OrderedToricRelationCriterion
 

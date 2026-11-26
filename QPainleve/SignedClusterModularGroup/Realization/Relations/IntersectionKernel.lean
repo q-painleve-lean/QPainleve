@@ -10,6 +10,7 @@ public import QPainleve.Geometry.Toric.Fan.Picard.IntersectionMatrix
 public import QPainleve.LinearAlgebra.Matrix.Kernel.Generator
 public import QPainleve.SignedClusterModularGroup.Realization.Relations.Coordinates
 
+import QPainleve.Algebra.Cluster.Word.LoopComparison.Reindex
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Nodal.IntersectionKernel
 import QPainleve.AlgebraicGeometry.Chow.Isomorphism
 
@@ -109,6 +110,46 @@ theorem compareSignedLoopListsFromRays_eq_none_iff {m n r : ℕ} [NeZero m] [NeZ
         (SkewExchangeMatrix.ofChargeCoordinates (ray ∘ centerRay)).compareSignedLoopLists
           (boundaryOrderTable (ray ∘ centerRay) ray survivors) gs hs = none := by
   simp only [compareSignedLoopListsFromRays, Option.bind_eq_bind, Option.bind_eq_none_iff]
+
+/-- Renumbering the centers of a ray table preserves the whole comparison.
+The intersection matrix counts the centers on each ray and the determinant
+orders are permuted with the cluster coordinates. -/
+theorem compareSignedLoopListsFromRays_reindex {m n r s : ℕ} [NeZero m] [NeZero n]
+    (ray : Fin m → Fin 2 → ℤ) (centerRay : Fin r → Fin m) (e : Fin r ≃ Fin s)
+    (gs hs : List (Generator (Fin r))) :
+    compareSignedLoopListsFromRays (n := n) ray (centerRay ∘ e.symm)
+        (gs.map (Generator.reindex e)) (hs.map (Generator.reindex e)) =
+      compareSignedLoopListsFromRays (n := n) ray centerRay gs hs := by
+  let p := ZMod.finEquiv m
+  have hA : internalBlowupBoundaryIntersectionMatrix (ray ∘ p.symm) (p ∘ (centerRay ∘ e.symm)) =
+      internalBlowupBoundaryIntersectionMatrix (ray ∘ p.symm) (p ∘ centerRay) := by
+    have hcard (j : ZMod m) :
+        (Finset.univ.filter fun k : Fin s ↦ p (centerRay (e.symm k)) = j).card =
+          (Finset.univ.filter fun k : Fin r ↦ p (centerRay k) = j).card := by
+      exact (Fintype.card_subtype _).symm.trans
+        ((Fintype.card_congr
+          (e.symm.subtypeEquivOfSubtype (p := fun k ↦ p (centerRay k) = j))).trans
+          (Fintype.card_subtype _))
+    ext a d
+    simp only [internalBlowupBoundaryIntersectionMatrix_apply, Function.comp_apply, hcard]
+  simp only [p] at hA
+  let E := SkewExchangeMatrix.ofChargeCoordinates (ray ∘ centerRay)
+  have hE : SkewExchangeMatrix.ofChargeCoordinates (ray ∘ (centerRay ∘ e.symm)) =
+      (SkewExchangeMatrix.reindexPrefunctor e).obj E := by
+    apply SkewExchangeMatrix.ext
+    ext a d
+    simp only [SkewExchangeMatrix.reindexPrefunctor_obj, SkewExchangeMatrix.reindex_matrix,
+      Matrix.submatrix_apply, SkewExchangeMatrix.ofChargeCoordinates_matrix_apply,
+      Function.comp_apply, E]
+  have horders (t : Set.powersetCard (Fin m) n) :
+      boundaryOrderTable (ray ∘ (centerRay ∘ e.symm)) ray t =
+        fun j ↦ boundaryOrderTable (ray ∘ centerRay) ray t j ∘ e.symm := by
+    funext j k
+    simp only [boundaryOrderTable_apply, Function.comp_apply]
+  apply Option.ext
+  intro result
+  simp only [compareSignedLoopListsFromRays_eq_some_iff, hA, hE, horders,
+    SkewExchangeMatrix.compareSignedLoopLists_reindex, E]
 
 namespace CompleteToricPresentation
 

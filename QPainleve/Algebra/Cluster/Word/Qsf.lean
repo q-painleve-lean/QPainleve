@@ -35,6 +35,21 @@ variable {ι : Type*} [DecidableEq ι]
 local notation "EndQsf" => Function.End (Qsf ι)
 local notation "XField" k => FractionRing (AddMonoidAlgebra k (ι →₀ ℤ))
 
+namespace Quiver.Path
+
+/-- In characteristic zero, equality of the pullbacks is exactly equality of
+the substitutions of the final universal coefficients. -/
+theorem xPullback_eq_iff_qsf_eval_eq (k : Type*) [Field k] [CharZero k]
+    {B C D : SkewExchangeMatrix ι} (w : Word B C) (v : Word B D) :
+    w.xPullback k = v.xPullback k ↔
+      Qsf.eval (w.ySeed ⟨Qsf.X, B.val⟩).coefficient =
+        Qsf.eval (v.ySeed ⟨Qsf.X, B.val⟩).coefficient := by
+  rw [w.xPullback_eq_iff_ySeed_coefficient_eq k v]
+  refine ⟨congrArg Qsf.eval, fun h ↦ funext fun i ↦ ?_⟩
+  simpa only [Qsf.eval_X] using DFunLike.congr_fun h (Qsf.X i)
+
+end Quiver.Path
+
 namespace QPainleve.Cluster
 
 variable (k : Type*) [Field k] [CharZero k] (B : SkewExchangeMatrix ι)
@@ -93,12 +108,12 @@ private theorem loopSubstitutionHom_injective : Function.Injective (loopSubstitu
   obtain ⟨w, hw⟩ := (mem_signedLoopPullbacks_iff k B f.val).mp f.property
   obtain ⟨v, hv⟩ := (mem_signedLoopPullbacks_iff k B g.val).mp g.property
   apply Subtype.ext
-  rw [← hw, ← hv, w.xPullback_eq_iff_ySeed_coefficient_eq k v]
-  funext i
-  have hi : loopSubstitution k B f (Qsf.X i) = loopSubstitution k B g (Qsf.X i) :=
-    congrArg (fun a : EndQsf ↦ a (Qsf.X i)) h
-  simpa only [loopSubstitution_apply_of_word k B f w hw, loopSubstitution_apply_of_word k B g v hv,
-    Qsf.eval_X] using hi
+  rw [← hw, ← hv, w.xPullback_eq_iff_qsf_eval_eq k v]
+  apply DFunLike.ext
+  intro x
+  have hx : loopSubstitution k B f x = loopSubstitution k B g x := congrFun h x
+  simpa only [loopSubstitution_apply_of_word k B f w hw, loopSubstitution_apply_of_word k B g v hv]
+    using hx
 
 private theorem loopSubstitution_mem_set (f : signedLoopPullbacks k B) :
     loopSubstitution k B f ∈ signedLoopSubstitutionSet B := by
@@ -123,13 +138,9 @@ private theorem exists_loopSubstitution_of_mem_set {f : EndQsf}
   let p := Generator.wordOfList B (gs ++ [.permute τ])
   let s : YSeed ι (Qsf ι) := ⟨Qsf.X, B.val⟩
   have hs : p.2.ySeed s = YSeed.reindex τ.symm (gs.foldl (fun t g ↦ g.ySeed t) s) := by
-    simp [Path.ySeed_eq_foldl_generators, p, List.foldl_append]
-  have hm : p.1.val.matrix = B.val.matrix := by
-    rw [← p.2.ySeed_exchangeMatrix s rfl, hs, YSeed.reindex_exchangeMatrix]
-    ext i j
-    simpa using hclose i j
+    exact Generator.ySeed_wordOfList_append_permute B gs τ s
   have hp : p.1 = B :=
-    Subtype.ext (ExchangeMatrix.ext hm (p.1.property.trans B.property.symm))
+    (Generator.wordOfList_append_permute_fst_eq_iff B gs τ s rfl).mpr hclose
   let w := p.2.cast rfl hp
   have hw : w.ySeed s = p.2.ySeed s := by
     simp only [Path.ySeed_eq_foldl_generators, w, Path.generators_cast]

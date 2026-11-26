@@ -54,6 +54,15 @@ theorem generators_comp {D : SkewExchangeMatrix ι} (w : Word B C) (v : Word C D
   | nil => simp
   | cons v s ih => simp [ih, List.append_assoc]
 
+/-- Relabeling a word relabels each generator in its execution list. -/
+@[simp]
+theorem generators_reindex {κ : Type*} [DecidableEq κ] (w : Word B C) (e : ι ≃ κ) :
+    ((SkewExchangeMatrix.reindexPrefunctor e).mapPath w).generators =
+      w.generators.map (Generator.reindex e) := by
+  induction w with
+  | nil => rfl
+  | cons w s ih => simp [ih]
+
 end Quiver.Path
 
 namespace QPainleve.Cluster.Generator
@@ -100,6 +109,23 @@ theorem wordOfList_generators {C : SkewExchangeMatrix ι} (w : Word B C) :
     dsimp only
     rw [he]
 
+/-- Evaluating a relabeled generator list relabels both the endpoint and the typed word. -/
+theorem wordOfList_reindex {κ : Type*} [DecidableEq κ] (e : ι ≃ κ) (gs : List (Generator ι)) :
+    wordOfList ((SkewExchangeMatrix.reindexPrefunctor e).obj B) (gs.map (Generator.reindex e)) =
+      ⟨(SkewExchangeMatrix.reindexPrefunctor e).obj (wordOfList B gs).1,
+        (SkewExchangeMatrix.reindexPrefunctor e).mapPath (wordOfList B gs).2⟩ := by
+  simpa only [Path.generators_reindex, generators_wordOfList] using
+    wordOfList_generators ((SkewExchangeMatrix.reindexPrefunctor e).obj B)
+      ((SkewExchangeMatrix.reindexPrefunctor e).mapPath (wordOfList B gs).2)
+
+/-- There is a typed word with the given generators and endpoint precisely when
+the list computes that endpoint. -/
+theorem exists_word_generators_iff (C : SkewExchangeMatrix ι) (gs : List (Generator ι)) :
+    (∃ w : Word B C, w.generators = gs) ↔ (wordOfList B gs).1 = C := by
+  refine ⟨?_, fun h ↦ ⟨(wordOfList B gs).2.cast rfl h, by simp⟩⟩
+  rintro ⟨w, rfl⟩
+  simp
+
 variable [Fintype ι]
 
 private def toLoop? (w : Σ C, Word B C) : Option (Word B B) :=
@@ -140,6 +166,22 @@ theorem loopOfList?_eq_none_iff {gs : List (Generator ι)} :
     simp [SkewExchangeMatrix.ext h]
   · rename_i h
     exact iff_of_true rfl (fun he ↦ h (congrArg SkewExchangeMatrix.matrix he))
+
+/-- Changing labels preserves the endpoint test and transports the returned loop. -/
+@[simp]
+theorem loopOfList?_reindex {κ : Type*} [Fintype κ] [DecidableEq κ]
+    (e : ι ≃ κ) (gs : List (Generator ι)) :
+    loopOfList? ((SkewExchangeMatrix.reindexPrefunctor e).obj B) (gs.map (Generator.reindex e)) =
+      (loopOfList? B gs).map (SkewExchangeMatrix.reindexPrefunctor e).mapPath := by
+  cases hw : loopOfList? B gs with
+  | none =>
+    rw [Option.map_none, loopOfList?_eq_none_iff, wordOfList_reindex]
+    intro h
+    apply (loopOfList?_eq_none_iff B).mp hw
+    simpa using congrArg (fun E : SkewExchangeMatrix κ ↦ E.reindex e.symm) h
+  | some w =>
+    rw [Option.map_some, loopOfList?_eq_some_iff, Path.generators_reindex,
+      (loopOfList?_eq_some_iff B).mp hw]
 
 end QPainleve.Cluster.Generator
 
