@@ -35,20 +35,6 @@ variable {ι : Type*} [DecidableEq ι]
 local notation "EndQsf" => Function.End (Qsf ι)
 local notation "XField" k => FractionRing (AddMonoidAlgebra k (ι →₀ ℤ))
 
-namespace Quiver.Path
-
-/-- Pullback on the image of the universal coefficient semifield is substitution at
-the final Y-seed coefficients. -/
-theorem xPullback_toXField_eval_ySeed (k : Type*) [Field k] [CharZero k]
-    {B C : SkewExchangeMatrix ι} (w : Word B C) (x : Qsf ι) :
-    w.xPullback k (QsfZero.toXField k (x : QsfZero ι)) =
-      QsfZero.toXField k
-        (Qsf.eval (w.ySeed ⟨Qsf.X, B.val⟩).coefficient x : QsfZero ι) := by
-  rw [Qsf.val_eval]
-  exact DFunLike.congr_fun (w.xPullback_comp_toXField_eq_eval_ySeed k) (x : QsfZero ι)
-
-end Quiver.Path
-
 namespace QPainleve.Cluster
 
 variable (k : Type*) [Field k] [CharZero k] (B : SkewExchangeMatrix ι)
