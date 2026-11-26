@@ -225,6 +225,7 @@ variable
 
 include hΘ in
 /-- The central Picard involution has negative inversion sign. -/
+@[simp]
 theorem signedInversionSign_picardCentralInvolution :
     signedInversionSign k E hE (picardCentralInvolution Θ hn) = -1 := by
   rw [← sign_picardHom_apply_op Θ.toMonoidHom hΘ hE, MulEquiv.coe_toMonoidHom,
