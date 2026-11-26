@@ -42,14 +42,10 @@ theorem intKernelGenerator_eq_some_of_span {m n : ℕ} {A : Matrix (Fin m) (Fin 
     {x : Fin n → ℤ} {i : Fin n} (hi : 0 < x i)
     (hker : A.mulVecLin.ker = Submodule.span ℤ {x}) :
     A.intKernelGenerator i = some x := by
-  obtain ⟨b, hb⟩ := A.exists_basis_eq_intKernelBasisVectors
-  let f := LinearMap.toSpanSingleton ℤ (Fin n → ℤ) x
-  have hf : Function.Injective f := by
-    intro a b hab
-    exact mul_right_cancel₀ hi.ne' (congrFun hab i)
+  let b := A.intKernelBasis
+  have hx₀ : x ≠ 0 := fun h ↦ hi.ne' (congrFun h i)
   have hdim : finrank ℤ A.mulVecLin.ker = 1 := by
-    rw [hker, LinearMap.span_singleton_eq_range]
-    exact (LinearEquiv.ofInjective f hf).finrank_eq.symm.trans (finrank_self ℤ)
+    rw [hker, ← (LinearEquiv.toSpanNonzeroSingleton ℤ _ x hx₀).finrank_eq, finrank_self]
   have hr : A.intKernelBasisVectors.1 = 1 := by
     simpa only [finrank_eq_card_basis b, Fintype.card_fin] using hdim
   let j : Fin A.intKernelBasisVectors.1 := ⟨0, by omega⟩
@@ -62,13 +58,13 @@ theorem intKernelGenerator_eq_some_of_span {m n : ℕ} {A : Matrix (Fin m) (Fin 
   have hab := congrArg (b.coord j) hay
   simp only [map_smul, Basis.coord_apply, Basis.repr_self, Finsupp.single_eq_same,
     smul_eq_mul] at hab
-  rw [intKernelGenerator, dite_eq_left hr, ← hb]
+  have hvector : A.intKernelBasisVectors.2 j = a • x := by
+    simpa only [b, intKernelBasis_apply] using ha.symm
+  rw [intKernelGenerator, dite_eq_left hr]
+  simp only [j] at hvector
+  rw [hvector]
   rcases Int.isUnit_iff.mp (IsUnit.of_mul_eq_one _ hab) with rfl | rfl
-  · have h : (b j : Fin n → ℤ) = x := by simpa using ha.symm
-    simp [j] at h
-    simp [h, hi.not_gt]
-  · have h : (b j : Fin n → ℤ) = -x := by simpa using ha.symm
-    simp [j] at h
-    simp [h, hi]
+  · simp [hi.not_gt]
+  · simp [hi]
 
 end Matrix

@@ -70,34 +70,35 @@ private def bezoutEquiv (a b : ℤ) :
     _ = a * (s * x.1 - q * x.2) + b * (t * x.1 + p * x.2) := rfl
     _ = _ := by linear_combination -x.1 * hgcd - x.2 * hcross
 
-private def consEquiv (n : ℕ) :
-    (ℤ × (Fin n → ℤ)) ≃ₗ[ℤ] (Fin (n + 1) → ℤ) :=
-  Fin.consLinearEquiv ℤ (fun _ ↦ ℤ)
-
 private def headPairEquiv (n : ℕ) :
     ((ℤ × ℤ) × (Fin n → ℤ)) ≃ₗ[ℤ] (Fin (n + 2) → ℤ) :=
+  let tail := Fin.consLinearEquiv ℤ (fun _ : Fin (n + 1) ↦ ℤ)
+  let head := Fin.consLinearEquiv ℤ (fun _ : Fin (n + 2) ↦ ℤ)
   (LinearEquiv.prodAssoc ℤ ℤ ℤ (Fin n → ℤ)).trans
-    (((LinearEquiv.refl ℤ ℤ).prodCongr (consEquiv n)).trans (consEquiv (n + 1)))
+    (((LinearEquiv.refl ℤ ℤ).prodCongr tail).trans head)
+
+-- Store each entry once before the next reduction step applies the map repeatedly.
+private def materializeMatrix {m n : ℕ} (f : (Fin n → ℤ) →ₗ[ℤ] (Fin m → ℤ)) :
+    {A : Matrix (Fin m) (Fin n) ℤ // A.mulVecLin = f} := by
+  let A := LinearMap.toMatrix' f
+  let entries := A.toArray
+  exact ⟨Matrix.ofArray entries A.size_toArray, by
+    simpa only [entries, A, ofArray_toArray, toLin'_apply'] using toLin'_toMatrix' f⟩
 
 -- Retain the matrix entries when composing more than one Bézout step.
 private def materialize {n : ℕ} (e : (Fin n → ℤ) ≃ₗ[ℤ] (Fin n → ℤ)) :
     (Fin n → ℤ) ≃ₗ[ℤ] (Fin n → ℤ) := by
-  let A := LinearMap.toMatrix' e.toLinearMap
-  let entries := A.toArray
-  let f := (Matrix.ofArray entries A.size_toArray).mulVecLin
-  have hf : f = e.toLinearMap := by
-    simpa only [f, entries, A, ofArray_toArray, toLin'_apply'] using toLin'_toMatrix' e.toLinearMap
+  let A := materializeMatrix e.toLinearMap
   exact
-    { f with
+    { A.val.mulVecLin with
       invFun := e.symm
-      left_inv := fun x ↦ by rw [hf]; exact e.symm_apply_apply x
-      right_inv := fun x ↦ by rw [hf]; exact e.apply_symm_apply x }
+      left_inv := fun x ↦ by rw [A.property]; exact e.symm_apply_apply x
+      right_inv := fun x ↦ by rw [A.property]; exact e.apply_symm_apply x }
 
 private theorem materialize_apply {n : ℕ} (e : (Fin n → ℤ) ≃ₗ[ℤ] (Fin n → ℤ)) (x : Fin n → ℤ) :
     materialize e x = e x := by
   simp only [materialize, LinearEquiv.coe_mk]
-  exact congrArg (fun f : (Fin n → ℤ) →ₗ[ℤ] (Fin n → ℤ) ↦ f x)
-    (by simpa only [ofArray_toArray, toLin'_apply'] using toLin'_toMatrix' e.toLinearMap)
+  exact LinearMap.congr_fun (materializeMatrix e.toLinearMap).property x
 
 private def reduceRow : ∀ {n : ℕ} (a : Fin (n + 1) → ℤ),
     {p : ℤ × ((Fin (n + 1) → ℤ) ≃ₗ[ℤ] (Fin (n + 1) → ℤ)) //
@@ -109,7 +110,7 @@ private def reduceRow : ∀ {n : ℕ} (a : Fin (n + 1) → ℤ),
     let splitPair := headPairEquiv n
     let mix := splitPair.symm.trans
       ((step.val.prodCongr (LinearEquiv.refl ℤ _)).trans splitPair)
-    let splitHead := consEquiv (n + 1)
+    let splitHead := Fin.consLinearEquiv ℤ (fun _ : Fin (n + 2) ↦ ℤ)
     let liftTail := splitHead.symm.trans
       (((LinearEquiv.refl ℤ ℤ).prodCongr tail.val.2).trans splitHead)
     let e := mix.trans liftTail
@@ -187,15 +188,10 @@ private def intKernelEquiv : ∀ {m n : ℕ} (A : Matrix (Fin m) (Fin n) ℤ),
     let K := (dotProductBilin ℤ ℤ (A 0)).ker
     let endRows := (tailRows A).comp K.subtype
     let f := endRows.comp row.2.toLinearMap
-    let C := LinearMap.toMatrix' f
-    -- Store the transformed entries before recursing, so later products reuse them.
-    let entries := C.toArray
-    let B := Matrix.ofArray entries C.size_toArray
-    let rest := intKernelEquiv B
-    have hB : B.mulVecLin = f := by
-      simpa only [B, entries, C, ofArray_toArray, toLin'_apply'] using toLin'_toMatrix' f
-    have hker : B.mulVecLin.ker = endRows.ker.comap row.2.toLinearMap :=
-      (congrArg LinearMap.ker hB).trans (LinearMap.ker_comp _ _)
+    let B := materializeMatrix f
+    let rest := intKernelEquiv B.val
+    have hker : B.val.mulVecLin.ker = endRows.ker.comap row.2.toLinearMap :=
+      (congrArg LinearMap.ker B.property).trans (LinearMap.ker_comp _ _)
     have hle : A.mulVecLin.ker ≤ K :=
       fun _ hx ↦ congrFun (LinearMap.mem_ker.mp hx) 0
     exact ⟨rest.1, rest.2.trans <| (LinearEquiv.ofEq _ _ hker).trans <|
@@ -209,14 +205,20 @@ def intKernelBasisVectors {m n : ℕ} (A : Matrix (Fin m) (Fin n) ℤ) :
   let e := intKernelEquiv A
   ⟨e.1, fun j ↦ (e.2 (Pi.single j 1)).val⟩
 
-/-- The computed columns form an integral basis of the matrix kernel. -/
-theorem exists_basis_eq_intKernelBasisVectors {m n : ℕ} (A : Matrix (Fin m) (Fin n) ℤ) :
-    ∃ b : Basis (Fin A.intKernelBasisVectors.1) ℤ A.mulVecLin.ker,
-      (fun j ↦ (b j : Fin n → ℤ)) = A.intKernelBasisVectors.2 := by
-  exact ⟨(Pi.basisFun ℤ _).map (intKernelEquiv A).2, by
-    let e := intKernelEquiv A
-    have h (j : Fin e.1) : ((Pi.basisFun ℤ _).map e.2) j = e.2 (Pi.single j 1) := by
-      rw [Basis.map_apply, Pi.basisFun_apply]
-    exact funext fun j ↦ congrArg Subtype.val (h j)⟩
+/-- The integral basis of the matrix kernel whose ambient vectors are computed by
+`intKernelBasisVectors`. -/
+noncomputable def intKernelBasis {m n : ℕ} (A : Matrix (Fin m) (Fin n) ℤ) :
+    Basis (Fin A.intKernelBasisVectors.1) ℤ A.mulVecLin.ker :=
+  Basis.ofEquivFun (intKernelEquiv A).2.symm
+
+/-- The ambient coordinates of the integral kernel basis are the computed vectors. -/
+@[simp]
+theorem intKernelBasis_apply {m n : ℕ} (A : Matrix (Fin m) (Fin n) ℤ)
+    (j : Fin A.intKernelBasisVectors.1) :
+    (A.intKernelBasis j : Fin n → ℤ) = A.intKernelBasisVectors.2 j := by
+  let e := intKernelEquiv A
+  have h (i : Fin e.1) : Basis.ofEquivFun e.2.symm i = e.2 (Pi.single i 1) := by
+    rw [Basis.coe_ofEquivFun, LinearEquiv.symm_symm]
+  exact congrArg Subtype.val (h j)
 
 end Matrix
