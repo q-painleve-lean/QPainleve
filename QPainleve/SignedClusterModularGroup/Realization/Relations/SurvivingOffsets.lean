@@ -97,7 +97,7 @@ private theorem markedBoundaryMap_pairing_pos_iff_mem_range
 /-- In a marked nodal contraction, the integer degree filter yields exactly the
 offsets of the numbered surviving boundary rays. The toric divisor representing
 the pullback's toric class may be chosen arbitrarily. -/
-theorem survivingRayOffsets_eq_map_numberedBoundaryRayOffsets
+theorem survivingRayOffsets_eq_survivingBoundaryRayOffsets
     (hp : p.IsNodalContraction) (hc : Φ.IsComplete)
     {H : LineBundleClass M.surface} (hH : H.IsAmple)
     (selfIntersection toricCoeff : ZMod m → ℤ) (centerRay : Fin r → ZMod m)
@@ -107,7 +107,7 @@ theorem survivingRayOffsets_eq_map_numberedBoundaryRayOffsets
     (hcoords : (Φ.rayDivisorToPicard hΦ (toricCoeff ∘ (u).symm), exceptionalCoeff) =
       μ (M.picardMarking.symm (Additive.ofMul H))) :
     survivingRayOffsets selfIntersection toricCoeff centerRay exceptionalCoeff =
-      Finset.univ.map (p.numberedBoundaryRayOffsets hp.cartier) := by
+      (p.survivingBoundaryRayOffsets hp.cartier).val := by
   let : SmoothOfRelativeDimension 2 (Φ.algebraicRealization ↘ S) :=
     ((finrank_eq_card_basis b).trans (Fintype.card_fin 2)) ▸
       Φ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
@@ -134,8 +134,8 @@ theorem survivingRayOffsets_eq_map_numberedBoundaryRayOffsets
   rw [mem_survivingRayOffsets]
   dsimp only
   rw [← hdegree, p.markedBoundaryMap_pairing_pos_iff_mem_range hp hH,
-    ← Fan.rayFinEquivOfNodalCycleNumbering_apply, ← p.mem_range_numberedBoundaryRayOffsets_iff,
-    ← Finset.mem_coe, Finset.coe_map, Finset.coe_univ, Set.image_univ]
+    ← Fan.rayFinEquivOfNodalCycleNumbering_apply, Set.powersetCard.mem_coe_iff,
+    p.mem_survivingBoundaryRayOffsets]
 
 end ContractedToricFiber
 
