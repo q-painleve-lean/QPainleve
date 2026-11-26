@@ -115,9 +115,7 @@ theorem exists_realize_signed_word_with_pair_iso_action
     rwa [Path.centerPartialMap_domain]
   obtain ⟨c, hc⟩ := (Cw[w,P₀].exists_section_comp_domainSource_eq_iff
     (Y := Centers[r]) c₀ (default : S)).mpr hmem
-  let := hm₁.isRationalOver
-  have hindex := Q₁.chargeIndex_ne_zero_of_anticanonical_cycle hm₁ hD₁ hnef₁ hsq₁
-    (congrArg Inv.inv (hm₁.canonicalClass hD₁)) hprim₁
+  have hindex := hm₁.chargeIndex_ne_zero hD₁ hnef₁ hsq₁ hprim₁
   let := Q₁.complete.nonempty_cones
   let := Q₁.prestable
   let := Q₁.neZero

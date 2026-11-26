@@ -194,8 +194,7 @@ theorem existsUnique_faithful_signedPicardHom_of_presentation
     ∃! ρ : (SignedClusterModularGroup ℂ E)ᵐᵒᵖ →* signedBoundaryIsometryGroup H d,
       IsSignedPicardAction Q M hD hmark ρ ∧ ρ.ker = ⊥ := by
   let : IsRationalOver ((M c₀).surface ↘ S) := href.isRationalOver
-  have hcan := congrArg Inv.inv (href.canonicalClass (hD c₀))
-  have hindex := Q.chargeIndex_ne_zero_of_anticanonical_cycle href (hD c₀) hnef hsq hcan hprim
+  have hindex := href.chargeIndex_ne_zero (hD c₀) hnef hsq hprim
   have hker : E.matrix.mulVecLin.ker = P.charge.ker := by
     rw [← P.matrix_eq, hform, hcharge]
     exact Fan.ker_chargeExchangeMatrix_rayChargeMap b Q.rays hindex
