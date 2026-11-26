@@ -80,6 +80,36 @@ def compareSignedLoopListsFromRays {m n r : ℕ} [NeZero m] [NeZero n]
   (SkewExchangeMatrix.ofChargeCoordinates charge).compareSignedLoopLists
     (boundaryOrderTable charge ray survivors) gs hs
 
+/-- The ray comparison returns a result exactly when survivor selection succeeds
+and the loop comparison for those survivors returns that result. -/
+@[simp]
+theorem compareSignedLoopListsFromRays_eq_some_iff {m n r : ℕ} [NeZero m] [NeZero n]
+    (ray : Fin m → Fin 2 → ℤ) (centerRay : Fin r → Fin m)
+    (gs hs : List (Generator (Fin r))) (result : Bool) :
+    compareSignedLoopListsFromRays (n := n) ray centerRay gs hs = some result ↔
+      ∃ survivors : Set.powersetCard (Fin m) n,
+        survivingRayOffsetsOfIntersectionMatrix
+          (internalBlowupBoundaryIntersectionMatrix (ray ∘ (ZMod.finEquiv m).symm)
+            (ZMod.finEquiv m ∘ centerRay)) = some survivors ∧
+        (SkewExchangeMatrix.ofChargeCoordinates (ray ∘ centerRay)).compareSignedLoopLists
+          (boundaryOrderTable (ray ∘ centerRay) ray survivors) gs hs = some result := by
+  simp only [compareSignedLoopListsFromRays, Option.bind_eq_bind, Option.bind_eq_some_iff]
+
+/-- The ray comparison fails if survivor selection fails or the loop comparison
+fails for the selected survivors. -/
+@[simp]
+theorem compareSignedLoopListsFromRays_eq_none_iff {m n r : ℕ} [NeZero m] [NeZero n]
+    (ray : Fin m → Fin 2 → ℤ) (centerRay : Fin r → Fin m)
+    (gs hs : List (Generator (Fin r))) :
+    compareSignedLoopListsFromRays (n := n) ray centerRay gs hs = none ↔
+      ∀ survivors : Set.powersetCard (Fin m) n,
+        survivingRayOffsetsOfIntersectionMatrix
+          (internalBlowupBoundaryIntersectionMatrix (ray ∘ (ZMod.finEquiv m).symm)
+            (ZMod.finEquiv m ∘ centerRay)) = some survivors →
+        (SkewExchangeMatrix.ofChargeCoordinates (ray ∘ centerRay)).compareSignedLoopLists
+          (boundaryOrderTable (ray ∘ centerRay) ray survivors) gs hs = none := by
+  simp only [compareSignedLoopListsFromRays, Option.bind_eq_bind, Option.bind_eq_none_iff]
+
 namespace CompleteToricPresentation
 
 open GeometricRealization (Point)
