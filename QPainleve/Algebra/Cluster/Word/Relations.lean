@@ -10,6 +10,7 @@ public import QPainleve.Algebra.Cluster.Word.KernelMatrix
 public import QPainleve.Algebra.Cluster.Word.Pullback
 
 import QPainleve.Algebra.Cluster.Tropical.Valuation
+import QPainleve.Algebra.Cluster.Word.CoefficientChange
 import QPainleve.Algebra.Cluster.Word.Monomial
 import QPainleve.Algebra.Cluster.Word.Parity
 
@@ -164,6 +165,20 @@ theorem signedLoopInvariants_eq_of_xPullback_eq {k : Type*} [Field k]
   simp only [SignedLoopInvariants.ext_iff, signedLoopInvariants_sign,
     signedLoopInvariants_kernelColumns, signedLoopInvariants_boundaryLabel,
     tropicalBoundaryLabel_def, ← coe_exchangeKernelEquiv_apply, hsign, hkernel, htrop, and_self]
+
+/-- If the integer invariants detect equality of two loop pullbacks over a
+characteristic-zero field, they detect equality over every field. -/
+theorem xPullback_eq_iff_signedLoopInvariants_eq_of_charZero
+    (w v : Word E E) (k k₀ : Type*) [Field k] [Field k₀] [CharZero k₀]
+    (hE : E.matrix ≠ 0) (vectors : κ → K) (orders : Fin n → ι → ℤ) (source : ι → ℤ)
+    (h : w.signedLoopInvariants (fun j ↦ (vectors j : ι → ℤ)) orders source =
+      v.signedLoopInvariants (fun j ↦ (vectors j : ι → ℤ)) orders source →
+      w.xPullback k₀ = v.xPullback k₀) :
+    w.xPullback k = v.xPullback k ↔
+      w.signedLoopInvariants (fun j ↦ (vectors j : ι → ℤ)) orders source =
+        v.signedLoopInvariants (fun j ↦ (vectors j : ι → ℤ)) orders source :=
+  ⟨fun heq ↦ signedLoopInvariants_eq_of_xPullback_eq hE heq vectors orders source,
+    fun heq ↦ xPullback_eq_of_charZero k k₀ (h heq)⟩
 
 section Conjugation
 

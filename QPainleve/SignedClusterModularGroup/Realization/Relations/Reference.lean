@@ -10,7 +10,6 @@ public import QPainleve.SignedClusterModularGroup.Realization.Presentation
 public import QPainleve.SignedClusterModularGroup.Realization.Tropical
 
 import QPainleve.AlgebraicGeometry.Chow.RationalSurface.Basic
-import QPainleve.Algebra.Cluster.Word.CoefficientChange
 import QPainleve.SignedClusterModularGroup.Realization.NodalFiber
 import QPainleve.SignedClusterModularGroup.Realization.Reflection
 import QPainleve.SignedClusterModularGroup.Realization.Relations.PicardAction
@@ -93,7 +92,7 @@ theorem xPullback_eq_iff_signedLoopInvariants_eq {p₀ : fiber[M₀,c₀]}
   rw [h.orders_eq]
   have href := Q.hasNodalModel_of_contraction hnodal₀
   have hne := href.exchangeMatrix_ne_zero h.matrix_eq hprim hnef hsq
-  refine ⟨fun heq ↦ Path.signedLoopInvariants_eq_of_xPullback_eq hne heq β _ _, ?_⟩
+  refine w.xPullback_eq_iff_signedLoopInvariants_eq_of_charZero v k ℂ hne β _ _ ?_
   intro hinvariants
   obtain ⟨A⟩ := Q.nonempty_signedLoopPicardComparison_of_nodal_contraction
     p₀ hnodal₀ h.matrix_eq hprim hnef hsq
@@ -110,7 +109,6 @@ theorem xPullback_eq_iff_signedLoopInvariants_eq {p₀ : fiber[M₀,c₀]}
     M₀.isPerfPair_of_isRationalOver.nondegenerate
     (M₀.intersectionForm_boundaryClass cartier[M₀] hnef hsq)
     (M₀.boundaryClass_injective_of_nef_square_zero cartier[M₀] hnef hsq) w v β).mpr hinvariants
-  apply Path.xPullback_eq_of_charZero k ℂ
   exact (signedClusterModularGroupMap_eq_iff ℂ E (End.of w) (End.of v)).mp
     (op_injective (A.identification.signedEquiv.injective heq))
 
@@ -127,6 +125,20 @@ theorem compareSignedLoops_eq_true_iff_xPullback_eq {p₀ : fiber[M₀,c₀]}
     E.compareSignedLoops orders w v = true ↔ w.xPullback k = v.xPullback k := by
   exact SkewExchangeMatrix.compareSignedLoops_eq_true_iff_xPullback_eq E k orders w v
     (h.xPullback_eq_iff_signedLoopInvariants_eq k hnodal₀ hprim hnef hsq w v)
+
+/-- Equality of independent X pullbacks detected by a certified loop comparison
+is the same over any two coefficient fields. -/
+theorem xPullback_eq_iff_xPullback_eq {p₀ : fiber[M₀,c₀]}
+    (h : Q.IsSignedLoopComparisonInput p₀ E orders) (k k' : Type*) [Field k] [Field k']
+    (hnodal₀ : p₀.IsNodalContraction)
+    (hprim : IsPrimitive (Additive.ofMul classOf(cartier[M₀])))
+    (hnef : (classOf(cartier[M₀])).IsNef ℂ (M₀.surface ↘ S))
+    (hsq : Chow.classIntersectionNumber ℂ M₀.surface classOf(cartier[M₀])
+      classOf(cartier[M₀]) = 0)
+    (w v : Word E E) :
+    w.xPullback k = v.xPullback k ↔ w.xPullback k' = v.xPullback k' :=
+  (h.compareSignedLoops_eq_true_iff_xPullback_eq k hnodal₀ hprim hnef hsq w v).symm.trans
+    (h.compareSignedLoops_eq_true_iff_xPullback_eq k' hnodal₀ hprim hnef hsq w v)
 
 /-- Decide equality of signed loop pullbacks from the certified discrete input. -/
 def decidableXPullbackEq {p₀ : fiber[M₀,c₀]}

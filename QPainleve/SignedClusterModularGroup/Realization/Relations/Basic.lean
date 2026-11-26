@@ -9,7 +9,6 @@ public import QPainleve.SignedClusterModularGroup.Realization.ChargeKernel.Basic
 public import QPainleve.SignedClusterModularGroup.Realization.Relations.Boundary
 
 import QPainleve.Algebra.Cluster.ChargeKernel.Index
-import QPainleve.Algebra.Cluster.Word.CoefficientChange
 import QPainleve.Geometry.Toric.Fan.ExchangeMatrix
 import QPainleve.SignedClusterModularGroup.BoundaryCycle
 import QPainleve.SignedClusterModularGroup.Faithfulness
@@ -168,8 +167,8 @@ theorem xPullback_eq_iff_signedLoopInvariants_eq {k : Type*} [Field k]
   have hne : E.matrix ≠ 0 := hE.symm ▸
     ((Fan.rayChargeMap s).chargeExchangeMatrix_eq_zero_iff_index_range_eq_zero b
       b.detDualEquiv_self b.detDualEquiv_apply_basis_zero_one).not.mpr hindex
-  refine ⟨fun h ↦ Path.signedLoopInvariants_eq_of_xPullback_eq hne h β _ _, fun h ↦ ?_⟩
-  apply Path.xPullback_eq_of_charZero k ℂ
+  refine w.xPullback_eq_iff_signedLoopInvariants_eq_of_charZero v k ℂ hne β _ _ ?_
+  intro h
   let Q := Fan.rayChargeSeed b s hE
   have hcharge : Q.charge = Fan.rayChargeMap s := Fan.rayChargeSeed_charge _ _ _
   have hker : E.matrix.mulVecLin.ker = Q.charge.ker := by

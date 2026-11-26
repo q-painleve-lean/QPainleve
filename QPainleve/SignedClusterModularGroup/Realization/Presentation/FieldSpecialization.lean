@@ -18,12 +18,12 @@ import QPainleve.SignedClusterModularGroup.SignExtension
 For a toric presentation of a primitive nef square-zero anticanonical cycle,
 specializing the field of independent X coordinates preserves both cluster modular
 groups. The integer invariants of a specialized loop are recovered from its X
-pullback, and the marked relation criterion then recovers its complex pullback.
+pullback, and the marked relation criterion detects the same relations over both fields.
 Consequently the Picard identifications over the complex numbers transport to
 every coefficient field with their evaluation on loop representatives.
 
-The comparison uses `Quiver.Path.signedLoopInvariants_eq_of_xPullback_eq` and
-`CompleteToricPresentation.IsSignedLoopComparisonInput.xPullback_eq_iff_signedLoopInvariants_eq`.
+The comparison uses
+`CompleteToricPresentation.IsSignedLoopComparisonInput.xPullback_eq_iff_xPullback_eq`.
 -/
 
 public section
@@ -69,13 +69,9 @@ private theorem injective_signedSpecialization
   let := Q.prestable
   let := Q.neZero
   obtain ⟨p, hp⟩ := href.exists_isNodalContraction cartier
-  let β := Module.finBasis ℤ E.matrix.mulVecLin.ker
-  have hnonzero := href.exchangeMatrix_ne_zero hE hprim hnef hsq
   have hinput : Q.IsSignedLoopComparisonInput p E (p.numberedBoundaryOrders cartier) :=
     ⟨hE, rfl⟩
-  exact (hinput.xPullback_eq_iff_signedLoopInvariants_eq
-    ℂ hp hprim hnef hsq w.asHom v.asHom β).mpr
-      (Path.signedLoopInvariants_eq_of_xPullback_eq hnonzero hg β _ _)
+  exact (hinput.xPullback_eq_iff_xPullback_eq k ℂ hp hprim hnef hsq w.asHom v.asHom).mp hg
 
 /-- Specialization identifies the signed point maps of a marked primitive nef square-zero
 anticanonical cycle over the complex numbers with those over the target field. -/
