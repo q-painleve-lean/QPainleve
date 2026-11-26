@@ -210,7 +210,9 @@ private theorem exists_boundary_origin [PrestableFamily (TorBoundary ↘ S)] [Ne
     rwa [← Scheme.Hom.comp_apply, hg, Scheme.Hom.comp_apply]⟩
   exact A.exists_componentGenericPoint_over C g 0
 
-private theorem exists_reference_of_numbered_model
+/-- Choose the reference fiber in a specified frame and boundary numbering when the
+given oriented subdivision already has positive cyclic ray order in that frame. -/
+theorem exists_marked_reference_fiber_of_numbered_model
     (hc : Φ.IsComplete) (hT : IsNodalBoundaryTower D (X ↘ S) (𝟙 X) T)
     (e : U.1 ≅ W) (hbase : e.hom ≫ T.toBase ≫ (X ↘ S) =
       U.2.toTower.toBase ≫ Φ.algebraicRealizationStructureMap)
@@ -321,7 +323,7 @@ private theorem exists_reference_with_swapped_basis
     simp only [Iso.trans_hom, Category.assoc]
     exact hg.trans ((reassoc_of% hboundary) _).symm
   obtain ⟨R, hcenter, hrays⟩ :=
-    exists_reference_of_numbered_model A μ hΦ s c' hc hT (v ≪≫ e) hb' hker'
+    exists_marked_reference_fiber_of_numbered_model A μ hΦ s c' hc hT (v ≪≫ e) hb' hker'
       C g hg' hsub hpositive
   exact ⟨R, hcenter ▸ hc', hrays⟩
 
@@ -382,7 +384,8 @@ private theorem exists_marked_reference_fibers :
   rcases ha with ha | ha
   · subst a
     obtain ⟨R, hcenter, hrays⟩ :=
-      exists_reference_of_numbered_model A μ hΦ s c hc hT e hbase hker C g hg hsub hpositive
+      exists_marked_reference_fiber_of_numbered_model A μ hΦ s c hc hT e hbase hker
+        C g hg hsub hpositive
     refine ⟨⟨b, R, Or.inl ⟨rfl, ?_⟩, hrays⟩, ⟨A, R, Or.inl rfl, ?_, hrays⟩⟩ <;>
       rw [hcenter]
   · subst a
@@ -405,7 +408,7 @@ private theorem exists_marked_reference_fibers :
     obtain ⟨R, hparam, hrays⟩ :=
       exists_reference_with_swapped_basis A μ hΦ s c hc hT e hbase hker C g hg hsub hpositive
     obtain ⟨R', hcenter', hrays'⟩ :=
-      exists_reference_of_numbered_model A.reverse μ hΦ s c hc hT e hbase hker
+      exists_marked_reference_fiber_of_numbered_model A.reverse μ hΦ s c hc hT e hbase hker
         C.reverse g hg hsub.reverse hpositive'
     exact ⟨⟨_, R, Or.inr ⟨rfl, hparam⟩, hrays⟩,
       ⟨_, R', Or.inr rfl, by rw [hcenter'], hrays'⟩⟩
