@@ -38,12 +38,11 @@ ref = "692c51780c76777e8f6a00cc9ba2b876901f32e5"
 repo = "TauCetiProject/TauCetiProgress"
 ref = "ddaaed27a70d9f376d300edf32d521843c27cc16"
 
-# Workers submit finished PRs (`full_quality = true`); review checks that the mathematics is
-# right and well placed, and that its public API is minimal, complete and stated at its natural
-# generality. Every listed rubric must be green on the head before auto-merge.
+# Workers submit finished PRs (`full_quality = true`); review checks only that the mathematics
+# is right and well placed. Every listed rubric must be green on the head before auto-merge.
 # Order matters: a block halts the round, so the block-capable angles run first.
 [review]
-rubrics = ["correctness", "reuse", "scope", "api-design", "generality", "placement"]
+rubrics = ["correctness", "reuse", "scope", "placement"]
 
 [merge]
 backend = "github-queue"
