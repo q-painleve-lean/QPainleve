@@ -7,11 +7,11 @@ module
 
 public import QPainleve.AlgebraicGeometry.Blowup.Tower.Nodal.Basic
 public import QPainleve.Geometry.Toric.Fan.Boundary.PositiveRefinement
+public import QPainleve.Geometry.Toric.Fan.Picard.Subdivision
 public import QPainleve.SignedClusterModularGroup.Realization.Agreement
 
 import QPainleve.AlgebraicGeometry.Morphisms.Modification.Birational
 import QPainleve.Geometry.Toric.Fan.Boundary.Node
-import QPainleve.Geometry.Toric.Fan.Picard.Subdivision
 import QPainleve.Geometry.Toric.Fan.Subdivision.NodalRefinement
 
 /-!
@@ -63,9 +63,7 @@ local notation "π" => toBase (WithBoundary.toTower (Sigma.snd (A)))
 local notation "π'" => toBase (WithBoundary.toTower (Sigma.snd (A')))
 local notation "f" => h.toFanHom.algebraicMap
 local notation "β" => h.boundaryMap hΨ₀ hΦ₀
-local notation "J'" => LinearMap.comp
-  (LinearMap.prodMap (AddMonoidHom.toIntLinearMap (MonoidHom.toAdditive
-    (LineBundleClass.pullbackHom (h.toFanHom.algebraicMap)))) LinearMap.id) J
+local notation "J'" => h.internalBlowupPicardPullback.comp J
 
 open Scheme.RationalMap in
 private theorem evaluation_eq_subdivision (hΨ : Ψ.IsRegular) (g : (A').1 ⟶ (A).1)
@@ -93,10 +91,9 @@ private theorem marked_pullback_subdivision (hΨ : Ψ.IsRegular) (g : (A').1 ⟶
   have hx' := congrArg Additive.toMul hx
   rw [toMul_ofMul] at hx'
   rw [hx']
-  simpa only [LinearMap.comp_apply, LinearMap.prodMap_apply, LinearMap.id_apply,
-    AddMonoidHom.coe_toIntLinearMap, MonoidHom.coe_toAdditive, Function.comp_apply,
-    LineBundleClass.pullbackHom_apply, ofMul_toMul, Prod.eta] using congrArg Additive.ofMul
-    (h.pullback_internalBlowupPicardMarking b s (centers c) hΨ hΦ g hg (J x).1.toMul (J x).2)
+  simpa only [LinearMap.comp_apply, h.internalBlowupPicardPullback_apply, ofMul_toMul, Prod.eta]
+    using congrArg Additive.ofMul
+      (h.pullback_internalBlowupPicardMarking b s (centers c) hΨ hΦ g hg (J x).1.toMul (J x).2)
 
 section Numbering
 

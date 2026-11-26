@@ -7,7 +7,6 @@ module
 
 public import QPainleve.SignedClusterModularGroup.Realization.Mutation.Complete
 public import QPainleve.SignedClusterModularGroup.Realization.Permutation.Contracted
-public import QPainleve.SignedClusterModularGroup.Realization.Presentation
 public import QPainleve.SignedClusterModularGroup.Realization.Word
 
 /-!
@@ -152,49 +151,19 @@ private theorem exists_mutation_step {r : ℕ} {B E : SkewExchangeMatrix (Fin (r
     simpa only [U, Path.centerStepPartialMap_domain] using inf_le_right
       (a := (w.centerPartialMap ℂ P).hom.opensRange)
   have hC := w.centerStepPartialMap_eq_restrict s P (K := ℂ)
-  let := Q.complete.nonempty_cones
-  let := Q.prestable
-  let := Q.neZero
-  obtain ⟨Ω, h, hΩ, hcΩ, hopp, hpre, l', hl', T', o', v, M', R, hv, hpos,
-      hcharge', hpic, hact, hmodels⟩ :=
-    exists_mutate_contracted_of_complete b Q.rays k Q.regular (w.chargeTarget P) hform
-      hcharge U hU hle M Q.rayOrder Q.complete Q.component_eq Q.positive
-      (T := Q.cycle) (o := Q.origin) (J := Q.inclusion) (by
-        rw [← hC]
-        intro c
-        exact (Q.hasNodalModel_iff _ _).mp (hasNodalModel_stepSource Q models c))
-  let t := (h.liftRay ∘ Q.rays) k
-  let J' := (mutationPicardEquiv b (h.liftRay ∘ Q.rays) k hopp hΩ).symm.toLinearMap.comp
-    ((LinearMap.prodMap (AddMonoidHom.toIntLinearMap (MonoidHom.toAdditive
-      (LineBundleClass.pullbackHom (FanHom.algebraicMap (Fan.IsSubdivision.toFanHom h)))))
-      LinearMap.id).comp Q.inclusion)
-  let Q' : CompleteToricPresentation i b (r + 1) L Empty :=
-    { fan := Ω.mutationFan b t.primitiveGenerator_ne_zero t.hull_primitiveGenerator_mem hopp
-      complete := (Ω.isComplete_mutationFan_iff b t.primitiveGenerator_ne_zero
-        t.hull_primitiveGenerator_mem hopp).mpr hcΩ
-      regular := (Ω.isRegular_mutationFan_iff b t.primitiveGenerator_ne_zero
-        t.hull_primitiveGenerator_mem hopp).mpr hΩ
-      rays := Ω.mutationFanCenterRays b (h.liftRay ∘ Q.rays) k hopp
-      prestable := hpre
-      length := l'
-      neZero := hl'
-      marks := Empty.elim
-      cycle := T'
-      origin := o'
-      inclusion := J'
-      rayOrder := v
-      component_eq := hv
-      positive := hpos }
+  obtain ⟨Q', M', R, hcharge', hpic, hact, hmodels, -⟩ :=
+    Q.exists_mutated_presentation k (w.chargeTarget P) hform hcharge U hU hle M (by
+      rw [← hC]
+      exact hasNodalModel_stepSource Q models)
   refine ⟨Empty, Q', M', R.congrMaps hC.symm rfl, ?_, ?_,
     (congrMaps_picard _ _ _).trans hpic, ?_, ?_⟩
   · simpa only [Path.chargeTarget_cons, Step.chargeTarget_mutate_form] using hform
-  · simpa only [s, Path.chargeTarget_cons, Path.chargeTarget_nil, Hom.toPath, Q'] using hcharge'
+  · simpa only [s, Path.chargeTarget_cons, Path.chargeTarget_nil, Hom.toPath] using hcharge'
   · simpa only [congrMaps_boundaryAction, Generator.toStep_generator,
       Generator.inversionCount_mutate, pow_zero] using hact
-  · refine (nodalModelsOn_congr Q' M' hC).mpr ?_
-    intro c
-    obtain ⟨_, _, _, p, Y, d, W, e, hW, hp⟩ := hmodels c
-    exact (Q'.hasNodalModel_iff _ _).mpr ⟨p, Y, d, W, e, hW, hp⟩
+  · refine (nodalModelsOn_congr Q' M' hC).mpr fun c ↦ ?_
+    obtain ⟨_, _, _, hc⟩ := hmodels c
+    exact hc
 
 private theorem exists_permutation_step (w : Word B E) (P : ChargeSeed B N)
     (σ : Equiv.Perm (Fin r)) (Q : CompleteToricPresentation i b r L γ)
