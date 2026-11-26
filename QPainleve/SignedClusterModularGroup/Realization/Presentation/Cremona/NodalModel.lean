@@ -6,7 +6,6 @@ Authors: The QPainleve contributors
 module
 
 public import QPainleve.SignedClusterModularGroup.Realization.Cremona
-public import QPainleve.SignedClusterModularGroup.Realization.Presentation.Cremona.Comparison
 public import QPainleve.SignedClusterModularGroup.Realization.Endpoint.PicardAction
 
 import QPainleve.SignedClusterModularGroup.Realization.Anticanonical
@@ -105,20 +104,12 @@ theorem exists_cluster_cremona_equivs_of_nodal_model
   let : M₀.surface.IsProjectiveOver ℂ := M₀.projective
   let : IsRationalOver (M₀.surface ↘ S) := href.isRationalOver
   have hcan := congrArg Inv.inv (href.canonicalClass M₀.isEffectiveCartier_boundaryIdeal)
-  let π := M₀.cremonaPicardHom hcan hnef hsq hroot
-  have hinj (hn : 3 ≤ n) : Function.Injective π := by
-    intro x y hxy
-    apply (M₀.signedBoundaryIsometryEquivCremona hcan hnef hsq hroot hn).injective
-    simpa only [MarkedSurface.signedBoundaryIsometryEquivCremona_apply] using hxy
-  let P := ClusterCremonaComparison.ofPicardEquiv G.signedEquiv G.sign_ker_unop π
-    (M₀.cremonaPicardHom_surjective hcan hnef hsq hroot) hinj
-    (M₀.signedBoundaryIsometryEquivCremonaProd hcan hnef hsq hroot)
-    (M₀.signedBoundaryIsometryEquivCremonaProd_apply hcan hnef hsq hroot)
+  let P :=
+    M₀.clusterCremonaComparison hcan hnef hsq hroot rfl G.signedEquiv G.sign_ker_unop
   refine ⟨G.family, G.boundaryClass_eq, P, hGc, G.hasNodalModel, fun w ↦ ⟨?_, fun R hR ↦ ?_⟩⟩
-  · simpa only [P, ClusterCremonaComparison.ofPicardEquiv_sign_apply,
-      SignedBoundaryIsometryGroup.sign_apply] using G.sign_signedEquiv_apply_word w
-  · simp only [P, ClusterCremonaComparison.ofPicardEquiv_projection_apply,
+  · simpa only [P, MarkedSurface.clusterCremonaComparison_sign_apply] using
+      G.sign_signedEquiv_apply_word w
+  · simp only [P, MarkedSurface.val_clusterCremonaComparison_projection_apply,
       G.signedEquiv_apply_word w R hR]
-    exact M₀.cremonaPicardHom_apply hcan hnef hsq hroot _
 
 end QPainleve.SignedClusterModularGroup.CompleteToricPresentation
