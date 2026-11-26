@@ -147,8 +147,8 @@ theorem comp_evaluation_eq_of_marked_actions
         (isOrientedCycleSubdivision_comp_boundaryImage q)
         (by
           intro ρ
-          simpa only [heP, heQ, p.mem_range_boundaryRayEmbedding_iff,
-            q.mem_range_boundaryRayEmbedding_iff] using Set.ext_iff.mp hkeep ρ)
+          simpa only [heP, heQ, boundaryRayEmbedding_def,
+            Fan.mem_range_contractedBoundaryRayEmbedding_iff] using Set.ext_iff.mp hkeep ρ)
         (surfaceIso e) vB hv (by
           intro L
           obtain ⟨a, ha⟩ := Q.picardMarking.surjective (Additive.ofMul L)

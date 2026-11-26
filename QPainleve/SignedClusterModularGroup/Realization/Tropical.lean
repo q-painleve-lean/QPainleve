@@ -75,7 +75,8 @@ theorem mem_range_numberedBoundaryRays_iff (hM : D[M].IsEffectiveCartier) (ρ : 
     ρ ∈ Set.range (p.numberedBoundaryRays hM) ↔
       p.projection (Fan.internalBlowupBoundaryPrimeEquiv hΦ b s (center c) ρ).val ∈
         D[M].boundaryPrimes := by
-  rw [p.range_numberedBoundaryRays, p.mem_range_boundaryRayEmbedding_iff]
+  rw [p.range_numberedBoundaryRays, boundaryRayEmbedding_def,
+    Fan.mem_range_contractedBoundaryRayEmbedding_iff]
 
 /-- A numbered toric component gives the ray of a contracted component exactly
 when its generic point maps to that contracted component's generic point. -/
@@ -86,8 +87,8 @@ theorem numberedBoundaryRays_eq_iff (hM : D[M].IsEffectiveCartier) (j : ZMod n) 
       p.boundaryMap (T.componentGenericPoint k) = M.cycle.componentGenericPoint j := by
   let : PrestableFamily (M.boundary ↘ S) := M.prestable
   let : IsClosedImmersion M.pair.hom.left := M.closedImmersion
-  rw [numberedBoundaryRays, Function.Embedding.trans_apply,
-    p.boundaryRayEmbedding_eq_iff, Fan.internalBlowupBoundaryPrime_val,
+  rw [numberedBoundaryRays, Function.Embedding.trans_apply, boundaryRayEmbedding_def,
+    Fan.contractedBoundaryRayEmbedding_eq_iff, Fan.internalBlowupBoundaryPrime_val,
     Equiv.apply_symm_apply, ← T.componentGenericPoint_def,
     ← Scheme.Hom.comp_apply, ← p.boundary_comp, Scheme.Hom.comp_apply,
     MarkedSurface.numberedBoundaryPrimes_apply_val, MarkedSurface.coe_boundaryPrime]

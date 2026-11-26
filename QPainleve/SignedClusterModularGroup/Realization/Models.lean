@@ -72,20 +72,6 @@ theorem boundaryRayEmbedding_def :
       Fan.contractedBoundaryRayEmbedding hΦ b s (center c) p.projection p.support_comap :=
   (rfl)
 
-/-- The ray of a marked boundary prime is determined by the image of the strict prime. -/
-theorem boundaryRayEmbedding_eq_iff (x : D[P].boundaryPrimes) (ρ : Φ.Ray) :
-    p.boundaryRayEmbedding x = ρ ↔
-      p.projection (Fan.internalBlowupBoundaryPrimeEquiv hΦ b s (center c) ρ).val = x.val := by
-  rw [p.boundaryRayEmbedding_def, Fan.contractedBoundaryRayEmbedding_eq_iff]
-
-/-- A ray occurs in the contracted boundary exactly when its strict prime projects
-to a boundary prime on the marked surface. -/
-theorem mem_range_boundaryRayEmbedding_iff (ρ : Φ.Ray) :
-    ρ ∈ Set.range p.boundaryRayEmbedding ↔
-      p.projection (Fan.internalBlowupBoundaryPrimeEquiv hΦ b s (center c) ρ).val ∈
-        D[P].boundaryPrimes := by
-  rw [p.boundaryRayEmbedding_def, Fan.mem_range_contractedBoundaryRayEmbedding_iff]
-
 end ContractedToricFiber
 
 namespace GeometricRealization
