@@ -52,4 +52,23 @@ theorem boundaryPrimesEquivWeilSupport_symm_apply_val (hD : D.IsEffectiveCartier
     (hD.boundaryPrimesEquivWeilSupport.symm p).val = (p.val : X) :=
   (rfl)
 
+/-- The Weil multiplicity of an effective Cartier divisor at one of its boundary primes. -/
+noncomputable def boundaryCoeff (hD : D.IsEffectiveCartier) (p : D.boundaryPrimes) : ℤ :=
+  hD.toCartierDivisor.toWeilDivisor (D.boundaryPrimeEmbedding p)
+
+/-- Boundary coefficients are evaluated at the corresponding codimension-one points. -/
+theorem boundaryCoeff_def (hD : D.IsEffectiveCartier) (p : D.boundaryPrimes) :
+    hD.boundaryCoeff p = hD.toCartierDivisor.toWeilDivisor (D.boundaryPrimeEmbedding p) :=
+  (rfl)
+
+/-- On a normal scheme, each boundary prime of an effective Cartier divisor has
+strictly positive coefficient. -/
+theorem boundaryCoeff_pos [IsNormalScheme X] (hD : D.IsEffectiveCartier) (p : D.boundaryPrimes) :
+    0 < hD.boundaryCoeff p := by
+  have hnonneg := (Scheme.CartierDivisor.isEffective_iff_toWeilDivisor_nonneg _).mp
+    hD.isEffective_toCartierDivisor
+  rw [boundaryCoeff_def, ← hD.boundaryPrimesEquivWeilSupport_apply_val p]
+  exact (hnonneg _).lt_of_ne (WeilDivisor.mem_support_iff.mp
+    (hD.boundaryPrimesEquivWeilSupport p).property).symm
+
 end AlgebraicGeometry.Scheme.IdealSheafData.IsEffectiveCartier
