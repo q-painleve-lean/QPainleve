@@ -7,8 +7,6 @@ module
 
 public import QPainleve.Algebra.Cluster.Tropical.Basic
 
-import QPainleve.Data.Fin.Find
-
 /-!
 # Tropical boundary labels of signed cluster words
 
@@ -48,13 +46,22 @@ theorem tropicalBoundaryLabel_eq_none_iff (w : Word E E') (orders : Fin n → ι
     w.tropicalBoundaryLabel orders source = none ↔ ∀ j, orders j ≠ trop[w] source := by
   simp [tropicalBoundaryLabel, Fin.find?_decide_eq_dite]
 
+/-- A label is returned exactly when its row has the transported orders and every earlier
+row differs from them. -/
+theorem mem_tropicalBoundaryLabel_iff (w : Word E E') (orders : Fin n → ι → ℤ)
+    (source : ι → ℤ) (j : Fin n) :
+    j ∈ w.tropicalBoundaryLabel orders source ↔
+      orders j = trop[w] source ∧ ∀ k, k < j → orders k ≠ trop[w] source := by
+  simp only [tropicalBoundaryLabel_def, Fin.mem_find?_iff, decide_eq_true_eq]
+
 /-- For distinct rows, the label search returns precisely the row with the transported
 orders. -/
 @[simp]
 theorem tropicalBoundaryLabel_eq_some_iff (w : Word E E') {orders : Fin n → ι → ℤ}
     (source : ι → ℤ) (hinj : Function.Injective orders) (j : Fin n) :
-    w.tropicalBoundaryLabel orders source = some j ↔ orders j = trop[w] source :=
-  Fin.find?_decide_eq_some_iff_of_injective hinj _ j
+    w.tropicalBoundaryLabel orders source = some j ↔ orders j = trop[w] source := by
+  rw [← Option.mem_def, mem_tropicalBoundaryLabel_iff]
+  exact ⟨And.left, fun hj ↦ ⟨hj, fun k hk ↦ (hinj.ne_iff' hj).2 hk.ne⟩⟩
 
 /-- If a connecting word transports one table of boundary orders by `p`, and a
 loop permutes the original table by `q`, then the transported loop's boundary
