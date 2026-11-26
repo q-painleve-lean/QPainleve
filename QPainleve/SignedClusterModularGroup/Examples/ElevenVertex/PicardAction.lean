@@ -68,7 +68,6 @@ local notation "S" => Spec (CommRingCat.of ℂ)
 local notation "Centers" => Over.mk (structureMap ℂ (Fin 11 → ℤ))
 local notation "XTor" => scheme ℂ (Fin 11 →₀ ℤ)
 local notation "χ[" c "]" => pointsEquiv ℂ _ (Subtype.mk (Over.Hom.left c) (Over.w c))
-local notation "D[" M "]" => Scheme.Hom.ker (Over.Hom.left (Arrow.hom (MarkedSurface.pair M)))
 local notation "cartier[" M "]" => MarkedSurface.isEffectiveCartier_boundaryIdeal M
 local notation "classOf(" h ")" => (LineBundleClass.mk (IsEffectiveCartier.toInvertibleSheaf h))⁻¹
 
@@ -159,39 +158,5 @@ theorem nonempty_involutionPicardIdentification_of_nodal_contraction
   · intro w
     simpa only [SignedBoundaryIsometryGroup.sign_apply] using (hΘ w).1
   · exact (hΘ w).2 R (fun a ↦ (hM (a ≫ C.domainTarget)).nonempty_contractedToricFiber)
-
-/-- In a marked nodal contraction of the eleven-vertex seed with a primitive nef
-square-zero boundary of one component, the full signed Picard equivalence sends the
-inversion–mutation–transposition word to the pure sign change. The marked family
-contains the specified marked surface at its reference center. The same equivalence
-gives geometric Picard pullback and the inversion sign for signed loops. -/
-theorem exists_picardEquiv_apply_involutionWord_of_nodal_contraction
-    (Q : CompleteToricPresentation i b 11 L γ)
-    (p₀ : ContractedToricFiber b Q.rays Q.regular Q.cycle Q.origin Q.inclusion χ[c₀] M₀)
-    (hnodal₀ : p₀.IsNodalContraction)
-    (hE : (B).matrix = chargeExchangeMatrix b.detDualEquiv.toLinearMap (Fan.rayChargeMap Q.rays))
-    (hprim : IsPrimitive (Additive.ofMul classOf(cartier[M₀])))
-    (hnef : (classOf(cartier[M₀])).IsNef ℂ (M₀.surface ↘ S))
-    (hsq : Chow.classIntersectionNumber ℂ M₀.surface classOf(cartier[M₀])
-      classOf(cartier[M₀]) = 0) :
-    let d := M₀.boundaryClass cartier[M₀]
-    ∃ (M : Point Centers → MarkedSurface ℂ 1 H XTor)
-      (hD : ∀ c, D[M c].IsEffectiveCartier)
-      (hmark : ∀ c j, (M c).boundaryClass (hD c) j = d j)
-      (Θ : Γᵐᵒᵖ ≃* signedBoundaryIsometryGroup H d),
-      M c₀ = M₀ ∧ (∀ c, Q.HasNodalModel c (M c)) ∧
-      Θ eval[involutionWord] = centralSign H d (by decide) ∧
-      ∀ w : Word B B,
-        sign H d (Θ eval[w]) = (-1 : ℤˣ) ^ w.inversionCount ∧
-          ∀ {C : (Centers).left.PartialMap (Centers).left} [IsDominant C.hom]
-            [C.IsOver (Centers).hom (Centers).hom]
-            (R : GeometricRealization M M C (w.xRationalMap ℂ)),
-            Θ eval[w] = R.toSignedBoundaryIsometry d hD hmark := by
-  obtain ⟨I⟩ := nonempty_involutionPicardIdentification_of_nodal_contraction p₀ hnodal₀ hE
-    hprim hnef hsq
-  refine ⟨I.family, (fun c ↦ cartier[I.family c]), I.boundaryClass_eq, I.signedEquiv,
-    I.family_center, I.hasNodalModel, I.signedEquiv_apply_involutionWord,
-    fun w ↦ ⟨?_, fun R ↦ I.signedEquiv_apply_of_realization w R⟩⟩
-  simpa only [SignedBoundaryIsometryGroup.sign_apply] using I.sign_signedEquiv_apply_word w
 
 end QPainleve.ElevenVertex
