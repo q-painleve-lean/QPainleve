@@ -9,7 +9,6 @@ public import Mathlib.Basic.Complex.Basic
 public import QPainleve.SignedClusterModularGroup.Boundary.Restriction
 public import QPainleve.SignedClusterModularGroup.Examples.FourVertex.PicardAction
 
-import QPainleve.AlgebraicGeometry.Chow.Nef.Boundary
 import QPainleve.SignedClusterModularGroup.Examples.FourVertex.Marking
 import QPainleve.SignedClusterModularGroup.Examples.FourVertex.Presentation
 import QPainleve.SignedClusterModularGroup.Realization.ChargeKernel.Basic
@@ -18,6 +17,7 @@ import QPainleve.SignedClusterModularGroup.Realization.Orthogonal
 import QPainleve.SignedClusterModularGroup.Realization.Presentation.Boundary
 import QPainleve.SignedClusterModularGroup.Realization.PicardAction
 import QPainleve.SignedClusterModularGroup.Realization.Surjectivity.PicardAction
+import QPainleve.SignedClusterModularGroup.Realization.Surface.Numerics
 import TauCeti.AlgebraicGeometry.Curves.Prestable
 
 /-!
@@ -67,32 +67,16 @@ private theorem markedBoundaryNumerics (M : MarkedSurface ℂ 8 H XTor)
     (hD : D[M].IsEffectiveCartier) (hmark : ∀ j, M.boundaryClass hD j = boundaryClass j) :
     IsPrimitive (Additive.ofMul classOf(hD)) ∧ classOf(hD).IsNef ℂ (M.surface ↘ S) ∧
       Chow.classIntersectionNumber ℂ M.surface classOf(hD) classOf(hD) = 0 := by
-  let : M.surface.IsProjectiveOver ℂ := M.projective
-  let : SmoothOfRelativeDimension 2 (M.surface ↘ S) := M.smooth
-  let : IsNoetherian M.surface := isNoetherian_of_finiteType (M.surface ↘ S)
-  let := (M.surface ↘ S).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two
-  have hδ : M.picardMarking δ = Additive.ofMul classOf(hD) := by
-    rw [← funext hmark, M.picardMarking_sum_boundaryClass]
+  rw [M.primitive_nef_square_zero_iff hD, funext hmark]
   have horth (j : ZMod 8) : H δ (boundaryClass j) = 0 :=
     (intersectionForm_isSymm.eq _ _).trans
       (Submodule.mem_orthogonalBilin_span.mp sum_boundaryClass_mem_orthogonal
         (Set.mem_range_self j))
-  have hpair (x y : L) : Chow.classIntersectionNumber ℂ M.surface
-      (M.picardMarking x).toMul (M.picardMarking y).toMul = H x y :=
-    (Chow.intersectionBilinForm_apply ℂ M.surface _ _).symm.trans
-      (M.intersectionBilinForm_picardMarking x y)
   have hδprim : IsPrimitive (δ : L) :=
     isPrimitive_def.mpr ⟨-(LinearMap.proj (6 : Fin 10)), by decide⟩
-  refine ⟨hδ ▸ M.picardMarking.isPrimitive_iff.mpr hδprim, ?_, ?_⟩
-  · refine (hD.isNef_inv_mk_toInvertibleSheaf_iff
-      (topologicalKrullDim_eq_of_smoothOfRelativeDimension (M.surface ↘ S) (n := 2))).mpr ?_
-    intro p hp
-    obtain ⟨j, rfl⟩ := (M.mem_range_boundaryPrime_iff hD p).mpr hp
-    have h := hpair δ (boundaryClass j)
-    rw [hδ, ← hmark j, M.picardMarking_boundaryClass, hmark, horth, toMul_ofMul, toMul_ofMul] at h
-    exact h.ge
-  · rw [← toMul_ofMul (x := classOf(hD)), ← hδ, hpair, map_sum, Finset.sum_eq_zero]
-    exact fun j _ ↦ horth j
+  refine ⟨hδprim, fun j ↦ (horth j).ge, ?_⟩
+  rw [map_sum]
+  exact Finset.sum_eq_zero fun j _ ↦ horth j
 
 variable (Q : CompleteToricPresentation i₂ b₂ 4 L Empty)
 
