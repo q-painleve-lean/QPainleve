@@ -122,19 +122,21 @@ theorem orderEmbOfFin_survivingBoundaryRayOffsets (hP : D[P].IsEffectiveCartier)
   rw [← Set.powersetCard.ofFinEmbEquiv_symm_apply, survivingBoundaryRayOffsets,
     Equiv.symm_apply_apply]
 
-/-- The contracted boundary numbering is the increasing enumeration of the surviving
-ray offsets, read from the specified initial toric ray. -/
-theorem numberedBoundaryRays_eq_orderEmbOfFin (hP : D[P].IsEffectiveCartier)
-    (survivors : Set.powersetCard (Fin m) n)
-    (hkeep : ∀ k ∈ survivors, rayAt k ∈ Set.range (p.numberedBoundaryRays hP)) :
-    ∀ j : Fin n, p.numberedBoundaryRays hP (ZMod.finEquiv n j) =
-      rayAt (survivors.val.orderEmbOfFin survivors.prop j) := by
-  have hsubset : survivors.val ⊆ (p.survivingBoundaryRayOffsets hP).val :=
-    fun k hk ↦ (p.mem_survivingBoundaryRayOffsets hP k).mpr (hkeep k hk)
-  have heq : survivors = p.survivingBoundaryRayOffsets hP :=
-    Subtype.ext (Finset.eq_of_subset_of_card_le hsubset (by simp))
-  intro j
-  rw [heq, orderEmbOfFin_survivingBoundaryRayOffsets, numberedBoundaryRayOffsets_apply,
+/-- A set of the required cardinality is the survivor set if every listed ray survives. -/
+theorem eq_survivingBoundaryRayOffsets_iff (hP : D[P].IsEffectiveCartier)
+    (survivors : Set.powersetCard (Fin m) n) :
+    survivors = p.survivingBoundaryRayOffsets hP ↔
+      ∀ k ∈ survivors, rayAt k ∈ Set.range (p.numberedBoundaryRays hP) := by
+  rw [Set.powersetCard.eq_iff_subset, Finset.subset_iff]
+  simp only [Set.powersetCard.mem_coe_iff, p.mem_survivingBoundaryRayOffsets]
+
+/-- The contracted boundary numbering enumerates the surviving offsets in increasing order
+from the ray of component zero. -/
+theorem numberedBoundaryRays_eq_orderEmbOfFin (hP : D[P].IsEffectiveCartier) (j : Fin n) :
+    p.numberedBoundaryRays hP (ZMod.finEquiv n j) =
+      rayAt ((p.survivingBoundaryRayOffsets hP).val.orderEmbOfFin
+        (p.survivingBoundaryRayOffsets hP).prop j) := by
+  rw [orderEmbOfFin_survivingBoundaryRayOffsets, numberedBoundaryRayOffsets_apply,
     Equiv.apply_symm_apply]
 
 /-- The same set of surviving rays gives the same numbered rays for two contractions

@@ -10,6 +10,7 @@ public import QPainleve.Geometry.Toric.Fan.Boundary.SelfIntersection
 public import QPainleve.SignedClusterModularGroup.Realization.NumberedRays
 
 import QPainleve.Geometry.Toric.Fan.Picard.Contraction.Polarization
+import QPainleve.Geometry.Toric.Fan.Subdivision.Projective
 
 /-!
 # Computing the offsets of surviving boundary rays
@@ -30,26 +31,42 @@ open Scheme Scheme.IdealSheafData
 
 namespace QPainleve.SignedClusterModularGroup
 
+/-- Degree of a polarization on the strict boundary component of a ray, computed
+from integer Picard coordinates. The offsets start at the ray of component zero. -/
+def strictBoundaryRayDegree {m : ℕ} [NeZero m] {ι : Type*} [Fintype ι]
+    (selfIntersection toricCoeff : ZMod m → ℤ) (centerRay : ι → Fin m)
+    (exceptionalCoeff : ι → ℤ) (k : Fin m) : ℤ :=
+  let j := ZMod.finEquiv m k
+  toricCoeff (j - 1) + selfIntersection j * toricCoeff j + toricCoeff (j + 1) +
+    ∑ t ∈ Finset.univ.filter (fun t ↦ centerRay t = k), exceptionalCoeff t
+
+/-- The degree uses the two neighboring coefficients, the self-intersection term, and
+the total exceptional coefficients on this ray. -/
+theorem strictBoundaryRayDegree_def {m : ℕ} [NeZero m] {ι : Type*} [Fintype ι]
+    (selfIntersection toricCoeff : ZMod m → ℤ) (centerRay : ι → Fin m)
+    (exceptionalCoeff : ι → ℤ) (k : Fin m) :
+    strictBoundaryRayDegree selfIntersection toricCoeff centerRay exceptionalCoeff k =
+      let j := ZMod.finEquiv m k
+      toricCoeff (j - 1) + selfIntersection j * toricCoeff j + toricCoeff (j + 1) +
+        ∑ t ∈ Finset.univ.filter (fun t ↦ centerRay t = k), exceptionalCoeff t :=
+  (rfl)
+
 /-- Compute the offsets of surviving boundary rays using the toric divisor and total
 exceptional coefficients of a pulled back polarization. The input arrays are indexed
 cyclically starting at the ray of component zero on the contracted surface. -/
 def survivingRayOffsets {m : ℕ} [NeZero m] {ι : Type*} [Fintype ι]
-    (selfIntersection toricCoeff : ZMod m → ℤ) (centerRay : ι → ZMod m)
+    (selfIntersection toricCoeff : ZMod m → ℤ) (centerRay : ι → Fin m)
     (exceptionalCoeff : ι → ℤ) : Finset (Fin m) :=
   Finset.univ.filter fun k ↦
-    let j := ZMod.finEquiv m k
-    0 < toricCoeff (j - 1) + selfIntersection j * toricCoeff j + toricCoeff (j + 1) +
-      ∑ t ∈ Finset.univ.filter (fun t ↦ centerRay t = j), exceptionalCoeff t
+    0 < strictBoundaryRayDegree selfIntersection toricCoeff centerRay exceptionalCoeff k
 
 /-- A ray offset is selected precisely when its integer degree is positive. -/
 @[simp]
 theorem mem_survivingRayOffsets {m : ℕ} [NeZero m] {ι : Type*} [Fintype ι]
-    (selfIntersection toricCoeff : ZMod m → ℤ) (centerRay : ι → ZMod m)
+    (selfIntersection toricCoeff : ZMod m → ℤ) (centerRay : ι → Fin m)
     (exceptionalCoeff : ι → ℤ) (k : Fin m) :
     k ∈ survivingRayOffsets selfIntersection toricCoeff centerRay exceptionalCoeff ↔
-      let j := ZMod.finEquiv m k
-      0 < toricCoeff (j - 1) + selfIntersection j * toricCoeff j + toricCoeff (j + 1) +
-        ∑ t ∈ Finset.univ.filter (fun t ↦ centerRay t = j), exceptionalCoeff t := by
+      0 < strictBoundaryRayDegree selfIntersection toricCoeff centerRay exceptionalCoeff k := by
   simp only [survivingRayOffsets, Finset.mem_filter, Finset.mem_univ, true_and]
 
 namespace ContractedToricFiber
@@ -70,14 +87,14 @@ variable {N V L : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V] [AddCom
   (p : ContractedToricFiber b s hΦ T origin μ c M)
 
 local notation "u" => Φ.rayEquivOfNodalCycleNumbering hΦ (T.rotate origin)
+local notation "rayAt" => Φ.rayFinEquivOfNodalCycleNumbering hΦ T origin
 local notation "F" => LinearMap.BilinForm.prod
   (Chow.intersectionBilinForm ℂ Φ.algebraicRealization)
   (-(dotProductBilin ℤ ℤ : LinearMap.BilinForm ℤ (Fin r → ℤ)))
 local notation "center" => (fun j : Fin r ↦ c (ofAdd (Pi.single j 1)))
 
-variable [Φ.algebraicRealization.IsProjectiveOver ℂ]
-
 private theorem markedBoundaryMap_pairing_pos_iff_mem_range
+    [Φ.algebraicRealization.IsProjectiveOver ℂ]
     [SmoothOfRelativeDimension 2 (Φ.algebraicRealization ↘ S)]
     (hp : p.IsNodalContraction) {H : LineBundleClass M.surface} (hH : H.IsAmple) (ρ : Φ.Ray) :
     (0 < (F) (Fan.markedBoundaryMap hΦ s (Pi.single ρ 1))
@@ -94,20 +111,24 @@ private theorem markedBoundaryMap_pairing_pos_iff_mem_range
     LinearEquiv.apply_symm_apply, toMul_ofMul,
     p.mem_range_numberedBoundaryRays_iff hp.cartier ρ] using h
 
-/-- In a marked nodal contraction, the integer degree filter yields exactly the
-offsets of the numbered surviving boundary rays. The toric divisor representing
-the pullback's toric class may be chosen arbitrarily. -/
-theorem survivingRayOffsets_eq_survivingBoundaryRayOffsets
-    (hp : p.IsNodalContraction) (hc : Φ.IsComplete)
+variable (hp : p.IsNodalContraction) (hc : Φ.IsComplete)
     {H : LineBundleClass M.surface} (hH : H.IsAmple)
-    (selfIntersection toricCoeff : ZMod m → ℤ) (centerRay : Fin r → ZMod m)
+    (selfIntersection toricCoeff : ZMod m → ℤ) (centerRay : Fin r → Fin m)
     (exceptionalCoeff : Fin r → ℤ)
-    (hself : ∀ j, selfIntersection j = Φ.rayBoundarySelfIntersection hΦ (u j))
-    (hcenter : ∀ t, u (centerRay t) = s t)
-    (hcoords : (Φ.rayDivisorToPicard hΦ (toricCoeff ∘ (u).symm), exceptionalCoeff) =
-      μ (M.picardMarking.symm (Additive.ofMul H))) :
+    (hself : ∀ j, selfIntersection j = Φ.rayBoundarySelfIntersection hΦ
+      (Φ.rayEquivOfNodalCycleNumbering hΦ (T.rotate origin) j))
+    (hcenter : ∀ t, Φ.rayFinEquivOfNodalCycleNumbering hΦ T origin (centerRay t) = s t)
+    (hcoords : (Φ.rayDivisorToPicard hΦ
+        (toricCoeff ∘ (Φ.rayEquivOfNodalCycleNumbering hΦ (T.rotate origin)).symm),
+      exceptionalCoeff) =
+      μ (M.picardMarking.symm (Additive.ofMul H)))
+
+include hc hH hself hcenter hcoords in
+private theorem survivingRayOffsets_val_eq :
     survivingRayOffsets selfIntersection toricCoeff centerRay exceptionalCoeff =
       (p.survivingBoundaryRayOffsets hp.cartier).val := by
+  let : Φ.algebraicRealization.IsProjectiveOver ℂ :=
+    Φ.isProjectiveOver_algebraicRealization_of_isComplete hΦ hc b
   let : SmoothOfRelativeDimension 2 (Φ.algebraicRealization ↘ S) :=
     ((finrank_eq_card_basis b).trans (Fintype.card_fin 2)) ▸
       Φ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
@@ -122,20 +143,51 @@ theorem survivingRayOffsets_eq_survivingBoundaryRayOffsets
   let j := ZMod.finEquiv m k
   have htoric := Φ.intersectionBilinForm_rayDivisorToPicard_single hΦ b' hc
     (toricCoeff ∘ (u).symm) (by simpa only [sub_add_cancel] using hnext (j - 1)) (hnext j)
-  have hsum (t : Fin r) : (s t = u j) ↔ centerRay t = j := by
-    rw [← hcenter t, (u).injective.eq_iff]
+  have hsum (t : Fin r) : (s t = u j) ↔ centerRay t = k := by
+    rw [← hcenter t, ← Fan.rayFinEquivOfNodalCycleNumbering_apply, (rayAt).injective.eq_iff]
   have hdegree :
       (F) (Fan.markedBoundaryMap hΦ s (Pi.single (u j) 1))
           (μ (M.picardMarking.symm (Additive.ofMul H))) =
-        toricCoeff (j - 1) + selfIntersection j * toricCoeff j + toricCoeff (j + 1) +
-          ∑ t ∈ Finset.univ.filter (fun t ↦ centerRay t = j), exceptionalCoeff t := by
-    rw [← hcoords, Fan.markedBoundaryMap_single_pairing]
-    simp only [htoric, Function.comp_apply, Equiv.symm_apply_apply, hself, hsum]
-  rw [mem_survivingRayOffsets]
-  dsimp only
-  rw [← hdegree, p.markedBoundaryMap_pairing_pos_iff_mem_range hp hH,
+        strictBoundaryRayDegree selfIntersection toricCoeff centerRay exceptionalCoeff k := by
+    rw [← hcoords, Fan.markedBoundaryMap_single_pairing, htoric, strictBoundaryRayDegree_def]
+    simp only [Function.comp_apply, Equiv.symm_apply_apply, hself, hsum, j]
+  rw [mem_survivingRayOffsets, ← hdegree, p.markedBoundaryMap_pairing_pos_iff_mem_range hp hH,
     ← Fan.rayFinEquivOfNodalCycleNumbering_apply, Set.powersetCard.mem_coe_iff,
     p.mem_survivingBoundaryRayOffsets]
+
+include p hp hc hH hself hcenter hcoords in
+/-- The computed survivor offsets, with cardinality given by the numbered boundary.
+The toric divisor representing the toric part of the pulled-back ample class may be chosen
+arbitrarily. -/
+def survivingRayOffsetsOfPolarization : Set.powersetCard (Fin m) n :=
+  Set.powersetCard.ofCard
+    ((congrArg Finset.card
+      (p.survivingRayOffsets_val_eq hp hc hH selfIntersection toricCoeff centerRay
+        exceptionalCoeff hself hcenter hcoords)).trans
+      (p.survivingBoundaryRayOffsets hp.cartier).prop)
+
+local notation "offsets" => p.survivingRayOffsetsOfPolarization hp hc hH selfIntersection
+  toricCoeff centerRay exceptionalCoeff hself hcenter hcoords
+
+/-- The underlying finite set is the integer degree filter. -/
+@[simp]
+theorem survivingRayOffsetsOfPolarization_val :
+    (offsets).val = survivingRayOffsets selfIntersection toricCoeff centerRay exceptionalCoeff :=
+  Set.powersetCard.val_ofCard _
+
+/-- A computed offset survives precisely when its strict boundary degree is positive. -/
+@[simp]
+theorem mem_survivingRayOffsetsOfPolarization (k : Fin m) :
+    k ∈ offsets ↔ 0 < strictBoundaryRayDegree selfIntersection toricCoeff
+      centerRay exceptionalCoeff k := by
+  rw [← Set.powersetCard.mem_coe_iff, survivingRayOffsetsOfPolarization_val,
+    mem_survivingRayOffsets]
+
+/-- The computed set contains exactly the offsets occurring in the contracted numbering. -/
+theorem survivingRayOffsetsOfPolarization_eq :
+    offsets = p.survivingBoundaryRayOffsets hp.cartier :=
+  Subtype.ext (p.survivingRayOffsets_val_eq hp hc hH selfIntersection toricCoeff centerRay
+    exceptionalCoeff hself hcenter hcoords)
 
 end ContractedToricFiber
 

@@ -63,19 +63,19 @@ variable {N V L : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V] [AddCom
 local notation "rayAt" => Φ.rayFinEquivOfNodalCycleNumbering hΦ T origin
 
 /-- The determinant table computed from the surviving offsets and integer coordinates
-is the order table of the numbered components of the marked surface. A set of the correct
-size suffices when every listed ray occurs in that boundary numbering. -/
+is the order table of the numbered components of the marked surface. -/
 theorem boundaryOrderTable_eq (survivors : Set.powersetCard (Fin m) n)
-    (hkeep : ∀ k ∈ survivors, rayAt k ∈ Set.range (p.numberedBoundaryRays hD))
+    (hsurvivors : survivors = p.survivingBoundaryRayOffsets hD)
     (charge : Fin r → Fin 2 → ℤ) (ray : Fin m → Fin 2 → ℤ)
     (hcharge : ∀ k, charge k = b.repr (s k).primitiveGenerator)
     (hray : ∀ k ∈ survivors, ray k = b.repr (rayAt k).primitiveGenerator) :
     boundaryOrderTable charge ray survivors = p.numberedBoundaryOrders hD := by
+  subst survivors
   funext j k
   rw [p.numberedBoundaryOrders_apply, RingEquiv.toEquiv_eq_coe, RingEquiv.coe_toEquiv,
-    p.numberedBoundaryRays_eq_orderEmbOfFin hD survivors hkeep,
-    Fan.rayBoundaryOrders_apply_eq_repr]
-  have hj := Finset.orderEmbOfFin_mem survivors.val survivors.prop j
+    p.numberedBoundaryRays_eq_orderEmbOfFin hD j, Fan.rayBoundaryOrders_apply_eq_repr]
+  have hj := Finset.orderEmbOfFin_mem (p.survivingBoundaryRayOffsets hD).val
+    (p.survivingBoundaryRayOffsets hD).prop j
   simp only [boundaryOrderTable_apply, hcharge, hray _ hj]
 
 end ContractedToricFiber
