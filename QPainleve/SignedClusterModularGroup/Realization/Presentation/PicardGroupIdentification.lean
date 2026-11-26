@@ -5,21 +5,24 @@ Authors: The QPainleve contributors
 -/
 module
 
-public import QPainleve.Algebra.Cluster.Word.ModularGroup
+public import QPainleve.Geometry.Toric.Fan.ExchangeMatrix
 public import QPainleve.LinearAlgebra.BilinearForm.Conjugation
-public import QPainleve.SignedClusterModularGroup.Realization.Presentation
+public import QPainleve.SignedClusterModularGroup.Realization.Presentation.NodalPicardGroupIdentification
+public import QPainleve.SignedClusterModularGroup.Realization.Presentation.Reference
 public import QPainleve.SignedClusterModularGroup.Realization.Surface.PrimeClass
+
+import QPainleve.SignedClusterModularGroup.Boundary.Conjugation
 
 /-!
 # Picard group identifications of numbered anticanonical pairs
 
-A marked toric family with a prescribed numbered reference fiber determines
-signed and unsigned group equivalences on the original Picard lattice. The
-identification records the seed, the family, and the formulas for evaluating
-the equivalences on geometric loop realizations and unsigned maps.
+A nodal Picard group identification and a marking on the numbered reference
+fiber determine the group equivalences on the original Picard lattice. The
+signed equivalence transports the marked action by boundary conjugation. Its
+sign kernel gives the unsigned equivalence by restriction.
 -/
 
-public section
+public noncomputable section
 
 open AlgebraicGeometry CategoryTheory Module MulOpposite Quiver
 open QPainleve.CharacterTorus QPainleve.Cluster QPainleve.SignedBoundaryIsometryGroup
@@ -31,7 +34,6 @@ open GeometricRealization
 
 local notation "S" => Spec (CommRingCat.of ℂ)
 local notation "Centers[" r "]" => Over.mk (structureMap ℂ (Fin r → ℤ))
-local notation "XTor[" r "]" => scheme ℂ (Fin r →₀ ℤ)
 local notation "χ[" c "]" => pointsEquiv ℂ _ (Subtype.mk (Over.Hom.left c) (Over.w c))
 
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
@@ -55,7 +57,9 @@ local notation "classes[" A "," hD "]" =>
 
 /-- The Picard group equivalences of a toric seed with `r` ordered centers for a
 numbered anticanonical pair. The reference fiber uses the original surface and
-boundary numbering, and both equivalences take values on its Picard lattice. -/
+boundary numbering. The nodal identification computes the group action in the
+moving marking. -/
+@[ext]
 structure PicardGroupIdentification (i : N →+ V) (r : ℕ)
     (A : Scheme.NodalCycleNumbering (X := D.subscheme)
       (Empty.elim : Empty → (D.subscheme ↘ S).smoothLocus) n) (hD : D.IsEffectiveCartier) where
@@ -65,63 +69,91 @@ structure PicardGroupIdentification (i : N →+ V) (r : ℕ)
   marking : form.IsometryEquiv B
   /-- The oriented frame of the toric presentation. -/
   basis : Basis (Fin 2) ℤ N
-  /-- The ordered toric presentation supplying the nodal models. -/
-  presentation : CompleteToricPresentation i basis r L Empty
-  /-- The center of the original surface in the family. -/
-  center : Point Centers[r]
-  /-- The rational X evaluation on the original surface. -/
-  evaluation : X ⤏ XTor[r]
-  /-- The seed's exchange matrix. -/
-  exchangeMatrix : SkewExchangeMatrix (Fin r)
-  /-- The family of marked surfaces over the center torus. -/
-  family : Point Centers[r] → MarkedSurface ℂ n form XTor[r]
-  /-- The opposite signed cluster modular group identifies with signed boundary isometries. -/
-  signedEquiv : (SignedClusterModularGroup ℂ exchangeMatrix)ᵐᵒᵖ ≃*
-    signedBoundaryIsometryGroup B classes[A,hD]
-  /-- The opposite unsigned cluster modular group identifies with boundary rotations. -/
-  unsignedEquiv : (ClusterModularGroup ℂ exchangeMatrix)ᵐᵒᵖ ≃*
-    boundaryRotationGroup B classes[A,hD]
-  /-- The exchange matrix comes from the ordered ray charges in the oriented frame. -/
-  matrix_eq : exchangeMatrix.matrix =
-    chargeExchangeMatrix basis.detDualEquiv.toLinearMap (Fan.rayChargeMap presentation.rays)
+  /-- The original surface as a reference fiber in the oriented frame. -/
+  reference : MarkedReferenceFiber i basis r A marking
+  /-- The Picard identification of the family with the numbered classes in the moving marking. -/
+  nodal : CompleteToricPresentation.NodalPicardGroupIdentification reference.presentation ℂ
+    (Fan.rayExchangeMatrix basis reference.presentation.rays) (marking.symm ∘ classes[A,hD])
   /-- The reference fiber is the original pair with its marking and X evaluation. -/
-  family_center : family center = MarkedSurface.ofBoundary D A marking evaluation
-  /-- Each fiber has a nodal model in the same presentation. -/
-  hasNodalModel (z : Point Centers[r]) : presentation.HasNodalModel z (family z)
-  /-- In the moving Picard marking the numbered boundary classes are constant. -/
-  boundaryClass_eq (z : Point Centers[r]) (j : ZMod n) :
-    (family z).boundaryClass (family z).isEffectiveCartier_boundaryIdeal j =
-      marking.symm (classes[A,hD] j)
-  /-- The Picard sign of a loop is its inversion parity. -/
-  sign_signedEquiv_apply_word (w : Word exchangeMatrix exchangeMatrix) :
-    (signedEquiv (op (signedClusterModularGroupMap ℂ exchangeMatrix (End.of w)))).val.2 =
-      (-1 : ℤˣ) ^ w.inversionCount
-  /-- The signed equivalence gives the marked pullback and ordered branch sign of every
-  compatible geometric realization of a loop. -/
-  signedEquiv_apply_word (w : Word exchangeMatrix exchangeMatrix) :
-    letI := presentation.complete.nonempty_cones
-    letI := presentation.prestable
-    letI := presentation.neZero
+  family_center : nodal.family reference.center =
+    MarkedSurface.ofBoundary D A marking reference.evaluation
+
+namespace PicardGroupIdentification
+
+attribute [simp] family_center
+
+variable {i : N →+ V} {r : ℕ}
+  {A : Scheme.NodalCycleNumbering (X := D.subscheme)
+    (Empty.elim : Empty → (D.subscheme ↘ S).smoothLocus) n} {hD : D.IsEffectiveCartier}
+  (P : PicardGroupIdentification i r A hD)
+
+/-- The exchange matrix of the ordered ray charges in the oriented frame. This abbreviation
+uses the same seed type as the nodal identification. -/
+abbrev exchangeMatrix : SkewExchangeMatrix (Fin r) :=
+  Fan.rayExchangeMatrix P.basis P.reference.presentation.rays
+
+local notation "E" => P.exchangeMatrix
+local notation "Q" => P.reference.presentation
+local notation "Γs" => (SignedClusterModularGroup ℂ E)ᵐᵒᵖ
+local notation "Γ" => (ClusterModularGroup ℂ E)ᵐᵒᵖ
+local notation "d" => classes[A,hD]
+
+/-- Opposite signed cluster maps act on the original Picard group by the marked Picard
+action conjugated along the reference marking, with their branch sign. -/
+def signedEquiv : Γs ≃* signedBoundaryIsometryGroup B d :=
+  P.nodal.signedEquiv.trans (SignedBoundaryIsometryGroup.congr P.marking.symm
+    (ε := 1) (a := 0) fun j ↦ by simp)
+
+/-- The signed Picard image on the original surface is the conjugate of the marked image. -/
+@[simp]
+theorem coe_signedEquiv_apply (x : Γs) :
+    (P.signedEquiv x).val =
+      (P.marking.isometryGroupCongr (P.nodal.signedEquiv x).val.1,
+        (P.nodal.signedEquiv x).val.2) := by
+  simp only [signedEquiv, MulEquiv.trans_apply, coe_congr,
+    LinearMap.BilinForm.IsometryEquiv.symm_symm]
+
+/-- The signed equivalence evaluates by geometric pullback and the ordered branch sign
+for every compatible realization of a loop. -/
+theorem signedEquiv_apply_word (w : Word E E) :
+    letI := (Q).complete.nonempty_cones
+    letI := (Q).prestable
+    letI := (Q).neZero
     ∀ {C : Centers[r].left.PartialMap Centers[r].left} [IsDominant C.hom]
       [C.IsOver Centers[r].hom Centers[r].hom]
-      (R : GeometricRealization family family C (w.xRationalMap ℂ)),
-      HasToricTargetModels (T₀ := Centers[r]) (T₁ := Centers[r]) (b := basis)
-        (s := presentation.rays) (hΦ := presentation.regular) (T := presentation.cycle)
-        (origin := presentation.origin) (ι := presentation.inclusion) (P₁ := family)
+      (R : GeometricRealization P.nodal.family P.nodal.family C (w.xRationalMap ℂ)),
+      HasToricTargetModels (T₀ := Centers[r]) (T₁ := Centers[r]) (b := P.basis)
+        (s := (Q).rays) (hΦ := (Q).regular) (T := (Q).cycle)
+        (origin := (Q).origin) (ι := (Q).inclusion) (P₁ := P.nodal.family)
         (fun z : Point Centers[r] ↦ χ[z]) C →
-      (signedEquiv (op (signedClusterModularGroupMap ℂ exchangeMatrix (End.of w)))).val =
-        (marking.isometryGroupCongr (form.isometryGroupEquivIsometryEquiv.symm R.picard),
-          R.orientation)
-  /-- The sign kernel on point maps is the image of the unsigned group. -/
-  sign_ker_unop : ((sign B classes[A,hD]).comp signedEquiv.toMonoidHom).ker.unop =
-    (clusterModularGroupInclusion ℂ exchangeMatrix).range
-  /-- The two Picard equivalences agree on unsigned maps via rotation inclusion. -/
-  rotationInclusion_unsignedEquiv_apply (x : (ClusterModularGroup ℂ exchangeMatrix)ᵐᵒᵖ) :
-    rotationInclusion B classes[A,hD] (unsignedEquiv x) =
-      signedEquiv (MonoidHom.op (clusterModularGroupInclusion ℂ exchangeMatrix) x)
+      (P.signedEquiv (op (signedClusterModularGroupMap ℂ E (End.of w)))).val =
+        (P.marking.isometryGroupCongr (P.form.isometryGroupEquivIsometryEquiv.symm R.picard),
+          R.orientation) := by
+  intro C _ _ R hR
+  simp only [coe_signedEquiv_apply, P.nodal.signedEquiv_apply_word w R hR,
+    coe_toSignedBoundaryIsometry]
 
-attribute [simp] PicardGroupIdentification.family_center
-  PicardGroupIdentification.sign_signedEquiv_apply_word
-  PicardGroupIdentification.rotationInclusion_unsignedEquiv_apply
+/-- The sign kernel on point maps is the image of the unsigned group. -/
+theorem sign_ker_unop :
+    ((sign B d).comp P.signedEquiv.toMonoidHom).ker.unop =
+      (clusterModularGroupInclusion ℂ E).range := by
+  have hsign : (sign B d).comp P.signedEquiv.toMonoidHom =
+      (sign P.form (P.marking.symm ∘ d)).comp P.nodal.signedEquiv.toMonoidHom :=
+    MonoidHom.ext fun x ↦ by simp
+  rw [hsign]
+  exact P.nodal.sign_ker_unop
+
+/-- The unsigned Picard equivalence is the restriction of the signed action to rotations. -/
+def unsignedEquiv : Γ ≃* boundaryRotationGroup B d :=
+  picardRotationEquiv P.signedEquiv P.sign_ker_unop
+
+/-- The unsigned equivalence agrees with the signed equivalence under rotation inclusion. -/
+@[simp]
+theorem rotationInclusion_unsignedEquiv_apply (x : Γ) :
+    rotationInclusion B d (P.unsignedEquiv x) =
+      P.signedEquiv (MonoidHom.op (clusterModularGroupInclusion ℂ E) x) :=
+  rotationInclusion_picardRotationEquiv_apply P.signedEquiv P.sign_ker_unop x
+
+end PicardGroupIdentification
 
 end QPainleve.SignedClusterModularGroup
