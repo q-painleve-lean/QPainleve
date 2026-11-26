@@ -34,6 +34,49 @@ open TauCeti.AlgebraicGeometry
 
 namespace TauCeti.Toric.Fan
 
+section Coordinates
+
+variable {m : ℕ} {ι : Type*}
+
+/-- The divisor coefficients of a strict toric boundary component after internal
+blowups, given the ray of each center. -/
+def numberedStrictBoundaryCoefficients (ρ : ι → ZMod m) (j : ZMod m) :
+    ZMod m ⊕ ι → ℤ :=
+  Sum.elim (Pi.single j 1) (fun a ↦ if ρ a = j then -1 else 0)
+
+variable (ι) in
+open Classical in
+/-- The intersection matrix in ray and total exceptional divisor coordinates for
+a numbered fan. The ray block uses the cyclic wall intersections. -/
+def numberedInternalBlowupGram (u : ZMod m → Fin 2 → ℤ) :
+    Matrix (ZMod m ⊕ ι) (ZMod m ⊕ ι) ℤ :=
+  Matrix.fromBlocks
+    (Matrix.of fun j k ↦
+      (if k = j + 1 then 1 else 0) + (if k = j - 1 then 1 else 0) +
+        if k = j then toricBoundarySelfIntersection u j else 0)
+    0 0 (Matrix.diagonal fun _ ↦ -1)
+
+@[simp]
+theorem numberedStrictBoundaryCoefficients_inl (ρ : ι → ZMod m) (j k : ZMod m) :
+    numberedStrictBoundaryCoefficients ρ j (.inl k) = (Pi.single j 1 : ZMod m → ℤ) k :=
+  (rfl)
+
+@[simp]
+theorem numberedStrictBoundaryCoefficients_inr (ρ : ι → ZMod m) (j : ZMod m) (a : ι) :
+    numberedStrictBoundaryCoefficients ρ j (.inr a) = if ρ a = j then -1 else 0 :=
+  (rfl)
+
+open Classical in
+theorem numberedInternalBlowupGram_def (u : ZMod m → Fin 2 → ℤ) :
+    numberedInternalBlowupGram ι u =
+      Matrix.fromBlocks (Matrix.of fun j k ↦
+        (if k = j + 1 then 1 else 0) + (if k = j - 1 then 1 else 0) +
+          if k = j then toricBoundarySelfIntersection u j else 0)
+        0 0 (Matrix.diagonal fun _ ↦ -1) :=
+  (rfl)
+
+end Coordinates
+
 variable {N V : Type} {ι : Type*} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {Φ : Fan i} [Nonempty Φ.cones] {m n : ℕ}
   (b : Basis (Fin 2) ℤ N) (hΦ : Φ.IsRegular)
@@ -137,7 +180,7 @@ theorem numberedInternalBlowupPicardMap_strictBoundary (j : ZMod m) :
       smoothOfRelativeDimension_internalBlowupTower b (e ∘ ρ ∘ o) c hΦ
     let := f.uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two
     numberedInternalBlowupPicardMap b hΦ e o ρ c
-        (Sum.elim (Pi.single j 1) (fun a ↦ if ρ a = j then -1 else 0)) =
+        (numberedStrictBoundaryCoefficients ρ j) =
       Additive.ofMul (primeDivisorClass
         ⟨_, (mem_boundaryPrimes.mp
           (internalBlowupBoundaryPrimeEquiv hΦ b (e ∘ ρ ∘ o) c (e j)).property).2⟩) := by
@@ -148,7 +191,8 @@ theorem numberedInternalBlowupPicardMap_strictBoundary (j : ZMod m) :
   congr 1
   have hj : (Pi.single j (1 : ℤ) ∘ e.symm) = Pi.single (e j) 1 := by
     rw [Pi.single_comp_equiv, Equiv.symm_symm]
-  simp only [Sum.elim_inl, Sum.elim_inr, markedBoundaryMap_apply, Prod.mk.injEq]
+  simp only [numberedStrictBoundaryCoefficients, Sum.elim_inl, Sum.elim_inr,
+    markedBoundaryMap_apply, Prod.mk.injEq]
   refine ⟨congrArg (Φ.rayDivisorToPicard hΦ) hj, ?_⟩
   simp only [Pi.single_apply, Function.comp_apply, Equiv.apply_eq_iff_eq]
   funext k
@@ -163,14 +207,8 @@ variable [NeZero m] [Fintype ι]
 
 local notation "B" => Chow.intersectionBilinForm ℂ Y
 local notation "F" => numberedInternalBlowupPicardMap b hΦ e o ρ c
-local notation "G" => (Matrix.of fun (a d : ZMod m ⊕ ι) ↦
-  match a, d with
-  | .inl j, .inl k =>
-      ite (k = j + 1) 1 0 + ite (k = j - 1) 1 0 +
-        ite (k = j)
-          (toricBoundarySelfIntersection (fun l ↦ Basis.repr b (Ray.primitiveGenerator (e l))) j) 0
-  | .inr a, .inr d => ite (a = d) (-1 : ℤ) 0
-  | _, _ => 0)
+local notation "G" =>
+  numberedInternalBlowupGram ι (fun j ↦ Basis.repr b (Ray.primitiveGenerator (e j)))
 
 include he in
 open Classical in
@@ -196,10 +234,13 @@ theorem numberedInternalBlowupPicardMap_intersection :
   simp only [picardMarking_apply] at hmark
   apply LinearMap.BilinForm.ext_basis (Pi.basisFun ℤ (ZMod m ⊕ ι))
   intro a d
-  simp only [Pi.basisFun_apply, compl₁₂_apply, Matrix.toBilin'_single, Matrix.of_apply,
+  simp only [Pi.basisFun_apply, compl₁₂_apply, Matrix.toBilin'_single,
+    numberedInternalBlowupGram_def,
     numberedInternalBlowupPicardMap_apply, internalBlowupPicardMarking_apply,
     Chow.intersectionBilinForm_apply, hmark]
-  rcases a with j | a <;> rcases d with k | d
+  rcases a with j | a <;> rcases d with k | d <;>
+    simp only [Matrix.fromBlocks_apply₁₁, Matrix.fromBlocks_apply₁₂, Matrix.fromBlocks_apply₂₁,
+      Matrix.fromBlocks_apply₂₂, Matrix.of_apply, Matrix.zero_apply, Matrix.diagonal_apply]
   · have hp := he (j - 1)
     rw [sub_add_cancel] at hp
     rw [← Chow.intersectionBilinForm_apply]
