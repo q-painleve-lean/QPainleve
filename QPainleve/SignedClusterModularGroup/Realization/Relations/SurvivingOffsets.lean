@@ -6,7 +6,7 @@ Authors: The QPainleve contributors
 module
 
 public import QPainleve.AlgebraicGeometry.LineBundle.Ample
-public import QPainleve.Geometry.Toric.Fan.Boundary.SelfIntersection
+public import QPainleve.Geometry.Toric.Fan.Picard.Boundary.Degree
 public import QPainleve.SignedClusterModularGroup.Realization.NumberedRays
 
 import QPainleve.Geometry.Toric.Fan.Picard.Contraction.Polarization
@@ -30,26 +30,6 @@ open QPainleve.BlowupTower TauCeti TauCeti.AlgebraicGeometry TauCeti.Toric
 open Scheme Scheme.IdealSheafData
 
 namespace QPainleve.SignedClusterModularGroup
-
-/-- Degree of a polarization on the strict boundary component of a ray, computed
-from integer Picard coordinates. The offsets start at the ray of component zero. -/
-def strictBoundaryRayDegree {m : ℕ} [NeZero m] {ι : Type*} [Fintype ι]
-    (selfIntersection toricCoeff : ZMod m → ℤ) (centerRay : ι → Fin m)
-    (exceptionalCoeff : ι → ℤ) (k : Fin m) : ℤ :=
-  let j := ZMod.finEquiv m k
-  toricCoeff (j - 1) + selfIntersection j * toricCoeff j + toricCoeff (j + 1) +
-    ∑ t ∈ Finset.univ.filter (fun t ↦ centerRay t = k), exceptionalCoeff t
-
-/-- The degree uses the two neighboring coefficients, the self-intersection term, and
-the total exceptional coefficients on this ray. -/
-theorem strictBoundaryRayDegree_def {m : ℕ} [NeZero m] {ι : Type*} [Fintype ι]
-    (selfIntersection toricCoeff : ZMod m → ℤ) (centerRay : ι → Fin m)
-    (exceptionalCoeff : ι → ℤ) (k : Fin m) :
-    strictBoundaryRayDegree selfIntersection toricCoeff centerRay exceptionalCoeff k =
-      let j := ZMod.finEquiv m k
-      toricCoeff (j - 1) + selfIntersection j * toricCoeff j + toricCoeff (j + 1) +
-        ∑ t ∈ Finset.univ.filter (fun t ↦ centerRay t = k), exceptionalCoeff t :=
-  (rfl)
 
 /-- Compute the offsets of surviving boundary rays using the toric divisor and total
 exceptional coefficients of a pulled back polarization. The input arrays are indexed
@@ -141,16 +121,14 @@ private theorem survivingRayOffsets_val_eq :
     exact ⟨hdet j, σ.val, h₁, h₂⟩
   ext k
   let j := ZMod.finEquiv m k
-  have htoric := Φ.intersectionBilinForm_rayDivisorToPicard_single hΦ b' hc
-    (toricCoeff ∘ (u).symm) (by simpa only [sub_add_cancel] using hnext (j - 1)) (hnext j)
-  have hsum (t : Fin r) : (s t = u j) ↔ centerRay t = k := by
-    rw [← hcenter t, ← Fan.rayFinEquivOfNodalCycleNumbering_apply, (rayAt).injective.eq_iff]
+  have hlabel (t : Fin r) : u (ZMod.finEquiv m (centerRay t)) = s t := by
+    simpa only [Fan.rayFinEquivOfNodalCycleNumbering_apply] using hcenter t
   have hdegree :
       (F) (Fan.markedBoundaryMap hΦ s (Pi.single (u j) 1))
           (μ (M.picardMarking.symm (Additive.ofMul H))) =
         strictBoundaryRayDegree selfIntersection toricCoeff centerRay exceptionalCoeff k := by
-    rw [← hcoords, Fan.markedBoundaryMap_single_pairing, htoric, strictBoundaryRayDegree_def]
-    simp only [Function.comp_apply, Equiv.symm_apply_apply, hself, hsum, j]
+    rw [← hcoords, Fan.markedBoundaryMap_single_pairing_eq_strictBoundaryRayDegree
+      hΦ hc b' (u) s centerRay hlabel hnext, ← funext hself]
   rw [mem_survivingRayOffsets, ← hdegree, p.markedBoundaryMap_pairing_pos_iff_mem_range hp hH,
     ← Fan.rayFinEquivOfNodalCycleNumbering_apply, Set.powersetCard.mem_coe_iff,
     p.mem_survivingBoundaryRayOffsets]

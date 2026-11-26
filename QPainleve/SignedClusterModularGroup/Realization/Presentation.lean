@@ -131,8 +131,7 @@ theorem HasNodalModel.nonempty_contractedToricFiber
   obtain ⟨p, _⟩ := (Q.hasNodalModel_iff c M).mp h
   exact ⟨p⟩
 
-/-- The ray order of a complete toric presentation is the order induced by
-its numbered boundary. -/
+/-- Reading rays from the numbered toric boundary gives the recorded ray order. -/
 theorem rayEquivOfNodalCycleNumbering_eq_rayOrder
     (Q : CompleteToricPresentation i b r L γ) :
     letI := Q.complete.nonempty_cones
