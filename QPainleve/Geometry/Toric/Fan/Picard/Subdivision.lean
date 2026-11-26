@@ -33,7 +33,25 @@ open LineBundleClass
 namespace TauCeti.Toric.Fan.IsSubdivision
 
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
-  {i : N →+ V} {Φ Ψ : Fan i} [Nonempty Φ.cones] [Nonempty Ψ.cones]
+  {i : N →+ V} {Φ Ψ : Fan i}
+
+/-- Pullback in the coordinates of an ordered internal blowup model. A fan subdivision
+pulls back the toric class and keeps every total exceptional coefficient. -/
+noncomputable def internalBlowupPicardPullback (h : Φ.IsSubdivision Ψ) {n : ℕ} :
+    Additive (LineBundleClass Ψ.algebraicRealization) × (Fin n → ℤ) →ₗ[ℤ]
+      Additive (LineBundleClass Φ.algebraicRealization) × (Fin n → ℤ) :=
+  ((pullbackHom h.toFanHom.algebraicMap).toAdditive.toIntLinearMap).prodMap LinearMap.id
+
+/-- Coordinate formula for pullback along a fan subdivision of an ordered internal model. -/
+@[simp]
+theorem internalBlowupPicardPullback_apply (h : Φ.IsSubdivision Ψ) {n : ℕ}
+    (x : Additive (LineBundleClass Ψ.algebraicRealization) × (Fin n → ℤ)) :
+    h.internalBlowupPicardPullback x =
+      (Additive.ofMul (pullback h.toFanHom.algebraicMap x.1.toMul), x.2) := by
+  simp only [internalBlowupPicardPullback, LinearMap.prodMap_apply, AddMonoidHom.coe_toIntLinearMap,
+    MonoidHom.coe_toAdditive, Function.comp_apply, pullbackHom_apply, LinearMap.id_apply]
+
+variable [Nonempty Φ.cones] [Nonempty Ψ.cones]
   (h : Φ.IsSubdivision Ψ) (b : Module.Basis (Fin 2) ℤ N) {n : ℕ}
   (ρ : Fin n → Ψ.Ray) (c : Fin n → ℂˣ)
 

@@ -44,7 +44,7 @@ variable (i) in
 /-- The data common to the fibers of an ordered toric presentation on a complete
 regular fan, with positive cyclic numbering and a fixed auxiliary Picard inclusion. -/
 structure CompleteToricPresentation (b : Basis (Fin 2) ℤ N) (r : ℕ)
-    (L : Type) [AddCommGroup L] (γ : Type) where
+    (L : Type) [AddCommGroup L] (γ : Type*) where
   /-- The complete regular fan of the toric surface. -/
   fan : Fan i
   /-- Completeness of the toric surface fan. -/
@@ -79,7 +79,7 @@ structure CompleteToricPresentation (b : Basis (Fin 2) ℤ N) (r : ℕ)
       ∃ σ : fan.cones, (rayOrder j).toCone ≤ σ ∧ (rayOrder (j + 1)).toCone ≤ σ
 
 variable {b : Basis (Fin 2) ℤ N} {r n : ℕ} [NeZero n] {L : Type}
-  [AddCommGroup L] {H : LinearMap.BilinForm ℤ L} {γ : Type}
+  [AddCommGroup L] {H : LinearMap.BilinForm ℤ L} {γ : Type*}
 
 local notation "A" => (Fin r → ℤ)
 local notation "Centers" => Over.mk (structureMap ℂ A)

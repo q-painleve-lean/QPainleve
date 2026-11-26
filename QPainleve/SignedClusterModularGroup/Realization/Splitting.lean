@@ -120,8 +120,10 @@ theorem exists_signedPicardSplitting_of_nodal_model
   obtain ⟨G, hFc⟩ :=
     Q.exists_picardGroupEquivs_of_nodal_model href hmatrix hprim hnef hsq
   have hcan := congrArg Inv.inv (href.canonicalClass M.isEffectiveCartier_boundaryIdeal)
-  obtain ⟨j₀, a, g, haa, ha, hg, hgg, hfix, hsum, hreflect, horth⟩ :=
-    M.exists_marked_boundary_reversing_involution hcan hnef hsq hprim
+  obtain ⟨reflection⟩ := M.nonempty_cycleReversingInvolution hcan hnef hsq hprim
+  let g := reflection.element
+  have hg : sign B d g = -1 := by simp [g]
+  have hgg : g * g = 1 := reflection.element_mul_self
   let Θ := G.signedEquiv
   let Θrot := G.unsignedEquiv
   have hsign (w : Word E E) := (sign_apply B _ _).trans (G.sign_signedEquiv_apply_word w)
@@ -135,7 +137,11 @@ theorem exists_signedPicardSplitting_of_nodal_model
   exact ⟨G.family, G.boundaryClass_eq, hFc, G.hasNodalModel, Θ, Θrot, hE, hs, s, hrot,
     fun w ↦ ⟨hsign w, G.signedEquiv_apply_word w⟩,
     index_range_clusterModularGroupInclusion ℂ E hE hs, horder,
-    ⟨j₀, a, g, hg, hgg, haa, ha, hfix, hsum, hreflect, horth, fun ε ↦ by simp [s, t],
+    ⟨reflection.cut, reflection.cutClass, g, hg, hgg, reflection.cutClass_sq,
+      reflection.pairing_cutClass, by simp [g], toIsometry_apply_sum B d g,
+      fun j ↦ by simp [g],
+      by simpa only [g, toIsometry_apply] using reflection.toIsometry_apply_orthogonal,
+      fun ε ↦ by simp [s, t],
       picardSignSplitting_conjAct Θ hsign hE t Θrot hrot,
       picardSignSplitting_semidirectProductMulEquiv Θ hsign hE t Θrot hrot⟩,
     exists_central_involution_of_picardEquiv Θ hsign hE⟩

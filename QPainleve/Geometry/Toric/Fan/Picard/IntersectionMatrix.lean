@@ -6,7 +6,7 @@ Authors: The QPainleve contributors
 module
 
 public import QPainleve.Geometry.Toric.Fan.Picard.StrictTransform
-public import TauCeti.AlgebraicGeometry.Chow.SurfaceIntersection.Basic
+public import QPainleve.AlgebraicGeometry.Chow.SurfaceIntersection
 
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Intersection
 import QPainleve.Geometry.Toric.Fan.Boundary.SelfIntersection
@@ -159,10 +159,10 @@ private theorem classIntersectionNumber_markedBoundaryMap_single_single
 /-- The executable integer matrix is the intersection matrix of the actual numbered
 strict boundary primes of the ordered toric blowup. The chosen center parameters
 may coincide, including on the same ray. -/
-theorem classIntersectionNumber_internalBlowupBoundaryPrime_eq_matrix
+theorem primeIntersectionMatrix_internalBlowupBoundaryPrime_eq
     (he : ∀ j : ZMod m,
       b.detDualEquiv (e j).primitiveGenerator (e (j + 1)).primitiveGenerator = 1 ∧
-        ∃ σ : Φ.cones, (e j).toCone ≤ σ ∧ (e (j + 1)).toCone ≤ σ) (a d : Fin m) :
+        ∃ σ : Φ.cones, (e j).toCone ≤ σ ∧ (e (j + 1)).toCone ≤ σ) :
     letI : Nonempty Φ.cones := hc.nonempty_cones
     letI : Scheme.Over Y S := ⟨BlowupTower.toBase T ≫ f⟩
     letI : IsIntegral Y := isIntegral_internalBlowupTower (h₀ := hc.nonempty_cones) b s c hΦ
@@ -171,9 +171,7 @@ theorem classIntersectionNumber_internalBlowupBoundaryPrime_eq_matrix
       smoothOfRelativeDimension_internalBlowupTower (h₀ := hc.nonempty_cones) b s c hΦ
     letI := (BlowupTower.toBase T ≫ f)
       |>.uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two
-    classIntersectionNumber ℂ Y
-      (LineBundleClass.primeDivisorClass prime[e (ZMod.finEquiv m a)])
-      (LineBundleClass.primeDivisorClass prime[e (ZMod.finEquiv m d)]) = A a d := by
+    primeIntersectionMatrix ℂ (fun a : Fin m ↦ prime[e (ZMod.finEquiv m a)]) = A := by
   classical
   let : Nonempty Φ.cones := hc.nonempty_cones
   let : IsIntegral Y := isIntegral_internalBlowupTower b s c hΦ
@@ -188,7 +186,8 @@ theorem classIntersectionNumber_internalBlowupBoundaryPrime_eq_matrix
     rw [hmark, toMul_ofMul]
     congr 1
     exact Subtype.ext (coe_boundaryPrimeEmbedding _ _).symm
-  rw [← h, ← h]
+  ext a d
+  rw [primeIntersectionMatrix_apply, ← h, ← h]
   exact classIntersectionNumber_markedBoundaryMap_single_single b hΦ hc e s c he a d
 
 end Geometry

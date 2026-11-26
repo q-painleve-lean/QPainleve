@@ -8,7 +8,6 @@ module
 public import QPainleve.SignedClusterModularGroup.Realization.Comparison
 public import QPainleve.Geometry.Toric.Fan.TorusAction.Orientation.Basic
 
-import TauCeti.AlgebraicGeometry.Curves.Node.Reduced
 import TauCeti.AlgebraicGeometry.Morphisms.Smooth.RationalPoint
 
 /-!
@@ -19,7 +18,7 @@ between their target fibers. For targets from the same ordered toric presentatio
 finite-index charges, its lift is a torus translation. Consequently the two realizations
 have the same Picard pullback and the same action on the ordered boundary branches.
 The translating lift is supplied by
-`Fan.existsUnique_translation_of_comp_contractedXEvaluation_eq`.
+`Fan.existsUnique_contractedToricTranslation_of_comp_contractedXEvaluation_eq`.
 -/
 
 public section
@@ -144,26 +143,14 @@ theorem ContractedToricFiber.marked_actions_of_comp_evaluation_eq
     (let : PrestableFamily (P.boundary ↘ S) := P.prestable
      letI : PrestableFamily (Q.boundary ↘ S) := Q.prestable
      (boundaryIso e).boundaryCycleAction P.cycle Q.cycle = 1) := by
-  have : IsClosedImmersion P.pair.hom.left := P.closedImmersion
-  have : IsClosedImmersion Q.pair.hom.left := Q.closedImmersion
-  let : PrestableFamily (P.boundary ↘ S) := P.prestable
-  let : PrestableFamily (Q.boundary ↘ S) := Q.prestable
-  have : IsReduced P.boundary :=
-    (PrestableFamily.atWorstNodalOfRelativeDimensionOne (f := P.boundary ↘ S)).isReduced
-  have : IsReduced Q.boundary :=
-    (PrestableFamily.atWorstNodalOfRelativeDimensionOne (f := Q.boundary ↘ S)).isReduced
-  have : IsReduced P.pair.hom.left.ker.subscheme :=
-    isReduced_of_isOpenImmersion (asIso P.pair.hom.left.toImage).inv
-  have : IsReduced Q.pair.hom.left.ker.subscheme :=
-    isReduced_of_isOpenImmersion (asIso Q.pair.hom.left.toImage).inv
   have : Q.surface.IsProjectiveOver ℂ := Q.projective
   rw [p.evaluation_eq, q.evaluation_eq] at heval
-  obtain ⟨χ, ⟨t, ht, hcomp, -, hpic⟩, -⟩ :=
-    Fan.existsUnique_translation_of_comp_contractedXEvaluation_eq b s c d hΦ
-      p.projection q.projection (surfaceIso e) hindex p.projection_over q.projection_over
-      p.support_comap q.support_comap heval
-  refine ⟨fun a ↦ ?_, boundaryCycleAction_eq_one_of_translation p q e hc ht hcomp⟩
-  have h := (hpic (Q.picardMarking a).toMul).trans (q.marked_pullback a)
+  obtain ⟨lift⟩ :=
+    Fan.existsUnique_contractedToricTranslation_of_comp_contractedXEvaluation_eq b s c d hΦ
+      p.projection q.projection (surfaceIso e) hindex p.projection_over q.projection_over heval
+  let t := lift.default
+  refine ⟨fun a ↦ ?_, boundaryCycleAction_eq_one_of_translation p q e hc t.isLift t.commutes⟩
+  have h := (t.pullback_marking hΦ (Q.picardMarking a).toMul).trans (q.marked_pullback a)
   obtain ⟨a', ha'⟩ := P.picardMarking.surjective
     (Additive.ofMul (LineBundleClass.pullback (surfaceIso e).hom (Q.picardMarking a).toMul))
   have hcoord := p.marked_pullback a'

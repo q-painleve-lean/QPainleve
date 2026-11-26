@@ -51,6 +51,14 @@ theorem CompleteToricPresentation.isRationalOver_fan (Q : CompleteToricPresentat
   have hN : Module.finrank ℤ N = 2 := by simpa using Module.finrank_eq_card_basis b
   exact Q.fan.isRationalOver_of_ray_ne_of_le Q.regular hN hne h₀ h₁
 
+/-- The complete regular toric model is a smooth surface over ℂ. -/
+theorem CompleteToricPresentation.smoothOfRelativeDimension_fan
+    (Q : CompleteToricPresentation i b r L γ) :
+    SmoothOfRelativeDimension 2 (Q.fan.algebraicRealization ↘ S) := by
+  have hN : Module.finrank ℤ N = 2 := by simpa using Module.finrank_eq_card_basis b
+  rw [← hN, Q.fan.algebraicRealization_over]
+  exact Q.fan.smoothOfRelativeDimension_algebraicRealizationStructureMap Q.regular
+
 namespace CompleteToricPresentation
 
 variable (Q : CompleteToricPresentation i b r L γ)
@@ -70,9 +78,8 @@ local notation "Fiber" => ContractedToricFiber
 private theorem isRationalOver_fiber (p : Fiber) : IsRationalOver (M.surface ↘ S) := by
   let : IsRationalOver Q.fan.algebraicRealizationStructureMap :=
     Q.fan.algebraicRealization_over ▸ Q.isRationalOver_fan
-  have hN : Module.finrank ℤ N = 2 := by simpa using Module.finrank_eq_card_basis b
   let : SmoothOfRelativeDimension 2 Q.fan.algebraicRealizationStructureMap :=
-    hN ▸ Q.fan.smoothOfRelativeDimension_algebraicRealizationStructureMap Q.regular
+    Q.fan.algebraicRealization_over ▸ Q.smoothOfRelativeDimension_fan
   let : IsModification p.projection := p.modification
   let c₀ := pointsEquiv ℂ (Fin r → ℤ) ⟨Over.Hom.left c, Over.w c⟩
   have hrat := (Fan.isClosedPointTower_internalBlowupTower b Q.rays

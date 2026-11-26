@@ -73,6 +73,56 @@ local notation "leftBoundary" => Fan.IsSubdivision.boundaryMap hΔΦ hΔ₀ hΦ�
 local notation "rightBoundary" =>
   Fan.IsSubdivision.boundaryMap hΔΩ hΔ₀ hΩ₀ ≫ Iso.inv (FanEquiv.boundaryIso g hΨ₀ hΩ₀)
 
+/-- A comparison of two marked endpoints on a specified common toric subdivision.
+The pair isomorphism realizes the coordinate relabeling. Its Picard pullback is
+read in the common toric marking and its boundary rotation is read from the
+image of component zero. -/
+structure MarkedToricEndpointComparison (σ : Equiv.Perm (Fin r)) where
+  /-- The Picard pullback from the target marking to the source marking. -/
+  picard : B'.IsometryEquiv B
+  /-- The forward rotation of the numbered boundary, including its ordered branches. -/
+  rotation : ZMod n
+  /-- The fixed-center realization inducing the stated Picard pullback and rotation. -/
+  fiber : FiberRealization M M' (renameX(σ.symm)).toRationalMap picard (DihedralGroup.r rotation)
+  /-- The endpoint isomorphism intertwines the two maps from the subdivided boundary. -/
+  boundary_comp : (leftBoundary ≫ p.boundaryMap) ≫ (MarkedSurface.boundaryIso fiber.iso).hom =
+    rightBoundary ≫ q.boundaryMap
+  /-- Pullback matches the toric and ordered exceptional coordinates on the subdivision. -/
+  picard_apply_eq_iff (x : L) (y : L') : picard y = x ↔
+    (Additive.ofMul (pullback hΔΦ.toFanHom.algebraicMap (J x).1.toMul), (J x).2) =
+    (Additive.ofMul (pullback
+      (hΔΩ.toFanHom.algebraicMap ≫ (g).symm.toFanHom.algebraicMap) (J' y).1.toMul),
+      (J' y).2 ∘ σ)
+  /-- A point over the initial surviving component maps to its forward boundary label. -/
+  componentGenericPoint_eq :
+    letI : PrestableFamily (M.boundary ↘ S) := M.prestable
+    letI : PrestableFamily (M'.boundary ↘ S) := M'.prestable
+    ∀ x : Dtor[Δ,hΔ₀], leftBoundary x = T.componentGenericPoint o →
+      (rightBoundary ≫ q.boundaryMap) x = M'.cycle.componentGenericPoint rotation
+
+variable {p q e hΔΦ hΔΩ} in
+/-- For fixed subdivision and relabeling, the endpoint pair isomorphism determines the
+comparison. -/
+@[ext]
+theorem MarkedToricEndpointComparison.ext {σ : Equiv.Perm (Fin r)}
+    {C C' : MarkedToricEndpointComparison p q e hΔΦ hΔΩ σ}
+    (h : C.fiber.iso = C'.fiber.iso) : C = C' := by
+  have hp : C.picard = C'.picard := by
+    apply DFunLike.ext
+    intro y
+    apply M.picardMarking.injective
+    rw [C.fiber.picard_eq, C'.fiber.picard_eq, h]
+  have hr : C.rotation = C'.rotation := by
+    apply DihedralGroup.r.inj
+    rw [← C.fiber.boundaryAction_eq, ← C'.fiber.boundaryAction_eq, h]
+  cases C
+  cases C'
+  dsimp only at h hp hr
+  cases hp
+  cases hr
+  cases FiberRealization.ext h
+  rfl
+
 private theorem exists_endpoint_rotation (hΔ : Δ.IsRegular)
     [PrestableFamily (Dtor[Δ,hΔ₀] ↘ S)] {k : ℕ} [NeZero k] {β : Type*}
     {w : β → (Dtor[Δ,hΔ₀] ↘ S).smoothLocus} (U : Scheme.NodalCycleNumbering w k)
@@ -112,7 +162,7 @@ relabels the independent X evaluation, and computes the full marked Picard
 pullback on the common subdivision. Its rotation on the ordered branches is
 read from the image of the initial surviving component. Inversions of the
 label order are allowed only between distinct centers. -/
-theorem exists_marked_toric_endpoint_comparison
+theorem nonempty_markedToricEndpointComparison
     (hΔ : Δ.IsRegular) (σ : Equiv.Perm (Fin r)) (hc : centers(d) ∘ σ = centers(c))
     (hss' : ∀ j, e (s j).primitiveGenerator = (s' (σ j)).primitiveGenerator)
     (hdet : ∀ x y, b'.detDualEquiv (e x) (e y) = b.detDualEquiv x y)
@@ -133,20 +183,7 @@ theorem exists_marked_toric_endpoint_comparison
     {w : β → (Dtor[Δ,hΔ₀] ↘ S).smoothLocus} (U : Scheme.NodalCycleNumbering w k)
     (hleft : (leftBoundary).IsOrientedCycleSubdivision U T)
     (hright : (rightBoundary).IsOrientedCycleSubdivision U T') :
-    ∃ (I : B'.IsometryEquiv B) (j : ZMod n)
-      (R : FiberRealization M M' (renameX(σ.symm)).toRationalMap I (DihedralGroup.r j)),
-      (leftBoundary ≫ p.boundaryMap) ≫ (MarkedSurface.boundaryIso R.iso).hom =
-        rightBoundary ≫ q.boundaryMap ∧
-      (∀ (x : L) (y : L'),
-        I y = x ↔
-        (Additive.ofMul (pullback hΔΦ.toFanHom.algebraicMap (J x).1.toMul), (J x).2) =
-          (Additive.ofMul (pullback
-            (hΔΩ.toFanHom.algebraicMap ≫ (g).symm.toFanHom.algebraicMap) (J' y).1.toMul),
-            (J' y).2 ∘ σ)) ∧
-      (letI : PrestableFamily (M.boundary ↘ S) := M.prestable
-       letI : PrestableFamily (M'.boundary ↘ S) := M'.prestable
-       ∀ x : Dtor[Δ,hΔ₀], leftBoundary x = T.componentGenericPoint o →
-           (rightBoundary ≫ q.boundaryMap) x = M'.cycle.componentGenericPoint j) := by
+    Nonempty (MarkedToricEndpointComparison p q e hΔΦ hΔΩ σ) := by
   let : SmoothOfRelativeDimension 2 (M.surface ↘ S) := M.smooth
   let : SmoothOfRelativeDimension 2 (M'.surface ↘ S) := M'.smooth
   let : M.surface.IsProjectiveOver ℂ := M.projective
@@ -155,8 +192,7 @@ theorem exists_marked_toric_endpoint_comparison
   let : ConnectedSpace D[M].subscheme :=
     GeometricallyConnected.connectedSpace_of_subsingleton (D[M].subscheme ↘ S)
   have hconn : _root_.IsConnected (D[M].support : Set M.surface) := by
-    rw [← range_subschemeι]
-    exact isConnected_range D[M].subschemeι.continuous
+    simpa only [range_subschemeι] using isConnected_range D[M].subschemeι.continuous
   have hp : u.hom ≫ p.projection = A.toBase := by rw [← hu, Iso.hom_inv_id_assoc]
   have hq : u'.hom ≫ q.projection = A'.toBase := by rw [← hu', Iso.hom_inv_id_assoc]
   obtain ⟨f, hf, hideal, hboundary, heval, hpic⟩ :=
@@ -185,7 +221,12 @@ theorem exists_marked_toric_endpoint_comparison
       Additive.ofMul (pullback (MarkedSurface.surfaceIso f').hom (M'.picardMarking y).toMul) := by
     simp only [MarkedSurface.picardMarking_apply, I, LinearMap.BilinForm.IsometryEquiv.trans_apply,
       LinearMap.BilinForm.IsometryEquiv.apply_symm_apply, Chow.picardPullbackIsometry_apply]
-  refine ⟨I, j, ⟨f', hI, hrotation, ?_⟩, hcomm, fun x y ↦ ?_, hpoint⟩
+  refine ⟨{ picard := I
+            rotation := j
+            fiber := ⟨f', hI, hrotation, ?_⟩
+            boundary_comp := hcomm
+            picard_apply_eq_iff := fun x y ↦ ?_
+            componentGenericPoint_eq := hpoint }⟩
   · obtain ⟨h, hX⟩ := M.evaluation.compOfDefined_toRationalMap (renameX(σ.symm))
     refine ⟨h, hX.trans ?_⟩
     rw [p.evaluation_eq, q.evaluation_eq]

@@ -111,19 +111,12 @@ local notation "cartier" => M.isEffectiveCartier_boundaryIdeal
 signed Picard involution that reflects the numbered components about a component. It fixes the
 total cycle and a square `-1` class meeting that component once. On the orthogonal complement
 the involution is negation corrected in the direction of the total cycle. -/
-theorem exists_marked_boundary_reversing_involution
+theorem nonempty_cycleReversingInvolution
     (hcan : letI : SmoothOfRelativeDimension 2 f := M.smooth
       classOf(cartier) = K⁻¹) (hnef : (classOf(cartier)).IsNef k f)
     (hsq : Chow.classIntersectionNumber k M.surface classOf(cartier) classOf(cartier) = 0)
     (hprim : IsPrimitive (Additive.ofMul classOf(cartier))) :
-    ∃ (j₀ : ZMod n) (a : L) (s : signedBoundaryIsometryGroup B d[cartier]),
-      B a a = -1 ∧ (∀ j, B a (d[cartier] j) = if j = j₀ then 1 else 0) ∧
-      sign B d[cartier] s = -1 ∧ s * s = 1 ∧
-      (toIsometry B d[cartier] s).val a = a ∧
-      (toIsometry B d[cartier] s).val (δ[cartier]) = δ[cartier] ∧
-      (∀ j, (toIsometry B d[cartier] s).val (d[cartier] j) = d[cartier] (2 * j₀ - j)) ∧
-      (∀ x, x ∈ B.orthogonal (Submodule.span ℤ (Set.range d[cartier])) →
-        (toIsometry B d[cartier] s).val x = -x + (2 * B x a) • (δ[cartier])) := by
+    Nonempty (CycleReversingInvolution B d[cartier]) := by
   let hD := cartier
   let : M.surface.IsProjectiveOver k := M.projective
   let : SmoothOfRelativeDimension 2 f := M.smooth
@@ -134,20 +127,10 @@ theorem exists_marked_boundary_reversing_involution
     M.surface.finite_picard_of_isRationalOver k
   let : Module.Free ℤ L := Module.Free.of_equiv M.picardMarking.symm
   let : Module.Finite ℤ L := Module.Finite.of_surjective _ M.picardMarking.symm.surjective
-  have hpair (x y : L) : B x y =
-      Chow.classIntersectionNumber k M.surface (M.picardMarking x).toMul
-        (M.picardMarking y).toMul :=
-    (M.intersectionBilinForm_picardMarking x y).symm.trans (Chow.intersectionBilinForm_apply ..)
-  have hSymm : B.IsSymm := ⟨fun x y ↦
-    (hpair x y).trans ((Chow.classIntersectionNumber_comm _ _).trans (hpair y x).symm)⟩
   have hprimitive : IsPrimitive (δ[hD]) :=
     M.picardMarking.isPrimitive_iff.mp (by rwa [M.picardMarking_sum_boundaryClass])
-  obtain ⟨r⟩ := nonempty_cycleReversingInvolution B d[hD] hSymm
+  exact SignedBoundaryIsometryGroup.nonempty_cycleReversingInvolution B d[hD] M.isSymm
     (M.intersectionForm_boundaryClass hD hnef hsq) hprimitive
     (M.isCharacteristic_sum_boundaryClass hD hcan)
-  refine ⟨r.cut, r.cutClass, r.element, r.cutClass_sq, r.pairing_cutClass,
-    by simp, r.element_mul_self, by simp, toIsometry_apply_sum B d[hD] r.element,
-    fun j ↦ by simp, ?_⟩
-  simpa only [toIsometry_apply] using r.toIsometry_apply_orthogonal
 
 end QPainleve.SignedClusterModularGroup.MarkedSurface

@@ -54,4 +54,21 @@ theorem compareSignedLoopLists_eq_some_iff (orders : Fin n → Fin r → ℤ)
   simp only [compareSignedLoopLists, Option.map₂_eq_some_iff, Option.mem_def,
     Generator.loopOfList?_eq_some_iff, eq_comm (a := result)]
 
+/-- A correctness criterion for typed loops certifies the generator-list comparison.
+A Boolean result witnesses two valid loops and records whether their X pullbacks agree. -/
+theorem compareSignedLoopLists_eq_some_iff_xPullback_eq (k : Type*) [Field k]
+    (orders : Fin n → Fin r → ℤ)
+    (criterion : ∀ w v : Word B B,
+      B.compareSignedLoops orders w v = true ↔ w.xPullback k = v.xPullback k)
+    (gs hs : List (Generator (Fin r))) (result : Bool) :
+    B.compareSignedLoopLists orders gs hs = some result ↔
+      ∃ w v : Word B B, w.generators = gs ∧ v.generators = hs ∧
+        (result = true ↔ w.xPullback k = v.xPullback k) := by
+  rw [compareSignedLoopLists_eq_some_iff]
+  have hresult (w v : Word B B) :
+      result = B.compareSignedLoops orders w v ↔
+        (result = true ↔ w.xPullback k = v.xPullback k) :=
+    Bool.eq_iff_iff.trans (iff_congr Iff.rfl (criterion w v))
+  simp_rw [hresult]
+
 end QPainleve.Cluster.SkewExchangeMatrix

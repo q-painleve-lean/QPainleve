@@ -6,6 +6,7 @@ Authors: The QPainleve contributors
 module
 
 public import QPainleve.AlgebraicGeometry.Chow.Cremona
+public import QPainleve.SignedClusterModularGroup.Realization.Presentation.Cremona.Comparison
 public import QPainleve.SignedClusterModularGroup.Realization.Presentation.PicardGroupIdentification
 
 import QPainleve.SignedClusterModularGroup.Boundary.Cremona
@@ -78,24 +79,36 @@ variable {i : N →+ V} {r : ℕ}
 
 local notation "E" => P.picard.exchangeMatrix
 local notation "Γs" => (SignedClusterModularGroup ℂ E)ᵐᵒᵖ
-local notation "Γ" => (ClusterModularGroup ℂ E)ᵐᵒᵖ
 local notation "π" =>
   A.cremonaProjection hD P.canonicalClass_eq P.nef P.selfIntersection_eq_zero P.noInternalRoots
 
-/-- Picard pullback as a homomorphism from opposite signed cluster maps to Cremona isometries. -/
-def projection : Γs →* Cr := (π).comp P.picard.signedEquiv.toMonoidHom
+/-- The Cremona projection and branch sign of the ordered toric seed. -/
+def comparison : ClusterCremonaComparison (k := ℂ) E n Cr :=
+  ClusterCremonaComparison.ofPicardEquiv P.picard.signedEquiv P.picard.sign_ker_unop π
+    (A.cremonaProjection_surjective hD P.canonicalClass_eq P.nef P.selfIntersection_eq_zero
+      P.noInternalRoots)
+    (A.cremonaProjection_injective hD P.canonicalClass_eq P.nef P.selfIntersection_eq_zero
+      P.noInternalRoots)
+    (A.signedBoundaryIsometryEquivCremonaProd hD P.canonicalClass_eq P.nef
+      P.selfIntersection_eq_zero P.noInternalRoots)
+    (A.signedBoundaryIsometryEquivCremonaProd_apply hD P.canonicalClass_eq P.nef
+      P.selfIntersection_eq_zero P.noInternalRoots)
 
-/-- The Cremona projection acts on Picard classes by the underlying signed Picard isometry. -/
+/-- The Cremona projection acts by the underlying signed Picard isometry. -/
 @[simp]
-theorem val_projection_apply (x : Γs) : (P.projection x).val = (P.picard.signedEquiv x).val.1 := by
-  simpa only [projection, MonoidHom.comp_apply, MulEquiv.coe_toMonoidHom, toIsometry_apply] using
+theorem val_projection_apply (x : Γs) :
+    (P.comparison.projection x).val = (P.picard.signedEquiv x).val.1 := by
+  simpa only [comparison, ClusterCremonaComparison.ofPicardEquiv_projection_apply,
+    toIsometry_apply] using
     A.val_cremonaProjection_apply hD P.canonicalClass_eq P.nef P.selfIntersection_eq_zero
       P.noInternalRoots (P.picard.signedEquiv x)
 
-/-- Every Cremona isometry is realized by a signed cluster map. -/
-theorem projection_surjective : Function.Surjective P.projection :=
-  (A.cremonaProjection_surjective hD P.canonicalClass_eq P.nef P.selfIntersection_eq_zero
-    P.noInternalRoots).comp P.picard.signedEquiv.surjective
+/-- The Cremona comparison retains the ordered branch sign of the Picard image. -/
+@[simp]
+theorem sign_apply (x : Γs) :
+    P.comparison.sign x = (P.picard.signedEquiv x).val.2 := by
+  simp only [comparison, ClusterCremonaComparison.ofPicardEquiv_sign_apply,
+    SignedBoundaryIsometryGroup.sign_apply]
 
 /-- On a realized loop, the Cremona projection evaluates by the marked Picard pullback. -/
 theorem val_projection_apply_word (w : Word E E) :
@@ -110,62 +123,12 @@ theorem val_projection_apply_word (w : Word E E) :
         (T := P.picard.presentation.cycle) (origin := P.picard.presentation.origin)
         (ι := P.picard.presentation.inclusion) (P₁ := P.picard.family)
         (fun z : Point Centers[r] ↦ χ[z]) C →
-      (P.projection (op (signedClusterModularGroupMap ℂ E (End.of w)))).val =
+      (P.comparison.projection (op (signedClusterModularGroupMap ℂ E (End.of w)))).val =
         P.picard.marking.isometryGroupCongr
           (P.picard.form.isometryGroupEquivIsometryEquiv.symm R.picard) := by
   intro C _ _ R hR
   rw [val_projection_apply]
   exact congrArg Prod.fst (P.picard.signedEquiv_apply_word w R hR)
-
-/-- With at least three boundary components, Picard pullback is a Cremona equivalence. -/
-def signedEquiv (hn : 3 ≤ n) : Γs ≃* Cr :=
-  MulEquiv.ofBijective P.projection
-    ⟨(A.cremonaProjection_injective hD P.canonicalClass_eq P.nef P.selfIntersection_eq_zero
-      P.noInternalRoots hn).comp P.picard.signedEquiv.injective, P.projection_surjective⟩
-
-/-- The large-boundary equivalence evaluates by the Cremona projection. -/
-@[simp]
-theorem signedEquiv_apply (hn : 3 ≤ n) (x : Γs) :
-    P.signedEquiv hn x = P.projection x :=
-  (rfl)
-
-/-- With one or two components, record both the Cremona isometry and the branch sign. -/
-def signedProdEquiv (hn : n ≤ 2) : Γs ≃* Cr × ℤˣ :=
-  P.picard.signedEquiv.trans
-    (A.signedBoundaryIsometryEquivCremonaProd hD P.canonicalClass_eq P.nef
-      P.selfIntersection_eq_zero P.noInternalRoots hn)
-
-/-- The small-boundary product evaluates by Picard pullback and the branch sign. -/
-@[simp]
-theorem signedProdEquiv_apply (hn : n ≤ 2) (x : Γs) :
-    P.signedProdEquiv hn x = (P.projection x, (P.picard.signedEquiv x).val.2) := by
-  simpa only [signedProdEquiv, MulEquiv.trans_apply, projection, MonoidHom.comp_apply,
-    MulEquiv.coe_toMonoidHom, SignedBoundaryIsometryGroup.sign_apply] using
-    A.signedBoundaryIsometryEquivCremonaProd_apply hD P.canonicalClass_eq P.nef
-      P.selfIntersection_eq_zero P.noInternalRoots hn (P.picard.signedEquiv x)
-
-/-- With one or two components, unsigned cluster maps identify with the Cremona isometries. -/
-def unsignedEquiv (hn : n ≤ 2) : Γ ≃* Cr :=
-  P.picard.unsignedEquiv.trans
-    (A.boundaryRotationEquivCremona hD P.canonicalClass_eq P.nef
-      P.selfIntersection_eq_zero P.noInternalRoots hn)
-
-/-- The unsigned equivalence evaluates by the same Cremona projection after inclusion. -/
-@[simp]
-theorem unsignedEquiv_apply (hn : n ≤ 2) (x : Γ) :
-    P.unsignedEquiv hn x =
-      P.projection (MonoidHom.op (clusterModularGroupInclusion ℂ E) x) := by
-  simp only [unsignedEquiv, MulEquiv.trans_apply,
-    Scheme.NodalCycleNumbering.boundaryRotationEquivCremona_apply,
-    P.picard.rotationInclusion_unsignedEquiv_apply, projection, MonoidHom.comp_apply,
-    MulEquiv.coe_toMonoidHom]
-
-/-- The unsigned subgroup maps to the Cremona factor with positive branch sign. -/
-theorem signedProdEquiv_apply_inclusion (hn : n ≤ 2) (x : Γ) :
-    P.signedProdEquiv hn (MonoidHom.op (clusterModularGroupInclusion ℂ E) x) =
-      (P.unsignedEquiv hn x, 1) := by
-  rw [signedProdEquiv_apply, unsignedEquiv_apply, ← P.picard.rotationInclusion_unsignedEquiv_apply]
-  simp only [coe_rotationInclusion]
 
 end CremonaGroupIdentification
 

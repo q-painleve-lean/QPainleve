@@ -19,7 +19,7 @@ marked nodal contraction for both loops.
 
 public section
 
-open AlgebraicGeometry CategoryTheory MulOpposite Quiver
+open AlgebraicGeometry CategoryTheory DihedralGroup MulOpposite Quiver
 open QPainleve.CharacterTorus QPainleve.Cluster QPainleve.SignedBoundaryIsometryGroup
 open Scheme Scheme.IdealSheafData TauCeti TauCeti.AlgebraicGeometry TauCeti.Toric
 
@@ -84,28 +84,29 @@ theorem signedLoopInvariants_comp_of_nodal_contraction
   obtain ⟨j, hj, hw⟩ := hInv w β
   obtain ⟨k, hk, hv⟩ := hInv v β
   obtain ⟨l, hl, hcomp⟩ := hInv (w.comp v) β
+  have hD := M₀.boundaryClass_injective_of_nef_square_zero cartier[M₀] hnef hsq
+  let action := boundaryAction B d hD
+  have label_eq (u : Word E E) (a : Fin n)
+      (ha : ∀ i, (toIsometry B d (Θ eval[u])).val (d i) =
+        d (sign B d (Θ eval[u]) • (i - index a))) :
+      cycleVertexPerm (action (op (Θ eval[u]))) 0 = index a :=
+    (cycleVertexPerm_boundaryAction_apply_eq_iff B d hD _ _ _).mpr (by simpa using ha (index a))
   have hprod : Θ eval[w.comp v] = Θ eval[w] * Θ eval[v] := by
     -- Endomorphism multiplication executes the right-hand path first.
     have hEnd : (End.of (w.comp v) : End ((Paths.of (SkewExchangeMatrix (Fin r))).obj E)) =
         End.of v * End.of w := rfl
     rw [hEnd, map_mul, op_mul, map_mul]
-  have hw₀ : (toIsometry B d (Θ eval[w])).val (d (index j)) = d 0 := by
-    simpa only [index, sub_self, smul_zero] using hw (index j)
-  have hl₀ : (toIsometry B d (Θ eval[w.comp v])).val (d (index l)) = d 0 := by
-    have h := hcomp ((ZMod.finEquiv n).toEquiv l)
-    rw [sub_self, smul_zero] at h
-    exact h
-  let p := sign B d (Θ eval[v]) • index j + index k
-  have hvp : (toIsometry B d (Θ eval[v])).val (d p) = d (index j) := by
-    simpa only [p, index, d, add_sub_cancel_right, smul_smul, Int.units_mul_self, one_smul]
-      using hv p
-  have hp : (toIsometry B d (Θ eval[w.comp v])).val (d p) = d 0 := by
-    rw [hprod, map_mul, Subgroup.coe_mul, mul_apply_eq_comp, hvp, hw₀]
-  have hD := M₀.boundaryClass_injective_of_nef_square_zero cartier[M₀] hnef hsq
-  have hlp : l = index.symm p := by
-    apply index.injective
-    rw [Equiv.apply_symm_apply]
-    exact hD ((toIsometry B d (Θ eval[w.comp v])).val.injective (hl₀.trans hp.symm))
+  have hs : (invariant v).sign = sign B d (Θ eval[v]) := congrArg SignedLoopInvariants.sign hk
+  have hlabel : index l = (invariant v).sign • index j + index k := by
+    calc
+      index l = cycleVertexPerm (action (op (Θ eval[w.comp v]))) 0 :=
+        (label_eq _ _ hcomp).symm
+      _ = cycleVertexPerm (action (op (Θ eval[v]))) (index j) := by
+        rw [hprod, op_mul, map_mul, map_mul, Equiv.Perm.mul_apply, label_eq _ _ hw]
+      _ = _ := by
+        rw [cycleVertexPerm_apply, ← Units.smul_def, label_eq _ _ hv, hs]
+        exact congrArg (fun η : ℤˣ ↦ η • index j + index k)
+          (cycleOrientationSign_boundaryAction B d hD _)
   refine SignedLoopInvariants.ext ?_ ?_ ?_
   · simp only [invariant, Path.signedLoopInvariants_sign, Path.inversionCount_comp, pow_add]
     exact mul_comm _ _
@@ -116,8 +117,7 @@ theorem signedLoopInvariants_comp_of_nodal_contraction
       congrArg SignedLoopInvariants.boundaryLabel hk
     have hl' : (invariant (w.comp v)).boundaryLabel = some l :=
       congrArg SignedLoopInvariants.boundaryLabel hl
-    have hs : (invariant v).sign = sign B d (Θ eval[v]) := congrArg SignedLoopInvariants.sign hk
-    rw [hj', hk', hl', hs, hlp]
-    rfl
+    rw [hj', hk', hl']
+    exact congrArg some (index.eq_symm_apply.mpr hlabel)
 
 end QPainleve.SignedClusterModularGroup.CompleteToricPresentation

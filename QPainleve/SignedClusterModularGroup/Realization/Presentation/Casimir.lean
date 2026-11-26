@@ -5,12 +5,14 @@ Authors: The QPainleve contributors
 -/
 module
 
+public import QPainleve.SignedClusterModularGroup.Realization.ChargeKernel.BoundaryExponent
 public import QPainleve.SignedClusterModularGroup.Realization.Endpoint.MonomialImage
 public import QPainleve.SignedClusterModularGroup.Realization.Presentation
 
 import QPainleve.Geometry.Toric.Fan.ExchangeMatrix
+import QPainleve.LinearAlgebra.Reflection
+import QPainleve.SignedClusterModularGroup.BoundaryCycle
 import QPainleve.SignedClusterModularGroup.Realization.Anticanonical
-import QPainleve.SignedClusterModularGroup.Realization.ChargeKernel.BoundaryExponent
 import QPainleve.SignedClusterModularGroup.Realization.Endpoint.Casimir
 import QPainleve.SignedClusterModularGroup.Realization.NodalFiber
 import QPainleve.SignedClusterModularGroup.Realization.Presentation.Group
@@ -43,11 +45,7 @@ open GeometricRealization
 local notation "S" => Spec (CommRingCat.of ℂ)
 local notation "Centers[" r "]" => Over.mk (structureMap ℂ (Fin r → ℤ))
 local notation "XTor[" r "]" => scheme ℂ (Fin r →₀ ℤ)
-local notation "boundary[" M "]" =>
-  Scheme.Hom.ker (Over.Hom.left (Arrow.hom (MarkedSurface.pair M)))
 local notation "classOf(" h ")" => (LineBundleClass.mk (IsEffectiveCartier.toInvertibleSheaf h))⁻¹
-local notation "χ[" c "]" => pointsEquiv ℂ _
-  (Subtype.mk (Over.Hom.left c) (Over.w c))
 local notation "orth[" B "," D "]" => LinearMap.BilinForm.orthogonal B
   (Submodule.span ℤ (Set.range D))
 local notation "exch[" E "]" => LinearMap.ker (Matrix.mulVecLin (SkewExchangeMatrix.matrix E))
@@ -127,72 +125,158 @@ theorem nonempty_casimirActionComparison_of_nodal_model [NeZero n]
   refine ⟨⟨Θ, e, fun x ↦ neg_eq_iff_eq_neg.mp (he x).symm, ?_, G.sign_ker_unop, hCasimirKer⟩⟩
   simpa only [MonoidHom.comp_assoc] using hact
 
-end CompleteToricPresentation
+/-- A boundary-reversing Picard involution and the exchange-kernel comparison
+for a marked presentation with primitive total boundary class. -/
+@[ext]
+structure CasimirReflection [NeZero n] (Q : CompleteToricPresentation i b r L γ)
+    (E : SkewExchangeMatrix (Fin r)) (B : LinearMap.BilinForm ℤ L) (D : ZMod n → L) where
+  /-- The Picard and exchange-kernel identifications. -/
+  comparison : Q.CasimirActionComparison E B D
+  /-- The chosen boundary involution with its cut class. -/
+  involution : CycleReversingInvolution B D
+  total_mem_orthogonal : total[D] ∈ orth[B,D]
+  isPrimitive_total : IsPrimitive total[D]
+  isSymm : B.IsSymm
+  isAddTorsionFree : IsAddTorsionFree L
 
-namespace GeometricRealization
+namespace CasimirReflection
 
-/-- On a marked toric presentation of a primitive nef square-zero cycle, a reversing loop
-acts by reflection along the primitive total boundary exponent and acts trivially on the
-quotient by that exponent. The full Casimir image consists of the unsigned image and its
-disjoint right coset by this reflection. The exponent entries are the multiplicities of the
-total boundary transform at the ordered centers. -/
-theorem exists_exchangeKernelAction_reflection_of_presentation [NeZero n]
+variable [NeZero n] {Q : CompleteToricPresentation i b r L γ} {D : ZMod n → L}
+  (R : Q.CasimirReflection E B D)
+
+/-- The primitive total boundary exponent in the exchange kernel. -/
+def exponent : exch[E] :=
+  R.comparison.exchangeKernelEquiv ⟨total[D], R.total_mem_orthogonal⟩
+
+@[simp]
+theorem coe_exponent : (R.exponent : Fin r → ℤ) = Q.totalBoundaryExponent D :=
+  (R.comparison.coe_exchangeKernelEquiv_apply ⟨total[D], R.total_mem_orthogonal⟩).trans
+    (Q.totalBoundaryExponent_def D).symm
+
+/-- The total boundary exponent is primitive in the integral exchange kernel. -/
+theorem isPrimitive_exponent : IsPrimitive R.exponent :=
+  R.comparison.exchangeKernelEquiv.isPrimitive_iff.mpr
+    (R.isPrimitive_total.of_map (g := orth[B,D].subtype))
+
+/-- The reflecting form in exchange-kernel coordinates pairs with the cut class twice. -/
+def reflectionForm : exch[E] →ₗ[ℤ] ℤ :=
+  R.involution.orthogonalReflectionForm.comp
+    (R.comparison.exchangeKernelEquiv.symm : exch[E] →ₗ[ℤ] orth[B,D])
+
+@[simp]
+theorem reflectionForm_apply (x : exch[E]) :
+    R.reflectionForm x = 2 * B (R.comparison.exchangeKernelEquiv.symm x) R.involution.cutClass :=
+  R.involution.orthogonalReflectionForm_apply _
+
+/-- The reflecting form takes the primitive total boundary exponent to two. -/
+@[simp high]
+theorem reflectionForm_apply_exponent : R.reflectionForm R.exponent = 2 := by
+  simpa only [reflectionForm, exponent, LinearMap.comp_apply, LinearEquiv.coe_coe,
+    LinearEquiv.symm_apply_apply] using
+    R.involution.orthogonalReflectionForm_apply_sum R.isSymm R.total_mem_orthogonal
+
+/-- The Casimir reflection along the total boundary exponent. -/
+def reflection : exch[E] ≃ₗ[ℤ] exch[E] :=
+  Module.reflection R.reflectionForm_apply_exponent
+
+theorem reflection_apply (x : exch[E]) :
+    R.reflection x = x - R.reflectionForm x • R.exponent :=
+  Module.reflection_apply x R.reflectionForm_apply_exponent
+
+@[simp]
+theorem reflection_apply_exponent : R.reflection R.exponent = -R.exponent :=
+  Module.reflection_apply_self R.reflectionForm_apply_exponent
+
+/-- The Casimir reflection is an involution. -/
+theorem involutive_reflection : Function.Involutive R.reflection :=
+  Module.involutive_reflection R.reflectionForm_apply_exponent
+
+/-- Applying the Casimir reflection twice fixes every exchange-kernel vector. -/
+@[simp]
+theorem reflection_reflection (x : exch[E]) : R.reflection (R.reflection x) = x :=
+  R.involutive_reflection x
+
+/-- The inverse of the Casimir reflection is the reflection itself. -/
+@[simp]
+theorem reflection_symm : R.reflection.symm = R.reflection :=
+  Module.reflection_symm R.reflectionForm_apply_exponent
+
+/-- The Casimir reflection induces the identity modulo the total boundary exponent. -/
+@[simp high]
+theorem mkQ_reflection_apply (x : exch[E]) :
+    (ℤ ∙ R.exponent).mkQ (R.reflection x) = (ℤ ∙ R.exponent).mkQ x :=
+  Module.mkQ_reflection_apply R.reflectionForm_apply_exponent x
+
+/-- The signed point map of the chosen Picard involution acts by the Casimir reflection. -/
+@[simp]
+theorem exchangeKernelAction_picardEquiv_symm :
+    act[E] (R.comparison.picardEquiv.symm R.involution.element) = R.reflection :=
+  exchangeKernelAction_picardEquiv_symm_cycleReversingInvolution
+    R.comparison.picardEquiv R.comparison.exchangeKernelEquiv R.comparison.exchangeKernelAction_eq
+    R.involution R.total_mem_orthogonal
+    (R.involution.orthogonalReflectionForm_apply_sum R.isSymm R.total_mem_orthogonal)
+
+private theorem range_eq_disjoint_union :
+    let unsigned : Set (exch[E] ≃ₗ[ℤ] exch[E]) := unsignedImage[E]
+    (↑(act[E]).range : Set (exch[E] ≃ₗ[ℤ] exch[E])) =
+      unsigned ∪ (unsigned <• R.reflection) ∧ Disjoint unsigned (unsigned <• R.reflection) := by
+  let : IsAddTorsionFree L := R.isAddTorsionFree
+  simpa only [R.exchangeKernelAction_picardEquiv_symm] using
+    range_exchangeKernelAction_eq_disjoint_union
+      R.comparison.picardEquiv R.comparison.exchangeKernelEquiv R.comparison.exchangeKernelAction_eq
+      R.comparison.ker_sign R.total_mem_orthogonal R.isPrimitive_total.ne_zero
+      R.involution.element (by simp)
+
+/-- The signed Casimir image is the union of the unsigned image and its right coset
+by the Casimir reflection. -/
+theorem range_exchangeKernelAction :
+    let unsigned : Set (exch[E] ≃ₗ[ℤ] exch[E]) := unsignedImage[E]
+    (↑(act[E]).range : Set (exch[E] ≃ₗ[ℤ] exch[E])) = unsigned ∪ (unsigned <• R.reflection) :=
+  R.range_eq_disjoint_union.1
+
+/-- The reflection coset is disjoint from the unsigned Casimir image. -/
+theorem disjoint_unsignedImage :
+    let unsigned : Set (exch[E] ≃ₗ[ℤ] exch[E]) := unsignedImage[E]
+    Disjoint unsigned (unsigned <• R.reflection) :=
+  R.range_eq_disjoint_union.2
+
+end CasimirReflection
+
+/-- A marked nodal model of a primitive nef square-zero anticanonical cycle supplies
+a Casimir reflection along its total boundary exponent. Its involution lifts to the
+signed cluster modular group and supplies the odd coset of the Casimir image. -/
+theorem nonempty_casimirReflection_of_nodal_model [NeZero n]
     (Q : CompleteToricPresentation i b r L γ)
-    (P : ChargeSeed E N) (hform : P.form = b.detDualEquiv.toLinearMap)
-    (hcharge : P.charge = Fan.rayChargeMap Q.rays)
     {c : Point Centers[r]} {M : MarkedSurface ℂ n B XTor[r]}
-    (href : Q.HasNodalModel c M) (hD : boundary[M].IsEffectiveCartier)
-    (hprim : IsPrimitive (Additive.ofMul classOf(hD)))
-    (hnef : (classOf(hD)).IsNef ℂ (M.surface ↘ S))
-    (hsq : Chow.classIntersectionNumber ℂ M.surface classOf(hD) classOf(hD) = 0) :
-    let D := M.boundaryClass hD
-    ∃ (A : Q.CasimirActionComparison E B D)
-      (hδ : total[D] ∈ orth[B,D]) (a : L) (s : signedBoundaryIsometryGroup B D),
-      let v := A.exchangeKernelEquiv ⟨total[D], hδ⟩
-      IsPrimitive v ∧
-      (letI := Q.complete.nonempty_cones
-       letI := Q.prestable
-       letI := Q.neZero
-       ∀ p : ContractedToricFiber b Q.rays Q.regular Q.cycle Q.origin Q.inclusion χ[c] M,
-         (v : Fin r → ℤ) = fun j ↦ p.totalBoundaryRayMultiplicity hD (Q.rays j)) ∧
-      let ℓ := ((2 : ℤ) • (B.flip a).comp orth[B,D].subtype).comp
-        (A.exchangeKernelEquiv.symm : exch[E] →ₗ[ℤ] orth[B,D])
-      ∃ hℓ : ℓ v = 2,
-        let q := Module.reflection hℓ
-        let unsigned : Set (exch[E] ≃ₗ[ℤ] exch[E]) := unsignedImage[E]
-        sign B D s = -1 ∧ s * s = 1 ∧ act[E] (A.picardEquiv.symm s) = q ∧
-          (↑(act[E]).range : Set (exch[E] ≃ₗ[ℤ] exch[E])) = unsigned ∪ (unsigned <• q) ∧
-          Disjoint unsigned (unsigned <• q) ∧
-          ∀ x, (ℤ ∙ v).mkQ (q x) = (ℤ ∙ v).mkQ x := by
-  have hE := P.matrix_eq.symm.trans (congrArg₂ chargeExchangeMatrix hform hcharge)
+    (href : Q.HasNodalModel c M)
+    (hE : E.matrix = chargeExchangeMatrix b.detDualEquiv.toLinearMap (Fan.rayChargeMap Q.rays))
+    (hprim : IsPrimitive (Additive.ofMul classOf(M.isEffectiveCartier_boundaryIdeal)))
+    (hnef : (classOf(M.isEffectiveCartier_boundaryIdeal)).IsNef ℂ (M.surface ↘ S))
+    (hsq : Chow.classIntersectionNumber ℂ M.surface classOf(M.isEffectiveCartier_boundaryIdeal)
+      classOf(M.isEffectiveCartier_boundaryIdeal) = 0) :
+    Nonempty (Q.CasimirReflection E B (M.boundaryClass M.isEffectiveCartier_boundaryIdeal)) := by
   obtain ⟨A⟩ := Q.nonempty_casimirActionComparison_of_nodal_model href hE hprim hnef hsq
   let : Scheme.IsRationalOver (M.surface ↘ S) := href.isRationalOver
   let : M.surface.IsProjectiveOver ℂ := M.projective
   let : SmoothOfRelativeDimension 2 (M.surface ↘ S) := M.smooth
-  let : B.IsPerfPair := M.isPerfPair_of_isRationalOver
   let : Module.Free ℤ (Additive (LineBundleClass M.surface)) :=
     M.surface.free_picard_of_isRationalOver ℂ
-  let : Module.Finite ℤ (Additive (LineBundleClass M.surface)) :=
-    M.surface.finite_picard_of_isRationalOver ℂ
   let : Module.Free ℤ L := Module.Free.of_equiv M.picardMarking.symm
-  let : Module.Finite ℤ L := Module.Finite.of_surjective _ M.picardMarking.symm.surjective
-  have hpair (x y : L) := (M.intersectionBilinForm_picardMarking x y).symm.trans
-    (Chow.intersectionBilinForm_apply ..)
-  have hSymm : B.IsSymm := ⟨fun x y ↦
-    (hpair x y).trans ((Chow.classIntersectionNumber_comm _ _).trans (hpair y x).symm)⟩
+  let : HasUniqueDiv L := HasUniqueDiv.of_isTorsionFree ℤ L
+  let hD := M.isEffectiveCartier_boundaryIdeal
+  obtain ⟨s⟩ := M.nonempty_cycleReversingInvolution
+    (congrArg Inv.inv (href.canonicalClass hD)) hnef hsq hprim
   have hPrimitive : IsPrimitive (total[M.boundaryClass hD]) :=
     M.picardMarking.isPrimitive_iff.mp (by rwa [M.picardMarking_sum_boundaryClass])
-  obtain ⟨hδ, a, s, hℓ, hreflection⟩ :=
-    exists_exchangeKernelAction_reflection A.picardEquiv A.exchangeKernelEquiv
-      A.exchangeKernelAction_eq A.ker_sign hSymm
-      (M.intersectionForm_boundaryClass hD hnef hsq) hPrimitive
-      (M.isCharacteristic_sum_boundaryClass hD (congrArg Inv.inv (href.canonicalClass hD)))
-  refine ⟨A, hδ, a, s, A.exchangeKernelEquiv.isPrimitive_iff.mpr
-    (hPrimitive.of_map (g := orth[B,M.boundaryClass hD].subtype)), ?_, hℓ, hreflection⟩
-  intro p
-  rw [A.coe_exchangeKernelEquiv_apply, ← Q.totalBoundaryExponent_def]
-  exact Q.totalBoundaryExponent_eq_totalBoundaryRayMultiplicity p _ rfl
+  exact ⟨{
+    comparison := A
+    involution := s
+    total_mem_orthogonal := BoundaryCycle.sum_mem_orthogonal
+      (M.intersectionForm_boundaryClass hD hnef hsq)
+    isPrimitive_total := hPrimitive
+    isSymm := M.isSymm
+    isAddTorsionFree := inferInstance }⟩
 
-end GeometricRealization
+end CompleteToricPresentation
 
 end QPainleve.SignedClusterModularGroup

@@ -38,7 +38,6 @@ local notation "M" a:arg => internalBlowupTower b s (center a)
 local notation "π" a:arg => toBase (WithBoundary.toTower (Sigma.snd (M a)))
 local notation "strict[" a "]" => Scheme.Hom.ker (WithBoundary.boundaryι (Sigma.snd (M a)))
 local notation "prime[" a "]" => internalBlowupBoundaryPrimeEquiv hΦ b s (center a)
-local notation "mark" a:arg => internalBlowupPicardMarking b s (center a) hΦ
 local notation "base" => Φ.algebraicRealizationStructureMap
 
 variable [PrestableFamily ((Φ.boundaryIdeal inferInstance).subscheme ↘ Spec (.of ℂ))]
@@ -80,19 +79,8 @@ theorem exists_iso_of_eq_orderedBoundaryPeriod
       q[e'] (prime[d] ρ).val ∈ D'.boundaryPrimes)
     (hperiod : orderedBoundaryPeriod hΦ b s A (center c) =
       orderedBoundaryPeriod hΦ b s A (center d)) :
-    let : IsModification T.toBase :=
-      hT.isClosedPointTower.isModification_of_smoothOfRelativeDimension_two f
-    let : IsModification U.toBase :=
-      hU.isClosedPointTower.isModification_of_smoothOfRelativeDimension_two g
-    ∃ (χ : Multiplicative (N →+ ℤ) →* ℂˣ) (t : (M c).1 ≅ (M d).1) (j : X ≅ X'),
-      IsLift (Φ.torusTranslation χ) (M c).2.toTower (M d).2.toTower t ∧
-      p[e] ≫ j.hom = t.hom ≫ q[e'] ∧ j.hom ≫ g = f ∧ D'.comap j.hom = D ∧
-      j.hom.toRationalMap.comp (contractedXEvaluation b s d hΦ q[e']) =
-        contractedXEvaluation b s c hΦ p[e] ∧
-      ∀ L : LineBundleClass X',
-        (mark c).symm (Additive.ofMul (LineBundleClass.pullback p[e]
-          (LineBundleClass.pullback j.hom L))) =
-        (mark d).symm (Additive.ofMul (LineBundleClass.pullback q[e'] L)) := by
+    ∃ j : X ≅ X', j.hom ≫ g = f ∧ D'.comap j.hom = D ∧
+      Nonempty (ContractedToricTranslation b s p[e] q[e'] j) := by
   exact exists_iso_of_eq_center_character hΦ b s c d hT hU e e' hc hd hD hD' hkeep
     ((orderedBoundaryPeriod_eq_iff hΦ b s A r hcomp hdet hnodes (center c) (center d)).mp hperiod)
 

@@ -8,6 +8,7 @@ module
 public import Mathlib.GroupTheory.Coset.Basic
 public import Mathlib.LinearAlgebra.Reflection
 public import QPainleve.SignedClusterModularGroup.Boundary.Isometry
+import QPainleve.LinearAlgebra.Reflection
 import QPainleve.SignedClusterModularGroup.BoundaryCycle
 import QPainleve.SignedClusterModularGroup.Faithfulness
 
@@ -208,6 +209,44 @@ theorem eq_centralSign_of_signedOrthogonalRestriction [Module.Free ℤ L] [Modul
         toIsometry_apply, OneMemClass.coe_one, hone] using smul_left_cancel (-1 : ℤˣ) heq
   · simpa only [coe_centralSign, sign_apply] using hsign
 
+namespace CycleReversingInvolution
+
+variable {D} (r : CycleReversingInvolution B D)
+
+/-- The linear form of the signed reflection on the boundary orthogonal. -/
+def orthogonalReflectionForm : K →ₗ[ℤ] ℤ :=
+  (2 : ℤ) • (B.flip r.cutClass).comp (K).subtype
+
+@[simp]
+theorem orthogonalReflectionForm_apply (x : K) : r.orthogonalReflectionForm x =
+    2 * B x r.cutClass := by
+  simp [orthogonalReflectionForm]
+
+/-- The reflecting linear form takes the total boundary class to two. -/
+theorem orthogonalReflectionForm_apply_sum (hSymm : B.IsSymm) (hδ : δ ∈ K) :
+    r.orthogonalReflectionForm ⟨δ, hδ⟩ = 2 := by
+  classical
+  have hpair : B r.cutClass δ = 1 := by simp [map_sum]
+  rw [orthogonalReflectionForm_apply, hSymm.eq δ r.cutClass, hpair, mul_one]
+
+/-- The signed restriction of the chosen boundary involution is the module reflection
+along the total boundary class. -/
+theorem signedOrthogonalRestriction_eq_reflection (hδ : δ ∈ K)
+    (hℓ : r.orthogonalReflectionForm ⟨δ, hδ⟩ = 2) :
+    (ρ r.element).val = Module.reflection hℓ := by
+  apply LinearEquiv.ext
+  intro x
+  apply Subtype.ext
+  have hnegative : ((ρ r.element).val x : L) = -(toIsometry B D r.element).val x := by
+    rw [coe_signedOrthogonalRestriction_apply, sign_apply, r.sign_element]
+    simp [Units.smul_def]
+  rw [hnegative, toIsometry_apply, r.toIsometry_apply_orthogonal x x.property,
+    neg_add_rev, neg_neg, neg_add_eq_sub, Module.reflection_apply,
+    orthogonalReflectionForm_apply, Submodule.coe_sub, Submodule.coe_smul]
+  exact congrArg ((x : L) - ·) (int_smul_eq_zsmul scalar _ _).symm
+
+end CycleReversingInvolution
+
 variable (B)
 
 /-- In a unimodular symmetric cycle lattice with primitive characteristic total class, the
@@ -223,30 +262,12 @@ theorem exists_signedOrthogonalRestriction_eq_reflection [Module.Free ℤ L] [Mo
       (hℓ : ((2 : ℤ) • (B.flip f).comp (K).subtype) ⟨δ, hδ⟩ = 2),
       sign B D s = -1 ∧ s * s = 1 ∧ (ρ s).val = Module.reflection hℓ ∧
         ∀ x : K, (ℤ ∙ (⟨δ, hδ⟩ : K)).mkQ ((ρ s).val x) = (ℤ ∙ (⟨δ, hδ⟩ : K)).mkQ x := by
-  classical
-  have hδ : δ ∈ K := Submodule.mem_orthogonalBilin_span.mpr
-    (by rintro _ ⟨i, rfl⟩; exact (hSymm.eq _ _).trans (BoundaryCycle.pairing_sum hGram i))
+  have hδ := BoundaryCycle.sum_mem_orthogonal hGram
   obtain ⟨r⟩ := nonempty_cycleReversingInvolution B D hSymm hGram hPrimitive hCharacteristic
-  let ℓ : K →ₗ[ℤ] ℤ := (2 : ℤ) • (B.flip r.cutClass).comp (K).subtype
-  have hℓ_eval (x : K) : ℓ x = 2 * B x r.cutClass := by simp [ℓ]
-  have hℓ : ℓ ⟨δ, hδ⟩ = 2 := by
-    have hfδ : B r.cutClass δ = 1 := by simp [map_sum]
-    have hδf : B δ r.cutClass = 1 := (hSymm.eq _ _).trans hfδ
-    simp only [hℓ_eval, hδf, mul_one]
-  have hr : (ρ r.element).val = Module.reflection hℓ := by
-    apply LinearEquiv.ext
-    intro x
-    apply Subtype.ext
-    have hnegative : ((ρ r.element).val x : L) = -(toIsometry B D r.element).val x := by
-      rw [coe_signedOrthogonalRestriction_apply, sign_apply, r.sign_element]
-      simp [Units.smul_def]
-    rw [hnegative, toIsometry_apply, r.toIsometry_apply_orthogonal x x.property,
-      neg_add_rev, neg_neg, neg_add_eq_sub, Module.reflection_apply,
-      hℓ_eval, Submodule.coe_sub, Submodule.coe_smul]
-    exact congrArg ((x : L) - ·) (int_smul_eq_zsmul scalar _ _).symm
+  have hℓ := r.orthogonalReflectionForm_apply_sum hSymm hδ
+  have hr := r.signedOrthogonalRestriction_eq_reflection hδ hℓ
   refine ⟨hδ, r.cutClass, r.element, hℓ, by simp, r.element_mul_self, hr, ?_⟩
   intro x
-  rw [hr, Module.reflection_apply, map_sub, sub_eq_self, ← LinearMap.mem_ker, Submodule.ker_mkQ]
-  exact Submodule.smul_mem _ _ (Submodule.mem_span_singleton_self _)
+  rw [hr, Module.mkQ_reflection_apply]
 
 end QPainleve.SignedBoundaryIsometryGroup
