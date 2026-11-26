@@ -257,31 +257,6 @@ private theorem unrolledAngle_strictMonoOn {v : ZMod r → Fin 2 → ℝ}
   let j : Fin (r + 1) := ⟨b, Nat.lt_succ_of_le hb⟩
   exact hmono (a := i) (b := j) hab
 
-omit [NeZero r] in
-private theorem endpoint_of_two_angleIntervals {θ : ℕ → ℝ}
-    (hmono : MonotoneOn θ (Set.Iic r)) (hperiod : θ r = θ 0 + 2 * Real.pi)
-    {k l : ℕ} (hk : k < r) (hl : l < r) (hne : k ≠ l)
-    {s t a : ℝ} (hs : s = a ∨ s = a + 2 * Real.pi) (ht : t = a ∨ t = a + 2 * Real.pi)
-    (hks : θ k ≤ s ∧ s ≤ θ (k + 1)) (hlt : θ l ≤ t ∧ t ≤ θ (l + 1)) :
-    s = θ k ∨ s = θ (k + 1) := by
-  have hle {i j : ℕ} (hj : j ≤ r) (hij : i ≤ j) : θ i ≤ θ j :=
-    hmono (hij.trans hj) hj hij
-  rcases eq_or_ne s t with rfl | hst
-  · rcases lt_or_gt_of_ne hne with hkl | hlk
-    · exact Or.inr (hks.2.antisymm ((hle hl.le (by omega)).trans hlt.1))
-    · exact Or.inl (le_antisymm (hlt.2.trans (hle hk.le (by omega))) hks.1)
-  · -- Two distinct lifts differ by one turn, so they lie at opposite ends of the cut.
-    have hsb : θ 0 ≤ s ∧ s ≤ θ r :=
-      ⟨(hle hk.le (Nat.zero_le _)).trans hks.1, hks.2.trans (hle le_rfl (by omega))⟩
-    have htb : θ 0 ≤ t ∧ t ≤ θ r :=
-      ⟨(hle hl.le (Nat.zero_le _)).trans hlt.1, hlt.2.trans (hle le_rfl (by omega))⟩
-    rcases hs with rfl | rfl <;> rcases ht with ht | ht
-    · exact (hst ht.symm).elim
-    · exact Or.inl (by linarith [hks.1, hsb.1, htb.2, hle hk.le (Nat.zero_le k)])
-    · have hk' : k + 1 ≤ r := by omega
-      exact Or.inr (by linarith [hks.2, hsb.2, htb.1, hle le_rfl hk'])
-    · exact (hst ht.symm).elim
-
 variable {v : ZMod r → Fin 2 → ℝ} {start : ZMod r}
   (hdet : ∀ j, det₂ (v j) (v (j + 1)) = 1)
   (hc : ∀ j, (v j 1 < 0 ∧ 0 ≤ v (j + 1) 1) ↔ j + 1 = start)
@@ -332,8 +307,8 @@ private theorem angle_eq_endpoint_of_mem_two_adjacentCones {j l : ZMod r} (hne :
   obtain ⟨s, hs, hs₁, hs₂⟩ := (mem_adjacentCone_iff_exists_angle hdet hc hk hx).mp hj
   obtain ⟨t, ht, ht₁, ht₂⟩ := (mem_adjacentCone_iff_exists_angle hdet hc hm hx).mp hl
   have hmono := unrolledAngle_strictMonoOn (fun j ↦ (hdet j).symm ▸ zero_lt_one) hc
-  have hθ := endpoint_of_two_angleIntervals hmono.monotoneOn (unrolledAngle_end v start)
-    hk hm (fun h ↦ hne (congrArg _ h)) hs ht ⟨hs₁, hs₂⟩ ⟨ht₁, ht₂⟩
+  have hθ := hmono.monotoneOn.eq_endpoint_of_mem_two_periodic_intervals
+    (unrolledAngle_end v start) hk hm (fun h ↦ hne (congrArg _ h)) hs ht ⟨hs₁, hs₂⟩ ⟨ht₁, ht₂⟩
   have huniq {a b s : ℝ} (ha : a ∈ Set.Ico 0 (2 * Real.pi)) (hb : b ∈ Set.Ico 0 (2 * Real.pi))
       (h₁ : s = a ∨ s = a + 2 * Real.pi) (h₂ : s = b ∨ s = b + 2 * Real.pi) : a = b := by
     rcases ha with ⟨ha₀, ha₂⟩
