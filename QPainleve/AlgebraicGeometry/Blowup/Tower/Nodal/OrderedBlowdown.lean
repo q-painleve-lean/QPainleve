@@ -46,38 +46,6 @@ variable {X : Scheme.{u}} {D : X.IdealSheafData}
 
 local notation "pc[" D "," x "]" => Additive.ofMul (primeDivisorClass (boundaryPrimeEmbedding D x))
 
-private theorem mem_support_vanishingIdeal_boundaryPrime_iff (x y : D.boundaryPrimes) :
-    x.val ∈ (J[y.val]).support ↔ x = y := by
-  simp only [← SetLike.mem_coe, coe_support_vanishingIdeal, Closeds.coe_mk]
-  refine ⟨fun h ↦ ?_, fun h ↦ h ▸ subset_closure (Set.mem_singleton _)⟩
-  apply D.boundaryPrimeEmbedding.injective
-  exact (CodimensionOnePoint.eq_of_specializes (x := D.boundaryPrimeEmbedding x)
-    (y := D.boundaryPrimeEmbedding y)
-    (specializes_iff_mem_closure.mpr (by simpa only [coe_boundaryPrimeEmbedding] using h))).symm
-
-private noncomputable def eraseBoundaryPrimeEquiv {α : Type w} [DecidableEq α]
-    {s : Finset α} (a : s ≃ D.boundaryPrimes) (j : s)
-    {Y : Scheme.{u}} {F : Y.IdealSheafData} {f : X ⟶ Y}
-    (h : Set.BijOn f (D.boundaryPrimes \ (J[(a j).val]).support) F.boundaryPrimes) :
-    (s.erase j.val : Finset α) ≃ F.boundaryPrimes := by
-  let e := (Set.equivOfEq (Finset.coe_erase j.val s)).trans
-    (Equiv.subtypeSubtypeEquivSubtypeInter (fun x ↦ x ∈ s) (fun x ↦ x ∉ ({j.val} : Set α))).symm
-  let b := a.subtypeEquiv (p := fun i ↦ i.val ∉ ({j.val} : Set α))
-    (q := fun x ↦ x.val ∉ (J[(a j).val]).support) fun i ↦ by
-      rw [Set.mem_singleton_iff, mem_support_vanishingIdeal_boundaryPrime_iff, a.injective.eq_iff]
-      exact not_congr Subtype.ext_iff.symm
-  let d := Equiv.subtypeSubtypeEquivSubtypeInter
-    (fun x ↦ x ∈ D.boundaryPrimes) (fun x ↦ x ∉ (J[(a j).val]).support)
-  exact e.trans (b.trans (d.trans (h.equiv f)))
-
-private theorem eraseBoundaryPrimeEquiv_apply_val {α : Type w} [DecidableEq α]
-    {s : Finset α} (a : s ≃ D.boundaryPrimes) (j : s)
-    {Y : Scheme.{u}} {F : Y.IdealSheafData} {f : X ⟶ Y}
-    (h : Set.BijOn f (D.boundaryPrimes \ (J[(a j).val]).support) F.boundaryPrimes)
-    (i : (s.erase j.val : Finset α)) :
-    (eraseBoundaryPrimeEquiv a j h i).val =
-      f (a ⟨i.val, (Finset.mem_erase.mp i.property).2⟩).val := (rfl)
-
 private theorem exists_snoc_numbered_blowdown {Y Z W : Scheme.{u}}
     [Y.Over S(k)] [Z.Over S(k)] {F : Y.IdealSheafData} {G : Z.IdealSheafData}
     {l : ℕ} {T : BlowupTower Z l W}
@@ -140,7 +108,7 @@ private theorem pullback_primeDivisorClass_eraseBoundaryPrimeEquiv
     (i : (s.erase j.val : Finset α)) :
     let i' : s := ⟨i.val, (Finset.mem_erase.mp i.property).2⟩
     Additive.ofMul (pullback f (primeDivisorClass
-      (F.boundaryPrimeEmbedding (eraseBoundaryPrimeEquiv a j h i)))) =
+      (F.boundaryPrimeEmbedding (D.eraseBoundaryPrimeEquiv a j h i)))) =
       B.projectOffNegOne (pc[D,a j]) (pc[D,a i']) := by
   intro i'
   let t := b.symm (a i')
@@ -150,9 +118,9 @@ private theorem pullback_primeDivisorClass_eraseBoundaryPrimeEquiv
     have hlabel : i' = j := a.injective (ht.symm.trans ((congrArg b htl).trans hl))
     exact (Finset.mem_erase.mp i.property).1 (congrArg Subtype.val hlabel)
   obtain ⟨r, hr, hrClass⟩ := hprime t hne
-  have hr' : r = eraseBoundaryPrimeEquiv a j h i := Subtype.ext (hr.symm.trans
+  have hr' : r = D.eraseBoundaryPrimeEquiv a j h i := Subtype.ext (hr.symm.trans
     ((congrArg (fun z : D.boundaryPrimes ↦ f z.val) ht).trans
-      (eraseBoundaryPrimeEquiv_apply_val a j h i).symm))
+      (D.eraseBoundaryPrimeEquiv_apply_val a j h i).symm))
   simpa only [hr', ht, hl] using hrClass
 
 private theorem comp_mem_boundaryPrimes_iff_of_erase {α : Type w} [DecidableEq α]
@@ -163,7 +131,7 @@ private theorem comp_mem_boundaryPrimes_iff_of_erase {α : Type w} [DecidableEq 
     {q : Y} (hq : IsClosed ({q} : Set Y)) (hp : IsClosedMap p)
     (hExc : (Y.fromSpecResidueField q).ker.comap f = J[(a j).val])
     {c : List α}
-    (hsurv : ∀ i : s.erase j.val, p (eraseBoundaryPrimeEquiv a j h i).val ∈ G.boundaryPrimes ↔
+    (hsurv : ∀ i : s.erase j.val, p (D.eraseBoundaryPrimeEquiv a j h i).val ∈ G.boundaryPrimes ↔
       i.val ∉ c) (i : s) :
     (f ≫ p) (a i).val ∈ G.boundaryPrimes ↔ i.val ∉ j.val :: c := by
   by_cases hi : i.val = j.val
@@ -257,7 +225,7 @@ private theorem exists_ordered_blowdown [IsAlgClosed k] [NeZero (2 : k)]
         D.support.isClosed
     have hbij' : Set.BijOn f (D.boundaryPrimes \ (J[(a j').val]).support) F.boundaryPrimes :=
       by simpa only [F, hl] using hbij
-    let a' := eraseBoundaryPrimeEquiv a j' hbij'
+    let a' := D.eraseBoundaryPrimeEquiv a j' hbij'
     let m' := m.comp (pullbackHom f).toAdditive.toIntLinearMap
     have hm' : ∀ x y, B (m' x) (m' y) = B[k,Y] x y := by
       intro x y
