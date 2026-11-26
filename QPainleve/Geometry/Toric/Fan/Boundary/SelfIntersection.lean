@@ -19,7 +19,8 @@ The primitive generators immediately before and after a ray satisfy an integral
 linear relation with that ray. The coefficient of the middle ray is the self-intersection
 of its boundary divisor. This is the wall relation of Fulton, *Introduction to Toric
 Varieties*, §5.1, and determines the next generator from the preceding pair and the
-self-intersection.
+self-intersection. In positive cyclic coordinates, it gives each self-intersection
+as the negative determinant of the neighboring primitive generators.
 -/
 
 public section
@@ -27,6 +28,26 @@ public section
 open AlgebraicGeometry Multiplicative
 open TauCeti.AlgebraicGeometry (LineBundleClass)
 open TauCeti.AlgebraicGeometry.Chow
+open scoped Matrix
+
+namespace QPainleve
+
+/-- Toric self-intersection in positive cyclic order, from the two neighboring
+primitive ray coordinates. -/
+def toricBoundarySelfIntersection {m : ℕ} (ray : ZMod m → Fin 2 → ℤ) (j : ZMod m) : ℤ :=
+  let u := ray (j - 1)
+  let v := ray (j + 1)
+  Int.neg (u 0 * v 1 - u 1 * v 0)
+
+/-- The self-intersection is the negative determinant of the two neighboring rays. -/
+@[simp]
+theorem toricBoundarySelfIntersection_apply {m : ℕ} (ray : ZMod m → Fin 2 → ℤ) (j : ZMod m) :
+    toricBoundarySelfIntersection ray j =
+      (-(Matrix.det !![ray (j - 1) 0, ray (j - 1) 1; ray (j + 1) 0, ray (j + 1) 1])) := by
+  rw [Matrix.det_fin_two_of]
+  rfl
+
+end QPainleve
 
 namespace TauCeti.Toric.Fan
 
@@ -197,5 +218,27 @@ theorem rayBoundarySelfIntersection_eq_neg_det_of_neighbors
     (primitiveGenerator_add_selfIntersection_smul_add_eq_zero b hΦ hc hprev hnext)
   simpa only [map_add, map_smul, map_zero, b.detDualEquiv_self, hprev.1,
     zero_add, smul_eq_mul, mul_one, eq_neg_iff_add_eq_zero] using h
+
+open _root_.Module QPainleve in
+/-- In positive cyclic coordinates, each ray's self-intersection equals the integer
+self-intersection computed from its neighboring rays. -/
+theorem rayBoundarySelfIntersection_eq_of_positiveRayCoordinates
+    {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V] {i : N →+ V} {Φ : Fan i}
+    [Φ.algebraicRealization.IsProjectiveOver ℂ]
+    (hΦ : Φ.IsRegular) (hc : Φ.IsComplete) (b : Basis (Fin 2) ℤ N)
+    {m : ℕ} (e : ZMod m ≃ Φ.Ray)
+    (he : ∀ j, b.detDualEquiv (e j).primitiveGenerator (e (j + 1)).primitiveGenerator = 1 ∧
+      ∃ σ : Φ.cones, (e j).toCone ≤ σ ∧ (e (j + 1)).toCone ≤ σ) :
+    (fun j ↦ Φ.rayBoundarySelfIntersection hΦ (e j)) =
+      toricBoundarySelfIntersection (fun j ↦ b.repr (e j).primitiveGenerator) := by
+  funext j
+  have hp := he (j - 1)
+  rw [sub_add_cancel] at hp
+  rw [toricBoundarySelfIntersection_apply, Matrix.det_fin_two_of,
+    rayBoundarySelfIntersection_eq_neg_det_of_neighbors b hΦ hc hp (he j),
+    Basis.detDualEquiv_apply, Basis.det_apply]
+  simp only [Matrix.det_fin_two, Basis.toMatrix_apply,
+    Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val_fin_one]
+  ring
 
 end TauCeti.Toric.Fan

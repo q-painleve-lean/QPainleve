@@ -15,31 +15,15 @@ The integer Picard coordinates of a class on an ordered internal blowup give
 its degree on a strict boundary ray. The toric divisor contributes its
 coefficients at the ray and its two neighbors. Each total exceptional
 coordinate contributes on the ray of its center. The comparison uses
-`Fan.markedBoundaryMap_single_pairing` and the toric wall relation in
-`Fan.rayBoundarySelfIntersection_eq_neg_det_of_neighbors`.
+`Fan.markedBoundaryMap_single_pairing` and the toric boundary pairing in
+`Fan.intersectionBilinForm_rayDivisorToPicard_single`.
 -/
 
 public section
 
 open AlgebraicGeometry Module TauCeti.AlgebraicGeometry
-open scoped Matrix
 
 namespace QPainleve
-
-/-- Toric self-intersection in positive cyclic order, from the two neighboring
-primitive ray coordinates. -/
-def toricBoundarySelfIntersection {m : ℕ} (ray : ZMod m → Fin 2 → ℤ) (j : ZMod m) : ℤ :=
-  let u := ray (j - 1)
-  let v := ray (j + 1)
-  Int.neg (u 0 * v 1 - u 1 * v 0)
-
-/-- The self-intersection is the negative determinant of the two neighboring rays. -/
-@[simp]
-theorem toricBoundarySelfIntersection_apply {m : ℕ} (ray : ZMod m → Fin 2 → ℤ) (j : ZMod m) :
-    toricBoundarySelfIntersection ray j =
-      (-(Matrix.det !![ray (j - 1) 0, ray (j - 1) 1; ray (j + 1) 0, ray (j + 1) 1])) := by
-  rw [Matrix.det_fin_two_of]
-  rfl
 
 /-- Degree on the strict boundary component of a ray, computed from the integer
 Picard coordinates of a class on the internal blowup. The offsets start at the
@@ -71,28 +55,7 @@ open QPainleve
 
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {Φ : Fan i}
-  [Φ.algebraicRealization.IsProjectiveOver ℂ]
-
-/-- In positive cyclic coordinates, each ray's self-intersection equals the integer
-self-intersection computed from its neighboring rays. -/
-theorem rayBoundarySelfIntersection_eq_of_positiveRayCoordinates
-    (hΦ : Φ.IsRegular) (hc : Φ.IsComplete) (b : Basis (Fin 2) ℤ N)
-    {m : ℕ} (e : ZMod m ≃ Φ.Ray)
-    (he : ∀ j, b.detDualEquiv (e j).primitiveGenerator (e (j + 1)).primitiveGenerator = 1 ∧
-      ∃ σ : Φ.cones, (e j).toCone ≤ σ ∧ (e (j + 1)).toCone ≤ σ) :
-    (fun j ↦ Φ.rayBoundarySelfIntersection hΦ (e j)) =
-      toricBoundarySelfIntersection (fun j ↦ b.repr (e j).primitiveGenerator) := by
-  funext j
-  have hp := he (j - 1)
-  rw [sub_add_cancel] at hp
-  rw [toricBoundarySelfIntersection_apply, Matrix.det_fin_two_of,
-    rayBoundarySelfIntersection_eq_neg_det_of_neighbors b hΦ hc hp (he j),
-    Basis.detDualEquiv_apply, Basis.det_apply]
-  simp only [Matrix.det_fin_two, Basis.toMatrix_apply,
-    Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val_fin_one]
-  ring
-
-variable [Nonempty Φ.cones]
+  [Φ.algebraicRealization.IsProjectiveOver ℂ] [Nonempty Φ.cones]
   [SmoothOfRelativeDimension 2 (Φ.algebraicRealization ↘ Spec (CommRingCat.of ℂ))]
 
 /-- In a cyclic ray numbering, the marked pairing with a strict boundary component
