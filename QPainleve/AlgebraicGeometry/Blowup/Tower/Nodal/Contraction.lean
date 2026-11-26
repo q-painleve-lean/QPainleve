@@ -12,7 +12,6 @@ public import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.ProjectiveOver
 
 import QPainleve.AlgebraicGeometry.Blowup.StrictTransform.Contraction
 import QPainleve.AlgebraicGeometry.Blowup.StrictTransform.Reduced
-import QPainleve.AlgebraicGeometry.Blowup.Tower.Boundary.Primes
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Contraction
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Modification
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Nodal.InternalCurve
@@ -142,6 +141,12 @@ theorem existsUnique_iso_of_eq_surviving_boundaryPrimes
   have : Smooth g := SmoothOfRelativeDimension.smooth 2 g
   have : IsNoetherian X := isNoetherian_of_finiteType f
   have : IsNoetherian Y := isNoetherian_of_finiteType g
+  have : IsRegular X := IsRegular.of_smooth f
+  have : IsRegular Y := IsRegular.of_smooth g
+  have : IsIntegral V := hT.isClosedPointTower.isIntegral f
+  have : IsIntegral W := hU.isClosedPointTower.isIntegral g
+  have := hT.isClosedPointTower.isModification_of_smoothOfRelativeDimension_two f
+  have := hU.isClosedPointTower.isModification_of_smoothOfRelativeDimension_two g
   have hs (x : V) : x ∈ (D.comap T.toBase).support ↔ e.hom x ∈ (E.comap U.toBase).support := by
     rw [hsupp, support_comap]
     rfl
@@ -157,8 +162,8 @@ theorem existsUnique_iso_of_eq_surviving_boundaryPrimes
     · have hp := mem_boundaryPrimes.mpr ⟨hb, hx⟩
       have hq := mem_boundaryPrimes.mpr
         ⟨(hs x).mp hb, (coheight_eq_of_isOpenImmersion e.hom).trans hx⟩
-      rw [hT.isClosedPointTower.toBase_mem_centre_iff_notMem_boundaryPrimes f hp,
-        hU.isClosedPointTower.toBase_mem_centre_iff_notMem_boundaryPrimes g hq, hkeep x hp]
+      rw [D.mem_centre_iff_notMem_boundaryPrimes_of_mem_boundaryPrimes_comap T.toBase hp,
+        E.mem_centre_iff_notMem_boundaryPrimes_of_mem_boundaryPrimes_comap U.toBase hq, hkeep x hp]
     · exact iff_of_false (hnot hT.boundaryCompl_le_isoLocus hb)
         (hnot hU.boundaryCompl_le_isoLocus (fun h ↦ hb ((hs x).mpr h)))
   obtain ⟨a, ⟨ha, haOver⟩, hu⟩ :=

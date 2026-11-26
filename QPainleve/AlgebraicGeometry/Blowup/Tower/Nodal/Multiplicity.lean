@@ -9,7 +9,7 @@ public import QPainleve.AlgebraicGeometry.Blowup.Tower.Nodal.Basic
 public import QPainleve.AlgebraicGeometry.CartierDivisor.Support
 public import QPainleve.AlgebraicGeometry.IdealSheaf.Boundary.Primes
 import QPainleve.AlgebraicGeometry.Blowup.Descent
-import QPainleve.AlgebraicGeometry.Blowup.Tower.Boundary.Primes
+import QPainleve.AlgebraicGeometry.Blowup.Tower.Modification
 import QPainleve.AlgebraicGeometry.CartierDivisor.BoundaryPrimes
 import QPainleve.AlgebraicGeometry.Curves.Node.Order
 import QPainleve.AlgebraicGeometry.IdealSheaf.Stalk
@@ -121,6 +121,9 @@ theorem toBase_mem_boundaryPrimes_iff_coeff_totalTransform_eq_one
   intro htotal
   let : IsIntegral Y := hT.isClosedPointTower.isIntegral s
   let : IsNoetherian Y := T.isNoetherian
+  have : Smooth s := SmoothOfRelativeDimension.smooth 2 s
+  have : IsRegular X := IsRegular.of_smooth s
+  have := hT.isClosedPointTower.isModification_of_smoothOfRelativeDimension_two s
   have : Smooth (T.toBase ≫ s) := (hT.isClosedPointTower.smoothOfRelativeDimension s).smooth
   have : IsRegular Y := IsRegular.of_smooth (T.toBase ≫ s)
   let x := (D.comap T.toBase).boundaryPrimeEmbedding p
@@ -135,7 +138,7 @@ theorem toBase_mem_boundaryPrimes_iff_coeff_totalTransform_eq_one
   have hcentre : 2 ≤ WeilDivisor.coeff W x ↔ T.toBase p.val ∉ D.boundaryPrimes :=
     (hT.mem_centre_iff_two_le_coeff_totalTransform hD hnodal x).symm.trans
       (by simpa only [x, coe_boundaryPrimeEmbedding] using
-        hT.isClosedPointTower.toBase_mem_centre_iff_notMem_boundaryPrimes s p.property)
+        D.mem_centre_iff_notMem_boundaryPrimes_of_mem_boundaryPrimes_comap T.toBase p.property)
   have hweight : (¬ 2 ≤ WeilDivisor.coeff W x) ↔ WeilDivisor.coeff W x = 1 := by omega
   exact not_not.symm.trans ((not_congr hcentre.symm).trans hweight)
 

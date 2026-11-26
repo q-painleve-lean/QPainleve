@@ -167,6 +167,16 @@ theorem mem_boundaryPrimes_iff_mem_isoLocus_of_mem_boundaryPrimes_comap
   exact ⟨fun hp ↦ π.mem_isoLocus_of_coheight_eq_one (mem_boundaryPrimes.mp hp).2,
     fun hp ↦ (h.mapsTo (Set.mem_inter hy hp)).1⟩
 
+/-- A boundary prime of the inverse image under a modification projects to the centre exactly
+when its image is outside the original boundary primes. -/
+theorem mem_centre_iff_notMem_boundaryPrimes_of_mem_boundaryPrimes_comap
+    (D : X.IdealSheafData) (π : Y ⟶ X) [IsIntegral X] [IsNormalScheme X]
+    [IsLocallyNoetherian X] [IsReduced Y] [IsModification π] {y : Y}
+    (hy : y ∈ (D.comap π).boundaryPrimes) :
+    π y ∈ π.centre ↔ π y ∉ D.boundaryPrimes := by
+  rw [Scheme.Hom.centre_def, Set.mem_compl_iff, SetLike.mem_coe]
+  exact not_congr (D.mem_boundaryPrimes_iff_mem_isoLocus_of_mem_boundaryPrimes_comap π hy).symm
+
 /-- If a morphism is an isomorphism away from a point of coheight other than one,
 its point map bijects the pulled-back boundary primes away from that point with the
 original boundary primes. -/
