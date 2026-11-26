@@ -377,7 +377,7 @@ theorem exists_four_vertex_internal_blowup (parameters : Fin 4 → ℂˣ) :
   let := smooth_base hΨ
   let hD₀ := Ψ.isEffectiveCartier_boundaryIdeal hΨ hcΨ rank_two
   let hD := Fan.isEffectiveCartier_internalBlowupBoundary b₂ (diagonalRay rays) hΨ parameters hD₀
-  obtain ⟨hpre, A, hA⟩ := Fan.exists_numbering_internalBlowup_of_cyclicRays
+  obtain ⟨_, hpre, _, A, _, _, _, hA⟩ := Fan.exists_numbering_internalBlowup_of_cyclicRays
     hΨ hcΨ b₂ (diagonalRay rays) parameters rays hnext hD
   let : IsReduced M'.2.boundaryι.ker.subscheme := hpre.atWorstNodalOfRelativeDimensionOne.isReduced
   have hK := Fan.canonicalClass_internalBlowupTower b₂ (diagonalRay rays) parameters hΨ hD₀ hD
