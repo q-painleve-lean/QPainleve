@@ -8,6 +8,7 @@ module
 public import QPainleve.Algebra.Cluster.Word.Center
 public import QPainleve.Algebra.Cluster.Word.ModularGroup
 public import QPainleve.Algebra.Cluster.Word.Monomial
+public import QPainleve.Algebra.Cluster.Word.Specialization
 public import TauCeti.Algebra.Module.Equiv.AutCongr
 
 /-!
@@ -79,6 +80,15 @@ theorem exchangeKernelAction_op_loop (w : Loops) :
       Path.exchangeKernelEquiv (B := B) (C := B) w.asHom :=
   exchangeKernelEquivOfPullback_eq k B _ w.asHom
     (signedClusterModularGroupMap_unop_coe k B w).symm
+
+/-- Specializing the coefficient field preserves the integral exchange-kernel action. -/
+@[simp]
+theorem exchangeKernelAction_op_specialization (K : Type*) [Field K] [CharZero K]
+    (g : SignedClusterModularGroup K B) :
+    exchangeKernelAction k B (op (signedClusterModularGroupSpecialization K k B g)) =
+      exchangeKernelAction K B (op g) := by
+  obtain ⟨w, rfl⟩ := signedClusterModularGroupMap_surjective K B g
+  simp
 
 /-- If the signed action on the exchange kernel is faithful, the transported basis
 vectors determine equality of loop pullbacks. -/

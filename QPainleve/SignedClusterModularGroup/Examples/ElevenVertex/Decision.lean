@@ -17,8 +17,8 @@ import QPainleve.SignedClusterModularGroup.Realization.Relations.Casimir
 # Deciding relations of the eleven-vertex seed
 
 The ordered plane blowups give a marked reference model with one boundary component.
-The squarefree-boundary relation criterion then reduces equality of independent X pullbacks to
-transport of the nine explicit integral Casimir basis vectors. The algorithm uses the
+The squarefree-boundary relation criterion reduces equality of independent X pullbacks over
+any coefficient field to transport of the nine explicit integral Casimir basis vectors. It uses the
 original seed labels, including when the reference model uses the transposed lattice frame.
 The same criterion proves faithfulness of the signed group's exchange-kernel action.
 
@@ -61,8 +61,6 @@ private theorem xPullback_eq_iff_columns_of_neg
   have hcols (p : Word B B) : transportedColumns (u p) = transportedColumns p :=
     funext fun j ↦ hexp p (exchangeKernelBasisVectors j)
   simpa only [hX, mul_left_cancel_iff, mul_right_cancel_iff, hcols] using h (u w) (u v)
-
-variable [CharZero k]
 
 open AlgebraicGeometry QPainleve.SignedClusterModularGroup TauCeti
 open TauCeti.AlgebraicGeometry TauCeti.Toric Scheme.IdealSheafData
@@ -128,7 +126,7 @@ private theorem xPullback_eq_iff_columns (w v : Word B B) :
     exact criterion (by rw [hcharge]; exact neg_exchangeMatrix_eq_chargeExchangeMatrix)
       (by ext x; simp [SkewExchangeMatrix.neg_matrix, LinearMap.mem_ker])
 
-/-- Two signed eleven-vertex loops over a characteristic-zero field have the same X pullback
+/-- Two signed eleven-vertex loops over any coefficient field have the same X pullback
 exactly when their integral exchange-kernel actions agree. -/
 theorem xPullback_eq_iff_exchangeKernelEquiv_eq (w v : Word B B) :
     w.xPullback k = v.xPullback k ↔ w.exchangeKernelEquiv = v.exchangeKernelEquiv := by
@@ -140,7 +138,7 @@ theorem xPullback_eq_iff_exchangeKernelEquiv_eq (w v : Word B B) :
     congrArg (fun e : K ≃ₗ[ℤ] K ↦ (e (exchangeKernelBasis j) : Fin 11 → ℤ)) h
 
 /-- The integral exchange-kernel action of the eleven-vertex signed cluster modular group
-over a characteristic-zero field is faithful. -/
+over any coefficient field is faithful. -/
 theorem exchangeKernelAction_injective :
     Function.Injective (exchangeKernelAction k B) := by
   intro x y h
@@ -152,7 +150,7 @@ theorem exchangeKernelAction_injective :
     ((xPullback_eq_iff_exchangeKernelEquiv_eq k w.asHom v.asHom).mpr h))
 
 /-- In the eleven-vertex seed, the complete integer invariant detects equality of X pullbacks
-over every characteristic-zero field. The columns already distinguish the pullbacks. -/
+over every coefficient field. The columns already distinguish the pullbacks. -/
 theorem xPullback_eq_iff_signedLoopInvariants_eq (w v : Word B B) :
     w.xPullback k = v.xPullback k ↔
       w.signedLoopInvariants exchangeKernelBasisVectors boundaryOrders (boundaryOrders 0) =

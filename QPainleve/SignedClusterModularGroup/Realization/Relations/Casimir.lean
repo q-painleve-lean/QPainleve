@@ -10,10 +10,10 @@ public import QPainleve.Algebra.Cluster.ChargeKernel.Action
 public import QPainleve.SignedClusterModularGroup.Realization.Boundary
 public import QPainleve.SignedClusterModularGroup.Realization.Presentation
 
-import QPainleve.Algebra.Cluster.Word.SubtractionFree
 import QPainleve.SignedClusterModularGroup.Boundary.RotationKernel
-import QPainleve.SignedClusterModularGroup.Realization.Presentation.Casimir
 import QPainleve.SignedClusterModularGroup.Realization.NodalFiber
+import QPainleve.SignedClusterModularGroup.Realization.Presentation.Casimir
+import QPainleve.SignedClusterModularGroup.Realization.Presentation.FieldSpecialization
 import QPainleve.SignedClusterModularGroup.Realization.Reflection
 import TauCeti.LinearAlgebra.SesquilinearForm.TorsionFree
 
@@ -22,15 +22,17 @@ import TauCeti.LinearAlgebra.SesquilinearForm.TorsionFree
 
 The Casimir kernel has order dividing the boundary saturation index.
 For a squarefree boundary length the transported exchange-kernel basis alone
-decides equality of signed loop pullbacks, including for two-component boundaries.
+decides equality of signed loop pullbacks over any coefficient field, including
+for two-component boundaries.
 
 The comparison uses `CompleteToricPresentation.nonempty_casimirActionComparison_of_nodal_model`
-to transport the signed Picard restriction to the exchange kernel.
+to identify the complex Casimir kernel and `CompleteToricPresentation.signedSpecializationEquiv`
+to carry it to other coefficient fields.
 -/
 
 public section
 
-open AlgebraicGeometry CategoryTheory
+open AlgebraicGeometry CategoryTheory MulOpposite
 open QPainleve.CharacterTorus QPainleve.Cluster QPainleve.SignedBoundaryIsometryGroup
 open TauCeti TauCeti.AlgebraicGeometry TauCeti.Toric
 open Scheme Scheme.IdealSheafData
@@ -59,11 +61,22 @@ variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
 local notation "D" => M.boundaryClass M.isEffectiveCartier_boundaryIdeal
 
 include href hE hprim hnef hsq in
-/-- The order of the signed Casimir kernel divides the saturation index of the marked
-boundary lattice. -/
-theorem card_ker_exchangeKernelAction_dvd_boundaryTorsion :
-    Nat.card (exchangeKernelAction ℂ E).ker ∣
+/-- Over any coefficient field the order of the signed Casimir kernel divides the
+saturation index of the marked boundary lattice. -/
+theorem card_ker_exchangeKernelAction_dvd_boundaryTorsion (k : Type*) [Field k] :
+    Nat.card (exchangeKernelAction k E).ker ∣
       Nat.card (AddCommGroup.torsion (L ⧸ Submodule.span ℤ (Set.range D))) := by
+  let specialization := MulEquiv.op (Q.signedSpecializationEquiv k href hE hprim hnef hsq)
+  have he : (exchangeKernelAction k E).comp specialization.toMonoidHom =
+      exchangeKernelAction ℂ E := by
+    apply MonoidHom.ext
+    intro g
+    rw [← op_unop g]
+    simp [specialization]
+  have hcard :
+      Nat.card (exchangeKernelAction k E).ker = Nat.card (exchangeKernelAction ℂ E).ker := by
+    rw [← he, MulEquiv.toMonoidHom_eq_coe, MonoidHom.ker_comp_mulEquiv,
+      Subgroup.card_map_of_injective specialization.symm.injective]
   obtain ⟨A⟩ := Q.nonempty_casimirActionComparison_of_nodal_model href hE hprim hnef hsq
   let : Scheme.IsRationalOver (M.surface ↘ S) := href.isRationalOver
   let : M.surface.IsProjectiveOver ℂ := M.projective
@@ -74,7 +87,7 @@ theorem card_ker_exchangeKernelAction_dvd_boundaryTorsion :
   let : Module.Finite ℤ L := Module.Finite.of_surjective _ M.picardMarking.symm.surjective
   have hδ : IsPrimitive (∑ j, D j) :=
     M.picardMarking.isPrimitive_iff.mp (by rwa [M.picardMarking_sum_boundaryClass])
-  rw [A.exchangeKernelAction_eq, MonoidHom.ker_comp_of_injective _ _
+  rw [hcard, A.exchangeKernelAction_eq, MonoidHom.ker_comp_of_injective _ _
     ((LinearEquiv.autCongr A.exchangeKernelEquiv).injective.comp Subtype.val_injective),
     MulEquiv.toMonoidHom_eq_coe, MonoidHom.ker_comp_mulEquiv,
     Subgroup.card_map_of_injective A.picardEquiv.symm.injective]
@@ -85,26 +98,25 @@ include href hE hprim hnef hsq in
 /-- A saturated marked boundary span gives a faithful action on the integral
 exchange kernel. -/
 theorem exchangeKernelAction_injective_of_saturated_boundary
-    (ht : Nat.card (AddCommGroup.torsion (L ⧸ Submodule.span ℤ (Set.range D))) = 1) :
-    Function.Injective (exchangeKernelAction ℂ E) := by
-  have hd := Q.card_ker_exchangeKernelAction_dvd_boundaryTorsion href hE hprim hnef hsq
+    (ht : Nat.card (AddCommGroup.torsion (L ⧸ Submodule.span ℤ (Set.range D))) = 1)
+    (k : Type*) [Field k] :
+    Function.Injective (exchangeKernelAction k E) := by
+  have hd := Q.card_ker_exchangeKernelAction_dvd_boundaryTorsion href hE hprim hnef hsq k
   rw [ht] at hd
-  exact (MonoidHom.ker_eq_bot_iff (exchangeKernelAction ℂ E)).mp
+  exact (MonoidHom.ker_eq_bot_iff (exchangeKernelAction k E)).mp
     ((Subgroup.eq_bot_iff_card _).mpr (Nat.dvd_one.mp hd))
 
 include href hE hprim hnef hsq in
 /-- If the marked boundary span is saturated, signed loop pullbacks agree exactly when
-their transported integral basis columns agree, over any characteristic-zero field. -/
+their transported integral basis columns agree, over any coefficient field. -/
 theorem xPullback_eq_iff_exponentEquiv_eq_on_basis_of_saturated_boundary
     (ht : Nat.card (AddCommGroup.torsion (L ⧸ Submodule.span ℤ (Set.range D))) = 1)
-    (k : Type*) [Field k] [CharZero k] (w v : Word E E)
+    (k : Type*) [Field k] (w v : Word E E)
     {κ : Type*} (β : Module.Basis κ ℤ E.matrix.mulVecLin.ker) :
     w.xPullback k = v.xPullback k ↔
       ∀ j, w.exponentEquiv (β j : Fin r → ℤ) = v.exponentEquiv (β j : Fin r → ℤ) := by
-  rw [Quiver.Path.xPullback_eq_iff_ySeed_coefficient_eq k w v,
-    ← Quiver.Path.xPullback_eq_iff_ySeed_coefficient_eq ℂ w v]
-  exact xPullback_eq_iff_exponentEquiv_eq_on_basis_of_injective ℂ E
-    (Q.exchangeKernelAction_injective_of_saturated_boundary href hE hprim hnef hsq ht) w v β
+  exact xPullback_eq_iff_exponentEquiv_eq_on_basis_of_injective k E
+    (Q.exchangeKernelAction_injective_of_saturated_boundary href hE hprim hnef hsq ht k) w v β
 
 include href hprim hnef hsq in
 private theorem card_boundaryTorsion_eq_one_of_squarefree (hn : Squarefree n) :
@@ -124,15 +136,15 @@ private theorem card_boundaryTorsion_eq_one_of_squarefree (hn : Squarefree n) :
 include href hE hprim hnef hsq in
 /-- At squarefree boundary length the signed cluster modular group acts faithfully
 on the integral exchange kernel. -/
-theorem exchangeKernelAction_injective_of_squarefree (hn : Squarefree n) :
-    Function.Injective (exchangeKernelAction ℂ E) :=
+theorem exchangeKernelAction_injective_of_squarefree (hn : Squarefree n) (k : Type*) [Field k] :
+    Function.Injective (exchangeKernelAction k E) :=
   Q.exchangeKernelAction_injective_of_saturated_boundary href hE hprim hnef hsq
-    (card_boundaryTorsion_eq_one_of_squarefree Q href hprim hnef hsq hn)
+    (card_boundaryTorsion_eq_one_of_squarefree Q href hprim hnef hsq hn) k
 
 include href hE hprim hnef hsq in
 /-- For squarefree boundary length, Casimir basis columns alone decide signed relations. -/
 theorem xPullback_eq_iff_exponentEquiv_eq_on_basis_of_squarefree
-    (hn : Squarefree n) (k : Type*) [Field k] [CharZero k] (w v : Word E E)
+    (hn : Squarefree n) (k : Type*) [Field k] (w v : Word E E)
     {κ : Type*} (β : Module.Basis κ ℤ E.matrix.mulVecLin.ker) :
     w.xPullback k = v.xPullback k ↔
       ∀ j, w.exponentEquiv (β j : Fin r → ℤ) = v.exponentEquiv (β j : Fin r → ℤ) :=
@@ -144,7 +156,7 @@ include href hE hprim hnef hsq in
 /-- Decide signed loop equality at squarefree boundary length by comparing integer
 columns of the transported exchange-kernel basis. -/
 def decidableXPullbackEqOfSquarefreeBoundary
-    (hn : Squarefree n) (k : Type*) [Field k] [CharZero k] (w v : Word E E)
+    (hn : Squarefree n) (k : Type*) [Field k] (w v : Word E E)
     {κ : Type*} [Fintype κ] (β : Module.Basis κ ℤ E.matrix.mulVecLin.ker)
     (basisVectors : κ → Fin r → ℤ) (hb : basisVectors = fun j ↦ (β j : Fin r → ℤ)) :
     Decidable (w.xPullback k = v.xPullback k) :=

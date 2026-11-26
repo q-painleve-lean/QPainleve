@@ -49,8 +49,6 @@ private theorem signedInversionSign_involutionWord :
   exact (signedInversionSign_apply k B exchangeMatrix_matrix_ne_zero
     (End.of involutionWord)).trans h
 
-variable [CharZero k]
-
 /-- The eleven-vertex involution word is central in the signed cluster modular group. -/
 theorem involutionWord_pointMap_mem_center :
     z ∈ Subgroup.center (SignedClusterModularGroup k B) := by

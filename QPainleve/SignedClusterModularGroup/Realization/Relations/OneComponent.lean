@@ -69,7 +69,8 @@ theorem exists_picardEquiv_with_faithful_exchangeKernelAction :
   obtain ⟨A⟩ := Q.nonempty_casimirActionComparison_of_nodal_model href hE hprim hnef hsq
   have hcentral := GeometricRealization.exchangeKernelAction_picardEquiv_symm_centralSign
     A.exchangeKernelAction_eq (by decide : 1 ≤ 2)
-  have hinj := Q.exchangeKernelAction_injective_of_squarefree href hE hprim hnef hsq squarefree_one
+  have hinj := Q.exchangeKernelAction_injective_of_squarefree
+    href hE hprim hnef hsq squarefree_one ℂ
   refine ⟨A.picardEquiv, A.exchangeKernelEquiv,
     fun x ↦ neg_eq_iff_eq_neg.mp (A.coe_exchangeKernelEquiv_apply x).symm,
     A.exchangeKernelAction_apply, hinj, fun g ↦ ⟨?_, ?_⟩⟩
