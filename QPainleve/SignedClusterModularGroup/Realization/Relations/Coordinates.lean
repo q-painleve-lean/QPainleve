@@ -10,6 +10,8 @@ public import QPainleve.SignedClusterModularGroup.Realization.Relations.RayOrder
 public import QPainleve.SignedClusterModularGroup.Realization.Relations.Reference
 public import QPainleve.SignedClusterModularGroup.Realization.Relations.SurvivingOffsets
 
+import QPainleve.Geometry.Toric.Fan.Subdivision.Projective
+
 /-!
 # Signed loop comparison from a toric ray table
 
@@ -78,6 +80,32 @@ theorem isSignedLoopComparisonInput_of_rayCoordinates (p₀ : fiber[M₀,c₀])
     SkewExchangeMatrix.ofChargeCoordinates_matrix_eq_chargeExchangeMatrix b
       (Fan.rayChargeMap Q.rays)
 
+/-- The full ray table computes the toric self-intersections in the frame and cyclic
+order of the presentation. -/
+theorem rayBoundarySelfIntersection_eq_of_rayCoordinates
+    (ray : Fin Q.length → Fin 2 → ℤ)
+    (hray : ∀ j, ray j = b.repr (rayAt j).primitiveGenerator) :
+    (fun j ↦ Q.fan.rayBoundarySelfIntersection Q.regular (raysFromOrigin j)) =
+      toricBoundarySelfIntersection (ray ∘ (ZMod.finEquiv Q.length).symm) := by
+  let : Q.fan.algebraicRealization.IsProjectiveOver ℂ :=
+    Q.fan.isProjectiveOver_algebraicRealization_of_isComplete Q.regular Q.complete b
+  have hpositive (j : ZMod Q.length) :
+      b.detDualEquiv (raysFromOrigin j).primitiveGenerator
+        (raysFromOrigin (j + 1)).primitiveGenerator = 1 ∧
+      ∃ σ : Q.fan.cones, (raysFromOrigin j).toCone ≤ σ ∧
+        (raysFromOrigin (j + 1)).toCone ≤ σ := by
+    simpa only [Fan.rayEquivOfNodalCycleNumbering_rotate_apply,
+      Q.rayEquivOfNodalCycleNumbering_eq_rayOrder, add_right_comm j 1 Q.origin] using
+      Q.positive (j + Q.origin)
+  have hcoords : ray ∘ (ZMod.finEquiv Q.length).symm =
+      fun j k ↦ b.repr (raysFromOrigin j).primitiveGenerator k := by
+    funext j
+    simp only [Function.comp_apply, hray, Fan.rayFinEquivOfNodalCycleNumbering_apply,
+      RingEquiv.apply_symm_apply]
+  rw [hcoords]
+  exact Q.fan.rayBoundarySelfIntersection_eq_of_positiveRayCoordinates
+    Q.regular Q.complete b (raysFromOrigin) hpositive
+
 /-- The integer coefficients of a pulled-back ample class determine the surviving ray
 offsets. With the center and surviving ray coordinates, they certify the exchange matrix
 and the computed order table for the signed loop checker. -/
@@ -101,6 +129,28 @@ theorem isSignedLoopComparisonInput_of_polarization
   exact Q.isSignedLoopComparisonInput_of_rayCoordinates p₀ ray centerRay survivors hray hcenter
     (p₀.survivingRayOffsetsOfPolarization_eq hnodal₀ Q.complete hH
       selfIntersection toricCoeff centerRay exceptionalCoeff hself hcenter hcoords)
+
+/-- Certify the signed loop checker directly from a full ray table and the coordinates
+of a pulled-back polarization. The same ray table computes the self-intersections,
+exchange matrix, and boundary orders. -/
+theorem isSignedLoopComparisonInput_of_polarization_rayCoordinates
+    (p₀ : fiber[M₀,c₀]) (hnodal₀ : p₀.IsNodalContraction)
+    {H : LineBundleClass M₀.surface} (hH : H.IsAmple)
+    (ray : Fin Q.length → Fin 2 → ℤ) (centerRay : Fin r → Fin Q.length)
+    (toricCoeff : ZMod Q.length → ℤ) (exceptionalCoeff : Fin r → ℤ)
+    (hray : ∀ j, ray j = b.repr (rayAt j).primitiveGenerator)
+    (hcenter : ∀ j, rayAt (centerRay j) = Q.rays j)
+    (hcoords : (Q.fan.rayDivisorToPicard Q.regular (toricCoeff ∘ (raysFromOrigin).symm),
+        exceptionalCoeff) = Q.inclusion (M₀.picardMarking.symm (Additive.ofMul H))) :
+    let selfIntersection := toricBoundarySelfIntersection (ray ∘ (ZMod.finEquiv Q.length).symm)
+    let survivors := p₀.survivingRayOffsetsOfPolarization hnodal₀ Q.complete hH
+      selfIntersection toricCoeff centerRay exceptionalCoeff
+      (congrFun (Q.rayBoundarySelfIntersection_eq_of_rayCoordinates ray hray).symm) hcenter hcoords
+    Q.IsSignedLoopComparisonInput p₀ (SkewExchangeMatrix.ofChargeCoordinates (ray ∘ centerRay))
+      (boundaryOrderTable (ray ∘ centerRay) ray survivors) :=
+  Q.isSignedLoopComparisonInput_of_polarization p₀ hnodal₀ hH ray centerRay _ toricCoeff
+    exceptionalCoeff (congrFun (Q.rayBoundarySelfIntersection_eq_of_rayCoordinates ray hray).symm)
+    hcoords hcenter (fun j _ ↦ hray j)
 
 end CompleteToricPresentation
 

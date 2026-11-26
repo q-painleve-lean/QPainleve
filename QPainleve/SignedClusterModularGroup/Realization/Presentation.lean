@@ -5,12 +5,11 @@ Authors: The QPainleve contributors
 -/
 module
 
+public import QPainleve.Geometry.Toric.Fan.Boundary.Numbering
 public import QPainleve.Geometry.Toric.Fan.CyclicOrder
 public import QPainleve.SignedClusterModularGroup.Realization.ContractionNumerics
 public import QPainleve.SignedClusterModularGroup.Realization.Inversion.Contracted
 public import QPainleve.SignedClusterModularGroup.Realization.MarkedComparison
-
-import QPainleve.Geometry.Toric.Fan.Boundary.Numbering
 
 import QPainleve.Algebra.Cluster.ChargeKernel.Index
 
@@ -132,6 +131,19 @@ theorem HasNodalModel.nonempty_contractedToricFiber
   obtain ⟨p, _⟩ := (Q.hasNodalModel_iff c M).mp h
   exact ⟨p⟩
 
+/-- Reading rays from the numbered toric boundary gives the recorded ray order. -/
+theorem rayEquivOfNodalCycleNumbering_eq_rayOrder
+    (Q : CompleteToricPresentation i b r L γ) :
+    letI := Q.complete.nonempty_cones
+    letI := Q.prestable
+    letI := Q.neZero
+    Q.fan.rayEquivOfNodalCycleNumbering Q.regular Q.cycle = Q.rayOrder := by
+  let := Q.complete.nonempty_cones
+  let := Q.prestable
+  let := Q.neZero
+  refine Equiv.ext fun j ↦ (Q.fan.boundaryNormalizationComponentEquiv Q.regular).injective ?_
+  rw [Fan.boundaryNormalizationComponentEquiv_rayEquivOfNodalCycleNumbering, Q.component_eq]
+
 /-- The numbered node is the toric fixed point of the cone between its consecutive rays. -/
 theorem exists_cone_of_numbered_node (Q : CompleteToricPresentation i b r L γ)
     (j : ZMod Q.length) :
@@ -146,12 +158,9 @@ theorem exists_cone_of_numbered_node (Q : CompleteToricPresentation i b r L γ)
   let := Q.complete.nonempty_cones
   let := Q.prestable
   let := Q.neZero
-  have hray : Q.fan.rayEquivOfNodalCycleNumbering Q.regular Q.cycle = Q.rayOrder := by
-    refine Equiv.ext fun k ↦ (Q.fan.boundaryNormalizationComponentEquiv Q.regular).injective ?_
-    rw [Fan.boundaryNormalizationComponentEquiv_rayEquivOfNodalCycleNumbering, Q.component_eq]
   obtain ⟨_, -, _, hnodes⟩ :=
     Q.fan.exists_positive_ray_numbering_of_nodalCycleNumbering b Q.regular Q.complete Q.cycle
-  rw [hray] at hnodes
+  rw [Q.rayEquivOfNodalCycleNumbering_eq_rayOrder] at hnodes
   obtain ⟨σ, h₀, h₁, hpoint⟩ := hnodes j
   exact ⟨σ.val, h₀, h₁, hpoint⟩
 
