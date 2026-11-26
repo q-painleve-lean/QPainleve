@@ -6,13 +6,11 @@ Authors: The QPainleve contributors
 module
 
 public import QPainleve.Algebra.Cluster.ChargeKernel.Coordinates
-public import QPainleve.Algebra.Cluster.Word.LoopComparison.Basic
-public import QPainleve.SignedClusterModularGroup.Realization.Presentation
 public import QPainleve.SignedClusterModularGroup.Realization.Relations.RayOrders
+public import QPainleve.SignedClusterModularGroup.Realization.Relations.Reference
 public import QPainleve.SignedClusterModularGroup.Realization.Relations.SurvivingOffsets
 
 import QPainleve.Geometry.Toric.Fan.Subdivision.Projective
-import QPainleve.SignedClusterModularGroup.Realization.Relations.Reference
 
 /-!
 # Signed loop comparison from a toric ray table
@@ -22,38 +20,17 @@ zero, together with the ray offset of every ordered center and the set of offset
 that survive a nodal contraction. The center offsets determine the exchange
 matrix. The surviving offsets determine the determinant orders used in the
 tropical boundary search. An integer kernel calculation supplies the Casimir
-basis, so the decision procedure uses only these discrete inputs and the words.
+basis. The resulting certificate for the exchange matrix and order table can
+be used with the typed and generator-list comparisons.
 -/
 
 public section
 
-open AlgebraicGeometry CategoryTheory Module Quiver
+open AlgebraicGeometry CategoryTheory Module
 open QPainleve.CharacterTorus QPainleve.Cluster
 open Scheme Scheme.IdealSheafData TauCeti TauCeti.AlgebraicGeometry TauCeti.Toric
 
 namespace QPainleve.SignedClusterModularGroup
-
-local notation "seed[" ray "," center "]" => SkewExchangeMatrix.ofChargeCoordinates (ray ∘ center)
-
-/-- Compare the inversion signs, transported integral kernel columns, and forward boundary
-labels of two loops using the primitive ray coordinates and the offsets of the centers and
-surviving rays. The ray table is ordered cyclically from the ray of component zero. -/
-def compareSignedLoopsOfRayCoordinates {m n r : ℕ} [NeZero n]
-    (ray : Fin m → Fin 2 → ℤ) (centerRay : Fin r → Fin m)
-    (survivors : Set.powersetCard (Fin m) n)
-    (w v : Word (seed[ray,centerRay]) (seed[ray,centerRay])) : Bool :=
-  (seed[ray,centerRay]).compareSignedLoops
-    (boundaryOrderTable (ray ∘ centerRay) ray survivors) w v
-
-/-- The ray-coordinate checker uses the typed comparison with the determinant order table. -/
-theorem compareSignedLoopsOfRayCoordinates_def {m n r : ℕ} [NeZero n]
-    (ray : Fin m → Fin 2 → ℤ) (centerRay : Fin r → Fin m)
-    (survivors : Set.powersetCard (Fin m) n)
-    (w v : Word (seed[ray,centerRay]) (seed[ray,centerRay])) :
-    compareSignedLoopsOfRayCoordinates ray centerRay survivors w v =
-      (seed[ray,centerRay]).compareSignedLoops
-        (boundaryOrderTable (ray ∘ centerRay) ray survivors) w v :=
-  (rfl)
 
 namespace CompleteToricPresentation
 
@@ -64,7 +41,6 @@ local notation "Centers[" r "]" => Over.mk (structureMap ℂ (Fin r → ℤ))
 local notation "XTor[" r "]" => scheme ℂ (Fin r →₀ ℤ)
 local notation "χ[" c "]" => pointsEquiv ℂ _ (Subtype.mk (Over.Hom.left c) (Over.w c))
 local notation "cartier[" M "]" => MarkedSurface.isEffectiveCartier_boundaryIdeal M
-local notation "classOf(" h ")" => (LineBundleClass.mk (IsEffectiveCartier.toInvertibleSheaf h))⁻¹
 
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {b : Basis (Fin 2) ℤ N} {r n : ℕ} [NeZero n]
@@ -85,69 +61,30 @@ local notation "rayAt" => Q.fan.rayFinEquivOfNodalCycleNumbering Q.regular Q.cyc
 local notation "fiber[" M "," c "]" =>
   ContractedToricFiber b Q.rays Q.regular Q.cycle Q.origin Q.inclusion χ[c] M
 
-/-- For a certified ray table of a reference nodal contraction of a primitive nef
-square-zero anticanonical cycle, the three integer invariants computed from the ray table
-decide equality of signed loop pullbacks over any field. Only the rays of centers and
-surviving boundary primes need certified coordinates. -/
-theorem compareSignedLoopsOfRayCoordinates_eq_true_iff
-    (k : Type*) [Field k]
-    (p₀ : fiber[M₀,c₀]) (hnodal₀ : p₀.IsNodalContraction)
-    (hprim : IsPrimitive (Additive.ofMul classOf(cartier[M₀])))
-    (hnef : (classOf(cartier[M₀])).IsNef ℂ (M₀.surface ↘ S))
-    (hsq : Chow.classIntersectionNumber ℂ M₀.surface classOf(cartier[M₀])
-      classOf(cartier[M₀]) = 0)
+/-- The coordinates of the center and surviving rays certify the computed exchange matrix
+and order table. The ray indices are cyclic offsets from the ray of component zero. -/
+theorem isSignedLoopComparisonInput_of_rayCoordinates (p₀ : fiber[M₀,c₀])
     (ray : Fin Q.length → Fin 2 → ℤ) (centerRay : Fin r → Fin Q.length)
     (survivors : Set.powersetCard (Fin Q.length) n)
     (hray : ∀ j, j ∈ survivors ∨ j ∈ Set.range centerRay →
       ray j = b.repr (rayAt j).primitiveGenerator)
     (hcenter : ∀ j, rayAt (centerRay j) = Q.rays j)
-    (hkeep : ∀ j ∈ survivors, rayAt j ∈ Set.range (p₀.numberedBoundaryRays cartier[M₀]))
-    (w v : Word (seed[ray,centerRay]) (seed[ray,centerRay])) :
-    compareSignedLoopsOfRayCoordinates ray centerRay survivors w v = true ↔
-      w.xPullback k = v.xPullback k := by
+    (hkeep : ∀ j ∈ survivors, rayAt j ∈ Set.range (p₀.numberedBoundaryRays cartier[M₀])) :
+    Q.IsSignedLoopComparisonInput p₀ (SkewExchangeMatrix.ofChargeCoordinates (ray ∘ centerRay))
+      (boundaryOrderTable (ray ∘ centerRay) ray survivors) := by
   have hcharge (j : Fin r) : (ray ∘ centerRay) j = b.repr (Q.rays j).primitiveGenerator := by
     rw [Function.comp_apply, hray _ (Or.inr (Set.mem_range_self j)), hcenter j]
-  have hE : (seed[ray,centerRay]).matrix =
-      chargeExchangeMatrix b.detDualEquiv.toLinearMap (Fan.rayChargeMap Q.rays) := by
-    simpa only [Fan.rayChargeMap_single, funext hcharge] using
-      SkewExchangeMatrix.ofChargeCoordinates_matrix_eq_chargeExchangeMatrix b
-        (Fan.rayChargeMap Q.rays)
-  have hord := p₀.boundaryOrderTable_eq (Φ := Q.fan) cartier[M₀] survivors hkeep
-    (ray ∘ centerRay) ray hcharge (fun j hj ↦ hray j (Or.inl hj))
-  rw [compareSignedLoopsOfRayCoordinates_def, hord]
-  exact (seed[ray,centerRay]).compareSignedLoops_eq_true_iff_xPullback_eq k _ w v
-    (fun β ↦ Q.xPullback_eq_iff_signedLoopInvariants_eq_of_nodal_contraction k p₀ hnodal₀ hE
-      hprim hnef hsq w v β)
+  refine ⟨?_, p₀.boundaryOrderTable_eq (Φ := Q.fan) cartier[M₀] survivors hkeep
+    (ray ∘ centerRay) ray hcharge (fun j hj ↦ hray j (Or.inl hj))⟩
+  simpa only [Fan.rayChargeMap_single, funext hcharge] using
+    SkewExchangeMatrix.ofChargeCoordinates_matrix_eq_chargeExchangeMatrix b
+      (Fan.rayChargeMap Q.rays)
 
-/-- Decide equality of signed-loop pullbacks by integer computation on the supplied ray table.
-The reference contraction and its certificates justify the answer. -/
-def decidableXPullbackEqOfRayCoordinates
-    (k : Type*) [Field k]
+/-- The integer coefficients of a pulled-back ample class determine the surviving ray
+offsets. With the center and surviving ray coordinates, they certify the input to the
+signed loop checker. -/
+theorem exists_isSignedLoopComparisonInput_of_polarization
     (p₀ : fiber[M₀,c₀]) (hnodal₀ : p₀.IsNodalContraction)
-    (hprim : IsPrimitive (Additive.ofMul classOf(cartier[M₀])))
-    (hnef : (classOf(cartier[M₀])).IsNef ℂ (M₀.surface ↘ S))
-    (hsq : Chow.classIntersectionNumber ℂ M₀.surface classOf(cartier[M₀])
-      classOf(cartier[M₀]) = 0)
-    (ray : Fin Q.length → Fin 2 → ℤ) (centerRay : Fin r → Fin Q.length)
-    (survivors : Set.powersetCard (Fin Q.length) n)
-    (hray : ∀ j, j ∈ survivors ∨ j ∈ Set.range centerRay →
-      ray j = b.repr (rayAt j).primitiveGenerator)
-    (hcenter : ∀ j, rayAt (centerRay j) = Q.rays j)
-    (hkeep : ∀ j ∈ survivors, rayAt j ∈ Set.range (p₀.numberedBoundaryRays cartier[M₀]))
-    (w v : Word (seed[ray,centerRay]) (seed[ray,centerRay])) :
-    Decidable (w.xPullback k = v.xPullback k) :=
-  decidable_of_iff _ (Q.compareSignedLoopsOfRayCoordinates_eq_true_iff k p₀ hnodal₀
-    hprim hnef hsq ray centerRay survivors hray hcenter hkeep w v)
-
-/-- The integer coefficients of a pulled-back ample class determine the surviving offsets
-for the ray-coordinate checker. Its answer then decides equality of the two X pullbacks. -/
-theorem compareSignedLoopsOfRayCoordinates_eq_true_iff_of_polarization
-    (k : Type*) [Field k]
-    (p₀ : fiber[M₀,c₀]) (hnodal₀ : p₀.IsNodalContraction)
-    (hprim : IsPrimitive (Additive.ofMul classOf(cartier[M₀])))
-    (hnef : (classOf(cartier[M₀])).IsNef ℂ (M₀.surface ↘ S))
-    (hsq : Chow.classIntersectionNumber ℂ M₀.surface classOf(cartier[M₀])
-      classOf(cartier[M₀]) = 0)
     {H : LineBundleClass M₀.surface} (hH : H.IsAmple)
     (ray : Fin Q.length → Fin 2 → ℤ) (centerRay : Fin r → Fin Q.length)
     (selfIntersection toricCoeff : ZMod Q.length → ℤ) (exceptionalCoeff : Fin r → ℤ)
@@ -160,11 +97,10 @@ theorem compareSignedLoopsOfRayCoordinates_eq_true_iff_of_polarization
       ((ZMod.finEquiv Q.length) ∘ centerRay) exceptionalCoeff
     (∀ j, j ∈ survivors ∨ j ∈ Set.range centerRay →
       ray j = b.repr (rayAt j).primitiveGenerator) →
-    ∀ (w v : Word (seed[ray,centerRay]) (seed[ray,centerRay])),
-      ∃ hcard : survivors.card = n,
-        compareSignedLoopsOfRayCoordinates ray centerRay (Set.powersetCard.ofCard hcard) w v =
-          true ↔ w.xPullback k = v.xPullback k := by
-  intro survivors hray w v
+    ∃ hcard : survivors.card = n,
+      Q.IsSignedLoopComparisonInput p₀ (SkewExchangeMatrix.ofChargeCoordinates (ray ∘ centerRay))
+        (boundaryOrderTable (ray ∘ centerRay) ray (Set.powersetCard.ofCard hcard)) := by
+  intro survivors hray
   let : Q.fan.algebraicRealization.IsProjectiveOver ℂ :=
     Q.fan.isProjectiveOver_algebraicRealization_of_isComplete Q.regular Q.complete b
   have hcenter' (j : Fin r) : raysFromOrigin ((ZMod.finEquiv Q.length ∘ centerRay) j) =
@@ -178,8 +114,8 @@ theorem compareSignedLoopsOfRayCoordinates_eq_true_iff_of_polarization
       (p₀.numberedBoundaryRays cartier[M₀]) := by
     rw [hs, Set.powersetCard.mem_coe_iff, p₀.mem_survivingBoundaryRayOffsets] at hj
     exact hj
-  exact ⟨hcard, Q.compareSignedLoopsOfRayCoordinates_eq_true_iff k p₀ hnodal₀
-    hprim hnef hsq ray centerRay (Set.powersetCard.ofCard hcard) hray hcenter hkeep w v⟩
+  exact ⟨hcard, Q.isSignedLoopComparisonInput_of_rayCoordinates p₀ ray centerRay
+    (Set.powersetCard.ofCard hcard) hray hcenter hkeep⟩
 
 end CompleteToricPresentation
 
