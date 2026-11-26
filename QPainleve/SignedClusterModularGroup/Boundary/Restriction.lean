@@ -262,7 +262,7 @@ theorem exists_signedOrthogonalRestriction_eq_reflection [Module.Free ℤ L] [Mo
       (hℓ : ((2 : ℤ) • (B.flip f).comp (K).subtype) ⟨δ, hδ⟩ = 2),
       sign B D s = -1 ∧ s * s = 1 ∧ (ρ s).val = Module.reflection hℓ ∧
         ∀ x : K, (ℤ ∙ (⟨δ, hδ⟩ : K)).mkQ ((ρ s).val x) = (ℤ ∙ (⟨δ, hδ⟩ : K)).mkQ x := by
-  have hδ := BoundaryCycle.sum_mem_orthogonal hGram hSymm
+  have hδ := BoundaryCycle.sum_mem_orthogonal hGram
   obtain ⟨r⟩ := nonempty_cycleReversingInvolution B D hSymm hGram hPrimitive hCharacteristic
   have hℓ := r.orthogonalReflectionForm_apply_sum hSymm hδ
   have hr := r.signedOrthogonalRestriction_eq_reflection hδ hℓ

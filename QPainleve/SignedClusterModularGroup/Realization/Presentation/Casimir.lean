@@ -185,6 +185,20 @@ theorem reflection_apply (x : exch[E]) :
 theorem reflection_apply_exponent : R.reflection R.exponent = -R.exponent :=
   Module.reflection_apply_self R.reflectionForm_apply_exponent
 
+/-- The Casimir reflection is an involution. -/
+theorem involutive_reflection : Function.Involutive R.reflection :=
+  Module.involutive_reflection R.reflectionForm_apply_exponent
+
+/-- Applying the Casimir reflection twice fixes every exchange-kernel vector. -/
+@[simp]
+theorem reflection_reflection (x : exch[E]) : R.reflection (R.reflection x) = x :=
+  R.involutive_reflection x
+
+/-- The inverse of the Casimir reflection is the reflection itself. -/
+@[simp]
+theorem reflection_symm : R.reflection.symm = R.reflection :=
+  Module.reflection_symm R.reflectionForm_apply_exponent
+
 /-- The Casimir reflection induces the identity modulo the total boundary exponent. -/
 @[simp high]
 theorem mkQ_reflection_apply (x : exch[E]) :
@@ -256,7 +270,7 @@ theorem nonempty_casimirReflection_of_nodal_model [NeZero n]
     comparison := A
     involution := s
     total_mem_orthogonal := BoundaryCycle.sum_mem_orthogonal
-      (M.intersectionForm_boundaryClass hD hnef hsq) M.isSymm
+      (M.intersectionForm_boundaryClass hD hnef hsq)
     isPrimitive_total := hPrimitive
     isSymm := M.isSymm
     isAddTorsionFree := inferInstance }⟩
