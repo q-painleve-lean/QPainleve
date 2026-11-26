@@ -79,10 +79,9 @@ theorem signedInversionSignExtension_rightHom (hB : B.matrix ≠ 0)
 theorem index_range_clusterModularGroupInclusion (hB : B.matrix ≠ 0)
     (hs : Function.Surjective (signedInversionSign k B hB)) :
     (clusterModularGroupInclusion k B).range.index = 2 := by
-  let S := signedInversionSignExtension k B hB hs
-  rw [← signedInversionSignExtension_inl k B hB hs, Subgroup.index_eq_card]
-  exact (Nat.card_congr S.quotientRangeInlEquivRight.toEquiv).trans
-    (Nat.card_eq_fintype_card.trans Fintype.card_units_int)
+  rw [range_clusterModularGroupInclusion k B hB, Subgroup.index_ker,
+    MonoidHom.range_eq_top_of_surjective _ hs, Subgroup.card_top, Nat.card_eq_fintype_card,
+    Fintype.card_units_int]
 
 section SignInvolution
 
