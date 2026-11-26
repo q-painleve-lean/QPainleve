@@ -9,6 +9,7 @@ public import QPainleve.Algebra.Cluster.Word.LoopComparison.List
 public import QPainleve.SignedClusterModularGroup.Realization.Presentation
 public import QPainleve.SignedClusterModularGroup.Realization.Tropical
 
+import QPainleve.Geometry.Toric.Fan.ExchangeMatrix
 import QPainleve.SignedClusterModularGroup.Realization.NodalFiber
 import QPainleve.SignedClusterModularGroup.Realization.Presentation.Family
 import QPainleve.SignedClusterModularGroup.Realization.Relations.Presentation
@@ -79,14 +80,14 @@ theorem xPullback_eq_iff_signedLoopInvariants_eq_of_nodal_contraction
     Q.exists_marked_family_of_nodal_model (Q.hasNodalModel_of_contraction hnodal₀) cartier[M₀]
   subst M₀
   dsimp only
-  let P : ChargeSeed E N :=
-    ⟨b.detDualEquiv.toLinearMap, Fan.rayChargeMap Q.rays, b.detDualEquiv_self, hE.symm⟩
+  let P := Fan.rayChargeSeed b Q.rays hE
   choose p hp using fun c ↦ (hfamily c).1.exists_isNodalContraction cartier[M c]
   have hmark (c : Point Centers[r]) (j : ZMod n) :
       (M c).boundaryClass cartier[M c] j = (M c₀).boundaryClass cartier[M c₀] j :=
     congrFun (hfamily c).2 j
   exact GeometricRealization.xPullback_eq_iff_signedLoopInvariants_eq_of_presentation
-    Q P rfl rfl M p₀ hnodal₀ (fun c _ ↦ p c) (fun c _ ↦ hp c) hnef hsq hprim hmark
+    Q P (Fan.rayChargeSeed_form _ _ _) (Fan.rayChargeSeed_charge _ _ _)
+    M p₀ hnodal₀ (fun c _ ↦ p c) (fun c _ ↦ hp c) hnef hsq hprim hmark
     Q.exists_cone_of_numbered_node w v β
 
 /-- The numbered boundary orders of a reference nodal contraction certify the integer
