@@ -24,10 +24,6 @@ The realization combines `Fan.exists_fan_of_cyclic_rays`,
 `Fan.exists_numbered_contraction_of_square_neg_one` and
 `Fan.exists_oriented_numbering_of_contracted_toric_boundary`. It applies
 `exists_signedLoopSubstitutions_mulEquiv_of_numbered_contraction` to the resulting model.
-The numerical presentation is that of the [signed cluster modular group comparator
-challenge][comparator].
-
-[comparator]: https://github.com/q-painleve-lean/QPainleve/pull/841
 -/
 
 public noncomputable section

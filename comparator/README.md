@@ -10,8 +10,7 @@ everything its statement uses, and states the challenge theorem with `sorry`. Th
 library's no-`sorry` rule and axiom audit do not apply to them.
 
 To submit a solution, copy the challenge file to `Solution/<Name>.lean` and replace the `sorry` by
-a proof. The proof may import anything, including `QPainleve`. The `Solution` library is empty
-until then, so `lake build Solution` fails before a solution is added. Run comparator from a clean
+a proof. The proof may import anything, including `QPainleve`. Run comparator from a clean
 checkout (no `.lake` directory) with `bubblewrap` installed:
 
 ```sh
@@ -26,3 +25,5 @@ in the challenge, uses only the permitted axioms, and is accepted by the kernel.
 * `SignedClusterModularGroup`: for every toric presentation whose surface satisfies the
   target-pair conditions, the signed cluster modular group of its seed is isomorphic to the group
   of signed boundary isometries of its Picard lattice.
+  The [solution](../Solution/SignedClusterModularGroup.lean) uses the cyclic-ray comparison in
+  `QPainleve.SignedClusterModularGroup.Realization.Presentation.CyclicRays`.
