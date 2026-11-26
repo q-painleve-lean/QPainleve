@@ -5,11 +5,15 @@ Authors: The QPainleve contributors
 -/
 module
 
+public import Mathlib.LinearAlgebra.BilinearForm.IsometryEquiv
 public import QPainleve.AlgebraicGeometry.Blowup.Canonical
 public import QPainleve.AlgebraicGeometry.Blowup.Tower.Picard
+public import QPainleve.AlgebraicGeometry.Blowup.Tower.Projective
+public import QPainleve.AlgebraicGeometry.Chow.SurfaceIntersection
 public import TauCeti.AlgebraicGeometry.Chow.SurfaceIntersection.Basic
 public import TauCeti.AlgebraicGeometry.Noetherian
 public import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.ProjectiveOver
+public import TauCeti.LinearAlgebra.BilinearForm.Prod
 import Mathlib.AlgebraicGeometry.AlgClosed.Basic
 import QPainleve.AlgebraicGeometry.Blowup.Exceptional.EulerCharacteristic
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Canonical.Basic
@@ -167,6 +171,33 @@ theorem classIntersectionNumber_picardMarking (hT : IsClosedPointTower X T)
     toMul_zero, toMul_neg, toMul_add, Pi.neg_apply, Pi.add_apply, Pi.zero_apply,
     zero_mul, Finset.sum_const_zero] at hzero ha hb hab
   omega
+
+/-- The Picard marking of a closed-point tower is an isometry from the product
+of the base intersection form and the negative dot product on exceptional coordinates. -/
+noncomputable def IsClosedPointTower.picardMarkingIsometry (hT : IsClosedPointTower X T) :
+    let : IsNoetherian X := isNoetherian_of_finiteType f
+    let : Y.Over (Spec (.of k)) := ⟨T.toBase ≫ f⟩
+    let : Y.IsProjectiveOver k := T.isProjectiveOver k
+    let : IsIntegral Y := hT.isIntegral f
+    let : SmoothOfRelativeDimension 2 (Y ↘ Spec (.of k)) := hT.smoothOfRelativeDimension f
+    ((Chow.intersectionBilinForm k X).prod
+      (-(dotProductBilin ℤ ℤ : LinearMap.BilinForm ℤ (Fin n → ℤ)))).IsometryEquiv
+      (Chow.intersectionBilinForm k Y) := by
+  intro _ _ _ _ _
+  refine { T.picardMarking hT f with map_app' := ?_ }
+  intro a b
+  simpa only [LinearEquiv.toFun_eq_coe, Chow.intersectionBilinForm_apply,
+    LinearMap.BilinForm.prod_apply, LinearMap.neg_apply, dotProductBilin_apply_apply, dotProduct,
+    sub_eq_add_neg] using classIntersectionNumber_picardMarking k hT a b
+
+/-- The tower isometry sends the base class and the exceptional coefficients to
+their image under the Picard homomorphism. -/
+@[simp]
+theorem IsClosedPointTower.picardMarkingIsometry_apply (hT : IsClosedPointTower X T)
+    (a : Additive (LineBundleClass X) × (Fin n → ℤ)) :
+    hT.picardMarkingIsometry k a = T.picardHom a := by
+  let : IsNoetherian X := isNoetherian_of_finiteType f
+  exact T.picardMarking_apply hT f a
 
 variable {k} in
 /-- Intersecting a marked class with the total exceptional class of one blowup

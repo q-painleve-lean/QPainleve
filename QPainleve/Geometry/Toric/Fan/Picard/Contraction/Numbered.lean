@@ -40,9 +40,6 @@ variable {N V : Type} {ι : Type*} [AddCommGroup N] [AddCommGroup V] [Module ℝ
 local notation "S" => Spec (CommRingCat.of ℂ)
 local notation "Z" => Φ.algebraicRealization
 local notation "s" => (v ∘ ρ ∘ o)
-local notation "U" => internalBlowupTower b s c
-local notation "Y" => (Sigma.fst U)
-local notation "T₀" => WithBoundary.toTower (Sigma.snd U)
 local notation "A" => (ZMod m ⊕ ι → ℤ)
 local notation "F" => numberedInternalBlowupPicardMap b hΦ v o ρ c
 local notation "Aux" => (LinearMap.BilinForm.prod (Chow.intersectionBilinForm ℂ Z)
@@ -68,27 +65,13 @@ private theorem exists_numberedAuxIsometry (hv : (∀ j,
           Φ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ)
     ∃ g : B.IsometryEquiv Aux, ∀ j, g (R.mkQ (strict j)) = rayClass j := by
   intro _ _
-  let : (Y).Over S := ⟨(T₀).toBase ≫ Z ↘ S⟩
-  let : (Y).IsProjectiveOver ℂ := (T₀).isProjectiveOver ℂ
-  let : IsIntegral Y := isIntegral_internalBlowupTower b s c hΦ
-  let hU := isClosedPointTower_internalBlowupTower b s c
-  let : SmoothOfRelativeDimension 2 (Y ↘ S) := hU.smoothOfRelativeDimension (Z ↘ S)
-  let : IsNoetherian Y := (T₀).isNoetherian
-  let := (Y ↘ S).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two
   obtain ⟨q, hq⟩ := numberedInternalBlowupPicardIsometry b hΦ v o ρ c hc hv B hR hB
-  let f : (Aux).IsometryEquiv (Chow.intersectionBilinForm ℂ Y) :=
-    { internalBlowupPicardMarking b s c hΦ with
-      map_app' := fun x y ↦ by
-        simpa only [picardMarking_apply, internalBlowupPicardMarking_apply,
-          Chow.intersectionBilinForm_apply, LinearMap.BilinForm.prod_apply, LinearMap.neg_apply,
-          LinearMap.toFun_eq_coe, LinearEquiv.coe_coe, dotProductBilin_apply_apply, dotProduct,
-          sub_eq_add_neg] using classIntersectionNumber_picardMarking ℂ hU x y }
+  let f := (isClosedPointTower_internalBlowupTower b s c).picardMarkingIsometry ℂ
   refine ⟨q.trans f.symm, fun j ↦ f.injective ?_⟩
   simp only [BilinForm.IsometryEquiv.trans_apply, BilinForm.IsometryEquiv.coe_toLinearEquiv,
     f.apply_symm_apply, hq, numberedInternalBlowupPicardMap_strictBoundary]
-  -- The underlying linear map of the isometry is the ordered tower marking.
-  change _ = internalBlowupPicardMarking b s c hΦ (rayClass j)
-  rw [internalBlowupPicardMarking_apply, picardHom_markedBoundaryMap_single_eq_primeDivisorClass]
+  rw [IsClosedPointTower.picardMarkingIsometry_apply,
+    picardHom_markedBoundaryMap_single_eq_primeDivisorClass]
 
 variable {X W : Scheme} [X.Over S] [X.IsProjectiveOver ℂ] [IsIntegral X]
   [SmoothOfRelativeDimension 2 (X ↘ S)] {D : X.IdealSheafData} {d : ℕ}
