@@ -5,6 +5,7 @@ Authors: The QPainleve contributors
 -/
 module
 
+public import QPainleve.Geometry.Toric.Fan.ExchangeMatrix
 public import QPainleve.Geometry.Toric.Fan.Presentation.Basic
 public import QPainleve.SignedClusterModularGroup.Realization.Presentation
 public import QPainleve.SignedClusterModularGroup.Realization.Surface.Boundary
@@ -63,6 +64,45 @@ structure MarkedReferenceFiber {N V : Type} [AddCommGroup N] [AddCommGroup V] [M
   evaluation : X ⤏ XTor[r]
   /-- The reference surface with this evaluation has the indicated nodal model. -/
   hasNodalModel : presentation.HasNodalModel center (MarkedSurface.ofBoundary D A μ evaluation)
+
+namespace MarkedReferenceFiber
+
+variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
+  {i : N →+ V} {b b' : Module.Basis (Fin 2) ℤ N} {r n : ℕ} [NeZero n]
+  {X : Scheme} [X.Over S] [IsIntegral X] [X.IsProjectiveOver ℂ]
+  [SmoothOfRelativeDimension 2 (X ↘ S)] {D : X.IdealSheafData}
+  [PrestableFamily (D.subscheme ↘ S)] {L : Type} [AddCommGroup L] {B : LinearMap.BilinForm ℤ L}
+  {A : Scheme.NodalCycleNumbering (X := D.subscheme)
+    (Empty.elim : Empty → (D.subscheme ↘ S).smoothLocus) n}
+  {μ : B.IsometryEquiv (Chow.intersectionBilinForm ℂ X)}
+  (R : MarkedReferenceFiber i b' r A μ)
+
+/-- The original numbered surface with its marked rational X evaluation. -/
+-- The underlying schemes must reduce to the original surface and boundary.
+abbrev markedSurface : MarkedSurface ℂ n B XTor[r] :=
+  MarkedSurface.ofBoundary D A μ R.evaluation
+
+/-- The coordinate units of the center in the oriented frame. -/
+abbrev parameters : Fin r → ℂˣ :=
+  param[R.center]
+
+/-- The seed matrix given by the labeled ray charges in the oriented frame. -/
+abbrev exchangeMatrix : QPainleve.Cluster.SkewExchangeMatrix (Fin r) :=
+  Fan.rayExchangeMatrix b' R.presentation.rays
+
+/-- The reference fiber retains the fan and every ray label of a specified ordered
+toric presentation. Its frame and center coordinates change together under transposition. -/
+structure HasToricData (P : D.ToricPresentation (X ↘ S) b i r) : Prop where
+  /-- The frame agrees with the supplied frame or is transposed with inverted parameters. -/
+  basis_parameters :
+    (b' = b ∧ R.parameters = P.parameters) ∨
+      (b' = b.reindex (Equiv.swap 0 1) ∧ R.parameters = P.parameters⁻¹)
+  /-- The fan is the supplied toric fan. -/
+  fan_eq : R.presentation.fan = P.fan
+  /-- Each ordered center keeps its ray under the fan identification. -/
+  rays_eq : fan_eq ▸ R.presentation.rays = P.rays
+
+end MarkedReferenceFiber
 
 section Reference
 
@@ -370,17 +410,6 @@ private theorem exists_marked_reference_fibers :
     exact ⟨⟨_, R, Or.inr ⟨rfl, hparam⟩, hrays⟩,
       ⟨_, R', Or.inr rfl, by rw [hcenter'], hrays'⟩⟩
 
-/-- Equip specified ordered toric and nodal blowup towers with a complete marking
-and use their common surface to obtain the reference fiber. The fan and the ray of
-each label are retained. If the boundary orientation calls for the transposed
-basis, every center parameter is inverted in that basis. -/
-theorem exists_marked_reference_fiber_of_ordered_towers :
-    ∃ (b' : Module.Basis (Fin 2) ℤ N) (R : MarkedReferenceFiber i b' r A μ),
-      ((b' = b ∧ param[R.center] = u) ∨
-        (b' = b.reindex (Equiv.swap 0 1) ∧ param[R.center] = u⁻¹)) ∧
-        (∃ hfan : R.presentation.fan = Φ, hfan ▸ R.presentation.rays = s) :=
-  (exists_marked_reference_fibers hΦ hc s u hT e hbase hker hD A μ).1
-
 /-- Mark the specified ordered toric and nodal towers in the original lattice basis.
 The boundary numbering downstairs is chosen from the supplied numbering and its
 reverse, so that the fan has positive cyclic order in that basis. -/
@@ -394,6 +423,22 @@ theorem exists_marked_reference_fiber_of_ordered_towers_fixed_basis :
 
 end OrderedTowers
 
+/-- A specified toric presentation supplies a reference fiber with the given numbering
+and Picard marking. The reference keeps the input fan and ray labels. Transposing the
+lattice frame to agree with the numbering inverts all center parameters. -/
+theorem
+    _root_.AlgebraicGeometry.Scheme.IdealSheafData.ToricPresentation.exists_marked_reference_fiber
+    {r : ℕ} (P : D.ToricPresentation (X ↘ S) b i r) (hD : D.IsEffectiveCartier)
+    (A : Scheme.NodalCycleNumbering (X := D.subscheme)
+      (Empty.elim : Empty → (D.subscheme ↘ S).smoothLocus) n)
+    (μ : B.IsometryEquiv (Chow.intersectionBilinForm ℂ X)) :
+    ∃ (b' : Module.Basis (Fin 2) ℤ N) (R : MarkedReferenceFiber i b' r A μ),
+      R.HasToricData P := by
+  obtain ⟨b', R, hframe, hfan, hrays⟩ :=
+    (exists_marked_reference_fibers P.regular P.complete P.rays P.parameters
+      P.isNodal P.iso P.iso_over P.iso_boundary hD A μ).1
+  exact ⟨b', R, hframe, hfan, hrays⟩
+
 /-- A toric presentation of a numbered Cartier boundary gives a complete marked
 presentation with a reference fiber on the same surface. The given numbering and
 Picard marking are retained. The construction permits repeated internal centers
@@ -406,31 +451,8 @@ theorem exists_marked_reference_fiber_of_toric_presentation
     ∃ (b' : Module.Basis (Fin 2) ℤ N) (r : ℕ) (_ : MarkedReferenceFiber i b' r A μ),
       b' = b ∨ b' = b.reindex (Equiv.swap 0 1) := by
   obtain ⟨r, ⟨P⟩⟩ := (hasToricPresentation_iff ..).mp hP
-  obtain ⟨b', R, hframe, _⟩ :=
-    exists_marked_reference_fiber_of_ordered_towers P.regular P.complete P.rays P.parameters
-      P.isNodal P.iso P.iso_over P.iso_boundary hD A μ
-  exact ⟨b', r, R, hframe.imp And.left And.left⟩
-
-/-- A specified toric presentation on a surface with finite free Picard group admits a
-reference fiber marked by a finite coordinate lattice. The fan and ray labels are retained.
-The reference center parameters are inverted if the lattice basis is transposed. -/
-theorem exists_fin_marked_reference_fiber_of_toric_presentation {r : ℕ}
-    [Module.Free ℤ (Additive (LineBundleClass X))] [Module.Finite ℤ (Additive (LineBundleClass X))]
-    (P : D.ToricPresentation (X ↘ S) b i r) (hD : D.IsEffectiveCartier)
-    (A : Scheme.NodalCycleNumbering (X := D.subscheme)
-      (Empty.elim : Empty → (D.subscheme ↘ S).smoothLocus) n) :
-    ∃ (H : LinearMap.BilinForm ℤ (Fin (Module.finrank ℤ (Additive (LineBundleClass X))) → ℤ))
-      (μ : H.IsometryEquiv (Chow.intersectionBilinForm ℂ X))
-      (b' : Module.Basis (Fin 2) ℤ N) (R : MarkedReferenceFiber i b' r A μ),
-      ((b' = b ∧ param[R.center] = P.parameters) ∨
-        (b' = b.reindex (Equiv.swap 0 1) ∧ param[R.center] = P.parameters⁻¹)) ∧
-        (∃ hfan : R.presentation.fan = P.fan, hfan ▸ R.presentation.rays = P.rays) := by
-  let a := (Module.finBasis ℤ (Additive (LineBundleClass X))).equivFun.symm
-  let μ := ((Chow.intersectionBilinForm ℂ X).isometryEquivOfCompLinearEquiv a).symm
-  obtain ⟨b', R, hframe, hrays⟩ :=
-    exists_marked_reference_fiber_of_ordered_towers P.regular P.complete P.rays P.parameters
-      P.isNodal P.iso P.iso_over P.iso_boundary hD A μ
-  exact ⟨_, μ, b', R, hframe, hrays⟩
+  obtain ⟨b', R, hR⟩ := P.exists_marked_reference_fiber hD A μ
+  exact ⟨b', r, R, hR.basis_parameters.imp And.left And.left⟩
 
 end FromToricPresentation
 

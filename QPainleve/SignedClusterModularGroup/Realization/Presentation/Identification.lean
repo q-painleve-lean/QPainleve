@@ -24,7 +24,6 @@ given by `CompleteToricPresentation.exists_picardGroupEquivs_of_nodal_model`.
 public section
 
 open AlgebraicGeometry CategoryTheory Module
-open QPainleve.CharacterTorus
 open Scheme Scheme.IdealSheafData TauCeti TauCeti.AlgebraicGeometry TauCeti.Toric
 
 namespace QPainleve.SignedClusterModularGroup
@@ -32,26 +31,50 @@ namespace QPainleve.SignedClusterModularGroup
 open GeometricRealization
 
 local notation "S" => Spec (CommRingCat.of ℂ)
-local notation "Centers[" r "]" => Over.mk (structureMap ℂ (Fin r → ℤ))
 local notation "δ[" h "]" => (LineBundleClass.mk (IsEffectiveCartier.toInvertibleSheaf h))⁻¹
-local notation "χ[" c "]" => pointsEquiv ℂ _ (Subtype.mk (Over.Hom.left c) (Over.w c))
-local notation "parameters[" c "]" => (fun j ↦ χ[c] (Multiplicative.ofAdd (Pi.single j 1)))
 
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {b : Basis (Fin 2) ℤ N}
   {X : Scheme} [X.Over S] [X.IsProjectiveOver ℂ]
-  [SmoothOfRelativeDimension 2 (X ↘ S)] [Scheme.IsRationalOver (X ↘ S)]
+  [SmoothOfRelativeDimension 2 (X ↘ S)]
   {D : X.IdealSheafData} [PrestableFamily (D.subscheme ↘ S)]
   {n r : ℕ} [NeZero n]
-
-local instance : IsIntegral X := by
-  let : Smooth (X ↘ S) := SmoothOfRelativeDimension.smooth 2 _
-  exact Scheme.IsRationalOver.isIntegral_of_smooth (f := X ↘ S) inferInstance
 
 local notation "Pic" => Additive (LineBundleClass X)
 local notation "classes[" A "," hD "]" =>
   (fun j ↦ Additive.ofMul (LineBundleClass.primeDivisorClass
     (D.boundaryPrimeEmbedding (Scheme.NodalCycleNumbering.boundaryPrimeEquiv A hD j))))
+
+/-- The chosen numbered reference fiber determines the signed and unsigned Picard
+equivalences, with its existing marking and X evaluation. -/
+theorem FiniteMarkedReferenceFiber.nonempty_picardGroupIdentification [IsIntegral X]
+    {A : Scheme.NodalCycleNumbering (X := D.subscheme)
+      (Empty.elim : Empty → (D.subscheme ↘ S).smoothLocus) n}
+    (R : FiniteMarkedReferenceFiber i r A) (hD : D.IsEffectiveCartier)
+    (hprim : IsPrimitive (Additive.ofMul δ[hD])) (hnef : δ[hD].IsNef ℂ (X ↘ S))
+    (hsq : Chow.classIntersectionNumber ℂ X δ[hD] δ[hD] = 0) :
+    Nonempty (PicardGroupIdentification R hD) := by
+  let M₀ := R.reference.markedSurface
+  have hδ : δ[M₀.isEffectiveCartier_boundaryIdeal] = δ[hD] :=
+    MarkedSurface.ofBoundary_boundaryIdeal_class D A R.marking R.reference.evaluation
+      M₀.isEffectiveCartier_boundaryIdeal hD
+  have hE := Fan.rayExchangeMatrix_matrix R.basis R.reference.presentation.rays
+  let : IsNoetherian X := isNoetherian_of_finiteType (X ↘ S)
+  let := (X ↘ S).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two
+  let d := classes[A,hD]
+  have hd : M₀.boundaryClass M₀.isEffectiveCartier_boundaryIdeal = R.marking.symm ∘ d :=
+    funext (MarkedSurface.boundaryClass_ofBoundary D A R.marking R.reference.evaluation hD)
+  have hgroups := R.reference.presentation.exists_picardGroupEquivs_of_nodal_model (M₀ := M₀)
+    R.reference.hasNodalModel hE (by rwa [hδ]) (by rwa [hδ]) (by rwa [hδ])
+  rw [hd] at hgroups
+  obtain ⟨identification, hM⟩ := hgroups
+  exact ⟨⟨identification, hM⟩⟩
+
+variable [Scheme.IsRationalOver (X ↘ S)]
+
+local instance : IsIntegral X := by
+  let : Smooth (X ↘ S) := SmoothOfRelativeDimension.smooth 2 _
+  exact Scheme.IsRationalOver.isIntegral_of_smooth (f := X ↘ S) inferInstance
 
 /-- For a specified ordered toric presentation of a primitive nef square-zero
 anticanonical cycle, the signed and unsigned opposite cluster modular groups
@@ -67,29 +90,11 @@ theorem exists_picardGroupEquivs_of_toric_presentation
     (hD : D.IsEffectiveCartier)
     (hprim : IsPrimitive (Additive.ofMul δ[hD])) (hnef : δ[hD].IsNef ℂ (X ↘ S))
     (hsq : Chow.classIntersectionNumber ℂ X δ[hD] δ[hD] = 0) :
-    ∃ Q : PicardGroupIdentification i r A hD,
-      ((Q.basis = b ∧ parameters[Q.reference.center] = P.parameters) ∨
-        (Q.basis = b.reindex (Equiv.swap 0 1) ∧ parameters[Q.reference.center] = P.parameters⁻¹)) ∧
-      (∃ hfan : Q.reference.presentation.fan = P.fan,
-        hfan ▸ Q.reference.presentation.rays = P.rays) := by
+    ∃ R : FiniteMarkedReferenceFiber i r A,
+      R.reference.HasToricData P ∧ Nonempty (PicardGroupIdentification R hD) := by
   let : Module.Free ℤ Pic := X.free_picard_of_isRationalOver ℂ
   let : Module.Finite ℤ Pic := X.finite_picard_of_isRationalOver ℂ
-  obtain ⟨H, μ, b', R, hframe, hrays⟩ :=
-    exists_fin_marked_reference_fiber_of_toric_presentation P hD A
-  let M₀ := MarkedSurface.ofBoundary D A μ R.evaluation
-  have hδ : δ[M₀.isEffectiveCartier_boundaryIdeal] = δ[hD] :=
-    MarkedSurface.ofBoundary_boundaryIdeal_class D A μ R.evaluation
-      M₀.isEffectiveCartier_boundaryIdeal hD
-  have hE := Fan.rayExchangeMatrix_matrix b' R.presentation.rays
-  let : IsNoetherian X := isNoetherian_of_finiteType (X ↘ S)
-  let := (X ↘ S).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two
-  let d := classes[A,hD]
-  have hd : M₀.boundaryClass M₀.isEffectiveCartier_boundaryIdeal = μ.symm ∘ d :=
-    funext (MarkedSurface.boundaryClass_ofBoundary D A μ R.evaluation hD)
-  have hgroups := R.presentation.exists_picardGroupEquivs_of_nodal_model (M₀ := M₀)
-    R.hasNodalModel hE (by rwa [hδ]) (by rwa [hδ]) (by rwa [hδ])
-  rw [hd] at hgroups
-  obtain ⟨identification, hM⟩ := hgroups
-  exact ⟨⟨H, μ, b', R, identification, hM⟩, hframe, hrays⟩
+  obtain ⟨R, hR⟩ := exists_fin_marked_reference_fiber_of_toric_presentation P hD A
+  exact ⟨R, hR, R.nonempty_picardGroupIdentification hD hprim hnef hsq⟩
 
 end QPainleve.SignedClusterModularGroup
