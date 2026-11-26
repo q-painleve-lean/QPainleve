@@ -337,6 +337,18 @@ theorem signSplitting_neg_one (s : signedBoundaryIsometryGroup B D) (hs : sign B
     (hss : s * s = 1) : signSplitting B D s hs hss (-1) = s := by
   simp [signSplitting]
 
+/-- The sign section associated with the chosen reversal of a numbered boundary. -/
+def CycleReversingInvolution.signSplitting {B : LinearMap.BilinForm ℤ L} {D : ZMod n → L} [NeZero n]
+    (r : CycleReversingInvolution B D) :
+    (signExtension B D (sign_surjective B D r.element (by simp))).Splitting :=
+  SignedBoundaryIsometryGroup.signSplitting B D r.element (by simp) r.element_mul_self
+
+@[simp]
+theorem CycleReversingInvolution.signSplitting_neg_one {B : LinearMap.BilinForm ℤ L}
+    {D : ZMod n → L} [NeZero n]
+    (r : CycleReversingInvolution B D) : r.signSplitting (-1) = r.element :=
+  SignedBoundaryIsometryGroup.signSplitting_neg_one B D r.element (by simp) r.element_mul_self
+
 /-- In the semidirect product induced by the splitting, the negative sign acts on rotations
 by conjugation by the underlying reversing involution. -/
 theorem coe_signSplitting_conjAct_neg_one (s : signedBoundaryIsometryGroup B D)
@@ -368,12 +380,10 @@ theorem exists_semidirectProductMulEquiv [Module.Free ℤ L] [Module.Finite ℤ 
         e (SemidirectProduct.inr (-1)) = s := by
   obtain ⟨r⟩ := nonempty_cycleReversingInvolution B D hSymm hIntersection hPrimitive hCharacteristic
   have hsign : sign B D r.element = -1 := by simp
-  let splitting := signSplitting B D r.element hsign r.element_mul_self
   refine ⟨r.element, hsign, r.element_mul_self, ⟨r.cut, fun j ↦ by simp⟩,
     orderOf_eq_two_of_sign_eq_neg_one B D r.element hsign r.element_mul_self,
-    splitting.semidirectProductMulEquiv, ?_⟩
-  rw [splitting.semidirectProductMulEquiv_inr]
-  exact signSplitting_neg_one B D r.element hsign r.element_mul_self
+    r.signSplitting.semidirectProductMulEquiv, ?_⟩
+  exact (r.signSplitting.semidirectProductMulEquiv_inr (-1)).trans r.signSplitting_neg_one
 
 /-- On an injectively indexed boundary of length at least three, the underlying isometry
 determines the sign. -/
