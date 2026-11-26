@@ -6,7 +6,7 @@ Authors: The QPainleve contributors
 module
 
 public import QPainleve.SignedClusterModularGroup.Realization.Presentation.Reference.Finite
-public import QPainleve.SignedClusterModularGroup.Realization.Relations.Reference
+public import QPainleve.SignedClusterModularGroup.Realization.Relations.IntersectionKernel
 
 import QPainleve.AlgebraicGeometry.Chow.RationalSurface.Basic
 import QPainleve.SignedClusterModularGroup.Realization.NodalFiber
@@ -17,12 +17,13 @@ import QPainleve.SignedClusterModularGroup.Realization.NodalFiber
 A specified toric presentation supplies a marked reference contraction for the
 complete integer relation criterion. Its numbered boundary orders and exchange
 matrix give an input to the same comparison theorems used with integer tables
-supplied separately.
+supplied separately. The intersection kernel of the strict boundary recovers the
+orders from the cyclic ray coordinates and the ordered center labels.
 -/
 
 public noncomputable section
 
-open AlgebraicGeometry CategoryTheory Module
+open AlgebraicGeometry CategoryTheory Module Quiver
 open QPainleve.CharacterTorus QPainleve.Cluster
 open Scheme Scheme.IdealSheafData TauCeti TauCeti.AlgebraicGeometry TauCeti.Toric
 
@@ -98,6 +99,29 @@ theorem comparisonInput : (Q).IsSignedLoopComparisonInput C.contraction R.refere
     C.boundaryOrders :=
   ⟨Fan.rayExchangeMatrix_matrix R.basis (Q).rays, rfl⟩
 
+local notation "rayAt" => Fan.rayFinEquivOfNodalCycleNumbering
+  (CompleteToricPresentation.fan Q) (CompleteToricPresentation.regular Q)
+  (CompleteToricPresentation.cycle Q) (CompleteToricPresentation.origin Q)
+
+include C in
+/-- On the ray table of the specified presentation, a Boolean result witnesses two
+loops and is true exactly when they act identically on independent X coordinates over
+the given field. The ordered center labels may have the same ray or center parameter. -/
+theorem compareSignedLoopListsFromRays_eq_some_iff_xPullback_eq
+    (ray : Fin (Q).length → Fin 2 → ℤ) (centerRay : Fin r → Fin (Q).length)
+    (hray : ∀ j, ray j = R.basis.repr (rayAt j).primitiveGenerator)
+    (hcenter : ∀ j, rayAt (centerRay j) = (Q).rays j)
+    (k : Type*) [Field k] (gs hs : List (Generator (Fin r))) (result : Bool) :
+    compareSignedLoopListsFromRays (n := n) ray centerRay gs hs = some result ↔
+      ∃ w v : Word R.reference.exchangeMatrix R.reference.exchangeMatrix,
+        w.generators = gs ∧ v.generators = hs ∧
+          (result = true ↔ w.xPullback k = v.xPullback k) := by
+  rw [(Q).compareSignedLoopListsFromRays_eq_compareSignedLoopLists
+    C.contraction C.isNodalContraction
+    C.boundary_nef C.boundary_square_zero ray centerRay hray hcenter]
+  exact C.comparisonInput.compareSignedLoopLists_eq_some_iff_xPullback_eq k C.isNodalContraction
+    C.boundary_primitive C.boundary_nef C.boundary_square_zero gs hs result
+
 end OrderedToricRelationCriterion
 
 variable {i : N →+ V} {b : Basis (Fin 2) ℤ N} {r : ℕ}
@@ -140,5 +164,44 @@ theorem exists_ordered_toric_relation_criterion
   let : Module.Finite ℤ Pic := X.finite_picard_of_isRationalOver ℂ
   obtain ⟨R, hR⟩ := exists_fin_marked_reference_fiber_of_toric_presentation P hD A
   exact ⟨R, hR, R.nonempty_orderedToricRelationCriterion hD hprim hnef hsq⟩
+
+/-- An ordered toric presentation of a primitive nef square-zero anticanonical cycle
+supplies cyclic integer ray coordinates and ordered center offsets for the executable
+comparison. The ray of the original component zero starts the table, and the frame
+and center parameters obey the reference orientation convention. -/
+theorem exists_ordered_toric_relation_comparison_from_rays
+    (P : D.ToricPresentation (X ↘ S) b i r)
+    (A : Scheme.NodalCycleNumbering (X := D.subscheme)
+      (Empty.elim : Empty → (D.subscheme ↘ S).smoothLocus) n)
+    (hD : D.IsEffectiveCartier)
+    (hprim : IsPrimitive (Additive.ofMul classOf(hD))) (hnef : classOf(hD).IsNef ℂ (X ↘ S))
+    (hsq : Chow.classIntersectionNumber ℂ X classOf(hD) classOf(hD) = 0) :
+    ∃ R : FiniteMarkedReferenceFiber i r A,
+      R.reference.HasToricData P ∧
+      let Q := R.reference.presentation
+      letI := Q.complete.nonempty_cones
+      letI := Q.prestable
+      letI := Q.neZero
+      let rayAt := Q.fan.rayFinEquivOfNodalCycleNumbering Q.regular Q.cycle Q.origin
+      ∃ (ray : Fin Q.length → Fin 2 → ℤ) (centerRay : Fin r → Fin Q.length),
+        (∀ j, ray j = R.basis.repr (rayAt j).primitiveGenerator) ∧
+        (∀ j, rayAt (centerRay j) = Q.rays j) ∧
+        ∀ (k : Type*) [Field k] (gs hs : List (Generator (Fin r))) (result : Bool),
+          compareSignedLoopListsFromRays (n := n) ray centerRay gs hs = some result ↔
+            ∃ w v : Word R.reference.exchangeMatrix R.reference.exchangeMatrix,
+              w.generators = gs ∧ v.generators = hs ∧
+                (result = true ↔ w.xPullback k = v.xPullback k) := by
+  obtain ⟨R, hR, ⟨C⟩⟩ := exists_ordered_toric_relation_criterion P A hD hprim hnef hsq
+  let Q := R.reference.presentation
+  let := Q.complete.nonempty_cones
+  let := Q.prestable
+  let := Q.neZero
+  let rayAt := Q.fan.rayFinEquivOfNodalCycleNumbering Q.regular Q.cycle Q.origin
+  let ray (j : Fin Q.length) (k : Fin 2) := R.basis.repr (rayAt j).primitiveGenerator k
+  let centerRay := rayAt.symm ∘ Q.rays
+  have hcenter (j : Fin r) : rayAt (centerRay j) = Q.rays j :=
+    rayAt.apply_symm_apply _
+  exact ⟨R, hR, ray, centerRay, fun _ ↦ rfl, hcenter,
+    C.compareSignedLoopListsFromRays_eq_some_iff_xPullback_eq ray centerRay (fun _ ↦ rfl) hcenter⟩
 
 end QPainleve.SignedClusterModularGroup
