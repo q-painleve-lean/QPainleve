@@ -6,7 +6,7 @@ Authors: The QPainleve contributors
 module
 
 public import QPainleve.Geometry.Toric.Fan.Boundary.Descent
-public import QPainleve.Geometry.Toric.Fan.TorusAction.ContractedEvaluation
+public import QPainleve.Geometry.Toric.Fan.TorusAction.Contraction
 
 import QPainleve.Geometry.Toric.Fan.Boundary.Contraction
 
@@ -37,7 +37,6 @@ local notation "M" a:arg => internalBlowupTower b s (center a)
 local notation "π" a:arg => toBase (WithBoundary.toTower (Sigma.snd (M a)))
 local notation "strict[" a "]" => Scheme.Hom.ker (WithBoundary.boundaryι (Sigma.snd (M a)))
 local notation "prime[" a "]" => internalBlowupBoundaryPrimeEquiv hΦ b s (center a)
-local notation "mark" a:arg => internalBlowupPicardMarking b s (center a) hΦ
 local notation "base" => Φ.algebraicRealizationStructureMap
 
 variable {X X' Y Y' : Scheme} [IsIntegral X] [IsIntegral X']
@@ -63,23 +62,8 @@ theorem exists_iso_of_eq_center_character
       q[e'] (prime[d] ρ).val ∈ D'.boundaryPrimes)
     (hcenters : ∀ x ∈ (rayChargeMap s).ker,
       (∏ j, (center c) j ^ x j) = ∏ j, (center d) j ^ x j) :
-    let : IsModification T.toBase :=
-      hT.isClosedPointTower.isModification_of_smoothOfRelativeDimension_two f
-    let : IsModification U.toBase :=
-      hU.isClosedPointTower.isModification_of_smoothOfRelativeDimension_two g
-    ∃ (χ : Multiplicative (N →+ ℤ) →* ℂˣ) (t : (M c).1 ≅ (M d).1) (a : X ≅ X'),
-      IsLift (Φ.torusTranslation χ) (M c).2.toTower (M d).2.toTower t ∧
-      p[e] ≫ a.hom = t.hom ≫ q[e'] ∧ a.hom ≫ g = f ∧ D'.comap a.hom = D ∧
-      a.hom.toRationalMap.comp (contractedXEvaluation b s d hΦ q[e']) =
-        contractedXEvaluation b s c hΦ p[e] ∧
-      ∀ L : LineBundleClass X',
-        (mark c).symm (Additive.ofMul (LineBundleClass.pullback p[e]
-          (LineBundleClass.pullback a.hom L))) =
-        (mark d).symm (Additive.ofMul (LineBundleClass.pullback q[e'] L)) := by
-  let : IsModification T.toBase :=
-    hT.isClosedPointTower.isModification_of_smoothOfRelativeDimension_two f
-  let : IsModification U.toBase :=
-    hU.isClosedPointTower.isModification_of_smoothOfRelativeDimension_two g
+    ∃ a : X ≅ X', a.hom ≫ g = f ∧ D'.comap a.hom = D ∧
+      Nonempty (ContractedToricTranslation b s p[e] q[e'] a) := by
   obtain ⟨χ, t, ht⟩ :=
     (exists_translation_lift_internalBlowupTower_iff b s (center c) (center d)).mpr hcenters
   have hover : p[e] ≫ f = t.hom ≫ q[e'] ≫ g := by
@@ -91,8 +75,6 @@ theorem exists_iso_of_eq_center_character
       t hover hD hD' (Equiv.refl Φ.Ray)
       (apply_internalBlowupBoundaryPrimeEquiv_of_isLift_torusTranslation b s hΦ
         (center c) (center d) ht)).mpr hkeep
-  exact ⟨χ, t, a, ht, ha, haOver, haD,
-    comp_contractedXEvaluation_of_isLift_torusTranslation b s hΦ ht ha,
-    pullback_marking_of_translation_descends b s (center c) (center d) hΦ ht ha⟩
+  exact ⟨a, haOver, haD, ⟨⟨χ, t, ht, ha⟩⟩⟩
 
 end TauCeti.Toric.Fan
