@@ -12,6 +12,7 @@ public import QPainleve.SignedClusterModularGroup.Realization.Endpoint.PicardAct
 import QPainleve.Geometry.Toric.Fan.Subdivision.Projective
 import QPainleve.SignedClusterModularGroup.Realization.NodalFiber
 import QPainleve.SignedClusterModularGroup.Realization.Presentation.Reference
+import QPainleve.SignedClusterModularGroup.SignExtension
 import TauCeti.LinearAlgebra.Matrix.Dual
 
 /-!
@@ -114,13 +115,9 @@ theorem nonempty_planePicardIdentification (u : Fin 11 → ℂˣ) :
 theorem involutionWord_mem_center :
     signedClusterModularGroupMap ℂ exchangeMatrix (End.of involutionWord) ∈ Subgroup.center Γ := by
   obtain ⟨I⟩ := nonempty_planePicardIdentification 1
-  let z := signedClusterModularGroupMap ℂ exchangeMatrix (End.of involutionWord)
-  have hz : I.identification.signedEquiv (op z) ∈ Subgroup.center _ := by
-    dsimp only [z]
-    rw [I.identification.signedEquiv_apply_involutionWord]
-    exact centralSign_mem_center I.form (I.reference.boundaryClass cartier[I.reference]) (by decide)
-  have hop : op z ∈ Subgroup.center Γᵐᵒᵖ :=
-    (MulEquivClass.apply_mem_center_iff I.identification.signedEquiv).mp hz
-  exact ((Subgroup.centerToMulOpposite Γ).symm ⟨_, hop⟩).property
+  have hn : (1 : ℕ) ≤ 2 := by decide
+  rw [(eq_picardCentralInvolution_iff I.identification.signedEquiv hn _).mpr
+    I.identification.signedEquiv_apply_involutionWord]
+  exact picardCentralInvolution_mem_center I.identification.signedEquiv hn
 
 end QPainleve.ElevenVertex
