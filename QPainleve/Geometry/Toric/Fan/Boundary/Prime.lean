@@ -19,6 +19,8 @@ import TauCeti.Geometry.Toric.Algebraic.Fan.Normal
 The strict boundary of an ordered internal blowup has one prime for every ray.
 The projection identifies it with the original toric prime over the isomorphism locus,
 including in presentations with repeated or infinitely near centers.
+An isomorphism identifying the strict boundary with another boundary transports
+the same ray indexing to that boundary.
 -/
 
 public noncomputable section
@@ -111,5 +113,42 @@ theorem coe_support_ker_boundaryι_eq_iUnion_closure :
 theorem toBase_internalBlowupBoundaryPrimeEquiv (ρ : Φ.Ray) :
     π (internalBlowupBoundaryPrimeEquiv hΦ b s c ρ).val = Φ.rayBoundaryPoint hΦ ρ :=
   toBase_rayComponent_genericPoint hΦ b s c ρ
+
+section Iso
+
+variable {X : Scheme} {D : X.IdealSheafData}
+  (g : (internalBlowupTower b s c).1 ≅ X)
+  (hg : (D.comap g.hom).support = (internalBlowupTower b s c).2.boundaryι.ker.support)
+
+/-- Index the primes of a boundary with the same support as the strict boundary, transported
+along the model isomorphism, by the rays of the ordered toric model. -/
+def internalBlowupBoundaryPrimeEquivOfIso : Φ.Ray ≃ D.boundaryPrimes :=
+  (internalBlowupBoundaryPrimeEquiv hΦ b s c).trans
+    ((Set.equivOfEq (boundaryPrimes_eq_of_support_eq hg.symm)).trans (D.boundaryPrimesEquivOfIso g))
+
+/-- The transported prime is the image of the strict boundary prime under the isomorphism. -/
+@[simp]
+theorem internalBlowupBoundaryPrimeEquivOfIso_apply_val (ρ : Φ.Ray) :
+    (internalBlowupBoundaryPrimeEquivOfIso hΦ b s c g hg ρ).val =
+      g.hom (internalBlowupBoundaryPrimeEquiv hΦ b s c ρ).val := by
+  simp [internalBlowupBoundaryPrimeEquivOfIso]
+
+/-- The strict boundary prime of the recovered ray is the inverse image of the given prime. -/
+@[simp]
+theorem internalBlowupBoundaryPrimeEquivOfIso_symm_apply_val (x : D.boundaryPrimes) :
+    (internalBlowupBoundaryPrimeEquiv hΦ b s c
+      ((internalBlowupBoundaryPrimeEquivOfIso hΦ b s c g hg).symm x)).val = g.inv x.val := by
+  simp [internalBlowupBoundaryPrimeEquivOfIso]
+
+/-- The image of a ray component is the closure of its transported prime. -/
+theorem range_rayComponent_internalBlowupBoundaryPrimeEquivOfIso (ρ : Φ.Ray) :
+    Set.range ((e ρ) ≫ g.hom) =
+      closure {((internalBlowupBoundaryPrimeEquivOfIso hΦ b s c g hg ρ).val : X)} := by
+  rw [Scheme.Hom.comp_base, TopCat.coe_comp, Set.range_comp,
+    range_rayComponent_internalBlowupBoundaryPrimeEquiv hΦ b s c ρ,
+    ← g.hom.isClosedEmbedding.closure_image_eq, Set.image_singleton,
+    internalBlowupBoundaryPrimeEquivOfIso_apply_val]
+
+end Iso
 
 end TauCeti.Toric.Fan
