@@ -6,7 +6,6 @@ Authors: The QPainleve contributors
 module
 
 public import QPainleve.SignedClusterModularGroup.Realization.Cremona
-public import QPainleve.SignedClusterModularGroup.Realization.Presentation.Cremona.Comparison
 public import QPainleve.SignedClusterModularGroup.Realization.Endpoint.PicardAction
 
 import QPainleve.SignedClusterModularGroup.Realization.Anticanonical
@@ -33,78 +32,6 @@ open AlgebraicGeometry CategoryTheory MulOpposite Quiver
 open QPainleve.CharacterTorus QPainleve.Cluster QPainleve.SignedBoundaryIsometryGroup
 open TauCeti TauCeti.AlgebraicGeometry TauCeti.Toric
 open Scheme Scheme.IdealSheafData LineBundleClass
-
-namespace QPainleve.SignedClusterModularGroup.MarkedSurface
-
-universe u
-
-variable {K : Type u} [Field K] [IsAlgClosed K] {k : Type*} [Field k]
-  {n : ℕ} [NeZero n] {L : Type u} [AddCommGroup L] {B : LinearMap.BilinForm ℤ L}
-  {X : Scheme.{u}} {ι : Type*} [DecidableEq ι] {E : SkewExchangeMatrix ι}
-  (M : MarkedSurface K n B X)
-
-local notation "S" => Spec (CommRingCat.of K)
-local notation "base" => (M.surface ↘ S)
-local notation "Cr" => Chow.cremonaIsometryGroup K M.surface
-local notation "Γs" => (SignedClusterModularGroup k E)ᵐᵒᵖ
-
-local instance : SmoothOfRelativeDimension 2 (M.surface ↘ S) := M.smooth
-local instance : M.surface.IsProjectiveOver K := M.projective
-local instance : IsNoetherian M.surface := isNoetherian_of_finiteType base
-local instance (x : M.surface) : UniqueFactorizationMonoid (M.surface.presheaf.stalk x) :=
-  (base).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two x
-
-variable [IsRationalOver (M.surface ↘ Spec (CommRingCat.of K))]
-  (hcan : (LineBundleClass.mk M.isEffectiveCartier_boundaryIdeal.toInvertibleSheaf)⁻¹ =
-    (LineBundleClass.mk (QPainleve.canonicalBundle K M.surface 2))⁻¹)
-  (hnef : (LineBundleClass.mk M.isEffectiveCartier_boundaryIdeal.toInvertibleSheaf)⁻¹.IsNef K
-    (M.surface ↘ Spec (CommRingCat.of K)))
-  (hsq : let a := (LineBundleClass.mk M.isEffectiveCartier_boundaryIdeal.toInvertibleSheaf)⁻¹
-    Chow.classIntersectionNumber K M.surface a a = 0)
-  (hroot : ∀ p : CodimensionOnePoint M.surface, Disjoint (closure {(p : M.surface)})
-    M.pair.hom.left.ker.support →
-    Chow.classIntersectionNumber K M.surface (primeDivisorClass p) (primeDivisorClass p) ≠ -2)
-  {d' : ZMod n → L} (hd : M.boundaryClass M.isEffectiveCartier_boundaryIdeal = d')
-  (Θ : (SignedClusterModularGroup k E)ᵐᵒᵖ ≃* signedBoundaryIsometryGroup B d')
-  (hΘ : ((sign B d').comp Θ.toMonoidHom).ker.unop = (clusterModularGroupInclusion k E).range)
-
-include hd in
-/-- The signed Picard identification on a marked surface with no internal `(-2)` curves
-gives the projection to Cremona isometries together with the boundary sign. -/
-noncomputable def clusterCremonaComparison : ClusterCremonaComparison (k := k) E n Cr := by
-  subst d'
-  let π := M.cremonaPicardHom hcan hnef hsq hroot
-  have hinj (hn : 3 ≤ n) : Function.Injective π := by
-    intro x y hxy
-    apply (M.signedBoundaryIsometryEquivCremona hcan hnef hsq hroot hn).injective
-    simpa only [M.signedBoundaryIsometryEquivCremona_apply] using hxy
-  exact ClusterCremonaComparison.ofPicardEquiv Θ hΘ π
-    (M.cremonaPicardHom_surjective hcan hnef hsq hroot) hinj
-    (M.signedBoundaryIsometryEquivCremonaProd hcan hnef hsq hroot)
-    (M.signedBoundaryIsometryEquivCremonaProd_apply hcan hnef hsq hroot)
-
-/-- The Cremona projection is the lattice action of the signed Picard image in the
-marking of the chosen surface. -/
-@[simp]
-theorem val_clusterCremonaComparison_projection_apply (x : Γs) :
-    ((M.clusterCremonaComparison hcan hnef hsq hroot hd Θ hΘ).projection x).val =
-      M.marking.isometryGroupCongr (toIsometry B d' (Θ x)) := by
-  subst d'
-  dsimp only [clusterCremonaComparison]
-  erw [ClusterCremonaComparison.ofPicardEquiv_projection_apply]
-  exact M.cremonaPicardHom_apply hcan hnef hsq hroot (Θ x)
-
-/-- The sign of the Cremona comparison is the sign of the signed Picard image. -/
-@[simp]
-theorem clusterCremonaComparison_sign_apply (x : Γs) :
-    (M.clusterCremonaComparison hcan hnef hsq hroot hd Θ hΘ).sign x =
-      (Θ x).val.2 := by
-  subst d'
-  dsimp only [clusterCremonaComparison]
-  erw [ClusterCremonaComparison.ofPicardEquiv_sign_apply,
-    SignedBoundaryIsometryGroup.sign_apply]
-
-end QPainleve.SignedClusterModularGroup.MarkedSurface
 
 namespace QPainleve.SignedClusterModularGroup.CompleteToricPresentation
 
