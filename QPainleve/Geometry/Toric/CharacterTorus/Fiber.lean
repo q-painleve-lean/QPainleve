@@ -96,12 +96,9 @@ variable [CommRing k]
 def centerFiberIso (U : (D A).X.left.Opens) (c : S ⟶ U.toScheme)
     (hc : c ≫ U.ι ≫ (D A).X.hom = 𝟙 S) :
     pullback π[U] c ≅ (D N).X.left := by
-  have hp : IsPullback (π₂).hom.hom.left (π₁).hom.hom.left (D N).X.hom (D A).X.hom :=
-    (IsPullback.of_hasPullback (D A).X.hom (D N).X.hom).flip.of_iso' (prodIso k A N).symm
-      (Iso.refl _) (Iso.refl _) (Iso.refl _) (by simp [Iso.inv_comp_eq])
-      (by simp [Iso.inv_comp_eq]) (by simp) (by simp)
   have h := ((IsPullback.of_hasPullback π[U] c).paste_horiz
-    (isPullback_morphismRestrict (π₁).hom.hom.left U).flip).paste_horiz hp
+    (isPullback_morphismRestrict (π₁).hom.hom.left U).flip).paste_horiz
+      (isPullback_prod k A N).flip
   let j := (pullback.fst π[U] c ≫ (E[U]).ι) ≫ (π₂).hom.hom.left
   have h' : IsPullback j (pullback.snd π[U] c) (D N).X.hom (𝟙 S) := by
     simpa only [j, Category.assoc, hc] using h
@@ -116,16 +113,6 @@ theorem centerFiberIso_hom (U : (D A).X.left.Opens) (c : S ⟶ U.toScheme)
   rw [← Category.assoc]
   rfl
 
-/-- Restrict variable-center evaluation to the fiber over a specified center. -/
-def centerFiberEvaluation (U : (D A).X.left.Opens) (v : A →+ N) (c : S ⟶ U.toScheme) :
-    pullback π[U] c ⟶ (D A).X.left :=
-  pullback.fst π[U] c ≫ ev[U, v]
-
-/-- Fixed-center evaluation is the restriction of the joint torus evaluation. -/
-@[simp]
-theorem centerFiberEvaluation_def (U : (D A).X.left.Opens) (v : A →+ N) (c : S ⟶ U.toScheme) :
-    centerFiberEvaluation k U v c = pullback.fst π[U] c ≫ ev[U, v] := (rfl)
-
 /-- The fiber of variable-center evaluation is evaluation at the corresponding
 center of the ambient torus. -/
 theorem centerFiberIso_hom_comp_evaluationAtCenter
@@ -133,46 +120,35 @@ theorem centerFiberIso_hom_comp_evaluationAtCenter
     (hc : c ≫ U.ι ≫ (D A).X.hom = 𝟙 S) :
     (centerFiberIso k (N := N) U c hc).hom ≫
         evaluationAtCenter k v (c ≫ U.ι) (by simpa using hc) =
-      centerFiberEvaluation k U v c := by
+      pullback.fst π[U] c ≫ ev[U, v] := by
   let e := centerFiberIso k (N := N) U c hc
-  let j := pullback.fst π[U] c ≫ (E[U]).ι
-  let q := pullback.lift (f := (D A).X.hom) (g := (D N).X.hom)
-    ((D N).X.hom ≫ c ≫ U.ι) (𝟙 (D N).X.left) (by simp [hc])
-  have hf := ((prodIso k A N).inv_comp_eq).2 (prodIso_hom_fst k A N).symm
-  have hs := ((prodIso k A N).inv_comp_eq).2 (prodIso_hom_snd k A N).symm
-  have h : (e.hom ≫ q) ≫ (prodIso k A N).hom = j := by
-    symm
-    apply ((prodIso k A N).comp_inv_eq).mp
-    apply pullback.hom_ext
-    · simp only [q, j, Category.assoc, hf, pullback.lift_fst]
-      rw [← morphismRestrict_ι, pullback.condition_assoc]
-      have he : e.hom ≫ (D N).X.hom = pullback.snd π[U] c := by
-        simp only [e, centerFiberIso_hom, Category.assoc, Over.w]
-        rw [← Over.w ((π₁).hom.hom), ← morphismRestrict_ι_assoc,
-          pullback.condition_assoc, hc, Category.comp_id]
-      rw [reassoc_of% he]
-    · simp only [q, j, e, Category.assoc, hs, pullback.lift_snd,
-        Category.comp_id, centerFiberIso_hom]
-  simpa only [evaluationAtCenter, centerFiberEvaluation_def, e, q, j, Category.assoc]
-    using congrArg (· ≫ (evaluation k v).hom.hom.left) h
+  have hbase : e.hom ≫ (D N).X.hom = pullback.snd π[U] c := by
+    simp only [e, centerFiberIso_hom, Category.assoc, Over.w]
+    rw [← Over.w ((π₁).hom.hom), ← morphismRestrict_ι_assoc,
+      pullback.condition_assoc, hc, Category.comp_id]
+  have hslice : e.hom ≫ centerSlice k (c ≫ U.ι) (by simpa using hc) =
+      pullback.fst π[U] c ≫ (E[U]).ι := by
+    apply (isPullback_prod k A N).hom_ext
+    · simp only [Category.assoc, centerSlice_fst, reassoc_of% hbase,
+        ← morphismRestrict_ι, pullback.condition_assoc]
+    · simp only [Category.assoc, centerSlice_snd, Category.comp_id, e, centerFiberIso_hom]
+  rw [evaluationAtCenter_def, ← Category.assoc, hslice, Category.assoc]
 
 end CenterEvaluation
 
 variable [Field k] [IsSepClosed k] [Module.Free ℤ A] [Module.Free ℤ N]
   {Y : Scheme.{u}} [Y.IsSeparated]
 
-/-- Agreement after rational composition on every center fiber of a nonempty
-open determines the X map. Postcompose evaluation by a dominant morphism `eX`
-over the ground field to compare maps on the chosen independent-variable scheme. -/
-theorem eq_of_compOfDefined_eq_on_center_fibers (U : (D A).X.left.Opens) [Nonempty U]
+/-- Agreement after evaluation on the charge torus at every rational center of
+a nonempty open determines the X map. Postcompose evaluation by a dominant morphism
+`eX` over the ground field to use the chosen coordinates for the independent variables. -/
+theorem eq_of_compOfDefined_eq_at_centers (U : (D A).X.left.Opens) [Nonempty U]
     (v : A →+ N) {X : Scheme.{u}} [IsIntegral X] [X.IsSeparated]
     (sX : X ⟶ S) (sY : Y ⟶ S)
     (eX : (D A).X.left ⟶ X) [IsDominant eX] (heX : eX ≫ sX = (D A).X.hom)
     {f g : X ⤏ Y} [f.IsOver sX sY] [g.IsOver sX sY]
     (heq : ∀ (c : S ⟶ U.toScheme) (hc : c ≫ U.ι ≫ (D A).X.hom = 𝟙 S),
-      letI : IsIntegral (pullback π[U] c) :=
-        IsIntegral.of_isIso (centerFiberIso k (N := N) U c hc).inv
-      let j := (centerFiberEvaluation k U v c ≫ eX).toRationalMap
+      let j := (evaluationAtCenter k v (c ≫ U.ι) (by simpa using hc) ≫ eX).toRationalMap
       let x := j.fromFunctionField (IsLocalRing.closedPoint _)
       ∃ (hf : x ∈ f.domain) (hg : x ∈ g.domain),
         j.compOfDefined f hf = j.compOfDefined g hg) :
@@ -191,6 +167,17 @@ theorem eq_of_compOfDefined_eq_on_center_fibers (U : (D A).X.left.Opens) [Nonemp
   apply Scheme.RationalMap.eq_of_compOfDefined_eq_on_rationalFibers
     π[U] (U.ι ≫ (D A).X.hom) sX sY (e ≫ eX) hb hF
   intro c hc
-  simpa only [centerFiberEvaluation_def, Category.assoc, e] using heq c hc
+  let := hF c hc
+  let i := centerFiberIso k (N := N) U c hc
+  let j := (evaluationAtCenter k v (c ≫ U.ι) (by simpa using hc) ≫ eX).toRationalMap
+  obtain ⟨hf, hg, h⟩ := heq c hc
+  obtain ⟨hf', heF⟩ := i.hom.toRationalMap.comp_compOfDefined j f hf
+  obtain ⟨hg', heG⟩ := i.hom.toRationalMap.comp_compOfDefined j g hg
+  have hj : i.hom.toRationalMap.comp j = (pullback.fst π[U] c ≫ e ≫ eX).toRationalMap := by
+    rw [Scheme.RationalMap.comp_toRationalMap, Scheme.Hom.toRationalMap_compHom,
+      ← Category.assoc, centerFiberIso_hom_comp_evaluationAtCenter]
+    simp only [e, Category.assoc]
+  rw [← hj]
+  exact ⟨hf', hg', heF.trans ((congrArg (i.hom.toRationalMap.comp ·) h).trans heG.symm)⟩
 
 end QPainleve.CharacterTorus

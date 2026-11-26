@@ -8,7 +8,6 @@ module
 public import QPainleve.SignedClusterModularGroup.Realization.Comparison
 public import QPainleve.Geometry.Toric.Fan.TorusAction.Orientation.Basic
 
-import TauCeti.AlgebraicGeometry.Curves.Node.Reduced
 import TauCeti.AlgebraicGeometry.Morphisms.Smooth.RationalPoint
 
 /-!
@@ -19,7 +18,7 @@ between their target fibers. For targets from the same ordered toric presentatio
 finite-index charges, its lift is a torus translation. Consequently the two realizations
 have the same Picard pullback and the same action on the ordered boundary branches.
 The translating lift is supplied by
-`Fan.existsUnique_translation_of_comp_contractedXEvaluation_eq`.
+`Fan.existsUnique_contractedToricTranslation_of_comp_contractedXEvaluation_eq`.
 -/
 
 public section
@@ -144,26 +143,14 @@ theorem ContractedToricFiber.marked_actions_of_comp_evaluation_eq
     (let : PrestableFamily (P.boundary ↘ S) := P.prestable
      letI : PrestableFamily (Q.boundary ↘ S) := Q.prestable
      (boundaryIso e).boundaryCycleAction P.cycle Q.cycle = 1) := by
-  have : IsClosedImmersion P.pair.hom.left := P.closedImmersion
-  have : IsClosedImmersion Q.pair.hom.left := Q.closedImmersion
-  let : PrestableFamily (P.boundary ↘ S) := P.prestable
-  let : PrestableFamily (Q.boundary ↘ S) := Q.prestable
-  have : IsReduced P.boundary :=
-    (PrestableFamily.atWorstNodalOfRelativeDimensionOne (f := P.boundary ↘ S)).isReduced
-  have : IsReduced Q.boundary :=
-    (PrestableFamily.atWorstNodalOfRelativeDimensionOne (f := Q.boundary ↘ S)).isReduced
-  have : IsReduced P.pair.hom.left.ker.subscheme :=
-    isReduced_of_isOpenImmersion (asIso P.pair.hom.left.toImage).inv
-  have : IsReduced Q.pair.hom.left.ker.subscheme :=
-    isReduced_of_isOpenImmersion (asIso Q.pair.hom.left.toImage).inv
   have : Q.surface.IsProjectiveOver ℂ := Q.projective
   rw [p.evaluation_eq, q.evaluation_eq] at heval
-  obtain ⟨χ, ⟨t, ht, hcomp, -, hpic⟩, -⟩ :=
-    Fan.existsUnique_translation_of_comp_contractedXEvaluation_eq b s c d hΦ
-      p.projection q.projection (surfaceIso e) hindex p.projection_over q.projection_over
-      p.support_comap q.support_comap heval
-  refine ⟨fun a ↦ ?_, boundaryCycleAction_eq_one_of_translation p q e hc ht hcomp⟩
-  have h := (hpic (Q.picardMarking a).toMul).trans (q.marked_pullback a)
+  obtain ⟨lift⟩ :=
+    Fan.existsUnique_contractedToricTranslation_of_comp_contractedXEvaluation_eq b s c d hΦ
+      p.projection q.projection (surfaceIso e) hindex p.projection_over q.projection_over heval
+  let t := lift.default
+  refine ⟨fun a ↦ ?_, boundaryCycleAction_eq_one_of_translation p q e hc t.isLift t.commutes⟩
+  have h := (t.pullback_marking hΦ (Q.picardMarking a).toMul).trans (q.marked_pullback a)
   obtain ⟨a', ha'⟩ := P.picardMarking.surjective
     (Additive.ofMul (LineBundleClass.pullback (surfaceIso e).hom (Q.picardMarking a).toMul))
   have hcoord := p.marked_pullback a'
@@ -225,6 +212,32 @@ abbrev GeometricRealization.HasToricTargetModels
   ∀ c : CenterPoint C, Nonempty
     (ContractedToricFiber b s hΦ T origin ι (centers (c ≫ C.domainTarget))
       (P₁ (c ≫ C.domainTarget)))
+
+namespace GeometricRealization.HasToricTargetModels
+
+variable {T₀ T₁ T₂ : Over S}
+  {P₂ : Point T₂ → MarkedSurface ℂ n B₁ Xtor[r]}
+  {centers : Point T₂ → Multiplicative (Fin r → ℤ) →* ℂˣ}
+  {D : T₁.left.PartialMap T₂.left} [D.IsOver T₁.hom T₂.hom]
+
+/-- A toric model at every target center supplies models for any partial center map. -/
+theorem of_forall
+    (h : ∀ c, Nonempty (ContractedToricFiber b s hΦ T origin ι (centers c) (P₂ c))) :
+    HasToricTargetModels (T₀ := T₁) (T₁ := T₂) (b := b) (s := s) (hΦ := hΦ) (T := T)
+      (origin := origin) (ι := ι) (P₁ := P₂) centers D :=
+  fun c ↦ h (c ≫ D.domainTarget (X := T₁) (Y := T₂))
+
+/-- Precomposing a partial center map preserves the target model condition. -/
+theorem comp [PreirreducibleSpace T₀.left] [Nonempty T₁.left]
+    (hD : HasToricTargetModels (T₀ := T₁) (T₁ := T₂) (b := b) (s := s) (hΦ := hΦ) (T := T)
+      (origin := origin) (ι := ι) (P₁ := P₂) centers D)
+    (C : T₀.left.PartialMap T₁.left) [IsDominant C.hom] [C.IsOver T₀.hom T₁.hom] :
+    HasToricTargetModels (T₀ := T₀) (T₁ := T₂) (b := b) (s := s) (hΦ := hΦ) (T := T)
+      (origin := origin) (ι := ι) (P₁ := P₂) centers (C.comp D) :=
+  C.forall_comp_domainTarget (X := T₀) (Y := T₁) (Z := T₂) D
+    (fun c ↦ Nonempty (ContractedToricFiber b s hΦ T origin ι (centers c) (P₂ c))) hD
+
+end GeometricRealization.HasToricTargetModels
 
 variable
   {T₀ T₁ : Over S} [Nonempty T₀.left] [Smooth T₀.hom]

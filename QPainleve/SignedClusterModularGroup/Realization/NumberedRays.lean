@@ -5,21 +5,24 @@ Authors: The QPainleve contributors
 -/
 module
 
+public import Mathlib.Data.Set.PowersetCard
 public import QPainleve.Geometry.Toric.Fan.Boundary.Numbering
 public import QPainleve.SignedClusterModularGroup.Realization.MarkedComparison
 public import QPainleve.SignedClusterModularGroup.Realization.Tropical
 
+import Mathlib.Order.Hom.PowersetCard
 import QPainleve.AlgebraicGeometry.Curves.Node.Conductor.ComponentOrder
 import QPainleve.Geometry.Toric.Fan.Picard.Contraction.Surviving
 import TauCeti.Data.ZMod.FinEquiv
 
 /-!
-# Constant numbered boundary rays
+# Numbered surviving boundary rays
 
 In a fixed ordered toric presentation, the marked Picard pullbacks determine
 which strict boundary rays survive the contractions. The oriented subdivision
 and the initial component then determine the numbering of the surviving rays
-and the corresponding marked boundary classes.
+and the corresponding marked boundary classes. The increasing ray offsets
+give a fixed-cardinality set for computing the boundary order table.
 -/
 
 public section
@@ -49,30 +52,8 @@ variable [PrestableFamily ((Φ.boundaryIdeal h₀).subscheme ↘ S)]
 
 local notation "rayAt" => Φ.rayFinEquivOfNodalCycleNumbering hΦ T origin
 
-/-- Read each numbered contracted component as the finite offset of its surviving toric ray. -/
-noncomputable def numberedBoundaryRayOffsets (hP : D[P].IsEffectiveCartier) : Fin n ↪ Fin m :=
-  ((ZMod.finEquiv n).toEquiv.toEmbedding.trans (p.numberedBoundaryRays hP)).trans
-    (rayAt).symm.toEmbedding
-
-/-- The offset of a component is the inverse ray index applied to its surviving ray. -/
-@[simp]
-theorem numberedBoundaryRayOffsets_apply (hP : D[P].IsEffectiveCartier) (j : Fin n) :
-    p.numberedBoundaryRayOffsets hP j =
-      (rayAt).symm (p.numberedBoundaryRays hP (ZMod.finEquiv n j)) :=
-  (rfl)
-
-/-- Membership in the offset range is equivalent to survival of the corresponding ray. -/
-theorem mem_range_numberedBoundaryRayOffsets_iff (hP : D[P].IsEffectiveCartier) (k : Fin m) :
-    k ∈ Set.range (p.numberedBoundaryRayOffsets hP) ↔
-      rayAt k ∈ Set.range (p.numberedBoundaryRays hP) := by
-  rw [numberedBoundaryRayOffsets, Function.Embedding.coe_trans, Function.Embedding.coe_trans,
-    Equiv.coe_toEmbedding, Equiv.coe_toEmbedding, Set.range_comp,
-    (ZMod.finEquiv n).toEquiv.surjective.range_comp,
-    Equiv.image_symm_eq_preimage, Set.mem_preimage]
-
-/-- The surviving ray offsets increase in the order of the contracted boundary numbering. -/
-theorem strictMono_numberedBoundaryRayOffsets (hP : D[P].IsEffectiveCartier) :
-    StrictMono (p.numberedBoundaryRayOffsets hP) := by
+private theorem strictMono_boundaryRayOffset (hP : D[P].IsEffectiveCartier) :
+    StrictMono fun j : Fin n ↦ (rayAt).symm (p.numberedBoundaryRays hP (ZMod.finEquiv n j)) := by
   let : PrestableFamily (P.boundary ↘ S) := P.prestable
   let e := Φ.rayEquivOfNodalCycleNumbering hΦ T
   have he (j : ZMod m) : (Φ.boundaryNormalizationComponentEquiv hΦ).symm (T.component j) =
@@ -89,33 +70,66 @@ theorem strictMono_numberedBoundaryRayOffsets (hP : D[P].IsEffectiveCartier) :
     simp only [he, u, Function.Embedding.trans_apply, Equiv.toEmbedding_apply,
       Equiv.apply_symm_apply]
   intro j k hjk
-  simpa only [Fin.lt_def, numberedBoundaryRayOffsets_apply,
+  simpa only [Fin.lt_def,
     Fan.rayFinEquivOfNodalCycleNumbering_symm_apply, ZMod.finEquiv_symm_apply_val,
     hzero, u, Function.Embedding.trans_apply, Equiv.toEmbedding_apply] using
     p.orientedSubdivision.strictMono_componentSection u hu hjk
 
+/-- The finite offsets of surviving toric rays in the contracted boundary numbering,
+starting at the ray of component zero. -/
+noncomputable def numberedBoundaryRayOffsets (hP : D[P].IsEffectiveCartier) : Fin n ↪o Fin m :=
+  OrderEmbedding.ofStrictMono _ (p.strictMono_boundaryRayOffset hP)
+
+/-- The offset of a component is the inverse ray index applied to its surviving ray. -/
+@[simp]
+theorem numberedBoundaryRayOffsets_apply (hP : D[P].IsEffectiveCartier) (j : Fin n) :
+    p.numberedBoundaryRayOffsets hP j =
+      (rayAt).symm (p.numberedBoundaryRays hP (ZMod.finEquiv n j)) :=
+  (rfl)
+
+/-- Membership in the offset range is equivalent to survival of the corresponding ray. -/
+theorem mem_range_numberedBoundaryRayOffsets_iff (hP : D[P].IsEffectiveCartier) (k : Fin m) :
+    k ∈ Set.range (p.numberedBoundaryRayOffsets hP) ↔
+      rayAt k ∈ Set.range (p.numberedBoundaryRays hP) := by
+  simp only [Set.mem_range, numberedBoundaryRayOffsets_apply, Equiv.symm_apply_eq]
+  exact ((ZMod.finEquiv n).surjective.exists
+    (p := fun j ↦ p.numberedBoundaryRays hP j = rayAt k)).symm
+
+/-- The offsets of the surviving rays, with cardinality given by the contracted boundary. -/
+noncomputable def survivingBoundaryRayOffsets (hP : D[P].IsEffectiveCartier) :
+    Set.powersetCard (Fin m) n :=
+  Set.powersetCard.ofFinEmbEquiv (p.numberedBoundaryRayOffsets hP)
+
+/-- An offset belongs to the survivor set exactly when its ray survives. -/
+@[simp]
+theorem mem_survivingBoundaryRayOffsets (hP : D[P].IsEffectiveCartier) (k : Fin m) :
+    k ∈ p.survivingBoundaryRayOffsets hP ↔
+      rayAt k ∈ Set.range (p.numberedBoundaryRays hP) :=
+  (Set.powersetCard.mem_ofFinEmbEquiv_iff_mem_range _ _).trans
+    (p.mem_range_numberedBoundaryRayOffsets_iff hP k)
+
+/-- Sorting the survivor set recovers the offsets in the contracted boundary numbering. -/
+@[simp]
+theorem orderEmbOfFin_survivingBoundaryRayOffsets (hP : D[P].IsEffectiveCartier) :
+    (p.survivingBoundaryRayOffsets hP).val.orderEmbOfFin
+      (p.survivingBoundaryRayOffsets hP).prop = p.numberedBoundaryRayOffsets hP := by
+  rw [← Set.powersetCard.ofFinEmbEquiv_symm_apply, survivingBoundaryRayOffsets,
+    Equiv.symm_apply_apply]
+
 /-- The contracted boundary numbering is the increasing enumeration of the surviving
 ray offsets, read from the specified initial toric ray. -/
 theorem numberedBoundaryRays_eq_orderEmbOfFin (hP : D[P].IsEffectiveCartier)
-    (survivors : Finset (Fin m))
-    (hcard : survivors.card = n)
+    (survivors : Set.powersetCard (Fin m) n)
     (hkeep : ∀ k ∈ survivors, rayAt k ∈ Set.range (p.numberedBoundaryRays hP)) :
     ∀ j : Fin n, p.numberedBoundaryRays hP (ZMod.finEquiv n j) =
-      rayAt (survivors.orderEmbOfFin hcard j) := by
-  let f := p.numberedBoundaryRayOffsets hP
-  have hsubset : survivors ⊆ Finset.univ.map f := by
-    intro k hk
-    rw [← Finset.mem_coe, Finset.coe_map, Finset.coe_univ, Set.image_univ]
-    exact (p.mem_range_numberedBoundaryRayOffsets_iff hP k).mpr (hkeep k hk)
-  have heq := Finset.eq_of_subset_of_card_le hsubset (by
-    rw [Finset.card_map, Finset.card_univ, Fintype.card_fin, hcard])
-  have hmem (j : Fin n) : f j ∈ survivors :=
-    heq ▸ Finset.mem_map_of_mem f (Finset.mem_univ j)
+      rayAt (survivors.val.orderEmbOfFin survivors.prop j) := by
+  have hsubset : survivors.val ⊆ (p.survivingBoundaryRayOffsets hP).val :=
+    fun k hk ↦ (p.mem_survivingBoundaryRayOffsets hP k).mpr (hkeep k hk)
+  have heq : survivors = p.survivingBoundaryRayOffsets hP :=
+    Subtype.ext (Finset.eq_of_subset_of_card_le hsubset (by simp))
   intro j
-  have hj := congrFun (Finset.orderEmbOfFin_unique hcard hmem
-    (p.strictMono_numberedBoundaryRayOffsets hP)) j
-  simpa only [f, numberedBoundaryRayOffsets_apply, Equiv.apply_symm_apply] using
-    congrArg (rayAt) hj
+  rw [heq, orderEmbOfFin_survivingBoundaryRayOffsets, numberedBoundaryRayOffsets_apply,
+    Equiv.apply_symm_apply]
 
 /-- The same set of surviving rays gives the same numbered rays for two contractions
 with the same oriented source cycle and initial component. -/
@@ -127,12 +141,12 @@ theorem numberedBoundaryRays_eq_of_range_eq
       Set.range (q.numberedBoundaryRayOffsets hQ) := by
     ext k
     simp only [mem_range_numberedBoundaryRayOffsets_iff, hrange]
-  have h := ((p.strictMono_numberedBoundaryRayOffsets hP).range_inj_of_wellFoundedLT
-    (q.strictMono_numberedBoundaryRayOffsets hQ)).mp hr
+  have h := OrderEmbedding.range_inj_of_wellFoundedLT.mp hr
   apply Function.Embedding.ext
   intro j
   obtain ⟨k, rfl⟩ := (ZMod.finEquiv n).surjective j
-  exact (rayAt).symm.injective (by simpa only [numberedBoundaryRayOffsets_apply] using congrFun h k)
+  exact (rayAt).symm.injective (by
+    simpa only [numberedBoundaryRayOffsets_apply] using DFunLike.congr_fun h k)
 
 variable [Φ.algebraicRealization.IsProjectiveOver ℂ]
 

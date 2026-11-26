@@ -12,9 +12,10 @@ public import QPainleve.SignedClusterModularGroup.Realization.Period
 
 import QPainleve.AlgebraicGeometry.Curves.Node.Period.Roots
 import QPainleve.Geometry.Toric.Fan.Presentation.Genus
-import QPainleve.Geometry.Toric.Fan.Smooth
 import QPainleve.Geometry.Toric.Fan.Subdivision.Projective
 import QPainleve.SignedClusterModularGroup.Realization.Anticanonical
+import QPainleve.SignedClusterModularGroup.Realization.NodalFiber
+import QPainleve.SignedClusterModularGroup.Realization.Presentation.Boundary
 import TauCeti.AlgebraicGeometry.RationalPoint.Image
 
 /-!
@@ -140,10 +141,7 @@ theorem exists_root_free_fibers_with_compatible_periods
   classical
   let : Q.fan.algebraicRealization.IsProjectiveOver ℂ :=
     Q.fan.isProjectiveOver_algebraicRealization_of_isComplete Q.regular Q.complete b
-  have hrank : Module.finrank ℤ N = 2 := by simpa using Module.finrank_eq_card_basis b
-  let : SmoothOfRelativeDimension 2 (Q.fan.algebraicRealization ↘ S) := by
-    rw [← hrank, Q.fan.algebraicRealization_over]
-    exact Q.fan.smoothOfRelativeDimension_algebraicRealizationStructureMap Q.regular
+  let := Q.smoothOfRelativeDimension_fan
   let U := (Path.nil : Word E E).centerOpen ℂ P
   obtain ⟨z, hz, hzU⟩ := U.isOpen.isLocallyClosed.exists_rationalPoint_mem
     (structureMap ℂ (Fin r → ℤ)) ((Path.nil : Word E E).nonempty_centerOpen (K := ℂ) P)
@@ -151,8 +149,9 @@ theorem exists_root_free_fibers_with_compatible_periods
   have hc : c.left (default : S) ∈ U := by
     rw [Subsingleton.elim (default : S) (IsLocalRing.closedPoint ℂ)]
     exact hzU
-  obtain ⟨hAux, e, he, _⟩ := (hmodels c hc).existsUnique_chargeKernelEquiv (hD c) (hmark c)
-  let := hAux
+  let := Q.isPerfPair_auxiliaryPicardForm
+  let e := (hmodels c hc).chargeKernelEquiv (hD c) (hmark c)
+  have he := (hmodels c hc).chargeKernelEquiv_symm_apply (hD c) (hmark c)
   -- The charge action already incorporates the boundary sign.
   let action := (e.symm.trans (signedOrthogonalRestriction B d g).val).trans e
   obtain ⟨c₀, c₁, hi₀, hi₁, hperiod, hword⟩ := Q.exists_compatible_ordered_periods P hcharge action

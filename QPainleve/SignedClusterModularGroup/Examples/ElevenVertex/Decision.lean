@@ -5,6 +5,7 @@ Authors: The QPainleve contributors
 -/
 module
 
+public import QPainleve.Algebra.Cluster.ChargeKernel.Action
 public import QPainleve.SignedClusterModularGroup.Examples.ElevenVertex.Relations
 
 import QPainleve.AlgebraicGeometry.Chow.RationalSurface.Basic
@@ -19,6 +20,7 @@ The ordered plane blowups give a marked reference model with one boundary compon
 The squarefree-boundary relation criterion then reduces equality of independent X pullbacks to
 transport of the nine explicit integral Casimir basis vectors. The algorithm uses the
 original seed labels, including when the reference model uses the transposed lattice frame.
+The same criterion proves faithfulness of the signed group's exchange-kernel action.
 
 The proof uses `exists_marked_reference_fiber_of_ordered_towers` and
 `CompleteToricPresentation.xPullback_eq_iff_exponentEquiv_eq_on_basis_of_squarefree`.
@@ -26,7 +28,7 @@ The proof uses `exists_marked_reference_fiber_of_ordered_towers` and
 
 public section
 
-open CategoryTheory Quiver QPainleve.Cluster
+open CategoryTheory MulOpposite Quiver QPainleve.Cluster
 
 namespace QPainleve.ElevenVertex
 
@@ -127,6 +129,29 @@ private theorem xPullback_eq_iff_columns (w v : Word B B) :
     exact criterion (by rw [hcharge]; exact neg_exchangeMatrix_eq_chargeExchangeMatrix)
       (by ext x; simp [SkewExchangeMatrix.neg_matrix, LinearMap.mem_ker])
 
+/-- Two signed eleven-vertex loops over a characteristic-zero field have the same X pullback
+exactly when their integral exchange-kernel actions agree. -/
+theorem xPullback_eq_iff_exchangeKernelEquiv_eq (w v : Word B B) :
+    w.xPullback k = v.xPullback k ↔ w.exchangeKernelEquiv = v.exchangeKernelEquiv := by
+  refine ⟨Path.exchangeKernelEquiv_eq_of_xPullback_eq k, fun h ↦ ?_⟩
+  apply (xPullback_eq_iff_columns k w v).mpr
+  funext j
+  simpa only [transportedColumns, Path.coe_exchangeKernelEquiv_apply,
+    coe_exchangeKernelBasis_apply] using
+    congrArg (fun e : K ≃ₗ[ℤ] K ↦ (e (exchangeKernelBasis j) : Fin 11 → ℤ)) h
+
+/-- The integral exchange-kernel action of the eleven-vertex signed cluster modular group
+over a characteristic-zero field is faithful. -/
+theorem exchangeKernelAction_injective :
+    Function.Injective (exchangeKernelAction k B) := by
+  intro x y h
+  obtain ⟨w, hw⟩ := signedClusterModularGroupMap_surjective k B x.unop
+  obtain ⟨v, hv⟩ := signedClusterModularGroupMap_surjective k B y.unop
+  rw [← op_unop x, ← op_unop y, ← hw, ← hv] at h ⊢
+  rw [exchangeKernelAction_op_loop, exchangeKernelAction_op_loop] at h
+  exact congrArg op ((signedClusterModularGroupMap_eq_iff k B w v).mpr
+    ((xPullback_eq_iff_exchangeKernelEquiv_eq k w.asHom v.asHom).mpr h))
+
 /-- In the eleven-vertex seed, the complete integer invariant detects equality of X pullbacks
 over every characteristic-zero field. The columns already distinguish the pullbacks. -/
 theorem xPullback_eq_iff_signedLoopInvariants_eq (w v : Word B B) :
@@ -135,26 +160,9 @@ theorem xPullback_eq_iff_signedLoopInvariants_eq (w v : Word B B) :
         v.signedLoopInvariants exchangeKernelBasisVectors boundaryOrders (boundaryOrders 0) := by
   constructor
   · intro h
-    have hB : (B).matrix ≠ 0 := by
-      intro he
-      have hm := congrArg (fun m : Matrix (Fin 11) (Fin 11) ℤ ↦ m 0 2) he
-      have hentry : (B).matrix 0 2 ≠ 0 := by
-        rw [exchangeMatrix_eq_chargeExchangeMatrix, chargeExchangeMatrix_apply, chargeMap_single,
-          chargeMap_single]
-        have h₀ : charge 0 = Pi.basisFun ℤ (Fin 2) 0 := by
-          ext j
-          fin_cases j <;>
-            norm_num [charge_apply, rayIndex_eq_ite, Pi.basisFun_apply, Pi.single_apply]
-        have h₂ : charge 2 = Pi.basisFun ℤ (Fin 2) 1 := by
-          ext j
-          fin_cases j <;>
-            norm_num [charge_apply, rayIndex_eq_ite, Pi.basisFun_apply, Pi.single_apply]
-        rw [h₀, h₂, LinearEquiv.coe_coe, Module.Basis.detDualEquiv_apply_basis_zero_one]
-        exact one_ne_zero
-      exact hentry hm
     simpa only [coe_exchangeKernelBasis_apply] using
-      Path.signedLoopInvariants_eq_of_xPullback_eq hB h exchangeKernelBasis
-        boundaryOrders (boundaryOrders 0)
+      Path.signedLoopInvariants_eq_of_xPullback_eq exchangeMatrix_matrix_ne_zero h
+        exchangeKernelBasis boundaryOrders (boundaryOrders 0)
   · intro h
     apply (xPullback_eq_iff_columns k w v).mpr
     unfold transportedColumns

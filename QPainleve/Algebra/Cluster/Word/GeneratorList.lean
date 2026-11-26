@@ -142,3 +142,16 @@ theorem loopOfList?_eq_none_iff {gs : List (Generator ι)} :
     exact iff_of_true rfl (fun he ↦ h (congrArg SkewExchangeMatrix.matrix he))
 
 end QPainleve.Cluster.Generator
+
+namespace Quiver.Path
+
+variable {ι : Type*} [DecidableEq ι] {B C : SkewExchangeMatrix ι}
+
+/-- A typed cluster word is determined by its list of generators. -/
+theorem generators_injective : Function.Injective (generators : Word B C → List (Generator ι)) := by
+  intro w v h
+  have hword : (⟨C, w⟩ : Σ D, Word B D) = ⟨C, v⟩ := by
+    simpa only [Generator.wordOfList_generators] using congrArg (Generator.wordOfList B) h
+  exact eq_of_heq (Sigma.mk.inj_iff.mp hword).2
+
+end Quiver.Path

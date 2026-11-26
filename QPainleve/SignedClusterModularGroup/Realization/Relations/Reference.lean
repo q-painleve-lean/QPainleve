@@ -5,7 +5,7 @@ Authors: The QPainleve contributors
 -/
 module
 
-public import QPainleve.Algebra.Cluster.Word.Relations
+public import QPainleve.Algebra.Cluster.Word.LoopComparison.List
 public import QPainleve.SignedClusterModularGroup.Realization.Presentation
 public import QPainleve.SignedClusterModularGroup.Realization.Tropical
 
@@ -19,7 +19,8 @@ import QPainleve.SignedClusterModularGroup.Realization.Relations.Presentation
 
 A single reference nodal contraction supplies the boundary orders and the moving
 models used in the geometric criterion. The resulting integer comparison decides
-equality of independent X pullbacks over any field.
+equality of independent X pullbacks over any field for typed loops and lists of
+generators.
 It combines `CompleteToricPresentation.exists_marked_family_of_nodal_model` with
 `GeometricRealization.xPullback_eq_iff_signedLoopInvariants_eq_of_presentation`.
 -/
@@ -88,5 +89,56 @@ theorem xPullback_eq_iff_signedLoopInvariants_eq_of_nodal_contraction
     Q P (Fan.rayChargeSeed_form _ _ _) (Fan.rayChargeSeed_charge _ _ _)
     M p₀ hnodal₀ (fun c _ ↦ p c) (fun c _ ↦ hp c) hnef hsq hprim hmark
     Q.exists_cone_of_numbered_node w v β
+
+/-- The numbered boundary orders of a reference nodal contraction certify the integer
+comparison of typed signed loops over every coefficient field. -/
+theorem compareSignedLoops_eq_true_iff_of_nodal_contraction
+    (p₀ : fiber[M₀,c₀]) (hnodal₀ : p₀.IsNodalContraction)
+    (hE : E.matrix = chargeExchangeMatrix b.detDualEquiv.toLinearMap (Fan.rayChargeMap Q.rays))
+    (hprim : IsPrimitive (Additive.ofMul classOf(cartier[M₀])))
+    (hnef : (classOf(cartier[M₀])).IsNef ℂ (M₀.surface ↘ S))
+    (hsq : Chow.classIntersectionNumber ℂ M₀.surface classOf(cartier[M₀])
+      classOf(cartier[M₀]) = 0)
+    (w v : Word E E) :
+    E.compareSignedLoops (p₀.numberedBoundaryOrders cartier[M₀]) w v = true ↔
+      w.xPullback k = v.xPullback k :=
+  E.compareSignedLoops_eq_true_iff_xPullback_eq k _ w v
+    (fun β ↦ Q.xPullback_eq_iff_signedLoopInvariants_eq_of_nodal_contraction k p₀ hnodal₀
+      hE hprim hnef hsq w v β)
+
+/-- Decide equality of signed loop pullbacks from an integer order table certified by a
+reference nodal contraction. -/
+def decidableXPullbackEqOfNodalContraction
+    (p₀ : fiber[M₀,c₀]) (hnodal₀ : p₀.IsNodalContraction)
+    (hE : E.matrix = chargeExchangeMatrix b.detDualEquiv.toLinearMap (Fan.rayChargeMap Q.rays))
+    (hprim : IsPrimitive (Additive.ofMul classOf(cartier[M₀])))
+    (hnef : (classOf(cartier[M₀])).IsNef ℂ (M₀.surface ↘ S))
+    (hsq : Chow.classIntersectionNumber ℂ M₀.surface classOf(cartier[M₀])
+      classOf(cartier[M₀]) = 0)
+    (orders : Fin n → Fin r → ℤ) (ho : orders = p₀.numberedBoundaryOrders cartier[M₀])
+    (w v : Word E E) : Decidable (w.xPullback k = v.xPullback k) :=
+  decidable_of_iff (E.compareSignedLoops orders w v = true) (by
+    rw [ho]
+    exact Q.compareSignedLoops_eq_true_iff_of_nodal_contraction k p₀ hnodal₀ hE hprim hnef hsq w v)
+
+/-- With the numbered boundary orders of a reference nodal contraction, a Boolean result
+certifies that both generator lists return to the starting exchange matrix. It is true
+exactly when the two independent X pullbacks agree over the given field. -/
+theorem compareSignedLoopLists_eq_some_iff_of_nodal_contraction
+    (p₀ : fiber[M₀,c₀]) (hnodal₀ : p₀.IsNodalContraction)
+    (hE : E.matrix = chargeExchangeMatrix b.detDualEquiv.toLinearMap (Fan.rayChargeMap Q.rays))
+    (hprim : IsPrimitive (Additive.ofMul classOf(cartier[M₀])))
+    (hnef : (classOf(cartier[M₀])).IsNef ℂ (M₀.surface ↘ S))
+    (hsq : Chow.classIntersectionNumber ℂ M₀.surface classOf(cartier[M₀])
+      classOf(cartier[M₀]) = 0)
+    (orders : Fin n → Fin r → ℤ) (ho : orders = p₀.numberedBoundaryOrders cartier[M₀])
+    (gs hs : List (Generator (Fin r))) (result : Bool) :
+    E.compareSignedLoopLists orders gs hs = some result ↔
+      ∃ w v : Word E E, w.generators = gs ∧ v.generators = hs ∧
+        (result = true ↔ w.xPullback k = v.xPullback k) := by
+  rw [ho]
+  exact E.compareSignedLoopLists_eq_some_iff_xPullback_eq k _
+    (Q.compareSignedLoops_eq_true_iff_of_nodal_contraction k p₀ hnodal₀ hE hprim hnef hsq)
+    gs hs result
 
 end QPainleve.SignedClusterModularGroup.CompleteToricPresentation

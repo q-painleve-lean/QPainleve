@@ -116,11 +116,9 @@ private theorem hasNodalModel_appended (Q : CompleteToricPresentation i b r L γ
   have hC := Path.centerPartialMap_cons (K := ℂ) w s P
   let : ((Cw[w,P]).comp (Cstep[w,s,P])).IsOver (Centers).hom (Centers).hom :=
     hC ▸ inferInstanceAs ((Cnext[w,s,P]).IsOver (Centers).hom (Centers).hom)
-  refine (nodalModelsOn_congr Q M hC).mpr ?_
-  intro c
-  simpa only [Category.assoc, compDomainRight_target] using
-    models (c ≫ (Cw[w,P]).compDomainRight (X := Centers) (Y := Centers) (Z := Centers)
-      (Cstep[w,s,P]))
+  exact (nodalModelsOn_congr Q M hC).mpr
+    ((Cw[w,P]).forall_comp_domainTarget (X := Centers) (Y := Centers) (Z := Centers)
+      (Cstep[w,s,P]) (fun c ↦ Q.HasNodalModel c (M c)) models)
 
 local notation "frameSwap" => (Equiv.swap 0 1 : Equiv.Perm (Fin 2))
 local notation "reflection" => (DihedralGroup.sr (0 : ZMod n))

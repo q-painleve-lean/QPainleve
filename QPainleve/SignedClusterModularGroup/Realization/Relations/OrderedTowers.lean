@@ -17,7 +17,8 @@ import QPainleve.SignedClusterModularGroup.Realization.NodalFiber
 
 A specified toric presentation supplies a marked reference fiber and a contraction for the
 integer relation criterion. The reference fiber retains the original surface, numbering and
-center labels. Its boundary orders also certify the Boolean comparison of signed generator lists.
+center labels. Its contraction supplies the boundary orders used by
+`CompleteToricPresentation.compareSignedLoopLists_eq_some_iff_of_nodal_contraction`.
 -/
 
 public section
