@@ -6,11 +6,12 @@ Authors: The QPainleve contributors
 module
 
 public import QPainleve.AlgebraicGeometry.Blowup.Tower.Nodal.Basic
-public import QPainleve.AlgebraicGeometry.CartierDivisor.Support
+public import QPainleve.AlgebraicGeometry.CartierDivisor.BoundaryPrimes
 public import QPainleve.AlgebraicGeometry.Curves.Node.NumberedPrime
 import QPainleve.AlgebraicGeometry.Blowup.Point.BoundaryPrimes
 import QPainleve.AlgebraicGeometry.Blowup.Point.Multiplicity
 import QPainleve.AlgebraicGeometry.Blowup.Point.NodalWeights
+import QPainleve.AlgebraicGeometry.Blowup.Tower.Nodal.Multiplicity
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Nodal.Subdivision
 import TauCeti.AlgebraicGeometry.Curves.Node.Reduced
 import TauCeti.AlgebraicGeometry.Morphisms.Smooth.Regular
@@ -24,6 +25,7 @@ In a tower of blowups at nodes of a reduced Cartier cycle, give every original
 component weight one. At each blowup retain the weights on the strict transforms
 and append the sum of the two branch weights. The resulting integer table gives
 the Weil coefficients of the total transform, including all exceptional primes.
+The weight-one entries identify the strict transforms of the original components.
 -/
 
 public section
@@ -106,7 +108,52 @@ theorem snoc_iff {T : BlowupTower X m Z} {I : Z.IdealSheafData} {r : BoundaryWei
         I.blowupToBase (e' (Fin.last (n + m))).val = x ∧
         ∀ i, x ∈ closure {(e i).val} ↔ i = a ∨ i = b := (Iff.rfl)
 
+/-- An original label projects to its original boundary component after every step. -/
+theorem toBase_apply_castAdd {r : BoundaryWeightRecurrence n m} {T : BlowupTower X m Z}
+    {e : Fin (n + m) ≃ (D.comap T.toBase).boundaryPrimes}
+    (h : r.MatchesTower D original T e) (i : Fin n) :
+    T.toBase (e (Fin.castAdd m i)).val = original i := by
+  induction r generalizing Z with
+  | nil =>
+    cases T
+    simpa only [toBase_nil, Scheme.Hom.id_base, TopCat.coe_id, id_eq, Fin.castAdd_zero,
+      Fin.cast_eq_self] using (nil_iff.mp h) i
+  | @snoc m r a b ih =>
+    cases T with
+    | snoc T I =>
+      obtain ⟨e, _, hm, _, _, he, _, _⟩ := snoc_iff.mp h
+      rw (occs := .pos [1]) [toBase_snoc]
+      rw [Scheme.Hom.comp_apply, ← Fin.castSucc_castAdd, he, ih hm]
+
 end MatchesTower
+
+/-- A computation of the total transform records the incident components at each
+blowup and gives the Weil coefficient at every numbered boundary prime. -/
+structure IsTotalTransform {X Y : Scheme.{u}} [IsIntegral Y] [IsNoetherian Y]
+    {n m : ℕ} (r : BoundaryWeightRecurrence n m)
+    (D : X.IdealSheafData) (original : Fin n → X) (T : BlowupTower X m Y)
+    (e : Fin (n + m) ≃ (D.comap T.toBase).boundaryPrimes)
+    (hP : (D.comap T.toBase).IsEffectiveCartier) : Prop where
+  /-- Each step labels the strict transforms, exceptional prime and incident components. -/
+  matchesTower : r.MatchesTower D original T e
+  /-- The computed weights are the Weil coefficients in this numbering. -/
+  boundaryCoeff_eq (i : Fin (n + m)) : hP.boundaryCoeff (e i) = r.weights i
+
+/-- The recurrence identifies the surviving boundary primes by their weight-one entries. -/
+theorem IsTotalTransform.toBase_mem_boundaryPrimes_iff
+    {k : Type u} [Field k] [PerfectField k] {X Y : Scheme.{u}}
+    [IsIntegral X] [IsNoetherian X] [IsIntegral Y] [IsNoetherian Y]
+    {s : X ⟶ Spec (.of k)} [SmoothOfRelativeDimension 2 s]
+    {D : X.IdealSheafData} {n m : ℕ} {T : BlowupTower X m Y} {original : Fin n → X}
+    {r : BoundaryWeightRecurrence n m} {e : Fin (n + m) ≃ (D.comap T.toBase).boundaryPrimes}
+    {hP : (D.comap T.toBase).IsEffectiveCartier} (h : r.IsTotalTransform D original T e hP)
+    (hT : IsNodalBoundaryTower D s (𝟙 X) T) (hD : D.IsEffectiveCartier)
+    (hnodal : AtWorstNodalOfRelativeDimensionOne (D.subschemeι ≫ s)) (i : Fin (n + m)) :
+    T.toBase (e i).val ∈ D.boundaryPrimes ↔ r.weights i = 1 := by
+  have hsurvives : T.toBase (e i).val ∈ D.boundaryPrimes ↔ hP.boundaryCoeff (e i) = 1 :=
+    hT.toBase_mem_boundaryPrimes_iff_boundaryCoeff_eq_one hD hnodal (e i)
+  rw [hsurvives, h.boundaryCoeff_eq]
+  exact Int.ofNat_inj
 
 end BoundaryWeightRecurrence
 
@@ -122,8 +169,6 @@ variable {k : Type u} [Field k] [IsSepClosed k] [PerfectField k] {X Y : Scheme.{
 local notation "s" => (X ↘ Spec (CommRingCat.of k))
 local notation "P[" T "]" => comap D (BlowupTower.toBase T)
 local notation "B[" T "]" => radical (P[T])
-local notation "weight(" h "," q ")" =>
-  WeilDivisor.coeff (Scheme.CartierDivisor.toWeilDivisor (IsEffectiveCartier.toCartierDivisor h)) q
 local notation "original(" A "," hD ")" =>
   (fun i ↦ Subtype.val (Scheme.NodalCycleNumbering.boundaryPrimeEquiv A hD (ZMod.finEquiv _ i)))
 
@@ -131,9 +176,7 @@ private abbrev HasBoundaryWeights (hD : D.IsEffectiveCartier)
     (A : Scheme.NodalCycleNumbering p n) (T : BlowupTower X m Y)
     [IsIntegral Y] [IsNoetherian Y] (hP : (P[T]).IsEffectiveCartier) : Prop :=
   ∃ (e : Fin (n + m) ≃ (P[T]).boundaryPrimes) (a : BoundaryWeightRecurrence n m),
-    a.MatchesTower D original(A,hD) T e ∧
-    (∀ i : Fin n, T.toBase (e (Fin.castAdd m i)).val = original(A,hD) i) ∧
-    ∀ i, weight(hP,(P[T]).boundaryPrimeEmbedding (e i)) = a.weights i
+    a.IsTotalTransform D original(A,hD) T e hP
 
 omit [PerfectField k] in
 private theorem hasBoundaryWeights_id (hD : D.IsEffectiveCartier)
@@ -142,12 +185,11 @@ private theorem hasBoundaryWeights_id (hD : D.IsEffectiveCartier)
   suffices ∀ hP : (P[BlowupTower.nil]).IsEffectiveCartier,
       ∃ e : Fin n ≃ (P[BlowupTower.nil]).boundaryPrimes,
         (∀ i, (e i).val = original(A,hD) i) ∧
-        ∀ i, weight(hP,(P[BlowupTower.nil]).boundaryPrimeEmbedding (e i)) =
+        ∀ i, hP.boundaryCoeff (e i) =
           (BoundaryWeightRecurrence.nil : BoundaryWeightRecurrence n 0).weights i by
     intro hP
     obtain ⟨e, he, hw⟩ := this hP
-    exact ⟨e, .nil, BoundaryWeightRecurrence.MatchesTower.nil_iff.mpr he,
-      fun i ↦ by simpa using he i, hw⟩
+    exact ⟨e, .nil, ⟨BoundaryWeightRecurrence.MatchesTower.nil_iff.mpr he, hw⟩⟩
   have : Smooth s := SmoothOfRelativeDimension.smooth 2 _
   have : IsRegular X := IsRegular.of_smooth s
   have hN : AtWorstNodalOfRelativeDimensionOne (D.subschemeι ≫ s) := by
@@ -160,7 +202,7 @@ private theorem hasBoundaryWeights_id (hD : D.IsEffectiveCartier)
   let q := D.boundaryPrimeEmbedding (A.boundaryPrimeEquiv hD (ZMod.finEquiv n i))
   have : IsDiscreteValuationRing (X.presheaf.stalk (q : X)) :=
     IsNormalScheme.isDiscreteValuationRing_stalk q.val q.property
-  rw [BoundaryWeightRecurrence.weights_nil, Nat.cast_one]
+  rw [IsEffectiveCartier.boundaryCoeff_def, BoundaryWeightRecurrence.weights_nil, Nat.cast_one]
   exact hP.coeff_toWeilDivisor_eq_one_of_isReduced q (by
     simpa only [q, coe_boundaryPrimeEmbedding] using
       (mem_boundaryPrimes.mp (A.boundaryPrimeEquiv hD (ZMod.finEquiv n i)).property).1)
@@ -184,13 +226,13 @@ private theorem exists_boundaryWeights_snoc_of_numbering
     (hI : I = (Z.fromSpecResidueField (C.ambientNode j)).ker)
     (hP : (P[U]).IsEffectiveCartier) (e : Fin (n + m) ≃ (P[U]).boundaryPrimes)
     (r : BoundaryWeightRecurrence n m)
-    (hr : ∀ i, weight(hP,(P[U]).boundaryPrimeEmbedding (e i)) = r.weights i) :
+    (hr : ∀ i, hP.boundaryCoeff (e i) = r.weights i) :
     ∃ (e' : Fin (n + (m + 1)) ≃ (P[U.snoc I]).boundaryPrimes) (a b : Fin (n + m)),
       (∀ i, I.blowupToBase (e' i.castSucc).val = (e i).val) ∧
       I.blowupToBase (e' (Fin.last (n + m))).val = C.ambientNode j ∧
       (∀ i, C.ambientNode j ∈ closure {(e i).val} ↔ i = a ∨ i = b) ∧
       ∀ (hPV : (P[U.snoc I]).IsEffectiveCartier) i,
-        weight(hPV,(P[U.snoc I]).boundaryPrimeEmbedding (e' i)) = (r.snoc a b).weights i := by
+        hPV.boundaryCoeff (e' i) = (r.snoc a b).weights i := by
   rw [toBase_snoc, comap_comp]
   let f := Z ↘ Spec (CommRingCat.of k)
   have : Smooth f := SmoothOfRelativeDimension.smooth 2 f
@@ -216,6 +258,7 @@ private theorem exists_boundaryWeights_snoc_of_numbering
       change _ = ((r.snoc (l j) (l (j + 1))).weights (Fin.last (n + m)) : ℤ)
       rw [BoundaryWeightRecurrence.weights_snoc_last r (l j) (l (j + 1)),
         Nat.cast_add, ← hr (l j), ← hr (l (j + 1))]
+      simp only [IsEffectiveCartier.boundaryCoeff_def]
       have hl' (d : ZMod (n + m)) :
           (P[U]).boundaryPrimeEmbedding (e (l d)) =
             (B[U]).boundaryPrimeEmbedding (C.boundaryPrimeEquiv hB d) := by
@@ -227,7 +270,8 @@ private theorem exists_boundaryWeights_snoc_of_numbering
         IsNormalScheme.isDiscreteValuationRing_stalk q.val q.property
       exact C.coeff_toWeilDivisor_comap_pointBlowup_of_over_node hB hP hsupport j hI q
         (by simpa only [q, coe_boundaryPrimeEmbedding] using he'₀)
-    · rw [BoundaryWeightRecurrence.weights_snoc_castSucc, ← hr]
+    · rw [BoundaryWeightRecurrence.weights_snoc_castSucc, ← hr,
+        hPV.boundaryCoeff_def, hP.boundaryCoeff_def]
       have hx₂ := coheight_eq_of_isClosed_of_smoothOfRelativeDimension (n := 2) f hx
       exact hP.coeff_toWeilDivisor_comap_pointBlowup_of_strict hx (by rw [hx₂]; norm_num) hI hPV _ _
         (by simpa only [coe_boundaryPrimeEmbedding] using he' i)
@@ -275,15 +319,14 @@ private theorem hasBoundaryWeights_toBase
     have : IsNoetherian I.blowup := (U.snoc I).isNoetherian
     have : Surjective I.blowupToBase := by
       simpa only [toBase_snoc, toBase_nil, Category.comp_id] using hstep.surjective f
-    obtain ⟨e, r, hmatch, he, hr⟩ := ih hP
+    obtain ⟨e, r, hweights⟩ := ih hP
     obtain ⟨e', a, b, he', hnew, hbranch, hw⟩ :=
-      exists_boundaryWeights_snoc_of_numbering (U := U) (I := I) C hB j hcenter hP e r hr
+      exists_boundaryWeights_snoc_of_numbering (U := U) (I := I) C hB j hcenter hP e r
+        hweights.boundaryCoeff_eq
     intro hPV
-    refine ⟨e', r.snoc a b, BoundaryWeightRecurrence.MatchesTower.snoc_iff.mpr
-      ⟨e, x, hmatch, hx, hI, he', hj ▸ hnew, hj ▸ hbranch⟩, ?_, hw hPV⟩
-    intro i
-    rw (occs := .pos [1]) [toBase_snoc]
-    rw [Scheme.Hom.comp_apply, ← Fin.castSucc_castAdd, he', he]
+    refine ⟨e', r.snoc a b, ⟨?_, hw hPV⟩⟩
+    exact BoundaryWeightRecurrence.MatchesTower.snoc_iff.mpr
+      ⟨e, x, hweights.matchesTower, hx, hI, he', hj ▸ hnew, hj ▸ hbranch⟩
 
 /-- The total-transform Weil coefficients of a numbered nodal cycle are computed
 by the integer recurrence that starts from ones and adds the two incident
@@ -296,10 +339,8 @@ theorem exists_boundaryWeightRecurrence
     letI := hT.isClosedPointTower.isIntegral s
     letI := T.isNoetherian
     let hP := hT.isClosedPointTower.isEffectiveCartier_totalTransform s hD
-    ∃ (e : Fin (n + m) ≃ (P[T]).boundaryPrimes) (a : BoundaryWeightRecurrence n m),
-      a.MatchesTower D original(A,hD) T e ∧
-      (∀ i : Fin n, T.toBase (e (Fin.castAdd m i)).val = original(A,hD) i) ∧
-      ∀ i, weight(hP,(P[T]).boundaryPrimeEmbedding (e i)) = a.weights i :=
+    ∃ (e : Fin (n + m) ≃ (P[T]).boundaryPrimes) (r : BoundaryWeightRecurrence n m),
+      r.IsTotalTransform D original(A,hD) T e hP :=
   hasBoundaryWeights_toBase hT hD A _
 
 end IsNodalBoundaryTower

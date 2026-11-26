@@ -6,11 +6,9 @@ Authors: The QPainleve contributors
 module
 
 public import QPainleve.AlgebraicGeometry.Blowup.Tower.Nodal.Basic
-public import QPainleve.AlgebraicGeometry.CartierDivisor.Support
-public import QPainleve.AlgebraicGeometry.IdealSheaf.Boundary.Primes
+public import QPainleve.AlgebraicGeometry.CartierDivisor.BoundaryPrimes
 import QPainleve.AlgebraicGeometry.Blowup.Descent
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Modification
-import QPainleve.AlgebraicGeometry.CartierDivisor.BoundaryPrimes
 import QPainleve.AlgebraicGeometry.Curves.Node.Order
 import QPainleve.AlgebraicGeometry.IdealSheaf.Stalk
 import QPainleve.AlgebraicGeometry.Morphisms.IsoLocus
@@ -107,7 +105,7 @@ theorem mem_centre_iff_two_le_coeff_totalTransform [PerfectField k] [IsIntegral 
 
 /-- A prime of the total boundary survives the nodal contraction exactly when its
 Weil multiplicity is one. -/
-theorem toBase_mem_boundaryPrimes_iff_coeff_totalTransform_eq_one
+theorem toBase_mem_boundaryPrimes_iff_boundaryCoeff_eq_one
     [PerfectField k] [IsIntegral X] [IsNoetherian X]
     (hT : IsNodalBoundaryTower D s (𝟙 X) T)
     (hD : D.IsEffectiveCartier) (hnodal : AtWorstNodalOfRelativeDimensionOne (D.subschemeι ≫ s))
@@ -115,9 +113,7 @@ theorem toBase_mem_boundaryPrimes_iff_coeff_totalTransform_eq_one
     letI := hT.isClosedPointTower.isIntegral s
     letI := T.isNoetherian
     let htotal := hT.isClosedPointTower.isEffectiveCartier_totalTransform s hD
-    T.toBase p.val ∈ D.boundaryPrimes ↔
-      WeilDivisor.coeff htotal.toCartierDivisor.toWeilDivisor
-        ((D.comap T.toBase).boundaryPrimeEmbedding p) = 1 := by
+    T.toBase p.val ∈ D.boundaryPrimes ↔ htotal.boundaryCoeff p = 1 := by
   intro htotal
   let : IsIntegral Y := hT.isClosedPointTower.isIntegral s
   let : IsNoetherian Y := T.isNoetherian
@@ -127,19 +123,13 @@ theorem toBase_mem_boundaryPrimes_iff_coeff_totalTransform_eq_one
   have : Smooth (T.toBase ≫ s) := (hT.isClosedPointTower.smoothOfRelativeDimension s).smooth
   have : IsRegular Y := IsRegular.of_smooth (T.toBase ≫ s)
   let x := (D.comap T.toBase).boundaryPrimeEmbedding p
-  let W := htotal.toCartierDivisor.toWeilDivisor
-  have hnonneg : 0 ≤ W :=
-    (Scheme.CartierDivisor.isEffective_iff_toWeilDivisor_nonneg _).mp
-      htotal.isEffective_toCartierDivisor
-  have hne : WeilDivisor.coeff W x ≠ 0 := by
-    simpa only [x, IsEffectiveCartier.boundaryPrimesEquivWeilSupport_apply_val] using
-      WeilDivisor.mem_support_iff.mp (htotal.boundaryPrimesEquivWeilSupport p).property
-  have hpos : 0 < WeilDivisor.coeff W x := (hnonneg x).lt_of_ne hne.symm
-  have hcentre : 2 ≤ WeilDivisor.coeff W x ↔ T.toBase p.val ∉ D.boundaryPrimes :=
-    (hT.mem_centre_iff_two_le_coeff_totalTransform hD hnodal x).symm.trans
+  have hpos := htotal.boundaryCoeff_pos p
+  have hcentre : 2 ≤ htotal.boundaryCoeff p ↔ T.toBase p.val ∉ D.boundaryPrimes := by
+    rw [htotal.boundaryCoeff_def]
+    exact (hT.mem_centre_iff_two_le_coeff_totalTransform hD hnodal x).symm.trans
       (by simpa only [x, coe_boundaryPrimeEmbedding] using
         D.mem_centre_iff_notMem_boundaryPrimes_of_mem_boundaryPrimes_comap T.toBase p.property)
-  have hweight : (¬ 2 ≤ WeilDivisor.coeff W x) ↔ WeilDivisor.coeff W x = 1 := by omega
+  have hweight : (¬ 2 ≤ htotal.boundaryCoeff p) ↔ htotal.boundaryCoeff p = 1 := by omega
   exact not_not.symm.trans ((not_congr hcentre.symm).trans hweight)
 
 attribute [local instance] specializationOrder
