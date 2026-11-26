@@ -54,6 +54,16 @@ theorem unsignedRelators_def :
         (FreeGroup.of 0 ^ 3 * FreeGroup.of 1) ^ 2} :=
   (rfl)
 
+/-- Membership in the unsigned relators is equality to one of the three rotation and
+translation relators. -/
+@[simp]
+theorem mem_unsignedRelators_iff {r : FreeGroup (Fin 2)} :
+    r ∈ unsignedRelators ↔
+      let p := FreeGroup.of (0 : Fin 2)
+      let t := FreeGroup.of (1 : Fin 2)
+      r = p ^ 4 ∨ r = (p * t) ^ 2 ∨ r = (p ^ 3 * t) ^ 2 := by
+  simp only [unsignedRelators_def, Set.mem_insert_iff, Set.mem_singleton_iff]
+
 /-- The signed presentation adds `s²`, `(sp)²`, and `(spt)²` to the unsigned relators.
 Generator two is the reflection. -/
 def signedRelators : Set (FreeGroup (Fin 3)) :=
@@ -69,7 +79,24 @@ theorem signedRelators_def :
         (FreeGroup.of 2 * FreeGroup.of 0 * FreeGroup.of 1) ^ 2} :=
   (rfl)
 
-private theorem map_eq_one_on_unsignedRelators {G : Type*} [Monoid G]
+/-- Membership in the signed relators is equality to one of the six relators in the signed
+free generators. -/
+@[simp]
+theorem mem_signedRelators_iff {r : FreeGroup (Fin 3)} :
+    r ∈ signedRelators ↔
+      let p := FreeGroup.of (0 : Fin 3)
+      let t := FreeGroup.of (1 : Fin 3)
+      let s := FreeGroup.of (2 : Fin 3)
+      r = p ^ 4 ∨ r = (p * t) ^ 2 ∨ r = (p ^ 3 * t) ^ 2 ∨
+        r = s ^ 2 ∨ r = (s * p) ^ 2 ∨ r = (s * p * t) ^ 2 := by
+  simp only [signedRelators_def, unsignedRelators_def, Set.image_insert_eq, Set.image_singleton,
+    map_pow, map_mul, FreeGroup.map.of, Set.mem_union, Set.mem_insert_iff, Set.mem_singleton_iff,
+    or_assoc]
+  rfl
+
+/-- A monoid homomorphism sends the unsigned relators to one exactly when the images of the
+two free generators satisfy the three unsigned relations. -/
+theorem map_eq_one_on_unsignedRelators {G : Type*} [Monoid G]
     (f : FreeGroup (Fin 2) →* G) :
     (∀ r ∈ unsignedRelators, f r = 1) ↔
       let p := f (FreeGroup.of 0)
@@ -78,7 +105,9 @@ private theorem map_eq_one_on_unsignedRelators {G : Type*} [Monoid G]
   simp only [unsignedRelators_def, Set.forall_mem_insert, Set.forall_mem_singleton,
     map_pow, map_mul]
 
-private theorem map_eq_one_on_signedRelators {G : Type*} [Monoid G]
+/-- A monoid homomorphism sends the signed relators to one exactly when the images of the
+three free generators satisfy the six signed relations. -/
+theorem map_eq_one_on_signedRelators {G : Type*} [Monoid G]
     (f : FreeGroup (Fin 3) →* G) :
     (∀ r ∈ signedRelators, f r = 1) ↔
       let p := f (FreeGroup.of 0)
