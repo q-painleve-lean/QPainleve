@@ -7,10 +7,9 @@ module
 
 public import QPainleve.AlgebraicGeometry.Blowup.Tower.Nodal.Basic
 public import QPainleve.AlgebraicGeometry.Blowup.Tower.TotalTransform
-public import QPainleve.AlgebraicGeometry.IdealSheaf.Boundary.Primes
+public import QPainleve.AlgebraicGeometry.CartierDivisor.BoundaryPrimes
 
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Nodal.Multiplicity
-import QPainleve.AlgebraicGeometry.CartierDivisor.BoundaryPrimes
 import TauCeti.AlgebraicGeometry.Curves.Node.Reduced
 
 /-!
@@ -56,12 +55,11 @@ theorem intKernelGenerator_eq_totalTransform_and_surviving
     letI (y : Y) :=
       (T.toBase ≫ s).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two y
     let htotal := hT.isClosedPointTower.isEffectiveCartier_totalTransform s hD
-    let W := htotal.toCartierDivisor.toWeilDivisor
     let E := D.comap T.toBase
     (Chow.primeIntersectionMatrix k (E.boundaryPrimeEmbedding ∘ e)).intKernelGenerator i =
-        some (fun j ↦ W (E.boundaryPrimeEmbedding (e j))) ∧
-      ∀ j, T.toBase (e j).val ∈ D.boundaryPrimes ↔ W (E.boundaryPrimeEmbedding (e j)) = 1 := by
-  intro htotal W E
+        some (htotal.boundaryCoeff ∘ e) ∧
+      ∀ j, T.toBase (e j).val ∈ D.boundaryPrimes ↔ htotal.boundaryCoeff (e j) = 1 := by
+  intro htotal E
   let : IsNoetherian X := isNoetherian_of_finiteType s
   let : IsNoetherian Y := T.isNoetherian
   let : IsIntegral Y := hT.isClosedPointTower.isIntegral s
@@ -71,8 +69,8 @@ theorem intKernelGenerator_eq_totalTransform_and_surviving
   let (y : Y) : UniqueFactorizationMonoid (Y.presheaf.stalk y) :=
     (T.toBase ≫ s).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two y
   have : IsReduced D.subscheme := hnodal.isReduced
-  refine ⟨?_, fun j ↦ hT.toBase_mem_boundaryPrimes_iff_coeff_totalTransform_eq_one hD hnodal (e j)⟩
-  simpa only [Function.comp_def, Equiv.trans_apply,
+  refine ⟨?_, fun j ↦ hT.toBase_mem_boundaryPrimes_iff_boundaryCoeff_eq_one hD hnodal (e j)⟩
+  simpa only [Function.comp_def, Equiv.trans_apply, IsEffectiveCartier.boundaryCoeff_def,
     IsEffectiveCartier.boundaryPrimesEquivWeilSupport_apply_val] using
     hT.isClosedPointTower.intKernelGenerator_eq_totalTransform k hD hconn hnef hsq
       (e.trans htotal.boundaryPrimesEquivWeilSupport) i
