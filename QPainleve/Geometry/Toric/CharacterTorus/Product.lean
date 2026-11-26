@@ -58,7 +58,8 @@ private theorem prodCoordinates_inr :
 
 variable [IsAddFG A] [IsAddFG N]
 
-private theorem isPullback_prod :
+/-- The joint torus is the fiber product of the center and charge tori over the base. -/
+theorem isPullback_prod :
     IsPullback (Dmap (AddMonoidHom.inl A N)).hom.hom.left (Dmap (AddMonoidHom.inr A N)).hom.hom.left
       (D A).X.hom (D N).X.hom := by
   let R := MonoidAlgebra k (Multiplicative A)
@@ -102,6 +103,29 @@ theorem prodIso_hom_fst :
 theorem prodIso_hom_snd :
     (prodIso k A N).hom ≫ (Dmap (AddMonoidHom.inr A N)).hom.hom.left = pullback.snd _ _ :=
   (isPullback_prod k A N).isoPullback_inv_snd
+
+variable {A N} in
+/-- Insert a fixed center and leave the charge torus coordinate unchanged. -/
+def centerSlice (c : Spec (CommRingCat.of k) ⟶ (D A).X.left)
+    (hc : c ≫ (D A).X.hom = 𝟙 _) : (D N).X.left ⟶ (D (A × N)).X.left :=
+  (isPullback_prod k A N).lift ((D N).X.hom ≫ c) (𝟙 _) (by simp [hc])
+
+variable {A N} in
+/-- The center projection of the slice is constant at the specified center. -/
+@[reassoc (attr := simp)]
+theorem centerSlice_fst (c : Spec (CommRingCat.of k) ⟶ (D A).X.left)
+    (hc : c ≫ (D A).X.hom = 𝟙 _) :
+    centerSlice k (N := N) c hc ≫ (Dmap (AddMonoidHom.inl A N)).hom.hom.left =
+      (D N).X.hom ≫ c :=
+  IsPullback.lift_fst ..
+
+variable {A N} in
+/-- The charge projection of the slice is the identity. -/
+@[reassoc (attr := simp)]
+theorem centerSlice_snd (c : Spec (CommRingCat.of k) ⟶ (D A).X.left)
+    (hc : c ≫ (D A).X.hom = 𝟙 _) :
+    centerSlice k (N := N) c hc ≫ (Dmap (AddMonoidHom.inr A N)).hom.hom.left = 𝟙 _ :=
+  IsPullback.lift_snd ..
 
 /-- The first projection is smooth when the second factor is smooth over the base. -/
 theorem smooth_map_inl [Smooth (D N).X.hom] :

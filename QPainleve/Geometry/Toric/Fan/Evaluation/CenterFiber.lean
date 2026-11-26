@@ -16,7 +16,7 @@ The dominant rational chart of a contracted ordered blowup model identifies its
 fixed-center X evaluation with the restriction of the variable-center evaluation
 in diagonalizable group-scheme coordinates. The comparison uses
 `Fan.exists_dominant_chart_comp_contractedXEvaluation` and
-`CharacterTorus.pullback_lift_comp_evaluation_comp_diagonalizableGroupSchemeIso`.
+`CharacterTorus.evaluationAtCenter_comp_diagonalizableGroupSchemeIso`.
 -/
 
 public noncomputable section
@@ -81,10 +81,8 @@ theorem exists_dominant_chart_comp_evaluationAtCenter
   let f := (repr).toAddEquiv.toAddMonoidHom
   let m := map ℂ f
   have heval : evaluationAtCenter ℂ v c hc ≫ t.hom =
-      e.hom ≫ affineCenterSlice χ ≫ affineEvaluation ℂ v := by
-    -- Reduce the additive type tag on the character group in the scheme comparison.
-    simpa only [evaluationAtCenter, Category.assoc] using!
-      pullback_lift_comp_evaluation_comp_diagonalizableGroupSchemeIso v c hc
+      e.hom ≫ affineCenterSlice χ ≫ affineEvaluation ℂ v :=
+    evaluationAtCenter_comp_diagonalizableGroupSchemeIso v c hc
   apply congrArg Scheme.Hom.toRationalMap
   calc
     _ = e.hom ≫ affineCenterSlice χ ≫ affineEvaluation ℂ v ≫ m :=

@@ -127,68 +127,52 @@ local notation "S" => Spec (CommRingCat.of k)
 /-- The center insertion into the product of diagonalizable groups agrees with the
 additive-coordinate slice at its character. -/
 @[reassoc]
-theorem pullback_lift_prodIso_comp_diagonalizableGroupSchemeIso
+theorem centerSlice_comp_diagonalizableGroupSchemeIso
     (c : S ⟶ (D A).X.left) (hc : c ≫ (D A).X.hom = 𝟙 S) :
     let point : (S).asOver S ⟶ (D A).X :=
       Over.homMk c (hc.trans (Spec.map_id (CommRingCat.of k)).symm)
     let slice : scheme k N ⟶ scheme k (A × N) :=
       affineCenterSlice
         (schemePointsMulEquiv (R := k) (A := k) (G A) point : Multiplicative A →* kˣ)
-    pullback.lift (f := (D A).X.hom) (g := (D N).X.hom)
-        ((D N).X.hom ≫ c) (𝟙 _) (by simp [hc]) ≫
-      (prodIso k A N).hom ≫ (τ (A × N)).hom =
+    centerSlice k c hc ≫ (τ (A × N)).hom =
     (τ N).hom ≫ slice := by
   intro point slice
-  let e := prodIso k A N ≪≫ τ (A × N)
   let χ : Multiplicative A →* kˣ := schemePointsMulEquiv (R := k) (A := k) (G A) point
   let q := (τ N).hom ≫ slice
-  have hfst : e.inv ≫ pullback.fst (D A).X.hom (D N).X.hom =
-      map k (AddMonoidHom.inl A N) ≫ (τ A).inv := by
-    apply (cancel_mono (τ A).hom).mp
-    simp only [e, Iso.trans_inv, Category.assoc, ← prodIso_hom_fst,
-      Iso.inv_hom_id_assoc, groupSchemeMap_comp_diagonalizableGroupSchemeIso]
-    erw [Iso.inv_hom_id_assoc, Category.assoc, Iso.inv_hom_id, Category.comp_id]
-    rfl
-  have hsnd : e.inv ≫ pullback.snd (D A).X.hom (D N).X.hom =
-      map k (AddMonoidHom.inr A N) ≫ (τ N).inv := by
-    apply (cancel_mono (τ N).hom).mp
-    simp only [e, Iso.trans_inv, Category.assoc, ← prodIso_hom_snd,
-      Iso.inv_hom_id_assoc, groupSchemeMap_comp_diagonalizableGroupSchemeIso]
-    erw [Iso.inv_hom_id_assoc, Category.assoc, Iso.inv_hom_id, Category.comp_id]
-    rfl
+  have hproject {B : Type u} [AddCommGroup B] [IsAddFG B] (f : B →+ A × N) :
+      (τ (A × N)).inv ≫ (groupSchemeMap k (FGCommGrpCat.ofHom f.toMultiplicative)).hom.hom.left =
+        map k f ≫ (τ B).inv := by
+    exact (τ (A × N)).inv_comp_eq.mpr
+      ((τ B).eq_comp_inv.mpr (groupSchemeMap_comp_diagonalizableGroupSchemeIso k f))
   have hpoint : ((pointsEquiv k A).symm χ).val ≫ (τ A).inv = c := by
     rw [← schemePointsMulEquiv_symm_comp_diagonalizableGroupSchemeIso,
       MulEquiv.symm_apply_apply]
     erw [Category.assoc, Iso.hom_inv_id, Category.comp_id]
     rfl
-  suffices h : q ≫ e.inv =
-      pullback.lift ((D N).X.hom ≫ c) (𝟙 _) (by simp [hc]) by
-    exact (e.comp_inv_eq.mp h).symm
-  apply pullback.hom_ext
-  · erw [pullback.lift_fst, Category.assoc, hfst]
+  apply (τ (A × N)).eq_comp_inv.mp
+  apply (isPullback_prod k A N).hom_ext
+  · erw [centerSlice_fst, Category.assoc, hproject (AddMonoidHom.inl A N)]
     dsimp only [q, slice]
     erw [Category.assoc, affineCenterSlice_comp_map_inl_assoc, hpoint,
       diagonalizableGroupSchemeIso_hom_structureMap_assoc]
-  · erw [pullback.lift_snd, Category.assoc, hsnd]
+  · erw [centerSlice_snd, Category.assoc, hproject (AddMonoidHom.inr A N)]
     dsimp only [q, slice]
     erw [Category.assoc, affineCenterSlice_comp_map_inr_assoc, Iso.hom_inv_id]
 
 /-- Fixed-center evaluation in diagonalizable group schemes is the affine evaluation
 restricted to the slice at that center. -/
-theorem pullback_lift_comp_evaluation_comp_diagonalizableGroupSchemeIso
+theorem evaluationAtCenter_comp_diagonalizableGroupSchemeIso
     (v : A →+ N) (c : S ⟶ (D A).X.left) (hc : c ≫ (D A).X.hom = 𝟙 S) :
     let point : (S).asOver S ⟶ (D A).X :=
       Over.homMk c (hc.trans (Spec.map_id (CommRingCat.of k)).symm)
     let slice : scheme k N ⟶ scheme k (A × N) :=
       affineCenterSlice
         (schemePointsMulEquiv (R := k) (A := k) (G A) point : Multiplicative A →* kˣ)
-    pullback.lift (f := (D A).X.hom) (g := (D N).X.hom)
-        ((D N).X.hom ≫ c) (𝟙 _) (by simp [hc]) ≫
-      (prodIso k A N).hom ≫ (evaluation k v).hom.hom.left ≫ (τ A).hom =
+    evaluationAtCenter k v c hc ≫ (τ A).hom =
     (τ N).hom ≫ slice ≫ affineEvaluation k v := by
   intro point slice
-  erw [evaluation_comp_diagonalizableGroupSchemeIso,
-    pullback_lift_prodIso_comp_diagonalizableGroupSchemeIso_assoc c hc, Category.assoc]
+  erw [evaluationAtCenter_def_assoc, evaluation_comp_diagonalizableGroupSchemeIso,
+    centerSlice_comp_diagonalizableGroupSchemeIso_assoc c hc, Category.assoc]
 
 end Diagonalizable
 
