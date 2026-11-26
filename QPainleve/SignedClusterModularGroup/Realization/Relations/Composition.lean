@@ -79,11 +79,12 @@ theorem signedLoopInvariants_comp_of_nodal_contraction
           pure (index.symm ((invariant v).sign • index j + index k))⟩ := by
   intro index orders invariant
   let d := M₀.boundaryClass cartier[M₀]
-  obtain ⟨_, _, _, Θ, _, _, _, _, _, _, hInv⟩ :=
-    Q.exists_picardEquiv_signedLoopInvariants_of_nodal_contraction p₀ hnodal₀ hE hprim hnef hsq
-  obtain ⟨j, hj, hw⟩ := hInv w β
-  obtain ⟨k, hk, hv⟩ := hInv v β
-  obtain ⟨l, hl, hcomp⟩ := hInv (w.comp v) β
+  obtain ⟨A⟩ := Q.nonempty_signedLoopPicardComparison_of_nodal_contraction
+    p₀ hnodal₀ hE hprim hnef hsq
+  let Θ := A.identification.signedEquiv
+  obtain ⟨j, hj, hw⟩ := A.boundaryLabel_spec w
+  obtain ⟨k, hk, hv⟩ := A.boundaryLabel_spec v
+  obtain ⟨l, hl, hcomp⟩ := A.boundaryLabel_spec (w.comp v)
   have hD := M₀.boundaryClass_injective_of_nef_square_zero cartier[M₀] hnef hsq
   let action := boundaryAction B d hD
   have label_eq (u : Word E E) (a : Fin n)
@@ -96,7 +97,9 @@ theorem signedLoopInvariants_comp_of_nodal_contraction
     have hEnd : (End.of (w.comp v) : End ((Paths.of (SkewExchangeMatrix (Fin r))).obj E)) =
         End.of v * End.of w := rfl
     rw [hEnd, map_mul, op_mul, map_mul]
-  have hs : (invariant v).sign = sign B d (Θ eval[v]) := congrArg SignedLoopInvariants.sign hk
+  have hs : (invariant v).sign = sign B d (Θ eval[v]) := by
+    simp only [invariant, Path.signedLoopInvariants_sign, SignedBoundaryIsometryGroup.sign_apply, Θ,
+      A.identification.sign_signedEquiv_apply_word]
   have hlabel : index l = (invariant v).sign • index j + index k := by
     calc
       index l = cycleVertexPerm (action (op (Θ eval[w.comp v]))) 0 :=
@@ -111,13 +114,8 @@ theorem signedLoopInvariants_comp_of_nodal_contraction
   · simp only [invariant, Path.signedLoopInvariants_sign, Path.inversionCount_comp, pow_add]
     exact mul_comm _ _
   · exact Path.signedLoopInvariants_comp_matrix w v β orders (orders 0) read hread
-  · have hj' : (invariant w).boundaryLabel = some j :=
-      congrArg SignedLoopInvariants.boundaryLabel hj
-    have hk' : (invariant v).boundaryLabel = some k :=
-      congrArg SignedLoopInvariants.boundaryLabel hk
-    have hl' : (invariant (w.comp v)).boundaryLabel = some l :=
-      congrArg SignedLoopInvariants.boundaryLabel hl
-    rw [hj', hk', hl']
-    exact congrArg some (index.eq_symm_apply.mpr hlabel)
+  · simpa only [invariant, Path.signedLoopInvariants_boundaryLabel, orders, hj, hk, hl,
+      Option.bind_eq_bind, Option.bind_some, Option.pure_def] using
+      congrArg some (index.eq_symm_apply.mpr hlabel)
 
 end QPainleve.SignedClusterModularGroup.CompleteToricPresentation

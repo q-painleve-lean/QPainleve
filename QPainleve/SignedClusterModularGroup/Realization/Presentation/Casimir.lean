@@ -7,7 +7,7 @@ module
 
 public import QPainleve.SignedClusterModularGroup.Realization.ChargeKernel.BoundaryExponent
 public import QPainleve.SignedClusterModularGroup.Realization.Endpoint.MonomialImage
-public import QPainleve.SignedClusterModularGroup.Realization.Presentation
+public import QPainleve.SignedClusterModularGroup.Realization.Presentation.NodalPicardGroupIdentification
 
 import QPainleve.Geometry.Toric.Fan.ExchangeMatrix
 import QPainleve.LinearAlgebra.Reflection
@@ -26,13 +26,14 @@ and intertwines the Casimir action with signed Picard restriction. This comparis
 also supplies the two cosets of the Casimir image, with a reflection along the
 total boundary exponent representing the odd coset.
 
-The comparison combines `exists_picardGroupEquivs_of_nodal_model` with
+The Casimir comparison can be constructed from a specified
+`NodalPicardGroupIdentification` using
 `GeometricRealization.existsUnique_exchangeKernelEquiv_of_presentation`.
 -/
 
 public section
 
-open AlgebraicGeometry CategoryTheory Quiver
+open AlgebraicGeometry CategoryTheory MulOpposite Quiver
 open QPainleve.CharacterTorus QPainleve.Cluster QPainleve.SignedBoundaryIsometryGroup
 open TauCeti TauCeti.AlgebraicGeometry TauCeti.Toric
 open Scheme Scheme.IdealSheafData
@@ -100,6 +101,41 @@ theorem CasimirActionComparison.exchangeKernelAction_apply
   simpa only [MonoidHom.comp_apply, MulEquiv.coe_toMonoidHom, Subgroup.subtype_apply] using
     DFunLike.congr_fun A.exchangeKernelAction_eq g
 
+/-- On a loop representative, the signed Picard restriction gives the word's
+integral exchange-kernel transport in the marked coordinates. -/
+theorem CasimirActionComparison.exchangeKernelEquiv_eq_autCongr
+    {Q : CompleteToricPresentation i b r L γ} {D : ZMod n → L}
+    (A : Q.CasimirActionComparison E B D) (w : Word E E) :
+    w.exchangeKernelEquiv =
+      LinearEquiv.autCongr A.exchangeKernelEquiv
+        (signedOrthogonalRestriction B D
+          (A.picardEquiv (op (signedClusterModularGroupMap ℂ E (End.of w))))).val := by
+  simpa only [exchangeKernelAction_op_loop] using
+    A.exchangeKernelAction_apply (op (signedClusterModularGroupMap ℂ E (End.of w)))
+
+/-- Extend a specified Picard identification by the Casimir comparison, keeping its
+signed equivalence. The boundary conditions are needed at only one center. -/
+theorem NodalPicardGroupIdentification.exists_casimirActionComparison [NeZero n]
+    {Q : CompleteToricPresentation i b r L γ} {D : ZMod n → L}
+    (G : Q.NodalPicardGroupIdentification (B := B) ℂ E D) {c : Point Centers[r]}
+    (hE : E.matrix = chargeExchangeMatrix b.detDualEquiv.toLinearMap (Fan.rayChargeMap Q.rays))
+    (hprim : IsPrimitive (Additive.ofMul classOf((G.family c).isEffectiveCartier_boundaryIdeal)))
+    (hnef : (classOf((G.family c).isEffectiveCartier_boundaryIdeal)).IsNef ℂ
+      ((G.family c).surface ↘ S))
+    (hsq : Chow.classIntersectionNumber ℂ (G.family c).surface
+      classOf((G.family c).isEffectiveCartier_boundaryIdeal)
+      classOf((G.family c).isEffectiveCartier_boundaryIdeal) = 0) :
+    ∃ A : Q.CasimirActionComparison E B D, A.picardEquiv = G.signedEquiv := by
+  let P := Fan.rayChargeSeed b Q.rays hE
+  obtain ⟨e, ⟨he, hact, hCasimirKer⟩, _⟩ := existsUnique_exchangeKernelEquiv_of_presentation
+    Q P (Fan.rayChargeSeed_form _ _ _) (Fan.rayChargeSeed_charge _ _ _)
+    G.family (fun z ↦ (G.family z).isEffectiveCartier_boundaryIdeal)
+    (G.hasNodalModel c) (fun z _ ↦ G.hasNodalModel z) hnef hsq hprim D G.boundaryClass_eq
+    G.signedEquiv.toMonoidHom (fun w {_} _ _ R hR ↦ G.signedEquiv_apply_word (End.asHom w) R hR)
+  refine ⟨⟨G.signedEquiv, e, fun x ↦ neg_eq_iff_eq_neg.mp (he x).symm, ?_,
+    G.sign_ker_unop, hCasimirKer⟩, rfl⟩
+  simpa only [MonoidHom.comp_assoc] using hact
+
 /-- One marked nodal model of a primitive nef square-zero anticanonical cycle supplies
 the signed Picard equivalence and its Casimir comparison in the specified presentation. -/
 theorem nonempty_casimirActionComparison_of_nodal_model [NeZero n]
@@ -113,17 +149,10 @@ theorem nonempty_casimirActionComparison_of_nodal_model [NeZero n]
       classOf(M.isEffectiveCartier_boundaryIdeal) = 0) :
     Nonempty (Q.CasimirActionComparison E B
       (M.boundaryClass M.isEffectiveCartier_boundaryIdeal)) := by
-  let P := Fan.rayChargeSeed b Q.rays hE
   obtain ⟨G, hGc⟩ := Q.exists_picardGroupEquivs_of_nodal_model href hE hprim hnef hsq
-  let Θ := G.signedEquiv
-  obtain ⟨e, ⟨he, hact, hCasimirKer⟩, _⟩ := existsUnique_exchangeKernelEquiv_of_presentation
-    Q P (Fan.rayChargeSeed_form _ _ _) (Fan.rayChargeSeed_charge _ _ _)
-    G.family (fun z ↦ (G.family z).isEffectiveCartier_boundaryIdeal)
-    (G.hasNodalModel c) (fun z _ ↦ G.hasNodalModel z)
-    (hGc.symm ▸ hnef) (hGc.symm ▸ hsq) (hGc.symm ▸ hprim) _ G.boundaryClass_eq
-    Θ.toMonoidHom (fun w {_} _ _ R hR ↦ G.signedEquiv_apply_word (End.asHom w) R hR)
-  refine ⟨⟨Θ, e, fun x ↦ neg_eq_iff_eq_neg.mp (he x).symm, ?_, G.sign_ker_unop, hCasimirKer⟩⟩
-  simpa only [MonoidHom.comp_assoc] using hact
+  obtain ⟨A, _⟩ := G.exists_casimirActionComparison hE
+    (hGc.symm ▸ hprim) (hGc.symm ▸ hnef) (hGc.symm ▸ hsq)
+  exact ⟨A⟩
 
 /-- A boundary-reversing Picard involution and the exchange-kernel comparison
 for a marked presentation with primitive total boundary class. -/
