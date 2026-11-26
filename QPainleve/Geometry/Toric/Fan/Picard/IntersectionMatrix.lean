@@ -5,11 +5,11 @@ Authors: The QPainleve contributors
 -/
 module
 
+public import QPainleve.Geometry.Toric.Fan.Picard.Boundary.Degree
 public import QPainleve.Geometry.Toric.Fan.Picard.StrictTransform
 public import QPainleve.AlgebraicGeometry.Chow.SurfaceIntersection
 
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Intersection
-import QPainleve.Geometry.Toric.Fan.Boundary.SelfIntersection
 import QPainleve.Geometry.Toric.Fan.Subdivision.Projective
 
 /-!
@@ -43,10 +43,8 @@ def internalBlowupBoundaryIntersectionMatrix {m r : ℕ} [NeZero m]
   Matrix.of fun a d ↦
     let j := ZMod.finEquiv m a
     let l := ZMod.finEquiv m d
-    let u := ray (j - 1)
-    let v := ray (j + 1)
     (if j = l then
-      -Matrix.det !![u 0, u 1; v 0, v 1] -
+      toricBoundarySelfIntersection ray j -
         (Finset.univ.filter (fun k ↦ centerRay k = j)).card
     else 0) + (if j - 1 = l then 1 else 0) + (if j + 1 = l then 1 else 0)
 
@@ -63,8 +61,35 @@ theorem internalBlowupBoundaryIntersectionMatrix_apply {m r : ℕ} [NeZero m]
       (if j = l then
         -Matrix.det !![u 0, u 1; v 0, v 1] -
           (Finset.univ.filter (fun k ↦ centerRay k = j)).card
-      else 0) + (if j - 1 = l then 1 else 0) + (if j + 1 = l then 1 else 0) :=
-  (rfl)
+      else 0) + (if j - 1 = l then 1 else 0) + (if j + 1 = l then 1 else 0) := by
+  simp only [internalBlowupBoundaryIntersectionMatrix, Matrix.of_apply,
+    toricBoundarySelfIntersection_apply]
+
+/-- A matrix entry is the degree on the row ray of the strict boundary class of the
+column ray. Its exceptional coefficients are minus one at centers on the column ray. -/
+private theorem internalBlowupBoundaryIntersectionMatrix_apply_eq_degree {m r : ℕ} [NeZero m]
+    (ray : ZMod m → Fin 2 → ℤ) (centerRay : Fin r → ZMod m) (a d : Fin m) :
+    internalBlowupBoundaryIntersectionMatrix ray centerRay a d =
+      let e := ZMod.finEquiv m
+      let l := e d
+      strictBoundaryRayDegree (toricBoundarySelfIntersection ray) (Pi.single l 1)
+        (e.symm ∘ centerRay) (fun k ↦ -((Pi.single l 1 : ZMod m → ℤ) (centerRay k))) a := by
+  let e := ZMod.finEquiv m
+  let j := e a
+  let l := e d
+  have hsum : (∑ k ∈ Finset.univ.filter (fun k ↦ centerRay k = j),
+      -((Pi.single l 1 : ZMod m → ℤ) (centerRay k))) =
+      (Finset.univ.filter (fun k ↦ centerRay k = j)).card •
+        (-((Pi.single l 1 : ZMod m → ℤ) j)) := by
+    rw [← Finset.sum_const]
+    refine Finset.sum_congr rfl fun k hk ↦ ?_
+    rw [(Finset.mem_filter.mp hk).2]
+  simp only [internalBlowupBoundaryIntersectionMatrix_apply,
+    strictBoundaryRayDegree_apply, Function.comp_apply, RingEquiv.symm_apply_eq]
+  rw [hsum]
+  simp only [toricBoundarySelfIntersection_apply, Pi.single_apply, nsmul_eq_mul, j, l, e]
+  by_cases h : ZMod.finEquiv m a = ZMod.finEquiv m d <;>
+    simp only [h, ite_true, ite_false, mul_one, mul_zero, neg_zero] <;> ring
 
 end QPainleve
 
@@ -74,27 +99,6 @@ variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {Φ : Fan i} {m r : ℕ}
 
 local notation "S" => Spec (CommRingCat.of ℂ)
-
-open Classical in
-private theorem sum_markedBoundaryMap_single_mul [Nonempty Φ.cones]
-    (hΦ : Φ.IsRegular) (e : ZMod m ≃ Φ.Ray) (s : Fin r → Φ.Ray) (j l : ZMod m) :
-    (∑ k : Fin r, (markedBoundaryMap hΦ s (Pi.single (e j) 1)).2 k *
-      (markedBoundaryMap hΦ s (Pi.single (e l) 1)).2 k) =
-      if j = l then ((Finset.univ.filter (fun k ↦ e.symm (s k) = j)).card : ℤ) else 0 := by
-  simp only [markedBoundaryMap_apply, Pi.single_apply, neg_mul_neg]
-  by_cases h : j = l
-  · subst l
-    rw [ite_eq_left rfl, ← Finset.sum_boole]
-    exact Finset.sum_congr rfl fun k _ ↦ by
-      by_cases hk : e.symm (s k) = j
-      · simp [e.symm_apply_eq.mp hk]
-      · simp [hk, mt e.symm_apply_eq.mpr hk]
-  · rw [ite_eq_right h]
-    apply Finset.sum_eq_zero
-    intro k _
-    by_cases hk : s k = e j
-    · simp [hk, h]
-    · simp [hk]
 
 section Geometry
 
@@ -134,27 +138,21 @@ private theorem classIntersectionNumber_markedBoundaryMap_single_single
     have hdim := (Module.finrank_eq_card_basis b).trans (Fintype.card_fin 2)
     rw [algebraicRealization_over, ← hdim]
     exact Φ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
-  let j := ZMod.finEquiv m a
   let l := ZMod.finEquiv m d
-  have hp := he (j - 1)
-  rw [sub_add_cancel] at hp
-  have hn := he j
-  have hbase := Φ.intersectionBilinForm_rayDivisorToPicard_single hΦ b hc
-    (Pi.single (e l) 1) hp hn
-  simp only [intersectionBilinForm_apply, Pi.single_apply, e.injective.eq_iff]
-    at hbase
-  have hdet := rayBoundarySelfIntersection_eq_neg_det_of_neighbors b hΦ hc hp hn
-  rw [Basis.detDualEquiv_apply, Basis.det_apply] at hdet
-  simp only [Basis.toMatrix_apply, Matrix.det_fin_two, Matrix.cons_val_zero,
-    Matrix.cons_val_one, Matrix.cons_val_fin_one] at hdet
+  have hself := Φ.rayBoundarySelfIntersection_eq_of_positiveRayCoordinates hΦ hc b e he
+  have hpair := Φ.markedBoundaryMap_single_pairing_eq_strictBoundaryRayDegree
+    hΦ hc b e s ((ZMod.finEquiv m).symm ∘ e.symm ∘ s) (by simp) he
+    (Pi.single l 1) (fun k ↦ -((Pi.single l 1 : ZMod m → ℤ) (e.symm (s k)))) a
   rw [← picardMarking_apply T (hT) f, ← picardMarking_apply T (hT) f,
-    classIntersectionNumber_picardMarking ℂ (hT),
-    sum_markedBoundaryMap_single_mul hΦ e s,
-    internalBlowupBoundaryIntersectionMatrix_apply]
-  dsimp only [j, l] at hbase hdet
-  simp only [markedBoundaryMap_apply, hbase, hdet, Function.comp_apply, Matrix.det_fin_two_of]
-  by_cases h : ZMod.finEquiv m a = ZMod.finEquiv m d <;>
-    simp only [h, ite_true, ite_false, mul_one, mul_zero, sub_zero] <;> ring
+    classIntersectionNumber_picardMarking ℂ (hT)]
+  have hsingle : Pi.single (e l) (1 : ℤ) = Pi.single l 1 ∘ e.symm := by
+    rw [Pi.single_comp_equiv, Equiv.symm_symm]
+  rw [internalBlowupBoundaryIntersectionMatrix_apply_eq_degree]
+  simp only [markedBoundaryMap_apply]
+  rw [hsingle]
+  simpa only [LinearMap.BilinForm.prod_apply, markedBoundaryMap_apply,
+    LinearMap.neg_apply, dotProductBilin_apply_apply, dotProduct, ← sub_eq_add_neg,
+    intersectionBilinForm_apply, Function.comp_apply, hself] using hpair
 
 /-- The executable integer matrix is the intersection matrix of the actual numbered
 strict boundary primes of the ordered toric blowup. The chosen center parameters
