@@ -189,4 +189,21 @@ theorem bijOn_boundaryPrimes_comap_off_point (D : X.IdealSheafData) (π : Y ⟶ 
   simpa only [Set.inter_eq_left.mpr hsub, hpreimage] using
     D.bijOn_boundaryPrimes_comap_of_subset_isoLocus (U := {x | x ≠ p}) π (fun _ ↦ hIso _)
 
+/-- A modification identifies the source boundary primes that survive with the
+boundary primes of the schematic image. -/
+theorem bijOn_boundaryPrimes_map (B : Y.IdealSheafData) (π : Y ⟶ X)
+    [IsIntegral X] [IsNormalScheme X] [IsLocallyNoetherian X] [IsReduced Y] [IsModification π] :
+    Set.BijOn π (B.boundaryPrimes ∩ π ⁻¹' (B.map π).boundaryPrimes) (B.map π).boundaryPrimes := by
+  have hiso : (B.map π).boundaryPrimes ⊆ π.isoLocus :=
+    fun _ hy ↦ π.mem_isoLocus_of_coheight_eq_one (mem_boundaryPrimes.mp hy).2
+  refine ⟨fun _ hx ↦ hx.2, π.injOn_preimage_isoLocus.mono (fun _ hx ↦ hiso hx.2), ?_⟩
+  intro y hy
+  have hsupport : ((B.map π).support : Set X) = π '' (B.support : Set Y) := by
+    rw [support_map, Closeds.coe_closure, (π.isClosedMap _ B.support.isClosed).closure_eq]
+  have hy' : y ∈ ((B.map π).support : Set X) := (mem_boundaryPrimes.mp hy).1
+  rw [hsupport] at hy'
+  obtain ⟨x, hx, rfl⟩ := hy'
+  refine ⟨x, ⟨mem_boundaryPrimes.mpr ⟨hx, ?_⟩, hy⟩, rfl⟩
+  exact (π.coheight_eq_of_apply_mem_isoLocus (hiso hy)).symm.trans (mem_boundaryPrimes.mp hy).2
+
 end AlgebraicGeometry.Scheme.IdealSheafData
