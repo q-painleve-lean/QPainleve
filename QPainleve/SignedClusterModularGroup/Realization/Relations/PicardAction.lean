@@ -10,6 +10,7 @@ public import QPainleve.SignedClusterModularGroup.Realization.Presentation.Casim
 public import QPainleve.SignedClusterModularGroup.Realization.Tropical
 
 import QPainleve.Geometry.Toric.Fan.ExchangeMatrix
+import QPainleve.SignedClusterModularGroup.BoundaryCycle
 import QPainleve.SignedClusterModularGroup.Realization.NodalFiber
 import QPainleve.SignedClusterModularGroup.Realization.Presentation.Group
 import QPainleve.SignedClusterModularGroup.Realization.Relations.Presentation
@@ -114,6 +115,46 @@ theorem signedLoopInvariants_eq {p₀ : fiber[M₀,c₀]} (A : Q.SignedLoopPicar
   · simp only [Path.signedLoopInvariants_kernelColumns, ← Path.coe_exchangeKernelEquiv_apply,
       haction]
   · simpa only [Path.signedLoopInvariants_boundaryLabel] using hlabel
+
+/-- Equality of the marked signed Picard actions is equivalent to equality of the
+integer loop invariants. The sign still distinguishes the two branch orientations
+when there are only one or two boundary components. -/
+theorem signedEquiv_apply_word_eq_iff_signedLoopInvariants_eq {p₀ : fiber[M₀,c₀]}
+    (A : Q.SignedLoopPicardComparison p₀ E)
+    [Module.Free ℤ L] [Module.Finite ℤ L]
+    (hSymm : B.IsSymm) (hB : B.Nondegenerate)
+    (hGram : ∀ j l, B (classes[M₀] j) (classes[M₀] l) =
+      (-2 : ℤ) * (if j = l then 1 else 0) + (if l = j + 1 then 1 else 0) +
+        (if l = j - 1 then 1 else 0))
+    (hD : Function.Injective classes[M₀])
+    (w v : Word E E) {κ : Type*} (β : Module.Basis κ ℤ K) :
+    let orders := p₀.numberedBoundaryOrders cartier[M₀]
+    A.identification.signedEquiv eval[w] = A.identification.signedEquiv eval[v] ↔
+      w.signedLoopInvariants (fun j ↦ (β j : Fin r → ℤ)) orders (orders 0) =
+        v.signedLoopInvariants (fun j ↦ (β j : Fin r → ℤ)) orders (orders 0) := by
+  intro orders
+  let d := classes[M₀]
+  let Θ := A.identification.signedEquiv
+  obtain ⟨j, hj, hboundary⟩ := A.boundaryLabel_spec w
+  obtain ⟨l, hl, hboundary'⟩ := A.boundaryLabel_spec v
+  have atZero (u : Word E E) (a : Fin n)
+      (hu : ∀ x, (toIsometry B d (Θ eval[u])).val (d x) =
+        d (sign B d (Θ eval[u]) • (x - ZMod.finEquiv n a))) :
+      (toIsometry B d (Θ eval[u])).val (d (ZMod.finEquiv n a)) = d 0 := by
+    simpa only [sub_self, smul_zero] using hu (ZMod.finEquiv n a)
+  have hsign (u : Word E E) :
+      sign B d (Θ eval[u]) = (-1) ^ u.inversionCount := by
+    simpa only [SignedBoundaryIsometryGroup.sign_apply]
+      using A.identification.sign_signedEquiv_apply_word u
+  have hres (u : Word E E) :
+      u.exchangeKernelEquiv = LinearEquiv.autCongr A.casimir.exchangeKernelEquiv
+        (signedOrthogonalRestriction B d (Θ eval[u])).val := by
+    simpa only [A.casimir_picardEquiv] using A.casimir.exchangeKernelEquiv_eq_autCongr u
+  rw [eq_iff_of_boundary_pullback hSymm hB.1 (BoundaryCycle.span_sup_orthogonal_rat hGram hSymm hB)
+    hD (atZero w j hboundary) (atZero v l hboundary')]
+  rw [Path.signedLoopInvariants_eq_iff, hsign w, hsign v, hres w, hres v,
+    (LinearEquiv.autCongr A.casimir.exchangeKernelEquiv).injective.eq_iff,
+    Subtype.coe_injective.eq_iff, hj, hl, Option.some.injEq, (ZMod.finEquiv n).injective.eq_iff]
 
 end SignedLoopPicardComparison
 

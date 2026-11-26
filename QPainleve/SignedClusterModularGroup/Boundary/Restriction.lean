@@ -91,6 +91,39 @@ theorem coe_signedOrthogonalRestriction_apply (g : signedBoundaryIsometryGroup B
 
 variable [NeZero n]
 
+/-- For signed isometries with specified forward images of component zero, equality is
+equivalent to agreement of the signs, signed orthogonal restrictions, and forward images. -/
+theorem eq_iff_of_boundary_pullback (hSymm : B.IsSymm) (hsep : B.SeparatingLeft)
+    (hspan : (M).baseChange ℚ ⊔ (K).baseChange ℚ =
+      (B.baseChange ℚ).orthogonal ((ℤ ∙ δ).baseChange ℚ))
+    (hD : Function.Injective D) {g h : signedBoundaryIsometryGroup B D} {j k : ZMod n}
+    (hg : (toIsometry B D g).val (D j) = D 0)
+    (hh : (toIsometry B D h).val (D k) = D 0) :
+    g = h ↔ sign B D g = sign B D h ∧
+      signedOrthogonalRestriction B D g = signedOrthogonalRestriction B D h ∧ j = k := by
+  let iso := B.isometryGroupEquivIsometryEquiv
+  have pullback (a : signedBoundaryIsometryGroup B D) {l : ZMod n}
+      (ha : (toIsometry B D a).val (D l) = D 0) :
+      ∀ i, iso (toIsometry B D a) (D i) = D (sign B D a • (i - l)) := by
+    rw [← B.coe_isometryGroupEquivIsometryEquiv] at ha
+    refine (boundary_pullback_eq_smul_sub_iff hD ?_).mpr ha
+    simpa only [iso, BilinForm.coe_isometryGroupEquivIsometryEquiv, toIsometry_apply, sign_apply]
+      using (mem_signedBoundaryIsometryGroup_iff B D).mp a.property
+  have hrestriction :
+      signedOrthogonalRestriction B D g = signedOrthogonalRestriction B D h ↔
+        ∀ x ∈ K, sign B D g • iso (toIsometry B D g) x =
+          sign B D h • iso (toIsometry B D h) x := by
+    rw [← Subtype.coe_injective.eq_iff, LinearEquiv.ext_iff, Subtype.forall]
+    simp only [Subtype.ext_iff, coe_signedOrthogonalRestriction_apply, iso,
+      BilinForm.coe_isometryGroupEquivIsometryEquiv]
+  calc
+    g = h ↔ (iso (toIsometry B D g), sign B D g) = (iso (toIsometry B D h), sign B D h) := by
+      simp only [Prod.mk.injEq, iso.injective.eq_iff, toIsometry_apply, sign_apply,
+        ← Prod.ext_iff, Subtype.coe_injective.eq_iff]
+    _ ↔ _ := by
+      rw [hrestriction]
+      exact signed_boundary_isometry_eq_iff hSymm hsep hspan hD (pullback g hg) (pullback h hh)
+
 /-- On the total boundary class, the signed restriction acts by the sign. -/
 @[simp]
 theorem signedOrthogonalRestriction_apply_sum (g : signedBoundaryIsometryGroup B D) (hδ : δ ∈ K) :

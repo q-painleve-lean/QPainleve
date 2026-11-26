@@ -5,26 +5,24 @@ Authors: The QPainleve contributors
 -/
 module
 
-public import QPainleve.SignedClusterModularGroup.Realization.Relations.Basic
+public import QPainleve.Algebra.Cluster.Tropical.Label
 public import QPainleve.SignedClusterModularGroup.Realization.Presentation
+public import QPainleve.SignedClusterModularGroup.Realization.Tropical
 
-import QPainleve.AlgebraicGeometry.Chow.RationalSurface.Basic
 import QPainleve.Geometry.Toric.Fan.Subdivision.Projective
 import QPainleve.SignedClusterModularGroup.Realization.Anticanonical
 import QPainleve.SignedClusterModularGroup.Realization.Endpoint.SelfRealization
 import QPainleve.SignedClusterModularGroup.Realization.NodalFiber
-import QPainleve.SignedClusterModularGroup.Realization.Orthogonal
 import QPainleve.SignedClusterModularGroup.Realization.Presentation.Boundary
 import QPainleve.SignedClusterModularGroup.Realization.Reflection
+import QPainleve.SignedClusterModularGroup.Realization.Relations.Boundary
 
 /-!
-# Deciding relations in a marked toric presentation
+# Boundary labels of signed loops in a marked toric presentation
 
-A reference nodal contraction determines the boundary orders used to compare signed
-loops. The reference center can have repeated blowup centers. The decision procedure
-computes an integral kernel basis from the exchange matrix and takes the boundary
-orders as integer input. It compares inversion signs, transported basis vectors, and
-the results of finite boundary searches.
+A reference nodal contraction supplies the order table for the tropical boundary search.
+The label found by the search is the forward image of component zero in the geometric
+realization. The reference center can have repeated blowup centers.
 -/
 
 public section
@@ -126,77 +124,5 @@ theorem exists_realize_signed_loop_with_boundary_label
   simpa only [SignedBoundaryIsometryGroup.toIsometry_apply, coe_toSignedBoundaryIsometry,
     LinearMap.BilinForm.coe_isometryGroupEquivIsometryEquiv_symm] using
     R.picard_apply_boundaryClass boundaryClasses[M,c₀] (fun c ↦ cartier(M c)) hmark l
-
-/-- The integer comparison decides equality over any field of independent X pullbacks
-of signed loops of a primitive nef square-zero cycle. Nodal models are needed on the
-initial noncollision open for the realizations. The reference fiber supplying the
-boundary order table can be at any center, including a center outside that open. -/
-theorem xPullback_eq_iff_signedLoopInvariants_eq_of_presentation {F : Type*} [Field F]
-    (Q : CompleteToricPresentation i b r L γ) (P : ChargeSeed E N)
-    (hform : P.form = b.detDualEquiv.toLinearMap) (hcharge : P.charge = Fan.rayChargeMap Q.rays)
-    (M : Point Centers[r] → MarkedSurface ℂ n H XTor[r]) {c₀ : Point Centers[r]}
-    (p₀ : fiber[Q,M,c₀]) (hnodal₀ : p₀.IsNodalContraction)
-    (p : ∀ (c : Point Centers[r]) (_ : c.left (default : S) ∈ U₀[P]), fiber[Q,M,c])
-    (hnodal : ∀ c hc, (p c hc).IsNodalContraction)
-    (hnef : classOf(cartier(M c₀)).IsNef ℂ ((M c₀).surface ↘ S))
-    (hsq : Chow.classIntersectionNumber ℂ (M c₀).surface
-      classOf(cartier(M c₀)) classOf(cartier(M c₀)) = 0)
-    (hprim : IsPrimitive (Additive.ofMul classOf(cartier(M c₀))))
-    (hmark : ∀ c j, (M c).boundaryClass (cartier(M c)) j = boundaryClasses[M,c₀] j)
-    (hnodes : ∀ j, ∃ σ : Q.fan.cones, (Q.rayOrder j).toCone ≤ σ ∧
-      (Q.rayOrder (j + 1)).toCone ≤ σ ∧
-      (Q.fan.boundaryIdeal Q.complete.nonempty_cones).subschemeι
-        ((Q.fan.boundaryIdeal Q.complete.nonempty_cones).subscheme.dualGraphEdgeEquiv
-          Q.marks (Q.cycle.edge j)).val =
-        Q.fan.distinguishedPointHom σ (IsLocalRing.closedPoint ℂ))
-    (w v : Word E E)
-    {k : ℕ} (β : Basis (Fin k) ℤ E.matrix.mulVecLin.ker) :
-    let orders := p₀.numberedBoundaryOrders (cartier(M c₀))
-    w.xPullback F = v.xPullback F ↔
-      w.signedLoopInvariants (fun j ↦ (β j : Fin r → ℤ)) orders (orders 0) =
-        v.signedLoopInvariants (fun j ↦ (β j : Fin r → ℤ)) orders (orders 0) := by
-  dsimp only
-  -- The reference contraction supplies the lattice and boundary intersection data.
-  have hreference := Q.hasNodalModel_of_contraction hnodal₀
-  let : IsRationalOver ((M c₀).surface ↘ S) := hreference.isRationalOver
-  let : (M c₀).surface.IsProjectiveOver ℂ := (M c₀).projective
-  let : SmoothOfRelativeDimension 2 ((M c₀).surface ↘ S) := (M c₀).smooth
-  let : H.IsPerfPair := (M c₀).isPerfPair_of_isRationalOver
-  let : Module.Free ℤ (Additive (LineBundleClass (M c₀).surface)) :=
-    (M c₀).surface.free_picard_of_isRationalOver ℂ
-  let : Module.Free ℤ L := Module.Free.of_equiv (M c₀).picardMarking.symm
-  let : Module.Finite ℤ (Additive (LineBundleClass (M c₀).surface)) :=
-    (M c₀).surface.finite_picard_of_isRationalOver ℂ
-  let : Module.Finite ℤ L := Module.Finite.of_surjective _ (M c₀).picardMarking.symm.surjective
-  have hindex := hreference.chargeIndex_ne_zero (cartier(M c₀)) hnef hsq hprim
-  have hker : E.matrix.mulVecLin.ker = P.charge.ker := by
-    rw [← P.matrix_eq, hform, hcharge]
-    exact Fan.ker_chargeExchangeMatrix_rayChargeMap b Q.rays hindex
-  have models (x : CenterPoint (U := Centers[r]) (V := Centers[r]) Cnil[P]) :=
-    let hx := (Path.nil.centerPoint_endpoints_mem_noncollision P hker x).2
-    Q.hasNodalModel_of_contraction (hnodal _ hx)
-  -- Realize both words on their noncollision domains.
-  have hreal (u : Word E E) := exists_realize_signed_loop u P Q hform hcharge M models
-    hreference (fun c ↦ cartier(M c)) hnef hsq hprim boundaryClasses[M,c₀] hmark
-  obtain ⟨R, hR, -⟩ := hreal w
-  obtain ⟨R', hR', -⟩ := hreal v
-  -- Identify the charge coordinates for the common boundary order table.
-  let : Q.fan.algebraicRealization.IsProjectiveOver ℂ :=
-    Q.fan.isProjectiveOver_algebraicRealization_of_isComplete Q.regular Q.complete b
-  let := Q.smoothOfRelativeDimension_fan
-  let := Q.isPerfPair_auxiliaryPicardForm
-  let e := p₀.markedBoundaryOrthogonalEquivChargeKernel hnodal₀ (cartier(M c₀)) rfl
-  have he := p₀.markedBoundaryOrthogonalEquivChargeKernel_symm_apply hnodal₀ (cartier(M c₀)) rfl
-  have hE := P.matrix_eq.symm.trans (congrArg₂ chargeExchangeMatrix hform hcharge)
-  have hvertices j := (Q.cycle.component_apply j).symm.trans (Q.component_eq j)
-  exact xPullback_eq_iff_signedLoopInvariants_eq boundaryClasses[M,c₀] (fun c ↦ cartier(M c))
-    hmark R R' (M c₀).isSymm
-    ((M c₀).intersectionForm_boundaryClass (cartier(M c₀)) hnef hsq) hR hR'
-    (w.centerPartialMap_hom (K := ℂ) P) (v.centerPartialMap_hom (K := ℂ) P)
-    Q.complete hE hindex Q.rayOrder hvertices (fun j ↦ (Q.positive j).1) hnodes
-    e he p₀ hnodal₀
-    (U := {c : Point Centers[r] | c.left (default : S) ∈ U₀[P]}) p hnodal
-    (w.centerPoint_endpoints_mem_noncollision P hker)
-    (v.centerPoint_endpoints_mem_noncollision P hker) β
 
 end QPainleve.SignedClusterModularGroup.GeometricRealization
