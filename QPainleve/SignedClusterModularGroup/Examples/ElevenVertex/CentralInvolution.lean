@@ -95,8 +95,7 @@ theorem nonempty_planePicardIdentification (u : Fin 11 → ℂˣ) :
       planeCenterRay u hR a hbase hker hD A' μ
   let M := MarkedSurface.ofBoundary D A'' μ f
   have hclass : classOf(cartier[M]) = classOf(hD) :=
-    congrArg Inv.inv (LineBundleClass.mk_toInvertibleSheaf_congr cartier[M] hD
-      (MarkedSurface.ofBoundary_ker ..))
+    MarkedSurface.ofBoundary_boundaryIdeal_class D A'' μ f cartier[M] hD
   obtain ⟨p, hp⟩ := hm.exists_isNodalContraction cartier[M]
   have hE : exchangeMatrix.matrix =
       chargeExchangeMatrix (b).detDualEquiv.toLinearMap (Fan.rayChargeMap Q.rays) := by

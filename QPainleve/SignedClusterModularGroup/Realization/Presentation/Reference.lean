@@ -411,6 +411,27 @@ theorem exists_marked_reference_fiber_of_toric_presentation
       P.isNodal P.iso P.iso_over P.iso_boundary hD A μ
   exact ⟨b', r, R, hframe.imp And.left And.left⟩
 
+/-- A specified toric presentation on a surface with finite free Picard group admits a
+reference fiber marked by a finite coordinate lattice. The fan and ray labels are retained.
+The reference center parameters are inverted if the lattice basis is transposed. -/
+theorem exists_fin_marked_reference_fiber_of_toric_presentation {r : ℕ}
+    [Module.Free ℤ (Additive (LineBundleClass X))] [Module.Finite ℤ (Additive (LineBundleClass X))]
+    (P : D.ToricPresentation (X ↘ S) b i r) (hD : D.IsEffectiveCartier)
+    (A : Scheme.NodalCycleNumbering (X := D.subscheme)
+      (Empty.elim : Empty → (D.subscheme ↘ S).smoothLocus) n) :
+    ∃ (H : LinearMap.BilinForm ℤ (Fin (Module.finrank ℤ (Additive (LineBundleClass X))) → ℤ))
+      (μ : H.IsometryEquiv (Chow.intersectionBilinForm ℂ X))
+      (b' : Module.Basis (Fin 2) ℤ N) (R : MarkedReferenceFiber i b' r A μ),
+      ((b' = b ∧ param[R.center] = P.parameters) ∨
+        (b' = b.reindex (Equiv.swap 0 1) ∧ param[R.center] = P.parameters⁻¹)) ∧
+        (∃ hfan : R.presentation.fan = P.fan, hfan ▸ R.presentation.rays = P.rays) := by
+  let a := (Module.finBasis ℤ (Additive (LineBundleClass X))).equivFun.symm
+  let μ := ((Chow.intersectionBilinForm ℂ X).isometryEquivOfCompLinearEquiv a).symm
+  obtain ⟨b', R, hframe, hrays⟩ :=
+    exists_marked_reference_fiber_of_ordered_towers P.regular P.complete P.rays P.parameters
+      P.isNodal P.iso P.iso_over P.iso_boundary hD A μ
+  exact ⟨_, μ, b', R, hframe, hrays⟩
+
 end FromToricPresentation
 
 end QPainleve.SignedClusterModularGroup
