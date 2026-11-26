@@ -10,8 +10,6 @@ public import QPainleve.SignedClusterModularGroup.Realization.Relations.RayOrder
 public import QPainleve.SignedClusterModularGroup.Realization.Relations.Reference
 public import QPainleve.SignedClusterModularGroup.Realization.Relations.SurvivingOffsets
 
-import QPainleve.Geometry.Toric.Fan.Subdivision.Projective
-
 /-!
 # Signed loop comparison from a toric ray table
 
@@ -69,21 +67,21 @@ theorem isSignedLoopComparisonInput_of_rayCoordinates (p₀ : fiber[M₀,c₀])
     (hray : ∀ j, j ∈ survivors ∨ j ∈ Set.range centerRay →
       ray j = b.repr (rayAt j).primitiveGenerator)
     (hcenter : ∀ j, rayAt (centerRay j) = Q.rays j)
-    (hkeep : ∀ j ∈ survivors, rayAt j ∈ Set.range (p₀.numberedBoundaryRays cartier[M₀])) :
+    (hsurvivors : survivors = p₀.survivingBoundaryRayOffsets cartier[M₀]) :
     Q.IsSignedLoopComparisonInput p₀ (SkewExchangeMatrix.ofChargeCoordinates (ray ∘ centerRay))
       (boundaryOrderTable (ray ∘ centerRay) ray survivors) := by
   have hcharge (j : Fin r) : (ray ∘ centerRay) j = b.repr (Q.rays j).primitiveGenerator := by
     rw [Function.comp_apply, hray _ (Or.inr (Set.mem_range_self j)), hcenter j]
-  refine ⟨?_, p₀.boundaryOrderTable_eq (Φ := Q.fan) cartier[M₀] survivors hkeep
+  refine ⟨?_, p₀.boundaryOrderTable_eq (Φ := Q.fan) cartier[M₀] survivors hsurvivors
     (ray ∘ centerRay) ray hcharge (fun j hj ↦ hray j (Or.inl hj))⟩
   simpa only [Fan.rayChargeMap_single, funext hcharge] using
     SkewExchangeMatrix.ofChargeCoordinates_matrix_eq_chargeExchangeMatrix b
       (Fan.rayChargeMap Q.rays)
 
 /-- The integer coefficients of a pulled-back ample class determine the surviving ray
-offsets. With the center and surviving ray coordinates, they certify the input to the
-signed loop checker. -/
-theorem exists_isSignedLoopComparisonInput_of_polarization
+offsets. With the center and surviving ray coordinates, they certify the exchange matrix
+and the computed order table for the signed loop checker. -/
+theorem isSignedLoopComparisonInput_of_polarization
     (p₀ : fiber[M₀,c₀]) (hnodal₀ : p₀.IsNodalContraction)
     {H : LineBundleClass M₀.surface} (hH : H.IsAmple)
     (ray : Fin Q.length → Fin 2 → ℤ) (centerRay : Fin r → Fin Q.length)
@@ -93,29 +91,16 @@ theorem exists_isSignedLoopComparisonInput_of_polarization
     (hcoords : (Q.fan.rayDivisorToPicard Q.regular (toricCoeff ∘ (raysFromOrigin).symm),
         exceptionalCoeff) = Q.inclusion (M₀.picardMarking.symm (Additive.ofMul H)))
     (hcenter : ∀ j, rayAt (centerRay j) = Q.rays j) :
-    let survivors := survivingRayOffsets selfIntersection toricCoeff
-      ((ZMod.finEquiv Q.length) ∘ centerRay) exceptionalCoeff
+    let survivors := p₀.survivingRayOffsetsOfPolarization hnodal₀ Q.complete hH
+      selfIntersection toricCoeff centerRay exceptionalCoeff hself hcenter hcoords
     (∀ j, j ∈ survivors ∨ j ∈ Set.range centerRay →
       ray j = b.repr (rayAt j).primitiveGenerator) →
-    ∃ hcard : survivors.card = n,
-      Q.IsSignedLoopComparisonInput p₀ (SkewExchangeMatrix.ofChargeCoordinates (ray ∘ centerRay))
-        (boundaryOrderTable (ray ∘ centerRay) ray (Set.powersetCard.ofCard hcard)) := by
+    Q.IsSignedLoopComparisonInput p₀ (SkewExchangeMatrix.ofChargeCoordinates (ray ∘ centerRay))
+      (boundaryOrderTable (ray ∘ centerRay) ray survivors) := by
   intro survivors hray
-  let : Q.fan.algebraicRealization.IsProjectiveOver ℂ :=
-    Q.fan.isProjectiveOver_algebraicRealization_of_isComplete Q.regular Q.complete b
-  have hcenter' (j : Fin r) : raysFromOrigin ((ZMod.finEquiv Q.length ∘ centerRay) j) =
-      Q.rays j := by
-    simpa only [Fan.rayFinEquivOfNodalCycleNumbering_apply, Function.comp_apply] using hcenter j
-  have hs : survivors = (p₀.survivingBoundaryRayOffsets hnodal₀.cartier).val :=
-    p₀.survivingRayOffsets_eq_survivingBoundaryRayOffsets (Φ := Q.fan) hnodal₀ Q.complete hH
-      selfIntersection toricCoeff _ exceptionalCoeff hself hcenter' hcoords
-  have hcard : survivors.card = n := hs ▸ (p₀.survivingBoundaryRayOffsets hnodal₀.cartier).prop
-  have hkeep j (hj : j ∈ survivors) : rayAt j ∈ Set.range
-      (p₀.numberedBoundaryRays cartier[M₀]) := by
-    rw [hs, Set.powersetCard.mem_coe_iff, p₀.mem_survivingBoundaryRayOffsets] at hj
-    exact hj
-  exact ⟨hcard, Q.isSignedLoopComparisonInput_of_rayCoordinates p₀ ray centerRay
-    (Set.powersetCard.ofCard hcard) hray hcenter hkeep⟩
+  exact Q.isSignedLoopComparisonInput_of_rayCoordinates p₀ ray centerRay survivors hray hcenter
+    (p₀.survivingRayOffsetsOfPolarization_eq hnodal₀ Q.complete hH
+      selfIntersection toricCoeff centerRay exceptionalCoeff hself hcenter hcoords)
 
 end CompleteToricPresentation
 
