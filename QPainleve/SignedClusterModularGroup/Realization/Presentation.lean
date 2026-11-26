@@ -6,7 +6,7 @@ Authors: The QPainleve contributors
 module
 
 public import QPainleve.Geometry.Toric.Fan.Boundary.Numbering
-public import QPainleve.Geometry.Toric.Fan.CyclicOrder
+public import QPainleve.Geometry.Toric.Fan.CyclicOrder.Basic
 public import QPainleve.SignedClusterModularGroup.Realization.ContractionNumerics
 public import QPainleve.SignedClusterModularGroup.Realization.Inversion.Contracted
 public import QPainleve.SignedClusterModularGroup.Realization.MarkedComparison

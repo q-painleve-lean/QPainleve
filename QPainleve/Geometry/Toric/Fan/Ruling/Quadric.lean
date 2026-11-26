@@ -12,7 +12,7 @@ public import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.ProjectiveOver
 public import TauCeti.Geometry.Toric.Algebraic.Fan.Product.Basic
 
 import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.Polynomial.SymmetricAlgebra
-import QPainleve.Geometry.Toric.Fan.CyclicOrder
+import QPainleve.Geometry.Toric.Fan.CyclicOrder.Basic
 import QPainleve.Geometry.Toric.Fan.Equiv
 import QPainleve.Geometry.Toric.Fan.HalfPlane
 import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.Segre

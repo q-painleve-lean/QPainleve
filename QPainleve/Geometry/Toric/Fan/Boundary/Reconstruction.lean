@@ -6,7 +6,7 @@ Authors: The QPainleve contributors
 module
 
 public import QPainleve.Geometry.Toric.Fan.Boundary.SelfIntersection
-public import QPainleve.Geometry.Toric.Fan.CyclicOrder
+public import QPainleve.Geometry.Toric.Fan.CyclicOrder.Basic
 
 /-!
 # Reconstruction of a toric surface fan from its boundary
