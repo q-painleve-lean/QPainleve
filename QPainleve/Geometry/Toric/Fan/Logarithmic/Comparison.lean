@@ -72,16 +72,18 @@ theorem eq_of_toric_internal_factorizations (hc : Φ.IsComplete)
   have := Θ.isModification_internalBlowupTower_toBase b r c hΘ
   have : IsDominant (e.hom ≫ f) := by rw [he]; infer_instance
   have : IsDominant f := IsDominant.of_comp e.hom f
-  obtain ⟨R, hR, -⟩ := exists_equiv_boundaryPrimes_of_toric_internal_factorization
-    b hΘ J r c e he hP
-  obtain ⟨U, hU, -⟩ := exists_equiv_boundaryPrimes_of_toric_internal_factorization
-    b hΩ K s d e' he' hP'
+  have hs := congrArg Scheme.IdealSheafData.support hP
+  have hs' := congrArg Scheme.IdealSheafData.support hP'
+  let R := internalBlowupBoundaryPrimeEquivOfIso hΘ b r c e hs
+  let U := internalBlowupBoundaryPrimeEquivOfIso hΩ b s d e' hs'
   have hgen {t : Θ.Ray} {u : Ω.Ray} (h : R t = U u) :
       t.primitiveGenerator = u.primitiveGenerator := by
     apply b.repr.injective
     ext j
     let a := (b.coord j).toAddMonoidHom
-    exact ((hR t (U u)).mp h a).symm.trans ((hU u (U u)).mp rfl a)
+    exact ((internalBlowupBoundaryPrimeEquivOfIso_eq_iff_forall_ord_character
+      b hΘ J r c e he hs t (U u)).mp h a).symm.trans
+      (ord_internalBlowupBoundaryPrimeEquivOfIso_character b hΩ K s d e' he' hs' u a)
   apply eq_of_range_primitiveGenerator_eq b hΘ hΩ
     (J.isComplete_iff.mpr hc) (K.isComplete_iff.mpr hc)
   rw [← (R.trans U.symm).surjective.range_comp (Ray.primitiveGenerator (Phi := Ω))]

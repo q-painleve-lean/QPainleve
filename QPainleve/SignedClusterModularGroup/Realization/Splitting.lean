@@ -136,8 +136,9 @@ theorem exists_signedPicardSplitting_of_nodal_model
       P.identification.family c = M := by
   obtain ⟨G, hGc⟩ := Q.exists_picardGroupEquivs_of_nodal_model href hE hprim hnef hsq
   let : IsRationalOver (M.surface ↘ S) := href.isRationalOver
+  have hmatrix_ne_zero := href.exchangeMatrix_ne_zero hE hprim hnef hsq
   have hcan := congrArg Inv.inv (href.canonicalClass M.isEffectiveCartier_boundaryIdeal)
   obtain ⟨reflection⟩ := M.nonempty_cycleReversingInvolution hcan hnef hsq hprim
-  exact ⟨⟨G, reflection, href.exchangeMatrix_ne_zero hE hprim hnef hsq⟩, hGc⟩
+  exact ⟨⟨G, reflection, hmatrix_ne_zero⟩, hGc⟩
 
 end QPainleve.SignedClusterModularGroup.CompleteToricPresentation

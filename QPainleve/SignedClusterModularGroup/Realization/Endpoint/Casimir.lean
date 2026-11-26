@@ -128,9 +128,7 @@ theorem existsUnique_exchangeKernelEquiv_of_presentation
   let := Q.prestable
   let := Q.neZero
   -- A reference fiber fixes the two kernel identifications for the whole family.
-  let : IsRationalOver ((M c₀).surface ↘ S) := href.isRationalOver
-  have hcan := congrArg Inv.inv (href.canonicalClass (hD c₀))
-  have hindex := Q.chargeIndex_ne_zero_of_anticanonical_cycle href (hD c₀) hnef hsq hcan hprim
+  have hindex := href.chargeIndex_ne_zero (hD c₀) hnef hsq hprim
   have hker : E.matrix.mulVecLin.ker = P.charge.ker := by
     rw [← P.matrix_eq, hform, hcharge]
     exact Fan.ker_chargeExchangeMatrix_rayChargeMap b Q.rays hindex
@@ -202,6 +200,7 @@ theorem existsUnique_exchangeKernelEquiv_of_presentation
       apply Subtype.ext
       apply (LinearEquiv.autCongr e').injective
       simpa only [hg₁, map_one, OneMemClass.coe_one] using (comparison w).1.symm
+    let : IsRationalOver ((M c₀).surface ↘ S) := href.isRationalOver
     have hsign := sign_eq_one_of_mem_ker_signedOrthogonalRestriction
       (M c₀) (hD c₀) hnef hsq hprim (funext (hmark c₀)) hrestrict
     rw [(comparison w).2, neg_one_pow_eq_one_iff_even (by decide : (-1 : ℤˣ) ≠ 1)] at hsign

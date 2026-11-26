@@ -157,10 +157,7 @@ theorem nonempty_picardBaseChange_of_presentations
   let := Q₁.neZero
   let : PreirreducibleSpace Centers[r].left :=
     inferInstanceAs (PreirreducibleSpace (scheme ℂ (Fin r → ℤ)))
-  let : IsRationalOver ((M₁ a₁).surface ↘ S) := href₁.isRationalOver
-  have hcan₁ := congrArg Inv.inv (href₁.canonicalClass (hD₁ a₁))
-  have hindex := Q₁.chargeIndex_ne_zero_of_anticanonical_cycle href₁
-    (hD₁ a₁) hnef₁ hsq₁ hcan₁ hprim₁
+  have hindex := href₁.chargeIndex_ne_zero (hD₁ a₁) hnef₁ hsq₁ hprim₁
   have hsigned := R.signedPicardHom_base_change
     (b := b₁) (hΦ := Q₁.regular) (T := Q₁.cycle) (origin := Q₁.origin)
     (s := Q₁.rays) (centers := fun c : Point Centers[r] ↦ χ[c])

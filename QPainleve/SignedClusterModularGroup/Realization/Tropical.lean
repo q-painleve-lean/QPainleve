@@ -6,8 +6,7 @@ Authors: The QPainleve contributors
 module
 
 public import QPainleve.Geometry.Toric.Fan.Mutation.Tropical
-public import QPainleve.SignedClusterModularGroup.Realization.Agreement
-public import QPainleve.SignedClusterModularGroup.Realization.Boundary
+public import QPainleve.SignedClusterModularGroup.Realization.Models
 
 import QPainleve.Geometry.Toric.Fan.Boundary.NumberedPrime
 
@@ -55,20 +54,18 @@ namespace ContractedToricFiber
 /-- Each numbered component of a contracted boundary determines its surviving toric ray. -/
 def numberedBoundaryRays (hM : D[M].IsEffectiveCartier) : ZMod n ↪ Φ.Ray :=
   (M.numberedBoundaryPrimes hM).trans
-    (Fan.contractedBoundaryRayEmbedding hΦ b s (center c) p.projection p.support_comap)
+    p.boundaryRayEmbedding
 
 /-- The ray at a numbered component is the strict transform of its boundary prime. -/
 theorem numberedBoundaryRays_apply (hM : D[M].IsEffectiveCartier) (j : ZMod n) :
     p.numberedBoundaryRays hM j =
-      Fan.contractedBoundaryRayEmbedding hΦ b s (center c) p.projection p.support_comap
-        (M.numberedBoundaryPrimes hM j) :=
+      p.boundaryRayEmbedding (M.numberedBoundaryPrimes hM j) :=
   (rfl)
 
 /-- The numbered rays are exactly the surviving rays of the contraction. -/
 theorem range_numberedBoundaryRays (hM : D[M].IsEffectiveCartier) :
     Set.range (p.numberedBoundaryRays hM) =
-      Set.range (Fan.contractedBoundaryRayEmbedding hΦ b s (center c) p.projection
-        p.support_comap) := by
+      Set.range p.boundaryRayEmbedding := by
   rw [numberedBoundaryRays, Function.Embedding.coe_trans,
     (M.numberedBoundaryPrimes_surjective hM).range_comp]
 
@@ -78,7 +75,8 @@ theorem mem_range_numberedBoundaryRays_iff (hM : D[M].IsEffectiveCartier) (ρ : 
     ρ ∈ Set.range (p.numberedBoundaryRays hM) ↔
       p.projection (Fan.internalBlowupBoundaryPrimeEquiv hΦ b s (center c) ρ).val ∈
         D[M].boundaryPrimes := by
-  rw [p.range_numberedBoundaryRays, Fan.mem_range_contractedBoundaryRayEmbedding_iff]
+  rw [p.range_numberedBoundaryRays, boundaryRayEmbedding_def,
+    Fan.mem_range_contractedBoundaryRayEmbedding_iff]
 
 /-- A numbered toric component gives the ray of a contracted component exactly
 when its generic point maps to that contracted component's generic point. -/
@@ -89,7 +87,7 @@ theorem numberedBoundaryRays_eq_iff (hM : D[M].IsEffectiveCartier) (j : ZMod n) 
       p.boundaryMap (T.componentGenericPoint k) = M.cycle.componentGenericPoint j := by
   let : PrestableFamily (M.boundary ↘ S) := M.prestable
   let : IsClosedImmersion M.pair.hom.left := M.closedImmersion
-  rw [numberedBoundaryRays, Function.Embedding.trans_apply,
+  rw [numberedBoundaryRays, Function.Embedding.trans_apply, boundaryRayEmbedding_def,
     Fan.contractedBoundaryRayEmbedding_eq_iff, Fan.internalBlowupBoundaryPrime_val,
     Equiv.apply_symm_apply, ← T.componentGenericPoint_def,
     ← Scheme.Hom.comp_apply, ← p.boundary_comp, Scheme.Hom.comp_apply,
@@ -177,9 +175,11 @@ theorem rayBoundaryOrders_tropical (j : ZMod n) :
     simpa only [MarkedSurface.numberedBoundaryPrimes_apply_val,
       CodimensionOnePoint.coe_mapOfIsOpenImmersion] using
       congrArg Subtype.val hpoint
-  exact Fan.rayBoundaryOrders_eq_tropical_of_comp_contractedXEvaluation
-    b b' s s' hΦ hΨ c c' p.projection q.projection w (MarkedSurface.surfaceIso R.iso)
-    p.support_comap q.support_comap hcΦ hE heval _ _ himage
+  simpa only [ContractedToricFiber.numberedBoundaryRays_apply,
+    ContractedToricFiber.boundaryRayEmbedding_def] using
+    Fan.rayBoundaryOrders_eq_tropical_of_comp_contractedXEvaluation
+      b b' s s' hΦ hΨ c c' p.projection q.projection w (MarkedSurface.surfaceIso R.iso)
+      p.support_comap q.support_comap hcΦ hE heval _ _ himage
 
 include R hcΦ hE in
 /-- Searching the surviving target rays at the tropical order vector returns the

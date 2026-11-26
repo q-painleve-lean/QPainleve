@@ -100,12 +100,9 @@ theorem exists_realize_signed_loop_with_boundary_label
             d (η • (l - (ZMod.finEquiv n).toEquiv j)) := by
   dsimp only
   have hreference := Q.hasNodalModel_of_contraction hnodal₀
-  let : IsRationalOver ((M c₀).surface ↘ S) := hreference.isRationalOver
   let : (M c₀).surface.IsProjectiveOver ℂ := (M c₀).projective
   let : SmoothOfRelativeDimension 2 ((M c₀).surface ↘ S) := (M c₀).smooth
-  have hcan := congrArg Inv.inv (hreference.canonicalClass (cartier(M c₀)))
-  have hindex := Q.chargeIndex_ne_zero_of_anticanonical_cycle (M := M) hreference
-    (cartier(M c₀)) hnef hsq hcan hprim
+  have hindex := hreference.chargeIndex_ne_zero (cartier(M c₀)) hnef hsq hprim
   have hE := P.matrix_eq.symm.trans (congrArg₂ chargeExchangeMatrix hform hcharge)
   have hker : E.matrix.mulVecLin.ker = P.charge.ker := by
     rw [← P.matrix_eq, hform, hcharge]
@@ -171,9 +168,7 @@ theorem xPullback_eq_iff_signedLoopInvariants_eq_of_presentation {F : Type*} [Fi
   let : Module.Finite ℤ (Additive (LineBundleClass (M c₀).surface)) :=
     (M c₀).surface.finite_picard_of_isRationalOver ℂ
   let : Module.Finite ℤ L := Module.Finite.of_surjective _ (M c₀).picardMarking.symm.surjective
-  have hcan := congrArg Inv.inv (hreference.canonicalClass (cartier(M c₀)))
-  have hindex := Q.chargeIndex_ne_zero_of_anticanonical_cycle (M := M) hreference
-    (cartier(M c₀)) hnef hsq hcan hprim
+  have hindex := hreference.chargeIndex_ne_zero (cartier(M c₀)) hnef hsq hprim
   have hker : E.matrix.mulVecLin.ker = P.charge.ker := by
     rw [← P.matrix_eq, hform, hcharge]
     exact Fan.ker_chargeExchangeMatrix_rayChargeMap b Q.rays hindex

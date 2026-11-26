@@ -20,7 +20,8 @@ import QPainleve.SignedClusterModularGroup.Realization.Anticanonical
 The toric base has a chart isomorphic to the affine plane. The ordered internal
 blowups and the projection to a marked fiber preserve its birational type.
 The presentation also identifies the projection as a nodal contraction
-with rational boundary normalization.
+with rational boundary normalization. For a primitive nef square-zero boundary,
+the ray charges span a finite-index sublattice.
 -/
 
 public section
@@ -96,8 +97,28 @@ theorem HasNodalModel.isRationalOver (h : Q.HasNodalModel c M) :
   obtain ⟨p, _⟩ := (Q.hasNodalModel_iff c M).mp h
   exact Q.isRationalOver_fiber p
 
+local notation "classOf(" h ")" => (LineBundleClass.mk (IsEffectiveCartier.toInvertibleSheaf h))⁻¹
+
+variable {Q} in
+/-- The ray charges of a marked nodal model with primitive nef square-zero boundary
+span a finite-index sublattice. The model supplies rationality and the anticanonical
+boundary identity at the given center. -/
+theorem HasNodalModel.chargeIndex_ne_zero (h : Q.HasNodalModel c M)
+    (hD : (Scheme.Hom.ker (Over.Hom.left (Arrow.hom M.pair))).IsEffectiveCartier)
+    (hnef : (classOf(hD)).IsNef ℂ (M.surface ↘ S))
+    (hsq : Chow.classIntersectionNumber ℂ M.surface classOf(hD) classOf(hD) = 0)
+    (hprim : IsPrimitive (Additive.ofMul classOf(hD))) :
+    (Fan.rayChargeMap Q.rays).range.toAddSubgroup.index ≠ 0 := by
+  let : SmoothOfRelativeDimension 2 (M.surface ↘ S) := M.smooth
+  obtain ⟨p, _, _, _, e, hW, hp⟩ := (Q.hasNodalModel_iff c M).mp h
+  let : IsRationalOver (M.surface ↘ S) := Q.isRationalOver_fiber p
+  have hcan := congrArg Inv.inv (h.canonicalClass hD)
+  obtain ⟨_, _, _, _, hdiv, _, _⟩ :=
+    p.chargeIndex_bounds_of_anticanonical_cycle Q.complete hW e hp.symm hD hnef hsq hcan hprim
+  exact fun hz ↦ ne_zero_of_dvd_ne_zero (NeZero.ne n) hdiv (by simp [hz])
+
 local notation "cartier" => M.isEffectiveCartier_boundaryIdeal
-local notation "δ" => (LineBundleClass.mk (IsEffectiveCartier.toInvertibleSheaf cartier))⁻¹
+local notation "δ" => classOf(cartier)
 
 variable {Q} in
 /-- The exchange matrix of a marked primitive nef square-zero anticanonical
@@ -109,12 +130,10 @@ theorem HasNodalModel.exchangeMatrix_ne_zero (h : Q.HasNodalModel c M)
     (hnef : LineBundleClass.IsNef ℂ (M.surface ↘ S) δ)
     (hsq : Chow.classIntersectionNumber ℂ M.surface δ δ = 0) :
     E.matrix ≠ 0 := by
-  let : IsRationalOver (M.surface ↘ S) := h.isRationalOver
   let P := Fan.rayChargeSeed b Q.rays hE
-  have hindex := Q.chargeIndex_ne_zero_of_anticanonical_cycle (M := fun _ ↦ M)
-    h cartier hnef hsq (congrArg Inv.inv (h.canonicalClass cartier)) hprim
   exact Q.exchangeMatrix_ne_zero_of_chargeIndex_ne_zero P
-    (Fan.rayChargeSeed_form _ _ _) (Fan.rayChargeSeed_charge _ _ _) hindex
+    (Fan.rayChargeSeed_form _ _ _) (Fan.rayChargeSeed_charge _ _ _)
+    (h.chargeIndex_ne_zero cartier hnef hsq hprim)
 
 variable {Q} in
 /-- With Cartier boundary, an ordered nodal model gives a nodal contraction,
