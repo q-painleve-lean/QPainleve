@@ -9,9 +9,9 @@ public import Mathlib.LinearAlgebra.Matrix.ToLin
 
 import Mathlib.Algebra.Module.Submodule.Equiv
 import Mathlib.Data.Int.GCD
-import Mathlib.LinearAlgebra.Matrix.Array
 import Mathlib.LinearAlgebra.Matrix.Notation
 import Mathlib.Tactic.LinearCombination
+import QPainleve.LinearAlgebra.Matrix.Array
 
 /-!
 # Computing bases of integral matrix kernels
@@ -77,29 +77,6 @@ private def headPairEquiv (n : ℕ) :
   (LinearEquiv.prodAssoc ℤ ℤ ℤ (Fin n → ℤ)).trans
     (((LinearEquiv.refl ℤ ℤ).prodCongr tail).trans head)
 
--- Store each entry once before the next reduction step applies the map repeatedly.
-private def materializeMatrix {m n : ℕ} (f : (Fin n → ℤ) →ₗ[ℤ] (Fin m → ℤ)) :
-    {A : Matrix (Fin m) (Fin n) ℤ // A.mulVecLin = f} := by
-  let A := LinearMap.toMatrix' f
-  let entries := A.toArray
-  exact ⟨Matrix.ofArray entries A.size_toArray, by
-    simpa only [entries, A, ofArray_toArray, toLin'_apply'] using toLin'_toMatrix' f⟩
-
--- Retain the matrix entries when composing more than one Bézout step.
-private def materialize {n : ℕ} (e : (Fin n → ℤ) ≃ₗ[ℤ] (Fin n → ℤ)) :
-    (Fin n → ℤ) ≃ₗ[ℤ] (Fin n → ℤ) := by
-  let A := materializeMatrix e.toLinearMap
-  exact
-    { A.val.mulVecLin with
-      invFun := e.symm
-      left_inv := fun x ↦ by rw [A.property]; exact e.symm_apply_apply x
-      right_inv := fun x ↦ by rw [A.property]; exact e.apply_symm_apply x }
-
-private theorem materialize_apply {n : ℕ} (e : (Fin n → ℤ) ≃ₗ[ℤ] (Fin n → ℤ)) (x : Fin n → ℤ) :
-    materialize e x = e x := by
-  simp only [materialize, LinearEquiv.coe_mk]
-  exact LinearMap.congr_fun (materializeMatrix e.toLinearMap).property x
-
 private def reduceRow : ∀ {n : ℕ} (a : Fin (n + 1) → ℤ),
     {p : ℤ × ((Fin (n + 1) → ℤ) ≃ₗ[ℤ] (Fin (n + 1) → ℤ)) //
       ∀ x, a ⬝ᵥ p.2 x = p.1 * x 0}
@@ -114,8 +91,8 @@ private def reduceRow : ∀ {n : ℕ} (a : Fin (n + 1) → ℤ),
     let liftTail := splitHead.symm.trans
       (((LinearEquiv.refl ℤ ℤ).prodCongr tail.val.2).trans splitHead)
     let e := mix.trans liftTail
-    refine ⟨(Int.gcd (a 0) tail.val.1, materialize e), fun x ↦ ?_⟩
-    rw [materialize_apply]
+    refine ⟨(Int.gcd (a 0) tail.val.1, e.withCachedMatrix), fun x ↦ ?_⟩
+    rw [LinearEquiv.withCachedMatrix_apply]
     let z := step.val (x 0, x 1)
     have ht : a ⬝ᵥ e x = a 0 * z.1 + vecTail a ⬝ᵥ tail.val.2 (vecCons z.2 (vecTail (vecTail x))) :=
       dotProduct_cons ..
@@ -188,7 +165,7 @@ private def intKernelEquiv : ∀ {m n : ℕ} (A : Matrix (Fin m) (Fin n) ℤ),
     let K := (dotProductBilin ℤ ℤ (A 0)).ker
     let endRows := (tailRows A).comp K.subtype
     let f := endRows.comp row.2.toLinearMap
-    let B := materializeMatrix f
+    let B := f.materializeMatrix
     let rest := intKernelEquiv B.val
     have hker : B.val.mulVecLin.ker = endRows.ker.comap row.2.toLinearMap :=
       (congrArg LinearMap.ker B.property).trans (LinearMap.ker_comp _ _)
