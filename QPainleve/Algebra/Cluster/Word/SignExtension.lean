@@ -20,8 +20,8 @@ import TauCeti.GroupTheory.GroupExtension.Splitting
 The unsigned group is included in the signed group by retaining the same X map.
 At a nonzero exchange matrix, the range of this inclusion is the kernel of the
 descended inversion sign. An odd loop makes the sign surjective and gives the
-unsigned inclusion index two. An odd involution splits the extension and, when
-central, generates a direct product complement.
+unsigned inclusion index two. A negative-sign point map of order two splits the
+extension and, when central, generates a direct product complement.
 -/
 
 public noncomputable section
@@ -33,14 +33,14 @@ namespace QPainleve.Cluster
 variable (k : Type*) [Field k] {ι : Type*} [DecidableEq ι] (B : SkewExchangeMatrix ι)
 variable [Finite ι]
 
-/-- The sign homomorphism is onto as soon as an odd loop exists. -/
-theorem signedInversionSign_surjective (hB : B.matrix ≠ 0) {w : Word B B}
-    (hw : Odd w.inversionCount) : Function.Surjective (signedInversionSign k B hB) := by
+/-- A signed point map of sign `-1` makes the sign homomorphism surjective. -/
+theorem signedInversionSign_surjective (hB : B.matrix ≠ 0) {z : SignedClusterModularGroup k B}
+    (hz : signedInversionSign k B hB z = -1) :
+    Function.Surjective (signedInversionSign k B hB) := by
   intro ε
   rcases Int.units_eq_one_or ε with rfl | rfl
   · exact ⟨1, map_one _⟩
-  · exact ⟨signedClusterModularGroupMap k B (End.of w),
-      (signedInversionSign_apply k B hB (End.of w)).trans hw.neg_one_pow⟩
+  · exact ⟨z, hz⟩
 
 private def unsignedEquivSignKer (hB : B.matrix ≠ 0) :
     ClusterModularGroup k B ≃* (signedInversionSign k B hB).ker :=
@@ -84,10 +84,12 @@ theorem index_range_clusterModularGroupInclusion (hB : B.matrix ≠ 0)
   exact (Nat.card_congr S.quotientRangeInlEquivRight.toEquiv).trans
     (Nat.card_eq_fintype_card.trans Fintype.card_units_int)
 
-private def oddInvolutionZPowersEquivSign {hB : B.matrix ≠ 0} (w : Word B B)
-    (hw : Odd w.inversionCount) (ho : orderOf (signedClusterModularGroupMap k B (End.of w)) = 2) :
-    Subgroup.zpowers (signedClusterModularGroupMap k B (End.of w)) ≃* ℤˣ := by
-  let z := signedClusterModularGroupMap k B (End.of w)
+section SignInvolution
+
+variable {hB : B.matrix ≠ 0} {z : SignedClusterModularGroup k B}
+  (hz : signedInversionSign k B hB z = -1) (ho : orderOf z = 2)
+
+private def involutionZPowersEquivSign : Subgroup.zpowers z ≃* ℤˣ := by
   let f := (signedInversionSign k B hB).comp (Subgroup.zpowers z).subtype
   have hcard : Nat.card (Subgroup.zpowers z) = 2 := (Nat.card_zpowers z).trans ho
   letI := Nat.finite_of_card_ne_zero (hcard.trans_ne (by decide : (2 : ℕ) ≠ 0))
@@ -95,80 +97,65 @@ private def oddInvolutionZPowersEquivSign {hB : B.matrix ≠ 0} (w : Word B B)
   · intro ε
     rcases Int.units_eq_one_or ε with rfl | rfl
     · exact ⟨1, map_one f⟩
-    · exact ⟨⟨z, Subgroup.mem_zpowers z⟩,
-        (signedInversionSign_apply k B hB (End.of w)).trans hw.neg_one_pow⟩
+    · exact ⟨⟨z, Subgroup.mem_zpowers z⟩, hz⟩
   · rw [hcard, Nat.card_eq_fintype_card, Fintype.card_units_int]
 
-/-- An odd loop whose signed point map has order two splits the inversion-sign extension. -/
-def signSplittingOfOddInvolution {hB : B.matrix ≠ 0} (w : Word B B)
-    (hw : Odd w.inversionCount) (ho : orderOf (signedClusterModularGroupMap k B (End.of w)) = 2) :
-    (signedInversionSignExtension k B hB (signedInversionSign_surjective k B hB hw)).Splitting where
-  __ := (Subgroup.zpowers _).subtype.comp
-    (oddInvolutionZPowersEquivSign k B (hB := hB) w hw ho).symm.toMonoidHom
+/-- A negative-sign point map of order two splits the inversion-sign extension. -/
+def signSplittingOfInvolution :
+    (signedInversionSignExtension k B hB (signedInversionSign_surjective k B hB hz)).Splitting where
+  __ := (Subgroup.zpowers z).subtype.comp (involutionZPowersEquivSign k B hz ho).symm.toMonoidHom
   rightInverse_rightHom ε := by
     rw [signedInversionSignExtension_rightHom]
-    exact (oddInvolutionZPowersEquivSign k B (hB := hB) w hw ho).apply_symm_apply ε
+    exact (involutionZPowersEquivSign k B hz ho).apply_symm_apply ε
 
-/-- The section defined by an odd involution sends minus one to the loop's point map. -/
-theorem signSplittingOfOddInvolution_neg_one {hB : B.matrix ≠ 0}
-    (w : Word B B) (hw : Odd w.inversionCount)
-    (ho : orderOf (signedClusterModularGroupMap k B (End.of w)) = 2) :
-    signSplittingOfOddInvolution k B (hB := hB) w hw ho (-1) =
-      signedClusterModularGroupMap k B (End.of w) := by
-  let z := signedClusterModularGroupMap k B (End.of w)
-  let e := oddInvolutionZPowersEquivSign k B (hB := hB) w hw ho
-  have h : e ⟨z, Subgroup.mem_zpowers z⟩ = -1 :=
-    (signedInversionSign_apply k B hB (End.of w)).trans hw.neg_one_pow
+/-- The section sends the negative sign to the specified involution. -/
+@[simp]
+theorem signSplittingOfInvolution_neg_one : signSplittingOfInvolution k B hz ho (-1) = z := by
+  let e := involutionZPowersEquivSign k B hz ho
+  have h : e ⟨z, Subgroup.mem_zpowers z⟩ = -1 := hz
   exact congrArg Subtype.val (e.symm_apply_eq.mpr h.symm)
 
-section CentralOddLoop
+variable (hc : z ∈ Subgroup.center (SignedClusterModularGroup k B))
 
-variable {hB : B.matrix ≠ 0} (w : Word B B) (hw : Odd w.inversionCount)
-  (ho : orderOf (signedClusterModularGroupMap k B (End.of w)) = 2)
-  (hc : signedClusterModularGroupMap k B (End.of w) ∈
-    Subgroup.center (SignedClusterModularGroup k B))
-
-local notation "z" => signedClusterModularGroupMap k B (End.of w)
-local notation "t" => signSplittingOfOddInvolution k B (hB := hB) w hw ho
+local notation "t" => signSplittingOfInvolution k B hz ho
 
 include hc in
-private theorem signSplittingOfOddInvolution_conjAct_eq_one : (t).conjAct = 1 := by
+private theorem signSplittingOfInvolution_conjAct_eq_one : (t).conjAct = 1 := by
   ext ε f
   rcases Int.units_eq_one_or ε with rfl | rfl
   · simp
   · apply clusterModularGroupInclusion_injective k B
     have h := (t).inl_conjAct (-1) f
-    rw [signedInversionSignExtension_inl, signSplittingOfOddInvolution_neg_one] at h
+    rw [signedInversionSignExtension_inl, signSplittingOfInvolution_neg_one] at h
     have hcomm := Subgroup.mem_center_iff.mp hc (clusterModularGroupInclusion k B f)
     simpa only [← hcomm, mul_inv_cancel_right, MonoidHom.one_apply, MulAut.one_apply] using h
 
 include hc in
 /-- Multiplication identifies the signed group with the product of the unsigned group and
-the cyclic subgroup of a central odd involution.
+the cyclic subgroup of a central negative-sign involution.
 The complement calculation follows [the signed Picard splitting proof]
 (https://github.com/q-painleve-lean/QPainleve/pull/753). -/
-def mulEquivProdZPowersOfCentralOddLoop :
+def mulEquivProdZPowersOfCentralInvolution :
     ClusterModularGroup k B × Subgroup.zpowers z ≃* SignedClusterModularGroup k B :=
-  (MulEquiv.prodCongr (MulEquiv.refl _)
-    (oddInvolutionZPowersEquivSign k B (hB := hB) w hw ho)).trans
+  (MulEquiv.prodCongr (MulEquiv.refl _) (involutionZPowersEquivSign k B hz ho)).trans
     (SemidirectProduct.mulEquivProd.symm.trans
       ((SemidirectProduct.congr (MulEquiv.refl _) (MulEquiv.refl _) (by
-        rw [signSplittingOfOddInvolution_conjAct_eq_one k B w hw ho hc]
+        rw [signSplittingOfInvolution_conjAct_eq_one k B hz ho hc]
         intro ε
         rfl)).trans (t).semidirectProductMulEquiv))
 
 @[simp]
-theorem mulEquivProdZPowersOfCentralOddLoop_apply
+theorem mulEquivProdZPowersOfCentralInvolution_apply
     (x : ClusterModularGroup k B × Subgroup.zpowers z) :
-    mulEquivProdZPowersOfCentralOddLoop k B (hB := hB) w hw ho hc x =
+    mulEquivProdZPowersOfCentralInvolution k B hz ho hc x =
       clusterModularGroupInclusion k B x.1 * x.2.val := by
   obtain ⟨f, y⟩ := x
-  let e := oddInvolutionZPowersEquivSign k B (hB := hB) w hw ho
+  let e := involutionZPowersEquivSign k B hz ho
   obtain ⟨ε, rfl⟩ := e.symm.surjective y
   have hsection : t ε = (e.symm ε).val := rfl
-  simp [mulEquivProdZPowersOfCentralOddLoop, e, ← hsection,
+  simp [mulEquivProdZPowersOfCentralInvolution, e, ← hsection,
     GroupExtension.Splitting.semidirectProductMulEquiv_apply]
 
-end CentralOddLoop
+end SignInvolution
 
 end QPainleve.Cluster

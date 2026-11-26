@@ -42,6 +42,13 @@ theorem orderOf_involutionWord_pointMap : orderOf z = 2 := by
       rw [← Subgroup.orderOf_coe (unop z), hp]
       exact orderOf_involutionWord_xPullback k
 
+private theorem signedInversionSign_involutionWord :
+    signedInversionSign k B exchangeMatrix_matrix_ne_zero z = -1 := by
+  have h : (-1 : ℤˣ) ^ involutionWord.inversionCount = -1 := by
+    simp only [inversionCount_involutionWord, pow_one]
+  exact (signedInversionSign_apply k B exchangeMatrix_matrix_ne_zero
+    (End.of involutionWord)).trans h
+
 variable [CharZero k]
 
 /-- The eleven-vertex involution word is central in the signed cluster modular group. -/
@@ -58,16 +65,12 @@ theorem involutionWord_pointMap_mem_center :
   ext x
   simp
 
-private theorem odd_inversionCount_involutionWord : Odd involutionWord.inversionCount := by
-  rw [inversionCount_involutionWord]
-  decide
-
 /-- Multiplication of point maps identifies the signed eleven-vertex cluster modular group
 with the product of the unsigned group and the order-two subgroup of the involution word. -/
 def involutionWordMulEquiv :
     ClusterModularGroup k B × Subgroup.zpowers z ≃* SignedClusterModularGroup k B :=
-  mulEquivProdZPowersOfCentralOddLoop k B (hB := exchangeMatrix_matrix_ne_zero)
-    involutionWord odd_inversionCount_involutionWord (orderOf_involutionWord_pointMap k)
+  mulEquivProdZPowersOfCentralInvolution k B
+    (signedInversionSign_involutionWord k) (orderOf_involutionWord_pointMap k)
     (involutionWord_pointMap_mem_center k)
 
 @[simp]

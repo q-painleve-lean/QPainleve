@@ -146,7 +146,10 @@ theorem exists_signedPicardSplitting_of_nodal_model
       fun ε ↦ by simp [s, t],
       picardSignSplitting_conjAct Θ hsign hE t Θrot hrot,
       picardSignSplitting_semidirectProductMulEquiv Θ hsign hE t Θrot hrot⟩,
-    exists_central_involution_of_picardEquiv Θ hsign hE⟩
+    fun hn ↦ ⟨picardCentralInvolution Θ hn, signedEquiv_apply_picardCentralInvolution Θ hn,
+      picardCentralInvolution_mem_center Θ hn, orderOf_picardCentralInvolution Θ hn,
+      picardCentralInvolutionMulEquiv Θ hn hsign hE,
+      fun f u ↦ picardCentralInvolutionMulEquiv_apply Θ hn hsign hE (f, u)⟩⟩
 
 end CompleteToricPresentation
 
