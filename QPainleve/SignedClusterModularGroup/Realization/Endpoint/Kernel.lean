@@ -26,7 +26,7 @@ domain, the marked Picard pullback determines the permutation of boundary
 components. The sign retains the branch action even for cycles with one or two
 components. The marked comparison then recovers
 the independent rational X map from these actions. The comparison uses
-`ContractedToricFiber.numberedBoundaryRays_eq_of_nodalContractions` to read the
+`HasNodalToricTargetModels.of_nodalContractions` to read the
 same surviving rays at every reached center.
 -/
 
@@ -130,21 +130,14 @@ private theorem xMap_eq_of_signedBoundaryIsometry_eq
   have ha := congrArg Subtype.val hR
   simp only [coe_toSignedBoundaryIsometry, Prod.mk.injEq] at ha
   have hpic := H.isometryGroupEquivIsometryEquiv.symm.injective ha.1
-  have hp := R.cycleVertexPerm_eq_of_picard_eq R' hmark hmark hinj hpic
-  have hrays c (hc : c ∈ U) : (p c hc).numberedBoundaryRays (hD c) =
-      (p c₀ hc₀).numberedBoundaryRays (hD c₀) :=
-    (p c hc).numberedBoundaryRays_eq_of_nodalContractions (p c₀ hc₀)
-      (hnodal c hc) (hnodal c₀ hc₀) hsep
-  have hkeep c (hc : c ∈ U) ρ := ((p c hc).mem_range_numberedBoundaryRays_iff (hD c) ρ).symm.trans
-    (by rw [hrays c hc])
+  have hact :=
+    R.boundaryAction_eq_of_picard_eq_of_orientation_eq R' hmark hmark hinj hpic ha.2
   exact R.xMap_eq_of_marked_actions_on_center_domains R' Q.complete Q.rayOrder
     (fun j ↦ (Q.cycle.component_apply j).symm.trans (Q.component_eq j))
     (fun j ↦ (Q.positive j).1) Q.exists_cone_of_numbered_node
-    (fun x ↦ p _ (hU x).1) (Set.range ((p c₀ hc₀).numberedBoundaryRays (hD c₀)))
-    (fun x ↦ ⟨p _ (hU x).2, hnodal _ (hU x).2, hkeep _ (hU x).2⟩)
-    (fun x ↦ ⟨p _ (hU' x), hnodal _ (hU' x), hkeep _ (hU' x)⟩) hpic
-    (by simpa only [boundaryPerm_def] using hp) ha.2
-
+    (fun x ↦ p _ (hU x).1) (Set.range (p c₀ hc₀).boundaryRayEmbedding)
+    (.of_nodalContractions hsep (p c₀ hc₀) (hnodal c₀ hc₀) p hnodal (fun x ↦ (hU x).2))
+    (.of_nodalContractions hsep (p c₀ hc₀) (hnodal c₀ hc₀) p hnodal hU') hpic hact
 
 include hnodal hmark in
 private theorem ker_eq_bot_of_realized_actions [H.IsPerfPair]
