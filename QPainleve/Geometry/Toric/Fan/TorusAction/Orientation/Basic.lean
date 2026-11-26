@@ -11,8 +11,6 @@ public import QPainleve.Geometry.Toric.Fan.Boundary.Contraction
 public import QPainleve.Geometry.Toric.Fan.TorusAction.Branches
 public import QPainleve.Geometry.Toric.Fan.TorusAction.Comparison
 
-import TauCeti.AlgebraicGeometry.Curves.Node.Reduced
-
 /-!
 # Ordered boundary actions detected by fixed-center X evaluation
 
@@ -175,14 +173,11 @@ theorem boundaryCycleAction_eq_r_iff_of_comp_contractedXEvaluation_eq
     eB.boundaryCycleAction A B = DihedralGroup.r j ↔
       contractedBoundaryRayEmbedding hΦ b s (center c) p hD x =
         contractedBoundaryRayEmbedding hΦ b s (center d) q hE y := by
-  have : IsReduced D.subscheme :=
-    (PrestableFamily.atWorstNodalOfRelativeDimensionOne (f := D.subscheme ↘ S)).isReduced
-  have : IsReduced E.subscheme :=
-    (PrestableFamily.atWorstNodalOfRelativeDimensionOne (f := E.subscheme ↘ S)).isReduced
-  obtain ⟨χ, ⟨t, ht, htq, -, -⟩, -⟩ :=
-    existsUnique_translation_of_comp_contractedXEvaluation_eq b s c d hΦ p q e
-      hindex hp hq hD hE heval
+  obtain ⟨lift⟩ :=
+    existsUnique_contractedToricTranslation_of_comp_contractedXEvaluation_eq
+      b s c d hΦ p q e hindex hp hq heval
+  let t := lift.default
   exact boundaryCycleAction_eq_r_iff_of_isLift_torusTranslation b s c d hΦ A B T
-    hf hg hfs hgs heB hc ht htq hD hE j x y hx hy
+    hf hg hfs hgs heB hc t.isLift t.commutes hD hE j x y hx hy
 
 end TauCeti.Toric.Fan

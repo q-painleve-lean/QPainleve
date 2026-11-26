@@ -5,6 +5,7 @@ Authors: The QPainleve contributors
 -/
 module
 
+public import QPainleve.AlgebraicGeometry.Blowup.Tower.Modification
 public import QPainleve.Geometry.Toric.Fan.TorusAction.Alignment
 public import QPainleve.Geometry.Toric.Fan.TorusAction.Orientation.Basic
 
@@ -12,6 +13,7 @@ import QPainleve.AlgebraicGeometry.Blowup.Tower.Picard
 import QPainleve.AlgebraicGeometry.Curves.Node.Conductor.Orientation
 import QPainleve.AlgebraicGeometry.IdealSheaf.BaseChange
 import QPainleve.AlgebraicGeometry.RationalMap.Composition.Basic
+import QPainleve.Geometry.Toric.Fan.TorusAction.ContractedEvaluation
 import TauCeti.AlgebraicGeometry.Curves.Node.Reduced
 import TauCeti.AlgebraicGeometry.Noetherian
 import TauCeti.AlgebraicGeometry.Scheme.Regular.Scheme
@@ -189,7 +191,7 @@ theorem comp_contractedXEvaluation_eq_of_eq_center_character
   have : IsNoetherian X' := isNoetherian_of_finiteType (X' ↘ S)
   have : AlgebraicGeometry.IsRegular X := AlgebraicGeometry.IsRegular.of_smooth (X ↘ S)
   have : AlgebraicGeometry.IsRegular X' := AlgebraicGeometry.IsRegular.of_smooth (X' ↘ S)
-  obtain ⟨χ, t, u, ht, htu, hover, hcomap, heval, hmark⟩ :=
+  obtain ⟨u, hover, hcomap, ⟨t⟩⟩ :=
     exists_iso_of_eq_center_character hΦ b s c d hT hU e e' hp hq hD hD' hkeep hcenters
   obtain ⟨uB, hu⟩ := D'.exists_iso_of_comap_eq_ker u D.subschemeι
     (hcomap.trans D.ker_subschemeι.symm)
@@ -199,12 +201,13 @@ theorem comp_contractedXEvaluation_eq_of_eq_center_character
   have hray := ((contractedBoundaryRayEmbedding_eq_iff hΦ b s (center c) p[e] hD x ρ).mpr hxρ).trans
     (((contractedBoundaryRayEmbedding_eq_iff hΦ b s (center d) q[e'] hD' y ρ).mpr hyρ).symm)
   have huact := (boundaryCycleAction_eq_r_iff_of_isLift_torusTranslation b s c d hΦ A B C
-    hf hg hfs hgs hu hc ht htu hD hD' j x y hx hy).mpr hray
+    hf hg hfs hgs hu hc t.isLift t.commutes hD hD' j x y hx hy).mpr hray
   have hPic' (L : LineBundleClass X') : pullback v.hom L = pullback u.hom L := by
     apply hT.isClosedPointTower.injective_pullback_toBase (X ↘ S)
     apply (pullbackEquiv e.symm).injective
+    have hmark := (hPic L).trans (t.pullback_marking hΦ L).symm
     simpa only [pullbackEquiv_apply, Iso.symm_hom, pullback_comp, Category.assoc] using
-      Additive.ofMul.injective ((mark c).symm.injective ((hPic L).trans (hmark L).symm))
+      Additive.ofMul.injective ((mark c).symm.injective hmark)
   have he' : e'.hom ≫ π d ≫ Φ.algebraicRealizationStructureMap = U.toBase ≫ (X' ↘ S) := by
     rw [← hq, Category.assoc, Iso.hom_inv_id_assoc]
   have hD'' : (D'.comap U.toBase).support = ((ι d).ker.comap e'.hom).support := calc
@@ -212,7 +215,7 @@ theorem comp_contractedXEvaluation_eq_of_eq_center_character
       rw [← comap_comp, Iso.hom_inv_id_assoc]
     _ = _ := by rw [support_comap (D'.comap q[e']), support_comap ((ι d).ker), hD']
   exact (comp_contractedXEvaluation_eq_of_matching_actions b s hΦ d hc hCartier hU e' he' hD''
-    v u vB uB hv hu B A hPic' (hact.trans huact.symm)).trans heval
+    v u vB uB hv hu B A hPic' (hact.trans huact.symm)).trans (t.comp_contractedXEvaluation hΦ)
 
 end AlignedCenters
 
