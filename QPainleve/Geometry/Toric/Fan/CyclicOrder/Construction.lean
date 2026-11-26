@@ -22,9 +22,6 @@ Consecutive determinant-one pairs in a list winding once around the origin give 
 two-dimensional cones of a complete fan. The winding condition counts the positive
 horizontal axis crossings. Cutting the list at its unique crossing orders the
 arguments of the rays and shows that the cones cover the plane and meet in faces.
-The winding criterion comes from the [signed cluster modular group comparator challenge][challenge].
-
-[challenge]: https://github.com/q-painleve-lean/QPainleve/pull/841
 -/
 
 open Module PointedCone

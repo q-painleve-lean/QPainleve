@@ -22,9 +22,7 @@ matrix give an input to the same comparison theorems used with integer tables
 supplied separately. The intersection kernel of the strict boundary recovers the
 orders from the cyclic ray coordinates and the ordered center labels.
 For terminally relabeled words, the same comparison applies to the universal
-coefficient substitutions of the [signed cluster modular group challenge][challenge].
-
-[challenge]: https://github.com/q-painleve-lean/QPainleve/pull/841
+coefficient substitutions determined by the final Y-seed.
 -/
 
 public noncomputable section

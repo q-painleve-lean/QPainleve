@@ -20,10 +20,7 @@ of pullbacks, which is the reverse of composition of point maps.
 
 The comparison uses the subtraction-free word evaluation
 `Quiver.Path.xPullback_comp_toXField_eq_eval_ySeed` and the universal substitution
-`TauCeti.Qsf.eval`. The terminal-relabeling presentation is the one used in the
-[signed cluster modular group comparator challenge][comparator].
-
-[comparator]: https://github.com/q-painleve-lean/QPainleve/pull/841
+`TauCeti.Qsf.eval`.
 -/
 
 public noncomputable section
