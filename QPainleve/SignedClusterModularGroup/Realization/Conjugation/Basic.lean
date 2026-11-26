@@ -62,10 +62,12 @@ def boundaryRotationGroupCongr :
   QPainleve.boundaryRotationGroupCongr R.picard (ε := cycleOrientationSign R.boundaryAction⁻¹)
     (a := cycleVertexPerm R.boundaryAction⁻¹ 0) (R.picard_marked_boundaryClass hd₀ hd₁)
 
+/-- On the full isometry group, transport of a rotation conjugates by the marked pullback. -/
 @[simp]
-theorem boundaryRotationGroupCongr_apply_apply (g : boundaryRotationGroup B₀ d₀) (x : L₁) :
-    (R.boundaryRotationGroupCongr hd₀ hd₁ g).val.val x = R.picard.symm (g.val.val (R.picard x)) :=
-  QPainleve.boundaryRotationGroupCongr_apply_apply ..
+theorem coe_boundaryRotationGroupCongr (g : boundaryRotationGroup B₀ d₀) :
+    (R.boundaryRotationGroupCongr hd₀ hd₁ g : B₁.isometryGroup) =
+      R.picard.symm.isometryGroupCongr g.val :=
+  QPainleve.coe_boundaryRotationGroupCongr ..
 
 open SignedBoundaryIsometryGroup
 
@@ -136,15 +138,20 @@ theorem picard_conjugation_of_comp_xMap_eq
     (hc : Φ.IsComplete) (hι : Function.Injective ι)
     (hindex : (Fan.rayChargeMap s).range.toAddSubgroup.index ≠ 0)
     (hC : Models[C]) (hJ : Models[J]) :
-    (∀ x, B.picard x = R.picard.symm (A.picard (R.picard x))) ∧
+    asIsometry[B₁] B.picard = R.picard.symm.isometryGroupCongr (asIsometry[B₀] A.picard) ∧
       B.orientation = A.orientation := by
   let : (F.comp (w.xRationalMap ℂ)).IsDominant := RationalMap.instIsDominantComp _ _
   obtain ⟨hpic, hact⟩ := (R.comp B).marked_actions_eq_of_xMap_eq (A.comp R)
     hcomp hc hι hindex centers (hJ.comp C) (hC.comp D)
-  refine ⟨fun x ↦ ?_, ?_⟩
-  · have h := congrArg (fun e : B₁.IsometryEquiv B₀ ↦ e x) hpic
+  refine ⟨?_, ?_⟩
+  · apply Subtype.ext
+    apply LinearEquiv.ext
+    intro x
+    have h := DFunLike.congr_fun hpic x
     simp only [comp_picard, BilinForm.IsometryEquiv.trans_apply] at h
-    simpa only [BilinForm.IsometryEquiv.symm_apply_apply] using congrArg R.picard.symm h
+    simpa only [BilinForm.coe_isometryGroupEquivIsometryEquiv_symm,
+      BilinForm.IsometryEquiv.isometryGroupCongr_apply_apply, BilinForm.IsometryEquiv.symm_symm,
+      BilinForm.IsometryEquiv.symm_apply_apply] using congrArg R.picard.symm h
   · have h := congrArg cycleOrientationSign hact
     rw [← orientation_def, ← orientation_def, comp_orientation, comp_orientation,
       mul_comm R.orientation A.orientation] at h
@@ -201,12 +208,7 @@ theorem picardHom_base_change
   simp only [MonoidHom.comp_apply, MulEquiv.coe_toMonoidHom, hv']
   rw [hg]
   apply Subtype.ext
-  apply Subtype.ext
-  apply LinearEquiv.ext
-  intro x
-  rw [boundaryRotationGroupCongr_apply_apply, hA, hB]
-  simp only [BilinForm.coe_isometryGroupEquivIsometryEquiv_symm]
-  exact hpic x
+  simpa only [coe_boundaryRotationGroupCongr, hA, hB] using hpic
 
 end Words
 
