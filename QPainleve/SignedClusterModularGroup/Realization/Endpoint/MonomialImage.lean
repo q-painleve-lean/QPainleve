@@ -17,7 +17,7 @@ The Picard equivalence transports the boundary rotation image to the unsigned Ca
 The full Casimir image contains one further right coset, represented by the restriction of a
 signed Picard reflection. The two cosets act with opposite signs on the total boundary exponent.
 The reflection is Mathlib's `Module.reflection`, transported from
-`SignedBoundaryIsometryGroup.exists_signedOrthogonalRestriction_eq_reflection`.
+`CycleReversingInvolution.signedOrthogonalRestriction_eq_reflection`.
 -/
 
 public section
@@ -132,47 +132,21 @@ theorem exchangeKernelAction_picardEquiv_symm_centralSign (hn : n ≤ 2) (x : ex
 
 variable (Θ e)
 
-include hCasimir hker in
-/-- For a unimodular symmetric cycle lattice with primitive characteristic total class,
-a signed Picard involution acts on the exchange kernel by reflection along the total
-boundary exponent. This reflection represents the odd coset of the unsigned Casimir
-image and acts trivially modulo the total boundary exponent. -/
-theorem exists_exchangeKernelAction_reflection [Module.Free ℤ L] [Module.Finite ℤ L]
-    [B.IsPerfPair] (hSymm : B.IsSymm)
-    (hGram : ∀ i j : ZMod n, B (D i) (D j) = (-2 : ℤ) * (if i = j then 1 else 0) +
-      (if j = i + 1 then 1 else 0) + (if j = i - 1 then 1 else 0))
-    (hPrimitive : TauCeti.IsPrimitive total[D]) (hCharacteristic : B.IsCharacteristic total[D]) :
-    ∃ (hδ : total[D] ∈ orth[B,D]) (a : L) (s : signedBoundaryIsometryGroup B D),
-      let v := e ⟨total[D], hδ⟩
-      let ℓ := ((2 : ℤ) • (B.flip a).comp (orth[B,D]).subtype).comp
-        (e.symm : exch[E] →ₗ[ℤ] orth[B,D])
-      ∃ hℓ : ℓ v = 2,
-        let q := Module.reflection hℓ
-        let unsigned : Set (exch[E] ≃ₗ[ℤ] exch[E]) := unsignedImage[k,E]
-        sign B D s = -1 ∧ s * s = 1 ∧ act[k,E] (Θ.symm s) = q ∧
-          (↑(act[k,E]).range : Set (exch[E] ≃ₗ[ℤ] exch[E])) = unsigned ∪ (unsigned <• q) ∧
-          Disjoint unsigned (unsigned <• q) ∧
-          ∀ x, (ℤ ∙ v).mkQ (q x) = (ℤ ∙ v).mkQ x := by
-  obtain ⟨hδ, a, s, hℓ, hs, hss, hreflect, -⟩ :=
-    exists_signedOrthogonalRestriction_eq_reflection B D hSymm hGram hPrimitive hCharacteristic
-  let v := e ⟨total[D], hδ⟩
-  let ℓ := ((2 : ℤ) • (B.flip a).comp (orth[B,D]).subtype).comp (e.symm : exch[E] →ₗ[ℤ] orth[B,D])
-  have hℓ' : ℓ v = 2 := by
-    simpa only [ℓ, v, LinearMap.comp_apply, LinearEquiv.coe_coe, LinearEquiv.symm_apply_apply]
-      using hℓ
-  have hq : act[k,E] (Θ.symm s) = Module.reflection hℓ' := by
-    rw [exchangeKernelAction_picardEquiv_symm Θ e hCasimir, hreflect]
-    ext x : 1
-    simp only [LinearEquiv.autCongr_apply_apply, Module.reflection_apply, map_sub, map_smul,
-      LinearEquiv.apply_symm_apply, ℓ, v, LinearMap.comp_apply, LinearEquiv.coe_coe]
-  let : HasUniqueDiv L := HasUniqueDiv.of_isTorsionFree ℤ L
-  obtain ⟨himage, hdisjoint⟩ :=
-    range_exchangeKernelAction_eq_disjoint_union Θ e hCasimir hker hδ hPrimitive.ne_zero s hs
-  refine ⟨hδ, a, s, hℓ', hs, hss, hq, ?_, ?_, ?_⟩
-  · simpa only [hq] using himage
-  · simpa only [hq] using hdisjoint
-  · intro x
-    rw [Module.reflection_apply, map_sub, sub_eq_self, ← LinearMap.mem_ker, Submodule.ker_mkQ]
-    exact Submodule.smul_mem _ _ (Submodule.mem_span_singleton_self _)
+include hCasimir in
+/-- The point map of a chosen signed cycle-reversing involution acts on the exchange kernel
+by reflection along the total boundary exponent. -/
+theorem exchangeKernelAction_picardEquiv_symm_cycleReversingInvolution
+    (r : CycleReversingInvolution B D) (hδ : total[D] ∈ orth[B,D])
+    (hℓ : r.orthogonalReflectionForm ⟨total[D], hδ⟩ = 2) :
+    let v := e ⟨total[D], hδ⟩
+    let ℓ := r.orthogonalReflectionForm.comp (e.symm : exch[E] →ₗ[ℤ] orth[B,D])
+    let hℓ' : ℓ v = 2 := by simpa only [ℓ, v, LinearMap.comp_apply, LinearEquiv.coe_coe,
+      LinearEquiv.symm_apply_apply] using hℓ
+    act[k,E] (Θ.symm r.element) = Module.reflection hℓ' := by
+  rw [exchangeKernelAction_picardEquiv_symm Θ e hCasimir,
+    r.signedOrthogonalRestriction_eq_reflection hδ hℓ]
+  ext x : 1
+  simp only [LinearEquiv.autCongr_apply_apply, Module.reflection_apply, map_sub, map_smul,
+    LinearEquiv.apply_symm_apply, LinearMap.comp_apply, LinearEquiv.coe_coe]
 
 end QPainleve.SignedClusterModularGroup.GeometricRealization

@@ -72,19 +72,13 @@ theorem card_ker_exchangeKernelAction_dvd_boundaryTorsion :
   let : Module.Finite ℤ (Additive (LineBundleClass M.surface)) :=
     M.surface.finite_picard_of_isRationalOver ℂ
   let : Module.Finite ℤ L := Module.Finite.of_surjective _ M.picardMarking.symm.surjective
-  have hpair (x y : L) : B x y =
-      Chow.classIntersectionNumber ℂ M.surface (M.picardMarking x).toMul
-        (M.picardMarking y).toMul :=
-    (M.intersectionBilinForm_picardMarking x y).symm.trans (Chow.intersectionBilinForm_apply ..)
-  have hSymm : B.IsSymm := ⟨fun x y ↦
-    (hpair x y).trans ((Chow.classIntersectionNumber_comm _ _).trans (hpair y x).symm)⟩
   have hδ : IsPrimitive (∑ j, D j) :=
     M.picardMarking.isPrimitive_iff.mp (by rwa [M.picardMarking_sum_boundaryClass])
   rw [A.exchangeKernelAction_eq, MonoidHom.ker_comp_of_injective _ _
     ((LinearEquiv.autCongr A.exchangeKernelEquiv).injective.comp Subtype.val_injective),
     MulEquiv.toMonoidHom_eq_coe, MonoidHom.ker_comp_mulEquiv,
     Subgroup.card_map_of_injective A.picardEquiv.symm.injective]
-  exact card_ker_signedOrthogonalRestriction_dvd hSymm
+  exact card_ker_signedOrthogonalRestriction_dvd M.isSymm
     (M.intersectionForm_boundaryClass M.isEffectiveCartier_boundaryIdeal hnef hsq) hδ
 
 include href hE hprim hnef hsq in

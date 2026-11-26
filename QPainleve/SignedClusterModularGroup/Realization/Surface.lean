@@ -131,6 +131,18 @@ theorem intersectionBilinForm_picardMarking (x y : L) :
     Chow.intersectionBilinForm k M.surface (M.picardMarking x) (M.picardMarking y) = B x y :=
   M.marking.map_app y x
 
+include M in
+/-- The form of a marked surface is symmetric. -/
+theorem isSymm : B.IsSymm := by
+  let : SmoothOfRelativeDimension 2 (M.surface ↘ S) := M.smooth
+  let : M.surface.IsProjectiveOver k := M.projective
+  have hpair (x y : L) : B x y =
+      Chow.classIntersectionNumber k M.surface (M.picardMarking x).toMul
+        (M.picardMarking y).toMul :=
+    (M.intersectionBilinForm_picardMarking x y).symm.trans (Chow.intersectionBilinForm_apply ..)
+  exact ⟨fun x y ↦
+    (hpair x y).trans ((Chow.classIntersectionNumber_comm _ _).trans (hpair y x).symm)⟩
+
 /-- Replacing the evaluation preserves the Picard marking. -/
 @[simp]
 theorem withEvaluation_picardMarking {Y : Scheme.{u}} (f : M.surface ⤏ Y) (a : L) :
