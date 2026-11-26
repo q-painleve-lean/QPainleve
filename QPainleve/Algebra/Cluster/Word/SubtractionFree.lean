@@ -79,6 +79,16 @@ theorem xPullback_comp_toXField_eq_eval_ySeed (w : Word B C) :
     rw [RingHom.comp_assoc, g.xPullback_comp_toXField k C, ← RingHom.comp_assoc, ih,
       RingHom.comp_assoc, hEval]
 
+/-- Pullback on the image of the universal coefficient semifield is substitution at
+the final Y-seed coefficients. -/
+theorem xPullback_toXField_eval_ySeed (k : Type*) [Field k] [CharZero k]
+    {B C : SkewExchangeMatrix ι} (w : Word B C) (x : Qsf ι) :
+    w.xPullback k (QsfZero.toXField k (x : QsfZero ι)) =
+      QsfZero.toXField k
+        (Qsf.eval (w.ySeed ⟨Qsf.X, B.val⟩).coefficient x : QsfZero ι) := by
+  rw [Qsf.val_eval]
+  exact DFunLike.congr_fun (w.xPullback_comp_toXField_eq_eval_ySeed k) (x : QsfZero ι)
+
 /-- Each X coordinate is pulled back to the corresponding coefficient of the final
 universal Y-seed, interpreted in the field of independent X coordinates. -/
 theorem xPullback_xCoordinate_eq_toXField (w : Word B C) (i : ι) :
