@@ -98,9 +98,11 @@ variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   (Q : CompleteToricPresentation i b r L γ)
   {c₀ : Point Centers[r]} {M₀ : MarkedSurface ℂ n B XTor[r]}
 
-local instance : Nonempty Q.fan.cones := Q.complete.nonempty_cones
-local instance : NeZero Q.length := Q.neZero
-local instance : PrestableFamily ((Q.fan.boundaryIdeal Q.complete.nonempty_cones).subscheme ↘ S) :=
+local instance instNonemptyIntersectionKernelCones : Nonempty Q.fan.cones :=
+  Q.complete.nonempty_cones
+local instance instNeZeroIntersectionKernelBoundaryLength : NeZero Q.length := Q.neZero
+local instance instPrestableIntersectionKernelBoundary :
+    PrestableFamily ((Q.fan.boundaryIdeal Q.complete.nonempty_cones).subscheme ↘ S) :=
   Q.prestable
 
 local notation "eFin" => ZMod.finEquiv Q.length
