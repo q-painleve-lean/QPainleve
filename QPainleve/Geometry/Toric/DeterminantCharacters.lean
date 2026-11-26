@@ -55,19 +55,22 @@ open TauCeti.Toric Multiplicative
 variable {N V : Type*} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V}
 
+variable (R : Type*) [CommSemiring R]
+
 /-- The dense torus coordinate ring in determinant coordinates for the ordered basis `b`. -/
 def denseTorusCoordinateRingEquivDet (hi : IsIntegralLattice i) (b : Module.Basis (Fin 2) ℤ N) :
-    AddMonoidAlgebra ℂ N ≃ₐ[ℂ] affineCoordinateRing hi (⊥ : PointedCone ℝ V) :=
+    AddMonoidAlgebra R N ≃ₐ[R] MonoidAlgebra R
+      (Multiplicative (dualSemigroup hi (⊥ : PointedCone ℝ V))) :=
   let e := b.detDualEquiv.trans (addMonoidHomLequivInt ℤ).symm
-  (AddMonoidAlgebra.toMultiplicativeAlgEquiv ℂ ℂ N).trans <|
-    (MonoidAlgebra.domCongr ℂ ℂ e.toAddEquiv.toMultiplicative).trans
-      (denseTorusCoordinateRingEquiv hi).symm
+  (AddMonoidAlgebra.toMultiplicativeAlgEquiv R R N).trans <|
+    (MonoidAlgebra.domCongr R R e.toAddEquiv.toMultiplicative).trans
+      (MonoidAlgebra.domCongr R R (denseTorusDualEquiv hi).symm.toMultiplicative)
 
 /-- A monomial of exponent `h` is the zero-cone character with values `u ↦ det(h, u)`. -/
 @[simp]
 theorem denseTorusCoordinateRingEquivDet_single (hi : IsIntegralLattice i)
-    (b : Module.Basis (Fin 2) ℤ N) (h : N) (z : ℂ) :
-    denseTorusCoordinateRingEquivDet hi b (AddMonoidAlgebra.single h z) =
+    (b : Module.Basis (Fin 2) ℤ N) (h : N) (z : R) :
+    denseTorusCoordinateRingEquivDet R hi b (AddMonoidAlgebra.single h z) =
       MonoidAlgebra.single
         (ofAdd ((denseTorusDualEquiv hi).symm (b.detDualEquiv h).toAddMonoidHom)) z := by
   simp [denseTorusCoordinateRingEquivDet, AddMonoidAlgebra.toMultiplicativeAlgEquiv_single,
@@ -76,10 +79,10 @@ theorem denseTorusCoordinateRingEquivDet_single (hi : IsIntegralLattice i)
 /-- A native torus monomial has exponent given by the inverse determinant pairing. -/
 @[simp]
 theorem denseTorusCoordinateRingEquivDet_symm_single (hi : IsIntegralLattice i)
-    (b : Module.Basis (Fin 2) ℤ N) (m : dualSemigroup hi (⊥ : PointedCone ℝ V)) (z : ℂ) :
-    (denseTorusCoordinateRingEquivDet hi b).symm (MonoidAlgebra.single (ofAdd m) z) =
+    (b : Module.Basis (Fin 2) ℤ N) (m : dualSemigroup hi (⊥ : PointedCone ℝ V)) (z : R) :
+    (denseTorusCoordinateRingEquivDet R hi b).symm (MonoidAlgebra.single (ofAdd m) z) =
       AddMonoidAlgebra.single (b.detDualEquiv.symm (m : N →+ ℤ).toIntLinearMap) z := by
-  apply (denseTorusCoordinateRingEquivDet hi b).injective
+  apply (denseTorusCoordinateRingEquivDet R hi b).injective
   have hm : (m : N →+ ℤ).toIntLinearMap.toAddMonoidHom = (m : N →+ ℤ) := by
     ext u
     simp only [LinearMap.toAddMonoidHom_coe, AddMonoidHom.coe_toIntLinearMap]

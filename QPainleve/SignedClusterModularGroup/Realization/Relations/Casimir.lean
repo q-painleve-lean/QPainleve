@@ -66,7 +66,7 @@ saturation index of the marked boundary lattice. -/
 theorem card_ker_exchangeKernelAction_dvd_boundaryTorsion (k : Type*) [Field k] :
     Nat.card (exchangeKernelAction k E).ker ∣
       Nat.card (AddCommGroup.torsion (L ⧸ Submodule.span ℤ (Set.range D))) := by
-  let specialization := MulEquiv.op (Q.signedSpecializationEquiv k href hE hprim hnef hsq)
+  let specialization := MulEquiv.op (Q.signedSpecializationEquiv ℂ k href hE hprim hnef hsq)
   have he : (exchangeKernelAction k E).comp specialization.toMonoidHom =
       exchangeKernelAction ℂ E := by
     apply MonoidHom.ext

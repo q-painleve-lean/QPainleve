@@ -5,7 +5,6 @@ Authors: The QPainleve contributors
 -/
 module
 
-public import Mathlib.Basic.Complex.Basic
 public import QPainleve.Algebra.Cluster.Word.Specialization
 public import QPainleve.SignedClusterModularGroup.Examples.FourVertex.Words
 
@@ -28,42 +27,44 @@ namespace QPainleve.FourVertex
 
 local notation "B" => exchangeMatrix
 
-variable (k : Type*) [Field k]
+variable (K k : Type*) [Field K] [CharZero K] [Field k]
 
 private theorem signedSpecialization_injective :
-    Function.Injective (signedClusterModularGroupSpecialization ℂ k B) := by
+    Function.Injective (signedClusterModularGroupSpecialization K k B) := by
   intro x y h
-  obtain ⟨w, rfl⟩ := signedClusterModularGroupMap_surjective ℂ B x
-  obtain ⟨v, rfl⟩ := signedClusterModularGroupMap_surjective ℂ B y
+  obtain ⟨w, rfl⟩ := signedClusterModularGroupMap_surjective K B x
+  obtain ⟨v, rfl⟩ := signedClusterModularGroupMap_surjective K B y
   simp only [signedClusterModularGroupSpecialization_apply, signedClusterModularGroupMap_eq_iff]
     at h ⊢
-  exact (xPullback_eq_iff_signedLoopInvariants_eq ℂ w.asHom v.asHom).mpr
+  exact (xPullback_eq_iff_signedLoopInvariants_eq K w.asHom v.asHom).mpr
     ((xPullback_eq_iff_signedLoopInvariants_eq k w.asHom v.asHom).mp h)
 
-/-- Specialization of the signed four-vertex point maps from `ℂ` to an arbitrary field. -/
+/-- Specialization of the signed four-vertex point maps from a characteristic-zero field
+to an arbitrary field. -/
 def signedSpecializationEquiv :
-    SignedClusterModularGroup ℂ B ≃* SignedClusterModularGroup k B :=
-  MulEquiv.ofBijective (signedClusterModularGroupSpecialization ℂ k B)
-    ⟨signedSpecialization_injective k, signedClusterModularGroupSpecialization_surjective ℂ k B⟩
+    SignedClusterModularGroup K B ≃* SignedClusterModularGroup k B :=
+  MulEquiv.ofBijective (signedClusterModularGroupSpecialization K k B)
+    ⟨signedSpecialization_injective K k, signedClusterModularGroupSpecialization_surjective K k B⟩
 
 /-- On a signed point map, the equivalence applies the coefficient specialization homomorphism. -/
 @[simp]
-theorem signedSpecializationEquiv_apply (g : SignedClusterModularGroup ℂ B) :
-    signedSpecializationEquiv k g = signedClusterModularGroupSpecialization ℂ k B g :=
+theorem signedSpecializationEquiv_apply (g : SignedClusterModularGroup K B) :
+    signedSpecializationEquiv K k g = signedClusterModularGroupSpecialization K k B g :=
   (rfl)
 
-/-- Specialization of the unsigned four-vertex point maps from `ℂ` to an arbitrary field. -/
+/-- Specialization of the unsigned four-vertex point maps from a characteristic-zero field
+to an arbitrary field. -/
 def unsignedSpecializationEquiv :
-    ClusterModularGroup ℂ B ≃* ClusterModularGroup k B :=
-  MulEquiv.ofBijective (clusterModularGroupSpecialization ℂ k B)
-    ⟨clusterModularGroupSpecialization_injective_of_signed ℂ k B
-      (signedSpecialization_injective k), clusterModularGroupSpecialization_surjective ℂ k B⟩
+    ClusterModularGroup K B ≃* ClusterModularGroup k B :=
+  MulEquiv.ofBijective (clusterModularGroupSpecialization K k B)
+    ⟨clusterModularGroupSpecialization_injective_of_signed K k B
+      (signedSpecialization_injective K k), clusterModularGroupSpecialization_surjective K k B⟩
 
 /-- On an unsigned point map, the equivalence applies the coefficient specialization
 homomorphism. -/
 @[simp]
-theorem unsignedSpecializationEquiv_apply (g : ClusterModularGroup ℂ B) :
-    unsignedSpecializationEquiv k g = clusterModularGroupSpecialization ℂ k B g :=
+theorem unsignedSpecializationEquiv_apply (g : ClusterModularGroup K B) :
+    unsignedSpecializationEquiv K k g = clusterModularGroupSpecialization K k B g :=
   (rfl)
 
 end QPainleve.FourVertex

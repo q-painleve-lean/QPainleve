@@ -39,7 +39,7 @@ local notation "L" => LaurentRing ℂ (Fin n)
 local notation "R" => affineCoordinateRing Φ.lattice (⊥ : PointedCone ℝ V)
 local notation "T" => Φ.denseTorus
 local notation "d" => Φ.denseTorusι inferInstance
-local notation "e" => denseTorusCoordinateRingEquivDet Φ.lattice b
+local notation "e" => denseTorusCoordinateRingEquivDet ℂ Φ.lattice b
 local notation "reprEquiv" => Finsupp.linearEquivFunOnFinite ℤ ℤ (Fin n)
 
 private def scaledCharge : L →ₐ[ℂ] AddMonoidAlgebra ℂ N :=

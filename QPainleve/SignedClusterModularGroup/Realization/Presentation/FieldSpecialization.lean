@@ -51,7 +51,7 @@ variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
 local notation "cartier" => M₀.isEffectiveCartier_boundaryIdeal
 local notation "δ" => (LineBundleClass.mk (IsEffectiveCartier.toInvertibleSheaf cartier))⁻¹
 
-variable (k : Type*) [Field k]
+variable (K k : Type*) [Field K] [CharZero K] [Field k]
 
 private theorem injective_signedSpecialization
     (href : Q.HasNodalModel c M₀)
@@ -59,10 +59,10 @@ private theorem injective_signedSpecialization
     (hprim : IsPrimitive (Additive.ofMul δ))
     (hnef : LineBundleClass.IsNef ℂ (M₀.surface ↘ S) δ)
     (hsq : Chow.classIntersectionNumber ℂ M₀.surface δ δ = 0) :
-    Function.Injective (signedClusterModularGroupSpecialization ℂ k E) := by
+    Function.Injective (signedClusterModularGroupSpecialization K k E) := by
   intro g g' hg
-  obtain ⟨w, rfl⟩ := signedClusterModularGroupMap_surjective ℂ E g
-  obtain ⟨v, rfl⟩ := signedClusterModularGroupMap_surjective ℂ E g'
+  obtain ⟨w, rfl⟩ := signedClusterModularGroupMap_surjective K E g
+  obtain ⟨v, rfl⟩ := signedClusterModularGroupMap_surjective K E g'
   simp only [signedClusterModularGroupSpecialization_apply,
     signedClusterModularGroupMap_eq_iff] at hg ⊢
   let := Q.complete.nonempty_cones
@@ -71,20 +71,20 @@ private theorem injective_signedSpecialization
   obtain ⟨p, hp⟩ := href.exists_isNodalContraction cartier
   have hinput : Q.IsSignedLoopComparisonInput p E (p.numberedBoundaryOrders cartier) :=
     ⟨hE, rfl⟩
-  exact (hinput.xPullback_eq_iff_xPullback_eq k ℂ hp hprim hnef hsq w.asHom v.asHom).mp hg
+  exact (hinput.xPullback_eq_iff_xPullback_eq k K hp hprim hnef hsq w.asHom v.asHom).mp hg
 
 /-- Specialization identifies the signed point maps of a marked primitive nef square-zero
-anticanonical cycle over the complex numbers with those over the target field. -/
+anticanonical cycle over a characteristic-zero field with those over the target field. -/
 noncomputable def signedSpecializationEquiv
     (href : Q.HasNodalModel c M₀)
     (hE : E.matrix = chargeExchangeMatrix b.detDualEquiv.toLinearMap (Fan.rayChargeMap Q.rays))
     (hprim : IsPrimitive (Additive.ofMul δ))
     (hnef : LineBundleClass.IsNef ℂ (M₀.surface ↘ S) δ)
     (hsq : Chow.classIntersectionNumber ℂ M₀.surface δ δ = 0) :
-    SignedClusterModularGroup ℂ E ≃* SignedClusterModularGroup k E :=
-  MulEquiv.ofBijective (signedClusterModularGroupSpecialization ℂ k E)
-    ⟨injective_signedSpecialization Q k href hE hprim hnef hsq,
-      signedClusterModularGroupSpecialization_surjective ℂ k E⟩
+    SignedClusterModularGroup K E ≃* SignedClusterModularGroup k E :=
+  MulEquiv.ofBijective (signedClusterModularGroupSpecialization K k E)
+    ⟨injective_signedSpecialization Q K k href hE hprim hnef hsq,
+      signedClusterModularGroupSpecialization_surjective K k E⟩
 
 /-- The signed equivalence acts by evaluating signed loops over the target field. -/
 @[simp]
@@ -94,22 +94,22 @@ theorem coe_signedSpecializationEquiv
     (hprim : IsPrimitive (Additive.ofMul δ))
     (hnef : LineBundleClass.IsNef ℂ (M₀.surface ↘ S) δ)
     (hsq : Chow.classIntersectionNumber ℂ M₀.surface δ δ = 0) :
-    ⇑(Q.signedSpecializationEquiv k href hE hprim hnef hsq) =
-      signedClusterModularGroupSpecialization ℂ k E := (rfl)
+    ⇑(Q.signedSpecializationEquiv K k href hE hprim hnef hsq) =
+      signedClusterModularGroupSpecialization K k E := (rfl)
 
 /-- Specialization identifies the unsigned point maps of a marked primitive nef square-zero
-anticanonical cycle over the complex numbers with those over the target field. -/
+anticanonical cycle over a characteristic-zero field with those over the target field. -/
 noncomputable def unsignedSpecializationEquiv
     (href : Q.HasNodalModel c M₀)
     (hE : E.matrix = chargeExchangeMatrix b.detDualEquiv.toLinearMap (Fan.rayChargeMap Q.rays))
     (hprim : IsPrimitive (Additive.ofMul δ))
     (hnef : LineBundleClass.IsNef ℂ (M₀.surface ↘ S) δ)
     (hsq : Chow.classIntersectionNumber ℂ M₀.surface δ δ = 0) :
-    ClusterModularGroup ℂ E ≃* ClusterModularGroup k E :=
-  MulEquiv.ofBijective (clusterModularGroupSpecialization ℂ k E)
-    ⟨clusterModularGroupSpecialization_injective_of_signed ℂ k E
-      (injective_signedSpecialization Q k href hE hprim hnef hsq),
-      clusterModularGroupSpecialization_surjective ℂ k E⟩
+    ClusterModularGroup K E ≃* ClusterModularGroup k E :=
+  MulEquiv.ofBijective (clusterModularGroupSpecialization K k E)
+    ⟨clusterModularGroupSpecialization_injective_of_signed K k E
+      (injective_signedSpecialization Q K k href hE hprim hnef hsq),
+      clusterModularGroupSpecialization_surjective K k E⟩
 
 /-- The unsigned equivalence acts by evaluating inversion-free loops over the target field. -/
 @[simp]
@@ -119,8 +119,8 @@ theorem coe_unsignedSpecializationEquiv
     (hprim : IsPrimitive (Additive.ofMul δ))
     (hnef : LineBundleClass.IsNef ℂ (M₀.surface ↘ S) δ)
     (hsq : Chow.classIntersectionNumber ℂ M₀.surface δ δ = 0) :
-    ⇑(Q.unsignedSpecializationEquiv k href hE hprim hnef hsq) =
-      clusterModularGroupSpecialization ℂ k E := (rfl)
+    ⇑(Q.unsignedSpecializationEquiv K k href hE hprim hnef hsq) =
+      clusterModularGroupSpecialization K k E := (rfl)
 
 /-- The Picard identifications of the opposite signed and unsigned cluster
 modular groups hold over every field of X coefficients. They retain the
@@ -135,7 +135,7 @@ theorem exists_picardGroupEquivs_over_field_of_nodal_model
     ∃ P : NodalPicardGroupIdentification (B := B) Q k E (M₀.boundaryClass cartier),
       P.family c = M₀ := by
   obtain ⟨P, hP⟩ := Q.exists_picardGroupEquivs_of_nodal_model href hE hprim hnef hsq
-  let e := Q.signedSpecializationEquiv k href hE hprim hnef hsq
+  let e := Q.signedSpecializationEquiv ℂ k href hE hprim hnef hsq
   have hword (w : Word E E) :
       (MulEquiv.op e).symm (op (signedClusterModularGroupMap k E (End.of w))) =
         op (signedClusterModularGroupMap ℂ E (End.of w)) :=
