@@ -15,11 +15,10 @@ import QPainleve.SignedClusterModularGroup.Realization.Reflection
 /-!
 # The eleven-vertex word under Picard pullback
 
-For a marked nodal contraction of the eleven-vertex seed, the integer
-invariants identify the inversion–mutation–transposition word with the pure
-sign change. The sign-adjusted restriction of this element negates the
-Casimir basis, and the single boundary component forces the forward label.
-The comparison uses `exists_picardEquiv_signedLoopInvariants_of_nodal_contraction`.
+For a marked nodal contraction of the eleven-vertex seed, the exchange-kernel
+transport identifies the inversion–mutation–transposition word with the pure
+sign change. The word negates the exchange kernel, and the marked Casimir
+comparison identifies this action with signed Picard restriction.
 -/
 
 public section
@@ -32,37 +31,8 @@ open Scheme Scheme.IdealSheafData TauCeti TauCeti.AlgebraicGeometry TauCeti.Tori
 namespace QPainleve.ElevenVertex
 
 local notation "B" => exchangeMatrix
-local notation "K" => exchangeMatrix.matrix.mulVecLin.ker
 local notation "Γ" => SignedClusterModularGroup ℂ B
 local notation "eval[" w "]" => op (signedClusterModularGroupMap ℂ B (End.of w))
-
-private theorem signedOrthogonalRestriction_eq_neg_of_involution_invariants
-    {L : Type} [AddCommGroup L] {H : LinearMap.BilinForm ℤ L} {d : ZMod 1 → L}
-    (e : H.orthogonal (Submodule.span ℤ (Set.range d)) ≃ₗ[ℤ] K)
-    (g : signedBoundaryIsometryGroup H d) (orders : Fin 1 → Fin 11 → ℤ) {j : Fin 1}
-    (h : involutionWord.signedLoopInvariants (fun j ↦ (exchangeKernelBasis j : Fin 11 → ℤ))
-        orders (orders 0) =
-      ⟨sign H d g, Matrix.of (fun i j ↦
-        ((LinearEquiv.autCongr e (signedOrthogonalRestriction H d g).val)
-          (exchangeKernelBasis j) : Fin 11 → ℤ) i), some j⟩)
-    (x : H.orthogonal (Submodule.span ℤ (Set.range d))) :
-    (signedOrthogonalRestriction H d g).val x = -x := by
-  -- The exponent columns do not depend on the table used for the boundary search.
-  have hcols := congrArg SignedLoopInvariants.kernelColumns h
-  rw [Path.signedLoopInvariants_kernelColumns] at hcols
-  have hact : LinearEquiv.autCongr e (signedOrthogonalRestriction H d g).val =
-      involutionWord.exchangeKernelEquiv := by
-    apply LinearEquiv.toLinearMap_injective
-    apply exchangeKernelBasis.ext
-    intro j
-    apply Subtype.ext
-    funext i
-    simpa only [LinearEquiv.coe_coe, Matrix.of_apply, coe_exchangeKernelBasis_apply,
-      Path.coe_exchangeKernelEquiv_apply] using
-      congrArg (fun m : Matrix (Fin 11) (Fin 9) ℤ ↦ m i j) hcols.symm
-  apply e.injective
-  simpa only [LinearEquiv.autCongr_apply_apply, LinearEquiv.symm_apply_apply, map_neg,
-    involutionWord_exchangeKernelEquiv_apply] using DFunLike.congr_fun hact (e x)
 
 local notation "S" => Spec (CommRingCat.of ℂ)
 local notation "Centers" => Over.mk (structureMap ℂ (Fin 11 → ℤ))
@@ -132,8 +102,9 @@ theorem nonempty_involutionPicardIdentification_of_nodal_contraction
     (hsq : Chow.classIntersectionNumber ℂ M₀.surface classOf(cartier[M₀])
       classOf(cartier[M₀]) = 0) :
     Nonempty (InvolutionPicardIdentification Q c₀ M₀) := by
-  obtain ⟨M, _, hmark, Θ, e, hMc, hM, hΘ, _, _, hInv⟩ :=
-    Q.exists_picardEquiv_signedLoopInvariants_of_nodal_contraction p₀ hnodal₀ hE hprim hnef hsq
+  obtain ⟨A⟩ := Q.nonempty_signedLoopPicardComparison_of_nodal_contraction
+    p₀ hnodal₀ hE hprim hnef hsq
+  let G := A.identification
   let : IsRationalOver (M₀.surface ↘ S) := (Q.hasNodalModel_of_contraction hnodal₀).isRationalOver
   let : M₀.surface.IsProjectiveOver ℂ := M₀.projective
   let : SmoothOfRelativeDimension 2 (M₀.surface ↘ S) := M₀.smooth
@@ -148,15 +119,24 @@ theorem nonempty_involutionPicardIdentification_of_nodal_contraction
     (M₀.intersectionBilinForm_picardMarking x y).symm.trans (Chow.intersectionBilinForm_apply ..)
   have hSymm : H.IsSymm :=
     ⟨fun x y ↦ (hpair x y).trans ((Chow.classIntersectionNumber_comm _ _).trans (hpair y x).symm)⟩
-  obtain ⟨_, hcomp, _⟩ := hInv involutionWord exchangeKernelBasis
-  have hsign := (hΘ involutionWord).1
+  have hsign := (SignedBoundaryIsometryGroup.sign_apply H classes[M₀] _).trans
+    (G.sign_signedEquiv_apply_word involutionWord)
   rw [inversionCount_involutionWord, pow_one] at hsign
+  have hneg (x : H.orthogonal (Submodule.span ℤ (Set.range classes[M₀]))) :
+      (signedOrthogonalRestriction H classes[M₀] (G.signedEquiv eval[involutionWord])).val x =
+        -x := by
+    let e := A.casimir.exchangeKernelEquiv
+    have hact := A.casimir.exchangeKernelEquiv_eq_autCongr involutionWord
+    rw [A.casimir_picardEquiv] at hact
+    apply e.injective
+    simpa only [e, LinearEquiv.autCongr_apply_apply, LinearEquiv.symm_apply_apply, map_neg,
+      involutionWord_exchangeKernelEquiv_apply] using DFunLike.congr_fun hact.symm (e x)
   have hz := eq_centralSign_of_signedOrthogonalRestriction hSymm
     M₀.isPerfPair_of_isRationalOver.nondegenerate (M₀.intersectionForm_boundaryClass _ hnef hsq)
-    _ hsign (signedOrthogonalRestriction_eq_neg_of_involution_invariants e _ _ hcomp)
-  refine ⟨⟨M, hMc, hM, hmark, Θ, hz, ?_, fun w {C} _ _ R ↦ ?_⟩⟩
-  · intro w
-    simpa only [SignedBoundaryIsometryGroup.sign_apply] using (hΘ w).1
-  · exact (hΘ w).2 R (fun a ↦ (hM (a ≫ C.domainTarget)).nonempty_contractedToricFiber)
+    _ hsign hneg
+  exact ⟨⟨G.family, A.family_center, G.hasNodalModel, G.boundaryClass_eq, G.signedEquiv, hz,
+    G.sign_signedEquiv_apply_word, fun w {C} _ _ R ↦
+      G.signedEquiv_apply_word w R
+        (fun a ↦ (G.hasNodalModel (a ≫ C.domainTarget)).nonempty_contractedToricFiber)⟩⟩
 
 end QPainleve.ElevenVertex
