@@ -5,7 +5,6 @@ Authors: The QPainleve contributors
 -/
 module
 
-public import QPainleve.Algebra.Cluster.ChargeKernel.Coordinates
 public import QPainleve.Geometry.Toric.Fan.CyclicOrder.Survivors
 public import QPainleve.SignedClusterModularGroup.Realization.Presentation.Numbered
 
@@ -49,23 +48,9 @@ variable {m : ℕ} [NeZero m] {ι : Type} [Fintype ι] [DecidableEq ι]
 local notation "V₀" => (ZMod m ⊕ ι → ℤ)
 local notation "F" => (Matrix.toBilin' (Fan.numberedInternalBlowupGram ι u))
 local notation "a" => (l.map (Fan.numberedStrictBoundaryCoefficients ρ))
-local notation "n" => List.length (survivingRayIndices l)
-local notation "vₛ" => survivingRayOrderEmbedding l
+local notation "n" => Finset.card (survivingRayIndices l)
+local notation "vₛ" => Finset.orderEmbOfFin (survivingRayIndices l) rfl
 local notation "E" => SkewExchangeMatrix.ofChargeCoordinates (u ∘ ρ)
-
-omit [NeZero m] [Fintype ι] [DecidableEq ι] in
-private theorem reindex_ofChargeCoordinates_eq_rayExchangeMatrix {Φ : Fan
-    (AddMonoidHom.compLeft (Int.castAddHom ℝ) (Fin 2))}
-    {v : ZMod m ≃ Φ.Ray} (hv : ∀ j, (v j).primitiveGenerator = u j)
-    {r : ℕ} (o : Fin r ≃ ι) :
-    (E).reindex o.symm = Fan.rayExchangeMatrix b₂ (v ∘ ρ ∘ o) := by
-  apply SkewExchangeMatrix.ext
-  ext j k
-  rw [SkewExchangeMatrix.reindex_matrix, Matrix.submatrix_apply,
-    SkewExchangeMatrix.ofChargeCoordinates_matrix_apply, Fan.rayExchangeMatrix_matrix,
-    chargeExchangeMatrix_apply, Fan.rayChargeMap_single, Fan.rayChargeMap_single]
-  simp only [Function.comp_apply, Equiv.symm_symm, hv]
-  exact (Basis.detDualEquiv_pi_basisFun _ _).symm
 
 private theorem exists_signed_comparison_with_survivors
     {d q : ℕ} [NeZero q] (hmd : m = q + d) (hd : l.length = d)
@@ -126,13 +111,14 @@ private theorem exists_signed_comparison_with_survivors
     simpa [j, Set.range_comp, EquivLike.range_eq_univ] using hf k
   have hj' (k : ZMod q) := hj ((ZMod.finEquiv q).symm k)
   simp only [RingEquiv.apply_symm_apply] at hj'
+  have hE := Fan.reindex_ofChargeCoordinates_eq_rayExchangeMatrix b₂ (v ∘ ρ ∘ o) o (c := u ∘ ρ)
+    (fun k ↦ hcoord (ρ (o k)))
   subst v
   have h := exists_signedLoopSubstitutions_mulEquiv_of_numbered_contraction hΦ hc A C hD
     o ρ c hT e he hker g hg hsub hv' B
     (by simpa only [hcoord] using hR) (by simpa only [hcoord] using hB) l j
     (fun k ↦ by simpa only [not_not] using (not_congr (hrange k)).symm)
-    hj' (SkewExchangeMatrix.ofChargeCoordinates (u ∘ ρ))
-    (reindex_ofChargeCoordinates_eq_rayExchangeMatrix u ρ hv o)
+    hj' (SkewExchangeMatrix.ofChargeCoordinates (u ∘ ρ)) hE
   simp only [hB] at h
   exact h hs hp hn hz
 
@@ -150,7 +136,7 @@ theorem exists_signedLoopSubstitutions_mulEquiv_of_cyclic_rays
     (hB : B.compl₁₂ R.mkQ R.mkQ = F)
     (hs : ∀ x ∈ (F).orthogonalizeNegOnes a, F x x = -1) :
     let : NeZero n := ⟨by
-      rw [length_survivingRayIndices, List.toFinset_card_of_nodup hl]
+      rw [card_survivingRayIndices, List.toFinset_card_of_nodup hl]
       exact Nat.sub_ne_zero_of_lt hlen⟩
     let j := ZMod.finEquiv m ∘ vₛ ∘ (ZMod.finEquiv n).symm
     let P := B.orthogonal
@@ -163,9 +149,10 @@ theorem exists_signedLoopSubstitutions_mulEquiv_of_cyclic_rays
       Nonempty (signedLoopSubstitutions E ≃* signedBoundaryIsometryGroup (B.restrict P) A) := by
   intro _
   have hm : m = n + l.length := by
-    rw [length_survivingRayIndices, List.toFinset_card_of_nodup hl, Nat.sub_add_cancel hlen.le]
+    rw [card_survivingRayIndices, List.toFinset_card_of_nodup hl, Nat.sub_add_cancel hlen.le]
   exact exists_signed_comparison_with_survivors u ρ l hm rfl vₛ
-    (mem_range_survivingRayOrderEmbedding l) hdet hwind hl hlen B hR hB hs
+    (fun k ↦ by simpa only [Finset.range_orderEmbOfFin, Finset.mem_coe] using
+      mem_survivingRayIndices l k) hdet hwind hl hlen B hR hB hs
 
 end Comparison
 end QPainleve.SignedClusterModularGroup

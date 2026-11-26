@@ -5,6 +5,7 @@ Authors: The QPainleve contributors
 -/
 module
 
+public import QPainleve.Algebra.Cluster.ChargeKernel.Coordinates
 public import QPainleve.Algebra.Cluster.ChargeKernel.Word
 public import QPainleve.Geometry.Toric.Fan.Charge
 
@@ -37,6 +38,19 @@ theorem rayExchangeMatrix_matrix (b : Basis (Fin 2) ℤ N) (s : ι → Φ.Ray) :
     (rayExchangeMatrix b s).matrix =
       chargeExchangeMatrix b.detDualEquiv.toLinearMap (rayChargeMap s) :=
   SkewExchangeMatrix.matrix_ofMatrix _ _
+
+/-- Coordinate charges that agree with the primitive ray generators in the given basis
+give the ray exchange matrix after reindexing to the ray labels. -/
+theorem reindex_ofChargeCoordinates_eq_rayExchangeMatrix {κ : Type*}
+    (b : Basis (Fin 2) ℤ N) (s : ι → Φ.Ray) (o : ι ≃ κ) {c : κ → Fin 2 → ℤ}
+    (h : ∀ j, b.repr (s j).primitiveGenerator = c (o j)) :
+    (SkewExchangeMatrix.ofChargeCoordinates c).reindex o.symm = rayExchangeMatrix b s := by
+  apply SkewExchangeMatrix.ext
+  ext j k
+  rw [SkewExchangeMatrix.reindex_matrix, Matrix.submatrix_apply, rayExchangeMatrix_matrix,
+    ← SkewExchangeMatrix.ofChargeCoordinates_matrix_eq_chargeExchangeMatrix]
+  simp only [Equiv.symm_symm, SkewExchangeMatrix.ofChargeCoordinates_matrix_apply,
+    rayChargeMap_single, h]
 
 /-- Realize a skew exchange matrix with the given determinant entries by the labeled ray charges. -/
 def rayChargeSeed (b : Basis (Fin 2) ℤ N) (s : ι → Φ.Ray) {E : SkewExchangeMatrix ι}
