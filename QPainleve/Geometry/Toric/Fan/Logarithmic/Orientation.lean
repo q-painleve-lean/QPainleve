@@ -73,33 +73,27 @@ private theorem range_numberedComponent_of_boundaryIso
 
 variable (b : Module.Basis (Fin 2) ℤ N) (hΨ : Ψ.IsRegular) (hc : Φ.IsComplete)
   (H : Ψ.IsSubdivision Φ) {m : ℕ} (ρ : Fin m → Ψ.Ray) (u : Fin m → ℂˣ)
-  [IsIntegral X] {f : X ⟶ Φ.algebraicRealization} [f.IsOver S]
-
-section
-
-variable [Nonempty Φ.cones] [IsLocallyNoetherian X] [IsDominant f]
+  {f : X ⟶ Φ.algebraicRealization} [f.IsOver S]
 
 include hΨ hc in
 /-- A specified logarithmic factorization numbers the actual boundary cycle of the source
 starting at any chosen boundary prime. The first branch at node `j` is on the prime for
-ray `j` and the second is on the prime for ray `j` + 1. Their primitive ray generators,
-recovered from the orders of pulled-back characters, have positive determinant one. -/
+ray `j` and the second is on the prime for ray `j` + 1. Their primitive ray generators
+have positive determinant one. -/
 theorem exists_oriented_boundary_of_logarithmic_factorization
     (e : (Ψ.internalBlowupTower b ρ u).1 ≅ X)
     (he : e.hom ≫ f = (Ψ.internalBlowupTower b ρ u).2.toTower.toBase ≫ H.toFanHom.algebraicMap)
     (hP : P.comap e.hom = (Ψ.internalBlowupTower b ρ u).2.boundaryι.ker)
     (p₀ : P.boundaryPrimes) :
-    ∃ (n : ℕ) (_ : NeZero n) (W : Scheme.NodalCycleNumbering p n)
-      (v : ZMod n ≃ Ψ.Ray) (R : Ψ.Ray ≃ P.boundaryPrimes),
+    let hs := congrArg Scheme.IdealSheafData.support hP
+    let R := internalBlowupBoundaryPrimeEquivOfIso hΨ b ρ u e hs
+    ∃ (n : ℕ) (_ : NeZero n) (W : Scheme.NodalCycleNumbering p n) (v : ZMod n ≃ Ψ.Ray),
       R (v 0) = p₀ ∧
-      (∀ (r : Ψ.Ray) (a : N →+ ℤ),
-        X.ord (f.functionFieldMap (Φ.character (ofAdd a))) (R r).val = a r.primitiveGenerator) ∧
       ∀ j, b.detDualEquiv (v j).primitiveGenerator (v (j + 1)).primitiveGenerator = 1 ∧
         Set.range ((P.subscheme.blowupComponent (W.component j)).ι ≫
           ν[P.subscheme] ≫ P.subschemeι) = closure {((R (v j)).val : X)} := by
   let A := Ψ.internalBlowupTower b ρ u
-  obtain ⟨R, hord, hrange⟩ :=
-    exists_equiv_boundaryPrimes_of_toric_internal_factorization b hΨ H ρ u e he hP
+  intro hs R
   obtain ⟨d, hd⟩ := P.exists_iso_of_comap_eq_ker e A.2.boundaryι hP
   have hdOver : d.hom.IsOver S := ⟨by
     simp only [over_eq_subschemeι_comp, reassoc_of% hd]
@@ -116,17 +110,15 @@ theorem exists_oriented_boundary_of_logarithmic_factorization
   let q : Empty → (C ↘ S).smoothLocus := Empty.elim
   obtain ⟨E, o, w, hw, hw', -⟩ := exists_toric_boundary_dualGraph_cycle hΨ hc' q b v hv
   let W : Scheme.NodalCycleNumbering q (Nat.card Ψ.Ray) := ⟨w, E, o, hw⟩
-  refine ⟨_, inferInstance, d.mapNodalCycleNumbering W, v, R, ?_,
-    fun r a ↦ ((hord r (R r)).mp rfl) a, fun j ↦ ⟨(hv j).1, ?_⟩⟩
+  refine ⟨_, inferInstance, d.mapNodalCycleNumbering W, v, ?_, fun j ↦ ⟨(hv j).1, ?_⟩⟩
   · exact (congrArg R hv₀).trans (R.apply_symm_apply p₀)
   · have hW : W.component j = Ψ.boundaryNormalizationComponentEquiv hΨ (v j) := by
       simpa only [Scheme.NodalCycleNumbering.component_apply, W] using hw' j
     rw [range_numberedComponent_of_boundaryIso p hΨ d W j (v j) hW, hd]
-    exact hrange (v j)
+    simpa only [Category.assoc] using
+      range_rayComponent_internalBlowupBoundaryPrimeEquivOfIso hΨ b ρ u e hs (v j)
 
-end
-
-variable (hΦ : Φ.IsRegular) [X.IsProjectiveOver ℂ]
+variable (hΦ : Φ.IsRegular) [IsIntegral X] [X.IsProjectiveOver ℂ]
   [SmoothOfRelativeDimension 2 (X ↘ S)]
 
 /-- Recover the positive cycle on the source boundary directly from the pole-divisor
@@ -166,23 +158,19 @@ theorem exists_oriented_boundary_of_pullbackTopFormDivisor
     rw [he]
     infer_instance
   have hDom : IsDominant f := IsDominant.of_comp e.hom f
-  obtain ⟨n, hn, W, v, R, h₀, hord, hcycle⟩ :=
+  have hs := congrArg Scheme.IdealSheafData.support hboundary
+  let R := internalBlowupBoundaryPrimeEquivOfIso hΨ b ρ u e hs
+  obtain ⟨n, hn, W, v, h₀, hcycle⟩ :=
     exists_oriented_boundary_of_logarithmic_factorization p b hΨ hc H ρ u e he hboundary p₀
   refine ⟨hDom, n, hn, W, v.trans R, h₀, fun j ↦ ⟨?_, (hcycle j).2⟩⟩
   let x := (v j).primitiveGenerator
   let y := (v (j + 1)).primitiveGenerator
-  calc
-    _ = b.repr x 0 * b.repr y 1 - b.repr x 1 * b.repr y 0 :=
-      congrArg₂ (· - ·)
-        (congrArg₂ (· * ·) (hord (v j) (b.coord 0).toAddMonoidHom)
-          (hord (v (j + 1)) (b.coord 1).toAddMonoidHom))
-        (congrArg₂ (· * ·) (hord (v j) (b.coord 1).toAddMonoidHom)
-          (hord (v (j + 1)) (b.coord 0).toAddMonoidHom))
-    _ = 1 := by
-      have hdet : b.det ![x, y] = 1 :=
-        (b.detDualEquiv_apply x y).symm.trans (hcycle j).1
-      rw [mul_comm (b.repr x 1) (b.repr y 0)]
-      simpa only [Module.Basis.det_apply, Module.Basis.toMatrix_apply,
-        Matrix.det_fin_two, Matrix.cons_val_zero, Matrix.cons_val_one] using hdet
+  simp only [R, Equiv.trans_apply,
+    ord_internalBlowupBoundaryPrimeEquivOfIso_character b hΨ H ρ u e he hs,
+    LinearMap.toAddMonoidHom_coe, Module.Basis.coord_apply]
+  have hdet : b.det ![x, y] = 1 := (b.detDualEquiv_apply x y).symm.trans (hcycle j).1
+  rw [mul_comm (b.repr x 1) (b.repr y 0)]
+  simpa only [Module.Basis.det_apply, Module.Basis.toMatrix_apply,
+    Matrix.det_fin_two, Matrix.cons_val_zero, Matrix.cons_val_one] using hdet
 
 end TauCeti.Toric.Fan
