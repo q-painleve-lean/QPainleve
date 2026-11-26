@@ -5,13 +5,12 @@ Authors: The QPainleve contributors
 -/
 module
 
-public import QPainleve.Algebra.Cluster.Word.ModularGroup
 public import QPainleve.Algebra.Cluster.Word.Relations
-public import QPainleve.SignedClusterModularGroup.Boundary.Restriction
-public import QPainleve.SignedClusterModularGroup.Realization.Presentation
+public import QPainleve.SignedClusterModularGroup.Realization.Presentation.Casimir
 public import QPainleve.SignedClusterModularGroup.Realization.Tropical
 
-import QPainleve.SignedClusterModularGroup.Realization.Endpoint.Casimir
+import QPainleve.Geometry.Toric.Fan.ExchangeMatrix
+import QPainleve.SignedClusterModularGroup.BoundaryCycle
 import QPainleve.SignedClusterModularGroup.Realization.NodalFiber
 import QPainleve.SignedClusterModularGroup.Realization.Presentation.Group
 import QPainleve.SignedClusterModularGroup.Realization.Relations.Presentation
@@ -22,10 +21,8 @@ import QPainleve.SignedClusterModularGroup.Realization.Relations.Presentation
 From a single nodal contraction, the signed Picard equivalence recovers the sign,
 the transported Casimir columns, and the boundary label of a signed cluster loop.
 The formula for the boundary action uses the inverse of the forward permutation,
-as required for Picard pullback. The comparison combines
-`CompleteToricPresentation.exists_picardGroupEquivs_of_nodal_model`,
-`GeometricRealization.existsUnique_exchangeKernelEquiv_of_presentation`, and
-`GeometricRealization.exists_realize_signed_loop_with_boundary_label`.
+as required for Picard pullback. Both the Casimir and boundary formulas use
+the same signed Picard equivalence of the marked family.
 -/
 
 public section
@@ -43,7 +40,6 @@ local notation "Centers[" r "]" => Over.mk (structureMap ℂ (Fin r → ℤ))
 local notation "XTor[" r "]" => scheme ℂ (Fin r →₀ ℤ)
 local notation "χ[" c "]" => pointsEquiv ℂ _ (Subtype.mk (Over.Hom.left c) (Over.w c))
 local notation "cartier[" M "]" => MarkedSurface.isEffectiveCartier_boundaryIdeal M
-local notation "D[" M "]" => Scheme.Hom.ker (Over.Hom.left (Arrow.hom (MarkedSurface.pair M)))
 local notation "classOf(" h ")" => (LineBundleClass.mk (IsEffectiveCartier.toInvertibleSheaf h))⁻¹
 local notation "eval[" w "]" => op (signedClusterModularGroupMap ℂ _ (End.of w))
 
@@ -63,79 +59,139 @@ local instance instPrestablePicardActionToricBoundary :
 local notation "fiber[" M "," c "]" =>
   ContractedToricFiber b Q.rays Q.regular Q.cycle Q.origin Q.inclusion χ[c] M
 local notation "K" => E.matrix.mulVecLin.ker
-local notation "Models[" M "," C "]" =>
-  HasToricTargetModels (T₀ := Centers[r]) (T₁ := Centers[r]) (b := b) (s := Q.rays)
-    (hΦ := Q.regular) (T := Q.cycle) (origin := Q.origin) (ι := Q.inclusion) (P₁ := M)
-    (fun z : Point Centers[r] ↦ χ[z]) C
+local notation "classes[" M "]" => MarkedSurface.boundaryClass M cartier[M]
 
-/-- For the signed Picard equivalence of a primitive nef square-zero anticanonical cycle,
-the computed sign is the branch sign, and the computed columns are the signed orthogonal
-restriction in exchange-kernel coordinates. The boundary search returns the forward
-image `j` of component zero, so the isometry pulls back component `l` to `η • (l - j)`.
-The single reference contraction may be outside the noncollision open. The equivalence
-gives the marked pullback of realizations with compatible target models and identifies
-the unsigned subgroup with the sign kernel. -/
-theorem exists_picardEquiv_signedLoopInvariants_of_nodal_contraction
+/-- The signed Picard and Casimir identifications for a specified reference fiber,
+together with the forward tropical boundary search and its Picard pullback formula. -/
+@[ext]
+structure SignedLoopPicardComparison (p₀ : fiber[M₀,c₀])
+    (E : SkewExchangeMatrix (Fin r)) where
+  /-- The marked family and signed Picard equivalence. -/
+  identification : Q.NodalPicardGroupIdentification (B := B) ℂ E classes[M₀]
+  /-- The marked family has the specified reference fiber. -/
+  family_center : identification.family c₀ = M₀
+  /-- The signed comparison with exchange-kernel transport. -/
+  casimir : Q.CasimirActionComparison E B classes[M₀]
+  /-- The Casimir comparison uses the same Picard pullback as the marked family. -/
+  casimir_picardEquiv : casimir.picardEquiv = identification.signedEquiv
+  /-- The tropical search yields the forward label of component zero. The corresponding
+  Picard pullback acts by the inverse signed boundary permutation. -/
+  boundaryLabel_spec (w : Word E E) :
+    let orders := p₀.numberedBoundaryOrders cartier[M₀]
+    let d := classes[M₀]
+    let g := identification.signedEquiv eval[w]
+    ∃ j : Fin n, w.tropicalBoundaryLabel orders (orders 0) = some j ∧
+      ∀ l, (toIsometry B d g).val (d l) =
+        d (sign B d g • (l - (ZMod.finEquiv n).toEquiv j))
+
+namespace SignedLoopPicardComparison
+
+attribute [simp] family_center casimir_picardEquiv
+
+variable {Q}
+
+/-- The signed Picard equivalence recovers all three computed integer invariants.
+The kernel columns are in ambient exponent coordinates and the boundary label
+is the forward image of component zero. -/
+theorem signedLoopInvariants_eq {p₀ : fiber[M₀,c₀]} (A : Q.SignedLoopPicardComparison p₀ E)
+    (w : Word E E) {κ : Type*} (vectors : κ → K) :
+    let orders := p₀.numberedBoundaryOrders cartier[M₀]
+    let d := classes[M₀]
+    let g := A.identification.signedEquiv eval[w]
+    let η := sign B d g
+    ∃ j : Fin n,
+      w.signedLoopInvariants (fun k ↦ (vectors k : Fin r → ℤ)) orders (orders 0) =
+        ⟨η, Matrix.of (fun i k ↦
+          (LinearEquiv.autCongr A.casimir.exchangeKernelEquiv
+            (signedOrthogonalRestriction B d g).val (vectors k) : Fin r → ℤ) i), some j⟩ ∧
+        ∀ l, (toIsometry B d g).val (d l) = d (η • (l - (ZMod.finEquiv n).toEquiv j)) := by
+  dsimp only
+  obtain ⟨j, hlabel, hboundary⟩ := A.boundaryLabel_spec w
+  have haction := A.casimir.exchangeKernelEquiv_eq_autCongr w
+  rw [A.casimir_picardEquiv] at haction
+  refine ⟨j, SignedLoopInvariants.ext ?_ ?_ ?_, hboundary⟩
+  · simp only [Path.signedLoopInvariants_sign, SignedBoundaryIsometryGroup.sign_apply,
+      A.identification.sign_signedEquiv_apply_word]
+  · simp only [Path.signedLoopInvariants_kernelColumns, ← Path.coe_exchangeKernelEquiv_apply,
+      haction]
+  · simpa only [Path.signedLoopInvariants_boundaryLabel] using hlabel
+
+/-- Equality of the marked signed Picard actions is equivalent to equality of the
+integer loop invariants. The sign still distinguishes the two branch orientations
+when there are only one or two boundary components. -/
+theorem signedEquiv_apply_word_eq_iff_signedLoopInvariants_eq {p₀ : fiber[M₀,c₀]}
+    (A : Q.SignedLoopPicardComparison p₀ E)
+    [Module.Free ℤ L] [Module.Finite ℤ L]
+    (hSymm : B.IsSymm) (hB : B.Nondegenerate)
+    (hGram : ∀ j l, B (classes[M₀] j) (classes[M₀] l) =
+      (-2 : ℤ) * (if j = l then 1 else 0) + (if l = j + 1 then 1 else 0) +
+        (if l = j - 1 then 1 else 0))
+    (hD : Function.Injective classes[M₀])
+    (w v : Word E E) {κ : Type*} (β : Module.Basis κ ℤ K) :
+    let orders := p₀.numberedBoundaryOrders cartier[M₀]
+    A.identification.signedEquiv eval[w] = A.identification.signedEquiv eval[v] ↔
+      w.signedLoopInvariants (fun j ↦ (β j : Fin r → ℤ)) orders (orders 0) =
+        v.signedLoopInvariants (fun j ↦ (β j : Fin r → ℤ)) orders (orders 0) := by
+  intro orders
+  let d := classes[M₀]
+  let Θ := A.identification.signedEquiv
+  obtain ⟨j, hj, hboundary⟩ := A.boundaryLabel_spec w
+  obtain ⟨l, hl, hboundary'⟩ := A.boundaryLabel_spec v
+  have atZero (u : Word E E) (a : Fin n)
+      (hu : ∀ x, (toIsometry B d (Θ eval[u])).val (d x) =
+        d (sign B d (Θ eval[u]) • (x - ZMod.finEquiv n a))) :
+      (toIsometry B d (Θ eval[u])).val (d (ZMod.finEquiv n a)) = d 0 := by
+    simpa only [sub_self, smul_zero] using hu (ZMod.finEquiv n a)
+  have hsign (u : Word E E) :
+      sign B d (Θ eval[u]) = (-1) ^ u.inversionCount := by
+    simpa only [SignedBoundaryIsometryGroup.sign_apply]
+      using A.identification.sign_signedEquiv_apply_word u
+  have hres (u : Word E E) :
+      u.exchangeKernelEquiv = LinearEquiv.autCongr A.casimir.exchangeKernelEquiv
+        (signedOrthogonalRestriction B d (Θ eval[u])).val := by
+    simpa only [A.casimir_picardEquiv] using A.casimir.exchangeKernelEquiv_eq_autCongr u
+  rw [eq_iff_of_boundary_pullback hSymm hB.1 (BoundaryCycle.span_sup_orthogonal_rat hGram hSymm hB)
+    hD (atZero w j hboundary) (atZero v l hboundary')]
+  rw [Path.signedLoopInvariants_eq_iff, hsign w, hsign v, hres w, hres v,
+    (LinearEquiv.autCongr A.casimir.exchangeKernelEquiv).injective.eq_iff,
+    Subtype.coe_injective.eq_iff, hj, hl, Option.some.injEq, (ZMod.finEquiv n).injective.eq_iff]
+
+end SignedLoopPicardComparison
+
+/-- A reference nodal contraction of a primitive nef square-zero anticanonical cycle
+supplies the Picard and Casimir identifications and the complete integer invariant formula.
+The reference center may lie outside the noncollision open. -/
+theorem nonempty_signedLoopPicardComparison_of_nodal_contraction
     (p₀ : fiber[M₀,c₀]) (hnodal₀ : p₀.IsNodalContraction)
     (hE : E.matrix = chargeExchangeMatrix b.detDualEquiv.toLinearMap (Fan.rayChargeMap Q.rays))
     (hprim : IsPrimitive (Additive.ofMul classOf(cartier[M₀])))
     (hnef : (classOf(cartier[M₀])).IsNef ℂ (M₀.surface ↘ S))
     (hsq : Chow.classIntersectionNumber ℂ M₀.surface classOf(cartier[M₀])
       classOf(cartier[M₀]) = 0) :
-    let d := M₀.boundaryClass cartier[M₀]
-    let orders (j : Fin n) := Fan.rayBoundaryOrders b Q.rays
-      (p₀.numberedBoundaryRays cartier[M₀] ((ZMod.finEquiv n).toEquiv j))
-    ∃ (M : Point Centers[r] → MarkedSurface ℂ n B XTor[r])
-      (hD : ∀ z, D[M z].IsEffectiveCartier)
-      (hmark : ∀ z j, (M z).boundaryClass (hD z) j = d j)
-      (Θ : (SignedClusterModularGroup ℂ E)ᵐᵒᵖ ≃* signedBoundaryIsometryGroup B d)
-      (e : B.orthogonal (Submodule.span ℤ (Set.range d)) ≃ₗ[ℤ] K),
-      M c₀ = M₀ ∧ (∀ z, Q.HasNodalModel z (M z)) ∧
-      (∀ w : Word E E,
-        sign B d (Θ eval[w]) = (-1 : ℤˣ) ^ w.inversionCount ∧
-          ∀ {C : Centers[r].left.PartialMap Centers[r].left} [IsDominant C.hom]
-            [C.IsOver Centers[r].hom Centers[r].hom]
-            (R : GeometricRealization M M C (w.xRationalMap ℂ)),
-            Models[M,C] → Θ eval[w] = R.toSignedBoundaryIsometry d hD hmark) ∧
-      (∀ x, (Q.inclusion x.val).2 = -(e x : Fin r → ℤ)) ∧
-      ((sign B d).comp Θ.toMonoidHom).ker.unop = (clusterModularGroupInclusion ℂ E).range ∧
-      ∀ (w : Word E E) {κ : Type*} (vectors : κ → K),
-        let g := Θ eval[w]
-        let η := sign B d g
-        ∃ j : Fin n,
-          w.signedLoopInvariants (fun k ↦ (vectors k : Fin r → ℤ)) orders (orders 0) =
-            (η, Matrix.of (fun i k ↦
-              ((LinearEquiv.autCongr e (signedOrthogonalRestriction B d g).val)
-                (vectors k) : Fin r → ℤ) i), some j) ∧
-          ∀ l, (toIsometry B d g).val (d l) =
-            d (η • (l - (ZMod.finEquiv n).toEquiv j)) := by
-  -- Use the same marked family for the Picard, Casimir, and boundary comparisons.
-  obtain ⟨M, hD, hmark, Θ, _, hM, hfamily, hΘ, hsignker, -⟩ :=
-    Q.exists_picardGroupEquivs_of_nodal_model (Q.hasNodalModel_of_contraction hnodal₀)
-      hE hprim hnef hsq
+    Nonempty (Q.SignedLoopPicardComparison p₀ E) := by
+  obtain ⟨⟨M, hmodels, hmark, Θ, hsign, happly, hker⟩, hM⟩ :=
+    Q.exists_picardGroupEquivs_of_nodal_model
+      (Q.hasNodalModel_of_contraction hnodal₀) hE hprim hnef hsq
+  -- The identification is indexed by the boundary classes of the reference fiber.
+  -- Substitute the fiber before reassembling the identification at those classes.
+  dsimp only at hM
   subst M₀
-  dsimp only
-  let d := (M c₀).boundaryClass cartier[M c₀]
-  let P : ChargeSeed E N :=
-    ⟨b.detDualEquiv.toLinearMap, Fan.rayChargeMap Q.rays, b.detDualEquiv_self, hE.symm⟩
-  obtain ⟨e, ⟨hcoords, hCasimir, -⟩, -⟩ := existsUnique_exchangeKernelEquiv_of_presentation
-    Q P rfl rfl M (fun c ↦ cartier[M c]) (hfamily c₀) (fun c _ ↦ hfamily c)
-    hnef hsq hprim d hmark Θ.toMonoidHom (fun w ↦ (hΘ (End.asHom w)).2)
-  choose p hp using fun c ↦ (hfamily c).exists_isNodalContraction (cartier[M c])
-  refine ⟨M, hD, hmark, Θ, e, rfl, hfamily, hΘ, hcoords, hsignker, fun w _ vectors ↦ ?_⟩
-  obtain ⟨R, _, _, j, hfind, hboundary⟩ :=
-    exists_realize_signed_loop_with_boundary_label Q P rfl rfl M p₀ hnodal₀
-      (fun c _ ↦ p c) (fun c _ ↦ hp c) hnef hsq hprim hmark w (fun k ↦ vectors k)
-  have hR := (hΘ w).2 R fun _ ↦ ⟨p _⟩
-  have hsign := (hΘ w).1
-  have haction := DFunLike.congr_fun hCasimir eval[w]
-  simp only [exchangeKernelAction_op_loop, MonoidHom.comp_apply, MulEquiv.coe_toMonoidHom,
-    Subgroup.subtype_apply] at haction
-  refine ⟨j, ?_, ?_⟩
-  · refine Prod.ext ?_ (Prod.ext ?_ hfind)
-    · simpa only [Path.signedLoopInvariants_def] using hsign.symm
-    · rw [← haction]
-      simp only [Path.signedLoopInvariants_def, Path.coe_exchangeKernelEquiv_apply]
-  · simpa only [← hR, hsign] using hboundary
+  let G : Q.NodalPicardGroupIdentification (B := B) ℂ E classes[M c₀] :=
+    ⟨M, hmodels, hmark, Θ, hsign, happly, hker⟩
+  obtain ⟨A, hA⟩ := G.exists_casimirActionComparison (c := c₀) hE hprim hnef hsq
+  choose p hp using fun c ↦ (hmodels c).exists_isNodalContraction cartier[M c]
+  let P := Fan.rayChargeSeed b Q.rays hE
+  have hform := Fan.rayChargeSeed_form b Q.rays hE
+  have hcharge := Fan.rayChargeSeed_charge b Q.rays hE
+  refine ⟨⟨G, rfl, A, hA, fun w ↦ ?_⟩⟩
+  obtain ⟨R, _, _, j, hlabel, hboundary⟩ :=
+    exists_realize_signed_loop_with_boundary_label Q P hform hcharge M p₀ hnodal₀
+      (fun c _ ↦ p c) (fun c _ ↦ hp c) hnef hsq hprim hmark w
+  have hR : G.signedEquiv eval[w] =
+      R.toSignedBoundaryIsometry classes[M c₀] (fun c ↦ cartier[M c]) hmark :=
+    G.signedEquiv_apply_word w R (fun _ ↦ ⟨p _⟩)
+  refine ⟨j, hlabel, fun l ↦ ?_⟩
+  simpa only [← hR, SignedBoundaryIsometryGroup.sign_apply, G.sign_signedEquiv_apply_word]
+    using hboundary l
 
 end QPainleve.SignedClusterModularGroup.CompleteToricPresentation

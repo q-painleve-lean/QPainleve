@@ -131,6 +131,18 @@ theorem intersectionBilinForm_picardMarking (x y : L) :
     Chow.intersectionBilinForm k M.surface (M.picardMarking x) (M.picardMarking y) = B x y :=
   M.marking.map_app y x
 
+include M in
+/-- The form of a marked surface is symmetric. -/
+theorem isSymm : B.IsSymm := by
+  let : SmoothOfRelativeDimension 2 (M.surface ↘ S) := M.smooth
+  let : M.surface.IsProjectiveOver k := M.projective
+  have hpair (x y : L) : B x y =
+      Chow.classIntersectionNumber k M.surface (M.picardMarking x).toMul
+        (M.picardMarking y).toMul :=
+    (M.intersectionBilinForm_picardMarking x y).symm.trans (Chow.intersectionBilinForm_apply ..)
+  exact ⟨fun x y ↦
+    (hpair x y).trans ((Chow.classIntersectionNumber_comm _ _).trans (hpair y x).symm)⟩
+
 /-- Replacing the evaluation preserves the Picard marking. -/
 @[simp]
 theorem withEvaluation_picardMarking {Y : Scheme.{u}} (f : M.surface ⤏ Y) (a : L) :
@@ -221,6 +233,14 @@ instance (e : M.pair ≅ N.pair) : (surfaceIso e).hom.IsOver S :=
 theorem boundaryIso_hom_comp (e : M.pair ≅ N.pair) :
     (boundaryIso e).hom ≫ N.pair.hom.left = M.pair.hom.left ≫ (surfaceIso e).hom :=
   congrArg (fun f ↦ f.left) (Arrow.w e.hom)
+
+/-- A marked pair isomorphism pulls the ideal of the target boundary back to
+the ideal of the source boundary. -/
+@[simp]
+theorem comap_boundaryIdeal_surfaceIso (e : M.pair ≅ N.pair) :
+    N.pair.hom.left.ker.comap (surfaceIso e).hom = M.pair.hom.left.ker := by
+  rw [← Scheme.Hom.comap_ker_comp_of_isClosedImmersion M.pair.hom.left (surfaceIso e).hom,
+    ← boundaryIso_hom_comp, Scheme.Hom.ker_comp_of_isIso]
 
 instance (e : M.pair ≅ N.pair) : (boundaryIso e).hom.IsOver S :=
   ⟨Over.w e.hom.left⟩

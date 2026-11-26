@@ -90,6 +90,14 @@ theorem comp_contractedXEvaluation_of_isLift_torusTranslation
         simp only [Category.id_comp, compHom_id, ht.hom_toBase, ← Scheme.Hom.toRationalMap_compHom,
           ← comp_toRationalMap, comp_assoc, heval])
 
+variable {b s} in
+/-- A contracted translation intertwines the fixed-center X evaluations. -/
+theorem ContractedToricTranslation.comp_contractedXEvaluation {e : X ≅ X'}
+    (t : ContractedToricTranslation b s p q e) :
+    e.hom.toRationalMap.comp (contractedXEvaluation b s d hΦ q) =
+      contractedXEvaluation b s c hΦ p :=
+  comp_contractedXEvaluation_of_isLift_torusTranslation b s hΦ t.isLift t.commutes
+
 /-- Every quotient-character automorphism of a contracted toric presentation
 fixes its fixed-center rational X evaluation. -/
 @[simp]

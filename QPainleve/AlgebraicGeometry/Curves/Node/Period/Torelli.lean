@@ -78,12 +78,9 @@ specified boundary components and intertwining the signed periods is induced
 by a pair isomorphism with the given action on the ordered branches. -/
 theorem exists_pair_iso_of_root_free_signed_boundary_period
     {H : LineBundleClass Y} (hH : H.IsAmple) (hGH : (G (Additive.ofMul H)).toMul.IsAmple) :
-    ∃ (a : X ≅ Y) (aB : D.subscheme ≅ E.subscheme) (haB : aB.hom.IsOver S),
-      a.hom ≫ g(Y) = g(X) ∧ E.comap a.hom = D ∧
-      aB.hom ≫ E.subschemeι = D.subschemeι ≫ a.hom ∧
-      (∀ L : LineBundleClass Y, pullback a.hom L = (G (Additive.ofMul L)).toMul) ∧
-      (letI := haB; aB.boundaryCycleAction (k := ℂ) A C = act) := by
-  have hpres := Fan.hasToricPresentation_of_ruled_reduction (b := Pi.basisFun ℤ (Fin 2))
+    Nonempty (SignedTorelliPairIso (D := D) (E := E) A C
+      (fun L ↦ (G (Additive.ofMul L)).toMul) act) := by
+  have hpres := D.hasToricPresentation_of_anticanonical_cycle (Pi.basisFun ℤ (Fin 2))
     (isIntegralLattice_intCast 2) A hD hcanD
   exact D.exists_pair_iso_of_root_free_signed_boundary_period_of_toric_presentation
     A C hD hE act G hclass hcanD hcanE
@@ -98,12 +95,9 @@ the prescribed Picard pullback and branch action. -/
 theorem exists_pair_iso_of_root_free_signed_boundary_period_of_nef
     (hnefD : (K(X))⁻¹.IsNef ℂ g(X)) (hnefE : (K(Y))⁻¹.IsNef ℂ g(Y))
     (hsq : Chow.classIntersectionNumber ℂ Y (K(Y))⁻¹ (K(Y))⁻¹ = 0) :
-    ∃ (a : X ≅ Y) (aB : D.subscheme ≅ E.subscheme) (haB : aB.hom.IsOver S),
-      a.hom ≫ g(Y) = g(X) ∧ E.comap a.hom = D ∧
-      aB.hom ≫ E.subschemeι = D.subschemeι ≫ a.hom ∧
-      (∀ L : LineBundleClass Y, pullback a.hom L = (G (Additive.ofMul L)).toMul) ∧
-      (letI := haB; aB.boundaryCycleAction (k := ℂ) A C = act) := by
-  have hpres := Fan.hasToricPresentation_of_ruled_reduction (b := Pi.basisFun ℤ (Fin 2))
+    Nonempty (SignedTorelliPairIso (D := D) (E := E) A C
+      (fun L ↦ (G (Additive.ofMul L)).toMul) act) := by
+  have hpres := D.hasToricPresentation_of_anticanonical_cycle (Pi.basisFun ℤ (Fin 2))
     (isIntegralLattice_intCast 2) A hD hcanD
   exact D.exists_pair_iso_of_root_free_signed_boundary_period_of_toric_presentation_of_nef
     A C hD hE act G hclass hcanD hcanE

@@ -5,20 +5,24 @@ Authors: The QPainleve contributors
 -/
 module
 
+public import Mathlib.Data.Set.PowersetCard
+public import QPainleve.Geometry.Toric.Fan.Boundary.Numbering
 public import QPainleve.SignedClusterModularGroup.Realization.MarkedComparison
 public import QPainleve.SignedClusterModularGroup.Realization.Tropical
 
+import Mathlib.Order.Hom.PowersetCard
 import QPainleve.AlgebraicGeometry.Curves.Node.Conductor.ComponentOrder
 import QPainleve.Geometry.Toric.Fan.Picard.Contraction.Surviving
 import TauCeti.Data.ZMod.FinEquiv
 
 /-!
-# Constant numbered boundary rays
+# Numbered surviving boundary rays
 
 In a fixed ordered toric presentation, the marked Picard pullbacks determine
 which strict boundary rays survive the contractions. The oriented subdivision
 and the initial component then determine the numbering of the surviving rays
-and the corresponding marked boundary classes.
+and the corresponding marked boundary classes. The increasing ray offsets
+give a fixed-cardinality set for computing the boundary order table.
 -/
 
 public section
@@ -26,7 +30,7 @@ public section
 open AlgebraicGeometry CategoryTheory Multiplicative QPainleve.BlowupTower
 open TauCeti TauCeti.AlgebraicGeometry TauCeti.Toric Scheme Scheme.IdealSheafData
 
-namespace QPainleve.SignedClusterModularGroup.ContractedToricFiber
+namespace QPainleve.SignedClusterModularGroup
 
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {Φ : Fan i} [h₀ : Nonempty Φ.cones] {r m n : ℕ} [NeZero m] [NeZero n]
@@ -42,64 +46,98 @@ variable [PrestableFamily ((Φ.boundaryIdeal h₀).subscheme ↘ S)]
   {γ : Type*} {a : γ → ((Φ.boundaryIdeal h₀).subscheme ↘ S).smoothLocus}
   {T : NodalCycleNumbering a m} {origin : ZMod m}
   {ι : L →ₗ[ℤ] Additive (LineBundleClass Φ.algebraicRealization) × (Fin r → ℤ)}
-  {c d : Multiplicative (Fin r → ℤ) →* ℂˣ} {P Q : MarkedSurface ℂ n B XTor[r]}
+
+local notation "F" => LinearMap.BilinForm.prod (Chow.intersectionBilinForm ℂ Φ.algebraicRealization)
+  (-(dotProductBilin ℤ ℤ : LinearMap.BilinForm ℤ (Fin r → ℤ)))
+
+namespace ContractedToricFiber
+
+variable {c d : Multiplicative (Fin r → ℤ) →* ℂˣ} {P Q : MarkedSurface ℂ n B XTor[r]}
   (p : ContractedToricFiber b s hΦ T origin ι c P)
   (q : ContractedToricFiber b s hΦ T origin ι d Q)
 
-/-- Numbered boundary rays occur in increasing cyclic distance from the toric origin. -/
-theorem strictMono_numberedBoundaryRays (hP : D[P].IsEffectiveCartier) :
-    let e := ((Φ.boundaryNormalizationComponentEquiv hΦ).trans T.component.symm)
-    StrictMono fun j : Fin n ↦
-      (e (p.numberedBoundaryRays hP (ZMod.finEquiv n j)) - origin).val := by
+local notation "rayAt" => Φ.rayFinEquivOfNodalCycleNumbering hΦ T origin
+
+private theorem strictMono_boundaryRayOffset (hP : D[P].IsEffectiveCartier) :
+    StrictMono fun j : Fin n ↦ (rayAt).symm (p.numberedBoundaryRays hP (ZMod.finEquiv n j)) := by
   let : PrestableFamily (P.boundary ↘ S) := P.prestable
-  let e := (Φ.boundaryNormalizationComponentEquiv hΦ).trans T.component.symm
-  let u := (p.numberedBoundaryRays hP).trans e.toEmbedding
+  let e := Φ.rayEquivOfNodalCycleNumbering hΦ T
+  have he (j : ZMod m) : (Φ.boundaryNormalizationComponentEquiv hΦ).symm (T.component j) =
+      e j :=
+    (Equiv.symm_apply_eq _).mpr (Φ.boundaryNormalizationComponentEquiv_rayEquivOfNodalCycleNumbering
+      hΦ T j).symm
+  let u := (p.numberedBoundaryRays hP).trans e.symm.toEmbedding
   have hzero : u 0 = origin := by
     simp only [u, Function.Embedding.trans_apply, Equiv.toEmbedding_apply,
-      p.numberedBoundaryRays_zero, e, Equiv.trans_apply, Equiv.apply_symm_apply,
-      Equiv.symm_apply_apply]
+      p.numberedBoundaryRays_zero, he, Equiv.symm_apply_apply]
   have hu (j : ZMod n) : p.boundaryMap (T.componentGenericPoint (u j)) =
       P.cycle.componentGenericPoint j := by
     apply (p.numberedBoundaryRays_eq_iff hP j (u j)).mp
-    simp only [u, Function.Embedding.trans_apply, Equiv.toEmbedding_apply, e,
-      Equiv.trans_apply, Equiv.apply_symm_apply, Equiv.symm_apply_apply]
-  simpa only [hzero, u, Function.Embedding.trans_apply, Equiv.toEmbedding_apply] using
-    p.orientedSubdivision.strictMono_componentSection u hu
+    simp only [he, u, Function.Embedding.trans_apply, Equiv.toEmbedding_apply,
+      Equiv.apply_symm_apply]
+  intro j k hjk
+  simpa only [Fin.lt_def,
+    Fan.rayFinEquivOfNodalCycleNumbering_symm_apply, ZMod.finEquiv_symm_apply_val,
+    hzero, u, Function.Embedding.trans_apply, Equiv.toEmbedding_apply] using
+    p.orientedSubdivision.strictMono_componentSection u hu hjk
 
-local notation "RayIndex" =>
-  Equiv.trans (Φ.boundaryNormalizationComponentEquiv hΦ)
-    (Equiv.trans (Equiv.symm (NodalCycleNumbering.component T))
-      (Equiv.trans (Equiv.subRight origin) (Equiv.symm (RingEquiv.toEquiv (ZMod.finEquiv m)))))
+/-- The finite offsets of surviving toric rays in the contracted boundary numbering,
+starting at the ray of component zero. -/
+noncomputable def numberedBoundaryRayOffsets (hP : D[P].IsEffectiveCartier) : Fin n ↪o Fin m :=
+  OrderEmbedding.ofStrictMono _ (p.strictMono_boundaryRayOffset hP)
 
-/-- The contracted boundary numbering is the increasing enumeration of the surviving
-ray indices, read from the specified initial toric ray. -/
-theorem numberedBoundaryRays_eq_orderEmbOfFin (hP : D[P].IsEffectiveCartier)
-    (survivors : Finset (Fin m))
-    (hcard : survivors.card = n)
-    (hkeep : ∀ k ∈ survivors, (RayIndex).symm k ∈ Set.range (p.numberedBoundaryRays hP)) :
-    ∀ j : Fin n, p.numberedBoundaryRays hP (ZMod.finEquiv n j) =
-      (RayIndex).symm (survivors.orderEmbOfFin hcard j) := by
-  let f (j : Fin n) := RayIndex (p.numberedBoundaryRays hP (ZMod.finEquiv n j))
-  have hmono : StrictMono f := by
-    intro a b hab
-    simpa only [f, Fin.lt_def, Equiv.trans_apply, Equiv.subRight_apply,
-      RingEquiv.toEquiv_eq_coe, RingEquiv.coe_coe_toEquiv_symm, ZMod.finEquiv_symm_apply_val] using
-      p.strictMono_numberedBoundaryRays hP hab
-  have hsubset : survivors ⊆ Finset.univ.image f := by
-    intro k hk
-    obtain ⟨j, hj⟩ := hkeep k hk
-    obtain ⟨j, rfl⟩ := (ZMod.finEquiv n).surjective j
-    exact Finset.mem_image.mpr ⟨j, Finset.mem_univ _, by
-      simp only [f, hj, Equiv.apply_symm_apply]⟩
-  have hmem (j : Fin n) : f j ∈ survivors := by
-    have heq := Finset.eq_of_subset_of_card_le hsubset (by
-      rw [Finset.card_image_of_injective _ hmono.injective, Finset.card_univ,
-        Fintype.card_fin, hcard])
-    rw [heq]
-    exact Finset.mem_image_of_mem f (Finset.mem_univ j)
-  intro j
-  have hj := congrFun (Finset.orderEmbOfFin_unique hcard hmem hmono) j
-  exact (RayIndex).injective (by simpa only [Equiv.apply_symm_apply] using hj)
+/-- The offset of a component is the inverse ray index applied to its surviving ray. -/
+@[simp]
+theorem numberedBoundaryRayOffsets_apply (hP : D[P].IsEffectiveCartier) (j : Fin n) :
+    p.numberedBoundaryRayOffsets hP j =
+      (rayAt).symm (p.numberedBoundaryRays hP (ZMod.finEquiv n j)) :=
+  (rfl)
+
+/-- Membership in the offset range is equivalent to survival of the corresponding ray. -/
+theorem mem_range_numberedBoundaryRayOffsets_iff (hP : D[P].IsEffectiveCartier) (k : Fin m) :
+    k ∈ Set.range (p.numberedBoundaryRayOffsets hP) ↔
+      rayAt k ∈ Set.range (p.numberedBoundaryRays hP) := by
+  simp only [Set.mem_range, numberedBoundaryRayOffsets_apply, Equiv.symm_apply_eq]
+  exact ((ZMod.finEquiv n).surjective.exists
+    (p := fun j ↦ p.numberedBoundaryRays hP j = rayAt k)).symm
+
+/-- The offsets of the surviving rays, with cardinality given by the contracted boundary. -/
+noncomputable def survivingBoundaryRayOffsets (hP : D[P].IsEffectiveCartier) :
+    Set.powersetCard (Fin m) n :=
+  Set.powersetCard.ofFinEmbEquiv (p.numberedBoundaryRayOffsets hP)
+
+/-- An offset belongs to the survivor set exactly when its ray survives. -/
+@[simp]
+theorem mem_survivingBoundaryRayOffsets (hP : D[P].IsEffectiveCartier) (k : Fin m) :
+    k ∈ p.survivingBoundaryRayOffsets hP ↔
+      rayAt k ∈ Set.range (p.numberedBoundaryRays hP) :=
+  (Set.powersetCard.mem_ofFinEmbEquiv_iff_mem_range _ _).trans
+    (p.mem_range_numberedBoundaryRayOffsets_iff hP k)
+
+/-- Sorting the survivor set recovers the offsets in the contracted boundary numbering. -/
+@[simp]
+theorem orderEmbOfFin_survivingBoundaryRayOffsets (hP : D[P].IsEffectiveCartier) :
+    (p.survivingBoundaryRayOffsets hP).val.orderEmbOfFin
+      (p.survivingBoundaryRayOffsets hP).prop = p.numberedBoundaryRayOffsets hP := by
+  rw [← Set.powersetCard.ofFinEmbEquiv_symm_apply, survivingBoundaryRayOffsets,
+    Equiv.symm_apply_apply]
+
+/-- A set of the required cardinality is the survivor set if every listed ray survives. -/
+theorem eq_survivingBoundaryRayOffsets_iff (hP : D[P].IsEffectiveCartier)
+    (survivors : Set.powersetCard (Fin m) n) :
+    survivors = p.survivingBoundaryRayOffsets hP ↔
+      ∀ k ∈ survivors, rayAt k ∈ Set.range (p.numberedBoundaryRays hP) := by
+  rw [Set.powersetCard.eq_iff_subset, Finset.subset_iff]
+  simp only [Set.powersetCard.mem_coe_iff, p.mem_survivingBoundaryRayOffsets]
+
+/-- The contracted boundary numbering enumerates the surviving offsets in increasing order
+from the ray of component zero. -/
+theorem numberedBoundaryRays_eq_orderEmbOfFin (hP : D[P].IsEffectiveCartier) (j : Fin n) :
+    p.numberedBoundaryRays hP (ZMod.finEquiv n j) =
+      rayAt ((p.survivingBoundaryRayOffsets hP).val.orderEmbOfFin
+        (p.survivingBoundaryRayOffsets hP).prop j) := by
+  rw [orderEmbOfFin_survivingBoundaryRayOffsets, numberedBoundaryRayOffsets_apply,
+    Equiv.apply_symm_apply]
 
 /-- The same set of surviving rays gives the same numbered rays for two contractions
 with the same oriented source cycle and initial component. -/
@@ -107,29 +145,18 @@ theorem numberedBoundaryRays_eq_of_range_eq
     (hP : D[P].IsEffectiveCartier) (hQ : D[Q].IsEffectiveCartier)
     (hrange : Set.range (p.numberedBoundaryRays hP) = Set.range (q.numberedBoundaryRays hQ)) :
     p.numberedBoundaryRays hP = q.numberedBoundaryRays hQ := by
-  let e := (Φ.boundaryNormalizationComponentEquiv hΦ).trans T.component.symm
-  let index (ρ : Φ.Ray) := (e ρ - origin).val
-  have hindex : Function.Injective index :=
-    (ZMod.val_injective m).comp ((Equiv.subRight origin).injective.comp e.injective)
-  let toZMod := fun j : Fin n ↦ ZMod.finEquiv n j
-  have hp : StrictMono (index ∘ p.numberedBoundaryRays hP ∘ toZMod) :=
-    p.strictMono_numberedBoundaryRays hP
-  have hq : StrictMono (index ∘ q.numberedBoundaryRays hQ ∘ toZMod) :=
-    q.strictMono_numberedBoundaryRays hQ
-  have hs : Function.Surjective toZMod := (ZMod.finEquiv n).surjective
-  have hr : Set.range (index ∘ p.numberedBoundaryRays hP ∘ toZMod) =
-      Set.range (index ∘ q.numberedBoundaryRays hQ ∘ toZMod) := by
-    rw [Set.range_comp, Set.range_comp index, hs.range_comp, hs.range_comp, hrange]
-  have h := (hp.range_inj_of_wellFoundedLT hq).mp hr
+  have hr : Set.range (p.numberedBoundaryRayOffsets hP) =
+      Set.range (q.numberedBoundaryRayOffsets hQ) := by
+    ext k
+    simp only [mem_range_numberedBoundaryRayOffsets_iff, hrange]
+  have h := OrderEmbedding.range_inj_of_wellFoundedLT.mp hr
   apply Function.Embedding.ext
   intro j
-  obtain ⟨j, rfl⟩ := hs j
-  exact hindex (congrFun h j)
+  obtain ⟨k, rfl⟩ := (ZMod.finEquiv n).surjective j
+  exact (rayAt).symm.injective (by
+    simpa only [numberedBoundaryRayOffsets_apply] using DFunLike.congr_fun h k)
 
 variable [Φ.algebraicRealization.IsProjectiveOver ℂ]
-
-local notation "F" => LinearMap.BilinForm.prod (Chow.intersectionBilinForm ℂ Φ.algebraicRealization)
-  (-(dotProductBilin ℤ ℤ : LinearMap.BilinForm ℤ (Fin r → ℤ)))
 
 /-- Two nodal contractions of one marked toric presentation have the same numbered
 rays. The common Picard pullback determines the set of surviving rays. -/
@@ -195,8 +222,8 @@ theorem boundaryClass_eq_of_range_numberedBoundaryRays_eq
         (e.inv ≫ A.toBase) hD) =
       Set.range (Fan.contractedBoundaryRayEmbedding hΦ b s (center d)
         (f.inv ≫ U.toBase) hD') := by
-    simpa only [he, hf, ← p.range_numberedBoundaryRays hp.cartier,
-      ← q.range_numberedBoundaryRays hq.cartier] using hrange
+    simpa only [he, hf, p.range_numberedBoundaryRays, q.range_numberedBoundaryRays,
+      boundaryRayEmbedding_def] using hrange
   have hspan := (Fan.markedExceptionalSpan_eq_span_compl_survivingRays hΦ b s
       (center c) hA e.symm hD).trans
     (hsurvives ▸ (Fan.markedExceptionalSpan_eq_span_compl_survivingRays hΦ b s
@@ -207,8 +234,8 @@ theorem boundaryClass_eq_of_range_numberedBoundaryRays_eq
   have hclass := Fan.marked_pullback_prime_eq_of_contractedBoundaryRayEmbedding_eq hΦ b s
     (center c) hA e.symm hover hD (center d) hU f.symm hover' hD' hspan
     (P.numberedBoundaryPrimes hp.cartier j) (Q.numberedBoundaryPrimes hq.cartier j)
-    (by simpa only [Iso.symm_hom, he, hf, ← numberedBoundaryRays_apply] using
-      congrArg (fun u : ZMod n ↪ Φ.Ray ↦ u j) hrays)
+    (by simpa only [Iso.symm_hom, he, hf, numberedBoundaryRays_apply,
+      boundaryRayEmbedding_def] using congrArg (fun u : ZMod n ↪ Φ.Ray ↦ u j) hrays)
   dsimp only at hclass
   rw [Iso.symm_hom, Iso.symm_hom, he, hf] at hclass
   rw [← p.marked_pullback, ← q.marked_pullback, P.picardMarking_boundaryClass,
@@ -219,4 +246,35 @@ theorem boundaryClass_eq_of_range_numberedBoundaryRays_eq
     apply Subtype.ext
     simp only [MarkedSurface.numberedBoundaryPrimes_apply_val]
 
-end QPainleve.SignedClusterModularGroup.ContractedToricFiber
+end ContractedToricFiber
+
+namespace GeometricRealization.HasNodalToricTargetModels
+
+variable {T₀ T₁ : Over S} {M : Point T₁ → MarkedSurface ℂ n B XTor[r]}
+  {centers : Point T₁ → Multiplicative (Fin r → ℤ) →* ℂˣ}
+  {C : T₀.left.PartialMap T₁.left} [C.IsOver T₀.hom T₁.hom]
+
+/-- Nodal models with a common Picard marking have the surviving rays of the reference
+contraction at every reached target center. -/
+theorem of_nodalContractions [Φ.algebraicRealization.IsProjectiveOver ℂ]
+    [SmoothOfRelativeDimension 2 (Φ.algebraicRealization ↘ S)]
+    (hsep : (F).SeparatingRight)
+    {c₀ : Point T₁}
+    (p₀ : ContractedToricFiber b s hΦ T origin ι (centers c₀) (M c₀))
+    (h₀ : p₀.IsNodalContraction) {U : Set (Point T₁)}
+    (p : ∀ c ∈ U, ContractedToricFiber b s hΦ T origin ι (centers c) (M c))
+    (h : ∀ c hc, (p c hc).IsNodalContraction)
+    (hU : ∀ x : CenterPoint C, x ≫ C.domainTarget ∈ U) :
+    HasNodalToricTargetModels (T₀ := T₀) (T₁ := T₁) (b := b) (s := s) (hΦ := hΦ)
+      (toricCycle := T) (origin := origin) (ι := ι) (P := M) centers
+      (Set.range p₀.boundaryRayEmbedding) C := by
+  intro x
+  let q := p _ (hU x)
+  have hq : q.IsNodalContraction := h _ (hU x)
+  refine ⟨q, hq, ?_⟩
+  rw [← q.range_numberedBoundaryRays hq.cartier, ← p₀.range_numberedBoundaryRays h₀.cartier,
+    q.numberedBoundaryRays_eq_of_nodalContractions p₀ hq h₀ hsep]
+
+end GeometricRealization.HasNodalToricTargetModels
+
+end QPainleve.SignedClusterModularGroup

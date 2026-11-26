@@ -9,6 +9,7 @@ public import Mathlib.GroupTheory.GroupExtension.Basic
 public import QPainleve.AlgebraicGeometry.Curves.DualGraph.Cycle.Action
 public import QPainleve.SignedClusterModularGroup.BoundaryReflection
 public import TauCeti.LinearAlgebra.BilinearForm.Isometry
+import TauCeti.GroupTheory.GroupExtension.Splitting
 
 /-!
 # Signed boundary isometries
@@ -18,9 +19,12 @@ A signed boundary isometry of a cyclic family `D` is an isometry together with a
 The positive-sign kernel consists of rotations. A reversing involution splits the sign
 extension, so Mathlib's `GroupExtension.Splitting.semidirectProductMulEquiv` gives the
 semidirect product with conjugation by that involution.
+For an injectively numbered boundary, `SignedBoundaryIsometryGroup.boundaryAction`
+reads the forward dihedral action from Picard pullback and the branch sign.
 For a unimodular symmetric cycle lattice with primitive characteristic total class,
-`SignedBoundaryIsometryGroup.exists_semidirectProductMulEquiv` obtains this splitting from
-`exists_cycle_reversing_involution`.
+`SignedBoundaryIsometryGroup.CycleReversingInvolution` records the signed element and
+its action on the lattice. The same witness supplies the splitting and the action on
+the boundary orthogonal complement.
 
 For an injectively indexed family of length at least three, the underlying isometry determines
 the sign. For lengths one and two, both signs give the same index action and the signed group
@@ -71,6 +75,8 @@ theorem mem_boundaryRotationGroup_iff {g : B.isometryGroup} :
 
 namespace SignedBoundaryIsometryGroup
 
+open DihedralGroup MulOpposite
+
 /-- Projection to the underlying isometry. -/
 def toIsometry : signedBoundaryIsometryGroup B D →* B.isometryGroup :=
   (MonoidHom.fst _ _).domRestrict _
@@ -117,6 +123,68 @@ theorem exists_cycleAction_pullback (g : signedBoundaryIsometryGroup B D) :
     intro j
     simpa only [toIsometry_apply, DihedralGroup.cycleVertexPerm_sr_apply, neg_neg, ← sign_apply,
       h, Units.neg_smul, one_smul, neg_sub, sub_add_cancel] using hk (k - j)
+
+private theorem cycleAction_eq_of_pullback (hD : Function.Injective D)
+    (g : signedBoundaryIsometryGroup B D) {a b : DihedralGroup n}
+    (ha : cycleOrientationSign a = sign B D g ∧
+      ∀ j, (toIsometry B D g).val (D (cycleVertexPerm a j)) = D j)
+    (hb : cycleOrientationSign b = sign B D g ∧
+      ∀ j, (toIsometry B D g).val (D (cycleVertexPerm b j)) = D j) : a = b :=
+  eq_of_cycleVertexPerm_eq_of_cycleOrientationSign_eq
+    (Equiv.ext fun j ↦ hD ((toIsometry B D g).val.injective ((ha.2 j).trans (hb.2 j).symm)))
+    (ha.1.trans hb.1.symm)
+
+/-- The forward dihedral action determined by Picard pullback on an injectively
+numbered boundary and by the specified orientation sign. The opposite group
+accounts for the reversal of composition under pullback. -/
+noncomputable def boundaryAction (hD : Function.Injective D) :
+    (signedBoundaryIsometryGroup B D)ᵐᵒᵖ →* DihedralGroup n where
+  toFun g := (exists_cycleAction_pullback B D g.unop).choose
+  map_one' := by
+    refine cycleAction_eq_of_pullback B D hD _ (exists_cycleAction_pullback B D _).choose_spec
+      ⟨?_, fun j ↦ ?_⟩ <;> simp
+  map_mul' g h := by
+    have hg := (exists_cycleAction_pullback B D g.unop).choose_spec
+    have hh := (exists_cycleAction_pullback B D h.unop).choose_spec
+    refine cycleAction_eq_of_pullback B D hD _ (exists_cycleAction_pullback B D _).choose_spec
+      ⟨?_, fun j ↦ ?_⟩
+    · rw [map_mul, hg.1, hh.1, unop_mul, map_mul, mul_comm]
+    · rw [unop_mul, map_mul, Subgroup.coe_mul, mul_apply_eq_comp, map_mul, Equiv.Perm.mul_apply,
+        hg.2, hh.2]
+
+/-- The forward boundary action retains the sign, even when the vertex
+permutation alone does not distinguish the two orientations. -/
+@[simp]
+theorem cycleOrientationSign_boundaryAction (hD : Function.Injective D)
+    (g : signedBoundaryIsometryGroup B D) :
+    cycleOrientationSign (boundaryAction B D hD (op g)) = sign B D g :=
+  (exists_cycleAction_pullback B D g).choose_spec.1
+
+/-- The class at the forward image of a component pulls back to that component's class. -/
+@[simp↓] -- Simplify the pullback before unfolding `toIsometry`.
+theorem toIsometry_apply_boundaryAction (hD : Function.Injective D)
+    (g : signedBoundaryIsometryGroup B D) (j : ZMod n) :
+    (toIsometry B D g).val (D (cycleVertexPerm (boundaryAction B D hD (op g)) j)) = D j :=
+  (exists_cycleAction_pullback B D g).choose_spec.2 j
+
+/-- A dihedral element gives the forward action exactly when its sign and
+its pullback on boundary classes agree with the signed isometry. -/
+theorem boundaryAction_eq_iff (hD : Function.Injective D)
+    (g : signedBoundaryIsometryGroup B D) (a : DihedralGroup n) :
+    boundaryAction B D hD (op g) = a ↔
+      cycleOrientationSign a = sign B D g ∧
+        ∀ j, (toIsometry B D g).val (D (cycleVertexPerm a j)) = D j := by
+  have h := And.intro (cycleOrientationSign_boundaryAction B D hD g)
+    (toIsometry_apply_boundaryAction B D hD g)
+  exact ⟨fun e ↦ e ▸ h, cycleAction_eq_of_pullback B D hD g h⟩
+
+/-- The forward image of a boundary index can be read by pulling back its class. -/
+theorem cycleVertexPerm_boundaryAction_apply_eq_iff (hD : Function.Injective D)
+    (g : signedBoundaryIsometryGroup B D) (j l : ZMod n) :
+    cycleVertexPerm (boundaryAction B D hD (op g)) j = l ↔
+      (toIsometry B D g).val (D l) = D j := by
+  rw [← toIsometry_apply_boundaryAction B D hD g j, (toIsometry B D g).val.injective.eq_iff,
+    hD.eq_iff, eq_comm]
 
 /-- Include a boundary rotation with positive sign. -/
 def rotationInclusion : boundaryRotationGroup B D →* signedBoundaryIsometryGroup B D :=
@@ -171,6 +239,56 @@ theorem reversal_mul_self (g : B.IsometryEquiv B)
 
 variable (B D)
 
+/-- A signed lift of the boundary reflection about a chosen component, together with
+the square `-1` lattice class that meets that component once. -/
+@[ext]
+structure CycleReversingInvolution [NeZero n] where
+  /-- The component at the cut. -/
+  cut : ZMod n
+  /-- The square `-1` lattice class at the cut. -/
+  cutClass : L
+  /-- The involution in the signed boundary isometry group. -/
+  element : signedBoundaryIsometryGroup B D
+  cutClass_sq : B cutClass cutClass = -1
+  pairing_cutClass : ∀ j, B cutClass (D j) = if j = cut then 1 else 0
+  sign_element : element.val.2 = -1
+  element_mul_self : element * element = 1
+  toIsometry_apply_cutClass : element.val.1.val cutClass = cutClass
+  toIsometry_apply_boundary : ∀ j, element.val.1.val (D j) = D (2 * cut - j)
+  toIsometry_apply_orthogonal : ∀ x ∈ B.orthogonal (Submodule.span ℤ (Set.range D)),
+    element.val.1.val x = -x + (2 * B x cutClass) • (∑ j, D j)
+
+attribute [simp] CycleReversingInvolution.cutClass_sq CycleReversingInvolution.sign_element
+  CycleReversingInvolution.pairing_cutClass CycleReversingInvolution.element_mul_self
+  CycleReversingInvolution.toIsometry_apply_cutClass
+  CycleReversingInvolution.toIsometry_apply_boundary
+
+/-- A unimodular symmetric cycle lattice with primitive characteristic total class
+has a signed cycle-reversing involution. -/
+theorem nonempty_cycleReversingInvolution [Module.Free ℤ L] [Module.Finite ℤ L] [NeZero n]
+    [B.IsPerfPair] (hSymm : B.IsSymm)
+    (hIntersection : ∀ i j : ZMod n,
+      B (D i) (D j) = (-2 : ℤ) * (if i = j then 1 else 0) +
+        (if j = i + 1 then 1 else 0) + (if j = i - 1 then 1 else 0))
+    (hPrimitive : TauCeti.IsPrimitive (∑ j, D j))
+    (hCharacteristic : B.IsCharacteristic (∑ j, D j)) :
+    Nonempty (CycleReversingInvolution B D) := by
+  obtain ⟨j₀, f, g, hsq, hpair, hinv, hfix, _, hboundary, horthogonal⟩ :=
+    exists_cycle_reversing_involution L B hSymm n D hIntersection hPrimitive hCharacteristic
+  have hrev : ∃ k : ZMod n, ∀ j, g (D j) = D (-j + k) :=
+    ⟨2 * j₀, fun j ↦ by simpa only [sub_eq_neg_add] using hboundary j⟩
+  exact ⟨{
+    cut := j₀
+    cutClass := f
+    element := reversal g hrev
+    cutClass_sq := hsq
+    pairing_cutClass := hpair
+    sign_element := by simp
+    element_mul_self := reversal_mul_self g hrev hinv
+    toIsometry_apply_cutClass := by simpa using hfix
+    toIsometry_apply_boundary := by simpa using hboundary
+    toIsometry_apply_orthogonal := by simpa using horthogonal }⟩
+
 /-- A negative-sign element ensures that the sign homomorphism is surjective. -/
 theorem sign_surjective (s : signedBoundaryIsometryGroup B D) (hs : sign B D s = -1) :
     Function.Surjective (sign B D) := by
@@ -219,6 +337,18 @@ theorem signSplitting_neg_one (s : signedBoundaryIsometryGroup B D) (hs : sign B
     (hss : s * s = 1) : signSplitting B D s hs hss (-1) = s := by
   simp [signSplitting]
 
+/-- The sign section associated with the chosen reversal of a numbered boundary. -/
+def CycleReversingInvolution.signSplitting {B : LinearMap.BilinForm ℤ L} {D : ZMod n → L} [NeZero n]
+    (r : CycleReversingInvolution B D) :
+    (signExtension B D (sign_surjective B D r.element (by simp))).Splitting :=
+  SignedBoundaryIsometryGroup.signSplitting B D r.element (by simp) r.element_mul_self
+
+@[simp]
+theorem CycleReversingInvolution.signSplitting_neg_one {B : LinearMap.BilinForm ℤ L}
+    {D : ZMod n → L} [NeZero n]
+    (r : CycleReversingInvolution B D) : r.signSplitting (-1) = r.element :=
+  SignedBoundaryIsometryGroup.signSplitting_neg_one B D r.element (by simp) r.element_mul_self
+
 /-- In the semidirect product induced by the splitting, the negative sign acts on rotations
 by conjugation by the underlying reversing involution. -/
 theorem coe_signSplitting_conjAct_neg_one (s : signedBoundaryIsometryGroup B D)
@@ -235,35 +365,25 @@ theorem coe_signSplitting_conjAct_neg_one (s : signedBoundaryIsometryGroup B D)
 total class gives an order-two section of the sign projection. The signed isometry group is
 the corresponding semidirect product, with the negative sign acting by conjugation. -/
 theorem exists_semidirectProductMulEquiv [Module.Free ℤ L] [Module.Finite ℤ L] [NeZero n]
+    [B.IsPerfPair]
     (hSymm : B.IsSymm)
-    (hUnimodular : Function.Bijective (B : L → (L →ₗ[ℤ] ℤ)))
     (hIntersection : ∀ i j : ZMod n,
       B (D i) (D j) = (-2 : ℤ) * (if i = j then 1 else 0) +
         (if j = i + 1 then 1 else 0) + (if j = i - 1 then 1 else 0))
-    (hPrimitive : ∃ ℓ : L →ₗ[ℤ] ℤ, ℓ (∑ i : ZMod n, D i) = 1)
-    (hCharacteristic : ∀ x : L, Even (B x x - B x (∑ i : ZMod n, D i))) :
+    (hPrimitive : TauCeti.IsPrimitive (∑ i : ZMod n, D i))
+    (hCharacteristic : B.IsCharacteristic (∑ i : ZMod n, D i)) :
     ∃ (s : signedBoundaryIsometryGroup B D) (hs : sign B D s = -1) (hss : s * s = 1),
       (∃ j₀ : ZMod n, ∀ j, (toIsometry B D s).val (D j) = D (2 * j₀ - j)) ∧
       orderOf s = 2 ∧
       ∃ e : (boundaryRotationGroup B D ⋊[(signSplitting B D s hs hss).conjAct] ℤˣ) ≃*
           signedBoundaryIsometryGroup B D,
         e (SemidirectProduct.inr (-1)) = s := by
-  obtain ⟨j₀, f, g, _, _, hinv, _, _, hg, _⟩ :=
-    exists_cycle_reversing_involution L B hSymm hUnimodular n D hIntersection hPrimitive
-      hCharacteristic
-  have hrev : ∃ k : ZMod n, ∀ j, g (D j) = D (-j + k) :=
-    ⟨2 * j₀, fun j ↦ by simpa only [sub_eq_neg_add] using hg j⟩
-  let s := reversal g hrev
-  have hs : sign B D s = -1 := by simp [s]
-  have hss : s * s = 1 := reversal_mul_self g hrev hinv
-  let splitting := signSplitting B D s hs hss
-  refine ⟨s, hs, hss, ⟨j₀, ?_⟩, orderOf_eq_two_of_sign_eq_neg_one B D s hs hss,
-    splitting.semidirectProductMulEquiv, ?_⟩
-  · intro j
-    simpa only [s, toIsometry_apply, coe_reversal,
-      LinearMap.BilinForm.coe_isometryGroupEquivIsometryEquiv_symm] using hg j
-  · change rotationInclusion B D 1 * splitting (-1) = s
-    simp [splitting]
+  obtain ⟨r⟩ := nonempty_cycleReversingInvolution B D hSymm hIntersection hPrimitive hCharacteristic
+  have hsign : sign B D r.element = -1 := by simp
+  refine ⟨r.element, hsign, r.element_mul_self, ⟨r.cut, fun j ↦ by simp⟩,
+    orderOf_eq_two_of_sign_eq_neg_one B D r.element hsign r.element_mul_self,
+    r.signSplitting.semidirectProductMulEquiv, ?_⟩
+  exact (r.signSplitting.semidirectProductMulEquiv_inr (-1)).trans r.signSplitting_neg_one
 
 /-- On an injectively indexed boundary of length at least three, the underlying isometry
 determines the sign. -/

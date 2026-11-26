@@ -166,6 +166,13 @@ theorem compDomainRight_target :
   ext : 1
   exact Category.assoc _ _ _
 
+/-- A property of the target images of all maps into the second domain also holds
+for the target images of maps into the composite domain. -/
+theorem forall_comp_domainTarget {A : Over S} (p : (A ⟶ Z) → Prop)
+    (h : ∀ c : A ⟶ g.domainOver, p (c ≫ g.domainTarget))
+    (c : A ⟶ (f.comp g).domainOver) : p (c ≫ (f.comp g).domainTarget) := by
+  simpa only [Category.assoc, compDomainRight_target] using h (c ≫ f.compDomainRight g)
+
 instance (A : Over S) : (PartialMap.id A.left).IsOver A.hom A.hom :=
   Hom.isOver_toPartialMap (Category.id_comp _)
 

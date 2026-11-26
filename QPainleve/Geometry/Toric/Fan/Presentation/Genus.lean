@@ -45,7 +45,7 @@ theorem HasToricPresentation.genus_blowupComponent_eq_zero
     (h : D.HasToricPresentation (X ↘ S) b i) (hD : D.IsEffectiveCartier)
     (v : irreducibleComponents (D.subscheme.singularLocus ℂ).blowup) :
     (D.subscheme.blowupComponent v).toScheme.genus ℂ = 0 := by
-  obtain ⟨Φ, hΦ, hc, m, rays, c, n, Y, T, hT, e, he, hB⟩ := (hasToricPresentation_iff ..).mp h
+  obtain ⟨m, ⟨Φ, hΦ, hc, rays, c, n, Y, T, hT, e, he, hB⟩⟩ := (hasToricPresentation_iff ..).mp h
   let := hc.nonempty_cones
   let B := Φ.boundaryIdeal hc.nonempty_cones
   let A := Fan.internalBlowupTower b rays c

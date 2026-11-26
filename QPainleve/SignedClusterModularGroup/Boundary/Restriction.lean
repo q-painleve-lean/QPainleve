@@ -8,9 +8,9 @@ module
 public import Mathlib.GroupTheory.Coset.Basic
 public import Mathlib.LinearAlgebra.Reflection
 public import QPainleve.SignedClusterModularGroup.Boundary.Isometry
-public import TauCeti.Algebra.Module.Primitive
-public import TauCeti.LinearAlgebra.BilinearForm.Characteristic
+import QPainleve.LinearAlgebra.Reflection
 import QPainleve.SignedClusterModularGroup.BoundaryCycle
+import QPainleve.SignedClusterModularGroup.Faithfulness
 
 /-!
 # Signed action on the boundary orthogonal lattice
@@ -90,6 +90,39 @@ theorem coe_signedOrthogonalRestriction_apply (g : signedBoundaryIsometryGroup B
   coe_signedRestrictionEquiv_apply B D g x
 
 variable [NeZero n]
+
+/-- For signed isometries with specified forward images of component zero, equality is
+equivalent to agreement of the signs, signed orthogonal restrictions, and forward images. -/
+theorem eq_iff_of_boundary_pullback (hSymm : B.IsSymm) (hsep : B.SeparatingLeft)
+    (hspan : (M).baseChange ℚ ⊔ (K).baseChange ℚ =
+      (B.baseChange ℚ).orthogonal ((ℤ ∙ δ).baseChange ℚ))
+    (hD : Function.Injective D) {g h : signedBoundaryIsometryGroup B D} {j k : ZMod n}
+    (hg : (toIsometry B D g).val (D j) = D 0)
+    (hh : (toIsometry B D h).val (D k) = D 0) :
+    g = h ↔ sign B D g = sign B D h ∧
+      signedOrthogonalRestriction B D g = signedOrthogonalRestriction B D h ∧ j = k := by
+  let iso := B.isometryGroupEquivIsometryEquiv
+  have pullback (a : signedBoundaryIsometryGroup B D) {l : ZMod n}
+      (ha : (toIsometry B D a).val (D l) = D 0) :
+      ∀ i, iso (toIsometry B D a) (D i) = D (sign B D a • (i - l)) := by
+    rw [← B.coe_isometryGroupEquivIsometryEquiv] at ha
+    refine (boundary_pullback_eq_smul_sub_iff hD ?_).mpr ha
+    simpa only [iso, BilinForm.coe_isometryGroupEquivIsometryEquiv, toIsometry_apply, sign_apply]
+      using (mem_signedBoundaryIsometryGroup_iff B D).mp a.property
+  have hrestriction :
+      signedOrthogonalRestriction B D g = signedOrthogonalRestriction B D h ↔
+        ∀ x ∈ K, sign B D g • iso (toIsometry B D g) x =
+          sign B D h • iso (toIsometry B D h) x := by
+    rw [← Subtype.coe_injective.eq_iff, LinearEquiv.ext_iff, Subtype.forall]
+    simp only [Subtype.ext_iff, coe_signedOrthogonalRestriction_apply, iso,
+      BilinForm.coe_isometryGroupEquivIsometryEquiv]
+  calc
+    g = h ↔ (iso (toIsometry B D g), sign B D g) = (iso (toIsometry B D h), sign B D h) := by
+      simp only [Prod.mk.injEq, iso.injective.eq_iff, toIsometry_apply, sign_apply,
+        ← Prod.ext_iff, Subtype.coe_injective.eq_iff]
+    _ ↔ _ := by
+      rw [hrestriction]
+      exact signed_boundary_isometry_eq_iff hSymm hsep hspan hD (pullback g hg) (pullback h hh)
 
 /-- On the total boundary class, the signed restriction acts by the sign. -/
 @[simp]
@@ -175,6 +208,80 @@ theorem signedOrthogonalRestriction_centralSign_apply (hn : n ≤ 2) (x : K) :
   apply Subtype.ext
   simp [Units.smul_def]
 
+variable {B}
+
+/-- For a one-component cycle, a negative signed boundary isometry whose signed restriction
+acts by negation is the central sign element. -/
+theorem eq_centralSign_of_signedOrthogonalRestriction [Module.Free ℤ L] [Module.Finite ℤ L]
+    (hSymm : B.IsSymm) (hnondeg : B.Nondegenerate)
+    {d : ZMod 1 → L} (hgram : ∀ j k, B (d j) (d k) = (-2 : ℤ) * (if j = k then 1 else 0) +
+      (if k = j + 1 then 1 else 0) + (if k = j - 1 then 1 else 0))
+    (g : signedBoundaryIsometryGroup B d)
+    (hsign : sign B d g = -1)
+    (horth : ∀ x : B.orthogonal (Submodule.span ℤ (Set.range d)),
+      (signedOrthogonalRestriction B d g).val x = -x) :
+    g = centralSign B d (by decide) := by
+  have hone (x : L) : (1 : L ≃ₗ[ℤ] L) x = x := rfl
+  apply Subtype.ext
+  apply Prod.ext
+  · rw [coe_centralSign, ← toIsometry_apply]
+    apply B.isometryGroupEquivIsometryEquiv.injective
+    refine boundary_isometry_ext (D := d) hSymm hnondeg.1
+      (BoundaryCycle.span_sup_orthogonal_rat hgram hSymm hnondeg) ?_ ?_
+    · intro j
+      obtain ⟨p, hp⟩ := exists_indexPerm B d g
+      simpa only [BilinForm.coe_isometryGroupEquivIsometryEquiv,
+        OneMemClass.coe_one, hone, Subsingleton.elim (p j) j] using hp j
+    · intro x hx
+      have heq := congrArg Subtype.val
+        ((horth ⟨x, hx⟩).trans
+          (signedOrthogonalRestriction_centralSign_apply B d (by decide) ⟨x, hx⟩).symm)
+      simp only [coe_signedOrthogonalRestriction_apply, hsign, sign_apply, toIsometry_apply,
+        coe_centralSign] at heq
+      simpa only [BilinForm.coe_isometryGroupEquivIsometryEquiv,
+        toIsometry_apply, OneMemClass.coe_one, hone] using smul_left_cancel (-1 : ℤˣ) heq
+  · simpa only [coe_centralSign, sign_apply] using hsign
+
+namespace CycleReversingInvolution
+
+variable {D} (r : CycleReversingInvolution B D)
+
+/-- The linear form of the signed reflection on the boundary orthogonal. -/
+def orthogonalReflectionForm : K →ₗ[ℤ] ℤ :=
+  (2 : ℤ) • (B.flip r.cutClass).comp (K).subtype
+
+@[simp]
+theorem orthogonalReflectionForm_apply (x : K) : r.orthogonalReflectionForm x =
+    2 * B x r.cutClass := by
+  simp [orthogonalReflectionForm]
+
+/-- The reflecting linear form takes the total boundary class to two. -/
+theorem orthogonalReflectionForm_apply_sum (hSymm : B.IsSymm) (hδ : δ ∈ K) :
+    r.orthogonalReflectionForm ⟨δ, hδ⟩ = 2 := by
+  classical
+  have hpair : B r.cutClass δ = 1 := by simp [map_sum]
+  rw [orthogonalReflectionForm_apply, hSymm.eq δ r.cutClass, hpair, mul_one]
+
+/-- The signed restriction of the chosen boundary involution is the module reflection
+along the total boundary class. -/
+theorem signedOrthogonalRestriction_eq_reflection (hδ : δ ∈ K)
+    (hℓ : r.orthogonalReflectionForm ⟨δ, hδ⟩ = 2) :
+    (ρ r.element).val = Module.reflection hℓ := by
+  apply LinearEquiv.ext
+  intro x
+  apply Subtype.ext
+  have hnegative : ((ρ r.element).val x : L) = -(toIsometry B D r.element).val x := by
+    rw [coe_signedOrthogonalRestriction_apply, sign_apply, r.sign_element]
+    simp [Units.smul_def]
+  rw [hnegative, toIsometry_apply, r.toIsometry_apply_orthogonal x x.property,
+    neg_add_rev, neg_neg, neg_add_eq_sub, Module.reflection_apply,
+    orthogonalReflectionForm_apply, Submodule.coe_sub, Submodule.coe_smul]
+  exact congrArg ((x : L) - ·) (int_smul_eq_zsmul scalar _ _).symm
+
+end CycleReversingInvolution
+
+variable (B)
+
 /-- In a unimodular symmetric cycle lattice with primitive characteristic total class, the
 negative lift of the cycle-reversing involution restricts to the reflection
 `x ↦ x - 2 B(x,f) δ`. This reflection induces the identity on the quotient by the total class. -/
@@ -188,42 +295,12 @@ theorem exists_signedOrthogonalRestriction_eq_reflection [Module.Free ℤ L] [Mo
       (hℓ : ((2 : ℤ) • (B.flip f).comp (K).subtype) ⟨δ, hδ⟩ = 2),
       sign B D s = -1 ∧ s * s = 1 ∧ (ρ s).val = Module.reflection hℓ ∧
         ∀ x : K, (ℤ ∙ (⟨δ, hδ⟩ : K)).mkQ ((ρ s).val x) = (ℤ ∙ (⟨δ, hδ⟩ : K)).mkQ x := by
-  classical
-  have hδ : δ ∈ K := Submodule.mem_orthogonalBilin_span.mpr
-    (by rintro _ ⟨i, rfl⟩; exact (hSymm.eq _ _).trans (BoundaryCycle.pairing_sum hGram i))
-  have hEven (x : L) : Even (B x x - B x δ) := by
-    rw [even_iff_two_dvd, dvd_sub_comm, hSymm.eq x δ]
-    exact (BilinForm.isCharacteristic_iff.mp hCharacteristic) x
-  have hPrimitive' : ∃ ℓ : L →ₗ[ℤ] ℤ, ℓ δ = 1 := by
-    have hscalar : scalar = AddCommGroup.toIntModule L := Subsingleton.elim _ _
-    rw [hscalar]
-    exact TauCeti.isPrimitive_def.mp hPrimitive
-  obtain ⟨j₀, f, g, _, hfD, hgInv, _, _, hgD, hgK⟩ :=
-    exists_cycle_reversing_involution L B hSymm (IsPerfPair.bijective_left B) n D
-      hGram hPrimitive' hEven
-  let hrev : ∃ k : ZMod n, ∀ j, g (D j) = D (-j + k) :=
-    ⟨2 * j₀, fun j ↦ by simpa only [sub_eq_neg_add] using hgD j⟩
-  let ℓ : K →ₗ[ℤ] ℤ := (2 : ℤ) • (B.flip f).comp (K).subtype
-  have hℓ_eval (x : K) : ℓ x = 2 * B x f := by simp [ℓ]
-  have hℓ : ℓ ⟨δ, hδ⟩ = 2 := by
-    have hfδ : B f δ = 1 := by simp [map_sum, hfD]
-    have hδf : B δ f = 1 := (hSymm.eq δ f).trans hfδ
-    simp only [hℓ_eval, hδf, mul_one]
-  have hr : (ρ (reversal g hrev)).val = Module.reflection hℓ := by
-    apply LinearEquiv.ext
-    intro x
-    apply Subtype.ext
-    have hx (j : ZMod n) : B x (D j) = 0 :=
-      (hSymm.eq _ _).trans (B.mem_orthogonal_iff.mp x.property _ (Submodule.subset_span
-        (Set.mem_range_self j)))
-    have hrev_apply : ((ρ (reversal g hrev)).val x : L) = -g x := by
-      simp [Units.smul_def]
-    rw [hrev_apply, hgK x hx, neg_add_rev, neg_neg, neg_add_eq_sub, Module.reflection_apply,
-      hℓ_eval, Submodule.coe_sub, Submodule.coe_smul]
-    exact congrArg ((x : L) - ·) (int_smul_eq_zsmul scalar _ _).symm
-  refine ⟨hδ, f, reversal g hrev, hℓ, by simp, reversal_mul_self g hrev hgInv, hr, ?_⟩
+  have hδ := BoundaryCycle.sum_mem_orthogonal hGram
+  obtain ⟨r⟩ := nonempty_cycleReversingInvolution B D hSymm hGram hPrimitive hCharacteristic
+  have hℓ := r.orthogonalReflectionForm_apply_sum hSymm hδ
+  have hr := r.signedOrthogonalRestriction_eq_reflection hδ hℓ
+  refine ⟨hδ, r.cutClass, r.element, hℓ, by simp, r.element_mul_self, hr, ?_⟩
   intro x
-  rw [hr, Module.reflection_apply, map_sub, sub_eq_self, ← LinearMap.mem_ker, Submodule.ker_mkQ]
-  exact Submodule.smul_mem _ _ (Submodule.mem_span_singleton_self _)
+  rw [hr, Module.mkQ_reflection_apply]
 
 end QPainleve.SignedBoundaryIsometryGroup

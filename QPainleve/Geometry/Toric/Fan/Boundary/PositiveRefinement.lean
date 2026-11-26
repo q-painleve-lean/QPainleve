@@ -10,7 +10,7 @@ public import QPainleve.Geometry.Toric.Fan.Boundary.Refinement
 import QPainleve.Geometry.Toric.Fan.Boundary.CycleAction
 import QPainleve.Geometry.Toric.Fan.Boundary.Node
 import QPainleve.Geometry.Toric.Fan.Boundary.Period
-import QPainleve.Geometry.Toric.Fan.CyclicOrder
+import QPainleve.Geometry.Toric.Fan.CyclicOrder.Basic
 import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.Pullback
 
 /-!

@@ -19,7 +19,7 @@ enumeration with the actual boundary numbering of a marked contraction.
 
 public section
 
-open AlgebraicGeometry CategoryTheory Module Multiplicative
+open AlgebraicGeometry CategoryTheory Module
 open TauCeti TauCeti.AlgebraicGeometry TauCeti.Toric
 open Scheme Scheme.IdealSheafData
 
@@ -28,20 +28,20 @@ namespace QPainleve.SignedClusterModularGroup
 /-- Compute the boundary order table from integer charge coordinates and a subset of
 toric ray indices. The ray indices are cyclic offsets from the initial boundary ray. -/
 def boundaryOrderTable {ι : Type*} {m n : ℕ} (charge : ι → Fin 2 → ℤ)
-    (ray : Fin m → Fin 2 → ℤ) (survivors : Finset (Fin m)) (hcard : survivors.card = n) :
+    (ray : Fin m → Fin 2 → ℤ) (survivors : Set.powersetCard (Fin m) n) :
     Fin n → ι → ℤ :=
   fun j i ↦
-    let u := ray (survivors.orderEmbOfFin hcard j)
+    let u := ray (survivors.val.orderEmbOfFin survivors.prop j)
     Matrix.det !![charge i 0, charge i 1; u 0, u 1]
 
 /-- Each table entry is the determinant of the charge and the selected primitive ray. -/
 @[simp]
 theorem boundaryOrderTable_apply {ι : Type*} {m n : ℕ} (charge : ι → Fin 2 → ℤ)
-    (ray : Fin m → Fin 2 → ℤ) (survivors : Finset (Fin m)) (hcard : survivors.card = n)
+    (ray : Fin m → Fin 2 → ℤ) (survivors : Set.powersetCard (Fin m) n)
     (j : Fin n) (i : ι) :
-    boundaryOrderTable charge ray survivors hcard j i =
-      charge i 0 * ray (survivors.orderEmbOfFin hcard j) 1 -
-        charge i 1 * ray (survivors.orderEmbOfFin hcard j) 0 :=
+    boundaryOrderTable charge ray survivors j i =
+      charge i 0 * ray (survivors.val.orderEmbOfFin survivors.prop j) 1 -
+        charge i 1 * ray (survivors.val.orderEmbOfFin survivors.prop j) 0 :=
   Matrix.det_fin_two_of _ _ _ _
 
 namespace ContractedToricFiber
@@ -60,28 +60,23 @@ variable {N V L : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V] [AddCom
   {M : MarkedSurface ℂ n B (Spec (CommRingCat.of (LaurentRing ℂ (Fin r))))}
   (p : ContractedToricFiber b s hΦ T origin μ c M) (hD : D[M].IsEffectiveCartier)
 
-local notation "RayIndex" =>
-  Equiv.trans (Φ.boundaryNormalizationComponentEquiv hΦ)
-    (Equiv.trans (Equiv.symm (NodalCycleNumbering.component T))
-      (Equiv.trans (Equiv.subRight origin) (Equiv.symm (RingEquiv.toEquiv (ZMod.finEquiv m)))))
+local notation "rayAt" => Φ.rayFinEquivOfNodalCycleNumbering hΦ T origin
 
 /-- The determinant table computed from the surviving offsets and integer coordinates
-is the order table of the numbered components of the marked surface. A set of the correct
-size suffices when every listed ray's strict prime maps to a boundary prime. -/
-theorem boundaryOrderTable_eq (survivors : Finset (Fin m)) (hcard : survivors.card = n)
-    (hkeep : ∀ k ∈ survivors,
-      p.projection (Fan.internalBlowupBoundaryPrimeEquiv hΦ b s
-        (fun j ↦ c (ofAdd (Pi.single j 1))) ((RayIndex).symm k)).val ∈ D[M].boundaryPrimes)
+is the order table of the numbered components of the marked surface. -/
+theorem boundaryOrderTable_eq (survivors : Set.powersetCard (Fin m) n)
+    (hsurvivors : survivors = p.survivingBoundaryRayOffsets hD)
     (charge : Fin r → Fin 2 → ℤ) (ray : Fin m → Fin 2 → ℤ)
     (hcharge : ∀ k, charge k = b.repr (s k).primitiveGenerator)
-    (hray : ∀ k ∈ survivors, ray k = b.repr ((RayIndex).symm k).primitiveGenerator) :
-    boundaryOrderTable charge ray survivors hcard = fun j : Fin n ↦
-      Fan.rayBoundaryOrders b s (p.numberedBoundaryRays hD (ZMod.finEquiv n j)) := by
+    (hray : ∀ k ∈ survivors, ray k = b.repr (rayAt k).primitiveGenerator) :
+    boundaryOrderTable charge ray survivors = p.numberedBoundaryOrders hD := by
+  subst survivors
   funext j k
-  have hsurvives l hl := (p.mem_range_numberedBoundaryRays_iff hD _).mpr (hkeep l hl)
-  rw [p.numberedBoundaryRays_eq_orderEmbOfFin hD survivors hcard hsurvives,
-    Fan.rayBoundaryOrders_apply_eq_repr]
-  simp only [boundaryOrderTable_apply, hcharge, hray _ (Finset.orderEmbOfFin_mem survivors hcard j)]
+  rw [p.numberedBoundaryOrders_apply, RingEquiv.toEquiv_eq_coe, RingEquiv.coe_toEquiv,
+    p.numberedBoundaryRays_eq_orderEmbOfFin hD j, Fan.rayBoundaryOrders_apply_eq_repr]
+  have hj := Finset.orderEmbOfFin_mem (p.survivingBoundaryRayOffsets hD).val
+    (p.survivingBoundaryRayOffsets hD).prop j
+  simp only [boundaryOrderTable_apply, hcharge, hray _ hj]
 
 end ContractedToricFiber
 

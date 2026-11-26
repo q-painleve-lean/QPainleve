@@ -9,11 +9,10 @@ public import QPainleve.AlgebraicGeometry.Chow.Cremona
 public import QPainleve.LinearAlgebra.BilinearForm.Conjugation
 public import QPainleve.SignedClusterModularGroup.Boundary.Isometry
 public import QPainleve.SignedClusterModularGroup.Realization.Boundary
+public import QPainleve.SignedClusterModularGroup.Realization.Presentation.Cremona.Comparison
 
 import QPainleve.SignedClusterModularGroup.Boundary.Conjugation
 import QPainleve.SignedClusterModularGroup.Boundary.Cremona
-import QPainleve.SignedClusterModularGroup.Realization.Reflection
-import TauCeti.AlgebraicGeometry.Curves.Node.Reduced
 
 /-!
 # Cremona isometries in the Picard marking
@@ -24,8 +23,9 @@ For at least three boundary components this projection is an equivalence.
 For one or two components the rotation group is the Cremona isometry group,
 and the signed group has an extra direct factor of order two.
 
-The geometric input is
-`QPainleve.BoundaryCycle.range_toIsometry_eq_cremonaIsometryGroup_of_cycle_gram`.
+The marked comparisons transport the Cremona projection of the numbered cycle
+through the Picard marking. A signed cluster modular group identification
+with the marked isometries then gives a Cremona projection and a branch sign.
 -/
 
 public noncomputable section
@@ -67,48 +67,31 @@ variable [IsRationalOver (M.surface ↘ Spec (CommRingCat.of k))]
       Disjoint (closure {(r : M.surface)}) M.pair.hom.left.ker.support →
       Chow.classIntersectionNumber k M.surface (primeDivisorClass r) (primeDivisorClass r) ≠ -2)
 
-include hcan hnef hsq hroot in
-private theorem range_markedProjection :
+local notation "a" =>
+  (fun j ↦ Additive.ofMul (primeDivisorClass
+    (boundaryPrimeEmbedding D (Scheme.NodalCycleNumbering.boundaryPrimeEquiv M.imageCycle hD j))))
+
+omit [IsRationalOver (M.surface ↘ Spec (.of k))] in
+private theorem marking_symm_imageCycle_class :
     letI : SmoothOfRelativeDimension 2 base := M.smooth
     letI : M.surface.IsProjectiveOver k := M.projective
-    (M.marking.isometryGroupCongr.toMonoidHom.comp (toIsometry B d)).range = Cr := by
+    letI : IsNoetherian M.surface := isNoetherian_of_finiteType base
+    letI := (base).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two
+    letI := M.prestable_boundaryImage
+    ∀ j : ZMod n, M.marking.symm (a j) = d ((1 : ℤˣ) • j + 0) := by
   let : SmoothOfRelativeDimension 2 base := M.smooth
   let : M.surface.IsProjectiveOver k := M.projective
   let : IsNoetherian M.surface := isNoetherian_of_finiteType base
   let := (base).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two
-  let : PrestableFamily ((D).subscheme ↘ S) := M.prestable_boundaryImage
-  let : IsReduced (D).subscheme :=
-    (PrestableFamily.atWorstNodalOfRelativeDimensionOne (f := (D).subscheme ↘ S)).isReduced
-  let p := (M.numberedBoundaryPrimes hD).trans (D).boundaryPrimeEmbedding
-  let a := fun j ↦ Additive.ofMul (primeDivisorClass (p j))
-  have hp (j : ZMod n) : p j = M.boundaryPrime hD j := Subtype.ext (by simp [p])
-  have hmark (j : ZMod n) : M.marking (d j) = a j := by
-    dsimp only [a]
-    rw [← M.picardMarking_apply, M.picardMarking_boundaryClass, hp]
-  have hgram (i j : ZMod n) :
-      Chow.intersectionBilinForm k M.surface (a i) (a j) = (-2 : ℤ) * (if i = j then 1 else 0) +
-        (if j = i + 1 then 1 else 0) + (if j = i - 1 then 1 else 0) := by
-    rw [← hmark i, ← hmark j, ← M.picardMarking_apply, ← M.picardMarking_apply,
-      M.intersectionBilinForm_picardMarking]
-    exact M.intersectionForm_boundaryClass hD hnef hsq i j
-  have hrange := QPainleve.BoundaryCycle.range_toIsometry_eq_cremonaIsometryGroup_of_cycle_gram
-    k hD p (fun x ↦ by rw [funext hp, M.mem_range_boundaryPrime_iff])
-    (inv_injective hcan) (hcan ▸ hnef) (hcan ▸ hsq) hgram hroot
-  let e := SignedBoundaryIsometryGroup.congr
-    (d₀ := d) (d₁ := a) M.marking.symm (ε := 1) (a := 0)
-    (fun j ↦ by rw [one_smul, add_zero, ← hmark, BilinForm.IsometryEquiv.symm_apply_apply])
-  have he (g : signedBoundaryIsometryGroup B d) :
-      toIsometry _ a (e g) = M.marking.isometryGroupCongr (toIsometry B d g) := by
-    rw [toIsometry_apply, coe_congr, toIsometry_apply]
-    rfl
-  rw [← hrange]
-  ext g
-  constructor
-  · rintro ⟨s, rfl⟩
-    exact ⟨e s, he s⟩
-  · rintro ⟨s, rfl⟩
-    exact ⟨e.symm s, by simpa only [MonoidHom.comp_apply, MulEquiv.coe_toMonoidHom,
-      MulEquiv.apply_symm_apply] using (he (e.symm s)).symm⟩
+  let := M.prestable_boundaryImage
+  intro j
+  simp only [M.boundaryPrimeEmbedding_imageCycle hD, one_smul, add_zero]
+  have hj : M.marking (d j) = Additive.ofMul (primeDivisorClass (M.boundaryPrime hD j)) :=
+    (M.picardMarking_apply (d j)).symm.trans (M.picardMarking_boundaryClass hD j)
+  exact (congrArg M.marking.symm hj.symm).trans (M.marking.symm_apply_apply _)
+
+local notation "markingCongr" =>
+  SignedBoundaryIsometryGroup.congr M.marking.symm M.marking_symm_imageCycle_class
 
 /-- The signed marked Picard isometry acts on the surface by conjugating through the marking.
 For a square-zero anticanonical boundary without internal `(-2)` curves the action preserves
@@ -119,8 +102,11 @@ def cremonaPicardHom :
     signedBoundaryIsometryGroup B d →* Cr := by
   let : SmoothOfRelativeDimension 2 base := M.smooth
   let : M.surface.IsProjectiveOver k := M.projective
-  exact (MulEquiv.subgroupCongr (M.range_markedProjection hcan hnef hsq hroot)).toMonoidHom.comp
-    (M.marking.isometryGroupCongr.toMonoidHom.comp (toIsometry B d)).rangeRestrict
+  let : IsNoetherian M.surface := isNoetherian_of_finiteType base
+  let := (base).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two
+  let := M.prestable_boundaryImage
+  exact (M.imageCycle.cremonaProjection hD (inv_injective hcan) hnef hsq hroot).comp
+    (markingCongr).toMonoidHom
 
 /-- The projection evaluates by conjugating the underlying marked isometry. -/
 @[simp]
@@ -129,8 +115,16 @@ theorem cremonaPicardHom_apply (g : signedBoundaryIsometryGroup B d) :
     letI : M.surface.IsProjectiveOver k := M.projective
     (M.cremonaPicardHom hcan hnef hsq hroot g).val =
       M.marking.isometryGroupCongr (toIsometry B d g) := by
-  simp only [cremonaPicardHom, MonoidHom.comp_apply, MulEquiv.coe_toMonoidHom,
-    MulEquiv.subgroupCongr_apply, MonoidHom.coe_rangeRestrict]
+  let : SmoothOfRelativeDimension 2 base := M.smooth
+  let : M.surface.IsProjectiveOver k := M.projective
+  let : IsNoetherian M.surface := isNoetherian_of_finiteType base
+  let := (base).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two
+  let := M.prestable_boundaryImage
+  simp only [cremonaPicardHom, MonoidHom.comp_apply, MulEquiv.coe_toMonoidHom]
+  refine (M.imageCycle.val_cremonaProjection_apply hD (inv_injective hcan) hnef hsq hroot
+    (markingCongr g)).trans ?_
+  simpa only [toIsometry_apply, BilinForm.IsometryEquiv.symm_symm] using
+    congrArg Prod.fst (coe_congr M.marking.symm M.marking_symm_imageCycle_class g)
 
 /-- Every Cremona isometry comes from a signed isometry of the marked boundary. -/
 theorem cremonaPicardHom_surjective :
@@ -139,8 +133,11 @@ theorem cremonaPicardHom_surjective :
     Function.Surjective (M.cremonaPicardHom hcan hnef hsq hroot) := by
   let : SmoothOfRelativeDimension 2 base := M.smooth
   let : M.surface.IsProjectiveOver k := M.projective
-  exact (MulEquiv.subgroupCongr (M.range_markedProjection hcan hnef hsq hroot)).surjective.comp
-    (MonoidHom.rangeRestrict_surjective _)
+  let : IsNoetherian M.surface := isNoetherian_of_finiteType base
+  let := (base).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two
+  let := M.prestable_boundaryImage
+  exact (M.imageCycle.cremonaProjection_surjective hD (inv_injective hcan) hnef hsq hroot).comp
+    (markingCongr).surjective
 
 /-- For three or more components the Cremona projection determines the signed isometry. -/
 def signedBoundaryIsometryEquivCremona (hn : 3 ≤ n) :
@@ -149,11 +146,13 @@ def signedBoundaryIsometryEquivCremona (hn : 3 ≤ n) :
     signedBoundaryIsometryGroup B d ≃* Cr := by
   let : SmoothOfRelativeDimension 2 base := M.smooth
   let : M.surface.IsProjectiveOver k := M.projective
-  refine MulEquiv.ofBijective (M.cremonaPicardHom hcan hnef hsq hroot)
-    ⟨fun g h hgh ↦ ?_, M.cremonaPicardHom_surjective hcan hnef hsq hroot⟩
-  apply toIsometry_injective B d hn (M.boundaryClass_injective_of_nef_square_zero hD hnef hsq)
-  apply M.marking.isometryGroupCongr.injective
-  simpa only [M.cremonaPicardHom_apply] using congrArg Subtype.val hgh
+  let : IsNoetherian M.surface := isNoetherian_of_finiteType base
+  let := (base).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two
+  let := M.prestable_boundaryImage
+  refine MulEquiv.ofBijective (M.cremonaPicardHom hcan hnef hsq hroot) ⟨?_, ?_⟩
+  · exact (M.imageCycle.cremonaProjection_injective hD (inv_injective hcan) hnef hsq hroot hn).comp
+      (markingCongr).injective
+  · exact M.cremonaPicardHom_surjective hcan hnef hsq hroot
 
 /-- The large-boundary equivalence is the Cremona Picard projection. -/
 @[simp]
@@ -172,21 +171,11 @@ def boundaryRotationEquivCremona (hn : n ≤ 2) :
     boundaryRotationGroup B d ≃* Cr := by
   let : SmoothOfRelativeDimension 2 base := M.smooth
   let : M.surface.IsProjectiveOver k := M.projective
-  refine MulEquiv.ofBijective
-    ((M.cremonaPicardHom hcan hnef hsq hroot).comp (rotationInclusion B d)) ⟨?_, ?_⟩
-  · intro g h hgh
-    apply Subtype.ext
-    apply M.marking.isometryGroupCongr.injective
-    simpa only [MonoidHom.comp_apply, M.cremonaPicardHom_apply, toIsometry_apply,
-      coe_rotationInclusion] using congrArg Subtype.val hgh
-  · intro g
-    obtain ⟨s, rfl⟩ := M.cremonaPicardHom_surjective hcan hnef hsq hroot g
-    let t := mulEquivProdOfLeTwo B d hn s
-    refine ⟨t.1, Subtype.ext ?_⟩
-    simp only [MonoidHom.comp_apply, M.cremonaPicardHom_apply, toIsometry_apply,
-      coe_rotationInclusion]
-    exact congrArg M.marking.isometryGroupCongr
-      (congrArg Prod.fst (coe_mulEquivProdOfLeTwo_apply B d hn s))
+  let : IsNoetherian M.surface := isNoetherian_of_finiteType base
+  let := (base).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two
+  let := M.prestable_boundaryImage
+  exact (boundaryRotationGroupCongr M.marking.symm M.marking_symm_imageCycle_class).trans
+    (M.imageCycle.boundaryRotationEquivCremona hD (inv_injective hcan) hnef hsq hroot hn)
 
 /-- The rotation equivalence acts by the same marked Picard projection at sign one. -/
 @[simp]
@@ -194,17 +183,29 @@ theorem boundaryRotationEquivCremona_apply (hn : n ≤ 2) (g : boundaryRotationG
     letI : SmoothOfRelativeDimension 2 base := M.smooth
     letI : M.surface.IsProjectiveOver k := M.projective
     M.boundaryRotationEquivCremona hcan hnef hsq hroot hn g =
-      M.cremonaPicardHom hcan hnef hsq hroot (rotationInclusion B d g) :=
-  (rfl)
+      M.cremonaPicardHom hcan hnef hsq hroot (rotationInclusion B d g) := by
+  let : SmoothOfRelativeDimension 2 base := M.smooth
+  let : M.surface.IsProjectiveOver k := M.projective
+  let : IsNoetherian M.surface := isNoetherian_of_finiteType base
+  let := (base).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two
+  let := M.prestable_boundaryImage
+  simp only [boundaryRotationEquivCremona, MulEquiv.trans_apply, cremonaPicardHom,
+    MonoidHom.comp_apply, MulEquiv.coe_toMonoidHom, congr_rotationInclusion]
+  exact M.imageCycle.boundaryRotationEquivCremona_apply hD (inv_injective hcan) hnef hsq hroot hn _
 
 /-- For one or two boundary components the signed group is the direct product of Cremona
 isometries and the sign group. -/
 def signedBoundaryIsometryEquivCremonaProd (hn : n ≤ 2) :
     letI : SmoothOfRelativeDimension 2 base := M.smooth
     letI : M.surface.IsProjectiveOver k := M.projective
-    signedBoundaryIsometryGroup B d ≃* Cr × ℤˣ :=
-  (mulEquivProdOfLeTwo B d hn).trans
-    (MulEquiv.prodCongr (M.boundaryRotationEquivCremona hcan hnef hsq hroot hn) (MulEquiv.refl _))
+    signedBoundaryIsometryGroup B d ≃* Cr × ℤˣ := by
+  let : SmoothOfRelativeDimension 2 base := M.smooth
+  let : M.surface.IsProjectiveOver k := M.projective
+  let : IsNoetherian M.surface := isNoetherian_of_finiteType base
+  let := (base).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two
+  let := M.prestable_boundaryImage
+  exact (markingCongr).trans
+    (M.imageCycle.signedBoundaryIsometryEquivCremonaProd hD (inv_injective hcan) hnef hsq hroot hn)
 
 /-- The two coordinates of the small-boundary equivalence are the Cremona projection and
 the original sign. -/
@@ -215,14 +216,88 @@ theorem signedBoundaryIsometryEquivCremonaProd_apply (hn : n ≤ 2)
     letI : M.surface.IsProjectiveOver k := M.projective
     M.signedBoundaryIsometryEquivCremonaProd hcan hnef hsq hroot hn g =
       (M.cremonaPicardHom hcan hnef hsq hroot g, sign B d g) := by
-  let t := mulEquivProdOfLeTwo B d hn g
-  have ht : (t.1.val, t.2) = g.val := coe_mulEquivProdOfLeTwo_apply B d hn g
-  -- Reduce the application of `MulEquiv.prodCongr` to its two component maps.
-  change (M.boundaryRotationEquivCremona hcan hnef hsq hroot hn t.1, t.2) = _
-  rw [M.boundaryRotationEquivCremona_apply, SignedBoundaryIsometryGroup.sign_apply]
-  have hsign : t.2 = g.val.2 := congrArg Prod.snd ht
-  refine Prod.ext (Subtype.ext ?_) hsign
-  simp only [M.cremonaPicardHom_apply, toIsometry_apply, coe_rotationInclusion]
-  exact congrArg M.marking.isometryGroupCongr (congrArg Prod.fst ht)
+  let : SmoothOfRelativeDimension 2 base := M.smooth
+  let : M.surface.IsProjectiveOver k := M.projective
+  let : IsNoetherian M.surface := isNoetherian_of_finiteType base
+  let := (base).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two
+  let := M.prestable_boundaryImage
+  simp only [signedBoundaryIsometryEquivCremonaProd, MulEquiv.trans_apply, cremonaPicardHom,
+    MonoidHom.comp_apply, MulEquiv.coe_toMonoidHom]
+  refine (M.imageCycle.signedBoundaryIsometryEquivCremonaProd_apply hD (inv_injective hcan)
+    hnef hsq hroot hn (markingCongr g)).trans (Prod.ext rfl ?_)
+  simpa only [SignedBoundaryIsometryGroup.sign_apply] using
+    congrArg Prod.snd (coe_congr M.marking.symm M.marking_symm_imageCycle_class g)
+
+end QPainleve.SignedClusterModularGroup.MarkedSurface
+
+namespace QPainleve.SignedClusterModularGroup.MarkedSurface
+
+open MulOpposite QPainleve.Cluster
+
+variable {K : Type u} [Field K] [IsAlgClosed K] {k : Type*} [Field k]
+  {n : ℕ} [NeZero n] {L : Type u} [AddCommGroup L] {B : LinearMap.BilinForm ℤ L}
+  {X : Scheme.{u}} {ι : Type*} [DecidableEq ι] {E : SkewExchangeMatrix ι}
+  (M : MarkedSurface K n B X)
+
+local notation "S" => Spec (CommRingCat.of K)
+local notation "base" => (M.surface ↘ S)
+local notation "Cr" => Chow.cremonaIsometryGroup K M.surface
+local notation "Γs" => (SignedClusterModularGroup k E)ᵐᵒᵖ
+
+local instance : SmoothOfRelativeDimension 2 (M.surface ↘ S) := M.smooth
+local instance : M.surface.IsProjectiveOver K := M.projective
+local instance : IsNoetherian M.surface := isNoetherian_of_finiteType base
+local instance (x : M.surface) : UniqueFactorizationMonoid (M.surface.presheaf.stalk x) :=
+  (base).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two x
+
+variable [IsRationalOver (M.surface ↘ Spec (CommRingCat.of K))]
+  (hcan : (LineBundleClass.mk M.isEffectiveCartier_boundaryIdeal.toInvertibleSheaf)⁻¹ =
+    (LineBundleClass.mk (QPainleve.canonicalBundle K M.surface 2))⁻¹)
+  (hnef : (LineBundleClass.mk M.isEffectiveCartier_boundaryIdeal.toInvertibleSheaf)⁻¹.IsNef K
+    (M.surface ↘ Spec (CommRingCat.of K)))
+  (hsq : let a := (LineBundleClass.mk M.isEffectiveCartier_boundaryIdeal.toInvertibleSheaf)⁻¹
+    Chow.classIntersectionNumber K M.surface a a = 0)
+  (hroot : ∀ p : CodimensionOnePoint M.surface, Disjoint (closure {(p : M.surface)})
+    M.pair.hom.left.ker.support →
+    Chow.classIntersectionNumber K M.surface (primeDivisorClass p) (primeDivisorClass p) ≠ -2)
+  {d' : ZMod n → L} (hd : M.boundaryClass M.isEffectiveCartier_boundaryIdeal = d')
+  (Θ : (SignedClusterModularGroup k E)ᵐᵒᵖ ≃* signedBoundaryIsometryGroup B d')
+  (hΘ : ((sign B d').comp Θ.toMonoidHom).ker.unop = (clusterModularGroupInclusion k E).range)
+
+include hd in
+/-- The signed Picard identification on a marked surface with no internal `(-2)` curves
+gives the projection to Cremona isometries together with the boundary sign. -/
+noncomputable def clusterCremonaComparison : ClusterCremonaComparison (k := k) E n Cr := by
+  subst d'
+  let π := M.cremonaPicardHom hcan hnef hsq hroot
+  have hinj (hn : 3 ≤ n) : Function.Injective π := by
+    intro x y hxy
+    apply (M.signedBoundaryIsometryEquivCremona hcan hnef hsq hroot hn).injective
+    simpa only [M.signedBoundaryIsometryEquivCremona_apply] using hxy
+  exact ClusterCremonaComparison.ofPicardEquiv Θ hΘ π
+    (M.cremonaPicardHom_surjective hcan hnef hsq hroot) hinj
+    (M.signedBoundaryIsometryEquivCremonaProd hcan hnef hsq hroot)
+    (M.signedBoundaryIsometryEquivCremonaProd_apply hcan hnef hsq hroot)
+
+/-- The Cremona projection is the lattice action of the signed Picard image in the
+marking of the chosen surface. -/
+@[simp]
+theorem val_clusterCremonaComparison_projection_apply (x : Γs) :
+    ((M.clusterCremonaComparison hcan hnef hsq hroot hd Θ hΘ).projection x).val =
+      M.marking.isometryGroupCongr (toIsometry B d' (Θ x)) := by
+  subst d'
+  dsimp only [clusterCremonaComparison]
+  erw [ClusterCremonaComparison.ofPicardEquiv_projection_apply]
+  exact M.cremonaPicardHom_apply hcan hnef hsq hroot (Θ x)
+
+/-- The sign of the Cremona comparison is the sign of the signed Picard image. -/
+@[simp]
+theorem clusterCremonaComparison_sign_apply (x : Γs) :
+    (M.clusterCremonaComparison hcan hnef hsq hroot hd Θ hΘ).sign x =
+      (Θ x).val.2 := by
+  subst d'
+  dsimp only [clusterCremonaComparison]
+  erw [ClusterCremonaComparison.ofPicardEquiv_sign_apply,
+    SignedBoundaryIsometryGroup.sign_apply]
 
 end QPainleve.SignedClusterModularGroup.MarkedSurface

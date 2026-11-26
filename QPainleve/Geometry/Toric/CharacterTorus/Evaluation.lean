@@ -7,6 +7,7 @@ module
 
 public import Mathlib.LinearAlgebra.Basis.Prod
 public import QPainleve.Geometry.Toric.CharacterTorus.Product
+public import TauCeti.CategoryTheory.Monoidal.Grp.Translation
 
 /-!
 # Evaluation with variable centers
@@ -21,6 +22,7 @@ centers vary in any nonempty open.
 public noncomputable section
 
 open AlgebraicGeometry CategoryTheory Limits TauCeti DiagonalizableGroup
+open CartesianMonoidalCategory MonoidalCategory
 open scoped CategoryTheory.MonObj
 
 namespace QPainleve.CharacterTorus
@@ -108,21 +110,30 @@ local notation:max "D" B:arg => groupScheme k (L B)
 local notation "Dmap" f => groupSchemeMap k (FGCommGrpCat.ofHom (AddMonoidHom.toMultiplicative f))
 local notation "π₁" => Dmap (AddMonoidHom.inl A N)
 local notation "S" => Spec (CommRingCat.of k)
+local notation "π₂" => Dmap (AddMonoidHom.inr A N)
+local notation "c[" c "," hc "]" => (Over.homMk (U := 𝟙_ (Over S)) c hc)
 
 /-- Evaluation of independent characters using a variable center and a charge map.
 The domain models the product of the center and charge tori via `prodIso`. -/
 def evaluation (v : A →+ N) : (D (A × N)) ⟶ (D A) :=
   Dmap ((AddMonoidHom.id A).prod v)
 
+/-- The evaluation morphism is induced by the graph of the charge homomorphism. -/
+theorem evaluation_def (v : A →+ N) :
+    evaluation k v = Dmap ((AddMonoidHom.id A).prod v) := (rfl)
+
 /-- Evaluate the independent characters on the charge torus at the specified center
 point. This is specialization of the variable-center morphism with the center fixed. -/
-@[expose]
 def evaluationAtCenter (v : A →+ N) (c : S ⟶ (D A).X.left)
     (hc : c ≫ (D A).X.hom = 𝟙 S) :
     (D N).X.left ⟶ (D A).X.left :=
-  pullback.lift (f := (D A).X.hom) (g := (D N).X.hom)
-    ((D N).X.hom ≫ c) (𝟙 _) (by simp [hc]) ≫
-    (prodIso k A N).hom ≫ (evaluation k v).hom.hom.left
+  centerSlice k c hc ≫ (evaluation k v).hom.hom.left
+
+/-- Fixed-center evaluation is variable-center evaluation composed with the center slice. -/
+@[reassoc]
+theorem evaluationAtCenter_def (v : A →+ N) (c : S ⟶ (D A).X.left)
+    (hc : c ≫ (D A).X.hom = 𝟙 S) :
+    evaluationAtCenter k v c hc = centerSlice k c hc ≫ (evaluation k v).hom.hom.left := (rfl)
 
 /-- Evaluation at a center depends only on the underlying point. -/
 theorem evaluationAtCenter_congr (v : A →+ N) {c d : S ⟶ (D A).X.left} (h : c = d)
@@ -130,6 +141,43 @@ theorem evaluationAtCenter_congr (v : A →+ N) {c d : S ⟶ (D A).X.left} (h : 
     evaluationAtCenter k v c hc = evaluationAtCenter k v d hd := by
   subst d
   rfl
+
+variable {k} in
+private theorem eval_eq_mul (v : A →+ N) :
+    (evaluation k v).hom.hom =
+      (π₁).hom.hom * ((π₂).hom.hom ≫ (Dmap v).hom.hom) := by
+  have h : ((AddMonoidHom.id A).prod v).toMultiplicative =
+      (AddMonoidHom.inl A N).toMultiplicative *
+        ((AddMonoidHom.inr A N).comp v).toMultiplicative := by
+    exact MonoidHom.ext fun a ↦
+      Prod.ext (add_zero a.toAdd).symm (zero_add (v a.toAdd)).symm
+  rw [evaluation_def, h, groupSchemeMap_mul (k := k)
+    (G := FGCommGrpCat.of (Multiplicative A)) (H := FGCommGrpCat.of (Multiplicative (A × N)))
+    (AddMonoidHom.inl A N).toMultiplicative
+    ((AddMonoidHom.inr A N).comp v).toMultiplicative,
+    ← Grp.comp_hom_hom, ← groupSchemeMap_comp]
+  rfl
+
+variable {k} in
+/-- Evaluation at a fixed center is the charge morphism followed by translation
+by the center. -/
+theorem evaluationAtCenter_eq_leftTranslation (v : A →+ N)
+    (c : S ⟶ (D A).X.left) (hc : c ≫ (D A).X.hom = 𝟙 S) :
+    evaluationAtCenter k v c hc =
+      (Dmap v).hom.hom.left ≫ (leftTranslation c[c,hc]).hom.left := by
+  let s : (D N).X ⟶ (D (A × N)).X :=
+    Over.homMk (centerSlice k c hc) (by
+      rw [← (π₂).hom.hom.w, centerSlice_snd_assoc])
+  have h₁ : s ≫ (π₁).hom.hom = toUnit _ ≫ c[c,hc] := by
+    ext : 1
+    simp [s]
+  have h₂ : s ≫ (π₂).hom.hom = 𝟙 _ := by
+    ext : 1
+    simp [s]
+  have h := congrArg (fun p ↦ s ≫ p) (eval_eq_mul (k := k) v)
+  rw [MonObj.comp_mul, ← Category.assoc, h₁, h₂, Category.id_comp] at h
+  rw [← Over.comp_left, comp_leftTranslation_hom]
+  exact congrArg Over.Hom.left h
 
 /-- On points evaluation multiplies the center character by the pullback of the charge
 character. -/

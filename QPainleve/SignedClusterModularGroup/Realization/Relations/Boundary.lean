@@ -15,7 +15,7 @@ The finite search in the integer loop invariants returns the forward image of
 component zero. One reference nodal contraction of the presentation suffices
 to tabulate the target orders, even when the reference center lies outside the
 domain of the loop. The comparison combines
-`GeometricRealization.boundaryRayOfOrders_eq_boundaryPerm` with
+`GeometricRealization.boundaryRayOfOrders_eq_some_boundaryPerm` with
 `ContractedToricFiber.numberedBoundaryRays_eq_of_nodalContractions`.
 -/
 
@@ -60,7 +60,7 @@ local notation "Aux" => LinearMap.BilinForm.prod
 /-- The boundary search for a realized signed loop returns the forward label of
 component zero. The target order table may be taken from any reference nodal
 contraction with the same auxiliary Picard inclusion. -/
-theorem signedLoopInvariants_boundary_eq_some
+theorem tropicalBoundaryLabel_eq_some
     [Φ.algebraicRealization.IsProjectiveOver ℂ]
     [SmoothOfRelativeDimension 2 (Φ.algebraicRealization ↘ S)]
     (hsep : (Aux).SeparatingRight)
@@ -71,18 +71,14 @@ theorem signedLoopInvariants_boundary_eq_some
     (hindex : (Fan.rayChargeMap s).range.toAddSubgroup.index ≠ 0)
     {c₀ : Point T} (p₀ : fiberAt[c₀]) (hnodal₀ : p₀.IsNodalContraction)
     (p : fiberAt[src[C,x]]) (q : fiberAt[dst[C,x]]) (hnodal : q.IsNodalContraction)
-    (h₀ : D[P (src[C,x])].IsEffectiveCartier)
-    {κ : Type*} (basisVectors : κ → Fin r → ℤ) :
-    let orders (j : Fin n) := Fan.rayBoundaryOrders b s
-      (p₀.numberedBoundaryRays hnodal₀.cartier ((ZMod.finEquiv n).toEquiv j))
-    let source := Fan.rayBoundaryOrders b s
-      ((Φ.boundaryNormalizationComponentEquiv hΦ).symm (τ.component origin))
-    ((w.signedLoopInvariants basisVectors orders source).2.2).map (ZMod.finEquiv n).toEquiv =
-      some (R.boundaryPerm 0) := by
-  have h := R.boundaryRayOfOrders_eq_boundaryPerm x p q h₀ hnodal.cartier hcΦ hE hindex
+    (h₀ : D[P (src[C,x])].IsEffectiveCartier) :
+    let orders := p₀.numberedBoundaryOrders hnodal₀.cartier
+    w.tropicalBoundaryLabel orders (orders 0) =
+      some ((ZMod.finEquiv n).toEquiv.symm (R.boundaryPerm 0)) := by
+  have h := R.boundaryRayOfOrders_eq_some_boundaryPerm x p q h₀ hnodal.cartier hcΦ hE hindex
   rw [q.numberedBoundaryRays_eq_of_nodalContractions p₀ hnodal hnodal₀ hsep] at h
-  simpa only [Quiver.Path.signedLoopInvariants_def, Fan.boundaryRayOfOrders_eq_find_coordinates,
-    Function.Embedding.trans_apply, Equiv.toEmbedding_apply, ← Fan.rayBoundaryOrders_apply_eq_repr,
-    ← funext_iff] using h
+  simpa only [Quiver.Path.tropicalBoundaryLabel_def, p₀.numberedBoundaryOrders_zero,
+    p₀.numberedBoundaryOrders_apply, Fan.boundaryRayOfOrders_def,
+    Function.Embedding.trans_apply, Equiv.toEmbedding_apply] using h
 
 end QPainleve.SignedClusterModularGroup.GeometricRealization

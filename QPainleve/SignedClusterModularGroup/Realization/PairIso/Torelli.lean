@@ -27,7 +27,7 @@ Torelli theorem][GHK] in the same marking used by the cluster-word comparison.
 
 public section
 
-open AlgebraicGeometry CategoryTheory DihedralGroup Multiplicative
+open AlgebraicGeometry CategoryTheory DihedralGroup MulOpposite Multiplicative
 open QPainleve.CharacterTorus
 open TauCeti TauCeti.AlgebraicGeometry TauCeti.Toric
 open Scheme Scheme.IdealSheafData LineBundleClass
@@ -36,7 +36,7 @@ namespace QPainleve.SignedClusterModularGroup
 
 open GeometricRealization (Point)
 open MarkedSurface (surfaceIso boundaryIso)
-open SignedBoundaryIsometryGroup (sign toIsometry)
+open SignedBoundaryIsometryGroup
 
 local notation "S" => Spec (CommRingCat.of ℂ)
 local notation "D[" M "]" => Scheme.Hom.ker (Over.Hom.left (Arrow.hom (MarkedSurface.pair M)))
@@ -73,12 +73,23 @@ local instance (M : MarkedSurface ℂ n H XTor) : PrestableFamily (M.boundary �
 
 namespace CompleteToricPresentation
 
+private theorem exists_marked_pair_iso_of_torelli
+    {P₀ P₁ : MarkedSurface ℂ n H XTor}
+    {G : LineBundleClass P₁.surface → LineBundleClass P₀.surface} {act : DihedralGroup n}
+    (e : SignedTorelliPairIso (D := D[P₀]) (E := D[P₁]) P₀.imageCycle P₁.imageCycle G act) :
+    ∃ f : P₀.pair ≅ P₁.pair,
+      (surfaceIso f).hom = e.surfaceIso.hom ∧ MarkedSurface.imagePairIso f = e.boundaryIso := by
+  obtain ⟨f, hf⟩ := P₀.exists_pairIso_of_boundaryIdeal P₁ e.surfaceIso
+    (comp_over e.surfaceIso.hom S) e.comap_surfaceIso_hom
+  refine ⟨f, hf, Iso.ext ((cancel_mono D[P₁].subschemeι).mp ?_)⟩
+  rw [MarkedSurface.imagePairIso_hom_comp, e.boundaryIso_hom_comp, hf]
+
 /-- For two marked fibers of the same ordered toric presentation, a specified
 signed boundary isometry is induced by a pair isomorphism when the boundaries
 are nef, the target boundary has square zero, there are no internal curves of
-square `-2`, and the
-geometric periods intertwine the signed marked pullback. The conclusion retains
-the action on ordered branches, including for one and two boundary components. -/
+square `-2`, and the geometric periods intertwine the signed marked pullback.
+The isomorphism acts on the ordered branches by the isometry's forward boundary
+action, including for one and two boundary components. -/
 theorem exists_marked_pair_iso_of_signed_boundary_isometry
     {c₀ c₁ : Point Centers} {P₀ P₁ : MarkedSurface ℂ n H XTor}
     (hm₀ : Q.HasNodalModel c₀ P₀) (hm₁ : Q.HasNodalModel c₁ P₁)
@@ -103,19 +114,21 @@ theorem exists_marked_pair_iso_of_signed_boundary_isometry
       ∃ hy : y ∈ D[P₀].boundaryOrthogonal ℂ,
         hE.boundaryPeriod g₁ P₁.imageCycle.endpoint_eq (ofAdd x) =
           hD.boundaryPeriod g₀ P₀.imageCycle.endpoint_eq (ofAdd ⟨y, hy⟩) ^ (sign H d g : ℤ)) :
-    ∃ (a : P₀.pair ≅ P₁.pair) (act : DihedralGroup n),
-      cycleOrientationSign act = sign H d g ∧
-      (∀ j, (toIsometry H d g).val (d (cycleVertexPerm act j)) = d j) ∧
+    let hd := hQ ▸ P₁.boundaryClass_injective_of_nef_square_zero hE hn₁ hsq
+    ∃ a : P₀.pair ≅ P₁.pair,
       (letI : PrestableFamily (P₀.boundary ↘ S) := P₀.prestable
        letI : PrestableFamily (P₁.boundary ↘ S) := P₁.prestable
-       (boundaryIso a).boundaryCycleAction P₀.cycle P₁.cycle = act) ∧
+       (boundaryIso a).boundaryCycleAction P₀.cycle P₁.cycle = boundaryAction H d hd (op g)) ∧
       ∀ z, P₀.picardMarking ((toIsometry H d g).val z) =
         Additive.ofMul (pullback (surfaceIso a).hom (P₁.picardMarking z).toMul) := by
+  intro hd
   let := hm₀.isRationalOver
   let := hm₁.isRationalOver
   have hk₀ := hm₀.canonicalClass hD
   have hk₁ := hm₁.canonicalClass hE
-  obtain ⟨act, hact, hd⟩ := SignedBoundaryIsometryGroup.exists_cycleAction_pullback H d g
+  let act := boundaryAction H d hd (op g)
+  have hact : cycleOrientationSign act = sign H d g :=
+    cycleOrientationSign_boundaryAction H d hd g
   let G := (P₁.marking.symm.trans
     (H.isometryGroupEquivIsometryEquiv (toIsometry H d g))).trans P₀.marking
   have hG (z : L) : G (P₁.picardMarking z) = P₀.picardMarking ((toIsometry H d g).val z) := by
@@ -128,7 +141,8 @@ theorem exists_marked_pair_iso_of_signed_boundary_isometry
       Additive.ofMul (primeDivisorClass
         (D[P₀].boundaryPrimeEmbedding (P₀.imageCycle.boundaryPrimeEquiv hD j))) := by
     rw [P₀.boundaryPrimeEmbedding_imageCycle, P₁.boundaryPrimeEmbedding_imageCycle,
-      ← P₀.picardMarking_boundaryClass, ← P₁.picardMarking_boundaryClass, hG, hP, hQ, hd]
+      ← P₀.picardMarking_boundaryClass, ← P₁.picardMarking_boundaryClass, hG, hP, hQ,
+      toIsometry_apply_boundaryAction H d hd g]
   have hperiod (x : D[P₁].boundaryOrthogonal ℂ) (y : D[P₀].boundaryOrthogonal ℂ)
       (hxy : G x.val = y.val) : hE.boundaryPeriod g₁ P₁.imageCycle.endpoint_eq (ofAdd x) =
       hD.boundaryPeriod g₀ P₀.imageCycle.endpoint_eq (ofAdd y) ^
@@ -140,7 +154,7 @@ theorem exists_marked_pair_iso_of_signed_boundary_isometry
     have heq : (⟨_, hy⟩ : D[P₀].boundaryOrthogonal ℂ) = y :=
       Subtype.ext (hval.symm.trans hxy)
     simpa only [heq, hact] using hy'
-  obtain ⟨a, aB, haB, hover, hideal, hB, hpic, hb⟩ :=
+  obtain ⟨e⟩ :=
     D[P₀].exists_pair_iso_of_root_free_signed_boundary_period_of_toric_presentation_of_nef
       P₀.imageCycle P₁.imageCycle hD hE act G hclass hk₀ hk₁
       (Chow.prime_self_intersection_ne_neg_two_off_boundary ℂ hD hk₀ hroot₀)
@@ -148,15 +162,12 @@ theorem exists_marked_pair_iso_of_signed_boundary_isometry
       g₀ g₁ hperiod hm₀.hasToricPresentation
       (by simpa only [← hk₀] using hn₀) (by simpa only [← hk₁] using hn₁)
       (by simpa only [← hk₁] using hsq)
-  obtain ⟨f, hf⟩ := P₀.exists_pairIso_of_boundaryIdeal P₁ a hover hideal
-  have hfB : (MarkedSurface.imagePairIso f).hom = aB.hom := (cancel_mono D[P₁].subschemeι).mp
-    (by rw [MarkedSurface.imagePairIso_hom_comp, hf, hB])
-  refine ⟨f, act, hact, hd, ?_, fun z ↦ ?_⟩
+  obtain ⟨f, hf, hfB⟩ := exists_marked_pair_iso_of_torelli e
+  refine ⟨f, ?_, fun z ↦ ?_⟩
   · rw [← MarkedSurface.imagePairIso_boundaryAction]
-    have hIso : MarkedSurface.imagePairIso f = aB := Iso.ext hfB
-    cases hIso
-    exact hb
-  · rw [hf, hpic]
+    exact ((MarkedSurface.imagePairIso f).boundaryCycleAction_congr
+      P₀.imageCycle P₁.imageCycle e.boundaryIso hfB).trans e.boundaryCycleAction_eq
+  · rw [hf, e.pullback_eq]
     simp only [ofMul_toMul, hG]
 
 end CompleteToricPresentation

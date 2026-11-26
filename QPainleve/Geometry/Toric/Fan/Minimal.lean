@@ -5,7 +5,7 @@ Authors: The QPainleve contributors
 -/
 module
 
-public import QPainleve.Geometry.Toric.Fan.CyclicOrder
+public import QPainleve.Geometry.Toric.Fan.CyclicOrder.Basic
 
 import QPainleve.Geometry.Toric.Fan.HalfPlane
 import TauCeti.Data.ZMod.Induction

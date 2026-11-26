@@ -5,9 +5,8 @@ Authors: The QPainleve contributors
 -/
 module
 
-public import QPainleve.SignedClusterModularGroup.Realization.Endpoint.PicardAction
+public import QPainleve.SignedClusterModularGroup.Realization.Surjectivity
 
-import QPainleve.SignedClusterModularGroup.Realization.Anticanonical
 import QPainleve.SignedClusterModularGroup.Realization.Endpoint.Kernel
 import QPainleve.SignedClusterModularGroup.Realization.NodalFiber
 import QPainleve.SignedClusterModularGroup.Realization.Surjectivity.Torelli
@@ -23,7 +22,7 @@ boundary rotation it can be chosen inversion-free.
 
 The construction joins
 `CompleteToricPresentation.exists_root_free_pair_iso_of_signed_boundary_isometry`
-and `GeometricRealization.exists_word_signedPicardHom_eq_of_pair_iso`.
+and `GeometricRealization.nonempty_picardLoopRealization_of_pair_iso`.
 -/
 
 public section
@@ -35,8 +34,8 @@ open Scheme Scheme.IdealSheafData
 
 namespace QPainleve.SignedClusterModularGroup.GeometricRealization
 
-open MarkedSurface (boundaryIso)
-open SignedBoundaryIsometryGroup (sign)
+open MarkedSurface (boundaryIso surfaceIso)
+open SignedBoundaryIsometryGroup (sign cycleOrientationSign_boundaryAction)
 
 local notation "S" => Spec (CommRingCat.of ℂ)
 local notation "Centers[" r "]" => Over.mk (structureMap ℂ (Fin r → ℤ))
@@ -67,9 +66,12 @@ local notation "Models[" C "]" =>
 
 /-- Every signed boundary isometry of a marked toric presentation of a primitive
 nef square-zero anticanonical cycle occurs as the Picard action of a signed
-cluster loop. An orientation-preserving action has an inversion-free representative.
+cluster loop. The witness records the two centers, the pair isomorphism with the
+prescribed signed action, and its X-evaluation equation. The source center lies in
+the loop's noncollision open, and an orientation-preserving action has an
+inversion-free representative.
 The reference fiber may lie outside the initial noncollision open. -/
-theorem exists_word_signedPicardHom_eq_of_presentation
+theorem nonempty_presentationPicardLoopRealization
     (P : ChargeSeed E N) (hform : P.form = b.detDualEquiv.toLinearMap)
     (hcharge : P.charge = Fan.rayChargeMap Q.rays)
     (models : ∀ c : Point Centers[r], c.left (default : S) ∈ Path.nil.centerOpen ℂ P →
@@ -83,10 +85,10 @@ theorem exists_word_signedPicardHom_eq_of_presentation
       (R : GeometricRealization M M (w.centerPartialMap ℂ P) (w.xRationalMap ℂ)),
       Models[w.centerPartialMap ℂ P] → ρ eval[E,w] = R.toSignedBoundaryIsometry d hD hmark)
     (g : signedBoundaryIsometryGroup B d) :
-    ∃ w : Word E E, ρ eval[E,w] = g ∧ (sign B d g = 1 → w.inversionCount = 0) := by
+    Nonempty (PresentationPicardLoopRealization M P ρ g) := by
   have hK : P.charge.ker ≤ (Fan.rayChargeMap Q.rays).ker :=
     le_of_eq (congrArg LinearMap.ker hcharge)
-  obtain ⟨c₀, c₁, -, hm₁, hword, hprim₀, hnef₀, hsq₀, -, -, e, act, hsign, -, hact, hpic⟩ :=
+  obtain ⟨c₀, c₁, -, hm₁, hword, hprim₀, hnef₀, hsq₀, -, -, e, hact, hpic⟩ :=
     Q.exists_root_free_pair_iso_of_signed_boundary_isometry P hK hD
       (fun c' ↦ funext (hmark c')) href hprim hnef hsq models g
   have hsgn :
@@ -94,10 +96,11 @@ theorem exists_word_signedPicardHom_eq_of_presentation
       letI : PrestableFamily ((M c₁).boundary ↘ S) := (M c₁).prestable
       DihedralGroup.cycleOrientationSign ((boundaryIso e).boundaryCycleAction
         (M c₀).cycle (M c₁).cycle) = sign B d g := by
-    rw [hact, hsign]
-  obtain ⟨w, hw, hfree, -⟩ := exists_word_signedPicardHom_eq_of_pair_iso P hform hcharge
-    models hm₁ hnef₀ hsq₀ hprim₀ (fun w ↦ (hword w).1) ρ hρ e hpic hsgn
-  exact ⟨w, hw, hfree⟩
+    rw [hact, cycleOrientationSign_boundaryAction]
+  let signedIso : SignedPicardPairIso (M c₀) (M c₁) g := ⟨e, hsgn, hpic⟩
+  obtain ⟨R⟩ := nonempty_picardLoopRealization_of_pair_iso P hform hcharge
+    models hm₁ hnef₀ hsq₀ hprim₀ (fun w ↦ (hword w).1) ρ hρ signedIso
+  exact ⟨⟨c₀, c₁, signedIso, R, (hword R.word).1⟩⟩
 
 /-- The marked Picard pullback identifies the opposite signed cluster modular
 group with the signed boundary isometry group. The comparison computes the
@@ -114,35 +117,19 @@ theorem existsUnique_signedPicardEquiv_of_presentation
     (hnef : (classOf(hD c)).IsNef ℂ ((M c).surface ↘ S))
     (hsq : Chow.classIntersectionNumber ℂ (M c).surface classOf(hD c) classOf(hD c) = 0) :
     ∃! Θ : (SignedClusterModularGroup ℂ E)ᵐᵒᵖ ≃* signedBoundaryIsometryGroup B d,
-      (∀ (w : Word E E),
-        sign B d (Θ eval[E,w]) = (-1 : ℤˣ) ^ w.inversionCount ∧
-        ∀ {C : Centers[r].left.PartialMap Centers[r].left} [IsDominant C.hom]
-          [C.IsOver Centers[r].hom Centers[r].hom]
-          (R : GeometricRealization M M C (w.xRationalMap ℂ)),
-          Models[C] → Θ eval[E,w] = R.toSignedBoundaryIsometry d hD hmark) ∧
-      ((sign B d).comp Θ.toMonoidHom).ker.unop = (clusterModularGroupInclusion ℂ E).range := by
-  classical
-  let : IsRationalOver ((M c).surface ↘ S) := href.isRationalOver
-  have hcan := congrArg Inv.inv (href.canonicalClass (hD c))
-  have hindex := Q.chargeIndex_ne_zero_of_anticanonical_cycle href (hD c) hnef hsq hcan hprim
-  have hker : E.matrix.mulVecLin.ker = P.charge.ker := by
-    rw [← P.matrix_eq, hform, hcharge]
-    exact Fan.ker_chargeExchangeMatrix_rayChargeMap b Q.rays hindex
-  obtain ⟨ρ, ⟨hρ, hsignker⟩, huniq⟩ :=
-    existsUnique_signedPicardHom_of_presentation P Q hform hcharge M
-      (fun x ↦ models _ (Path.nil.centerPoint_endpoints_mem_noncollision P hker x).2)
-      href hD hnef hsq hcan hprim d hmark
-  have hinj := ρ.ker_eq_bot_iff.mp
-    (signedPicardHom_ker_eq_bot_of_presentation Q P hform hcharge M models hD
-      href hnef hsq hcan hprim d hmark ρ (fun w _ _ _ ↦ (hρ w).2))
+      IsSignedPicardAction Q M hD hmark Θ.toMonoidHom := by
+  obtain ⟨ρ, ⟨hρ, hker⟩, huniq⟩ := existsUnique_faithful_signedPicardHom_of_presentation
+    Q P hform hcharge M models href hD hnef hsq hprim d hmark
+  have hinj := ρ.ker_eq_bot_iff.mp hker
   have hsurj : Function.Surjective ρ := by
     intro g
-    obtain ⟨w, hw, -⟩ := exists_word_signedPicardHom_eq_of_presentation
-      P hform hcharge models href hprim hnef hsq ρ (fun w ↦ (hρ (End.of w)).2) g
-    exact ⟨eval[E,w], hw⟩
+    obtain ⟨R⟩ := nonempty_presentationPicardLoopRealization
+      P hform hcharge models href hprim hnef hsq ρ
+      (fun w R hR ↦ hρ.apply_of_realization w R hR) g
+    exact ⟨eval[E,R.loop.word], R.loop.picard_eq⟩
   let Θ := MulEquiv.ofBijective ρ ⟨hinj, hsurj⟩
-  refine ⟨Θ, ⟨fun w ↦ hρ (End.of w), hsignker⟩, fun Θ' hΘ' ↦ ?_⟩
-  exact MulEquiv.toMonoidHom_injective (huniq Θ'.toMonoidHom
-    ⟨fun w ↦ hΘ'.1 (End.asHom w), hΘ'.2⟩)
+  refine ⟨Θ, hρ, fun Θ' hΘ' ↦ ?_⟩
+  exact MulEquiv.toMonoidHom_injective
+    (huniq Θ'.toMonoidHom ⟨hΘ', Θ'.toMonoidHom.ker_eq_bot_iff.mpr Θ'.injective⟩)
 
 end QPainleve.SignedClusterModularGroup.GeometricRealization

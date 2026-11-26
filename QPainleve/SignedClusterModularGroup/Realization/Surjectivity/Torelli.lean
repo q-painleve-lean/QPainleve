@@ -27,17 +27,16 @@ from Gross, Hacking and Keel.
 
 public section
 
-open AlgebraicGeometry CategoryTheory Quiver
+open AlgebraicGeometry CategoryTheory MulOpposite Quiver
 open QPainleve.CharacterTorus QPainleve.Cluster
 open TauCeti TauCeti.AlgebraicGeometry TauCeti.Toric
 open Scheme Scheme.IdealSheafData
 
 namespace QPainleve.SignedClusterModularGroup.CompleteToricPresentation
 
-open DihedralGroup (cycleOrientationSign cycleVertexPerm)
 open GeometricRealization (Point)
 open MarkedSurface (boundaryIso surfaceIso)
-open SignedBoundaryIsometryGroup (sign toIsometry)
+open SignedBoundaryIsometryGroup
 
 local notation "S" => Spec (CommRingCat.of ℂ)
 local notation "Centers[" r "]" => Over.mk (structureMap ℂ (Fin r → ℤ))
@@ -52,9 +51,8 @@ variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
 
 /-- Every signed boundary isometry of a marked toric presentation with primitive nef
 square-zero boundary is the Picard pullback of a pair isomorphism between two root-free
-fibers. Both centers lie in every word's noncollision open. The isomorphism also gives the
-prescribed boundary permutation and sign on ordered branches, including for one and two
-components. -/
+fibers. Both centers lie in every word's noncollision open. The isomorphism induces the
+forward boundary action on ordered branches, including for one and two components. -/
 theorem exists_root_free_pair_iso_of_signed_boundary_isometry
     (Q : CompleteToricPresentation i b r L γ) {E : SkewExchangeMatrix (Fin r)}
     (P : ChargeSeed E N) (hcharge : P.charge.ker ≤ (Fan.rayChargeMap Q.rays).ker)
@@ -67,6 +65,7 @@ theorem exists_root_free_pair_iso_of_signed_boundary_isometry
     (hmodels : ∀ c' : Point Centers[r],
       c'.left (default : S) ∈ (Path.nil : Word E E).centerOpen ℂ P → Q.HasNodalModel c' (M c'))
     (g : signedBoundaryIsometryGroup B d) :
+    let hd := hmark c ▸ (M c).boundaryClass_injective_of_nef_square_zero (hD c) hnef hsq
     ∃ c₀ c₁ : Point Centers[r], Q.HasNodalModel c₀ (M c₀) ∧ Q.HasNodalModel c₁ (M c₁) ∧
       (∀ ⦃C : SkewExchangeMatrix (Fin r)⦄ (w : Word E C),
         c₀.left (default : S) ∈ w.centerOpen ℂ P ∧ c₁.left (default : S) ∈ w.centerOpen ℂ P) ∧
@@ -77,12 +76,11 @@ theorem exists_root_free_pair_iso_of_signed_boundary_isometry
         ¬Disjoint (closure {(z : (M c₀).surface)}) (D[M c₀].support : Set (M c₀).surface)) ∧
       (∀ z : CodimensionOnePoint (M c₁).surface,
         ¬Disjoint (closure {(z : (M c₁).surface)}) (D[M c₁].support : Set (M c₁).surface)) ∧
-      ∃ (e : (M c₀).pair ≅ (M c₁).pair) (act : DihedralGroup n),
-        cycleOrientationSign act = sign B d g ∧
-        (∀ j, (toIsometry B d g).val (d (cycleVertexPerm act j)) = d j) ∧
+      ∃ e : (M c₀).pair ≅ (M c₁).pair,
         (letI : PrestableFamily ((M c₀).boundary ↘ S) := (M c₀).prestable
          letI : PrestableFamily ((M c₁).boundary ↘ S) := (M c₁).prestable
-         (boundaryIso e).boundaryCycleAction (M c₀).cycle (M c₁).cycle = act) ∧
+         (boundaryIso e).boundaryCycleAction (M c₀).cycle (M c₁).cycle =
+           boundaryAction B d hd (op g)) ∧
         ∀ z, (M c₀).picardMarking ((toIsometry B d g).val z) =
           Additive.ofMul
             (LineBundleClass.pullback (surfaceIso e).hom ((M c₁).picardMarking z).toMul) := by

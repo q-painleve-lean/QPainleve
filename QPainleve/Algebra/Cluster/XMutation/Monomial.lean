@@ -111,6 +111,21 @@ theorem chargeMutationEquiv_apply (ε : Matrix ι ι ℤ) (k : ι) (x : ι → �
     chargeMutationEquiv ε k x = matrixMutationRight (Function.Embedding.refl ι) (-ε) k 1 *ᵥ x :=
   Matrix.toLin'_apply _ _
 
+/-- Relabeling coordinates commutes with the right mutation factor on exponents. -/
+theorem chargeMutationEquiv_reindex {κ : Type*} [Fintype κ] [DecidableEq κ]
+    (ε : Matrix ι ι ℤ) (e : ι ≃ κ) (k : ι) (x : ι → ℤ) :
+    chargeMutationEquiv (ε.submatrix e.symm e.symm) (e k) (x ∘ e.symm) =
+      chargeMutationEquiv ε k x ∘ e.symm := by
+  simp only [chargeMutationEquiv_apply]
+  have hneg : -(ε.submatrix e.symm e.symm) = (-ε).submatrix e.symm e.symm := by
+    simpa only [Pi.neg_apply] using
+      (congrFun (congrFun (Matrix.submatrix_neg ε) e.symm) e.symm).symm
+  rw [hneg,
+    matrixMutationRight_submatrix (Function.Embedding.refl ι) (-ε) 1
+      (row' := Function.Embedding.refl κ) (f := e.symm) e.symm.injective (fun _ ↦ rfl),
+    e.symm_apply_apply, Matrix.submatrix_mulVec_equiv _ _ _ e.symm]
+  simp [Function.comp_assoc]
+
 /-- The pivot exponent is negated and receives the weighted sum of the other exponents. -/
 theorem chargeMutationEquiv_apply_self (B : Matrix ι ι ℤ) (k : ι) (x : ι → ℤ) :
     chargeMutationEquiv B k x k = -x k + ∑ i ∈ Finset.univ.erase k, (-B k i)⁺ * x i := by

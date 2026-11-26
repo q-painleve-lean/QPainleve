@@ -62,10 +62,12 @@ def boundaryRotationGroupCongr :
   QPainleve.boundaryRotationGroupCongr R.picard (ε := cycleOrientationSign R.boundaryAction⁻¹)
     (a := cycleVertexPerm R.boundaryAction⁻¹ 0) (R.picard_marked_boundaryClass hd₀ hd₁)
 
+/-- On the full isometry group, transport of a rotation conjugates by the marked pullback. -/
 @[simp]
-theorem boundaryRotationGroupCongr_apply_apply (g : boundaryRotationGroup B₀ d₀) (x : L₁) :
-    (R.boundaryRotationGroupCongr hd₀ hd₁ g).val.val x = R.picard.symm (g.val.val (R.picard x)) :=
-  QPainleve.boundaryRotationGroupCongr_apply_apply ..
+theorem coe_boundaryRotationGroupCongr (g : boundaryRotationGroup B₀ d₀) :
+    (R.boundaryRotationGroupCongr hd₀ hd₁ g : B₁.isometryGroup) =
+      R.picard.symm.isometryGroupCongr g.val :=
+  QPainleve.coe_boundaryRotationGroupCongr ..
 
 open SignedBoundaryIsometryGroup
 
@@ -136,21 +138,20 @@ theorem picard_conjugation_of_comp_xMap_eq
     (hc : Φ.IsComplete) (hι : Function.Injective ι)
     (hindex : (Fan.rayChargeMap s).range.toAddSubgroup.index ≠ 0)
     (hC : Models[C]) (hJ : Models[J]) :
-    (∀ x, B.picard x = R.picard.symm (A.picard (R.picard x))) ∧
+    asIsometry[B₁] B.picard = R.picard.symm.isometryGroupCongr (asIsometry[B₀] A.picard) ∧
       B.orientation = A.orientation := by
-  have hmodels₁ : Models[C.comp J] := fun c ↦ by
-    simpa only [Category.assoc, PartialMap.compDomainRight_target] using
-      hJ (c ≫ C.compDomainRight J)
-  have hmodels₀ : Models[D.comp C] := fun c ↦ by
-    simpa only [Category.assoc, PartialMap.compDomainRight_target] using
-      hC (c ≫ D.compDomainRight C)
   let : (F.comp (w.xRationalMap ℂ)).IsDominant := RationalMap.instIsDominantComp _ _
   obtain ⟨hpic, hact⟩ := (R.comp B).marked_actions_eq_of_xMap_eq (A.comp R)
-    hcomp hc hι hindex centers hmodels₁ hmodels₀
-  refine ⟨fun x ↦ ?_, ?_⟩
-  · have h := congrArg (fun e : B₁.IsometryEquiv B₀ ↦ e x) hpic
+    hcomp hc hι hindex centers (hJ.comp C) (hC.comp D)
+  refine ⟨?_, ?_⟩
+  · apply Subtype.ext
+    apply LinearEquiv.ext
+    intro x
+    have h := DFunLike.congr_fun hpic x
     simp only [comp_picard, BilinForm.IsometryEquiv.trans_apply] at h
-    simpa only [BilinForm.IsometryEquiv.symm_apply_apply] using congrArg R.picard.symm h
+    simpa only [BilinForm.coe_isometryGroupEquivIsometryEquiv_symm,
+      BilinForm.IsometryEquiv.isometryGroupCongr_apply_apply, BilinForm.IsometryEquiv.symm_symm,
+      BilinForm.IsometryEquiv.symm_apply_apply] using congrArg R.picard.symm h
   · have h := congrArg cycleOrientationSign hact
     rw [← orientation_def, ← orientation_def, comp_orientation, comp_orientation,
       mul_comm R.orientation A.orientation] at h
@@ -200,23 +201,14 @@ theorem picardHom_base_change
     (clusterModularGroupMap_eq_congr_iff ℂ w u'
       ((mem_inversionFreeLoops_iff E₀ _).mp u.property) v'
       ((mem_inversionFreeLoops_iff E₁ _).mp v.property)).mp (hu.symm ▸ hv)
-  have hcomp : (w.xRationalMap ℂ).comp xmap[E₁,v] = xmap[E₀,u].comp (w.xRationalMap ℂ) := by
-    have h := (Quiver.Path.xRationalMap_eq_iff ℂ (w.comp v') (u'.comp w)).mpr (by
-      simp only [Quiver.Path.xPullback_comp, hx, Quiver.Path.xPullback_reverse]
-      group)
-    simpa only [Quiver.Path.xRationalMap_comp] using h
+  have hcomp := w.xRationalMap_comp_eq_of_xPullback_eq_conj ℂ hx
   have hpic := (R.picard_conjugation_of_comp_xMap_eq A B hcomp hc hι hindex hC hmodel).1
   have hg : g = eval[E₀,u] := op_unop g ▸ congrArg op hu.symm
   have hv' : MulEquiv.op (clusterModularGroupCongr ℂ w) g = eval[E₁,v] := congrArg op hv.symm
   simp only [MonoidHom.comp_apply, MulEquiv.coe_toMonoidHom, hv']
   rw [hg]
   apply Subtype.ext
-  apply Subtype.ext
-  apply LinearEquiv.ext
-  intro x
-  rw [boundaryRotationGroupCongr_apply_apply, hA, hB]
-  simp only [BilinForm.coe_isometryGroupEquivIsometryEquiv_symm]
-  exact hpic x
+  simpa only [coe_boundaryRotationGroupCongr, hA, hB] using hpic
 
 end Words
 

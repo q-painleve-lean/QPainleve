@@ -41,10 +41,6 @@ local notation "Pic[" Φ "," r "]" =>
   Additive (LineBundleClass (Fan.algebraicRealization Φ)) × (Fin r → ℤ)
 local notation "centers" c:arg => (fun j : Fin _ ↦ c (ofAdd (Pi.single j 1)))
 local notation "model[" b "," s "," c "]" => Sigma.fst (Fan.internalBlowupTower b s (centers c))
-local notation "mapPic(" h ")" => LinearMap.prodMap
-  (AddMonoidHom.toIntLinearMap (MonoidHom.toAdditive
-    (LineBundleClass.pullbackHom (FanHom.algebraicMap (Fan.IsSubdivision.toFanHom h)))))
-  LinearMap.id
 
 variable [PrestableFamily (D[Φ,hΦ₀] ↘ S)]
   {α : Type*} {a : α → (D[Φ,hΦ₀] ↘ S).smoothLocus}
@@ -71,8 +67,9 @@ theorem exists_subdivision_for_pivot (hc : Φ.IsComplete) (k : Fin r)
         letI := hpre
         ∃ (U : Scheme.NodalCycleNumbering (Empty.elim : Empty → (D[Ψ,hc'.nonempty_cones] ↘
           S).smoothLocus) l) (o' : ZMod l),
-          ∀ t, ∃ (q : ContractedToricFiber b (h.liftRay ∘ s) hΨ U o' ((mapPic(h)).comp J)
-            (χ t) (P t)) (Y : Scheme) (j : ℕ) (R : BlowupTower (P t).surface j Y)
+          ∀ t, ∃ (q : ContractedToricFiber b (h.liftRay ∘ s) hΨ U o'
+            (h.internalBlowupPicardPullback.comp J) (χ t) (P t))
+            (Y : Scheme) (j : ℕ) (R : BlowupTower (P t).surface j Y)
             (e : Y ≅ model[b,h.liftRay ∘ s,χ t]),
             IsNodalBoundaryTower Dₘ[P t] ((P t).surface ↘ S) (𝟙 _) R ∧
               q.projection = e.inv ≫ R.toBase ∧

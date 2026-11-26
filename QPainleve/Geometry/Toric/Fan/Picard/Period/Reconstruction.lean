@@ -5,6 +5,7 @@ Authors: The QPainleve contributors
 -/
 module
 
+public import QPainleve.AlgebraicGeometry.Curves.Node.Period.PairIso
 public import QPainleve.Geometry.Toric.Fan.Picard.Period.Alignment
 public import QPainleve.Geometry.Toric.Fan.TorusAction.Orientation.Basic
 
@@ -107,16 +108,12 @@ theorem exists_iso_of_eq_period_of_matching_picard_markings
     (hρ : p (prime[c] ρ).val = D.subschemeι (A.componentGenericPoint 0))
     (hρ' : q (prime[d] ρ).val =
       E.subschemeι (B.componentGenericPoint (DihedralGroup.cycleVertexPerm act 0))) :
-    ∃ (a : X ≅ Y) (aB : D.subscheme ≅ E.subscheme) (haB : aB.hom.IsOver S),
-      a.hom ≫ (Y ↘ S) = (X ↘ S) ∧ E.comap a.hom = D ∧
-      aB.hom ≫ E.subschemeι = D.subschemeι ≫ a.hom ∧
-      (∀ L : LineBundleClass Y, pullback a.hom L = G L) ∧
-      (letI := haB; aB.boundaryCycleAction A B = act) := by
+    Nonempty (SignedTorelliPairIso (D := D) (E := E) A B G act) := by
   have : IsReduced D.subscheme :=
     (PrestableFamily.atWorstNodalOfRelativeDimensionOne (f := D.subscheme ↘ S)).isReduced
   have : IsReduced E.subscheme :=
     (PrestableFamily.atWorstNodalOfRelativeDimensionOne (f := E.subscheme ↘ S)).isReduced
-  obtain ⟨χ, t, a, ht, ha, haOver, haD, -, haMark⟩ :=
+  obtain ⟨a, haOver, haD, ⟨t⟩⟩ :=
     exists_iso_of_eq_orderedBoundaryPeriod hΦ b s c d C u hvertices hdet hnodes
       hT hU e e' hp hq hD hE hkeep hperiod
   have haPic (L : LineBundleClass Y) : pullback a.hom L = G L := by
@@ -127,19 +124,21 @@ theorem exists_iso_of_eq_period_of_matching_picard_markings
     apply Additive.ofMul.injective
     apply (mark c).symm.injective
     simpa only [pullbackEquiv_apply, Iso.symm_hom, pullback_comp, Category.assoc] using
-      (haMark L).trans (hPic L).symm
+      (t.pullback_marking hΦ L).trans (hPic L).symm
   obtain ⟨aB, haB⟩ := E.exists_iso_of_comap_eq_ker a D.subschemeι
     (haD.trans D.ker_subschemeι.symm)
+  let : a.hom.IsOver S := ⟨haOver⟩
   let hover : aB.hom.IsOver S := ⟨by
     rw [E.over_eq_subschemeι_comp, reassoc_of% haB, haOver, D.over_eq_subschemeι_comp]⟩
-  refine ⟨a, aB, hover, haOver, haD, haB, haPic, ?_⟩
+  suffices hAction : aB.boundaryCycleAction A B = act from
+    ⟨SignedTorelliPairIso.ofIsos a aB haB haPic hAction⟩
   cases act with
   | r j =>
     have hsign : (1 : ℤˣ) ≠ -1 := by decide
     simp only [DihedralGroup.cycleOrientationSign_r, ite_eq_right hsign] at hgs
     simp only [DihedralGroup.cycleVertexPerm_r_apply, zero_add] at hρ'
     exact boundaryCycleAction_of_translation_of_common_ray b s c d hΦ A B C
-      hf hg hfs hgs haB hc ht ha j ρ hρ hρ'
+      hf hg hfs hgs haB hc t.isLift t.commutes j ρ hρ hρ'
   | sr j =>
     simp only [DihedralGroup.cycleOrientationSign_sr, ite_true] at hgs
     have hρ'' : q (prime[d] ρ).val = E.subschemeι (B.reverse.componentGenericPoint j) := by
@@ -147,7 +146,7 @@ theorem exists_iso_of_eq_period_of_matching_picard_markings
         NodalCycleNumbering.componentGenericPoint_def, NodalCycleNumbering.reverse_component]
         using hρ'
     have h := boundaryCycleAction_of_translation_of_common_ray b s c d hΦ A B.reverse C
-      hf hg hfs hgs haB hc ht ha j ρ hρ hρ''
+      hf hg hfs hgs haB hc t.isLift t.commutes j ρ hρ hρ''
     have : (Iso.refl E.subscheme).hom.IsOver S := by
       rw [Iso.refl_hom]
       infer_instance

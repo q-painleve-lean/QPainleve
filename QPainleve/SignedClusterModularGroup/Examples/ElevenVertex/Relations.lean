@@ -21,6 +21,7 @@ explicit invariant for the inversion–mutation–transposition loop.
 public section
 
 open Matrix Module Quiver
+open QPainleve.Cluster
 
 namespace QPainleve.ElevenVertex
 
@@ -117,16 +118,17 @@ theorem rayBoundaryOrders_planeBoundaryRay_two :
 Casimir basis column, and returns the unique forward boundary label. -/
 theorem involutionWord_signedLoopInvariants :
     involutionWord.signedLoopInvariants exchangeKernelBasisVectors boundaryOrders
-      (boundaryOrders 0) = (-1, -Matrix.of (fun i j ↦ exchangeKernelBasisVectors j i), some 0) := by
-  simp only [Path.signedLoopInvariants_def, inversionCount_involutionWord, pow_one, Prod.mk.injEq,
-    true_and]
-  constructor
+      (boundaryOrders 0) = ⟨-1, -Matrix.of (fun i j ↦ exchangeKernelBasisVectors j i), some 0⟩ := by
+  refine SignedLoopInvariants.ext ?_ ?_ ?_
+  · simp [inversionCount_involutionWord]
   · ext i j
-    simp only [Matrix.neg_apply, Matrix.of_apply, ← coe_exchangeKernelBasis_apply,
+    simp only [Path.signedLoopInvariants_kernelColumns, Matrix.neg_apply, Matrix.of_apply,
+      ← coe_exchangeKernelBasis_apply,
       ← Path.coe_exchangeKernelEquiv_apply, involutionWord_exchangeKernelEquiv_apply,
       Submodule.coe_neg, Pi.neg_apply]
-  · rw [← Option.mem_def, Fin.mem_find?_iff]
-    refine ⟨decide_eq_true_eq.mpr ?_, fun j hj ↦ (Fin.not_lt_zero j hj).elim⟩
-    exact involutionWord_tropical_boundaryOrders.symm
+  · rw [Path.signedLoopInvariants_boundaryLabel]
+    exact (involutionWord.tropicalBoundaryLabel_eq_some_iff _
+      (Function.injective_of_subsingleton boundaryOrders) 0).mpr
+      involutionWord_tropical_boundaryOrders.symm
 
 end QPainleve.ElevenVertex

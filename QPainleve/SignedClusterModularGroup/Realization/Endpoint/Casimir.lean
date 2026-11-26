@@ -11,11 +11,11 @@ public import QPainleve.SignedClusterModularGroup.Realization.Endpoint.SelfReali
 import QPainleve.AlgebraicGeometry.Chow.Nef.Boundary
 import QPainleve.AlgebraicGeometry.Chow.RationalSurface.Basic
 import QPainleve.Geometry.Toric.Fan.Presentation.Genus
-import QPainleve.Geometry.Toric.Fan.Smooth
 import QPainleve.Geometry.Toric.Fan.Subdivision.Projective
 import QPainleve.SignedClusterModularGroup.Realization.Anticanonical
 import QPainleve.SignedClusterModularGroup.Realization.NodalFiber
 import QPainleve.SignedClusterModularGroup.Realization.Orthogonal
+import QPainleve.SignedClusterModularGroup.Realization.Presentation.Boundary
 
 /-!
 # Casimir action in a marked toric presentation
@@ -128,28 +128,27 @@ theorem existsUnique_exchangeKernelEquiv_of_presentation
   let := Q.prestable
   let := Q.neZero
   -- A reference fiber fixes the two kernel identifications for the whole family.
-  let : IsRationalOver ((M c₀).surface ↘ S) := href.isRationalOver
-  have hcan := congrArg Inv.inv (href.canonicalClass (hD c₀))
-  have hindex := Q.chargeIndex_ne_zero_of_anticanonical_cycle href (hD c₀) hnef hsq hcan hprim
+  have hindex := href.chargeIndex_ne_zero (hD c₀) hnef hsq hprim
   have hker : E.matrix.mulVecLin.ker = P.charge.ker := by
     rw [← P.matrix_eq, hform, hcharge]
     exact Fan.ker_chargeExchangeMatrix_rayChargeMap b Q.rays hindex
   let : Q.fan.algebraicRealization.IsProjectiveOver ℂ :=
     Q.fan.isProjectiveOver_algebraicRealization_of_isComplete Q.regular Q.complete b
-  let : SmoothOfRelativeDimension 2 (Q.fan.algebraicRealization ↘ S) := by
-    have hrank : Module.finrank ℤ N = 2 := by simpa using Module.finrank_eq_card_basis b
-    rw [← hrank, Q.fan.algebraicRealization_over]
-    exact Q.fan.smoothOfRelativeDimension_algebraicRealizationStructureMap Q.regular
-  obtain ⟨hAux, e, he, _⟩ := href.existsUnique_chargeKernelEquiv (hD c₀) (funext (hmark c₀))
-  let := hAux
-  let j₁ := LinearEquiv.ofEq _ _ hker
-  let j₂ := LinearEquiv.ofEq _ _ (congrArg LinearMap.ker hcharge)
-  let j := j₁.trans j₂
-  let e' := e.trans j.symm
+  let := Q.smoothOfRelativeDimension_fan
+  let := Q.isPerfPair_auxiliaryPicardForm
+  let e := href.chargeKernelEquiv (hD c₀) (funext (hmark c₀))
+  have he := href.chargeKernelEquiv_symm_apply (hD c₀) (funext (hmark c₀))
+  have hker' := hker.trans (congrArg LinearMap.ker hcharge)
+  let j := (LinearEquiv.ofEq _ _ hker).trans
+    (LinearEquiv.ofEq _ _ (congrArg LinearMap.ker hcharge))
+  have hj : LinearEquiv.ofEq _ _ hker' = j := by
+    ext x : 1
+    exact Subtype.ext (by simp [j])
+  let e' := href.exchangeKernelEquiv (hD c₀) (funext (hmark c₀)) hker'
+  have he' : e' = e.trans j.symm := by
+    simp only [e', href.exchangeKernelEquiv_def, hj, e]
   have hcoordinates (x : orth[H,d]) : (Q.inclusion x.val).2 = -(e' x : Fin r → ℤ) := by
-    simpa only [e', j, j₁, j₂, LinearEquiv.trans_symm, LinearEquiv.trans_apply,
-      LinearEquiv.ofEq_symm, LinearEquiv.coe_ofEq_apply, LinearEquiv.symm_apply_apply,
-      Fan.boundaryOrthogonalEquivChargeKernel_symm_snd] using congrArg Prod.snd (he (e x))
+    simp [e']
   -- Use the same geometric realization for the charge action and its sign.
   have comparison (w : Loops[E]) :
       exchangeKernelAction ℂ E eval[w] =
@@ -182,9 +181,8 @@ theorem existsUnique_exchangeKernelEquiv_of_presentation
         (fun c hc ↦ ⟨((Q.hasNodalModel_iff c (M c)).mp (models c hc)).choose⟩)
       have hw : (End.of word : Loops[E]) = w := End.ext rfl
       apply (LinearEquiv.autCongr j).injective
-      simpa only [hw, chargeKernelAction_apply, e', j, ← LinearEquiv.autCongr_trans,
-        MulEquiv.trans_apply, ← LinearEquiv.autCongr_symm, MulEquiv.apply_symm_apply,
-        j₁, j₂] using! h
+      simpa only [hw, chargeKernelAction_apply, he', j, ← LinearEquiv.autCongr_trans,
+        MulEquiv.trans_apply, ← LinearEquiv.autCongr_symm, MulEquiv.apply_symm_apply] using! h
     · exact (SignedBoundaryIsometryGroup.sign_apply H d _).trans
         ((congrArg Prod.snd (coe_toSignedBoundaryIsometry R d hD hmark)).trans hsign)
   refine ⟨e', ⟨hcoordinates, ?_, ?_⟩, fun f hf ↦ ?_⟩
@@ -202,6 +200,7 @@ theorem existsUnique_exchangeKernelEquiv_of_presentation
       apply Subtype.ext
       apply (LinearEquiv.autCongr e').injective
       simpa only [hg₁, map_one, OneMemClass.coe_one] using (comparison w).1.symm
+    let : IsRationalOver ((M c₀).surface ↘ S) := href.isRationalOver
     have hsign := sign_eq_one_of_mem_ker_signedOrthogonalRestriction
       (M c₀) (hD c₀) hnef hsq hprim (funext (hmark c₀)) hrestrict
     rw [(comparison w).2, neg_one_pow_eq_one_iff_even (by decide : (-1 : ℤˣ) ≠ 1)] at hsign

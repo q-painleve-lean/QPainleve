@@ -92,21 +92,13 @@ local instance : SmoothOfRelativeDimension 2 (Y ↘ S) :=
   (Fan.isClosedPointTower_internalBlowupTower b Q.rays param[c]).smoothOfRelativeDimension (X ↘ S)
 
 private def internalModelMarking (e : H.IsometryEquiv (Aux)) :
-    H.IsometryEquiv (Chow.intersectionBilinForm ℂ Y) := by
-  let v : (Aux).IsometryEquiv (Chow.intersectionBilinForm ℂ Y) :=
-    { toLinearEquiv := μ
-      map_app' := by
-        intro x y
-        simpa only [picardMarking_apply, Fan.internalBlowupPicardMarking_apply,
-          Chow.intersectionBilinForm_apply, LinearMap.BilinForm.prod_apply, LinearMap.neg_apply,
-          LinearMap.toFun_eq_coe, LinearEquiv.coe_coe, dotProductBilin_apply_apply, dotProduct,
-          sub_eq_add_neg] using
-            classIntersectionNumber_picardMarking ℂ
-              (Fan.isClosedPointTower_internalBlowupTower b Q.rays param[c]) x y }
-  exact e.trans v
+    H.IsometryEquiv (Chow.intersectionBilinForm ℂ Y) :=
+  e.trans ((Fan.isClosedPointTower_internalBlowupTower b Q.rays param[c]).picardMarkingIsometry ℂ)
 
 private theorem internalModelMarking_apply (e : H.IsometryEquiv (Aux)) (x : L) :
-    Q.internalModelMarking c e x = μ (e x) := rfl
+    Q.internalModelMarking c e x = μ (e x) := by
+  simp only [internalModelMarking, LinearMap.BilinForm.IsometryEquiv.trans_apply,
+    IsClosedPointTower.picardMarkingIsometry_apply, Fan.internalBlowupPicardMarking_apply]
 
 private theorem isOver_internalBoundary :
     (U).2.boundaryι.IsOver S := by

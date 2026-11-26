@@ -9,17 +9,36 @@ public import TauCeti.Algebra.Module.Primitive
 public import TauCeti.LinearAlgebra.BilinearForm.Characteristic
 
 /-!
-# Primitivity from a characteristic vector
+# Primitivity and integral bilinear forms
 
 An isotropic vector pairing to minus two with a characteristic vector is primitive.
 This applies to the fiber class on a rational ruled surface by adjunction.
+For a perfect form, a witness to primitivity can also be read as a pairing
+of value one in an ambient bilinear space.
 -/
 
 public section
 
 namespace LinearMap.BilinForm
 
-variable {M : Type*} [AddCommGroup M] [Module.Free ℤ M]
+variable {A M : Type*} [AddCommGroup A] [AddCommGroup M]
+
+/-- If every functional on the source is represented by pairing on the right,
+a vector is primitive exactly when its isometric image pairs to one with
+some ambient vector. -/
+theorem Isometry.isPrimitive_iff_exists_apply_eq_one {B : LinearMap.BilinForm ℤ M}
+    {C : LinearMap.BilinForm ℤ A} (e : B →bᵢ C) (hB : Function.Surjective B.flip) (x : M) :
+    TauCeti.IsPrimitive x ↔ ∃ y : A, C (e x) y = 1 := by
+  constructor
+  · intro hx
+    obtain ⟨f, hf⟩ := TauCeti.isPrimitive_def.mp hx
+    obtain ⟨y, rfl⟩ := hB f
+    exact ⟨e y, (e.map_app x y).trans hf⟩
+  · rintro ⟨y, hy⟩
+    exact TauCeti.IsPrimitive.of_map (g := e.toLinearMap)
+      (TauCeti.isPrimitive_def.mpr ⟨C.flip y, hy⟩)
+
+variable [Module.Free ℤ M]
   {B : LinearMap.BilinForm ℤ M} {K F : M}
 
 /-- An isotropic vector of characteristic degree minus two is primitive. -/

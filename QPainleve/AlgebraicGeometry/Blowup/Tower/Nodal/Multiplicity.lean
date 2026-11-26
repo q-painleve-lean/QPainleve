@@ -6,8 +6,9 @@ Authors: The QPainleve contributors
 module
 
 public import QPainleve.AlgebraicGeometry.Blowup.Tower.Nodal.Basic
-public import QPainleve.AlgebraicGeometry.CartierDivisor.Support
+public import QPainleve.AlgebraicGeometry.CartierDivisor.BoundaryPrimes
 import QPainleve.AlgebraicGeometry.Blowup.Descent
+import QPainleve.AlgebraicGeometry.Blowup.Tower.Modification
 import QPainleve.AlgebraicGeometry.Curves.Node.Order
 import QPainleve.AlgebraicGeometry.IdealSheaf.Stalk
 import QPainleve.AlgebraicGeometry.Morphisms.IsoLocus
@@ -15,6 +16,7 @@ import TauCeti.AlgebraicGeometry.Curves.Node.Reduced
 import TauCeti.AlgebraicGeometry.Curves.SingularLocus.Smooth
 import TauCeti.AlgebraicGeometry.Morphisms.Smooth.GeometricallyReduced
 import TauCeti.AlgebraicGeometry.Scheme.DiscreteValuationStalk
+import TauCeti.AlgebraicGeometry.Scheme.Regular.Scheme
 
 /-!
 # Multiplicities of the total boundary under nodal blowups
@@ -100,6 +102,35 @@ theorem mem_centre_iff_two_le_coeff_totalTransform [PerfectField k] [IsIntegral 
     hT.mem_centre_iff_two_le_stalkOrder hD hnodal x]
   conv_lhs => rw [← ENat.natCast_toNat hfinite]
   exact ENat.natCast_le_natCast.trans (Int.ofNat_le).symm
+
+/-- A prime of the total boundary survives the nodal contraction exactly when its
+Weil multiplicity is one. -/
+theorem toBase_mem_boundaryPrimes_iff_boundaryCoeff_eq_one
+    [PerfectField k] [IsIntegral X] [IsNoetherian X]
+    (hT : IsNodalBoundaryTower D s (𝟙 X) T)
+    (hD : D.IsEffectiveCartier) (hnodal : AtWorstNodalOfRelativeDimensionOne (D.subschemeι ≫ s))
+    (p : (D.comap T.toBase).boundaryPrimes) :
+    letI := hT.isClosedPointTower.isIntegral s
+    letI := T.isNoetherian
+    let htotal := hT.isClosedPointTower.isEffectiveCartier_totalTransform s hD
+    T.toBase p.val ∈ D.boundaryPrimes ↔ htotal.boundaryCoeff p = 1 := by
+  intro htotal
+  let : IsIntegral Y := hT.isClosedPointTower.isIntegral s
+  let : IsNoetherian Y := T.isNoetherian
+  have : Smooth s := SmoothOfRelativeDimension.smooth 2 s
+  have : IsRegular X := IsRegular.of_smooth s
+  have := hT.isClosedPointTower.isModification_of_smoothOfRelativeDimension_two s
+  have : Smooth (T.toBase ≫ s) := (hT.isClosedPointTower.smoothOfRelativeDimension s).smooth
+  have : IsRegular Y := IsRegular.of_smooth (T.toBase ≫ s)
+  let x := (D.comap T.toBase).boundaryPrimeEmbedding p
+  have hpos := htotal.boundaryCoeff_pos p
+  have hcentre : 2 ≤ htotal.boundaryCoeff p ↔ T.toBase p.val ∉ D.boundaryPrimes := by
+    rw [htotal.boundaryCoeff_def]
+    exact (hT.mem_centre_iff_two_le_coeff_totalTransform hD hnodal x).symm.trans
+      (by simpa only [x, coe_boundaryPrimeEmbedding] using
+        D.mem_centre_iff_notMem_boundaryPrimes_of_mem_boundaryPrimes_comap T.toBase p.property)
+  have hweight : (¬ 2 ≤ htotal.boundaryCoeff p) ↔ htotal.boundaryCoeff p = 1 := by omega
+  exact not_not.symm.trans ((not_congr hcentre.symm).trans hweight)
 
 attribute [local instance] specializationOrder
 

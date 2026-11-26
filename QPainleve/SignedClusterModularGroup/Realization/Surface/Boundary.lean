@@ -74,6 +74,19 @@ theorem MarkedSurface.ofBoundary_ker (D : X.IdealSheafData)
     (MarkedSurface.ofBoundary D A μ f).pair.hom.left.ker = D :=
   D.ker_subschemeι
 
+/-- The line bundle of the packaged boundary has the class of the original Cartier divisor. -/
+theorem MarkedSurface.ofBoundary_boundaryIdeal_class (D : X.IdealSheafData)
+    [PrestableFamily (D.subscheme ↘ S)]
+    (A : Scheme.NodalCycleNumbering (X := D.subscheme)
+      (Empty.elim : Empty → (D.subscheme ↘ S).smoothLocus) n)
+    (μ : B.IsometryEquiv (Chow.intersectionBilinForm K X))
+    {Y : Scheme.{u}} (f : X ⤏ Y)
+    (hD' : (MarkedSurface.ofBoundary D A μ f).pair.hom.left.ker.IsEffectiveCartier)
+    (hD : D.IsEffectiveCartier) :
+    (LineBundleClass.mk hD'.toInvertibleSheaf)⁻¹ = (LineBundleClass.mk hD.toInvertibleSheaf)⁻¹ :=
+  congrArg Inv.inv (LineBundleClass.mk_toInvertibleSheaf_congr _ _
+    (MarkedSurface.ofBoundary_ker D A μ f))
+
 /-- The packaged cycle retains the specified numbering on the closed boundary. -/
 @[simp]
 theorem MarkedSurface.ofBoundary_cycle (D : X.IdealSheafData)

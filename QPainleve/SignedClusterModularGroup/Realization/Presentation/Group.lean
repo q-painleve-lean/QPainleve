@@ -6,7 +6,9 @@ Authors: The QPainleve contributors
 module
 
 public import QPainleve.SignedClusterModularGroup.Realization.Endpoint.PicardAction
+public import QPainleve.SignedClusterModularGroup.Realization.Presentation.NodalPicardGroupIdentification
 
+import QPainleve.Geometry.Toric.Fan.ExchangeMatrix
 import QPainleve.SignedClusterModularGroup.Realization.Presentation.Family
 import QPainleve.SignedClusterModularGroup.Realization.Surjectivity.PicardAction
 
@@ -25,8 +27,8 @@ and `GeometricRealization.existsUnique_signedPicardEquiv_of_presentation`.
 
 public section
 
-open AlgebraicGeometry CategoryTheory MulOpposite Quiver
-open QPainleve.CharacterTorus QPainleve.Cluster QPainleve.SignedBoundaryIsometryGroup
+open AlgebraicGeometry CategoryTheory
+open QPainleve.CharacterTorus QPainleve.Cluster
 open TauCeti TauCeti.AlgebraicGeometry TauCeti.Toric
 open Scheme Scheme.IdealSheafData
 
@@ -37,9 +39,7 @@ open GeometricRealization
 local notation "S" => Spec (CommRingCat.of ℂ)
 local notation "Centers[" r "]" => Over.mk (structureMap ℂ (Fin r → ℤ))
 local notation "XTor[" r "]" => scheme ℂ (Fin r →₀ ℤ)
-local notation "D[" M "]" => Scheme.Hom.ker (Over.Hom.left (Arrow.hom (MarkedSurface.pair M)))
 local notation "classOf(" h ")" => (LineBundleClass.mk (IsEffectiveCartier.toInvertibleSheaf h))⁻¹
-local notation "χ[" c "]" => pointsEquiv ℂ _ (Subtype.mk (Over.Hom.left c) (Over.w c))
 
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {b : Module.Basis (Fin 2) ℤ N} {r n : ℕ} [NeZero n]
@@ -48,17 +48,12 @@ variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   (Q : CompleteToricPresentation i b r L γ)
   {c : Point Centers[r]} {M₀ : MarkedSurface ℂ n B XTor[r]}
 
-local notation "Models[" M "," C "]" =>
-  HasToricTargetModels (T₀ := Centers[r]) (T₁ := Centers[r]) (b := b) (s := Q.rays)
-    (hΦ := Q.regular) (T := Q.cycle) (origin := Q.origin) (ι := Q.inclusion) (P₁ := M)
-    (fun z : Point Centers[r] ↦ χ[z]) C
-
 /-- The signed and unsigned opposite cluster modular groups of a complete toric
 presentation of a primitive nef square-zero anticanonical cycle are the signed
 boundary isometries and the boundary rotations. One marked nodal model supplies
-the whole family, even when its reference center has repeated points. The signed
-equivalence computes the Picard pullback of every compatible loop realization and
-retains the branch sign. The two equivalences commute with the unsigned inclusions. -/
+the whole family, even when its reference center has repeated points.
+`NodalPicardGroupIdentification` gives the Picard pullback and branch sign of
+every compatible loop realization and the compatibility with the unsigned inclusions. -/
 theorem exists_picardGroupEquivs_of_nodal_model
     (href : Q.HasNodalModel c M₀)
     (hE : E.matrix = chargeExchangeMatrix b.detDualEquiv.toLinearMap (Fan.rayChargeMap Q.rays))
@@ -66,53 +61,30 @@ theorem exists_picardGroupEquivs_of_nodal_model
     (hnef : (classOf(M₀.isEffectiveCartier_boundaryIdeal)).IsNef ℂ (M₀.surface ↘ S))
     (hsq : Chow.classIntersectionNumber ℂ M₀.surface classOf(M₀.isEffectiveCartier_boundaryIdeal)
       classOf(M₀.isEffectiveCartier_boundaryIdeal) = 0) :
-    letI := Q.complete.nonempty_cones
-    letI := Q.prestable
-    letI := Q.neZero
-    let d := M₀.boundaryClass M₀.isEffectiveCartier_boundaryIdeal
-    ∃ (M : Point Centers[r] → MarkedSurface ℂ n B XTor[r])
-      (hD : ∀ z, D[M z].IsEffectiveCartier)
-      (hmark : ∀ z j, (M z).boundaryClass (hD z) j = d j)
-      (Θ : (SignedClusterModularGroup ℂ E)ᵐᵒᵖ ≃* signedBoundaryIsometryGroup B d)
-      (Θrot : (ClusterModularGroup ℂ E)ᵐᵒᵖ ≃* boundaryRotationGroup B d),
-      M c = M₀ ∧ (∀ z, Q.HasNodalModel z (M z)) ∧
-      (∀ (w : Word E E),
-        sign B d (Θ (op (signedClusterModularGroupMap ℂ E (End.of w)))) =
-          (-1 : ℤˣ) ^ w.inversionCount ∧
-        ∀ {C : Centers[r].left.PartialMap Centers[r].left} [IsDominant C.hom]
-          [C.IsOver Centers[r].hom Centers[r].hom]
-          (R : GeometricRealization M M C (w.xRationalMap ℂ)),
-          Models[M,C] →
-          Θ (op (signedClusterModularGroupMap ℂ E (End.of w))) =
-            R.toSignedBoundaryIsometry d hD hmark) ∧
-      ((sign B d).comp Θ.toMonoidHom).ker.unop = (clusterModularGroupInclusion ℂ E).range ∧
-      (∀ x, rotationInclusion B d (Θrot x) =
-        Θ (MonoidHom.op (clusterModularGroupInclusion ℂ E) x)) := by
+    ∃ P : NodalPicardGroupIdentification (B := B) Q ℂ E
+        (M₀.boundaryClass M₀.isEffectiveCartier_boundaryIdeal),
+      P.family c = M₀ := by
   obtain ⟨M, hD, hM, hfamily⟩ :=
     Q.exists_marked_family_of_nodal_model href M₀.isEffectiveCartier_boundaryIdeal
-  dsimp only
   let := Q.complete.nonempty_cones
   let := Q.prestable
   let := Q.neZero
   subst M₀
-  let P : ChargeSeed E N :=
-    ⟨b.detDualEquiv.toLinearMap, Fan.rayChargeMap Q.rays, b.detDualEquiv_self, hE.symm⟩
+  let P := Fan.rayChargeSeed b Q.rays hE
   have hmark (z : Point Centers[r]) (j : ZMod n) :=
     congrFun (hfamily z).2 j
-  obtain ⟨Θ, ⟨hΘ, hsign⟩, -⟩ := existsUnique_signedPicardEquiv_of_presentation
-    (Q := Q) (hD := hD) (hmark := hmark) P rfl rfl (fun z _ ↦ (hfamily z).1)
-    (hfamily c).1 hprim hnef hsq
-  let ρ := picardRotationHom Θ.toMonoidHom hsign.ge
-  have hinj : Function.Injective ρ := by
-    intro x y hxy
-    have h := congrArg (rotationInclusion B _) hxy
-    simp only [ρ, rotationInclusion_picardRotationHom_apply, MulEquiv.coe_toMonoidHom] at h
-    exact unop_injective
-      (clusterModularGroupInclusion_injective ℂ E (op_injective (Θ.injective h)))
-  have hsurj : Function.Surjective ρ :=
-    (picardRotationHom_surjective_iff Θ.toMonoidHom hsign).mpr
-      (fun g _ ↦ MonoidHom.mem_range.mpr (Θ.surjective g))
-  exact ⟨M, hD, hmark, Θ, MulEquiv.ofBijective ρ ⟨hinj, hsurj⟩, rfl,
-    fun z ↦ (hfamily z).1, hΘ, hsign, rotationInclusion_picardRotationHom_apply _ _⟩
+  obtain ⟨Θ, hΘ, -⟩ := existsUnique_signedPicardEquiv_of_presentation
+    (Q := Q) (hD := hD) (hmark := hmark) P
+    (Fan.rayChargeSeed_form _ _ _) (Fan.rayChargeSeed_charge _ _ _)
+    (fun z _ ↦ (hfamily z).1) (hfamily c).1 hprim hnef hsq
+  exact ⟨{ family := M
+           hasNodalModel := fun z ↦ (hfamily z).1
+           boundaryClass_eq := hmark
+           signedEquiv := Θ
+           sign_signedEquiv_apply_word := fun w ↦ by
+             simpa only [SignedBoundaryIsometryGroup.sign_apply, MulEquiv.coe_toMonoidHom]
+               using hΘ.sign_apply_word w
+           signedEquiv_apply_word := hΘ.apply_of_realization
+           sign_ker_unop := hΘ.sign_ker_unop }, rfl⟩
 
 end QPainleve.SignedClusterModularGroup.CompleteToricPresentation

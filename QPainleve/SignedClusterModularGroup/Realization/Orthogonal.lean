@@ -9,6 +9,7 @@ public import QPainleve.SignedClusterModularGroup.Realization.MarkedComparison
 public import QPainleve.SignedClusterModularGroup.Realization.Presentation
 
 import QPainleve.Geometry.Toric.Fan.Picard.Contraction.ChargeKernel
+import QPainleve.Geometry.Toric.Fan.Subdivision.Projective
 import QPainleve.SignedClusterModularGroup.Realization.NodalFiber
 import QPainleve.SignedClusterModularGroup.Realization.Presentation.Boundary
 
@@ -21,6 +22,9 @@ kernel. The inverse comparison is characterized by its image in the toric and
 total exceptional coordinates. Thus the comparison is independent of the center
 and of the nodal tower used to construct it.
 
+When the charge and exchange kernels agree, the negative total exceptional
+coefficients give the exchange-kernel coordinates in the same marking.
+
 The construction uses `Fan.existsUnique_contractedPicardMarkingOfRaySet_chargeKernelEquiv`.
 -/
 
@@ -28,7 +32,7 @@ public section
 
 open AlgebraicGeometry CategoryTheory Multiplicative
 open QPainleve.BlowupTower TauCeti TauCeti.AlgebraicGeometry TauCeti.Toric
-open QPainleve.CharacterTorus
+open QPainleve.CharacterTorus QPainleve.Cluster
 open Scheme Scheme.IdealSheafData LineBundleClass
 
 namespace QPainleve.SignedClusterModularGroup
@@ -65,12 +69,9 @@ variable [LinearMap.IsPerfPair ((Chow.intersectionBilinForm ℂ Φ.algebraicReal
   (-(dotProductBilin ℤ ℤ : LinearMap.BilinForm ℤ (Fin r → ℤ))))] [B.IsPerfPair]
 
 include p in
-/-- A nodal toric model supplies the integral charge coordinates of the fixed Picard
-marking. Inverse charge classes have the prescribed toric and total exceptional
-coordinates under the fixed inclusion. -/
-theorem existsUnique_markedBoundaryOrthogonalEquivChargeKernel (hp : p.IsNodalContraction)
+private theorem exists_markedBoundaryOrthogonalEquivChargeKernel (hp : p.IsNodalContraction)
     (hD : D[P].IsEffectiveCartier) {d : ZMod n → L} (hd : P.boundaryClass hD = d) :
-    ∃! e : B.orthogonal (Submodule.span ℤ (Set.range d)) ≃ₗ[ℤ] K,
+    ∃ e : B.orthogonal (Submodule.span ℤ (Set.range d)) ≃ₗ[ℤ] K,
       ∀ x : K, J (e.symm x).val =
         ((Fan.boundaryOrthogonalEquivChargeKernel hΦ s Btor).symm x).val := by
   classical
@@ -102,14 +103,34 @@ theorem existsUnique_markedBoundaryOrthogonalEquivChargeKernel (hp : p.IsNodalCo
       Fan.coe_contractedChargeKernelHom_apply, Iso.symm_hom, hu] at hcoords
     exact (p.marked_pullback (e.symm x).val).symm.trans
       (by simpa only [hclass, ofMul_toMul] using hcoords)
-  refine ⟨e, he, fun e' he' ↦ LinearEquiv.ext fun z ↦ Subtype.ext ?_⟩
-  have hcoords (f : _ ≃ₗ[ℤ] K)
-      (hf : ∀ x : K, J (f.symm x).val =
-        ((Fan.boundaryOrthogonalEquivChargeKernel hΦ s Btor).symm x).val) :
-      (J z.val).2 = -(f z : Fin r → ℤ) := by
-    simpa only [LinearEquiv.symm_apply_apply, Fan.boundaryOrthogonalEquivChargeKernel_symm_snd]
-      using congrArg Prod.snd (hf (f z))
-  exact neg_injective ((hcoords e' he').symm.trans (hcoords e he))
+  exact ⟨e, he⟩
+
+/-- The charge coordinates of the boundary orthogonal in a fixed Picard marking.
+The inverse preserves the toric and total exceptional coordinates of a charge relation. -/
+noncomputable def markedBoundaryOrthogonalEquivChargeKernel (hp : p.IsNodalContraction)
+    (hD : D[P].IsEffectiveCartier) {d : ZMod n → L} (hd : P.boundaryClass hD = d) :
+    B.orthogonal (Submodule.span ℤ (Set.range d)) ≃ₗ[ℤ] K :=
+  (p.exists_markedBoundaryOrthogonalEquivChargeKernel hp hD hd).choose
+
+/-- The inverse charge class has the coordinates of the same relation on the internal blowup
+model. -/
+@[simp]
+theorem markedBoundaryOrthogonalEquivChargeKernel_symm_apply (hp : p.IsNodalContraction)
+    (hD : D[P].IsEffectiveCartier) {d : ZMod n → L} (hd : P.boundaryClass hD = d) (x : K) :
+    J ((p.markedBoundaryOrthogonalEquivChargeKernel hp hD hd).symm x).val =
+      ((Fan.boundaryOrthogonalEquivChargeKernel hΦ s Btor).symm x).val :=
+  (p.exists_markedBoundaryOrthogonalEquivChargeKernel hp hD hd).choose_spec x
+
+/-- The charge coordinates are the negatives of the total exceptional coefficients. -/
+@[simp]
+theorem coe_markedBoundaryOrthogonalEquivChargeKernel_apply (hp : p.IsNodalContraction)
+    (hD : D[P].IsEffectiveCartier) {d : ZMod n → L} (hd : P.boundaryClass hD = d)
+    (x : B.orthogonal (Submodule.span ℤ (Set.range d))) :
+    (p.markedBoundaryOrthogonalEquivChargeKernel hp hD hd x : Fin r → ℤ) = -(J x.val).2 := by
+  let e := p.markedBoundaryOrthogonalEquivChargeKernel hp hD hd
+  simpa only [e, LinearEquiv.symm_apply_apply, Fan.boundaryOrthogonalEquivChargeKernel_symm_snd,
+    neg_neg] using (congrArg (fun y ↦ -y.2)
+      (p.markedBoundaryOrthogonalEquivChargeKernel_symm_apply hp hD hd (e x))).symm
 
 end ContractedToricFiber
 
@@ -129,27 +150,70 @@ local notation "Aux" => LinearMap.BilinForm.prod
   (Chow.intersectionBilinForm ℂ Q.fan.algebraicRealization)
   (-(dotProductBilin ℤ ℤ : LinearMap.BilinForm ℤ (Fin r → ℤ)))
 
-variable [Q.fan.algebraicRealization.IsProjectiveOver ℂ]
-  [SmoothOfRelativeDimension 2 (Q.fan.algebraicRealization ↘ S)]
+local notation "Orth[" d "]" => B.orthogonal (Submodule.span ℤ (Set.range d))
 
-/-- One nodal model fixes the unique integral charge coordinates of the boundary orthogonal.
-The auxiliary intersection form is perfect, and the inverse charge coordinates agree with the
-toric and total exceptional coordinates of the presentation. -/
-theorem HasNodalModel.existsUnique_chargeKernelEquiv (h : Q.HasNodalModel c M)
+/-- A nodal model identifies the boundary orthogonal of the marking with the charge kernel. -/
+noncomputable def HasNodalModel.chargeKernelEquiv (h : Q.HasNodalModel c M)
     (hD : D[M].IsEffectiveCartier) {d : ZMod n → L} (hd : M.boundaryClass hD = d) :
-    ∃ hAux : (Aux).IsPerfPair, letI := hAux
-      ∃! e : B.orthogonal (Submodule.span ℤ (Set.range d)) ≃ₗ[ℤ] (Fan.rayChargeMap Q.rays).ker,
-        ∀ x, Q.inclusion (e.symm x).val =
-          ((Fan.boundaryOrthogonalEquivChargeKernel Q.regular Q.rays Aux).symm x).val := by
+    Orth[d] ≃ₗ[ℤ] (Fan.rayChargeMap Q.rays).ker := by
   let := Q.prestable
   let := Q.neZero
+  let := Q.fan.isProjectiveOver_algebraicRealization_of_isComplete Q.regular Q.complete b
+  let := Q.smoothOfRelativeDimension_fan
   let : M.surface.IsProjectiveOver ℂ := M.projective
   let : SmoothOfRelativeDimension 2 (M.surface ↘ S) := M.smooth
-  obtain ⟨p, hnodal⟩ := h.exists_isNodalContraction hD
   let : IsRationalOver (M.surface ↘ S) := h.isRationalOver
   let : B.IsPerfPair := M.isPerfPair_of_isRationalOver
-  let hAux := Q.isPerfPair_auxiliaryPicardForm
-  exact ⟨hAux, p.existsUnique_markedBoundaryOrthogonalEquivChargeKernel hnodal hD hd⟩
+  let := Q.isPerfPair_auxiliaryPicardForm
+  exact (h.exists_isNodalContraction hD).choose.markedBoundaryOrthogonalEquivChargeKernel
+    (h.exists_isNodalContraction hD).choose_spec hD hd
+
+/-- The marked class attached to a charge relation has the same coordinates as its class on the
+internal blowup model. -/
+@[simp]
+theorem HasNodalModel.chargeKernelEquiv_symm_apply [Q.fan.algebraicRealization.IsProjectiveOver ℂ]
+    [SmoothOfRelativeDimension 2 (Q.fan.algebraicRealization ↘ S)] [(Aux).IsPerfPair]
+    (h : Q.HasNodalModel c M) (hD : D[M].IsEffectiveCartier) {d : ZMod n → L}
+    (hd : M.boundaryClass hD = d) (x : (Fan.rayChargeMap Q.rays).ker) :
+    Q.inclusion ((h.chargeKernelEquiv hD hd).symm x).val =
+      ((Fan.boundaryOrthogonalEquivChargeKernel Q.regular Q.rays Aux).symm x).val := by
+  simp only [HasNodalModel.chargeKernelEquiv,
+    ContractedToricFiber.markedBoundaryOrthogonalEquivChargeKernel_symm_apply]
+
+/-- The marked charge equivalence reads the negative total exceptional coefficients. -/
+@[simp]
+theorem HasNodalModel.coe_chargeKernelEquiv_apply (h : Q.HasNodalModel c M)
+    (hD : D[M].IsEffectiveCartier) {d : ZMod n → L} (hd : M.boundaryClass hD = d)
+    (x : Orth[d]) :
+    (h.chargeKernelEquiv hD hd x : Fin r → ℤ) = -(Q.inclusion x.val).2 := by
+  simp only [HasNodalModel.chargeKernelEquiv,
+    ContractedToricFiber.coe_markedBoundaryOrthogonalEquivChargeKernel_apply]
+
+/-- Exchange-kernel coordinates in the marked boundary orthogonal, when the exchange and
+charge kernels coincide. -/
+noncomputable def HasNodalModel.exchangeKernelEquiv (h : Q.HasNodalModel c M)
+    (hD : D[M].IsEffectiveCartier) {d : ZMod n → L} (hd : M.boundaryClass hD = d)
+    {E : SkewExchangeMatrix (Fin r)}
+    (hker : E.matrix.mulVecLin.ker = (Fan.rayChargeMap Q.rays).ker) :
+    Orth[d] ≃ₗ[ℤ] E.matrix.mulVecLin.ker :=
+  (h.chargeKernelEquiv hD hd).trans (LinearEquiv.ofEq _ _ hker).symm
+
+/-- The exchange equivalence is the charge equivalence transported along the equality of kernels. -/
+theorem HasNodalModel.exchangeKernelEquiv_def (h : Q.HasNodalModel c M)
+    (hD : D[M].IsEffectiveCartier) {d : ZMod n → L} (hd : M.boundaryClass hD = d)
+    {E : SkewExchangeMatrix (Fin r)}
+    (hker : E.matrix.mulVecLin.ker = (Fan.rayChargeMap Q.rays).ker) :
+    h.exchangeKernelEquiv hD hd hker =
+      (h.chargeKernelEquiv hD hd).trans (LinearEquiv.ofEq _ _ hker).symm := (rfl)
+
+/-- Exchange-kernel coordinates are the negative total exceptional coefficients. -/
+@[simp]
+theorem HasNodalModel.coe_exchangeKernelEquiv_apply (h : Q.HasNodalModel c M)
+    (hD : D[M].IsEffectiveCartier) {d : ZMod n → L} (hd : M.boundaryClass hD = d)
+    {E : SkewExchangeMatrix (Fin r)}
+    (hker : E.matrix.mulVecLin.ker = (Fan.rayChargeMap Q.rays).ker) (x : Orth[d]) :
+    (h.exchangeKernelEquiv hD hd hker x : Fin r → ℤ) = -(Q.inclusion x.val).2 := by
+  simp [HasNodalModel.exchangeKernelEquiv]
 
 end CompleteToricPresentation
 

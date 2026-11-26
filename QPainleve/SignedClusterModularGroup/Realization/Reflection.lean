@@ -17,8 +17,8 @@ import QPainleve.SignedClusterModularGroup.Boundary.Intersection
 The actual numbered components and nodes of a nef square-zero boundary give the
 negative cycle Laplacian in the Picard marking. For a primitive anticanonical
 boundary on a rational surface, the marked lattice then contains an involution
-with negative sign. Its action on the boundary and its orthogonal complement
-are supplied by the integral construction `exists_cycle_reversing_involution`.
+with negative sign. Its actions on the boundary and its orthogonal complement
+are supplied by `SignedBoundaryIsometryGroup.nonempty_cycleReversingInvolution`.
 -/
 
 public section
@@ -111,19 +111,12 @@ local notation "cartier" => M.isEffectiveCartier_boundaryIdeal
 signed Picard involution that reflects the numbered components about a component. It fixes the
 total cycle and a square `-1` class meeting that component once. On the orthogonal complement
 the involution is negation corrected in the direction of the total cycle. -/
-theorem exists_marked_boundary_reversing_involution
+theorem nonempty_cycleReversingInvolution
     (hcan : letI : SmoothOfRelativeDimension 2 f := M.smooth
       classOf(cartier) = K⁻¹) (hnef : (classOf(cartier)).IsNef k f)
     (hsq : Chow.classIntersectionNumber k M.surface classOf(cartier) classOf(cartier) = 0)
     (hprim : IsPrimitive (Additive.ofMul classOf(cartier))) :
-    ∃ (j₀ : ZMod n) (a : L) (s : signedBoundaryIsometryGroup B d[cartier]),
-      B a a = -1 ∧ (∀ j, B a (d[cartier] j) = if j = j₀ then 1 else 0) ∧
-      sign B d[cartier] s = -1 ∧ s * s = 1 ∧
-      (toIsometry B d[cartier] s).val a = a ∧
-      (toIsometry B d[cartier] s).val (δ[cartier]) = δ[cartier] ∧
-      (∀ j, (toIsometry B d[cartier] s).val (d[cartier] j) = d[cartier] (2 * j₀ - j)) ∧
-      (∀ x, x ∈ B.orthogonal (Submodule.span ℤ (Set.range d[cartier])) →
-        (toIsometry B d[cartier] s).val x = -x + (2 * B x a) • (δ[cartier])) := by
+    Nonempty (CycleReversingInvolution B d[cartier]) := by
   let hD := cartier
   let : M.surface.IsProjectiveOver k := M.projective
   let : SmoothOfRelativeDimension 2 f := M.smooth
@@ -134,30 +127,10 @@ theorem exists_marked_boundary_reversing_involution
     M.surface.finite_picard_of_isRationalOver k
   let : Module.Free ℤ L := Module.Free.of_equiv M.picardMarking.symm
   let : Module.Finite ℤ L := Module.Finite.of_surjective _ M.picardMarking.symm.surjective
-  have hpair (x y : L) : B x y =
-      Chow.classIntersectionNumber k M.surface (M.picardMarking x).toMul
-        (M.picardMarking y).toMul :=
-    (M.intersectionBilinForm_picardMarking x y).symm.trans (Chow.intersectionBilinForm_apply ..)
-  have hSymm : B.IsSymm := ⟨fun x y ↦
-    (hpair x y).trans ((Chow.classIntersectionNumber_comm _ _).trans (hpair y x).symm)⟩
   have hprimitive : IsPrimitive (δ[hD]) :=
     M.picardMarking.isPrimitive_iff.mp (by rwa [M.picardMarking_sum_boundaryClass])
-  have hchar (x : L) : Even (B x x - B x (δ[hD])) := by
-    rw [even_iff_two_dvd, dvd_sub_comm, hSymm.eq x (δ[hD])]
-    exact (BilinForm.isCharacteristic_iff.mp (M.isCharacteristic_sum_boundaryClass hD hcan)) x
-  obtain ⟨j₀, a, g, haa, ha, hg, hga, hgδ, hgd, hgK⟩ :=
-    exists_cycle_reversing_involution L B hSymm (IsPerfPair.bijective_left B) n d[hD]
-      (M.intersectionForm_boundaryClass hD hnef hsq) (isPrimitive_def.mp hprimitive) hchar
-  have hrev : ∃ t : ZMod n, ∀ j, g (d[hD] j) = d[hD] (-j + t) :=
-    ⟨2 * j₀, fun j ↦ by simpa only [sub_eq_neg_add] using hgd j⟩
-  let s := reversal g hrev
-  have hs : ⇑(toIsometry B d[hD] s).val = ⇑g := by
-    simp only [s, toIsometry_apply, coe_reversal,
-      BilinForm.coe_isometryGroupEquivIsometryEquiv_symm]
-  refine ⟨j₀, a, s, haa, ha, by simp [s], reversal_mul_self g hrev hg, ?_⟩
-  simp only [hs]
-  refine ⟨hga, hgδ, hgd, fun x hx ↦ hgK x fun j ↦ ?_⟩
-  exact (hSymm.eq _ _).trans
-    (B.mem_orthogonal_iff.mp hx _ (Submodule.subset_span (Set.mem_range_self j)))
+  exact SignedBoundaryIsometryGroup.nonempty_cycleReversingInvolution B d[hD] M.isSymm
+    (M.intersectionForm_boundaryClass hD hnef hsq) hprimitive
+    (M.isCharacteristic_sum_boundaryClass hD hcan)
 
 end QPainleve.SignedClusterModularGroup.MarkedSurface

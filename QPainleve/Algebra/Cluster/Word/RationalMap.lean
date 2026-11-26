@@ -100,4 +100,14 @@ theorem xRationalMap_reverse_comp (w : Word B C) :
     (w.reverse.xRationalMap k).comp (w.xRationalMap k) = Scheme.RationalMap.id X := by
   simpa only [reverse_reverse] using xRationalMap_comp_reverse k w.reverse
 
+/-- A representative of a loop transported along `w` intertwines the rational X maps
+of the two loops with that of `w`. -/
+theorem xRationalMap_comp_eq_of_xPullback_eq_conj (w : Word B C)
+    {v : Word B B} {u : Word C C}
+    (h : u.xPullback k = ((w.reverse.comp v).comp w).xPullback k) :
+    (w.xRationalMap k).comp (u.xRationalMap k) =
+      (v.xRationalMap k).comp (w.xRationalMap k) := by
+  simpa only [xRationalMap_comp] using
+    (xRationalMap_eq_iff k (w.comp u) (v.comp w)).2 (by simp [h])
+
 end Quiver.Path

@@ -154,7 +154,7 @@ theorem exists_toric_contraction_of_root_free_presentation
           p ∈ (I.subschemeι ≫ Φ.algebraicRealizationStructureMap).smoothLocus) ∧
         ∃ v : E.subscheme ≅ I.subscheme,
           v.hom ≫ I.subschemeι = E.subschemeι ≫ a.hom ≫ M.2.toTower.toBase := by
-  obtain ⟨Φ, hΦ, hc, r, s, c, m, Y, T, hT, e, he, hB⟩ := (hasToricPresentation_iff ..).mp h
+  obtain ⟨r, ⟨Φ, hΦ, hc, s, c, m, Y, T, hT, e, he, hB⟩⟩ := (hasToricPresentation_iff ..).mp h
   let : Nonempty Φ.cones := hc.nonempty_cones
   let I := Φ.boundaryIdeal hc.nonempty_cones
   let E := (D.comap T.toBase).radical

@@ -91,62 +91,62 @@ theorem exists_toric_internal_factorization_of_poleIdeal
       Category.comp_id]
     exact hboundary
 
-/-- Under an ordered toric factorization of a specified morphism, every boundary prime
-corresponds to a ray of the subdivided fan. Its orders on all pulled-back characters
-are the evaluations on that ray's primitive generator, which characterize the correspondence.
-The closure of each prime is the image of the embedded ray component. -/
-theorem exists_equiv_boundaryPrimes_of_toric_internal_factorization
+/-- At a transported boundary prime, the order of a character pulled back along the
+specified morphism is its evaluation on the corresponding primitive ray generator. -/
+theorem ord_internalBlowupBoundaryPrimeEquivOfIso_character
     [Nonempty Φ.cones] {Ψ : Fan i} [Nonempty Ψ.cones]
     (hΨ : Ψ.IsRegular) (H : Ψ.IsSubdivision Φ)
     {m : ℕ} (ρ : Fin m → Ψ.Ray) (u : Fin m → ℂˣ)
     [IsIntegral X] [IsLocallyNoetherian X] {f : X ⟶ Y} [IsDominant f] {P : X.IdealSheafData}
     (e : (Ψ.internalBlowupTower b ρ u).1 ≅ X)
     (he : e.hom ≫ f = (Ψ.internalBlowupTower b ρ u).2.toTower.toBase ≫ H.toFanHom.algebraicMap)
-    (hP : P.comap e.hom = (Ψ.internalBlowupTower b ρ u).2.boundaryι.ker) :
-    ∃ R : Ψ.Ray ≃ P.boundaryPrimes,
-      (∀ (r : Ψ.Ray) (p : P.boundaryPrimes),
-        R r = p ↔ ∀ a : N →+ ℤ,
-          X.ord (f.functionFieldMap (Φ.character (ofAdd a))) p.val = a r.primitiveGenerator) ∧
-      ∀ r, Set.range (r.boundaryComponentι hΨ ≫ (Ψ.internalBlowupTower b ρ u).2.boundaryι ≫
-        e.hom) = closure {((R r).val : X)} := by
+    (hs : (P.comap e.hom).support = (Ψ.internalBlowupTower b ρ u).2.boundaryι.ker.support)
+    (r : Ψ.Ray) (a : N →+ ℤ) :
+    X.ord (f.functionFieldMap (Φ.character (ofAdd a)))
+        (internalBlowupBoundaryPrimeEquivOfIso hΨ b ρ u e hs r).val =
+      a r.primitiveGenerator := by
   let A := Ψ.internalBlowupTower b ρ u
   let π := A.2.toTower.toBase
   have : IsIntegral A.1 := isIntegral_internalBlowupTower b ρ u hΨ
   have : IsNoetherian A.1 := A.2.toTower.isNoetherian
   have : IsModification π := isModification_internalBlowupTower_toBase b ρ u hΨ
-  let R := internalBlowupBoundaryPrimeEquiv hΨ b ρ u
-  let E := (Set.equivOfEq (congrArg boundaryPrimes hP.symm)).trans
-    (P.boundaryPrimesEquivOfIso e)
-  let rays := R.trans E
-  have hrays (r : Ψ.Ray) : (rays r).val = e.hom (R r).val := by
-    simp only [rays, E, Equiv.trans_apply, boundaryPrimesEquivOfIso_apply_val, Set.equivOfEq_apply]
-  have horder (r : Ψ.Ray) (a : N →+ ℤ) :
-      X.ord (f.functionFieldMap (Φ.character (ofAdd a))) (rays r).val =
-        a r.primitiveGenerator := by
-    let x := (R r).val
-    have hπ : π x = (Ψ.rayBoundaryPoint hΨ r).val :=
-      toBase_internalBlowupBoundaryPrimeEquiv hΨ b ρ u r
-    have hIso : π x ∈ π.isoLocus :=
-      π.mem_isoLocus_of_coheight_eq_one (hπ.symm ▸ (Ψ.rayBoundaryPoint hΨ r).property)
-    rw [hrays, ← TauCeti.AlgebraicGeometry.Scheme.ord_functionFieldMap e.hom]
-    have hfield := (Scheme.Hom.functionFieldMap_comp e.hom f).symm.trans
-      ((Scheme.Hom.functionFieldMap_congr he).trans (Scheme.Hom.functionFieldMap_comp π _))
-    rw [← CommRingCat.comp_apply, hfield, CommRingCat.comp_apply,
-      π.ord_functionFieldMap_of_mem_isoLocus hIso, hπ,
-      H.toFanHom.functionFieldMap_algebraicMap_character,
-      H.toFanHom_latticeMap, AddMonoidHom.comp_id, Ψ.ord_rayBoundaryPoint_character hΨ]
-  refine ⟨rays, fun r p ↦ ⟨fun h a ↦ h ▸ horder r a, ?_⟩, ?_⟩
-  · obtain ⟨q, rfl⟩ := rays.surjective p
-    intro h
-    apply congrArg rays
-    apply Ray.primitiveGenerator_injective
-    apply b.repr.injective
-    ext j
-    exact (h (b.coord j).toAddMonoidHom).symm.trans (horder q (b.coord j).toAddMonoidHom)
-  · intro r
-    rw [← Category.assoc, Scheme.Hom.comp_base, TopCat.coe_comp, Set.range_comp,
-      range_rayComponent_internalBlowupBoundaryPrimeEquiv hΨ b ρ u,
-      ← e.hom.isClosedEmbedding.closure_image_eq, Set.image_singleton, hrays]
+  let x := (internalBlowupBoundaryPrimeEquiv hΨ b ρ u r).val
+  have hπ : π x = (Ψ.rayBoundaryPoint hΨ r).val :=
+    toBase_internalBlowupBoundaryPrimeEquiv hΨ b ρ u r
+  have hIso : π x ∈ π.isoLocus :=
+    π.mem_isoLocus_of_coheight_eq_one (hπ.symm ▸ (Ψ.rayBoundaryPoint hΨ r).property)
+  rw [internalBlowupBoundaryPrimeEquivOfIso_apply_val,
+    ← TauCeti.AlgebraicGeometry.Scheme.ord_functionFieldMap e.hom]
+  have hfield := (Scheme.Hom.functionFieldMap_comp e.hom f).symm.trans
+    ((Scheme.Hom.functionFieldMap_congr he).trans (Scheme.Hom.functionFieldMap_comp π _))
+  rw [← CommRingCat.comp_apply, hfield, CommRingCat.comp_apply,
+    π.ord_functionFieldMap_of_mem_isoLocus hIso, hπ,
+    H.toFanHom.functionFieldMap_algebraicMap_character,
+    H.toFanHom_latticeMap, AddMonoidHom.comp_id, Ψ.ord_rayBoundaryPoint_character hΨ]
+
+/-- The character orders at a boundary prime determine its ray in the specified
+ordered toric factorization. -/
+theorem internalBlowupBoundaryPrimeEquivOfIso_eq_iff_forall_ord_character
+    [Nonempty Φ.cones] {Ψ : Fan i} [Nonempty Ψ.cones]
+    (hΨ : Ψ.IsRegular) (H : Ψ.IsSubdivision Φ)
+    {m : ℕ} (ρ : Fin m → Ψ.Ray) (u : Fin m → ℂˣ)
+    [IsIntegral X] [IsLocallyNoetherian X] {f : X ⟶ Y} [IsDominant f] {P : X.IdealSheafData}
+    (e : (Ψ.internalBlowupTower b ρ u).1 ≅ X)
+    (he : e.hom ≫ f = (Ψ.internalBlowupTower b ρ u).2.toTower.toBase ≫ H.toFanHom.algebraicMap)
+    (hs : (P.comap e.hom).support = (Ψ.internalBlowupTower b ρ u).2.boundaryι.ker.support)
+    (r : Ψ.Ray) (p : P.boundaryPrimes) :
+    internalBlowupBoundaryPrimeEquivOfIso hΨ b ρ u e hs r = p ↔
+      ∀ a : N →+ ℤ,
+        X.ord (f.functionFieldMap (Φ.character (ofAdd a))) p.val = a r.primitiveGenerator := by
+  let R := internalBlowupBoundaryPrimeEquivOfIso hΨ b ρ u e hs
+  obtain ⟨q, rfl⟩ := R.surjective p
+  simp only [ord_internalBlowupBoundaryPrimeEquivOfIso_character b hΨ H ρ u e he hs,
+    R, Equiv.apply_eq_iff_eq]
+  refine ⟨fun h a ↦ congrArg (fun x : Ψ.Ray ↦ a x.primitiveGenerator) h.symm, fun h ↦ ?_⟩
+  apply Ray.primitiveGenerator_injective
+  apply b.repr.injective
+  ext j
+  exact (h (b.coord j).toAddMonoidHom).symm
 
 variable [X.Over (Spec (.of ℂ))] [IsIntegral X] [X.IsProjectiveOver ℂ]
   [SmoothOfRelativeDimension 2 (X ↘ Spec (.of ℂ))]

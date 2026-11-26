@@ -79,6 +79,16 @@ theorem xPullback_comp_toXField_eq_eval_ySeed (w : Word B C) :
     rw [RingHom.comp_assoc, g.xPullback_comp_toXField k C, ← RingHom.comp_assoc, ih,
       RingHom.comp_assoc, hEval]
 
+/-- Pullback on the image of the universal coefficient semifield is substitution at
+the final Y-seed coefficients. -/
+theorem xPullback_toXField_eval_ySeed (k : Type*) [Field k] [CharZero k]
+    {B C : SkewExchangeMatrix ι} (w : Word B C) (x : Qsf ι) :
+    w.xPullback k (QsfZero.toXField k (x : QsfZero ι)) =
+      QsfZero.toXField k
+        (Qsf.eval (w.ySeed ⟨Qsf.X, B.val⟩).coefficient x : QsfZero ι) := by
+  rw [Qsf.val_eval]
+  exact DFunLike.congr_fun (w.xPullback_comp_toXField_eq_eval_ySeed k) (x : QsfZero ι)
+
 /-- Each X coordinate is pulled back to the corresponding coefficient of the final
 universal Y-seed, interpreted in the field of independent X coordinates. -/
 theorem xPullback_xCoordinate_eq_toXField (w : Word B C) (i : ι) :
@@ -108,5 +118,16 @@ theorem xPullback_eq_iff_ySeed_coefficient_eq {D : SkewExchangeMatrix ι}
       (w.xPullback_xCoordinate_eq_toXField k i).trans
         ((congrArg (fun c : ι → Qsf ι ↦ QsfZero.toXField k (c i : QsfZero ι)) h).trans
           (v.xPullback_xCoordinate_eq_toXField k i).symm)
+
+/-- In characteristic zero, equality of the pullbacks of two words with a common source
+is exactly equality of the substitutions of the final universal coefficients. -/
+theorem xPullback_eq_iff_qsf_eval_eq {D : SkewExchangeMatrix ι}
+    (w : Word B C) (v : Word B D) :
+    w.xPullback k = v.xPullback k ↔
+      Qsf.eval (w.ySeed ⟨Qsf.X, B.val⟩).coefficient =
+        Qsf.eval (v.ySeed ⟨Qsf.X, B.val⟩).coefficient := by
+  rw [w.xPullback_eq_iff_ySeed_coefficient_eq k v]
+  refine ⟨congrArg Qsf.eval, fun h ↦ funext fun i ↦ ?_⟩
+  simpa only [Qsf.eval_X] using DFunLike.congr_fun h (Qsf.X i)
 
 end Quiver.Path

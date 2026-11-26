@@ -270,17 +270,16 @@ local notation "f" => Φ.algebraicRealization ↘ S
 
 open LineBundleClass
 
-/-- A strict ray in an ordered toric model corresponds to an actual prime of
-the identified boundary. Pullback along the model isomorphism identifies that
-prime's Picard class with the strict ray class, in the same ray order. -/
-theorem exists_boundaryPrimeEquiv_pullback_eq_strictRayBoundaryClass
+/-- Pullback of a transported boundary prime class along the model isomorphism gives
+the strict class of the same ray. -/
+theorem pullback_primeDivisorClass_internalBlowupBoundaryPrimeEquivOfIso
     [IsLocallyNoetherian Y] [∀ y : Y, IsDomain (Y.presheaf.stalk y)]
     [∀ y : Y, UniqueFactorizationMonoid (Y.presheaf.stalk y)]
-    {D : Y.IdealSheafData} (e : M.1 ≅ Y) (he : D.comap e.hom = (ι).ker) :
-    ∃ σ : Φ.Ray ≃ D.boundaryPrimes,
-      (∀ ρ, (σ ρ).val = e.hom (internalBlowupBoundaryPrimeEquiv hΦ b s c ρ).val) ∧
-      ∀ ρ, Additive.ofMul (pullback e.hom (primeDivisorClass (D.boundaryPrimeEmbedding (σ ρ)))) =
-        strictRayBoundaryClass hΦ rankTwo J hJ ρ := by
+    {D : Y.IdealSheafData} (e : M.1 ≅ Y) (hs : (D.comap e.hom).support = (ι).ker.support)
+    (ρ : Φ.Ray) :
+    Additive.ofMul (pullback e.hom (primeDivisorClass (D.boundaryPrimeEmbedding
+      (internalBlowupBoundaryPrimeEquivOfIso hΦ b s c e hs ρ)))) =
+      strictRayBoundaryClass hΦ rankTwo J hJ ρ := by
   classical
   let : IsIntegral M.1 := isIntegral_internalBlowupTower b s c hΦ
   let : IsNoetherian M.1 := (J).isNoetherian
@@ -289,17 +288,11 @@ theorem exists_boundaryPrimeEquiv_pullback_eq_strictRayBoundaryClass
   let : SmoothOfRelativeDimension 2 ((J).toBase ≫ f) := (hJ).smoothOfRelativeDimension f
   let := ((J).toBase ≫ f).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two
   let α := internalBlowupBoundaryPrimeEquiv hΦ b s c
-  let t : (ι).ker.boundaryPrimes ≃ (D.comap e.hom).boundaryPrimes :=
-    Set.equivOfEq (congrArg boundaryPrimes he.symm)
-  let σ := α.trans (t.trans (D.boundaryPrimesEquivOfIso e))
-  have hσ (ρ : Φ.Ray) : (σ ρ).val = e.hom (α ρ).val := by
-    simp [σ, t]
-  refine ⟨σ, hσ, fun ρ ↦ ?_⟩
   have hp : CodimensionOnePoint.mapOfIsOpenImmersion e.hom
-      ((ι).ker.boundaryPrimeEmbedding (α ρ)) = D.boundaryPrimeEmbedding (σ ρ) := by
+      ((ι).ker.boundaryPrimeEmbedding (α ρ)) =
+        D.boundaryPrimeEmbedding (internalBlowupBoundaryPrimeEquivOfIso hΦ b s c e hs ρ) := by
     apply Subtype.ext
-    simpa only [CodimensionOnePoint.coe_mapOfIsOpenImmersion, coe_boundaryPrimeEmbedding]
-      using (hσ ρ).symm
+    simp [α]
   rw [← hp, pullback_primeDivisorClass_mapOfIsOpenImmersion,
     ← picardHom_markedBoundaryMap_single_internalBlowupTower hΦ b s c ρ]
   have hα : (ι).ker.boundaryPrimeEmbedding (α ρ) =
@@ -332,17 +325,17 @@ theorem pullback_numbered_boundaryPrime_eq_strictRayBoundaryClass
     have hk : ((ι) ≫ e.hom).ker = D := by
       rw [← heB, Scheme.Hom.ker_comp_of_isIso, D.ker_subschemeι]
     rw [← hk, Scheme.Hom.comap_ker_comp_of_isClosedImmersion]
-  obtain ⟨σ, hσ, hclass⟩ := exists_boundaryPrimeEquiv_pullback_eq_strictRayBoundaryClass
-    b hΦ s c e he
   have hpoint : (internalBlowupBoundaryPrimeEquiv hΦ b s c ρ).val =
       (ι) (C.componentGenericPoint j) := by
     rw [internalBlowupBoundaryPrime_val, Scheme.NodalCycleNumbering.componentGenericPoint_def, hρ]
-  have hPrime : σ ρ = A.boundaryPrimeEquiv hD j' := by
+  have hs := congrArg Scheme.IdealSheafData.support he
+  have hPrime : internalBlowupBoundaryPrimeEquivOfIso hΦ b s c e hs ρ =
+      A.boundaryPrimeEquiv hD j' := by
     apply Subtype.ext
-    rw [hσ, hpoint, ← Scheme.Hom.comp_apply, ← heB, Scheme.Hom.comp_apply, hj,
-      A.boundaryPrimeEquiv_apply_val]
+    rw [internalBlowupBoundaryPrimeEquivOfIso_apply_val, hpoint, ← Scheme.Hom.comp_apply,
+      ← heB, Scheme.Hom.comp_apply, hj, A.boundaryPrimeEquiv_apply_val]
   rw [← hPrime]
-  exact hclass ρ
+  exact pullback_primeDivisorClass_internalBlowupBoundaryPrimeEquivOfIso b hΦ s c e hs ρ
 
 end BoundaryClasses
 

@@ -44,4 +44,14 @@ theorem index_range_eq_gcd_chargeExchangeMatrix {ι N : Type*} [Fintype ι] [Dec
   simpa [Matrix.pairMinor_eq, Basis.det_apply, Basis.toMatrix_apply, LinearMap.toMatrix_apply,
     Matrix.det_fin_two] using h.symm
 
+/-- The determinant exchange matrix in a rank-two lattice is zero exactly when
+the charge image has infinite index. -/
+theorem chargeExchangeMatrix_eq_zero_iff_index_range_eq_zero {ι N : Type*}
+    [Fintype ι] [DecidableEq ι] [AddCommGroup N]
+    (v : (ι → ℤ) →ₗ[ℤ] N) (b : Basis (Fin 2) ℤ N)
+    {ω : LinearMap.BilinForm ℤ N} (hω : ω.IsAlt) (hb : ω (b 0) (b 1) = 1) :
+    chargeExchangeMatrix ω v = 0 ↔ v.range.toAddSubgroup.index = 0 := by
+  rw [v.index_range_eq_gcd_chargeExchangeMatrix b hω hb, Finset.gcd_eq_zero_iff, ← Matrix.ext_iff]
+  simp only [Finset.mem_univ, true_implies, Prod.forall, Int.natAbs_eq_zero, Matrix.zero_apply]
+
 end LinearMap

@@ -63,6 +63,25 @@ theorem isPerfPair_auxiliaryPicardForm
   ext x y
   simp
 
+local notation "Fiber[" c "," M "]" =>
+  ContractedToricFiber b Q.rays Q.regular Q.cycle Q.origin Q.inclusion
+    (pointsEquiv ℂ (Fin r → ℤ) (Subtype.mk (Over.Hom.left c) (Over.w c))) M
+
+local instance instProjectiveFan : Q.fan.algebraicRealization.IsProjectiveOver ℂ :=
+  Q.fan.isProjectiveOver_algebraicRealization_of_isComplete Q.regular Q.complete b
+
+local instance instSmoothFan : SmoothOfRelativeDimension 2 (Q.fan.algebraicRealization ↘ S) :=
+  Q.smoothOfRelativeDimension_fan
+
+/-- A complete toric presentation determines its surviving rays in boundary order
+at every nodal contraction, including at repeated centers. -/
+theorem numberedBoundaryRays_eq_of_nodalContractions {c d : GeometricRealization.Point Centers[r]}
+    {M P : MarkedSurface ℂ n H XTor[r]} {p : Fiber[c,M]} {q : Fiber[d,P]}
+    (hp : p.IsNodalContraction) (hq : q.IsNodalContraction) :
+    p.numberedBoundaryRays hp.cartier = q.numberedBoundaryRays hq.cartier := by
+  exact p.numberedBoundaryRays_eq_of_nodalContractions q hp hq
+    Q.isPerfPair_auxiliaryPicardForm.separatingRight
+
 /-- Two marked nodal models of one complete toric presentation have the same
 boundary class at every label. This holds also for repeated centers and cycles
 with one or two components. -/
@@ -70,16 +89,9 @@ theorem boundaryClass_eq_of_matching_nodal_models {c d : GeometricRealization.Po
     {M P : MarkedSurface ℂ n H XTor[r]} (hc : Q.HasNodalModel c M) (hd : Q.HasNodalModel d P)
     (hM : D[M].IsEffectiveCartier) (hP : D[P].IsEffectiveCartier) :
     M.boundaryClass hM = P.boundaryClass hP := by
-  let : Q.fan.algebraicRealization.IsProjectiveOver ℂ :=
-    Q.fan.isProjectiveOver_algebraicRealization_of_isComplete Q.regular Q.complete b
-  have hN : Module.finrank ℤ N = 2 := by simpa using Module.finrank_eq_card_basis b
-  let : SmoothOfRelativeDimension 2 (Q.fan.algebraicRealization ↘ S) := by
-    rw [← hN, Q.fan.algebraicRealization_over]
-    exact Q.fan.smoothOfRelativeDimension_algebraicRealizationStructureMap Q.regular
   obtain ⟨p, hp⟩ := hc.exists_isNodalContraction hM
   obtain ⟨q, hq⟩ := hd.exists_isNodalContraction hP
-  have hrays := p.numberedBoundaryRays_eq_of_nodalContractions q hp hq
-    Q.isPerfPair_auxiliaryPicardForm.separatingRight
+  have hrays := Q.numberedBoundaryRays_eq_of_nodalContractions hp hq
   exact p.boundaryClass_eq_of_range_numberedBoundaryRays_eq q hp hq
     (Q.inclusion_injective hc) (congrArg (fun e : ZMod n ↪ Q.fan.Ray ↦ Set.range e) hrays)
 

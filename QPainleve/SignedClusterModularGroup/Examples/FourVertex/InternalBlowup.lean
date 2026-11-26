@@ -18,12 +18,9 @@ import QPainleve.AlgebraicGeometry.Blowup.Tower.Intersection
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Modification
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Projective
 import QPainleve.AlgebraicGeometry.CartierDivisor.Support
-import QPainleve.AlgebraicGeometry.Curves.Node.CycleAction
-import QPainleve.AlgebraicGeometry.IdealSheaf.Image.Over
+import QPainleve.Geometry.Toric.Fan.Boundary.BlowupNumbering
 import QPainleve.Geometry.Toric.Fan.Boundary.Canonical
-import QPainleve.Geometry.Toric.Fan.Boundary.DualGraph
 import QPainleve.Geometry.Toric.Fan.Boundary.InternalBlowup
-import QPainleve.Geometry.Toric.Fan.Boundary.Prestable
 import QPainleve.Geometry.Toric.Fan.Logarithmic.InternalBlowup
 import QPainleve.Geometry.Toric.Fan.Picard.Hirzebruch
 import QPainleve.Geometry.Toric.Fan.Subdivision.Projective
@@ -200,30 +197,6 @@ private theorem intersection_boundaryPrime (j k : ZMod 8) :
   revert j k
   decide
 
-private theorem isOver_boundaryι :
-    let : (Y).Over S := ⟨g⟩
-    ((U).2.boundaryι).IsOver S := by
-  let : (Y).Over S := ⟨g⟩
-  constructor
-  rw [(Φ.boundaryIdeal inferInstance).over_eq_subschemeι_comp]
-  exact (U).2.boundaryι_toBase_assoc f
-
-include hc hΦ in
-private theorem prestable_boundary :
-    let : (Y).Over S := ⟨g⟩
-    PrestableFamily ((D).subscheme ↘ S) := by
-  intro _
-  let : (X).IsProjectiveOver ℂ := Φ.isProjectiveOver_algebraicRealization_of_isComplete hΦ hc b₂
-  let : IsProper Φ.algebraicRealizationStructureMap := by
-    rw [← Fan.algebraicRealization_over]
-    infer_instance
-  let : (Y).Over S := ⟨g⟩
-  let e := asIso (U).2.boundaryι.toImage
-  let : ((U).2.boundaryι).IsOver S := isOver_boundaryι v c
-  apply (MorphismProperty.cancel_left_of_respectsIso (P := @PrestableFamily) e.hom _).mp
-  rw [comp_over]
-  exact Φ.prestableFamily_boundary hΦ hc rank_two
-
 private def numberedPrime : ZMod 8 ↪ CodimensionOnePoint Y :=
   (v.trans (Fan.internalBlowupBoundaryPrimeEquiv hΦ b₂ s c)).toEmbedding.trans
     (D).boundaryPrimeEmbedding
@@ -345,38 +318,6 @@ end Rational
 local notation "Cycle(" C ")" =>
   Scheme.NodalCycleNumbering (Empty.elim : Empty → Scheme.Hom.smoothLocus (C ↘ S)) 8
 
-include hnext hc in
-private theorem exists_numbering_matching_primes (hD : (D).IsEffectiveCartier) :
-    let : (Y).Over S := ⟨g⟩
-    let : IsNoetherian Y := (T).isNoetherian
-    let := prestable_boundary v hΦ hc c
-    ∃ A : Cycle((D).subscheme), ∀ j,
-      A.boundaryPrimeEquiv hD j = Fan.internalBlowupBoundaryPrimeEquiv hΦ b₂ s c (v j) := by
-  intros
-  let : (X).IsProjectiveOver ℂ := Φ.isProjectiveOver_algebraicRealization_of_isComplete hΦ hc b₂
-  let : IsProper Φ.algebraicRealizationStructureMap := by
-    rw [← Fan.algebraicRealization_over]
-    infer_instance
-  let := Φ.prestableFamily_boundary hΦ hc rank_two
-  let : ((U).2.boundaryι).IsOver S := isOver_boundaryι v c
-  let e : (Φ.boundaryIdeal inferInstance).subscheme ≅ (D).subscheme :=
-    asIso (U).2.boundaryι.toImage
-  obtain ⟨edge, order, vertex, hend, hcomp, -⟩ :=
-    Φ.exists_toric_boundary_dualGraph_cycle hΦ hc Empty.elim b₂ v hnext
-  let P : Cycle((Φ.boundaryIdeal inferInstance).subscheme) := ⟨vertex, edge, order, hend⟩
-  let A : Cycle((D).subscheme) := e.mapNodalCycleNumbering P
-  refine ⟨A, fun j ↦ Subtype.ext ?_⟩
-  have hl := e.apply_componentGenericPoint P A j
-  have hact : e.boundaryCycleAction P A = 1 :=
-    e.boundaryCycleAction_mapNodalCycleNumbering P
-  rw [hact, map_one, Equiv.Perm.one_apply] at hl
-  have hh : P.component j = Φ.boundaryNormalizationComponentEquiv hΦ (v j) := by
-    rw [Scheme.NodalCycleNumbering.component_apply]
-    exact hcomp j
-  rw [Scheme.NodalCycleNumbering.boundaryPrimeEquiv_apply_val, ← hl,
-    ← Scheme.Hom.comp_apply, asIso_hom, Scheme.Hom.toImage_imageι,
-    Scheme.NodalCycleNumbering.componentGenericPoint_def, hh, Fan.internalBlowupBoundaryPrime_val]
-
 open Classical in
 /-- For every tuple of nonzero center parameters, the ordered blowups at the
 four diagonal rays of the subdivided quadric form a smooth projective rational
@@ -436,12 +377,12 @@ theorem exists_four_vertex_internal_blowup (parameters : Fin 4 → ℂˣ) :
   let := smooth_base hΨ
   let hD₀ := Ψ.isEffectiveCartier_boundaryIdeal hΨ hcΨ rank_two
   let hD := Fan.isEffectiveCartier_internalBlowupBoundary b₂ (diagonalRay rays) hΨ parameters hD₀
-  let hpre := prestable_boundary rays hΨ hcΨ parameters
+  obtain ⟨_, hpre, _, A, _, _, _, hA⟩ := Fan.exists_numbering_internalBlowup_of_cyclicRays
+    hΨ hcΨ b₂ (diagonalRay rays) parameters rays hnext hD
   let : IsReduced M'.2.boundaryι.ker.subscheme := hpre.atWorstNodalOfRelativeDimensionOne.isReduced
   have hK := Fan.canonicalClass_internalBlowupTower b₂ (diagonalRay rays) parameters hΨ hD₀ hD
     (Ψ.canonicalClass_boundaryIdeal hΨ hcΨ b₂ hD₀)
   obtain ⟨hprim, hnef, hsq⟩ := primitive_nef_square_zero rays hv hΨ hcΨ hnext parameters hD
-  obtain ⟨A, hA⟩ := exists_numbering_matching_primes rays hΨ hcΨ hnext parameters hD
   have hclosed := Fan.isClosedPointTower_internalBlowupTower b₂ (diagonalRay rays) parameters
   refine ⟨Ψ, hΨ, hcΨ, rays, hv, isProjectiveOver_model rays hΨ hcΨ parameters,
     smooth_model rays hΨ parameters, hclosed.isRationalOver _,

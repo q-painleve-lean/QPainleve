@@ -10,8 +10,7 @@ public import QPainleve.SignedClusterModularGroup.Realization.Endpoint.PicardAct
 
 import QPainleve.SignedClusterModularGroup.Realization.Anticanonical
 import QPainleve.SignedClusterModularGroup.Realization.NodalFiber
-import QPainleve.SignedClusterModularGroup.Realization.Presentation.Family
-import QPainleve.SignedClusterModularGroup.Realization.Surjectivity.PicardAction
+import QPainleve.SignedClusterModularGroup.Realization.Presentation.Group
 
 /-!
 # Cluster modular groups and Cremona isometries
@@ -23,8 +22,8 @@ equivalence for at least three boundary components. With one or two components,
 the signed equivalence also records the branch sign, and the unsigned group
 maps isomorphically to the Cremona isometries.
 
-The comparison combines `GeometricRealization.existsUnique_signedPicardEquiv_of_presentation`
-with `MarkedSurface.cremonaPicardHom` and the boundary-size comparisons for that map.
+The comparison combines `CompleteToricPresentation.exists_picardGroupEquivs_of_nodal_model`
+with `MarkedSurface.cremonaPicardHom` to produce a `ClusterCremonaComparison`.
 -/
 
 public section
@@ -62,36 +61,8 @@ local notation "Models[" M "," C "]" =>
     (hΦ := Q.regular) (T := Q.cycle) (origin := Q.origin) (ι := Q.inclusion) (P₁ := M)
     (fun z : Point Centers[r] ↦ χ[z]) C
 
-local notation "Γ" => (ClusterModularGroup ℂ E)ᵐᵒᵖ
-local notation "Γs" => (SignedClusterModularGroup ℂ E)ᵐᵒᵖ
-local notation "incl" => MonoidHom.op (clusterModularGroupInclusion ℂ E)
 local notation "Cr" => Chow.cremonaIsometryGroup ℂ M₀.surface
 local notation "d" => M₀.boundaryClass M₀.isEffectiveCartier_boundaryIdeal
-
-private theorem exists_unsignedEquiv_of_signedEquivProd
-    {G : Type*} [Group G] (e : Γs ≃* G × ℤˣ)
-    (hker : ((MonoidHom.snd G ℤˣ).comp e.toMonoidHom).ker.unop =
-      (clusterModularGroupInclusion ℂ E).range) :
-    ∃ e₀ : Γ ≃* G, ∀ x, e (incl x) = (e₀ x, 1) := by
-  have hsign (x : Γ) : (e (incl x)).2 = 1 := by
-    have hx : (incl x).unop ∈ (clusterModularGroupInclusion ℂ E).range := ⟨x.unop, rfl⟩
-    rw [← hker] at hx
-    exact MonoidHom.mem_ker.mp hx
-  let f := (MonoidHom.fst G ℤˣ).comp (e.toMonoidHom.comp incl)
-  have hinj : Function.Injective f := by
-    intro x y hxy
-    apply op_injective.comp ((clusterModularGroupInclusion_injective ℂ E).comp unop_injective)
-    exact e.injective (Prod.ext hxy ((hsign x).trans (hsign y).symm))
-  have hsurj : Function.Surjective f := by
-    intro g
-    let x := e.symm (g, 1)
-    have hx : x.unop ∈ ((MonoidHom.snd G ℤˣ).comp e.toMonoidHom).ker.unop :=
-      MonoidHom.mem_ker.mpr (by simp [x])
-    rw [hker] at hx
-    obtain ⟨y, hy⟩ := hx
-    have hincl : incl (op y) = x := unop_injective hy
-    exact ⟨op y, by simp [f, hincl, x]⟩
-  exact ⟨MulEquiv.ofBijective f ⟨hinj, hsurj⟩, fun x ↦ Prod.ext rfl (hsign x)⟩
 
 /-- Picard pullback identifies the Cremona isometries of a marked reference fiber
 without internal `(-2)` curves as a quotient of the opposite signed cluster modular
@@ -115,56 +86,30 @@ theorem exists_cluster_cremona_equivs_of_nodal_model
     letI : SmoothOfRelativeDimension 2 (M₀.surface ↘ S) := M₀.smooth
     letI : M₀.surface.IsProjectiveOver ℂ := M₀.projective
     ∃ (M : Point Centers[r] → MarkedSurface ℂ n B XTor[r])
-      (hD : ∀ z, D[M z].IsEffectiveCartier)
-      (hmark : ∀ z j, (M z).boundaryClass (hD z) j = d j)
-      (φ : Γs →* Cr) (η : Γs →* ℤˣ),
-      M c = M₀ ∧ (∀ z, Q.HasNodalModel z (M z)) ∧ Function.Surjective φ ∧
-      (∀ (w : Word E E),
+      (hmark : ∀ z j, (M z).boundaryClass (M z).isEffectiveCartier_boundaryIdeal j = d j)
+      (P : ClusterCremonaComparison (k := ℂ) E n Cr),
+      M c = M₀ ∧ (∀ z, Q.HasNodalModel z (M z)) ∧
+      ∀ (w : Word E E),
         let x := op (signedClusterModularGroupMap ℂ E (End.of w))
-        η x = (-1 : ℤˣ) ^ w.inversionCount ∧
+        P.sign x = (-1 : ℤˣ) ^ w.inversionCount ∧
         ∀ {C : Centers[r].left.PartialMap Centers[r].left} [IsDominant C.hom]
           [C.IsOver Centers[r].hom Centers[r].hom]
           (R : GeometricRealization M M C (w.xRationalMap ℂ)), Models[M,C] →
-          (φ x).val = M₀.marking.isometryGroupCongr
-            (toIsometry B d (R.toSignedBoundaryIsometry d hD hmark))) ∧
-      (3 ≤ n → ∃ e : Γs ≃* Cr, e.toMonoidHom = φ) ∧
-      (n ≤ 2 → ∃ (e : Γs ≃* Cr × ℤˣ) (e₀ : Γ ≃* Cr),
-        (∀ x, e x = (φ x, η x)) ∧ ∀ x, e (incl x) = (e₀ x, 1)) := by
-  obtain ⟨M, hD, hM, hfamily⟩ :=
-    Q.exists_marked_family_of_nodal_model href M₀.isEffectiveCartier_boundaryIdeal
-  subst M₀
-  let : SmoothOfRelativeDimension 2 ((M c).surface ↘ S) := (M c).smooth
-  let : (M c).surface.IsProjectiveOver ℂ := (M c).projective
-  let : IsRationalOver ((M c).surface ↘ S) := (hfamily c).1.isRationalOver
-  have hcan := congrArg Inv.inv (href.canonicalClass (M c).isEffectiveCartier_boundaryIdeal)
-  let P : ChargeSeed E N :=
-    ⟨b.detDualEquiv.toLinearMap, Fan.rayChargeMap Q.rays, b.detDualEquiv_self, hE.symm⟩
-  have hmark (z : Point Centers[r]) (j : ZMod n) := congrFun (hfamily z).2 j
-  obtain ⟨Θ, ⟨hΘ, hker⟩, -⟩ := existsUnique_signedPicardEquiv_of_presentation
-    (Q := Q) (hD := hD) (hmark := hmark) P rfl rfl (fun z _ ↦ (hfamily z).1)
-    (hfamily c).1 hprim hnef hsq
-  let π := (M c).cremonaPicardHom hcan hnef hsq hroot
-  refine ⟨M, hD, hmark, π.comp Θ.toMonoidHom, (sign B _).comp Θ.toMonoidHom,
-    rfl, fun z ↦ (hfamily z).1,
-    ((M c).cremonaPicardHom_surjective hcan hnef hsq hroot).comp Θ.surjective, ?_, ?_, ?_⟩
-  · intro w
-    refine ⟨(hΘ w).1, fun R hR ↦ ?_⟩
-    rw [MonoidHom.comp_apply, MulEquiv.coe_toMonoidHom, (hΘ w).2 R hR]
-    exact (M c).cremonaPicardHom_apply hcan hnef hsq hroot _
-  · intro hn
-    refine ⟨Θ.trans ((M c).signedBoundaryIsometryEquivCremona hcan hnef hsq hroot hn), ?_⟩
-    apply MonoidHom.ext
-    intro x
-    exact (M c).signedBoundaryIsometryEquivCremona_apply hcan hnef hsq hroot hn (Θ x)
-  · intro hn
-    let e := Θ.trans ((M c).signedBoundaryIsometryEquivCremonaProd hcan hnef hsq hroot hn)
-    have he (x : Γs) : e x = (π (Θ x), sign B _ (Θ x)) :=
-      (M c).signedBoundaryIsometryEquivCremonaProd_apply hcan hnef hsq hroot hn (Θ x)
-    have hs : (MonoidHom.snd _ ℤˣ).comp e.toMonoidHom =
-        (sign B _).comp Θ.toMonoidHom := MonoidHom.ext fun x ↦ congrArg Prod.snd (he x)
-    have hk : ((MonoidHom.snd _ ℤˣ).comp e.toMonoidHom).ker.unop =
-        (clusterModularGroupInclusion ℂ E).range := hs ▸ hker
-    obtain ⟨e₀, he₀⟩ := exists_unsignedEquiv_of_signedEquivProd e hk
-    exact ⟨e, e₀, he, he₀⟩
+          (P.projection x).val = M₀.marking.isometryGroupCongr
+            (toIsometry B d (R.toSignedBoundaryIsometry d
+              (fun z ↦ (M z).isEffectiveCartier_boundaryIdeal) hmark)) := by
+  obtain ⟨G, hGc⟩ :=
+    Q.exists_picardGroupEquivs_of_nodal_model href hE hprim hnef hsq
+  let : SmoothOfRelativeDimension 2 (M₀.surface ↘ S) := M₀.smooth
+  let : M₀.surface.IsProjectiveOver ℂ := M₀.projective
+  let : IsRationalOver (M₀.surface ↘ S) := href.isRationalOver
+  have hcan := congrArg Inv.inv (href.canonicalClass M₀.isEffectiveCartier_boundaryIdeal)
+  let P :=
+    M₀.clusterCremonaComparison hcan hnef hsq hroot rfl G.signedEquiv G.sign_ker_unop
+  refine ⟨G.family, G.boundaryClass_eq, P, hGc, G.hasNodalModel, fun w ↦ ⟨?_, fun R hR ↦ ?_⟩⟩
+  · simpa only [P, MarkedSurface.clusterCremonaComparison_sign_apply] using
+      G.sign_signedEquiv_apply_word w
+  · simp only [P, MarkedSurface.val_clusterCremonaComparison_projection_apply,
+      G.signedEquiv_apply_word w R hR]
 
 end QPainleve.SignedClusterModularGroup.CompleteToricPresentation

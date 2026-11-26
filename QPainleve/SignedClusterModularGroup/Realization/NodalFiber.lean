@@ -9,6 +9,7 @@ public import QPainleve.SignedClusterModularGroup.Realization.MarkedComparison
 public import QPainleve.SignedClusterModularGroup.Realization.Presentation
 
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Modification
+import QPainleve.Geometry.Toric.Fan.ExchangeMatrix
 import QPainleve.Geometry.Toric.Fan.Presentation.Genus
 import QPainleve.Geometry.Toric.Fan.Rationality
 import QPainleve.SignedClusterModularGroup.Realization.Anticanonical
@@ -19,15 +20,17 @@ import QPainleve.SignedClusterModularGroup.Realization.Anticanonical
 The toric base has a chart isomorphic to the affine plane. The ordered internal
 blowups and the projection to a marked fiber preserve its birational type.
 The presentation also identifies the projection as a nodal contraction
-with rational boundary normalization.
+with rational boundary normalization. For a primitive nef square-zero boundary,
+the ray charges span a finite-index sublattice.
 -/
 
 public section
 
 open AlgebraicGeometry CategoryTheory Multiplicative
 open Module (Basis)
-open Scheme
-open QPainleve.CharacterTorus TauCeti TauCeti.AlgebraicGeometry TauCeti.Toric
+open Scheme Scheme.IdealSheafData
+open QPainleve.CharacterTorus QPainleve.Cluster
+open TauCeti TauCeti.AlgebraicGeometry TauCeti.Toric
 
 namespace QPainleve.SignedClusterModularGroup
 
@@ -48,6 +51,14 @@ theorem CompleteToricPresentation.isRationalOver_fan (Q : CompleteToricPresentat
   have hN : Module.finrank ℤ N = 2 := by simpa using Module.finrank_eq_card_basis b
   exact Q.fan.isRationalOver_of_ray_ne_of_le Q.regular hN hne h₀ h₁
 
+/-- The complete regular toric model is a smooth surface over ℂ. -/
+theorem CompleteToricPresentation.smoothOfRelativeDimension_fan
+    (Q : CompleteToricPresentation i b r L γ) :
+    SmoothOfRelativeDimension 2 (Q.fan.algebraicRealization ↘ S) := by
+  have hN : Module.finrank ℤ N = 2 := by simpa using Module.finrank_eq_card_basis b
+  rw [← hN, Q.fan.algebraicRealization_over]
+  exact Q.fan.smoothOfRelativeDimension_algebraicRealizationStructureMap Q.regular
+
 namespace CompleteToricPresentation
 
 variable (Q : CompleteToricPresentation i b r L γ)
@@ -67,9 +78,8 @@ local notation "Fiber" => ContractedToricFiber
 private theorem isRationalOver_fiber (p : Fiber) : IsRationalOver (M.surface ↘ S) := by
   let : IsRationalOver Q.fan.algebraicRealizationStructureMap :=
     Q.fan.algebraicRealization_over ▸ Q.isRationalOver_fan
-  have hN : Module.finrank ℤ N = 2 := by simpa using Module.finrank_eq_card_basis b
   let : SmoothOfRelativeDimension 2 Q.fan.algebraicRealizationStructureMap :=
-    hN ▸ Q.fan.smoothOfRelativeDimension_algebraicRealizationStructureMap Q.regular
+    Q.fan.algebraicRealization_over ▸ Q.smoothOfRelativeDimension_fan
   let : IsModification p.projection := p.modification
   let c₀ := pointsEquiv ℂ (Fin r → ℤ) ⟨Over.Hom.left c, Over.w c⟩
   have hrat := (Fan.isClosedPointTower_internalBlowupTower b Q.rays
@@ -86,6 +96,44 @@ theorem HasNodalModel.isRationalOver (h : Q.HasNodalModel c M) :
     IsRationalOver (M.surface ↘ S) := by
   obtain ⟨p, _⟩ := (Q.hasNodalModel_iff c M).mp h
   exact Q.isRationalOver_fiber p
+
+local notation "classOf(" h ")" => (LineBundleClass.mk (IsEffectiveCartier.toInvertibleSheaf h))⁻¹
+
+variable {Q} in
+/-- The ray charges of a marked nodal model with primitive nef square-zero boundary
+span a finite-index sublattice. The model supplies rationality and the anticanonical
+boundary identity at the given center. -/
+theorem HasNodalModel.chargeIndex_ne_zero (h : Q.HasNodalModel c M)
+    (hD : (Scheme.Hom.ker (Over.Hom.left (Arrow.hom M.pair))).IsEffectiveCartier)
+    (hnef : (classOf(hD)).IsNef ℂ (M.surface ↘ S))
+    (hsq : Chow.classIntersectionNumber ℂ M.surface classOf(hD) classOf(hD) = 0)
+    (hprim : IsPrimitive (Additive.ofMul classOf(hD))) :
+    (Fan.rayChargeMap Q.rays).range.toAddSubgroup.index ≠ 0 := by
+  let : SmoothOfRelativeDimension 2 (M.surface ↘ S) := M.smooth
+  obtain ⟨p, _, _, _, e, hW, hp⟩ := (Q.hasNodalModel_iff c M).mp h
+  let : IsRationalOver (M.surface ↘ S) := Q.isRationalOver_fiber p
+  have hcan := congrArg Inv.inv (h.canonicalClass hD)
+  obtain ⟨_, _, _, _, hdiv, _, _⟩ :=
+    p.chargeIndex_bounds_of_anticanonical_cycle Q.complete hW e hp.symm hD hnef hsq hcan hprim
+  exact fun hz ↦ ne_zero_of_dvd_ne_zero (NeZero.ne n) hdiv (by simp [hz])
+
+local notation "cartier" => M.isEffectiveCartier_boundaryIdeal
+local notation "δ" => classOf(cartier)
+
+variable {Q} in
+/-- The exchange matrix of a marked primitive nef square-zero anticanonical
+cycle is nonzero over the exponent ring `ℤ`. -/
+theorem HasNodalModel.exchangeMatrix_ne_zero (h : Q.HasNodalModel c M)
+    {E : SkewExchangeMatrix (Fin r)}
+    (hE : E.matrix = chargeExchangeMatrix b.detDualEquiv.toLinearMap (Fan.rayChargeMap Q.rays))
+    (hprim : IsPrimitive (Additive.ofMul δ))
+    (hnef : LineBundleClass.IsNef ℂ (M.surface ↘ S) δ)
+    (hsq : Chow.classIntersectionNumber ℂ M.surface δ δ = 0) :
+    E.matrix ≠ 0 := by
+  let P := Fan.rayChargeSeed b Q.rays hE
+  exact Q.exchangeMatrix_ne_zero_of_chargeIndex_ne_zero P
+    (Fan.rayChargeSeed_form _ _ _) (Fan.rayChargeSeed_charge _ _ _)
+    (h.chargeIndex_ne_zero cartier hnef hsq hprim)
 
 variable {Q} in
 /-- With Cartier boundary, an ordered nodal model gives a nodal contraction,

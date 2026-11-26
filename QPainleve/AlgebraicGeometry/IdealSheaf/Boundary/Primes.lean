@@ -61,6 +61,53 @@ theorem range_boundaryPrimeEmbedding (D : X.IdealSheafData) :
   · intro hp
     exact ⟨⟨p.val, mem_boundaryPrimes.mpr ⟨hp, p.property⟩⟩, Subtype.ext rfl⟩
 
+/-- A boundary prime lies in the closure of another boundary prime exactly when they agree. -/
+@[simp]
+theorem mem_support_vanishingIdeal_boundaryPrime_iff {D : X.IdealSheafData}
+    (x y : D.boundaryPrimes) :
+    x.val ∈ (vanishingIdeal (Closeds.mk (closure {y.val}) isClosed_closure)).support ↔ x = y := by
+  simp only [← SetLike.mem_coe, coe_support_vanishingIdeal, Closeds.coe_mk]
+  refine ⟨fun h ↦ ?_, fun h ↦ h ▸ subset_closure (Set.mem_singleton _)⟩
+  apply D.boundaryPrimeEmbedding.injective
+  exact (CodimensionOnePoint.eq_of_specializes (x := D.boundaryPrimeEmbedding x)
+    (y := D.boundaryPrimeEmbedding y)
+    (specializes_iff_mem_closure.mpr (by simpa only [coe_boundaryPrimeEmbedding] using h))).symm
+
+/-- A bijection from the boundary primes off one component to the target boundary primes
+induces a numbering of the target primes by the remaining labels. -/
+noncomputable def eraseBoundaryPrimeEquiv (D : X.IdealSheafData) {α : Type*} [DecidableEq α]
+    {s : Finset α} (a : s ≃ D.boundaryPrimes) (j : s)
+    {F : Y.IdealSheafData} {f : X ⟶ Y}
+    (h : Set.BijOn f
+      (D.boundaryPrimes \
+        (vanishingIdeal (Closeds.mk (closure {(a j).val}) isClosed_closure)).support)
+      F.boundaryPrimes) :
+    (s.erase j.val : Finset α) ≃ F.boundaryPrimes := by
+  let e := (Set.equivOfEq (Finset.coe_erase j.val s)).trans
+    (Equiv.subtypeSubtypeEquivSubtypeInter (fun x ↦ x ∈ s) (fun x ↦ x ∉ ({j.val} : Set α))).symm
+  let b := a.subtypeEquiv (p := fun i ↦ i.val ∉ ({j.val} : Set α))
+    (q := fun x ↦
+      x.val ∉ (vanishingIdeal (Closeds.mk (closure {(a j).val}) isClosed_closure)).support)
+    fun i ↦ by
+      rw [Set.mem_singleton_iff, mem_support_vanishingIdeal_boundaryPrime_iff, a.injective.eq_iff]
+      exact not_congr Subtype.ext_iff.symm
+  let d := Equiv.subtypeSubtypeEquivSubtypeInter (fun x ↦ x ∈ D.boundaryPrimes)
+    (fun x ↦ x ∉ (vanishingIdeal (Closeds.mk (closure {(a j).val}) isClosed_closure)).support)
+  exact e.trans (b.trans (d.trans (h.equiv f)))
+
+/-- The surviving label maps to the image of its original boundary prime. -/
+@[simp]
+theorem eraseBoundaryPrimeEquiv_apply_val (D : X.IdealSheafData) {α : Type*} [DecidableEq α]
+    {s : Finset α} (a : s ≃ D.boundaryPrimes) (j : s)
+    {F : Y.IdealSheafData} {f : X ⟶ Y}
+    (h : Set.BijOn f
+      (D.boundaryPrimes \
+        (vanishingIdeal (Closeds.mk (closure {(a j).val}) isClosed_closure)).support)
+      F.boundaryPrimes)
+    (i : (s.erase j.val : Finset α)) :
+    (D.eraseBoundaryPrimeEquiv a j h i).val =
+      f (a ⟨i.val, (Finset.mem_erase.mp i.property).2⟩).val := (rfl)
+
 /-- If the support is the union of closures of specified codimension-one points,
 those points are exactly its boundary primes. -/
 theorem boundaryPrimes_eq_range_of_iUnion_closure {ι : Type*} (D : X.IdealSheafData)
@@ -167,6 +214,16 @@ theorem mem_boundaryPrimes_iff_mem_isoLocus_of_mem_boundaryPrimes_comap
   exact ⟨fun hp ↦ π.mem_isoLocus_of_coheight_eq_one (mem_boundaryPrimes.mp hp).2,
     fun hp ↦ (h.mapsTo (Set.mem_inter hy hp)).1⟩
 
+/-- A boundary prime of the inverse image under a modification projects to the centre exactly
+when its image is outside the original boundary primes. -/
+theorem mem_centre_iff_notMem_boundaryPrimes_of_mem_boundaryPrimes_comap
+    (D : X.IdealSheafData) (π : Y ⟶ X) [IsIntegral X] [IsNormalScheme X]
+    [IsLocallyNoetherian X] [IsReduced Y] [IsModification π] {y : Y}
+    (hy : y ∈ (D.comap π).boundaryPrimes) :
+    π y ∈ π.centre ↔ π y ∉ D.boundaryPrimes := by
+  rw [Scheme.Hom.centre_def, Set.mem_compl_iff, SetLike.mem_coe]
+  exact not_congr (D.mem_boundaryPrimes_iff_mem_isoLocus_of_mem_boundaryPrimes_comap π hy).symm
+
 /-- If a morphism is an isomorphism away from a point of coheight other than one,
 its point map bijects the pulled-back boundary primes away from that point with the
 original boundary primes. -/
@@ -178,5 +235,22 @@ theorem bijOn_boundaryPrimes_comap_off_point (D : X.IdealSheafData) (π : Y ⟶ 
   have hpreimage : π ⁻¹' {x | x ≠ p} = {y | π y ≠ p} := (rfl)
   simpa only [Set.inter_eq_left.mpr hsub, hpreimage] using
     D.bijOn_boundaryPrimes_comap_of_subset_isoLocus (U := {x | x ≠ p}) π (fun _ ↦ hIso _)
+
+/-- A modification identifies the source boundary primes that survive with the
+boundary primes of the schematic image. -/
+theorem bijOn_boundaryPrimes_map (B : Y.IdealSheafData) (π : Y ⟶ X)
+    [IsIntegral X] [IsNormalScheme X] [IsLocallyNoetherian X] [IsReduced Y] [IsModification π] :
+    Set.BijOn π (B.boundaryPrimes ∩ π ⁻¹' (B.map π).boundaryPrimes) (B.map π).boundaryPrimes := by
+  have hiso : (B.map π).boundaryPrimes ⊆ π.isoLocus :=
+    fun _ hy ↦ π.mem_isoLocus_of_coheight_eq_one (mem_boundaryPrimes.mp hy).2
+  refine ⟨fun _ hx ↦ hx.2, π.injOn_preimage_isoLocus.mono (fun _ hx ↦ hiso hx.2), ?_⟩
+  intro y hy
+  have hsupport : ((B.map π).support : Set X) = π '' (B.support : Set Y) := by
+    rw [support_map, Closeds.coe_closure, (π.isClosedMap _ B.support.isClosed).closure_eq]
+  have hy' : y ∈ ((B.map π).support : Set X) := (mem_boundaryPrimes.mp hy).1
+  rw [hsupport] at hy'
+  obtain ⟨x, hx, rfl⟩ := hy'
+  refine ⟨x, ⟨mem_boundaryPrimes.mpr ⟨hx, ?_⟩, hy⟩, rfl⟩
+  exact (π.coheight_eq_of_apply_mem_isoLocus (hiso hy)).symm.trans (mem_boundaryPrimes.mp hy).2
 
 end AlgebraicGeometry.Scheme.IdealSheafData

@@ -35,7 +35,6 @@ variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
 local notation "S" => Spec (CommRingCat.of ℂ)
 local notation "L" => LaurentRing ℂ (Fin n)
 local notation "center" a:arg => (fun j : Fin n ↦ a (ofAdd (Pi.single j 1)))
-local notation "Y" a:arg => (Sigma.fst (internalBlowupTower b s (center a)))
 local notation "T" a:arg => WithBoundary.toTower (Sigma.snd (internalBlowupTower b s (center a)))
 local notation "π" a:arg => toBase (T a)
 local notation "ι" a:arg => WithBoundary.boundaryι
@@ -59,29 +58,18 @@ section
 
 variable (e : X ≅ X') [e.hom.IsOver S]
 
-/-- Equality of fixed-center rational evaluations along a specified isomorphism of
-contractions determines a unique translating character. Its ordered lift compares the
-contraction projections and the Picard markings, and the isomorphism identifies the
-reduced boundary ideals. The finite-index condition is on the charge lattice. -/
-theorem existsUnique_translation_of_comp_contractedXEvaluation_eq
+/-- If a specified isomorphism of contractions identifies the fixed-center
+evaluations, it lifts to an ordered torus translation with a unique character.
+The charge sublattice has finite index. -/
+theorem existsUnique_contractedToricTranslation_of_comp_contractedXEvaluation_eq
     (hindex : (rayChargeMap s).range.toAddSubgroup.index ≠ 0)
     (hc : p ≫ (X ↘ S) = π c ≫ Φ.algebraicRealizationStructureMap)
     (hd : q ≫ (X' ↘ S) = π d ≫ Φ.algebraicRealizationStructureMap)
-    (hD : (D.comap p).support = (ι c).ker.support)
-    (hD' : (D'.comap q).support = (ι d).ker.support)
-    [IsReduced D.subscheme] [IsReduced D'.subscheme]
     (heval : e.hom.toRationalMap.comp (contractedXEvaluation b s d hΦ q) =
       contractedXEvaluation b s c hΦ p) :
-    ∃! χ : Multiplicative (N →+ ℤ) →* ℂˣ, ∃ t : Y c ≅ Y d,
-      IsLift (Φ.torusTranslation χ) (T c) (T d) t ∧
-      p ≫ e.hom = t.hom ≫ q ∧ D'.comap e.hom = D ∧
-      ∀ a : LineBundleClass X',
-        (internalBlowupPicardMarking b s (center c) hΦ).symm
-            (Additive.ofMul (LineBundleClass.pullback p (LineBundleClass.pullback e.hom a))) =
-          (internalBlowupPicardMarking b s (center d) hΦ).symm
-            (Additive.ofMul (LineBundleClass.pullback q a)) := by
-  apply existsUnique_isLift_of_eq_scaled_characters_of_contractions b s (center c) (center d)
-    hΦ hindex e hc hd hD hD'
+    Nonempty (Unique (ContractedToricTranslation b s p q e)) := by
+  apply existsUnique_contractedToricTranslation_of_eq_scaled_characters b s (center c) (center d)
+    hΦ hindex e hc hd
   dsimp only
   have := isIntegral_internalBlowupTower b s (center c) hΦ
   have := isIntegral_internalBlowupTower b s (center d) hΦ
@@ -136,13 +124,15 @@ theorem comap_boundary_and_pullback_eq_of_equal_contractedXEvaluation
     dsimp only
     simpa only [← Scheme.RationalMap.comp_assoc, Scheme.RationalMap.comp_toRationalMap,
       Scheme.Hom.toRationalMap_compHom, hfg] using heval.symm
-  obtain ⟨_, ⟨_, _, _, hB, hPic⟩, _⟩ :=
-    existsUnique_translation_of_comp_contractedXEvaluation_eq b s c d hΦ p q e
-      hindex hc hd hD hD' he
-  refine ⟨by rw [← hfg, Scheme.IdealSheafData.comap_comp, hB], fun a a' ↦ ?_⟩
+  obtain ⟨lift⟩ :=
+    existsUnique_contractedToricTranslation_of_comp_contractedXEvaluation_eq
+      b s c d hΦ p q e hindex hc hd he
+  let t := lift.default
+  refine ⟨by rw [← hfg, Scheme.IdealSheafData.comap_comp, t.comap_boundary hD hD'],
+    fun a a' ↦ ?_⟩
   rw [← hfg, ← LineBundleClass.pullback_comp, ← LineBundleClass.pullbackEquiv_apply,
     ← LineBundleClass.pullbackEquiv_apply, (LineBundleClass.pullbackEquiv f).injective.eq_iff,
-    ← hPic a']
+    ← t.pullback_marking hΦ a']
   exact ((internalBlowupPicardMarking b s (center c) hΦ).symm.injective.comp
     (Additive.ofMul.injective.comp hinj)).eq_iff.symm
 

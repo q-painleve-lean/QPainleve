@@ -204,6 +204,17 @@ inductive Generator (ι : Type*) where
 
 namespace Generator
 
+/-- Read a mutation direction as a generator, with `none` denoting global inversion. -/
+def mutationOrInversion (p : Option ι) : Generator ι := p.elim .invert .mutate
+
+@[simp]
+theorem mutationOrInversion_none : mutationOrInversion (none : Option ι) = .invert :=
+  (rfl)
+
+@[simp]
+theorem mutationOrInversion_some (p : ι) : mutationOrInversion (some p) = .mutate p :=
+  (rfl)
+
 /-- Reverse a generator. Mutation and global inversion are self-inverse, and the reverse
 of a permutation uses its inverse. -/
 def reverse : Generator ι → Generator ι
@@ -502,6 +513,14 @@ theorem inversionCount_reverse (w : Word B C) :
   induction w with
   | nil => simp [Path.reverse]
   | cons _ _ ih => simp [Path.reverse, ih, add_comm]
+
+/-- Conjugating a signed loop by a connecting word preserves its inversion sign. -/
+theorem neg_one_pow_inversionCount_reverse_comp_comp (w : Word B C) (v : Word B B) :
+    (-1 : ℤˣ) ^ ((w.reverse.comp v).comp w).inversionCount =
+      (-1 : ℤˣ) ^ v.inversionCount := by
+  simp only [inversionCount_comp, inversionCount_reverse, pow_add]
+  rw [mul_right_comm, ← pow_add, ← two_mul, pow_mul]
+  simp
 
 /-- Changing the labels of a signed word preserves its inversion count. -/
 @[simp]

@@ -8,6 +8,7 @@ module
 public import QPainleve.Algebra.Cluster.Word.Center
 public import QPainleve.Algebra.Cluster.Word.ModularGroup
 public import QPainleve.Algebra.Cluster.Word.Monomial
+public import QPainleve.Algebra.Cluster.Word.Specialization
 public import TauCeti.Algebra.Module.Equiv.AutCongr
 
 /-!
@@ -79,6 +80,31 @@ theorem exchangeKernelAction_op_loop (w : Loops) :
       Path.exchangeKernelEquiv (B := B) (C := B) w.asHom :=
   exchangeKernelEquivOfPullback_eq k B _ w.asHom
     (signedClusterModularGroupMap_unop_coe k B w).symm
+
+/-- Specializing the coefficient field preserves the integral exchange-kernel action. -/
+@[simp]
+theorem exchangeKernelAction_op_specialization (K : Type*) [Field K] [CharZero K]
+    (g : SignedClusterModularGroup K B) :
+    exchangeKernelAction k B (op (signedClusterModularGroupSpecialization K k B g)) =
+      exchangeKernelAction K B (op g) := by
+  obtain ⟨w, rfl⟩ := signedClusterModularGroupMap_surjective K B g
+  simp
+
+/-- If the signed action on the exchange kernel is faithful, the transported basis
+vectors determine equality of loop pullbacks. -/
+theorem xPullback_eq_iff_exponentEquiv_eq_on_basis_of_injective
+    (hinj : Function.Injective (exchangeKernelAction k B)) (w v : Word B B)
+    {κ : Type*} (β : Module.Basis κ ℤ E) :
+    w.xPullback k = v.xPullback k ↔
+      ∀ j, w.exponentEquiv (β j : ι → ℤ) = v.exponentEquiv (β j : ι → ℤ) := by
+  have hloop : signedClusterModularGroupMap k B (End.of w) =
+      signedClusterModularGroupMap k B (End.of v) ↔ w.xPullback k = v.xPullback k :=
+    signedClusterModularGroupMap_eq_iff k B (End.of w) (End.of v)
+  rw [← hloop, ← op_injective.eq_iff, ← hinj.eq_iff]
+  simp only [exchangeKernelAction_op_loop, ← Path.coe_exchangeKernelEquiv_apply,
+    Subtype.coe_injective.eq_iff]
+  exact ⟨fun h j ↦ DFunLike.congr_fun h (β j),
+    fun h ↦ LinearEquiv.toLinearMap_injective (β.ext h)⟩
 
 /-- The exchange-kernel action is characterized by the pullback of each Casimir monomial. -/
 theorem exchangeKernelAction_monomial (f : Γᵐᵒᵖ) (x : E) :

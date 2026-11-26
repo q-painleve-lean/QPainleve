@@ -190,11 +190,7 @@ theorem exists_iso_of_signed_boundary_period_of_matching_picard_markings
     (hρ : p (prime[c] ρ).val = D.subschemeι (A.componentGenericPoint 0))
     (hρ' : q (prime[d] ρ).val =
       E.subschemeι (B.componentGenericPoint (DihedralGroup.cycleVertexPerm act 0))) :
-    ∃ (a : X ≅ Y) (aB : D.subscheme ≅ E.subscheme) (haB : aB.hom.IsOver S),
-      a.hom ≫ (Y ↘ S) = (X ↘ S) ∧ E.comap a.hom = D ∧
-      aB.hom ≫ E.subschemeι = D.subschemeι ≫ a.hom ∧
-      (∀ L : LineBundleClass Y, pullback a.hom L = G L) ∧
-      (letI := haB; aB.boundaryCycleAction A B = act) := by
+    Nonempty (SignedTorelliPairIso (D := D) (E := E) A B G act) := by
   have hkeep := mem_boundaryPrimes_iff_of_matching_picard_markings hΦ b s
     (center c) hT e.symm hp hD (center d) hU e'.symm hq hE
     (LinearMap.IsPerfPair.separatingRight inferInstance) G hG hPic

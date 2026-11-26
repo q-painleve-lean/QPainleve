@@ -102,13 +102,7 @@ theorem signedInversionSign_signedClusterModularGroupCongr [Finite ι]
       signedInversionSign k B hB f := by
   obtain ⟨v, rfl⟩ := signedClusterModularGroupMap_surjective k B f
   rw [signedClusterModularGroupCongr_map, signedInversionSign_apply, signedInversionSign_apply]
-  let u : Word B B := v.asHom
-  -- The transported endomorphism is represented by the displayed path.
-  change (-1 : ℤˣ) ^ ((w.reverse.comp u).comp w).inversionCount =
-    (-1 : ℤˣ) ^ u.inversionCount
-  simp only [Path.inversionCount_comp, Path.inversionCount_reverse, pow_add]
-  rw [mul_right_comm, ← pow_add, ← two_mul, pow_mul]
-  simp
+  exact w.neg_one_pow_inversionCount_reverse_comp_comp v.asHom
 
 private theorem conj_mem_unsignedLoopPullbacks (w : Word B C)
     {f : Aut} (hf : f ∈ unsignedLoopPullbacks k B) :

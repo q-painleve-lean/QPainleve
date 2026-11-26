@@ -10,6 +10,7 @@ public import QPainleve.SignedClusterModularGroup.SignExtension
 
 import QPainleve.SignedClusterModularGroup.Realization.Anticanonical
 import QPainleve.SignedClusterModularGroup.Realization.NodalFiber
+import QPainleve.SignedClusterModularGroup.Realization.Presentation.FieldSpecialization
 import QPainleve.SignedClusterModularGroup.Realization.Reflection
 
 /-!
@@ -22,18 +23,14 @@ conjugation action. For one or two boundary components, the pure sign change
 gives a central involution and a direct product.
 -/
 
-public noncomputable section
+public section
 
-open CategoryTheory MulOpposite Quiver
-open QPainleve.Cluster QPainleve.SignedBoundaryIsometryGroup
+open AlgebraicGeometry CategoryTheory MulOpposite
+open QPainleve.CharacterTorus QPainleve.Cluster QPainleve.SignedBoundaryIsometryGroup
+open Scheme Scheme.IdealSheafData TauCeti TauCeti.AlgebraicGeometry TauCeti.Toric
 
-namespace QPainleve.SignedClusterModularGroup
+namespace QPainleve.SignedClusterModularGroup.CompleteToricPresentation
 
-namespace CompleteToricPresentation
-
-open AlgebraicGeometry QPainleve.CharacterTorus
-open TauCeti TauCeti.AlgebraicGeometry TauCeti.Toric
-open Scheme Scheme.IdealSheafData
 open GeometricRealization (Point)
 
 local notation "S" => Spec (CommRingCat.of ℂ)
@@ -44,99 +41,106 @@ local notation "classOf(" h ")" => (LineBundleClass.mk (IsEffectiveCartier.toInv
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {b : Module.Basis (Fin 2) ℤ N} {r n : ℕ} [NeZero n]
   {L γ : Type} [AddCommGroup L] {B : LinearMap.BilinForm ℤ L}
-  {E : SkewExchangeMatrix (Fin r)} (Q : CompleteToricPresentation i b r L γ)
-  (P : ChargeSeed E N) {c : Point Centers[r]} {M : MarkedSurface ℂ n B XTor[r]}
+  {E : SkewExchangeMatrix (Fin r)}
 
-local notation "d" => M.boundaryClass M.isEffectiveCartier_boundaryIdeal
+/-- A marked Picard identification with a chosen boundary reversal. The geometry is over ℂ,
+and `k` is the coefficient field of the signed X maps. The reflection determines the splitting
+on both the Picard lattice and the group of signed X maps. -/
+@[ext]
+structure SignedPicardSplitting (Q : CompleteToricPresentation i b r L γ)
+    (k : Type*) [Field k] (E : SkewExchangeMatrix (Fin r)) (d : ZMod n → L) where
+  /-- The signed Picard equivalence of the marked nodal family. -/
+  identification : NodalPicardGroupIdentification (B := B) Q k E d
+  /-- The chosen signed reversal of the numbered boundary. -/
+  reflection : CycleReversingInvolution B d
+  /-- The exchange matrix is nonzero, so inversion parity descends to the group of X maps. -/
+  matrix_ne_zero : E.matrix ≠ 0
+
+namespace SignedPicardSplitting
+
+variable {Q : CompleteToricPresentation i b r L γ} {k : Type*} [Field k] {d : ZMod n → L}
+  (P : SignedPicardSplitting (B := B) Q k E d)
+
+local notation "Θ" => P.identification.signedEquiv
+local notation "Θrot" => P.identification.unsignedEquiv
+local notation "Γ₀" => ClusterModularGroup k E
+
+private theorem sign_apply_word (w : Word E E) :
+    sign B d (Θ (op (signedClusterModularGroupMap k E (End.of w)))) =
+      (-1 : ℤˣ) ^ w.inversionCount := by
+  rw [SignedBoundaryIsometryGroup.sign_apply, P.identification.sign_signedEquiv_apply_word]
+
+/-- The inversion sign on signed point maps is surjective. -/
+theorem signedInversionSign_surjective :
+    Function.Surjective (signedInversionSign k E P.matrix_ne_zero) :=
+  signedInversionSign_surjective_of_picardEquiv Θ P.sign_apply_word P.matrix_ne_zero
+    (sign_surjective B d P.reflection.element (by simp))
+
+/-- The section of the inversion sign obtained by transporting the boundary reflection
+through the marked Picard equivalence. -/
+noncomputable def splitting :
+    (signedInversionSignExtension k E P.matrix_ne_zero
+      P.signedInversionSign_surjective).Splitting :=
+  picardSignSplitting Θ P.sign_apply_word P.matrix_ne_zero P.reflection.signSplitting
+
+/-- The section has the signed Picard action of the lattice section at each sign. -/
+@[simp]
+theorem signedEquiv_apply_splitting (ε : ℤˣ) :
+    Θ (op (P.splitting ε)) = P.reflection.signSplitting ε := by
+  simp only [splitting, picardSignSplitting_apply, op_unop, MulEquiv.apply_symm_apply]
+
+include P in
+/-- The unsigned point maps form a subgroup of index two in the signed group. -/
+theorem index_range_clusterModularGroupInclusion :
+    (clusterModularGroupInclusion k E).range.index = 2 :=
+  Cluster.index_range_clusterModularGroupInclusion k E P.matrix_ne_zero
+    P.signedInversionSign_surjective
+
+/-- The negative sign lifts to an involution of order two. -/
+@[simp]
+theorem orderOf_splitting_neg_one : orderOf (P.splitting (-1)) = 2 :=
+  (orderOf_injective P.splitting.toMonoidHom P.splitting.rightInverse_rightHom.injective
+    (-1)).trans (by simp)
+
+/-- The unsigned Picard equivalence after inversion intertwines the actions of the two
+sign sections on their respective kernels. -/
+theorem unsignedEquiv_apply_splitting_conjAct (ε : ℤˣ) (x : Γ₀) :
+    Θrot (op (P.splitting.conjAct ε x)⁻¹) =
+      P.reflection.signSplitting.conjAct ε (Θrot (op x⁻¹)) :=
+  picardSignSplitting_conjAct Θ P.sign_apply_word P.matrix_ne_zero P.reflection.signSplitting
+    Θrot P.identification.rotationInclusion_unsignedEquiv_apply ε x
+
+/-- Under signed Picard pullback after inversion, the semidirect product sends the
+unsigned coordinate to its Picard rotation and preserves the sign. -/
+theorem signedEquiv_apply_splitting_semidirectProductMulEquiv (x : Γ₀ ⋊[P.splitting.conjAct] ℤˣ) :
+    Θ (op (P.splitting.semidirectProductMulEquiv x)⁻¹) =
+      P.reflection.signSplitting.semidirectProductMulEquiv ⟨Θrot (op x.left⁻¹), x.right⟩ :=
+  picardSignSplitting_semidirectProductMulEquiv Θ P.sign_apply_word P.matrix_ne_zero
+    P.reflection.signSplitting Θrot P.identification.rotationInclusion_unsignedEquiv_apply x
+
+end SignedPicardSplitting
+
+variable (Q : CompleteToricPresentation i b r L γ)
+  {c : Point Centers[r]} {M : MarkedSurface ℂ n B XTor[r]}
+
 local notation "δ" => classOf(M.isEffectiveCartier_boundaryIdeal)
-local notation "δL" => ∑ j, d j
-local notation "Γ₀" => ClusterModularGroup ℂ E
-local notation "Γₛ" => SignedClusterModularGroup ℂ E
 
-local instance splittingFanNonempty : Nonempty Q.fan.cones := Q.complete.nonempty_cones
-local instance splittingCycleNeZero : NeZero Q.length := Q.neZero
-local instance splittingBoundaryPrestable :
-    PrestableFamily ((Q.fan.boundaryIdeal Q.complete.nonempty_cones).subscheme ↘ S) :=
-  Q.prestable
-
-local notation "χ[" t "]" => pointsEquiv ℂ _ (Subtype.mk (Over.Hom.left t) (Over.w t))
-local notation "eval[" w "]" => op (signedClusterModularGroupMap ℂ E (End.of w))
-local notation "models[" F "," C "]" =>
-  GeometricRealization.HasToricTargetModels (T₀ := Centers[r]) (T₁ := Centers[r])
-    (b := b) (s := Q.rays) (hΦ := Q.regular) (T := Q.cycle) (origin := Q.origin)
-    (ι := Q.inclusion) (P₁ := F) (fun t ↦ χ[t]) C
-
-local notation "D[" M "]" => Scheme.Hom.ker (Over.Hom.left (Arrow.hom (MarkedSurface.pair M)))
-
-/-- The signed Picard lift of a boundary reflection has order two and splits
-the inversion-sign extension for a primitive nef square-zero anticanonical cycle.
-The unsigned subgroup has index two. The signed and unsigned Picard equivalences
-identify the resulting conjugation actions and semidirect products after inversion.
-For a cycle of one or two components, the pure sign change lifts to a central
-involution and multiplication gives the product with its cyclic subgroup.
-The reference marked nodal model may have repeated centers. -/
-theorem exists_signedPicardSplitting_of_nodal_model
-    (hform : P.form = b.detDualEquiv.toLinearMap) (hcharge : P.charge = Fan.rayChargeMap Q.rays)
+/-- One marked nodal model of a primitive nef square-zero anticanonical cycle supplies
+a splitting of the sign extension through the signed Picard action over any X coefficient
+field. The model at the reference center may have repeated points. -/
+theorem exists_signedPicardSplitting_of_nodal_model (k : Type*) [Field k]
     (href : Q.HasNodalModel c M)
+    (hE : E.matrix = chargeExchangeMatrix b.detDualEquiv.toLinearMap (Fan.rayChargeMap Q.rays))
+    (hprim : IsPrimitive (Additive.ofMul δ))
     (hnef : (δ).IsNef ℂ (M.surface ↘ S))
-    (hsq : Chow.classIntersectionNumber ℂ M.surface δ δ = 0)
-    (hprim : IsPrimitive (Additive.ofMul δ)) :
-    ∃ (F : Point Centers[r] → MarkedSurface ℂ n B XTor[r])
-      (hmark : ∀ t j, (F t).boundaryClass (F t).isEffectiveCartier_boundaryIdeal j = d j),
-      F c = M ∧ (∀ t, Q.HasNodalModel t (F t)) ∧
-      ∃ (Θ : (Γₛ)ᵐᵒᵖ ≃* signedBoundaryIsometryGroup B d)
-        (Θrot : (Γ₀)ᵐᵒᵖ ≃* boundaryRotationGroup B d) (hE : E.matrix ≠ 0)
-        (hs : Function.Surjective (signedInversionSign ℂ E hE))
-        (s : (signedInversionSignExtension ℂ E hE hs).Splitting),
-        (∀ x, rotationInclusion B d (Θrot x) =
-          Θ (MonoidHom.op (clusterModularGroupInclusion ℂ E) x)) ∧
-        (∀ w : Word E E, sign B d (Θ eval[w]) = (-1 : ℤˣ) ^ w.inversionCount ∧
-          ∀ {C : Centers[r].left.PartialMap Centers[r].left} [IsDominant C.hom]
-            [C.IsOver Centers[r].hom Centers[r].hom]
-            (R : GeometricRealization F F C (w.xRationalMap ℂ)), models[F,C] →
-            Θ eval[w] = R.toSignedBoundaryIsometry d
-              (fun t ↦ (F t).isEffectiveCartier_boundaryIdeal) hmark) ∧
-        (clusterModularGroupInclusion ℂ E).range.index = 2 ∧
-        orderOf (s (-1)) = 2 ∧
-        (∃ (j₀ : ZMod n) (a : L) (g : signedBoundaryIsometryGroup B d)
-          (hg : sign B d g = -1) (hgg : g * g = 1),
-          let t := signSplitting B d g hg hgg
-          let g₀ := (toIsometry B d g).val
-          B a a = -1 ∧ (∀ j, B a (d j) = if j = j₀ then 1 else 0) ∧
-          g₀ a = a ∧ g₀ δL = δL ∧ (∀ j, g₀ (d j) = d (2 * j₀ - j)) ∧
-          (∀ x ∈ B.orthogonal (Submodule.span ℤ (Set.range d)), g₀ x = -x + (2 * B x a) • δL) ∧
-          (∀ ε, Θ (op (s ε)) = t ε) ∧
-          (∀ ε x, Θrot (op (s.conjAct ε x)⁻¹) = t.conjAct ε (Θrot (op x⁻¹))) ∧
-          ∀ x : Γ₀ ⋊[s.conjAct] ℤˣ,
-            Θ (op (s.semidirectProductMulEquiv x)⁻¹) =
-              t.semidirectProductMulEquiv ⟨Θrot (op x.left⁻¹), x.right⟩) ∧
-        ∀ hn : n ≤ 2, ∃ z : Γₛ,
-          Θ (op z) = centralSign B d hn ∧ z ∈ Subgroup.center Γₛ ∧ orderOf z = 2 ∧
-          ∃ e : Γ₀ × Subgroup.zpowers z ≃* Γₛ, ∀ (f : Γ₀) (u : Subgroup.zpowers z),
-            e (f, u) = clusterModularGroupInclusion ℂ E f * u.val := by
+    (hsq : Chow.classIntersectionNumber ℂ M.surface δ δ = 0) :
+    ∃ P : SignedPicardSplitting (B := B) Q k E (M.boundaryClass M.isEffectiveCartier_boundaryIdeal),
+      P.identification.family c = M := by
+  obtain ⟨G, hGc⟩ := Q.exists_picardGroupEquivs_over_field_of_nodal_model k href hE hprim hnef hsq
   let : IsRationalOver (M.surface ↘ S) := href.isRationalOver
+  have hmatrix_ne_zero := href.exchangeMatrix_ne_zero hE hprim hnef hsq
   have hcan := congrArg Inv.inv (href.canonicalClass M.isEffectiveCartier_boundaryIdeal)
-  have hindex := Q.chargeIndex_ne_zero_of_anticanonical_cycle
-    (M := fun _ ↦ M) href M.isEffectiveCartier_boundaryIdeal hnef hsq hcan hprim
-  have hE := Q.exchangeMatrix_ne_zero_of_chargeIndex_ne_zero P hform hcharge hindex
-  have hmatrix := P.matrix_eq.symm.trans (congrArg₂ chargeExchangeMatrix hform hcharge)
-  obtain ⟨F, hD, hmark, Θ, Θrot, hFc, hfamily, hΘ, -, hrot⟩ :=
-    Q.exists_picardGroupEquivs_of_nodal_model href hmatrix hprim hnef hsq
-  obtain ⟨j₀, a, g, haa, ha, hg, hgg, hfix, hsum, hreflect, horth⟩ :=
-    M.exists_marked_boundary_reversing_involution hcan hnef hsq hprim
-  have hsign (w : Word E E) := (hΘ w).1
-  obtain ⟨hs, s, hsection, hconj, hsemi⟩ :=
-    exists_signSplitting_of_picardEquivs Θ Θrot hsign hrot hE (signSplitting B d g hg hgg)
-  obtain ⟨w, hw, hodd, horder⟩ := exists_odd_word_of_picard_involution Θ hsign g hg hgg
-  have hsect : s (-1) = signedClusterModularGroupMap ℂ E (End.of w) := by
-    apply op_injective
-    apply Θ.injective
-    rw [hsection, signSplitting_neg_one, hw]
-  exact ⟨F, hmark, hFc, hfamily, Θ, Θrot, hE, hs, s, hrot, hΘ,
-    index_range_clusterModularGroupInclusion ℂ E hE hodd, hsect ▸ horder,
-    ⟨j₀, a, g, hg, hgg, haa, ha, hfix, hsum, hreflect, horth, hsection, hconj, hsemi⟩,
-    exists_central_involution_of_picardEquiv Θ hsign hE⟩
+  obtain ⟨reflection⟩ := M.nonempty_cycleReversingInvolution hcan hnef hsq hprim
+  exact ⟨⟨G, reflection, hmatrix_ne_zero⟩, hGc⟩
 
-end CompleteToricPresentation
-
-end QPainleve.SignedClusterModularGroup
+end QPainleve.SignedClusterModularGroup.CompleteToricPresentation
