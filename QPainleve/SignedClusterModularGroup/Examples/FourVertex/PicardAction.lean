@@ -12,7 +12,6 @@ public import QPainleve.SignedClusterModularGroup.Examples.FourVertex.Generation
 
 import QPainleve.Data.Fin.Find
 import QPainleve.SignedClusterModularGroup.BoundaryCycle
-import QPainleve.SignedClusterModularGroup.Faithfulness
 
 /-!
 # Integer comparison for the four-vertex Picard action
@@ -26,7 +25,7 @@ of the class pulled back to component zero. This transfers the lattice generatio
 theorems to a faithful Picard action of the independent X maps.
 
 The comparison uses `Quiver.Path.signedLoopInvariants` and
-`signed_boundary_isometry_eq_iff`.
+`SignedBoundaryIsometryGroup.eq_iff_of_boundary_pullback`.
 -/
 
 public noncomputable section
@@ -111,31 +110,12 @@ theorem picardInvariants_injective : Function.Injective picardInvariants := by
   obtain ⟨j, hj⟩ := exists_picardInvariants_label g
   have hj' : (picardInvariants h).boundaryLabel = some j :=
     (congrArg SignedLoopInvariants.boundaryLabel heq).symm.trans hj
-  have hforward (a : G) (ha : (picardInvariants a).boundaryLabel = some j) :
-      ∀ i, (picard a).val (boundaryClass i) = boundaryClass (η a • (i - label j)) := by
-    apply (boundary_pullback_eq_smul_sub_iff boundaryClass_injective ?_).mpr
-      ((picardInvariants_label_eq_some_iff _ _).mp ha)
-    simpa only [toIsometry_apply, sign_apply] using
-      (mem_signedBoundaryIsometryGroup_iff _ _).mp a.property
-  let iso := intersectionForm.isometryGroupEquivIsometryEquiv
-  have he := signed_boundary_isometry_eq_iff
-    (g := iso (picard g)) (h := iso (picard h)) (j := label j) (j' := label j)
-    intersectionForm_isSymm intersectionForm_nondegenerate.1
+  exact (eq_iff_of_boundary_pullback intersectionForm_isSymm
+    intersectionForm_nondegenerate.1
     (BoundaryCycle.span_sup_orthogonal_rat intersectionForm_boundaryClass
       intersectionForm_isSymm intersectionForm_nondegenerate) boundaryClass_injective
-    (fun i ↦ by simpa only [iso, LinearMap.BilinForm.coe_isometryGroupEquivIsometryEquiv]
-      using hforward g hj i)
-    (fun i ↦ by simpa only [iso, LinearMap.BilinForm.coe_isometryGroupEquivIsometryEquiv]
-      using hforward h hj' i)
-  have heq' := he.mpr ⟨hη, fun x hx ↦ by
-    simpa only [coe_signedOrthogonalRestriction_apply, iso,
-      LinearMap.BilinForm.coe_isometryGroupEquivIsometryEquiv] using
-      congrArg (fun a : K ≃ₗ[ℤ] K ↦ (a ⟨x, hx⟩ : Fin 10 → ℤ)) hres, rfl⟩
-  apply Subtype.ext
-  apply Prod.ext
-  · exact (toIsometry_apply _ _ _).symm.trans
-      ((iso.injective (congrArg Prod.fst heq')).trans (toIsometry_apply _ _ _))
-  · exact (sign_apply _ _ _).symm.trans (hη.trans (sign_apply _ _ _))
+    ((picardInvariants_label_eq_some_iff g j).mp hj)
+    ((picardInvariants_label_eq_some_iff h j).mp hj')).mpr ⟨hη, Subtype.ext hres, rfl⟩
 
 local notation "invariants[" w "]" =>
   Quiver.Path.signedLoopInvariants w (fun j ↦ (exchangeKernelBasis j : Fin 4 → ℤ))

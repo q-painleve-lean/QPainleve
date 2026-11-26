@@ -9,10 +9,11 @@ public import QPainleve.Algebra.Cluster.Word.LoopComparison.List
 public import QPainleve.SignedClusterModularGroup.Realization.Presentation
 public import QPainleve.SignedClusterModularGroup.Realization.Tropical
 
-import QPainleve.Geometry.Toric.Fan.ExchangeMatrix
+import QPainleve.AlgebraicGeometry.Chow.RationalSurface.Basic
+import QPainleve.Algebra.Cluster.Word.CoefficientChange
 import QPainleve.SignedClusterModularGroup.Realization.NodalFiber
-import QPainleve.SignedClusterModularGroup.Realization.Presentation.Family
-import QPainleve.SignedClusterModularGroup.Realization.Relations.Presentation
+import QPainleve.SignedClusterModularGroup.Realization.Reflection
+import QPainleve.SignedClusterModularGroup.Realization.Relations.PicardAction
 
 /-!
 # Deciding signed loop relations from a reference contraction
@@ -22,13 +23,12 @@ models used in the geometric criterion. The resulting integer comparison decides
 equality of independent X pullbacks over any field for typed loops and lists of
 generators.
 The same certificate of the exchange matrix and order table serves both checkers.
-Their correctness uses `CompleteToricPresentation.exists_marked_family_of_nodal_model`
-and `GeometricRealization.xPullback_eq_iff_signedLoopInvariants_eq_of_presentation`.
+The relation criterion uses the signed Picard comparison for the reference fiber.
 -/
 
 public section
 
-open AlgebraicGeometry CategoryTheory Quiver
+open AlgebraicGeometry CategoryTheory MulOpposite Quiver
 open QPainleve.CharacterTorus QPainleve.Cluster
 open Scheme Scheme.IdealSheafData TauCeti TauCeti.AlgebraicGeometry TauCeti.Toric
 
@@ -86,24 +86,33 @@ theorem xPullback_eq_iff_signedLoopInvariants_eq {p₀ : fiber[M₀,c₀]}
     (hnef : (classOf(cartier[M₀])).IsNef ℂ (M₀.surface ↘ S))
     (hsq : Chow.classIntersectionNumber ℂ M₀.surface classOf(cartier[M₀])
       classOf(cartier[M₀]) = 0)
-    (w v : Word E E) {m : ℕ} (β : Module.Basis (Fin m) ℤ E.matrix.mulVecLin.ker) :
+    (w v : Word E E) {κ : Type*} (β : Module.Basis κ ℤ E.matrix.mulVecLin.ker) :
     w.xPullback k = v.xPullback k ↔
       w.signedLoopInvariants (fun j ↦ (β j : Fin r → ℤ)) orders (orders 0) =
         v.signedLoopInvariants (fun j ↦ (β j : Fin r → ℤ)) orders (orders 0) := by
   rw [h.orders_eq]
-  have hE := h.matrix_eq
-  obtain ⟨M, _, hM, hfamily⟩ :=
-    Q.exists_marked_family_of_nodal_model (Q.hasNodalModel_of_contraction hnodal₀) cartier[M₀]
-  subst M₀
-  let P := Fan.rayChargeSeed b Q.rays hE
-  choose p hp using fun c ↦ (hfamily c).1.exists_isNodalContraction cartier[M c]
-  have hmark (c : Point Centers[r]) (j : ZMod n) :
-      (M c).boundaryClass cartier[M c] j = (M c₀).boundaryClass cartier[M c₀] j :=
-    congrFun (hfamily c).2 j
-  exact GeometricRealization.xPullback_eq_iff_signedLoopInvariants_eq_of_presentation
-    Q P (Fan.rayChargeSeed_form _ _ _) (Fan.rayChargeSeed_charge _ _ _)
-    M p₀ hnodal₀ (fun c _ ↦ p c) (fun c _ ↦ hp c) hnef hsq hprim hmark
-    Q.exists_cone_of_numbered_node w v β
+  have href := Q.hasNodalModel_of_contraction hnodal₀
+  have hne := href.exchangeMatrix_ne_zero h.matrix_eq hprim hnef hsq
+  refine ⟨fun heq ↦ Path.signedLoopInvariants_eq_of_xPullback_eq hne heq β _ _, ?_⟩
+  intro hinvariants
+  obtain ⟨A⟩ := Q.nonempty_signedLoopPicardComparison_of_nodal_contraction
+    p₀ hnodal₀ h.matrix_eq hprim hnef hsq
+  let : M₀.surface.IsProjectiveOver ℂ := M₀.projective
+  let : SmoothOfRelativeDimension 2 (M₀.surface ↘ S) := M₀.smooth
+  let : IsRationalOver (M₀.surface ↘ S) := href.isRationalOver
+  let : Module.Free ℤ (Additive (LineBundleClass M₀.surface)) :=
+    M₀.surface.free_picard_of_isRationalOver ℂ
+  let : Module.Finite ℤ (Additive (LineBundleClass M₀.surface)) :=
+    M₀.surface.finite_picard_of_isRationalOver ℂ
+  let : Module.Free ℤ L := Module.Free.of_equiv M₀.picardMarking.symm
+  let : Module.Finite ℤ L := Module.Finite.of_surjective _ M₀.picardMarking.symm.surjective
+  have heq := (A.signedEquiv_apply_word_eq_iff_signedLoopInvariants_eq M₀.isSymm
+    M₀.isPerfPair_of_isRationalOver.nondegenerate
+    (M₀.intersectionForm_boundaryClass cartier[M₀] hnef hsq)
+    (M₀.boundaryClass_injective_of_nef_square_zero cartier[M₀] hnef hsq) w v β).mpr hinvariants
+  apply Path.xPullback_eq_of_charZero k ℂ
+  exact (signedClusterModularGroupMap_eq_iff ℂ E (End.of w) (End.of v)).mp
+    (op_injective (A.identification.signedEquiv.injective heq))
 
 /-- A certified exchange matrix and order table for a nodal contraction make the typed
 integer comparison correct over every coefficient field. -/
