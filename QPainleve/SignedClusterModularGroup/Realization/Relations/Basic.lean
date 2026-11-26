@@ -73,7 +73,7 @@ private theorem marked_actions_eq_of_restriction_eq
     (hη : R.orientation = R'.orientation)
     (hK : res[sPic R] = res[sPic R'])
     (hj : R.boundaryPerm 0 = R'.boundaryPerm 0) :
-    R.picard = R'.picard ∧ R.boundaryPerm = R'.boundaryPerm := by
+    R.picard = R'.picard ∧ R.boundaryAction = R'.boundaryAction := by
   have hperm : cycleVertexPerm R.boundaryAction = cycleVertexPerm R'.boundaryAction := by
     apply Equiv.ext
     intro j
@@ -92,7 +92,8 @@ private theorem marked_actions_eq_of_restriction_eq
         coe_toSignedBoundaryIsometry, LinearMap.BilinForm.coe_isometryGroupEquivIsometryEquiv_symm,
         hη] at h
       exact smul_left_cancel R'.orientation h
-  exact ⟨hpic, by simpa only [boundaryPerm_def] using hperm⟩
+  exact ⟨hpic, eq_of_cycleVertexPerm_eq_of_cycleOrientationSign_eq hperm
+    (R.orientation_def.symm.trans (hη.trans R'.orientation_def))⟩
 
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {Φ : Fan i} [hΦ₀ : Nonempty Φ.cones] {m : ℕ} [NeZero m]
@@ -169,12 +170,6 @@ theorem xPullback_eq_iff_signedLoopInvariants_eq {k : Type*} [Field k]
       b.detDualEquiv_self b.detDualEquiv_apply_basis_zero_one).not.mpr hindex
   refine ⟨fun h ↦ Path.signedLoopInvariants_eq_of_xPullback_eq hne h β _ _, fun h ↦ ?_⟩
   apply Path.xPullback_eq_of_charZero k ℂ
-  have hrays c (hc : c ∈ U) : (p c hc).numberedBoundaryRays (hD c) =
-      p₀.numberedBoundaryRays (hD c₀) :=
-    (p c hc).numberedBoundaryRays_eq_of_nodalContractions (p₀)
-      (hnodal c hc) hnodal₀ (LinearMap.IsPerfPair.separatingRight inferInstance)
-  have hkeep c (hc : c ∈ U) ρ := ((p c hc).mem_range_numberedBoundaryRays_iff (hD c) ρ).symm.trans
-    (by rw [hrays c hc])
   let Q := Fan.rayChargeSeed b s hE
   have hcharge : Q.charge = Fan.rayChargeMap s := Fan.rayChargeSeed_charge _ _ _
   have hker : E.matrix.mulVecLin.ker = Q.charge.ker := by
@@ -201,13 +196,13 @@ theorem xPullback_eq_iff_signedLoopInvariants_eq {k : Type*} [Field k]
   have hres := hcharge₁.symm.trans hcharge₂
   have horient := hηw.trans (hη.trans hηv.symm)
   have hB : B.Nondegenerate := LinearMap.IsPerfPair.nondegenerate inferInstance
-  obtain ⟨hpic, hperm⟩ := marked_actions_eq_of_restriction_eq D hD hmark R R'
+  obtain ⟨hpic, hboundary⟩ := marked_actions_eq_of_restriction_eq D hD hmark R R'
     hSymm hB.1 (BoundaryCycle.span_sup_orthogonal_rat hGram hSymm hB)
     horient ((LinearEquiv.autCongr e).injective hres) hj
   exact (Path.xRationalMap_eq_iff ℂ w v).mp
     (R.xMap_eq_of_marked_actions_on_center_domains R' hcΦ u hvertices hdet hnodes
-      (fun x ↦ p _ (hU x).1) (Set.range (p₀.numberedBoundaryRays (hD c₀)))
-      (fun x ↦ ⟨p _ (hU x).2, hnodal _ (hU x).2, hkeep _ (hU x).2⟩)
-      (fun x ↦ ⟨p _ (hU' x).2, hnodal _ (hU' x).2, hkeep _ (hU' x).2⟩) hpic hperm horient)
+      (fun x ↦ p _ (hU x).1) (Set.range p₀.boundaryRayEmbedding)
+      (.of_nodalContractions hsep p₀ hnodal₀ p hnodal (fun x ↦ (hU x).2))
+      (.of_nodalContractions hsep p₀ hnodal₀ p hnodal (fun x ↦ (hU' x).2)) hpic hboundary)
 
 end QPainleve.SignedClusterModularGroup.GeometricRealization

@@ -6,9 +6,8 @@ Authors: The QPainleve contributors
 module
 
 public import QPainleve.Geometry.Toric.Fan.Picard.Period.Evaluation
-public import QPainleve.SignedClusterModularGroup.Realization.Agreement
-public import QPainleve.SignedClusterModularGroup.Realization.Boundary
 public import QPainleve.SignedClusterModularGroup.Realization.CenterFibers
+public import QPainleve.SignedClusterModularGroup.Realization.Models
 
 import QPainleve.Geometry.Toric.Fan.Boundary.NumberedPrime
 import QPainleve.Geometry.Toric.Fan.Evaluation.CenterFiber
@@ -67,21 +66,6 @@ namespace ContractedToricFiber
 
 private instance : PrestableFamily (D[P].subscheme ↘ S) := P.prestable_boundaryImage
 
-/-- The marked boundary is a Cartier cycle of rational curves and the specified
-projection reverses a tower of blowups at boundary nodes. -/
-structure IsNodalContraction : Prop where
-  /-- The boundary is Cartier. -/
-  cartier : D[P].IsEffectiveCartier
-  /-- The boundary normalization has genus zero on every component. -/
-  genus_zero :
-    letI := P.prestable_boundaryImage
-    ∀ v : irreducibleComponents (D[P].subscheme.singularLocus ℂ).blowup,
-      (D[P].subscheme.blowupComponent (K := ℂ) v).toScheme.genus ℂ = 0
-  /-- The nodal tower gives the specified projection from the ordered model. -/
-  exists_tower : ∃ (l : ℕ) (W : Scheme) (A : BlowupTower P.surface l W)
-    (_ : IsNodalBoundaryTower D[P] (P.surface ↘ S) (𝟙 P.surface) A)
-    (e : W ≅ (Model[b,s,c]).1), e.inv ≫ A.toBase = p.projection
-
 /-- The toric boundary projection remains an oriented subdivision after identifying the
 marked boundary with the closed subscheme cut out by its ideal. -/
 theorem isOrientedCycleSubdivision_comp_boundaryImage :
@@ -118,8 +102,7 @@ the evaluations in two fibers of a fixed ordered toric presentation. The survivi
 rays are the same in both fibers, and the charge map can have any rank. -/
 theorem comp_evaluation_eq_of_marked_actions
     (hc : Φ.IsComplete) (hp : p.IsNodalContraction) (hq : q.IsNodalContraction)
-    (hkeep : ∀ ρ : Φ.Ray, p.projection (prime[b,s,hΦ,c] ρ).val ∈ D[P].boundaryPrimes ↔
-      q.projection (prime[b,s,hΦ,d] ρ).val ∈ D[Q].boundaryPrimes)
+    (hkeep : Set.range p.boundaryRayEmbedding = Set.range q.boundaryRayEmbedding)
     (e : P.pair ≅ Q.pair)
     (hPic : ∀ a, LineBundleClass.pullback (surfaceIso e).hom (Q.picardMarking a).toMul =
       (P.picardMarking a).toMul)
@@ -162,7 +145,10 @@ theorem comp_evaluation_eq_of_marked_actions
         (by simpa only [heP] using hf) (by simpa only [heQ] using hg)
         (isOrientedCycleSubdivision_comp_boundaryImage p)
         (isOrientedCycleSubdivision_comp_boundaryImage q)
-        (by simpa only [heP, heQ] using hkeep)
+        (by
+          intro ρ
+          simpa only [heP, heQ, boundaryRayEmbedding_def,
+            Fan.mem_range_contractedBoundaryRayEmbedding_iff] using Set.ext_iff.mp hkeep ρ)
         (surfaceIso e) vB hv (by
           intro L
           obtain ⟨a, ha⟩ := Q.picardMarking.surjective (Additive.ofMul L)
@@ -195,15 +181,14 @@ variable [Φ.algebraicRealization.IsProjectiveOver ℂ] [B₁.IsPerfPair]
   [C.IsOver (Torus[A]).X.hom T₁.hom] [C'.IsOver (Torus[A]).X.hom T₁.hom]
   {F G : (Torus[A]).X.left ⤏ Xtor[r]} [F.IsDominant] [G.IsDominant]
 
-/-- Equality of the constant Picard pullback, boundary permutation and orientation
+/-- Equality of the constant Picard pullback and the full ordered boundary action
 implies equality of the independent rational X maps. The source evaluation
 comes from the charge map on a dominant torus chart. Both target realizations use a
 fixed ordered toric presentation and the same surviving rays. This works for
 arbitrary charge rank and for one- and two-component boundaries. -/
 theorem GeometricRealization.xMap_eq_of_marked_actions_eq
     (R : GeometricRealization P₀ P₁ C F) (R' : GeometricRealization P₀ P₁ C' G)
-    (hI : R.picard = R'.picard) (hperm : R.boundaryPerm = R'.boundaryPerm)
-    (horient : R.orientation = R'.orientation)
+    (hI : R.picard = R'.picard) (hact : R.boundaryAction = R'.boundaryAction)
     (v : A →+ N₀) (sY : Xtor[r] ⟶ S)
     [F.IsOver (Torus[A]).X.hom sY] [G.IsOver (Torus[A]).X.hom sY]
     (U : (Torus[A]).X.left.Opens) [Nonempty U] (hUC : U ≤ C.domain) (hUC' : U ≤ C'.domain)
@@ -219,18 +204,12 @@ theorem GeometricRealization.xMap_eq_of_marked_actions_eq
       (Φ.boundaryIdeal h₀).subschemeι (Dtor[Φ,h₀].dualGraphEdgeEquiv a (T.edge j)).val =
         Φ.distinguishedPointHom σ (IsLocalRing.closedPoint ℂ))
     (centers : Point T₁ → (Multiplicative (Fin r → ℤ) →* ℂˣ)) (survives : Set Φ.Ray)
-    (hC : ∀ x : CenterPoint C,
-      ∃ p : ContractedToricFiber b s hΦ T origin ι (centers (x ≫ C.domainTarget))
-          (P₁ (x ≫ C.domainTarget)),
-        p.IsNodalContraction ∧ ∀ ρ : Φ.Ray,
-          p.projection (prime[b,s,hΦ,centers (x ≫ C.domainTarget)] ρ).val ∈
-            D[P₁ (x ≫ C.domainTarget)].boundaryPrimes ↔ ρ ∈ survives)
-    (hC' : ∀ x' : CenterPoint C',
-      ∃ q : ContractedToricFiber b s hΦ T origin ι (centers (x' ≫ C'.domainTarget))
-          (P₁ (x' ≫ C'.domainTarget)),
-        q.IsNodalContraction ∧ ∀ ρ : Φ.Ray,
-          q.projection (prime[b,s,hΦ,centers (x' ≫ C'.domainTarget)] ρ).val ∈
-            D[P₁ (x' ≫ C'.domainTarget)].boundaryPrimes ↔ ρ ∈ survives) :
+    (hC : GeometricRealization.HasNodalToricTargetModels (T₀ := (Torus[A]).X) (T₁ := T₁)
+      (b := b) (s := s) (hΦ := hΦ) (toricCycle := T) (origin := origin) (ι := ι)
+      (P := P₁) centers survives C)
+    (hC' : GeometricRealization.HasNodalToricTargetModels (T₀ := (Torus[A]).X) (T₁ := T₁)
+      (b := b) (s := s) (hΦ := hΦ) (toricCycle := T) (origin := origin) (ι := ι)
+      (P := P₁) centers survives C') :
     F = G := by
   apply R.xMap_eq_of_target_evaluation_eq_on_center_fibers R' v sY U hUC hUC' hchart
   intro x x' hs _
@@ -238,15 +217,11 @@ theorem GeometricRealization.xMap_eq_of_marked_actions_eq
       G R'.picard R'.boundaryAction := hs ▸ R'.fiber x'
   obtain ⟨p, hp, hkeep⟩ := hC x
   obtain ⟨q, hq, hkeep'⟩ := hC' x'
-  have hg : R.boundaryAction = R'.boundaryAction :=
-    eq_of_cycleVertexPerm_eq_of_cycleOrientationSign_eq
-      ((R.boundaryPerm_def.symm.trans hperm).trans R'.boundaryPerm_def)
-      ((R.orientation_def.symm.trans horient).trans R'.orientation_def)
   let realized := R.fiber x
   have hbranch := (realized.boundaryCycleAction_targetIso_eq_one_iff r.iso).mpr
-    (r.boundaryAction_eq.trans hg.symm)
+    (r.boundaryAction_eq.trans hact.symm)
   have heval := p.comp_evaluation_eq_of_marked_actions q u hvertices hdet hnodes hc hp hq
-    (fun ρ ↦ (hkeep ρ).trans (hkeep' ρ).symm) (realized.targetIso r.iso)
+    (hkeep.trans hkeep'.symm) (realized.targetIso r.iso)
     (fun a ↦ (realized.pullback_picardMarking_targetIso_eq_iff r.iso a).mpr (by
       rw [hI]
       exact r.picard_eq a)) hbranch
@@ -271,8 +246,6 @@ local notation "centerCoordinates" =>
   diagonalizableGroupSchemeIso ℂ (FGCommGrpCat.of (Multiplicative Cent))
 local notation "χ[" p "]" => pointsEquiv ℂ Cent
   (Subtype.mk (Over.Hom.left (p : Point T)) (Over.w (p : Point T)))
-local notation "dst[" C "," x "]" =>
-  x ≫ PartialMap.domainTarget (X := T) (Y := T) C
 local notation "src[" C "," x "]" =>
   x ≫ PartialMap.domainSource (X := T) (Y := T) C
 
@@ -373,18 +346,11 @@ theorem xMap_eq_of_marked_actions_on_center_domains
         Φ.distinguishedPointHom σ (IsLocalRing.closedPoint ℂ))
     (pSource : ∀ x : CenterPoint (U := T) (V := T) C, fiberAt (src[C,x]))
     (survives : Set Φ.Ray)
-    (pTarget : ∀ x : CenterPoint (U := T) (V := T) C,
-      ∃ p : fiberAt (dst[C,x]), p.IsNodalContraction ∧ ∀ ρ : Φ.Ray,
-        p.projection (Fan.internalBlowupBoundaryPrimeEquiv hΦ b s
-          (fun j ↦ χ[dst[C,x]] (ofAdd (Pi.single j 1))) ρ).val ∈
-          D[P (dst[C,x])].boundaryPrimes ↔ ρ ∈ survives)
-    (qTarget : ∀ x : CenterPoint (U := T) (V := T) C',
-      ∃ p : fiberAt (dst[C',x]), p.IsNodalContraction ∧ ∀ ρ : Φ.Ray,
-        p.projection (Fan.internalBlowupBoundaryPrimeEquiv hΦ b s
-          (fun j ↦ χ[dst[C',x]] (ofAdd (Pi.single j 1))) ρ).val ∈
-          D[P (dst[C',x])].boundaryPrimes ↔ ρ ∈ survives)
-    (hpic : R.picard = R'.picard) (hperm : R.boundaryPerm = R'.boundaryPerm)
-    (hη : R.orientation = R'.orientation) :
+    (pTarget : HasNodalToricTargetModels (T₀ := T) (T₁ := T) (b := b) (s := s) (hΦ := hΦ)
+      (toricCycle := τ) (origin := origin) (ι := ι) (P := P) (fun c ↦ χ[c]) survives C)
+    (qTarget : HasNodalToricTargetModels (T₀ := T) (T₁ := T) (b := b) (s := s) (hΦ := hΦ)
+      (toricCycle := τ) (origin := origin) (ι := ι) (P := P) (fun c ↦ χ[c]) survives C')
+    (hpic : R.picard = R'.picard) (hact : R.boundaryAction = R'.boundaryAction) :
     F = G := by
   -- The comparison uses the group-scheme coordinates for the joint evaluation map.
   let : Module.Free ℤ N := Module.Free.of_basis b
@@ -425,20 +391,13 @@ theorem xMap_eq_of_marked_actions_on_center_domains
   let U := (f.comp C).domain ⊓ (f.comp C').domain
   let : Nonempty U := ((f.comp C).dense_domain.inter_of_isOpen_left
     (f.comp C').dense_domain (f.comp C).domain.is_open').nonempty.to_subtype
-  let hasFiber (c : Point T) := ∃ p : fiberAt c, p.IsNodalContraction ∧ ∀ ρ : Φ.Ray,
-    p.projection (Fan.internalBlowupBoundaryPrimeEquiv hΦ b s
-      (fun j ↦ χ[c] (ofAdd (Pi.single j 1))) ρ).val ∈ D[P c].boundaryPrimes ↔ ρ ∈ survives
   apply RationalMap.comp_left_injective eX.hom.toRationalMap
   refine R₀.xMap_eq_of_marked_actions_eq (s := s) (origin := origin) (ι := ι) R₁
     (by simpa only [R₀, R₁, precompEvaluation_picard, precompCenter_picard] using hpic)
-    (by simpa only [R₀, R₁, boundaryPerm_def, precompEvaluation_boundaryAction,
-      precompCenter_boundaryAction] using hperm)
-    (by simpa only [R₀, R₁, orientation_def, precompEvaluation_boundaryAction,
-      precompCenter_boundaryAction] using hη)
+    (by simpa only [R₀, R₁, precompEvaluation_boundaryAction, precompCenter_boundaryAction]
+      using hact)
     (Fan.rayChargeMap s).toAddMonoidHom (structureMap ℂ (Fin l →₀ ℤ)) U inf_le_left inf_le_right
-    ?_ hcΦ u hvertices hdet hnodes (fun c ↦ χ[c]) survives
-    (f.forall_comp_domainTarget (X := Torus[Cent]) (Y := T) (Z := T) C hasFiber pTarget)
-    (f.forall_comp_domainTarget (X := Torus[Cent]) (Y := T) (Z := T) C' hasFiber qTarget)
+    ?_ hcΦ u hvertices hdet hnodes (fun c ↦ χ[c]) survives (pTarget.comp f) (qTarget.comp f)
   rintro c ⟨z, hz⟩
   exact exists_precompCenter_chart eOver eX (by rfl) hcoords pSource c
     (z ≫ Scheme.homOfLE _ (inf_le_left : U ≤ (f.comp C).domain))

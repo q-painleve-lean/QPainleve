@@ -30,7 +30,7 @@ public section
 open AlgebraicGeometry CategoryTheory Multiplicative QPainleve.BlowupTower
 open TauCeti TauCeti.AlgebraicGeometry TauCeti.Toric Scheme Scheme.IdealSheafData
 
-namespace QPainleve.SignedClusterModularGroup.ContractedToricFiber
+namespace QPainleve.SignedClusterModularGroup
 
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {Φ : Fan i} [h₀ : Nonempty Φ.cones] {r m n : ℕ} [NeZero m] [NeZero n]
@@ -46,7 +46,13 @@ variable [PrestableFamily ((Φ.boundaryIdeal h₀).subscheme ↘ S)]
   {γ : Type*} {a : γ → ((Φ.boundaryIdeal h₀).subscheme ↘ S).smoothLocus}
   {T : NodalCycleNumbering a m} {origin : ZMod m}
   {ι : L →ₗ[ℤ] Additive (LineBundleClass Φ.algebraicRealization) × (Fin r → ℤ)}
-  {c d : Multiplicative (Fin r → ℤ) →* ℂˣ} {P Q : MarkedSurface ℂ n B XTor[r]}
+
+local notation "F" => LinearMap.BilinForm.prod (Chow.intersectionBilinForm ℂ Φ.algebraicRealization)
+  (-(dotProductBilin ℤ ℤ : LinearMap.BilinForm ℤ (Fin r → ℤ)))
+
+namespace ContractedToricFiber
+
+variable {c d : Multiplicative (Fin r → ℤ) →* ℂˣ} {P Q : MarkedSurface ℂ n B XTor[r]}
   (p : ContractedToricFiber b s hΦ T origin ι c P)
   (q : ContractedToricFiber b s hΦ T origin ι d Q)
 
@@ -150,9 +156,6 @@ theorem numberedBoundaryRays_eq_of_range_eq
 
 variable [Φ.algebraicRealization.IsProjectiveOver ℂ]
 
-local notation "F" => LinearMap.BilinForm.prod (Chow.intersectionBilinForm ℂ Φ.algebraicRealization)
-  (-(dotProductBilin ℤ ℤ : LinearMap.BilinForm ℤ (Fin r → ℤ)))
-
 /-- Two nodal contractions of one marked toric presentation have the same numbered
 rays. The common Picard pullback determines the set of surviving rays. -/
 theorem numberedBoundaryRays_eq_of_nodalContractions
@@ -217,8 +220,8 @@ theorem boundaryClass_eq_of_range_numberedBoundaryRays_eq
         (e.inv ≫ A.toBase) hD) =
       Set.range (Fan.contractedBoundaryRayEmbedding hΦ b s (center d)
         (f.inv ≫ U.toBase) hD') := by
-    simpa only [he, hf, ← p.range_numberedBoundaryRays hp.cartier,
-      ← q.range_numberedBoundaryRays hq.cartier] using hrange
+    simpa only [he, hf, p.range_numberedBoundaryRays, q.range_numberedBoundaryRays,
+      boundaryRayEmbedding_def] using hrange
   have hspan := (Fan.markedExceptionalSpan_eq_span_compl_survivingRays hΦ b s
       (center c) hA e.symm hD).trans
     (hsurvives ▸ (Fan.markedExceptionalSpan_eq_span_compl_survivingRays hΦ b s
@@ -229,8 +232,8 @@ theorem boundaryClass_eq_of_range_numberedBoundaryRays_eq
   have hclass := Fan.marked_pullback_prime_eq_of_contractedBoundaryRayEmbedding_eq hΦ b s
     (center c) hA e.symm hover hD (center d) hU f.symm hover' hD' hspan
     (P.numberedBoundaryPrimes hp.cartier j) (Q.numberedBoundaryPrimes hq.cartier j)
-    (by simpa only [Iso.symm_hom, he, hf, ← numberedBoundaryRays_apply] using
-      congrArg (fun u : ZMod n ↪ Φ.Ray ↦ u j) hrays)
+    (by simpa only [Iso.symm_hom, he, hf, numberedBoundaryRays_apply,
+      boundaryRayEmbedding_def] using congrArg (fun u : ZMod n ↪ Φ.Ray ↦ u j) hrays)
   dsimp only at hclass
   rw [Iso.symm_hom, Iso.symm_hom, he, hf] at hclass
   rw [← p.marked_pullback, ← q.marked_pullback, P.picardMarking_boundaryClass,
@@ -241,4 +244,35 @@ theorem boundaryClass_eq_of_range_numberedBoundaryRays_eq
     apply Subtype.ext
     simp only [MarkedSurface.numberedBoundaryPrimes_apply_val]
 
-end QPainleve.SignedClusterModularGroup.ContractedToricFiber
+end ContractedToricFiber
+
+namespace GeometricRealization.HasNodalToricTargetModels
+
+variable {T₀ T₁ : Over S} {M : Point T₁ → MarkedSurface ℂ n B XTor[r]}
+  {centers : Point T₁ → Multiplicative (Fin r → ℤ) →* ℂˣ}
+  {C : T₀.left.PartialMap T₁.left} [C.IsOver T₀.hom T₁.hom]
+
+/-- Nodal models with a common Picard marking have the surviving rays of the reference
+contraction at every reached target center. -/
+theorem of_nodalContractions [Φ.algebraicRealization.IsProjectiveOver ℂ]
+    [SmoothOfRelativeDimension 2 (Φ.algebraicRealization ↘ S)]
+    (hsep : (F).SeparatingRight)
+    {c₀ : Point T₁}
+    (p₀ : ContractedToricFiber b s hΦ T origin ι (centers c₀) (M c₀))
+    (h₀ : p₀.IsNodalContraction) {U : Set (Point T₁)}
+    (p : ∀ c ∈ U, ContractedToricFiber b s hΦ T origin ι (centers c) (M c))
+    (h : ∀ c hc, (p c hc).IsNodalContraction)
+    (hU : ∀ x : CenterPoint C, x ≫ C.domainTarget ∈ U) :
+    HasNodalToricTargetModels (T₀ := T₀) (T₁ := T₁) (b := b) (s := s) (hΦ := hΦ)
+      (toricCycle := T) (origin := origin) (ι := ι) (P := M) centers
+      (Set.range p₀.boundaryRayEmbedding) C := by
+  intro x
+  let q := p _ (hU x)
+  have hq : q.IsNodalContraction := h _ (hU x)
+  refine ⟨q, hq, ?_⟩
+  rw [← q.range_numberedBoundaryRays hq.cartier, ← p₀.range_numberedBoundaryRays h₀.cartier,
+    q.numberedBoundaryRays_eq_of_nodalContractions p₀ hq h₀ hsep]
+
+end GeometricRealization.HasNodalToricTargetModels
+
+end QPainleve.SignedClusterModularGroup

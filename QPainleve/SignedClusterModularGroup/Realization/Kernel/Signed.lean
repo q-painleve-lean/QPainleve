@@ -56,9 +56,6 @@ variable [Smooth T[A].hom] [Φ.algebraicRealization.IsProjectiveOver ℂ] [B.IsP
   {ι : L →ₗ[ℤ] Additive (LineBundleClass Φ.algebraicRealization) × (Fin r → ℤ)}
   (centers : Point T[A] → Multiplicative (Fin r → ℤ) →* ℂˣ)
 
-local notation "D[" P "," c "]" =>
-  Scheme.Hom.ker (Over.Hom.left (Arrow.hom (MarkedSurface.pair (P c))))
-
 variable (hc : Φ.IsComplete) (u : ZMod m ≃ Φ.Ray)
   (hvertices : ∀ j, Dtor[Φ,hΦ₀].dualGraphVertexEquiv a (T.vertex j) =
     Φ.boundaryNormalizationComponentEquiv hΦ (u j))
@@ -68,10 +65,7 @@ variable (hc : Φ.IsComplete) (u : ZMod m ≃ Φ.Ray)
       Φ.distinguishedPointHom σ (IsLocalRing.closedPoint ℂ))
   (survives : Set Φ.Ray)
   (hmodels : ∀ c, ∃ p : ContractedToricFiber b s hΦ T origin ι (centers c) (P c),
-    p.IsNodalContraction ∧ ∀ ρ : Φ.Ray,
-      p.projection (Fan.internalBlowupBoundaryPrimeEquiv hΦ b s
-        (fun j ↦ centers c (Multiplicative.ofAdd (Pi.single j 1))) ρ).val ∈
-        D[P,c].boundaryPrimes ↔ ρ ∈ survives)
+    p.IsNodalContraction ∧ Set.range p.boundaryRayEmbedding = survives)
   (D : ZMod n → L)
   (hmark : ∀ c j, (P c).boundaryClass (hmodels c).choose_spec.1.cartier j = D j)
   (e : T[A].left ≅ X[r]) (he : e.hom ≫ sX[r] = T[A].hom)
