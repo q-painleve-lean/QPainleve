@@ -204,6 +204,17 @@ inductive Generator (ι : Type*) where
 
 namespace Generator
 
+/-- Read a mutation direction as a generator, with `none` denoting global inversion. -/
+def mutationOrInversion (p : Option ι) : Generator ι := p.elim .invert .mutate
+
+@[simp]
+theorem mutationOrInversion_none : mutationOrInversion (none : Option ι) = .invert :=
+  (rfl)
+
+@[simp]
+theorem mutationOrInversion_some (p : ι) : mutationOrInversion (some p) = .mutate p :=
+  (rfl)
+
 /-- Reverse a generator. Mutation and global inversion are self-inverse, and the reverse
 of a permutation uses its inverse. -/
 def reverse : Generator ι → Generator ι

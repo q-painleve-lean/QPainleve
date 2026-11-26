@@ -38,17 +38,6 @@ end Quiver.Path
 
 namespace QPainleve.Cluster.Generator
 
-/-- Read a mutation direction as a generator, with `none` denoting global inversion. -/
-def mutationOrInversion (p : Option ι) : Generator ι := p.elim .invert .mutate
-
-@[simp]
-theorem mutationOrInversion_none : mutationOrInversion (none : Option ι) = .invert :=
-  (rfl)
-
-@[simp]
-theorem mutationOrInversion_some (p : ι) : mutationOrInversion (some p) = .mutate p :=
-  (rfl)
-
 variable [DecidableEq ι] [CoefficientSemifield P]
 
 /-- A list of generators acts on a seed as mutations and inversions followed by one relabeling. -/
