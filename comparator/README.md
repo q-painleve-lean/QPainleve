@@ -1,17 +1,19 @@
 # Comparator challenges
 
-Each challenge has an entry file `Challenge/<Name>.lean` and a configuration
+Each challenge is a single file `Challenge/<Name>.lean` with a configuration
 `comparator/<Name>.json` for [`lake comparator`](https://github.com/leanprover/comparator), which
 is part of Lake since Lean v4.35.0.
 
-The `Challenge` library contains the trusted specification. It uses Tau Ceti and Mathlib and
-states each challenge theorem with `sorry`. The challenge and solution import the same definitions
-when the statement uses local definitions. The `Challenge` and `Solution` libraries are outside
-the audited `QPainleve` library and the default targets.
+A challenge file is the trusted specification: it imports only Tau Ceti and Mathlib, defines
+everything its statement uses, and states the challenge theorem with `sorry`. The `Challenge` and
+`Solution` libraries are outside the audited `QPainleve` library and the default targets, so the
+library's no-`sorry` rule and axiom audit do not apply to them.
 
 To submit a solution, copy the challenge file to `Solution/<Name>.lean` and replace the `sorry` by
-a proof. The proof may import anything, including `QPainleve`. Run comparator from a clean
-checkout (no `.lake` directory) with `bubblewrap` installed:
+a proof. The proof may import anything, including `QPainleve`. If extra imports affect how the
+copied definitions elaborate, keep the definitions and their original imports in a separate
+solution module. Run comparator from a clean checkout (no `.lake` directory) with `bubblewrap`
+installed:
 
 ```sh
 lake comparator --config comparator/<Name>.json

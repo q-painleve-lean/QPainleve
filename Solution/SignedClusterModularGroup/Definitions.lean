@@ -10,13 +10,15 @@ import Mathlib.LinearAlgebra.Matrix.BilinearForm
 import Mathlib.LinearAlgebra.Quotient.Bilinear
 
 /-!
-# Definitions for the signed cluster modular group comparator
+# Definitions for the signed cluster modular group solution
 
 For every toric presentation whose surface `Y` satisfies the target-pair conditions (the total
 boundary class `δ` is primitive, nef and of square zero), the signed cluster modular group of
 its seed is isomorphic to the group of signed boundary isometries of `Pic(Y)`.
 
-The challenge and solution import these definitions and example presentations.
+This file mirrors the definitions and example presentations in the standalone challenge
+`Challenge/SignedClusterModularGroup.lean`. It uses the same imports so that the definitions
+elaborate with the same instances and simplification lemmas as in the challenge.
 -/
 
 noncomputable section
