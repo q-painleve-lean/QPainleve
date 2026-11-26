@@ -9,8 +9,10 @@ public import Mathlib.Data.ZMod.Basic
 public import QPainleve.Geometry.Toric.Fan.Ray
 
 import Mathlib.Analysis.SpecialFunctions.Complex.Arg
-import Mathlib.LinearAlgebra.Matrix.ToLinearEquiv
 import Mathlib.Order.Fin.Basic
+import QPainleve.Analysis.SpecialFunctions.Trigonometric.Basic
+import QPainleve.Geometry.Toric.Cone.TwoDimensional
+import QPainleve.Order.Sequence
 import TauCeti.Geometry.Toric.Algebraic.Ray.Face
 
 /-!
@@ -88,32 +90,14 @@ private theorem eq_pos_smul_of_polarAngle_eq {x y : Fin 2 → ℝ} (hy : y ≠ 0
 
 local notation "det₂" => Module.Basis.detDualEquiv (Pi.basisFun _ (Fin 2))
 
-private theorem det₂_apply {R : Type*} [CommRing R] (x y : Fin 2 → R) :
-    det₂ x y = x 0 * y 1 - x 1 * y 0 := by
-  rw [Basis.detDualEquiv_apply, Basis.det_apply]
-  simp [Basis.toMatrix_apply, Matrix.det_fin_two, mul_comm]
-
 private theorem det₂_eq_sin (x y : Fin 2 → ℝ) :
     det₂ x y = (‖asComplex x‖ * ‖asComplex y‖) *
       Real.sin (polarAngle y - polarAngle x) := by
   rw [Real.sin_sub]
-  simp only [det₂_apply]
+  simp only [Basis.detDualEquiv_pi_basisFun]
   rw [← norm_mul_cos_polarAngle x, ← norm_mul_sin_polarAngle x,
     ← norm_mul_cos_polarAngle y, ← norm_mul_sin_polarAngle y]
   ring
-
-private theorem sin_nonneg_iff_of_nonneg_of_lt_two_pi {t : ℝ} (ht : 0 ≤ t)
-    (ht' : t < 2 * Real.pi) : 0 ≤ Real.sin t ↔ t ≤ Real.pi := by
-  refine ⟨fun hs ↦ le_of_not_gt fun h ↦ ?_, Real.sin_nonneg_of_nonneg_of_le_pi ht⟩
-  have hneg : Real.sin (t - 2 * Real.pi) < 0 :=
-    Real.sin_neg_of_neg_of_neg_pi_lt (by linarith) (by linarith)
-  rw [Real.sin_sub_two_pi] at hneg
-  exact hneg.not_ge hs
-
-private theorem sin_pos_bounds {t : ℝ} (ht : 0 ≤ t) (ht' : t < 2 * Real.pi)
-    (hs : 0 < Real.sin t) : 0 < t ∧ t < Real.pi := by
-  have hp := (sin_nonneg_iff_of_nonneg_of_lt_two_pi ht ht').mp hs.le
-  exact ⟨ht.lt_of_ne (by rintro rfl; simp at hs), hp.lt_of_ne (by rintro rfl; simp at hs)⟩
 
 private theorem polarAngle_step {x y : Fin 2 → ℝ} (hxy : 0 < det₂ x y) :
     if x 1 < 0 ∧ 0 ≤ y 1 then
@@ -128,12 +112,14 @@ private theorem polarAngle_step {x y : Fin 2 → ℝ} (hxy : 0 < det₂ x y) :
   by_cases hyx : polarAngle y < polarAngle x
   · have hsin : 0 < Real.sin (polarAngle y + 2 * Real.pi - polarAngle x) := by
       rwa [add_sub_right_comm, Real.sin_add_two_pi]
-    have hgap := sin_pos_bounds (by linarith [hy.1]) (by linarith) hsin
+    have hgap :=
+      (Real.sin_pos_iff_of_nonneg_of_lt_two_pi (by linarith [hy.1]) (by linarith)).mp hsin
     have h₁ : Real.pi < polarAngle x := by linarith [hy.1, hgap.2]
     have h₂ : polarAngle y ≤ Real.pi := by linarith [hx.2, hgap.2]
     have hx' : x 1 < 0 := lt_of_not_ge fun h ↦ h₁.not_ge ((polarAngle_le_pi_iff x).mpr h)
     simp [hx', (polarAngle_le_pi_iff y).mp h₂, hgap]
-  · have hgap := sin_pos_bounds (by linarith) (by linarith [hx.1, hy.2]) hs
+  · have hgap :=
+      (Real.sin_pos_iff_of_nonneg_of_lt_two_pi (by linarith) (by linarith [hx.1, hy.2])).mp hs
     have hn : ¬ (x 1 < 0 ∧ 0 ≤ y 1) := fun ⟨hx', hy'⟩ ↦
       ((polarAngle_le_pi_iff x).not.mpr hx'.not_ge)
         ((le_of_not_gt hyx).trans ((polarAngle_le_pi_iff y).mpr hy'))
@@ -169,7 +155,7 @@ private theorem det₂_nonneg_iff_mem_angleInterval {x y v : Fin 2 → ℝ}
   constructor
   · rw [← hsin₁ t ht, ← hsin₂ t ht]
     rintro ⟨hs, hs'⟩
-    have hπ := (sin_nonneg_iff_of_nonneg_of_lt_two_pi (by linarith [hta.1])
+    have hπ := (Real.sin_nonneg_iff_of_nonneg_of_lt_two_pi (by linarith [hta.1])
       (by linarith [hta.2])).mp hs
     exact ⟨t, ht, hta.1, le_of_not_gt fun h ↦
       (Real.sin_neg_of_neg_of_neg_pi_lt (by linarith) (by linarith [hab.1])).not_ge hs'⟩
@@ -179,82 +165,7 @@ private theorem det₂_nonneg_iff_mem_angleInterval {x y v : Fin 2 → ℝ}
 
 private abbrev latticeInclusion := AddMonoidHom.compLeft (Int.castAddHom ℝ) (Fin 2)
 
-private theorem det₂_latticeInclusion (x y : Fin 2 → ℤ) :
-    det₂ (latticeInclusion x) (latticeInclusion y) = ((det₂ x y : ℤ) : ℝ) := by
-  rw [det₂_apply, det₂_apply]
-  simp [latticeInclusion]
-
-private def nextPair {R : Type*} (x y : Fin 2 → R) : Fin 2 → Fin 2 → R := ![x, y]
-
-private noncomputable def basisOfDetUnit {R : Type*} [CommRing R] (x y : Fin 2 → R)
-    (h : IsUnit (det₂ x y)) : Basis (Fin 2) R (Fin 2 → R) :=
-  let M : Matrix (Fin 2) (Fin 2) R := Matrix.of (fun i j ↦ nextPair x y j i)
-  have hM : IsUnit M.det := by
-    rw [det₂_apply] at h
-    simpa [M, Matrix.det_fin_two, nextPair, mul_comm] using h
-  (Pi.basisFun R (Fin 2)).map (M.toLinearEquiv (Pi.basisFun R (Fin 2)) hM)
-
-private theorem basisOfDetUnit_apply {R : Type*} [CommRing R] (x y : Fin 2 → R)
-    (h : IsUnit (det₂ x y)) (j : Fin 2) : basisOfDetUnit x y h j = nextPair x y j := by
-  rw [basisOfDetUnit, Basis.map_apply, Matrix.toLinearEquiv_apply,
-    Matrix.toLin_eq_toLin', Matrix.toLin'_apply, Pi.basisFun_apply,
-    Matrix.mulVec_single_one]
-  rfl
-
-private abbrev adjacentCone (x y : Fin 2 → ℝ) : PointedCone ℝ (Fin 2 → ℝ) :=
-  hull ℝ (Set.range (nextPair x y))
-
-private theorem nextPair_linearIndependent {x y : Fin 2 → ℝ} (h : det₂ x y = 1) :
-    LinearIndependent ℝ (nextPair x y) := by
-  let b := basisOfDetUnit x y (h ▸ isUnit_one)
-  have hb : (b : Fin 2 → Fin 2 → ℝ) = nextPair x y :=
-    funext (basisOfDetUnit_apply _ _ _)
-  exact hb ▸ b.linearIndependent
-
-private theorem adjacentCone_isRegular {x y : Fin 2 → ℤ} (h : det₂ x y = 1) :
-    IsRegularCone latticeInclusion (adjacentCone (latticeInclusion x) (latticeInclusion y)) := by
-  let b := basisOfDetUnit x y (h ▸ isUnit_one)
-  convert isRegularCone_hull_image_basis (isIntegralLattice_intCast 2) b Set.univ using 2
-  rw [Set.image_image, Set.image_univ]
-  congr 1
-  funext j
-  rw [basisOfDetUnit_apply]
-  have hpair : ∀ j, nextPair (latticeInclusion x) (latticeInclusion y) j =
-      latticeInclusion (nextPair x y j) := Fin.forall_fin_two.mpr ⟨rfl, rfl⟩
-  exact hpair j
-
-private theorem adjacentCone_eq_sup (x y : Fin 2 → ℝ) :
-    adjacentCone x y = hull ℝ {x} ⊔ hull ℝ {y} := by
-  have hrange : Set.range (nextPair x y) = {x} ∪ {y} := by
-    simp [nextPair, Matrix.range_cons]
-  rw [adjacentCone, hrange]
-  exact Submodule.span_union _ _
-
-private theorem mem_adjacentCone_iff {x y : Fin 2 → ℝ} (h : det₂ x y = 1) (v : Fin 2 → ℝ) :
-    v ∈ adjacentCone x y ↔ 0 ≤ det₂ x v ∧ 0 ≤ det₂ v y := by
-  rw [adjacentCone_eq_sup, Submodule.mem_sup]
-  simp only [PointedCone.mem_hull_singleton]
-  constructor
-  · rintro ⟨_, ⟨a, ha, rfl⟩, _, ⟨b, hb, rfl⟩, rfl⟩
-    simp only [det₂_apply, Pi.add_apply, Pi.smul_apply, smul_eq_mul] at h ⊢
-    constructor <;> nlinarith
-  · rintro ⟨ha, hb⟩
-    refine ⟨_, ⟨_, hb, rfl⟩, _, ⟨_, ha, rfl⟩, ?_⟩
-    apply funext
-    rw [Fin.forall_fin_two]
-    simp only [det₂_apply, Pi.add_apply, Pi.smul_apply, smul_eq_mul] at h ⊢
-    constructor
-    · linear_combination v 0 * h
-    · linear_combination v 1 * h
-
-private theorem nextPair_left_isFaceOf {x y : Fin 2 → ℝ} (h : det₂ x y = 1) :
-    (hull ℝ {x}).IsFaceOf (adjacentCone x y) := by
-  simpa [adjacentCone, nextPair] using isFaceOf_hull_image (nextPair_linearIndependent h) rfl {0}
-
-private theorem primitive_of_det₂_eq_one {x y : Fin 2 → ℤ} (h : det₂ x y = 1) :
-    IsPrimitive x := by
-  have hp := (basisOfDetUnit x y (h ▸ isUnit_one)).isPrimitive 0
-  simpa [basisOfDetUnit_apply, nextPair] using hp
+local notation "adjacentCone" => fun (x y : Fin 2 → ℝ) ↦ hull ℝ (Set.range ![x, y])
 
 section Unroll
 
@@ -346,20 +257,6 @@ private theorem unrolledAngle_strictMonoOn {v : ZMod r → Fin 2 → ℝ}
   let j : Fin (r + 1) := ⟨b, Nat.lt_succ_of_le hb⟩
   exact hmono (a := i) (b := j) hab
 
-private theorem exists_le_angle_le_succ {θ : ℕ → ℝ} {t : ℝ}
-    (h₀ : θ 0 ≤ t) (hr : t ≤ θ r) : ∃ k < r, θ k ≤ t ∧ t ≤ θ (k + 1) := by
-  classical
-  have hrpos := NeZero.pos r
-  have hlast : r - 1 + 1 = r := by omega
-  have hbound : t ≤ θ (r - 1 + 1) := hlast ▸ hr
-  have h : ∃ k, t ≤ θ (k + 1) := ⟨r - 1, hbound⟩
-  have hfind := Nat.find_min' h hbound
-  refine ⟨Nat.find h, by omega, ?_, Nat.find_spec h⟩
-  rcases hk : Nat.find h with _ | k
-  · exact h₀
-  · have hprev : k < Nat.find h := by omega
-    exact (lt_of_not_ge (Nat.find_min h hprev)).le
-
 omit [NeZero r] in
 private theorem endpoint_of_two_angleIntervals {θ : ℕ → ℝ}
     (hmono : MonotoneOn θ (Set.Iic r)) (hperiod : θ r = θ 0 + 2 * Real.pi)
@@ -391,14 +288,20 @@ variable {v : ZMod r → Fin 2 → ℝ} {start : ZMod r}
 
 include hdet hc
 
+omit [NeZero r] hc in
+private theorem linearIndependent_consecutive (j : ZMod r) :
+    LinearIndependent ℝ ![v j, v (j + 1)] :=
+  ((Pi.basisFun ℝ (Fin 2)).is_basis_iff_det.mpr
+    (by rw [← Basis.detDualEquiv_apply, hdet j]; exact isUnit_one)).1
+
 private theorem mem_adjacentCone_iff_exists_angle {k : ℕ} (hk : k < r)
     {x : Fin 2 → ℝ} (hx : x ≠ 0) :
     x ∈ adjacentCone (v (cycleIndex start k)) (v (cycleIndex start k + 1)) ↔
       ∃ t : ℝ, (t = polarAngle x ∨ t = polarAngle x + 2 * Real.pi) ∧
         unrolledAngle v start k ≤ t ∧ t ≤ unrolledAngle v start (k + 1) := by
   have h := hdet (cycleIndex start k)
-  rw [mem_adjacentCone_iff h]
-  have hind := nextPair_linearIndependent h
+  rw [mem_hull_pair_iff_detDualEquiv_nonneg (h.symm ▸ zero_lt_one)]
+  have hind := linearIndependent_consecutive hdet (cycleIndex start k)
   exact det₂_nonneg_iff_mem_angleInterval (hind.ne_zero 0) (hind.ne_zero 1)
     hx (unrolledAngle_lt hk) (unrolledAngle_succ hk)
     (unrolledAngle_step (fun j ↦ (hdet j).symm ▸ zero_lt_one) hc hk)
@@ -417,7 +320,7 @@ private theorem exists_mem_adjacentCone (x : Fin 2 → ℝ) :
     · exact ⟨_, Or.inr rfl, by linarith, by linarith⟩
     · exact ⟨_, Or.inl rfl, by linarith, by linarith⟩
   obtain ⟨t, ht, ht₀, htr⟩ := hangle
-  obtain ⟨k, hk, hkt, htk⟩ := exists_le_angle_le_succ ht₀ htr
+  obtain ⟨k, hk, hkt, htk⟩ := QPainleve.exists_le_le_succ_of_le_endpoints (NeZero.pos r) ht₀ htr
   exact ⟨cycleIndex start k, (mem_adjacentCone_iff_exists_angle hdet hc hk hx).2 ⟨t, ht, hkt, htk⟩⟩
 
 private theorem angle_eq_endpoint_of_mem_two_adjacentCones {j l : ZMod r} (hne : j ≠ l)
@@ -449,19 +352,19 @@ private theorem inf_adjacentCone_isFaceOf (j l : ZMod r) :
   · subst l
     simp only [inf_idem]
     exact IsFaceOf.refl _
-  let w := nextPair (v j) (v (j + 1))
+  let w := ![v j, v (j + 1)]
   let C := adjacentCone (v j) (v (j + 1))
   let D := adjacentCone (v l) (v (l + 1))
   -- The intersection is generated by the endpoints of the first cone that lie in the second.
   let A := {a : Fin 2 | w a ∈ D}
-  have hf := isFaceOf_hull_image (nextPair_linearIndependent (hdet j)) (C := C) rfl A
+  have hf := isFaceOf_hull_image (linearIndependent_consecutive hdet j) (C := C) rfl A
   suffices he : C ⊓ D = hull ℝ (w '' A) from he.symm ▸ hf
   refine le_antisymm (fun x hx ↦ ?_)
     (Submodule.span_le.mpr (by rintro _ ⟨a, ha, rfl⟩; exact ⟨subset_hull ⟨a, rfl⟩, ha⟩))
   by_cases h₀ : x = 0
   · exact h₀.symm ▸ Submodule.zero_mem _
   have hangle := angle_eq_endpoint_of_mem_two_adjacentCones hdet hc hjl h₀ hx.1 hx.2
-  have hind := nextPair_linearIndependent (hdet j)
+  have hind := linearIndependent_consecutive hdet j
   have hmem (a : Fin 2) (ha : w a ≠ 0) (he : polarAngle x = polarAngle (w a)) :
       x ∈ hull ℝ (w '' A) := by
     obtain ⟨c, hc, hcx⟩ := eq_pos_smul_of_polarAngle_eq ha h₀ he
@@ -483,24 +386,25 @@ private theorem injective_of_unrolledAngles : Function.Injective v := by
 end Unroll
 
 private theorem primitiveGenerator_eq_of_isFaceOf_adjacentCone {Φ : Fan latticeInclusion}
-    (a : Φ.Ray) {x y : Fin 2 → ℤ} (hxy : det₂ (latticeInclusion x) (latticeInclusion y) = 1)
+    (a : Φ.Ray) {x y : Fin 2 → ℤ}
+    (hxy : LinearIndependent ℝ ![latticeInclusion x, latticeInclusion y])
     (hx : IsPrimitive x) (hy : IsPrimitive y)
     (ha : a.toCone.val.IsFaceOf (adjacentCone (latticeInclusion x) (latticeInclusion y))) :
     a.primitiveGenerator = x ∨ a.primitiveGenerator = y := by
-  let w := nextPair (latticeInclusion x) (latticeInclusion y)
+  let w := ![latticeInclusion x, latticeInclusion y]
   let ρ : ToricRay (adjacentCone (latticeInclusion x) (latticeInclusion y)) :=
     ⟨⟨a.toCone.val, ha⟩, a.property⟩
-  let m := toricRayEquivOfLinearIndependent w (nextPair_linearIndependent hxy) rfl ρ
+  let m := toricRayEquivOfLinearIndependent w hxy rfl ρ
   have hm : w m ∈ a.toCone.val := by
     exact (apply_mem_iff_toricRayEquivOfLinearIndependent w
-      (nextPair_linearIndependent hxy) rfl ρ m).2 rfl
+      hxy rfl ρ m).2 rfl
   have hcases : ∀ j : Fin 2, j = 0 ∨ j = 1 :=
     Fin.forall_fin_two.mpr ⟨Or.inl rfl, Or.inr rfl⟩
   rcases hcases m with he | he
   · exact Or.inl (a.primitiveGenerator_eq_of_mem_of_isPrimitive
-      (by simpa [he, w, nextPair] using hm) hx)
+      (by simpa [he, w] using hm) hx)
   · exact Or.inr (a.primitiveGenerator_eq_of_mem_of_isPrimitive
-      (by simpa [he, w, nextPair] using hm) hy)
+      (by simpa [he, w] using hm) hy)
 
 public section
 
@@ -518,7 +422,8 @@ theorem exists_fan_of_cyclic_rays {r : ℕ} [NeZero r] (u : ZMod r → Fin 2 →
   classical
   let v := latticeInclusion ∘ u
   have hℝ (j : ZMod r) : det₂ (v j) (v (j + 1)) = 1 := by
-    simp only [v, Function.comp_apply, det₂_latticeInclusion, hdet, Int.cast_one]
+    change det₂ (Int.castRingHom ℝ ∘ u j) (Int.castRingHom ℝ ∘ u (j + 1)) = 1
+    rw [(Int.castRingHom ℝ).map_detDualEquiv_pi_basisFun, hdet, map_one]
   obtain ⟨cut, hcut⟩ := Finset.card_eq_one.mp hwind
   have hc (j : ZMod r) : (v j 1 < 0 ∧ 0 ≤ v (j + 1) 1) ↔ j + 1 = cut + 1 := by
     have h := Finset.ext_iff.mp hcut j
@@ -526,21 +431,26 @@ theorem exists_fan_of_cyclic_rays {r : ℕ} [NeZero r] (u : ZMod r → Fin 2 →
   let K := fun j : ZMod r ↦ adjacentCone (v j) (v (j + 1))
   have hreg : ∀ ⦃σ⦄, σ ∈ Set.range K → IsRegularCone latticeInclusion σ := by
     rintro _ ⟨j, rfl⟩
-    exact adjacentCone_isRegular (hdet j)
+    apply isRegularCone_hull_pair_of_isUnit_det (isIntegralLattice_intCast 2)
+      (Pi.basisFun ℤ (Fin 2))
+    rw [← Basis.detDualEquiv_apply, hdet]
+    exact isUnit_one
   let Φ := Fan.ofCones (isIntegralLattice_intCast 2) (Set.range K) (Set.finite_range K)
     (fun _ h ↦ (hreg h).toIsToricCone)
     (by rintro _ _ ⟨j, rfl⟩ ⟨k, rfl⟩; exact inf_adjacentCone_isFaceOf hℝ hc j k)
   have hK (j : ZMod r) : K j ∈ Φ.cones := (Fan.mem_ofCones_cones ..).2
     ⟨K j, Set.mem_range_self j, IsFaceOf.refl _⟩
-  have hp (j : ZMod r) : IsPrimitive (u j) := primitive_of_det₂_eq_one (hdet j)
+  have hp (j : ZMod r) : IsPrimitive (u j) :=
+    (Pi.basisFun ℤ (Fin 2)).isPrimitive_of_detDualEquiv_eq_one (hdet j)
   let q (j : ZMod r) : Φ.Ray := Ray.ofPrimitiveGenerator (hp j)
-    (Φ.mem_of_isFaceOf (hK j) (nextPair_left_isFaceOf (hℝ j)))
+    (Φ.mem_of_isFaceOf (hK j) (isFaceOf_hull_pair_left (linearIndependent_consecutive hℝ j)))
   have hq (j : ZMod r) : (q j).primitiveGenerator = u j :=
     Ray.primitiveGenerator_ofPrimitiveGenerator ..
   have hsurj : Function.Surjective q := by
     intro a
     obtain ⟨_, ⟨j, rfl⟩, ha⟩ := (Fan.mem_ofCones_cones ..).1 a.toCone.property
-    rcases primitiveGenerator_eq_of_isFaceOf_adjacentCone a (hℝ j) (hp j) (hp (j + 1)) ha with h | h
+    rcases primitiveGenerator_eq_of_isFaceOf_adjacentCone a (linearIndependent_consecutive hℝ j)
+      (hp j) (hp (j + 1)) ha with h | h
     · exact ⟨j, Ray.primitiveGenerator_injective ((hq j).trans h.symm)⟩
     · exact ⟨j + 1, Ray.primitiveGenerator_injective ((hq (j + 1)).trans h.symm)⟩
   let e := Equiv.ofBijective q ⟨fun a b hab ↦ injective_of_unrolledAngles hℝ hc (by
@@ -554,8 +464,8 @@ theorem exists_fan_of_cyclic_rays {r : ℕ} [NeZero r] (u : ZMod r → Fin 2 →
   · intro j
     have he₀ : (e j).toCone.val = hull ℝ {v j} := Ray.ofPrimitiveGenerator_toCone ..
     have he₁ : (e (j + 1)).toCone.val = hull ℝ {v (j + 1)} := Ray.ofPrimitiveGenerator_toCone ..
-    rw [he₀, he₁, ← adjacentCone_eq_sup]
-    exact hK j
+    rw [he₀, he₁, hull, hull, ← Submodule.span_union]
+    simpa [K, hull, Matrix.range_cons] using hK j
 
 end
 
