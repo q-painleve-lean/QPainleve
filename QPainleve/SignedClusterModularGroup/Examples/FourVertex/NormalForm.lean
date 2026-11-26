@@ -219,7 +219,7 @@ variable (k : Type*) [Field k]
 /-- The normal form of an unsigned four-vertex X map over `k`, with rotation exponent in
 `Fin 4` and translation exponent in `ℤ`. The forward map multiplies in point-map order. -/
 def unsignedNormalFormEquiv : Fin 4 × ℤ ≃ ClusterModularGroup k B :=
-  unsignedNormalFormEquivComplex.trans (unsignedSpecializationEquiv k).toEquiv
+  unsignedNormalFormEquivComplex.trans (unsignedSpecializationEquiv ℂ k).toEquiv
 
 /-- The unsigned normal form is the product of the rotation and translation powers,
 with the rotation power on the left. -/
@@ -234,7 +234,7 @@ theorem unsignedNormalFormEquiv_apply (a : Fin 4 × ℤ) :
 reflection, rotation, and translation. The forward map appends the reflection power on the
 right in point-map order. -/
 def signedNormalFormEquiv : Fin 2 × Fin 4 × ℤ ≃ SignedClusterModularGroup k B :=
-  signedNormalFormEquivComplex.trans (signedSpecializationEquiv k).toEquiv
+  signedNormalFormEquivComplex.trans (signedSpecializationEquiv ℂ k).toEquiv
 
 /-- The signed normal form evaluates to the rotation, translation, and reflection
 powers in that product order. -/

@@ -8,9 +8,10 @@ module
 public import QPainleve.Algebra.Cluster.Word.Noncollision
 public import QPainleve.Geometry.Toric.Fan.Picard.Period.Surjectivity
 
-import QPainleve.Geometry.Toric.CharacterTorus.Avoidance
+import Mathlib.Analysis.Real.Cardinality
 import Mathlib.Data.Finsupp.Encodable
 import Mathlib.LinearAlgebra.FreeModule.PID
+import QPainleve.Geometry.Toric.CharacterTorus.Avoidance
 import TauCeti.Algebra.AlgebraicGroup.SplitTorus.Weight
 
 /-!
@@ -97,6 +98,7 @@ theorem exists_ordered_boundary_periods_mem_all_center_opens
         ((pointsEquiv ℂ (Fin n → ℤ)).symm (centerCharacter c₁)).val default ∈ w.centerOpen ℂ P := by
   let : Countable (Multiplicative K) := (Finsupp.equivFunOnFinite.symm.injective.comp
     (Subtype.val_injective.comp Multiplicative.toAdd.injective)).countable
+  let : Uncountable ℂ := Complex.ofReal_injective.uncountable
   obtain ⟨u, hu⟩ := exists_character_avoiding
     (fun j : {x : Multiplicative K // x ≠ 1} × Multiplicative K ↦ j.1.val)
     (fun j ↦ j.1.property) (fun j ↦ period 1 j.2)

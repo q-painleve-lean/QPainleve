@@ -5,7 +5,6 @@ Authors: The QPainleve contributors
 -/
 module
 
-public import Mathlib.Basic.Complex.Basic
 public import Mathlib.LinearAlgebra.BilinearForm.Orthogonal
 public import QPainleve.Geometry.Toric.CharacterTorus.Injective
 
@@ -60,16 +59,18 @@ theorem period_zpow_ne_one_on_root_translate {G : Type*} [Group G]
   · simpa only [Units.val_one, zpow_one] using h
   · simpa only [Units.val_neg, Units.val_one, zpow_neg, zpow_one, inv_ne_one] using h
 
-/-- A finite free lattice with a primitive radical vector admits an injective complex period
-character normalized to `1/2` on that vector and avoiding one on all translated roots. -/
-theorem exists_root_avoiding_period [Module.Free ℤ K] [Module.Finite ℤ K]
+/-- A finite free lattice with a primitive radical vector admits an injective period character
+over any characteristic-zero field. It takes the value `1/2` on that vector and avoids one on all
+translated roots. -/
+theorem exists_root_avoiding_period {k : Type*} [Field k] [CharZero k]
+    [Module.Free ℤ K] [Module.Finite ℤ K]
     (B : LinearMap.BilinForm ℤ K) (hB : B.IsSymm) {δ : K} (hδ : δ ∈ B.orthogonal ⊤)
     (f : K →ₗ[ℤ] ℤ) (hf : f δ = 1) :
-    ∃ a : Multiplicative K →* ℂˣ, Function.Injective a ∧
-      (a (Multiplicative.ofAdd δ) : ℂ) = (2 : ℂ)⁻¹ ∧
+    ∃ a : Multiplicative K →* kˣ, Function.Injective a ∧
+      (a (Multiplicative.ofAdd δ) : k) = (2 : k)⁻¹ ∧
       ∀ x : K, B x x = -2 → ∀ n : ℤ, a (Multiplicative.ofAdd (x + n • δ)) ≠ 1 := by
   obtain ⟨a, -, -, -, ha, -, hval, -⟩ :=
-    CharacterTorus.exists_injective_character_of_primitive (k := ℂ) f hf
+    CharacterTorus.exists_injective_character_of_primitive (k := k) f hf
   exact ⟨a, ha, hval, fun _ hx n ↦ period_ne_one_on_root_translate ha B hB hδ hx n⟩
 
 end QPainleve
