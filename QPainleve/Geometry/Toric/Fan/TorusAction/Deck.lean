@@ -75,13 +75,14 @@ theorem mem_range_toricPresentationCharacterHom_iff_comp_contractedXEvaluation_e
         Scheme.Hom.toRationalMap_compHom] using
         congrArg (fun F ↦ F.compHom (Spec.algebraMap ℂ (LaurentRing ℂ (Fin n)))) ha
     let : a.asIso.hom.IsOver S := ⟨hcomp⟩
-    obtain ⟨_, ⟨g, hg, hcomm⟩, -⟩ :=
-      existsUnique_torusTranslation_isLift_of_comp_contractedXEvaluation_eq
+    obtain ⟨lift⟩ :=
+      existsUnique_contractedToricTranslation_of_comp_contractedXEvaluation_eq
         b s c c hΦ (p) (p) a.asIso hindex hp hp ha
+    let t := lift.default
     have hmem := mem_internalBlowupPicardBoundaryAut_of_isLift_torusTranslation
-      b s centers hΦ (g := Aut.of g) hg
+      b s centers hΦ (g := Aut.of t.iso) t.isLift
     exact mem_range_toricPresentationCharacterHom_of_comp_eq
-      b s centers hΦ (X ↘ S) e hT hc hmem hcomm
+      b s centers hΦ (X ↘ S) e hT hc hmem t.commutes
 
 include hc in
 /-- The Picard kernel fixing all components and branches of a nodal boundary is

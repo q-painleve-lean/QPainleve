@@ -121,8 +121,7 @@ theorem cremonaPicardHom_apply (g : signedBoundaryIsometryGroup B d) :
   simp only [cremonaPicardHom, MonoidHom.comp_apply, MulEquiv.coe_toMonoidHom]
   refine (M.imageCycle.val_cremonaProjection_apply hD (inv_injective hcan) hnef hsq hroot
     (markingCongr g)).trans ?_
-  have hSymm : M.marking.symm.symm = M.marking := rfl
-  simpa only [toIsometry_apply, hSymm] using
+  simpa only [toIsometry_apply, BilinForm.IsometryEquiv.symm_symm] using
     congrArg Prod.fst (coe_congr M.marking.symm M.marking_symm_imageCycle_class g)
 
 /-- Every Cremona isometry comes from a signed isometry of the marked boundary. -/

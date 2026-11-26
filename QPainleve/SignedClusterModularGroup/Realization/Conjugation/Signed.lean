@@ -95,24 +95,15 @@ theorem signedPicardHom_base_change
   let := hJO
   have hcomp := w.xRationalMap_comp_eq_of_xPullback_eq_conj ℂ (v := v) (u := u) rfl
   obtain ⟨hpic, hsign⟩ := R.picard_conjugation_of_comp_xMap_eq A B hcomp hc hι hindex hC hmodel
-  rw [← op_unop g, ← hloop]
-  simp only [MonoidHom.comp_apply, MulEquiv.coe_toMonoidHom]
-  -- Evaluate the opposite equivalence on a point-map group element.
-  change ρ₁ (op (signedClusterModularGroupCongr ℂ w
-    (signedClusterModularGroupMap ℂ E₀ loop))) = _
-  rw [signedClusterModularGroupCongr_map]
-  -- Use the paths named above to apply their realization formulas.
-  change ρ₁ eval[E₁,u] = _
-  rw [hA, hB]
+  have hg : g = eval[E₀,v] := op_unop g ▸ congrArg op hloop.symm
+  have hcongr : MulEquiv.op (signedClusterModularGroupCongr ℂ w) (eval[E₀,v]) = eval[E₁,u] := by
+    simp only [MulEquiv.op_apply_apply, Function.comp_apply, unop_op,
+      signedClusterModularGroupCongr_map]
+    rfl
+  simp only [MonoidHom.comp_apply, MulEquiv.coe_toMonoidHom, hg, hcongr, hA, hB]
   apply Subtype.ext
   rw [coe_toSignedBoundaryIsometry, coe_signedBoundaryIsometryGroupCongr,
     coe_toSignedBoundaryIsometry]
-  refine Prod.ext ?_ hsign
-  apply Subtype.ext
-  apply LinearEquiv.ext
-  intro x
-  have hInv : R.picard.symm.symm = R.picard := rfl
-  simpa only [BilinForm.IsometryEquiv.isometryGroupCongr_apply_apply, hInv,
-    BilinForm.coe_isometryGroupEquivIsometryEquiv_symm] using hpic x
+  exact Prod.ext hpic hsign
 
 end QPainleve.SignedClusterModularGroup.GeometricRealization

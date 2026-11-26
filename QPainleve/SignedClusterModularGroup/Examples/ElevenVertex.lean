@@ -231,6 +231,13 @@ theorem exchangeKernel_eq_chargeKernel : (B).matrix.mulVecLin.ker = chargeMap.ke
     exact (DFunLike.congr_fun hy x).symm.trans (hx y)
   · rw [LinearMap.range_eq_top.mpr surjective_chargeMap, finrank_top]
 
+/-- The eleven-vertex exchange matrix is nonzero. -/
+theorem exchangeMatrix_matrix_ne_zero : (B).matrix ≠ 0 := by
+  intro h
+  apply LinearMap.ne_zero_of_surjective surjective_chargeMap
+  rw [← LinearMap.ker_eq_top, ← exchangeKernel_eq_chargeKernel, h,
+    Matrix.mulVecLin_zero, LinearMap.ker_zero]
+
 /-- An exponent is a Casimir exponent exactly when its three ray sums coincide. -/
 theorem mem_exchangeKernel_iff (x : I → ℤ) :
     x ∈ (B).matrix.mulVecLin.ker ↔ raySum x 0 = raySum x 1 ∧ raySum x 1 = raySum x 2 := by

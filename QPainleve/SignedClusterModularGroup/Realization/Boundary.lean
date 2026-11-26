@@ -443,14 +443,11 @@ class of the total target boundary to that of the total source boundary. -/
 theorem pullback_boundaryLineBundleClass (e : M.pair ≅ N.pair) :
     LineBundleClass.pullback (surfaceIso e).hom classOf(N.isEffectiveCartier_boundaryIdeal) =
       classOf(M.isEffectiveCartier_boundaryIdeal) := by
-  have hb := congrArg Scheme.Hom.ker (boundaryIso_hom_comp e)
-  rw [Scheme.Hom.ker_comp_of_isIso] at hb
-  have hker : D[N].comap (surfaceIso e).hom = D[M] := by
-    rw [hb, Scheme.Hom.comap_ker_comp_of_isClosedImmersion]
   let hN := N.isEffectiveCartier_boundaryIdeal
   let hc := hN.comap (surfaceIso e).hom
   rw [LineBundleClass.pullback_inv, hN.pullback_mk_toInvertibleSheaf hc,
-    LineBundleClass.mk_toInvertibleSheaf_congr hc M.isEffectiveCartier_boundaryIdeal hker]
+    LineBundleClass.mk_toInvertibleSheaf_congr hc M.isEffectiveCartier_boundaryIdeal
+      (comap_boundaryIdeal_surfaceIso e)]
 
 variable {M} in
 /-- A marked pair isomorphism transports a Cartier boundary with nef class of

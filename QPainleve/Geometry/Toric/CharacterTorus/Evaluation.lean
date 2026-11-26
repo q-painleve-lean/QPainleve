@@ -124,13 +124,16 @@ theorem evaluation_def (v : A →+ N) :
 
 /-- Evaluate the independent characters on the charge torus at the specified center
 point. This is specialization of the variable-center morphism with the center fixed. -/
-@[expose]
 def evaluationAtCenter (v : A →+ N) (c : S ⟶ (D A).X.left)
     (hc : c ≫ (D A).X.hom = 𝟙 S) :
     (D N).X.left ⟶ (D A).X.left :=
-  pullback.lift (f := (D A).X.hom) (g := (D N).X.hom)
-    ((D N).X.hom ≫ c) (𝟙 _) (by simp [hc]) ≫
-    (prodIso k A N).hom ≫ (evaluation k v).hom.hom.left
+  centerSlice k c hc ≫ (evaluation k v).hom.hom.left
+
+/-- Fixed-center evaluation is variable-center evaluation composed with the center slice. -/
+@[reassoc]
+theorem evaluationAtCenter_def (v : A →+ N) (c : S ⟶ (D A).X.left)
+    (hc : c ≫ (D A).X.hom = 𝟙 S) :
+    evaluationAtCenter k v c hc = centerSlice k c hc ≫ (evaluation k v).hom.hom.left := (rfl)
 
 /-- Evaluation at a center depends only on the underlying point. -/
 theorem evaluationAtCenter_congr (v : A →+ N) {c d : S ⟶ (D A).X.left} (h : c = d)
@@ -163,10 +166,8 @@ theorem evaluationAtCenter_eq_leftTranslation (v : A →+ N)
     evaluationAtCenter k v c hc =
       (Dmap v).hom.hom.left ≫ (leftTranslation c[c,hc]).hom.left := by
   let s : (D N).X ⟶ (D (A × N)).X :=
-    Over.homMk (pullback.lift ((D N).X.hom ≫ c) (𝟙 _) (by simp [hc]) ≫
-      (prodIso k A N).hom) (by
-        rw [Category.assoc, ← (π₂).hom.hom.w,
-          prodIso_hom_snd_assoc, pullback.lift_snd_assoc, Category.id_comp])
+    Over.homMk (centerSlice k c hc) (by
+      rw [← (π₂).hom.hom.w, centerSlice_snd_assoc])
   have h₁ : s ≫ (π₁).hom.hom = toUnit _ ≫ c[c,hc] := by
     ext : 1
     simp [s]

@@ -6,6 +6,7 @@ Authors: The QPainleve contributors
 module
 
 public import QPainleve.LinearAlgebra.BilinearForm.Conjugation
+public import QPainleve.LinearAlgebra.BilinearForm.Isometry
 public import QPainleve.SignedClusterModularGroup.Boundary.Isometry
 
 /-!
@@ -38,8 +39,7 @@ private theorem isometryGroupCongr_mem (I : B₁.IsometryEquiv B₀)
   obtain ⟨k, hk⟩ := (mem_signedBoundaryIsometryGroup_iff B₀ d₀).mp hg
   refine (mem_signedBoundaryIsometryGroup_iff B₁ d₁).mpr
     ⟨ε⁻¹ • (g.2 • a + k - a), fun j ↦ ?_⟩
-  have hInv : I.symm.symm = I := rfl
-  rw [BilinForm.IsometryEquiv.isometryGroupCongr_apply_apply, hInv, hI, hk]
+  rw [BilinForm.IsometryEquiv.isometryGroupCongr_apply_apply, I.symm_symm, hI, hk]
   have hshift : g.2 • (ε • j + a) + k =
       ε • (g.2 • j + ε⁻¹ • (g.2 • a + k - a)) + a := by
     simp only [smul_add, ← mul_smul, mul_inv_cancel, one_smul, mul_comm g.2 ε]
@@ -61,9 +61,8 @@ private theorem map_eq_of_signed_shift (I : B₁.IsometryEquiv B₀)
     · apply Subtype.ext
       apply LinearEquiv.ext
       intro x
-      have hSymm : I.symm.symm = I := rfl
       exact (by
-        simp [BilinForm.IsometryEquiv.isometryGroupCongr_apply_apply, hSymm] :
+        simp :
         (I.symm.isometryGroupCongr (I.isometryGroupCongr g.1)).val x = g.1.val x)
     · rfl
   ext g
@@ -122,15 +121,14 @@ def boundaryRotationGroupCongr (I : B₁.IsometryEquiv B₀)
     boundaryRotationGroup B₀ d₀ ≃* boundaryRotationGroup B₁ d₁ :=
   TauCeti.Subgroup.congrOfMapEq I.symm.isometryGroupCongr (map_boundaryRotationGroup_congr I hI)
 
+/-- The underlying isometry of a transported rotation is its conjugate by the change of marking. -/
 @[simp]
-theorem boundaryRotationGroupCongr_apply_apply (I : B₁.IsometryEquiv B₀)
+theorem coe_boundaryRotationGroupCongr (I : B₁.IsometryEquiv B₀)
     {ε : ℤˣ} {a : ZMod n} (hI : ∀ j, I (d₁ j) = d₀ (ε • j + a))
-    (g : boundaryRotationGroup B₀ d₀) (x : L₁) :
-    (boundaryRotationGroupCongr I hI g).val.val x = I.symm (g.val.val (I x)) := by
-  have h := TauCeti.Subgroup.coe_congrOfMapEq_apply I.symm.isometryGroupCongr
+    (g : boundaryRotationGroup B₀ d₀) :
+    (boundaryRotationGroupCongr I hI g : B₁.isometryGroup) = I.symm.isometryGroupCongr g.val :=
+  TauCeti.Subgroup.coe_congrOfMapEq_apply I.symm.isometryGroupCongr
     (map_boundaryRotationGroup_congr I hI) g
-  exact (congrArg (fun u : B₁.isometryGroup ↦ u.val x) h).trans
-    (BilinForm.IsometryEquiv.isometryGroupCongr_apply_apply I.symm g.val x)
 
 namespace SignedBoundaryIsometryGroup
 
@@ -142,13 +140,7 @@ theorem congr_rotationInclusion (I : B₁.IsometryEquiv B₀)
     congr I hI (rotationInclusion B₀ d₀ g) =
       rotationInclusion B₁ d₁ (boundaryRotationGroupCongr I hI g) := by
   apply Subtype.ext
-  rw [coe_congr, coe_rotationInclusion, coe_rotationInclusion]
-  refine Prod.ext ?_ rfl
-  apply Subtype.ext
-  apply LinearEquiv.ext
-  intro x
-  have hSymm : I.symm.symm = I := rfl
-  simp [BilinForm.IsometryEquiv.isometryGroupCongr_apply_apply, hSymm]
+  simp only [coe_congr, coe_rotationInclusion, coe_boundaryRotationGroupCongr]
 
 end SignedBoundaryIsometryGroup
 

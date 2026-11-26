@@ -102,9 +102,9 @@ theorem exists_picardGroupEquivs_of_toric_presentation
     funext (MarkedSurface.boundaryClass_ofBoundary D A μ R.evaluation hD)
   have hgroups := Q.exists_picardGroupEquivs_of_nodal_model (M₀ := M₀) R.hasNodalModel hE
     (by rwa [hδ]) (by rwa [hδ]) (by rwa [hδ])
-  dsimp only at hgroups
   rw [hd] at hgroups
-  obtain ⟨M, hD', hmark, Θ, Θrot, hM, hmodels, hwords, hsign, hrot⟩ := hgroups
+  obtain ⟨identification, hM⟩ := hgroups
+  let Θ := identification.signedEquiv
   have hmatch (j : ZMod n) : μ.symm (d j) = (μ.symm ∘ d) ((1 : ℤˣ) • j + 0) := by simp
   let α := SignedBoundaryIsometryGroup.congr μ.symm hmatch
   let β := boundaryRotationGroupCongr μ.symm hmatch
@@ -114,20 +114,27 @@ theorem exists_picardGroupEquivs_of_toric_presentation
       simp only [MonoidHom.comp_apply, MulEquiv.coe_toMonoidHom, MulEquiv.trans_apply,
         α, SignedBoundaryIsometryGroup.sign_apply, coe_congr]
   refine ⟨{ form := H, marking := μ, basis := b', presentation := Q
-            center := R.center, evaluation := R.evaluation, exchangeMatrix := E, family := M
-            signedEquiv := Θ.trans α, unsignedEquiv := Θrot.trans β, matrix_eq := hE
-            family_center := hM, hasNodalModel := hmodels, boundaryClass_eq := hmark
+            center := R.center, evaluation := R.evaluation, exchangeMatrix := E
+            family := identification.family
+            signedEquiv := Θ.trans α, unsignedEquiv := identification.unsignedEquiv.trans β
+            matrix_eq := hE
+            family_center := hM, hasNodalModel := identification.hasNodalModel
+            boundaryClass_eq := identification.boundaryClass_eq
             sign_signedEquiv_apply_word := fun w ↦ by
               simpa only [MonoidHom.comp_apply, SignedBoundaryIsometryGroup.sign_apply,
-                MulEquiv.coe_toMonoidHom] using (DFunLike.congr_fun hcomp _).trans (hwords w).1
+                MulEquiv.coe_toMonoidHom] using
+                (DFunLike.congr_fun hcomp _).trans
+                  ((SignedBoundaryIsometryGroup.sign_apply H _ _).trans
+                    (identification.sign_signedEquiv_apply_word w))
             signedEquiv_apply_word := ?_, sign_ker_unop := ?_
             rotationInclusion_unsignedEquiv_apply := ?_ }, hframe, hrays⟩
   · intro w C _ _ R hR
-    simp only [MulEquiv.trans_apply, α, coe_congr, (hwords w).2 R hR, coe_toSignedBoundaryIsometry]
+    simp only [MulEquiv.trans_apply, α, Θ, coe_congr, identification.signedEquiv_apply_word w R hR,
+      coe_toSignedBoundaryIsometry]
     rfl
-  · rw [hcomp, hsign]
+  · rw [hcomp, identification.sign_ker_unop]
   · intro x
     simpa only [MulEquiv.trans_apply, α, β, congr_rotationInclusion] using
-      congrArg α (hrot x)
+      congrArg α (identification.rotationInclusion_unsignedEquiv_apply x)
 
 end QPainleve.SignedClusterModularGroup

@@ -91,8 +91,11 @@ theorem existsUnique_iso_of_translation_of_nef_square_zero_boundary
   have hf' : P.toBase ≫ f.hom = e.hom ≫ g.hom ≫ e'.inv ≫ Q.toBase := by
     simpa only [a, Iso.trans_hom, Iso.symm_hom, Category.assoc] using hf
   refine ⟨f, ⟨hf', hfOver, hfD, fun L ↦ ?_⟩, fun j hj ↦ huniq j ⟨?_, hj.2.1, hj.2.2.1⟩⟩
-  · apply pullback_marking_of_translation_descends b s c d hΦ hg _ L
-    rw [Category.assoc, hf', Iso.inv_hom_id_assoc]
+  · have hcomm : (e.inv ≫ P.toBase) ≫ f.hom = g.hom ≫ e'.inv ≫ Q.toBase := by
+      rw [Category.assoc, hf', Iso.inv_hom_id_assoc]
+    let t : ContractedToricTranslation b s (e.inv ≫ P.toBase) (e'.inv ≫ Q.toBase) f :=
+      ⟨χ, g, hg, hcomm⟩
+    exact t.pullback_marking hΦ L
   · simpa only [a, Iso.trans_hom, Iso.symm_hom, Category.assoc] using hj.1
 
 end TauCeti.Toric.Fan
