@@ -8,7 +8,7 @@ module
 public import QPainleve.Geometry.Toric.Fan.Picard.Norm.Formula
 
 import Mathlib.Algebra.BigOperators.ModEq
-import QPainleve.Geometry.Toric.Fan.CyclicOrder
+import QPainleve.Geometry.Toric.Fan.CyclicOrder.Basic
 import QPainleve.Geometry.Toric.Fan.Smooth
 
 /-!

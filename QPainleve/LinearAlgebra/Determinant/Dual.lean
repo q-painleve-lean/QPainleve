@@ -44,6 +44,19 @@ theorem detDualEquiv_apply (b : Basis (Fin 2) R N) (h u : N) :
   simp only [detDualEquiv, LinearMap.toPerfPair_apply, MultilinearMap.toBilinMap_apply,
     AlternatingMap.coe_multilinearMap]
 
+/-- The determinant pairing in the standard basis of the coordinate plane. -/
+theorem detDualEquiv_pi_basisFun (x y : Fin 2 → R) :
+    (Pi.basisFun R (Fin 2)).detDualEquiv x y = x 0 * y 1 - x 1 * y 0 := by
+  rw [detDualEquiv_apply, Basis.det_apply]
+  simp [Basis.toMatrix_apply, Matrix.det_fin_two, mul_comm]
+
+/-- Applying a ring homomorphism to both vectors transports the standard determinant pairing. -/
+theorem _root_.RingHom.map_detDualEquiv_pi_basisFun {S : Type*} [CommRing S]
+    (f : R →+* S) (x y : Fin 2 → R) :
+    (Pi.basisFun S (Fin 2)).detDualEquiv (f ∘ x) (f ∘ y) =
+      f ((Pi.basisFun R (Fin 2)).detDualEquiv x y) := by
+  simp only [detDualEquiv_pi_basisFun, Function.comp_apply, map_sub, map_mul]
+
 /-- Transporting the ordered basis and both arguments preserves the determinant pairing. -/
 theorem detDualEquiv_map {N' : Type*} [AddCommGroup N'] [Module R N']
     (b : Basis (Fin 2) R N) (e : N ≃ₗ[R] N') (x y : N) :
@@ -86,6 +99,12 @@ end Module.Basis
 namespace Module.Basis
 
 variable {N : Type*} [AddCommGroup N]
+
+/-- An integral vector pairing to one with another vector is primitive. -/
+theorem isPrimitive_of_detDualEquiv_eq_one (b : Basis (Fin 2) ℤ N) {x y : N}
+    (h : b.detDualEquiv x y = 1) : TauCeti.IsPrimitive x :=
+  TauCeti.isPrimitive_def.mpr ⟨-b.detDualEquiv y, by
+    rw [LinearMap.neg_apply, detDualEquiv_swap, h, neg_neg]⟩
 
 /-- The determinant functional of a primitive vector takes every integral value. -/
 theorem surjective_detDualEquiv_of_isPrimitive (b : Basis (Fin 2) ℤ N) {v : N}

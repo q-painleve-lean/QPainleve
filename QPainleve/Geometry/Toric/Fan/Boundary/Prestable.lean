@@ -14,7 +14,7 @@ import Mathlib.Analysis.Complex.Polynomial.Basic
 import QPainleve.Geometry.Toric.Fan.Boundary.Component
 import QPainleve.Geometry.Toric.Fan.Boundary.InternalCenter
 import QPainleve.Geometry.Toric.Fan.Boundary.Intersection
-import QPainleve.Geometry.Toric.Fan.CyclicOrder
+import QPainleve.Geometry.Toric.Fan.CyclicOrder.Basic
 import TauCeti.AlgebraicGeometry.Geometrically.Irreducible
 import TauCeti.AlgebraicGeometry.Morphisms.Dominant
 import TauCeti.AlgebraicGeometry.Pullback.Carrier

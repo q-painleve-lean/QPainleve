@@ -8,7 +8,7 @@ module
 public import Mathlib.Analysis.Complex.Polynomial.Basic
 public import QPainleve.AlgebraicGeometry.Curves.Node.Conductor.Coordinates
 public import QPainleve.Geometry.Toric.Fan.Boundary.Normalization
-public import QPainleve.Geometry.Toric.Fan.CyclicOrder
+public import QPainleve.Geometry.Toric.Fan.CyclicOrder.Basic
 public import TauCeti.AlgebraicGeometry.Curves.DualGraph.Cycle
 
 import QPainleve.Geometry.Toric.Fan.Boundary.Intersection

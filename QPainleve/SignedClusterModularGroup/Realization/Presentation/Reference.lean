@@ -15,7 +15,7 @@ import QPainleve.AlgebraicGeometry.Blowup.Tower.Nodal.Subdivision
 import QPainleve.AlgebraicGeometry.IdealSheaf.BaseChange
 import QPainleve.Geometry.Toric.Fan.Boundary.Numbering
 import QPainleve.Geometry.Toric.Fan.Boundary.Prestable
-import QPainleve.Geometry.Toric.Fan.CyclicOrder
+import QPainleve.Geometry.Toric.Fan.CyclicOrder.Basic
 import QPainleve.Geometry.Toric.Fan.Subdivision.Projective
 
 /-!
