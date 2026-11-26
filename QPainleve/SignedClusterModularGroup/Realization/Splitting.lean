@@ -120,20 +120,24 @@ theorem exists_signedPicardSplitting_of_nodal_model
     (M := fun _ ↦ M) href M.isEffectiveCartier_boundaryIdeal hnef hsq hcan hprim
   have hE := Q.exchangeMatrix_ne_zero_of_chargeIndex_ne_zero P hform hcharge hindex
   have hmatrix := P.matrix_eq.symm.trans (congrArg₂ chargeExchangeMatrix hform hcharge)
-  obtain ⟨F, hD, hmark, Θ, Θrot, hFc, hfamily, hΘ, -, hrot⟩ :=
+  obtain ⟨G, hFc⟩ :=
     Q.exists_picardGroupEquivs_of_nodal_model href hmatrix hprim hnef hsq
   obtain ⟨reflection⟩ := M.nonempty_cycleReversingInvolution hcan hnef hsq hprim
   let g := reflection.element
   have hg : sign B d g = -1 := by simp [g]
   have hgg : g * g = 1 := reflection.element_mul_self
-  have hsign (w : Word E E) := (hΘ w).1
+  let Θ := G.signedEquiv
+  let Θrot := G.unsignedEquiv
+  have hsign (w : Word E E) := (sign_apply B _ _).trans (G.sign_signedEquiv_apply_word w)
+  have hrot := G.rotationInclusion_unsignedEquiv_apply
   let t := signSplitting B d g hg hgg
   have hs := signedInversionSign_surjective_of_picardEquiv Θ hsign hE
     (sign_surjective B d g hg)
   let s := picardSignSplitting Θ hsign hE t
   have horder : orderOf (s (-1)) = 2 :=
     (orderOf_injective s.toMonoidHom s.rightInverse_rightHom.injective (-1)).trans (by simp)
-  exact ⟨F, hmark, hFc, hfamily, Θ, Θrot, hE, hs, s, hrot, hΘ,
+  exact ⟨G.family, G.boundaryClass_eq, hFc, G.hasNodalModel, Θ, Θrot, hE, hs, s, hrot,
+    fun w ↦ ⟨hsign w, G.signedEquiv_apply_word w⟩,
     index_range_clusterModularGroupInclusion ℂ E hE hs, horder,
     ⟨reflection.cut, reflection.cutClass, g, hg, hgg, reflection.cutClass_sq,
       reflection.pairing_cutClass, by simp [g], toIsometry_apply_sum B d g,

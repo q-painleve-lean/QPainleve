@@ -7,7 +7,6 @@ module
 
 public import QPainleve.SignedClusterModularGroup.Realization.Endpoint.PicardAction
 
-import QPainleve.Algebra.Cluster.Word.SignExtension
 import QPainleve.AlgebraicGeometry.Chow.RationalSurface.Basic
 import QPainleve.Geometry.Toric.Fan.Subdivision.Projective
 import QPainleve.SignedClusterModularGroup.Realization.Anticanonical
@@ -16,6 +15,7 @@ import QPainleve.SignedClusterModularGroup.Realization.NodalFiber
 import QPainleve.SignedClusterModularGroup.Realization.NumberedRays
 import QPainleve.SignedClusterModularGroup.Realization.PicardAction
 import QPainleve.SignedClusterModularGroup.Realization.Presentation.Boundary
+import QPainleve.SignedClusterModularGroup.SignExtension
 
 /-!
 # The faithful signed Picard action of a toric presentation
@@ -212,17 +212,11 @@ theorem existsUnique_faithful_signedPicardHom_of_presentation
   obtain ⟨ρ, hρ, huniq⟩ := existsUnique_signedPicardHom_of_realizations (E := E) d hD hmark
     Q.complete (Q.inclusion_injective href) hindex (centers := fun c : Point Centers[r] ↦ χ[c])
     (fun w ↦ ⟨_, inferInstance, inferInstance, R w, hη w, htargets w⟩)
-  have hsign : ((sign H d).comp ρ).ker.unop = (clusterModularGroupInclusion ℂ E).range := by
-    rw [range_clusterModularGroupInclusion ℂ E
-      (Q.exchangeMatrix_ne_zero_of_chargeIndex_ne_zero P hform hcharge hindex)]
-    ext g
-    obtain ⟨w, rfl⟩ := signedClusterModularGroupMap_surjective ℂ E g
-    simpa only [Subgroup.mem_unop, MonoidHom.mem_ker, MonoidHom.comp_apply,
-      signedInversionSign_apply] using Iff.of_eq (congrArg (· = 1) (hρ w).1)
   have haction : IsSignedPicardAction Q M hD hmark ρ :=
     { sign_apply_word := fun w ↦ (hρ (End.of w)).1
       apply_of_realization := fun w ↦ (hρ (End.of w)).2
-      sign_ker_unop := hsign }
+      sign_ker_unop := sign_ker_unop_eq_range_of_apply_word ρ (fun w ↦ (hρ (End.of w)).1)
+        (Q.exchangeMatrix_ne_zero_of_chargeIndex_ne_zero P hform hcharge hindex) }
   refine ⟨ρ, ⟨haction, ?_⟩, ?_⟩
   · choose p hnodal using fun c hc ↦ (models c hc).exists_isNodalContraction (hD c)
     have hd : Function.Injective d := by

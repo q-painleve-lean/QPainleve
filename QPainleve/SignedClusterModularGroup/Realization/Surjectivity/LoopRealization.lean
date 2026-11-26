@@ -8,8 +8,8 @@ module
 public import QPainleve.Algebra.Cluster.Word.Center
 public import QPainleve.Algebra.Cluster.Word.ModularGroup
 public import QPainleve.Algebra.Cluster.Word.RationalMap
-public import QPainleve.SignedClusterModularGroup.Boundary.Isometry
 public import QPainleve.SignedClusterModularGroup.Realization.Basic
+public import QPainleve.SignedClusterModularGroup.Realization.PairIso.PicardAction
 public import Mathlib.Analysis.Complex.Polynomial.Basic
 
 /-!
@@ -17,7 +17,7 @@ public import Mathlib.Analysis.Complex.Polynomial.Basic
 
 A signed loop can realize a prescribed Picard action and intertwine fixed-center
 X evaluations. For a marked presentation the witness includes the two centers
-and the pair isomorphism whose X evaluation the loop realizes.
+and the pair isomorphism inducing that action.
 -/
 
 public section
@@ -68,13 +68,13 @@ structure PresentationPicardLoopRealization (M : Point Centers[r] → MarkedSurf
   sourceCenter : Point Centers[r]
   /-- The center of the target fiber. -/
   targetCenter : Point Centers[r]
-  /-- The isomorphism of pairs over the two centers. -/
-  pairIso : (M sourceCenter).pair ≅ (M targetCenter).pair
+  /-- The isomorphism of pairs over the two centers with the prescribed signed Picard action. -/
+  pairIso : SignedPicardPairIso (M sourceCenter) (M targetCenter) g
   /-- The loop with the prescribed Picard action and fixed-center evaluation. -/
   loop :
     letI : IsIntegral (M sourceCenter).surface := (M sourceCenter).integral
     PicardLoopRealization ρ g (M sourceCenter).evaluation
-      ((MarkedSurface.surfaceIso pairIso).hom.toRationalMap.comp (M targetCenter).evaluation)
+      ((MarkedSurface.surfaceIso pairIso.iso).hom.toRationalMap.comp (M targetCenter).evaluation)
   /-- The source center belongs to the loop's noncollision open. -/
   source_mem_centerOpen : sourceCenter.left (default : S) ∈ loop.word.centerOpen ℂ P
 
@@ -85,12 +85,12 @@ theorem PresentationPicardLoopRealization.ext
     {ρ : (SignedClusterModularGroup ℂ E)ᵐᵒᵖ →* signedBoundaryIsometryGroup B d}
     {g : signedBoundaryIsometryGroup B d} {R R' : PresentationPicardLoopRealization M P ρ g}
     (hsource : R.sourceCenter = R'.sourceCenter) (htarget : R.targetCenter = R'.targetCenter)
-    (hiso : HEq R.pairIso R'.pairIso) (hword : R.loop.word = R'.loop.word) : R = R' := by
+    (hiso : HEq R.pairIso.iso R'.pairIso.iso) (hword : R.loop.word = R'.loop.word) : R = R' := by
   obtain ⟨c₀, c₁, e, w, _⟩ := R
   obtain ⟨c₀', c₁', e', w', _⟩ := R'
   dsimp only at hsource htarget hiso hword
   subst c₀' c₁'
-  have he := eq_of_heq hiso
+  have he := SignedPicardPairIso.ext (eq_of_heq hiso)
   subst e'
   cases PicardLoopRealization.ext hword
   rfl

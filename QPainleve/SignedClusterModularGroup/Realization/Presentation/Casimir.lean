@@ -9,6 +9,7 @@ public import QPainleve.SignedClusterModularGroup.Realization.ChargeKernel.Bound
 public import QPainleve.SignedClusterModularGroup.Realization.Endpoint.MonomialImage
 public import QPainleve.SignedClusterModularGroup.Realization.Presentation
 
+import QPainleve.Geometry.Toric.Fan.ExchangeMatrix
 import QPainleve.LinearAlgebra.Reflection
 import QPainleve.SignedClusterModularGroup.BoundaryCycle
 import QPainleve.SignedClusterModularGroup.Realization.Anticanonical
@@ -112,15 +113,16 @@ theorem nonempty_casimirActionComparison_of_nodal_model [NeZero n]
       classOf(M.isEffectiveCartier_boundaryIdeal) = 0) :
     Nonempty (Q.CasimirActionComparison E B
       (M.boundaryClass M.isEffectiveCartier_boundaryIdeal)) := by
-  let P : ChargeSeed E N :=
-    ⟨b.detDualEquiv.toLinearMap, Fan.rayChargeMap Q.rays, b.detDualEquiv_self, hE.symm⟩
-  obtain ⟨F, hF, hmark, Θ, _, hM, hmodels, hΘ, hker, _⟩ :=
-    Q.exists_picardGroupEquivs_of_nodal_model href hE hprim hnef hsq
-  subst M
+  let P := Fan.rayChargeSeed b Q.rays hE
+  obtain ⟨G, hGc⟩ := Q.exists_picardGroupEquivs_of_nodal_model href hE hprim hnef hsq
+  let Θ := G.signedEquiv
   obtain ⟨e, ⟨he, hact, hCasimirKer⟩, _⟩ := existsUnique_exchangeKernelEquiv_of_presentation
-    Q P rfl rfl F hF (hmodels c) (fun d _ ↦ hmodels d) hnef hsq hprim _ hmark
-    Θ.toMonoidHom (fun w {_} _ _ R hR ↦ (hΘ (End.asHom w)).2 R hR)
-  refine ⟨⟨Θ, e, fun x ↦ neg_eq_iff_eq_neg.mp (he x).symm, ?_, hker, hCasimirKer⟩⟩
+    Q P (Fan.rayChargeSeed_form _ _ _) (Fan.rayChargeSeed_charge _ _ _)
+    G.family (fun z ↦ (G.family z).isEffectiveCartier_boundaryIdeal)
+    (G.hasNodalModel c) (fun z _ ↦ G.hasNodalModel z)
+    (hGc.symm ▸ hnef) (hGc.symm ▸ hsq) (hGc.symm ▸ hprim) _ G.boundaryClass_eq
+    Θ.toMonoidHom (fun w {_} _ _ R hR ↦ G.signedEquiv_apply_word (End.asHom w) R hR)
+  refine ⟨⟨Θ, e, fun x ↦ neg_eq_iff_eq_neg.mp (he x).symm, ?_, G.sign_ker_unop, hCasimirKer⟩⟩
   simpa only [MonoidHom.comp_assoc] using hact
 
 /-- A boundary-reversing Picard involution and the exchange-kernel comparison

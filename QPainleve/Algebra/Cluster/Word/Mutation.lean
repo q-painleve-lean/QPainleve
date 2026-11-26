@@ -5,16 +5,17 @@ Authors: The QPainleve contributors
 -/
 module
 
+public import QPainleve.Algebra.Cluster.Word.GeneratorList
 public import QPainleve.Algebra.Cluster.Word.Pullback
 public import QPainleve.Algebra.Cluster.XMutation.SubtractionFree
-public import Mathlib.Combinatorics.Quiver.Cast
 public import Mathlib.Data.Option.NAry
-import Mathlib.Data.List.Induction
 
 /-!
 # Mutation-only segments of signed cluster words
 
 A segment consisting entirely of mutations has a list of directions in execution order.
+The typed path is constructed by `Generator.wordOfList`, the same interpreter used for
+lists that also contain permutations and inversions.
 Its target matrix is given by Tau Ceti's `ExchangeMatrix.mutationWord`, and its X pullback
 agrees with the list-based pullback over every field. In characteristic zero this identifies
 the pullback on subtraction-free expressions with substitution by `YSeed.mutationWord`.
@@ -26,27 +27,62 @@ open QPainleve.Cluster TauCeti
 
 namespace Quiver.Path
 
-variable {ι κ : Type*} [DecidableEq ι] [DecidableEq κ] {A B C : SkewExchangeMatrix ι}
+variable {ι κ : Type*}
+
+private def mutationDirection? : Generator ι → Option ι
+  | .mutate p => some p
+  | .permute _ | .invert => none
+
+private theorem mapM_mutationDirection_eq_some_iff (gs : List (Generator ι)) (directions : List ι) :
+    gs.mapM mutationDirection? = some directions ↔ gs = directions.map Generator.mutate := by
+  induction gs generalizing directions with
+  | nil => cases directions <;> simp
+  | cons g gs ih =>
+    cases g <;> cases directions <;>
+      simp [List.mapM_cons, mutationDirection?, Option.bind_eq_some_iff, ih, and_comm]
+
+variable [DecidableEq ι] [DecidableEq κ] {A B C : SkewExchangeMatrix ι}
 
 /-- Read the mutation directions in execution order. A relabeling or global inversion anywhere
 in the path gives `none`. -/
-def mutationDirections : ∀ {B : SkewExchangeMatrix ι}, Word A B → Option (List ι)
-  | _, .nil => some []
-  | _, .cons w s =>
-    match Step.generator s with
-    | .mutate p => w.mutationDirections.map (· ++ [p])
-    | .permute _ | .invert => none
+def mutationDirections (w : Word A B) : Option (List ι) :=
+  w.generators.mapM mutationDirection?
+
+/-- A word has the given mutation directions exactly when its generators are those mutations
+in execution order. -/
+@[simp]
+theorem mutationDirections_eq_some_iff (w : Word A B) (directions : List ι) :
+    w.mutationDirections = some directions ↔ w.generators = directions.map Generator.mutate :=
+  mapM_mutationDirection_eq_some_iff _ _
 
 @[simp]
 theorem mutationDirections_nil : (Path.nil : Word A A).mutationDirections = some [] :=
-  (rfl)
+  (mutationDirections_eq_some_iff _ _).mpr generators_nil
+
+@[simp]
+theorem mutationDirections_toPath (s : A ⟶ B) :
+    s.toPath.mutationDirections = match Step.generator s with
+      | .mutate p => some [p]
+      | .permute _ | .invert => none := by
+  cases hs : Step.generator s <;>
+    simp [mutationDirections, Hom.toPath, List.mapM_cons, mutationDirection?, hs]
+
+/-- A concatenation has mutation directions when both segments do, in execution order. -/
+@[simp]
+theorem mutationDirections_comp (w : Word A B) (v : Word B C) :
+    (w.comp v).mutationDirections = Option.map₂ List.append w.mutationDirections
+      v.mutationDirections := by
+  simp only [mutationDirections, generators_comp, List.mapM_append, Option.map₂,
+    Option.map_eq_bind, Function.comp_def, Option.bind_eq_bind, Option.pure_def]
+  rfl
 
 @[simp]
 theorem mutationDirections_cons (w : Word A B) (s : B ⟶ C) :
     (w.cons s).mutationDirections = match Step.generator s with
       | .mutate p => w.mutationDirections.map (· ++ [p])
-      | .permute _ | .invert => none :=
-  (rfl)
+      | .permute _ | .invert => none := by
+  rw [← comp_toPath_eq_cons, mutationDirections_comp, mutationDirections_toPath]
+  cases Step.generator s <;> simp
 
 /-- A path extended by one step has mutation directions exactly when the prefix does and
 the last step is a mutation. -/
@@ -56,37 +92,18 @@ theorem mutationDirections_cons_eq_some_iff (w : Word A B) (s : B ⟶ C) (direct
         u ++ [p] = directions := by
   cases hs : Step.generator s <;> simp [hs, Option.map_eq_some_iff]
 
-@[simp]
-theorem mutationDirections_toPath (s : A ⟶ B) :
-    s.toPath.mutationDirections = match Step.generator s with
-      | .mutate p => some [p]
-      | .permute _ | .invert => none := by
-  simp [Hom.toPath]
-
 /-- Transport along endpoint equalities leaves the direction list unchanged. -/
 @[simp]
 theorem mutationDirections_cast {A' B' : SkewExchangeMatrix ι} (w : Word A B)
     (hA : A = A') (hB : B = B') : (w.cast hA hB).mutationDirections = w.mutationDirections := by
-  subst hA hB
-  rfl
-
-/-- A concatenation has mutation directions when both segments do, in execution order. -/
-@[simp]
-theorem mutationDirections_comp (w : Word A B) (v : Word B C) :
-    (w.comp v).mutationDirections = Option.map₂ List.append w.mutationDirections
-      v.mutationDirections := by
-  induction v with
-  | nil => simp
-  | cons v s ih =>
-    cases hs : Step.generator s <;>
-      simp [hs, ih, Option.map_map₂, Option.map₂_map_right, List.append_assoc]
+  simp [mutationDirections]
 
 /-- Reversing a mutation-only path reverses its list of directions. -/
 @[simp]
 theorem mutationDirections_reverse (w : Word A B) :
     w.reverse.mutationDirections = w.mutationDirections.map List.reverse := by
   induction w with
-  | nil => rfl
+  | nil => simp
   | cons w s ih =>
     cases hs : Step.generator s <;> simp [Path.reverse, hs, ih, Function.comp_def]
 
@@ -96,7 +113,7 @@ theorem mutationDirections_reindex (e : ι ≃ κ) (w : Word A B) :
     ((SkewExchangeMatrix.reindexPrefunctor e).mapPath w).mutationDirections =
       w.mutationDirections.map (List.map e) := by
   induction w with
-  | nil => rfl
+  | nil => simp
   | cons w s ih =>
     cases hs : Step.generator s <;> simp [hs, ih, Function.comp_def]
 
@@ -142,28 +159,36 @@ its target. -/
 def mutationPath (B : SkewExchangeMatrix ι) (directions : List ι) :
     Word B ⟨B.val.mutationWord directions,
       (B.val.mutationWord_symmetrizer directions).trans B.property⟩ :=
-  directions.reverseRecOn (Path.nil.cast rfl (Subtype.ext (B.val.mutationWord_nil.symm)))
-    fun _ p w => (w.cons ((Generator.mutate p).toStep _)).cast rfl (Subtype.ext (by simp))
+  let w := Generator.wordOfList B (directions.map Generator.mutate)
+  have hdirs : w.2.mutationDirections = some directions :=
+    (w.2.mutationDirections_eq_some_iff _).mpr (Generator.generators_wordOfList B _)
+  w.2.cast rfl (Subtype.ext (w.2.mutationWord_eq_of_mutationDirections hdirs).symm)
+
+/-- The generators of the typed mutation path are the given mutations in execution order. -/
+@[simp]
+theorem generators_mutationPath (B : SkewExchangeMatrix ι) (directions : List ι) :
+    (B.mutationPath directions).generators = directions.map Generator.mutate := by
+  simp [mutationPath]
 
 @[simp]
 theorem mutationPath_nil (B : SkewExchangeMatrix ι) :
     B.mutationPath [] = Path.nil.cast rfl (Subtype.ext (B.val.mutationWord_nil.symm)) := by
-  simp [mutationPath]
+  apply Path.generators_injective
+  simp
 
 @[simp]
 theorem mutationPath_append_singleton (B : SkewExchangeMatrix ι) (w : List ι) (p : ι) :
     B.mutationPath (w ++ [p]) =
       ((B.mutationPath w).cons ((Generator.mutate p).toStep _)).cast rfl
         (Subtype.ext (by simp)) := by
-  simp [mutationPath]
+  apply Path.generators_injective
+  simp
 
 /-- The typed path constructed from a list has precisely those mutation directions. -/
 @[simp]
 theorem mutationDirections_mutationPath (B : SkewExchangeMatrix ι) (w : List ι) :
-    (B.mutationPath w).mutationDirections = some w := by
-  induction w using List.reverseRecOn with
-  | nil => simp
-  | append_singleton w p ih => simp [ih]
+    (B.mutationPath w).mutationDirections = some w :=
+  (Path.mutationDirections_eq_some_iff _ _).mpr (B.generators_mutationPath w)
 
 end QPainleve.Cluster.SkewExchangeMatrix
 
@@ -176,22 +201,9 @@ theorem mutationPath_cast_eq_of_mutationDirections (w : Word A B) {directions : 
     (h : w.mutationDirections = some directions) :
     (A.mutationPath directions).cast rfl
       (Subtype.ext (w.mutationWord_eq_of_mutationDirections h)) = w := by
-  induction w generalizing directions with
-  | nil =>
-    obtain rfl : [] = directions := by simpa using h
-    simp
-  | @cons B C w s ih =>
-    obtain ⟨u, p, hm, hs, rfl⟩ := (mutationDirections_cons_eq_some_iff w s directions).mp h
-    rcases s with ⟨g, rfl⟩
-    obtain rfl : g = .mutate p := hs
-    have hB : (⟨A.val.mutationWord u,
-        (A.val.mutationWord_symmetrizer u).trans A.property⟩ : SkewExchangeMatrix ι) = B :=
-      Subtype.ext (w.mutationWord_eq_of_mutationDirections hm)
-    subst B
-    have hw : A.mutationPath u = w := by simpa using ih hm
-    simp only [SkewExchangeMatrix.mutationPath_append_singleton, cast_cast, cast_rfl_rfl, hw,
-      cons.injEq, heq_eq_eq, true_and]
-    exact Step.ext (Generator.toStep_generator _ _)
+  apply generators_injective
+  simpa only [generators_cast, SkewExchangeMatrix.generators_mutationPath] using
+    ((w.mutationDirections_eq_some_iff _).mp h).symm
 
 end Quiver.Path
 

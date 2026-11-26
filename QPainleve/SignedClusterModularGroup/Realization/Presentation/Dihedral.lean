@@ -86,18 +86,17 @@ theorem exists_picardIsometryEquiv_of_nodal_model
           (-1 : ℤˣ) ^ w.inversionCount ∧
           ∀ a' : DihedralGroup n,
             (∀ j, (Ψ x).val.val (d (DihedralGroup.cycleVertexPerm a' j)) = d j) ↔ a' = a := by
-  obtain ⟨M, hD, hmark, Θ, _, hM, hfamily, hΘ, _, _⟩ :=
-    Q.exists_picardGroupEquivs_of_nodal_model href hE hprim hnef hsq
-  dsimp only
-  subst M₀
-  have hd := (M c).boundaryClass_injective_of_nef_square_zero _ hnef hsq
-  refine ⟨M, hD, hmark, Θ.trans (MonoidHom.ofInjective (toIsometry_injective B _ hn hd)), rfl,
-    hfamily, fun w ↦ ?_⟩
+  obtain ⟨P, hP⟩ := Q.exists_picardGroupEquivs_of_nodal_model href hE hprim hnef hsq
+  have hd := M₀.boundaryClass_injective_of_nef_square_zero _ hnef hsq
+  refine ⟨P.family, fun z ↦ (P.family z).isEffectiveCartier_boundaryIdeal, P.boundaryClass_eq,
+    P.signedEquiv.trans (MonoidHom.ofInjective (toIsometry_injective B _ hn hd)), hP,
+    P.hasNodalModel, fun w ↦ ?_⟩
   simp only [MulEquiv.trans_apply, MonoidHom.ofInjective_apply]
-  refine ⟨fun R hR ↦ congrArg (toIsometry B _) ((hΘ w).2 R hR), ?_⟩
-  let g := Θ (op (signedClusterModularGroupMap ℂ E (End.of w)))
+  refine ⟨fun R hR ↦ congrArg (toIsometry B _) (P.signedEquiv_apply_word w R hR), ?_⟩
+  let g := P.signedEquiv (op (signedClusterModularGroupMap ℂ E (End.of w)))
   obtain ⟨a, ha, hpb⟩ := exists_cycleAction_pullback B _ g
-  refine ⟨a, ha.trans (hΘ w).1, fun a' ↦ ⟨fun hpb' ↦ ?_, fun h ↦ h ▸ hpb⟩⟩
+  have hsign := (sign_apply B _ g).trans (P.sign_signedEquiv_apply_word w)
+  refine ⟨a, ha.trans hsign, fun a' ↦ ⟨fun hpb' ↦ ?_, fun h ↦ h ▸ hpb⟩⟩
   apply DihedralGroup.cycleVertexPerm_injective hn
   ext j
   exact hd ((toIsometry B _ g).val.injective ((hpb' j).trans (hpb j).symm))

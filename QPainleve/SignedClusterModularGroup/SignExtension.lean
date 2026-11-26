@@ -39,6 +39,28 @@ local notation "Γₛ" => SignedClusterModularGroup k E
 local notation "inclusion" => clusterModularGroupInclusion k E
 local notation "eval[" w "]" => op (signedClusterModularGroupMap k E (End.of w))
 
+/-- If a Picard action gives the inversion parity on each loop, its sign on every
+signed point map is the descended inversion sign. -/
+theorem sign_picardHom_apply_op
+    (ρ : Γₛᵐᵒᵖ →* signedBoundaryIsometryGroup B D)
+    (hρ : ∀ w : Word E E, sign B D (ρ eval[w]) = (-1 : ℤˣ) ^ w.inversionCount)
+    (hE : E.matrix ≠ 0) (x : Γₛ) :
+    sign B D (ρ (op x)) = signedInversionSign k E hE x := by
+  obtain ⟨w, rfl⟩ := signedClusterModularGroupMap_surjective k E x
+  exact (hρ (End.asHom w)).trans (signedInversionSign_apply k E hE w).symm
+
+/-- For a Picard action with the prescribed sign on loops, the sign kernel on
+point maps is the image of the unsigned cluster modular group. -/
+theorem sign_ker_unop_eq_range_of_apply_word
+    (ρ : Γₛᵐᵒᵖ →* signedBoundaryIsometryGroup B D)
+    (hρ : ∀ w : Word E E, sign B D (ρ eval[w]) = (-1 : ℤˣ) ^ w.inversionCount)
+    (hE : E.matrix ≠ 0) :
+    ((sign B D).comp ρ).ker.unop = MonoidHom.range inclusion := by
+  rw [range_clusterModularGroupInclusion k E hE]
+  ext x
+  simp only [Subgroup.mem_unop, MonoidHom.mem_ker, MonoidHom.comp_apply,
+    sign_picardHom_apply_op ρ hρ hE]
+
 section Splitting
 
 variable (Θ : (SignedClusterModularGroup k E)ᵐᵒᵖ ≃* signedBoundaryIsometryGroup B D)
@@ -47,18 +69,12 @@ variable (hΘ : ∀ w : Word E E,
 variable (hE : E.matrix ≠ 0) {hsign : Function.Surjective (sign B D)}
 
 include hΘ in
-private theorem picardSign_eq (x : Γₛ) :
-    sign B D (Θ (op x)) = signedInversionSign k E hE x := by
-  obtain ⟨w, rfl⟩ := signedClusterModularGroupMap_surjective k E x
-  exact (hΘ (End.asHom w)).trans (signedInversionSign_apply k E hE w).symm
-
-include hΘ in
 /-- A sign-compatible Picard equivalence transfers surjectivity of the boundary sign to the
 inversion sign of the signed cluster modular group. -/
 theorem signedInversionSign_surjective_of_picardEquiv
     (hsign : Function.Surjective (sign B D)) :
     Function.Surjective (signedInversionSign k E hE) := by
-  rw [← funext (picardSign_eq Θ hΘ hE)]
+  rw [← funext (sign_picardHom_apply_op Θ.toMonoidHom hΘ hE)]
   exact hsign.comp (Θ.surjective.comp op_surjective)
 
 /-- Transport the boundary sign section to signed point maps through the Picard equivalence
@@ -75,7 +91,7 @@ noncomputable def picardSignSplitting (t : (signExtension B D hsign).Splitting) 
       simpa only [e, MonoidHom.comp_apply, MulEquiv.coe_toMonoidHom, MulEquiv.trans_apply,
         MulEquiv.inv'_apply, Function.comp_apply, MulEquiv.refl_apply, signExtension_rightHom,
         signedInversionSignExtension_rightHom, map_inv, Int.units_inv_eq_self]
-        using picardSign_eq Θ hΘ hE x⁻¹)).symm t
+        using sign_picardHom_apply_op Θ.toMonoidHom hΘ hE x⁻¹)).symm t
 
 variable (t : (signExtension B D hsign).Splitting)
 
@@ -176,7 +192,8 @@ theorem exists_central_involution_of_picardEquiv [NeZero n]
     apply Θ.injective
     simpa only [op_mul, map_mul, hw] using
       (Subgroup.mem_center_iff.mp (centralSign_mem_center B D hn) (Θ (op f))).symm
-  exact ⟨_, hw, hc, horder,
-    exists_mulEquiv_prod_zpowers_of_central_odd_loop k E (hB := hE) w hodd horder hc⟩
+  refine ⟨_, hw, hc, horder, mulEquivProdZPowersOfCentralOddLoop k E (hB := hE) w hodd horder hc,
+    fun f u ↦ ?_⟩
+  simp
 
 end QPainleve.SignedClusterModularGroup
