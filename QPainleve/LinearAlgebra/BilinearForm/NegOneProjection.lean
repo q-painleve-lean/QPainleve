@@ -81,7 +81,8 @@ theorem length_orthogonalizeNegOnes (l : List M) :
       length_orthogonalizeNegOnes (l.map (B.projectOffNegOne c)), List.length_map]
 termination_by l.length
 
-private theorem projectOffNegOne_sub_mem {P : Submodule R M} {c : M} (hc : c ∈ P) (x : M) :
+/-- Updating along a vector in a submodule changes the input by an element of that submodule. -/
+theorem projectOffNegOne_sub_mem {P : Submodule R M} {c : M} (hc : c ∈ P) (x : M) :
     B.projectOffNegOne c x - x ∈ P := by
   simpa only [projectOffNegOne_apply, add_sub_cancel_left] using P.smul_mem (B x c) hc
 
@@ -117,7 +118,8 @@ theorem span_orthogonalizeNegOnes (l : List M) :
       B.span_cons_map_projectOffNegOne c l
 termination_by l.length
 
-private theorem sub_projectOffNegOnes_mem_span (l : List M) (x : M) :
+/-- The difference between the input and the successive updates lies in the original span. -/
+theorem sub_projectOffNegOnes_mem_span (l : List M) (x : M) :
     x - B.projectOffNegOnes l x ∈ span R {y | y ∈ l} := by
   cases l with
   | nil => simp
@@ -134,7 +136,9 @@ private theorem sub_projectOffNegOnes_mem_span (l : List M) (x : M) :
       add_mem h₁ (hle h₂)
 termination_by l.length
 
-private theorem apply_projectOffNegOne_eq_zero {c : M} (hc : B c c = -1) (x : M) :
+/-- After updating along a vector of square −1, pairing the result with that vector gives zero. -/
+@[simp↓]
+theorem apply_projectOffNegOne_eq_zero {c : M} (hc : B c c = -1) (x : M) :
     B (B.projectOffNegOne c x) c = 0 := by
   simp [hc]
 
@@ -186,7 +190,10 @@ private theorem projectOffNegOnes_mem_orthogonal (hB : B.IsRefl) (l : List M)
       exact Submodule.mem_orthogonalBilin_span.mp h hy
 termination_by l.length
 
-private theorem projectOffNegOnes_eq_self_of_mem_orthogonal (l : List M) (x : M)
+/-- Successive updates fix a vector that pairs to zero with each original vector in the
+second argument of the form. -/
+@[simp↓]
+theorem projectOffNegOnes_eq_self_of_mem_orthogonal (l : List M) (x : M)
     (hx : x ∈ B.flip.orthogonal (span R {y | y ∈ l})) :
     B.projectOffNegOnes l x = x := by
   cases l with
