@@ -17,13 +17,14 @@ charge correspondence to the ambient lattice. Using a common oriented toric
 refinement, the resulting comparison of endpoints preserves the ordered
 branches and reads the full Picard pullback in fixed toric coordinates.
 
-The integral extension uses `Fan.existsUnique_rayChargeEquiv_of_anticanonical_cycle`.
-The comparison after extension uses `ContractedToricFiber.exists_marked_toric_endpoint_comparison`.
+The integral extension uses `Fan.existsUnique_rayChargeEquiv_of_index`.
+Both the direct comparison and the comparison after extension return a
+`ContractedToricFiber.MarkedToricEndpointComparison`.
 -/
 
 public section
 
-open AlgebraicGeometry CategoryTheory DihedralGroup Module Multiplicative TopologicalSpace
+open AlgebraicGeometry CategoryTheory Module Multiplicative
 open QPainleve.BlowupTower QPainleve.Cluster TauCeti TauCeti.AlgebraicGeometry TauCeti.Toric
 open Scheme.IdealSheafData LineBundleClass TauCeti.Toric.Fan
 
@@ -38,8 +39,6 @@ local notation "Pic[" Φ "," r "]" =>
 local notation "centers(" c ")" => (fun j ↦ c (ofAdd (Pi.single j 1)))
 local notation "model[" b "," s "," c "]" => Fan.internalBlowupTower b s centers(c)
 local notation "classOf(" h ")" => (LineBundleClass.mk (IsEffectiveCartier.toInvertibleSheaf h))⁻¹
-local notation "renameX(" σ ")" => Spec.map
-  (CommRingCat.ofHom (AlgHom.toRingHom (LaurentRing.rename (R := ℂ) (Equiv.toFun σ))))
 
 variable {N N' V V' : Type} [AddCommGroup N] [AddCommGroup N']
   [AddCommGroup V] [AddCommGroup V'] [Module ℝ V] [Module ℝ V']
@@ -126,26 +125,9 @@ theorem exists_marked_endpoint_comparison_of_equal_exchange_matrix
     ∃ e : N ≃ₗ[ℤ] N',
       (∀ j, e (s j).primitiveGenerator = (s' (σ j)).primitiveGenerator) ∧
       (∀ x y, b'.detDualEquiv (e x) (e y) = b.detDualEquiv x y) ∧
-      let g := Ψ.mapEquivIso Φ.lattice e.symm
-      let hΩ₀ := Nonempty.map g.coneEquiv hΨ₀
       ∃ (Δ : Fan i) (hΔΦ : Δ.IsSubdivision Φ)
         (hΔΩ : Δ.IsSubdivision (Ψ.mapEquiv Φ.lattice e.symm)),
-        let hΔ₀ := hΔΦ.nonempty_cones_of_nonempty hΦ₀
-        let left := hΔΦ.boundaryMap hΔ₀ hΦ₀
-        let right := hΔΩ.boundaryMap hΔ₀ hΩ₀ ≫ (g.boundaryIso hΨ₀ hΩ₀).inv
-        ∃ (I : B'.IsometryEquiv B) (j : ZMod n)
-          (R : FiberRealization M M' (renameX(σ.symm)).toRationalMap I (DihedralGroup.r j)),
-          (left ≫ p.boundaryMap) ≫ (MarkedSurface.boundaryIso R.iso).hom =
-            right ≫ q.boundaryMap ∧
-          (∀ (x : L) (y : L'), I y = x ↔
-            (Additive.ofMul (pullback hΔΦ.toFanHom.algebraicMap (J x).1.toMul), (J x).2) =
-            (Additive.ofMul (pullback
-              (hΔΩ.toFanHom.algebraicMap ≫ g.symm.toFanHom.algebraicMap) (J' y).1.toMul),
-              (J' y).2 ∘ σ)) ∧
-          (letI : PrestableFamily (M.boundary ↘ S) := M.prestable
-           letI : PrestableFamily (M'.boundary ↘ S) := M'.prestable
-           ∀ x : Dtor[Δ,hΔ₀], left x = T.componentGenericPoint o →
-               (right ≫ q.boundaryMap) x = M'.cycle.componentGenericPoint j) := by
+        Nonempty (MarkedToricEndpointComparison p q e hΔΦ hΔΩ σ) := by
   obtain ⟨e, ⟨hmatch, hdet⟩, -⟩ := p.existsUnique_rayChargeEquiv_of_equal_exchange_matrix
     (s' := s' ∘ σ) hcΦ hA u hu hD hnefD hsqD hcan hδ hmat
   let g := Ψ.mapEquivIso Φ.lattice e.symm
@@ -158,7 +140,7 @@ theorem exists_marked_endpoint_comparison_of_equal_exchange_matrix
   let : NeZero k := hk
   let : PrestableFamily (Dtor[Δ,hΔΦ.nonempty_cones_of_nonempty hΦ₀] ↘ S) := hpre
   exact ⟨e, hmatch, hdet, Δ, hΔΦ, hΔΩ,
-    p.exists_marked_toric_endpoint_comparison q e hΔΦ hΔΩ hΔ σ hc hmatch hdet horder hA hA'
+    p.nonempty_markedToricEndpointComparison q e hΔΦ hΔΩ hΔ σ hc hmatch hdet horder hA hA'
       u u' hu hu' hD hE hnefD hnefE hsqD hsqE U hleft hright⟩
 
 end QPainleve.SignedClusterModularGroup.ContractedToricFiber
