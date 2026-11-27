@@ -142,7 +142,8 @@ theorem exists_sarkisov_decrease_of_logarithmic_plane_vertex
         (X[Φ]).IsProjectiveOver ℂ ∧
         q ≫ π[hσ] ≫ (eP).hom = T.toBase ∧
         T.toBase.toRationalMap.comp
-          ((eP).inv.toRationalMap.comp ((Π).denseTorusPartialIso Φ).toRationalMap) =
+          ((eP).inv.toRationalMap.comp (Scheme.PartialIso.ofDenseOpenImmersions
+            (Fan.denseTorusι (Π) inferInstance) (Fan.denseTorusι Φ inferInstance)).toRationalMap) =
           q.toRationalMap ∧
         (B[Φ,hcΦ[hσ]]).comap q = D * ramificationIdealSheaf ℂ q ∧
         (B[Φ,hcΦ[hσ]]).comap U.toBase = D.comap k.inv * ramificationIdealSheaf ℂ U.toBase ∧

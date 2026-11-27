@@ -142,7 +142,9 @@ theorem exists_common_nodal_plane_reduction
           (∀ (Δ : Fan (i j)) [Nonempty Δ.cones] (L : Ω.IsSubdivision Δ),
             letI : Nonempty (Φ j).cones := (hcΦ j).nonempty_cones
             (T.toBase ≫ f j).toRationalMap.comp
-              ((Φ j).denseTorusPartialIso Δ).toRationalMap = (g ≫ π[L]).toRationalMap) ∧
+              (Scheme.PartialIso.ofDenseOpenImmersions
+                (Fan.denseTorusι (Φ j) inferInstance)
+                (Fan.denseTorusι Δ inferInstance)).toRationalMap = (g ≫ π[L]).toRationalMap) ∧
           let e := planeIso(b j,(Φ j).lattice)
           let q := (g ≫ π[K]) ≫ e.hom
           ∃ (m : ℕ) (W : Scheme) (U : BlowupTower P m W) (a : Z ≅ W),

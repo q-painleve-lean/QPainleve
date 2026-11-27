@@ -104,7 +104,8 @@ theorem exists_nodal_resolution_of_hirzebruch_quadric_preparation
         (hT : IsNodalBoundaryTower D s(X) (𝟙 X) T),
         g ≫ π[P.common_source] = T.toBase ≫ f ∧
         (∀ (Δ : Fan i) [Nonempty Δ.cones] (L : P.common.IsSubdivision Δ),
-          (T.toBase ≫ f).toRationalMap.comp (Φ.denseTorusPartialIso Δ).toRationalMap =
+          (T.toBase ≫ f).toRationalMap.comp (Scheme.PartialIso.ofDenseOpenImmersions
+            (Fan.denseTorusι Φ inferInstance) (Fan.denseTorusι Δ inferInstance)).toRationalMap =
             (g ≫ π[L]).toRationalMap ∧
           ∃ hOver : g ≫ π[L] ≫ s[Δ] = T.toBase ≫ s(X),
             let : Z.Over S := ⟨T.toBase ≫ s(X)⟩
@@ -121,7 +122,9 @@ theorem exists_nodal_resolution_of_hirzebruch_quadric_preparation
           A.fan = Φ ∧ A.hom ≍ T.toBase ≫ f ∧
           B.fan = P.model 0 ∧ B.hom ≍ g ≫ π[P.common_model 0] ∧
           p.length = 2 * e ∧
-            p.rationalMap = (A.fan.denseTorusPartialIso B.fan).toRationalMap := by
+            p.rationalMap = (Scheme.PartialIso.ofDenseOpenImmersions
+              (Fan.denseTorusι A.fan inferInstance)
+              (Fan.denseTorusι B.fan inferInstance)).toRationalMap := by
   intro _ B hTotal hRam hpole
   obtain ⟨P⟩ := Φ.exists_hirzebruch_quadric_preparation b e hΦ hc hrays
   have hcP : P.common.IsComplete := P.common_source.isComplete_iff.mpr hc

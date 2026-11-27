@@ -166,7 +166,9 @@ theorem exists_sarkisov_path_of_absent_corner
         (Z : Scheme) (U : BlowupTower X[B.fan] (1 + n) Z)
         (hU : IsClosedPointTower X[B.fan] U) (k : J.blowup ≅ Z),
         A.fan = Φ ∧ A.hom ≍ R.toBase ≫ T.toBase ∧ B.hom = k.hom ≫ U.toBase ∧
-        length path = 2 ∧ path.rationalMap = (A.fan.denseTorusPartialIso B.fan).toRationalMap ∧
+        length path = 2 ∧ path.rationalMap = (Scheme.PartialIso.ofDenseOpenImmersions
+          (Fan.denseTorusι A.fan inferInstance)
+          (Fan.denseTorusι B.fan inferInstance)).toRationalMap ∧
         (k.inv ≫ R.toBase ≫ g) ≫ (P ↘ S) = U.toBase ≫ f[B.fan] ∧
         Scheme.BirationalOver (k.inv ≫ R.toBase ≫ g) (𝟙 P) ∧
         (∃ τ : B.fan.cones, τ.val = hull ℝ {i (d 1), i (-d 0)} ∧
@@ -349,7 +351,9 @@ theorem exists_sarkisov_path_of_absent_positive_corner
         (Z : Scheme) (U : BlowupTower X[B.fan] (1 + n) Z)
         (hU : IsClosedPointTower X[B.fan] U) (k : J.blowup ≅ Z),
         A.fan = Φ ∧ A.hom ≍ R.toBase ≫ T.toBase ∧ B.hom = k.hom ≫ U.toBase ∧
-        length path = 2 ∧ path.rationalMap = (A.fan.denseTorusPartialIso B.fan).toRationalMap ∧
+        length path = 2 ∧ path.rationalMap = (Scheme.PartialIso.ofDenseOpenImmersions
+          (Fan.denseTorusι A.fan inferInstance)
+          (Fan.denseTorusι B.fan inferInstance)).toRationalMap ∧
         (k.inv ≫ R.toBase ≫ g) ≫ (P ↘ S) = U.toBase ≫ f[B.fan] ∧
         Scheme.BirationalOver (k.inv ≫ R.toBase ≫ g) (𝟙 P) ∧
         (∃ τ : B.fan.cones, τ.val = hull ℝ {i (d 0), i (d 1)} ∧

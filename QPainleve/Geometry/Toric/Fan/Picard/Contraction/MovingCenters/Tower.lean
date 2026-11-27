@@ -31,6 +31,7 @@ import QPainleve.Geometry.Toric.Fan.Subdivision.Projective
 import TauCeti.AlgebraicGeometry.Curves.Node.Reduced
 import TauCeti.AlgebraicGeometry.IdealSheaf.Reduced
 import TauCeti.AlgebraicGeometry.Morphisms.Smooth.Regular
+import TauCeti.Geometry.Toric.Algebraic.BaseChange.Complex
 
 /-!
 # Nodal contraction towers after moving internal centers
@@ -113,7 +114,11 @@ private def centerSurface (c : Fin r → ℂˣ) : NodalAnticanonicalSurface := b
   let : Y[c].Over S := ⟨(WithBoundary.toTower (Sigma.snd (Model[c]))).toBase ≫ Z ↘ S⟩
   let hT := isClosedPointTower_internalBlowupTower b s c
   let : SmoothOfRelativeDimension 2 (Y[c] ↘ S) := hT.smoothOfRelativeDimension (Z ↘ S)
-  let : Scheme.IsRationalOver (Z ↘ S) := Φ.isRationalOver_of_isComplete hΦ hc b
+  let : Scheme.IsRationalOver (Z ↘ S) := by
+    let := Φ.isRationalOver_of_isComplete ℂ hΦ hc b
+    rw [Φ.algebraicRealization_over]
+    exact (Φ.finiteFanSchemeComplexIso.hom.birationalOver _ _
+      Φ.finiteFanSchemeComplexIso_hom_comp_algebraicRealizationStructureMap).symm.isRationalOver _ _
   let hBase := Φ.isEffectiveCartier_boundaryIdeal hΦ hc rankTwo
   let hB := isEffectiveCartier_internalBlowupBoundary b s hΦ c hBase
   exact

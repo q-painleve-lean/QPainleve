@@ -48,7 +48,9 @@ theorem exists_sarkisov_path_of_quadric_preparation [IsIntegral Z] :
       A.fan = Φ ∧ A.hom ≍ C.hom ≫ π[hC ▸ P.common_source] ∧
       B.fan = P.model 0 ∧ B.hom ≍ C.hom ≫ π[hC ▸ P.common_model 0] ∧
       @Quiver.Path.length _ sarkisovQuiver _ _ p = 2 * a ∧
-      p.rationalMap = (A.fan.denseTorusPartialIso B.fan).toRationalMap := by
+      p.rationalMap = (Scheme.PartialIso.ofDenseOpenImmersions
+        (Fan.denseTorusι A.fan inferInstance)
+        (Fan.denseTorusι B.fan inferInstance)).toRationalMap := by
   let model (j : Fin (a + 1)) :=
     C.coarsen (hC ▸ P.common_model j) (P.model_regular j) rankTwo
   let link (j : Fin a) := C.coarsen (hC ▸ P.common_link j) (P.link_regular j) rankTwo

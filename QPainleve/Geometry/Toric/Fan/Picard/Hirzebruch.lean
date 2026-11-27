@@ -19,6 +19,7 @@ import QPainleve.AlgebraicGeometry.LineBundle.Ample
 import QPainleve.Geometry.Toric.Fan.Boundary.ProjectiveLine
 import QPainleve.Geometry.Toric.Fan.Rationality
 import TauCeti.AlgebraicGeometry.Cohomology.ProjectiveLine.Basic
+import TauCeti.Geometry.Toric.Algebraic.BaseChange.Complex
 
 /-!
 # Picard coordinates of a Hirzebruch fan
@@ -381,8 +382,11 @@ theorem isRationalOver_of_hirzebruch :
     Scheme.IsRationalOver (X ↘ S) := by
   obtain ⟨σ, h₀, h₁⟩ := exists_cone_of_hirzebruch_section_fiber b e r hr hΦ hc 0 0
   have hN : Module.finrank ℤ N = 2 := by simpa using Module.finrank_eq_card_basis b
-  exact Φ.isRationalOver_of_ray_ne_of_le hΦ hN
+  let := Φ.isRationalOver_of_ray_ne_of_le ℂ hΦ hN
     (r.injective.ne (by decide : (0 : Fin 4) ≠ 1)) h₀ h₁
+  rw [Φ.algebraicRealization_over]
+  exact (Φ.finiteFanSchemeComplexIso.hom.birationalOver _ _
+    Φ.finiteFanSchemeComplexIso_hom_comp_algebraicRealizationStructureMap).symm.isRationalOver _ _
 
 include hc in
 open Classical in

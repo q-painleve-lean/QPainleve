@@ -42,7 +42,8 @@ variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V] {i : N �
 local notation "S" => Spec (CommRingCat.of ℂ)
 local notation "X[" Φ "]" => Fan.algebraicRealization Φ
 local notation "toricMap[" Φ "," Ψ "]" =>
-  Scheme.PartialIso.toRationalMap (Fan.denseTorusPartialIso Φ Ψ)
+  Scheme.PartialIso.toRationalMap (Scheme.PartialIso.ofDenseOpenImmersions
+    (Fan.denseTorusι Φ inferInstance) (Fan.denseTorusι Ψ inferInstance))
 local notation "isoMap[" e "," c "]" =>
   Scheme.Hom.toRationalMap (FanHom.algebraicMap (FanEquiv.toFanHom e) ≫
     Iso.hom (Fan.torusTranslation _ c))

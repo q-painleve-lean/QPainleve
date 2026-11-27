@@ -118,7 +118,9 @@ theorem StarStep.isModification_target (step : StarStep A B)
 
 local notation "toricMap[" A "," B "]" =>
   Scheme.PartialIso.toRationalMap
-    (Fan.denseTorusPartialIso (LogarithmicProjection.fan A) (LogarithmicProjection.fan B))
+    (Scheme.PartialIso.ofDenseOpenImmersions
+      (Fan.denseTorusι (LogarithmicProjection.fan A) inferInstance)
+      (Fan.denseTorusι (LogarithmicProjection.fan B) inferInstance))
 
 /-- Each toric step composed with the source projection is the specified target projection
 as a rational map on the resolving surface. -/
@@ -151,10 +153,10 @@ def dominantPathRationalMap (Q : Quiver (LogarithmicProjection i D))
 
 /-- Compose the rational maps of a resolved toric path in execution order. -/
 def pathRationalMap (p : Quiver.Path A B) : X[A.fan] ⤏ X[B.fan] :=
-  (dominantPathRationalMap instQuiver (fun {_ _} _ ↦ ⟨toricMap[_,_], inferInstance⟩) p).val
+  (dominantPathRationalMap instQuiver (fun {A B} _ ↦ ⟨toricMap[A,B], inferInstance⟩) p).val
 
 instance (p : Quiver.Path A B) : (pathRationalMap p).IsDominant :=
-  (dominantPathRationalMap instQuiver (fun {_ _} _ ↦ ⟨toricMap[_,_], inferInstance⟩) p).property
+  (dominantPathRationalMap instQuiver (fun {A B} _ ↦ ⟨toricMap[A,B], inferInstance⟩) p).property
 
 @[simp]
 theorem pathRationalMap_nil :
@@ -168,8 +170,9 @@ theorem pathRationalMap_cons (p : Quiver.Path A B) (e : B ⟶ C) :
 theorem pathRationalMap_eq_denseTorusPartialIso (p : Quiver.Path A B) :
     pathRationalMap p = toricMap[A,B] := by
   induction p with
-  | nil => rw [pathRationalMap_nil, denseTorusPartialIso_self_toRationalMap]
-  | cons p e ih => simp only [pathRationalMap_cons, ih, denseTorusPartialIso_toRationalMap_comp]
+  | nil => rw [pathRationalMap_nil, Scheme.PartialIso.ofDenseOpenImmersions_toRationalMap_self]
+  | cons p e ih => simp only [pathRationalMap_cons, ih,
+    Scheme.PartialIso.ofDenseOpenImmersions_toRationalMap_comp]
 
 /-- The regular projections at the vertices of a path represent its partial composites.
 Apply this to any initial subpath, including the whole path. -/
@@ -184,7 +187,8 @@ theorem comp_pathRationalMap [PreirreducibleSpace Z] (p : Quiver.Path A B) :
 /-- Concatenation of resolved paths composes their rational maps in execution order. -/
 theorem pathRationalMap_comp (p : Quiver.Path A B) (q : Quiver.Path B C) :
     pathRationalMap (p.comp q) = (pathRationalMap p).comp (pathRationalMap q) := by
-  simp only [pathRationalMap_eq_denseTorusPartialIso, denseTorusPartialIso_toRationalMap_comp]
+  simp only [pathRationalMap_eq_denseTorusPartialIso,
+    Scheme.PartialIso.ofDenseOpenImmersions_toRationalMap_comp]
 
 section Factorization
 

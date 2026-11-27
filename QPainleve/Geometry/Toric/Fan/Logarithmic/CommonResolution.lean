@@ -61,7 +61,9 @@ private theorem resolved_toric_projection
     (hPole : letI : Smooth (Z ↘ S) := SmoothOfRelativeDimension.smooth 2 _
       (B[Φ,hc]).comap p = P * ramificationIdealSheaf ℂ p) :
     let q := g ≫ π[L]
-    p.toRationalMap.comp (Φ.denseTorusPartialIso Δ).toRationalMap = q.toRationalMap ∧
+    p.toRationalMap.comp (Scheme.PartialIso.ofDenseOpenImmersions
+      (Fan.denseTorusι Φ inferInstance)
+      (Fan.denseTorusι Δ inferInstance)).toRationalMap = q.toRationalMap ∧
     ∃ hOver : q ≫ s[Δ] = Z ↘ S,
       letI : q.IsOver S := ⟨hOver⟩
       letI : Smooth (Z ↘ S) := SmoothOfRelativeDimension.smooth 2 (Z ↘ S)
@@ -79,7 +81,8 @@ private theorem resolved_toric_projection
   have : IsProper (q ≫ s[Δ]) := hOver.symm ▸ inferInstanceAs (IsProper (Z ↘ S))
   let : IsProper q := IsProper.of_comp q s[Δ]
   refine ⟨hrat, hOver, fun hΔ ↦ ⟨?_, ?_⟩⟩
-  · exact IsModification.of_resolved_partialIso (g ≫ π[J]) (Φ.denseTorusPartialIso Δ) q hrat
+  · exact IsModification.of_resolved_partialIso (g ≫ π[J]) (Scheme.PartialIso.ofDenseOpenImmersions
+    (Fan.denseTorusι Φ inferInstance) (Fan.denseTorusι Δ inferInstance)) q hrat
   · exact (comap_boundaryIdeal_eq_mul_ramificationIdealSheaf_iff_of_common_subdivision
       J L hΦ hΔ hΩ hc hRank g P).mp hPole
 
@@ -118,7 +121,8 @@ theorem exists_common_nodal_resolution_of_toric_changes
         ∀ (Δ : Fan (i j)) [Nonempty Δ.cones] (L : Ω.IsSubdivision Δ),
           letI : Nonempty (Φ j).cones := (hcΦ j).nonempty_cones
           let q := g ≫ π[L]
-          (T.toBase ≫ f j).toRationalMap.comp ((Φ j).denseTorusPartialIso Δ).toRationalMap =
+          (T.toBase ≫ f j).toRationalMap.comp (Scheme.PartialIso.ofDenseOpenImmersions
+            (Fan.denseTorusι (Φ j) inferInstance) (Fan.denseTorusι Δ inferInstance)).toRationalMap =
             q.toRationalMap ∧
           ∃ hOver : q ≫ s[Δ] = Z ↘ S,
             letI : q.IsOver S := ⟨hOver⟩

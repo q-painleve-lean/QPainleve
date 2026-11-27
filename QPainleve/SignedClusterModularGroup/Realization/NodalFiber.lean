@@ -13,6 +13,7 @@ import QPainleve.Geometry.Toric.Fan.ExchangeMatrix
 import QPainleve.Geometry.Toric.Fan.Presentation.Genus
 import QPainleve.Geometry.Toric.Fan.Rationality
 import QPainleve.SignedClusterModularGroup.Realization.Anticanonical
+import TauCeti.Geometry.Toric.Algebraic.BaseChange.Complex
 
 /-!
 # Geometry of marked toric fibers
@@ -49,7 +50,10 @@ theorem CompleteToricPresentation.isRationalOver_fan (Q : CompleteToricPresentat
     rw [← h, b.detDualEquiv_self] at hdet
     exact zero_ne_one hdet
   have hN : Module.finrank ℤ N = 2 := by simpa using Module.finrank_eq_card_basis b
-  exact Q.fan.isRationalOver_of_ray_ne_of_le Q.regular hN hne h₀ h₁
+  let := Q.fan.isRationalOver_of_ray_ne_of_le ℂ Q.regular hN hne h₀ h₁
+  rw [Q.fan.algebraicRealization_over]
+  have h := Q.fan.finiteFanSchemeComplexIso_hom_comp_algebraicRealizationStructureMap
+  exact (Q.fan.finiteFanSchemeComplexIso.hom.birationalOver _ _ h).symm.isRationalOver _ _
 
 /-- The complete regular toric model is a smooth surface over ℂ. -/
 theorem CompleteToricPresentation.smoothOfRelativeDimension_fan

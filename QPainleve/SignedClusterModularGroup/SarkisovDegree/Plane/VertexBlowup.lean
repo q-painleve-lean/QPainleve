@@ -217,7 +217,8 @@ private theorem comp_vertexLink_eq {Y : Scheme} [PreirreducibleSpace Y]
     let : Nonempty (Φ).cones :=
       (((Ψ).starSubdivisionAlong_isSubdivision hΨ (σ).property hσ).isComplete_iff.mpr
         (Fan.isComplete_projectiveSpace d hi)).nonempty_cones
-    f.toRationalMap.comp ((D).inv.toRationalMap.comp ((Ψ).denseTorusPartialIso Φ).toRationalMap) =
+    f.toRationalMap.comp ((D).inv.toRationalMap.comp (Scheme.PartialIso.ofDenseOpenImmersions
+      (Fan.denseTorusι (Ψ) inferInstance) (Fan.denseTorusι Φ inferInstance)).toRationalMap) =
       q.toRationalMap := by
   intro hΨ₀ hΦ₀
   let := hΨ₀
@@ -226,7 +227,8 @@ private theorem comp_vertexLink_eq {Y : Scheme} [PreirreducibleSpace Y]
   have hf' : f ≫ (D).inv = q ≫ s.toFanHom.algebraicMap := by
     simp only [← hf, Category.assoc, Iso.hom_inv_id, Category.comp_id]
   calc
-    _ = (f ≫ (D).inv).toRationalMap.comp ((Ψ).denseTorusPartialIso Φ).toRationalMap := by
+    _ = (f ≫ (D).inv).toRationalMap.comp (Scheme.PartialIso.ofDenseOpenImmersions
+      (Fan.denseTorusι (Ψ) inferInstance) (Fan.denseTorusι Φ inferInstance)).toRationalMap := by
       simp only [← Scheme.RationalMap.comp_assoc, Scheme.RationalMap.comp_toRationalMap,
         Scheme.Hom.toRationalMap_compHom]
     _ = q.toRationalMap := ?_
@@ -261,7 +263,8 @@ theorem exists_sarkisov_decrease_of_plane_vertex {Y : Scheme} {n : ℕ}
       let : Nonempty (Φ).cones := hc.nonempty_cones
       q ≫ s.toFanHom.algebraicMap ≫ (D).hom = T.toBase ∧
       T.toBase.toRationalMap.comp
-        ((D).inv.toRationalMap.comp ((Ψ).denseTorusPartialIso Φ).toRationalMap) =
+        ((D).inv.toRationalMap.comp (Scheme.PartialIso.ofDenseOpenImmersions
+          (Fan.denseTorusι (Ψ) inferInstance) (Fan.denseTorusι Φ inferInstance)).toRationalMap) =
         q.toRationalMap ∧
       (k.inv ≫ g) ≫ fP = U.toBase ≫ fX ∧
       Scheme.BirationalOver (k.inv ≫ g) (𝟙 P) ∧
