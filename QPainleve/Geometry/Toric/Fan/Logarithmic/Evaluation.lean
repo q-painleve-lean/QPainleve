@@ -40,7 +40,6 @@ rays and the binomial center ideals gives the exchange matrix of the
 typed relabeling and its fixed-center X evaluation on the original resolving
 surface. The permutation reads target labels in the source ordering. -/
 theorem comp_xEvaluation_of_resolved_toric_iso (e : FanEquiv Φ Ψ)
-    (hΦ : Φ.IsRegular)
     (b : Basis (Fin 2) ℤ N) (b' : Basis (Fin 2) ℤ N')
     (s : ι → Φ.Ray) (t : ι → Ψ.Ray) (σ : Equiv.Perm ι)
     (c d : Multiplicative (ι → ℤ) →* ℂˣ)
@@ -84,7 +83,7 @@ theorem comp_xEvaluation_of_resolved_toric_iso (e : FanEquiv Φ Ψ)
         c (ofAdd (Pi.single (σ j) 1)) := by
     have hj := hc j
     rw [← hray j] at hj ⊢
-    exact (e.comap_internalCenter_toricIso_eq_iff b b' hdet hΦ (s (σ j)) χ _ _).mp hj
+    exact (e.comap_internalCenter_toricIso_eq_iff b b' hdet (s (σ j)) χ _ _).mp hj
   rw [← e.comp_xEvaluation_of_toric_iso b b' s t σ c d χ hray hdet hparam]
   simp only [← comp_assoc, hpq]
 

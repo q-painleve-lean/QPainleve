@@ -75,10 +75,10 @@ private theorem compare_relabel {U T : OrderedToricModel B m}
           (F.toFanHom.algebraicMap ≫ (Φ.torusTranslation 1).hom).toRationalMap =
             T.hom.toRationalMap := by
         rw [Scheme.RationalMap.comp_toRationalMap, Scheme.Hom.toRationalMap_compHom, hf]
-      obtain ⟨hm, hx⟩ := F.comp_xEvaluation_of_resolved_toric_iso hΦ b b r s σ
+      obtain ⟨hm, hx⟩ := F.comp_xEvaluation_of_resolved_toric_iso b b r s σ
         (centerCharacter c) (centerCharacter d) 1 hray hdet (fun j ↦ by
           rw [← hray j]
-          apply (F.comap_internalCenter_toricIso_eq_iff b b hdet hΦ (r (σ j)) 1 _ _).mpr
+          apply (F.comap_internalCenter_toricIso_eq_iff b b hdet (r (σ j)) 1 _ _).mpr
           simpa [centerCharacter, Finsupp.linearEquivFunOnFinite_symm_single] using
             congrArg Prod.snd (hσ j)) U.hom T.hom hcomp U.exchangeMatrix U.exchangeMatrix_matrix
       refine ⟨SkewExchangeMatrix.ext (T.exchangeMatrix_matrix.trans hm.symm), ?_, ?_⟩

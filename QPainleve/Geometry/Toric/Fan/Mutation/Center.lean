@@ -40,16 +40,13 @@ local notation "S(" σ ")" => dualSemigroup Φ.lattice (Subtype.val σ)
 local notation "R(" σ ")" => AddMonoidAlgebra ℂ (S(σ))
 
 private abbrev centerEval (d : ℂˣ) : R(ρ.toCone) →ₐ[ℂ] ℂ :=
-  (ρ.binomialCenterEval rankTwo (m := χ(u)) (b.detDualEquiv_self u)
-    (ρ.surjective_detCharacter b) d).comp
-      (toMultiplicativeAlgEquiv ℂ ℂ (S(ρ.toCone))).toAlgHom
+  ρ.binomialCenterEval ℂ rankTwo (m := χ(u)) (b.detDualEquiv_self u)
+    (ρ.surjective_detCharacter b) d
 
 private theorem centerEval_single_eq_zero (d : ℂˣ) (a : S(ρ.toCone)) (r : ℂ)
     (ha : (a : N →+ ℤ) u ≠ 0) :
     centerEval b ρ d (single a r) = 0 := by
-  simpa only [centerEval, AlgHom.comp_apply, AlgEquiv.coe_toAlgHom,
-    toMultiplicativeAlgEquiv_single] using
-    ρ.binomialCenterEval_single_eq_zero rankTwo (b.detDualEquiv_self u)
+  exact ρ.binomialCenterEval_single_eq_zero ℂ rankTwo (b.detDualEquiv_self u)
       (ρ.surjective_detCharacter b) d a r ha
 
 private theorem centerEval_single_zsmul (d : ℂˣ) (a : S(ρ.toCone)) (r : ℂ) (n : ℤ)
@@ -60,9 +57,9 @@ private theorem centerEval_single_zsmul (d : ℂˣ) (a : S(ρ.toCone)) (r : ℂ)
       smul_zero]
   have he : a = ρ.chartCharacter hz := Subtype.ext (by simpa only [Ray.coe_chartCharacter] using ha)
   rw [he]
-  simpa only [centerEval, AlgHom.comp_apply, AlgEquiv.coe_toAlgHom,
-    toMultiplicativeAlgEquiv_single] using
-    ρ.binomialCenterEval_single_zsmul rankTwo (b.detDualEquiv_self u)
+  simpa only [centerEval, Units.val_zpow_eq_zpow_val, Units.val_mul, Units.val_neg,
+    Units.val_one, neg_one_mul] using
+    ρ.binomialCenterEval_single_zsmul ℂ rankTwo (b.detDualEquiv_self u)
       (ρ.surjective_detCharacter b) d n r
 
 private theorem centerEval_toPoint (d : ℂˣ) :
@@ -73,11 +70,7 @@ private theorem centerEval_toPoint (d : ℂˣ) :
         (ρ.surjective_detCharacter b) d := by
   rw [additiveAffineToricChartι_def, Ray.binomialCenter_def, ← Spec.map_comp_assoc,
     ← CommRingCat.ofHom_comp]
-  congr 2
-  apply CommRingCat.hom_ext
-  apply RingHom.ext
-  intro x
-  simp [centerEval]
+  rfl
 
 private def centerEvalOnCone (d : ℂˣ) (σ : Φ.cones) (hσ : σ = ρ.toCone) :
     R(σ) →ₐ[ℂ] ℂ :=

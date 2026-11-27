@@ -16,6 +16,7 @@ import QPainleve.AlgebraicGeometry.IdealSheaf.Restriction
 import QPainleve.AlgebraicGeometry.Morphisms.IsoLocus
 import QPainleve.AlgebraicGeometry.Morphisms.Pullback.IsoLocus
 import QPainleve.AlgebraicGeometry.Scheme.FunctionField
+import TauCeti.Algebra.Bialgebra.MonoidAlgebra.Equiv
 import TauCeti.AlgebraicGeometry.IdealSheaf.BaseChange
 import TauCeti.AlgebraicGeometry.WeilDivisor.Scheme.Order
 import TauCeti.RingTheory.LocalRing.Basic
@@ -177,11 +178,11 @@ local notation "s'" =>
     (Eq.trans (congrArg m (primitiveGenerator_liftRay h ρ)) hm) hp c
 
 private theorem binomialCenterEval_liftRay :
-    (h.liftRay ρ).binomialCenterEval hdim ((congrArg m (h.primitiveGenerator_liftRay ρ)).trans hm)
-      hp c = ρ.binomialCenterEval hdim hm hp c := by
-  let a := (h.liftRay ρ).binomialCenterEval hdim
+    (h.liftRay ρ).binomialCenterEval ℂ hdim ((congrArg m (h.primitiveGenerator_liftRay ρ)).trans hm)
+      hp c = ρ.binomialCenterEval ℂ hdim hm hp c := by
+  let a := (h.liftRay ρ).binomialCenterEval ℂ hdim
     ((congrArg m (h.primitiveGenerator_liftRay ρ)).trans hm) hp c
-  let b := ρ.binomialCenterEval hdim hm hp c
+  let b := ρ.binomialCenterEval ℂ hdim hm hp c
   have hker : RingHom.ker a = RingHom.ker b := by
     dsimp only [a, b]
     rw [Ray.ker_binomialCenterEval, Ray.ker_binomialCenterEval]
@@ -204,8 +205,8 @@ theorem binomialCenter_comp_algebraicMap :
   have hchart : Φ.affineToricChartι (h.liftRay ρ).toCone ≫ h.toFanHom.algebraicMap =
       Ψ.affineToricChartι ρ.toCone :=
     h.affineToricChartι_comp_algebraicMap (h.ray_mem ρ) ρ.toCone.property
-  rw [Ray.binomialCenter_def, Category.assoc, hchart, Ray.binomialCenter_def,
-    h.binomialCenterEval_liftRay ρ hdim hm hp c]
+  rw [Ray.binomialCenter_def, Category.assoc, hchart, Ray.binomialCenter_def]
+  rw [h.binomialCenterEval_liftRay ρ hdim hm hp c]
   rfl
 
 /-- Each binomial center on the old boundary belongs to the isomorphism locus. -/

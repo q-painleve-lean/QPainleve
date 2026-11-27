@@ -13,6 +13,7 @@ public import QPainleve.Geometry.Toric.Fan.Picard.Basic
 public import TauCeti.AlgebraicGeometry.CartierDivisor.Excision
 
 import Mathlib.RingTheory.Spectrum.Prime.RingHom
+import TauCeti.Algebra.Bialgebra.MonoidAlgebra.Equiv
 import TauCeti.AlgebraicGeometry.IdealSheaf.BaseChange
 import TauCeti.AlgebraicGeometry.IdealSheaf.VanishingIdeal
 
@@ -195,97 +196,65 @@ private theorem mapsTo_rayCone :
 
 local notation "F" => affineCoordinateRingMap Φ.lattice Ψ.lattice
   e.toFanHom.latticeMap e.toFanHom.realMap e.toFanHom.map_lattice (mapsTo_rayCone e ρ)
-local notation "I" =>
-  rayIdeal Φ.lattice (Φ.isToricCone ρ.toCone.property) (ρ.toToricRay Φ ρ.toCone le_rfl)
-local notation "J" =>
-  rayIdeal Ψ.lattice (Ψ.isToricCone (Subtype.property (Fan.Ray.toCone Ψ (e.rayEquiv ρ))))
-    (Fan.Ray.toToricRay Ψ (e.rayEquiv ρ) (Fan.Ray.toCone Ψ (e.rayEquiv ρ)) le_rfl)
-
--- Read the equality of ray generic points in the affine chart as an equality of prime ideals.
-private theorem comap_rayIdeal (hΦ : Φ.IsRegular) (hΨ : Ψ.IsRegular) :
-    Ideal.comap F I = J := by
-  let a := (Fan.isRegular_iff.1 hΦ _ ρ.toCone.property).rayPoint Φ.lattice
-    (Φ.isToricCone ρ.toCone.property) (ρ.toToricRay Φ ρ.toCone le_rfl)
-  let b := (Fan.isRegular_iff.1 hΨ _ (e.rayEquiv ρ).toCone.property).rayPoint Ψ.lattice
-    (Ψ.isToricCone (e.rayEquiv ρ).toCone.property)
-    ((e.rayEquiv ρ).toToricRay Ψ (e.rayEquiv ρ).toCone le_rfl)
-  let q := affineToricSchemeMap Φ.lattice Ψ.lattice e.toFanHom.latticeMap
-    e.toFanHom.realMap e.toFanHom.map_lattice (mapsTo_rayCone e ρ)
-  have h : q a.val = b.val := by
-    apply (Ψ.affineToricChartι (e.rayEquiv ρ).toCone).isOpenEmbedding.injective
-    rw [← Scheme.Hom.comp_apply,
-      ← e.toFanHom.affineToricChartι_comp_algebraicMap_of_mapsTo _ _ (mapsTo_rayCone e ρ),
-      Scheme.Hom.comp_apply]
-    simpa only [Fan.coe_rayBoundaryPoint] using e.algebraicMap_rayBoundaryPoint hΦ hΨ ρ
-  have ha := congrArg
-    (fun x : Ψ.affineToricChart (e.rayEquiv ρ).toCone ↦
-      (show PrimeSpectrum
-        (affineCoordinateRing Ψ.lattice (e.rayEquiv ρ).toCone.val) from x).asIdeal) h
-  simp only [q, affineToricSchemeMap_def, Spec.map_apply, CommRingCat.hom_ofHom] at ha
-  -- Identify the points of the affine charts with their versions in the prime spectra.
-  change (PrimeSpectrum.comap (F).toRingHom a.val).asIdeal =
-    (b.val : PrimeSpectrum _).asIdeal at ha
-  have haI : (a.val : PrimeSpectrum _).asIdeal = I := IsRegularCone.rayPoint_asIdeal _ _ _ _
-  have hbJ : (b.val : PrimeSpectrum _).asIdeal = J := IsRegularCone.rayPoint_asIdeal _ _ _ _
-  calc
-    _ = Ideal.comap (F).toRingHom (a.val : PrimeSpectrum _).asIdeal :=
-      congrArg (Ideal.comap (F).toRingHom) haI.symm
-    _ = (PrimeSpectrum.comap (F).toRingHom (a.val : PrimeSpectrum _)).asIdeal :=
-      (PrimeSpectrum.comap_asIdeal (F).toRingHom _).symm
-    _ = _ := ha.trans hbJ
 
 variable {m : N →+ ℤ} {m' : N' →+ ℤ}
   (hdim : Module.finrank ℤ N = 2) (hdim' : Module.finrank ℤ N' = 2)
   (hm : m ρ.primitiveGenerator = 0) (hm' : m' (e.rayEquiv ρ).primitiveGenerator = 0)
   (hprim : Function.Surjective m) (hprim' : Function.Surjective m') (c : ℂˣ)
 
-private theorem binomialCenterEval_comp (hΦ : Φ.IsRegular)
+local notation "chartEval(" P ", " ray ", " dim ", " vanishes ", " primitive ")" =>
+  (AlgHom.comp (Fan.Ray.binomialCenterEval ray ℂ dim vanishes primitive c)
+    (AlgEquiv.toAlgHom (AlgEquiv.symm (AddMonoidAlgebra.toMultiplicativeAlgEquiv ℂ ℂ
+      (dualSemigroup (Fan.lattice P) (Subtype.val (Fan.Ray.toCone P ray)))))))
+
+private theorem binomialCenterEval_comp
     (hchar : m'.comp (e.latticeEquiv : N →+ N') = m) :
-    (ρ.binomialCenterEval hdim hm hprim c).comp F =
-      (e.rayEquiv ρ).binomialCenterEval hdim' hm' hprim' c := by
-  let a := (ρ.binomialCenterEval hdim hm hprim c).comp F
-  let b := (e.rayEquiv ρ).binomialCenterEval hdim' hm' hprim' c
-  have hχ : dualSemigroupMap Φ.lattice Ψ.lattice e.toFanHom.latticeMap
-      e.toFanHom.realMap e.toFanHom.map_lattice (mapsTo_rayCone e ρ)
-        ((e.rayEquiv ρ).chartCharacter hm') =
-      ρ.chartCharacter hm := by
-    apply Subtype.ext
-    simpa only [coe_dualSemigroupMap, Fan.Ray.coe_chartCharacter, toFanHom_latticeMap] using hchar
-  have hker : RingHom.ker b ≤ RingHom.ker a := by
-    rw [show RingHom.ker b = _ from (e.rayEquiv ρ).ker_binomialCenterEval hdim' hm' hprim' c]
-    refine sup_le (fun x hx ↦ ?_) ?_
-    · have hmem : F x ∈ I := by
-        rw [← comap_rayIdeal e ρ hΦ (e.isRegular_iff.mpr hΦ)] at hx
-        exact hx
-      have hle := le_sup_left (a := I)
-        (b := Ideal.span {1 + algebraMap ℂ _ (c : ℂ) *
-          MonoidAlgebra.of ℂ _ (ofAdd (ρ.chartCharacter hm))})
-      rw [← ρ.ker_binomialCenterEval hdim hm hprim c] at hle
-      exact RingHom.mem_ker.mpr (RingHom.mem_ker.mp (hle hmem))
-    · rw [Ideal.span_le, Set.singleton_subset_iff]
-      apply RingHom.mem_ker.mpr
-      simp only [a, map_add, map_one, map_mul, AlgHom.comp_apply, AlgHom.commutes,
-        MonoidAlgebra.of_apply, affineCoordinateRingMap_single, hχ,
-        Fan.Ray.binomialCenterEval_character, Algebra.algebraMap_self_apply]
-      simp
-  apply AlgHom.ext
-  intro x
-  have hz : x - algebraMap ℂ _ (b x) ∈ RingHom.ker b :=
-    RingHom.mem_ker.mpr (by
-      simp only [map_sub, AlgHom.commutes, Algebra.algebraMap_self_apply, sub_self])
-  have ha := RingHom.mem_ker.mp (hker hz)
-  simpa only [AlgHom.coe_toRingHom, map_sub, AlgHom.commutes,
-    Algebra.algebraMap_self_apply, sub_eq_zero] using ha
+    (chartEval(Φ, ρ, hdim, hm, hprim)).comp F =
+      chartEval(Ψ, e.rayEquiv ρ, hdim', hm', hprim') := by
+  refine MonoidAlgebra.algHom_ext (fun x ↦ ?_) (Subsingleton.elim _ _)
+  let a := x.toAdd
+  have hx : ofAdd a = x := ofAdd_toAdd x
+  rw [← hx]
+  let a' := dualSemigroupMap Φ.lattice Ψ.lattice e.toFanHom.latticeMap
+    e.toFanHom.realMap e.toFanHom.map_lattice (mapsTo_rayCone e ρ) a
+  change (chartEval(Φ, ρ, hdim, hm, hprim))
+      (F (MonoidAlgebra.single (ofAdd a) 1)) =
+    chartEval(Ψ, e.rayEquiv ρ, hdim', hm', hprim') (MonoidAlgebra.single (ofAdd a) 1)
+  rw [affineCoordinateRingMap_single]
+  change (chartEval(Φ, ρ, hdim, hm, hprim)) (MonoidAlgebra.single (ofAdd a') 1) = _
+  simp only [AlgHom.comp_apply, AlgEquiv.coe_toAlgHom,
+    AddMonoidAlgebra.toMultiplicativeAlgEquiv_symm_single, toAdd_ofAdd]
+  have hv : (a' : N →+ ℤ) ρ.primitiveGenerator =
+      (a : N' →+ ℤ) (e.rayEquiv ρ).primitiveGenerator := by
+    simp only [a', coe_dualSemigroupMap, AddMonoidHom.comp_apply, toFanHom_latticeMap,
+      primitiveGenerator_rayEquiv]
+    rfl
+  by_cases ha : (a : N' →+ ℤ) (e.rayEquiv ρ).primitiveGenerator = 0
+  · obtain ⟨n, hn⟩ :=
+      (e.rayEquiv ρ).exists_zsmul_eq_of_apply_primitiveGenerator_eq_zero hdim' hm' hprim' ha
+    have hb : (a' : N →+ ℤ) = n • m := by
+      ext z
+      simp only [a', coe_dualSemigroupMap, AddMonoidHom.comp_apply, toFanHom_latticeMap,
+        ← hn, AddMonoidHom.zsmul_apply, ← hchar]
+    have hsrc : a' = ρ.chartCharacter (m := n • m) (by simp [hm]) :=
+      Subtype.ext (by simpa only [Fan.Ray.coe_chartCharacter] using hb)
+    have hdst : a = (e.rayEquiv ρ).chartCharacter (m := n • m')
+        (by simp only [AddMonoidHom.zsmul_apply, hm', smul_zero]) :=
+      Subtype.ext (by simpa only [Fan.Ray.coe_chartCharacter] using hn.symm)
+    rw [hsrc, hdst, Fan.Ray.binomialCenterEval_single_zsmul,
+      Fan.Ray.binomialCenterEval_single_zsmul]
+  · rw [Fan.Ray.binomialCenterEval_single_eq_zero _ _ _ _ _ _ _ _ (fun h ↦ ha (hv.symm.trans h)),
+      Fan.Ray.binomialCenterEval_single_eq_zero _ _ _ _ _ _ _ _ ha]
 
 /-- Matching primitive orbit characters give the same binomial parameter under a fan
 equivalence. This is an equality of complex sections in the ambient toric scheme. -/
-theorem binomialCenter_comp_algebraicMap (hΦ : Φ.IsRegular)
+theorem binomialCenter_comp_algebraicMap
     (hchar : m'.comp (e.latticeEquiv : N →+ N') = m) :
     ρ.binomialCenter hdim hm hprim c ≫ e.toFanHom.algebraicMap =
       (e.rayEquiv ρ).binomialCenter hdim' hm' hprim' c := by
-  have h := binomialCenterEval_comp e ρ hdim hdim' hm hm' hprim hprim' c hΦ hchar
-  have hf : (ρ.binomialCenterEval hdim hm hprim c).toRingHom.comp (F).toRingHom =
-      ((e.rayEquiv ρ).binomialCenterEval hdim' hm' hprim' c).toRingHom :=
+  have h := binomialCenterEval_comp e ρ hdim hdim' hm hm' hprim hprim' c hchar
+  have hf : (chartEval(Φ, ρ, hdim, hm, hprim)).toRingHom.comp (F).toRingHom =
+      (chartEval(Ψ, e.rayEquiv ρ, hdim', hm', hprim')).toRingHom :=
     congrArg AlgHom.toRingHom h
   rw [Fan.Ray.binomialCenter_def, Fan.Ray.binomialCenter_def, Category.assoc,
     e.toFanHom.affineToricChartι_comp_algebraicMap_of_mapsTo _ _ (mapsTo_rayCone e ρ),
@@ -293,16 +262,16 @@ theorem binomialCenter_comp_algebraicMap (hΦ : Φ.IsRegular)
 
 /-- Under compatible orbit characters, the image binomial center pulls back to the
 original center as a closed subscheme. -/
-theorem comap_ker_binomialCenter_algebraicMap (hΦ : Φ.IsRegular)
+theorem comap_ker_binomialCenter_algebraicMap
     (hchar : m'.comp (e.latticeEquiv : N →+ N') = m) :
     ((e.rayEquiv ρ).binomialCenter hdim' hm' hprim' c).ker.comap e.toFanHom.algebraicMap =
       (ρ.binomialCenter hdim hm hprim c).ker := by
-  rw [← e.binomialCenter_comp_algebraicMap ρ hdim hdim' hm hm' hprim hprim' c hΦ hchar,
+  rw [← e.binomialCenter_comp_algebraicMap ρ hdim hdim' hm hm' hprim hprim' c hchar,
     Scheme.Hom.comap_ker_comp_of_isClosedImmersion]
 
 /-- The boundary restriction of a fan equivalence transports the binomial points
 for matching orbit characters. -/
-theorem binomialCenterOnBoundary_comp_boundaryIso (hΦ : Φ.IsRegular)
+theorem binomialCenterOnBoundary_comp_boundaryIso
     (hchar : m'.comp (e.latticeEquiv : N →+ N') = m) :
     ρ.binomialCenterOnBoundary hdim hm hprim c ≫
         (e.boundaryIso ⟨ρ.toCone⟩ ⟨(e.rayEquiv ρ).toCone⟩).hom =
@@ -311,16 +280,16 @@ theorem binomialCenterOnBoundary_comp_boundaryIso (hΦ : Φ.IsRegular)
   rw [Category.assoc, e.boundaryIso_hom_subschemeι, ← Category.assoc,
     Fan.Ray.binomialCenterOnBoundary_comp_subschemeι,
     Fan.Ray.binomialCenterOnBoundary_comp_subschemeι]
-  exact e.binomialCenter_comp_algebraicMap ρ hdim hdim' hm hm' hprim hprim' c hΦ hchar
+  exact e.binomialCenter_comp_algebraicMap ρ hdim hdim' hm hm' hprim hprim' c hchar
 
 /-- The ideal of an internal center on the image boundary pulls back to the original
 center ideal under the compatibility of orbit characters. -/
 theorem comap_ker_binomialCenterOnBoundary_boundaryIso
-    (hΦ : Φ.IsRegular) (hchar : m'.comp (e.latticeEquiv : N →+ N') = m) :
+    (hchar : m'.comp (e.latticeEquiv : N →+ N') = m) :
     ((e.rayEquiv ρ).binomialCenterOnBoundary hdim' hm' hprim' c).ker.comap
         (e.boundaryIso ⟨ρ.toCone⟩ ⟨(e.rayEquiv ρ).toCone⟩).hom =
       (ρ.binomialCenterOnBoundary hdim hm hprim c).ker := by
-  rw [← e.binomialCenterOnBoundary_comp_boundaryIso ρ hdim hdim' hm hm' hprim hprim' c hΦ hchar,
+  rw [← e.binomialCenterOnBoundary_comp_boundaryIso ρ hdim hdim' hm hm' hprim hprim' c hchar,
     Scheme.Hom.comap_ker_comp_of_isClosedImmersion]
 
 end Centers

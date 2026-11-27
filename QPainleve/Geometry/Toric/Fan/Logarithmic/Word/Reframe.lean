@@ -78,7 +78,7 @@ theorem exists_reframe_of_latticeEquiv (U : OrderedToricModel A m)
   let : Nonempty B.fan.cones := B.isComplete.nonempty_cones
   let T := B.fan.internalBlowupTower b t U.parameters
   obtain ⟨g, ⟨hg, hgB⟩, -⟩ := f.existsUnique_isLift_internalBlowupTower U.basis b
-    (U.basis.detDualEquiv_map f.latticeEquiv.toIntLinearEquiv) U.rays U.parameters U.regular
+    (U.basis.detDualEquiv_map f.latticeEquiv.toIntLinearEquiv) U.rays U.parameters
   let w : T.1 ≅ Z := g.symm ≪≫ U.iso
   have hB : B.hom = U.hom ≫ f.toFanHom.algebraicMap := eq_of_heq hB
   have hbase : g.hom ≫ T.2.toTower.toBase =

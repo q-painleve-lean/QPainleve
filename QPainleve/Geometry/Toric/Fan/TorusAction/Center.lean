@@ -8,6 +8,7 @@ module
 public import QPainleve.Geometry.Toric.Fan.Boundary.InternalCenter
 public import QPainleve.Geometry.Toric.Fan.TorusAction.Translation
 
+import TauCeti.Algebra.Bialgebra.MonoidAlgebra.Equiv
 import TauCeti.AlgebraicGeometry.IdealSheaf.BaseChange
 import TauCeti.AlgebraicGeometry.IdealSheaf.VanishingIdeal
 
@@ -127,51 +128,67 @@ variable {V : Type} [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {Φ : Fan i}
   (ρ : Φ.Ray) {m : N →+ ℤ}
 
+local notation "chartEquiv" => (AddMonoidAlgebra.toMultiplicativeAlgEquiv ℂ ℂ
+  (dualSemigroup Φ.lattice ρ.toCone.val))
+
+local notation "chartEval(" hdim ", " hm ", " hprim ", " c ")" =>
+  (AlgHom.comp (binomialCenterEval ρ ℂ hdim hm hprim c)
+    (AlgEquiv.toAlgHom (AlgEquiv.symm chartEquiv)))
+
 private theorem binomialCenterEval_comp_charTwist (χ : Chars)
     (hdim : Module.finrank ℤ N = 2) (hm : m ρ.primitiveGenerator = 0)
     (hprim : Function.Surjective m) (c : ℂˣ) :
-    (ρ.binomialCenterEval hdim hm hprim c).comp (MonoidAlgebra.charTwist
+    (chartEval(hdim, hm, hprim, c)).comp (MonoidAlgebra.charTwist
       (χ.comp (dualSemigroup Φ.lattice ρ.toCone.val).subtype.toMultiplicative)).toAlgHom =
-      ρ.binomialCenterEval hdim hm hprim (c / χ (ofAdd m)) := by
-  let R := affineCoordinateRing Φ.lattice ρ.toCone.val
-  let e := ρ.binomialCenterEval hdim hm hprim c
-  let dst := ρ.binomialCenterEval hdim hm hprim (c / χ (ofAdd m))
+      chartEval(hdim, hm, hprim, (c / χ (ofAdd m))) := by
+  let R := affineChartRing ℂ Φ.lattice ρ.toCone.val
+  let e := ρ.binomialCenterEval ℂ hdim hm hprim c
+  let dst := ρ.binomialCenterEval ℂ hdim hm hprim (c / χ (ofAdd m))
   let twist := MonoidAlgebra.charTwist
     (χ.comp (dualSemigroup Φ.lattice ρ.toCone.val).subtype.toMultiplicative)
-  let src := e.comp twist.toAlgHom
+  let src := (chartEval(hdim, hm, hprim, c)).comp (twist.toAlgHom.comp (chartEquiv).toAlgHom)
   have hmon (a : dualSemigroup Φ.lattice ρ.toCone.val) :
-      src (MonoidAlgebra.of ℂ _ (ofAdd a)) =
-        (χ (ofAdd (a : N →+ ℤ)) : ℂ) * e (MonoidAlgebra.of ℂ _ (ofAdd a)) := by
-    simp only [src, AlgHom.comp_apply, AlgEquiv.coe_toAlgHom, twist, MonoidAlgebra.charTwist_of,
-      map_smul, MonoidHom.comp_apply, AddMonoidHom.coe_toMultiplicative, Function.comp_apply,
-      toAdd_ofAdd, AddSubmonoid.coe_subtype, smul_eq_mul]
+      src (AddMonoidAlgebra.single a 1) =
+        (χ (ofAdd (a : N →+ ℤ)) : ℂ) * e (AddMonoidAlgebra.single a 1) := by
+    simp only [src, AlgHom.comp_apply, AlgEquiv.coe_toAlgHom, twist,
+      AddMonoidAlgebra.toMultiplicativeAlgEquiv_single, MonoidAlgebra.charTwist_single,
+      MonoidHom.comp_apply, AddMonoidHom.coe_toMultiplicative, Function.comp_apply, toAdd_ofAdd,
+      AddSubmonoid.coe_subtype, mul_one, AddMonoidAlgebra.toMultiplicativeAlgEquiv_symm_single]
+    simpa only [AddMonoidAlgebra.smul_single', mul_one, smul_eq_mul] using
+      (map_smul e (χ (ofAdd (a : N →+ ℤ)) : ℂ) (AddMonoidAlgebra.single a 1))
   have hker : RingHom.ker dst ≤ RingHom.ker src := by
     dsimp only [dst]
     rw [ρ.ker_binomialCenterEval, sup_le_iff]
     constructor
-    · apply (rayIdeal_le_iff _ _ _ _).mpr
+    · apply (rayChartIdeal_le_iff _ _ _ _ _).mpr
       intro a ha
-      have hle : rayIdeal Φ.lattice (Φ.isToricCone ρ.toCone.property)
-          (Ray.toToricRay Φ ρ ρ.toCone le_rfl) ≤ RingHom.ker e := by
+      have hle : rayChartIdeal Φ.lattice (Φ.isToricCone ρ.toCone.property)
+          (Ray.toToricRay Φ ρ ρ.toCone le_rfl) ℂ ≤ RingHom.ker e := by
         dsimp only [e]
         rw [ρ.ker_binomialCenterEval]
         exact le_sup_left
-      have hz := RingHom.mem_ker.mp ((rayIdeal_le_iff _ _ _ _).mp hle a ha)
+      have hz := RingHom.mem_ker.mp ((rayChartIdeal_le_iff _ _ _ _ _).mp hle a ha)
       exact RingHom.mem_ker.mpr ((hmon a).trans (by rw [hz, mul_zero]))
     · rw [Ideal.span_le, Set.singleton_subset_iff]
       apply RingHom.mem_ker.mpr
       rw [map_add, map_one, map_mul, src.commutes, hmon, ρ.coe_chartCharacter]
-      rw [MonoidAlgebra.of_apply, ρ.binomialCenterEval_character]
+      rw [ρ.binomialCenterEval_character]
       have hprod : (c / χ (ofAdd m)) * (χ (ofAdd m) * c⁻¹) = 1 := by
         rw [← mul_assoc, div_mul_cancel, mul_inv_cancel]
       rw [Algebra.algebraMap_self_apply, mul_neg, mul_neg, ← Units.val_mul, ← Units.val_mul,
         hprod, Units.val_one, add_neg_cancel]
+  have h : src = dst := by
+    apply AlgHom.ext
+    intro x
+    have hx : x - algebraMap ℂ R (dst x) ∈ RingHom.ker dst :=
+      RingHom.mem_ker.mpr (by rw [map_sub, dst.commutes, Algebra.algebraMap_self_apply, sub_self])
+    have h := RingHom.mem_ker.mp (hker hx)
+    rwa [map_sub, src.commutes, Algebra.algebraMap_self_apply, sub_eq_zero] at h
   apply AlgHom.ext
   intro x
-  have hx : x - algebraMap ℂ R (dst x) ∈ RingHom.ker dst :=
-    RingHom.mem_ker.mpr (by rw [map_sub, dst.commutes, Algebra.algebraMap_self_apply, sub_self])
-  have h := RingHom.mem_ker.mp (hker hx)
-  rwa [map_sub, src.commutes, Algebra.algebraMap_self_apply, sub_eq_zero] at h
+  obtain ⟨y, rfl⟩ := (chartEquiv).surjective x
+  simpa only [src, dst, AlgHom.comp_apply, AlgEquiv.coe_toAlgHom, AlgEquiv.symm_apply_apply] using
+    congrArg (fun f : R →ₐ[ℂ] ℂ ↦ f y) h
 
 variable [Nonempty Φ.cones]
 
