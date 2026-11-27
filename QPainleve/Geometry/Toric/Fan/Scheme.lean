@@ -5,6 +5,7 @@ Authors: The QPainleve contributors
 -/
 module
 
+public import QPainleve.Geometry.Toric.Fan.Equiv
 public import TauCeti.Geometry.Toric.Algebraic.Fan.DenseTorus
 public import TauCeti.Geometry.Toric.Algebraic.Fan.Equiv
 
@@ -36,12 +37,6 @@ theorem algebraicMap_comp_symm :
 instance isIso_algebraicMap : IsIso e.toFanHom.algebraicMap :=
   ⟨⟨e.symm.toFanHom.algebraicMap, e.algebraicMap_comp_symm,
     by simpa only [symm_symm] using e.symm.algebraicMap_comp_symm⟩⟩
-
-/-- The real map of a fan equivalence sends a cone into its image cone. -/
-theorem mapsTo_coneEquiv (σ : Φ.cones) :
-    Set.MapsTo e.toFanHom.realMap (σ.val : Set V) (e.coneEquiv σ).val := by
-  rw [coneEquiv_apply_coe, toFanHom_realMap]
-  exact fun x hx ↦ PointedCone.mem_map.mpr ⟨x, hx, rfl⟩
 
 /-- Points in a cone chart map into the chart of the image cone. -/
 theorem mapsTo_affineToricChartι (σ : Φ.cones) :
