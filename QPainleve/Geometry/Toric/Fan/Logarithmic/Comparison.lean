@@ -33,16 +33,18 @@ open TauCeti.AlgebraicGeometry Scheme.IdealSheafData
 
 namespace TauCeti.Toric.Fan
 
+variable (K : Type) [Field K] [PerfectField K]
+
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {Φ Ψ Θ Ω : Fan i}
   {X : Scheme} [IsIntegral X] {P : X.IdealSheafData}
 
-local notation "S" => Spec (CommRingCat.of ℂ)
-local notation "X[" A "]" => Fan.algebraicRealization A
-local notation "π[" H "]" => FanHom.algebraicMap (IsSubdivision.toFanHom H)
-local notation "D[" A "," h "]" => Fan.boundaryIdeal A (IsComplete.nonempty_cones h)
+local notation "S" => Spec (CommRingCat.of K)
+local notation "X[" A "]" => Fan.finiteFanScheme K A
+local notation "π[" H "]" => FanHom.finiteFanSchemeHom K (IsSubdivision.toFanHom H)
+local notation "D[" A "," h "]" => Fan.toricBoundaryIdeal K A (IsComplete.nonempty_cones h)
 
-variable {f : X ⟶ X[Φ]} {g : X ⟶ X[Ψ]}
+variable {f : X ⟶ Φ.finiteFanScheme K} {g : X ⟶ Ψ.finiteFanScheme K}
   (b : Module.Basis (Fin 2) ℤ N)
 
 variable [IsLocallyNoetherian X] in
@@ -51,63 +53,64 @@ toric subdivision is determined by the specified map and its pole boundary.
 The orders on the same boundary prime recover the same primitive ray generator
 in either factorization. -/
 theorem eq_of_toric_internal_factorizations (hc : Φ.IsComplete)
-    (hΘ : Θ.IsRegular) (hΩ : Ω.IsRegular) (J : Θ.IsSubdivision Φ) (K : Ω.IsSubdivision Φ)
-    {m n : ℕ} (r : Fin m → Θ.Ray) (s : Fin n → Ω.Ray) (c : Fin m → ℂˣ) (d : Fin n → ℂˣ) :
+    (hΘ : Θ.IsRegular) (hΩ : Ω.IsRegular) (J : Θ.IsSubdivision Φ) (L : Ω.IsSubdivision Φ)
+    {m n : ℕ} (r : Fin m → Θ.Ray) (s : Fin n → Ω.Ray) (c : Fin m → Kˣ) (d : Fin n → Kˣ) :
     letI := hc.nonempty_cones
     letI := J.nonempty_cones_of_nonempty hc.nonempty_cones
-    letI := K.nonempty_cones_of_nonempty hc.nonempty_cones
-    let A := Θ.internalBlowupTower b r c
-    let B := Ω.internalBlowupTower b s d
+    letI := L.nonempty_cones_of_nonempty hc.nonempty_cones
+    let A := Θ.internalBlowupTower K b r c
+    let B := Ω.internalBlowupTower K b s d
     ∀ (e : A.1 ≅ X) (e' : B.1 ≅ X),
       e.hom ≫ f = A.2.toTower.toBase ≫ π[J] →
-      e'.hom ≫ f = B.2.toTower.toBase ≫ π[K] →
+      e'.hom ≫ f = B.2.toTower.toBase ≫ π[L] →
       P.comap e.hom = A.2.boundaryι.ker →
       P.comap e'.hom = B.2.boundaryι.ker →
       Θ = Ω := by
   intro A B e e' he he' hP hP'
   let : Nonempty Φ.cones := hc.nonempty_cones
   let : Nonempty Θ.cones := J.nonempty_cones_of_nonempty inferInstance
-  let : Nonempty Ω.cones := K.nonempty_cones_of_nonempty inferInstance
-  have := Θ.isIntegral_internalBlowupTower b r c hΘ
-  have := Θ.isModification_internalBlowupTower_toBase b r c hΘ
+  let : Nonempty Ω.cones := L.nonempty_cones_of_nonempty inferInstance
+  have := Θ.isIntegral_internalBlowupTower K b r c hΘ
+  have := Θ.isModification_internalBlowupTower_toBase K b r c hΘ
   have : IsDominant (e.hom ≫ f) := by rw [he]; infer_instance
   have : IsDominant f := IsDominant.of_comp e.hom f
   have hs := congrArg Scheme.IdealSheafData.support hP
   have hs' := congrArg Scheme.IdealSheafData.support hP'
-  let R := internalBlowupBoundaryPrimeEquivOfIso hΘ b r c e hs
-  let U := internalBlowupBoundaryPrimeEquivOfIso hΩ b s d e' hs'
+  let R := internalBlowupBoundaryPrimeEquivOfIso K hΘ b r c e hs
+  let U := internalBlowupBoundaryPrimeEquivOfIso K hΩ b s d e' hs'
   have hgen {t : Θ.Ray} {u : Ω.Ray} (h : R t = U u) :
       t.primitiveGenerator = u.primitiveGenerator := by
     apply b.repr.injective
     ext j
     let a := (b.coord j).toAddMonoidHom
-    exact ((internalBlowupBoundaryPrimeEquivOfIso_eq_iff_forall_ord_character
+    exact ((internalBlowupBoundaryPrimeEquivOfIso_eq_iff_forall_ord_character K
       b hΘ J r c e he hs t (U u)).mp h a).symm.trans
-      (ord_internalBlowupBoundaryPrimeEquivOfIso_character b hΩ K s d e' he' hs' u a)
+      (ord_internalBlowupBoundaryPrimeEquivOfIso_character K b hΩ L s d e' he' hs' u a)
   apply eq_of_range_primitiveGenerator_eq b hΘ hΩ
-    (J.isComplete_iff.mpr hc) (K.isComplete_iff.mpr hc)
+    (J.isComplete_iff.mpr hc) (L.isComplete_iff.mpr hc)
   rw [← (R.trans U.symm).surjective.range_comp (Ray.primitiveGenerator (Phi := Ω))]
   exact congrArg Set.range (funext fun t ↦ hgen (U.apply_symm_apply (R t)).symm)
 
-variable [X.Over S] [X.IsProjectiveOver ℂ] [SmoothOfRelativeDimension 2 (X ↘ S)]
-  [f.IsOver S] [IsModification f]
+variable [X.Over (Spec (.of K))] [X.IsProjectiveOver K]
+  [SmoothOfRelativeDimension 2 (X ↘ Spec (.of K))]
+  [f.IsOver (Spec (.of K))] [IsModification f]
 
 /-- When a specified logarithmic morphism already factors through a regular
 toric subdivision, a single ordered internal model realizes both projections.
 Both projections are the given morphisms on the whole surface, and the
 boundary of the internal model is the original pole ideal. -/
-theorem IsSubdivision.exists_common_toric_internal_factorization
+theorem IsSubdivision.exists_common_toric_internal_factorization [IsAlgClosed K]
     (H : Ψ.IsSubdivision Φ) (hΦ : Φ.IsRegular) (hΨ : Ψ.IsRegular) (hc : Φ.IsComplete)
     (hfg : g ≫ π[H] = f)
     (hPole : letI := SmoothOfRelativeDimension.smooth 2 (X ↘ S)
-      (D[Φ,hc]).comap f = P * ramificationIdealSheaf ℂ f) :
-    ∃ (Θ : Fan i) (_ : Θ.IsRegular) (K : Θ.IsSubdivision Ψ),
-      letI := (K.trans H).nonempty_cones_of_nonempty hc.nonempty_cones
-      ∃ (m : ℕ) (r : Fin m → Θ.Ray) (c : Fin m → ℂˣ),
-        let A := Θ.internalBlowupTower b r c
+      (D[Φ,hc]).comap f = P * ramificationIdealSheaf K f) :
+    ∃ (Θ : Fan i) (_ : Θ.IsRegular) (L : Θ.IsSubdivision Ψ),
+      letI := (L.trans H).nonempty_cones_of_nonempty hc.nonempty_cones
+      ∃ (m : ℕ) (r : Fin m → Θ.Ray) (c : Fin m → Kˣ),
+        let A := Θ.internalBlowupTower K b r c
         ∃ e : A.1 ≅ X,
-          e.hom ≫ g = A.2.toTower.toBase ≫ π[K] ∧
-          e.hom ≫ f = A.2.toTower.toBase ≫ π[K.trans H] ∧
+          e.hom ≫ g = A.2.toTower.toBase ≫ π[L] ∧
+          e.hom ≫ f = A.2.toTower.toBase ≫ π[L.trans H] ∧
           P.comap e.hom = A.2.boundaryι.ker := by
   subst f
   let hc' := H.isComplete_iff.mpr hc
@@ -115,57 +118,57 @@ theorem IsSubdivision.exists_common_toric_internal_factorization
   let : Nonempty Ψ.cones := hc'.nonempty_cones
   have hN : Module.finrank ℤ N = 2 :=
     (Module.finrank_eq_card_basis b).trans (Fintype.card_fin 2)
-  let : IsModification π[H] := H.isModification_algebraicMap hΦ hΨ hc.nonempty_cones hN
+  let : IsModification π[H] := H.isModification_finiteFanSchemeHom K hΦ hΨ hc.nonempty_cones hN
   let : IsModification g := IsModification.of_comp_right g π[H]
   let : g.IsOver S := ⟨by
-    rw [Ψ.algebraicRealization_over,
-      ← H.toFanHom.algebraicMap_comp_algebraicRealizationStructureMap,
-      ← Category.assoc, ← Φ.algebraicRealization_over, comp_over]⟩
+    rw [Ψ.finiteFanScheme_over K,
+      ← H.toFanHom.finiteFanSchemeHom_comp_finiteFanSchemeToSpec K,
+      ← Category.assoc, ← Φ.finiteFanScheme_over K, comp_over]⟩
   have hpole' :=
-    (H.comap_boundaryIdeal_eq_mul_ramificationIdealSheaf_comp_iff hΦ hΨ hc hN g P).mp hPole
-  obtain ⟨Θ, hΘ, K, m, r, c, e, he, hboundary⟩ :=
-    Ψ.exists_toric_internal_factorization_of_boundary_comap_eq b hΨ hc'
+    (H.comap_boundaryIdeal_eq_mul_ramificationIdealSheaf_comp_iff K hΦ hΨ hc hN g P).mp hPole
+  obtain ⟨Θ, hΘ, L, m, r, c, e, he, hboundary⟩ :=
+    Ψ.exists_toric_internal_factorization_of_boundary_comap_eq K b hΨ hc'
       (IsModification.birationalOver g) hpole'
-  refine ⟨Θ, hΘ, K, m, r, c, e, he, ?_, hboundary⟩
-  rw [← Category.assoc, he, Category.assoc, IsSubdivision.toFanHom_trans K H,
-    FanHom.algebraicMap_comp]
+  refine ⟨Θ, hΘ, L, m, r, c, e, he, ?_, hboundary⟩
+  rw [← Category.assoc, he, Category.assoc, IsSubdivision.toFanHom_trans L H,
+    FanHom.finiteFanSchemeHom_comp K]
 
 /-- If a logarithmic morphism lifts regularly to a finer toric target, any
 specified ordered internal model of the original morphism already refines that
 target. Its existing tower, including all labels and infinitely near centers,
 recovers the lift by a toric projection. -/
-theorem IsSubdivision.exists_lift_of_toric_internal_factorization
+theorem IsSubdivision.exists_lift_of_toric_internal_factorization [IsAlgClosed K]
     (H : Ψ.IsSubdivision Φ) (hΦ : Φ.IsRegular) (hΨ : Ψ.IsRegular) (hc : Φ.IsComplete)
-    (hΘ : Θ.IsRegular) (J : Θ.IsSubdivision Φ) {m : ℕ} (r : Fin m → Θ.Ray) (c : Fin m → ℂˣ)
+    (hΘ : Θ.IsRegular) (J : Θ.IsSubdivision Φ) {m : ℕ} (r : Fin m → Θ.Ray) (c : Fin m → Kˣ)
     (hfg : g ≫ π[H] = f)
     (hPole : letI := SmoothOfRelativeDimension.smooth 2 (X ↘ S)
-      (D[Φ,hc]).comap f = P * ramificationIdealSheaf ℂ f) :
+      (D[Φ,hc]).comap f = P * ramificationIdealSheaf K f) :
     letI := J.nonempty_cones_of_nonempty hc.nonempty_cones
-    let A := Θ.internalBlowupTower b r c
+    let A := Θ.internalBlowupTower K b r c
     ∀ (e : A.1 ≅ X),
       e.hom ≫ f = A.2.toTower.toBase ≫ π[J] →
       P.comap e.hom = A.2.boundaryι.ker →
-      ∃ K : Θ.IsSubdivision Ψ, e.hom ≫ g = A.2.toTower.toBase ≫ π[K] := by
+      ∃ L : Θ.IsSubdivision Ψ, e.hom ≫ g = A.2.toTower.toBase ≫ π[L] := by
   intro A e he hboundary
   let : Nonempty Φ.cones := hc.nonempty_cones
   let : Nonempty Ψ.cones := H.nonempty_cones_of_nonempty inferInstance
   let : Nonempty Θ.cones := J.nonempty_cones_of_nonempty inferInstance
   let : IsLocallyNoetherian X := LocallyOfFiniteType.isLocallyNoetherian (X ↘ S)
-  obtain ⟨Ω, hΩ, K, n, s, d, e', -, he', hboundary'⟩ :=
-    H.exists_common_toric_internal_factorization b hΦ hΨ hc hfg hPole
-  have h := eq_of_toric_internal_factorizations b hc hΘ hΩ J (K.trans H) r s c d
+  obtain ⟨Ω, hΩ, L, n, s, d, e', -, he', hboundary'⟩ :=
+    H.exists_common_toric_internal_factorization K b hΦ hΨ hc hfg hPole
+  have h := eq_of_toric_internal_factorizations K b hc hΘ hΩ J (L.trans H) r s c d
     e e' he he' hboundary hboundary'
   subst Ω
   have hN : Module.finrank ℤ N = 2 :=
     (Module.finrank_eq_card_basis b).trans (Fintype.card_fin 2)
-  let : IsModification π[H] := H.isModification_algebraicMap hΦ hΨ hc.nonempty_cones hN
+  let : IsModification π[H] := H.isModification_finiteFanSchemeHom K hΦ hΨ hc.nonempty_cones hN
   let : IsModification (g ≫ π[H]) := hfg.symm ▸ ‹IsModification f›
   let : IsModification g := IsModification.of_comp_right g π[H]
-  let : IsIntegral A.1 := Θ.isIntegral_internalBlowupTower b r c hΘ
+  let : IsIntegral A.1 := Θ.isIntegral_internalBlowupTower K b r c hΘ
   let : IsModification A.2.toTower.toBase :=
-    Θ.isModification_internalBlowupTower_toBase b r c hΘ
-  refine ⟨K, Scheme.Hom.eq_of_comp_eq_of_isModification π[H] ?_⟩
-  rw [Category.assoc, hfg, he, Category.assoc, ← FanHom.algebraicMap_comp,
-    ← IsSubdivision.toFanHom_trans K H]
+    Θ.isModification_internalBlowupTower_toBase K b r c hΘ
+  refine ⟨L, Scheme.Hom.eq_of_comp_eq_of_isModification π[H] ?_⟩
+  rw [Category.assoc, hfg, he, Category.assoc, ← FanHom.finiteFanSchemeHom_comp K,
+    ← IsSubdivision.toFanHom_trans L H]
 
 end TauCeti.Toric.Fan

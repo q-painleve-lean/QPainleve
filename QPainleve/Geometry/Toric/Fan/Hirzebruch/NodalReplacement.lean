@@ -5,7 +5,6 @@ Authors: The QPainleve contributors
 -/
 module
 
-public import Mathlib.Analysis.Complex.Polynomial.Basic
 public import QPainleve.AlgebraicGeometry.Blowup.Tower.Nodal.Numbering
 public import QPainleve.AlgebraicGeometry.IdealSheaf.Boundary.Locus
 public import QPainleve.Geometry.Toric.Fan.Hirzebruch.Bisection
@@ -49,10 +48,12 @@ open TauCeti.AlgebraicGeometry LineBundleClass Scheme.IdealSheafData
 
 namespace TauCeti.Toric.Fan
 
+variable (k₀ : Type) [Field k₀] [IsAlgClosed k₀]
+
 attribute [local instance] MvPolynomial.gradedAlgebra
 
-local notation "S" => Spec (CommRingCat.of ℂ)
-local notation "Plane" => Proj (MvPolynomial.homogeneousSubmodule (Fin 3) ℂ)
+local notation "S" => Spec (CommRingCat.of k₀)
+local notation "Plane" => Proj (MvPolynomial.homogeneousSubmodule (Fin 3) k₀)
 local notation "I[" x "]" => Scheme.Hom.ker (Scheme.fromSpecResidueField _ x)
 local notation "J[" x "]" => vanishingIdeal
   (TopologicalSpace.Closeds.mk (closure ({x} : Set Plane)) isClosed_closure)
@@ -63,7 +64,7 @@ local notation "RN[" D "," x "]" => radical (comap D (BlowupTower.toBase (T[x]))
 local notation "St[" I "," D "]" => Scheme.Hom.ker (blowupMap I (subschemeι D))
 
 local instance : SmoothOfRelativeDimension 2 (Plane ↘ S) :=
-  Proj.smoothOfRelativeDimension_toSpecCoeff ℂ 2
+  Proj.smoothOfRelativeDimension_toSpecCoeff k₀ 2
 
 open TauCeti.SymmetricAlgebra in
 private theorem complexity_drop_of_bisection_replacement
@@ -77,14 +78,14 @@ private theorem complexity_drop_of_bisection_replacement
   let : IsNoetherian Plane := isNoetherian_of_finiteType (Plane ↘ S)
   let : Module.Finite ℤ (Additive (LineBundleClass Plane)) :=
     Module.Finite.equiv ((LineBundleClass.pullbackEquiv
-      (Pi.basisFun ℂ (Fin 3)).polynomialProjIso).toAdditive.toIntLinearEquiv)
+      (Pi.basisFun k₀ (Fin 3)).polynomialProjIso).toAdditive.toIntLinearEquiv)
   let hP : IsClosedPointTower Plane T[p] := .snoc .nil p hp rfl
   let B := D.comap a.inv
   obtain ⟨v, hv⟩ := D.exists_iso_of_comap_eq_ker a.symm B.subschemeι B.ker_subschemeι.symm
   have hproj : (v ≪≫ u).hom ≫ A.subschemeι = B.subschemeι ≫ T[p].toBase := by
     rw [Iso.trans_hom, Category.assoc, hu, reassoc_of% hv, Iso.symm_hom,
       Iso.inv_hom_id_assoc, toBase_snoc, toBase_nil, Category.comp_id]
-  have hdrop := hP.boundaryComplexity_eq_add_length_of_subschemeIso ℂ hA (hD.comap a.inv)
+  have hdrop := hP.boundaryComplexity_eq_add_length_of_subschemeIso k₀ hA (hD.comap a.inv)
     (v ≪≫ u) hproj
   have hdrop' : D.boundaryComplexity = A.boundaryComplexity + 1 := by
     simpa only [Nat.zero_add, Nat.cast_one] using
@@ -93,6 +94,7 @@ private theorem complexity_drop_of_bisection_replacement
   simpa only [toBase_snoc, toBase_nil, Category.comp_id, boundaryComplexity_radical] using
     (congrArg (· + 1) hkeep).trans hdrop'.symm
 
+omit [IsAlgClosed k₀] in
 private theorem bisection_replacement_square
     {X : Scheme} [X.Over S] {D : X.IdealSheafData} {A : (Plane).IdealSheafData}
     [IsReduced A.subscheme] {p q : Plane} {x : X} (a : X ≅ (I[p]).blowup)
@@ -178,11 +180,11 @@ private theorem numbered_node_image_of_bisection_contraction
       (hbase.symm ▸ ‹PrestableFamily (D.subscheme ↘ S)›)
   let C := u.mapNodalCycleNumbering B (q := (Empty.elim : Empty → _))
   refine ⟨hA, C, ?_⟩
-  have hsing := u.singularLocusIso_hom_subschemeι_assoc (R := ℂ) A.subschemeι
+  have hsing := u.singularLocusIso_hom_subschemeι_assoc (R := k₀) A.subschemeι
   rw [hu] at hsing
   simpa only [C, Scheme.NodalCycleNumbering.ambientNode_def, Scheme.Hom.comp_apply,
     CategoryTheory.Iso.node_mapNodalCycleNumbering] using
-    (congrArg (fun g : (D.subscheme.singularLocus ℂ).subscheme ⟶ Plane ↦ g (B.node j)) hsing)
+    (congrArg (fun g : (D.subscheme.singularLocus k₀).subscheme ⟶ Plane ↦ g (B.node j)) hsing)
 
 open AlgebraicGeometry.Proj in
 private theorem exists_numbered_hirzebruch_model_of_bisection_plane
@@ -192,38 +194,38 @@ private theorem exists_numbered_hirzebruch_model_of_bisection_plane
     {n : ℕ} [NeZero n] {m : Empty → (A.subscheme ↘ S).smoothLocus}
     (B : Scheme.NodalCycleNumbering m n) (j : ZMod n) (hA : A.IsEffectiveCartier)
     (hcan : LineBundleClass.mk hA.toInvertibleSheaf =
-      LineBundleClass.mk (canonicalBundle ℂ Plane 2)) :
+      LineBundleClass.mk (canonicalBundle k₀ Plane 2)) :
     let q := B.ambientNode j
     ∃ (Ψ : Fan i) (hΨ : Ψ.IsRegular) (hcΨ : Ψ.IsComplete) (d : Basis (Fin 2) ℤ N)
-      (r' : Fin 4 ≃ Ψ.Ray) (f : Ψ.algebraicRealization ≅ (I[q]).blowup),
-      let X' := Ψ.algebraicRealization
+      (r' : Fin 4 ≃ Ψ.Ray) (f : (Ψ.finiteFanScheme k₀) ≅ (I[q]).blowup),
+      let X' := (Ψ.finiteFanScheme k₀)
       letI : Nonempty Ψ.cones := hcΨ.nonempty_cones
       letI : SmoothOfRelativeDimension 2 (X' ↘ S) := by
-        rw [algebraicRealization_over]
+        rw [finiteFanScheme_over]
         exact ((finrank_eq_card_basis d).trans (Fintype.card_fin 2)) ▸
-          Ψ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΨ
+          Ψ.smoothOfRelativeDimension_finiteFanSchemeToSpec k₀ hΨ
       let E := (RN[A,q]).comap f.hom
       (fun l ↦ (r' l).primitiveGenerator) = ![d 0, d 1, -d 0, d 0 - d 1] ∧
       f.hom ≫ π[q] ≫ Plane ↘ S = X' ↘ S ∧
       ∃ (hE : E.IsEffectiveCartier) (hPre : PrestableFamily (E.subscheme ↘ S)),
         letI := hPre
-        LineBundleClass.mk hE.toInvertibleSheaf = LineBundleClass.mk (canonicalBundle ℂ X' 2) ∧
+        LineBundleClass.mk hE.toInvertibleSheaf = LineBundleClass.mk (canonicalBundle k₀ X' 2) ∧
         Nonempty (Scheme.NodalCycleNumbering (Empty.elim : Empty → (E.subscheme ↘ S).smoothLocus)
           (n + 1)) := by
   intro q
   have hT : IsNodalBoundaryTower A (Plane ↘ S) (𝟙 Plane) T[q] :=
     isNodalBoundaryTower_numbered_node B j
   have hToBase : T[q].toBase = π[q] := by rw [toBase_snoc, toBase_nil, Category.comp_id]
-  let a := projectivePlaneIso b hi
+  let a := projectivePlaneIso k₀ b hi
   let : Nonempty (projectiveSpace b hi).cones := (isComplete_projectiveSpace b hi).nonempty_cones
   let : a.hom.IsOver S := ⟨by
-    rw [over_polynomial (R := ℂ) (σ := Fin 3), projectivePlaneIso_hom_toSpecCoeff,
-      algebraicRealization_over]⟩
+    rw [over_polynomial (R := k₀) (σ := Fin 3), projectivePlaneIso_hom_toSpecCoeff,
+      finiteFanScheme_over]⟩
   have hnodal : AtWorstNodalOfRelativeDimensionOne (A.subschemeι ≫ Plane ↘ S) := by
     rw [← A.over_eq_subschemeι_comp]
     exact PrestableFamily.atWorstNodalOfRelativeDimensionOne
   obtain ⟨Ψ, hΨ, hcΨ, d, _, f, hr', -, hπ, -, -, hE, hK, -⟩ :=
-    exists_hirzebruch_one_model_of_plane_nodal_blowup b hi a hA hnodal q
+    exists_hirzebruch_one_model_of_plane_nodal_blowup k₀ b hi a hA hnodal q
       (B.isClosed_ambientNode j) (B.isNodeOfReducedBoundary_ambientNode j rfl) hcan
   obtain ⟨r', hr'⟩ := exists_rayEquiv_of_hirzebruch_ray_generators d 1 (by simpa using hr')
   let E := (RN[A,q]).comap f.hom
@@ -231,12 +233,12 @@ private theorem exists_numbered_hirzebruch_model_of_bisection_plane
     rw [comap_comp, radical_comap_of_isOpenImmersion, ← hToBase]
   let : Nonempty Ψ.cones := hcΨ.nonempty_cones
   let : (I[q]).blowup.Over S := ⟨T[q].toBase ≫ Plane ↘ S⟩
-  have hπ' : f.hom ≫ π[q] ≫ Plane ↘ S = Ψ.algebraicRealization ↘ S := by
+  have hπ' : f.hom ≫ π[q] ≫ Plane ↘ S = (Ψ.finiteFanScheme k₀) ↘ S := by
     rw [← Category.assoc]
     let : (f.hom ≫ π[q]).IsOver S := hπ
     exact comp_over (f.hom ≫ π[q]) S
   obtain ⟨v, hv⟩ := (RN[A,q]).exists_iso_of_comap_eq_ker f E.subschemeι E.ker_subschemeι.symm
-  have hfOver : f.hom ≫ (I[q]).blowup ↘ S = Ψ.algebraicRealization ↘ S :=
+  have hfOver : f.hom ≫ (I[q]).blowup ↘ S = (Ψ.finiteFanScheme k₀) ↘ S :=
     (congrArg (fun g ↦ f.hom ≫ g ≫ Plane ↘ S) hToBase).trans hπ'
   have hbase : v.hom ≫ (RN[A,q]).subscheme ↘ S = E.subscheme ↘ S := by
     simp only [over_eq_subschemeι_comp, reassoc_of% hv, hfOver]
@@ -259,6 +261,7 @@ private theorem exists_numbered_hirzebruch_model_of_bisection_plane
       simpa only [Nat.zero_add] using C
     exact ⟨v.symm.mapNodalCycleNumbering C'⟩
 
+omit [IsAlgClosed k₀] in
 private theorem bisection_replacement_square_on_fan
     {X Y W : Scheme} [Y.Over S] {D : X.IdealSheafData} {A : W.IdealSheafData}
     {x : X} {z : W} {g : X ⟶ Plane} {p : W ⟶ Plane}
@@ -298,6 +301,7 @@ private theorem bisection_replacement_square_on_fan
     rw [Iso.trans_hom, Iso.symm_hom, ← hwD, ← comap_comp,
       Category.assoc, Iso.inv_hom_id, Category.comp_id, hD]
 
+omit [IsAlgClosed k₀] in
 private theorem bisection_plane_center_smooth_and_ne_node
     {A : (Plane).IdealSheafData} [IsReduced A.subscheme]
     {p q : Plane} {z : A.subscheme} (hz : A.subschemeι z = p)
@@ -324,32 +328,33 @@ theorem exists_hirzebruch_one_nodal_replacement_of_bisection
     (b : Basis (Fin 2) ℤ N) (hΦ : Φ.IsRegular) (hc : Φ.IsComplete)
     (r : Fin 4 ≃ Φ.Ray)
     (hr : (fun j ↦ (r j).primitiveGenerator) = ![b 0, b 1, -b 0, (1 : ℤ) • b 0 - b 1])
-    [SmoothOfRelativeDimension 2 (Φ.algebraicRealization ↘ S)]
-    {D : Φ.algebraicRealization.IdealSheafData} [PrestableFamily (D.subscheme ↘ S)]
+    [SmoothOfRelativeDimension 2 ((Φ.finiteFanScheme k₀) ↘ S)]
+    {D : (Φ.finiteFanScheme k₀).IdealSheafData} [PrestableFamily (D.subscheme ↘ S)]
     (hD : D.IsEffectiveCartier)
     (hK : LineBundleClass.mk hD.toInvertibleSheaf =
-      LineBundleClass.mk (canonicalBundle ℂ Φ.algebraicRealization 2))
+      LineBundleClass.mk (canonicalBundle k₀ (Φ.finiteFanScheme k₀) 2))
     (t : D.boundaryPrimes)
-    (ht : (Φ.hirzebruchPicardBasis b 1 hΦ r hr).repr
+    (ht : (Φ.hirzebruchPicardBasis k₀ b 1 hΦ r hr).repr
       (Additive.ofMul (@primeDivisorClass _ _ _
-        (Φ.uniqueFactorizationMonoid_stalk_algebraicRealization hΦ) (D.boundaryPrimeEmbedding t))) 1
+        (Φ.uniqueFactorizationMonoid_stalk_finiteFanScheme (R :=
+          k₀) hΦ) (D.boundaryPrimeEmbedding t))) 1
       = 2)
     {n : ℕ} [NeZero n] {α : Type*} {m : α → (D.subscheme ↘ S).smoothLocus}
     (B : Scheme.NodalCycleNumbering m n) (j : ZMod n) :
-    let X := Φ.algebraicRealization
+    let X := (Φ.finiteFanScheme k₀)
     let x := B.ambientNode j
     ∃ (p q : Plane) (a : X ≅ (I[p]).blowup)
       (Ψ : Fan i) (hΨ : Ψ.IsRegular) (hcΨ : Ψ.IsComplete) (d : Basis (Fin 2) ℤ N)
-      (r' : Fin 4 ≃ Ψ.Ray) (f : Ψ.algebraicRealization ≅ (I[q]).blowup)
-      (y : Ψ.algebraicRealization) (e : (I[x]).blowup ≅ (I[y]).blowup),
-      let X' := Ψ.algebraicRealization
+      (r' : Fin 4 ≃ Ψ.Ray) (f : (Ψ.finiteFanScheme k₀) ≅ (I[q]).blowup)
+      (y : (Ψ.finiteFanScheme k₀)) (e : (I[x]).blowup ≅ (I[y]).blowup),
+      let X' := (Ψ.finiteFanScheme k₀)
       let A := D.map (a.hom ≫ π[p])
       let E := (RN[A,q]).comap f.hom
       letI : Nonempty Ψ.cones := hcΨ.nonempty_cones
       letI : SmoothOfRelativeDimension 2 (X' ↘ S) := by
-        rw [algebraicRealization_over]
+        rw [finiteFanScheme_over]
         exact ((finrank_eq_card_basis d).trans (Fintype.card_fin 2)) ▸
-          Ψ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΨ
+          Ψ.smoothOfRelativeDimension_finiteFanSchemeToSpec k₀ hΨ
       IsClosed ({p} : Set Plane) ∧ IsClosed ({q} : Set Plane) ∧
       (a.hom ≫ π[p]) x = q ∧ p ≠ q ∧
       a.hom ≫ π[p] ≫ Plane ↘ S = X ↘ S ∧ f.hom ≫ π[q] ≫ Plane ↘ S = X' ↘ S ∧
@@ -362,24 +367,24 @@ theorem exists_hirzebruch_one_nodal_replacement_of_bisection
       E.boundaryComplexity + 1 = D.boundaryComplexity ∧
       ∃ (hE : E.IsEffectiveCartier) (hPre : PrestableFamily (E.subscheme ↘ S)),
         letI := hPre
-        LineBundleClass.mk hE.toInvertibleSheaf = LineBundleClass.mk (canonicalBundle ℂ X' 2) ∧
+        LineBundleClass.mk hE.toInvertibleSheaf = LineBundleClass.mk (canonicalBundle k₀ X' 2) ∧
         Nonempty (Scheme.NodalCycleNumbering (Empty.elim : Empty → (E.subscheme ↘ S).smoothLocus)
           (n + 1)) := by
   intro X x
-  let : X.IsProjectiveOver ℂ := Φ.isProjectiveOver_algebraicRealization_of_isComplete hΦ hc b
+  let : X.IsProjectiveOver k₀ := Φ.isProjectiveOver_finiteFanScheme_of_isComplete k₀ hΦ hc b
   have hN : AtWorstNodalOfRelativeDimensionOne (D.subschemeι ≫ X ↘ S) := by
     rw [← D.over_eq_subschemeι_comp]
     exact PrestableFamily.atWorstNodalOfRelativeDimensionOne
   have hcontraction :=
     exists_plane_internalBlowdown_of_hirzebruch_one_anticanonical_bisection
-      b 1 hΦ hc r hr hD hK rfl ht hN
+      k₀ b 1 hΦ hc r hr hD hK rfl ht hN
   obtain ⟨p, a, hp, ha, -, hA, hcan, hAN, -, -, hJ, hs, u, hu⟩ := hcontraction
   generalize hIp : J[p] = J at a ha hA hcan hAN hJ hs u hu
   have hJp : J = I[p] := hIp.symm.trans (Scheme.ker_fromSpecResidueField_eq_vanishingIdeal p).symm
   clear hIp
   subst J
   let A := D.map (a.hom ≫ π[p])
-  obtain ⟨hPreA, C, hnode⟩ := numbered_node_image_of_bisection_contraction B j _ ha u hu
+  obtain ⟨hPreA, C, hnode⟩ := numbered_node_image_of_bisection_contraction k₀ B j _ ha u hu
   let := hPreA
   let q := C.ambientNode j
   have hq := C.isClosed_ambientNode j
@@ -387,16 +392,16 @@ theorem exists_hirzebruch_one_nodal_replacement_of_bisection
   let : IsReduced A.subscheme := hAN.isReduced
   obtain ⟨z, hz, hzs⟩ := hs
   obtain ⟨hpD, hneq⟩ :=
-    bisection_plane_center_smooth_and_ne_node hz (Scheme.Hom.mem_smoothLocus.mp hzs) hqNode
-  obtain ⟨y, e, hy, hyp, hyD, hpb, hcomp⟩ := bisection_replacement_square a ha u hu hJ hp
+    bisection_plane_center_smooth_and_ne_node k₀ hz (Scheme.Hom.mem_smoothLocus.mp hzs) hqNode
+  obtain ⟨y, e, hy, hyp, hyD, hpb, hcomp⟩ := bisection_replacement_square k₀ a ha u hu hJ hp
     (B.isClosed_ambientNode j) hpD (B.isNodeOfReducedBoundary_ambientNode j rfl) hnode.symm hneq
   obtain ⟨Ψ, hΨ, hcΨ, d, r', f, hr', hf, hE, hPreE, hEK, hnum⟩ :=
-    exists_numbered_hirzebruch_model_of_bisection_plane b Φ.lattice C j hA hcan
-  have hdrop := complexity_drop_of_bisection_replacement a u hu hp hA hD
+    exists_numbered_hirzebruch_model_of_bisection_plane k₀ b Φ.lattice C j hA hcan
+  have hdrop := complexity_drop_of_bisection_replacement k₀ a u hu hp hA hD
     (isNodalBoundaryTower_numbered_node C j)
   let : Nonempty Ψ.cones := hcΨ.nonempty_cones
   obtain ⟨y', e', hy', hyy, hyD', hpb', hcomp'⟩ :=
-    bisection_replacement_square_on_fan f e hf hy hyD hpb hcomp
+    bisection_replacement_square_on_fan k₀ f e hf hy hyD hpb hcomp
   have hToBase : T[q].toBase = π[q] := by rw [toBase_snoc, toBase_nil, Category.comp_id]
   rw [← hToBase] at hyD' hcomp'
   refine ⟨p, q, a, Ψ, hΨ, hcΨ, d, r', f, y', e', hp, hq, hnode.symm, hneq.symm, ha, hf, hr',

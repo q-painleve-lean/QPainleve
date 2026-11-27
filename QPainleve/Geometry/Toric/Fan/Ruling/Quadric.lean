@@ -16,7 +16,7 @@ import QPainleve.Geometry.Toric.Fan.CyclicOrder.Basic
 import QPainleve.Geometry.Toric.Fan.Equiv
 import QPainleve.Geometry.Toric.Fan.HalfPlane
 import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.Segre
-import TauCeti.Geometry.Toric.Algebraic.Fan.Product.Isomorphism
+import QPainleve.Geometry.Toric.BaseChange.Product
 
 /-!
 # The ruling exchange of the toric quadric
@@ -36,6 +36,8 @@ public noncomputable section
 open AlgebraicGeometry CategoryTheory Limits Module PointedCone
 
 namespace TauCeti.Toric.Fan
+
+variable (k : Type) [CommRing k]
 
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {Φ : Fan i} (b : Basis (Fin 2) ℤ N) (hΦ : Φ.IsRegular) (hc : Φ.IsComplete)
@@ -84,10 +86,10 @@ include hr in
 /-- The Hirzebruch ruling for the exchanged marking is the transverse
 character ruling for the original marking. -/
 theorem characterRuling_quadric_swap :
-    Φ.characterRuling ((b').coord 1).toAddMonoidHom
+    Φ.characterRuling k ((b').coord 1).toAddMonoidHom
         (nonneg_or_nonpos_hirzebruch_ruling_character (b') 0 (r')
           (quadric_swapped_generators b r hr)) =
-      Φ.characterRuling (b.coord 0).toAddMonoidHom
+      Φ.characterRuling k (b.coord 0).toAddMonoidHom
         (nonneg_or_nonpos_quadric_transverse_character b r hr) := by
   have hchar : ((b').coord 1).toAddMonoidHom = (b.coord 0).toAddMonoidHom := by
     ext x
@@ -250,11 +252,11 @@ include hΦ hc hr in
 projective lines over the coefficient field. -/
 theorem isPullback_quadric_characterRulings :
     IsPullback
-      (Φ.characterRuling (b.coord 0).toAddMonoidHom
+      (Φ.characterRuling k (b.coord 0).toAddMonoidHom
         (nonneg_or_nonpos_quadric_transverse_character b r hr))
-      (Φ.characterRuling (b.coord 1).toAddMonoidHom
+      (Φ.characterRuling k (b.coord 1).toAddMonoidHom
         (nonneg_or_nonpos_hirzebruch_ruling_character b 0 r hr))
-      (projectiveLine ℂ ↘ Spec (.of ℂ)) (projectiveLine ℂ ↘ Spec (.of ℂ)) := by
+      (projectiveLine k ↘ Spec (.of k)) (projectiveLine k ↘ Spec (.of k)) := by
   let e := (Φ.quadricFanEquivProduct b hΦ hc r hr).toFanHom
   have hfst : (FanHom.fst P P).comp e = Φ.characterFanHom (b.coord 0).toAddMonoidHom
       (nonneg_or_nonpos_quadric_transverse_character b r hr) := by
@@ -264,14 +266,14 @@ theorem isPullback_quadric_characterRulings :
       (nonneg_or_nonpos_hirzebruch_ruling_character b 0 r hr) := by
     ext x j
     simp [e, FanHom.comp_latticeMap]
-  have ho : projectiveLineToricIso.inv ≫ (P).algebraicRealizationStructureMap =
-      (projectiveLine ℂ ↘ Spec (.of ℂ)) := by
-    rw [Iso.inv_comp_eq, ← algebraicRealization_over, comp_over]
-  apply ((P).isPullback_fst_snd_algebraicMap P).of_iso' (asIso e.algebraicMap)
-    projectiveLineToricIso.symm projectiveLineToricIso.symm (Iso.refl _)
-  · rw [asIso_hom, ← FanHom.algebraicMap_comp, hfst, characterRuling_def]
+  have ho : (projectiveLineToricIso k).inv ≫ (P).finiteFanSchemeToSpec k =
+      (projectiveLine k ↘ Spec (.of k)) := by
+    rw [Iso.inv_comp_eq, ← finiteFanScheme_over k, comp_over]
+  apply ((P).isPullback_fst_snd_finiteFanSchemeHom k P).of_iso' (asIso (e.finiteFanSchemeHom k))
+    (projectiveLineToricIso k).symm (projectiveLineToricIso k).symm (Iso.refl _)
+  · rw [asIso_hom, ← FanHom.finiteFanSchemeHom_comp k, hfst, characterRuling_def k]
     simp
-  · rw [asIso_hom, ← FanHom.algebraicMap_comp, hsnd, characterRuling_def]
+  · rw [asIso_hom, ← FanHom.finiteFanSchemeHom_comp k, hsnd, characterRuling_def k]
     simp
   · simpa only [Iso.symm_hom, Iso.refl_hom, Category.comp_id] using ho
   · simpa only [Iso.symm_hom, Iso.refl_hom, Category.comp_id] using ho
@@ -281,36 +283,36 @@ attribute [local instance] MvPolynomial.gradedAlgebra
 open TauCeti.SymmetricAlgebra (homogeneousSubmodule)
 
 local notation "J" => Fin 2
-local notation "S" => Spec (CommRingCat.of ℂ)
-local notation "s" => Proj.toSpecCoeff (MvPolynomial.homogeneousSubmodule J ℂ)
-local notation "lineIso" => Basis.polynomialProjIso (Pi.basisFun ℂ J)
+local notation "S" => Spec (CommRingCat.of k)
+local notation "s" => Proj.toSpecCoeff (MvPolynomial.homogeneousSubmodule J k)
+local notation "lineIso" => Basis.polynomialProjIso (Pi.basisFun k J)
 
 include hΦ hc hr in
 /-- The algebraic realization of the toric quadric is projective over the
 coefficient field, via the Segre embedding of the product of projective lines. -/
-theorem isProjectiveOver_quadric : Φ.algebraicRealization.IsProjectiveOver ℂ := by
-  let q₀ := Φ.characterRuling (b.coord 0).toAddMonoidHom
+theorem isProjectiveOver_quadric : (Φ.finiteFanScheme k).IsProjectiveOver k := by
+  let q₀ := Φ.characterRuling k (b.coord 0).toAddMonoidHom
     (nonneg_or_nonpos_quadric_transverse_character b r hr)
-  let q₁ := Φ.characterRuling (b.coord 1).toAddMonoidHom
+  let q₁ := Φ.characterRuling k (b.coord 1).toAddMonoidHom
     (nonneg_or_nonpos_hirzebruch_ruling_character b 0 r hr)
-  have ho : (lineIso).hom ≫ (projectiveLine ℂ ↘ S) = s := by
+  have ho : (lineIso).hom ≫ (projectiveLine k ↘ S) = s := by
     rw [TauCeti.SymmetricAlgebra.over_eq_projToSpec, Basis.polynomialProjIso_hom_over]
   let g₀ := q₀ ≫ (lineIso).inv
   let g₁ := q₁ ≫ (lineIso).inv
   have hp : IsPullback g₀ g₁ s s :=
-    (isPullback_quadric_characterRulings b hΦ hc r hr).of_iso' (Iso.refl _)
+    (isPullback_quadric_characterRulings k b hΦ hc r hr).of_iso' (Iso.refl _)
       (lineIso) (lineIso) (Iso.refl S)
       (by simp [g₀, q₀]) (by simp [g₁, q₁])
       (by simpa only [Iso.refl_hom, Category.comp_id] using ho)
       (by simpa only [Iso.refl_hom, Category.comp_id] using ho)
-  let g := hp.isoPullback.hom ≫ Proj.segre (σ := J) (τ := J) ℂ ≫
-    (Pi.basisFun ℂ (J × J)).polynomialProjIso.hom
+  let g := hp.isoPullback.hom ≫ Proj.segre (σ := J) (τ := J) k ≫
+    (Pi.basisFun k (J × J)).polynomialProjIso.hom
   have : g.IsOver S := ⟨by
     simp only [g, Category.assoc, TauCeti.SymmetricAlgebra.over_eq_projToSpec,
       Basis.polynomialProjIso_hom_over, Proj.segre_toSpecCoeff,
       IsPullback.isoPullback_hom_fst_assoc, g₀, Category.assoc]
     rw [← ho, Iso.inv_hom_id_assoc, comp_over]⟩
-  exact Scheme.IsProjectiveOver.of_isClosedImmersion ℂ g
+  exact Scheme.IsProjectiveOver.of_isClosedImmersion k g
 
 include hΦ hc hr in
 private theorem quadric_cyclicRays_swap (j : ZMod 4) :
@@ -344,7 +346,7 @@ def quadricRulingExchange : FanEquiv Φ Φ :=
     (f).toAddEquiv (quadric_swap_generator b r hr)
 
 local notation "E" => quadricRulingExchange b hΦ hc r hr
-local notation "τ" => FanHom.algebraicMap (FanEquiv.toFanHom (E))
+local notation "τ" => FanHom.finiteFanSchemeHom k (FanEquiv.toFanHom (E))
 
 /-- The ruling exchange acts on the lattice by transposing the two basis directions. -/
 @[simp]
@@ -366,16 +368,16 @@ theorem quadricRulingExchange_symm : (E).symm = E := by
 
 /-- The algebraic ruling exchange is an involution. -/
 @[reassoc (attr := simp)]
-theorem quadricRulingExchange_algebraicMap_comp : τ ≫ τ = 𝟙 Φ.algebraicRealization := by
-  simpa only [quadricRulingExchange_symm] using (E).algebraicMap_comp_symm
+theorem quadricRulingExchange_finiteFanSchemeHom_comp : τ ≫ τ = 𝟙 (Φ.finiteFanScheme k) := by
+  simpa only [quadricRulingExchange_symm] using (E).finiteFanSchemeHom_comp_symm k
 
 variable [Nonempty Φ.cones]
 
 /-- The ruling exchange preserves the reduced toric boundary as a closed subscheme. -/
 @[simp]
 theorem comap_boundaryIdeal_quadricRulingExchange :
-    (Φ.boundaryIdeal inferInstance).comap τ = Φ.boundaryIdeal inferInstance :=
-  (E).comap_boundaryIdeal_algebraicMap _ _
+    (Φ.toricBoundaryIdeal k inferInstance).comap τ = Φ.toricBoundaryIdeal k inferInstance :=
+  (E).comap_toricBoundaryIdeal_finiteFanSchemeHom k _ _
 
 omit [Nonempty Φ.cones] in
 /-- On the cyclic ray indices, the ruling exchange reverses the cycle and sends

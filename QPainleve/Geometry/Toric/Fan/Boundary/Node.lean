@@ -6,21 +6,19 @@ Authors: The QPainleve contributors
 module
 
 public import QPainleve.AlgebraicGeometry.Curves.Node.Locus
-public import QPainleve.Geometry.Toric.Fan.Boundary.Basic
-public import QPainleve.Geometry.Toric.Fan.Point
+public import QPainleve.Geometry.Toric.BaseChange.Boundary
 public import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.Basic
 public import TauCeti.RingTheory.Node.Branches
 
 import QPainleve.AlgebraicGeometry.Curves.Node.Split
 import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
 import QPainleve.Geometry.Toric.Cone.TwoDimensional
-import QPainleve.Geometry.Toric.Fan.Boundary.Ideal
-import QPainleve.Geometry.Toric.Fan.Boundary.Intersection
+import QPainleve.Geometry.Toric.BaseChange.Point
+import QPainleve.Geometry.Toric.RegularChart
 import QPainleve.Geometry.Toric.Fan.TwoDimensional
 import TauCeti.AlgebraicGeometry.IdealSheaf.Reduced
 import TauCeti.AlgebraicGeometry.Pullback.Carrier
 import TauCeti.RingTheory.Node.Reduced
-import TauCeti.Geometry.Toric.Algebraic.Fan.AffineSpace.Scheme
 
 /-!
 # Nodes in regular toric surface boundaries
@@ -28,108 +26,97 @@ import TauCeti.Geometry.Toric.Algebraic.Fan.AffineSpace.Scheme
 On the affine chart of a two-dimensional regular cone, the two ray divisors
 are the coordinate axes and the distinguished point is their common origin.
 The reduced boundary at that point is therefore the split node
-`Spec ℂ[x,y]/(xy)`. The comparison uses Tau Ceti's affine-space coordinates
+`Spec k[x,y]/(xy)`. The comparison uses the regular affine chart coordinates
 and its split-node singular locus. For a complete rank-two fan, these charts
 cover the reduced boundary and identify its nodes with the two-ray cones.
 -/
 
 public noncomputable section
 
-open AlgebraicGeometry CategoryTheory Multiplicative TopologicalSpace
+open AlgebraicGeometry CategoryTheory AddMonoidAlgebra TopologicalSpace
 open AlgebraicGeometry.Scheme.IdealSheafData
 open TauCeti.AlgebraicGeometry
 
 namespace TauCeti.Toric
 
-variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
+universe u
+
+variable (k : Type u) [Field k] {N : Type u} {V : Type*}
+  [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V}
 
 private theorem exists_twoRayChartCoordinates {C : PointedCone ℝ V}
     (hi : IsIntegralLattice i) (hC : IsRegularCone i C)
     (hN : Module.finrank ℤ N = 2) (hc : Nat.card (ToricRay C) = 2) :
-    ∃ (r : Fin 2 ≃ ToricRay C) (e : affineCoordinateRing hi C ≃ₐ[ℂ] MvPolynomial (Fin 2) ℂ),
-      (∀ j, rayIdeal hi hC.toIsToricCone (r j) =
+    ∃ (r : Fin 2 ≃ ToricRay C) (e : affineChartRing k hi C ≃ₐ[k] MvPolynomial (Fin 2) k),
+      (∀ j, rayChartIdeal hi hC.toIsToricCone (r j) k =
         Ideal.span {e.symm (MvPolynomial.X j)}) ∧
-      (NodeAlgebra.origin ℂ).comp ((NodeAlgebra.mk 0).comp e.toAlgHom) =
-        distinguishedPoint hi (⊤ : C.Face) := by
+      (NodeAlgebra.origin k).comp ((NodeAlgebra.mk 0).comp e.toAlgHom) =
+        facePointAlgebraHom hi (⊤ : C.Face) k := by
   classical
   obtain ⟨r, b, hb⟩ := hC.exists_basis_primitiveGenerators hi hN hc
-  have hcone : C = projectiveSpaceCone b i {none}ᶜ := by
-    rw [projectiveSpaceCone_compl_none]
-    simpa only [← Set.range_comp, Function.comp_def] using
-      (hC.hull_eq_of_basis_primitiveGenerators hi b r hb).symm
-  subst C
-  let e := Fan.affineSpaceCoordinateRingEquiv b hi
-  let b' := b.reindex (r.trans (Equiv.sumEmpty (ToricRay (projectiveSpaceCone b i {none}ᶜ))
-    (Fin 0)).symm)
-  have hb' (k : Fin 2) : b' (Sum.inl (r k)) = b k := by simp [b']
-  have hprim (t : ToricRay (projectiveSpaceCone b i {none}ᶜ)) :
-      IsPrimitiveGenerator i t (b' (Sum.inl t)) := by
-    obtain ⟨k, rfl⟩ := r.surjective t
+  let b' := b.reindex (r.trans (Equiv.sumEmpty (ToricRay C) (Fin 0)).symm)
+  have hb' (j : Fin 2) : b' (Sum.inl (r j)) = b j := by simp [b']
+  have hprim (t : ToricRay C) : IsPrimitiveGenerator i t (b' (Sum.inl t)) := by
+    obtain ⟨j, rfl⟩ := r.surjective t
     rw [hb', hb]
     exact isPrimitiveGenerator_primitiveGenerator hi hC.toIsToricCone _
-  refine ⟨r, e, ?_, ?_⟩
-  · intro j
-    dsimp only [e]
-    rw [rayIdeal_eq_span hi _ hprim, Fan.affineSpaceCoordinateRingEquiv_symm_X]
-    have hcoord : b'.coord (Sum.inl (r j)) = b.coord j := by
-      apply b.ext
-      intro k
-      nth_rw 1 [← hb' k]
-      simp [Module.Basis.coord_apply, Finsupp.single_apply, r.injective.eq_iff]
-    have hm : dualSemigroupCoord hi hC.toIsToricCone hprim (Sum.inl (r j)) =
-        ⟨(b.coord j).toAddMonoidHom,
-          Fan.coord_mem_dualSemigroup_affineSpace b hi j (Fan.affineSpaceMaximalCone b hi)⟩ := by
-      apply Subtype.ext
-      exact (coe_dualSemigroupCoord hi _ hprim _).trans
-        (congrArg LinearMap.toAddMonoidHom hcoord)
-    rw [hm, MonoidAlgebra.of_apply]
+  let e := (affineChartRingEquivMvPolynomial hi hC.toIsToricCone hprim k).trans
+    ((MvPolynomial.mapAlgEquiv (ToricRay C) (AddMonoidAlgebra.uniqueAlgEquiv k (Fin 0 →₀ ℤ))).trans
+      (MvPolynomial.renameEquiv k r.symm))
+  have hX (j : Fin 2) : e.symm (MvPolynomial.X j) =
+      AddMonoidAlgebra.single (dualSemigroupCoord hi hC.toIsToricCone hprim (Sum.inl (r j))) 1 := by
+    apply e.injective
+    rw [AlgEquiv.apply_symm_apply]
+    dsimp only [e, AlgEquiv.trans_apply]
+    rw [affineChartRingEquivMvPolynomial_rayCoord]
+    simp
+  refine ⟨r, e, fun j ↦ ?_, ?_⟩
+  · rw [hX, rayChartIdeal_eq_span_rayCoordinate hi hC.toIsToricCone (r j) k hprim]
   · apply (AlgHom.cancel_right (f := e.symm.toAlgHom) e.symm.surjective).mp
     apply MvPolynomial.algHom_ext
     intro j
     simp only [AlgHom.comp_apply, AlgEquiv.coe_toAlgHom, AlgEquiv.apply_symm_apply,
       NodeAlgebra.mk_X, NodeAlgebra.origin_coord]
-    dsimp only [e]
-    rw [Fan.affineSpaceCoordinateRingEquiv_symm_X, distinguishedPoint_apply_single]
-    have hnonzero : ¬ ∀ x ∈ (⊤ : (projectiveSpaceCone b i {none}ᶜ).Face),
-        hi.realCharacter (b.coord j).toAddMonoidHom x = 0 := by
-      intro h
-      have hz := h (i (b j)) ((r j).val.isFaceOf.le
-        (by rw [hb j]; exact primitiveGenerator_mem hi hC.toIsToricCone (r j)))
-      simp [hi.realCharacter_apply, Module.Basis.coord_apply] at hz
-    simp [hnonzero]
+    rw [hX, facePointAlgebraHom_single]
+    refine (ite_eq_right fun h ↦ ?_).symm
+    have hz := h (i (b' (Sum.inl (r j)))) ((r j).val.isFaceOf.le (hprim (r j)).mem)
+    rw [hi.realCharacter_apply] at hz
+    rw [dualSemigroupCoord_apply_basis_self] at hz
+    norm_num at hz
 
 namespace Fan
 
 variable {Φ : Fan i}
 
 private theorem mem_boundaryIdeal_comap_chart_iff (hΦ : Φ.IsRegular) (σ : Φ.cones)
-    (x : Φ.affineToricChart σ) :
-    x ∈ ((Φ.boundaryIdeal ⟨σ⟩).comap (Φ.affineToricChartι σ)).support ↔
-      ∃ r : ToricRay σ.val, rayIdeal Φ.lattice (Φ.isToricCone σ.property) r ≤ x.asIdeal := by
+    (x : affineChart k Φ.lattice σ.val) :
+    x ∈ ((Φ.toricBoundaryIdeal k ⟨σ⟩).comap (Φ.affineChartι k σ)).support ↔
+      ∃ r : ToricRay σ.val, rayChartIdeal Φ.lattice (Φ.isToricCone σ.property) r k ≤ x.asIdeal := by
   have hcomap (ρ : Φ.Ray) :
-      x ∈ ((Φ.rayBoundaryIdeal hΦ ρ).comap (Φ.affineToricChartι σ)).support ↔
-        Φ.affineToricChartι σ x ∈ (Φ.rayBoundaryIdeal hΦ ρ).support := by
+      x ∈ ((Φ.rayDivisorIdeal k hΦ ρ).comap (Φ.affineChartι k σ)).support ↔
+        Φ.affineChartι k σ x ∈ (Φ.rayDivisorIdeal k hΦ ρ).support := by
     rw [← SetLike.mem_coe, support_comap, Closeds.coe_preimage]
     rfl
   rw [← SetLike.mem_coe, support_comap, Closeds.coe_preimage, Set.mem_preimage,
-    Φ.support_boundaryIdeal_eq_iUnion_closure hΦ, Set.mem_iUnion]
-  simp only [← Φ.coe_support_rayBoundaryIdeal hΦ]
+    Φ.support_toricBoundaryIdeal_eq_iUnion_closure k hΦ, Set.mem_iUnion]
+  simp only [← Φ.coe_support_rayDivisorIdeal k hΦ]
   have hlocal (r : ToricRay σ.val) :
-      x ∈ ((Φ.rayBoundaryIdeal hΦ (Ray.ofToricRay Φ σ r)).comap
-          (Φ.affineToricChartι σ)).support ↔
-        rayIdeal Φ.lattice (Φ.isToricCone σ.property) r ≤ x.asIdeal := by
+      x ∈ ((Φ.rayDivisorIdeal k hΦ (Ray.ofToricRay Φ σ r)).comap
+          (Φ.affineChartι k σ)).support ↔
+        rayChartIdeal Φ.lattice (Φ.isToricCone σ.property) r k ≤ x.asIdeal := by
     have hle := Ray.toCone_ofToricRay_le Φ σ r
-    rw [Φ.comap_rayBoundaryIdeal_eq_ofIdealTop hΦ _ σ hle,
+    rw [Φ.comap_rayDivisorIdeal_eq_ofIdealTop k hΦ _ σ hle,
       ← SetLike.mem_coe, coe_support_ofIdealTop, Spec_zeroLocus]
-    let p : PrimeSpectrum (affineCoordinateRing Φ.lattice σ.val) := x
+    let p : PrimeSpectrum (affineChartRing k Φ.lattice σ.val) := x
     -- Use the prime spectrum carrier explicitly to apply the affine zero-locus API.
     change p ∈ PrimeSpectrum.zeroLocus _ ↔ _ ≤ p.asIdeal
     rw [PrimeSpectrum.mem_zeroLocus, ← Ideal.coe_comap,
       Ideal.comap_map_of_bijective _ (ConcreteCategory.bijective_of_isIso (C := CommRingCat) _),
       SetLike.coe_subset_coe]
     simpa only [rayEquiv_apply, rayEquiv_symm_apply] using
-      iff_of_eq (congrArg (fun t ↦ rayIdeal Φ.lattice (Φ.isToricCone σ.property) t ≤ x.asIdeal)
+      iff_of_eq (congrArg
+        (fun t ↦ rayChartIdeal Φ.lattice (Φ.isToricCone σ.property) t k ≤ x.asIdeal)
         ((Φ.rayEquiv σ).apply_symm_apply r))
   constructor
   · rintro ⟨ρ, hρ⟩
@@ -139,59 +126,59 @@ private theorem mem_boundaryIdeal_comap_chart_iff (hΦ : Φ.IsRegular) (σ : Φ.
       have he : Ray.ofToricRay Φ σ r = ρ := by
         simpa only [rayEquiv_symm_apply] using congrArg Subtype.val hr
       exact ⟨r, (hlocal r).mp (he.symm ▸ hx)⟩
-    · rw [Φ.comap_rayBoundaryIdeal_eq_top hΦ ρ σ hle, support_top] at hx
+    · rw [Φ.comap_rayDivisorIdeal_eq_top k hΦ ρ σ hle, support_top] at hx
       exact hx.elim
   · rintro ⟨r, hr⟩
     exact ⟨Ray.ofToricRay Φ σ r, (hcomap _).mp ((hlocal r).mpr hr)⟩
 
-private theorem ker_nodeChart {R : Type} [CommRing R] [Algebra ℂ R]
-    (e : R ≃ₐ[ℂ] MvPolynomial (Fin 2) ℂ) :
+private theorem ker_nodeChart {R : Type*} [CommRing R] [Algebra k R]
+    (e : R ≃ₐ[k] MvPolynomial (Fin 2) k) :
     RingHom.ker ((NodeAlgebra.mk 0).comp e.toAlgHom).toRingHom =
       Ideal.span {e.symm (MvPolynomial.X 0) * e.symm (MvPolynomial.X 1)} := by
-  refine (AlgHom.comap_ker (NodeAlgebra.mk (0 : ℂ)) e.toAlgHom).symm.trans ?_
-  have hker : RingHom.ker (NodeAlgebra.mk (0 : ℂ) :
-      MvPolynomial (Fin 2) ℂ →+* NodeAlgebra ℂ 0) =
+  refine (AlgHom.comap_ker (NodeAlgebra.mk (0 : k)) e.toAlgHom).symm.trans ?_
+  have hker : RingHom.ker (NodeAlgebra.mk (0 : k) :
+      MvPolynomial (Fin 2) k →+* NodeAlgebra k 0) =
       Ideal.span {MvPolynomial.X 0 * MvPolynomial.X 1} := by simp
-  refine (congrArg (Ideal.comap (e.toAlgHom : R →+* MvPolynomial (Fin 2) ℂ)) hker).trans ?_
+  refine (congrArg (Ideal.comap (e.toAlgHom : R →+* MvPolynomial (Fin 2) k)) hker).trans ?_
   exact (Ideal.map_symm e.toRingEquiv).symm.trans (by simp [Ideal.map_span])
 
 private theorem comap_boundaryIdeal_eq_ker_nodeChart (hΦ : Φ.IsRegular) (σ : Φ.cones)
     (r : Fin 2 ≃ ToricRay σ.val)
-    (e : affineCoordinateRing Φ.lattice σ.val ≃ₐ[ℂ] MvPolynomial (Fin 2) ℂ)
-    (hr : ∀ j, rayIdeal Φ.lattice (Φ.isToricCone σ.property) (r j) =
+    (e : affineChartRing k Φ.lattice σ.val ≃ₐ[k] MvPolynomial (Fin 2) k)
+    (hr : ∀ j, rayChartIdeal Φ.lattice (Φ.isToricCone σ.property) (r j) k =
       Ideal.span {e.symm (MvPolynomial.X j)}) :
     let a := (NodeAlgebra.mk 0).comp e.toAlgHom
-    (Φ.boundaryIdeal ⟨σ⟩).comap (Φ.affineToricChartι σ) =
+    (Φ.toricBoundaryIdeal k ⟨σ⟩).comap (Φ.affineChartι k σ) =
       (Spec.map (CommRingCat.ofHom a.toRingHom)).ker := by
   intro a
-  let j := Φ.affineToricChartι σ
-  let q : Spec (.of (NodeAlgebra ℂ 0)) ⟶ Φ.affineToricChart σ :=
+  let j := Φ.affineChartι k σ
+  let q : Spec (.of (NodeAlgebra k 0)) ⟶ affineChart k Φ.lattice σ.val :=
     Spec.map (CommRingCat.ofHom a.toRingHom)
   have hsurj : Function.Surjective a := (NodeAlgebra.mk_surjective 0).comp e.surjective
   have : IsClosedImmersion q := IsClosedImmersion.spec_of_surjective _ hsurj
   -- Work with the named quotient morphism so that its affine range formula applies below.
-  change (Φ.boundaryIdeal ⟨σ⟩).comap j = q.ker
-  have hD : ((Φ.boundaryIdeal ⟨σ⟩).comap j).radical = (Φ.boundaryIdeal ⟨σ⟩).comap j := by
+  change (Φ.toricBoundaryIdeal k ⟨σ⟩).comap j = q.ker
+  have hD : ((Φ.toricBoundaryIdeal k ⟨σ⟩).comap j).radical =
+      (Φ.toricBoundaryIdeal k ⟨σ⟩).comap j := by
     rw [radical_comap_of_isOpenImmersion]
     congr 1
     apply (isReduced_subscheme_iff_radical_eq _).mp
-    rw [Φ.boundaryIdeal_def]
     infer_instance
   rw [q.ker_eq_vanishingIdeal_support, ← hD, ← vanishingIdeal_support]
   apply congrArg vanishingIdeal
   ext x
-  rw [SetLike.mem_coe, SetLike.mem_coe, mem_boundaryIdeal_comap_chart_iff hΦ,
+  rw [SetLike.mem_coe, SetLike.mem_coe, mem_boundaryIdeal_comap_chart_iff k hΦ,
     ← SetLike.mem_coe, q.support_ker, q.isClosedEmbedding.isClosed_range.closure_eq]
   have hqrange : Set.range q = PrimeSpectrum.zeroLocus (RingHom.ker a.toRingHom : Set _) :=
     range_comap_of_surjective _ _ hsurj
   rw [hqrange]
-  let p : PrimeSpectrum (affineCoordinateRing Φ.lattice σ.val) := x
+  let p : PrimeSpectrum (affineChartRing k Φ.lattice σ.val) := x
   -- The chart is affine, so the range condition is ideal containment at its prime.
-  change (∃ t : ToricRay σ.val, rayIdeal Φ.lattice (Φ.isToricCone σ.property) t ≤ p.asIdeal) ↔
-    p ∈ PrimeSpectrum.zeroLocus _
+  change (∃ t : ToricRay σ.val, rayChartIdeal Φ.lattice (Φ.isToricCone σ.property) t k ≤
+    p.asIdeal) ↔ p ∈ PrimeSpectrum.zeroLocus _
   rw [PrimeSpectrum.mem_zeroLocus, r.symm.exists_congr_left, Equiv.symm_symm,
     Fin.exists_fin_two, hr, hr]
-  rw [ker_nodeChart e]
+  rw [ker_nodeChart k e]
   simp only [SetLike.coe_subset_coe, Ideal.span_singleton_le_iff_mem,
     p.isPrime.mul_mem_iff_mem_or_mem]
 
@@ -199,23 +186,23 @@ private theorem comap_boundaryIdeal_eq_ker_nodeChart (hΦ : Φ.IsRegular) (σ : 
 comparison is a pullback of the ambient affine toric chart along the boundary inclusion. -/
 theorem exists_isPullback_boundaryIdeal_splitNode (hΦ : Φ.IsRegular) (σ : Φ.cones)
     (hN : Module.finrank ℤ N = 2) (hc : Nat.card (ToricRay σ.val) = 2) :
-    ∃ (q : Spec (.of (NodeAlgebra ℂ 0)) ⟶ Φ.affineToricChart σ)
-      (b : Spec (.of (NodeAlgebra ℂ 0)) ⟶ (Φ.boundaryIdeal ⟨σ⟩).subscheme),
-      IsPullback q b (Φ.affineToricChartι σ) (Φ.boundaryIdeal ⟨σ⟩).subschemeι ∧
-      b ≫ (Φ.boundaryIdeal ⟨σ⟩).subschemeι ≫ Φ.algebraicRealizationStructureMap =
-        Spec.map (CommRingCat.ofHom (algebraMap ℂ (NodeAlgebra ℂ 0))) ∧
-      Spec.map (CommRingCat.ofHom (NodeAlgebra.origin ℂ).toRingHom) ≫ q ≫
-        Φ.affineToricChartι σ = Φ.distinguishedPointHom σ := by
-  obtain ⟨r, e, hr, ho⟩ := exists_twoRayChartCoordinates Φ.lattice
+    ∃ (q : Spec (.of (NodeAlgebra k 0)) ⟶ affineChart k Φ.lattice σ.val)
+      (b : Spec (.of (NodeAlgebra k 0)) ⟶ (Φ.toricBoundaryIdeal k ⟨σ⟩).subscheme),
+      IsPullback q b (Φ.affineChartι k σ) (Φ.toricBoundaryIdeal k ⟨σ⟩).subschemeι ∧
+      b ≫ (Φ.toricBoundaryIdeal k ⟨σ⟩).subschemeι ≫ (Φ.finiteFanSchemeToSpec k) =
+        Spec.map (CommRingCat.ofHom (algebraMap k (NodeAlgebra k 0))) ∧
+      Spec.map (CommRingCat.ofHom (NodeAlgebra.origin k).toRingHom) ≫ q ≫
+        Φ.affineChartι k σ = Φ.distinguishedSection (R := k) σ := by
+  obtain ⟨r, e, hr, ho⟩ := exists_twoRayChartCoordinates k Φ.lattice
     ((isRegular_iff.mp hΦ) σ.val σ.property) hN hc
   let a := (NodeAlgebra.mk 0).comp e.toAlgHom
-  let q : Spec (.of (NodeAlgebra ℂ 0)) ⟶ Φ.affineToricChart σ :=
+  let q : Spec (.of (NodeAlgebra k 0)) ⟶ affineChart k Φ.lattice σ.val :=
     Spec.map (CommRingCat.ofHom a.toRingHom)
-  let j := Φ.affineToricChartι σ
-  let D := Φ.boundaryIdeal ⟨σ⟩
+  let j := Φ.affineChartι k σ
+  let D := Φ.toricBoundaryIdeal k ⟨σ⟩
   have : IsClosedImmersion q :=
     IsClosedImmersion.spec_of_surjective _ ((NodeAlgebra.mk_surjective 0).comp e.surjective)
-  have hker : D.comap j = q.ker := comap_boundaryIdeal_eq_ker_nodeChart hΦ σ r e hr
+  have hker : D.comap j = q.ker := comap_boundaryIdeal_eq_ker_nodeChart k hΦ σ r e hr
   let b := IsClosedImmersion.lift D.subschemeι (q ≫ j) (by
     rw [ker_subschemeι, Scheme.Hom.ker_comp, ← hker]
     exact le_map_comap _ _)
@@ -223,63 +210,62 @@ theorem exists_isPullback_boundaryIdeal_splitNode (hΦ : Φ.IsRegular) (σ : Φ.
   refine ⟨q, b, isPullback_of_isClosedImmersion q D.subschemeι b j hb.symm (by
     rwa [ker_subschemeι]), ?_, ?_⟩
   · rw [← Category.assoc, hb, Category.assoc,
-      Φ.affineToricChartι_comp_algebraicRealizationStructureMap]
+      Φ.affineChartι_finiteFanSchemeToSpec k]
     dsimp only [q]
     rw [← Spec.map_comp]
     congr 1
     ext c
     exact a.commutes c
-  · rw [Φ.distinguishedPointHom_def, ← Category.assoc]
+  · rw [Φ.distinguishedSection_def (R := k), ← Category.assoc]
     dsimp only [q]
     rw [← Spec.map_comp]
-    have ha : CommRingCat.ofHom a.toRingHom ≫ CommRingCat.ofHom (NodeAlgebra.origin ℂ).toRingHom =
-        CommRingCat.ofHom (distinguishedPoint Φ.lattice (⊤ : σ.val.Face)).toRingHom := by
+    have ha : CommRingCat.ofHom a.toRingHom ≫ CommRingCat.ofHom (NodeAlgebra.origin k).toRingHom =
+        CommRingCat.ofHom (facePointAlgebraHom Φ.lattice (⊤ : σ.val.Face) k).toRingHom := by
       rw [← CommRingCat.ofHom_comp]
-      exact congrArg (fun g : affineCoordinateRing Φ.lattice σ.val →ₐ[ℂ] ℂ ↦
+      exact congrArg (fun g : affineChartRing k Φ.lattice σ.val →ₐ[k] k ↦
         CommRingCat.ofHom g.toRingHom) ho
     rw [ha]
 
 /-- The distinguished point of a two-dimensional cone of a regular surface fan is a
 node of the reduced toric boundary. This holds for noncomplete fans as well. -/
-theorem isNodeOfReducedBoundary_distinguishedPointHom (hΦ : Φ.IsRegular) (σ : Φ.cones)
+theorem isNodeOfReducedBoundary_distinguishedSection (hΦ : Φ.IsRegular) (σ : Φ.cones)
     (hN : Module.finrank ℤ N = 2) (hc : Nat.card (ToricRay σ.val) = 2) :
-    (Φ.boundaryIdeal ⟨σ⟩).IsNodeOfReducedBoundary Φ.algebraicRealizationStructureMap
-      (Φ.distinguishedPointHom σ (IsLocalRing.closedPoint ℂ)) := by
-  obtain ⟨q, b, hpb, hbase, ho⟩ := Φ.exists_isPullback_boundaryIdeal_splitNode hΦ σ hN hc
-  let D := Φ.boundaryIdeal ⟨σ⟩
-  let x := Spec.map (CommRingCat.ofHom (NodeAlgebra.origin ℂ).toRingHom)
-    (IsLocalRing.closedPoint ℂ)
+    (Φ.toricBoundaryIdeal k ⟨σ⟩).IsNodeOfReducedBoundary (Φ.finiteFanSchemeToSpec k)
+      (Φ.distinguishedSection (R := k) σ (IsLocalRing.closedPoint k)) := by
+  obtain ⟨q, b, hpb, hbase, ho⟩ := Φ.exists_isPullback_boundaryIdeal_splitNode k hΦ σ hN hc
+  let D := Φ.toricBoundaryIdeal k ⟨σ⟩
+  let x := Spec.map (CommRingCat.ofHom (NodeAlgebra.origin k).toRingHom)
+    (IsLocalRing.closedPoint k)
   have : IsOpenImmersion b := MorphismProperty.of_isPullback (P := @IsOpenImmersion)
     hpb inferInstance
   have : IsReduced D.subscheme := by
     dsimp only [D]
-    rw [Φ.boundaryIdeal_def]
     infer_instance
   refine (D.isNodeOfReducedBoundary_iff_of_isReduced _ _).mpr ⟨b x, ?_, ?_⟩
   · rw [← Scheme.Hom.comp_apply, ← hpb.w]
-    exact congrArg (fun a : Spec (.of ℂ) ⟶ Φ.algebraicRealization ↦
-      a (IsLocalRing.closedPoint ℂ)) ho
+    exact congrArg (fun a : Spec (.of k) ⟶ (Φ.finiteFanScheme k) ↦
+      a (IsLocalRing.closedPoint k)) ho
   · apply (Scheme.Hom.isNodeAt_comp_iff_of_isOpenImmersion
-      (D.subschemeι ≫ Φ.algebraicRealizationStructureMap) b x).mp
+      (D.subschemeι ≫ (Φ.finiteFanSchemeToSpec k)) b x).mp
     rw [hbase]
-    exact (NodeAlgebra.isNodeAt_iff_mem_range_origin x).mpr ⟨IsLocalRing.closedPoint ℂ, rfl⟩
+    exact (NodeAlgebra.isNodeAt_iff_mem_range_origin x).mpr ⟨IsLocalRing.closedPoint k, rfl⟩
 
 private theorem exists_twoRayChart_apply_eq (hΦ : Φ.IsRegular) (hc : Φ.IsComplete)
-    (hdim : Module.finrank ℤ N = 2) (x : Φ.algebraicRealization) :
+    (hdim : Module.finrank ℤ N = 2) (x : (Φ.finiteFanScheme k)) :
     ∃ (υ : Φ.cones) (_ : Nat.card (ToricRay υ.val) = 2)
-      (y : Φ.affineToricChart υ), Φ.affineToricChartι υ y = x := by
-  obtain ⟨σ, y, hy⟩ := Φ.exists_affineToricChartι_apply_eq x
+      (y : affineChart k Φ.lattice υ.val), Φ.affineChartι k υ y = x := by
+  obtain ⟨σ, y, hy⟩ := Φ.exists_affineChartι_apply_eq k x
   obtain ⟨υ, hσυ, hυ⟩ := exists_le_cone_of_card_toricRay_eq_two hΦ hc hdim σ
-  let j := faceAffineToricSchemeMap Φ.lattice (Φ.isFaceOf_of_le υ.property σ.property hσυ)
+  let j := faceAffineChartMap k Φ.lattice (Φ.isFaceOf_of_le υ.property σ.property hσυ)
   refine ⟨υ, hυ, j y, ?_⟩
-  rw [← Scheme.Hom.comp_apply, Φ.faceAffineToricSchemeMap_comp_affineToricChartι]
+  rw [← Scheme.Hom.comp_apply, Φ.faceAffineChartMap_comp_affineChartι k]
   exact hy
 
 private theorem mem_range_rayChart_of_not_mem_otherRayIdeal (σ : Φ.cones)
     (hΦ : Φ.IsRegular) (hc : Nat.card (ToricRay σ.val) = 2)
-    {r t : ToricRay σ.val} (hrt : r ≠ t) (y : Φ.affineToricChart σ)
-    (hy : ¬ rayIdeal Φ.lattice (Φ.isToricCone σ.property) t ≤ y.asIdeal) :
-    Φ.affineToricChartι σ y ∈ Set.range (Φ.affineToricChartι (Ray.ofToricRay Φ σ r).toCone) := by
+    {r t : ToricRay σ.val} (hrt : r ≠ t) (y : affineChart k Φ.lattice σ.val)
+    (hy : ¬ rayChartIdeal Φ.lattice (Φ.isToricCone σ.property) t k ≤ y.asIdeal) :
+    Φ.affineChartι k σ y ∈ Set.range (Φ.affineChartι k (Ray.ofToricRay Φ σ r).toCone) := by
   let hreg := isRegular_iff.mp hΦ σ.val σ.property
   let hσ := hreg.toIsToricCone
   obtain ⟨l, b, hb⟩ := hreg.exists_basis_sum
@@ -305,14 +291,14 @@ private theorem mem_range_rayChart_of_not_mem_otherRayIdeal (σ : Φ.cones)
     rcases hall u with rfl | rfl
     · simp [m, hrt]
     · simp [m, hrt.symm]
-  have hy' : y ∈ Set.range (faceAffineToricSchemeMap Φ.lattice F.isFaceOf) := by
-    rw [range_faceAffineToricSchemeMap Φ.lattice hσ.fg m]
-    let p : PrimeSpectrum (affineCoordinateRing Φ.lattice σ.val) := y
+  have hy' : y ∈ Set.range (faceAffineChartMap k Φ.lattice F.isFaceOf) := by
+    rw [range_faceAffineChartMap k Φ.lattice hσ.fg m]
+    let p : PrimeSpectrum (affineChartRing k Φ.lattice σ.val) := y
     -- The spectrum's basic open is written on the affine chart's point carrier.
-    change p ∈ PrimeSpectrum.basicOpen (MonoidAlgebra.single (ofAdd m) 1)
+    change p ∈ PrimeSpectrum.basicOpen (AddMonoidAlgebra.single m 1)
     rw [PrimeSpectrum.mem_basicOpen]
-    simpa only [rayIdeal_eq_span Φ.lattice hσ hb, Ideal.span_singleton_le_iff_mem,
-      MonoidAlgebra.of_apply, m] using hy
+    simpa only [rayChartIdeal_eq_span_rayCoordinate Φ.lattice hσ t k hb,
+      Ideal.span_singleton_le_iff_mem, m] using hy
   rw [hface] at hy'
   let τ : Φ.cones := ⟨r.toPointedCone, Φ.mem_of_isFaceOf σ.property r.val.isFaceOf⟩
   have hτ : (Ray.ofToricRay Φ σ r).toCone = τ :=
@@ -321,47 +307,47 @@ private theorem mem_range_rayChart_of_not_mem_otherRayIdeal (σ : Φ.cones)
   obtain ⟨z, hz⟩ := hy'
   refine ⟨z, ?_⟩
   rw [← hz, ← Scheme.Hom.comp_apply]
-  exact (congrArg (fun f : Φ.affineToricChart τ ⟶ Φ.algebraicRealization ↦ f z)
-    (Φ.faceAffineToricSchemeMap_comp_affineToricChartι (τ := τ) (σ := σ) r.val.isFaceOf)).symm
+  exact (congrArg (fun f : affineChart k Φ.lattice τ.val ⟶ (Φ.finiteFanScheme k) ↦ f z)
+    (Φ.faceAffineChartMap_comp_affineChartι k (τ := τ) (σ := σ) r.val.isFaceOf)).symm
 
 /-- Every point of a complete regular toric surface outside the nodes of the reduced
 boundary belongs to a ray chart. -/
 theorem exists_rayChart_of_not_isNodeOfReducedBoundary
     (hΦ : Φ.IsRegular) (hc : Φ.IsComplete) (hdim : Module.finrank ℤ N = 2)
-    {x : Φ.algebraicRealization}
-    (hn : ¬ (Φ.boundaryIdeal hc.nonempty_cones).IsNodeOfReducedBoundary
-      Φ.algebraicRealizationStructureMap x) :
-    ∃ ρ : Φ.Ray, x ∈ Set.range (Φ.affineToricChartι ρ.toCone) := by
-  obtain ⟨σ, hσ, y, rfl⟩ := exists_twoRayChart_apply_eq hΦ hc hdim x
+    {x : (Φ.finiteFanScheme k)}
+    (hn : ¬ (Φ.toricBoundaryIdeal k hc.nonempty_cones).IsNodeOfReducedBoundary
+      (Φ.finiteFanSchemeToSpec k) x) :
+    ∃ ρ : Φ.Ray, x ∈ Set.range (Φ.affineChartι k ρ.toCone) := by
+  obtain ⟨σ, hσ, y, rfl⟩ := exists_twoRayChart_apply_eq k hΦ hc hdim x
   classical
-  have hnot : ¬ (⨆ t : ToricRay σ.val, rayIdeal Φ.lattice (Φ.isToricCone σ.property) t) ≤
+  have hnot : ¬ (⨆ t : ToricRay σ.val, rayChartIdeal Φ.lattice (Φ.isToricCone σ.property) t k) ≤
       y.asIdeal := by
-    rw [iSup_rayIdeal_eq_ker_distinguishedPoint Φ.lattice (Φ.isToricCone σ.property)
+    rw [iSup_rayChartIdeal_eq_ker_facePointAlgebraHom k Φ.lattice (Φ.isToricCone σ.property)
       (isRegular_iff.mp hΦ _ σ.property) (hσ.trans hdim.symm)]
     intro h
-    let d := distinguishedPoint Φ.lattice (⊤ : σ.val.Face)
-    let g : Spec (.of ℂ) ⟶ Φ.affineToricChart σ := Spec.map (CommRingCat.ofHom d.toRingHom)
+    let d := facePointAlgebraHom Φ.lattice (⊤ : σ.val.Face) k
+    let g : Spec (.of k) ⟶ affineChart k Φ.lattice σ.val := Spec.map (CommRingCat.ofHom d.toRingHom)
     have hg : Set.range g = PrimeSpectrum.zeroLocus (RingHom.ker d.toRingHom : Set _) :=
-      range_comap_of_surjective _ _ (fun a ↦ ⟨algebraMap ℂ _ a, d.commutes a⟩)
+      range_comap_of_surjective _ _ (fun a ↦ ⟨algebraMap k _ a, d.commutes a⟩)
     have hy' : y ∈ Set.range g := hg.symm ▸ (PrimeSpectrum.mem_zeroLocus y _).mpr h
     obtain ⟨z, rfl⟩ := hy'
-    let o : Spec (.of ℂ) := IsLocalRing.closedPoint ℂ
+    let o : Spec (.of k) := IsLocalRing.closedPoint k
     have hz : z = o := Subsingleton.elim _ _
     subst z
-    have ho : Φ.distinguishedPointHom σ o = Φ.affineToricChartι σ (g o) := by
-      rw [Φ.distinguishedPointHom_def]
-      exact Scheme.Hom.comp_apply g (Φ.affineToricChartι σ) o
-    exact hn (ho ▸ Φ.isNodeOfReducedBoundary_distinguishedPointHom hΦ σ hdim hσ)
+    have ho : Φ.distinguishedSection (R := k) σ o = Φ.affineChartι k σ (g o) := by
+      rw [Φ.distinguishedSection_def (R := k)]
+      exact Scheme.Hom.comp_apply g (Φ.affineChartι k σ) o
+    exact hn (ho ▸ Φ.isNodeOfReducedBoundary_distinguishedSection k hΦ σ hdim hσ)
   obtain ⟨t, ht⟩ := not_forall.mp (fun h ↦ hnot (iSup_le h))
   have : Finite (ToricRay σ.val) := ToricRay.finite_of_fg (Φ.isToricCone σ.property).fg
   have : Nontrivial (ToricRay σ.val) := Finite.one_lt_card_iff_nontrivial.mp (by rw [hσ]; decide)
   obtain ⟨r, hrt⟩ := exists_ne t
-  exact ⟨Ray.ofToricRay Φ σ r, mem_range_rayChart_of_not_mem_otherRayIdeal σ hΦ hσ hrt y ht⟩
+  exact ⟨Ray.ofToricRay Φ σ r, mem_range_rayChart_of_not_mem_otherRayIdeal k σ hΦ hσ hrt y ht⟩
 
 variable [Nonempty Φ.cones]
 
-local notation "D" => Φ.boundaryIdeal inferInstance
-local notation "boundaryMap" => subschemeι D ≫ Φ.algebraicRealizationStructureMap
+local notation "D" => Φ.toricBoundaryIdeal k inferInstance
+local notation "boundaryMap" => subschemeι D ≫ (Φ.finiteFanSchemeToSpec k)
 
 /-- The reduced boundary of a complete regular rank-two fan is effective Cartier.
 On each maximal cone chart the ideal is generated by the product of the two ray coordinates. -/
@@ -369,33 +355,33 @@ theorem isEffectiveCartier_boundaryIdeal (hΦ : Φ.IsRegular) (hc : Φ.IsComplet
     (hdim : Module.finrank ℤ N = 2) : (D).IsEffectiveCartier := by
   rw [isEffectiveCartier_iff_exists_isOpenImmersion]
   intro x
-  obtain ⟨σ, hσ, y, hy⟩ := Φ.exists_twoRayChart_apply_eq hΦ hc hdim x
-  obtain ⟨r, e, hr, _⟩ := exists_twoRayChartCoordinates Φ.lattice
+  obtain ⟨σ, hσ, y, hy⟩ := Φ.exists_twoRayChart_apply_eq k hΦ hc hdim x
+  obtain ⟨r, e, hr, _⟩ := exists_twoRayChartCoordinates k Φ.lattice
     ((isRegular_iff.mp hΦ) σ.val σ.property) hdim hσ
   let a := e.symm (MvPolynomial.X 0) * e.symm (MvPolynomial.X 1)
-  let E := Scheme.ΓSpecIso (.of (affineCoordinateRing Φ.lattice σ.val))
+  let E := Scheme.ΓSpecIso (.of (affineChartRing k Φ.lattice σ.val))
   have ha : a ≠ 0 := by
     dsimp only [a]
     rw [← map_mul]
     exact e.symm.toRingEquiv.map_ne_zero_iff.mpr
       (mul_ne_zero (MvPolynomial.X_ne_zero _) (MvPolynomial.X_ne_zero _))
-  refine ⟨Φ.affineToricChart σ, inferInstance, Φ.affineToricChartι σ, inferInstance, ⟨y, hy⟩,
+  refine ⟨affineChart k Φ.lattice σ.val, inferInstance, Φ.affineChartι k σ, inferInstance, ⟨y, hy⟩,
     E.inv a, IsSMulRegular.of_ne_zero (E.symm.commRingCatIsoToRingEquiv.map_ne_zero_iff.mpr ha), ?_⟩
-  rw [comap_boundaryIdeal_eq_ker_nodeChart hΦ σ r e hr, Scheme.Hom.ker_Spec_map,
+  rw [comap_boundaryIdeal_eq_ker_nodeChart k hΦ σ r e hr, Scheme.Hom.ker_Spec_map,
     CommRingCat.hom_ofHom, ker_nodeChart, Ideal.map_span, Set.image_singleton]
 
-/-- The reduced boundary of a complete regular rank-two fan is nodal over `ℂ`. -/
+/-- The reduced boundary of a complete regular rank-two fan is nodal over the coefficient field. -/
 theorem atWorstNodalOfRelativeDimensionOne_boundary (hΦ : Φ.IsRegular) (hc : Φ.IsComplete)
     (hdim : Module.finrank ℤ N = 2) : AtWorstNodalOfRelativeDimensionOne boundaryMap := by
   classical
   let J := {σ : Φ.cones // Nat.card (ToricRay σ.val) = 2}
   choose q b hpb hbase _ using fun σ : J ↦
-    Φ.exists_isPullback_boundaryIdeal_splitNode hΦ σ.val hdim σ.property
+    Φ.exists_isPullback_boundaryIdeal_splitNode k hΦ σ.val hdim σ.property
   let (σ : J) : IsOpenImmersion (b σ) :=
     MorphismProperty.of_isPullback (P := @IsOpenImmersion) (hpb σ) inferInstance
   let U : (D).subscheme.OpenCover := Scheme.Cover.mkOfCovers J _ b (by
     intro x
-    obtain ⟨σ, hσ, y, hy⟩ := exists_twoRayChart_apply_eq hΦ hc hdim ((D).subschemeι x)
+    obtain ⟨σ, hσ, y, hy⟩ := exists_twoRayChart_apply_eq k hΦ hc hdim ((D).subschemeι x)
     refine ⟨⟨σ, hσ⟩, ?_⟩
     rw [← Set.mem_range, Scheme.Pullback.range_snd_of_isPullback (hpb ⟨σ, hσ⟩)]
     exact ⟨y, hy⟩)
@@ -408,18 +394,17 @@ theorem atWorstNodalOfRelativeDimensionOne_boundary (hΦ : Φ.IsRegular) (hc : �
 /-- Each node of the reduced boundary is the distinguished point of a unique two-ray
 cone, and each such cone gives a node. -/
 theorem isNodeOfReducedBoundary_iff_existsUnique_twoRayCone (hΦ : Φ.IsRegular) (hc : Φ.IsComplete)
-    (hdim : Module.finrank ℤ N = 2) {x : Φ.algebraicRealization} :
-    (D).IsNodeOfReducedBoundary Φ.algebraicRealizationStructureMap x ↔
+    (hdim : Module.finrank ℤ N = 2) {x : (Φ.finiteFanScheme k)} :
+    (D).IsNodeOfReducedBoundary (Φ.finiteFanSchemeToSpec k) x ↔
       ∃! σ : Φ.cones, Nat.card (ToricRay σ.val) = 2 ∧
-        Φ.distinguishedPointHom σ (IsLocalRing.closedPoint ℂ) = x := by
+        Φ.distinguishedSection (R := k) σ (IsLocalRing.closedPoint k) = x := by
   have : IsReduced (D).subscheme := by
-    rw [Φ.boundaryIdeal_def]
     infer_instance
   constructor
   · rw [isNodeOfReducedBoundary_iff_of_isReduced]
     rintro ⟨z, rfl, hz⟩
-    obtain ⟨σ, hσ, y, hy⟩ := exists_twoRayChart_apply_eq hΦ hc hdim ((D).subschemeι z)
-    obtain ⟨q, b, hpb, hbase, ho⟩ := Φ.exists_isPullback_boundaryIdeal_splitNode hΦ σ hdim hσ
+    obtain ⟨σ, hσ, y, hy⟩ := exists_twoRayChart_apply_eq k hΦ hc hdim ((D).subschemeι z)
+    obtain ⟨q, b, hpb, hbase, ho⟩ := Φ.exists_isPullback_boundaryIdeal_splitNode k hΦ σ hdim hσ
     have : IsOpenImmersion b :=
       MorphismProperty.of_isPullback (P := @IsOpenImmersion) hpb inferInstance
     have hz' : z ∈ Set.range b := by
@@ -429,21 +414,21 @@ theorem isNodeOfReducedBoundary_iff_existsUnique_twoRayCone (hΦ : Φ.IsRegular)
     have hw := (Scheme.Hom.isNodeAt_comp_iff_of_isOpenImmersion boundaryMap b w).mpr hz
     rw [hbase] at hw
     obtain ⟨o, rfl⟩ := (NodeAlgebra.isNodeAt_iff_mem_range_origin w).mp hw
-    have hcomp : Spec.map (CommRingCat.ofHom (NodeAlgebra.origin ℂ).toRingHom) ≫
-        b ≫ (D).subschemeι = Φ.distinguishedPointHom σ := by
+    have hcomp : Spec.map (CommRingCat.ofHom (NodeAlgebra.origin k).toRingHom) ≫
+        b ≫ (D).subschemeι = Φ.distinguishedSection (R := k) σ := by
       rw [← hpb.w, ho]
-    have ho' : o = IsLocalRing.closedPoint ℂ := Subsingleton.elim _ _
+    have ho' : o = IsLocalRing.closedPoint k := Subsingleton.elim _ _
     subst o
     have hx := congrArg
-      (fun a : Spec (.of ℂ) ⟶ Φ.algebraicRealization ↦ a (IsLocalRing.closedPoint ℂ)) hcomp.symm
+      (fun a : Spec (.of k) ⟶ (Φ.finiteFanScheme k) ↦ a (IsLocalRing.closedPoint k)) hcomp.symm
     refine ⟨σ, ⟨hσ, hx⟩, fun τ ⟨hτ, hpt⟩ ↦ ?_⟩
     apply Φ.eq_of_le_fullCone hΦ hdim hτ
-    let p : Spec (.of ℂ) := IsLocalRing.closedPoint ℂ
-    have hm := (Φ.distinguishedPointHom_mem_range_affineToricChartι_iff σ σ p).mpr le_rfl
-    exact (Φ.distinguishedPointHom_mem_range_affineToricChartι_iff τ σ p).mp
+    let p : Spec (.of k) := IsLocalRing.closedPoint k
+    have hm := (Φ.distinguishedSection_mem_range_affineChartι_iff (R := k) σ σ p).mpr le_rfl
+    exact (Φ.distinguishedSection_mem_range_affineChartι_iff (R := k) τ σ p).mp
       ((hpt.trans hx.symm).symm ▸ hm)
   · rintro ⟨σ, ⟨hσ, rfl⟩, -⟩
-    exact Φ.isNodeOfReducedBoundary_distinguishedPointHom hΦ σ hdim hσ
+    exact Φ.isNodeOfReducedBoundary_distinguishedSection k hΦ σ hdim hσ
 
 end Fan
 

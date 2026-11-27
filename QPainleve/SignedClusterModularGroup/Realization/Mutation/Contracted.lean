@@ -33,6 +33,8 @@ open Scheme Scheme.PartialMap
 
 namespace QPainleve.SignedClusterModularGroup.GeometricRealization
 
+variable {k₀ : Type} [Field k₀] [IsAlgClosed k₀]
+
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {Φ : Fan i} (b : Basis (Fin 2) ℤ N) {n : ℕ}
   (s : Fin (n + 1) → Φ.Ray) (k : Fin (n + 1))
@@ -46,27 +48,28 @@ local notation "hΨ" => Iff.mpr (Φ.isRegular_mutationFan_iff b hv hp hOpp) hΦ
 local notation "t" => Φ.mutationFanCenterRays b s k hOpp
 local notation "shear" => Φ.mutationFanRayEquiv b hv hp hOpp
 
-local notation "S" => Spec (CommRingCat.of ℂ)
+local notation "S" => Spec (CommRingCat.of k₀)
 local notation "A" => (Fin (n + 1) → ℤ)
-local notation "Centers" => Over.mk (structureMap ℂ A)
-local notation "XTor" => scheme ℂ (Fin (n + 1) →₀ ℤ)
-local notation "χ(" c ")" => pointsEquiv ℂ A
+local notation "Centers" => Over.mk (structureMap k₀ A)
+local notation "XTor" => scheme k₀ (Fin (n + 1) →₀ ℤ)
+local notation "χ(" c ")" => pointsEquiv k₀ A
   (Subtype.mk (CommaMorphism.left (c : Point Centers)) (Over.w (c : Point Centers)))
 local notation "ε" => chargeExchangeMatrix b.detDualEquiv.toLinearMap (rayChargeMap s)
 local notation "centers(" a ")" => fun j : Fin (n + 1) ↦ (a) (ofAdd (Pi.single j 1))
-local notation "Dtor[" Φ "," h "]" => Scheme.IdealSheafData.subscheme (Fan.boundaryIdeal Φ h)
+local notation "Dtor[" coeff "," Φ "," h "]" => Scheme.IdealSheafData.subscheme
+  (Fan.toricBoundaryIdeal coeff Φ h)
 
 variable {E : SkewExchangeMatrix (Fin (n + 1))} (P : ChargeSeed E N)
   (hform : P.form = b.detDualEquiv.toLinearMap) (hcharge : P.charge = rayChargeMap s)
 
 local notation "step" => Generator.toStep (Generator.mutate k) E
 local notation "w" => Quiver.Hom.toPath step
-local notation "C" => Quiver.Path.centerPartialMap ℂ w P
-local notation "F" => Quiver.Path.xRationalMap ℂ w
+local notation "C" => Quiver.Path.centerPartialMap k₀ w P
+local notation "F" => Quiver.Path.xRationalMap k₀ w
 
-variable (U : (scheme ℂ (Fin (n + 1) → ℤ)).Opens)
-  (hU : Dense (U : Set (scheme ℂ (Fin (n + 1) → ℤ))))
-  (hle : U ≤ (Quiver.Path.centerPartialMap ℂ ((Generator.mutate k).toStep E).toPath P).domain)
+variable (U : (scheme k₀ (Fin (n + 1) → ℤ)).Opens)
+  (hU : Dense (U : Set (scheme k₀ (Fin (n + 1) → ℤ))))
+  (hle : U ≤ (Quiver.Path.centerPartialMap k₀ ((Generator.mutate k).toStep E).toPath P).domain)
 
 local notation "C'" => Scheme.PartialMap.restrict C U hU hle
 local notation "src(" c ")" => (c) ≫ Scheme.PartialMap.domainSource (X := Centers) (Y := Centers) C'
@@ -74,34 +77,34 @@ local notation "dst(" c ")" => (c) ≫ Scheme.PartialMap.domainTarget (X := Cent
 
 variable [hΦ₀ : Nonempty Φ.cones] [hΨ₀ : Nonempty (Φ.mutationFan b
   (s k).primitiveGenerator_ne_zero (s k).hull_primitiveGenerator_mem hOpp).cones]
-  [PrestableFamily (Dtor[Φ,hΦ₀] ↘ S)]
+  [PrestableFamily (Dtor[k₀,Φ,hΦ₀] ↘ Spec (.of k₀))]
   {m l : ℕ} [NeZero m] [NeZero l]
   {L : Type} [AddCommGroup L] {H : LinearMap.BilinForm ℤ L}
-  {γ : Type*} {a : γ → (Dtor[Φ,hΦ₀] ↘ S).smoothLocus}
+  {γ : Type*} {a : γ → (Dtor[k₀,Φ,hΦ₀] ↘ Spec (.of k₀)).smoothLocus}
   {T : Scheme.NodalCycleNumbering a l} {o : ZMod l}
-  {J : L →ₗ[ℤ] Additive (LineBundleClass Φ.algebraicRealization) × (Fin (n + 1) → ℤ)}
-  (M : Point (Over.mk (structureMap ℂ (Fin (n + 1) → ℤ))) →
-    MarkedSurface ℂ m H (scheme ℂ (Fin (n + 1) →₀ ℤ)))
+  {J : L →ₗ[ℤ] Additive (LineBundleClass (Φ.finiteFanScheme k₀)) × (Fin (n + 1) → ℤ)}
+  (M : Point (Over.mk (structureMap k₀ (Fin (n + 1) → ℤ))) →
+    MarkedSurface k₀ m H (scheme k₀ (Fin (n + 1) →₀ ℤ)))
   (r : ZMod l ≃ Φ.Ray)
 
 local notation "J'" => LinearMap.comp
-  (LinearEquiv.toLinearMap (LinearEquiv.symm (mutationPicardEquiv b s k hOpp hΦ))) J
+  (LinearEquiv.toLinearMap (LinearEquiv.symm (mutationPicardEquiv k₀ b s k hOpp hΦ))) J
 
 local notation "Aux[" b "," s "," h "," c "]" =>
-  internalBlowupTower (h₀ := h) b s centers(χ(c))
+  internalBlowupTower k₀ (h₀ := h) b s centers(χ(c))
 
 section Fibers
 
-variable [PrestableFamily (Dtor[Φ.mutationFan b (s k).primitiveGenerator_ne_zero
-  (s k).hull_primitiveGenerator_mem hOpp,hΨ₀] ↘ S)]
+variable [PrestableFamily (Dtor[k₀,Φ.mutationFan b (s k).primitiveGenerator_ne_zero
+  (s k).hull_primitiveGenerator_mem hOpp,hΨ₀] ↘ Spec (.of k₀))]
   (T' : Scheme.NodalCycleNumbering
-    (Empty.elim : Empty → (Dtor[Φ.mutationFan b (s k).primitiveGenerator_ne_zero
-      (s k).hull_primitiveGenerator_mem hOpp,hΨ₀] ↘ S).smoothLocus) l)
+    (Empty.elim : Empty → (Dtor[k₀,Φ.mutationFan b (s k).primitiveGenerator_ne_zero
+      (s k).hull_primitiveGenerator_mem hOpp,hΨ₀] ↘ Spec (.of k₀)).smoothLocus) l)
 
 include hform hcharge in
 private theorem exists_mutation_fiber
-    (hr : ∀ j, T.component j = Φ.boundaryNormalizationComponentEquiv hΦ (r j))
-    (hr' : ∀ j, T'.component j = (Ψ).boundaryNormalizationComponentEquiv (hΨ) (shear (r j)))
+    (hr : ∀ j, T.component j = Φ.boundaryNormalizationComponentEquiv k₀ hΦ (r j))
+    (hr' : ∀ j, T'.component j = (Ψ).boundaryNormalizationComponentEquiv k₀ (hΨ) (shear (r j)))
     (hAdjacent : b.detDualEquiv (r 0).primitiveGenerator (r 1).primitiveGenerator = 1 ∧
       ∃ σ : Φ.cones, (r 0).toCone ≤ σ ∧ (r 1).toCone ≤ σ)
     (hPositive : ∀ j, b.detDualEquiv (shear (r j)).primitiveGenerator
@@ -165,7 +168,7 @@ positive determinant on consecutive pairs. At corresponding centers the
 target uses the source pair, Picard marking and numbered branches. Its nodal
 contraction uses the inverse integral mutation on the auxiliary Picard inclusion. -/
 theorem exists_mutate_contracted (hc : Φ.IsComplete)
-    (hr : ∀ j, T.component j = Φ.boundaryNormalizationComponentEquiv hΦ (r j))
+    (hr : ∀ j, T.component j = Φ.boundaryNormalizationComponentEquiv k₀ hΦ (r j))
     (hpos : ∀ j, b.detDualEquiv (r j).primitiveGenerator (r (j + 1)).primitiveGenerator = 1 ∧
       ∃ σ : Φ.cones, (r j).toCone ≤ σ ∧ (r (j + 1)).toCone ≤ σ)
     (hmodel : ∀ c : CenterPoint (U := Centers) (V := Centers) C',
@@ -174,13 +177,13 @@ theorem exists_mutate_contracted (hc : Φ.IsComplete)
         (e : Y ≅ (Aux[b,s,hΦ₀,src(c)]).1),
       IsNodalBoundaryTower (M (src(c))).pair.hom.left.ker ((M (src(c))).surface ↘ S) (𝟙 _) W ∧
         p.projection = e.inv ≫ W.toBase) :
-    ∃ (hpre : PrestableFamily (Dtor[Ψ,hΨ₀] ↘ S)),
+    ∃ (hpre : PrestableFamily (Dtor[k₀,Ψ,hΨ₀] ↘ S)),
       letI := hpre
       ∃ (T' : Scheme.NodalCycleNumbering
-          (Empty.elim : Empty → (Dtor[Ψ,hΨ₀] ↘ S).smoothLocus) l)
-        (M' : Point Centers → MarkedSurface ℂ m H XTor)
+          (Empty.elim : Empty → (Dtor[k₀,Ψ,hΨ₀] ↘ S).smoothLocus) l)
+        (M' : Point Centers → MarkedSurface k₀ m H XTor)
         (R : GeometricRealization (T₀ := Centers) (T₁ := Centers) M M' C' F),
-      (∀ j, T'.component j = (Ψ).boundaryNormalizationComponentEquiv (hΨ) (shear (r j))) ∧
+      (∀ j, T'.component j = (Ψ).boundaryNormalizationComponentEquiv k₀ (hΨ) (shear (r j))) ∧
       (∀ j, b.detDualEquiv (shear (r j)).primitiveGenerator
         (shear (r (j + 1))).primitiveGenerator = 1 ∧
         ∃ σ : (Ψ).cones, (shear (r j)).toCone ≤ σ ∧ (shear (r (j + 1))).toCone ≤ σ) ∧
@@ -195,7 +198,7 @@ theorem exists_mutate_contracted (hc : Φ.IsComplete)
         IsNodalBoundaryTower (M' (dst(c))).pair.hom.left.ker ((M' (dst(c))).surface ↘ S) (𝟙 _) W ∧
           p.projection = e.inv ≫ W.toBase := by
   classical
-  obtain ⟨hpre, T', hr', ht⟩ := (s k).exists_mutationBoundaryNumbering b hOpp hΦ r hc hpos
+  obtain ⟨hpre, T', hr', ht⟩ := (s k).exists_mutationBoundaryNumbering k₀ b hOpp hΦ r hc hpos
   let _ := hpre
   have hcharge' : (Quiver.Path.chargeTarget w P).charge = rayChargeMap (t) := by
     rw [Quiver.Hom.toPath, Quiver.Path.chargeTarget_cons, Quiver.Path.chargeTarget_nil,
@@ -205,19 +208,19 @@ theorem exists_mutate_contracted (hc : Φ.IsComplete)
       hr hr' (by simpa only [zero_add] using hpos 0) (fun j ↦ (ht j).1) c (hmodel c)
   choose ev R₁ hR hW using hdata
   have hhom : ((C').domainTarget (X := Centers) (Y := Centers)).left =
-      U.ι ≫ (Quiver.Path.centerIso ℂ w).hom := by
+      U.ι ≫ (Quiver.Path.centerIso k₀ w).hom := by
     simp only [domainTarget_left, PartialMap.restrict_hom, Quiver.Path.centerPartialMap_hom,
       Scheme.homOfLE_ι_assoc]
     -- The domain of the restricted partial map is `U`.
     rfl
   have hleft : Mono ((C').domainTarget (X := Centers) (Y := Centers)).left :=
-    hhom ▸ inferInstanceAs (Mono (U.ι ≫ (Quiver.Path.centerIso ℂ w).hom))
+    hhom ▸ inferInstanceAs (Mono (U.ι ≫ (Quiver.Path.centerIso k₀ w).hom))
   have hmono := Over.mono_of_mono_left ((C').domainTarget (X := Centers) (Y := Centers))
   have hinj : Function.Injective (fun c : CenterPoint (U := Centers) (V := Centers) C' ↦ dst(c)) :=
     fun _ _ h ↦ (cancel_mono ((C').domainTarget (X := Centers) (Y := Centers))).mp h
   -- The family type is indexed by the whole torus. Only the image of the open
   -- is used by the realization and the target contraction.
-  let M' : Point Centers → MarkedSurface ℂ m H XTor :=
+  let M' : Point Centers → MarkedSurface k₀ m H XTor :=
     Function.extend (fun c : CenterPoint (U := Centers) (V := Centers) C' ↦ dst(c))
       (fun c ↦ (M (src(c))).withEvaluation (ev c)) M
   have hM (c : CenterPoint (U := Centers) (V := Centers) C') :
@@ -226,7 +229,7 @@ theorem exists_mutate_contracted (hc : Φ.IsComplete)
   let R : GeometricRealization (T₀ := Centers) (T₁ := Centers) M M' C' F :=
     ⟨.refl H, 1, fun c ↦ (hM c).symm ▸ R₁ c⟩
   refine ⟨hpre, T', M', R, hr', ht, hcharge', rfl, rfl, fun c ↦ ⟨ev c, hM c, ?_, ?_⟩⟩
-  · have hIso {Y : MarkedSurface ℂ m H XTor}
+  · have hIso {Y : MarkedSurface k₀ m H XTor}
         (hY : Y = (M (src(c))).withEvaluation (ev c)) :
         (hY.symm ▸ R₁ c : FiberRealization (M (src(c))) Y F (.refl H) 1).iso ≪≫
             eqToIso (congrArg MarkedSurface.pair hY) = Iso.refl _ := by

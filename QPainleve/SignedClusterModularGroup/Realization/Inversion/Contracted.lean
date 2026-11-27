@@ -30,49 +30,54 @@ open Scheme.IdealSheafData
 
 namespace QPainleve.SignedClusterModularGroup
 
+variable {k : Type} [Field k] [IsAlgClosed k]
+
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {Φ : Fan i} [h₀ : Nonempty Φ.cones]
   {r m n : ℕ} [NeZero m] [NeZero n] {L : Type} [AddCommGroup L]
   {B : LinearMap.BilinForm ℤ L}
   {b : Module.Basis (Fin 2) ℤ N} {s : Fin r → Φ.Ray} {hΦ : Φ.IsRegular}
 
-local notation "S" => Spec (CommRingCat.of ℂ)
-local notation "D[" Φ "," h "]" => Scheme.IdealSheafData.subscheme (Fan.boundaryIdeal Φ h)
-local notation "XTor[" r "]" => Spec (CommRingCat.of (TauCeti.LaurentRing ℂ (Fin r)))
+local notation "S" => Spec (CommRingCat.of k)
+local notation "D[" Φ "," h "]" => Scheme.IdealSheafData.subscheme (Fan.toricBoundaryIdeal k Φ h)
+local notation "XTor[" r "]" => Spec (CommRingCat.of (TauCeti.LaurentRing k (Fin r)))
 local notation "Pic[" Φ "," r "]" =>
-  Additive (LineBundleClass (Fan.algebraicRealization Φ)) × (Fin r → ℤ)
+  Additive (LineBundleClass (Fan.finiteFanScheme k Φ)) × (Fin r → ℤ)
 local notation "opBasis" b:arg => Module.Basis.reindex b (Equiv.swap 0 1)
 local notation "centers" c:arg => (fun j ↦ c (ofAdd (Pi.single j 1)))
-local notation "tower(" b "," s "," c ")" => internalBlowupTower b s (centers c)
+local notation "tower(" b "," s "," c ")" => internalBlowupTower k b s (centers c)
 
-variable [PrestableFamily (D[Φ,h₀] ↘ S)] {γ : Type*} {a : γ → (D[Φ,h₀] ↘ S).smoothLocus}
-  {T : Scheme.NodalCycleNumbering a m} {o : ZMod m} {J : L →ₗ[ℤ] Pic[Φ,r]}
+variable [PrestableFamily ((Φ.toricBoundaryIdeal k h₀).subscheme ↘ Spec (.of k))]
+  {γ : Type*} {a : γ → ((Φ.toricBoundaryIdeal k h₀).subscheme ↘ Spec (.of k)).smoothLocus}
+  {T : Scheme.NodalCycleNumbering a m} {o : ZMod m}
+  {J : L →ₗ[ℤ] Additive (LineBundleClass (Φ.finiteFanScheme k)) × (Fin r → ℤ)}
 
 local notation "modelIso(" b "," s "," c ")" => eqToIso (congrArg Sigma.fst
   (@id (tower(opBasis b,s,c⁻¹) = tower(b,s,c))
-    (internalBlowupTower_reindex_swap b s (centers c))))
+    (internalBlowupTower_reindex_swap k b s (centers c))))
 
 namespace ContractedToricFiber
 
-variable {c : Multiplicative (Fin r → ℤ) →* ℂˣ} {M : MarkedSurface ℂ n B XTor[r]}
+variable {c : Multiplicative (Fin r → ℤ) →* kˣ}
+  {M : MarkedSurface k n B (Spec (.of (TauCeti.LaurentRing k (Fin r))))}
   (p : ContractedToricFiber (h₀ := h₀) b s hΦ T o J c M)
 
 private theorem marked_pullback_invert
     (e : (tower(opBasis b,s,c⁻¹)).1 ≅ (tower(b,s,c)).1)
     (hpic : ∀ a, LineBundleClass.pullback e.inv
-        (internalBlowupPicardMarking (opBasis b) s (centers(c⁻¹)) hΦ a).toMul =
-        (internalBlowupPicardMarking b s (centers c) hΦ a).toMul)
+        (internalBlowupPicardMarking k (opBasis b) s (centers(c⁻¹)) hΦ a).toMul =
+        (internalBlowupPicardMarking k b s (centers c) hΦ a).toMul)
     (x : L) :
-    (internalBlowupPicardMarking (opBasis b) s (centers(c⁻¹)) hΦ).symm
+    (internalBlowupPicardMarking k (opBasis b) s (centers(c⁻¹)) hΦ).symm
       (Additive.ofMul (LineBundleClass.pullback (e.hom ≫ p.projection)
         (M.picardMarking x).toMul)) = J x := by
-  have hx := congrArg (fun a ↦ (internalBlowupPicardMarking b s (centers c) hΦ a).toMul)
+  have hx := congrArg (fun a ↦ (internalBlowupPicardMarking k b s (centers c) hΦ a).toMul)
     (p.marked_pullback x)
   have hx' : LineBundleClass.pullback p.projection (M.picardMarking x).toMul =
-      (internalBlowupPicardMarking b s (centers c) hΦ (J x)).toMul := by
+      (internalBlowupPicardMarking k b s (centers c) hΦ (J x)).toMul := by
     simpa only [LinearEquiv.apply_symm_apply, toMul_ofMul] using hx
   have hm : LineBundleClass.pullback (e.hom ≫ p.projection) (M.picardMarking x).toMul =
-      (internalBlowupPicardMarking (opBasis b) s (centers(c⁻¹)) hΦ (J x)).toMul := by
+      (internalBlowupPicardMarking k (opBasis b) s (centers(c⁻¹)) hΦ (J x)).toMul := by
     rw [← LineBundleClass.pullback_comp, hx', ← hpic, LineBundleClass.pullback_comp,
       Iso.hom_inv_id, LineBundleClass.pullback_id]
   rw [LinearEquiv.symm_apply_eq, hm, ofMul_toMul]
@@ -83,7 +88,7 @@ construction also applies to repeated and infinitely near centers. -/
 def invert : ContractedToricFiber (h₀ := h₀) (opBasis b) s hΦ T.reverse (-o) J c⁻¹
     (M.invert (ι := Fin r)) := by
   let e : (tower(opBasis b,s,c⁻¹)).1 ≅ (tower(b,s,c)).1 := modelIso(b,s,c)
-  obtain ⟨hbase, hboundary, hpic⟩ := internalBlowupTower_reindex_swap_iso b s (centers c) hΦ
+  obtain ⟨hbase, hboundary, hpic⟩ := internalBlowupTower_reindex_swap_iso k b s (centers c) hΦ
   have hbase_inv : e.inv ≫ (tower(opBasis b,s,c⁻¹)).2.toTower.toBase =
       (tower(b,s,c)).2.toTower.toBase := hbase
   have hboundary_inv : (tower(b,s,c)).2.boundaryι ≫ e.inv =
@@ -109,7 +114,7 @@ def invert : ContractedToricFiber (h₀ := h₀) (opBasis b) s hΦ T.reverse (-o
     evaluation_eq := ?_ }
   · exact (Category.assoc _ _ _).trans
       ((congrArg (e.hom ≫ ·) p.projection_over).trans
-        ((reassoc_of% hbase_forward) Φ.algebraicRealizationStructureMap))
+        ((reassoc_of% hbase_forward) (Φ.finiteFanSchemeToSpec k)))
   · have hker : (tower(b,s,c)).2.boundaryι.ker.comap e.hom =
         (tower(opBasis b,s,c⁻¹)).2.boundaryι.ker := by
       rw [← hboundary_forward, Scheme.Hom.comap_ker_comp_of_isClosedImmersion]
@@ -127,7 +132,7 @@ def invert : ContractedToricFiber (h₀ := h₀) (opBasis b) s hΦ T.reverse (-o
     rw [MarkedSurface.invert_picardMarking]
     exact marked_pullback_invert p e (fun a ↦ hpic a) x
   · rw [MarkedSurface.invert_evaluation, p.evaluation_eq]
-    exact (contractedXEvaluation_reindex_swap b s c hΦ p.projection
+    exact (contractedXEvaluation_reindex_swap k b s c hΦ p.projection
       (e.hom ≫ p.projection) rfl).symm
 
 /-- Inversion transports the contraction by the canonical identification of the
@@ -143,20 +148,21 @@ end ContractedToricFiber
 
 namespace GeometricRealization
 
-local notation "Centers[" r "]" => Over.mk (structureMap ℂ (Fin r → ℤ))
-local notation "χ[" r "](" y ")" => pointsEquiv ℂ (Fin r → ℤ)
+local notation "Centers[" r "]" => Over.mk (structureMap k (Fin r → ℤ))
+local notation "χ[" r "](" y ")" => pointsEquiv k (Fin r → ℤ)
   (Subtype.mk (CommaMorphism.left y) (Over.w y))
 
 variable (E : SkewExchangeMatrix (Fin r))
 
 local notation "invCenters" E:arg =>
-  Quiver.Path.centerIsoOver ℂ (Quiver.Hom.toPath (Generator.toStep Generator.invert E))
+  Quiver.Path.centerIsoOver k (Quiver.Hom.toPath (Generator.toStep Generator.invert E))
 
+omit [IsAlgClosed k] in
 private theorem character_comp_invert_inv (y : Point Centers[r]) :
     χ[r](y ≫ (invCenters E).inv)⁻¹ = χ[r](y) := by
-  apply (pointsEquiv ℂ (Fin r → ℤ)).symm.injective
+  apply (pointsEquiv k (Fin r → ℤ)).symm.injective
   apply Subtype.ext
-  rw [← Quiver.Path.pointsEquiv_symm_comp_centerIso_hom_invert ℂ,
+  rw [← Quiver.Path.pointsEquiv_symm_comp_centerIso_hom_invert k,
     Equiv.symm_apply_apply, Equiv.symm_apply_apply, ← Quiver.Path.centerIsoOver_hom_left,
     ← Over.comp_left, Category.assoc, Iso.inv_hom_id, Category.comp_id]
 
@@ -165,7 +171,7 @@ presentation at the actual image center. The same nodal tower presents the
 target, with all Picard coordinates and all of its centers in the original order.
 Only the source fiber at the inverse center is needed. -/
 theorem exists_invert_contracted
-    (P : Point Centers[r] → MarkedSurface ℂ n B XTor[r]) (y : Point Centers[r])
+    (P : Point Centers[r] → MarkedSurface k n B XTor[r]) (y : Point Centers[r])
     (p : ContractedToricFiber (h₀ := h₀) b s hΦ T o J χ[r](y ≫ (invCenters E).inv)
       (P (y ≫ (invCenters E).inv)))
     {Y : Scheme} {j : ℕ}

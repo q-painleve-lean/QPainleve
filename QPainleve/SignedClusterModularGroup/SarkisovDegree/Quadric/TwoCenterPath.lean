@@ -38,22 +38,24 @@ open scoped Sarkisov
 
 namespace QPainleve.BlowupTower.IsClosedPointTower
 
+variable (k₀ : Type) [Field k₀] [IsAlgClosed k₀]
+
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {Φ : Fan i} (b : Basis (Fin 2) ℤ N) (hΦ : Φ.IsRegular)
   (hc : Φ.IsComplete) (r : Fin 4 ≃ Φ.Ray)
   (hr : (fun j ↦ (r j).primitiveGenerator) = ![b 0, b 1, -b 0, (0 : ℤ) • b 0 - b 1])
 
-local notation "S" => Spec (CommRingCat.of ℂ)
-local notation "X[" Δ "]" => Fan.algebraicRealization Δ
+local notation "S" => Spec (CommRingCat.of k₀)
+local notation "X[" Δ "]" => Fan.finiteFanScheme k₀ Δ
 local notation "f[" Δ "]" => (X[Δ] ↘ S)
-local notation "B[" Δ "," h "]" => Fan.boundaryIdeal Δ (Fan.IsComplete.nonempty_cones h)
-local notation "P" => Proj (homogeneousSubmodule ℂ (Fin 3 → ℂ))
+local notation "B[" Δ "," h "]" => Fan.toricBoundaryIdeal k₀ Δ (Fan.IsComplete.nonempty_cones h)
+local notation "P" => Proj (homogeneousSubmodule k₀ (Fin 3 → k₀))
 local notation "fP" => (P ↘ S)
-local notation "H" => mk (Proj.symmetricAlgebraTwistingBundle ℂ (Fin 3 → ℂ) 1)
+local notation "H" => mk (Proj.symmetricAlgebraTwistingBundle k₀ (Fin 3 → k₀) 1)
 local notation "rankTwo" => Eq.trans (finrank_eq_card_basis b) (Fintype.card_fin 2)
 local notation "center[" u "," c "]" =>
-  (Fan.Ray.binomialCenter u rankTwo (b.detDualEquiv_self (Fan.Ray.primitiveGenerator u))
-    (Fan.Ray.surjective_detCharacter u b) c) (IsLocalRing.closedPoint ℂ)
+  (Fan.Ray.binomialCenter u k₀ rankTwo (b.detDualEquiv_self (Fan.Ray.primitiveGenerator u))
+    (Fan.Ray.surjective_detCharacter u b) c) (IsLocalRing.closedPoint k₀)
 
 local notation "ρ" => r 0
 local notation "hv" => Fan.Ray.primitiveGenerator_ne_zero (ρ)
@@ -74,47 +76,50 @@ local notation "hΩ" => Iff.mpr (Fan.isRegular_mutationFan_iff (Ψ) b hw hwPos o
 local notation "hcΩ" => Iff.mpr (Fan.isComplete_mutationFan_iff (Ψ) b hw hwPos opp₁) hcΨ
 local notation "t" => Equiv.trans s (Fan.mutationFanRayEquiv (Ψ) b hw hwPos opp₁)
 local notation "μ₀[" c "]" =>
-  Scheme.PartialMap.toRationalMap (Φ.mutationPartialMap b (c : ℂ) hv hp opp₀)
+  Scheme.PartialMap.toRationalMap (Φ.mutationPartialMap k₀ b (c : k₀) hv hp opp₀)
 local notation "μ₁[" d "]" =>
-  Scheme.PartialMap.toRationalMap (Fan.mutationPartialMap (Ψ) b (d : ℂ) hw hwPos opp₁)
+  Scheme.PartialMap.toRationalMap (Fan.mutationPartialMap k₀ (Ψ) b (d : k₀) hw hwPos opp₁)
 
 variable {Y : Scheme}
 
 include hΦ in
+omit [IsAlgClosed k₀] in
 private theorem exists_two_smooth_center_path
     [Y.Over S] [SmoothOfRelativeDimension 2 (Y ↘ S)] [PreirreducibleSpace Y]
     [Nonempty Φ.cones] [Nonempty (Ψ).cones] [Nonempty (Ω).cones]
-    {D : Y.IdealSheafData} (c d : ℂˣ) (τ : FanEquiv (Ω) (Ω))
+    {D : Y.IdealSheafData} (c d : k₀ˣ) (τ : FanEquiv (Ω) (Ω))
     (p₀ : Y ⟶ X[Φ]) (p₁ : Y ⟶ X[Ψ]) (p₂ p₃ : Y ⟶ X[Ω])
     [p₀.IsOver S] [p₁.IsOver S] [p₂.IsOver S] [p₃.IsOver S]
     [IsDominant p₀] [IsDominant p₁] [IsDominant p₂] [IsDominant p₃]
     (h₁ : p₀.toRationalMap.comp μ₀[c] = p₁.toRationalMap)
     (h₂ : p₁.toRationalMap.comp μ₁[d] = p₂.toRationalMap)
-    (h₃ : p₃ = p₂ ≫ τ.toFanHom.algebraicMap)
+    (h₃ : p₃ = p₂ ≫ (τ.toFanHom.finiteFanSchemeHom k₀))
     (hpoles : letI : Smooth (Y ↘ S) := SmoothOfRelativeDimension.smooth 2 _
-      B[Φ,hc].comap p₀ = D * ramificationIdealSheaf ℂ p₀ ∧
-      B[Ψ,hcΨ].comap p₁ = D * ramificationIdealSheaf ℂ p₁ ∧
-      B[Ω,hcΩ].comap p₂ = D * ramificationIdealSheaf ℂ p₂ ∧
-      B[Ω,hcΩ].comap p₃ = D * ramificationIdealSheaf ℂ p₃) :
-    ∃ (A A₁ A₂ C : LogarithmicProjection i D) (path : SarkisovPath A C),
+      B[Φ,hc].comap p₀ = D * ramificationIdealSheaf k₀ p₀ ∧
+      B[Ψ,hcΨ].comap p₁ = D * ramificationIdealSheaf k₀ p₁ ∧
+      B[Ω,hcΩ].comap p₂ = D * ramificationIdealSheaf k₀ p₂ ∧
+      B[Ω,hcΩ].comap p₃ = D * ramificationIdealSheaf k₀ p₃) :
+    ∃ (A A₁ A₂ C : LogarithmicProjection k₀ i D) (path : SarkisovPath A C),
       A.fan = Φ ∧ A.hom ≍ p₀ ∧ C.fan = Ω ∧ C.hom ≍ p₃ ∧
       path.vertices = [A, A₁, A₂, C] ∧
       A₁.hom.toRationalMap ≍ p₀.toRationalMap.comp μ₀[c] ∧
       A₂.hom.toRationalMap ≍ (p₀.toRationalMap.comp μ₀[c]).comp μ₁[d] ∧
-      path.rationalMap ≍ (μ₀[c].comp μ₁[d]).comp τ.toFanHom.algebraicMap.toRationalMap := by
+      path.rationalMap ≍ (μ₀[c].comp μ₁[d]).comp (τ.toFanHom.finiteFanSchemeHom
+        k₀).toRationalMap := by
   obtain ⟨hp₀, hp₁, hp₂, hp₃⟩ := hpoles
-  let A : LogarithmicProjection i D := ⟨Φ, hΦ, hc, p₀, inferInstance, inferInstance, hp₀⟩
-  let A₁ : LogarithmicProjection i D := ⟨Ψ, hΨ, hcΨ, p₁, inferInstance, inferInstance, hp₁⟩
-  let A₂ : LogarithmicProjection i D := ⟨Ω, hΩ, hcΩ, p₂, inferInstance, inferInstance, hp₂⟩
-  let C : LogarithmicProjection i D := ⟨Ω, hΩ, hcΩ, p₃, inferInstance, inferInstance, hp₃⟩
+  let A : LogarithmicProjection k₀ i D := ⟨Φ, hΦ, hc, p₀, inferInstance, inferInstance, hp₀⟩
+  let A₁ : LogarithmicProjection k₀ i D := ⟨Ψ, hΨ, hcΨ, p₁, inferInstance, inferInstance, hp₁⟩
+  let A₂ : LogarithmicProjection k₀ i D := ⟨Ω, hΩ, hcΩ, p₂, inferInstance, inferInstance, hp₂⟩
+  let C : LogarithmicProjection k₀ i D := ⟨Ω, hΩ, hcΩ, p₃, inferInstance, inferInstance, hp₃⟩
   let e₁ : SarkisovStep A A₁ := ⟨μ₀[c], .mutation b (r 0) c opp₀, h₁⟩
   let e₂ : SarkisovStep A₁ A₂ := ⟨μ₁[d], .mutation b (s 2) d opp₁, h₂⟩
-  have hτ : Fan.IsSarkisovLink τ.toFanHom.algebraicMap.toRationalMap := by
-    simpa only [Fan.torusTranslation_one, Iso.refl_hom, Category.comp_id] using
+  have hτ : Fan.IsSarkisovLink k₀ (τ.toFanHom.finiteFanSchemeHom k₀).toRationalMap := by
+    simpa only [Fan.torusTranslationIso_one, Iso.refl_hom, Category.comp_id] using
       Fan.IsSarkisovLink.toricIso τ 1
-  have hComp : p₂.toRationalMap.comp τ.toFanHom.algebraicMap.toRationalMap = p₃.toRationalMap := by
+  have hComp : p₂.toRationalMap.comp (τ.toFanHom.finiteFanSchemeHom k₀).toRationalMap =
+    p₃.toRationalMap := by
     rw [Scheme.RationalMap.comp_toRationalMap, Scheme.Hom.toRationalMap_compHom, h₃]
-  let e₃ : SarkisovStep A₂ C := ⟨τ.toFanHom.algebraicMap.toRationalMap, hτ, hComp⟩
+  let e₃ : SarkisovStep A₂ C := ⟨(τ.toFanHom.finiteFanSchemeHom k₀).toRationalMap, hτ, hComp⟩
   have hSecond : p₂.toRationalMap = (p₀.toRationalMap.comp μ₀[c]).comp μ₁[d] := by
     simp only [h₁, h₂]
   refine ⟨A, A₁, A₂, C, ((Quiver.Hom.toPath e₁).cons e₂).cons e₃,
@@ -133,9 +138,9 @@ The terminal projection
 is identified with a new quadric tower carrying the transported map to the plane
 and pole ideal. The Sarkisov degree decreases for any total base orders. -/
 theorem exists_sarkisov_path_of_quadric_two_smooth_centers
-    [X[Φ].IsProjectiveOver ℂ] {n : ℕ} {T : BlowupTower X[Φ] (n + 2) Y}
+    [X[Φ].IsProjectiveOver k₀] {n : ℕ} {T : BlowupTower X[Φ] (n + 2) Y}
     (hT : IsClosedPointTower X[Φ] T) (g : Y ⟶ P) (hg : g ≫ fP = T.toBase ≫ f[Φ])
-    (hbir : Scheme.BirationalOver g (𝟙 P)) (c d : ℂˣ) (j : Fin (n + 2)) (l : Fin (n + 1))
+    (hbir : Scheme.BirationalOver g (𝟙 P)) (c d : k₀ˣ) (j : Fin (n + 2)) (l : Fin (n + 1))
     (hj : hT.baseCenter j = center[r 0,c]) (hl : hT.baseCenter (j.succAbove l) = center[r 2,d])
     (hjfirst : ∀ k < j, hT.baseCenter k ≠ center[r 0,c])
     (hlfirst : ∀ k < j.succAbove l, hT.baseCenter k ≠ center[r 2,d])
@@ -144,9 +149,9 @@ theorem exists_sarkisov_path_of_quadric_two_smooth_centers
     let : Nonempty (Ψ).cones := Fan.IsComplete.nonempty_cones hcΨ
     let : Nonempty (Ω).cones := Fan.IsComplete.nonempty_cones hcΩ
     let : SmoothOfRelativeDimension 2 f[Φ] :=
-      rankTwo ▸ Φ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
+      rankTwo ▸ Φ.smoothOfRelativeDimension_finiteFanSchemeToSpec k₀ hΦ
     let : SmoothOfRelativeDimension 2 f[Ω] :=
-      rankTwo ▸ (Ω).smoothOfRelativeDimension_algebraicRealizationStructureMap hΩ
+      rankTwo ▸ (Ω).smoothOfRelativeDimension_finiteFanSchemeToSpec k₀ hΩ
     let : Y.Over S := ⟨T.toBase ≫ f[Φ]⟩
     let : T.toBase.IsOver S := ⟨rfl⟩
     let : SmoothOfRelativeDimension 2 (Y ↘ S) := hT.smoothOfRelativeDimension f[Φ]
@@ -154,28 +159,28 @@ theorem exists_sarkisov_path_of_quadric_two_smooth_centers
     let : IsIntegral Y := hT.isIntegral f[Φ]
     let : IsModification T.toBase := hT.isModification_of_smoothOfRelativeDimension_two f[Φ]
     let x := (T.picardMarking hT f[Φ]).symm (Additive.ofMul (pullback g H))
-    let β := (Φ.hirzebruchPicardBasis b 0 hΦ r hr).repr x.1 0
+    let β := (Φ.hirzebruchPicardBasis k₀ b 0 hΦ r hr).repr x.1 0
     let orders := fun k ↦ -x.2 k
-    B[Φ,hc].comap T.toBase = D * ramificationIdealSheaf ℂ T.toBase →
-    (Φ.hirzebruchPicardBasis b 0 hΦ r hr).repr x.1 1 < orders j + orders (j.succAbove l) →
+    B[Φ,hc].comap T.toBase = D * ramificationIdealSheaf k₀ T.toBase →
+    (Φ.hirzebruchPicardBasis k₀ b 0 hΦ r hr).repr x.1 1 < orders j + orders (j.succAbove l) →
     ∃ (a : Basis (Fin 2) ℤ N)
       (ht : (fun k ↦ ((t) k).primitiveGenerator) = ![a 0, a 1, -a 0, (0 : ℤ) • a 0 - a 1])
       (Z : Scheme) (U : BlowupTower X[Ω] (1 + (1 + n)) Z) (hU : IsClosedPointTower X[Ω] U)
-      (e : Y ≅ Z) (A A₁ A₂ C : LogarithmicProjection i D) (path : SarkisovPath A C),
+      (e : Y ≅ Z) (A A₁ A₂ C : LogarithmicProjection k₀ i D) (path : SarkisovPath A C),
       let τ := Fan.quadricRulingExchange a hΩ hcΩ t ht
       let g' := e.inv ≫ g
       let y := (U.picardMarking hU f[Ω]).symm (Additive.ofMul (pullback g' H))
-      let β' := ((Ω).hirzebruchPicardBasis a 0 hΩ t ht).repr y.1 1
+      let β' := ((Ω).hirzebruchPicardBasis k₀ a 0 hΩ t ht).repr y.1 1
       A.fan = Φ ∧ A.hom ≍ T.toBase ∧ C.fan = Ω ∧ C.hom ≍ e.hom ≫ U.toBase ∧
       path.vertices = [A, A₁, A₂, C] ∧
       A₁.hom.toRationalMap ≍ T.toBase.toRationalMap.comp μ₀[c] ∧
       A₂.hom.toRationalMap ≍ (T.toBase.toRationalMap.comp μ₀[c]).comp μ₁[d] ∧
-      path.rationalMap ≍ (μ₀[c].comp μ₁[d]).comp τ.toFanHom.algebraicMap.toRationalMap ∧
-      X[Ω].IsProjectiveOver ℂ ∧
+      path.rationalMap ≍ (μ₀[c].comp μ₁[d]).comp (τ.toFanHom.finiteFanSchemeHom k₀).toRationalMap ∧
+      X[Ω].IsProjectiveOver k₀ ∧
       g' ≫ fP = U.toBase ≫ f[Ω] ∧ Scheme.BirationalOver g' (𝟙 P) ∧
-      B[Ω,hcΩ].comap U.toBase = D.comap e.inv * hU.ramificationIdealSheafToBase ℂ ∧
+      B[Ω,hcΩ].comap U.toBase = D.comap e.inv * hU.ramificationIdealSheafToBase k₀ ∧
       0 < β' ∧
-      β' = β + (Φ.hirzebruchPicardBasis b 0 hΦ r hr).repr x.1 1 - orders j -
+      β' = β + (Φ.hirzebruchPicardBasis k₀ b 0 hΦ r hr).repr x.1 1 - orders j -
         orders (j.succAbove l) ∧
       ∀ M' M, hirzebruchSarkisovBidegree β'.toNat M' <
         hirzebruchSarkisovBidegree β.toNat M := by
@@ -193,13 +198,13 @@ theorem exists_sarkisov_path_of_quadric_two_smooth_centers
   let := hIntegral
   let := hMod
   obtain ⟨a, ht, Z, U, hU, e, W, V₀, hV, k, h₁, h₂, h₃, hg', hbir', hpoles, hcoords⟩ :=
-    hT.exists_quadric_resolution_of_two_smooth_centers b hΦ hc r hr g hg hbir c d j l
+    hT.exists_quadric_resolution_of_two_smooth_centers k₀ b hΦ hc r hr g hg hbir c d j l
       hj hl hjfirst hlfirst hsum
   let τ := Fan.quadricRulingExchange a hΩ hcΩ t ht
-  let q := V₀.transport (asIso τ.toFanHom.algebraicMap)
+  let q := V₀.transport (asIso (τ.toFanHom.finiteFanSchemeHom k₀))
   let E := e ≪≫ k ≪≫ q.iso
   let : SmoothOfRelativeDimension 2 f[Ψ] :=
-    rankTwo ▸ (Ψ).smoothOfRelativeDimension_algebraicRealizationStructureMap hΨ
+    rankTwo ▸ (Ψ).smoothOfRelativeDimension_finiteFanSchemeToSpec k₀ hΨ
   let : IsModification U.toBase := hU.isModification_of_smoothOfRelativeDimension_two f[Ψ]
   let : IsModification V₀.toBase := hV.isModification_of_smoothOfRelativeDimension_two f[Ω]
   let hQ := q.isLift.isClosedPointTower hV
@@ -211,15 +216,15 @@ theorem exists_sarkisov_path_of_quadric_two_smooth_centers
   let := hOver₃
   obtain ⟨hp₁, hp₂, hp₃, hpQ⟩ := hPole hpole
   obtain ⟨A, A₁, A₂, C, path, hFan₀, hHom₀, hFan₃, hHom₃, hVertices, hFirst, hSecond, hMap⟩ :=
-    exists_two_smooth_center_path b hΦ hc r hr c d τ T.toBase (e.hom ≫ U.toBase)
+    exists_two_smooth_center_path k₀ b hΦ hc r hr c d τ T.toBase (e.hom ≫ U.toBase)
       (e.hom ≫ k.hom ≫ V₀.toBase) (E.hom ≫ q.tower.toBase) h₁ h₂ h₃ ⟨hpole, hp₁, hp₂, hp₃⟩
-  let : X[Ψ].IsProjectiveOver ℂ := (r 0).isProjectiveOver_mutationFan b opp₀ hΦ
-  have hProjective : X[Ω].IsProjectiveOver ℂ := (s 2).isProjectiveOver_mutationFan b opp₁ hΨ
+  let : X[Ψ].IsProjectiveOver k₀ := (r 0).isProjectiveOver_mutationFan k₀ b opp₀ hΦ
+  have hProjective : X[Ω].IsProjectiveOver k₀ := (s 2).isProjectiveOver_mutationFan k₀ b opp₁ hΨ
   let y := (q.tower.picardMarking hQ f[Ω]).symm (Additive.ofMul (pullback (E.inv ≫ g) H))
-  let β' := ((Ω).hirzebruchPicardBasis a 0 hΩ t ht).repr y.1 1
+  let β' := ((Ω).hirzebruchPicardBasis k₀ a 0 hΩ t ht).repr y.1 1
   have hpos : 0 < β' :=
-    (hQ.hirzebruch_resolution_degree_bounds a 0 hΩ hcΩ t ht _ hg' hbir').1
-  have hdegree : β' = β + (Φ.hirzebruchPicardBasis b 0 hΦ r hr).repr x.1 1 -
+    (hQ.hirzebruch_resolution_degree_bounds k₀ a 0 hΩ hcΩ t ht _ hg' hbir').1
+  have hdegree : β' = β + (Φ.hirzebruchPicardBasis k₀ b 0 hΦ r hr).repr x.1 1 -
       orders j - orders (j.succAbove l) := hcoords.2.1
   have hlt : β' < β := by linarith only [hdegree, hsum]
   refine ⟨a, ht, _, q.tower, hQ, E, A, A₁, A₂, C, path, hFan₀, hHom₀, hFan₃, hHom₃, hVertices,

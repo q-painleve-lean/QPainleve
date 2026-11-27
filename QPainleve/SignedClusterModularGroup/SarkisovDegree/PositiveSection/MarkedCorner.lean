@@ -37,26 +37,29 @@ open TauCeti.AlgebraicGeometry TauCeti.SymmetricAlgebra LineBundleClass Scheme.I
 
 namespace TauCeti.Toric.Fan.LogarithmicProjection
 
+variable {k₀ : Type} [Field k₀] [IsAlgClosed k₀]
+
 open scoped Sarkisov
 
 attribute [local instance] MvPolynomial.gradedAlgebra
 
-local notation "S" => Spec (CommRingCat.of ℂ)
-local notation "P" => Proj (homogeneousSubmodule ℂ (Fin 3 → ℂ))
-local notation "H" => LineBundleClass.mk (Proj.symmetricAlgebraTwistingBundle ℂ (Fin 3 → ℂ) 1)
-local notation "pt" => (IsLocalRing.closedPoint ℂ : S)
-local notation "point[" j "]" => projectiveLine.polynomialPoint ℂ (RingHom.id ℂ) j 0
+local notation "S" => Spec (CommRingCat.of k₀)
+local notation "P" => Proj (homogeneousSubmodule k₀ (Fin 3 → k₀))
+local notation "H" => LineBundleClass.mk (Proj.symmetricAlgebraTwistingBundle k₀ (Fin 3 → k₀) 1)
+local notation "pt" => (IsLocalRing.closedPoint k₀ : S)
+local notation "point[" j "]" => projectiveLine.polynomialPoint k₀ (RingHom.id k₀) j 0
 local notation "baseMap[" t "]" =>
-  ite (t = (0 : Fin 2)) (𝟙 (projectiveLine ℂ)) (Iso.hom (projectiveLine.coordinateSwap ℂ))
+  ite (t = (0 : Fin 2)) (𝟙 (projectiveLine k₀)) (Iso.hom (projectiveLine.coordinateSwap k₀))
 local notation "rankTwo[" b "]" => Eq.trans (finrank_eq_card_basis b) (Fintype.card_fin 2)
-local notation "X[" Φ "]" => Fan.algebraicRealization Φ
+local notation "X[" Φ "]" => Fan.finiteFanScheme k₀ Φ
 local notation "f[" Φ "]" => (X[Φ] ↘ S)
 local notation "ruling[" Φ "," b "," e "," r "," hr "]" =>
-  Fan.characterRuling Φ (LinearMap.toAddMonoidHom (Basis.coord b 1))
+  Fan.characterRuling k₀ Φ (LinearMap.toAddMonoidHom (Basis.coord b 1))
     (Fan.nonneg_or_nonpos_hirzebruch_ruling_character b e r hr)
 local notation "line[" T "," hT "," f "," g "]" =>
   LinearEquiv.symm (BlowupTower.picardMarking T hT f) (Additive.ofMul (pullback g H))
 
+omit [IsAlgClosed k₀] in
 private theorem coordinatePoint_baseMap (t : Fin 2) :
     ∃ p : Equiv.Perm (Fin 2), ∀ a, (point[a] ≫ baseMap[t]) pt = point[p a] pt := by
   fin_cases t
@@ -64,15 +67,17 @@ private theorem coordinatePoint_baseMap (t : Fin 2) :
   · exact ⟨Fin.revPerm, fun a ↦ by simp⟩
 
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V] {i : N →+ V}
-  {X : Scheme} [X.Over S] [SmoothOfRelativeDimension 2 (X ↘ S)] [PreirreducibleSpace X]
+  {X : Scheme} [X.Over (Spec (.of k₀))] [SmoothOfRelativeDimension 2 (X ↘ Spec (.of k₀))]
+    [PreirreducibleSpace X]
   {D : X.IdealSheafData} {n : ℕ} {ι : Type*}
 
+omit [IsAlgClosed k₀] in
 private theorem exists_marked_centers_of_corner
     {Φ Ψ : Fan i} {Y Z : Scheme}
     {T : BlowupTower X[Φ] (n + 1) Y} (hT : IsClosedPointTower X[Φ] T)
     {U : BlowupTower X[Ψ] (1 + n) Z} (hU : IsClosedPointTower X[Ψ] U)
     (j : Fin (n + 1)) (hj : ∀ l < j, hT.baseCenter l ≠ hT.baseCenter j)
-    (f q : X[Φ] ⟶ projectiveLine ℂ) (q' : X[Ψ] ⟶ projectiveLine ℂ)
+    (f q : X[Φ] ⟶ projectiveLine k₀) (q' : X[Ψ] ⟶ projectiveLine k₀)
     (t : Fin 2) (hq : q ≫ baseMap[t] = f)
     (x : Fin (n + 1) → ℤ) (y : Fin (1 + n) → ℤ)
     (c : Fin (n + 1) → ℤ) (c' : Fin (1 + n) → ℤ)
@@ -95,7 +100,7 @@ private theorem exists_marked_centers_of_corner
       (∀ a, q' (hU.baseCenter (index' a)) = point[fiber' a] pt) ∧
       (∀ a, -x (index a) ≤ -y (index' a)) ∧
       ∀ a, c (index a) = 0 → c' (index' a) = 0 := by
-  obtain ⟨p, hp⟩ := coordinatePoint_baseMap t
+  obtain ⟨p, hp⟩ := coordinatePoint_baseMap (k₀ := k₀) t
   let : IsIso baseMap[t] := by
     by_cases ht : t = 0 <;> simp only [ht, ite_true, ite_false] <;> infer_instance
   have hmarks (a : ι) : ∃ b : Fin (1 + n), (∀ l < b, hU.baseCenter l ≠ hU.baseCenter b) ∧
@@ -135,7 +140,7 @@ at least its original order. The retained centers may already lie at corners.
 The reverse center misses the marked section, and each retained mark off the old
 strict section stays off the new strict section. -/
 theorem exists_marked_positive_section_corner_pivot
-    (A : LogarithmicProjection i D) (b : Basis (Fin 2) ℤ N) (e : ℕ) (he : 0 < e)
+    (A : LogarithmicProjection k₀ i D) (b : Basis (Fin 2) ℤ N) (e : ℕ) (he : 0 < e)
     (r : Fin 4 ≃ A.fan.Ray)
     (hr : (fun l ↦ (r l).primitiveGenerator) = ![b 0, b 1, -b 0, (e : ℤ) • b 0 - b 1])
     {Y : Scheme} {T : BlowupTower X[A.fan] (n + 1) Y}
@@ -144,7 +149,7 @@ theorem exists_marked_positive_section_corner_pivot
     (g : Y ⟶ P) (hg : g ≫ (P ↘ S) = T.toBase ≫ f[A.fan])
     (hbir : Scheme.BirationalOver g (𝟙 P))
     (σ : A.fan.cones) (hσ : Nat.card (ToricRay σ.val) = 2) (hsec : (r 2).toCone ≤ σ)
-    (j : Fin (n + 1)) (hp : A.fan.distinguishedPointHom σ pt = hT.baseCenter j)
+    (j : Fin (n + 1)) (hp : (A.fan.distinguishedSection (R := k₀) σ) pt = hT.baseCenter j)
     (hj : ∀ l < j, hT.baseCenter l ≠ hT.baseCenter j)
     (fiber : ι ↪ Fin 2) (index : ι → Fin (n + 1))
     (hfirst : ∀ a, ∀ l < index a, hT.baseCenter l ≠ hT.baseCenter (index a))
@@ -152,13 +157,13 @@ theorem exists_marked_positive_section_corner_pivot
     (hpivot : ∀ a, index a ≠ j) :
     let : Nonempty A.fan.cones := A.isComplete.nonempty_cones
     let : SmoothOfRelativeDimension 2 f[A.fan] :=
-      rankTwo[b] ▸ A.fan.smoothOfRelativeDimension_algebraicRealizationStructureMap A.isRegular
+      rankTwo[b] ▸ A.fan.smoothOfRelativeDimension_finiteFanSchemeToSpec k₀ A.isRegular
     let : IsNoetherian X[A.fan] := by
       let : Smooth f[A.fan] := SmoothOfRelativeDimension.smooth 2 _
       exact isNoetherian_of_finiteType f[A.fan]
     let x := line[T,hT,f[A.fan],g]
-    let C₀ := A.fan.hirzebruchPicardBasis b (e : ℤ) A.isRegular r hr
-    ∃ (C : LogarithmicProjection i D) (t : Fin 2)
+    let C₀ := A.fan.hirzebruchPicardBasis k₀ b (e : ℤ) A.isRegular r hr
+    ∃ (C : LogarithmicProjection k₀ i D) (t : Fin 2)
       (d : Basis (Fin 2) ℤ N) (s : Fin 4 ≃ C.fan.Ray)
       (hs : (fun l ↦ (s l).primitiveGenerator) =
         ![d 0, d 1, -d 0, ((e - 1 : ℕ) : ℤ) • d 0 - d 1])
@@ -169,16 +174,16 @@ theorem exists_marked_positive_section_corner_pivot
       g' ≫ (P ↘ S) = U.toBase ≫ f[C.fan] ∧ Scheme.BirationalOver g' (𝟙 P) ∧
       let : Nonempty C.fan.cones := C.isComplete.nonempty_cones
       let : SmoothOfRelativeDimension 2 f[C.fan] :=
-        rankTwo[b] ▸ C.fan.smoothOfRelativeDimension_algebraicRealizationStructureMap C.isRegular
+        rankTwo[b] ▸ C.fan.smoothOfRelativeDimension_finiteFanSchemeToSpec k₀ C.isRegular
       let : IsNoetherian X[C.fan] := by
         let : Smooth f[C.fan] := SmoothOfRelativeDimension.smooth 2 _
         exact isNoetherian_of_finiteType f[C.fan]
       let y := line[U,hU,f[C.fan],g']
-      let C₁ := C.fan.hirzebruchPicardBasis d ((e - 1 : ℕ) : ℤ) C.isRegular s hs
+      let C₁ := C.fan.hirzebruchPicardBasis k₀ d ((e - 1 : ℕ) : ℤ) C.isRegular s hs
       C₁.repr y.1 0 = C₀.repr x.1 0 + x.2 j ∧ C₁.repr y.1 1 = C₀.repr x.1 1 ∧
       y.2 = Fin.append (fun _ : Fin 1 ↦ -C₀.repr x.1 1 - x.2 j) (x.2 ∘ j.succAbove) ∧
-      let c := hT.strictTransformCoefficients (A.fan.rayBoundaryIdeal A.isRegular (r 2))
-      let c' := hU.strictTransformCoefficients (C.fan.rayBoundaryIdeal C.isRegular (s 2))
+      let c := hT.strictTransformCoefficients (A.fan.rayDivisorIdeal k₀ A.isRegular (r 2))
+      let c' := hU.strictTransformCoefficients (C.fan.rayDivisorIdeal k₀ C.isRegular (s 2))
       c' = Fin.append (0 : Fin 1 → ℤ) (c ∘ j.succAbove) ∧
       (∀ a, ∀ l < index' a, hU.baseCenter l ≠ hU.baseCenter (index' a)) ∧
       (∀ a, (ruling[C.fan,d,(e - 1 : ℕ),s,hs] ≫ baseMap[t])
@@ -191,8 +196,8 @@ theorem exists_marked_positive_section_corner_pivot
   let := hdim
   let := hnoeth
   let : Smooth f[A.fan] := SmoothOfRelativeDimension.smooth 2 _
-  let : X[A.fan].IsProjectiveOver ℂ :=
-    A.fan.isProjectiveOver_algebraicRealization_of_isComplete A.isRegular A.isComplete b
+  let : X[A.fan].IsProjectiveOver k₀ :=
+    A.fan.isProjectiveOver_finiteFanScheme_of_isComplete k₀ A.isRegular A.isComplete b
   let : Y.Over S := ⟨T.toBase ≫ f[A.fan]⟩
   let : T.toBase.IsOver S := ⟨rfl⟩
   let : SmoothOfRelativeDimension 2 (Y ↘ S) := hT.smoothOfRelativeDimension f[A.fan]
@@ -202,28 +207,28 @@ theorem exists_marked_positive_section_corner_pivot
   let : k.hom.IsOver S := ⟨(Category.assoc k.hom T.toBase f[A.fan]).symm.trans
     (hA ▸ comp_over A.hom S)⟩
   obtain ⟨t, b₀, r₀, hr₀, hcorner, -, -, hsection, hPic, hRuling⟩ :=
-    A.fan.exists_hirzebruch_section_corner_picardBasis_ruling b (e : ℤ) r hr
+    A.fan.exists_hirzebruch_section_corner_picardBasis_ruling k₀ b (e : ℤ) r hr
       A.isRegular A.isComplete σ hσ hsec
   let E := D.comap k.inv
-  have hPole : (A.fan.boundaryIdeal A.isComplete.nonempty_cones).comap T.toBase =
-      E * ramificationIdealSheaf ℂ T.toBase := by
-    have h := comap_eq_mul_ramificationIdealSheaf_comp_iff_of_isIso ℂ k.hom T.toBase 2
-      (D := A.fan.boundaryIdeal A.isComplete.nonempty_cones) (Q := D)
+  have hPole : (A.fan.toricBoundaryIdeal k₀ A.isComplete.nonempty_cones).comap T.toBase =
+      E * ramificationIdealSheaf k₀ T.toBase := by
+    have h := comap_eq_mul_ramificationIdealSheaf_comp_iff_of_isIso k₀ k.hom T.toBase 2
+      (D := A.fan.toricBoundaryIdeal k₀ A.isComplete.nonempty_cones) (Q := D)
     rw [IsIso.inv_eq_of_hom_inv_id k.hom_inv_id] at h
     exact h.mp (by simpa only [hA] using A.comap_boundaryIdeal)
   -- Perform the link in tower coordinates and put its path back on the prescribed surface.
-  obtain ⟨R, p, d, s, hs, Z, U, hU, k₀, -, -, hR, -, hg', hbir', -, ha, hβ, horders,
+  obtain ⟨R, p, d, s, hs, Z, U, hU, e₀, -, -, hR, -, hg', hbir', -, ha, hβ, horders,
       -, -, -, hcoeff, hretained⟩ :=
-    hT.exists_sarkisov_path_of_positive_corner b₀ e he A.isRegular A.isComplete r₀ hr₀ g hg hbir
+    hT.exists_sarkisov_path_of_positive_corner k₀ b₀ e he A.isRegular A.isComplete r₀ hr₀ g hg hbir
       σ hcorner j hp.symm hj E hPole
-  let L : LogarithmicProjection i E :=
+  let L : LogarithmicProjection k₀ i E :=
     ⟨A.fan, A.isRegular, A.isComplete, T.toBase, inferInstance, inferInstance, hPole⟩
   obtain ⟨C, ⟨q⟩, hCfan, hChom⟩ :=
     exists_path_on_resolving_surface rankTwo[b] k (L := L) rfl (heq_of_eq hA) p
   rcases C with ⟨Φ, hΦ, hc, l, hlover, hldom, hlog⟩
   dsimp only at hCfan hChom
   subst Φ
-  let C : LogarithmicProjection i D := ⟨R.fan, hΦ, hc, l, hlover, hldom, hlog⟩
+  let C : LogarithmicProjection k₀ i D := ⟨R.fan, hΦ, hc, l, hlover, hldom, hlog⟩
   -- Apply the same frame change to every retained mark, keeping its position off the section.
   have hcoeff' := hsection ▸ hcoeff
   obtain ⟨fiber', index', hfirst', hval, hvals, hbound, hoff⟩ :=
@@ -231,7 +236,7 @@ theorem exists_marked_positive_section_corner_pivot
       hfirst hvalue hpivot (fun l hl hlf ↦ by
         obtain ⟨a, ha, hv, ho, hs, hd⟩ := hretained l hl hlf
         exact ⟨a, ha, hv, ho, hs, fun he ↦ (hd he).1⟩)
-  refine ⟨C, t, d, s, hs, Z, U, hU, k ≪≫ k₀, k₀.inv ≫ g, fiber', index', ⟨q⟩, ?_,
+  refine ⟨C, t, d, s, hs, Z, U, hU, k ≪≫ e₀, e₀.inv ≫ g, fiber', index', ⟨q⟩, ?_,
     by simp, hg', hbir', ?_, ?_, ?_, hcoeff', hfirst', hval, hvals, hbound, hoff⟩
   · exact eq_of_heq (by simpa only [C, hR, Category.assoc, Iso.trans_hom] using hChom)
   · simpa only [hPic] using ha

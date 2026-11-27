@@ -27,21 +27,25 @@ open QPainleve.CharacterTorus (centerCharacter)
 
 namespace TauCeti.Toric.Fan.LogarithmicProjection
 
+variable {k₀ : Type} [Field k₀] [IsAlgClosed k₀]
+
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V] {i : N →+ V}
 
-local notation "S" => Spec (CommRingCat.of ℂ)
-local notation "π[" H "]" => FanHom.algebraicMap (IsSubdivision.toFanHom H)
+local notation "S" => Spec (CommRingCat.of k₀)
+local notation "π[" H "]" => FanHom.finiteFanSchemeHom k₀ (IsSubdivision.toFanHom H)
 local notation "base[" T "]" => QPainleve.BlowupTower.toBase (WithBoundary.toTower (Sigma.snd T))
 
-variable {Z : Scheme} [Z.Over S] [SmoothOfRelativeDimension 2 (Z ↘ S)] [IsIntegral Z]
-  {D : Z.IdealSheafData} {A B : LogarithmicProjection i D} {m : ℕ}
+variable {Z : Scheme} [Z.Over (Spec (.of k₀))] [SmoothOfRelativeDimension 2 (Z ↘ Spec (.of k₀))]
+  [IsIntegral Z]
+  {D : Z.IdealSheafData} {A B : LogarithmicProjection k₀ i D} {m : ℕ}
 
+omit [IsAlgClosed k₀] in
 private theorem comp_xEvaluation_denseTorusPartialIso (U : OrderedToricModel A m) :
-    A.hom.toRationalMap.comp ((A.fan.denseTorusPartialIso U.fan).toRationalMap.comp
-      (U.fan.xEvaluation U.basis U.rays (centerCharacter U.parameters))) =
+    A.hom.toRationalMap.comp ((A.fan.denseTorusPartialIso k₀ U.fan).toRationalMap.comp
+      (U.fan.xEvaluation k₀ U.basis U.rays (centerCharacter U.parameters))) =
     U.xEvaluation := by
-  have h := U.subdivision.comp_denseTorusPartialIso (.refl U.fan) U.hom
-  simp only [U.hom_comp_subdivision, IsSubdivision.toFanHom_refl, FanHom.algebraicMap_id,
+  have h := U.subdivision.comp_denseTorusPartialIso k₀ (.refl U.fan) U.hom
+  simp only [U.hom_comp_subdivision, IsSubdivision.toFanHom_refl, FanHom.finiteFanSchemeHom_id,
     Category.comp_id] at h
   simp only [OrderedToricModel.xEvaluation_def, ← Scheme.RationalMap.comp_assoc, h]
 
@@ -51,15 +55,15 @@ rational evaluations on the endpoint fans are read using their common dense toru
 The path commutes with the two subdivisions and intertwines these evaluations.
 On the resolving surface the empty cluster word is defined at the generic value
 and gives the terminal evaluation. -/
-theorem exists_word_of_resolved_star_path [Z.IsProjectiveOver ℂ]
+theorem exists_word_of_resolved_star_path [Z.IsProjectiveOver k₀]
     (p : Quiver.Path A B) (U : OrderedToricModel A m) :
     ∃ (K : U.fan.IsSubdivision B.fan) (hK : U.iso.hom ≫ B.hom = base[U.tower] ≫ π[K]),
       let W : OrderedToricModel B m :=
         ⟨U.fan, U.regular, K, U.basis, U.rays, U.parameters, U.iso, hK, U.pole_eq⟩
-      let x := U.fan.xEvaluation U.basis U.rays (centerCharacter U.parameters)
-      let x' := W.fan.xEvaluation W.basis W.rays (centerCharacter W.parameters)
-      let xA := (A.fan.denseTorusPartialIso U.fan).toRationalMap.comp x
-      let xB := (B.fan.denseTorusPartialIso W.fan).toRationalMap.comp x'
+      let x := U.fan.xEvaluation k₀ U.basis U.rays (centerCharacter U.parameters)
+      let x' := W.fan.xEvaluation k₀ W.basis W.rays (centerCharacter W.parameters)
+      let xA := (A.fan.denseTorusPartialIso k₀ U.fan).toRationalMap.comp x
+      let xB := (B.fan.denseTorusPartialIso k₀ W.fan).toRationalMap.comp x'
       let w : Word U.exchangeMatrix W.exchangeMatrix := Quiver.Path.nil
       π[U.subdivision].toRationalMap.comp (pathRationalMap p) =
           π[W.subdivision].toRationalMap ∧
@@ -67,8 +71,8 @@ theorem exists_word_of_resolved_star_path [Z.IsProjectiveOver ℂ]
         A.hom.toRationalMap.comp xA = U.xEvaluation ∧
         B.hom.toRationalMap.comp xB = W.xEvaluation ∧
         ∃ hdom : U.xEvaluation.fromFunctionField
-            (IsLocalRing.closedPoint Z.functionField) ∈ (w.xRationalMap ℂ).domain,
-          U.xEvaluation.compOfDefined (w.xRationalMap ℂ) hdom =
+            (IsLocalRing.closedPoint Z.functionField) ∈ (w.xRationalMap k₀).domain,
+          U.xEvaluation.compOfDefined (w.xRationalMap k₀) hdom =
             W.xEvaluation := by
   obtain ⟨-, K, hK⟩ := exists_subdivisions_of_toric_internal_factorization p
     U.basis U.regular U.subdivision U.rays U.parameters U.iso U.hom_eq U.pole_eq
@@ -83,7 +87,8 @@ theorem exists_word_of_resolved_star_path [Z.IsProjectiveOver ℂ]
   have hB : B.hom.toRationalMap.comp xB = W.xEvaluation :=
     comp_xEvaluation_denseTorusPartialIso W
   refine ⟨?_, hpath, hA, hB, ?_⟩
-  · simp only [IsSubdivision.toRationalMap_algebraicMap, pathRationalMap_eq_denseTorusPartialIso,
+  · simp only [IsSubdivision.toRationalMap_finiteFanSchemeHom,
+    pathRationalMap_eq_denseTorusPartialIso,
       denseTorusPartialIso_toRationalMap_comp, W]
   have hEval : U.xEvaluation = W.xEvaluation := by
     calc
@@ -91,8 +96,8 @@ theorem exists_word_of_resolved_star_path [Z.IsProjectiveOver ℂ]
       _ = B.hom.toRationalMap.comp xB := by
         simp only [← hpath, ← Scheme.RationalMap.comp_assoc, comp_pathRationalMap]
       _ = _ := hB
-  have hw : w.xRationalMap ℂ = Scheme.RationalMap.id _ :=
-    Quiver.Path.xRationalMap_nil (B := U.exchangeMatrix) ℂ
+  have hw : w.xRationalMap k₀ = Scheme.RationalMap.id _ :=
+    Quiver.Path.xRationalMap_nil (B := U.exchangeMatrix) k₀
   simpa only [hw, Scheme.RationalMap.compHom_id, hEval] using
     U.xEvaluation.compOfDefined_toRationalMap (𝟙 _)
 

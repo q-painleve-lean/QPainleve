@@ -5,10 +5,9 @@ Authors: The QPainleve contributors
 -/
 module
 
-public import Mathlib.Analysis.Complex.Polynomial.Basic
 public import QPainleve.AlgebraicGeometry.Blowup.Tower.ProjectedPoint
 public import QPainleve.Geometry.Toric.Fan.Boundary.InternalCenter
-public import QPainleve.Geometry.Toric.Fan.Smooth
+public import QPainleve.Geometry.Toric.BaseChange.Fan
 
 import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
 import QPainleve.Geometry.Toric.Fan.Boundary.Subdivision
@@ -32,22 +31,26 @@ open TauCeti.AlgebraicGeometry TauCeti.Toric LineBundleClass Scheme.IdealSheafDa
 
 namespace QPainleve.BlowupTower.IsClosedPointTower
 
-variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V] {i : N →+ V}
+universe u
+
+variable (F : Type u) [Field F] [IsAlgClosed F] {N : Type u} {V : Type*}
+  [AddCommGroup N] [AddCommGroup V] [Module ℝ V] {i : N →+ V}
   {Φ Ψ Ω : Fan i} [Nonempty Φ.cones] [Nonempty Ψ.cones]
 
-local notation "X[" A "]" => Fan.algebraicRealization A
-local notation "π[" H "]" => FanHom.algebraicMap (Fan.IsSubdivision.toFanHom H)
-local notation "S" => Spec (CommRingCat.of ℂ)
+local notation "X[" A "]" => Fan.finiteFanScheme F A
+local notation "π[" H "]" => FanHom.finiteFanSchemeHom F (Fan.IsSubdivision.toFanHom H)
+local notation "S" => Spec (CommRingCat.of F)
 local notation "f[" A "]" => (X[A] ↘ S)
 local notation "rankTwo(" b ")" => Eq.trans (Module.finrank_eq_card_basis b) (Fintype.card_fin 2)
-local notation "center(" b "," ρ "," c ")" => Fan.Ray.binomialCenter ρ rankTwo(b)
+local notation "center(" b "," ρ "," c ")" => Fan.Ray.binomialCenter ρ F rankTwo(b)
   (Module.Basis.detDualEquiv_self b (Fan.Ray.primitiveGenerator ρ))
   (Fan.Ray.surjective_detCharacter ρ b) c
-local notation "pt(" b "," ρ "," c ")" => center(b,ρ,c) (IsLocalRing.closedPoint ℂ)
+local notation "pt(" b "," ρ "," c ")" => center(b,ρ,c) (IsLocalRing.closedPoint F : S)
 
-variable {Y W Z : Scheme} {n m r : ℕ}
-  {T : BlowupTower X[Φ] n Y} {R : BlowupTower Y r W} {U : BlowupTower X[Ψ] m Z}
-  [X[Φ].IsProjectiveOver ℂ] [X[Ψ].IsProjectiveOver ℂ]
+variable {Y W Z : Scheme.{u}} {n m r : ℕ}
+  {T : BlowupTower (Φ.finiteFanScheme F) n Y} {R : BlowupTower Y r W}
+  {U : BlowupTower (Ψ.finiteFanScheme F) m Z}
+  [(Φ.finiteFanScheme F).IsProjectiveOver F] [(Ψ.finiteFanScheme F).IsProjectiveOver F]
 
 -- The point ideals agree on the common subdivision, so the comparison also
 -- applies with the two resolutions interchanged.
@@ -57,13 +60,13 @@ private theorem first_base_order_eq_of_common_subdivision
     (e : Y ≅ Z) (H : Ω.IsSubdivision Φ) (K : Ω.IsSubdivision Ψ) (g : Y ⟶ X[Ω])
     (hg : g ≫ π[H] = T.toBase) (hg' : g ≫ π[K] = e.hom ≫ U.toBase)
     (b : Basis (Fin 2) ℤ N) (ρ : Φ.Ray) (τ : Ψ.Ray)
-    (hρ : ρ.primitiveGenerator = τ.primitiveGenerator) (c : ℂˣ)
+    (hρ : ρ.primitiveGenerator = τ.primitiveGenerator) (c : Fˣ)
     (j : Fin n) (hj : hT.baseCenter j = pt(b,ρ,c))
     (hfirst : ∀ l < j, hT.baseCenter l ≠ pt(b,ρ,c)) (L : LineBundleClass Y) :
     let : SmoothOfRelativeDimension 2 f[Φ] :=
-      rankTwo(b) ▸ Φ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
+      rankTwo(b) ▸ Φ.smoothOfRelativeDimension_finiteFanSchemeToSpec F hΦ
     let : SmoothOfRelativeDimension 2 f[Ψ] :=
-      rankTwo(b) ▸ Ψ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΨ
+      rankTwo(b) ▸ Ψ.smoothOfRelativeDimension_finiteFanSchemeToSpec F hΨ
     let : IsNoetherian X[Φ] := isNoetherian_of_finiteType f[Φ]
     let : IsNoetherian X[Ψ] := isNoetherian_of_finiteType f[Ψ]
     let a := (T.picardMarking hT f[Φ]).symm (Additive.ofMul L)
@@ -79,10 +82,10 @@ private theorem first_base_order_eq_of_common_subdivision
       (center(b,r,c)).ker.comap π[J] = (center(b,J.liftRay r,c)).ker := by
     have hpb : IsPullback center(b,J.liftRay r,c) (𝟙 S) π[J] center(b,r,c) := by
       simpa only [J.primitiveGenerator_liftRay] using
-        J.isPullback_binomialCenter r rankTwo(b)
+        J.isPullback_binomialCenter F r rankTwo(b)
           (m := (b.detDualEquiv r.primitiveGenerator).toAddMonoidHom)
           (b.detDualEquiv_self _) (r.surjective_detCharacter b) c
-    have := r.isClosedImmersion_binomialCenter rankTwo(b) (b.detDualEquiv_self _)
+    have := r.isClosedImmersion_binomialCenter F rankTwo(b) (b.detDualEquiv_self _)
       (r.surjective_detCharacter b) c
     exact (ker_eq_comap_of_isPullback _ hpb).symm
   have hray : H.liftRay ρ = K.liftRay τ := Fan.Ray.primitiveGenerator_injective
@@ -93,15 +96,15 @@ private theorem first_base_order_eq_of_common_subdivision
   rw [(center(b,ρ,c)).ker_eq_ker_fromSpecResidueField,
     (center(b,τ,c)).ker_eq_ker_fromSpecResidueField] at hI
   have hOver : e.hom ≫ U.toBase ≫ f[Ψ] = T.toBase ≫ f[Φ] := by
-    rw [Fan.algebraicRealization_over, Fan.algebraicRealization_over,
+    rw [Fan.finiteFanScheme_over F, Fan.finiteFanScheme_over F,
       ← hg, ← Category.assoc e.hom, ← hg', Category.assoc, Category.assoc,
-      FanHom.algebraicMap_comp_algebraicRealizationStructureMap,
-      FanHom.algebraicMap_comp_algebraicRealizationStructureMap]
+      FanHom.finiteFanSchemeHom_comp_finiteFanSchemeToSpec F,
+      FanHom.finiteFanSchemeHom_comp_finiteFanSchemeToSpec F]
   have hClosed {A : Fan i} (r : A.Ray) : IsClosed ({pt(b,r,c)} : Set X[A]) :=
     isClosed_singleton_of_section
-      (r.binomialCenter_comp_structureMap rankTwo(b) (b.detDualEquiv_self _)
+      (r.binomialCenter_comp_structureMap F rankTwo(b) (b.detDualEquiv_self _)
         (r.surjective_detCharacter b) c)
-  exact hT.base_order_eq_of_comap_point_ideal_eq (k := ℂ) hU e hOver
+  exact hT.base_order_eq_of_comap_point_ideal_eq (k := F) hU e hOver
     (hClosed ρ) (hClosed τ) hI j hj hfirst L
 
 /-- A binomial point on a common ray of two smooth projective toric surfaces
@@ -116,13 +119,13 @@ theorem base_order_eq_of_common_subdivision (hT : IsClosedPointTower X[Φ] T)
     (e : W ≅ Z) (H : Ω.IsSubdivision Φ) (K : Ω.IsSubdivision Ψ) (g : W ⟶ X[Ω])
     (hg : g ≫ π[H] = R.toBase ≫ T.toBase) (hg' : g ≫ π[K] = e.hom ≫ U.toBase)
     (b : Basis (Fin 2) ℤ N) (ρ : Φ.Ray) (τ : Ψ.Ray)
-    (hρ : ρ.primitiveGenerator = τ.primitiveGenerator) (c : ℂˣ)
+    (hρ : ρ.primitiveGenerator = τ.primitiveGenerator) (c : Fˣ)
     (j : Fin n) (hj : hT.baseCenter j = pt(b,ρ,c))
     (hfirst : ∀ l < j, hT.baseCenter l ≠ pt(b,ρ,c)) (L : LineBundleClass Y) :
     let : SmoothOfRelativeDimension 2 f[Φ] :=
-      rankTwo(b) ▸ Φ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
+      rankTwo(b) ▸ Φ.smoothOfRelativeDimension_finiteFanSchemeToSpec F hΦ
     let : SmoothOfRelativeDimension 2 f[Ψ] :=
-      rankTwo(b) ▸ Ψ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΨ
+      rankTwo(b) ▸ Ψ.smoothOfRelativeDimension_finiteFanSchemeToSpec F hΨ
     let : IsNoetherian X[Φ] := isNoetherian_of_finiteType f[Φ]
     let : IsNoetherian X[Ψ] := isNoetherian_of_finiteType f[Ψ]
     let a := (T.picardMarking hT f[Φ]).symm (Additive.ofMul L)
@@ -142,7 +145,7 @@ theorem base_order_eq_of_common_subdivision (hT : IsClosedPointTower X[Φ] T)
     rw [← Fin.castAdd_castLT r l hlN, baseCenter_append_castAdd hT hR]
     exact hfirst _ (Fin.lt_def.mpr (Fin.lt_def.mp hl))
   obtain ⟨j', hj'', hfirst'', hC, horder⟩ :=
-    first_base_order_eq_of_common_subdivision (hT.append hR) hU hΦ hΨ e H K g
+    first_base_order_eq_of_common_subdivision F (hT.append hR) hU hΦ hΨ e H K g
       (hg.trans (toBase_append T R).symm) hg' b ρ τ hρ c (j.castAdd r) hj' hfirst'
       (pullback R.toBase L)
   simp only [hT.picardMarking_symm_pullback_append hR f[Φ] L, Fin.append_left,
@@ -159,13 +162,13 @@ theorem base_order_eq_zero_or_exists_of_common_subdivision (hT : IsClosedPointTo
     (e : W ≅ Z) (H : Ω.IsSubdivision Φ) (K : Ω.IsSubdivision Ψ) (g : W ⟶ X[Ω])
     (hg : g ≫ π[H] = R.toBase ≫ T.toBase) (hg' : g ≫ π[K] = e.hom ≫ U.toBase)
     (b : Basis (Fin 2) ℤ N) (ρ : Φ.Ray) (τ : Ψ.Ray)
-    (hρ : ρ.primitiveGenerator = τ.primitiveGenerator) (c : ℂˣ)
+    (hρ : ρ.primitiveGenerator = τ.primitiveGenerator) (c : Fˣ)
     (j : Fin m) (hj : hU.baseCenter j = pt(b,τ,c))
     (hfirst : ∀ l < j, hU.baseCenter l ≠ pt(b,τ,c)) (L : LineBundleClass Y) :
     let : SmoothOfRelativeDimension 2 f[Φ] :=
-      rankTwo(b) ▸ Φ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
+      rankTwo(b) ▸ Φ.smoothOfRelativeDimension_finiteFanSchemeToSpec F hΦ
     let : SmoothOfRelativeDimension 2 f[Ψ] :=
-      rankTwo(b) ▸ Ψ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΨ
+      rankTwo(b) ▸ Ψ.smoothOfRelativeDimension_finiteFanSchemeToSpec F hΨ
     let : IsNoetherian X[Φ] := isNoetherian_of_finiteType f[Φ]
     let : IsNoetherian X[Ψ] := isNoetherian_of_finiteType f[Ψ]
     let a := (T.picardMarking hT f[Φ]).symm (Additive.ofMul L)
@@ -183,13 +186,17 @@ theorem base_order_eq_zero_or_exists_of_common_subdivision (hT : IsClosedPointTo
   have hH : (e.inv ≫ g) ≫ π[H] = e.inv ≫ (T.append R).toBase := by
     rw [Category.assoc, hg, toBase_append]
   obtain ⟨l, hl, hfirst', -, horder⟩ :=
-    first_base_order_eq_of_common_subdivision hU (hT.append hR) hΨ hΦ e.symm K H
+    first_base_order_eq_of_common_subdivision F hU (hT.append hR) hΨ hΦ e.symm K H
       (e.inv ≫ g) hK hH b τ ρ hρ.symm c j hj hfirst (pullback (e.inv ≫ R.toBase) L)
   simp only [Iso.symm_inv, pullback_comp, Iso.hom_inv_id_assoc,
     hT.picardMarking_symm_pullback_append hR f[Φ] L] at horder
   -- The coordinates of all steps added on the source resolution are zero.
+  have : SmoothOfRelativeDimension 2 (Ψ.finiteFanSchemeToSpec F) := hdim'
   refine Fin.addCases (fun k hk hmin hord ↦ Or.inr ⟨k, ?_, ?_, ?_⟩)
-    (fun k _ _ hord ↦ Or.inl (by simpa using hord)) l hl hfirst' horder
+    (fun k _ _ hord ↦ Or.inl (by
+      rw [show a'.2 j = ((U.picardMarking hU (Ψ.finiteFanSchemeToSpec F)).symm
+        (Additive.ofMul (pullback (e.inv ≫ R.toBase) L))).2 j from rfl]
+      simpa using hord)) l hl hfirst' horder
   · exact (baseCenter_append_castAdd hT hR k).symm.trans hk
   · intro t ht
     have ht' : t.castAdd r < k.castAdd r := by simpa only [Fin.lt_def, Fin.val_castAdd] using ht

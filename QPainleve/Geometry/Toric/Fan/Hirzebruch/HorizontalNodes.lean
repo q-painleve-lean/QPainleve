@@ -5,7 +5,6 @@ Authors: The QPainleve contributors
 -/
 module
 
-public import Mathlib.Analysis.Complex.Polynomial.Basic
 public import QPainleve.AlgebraicGeometry.Curves.Node.NumberedPrime
 public import QPainleve.Geometry.Toric.Fan.Hirzebruch.Anticanonical
 import Mathlib.AlgebraicGeometry.AlgClosed.Basic
@@ -37,29 +36,31 @@ open Scheme.IdealSheafData
 
 namespace TauCeti.Toric.Fan
 
+variable (K : Type) [Field K] [IsAlgClosed K]
+
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {Φ : Fan i} [Nonempty Φ.cones]
   (b : Basis (Fin 2) ℤ N) (e : ℤ) (hΦ : Φ.IsRegular) (hc : Φ.IsComplete)
   (r : Fin 4 ≃ Φ.Ray)
   (hr : (fun j ↦ (r j).primitiveGenerator) = ![b 0, b 1, -b 0, e • b 0 - b 1])
 
-local notation "X" => Φ.algebraicRealization
-local notation "S" => Spec (CommRingCat.of ℂ)
-local notation "C" => Φ.hirzebruchPicardBasis b e hΦ r hr
+local notation "X" => (Φ.finiteFanScheme K)
+local notation "S" => Spec (CommRingCat.of K)
+local notation "C" => Φ.hirzebruchPicardBasis K b e hΦ r hr
 local notation "P" p:arg =>
   Additive.ofMul
-    (@primeDivisorClass X _ _ (Φ.uniqueFactorizationMonoid_stalk_algebraicRealization hΦ) p)
+    (@primeDivisorClass X _ _ (Φ.uniqueFactorizationMonoid_stalk_finiteFanScheme (R := K) hΦ) p)
 local notation "deg" p:arg => Basis.repr C (P p) (1 : Fin 2)
 local notation "m" => LinearMap.toAddMonoidHom (b.coord 1)
 local notation "hR" => nonneg_or_nonpos_hirzebruch_ruling_character b e r hr
-local notation "ruling" => Φ.characterRuling m hR
+local notation "ruling" => Φ.characterRuling K m hR
 
-variable [(Φ.algebraicRealization).IsProjectiveOver ℂ]
-  [SmoothOfRelativeDimension 2 (Φ.algebraicRealization ↘ Spec (CommRingCat.of ℂ))]
+variable [((Φ.finiteFanScheme K)).IsProjectiveOver K]
+  [SmoothOfRelativeDimension 2 ((Φ.finiteFanScheme K) ↘ Spec (CommRingCat.of K))]
 
-variable {D : Φ.algebraicRealization.IdealSheafData}
-  [D.subscheme.Over (Spec (.of ℂ))] [PrestableFamily (D.subscheme ↘ Spec (.of ℂ))]
-  {ι : Type*} {p : ι → (D.subscheme ↘ Spec (.of ℂ)).smoothLocus} {n : ℕ} [NeZero n]
+variable {D : (Φ.finiteFanScheme K).IdealSheafData}
+  [D.subscheme.Over (Spec (.of K))] [PrestableFamily (D.subscheme ↘ Spec (.of K))]
+  {ι : Type*} {p : ι → (D.subscheme ↘ Spec (.of K)).smoothLocus} {n : ℕ} [NeZero n]
   (A : Scheme.NodalCycleNumbering p n) (hD : D.IsEffectiveCartier)
 
 local notation "prime[" j "]" => D.boundaryPrimeEmbedding (A.boundaryPrimeEquiv hD j)
@@ -69,7 +70,7 @@ local notation "horizontalNodes" =>
   Finset.univ.filter (fun j : ZMod n ↦ 0 < d[j] ∧ 0 < d[j + 1])
 
 variable (hK : LineBundleClass.mk hD.toInvertibleSheaf =
-  LineBundleClass.mk (QPainleve.canonicalBundle ℂ Φ.algebraicRealization 2))
+  LineBundleClass.mk (QPainleve.canonicalBundle K (Φ.finiteFanScheme K) 2))
 
 include hc A hD hK in
 private theorem sum_numbered_fiber_degrees : ∑ j : ZMod n, d[j] = 2 := by
@@ -81,16 +82,16 @@ private theorem sum_numbered_fiber_degrees : ∑ j : ZMod n, d[j] = 2 := by
     ∑ j : ZMod n, d[j] =
         ∑ q : D.boundaryPrimes, deg (D.boundaryPrimeEmbedding q) :=
       Equiv.sum_comp (A.boundaryPrimeEquiv hD) (fun q ↦ deg (D.boundaryPrimeEmbedding q))
-    _ = 2 := Φ.sum_hirzebruch_boundary_prime_coordinates b e hΦ hc r hr hD hK 1
+    _ = 2 := Φ.sum_hirzebruch_boundary_prime_coordinates K b e hΦ hc r hr hD hK 1
 
 include hc A hD hK in
 private theorem fiber_degree_pos_or_pos_at_node (j : ZMod n) : 0 < d[j] ∨ 0 < d[j + 1] := by
   by_contra! h
-  have hdeg (k : ZMod n) := Φ.hirzebruch_fiber_degree_nonneg b e hΦ r hr hc (prime[k])
+  have hdeg (k : ZMod n) := Φ.hirzebruch_fiber_degree_nonneg K b e hΦ r hr hc (prime[k])
   have hz : d[j] = 0 := le_antisymm h.1 (hdeg j)
   have hz' : d[j + 1] = 0 := le_antisymm h.2 (hdeg (j + 1))
   by_cases hne : j ≠ j + 1
-  · have hdis := Φ.disjoint_of_hirzebruch_fiber_degree_eq_zero b e hΦ r hr hc
+  · have hdis := Φ.disjoint_of_hirzebruch_fiber_degree_eq_zero K b e hΦ r hr hc
       (D.boundaryPrimeEmbedding.injective.ne ((A.boundaryPrimeEquiv hD).injective.ne hne)) hz hz'
     have hleft := (A.ambientNode_mem_closure_boundaryPrime_iff hD j j).mpr ⟨0, by simp⟩
     have hright := (A.ambientNode_mem_closure_boundaryPrime_iff hD j (j + 1)).mpr ⟨1, by simp⟩
@@ -98,7 +99,7 @@ private theorem fiber_degree_pos_or_pos_at_node (j : ZMod n) : 0 < d[j] ∨ 0 < 
       (by simpa only [D.coe_boundaryPrimeEmbedding] using hright)
   · have h1 : (1 : ZMod n) = 0 := by simpa only [add_eq_left] using (not_ne_iff.mp hne).symm
     let : Subsingleton (ZMod n) := subsingleton_of_zero_eq_one h1.symm
-    have hsum := sum_numbered_fiber_degrees b e hΦ hc r hr A hD hK
+    have hsum := sum_numbered_fiber_degrees K b e hΦ hc r hr A hD hK
     have hsingle := Finset.sum_eq_single (f := fun k ↦ d[k]) j
       (s := Finset.univ) (fun k _ hk ↦ (hk (Subsingleton.elim k j)).elim) (by simp)
     rw [hsingle, hz] at hsum
@@ -118,9 +119,9 @@ theorem card_hirzebruch_horizontal_nodes_add_twice_vertical :
   have hcount (j : ZMod n) :
       (if 0 < d[j] ∧ 0 < d[j + 1] then (1 : ℕ) else 0) +
         (if d[j] = 0 then 1 else 0) + (if d[j + 1] = 0 then 1 else 0) = 1 := by
-    have ha := Φ.hirzebruch_fiber_degree_nonneg b e hΦ r hr hc (prime[j])
-    have hb := Φ.hirzebruch_fiber_degree_nonneg b e hΦ r hr hc (prime[j + 1])
-    have hor := fiber_degree_pos_or_pos_at_node b e hΦ hc r hr A hD hK j
+    have ha := Φ.hirzebruch_fiber_degree_nonneg K b e hΦ r hr hc (prime[j])
+    have hb := Φ.hirzebruch_fiber_degree_nonneg K b e hΦ r hr hc (prime[j + 1])
+    have hor := fiber_degree_pos_or_pos_at_node K b e hΦ hc r hr A hD hK j
     split_ifs <;> omega
   have hsum := Finset.sum_congr (s₁ := Finset.univ) rfl (fun j _ ↦ hcount j)
   simp [Finset.sum_add_distrib, hshift, ZMod.card] at hsum
@@ -132,7 +133,7 @@ private theorem exists_horizontal_node_or_terminal_degrees
     (∃ j : ZMod n, D.IsNodeOfReducedBoundary (X ↘ S) (A.ambientNode j) ∧
       ∀ k : ZMod n, A.ambientNode j ∈ closure {(A.boundaryPrimeEquiv hD k).val} → 0 < d[k]) ∨
     n = 4 ∨ (n = 2 ∧ ∃ j : ZMod n, d[j] = 2) := by
-  have hcount := card_hirzebruch_horizontal_nodes_add_twice_vertical b e hΦ hc r hr A hD hK
+  have hcount := card_hirzebruch_horizontal_nodes_add_twice_vertical K b e hΦ hc r hr A hD hK
   by_cases h : (horizontalNodes).Nonempty
   · obtain ⟨j, hj⟩ := h
     have hpos := (Finset.mem_filter.mp hj).2
@@ -145,7 +146,7 @@ private theorem exists_horizontal_node_or_terminal_degrees
       exact hk' ▸ hpos.2
   · have hv := Finset.card_eq_zero.mpr (Finset.not_nonempty_iff_eq_empty.mp h)
     rw [hv, zero_add] at hcount
-    have hd := sum_numbered_fiber_degrees b e hΦ hc r hr A hD hK
+    have hd := sum_numbered_fiber_degrees K b e hΦ hc r hr A hD hK
     let positive := Finset.univ.filter (fun j : ZMod n ↦ ¬ d[j] = 0)
     have hbound : (positive.card : ℤ) ≤ 2 := by
       rw [← hd]
@@ -153,7 +154,7 @@ private theorem exists_horizontal_node_or_terminal_degrees
         (positive.card : ℤ) = ∑ j : ZMod n, if ¬ d[j] = 0 then (1 : ℤ) else 0 :=
           (Finset.sum_boole _ _).symm
         _ ≤ _ := Finset.sum_le_sum fun j _ ↦ by
-          have hj := Φ.hirzebruch_fiber_degree_nonneg b e hΦ r hr hc (prime[j])
+          have hj := Φ.hirzebruch_fiber_degree_nonneg K b e hΦ r hr hc (prime[j])
           split_ifs <;> omega
     have hparts : (vertical).card + positive.card = n := by
       simpa only [positive, Finset.card_univ, ZMod.card] using
@@ -174,26 +175,26 @@ include hc A hD in
 private theorem exists_ruling_fiber_omitted_of_node_degrees (j : ZMod n)
     (hpos : ∀ k : ZMod n, A.ambientNode j ∈ closure {(A.boundaryPrimeEquiv hD k).val} →
       0 < d[k]) :
-    ∃ y : S ⟶ projectiveLine ℂ, y ≫ (projectiveLine ℂ ↘ S) = 𝟙 S ∧
+    ∃ y : S ⟶ projectiveLine K, y ≫ (projectiveLine K ↘ S) = 𝟙 S ∧
       A.ambientNode j ∈ (y.ker.comap ruling).support ∧
       ¬ (y.ker.comap ruling).support ≤ D.support := by
   let x : X := A.ambientNode j
   let t := pointOfClosedPoint (X ↘ S) x (A.isClosed_ambientNode j)
   let y := t ≫ ruling
-  have hy : y ≫ (projectiveLine ℂ ↘ S) = 𝟙 S := by
+  have hy : y ≫ (projectiveLine K ↘ S) = 𝟙 S := by
     simpa only [y, Category.assoc, comp_over ruling S] using
       pointOfClosedPoint_comp (X ↘ S) x (A.isClosed_ambientNode j)
   have hx : x ∈ (y.ker.comap ruling).support := by
     rw [← SetLike.mem_coe, support_comap, Closeds.coe_preimage, Set.mem_preimage, y.support_ker]
     apply subset_closure
-    refine ⟨IsLocalRing.closedPoint ℂ, (Scheme.Hom.comp_apply _ _ _).trans ?_⟩
+    refine ⟨IsLocalRing.closedPoint K, (Scheme.Hom.comp_apply _ _ _).trans ?_⟩
     exact congrArg ruling (pointOfClosedPoint_apply _ _ _ _)
   refine ⟨y, hy, hx, fun hle ↦ ?_⟩
   have hm : m ≠ 0 := by
     intro h
     simpa [Basis.coord_apply] using DFunLike.congr_fun h (b 1)
-  have := Φ.uniqueFactorizationMonoid_stalk_algebraicRealization hΦ
-  have hCartier := Φ.isEffectiveCartier_characterRuling_fiber m hR hm y hy
+  have := Φ.uniqueFactorizationMonoid_stalk_finiteFanScheme (R := K) hΦ
+  have hCartier := Φ.isEffectiveCartier_characterRuling_fiber K m hR hm y hy
   obtain ⟨p', hp', hspec⟩ := hCartier.mem_support_iff_exists_codimensionOnePoint.mp hx
   let u : D.boundaryPrimes := ⟨p', mem_boundaryPrimes.mpr ⟨hle hp', p'.property⟩⟩
   obtain ⟨k, hk⟩ := (A.boundaryPrimeEquiv hD).surjective u
@@ -204,7 +205,7 @@ private theorem exists_ruling_fiber_omitted_of_node_degrees (j : ZMod n)
     rw [hk]
     exact specializes_iff_mem_closure.mp hspec
   exact (hpos k hmem).ne' (hp.symm ▸
-    Φ.hirzebruch_fiber_degree_eq_zero_of_mem_ruling_fiber b e hΦ hc r hr hy hp')
+    Φ.hirzebruch_fiber_degree_eq_zero_of_mem_ruling_fiber K b e hΦ hc r hr hy hp')
 
 include hc A hD hK in
 /-- In a numbered nodal anticanonical cycle on a Hirzebruch surface, either a
@@ -213,15 +214,16 @@ boundary has complexity zero, or it has two components and one is a bisection.
 The first case supplies the center and the fiber for an elementary transformation. -/
 theorem exists_hirzebruch_horizontal_node_or_boundary_cases
     (hOver : D.subscheme ↘ S = D.subschemeι ≫ X ↘ S) :
-    (∃ (j : ZMod n) (y : S ⟶ projectiveLine ℂ),
+    (∃ (j : ZMod n) (y : S ⟶ projectiveLine K),
       IsClosed ({A.ambientNode j} : Set X) ∧
       D.IsNodeOfReducedBoundary (X ↘ S) (A.ambientNode j) ∧
-      y ≫ (projectiveLine ℂ ↘ S) = 𝟙 S ∧ A.ambientNode j ∈ (y.ker.comap ruling).support ∧
+      y ≫ (projectiveLine K ↘ S) = 𝟙 S ∧ A.ambientNode j ∈ (y.ker.comap ruling).support ∧
       ¬ (y.ker.comap ruling).support ≤ D.support) ∨
     D.boundaryComplexity = 0 ∨ (n = 2 ∧ ∃ j : ZMod n, d[j] = 2) := by
-  rcases exists_horizontal_node_or_terminal_degrees b e hΦ hc r hr A hD hK hOver with
+  rcases exists_horizontal_node_or_terminal_degrees K b e hΦ hc r hr A hD hK hOver with
     ⟨j, hj, hdeg⟩ | h₄ | h₂
-  · obtain ⟨y, hy, hx, hf⟩ := exists_ruling_fiber_omitted_of_node_degrees b e hΦ hc r hr A hD j hdeg
+  · obtain ⟨y, hy, hx, hf⟩ :=
+      exists_ruling_fiber_omitted_of_node_degrees K b e hΦ hc r hr A hD j hdeg
     exact Or.inl ⟨j, y, A.isClosed_ambientNode j, hj, hy, hx, hf⟩
   · have hcard : D.boundaryPrimes.ncard = n := by
       rw [← Nat.card_coe_set_eq, ← Nat.card_congr (A.boundaryPrimeEquiv hD), Nat.card_zmod]
@@ -237,19 +239,19 @@ boundary. The distinguished section rules out the bisection case. -/
 theorem exists_hirzebruch_node_on_omitted_fiber_of_section_mem_support
     (hOver : D.subscheme ↘ S = D.subschemeι ≫ X ↘ S)
     (hpos : 0 < D.boundaryComplexity)
-    (hsection : (Φ.rayBoundaryPoint hΦ (r 0) : X) ∈ D.support) :
-    ∃ (j : ZMod n) (y : S ⟶ projectiveLine ℂ),
+    (hsection : (Φ.rayBoundaryChartPoint (R := K) hΦ (r 0) : X) ∈ D.support) :
+    ∃ (j : ZMod n) (y : S ⟶ projectiveLine K),
       IsClosed ({A.ambientNode j} : Set X) ∧
       D.IsNodeOfReducedBoundary (X ↘ S) (A.ambientNode j) ∧
-      y ≫ (projectiveLine ℂ ↘ S) = 𝟙 S ∧ A.ambientNode j ∈ (y.ker.comap ruling).support ∧
+      y ≫ (projectiveLine K ↘ S) = 𝟙 S ∧ A.ambientNode j ∈ (y.ker.comap ruling).support ∧
       ¬ (y.ker.comap ruling).support ≤ D.support := by
-  rcases exists_hirzebruch_horizontal_node_or_boundary_cases b e hΦ hc r hr A hD hK hOver
+  rcases exists_hirzebruch_horizontal_node_or_boundary_cases K b e hΦ hc r hr A hD hK hOver
     with hnode | hzero | ⟨_, j, hj⟩
   · exact hnode
   · exact (ne_of_gt hpos hzero).elim
   · let : IsReduced D.subscheme := (PrestableFamily.atWorstNodalOfRelativeDimensionOne
       (f := D.subscheme ↘ S)).isReduced
-    exact (hirzebruch_section_notMem_boundary_support_of_bisection b e hΦ hc r hr hD hK
+    exact (hirzebruch_section_notMem_boundary_support_of_bisection K b e hΦ hc r hr hD hK
       (s := A.boundaryPrimeEquiv hD j) hj hsection).elim
 
 end TauCeti.Toric.Fan

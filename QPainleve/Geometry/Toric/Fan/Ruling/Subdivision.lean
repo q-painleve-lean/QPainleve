@@ -21,7 +21,8 @@ open AlgebraicGeometry CategoryTheory
 
 namespace TauCeti.Toric.Fan.IsSubdivision
 
-variable {N : Type} {V : Type*} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
+variable (K : Type) [CommRing K] {N : Type} {V : Type*}
+  [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {Ω Φ Ψ : Fan i}
 
 /-- The two pullbacks of a shared character ruling to a common subdivision agree. -/
@@ -31,13 +32,13 @@ theorem comp_characterRuling_eq (s : Ω.IsSubdivision Φ) (t : Ω.IsSubdivision 
       ∀ x ∈ σ.val, Φ.lattice.realCharacter m x ≤ 0)
     (hΨ : ∀ σ : Ψ.cones, (∀ x ∈ σ.val, 0 ≤ Ψ.lattice.realCharacter m x) ∨
       ∀ x ∈ σ.val, Ψ.lattice.realCharacter m x ≤ 0) :
-    s.toFanHom.algebraicMap ≫ Φ.characterRuling m hΦ =
-      t.toFanHom.algebraicMap ≫ Ψ.characterRuling m hΨ := by
+    s.toFanHom.finiteFanSchemeHom K ≫ Φ.characterRuling K m hΦ =
+      t.toFanHom.finiteFanSchemeHom K ≫ Ψ.characterRuling K m hΨ := by
   have h : (Φ.characterFanHom m hΦ).comp s.toFanHom =
       (Ψ.characterFanHom m hΨ).comp t.toFanHom := by
     apply FanHom.ext
     ext x j
     simp [FanHom.comp_latticeMap]
-  simp only [characterRuling_def, ← Category.assoc, ← FanHom.algebraicMap_comp, h]
+  simp only [characterRuling_def, ← Category.assoc, ← FanHom.finiteFanSchemeHom_comp, h]
 
 end TauCeti.Toric.Fan.IsSubdivision

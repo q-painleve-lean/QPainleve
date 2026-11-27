@@ -19,7 +19,7 @@ For a toric presentation of a primitive nef square-zero anticanonical cycle,
 specializing the field of independent X coordinates preserves both cluster modular
 groups. The integer invariants of a specialized loop are recovered from its X
 pullback, and the marked relation criterion detects the same relations over both fields.
-Consequently the Picard identifications over the complex numbers transport to
+Consequently the Picard identifications over the geometric coefficient field transport to
 every coefficient field with their evaluation on loop representatives.
 
 The comparison uses
@@ -35,18 +35,21 @@ open Scheme Scheme.IdealSheafData
 
 namespace QPainleve.SignedClusterModularGroup.CompleteToricPresentation
 
+variable {k₀ : Type} [Field k₀] [IsAlgClosed k₀] [Uncountable k₀] [CharZero k₀]
+
 open GeometricRealization (Point)
 
-local notation "S" => Spec (CommRingCat.of ℂ)
-local notation "Centers[" r "]" => Over.mk (structureMap ℂ (Fin r → ℤ))
-local notation "XTor[" r "]" => scheme ℂ (Fin r →₀ ℤ)
+local notation "S" => Spec (CommRingCat.of k₀)
+local notation "Centers[" r "]" => Over.mk (structureMap k₀ (Fin r → ℤ))
+local notation "XTor[" r "]" => scheme k₀ (Fin r →₀ ℤ)
 
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {b : Module.Basis (Fin 2) ℤ N} {r n : ℕ} [NeZero n]
   {L γ : Type} [AddCommGroup L] {B : LinearMap.BilinForm ℤ L}
   {E : SkewExchangeMatrix (Fin r)}
-  (Q : CompleteToricPresentation i b r L γ)
-  {c : Point Centers[r]} {M₀ : MarkedSurface ℂ n B XTor[r]}
+  (Q : CompleteToricPresentation k₀ i b r L γ)
+  {c : Point (Over.mk (QPainleve.CharacterTorus.structureMap k₀ (Fin r →
+    ℤ)))} {M₀ : MarkedSurface k₀ n B (QPainleve.CharacterTorus.scheme k₀ (Fin r →₀ ℤ))}
 
 local notation "cartier" => M₀.isEffectiveCartier_boundaryIdeal
 local notation "δ" => (LineBundleClass.mk (IsEffectiveCartier.toInvertibleSheaf cartier))⁻¹
@@ -57,8 +60,8 @@ private theorem injective_signedSpecialization
     (href : Q.HasNodalModel c M₀)
     (hE : E.matrix = chargeExchangeMatrix b.detDualEquiv.toLinearMap (Fan.rayChargeMap Q.rays))
     (hprim : IsPrimitive (Additive.ofMul δ))
-    (hnef : LineBundleClass.IsNef ℂ (M₀.surface ↘ S) δ)
-    (hsq : Chow.classIntersectionNumber ℂ M₀.surface δ δ = 0) :
+    (hnef : LineBundleClass.IsNef k₀ (M₀.surface ↘ S) δ)
+    (hsq : Chow.classIntersectionNumber k₀ M₀.surface δ δ = 0) :
     Function.Injective (signedClusterModularGroupSpecialization K k E) := by
   intro g g' hg
   obtain ⟨w, rfl⟩ := signedClusterModularGroupMap_surjective K E g
@@ -79,8 +82,8 @@ noncomputable def signedSpecializationEquiv
     (href : Q.HasNodalModel c M₀)
     (hE : E.matrix = chargeExchangeMatrix b.detDualEquiv.toLinearMap (Fan.rayChargeMap Q.rays))
     (hprim : IsPrimitive (Additive.ofMul δ))
-    (hnef : LineBundleClass.IsNef ℂ (M₀.surface ↘ S) δ)
-    (hsq : Chow.classIntersectionNumber ℂ M₀.surface δ δ = 0) :
+    (hnef : LineBundleClass.IsNef k₀ (M₀.surface ↘ S) δ)
+    (hsq : Chow.classIntersectionNumber k₀ M₀.surface δ δ = 0) :
     SignedClusterModularGroup K E ≃* SignedClusterModularGroup k E :=
   MulEquiv.ofBijective (signedClusterModularGroupSpecialization K k E)
     ⟨injective_signedSpecialization Q K k href hE hprim hnef hsq,
@@ -92,8 +95,8 @@ theorem coe_signedSpecializationEquiv
     (href : Q.HasNodalModel c M₀)
     (hE : E.matrix = chargeExchangeMatrix b.detDualEquiv.toLinearMap (Fan.rayChargeMap Q.rays))
     (hprim : IsPrimitive (Additive.ofMul δ))
-    (hnef : LineBundleClass.IsNef ℂ (M₀.surface ↘ S) δ)
-    (hsq : Chow.classIntersectionNumber ℂ M₀.surface δ δ = 0) :
+    (hnef : LineBundleClass.IsNef k₀ (M₀.surface ↘ S) δ)
+    (hsq : Chow.classIntersectionNumber k₀ M₀.surface δ δ = 0) :
     ⇑(Q.signedSpecializationEquiv K k href hE hprim hnef hsq) =
       signedClusterModularGroupSpecialization K k E := (rfl)
 
@@ -103,8 +106,8 @@ noncomputable def unsignedSpecializationEquiv
     (href : Q.HasNodalModel c M₀)
     (hE : E.matrix = chargeExchangeMatrix b.detDualEquiv.toLinearMap (Fan.rayChargeMap Q.rays))
     (hprim : IsPrimitive (Additive.ofMul δ))
-    (hnef : LineBundleClass.IsNef ℂ (M₀.surface ↘ S) δ)
-    (hsq : Chow.classIntersectionNumber ℂ M₀.surface δ δ = 0) :
+    (hnef : LineBundleClass.IsNef k₀ (M₀.surface ↘ S) δ)
+    (hsq : Chow.classIntersectionNumber k₀ M₀.surface δ δ = 0) :
     ClusterModularGroup K E ≃* ClusterModularGroup k E :=
   MulEquiv.ofBijective (clusterModularGroupSpecialization K k E)
     ⟨clusterModularGroupSpecialization_injective_of_signed K k E
@@ -117,28 +120,28 @@ theorem coe_unsignedSpecializationEquiv
     (href : Q.HasNodalModel c M₀)
     (hE : E.matrix = chargeExchangeMatrix b.detDualEquiv.toLinearMap (Fan.rayChargeMap Q.rays))
     (hprim : IsPrimitive (Additive.ofMul δ))
-    (hnef : LineBundleClass.IsNef ℂ (M₀.surface ↘ S) δ)
-    (hsq : Chow.classIntersectionNumber ℂ M₀.surface δ δ = 0) :
+    (hnef : LineBundleClass.IsNef k₀ (M₀.surface ↘ S) δ)
+    (hsq : Chow.classIntersectionNumber k₀ M₀.surface δ δ = 0) :
     ⇑(Q.unsignedSpecializationEquiv K k href hE hprim hnef hsq) =
       clusterModularGroupSpecialization K k E := (rfl)
 
 /-- The Picard identifications of the opposite signed and unsigned cluster
 modular groups hold over every field of X coefficients. They retain the
-ordered branch sign and compute the complex geometric Picard pullback of
+ordered branch sign and compute the geometric Picard pullback of
 each loop. The unsigned inclusion corresponds to the boundary rotations. -/
 theorem exists_picardGroupEquivs_over_field_of_nodal_model
     (href : Q.HasNodalModel c M₀)
     (hE : E.matrix = chargeExchangeMatrix b.detDualEquiv.toLinearMap (Fan.rayChargeMap Q.rays))
     (hprim : IsPrimitive (Additive.ofMul δ))
-    (hnef : LineBundleClass.IsNef ℂ (M₀.surface ↘ S) δ)
-    (hsq : Chow.classIntersectionNumber ℂ M₀.surface δ δ = 0) :
+    (hnef : LineBundleClass.IsNef k₀ (M₀.surface ↘ S) δ)
+    (hsq : Chow.classIntersectionNumber k₀ M₀.surface δ δ = 0) :
     ∃ P : NodalPicardGroupIdentification (B := B) Q k E (M₀.boundaryClass cartier),
       P.family c = M₀ := by
   obtain ⟨P, hP⟩ := Q.exists_picardGroupEquivs_of_nodal_model href hE hprim hnef hsq
-  let e := Q.signedSpecializationEquiv ℂ k href hE hprim hnef hsq
+  let e := Q.signedSpecializationEquiv k₀ k href hE hprim hnef hsq
   have hword (w : Word E E) :
       (MulEquiv.op e).symm (op (signedClusterModularGroupMap k E (End.of w))) =
-        op (signedClusterModularGroupMap ℂ E (End.of w)) :=
+        op (signedClusterModularGroupMap k₀ E (End.of w)) :=
     (MulEquiv.op e).symm_apply_eq.mpr (by simp [e])
   let Θ := (MulEquiv.op e).symm.trans P.signedEquiv
   have hsign (w : Word E E) :

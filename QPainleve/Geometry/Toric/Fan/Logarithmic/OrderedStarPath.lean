@@ -5,6 +5,8 @@ Authors: The QPainleve contributors
 -/
 module
 
+public import QPainleve.Geometry.Toric.Fan.Subdivision
+
 public import Mathlib.Combinatorics.Quiver.Path.Vertices
 public import QPainleve.Geometry.Toric.Fan.InternalBlowup
 public import QPainleve.Geometry.Toric.Fan.Logarithmic.StarFactorization
@@ -33,15 +35,17 @@ open TauCeti.AlgebraicGeometry
 
 namespace TauCeti.Toric.Fan.LogarithmicProjection
 
+variable {k : Type} [Field k] [IsAlgClosed k]
+
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V] {i : N →+ V}
 
-local notation "S" => Spec (CommRingCat.of ℂ)
-local notation "π[" H "]" => FanHom.algebraicMap (IsSubdivision.toFanHom H)
+local notation "S" => Spec (CommRingCat.of k)
+local notation "π[" H "]" => FanHom.finiteFanSchemeHom k (IsSubdivision.toFanHom H)
 
-variable {Z : Scheme} [Z.Over S] [SmoothOfRelativeDimension 2 (Z ↘ S)]
-  {D : Z.IdealSheafData} {A B : LogarithmicProjection i D}
+variable {Z : Scheme} [Z.Over (Spec (.of k))] [SmoothOfRelativeDimension 2 (Z ↘ Spec (.of k))]
+  {D : Z.IdealSheafData} {A B : LogarithmicProjection k i D}
 
-variable [IsIntegral Z] [Z.IsProjectiveOver ℂ]
+variable [IsIntegral Z] [Z.IsProjectiveOver k]
 
 /-- A specified ordered internal model of the first projection of a resolved toric
 path realizes every projection on the path, by subdividing each successive target fan.
@@ -49,9 +53,9 @@ Every projection is a modification. The resolving isomorphism and the ordered
 centers are the same at every vertex. -/
 theorem exists_subdivisions_of_toric_internal_factorization (p : Quiver.Path A B)
     (b : Module.Basis (Fin 2) ℤ N) {Θ : Fan i} (hΘ : Θ.IsRegular)
-    (J : Θ.IsSubdivision A.fan) {m : ℕ} (r : Fin m → Θ.Ray) (c : Fin m → ℂˣ) :
+    (J : Θ.IsSubdivision A.fan) {m : ℕ} (r : Fin m → Θ.Ray) (c : Fin m → kˣ) :
     letI := J.nonempty_cones_of_nonempty A.isComplete.nonempty_cones
-    let T := Θ.internalBlowupTower b r c
+    let T := Θ.internalBlowupTower k b r c
     ∀ (e : T.1 ≅ Z), e.hom ≫ A.hom = T.2.toTower.toBase ≫ π[J] →
       D.comap e.hom = T.2.boundaryι.ker →
       ∀ C ∈ p.vertices, IsModification C.hom ∧ ∃ K : Θ.IsSubdivision C.fan,
@@ -61,9 +65,10 @@ theorem exists_subdivisions_of_toric_internal_factorization (p : Quiver.Path A B
     (Module.finrank_eq_card_basis b).trans (Fintype.card_fin 2)
   have hA : IsModification A.hom := by
     let : Nonempty Θ.cones := J.nonempty_cones_of_nonempty A.isComplete.nonempty_cones
-    let : IsModification T.2.toTower.toBase := Θ.isModification_internalBlowupTower_toBase b r c hΘ
+    let : IsModification T.2.toTower.toBase :=
+      Θ.isModification_internalBlowupTower_toBase k b r c hΘ
     let : IsModification π[J] :=
-      J.isModification_algebraicMap A.isRegular hΘ A.isComplete.nonempty_cones hN
+      J.isModification_finiteFanSchemeHom k A.isRegular hΘ A.isComplete.nonempty_cones hN
     have h : A.hom = e.inv ≫ T.2.toTower.toBase ≫ π[J] := by
       rw [← he, Iso.inv_hom_id_assoc]
     rw [h]
@@ -84,12 +89,12 @@ theorem exists_subdivisions_of_toric_internal_factorization (p : Quiver.Path A B
     cases step with
     | blowup h comm =>
       let : IsModification U.hom := hU
-      exact h.isSubdivision.exists_lift_of_toric_internal_factorization b U.isRegular
+      exact h.isSubdivision.exists_lift_of_toric_internal_factorization k b U.isRegular
         W.isRegular U.isComplete hΘ K r c comm U.comap_boundaryIdeal e hk hD
     | blowdown h comm =>
       refine ⟨K.trans h.isSubdivision, ?_⟩
       rw [← comm, ← Category.assoc, hk, Category.assoc,
-        IsSubdivision.toFanHom_trans K h.isSubdivision, FanHom.algebraicMap_comp]
+        IsSubdivision.toFanHom_trans K h.isSubdivision, FanHom.finiteFanSchemeHom_comp k]
 
 /-- One regular fan and one ordered internal model suffice for all the specified
 regular projections of a resolved toric path. The strict boundary of that model
@@ -98,13 +103,13 @@ theorem exists_toric_internal_factorization_of_star_path (p : Quiver.Path A B)
     [IsModification A.hom] (b : Module.Basis (Fin 2) ℤ N) :
     ∃ (Θ : Fan i) (_ : Θ.IsRegular) (J : Θ.IsSubdivision A.fan),
       letI := J.nonempty_cones_of_nonempty A.isComplete.nonempty_cones
-      ∃ (m : ℕ) (r : Fin m → Θ.Ray) (c : Fin m → ℂˣ),
-        let T := Θ.internalBlowupTower b r c
+      ∃ (m : ℕ) (r : Fin m → Θ.Ray) (c : Fin m → kˣ),
+        let T := Θ.internalBlowupTower k b r c
         ∃ e : T.1 ≅ Z, D.comap e.hom = T.2.boundaryι.ker ∧
           ∀ C ∈ p.vertices, IsModification C.hom ∧ ∃ K : Θ.IsSubdivision C.fan,
             e.hom ≫ C.hom = T.2.toTower.toBase ≫ π[K] := by
   obtain ⟨Θ, hΘ, J, m, r, c, e, he, hD⟩ :=
-    A.fan.exists_toric_internal_factorization_of_boundary_comap_eq b A.isRegular A.isComplete
+    A.fan.exists_toric_internal_factorization_of_boundary_comap_eq k b A.isRegular A.isComplete
       (IsModification.birationalOver A.hom) A.comap_boundaryIdeal
   exact ⟨Θ, hΘ, J, m, r, c, e, hD,
     exists_subdivisions_of_toric_internal_factorization p b hΘ J r c e he hD⟩

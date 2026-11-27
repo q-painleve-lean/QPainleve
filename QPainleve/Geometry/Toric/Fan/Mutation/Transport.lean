@@ -31,9 +31,9 @@ open Scheme.IdealSheafData
 
 namespace TauCeti.Toric.Fan
 
-variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
+variable (K : Type) [Field K] {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {Φ : Fan i} (b : Basis (Fin 2) ℤ N) (ρ : Φ.Ray)
-  (hOpp : hull ℝ {i (-ρ.primitiveGenerator)} ∈ Φ.cones) (c : ℂˣ)
+  (hOpp : hull ℝ {i (-ρ.primitiveGenerator)} ∈ Φ.cones) (c : Kˣ)
 
 local notation "v" => Ray.primitiveGenerator ρ
 local notation "hv" => Ray.primitiveGenerator_ne_zero ρ
@@ -41,8 +41,8 @@ local notation "hp" => Ray.hull_primitiveGenerator_mem ρ
 local notation "Ψ" => Φ.mutationFan b hv hp hOpp
 local notation "hΦ₀" => Nonempty.intro (Ray.toCone Φ ρ)
 local notation "hΨ₀" => Nonempty.intro (Φ.mutationFanConeEquiv b hv hp hOpp (Subtype.mk _ hp))
-local notation "D₀" => Φ.boundaryIdeal hΦ₀
-local notation "D₁" => boundaryIdeal (Ψ) hΨ₀
+local notation "D₀" => Φ.toricBoundaryIdeal K hΦ₀
+local notation "D₁" => toricBoundaryIdeal K (Ψ) hΨ₀
 local notation "I₀" => Ray.mutationSourceCenterIdeal b ρ c
 local notation "I₁" => Ray.mutationTargetCenterIdeal b ρ hOpp c
 local notation "eB" => Ray.mutationBlowupIso b ρ hOpp c
@@ -93,22 +93,22 @@ theorem Ray.commonBoundary_comp_mutationBlowupIso :
   exact congrArg ((J).subschemeι ≫ ·) (ρ.mutationComplementBlowupι_comp_mutationBlowupIso_hom
     b hOpp c)
 
-variable (hΦ : Φ.IsRegular) (u : Φ.Ray) (d : ℂˣ)
+variable (hΦ : Φ.IsRegular) (u : Φ.Ray) (d : Kˣ)
 
 local notation "a" => Ray.mutationBoundaryIso b ρ hOpp c hΦ
 local notation "r" => Φ.mutationFanRayEquiv b hv hp hOpp
 local notation "hΨ" => Iff.mpr (Φ.isRegular_mutationFan_iff b hv hp hOpp) hΦ
 local notation "char" => LinearMap.toAddMonoidHom (b.detDualEquiv v)
-local notation "r₀" => Φ.characterRuling char (Φ.detCharacter_nonneg_or_nonpos b hv hp hOpp)
+local notation "r₀" => Φ.characterRuling K char (Φ.detCharacter_nonneg_or_nonpos b hv hp hOpp)
 local notation "r₁" =>
-  characterRuling (Ψ) char (Φ.mutationDetCharacter_nonneg_or_nonpos b hv hp hOpp)
+  characterRuling K (Ψ) char (Φ.mutationDetCharacter_nonneg_or_nonpos b hv hp hOpp)
 local notation "rankTwo" => Eq.trans (Module.finrank_eq_card_basis b) (Fintype.card_fin 2)
 local notation "χ(" τ ")" => LinearMap.toAddMonoidHom (b.detDualEquiv (Ray.primitiveGenerator τ))
 local notation "hχ(" τ ")" => Eq.trans
   (congrFun (LinearMap.toAddMonoidHom_coe (b.detDualEquiv (Ray.primitiveGenerator τ)))
     (Ray.primitiveGenerator τ)) (b.detDualEquiv_self (Ray.primitiveGenerator τ))
 local notation "center(" τ ", " k ")" =>
-  Ray.binomialCenterOnBoundary τ rankTwo (m := χ(τ)) hχ(τ) (Ray.surjective_detCharacter τ b) k
+  Ray.binomialCenterOnBoundary τ K rankTwo (m := χ(τ)) hχ(τ) (Ray.surjective_detCharacter τ b) k
 local notation "δ" =>
   d * c ^ max (b.det ![Ray.primitiveGenerator u, v]) 0
 
@@ -118,13 +118,13 @@ private theorem binomialCenterOnBoundary_comp_mutationBoundaryIso_of_avoids_pivo
     center(u, d) ≫ (a).hom = center((r u), δ) := by
   let : Nonempty Φ.cones := hΦ₀
   obtain ⟨t, _, _, h₀, h₁⟩ := exists_common_boundaryCenters_mutationComplement
-    b hv hp hOpp c (fun _ : Fin 1 ↦ u) (fun _ ↦ d)
+    K b hv hp hOpp c (fun _ : Fin 1 ↦ u) (fun _ ↦ d)
     ρ.isPrimitiveGenerator.isPrimitive (fun _ ↦ hsame) (fun _ ↦ hopp)
   have h := h₀ 0
   dsimp only at h
   have he : (d₀) ≫ (a).hom = d₁ := by
     rw [← cancel_mono (j₁), Category.assoc, Ray.mutationBoundaryIso_hom_comp_boundaryι]
-    exact ρ.commonBoundary_comp_mutationBlowupIso b hOpp c
+    exact ρ.commonBoundary_comp_mutationBlowupIso K b hOpp c
   rw [← h, Category.assoc, he]
   exact h₁ 0
 
@@ -139,25 +139,25 @@ private theorem binomialCenterOnBoundary_comp_mutationBoundaryIso_of_horizontal
     (j : Fin 2)
     (hu' : (r u).primitiveGenerator = if j = 0 then v else -v)
     (hm₀ : char u.primitiveGenerator = 0) (hm₁ : char (r u).primitiveGenerator = 0) :
-    let p := u.binomialCenterOnBoundary rankTwo hm₀ (ρ.surjective_detCharacter b) d
-    let q := (r u).binomialCenterOnBoundary rankTwo hm₁ (ρ.surjective_detCharacter b) d
+    let p := u.binomialCenterOnBoundary K rankTwo hm₀ (ρ.surjective_detCharacter b) d
+    let q := (r u).binomialCenterOnBoundary K rankTwo hm₁ (ρ.surjective_detCharacter b) d
     p ≫ (a).hom = q := by
   dsimp only
   let : Nonempty Φ.cones := hΦ₀
   let : Nonempty (Ψ).cones := hΨ₀
-  let p := u.binomialCenterOnBoundary rankTwo hm₀ (ρ.surjective_detCharacter b) d
-  let q := (r u).binomialCenterOnBoundary rankTwo hm₁ (ρ.surjective_detCharacter b) d
-  have hp' : (u.boundaryComponentι hΦ).ker ≤ p.ker := by
+  let p := u.binomialCenterOnBoundary K rankTwo hm₀ (ρ.surjective_detCharacter b) d
+  let q := (r u).binomialCenterOnBoundary K rankTwo hm₁ (ρ.surjective_detCharacter b) d
+  have hp' : (u.boundaryComponentι K hΦ).ker ≤ p.ker := by
     dsimp only [p]
-    rw [← u.binomialCenterOnComponent_boundaryComponentι hΦ rankTwo hm₀
+    rw [← u.binomialCenterOnComponent_boundaryComponentι K hΦ rankTwo hm₀
       (ρ.surjective_detCharacter b) d]
     exact Scheme.Hom.le_ker_comp _ _
-  have hq' : ((r u).boundaryComponentι hΨ).ker ≤ q.ker := by
+  have hq' : ((r u).boundaryComponentι K hΨ).ker ≤ q.ker := by
     dsimp only [q]
-    rw [← (r u).binomialCenterOnComponent_boundaryComponentι hΨ rankTwo hm₁
+    rw [← (r u).binomialCenterOnComponent_boundaryComponentι K hΨ rankTwo hm₁
       (ρ.surjective_detCharacter b) d]
     exact Scheme.Hom.le_ker_comp _ _
-  have htransport : ((r u).boundaryComponentι hΨ).ker ≤ (p ≫ (a).hom).ker := by
+  have htransport : ((r u).boundaryComponentι K hΨ).ker ≤ (p ≫ (a).hom).ker := by
     rw [Scheme.Hom.ker_comp, le_map_iff_comap_le,
       ρ.comap_ker_boundaryComponentι_mutationBoundaryIso b hOpp c hΦ u]
     exact hp'
@@ -173,10 +173,10 @@ private theorem binomialCenterOnBoundary_comp_mutationBoundaryIso_of_horizontal
       (Φ.hull_singleton_mem_mutationFan_iff b hv hp hOpp (-v)).mpr hOpp
   apply (cancel_mono (D₁).subschemeι).mp
   rw [Category.assoc]
-  refine (r u).eq_of_characterRuling_eq_of_le_ker
+  refine (r u).eq_of_characterRuling_eq_of_le_ker K
     (Φ.mutationDetCharacter_nonneg_or_nonpos b hv hp hOpp) B hcoord hpos hneg hΨ j
     (by simpa only [hB] using hu') ?_ ?_
-    (projectiveLineTorusPoint ((-1 : ℂˣ) * d⁻¹)) ?_ ?_
+    (projectiveLineTorusPoint K ((-1 : Kˣ) * d⁻¹)) ?_ ?_
   · simpa only [map_ker, Ray.boundaryComponentι_subschemeι, ker_subschemeι, Category.assoc]
       using map_mono (D₁).subschemeι htransport
   · simpa only [map_ker, Ray.boundaryComponentι_subschemeι, ker_subschemeι]
@@ -199,7 +199,7 @@ theorem Ray.binomialCenterOnBoundary_comp_mutationBoundaryIso :
       rw [← b.detDualEquiv_apply, hpos, b.detDualEquiv_self]
     have hpos' : (r u).primitiveGenerator = v := by
       rw [mutationFanRayEquiv_primitiveGenerator, hd, max_self, zero_smul, add_zero, hpos]
-    have he := binomialCenterOnBoundary_comp_mutationBoundaryIso_of_horizontal b ρ hOpp c hΦ u d
+    have he := binomialCenterOnBoundary_comp_mutationBoundaryIso_of_horizontal K b ρ hOpp c hΦ u d
       0 (by simpa using hpos')
       (by rw [hpos]; exact b.detDualEquiv_self v)
       (by rw [hpos']; exact b.detDualEquiv_self v)
@@ -216,26 +216,27 @@ theorem Ray.binomialCenterOnBoundary_comp_mutationBoundaryIso :
       rw [hneg, map_neg, LinearMap.toAddMonoidHom_coe, b.detDualEquiv_self, neg_zero]
     have hm₁ : char (r u).primitiveGenerator = 0 := by
       rw [hneg', map_neg, LinearMap.toAddMonoidHom_coe, b.detDualEquiv_self, neg_zero]
-    have he := binomialCenterOnBoundary_comp_mutationBoundaryIso_of_horizontal b ρ hOpp c hΦ u d⁻¹
+    have he := binomialCenterOnBoundary_comp_mutationBoundaryIso_of_horizontal K b ρ hOpp c hΦ u d⁻¹
       1 (by simpa using hneg') hm₀ hm₁
     dsimp only at he
-    rw [← u.binomialCenterOnBoundary_neg_inv rankTwo hm₀ (ρ.surjective_detCharacter b) d⁻¹,
-      ← (r u).binomialCenterOnBoundary_neg_inv rankTwo hm₁ (ρ.surjective_detCharacter b) d⁻¹] at he
+    rw [← u.binomialCenterOnBoundary_neg_inv K rankTwo hm₀ (ρ.surjective_detCharacter b) d⁻¹,
+      ← (r u).binomialCenterOnBoundary_neg_inv K rankTwo hm₁
+        (ρ.surjective_detCharacter b) d⁻¹] at he
     simp only [hd, max_self, zpow_zero, mul_one]
     simp only [inv_inv] at he
     convert he using 2 <;> congr 1 <;> ext x <;> simp [hneg, hneg']
-  exact binomialCenterOnBoundary_comp_mutationBoundaryIso_of_avoids_pivot b ρ hOpp c hΦ u d
+  exact binomialCenterOnBoundary_comp_mutationBoundaryIso_of_avoids_pivot K b ρ hOpp c hΦ u d
     (fun h ↦ (hpos h).elim) (fun h ↦ (hneg h).elim)
 
 /-- The ideal of each transported binomial center pulls back to the original
 center ideal on the entire strict boundary. -/
 theorem Ray.mutationBoundaryIso_transports_internal_centers :
-    (((r u).internalCenter (h₀ := hΨ₀) b δ).val).comap (a).hom =
-      (u.internalCenter (h₀ := hΦ₀) b d).val := by
+    (((r u).internalCenter (h₀ := hΨ₀) K b δ).val).comap (a).hom =
+      (u.internalCenter (h₀ := hΦ₀) K b d).val := by
   let : Nonempty Φ.cones := hΦ₀
   let : Nonempty (Ψ).cones := hΨ₀
   rw [Ray.internalCenter_val, Ray.internalCenter_val,
-    ← ρ.binomialCenterOnBoundary_comp_mutationBoundaryIso b hOpp c hΦ u d,
+    ← ρ.binomialCenterOnBoundary_comp_mutationBoundaryIso K b hOpp c hΦ u d,
     Scheme.Hom.comap_ker_comp_of_isClosedImmersion]
 
 end TauCeti.Toric.Fan

@@ -27,6 +27,8 @@ open TauCeti TauCeti.AlgebraicGeometry TauCeti.Toric Scheme
 
 namespace QPainleve.SignedClusterModularGroup.GeometricRealization
 
+variable {k₀ : Type} [Field k₀] [IsAlgClosed k₀]
+
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {Φ : Fan i} [hΦ₀ : Nonempty Φ.cones]
   {r m n : ℕ} [NeZero m] [NeZero n]
@@ -34,37 +36,37 @@ variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {b : Basis (Fin 2) ℤ N} {s : Fin r → Φ.Ray} {hΦ : Φ.IsRegular}
   {E : SkewExchangeMatrix (Fin r)} {w : Word E E}
 
-local notation "S" => Spec (CommRingCat.of ℂ)
-local notation "T" => Over.mk (structureMap ℂ (Fin r → ℤ))
+local notation "S" => Spec (CommRingCat.of k₀)
+local notation "T" => Over.mk (structureMap k₀ (Fin r → ℤ))
 local notation "D[" M "]" => Scheme.Hom.ker (Over.Hom.left (Arrow.hom (MarkedSurface.pair M)))
-local notation "χ[" c "]" => pointsEquiv ℂ (Fin r → ℤ)
+local notation "χ[" c "]" => pointsEquiv k₀ (Fin r → ℤ)
   (Subtype.mk (Over.Hom.left (c : Point T)) (Over.w c))
 local notation "src[" C "," x "]" => x ≫ PartialMap.domainSource (X := T) (Y := T) C
 local notation "dst[" C "," x "]" => x ≫ PartialMap.domainTarget (X := T) (Y := T) C
 
-variable [PrestableFamily ((Φ.boundaryIdeal hΦ₀).subscheme ↘ S)]
-  {γ : Type*} {a : γ → ((Φ.boundaryIdeal hΦ₀).subscheme ↘ S).smoothLocus}
+variable [PrestableFamily ((Φ.toricBoundaryIdeal k₀ hΦ₀).subscheme ↘ Spec (.of k₀))]
+  {γ : Type*} {a : γ → ((Φ.toricBoundaryIdeal k₀ hΦ₀).subscheme ↘ Spec (.of k₀)).smoothLocus}
   {τ : NodalCycleNumbering a m} {origin : ZMod m}
-  {ι : L →ₗ[ℤ] Additive (LineBundleClass Φ.algebraicRealization) × (Fin r → ℤ)}
-  {P : Point (Over.mk (structureMap ℂ (Fin r → ℤ))) →
-    MarkedSurface ℂ n B (scheme ℂ (Fin r →₀ ℤ))}
-  {C : (scheme ℂ (Fin r → ℤ)).PartialMap (scheme ℂ (Fin r → ℤ))} [IsDominant C.hom]
-  [C.IsOver (Over.mk (structureMap ℂ (Fin r → ℤ))).hom
-    (Over.mk (structureMap ℂ (Fin r → ℤ))).hom]
+  {ι : L →ₗ[ℤ] Additive (LineBundleClass (Φ.finiteFanScheme k₀)) × (Fin r → ℤ)}
+  {P : Point (Over.mk (structureMap k₀ (Fin r → ℤ))) →
+    MarkedSurface k₀ n B (scheme k₀ (Fin r →₀ ℤ))}
+  {C : (scheme k₀ (Fin r → ℤ)).PartialMap (scheme k₀ (Fin r → ℤ))} [IsDominant C.hom]
+  [C.IsOver (Over.mk (structureMap k₀ (Fin r → ℤ))).hom
+    (Over.mk (structureMap k₀ (Fin r → ℤ))).hom]
 
 local notation "fiberAt[" c "]" => ContractedToricFiber b s hΦ τ origin ι χ[c] (P c)
 local notation "Aux" => LinearMap.BilinForm.prod
-  (Chow.intersectionBilinForm ℂ Φ.algebraicRealization)
+  (Chow.intersectionBilinForm k₀ (Φ.finiteFanScheme k₀))
   (-(dotProductBilin ℤ ℤ : LinearMap.BilinForm ℤ (Fin r → ℤ)))
 
 /-- The boundary search for a realized signed loop returns the forward label of
 component zero. The target order table may be taken from any reference nodal
 contraction with the same auxiliary Picard inclusion. -/
 theorem tropicalBoundaryLabel_eq_some
-    [Φ.algebraicRealization.IsProjectiveOver ℂ]
-    [SmoothOfRelativeDimension 2 (Φ.algebraicRealization ↘ S)]
+    [(Φ.finiteFanScheme k₀).IsProjectiveOver k₀]
+    [SmoothOfRelativeDimension 2 ((Φ.finiteFanScheme k₀) ↘ S)]
     (hsep : (Aux).SeparatingRight)
-    (R : GeometricRealization (T₀ := T) (T₁ := T) P P C (w.xRationalMap ℂ))
+    (R : GeometricRealization (T₀ := T) (T₁ := T) P P C (w.xRationalMap k₀))
     (x : CenterPoint (U := T) (V := T) C)
     (hcΦ : Φ.IsComplete)
     (hE : E.matrix = chargeExchangeMatrix b.detDualEquiv.toLinearMap (Fan.rayChargeMap s))

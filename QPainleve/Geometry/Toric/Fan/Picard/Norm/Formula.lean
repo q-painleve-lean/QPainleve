@@ -8,7 +8,7 @@ module
 public import QPainleve.Geometry.Toric.Fan.Boundary.SelfIntersection
 public import QPainleve.Geometry.Toric.Fan.Picard.ChargeKernel
 
-import QPainleve.Geometry.Toric.Fan.Smooth
+import QPainleve.Geometry.Toric.BaseChange.Fan
 
 /-!
 # The norm of a toric charge relation
@@ -31,29 +31,33 @@ open LinearMap (BilinForm)
 
 namespace TauCeti.Toric.Fan
 
-variable {N : Type} {V ι : Type*} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
+universe u
+
+variable (K : Type u) [Field K] [Infinite K]
+
+variable {N : Type u} {V ι : Type*} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {Φ : Fan i}
-  [Nonempty Φ.cones] [Φ.algebraicRealization.IsProjectiveOver ℂ]
+  [Nonempty Φ.cones] [(Φ.finiteFanScheme K).IsProjectiveOver K]
   (b : Module.Basis (Fin 2) ℤ N) (hΦ : Φ.IsRegular) (hc : Φ.IsComplete)
 
-local notation "X" => Φ.algebraicRealization
+local notation "X" => (Φ.finiteFanScheme K)
 local notation "gen" => Ray.primitiveGenerator (Phi := Φ)
 local notation "det" => b.detDualEquiv
-local notation "R" => Φ.rayDivisorToPicard hΦ
+local notation "R" => Φ.rayChartDivisorToPicard K hΦ
 
 private def coneCharacter (a : Φ.Ray → ℤ) (ρ τ : Φ.Ray) : N →ₗ[ℤ] ℤ :=
   a τ • det (gen ρ) - a ρ • det (gen τ)
 
-omit [Nonempty Φ.cones] [Φ.algebraicRealization.IsProjectiveOver ℂ] in
+omit [Field K] [Infinite K] [Nonempty Φ.cones] [(Φ.finiteFanScheme K).IsProjectiveOver K] in
 private theorem coneCharacter_apply_right (a : Φ.Ray → ℤ) {ρ τ : Φ.Ray}
     (h : det (gen ρ) (gen τ) = 1) : coneCharacter b a ρ τ (gen τ) = a τ := by
   simp [coneCharacter, h, b.detDualEquiv_self]
 
-variable [SmoothOfRelativeDimension 2 (Φ.algebraicRealization ↘ Spec (CommRingCat.of ℂ))]
+variable [SmoothOfRelativeDimension 2 ((Φ.finiteFanScheme K) ↘ Spec (CommRingCat.of K))]
 
 include hc
 
-local notation "B" => intersectionBilinForm ℂ X
+local notation "B" => intersectionBilinForm K X
 
 open Classical in
 private theorem coneCharacter_sub (a : Φ.Ray → ℤ) {prev ρ next : Φ.Ray}
@@ -62,11 +66,11 @@ private theorem coneCharacter_sub (a : Φ.Ray → ℤ) {prev ρ next : Φ.Ray}
     (v : N) :
     coneCharacter b a ρ next v - coneCharacter b a prev ρ v =
       B (R (Pi.single ρ 1)) (R a) * det (gen ρ) v := by
-  have hw := primitiveGenerator_add_selfIntersection_smul_add_eq_zero b hΦ hc hprev hnext
+  have hw := primitiveGenerator_add_selfIntersection_smul_add_eq_zero K b hΦ hc hprev hnext
   have h := congrArg (fun u ↦ det u v) hw
   simp only [map_add, map_smul, LinearMap.add_apply, LinearMap.smul_apply, Int.zsmul_eq_mul,
     LinearMap.zero_apply, map_zero] at h
-  rw [Φ.intersectionBilinForm_rayDivisorToPicard_single hΦ b hc a hprev hnext]
+  rw [Φ.intersectionBilinForm_rayChartDivisorToPicard_single K hΦ b hc a hprev hnext]
   simp only [coneCharacter, LinearMap.sub_apply, LinearMap.smul_apply, Int.zsmul_eq_mul]
   linear_combination -a ρ * h
 
@@ -93,7 +97,7 @@ private theorem coneCharacter_prefix (a : Φ.Ray → ℤ) (x : ι → ℤ)
   | zero => simp
   | succ j ih =>
     have hj' : j < n := by omega
-    have hw := coneCharacter_sub b hΦ hc a
+    have hw := coneCharacter_sub K b hΦ hc a
       (prev := u ((j : ZMod n) - 1)) (ρ := u (j : ZMod n)) (next := u ((j : ZMod n) + 1))
       (by simpa only [sub_add_cancel] using hu ((j : ZMod n) - 1)) (hu (j : ZMod n)) (v(k))
     have hpos (l : ι) : s l = u (j : ZMod n) ↔ pos(l) = j := by
@@ -130,12 +134,12 @@ private theorem toric_square_eq_sum_det (x : ι → ℤ) (a : Φ.Ray → ℤ)
   let m₀ := coneCharacter b a (u (-1)) (u 0)
   let c := Φ.characterToRayDivisor m₀.toAddMonoidHom
   have hzero : R c = 0 :=
-    (Φ.exact_characterToRayDivisor_rayDivisorToPicard hΦ c).mpr ⟨_, rfl⟩
+    (Φ.exact_characterToRayDivisor_rayChartDivisorToPicard K hΦ c).mpr ⟨_, rfl⟩
   have hprincipal : ∑ k, c (s k) * x k = 0 := by
     rw [← hdeg, hzero, map_zero, LinearMap.zero_apply]
   have hcoeff (k : ι) : a (s k) = c (s k) +
       ∑ l with pos(l) < pos(k), x l * det (v(l)) (v(k)) := by
-    have h := coneCharacter_prefix b hΦ hc u hu s a x hdeg k (pos(k)) (ZMod.val_lt _).le
+    have h := coneCharacter_prefix K b hΦ hc u hu s a x hdeg k (pos(k)) (ZMod.val_lt _).le
     dsimp only at h
     rw [ZMod.natCast_zmod_val, u.apply_symm_apply] at h
     have hdet : det (gen (u (u.symm (s k) - 1))) (v(k)) = 1 := by
@@ -147,10 +151,10 @@ private theorem toric_square_eq_sum_det (x : ι → ℤ) (a : Φ.Ray → ℤ)
 
 local notation "Q" => BilinForm.prod B (-(dotProductBilin ℤ ℤ : BilinForm ℤ (ι → ℤ)))
 
-omit [SmoothOfRelativeDimension 2 (Φ.algebraicRealization ↘ Spec (CommRingCat.of ℂ))]
+omit [SmoothOfRelativeDimension 2 ((Φ.finiteFanScheme K) ↘ Spec (CommRingCat.of K))]
 
 local notation "Surface" =>
-  SmoothOfRelativeDimension 2 (Φ.algebraicRealization ↘ Spec (CommRingCat.of ℂ))
+  SmoothOfRelativeDimension 2 ((Φ.finiteFanScheme K) ↘ Spec (CommRingCat.of K))
 
 include hu in
 open Classical in
@@ -160,18 +164,18 @@ numbering is positive, so the clockwise sum pairs each label k with the labels l
 of smaller index. Labels on the same ray have zero determinant. -/
 theorem boundary_orthogonal_norm_eq_sum_det :
     let _ : Surface := by
-      rw [Φ.algebraicRealization_over]
+      rw [Φ.finiteFanScheme_over K]
       have hN : Module.finrank ℤ N = 2 := by simpa using Module.finrank_eq_card_basis b
-      exact hN ▸ Φ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
-    ∀ y : BilinForm.orthogonal Q (LinearMap.range (markedBoundaryMap hΦ s)),
+      exact hN ▸ Φ.smoothOfRelativeDimension_finiteFanSchemeToSpec K hΦ
+    ∀ y : BilinForm.orthogonal Q (LinearMap.range (markedBoundaryMap K hΦ s)),
       (Q) y.val y.val = -(∑ k, (y.val.2 k) ^ 2) -
         ∑ k, ∑ l with pos(l) < pos(k), det (v(k)) (v(l)) * y.val.2 k * y.val.2 l := by
   intro _ y
-  obtain ⟨a, ha⟩ := Φ.rayDivisorToPicard_surjective hΦ y.val.1
+  obtain ⟨a, ha⟩ := Φ.rayChartDivisorToPicard_surjective K hΦ y.val.1
   have hdeg (c : Φ.Ray → ℤ) : B (R c) (R a) = ∑ l, c (s l) * (-y.val.2 l) := by
     rw [ha]
-    exact markedBoundary_orthogonal_fst_pairing hΦ s B y c
-  have h := toric_square_eq_sum_det b hΦ hc u hu s (-y.val.2) a hdeg
+    exact markedBoundary_orthogonal_fst_pairing K hΦ s B y c
+  have h := toric_square_eq_sum_det K b hΦ hc u hu s (-y.val.2) a hdeg
   rw [ha] at h
   have htoric : B y.val.1 y.val.1 =
       -(∑ k, ∑ l with pos(l) < pos(k), det (v(k)) (v(l)) * y.val.2 k * y.val.2 l) := by

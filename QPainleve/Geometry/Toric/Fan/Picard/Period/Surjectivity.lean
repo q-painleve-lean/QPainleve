@@ -37,53 +37,55 @@ open Scheme (IdealSheafData NodalCycleNumbering)
 
 namespace TauCeti.Toric.Fan
 
+variable (F : Type) [Field F] [IsAlgClosed F]
+
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {Φ : Fan i} [Nonempty Φ.cones] {n : ℕ}
   (hΦ : Φ.IsRegular) (b : Module.Basis (Fin 2) ℤ N) (s : Fin n → Φ.Ray)
 
-local notation "S" => Spec (CommRingCat.of ℂ)
-local notation "Z" => Φ.algebraicRealization
-local notation "D" => Fan.boundaryIdeal Φ inferInstance
+local notation "S" => Spec (CommRingCat.of F)
+local notation "Z" => (Φ.finiteFanScheme F)
+local notation "D" => Fan.toricBoundaryIdeal F Φ inferInstance
 local notation "C" => IdealSheafData.subscheme D
-local notation "ν" => IdealSheafData.blowupToBase (Scheme.singularLocus ℂ C)
+local notation "ν" => IdealSheafData.blowupToBase (Scheme.singularLocus F C)
 local notation "K" => LinearMap.ker (rayChargeMap s)
 local notation "PicZero" => MonoidHom.ker (pullbackHom ν)
 local notation "hdim" => (Eq.trans (Module.finrank_eq_card_basis b) (Fintype.card_fin 2))
-local notation "J[" c "]" => (fun j ↦ Ray.internalCenter b (s j) (c j))
+local notation "J[" c "]" => (fun j ↦ Ray.internalCenter F b (s j) (c j))
 local notation "model[" c "]" => alongBoundary (subschemeι D) (J[c])
 local notation "I[" ρ "," c "]" =>
   LineBundleClass.mk
-    (IsEffectiveCartier.toInvertibleSheaf (Subtype.property (Ray.internalCenter b ρ c)))
+    (IsEffectiveCartier.toInvertibleSheaf (Subtype.property (Ray.internalCenter F b ρ c)))
 
-variable [PrestableFamily ((Φ.boundaryIdeal inferInstance).subscheme ↘ Spec (.of ℂ))]
+variable [PrestableFamily ((Φ.toricBoundaryIdeal F inferInstance).subscheme ↘ Spec (.of F))]
 
-variable [Φ.algebraicRealization.IsProjectiveOver ℂ]
-  [SmoothOfRelativeDimension 2 (Φ.algebraicRealization ↘ Spec (.of ℂ))]
+variable [(Φ.finiteFanScheme F).IsProjectiveOver F]
+  [SmoothOfRelativeDimension 2 ((Φ.finiteFanScheme F) ↘ Spec (.of F))]
 
-local notation "A" => Chow.intersectionBilinForm ℂ Z
+local notation "A" => Chow.intersectionBilinForm F Z
 local notation "Qform" =>
   LinearMap.BilinForm.prod A (-(dotProductBilin ℤ ℤ : LinearMap.BilinForm ℤ (Fin n → ℤ)))
 
 variable [LinearMap.IsPerfPair
-  ((Chow.intersectionBilinForm ℂ Φ.algebraicRealization).prod
+  ((Chow.intersectionBilinForm F (Φ.finiteFanScheme F)).prod
     (-(dotProductBilin ℤ ℤ : LinearMap.BilinForm ℤ (Fin n → ℤ))))]
 
 local notation "mark" =>
-  LinearEquiv.symm (boundaryOrthogonalEquivChargeKernel hΦ s Qform)
+  LinearEquiv.symm (boundaryOrthogonalEquivChargeKernel F hΦ s Qform)
 local notation "markedClass[" c "]" =>
   LinearMap.comp (QPainleve.BlowupTower.picardHom (WithBoundary.toTower (Sigma.snd (model[c]))))
     (LinearMap.comp
       (Submodule.subtype
-        (LinearMap.BilinForm.orthogonal Qform (LinearMap.range (markedBoundaryMap hΦ s))))
+        (LinearMap.BilinForm.orthogonal Qform (LinearMap.range (markedBoundaryMap F hΦ s))))
       (LinearEquiv.toLinearMap mark))
 
-private def orderedRestriction (c : Fin n → ℂˣ) :
+private def orderedRestriction (c : Fin n → Fˣ) :
     Multiplicative K →* LineBundleClass C :=
   (pullbackHom (model[c]).2.boundaryι).comp (markedClass[c]).toAddMonoidHom.toMultiplicativeLeft
 
-omit [PrestableFamily ((Φ.boundaryIdeal inferInstance).subscheme ↘ Spec (.of ℂ))] in
-private theorem orderedRestriction_apply (c : Fin n → ℂˣ) (x : K) :
-    orderedRestriction hΦ b s c (Multiplicative.ofAdd x) =
+omit [PrestableFamily ((Φ.toricBoundaryIdeal F inferInstance).subscheme ↘ Spec (.of F))] in
+private theorem orderedRestriction_apply (c : Fin n → Fˣ) (x : K) :
+    orderedRestriction F hΦ b s c (Multiplicative.ofAdd x) =
       pullback (subschemeι D) ((mark x).val.1).toMul *
         ∏ j, I[s j,c j] ^ (x : Fin n → ℤ) j := by
   rw [orderedRestriction, MonoidHom.comp_apply, pullbackHom_apply]
@@ -93,45 +95,45 @@ private theorem orderedRestriction_apply (c : Fin n → ℂˣ) (x : K) :
     boundaryOrthogonalEquivChargeKernel_symm_snd]
   simp only [Pi.neg_apply, neg_neg]
 
-private theorem orderedRestriction_mem_ker (c : Fin n → ℂˣ) (x : K) :
-    orderedRestriction hΦ b s c (Multiplicative.ofAdd x) ∈ PicZero := by
+private theorem orderedRestriction_mem_ker (c : Fin n → Fˣ) (x : K) :
+    orderedRestriction F hΦ b s c (Multiplicative.ofAdd x) ∈ PicZero := by
   classical
   rw [MonoidHom.mem_ker, pullbackHom_apply, (C).pullback_blowupToBase_singularLocus_eq_one_iff
-      (boundaryNormalizationComponent_genus_eq_zero hΦ b), orderedRestriction_apply]
+      (boundaryNormalizationComponent_genus_eq_zero F hΦ b), orderedRestriction_apply]
   intro v
-  obtain ⟨ρ, rfl⟩ := (Φ.boundaryNormalizationComponentEquiv hΦ).surjective v
-  let e := ρ.boundaryNormalizationComponentIso hΦ
-  let := ρ.isProper_boundaryComponent_of_prestableFamily hΦ
-  have := ρ.isCurveOver_boundaryComponent hΦ hdim (b.detDualEquiv_self _)
+  obtain ⟨ρ, rfl⟩ := (Φ.boundaryNormalizationComponentEquiv F hΦ).surjective v
+  let e := ρ.boundaryNormalizationComponentIso F hΦ
+  let := ρ.isProper_boundaryComponent_of_prestableFamily F hΦ
+  have := ρ.isCurveOver_boundaryComponent F hΦ hdim (b.detDualEquiv_self _)
     (ρ.surjective_detCharacter b)
-  rw [← ρ.boundaryNormalizationComponentIso_hom_boundaryComponentι hΦ,
+  rw [← ρ.boundaryNormalizationComponentIso_hom_boundaryComponentι F hΦ,
     ← pullback_comp, eulerDegree_pullback_of_isIso e.hom (comp_over e.hom S)]
-  let R := (Φ.rayBoundaryIdeal hΦ ρ).subscheme
-  let : TauCeti.AlgebraicGeometry.IsRegular R := Φ.isRegular_rayBoundary hΦ ρ
-  have : IsNoetherian R := Scheme.IsCurveOver.isNoetherian ℂ R
-  have : R.IsProjectiveOver ℂ :=
-    Scheme.IsProjectiveOver.of_isClosedImmersion ℂ (Φ.rayBoundaryIdeal hΦ ρ).subschemeι
+  let R := (Φ.rayDivisorIdeal F hΦ ρ).subscheme
+  let : TauCeti.AlgebraicGeometry.IsRegular R := Φ.isRegular_rayBoundary F hΦ ρ
+  have : IsNoetherian R := Scheme.IsCurveOver.isNoetherian F R
+  have : R.IsProjectiveOver F :=
+    Scheme.IsProjectiveOver.of_isClosedImmersion F (Φ.rayDivisorIdeal F hΦ ρ).subschemeι
   let : Fact (∀ y : R, Order.coheight y ≤ 1) := ⟨fun y ↦ by
     exact_mod_cast (coheight_le_topologicalKrullDim y).trans
-      (Scheme.IsCurveOver.topologicalKrullDim_eq_one ℂ).le⟩
-  let := Scheme.Modules.moduleFinite_cohomology_of_isProjectiveOver ℂ
+      (Scheme.IsCurveOver.topologicalKrullDim_eq_one F).le⟩
+  let := Scheme.Modules.moduleFinite_cohomology_of_isProjectiveOver F
     (InvertibleSheaf.trivial R).obj 1
-  let d := eulerDegreeHom ℂ R
-  have hd (L : LineBundleClass (Φ.rayBoundaryIdeal hΦ ρ).subscheme) :
-      d (Additive.ofMul L) = eulerDegree ℂ L := by
+  let d := eulerDegreeHom F R
+  have hd (L : LineBundleClass (Φ.rayDivisorIdeal F hΦ ρ).subscheme) :
+      d (Additive.ofMul L) = eulerDegree F L := by
     rw [eulerDegreeHom_apply, toMul_ofMul]
-  have ht : d (Additive.ofMul (pullback (ρ.boundaryComponentι hΦ)
+  have ht : d (Additive.ofMul (pullback (ρ.boundaryComponentι F hΦ)
         (pullback (subschemeι D) ((mark x).val.1).toMul))) =
       ∑ j, (if s j = ρ then 1 else 0) * (x : Fin n → ℤ) j := by
-    have h := boundaryOrthogonalEquivChargeKernel_symm_fst_pairing hΦ s A x (Pi.single ρ 1)
+    have h := boundaryOrthogonalEquivChargeKernel_symm_fst_pairing F hΦ s A x (Pi.single ρ 1)
     have hZ := topologicalKrullDim_eq_of_smoothOfRelativeDimension (Z ↘ S) (n := 2)
     let := (Z ↘ S).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two
-    simp only [rayDivisorToPicard_single, one_smul, Chow.intersectionBilinForm_apply,
+    simp only [rayChartDivisorToPicard_single, one_smul, Chow.intersectionBilinForm_apply,
       toMul_ofMul, Pi.single_apply] at h
     rw [hd, pullback_comp,
-      ρ.boundaryComponentι_subschemeι, ← intersectionNumber_def,
-      Fan.rayBoundaryIdeal_def]
-    rw [← Chow.classIntersectionNumber_primeDivisorClass_eq_intersectionNumber ℂ hZ,
+      ρ.boundaryComponentι_subschemeι F hΦ, ← intersectionNumber_def F,
+      Φ.rayDivisorIdeal_def F hΦ]
+    rw [← Chow.classIntersectionNumber_primeDivisorClass_eq_intersectionNumber F hZ,
       Chow.classIntersectionNumber_comm]
     exact h
   -- The degree homomorphism adds the degrees of the tensor factors.
@@ -147,21 +149,21 @@ private theorem orderedRestriction_mem_ker (c : Fin n → ℂˣ) (x : K) :
   · simp only [hj, ↓reduceIte, zero_mul, smul_zero, add_zero]
 
 variable {α : Type*}
-  {p : α → ((Φ.boundaryIdeal inferInstance).subscheme ↘ Spec (.of ℂ)).smoothLocus}
+  {p : α → ((Φ.toricBoundaryIdeal F inferInstance).subscheme ↘ Spec (.of F)).smoothLocus}
   {a : ℕ} [NeZero a]
   (B : NodalCycleNumbering p a)
 
 /-- Restriction of marked charge classes on the ordered internal blowup to the fixed
 toric boundary, with values in the kernel of pullback to the normalization. -/
-def orderedBoundaryRestriction (c : Fin n → ℂˣ) : Multiplicative K →* PicZero :=
-  (orderedRestriction hΦ b s c).codRestrict PicZero fun x ↦
-    orderedRestriction_mem_ker hΦ b s c x.toAdd
+def orderedBoundaryRestriction (c : Fin n → Fˣ) : Multiplicative K →* PicZero :=
+  (orderedRestriction F hΦ b s c).codRestrict PicZero fun x ↦
+    orderedRestriction_mem_ker F hΦ b s c x.toAdd
 
 /-- The marked restriction pulls back the line-bundle class in the ordered Picard
 marking along the boundary embedding. -/
 @[simp]
-theorem coe_orderedBoundaryRestriction (c : Fin n → ℂˣ) (x : K) :
-    (orderedBoundaryRestriction hΦ b s c (Multiplicative.ofAdd x)).val =
+theorem coe_orderedBoundaryRestriction (c : Fin n → Fˣ) (x : K) :
+    (orderedBoundaryRestriction F hΦ b s c (Multiplicative.ofAdd x)).val =
       pullback (model[c]).2.boundaryι ((markedClass[c] x).toMul) := by
   rw [orderedBoundaryRestriction, MonoidHom.codRestrict_apply, Subgroup.coe_mk,
     orderedRestriction, MonoidHom.comp_apply, pullbackHom_apply]
@@ -170,28 +172,28 @@ theorem coe_orderedBoundaryRestriction (c : Fin n → ℂˣ) (x : K) :
 /-- In the ordered internal blowup model, the restricted charge class is obtained by
 applying the Picard marking and restricting to the strict boundary. -/
 theorem coe_orderedBoundaryRestriction_eq_pullback_internalBlowupPicardMarking
-    (c : Fin n → ℂˣ) (x : K) :
-    (orderedBoundaryRestriction hΦ b s c (Multiplicative.ofAdd x)).val =
-      pullback (internalBlowupTower b s c).2.boundaryι
-        (internalBlowupPicardMarking b s c hΦ (mark x).val).toMul := by
+    (c : Fin n → Fˣ) (x : K) :
+    (orderedBoundaryRestriction F hΦ b s c (Multiplicative.ofAdd x)).val =
+      pullback (internalBlowupTower F b s c).2.boundaryι
+        (internalBlowupPicardMarking F b s c hΦ (mark x).val).toMul := by
   rw [coe_orderedBoundaryRestriction, internalBlowupPicardMarking_apply,
     internalBlowupTower_eq_alongBoundary]
   rfl
 
 /-- The period character obtained by restricting marked charge classes on the ordered
 internal blowup to its boundary, identified with the original toric boundary. -/
-def orderedBoundaryPeriod (c : Fin n → ℂˣ) : Multiplicative K →* ℂˣ :=
+def orderedBoundaryPeriod (c : Fin n → Fˣ) : Multiplicative K →* Fˣ :=
   ((C).nodalPicardCycleMulEquiv B.endpoint_eq).toMonoidHom.comp
-    (orderedBoundaryRestriction hΦ b s c)
+    (orderedBoundaryRestriction F hΦ b s c)
 
 /-- The ordered period is the oriented gluing product of the marked restriction. -/
 @[simp]
-theorem orderedBoundaryPeriod_apply (c : Fin n → ℂˣ) (x : Multiplicative K) :
-    orderedBoundaryPeriod hΦ b s B c x =
-      (C).nodalPicardCycleMulEquiv B.endpoint_eq (orderedBoundaryRestriction hΦ b s c x) := (rfl)
+theorem orderedBoundaryPeriod_apply (c : Fin n → Fˣ) (x : Multiplicative K) :
+    orderedBoundaryPeriod F hΦ b s B c x =
+      (C).nodalPicardCycleMulEquiv B.endpoint_eq (orderedBoundaryRestriction F hΦ b s c x) := (rfl)
 
-private theorem ne_center_of_orderedBoundaryPeriod_injective {c : Fin n → ℂˣ}
-    (hc : Function.Injective (orderedBoundaryPeriod hΦ b s B c))
+private theorem ne_center_of_orderedBoundaryPeriod_injective {c : Fin n → Fˣ}
+    (hc : Function.Injective (orderedBoundaryPeriod F hΦ b s B c))
     {j l : Fin n} (hjl : j ≠ l) (hray : s j = s l) : c j ≠ c l := by
   classical
   intro hcenter
@@ -200,13 +202,13 @@ private theorem ne_center_of_orderedBoundaryPeriod_injective {c : Fin n → ℂ�
   have hx (u : Fin n → ℤ) : ∑ t, u t * (x : Fin n → ℤ) t = u j - u l := by
     simp [x, mul_sub, Finset.sum_sub_distrib, Pi.single_apply, mul_ite, mul_zero]
   obtain ⟨_, _, huniq⟩ :=
-    existsUnique_rayDivisorToPicard_pairing_eq_charge hΦ s A x
+    existsUnique_rayDivisorToPicard_pairing_eq_charge F hΦ s A x
   have htoric : (mark x).val.1 = 0 := by
-    have hzero (u : Φ.Ray → ℤ) : A (Φ.rayDivisorToPicard hΦ u) 0 =
+    have hzero (u : Φ.Ray → ℤ) : A (Φ.rayChartDivisorToPicard F hΦ u) 0 =
         ∑ t, u (s t) * (x : Fin n → ℤ) t := by
       have hsum := hx (u ∘ s)
       simpa [Function.comp_apply, hray] using hsum.symm
-    exact (huniq _ (boundaryOrthogonalEquivChargeKernel_symm_fst_pairing hΦ s A x)).trans
+    exact (huniq _ (boundaryOrthogonalEquivChargeKernel_symm_fst_pairing F hΦ s A x)).trans
       (huniq _ hzero).symm
   have hsingle (v : Fin n) :
       ∏ t, I[s t,c t] ^ ((Pi.single v 1 : Fin n → ℤ) t) = I[s v,c v] := by
@@ -218,85 +220,86 @@ private theorem ne_center_of_orderedBoundaryPeriod_injective {c : Fin n → ℂ�
   have hprod : ∏ t, I[s t,c t] ^ (x : Fin n → ℤ) t = 1 := by
     simp only [x, Pi.sub_apply, zpow_sub, Finset.prod_mul_distrib, Finset.prod_inv_distrib,
       hsingle, hray, hcenter, mul_inv_cancel]
-  have hres : orderedBoundaryRestriction hΦ b s c (Multiplicative.ofAdd x) = 1 := by
+  have hres : orderedBoundaryRestriction F hΦ b s c (Multiplicative.ofAdd x) = 1 := by
     apply Subtype.ext
     -- Compute in the ambient Picard group using the ordered restriction formula.
-    change orderedRestriction hΦ b s c (Multiplicative.ofAdd x) = 1
+    change orderedRestriction F hΦ b s c (Multiplicative.ofAdd x) = 1
     rw [orderedRestriction_apply, htoric, hprod, toMul_zero, pullback_one, mul_one]
-  have hperiod : orderedBoundaryPeriod hΦ b s B c (Multiplicative.ofAdd x) = 1 := by
+  have hperiod : orderedBoundaryPeriod F hΦ b s B c (Multiplicative.ofAdd x) = 1 := by
     rw [orderedBoundaryPeriod_apply, hres, map_one]
   have hzero := Multiplicative.ofAdd.injective
-    (hc (hperiod.trans ((orderedBoundaryPeriod hΦ b s B c).map_one.symm)))
+    (hc (hperiod.trans ((orderedBoundaryPeriod F hΦ b s B c).map_one.symm)))
   have hval := congrArg (fun y : K ↦ (y : Fin n → ℤ) j) hzero
   simp [x, hjl] at hval
 
 /-- An injective ordered boundary period forces the original boundary centers at
 distinct labels to have disjoint supports. -/
-theorem pairwise_disjoint_internalCenters_of_orderedBoundaryPeriod_injective {c : Fin n → ℂˣ}
-    (hc : Function.Injective (orderedBoundaryPeriod hΦ b s B c)) :
+theorem pairwise_disjoint_internalCenters_of_orderedBoundaryPeriod_injective {c : Fin n → Fˣ}
+    (hc : Function.Injective (orderedBoundaryPeriod F hΦ b s B c)) :
     Pairwise fun j l ↦ Disjoint ((J[c] j).val.support : Set C) ((J[c] l).val.support : Set C) := by
   intro j l hjl
   have hpair : (s j, c j) ≠ (s l, c l) := fun h ↦
-    ne_center_of_orderedBoundaryPeriod_injective hΦ b s B hc hjl (congrArg Prod.fst h)
+    ne_center_of_orderedBoundaryPeriod_injective F hΦ b s B hc hjl (congrArg Prod.fst h)
       (congrArg Prod.snd h)
   simpa only [Scheme.IdealSheafData.map_id] using
-    (disjoint_support_map_internalCenter_iff b (𝟙 C) (s j) (s l) (c j) (c l)).mpr hpair
+    (disjoint_support_map_internalCenter_iff F b (𝟙 C) (s j) (s l) (c j) (c l)).mpr hpair
 
 variable (r : ZMod a ≃ Φ.Ray)
-  (hcomp : ∀ j, (Φ.boundaryIdeal inferInstance).subscheme.dualGraphVertexEquiv p (B.vertex j) =
-    Φ.boundaryNormalizationComponentEquiv hΦ (r j))
+  (hcomp : ∀ j,
+    (Φ.toricBoundaryIdeal F inferInstance).subscheme.dualGraphVertexEquiv p (B.vertex j) =
+      Φ.boundaryNormalizationComponentEquiv F hΦ (r j))
   (hdet : ∀ j, b.detDualEquiv (r j).primitiveGenerator (r (j + 1)).primitiveGenerator = 1)
   (hnodes : ∀ j, ∃ σ : Φ.cones, (r j).toCone ≤ σ ∧ (r (j + 1)).toCone ≤ σ ∧
-    (Φ.boundaryIdeal inferInstance).subschemeι
-      ((Φ.boundaryIdeal inferInstance).subscheme.dualGraphEdgeEquiv p (B.edge j)).val =
-      Φ.distinguishedPointHom σ (IsLocalRing.closedPoint ℂ))
+    (Φ.toricBoundaryIdeal F inferInstance).subschemeι
+      ((Φ.toricBoundaryIdeal F inferInstance).subscheme.dualGraphEdgeEquiv p (B.edge j)).val =
+      (Φ.distinguishedSection (R := F) σ) (IsLocalRing.closedPoint F))
 
 include hcomp hdet hnodes in
 /-- In the positive determinant orientation, the ratio of ordered boundary periods
 is the inverse center ratio evaluated at the charge relation. -/
-theorem orderedBoundaryPeriod_div (c d : Fin n → ℂˣ) (x : K) :
-    orderedBoundaryPeriod hΦ b s B c (Multiplicative.ofAdd x) /
-      orderedBoundaryPeriod hΦ b s B d (Multiplicative.ofAdd x) =
+theorem orderedBoundaryPeriod_div (c d : Fin n → Fˣ) (x : K) :
+    orderedBoundaryPeriod F hΦ b s B c (Multiplicative.ofAdd x) /
+      orderedBoundaryPeriod F hΦ b s B d (Multiplicative.ofAdd x) =
         ∏ j, (d j / c j) ^ (x : Fin n → ℤ) j := by
-  obtain ⟨L, hL, hperiod⟩ := exists_prod_internalCenterRatio_nodalPicardCycleMulEquiv hΦ r
+  obtain ⟨L, hL, hperiod⟩ := exists_prod_internalCenterRatio_nodalPicardCycleMulEquiv F hΦ r
     B.endpoint_eq hcomp b hdet hnodes s c d (x : Fin n → ℤ)
-  have hratio : orderedBoundaryRestriction hΦ b s c (Multiplicative.ofAdd x) /
-      orderedBoundaryRestriction hΦ b s d (Multiplicative.ofAdd x) = L := by
+  have hratio : orderedBoundaryRestriction F hΦ b s c (Multiplicative.ofAdd x) /
+      orderedBoundaryRestriction F hΦ b s d (Multiplicative.ofAdd x) = L := by
     apply Subtype.ext
     rw [Subgroup.coe_div, hL]
     -- The toric part is the same for both boundary restrictions.
-    change orderedRestriction hΦ b s c (Multiplicative.ofAdd x) /
-      orderedRestriction hΦ b s d (Multiplicative.ofAdd x) = _
+    change orderedRestriction F hΦ b s c (Multiplicative.ofAdd x) /
+      orderedRestriction F hΦ b s d (Multiplicative.ofAdd x) = _
     rw [orderedRestriction_apply, orderedRestriction_apply, mul_div_mul_left_eq_div]
   rw [orderedBoundaryPeriod_apply, orderedBoundaryPeriod_apply, ← hperiod, ← hratio, map_div]
 
 include hcomp hdet hnodes in
 /-- Multiplying the marked period by the restricted center monomial gives a value
 independent of the reference center. -/
-theorem orderedBoundaryPeriod_mul_torusCharacter (c d : Fin n → ℂˣ) (x : K) :
-    orderedBoundaryPeriod hΦ b s B c (Multiplicative.ofAdd x) *
+theorem orderedBoundaryPeriod_mul_torusCharacter (c d : Fin n → Fˣ) (x : K) :
+    orderedBoundaryPeriod F hΦ b s B c (Multiplicative.ofAdd x) *
         torusCharacter c (x : Fin n → ℤ) =
-      orderedBoundaryPeriod hΦ b s B d (Multiplicative.ofAdd x) *
+      orderedBoundaryPeriod F hΦ b s B d (Multiplicative.ofAdd x) *
         torusCharacter d (x : Fin n → ℤ) := by
-  have h := orderedBoundaryPeriod_div hΦ b s B r hcomp hdet hnodes c d x
+  have h := orderedBoundaryPeriod_div F hΦ b s B r hcomp hdet hnodes c d x
   simp only [div_zpow, Finset.prod_div_distrib, ← torusCharacter_def] at h
   simpa only [mul_comm (torusCharacter d _)] using div_eq_div_iff_mul_eq_mul.mp h
 
 include hcomp hdet hnodes in
 /-- Ordered boundary periods agree exactly when the center characters agree on all
 charge relations. -/
-theorem orderedBoundaryPeriod_eq_iff (c d : Fin n → ℂˣ) :
-    orderedBoundaryPeriod hΦ b s B c = orderedBoundaryPeriod hΦ b s B d ↔
+theorem orderedBoundaryPeriod_eq_iff (c d : Fin n → Fˣ) :
+    orderedBoundaryPeriod F hΦ b s B c = orderedBoundaryPeriod F hΦ b s B d ↔
       ∀ x ∈ (rayChargeMap s).ker, (∏ j, c j ^ x j) = ∏ j, d j ^ x j := by
   constructor
   · intro h x hx
-    have hp := orderedBoundaryPeriod_mul_torusCharacter hΦ b s B r hcomp hdet hnodes c d ⟨x, hx⟩
+    have hp := orderedBoundaryPeriod_mul_torusCharacter F hΦ b s B r hcomp hdet hnodes c d ⟨x, hx⟩
     rw [h, mul_right_inj] at hp
     simpa only [torusCharacter_def] using hp
   · intro h
     apply MonoidHom.ext
     intro x
-    have hp := orderedBoundaryPeriod_mul_torusCharacter hΦ b s B r hcomp hdet hnodes c d x.toAdd
+    have hp := orderedBoundaryPeriod_mul_torusCharacter F hΦ b s B r hcomp hdet hnodes c d x.toAdd
     rw [ofAdd_toAdd, torusCharacter_def, torusCharacter_def, h _ x.toAdd.property,
       mul_left_inj] at hp
     exact hp
@@ -306,7 +309,7 @@ include hcomp hdet hnodes in
 the positive determinant orientation. All choices of centers, including repetitions,
 are allowed. -/
 theorem orderedBoundaryPeriod_surjective :
-    Function.Surjective (orderedBoundaryPeriod hΦ b s B) := by
+    Function.Surjective (orderedBoundaryPeriod F hΦ b s B) := by
   classical
   intro a
   have := Φ.lattice.free
@@ -314,19 +317,19 @@ theorem orderedBoundaryPeriod_surjective :
   have hfree : Module.IsTorsionFree ℤ ((Fin n → ℤ) ⧸ K) :=
     e.injective.moduleIsTorsionFree _ (map_smul e)
   obtain ⟨T, hT⟩ := (Submodule.exists_isCompl_iff_isTorsionFree_quotient K).mpr hfree
-  let χ := (orderedBoundaryPeriod hΦ b s B 1 / a).comp
+  let χ := (orderedBoundaryPeriod F hΦ b s B 1 / a).comp
     ((K).projectionOnto T hT).toAddMonoidHom.toMultiplicative
   let c (j : Fin n) := χ (Multiplicative.ofAdd (Pi.single j 1))
   refine ⟨c, MonoidHom.ext fun x ↦ ?_⟩
-  have h := orderedBoundaryPeriod_mul_torusCharacter hΦ b s B r hcomp hdet hnodes c 1 x.toAdd
+  have h := orderedBoundaryPeriod_mul_torusCharacter F hΦ b s B r hcomp hdet hnodes c 1 x.toAdd
   rw [torusCharacter_one, mul_one, torusCharacter_of_pi_single] at h
   have hproj : (K).projectionOnto T hT (x.toAdd : Fin n → ℤ) = x.toAdd :=
     Submodule.projectionOnto_apply_left hT x.toAdd
   -- The character extension restricts to the prescribed ratio on the kernel.
   have hχ : χ (Multiplicative.ofAdd (x.toAdd : Fin n → ℤ)) =
-      orderedBoundaryPeriod hΦ b s B 1 x / a x := by
+      orderedBoundaryPeriod F hΦ b s B 1 x / a x := by
     simp only [χ, MonoidHom.comp_apply]
-    change (orderedBoundaryPeriod hΦ b s B 1 / a)
+    change (orderedBoundaryPeriod F hΦ b s B 1 / a)
       (Multiplicative.ofAdd ((K).projectionOnto T hT (x.toAdd : Fin n → ℤ))) = _
     rw [hproj, MonoidHom.div_apply, ofAdd_toAdd]
   rw [hχ, ofAdd_toAdd] at h
@@ -334,29 +337,29 @@ theorem orderedBoundaryPeriod_surjective :
 
 section Contraction
 
-variable {c : Fin n → ℂˣ} {X Y : Scheme}
-  [X.Over (Spec (.of ℂ))] [X.IsProjectiveOver ℂ] [IsIntegral X]
-  [SmoothOfRelativeDimension 2 (X ↘ Spec (.of ℂ))]
-  [LinearMap.IsPerfPair (Chow.intersectionBilinForm ℂ X)]
+variable {c : Fin n → Fˣ} {X Y : Scheme}
+  [X.Over (Spec (.of F))] [X.IsProjectiveOver F] [IsIntegral X]
+  [SmoothOfRelativeDimension 2 (X ↘ Spec (.of F))]
+  [LinearMap.IsPerfPair (Chow.intersectionBilinForm F X)]
   {D₀ : X.IdealSheafData} {d : ℕ} {T : QPainleve.BlowupTower X d Y}
-  (hT : IsNodalBoundaryTower D₀ (X ↘ Spec (.of ℂ)) (𝟙 X) T)
-  (e : Y ≅ (alongBoundary (Φ.boundaryIdeal inferInstance).subschemeι
-    (fun j ↦ (s j).internalCenter b (c j))).1)
-  (he : e.inv ≫ T.toBase ≫ (X ↘ Spec (.of ℂ)) =
-    (alongBoundary (Φ.boundaryIdeal inferInstance).subschemeι
-      (fun j ↦ (s j).internalCenter b (c j))).2.toTower.toBase ≫
-      (Φ.algebraicRealization ↘ Spec (.of ℂ)))
+  (hT : IsNodalBoundaryTower D₀ (X ↘ Spec (.of F)) (𝟙 X) T)
+  (e : Y ≅ (alongBoundary (Φ.toricBoundaryIdeal F inferInstance).subschemeι
+    (fun j ↦ (s j).internalCenter F b (c j))).1)
+  (he : e.inv ≫ T.toBase ≫ (X ↘ Spec (.of F)) =
+    (alongBoundary (Φ.toricBoundaryIdeal F inferInstance).subschemeι
+      (fun j ↦ (s j).internalCenter F b (c j))).2.toTower.toBase ≫
+      ((Φ.finiteFanScheme F) ↘ Spec (.of F)))
   (hD : ((D₀.comap T.toBase).comap e.inv).support =
-    (alongBoundary (Φ.boundaryIdeal inferInstance).subschemeι
-      (fun j ↦ (s j).internalCenter b (c j))).2.boundaryι.ker.support)
-  [PrestableFamily (D₀.subscheme ↘ Spec (.of ℂ))]
+    (alongBoundary (Φ.toricBoundaryIdeal F inferInstance).subschemeι
+      (fun j ↦ (s j).internalCenter F b (c j))).2.boundaryι.ker.support)
+  [PrestableFamily (D₀.subscheme ↘ Spec (.of F))]
   (hCartier : D₀.IsEffectiveCartier)
-  (hgenus : ∀ v : irreducibleComponents (D₀.subscheme.singularLocus ℂ).blowup,
-    ((D₀.subscheme).blowupComponent v).toScheme.genus ℂ = 0)
-  {β : Type*} {q : β → (D₀.subscheme ↘ Spec (.of ℂ)).smoothLocus} {k : ℕ} [NeZero k]
+  (hgenus : ∀ v : irreducibleComponents (D₀.subscheme.singularLocus F).blowup,
+    ((D₀.subscheme).blowupComponent v).toScheme.genus F = 0)
+  {β : Type*} {q : β → (D₀.subscheme ↘ Spec (.of F)).smoothLocus} {k : ℕ} [NeZero k]
   (B₀ : NodalCycleNumbering q k)
 
-local notation "g" => toricBoundaryToBase (J[c]) e hD
+local notation "g" => toricBoundaryToBase F (J[c]) e hD
 local notation "m" => (fun j ↦
   LinearMap.toAddMonoidHom (b.detDualEquiv (Ray.primitiveGenerator (s j))))
 
@@ -364,24 +367,24 @@ local notation "m" => (fun j ↦
 the boundary projection is an oriented conductor subdivision. -/
 theorem markedBoundaryPeriod_eq_orderedBoundaryPeriod
     (hsub : Scheme.Hom.IsOrientedCycleSubdivision g B B₀) :
-    markedBoundaryPeriod hΦ b s hT e he hD hCartier hgenus B₀ =
-      orderedBoundaryPeriod hΦ b s B c := by
+    markedBoundaryPeriod F hΦ b s hT e he hD hCartier hgenus B₀ =
+      orderedBoundaryPeriod F hΦ b s B c := by
   obtain ⟨_, hν, hnode, keep, hkeep, hcollapse⟩ := hsub
   apply MonoidHom.ext
   intro x
   rw [← ofAdd_toAdd x, orderedBoundaryPeriod_apply]
-  obtain ⟨L, hL, hperiod⟩ := exists_pullback_markedBoundaryPeriod hΦ b s hT e he hD
+  obtain ⟨L, hL, hperiod⟩ := exists_pullback_markedBoundaryPeriod F hΦ b s hT e he hD
     hCartier hgenus B₀ B hν hnode keep hkeep hcollapse x.toAdd
   rw [← hperiod]
   apply congrArg ((C).nodalPicardCycleMulEquiv B.endpoint_eq)
   apply Subtype.ext
   simp only [hL, orderedBoundaryRestriction, MonoidHom.codRestrict_apply, Subgroup.coe_mk,
     orderedRestriction_apply]
-  refine pullback_toricBoundaryToBase_picardBoundaryOrthogonalEquivChargeKernel_symm (J[c]) e hD
+  refine pullback_toricBoundaryToBase_picardBoundaryOrthogonalEquivChargeKernel_symm F (J[c]) e hD
     hΦ hdim s m (fun j ↦ b.detDualEquiv_self _) (fun j ↦ (s j).surjective_detCharacter b)
-    c (fun j ↦ (s j).internalCenter_val b (c j)) hT he x.toAdd (mark x.toAdd).val.1 ?_
+    c (fun j ↦ (s j).internalCenter_val F b (c j)) hT he x.toAdd (mark x.toAdd).val.1 ?_
   simpa only [Chow.intersectionBilinForm_apply] using
-    boundaryOrthogonalEquivChargeKernel_symm_fst_pairing hΦ s A x.toAdd
+    boundaryOrthogonalEquivChargeKernel_symm_fst_pairing F hΦ s A x.toAdd
 
 end Contraction
 

@@ -7,7 +7,6 @@ module
 
 public import QPainleve.AlgebraicGeometry.Blowup.Tower.StrictTransform.PlanePivot
 public import QPainleve.Geometry.Toric.Fan.Boundary.RayPoint
-public import QPainleve.Geometry.Toric.Fan.Smooth
 
 import QPainleve.Geometry.Toric.Fan.Subdivision.Projective
 
@@ -31,18 +30,21 @@ open LineBundleClass Scheme.IdealSheafData
 
 namespace TauCeti.Toric.Fan
 
-variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
+universe u
+
+variable (k : Type u) [Field k] [IsAlgClosed k] {N V : Type u}
+  [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {Φ : Fan i} (b : Basis (Fin 2) ℤ N) (hΦ : Φ.IsRegular) (hc : Φ.IsComplete)
 
-local notation "X" => Φ.algebraicRealization
-local notation "S" => Spec (CommRingCat.of ℂ)
+local notation "X" => Φ.finiteFanScheme k
+local notation "S" => Spec (CommRingCat.of k)
 local notation "f" => (X ↘ S)
-local notation "P" => Proj (homogeneousSubmodule ℂ (Fin 3 → ℂ))
-local notation "H" => LineBundleClass.mk (Proj.symmetricAlgebraTwistingBundle ℂ (Fin 3 → ℂ) 1)
+local notation "P" => Proj (homogeneousSubmodule k (Fin 3 → k))
+local notation "H" => LineBundleClass.mk (Proj.symmetricAlgebraTwistingBundle k (Fin 3 → k) 1)
 local notation "rankTwo" => (Eq.trans (finrank_eq_card_basis b) (Fintype.card_fin 2))
-local notation "z" => (IsLocalRing.closedPoint ℂ : Spec (CommRingCat.of ℂ))
+local notation "z" => (IsLocalRing.closedPoint k : Spec (CommRingCat.of k))
 local notation "p[" ρ "," c "]" =>
-  (Ray.binomialCenter ρ rankTwo (b.detDualEquiv_self (Ray.primitiveGenerator ρ))
+  (Ray.binomialCenter ρ k rankTwo (b.detDualEquiv_self (Ray.primitiveGenerator ρ))
     (Ray.surjective_detCharacter ρ b) c) z
 
 /-- In a plane resolution, the earliest maximal positive order on the
@@ -54,11 +56,12 @@ theorem exists_first_max_base_order_on_ray (ρ : Φ.Ray) {Y : Scheme} {n : ℕ}
     (g : Y ⟶ P) (hg : g ≫ P ↘ S = T.toBase ≫ f) :
     let : Nonempty Φ.cones := hc.nonempty_cones
     let : SmoothOfRelativeDimension 2 f :=
-      rankTwo ▸ Φ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
+      (Φ.finiteFanScheme_over k).symm ▸
+        (rankTwo ▸ Φ.smoothOfRelativeDimension_finiteFanSchemeToSpec k hΦ)
     let : IsNoetherian X := by
       let : Smooth f := SmoothOfRelativeDimension.smooth 2 f
       exact isNoetherian_of_finiteType f
-    let C := Φ.rayBoundaryIdeal hΦ ρ
+    let C := Φ.rayDivisorIdeal k hΦ ρ
     let v := (T.picardMarking hT f).symm (Additive.ofMul (pullback g H))
     (∃ j, hT.strictTransformCoefficients C j ≠ 0 ∧ 0 < -v.2 j) →
     ∃ a : Fin n, hT.strictTransformCoefficients C a ≠ 0 ∧ 0 < -v.2 a ∧
@@ -66,18 +69,18 @@ theorem exists_first_max_base_order_on_ray (ρ : Φ.Ray) {Y : Scheme} {n : ℕ}
       (∀ j < a, hT.strictTransformCoefficients C j ≠ 0 → -v.2 j < -v.2 a) ∧
       (∀ j < a, hT.baseCenter j ≠ hT.baseCenter a) ∧
       ((∃ σ : Φ.cones, Nat.card (ToricRay σ.val) = 2 ∧ ρ.toCone ≤ σ ∧
-          Φ.distinguishedPointHom σ z = hT.baseCenter a) ∨
-        ∃ c : ℂˣ, hT.baseCenter a = p[ρ,c]) := by
+          Φ.distinguishedSection (R := k) σ z = hT.baseCenter a) ∨
+        ∃ c : kˣ, hT.baseCenter a = p[ρ,c]) := by
   intro hcones hSmooth hNoetherian C v hne
   let := hcones
   let := hSmooth
   let := hNoetherian
-  let : (X).IsProjectiveOver ℂ := Φ.isProjectiveOver_algebraicRealization_of_isComplete hΦ hc b
+  let : (X).IsProjectiveOver k := Φ.isProjectiveOver_finiteFanScheme_of_isComplete k hΦ hc b
   obtain ⟨a, ha, hpos, hmax, hleast, hfirst, hmem⟩ :=
-    hT.exists_first_max_base_order_on_strict_transform (Φ.isEffectiveCartier_rayBoundaryIdeal hΦ ρ)
+    hT.exists_first_max_base_order_on_strict_transform (Φ.isEffectiveCartier_rayDivisorIdeal k hΦ ρ)
       g hg hne
   refine ⟨a, ha, hpos, hmax, hleast, hfirst, ?_⟩
-  rcases (Φ.mem_support_rayBoundaryIdeal_iff b hΦ hc ρ (hT.isClosed_baseCenter a)).mp hmem with
+  rcases (Φ.mem_support_rayBoundaryIdeal_iff k b hΦ hc ρ (hT.isClosed_baseCenter a)).mp hmem with
     ⟨c, hp⟩ | ⟨σ, hσ, hρ, hp⟩
   · exact Or.inr ⟨c, hp⟩
   · exact Or.inl ⟨σ, hσ, hρ, hp.symm⟩

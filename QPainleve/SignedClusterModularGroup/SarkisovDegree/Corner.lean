@@ -11,7 +11,6 @@ public import QPainleve.AlgebraicGeometry.Blowup.Tower.Reorder
 public import QPainleve.Geometry.Toric.Fan.Birational
 public import QPainleve.Geometry.Toric.Fan.Boundary.InternalCenter
 public import QPainleve.Geometry.Toric.Fan.Ruling.Basic
-public import QPainleve.Geometry.Toric.Fan.Smooth
 public import QPainleve.SignedClusterModularGroup.SarkisovDegree.ToricLink
 
 import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
@@ -46,21 +45,22 @@ open TauCeti.AlgebraicGeometry LineBundleClass Scheme.IdealSheafData
 
 namespace QPainleve.BlowupTower.IsClosedPointTower
 
-variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
+variable {K : Type} [Field K]
+  {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {Φ : Fan i} {n : ℕ} {Y P : Scheme}
 
-local notation "X[" Δ "]" => Fan.algebraicRealization Δ
-local notation "f[" Δ "]" => Fan.algebraicRealizationStructureMap Δ
+local notation "X[" Δ "]" => Fan.finiteFanScheme K Δ
+local notation "f[" Δ "]" => Fan.finiteFanSchemeToSpec K Δ
 local notation "rays[" Δ "]" => Set.range (Fan.Ray.primitiveGenerator (Phi := Δ))
-local notation "I[" σ "]" => Scheme.Hom.ker (Fan.distinguishedPointHom _ σ)
-local notation "S" => Spec (CommRingCat.of ℂ)
-local notation "π[" s "]" => FanHom.algebraicMap (Fan.IsSubdivision.toFanHom s)
-local notation "B[" F "," hc "]" => Fan.boundaryIdeal F (Fan.IsComplete.nonempty_cones hc)
+local notation "I[" σ "]" => Scheme.Hom.ker (Fan.distinguishedSection (R := K) _ σ)
+local notation "S" => Spec (CommRingCat.of K)
+local notation "π[" s "]" => FanHom.finiteFanSchemeHom K (Fan.IsSubdivision.toFanHom s)
+local notation "B[" F "," hc "]" => Fan.toricBoundaryIdeal K F (Fan.IsComplete.nonempty_cones hc)
 local notation "rankTwo(" b ")" =>
   Eq.trans (Module.finrank_eq_card_basis b) (Fintype.card_fin 2)
-local notation "pt" => IsLocalRing.closedPoint ℂ
+local notation "pt" => IsLocalRing.closedPoint K
 local notation "center[" b "," ρ "," c "]" =>
-  Fan.Ray.binomialCenter ρ rankTwo(b)
+  Fan.Ray.binomialCenter ρ K rankTwo(b)
     (Module.Basis.detDualEquiv_self b (Fan.Ray.primitiveGenerator ρ))
     (Fan.Ray.surjective_detCharacter ρ b) c pt
 
@@ -70,8 +70,8 @@ private theorem isModification_corner_projection {F : Fan i} [Nonempty Φ.cones]
     (hv : v.hom ≫ (I[σ]).blowupToBase = π[s]) :
     IsModification π[s] := by
   have hσ : IsClosedPointTower X[Φ] (BlowupTower.nil.snoc (I[σ])) :=
-    .snoc .nil _ (Φ.isClosed_singleton_distinguishedPoint σ)
-      (Φ.distinguishedPointHom σ).ker_eq_ker_fromSpecResidueField
+    .snoc .nil _ (Φ.isClosed_singleton_distinguishedSection K σ)
+      ((Φ.distinguishedSection (R := K) σ)).ker_eq_ker_fromSpecResidueField
   have : IsModification (I[σ]).blowupToBase := by
     simpa only [toBase_snoc, toBase_nil, Category.comp_id] using
       hσ.isModification_of_smoothOfRelativeDimension_two f[Φ]
@@ -104,10 +104,10 @@ private theorem toric_corner_baseCenter_ruling {F Ψ : Fan i}
     (hσ : σ.val = hull ℝ (Set.range (i ∘ b))) (hτ : τ.val = hull ℝ {i (d 1), i (-d 0)})
     (hd₀ : d 0 = b 0) (hd₁ : d 1 = b 0 + b 1) (s : F.IsSubdivision Φ) (t : F.IsSubdivision Ψ)
     {p : Fin (n + 1) → X[Φ]} {q : Fin (1 + n) → X[Ψ]} (j : Fin (n + 1))
-    (hp : p j = Φ.distinguishedPointHom σ (IsLocalRing.closedPoint ℂ))
-    (hq : q (Fin.castAdd n (0 : Fin 1)) = Ψ.distinguishedPointHom τ (IsLocalRing.closedPoint ℂ))
-    (hpts : ∀ l : Fin n, ∃ z : X[F], s.toFanHom.algebraicMap z = p (j.succAbove l) ∧
-      t.toFanHom.algebraicMap z = q (l.natAdd 1))
+    (hp : p j = (Φ.distinguishedSection (R := K) σ) (IsLocalRing.closedPoint K))
+    (hq : q (Fin.castAdd n (0 : Fin 1)) = (Ψ.distinguishedSection (R := K) τ) pt)
+    (hpts : ∀ l : Fin n, ∃ z : X[F], (s.toFanHom.finiteFanSchemeHom K) z = p (j.succAbove l) ∧
+      (t.toFanHom.finiteFanSchemeHom K) z = q (l.natAdd 1))
     (h₀ : ∀ γ : Φ.cones, (∀ x ∈ γ.val, 0 ≤ Φ.lattice.realCharacter
       (b.coord 1).toAddMonoidHom x) ∨ ∀ x ∈ γ.val,
         Φ.lattice.realCharacter (b.coord 1).toAddMonoidHom x ≤ 0)
@@ -115,20 +115,21 @@ private theorem toric_corner_baseCenter_ruling {F Ψ : Fan i}
       (b.coord 1).toAddMonoidHom x) ∨ ∀ x ∈ γ.val,
         Ψ.lattice.realCharacter (b.coord 1).toAddMonoidHom x ≤ 0)
     (l : Fin (1 + n)) :
-    Ψ.characterRuling (b.coord 1).toAddMonoidHom h₁ (q l) =
-      Φ.characterRuling (b.coord 1).toAddMonoidHom h₀
+    Ψ.characterRuling K (b.coord 1).toAddMonoidHom h₁ (q l) =
+      Φ.characterRuling K (b.coord 1).toAddMonoidHom h₀
         (Fin.addCases (fun _ : Fin 1 ↦ p j) (p ∘ j.succAbove) l) := by
   induction l using Fin.addCases with
   | left l =>
     rw [Subsingleton.elim l (0 : Fin 1), Fin.addCases_left, hq, hp]
-    exact (Fan.characterRuling_distinguishedPointHom_eq_of_hirzebruch_link
-      b d hd₀ hd₁ σ τ hσ hτ h₀ h₁ (IsLocalRing.closedPoint ℂ)).symm
+    exact (Fan.characterRuling_distinguishedPointHom_eq_of_hirzebruch_link K
+      b d hd₀ hd₁ σ τ hσ hτ h₀ h₁ (IsLocalRing.closedPoint K)).symm
   | right l =>
     obtain ⟨z, hz, hz'⟩ := hpts l
-    have h := s.comp_characterRuling_eq t (b.coord 1).toAddMonoidHom h₀ h₁
+    have h := s.comp_characterRuling_eq K t (b.coord 1).toAddMonoidHom h₀ h₁
     simpa only [Fin.addCases_right, Function.comp_apply, Scheme.Hom.comp_apply, hz, hz'] using
       congrArg (fun f ↦ f z) h.symm
 
+variable [PerfectField K] in
 /-- Perform the toric elementary link at the first center over the selected
 corner of a specified Hirzebruch resolution. The two projections from the
 common toric blowup are single star subdivisions at two-ray cones. Their
@@ -158,13 +159,13 @@ theorem exists_sarkisov_decrease_of_toric_corner
     (σ : Φ.cones) (hσ : σ.val = hull ℝ (Set.range (i ∘ b)))
     {T : BlowupTower X[Φ] (n + 1) Y} (hT : IsClosedPointTower X[Φ] T)
     (j : Fin (n + 1))
-    (hj : hT.baseCenter j = Φ.distinguishedPointHom σ (IsLocalRing.closedPoint ℂ))
-    (hfirst : ∀ l < j, hT.baseCenter l ≠ Φ.distinguishedPointHom σ (IsLocalRing.closedPoint ℂ))
+    (hj : hT.baseCenter j = (Φ.distinguishedSection (R := K) σ) (IsLocalRing.closedPoint K))
+    (hfirst : ∀ l < j, hT.baseCenter l ≠ (Φ.distinguishedSection (R := K) σ) pt)
     (g : Y ⟶ P) (p : P ⟶ S) (hg : g ≫ p = T.toBase ≫ f[Φ])
     (hbir : Scheme.BirationalOver g (𝟙 P)) :
     let : Nonempty Φ.cones := hc.nonempty_cones
     let hdim : SmoothOfRelativeDimension 2 f[Φ] :=
-      rankTwo(b) ▸ Φ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
+      rankTwo(b) ▸ Φ.smoothOfRelativeDimension_finiteFanSchemeToSpec K hΦ
     let : IsIntegral Y := hT.isIntegral f[Φ]
     let : IsModification T.toBase := hT.isModification_of_smoothOfRelativeDimension_two f[Φ]
     ∃ (Ψ F : Fan i) (hΨ : Ψ.IsRegular) (_ : F.IsRegular)
@@ -177,21 +178,21 @@ theorem exists_sarkisov_decrease_of_toric_corner
       (Z : Scheme) (U : BlowupTower X[Ψ] (1 + n) Z)
       (hU : IsClosedPointTower X[Ψ] U) (k : Y ≅ Z),
       d 0 = b 0 ∧ d 1 = b 0 + b 1 ∧ τ.val = hull ℝ {i (d 1), i (-d 0)} ∧
-      v.hom ≫ (I[σ]).blowupToBase = s.toFanHom.algebraicMap ∧
-      v'.hom ≫ (I[τ]).blowupToBase = t.toFanHom.algebraicMap ∧
+      v.hom ≫ (I[σ]).blowupToBase = (s.toFanHom.finiteFanSchemeHom K) ∧
+      v'.hom ≫ (I[τ]).blowupToBase = (t.toFanHom.finiteFanSchemeHom K) ∧
       Φ.IsTwoRayStarSubdivision F ∧ Ψ.IsTwoRayStarSubdivision F ∧
-      q ≫ s.toFanHom.algebraicMap = T.toBase ∧
-      q ≫ t.toFanHom.algebraicMap = k.hom ≫ U.toBase ∧
+      q ≫ (s.toFanHom.finiteFanSchemeHom K) = T.toBase ∧
+      q ≫ (t.toFanHom.finiteFanSchemeHom K) = k.hom ≫ U.toBase ∧
       (∀ l : Fin n, ∃ z : X[F],
-        s.toFanHom.algebraicMap z = hT.baseCenter (j.succAbove l) ∧
-        t.toFanHom.algebraicMap z = hU.baseCenter (l.natAdd 1)) ∧
-      hU.baseCenter (Fin.castAdd n (0 : Fin 1)) = Ψ.distinguishedPointHom τ pt ∧
-      (∀ (l : Fin n) (c : ℂˣ),
+        (s.toFanHom.finiteFanSchemeHom K) z = hT.baseCenter (j.succAbove l) ∧
+        (t.toFanHom.finiteFanSchemeHom K) z = hU.baseCenter (l.natAdd 1)) ∧
+      hU.baseCenter (Fin.castAdd n (0 : Fin 1)) = (Ψ.distinguishedSection (R := K) τ) pt ∧
+      (∀ (l : Fin n) (c : Kˣ),
         hT.baseCenter (j.succAbove l) = center[b,r 1,c] →
         hU.baseCenter (l.natAdd 1) = hU.baseCenter (Fin.castAdd n (0 : Fin 1))) ∧
-      (∀ (l : Fin n) (c : ℂˣ),
+      (∀ (l : Fin n) (c : Kˣ),
         hT.baseCenter (j.succAbove l) = center[b,r 3,c] →
-        ∃ c' : ℂˣ, hU.baseCenter (l.natAdd 1) = center[d,r' 3,c'] ∧
+        ∃ c' : Kˣ, hU.baseCenter (l.natAdd 1) = center[d,r' 3,c'] ∧
           ((∀ m < j.succAbove l, hT.baseCenter m ≠ hT.baseCenter (j.succAbove l)) →
             ∀ m < l.natAdd 1, hU.baseCenter m ≠ hU.baseCenter (l.natAdd 1))) ∧
       (∀ (h₀ : ∀ γ : Φ.cones, (∀ x ∈ γ.val, 0 ≤ Φ.lattice.realCharacter
@@ -200,8 +201,8 @@ theorem exists_sarkisov_decrease_of_toric_corner
         (h₁ : ∀ γ : Ψ.cones, (∀ x ∈ γ.val, 0 ≤ Ψ.lattice.realCharacter
           (b.coord 1).toAddMonoidHom x) ∨ ∀ x ∈ γ.val,
             Ψ.lattice.realCharacter (b.coord 1).toAddMonoidHom x ≤ 0) (l : Fin (1 + n)),
-        Ψ.characterRuling (b.coord 1).toAddMonoidHom h₁ (hU.baseCenter l) =
-          Φ.characterRuling (b.coord 1).toAddMonoidHom h₀
+        Ψ.characterRuling K (b.coord 1).toAddMonoidHom h₁ (hU.baseCenter l) =
+          Φ.characterRuling K (b.coord 1).toAddMonoidHom h₀
             (Fin.addCases (fun _ : Fin 1 ↦ hT.baseCenter j) (hT.baseCenter ∘ j.succAbove) l)) ∧
       (∀ l : Fin n, hT.baseCenter (j.succAbove l) ≠ hT.baseCenter j →
         hU.baseCenter (l.natAdd 1) ≠ hU.baseCenter 0 →
@@ -212,28 +213,28 @@ theorem exists_sarkisov_decrease_of_toric_corner
       IsModification q ∧
       let : Nonempty F.cones := hcF.nonempty_cones
       let : Nonempty Ψ.cones := hc'.nonempty_cones
-      T.toBase.toRationalMap.comp (Φ.denseTorusPartialIso F).toRationalMap = q.toRationalMap ∧
-      T.toBase.toRationalMap.comp (Φ.denseTorusPartialIso Ψ).toRationalMap =
+      T.toBase.toRationalMap.comp (Φ.denseTorusPartialIso K F).toRationalMap = q.toRationalMap ∧
+      T.toBase.toRationalMap.comp (Φ.denseTorusPartialIso K Ψ).toRationalMap =
         (k.hom ≫ U.toBase).toRationalMap ∧
       (∃! φ : X[Φ] ⤏ X[Ψ], (π[s]).toRationalMap.comp φ = (π[t]).toRationalMap ∧
         T.toBase.toRationalMap.comp φ = (k.hom ≫ U.toBase).toRationalMap) ∧
       (letI : SmoothOfRelativeDimension 2 (X[Φ] ↘ S) := by
-         rw [Fan.algebraicRealization_over]
+         rw [Fan.finiteFanScheme_over]
          exact hdim
        letI : SmoothOfRelativeDimension 2 (X[Ψ] ↘ S) := by
-         rw [Fan.algebraicRealization_over]
-         exact rankTwo(b) ▸ Ψ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΨ
+         rw [Fan.finiteFanScheme_over]
+         exact rankTwo(b) ▸ Ψ.smoothOfRelativeDimension_finiteFanSchemeToSpec K hΨ
        letI : Y.Over S := ⟨T.toBase ≫ X[Φ] ↘ S⟩
        letI : Smooth (Y ↘ S) := (hT.smoothOfRelativeDimension (X[Φ] ↘ S)).smooth
        ∃ (_ : q.IsOver S) (_ : (k.hom ≫ U.toBase).IsOver S),
          ∀ D : Y.IdealSheafData,
-           B[Φ,hc].comap T.toBase = D * hT.ramificationIdealSheafToBase ℂ →
-             B[F,hcF].comap q = D * ramificationIdealSheaf ℂ q ∧
+           B[Φ,hc].comap T.toBase = D * hT.ramificationIdealSheafToBase K →
+             B[F,hcF].comap q = D * ramificationIdealSheaf K q ∧
              B[Ψ,hc'].comap (k.hom ≫ U.toBase) =
-               D * ramificationIdealSheaf ℂ (k.hom ≫ U.toBase) ∧
-             B[Ψ,hc'].comap U.toBase = D.comap k.inv * hU.ramificationIdealSheafToBase ℂ) ∧
-      let C := Fan.hirzebruchPicardBasis b e hΦ r hr
-      let C' := Fan.hirzebruchPicardBasis d (e + 1) hΨ r' hr'
+               D * ramificationIdealSheaf K (k.hom ≫ U.toBase) ∧
+             B[Ψ,hc'].comap U.toBase = D.comap k.inv * hU.ramificationIdealSheafToBase K) ∧
+      let C := Fan.hirzebruchPicardBasis K b e hΦ r hr
+      let C' := Fan.hirzebruchPicardBasis K d (e + 1) hΨ r' hr'
       ∀ (a β : ℤ) (x : Fin (n + 1) → ℤ),
         let x' := Fin.append (fun _ : Fin 1 ↦ -β - x j) (x ∘ j.succAbove)
         pullback k.hom (U.picardHom ((a + β + x j) • C' 0 + β • C' 1, x')).toMul =
@@ -247,56 +248,57 @@ theorem exists_sarkisov_decrease_of_toric_corner
   let := hdim
   let := hintegral
   let := hmod
-  have hI := (Φ.distinguishedPointHom σ).ker_eq_ker_fromSpecResidueField
+  have hI := ((Φ.distinguishedSection (R := K) σ)).ker_eq_ker_fromSpecResidueField
   have hmove := hT.exists_move_closed_point_blowup_to_front j
-    (Φ.isClosed_singleton_distinguishedPoint σ) hj hfirst
+    (Φ.isClosed_singleton_distinguishedSection K σ) hj hfirst
   rw [← hI] at hmove
   obtain ⟨W, A, h, hA, hbase, hE, hcenters, htail⟩ := hmove
   obtain ⟨Ψ, F, hΨ, hF, hc', hcF, d, τ, s, t, v, v', r, r', hr, hr', Z, A', k,
       hU, hd₀, hd₁, hτ, hv, hv', hstar, hstar', hcontract, hproj, hhead, htarget, hcoord⟩ :=
-    hA.exists_hirzebruch_toric_link_resolution b e hΦ hc hrays σ hσ
+    hA.exists_hirzebruch_toric_link_resolution K b e hΦ hc hrays σ hσ
   let U := (BlowupTower.nil.snoc (I[τ])).append A'
   -- The common blowup gives both projections and hence the ruling comparison.
   let q := h.hom ≫ A.toBase ≫ v.inv
   let k' := h ≪≫ k
-  have hq : q ≫ s.toFanHom.algebraicMap = T.toBase := by
+  have hq : q ≫ (s.toFanHom.finiteFanSchemeHom K) = T.toBase := by
     simp only [q, Category.assoc, ← hv, Iso.inv_hom_id_assoc, hbase]
-  have hq' : q ≫ t.toFanHom.algebraicMap = k'.hom ≫ U.toBase := by
+  have hq' : q ≫ (t.toFanHom.finiteFanSchemeHom K) = k'.hom ≫ U.toBase := by
     simp only [q, k', U, Iso.trans_hom, Category.assoc, hproj]
   have hover : (k'.inv ≫ g) ≫ p = U.toBase ≫ f[Ψ] := by
     apply (cancel_epi k'.hom).mp
     rw [← Category.assoc k'.hom, Iso.hom_inv_id_assoc, hg, ← hq, ← reassoc_of% hq']
-    simp only [Category.assoc, FanHom.algebraicMap_comp_algebraicRealizationStructureMap]
+    simp only [Category.assoc, FanHom.finiteFanSchemeHom_comp_finiteFanSchemeToSpec]
   have hbir' : Scheme.BirationalOver (k'.inv ≫ g) (𝟙 P) :=
     Scheme.BirationalOver.trans (sY := g)
       ⟨.ofIso k'.symm, by simp [Scheme.PartialIso.IsOver, Scheme.PartialIso.ofIso]⟩ hbir
   have hpts (l : Fin n) : ∃ z : X[F],
-      s.toFanHom.algebraicMap z = hT.baseCenter (j.succAbove l) ∧
-      t.toFanHom.algebraicMap z = hU.baseCenter (l.natAdd 1) := by
+      (s.toFanHom.finiteFanSchemeHom K) z = hT.baseCenter (j.succAbove l) ∧
+      (t.toFanHom.finiteFanSchemeHom K) z = hU.baseCenter (l.natAdd 1) := by
     refine ⟨v.inv (hA.baseCenter l), ?_, htarget l⟩
     rw [← Scheme.Hom.comp_apply, ← hv, Iso.inv_hom_id_assoc, hcenters]
   let : Nonempty F.cones := hcF.nonempty_cones
-  have hcoll (l : Fin n) (c : ℂˣ) (hl : hT.baseCenter (j.succAbove l) = center[b,r 1,c]) :
+  have hcoll (l : Fin n) (c : Kˣ) (hl : hT.baseCenter (j.succAbove l) = center[b,r 1,c]) :
       hU.baseCenter (l.natAdd 1) = hU.baseCenter (Fin.castAdd n (0 : Fin 1)) := by
     obtain ⟨z, hs, ht⟩ := hpts l
     rw [← ht, hhead]
-    exact s.algebraicMap_eq_distinguishedPoint_of_binomialCenter t b hF τ (r 1) hcontract c
+    exact s.finiteFanSchemeHom_eq_distinguishedSection_of_binomialCenter K
+      t b hF τ (r 1) hcontract c
       (hs.trans hl)
   have hshared : (r 3).primitiveGenerator = (r' 3).primitiveGenerator := by
     simp [congrFun hr 3, congrFun hr' 3, hd₀, hd₁, add_zsmul]
     abel
   have hreverse : hU.baseCenter (Fin.castAdd n (0 : Fin 1)) ∉ (π[t]).isoLocus := by
     rw [hhead]
-    exact Ψ.notMem_isoLocus_distinguishedPoint_of_blowup hΨ rankTwo(d) τ π[t] v' hv'
-  have hstay (l : Fin n) (c : ℂˣ) (hl : hT.baseCenter (j.succAbove l) = center[b,r 3,c]) :
-      ∃ c' : ℂˣ, hU.baseCenter (l.natAdd 1) = center[d,r' 3,c'] ∧
+    exact Ψ.notMem_isoLocus_distinguishedSection_of_blowup K hΨ rankTwo(d) τ π[t] v' hv'
+  have hstay (l : Fin n) (c : Kˣ) (hl : hT.baseCenter (j.succAbove l) = center[b,r 3,c]) :
+      ∃ c' : Kˣ, hU.baseCenter (l.natAdd 1) = center[d,r' 3,c'] ∧
         ((∀ m < j.succAbove l, hT.baseCenter m ≠ hT.baseCenter (j.succAbove l)) →
           ∀ m < l.natAdd 1, hU.baseCenter m ≠ hU.baseCenter (l.natAdd 1)) := by
-    obtain ⟨c', z, hs, ht, hsi, hti⟩ := s.exists_binomialCenter_lift_of_shared_ray t
+    obtain ⟨c', z, hs, ht, hsi, hti⟩ := s.exists_binomialCenter_lift_of_shared_ray K t
       (r 3) (r' 3) hshared b d c
     have hl' : (I[σ]).blowupToBase (hA.baseCenter l) = π[s] z := by
       rw [hcenters, hl, hs]
-    obtain ⟨h, hfirst'⟩ := hA.first_center_of_toric_link hU s t v hv hreverse htarget
+    obtain ⟨h, hfirst'⟩ := hA.first_center_of_toric_link K hU s t v hv hreverse htarget
       (hs.symm ▸ hsi) (ht.symm ▸ hti) l hl'
     refine ⟨c', h.trans ht, fun hfirst'' ↦ ?_⟩
     rw [h]
@@ -304,8 +306,8 @@ theorem exists_sarkisov_decrease_of_toric_corner
     intro m hm
     rw [hcenters, hs, ← hl]
     exact hfirst'' _ ((Fin.strictMono_succAbove j) hm)
-  have hsrc := Φ.centre_eq_singleton_distinguishedPoint_of_blowup hΦ rankTwo(b) σ π[s] v hv
-  have htgt := Ψ.centre_eq_singleton_distinguishedPoint_of_blowup hΨ rankTwo(d) τ π[t] v' hv'
+  have hsrc := Φ.centre_eq_singleton_distinguishedSection_of_blowup K hΦ rankTwo(b) σ π[s] v hv
+  have htgt := Ψ.centre_eq_singleton_distinguishedSection_of_blowup K hΨ rankTwo(d) τ π[t] v' hv'
   rw [← hj] at hsrc
   rw [← hhead] at htgt
   refine ⟨Ψ, F, hΨ, hF, hc', hcF, d, τ, s, t, v, v', q, r, r', hr, hr', Z, U, hU, k',
@@ -317,24 +319,24 @@ theorem exists_sarkisov_decrease_of_toric_corner
   have : IsModification π[s] := isModification_corner_projection σ s v hv
   have : IsModification (q ≫ π[s]) := hq ▸ inferInstance
   have hmodq : IsModification q := IsModification.of_comp_right q π[s]
-  have hmiddle := s.comp_denseTorusPartialIso (Fan.IsSubdivision.refl F) q
-  have hlink : T.toBase.toRationalMap.comp (Φ.denseTorusPartialIso Ψ).toRationalMap =
+  have hmiddle := s.comp_denseTorusPartialIso K (Fan.IsSubdivision.refl F) q
+  have hlink : T.toBase.toRationalMap.comp (Φ.denseTorusPartialIso K Ψ).toRationalMap =
       (k'.hom ≫ U.toBase).toRationalMap := by
-    simpa only [hq, hq'] using s.comp_denseTorusPartialIso t q
-  have htoric : (π[s]).toRationalMap.comp (Φ.denseTorusPartialIso Ψ).toRationalMap =
+    simpa only [hq, hq'] using s.comp_denseTorusPartialIso K t q
+  have htoric : (π[s]).toRationalMap.comp (Φ.denseTorusPartialIso K Ψ).toRationalMap =
       (π[t]).toRationalMap := by
-    simpa only [Category.id_comp] using s.comp_denseTorusPartialIso t (𝟙 X[F])
+    simpa only [Category.id_comp] using s.comp_denseTorusPartialIso K t (𝟙 X[F])
   refine ⟨hmodq, ?_, hlink, ⟨_, ⟨htoric, hlink⟩, fun φ hφ ↦
     (π[s]).toRationalMap.comp_left_injective (hφ.1.trans htoric.symm)⟩, ?_⟩
-  · simpa only [hq, Fan.IsSubdivision.toFanHom_refl, FanHom.algebraicMap_id, Category.comp_id]
+  · simpa only [hq, Fan.IsSubdivision.toFanHom_refl, FanHom.finiteFanSchemeHom_id, Category.comp_id]
       using hmiddle
   let : SmoothOfRelativeDimension 2 (X[Φ] ↘ S) := by
-    rw [Fan.algebraicRealization_over]
+    rw [Fan.finiteFanScheme_over]
     exact hdim
   let : SmoothOfRelativeDimension 2 (X[Ψ] ↘ S) := by
-    rw [Fan.algebraicRealization_over]
-    exact rankTwo(b) ▸ Ψ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΨ
-  refine ⟨s.pole_ideal_of_blowup_towers t hΦ hF hΨ hc hcF hc' rankTwo(b) hT hU q k' hq hq', ?_⟩
+    rw [Fan.finiteFanScheme_over]
+    exact rankTwo(b) ▸ Ψ.smoothOfRelativeDimension_finiteFanSchemeToSpec K hΨ
+  refine ⟨s.pole_ideal_of_blowup_towers K t hΦ hF hΨ hc hcF hc' rankTwo(b) hT hU q k' hq hq', ?_⟩
   -- Read the degree in the new marking and undo the permutation in the old order sum.
   intro C C' a β x x'
   obtain ⟨hclass, hsum, hlt⟩ := hcoord a β (x j) (x ∘ j.succAbove)

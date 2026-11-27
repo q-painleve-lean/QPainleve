@@ -11,7 +11,6 @@ public import QPainleve.Geometry.Toric.Fan.Picard.CycleNumerics
 public import QPainleve.LinearAlgebra.Determinant.Dual
 public import QPainleve.SignedClusterModularGroup.Boundary.Intersection
 
-import Mathlib.Analysis.Complex.Polynomial.Basic
 import QPainleve.AlgebraicGeometry.CartierDivisor.Support
 import QPainleve.SignedClusterModularGroup.Endpoint
 import TauCeti.AlgebraicGeometry.Curves.Node.Reduced
@@ -72,37 +71,33 @@ theorem existsUnique_rayChargeEquiv_of_index
 
 section NodalCycle
 
+variable (F : Type) [Field F] [IsAlgClosed F]
+
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {Φ : Fan i} [Nonempty Φ.cones] {n : ℕ}
-  [Φ.algebraicRealization.IsProjectiveOver ℂ]
+  [(Φ.finiteFanScheme F).IsProjectiveOver F]
   (hΦ : Φ.IsRegular) (hdim : Module.finrank ℤ N = 2)
   (s : Fin n → Φ.Ray) (m : Fin n → N →+ ℤ)
   (hm : ∀ j, m j (s j).primitiveGenerator = 0) (hprim : ∀ j, Function.Surjective (m j))
-  (c : Fin n → ℂˣ)
+  (c : Fin n → Fˣ)
   (J : Fin n →
-    {I : (Φ.boundaryIdeal inferInstance).subscheme.IdealSheafData // I.IsEffectiveCartier})
-  (hJ : ∀ j, (J j).val = ((s j).binomialCenterOnBoundary hdim (hm j) (hprim j) (c j)).ker)
-  {X Y : Scheme} [X.Over (Spec (.of ℂ))] [X.IsProjectiveOver ℂ]
-  [SmoothOfRelativeDimension 2 (X ↘ Spec (.of ℂ))]
-  [rational : Scheme.IsRationalOver (X ↘ Spec (.of ℂ))]
+    {I : (Φ.toricBoundaryIdeal F inferInstance).subscheme.IdealSheafData // I.IsEffectiveCartier})
+  (hJ : ∀ j, (J j).val = ((s j).binomialCenterOnBoundary F hdim (hm j) (hprim j) (c j)).ker)
+  {X Y : Scheme} [X.Over (Spec (.of F))] [X.IsProjectiveOver F]
+  [SmoothOfRelativeDimension 2 (X ↘ Spec (.of F))]
+  [rational : Scheme.IsRationalOver (X ↘ Spec (.of F))]
   {D : X.IdealSheafData} {d : ℕ} {T : QPainleve.BlowupTower X d Y}
-  (hT : IsNodalBoundaryTower D (X ↘ Spec (.of ℂ)) (𝟙 X) T)
-  (e : Y ≅ (alongBoundary (Φ.boundaryIdeal inferInstance).subschemeι J).1)
-  (he : e.inv ≫ T.toBase ≫ (X ↘ Spec (.of ℂ)) =
-    (alongBoundary (Φ.boundaryIdeal inferInstance).subschemeι J).2.toTower.toBase ≫
-      (Φ.algebraicRealization ↘ Spec (.of ℂ)))
+  (hT : IsNodalBoundaryTower D (X ↘ Spec (.of F)) (𝟙 X) T)
+  (e : Y ≅ (alongBoundary (Φ.toricBoundaryIdeal F inferInstance).subschemeι J).1)
+  (he : e.inv ≫ T.toBase ≫ (X ↘ Spec (.of F)) =
+    (alongBoundary (Φ.toricBoundaryIdeal F inferInstance).subschemeι J).2.toTower.toBase ≫
+      ((Φ.finiteFanScheme F) ↘ Spec (.of F)))
   (hD : ((D.comap T.toBase).comap e.inv).support =
-    (alongBoundary (Φ.boundaryIdeal inferInstance).subschemeι J).2.boundaryι.ker.support)
+    (alongBoundary (Φ.toricBoundaryIdeal F inferInstance).subschemeι J).2.boundaryι.ker.support)
   (hc : Φ.IsComplete)
 
-local notation "fX" => (X ↘ Spec (CommRingCat.of ℂ))
+local notation "fX" => (X ↘ Spec (CommRingCat.of F))
 
-local instance : IsIntegral X :=
-  let : Smooth fX := SmoothOfRelativeDimension.smooth 2 fX
-  rational.isIntegral_of_smooth
-local instance : IsNoetherian X := isNoetherian_of_finiteType fX
-local instance : ∀ x : X, UniqueFactorizationMonoid (X.presheaf.stalk x) :=
-  (fX).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two
 
 variable {k : ℕ} [NeZero k]
 
@@ -117,10 +112,10 @@ component labelling is in cyclic order, with the two nodes of a two-component
 cycle counted separately. -/
 theorem chargeIndex_bounds_of_nodal_anticanonical_cycle
     (hCart : D.IsEffectiveCartier)
-    (hnodal : AtWorstNodalOfRelativeDimensionOne (D.subscheme ↘ Spec (.of ℂ)))
-    (hnef : (divClass(hCart)).IsNef ℂ fX)
-    (hsq : Chow.classIntersectionNumber ℂ X divClass(hCart) divClass(hCart) = 0)
-    (hcan : divClass(hCart) = (LineBundleClass.mk (QPainleve.canonicalBundle ℂ X 2))⁻¹)
+    (hnodal : AtWorstNodalOfRelativeDimensionOne (D.subscheme ↘ Spec (.of F)))
+    (hnef : (divClass(hCart)).IsNef F fX)
+    (hsq : Chow.classIntersectionNumber F X divClass(hCart) divClass(hCart) = 0)
+    (hcan : divClass(hCart) = (LineBundleClass.mk (QPainleve.canonicalBundle F X 2))⁻¹)
     (hδ : TauCeti.IsPrimitive (Additive.ofMul divClass(hCart)))
     (p : ZMod k ↪ CodimensionOnePoint X) (node : ZMod k ↪ X)
     (hp : ∀ q : CodimensionOnePoint X, (q : X) ∈ D.support ↔ q ∈ Set.range p)
@@ -132,6 +127,10 @@ theorem chargeIndex_bounds_of_nodal_anticanonical_cycle
       (v).range.toAddSubgroup.index ∈ ({1, 2, 3} : Finset ℕ) ∧
       ∃ x : (v).ker, TauCeti.IsPrimitive x ∧
         ((v).range.toAddSubgroup.index : ℤ) ∣ ∑ j, x.val j ^ 2 := by
+  let : Smooth fX := SmoothOfRelativeDimension.smooth 2 fX
+  let : IsIntegral X := rational.isIntegral_of_smooth
+  let : IsNoetherian X := isNoetherian_of_finiteType fX
+  let := (fX).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two
   let C (j : ZMod k) := Additive.ofMul (primeDivisorClass (p j))
   let U : X.Opens := Closeds.compl D.support
   have hspan : U.primeDivisorSpanCompl = Submodule.span ℤ (Set.range C) := by
@@ -144,9 +143,9 @@ theorem chargeIndex_bounds_of_nodal_anticanonical_cycle
   have hsum : Additive.ofMul divClass(hCart) = ∑ j, C j :=
     hCart.ofMul_inv_toInvertibleSheaf_eq_sum_primeDivisorClass p hp
   have hsumCan : (∑ j, C j) = -Additive.ofMul (LineBundleClass.mk
-      (QPainleve.canonicalBundle ℂ X 2)) := by
+      (QPainleve.canonicalBundle F X 2)) := by
     rw [← hsum, hcan, ofMul_inv]
-  exact chargeIndex_bounds_of_anticanonical_cycle hΦ hdim s m hm hprim c J hJ hT e he hD
+  exact chargeIndex_bounds_of_anticanonical_cycle F hΦ hdim s m hm hprim c J hJ hT e he hD
     hc C hGram hspan hsumCan (hsum ▸ hδ)
 
 include hΦ hc hJ hT he hD in
@@ -156,10 +155,10 @@ family of rays with the same exchange matrix, the integral equivalence transport
 the labelled generators and preserves the determinant pairing. -/
 theorem exists_charge_lattice_equiv_of_anticanonical_cycle
     (hCart : D.IsEffectiveCartier)
-    (hnodal : AtWorstNodalOfRelativeDimensionOne (D.subscheme ↘ Spec (.of ℂ)))
-    (hnef : (divClass(hCart)).IsNef ℂ fX)
-    (hsq : Chow.classIntersectionNumber ℂ X divClass(hCart) divClass(hCart) = 0)
-    (hcan : divClass(hCart) = (LineBundleClass.mk (QPainleve.canonicalBundle ℂ X 2))⁻¹)
+    (hnodal : AtWorstNodalOfRelativeDimensionOne (D.subscheme ↘ Spec (.of F)))
+    (hnef : (divClass(hCart)).IsNef F fX)
+    (hsq : Chow.classIntersectionNumber F X divClass(hCart) divClass(hCart) = 0)
+    (hcan : divClass(hCart) = (LineBundleClass.mk (QPainleve.canonicalBundle F X 2))⁻¹)
     (hδ : TauCeti.IsPrimitive (Additive.ofMul divClass(hCart)))
     (p : ZMod k ↪ CodimensionOnePoint X) (node : ZMod k ↪ X)
     (hp : ∀ q : CodimensionOnePoint X, (q : X) ∈ D.support ↔ q ∈ Set.range p)
@@ -175,7 +174,7 @@ theorem exists_charge_lattice_equiv_of_anticanonical_cycle
       (∀ j, E (s j).primitiveGenerator = (t j).primitiveGenerator) ∧
       ∀ x y, b'.detDualEquiv (E x) (E y) = b.detDualEquiv x y := by
   obtain ⟨hcount, _, _, hk, hdiv, _, hrel⟩ :=
-    chargeIndex_bounds_of_nodal_anticanonical_cycle hΦ hdim s m hm hprim c J hJ hT e he hD hc
+    chargeIndex_bounds_of_nodal_anticanonical_cycle F hΦ hdim s m hm hprim c J hJ hT e he hD hc
       hCart hnodal hnef hsq hcan hδ p node hp hinc
   obtain ⟨E, hE, _⟩ := existsUnique_rayChargeEquiv_of_index s t b b' hmat hcount hk hdiv hrel
   exact ⟨E, hE⟩
@@ -184,44 +183,46 @@ end NodalCycle
 
 section PicardCycle
 
+variable (F : Type) [Field F] [IsAlgClosed F]
+
 variable {N N' V V' : Type} [AddCommGroup N] [AddCommGroup N']
   [AddCommGroup V] [AddCommGroup V'] [Module ℝ V] [Module ℝ V']
   {i : N →+ V} {i' : N' →+ V'} {Φ : Fan i} {Ψ : Fan i'}
   {n : ℕ} (s : Fin n → Φ.Ray) (t : Fin n → Ψ.Ray)
-  [Nonempty Φ.cones] [Φ.algebraicRealization.IsProjectiveOver ℂ]
-  (b : Module.Basis (Fin 2) ℤ N) (b' : Module.Basis (Fin 2) ℤ N') (c : Fin n → ℂˣ)
-  {X Y : Scheme} [X.Over (Spec (.of ℂ))] [X.IsProjectiveOver ℂ]
-  [SmoothOfRelativeDimension 2 (X ↘ Spec (.of ℂ))]
-  [rational : Scheme.IsRationalOver (X ↘ Spec (.of ℂ))]
+  [Nonempty Φ.cones] [(Φ.finiteFanScheme F).IsProjectiveOver F]
+  (b : Module.Basis (Fin 2) ℤ N) (b' : Module.Basis (Fin 2) ℤ N') (c : Fin n → Fˣ)
+  {X Y : Scheme} [X.Over (Spec (.of F))] [X.IsProjectiveOver F]
+  [SmoothOfRelativeDimension 2 (X ↘ Spec (.of F))]
+  [rational : Scheme.IsRationalOver (X ↘ Spec (.of F))]
   {D : X.IdealSheafData} {d : ℕ} {T : QPainleve.BlowupTower X d Y}
 
 local notation "Pic(" S ")" => Additive (LineBundleClass S)
-local notation "P" => internalBlowupTower b s c
-local notation "fX" => (X ↘ Spec (CommRingCat.of ℂ))
+local notation "P" => internalBlowupTower F b s c
+local notation "fX" => (X ↘ Spec (CommRingCat.of F))
 
-local instance : IsIntegral X :=
-  let : Smooth fX := SmoothOfRelativeDimension.smooth 2 fX
-  rational.isIntegral_of_smooth
-local instance : IsNoetherian X := isNoetherian_of_finiteType fX
-local instance : ∀ x : X, UniqueFactorizationMonoid (X.presheaf.stalk x) :=
-  (fX).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two
 
 /-- Numerical bounds on the center count, charge rank, and charge index of an
 ordered internal blowup presentation of a primitive square-zero anticanonical cycle. -/
 theorem chargeIndex_bounds_of_internal_anticanonical_cycle
     (hΦ : Φ.IsRegular) (hc : Φ.IsComplete)
-    (hT : IsNodalBoundaryTower D (X ↘ Spec (.of ℂ)) (𝟙 X) T)
+    (hT : IsNodalBoundaryTower D (X ↘ Spec (.of F)) (𝟙 X) T)
     (e : Y ≅ (P).1)
-    (he : e.inv ≫ T.toBase ≫ (X ↘ Spec (.of ℂ)) =
-      (P).2.toTower.toBase ≫ (Φ.algebraicRealization ↘ Spec (.of ℂ)))
+    (he : e.inv ≫ T.toBase ≫ (X ↘ Spec (.of F)) =
+      (P).2.toTower.toBase ≫ ((Φ.finiteFanScheme F) ↘ Spec (.of F)))
     (hD : ((D.comap T.toBase).comap e.inv).support = (P).2.boundaryι.ker.support)
     {k : ℕ} [NeZero k] (C : ZMod k → Pic(X))
-    (hGram : ∀ j l : ZMod k, Chow.intersectionBilinForm ℂ X (C j) (C l) =
+    (hGram : let : Smooth fX := SmoothOfRelativeDimension.smooth 2 fX
+      let : IsIntegral X := rational.isIntegral_of_smooth
+      ∀ j l : ZMod k, Chow.intersectionBilinForm F X (C j) (C l) =
       (-2 : ℤ) * (if j = l then 1 else 0) +
         (if l = j + 1 then 1 else 0) + (if l = j - 1 then 1 else 0))
-    (hspan : Scheme.Opens.primeDivisorSpanCompl (Closeds.compl D.support) =
+    (hspan : let : Smooth fX := SmoothOfRelativeDimension.smooth 2 fX
+      let : IsIntegral X := rational.isIntegral_of_smooth
+      let : IsNoetherian X := isNoetherian_of_finiteType fX
+      let := (fX).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two
+      Scheme.Opens.primeDivisorSpanCompl (Closeds.compl D.support) =
       Submodule.span ℤ (Set.range C))
-    (hcan : ∑ j, C j = -Additive.ofMul (LineBundleClass.mk (QPainleve.canonicalBundle ℂ X 2)))
+    (hcan : ∑ j, C j = -Additive.ofMul (LineBundleClass.mk (QPainleve.canonicalBundle F X 2)))
     (hδ : IsPrimitive (∑ j, C j)) :
     n + k = 12 ∧ Module.finrank ℤ (rayChargeMap s).ker = 10 - k ∧
       Module.finrank ℤ (rayChargeMap s).range = 2 ∧
@@ -234,9 +235,9 @@ theorem chargeIndex_bounds_of_internal_anticanonical_cycle
   revert e he hD
   rw [internalBlowupTower_eq_alongBoundary]
   intro e he hD
-  exact chargeIndex_bounds_of_anticanonical_cycle hΦ hrank s m
+  exact chargeIndex_bounds_of_anticanonical_cycle F hΦ hrank s m
     (fun _ ↦ b.detDualEquiv_self _) (fun j ↦ (s j).surjective_detCharacter b) c
-    (fun j ↦ (s j).internalCenter b (c j)) (fun j ↦ (s j).internalCenter_val b (c j))
+    (fun j ↦ (s j).internalCenter F b (c j)) (fun j ↦ (s j).internalCenter_val F b (c j))
     hT e he hD hc C hGram hspan hcan hδ
 
 /-- Equal exchange matrices in a common label order identify the labeled rays of a
@@ -244,25 +245,31 @@ toric presentation of a primitive square-zero anticanonical cycle with their cou
 by a unique integral equivalence preserving the determinant pairings. -/
 theorem existsUnique_rayChargeEquiv_of_anticanonical_cycle
     (hΦ : Φ.IsRegular) (hc : Φ.IsComplete)
-    (hT : IsNodalBoundaryTower D (X ↘ Spec (.of ℂ)) (𝟙 X) T)
+    (hT : IsNodalBoundaryTower D (X ↘ Spec (.of F)) (𝟙 X) T)
     (e : Y ≅ (P).1)
-    (he : e.inv ≫ T.toBase ≫ (X ↘ Spec (.of ℂ)) =
-      (P).2.toTower.toBase ≫ (Φ.algebraicRealization ↘ Spec (.of ℂ)))
+    (he : e.inv ≫ T.toBase ≫ (X ↘ Spec (.of F)) =
+      (P).2.toTower.toBase ≫ ((Φ.finiteFanScheme F) ↘ Spec (.of F)))
     (hD : ((D.comap T.toBase).comap e.inv).support = (P).2.boundaryι.ker.support)
     {k : ℕ} [NeZero k] (C : ZMod k → Pic(X))
-    (hGram : ∀ j l : ZMod k, Chow.intersectionBilinForm ℂ X (C j) (C l) =
+    (hGram : let : Smooth fX := SmoothOfRelativeDimension.smooth 2 fX
+      let : IsIntegral X := rational.isIntegral_of_smooth
+      ∀ j l : ZMod k, Chow.intersectionBilinForm F X (C j) (C l) =
       (-2 : ℤ) * (if j = l then 1 else 0) +
         (if l = j + 1 then 1 else 0) + (if l = j - 1 then 1 else 0))
-    (hspan : Scheme.Opens.primeDivisorSpanCompl (Closeds.compl D.support) =
+    (hspan : let : Smooth fX := SmoothOfRelativeDimension.smooth 2 fX
+      let : IsIntegral X := rational.isIntegral_of_smooth
+      let : IsNoetherian X := isNoetherian_of_finiteType fX
+      let := (fX).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two
+      Scheme.Opens.primeDivisorSpanCompl (Closeds.compl D.support) =
       Submodule.span ℤ (Set.range C))
-    (hcan : ∑ j, C j = -Additive.ofMul (LineBundleClass.mk (QPainleve.canonicalBundle ℂ X 2)))
+    (hcan : ∑ j, C j = -Additive.ofMul (LineBundleClass.mk (QPainleve.canonicalBundle F X 2)))
     (hδ : IsPrimitive (∑ j, C j))
     (hmat : chargeExchangeMatrix b.detDualEquiv.toLinearMap (rayChargeMap s) =
       chargeExchangeMatrix b'.detDualEquiv.toLinearMap (rayChargeMap t)) :
     ∃! E : N ≃ₗ[ℤ] N', (∀ j, E (s j).primitiveGenerator = (t j).primitiveGenerator) ∧
       ∀ x y, b'.detDualEquiv (E x) (E y) = b.detDualEquiv x y := by
   obtain ⟨hcount, _, _, hk, hindex, _, hrel⟩ :=
-    chargeIndex_bounds_of_internal_anticanonical_cycle s b c hΦ hc hT e he hD
+    chargeIndex_bounds_of_internal_anticanonical_cycle F s b c hΦ hc hT e he hD
       C hGram hspan hcan hδ
   exact existsUnique_rayChargeEquiv_of_index s t b b' hmat hcount hk hindex hrel
 

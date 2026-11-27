@@ -17,7 +17,7 @@ import QPainleve.AlgebraicGeometry.Blowup.Projective.Sections
 import QPainleve.AlgebraicGeometry.Blowup.StrictTransform.Reduced
 import QPainleve.AlgebraicGeometry.IdealSheaf.Restriction
 import QPainleve.Geometry.Toric.Fan.Ruling.Boundary
-import QPainleve.Geometry.Toric.Fan.Separated
+import QPainleve.Geometry.Toric.BaseChange.Fan
 import QPainleve.LinearAlgebra.Dual.Basis
 import TauCeti.AlgebraicGeometry.IdealSheaf.BaseChange
 import TauCeti.AlgebraicGeometry.IdealSheaf.Comap
@@ -41,9 +41,9 @@ open TauCeti.AlgebraicGeometry (projectiveLine)
 
 namespace TauCeti.Toric.Fan
 
-variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V] {i : N →+ V}
-  {Φ : Fan i} (b : Basis (Fin 2) ℤ N) (ρ : Φ.Ray)
-  (hOpp : hull ℝ {i (-ρ.primitiveGenerator)} ∈ Φ.cones) (c : ℂˣ)
+variable {K : Type} [Field K] {N V : Type} [AddCommGroup N] [AddCommGroup V]
+  [Module ℝ V] {i : N →+ V} {Φ : Fan i} (b : Basis (Fin 2) ℤ N) (ρ : Φ.Ray)
+  (hOpp : hull ℝ {i (-ρ.primitiveGenerator)} ∈ Φ.cones) (c : Kˣ)
 
 local notation "v" => ρ.primitiveGenerator
 local notation "hv" => Ray.primitiveGenerator_ne_zero ρ
@@ -52,8 +52,8 @@ local notation "Ψ" => Φ.mutationFan b hv hp hOpp
 local notation "m" => LinearMap.toAddMonoidHom (Basis.detDualEquiv b v)
 local notation "h₀" => detCharacter_nonneg_or_nonpos Φ b hv hp hOpp
 local notation "h₁" => mutationDetCharacter_nonneg_or_nonpos Φ b hv hp hOpp
-local notation "L" => LaurentPolynomial ℂ
-local notation "f" => (1 + C (c : ℂ) * T 1 : L)
+local notation "L" => LaurentPolynomial K
+local notation "f" => (1 + C (c : K) * T 1 : L)
 
 private theorem pivotBinomial_ne_zero : f ≠ 0 := by
   intro he
@@ -72,8 +72,8 @@ private theorem opposite_ray_mem_mutationFan :
   simpa only [mutationFanCenterRays_primitiveGenerator_self] using
     (ρ').hull_primitiveGenerator_mem
 
-local notation "π₀" => pullback.fst (Φ.characterRuling m h₀) projectiveLineTorusι
-local notation "π₁" => pullback.fst (characterRuling Ψ m h₁) projectiveLineTorusι
+local notation "π₀" => pullback.fst (Φ.characterRuling K m h₀) (projectiveLineTorusι K)
+local notation "π₁" => pullback.fst (characterRuling K Ψ m h₁) (projectiveLineTorusι K)
 local notation "hdim" => Eq.trans (Module.finrank_eq_card_basis b) (Fintype.card_fin 2)
 
 private theorem pivotCharacter_apply_opposite :
@@ -82,49 +82,49 @@ private theorem pivotCharacter_apply_opposite :
     map_neg, b.detDualEquiv_self, neg_zero]
 
 /-- The binomial center ideal on the original pivot ray in the whole toric surface. -/
-def Ray.mutationSourceCenterIdeal : Φ.algebraicRealization.IdealSheafData :=
-  (ρ.binomialCenter hdim (b.detDualEquiv_self v) (ρ.surjective_detCharacter b) c).ker
+def Ray.mutationSourceCenterIdeal : (Φ.finiteFanScheme K).IdealSheafData :=
+  (ρ.binomialCenter K hdim (b.detDualEquiv_self v) (ρ.surjective_detCharacter b) c).ker
 
 /-- The global source center is the kernel of the pivot's binomial point. -/
 theorem Ray.mutationSourceCenterIdeal_eq :
     ρ.mutationSourceCenterIdeal b c =
-      (ρ.binomialCenter hdim (b.detDualEquiv_self v) (ρ.surjective_detCharacter b) c).ker :=
+      (ρ.binomialCenter K hdim (b.detDualEquiv_self v) (ρ.surjective_detCharacter b) c).ker :=
   (rfl)
 
 /-- The center ideal on the opposite ray of the mutated fan, using the original ruling
 character. -/
-def Ray.mutationTargetCenterIdeal : (Ψ).algebraicRealization.IdealSheafData :=
-  ((ρ').binomialCenter hdim (pivotCharacter_apply_opposite b ρ hOpp)
+def Ray.mutationTargetCenterIdeal : ((Ψ).finiteFanScheme K).IdealSheafData :=
+  ((ρ').binomialCenter K hdim (pivotCharacter_apply_opposite b ρ hOpp)
     (ρ.surjective_detCharacter b) c).ker
 
 /-- The original pivot center ideal restricted to the ruling over the base torus. -/
 def Ray.mutationPivotSourceIdeal :
-    (pullback (Φ.characterRuling m h₀) projectiveLineTorusι).IdealSheafData :=
+    (pullback (Φ.characterRuling K m h₀) (projectiveLineTorusι K)).IdealSheafData :=
   (ρ.mutationSourceCenterIdeal b c).comap π₀
 
 /-- The opposite pivot center ideal restricted to the mutated ruling over the base torus. -/
 def Ray.mutationPivotTargetIdeal :
-    (pullback ((Ψ).characterRuling m h₁) projectiveLineTorusι).IdealSheafData :=
+    (pullback ((Ψ).characterRuling K m h₁) (projectiveLineTorusι K)).IdealSheafData :=
   (ρ.mutationTargetCenterIdeal b hOpp c).comap π₁
 
 /-- The source ideal is the pullback of the binomial center in its ray's determinant
 character. -/
 theorem Ray.mutationPivotSourceIdeal_def :
     ρ.mutationPivotSourceIdeal b hOpp c =
-      (ρ.binomialCenter hdim (b.detDualEquiv_self v) (ρ.surjective_detCharacter b) c).ker.comap
+      (ρ.binomialCenter K hdim (b.detDualEquiv_self v) (ρ.surjective_detCharacter b) c).ker.comap
         (π₀) := (rfl)
 
 /-- In the opposite ray's own determinant character the transformed center has parameter
 `c⁻¹`. -/
 theorem Ray.mutationTargetCenterIdeal_eq :
     ρ.mutationTargetCenterIdeal b hOpp c =
-      ((ρ').binomialCenter hdim (b.detDualEquiv_self (ρ').primitiveGenerator)
+      ((ρ').binomialCenter K hdim (b.detDualEquiv_self (ρ').primitiveGenerator)
         ((ρ').surjective_detCharacter b) c⁻¹).ker := by
   have hm : (b.detDualEquiv (ρ').primitiveGenerator).toAddMonoidHom = -m := by
     simp only [mutationFanCenterRays_primitiveGenerator_self, map_neg]
     rfl
   unfold mutationTargetCenterIdeal
-  rw [← (ρ').binomialCenter_neg_inv hdim (pivotCharacter_apply_opposite b ρ hOpp)
+  rw [← (ρ').binomialCenter_neg_inv K hdim (pivotCharacter_apply_opposite b ρ hOpp)
     (ρ.surjective_detCharacter b) c]
   congr
   exact hm.symm
@@ -133,7 +133,7 @@ theorem Ray.mutationTargetCenterIdeal_eq :
 with parameter `c⁻¹`. -/
 theorem Ray.mutationPivotTargetIdeal_def :
     ρ.mutationPivotTargetIdeal b hOpp c =
-      ((ρ').binomialCenter hdim (b.detDualEquiv_self (ρ').primitiveGenerator)
+      ((ρ').binomialCenter K hdim (b.detDualEquiv_self (ρ').primitiveGenerator)
         ((ρ').surjective_detCharacter b) c⁻¹).ker.comap (π₁) := by
   rw [mutationPivotTargetIdeal, mutationTargetCenterIdeal_eq]
 
@@ -143,8 +143,8 @@ open AlgebraicGeometry.Scheme.IdealSheafData
 
 local notation "hΦ" => Nonempty.intro (Ray.toCone Φ ρ)
 local notation "hΨ" => Nonempty.intro (Φ.mutationFanConeEquiv b hv hp hOpp (Subtype.mk _ hp))
-local notation "D₀" => Φ.boundaryIdeal hΦ
-local notation "D₁" => boundaryIdeal (Ψ) hΨ
+local notation "D₀" => Φ.toricBoundaryIdeal K hΦ
+local notation "D₁" => toricBoundaryIdeal K (Ψ) hΨ
 local notation "I₀" => Ray.mutationSourceCenterIdeal b ρ c
 local notation "I₁" => Ray.mutationTargetCenterIdeal b ρ hOpp c
 
@@ -152,18 +152,18 @@ local notation "I₁" => Ray.mutationTargetCenterIdeal b ρ hOpp c
 def Ray.mutationSourceBoundaryι : (D₀).subscheme ⟶ (I₀).blowup :=
   (I₀).blowupLift (D₀).subschemeι (by
     let : Nonempty Φ.cones := hΦ
-    rw [ρ.mutationSourceCenterIdeal_eq b c, ← ρ.map_internalCenter_subschemeι b c,
+    rw [ρ.mutationSourceCenterIdeal_eq b c, ← ρ.map_internalCenter_subschemeι K b c,
       comap_map_of_isClosedImmersion]
-    exact (ρ.internalCenter b c).property)
+    exact (ρ.internalCenter K b c).property)
 
 /-- The fixed toric boundary lifts to its strict transform in the target pivot blowup. -/
 def Ray.mutationTargetBoundaryι : (D₁).subscheme ⟶ (I₁).blowup :=
   (I₁).blowupLift (D₁).subschemeι (by
     let : Nonempty (Ψ).cones := hΨ
     rw [ρ.mutationTargetCenterIdeal_eq b hOpp c,
-      ← (ρ').map_internalCenter_subschemeι b c⁻¹,
+      ← (ρ').map_internalCenter_subschemeι K b c⁻¹,
       comap_map_of_isClosedImmersion]
-    exact ((ρ').internalCenter b c⁻¹).property)
+    exact ((ρ').internalCenter K b c⁻¹).property)
 
 instance Ray.isClosedImmersion_mutationSourceBoundaryι :
     IsClosedImmersion (ρ.mutationSourceBoundaryι b c) := by
@@ -290,16 +290,16 @@ local notation "ep₀" => pivotBasis_pos b ρ hp
 local notation "en₀" => pivotBasis_neg b ρ hOpp
 local notation "ep₁" => pivotBasis_pos b ρ (pivot_ray_mem_mutationFan b ρ hOpp)
 local notation "en₁" => pivotBasis_neg b ρ (opposite_ray_mem_mutationFan b ρ hOpp)
-local notation "E₀" => characterRulingLaurentIso Φ m h₀ d (pivotBasis_coord_one b ρ) ep₀ en₀
-local notation "E₁" => characterRulingLaurentIso Ψ m h₁ d (pivotBasis_coord_one b ρ) ep₁ en₁
+local notation "E₀" => characterRulingLaurentIso K Φ m h₀ d (pivotBasis_coord_one b ρ) ep₀ en₀
+local notation "E₁" => characterRulingLaurentIso K Ψ m h₁ d (pivotBasis_coord_one b ρ) ep₁ en₁
 
 private def sourceLaurentBlowupIso : (I₀).blowup ≅ (J(0)).blowup :=
-  ρ.characterRulingLaurentBlowupIso h₀ d
+  ρ.characterRulingLaurentBlowupIso K h₀ d
     (pivotBasis_coord_one b ρ) ep₀ en₀ 0 (by simp [pivotBasis_zero])
     hdim (b.detDualEquiv_self v) (ρ.surjective_detCharacter b) c
 
 private def targetLaurentBlowupIso : (I₁).blowup ≅ (J(1)).blowup :=
-  (ρ').characterRulingLaurentBlowupIso h₁ d
+  (ρ').characterRulingLaurentBlowupIso K h₁ d
     (pivotBasis_coord_one b ρ) ep₁ en₁ 1 (by simp [pivotBasis_zero]) hdim
     (pivotCharacter_apply_opposite b ρ hOpp) (ρ.surjective_detCharacter b) c
 
@@ -309,14 +309,14 @@ local notation "e₁" => targetLaurentBlowupIso b ρ hOpp c
 @[reassoc]
 private theorem sourceLaurentBlowupIso_hom_blowupToBase :
     (e₀).hom ≫ (J(0)).blowupToBase = (I₀).blowupToBase ≫ (E₀).hom :=
-  ρ.characterRulingLaurentBlowupIso_hom_comp_blowupToBase h₀ d
+  ρ.characterRulingLaurentBlowupIso_hom_comp_blowupToBase K h₀ d
     (pivotBasis_coord_one b ρ) ep₀ en₀ 0 (by simp [pivotBasis_zero])
     hdim (b.detDualEquiv_self v) (ρ.surjective_detCharacter b) c
 
 @[reassoc]
 private theorem targetLaurentBlowupIso_hom_blowupToBase :
     (e₁).hom ≫ (J(1)).blowupToBase = (I₁).blowupToBase ≫ (E₁).hom :=
-  (ρ').characterRulingLaurentBlowupIso_hom_comp_blowupToBase h₁ d
+  (ρ').characterRulingLaurentBlowupIso_hom_comp_blowupToBase K h₁ d
     (pivotBasis_coord_one b ρ) ep₁ en₁ 1 (by simp [pivotBasis_zero]) hdim
     (pivotCharacter_apply_opposite b ρ hOpp) (ρ.surjective_detCharacter b) c
 
@@ -330,13 +330,13 @@ def Ray.mutationPivotIso : (I₀).blowup ≅ (I₁).blowup :=
 /-- The source pivot point has two lifts whose images under the elementary
 transformation are distinct on the mutated surface over the ruling torus. -/
 theorem Ray.exists_lifts_mutationPivotSource :
-    ∃ a a' : Spec (.of ℂ) ⟶ (I₀).blowup,
+    ∃ a a' : Spec (.of K) ⟶ (I₀).blowup,
       a ≫ (I₀).blowupToBase ≫ π₀ =
-        ρ.binomialCenter hdim (b.detDualEquiv_self v) (ρ.surjective_detCharacter b) c ∧
+        ρ.binomialCenter K hdim (b.detDualEquiv_self v) (ρ.surjective_detCharacter b) c ∧
       a ≫ (I₀).blowupToBase = a' ≫ (I₀).blowupToBase ∧
       a ≫ (ρ.mutationPivotIso b hOpp c).hom ≫ (I₁).blowupToBase ≠
         a' ≫ (ρ.mutationPivotIso b hOpp c).hom ≫ (I₁).blowupToBase := by
-  let ev : L →ₐ[ℂ] ℂ := laurentEval ((-1 : ℂˣ) * c⁻¹)
+  let ev : L →ₐ[K] K := laurentEval ((-1 : Kˣ) * c⁻¹)
   have hroot : ev f = 0 := by
     have hmem : f ∈ Ideal.span ({f} : Set L) := Ideal.subset_span (Set.mem_singleton f)
     rw [← ker_laurentEval_neg_inv c, RingHom.mem_ker] at hmem
@@ -346,25 +346,25 @@ theorem Ray.exists_lifts_mutationPivotSource :
     projectiveLine.exists_elementaryTransform_lift_of_map_eq_zero f 0 hf ev.toRingHom hroot 0
   obtain ⟨a', hb, hb'⟩ :=
     projectiveLine.exists_elementaryTransform_lift_of_map_eq_zero f 0 hf ev.toRingHom hroot 1
-  have hcenter := ρ.binomialCenterInRulingTorus_comp_characterRulingLaurentIso h₀ d
+  have hcenter := ρ.binomialCenterInRulingTorus_comp_characterRulingLaurentIso K h₀ d
     (pivotBasis_coord_one b ρ) ep₀ en₀ 0 (by simp [pivotBasis_zero])
     hdim (b.detDualEquiv_self v) (ρ.surjective_detCharacter b) c
   have hproj : a ≫ (e₀).inv ≫ (I₀).blowupToBase =
-      ρ.binomialCenterInRulingTorus h₀ hdim (b.detDualEquiv_self v)
+      ρ.binomialCenterInRulingTorus K h₀ hdim (b.detDualEquiv_self v)
         (ρ.surjective_detCharacter b) c := by
     apply (cancel_mono (E₀).hom).mp
     simpa only [Category.assoc, ← sourceLaurentBlowupIso_hom_blowupToBase,
       Iso.inv_hom_id_assoc, ha, ev] using hcenter.symm
   refine ⟨a ≫ (e₀).inv, a' ≫ (e₀).inv, ?_, ?_, ?_⟩
   · rw [Category.assoc, reassoc_of% hproj]
-    exact ρ.binomialCenterInRulingTorus_fst h₀ hdim (b.detDualEquiv_self v)
+    exact ρ.binomialCenterInRulingTorus_fst K h₀ hdim (b.detDualEquiv_self v)
       (ρ.surjective_detCharacter b) c
   · apply (cancel_mono (E₀).hom).mp
     simp only [Category.assoc, ← sourceLaurentBlowupIso_hom_blowupToBase,
       Iso.inv_hom_id_assoc, ha, hb]
   · intro h
     have hh := congrArg (· ≫ (E₁).hom) h
-    have H (g : Spec (.of ℂ) ⟶ (J(0)).blowup) :
+    have H (g : Spec (.of K) ⟶ (J(0)).blowup) :
         (g ≫ (e₀).inv) ≫ (ρ.mutationPivotIso b hOpp c).hom ≫ (I₁).blowupToBase ≫ (E₁).hom =
           g ≫ (projectiveLine.elementaryTransform f 0 hf).hom ≫ (J(1)).blowupToBase := by
       rw [← targetLaurentBlowupIso_hom_blowupToBase]
@@ -376,32 +376,32 @@ theorem Ray.exists_lifts_mutationPivotSource :
     rw [projectiveLine.polynomialPoint_def, projectiveLine.polynomialPoint_def,
       cancel_mono, Spec.map_inj] at he
     simpa using congrArg
-      (fun g : CommRingCat.of (Polynomial L) ⟶ CommRingCat.of ℂ ↦ g.hom Polynomial.X) he
+      (fun g : CommRingCat.of (Polynomial L) ⟶ CommRingCat.of K ↦ g.hom Polynomial.X) he
 
 section Divisors
 
 open Scheme Scheme.IdealSheafData
 
-local notation "a₀" => (-1 : ℂˣ) * c⁻¹
-local notation "q" => projectiveLine.polynomialPoint ℂ (RingHom.id ℂ) 0 (Units.val a₀)
+local notation "a₀" => (-1 : Kˣ) * c⁻¹
+local notation "q" => projectiveLine.polynomialPoint K (RingHom.id K) 0 (Units.val a₀)
 local notation "g" =>
   Spec.map (CommRingCat.ofHom (Ideal.Quotient.mk (Ideal.span ({f} : Set L))))
 local notation "r" => (projectiveLine L ↘ Spec (CommRingCat.of L))
 
 private theorem comap_pivotFiber_projectiveLineTorusIsoSpecLaurent :
-    (g).ker.comap projectiveLineTorusIsoSpecLaurent.hom =
-      (q).ker.comap projectiveLineTorusι := by
-  let j := projectiveLineTorusPoint (a₀)
-  have hj : j ≫ projectiveLineTorusι = q :=
-    projectiveLineTorusPoint_comp_projectiveLineTorusι _
+    (g).ker.comap (projectiveLineTorusIsoSpecLaurent K).hom =
+      (q).ker.comap (projectiveLineTorusι K) := by
+  let j := projectiveLineTorusPoint K (a₀)
+  have hj : j ≫ (projectiveLineTorusι K) = q :=
+    projectiveLineTorusPoint_comp_projectiveLineTorusι K _
   have hclosed : IsClosedImmersion (q) :=
-    isClosedImmersion_of_comp_eq_id (projectiveLine ℂ ↘ Spec (.of ℂ)) _
+    isClosedImmersion_of_comp_eq_id (projectiveLine K ↘ Spec (.of K)) _
       (by simp [projectiveLine.polynomialPoint_over])
-  have hq : j.ker = (q).ker.comap projectiveLineTorusι :=
+  have hq : j.ker = (q).ker.comap (projectiveLineTorusι K) :=
     ker_eq_comap_of_isPullback (q)
       (IsPullback.of_vert_isIso_mono (snd := 𝟙 _) ⟨by rw [hj, Category.id_comp]⟩)
-  have hg : (g).ker = (j ≫ projectiveLineTorusIsoSpecLaurent.hom).ker := by
-    rw [projectiveLineTorusPoint_comp_projectiveLineTorusIsoSpecLaurent, Hom.ker_Spec_map,
+  have hg : (g).ker = (j ≫ (projectiveLineTorusIsoSpecLaurent K).hom).ker := by
+    rw [projectiveLineTorusPoint_comp_projectiveLineTorusIsoSpecLaurent K, Hom.ker_Spec_map,
       Hom.ker_Spec_map, CommRingCat.hom_ofHom, CommRingCat.hom_ofHom, Ideal.mk_ker]
     exact congrArg (fun K : Ideal L ↦ ofIdealTop
       (K.map (Scheme.ΓSpecIso (CommRingCat.of L)).inv.hom)) (ker_laurentEval_neg_inv c).symm
@@ -409,9 +409,9 @@ private theorem comap_pivotFiber_projectiveLineTorusIsoSpecLaurent :
 
 private theorem comap_pivotFiber_sourceLaurentBlowupIso :
     (g).ker.comap ((e₀).hom ≫ (J(0)).blowupToBase ≫ r) =
-      (q).ker.comap ((I₀).blowupToBase ≫ π₀ ≫ Φ.characterRuling m h₀) := by
+      (q).ker.comap ((I₀).blowupToBase ≫ π₀ ≫ Φ.characterRuling K m h₀) := by
   rw [sourceLaurentBlowupIso_hom_blowupToBase_assoc,
-    characterRulingLaurentIso_hom_comp_toBase, ← Category.assoc (I₀).blowupToBase,
+    characterRulingLaurentIso_hom_comp_toBase K, ← Category.assoc (I₀).blowupToBase,
     comap_comp, comap_pivotFiber_projectiveLineTorusIsoSpecLaurent, ← comap_comp,
     Category.assoc, ← pullback.condition]
 
@@ -419,13 +419,13 @@ local notation "E(" I ")" => IdealSheafData.comap I (IdealSheafData.blowupToBase
 
 private theorem comap_exceptional_sourceLaurentBlowupIso :
     E(J(0)).comap (e₀).hom = E(I₀) :=
-  ρ.comap_exceptionalIdeal_characterRulingLaurentBlowupIso h₀ d
+  ρ.comap_exceptionalIdeal_characterRulingLaurentBlowupIso K h₀ d
     (pivotBasis_coord_one b ρ) ep₀ en₀ 0 (by simp [pivotBasis_zero])
     hdim (b.detDualEquiv_self v) (ρ.surjective_detCharacter b) c
 
 private theorem comap_exceptional_targetLaurentBlowupIso :
     E(J(1)).comap (e₁).hom = E(I₁) :=
-  (ρ').comap_exceptionalIdeal_characterRulingLaurentBlowupIso h₁ d
+  (ρ').comap_exceptionalIdeal_characterRulingLaurentBlowupIso K h₁ d
     (pivotBasis_coord_one b ρ) ep₁ en₁ 1 (by simp [pivotBasis_zero]) hdim
     (pivotCharacter_apply_opposite b ρ hOpp) (ρ.surjective_detCharacter b) c
 
@@ -433,7 +433,7 @@ private theorem comap_exceptional_targetLaurentBlowupIso :
 is the sum of the source exceptional divisor and the pullback of the target exceptional
 divisor. This is an identity of their ideal sheaves. -/
 theorem Ray.comap_pivotFiber_mutationPivotIso :
-    (q).ker.comap ((I₀).blowupToBase ≫ π₀ ≫ Φ.characterRuling m h₀) =
+    (q).ker.comap ((I₀).blowupToBase ≫ π₀ ≫ Φ.characterRuling K m h₀) =
       E(I₀) * E(I₁).comap (ρ.mutationPivotIso b hOpp c).hom := by
   have he : (g).ker.comap ((J(0)).blowupToBase ≫ r) =
       E(J(0)) * E(J(1)).comap
@@ -461,14 +461,14 @@ local notation "S(" I ", " D ")" =>
 variable (hΦ : Φ.IsRegular) (τ : Φ.Ray)
 
 local notation "hΨ" => Iff.mpr (Φ.isRegular_mutationFan_iff b hv hp hOpp) hΦ
-local notation "D₀" => comap (Φ.rayBoundaryIdeal hΦ τ) π₀
-local notation "D₁" => comap (rayBoundaryIdeal (Ψ) hΨ (r τ)) π₁
+local notation "D₀" => comap (Φ.rayDivisorIdeal K hΦ τ) π₀
+local notation "D₁" => comap (rayDivisorIdeal K (Ψ) hΨ (r τ)) π₁
 
 private theorem comap_sourceLaurentBlowupIso_strictTransform
     (A : (projectiveLine L).IdealSheafData) :
     (S(J(0), A)).comap (e₀).hom = S(I₀, A.comap (E₀).hom) := by
   have hCenter : (J(0)).comap (E₀).hom = I₀ :=
-    ρ.comap_coordinateSectionCenter_characterRulingLaurentIso h₀ d
+    ρ.comap_coordinateSectionCenter_characterRulingLaurentIso K h₀ d
       (pivotBasis_coord_one b ρ) ep₀ en₀ 0 (by simp [pivotBasis_zero])
       hdim (b.detDualEquiv_self v) (ρ.surjective_detCharacter b) c
   have : IsLocallyNoetherian (projectiveLine L) :=
@@ -480,7 +480,7 @@ private theorem comap_targetLaurentBlowupIso_strictTransform
     (A : (projectiveLine L).IdealSheafData) :
     (S(J(1), A)).comap (e₁).hom = S(I₁, A.comap (E₁).hom) := by
   have hCenter : (J(1)).comap (E₁).hom = I₁ :=
-    (ρ').comap_coordinateSectionCenter_characterRulingLaurentIso h₁ d
+    (ρ').comap_coordinateSectionCenter_characterRulingLaurentIso K h₁ d
       (pivotBasis_coord_one b ρ) ep₁ en₁ 1 (by simp [pivotBasis_zero]) hdim
       (pivotCharacter_apply_opposite b ρ hOpp) (ρ.surjective_detCharacter b) c
   have : IsLocallyNoetherian (projectiveLine L) :=
@@ -513,25 +513,25 @@ theorem Ray.comap_rayBoundaryIdeal_mutationPivotIso (j : Fin 2)
     (hτ : τ.primitiveGenerator = if j = 0 then v else -v) :
     (S(I₁, D₁)).comap (ρ.mutationPivotIso b hOpp c).hom = S(I₀, D₀) := by
   have ht := mutationFanRayEquiv_primitiveGenerator_eq b ρ hOpp τ j hτ
-  have hD₀ := τ.comap_coordinateSection_characterRulingLaurentIso h₀ d
+  have hD₀ := τ.comap_coordinateSection_characterRulingLaurentIso K h₀ d
     (pivotBasis_coord_one b ρ) ep₀ en₀ hΦ j (by simpa only [pivotBasis_zero] using hτ)
-  have hD₁ := (r τ).comap_coordinateSection_characterRulingLaurentIso h₁ d
+  have hD₁ := (r τ).comap_coordinateSection_characterRulingLaurentIso K h₁ d
     (pivotBasis_coord_one b ρ) ep₁ en₁ hΨ j (by simpa only [pivotBasis_zero] using ht)
   rw [← hD₀, ← hD₁]
   exact comap_mutationPivotIso_strictTransform b ρ hOpp c (D(j))
     (projectiveLine.comap_ker_blowupMap_coordinateSectionCenter_elementaryTransform
       f 0 (pivotBinomial_ne_zero c) j)
 
-local notation "B₀" => Φ.boundaryIdeal (Nonempty.intro (Ray.toCone Φ ρ))
-local notation "B₁" => boundaryIdeal (Ψ) (Nonempty.intro (Ray.toCone (Ψ) (r ρ)))
+local notation "B₀" => Φ.toricBoundaryIdeal K (Nonempty.intro (Ray.toCone Φ ρ))
+local notation "B₁" => toricBoundaryIdeal K (Ψ) (Nonempty.intro (Ray.toCone (Ψ) (r ρ)))
 
 include hΦ in
 private theorem comap_restrictedBoundaryIdeal_mutationPivotIso :
     (S(I₁, comap (B₁) π₁)).comap (ρ.mutationPivotIso b hOpp c).hom =
       S(I₀, comap (B₀) π₀) := by
-  have hB₀ := Φ.comap_boundaryIdeal_characterRulingLaurentIso h₀ d
+  have hB₀ := Φ.comap_boundaryIdeal_characterRulingLaurentIso K h₀ d
     (pivotBasis_coord_one b ρ) ep₀ en₀ hΦ
-  have hB₁ := (Ψ).comap_boundaryIdeal_characterRulingLaurentIso h₁ d
+  have hB₁ := (Ψ).comap_boundaryIdeal_characterRulingLaurentIso K h₁ d
     (pivotBasis_coord_one b ρ) ep₁ en₁ hΨ
   rw [hB₀, hB₁]
   apply comap_mutationPivotIso_strictTransform b ρ hOpp c
@@ -565,31 +565,31 @@ end Boundary
 
 section Torus
 
-local notation "G" => AddMonoidAlgebra ℂ (N →+ ℤ)
-local notation "S" => Localization.Away (single (0 : N →+ ℤ) (1 : ℂ) + single m (c : ℂ))
+local notation "G" => AddMonoidAlgebra K (N →+ ℤ)
+local notation "S" => Localization.Away (single (0 : N →+ ℤ) (1 : K) + single m (c : K))
 local notation "𝕋" => Spec (CommRingCat.of S)
 local notation "ℓ" => Spec.algebraMap G S
 local notation "a" => LinearMap.toAddMonoidHom (Basis.coord d 0)
 local notation "z(" n ")" => (algebraMap G S) (single n 1)
 local notation "zu(" n ")" =>
   MonoidHom.toHomUnits (MonoidHom.comp (RingHom.toMonoidHom (algebraMap G S))
-    (AddMonoidAlgebra.of ℂ (N →+ ℤ))) (ofAdd n)
-local notation "k" => (laurentEval zu(m) : L →ₐ[ℂ] S)
-local notation "A" => @mutationTorusChartAlgEquiv N _ b v (c : ℂ)
+    (AddMonoidAlgebra.of K (N →+ ℤ))) (ofAdd n)
+local notation "k" => (laurentEval zu(m) : L →ₐ[K] S)
+local notation "A" => @mutationTorusChartAlgEquiv N _ b v K (c : K) _
 local notation "t" => Spec.map (CommRingCat.ofHom (AlgHom.toRingHom (AlgEquiv.toAlgHom A)))
-local notation "eG(" F ")" => AlgEquiv.trans (denseTorusCoordinateRingEquiv (lattice F))
-  (AlgEquiv.symm (AddMonoidAlgebra.toMultiplicativeAlgEquiv ℂ ℂ (N →+ ℤ)))
+local notation "g(" F ")" =>
+  AddMonoidAlgebra.mapDomainAlgHom K K (AddSubmonoid.subtype (dualSemigroup (lattice F) ⊥))
 local notation "aG(" F ")" =>
-  Spec.map (CommRingCat.ofHom (AlgHom.toRingHom (AlgEquiv.toAlgHom (eG(F)))))
+  Spec.map (CommRingCat.ofHom (AlgHom.toRingHom (g(F))))
 
 private theorem laurentEval_pivotBinomial : k f =
-    (awayBinomialUnit 1 (c : ℂ) m : S) := by
+    (awayBinomialUnit 1 (c : K) m : S) := by
   have hz : (zu(m) : S) = z(m) := rfl
-  have hc : (algebraMap ℂ G) (c : ℂ) * single m 1 = single m (c : ℂ) := by
+  have hc : (algebraMap K G) (c : K) * single m 1 = single m (c : K) := by
     rw [← Algebra.smul_def]
     simp
   rw [map_add, map_one, map_mul, laurentEval_T_one, hz, coe_awayBinomialUnit,
-    AlgHom.apply_laurentPolynomial_C, IsScalarTower.algebraMap_eq ℂ G S]
+    AlgHom.apply_laurentPolynomial_C, IsScalarTower.algebraMap_eq K G S]
   simp only [RingHom.comp_apply, ← map_mul, hc, ← AddMonoidAlgebra.one_def, map_add, map_one]
 
 private theorem polynomialPoint_pivotBase (F : Fan i)
@@ -597,18 +597,18 @@ private theorem polynomialPoint_pivotBase (F : Fan i)
       ∀ x ∈ σ.val, F.lattice.realCharacter m x ≤ 0)
     (hFpos : hull ℝ {i (d 0)} ∈ F.cones) (hFneg : hull ℝ {-i (d 0)} ∈ F.cones)
     (hF : Nonempty F.cones) :
-    ℓ ≫ aG(F) ≫ F.denseTorusιRulingTorus m hs hF ≫
-        (F.characterRulingLaurentIso m hs d (pivotBasis_coord_one b ρ) hFpos hFneg).hom =
+    ℓ ≫ aG(F) ≫ F.denseTorusιRulingTorus K m hs hF ≫
+        (F.characterRulingLaurentIso K m hs d (pivotBasis_coord_one b ρ) hFpos hFneg).hom =
       projectiveLine.polynomialPoint L (AlgHom.toRingHom k) 1 z(-a) := by
-  rw [F.additiveDenseTorus_comp_characterRulingLaurentIso m hs d (pivotBasis_coord_one b ρ)
+  rw [F.additiveDenseTorus_comp_characterRulingLaurentIso K m hs d (pivotBasis_coord_one b ρ)
     hFpos hFneg hF, projectiveLine.SpecMap_polynomialPoint]
-  have hk : ((Algebra.algHom ℂ G S).comp
-      (laurentEval ((AddMonoidAlgebra.of ℂ (N →+ ℤ)).toHomUnits (ofAdd m)))) = k := by
+  have hk : ((Algebra.algHom K G S).comp
+      (laurentEval ((AddMonoidAlgebra.of K (N →+ ℤ)).toHomUnits (ofAdd m)))) = k := by
     apply laurentEval_unique
     rw [AlgHom.comp_apply, laurentEval_T_one]
     rfl
   have hk' : (algebraMap G S).comp
-      (laurentEval ((AddMonoidAlgebra.of ℂ (N →+ ℤ)).toHomUnits (ofAdd m))).toRingHom =
+      (laurentEval ((AddMonoidAlgebra.of K (N →+ ℤ)).toHomUnits (ofAdd m))).toRingHom =
       (AlgHom.toRingHom k) := congrArg AlgHom.toRingHom hk
   rw [hk']
   have hz : (zu(-a) : S) = z(-a) := rfl
@@ -655,7 +655,7 @@ torus chart of the source fan. -/
 @[reassoc]
 theorem Ray.mutationPivotTorusι_blowupToBase :
     (ρ.mutationPivotTorusι b hOpp c) ≫ (I₀).blowupToBase =
-      ℓ ≫ aG(Φ) ≫ Φ.denseTorusιRulingTorus m h₀ ⟨ρ.toCone⟩ := by
+      ℓ ≫ aG(Φ) ≫ Φ.denseTorusιRulingTorus K m h₀ ⟨ρ.toCone⟩ := by
   rw [← cancel_mono (E₀).hom]
   simp only [mutationPivotTorusι, Category.assoc]
   rw [← sourceLaurentBlowupIso_hom_blowupToBase, Iso.inv_hom_id_assoc,
@@ -667,7 +667,7 @@ neighborhood. -/
 @[reassoc]
 theorem Ray.mutationPivotIso_hom_onTorus :
     (ρ.mutationPivotTorusι b hOpp c) ≫ (ρ.mutationPivotIso b hOpp c).hom ≫ (I₁).blowupToBase =
-      t ≫ ℓ ≫ aG(Ψ) ≫ (Ψ).denseTorusιRulingTorus m h₁
+      t ≫ ℓ ≫ aG(Ψ) ≫ (Ψ).denseTorusιRulingTorus K m h₁
         ⟨(ρ').toCone⟩ := by
   rw [← cancel_mono (E₁).hom]
   simp only [mutationPivotTorusι, mutationPivotIso, Iso.trans_hom, Iso.symm_hom,
@@ -681,28 +681,28 @@ theorem Ray.mutationPivotIso_hom_onTorus :
   rw [← targetLaurentBlowupIso_hom_blowupToBase, Iso.inv_hom_id_assoc,
     hproj, polynomialPoint_pivotBase, polynomialPoint_twist]
 
-local notation "U₀" => mutationComplement Φ b h₀ (c : ℂ)
-local notation "U₁" => mutationComplement Ψ b h₁ (c : ℂ)
-local notation "C₀" => Φ.mutationComplementTorusι b (c : ℂ) h₀ (Nonempty.intro (Ray.toCone Φ ρ))
+local notation "U₀" => mutationComplement Φ b h₀ (c : K)
+local notation "U₁" => mutationComplement Ψ b h₁ (c : K)
+local notation "C₀" => Φ.mutationComplementTorusι b (c : K) h₀ (Nonempty.intro (Ray.toCone Φ ρ))
 local notation "P₀" => Scheme.IdealSheafData.blowupToBase I₀ ≫ π₀
 local notation "P₁" => Scheme.IdealSheafData.blowupToBase I₁ ≫ π₁
 local notation "rL" => (projectiveLine L ↘ Spec (CommRingCat.of L)) ≫
-  Spec.algebraMap (Polynomial ℂ) L ≫ projectiveLine.polynomialChartι ℂ 0
+  Spec.algebraMap (Polynomial K) L ≫ projectiveLine.polynomialChartι K 0
 
 /-- The pivot transformation preserves the ruling to the projective line, so in
 particular it is a morphism over the coefficient field. -/
 @[reassoc]
 theorem Ray.mutationPivotIso_hom_comp_ruling :
-    (ρ.mutationPivotIso b hOpp c).hom ≫ P₁ ≫ (Ψ).characterRuling m h₁ =
-      P₀ ≫ Φ.characterRuling m h₀ := by
+    (ρ.mutationPivotIso b hOpp c).hom ≫ P₁ ≫ (Ψ).characterRuling K m h₁ =
+      P₀ ≫ Φ.characterRuling K m h₀ := by
   have hsource :
-      (e₀).hom ≫ (J(0)).blowupToBase ≫ rL = P₀ ≫ Φ.characterRuling m h₀ := by
+      (e₀).hom ≫ (J(0)).blowupToBase ≫ rL = P₀ ≫ Φ.characterRuling K m h₀ := by
     rw [sourceLaurentBlowupIso_hom_blowupToBase_assoc, Category.assoc,
-      characterRulingLaurentIso_hom_comp_toRuling]
+      characterRulingLaurentIso_hom_comp_toRuling K]
   have htarget :
-      (e₁).hom ≫ (J(1)).blowupToBase ≫ rL = P₁ ≫ (Ψ).characterRuling m h₁ := by
+      (e₁).hom ≫ (J(1)).blowupToBase ≫ rL = P₁ ≫ (Ψ).characterRuling K m h₁ := by
     rw [targetLaurentBlowupIso_hom_blowupToBase_assoc, Category.assoc,
-      characterRulingLaurentIso_hom_comp_toRuling]
+      characterRulingLaurentIso_hom_comp_toRuling K]
   rw [← htarget, ← hsource, mutationPivotIso]
   simp only [Iso.trans_hom, Iso.symm_hom, Category.assoc, Iso.inv_hom_id_assoc]
   exact congrArg ((e₀).hom ≫ ·)
@@ -713,17 +713,17 @@ local notation "W" => pullback P₀ (Scheme.Opens.ι U₀)
 private theorem center_comap_mutationComplement_eq_top {F : Fan i}
     (h : ∀ σ : F.cones, (∀ x ∈ σ.val, 0 ≤ F.lattice.realCharacter m x) ∨
       ∀ x ∈ σ.val, F.lattice.realCharacter m x ≤ 0)
-    (p : Spec (CommRingCat.of ℂ) ⟶ F.algebraicRealization)
-    (hpq : p ≫ F.characterRuling m h =
-      projectiveLine.polynomialPoint ℂ (RingHom.id ℂ) 0 (-(↑c⁻¹ : ℂ))) :
-    p.ker.comap (F.mutationComplement b h (c : ℂ)).ι = ⊤ := by
-  let q := projectiveLine.polynomialPoint ℂ (RingHom.id ℂ) 0 (-(↑c⁻¹ : ℂ))
-  let K := q.ker.comap (F.characterRuling m h)
-  have hle : K ≤ p.ker := by
-    dsimp only [K, q]
+    (p : Spec (CommRingCat.of K) ⟶ F.finiteFanScheme K)
+    (hpq : p ≫ F.characterRuling K m h =
+      projectiveLine.polynomialPoint K (RingHom.id K) 0 (-(↑c⁻¹ : K))) :
+    p.ker.comap (F.mutationComplement b h (c : K)).ι = ⊤ := by
+  let q := projectiveLine.polynomialPoint K (RingHom.id K) 0 (-(↑c⁻¹ : K))
+  let J := q.ker.comap (F.characterRuling K m h)
+  have hle : J ≤ p.ker := by
+    dsimp only [J, q]
     rw [← hpq, Scheme.Hom.ker_comp]
     exact Scheme.IdealSheafData.comap_map_le _ _
-  have htop : K.comap (F.mutationComplement b h (c : ℂ)).ι = ⊤ := by
+  have htop : J.comap (F.mutationComplement b h (c : K)).ι = ⊤ := by
     rw [Scheme.IdealSheafData.comap_eq_top_iff, ← mutationComplement_eq_compl_support]
     simp
   exact top_le_iff.mp (htop ▸ Scheme.IdealSheafData.comap_mono _ hle)
@@ -732,14 +732,14 @@ private theorem center_comap_mutationComplement_eq_top {F : Fan i}
 theorem Ray.mutationSourceCenterIdeal_comap_complement :
     (ρ.mutationSourceCenterIdeal b c).comap (U₀).ι = ⊤ :=
   center_comap_mutationComplement_eq_top b ρ c h₀ _
-    (ρ.binomialCenter_comp_characterRuling h₀ hdim (b.detDualEquiv_self v)
+    (ρ.binomialCenter_comp_characterRuling K h₀ hdim (b.detDualEquiv_self v)
       (ρ.surjective_detCharacter b) c)
 
 /-- The target center is absent from the complement of the same pivot fiber. -/
 theorem Ray.mutationTargetCenterIdeal_comap_complement :
     (ρ.mutationTargetCenterIdeal b hOpp c).comap (U₁).ι = ⊤ :=
   center_comap_mutationComplement_eq_top b ρ c h₁ _
-    ((ρ').binomialCenter_comp_characterRuling h₁ hdim (pivotCharacter_apply_opposite b ρ hOpp)
+    ((ρ').binomialCenter_comp_characterRuling K h₁ hdim (pivotCharacter_apply_opposite b ρ hOpp)
       (ρ.surjective_detCharacter b) c)
 
 private theorem comap_pivotSourceIdeal_on_complement :
@@ -765,10 +765,9 @@ private theorem isOpenImmersion_pivotOverlap_snd :
   exact h
 
 private theorem mutationPivotTorusι_comp_ambient :
-    (ρ.mutationPivotTorusι b hOpp c) ≫ P₀ = Φ.mutationTorusι b (c : ℂ) ⟨ρ.toCone⟩ := by
+    (ρ.mutationPivotTorusι b hOpp c) ≫ P₀ = Φ.mutationTorusι b (c : K) ⟨ρ.toCone⟩ := by
   rw [Ray.mutationPivotTorusι_blowupToBase_assoc, denseTorusιRulingTorus_fst,
     mutationTorusι_def]
-  rfl
 
 private def pivotOverlapTorusι : 𝕋 ⟶ W :=
   pullback.lift (ρ.mutationPivotTorusι b hOpp c) C₀ (by
@@ -777,13 +776,13 @@ private def pivotOverlapTorusι : 𝕋 ⟶ W :=
 private theorem isDominant_pivotOverlapTorusι_comp_snd :
     IsDominant (pivotOverlapTorusι b ρ hOpp c ≫ pullback.snd P₀ (U₀).ι) := by
   rw [pivotOverlapTorusι, pullback.lift_snd]
-  exact Φ.isDominant_mutationComplementTorusι b (c : ℂ) h₀ hv ⟨ρ.toCone⟩
+  exact Φ.isDominant_mutationComplementTorusι b (c : K) h₀ hv ⟨ρ.toCone⟩
 
 /-- The elementary transformation of the pivot blowups and the toric mutation on
 the fiber complements agree on their entire scheme-theoretic overlap. -/
 theorem Ray.mutationPivotIso_hom_agrees_on_overlap :
     pullback.fst P₀ (U₀).ι ≫ (ρ.mutationPivotIso b hOpp c).hom ≫ P₁ =
-      pullback.snd P₀ (U₀).ι ≫ (Φ.mutationComplementIso b (c : ℂ) hv hp hOpp).hom ≫ (U₁).ι := by
+      pullback.snd P₀ (U₀).ι ≫ (Φ.mutationComplementIso b (c : K) hv hp hOpp).hom ≫ (U₁).ι := by
   have := isOpenImmersion_pivotOverlap_snd b ρ hOpp c
   have : IsReduced W := isReduced_of_isOpenImmersion (pullback.snd P₀ (U₀).ι)
   let j := pivotOverlapTorusι b ρ hOpp c
@@ -793,27 +792,26 @@ theorem Ray.mutationPivotIso_hom_agrees_on_overlap :
   apply AlgebraicGeometry.ext_of_isDominant j
   simp only [j, pivotOverlapTorusι, pullback.lift_fst_assoc, pullback.lift_snd_assoc]
   rw [Ray.mutationPivotIso_hom_onTorus_assoc, denseTorusιRulingTorus_fst,
-    mutationComplementTorusι_comp_mutationComplementIso_hom_assoc Φ b (c : ℂ)
+    mutationComplementTorusι_comp_mutationComplementIso_hom_assoc Φ b (c : K)
       hv hp hOpp ⟨ρ.toCone⟩ ⟨(ρ').toCone⟩, mutationComplementTorusι_comp_ι,
     mutationTorusι_def]
-  rfl
 
 /-- The complement comparison preserves the map to the projective-line ruling. -/
 @[reassoc]
 theorem Ray.mutationComplementIso_hom_comp_ruling :
-    (Φ.mutationComplementIso b (c : ℂ) hv hp hOpp).hom ≫ (U₁).ι ≫
-        (Ψ).characterRuling m h₁ =
-      (U₀).ι ≫ Φ.characterRuling m h₀ := by
+    (Φ.mutationComplementIso b (c : K) hv hp hOpp).hom ≫ (U₁).ι ≫
+        (Ψ).characterRuling K m h₁ =
+      (U₀).ι ≫ Φ.characterRuling K m h₀ := by
   let p := pullback.snd P₀ (U₀).ι
   have : IsDominant (pivotOverlapTorusι b ρ hOpp c ≫ p) :=
     isDominant_pivotOverlapTorusι_comp_snd b ρ hOpp c
   have : IsDominant p := IsDominant.of_comp (pivotOverlapTorusι b ρ hOpp c) p
   apply AlgebraicGeometry.ext_of_isDominant p
-  have heq := congrArg (fun g ↦ g ≫ (Ψ).characterRuling m h₁)
+  have heq := congrArg (fun g ↦ g ≫ (Ψ).characterRuling K m h₁)
     (ρ.mutationPivotIso_hom_agrees_on_overlap b hOpp c)
   have hr := ρ.mutationPivotIso_hom_comp_ruling b hOpp c
-  have hcond : pullback.fst P₀ (U₀).ι ≫ P₀ ≫ Φ.characterRuling m h₀ =
-      p ≫ (U₀).ι ≫ Φ.characterRuling m h₀ := by
+  have hcond : pullback.fst P₀ (U₀).ι ≫ P₀ ≫ Φ.characterRuling K m h₀ =
+      p ≫ (U₀).ι ≫ Φ.characterRuling K m h₀ := by
     dsimp only [p]
     rw [pullback.condition_assoc]
   simp only [Category.assoc] at hr hcond heq

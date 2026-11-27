@@ -196,7 +196,7 @@ end TauCeti.Toric.Fan
 
 namespace TauCeti.Toric.FanEquiv
 
-variable {N N' V V' : Type} [AddCommGroup N] [AddCommGroup N']
+variable {N N' V V' : Type*} [AddCommGroup N] [AddCommGroup N']
   [AddCommGroup V] [AddCommGroup V'] [Module ℝ V] [Module ℝ V']
   {i : N →+ V} {i' : N' →+ V'} {Φ Ω : Fan i} {Ψ : Fan i'}
 

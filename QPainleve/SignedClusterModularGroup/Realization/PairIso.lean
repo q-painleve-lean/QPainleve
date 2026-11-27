@@ -33,15 +33,17 @@ open Scheme Scheme.IdealSheafData Fan.LogarithmicProjection
 
 namespace QPainleve.SignedClusterModularGroup
 
+variable {k₀ : Type} [Field k₀] [IsAlgClosed k₀]
+
 open MarkedSurface (surfaceIso)
 open GeometricRealization (Point)
 
-local notation "S" => Spec (CommRingCat.of ℂ)
-local notation "X[" r "]" => scheme ℂ (Fin r →₀ ℤ)
-local notation "Centers[" r "]" => Over.mk (structureMap ℂ (Fin r → ℤ))
+local notation "S" => Spec (CommRingCat.of k₀)
+local notation "X[" coeff "," r "]" => scheme coeff (Fin r →₀ ℤ)
+local notation "Centers[" r "]" => Over.mk (structureMap k₀ (Fin r → ℤ))
 local notation "D[" M "]" => Scheme.Hom.ker (Over.Hom.left (Arrow.hom (MarkedSurface.pair M)))
-local notation "ToricBoundary[" Φ "," h "]" =>
-  Scheme.IdealSheafData.subscheme (Fan.boundaryIdeal Φ h)
+local notation "ToricBoundary[" coeff "," Φ "," h "]" =>
+  Scheme.IdealSheafData.subscheme (Fan.toricBoundaryIdeal coeff Φ h)
 local notation "R[" D "," π "]" => radical (comap D π)
 local notation "E[" b "," s "]" =>
   chargeExchangeMatrix (LinearEquiv.toLinearMap (Module.Basis.detDualEquiv b)) (Fan.rayChargeMap s)
@@ -53,13 +55,13 @@ variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V] {i : N �
 namespace ContractedToricFiber
 
 variable {Φ : Fan i} [h₀ : Nonempty Φ.cones] {hΦ : Φ.IsRegular} {s : Fin r → Φ.Ray}
-  [PrestableFamily (ToricBoundary[Φ,h₀] ↘ S)] {m : ℕ} [NeZero m]
-  {γ : Type} {a : γ → (ToricBoundary[Φ,h₀] ↘ S).smoothLocus}
+  [PrestableFamily (ToricBoundary[k₀,Φ,h₀] ↘ Spec (.of k₀))] {m : ℕ} [NeZero m]
+  {γ : Type} {a : γ → (ToricBoundary[k₀,Φ,h₀] ↘ Spec (.of k₀)).smoothLocus}
   {C : Scheme.NodalCycleNumbering a m} {origin : ZMod m}
-  {ι : L →ₗ[ℤ] Additive (LineBundleClass Φ.algebraicRealization) × (Fin r → ℤ)}
-  {c : Multiplicative (Fin r → ℤ) →* ℂˣ} {M : MarkedSurface ℂ n H X[r]}
+  {ι : L →ₗ[ℤ] Additive (LineBundleClass (Φ.finiteFanScheme k₀)) × (Fin r → ℤ)}
+  {c : Multiplicative (Fin r → ℤ) →* k₀ˣ} {M : MarkedSurface k₀ n H X[k₀,r]}
 
-local notation "model" => Fan.internalBlowupTower b s (fun j ↦ c (ofAdd (Pi.single j 1)))
+local notation "model" => Fan.internalBlowupTower k₀ b s (fun j ↦ c (ofAdd (Pi.single j 1)))
 local notation "q" => toBase (WithBoundary.toTower (Sigma.snd model))
 
 private theorem exists_ordered_model
@@ -68,23 +70,23 @@ private theorem exists_ordered_model
     (e : Y ≅ (model).1) (π : Y ⟶ M.surface) [IsModification π]
     (hp : p.projection = e.inv ≫ π) (hπ : π ≫ M.surface ↘ S = Y ↘ S) :
     let : IsIntegral M.surface := M.integral
-    ∃ (A : Fan.LogarithmicProjection i R[D[M],π]) (W : OrderedToricModel A r),
+    ∃ (A : Fan.LogarithmicProjection k₀ i R[D[M],π]) (W : OrderedToricModel A r),
       A.fan = Φ ∧ A.hom ≍ e.hom ≫ q ∧ IsModification A.hom ∧
       W.exchangeMatrix.matrix = E[b,s] ∧ W.xEvaluation = π.toRationalMap.comp M.evaluation := by
   let : IsIntegral M.surface := M.integral
   have he : e.hom ≫ p.projection = π := by simp only [hp, Iso.hom_inv_id_assoc]
-  have hover : e.hom ≫ q ≫ Φ.algebraicRealizationStructureMap = Y ↘ S := by
+  have hover : e.hom ≫ q ≫ (Φ.finiteFanSchemeToSpec k₀) = Y ↘ S := by
     rw [← p.projection_over, ← Category.assoc, he, hπ]
   have hP : (D[M].comap π).support = ((model).2.boundaryι.ker.comap e.hom).support := by
     rw [← he, comap_comp, Scheme.IdealSheafData.support_comap (D[M].comap p.projection),
       p.support_comap, ← Scheme.IdealSheafData.support_comap]
   obtain ⟨A, W, hfan, hhom, hmod, hmat, hx⟩ :=
     Fan.exists_orderedToricModel_of_internalBlowupTower hc hΦ b s c e hover hP
-  let := Fan.isIntegral_internalBlowupTower b s (fun j ↦ c (ofAdd (Pi.single j 1))) hΦ
-  let := Fan.isModification_internalBlowupTower_toBase b s (fun j ↦ c (ofAdd (Pi.single j 1))) hΦ
+  let := Fan.isIntegral_internalBlowupTower k₀ b s (fun j ↦ c (ofAdd (Pi.single j 1))) hΦ
+  let := Fan.isModification_internalBlowupTower_toBase k₀ b s (fun j ↦ c (ofAdd (Pi.single j 1))) hΦ
   refine ⟨A, W, hfan, hhom, hmod, hmat, hx.trans ?_⟩
   calc
-    _ = e.hom.toRationalMap.comp ((q).toRationalMap.comp (Φ.xEvaluation b s c)) := by
+    _ = e.hom.toRationalMap.comp ((q).toRationalMap.comp (Φ.xEvaluation k₀ b s c)) := by
       simp only [← Scheme.RationalMap.comp_assoc, Scheme.RationalMap.comp_toRationalMap,
         Scheme.Hom.toRationalMap_compHom]
     _ = e.hom.toRationalMap.comp (p.projection.toRationalMap.comp M.evaluation) := by
@@ -106,7 +108,7 @@ theorem exists_ordered_model_on_nodal_extension
     let : IsIntegral M.surface := M.integral
     let : SmoothOfRelativeDimension 2 (M.surface ↘ S) := M.smooth
     let : Smooth (M.surface ↘ S) := SmoothOfRelativeDimension.smooth 2 _
-    let : M.surface.IsProjectiveOver ℂ := M.projective
+    let : M.surface.IsProjectiveOver k₀ := M.projective
     let : IsNoetherian M.surface := isNoetherian_of_finiteType (M.surface ↘ S)
     let : Y.Over S := ⟨T.toBase ≫ M.surface ↘ S⟩
     let : Z.Over S := ⟨U.toBase ≫ Y ↘ S⟩
@@ -123,7 +125,7 @@ theorem exists_ordered_model_on_nodal_extension
       let : IsModification U.toBase :=
         hU.isClosedPointTower.isModification_of_smoothOfRelativeDimension_two (Y ↘ S)
       exact IsModification.comp _ _
-    ∃ (A : Fan.LogarithmicProjection i R[D[M],U.toBase ≫ T.toBase])
+    ∃ (A : Fan.LogarithmicProjection k₀ i R[D[M],U.toBase ≫ T.toBase])
       (W : OrderedToricModel A r),
       A.fan = Φ ∧ A.hom ≍ U.toBase ≫ e.hom ≫ q ∧ IsModification A.hom ∧
       W.exchangeMatrix = Fan.rayExchangeMatrix b s ∧
@@ -131,7 +133,7 @@ theorem exists_ordered_model_on_nodal_extension
   let : SmoothOfRelativeDimension 2 (M.surface ↘ S) := M.smooth
   let : Smooth (M.surface ↘ S) := SmoothOfRelativeDimension.smooth 2 _
   let : IsIntegral M.surface := M.integral
-  let : M.surface.IsProjectiveOver ℂ := M.projective
+  let : M.surface.IsProjectiveOver k₀ := M.projective
   let : IsNoetherian M.surface := isNoetherian_of_finiteType (M.surface ↘ S)
   let : Y.Over S := ⟨T.toBase ≫ M.surface ↘ S⟩
   let : SmoothOfRelativeDimension 2 (Y ↘ S) := hT.isClosedPointTower.smoothOfRelativeDimension _
@@ -182,14 +184,14 @@ namespace CompleteToricPresentation
 variable {N' V' : Type} [AddCommGroup N'] [AddCommGroup V'] [Module ℝ V'] {i' : N' →+ V'}
   {b' : Module.Basis (Fin 2) ℤ N'} {r' : ℕ} {L' : Type} [AddCommGroup L']
   {H' : LinearMap.BilinForm ℤ L'} {γ γ' : Type}
-  {M : MarkedSurface ℂ n H X[r]} {P : MarkedSurface ℂ n H' X[r']}
+  {M : MarkedSurface k₀ n H X[k₀,r]} {P : MarkedSurface k₀ n H' X[k₀,r']}
 
 /-- Ordered toric models of the two projections on a common nodal refinement
 of the source of a specified pair isomorphism. Each model retains its
 presentation's exchange matrix and pulls back the corresponding evaluation. -/
 @[ext]
-structure CommonOrderedModels (Q : CompleteToricPresentation i b r L γ)
-    (Q' : CompleteToricPresentation i' b' r' L' γ') (e : M.pair ≅ P.pair) where
+structure CommonOrderedModels (Q : CompleteToricPresentation k₀ i b r L γ)
+    (Q' : CompleteToricPresentation k₀ i' b' r' L' γ') (e : M.pair ≅ P.pair) where
   /-- The number of nodal blowups in the common refinement. -/
   length : ℕ
   /-- The surface on which both projections are defined. -/
@@ -215,9 +217,9 @@ structure CommonOrderedModels (Q : CompleteToricPresentation i b r L γ)
   /-- The reduced pullback of the boundary is an effective Cartier divisor. -/
   isEffectiveCartier : R[D[M],projection].IsEffectiveCartier
   /-- The logarithmic projection to the source toric model. -/
-  sourceProjection : Fan.LogarithmicProjection i R[D[M],projection]
+  sourceProjection : Fan.LogarithmicProjection k₀ i R[D[M],projection]
   /-- The logarithmic projection to the target toric model. -/
-  targetProjection : Fan.LogarithmicProjection i' R[D[M],projection]
+  targetProjection : Fan.LogarithmicProjection k₀ i' R[D[M],projection]
   /-- The ordered toric model at the source endpoint. -/
   sourceModel : OrderedToricModel sourceProjection r
   /-- The ordered toric model at the target endpoint. -/
@@ -252,8 +254,8 @@ end CommonOrderedModels
 /-- Two marked nodal models related by a specified pair isomorphism give
 ordered models of their two projections on one common nodal refinement. -/
 theorem nonempty_commonOrderedModels_of_pair_iso
-    (Q : CompleteToricPresentation i b r L γ)
-    (Q' : CompleteToricPresentation i' b' r' L' γ')
+    (Q : CompleteToricPresentation k₀ i b r L γ)
+    (Q' : CompleteToricPresentation k₀ i' b' r' L' γ')
     {c : Point Centers[r]} {d : Point Centers[r']}
     (hM : Q.HasNodalModel c M) (hP : Q'.HasNodalModel d P)
     (e : M.pair ≅ P.pair) (hD : D[M].IsEffectiveCartier) (hE : D[P].IsEffectiveCartier) :
@@ -270,8 +272,8 @@ theorem nonempty_commonOrderedModels_of_pair_iso
   let : SmoothOfRelativeDimension 2 (P.surface ↘ S) := P.smooth
   let : Smooth (M.surface ↘ S) := SmoothOfRelativeDimension.smooth 2 _
   let : Smooth (P.surface ↘ S) := SmoothOfRelativeDimension.smooth 2 _
-  let : M.surface.IsProjectiveOver ℂ := M.projective
-  let : P.surface.IsProjectiveOver ℂ := P.projective
+  let : M.surface.IsProjectiveOver k₀ := M.projective
+  let : P.surface.IsProjectiveOver k₀ := P.projective
   let : IsNoetherian M.surface := isNoetherian_of_finiteType (M.surface ↘ S)
   let : IsNoetherian P.surface := isNoetherian_of_finiteType (P.surface ↘ S)
   obtain ⟨p, Y, k, T, a, hT, ha⟩ := (Q.hasNodalModel_iff c M).mp hM

@@ -51,16 +51,21 @@ attribute [local instance] MvPolynomial.gradedAlgebra
 
 universe u
 
-variable {k : Type u} [Field k] {n : ℕ}
+variable {k : Type u} {n : ℕ}
 
 local notation "𝒜" => MvPolynomial.homogeneousSubmodule (Fin (n + 1)) k
 local notation "P" => Proj 𝒜
 local notation "U[" i "]" => basicOpen 𝒜 (MvPolynomial.X i)
 
+variable [CommRing k] in
 @[instance_reducible, local instance]
 private def chartSectionsAlgebra (i : Fin (n + 1)) : Algebra k Γ(P, U[i]) :=
   letI : (P).Over (Spec (.of k)) := ⟨toSpecCoeff 𝒜⟩
   (((P).baseRingToStructurePresheaf k).app (op U[i])).hom.toAlgebra
+
+section CoordinateHyperplanes
+
+variable [CommRing k]
 
 private theorem coordinate_mem_one (i : Fin (n + 1)) : MvPolynomial.X i ∈ 𝒜 1 :=
   (MvPolynomial.mem_homogeneousSubmodule ..).mpr (MvPolynomial.isHomogeneous_X k i)
@@ -164,6 +169,10 @@ theorem coe_support_coordinateHyperplaneIdeal (j : Fin (n + 1)) :
   rw [Scheme.zeroLocus_singleton]
   rw [Set.mem_compl_iff, h]
   exact not_congr ⟨fun hx ↦ hx.2, fun hx ↦ ⟨hi, hx⟩⟩
+
+end CoordinateHyperplanes
+
+variable [Field k]
 
 private theorem isReduced_coordinateHyperplane (j : Fin (n + 1)) :
     IsReduced (coordinateHyperplaneIdeal (k := k) j).subscheme := by

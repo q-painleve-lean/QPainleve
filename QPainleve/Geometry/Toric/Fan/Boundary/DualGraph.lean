@@ -5,7 +5,6 @@ Authors: The QPainleve contributors
 -/
 module
 
-public import Mathlib.Analysis.Complex.Polynomial.Basic
 public import QPainleve.AlgebraicGeometry.Curves.Node.Conductor.Coordinates
 public import QPainleve.Geometry.Toric.Fan.Boundary.Normalization
 public import QPainleve.Geometry.Toric.Fan.CyclicOrder.Basic
@@ -30,18 +29,21 @@ open AlgebraicGeometry.Scheme.IdealSheafData TauCeti.AlgebraicGeometry
 
 namespace TauCeti.Toric.Fan
 
-variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
+universe u
+
+variable (k : Type u) [Field k] [IsSepClosed k] {N : Type u} {V : Type*}
+  [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {Φ : Fan i} [Nonempty Φ.cones]
 
-local notation "X" => Φ.algebraicRealization
-local notation "D" => Φ.boundaryIdeal inferInstance
+local notation "X" => Φ.finiteFanScheme k
+local notation "D" => Φ.toricBoundaryIdeal k inferInstance
 local notation "C" => Scheme.IdealSheafData.subscheme D
-local notation "ν" => Scheme.IdealSheafData.blowupToBase (Scheme.singularLocus ℂ C)
-local notation "base" => Spec (CommRingCat.of ℂ)
-local notation "point" => IsLocalRing.closedPoint ℂ
-local notation "G(" p ")" => Scheme.dualGraph (K := ℂ) C p
+local notation "ν" => Scheme.IdealSheafData.blowupToBase (Scheme.singularLocus k C)
+local notation "base" => Spec (CommRingCat.of k)
+local notation "point" => (IsLocalRing.closedPoint k : base)
+local notation "G(" p ")" => Scheme.dualGraph (K := k) C p
 
-variable [PrestableFamily ((Φ.boundaryIdeal inferInstance).subscheme ↘ Spec (.of ℂ))]
+variable [PrestableFamily ((Φ.toricBoundaryIdeal k inferInstance).subscheme ↘ Spec (.of k))]
 variable {ι : Type*} (hΦ : Φ.IsRegular) (hc : Φ.IsComplete) (hdim : Module.finrank ℤ N = 2)
 
 include hΦ hc hdim in
@@ -50,17 +52,15 @@ native dual graph via their distinguished points. -/
 theorem exists_boundaryDualGraphEdgeEquiv (p : ι → (C ↘ base).smoothLocus) :
     ∃ e : {σ : Φ.cones // Nat.card (ToricRay σ.val) = 2} ≃ (G(p)).Edge,
       ∀ σ, (D).subschemeι ((C).dualGraphEdgeEquiv p (e σ)).val =
-        Φ.distinguishedPointHom σ.val point := by
-  have : IsReduced C := by
-    rw [Φ.boundaryIdeal_def]
-    infer_instance
+        Φ.distinguishedSection (R := k) σ.val point := by
+  have : IsReduced C := inferInstance
   let f (a : (G(p)).Edge) := (D).subschemeι ((C).dualGraphEdgeEquiv p a).val
   have hn (z : C) : (C ↘ base).IsNodeAt z ↔ z ∉ (C ↘ base).smoothLocus :=
     (C ↘ base).isNodeAt_iff_notMem_smoothLocus
       PrestableFamily.atWorstNodalOfRelativeDimensionOne z
-  have hnode (x : X) : (D).IsNodeOfReducedBoundary Φ.algebraicRealizationStructureMap x ↔
+  have hnode (x : X) : (D).IsNodeOfReducedBoundary (Φ.finiteFanSchemeToSpec k) x ↔
       ∃ a, f a = x := by
-    rw [(D).isNodeOfReducedBoundary_iff_of_isReduced, ← Φ.algebraicRealization_over,
+    rw [(D).isNodeOfReducedBoundary_iff_of_isReduced, ← Φ.finiteFanScheme_over k,
       ← over_eq_subschemeι_comp]
     constructor
     · rintro ⟨z, hz, hz'⟩
@@ -69,14 +69,15 @@ theorem exists_boundaryDualGraphEdgeEquiv (p : ι → (C ↘ base).smoothLocus) 
     · rintro ⟨a, rfl⟩
       exact ⟨_, rfl, (hn _).mpr ((C).dualGraphEdgeEquiv p a).property⟩
   choose g hg using fun (σ : {σ : Φ.cones // Nat.card (ToricRay σ.val) = 2}) ↦
-    (hnode _).mp (Φ.isNodeOfReducedBoundary_distinguishedPointHom hΦ σ.val hdim σ.property)
-  have hcone (x : X) (hx : (D).IsNodeOfReducedBoundary Φ.algebraicRealizationStructureMap x) :=
-    (Φ.isNodeOfReducedBoundary_iff_existsUnique_twoRayCone hΦ hc hdim).mp hx
+    (hnode _).mp (Φ.isNodeOfReducedBoundary_distinguishedSection k hΦ σ.val hdim σ.property)
+  have hcone (x : X) (hx : (D).IsNodeOfReducedBoundary (Φ.finiteFanSchemeToSpec k) x) :=
+    (Φ.isNodeOfReducedBoundary_iff_existsUnique_twoRayCone k hΦ hc hdim).mp hx
   refine ⟨Equiv.ofBijective g ⟨?_, ?_⟩, hg⟩
   · intro σ τ h
-    have he : Φ.distinguishedPointHom τ.val point = Φ.distinguishedPointHom σ.val point :=
+    have he : Φ.distinguishedSection (R := k) τ.val point =
+        Φ.distinguishedSection (R := k) σ.val point :=
       (hg τ).symm.trans ((congrArg f h).symm.trans (hg σ))
-    obtain ⟨s, _, hs⟩ := hcone _ (Φ.isNodeOfReducedBoundary_distinguishedPointHom hΦ
+    obtain ⟨s, _, hs⟩ := hcone _ (Φ.isNodeOfReducedBoundary_distinguishedSection k hΦ
       σ.val hdim σ.property)
     exact Subtype.ext ((hs σ.val ⟨σ.property, rfl⟩).trans (hs τ.val ⟨τ.property, he⟩).symm)
   · intro a
@@ -89,25 +90,26 @@ private theorem exists_endpoint_of_distinguishedPoint (p : ι → (C ↘ base).s
     {σ : Φ.cones} {ρ τ : Φ.Ray}
     (hne : ρ ≠ τ) (hρ : ρ.toCone ≤ σ) (hτ : τ.toCone ≤ σ)
     (e : (G(p)).Edge)
-    (he : (D).subschemeι ((C).dualGraphEdgeEquiv p e).val = Φ.distinguishedPointHom σ point) :
+    (he : (D).subschemeι ((C).dualGraphEdgeEquiv p e).val =
+      Φ.distinguishedSection (R := k) σ point) :
     ∃ b, (C).dualGraphVertexEquiv p ((G(p)).endpoint e b) =
-      Φ.boundaryNormalizationComponentEquiv hΦ ρ := by
+      Φ.boundaryNormalizationComponentEquiv k hΦ ρ := by
   let z := ((C).dualGraphEdgeEquiv p e).val
-  let v := Φ.boundaryNormalizationComponentEquiv hΦ ρ
-  let U := (C).blowupComponent (K := ℂ) v
-  have hp : Φ.distinguishedPointHom σ point ∈
-      ((Φ.rayBoundaryIdeal hΦ ρ ⊔ Φ.rayBoundaryIdeal hΦ τ).support : Set X) := by
-    rw [Φ.sup_rayBoundaryIdeal_eq_ker_distinguishedPoint hΦ hdim hne σ hρ hτ,
-      ← Φ.distinguishedPointHom_def, Scheme.Hom.support_ker]
+  let v := Φ.boundaryNormalizationComponentEquiv k hΦ ρ
+  let U := (C).blowupComponent (K := k) v
+  have hp : Φ.distinguishedSection (R := k) σ point ∈
+      ((Φ.rayDivisorIdeal k hΦ ρ ⊔ Φ.rayDivisorIdeal k hΦ τ).support : Set X) := by
+    rw [Φ.sup_rayBoundaryIdeal_eq_ker_distinguishedPoint k hΦ hdim hne σ hρ hτ,
+      Scheme.Hom.support_ker]
     exact subset_closure (Set.mem_range_self _)
   rw [support_sup, Closeds.coe_inf] at hp
-  have hz : z ∈ Set.range (ρ.boundaryComponentι hΦ) := by
-    obtain ⟨x, hx⟩ := (range_subschemeι (Φ.rayBoundaryIdeal hΦ ρ)).symm ▸ hp.1
+  have hz : z ∈ Set.range (ρ.boundaryComponentι k hΦ) := by
+    obtain ⟨x, hx⟩ := (range_subschemeι (Φ.rayDivisorIdeal k hΦ ρ)).symm ▸ hp.1
     refine ⟨x, (D).subschemeι.isClosedEmbedding.injective ?_⟩
-    rw [← Scheme.Hom.comp_apply, ρ.boundaryComponentι_subschemeι, he]
+    rw [← Scheme.Hom.comp_apply, ρ.boundaryComponentι_subschemeι k, he]
     exact hx
   have hz' : z ∈ Set.range (U.ι ≫ ν) :=
-    (Φ.range_boundaryNormalizationComponentEquiv hΦ ρ).symm ▸ hz
+    (Φ.range_boundaryNormalizationComponentEquiv k hΦ ρ).symm ▸ hz
   obtain ⟨x, hx⟩ := hz'
   obtain ⟨b, hb⟩ := ((C).branchPointEquiv ((C).dualGraphEdgeEquiv p e)).surjective
     ⟨U.ι x, (Scheme.Hom.comp_apply U.ι ν x).symm.trans hx⟩
@@ -128,32 +130,32 @@ theorem exists_toric_boundary_dualGraph_cycle (p : ι → (C ↘ base).smoothLoc
       (w : ZMod n ≃ (G(p)).Vertex),
       (∀ j k, (G(p)).endpoint (e j) (o (e j) k) =
         w ((DualGraph.cycle n).endpoint j k)) ∧
-      (∀ j, (C).dualGraphVertexEquiv p (w j) = Φ.boundaryNormalizationComponentEquiv hΦ (u j)) ∧
+      (∀ j, (C).dualGraphVertexEquiv p (w j) = Φ.boundaryNormalizationComponentEquiv k hΦ (u j)) ∧
       ∀ j, ∃ σ : {σ : Φ.cones // Nat.card (ToricRay σ.val) = 2},
         (u j).toCone ≤ σ.val ∧ (u (j + 1)).toCone ≤ σ.val ∧
         (D).subschemeι ((C).dualGraphEdgeEquiv p (e j)).val =
-          Φ.distinguishedPointHom σ.val point := by
+          Φ.distinguishedSection (R := k) σ.val point := by
   obtain ⟨c, hcone⟩ := exists_cyclicConeNumbering b hΦ hc u hu
   have hdim : Module.finrank ℤ N = 2 := by simpa using Module.finrank_eq_card_basis b
-  obtain ⟨g, hg⟩ := exists_boundaryDualGraphEdgeEquiv hΦ hc hdim p
+  obtain ⟨g, hg⟩ := exists_boundaryDualGraphEdgeEquiv k hΦ hc hdim p
   let e := c.trans g
-  let w := u.trans ((Φ.boundaryNormalizationComponentEquiv hΦ).trans
+  let w := u.trans ((Φ.boundaryNormalizationComponentEquiv k hΦ).trans
     ((C).dualGraphVertexEquiv p).symm)
   have hw (j) : (C).dualGraphVertexEquiv p (w j) =
-      Φ.boundaryNormalizationComponentEquiv hΦ (u j) := by simp only [w, Equiv.trans_apply,
+      Φ.boundaryNormalizationComponentEquiv k hΦ (u j) := by simp only [w, Equiv.trans_apply,
         Equiv.apply_symm_apply]
   have hne (j) : u j ≠ u (j + 1) := by
     intro h
     have hdet := (hu j).1
     rw [← h, b.detDualEquiv_self] at hdet
     exact zero_ne_one hdet
-  choose l hl using fun j ↦ exists_endpoint_of_distinguishedPoint hΦ hdim p
+  choose l hl using fun j ↦ exists_endpoint_of_distinguishedPoint k hΦ hdim p
     (hne j) (hcone j).1 (hcone j).2 (e j) (hg (c j))
-  choose r hr using fun j ↦ exists_endpoint_of_distinguishedPoint hΦ hdim p
+  choose r hr using fun j ↦ exists_endpoint_of_distinguishedPoint k hΦ hdim p
     (hne j).symm (hcone j).2 (hcone j).1 (e j) (hg (c j))
   let f (j : ZMod n) : Fin 2 → Fin 2 := ![l j, r j]
   have hf (j) : Function.Injective (f j) := Matrix.injective_pair_iff_ne.mpr fun h ↦
-    hne j ((Φ.boundaryNormalizationComponentEquiv hΦ).injective
+    hne j ((Φ.boundaryNormalizationComponentEquiv k hΦ).injective
       ((hl j).symm.trans (h ▸ hr j)))
   let o (a : (G(p)).Edge) : Equiv.Perm (Fin 2) :=
     Equiv.ofBijective (f (e.symm a)) (Finite.injective_iff_bijective.mp (hf (e.symm a)))
@@ -170,52 +172,56 @@ end TauCeti.Toric.Fan
 
 namespace TauCeti.Toric.FanEquiv
 
-variable {N N' V V' : Type} [AddCommGroup N] [AddCommGroup N']
+universe u
+
+variable (k : Type u) [Field k] [IsSepClosed k] {N N' : Type u} {V V' : Type*}
+  [AddCommGroup N] [AddCommGroup N']
   [AddCommGroup V] [AddCommGroup V'] [Module ℝ V] [Module ℝ V']
   {i : N →+ V} {i' : N' →+ V'} {Φ : Fan i} {Ψ : Fan i'} (e : FanEquiv Φ Ψ)
 
 variable [hΦ₀ : Nonempty Φ.cones] [hΨ₀ : Nonempty Ψ.cones]
 
-local notation "base" => Spec (CommRingCat.of ℂ)
-local notation "D[" Φ "]" => Fan.boundaryIdeal Φ inferInstance
-local notation "C[" Φ "]" => Scheme.IdealSheafData.subscheme (D[Φ])
-local notation "g" => e.boundaryIso hΦ₀ hΨ₀
+local notation "base" => Spec (CommRingCat.of k)
+local notation "D₁" => Fan.toricBoundaryIdeal k Φ hΦ₀
+local notation "D₂" => Fan.toricBoundaryIdeal k Ψ hΨ₀
+local notation "C₁" => Scheme.IdealSheafData.subscheme D₁
+local notation "C₂" => Scheme.IdealSheafData.subscheme D₂
+local notation "g" => e.boundaryIso k hΦ₀ hΨ₀
 
-variable [PrestableFamily (C[Φ] ↘ base)] [PrestableFamily (C[Ψ] ↘ base)]
+variable {α β : Type*}
 
-variable {α β : Type*} {p : α → (C[Φ] ↘ base).smoothLocus}
-  {p' : β → (C[Ψ] ↘ base).smoothLocus}
-
-local notation "G[" p "]" => Scheme.dualGraph (K := ℂ) _ p
+local notation "G[" p "]" => Scheme.dualGraph (K := k) _ p
 
 /-- The induced isomorphism of singular loci sends the node of a cone to the
 node of its image cone. The edge labels can come from independent numberings. -/
 theorem singularLocusIso_dualGraphNodeEquiv_of_distinguishedPoint
+    [PrestableFamily (C₁ ↘ base)] [PrestableFamily (C₂ ↘ base)]
+    {p : α → (C₁ ↘ base).smoothLocus} {p' : β → (C₂ ↘ base).smoothLocus}
     {σ : Φ.cones} {x : (G[p]).Edge} {y : (G[p']).Edge}
-    (hx : (D[Φ]).subschemeι ((C[Φ]).dualGraphEdgeEquiv p x).val =
-      Φ.distinguishedPointHom σ (IsLocalRing.closedPoint ℂ))
-    (hy : (D[Ψ]).subschemeι ((C[Ψ]).dualGraphEdgeEquiv p' y).val =
-      Ψ.distinguishedPointHom (e.coneEquiv σ) (IsLocalRing.closedPoint ℂ)) :
-    (Iso.singularLocusIso (R := ℂ) g).hom ((C[Φ]).dualGraphNodeEquiv p x) =
-      (C[Ψ]).dualGraphNodeEquiv p' y := by
-  let I := Scheme.singularLocus ℂ (C[Φ])
-  let J := Scheme.singularLocus ℂ (C[Ψ])
-  let f := (Iso.singularLocusIso (R := ℂ) g).hom
-  have h : f ≫ J.subschemeι ≫ (D[Ψ]).subschemeι =
-      I.subschemeι ≫ (D[Φ]).subschemeι ≫ e.toFanHom.algebraicMap := by
-    simp only [f, I, J, Iso.singularLocusIso_hom_subschemeι_assoc, boundaryIso_hom_subschemeι]
-  have hp := congrArg (fun k : I.subscheme ⟶ Ψ.algebraicRealization ↦
-    k ((C[Φ]).dualGraphNodeEquiv p x)) h
-  let z := IsLocalRing.closedPoint ℂ
-  have hσ : e.toFanHom.algebraicMap (Φ.distinguishedPointHom σ z) =
-      Ψ.distinguishedPointHom (e.coneEquiv σ) z := by
+    (hx : (D₁).subschemeι ((C₁).dualGraphEdgeEquiv p x).val =
+      Φ.distinguishedSection (R := k) σ (IsLocalRing.closedPoint k))
+    (hy : (D₂).subschemeι ((C₂).dualGraphEdgeEquiv p' y).val =
+      Ψ.distinguishedSection (R := k) (e.coneEquiv σ) (IsLocalRing.closedPoint k)) :
+    (Iso.singularLocusIso (R := k) g).hom ((C₁).dualGraphNodeEquiv p x) =
+      (C₂).dualGraphNodeEquiv p' y := by
+  let I := Scheme.singularLocus k (C₁)
+  let J := Scheme.singularLocus k (C₂)
+  let f := (Iso.singularLocusIso (R := k) g).hom
+  have h : f ≫ J.subschemeι ≫ (D₂).subschemeι =
+      I.subschemeι ≫ (D₁).subschemeι ≫ e.toFanHom.finiteFanSchemeHom k := by
+    simp only [f, I, J, Iso.singularLocusIso_hom_subschemeι_assoc, boundaryIso_hom_subschemeι k e]
+  have hp := congrArg (fun a : I.subscheme ⟶ Ψ.finiteFanScheme k ↦
+    a ((C₁).dualGraphNodeEquiv p x)) h
+  let z : base := IsLocalRing.closedPoint k
+  have hσ : e.toFanHom.finiteFanSchemeHom k (Φ.distinguishedSection (R := k) σ z) =
+      Ψ.distinguishedSection (R := k) (e.coneEquiv σ) z := by
     calc
-      _ = (Φ.distinguishedPointHom σ ≫ e.toFanHom.algebraicMap) z :=
-        (Scheme.Hom.comp_apply (Φ.distinguishedPointHom σ) e.toFanHom.algebraicMap z).symm
-      _ = _ := by rw [e.distinguishedPointHom_comp_algebraicMap]
+      _ = (Φ.distinguishedSection (R := k) σ ≫ e.toFanHom.finiteFanSchemeHom k) z :=
+        (Scheme.Hom.comp_apply _ _ z).symm
+      _ = _ := by rw [e.distinguishedSection_comp_finiteFanSchemeHom (R := k)]
   simp only [I, Scheme.Hom.comp_apply, Scheme.subschemeι_dualGraphNodeEquiv, hx] at hp
   apply J.subschemeι.isClosedEmbedding.injective
-  apply (D[Ψ]).subschemeι.isClosedEmbedding.injective
+  apply (D₂).subschemeι.isClosedEmbedding.injective
   simpa only [J, Scheme.subschemeι_dualGraphNodeEquiv, hy, z] using hp.trans hσ
 
 end TauCeti.Toric.FanEquiv

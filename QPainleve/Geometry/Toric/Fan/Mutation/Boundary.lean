@@ -31,9 +31,10 @@ open Scheme.IdealSheafData TauCeti.AlgebraicGeometry
 
 namespace TauCeti.Toric.Fan
 
-variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V] {i : N →+ V}
+variable {K : Type} [Field K] {N V : Type} [AddCommGroup N] [AddCommGroup V]
+  [Module ℝ V] {i : N →+ V}
   {Φ : Fan i} (b : Basis (Fin 2) ℤ N) (ρ : Φ.Ray)
-  (hOpp : hull ℝ {i (-ρ.primitiveGenerator)} ∈ Φ.cones) (c : ℂˣ)
+  (hOpp : hull ℝ {i (-ρ.primitiveGenerator)} ∈ Φ.cones) (c : Kˣ)
   (hΦ : Φ.IsRegular)
 
 local notation "v" => Ray.primitiveGenerator ρ
@@ -47,17 +48,17 @@ local notation "I₁" => Ray.mutationTargetCenterIdeal b ρ hOpp c
 local notation "G" => Ray.mutationBlowupIso b ρ hOpp c
 local notation "h₀" => Φ.detCharacter_nonneg_or_nonpos b hv hp hOpp
 local notation "h₁" => Φ.mutationDetCharacter_nonneg_or_nonpos b hv hp hOpp
-local notation "U₀" => Φ.mutationComplement b h₀ (c : ℂ)
-local notation "U₁" => mutationComplement Ψ b h₁ (c : ℂ)
-local notation "eC" => Φ.mutationComplementIso b (c : ℂ) hv hp hOpp
+local notation "U₀" => Φ.mutationComplement b h₀ (c : K)
+local notation "U₁" => mutationComplement Ψ b h₁ (c : K)
+local notation "eC" => Φ.mutationComplementIso b (c : K) hv hp hOpp
 
 /-- The strict transform of each ray divisor pulls back to the strict transform of
 the corresponding original ray divisor under the global pivot blowup isomorphism. -/
 theorem Ray.comap_strictRayBoundary_mutationBlowupIso (u : Φ.Ray) :
-    ((I₁).blowupMap ((Ψ).rayBoundaryIdeal (hΨ) ((r) u)).subschemeι).ker.comap (G).hom =
-      ((I₀).blowupMap (Φ.rayBoundaryIdeal hΦ u).subschemeι).ker := by
+    ((I₁).blowupMap ((Ψ).rayDivisorIdeal K (hΨ) ((r) u)).subschemeι).ker.comap (G).hom =
+      ((I₀).blowupMap (Φ.rayDivisorIdeal K hΦ u).subschemeι).ker := by
   let x : (U₀).toScheme :=
-    ⟨(Φ.rayBoundaryPoint hΦ u).val,
+    ⟨(Φ.rayBoundaryChartPoint (R := K) hΦ u).val,
       Φ.rayBoundaryPoint_mem_mutationComplement b c hv h₀ hΦ u⟩
   let y := (eC).hom x
   let hI₀ := ρ.mutationSourceCenterIdeal_comap_complement b hOpp c
@@ -72,23 +73,23 @@ theorem Ray.comap_strictRayBoundary_mutationBlowupIso (u : Φ.Ray) :
       (I.blowupLift j (h.symm ▸ isEffectiveCartier_top _))
     rw [comap_blowupLift_exceptional] at he
     exact (Scheme.Hom.mem_preimage _).mp (by rw [he.mp h]; trivial)
-  have hx : (I₀).blowupToBase (l₀ x) = (Φ.rayBoundaryPoint hΦ u).val := by
+  have hx : (I₀).blowupToBase (l₀ x) = (Φ.rayBoundaryChartPoint (R := K) hΦ u).val := by
     rw [← Scheme.Hom.comp_apply, blowupLift_blowupToBase, Scheme.Opens.ι_apply]
-  have hy : (I₁).blowupToBase (l₁ y) = ((Ψ).rayBoundaryPoint (hΨ) ((r) u)).val := by
+  have hy : (I₁).blowupToBase (l₁ y) = ((Ψ).rayBoundaryChartPoint (R := K) (hΨ) ((r) u)).val := by
     rw [← Scheme.Hom.comp_apply, blowupLift_blowupToBase]
     exact Φ.mutationComplementIso_hom_rayBoundaryPoint b c hv hp hOpp hΦ u
   have hl : (G).hom (l₀ x) = l₁ y := by
     rw [← Scheme.Hom.comp_apply, ρ.mutationComplementBlowupι_comp_mutationBlowupIso_hom,
       Scheme.Hom.comp_apply]
-  rw [rayBoundaryIdeal_def, rayBoundaryIdeal_def, ← hx, ← hy,
+  rw [rayDivisorIdeal_def K, rayDivisorIdeal_def K, ← hx, ← hy,
     ker_blowupMap_vanishingIdeal_closure_singleton _ _ (outsideExceptional _ _ hI₀ x),
     ker_blowupMap_vanishingIdeal_closure_singleton _ _ (outsideExceptional _ _ hI₁ y),
     ← hl, comap_vanishingIdeal_closure_singleton_apply]
 
 local notation "hΦ₀" => Nonempty.intro (Ray.toCone Φ ρ)
 local notation "hΨ₀" => Nonempty.intro (Φ.mutationFanConeEquiv b hv hp hOpp (Subtype.mk _ hp))
-local notation "D₀" => Φ.boundaryIdeal hΦ₀
-local notation "D₁" => boundaryIdeal (Ψ) hΨ₀
+local notation "D₀" => Φ.toricBoundaryIdeal K hΦ₀
+local notation "D₁" => toricBoundaryIdeal K (Ψ) hΨ₀
 local notation "j₀" => Ray.mutationSourceBoundaryι b ρ c
 local notation "j₁" => Ray.mutationTargetBoundaryι b ρ hOpp c
 
@@ -117,10 +118,10 @@ theorem Ray.mutationBoundaryIso_hom_comp_boundaryι :
   IsClosedImmersion.lift_fac _ _ _
 
 instance Ray.isOver_mutationBoundaryIso_hom :
-    (ρ.mutationBoundaryIso b hOpp c hΦ).hom.IsOver (Spec (.of ℂ)) := by
+    (ρ.mutationBoundaryIso b hOpp c hΦ).hom.IsOver (Spec (.of K)) := by
   constructor
-  rw [over_eq_subschemeι_comp, over_eq_subschemeι_comp, Fan.algebraicRealization_over,
-    Fan.algebraicRealization_over,
+  rw [over_eq_subschemeι_comp, over_eq_subschemeι_comp, Fan.finiteFanScheme_over K,
+    Fan.finiteFanScheme_over K,
     ← ρ.mutationTargetBoundaryι_blowupToBase_assoc b hOpp c,
     ρ.mutationBoundaryIso_hom_comp_boundaryι_assoc,
     ρ.mutationBlowupIso_hom_comp_toBase, ρ.mutationSourceBoundaryι_blowupToBase_assoc]
@@ -130,19 +131,19 @@ the closed subscheme of the original ray. -/
 theorem Ray.comap_ker_boundaryComponentι_mutationBoundaryIso (u : Φ.Ray) :
     letI : Nonempty Φ.cones := hΦ₀
     letI : Nonempty (Ψ).cones := hΨ₀
-    ((r u).boundaryComponentι (hΨ)).ker.comap (ρ.mutationBoundaryIso b hOpp c hΦ).hom =
-      (u.boundaryComponentι hΦ).ker := by
+    ((r u).boundaryComponentι K (hΨ)).ker.comap (ρ.mutationBoundaryIso b hOpp c hΦ).hom =
+      (u.boundaryComponentι K hΦ).ker := by
   let : Nonempty Φ.cones := hΦ₀
   let : Nonempty (Ψ).cones := hΨ₀
-  have hI₀ : (I₀) = (ρ.internalCenter b c).val.map (D₀).subschemeι := by
+  have hI₀ : (I₀) = (ρ.internalCenter K b c).val.map (D₀).subschemeι := by
     rw [Ray.mutationSourceCenterIdeal_eq, Ray.map_internalCenter_subschemeι]
   let w := Φ.mutationFanCenterRays b (fun _ : Unit ↦ ρ) () hOpp ()
-  have hI₁ : (I₁) = (w.internalCenter b c⁻¹).val.map (D₁).subschemeι := by
+  have hI₁ : (I₁) = (w.internalCenter K b c⁻¹).val.map (D₁).subschemeι := by
     rw [Ray.mutationTargetCenterIdeal_eq, Ray.map_internalCenter_subschemeι]
   have h := ρ.comap_strictRayBoundary_mutationBlowupIso b hOpp c hΦ u
-  rw [← ker_comp_boundaryι_eq_blowupMap b hΦ ρ u c (I₀) hI₀ (j₀)
+  rw [← ker_comp_boundaryι_eq_blowupMap K b hΦ ρ u c (I₀) hI₀ (j₀)
     (ρ.mutationSourceBoundaryι_blowupToBase b c),
-    ← ker_comp_boundaryι_eq_blowupMap b (hΨ) w (r u) c⁻¹ (I₁) hI₁ (j₁)
+    ← ker_comp_boundaryι_eq_blowupMap K b (hΨ) w (r u) c⁻¹ (I₁) hI₁ (j₁)
       (ρ.mutationTargetBoundaryι_blowupToBase b hOpp c)] at h
   have hc := congrArg (fun J ↦ J.comap (j₀)) h
   rw [← comap_comp, ← ρ.mutationBoundaryIso_hom_comp_boundaryι b hOpp c hΦ,

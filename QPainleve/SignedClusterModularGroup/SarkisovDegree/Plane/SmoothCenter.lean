@@ -18,7 +18,7 @@ import QPainleve.AlgebraicGeometry.Blowup.Tower.Modification
 import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
 import QPainleve.AlgebraicGeometry.Morphisms.IsoLocus
 import TauCeti.AlgebraicGeometry.Blowup.Restriction
-import Mathlib.Analysis.Complex.Polynomial.Basic
+
 
 /-!
 # The Sarkisov link at a smooth plane boundary center
@@ -40,20 +40,26 @@ open Scheme.IdealSheafData
 
 namespace QPainleve.BlowupTower.IsClosedPointTower
 
+variable (k₀ : Type) [Field k₀] [IsAlgClosed k₀]
+
 attribute [local instance] MvPolynomial.gradedAlgebra
 
-local notation "S" => Spec (CommRingCat.of ℂ)
-local notation "P" => Proj (homogeneousSubmodule ℂ (Fin 3 → ℂ))
-local notation "H" => mk (Proj.symmetricAlgebraTwistingBundle ℂ (Fin 3 → ℂ) 1)
+local notation "S" => Spec (CommRingCat.of k₀)
+local notation "P" => Proj (homogeneousSubmodule k₀ (Fin 3 → k₀))
+local notation "H" => mk (Proj.symmetricAlgebraTwistingBundle k₀ (Fin 3 → k₀) 1)
 local notation "fP" => (P ↘ S)
-local notation "degree" => Module.Basis.picardTwistEquiv (Pi.basisFun ℂ (Fin 3))
+local notation "degree" => Module.Basis.picardTwistEquiv (Pi.basisFun k₀ (Fin 3))
 local notation "J[" p "]" => Scheme.Hom.ker (Scheme.fromSpecResidueField P p)
 local notation "single[" I "]" => BlowupTower.snoc BlowupTower.nil I
 local notation "first[" m "]" => Fin.castAdd m (0 : Fin 1)
 
-variable {Y : Scheme} {n : ℕ} {T : BlowupTower P (n + 1) Y}
-  (hT : IsClosedPointTower P T) (j : Fin (n + 1))
-  (g : Y ⟶ P) (hg : g ≫ fP = T.toBase ≫ fP) (hbir : Scheme.BirationalOver g (𝟙 P))
+variable {Y : Scheme} {n : ℕ} {T : BlowupTower (Proj (homogeneousSubmodule k₀ (Fin 3 → k₀)))
+  (n + 1) Y}
+  (hT : IsClosedPointTower (Proj (homogeneousSubmodule k₀ (Fin 3 → k₀))) T) (j : Fin (n + 1))
+  (g : Y ⟶ (Proj (homogeneousSubmodule k₀ (Fin 3 → k₀)))) (hg : g ≫
+    (Proj (homogeneousSubmodule k₀ (Fin 3 → k₀)) ↘ Spec (.of k₀)) = T.toBase ≫
+    (Proj (homogeneousSubmodule k₀ (Fin 3 → k₀)) ↘ Spec (.of k₀))) (hbir : Scheme.BirationalOver g
+      (𝟙 (Proj (homogeneousSubmodule k₀ (Fin 3 → k₀)))))
 
 local notation "mark[" T "," h "," g "]" =>
   LinearEquiv.symm (BlowupTower.picardMarking T h fP) (Additive.ofMul (pullback g H))
@@ -145,22 +151,24 @@ variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V] {i : N �
   {Φ : Fan i} (regΦ : Φ.IsRegular) (hcΦ : Φ.IsComplete)
   (b : Basis (Fin 2) ℤ N) (r : Fin 4 ≃ Φ.Ray)
   (hr : (fun l ↦ (r l).primitiveGenerator) = ![b 0, b 1, -b 0, (1 : ℤ) • b 0 - b 1])
-  (c : ℂˣ)
+  (c : k₀ˣ)
 
-local notation "X[" U "]" => Fan.algebraicRealization U
-local notation "f[" U "]" => (X[U] ↘ S)
+local notation "X[" coeff "," U "]" => Fan.finiteFanScheme coeff U
+local notation "f[" U "]" => (X[k₀,U] ↘ S)
 
-variable {p₀ : P} (hp₀ : IsClosed ({p₀} : Set P))
-  (e₀ : X[Φ] ≅ (J[p₀]).blowup)
+variable {p₀ : (Proj (homogeneousSubmodule k₀ (Fin 3 → k₀)))} (hp₀ : IsClosed ({p₀} : Set (Proj
+  (homogeneousSubmodule k₀ (Fin 3 → k₀)))))
+  (e₀ : X[k₀,Φ] ≅ (Scheme.fromSpecResidueField (Proj (homogeneousSubmodule k₀ (Fin 3 →
+    k₀))) p₀).ker.blowup)
 
 local notation "π" => Iso.hom e₀ ≫ Scheme.IdealSheafData.blowupToBase (J[p₀])
 local notation "ρ" => (r 2 : Fan.Ray Φ)
 local notation "v" => Fan.Ray.primitiveGenerator ρ
 local notation "rankTwo" => Eq.trans (Module.finrank_eq_card_basis b) (Fintype.card_fin 2)
 local notation "center" =>
-  Fan.Ray.binomialCenter ρ (m := LinearMap.toAddMonoidHom (Basis.detDualEquiv b v))
+  Fan.Ray.binomialCenter ρ k₀ (m := LinearMap.toAddMonoidHom (Basis.detDualEquiv b v))
     rankTwo (b.detDualEquiv_self v) (Fan.Ray.surjective_detCharacter ρ b) c
-local notation "u" => center (IsLocalRing.closedPoint ℂ)
+local notation "u" => center (IsLocalRing.closedPoint k₀)
 local notation "hOpp" =>
   Eq.mpr (congrArg (fun x : N ↦ hull ℝ {i x} ∈ Fan.cones Φ)
     (Eq.trans (congrArg Neg.neg (congrFun hr 2))
@@ -173,39 +181,41 @@ local notation "regΨ" => Iff.mpr (Fan.isRegular_mutationFan_iff Φ b hv hp hOpp
 local notation "hcΨ" => Iff.mpr (Fan.isComplete_mutationFan_iff Φ b hv hp hOpp) hcΦ
 local notation "s" => Equiv.trans r (Fan.mutationFanRayEquiv Φ b hv hp hOpp)
 local notation "μ" =>
-  Scheme.PartialMap.toRationalMap (Fan.mutationPartialMap Φ b (c : ℂ) hv hp hOpp)
-local notation "C" => Fan.hirzebruchPicardBasis b 1 regΦ r hr
-local notation "C'[" d' "," hd' "]" => Fan.hirzebruchPicardBasis d' 0 regΨ s hd'
+  Scheme.PartialMap.toRationalMap (Fan.mutationPartialMap k₀ Φ b (c : k₀) hv hp hOpp)
+local notation "C" => Fan.hirzebruchPicardBasis k₀ b 1 regΦ r hr
+local notation "C'[" d' "," hd' "]" => Fan.hirzebruchPicardBasis k₀ d' 0 regΨ s hd'
 
 include hp₀ in
-private theorem edge_point_ne_vertex (hE : (J[p₀]).comap π = (Φ).rayBoundaryIdeal regΦ (r 0))
+omit [IsAlgClosed k₀] in
+private theorem edge_point_ne_vertex (hE : (J[p₀]).comap π = (Φ).rayDivisorIdeal k₀ regΦ (r 0))
     : π u ≠ p₀ := by
   intro heq
   have hm : u ∈ ((J[p₀]).comap π).support := by
     rw [← SetLike.mem_coe, support_comap, Closeds.coe_preimage, Set.mem_preimage, heq,
       Scheme.support_ker_fromSpecResidueField_of_isClosed hp₀]
     exact Set.mem_singleton _
-  rw [hE, ← SetLike.mem_coe, ← (Φ.rayBoundaryIdeal regΦ (r 0)).range_subschemeι] at hm
+  rw [hE, ← SetLike.mem_coe, ← (Φ.rayDivisorIdeal k₀ regΦ (r 0)).range_subschemeι] at hm
   obtain ⟨y, hy⟩ := hm
   let : Nonempty Φ.cones := ⟨(r 0).toCone⟩
-  let B := Φ.boundaryIdeal (inferInstance : Nonempty Φ.cones)
+  let B := Φ.toricBoundaryIdeal k₀ (inferInstance : Nonempty Φ.cones)
   let m := LinearMap.toAddMonoidHom (Basis.detDualEquiv b v)
   have hm : m v = 0 := b.detDualEquiv_self v
   have hs : Function.Surjective m := Fan.Ray.surjective_detCharacter ρ b
-  let z₀ := (ρ).binomialCenterOnBoundary (m := m) rankTwo hm hs c
-  let z := z₀ (IsLocalRing.closedPoint ℂ)
-  have h : (r 0).boundaryComponentι regΦ y = z := by
+  let z₀ := (ρ).binomialCenterOnBoundary k₀ (m := m) rankTwo hm hs c
+  let z := z₀ (IsLocalRing.closedPoint k₀)
+  have h : (r 0).boundaryComponentι k₀ regΦ y = z := by
     apply B.subschemeι.isClosedEmbedding.injective
     have hz : B.subschemeι z = u := by
-      exact (Scheme.Hom.comp_apply z₀ B.subschemeι (IsLocalRing.closedPoint ℂ)).symm.trans
-        (congrArg (fun f : S ⟶ X[Φ] ↦ f (IsLocalRing.closedPoint ℂ))
-          ((ρ).binomialCenterOnBoundary_comp_subschemeι (m := m) rankTwo hm hs c))
+      exact (Scheme.Hom.comp_apply z₀ B.subschemeι (IsLocalRing.closedPoint k₀)).symm.trans
+        (congrArg (fun f : S ⟶ X[k₀,Φ] ↦ f (IsLocalRing.closedPoint k₀))
+          ((ρ).binomialCenterOnBoundary_comp_subschemeι k₀ (m := m) rankTwo hm hs c))
     rw [hz, ← Scheme.Hom.comp_apply, Fan.Ray.boundaryComponentι_subschemeι, hy]
-  have hray := ((ρ).binomialCenterOnBoundary_mem_range_boundaryComponentι_iff regΦ rankTwo
+  have hray := ((ρ).binomialCenterOnBoundary_mem_range_boundaryComponentι_iff k₀ regΦ rankTwo
     (b.detDualEquiv_self v) (Fan.Ray.surjective_detCharacter ρ b) c (r 0)).mp ⟨y, h⟩
   exact (by decide : (2 : Fin 4) ≠ 0) (r.injective hray)
 
 include hp₀ in
+omit [IsAlgClosed k₀] in
 private theorem edge_point_mem_isoLocus (hu : π u ≠ p₀) :
     π u ∈ (π).isoLocus := by
   rw [Scheme.Hom.isoLocus_comp_of_isIso]
@@ -236,7 +246,7 @@ The final quadric resolution carries the given resolving map and has strictly
 smaller Sarkisov bidegree. The projection to the prepared Hirzebruch surface
 is also identified with a closed-point tower. -/
 theorem exists_sarkisov_decrease_of_plane_edge
-    (hπ : π ≫ fP = f[Φ]) (hE : (J[p₀]).comap π = Φ.rayBoundaryIdeal regΦ (r 0))
+    (hπ : π ≫ fP = f[Φ]) (hE : (J[p₀]).comap π = Φ.rayDivisorIdeal k₀ regΦ (r 0))
     (hj : hT.baseCenter j = π u)
     (hfirst : ∀ l < j, hT.baseCenter l ≠ hT.baseCenter j)
     (hhigh : let w := mark[T,hT,g]; degree w.1 < 3 * (-w.2 j)) :
@@ -244,15 +254,15 @@ theorem exists_sarkisov_decrease_of_plane_edge
     let : Nonempty (Ψ).cones := (hcΨ).nonempty_cones
     let : SmoothOfRelativeDimension 2 f[Ψ] :=
       Eq.mp (congrArg (fun n ↦ SmoothOfRelativeDimension n f[Ψ]) rankTwo)
-        ((Ψ).smoothOfRelativeDimension_algebraicRealizationStructureMap regΨ)
-    ∃ (A : Scheme) (q : A ⟶ Y) (k : ℕ) (R : BlowupTower X[Φ] k A)
-      (_ : IsClosedPointTower X[Φ] R)
+        ((Ψ).smoothOfRelativeDimension_finiteFanSchemeToSpec k₀ regΨ)
+    ∃ (A : Scheme) (q : A ⟶ Y) (k : ℕ) (R : BlowupTower X[k₀,Φ] k A)
+      (_ : IsClosedPointTower X[k₀,Φ] R)
       (d' : Basis (Fin 2) ℤ N)
       (hd' : (fun l ↦ (s l).primitiveGenerator) = ![d' 0, d' 1, -d' 0, (0 : ℤ) • d' 0 - d' 1])
-      (m : ℕ) (Z : Scheme) (U : BlowupTower X[Ψ] m Z) (hU : IsClosedPointTower X[Ψ] U)
-      (e : A ≅ Z) (p : A ⟶ X[Ψ]) (_ : IsIntegral A) (_ : IsDominant R.toBase),
+      (m : ℕ) (Z : Scheme) (U : BlowupTower X[k₀,Ψ] m Z) (hU : IsClosedPointTower X[k₀,Ψ] U)
+      (e : A ≅ Z) (p : A ⟶ X[k₀,Ψ]) (_ : IsIntegral A) (_ : IsDominant R.toBase),
       let a := R.toBase
-      let τ := (Fan.quadricRulingExchange d' regΨ hcΨ s hd').toFanHom.algebraicMap
+      let τ := ((Fan.quadricRulingExchange d' regΨ hcΨ s hd').toFanHom.finiteFanSchemeHom k₀)
       let g' := e.inv ≫ q ≫ g
       (p₀ ∈ Set.range hT.baseCenter → IsIso q) ∧
       (p₀ ∉ Set.range hT.baseCenter → ∃ (z : Y)
@@ -274,12 +284,12 @@ theorem exists_sarkisov_decrease_of_plane_edge
   let : Nonempty (Ψ).cones := (hcΨ).nonempty_cones
   let : SmoothOfRelativeDimension 2 f[Ψ] :=
     Eq.mp (congrArg (fun n ↦ SmoothOfRelativeDimension n f[Ψ]) rankTwo)
-      ((Ψ).smoothOfRelativeDimension_algebraicRealizationStructureMap regΨ)
+      ((Ψ).smoothOfRelativeDimension_finiteFanSchemeToSpec k₀ regΨ)
   have hpos := (hT.plane_degree_eq_one_or_exists_high_baseCenter g hg hbir).1
-  have hne := edge_point_ne_vertex regΦ b r c hp₀ e₀ hE
-  have hloc := edge_point_mem_isoLocus b r c hp₀ e₀ hne
+  have hne := edge_point_ne_vertex k₀ regΦ b r c hp₀ e₀ hE
+  have hloc := edge_point_mem_isoLocus k₀ b r c hp₀ e₀ hne
   obtain ⟨m, A, L, hL, hB, q, j', hqIso, hqBlowup, hbase, hbir', hcenter, hfirst', hw, hj', hsum⟩ :=
-    exists_plane_edge_preparation hT j g hbir hp₀ (hj.trans_ne hne) hfirst
+    exists_plane_edge_preparation k₀ hT j g hbir hp₀ (hj.trans_ne hne) hfirst
   -- The lifted pivot is determined by its image in the isomorphism locus.
   let R := L.transport e₀.symm
   let hR := R.isLift.isClosedPointTower hL
@@ -298,14 +308,14 @@ theorem exists_sarkisov_decrease_of_plane_edge
     rw [← hproj, h, hj]
   let : SmoothOfRelativeDimension 2 f[Φ] :=
     Eq.mp (congrArg (fun n ↦ SmoothOfRelativeDimension n f[Φ]) rankTwo)
-      ((Φ).smoothOfRelativeDimension_algebraicRealizationStructureMap regΦ)
+      ((Φ).smoothOfRelativeDimension_finiteFanSchemeToSpec k₀ regΦ)
   let : Smooth f[Φ] := SmoothOfRelativeDimension.smooth 2 _
-  let : IsNoetherian X[Φ] := isNoetherian_of_finiteType f[Φ]
+  let : IsNoetherian X[k₀,Φ] := isNoetherian_of_finiteType f[Φ]
   let : (J[p₀]).blowup.Over S := ⟨(J[p₀]).blowupToBase ≫ fP⟩
   let : e₀.hom.IsOver S := ⟨(Category.assoc _ _ _).symm.trans hπ⟩
-  let : (J[p₀]).blowup.IsProjectiveOver ℂ :=
-    (J[p₀]).isProjectiveOver_blowup_of_isNoetherianRing ℂ
-  let : (X[Φ]).IsProjectiveOver ℂ := Scheme.IsProjectiveOver.of_isClosedImmersion ℂ e₀.hom
+  let : (J[p₀]).blowup.IsProjectiveOver k₀ :=
+    (J[p₀]).isProjectiveOver_blowup_of_isNoetherianRing k₀
+  let : (X[k₀,Φ]).IsProjectiveOver k₀ := Scheme.IsProjectiveOver.of_isClosedImmersion k₀ e₀.hom
   let : IsIntegral R.top := hR.isIntegral f[Φ]
   let : IsModification R.tower.toBase := hR.isModification_of_smoothOfRelativeDimension_two f[Φ]
   let g₁ := R.iso.inv ≫ q ≫ g
@@ -324,11 +334,11 @@ theorem exists_sarkisov_decrease_of_plane_edge
     simpa only [g₁, Iso.symm_inv, Iso.hom_inv_id_assoc] using hbir'
   -- Read the prepared Hirzebruch coordinates against the original plane marking.
   obtain ⟨ha, hβ, horders⟩ :=
-    hirzebruchOne_resolution_coordinates b regΦ hcΦ r hr hR hp₀ e₀
+    hirzebruchOne_resolution_coordinates k₀ b regΦ hcΦ r hr hR hp₀ e₀
       (by simpa only [Category.assoc] using hπ) hE R.isLift.symm g₁ hg₁ hb₁ hB hg' hb'
   simp only [g₁, Iso.symm_inv, Iso.hom_inv_id_assoc] at ha hβ horders
   obtain ⟨d', hd', Z, U, hU, e, p, hmut, -, hτ, -, hUover, hUbir, _, hdegree, _, _, hlt⟩ :=
-    exists_quadric_resolution_of_plane_edge_link b regΦ hcΦ r hr ρ c rfl hR j'
+    exists_quadric_resolution_of_plane_edge_link k₀ b regΦ hcΦ r hr ρ c rfl hR j'
       hpivot hpivotFirst g₁ hg₁ hb₁
   let q' := R.iso.inv ≫ q
   have hbase' : R.tower.toBase ≫ π = q' ≫ T.toBase := by

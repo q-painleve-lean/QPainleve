@@ -34,16 +34,19 @@ open scoped Sarkisov
 
 namespace TauCeti.Toric.Fan.LogarithmicProjection
 
-local notation "S" => Spec (CommRingCat.of ℂ)
-local notation "f[" A "]" => Fan.algebraicRealization (LogarithmicProjection.fan A) ↘ S
+variable {k₀ : Type} [Field k₀] [IsAlgClosed k₀]
+
+local notation "S" => Spec (CommRingCat.of k₀)
+local notation "f[" A "]" => Fan.finiteFanScheme k₀ (LogarithmicProjection.fan A) ↘ S
 local notation "rankTwo[" b "]" => Eq.trans (finrank_eq_card_basis b) (Fintype.card_fin 2)
 local notation "center[" b "," ρ "," c "]" =>
-  Fan.Ray.binomialCenter ρ rankTwo[b] (Basis.detDualEquiv_self b (Fan.Ray.primitiveGenerator ρ))
-    (Fan.Ray.surjective_detCharacter ρ b) c (IsLocalRing.closedPoint ℂ)
+  Fan.Ray.binomialCenter ρ k₀ rankTwo[b] (Basis.detDualEquiv_self b (Fan.Ray.primitiveGenerator ρ))
+    (Fan.Ray.surjective_detCharacter ρ b) c (IsLocalRing.closedPoint k₀)
 
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V] {i : N →+ V}
-  {X : Scheme} [X.Over S] [SmoothOfRelativeDimension 2 (X ↘ S)] [IsIntegral X] [IsNoetherian X]
-  {D : X.IdealSheafData} {A B : LogarithmicProjection i D}
+  {X : Scheme} [X.Over (Spec (.of k₀))] [SmoothOfRelativeDimension 2 (X ↘ Spec (.of k₀))]
+    [IsIntegral X] [IsNoetherian X]
+  {D : X.IdealSheafData} {A B : LogarithmicProjection k₀ i D}
   {b' : Basis (Fin 2) ℤ N} {hi : IsIntegralLattice i} {e n : ℕ}
 
 private theorem PositiveSectionMarking.exists_sarkisov_step
@@ -64,10 +67,10 @@ private theorem PositiveSectionMarking.exists_sarkisov_step
     omega
   let : Nonempty C.fan.cones := C.isComplete.nonempty_cones
   let : SmoothOfRelativeDimension 2 f[C] := by
-    rw [← rankTwo[W.basis], Fan.algebraicRealization_over]
-    exact C.fan.smoothOfRelativeDimension_algebraicRealizationStructureMap C.isRegular
+    rw [← rankTwo[W.basis], Fan.finiteFanScheme_over k₀]
+    exact C.fan.smoothOfRelativeDimension_finiteFanSchemeToSpec k₀ C.isRegular
   let : Smooth f[C] := SmoothOfRelativeDimension.smooth 2 _
-  let : IsNoetherian C.fan.algebraicRealization := isNoetherian_of_finiteType f[C]
+  let : IsNoetherian (C.fan.finiteFanScheme k₀) := isNoetherian_of_finiteType f[C]
   have hexit := exists_sarkisov_step_of_prepared_quadric_ruling_values W.rays W.rays_eq
     W.closed W.planeMap hD hNode W.target_fan W.iso W.source_hom W.target_hom
     W.planeMap_over W.planeMap_birational u.fiber u.index u.first
@@ -100,17 +103,17 @@ theorem HirzebruchPlaneResolution.exists_sarkisov_step_of_high_fibers
     (hNode : AtWorstNodalOfRelativeDimensionOne (D.subschemeι ≫ X ↘ S)) :
     let high := Finset.univ.filter (fun j ↦ M.fiberDegree < 2 * M.order j)
     high.Nonempty →
-    (∀ j ∈ high, ∃ t : Fin 2, ∃ c : ℂˣ,
+    (∀ j ∈ high, ∃ t : Fin 2, ∃ c : k₀ˣ,
       M.closed.baseCenter j = center[M.basis,M.rays ((![1, 3] : Fin 2 → Fin 4) t),c]) →
     HasPlaneTargetDecrease A B rankTwo[M.basis] hD hNode
       (hirzebruchSarkisovBidegree M.fiberDegree.toNat 0) := by
   intro high hhigh hcenters
   let : Nonempty A.fan.cones := A.isComplete.nonempty_cones
   let : SmoothOfRelativeDimension 2 f[A] := by
-    rw [← rankTwo[M.basis], Fan.algebraicRealization_over]
-    exact A.fan.smoothOfRelativeDimension_algebraicRealizationStructureMap A.isRegular
+    rw [← rankTwo[M.basis], Fan.finiteFanScheme_over k₀]
+    exact A.fan.smoothOfRelativeDimension_finiteFanSchemeToSpec k₀ A.isRegular
   let : Smooth f[A] := SmoothOfRelativeDimension.smooth 2 _
-  let : IsNoetherian A.fan.algebraicRealization := isNoetherian_of_finiteType f[A]
+  let : IsNoetherian (A.fan.finiteFanScheme k₀) := isNoetherian_of_finiteType f[A]
   have hinit := exists_positiveSection_selection_of_marked_high_fibers M.rays M.rays_eq
     M.closed M.planeMap M.target_fan M.iso M.source_hom M.target_hom
     M.planeMap_over M.planeMap_birational

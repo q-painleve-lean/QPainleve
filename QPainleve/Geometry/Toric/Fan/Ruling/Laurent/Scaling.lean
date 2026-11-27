@@ -9,8 +9,7 @@ public import QPainleve.Geometry.Toric.Fan.Ruling.Laurent
 public import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.ProjectiveLine.Scaling
 
 import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.ProjectiveLine.Basic
-import QPainleve.Geometry.Toric.Fan.DenseTorus
-import TauCeti.Geometry.Toric.Algebraic.Fan.Normal
+import QPainleve.Geometry.Toric.BaseChange.FunctionField
 
 /-!
 # Toric shears as projective-line scalings
@@ -32,54 +31,60 @@ open TauCeti.AlgebraicGeometry (projectiveLine)
 
 namespace TauCeti.Toric
 
+variable (K : Type) [CommRing K]
+
 local notation "P" => Fan.projectiveSpace (Pi.basisFun ℤ (Fin 1)) (isIntegralLattice_intCast 1)
 local notation "T₀" => projectiveLineTorusFan
 local notation "F" => (Fan.prod P T₀)
-local notation "L" => LaurentPolynomial ℂ
+local notation "L" => LaurentPolynomial K
 local notation "SL" => Spec (CommRingCat.of L)
 local notation "q" => (projectiveLine L ↘ SL)
 local notation "fstF" => (FanHom.fst P T₀)
 local notation "sndF" => (FanHom.snd P T₀)
-local notation "π₂" => FanHom.algebraicMap sndF
-local notation "eT" => projectiveLineTorusIsoSpecLaurent
+local notation "π₂" => FanHom.finiteFanSchemeHom K sndF
+local notation "eT" => projectiveLineTorusIsoSpecLaurent K
 
 local notation "m(" f ")" =>
   AddMonoidHom.comp (Pi.evalAddMonoidHom (fun _ : Fin 1 ↦ ℤ) 0) (FanHom.latticeMap f)
 
 namespace Fan
 
-local notation "E" => projectiveLineTorusProductIsoLaurent
+local notation "E" => projectiveLineTorusProductIsoLaurent K
 
 private theorem productFan_nonempty_cones : Nonempty (F).cones :=
   ⟨⟨(⊥ : PointedCone ℝ (Fin 1 → ℝ)).prod (⊥ : PointedCone ℝ (Fin 1 → ℝ)),
     (Fan.mem_prod_cones ..).mpr ⟨_, Fan.bot_mem_projectiveSpace_cones _ _,
       _, mem_projectiveLineTorusFan_cones.mpr rfl, rfl⟩⟩⟩
 
-local notation "d" => Fan.denseTorusι F productFan_nonempty_cones
-local notation "A" => affineCoordinateRing (Fan.lattice F) (⊥ : PointedCone ℝ _)
+local notation "d" =>
+  Fan.affineChartι K F (Subtype.mk ⊥ (Fan.bot_mem F productFan_nonempty_cones.some.property))
+local notation "A" => affineChartRing K (Fan.lattice F) (⊥ : PointedCone ℝ _)
 
 private def characterUnits :
     Multiplicative (((Fin 1 → ℤ) × (Fin 1 → ℤ)) →+ ℤ) →* Aˣ :=
-  ((MonoidAlgebra.of ℂ _).comp
-    (denseTorusDualEquiv (Fan.lattice F)).symm.toMultiplicative.toMonoidHom).toHomUnits
+  ((AddMonoidAlgebra.of K (dualSemigroup (Fan.lattice F) ⊥)).comp
+    (AddMonoidHom.toMultiplicative
+      { toFun := fun m ↦ ⟨m, by simp⟩
+        map_zero' := rfl
+        map_add' := fun _ _ ↦ rfl })).toHomUnits
 
-local notation "z(" χ ")" => characterUnits (ofAdd χ)
+local notation "z(" χ ")" => characterUnits K (ofAdd χ)
 local notation "m₀" => m(fstF)
 local notation "m₁" => m(sndF)
-local notation "k" => (laurentEval z(m₁) : L →ₐ[ℂ] A)
+local notation "k" => (laurentEval z(m₁) : L →ₐ[K] A)
 
 /-- In the base projection on the dense torus, the Laurent parameter pulls back
 to the character of the second factor. -/
 private theorem denseTorusι_comp_laurentBase :
     d ≫ π₂ ≫ (eT).hom = Spec.map (CommRingCat.ofHom (k).toRingHom) := by
-  have : IsOpenImmersion (Spec.algebraMap (Polynomial ℂ) L) :=
-    IsOpenImmersion.of_isLocalization (Polynomial.X : Polynomial ℂ)
-  apply (cancel_mono (Spec.algebraMap (Polynomial ℂ) L ≫
-    projectiveLine.polynomialChartι ℂ 0)).mp
+  have : IsOpenImmersion (Spec.algebraMap (Polynomial K) L) :=
+    IsOpenImmersion.of_isLocalization (Polynomial.X : Polynomial K)
+  apply (cancel_mono (Spec.algebraMap (Polynomial K) L ≫
+    projectiveLine.polynomialChartι K 0)).mp
   simp only [Category.assoc, Spec.algebraMap,
     projectiveLineTorusIsoSpecLaurent_hom_comp_chart]
-  rw [projectiveLineTorusι_def, ← reassoc_of% FanHom.algebraicMap_comp,
-    FanHom.denseTorusι_comp_projectiveLineToricIso,
+  rw [projectiveLineTorusι_def, ← reassoc_of% FanHom.finiteFanSchemeHom_comp K,
+    FanHom.denseTorusι_comp_projectiveLineToricIso K _ productFan_nonempty_cones,
     projectiveLine.polynomialPoint_def, ← Spec.map_comp_assoc, ← CommRingCat.ofHom_comp]
   congr 2
   apply congrArg CommRingCat.ofHom
@@ -95,25 +100,26 @@ private theorem denseTorusι_comp_laurentBase :
 
 private theorem denseTorusι_comp_laurentProduct (f : FanHom F F)
     (hf : FanHom.comp sndF f = sndF) :
-    d ≫ f.algebraicMap ≫ (E).hom =
+    d ≫ f.finiteFanSchemeHom K ≫ (E).hom =
       projectiveLine.polynomialPoint L (k).toRingHom 0 (z(m(FanHom.comp fstF f)) : A) := by
-  apply (projectiveLine.isPullback_baseChangeProjection ℂ L).hom_ext
+  apply (projectiveLine.isPullback_baseChangeProjection K L).hom_ext
   · simp only [Category.assoc, projectiveLineTorusProductIsoLaurent_hom_baseChangeProjection,
-      ← reassoc_of% FanHom.algebraicMap_comp, FanHom.denseTorusι_comp_projectiveLineToricIso,
+      ← reassoc_of% FanHom.finiteFanSchemeHom_comp K,
       projectiveLine.polynomialPoint_comp_baseChangeProjection]
+    rw [FanHom.denseTorusι_comp_projectiveLineToricIso K _ productFan_nonempty_cones]
     congr 1
     exact ((k).comp_algebraMap).symm
   · simp only [Category.assoc, projectiveLineTorusProductIsoLaurent_hom_toBase,
-      ← reassoc_of% FanHom.algebraicMap_comp, hf, denseTorusι_comp_laurentBase,
+      ← reassoc_of% FanHom.finiteFanSchemeHom_comp K, hf, denseTorusι_comp_laurentBase,
       projectiveLine.polynomialPoint_over]
 
 /-- In Laurent product coordinates, the lattice shear `(x, y) ↦ (x + a • y, y)`
 acts as `[X₀ : X₁] ↦ [t⁻ᵃ X₀ : X₁]` over the base with Laurent parameter `t`.
 In the chart with fiber coordinate `X₁ / X₀` it acts by multiplication by `tᵃ`. -/
 @[reassoc]
-theorem _root_.TauCeti.Toric.FanHom.algebraicMap_comp_projectiveLineTorusProductIsoLaurent_of_shear
-    (f : FanHom F F) (a : ℤ) (hf : ∀ x, f.latticeMap x = (x.1 + a • x.2, x.2)) :
-    f.algebraicMap ≫ (E).hom =
+theorem _root_.TauCeti.Toric.FanHom.finiteFanSchemeHom_comp_laurentProductIso_shear
+    [IsDomain K] (f : FanHom F F) (a : ℤ) (hf : ∀ x, f.latticeMap x = (x.1 + a • x.2, x.2)) :
+    f.finiteFanSchemeHom K ≫ (E).hom =
       (E).hom ≫ (projectiveLine.scalingBy L (isUnit_T (-a)).unit).hom := by
   have hsnd : FanHom.comp sndF f = sndF := by
     apply FanHom.ext
@@ -124,11 +130,12 @@ theorem _root_.TauCeti.Toric.FanHom.algebraicMap_comp_projectiveLineTorusProduct
     simp [FanHom.comp_latticeMap, FanHom.fst_latticeMap, FanHom.snd_latticeMap, hf]
   refine AlgebraicGeometry.ext_of_isDominant_of_isSeparated q ?_ d ?_
   · simp only [Category.assoc, projectiveLine.scalingBy_hom_over,
-      projectiveLineTorusProductIsoLaurent_hom_toBase, ← reassoc_of% FanHom.algebraicMap_comp, hsnd]
-  · have hid := denseTorusι_comp_laurentProduct (FanHom.id F) (by simp)
-    simp only [FanHom.algebraicMap_id, Category.id_comp, FanHom.comp_id] at hid
+      projectiveLineTorusProductIsoLaurent_hom_toBase,
+      ← reassoc_of% FanHom.finiteFanSchemeHom_comp K, hsnd]
+  · have hid := denseTorusι_comp_laurentProduct K (FanHom.id F) (by simp)
+    simp only [FanHom.finiteFanSchemeHom_id K, Category.id_comp, FanHom.comp_id] at hid
     have hrev : (0 : Fin 2).rev = 1 := rfl
-    rw [denseTorusι_comp_laurentProduct f hsnd, hfst,
+    rw [denseTorusι_comp_laurentProduct K f hsnd, hfst,
       ← Category.assoc d, hid, projectiveLine.polynomialPoint_rev _ 0 z(m₀),
       projectiveLine.polynomialPoint_rev _ 0 z(m₀ + a • m₁), hrev,
       projectiveLine.polynomialPoint_comp_scalingBy]

@@ -26,21 +26,24 @@ open QPainleve QPainleve.BlowupTower TauCeti.AlgebraicGeometry Scheme.IdealSheaf
 
 namespace TauCeti.Toric.Fan
 
-variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
+universe u
+
+variable (K : Type u) [Field K] [PerfectField K] [RootableBy Kˣ ℕ]
+  {N : Type u} {V : Type*} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {Φ : Fan i} [Nonempty Φ.cones] {n : ℕ}
   (hΦ : Φ.IsRegular) (b : Module.Basis (Fin 2) ℤ N) (s : Fin n → Φ.Ray)
-  (c d : Multiplicative (Fin n → ℤ) →* ℂˣ)
+  (c d : Multiplicative (Fin n → ℤ) →* Kˣ)
 
-local notation "S" => Spec (CommRingCat.of ℂ)
 local notation "center" a:arg => (fun j : Fin n ↦ a (ofAdd (Pi.single j 1)))
-local notation "M" a:arg => internalBlowupTower b s (center a)
+local notation "M" a:arg => internalBlowupTower K b s (center a)
 local notation "π" a:arg => toBase (WithBoundary.toTower (Sigma.snd (M a)))
 local notation "strict[" a "]" => Scheme.Hom.ker (WithBoundary.boundaryι (Sigma.snd (M a)))
-local notation "prime[" a "]" => internalBlowupBoundaryPrimeEquiv hΦ b s (center a)
-local notation "base" => Φ.algebraicRealizationStructureMap
+local notation "prime[" a "]" => internalBlowupBoundaryPrimeEquiv K hΦ b s (center a)
+local notation "base" => Φ.finiteFanSchemeToSpec K
 
 variable {X X' Y Y' : Scheme} [IsIntegral X] [IsIntegral X']
-  {f : X ⟶ S} {g : X' ⟶ S} [SmoothOfRelativeDimension 2 f] [SmoothOfRelativeDimension 2 g]
+  {f : X ⟶ Spec (.of K)} {g : X' ⟶ Spec (.of K)}
+  [SmoothOfRelativeDimension 2 f] [SmoothOfRelativeDimension 2 g]
   [QuasiCompact f] [QuasiCompact g]
   {D : X.IdealSheafData} {D' : X'.IdealSheafData} [IsReduced D.subscheme] [IsReduced D'.subscheme]
   {m m' : ℕ} {T : BlowupTower X m Y} {U : BlowupTower X' m' Y'}
@@ -63,17 +66,17 @@ theorem exists_iso_of_eq_center_character
     (hcenters : ∀ x ∈ (rayChargeMap s).ker,
       (∏ j, (center c) j ^ x j) = ∏ j, (center d) j ^ x j) :
     ∃ a : X ≅ X', a.hom ≫ g = f ∧ D'.comap a.hom = D ∧
-      Nonempty (ContractedToricTranslation b s p[e] q[e'] a) := by
+      Nonempty (ContractedToricTranslation K b s p[e] q[e'] a) := by
   obtain ⟨χ, t, ht⟩ :=
-    (exists_translation_lift_internalBlowupTower_iff b s (center c) (center d)).mpr hcenters
+    (exists_translation_lift_internalBlowupTower_iff K b s (center c) (center d)).mpr hcenters
   have hover : p[e] ≫ f = t.hom ≫ q[e'] ≫ g := by
     rw [hc, hd, hom_comp_internalBlowupTower_structureMap_of_isLift_torusTranslation
-      b s (center c) (center d) χ ht]
+      K b s (center c) (center d) χ ht]
   obtain ⟨a, ⟨ha, haOver, haD⟩, -⟩ :=
-    (existsUnique_iso_iff_eq_contractedBoundaryRays hΦ hΦ b b s s
+    (existsUnique_iso_iff_eq_contractedBoundaryRays K hΦ hΦ b b s s
       (center c) (center d) hT hU e e' (e.hom_inv_id_assoc _) (e'.hom_inv_id_assoc _)
       t hover hD hD' (Equiv.refl Φ.Ray)
-      (apply_internalBlowupBoundaryPrimeEquiv_of_isLift_torusTranslation b s hΦ
+      (apply_internalBlowupBoundaryPrimeEquiv_of_isLift_torusTranslation K b s hΦ
         (center c) (center d) ht)).mpr hkeep
   exact ⟨a, haOver, haD, ⟨⟨χ, t, ht, ha⟩⟩⟩
 

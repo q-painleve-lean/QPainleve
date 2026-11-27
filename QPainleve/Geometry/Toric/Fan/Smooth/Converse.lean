@@ -5,11 +5,12 @@ Authors: The QPainleve contributors
 -/
 module
 
-public import QPainleve.Geometry.Toric.Fan.Smooth
+public import QPainleve.Geometry.Toric.BaseChange.Fan
 
 import QPainleve.Algebra.MonoidAlgebra.GradedCotangent
 import QPainleve.Geometry.Toric.Cone.Regularity
-import QPainleve.Geometry.Toric.Fan.FunctionField
+import QPainleve.Geometry.Toric.BaseChange.FunctionField
+import QPainleve.Geometry.Toric.RegularChart
 import TauCeti.AlgebraicGeometry.Morphisms.Smooth.RelativeDimension
 import TauCeti.AlgebraicGeometry.Morphisms.Smooth.Regular
 import TauCeti.AlgebraicGeometry.Scheme.Regular.LocalRing
@@ -34,70 +35,73 @@ open TauCeti.AlgebraicGeometry
 
 namespace TauCeti.Toric
 
-variable {N : Type} {V : Type*} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
+universe u
+
+variable (k : Type u) [Field k] {N : Type u} {V : Type*}
+  [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V}
 
 namespace Fan
 
-private theorem topologicalKrullDim_algebraicRealization_of_smooth
-    (Φ : Fan i) [Nonempty Φ.cones] [Smooth Φ.algebraicRealizationStructureMap] :
-    topologicalKrullDim Φ.algebraicRealization = finrank ℤ N := by
-  let f := Φ.algebraicRealizationStructureMap
-  let j := Φ.denseTorusι inferInstance
+private theorem topologicalKrullDim_finiteFanScheme (Φ : Fan i) [Nonempty Φ.cones] :
+    topologicalKrullDim (Φ.finiteFanScheme k) = finrank ℤ N := by
+  let f := Φ.finiteFanSchemeToSpec k
+  let hbot := Φ.bot_mem (inferInstance : Nonempty Φ.cones).some.property
+  let j := Φ.affineChartι k ⟨⊥, hbot⟩
   have hdim : SmoothOfRelativeDimension (finrank ℤ N) (j ≫ f) := by
-    rw [Φ.denseTorusι_comp_structureMap]
-    exact (isRegularCone_bot Φ.lattice).smoothOfRelativeDimension_affineToricScheme Φ.lattice
+    change SmoothOfRelativeDimension _ (Φ.affineChartι k ⟨⊥, hbot⟩ ≫ Φ.finiteFanSchemeToSpec k)
+    rw [Φ.affineChartι_finiteFanSchemeToSpec k ⟨⊥, hbot⟩]
+    exact (isRegularCone_bot Φ.lattice).smoothOfRelativeDimension_affineChart (R := k) Φ.lattice
   rw [← topologicalKrullDim_eq_of_isOpenEmbedding_of_locallyOfFiniteType f j.isOpenEmbedding]
   exact topologicalKrullDim_eq_of_smoothOfRelativeDimension (j ≫ f)
 
 private theorem isRegularCone_of_smooth_of_span_eq_top (Φ : Fan i) (σ : Φ.cones)
-    [Smooth Φ.algebraicRealizationStructureMap] (hspan : span ℝ (σ.val : Set V) = ⊤) :
+    [Smooth (Φ.finiteFanSchemeToSpec k)] (hspan : span ℝ (σ.val : Set V) = ⊤) :
     IsRegularCone i σ.val := by
   let : Nonempty Φ.cones := ⟨σ⟩
   let hσ := Φ.isToricCone σ.property
   obtain ⟨d, hd⟩ := hσ.rational.exists_positive_degree_dualSemigroup Φ.lattice hspan
-  let A := AddMonoidAlgebra ℂ (dualSemigroup Φ.lattice σ.val)
-  let P : Ideal A := (HomogeneousIdeal.irrelevant (AddMonoidAlgebra.gradeBy ℂ d)).toIdeal
+  let A := AddMonoidAlgebra k (dualSemigroup Φ.lattice σ.val)
+  let P : Ideal A := (HomogeneousIdeal.irrelevant (AddMonoidAlgebra.gradeBy k d)).toIdeal
   let : P.IsMaximal := TauCeti.GradedAlgebra.isMaximal_toIdeal_irrelevant _
     (fun _ ↦ AddMonoidAlgebra.mem_bot_of_mem_gradeBy_zero d hd)
   let p : PrimeSpectrum A := ⟨P, inferInstance⟩
-  let e : Φ.affineToricChart σ ≅ Spec (.of A) :=
-    Scheme.Spec.mapIso (AddMonoidAlgebra.toMultiplicativeAlgEquiv ℂ ℂ
-      (dualSemigroup Φ.lattice σ.val)).toRingEquiv.toCommRingCatIso.op
-  let j := e.inv ≫ Φ.affineToricChartι σ
-  let f := Φ.algebraicRealizationStructureMap
+  let j := Φ.affineChartι k σ
+  let f := Φ.finiteFanSchemeToSpec k
   have : Smooth (j ≫ f) := MorphismProperty.comp_mem _ _ _ inferInstance inferInstance
   let : IsRegularLocalRing (Localization.AtPrime P) :=
     (isRegularLocalRing_stalk_Spec_iff (.of A) p).mp (isRegularLocalRing_stalk_of_smooth (j ≫ f) p)
   have hdim : ringKrullDim (Localization.AtPrime P) ≤ finrank ℤ N := by
     rw [IsLocalization.AtPrime.ringKrullDim_eq_height P]
     refine Ideal.height_le_ringKrullDim_of_isPrime.trans ?_
-    have hj : topologicalKrullDim (PrimeSpectrum A) = topologicalKrullDim Φ.algebraicRealization :=
+    have hj : topologicalKrullDim (PrimeSpectrum A) = topologicalKrullDim (Φ.finiteFanScheme k) :=
       topologicalKrullDim_eq_of_isOpenEmbedding_of_locallyOfFiniteType f j.isOpenEmbedding
     rw [← PrimeSpectrum.topologicalKrullDim_eq_ringKrullDim, hj,
-      Φ.topologicalKrullDim_algebraicRealization_of_smooth]
+      Φ.topologicalKrullDim_finiteFanScheme k]
   obtain ⟨hfin, hcard⟩ :=
-    AddMonoidAlgebra.finite_addIrreducible_and_card_le_of_isRegularLocalRing (k := ℂ) d hd hdim
+    AddMonoidAlgebra.finite_addIrreducible_and_card_le_of_isRegularLocalRing (k := k) d hd hdim
   exact hσ.isRegularCone_of_card_addIrreducible_le Φ.lattice d hd hcard
 
-/-- A rank-two fan whose algebraic realization over `ℂ` is smooth has regular cones. -/
-theorem isRegular_of_smooth_algebraicRealizationStructureMap (Φ : Fan i)
-    (hN : finrank ℤ N = 2) [Smooth Φ.algebraicRealizationStructureMap] : Φ.IsRegular := by
+/-- A rank-two fan whose realization over a field is smooth has regular cones. -/
+theorem isRegular_of_smooth_finiteFanSchemeToSpec (Φ : Fan i)
+    (hN : finrank ℤ N = 2) [Smooth (Φ.finiteFanSchemeToSpec k)] : Φ.IsRegular := by
   apply isRegular_iff.mpr
   intro σ hσ
   let := Φ.lattice.finiteDimensional
   have hv : finrank ℝ V = 2 := Φ.lattice.finrank_eq.symm.trans hN
   by_cases hspan : span ℝ (σ : Set V) = ⊤
-  · exact Φ.isRegularCone_of_smooth_of_span_eq_top ⟨σ, hσ⟩ hspan
+  · exact Φ.isRegularCone_of_smooth_of_span_eq_top k ⟨σ, hσ⟩ hspan
   · have hlt := Submodule.finrank_lt hspan
     exact (Φ.isToricCone hσ).isRegularCone_of_finrank_span_le_one Φ.lattice (by omega)
 
-/-- For a rank-two fan, regularity is equivalent to smoothness of its realization over `ℂ`. -/
-theorem isRegular_iff_smooth_algebraicRealizationStructureMap (Φ : Fan i)
+/-- For a rank-two fan, regularity is equivalent to smoothness of its realization over a field. -/
+theorem isRegular_iff_smooth_finiteFanSchemeToSpec (Φ : Fan i)
     (hN : finrank ℤ N = 2) :
-    Φ.IsRegular ↔ Smooth Φ.algebraicRealizationStructureMap :=
-  ⟨Φ.smooth_algebraicRealizationStructureMap, fun _ ↦
-    Φ.isRegular_of_smooth_algebraicRealizationStructureMap hN⟩
+    Φ.IsRegular ↔ Smooth (Φ.finiteFanSchemeToSpec k) :=
+  ⟨fun hΦ ↦
+      have := Φ.smoothOfRelativeDimension_finiteFanSchemeToSpec (R := k) hΦ
+      SmoothOfRelativeDimension.smooth (finrank ℤ N) _,
+    fun _ ↦ Φ.isRegular_of_smooth_finiteFanSchemeToSpec k hN⟩
 
 end Fan
 

@@ -30,14 +30,17 @@ open Scheme.IdealSheafData LineBundleClass TauCeti.Toric.Fan
 
 namespace QPainleve.SignedClusterModularGroup.ContractedToricFiber
 
-local notation "S" => Spec (CommRingCat.of ℂ)
-local notation "Xtor[" r "]" => Spec (CommRingCat.of (LaurentRing ℂ (Fin r)))
-local notation "Dtor[" Φ "," h "]" => Scheme.IdealSheafData.subscheme (Fan.boundaryIdeal Φ h)
+variable {k₀ : Type} [Field k₀] [IsAlgClosed k₀]
+
+local notation "S" => Spec (CommRingCat.of k₀)
+local notation "Xtor[" r "]" => Spec (CommRingCat.of (LaurentRing k₀ (Fin r)))
+local notation "Dtor[" coeff "," Φ "," h "]" => Scheme.IdealSheafData.subscheme
+  (Fan.toricBoundaryIdeal coeff Φ h)
 local notation "D[" M "]" => Scheme.Hom.ker (Over.Hom.left (Arrow.hom (MarkedSurface.pair M)))
-local notation "Pic[" Φ "," r "]" =>
-  Additive (LineBundleClass (Fan.algebraicRealization Φ)) × (Fin r → ℤ)
+local notation "Pic[" coeff "," Φ "," r "]" =>
+  Additive (LineBundleClass (Fan.finiteFanScheme coeff Φ)) × (Fin r → ℤ)
 local notation "centers(" c ")" => (fun j ↦ c (ofAdd (Pi.single j 1)))
-local notation "model[" b "," s "," c "]" => Fan.internalBlowupTower b s centers(c)
+local notation "model[" b "," s "," c "]" => Fan.internalBlowupTower k₀ b s centers(c)
 local notation "classOf(" h ")" => (LineBundleClass.mk (IsEffectiveCartier.toInvertibleSheaf h))⁻¹
 
 variable {N N' V V' : Type} [AddCommGroup N] [AddCommGroup N']
@@ -46,14 +49,14 @@ variable {N N' V V' : Type} [AddCommGroup N] [AddCommGroup N']
   [hΦ₀ : Nonempty Φ.cones]
   {r n m : ℕ} [NeZero n] [NeZero m]
   {L : Type} [AddCommGroup L] {B : LinearMap.BilinForm ℤ L}
-  {M : MarkedSurface ℂ n B Xtor[r]}
+  {M : MarkedSurface k₀ n B (QPainleve.CharacterTorus.scheme k₀ (Fin r →₀ ℤ))}
   {b : Basis (Fin 2) ℤ N} {b' : Basis (Fin 2) ℤ N'}
   {s : Fin r → Φ.Ray} {s' : Fin r → Ψ.Ray} {hΦ : Φ.IsRegular}
-  [PrestableFamily (Dtor[Φ,hΦ₀] ↘ S)]
-  {α : Type*} {a : α → (Dtor[Φ,hΦ₀] ↘ S).smoothLocus}
+  [PrestableFamily (Dtor[k₀,Φ,hΦ₀] ↘ Spec (.of k₀))]
+  {α : Type*} {a : α → (Dtor[k₀,Φ,hΦ₀] ↘ Spec (.of k₀)).smoothLocus}
   {T : Scheme.NodalCycleNumbering a m}
-  {o : ZMod m} {J : L →ₗ[ℤ] Pic[Φ,r]}
-  {c : Multiplicative (Fin r → ℤ) →* ℂˣ}
+  {o : ZMod m} {J : L →ₗ[ℤ] Pic[k₀,Φ,r]}
+  {c : Multiplicative (Fin r → ℤ) →* k₀ˣ}
   (p : ContractedToricFiber b s hΦ T o J c M)
 
 local instance : SmoothOfRelativeDimension 2 (M.surface ↘ S) := M.smooth
@@ -68,9 +71,9 @@ theorem existsUnique_rayChargeEquiv_of_equal_exchange_matrix
     {l : ℕ} {Y : Scheme} {A : BlowupTower M.surface l Y}
     (hA : IsNodalBoundaryTower D[M] (M.surface ↘ S) (𝟙 _) A)
     (u : Y ≅ (model[b,s,c]).1) (hu : u.inv ≫ A.toBase = p.projection)
-    (hD : D[M].IsEffectiveCartier) (hnefD : IsNef ℂ (M.surface ↘ S) classOf(hD))
-    (hsqD : Chow.classIntersectionNumber ℂ M.surface classOf(hD) classOf(hD) = 0)
-    (hcan : classOf(hD) = (LineBundleClass.mk (canonicalBundle ℂ M.surface 2))⁻¹)
+    (hD : D[M].IsEffectiveCartier) (hnefD : IsNef k₀ (M.surface ↘ S) classOf(hD))
+    (hsqD : Chow.classIntersectionNumber k₀ M.surface classOf(hD) classOf(hD) = 0)
+    (hcan : classOf(hD) = (LineBundleClass.mk (canonicalBundle k₀ M.surface 2))⁻¹)
     (hδ : IsPrimitive (Additive.ofMul classOf(hD)))
     (hmat : chargeExchangeMatrix b.detDualEquiv.toLinearMap (rayChargeMap s) =
       chargeExchangeMatrix b'.detDualEquiv.toLinearMap (rayChargeMap s')) :
@@ -82,11 +85,11 @@ theorem existsUnique_rayChargeEquiv_of_equal_exchange_matrix
 
 variable [hΨ₀ : Nonempty Ψ.cones] {m' : ℕ} [NeZero m']
   {L' : Type} [AddCommGroup L'] {B' : LinearMap.BilinForm ℤ L'}
-  {M' : MarkedSurface ℂ n B' Xtor[r]} {hΨ : Ψ.IsRegular}
-  [PrestableFamily (Dtor[Ψ,hΨ₀] ↘ S)]
-  {α' : Type*} {a' : α' → (Dtor[Ψ,hΨ₀] ↘ S).smoothLocus}
-  {T' : Scheme.NodalCycleNumbering a' m'} {o' : ZMod m'} {J' : L' →ₗ[ℤ] Pic[Ψ,r]}
-  {d : Multiplicative (Fin r → ℤ) →* ℂˣ}
+  {M' : MarkedSurface k₀ n B' (QPainleve.CharacterTorus.scheme k₀ (Fin r →₀ ℤ))} {hΨ : Ψ.IsRegular}
+  [PrestableFamily (Dtor[k₀,Ψ,hΨ₀] ↘ Spec (.of k₀))]
+  {α' : Type*} {a' : α' → (Dtor[k₀,Ψ,hΨ₀] ↘ Spec (.of k₀)).smoothLocus}
+  {T' : Scheme.NodalCycleNumbering a' m'} {o' : ZMod m'} {J' : L' →ₗ[ℤ] Pic[k₀,Ψ,r]}
+  {d : Multiplicative (Fin r → ℤ) →* k₀ˣ}
   (q : ContractedToricFiber b' s' hΨ T' o' J' d M')
 
 include p q in
@@ -98,8 +101,8 @@ theorem exists_marked_endpoint_comparison_of_equal_exchange_matrix
     [Scheme.IsRationalOver (M.surface ↘ S)]
     (hcΦ : Φ.IsComplete) (hcΨ : Ψ.IsComplete)
     (v : ZMod m ≃ Φ.Ray) (v' : ZMod m' ≃ Ψ.Ray)
-    (hv : ∀ j, T.component j = Φ.boundaryNormalizationComponentEquiv hΦ (v j))
-    (hv' : ∀ j, T'.component j = Ψ.boundaryNormalizationComponentEquiv hΨ (v' j))
+    (hv : ∀ j, T.component j = Φ.boundaryNormalizationComponentEquiv k₀ hΦ (v j))
+    (hv' : ∀ j, T'.component j = Ψ.boundaryNormalizationComponentEquiv k₀ hΨ (v' j))
     (hpos : ∀ j, b.detDualEquiv (v j).primitiveGenerator (v (j + 1)).primitiveGenerator = 1 ∧
       ∃ σ : Φ.cones, (v j).toCone ≤ σ ∧ (v (j + 1)).toCone ≤ σ)
     (hpos' : ∀ j, b'.detDualEquiv (v' j).primitiveGenerator (v' (j + 1)).primitiveGenerator = 1 ∧
@@ -114,11 +117,11 @@ theorem exists_marked_endpoint_comparison_of_equal_exchange_matrix
     (u : Y ≅ (model[b,s,c]).1) (u' : Y' ≅ (model[b',s',d]).1)
     (hu : u.inv ≫ A.toBase = p.projection) (hu' : u'.inv ≫ A'.toBase = q.projection)
     (hD : D[M].IsEffectiveCartier) (hE : D[M'].IsEffectiveCartier)
-    (hnefD : IsNef ℂ (M.surface ↘ S) classOf(hD))
-    (hnefE : IsNef ℂ (M'.surface ↘ S) classOf(hE))
-    (hsqD : Chow.classIntersectionNumber ℂ M.surface classOf(hD) classOf(hD) = 0)
-    (hsqE : Chow.classIntersectionNumber ℂ M'.surface classOf(hE) classOf(hE) = 0)
-    (hcan : classOf(hD) = (LineBundleClass.mk (canonicalBundle ℂ M.surface 2))⁻¹)
+    (hnefD : IsNef k₀ (M.surface ↘ S) classOf(hD))
+    (hnefE : IsNef k₀ (M'.surface ↘ S) classOf(hE))
+    (hsqD : Chow.classIntersectionNumber k₀ M.surface classOf(hD) classOf(hD) = 0)
+    (hsqE : Chow.classIntersectionNumber k₀ M'.surface classOf(hE) classOf(hE) = 0)
+    (hcan : classOf(hD) = (LineBundleClass.mk (canonicalBundle k₀ M.surface 2))⁻¹)
     (hδ : IsPrimitive (Additive.ofMul classOf(hD)))
     (hmat : chargeExchangeMatrix b.detDualEquiv.toLinearMap (rayChargeMap s) =
       chargeExchangeMatrix b'.detDualEquiv.toLinearMap (rayChargeMap (s' ∘ σ))) :
@@ -136,9 +139,9 @@ theorem exists_marked_endpoint_comparison_of_equal_exchange_matrix
     simpa only [g, Fan.mapEquivIso_latticeEquiv, LinearEquiv.coe_addEquiv_apply,
       LinearEquiv.apply_symm_apply] using (hdet (e.symm x) (e.symm y)).symm
   obtain ⟨Δ, hΔΦ, hΔΩ, hΔ, hpre, k, hk, U, hleft, hright⟩ :=
-    g.exists_oriented_common_boundary_subdivision T T' hΦ hΨ hcΦ hcΨ hv hv' b b' hg hpos hpos'
+    g.exists_oriented_common_boundary_subdivision k₀ T T' hΦ hΨ hcΦ hcΨ hv hv' b b' hg hpos hpos'
   let : NeZero k := hk
-  let : PrestableFamily (Dtor[Δ,hΔΦ.nonempty_cones_of_nonempty hΦ₀] ↘ S) := hpre
+  let : PrestableFamily (Dtor[k₀,Δ,hΔΦ.nonempty_cones_of_nonempty hΦ₀] ↘ S) := hpre
   exact ⟨e, hmatch, hdet, Δ, hΔΦ, hΔΩ,
     p.nonempty_markedToricEndpointComparison q e hΔΦ hΔΩ hΔ σ hc hmatch hdet horder hA hA'
       u u' hu hu' hD hE hnefD hnefE hsqD hsqE U hleft hright⟩

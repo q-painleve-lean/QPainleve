@@ -6,7 +6,7 @@ Authors: The QPainleve contributors
 module
 
 public import QPainleve.Geometry.Toric.Fan.Boundary.Component
-public import QPainleve.Geometry.Toric.Fan.Point
+public import QPainleve.Geometry.Toric.BaseChange.Point
 public import TauCeti.AlgebraicGeometry.Curves.Basic
 public import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.ProjectiveLine.Scaling
 
@@ -29,90 +29,93 @@ Gross, Hacking and Keel,
 
 public noncomputable section
 
-open AlgebraicGeometry CategoryTheory CategoryTheory.Limits Multiplicative
+open AlgebraicGeometry CategoryTheory CategoryTheory.Limits AddMonoidAlgebra
 open Scheme.IdealSheafData TauCeti.AlgebraicGeometry
 
 namespace TauCeti.Toric
 
-variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
+universe u
+
+variable (k : Type u) [Field k] {N : Type u} {V : Type*}
+  [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V}
 
 namespace Fan
 
 variable {Φ : Fan i} (hΦ : Φ.IsRegular) (ρ : Φ.Ray)
 
-local notation "D" => Φ.rayBoundaryIdeal hΦ ρ
+local notation "D" => Φ.rayDivisorIdeal k hΦ ρ
 
-local notation "base" => Spec (CommRingCat.of ℂ)
-local notation "Gm" => Spec (CommRingCat.of (LaurentPolynomial ℂ))
+local notation "base" => Spec (CommRingCat.of k)
+local notation "Gm" => Spec (CommRingCat.of (LaurentPolynomial k))
 
 variable (hdim : Module.finrank ℤ N = 2) {m : N →+ ℤ}
   (hm : m ρ.primitiveGenerator = 0) (hprim : Function.Surjective m)
 
-local notation "j" => ρ.orbitToComponent hΦ hdim hm hprim
-local notation "t" => projectiveLine.torusInclusion ℂ
+local notation "j" => ρ.orbitToComponent k hΦ hdim hm hprim
+local notation "t" => projectiveLine.torusInclusion k
 
-private instance : (t).IsOver base := ⟨projectiveLine.torusInclusion_over ℂ⟩
+private instance : (t).IsOver base := ⟨projectiveLine.torusInclusion_over k⟩
 
 private def rayBoundaryFunctionFieldEquiv :
-    (projectiveLine ℂ).functionField ≃ₐ[ℂ] (D).subscheme.functionField :=
+    (projectiveLine k).functionField ≃ₐ[k] (D).subscheme.functionField :=
   let eP := (asIso (t).functionFieldMap).commRingCatIsoToRingEquiv
   let eD := (asIso (j).functionFieldMap).commRingCatIsoToRingEquiv
-  (AlgEquiv.ofRingEquiv (f := eP) ((t).functionFieldMap_algebraMap ℂ)).trans
-    (AlgEquiv.ofRingEquiv (f := eD) ((j).functionFieldMap_algebraMap ℂ)).symm
+  (AlgEquiv.ofRingEquiv (f := eP) ((t).functionFieldMap_algebraMap k)).trans
+    (AlgEquiv.ofRingEquiv (f := eD) ((j).functionFieldMap_algebraMap k)).symm
 
-variable [hproper : IsProper ((Φ.rayBoundaryIdeal hΦ ρ).subscheme ↘ Spec (.of ℂ))]
+variable [hproper : IsProper ((Φ.rayDivisorIdeal k hΦ ρ).subscheme ↘ Spec (.of k))]
 
 /-- A proper reduced ray divisor of a regular toric surface is a projective line.
 The coordinate is normalized by the given primitive character on the open orbit. -/
-def Ray.boundaryIsoProjectiveLine : (D).subscheme ≅ projectiveLine ℂ :=
-  letI := Φ.isRegular_rayBoundary hΦ ρ
+def Ray.boundaryIsoProjectiveLine : (D).subscheme ≅ projectiveLine k :=
+  letI := Φ.isRegular_rayBoundary k hΦ ρ
   (D).subscheme.isoProjectiveLine
-    ((projectiveLine.functionFieldEquiv ℂ).symm.trans
-      (rayBoundaryFunctionFieldEquiv hΦ ρ hdim hm hprim))
+    ((projectiveLine.functionFieldEquiv k).symm.trans
+      (rayBoundaryFunctionFieldEquiv k hΦ ρ hdim hm hprim))
 
 instance Ray.isOver_boundaryIsoProjectiveLine_hom :
-    (ρ.boundaryIsoProjectiveLine hΦ hdim hm hprim).hom.IsOver base := by
-  let := Φ.isRegular_rayBoundary hΦ ρ
+    (ρ.boundaryIsoProjectiveLine k hΦ hdim hm hprim).hom.IsOver base := by
+  let := Φ.isRegular_rayBoundary k hΦ ρ
   unfold Ray.boundaryIsoProjectiveLine
   infer_instance
 
 include hdim hm hprim in
-/-- A proper ray divisor of a regular toric surface is a curve over `ℂ`. -/
-theorem Ray.isCurveOver_boundaryComponent : (D).subscheme.IsCurveOver ℂ := by
-  let p := ρ.boundaryIsoProjectiveLine hΦ hdim hm hprim
+/-- A proper ray divisor of a regular toric surface is a curve over the coefficient field. -/
+theorem Ray.isCurveOver_boundaryComponent : (D).subscheme.IsCurveOver k := by
+  let p := ρ.boundaryIsoProjectiveLine k hΦ hdim hm hprim
   have hp := p.hom.homeomorph.isHomeomorph.topologicalKrullDim_eq
   exact Scheme.isCurveOver_iff.mpr
-    ⟨inferInstance, inferInstance, hp.trans (Scheme.IsCurveOver.topologicalKrullDim_eq_one ℂ)⟩
+    ⟨inferInstance, inferInstance, hp.trans (Scheme.IsCurveOver.topologicalKrullDim_eq_one k)⟩
 
 /-- The projective coordinate restricts to the prescribed Laurent coordinate on the ray orbit. -/
 @[reassoc (attr := simp)]
 theorem Ray.orbitToComponent_comp_boundaryIsoProjectiveLine :
-    j ≫ (ρ.boundaryIsoProjectiveLine hΦ hdim hm hprim).hom = t := by
-  let := Φ.isRegular_rayBoundary hΦ ρ
+    j ≫ (ρ.boundaryIsoProjectiveLine k hΦ hdim hm hprim).hom = t := by
+  let := Φ.isRegular_rayBoundary k hΦ ρ
   apply Scheme.Hom.ext_of_functionFieldMap_eq base
   ext x
   rw [Scheme.Hom.functionFieldMap_comp, CommRingCat.comp_apply]
   simp only [Ray.boundaryIsoProjectiveLine, Scheme.functionFieldMap_isoProjectiveLine_hom,
     AlgEquiv.trans_apply, AlgEquiv.symm_apply_apply, rayBoundaryFunctionFieldEquiv]
   let e := AlgEquiv.ofRingEquiv (f := (asIso (j).functionFieldMap).commRingCatIsoToRingEquiv)
-    ((j).functionFieldMap_algebraMap ℂ)
+    ((j).functionFieldMap_algebraMap k)
   exact e.apply_symm_apply _
 
 /-- The binomial center with parameter `c` is the projective point with coordinates
 `[-c⁻¹ : 1]` in the projective coordinate extending its primitive character. -/
 @[reassoc]
-theorem Ray.binomialCenterOnComponent_comp_boundaryIsoProjectiveLine (c : ℂˣ) :
-    ρ.binomialCenterOnComponent hΦ hdim hm hprim c ≫
-      (ρ.boundaryIsoProjectiveLine hΦ hdim hm hprim).hom =
-        projectiveLine.polynomialPoint ℂ (RingHom.id ℂ) 1
-          (((-1 : ℂˣ) * c⁻¹ : ℂˣ) : ℂ) := by
-  rw [ρ.binomialCenterOnComponent_eq, Category.assoc,
+theorem Ray.binomialCenterOnComponent_comp_boundaryIsoProjectiveLine (c : kˣ) :
+    ρ.binomialCenterOnComponent k hΦ hdim hm hprim c ≫
+      (ρ.boundaryIsoProjectiveLine k hΦ hdim hm hprim).hom =
+        projectiveLine.polynomialPoint k (RingHom.id k) 1
+          (((-1 : kˣ) * c⁻¹ : kˣ) : k) := by
+  rw [ρ.binomialCenterOnComponent_eq k, Category.assoc,
     Ray.orbitToComponent_comp_boundaryIsoProjectiveLine,
     projectiveLine.torusInclusion_eq_polynomialPoint, projectiveLine.SpecMap_polynomialPoint]
   congr 2
   · ext a
-    exact (laurentEval ((-1 : ℂˣ) * c⁻¹)).commutes a
+    exact (laurentEval ((-1 : kˣ) * c⁻¹)).commutes a
   · exact laurentEval_T_one _
 
 section Nodes
@@ -120,44 +123,46 @@ section Nodes
 open LaurentPolynomial
 
 private theorem torusInclusion_eq_polynomialPoint (s : Fin 2) :
-    t = projectiveLine.polynomialPoint ℂ (algebraMap ℂ (LaurentPolynomial ℂ)) s
+    t = projectiveLine.polynomialPoint k (algebraMap k (LaurentPolynomial k)) s
       (T (if s = 1 then 1 else -1)) := by
   fin_cases s
   · rw [projectiveLine.torusInclusion_eq_polynomialPoint]
     simpa [genericUnit_val, genericUnit_inv] using
-      projectiveLine.polynomialPoint_rev (algebraMap ℂ (LaurentPolynomial ℂ)) 1 (genericUnit ℂ)
-  · exact projectiveLine.torusInclusion_eq_polynomialPoint ℂ
+      projectiveLine.polynomialPoint_rev (algebraMap k (LaurentPolynomial k)) 1 (genericUnit k)
+  · exact projectiveLine.torusInclusion_eq_polynomialPoint k
 
 variable {σ : Φ.cones} (hρ : ρ.toCone ≤ σ)
 
-local notation "A" => affineCoordinateRing Φ.lattice σ.val
+local notation "A" => affineChartRing k Φ.lattice σ.val
 local notation "face" => Φ.isFaceOf_of_le σ.property ρ.toCone.property hρ
-local notation "q" => ρ.orbitToRayChart hdim hm hprim
+local notation "q" => ρ.orbitToRayChart k hdim hm hprim
 
 omit hproper in
 private theorem orbitToRayChart_comp_face_comp_polynomialPoint
     (s : Fin 2) (a : dualSemigroup Φ.lattice σ.val)
     (ha : (a : N →+ ℤ) = (if s = 1 then 1 else -1 : ℤ) • m) :
-    q ≫ faceAffineToricSchemeMap Φ.lattice face ≫
-      projectiveLine.polynomialPoint ℂ (algebraMap ℂ A) s (MonoidAlgebra.single (ofAdd a) 1) =
+    q ≫ faceAffineChartMap k Φ.lattice face ≫
+      projectiveLine.polynomialPoint k (algebraMap k A) s (single a 1) =
         t := by
-  rw [faceAffineToricSchemeMap_def, projectiveLine.SpecMap_polynomialPoint,
+  rw [faceAffineChartMap_def, projectiveLine.SpecMap_polynomialPoint,
     Ray.orbitToRayChart_def, projectiveLine.SpecMap_polynomialPoint,
-    torusInclusion_eq_polynomialPoint s]
+    torusInclusion_eq_polynomialPoint k s]
   have hcoeff :
-      ((ρ.orbitCoordinateMap hdim hm hprim).toRingHom.comp
-        ((faceAffineCoordinateRingMap Φ.lattice face).toRingHom.comp (algebraMap ℂ A))) =
-          algebraMap ℂ (LaurentPolynomial ℂ) := by
+      ((ρ.orbitCoordinateMap k hdim hm hprim).toRingHom.comp
+        ((faceAffineChartRingMap k Φ.lattice face).toRingHom.comp (algebraMap k A))) =
+          algebraMap k (LaurentPolynomial k) := by
     apply RingHom.ext
     intro c
     simp only [RingHom.comp_apply, AlgHom.toRingHom_eq_coe, RingHom.coe_coe, AlgHom.commutes]
   rw [hcoeff]
   congr 1
-  simp only [AlgHom.toRingHom_eq_coe, RingHom.coe_coe, faceAffineCoordinateRingMap_single]
+  simp only [AlgHom.toRingHom_eq_coe, RingHom.coe_coe, faceAffineChartRingMap_single]
   let n : ℤ := if s = 1 then 1 else -1
-  have he : (⟨a, dualSemigroup_anti Φ.lattice (face).le a.property⟩ :
-      dualSemigroup Φ.lattice ρ.toCone.val) = ρ.chartCharacter (m := n • m) (by simp [hm]) :=
-    Subtype.ext (by simpa only [Ray.coe_chartCharacter] using ha)
+  have he : AddSubmonoid.inclusion (dualSemigroup_anti Φ.lattice (face).le) a =
+      ρ.chartCharacter (m := n • m) (by simp [hm]) := by
+    apply Subtype.ext
+    rw [AddSubmonoid.coe_inclusion, Ray.coe_chartCharacter]
+    exact ha
   rw [he, ρ.orbitCoordinateMap_zsmul_chartCharacter]
 
 include hρ
@@ -165,42 +170,42 @@ include hρ
 private theorem boundaryIsoProjectiveLine_on_cone
     (s : Fin 2) (a : dualSemigroup Φ.lattice σ.val)
     (ha : (a : N →+ ℤ) = (if s = 1 then 1 else -1 : ℤ) • m) :
-    pullback.fst (D).subschemeι (Φ.affineToricChartι σ) ≫
-        (ρ.boundaryIsoProjectiveLine hΦ hdim hm hprim).hom =
-      pullback.snd (D).subschemeι (Φ.affineToricChartι σ) ≫
-        projectiveLine.polynomialPoint ℂ (algebraMap ℂ A) s (MonoidAlgebra.single (ofAdd a) 1) := by
-  let u := pullback.fst (D).subschemeι (Φ.affineToricChartι σ)
-  let v := pullback.snd (D).subschemeι (Φ.affineToricChartι σ)
-  let e := ρ.boundaryIsoProjectiveLine hΦ hdim hm hprim
-  let p := projectiveLine.polynomialPoint ℂ (algebraMap ℂ A) s (MonoidAlgebra.single (ofAdd a) 1)
-  let g : Gm ⟶ pullback (D).subschemeι (Φ.affineToricChartι σ) :=
-    pullback.lift j (q ≫ faceAffineToricSchemeMap Φ.lattice face) (by simp)
+    pullback.fst (D).subschemeι (Φ.affineChartι k σ) ≫
+        (ρ.boundaryIsoProjectiveLine k hΦ hdim hm hprim).hom =
+      pullback.snd (D).subschemeι (Φ.affineChartι k σ) ≫
+        projectiveLine.polynomialPoint k (algebraMap k A) s (single a 1) := by
+  let u := pullback.fst (D).subschemeι (Φ.affineChartι k σ)
+  let v := pullback.snd (D).subschemeι (Φ.affineChartι k σ)
+  let e := ρ.boundaryIsoProjectiveLine k hΦ hdim hm hprim
+  let p := projectiveLine.polynomialPoint k (algebraMap k A) s (single a 1)
+  let g : Gm ⟶ pullback (D).subschemeι (Φ.affineChartι k σ) :=
+    pullback.lift j (q ≫ faceAffineChartMap k Φ.lattice face) (by simp)
   have hgu : g ≫ u = j := pullback.lift_fst _ _ _
-  have hgv : g ≫ v = q ≫ faceAffineToricSchemeMap Φ.lattice face := pullback.lift_snd _ _ _
-  let : (pullback (D).subschemeι (Φ.affineToricChartι σ)).Over base := ⟨u ≫ (D).subscheme ↘ base⟩
+  have hgv : g ≫ v = q ≫ faceAffineChartMap k Φ.lattice face := pullback.lift_snd _ _ _
+  let : (pullback (D).subschemeι (Φ.affineChartι k σ)).Over base := ⟨u ≫ (D).subscheme ↘ base⟩
   have : IsOpenImmersion u := inferInstanceAs (IsOpenImmersion (pullback.fst _ _))
-  have : IsReduced (pullback (D).subschemeι (Φ.affineToricChartι σ)) :=
+  have : IsReduced (pullback (D).subschemeι (Φ.affineChartι k σ)) :=
     isReduced_of_isOpenImmersion u
   have : IsDominant g := IsDominant.of_comp_of_isOpenImmersion g u (H := hgu ▸ inferInstance)
-  have hu : pullback (D).subschemeι (Φ.affineToricChartι σ) ↘ base =
+  have hu : pullback (D).subschemeι (Φ.affineChartι k σ) ↘ base =
       u ≫ (D).subscheme ↘ base := (rfl)
   have : u.IsOver base := ⟨hu.symm⟩
   have : g.IsOver base := ⟨by rw [hu, ← Category.assoc, hgu, comp_over]⟩
   have : (v ≫ p).IsOver base := ⟨by
     rw [Category.assoc, projectiveLine.polynomialPoint_over, ← specOverSpec_over,
-      ← comp_over (Φ.affineToricChartι σ) base, ← pullback.condition_assoc, hu,
+      ← comp_over (Φ.affineChartι k σ) base, ← pullback.condition_assoc, hu,
       over_eq_subschemeι_comp]⟩
   apply ext_of_isDominant_of_isSeparated' base g (f := u ≫ e.hom) (g := v ≫ p)
   rw [← Category.assoc, hgu, Ray.orbitToComponent_comp_boundaryIsoProjectiveLine,
     ← Category.assoc, hgv, Category.assoc]
-  exact (orbitToRayChart_comp_face_comp_polynomialPoint ρ hdim hm hprim hρ s a ha).symm
+  exact (orbitToRayChart_comp_face_comp_polynomialPoint k ρ hdim hm hprim hρ s a ha).symm
 
 private theorem polynomialPoint_comp_boundaryIsoProjectiveLine_inv_subschemeι
     (τ : Φ.Ray) (hτ : τ.toCone ≤ σ) (hne : ρ ≠ τ) (s : Fin 2)
     (hs : 0 < (if s = 1 then 1 else -1 : ℤ) * m τ.primitiveGenerator) :
-    projectiveLine.polynomialPoint ℂ (RingHom.id ℂ) s 0 ≫
-      (ρ.boundaryIsoProjectiveLine hΦ hdim hm hprim).inv ≫ (D).subschemeι =
-        Φ.distinguishedPointHom σ := by
+    projectiveLine.polynomialPoint k (RingHom.id k) s 0 ≫
+      (ρ.boundaryIsoProjectiveLine k hΦ hdim hm hprim).inv ≫ (D).subschemeι =
+        Φ.distinguishedSection (R := k) σ := by
   let n : ℤ := if s = 1 then 1 else -1
   let hσ := Φ.isToricCone σ.property
   let r := τ.toToricRay Φ σ hτ
@@ -215,25 +220,25 @@ private theorem polynomialPoint_comp_boundaryIsoProjectiveLine_inv_subschemeι
     · rw [Set.mem_singleton_iff.mp h, Ray.primitiveGenerator_toToricRay]
       exact hs.le
   let a : dualSemigroup Φ.lattice σ.val := ⟨n • m, hn⟩
-  let d := distinguishedPoint Φ.lattice (⊤ : σ.val.Face)
-  have hz : d (MonoidAlgebra.single (ofAdd a) 1) = 0 := by
-    refine distinguishedPoint_top_single_eq_zero_of_pos Φ.lattice hσ r a ?_
+  let d := facePointAlgebraHom Φ.lattice (⊤ : σ.val.Face) k
+  have hz : d (single a 1) = 0 := by
+    refine facePointAlgebraHom_top_single_eq_zero_of_pos k Φ.lattice hσ r a 1 ?_
     rw [Ray.primitiveGenerator_toToricRay]
     exact hs
   let w := Spec.map (CommRingCat.ofHom d.toRingHom)
-  have hk : D ≤ (Φ.distinguishedPointHom σ).ker := by
-    rw [Φ.distinguishedPointHom_def]
-    exact le_sup_left.trans_eq (Φ.sup_rayBoundaryIdeal_eq_ker_distinguishedPoint hΦ hdim
+  have hk : D ≤ (Φ.distinguishedSection (R := k) σ).ker :=
+    le_sup_left.trans_eq (Φ.sup_rayBoundaryIdeal_eq_ker_distinguishedPoint k hΦ hdim
       hne σ hρ hτ)
-  let p := IsClosedImmersion.lift (D).subschemeι (Φ.distinguishedPointHom σ)
+  let p := IsClosedImmersion.lift (D).subschemeι (Φ.distinguishedSection (R := k) σ)
     (by rwa [ker_subschemeι])
-  have hp : p ≫ (D).subschemeι = Φ.distinguishedPointHom σ := IsClosedImmersion.lift_fac _ _ _
-  have he : p ≫ (ρ.boundaryIsoProjectiveLine hΦ hdim hm hprim).hom =
-      projectiveLine.polynomialPoint ℂ (RingHom.id ℂ) s 0 := by
-    rw [← pullback.lift_fst p w (hp.trans (Φ.distinguishedPointHom_def σ)), Category.assoc,
-      boundaryIsoProjectiveLine_on_cone hΦ ρ hdim hm hprim hρ s a rfl, ← Category.assoc,
+  have hp : p ≫ (D).subschemeι = Φ.distinguishedSection (R := k) σ :=
+    IsClosedImmersion.lift_fac _ _ _
+  have he : p ≫ (ρ.boundaryIsoProjectiveLine k hΦ hdim hm hprim).hom =
+      projectiveLine.polynomialPoint k (RingHom.id k) s 0 := by
+    rw [← pullback.lift_fst p w (hp.trans (Φ.distinguishedSection_def (R := k) σ)), Category.assoc,
+      boundaryIsoProjectiveLine_on_cone k hΦ ρ hdim hm hprim hρ s a rfl, ← Category.assoc,
       pullback.lift_snd, projectiveLine.SpecMap_polynomialPoint]
-    have hcoeff : (d : A →+* ℂ).comp (algebraMap ℂ A) = RingHom.id ℂ :=
+    have hcoeff : (d : A →+* k).comp (algebraMap k A) = RingHom.id k :=
       RingHom.ext d.commutes
     simp only [hcoeff, AlgHom.toRingHom_eq_coe, RingHom.coe_coe, hz]
   rw [← he, Category.assoc, Iso.hom_inv_id_assoc, hp]
@@ -243,11 +248,11 @@ the projective coordinate is zero, with homogeneous coordinates `[0 : 1]`. -/
 @[reassoc]
 theorem Ray.polynomialPoint_comp_boundaryIsoProjectiveLine_inv_subschemeι_of_pos
     (τ : Φ.Ray) (hτ : τ.toCone ≤ σ) (hs : 0 < m τ.primitiveGenerator) :
-    projectiveLine.polynomialPoint ℂ (RingHom.id ℂ) 1 0 ≫
-      (ρ.boundaryIsoProjectiveLine hΦ hdim hm hprim).inv ≫ (D).subschemeι =
-        Φ.distinguishedPointHom σ := by
+    projectiveLine.polynomialPoint k (RingHom.id k) 1 0 ≫
+      (ρ.boundaryIsoProjectiveLine k hΦ hdim hm hprim).inv ≫ (D).subschemeι =
+        Φ.distinguishedSection (R := k) σ := by
   have hne : ρ ≠ τ := fun h ↦ hs.ne' (h ▸ hm)
-  exact polynomialPoint_comp_boundaryIsoProjectiveLine_inv_subschemeι hΦ ρ
+  exact polynomialPoint_comp_boundaryIsoProjectiveLine_inv_subschemeι k hΦ ρ
     hdim hm hprim hρ τ hτ hne 1 (by simpa using hs)
 
 /-- At the intersection with a neighboring ray on which the character is negative,
@@ -255,11 +260,11 @@ the projective coordinate has a pole, with homogeneous coordinates `[1 : 0]`. -/
 @[reassoc]
 theorem Ray.polynomialPoint_comp_boundaryIsoProjectiveLine_inv_subschemeι_of_neg
     (τ : Φ.Ray) (hτ : τ.toCone ≤ σ) (hs : m τ.primitiveGenerator < 0) :
-    projectiveLine.polynomialPoint ℂ (RingHom.id ℂ) 0 0 ≫
-      (ρ.boundaryIsoProjectiveLine hΦ hdim hm hprim).inv ≫ (D).subschemeι =
-        Φ.distinguishedPointHom σ := by
+    projectiveLine.polynomialPoint k (RingHom.id k) 0 0 ≫
+      (ρ.boundaryIsoProjectiveLine k hΦ hdim hm hprim).inv ≫ (D).subschemeι =
+        Φ.distinguishedSection (R := k) σ := by
   have hne : ρ ≠ τ := fun h ↦ hs.ne (h ▸ hm)
-  exact polynomialPoint_comp_boundaryIsoProjectiveLine_inv_subschemeι hΦ ρ
+  exact polynomialPoint_comp_boundaryIsoProjectiveLine_inv_subschemeι k hΦ ρ
     hdim hm hprim hρ τ hτ hne 0 (by simpa using neg_pos.mpr hs)
 
 end Nodes

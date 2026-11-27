@@ -8,6 +8,7 @@ module
 public import QPainleve.Algebra.Cluster.ChargeKernel.Action
 public import QPainleve.SignedClusterModularGroup.Examples.ElevenVertex.Relations
 
+import QPainleve.Algebra.Field.Reference
 import QPainleve.AlgebraicGeometry.Chow.RationalSurface.Basic
 import QPainleve.SignedClusterModularGroup.Examples.ElevenVertex.Presentation
 import QPainleve.SignedClusterModularGroup.Realization.Presentation.Reference.Finite
@@ -31,6 +32,8 @@ public section
 open CategoryTheory MulOpposite Quiver QPainleve.Cluster
 
 namespace QPainleve.ElevenVertex
+
+local notation "K₀" => QPainleve.ReferenceField
 
 local notation "B" => exchangeMatrix
 local notation "K" => exchangeMatrix.matrix.mulVecLin.ker
@@ -78,8 +81,9 @@ private theorem neg_exchangeMatrix_eq_chargeExchangeMatrix :
 private theorem xPullback_eq_iff_columns (w v : Word B B) :
     w.xPullback k = v.xPullback k ↔ transportedColumns w = transportedColumns v := by
   obtain ⟨X, f, hsm, D, hD, _, hpre, _, _, A, Y, T, e, _, hint, hproj, hrat, _, _, _, hprim,
-    hnef, hsq, hT, hbase, hker, _, _, _, _⟩ := exists_eleven_vertex_toric_presentation (fun _ ↦ 1)
-  let S := Spec (CommRingCat.of ℂ)
+    hnef, hsq, hT, hbase, hker, _, _, _, _⟩ := exists_eleven_vertex_toric_presentation (k₀ := K₀)
+      (fun _ ↦ 1)
+  let S := Spec (CommRingCat.of K₀)
   let : X.Over S := ⟨f⟩
   let : (Iso.refl D.subscheme).hom.IsOver S :=
     inferInstanceAs ((𝟙 D.subscheme : D.subscheme ⟶ D.subscheme).IsOver S)
@@ -89,8 +93,8 @@ private theorem xPullback_eq_iff_columns (w v : Word B B) :
   let hi := isIntegralLattice_intCast 2
   let hc := Fan.isComplete_projectiveSpace b hi
   let : Scheme.IsRationalOver (X ↘ S) := hrat
-  let : Module.Free ℤ (Additive (LineBundleClass X)) := X.free_picard_of_isRationalOver ℂ
-  let : Module.Finite ℤ (Additive (LineBundleClass X)) := X.finite_picard_of_isRationalOver ℂ
+  let : Module.Free ℤ (Additive (LineBundleClass X)) := X.free_picard_of_isRationalOver K₀
+  let : Module.Finite ℤ (Additive (LineBundleClass X)) := X.finite_picard_of_isRationalOver K₀
   let P : D.ToricPresentation (X ↘ S) b _ 11 :=
     ⟨_, Fan.isRegular_projectiveSpace b hi, hc, planeCenterRay, fun _ ↦ 1,
       _, Y, T, hT, e, hbase, hker⟩

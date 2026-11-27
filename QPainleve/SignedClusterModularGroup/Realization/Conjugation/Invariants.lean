@@ -32,15 +32,17 @@ open Scheme
 
 namespace QPainleve.SignedClusterModularGroup.GeometricRealization
 
-local notation "S" => Spec (CommRingCat.of ℂ)
-local notation "Centers[" r "]" => Over.mk (structureMap ℂ (Fin r → ℤ))
-local notation "XTor[" r "]" => scheme ℂ (Fin r →₀ ℤ)
+variable {k₀ : Type} [Field k₀] [IsAlgClosed k₀]
+
+local notation "S" => Spec (CommRingCat.of k₀)
+local notation "Centers[" r "]" => Over.mk (structureMap k₀ (Fin r → ℤ))
+local notation "XTor[" r "]" => scheme k₀ (Fin r →₀ ℤ)
 local notation "src(" C "," x ")" =>
   x ≫ Scheme.PartialMap.domainSource (X := Centers[_]) (Y := Centers[_]) C
 local notation "dst(" C "," x ")" =>
   x ≫ Scheme.PartialMap.domainTarget (X := Centers[_]) (Y := Centers[_]) C
 local notation "cartier(" M ")" => MarkedSurface.isEffectiveCartier_boundaryIdeal M
-local notation "χ[" c "]" => pointsEquiv ℂ _ (Subtype.mk (Over.Hom.left c) (Over.w c))
+local notation "χ[" c "]" => pointsEquiv k₀ _ (Subtype.mk (Over.Hom.left c) (Over.w c))
 local notation "trop[" w "]" =>
   DFunLike.coe (F := Equiv.Perm (Fin _ → ℤ))
     (CategoryTheory.Functor.map (Paths.lift (tropicalPrefunctor (A := ℤ) (Fin _))) w)
@@ -51,19 +53,24 @@ variable {r n : ℕ} [NeZero n] {E E' : SkewExchangeMatrix (Fin r)}
   {i : N →+ V} {i' : N' →+ V'} {b : Basis (Fin 2) ℤ N} {b' : Basis (Fin 2) ℤ N'}
   {L L' γ γ' : Type} [AddCommGroup L] [AddCommGroup L']
   {H : LinearMap.BilinForm ℤ L} {H' : LinearMap.BilinForm ℤ L'}
-  {M : Point Centers[r] → MarkedSurface ℂ n H XTor[r]}
-  {M' : Point Centers[r] → MarkedSurface ℂ n H' XTor[r]}
-  {C D : Centers[r].left.PartialMap Centers[r].left}
-  [IsDominant C.hom] [C.IsOver Centers[r].hom Centers[r].hom]
-  [IsDominant D.hom] [D.IsOver Centers[r].hom Centers[r].hom]
+  {M : Point (Over.mk (QPainleve.CharacterTorus.structureMap k₀ (Fin r → ℤ))) →
+    MarkedSurface k₀ n H (QPainleve.CharacterTorus.scheme k₀ (Fin r →₀ ℤ))}
+  {M' : Point (Over.mk (QPainleve.CharacterTorus.structureMap k₀ (Fin r → ℤ))) →
+    MarkedSurface k₀ n H' (QPainleve.CharacterTorus.scheme k₀ (Fin r →₀ ℤ))}
+  {C D : (Over.mk (QPainleve.CharacterTorus.structureMap k₀ (Fin r → ℤ))).left.PartialMap (Over.mk
+    (QPainleve.CharacterTorus.structureMap k₀ (Fin r → ℤ))).left}
+  [IsDominant C.hom] [C.IsOver (Over.mk (QPainleve.CharacterTorus.structureMap k₀ (Fin r →
+    ℤ))).hom (Over.mk (QPainleve.CharacterTorus.structureMap k₀ (Fin r → ℤ))).hom]
+  [IsDominant D.hom] [D.IsOver (Over.mk (QPainleve.CharacterTorus.structureMap k₀ (Fin r →
+    ℤ))).hom (Over.mk (QPainleve.CharacterTorus.structureMap k₀ (Fin r → ℤ))).hom]
   {w : Word E E'} {v : Word E E}
 
-local instance instNonemptyConjugationCones (Q : CompleteToricPresentation i b r L γ) :
+local instance instNonemptyConjugationCones (Q : CompleteToricPresentation k₀ i b r L γ) :
     Nonempty Q.fan.cones := Q.complete.nonempty_cones
-local instance instNeZeroConjugationBoundaryLength (Q : CompleteToricPresentation i b r L γ) :
+local instance instNeZeroConjugationBoundaryLength (Q : CompleteToricPresentation k₀ i b r L γ) :
     NeZero Q.length := Q.neZero
-local instance instPrestableConjugationBoundary (Q : CompleteToricPresentation i b r L γ) :
-    PrestableFamily ((Q.fan.boundaryIdeal Q.complete.nonempty_cones).subscheme ↘ S) :=
+local instance instPrestableConjugationBoundary (Q : CompleteToricPresentation k₀ i b r L γ) :
+    PrestableFamily ((Q.fan.toricBoundaryIdeal k₀ Q.complete.nonempty_cones).subscheme ↘ S) :=
   Q.prestable
 
 local notation "Fiber[" basis "," Q "," M "," c "]" =>
@@ -80,9 +87,9 @@ local notation "label[" R "]" =>
 boundary components. Each table can be taken from any reference nodal contraction
 of its presentation. The result is independent of the reference centers. -/
 theorem tropical_boundaryOrders_of_nodal_models
-    (R : GeometricRealization (T₀ := Centers[r]) (T₁ := Centers[r]) M M' C (w.xRationalMap ℂ))
-    (Q : CompleteToricPresentation i b r L γ)
-    (Q' : CompleteToricPresentation i' b' r L' γ')
+    (R : GeometricRealization (T₀ := Centers[r]) (T₁ := Centers[r]) M M' C (w.xRationalMap k₀))
+    (Q : CompleteToricPresentation k₀ i b r L γ)
+    (Q' : CompleteToricPresentation k₀ i' b' r L' γ')
     (hE : E.matrix = chargeExchangeMatrix b.detDualEquiv.toLinearMap (Fan.rayChargeMap Q.rays))
     {c : Point Centers[r]} {c' : Point Centers[r]}
     {p : Fiber[b,Q,M,c]} {p' : Fiber[b',Q',M',c']}
@@ -106,10 +113,10 @@ conjugates the Casimir matrix in the chosen integral bases, and computes the
 new boundary label from the two signs and forward images of zero. The two
 order tables come from arbitrary reference nodal contractions. -/
 theorem signedLoopInvariants_reverse_comp_comp
-    (R : GeometricRealization (T₀ := Centers[r]) (T₁ := Centers[r]) M M' C (w.xRationalMap ℂ))
-    (A : GeometricRealization (T₀ := Centers[r]) (T₁ := Centers[r]) M M D (v.xRationalMap ℂ))
-    (Q : CompleteToricPresentation i b r L γ)
-    (Q' : CompleteToricPresentation i' b' r L' γ')
+    (R : GeometricRealization (T₀ := Centers[r]) (T₁ := Centers[r]) M M' C (w.xRationalMap k₀))
+    (A : GeometricRealization (T₀ := Centers[r]) (T₁ := Centers[r]) M M D (v.xRationalMap k₀))
+    (Q : CompleteToricPresentation k₀ i b r L γ)
+    (Q' : CompleteToricPresentation k₀ i' b' r L' γ')
     (hE : E.matrix = chargeExchangeMatrix b.detDualEquiv.toLinearMap (Fan.rayChargeMap Q.rays))
     (hindex : (Fan.rayChargeMap Q'.rays).range.toAddSubgroup.index ≠ 0)
     {c : Point Centers[r]} {c' : Point Centers[r]}

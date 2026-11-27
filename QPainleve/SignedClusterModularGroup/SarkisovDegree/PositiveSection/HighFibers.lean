@@ -38,29 +38,31 @@ open Scheme.IdealSheafData
 
 namespace QPainleve.BlowupTower.IsClosedPointTower
 
+variable (k₀ : Type) [Field k₀] [IsAlgClosed k₀]
+
 attribute [local instance] MvPolynomial.gradedAlgebra
 
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V] {i : N →+ V}
   {Φ : Fan i} (b : Basis (Fin 2) ℤ N) (e : ℕ) (hΦ : Φ.IsRegular) (hc : Φ.IsComplete)
   (r : Fin 4 ≃ Φ.Ray)
   (hr : (fun j ↦ (r j).primitiveGenerator) = ![b 0, b 1, -b 0, (e : ℤ) • b 0 - b 1])
-  {Y : Scheme} {n : ℕ} {T : BlowupTower Φ.algebraicRealization n Y}
-  (hT : IsClosedPointTower Φ.algebraicRealization T)
+  {Y : Scheme} {n : ℕ} {T : BlowupTower (Φ.finiteFanScheme k₀) n Y}
+  (hT : IsClosedPointTower (Φ.finiteFanScheme k₀) T)
 
-local notation "S" => Spec (CommRingCat.of ℂ)
-local notation "X" => Φ.algebraicRealization
+local notation "S" => Spec (CommRingCat.of k₀)
+local notation "X" => (Φ.finiteFanScheme k₀)
 local notation "f" => (X ↘ S)
-local notation "P" => Proj (homogeneousSubmodule ℂ (Fin 3 → ℂ))
-local notation "H" => mk (Proj.symmetricAlgebraTwistingBundle ℂ (Fin 3 → ℂ) 1)
+local notation "P" => Proj (homogeneousSubmodule k₀ (Fin 3 → k₀))
+local notation "H" => mk (Proj.symmetricAlgebraTwistingBundle k₀ (Fin 3 → k₀) 1)
 local notation "plane[" d "," h "]" => Fan.projectiveSpace d h
 local notation "planeIso[" d "," h "]" =>
-  (Fan.projectivePlaneIso d h ≪≫ Basis.polynomialProjIso (Pi.basisFun ℂ (Fin 3)))
+  (Fan.projectivePlaneIso k₀ d h ≪≫ Basis.polynomialProjIso (Pi.basisFun k₀ (Fin 3)))
 local notation "rankTwo" => Eq.trans (finrank_eq_card_basis b) (Fintype.card_fin 2)
-local notation "B" => Fan.hirzebruchPicardBasis b e hΦ r hr
-local notation "C" => Φ.rayBoundaryIdeal hΦ (r 2)
+local notation "B" => Fan.hirzebruchPicardBasis k₀ b e hΦ r hr
+local notation "C" => Φ.rayDivisorIdeal k₀ hΦ (r 2)
 local notation "fiberRay[" t "]" => r ((![1, 3] : Fin 2 → Fin 4) t)
-local notation "z" => (IsLocalRing.closedPoint ℂ : S)
-local notation "center[" ρ "," c "]" => Fan.Ray.binomialCenter ρ rankTwo
+local notation "z" => (IsLocalRing.closedPoint k₀ : S)
+local notation "center[" ρ "," c "]" => Fan.Ray.binomialCenter ρ k₀ rankTwo
   (Basis.detDualEquiv_self b (Fan.Ray.primitiveGenerator ρ))
   (Fan.Ray.surjective_detCharacter ρ b) c z
 
@@ -69,16 +71,16 @@ include hc in
 the successive strict transforms of the marked positive section. -/
 theorem disjoint_sectionCenters_of_fiberCenters
     [IsNoetherian X] [SmoothOfRelativeDimension 2 f] (J : Finset (Fin n))
-    (hJ : ∀ j ∈ J, ∃ t : Fin 2, ∃ c : ℂˣ, hT.baseCenter j = center[fiberRay[t],c]) :
+    (hJ : ∀ j ∈ J, ∃ t : Fin 2, ∃ c : k₀ˣ, hT.baseCenter j = center[fiberRay[t],c]) :
     Disjoint (hT.strictTransformCenterIndices C) J := by
   let : Nonempty Φ.cones := hc.nonempty_cones
   refine Finset.disjoint_left.mpr fun {j} hj hk ↦ ?_
   have hsec := hT.baseCenter_mem_support_of_strictTransformCoefficients_ne_zero f
-    (Φ.isEffectiveCartier_rayBoundaryIdeal hΦ (r 2))
+    (Φ.isEffectiveCartier_rayDivisorIdeal k₀ hΦ (r 2))
     ((hT.mem_strictTransformCenterIndices C j).mp hj)
   obtain ⟨t, c, hp⟩ := hJ j hk
   rw [hp] at hsec
-  have he := ((fiberRay[t]).binomialCenter_mem_support_rayBoundaryIdeal_iff hΦ rankTwo
+  have he := ((fiberRay[t]).binomialCenter_mem_support_rayBoundaryIdeal_iff k₀ hΦ rankTwo
     (b.detDualEquiv_self _) ((fiberRay[t]).surjective_detCharacter b) c (r 2)).mp hsec
   have he' := r.injective he
   fin_cases t <;> contradiction
@@ -101,15 +103,16 @@ theorem exists_positiveSection_preparation_of_high_fiber_centers
     (hbir : Scheme.BirationalOver g (𝟙 P)) (D : Y.IdealSheafData) :
     let : Nonempty Φ.cones := hc.nonempty_cones
     let : SmoothOfRelativeDimension 2 f :=
-      rankTwo ▸ Φ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
+      rankTwo ▸ Φ.smoothOfRelativeDimension_finiteFanSchemeToSpec k₀ hΦ
     letI : Smooth f := SmoothOfRelativeDimension.smooth 2 f
     let : IsNoetherian X := isNoetherian_of_finiteType f
     letI : Y.Over S := ⟨T.toBase ≫ f⟩
     letI : Smooth (Y ↘ S) := (hT.smoothOfRelativeDimension f).smooth
     letI : g.IsOver S := ⟨hg⟩
-    (Φ.boundaryIdeal hc.nonempty_cones).comap T.toBase = D * hT.ramificationIdealSheafToBase ℂ →
-    ((plane[d,hi]).boundaryIdeal (Fan.isComplete_projectiveSpace d hi).nonempty_cones).comap
-      (g ≫ (planeIso[d,hi]).inv) = D * ramificationIdealSheaf ℂ g →
+    (Φ.toricBoundaryIdeal k₀ hc.nonempty_cones).comap T.toBase =
+      D * hT.ramificationIdealSheafToBase k₀ →
+    ((plane[d,hi]).toricBoundaryIdeal k₀ (Fan.isComplete_projectiveSpace d hi).nonempty_cones).comap
+      (g ≫ (planeIso[d,hi]).inv) = D * ramificationIdealSheaf k₀ g →
     let v := (T.picardMarking hT f).symm (Additive.ofMul (pullback g H))
     let a := (B).repr v.1 0
     let β := (B).repr v.1 1
@@ -118,11 +121,11 @@ theorem exists_positiveSection_preparation_of_high_fiber_centers
     let sectionCenters := hT.strictTransformCenterIndices C
     let positive := sectionCenters.filter (fun j ↦ 0 < order j)
     high.Nonempty →
-    (∀ j ∈ high, ∃ t : Fin 2, ∃ c : ℂˣ, hT.baseCenter j = center[fiberRay[t],c]) →
+    (∀ j ∈ high, ∃ t : Fin 2, ∃ c : k₀ˣ, hT.baseCenter j = center[fiberRay[t],c]) →
     (high.card = 1 ∨ high.card = 2) ∧ e ≤ high.card + 1 ∧
       (∃ fiber : (↑high : Type) ↪ Fin 2, ∀ j : high,
         order j ≤ β ∧ (∀ l < (j : Fin n), hT.baseCenter l ≠ hT.baseCenter j) ∧
-        ∃ c : ℂˣ, hT.baseCenter j = center[fiberRay[fiber j],c]) ∧
+        ∃ c : k₀ˣ, hT.baseCenter j = center[fiberRay[fiber j],c]) ∧
       ∃ top ⊆ positive, top.card = e ∧
         (∀ j ∈ top, ∀ l ∈ sectionCenters, l < j → order j ≤ order l → l ∈ top) ∧
         (∀ j ∈ top, ∀ l ∈ sectionCenters, l ∉ top → order l ≤ order j) ∧
@@ -132,8 +135,8 @@ theorem exists_positiveSection_preparation_of_high_fiber_centers
             (∀ l < j, hT.baseCenter l ≠ hT.baseCenter j) ∧
             ((∃ (σ : Φ.cones) (t : Fin 2), Nat.card (ToricRay σ.val) = 2 ∧ (r 2).toCone ≤ σ ∧
                 σ.val = hull ℝ {i (-b 0), i (fiberRay[t]).primitiveGenerator} ∧
-                Φ.distinguishedPointHom σ z = hT.baseCenter j) ∨
-              ∃ c : ℂˣ, hT.baseCenter j = center[r 2,c])) ∧
+                (Φ.distinguishedSection (R := k₀) σ) z = hT.baseCenter j) ∨
+              ∃ c : k₀ˣ, hT.baseCenter j = center[r 2,c])) ∧
         ∀ μ : Fin n → ℤ, (∀ j ∈ high, order j ≤ μ j) →
           let remaining := a - (∑ j ∈ top, order j) - (∑ j ∈ high, μ j)
           2 * remaining < (2 - (high.card : ℤ)) * β ∧
@@ -146,20 +149,20 @@ theorem exists_positiveSection_preparation_of_high_fiber_centers
   let := hcones
   let := hsmooth
   let := hnoeth
-  let : (X).IsProjectiveOver ℂ := Φ.isProjectiveOver_algebraicRealization_of_isComplete hΦ hc b
+  let : (X).IsProjectiveOver k₀ := Φ.isProjectiveOver_finiteFanScheme_of_isComplete k₀ hΦ hc b
   obtain ⟨fiber, hfiber⟩ :=
-    hT.exists_fiber_embedding_of_hirzebruch_high_base_orders b e hΦ hc r hr g hg
+    hT.exists_fiber_embedding_of_hirzebruch_high_base_orders k₀ b e hΦ hc r hr g hg
       (hsource.trans_le fun _ ↦ Ideal.mul_le_right) hcenters
   have hcap (j) (hj : j ∈ high) : order j ≤ β := (hfiber ⟨j, hj⟩).1
   have hcard : high.card ≤ 2 := by
     simpa only [Fintype.card_coe, Fintype.card_fin] using Fintype.card_le_of_embedding fiber
   have hpos := Finset.card_pos.mpr hnonempty
   have hsize : high.card = 1 ∨ high.card = 2 := by omega
-  have hline := hT.section_order_sum_of_hirzebruch_plane b e hΦ hc r hr d hi g hg hbir D
+  have hline := hT.section_order_sum_of_hirzebruch_plane k₀ b e hΦ hc r hr d hi g hg hbir D
     hsource (by simpa only [← comap_comp] using htarget)
-  obtain ⟨hβ, ha, hm⟩ := hT.hirzebruch_resolution_degree_bounds b e hΦ hc r hr g hg hbir
+  obtain ⟨hβ, ha, hm⟩ := hT.hirzebruch_resolution_degree_bounds k₀ b e hΦ hc r hr g hg hbir
   obtain ⟨hsq, hsum⟩ :=
-    hT.homaloidal_intersection_identities_of_hirzebruch b e hΦ hc r hr g hg hbir
+    hT.homaloidal_intersection_identities_of_hirzebruch k₀ b e hΦ hc r hr g hg hbir
   have hsq' : ∑ j, order j ^ 2 = 2 * a * β - (e : ℤ) * β ^ 2 - 1 := by
     simpa only [order, neg_sq] using hsq
   have hlow (j) (hj : j ∉ high) : 2 * order j ≤ β :=
@@ -167,7 +170,7 @@ theorem exists_positiveSection_preparation_of_high_fiber_centers
   have hindex : e ≤ high.card + 1 :=
     hirzebruch_index_le_card_high_add_one high order e hβ ha hm
       (fun j hj ↦ ⟨(Finset.mem_filter.mp hj).2, hcap j hj⟩) hlow hsq' hsum
-  have hdisj := disjoint_sectionCenters_of_fiberCenters b hΦ hc r hT high hcenters
+  have hdisj := disjoint_sectionCenters_of_fiberCenters k₀ b hΦ hc r hT high hcenters
   obtain ⟨j, hj⟩ := hnonempty
   have hcountPositive : 2 * e ≤ positive.card + 1 :=
     two_mul_index_le_card_positiveSection_add_one sectionCenters order e hβ ha (fun j _ ↦ hm j)
@@ -175,7 +178,7 @@ theorem exists_positiveSection_preparation_of_high_fiber_centers
       ⟨j, (Finset.mem_filter.mp hj).2⟩ hline.1 hsq'
   have heCard : e ≤ positive.card := by omega
   obtain ⟨top, hsub, hcount, hpriority, horder, hdrop⟩ :=
-    hT.exists_positiveSection_pivots_with_bidegree_drop b e hΦ hc r hr g hg hbir
+    hT.exists_positiveSection_pivots_with_bidegree_drop k₀ b e hΦ hc r hr g hg hbir
       sectionCenters hsize hcap hdisj hline.1
   rw [min_eq_left heCard] at hcount
   refine ⟨hsize, hindex, ⟨fiber, hfiber⟩, top, hsub, hcount, hpriority, horder, ?_, hdrop⟩
@@ -185,7 +188,7 @@ theorem exists_positiveSection_preparation_of_high_fiber_centers
   obtain ⟨l, hl⟩ := Finset.card_pos.mp (hcount.symm ▸ he)
   obtain ⟨hlsec, hlpos⟩ := Finset.mem_filter.mp (hsub hl)
   obtain ⟨j, hj, -, hmax, hleast, hfirst, hp⟩ :=
-    Fan.exists_first_max_base_order_on_ray b hΦ hc (r 2) hT g hg ⟨l, (hcoeff l).mp hlsec, hlpos⟩
+    Fan.exists_first_max_base_order_on_ray k₀ b hΦ hc (r 2) hT g hg ⟨l, (hcoeff l).mp hlsec, hlpos⟩
   have hjsec := (hcoeff j).mpr hj
   have hmem : j ∈ top := by
     by_contra hj'

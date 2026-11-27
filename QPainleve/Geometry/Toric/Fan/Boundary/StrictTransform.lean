@@ -24,98 +24,100 @@ open Scheme.IdealSheafData
 
 namespace TauCeti.Toric.Fan
 
-variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
+universe u
+
+variable (k : Type u) [Field k] {N : Type u} {V : Type*}
+  [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {Φ : Fan i} [Nonempty Φ.cones] {n : ℕ}
   (hΦ : Φ.IsRegular)
 
-local notation "toricBoundary" => Φ.boundaryIdeal inferInstance
+local notation "toricBoundary" => Φ.toricBoundaryIdeal k inferInstance
 
 variable (J : Fin n →
-  {K : (Φ.boundaryIdeal inferInstance).subscheme.IdealSheafData // K.IsEffectiveCartier})
+  {K : (Φ.toricBoundaryIdeal k inferInstance).subscheme.IdealSheafData // K.IsEffectiveCartier})
 
 local notation "model" => alongBoundary (subschemeι toricBoundary) J
-local notation "strictIdeal" ρ:arg => strictTransform (Φ.rayBoundaryIdeal hΦ ρ)
+local notation "strictIdeal" ρ:arg => strictTransform (Φ.rayDivisorIdeal k hΦ ρ)
   (WithBoundary.toTower (Sigma.snd model))
 
 /-- The closed embedding of an original ray divisor through the fixed reduced boundary
 defines its strict transform in the final surface if each center restricts to a Cartier
 ideal on that ray. -/
 theorem strictTransform_rayBoundaryIdeal_alongBoundary (ρ : Φ.Ray)
-    (hρ : ∀ j, ((J j).val.comap (ρ.boundaryComponentι hΦ)).IsEffectiveCartier) :
-    strictIdeal ρ = (ρ.boundaryComponentι hΦ ≫ (model).2.boundaryι).ker := by
+    (hρ : ∀ j, ((J j).val.comap (ρ.boundaryComponentι k hΦ)).IsEffectiveCartier) :
+    strictIdeal ρ = (ρ.boundaryComponentι k hΦ ≫ (model).2.boundaryι).ker := by
   simpa only [Ray.boundaryComponentι_subschemeι, ker_subschemeι] using
-    strictTransform_ker_comp_alongBoundary (toricBoundary).subschemeι (ρ.boundaryComponentι hΦ) J hρ
+    strictTransform_ker_comp_alongBoundary (toricBoundary).subschemeι
+      (ρ.boundaryComponentι k hΦ) J hρ
 
 /-- Each strict transform of a toric ray divisor in the ordered blowup model is integral. -/
 theorem isIntegral_strictTransform_rayBoundaryIdeal (ρ : Φ.Ray)
-    (hρ : ∀ j, ((J j).val.comap (ρ.boundaryComponentι hΦ)).IsEffectiveCartier) :
+    (hρ : ∀ j, ((J j).val.comap (ρ.boundaryComponentι k hΦ)).IsEffectiveCartier) :
     IsIntegral (strictIdeal ρ).subscheme := by
-  have : IsIntegral (Φ.rayBoundaryIdeal hΦ ρ).subscheme := by
-    rw [rayBoundaryIdeal_def]
-    exact isIntegral_subscheme_vanishingIdeal (isIrreducible_singleton.closure)
-  rw [strictTransform_rayBoundaryIdeal_alongBoundary hΦ J ρ hρ]
-  exact IsIntegral.of_isIso (ρ.boundaryComponentι hΦ ≫ (model).2.boundaryι).toImage
+  rw [strictTransform_rayBoundaryIdeal_alongBoundary k hΦ J ρ hρ]
+  exact IsIntegral.of_isIso (ρ.boundaryComponentι k hΦ ≫ (model).2.boundaryι).toImage
 
 /-- The reduced boundary of the ordered model is supported on the union of its strict
 ray divisors. -/
 theorem support_ker_alongBoundary_boundaryι
-    (hJ : ∀ j (ρ : Φ.Ray), ((J j).val.comap (ρ.boundaryComponentι hΦ)).IsEffectiveCartier) :
+    (hJ : ∀ j (ρ : Φ.Ray), ((J j).val.comap (ρ.boundaryComponentι k hΦ)).IsEffectiveCartier) :
     ((model).2.boundaryι.ker.support : Set (model).1) =
       ⋃ ρ : Φ.Ray, ((strictIdeal ρ).support : Set (model).1) := by
   let j := (model).2.boundaryι
   rw [j.support_ker, j.isClosedEmbedding.isClosed_range.closure_eq, ← Set.image_univ (f := j),
-    ← iUnion_range_boundaryComponentι hΦ, Set.image_iUnion]
+    ← iUnion_range_boundaryComponentι k hΦ, Set.image_iUnion]
   refine Set.iUnion_congr fun ρ ↦ ?_
   rw [← Set.range_comp, ← TopCat.coe_comp, ← Scheme.Hom.comp_base,
-    strictTransform_rayBoundaryIdeal_alongBoundary hΦ J ρ (fun j ↦ hJ j ρ)]
-  let k := ρ.boundaryComponentι hΦ ≫ j
+    strictTransform_rayBoundaryIdeal_alongBoundary k hΦ J ρ (fun j ↦ hJ j ρ)]
+  let k := ρ.boundaryComponentι k hΦ ≫ j
   exact (k.support_ker.trans k.isClosedEmbedding.isClosed_range.closure_eq).symm
 
 /-- The ray component embedded through the fixed boundary is the strict transform of
 the ray divisor in the ordered internal model. -/
 theorem ker_boundaryComponentι_internalBlowupTower
-    (b : Module.Basis (Fin 2) ℤ N) (s : Fin n → Φ.Ray) (c : Fin n → ℂˣ)
+    (b : Module.Basis (Fin 2) ℤ N) (s : Fin n → Φ.Ray) (c : Fin n → kˣ)
     (hΦ : Φ.IsRegular) (ρ : Φ.Ray) :
-    (ρ.boundaryComponentι hΦ ≫ (internalBlowupTower b s c).2.boundaryι).ker =
-      strictTransform (Φ.rayBoundaryIdeal hΦ ρ) (internalBlowupTower b s c).2.toTower := by
-  let D := (Φ.boundaryIdeal inferInstance).subschemeι
-  let J (k : Fin n) := (s k).internalCenter b (c k)
+    (ρ.boundaryComponentι k hΦ ≫ (internalBlowupTower k b s c).2.boundaryι).ker =
+      strictTransform (Φ.rayDivisorIdeal k hΦ ρ) (internalBlowupTower k b s c).2.toTower := by
+  let D := (Φ.toricBoundaryIdeal k inferInstance).subschemeι
+  let J (a : Fin n) := (s a).internalCenter k b (c a)
   let P (M : Σ Z, WithBoundary D n Z) :=
-    (ρ.boundaryComponentι hΦ ≫ M.2.boundaryι).ker =
-      strictTransform (Φ.rayBoundaryIdeal hΦ ρ) M.2.toTower
-  apply (congrArg P (internalBlowupTower_eq_alongBoundary b s c)).mpr
-  exact (strictTransform_rayBoundaryIdeal_alongBoundary hΦ J ρ
-    (fun k ↦ (s k).isEffectiveCartier_comap_internalCenter b (c k) hΦ ρ)).symm
+    (ρ.boundaryComponentι k hΦ ≫ M.2.boundaryι).ker =
+      strictTransform (Φ.rayDivisorIdeal k hΦ ρ) M.2.toTower
+  apply (congrArg P (internalBlowupTower_eq_alongBoundary k b s c)).mpr
+  exact (strictTransform_rayBoundaryIdeal_alongBoundary k hΦ J ρ
+    (fun a ↦ (s a).isEffectiveCartier_comap_internalCenter k b (c a) hΦ ρ)).symm
 
 /-- The boundary of the ordered internal model is supported on the union of the
 strict transforms of the ray divisors, also for repeated centers. -/
 theorem support_ker_internalBlowupTower_boundaryι
-    (b : Module.Basis (Fin 2) ℤ N) (s : Fin n → Φ.Ray) (c : Fin n → ℂˣ)
+    (b : Module.Basis (Fin 2) ℤ N) (s : Fin n → Φ.Ray) (c : Fin n → kˣ)
     (hΦ : Φ.IsRegular) :
-    ((internalBlowupTower b s c).2.boundaryι.ker.support : Set (internalBlowupTower b s c).1) =
-      ⋃ ρ : Φ.Ray, (strictTransform (Φ.rayBoundaryIdeal hΦ ρ)
-        (internalBlowupTower b s c).2.toTower).support := by
+    ((internalBlowupTower k b s c).2.boundaryι.ker.support :
+      Set (internalBlowupTower k b s c).1) =
+      ⋃ ρ : Φ.Ray, (strictTransform (Φ.rayDivisorIdeal k hΦ ρ)
+        (internalBlowupTower k b s c).2.toTower).support := by
   rw [internalBlowupTower_eq_alongBoundary]
-  exact support_ker_alongBoundary_boundaryι hΦ _
-    (fun k ρ ↦ (s k).isEffectiveCartier_comap_internalCenter b (c k) hΦ ρ)
+  exact support_ker_alongBoundary_boundaryι k hΦ _
+    (fun a ρ ↦ (s a).isEffectiveCartier_comap_internalCenter k b (c a) hΦ ρ)
 
 /-- The ray component embedded through the lifted boundary of a single internal blowup
 defines the same ideal as its scheme-theoretic strict transform. -/
 theorem ker_comp_boundaryι_eq_blowupMap (b : Module.Basis (Fin 2) ℤ N)
-    (hΦ : Φ.IsRegular) (u w : Φ.Ray) (d : ℂˣ)
-    (I : Φ.algebraicRealization.IdealSheafData)
-    (hI : I = (u.internalCenter b d).val.map (Φ.boundaryIdeal inferInstance).subschemeι)
-    (j : (Φ.boundaryIdeal inferInstance).subscheme ⟶ I.blowup)
-    (hj : j ≫ I.blowupToBase = (Φ.boundaryIdeal inferInstance).subschemeι) :
-    (w.boundaryComponentι hΦ ≫ j).ker =
-      (I.blowupMap (Φ.rayBoundaryIdeal hΦ w).subschemeι).ker := by
-  have hproj : (w.boundaryComponentι hΦ ≫ j) ≫ I.blowupToBase =
-      (Φ.rayBoundaryIdeal hΦ w).subschemeι := by
+    (hΦ : Φ.IsRegular) (u w : Φ.Ray) (d : kˣ)
+    (I : (Φ.finiteFanScheme k).IdealSheafData)
+    (hI : I = (u.internalCenter k b d).val.map (Φ.toricBoundaryIdeal k inferInstance).subschemeι)
+    (j : (Φ.toricBoundaryIdeal k inferInstance).subscheme ⟶ I.blowup)
+    (hj : j ≫ I.blowupToBase = (Φ.toricBoundaryIdeal k inferInstance).subschemeι) :
+    (w.boundaryComponentι k hΦ ≫ j).ker =
+      (I.blowupMap (Φ.rayDivisorIdeal k hΦ w).subschemeι).ker := by
+  have hproj : (w.boundaryComponentι k hΦ ≫ j) ≫ I.blowupToBase =
+      (Φ.rayDivisorIdeal k hΦ w).subschemeι := by
     simp only [Category.assoc, hj, Ray.boundaryComponentι_subschemeι]
-  have hCartier : (I.comap (Φ.rayBoundaryIdeal hΦ w).subschemeι).IsEffectiveCartier := by
+  have hCartier : (I.comap (Φ.rayDivisorIdeal k hΦ w).subschemeι).IsEffectiveCartier := by
     rw [hI, ← Ray.boundaryComponentι_subschemeι, comap_comp,
       comap_map_of_isClosedImmersion, Ray.internalCenter_val]
-    exact u.isEffectiveCartier_comap_ker_binomialCenterOnBoundary hΦ
+    exact u.isEffectiveCartier_comap_ker_binomialCenterOnBoundary k hΦ
       (by simpa using Module.finrank_eq_card_basis b) (b.detDualEquiv_self _)
       (u.surjective_detCharacter b) d w
   rw [I.eq_blowupLift hCartier hproj, ker_blowupLift, ker_blowupMap]

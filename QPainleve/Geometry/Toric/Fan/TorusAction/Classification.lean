@@ -5,6 +5,7 @@ Authors: The QPainleve contributors
 -/
 module
 
+public import Mathlib.RingTheory.RootsOfUnity.EnoughRootsOfUnity
 public import QPainleve.AlgebraicGeometry.Blowup.Tower.Nodal.Basic
 public import QPainleve.AlgebraicGeometry.IdealSheaf.Boundary.Automorphism
 public import QPainleve.Geometry.Toric.Fan.TorusAction.NodalDescent
@@ -19,7 +20,6 @@ import QPainleve.Geometry.Toric.Fan.Boundary.Prestable
 import QPainleve.Geometry.Toric.Fan.TorusAction.Branches
 import TauCeti.AlgebraicGeometry.Curves.Node.Reduced
 import TauCeti.AlgebraicGeometry.IdealSheaf.Reduced
-import Mathlib.Analysis.Complex.Polynomial.Basic
 import Mathlib.GroupTheory.FiniteAbelian.Duality
 import Mathlib.RingTheory.RootsOfUnity.AlgebraicallyClosed
 
@@ -41,23 +41,26 @@ open Scheme.IdealSheafData
 
 namespace TauCeti.Toric.Fan
 
-variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
+universe u
+
+variable (K : Type u) [Field K] {N : Type u} {V : Type*}
+  [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {Φ : Fan i} [h₀ : Nonempty Φ.cones]
-  {n : ℕ} (b : Module.Basis (Fin 2) ℤ N) (s : Fin n → Φ.Ray) (c : Fin n → ℂˣ)
+  {n : ℕ} (b : Module.Basis (Fin 2) ℤ N) (s : Fin n → Φ.Ray) (c : Fin n → Kˣ)
   (hΦ : Φ.IsRegular) (hc : Φ.IsComplete)
 
-local notation "M" => internalBlowupTower b s c
-local notation "C" => Scheme.IdealSheafData.subscheme (Φ.boundaryIdeal h₀)
+local notation "M" => internalBlowupTower K b s c
+local notation "C" => Scheme.IdealSheafData.subscheme (Φ.toricBoundaryIdeal K h₀)
 local notation "ι" => WithBoundary.boundaryι (Sigma.snd M)
-local notation "base" => Spec (CommRingCat.of ℂ)
-local notation "Chars" => (Multiplicative (N ⧸ LinearMap.range (rayChargeMap s)) →* ℂˣ)
+local notation "base" => Spec (CommRingCat.of K)
+local notation "Chars" => (Multiplicative (N ⧸ LinearMap.range (rayChargeMap s)) →* Kˣ)
 
-variable {X Y : Scheme} {f : X ⟶ Spec (.of ℂ)} {D : X.IdealSheafData}
-  {m : ℕ} {T : BlowupTower X m Y} (e : Y ≅ (internalBlowupTower b s c).1)
-  (he : e.hom ≫ (internalBlowupTower b s c).2.toTower.toBase ≫
-    Φ.algebraicRealizationStructureMap = T.toBase ≫ f)
+variable {X Y : Scheme} {f : X ⟶ Spec (.of K)} {D : X.IdealSheafData}
+  {m : ℕ} {T : BlowupTower X m Y} (e : Y ≅ (internalBlowupTower K b s c).1)
+  (he : e.hom ≫ (internalBlowupTower K b s c).2.toTower.toBase ≫
+    Φ.finiteFanSchemeToSpec K = T.toBase ≫ f)
   (hB : (D.comap T.toBase).support =
-    ((internalBlowupTower b s c).2.boundaryι.ker.comap e.hom).support)
+    ((internalBlowupTower K b s c).2.boundaryι.ker.comap e.hom).support)
 
 local notation "P" => radical (D.comap T.toBase)
 local notation "toTop" => Aut.autMulEquivOfIso (Iso.symm e)
@@ -68,7 +71,7 @@ private theorem exists_totalBoundaryIso :
       q.hom ≫ ι = (P).subschemeι ≫ e.hom ∧
       q.hom ≫ (C ↘ base) = (P).subschemeι ≫ T.toBase ≫ f := by
   have hdim := (Module.finrank_eq_card_basis b).trans (Fintype.card_fin 2)
-  have hnodal := Φ.atWorstNodalOfRelativeDimensionOne_boundary hΦ hc hdim
+  have hnodal := Φ.atWorstNodalOfRelativeDimensionOne_boundary K hΦ hc hdim
   have : IsReduced C := hnodal.isReduced
   let j := ι ≫ e.inv
   have hj : j.ker = (ι).ker.comap e.hom :=
@@ -83,16 +86,17 @@ private theorem exists_totalBoundaryIso :
       congrArg (· ≫ e.hom) hqj
   refine ⟨asIso q, hq, ?_⟩
   simp only [asIso_hom]
-  rw [over_eq_subschemeι_comp, Φ.algebraicRealization_over,
+  rw [over_eq_subschemeι_comp, Φ.finiteFanScheme_over K,
     ← WithBoundary.boundaryι_toBase_assoc (Sigma.snd M), reassoc_of% hq, he]
 
-variable [IsIntegral X] [IsNoetherian X] [IsProper f] [SmoothOfRelativeDimension 2 f]
+variable [IsAlgClosed K] [IsIntegral X] [IsNoetherian X] [IsProper f]
+  [SmoothOfRelativeDimension 2 f]
   (hCartier : D.IsEffectiveCartier)
   (hN : AtWorstNodalOfRelativeDimensionOne (D.subschemeι ≫ f))
   (hT : IsNodalBoundaryTower D f (𝟙 X) T)
 
 local notation "action" =>
-  toricPresentationCharacterHom b s c hΦ f e hT.isClosedPointTower hc
+  toricPresentationCharacterHom K b s c hΦ f e hT.isClosedPointTower hc
 
 include he hB hCartier hT in
 private theorem toricPresentationCharacterHom_fixes_branches (z : Chars)
@@ -103,33 +107,34 @@ private theorem toricPresentationCharacterHom_fixes_branches (z : Chars)
   let : X.Over base := ⟨f⟩
   have : SmoothOfRelativeDimension 2 (X ↘ base) := ‹SmoothOfRelativeDimension 2 f›
   have : QuasiCompact (X ↘ base) := inferInstanceAs (QuasiCompact f)
-  let u := internalBlowupPicardBoundaryAutMulEquiv b s c hΦ hc z
+  let u := internalBlowupPicardBoundaryAutMulEquiv K b s c hΦ hc z
   let g := (toTop (u : Aut (M).1)).asIso
-  have hg := toricPresentationCharacterHom_isLift b s c hΦ f e hT.isClosedPointTower hc z
+  have hg := toricPresentationCharacterHom_isLift K b s c hΦ f e hT.isClosedPointTower hc z
   obtain ⟨r, hr⟩ := D.exists_radicalComapSubschemeIso T.toBase hd hg.hom_toBase
-  obtain ⟨q, hq, hqOver⟩ := exists_totalBoundaryIso b s c hΦ hc e he hB
+  obtain ⟨q, hq, hqOver⟩ := exists_totalBoundaryIso K b s c hΦ hc e he hB
   have hdim := (Module.finrank_eq_card_basis b).trans (Fintype.card_fin 2)
   have : IsProper T.toBase := T.isProper_toBase
   have : IsProper (q.hom ≫ (C ↘ base)) := hqOver ▸ inferInstanceAs
     (IsProper ((P).subschemeι ≫ T.toBase ≫ f))
   have : IsProper (C ↘ base) :=
     (MorphismProperty.cancel_left_of_respectsIso @IsProper q.hom _).mp inferInstance
-  have hbase : C ↘ base = (Φ.boundaryIdeal h₀).subschemeι ≫ Φ.algebraicRealizationStructureMap :=
-    (over_eq_subschemeι_comp _).trans (congrArg (_ ≫ ·) Φ.algebraicRealization_over)
+  have hbase : C ↘ base = (Φ.toricBoundaryIdeal K h₀).subschemeι ≫ Φ.finiteFanSchemeToSpec K :=
+    ((Φ.toricBoundaryIdeal K h₀).over_eq_subschemeι_comp (S := base)).trans
+      (congrArg ((Φ.toricBoundaryIdeal K h₀).subschemeι ≫ ·) (Φ.finiteFanScheme_over K))
   have : PrestableFamily (C ↘ base) := {
     toIsProper := inferInstance
-    toGeometricallyConnected := hbase.symm ▸ Φ.geometricallyConnected_boundary hΦ hc hdim
+    toGeometricallyConnected := hbase.symm ▸ Φ.geometricallyConnected_boundary K hΦ hc hdim
     atWorstNodalOfRelativeDimensionOne :=
-      hbase.symm ▸ Φ.atWorstNodalOfRelativeDimensionOne_boundary hΦ hc hdim }
+      hbase.symm ▸ Φ.atWorstNodalOfRelativeDimensionOne_boundary K hΦ hc hdim }
   obtain ⟨a, ⟨haOver, ha, haBranch⟩, -⟩ :=
-    existsUnique_boundaryIso_of_internalBlowupPicardBoundaryAut b s hΦ hc u
+    existsUnique_boundaryIso_of_internalBlowupPicardBoundaryAut K b s hΦ hc u
   have hge : g.hom ≫ e.hom = e.hom ≫ u.val.asIso.hom := by simp [g]
   have hcomm : r ≪≫ q = q ≪≫ a := by
     apply Iso.ext
     apply (cancel_mono ι).mp
     simp only [Iso.trans_hom, Category.assoc]
     rw [hq, reassoc_of% hr, hge, ← reassoc_of% hq, ha]
-  have hNP := (hT.radical_comap_toBase (k := ℂ) hCartier hN).2
+  have hNP := (hT.radical_comap_toBase (k := K) hCartier hN).2
   have hrOver : r.hom ≫ (P).subschemeι ≫ T.toBase ≫ f = (P).subschemeι ≫ T.toBase ≫ f := by
     rw [reassoc_of% hr, hg.hom_toBase_assoc, hover]
   let ha' : a.hom ≫ (C ↘ base) = (C ↘ base) := haOver.comp_over
@@ -137,15 +142,15 @@ private theorem toricPresentationCharacterHom_fixes_branches (z : Chars)
     let : a.hom.IsOver base := haOver
     rw [Iso.fixesNodalBranches_iff_branchScheme]
     intro p
-    exact congrArg (fun v : (C).branchScheme ℂ ≅ (C).branchScheme ℂ ↦ v.hom p) haBranch
-  exact hT.fixes_nodal_branches_of_isLift (k := ℂ) hCartier hN hover hd hg hr
+    exact congrArg (fun v : (C).branchScheme K ≅ (C).branchScheme K ↦ v.hom p) haBranch
+  exact hT.fixes_nodal_branches_of_isLift (k := K) hCartier hN hover hd hg hr
     ((Iso.fixesNodalBranches_iff_of_comm (hC := hNP) (ha := hrOver) q hqOver hcomm).mpr hab)
 
 include he hB hCartier in
 /-- The quotient-character action has image exactly the intrinsic Picard kernel fixing
 the components and branches of the original boundary. -/
 theorem toricPresentationCharacterHom_range_eq_picardNodalBoundaryAut :
-    (toricPresentationCharacterHom b s c hΦ f e hT.isClosedPointTower hc).range =
+    (toricPresentationCharacterHom K b s c hΦ f e hT.isClosedPointTower hc).range =
       D.picardNodalBoundaryAut hN := by
   let : X.Over base := ⟨f⟩
   have : SmoothOfRelativeDimension 2 (X ↘ base) := ‹SmoothOfRelativeDimension 2 f›
@@ -155,7 +160,7 @@ theorem toricPresentationCharacterHom_range_eq_picardNodalBoundaryAut :
   constructor
   · rintro ⟨z, rfl⟩
     obtain ⟨hover, hPic, hfix, -⟩ :=
-      (mem_range_toricPresentationCharacterHom_iff b s c hΦ f e he hB
+      (mem_range_toricPresentationCharacterHom_iff K b s c hΦ f e he hB
         hT.isClosedPointTower hc _).mp ⟨z, rfl⟩
     have hred : IsReduced D.subscheme := hN.isReduced
     have hD := hCartier.comap_radical_eq_of_fixes_components _ hfix
@@ -163,11 +168,12 @@ theorem toricPresentationCharacterHom_range_eq_picardNodalBoundaryAut :
     obtain ⟨d, hd⟩ := D.exists_iso_of_comap_eq_ker _ D.subschemeι
       (by simpa only [ker_subschemeι] using hD)
     exact ⟨hover, hPic, hfix, d, hd,
-      toricPresentationCharacterHom_fixes_branches b s c hΦ hc e he hB hCartier hN hT z hover d hd⟩
+      toricPresentationCharacterHom_fixes_branches K b s c hΦ hc e he hB hCartier hN hT
+        z hover d hd⟩
   · rintro ⟨hover, hPic, hfix, d, hd, hb⟩
-    have hlift := hT.exists_isLift_of_fixes_nodal_branches (k := ℂ) hCartier hN _ d hover hd
+    have hlift := hT.exists_isLift_of_fixes_nodal_branches (k := K) hCartier hN _ d hover hd
       ((d.fixesNodalBranches_iff _ hN _).mp hb)
-    exact (mem_range_toricPresentationCharacterHom_iff b s c hΦ f e he hB
+    exact (mem_range_toricPresentationCharacterHom_iff K b s c hΦ f e he hB
       hT.isClosedPointTower hc a).mpr ⟨hover, hPic, hfix, hlift.exists⟩
 
 include he hB hCartier in
@@ -175,17 +181,17 @@ include he hB hCartier in
 of the pair fixing each boundary component and branch. -/
 def toricPresentationCharacterMulEquiv : Chars ≃* D.picardNodalBoundaryAut hN :=
   (MonoidHom.ofInjective
-    (toricPresentationCharacterHom_injective b s c hΦ f e hT.isClosedPointTower hc)).trans
+    (toricPresentationCharacterHom_injective K b s c hΦ f e hT.isClosedPointTower hc)).trans
       (MulEquiv.subgroupCongr
         (toricPresentationCharacterHom_range_eq_picardNodalBoundaryAut
-          b s c hΦ hc e he hB hCartier hN hT))
+          K b s c hΦ hc e he hB hCartier hN hT))
 
 include he hB hCartier in
 /-- The quotient-character equivalence acts by the descended torus translation. -/
 @[simp]
 theorem toricPresentationCharacterMulEquiv_apply (z : Chars) :
-    (toricPresentationCharacterMulEquiv b s c hΦ hc e he hB hCartier hN hT z : Aut X) =
-      toricPresentationCharacterHom b s c hΦ f e hT.isClosedPointTower hc z := by
+    (toricPresentationCharacterMulEquiv K b s c hΦ hc e he hB hCartier hN hT z : Aut X) =
+      toricPresentationCharacterHom K b s c hΦ f e hT.isClosedPointTower hc z := by
   rw [toricPresentationCharacterMulEquiv, MulEquiv.trans_apply, MulEquiv.subgroupCongr_apply,
     MonoidHom.ofInjective_apply]
 
@@ -193,10 +199,12 @@ include hΦ hc he hB hCartier hT in
 /-- For finite-index charges, the Picard kernel with fixed boundary components and
 branches has order equal to the charge index. -/
 theorem natCard_picardNodalBoundaryAut_of_toricPresentation
-    [Finite (N ⧸ LinearMap.range (rayChargeMap s))] :
+    [Finite (N ⧸ LinearMap.range (rayChargeMap s))]
+    [HasEnoughRootsOfUnity K (Monoid.exponent (Multiplicative
+      (N ⧸ LinearMap.range (rayChargeMap s))))] :
     Nat.card (D.picardNodalBoundaryAut hN) = (rayChargeMap s).range.toAddSubgroup.index := by
   rw [← Nat.card_congr
-    (toricPresentationCharacterMulEquiv b s c hΦ hc e he hB hCartier hN hT).toEquiv]
-  exact CommGroup.card_monoidHom_of_hasEnoughRootsOfUnity _ ℂ
+    (toricPresentationCharacterMulEquiv K b s c hΦ hc e he hB hCartier hN hT).toEquiv]
+  exact CommGroup.card_monoidHom_of_hasEnoughRootsOfUnity _ K
 
 end TauCeti.Toric.Fan

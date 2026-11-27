@@ -28,19 +28,17 @@ open Scheme Scheme.IdealSheafData TauCeti TauCeti.AlgebraicGeometry TauCeti.Tori
 
 namespace QPainleve.SignedClusterModularGroup
 
-local notation "S" => Spec (CommRingCat.of ℂ)
+variable {k₀ : Type} [Field k₀] [IsAlgClosed k₀] [Uncountable k₀] [NeZero (2 : k₀)]
+
+local notation "S" => Spec (CommRingCat.of k₀)
 local notation "δ[" h "]" => (LineBundleClass.mk (IsEffectiveCartier.toInvertibleSheaf h))⁻¹
 
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {b : Basis (Fin 2) ℤ N}
-  {X : Scheme} [X.Over S] [X.IsProjectiveOver ℂ]
-  [SmoothOfRelativeDimension 2 (X ↘ S)] [Scheme.IsRationalOver (X ↘ S)]
-  {D : X.IdealSheafData} [PrestableFamily (D.subscheme ↘ S)]
+  {X : Scheme} [X.Over (Spec (.of k₀))] [X.IsProjectiveOver k₀]
+  [SmoothOfRelativeDimension 2 (X ↘ Spec (.of k₀))] [Scheme.IsRationalOver (X ↘ Spec (.of k₀))]
+  {D : X.IdealSheafData} [PrestableFamily (D.subscheme ↘ Spec (.of k₀))]
   {n r : ℕ} [NeZero n]
-
-local instance instIntegralOrderedCremona : IsIntegral X := by
-  let : Smooth (X ↘ S) := SmoothOfRelativeDimension.smooth 2 _
-  exact Scheme.IsRationalOver.isIntegral_of_smooth (f := X ↘ S) inferInstance
 
 /-- The opposite signed cluster modular group of specified ordered toric and
 nodal blowup towers projects onto the Cremona isometries of the original surface
@@ -54,15 +52,19 @@ theorem exists_cluster_cremona_equivs_of_toric_presentation
     (A : Scheme.NodalCycleNumbering (X := D.subscheme)
       (Empty.elim : Empty → (D.subscheme ↘ S).smoothLocus) n)
     (hD : D.IsEffectiveCartier)
-    (hprim : IsPrimitive (Additive.ofMul δ[hD])) (hnef : δ[hD].IsNef ℂ (X ↘ S))
-    (hsq : Chow.classIntersectionNumber ℂ X δ[hD] δ[hD] = 0) :
+    (hprim : IsPrimitive (Additive.ofMul δ[hD])) (hnef : δ[hD].IsNef k₀ (X ↘ S))
+    (hsq : Chow.classIntersectionNumber k₀ X δ[hD] δ[hD] = 0) :
+    letI : Smooth (X ↘ S) := SmoothOfRelativeDimension.smooth 2 _
+    letI : IsIntegral X := (inferInstance : Scheme.IsRationalOver (X ↘ S)).isIntegral_of_smooth
     letI : IsNoetherian X := isNoetherian_of_finiteType (X ↘ S)
     letI := (X ↘ S).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two
     (∀ p : CodimensionOnePoint X, Disjoint (closure {(p : X)}) D.support →
-      Chow.classIntersectionNumber ℂ X (LineBundleClass.primeDivisorClass p)
+      Chow.classIntersectionNumber k₀ X (LineBundleClass.primeDivisorClass p)
         (LineBundleClass.primeDivisorClass p) ≠ -2) →
     ∃ R : FiniteMarkedReferenceFiber i r A,
       R.reference.HasToricData P ∧ Nonempty (CremonaGroupIdentification R hD) := by
+  let : Smooth (X ↘ S) := SmoothOfRelativeDimension.smooth 2 _
+  let : IsIntegral X := (inferInstance : Scheme.IsRationalOver (X ↘ S)).isIntegral_of_smooth
   let : IsNoetherian X := isNoetherian_of_finiteType (X ↘ S)
   let := (X ↘ S).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two
   intro hroot

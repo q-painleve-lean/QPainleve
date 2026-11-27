@@ -33,7 +33,10 @@ open Scheme.IdealSheafData
 
 namespace TauCeti.Toric.Fan.IsSubdivision
 
-variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
+universe u
+
+variable (k : Type u) [Field k] {N V : Type u}
+  [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {Φ Ψ : Fan i} (h : Φ.IsSubdivision Ψ)
   [hΦ : Nonempty Φ.cones] [hΨ : Nonempty Ψ.cones] (b : Module.Basis (Fin 2) ℤ N)
 
@@ -43,49 +46,52 @@ local notation "χ(" ρ ")" => LinearMap.toAddMonoidHom (b.detDualEquiv (Ray.pri
 /-- Subdivision pulls back the ordered internal model with the same center parameters.
 The lift intertwines the strict-transform boundary embeddings and pulls back each
 total exceptional class to the corresponding class on the refined model. -/
-theorem exists_isPullback_internalBlowupTower {n : ℕ} (ρ : Fin n → Ψ.Ray) (c : Fin n → ℂˣ) :
-    let A := internalBlowupTower b ρ c
-    let A' := internalBlowupTower b (h.liftRay ∘ ρ) c
-    ∃ g : A'.1 ⟶ A.1, IsPullback g A'.2.toTower.toBase A.2.toTower.toBase h.toFanHom.algebraicMap ∧
-      A'.2.boundaryι ≫ g = h.boundaryMap hΦ hΨ ≫ A.2.boundaryι ∧
+theorem exists_isPullback_internalBlowupTower {n : ℕ} (ρ : Fin n → Ψ.Ray) (c : Fin n → kˣ) :
+    let A := internalBlowupTower k b ρ c
+    let A' := internalBlowupTower k b (h.liftRay ∘ ρ) c
+    ∃ g : A'.1 ⟶ A.1,
+      IsPullback g A'.2.toTower.toBase A.2.toTower.toBase (h.toFanHom.finiteFanSchemeHom k) ∧
+      A'.2.boundaryι ≫ g = h.boundaryMap k hΦ hΨ ≫ A.2.boundaryι ∧
       ∀ j, LineBundleClass.pullback g (A.2.toTower.exceptionalClass j) =
         A'.2.toTower.exceptionalClass j := by
-  let s (j : Fin n) : Spec (.of ℂ) ⟶ (Ψ.boundaryIdeal hΨ).subscheme :=
-    (ρ j).binomialCenterOnBoundary rankTwo (m := χ(ρ j)) (b.detDualEquiv_self _)
+  let s (j : Fin n) : Spec (.of k) ⟶ (Ψ.toricBoundaryIdeal k hΨ).subscheme :=
+    (ρ j).binomialCenterOnBoundary k rankTwo (m := χ(ρ j)) (b.detDualEquiv_self _)
       ((ρ j).surjective_detCharacter b) (c j)
-  let s' (j : Fin n) : Spec (.of ℂ) ⟶ (Φ.boundaryIdeal hΦ).subscheme :=
-    (h.liftRay (ρ j)).binomialCenterOnBoundary rankTwo (m := χ(h.liftRay (ρ j)))
+  let s' (j : Fin n) : Spec (.of k) ⟶ (Φ.toricBoundaryIdeal k hΦ).subscheme :=
+    (h.liftRay (ρ j)).binomialCenterOnBoundary k rankTwo (m := χ(h.liftRay (ρ j)))
       (b.detDualEquiv_self _) ((h.liftRay (ρ j)).surjective_detCharacter b) (c j)
-  have hs (j : Fin n) : s' j ≫ h.boundaryMap hΦ hΨ = s j := by
+  have hs (j : Fin n) : s' j ≫ h.boundaryMap k hΦ hΨ = s j := by
     dsimp only [s', s]
     simpa only [primitiveGenerator_liftRay] using
-      h.binomialCenterOnBoundary_comp_boundaryMap (ρ j) rankTwo (m := χ(ρ j))
+      h.binomialCenterOnBoundary_comp_boundaryMap k (ρ j) rankTwo (m := χ(ρ j))
         (b.detDualEquiv_self _) ((ρ j).surjective_detCharacter b) (c j)
   have hC (j : Fin n) : (s j).ker.IsEffectiveCartier := by
-    simpa only [s, ← Ray.internalCenter_val] using ((ρ j).internalCenter b (c j)).property
+    simpa only [s, ← Ray.internalCenter_val] using ((ρ j).internalCenter k b (c j)).property
   have hC' (j : Fin n) : (s' j).ker.IsEffectiveCartier := by
     simpa only [s', ← Ray.internalCenter_val] using
-      ((h.liftRay (ρ j)).internalCenter b (c j)).property
+      ((h.liftRay (ρ j)).internalCenter k b (c j)).property
   have hi (j : Fin n) :
-      Set.range (s j ≫ (Ψ.boundaryIdeal hΨ).subschemeι) ⊆ h.toFanHom.algebraicMap.isoLocus := by
-    have hcomp : s j ≫ (Ψ.boundaryIdeal hΨ).subschemeι =
-        (ρ j).binomialCenter rankTwo (m := χ(ρ j)) (b.detDualEquiv_self _)
+      Set.range (s j ≫ (Ψ.toricBoundaryIdeal k hΨ).subschemeι) ⊆
+        (h.toFanHom.finiteFanSchemeHom k).isoLocus := by
+    have hcomp : s j ≫ (Ψ.toricBoundaryIdeal k hΨ).subschemeι =
+        (ρ j).binomialCenter k rankTwo (m := χ(ρ j)) (b.detDualEquiv_self _)
           ((ρ j).surjective_detCharacter b) (c j) :=
-      (ρ j).binomialCenterOnBoundary_comp_subschemeι rankTwo (b.detDualEquiv_self _)
+      (ρ j).binomialCenterOnBoundary_comp_subschemeι k rankTwo (b.detDualEquiv_self _)
         ((ρ j).surjective_detCharacter b) (c j)
     rw [hcomp]
-    exact h.range_binomialCenter_subset_isoLocus (ρ j) rankTwo (b.detDualEquiv_self _)
+    exact h.range_binomialCenter_subset_isoLocus k (ρ j) rankTwo (b.detDualEquiv_self _)
       ((ρ j).surjective_detCharacter b) (c j)
   have (j : Fin n) : IsClosedImmersion (s j) := by
-    exact (ρ j).isClosedImmersion_binomialCenterOnBoundary rankTwo (b.detDualEquiv_self _)
+    exact (ρ j).isClosedImmersion_binomialCenterOnBoundary k rankTwo (b.detDualEquiv_self _)
       ((ρ j).surjective_detCharacter b) (c j)
-  have hA : (fun j ↦ ⟨(s j).ker, hC j⟩) = fun j ↦ (ρ j).internalCenter b (c j) := by
+  have hA : (fun j ↦ ⟨(s j).ker, hC j⟩) = fun j ↦ (ρ j).internalCenter k b (c j) := by
     funext j
-    exact Subtype.ext (Ray.internalCenter_val _ _ _).symm
-  have hA' : (fun j ↦ ⟨(s' j).ker, hC' j⟩) = fun j ↦ (h.liftRay (ρ j)).internalCenter b (c j) := by
+    exact Subtype.ext (Ray.internalCenter_val k _ _ _).symm
+  have hA' : (fun j ↦ ⟨(s' j).ker, hC' j⟩) =
+      fun j ↦ (h.liftRay (ρ j)).internalCenter k b (c j) := by
     funext j
-    exact Subtype.ext (Ray.internalCenter_val _ _ _).symm
-  have hp := exists_isPullback_alongBoundary (h.boundaryMap_comp_subschemeι hΦ hΨ).symm
+    exact Subtype.ext (Ray.internalCenter_val k _ _ _).symm
+  have hp := exists_isPullback_alongBoundary (h.boundaryMap_comp_subschemeι k hΦ hΨ).symm
     s s' hs hC hC' hi
   dsimp only at hp ⊢
   rw [hA, hA'] at hp
@@ -95,22 +101,22 @@ theorem exists_isPullback_internalBlowupTower {n : ℕ} (ρ : Fin n → Ψ.Ray) 
 /-- The reduced inverse image of the strict boundary under a cartesian
 subdivision of ordered internal models is the strict boundary of the refined model. -/
 theorem radical_comap_internalBlowupTower_boundary {n : ℕ}
-    (ρ : Fin n → Ψ.Ray) (c : Fin n → ℂˣ) :
-    let A := internalBlowupTower b (h.liftRay ∘ ρ) c
-    let B := internalBlowupTower b ρ c
+    (ρ : Fin n → Ψ.Ray) (c : Fin n → kˣ) :
+    let A := internalBlowupTower k b (h.liftRay ∘ ρ) c
+    let B := internalBlowupTower k b ρ c
     ∀ (g : A.1 ⟶ B.1),
-      IsPullback g A.2.toTower.toBase B.2.toTower.toBase h.toFanHom.algebraicMap →
-      A.2.boundaryι ≫ g = h.boundaryMap hΦ hΨ ≫ B.2.boundaryι →
+      IsPullback g A.2.toTower.toBase B.2.toTower.toBase (h.toFanHom.finiteFanSchemeHom k) →
+      A.2.boundaryι ≫ g = h.boundaryMap k hΦ hΨ ≫ B.2.boundaryι →
       (B.2.boundaryι.ker.comap g).radical = A.2.boundaryι.ker := by
   intro A B g hg hb
-  have hred : IsReduced (Φ.boundaryIdeal hΦ).subscheme := by
-    rw [Fan.boundaryIdeal_def]
+  have hred : IsReduced (Φ.toricBoundaryIdeal k hΦ).subscheme := by
+    rw [Fan.toricBoundaryIdeal_def k]
     infer_instance
   have hbase :
-      (((B.2.boundaryι ≫ B.2.toTower.toBase).ker).comap h.toFanHom.algebraicMap).radical =
+      (((B.2.boundaryι ≫ B.2.toTower.toBase).ker).comap (h.toFanHom.finiteFanSchemeHom k)).radical =
         (A.2.boundaryι ≫ A.2.toTower.toBase).ker := by
     simpa only [WithBoundary.boundaryι_toBase, ker_subschemeι] using
-      h.radical_comap_boundaryIdeal hΦ hΨ
+      h.radical_comap_toricBoundaryIdeal k hΦ hΨ
   have : IsClosedImmersion (B.2.boundaryι ≫ B.2.toTower.toBase) := by
     rw [WithBoundary.boundaryι_toBase]
     infer_instance
@@ -118,25 +124,25 @@ theorem radical_comap_internalBlowupTower_boundary {n : ℕ}
     rw [WithBoundary.boundaryι_toBase]
     infer_instance
   exact radical_comap_ker_eq_of_isPullback hg B.2.boundaryι A.2.boundaryι
-    (h.boundaryMap hΦ hΨ) hb hbase
+    (h.boundaryMap k hΦ hΨ) hb hbase
 
 /-- A specified common subdivision with matching labeled primitive generators gives one
 ordered internal model projecting cartesianly to both endpoint models. Both projections
 respect the strict boundary. -/
 theorem exists_common_internalBlowupTower {Ω : Fan i} [hΩ : Nonempty Ω.cones]
-    (h' : Φ.IsSubdivision Ω) {n : ℕ} (ρ : Fin n → Ψ.Ray) (τ : Fin n → Ω.Ray) (c : Fin n → ℂˣ)
+    (h' : Φ.IsSubdivision Ω) {n : ℕ} (ρ : Fin n → Ψ.Ray) (τ : Fin n → Ω.Ray) (c : Fin n → kˣ)
     (hρτ : ∀ j, (ρ j).primitiveGenerator = (τ j).primitiveGenerator) :
-    let A := internalBlowupTower b (h.liftRay ∘ ρ) c
-    let B := internalBlowupTower b ρ c
-    let C := internalBlowupTower b τ c
+    let A := internalBlowupTower k b (h.liftRay ∘ ρ) c
+    let B := internalBlowupTower k b ρ c
+    let C := internalBlowupTower k b τ c
     ∃ (g : A.1 ⟶ B.1) (g' : A.1 ⟶ C.1),
-      IsPullback g A.2.toTower.toBase B.2.toTower.toBase h.toFanHom.algebraicMap ∧
-      IsPullback g' A.2.toTower.toBase C.2.toTower.toBase h'.toFanHom.algebraicMap ∧
-      A.2.boundaryι ≫ g = h.boundaryMap hΦ hΨ ≫ B.2.boundaryι ∧
-      A.2.boundaryι ≫ g' = h'.boundaryMap hΦ hΩ ≫ C.2.boundaryι := by
+      IsPullback g A.2.toTower.toBase B.2.toTower.toBase (h.toFanHom.finiteFanSchemeHom k) ∧
+      IsPullback g' A.2.toTower.toBase C.2.toTower.toBase (h'.toFanHom.finiteFanSchemeHom k) ∧
+      A.2.boundaryι ≫ g = h.boundaryMap k hΦ hΨ ≫ B.2.boundaryι ∧
+      A.2.boundaryι ≫ g' = h'.boundaryMap k hΦ hΩ ≫ C.2.boundaryι := by
   have hmatch := h.liftRay_comp_eq_of_primitiveGenerator_eq h' ρ τ hρτ
-  obtain ⟨g, hg, hb, -⟩ := h.exists_isPullback_internalBlowupTower b ρ c
-  have hsecond := h'.exists_isPullback_internalBlowupTower b τ c
+  obtain ⟨g, hg, hb, -⟩ := h.exists_isPullback_internalBlowupTower k b ρ c
+  have hsecond := h'.exists_isPullback_internalBlowupTower k b τ c
   dsimp only at hsecond
   rw [← hmatch] at hsecond
   obtain ⟨g', hg', hb', -⟩ := hsecond

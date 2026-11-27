@@ -7,6 +7,7 @@ module
 
 public import QPainleve.SignedClusterModularGroup.Examples.FourVertex.FieldSpecialization
 
+import QPainleve.Algebra.Field.Reference
 import QPainleve.SignedClusterModularGroup.Examples.FourVertex.MarkedAction
 import QPainleve.SignedClusterModularGroup.Realization.PicardAction
 import TauCeti.Algebra.Group.Action.Pow
@@ -24,7 +25,8 @@ The cluster words are those of Bershtein, Gavrylenko and Marshakov, *Cluster int
 systems, q-Painlevé equations and their quantization*, equation (3.1), in reciprocal
 coordinates. The proof uses the marked Picard comparison,
 `ker_four_vertex_rotation_restriction`, and `TauCeti.zpow_smul_eq_add_zsmul`.
-Field specialization transports the normal forms from the complex Picard calculation.
+Field specialization transports the normal forms from the Picard calculation over an algebraically
+closed field of characteristic zero.
 -/
 
 public noncomputable section
@@ -32,6 +34,8 @@ public noncomputable section
 open CategoryTheory Module MulOpposite
 
 namespace QPainleve.FourVertex
+
+local notation "k₀" => QPainleve.ReferenceField
 
 open Cluster SignedBoundaryIsometryGroup
 open SignedClusterModularGroup.GeometricRealization
@@ -186,24 +190,26 @@ private theorem signedNormalFormPicard_bijective :
     obtain ⟨⟨i, m⟩, rfl⟩ := normalFormPicard_surjective r
     exact ⟨⟨e, i, m⟩, (eq_mul_of_inv_mul_eq hr.symm).symm⟩
 
-private def unsignedNormalFormEquivComplex : Fin 4 × ℤ ≃ ClusterModularGroup ℂ B := by
-  let Θ := picardRotationEquiv markedPicardEquiv ker_sign_comp_markedPicardEquiv
+private def unsignedNormalFormEquivReference : Fin 4 × ℤ ≃ ClusterModularGroup k₀ B := by
+  let φ : (SignedClusterModularGroup k₀ B)ᵐᵒᵖ ≃* Ĝ := markedPicardEquiv
+  let Θ := picardRotationEquiv φ ker_sign_comp_markedPicardEquiv
   let f (a : Fin 4 × ℤ) :=
-    unsigned[ℂ,rotationWord,inversionCount_rotationWord] ^ (a.1 : ℕ) *
-      unsigned[ℂ,translationWord,inversionCount_translationWord] ^ a.2
+    unsigned[k₀,rotationWord,inversionCount_rotationWord] ^ (a.1 : ℕ) *
+      unsigned[k₀,translationWord,inversionCount_translationWord] ^ a.2
   refine Equiv.ofBijective f (((Θ.bijective.comp op_bijective).of_comp_iff' f).mp ?_)
   have hcomp : (⇑Θ ∘ op) ∘ f = fun a ↦ t ^ a.2 * p ^ (a.1 : ℕ) := by
     funext a
     apply rotationInclusion_injective H D
-    simp only [Function.comp_apply, f, Θ, op_mul, op_pow, op_zpow, map_mul, map_pow, map_zpow,
+    simp only [Function.comp_apply, f, Θ, φ, op_mul, op_pow, op_zpow, map_mul, map_pow, map_zpow,
       rotationInclusion_picardRotationEquiv_apply, MonoidHom.op_apply_apply, unop_op,
       clusterModularGroupInclusion_clusterModularGroupMap, markedPicardEquiv_rotationWord,
       markedPicardEquiv_translationWord]
   exact hcomp ▸ ⟨normalFormPicard_injective, normalFormPicard_surjective⟩
 
-private def signedNormalFormEquivComplex : Fin 2 × Fin 4 × ℤ ≃ SignedClusterModularGroup ℂ B := by
-  let f (a : Fin 2 × Fin 4 × ℤ) := eval[ℂ,rotationWord] ^ (a.2.1 : ℕ) *
-    eval[ℂ,translationWord] ^ a.2.2 * eval[ℂ,reflectionWord] ^ (a.1 : ℕ)
+private def signedNormalFormEquivReference : Fin 2 × Fin 4 × ℤ ≃ SignedClusterModularGroup k₀ B :=
+  by
+  let f (a : Fin 2 × Fin 4 × ℤ) := eval[k₀,rotationWord] ^ (a.2.1 : ℕ) *
+    eval[k₀,translationWord] ^ a.2.2 * eval[k₀,reflectionWord] ^ (a.1 : ℕ)
   refine Equiv.ofBijective f
     (((markedPicardEquiv.bijective.comp op_bijective).of_comp_iff' f).mp ?_)
   have hcomp : (⇑markedPicardEquiv ∘ op) ∘ f =
@@ -219,7 +225,7 @@ variable (k : Type*) [Field k]
 /-- The normal form of an unsigned four-vertex X map over `k`, with rotation exponent in
 `Fin 4` and translation exponent in `ℤ`. The forward map multiplies in point-map order. -/
 def unsignedNormalFormEquiv : Fin 4 × ℤ ≃ ClusterModularGroup k B :=
-  unsignedNormalFormEquivComplex.trans (unsignedSpecializationEquiv ℂ k).toEquiv
+  unsignedNormalFormEquivReference.trans (unsignedSpecializationEquiv k₀ k).toEquiv
 
 /-- The unsigned normal form is the product of the rotation and translation powers,
 with the rotation power on the left. -/
@@ -228,13 +234,13 @@ theorem unsignedNormalFormEquiv_apply (a : Fin 4 × ℤ) :
     unsignedNormalFormEquiv k a =
       unsigned[k,rotationWord,inversionCount_rotationWord] ^ (a.1 : ℕ) *
         unsigned[k,translationWord,inversionCount_translationWord] ^ a.2 := by
-  simp [unsignedNormalFormEquiv, unsignedNormalFormEquivComplex]
+  simp [unsignedNormalFormEquiv, unsignedNormalFormEquivReference]
 
 /-- The normal form of a signed four-vertex X map over `k`. The exponents are ordered as
 reflection, rotation, and translation. The forward map appends the reflection power on the
 right in point-map order. -/
 def signedNormalFormEquiv : Fin 2 × Fin 4 × ℤ ≃ SignedClusterModularGroup k B :=
-  signedNormalFormEquivComplex.trans (signedSpecializationEquiv ℂ k).toEquiv
+  signedNormalFormEquivReference.trans (signedSpecializationEquiv k₀ k).toEquiv
 
 /-- The signed normal form evaluates to the rotation, translation, and reflection
 powers in that product order. -/
@@ -242,7 +248,7 @@ powers in that product order. -/
 theorem signedNormalFormEquiv_apply (a : Fin 2 × Fin 4 × ℤ) :
     signedNormalFormEquiv k a = eval[k,rotationWord] ^ (a.2.1 : ℕ) *
       eval[k,translationWord] ^ a.2.2 * eval[k,reflectionWord] ^ (a.1 : ℕ) := by
-  simp [signedNormalFormEquiv, signedNormalFormEquivComplex]
+  simp [signedNormalFormEquiv, signedNormalFormEquivReference]
 
 /-- The unsigned inclusion preserves the rotation and translation exponents and sets
 the reflection exponent to zero. -/

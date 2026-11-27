@@ -36,11 +36,12 @@ namespace QPainleve.BlowupTower.IsClosedPointTower
 
 open TauCeti.Toric
 
-variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
+variable (K : Type) [Field K]
+  {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {Φ : Fan i}
 
-local notation "X[" Δ "]" => Fan.algebraicRealization Δ
-local notation "I[" σ "]" => Scheme.Hom.ker (Fan.distinguishedPointHom _ σ)
+local notation "X[" Δ "]" => Fan.finiteFanScheme K Δ
+local notation "I[" σ "]" => Scheme.Hom.ker (Fan.distinguishedSection (R := K) _ σ)
 local notation "tower[" I "]" => BlowupTower.snoc BlowupTower.nil I
 local notation "rays[" Δ "]" => Set.range (Fan.Ray.primitiveGenerator (Phi := Δ))
 
@@ -86,18 +87,18 @@ theorem exists_hirzebruch_toric_link_resolution
       let U' := (tower[I[τ]]).append U
       ∃ hU' : IsClosedPointTower X[Ψ] U',
       d 0 = b 0 ∧ d 1 = b 0 + b 1 ∧ τ.val = hull ℝ {i (d 1), i (-d 0)} ∧
-      g.hom ≫ (I[σ]).blowupToBase = s.toFanHom.algebraicMap ∧
-      g'.hom ≫ (I[τ]).blowupToBase = t.toFanHom.algebraicMap ∧
+      g.hom ≫ (I[σ]).blowupToBase = (s.toFanHom.finiteFanSchemeHom K) ∧
+      g'.hom ≫ (I[τ]).blowupToBase = (t.toFanHom.finiteFanSchemeHom K) ∧
       Φ.IsTwoRayStarSubdivision F ∧ Ψ.IsTwoRayStarSubdivision F ∧
-      (I[τ]).comap t.toFanHom.algebraicMap = F.rayBoundaryIdeal hF (s.liftRay (r 1)) ∧
-      k.hom ≫ U'.toBase = T.toBase ≫ g.inv ≫ t.toFanHom.algebraicMap ∧
+      (I[τ]).comap (t.toFanHom.finiteFanSchemeHom K) = F.rayDivisorIdeal K hF (s.liftRay (r 1)) ∧
+      k.hom ≫ U'.toBase = T.toBase ≫ g.inv ≫ (t.toFanHom.finiteFanSchemeHom K) ∧
       hU'.baseCenter (Fin.castAdd n (0 : Fin 1)) =
-        Ψ.distinguishedPointHom τ (IsLocalRing.closedPoint ℂ) ∧
+        (Ψ.distinguishedSection (R := K) τ) (IsLocalRing.closedPoint K) ∧
       (∀ j : Fin n,
-        t.toFanHom.algebraicMap (g.inv (hT.baseCenter j)) = hU'.baseCenter (j.natAdd 1)) ∧
+        (t.toFanHom.finiteFanSchemeHom K) (g.inv (hT.baseCenter j)) = hU'.baseCenter (j.natAdd 1)) ∧
       letI : Nonempty Ψ.cones := hc'.nonempty_cones
-      let C := Fan.hirzebruchPicardBasis b e hΦ r hr
-      let C' := Fan.hirzebruchPicardBasis d (e + 1) hΨ r' hr'
+      let C := Fan.hirzebruchPicardBasis K b e hΦ r hr
+      let C' := Fan.hirzebruchPicardBasis K d (e + 1) hΨ r' hr'
       ∀ (α β c : ℤ) (m : Fin n → ℤ),
         let coeffs := Fin.append (fun _ : Fin 1 ↦ c) m
         let coeffs' := Fin.append (fun _ : Fin 1 ↦ -β - c) m
@@ -111,23 +112,23 @@ theorem exists_hirzebruch_toric_link_resolution
             hirzebruchSarkisovBidegree β.toNat M.toNat) := by
   obtain ⟨Ψ, F, hΨ, hF, hc', hcF, d, τ, s, t, g, g', r, r', hr, hr',
       hd₀, hd₁, hτcone, hg, hg', hstar, hstar', hcontract, -, hcoord⟩ :=
-    Fan.exists_hirzebruch_toric_elementary_transform_picard_coordinates b e hΦ hc hrays σ hσ
+    Fan.exists_hirzebruch_toric_elementary_transform_picard_coordinates K b e hΦ hc hrays σ hσ
   let R := T.transport (g.symm ≪≫ g')
   let U := (tower[I[τ]]).append R.tower
   have hτ : IsClosedPointTower X[Ψ] (tower[I[τ]]) :=
-    IsClosedPointTower.nil.snoc _ (Ψ.isClosed_singleton_distinguishedPoint τ)
-      (Ψ.distinguishedPointHom τ).ker_eq_ker_fromSpecResidueField
+    IsClosedPointTower.nil.snoc _ (Ψ.isClosed_singleton_distinguishedSection K τ)
+      ((Ψ.distinguishedSection (R := K) τ)).ker_eq_ker_fromSpecResidueField
   let hR := R.isLift.isClosedPointTower hT
   let hU : IsClosedPointTower X[Ψ] U := hτ.append hR
-  have hproj : R.iso.hom ≫ U.toBase = T.toBase ≫ g.inv ≫ t.toFanHom.algebraicMap := by
+  have hproj : R.iso.hom ≫ U.toBase = T.toBase ≫ g.inv ≫ (t.toFanHom.finiteFanSchemeHom K) := by
     rw [toBase_append, ← Category.assoc, R.isLift.hom_toBase, toBase_snoc, toBase_nil,
       Category.comp_id, Category.assoc, Iso.trans_hom, Iso.symm_hom, Category.assoc, hg']
   refine ⟨Ψ, F, hΨ, hF, hc', hcF, d, τ, s, t, g, g', r, r', hr, hr', _, R.tower, R.iso,
     hU, hd₀, hd₁, hτcone, hg, hg', hstar, hstar', hcontract,
     hproj, ?_, ?_, fun α β c m ↦ ⟨?_, ?_, ?_⟩⟩
   · rw [baseCenter_append_castAdd hτ hR, baseCenter_snoc_nil,
-      hτ.lastCenter_eq _ (Ψ.isClosed_singleton_distinguishedPoint τ)
-        (Ψ.distinguishedPointHom τ).ker_eq_ker_fromSpecResidueField]
+      hτ.lastCenter_eq _ (Ψ.isClosed_singleton_distinguishedSection K τ)
+        ((Ψ.distinguishedSection (R := K) τ)).ker_eq_ker_fromSpecResidueField]
   · intro j
     rw [baseCenter_append_natAdd hτ hR, toBase_snoc, toBase_nil, Category.comp_id,
       ← R.isLift.hom_baseCenter hT hR]
@@ -153,17 +154,20 @@ theorem first_center_of_toric_link
     {U : BlowupTower X[Ψ] (1 + n) Z} (hU : IsClosedPointTower X[Ψ] U)
     (s : F.IsSubdivision Φ) (t : F.IsSubdivision Ψ)
     (v : X[F] ≅ (I[σ]).blowup)
-    (hv : v.hom ≫ (I[σ]).blowupToBase = s.toFanHom.algebraicMap)
-    (hcorner : hU.baseCenter (Fin.castAdd n (0 : Fin 1)) ∉ t.toFanHom.algebraicMap.isoLocus)
+    (hv : v.hom ≫ (I[σ]).blowupToBase = (s.toFanHom.finiteFanSchemeHom K))
+    (hcorner : hU.baseCenter (Fin.castAdd n (0 : Fin 1)) ∉
+      (t.toFanHom.finiteFanSchemeHom K).isoLocus)
     (hretained : ∀ k : Fin n,
-      t.toFanHom.algebraicMap (v.inv (hT.baseCenter k)) = hU.baseCenter (k.natAdd 1))
-    {z : X[F]} (hs : s.toFanHom.algebraicMap z ∈ s.toFanHom.algebraicMap.isoLocus)
-    (ht : t.toFanHom.algebraicMap z ∈ t.toFanHom.algebraicMap.isoLocus)
-    (l : Fin n) (hl : (I[σ]).blowupToBase (hT.baseCenter l) = s.toFanHom.algebraicMap z) :
-    hU.baseCenter (l.natAdd 1) = t.toFanHom.algebraicMap z ∧
-      ((∀ k < l, (I[σ]).blowupToBase (hT.baseCenter k) ≠ s.toFanHom.algebraicMap z) →
-        ∀ k < l.natAdd 1, hU.baseCenter k ≠ t.toFanHom.algebraicMap z) := by
-  refine s.toFanHom.algebraicMap.first_occurrence_of_projected_points t.toFanHom.algebraicMap
+      (t.toFanHom.finiteFanSchemeHom K) (v.inv (hT.baseCenter k)) = hU.baseCenter (k.natAdd 1))
+    {z : X[F]}
+    (hs : (s.toFanHom.finiteFanSchemeHom K) z ∈ (s.toFanHom.finiteFanSchemeHom K).isoLocus)
+    (ht : (t.toFanHom.finiteFanSchemeHom K) z ∈ (t.toFanHom.finiteFanSchemeHom K).isoLocus)
+    (l : Fin n) (hl : (I[σ]).blowupToBase (hT.baseCenter l) = (s.toFanHom.finiteFanSchemeHom K) z) :
+    hU.baseCenter (l.natAdd 1) = (t.toFanHom.finiteFanSchemeHom K) z ∧
+      ((∀ k < l, (I[σ]).blowupToBase (hT.baseCenter k) ≠ (s.toFanHom.finiteFanSchemeHom K) z) →
+        ∀ k < l.natAdd 1, hU.baseCenter k ≠ (t.toFanHom.finiteFanSchemeHom K) z) := by
+  refine (s.toFanHom.finiteFanSchemeHom K).first_occurrence_of_projected_points
+    (t.toFanHom.finiteFanSchemeHom K)
     hcorner (fun k ↦ ?_) hs ht l hl
   refine ⟨v.inv (hT.baseCenter k), ?_, hretained k⟩
   simp only [← hv, Scheme.Hom.comp_apply, Scheme.inv_hom_apply]

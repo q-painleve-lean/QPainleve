@@ -31,16 +31,19 @@ open scoped Sarkisov
 
 namespace TauCeti.Toric.Fan.LogarithmicProjection
 
+variable {k₀ : Type} [Field k₀] [IsAlgClosed k₀]
+
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V] {i : N →+ V}
 
-local notation "S" => Spec (CommRingCat.of ℂ)
-local notation "π[" H "]" => FanHom.algebraicMap (IsSubdivision.toFanHom H)
+local notation "S" => Spec (CommRingCat.of k₀)
+local notation "π[" H "]" => FanHom.finiteFanSchemeHom k₀ (IsSubdivision.toFanHom H)
 
-variable {Z W : Scheme} [Z.Over S] [W.Over S]
-  [SmoothOfRelativeDimension 2 (Z ↘ S)] [SmoothOfRelativeDimension 2 (W ↘ S)]
-  [IsIntegral Z] [IsIntegral W] [W.IsProjectiveOver ℂ]
+variable {Z W : Scheme} [Z.Over (Spec (.of k₀))] [W.Over (Spec (.of k₀))]
+  [SmoothOfRelativeDimension 2 (Z ↘ Spec (.of k₀))] [SmoothOfRelativeDimension 2 (W ↘ Spec
+    (.of k₀))]
+  [IsIntegral Z] [IsIntegral W] [W.IsProjectiveOver k₀]
   {D : Z.IdealSheafData} {E : W.IdealSheafData}
-  {A B : LogarithmicProjection i D} {A' B' : LogarithmicProjection i E} {m : ℕ}
+  {A B : LogarithmicProjection k₀ i D} {A' B' : LogarithmicProjection k₀ i E} {m : ℕ}
 
 namespace OrderedToricModel
 
@@ -58,7 +61,7 @@ private theorem exists_word_of_common_subdivision [Z.IsSeparated]
     (p : SarkisovPath A' B') :
     ∃ w : Word U.exchangeMatrix T.exchangeMatrix,
       U.HasBoundarySign T ((-1 : ℤˣ) ^ w.inversionCount) ∧
-      ∃ h, U.xEvaluation.compOfDefined (w.xRationalMap ℂ) h = T.xEvaluation := by
+      ∃ h, U.xEvaluation.compOfDefined (w.xRationalMap k₀) h = T.xEvaluation := by
   obtain ⟨_, _, _, w, _, _, -, -, -, -, -, -, -, -, -, hsign, -, heval⟩ :=
     exists_word_of_resolved_sarkisov_path_to_model p U' T'
   have hsign := hsign.of_common_subdivision H K hU hT hle hfU hfT
@@ -71,7 +74,7 @@ private theorem exists_word_of_common_subdivision [Z.IsSeparated]
 
 end OrderedToricModel
 
-variable [IsNoetherian Z] [Z.IsProjectiveOver ℂ] in
+variable [IsNoetherian Z] [Z.IsProjectiveOver k₀] in
 /-- A resolved factorization of the change between two prescribed ordered toric
 models produces a word in their original labels and frames. Its X evaluation
 intertwines the two models at the given centers on the original common source.
@@ -82,14 +85,14 @@ theorem exists_word_of_resolved_sarkisov_factorization
     (hD : D.IsEffectiveCartier) :
     ∃ w : Word U.exchangeMatrix T.exchangeMatrix,
       U.HasBoundarySign T ((-1 : ℤˣ) ^ w.inversionCount) ∧
-      ∃ h, U.xEvaluation.compOfDefined (w.xRationalMap ℂ) h = T.xEvaluation := by
+      ∃ h, U.xEvaluation.compOfDefined (w.xRationalMap k₀) h = T.xEvaluation := by
   obtain ⟨_, Y, L, hL, A₁, B₁, hAf, hAh, hBf, hBh, ⟨p⟩⟩ :=
     hasResolvedSarkisovFactorization_iff.mp h
   let : Y.Over S := ⟨L.toBase ≫ Z ↘ S⟩
   let : IsIntegral Y := hL.isClosedPointTower.isIntegral (Z ↘ S)
   let : SmoothOfRelativeDimension 2 (Y ↘ S) :=
     hL.isClosedPointTower.smoothOfRelativeDimension (Z ↘ S)
-  let : Y.IsProjectiveOver ℂ := L.isProjectiveOver ℂ
+  let : Y.IsProjectiveOver k₀ := L.isProjectiveOver k₀
   let : Z.IsSeparated := Scheme.IsSeparated.of_isSeparated (Z ↘ S)
   let : IsModification L.toBase :=
     hL.isClosedPointTower.isModification_of_smoothOfRelativeDimension_two (Z ↘ S)
@@ -116,7 +119,7 @@ theorem exists_word_of_resolved_sarkisov_factorization
   exact U.exists_word_of_common_subdivision T U' T' H K rfl rfl L.toBase (le_radical _) hfU hfT
     hu ht hevalU hevalT (hA₁ ▸ hB₁ ▸ p)
 
-variable [IsNoetherian Z] [Z.IsProjectiveOver ℂ] in
+variable [IsNoetherian Z] [Z.IsProjectiveOver k₀] in
 /-- A resolved factorization between prescribed models with the same boundary
 orientation produces an inversion-free word on their original exchange
 matrices, intertwining the two fixed-center X evaluations. -/
@@ -125,7 +128,7 @@ theorem exists_inversionFree_word_of_resolved_sarkisov_factorization
     (U : OrderedToricModel A m) (T : OrderedToricModel B m)
     (hD : D.IsEffectiveCartier) (hOrientation : U.HasBoundarySign T 1) :
     ∃ v : Word U.exchangeMatrix T.exchangeMatrix, v.inversionCount = 0 ∧
-      ∃ h, U.xEvaluation.compOfDefined (v.xRationalMap ℂ) h = T.xEvaluation := by
+      ∃ h, U.xEvaluation.compOfDefined (v.xRationalMap k₀) h = T.xEvaluation := by
   obtain ⟨w, hw, heval⟩ := exists_word_of_resolved_sarkisov_factorization h U T hD
   exact U.exists_inversionFree_word_of_boundarySign_eq_one T w hw hOrientation heval
 

@@ -32,7 +32,12 @@ open scoped Int
 
 namespace TauCeti.Toric.Fan
 
-variable {N : Type} {V ι : Type*} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
+universe u
+
+variable (R : Type u) [CommRing R] [IsDomain R] [IsNoetherianRing R]
+  [UniqueFactorizationMonoid R]
+
+variable {N : Type u} {V ι : Type*} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {Φ : Fan i}
   (b : Basis (Fin 2) ℤ N) (s : ι → Φ.Ray) (k : ι) [DecidableEq ι]
   (hOpposite : hull ℝ {i (-(s k).primitiveGenerator)} ∈ Φ.cones)
@@ -44,24 +49,24 @@ local notation "Φ'" => Fan.mutationFan Φ b hv hpos hOpposite
 local notation "r" => Fan.mutationFanRayEquiv Φ b hv hpos hOpposite
 local notation "s'" => Fan.mutationFanCenterRays Φ b s k hOpposite
 local notation "ω" => b.detDualEquiv.toLinearMap
-local notation "mark" Ψ:arg => (Additive (LineBundleClass (Fan.algebraicRealization Ψ)) × (ι → ℤ))
+local notation "mark" Ψ:arg => (Additive (LineBundleClass (Fan.finiteFanScheme R Ψ)) × (ι → ℤ))
 
 variable (hΦ : Φ.IsRegular)
 
 local notation "hΦ'" => Iff.mpr (Φ.isRegular_mutationFan_iff b hv hpos hOpposite) hΦ
-local notation "I" => mutationPicardEquiv b s k hOpposite hΦ
+local notation "I" => mutationPicardEquiv R b s k hOpposite hΦ
 
 private theorem map_range_markedBoundaryMap :
     letI : Nonempty Φ.cones := ⟨(s k).toCone⟩
     letI : Nonempty (Φ').cones := ⟨(r (s k)).toCone⟩
-    (range (markedBoundaryMap hΦ' s')).map (LinearEquiv.toLinearMap I) =
-      range (markedBoundaryMap hΦ s) := by
+    (range (markedBoundaryMap R hΦ' s')).map (LinearEquiv.toLinearMap I) =
+      range (markedBoundaryMap R hΦ s) := by
   let : Nonempty Φ.cones := ⟨(s k).toCone⟩
   let : Nonempty (Φ').cones := ⟨(r (s k)).toCone⟩
   let e := LinearEquiv.funCongrLeft ℤ ℤ r
-  have h : LinearMap.comp (LinearEquiv.toLinearMap I) (markedBoundaryMap hΦ' s') =
-      (markedBoundaryMap hΦ s).comp e.toLinearMap :=
-    LinearMap.ext (mutationPicardEquiv_markedBoundaryMap b s k hOpposite hΦ)
+  have h : LinearMap.comp (LinearEquiv.toLinearMap I) (markedBoundaryMap R hΦ' s') =
+      (markedBoundaryMap R hΦ s).comp e.toLinearMap :=
+    LinearMap.ext (mutationPicardEquiv_markedBoundaryMap R b s k hOpposite hΦ)
   rw [← LinearMap.range_comp, h, e.range_comp]
 
 /-- The marked Picard equivalence descends to the quotient by the strict-transform
@@ -69,14 +74,14 @@ boundary classes. -/
 def mutationBoundaryQuotientEquiv :
     letI : Nonempty Φ.cones := ⟨(s k).toCone⟩
     letI : Nonempty (Φ').cones := ⟨(r (s k)).toCone⟩
-    (mark Φ' ⧸ range (markedBoundaryMap hΦ' s')) ≃ₗ[ℤ]
-      (mark Φ ⧸ range (markedBoundaryMap hΦ s)) :=
-  Submodule.Quotient.equiv _ _ I (map_range_markedBoundaryMap b s k hOpposite hΦ)
+    (mark Φ' ⧸ range (markedBoundaryMap R hΦ' s')) ≃ₗ[ℤ]
+      (mark Φ ⧸ range (markedBoundaryMap R hΦ s)) :=
+  Submodule.Quotient.equiv _ _ I (map_range_markedBoundaryMap R b s k hOpposite hΦ)
 
 /-- The boundary quotient map takes a representative to its marked Picard transform. -/
 @[simp]
 theorem mutationBoundaryQuotientEquiv_apply_mk (z : mark Φ') :
-    mutationBoundaryQuotientEquiv b s k hOpposite hΦ (Submodule.Quotient.mk z) =
+    mutationBoundaryQuotientEquiv R b s k hOpposite hΦ (Submodule.Quotient.mk z) =
       Submodule.Quotient.mk (I z) :=
   (rfl)
 
@@ -84,8 +89,8 @@ variable [Fintype ι]
 
 local notation "ε" => chargeExchangeMatrix ω (rayChargeMap s)
 local notation "T" => chargeMutationEquiv ε k
-local notation "q" => boundaryQuotientEquivDualChargeCokernel hΦ s
-local notation "q'" => boundaryQuotientEquivDualChargeCokernel hΦ' s'
+local notation "q" => boundaryQuotientEquivDualChargeCokernel R hΦ s
+local notation "q'" => boundaryQuotientEquivDualChargeCokernel R hΦ' s'
 
 /-- In dual-charge coordinates, the Picard map on boundary quotients precomposes
 representatives with the exponent change. The fixed-matrix exponent change is involutive,
@@ -93,7 +98,7 @@ so it gives the inverse basis change used in this dual formula. -/
 theorem mutationBoundaryQuotientEquiv_apply_dual (φ : Dual ℤ (ι → ℤ)) :
     letI : Nonempty Φ.cones := ⟨(s k).toCone⟩
     letI : Nonempty (Φ').cones := ⟨(r (s k)).toCone⟩
-    mutationBoundaryQuotientEquiv b s k hOpposite hΦ ((q').symm (Submodule.Quotient.mk φ)) =
+    mutationBoundaryQuotientEquiv R b s k hOpposite hΦ ((q').symm (Submodule.Quotient.mk φ)) =
       (q).symm (Submodule.Quotient.mk ((T).dualMap φ)) := by
   let : Nonempty Φ.cones := ⟨(s k).toCone⟩
   let : Nonempty (Φ').cones := ⟨(r (s k)).toCone⟩
@@ -117,7 +122,7 @@ theorem mutationBoundaryQuotientEquiv_apply_dual (φ : Dual ℤ (ι → ℤ)) :
       rw [chargeMutationEquiv_single_of_ne ε k hj, map_add, map_smul, ha]
       simp [u, Pi.single_eq_of_ne hj, mul_comm]
   rw [he]
-  have hi := mutationPicardEquiv_apply_rayDivisor b s k hOpposite hΦ 0 u
+  have hi := mutationPicardEquiv_apply_rayDivisor R b s k hOpposite hΦ 0 u
   have hz : (0 : (Φ').Ray → ℤ) ∘ r = 0 := (rfl)
   simp only [map_zero, hz, Pi.zero_apply, add_zero, zero_add, mutationFiberClass_eq] at hi
   rw [hi]
@@ -144,14 +149,14 @@ theorem coe_mutationFanChargeKernelEquiv_apply (x : (rayChargeMap s').ker) :
     LinearEquiv.coe_ofEq_apply]
 
 variable
-  (B : BilinForm ℤ (Additive (LineBundleClass Φ.algebraicRealization) × (ι → ℤ)))
+  (B : BilinForm ℤ (Additive (LineBundleClass (Φ.finiteFanScheme R)) × (ι → ℤ)))
   (B' : BilinForm ℤ (Additive (LineBundleClass
-    (Φ.mutationFan b (IsPrimitiveGenerator.ne_zero (Ray.isPrimitiveGenerator (s k)))
-      (Ray.hull_primitiveGenerator_mem (s k)) hOpposite).algebraicRealization) × (ι → ℤ)))
+    ((Φ.mutationFan b (IsPrimitiveGenerator.ne_zero (Ray.isPrimitiveGenerator (s k)))
+      (Ray.hull_primitiveGenerator_mem (s k)) hOpposite).finiteFanScheme R)) × (ι → ℤ)))
   [LinearMap.IsPerfPair B] [LinearMap.IsPerfPair B']
 
-local notation "ι₀" => LinearEquiv.symm (boundaryOrthogonalEquivChargeKernel hΦ s B)
-local notation "ι₁" => LinearEquiv.symm (boundaryOrthogonalEquivChargeKernel hΦ' s' B')
+local notation "ι₀" => LinearEquiv.symm (boundaryOrthogonalEquivChargeKernel R hΦ s B)
+local notation "ι₁" => LinearEquiv.symm (boundaryOrthogonalEquivChargeKernel R hΦ' s' B')
 local notation "K" => mutationFanChargeKernelEquiv b s k hOpposite
 
 /-- The Picard change of marking and charge transport respect evaluation via the perfect
@@ -167,10 +172,10 @@ theorem mutationPicardEquiv_pairing_chargeKernel (x : (rayChargeMap s').ker) (z 
   have hz : (q').symm (Submodule.Quotient.mk φ) = Submodule.Quotient.mk z :=
     (LinearEquiv.symm_apply_eq _).mpr hφ
   have hIz : q (Submodule.Quotient.mk (I z)) = Submodule.Quotient.mk ((T).dualMap φ) := by
-    rw [← mutationBoundaryQuotientEquiv_apply_mk b s k hOpposite hΦ, ← hz,
+    rw [← mutationBoundaryQuotientEquiv_apply_mk R b s k hOpposite hΦ, ← hz,
       mutationBoundaryQuotientEquiv_apply_dual, LinearEquiv.apply_symm_apply]
-  rw [boundaryOrthogonalEquivChargeKernel_symm_pairing hΦ s B _ _ _ hIz,
-    boundaryOrthogonalEquivChargeKernel_symm_pairing hΦ' s' B' _ _ _ hφ.symm,
+  rw [boundaryOrthogonalEquivChargeKernel_symm_pairing R hΦ s B _ _ _ hIz,
+    boundaryOrthogonalEquivChargeKernel_symm_pairing R hΦ' s' B' _ _ _ hφ.symm,
     LinearEquiv.dualMap_apply, coe_mutationFanChargeKernelEquiv_apply]
   -- The right mutation factor is used for both directions of the fixed-matrix basis change.
   have hT (y : ι → ℤ) : (T).symm y = T y := (rfl)
@@ -190,6 +195,6 @@ theorem mutationPicardEquiv_boundaryOrthogonalEquivChargeKernel_symm
   intro y
   obtain ⟨z, rfl⟩ := (I).surjective y
   rw [LinearMap.flip_apply, LinearMap.flip_apply, hI]
-  exact (mutationPicardEquiv_pairing_chargeKernel b s k hOpposite hΦ B B' x z).symm
+  exact (mutationPicardEquiv_pairing_chargeKernel R b s k hOpposite hΦ B B' x z).symm
 
 end TauCeti.Toric.Fan

@@ -31,18 +31,20 @@ open Scheme Scheme.IdealSheafData
 
 namespace QPainleve.SignedClusterModularGroup.GeometricRealization
 
-local notation "S" => Spec (CommRingCat.of ℂ)
-local notation "Centers[" r "]" => Over.mk (structureMap ℂ (Fin r → ℤ))
-local notation "XTor[" r "]" => scheme ℂ (Fin r →₀ ℤ)
+variable {k₀ : Type} [Field k₀] [IsAlgClosed k₀]
+
+local notation "S" => Spec (CommRingCat.of k₀)
+local notation "Centers[" r "]" => Over.mk (structureMap k₀ (Fin r → ℤ))
+local notation "XTor[" r "]" => scheme k₀ (Fin r →₀ ℤ)
 local notation "D[" M "]" => Scheme.Hom.ker (Over.Hom.left (Arrow.hom (MarkedSurface.pair M)))
 local notation "classOf(" h ")" => (LineBundleClass.mk (IsEffectiveCartier.toInvertibleSheaf h))⁻¹
-local notation "Cw[" w "," P "]" => Path.centerPartialMap ℂ w P
-local notation "Cnil[" P "]" => Path.centerPartialMap ℂ Path.nil P
+local notation "Cw[" w "," P "]" => Path.centerPartialMap k₀ w P
+local notation "Cnil[" P "]" => Path.centerPartialMap k₀ Path.nil P
 local notation "dst(" C "," c ")" =>
   c ≫ Scheme.PartialMap.domainTarget (X := Centers[_]) (Y := Centers[_]) C
-local notation "χ[" c "]" => pointsEquiv ℂ _ (Subtype.mk (Over.Hom.left c) (Over.w c))
-local notation "eval[" E "," w "]" => op (signedClusterModularGroupMap ℂ E (End.of w))
-local notation "Maps[" E "]" => (SignedClusterModularGroup ℂ E)ᵐᵒᵖ
+local notation "χ[" c "]" => pointsEquiv k₀ _ (Subtype.mk (Over.Hom.left c) (Over.w c))
+local notation "eval[" E "," w "]" => op (signedClusterModularGroupMap k₀ E (End.of w))
+local notation "Maps[" E "]" => (SignedClusterModularGroup k₀ E)ᵐᵒᵖ
 
 variable {r n : ℕ} [NeZero n] {E₀ E₁ : SkewExchangeMatrix (Fin r)}
   {N₀ V₀ N₁ V₁ : Type} [AddCommGroup N₀] [AddCommGroup V₀] [Module ℝ V₀]
@@ -50,8 +52,10 @@ variable {r n : ℕ} [NeZero n] {E₀ E₁ : SkewExchangeMatrix (Fin r)}
   {i₀ : N₀ →+ V₀} {i₁ : N₁ →+ V₁} {b₀ : Basis (Fin 2) ℤ N₀} {b₁ : Basis (Fin 2) ℤ N₁}
   {L₀ L₁ γ₀ γ₁ : Type} [AddCommGroup L₀] [AddCommGroup L₁]
   {H₀ : LinearMap.BilinForm ℤ L₀} {H₁ : LinearMap.BilinForm ℤ L₁}
-  {M₀ : Point Centers[r] → MarkedSurface ℂ n H₀ XTor[r]}
-  {M₁ : Point Centers[r] → MarkedSurface ℂ n H₁ XTor[r]}
+  {M₀ : Point (Over.mk (QPainleve.CharacterTorus.structureMap k₀ (Fin r → ℤ))) →
+    MarkedSurface k₀ n H₀ (QPainleve.CharacterTorus.scheme k₀ (Fin r →₀ ℤ))}
+  {M₁ : Point (Over.mk (QPainleve.CharacterTorus.structureMap k₀ (Fin r → ℤ))) →
+    MarkedSurface k₀ n H₁ (QPainleve.CharacterTorus.scheme k₀ (Fin r →₀ ℤ))}
   {d₀ : ZMod n → L₀} {d₁ : ZMod n → L₁}
   {hD₀ : ∀ c, D[M₀ c].IsEffectiveCartier} {hD₁ : ∀ c, D[M₁ c].IsEffectiveCartier}
   {hmark₀ : ∀ c j, (M₀ c).boundaryClass (hD₀ c) j = d₀ j}
@@ -69,17 +73,18 @@ section LoopRealization
 variable {N V L γ : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V] [AddCommGroup L]
   {i : N →+ V} {b : Basis (Fin 2) ℤ N} {E : SkewExchangeMatrix (Fin r)}
   {H : LinearMap.BilinForm ℤ L} {d : ZMod n → L}
-  {M : Point Centers[r] → MarkedSurface ℂ n H XTor[r]}
+  {M : Point (Over.mk (QPainleve.CharacterTorus.structureMap k₀ (Fin r → ℤ))) →
+    MarkedSurface k₀ n H (QPainleve.CharacterTorus.scheme k₀ (Fin r →₀ ℤ))}
   {hD : ∀ c, D[M c].IsEffectiveCartier}
 
 private theorem exists_realize_loop_with_picard_eq
-    (P : ChargeSeed E N) (Q : CompleteToricPresentation i b r L γ)
+    (P : ChargeSeed E N) (Q : CompleteToricPresentation k₀ i b r L γ)
     (hform : P.form = b.detDualEquiv.toLinearMap) (hcharge : P.charge = Fan.rayChargeMap Q.rays)
     (models : ∀ c : CenterPoint (U := Centers[r]) (V := Centers[r]) Cnil[P],
       Q.HasNodalModel (dst(Cnil[P],c)) (M (dst(Cnil[P],c))))
     {a : Point Centers[r]} (href : Q.HasNodalModel a (M a))
-    (hnef : (classOf(hD a)).IsNef ℂ ((M a).surface ↘ S))
-    (hsq : Chow.classIntersectionNumber ℂ (M a).surface classOf(hD a) classOf(hD a) = 0)
+    (hnef : (classOf(hD a)).IsNef k₀ ((M a).surface ↘ S))
+    (hsq : Chow.classIntersectionNumber k₀ (M a).surface classOf(hD a) classOf(hD a) = 0)
     (hprim : IsPrimitive (Additive.ofMul classOf(hD a)))
     (hmark : ∀ c j, (M c).boundaryClass (hD c) j = d j)
     (Θ : Maps[E] ≃* signedBoundaryIsometryGroup H d)
@@ -87,13 +92,13 @@ private theorem exists_realize_loop_with_picard_eq
       letI := Q.complete.nonempty_cones
       letI := Q.prestable
       letI := Q.neZero
-      ∀ (v : Word E E) (A : GeometricRealization M M Cw[v,P] (v.xRationalMap ℂ)),
+      ∀ (v : Word E E) (A : GeometricRealization M M Cw[v,P] (v.xRationalMap k₀)),
         TargetModels[b,Q,M,Cw[v,P]] → Θ eval[E,v] = A.toSignedBoundaryIsometry d hD hmark)
     (v : Word E E) :
     letI := Q.complete.nonempty_cones
     letI := Q.prestable
     letI := Q.neZero
-    ∃ A : GeometricRealization M M Cw[v,P] (v.xRationalMap ℂ),
+    ∃ A : GeometricRealization M M Cw[v,P] (v.xRationalMap k₀),
       TargetModels[b,Q,M,Cw[v,P]] ∧ Θ eval[E,v] = A.toSignedBoundaryIsometry d hD hmark := by
   obtain ⟨A, -, -, hA⟩ := exists_realize_signed_loop v P Q
     hform hcharge M models href hD hnef hsq hprim d hmark
@@ -114,8 +119,8 @@ also intertwines the unsigned Picard equivalences compatible with the two
 inclusions. -/
 theorem nonempty_picardBaseChange_of_presentations
     (w : Word E₀ E₁) (P₀ : ChargeSeed E₀ N₀) (P₁ : ChargeSeed E₁ N₁)
-    (Q₀ : CompleteToricPresentation i₀ b₀ r L₀ γ₀)
-    (Q₁ : CompleteToricPresentation i₁ b₁ r L₁ γ₁)
+    (Q₀ : CompleteToricPresentation k₀ i₀ b₀ r L₀ γ₀)
+    (Q₁ : CompleteToricPresentation k₀ i₁ b₁ r L₁ γ₁)
     (hform₀ : P₀.form = b₀.detDualEquiv.toLinearMap)
     (hcharge₀ : P₀.charge = Fan.rayChargeMap Q₀.rays)
     (hform₁ : P₁.form = b₁.detDualEquiv.toLinearMap)
@@ -126,10 +131,10 @@ theorem nonempty_picardBaseChange_of_presentations
       Q₁.HasNodalModel (dst(Cnil[P₁],c)) (M₁ (dst(Cnil[P₁],c))))
     {a₀ a₁ : Point Centers[r]} (href₀ : Q₀.HasNodalModel a₀ (M₀ a₀))
     (href₁ : Q₁.HasNodalModel a₁ (M₁ a₁))
-    (hnef₀ : (classOf(hD₀ a₀)).IsNef ℂ ((M₀ a₀).surface ↘ S))
-    (hnef₁ : (classOf(hD₁ a₁)).IsNef ℂ ((M₁ a₁).surface ↘ S))
-    (hsq₀ : Chow.classIntersectionNumber ℂ (M₀ a₀).surface classOf(hD₀ a₀) classOf(hD₀ a₀) = 0)
-    (hsq₁ : Chow.classIntersectionNumber ℂ (M₁ a₁).surface classOf(hD₁ a₁) classOf(hD₁ a₁) = 0)
+    (hnef₀ : (classOf(hD₀ a₀)).IsNef k₀ ((M₀ a₀).surface ↘ S))
+    (hnef₁ : (classOf(hD₁ a₁)).IsNef k₀ ((M₁ a₁).surface ↘ S))
+    (hsq₀ : Chow.classIntersectionNumber k₀ (M₀ a₀).surface classOf(hD₀ a₀) classOf(hD₀ a₀) = 0)
+    (hsq₁ : Chow.classIntersectionNumber k₀ (M₁ a₁).surface classOf(hD₁ a₁) classOf(hD₁ a₁) = 0)
     (hprim₀ : IsPrimitive (Additive.ofMul classOf(hD₀ a₀)))
     (hprim₁ : IsPrimitive (Additive.ofMul classOf(hD₁ a₁)))
     (Θ₀ : Maps[E₀] ≃* signedBoundaryIsometryGroup H₀ d₀)
@@ -138,14 +143,14 @@ theorem nonempty_picardBaseChange_of_presentations
       letI := Q₀.complete.nonempty_cones
       letI := Q₀.prestable
       letI := Q₀.neZero
-      ∀ (v : Word E₀ E₀) (A : GeometricRealization M₀ M₀ Cw[v,P₀] (v.xRationalMap ℂ)),
+      ∀ (v : Word E₀ E₀) (A : GeometricRealization M₀ M₀ Cw[v,P₀] (v.xRationalMap k₀)),
         TargetModels[b₀,Q₀,M₀,Cw[v,P₀]] →
           Θ₀ eval[E₀,v] = A.toSignedBoundaryIsometry d₀ hD₀ hmark₀)
     (hΘ₁ :
       letI := Q₁.complete.nonempty_cones
       letI := Q₁.prestable
       letI := Q₁.neZero
-      ∀ (v : Word E₁ E₁) (A : GeometricRealization M₁ M₁ Cw[v,P₁] (v.xRationalMap ℂ)),
+      ∀ (v : Word E₁ E₁) (A : GeometricRealization M₁ M₁ Cw[v,P₁] (v.xRationalMap k₀)),
         TargetModels[b₁,Q₁,M₁,Cw[v,P₁]] →
           Θ₁ eval[E₁,v] = A.toSignedBoundaryIsometry d₁ hD₁ hmark₁) :
     Nonempty (PicardBaseChange (M₀ := M₀) (M₁ := M₁) w Cw[w,P₀] hmark₀ hmark₁ Θ₀ Θ₁) := by
@@ -156,7 +161,7 @@ theorem nonempty_picardBaseChange_of_presentations
   let := Q₁.prestable
   let := Q₁.neZero
   let : PreirreducibleSpace Centers[r].left :=
-    inferInstanceAs (PreirreducibleSpace (scheme ℂ (Fin r → ℤ)))
+    inferInstanceAs (PreirreducibleSpace (scheme k₀ (Fin r → ℤ)))
   have hindex := href₁.chargeIndex_ne_zero (hD₁ a₁) hnef₁ hsq₁ hprim₁
   have hsigned := R.signedPicardHom_base_change
     (b := b₁) (hΦ := Q₁.regular) (T := Q₁.cycle) (origin := Q₁.origin)

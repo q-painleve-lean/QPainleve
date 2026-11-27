@@ -39,16 +39,18 @@ open Scheme.IdealSheafData
 
 namespace TauCeti.Toric.Fan
 
-local notation "S" => Spec (CommRingCat.of ℂ)
-local notation "P₁" => projectiveLine ℂ
+variable (k₀ : Type) [Field k₀] [IsAlgClosed k₀]
+
+local notation "S" => Spec (CommRingCat.of k₀)
+local notation "P₁" => projectiveLine k₀
 attribute [local instance] MvPolynomial.gradedAlgebra
-local notation "Plane" => Proj (MvPolynomial.homogeneousSubmodule (Fin 3) ℂ)
+local notation "Plane" => Proj (MvPolynomial.homogeneousSubmodule (Fin 3) k₀)
 local notation "I[" x "]" => Scheme.Hom.ker (Scheme.fromSpecResidueField _ x)
 local notation "J[" x "]" => vanishingIdeal (Closeds.mk (closure ({x} : Set _)) isClosed_closure)
 local notation "π[" x "]" => blowupToBase (I[x])
 local notation "T[" x "]" => BlowupTower.nil.snoc (I[x])
 local notation "R[" D "," x "]" => radical (comap D (π[x]))
-local notation "K[" X "]" => LineBundleClass.mk (canonicalBundle ℂ X 2)
+local notation "K[" X "]" => LineBundleClass.mk (canonicalBundle k₀ X 2)
 
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {Φ : Fan i} [Nonempty Φ.cones]
@@ -56,13 +58,13 @@ variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   (r : Fin 4 ≃ Φ.Ray)
   (hr : (fun j ↦ (r j).primitiveGenerator) = ![b 0, b 1, -b 0, e • b 0 - b 1])
 
-local notation "X" => Φ.algebraicRealization
-local notation "C" => Φ.hirzebruchPicardBasis b e hΦ r hr
+local notation "X" => (Φ.finiteFanScheme k₀)
+local notation "C" => Φ.hirzebruchPicardBasis k₀ b e hΦ r hr
 local notation "P[" p "]" => Additive.ofMul
-  (@primeDivisorClass X _ _ (Φ.uniqueFactorizationMonoid_stalk_algebraicRealization hΦ) p)
+  (@primeDivisorClass X _ _ (Φ.uniqueFactorizationMonoid_stalk_finiteFanScheme (R := k₀) hΦ) p)
 local notation "χ[" b "]" => LinearMap.toAddMonoidHom (Basis.coord b 1)
 local notation "f[" b "," e "," r "," hr "]" =>
-  Φ.characterRuling χ[b] (nonneg_or_nonpos_hirzebruch_ruling_character b e r hr)
+  Φ.characterRuling k₀ χ[b] (nonneg_or_nonpos_hirzebruch_ruling_character b e r hr)
 
 private theorem characterRuling_closed_fibers (b : Basis (Fin 2) ℤ N) (e : ℤ)
     (hΦ : Φ.IsRegular) (hc : Φ.IsComplete) (r : Fin 4 ≃ Φ.Ray)
@@ -74,17 +76,18 @@ private theorem characterRuling_closed_fibers (b : Basis (Fin 2) ℤ N) (e : ℤ
   have hχ : χ[b] ≠ 0 := by
     intro hh
     simpa [Basis.coord_apply] using DFunLike.congr_fun hh (b 1)
-  refine ⟨Φ.isDominant_characterRuling _ _ hχ, fun z hz ↦ ?_⟩
-  obtain ⟨a, ha, -⟩ := exists_hirzebruch_fiber_iso_with_degree b e hΦ hc r hr z hz
+  refine ⟨Φ.isDominant_characterRuling k₀ _ _ hχ, fun z hz ↦ ?_⟩
+  obtain ⟨a, ha, -⟩ := exists_hirzebruch_fiber_iso_with_degree k₀ b e hΦ hc r hr z hz
   exact ⟨a, ha⟩
 
-variable [Φ.algebraicRealization.IsProjectiveOver ℂ]
-  [SmoothOfRelativeDimension 2 (Φ.algebraicRealization ↘ Spec (CommRingCat.of ℂ))]
-  {D : Φ.algebraicRealization.IdealSheafData}
-  [PrestableFamily (D.subscheme ↘ Spec (CommRingCat.of ℂ))] (hD : D.IsEffectiveCartier)
+variable [(Φ.finiteFanScheme k₀).IsProjectiveOver k₀]
+  [SmoothOfRelativeDimension 2 ((Φ.finiteFanScheme k₀) ↘ Spec (CommRingCat.of k₀))]
+  {D : (Φ.finiteFanScheme k₀).IdealSheafData}
+  [PrestableFamily (D.subscheme ↘ Spec (CommRingCat.of k₀))] (hD : D.IsEffectiveCartier)
   (hK : LineBundleClass.mk hD.toInvertibleSheaf =
-    LineBundleClass.mk (canonicalBundle ℂ Φ.algebraicRealization 2))
-  {n : ℕ} [NeZero n] {α : Type*} {p : α → (D.subscheme ↘ Spec (CommRingCat.of ℂ)).smoothLocus}
+    LineBundleClass.mk (canonicalBundle k₀ (Φ.finiteFanScheme k₀) 2))
+  {n : ℕ} [NeZero n] {α : Type*} {p : α → (D.subscheme ↘ Spec
+    (CommRingCat.of k₀)).smoothLocus}
   (A : Scheme.NodalCycleNumbering p n)
 
 local notation "prime[" j "]" => D.boundaryPrimeEmbedding (A.boundaryPrimeEquiv hD j)
@@ -107,9 +110,9 @@ private theorem exists_omitted_fiber_of_quadric_bisection (he : e = 0) (hn : n =
     have hone : (1 : ZMod n) ≠ 0 := by
       exact fun h ↦ by have := ZMod.one_eq_zero_iff.mp h; omega
     exact fun h ↦ hone (add_eq_left.mp h.symm)
-  have hsections := quadric_bisection_transverse_sections b hΦ hc r hr hD hK hs
+  have hsections := quadric_bisection_transverse_sections k₀ b hΦ hc r hr hD hK hs
     ((A.boundaryPrimeEquiv hD).injective.ne hst)
-  have hq : f[b', 0, r', hr'] = Φ.characterRuling (b.coord 0).toAddMonoidHom
+  have hq : f[b', 0, r', hr'] = Φ.characterRuling k₀ (b.coord 0).toAddMonoidHom
       (nonneg_or_nonpos_quadric_transverse_character b r hr) := by
     have hχ : χ[b'] = (b.coord 0).toAddMonoidHom := by
       ext x
@@ -117,12 +120,13 @@ private theorem exists_omitted_fiber_of_quadric_bisection (he : e = 0) (hn : n =
     congr
   have hdegree (j : ZMod n)
       (h : IsIso (J[prime[j].val].subschemeι ≫ f[b', 0, r', hr'])) :
-      (Φ.hirzebruchPicardBasis b' 0 hΦ r' hr').repr P[prime[j]] 1 = 1 := by
+      (Φ.hirzebruchPicardBasis k₀ b' 0 hΦ r' hr').repr P[prime[j]] 1 = 1 := by
     let g := J[prime[j].val].subschemeι ≫ f[b', 0, r', hr']
     let : IsIso g := h
-    obtain ⟨_, _, hrank⟩ := hirzebruch_ruling_prime_degree_of_isDominant b' 0 r' hr' prime[j]
+    obtain ⟨_, _, hrank⟩ := hirzebruch_ruling_prime_degree_of_isDominant k₀ b' 0 r' hr' prime[j]
     obtain ⟨y⟩ : Nonempty P₁ := inferInstance
-    have h := (eulerDegree_hirzebruch_ruling_prime b' 0 hΦ hc r' hr' prime[j]).symm.trans (hrank y)
+    have h := (eulerDegree_hirzebruch_ruling_prime k₀ b' 0 hΦ hc r' hr' prime[j]).symm.trans
+      (hrank y)
     have hr : g.finrank y = 1 := congrFun (g.finrank_eq_one_of_isIso) y
     exact h.trans (by exact_mod_cast hr)
   have h₀ := hdegree s (by rw [hq]; exact hsections.1)
@@ -134,7 +138,7 @@ private theorem exists_omitted_fiber_of_quadric_bisection (he : e = 0) (hn : n =
         (by rw [Finset.card_pair hst, Finset.card_univ, hcard])
     have hj : j ∈ ({s, s + 1} : Finset (ZMod n)) := huniv ▸ Finset.mem_univ j
     simpa using hj
-  rcases exists_hirzebruch_horizontal_node_or_boundary_cases b' 0 hΦ hc r' hr' A hD hK rfl with
+  rcases exists_hirzebruch_horizontal_node_or_boundary_cases k₀ b' 0 hΦ hc r' hr' A hD hK rfl with
     ⟨j, y, -, -, hy, hx, hF⟩ | hzero | ⟨-, j, hj⟩
   · have : IsClosedImmersion y := y.isClosedImmersion_of_comp_eq_id hy
     rw [support_comap] at hx
@@ -150,9 +154,9 @@ private theorem exists_omitted_fiber_or_hirzebruch_one_bisection (he : 0 ≤ e)
         ∃ a : P₁ ≅ f.fiber z, a.hom ≫ f.fiberι z ≫ X ↘ S = P₁ ↘ S) ∧
       ∃ j : ZMod n, ¬ (I[f (A.ambientNode j)].comap f).support ≤ D.support)
     ∨ (e = 1 ∧ ∃ s : ZMod n, d[s] = 2) := by
-  rcases exists_hirzebruch_horizontal_node_or_boundary_cases b e hΦ hc r hr A hD hK rfl with
+  rcases exists_hirzebruch_horizontal_node_or_boundary_cases k₀ b e hΦ hc r hr A hD hK rfl with
     ⟨j, y, -, -, hy, hx, hF⟩ | hzero | ⟨hn, s, hs⟩
-  · obtain ⟨hdom, hfiber⟩ := characterRuling_closed_fibers b e hΦ hc r hr
+  · obtain ⟨hdom, hfiber⟩ := characterRuling_closed_fibers k₀ b e hΦ hc r hr
     have : IsClosedImmersion y := y.isClosedImmersion_of_comp_eq_id hy
     rw [support_comap] at hx
     exact Or.inl ⟨f[b, e, r, hr], inferInstance, hdom, hfiber, j,
@@ -163,7 +167,7 @@ private theorem exists_omitted_fiber_or_hirzebruch_one_bisection (he : 0 ≤ e)
     have hcard : D.boundaryPrimes.ncard = n := by
       rw [← Nat.card_coe_set_eq, ← Nat.card_congr (A.boundaryPrimeEquiv hD), Nat.card_zmod]
     obtain ⟨-, -, hbound⟩ :=
-      hirzebruch_anticanonical_bisection b e hΦ hc r hr hD hK he
+      hirzebruch_anticanonical_bisection k₀ b e hΦ hc r hr hD hK he
         (A.boundaryPrimeEquiv hD s) hs
     rw [hcard, hn] at hbound
     by_cases hzero : e = 0
@@ -171,13 +175,13 @@ private theorem exists_omitted_fiber_or_hirzebruch_one_bisection (he : 0 ≤ e)
       let b' := b.reindex (Equiv.swap 0 1)
       let r' := ((Equiv.swap (0 : Fin 4) 1).trans (Equiv.swap 2 3)).trans r
       let hr' := quadric_swapped_generators b r hr
-      obtain ⟨j, hj⟩ := exists_omitted_fiber_of_quadric_bisection b hΦ hc r hr hD hK A
+      obtain ⟨j, hj⟩ := exists_omitted_fiber_of_quadric_bisection k₀ b hΦ hc r hr hD hK A
         rfl hn hpos.ne' s hs
-      obtain ⟨hdom, hfiber⟩ := characterRuling_closed_fibers b' 0 hΦ hc r' hr'
+      obtain ⟨hdom, hfiber⟩ := characterRuling_closed_fibers k₀ b' 0 hΦ hc r' hr'
       exact Or.inl ⟨f[b', 0, r', hr'], inferInstance, hdom, hfiber, j, hj⟩
     · exact Or.inr ⟨by omega, s, hs⟩
 
-omit [Φ.algebraicRealization.IsProjectiveOver ℂ] in
+omit [(Φ.finiteFanScheme k₀).IsProjectiveOver k₀] in
 include b hΦ hc r hr hD hK A in
 /-- A numbered anticanonical boundary of positive complexity on a Hirzebruch
 surface admits one nodal blowup followed by an internal contraction. The schematic
@@ -195,7 +199,7 @@ theorem exists_hirzebruch_positive_complexity_reduction (he : 0 ≤ e)
       ∃ hSmooth : SmoothOfRelativeDimension 2 s,
         letI : SmoothOfRelativeDimension 2 (Y ↘ S) := hSmooth
         IsNodalBoundaryTower D (X ↘ S) (𝟙 X) T[x] ∧
-        IsIntegral Y ∧ Y.IsProjectiveOver ℂ ∧ IsClosed ({y} : Set Y) ∧
+        IsIntegral Y ∧ Y.IsProjectiveOver k₀ ∧ IsClosed ({y} : Set Y) ∧
         g ≫ s = π[x] ≫ X ↘ S ∧ ¬ ((I[y]).comap g).support ≤ (R[D,x]).support ∧
         f.IsOver S ∧ Flat f ∧
         (∀ z : P₁, IsClosed ({z} : Set P₁) →
@@ -206,11 +210,11 @@ theorem exists_hirzebruch_positive_complexity_reduction (he : 0 ≤ e)
           ∃ _ : PrestableFamily (E.subscheme ↘ S),
             Nonempty (Scheme.NodalCycleNumbering
               (Empty.elim : Empty → (E.subscheme ↘ S).smoothLocus) (n + 1)) := by
-  let : (X).IsProjectiveOver ℂ :=
-    Φ.isProjectiveOver_algebraicRealization_of_isComplete hΦ hc b
-  let : SmoothOfRelativeDimension 1 (P₁ ↘ S) := projectiveLine.smoothOfRelativeDimension ℂ
+  let : (X).IsProjectiveOver k₀ :=
+    Φ.isProjectiveOver_finiteFanScheme_of_isComplete k₀ hΦ hc b
+  let : SmoothOfRelativeDimension 1 (P₁ ↘ S) := projectiveLine.smoothOfRelativeDimension k₀
   let : Smooth (P₁ ↘ S) := SmoothOfRelativeDimension.smooth 1 _
-  rcases exists_omitted_fiber_or_hirzebruch_one_bisection b hΦ hc r hr hD hK A he hpos with
+  rcases exists_omitted_fiber_or_hirzebruch_one_bisection k₀ b hΦ hc r hr hD hK A he hpos with
     ⟨f, hf, hd, hfib, j, hF⟩ | ⟨heq, t, ht⟩
   · let : Module.Finite ℤ (Additive (LineBundleClass X)) := Module.Finite.of_basis C
     let x := A.ambientNode j
@@ -221,7 +225,7 @@ theorem exists_hirzebruch_positive_complexity_reduction (he : 0 ≤ e)
     let : (J[x]).blowup.Over S := ⟨(J[x]).blowupToBase ≫ X ↘ S⟩
     let : SmoothOfRelativeDimension 2 (Y ↘ S) := hSmooth
     -- Identify the vanishing-ideal blowup with the residue-field blowup of the numbered node.
-    have hI : I[x] = J[x] := Φ.algebraicRealization.ker_fromSpecResidueField_eq_vanishingIdeal x
+    have hI : I[x] = J[x] := (Φ.finiteFanScheme k₀).ker_fromSpecResidueField_eq_vanishingIdeal x
     let v := blowupIso (Iso.refl X) (hI.trans (comap_id _).symm)
     have hv : v.hom ≫ (J[x]).blowupToBase = π[x] := by simp [v]
     have hgv : (v ≪≫ u).hom ≫ π[y] = v.hom ≫ g := by
@@ -245,24 +249,24 @@ theorem exists_hirzebruch_positive_complexity_reduction (he : 0 ≤ e)
     subst e
     obtain ⟨p, q, a, Ψ, hΨ, hcΨ, b', r', v, y, u, -, -, -, -, ha, hv, hr', hy, -, -,
       hT, hpb, hstrict, hcomplexity, hE, hpre, hKE, hnumber⟩ :=
-      exists_hirzebruch_one_nodal_replacement_of_bisection b hΦ hc r hr hD hK
+      exists_hirzebruch_one_nodal_replacement_of_bisection k₀ b hΦ hc r hr hD hK
         (A.boundaryPrimeEquiv hD t) ht A t
     let x := A.ambientNode t
     let : Nonempty Ψ.cones := hcΨ.nonempty_cones
-    let Y := Ψ.algebraicRealization
-    let hproj : Y.IsProjectiveOver ℂ :=
-      Ψ.isProjectiveOver_algebraicRealization_of_isComplete hΨ hcΨ b'
+    let Y := (Ψ.finiteFanScheme k₀)
+    let hproj : Y.IsProjectiveOver k₀ :=
+      Ψ.isProjectiveOver_finiteFanScheme_of_isComplete k₀ hΨ hcΨ b'
     let : SmoothOfRelativeDimension 2 (Y ↘ S) := by
-      rw [algebraicRealization_over]
+      rw [finiteFanScheme_over]
       exact ((finrank_eq_card_basis b').trans (Fintype.card_fin 2)) ▸
-        Ψ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΨ
+        Ψ.smoothOfRelativeDimension_finiteFanSchemeToSpec k₀ hΨ
     have hr₁ : (fun j ↦ (r' j).primitiveGenerator) =
         ![b' 0, b' 1, -b' 0, (1 : ℤ) • b' 0 - b' 1] := by simpa only [one_zsmul] using hr'
-    let f := Ψ.characterRuling χ[b'] (nonneg_or_nonpos_hirzebruch_ruling_character b' 1 r' hr₁)
+    let f := Ψ.characterRuling k₀ χ[b'] (nonneg_or_nonpos_hirzebruch_ruling_character b' 1 r' hr₁)
     have hf : f.IsOver S :=
-      inferInstanceAs ((Ψ.characterRuling χ[b']
+      inferInstanceAs ((Ψ.characterRuling k₀ χ[b']
         (nonneg_or_nonpos_hirzebruch_ruling_character b' 1 r' hr₁)).IsOver S)
-    obtain ⟨hfdom, hfiber⟩ := characterRuling_closed_fibers b' 1 hΨ hcΨ r' hr₁
+    obtain ⟨hfdom, hfiber⟩ := characterRuling_closed_fibers k₀ b' 1 hΨ hcΨ r' hr₁
     let : IsDominant f := hfdom
     have hFlat : Flat f := f.flat_of_isDominant_of_smooth (P₁ ↘ S)
     have hbase : u.hom ≫ π[y] ≫ Y ↘ S = π[x] ≫ X ↘ S := by

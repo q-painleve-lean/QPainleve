@@ -32,32 +32,35 @@ open Scheme Scheme.IdealSheafData TauCeti TauCeti.AlgebraicGeometry TauCeti.Tori
 
 namespace QPainleve.SignedClusterModularGroup
 
+variable {k₀ : Type} [Field k₀] [IsAlgClosed k₀]
+
 namespace CompleteToricPresentation
 
 open GeometricRealization (Point)
 
-local notation "S" => Spec (CommRingCat.of ℂ)
-local notation "Centers[" r "]" => Over.mk (structureMap ℂ (Fin r → ℤ))
-local notation "XTor[" r "]" => scheme ℂ (Fin r →₀ ℤ)
-local notation "χ[" c "]" => pointsEquiv ℂ _ (Subtype.mk (Over.Hom.left c) (Over.w c))
+local notation "S" => Spec (CommRingCat.of k₀)
+local notation "Centers[" r "]" => Over.mk (structureMap k₀ (Fin r → ℤ))
+local notation "XTor[" r "]" => scheme k₀ (Fin r →₀ ℤ)
+local notation "χ[" c "]" => pointsEquiv k₀ _ (Subtype.mk (Over.Hom.left c) (Over.w c))
 local notation "cartier[" M "]" => MarkedSurface.isEffectiveCartier_boundaryIdeal M
 
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {b : Basis (Fin 2) ℤ N} {r n : ℕ} [NeZero n]
   {L γ : Type} [AddCommGroup L] {B : LinearMap.BilinForm ℤ L}
-  (Q : CompleteToricPresentation i b r L γ)
-  {c₀ : Point Centers[r]} {M₀ : MarkedSurface ℂ n B XTor[r]}
+  (Q : CompleteToricPresentation k₀ i b r L γ)
+  {c₀ : Point (Over.mk (QPainleve.CharacterTorus.structureMap k₀ (Fin r →
+    ℤ)))} {M₀ : MarkedSurface k₀ n B (QPainleve.CharacterTorus.scheme k₀ (Fin r →₀ ℤ))}
 
 local instance instNonemptyCoordinateRelationCones : Nonempty Q.fan.cones :=
   Q.complete.nonempty_cones
 local instance instNeZeroCoordinateRelationLength : NeZero Q.length := Q.neZero
 local instance instPrestableCoordinateRelationBoundary :
-    PrestableFamily ((Q.fan.boundaryIdeal Q.complete.nonempty_cones).subscheme ↘ S) :=
+    PrestableFamily ((Q.fan.toricBoundaryIdeal k₀ Q.complete.nonempty_cones).subscheme ↘ S) :=
   Q.prestable
 
 local notation "raysFromOrigin" =>
-  Q.fan.rayEquivOfNodalCycleNumbering Q.regular (Q.cycle.rotate Q.origin)
-local notation "rayAt" => Q.fan.rayFinEquivOfNodalCycleNumbering Q.regular Q.cycle Q.origin
+  Q.fan.rayEquivOfNodalCycleNumbering k₀ Q.regular (Q.cycle.rotate Q.origin)
+local notation "rayAt" => Q.fan.rayFinEquivOfNodalCycleNumbering k₀ Q.regular Q.cycle Q.origin
 local notation "fiber[" M "," c "]" =>
   ContractedToricFiber b Q.rays Q.regular Q.cycle Q.origin Q.inclusion χ[c] M
 
@@ -85,10 +88,10 @@ order of the presentation. -/
 theorem rayBoundarySelfIntersection_eq_of_rayCoordinates
     (ray : Fin Q.length → Fin 2 → ℤ)
     (hray : ∀ j, ray j = b.repr (rayAt j).primitiveGenerator) :
-    (fun j ↦ Q.fan.rayBoundarySelfIntersection Q.regular (raysFromOrigin j)) =
+    (fun j ↦ Q.fan.rayBoundarySelfIntersection k₀ Q.regular (raysFromOrigin j)) =
       toricBoundarySelfIntersection (ray ∘ (ZMod.finEquiv Q.length).symm) := by
-  let : Q.fan.algebraicRealization.IsProjectiveOver ℂ :=
-    Q.fan.isProjectiveOver_algebraicRealization_of_isComplete Q.regular Q.complete b
+  let : (Q.fan.finiteFanScheme k₀).IsProjectiveOver k₀ :=
+    Q.fan.isProjectiveOver_finiteFanScheme_of_isComplete k₀ Q.regular Q.complete b
   have hpositive (j : ZMod Q.length) :
       b.detDualEquiv (raysFromOrigin j).primitiveGenerator
         (raysFromOrigin (j + 1)).primitiveGenerator = 1 ∧
@@ -103,7 +106,7 @@ theorem rayBoundarySelfIntersection_eq_of_rayCoordinates
     simp only [Function.comp_apply, hray, Fan.rayFinEquivOfNodalCycleNumbering_apply,
       RingEquiv.apply_symm_apply]
   rw [hcoords]
-  exact Q.fan.rayBoundarySelfIntersection_eq_of_positiveRayCoordinates
+  exact Q.fan.rayBoundarySelfIntersection_eq_of_positiveRayCoordinates k₀
     Q.regular Q.complete b (raysFromOrigin) hpositive
 
 /-- The integer coefficients of a pulled-back ample class determine the surviving ray
@@ -114,9 +117,9 @@ theorem isSignedLoopComparisonInput_of_polarization
     {H : LineBundleClass M₀.surface} (hH : H.IsAmple)
     (ray : Fin Q.length → Fin 2 → ℤ) (centerRay : Fin r → Fin Q.length)
     (selfIntersection toricCoeff : ZMod Q.length → ℤ) (exceptionalCoeff : Fin r → ℤ)
-    (hself : ∀ j, selfIntersection j = Q.fan.rayBoundarySelfIntersection Q.regular
+    (hself : ∀ j, selfIntersection j = Q.fan.rayBoundarySelfIntersection k₀ Q.regular
       (raysFromOrigin j))
-    (hcoords : (Q.fan.rayDivisorToPicard Q.regular (toricCoeff ∘ (raysFromOrigin).symm),
+    (hcoords : (Q.fan.rayChartDivisorToPicard k₀ Q.regular (toricCoeff ∘ (raysFromOrigin).symm),
         exceptionalCoeff) = Q.inclusion (M₀.picardMarking.symm (Additive.ofMul H)))
     (hcenter : ∀ j, rayAt (centerRay j) = Q.rays j) :
     let survivors := p₀.survivingRayOffsetsOfPolarization hnodal₀ Q.complete hH
@@ -140,7 +143,7 @@ theorem isSignedLoopComparisonInput_of_polarization_rayCoordinates
     (toricCoeff : ZMod Q.length → ℤ) (exceptionalCoeff : Fin r → ℤ)
     (hray : ∀ j, ray j = b.repr (rayAt j).primitiveGenerator)
     (hcenter : ∀ j, rayAt (centerRay j) = Q.rays j)
-    (hcoords : (Q.fan.rayDivisorToPicard Q.regular (toricCoeff ∘ (raysFromOrigin).symm),
+    (hcoords : (Q.fan.rayChartDivisorToPicard k₀ Q.regular (toricCoeff ∘ (raysFromOrigin).symm),
         exceptionalCoeff) = Q.inclusion (M₀.picardMarking.symm (Additive.ofMul H))) :
     let selfIntersection := toricBoundarySelfIntersection (ray ∘ (ZMod.finEquiv Q.length).symm)
     let survivors := p₀.survivingRayOffsetsOfPolarization hnodal₀ Q.complete hH

@@ -29,14 +29,17 @@ open AlgebraicGeometry CategoryTheory Module TauCeti.Toric
 
 namespace QPainleve
 
-variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
+universe u
+
+variable (k : Type u) [Field k] {N V : Type u}
+  [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {Φ Ψ F : Fan i} {n : ℕ}
 
-local notation "X[" Δ "]" => Fan.algebraicRealization Δ
-local notation "I[" σ "]" => Scheme.Hom.ker (Fan.distinguishedPointHom _ σ)
-local notation "π[" s "]" => FanHom.algebraicMap (Fan.IsSubdivision.toFanHom s)
+local notation "X[" Δ "]" => Fan.finiteFanScheme k Δ
+local notation "I[" σ "]" => Scheme.Hom.ker (Fan.distinguishedSection (R := k) _ σ)
+local notation "π[" s "]" => FanHom.finiteFanSchemeHom k (Fan.IsSubdivision.toFanHom s)
 local notation "node[" Δ "," σ "]" =>
-  Fan.distinguishedPointHom Δ σ (IsLocalRing.closedPoint ℂ)
+  Fan.distinguishedSection (R := k) Δ σ (IsLocalRing.closedPoint k)
 
 /-- A retained first center over a toric corner different from the pivot
 projects to a toric corner after the elementary link. The first index over
@@ -60,19 +63,20 @@ theorem retained_corner_of_toric_link
       ∃ k : Fin (1 + n), (k = Fin.castAdd n (0 : Fin 1) ∨ k = l.natAdd 1) ∧
         targetCenters k = node[Ψ,ω'] ∧ ∀ a < k, targetCenters a ≠ targetCenters k := by
   let s := hstar.isSubdivision
-  obtain ⟨υ, hυ, hsυ⟩ := hstar.exists_lift_distinguishedPointHom hN ω hω
+  obtain ⟨υ, hυ, hsυ⟩ := hstar.exists_lift_distinguishedSection k hN ω hω
   let z := node[F,υ]
   have hsrc : π[s] z = node[Φ,ω] :=
-    congrArg (fun f : Spec (.of ℂ) ⟶ X[Φ] ↦ f (IsLocalRing.closedPoint ℂ)) hsυ
+    congrArg (fun f : Spec (.of k) ⟶ X[Φ] ↦ f (IsLocalRing.closedPoint k)) hsυ
   let least : Ψ.cones := ⟨t.toFanHom.leastCone υ.property, t.toFanHom.leastCone_mem υ.property⟩
   obtain ⟨ω', hleast, hω'⟩ := Ψ.exists_le_cone_of_card_toricRay_eq_two hΨ hcΨ hN least
-  have hcomp := t.distinguishedPointHom_comp_algebraicMap_of_le_of_card_toricRay_eq_two hF hN hυ
+  have hcomp := t.distinguishedSection_comp_finiteFanSchemeHom_of_le_of_card_toricRay_eq_two
+    k hF hN hυ
     ((t.le_leastCone υ.property).trans hleast)
   have htgt : π[t] z = node[Ψ,ω'] :=
-    congrArg (fun f : Spec (.of ℂ) ⟶ X[Ψ] ↦ f (IsLocalRing.closedPoint ℂ)) hcomp
+    congrArg (fun f : Spec (.of k) ⟶ X[Ψ] ↦ f (IsLocalRing.closedPoint k)) hcomp
   have hoff : π[s] z ∈ π[s].isoLocus := by
     have hnon : π[s] z ∉ π[s].centre := by
-      rw [hsrc, Φ.centre_eq_singleton_distinguishedPoint_of_blowup hΦ hN σ _ v hv]
+      rw [hsrc, Φ.centre_eq_singleton_distinguishedSection_of_blowup k hΦ hN σ _ v hv]
       exact fun h ↦ hne (Set.mem_singleton_iff.mp h)
     simpa only [Scheme.Hom.centre_def, Set.mem_compl_iff, not_not, SetLike.mem_coe] using hnon
   refine ⟨ω', hω', ?_⟩
@@ -85,12 +89,12 @@ theorem retained_corner_of_toric_link
     exact (Nat.not_lt_zero _ ha).elim
   · have htarget : π[t] z ∈ π[t].isoLocus := by
       have hnon : π[t] z ∉ π[t].centre := by
-        rw [htgt, Ψ.centre_eq_singleton_distinguishedPoint_of_blowup hΨ hN τ _ w hw]
+        rw [htgt, Ψ.centre_eq_singleton_distinguishedSection_of_blowup k hΨ hN τ _ w hw]
         exact fun h ↦ he (Set.mem_singleton_iff.mp h)
       simpa only [Scheme.Hom.centre_def, Set.mem_compl_iff, not_not, SetLike.mem_coe] using hnon
     have hheadOff : targetCenters (Fin.castAdd n (0 : Fin 1)) ∉ π[t].isoLocus := by
       rw [hhead]
-      exact Ψ.notMem_isoLocus_distinguishedPoint_of_blowup hΨ hN τ _ w hw
+      exact Ψ.notMem_isoLocus_distinguishedSection_of_blowup k hΨ hN τ _ w hw
     obtain ⟨himage, hf⟩ := (π[s]).first_occurrence_of_projected_points (π[t])
       hheadOff hretained hoff htarget l (hl.trans hsrc.symm)
     exact ⟨himage.trans htgt, _, Or.inr rfl, himage.trans htgt,

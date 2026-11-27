@@ -26,15 +26,15 @@ open QPainleve QPainleve.BlowupTower
 
 namespace TauCeti.Toric.Fan
 
-variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
+variable (K : Type) [Field K] {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {Φ : Fan i} (ρ : Φ.Ray) (b : Basis (Fin 2) ℤ N)
-  (hOpp : hull ℝ {i (-ρ.primitiveGenerator)} ∈ Φ.cones) (c : ℂˣ) {n : ℕ}
+  (hOpp : hull ℝ {i (-ρ.primitiveGenerator)} ∈ Φ.cones) (c : Kˣ) {n : ℕ}
 
 local notation "hv" => Ray.primitiveGenerator_ne_zero ρ
 local notation "hp" => Ray.hull_primitiveGenerator_mem ρ
 local notation "Ψ" => Φ.mutationFan b hv hp hOpp
-local notation "X" => Φ.algebraicRealization
-local notation "X'" => Fan.algebraicRealization Ψ
+local notation "X" => Φ.finiteFanScheme K
+local notation "X'" => Fan.finiteFanScheme K Ψ
 local notation "I₀" => ρ.mutationSourceCenterIdeal b c
 local notation "I₁" => ρ.mutationTargetCenterIdeal b hOpp c
 local notation "E" => ρ.mutationBlowupIso b hOpp c
@@ -42,15 +42,15 @@ local notation "k" => Fin.castAdd n (0 : Fin 1)
 local notation "rankTwo" => Eq.trans (Module.finrank_eq_card_basis b) (Fintype.card_fin 2)
 local notation "reverseRay" => Φ.mutationFanCenterRays b (fun _ : Unit ↦ ρ) () hOpp ()
 local notation "reverseCenter" =>
-  Ray.binomialCenter (reverseRay) rankTwo
+  Ray.binomialCenter (reverseRay) K rankTwo
     (b.detDualEquiv_self (Ray.primitiveGenerator (reverseRay)))
     (Ray.surjective_detCharacter (reverseRay) b) c⁻¹
 
 local notation "sourceOpen" => Φ.mutationComplement b
-  (Φ.detCharacter_nonneg_or_nonpos b hv hp hOpp) (c : ℂ)
+  (Φ.detCharacter_nonneg_or_nonpos b hv hp hOpp) (c : K)
 local notation "targetOpen" => Fan.mutationComplement Ψ b
-  (Φ.mutationDetCharacter_nonneg_or_nonpos b hv hp hOpp) (c : ℂ)
-local notation "complementIso" => Φ.mutationComplementIso b (c : ℂ) hv hp hOpp
+  (Φ.mutationDetCharacter_nonneg_or_nonpos b hv hp hOpp) (c : K)
+local notation "complementIso" => Φ.mutationComplementIso b (c : K) hv hp hOpp
 
 /-- In the tower transported across a mutation, a retained center off the pivot fiber
 projects to its image under the isomorphism of fiber complements. If this center
@@ -60,7 +60,7 @@ theorem Ray.baseCenter_of_mutation_of_mem_complement {W Z : Scheme}
     {T : BlowupTower X (n + 1) W} {U : BlowupTower X' (1 + n) Z}
     (hT : IsClosedPointTower X T) (hU : IsClosedPointTower X' U)
     (j : Fin (n + 1)) (l : Fin n)
-    (hreverse : hU.baseCenter k = reverseCenter (IsLocalRing.closedPoint ℂ))
+    (hreverse : hU.baseCenter k = reverseCenter (IsLocalRing.closedPoint K))
     (hcenters : ∀ a : Fin n, ∃ p : (I₀).blowup,
       (I₀).blowupToBase p = hT.baseCenter (j.succAbove a) ∧
       (I₁).blowupToBase ((E).hom p) = hU.baseCenter (a.natAdd 1))
@@ -77,7 +77,7 @@ theorem Ray.baseCenter_of_mutation_of_mem_complement {W Z : Scheme}
   induction a using Fin.addCases with
   | left a =>
     rw [Subsingleton.elim a (0 : Fin 1), hreverse, htarget] at heq
-    have hmem : reverseCenter (IsLocalRing.closedPoint ℂ) ∈ (I₁).support := by
+    have hmem : reverseCenter (IsLocalRing.closedPoint K) ∈ (I₁).support := by
       rw [ρ.mutationTargetCenterIdeal_eq]
       exact (reverseCenter).range_subset_ker_support ⟨_, rfl⟩
     have hdis := (Scheme.IdealSheafData.comap_eq_top_iff (I₁) (targetOpen).ι).mp

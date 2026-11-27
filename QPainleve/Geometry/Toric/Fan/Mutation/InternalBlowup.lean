@@ -34,11 +34,11 @@ open QPainleve.BlowupTower
 
 namespace TauCeti.Toric.Fan
 
-variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
+variable (K : Type) [Field K] {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {Φ : Fan i}
   (b : Module.Basis (Fin 2) ℤ N) {v : N} (hv : v ≠ 0)
   (hpos : PointedCone.hull ℝ {i v} ∈ Φ.cones) (hneg : PointedCone.hull ℝ {i (-v)} ∈ Φ.cones)
-  (c : ℂˣ)
+  (c : Kˣ)
 
 local notation "Ψ" => Φ.mutationFan b hv hpos hneg
 local notation "U₀" =>
@@ -49,7 +49,7 @@ local notation "e" => Φ.mutationComplementIso b (Units.val c) hv hpos hneg
 local notation "f₀" => Scheme.Opens.ι (U₀)
 local notation "f₁" => Iso.hom (e) ≫ Scheme.Opens.ι (U₁)
 
-local notation "S" => Spec (CommRingCat.of ℂ)
+local notation "S" => Spec (CommRingCat.of K)
 local notation "rankTwo" => (Eq.trans (Module.finrank_eq_card_basis b) (Fintype.card_fin 2))
 local notation "χ(" ρ ")" => LinearMap.toAddMonoidHom (b.detDualEquiv (Ray.primitiveGenerator ρ))
 local notation "hχ(" ρ ")" => Eq.trans
@@ -57,14 +57,14 @@ local notation "hχ(" ρ ")" => Eq.trans
     (Ray.primitiveGenerator ρ)) (Module.Basis.detDualEquiv_self b (Ray.primitiveGenerator ρ))
 
 local notation "center(" ρ ", " a ")" =>
-  Ray.binomialCenterOnBoundary ρ rankTwo (m := χ(ρ)) hχ(ρ) (Ray.surjective_detCharacter ρ b) a
+  Ray.binomialCenterOnBoundary ρ K rankTwo (m := χ(ρ)) hχ(ρ) (Ray.surjective_detCharacter ρ b) a
 
 variable [hΦ : Nonempty Φ.cones]
 local notation "hΨ" =>
   Nonempty.intro (Φ.mutationFanConeEquiv b hv hpos hneg (Subtype.mk _ hpos))
 
-local notation "J₀" => Φ.boundaryIdeal hΦ
-local notation "J₁" => boundaryIdeal (Ψ) hΨ
+local notation "J₀" => Φ.toricBoundaryIdeal K hΦ
+local notation "J₁" => toricBoundaryIdeal K (Ψ) hΨ
 local notation "J" => comap (J₀) (f₀)
 local notation "boundaryToSource" => subschemeMap (J) (J₀) (f₀) (le_map_comap (J₀) (f₀))
 local notation "boundaryToTarget" => subschemeMap (J) (J₁) (f₁) (le_map_iff_comap_le.mpr
@@ -76,7 +76,7 @@ private theorem isPullback_boundary_to_mutationTarget :
     (by simpa only [ker_subschemeι] using
       comap_boundaryIdeal_mutationComplementIso b hv hpos hneg c hΦ hΨ)
 
-variable {n : ℕ} (s : Fin n → Φ.Ray) (d : Fin n → ℂˣ)
+variable {n : ℕ} (s : Fin n → Φ.Ray) (d : Fin n → Kˣ)
 
 local notation "r" => Φ.mutationFanRayEquiv b hv hpos hneg
 local notation "d₁" =>
@@ -115,9 +115,9 @@ theorem exists_common_boundaryCenters_mutationComplement (hprim : IsPrimitive v)
   have h₀ : IsPullback (J).subschemeι (boundaryToSource) (f₀) (J₀).subschemeι :=
     isPullback_of_isClosedImmersion _ _ _ _
       (subschemeMap_subschemeι _ _ _ _).symm (by simp)
-  have h₁ := isPullback_boundary_to_mutationTarget b hv hpos hneg c
+  have h₁ := isPullback_boundary_to_mutationTarget K b hv hpos hneg c
   choose t ht₀ ht₁ using fun j ↦
-    exists_common_boundaryCenter b hv hpos hneg c s d h₀ h₁ hprim j (hsame j) (hopp j)
+    exists_common_boundaryCenter K b hv hpos hneg c s d h₀ h₁ hprim j (hsame j) (hopp j)
   exact ⟨t, h₀, h₁, ht₀, ht₁⟩
 
 /-- The restrictions of the two ordered toric blowup models to the mutation fiber
@@ -127,8 +127,8 @@ each strict boundary. Only centers on the pivot fiber are excluded. -/
 theorem exists_common_internalBlowupTower_mutationComplement (hprim : IsPrimitive v)
     (hsame : ∀ j, (s j).primitiveGenerator = v → d j ≠ c)
     (hopp : ∀ j, (s j).primitiveGenerator = -v → d j * c ≠ 1) :
-    let A := internalBlowupTower b s d
-    let B := internalBlowupTower (Φ := Ψ) (h₀ := hΨ) b ((r) ∘ s) (d₁)
+    let A := internalBlowupTower K b s d
+    let B := internalBlowupTower (Φ := Ψ) (h₀ := hΨ) K b ((r) ∘ s) (d₁)
     ∃ (Z : Scheme) (q : Z ⟶ (U₀).toScheme) (g₀ : Z ⟶ A.1) (g₁ : Z ⟶ B.1)
         (j : (J).subscheme ⟶ Z),
       IsPullback g₀ q A.2.toTower.toBase (f₀) ∧
@@ -138,18 +138,18 @@ theorem exists_common_internalBlowupTower_mutationComplement (hprim : IsPrimitiv
   classical
   let j₀ := boundaryToSource
   obtain ⟨s', h₀, h₁, hs₀, hs₁⟩ :=
-    exists_common_boundaryCenters_mutationComplement b hv hpos hneg c s d hprim hsame hopp
+    exists_common_boundaryCenters_mutationComplement K b hv hpos hneg c s d hprim hsame hopp
   have hC₀ (k : Fin n) : ((s₀) k).ker.IsEffectiveCartier :=
-    (s k).isEffectiveCartier_ker_binomialCenterOnBoundary rankTwo hχ(s k)
+    (s k).isEffectiveCartier_ker_binomialCenterOnBoundary K rankTwo hχ(s k)
       ((s k).surjective_detCharacter b) (d k)
   have hC₁ (k : Fin n) : ((s₁) k).ker.IsEffectiveCartier :=
-    ((r) (s k)).isEffectiveCartier_ker_binomialCenterOnBoundary rankTwo hχ((r) (s k))
+    ((r) (s k)).isEffectiveCartier_ker_binomialCenterOnBoundary K rankTwo hχ((r) (s k))
       (((r) (s k)).surjective_detCharacter b) ((d₁) k)
   have hclosed₀ (k : Fin n) : IsClosedImmersion ((s₀) k) :=
-    (s k).isClosedImmersion_binomialCenterOnBoundary rankTwo (m := χ(s k))
+    (s k).isClosedImmersion_binomialCenterOnBoundary K rankTwo (m := χ(s k))
       (b.detDualEquiv_self _) ((s k).surjective_detCharacter b) (d k)
   have hclosed₁ (k : Fin n) : IsClosedImmersion ((s₁) k) :=
-    ((r) (s k)).isClosedImmersion_binomialCenterOnBoundary rankTwo
+    ((r) (s k)).isClosedImmersion_binomialCenterOnBoundary K rankTwo
       (m := χ((r) (s k))) (b.detDualEquiv_self _) (((r) (s k)).surjective_detCharacter b) ((d₁) k)
   have hs' (k : Fin n) : (s' k).ker.IsEffectiveCartier := by
     have hd : IsOpenImmersion j₀ := MorphismProperty.of_isPullback h₀ inferInstance
@@ -167,13 +167,13 @@ theorem exists_common_internalBlowupTower_mutationComplement (hprim : IsPrimitiv
   obtain ⟨g₀, hg₀, hb₀, -⟩ := exists_isPullback_alongBoundary h₀.w (s₀) s' hs₀ hC₀ hs' himage₀
   obtain ⟨g₁, hg₁, hb₁, -⟩ := exists_isPullback_alongBoundary h₁.w (s₁) s' hs₁ hC₁ hs' himage₁
   dsimp only at hg₀ hb₀ hg₁ hb₁ ⊢
-  rw [internalBlowupTower_eq_alongBoundary b s d,
-    internalBlowupTower_eq_alongBoundary (h₀ := hΨ) b ((r) ∘ s) (d₁)]
-  have hinput₀ : (fun j ↦ ⟨((s₀) j).ker, hC₀ j⟩) = fun j ↦ (s j).internalCenter b (d j) :=
-    funext fun j ↦ Subtype.ext ((s j).internalCenter_val b (d j)).symm
+  rw [internalBlowupTower_eq_alongBoundary K b s d,
+    internalBlowupTower_eq_alongBoundary (h₀ := hΨ) K b ((r) ∘ s) (d₁)]
+  have hinput₀ : (fun j ↦ ⟨((s₀) j).ker, hC₀ j⟩) = fun j ↦ (s j).internalCenter K b (d j) :=
+    funext fun j ↦ Subtype.ext ((s j).internalCenter_val K b (d j)).symm
   have hinput₁ : (fun j ↦ ⟨((s₁) j).ker, hC₁ j⟩) =
-      fun j ↦ (((r) ∘ s) j).internalCenter (h₀ := hΨ) b ((d₁) j) :=
-    funext fun j ↦ Subtype.ext (((r) (s j)).internalCenter_val (h₀ := hΨ) b ((d₁) j)).symm
+      fun j ↦ (((r) ∘ s) j).internalCenter (h₀ := hΨ) K b ((d₁) j) :=
+    funext fun j ↦ Subtype.ext (((r) (s j)).internalCenter_val (h₀ := hΨ) K b ((d₁) j)).symm
   rw [← hinput₀, ← hinput₁]
   exact ⟨_, _, g₀, g₁, _, hg₀, hg₁,
     WithBoundary.isPullback_boundaryι h₀ hg₀ hb₀,

@@ -9,7 +9,7 @@ public import QPainleve.Geometry.Toric.Fan.Mutation.Indeterminacy
 public import QPainleve.Geometry.Toric.Fan.Mutation.OrderedBlowup
 
 import QPainleve.AlgebraicGeometry.RationalMap.Composition.Basic
-import QPainleve.Geometry.Toric.Fan.Separated
+import QPainleve.Geometry.Toric.BaseChange.Fan
 
 /-!
 # Extracting the pivot of a specified toric mutation
@@ -35,9 +35,11 @@ open LineBundleClass
 
 namespace TauCeti.Toric.Fan
 
+variable (K : Type) [Field K] [PerfectField K]
+
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {Φ : Fan i} [hΦ : Nonempty Φ.cones]
-  (b : Module.Basis (Fin 2) ℤ N) (ρ : Φ.Ray) (c : ℂˣ)
+  (b : Module.Basis (Fin 2) ℤ N) (ρ : Φ.Ray) (c : Kˣ)
 
 local notation "v" => Ray.primitiveGenerator ρ
 local notation "hv" => Ray.primitiveGenerator_ne_zero ρ
@@ -45,13 +47,13 @@ local notation "hp" => Ray.hull_primitiveGenerator_mem ρ
 local notation "J₀" => Ray.mutationSourceCenterIdeal b ρ c
 local notation "ι₀" => Ray.mutationSourceBoundaryι b ρ c
 
-variable {n : ℕ} (s : Fin (n + 1) → Φ.Ray) (d : Fin (n + 1) → ℂˣ)
+variable {n : ℕ} (s : Fin (n + 1) → Φ.Ray) (d : Fin (n + 1) → Kˣ)
 
-local notation "M" => internalBlowupTower b s d
+local notation "M" => internalBlowupTower K b s d
 local notation "F" => QPainleve.BlowupTower.toBase (WithBoundary.toTower (Sigma.snd M))
 local notation "P₀" => QPainleve.BlowupTower.nil.snoc (J₀)
 local notation "tail(" k ")" => alongBoundary (ι₀)
-  (fun a ↦ Ray.internalCenter b (s (Fin.succAbove k a)) (d (Fin.succAbove k a)))
+  (fun a ↦ Ray.internalCenter K b (s (Fin.succAbove k a)) (d (Fin.succAbove k a)))
 
 variable (hOpp : PointedCone.hull ℝ {i (-ρ.primitiveGenerator)} ∈ Φ.cones)
 
@@ -59,19 +61,21 @@ local notation "Ψ" => Φ.mutationFan b hv hp hOpp
 local notation "J₁" => Ray.mutationTargetCenterIdeal b ρ hOpp c
 local notation "E" => Ray.mutationBlowupIso b ρ hOpp c
 local notation "q" =>
-  Scheme.PartialMap.toRationalMap (Fan.mutationPartialMap Φ b (c : ℂ) hv hp hOpp)
+  Scheme.PartialMap.toRationalMap (Fan.mutationPartialMap K Φ b (c : K) hv hp hOpp)
 
+omit [PerfectField K] in
 include hOpp in
 private theorem comp_mutationBlowupIso_eq_of_resolves
     {W : Scheme} [IsIntegral W] (p : W ⟶ (J₀).blowup)
-    [IsDominant (p ≫ (J₀).blowupToBase)] (r : W ⟶ (Ψ).algebraicRealization)
+    [IsDominant (p ≫ (J₀).blowupToBase)] (r : W ⟶ ((Ψ).finiteFanScheme K))
     (hr : (p ≫ (J₀).blowupToBase).toRationalMap.comp q = r.toRationalMap) :
     p ≫ (E).hom ≫ (J₁).blowupToBase = r := by
   let : Nonempty (Ψ).cones := ⟨Φ.mutationFanConeEquiv b hv hp hOpp ρ.toCone⟩
-  let : Scheme.IsSeparated (Ψ).algebraicRealization := (Ψ).isSeparated_algebraicRealization
+  let : Scheme.IsSeparated ((Ψ).finiteFanScheme K) := (Ψ).isSeparated_finiteFanScheme K
   apply Scheme.Hom.toRationalMap_injective
-  exact (ρ.mutationPartialMap_resolved_of_comp_eq b hOpp c p _ rfl).symm.trans hr
+  exact (ρ.mutationPartialMap_resolved_of_comp_eq K b hOpp c p _ rfl).symm.trans hr
 
+omit [PerfectField K] in
 include hOpp in
 /-- A specified morphism resolving a toric elementary transformation factors through the
 first occurrence of the pivot. The remaining centers retain their original order, including
@@ -79,7 +83,7 @@ any repeated centers on the pivot fiber. The source projection, the fixed bounda
 and the given morphism to the mutated fan all agree with those of the factored model.
 Pullback identifies the two Picard markings with the pivot coordinate split off. -/
 theorem Ray.exists_ordered_pivot_factorization_of_resolves
-    [IsIntegral M.1] [IsDominant F] (r : M.1 ⟶ (Ψ).algebraicRealization)
+    [IsIntegral M.1] [IsDominant F] (r : M.1 ⟶ ((Ψ).finiteFanScheme K))
     (hr : (F).toRationalMap.comp q = r.toRationalMap) :
     ∃ k : Fin (n + 1), s k = ρ ∧ d k = c ∧
       (∀ a < k, (s a, d a) ≠ (ρ, c)) ∧
@@ -91,17 +95,18 @@ theorem Ray.exists_ordered_pivot_factorization_of_resolves
           ((P₀).picardHom (a, fun _ ↦ x k), x ∘ k.succAbove)).toMul =
             (M.2.toTower.picardHom (a, x)).toMul := by
   obtain ⟨k, hk₀, hk₁, hfirst⟩ :=
-    ρ.exists_first_internalBlowupTower_center_of_resolves b hOpp c s d r hr
-  have hI : ((s k).internalCenter b (d k)).val.map (Φ.boundaryIdeal hΦ).subschemeι = J₀ := by
+    ρ.exists_first_internalBlowupTower_center_of_resolves K b hOpp c s d r hr
+  have hI : ((s k).internalCenter K b (d k)).val.map
+      (Φ.toricBoundaryIdeal K hΦ).subschemeι = J₀ := by
     rw [hk₀, hk₁, Ray.mutationSourceCenterIdeal_eq, Ray.map_internalCenter_subschemeι]
-  obtain ⟨e, he, hb, hpic⟩ := exists_iso_internalBlowupTower_split_at b s d k
+  obtain ⟨e, he, hb, hpic⟩ := exists_iso_internalBlowupTower_split_at K b s d k
     (fun a ha h ↦ hfirst a ha (h.trans (Prod.ext hk₀ hk₁)))
     hI (ρ.mutationSourceBoundaryι_blowupToBase b c)
   refine ⟨k, hk₀, hk₁, hfirst, e, he, hb, ?_, hpic⟩
   let p := e.hom ≫ (tail(k)).2.toTower.toBase
   have hproj : p ≫ (J₀).blowupToBase = F := (Category.assoc _ _ _).trans he
   have : IsDominant (p ≫ (J₀).blowupToBase) := hproj ▸ inferInstanceAs (IsDominant F)
-  simpa only [p, Category.assoc] using comp_mutationBlowupIso_eq_of_resolves b ρ c hOpp p r
+  simpa only [p, Category.assoc] using comp_mutationBlowupIso_eq_of_resolves K b ρ c hOpp p r
     (by simpa only [hproj] using hr)
 
 local notation "ray(" a ")" => Φ.mutationFanRayEquiv b hv hp hOpp (s a)
@@ -109,7 +114,7 @@ local notation "param(" a ")" =>
   d a * c ^ max (Module.Basis.det b ![Ray.primitiveGenerator (s a), v]) 0
 local notation "hΨ" => Nonempty.intro (Φ.mutationFanConeEquiv b hv hp hOpp (Subtype.mk _ hp))
 local notation "targetTail(" k ")" => alongBoundary (ρ.mutationTargetBoundaryι b hOpp c)
-  (fun a ↦ Ray.internalCenter (h₀ := hΨ) b (ray(Fin.succAbove k a)) (param(Fin.succAbove k a)))
+  (fun a ↦ Ray.internalCenter K (h₀ := hΨ) b (ray(Fin.succAbove k a)) (param(Fin.succAbove k a)))
 
 /-- A specified morphism resolving the elementary transformation is the projection
 of the transported tower followed by the target pivot projection. The first
@@ -118,9 +123,9 @@ The isomorphism of the tails identifies their strict boundaries and matches the
 actual center ideals, including infinitely near centers over the pivot fiber.
 The source splitting retains the full Picard marking. -/
 theorem Ray.exists_ordered_mutation_factorization_of_resolves
-    (hΦreg : Φ.IsRegular) (r : M.1 ⟶ (Ψ).algebraicRealization)
-    (hr : have := isIntegral_internalBlowupTower b s d hΦreg
-          have := isModification_internalBlowupTower_toBase b s d hΦreg
+    (hΦreg : Φ.IsRegular) (r : M.1 ⟶ ((Ψ).finiteFanScheme K))
+    (hr : have := isIntegral_internalBlowupTower K b s d hΦreg
+          have := isModification_internalBlowupTower_toBase K b s d hΦreg
           (F).toRationalMap.comp q = r.toRationalMap) :
     ∃ k : Fin (n + 1), s k = ρ ∧ d k = c ∧
       (∀ a < k, (s a, d a) ≠ (ρ, c)) ∧
@@ -134,11 +139,11 @@ theorem Ray.exists_ordered_mutation_factorization_of_resolves
         ∀ a x, pullback e.hom ((tail(k)).2.toTower.picardHom
           ((P₀).picardHom (a, fun _ ↦ x k), x ∘ k.succAbove)).toMul =
             (M.2.toTower.picardHom (a, x)).toMul := by
-  have := isIntegral_internalBlowupTower b s d hΦreg
-  have := isModification_internalBlowupTower_toBase b s d hΦreg
+  have := isIntegral_internalBlowupTower K b s d hΦreg
+  have := isModification_internalBlowupTower_toBase K b s d hΦreg
   obtain ⟨k, hk₀, hk₁, hk, e, he, hb, hr', hpic⟩ :=
-    ρ.exists_ordered_pivot_factorization_of_resolves b c s d hOpp r hr
-  obtain ⟨g, hg, hgb⟩ := ρ.exists_isLift_mutation_alongBoundary b hOpp c
+    ρ.exists_ordered_pivot_factorization_of_resolves K b c s d hOpp r hr
+  obtain ⟨g, hg, hgb⟩ := ρ.exists_isLift_mutation_alongBoundary K b hOpp c
     (fun a ↦ s (Fin.succAbove k a)) (fun a ↦ d (Fin.succAbove k a)) hΦreg
   refine ⟨k, hk₀, hk₁, hk, e, g, hg, he, hb, ?_, hgb, hpic⟩
   rw [hg.hom_toBase_assoc, hr']

@@ -6,10 +6,12 @@ Authors: The QPainleve contributors
 module
 
 public import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.Picard
-public import QPainleve.Geometry.Toric.Fan.Boundary.Basic
+public import QPainleve.Geometry.Toric.BaseChange.Boundary
 public import QPainleve.Geometry.Toric.Fan.ProjectiveSpace.Plane
 
 import QPainleve.AlgebraicGeometry.IdealSheaf.Restriction
+import QPainleve.Geometry.Toric.BaseChange.Subfan
+import TauCeti.AlgebraicGeometry.IdealSheaf.Reduced
 
 /-!
 # The coordinate triangle of the toric projective plane
@@ -25,21 +27,25 @@ open Scheme.IdealSheafData
 
 namespace TauCeti.Toric.Fan
 
-variable {N : Type} {V : Type*} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
+universe u
+
+variable (R : Type u) [CommRing R] {N : Type u} {V : Type*}
+  [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} (b : Basis (Fin 2) ℤ N) (hi : IsIntegralLattice i)
 
 attribute [local instance] MvPolynomial.gradedAlgebra
 
-local notation "𝒫" => MvPolynomial.homogeneousSubmodule (Fin 3) ℂ
+local notation "𝒫" => MvPolynomial.homogeneousSubmodule (Fin 3) R
 local notation "Φ" => projectiveSpace b hi
-local notation "g" => Iso.hom (projectivePlaneIso b hi)
-local notation "H[" j "]" => coordinateHyperplaneIdeal (k := ℂ) (n := 2) j
+local notation "g" => Iso.hom (projectivePlaneIso R b hi)
+local notation "H[" j "]" => coordinateHyperplaneIdeal (k := R) (n := 2) j
 
 /-- The dense torus of the projective plane consists of the points for which
 every homogeneous coordinate is nonzero. -/
-theorem mem_range_denseTorusι_projectivePlane_iff (h₀ : Nonempty (Φ).cones)
-    (x : (Φ).algebraicRealization) :
-    x ∈ Set.range ((Φ).denseTorusι h₀) ↔ ∀ j : Fin 3, g x ∈ basicOpen 𝒫 (MvPolynomial.X j) := by
+theorem mem_range_zeroChart_projectivePlane_iff
+    (x : (Φ).finiteFanScheme R) :
+    x ∈ Set.range ((Φ).affineChartι R ⟨⊥, bot_mem_projectiveSpace_cones b hi⟩) ↔
+      ∀ j : Fin 3, g x ∈ basicOpen 𝒫 (MvPolynomial.X j) := by
   let σ (j : Fin 3) := projectiveSpaceMaximalCone b hi (finSuccEquiv 2 j)
   have hbot := bot_mem_projectiveSpace_cones b hi
   have hmeet : σ 0 ⊓ σ 1 ⊓ σ 2 = ⟨⊥, hbot⟩ := by
@@ -59,29 +65,33 @@ theorem mem_range_denseTorusι_projectivePlane_iff (h₀ : Nonempty (Φ).cones)
     rw [hempty, projectiveSpaceCone_empty]
   have hchart (j : Fin 3) :
       g x ∈ basicOpen 𝒫 (MvPolynomial.X j) ↔
-        x ∈ Set.range ((Φ).affineToricChartι (σ j)) := by
-    rw [← Scheme.Hom.mem_preimage, projectivePlaneIso_hom_preimage_basicOpen,
+        x ∈ Set.range ((Φ).affineChartι R (σ j)) := by
+    rw [← Scheme.Hom.mem_preimage, projectivePlaneIso_hom_preimage_basicOpen R,
       Scheme.Hom.mem_opensRange]
     rfl
   simp only [hchart, Fin.forall_fin_succ, Fin.forall_fin_zero, and_true]
-  have h := congrArg (fun τ : (Φ).cones ↦ Set.range ((Φ).affineToricChartι τ)) hmeet
-  rw [← range_affineToricChartι_inter_range_affineToricChartι,
-    ← range_affineToricChartι_inter_range_affineToricChartι] at h
-  rw [denseTorusι_eq_affineToricChartι _ h₀ hbot, ← h]
+  have h := congrArg (fun τ : (Φ).cones ↦ Set.range ((Φ).affineChartι R τ)) hmeet
+  rw [← range_affineChartι_inter,
+    ← range_affineChartι_inter] at h
+  rw [← h]
   exact and_assoc
 
 /-- The plane comparison pulls back the reduced union of the coordinate
 hyperplanes to the toric boundary ideal. -/
 theorem projectivePlaneIso_comap_coordinateTriangle (h₀ : Nonempty (Φ).cones) :
-    ((∏ j : Fin 3, H[j]).radical).comap g = (Φ).boundaryIdeal h₀ := by
-  rw [← radical_comap_of_isOpenImmersion, ← vanishingIdeal_support, boundaryIdeal_def]
+    ((∏ j : Fin 3, H[j]).radical).comap g = (Φ).toricBoundaryIdeal R h₀ := by
+  have hred : ((Φ).toricBoundaryIdeal R h₀).radical = (Φ).toricBoundaryIdeal R h₀ :=
+    (isReduced_subscheme_iff_radical_eq _).mp inferInstance
+  rw [← radical_comap_of_isOpenImmersion, ← hred, ← vanishingIdeal_support,
+    ← vanishingIdeal_support]
   congr 1
   apply SetLike.coe_injective
   ext x
-  rw [support_comap, Closeds.coe_preimage, Set.mem_preimage]
+  rw [support_comap, Closeds.coe_preimage, Set.mem_preimage, (Φ).support_toricBoundaryIdeal R]
   -- Compare the underlying sets of the two bundled closed loci.
-  change g x ∈ ((∏ j : Fin 3, H[j]).support : Set _) ↔ x ∉ Set.range ((Φ).denseTorusι h₀)
-  rw [mem_range_denseTorusι_projectivePlane_iff]
+  change g x ∈ ((∏ j : Fin 3, H[j]).support : Set _) ↔
+    x ∉ Set.range ((Φ).affineChartι R ⟨⊥, bot_mem_projectiveSpace_cones b hi⟩)
+  rw [mem_range_zeroChart_projectivePlane_iff]
   simp only [Fin.prod_univ_three, support_mul, Closeds.coe_sup,
     coe_support_coordinateHyperplaneIdeal, Set.mem_union, Set.mem_compl_iff,
     Fin.forall_fin_succ, Fin.forall_fin_zero, and_true]

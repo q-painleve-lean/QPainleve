@@ -49,7 +49,8 @@ private theorem exists_hirzebruch_fan_in_some_basis (n : ℕ) :
     let hΨ := isRegular_projectiveSpace b₂ hi
     let σ := projectiveSpaceMaximalCone b₂ hi none
     let Γ := Ψ.starSubdivisionAlong hΨ σ.property
-    obtain ⟨hσ, c, _, hc, -⟩ := exists_blowup_projectivePlane_vertex_hirzebruchOne b₂ hi none
+    obtain ⟨hcard, c, -, hc, -⟩ := projectivePlane_vertex_starSubdivision_rays b₂ hi none
+    let hσ := ne_bot_of_card_toricRay_eq_two hcard
     have hreg : Γ.IsRegular := Ψ.isRegular_starSubdivisionAlong hΨ σ.property
     have hcomp : Γ.IsComplete :=
       (Ψ.starSubdivisionAlong_isSubdivision hΨ σ.property hσ).isComplete_iff.mpr

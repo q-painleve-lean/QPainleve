@@ -39,29 +39,31 @@ open Scheme Scheme.IdealSheafData
 
 namespace QPainleve.SignedClusterModularGroup.GeometricRealization
 
-local notation "S" => Spec (CommRingCat.of ℂ)
-local notation "Centers[" r "]" => Over.mk (structureMap ℂ (Fin r → ℤ))
-local notation "XTor[" r "]" => scheme ℂ (Fin r →₀ ℤ)
+variable {k₀ : Type} [Field k₀] [IsAlgClosed k₀]
+
+local notation "S" => Spec (CommRingCat.of k₀)
+local notation "Centers[" r "]" => Over.mk (structureMap k₀ (Fin r → ℤ))
+local notation "XTor[" r "]" => scheme k₀ (Fin r →₀ ℤ)
 local notation "D[" M "]" => Scheme.Hom.ker (Over.Hom.left (Arrow.hom (MarkedSurface.pair M)))
 local notation "classOf(" h ")" => (LineBundleClass.mk (IsEffectiveCartier.toInvertibleSheaf h))⁻¹
-local notation "Cw[" w "," P "]" => Path.centerPartialMap ℂ w P
-local notation "Cnil[" P "]" => Path.centerPartialMap ℂ Path.nil P
-local notation "U₀[" P "]" => Path.centerOpen ℂ Path.nil P
+local notation "Cw[" w "," P "]" => Path.centerPartialMap k₀ w P
+local notation "Cnil[" P "]" => Path.centerPartialMap k₀ Path.nil P
+local notation "U₀[" P "]" => Path.centerOpen k₀ Path.nil P
 local notation "src(" C "," c ")" =>
   c ≫ PartialMap.domainSource (X := Centers[_]) (Y := Centers[_]) C
 local notation "dst(" C "," c ")" =>
   c ≫ PartialMap.domainTarget (X := Centers[_]) (Y := Centers[_]) C
-local notation "χ[" c "]" => pointsEquiv ℂ _
+local notation "χ[" c "]" => pointsEquiv k₀ _
   (Subtype.mk (Over.Hom.left c) (Over.w c))
 local notation "Loops[" E "]" => End (Prefunctor.obj (Paths.of (SkewExchangeMatrix (Fin _))) E)
-local notation "loopMap" => signedClusterModularGroupMap ℂ
+local notation "loopMap" => signedClusterModularGroupMap k₀
 
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {b : Basis (Fin 2) ℤ N} {r n : ℕ} [NeZero n]
   {L γ : Type} [AddCommGroup L] {H : LinearMap.BilinForm ℤ L}
   {E : SkewExchangeMatrix (Fin r)}
 
-variable (Q : CompleteToricPresentation i b r L γ)
+variable (Q : CompleteToricPresentation k₀ i b r L γ)
 
 local notation "Models[" M "," C "]" =>
   HasToricTargetModels (T₀ := Centers[r]) (T₁ := Centers[r]) (b := b) (s := Q.rays)
@@ -71,45 +73,46 @@ local notation "Models[" M "," C "]" =>
 local instance instNonemptyKernelCones : Nonempty Q.fan.cones := Q.complete.nonempty_cones
 local instance instNeZeroKernelBoundaryLength : NeZero Q.length := Q.neZero
 local instance instPrestableKernelBoundary :
-    PrestableFamily ((Q.fan.boundaryIdeal Q.complete.nonempty_cones).subscheme ↘ S) :=
+    PrestableFamily ((Q.fan.toricBoundaryIdeal k₀ Q.complete.nonempty_cones).subscheme ↘ S) :=
   Q.prestable
 
 local notation "Aux" => LinearMap.BilinForm.prod
-  (Chow.intersectionBilinForm ℂ Q.fan.algebraicRealization)
+  (Chow.intersectionBilinForm k₀ (Q.fan.finiteFanScheme k₀))
   (-(dotProductBilin ℤ ℤ : LinearMap.BilinForm ℤ (Fin r → ℤ)))
 
 private theorem smooth_fan :
-    SmoothOfRelativeDimension 2 (Q.fan.algebraicRealization ↘ S) := by
+    SmoothOfRelativeDimension 2 ((Q.fan.finiteFanScheme k₀) ↘ S) := by
   have hN : Module.finrank ℤ N = 2 := by simpa using Module.finrank_eq_card_basis b
-  rw [← hN, Q.fan.algebraicRealization_over]
-  exact Q.fan.smoothOfRelativeDimension_algebraicRealizationStructureMap Q.regular
+  rw [← hN, Q.fan.finiteFanScheme_over k₀]
+  exact Q.fan.smoothOfRelativeDimension_finiteFanSchemeToSpec k₀ Q.regular
 
 local instance instIsDominantKernelLoopXRationalMap (w : Loops[E]) :
-    ((End.asHom w).xRationalMap ℂ).IsDominant :=
-  Path.instIsDominantXRationalMap ℂ (End.asHom w)
+    ((End.asHom w).xRationalMap k₀).IsDominant :=
+  Path.instIsDominantXRationalMap k₀ (End.asHom w)
 
 local instance instIsOverKernelLoopXRationalMap (w : Loops[E]) :
-    ((End.asHom w).xRationalMap ℂ).IsOver
-      (structureMap ℂ (Fin r →₀ ℤ)) (structureMap ℂ (Fin r →₀ ℤ)) :=
-  Path.instIsOverXRationalMapStructureMapFinsuppInt ℂ (End.asHom w)
+    ((End.asHom w).xRationalMap k₀).IsOver
+      (structureMap k₀ (Fin r →₀ ℤ)) (structureMap k₀ (Fin r →₀ ℤ)) :=
+  Path.instIsOverXRationalMapStructureMapFinsuppInt k₀ (End.asHom w)
 
 local instance instIsDominantKernelLoopCenterMap (w : Loops[E]) (P : ChargeSeed E N) :
     IsDominant Cw[End.asHom w,P].hom :=
-  Path.instIsDominantHomCenterPartialMap (K := ℂ) (End.asHom w) P
+  Path.instIsDominantHomCenterPartialMap (K := k₀) (End.asHom w) P
 
 local instance instIsOverKernelLoopCenterMap (w : Loops[E]) (P : ChargeSeed E N) :
     Cw[End.asHom w,P].IsOver Centers[r].hom Centers[r].hom :=
-  Path.instIsOverCenterPartialMapHomSchemeMkStructureMapForallInt (K := ℂ) (End.asHom w) P
+  Path.instIsOverCenterPartialMapHomSchemeMkStructureMapForallInt (K := k₀) (End.asHom w) P
 
 section Faithfulness
 
-variable [Q.fan.algebraicRealization.IsProjectiveOver ℂ]
-  [SmoothOfRelativeDimension 2 (Q.fan.algebraicRealization ↘ S)]
+variable [(Q.fan.finiteFanScheme k₀).IsProjectiveOver k₀]
+  [SmoothOfRelativeDimension 2 ((Q.fan.finiteFanScheme k₀) ↘ Spec (.of k₀))]
 
-variable {P : ChargeSeed E N} {M : Point (Over.mk (structureMap ℂ (Fin r → ℤ))) →
-    MarkedSurface ℂ n H (scheme ℂ (Fin r →₀ ℤ))}
-  {U : Set (Point (Over.mk (structureMap ℂ (Fin r → ℤ))))}
-  (p : ∀ c ∈ U, ContractedToricFiber b Q.rays Q.regular Q.cycle Q.origin Q.inclusion (χ[c]) (M c))
+variable {P : ChargeSeed E N} {M : Point (Over.mk (structureMap k₀ (Fin r → ℤ))) →
+    MarkedSurface k₀ n H (scheme k₀ (Fin r →₀ ℤ))}
+  {U : Set (Point (Over.mk (structureMap k₀ (Fin r → ℤ))))}
+  (p : ∀ c ∈ U, ContractedToricFiber b Q.rays Q.regular Q.cycle Q.origin Q.inclusion
+    (pointsEquiv k₀ _ ⟨c.left, c.w⟩) (M c))
   (hnodal : ∀ c hc, (p c hc).IsNodalContraction)
   (hD : ∀ c, D[M c].IsEffectiveCartier)
   (d : ZMod n → L) (hmark : ∀ c j, (M c).boundaryClass (hD c) j = d j)
@@ -119,14 +122,14 @@ private theorem xMap_eq_of_signedBoundaryIsometry_eq
     [H.IsPerfPair] (hsep : (Aux).SeparatingRight) (hinj : Function.Injective d)
     {c₀ : Point Centers[r]} (hc₀ : c₀ ∈ U)
     (w v : Loops[E])
-    (R : GeometricRealization M M Cw[End.asHom w,P] ((End.asHom w).xRationalMap ℂ))
-    (R' : GeometricRealization M M Cw[End.asHom v,P] ((End.asHom v).xRationalMap ℂ))
+    (R : GeometricRealization M M Cw[End.asHom w,P] ((End.asHom w).xRationalMap k₀))
+    (R' : GeometricRealization M M Cw[End.asHom v,P] ((End.asHom v).xRationalMap k₀))
     (hU : ∀ x : CenterPoint (U := Centers[r]) (V := Centers[r]) Cw[End.asHom w,P],
       src(Cw[End.asHom w,P],x) ∈ U ∧ dst(Cw[End.asHom w,P],x) ∈ U)
     (hU' : ∀ x : CenterPoint (U := Centers[r]) (V := Centers[r]) Cw[End.asHom v,P],
       dst(Cw[End.asHom v,P],x) ∈ U)
     (hR : R.toSignedBoundaryIsometry d hD hmark = R'.toSignedBoundaryIsometry d hD hmark) :
-    (End.asHom w).xRationalMap ℂ = (End.asHom v).xRationalMap ℂ := by
+    (End.asHom w).xRationalMap k₀ = (End.asHom v).xRationalMap k₀ := by
   have ha := congrArg Subtype.val hR
   simp only [coe_toSignedBoundaryIsometry, Prod.mk.injEq] at ha
   have hpic := H.isometryGroupEquivIsometryEquiv.symm.injective ha.1
@@ -143,16 +146,16 @@ include hnodal hmark in
 private theorem ker_eq_bot_of_realized_actions [H.IsPerfPair]
     (hsep : (Aux).SeparatingRight) (hd : Function.Injective d)
     {c : Point Centers[r]} (hc : c ∈ U)
-    (ρ : (SignedClusterModularGroup ℂ E)ᵐᵒᵖ →* signedBoundaryIsometryGroup H d)
+    (ρ : (SignedClusterModularGroup k₀ E)ᵐᵒᵖ →* signedBoundaryIsometryGroup H d)
     (hU : ∀ w : Loops[E], ∀ x : CenterPoint (U := Centers[r]) (V := Centers[r]) Cw[End.asHom w,P],
       src(Cw[End.asHom w,P],x) ∈ U ∧ dst(Cw[End.asHom w,P],x) ∈ U)
     (hreal : ∀ w : Loops[E],
-      ∃ R : GeometricRealization M M Cw[End.asHom w,P] ((End.asHom w).xRationalMap ℂ),
+      ∃ R : GeometricRealization M M Cw[End.asHom w,P] ((End.asHom w).xRationalMap k₀),
         ρ (op (loopMap E w)) = R.toSignedBoundaryIsometry d hD hmark) :
     ρ.ker = ⊥ := by
   rw [Subgroup.eq_bot_iff_forall]
   intro g hg
-  obtain ⟨w, hw⟩ := signedClusterModularGroupMap_surjective ℂ E g.unop
+  obtain ⟨w, hw⟩ := signedClusterModularGroupMap_surjective k₀ E g.unop
   have hw' : op (loopMap E w) = g := (congrArg op hw).trans (op_unop g)
   obtain ⟨R, hR⟩ := hreal w
   obtain ⟨R', hR'⟩ := hreal 1
@@ -162,8 +165,8 @@ private theorem ker_eq_bot_of_realized_actions [H.IsPerfPair]
   have hx := xMap_eq_of_signedBoundaryIsometry_eq Q p hnodal hD d hmark hsep
     hd hc w 1 R R' (hU w) (fun x ↦ (hU 1 x).2) hactions
   have hgroup : loopMap E w = loopMap E 1 :=
-    (signedClusterModularGroupMap_eq_iff ℂ E w 1).mpr
-      ((Path.xRationalMap_eq_iff ℂ (End.asHom w) (End.asHom (1 : Loops[E]))).mp hx)
+    (signedClusterModularGroupMap_eq_iff k₀ E w 1).mpr
+      ((Path.xRationalMap_eq_iff k₀ (End.asHom w) (End.asHom (1 : Loops[E]))).mp hx)
   rw [← hw', hgroup, map_one, op_one]
 
 end Faithfulness
@@ -175,16 +178,16 @@ repeated centers. -/
 theorem existsUnique_faithful_signedPicardHom_of_presentation
     (P : ChargeSeed E N) (hform : P.form = b.detDualEquiv.toLinearMap)
     (hcharge : P.charge = Fan.rayChargeMap Q.rays)
-    (M : Point Centers[r] → MarkedSurface ℂ n H XTor[r])
+    (M : Point Centers[r] → MarkedSurface k₀ n H XTor[r])
     (models : ∀ c : Point Centers[r], c.left (default : S) ∈ U₀[P] →
       Q.HasNodalModel c (M c))
     {c₀ : Point Centers[r]} (href : Q.HasNodalModel c₀ (M c₀))
     (hD : ∀ c, D[M c].IsEffectiveCartier)
-    (hnef : classOf(hD c₀).IsNef ℂ ((M c₀).surface ↘ S))
-    (hsq : Chow.classIntersectionNumber ℂ (M c₀).surface classOf(hD c₀) classOf(hD c₀) = 0)
+    (hnef : classOf(hD c₀).IsNef k₀ ((M c₀).surface ↘ S))
+    (hsq : Chow.classIntersectionNumber k₀ (M c₀).surface classOf(hD c₀) classOf(hD c₀) = 0)
     (hprim : IsPrimitive (Additive.ofMul classOf(hD c₀)))
     (d : ZMod n → L) (hmark : ∀ c j, (M c).boundaryClass (hD c) j = d j) :
-    ∃! ρ : (SignedClusterModularGroup ℂ E)ᵐᵒᵖ →* signedBoundaryIsometryGroup H d,
+    ∃! ρ : (SignedClusterModularGroup k₀ E)ᵐᵒᵖ →* signedBoundaryIsometryGroup H d,
       IsSignedPicardAction Q M hD hmark ρ ∧ ρ.ker = ⊥ := by
   let : IsRationalOver ((M c₀).surface ↘ S) := href.isRationalOver
   have hindex := href.chargeIndex_ne_zero (hD c₀) hnef hsq hprim
@@ -200,7 +203,7 @@ theorem existsUnique_faithful_signedPicardHom_of_presentation
   have htargets (w : Loops[E]) : Models[M,Cw[End.asHom w,P]] :=
     fun x ↦ (htarget w x).nonempty_contractedToricFiber
   let : PreirreducibleSpace Centers[r].left :=
-    inferInstanceAs (PreirreducibleSpace (scheme ℂ (Fin r → ℤ)))
+    inferInstanceAs (PreirreducibleSpace (scheme k₀ (Fin r → ℤ)))
   obtain ⟨ρ, hρ, huniq⟩ := existsUnique_signedPicardHom_of_realizations (E := E) d hD hmark
     Q.complete (Q.inclusion_injective href) hindex (centers := fun c : Point Centers[r] ↦ χ[c])
     (fun w ↦ ⟨_, inferInstance, inferInstance, R w, hη w, htargets w⟩)
@@ -214,9 +217,9 @@ theorem existsUnique_faithful_signedPicardHom_of_presentation
     have hd : Function.Injective d := by
       rw [← funext (hmark c₀)]
       exact (M c₀).boundaryClass_injective_of_nef_square_zero (hD c₀) hnef hsq
-    let : Q.fan.algebraicRealization.IsProjectiveOver ℂ :=
-      Q.fan.isProjectiveOver_algebraicRealization_of_isComplete Q.regular Q.complete b
-    let : SmoothOfRelativeDimension 2 (Q.fan.algebraicRealization ↘ S) := smooth_fan Q
+    let : (Q.fan.finiteFanScheme k₀).IsProjectiveOver k₀ :=
+      Q.fan.isProjectiveOver_finiteFanScheme_of_isComplete k₀ Q.regular Q.complete b
+    let : SmoothOfRelativeDimension 2 ((Q.fan.finiteFanScheme k₀) ↘ S) := smooth_fan Q
     let : H.IsPerfPair := (M c₀).isPerfPair_of_isRationalOver
     obtain ⟨c⟩ := nonempty_centerPoint (T₀ := Centers[r]) (T₁ := Centers[r]) Cnil[P]
     refine ker_eq_bot_of_realized_actions Q

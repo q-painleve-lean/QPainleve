@@ -34,29 +34,32 @@ open TauCeti.AlgebraicGeometry LineBundleClass TauCeti.SymmetricAlgebra Scheme.I
 
 namespace TauCeti.Toric.Fan.LogarithmicProjection
 
+variable {k₀ : Type} [Field k₀] [IsAlgClosed k₀]
+
 open scoped Sarkisov
 
-local notation "S" => Spec (CommRingCat.of ℂ)
-local notation "P" => Proj (homogeneousSubmodule ℂ (Fin 3 → ℂ))
-local notation "H" => LineBundleClass.mk (Proj.symmetricAlgebraTwistingBundle ℂ (Fin 3 → ℂ) 1)
-local notation "f[" A "]" => Fan.algebraicRealization (LogarithmicProjection.fan A) ↘ S
+local notation "S" => Spec (CommRingCat.of k₀)
+local notation "P" => Proj (homogeneousSubmodule k₀ (Fin 3 → k₀))
+local notation "H" => LineBundleClass.mk (Proj.symmetricAlgebraTwistingBundle k₀ (Fin 3 → k₀) 1)
+local notation "f[" A "]" => Fan.finiteFanScheme k₀ (LogarithmicProjection.fan A) ↘ S
 local notation "rankTwo[" b "]" => Eq.trans (finrank_eq_card_basis b) (Fintype.card_fin 2)
-local notation "point" => (IsLocalRing.closedPoint ℂ : S)
+local notation "point" => (IsLocalRing.closedPoint k₀ : S)
 local notation "coordPoint[" t "]" =>
-  projectiveLine.polynomialPoint ℂ (RingHom.id ℂ) t 0 point
+  projectiveLine.polynomialPoint k₀ (RingHom.id k₀) t 0 point
 local notation "center[" b "," ρ "," c "]" =>
-  Fan.Ray.binomialCenter ρ rankTwo[b] (Basis.detDualEquiv_self b (Fan.Ray.primitiveGenerator ρ))
+  Fan.Ray.binomialCenter ρ k₀ rankTwo[b] (Basis.detDualEquiv_self b (Fan.Ray.primitiveGenerator ρ))
     (Fan.Ray.surjective_detCharacter ρ b) c point
 local notation "obj[" F "," A "]" => @Prefunctor.obj _ sarkisovQuiver _ sarkisovQuiver F A
 local notation "coords[" T "," hT "," f "," g "]" =>
   LinearEquiv.symm (BlowupTower.picardMarking T hT f) (Additive.ofMul (pullback g H))
 local notation "ruling[" A "," b "," e "," r "," hr "]" =>
-  Fan.characterRuling (LogarithmicProjection.fan A) (LinearMap.toAddMonoidHom (Basis.coord b 1))
+  Fan.characterRuling k₀ (LogarithmicProjection.fan A) (LinearMap.toAddMonoidHom (Basis.coord b 1))
     (Fan.nonneg_or_nonpos_hirzebruch_ruling_character b e r hr)
 
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
-  {i : N →+ V} {X Y : Scheme} [X.Over S] [SmoothOfRelativeDimension 2 (X ↘ S)]
-  [PreirreducibleSpace X] {D : X.IdealSheafData} (A : LogarithmicProjection i D)
+  {i : N →+ V} {X Y : Scheme} [X.Over (Spec (.of k₀))] [SmoothOfRelativeDimension 2 (X ↘ Spec
+    (.of k₀))]
+  [PreirreducibleSpace X] {D : X.IdealSheafData} (A : LogarithmicProjection k₀ i D)
   (b : Basis (Fin 2) ℤ N) {n e : ℕ}
   (r : Fin 4 ≃ A.fan.Ray)
   (hr : (fun j ↦ (r j).primitiveGenerator) = ![b 0, b 1, -b 0, ((e + 1 : ℕ) : ℤ) • b 0 - b 1])
@@ -68,45 +71,46 @@ strict positive section and all other stages retain their section incidence and
 orders. Each marked invariant-fiber center stays first over its point, on the
 same ruling value and off the transported section, at its reindexed stage. -/
 theorem exists_sarkisov_path_of_marked_positive_section_smooth_center
-    {T : BlowupTower A.fan.algebraicRealization (n + 1) Y}
-    (hT : IsClosedPointTower A.fan.algebraicRealization T)
+    {T : BlowupTower (A.fan.finiteFanScheme k₀) (n + 1) Y}
+    (hT : IsClosedPointTower (A.fan.finiteFanScheme k₀) T)
     (g : Y ⟶ P) (hg : g ≫ (P ↘ S) = T.toBase ≫ f[A])
     (hbir : Scheme.BirationalOver g (𝟙 P))
     (u : X ≅ Y) (hA : A.hom = u.hom ≫ T.toBase)
     (j : Fin (n + 1)) (hfirst : ∀ l < j, hT.baseCenter l ≠ hT.baseCenter j)
-    (c : ℂˣ) (hc : hT.baseCenter j = center[b,r 2,c])
+    (c : k₀ˣ) (hc : hT.baseCenter j = center[b,r 2,c])
     {ι : Type*} (fiber : ι → Fin 2) (mark : ι → Fin (n + 1)) :
     let : Nonempty A.fan.cones := A.isComplete.nonempty_cones
     let : SmoothOfRelativeDimension 2 f[A] :=
-      rankTwo[b] ▸ A.fan.smoothOfRelativeDimension_algebraicRealizationStructureMap A.isRegular
-    let : IsNoetherian A.fan.algebraicRealization := by
+      rankTwo[b] ▸ A.fan.smoothOfRelativeDimension_finiteFanSchemeToSpec k₀ A.isRegular
+    let : IsNoetherian (A.fan.finiteFanScheme k₀) := by
       let : Smooth f[A] := SmoothOfRelativeDimension.smooth 2 _
       exact isNoetherian_of_finiteType f[A]
     let x := coords[T,hT,f[A],g]
-    let basis := A.fan.hirzebruchPicardBasis b (e + 1 : ℕ) A.isRegular r hr
-    let sectionCenters := hT.strictTransformCenterIndices (A.fan.rayBoundaryIdeal A.isRegular (r 2))
+    let basis := A.fan.hirzebruchPicardBasis k₀ b (e + 1 : ℕ) A.isRegular r hr
+    let sectionCenters := hT.strictTransformCenterIndices (A.fan.rayDivisorIdeal k₀ A.isRegular
+      (r 2))
     j ∈ sectionCenters →
     (∀ a, (∀ l < mark a, hT.baseCenter l ≠ hT.baseCenter (mark a)) ∧
       ruling[A,b,(e + 1 : ℕ),r,hr] (hT.baseCenter (mark a)) = coordPoint[fiber a] ∧
       mark a ∉ sectionCenters) →
-    ∃ (C : LogarithmicProjection i D) (_ : SarkisovPath A C)
+    ∃ (C : LogarithmicProjection k₀ i D) (_ : SarkisovPath A C)
       (d : Basis (Fin 2) ℤ N) (t : Fin 4 ≃ C.fan.Ray)
       (ht : (fun l ↦ (t l).primitiveGenerator) = ![d 0, d 1, -d 0, (e : ℤ) • d 0 - d 1])
-      (Z : Scheme) (U : BlowupTower C.fan.algebraicRealization (1 + n) Z)
-      (hU : IsClosedPointTower C.fan.algebraicRealization U) (k : Y ≅ Z) (index : ι → Fin (1 + n)),
+      (Z : Scheme) (U : BlowupTower (C.fan.finiteFanScheme k₀) (1 + n) Z)
+      (hU : IsClosedPointTower (C.fan.finiteFanScheme k₀) U) (k : Y ≅ Z) (index : ι → Fin (1 + n)),
       C.hom = (u ≪≫ k).hom ≫ U.toBase ∧
       (k.inv ≫ g) ≫ (P ↘ S) = U.toBase ≫ f[C] ∧
       Scheme.BirationalOver (k.inv ≫ g) (𝟙 P) ∧
       let : Nonempty C.fan.cones := C.isComplete.nonempty_cones
       let : SmoothOfRelativeDimension 2 f[C] :=
-        rankTwo[d] ▸ C.fan.smoothOfRelativeDimension_algebraicRealizationStructureMap C.isRegular
-      let : IsNoetherian C.fan.algebraicRealization := by
+        rankTwo[d] ▸ C.fan.smoothOfRelativeDimension_finiteFanSchemeToSpec k₀ C.isRegular
+      let : IsNoetherian (C.fan.finiteFanScheme k₀) := by
         let : Smooth f[C] := SmoothOfRelativeDimension.smooth 2 _
         exact isNoetherian_of_finiteType f[C]
       let y := coords[U,hU,f[C],k.inv ≫ g]
-      let basis' := C.fan.hirzebruchPicardBasis d e C.isRegular t ht
+      let basis' := C.fan.hirzebruchPicardBasis k₀ d e C.isRegular t ht
       let sectionCenters' :=
-        hU.strictTransformCenterIndices (C.fan.rayBoundaryIdeal C.isRegular (t 2))
+        hU.strictTransformCenterIndices (C.fan.rayDivisorIdeal k₀ C.isRegular (t 2))
       basis'.repr y.1 1 = basis.repr x.1 1 ∧ basis'.repr y.1 0 = basis.repr x.1 0 + x.2 j ∧
       y.2 = Fin.addCases (fun _ : Fin 1 ↦ -basis.repr x.1 1 - x.2 j) (x.2 ∘ j.succAbove) ∧
       sectionCenters' =
@@ -124,19 +128,19 @@ theorem exists_sarkisov_path_of_marked_positive_section_smooth_center
   let : Smooth (X ↘ S) := SmoothOfRelativeDimension.smooth 2 _
   let : Smooth (Y ↘ S) := SmoothOfRelativeDimension.smooth 2 _
   let : IsIntegral Y := hT.isIntegral f[A]
-  let : A.fan.algebraicRealization.IsProjectiveOver ℂ :=
-    A.fan.isProjectiveOver_algebraicRealization_of_isComplete A.isRegular A.isComplete b
+  let : (A.fan.finiteFanScheme k₀).IsProjectiveOver k₀ :=
+    A.fan.isProjectiveOver_finiteFanScheme_of_isComplete k₀ A.isRegular A.isComplete b
   let : T.toBase.IsOver S := ⟨rfl⟩
   let : u.hom.IsOver S := ⟨(Category.assoc _ _ _).symm.trans (hA ▸ comp_over A.hom S)⟩
   let E := D.comap u.inv
-  have hpole : (A.fan.boundaryIdeal A.isComplete.nonempty_cones).comap T.toBase =
-      E * hT.ramificationIdealSheafToBase ℂ := by
-    rw [hT.ramificationIdealSheafToBase_def ℂ]
-    have h := comap_eq_mul_ramificationIdealSheaf_comp_iff_of_isIso ℂ u.hom T.toBase 2
-      (D := A.fan.boundaryIdeal A.isComplete.nonempty_cones) (Q := D)
+  have hpole : (A.fan.toricBoundaryIdeal k₀ A.isComplete.nonempty_cones).comap T.toBase =
+      E * hT.ramificationIdealSheafToBase k₀ := by
+    rw [hT.ramificationIdealSheafToBase_def k₀]
+    have h := comap_eq_mul_ramificationIdealSheaf_comp_iff_of_isIso k₀ u.hom T.toBase 2
+      (D := A.fan.toricBoundaryIdeal k₀ A.isComplete.nonempty_cones) (Q := D)
     rw [IsIso.inv_eq_of_hom_inv_id u.hom_inv_id] at h
     exact h.mp (by simpa only [hA] using A.comap_boundaryIdeal)
-  have hlink := hT.exists_sarkisov_path_of_smooth_section b (e + 1) A.isRegular A.isComplete
+  have hlink := hT.exists_sarkisov_path_of_smooth_section k₀ b (e + 1) A.isRegular A.isComplete
     r hr 1 g hg hbir c j hc hfirst E hpole
   -- The pivot is on the second section, so the signed target index is nonnegative.
   have hsign : decide ((1 : Fin 2) = 0) = false := by decide
@@ -148,22 +152,22 @@ theorem exists_sarkisov_path_of_marked_positive_section_smooth_center
   -- Return the path to the original common surface and identify its initial projection.
   have hDE : E.comap u.hom = D := by
     simp only [E, ← comap_comp, Iso.hom_inv_id, Scheme.IdealSheafData.comap_id]
-  let F := precomposeSarkisovOfIso (i := i) rankTwo[b] u hDE
+  let F := precomposeSarkisovOfIso (K := k₀) (i := i) rankTwo[b] u hDE
   have hsource : obj[F,L] = A := by
     refine LogarithmicProjection.ext ((precomposeSarkisovOfIso_obj_fan ..).trans hL) ?_
     exact (precomposeSarkisovOfIso_obj_hom ..).trans
-      ((heq_comp rfl rfl (congrArg Fan.algebraicRealization hL) HEq.rfl hLhom).trans
+      ((heq_comp rfl rfl (congrArg (Fan.finiteFanScheme k₀) hL) HEq.rfl hLhom).trans
         (heq_of_eq hA.symm))
   have htargetFan : obj[F,R].fan = _ := (precomposeSarkisovOfIso_obj_fan ..).trans hR
-  have htargetHom := (precomposeSarkisovOfIso_obj_hom rankTwo[b] u hDE R).trans
-    (heq_comp rfl rfl (congrArg Fan.algebraicRealization hR) HEq.rfl hRhom)
+  have htargetHom := (precomposeSarkisovOfIso_obj_hom (K := k₀) rankTwo[b] u hDE R).trans
+    (heq_comp rfl rfl (congrArg (Fan.finiteFanScheme k₀) hR) HEq.rfl hRhom)
   have hpath : SarkisovPath A obj[F,R] :=
     Eq.mp (congrArg (fun L' ↦ SarkisovPath L' obj[F,R]) hsource) (F.mapPath p)
   generalize obj[F,R] = C at htargetFan htargetHom hpath
   rcases C with ⟨Δ, hreg, hcomplete, h, hover, hdom, hboundary⟩
   dsimp only at htargetFan htargetHom
   subst Δ
-  let C : LogarithmicProjection i D := ⟨_, hreg, hcomplete, h, hover, hdom, hboundary⟩
+  let C : LogarithmicProjection k₀ i D := ⟨_, hreg, hcomplete, h, hover, hdom, hboundary⟩
   have htarget : h = (u ≪≫ k).hom ≫ U.toBase := by
     simpa only [Iso.trans_hom, Category.assoc] using eq_of_heq htargetHom
   have hex (a : ι) : ∃ l, j.succAbove l = mark a :=

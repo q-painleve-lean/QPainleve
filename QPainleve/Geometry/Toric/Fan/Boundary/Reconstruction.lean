@@ -32,11 +32,11 @@ variable {N N' : Type} {V V' : Type*} [AddCommGroup N] [AddCommGroup N']
 
 namespace Fan
 
-variable {n : ℕ}
+variable (k : Type) [Field k] [Infinite k] {n : ℕ}
 
 private theorem map_primitiveGenerator_of_selfIntersection_eq
     [NeZero n]
-    [Φ.algebraicRealization.IsProjectiveOver ℂ] [Ψ.algebraicRealization.IsProjectiveOver ℂ]
+    [(Φ.finiteFanScheme k).IsProjectiveOver k] [(Ψ.finiteFanScheme k).IsProjectiveOver k]
     (b : Module.Basis (Fin 2) ℤ N) (b' : Module.Basis (Fin 2) ℤ N')
     (hΦ : Φ.IsRegular) (hΨ : Ψ.IsRegular) (hc : Φ.IsComplete) (hc' : Ψ.IsComplete)
     (u : ZMod n ≃ Φ.Ray) (v : ZMod n ≃ Ψ.Ray)
@@ -44,7 +44,8 @@ private theorem map_primitiveGenerator_of_selfIntersection_eq
       ∃ σ : Φ.cones, (u j).toCone ≤ σ ∧ (u (j + 1)).toCone ≤ σ)
     (hv : ∀ j, b'.detDualEquiv (v j).primitiveGenerator (v (j + 1)).primitiveGenerator = 1 ∧
       ∃ σ : Ψ.cones, (v j).toCone ≤ σ ∧ (v (j + 1)).toCone ≤ σ)
-    (hself : ∀ j, Φ.rayBoundarySelfIntersection hΦ (u j) = Ψ.rayBoundarySelfIntersection hΨ (v j))
+    (hself : ∀ j, Φ.rayBoundarySelfIntersection k hΦ (u j) =
+      Ψ.rayBoundarySelfIntersection k hΨ (v j))
     (f : N ≃ₗ[ℤ] N') (h₀ : f (u 0).primitiveGenerator = (v 0).primitiveGenerator)
     (h₁ : f (u 1).primitiveGenerator = (v 1).primitiveGenerator) :
     ∀ j, f (u j).primitiveGenerator = (v j).primitiveGenerator := by
@@ -52,9 +53,9 @@ private theorem map_primitiveGenerator_of_selfIntersection_eq
       (hprev : f (u (j - 1)).primitiveGenerator = (v (j - 1)).primitiveGenerator)
       (hcur : f (u j).primitiveGenerator = (v j).primitiveGenerator) :
       f (u (j + 1)).primitiveGenerator = (v (j + 1)).primitiveGenerator := by
-    have h := primitiveGenerator_add_selfIntersection_smul_add_eq_zero b hΦ hc
+    have h := primitiveGenerator_add_selfIntersection_smul_add_eq_zero k b hΦ hc
       (by simpa only [sub_add_cancel] using hu (j - 1)) (hu j)
-    have h' := primitiveGenerator_add_selfIntersection_smul_add_eq_zero b' hΨ hc'
+    have h' := primitiveGenerator_add_selfIntersection_smul_add_eq_zero k b' hΨ hc'
       (by simpa only [sub_add_cancel] using hv (j - 1)) (hv j)
     have hf := congrArg f h
     simp only [map_add, map_smul, map_zero, hprev, hcur, hself] at hf
@@ -86,7 +87,7 @@ numbered boundary self-intersections, there is a unique fan equivalence matching
 numberings. The determinant and cone conditions specify the two cyclic orders. -/
 theorem existsUnique_fanEquiv_of_boundarySelfIntersections
     [NeZero n]
-    [Φ.algebraicRealization.IsProjectiveOver ℂ] [Ψ.algebraicRealization.IsProjectiveOver ℂ]
+    [(Φ.finiteFanScheme k).IsProjectiveOver k] [(Ψ.finiteFanScheme k).IsProjectiveOver k]
     (b : Module.Basis (Fin 2) ℤ N) (b' : Module.Basis (Fin 2) ℤ N')
     (hΦ : Φ.IsRegular) (hΨ : Ψ.IsRegular) (hc : Φ.IsComplete) (hc' : Ψ.IsComplete)
     (u : ZMod n ≃ Φ.Ray) (v : ZMod n ≃ Ψ.Ray)
@@ -94,7 +95,8 @@ theorem existsUnique_fanEquiv_of_boundarySelfIntersections
       ∃ σ : Φ.cones, (u j).toCone ≤ σ ∧ (u (j + 1)).toCone ≤ σ)
     (hv : ∀ j, b'.detDualEquiv (v j).primitiveGenerator (v (j + 1)).primitiveGenerator = 1 ∧
       ∃ σ : Ψ.cones, (v j).toCone ≤ σ ∧ (v (j + 1)).toCone ≤ σ)
-    (hself : ∀ j, Φ.rayBoundarySelfIntersection hΦ (u j) = Ψ.rayBoundarySelfIntersection hΨ (v j)) :
+    (hself : ∀ j, Φ.rayBoundarySelfIntersection k hΦ (u j) =
+      Ψ.rayBoundarySelfIntersection k hΨ (v j)) :
     ∃! e : FanEquiv Φ Ψ, ∀ j, e.rayEquiv (u j) = v j := by
   obtain ⟨a, ha₀, ha₁⟩ :=
     exists_basis_of_first_two_rays b hΦ (by simpa only [zero_add] using hu 0)
@@ -102,7 +104,7 @@ theorem existsUnique_fanEquiv_of_boundarySelfIntersections
     exists_basis_of_first_two_rays b' hΨ (by simpa only [zero_add] using hv 0)
   let f := a.equiv a' (Equiv.refl (Fin 2))
   have hf (k : Fin 2) : f (a k) = a' k := a.equiv_apply _ _ _
-  have hfg := map_primitiveGenerator_of_selfIntersection_eq b b' hΦ hΨ hc hc' u v hu hv hself f
+  have hfg := map_primitiveGenerator_of_selfIntersection_eq k b b' hΦ hΨ hc hc' u v hu hv hself f
     (by rw [← ha₀, ← ha₀', hf]) (by rw [← ha₁, ← ha₁', hf])
   let e := fanEquivOfCyclicRays b b' hΦ hΨ hc hc' u v hu hv f.toAddEquiv hfg
   refine ⟨e, fun j ↦ Ray.primitiveGenerator_injective (by simpa [e] using hfg j), ?_⟩

@@ -8,6 +8,7 @@ module
 public import QPainleve.SignedClusterModularGroup.SarkisovDegree.Plane.Factorization
 public import QPainleve.SignedClusterModularGroup.SarkisovDegree.Plane.Terminal.Path
 
+import QPainleve.Geometry.Toric.Fan.Subdivision
 import QPainleve.AlgebraicGeometry.IdealSheaf.Restriction
 import TauCeti.Combinatorics.Quiver.Prefunctor
 
@@ -31,27 +32,30 @@ open scoped Sarkisov
 
 namespace QPainleve.BlowupTower.IsClosedPointTower
 
+variable (k₀ : Type) [Field k₀] [IsAlgClosed k₀]
+
 attribute [local instance] MvPolynomial.gradedAlgebra
 
-local notation "S" => Spec (CommRingCat.of ℂ)
-local notation "P" => Proj (homogeneousSubmodule ℂ (Fin 3 → ℂ))
+local notation "S" => Spec (CommRingCat.of k₀)
+local notation "P" => Proj (homogeneousSubmodule k₀ (Fin 3 → k₀))
 local notation "s" => (P ↘ S)
-local notation "coords" => Pi.basisFun ℂ (Fin 3)
-local notation "H" => mk (Proj.symmetricAlgebraTwistingBundle ℂ (Fin 3 → ℂ) 1)
+local notation "coords" => Pi.basisFun k₀ (Fin 3)
+local notation "H" => mk (Proj.symmetricAlgebraTwistingBundle k₀ (Fin 3 → k₀) 1)
 local notation "plane[" d "," h "]" => Fan.projectiveSpace d h
 local notation "planeIso[" d "," h "]" =>
-  (Fan.projectivePlaneIso d h ≪≫ Basis.polynomialProjIso coords)
+  (Fan.projectivePlaneIso k₀ d h ≪≫ Basis.polynomialProjIso coords)
 
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {b : Basis (Fin 2) ℤ N} {hi : IsIntegralLattice i}
-  {Y : Scheme} {n : ℕ} {T : BlowupTower P n Y}
-  {hT : IsClosedPointTower P T} {g : Y ⟶ P} {D : Y.IdealSheafData}
+  {Y : Scheme} {n : ℕ} {T : BlowupTower (Proj (homogeneousSubmodule k₀ (Fin 3 → k₀))) n Y}
+  {hT : IsClosedPointTower (Proj (homogeneousSubmodule k₀ (Fin 3 → k₀))) T} {g : Y ⟶ (Proj
+    (homogeneousSubmodule k₀ (Fin 3 → k₀)))} {D : Y.IdealSheafData}
 
 local notation "over(" X ")" => (X ↘ S)
 local notation "rankTwo" => Eq.trans (finrank_eq_card_basis b) (Fintype.card_fin 2)
 
 private theorem PlaneSarkisovDecrease.refinement_comp_over
-    (R : PlaneSarkisovDecrease b hi hT g D) :
+    (R : PlaneSarkisovDecrease k₀ b hi hT g D) :
     R.refinement ≫ T.toBase ≫ s =
       R.first ≫ over(_) := by
   let J := Fan.starSubdivisionAlong_isSubdivision (plane[b,hi])
@@ -63,30 +67,30 @@ private theorem PlaneSarkisovDecrease.refinement_comp_over
       (Fan.isRegular_projectiveSpace b hi)
       (Fan.projectiveSpaceMaximalCone b hi R.vertexIndex).property).cones :=
     J.nonempty_cones_of_nonempty inferInstance
-  let := Fan.projectivePlaneIso_trans_polynomialProjIso_hom_isOver b hi coords
+  let := Fan.projectivePlaneIso_trans_polynomialProjIso_hom_isOver k₀ b hi coords
   have h := (reassoc_of% R.first_comp) s
-  rw [comp_over (planeIso[b,hi]).hom S, comp_over J.toFanHom.algebraicMap S] at h
+  rw [comp_over (planeIso[b,hi]).hom S, comp_over (J.toFanHom.finiteFanSchemeHom k₀) S] at h
   simpa only [Category.assoc] using h.symm
 
 /-- The decreasing plane block on the actual nodal tower, with both its starting
 projection and the pulled-back plane target on the tower's top. Its last projection
 is the one given by the marked Hirzebruch resolution. -/
 private theorem PlaneSarkisovDecrease.exists_path_on_nodalTower
-    (R : PlaneSarkisovDecrease b hi hT g D)
+    (R : PlaneSarkisovDecrease k₀ b hi hT g D)
     (hD : D.IsEffectiveCartier)
     (hNode : AtWorstNodalOfRelativeDimensionOne (D.subschemeι ≫ T.toBase ≫ s)) :
     let : Y.Over S := ⟨T.toBase ≫ s⟩
     let : SmoothOfRelativeDimension 2 over(Y) := hT.smoothOfRelativeDimension s
     let : IsIntegral Y := hT.isIntegral s
     let : IsNoetherian Y := T.isNoetherian
-    ∀ (A B : Fan.LogarithmicProjection i D),
+    ∀ (A B : Fan.LogarithmicProjection k₀ i D),
       A.fan = plane[b,hi] → A.hom ≍ T.toBase ≫ (planeIso[b,hi]).inv →
       let : R.top.Over S := ⟨R.tower.toBase ≫ over(Y)⟩
       let : SmoothOfRelativeDimension 2 over(R.top) :=
         R.nodal.isClosedPointTower.smoothOfRelativeDimension over(Y)
       let : IsIntegral R.top := R.nodal.isClosedPointTower.isIntegral over(Y)
       let E := (D.comap R.tower.toBase).radical
-      ∃ (A' C B' : Fan.LogarithmicProjection i E) (p : SarkisovPath A' C),
+      ∃ (A' C B' : Fan.LogarithmicProjection k₀ i E) (p : SarkisovPath A' C),
         A'.fan = A.fan ∧ A'.hom ≍ R.tower.toBase ≫ A.hom ∧
         C.fan = R.fan ∧ C.hom ≍ R.refinementIso.inv ≫ R.modelIso.hom ≫ R.modelTower.toBase ∧
         B'.fan = B.fan ∧ B'.hom ≍ R.tower.toBase ≫ B.hom ∧
@@ -113,7 +117,7 @@ private theorem PlaneSarkisovDecrease.exists_path_on_nodalTower
   -- Identify the reduced total pole ideal on the tower with the one on the link model.
   have hIsoPole :
       ((D.comap R.refinement).radical).comap R.refinementIso.inv =
-        E * ramificationIdealSheaf ℂ R.refinementIso.inv := by
+        E * ramificationIdealSheaf k₀ R.refinementIso.inv := by
     rw [ramificationIdealSheaf_eq_top_of_isOpenImmersion, mul_top,
       ← radical_comap_of_isOpenImmersion, ← comap_comp, hq]
   obtain ⟨A₀, C₀, p, hA₀, ha₀, hC₀, hc₀, hp⟩ := R.exists_path
@@ -124,15 +128,15 @@ private theorem PlaneSarkisovDecrease.exists_path_on_nodalTower
     (precomposeSarkisov_obj_fan ..).trans hC₀, ?_,
     precomposeSarkisov_obj_fan .., precomposeSarkisov_obj_hom .., ?_⟩
   · have h := heq_comp (f := R.refinementIso.inv) (f' := R.refinementIso.inv)
-      rfl rfl (congrArg Fan.algebraicRealization hA₀) HEq.rfl ha₀
+      rfl rfl (congrArg (Fan.finiteFanScheme k₀) hA₀) HEq.rfl ha₀
     have hRefined : R.refinementIso.inv ≫ (R.refinement ≫ T.toBase ≫ (planeIso[b,hi]).inv) =
         R.tower.toBase ≫ (T.toBase ≫ (planeIso[b,hi]).inv) := by
       rw [← Category.assoc, hq]
     exact (precomposeSarkisov_obj_hom ..).trans (h.trans ((heq_of_eq hRefined).trans
-      (heq_comp rfl rfl (congrArg Fan.algebraicRealization hA)
+      (heq_comp rfl rfl (congrArg (Fan.finiteFanScheme k₀) hA)
         (HEq.rfl : R.tower.toBase ≍ R.tower.toBase) ha).symm))
   · exact (precomposeSarkisov_obj_hom ..).trans
-      (heq_comp rfl rfl (congrArg Fan.algebraicRealization hC₀) HEq.rfl hc₀)
+      (heq_comp rfl rfl (congrArg (Fan.finiteFanScheme k₀) hC₀) HEq.rfl hc₀)
   · simpa only [Prefunctor.length_mapPath] using hp
 
 /-- A specified logarithmic plane resolution either terminates on the given
@@ -149,18 +153,18 @@ theorem exists_sarkisov_path_or_decrease_of_logarithmic_plane
     let : SmoothOfRelativeDimension 2 over(Y) := hT.smoothOfRelativeDimension s
     let : IsIntegral Y := hT.isIntegral s
     let : IsNoetherian Y := T.isNoetherian
-    ∀ (A B : Fan.LogarithmicProjection i D),
+    ∀ (A B : Fan.LogarithmicProjection k₀ i D),
       A.fan = plane[b,hi] → B.fan = plane[b',hi] →
       A.hom ≍ T.toBase ≫ (planeIso[b,hi]).inv →
       B.hom ≍ g ≫ (planeIso[b',hi]).inv →
       (∃ p : SarkisovPath A B, p.length = 1) ∨
-        ∃ R : PlaneSarkisovDecrease b hi hT g D,
+        ∃ R : PlaneSarkisovDecrease k₀ b hi hT g D,
           let : R.top.Over S := ⟨R.tower.toBase ≫ over(Y)⟩
           let : SmoothOfRelativeDimension 2 over(R.top) :=
             R.nodal.isClosedPointTower.smoothOfRelativeDimension over(Y)
           let : IsIntegral R.top := R.nodal.isClosedPointTower.isIntegral over(Y)
           let E := (D.comap R.tower.toBase).radical
-          ∃ (A' C B' : Fan.LogarithmicProjection i E) (p : SarkisovPath A' C),
+          ∃ (A' C B' : Fan.LogarithmicProjection k₀ i E) (p : SarkisovPath A' C),
             A'.fan = A.fan ∧ A'.hom ≍ R.tower.toBase ≫ A.hom ∧
             C.fan = R.fan ∧ C.hom ≍ R.refinementIso.inv ≫ R.modelIso.hom ≫ R.modelTower.toBase ∧
             B'.fan = B.fan ∧ B'.hom ≍ R.tower.toBase ≫ B.hom ∧
@@ -170,7 +174,7 @@ theorem exists_sarkisov_path_or_decrease_of_logarithmic_plane
   let x := (T.picardMarking hT s).symm (Additive.ofMul (pullback g H))
   by_cases hd : (Basis.picardTwistEquiv coords) x.1 = 1
   · obtain ⟨_, _, p, hp, -⟩ :=
-      hT.exists_sarkisov_path_of_plane_degree_one b b' hi g hg hbir hd A B hA hB ha hb
+      hT.exists_sarkisov_path_of_plane_degree_one k₀ b b' hi g hg hbir hd A B hA hB ha hb
     exact Or.inl ⟨p, hp⟩
   · rcases A with ⟨Φ, hreg, hc, a, haOver, haDom, haPole⟩
     dsimp only at hA ha
@@ -178,16 +182,16 @@ theorem exists_sarkisov_path_or_decrease_of_logarithmic_plane
     obtain rfl : a = T.toBase ≫ (planeIso[b,hi]).inv := eq_of_heq ha
     let : Smooth over(Y) := hSmooth.smooth
     let : T.toBase.IsOver S := ⟨rfl⟩
-    let := Fan.projectivePlaneIso_trans_polynomialProjIso_hom_isOver b hi coords
+    let := Fan.projectivePlaneIso_trans_polynomialProjIso_hom_isOver k₀ b hi coords
     let : Nonempty (plane[b,hi]).cones := hc.nonempty_cones
     have hRank := (finrank_eq_card_basis b).trans (Fintype.card_fin 2)
-    let : SmoothOfRelativeDimension 2 over((plane[b,hi]).algebraicRealization) := by
-      simpa only [hRank, Fan.algebraicRealization_over] using
-        (plane[b,hi]).smoothOfRelativeDimension_algebraicRealizationStructureMap hreg
-    simp only [comap_comp, ramificationIdealSheaf_comp ℂ T.toBase (planeIso[b,hi]).inv 2,
+    let : SmoothOfRelativeDimension 2 over((Fan.finiteFanScheme k₀ (plane[b,hi]))) := by
+      simpa only [hRank, Fan.finiteFanScheme_over k₀] using
+        (plane[b,hi]).smoothOfRelativeDimension_finiteFanSchemeToSpec k₀ hreg
+    simp only [comap_comp, ramificationIdealSheaf_comp k₀ T.toBase (planeIso[b,hi]).inv 2,
       ramificationIdealSheaf_eq_top_of_isOpenImmersion, comap_top, mul_top,
-      ← hT.ramificationIdealSheafToBase_def ℂ] at haPole
-    obtain ⟨R⟩ := hT.nonempty_planeSarkisovDecrease b hi g D hg hbir hD hNode haPole hd
-    exact Or.inr ⟨R, R.exists_path_on_nodalTower hD hNode _ B rfl HEq.rfl⟩
+      ← hT.ramificationIdealSheafToBase_def k₀] at haPole
+    obtain ⟨R⟩ := hT.nonempty_planeSarkisovDecrease k₀ b hi g D hg hbir hD hNode haPole hd
+    exact Or.inr ⟨R, R.exists_path_on_nodalTower k₀ hD hNode _ B rfl HEq.rfl⟩
 
 end QPainleve.BlowupTower.IsClosedPointTower

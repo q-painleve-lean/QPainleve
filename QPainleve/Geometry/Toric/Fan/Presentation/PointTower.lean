@@ -9,7 +9,6 @@ public import QPainleve.AlgebraicGeometry.Modules.Differentials.Canonical
 public import QPainleve.Geometry.Toric.Fan.Presentation.Basic
 public import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.ProjectiveOver
 
-import Mathlib.Analysis.Complex.Polynomial.Basic
 import QPainleve.AlgebraicGeometry.Blowup.StrictTransform.Branches.NodalContraction
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Projective
 import QPainleve.AlgebraicGeometry.Curves.Node.Comap
@@ -45,13 +44,15 @@ open Scheme.IdealSheafData LineBundleClass
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {X Y : Scheme} (b : Module.Basis (Fin 2) ℤ N)
 
-local notation "S" => Spec (CommRingCat.of ℂ)
-local notation "K(" W ")" => LineBundleClass.mk (QPainleve.canonicalBundle ℂ W 2)
-
 namespace QPainleve.BlowupTower.IsClosedPointTower
 
-variable {b} [X.Over S] [X.IsProjectiveOver ℂ] [IsIntegral X]
-  [SmoothOfRelativeDimension 2 (X ↘ S)] {n : ℕ} {T : BlowupTower X n Y}
+variable (k₀ : Type) [Field k₀] [IsAlgClosed k₀] [NeZero (2 : k₀)]
+
+local notation "S" => Spec (CommRingCat.of k₀)
+local notation "K(" W ")" => LineBundleClass.mk (QPainleve.canonicalBundle k₀ W 2)
+
+variable {b} [X.Over (Spec (.of k₀))] [X.IsProjectiveOver k₀] [IsIntegral X]
+  [SmoothOfRelativeDimension 2 (X ↘ Spec (.of k₀))] {n : ℕ} {T : BlowupTower X n Y}
 
 local notation "s" => (X ↘ S)
 
@@ -80,7 +81,7 @@ theorem hasToricPresentation_of_closedPointTower (hT : IsClosedPointTower X T)
     let : W.Over S := ⟨U.toBase ≫ s⟩
     let : SmoothOfRelativeDimension 2 (W ↘ S) := hU.smoothOfRelativeDimension s
     have : IsIntegral W := hU.isIntegral s
-    have : W.IsProjectiveOver ℂ := U.isProjectiveOver ℂ
+    have : W.IsProjectiveOver k₀ := U.isProjectiveOver k₀
     have : IsNoetherian W := U.isNoetherian
     intro _ _ hcan h
     have hbase : (U.snoc I).toBase ≫ s = π ≫ (W ↘ S) := by
@@ -89,8 +90,8 @@ theorem hasToricPresentation_of_closedPointTower (hT : IsClosedPointTower X T)
     -- Pointwise descent uses the last blowup followed by the intermediate structure map.
     have hclass (f : I.blowup ⟶ S) (hf : f = π ≫ (W ↘ S))
         (hs : SmoothOfRelativeDimension 2 f) :
-        @QPainleve.canonicalBundle ℂ _ I.blowup ⟨f⟩ 2 hs =
-          @QPainleve.canonicalBundle ℂ _ I.blowup ⟨π ≫ (W ↘ S)⟩ 2
+        @QPainleve.canonicalBundle k₀ _ I.blowup ⟨f⟩ 2 hs =
+          @QPainleve.canonicalBundle k₀ _ I.blowup ⟨π ≫ (W ↘ S)⟩ 2
             (smoothOfRelativeDimension_blowup_closed_point (W ↘ S) hp) := by
       subst f
       rfl
@@ -103,14 +104,14 @@ theorem hasToricPresentation_of_closedPointTower (hT : IsClosedPointTower X T)
     rw [hbase]
     by_cases hE : (I.comap π).support ≤ B.support
     · obtain ⟨hD, hcanD, hN', htotal, hnode⟩ :=
-        hB.anticanonical_nodal_boundary_point_blowdown ℂ hp hnodal hcan
+        hB.anticanonical_nodal_boundary_point_blowdown k₀ hp hnodal hcan
       have hBD : (D.comap π).radical = B := by
         rw [← vanishingIdeal_support, htotal, support_mul, sup_eq_left.mpr hE,
           vanishingIdeal_support, B.isReduced_subscheme_iff_radical_eq.mp hnodal.isReduced]
       rw [← hBD]
       exact (ih hD hN' hcanD hDpres).nodalBlowup hp (hnode.mp hE)
     · obtain ⟨hD, hcanD, hN', _, _, hstrict, _, ⟨q, hq, hs⟩, -⟩ :=
-        hB.internalBlowdown_of_anticanonical ℂ hp hE hnodal hcan
+        hB.internalBlowdown_of_anticanonical k₀ hp hE hnodal hcan
       have : Smooth (W ↘ S) := SmoothOfRelativeDimension.smooth 2 _
       have hfp : LocallyOfFinitePresentation (D.subschemeι ≫ (W ↘ S)) :=
         TauCeti.locallyOfFinitePresentation_subschemeι_comp_of_isEffectiveCartier hD
@@ -148,6 +149,6 @@ theorem hasToricPresentation_of_closedPointTower_of_iso (hT : IsClosedPointTower
     rw [← comap_comp, Iso.inv_hom_id, comap_id] at hcomap
     exact hcomap.symm
   have h' : (B'.map T.toBase).HasToricPresentation s b i := by rwa [hmap, ← map_comp]
-  exact (hT.hasToricPresentation_of_closedPointTower hB' hN' hcan' h').of_comap_iso ha
+  exact (hT.hasToricPresentation_of_closedPointTower k₀ hB' hN' hcan' h').of_comap_iso ha
 
 end QPainleve.BlowupTower.IsClosedPointTower

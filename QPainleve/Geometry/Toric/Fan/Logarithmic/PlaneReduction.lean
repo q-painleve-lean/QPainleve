@@ -8,10 +8,9 @@ module
 public import QPainleve.Geometry.Toric.Fan.Logarithmic.CommonResolution
 public import QPainleve.Geometry.Toric.Fan.ProjectiveSpace.Plane
 
-import Mathlib.Analysis.Complex.Polynomial.Basic
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Projective
 import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.Polynomial.Smooth
-import QPainleve.Geometry.Toric.Fan.FunctionField
+import QPainleve.Geometry.Toric.BaseChange.FunctionField
 import TauCeti.AlgebraicGeometry.Morphisms.Modification.Composition
 
 /-!
@@ -36,28 +35,30 @@ open TauCeti.AlgebraicGeometry Scheme.IdealSheafData
 
 namespace TauCeti.Toric.Fan
 
-local notation "S" => Spec (CommRingCat.of ℂ)
-local notation "X[" Δ "]" => Fan.algebraicRealization Δ
-local notation "s[" Δ "]" => Fan.algebraicRealizationStructureMap Δ
-local notation "π[" H "]" => FanHom.algebraicMap (IsSubdivision.toFanHom H)
-local notation "B[" Δ "," h "]" => Fan.boundaryIdeal Δ (IsComplete.nonempty_cones h)
+variable (k₀ : Type) [Field k₀] [IsAlgClosed k₀]
+
+local notation "S" => Spec (CommRingCat.of k₀)
+local notation "X[" Δ "]" => Fan.finiteFanScheme k₀ Δ
+local notation "s[" Δ "]" => Fan.finiteFanSchemeToSpec k₀ Δ
+local notation "π[" H "]" => FanHom.finiteFanSchemeHom k₀ (IsSubdivision.toFanHom H)
+local notation "B[" Δ "," h "]" => Fan.toricBoundaryIdeal k₀ Δ (IsComplete.nonempty_cones h)
 
 attribute [local instance] MvPolynomial.gradedAlgebra
 
-local notation "P" => Proj (TauCeti.SymmetricAlgebra.homogeneousSubmodule ℂ (Fin 3 → ℂ))
+local notation "P" => Proj (TauCeti.SymmetricAlgebra.homogeneousSubmodule k₀ (Fin 3 → k₀))
 local notation "planeIso(" b "," h ")" =>
-  Fan.projectivePlaneIso b h ≪≫ Module.Basis.polynomialProjIso (Pi.basisFun ℂ (Fin 3))
+  Fan.projectivePlaneIso k₀ b h ≪≫ Module.Basis.polynomialProjIso (Pi.basisFun k₀ (Fin 3))
 
 private theorem factor_plane_projection
     {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V] {i : N →+ V}
     (b : Module.Basis (Fin 2) ℤ N) (hi : IsIntegralLattice i)
-    {Z : Scheme} [Z.Over S] [Z.IsProjectiveOver ℂ] [IsIntegral Z]
+    {Z : Scheme} [Z.Over S] [Z.IsProjectiveOver k₀] [IsIntegral Z]
     [SmoothOfRelativeDimension 2 (Z ↘ S)]
     (p : Z ⟶ X[projectiveSpace b hi]) [p.IsOver S] [IsModification p]
     {D : Z.IdealSheafData}
     (hpole : letI : Smooth (Z ↘ S) := SmoothOfRelativeDimension.smooth 2 _
       (B[projectiveSpace b hi,isComplete_projectiveSpace b hi]).comap p =
-        D * ramificationIdealSheaf ℂ p) :
+        D * ramificationIdealSheaf k₀ p) :
     let e := planeIso(b,hi)
     let q := p ≫ e.hom
     ∃ (n : ℕ) (Y : Scheme) (U : BlowupTower P n Y) (a : Z ≅ Y),
@@ -66,12 +67,12 @@ private theorem factor_plane_projection
         letI : q.IsOver S := ⟨hover⟩
         letI : Smooth (Z ↘ S) := SmoothOfRelativeDimension.smooth 2 _
         ((B[projectiveSpace b hi,isComplete_projectiveSpace b hi]).comap e.inv).comap q =
-          D * ramificationIdealSheaf ℂ q := by
+          D * ramificationIdealSheaf k₀ q := by
   intro e q
   have he : e.hom ≫ (P ↘ S) = s[projectiveSpace b hi] := by
     simp only [e, Iso.trans_hom, Category.assoc, TauCeti.SymmetricAlgebra.over_eq_projToSpec,
       Module.Basis.polynomialProjIso_hom_over, projectivePlaneIso_hom_toSpecCoeff]
-  let : e.hom.IsOver S := ⟨he.trans (algebraicRealization_over _).symm⟩
+  let : e.hom.IsOver S := ⟨he.trans (finiteFanScheme_over k₀ _).symm⟩
   let : q.IsOver S := inferInstanceAs ((p ≫ e.hom).IsOver S)
   have : IsModification q := inferInstanceAs (IsModification (p ≫ e.hom))
   let : Nonempty (projectiveSpace b hi).cones := (isComplete_projectiveSpace b hi).nonempty_cones
@@ -83,19 +84,19 @@ private theorem factor_plane_projection
   have hRank : Module.finrank ℤ N = 2 :=
     (Module.finrank_eq_card_basis b).trans (Fintype.card_fin 2)
   let : SmoothOfRelativeDimension 2 (X[projectiveSpace b hi] ↘ S) := by
-    simpa only [hRank, algebraicRealization_over] using
-      (projectiveSpace b hi).smoothOfRelativeDimension_algebraicRealizationStructureMap
+    simpa only [hRank, finiteFanScheme_over k₀] using
+      (projectiveSpace b hi).smoothOfRelativeDimension_finiteFanSchemeToSpec k₀
         (isRegular_projectiveSpace b hi)
   let : Smooth (X[projectiveSpace b hi] ↘ S) := SmoothOfRelativeDimension.smooth 2 _
   obtain ⟨n, Y, U, a, hU, ha⟩ :=
-    q.exists_isClosedPointTower_factorization (k := ℂ) (IsModification.birationalOver q)
+    q.exists_isClosedPointTower_factorization (k := k₀) (IsModification.birationalOver q)
   refine ⟨n, Y, U, a, hU, ha, comp_over q S, ?_⟩
   simp only [q, ← comap_comp, Category.assoc, Iso.hom_inv_id, Category.comp_id,
-    ramificationIdealSheaf_comp ℂ p e.hom 2, ramificationIdealSheaf_eq_top_of_isOpenImmersion,
+    ramificationIdealSheaf_comp k₀ p e.hom 2, ramificationIdealSheaf_eq_top_of_isOpenImmersion,
     comap_top, mul_top, hpole]
 
-variable {X : Scheme} [X.Over S] [IsIntegral X] [X.IsProjectiveOver ℂ]
-  [SmoothOfRelativeDimension 2 (X ↘ S)] {D : X.IdealSheafData}
+variable {X : Scheme} [X.Over (Spec (.of k₀))] [IsIntegral X] [X.IsProjectiveOver k₀]
+  [SmoothOfRelativeDimension 2 (X ↘ Spec (.of k₀))] {D : X.IdealSheafData}
 
 /-- Reduce specified toric contractions with common pole divisor `-D` to planes
 on a single nodal refinement. Each original morphism is recovered through its
@@ -116,14 +117,15 @@ theorem exists_common_nodal_plane_reduction
       let hRank : Module.finrank ℤ (N j) = 2 :=
         (Module.finrank_eq_card_basis (b j)).trans (Fintype.card_fin 2)
       letI : SmoothOfRelativeDimension 2 (X[Φ j] ↘ S) :=
-        hRank ▸ (Φ j).smoothOfRelativeDimension_algebraicRealizationStructureMap (hΦ j)
+        Eq.mpr (congrArg (SmoothOfRelativeDimension 2) ((Φ j).finiteFanScheme_over k₀))
+          (hRank ▸ (Φ j).smoothOfRelativeDimension_finiteFanSchemeToSpec k₀ (hΦ j))
       letI : Nonempty (Φ j).cones := (hcΦ j).nonempty_cones
-      let hB := (Φ j).isEffectiveCartier_boundaryIdeal (hΦ j) (hcΦ j) hRank
-      ∃ (ω : hB.toInvertibleSheaf ≅ canonicalBundle ℂ X[Φ j] 2)
+      let hB := (Φ j).isEffectiveCartier_boundaryIdeal k₀ (hΦ j) (hcΦ j) hRank
+      ∃ (ω : hB.toInvertibleSheaf ≅ canonicalBundle k₀ X[Φ j] 2)
         (hTotal : ((B[Φ j,hcΦ j]).comap (f j)).IsEffectiveCartier)
         (hRam : letI := SmoothOfRelativeDimension.smooth 2 (X ↘ S)
-          (ramificationIdealSheaf ℂ (f j)).IsEffectiveCartier),
-        pullbackTopFormDivisor ℂ (f j) 2 hB ω hTotal hRam = -hD.toCartierDivisor) :
+          (ramificationIdealSheaf k₀ (f j)).IsEffectiveCartier),
+        pullbackTopFormDivisor k₀ (f j) 2 hB ω hTotal hRam = -hD.toCartierDivisor) :
     letI : IsNoetherian X := isNoetherian_of_finiteType (X ↘ S)
     ∃ (n : ℕ) (Z : Scheme) (T : BlowupTower X n Z)
       (hT : IsNodalBoundaryTower D (X ↘ S) (𝟙 X) T),
@@ -142,7 +144,7 @@ theorem exists_common_nodal_plane_reduction
           (∀ (Δ : Fan (i j)) [Nonempty Δ.cones] (L : Ω.IsSubdivision Δ),
             letI : Nonempty (Φ j).cones := (hcΦ j).nonempty_cones
             (T.toBase ≫ f j).toRationalMap.comp
-              ((Φ j).denseTorusPartialIso Δ).toRationalMap = (g ≫ π[L]).toRationalMap) ∧
+              ((Φ j).denseTorusPartialIso k₀ Δ).toRationalMap = (g ≫ π[L]).toRationalMap) ∧
           let e := planeIso(b j,(Φ j).lattice)
           let q := (g ≫ π[K]) ≫ e.hom
           ∃ (m : ℕ) (W : Scheme) (U : BlowupTower P m W) (a : Z ≅ W),
@@ -150,26 +152,27 @@ theorem exists_common_nodal_plane_reduction
             ∃ hover : q ≫ P ↘ S = Z ↘ S,
               letI : q.IsOver S := ⟨hover⟩
               ((B[Ψ,isComplete_projectiveSpace (b j) (Φ j).lattice]).comap e.inv).comap q =
-                (D.comap T.toBase).radical * ramificationIdealSheaf ℂ q := by
+                (D.comap T.toBase).radical * ramificationIdealSheaf k₀ q := by
   let Ψ j := projectiveSpace (b j) (Φ j).lattice
   have hΨ j : (Ψ j).IsRegular := isRegular_projectiveSpace (b j) (Φ j).lattice
   have hcΨ j : (Ψ j).IsComplete := isComplete_projectiveSpace (b j) (Φ j).lattice
   have hPole (j : ι) :
       letI : Smooth (X ↘ S) := SmoothOfRelativeDimension.smooth 2 _
-      (B[Φ j,hcΦ j]).comap (f j) = D * ramificationIdealSheaf ℂ (f j) := by
+      (B[Φ j,hcΦ j]).comap (f j) = D * ramificationIdealSheaf k₀ (f j) := by
     let hRank := (Module.finrank_eq_card_basis (b j)).trans (Fintype.card_fin 2)
     let : SmoothOfRelativeDimension 2 (X[Φ j] ↘ S) :=
-      hRank ▸ (Φ j).smoothOfRelativeDimension_algebraicRealizationStructureMap (hΦ j)
+      Eq.mpr (congrArg (SmoothOfRelativeDimension 2) ((Φ j).finiteFanScheme_over k₀))
+          (hRank ▸ (Φ j).smoothOfRelativeDimension_finiteFanSchemeToSpec k₀ (hΦ j))
     obtain ⟨ω, hTotal, hRam, hω⟩ := hdiv j
-    exact (QPainleve.pullbackTopFormDivisor_eq_neg_iff ℂ (f j) 2 _ ω hTotal hD hRam).mp hω
-  obtain ⟨n, Z, T, hT, h⟩ := exists_common_nodal_resolution_of_toric_changes
+    exact (QPainleve.pullbackTopFormDivisor_eq_neg_iff k₀ (f j) 2 _ ω hTotal hD hRam).mp hω
+  obtain ⟨n, Z, T, hT, h⟩ := exists_common_nodal_resolution_of_toric_changes k₀
     b hΦ hcΦ hΨ hcΨ f hD hN hPole
   let : Z.Over S := ⟨T.toBase ≫ X ↘ S⟩
   let : SmoothOfRelativeDimension 2 (Z ↘ S) :=
     hT.isClosedPointTower.smoothOfRelativeDimension (X ↘ S)
   let : IsNoetherian X := isNoetherian_of_finiteType (X ↘ S)
   let : IsIntegral Z := hT.isClosedPointTower.isIntegral (X ↘ S)
-  let : Z.IsProjectiveOver ℂ := T.isProjectiveOver ℂ
+  let : Z.IsProjectiveOver k₀ := T.isProjectiveOver k₀
   refine ⟨n, Z, T, hT, fun j ↦ ?_⟩
   obtain ⟨Ω, J, K, g, hΩ, hchain, hchain', hproj, hΔ⟩ := h j
   refine ⟨Ω, J, K, g, hΩ, hchain, hchain', hproj, fun Δ _ L ↦ (hΔ Δ L).1, ?_⟩
@@ -179,6 +182,6 @@ theorem exists_common_nodal_plane_reduction
   let : p.IsOver S := ⟨hover⟩
   obtain ⟨hMod, hpole⟩ := hp (hΨ j)
   let : IsModification p := hMod
-  exact factor_plane_projection (b j) (Φ j).lattice p hpole
+  exact factor_plane_projection k₀ (b j) (Φ j).lattice p hpole
 
 end TauCeti.Toric.Fan

@@ -30,24 +30,27 @@ open Scheme.IdealSheafData LineBundleClass
 
 namespace TauCeti.Toric.Fan
 
-variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
+universe u
+
+variable (K : Type u) [Field K] [PerfectField K] {N : Type u} {V : Type*}
+  [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {Φ : Fan i} [Nonempty Φ.cones]
-  {n : ℕ} (b : Module.Basis (Fin 2) ℤ N) (s : Fin n → Φ.Ray) (c : Fin n → ℂˣ)
+  {n : ℕ} (b : Module.Basis (Fin 2) ℤ N) (s : Fin n → Φ.Ray) (c : Fin n → Kˣ)
   (hΦ : Φ.IsRegular)
 
-local notation "M" => Sigma.fst (internalBlowupTower b s c)
+local notation "M" => Sigma.fst (internalBlowupTower K b s c)
 local notation "B" =>
-  Scheme.Hom.ker (WithBoundary.boundaryι (Sigma.snd (internalBlowupTower b s c)))
-local notation "A" => internalBlowupPicardBoundaryAut b s c hΦ
-local notation "Chars" => (Multiplicative (N ⧸ LinearMap.range (rayChargeMap s)) →* ℂˣ)
+  Scheme.Hom.ker (WithBoundary.boundaryι (Sigma.snd (internalBlowupTower K b s c)))
+local notation "A" => internalBlowupPicardBoundaryAut K b s c hΦ
+local notation "Chars" => (Multiplicative (N ⧸ LinearMap.range (rayChargeMap s)) →* Kˣ)
 
-variable {X Y : Scheme} (f : X ⟶ Spec (.of ℂ))
+variable {X Y : Scheme} (f : X ⟶ Spec (.of K))
   {m : ℕ} {T : BlowupTower X m Y} {D : X.IdealSheafData}
-  (e : Y ≅ (internalBlowupTower b s c).1)
-  (he : e.hom ≫ (internalBlowupTower b s c).2.toTower.toBase ≫
-    Φ.algebraicRealizationStructureMap = T.toBase ≫ f)
+  (e : Y ≅ (internalBlowupTower K b s c).1)
+  (he : e.hom ≫ (internalBlowupTower K b s c).2.toTower.toBase ≫
+    Φ.finiteFanSchemeToSpec K = T.toBase ≫ f)
   (hB : (D.comap T.toBase).support =
-    ((internalBlowupTower b s c).2.boundaryι.ker.comap e.hom).support)
+    ((internalBlowupTower K b s c).2.boundaryι.ker.comap e.hom).support)
 
 local notation "toTop" => Aut.autMulEquivOfIso (Iso.symm e)
 
@@ -98,19 +101,19 @@ private theorem existsUnique_descend_model_aut (g : A) :
       ∀ L, pullback a.hom L = L := by
   apply hT.existsUnique_isLift_of_picard_trivial f
   intro L
-  have hPic := ((mem_internalBlowupPicardBoundaryAut b s c hΦ g.val).mp g.property).2.1
+  have hPic := ((mem_internalBlowupPicardBoundaryAut K b s c hΦ g.val).mp g.property).2.1
   obtain ⟨L', rfl⟩ := (pullbackEquiv e).surjective L
   rw [pullbackEquiv_apply, pullback_comp, Aut.autMulEquivOfIso_apply_asIso]
   simp only [Iso.trans_hom, Iso.symm_hom, Iso.symm_inv, Category.assoc, Iso.inv_hom_id,
     Category.comp_id, ← pullback_comp, hPic]
 
 private def descendModelAut : A →* Aut X where
-  toFun g := Aut.of (existsUnique_descend_model_aut b s c hΦ f e hT g).exists.choose
+  toFun g := Aut.of (existsUnique_descend_model_aut K b s c hΦ f e hT g).exists.choose
   map_one' := by
     have := hT.epi_toBase f
     apply Aut.ext
     apply Iso.ext
-    have hlift := (existsUnique_descend_model_aut b s c hΦ f e hT
+    have hlift := (existsUnique_descend_model_aut K b s c hΦ f e hT
       (1 : A)).exists.choose_spec.1
     apply (cancel_epi T.toBase).mp
     simpa only [Subgroup.coe_one, map_one, Aut.one_asIso, Iso.refl_hom, Category.id_comp,
@@ -120,7 +123,7 @@ private def descendModelAut : A →* Aut X where
     apply Aut.ext
     apply Iso.ext
     have lift (a : A) :=
-      (existsUnique_descend_model_aut b s c hΦ f e hT a).exists.choose_spec.1
+      (existsUnique_descend_model_aut K b s c hΦ f e hT a).exists.choose_spec.1
     apply (cancel_epi T.toBase).mp
     have h : (toTop ((g * g' : A) : Aut M)).asIso =
         (toTop (g' : Aut M)).asIso ≪≫ (toTop (g : Aut M)).asIso := by
@@ -132,27 +135,27 @@ private def descendModelAut : A →* Aut X where
 /-- Quotient characters act on the original surface of a toric presentation by
 descending their lifts to the ordered internal blowups. -/
 def toricPresentationCharacterHom (hc : Φ.IsComplete) : Chars →* Aut X :=
-  (descendModelAut b s c hΦ f e hT).comp
-    (internalBlowupPicardBoundaryAutMulEquiv b s c hΦ hc).toMonoidHom
+  (descendModelAut K b s c hΦ f e hT).comp
+    (internalBlowupPicardBoundaryAutMulEquiv K b s c hΦ hc).toMonoidHom
 
 variable (hc : Φ.IsComplete)
 
 /-- The ordered lift of the descended automorphism is the conjugate of the canonical
 character action on the internal blowup model. -/
 theorem toricPresentationCharacterHom_isLift (z : Chars) :
-    IsLift (toricPresentationCharacterHom b s c hΦ f e hT hc z).asIso T T
-      (toTop ((internalBlowupPicardBoundaryAutMulEquiv b s c hΦ hc z : A) : Aut M)).asIso :=
-  (existsUnique_descend_model_aut b s c hΦ f e hT
-    (internalBlowupPicardBoundaryAutMulEquiv b s c hΦ hc z)).exists.choose_spec.1
+    IsLift (toricPresentationCharacterHom K b s c hΦ f e hT hc z).asIso T T
+      (toTop ((internalBlowupPicardBoundaryAutMulEquiv K b s c hΦ hc z : A) : Aut M)).asIso :=
+  (existsUnique_descend_model_aut K b s c hΦ f e hT
+    (internalBlowupPicardBoundaryAutMulEquiv K b s c hΦ hc z)).exists.choose_spec.1
 
 /-- A quotient character is determined by its descended automorphism. -/
 theorem toricPresentationCharacterHom_injective :
-    Function.Injective (toricPresentationCharacterHom b s c hΦ f e hT hc) := by
+    Function.Injective (toricPresentationCharacterHom K b s c hΦ f e hT hc) := by
   intro z w hzw
-  have hz := toricPresentationCharacterHom_isLift b s c hΦ f e hT hc z
-  have hw := toricPresentationCharacterHom_isLift b s c hΦ f e hT hc w
+  have hz := toricPresentationCharacterHom_isLift K b s c hΦ f e hT hc z
+  have hw := toricPresentationCharacterHom_isLift K b s c hΦ f e hT hc w
   have heq := hz.unique (hzw.symm ▸ hw)
-  exact (internalBlowupPicardBoundaryAutMulEquiv b s c hΦ hc).injective
+  exact (internalBlowupPicardBoundaryAutMulEquiv K b s c hΦ hc).injective
     (Subtype.ext ((toTop).injective (Aut.ext heq)))
 
 /-- The descent of an automorphism in the ordered model's Picard and boundary kernel
@@ -161,10 +164,10 @@ square with the projection commutes. -/
 theorem mem_range_toricPresentationCharacterHom_of_comp_eq
     {a : Aut X} {g : Aut M} (hg : g ∈ A)
     (ha : (e.inv ≫ T.toBase) ≫ a.asIso.hom = g.asIso.hom ≫ e.inv ≫ T.toBase) :
-    a ∈ (toricPresentationCharacterHom b s c hΦ f e hT hc).range := by
+    a ∈ (toricPresentationCharacterHom K b s c hΦ f e hT hc).range := by
   obtain ⟨z, hz⟩ :=
-    (internalBlowupPicardBoundaryAutMulEquiv b s c hΦ hc).surjective ⟨g, hg⟩
-  have hlift := toricPresentationCharacterHom_isLift b s c hΦ f e hT hc z
+    (internalBlowupPicardBoundaryAutMulEquiv K b s c hΦ hc).surjective ⟨g, hg⟩
+  have hlift := toricPresentationCharacterHom_isLift K b s c hΦ f e hT hc z
   rw [hz] at hlift
   have := hT.epi_toBase f
   refine ⟨z, Aut.ext (Iso.ext ((cancel_epi (e.inv ≫ T.toBase)).mp ?_))⟩
@@ -176,16 +179,16 @@ include he hB in
 /-- The image of the character action is precisely the Picard-trivial automorphisms
 over the field that fix the boundary components and lift through the specified tower. -/
 theorem mem_range_toricPresentationCharacterHom_iff (a : Aut X) :
-    a ∈ (toricPresentationCharacterHom b s c hΦ f e hT hc).range ↔
+    a ∈ (toricPresentationCharacterHom K b s c hΦ f e hT hc).range ↔
       a.asIso.hom ≫ f = f ∧ (∀ L, pullback a.asIso.hom L = L) ∧
       (∀ x : CodimensionOnePoint X, (x : X) ∈ D.support → a.asIso.hom x = x) ∧
       ∃ g : Y ≅ Y, IsLift a.asIso T T g := by
   constructor
   · rintro ⟨z, rfl⟩
-    let g := internalBlowupPicardBoundaryAutMulEquiv b s c hΦ hc z
-    have hlift := toricPresentationCharacterHom_isLift b s c hΦ f e hT hc z
+    let g := internalBlowupPicardBoundaryAutMulEquiv K b s c hΦ hc z
+    have hlift := toricPresentationCharacterHom_isLift K b s c hΦ f e hT hc z
     obtain ⟨hover, hPic, hfix⟩ :=
-      (conjugate_internalBlowupPicardBoundaryAut_iff b s c hΦ f e he hB g.val).mp g.property
+      (conjugate_internalBlowupPicardBoundaryAut_iff K b s c hΦ f e he hB g.val).mp g.property
     have := hT.epi_toBase f
     refine ⟨(cancel_epi T.toBase).mp ?_, (hlift.forall_pullback_eq_iff f hT).mp hPic,
       (hlift.fixes_boundary_components_iff f hT D).mp hfix, _, hlift⟩
@@ -195,12 +198,12 @@ theorem mem_range_toricPresentationCharacterHom_iff (a : Aut X) :
     let gM := (toTop).symm (Aut.of g)
     have hgM : (toTop gM).asIso = g := by simp [gM]
     have hmem : gM ∈ A := by
-      apply (conjugate_internalBlowupPicardBoundaryAut_iff b s c hΦ f e he hB gM).mpr
+      apply (conjugate_internalBlowupPicardBoundaryAut_iff K b s c hΦ f e he hB gM).mpr
       rw [hgM]
       exact ⟨by rw [hg.hom_toBase_assoc, hover],
         (hg.forall_pullback_eq_iff f hT).mpr hPic,
         (hg.fixes_boundary_components_iff f hT D).mpr hfix⟩
-    apply mem_range_toricPresentationCharacterHom_of_comp_eq b s c hΦ f e hT hc hmem
+    apply mem_range_toricPresentationCharacterHom_of_comp_eq K b s c hΦ f e hT hc hmem
     have hcomp := congrArg (e.inv ≫ ·) hg.hom_toBase.symm
     simpa only [Category.assoc, ← hgM, Aut.autMulEquivOfIso_apply_asIso, Iso.trans_hom,
       Iso.symm_hom, Iso.symm_inv, Iso.inv_hom_id_assoc] using hcomp

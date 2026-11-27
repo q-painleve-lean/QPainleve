@@ -22,30 +22,33 @@ open TauCeti TauCeti.AlgebraicGeometry
 
 namespace TauCeti.Toric.Fan
 
-variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
+universe u
+
+variable (k : Type u) [Field k] [PerfectField k] {N : Type u} {V : Type*}
+  [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {Φ : Fan i} [h₀ : Nonempty Φ.cones]
 
-local notation "D" => Scheme.IdealSheafData.subscheme (Fan.boundaryIdeal Φ h₀)
-local notation "ν" => Scheme.IdealSheafData.blowupToBase (Scheme.singularLocus ℂ D)
+local notation "D" => Scheme.IdealSheafData.subscheme (Fan.toricBoundaryIdeal k Φ h₀)
+local notation "ν" => Scheme.IdealSheafData.blowupToBase (Scheme.singularLocus k D)
 
-variable [PrestableFamily ((Φ.boundaryIdeal h₀).subscheme ↘ Spec (.of ℂ))] {r : ℕ}
+variable [PrestableFamily ((Φ.toricBoundaryIdeal k h₀).subscheme ↘ Spec (.of k))] {r : ℕ}
 
 /-- The strict boundary prime indexed by a ray is the image of the generic point
 of the corresponding normalization component. -/
 theorem internalBlowupBoundaryPrime_val (hΦ : Φ.IsRegular) (b : Module.Basis (Fin 2) ℤ N)
-    (s : Fin r → Φ.Ray) (c : Fin r → ℂˣ) (ρ : Φ.Ray) :
-    (internalBlowupBoundaryPrimeEquiv hΦ b s c ρ).val =
-      (internalBlowupTower b s c).2.boundaryι
-        (ν (genericPoints.ofComponent (Φ.boundaryNormalizationComponentEquiv hΦ ρ))) := by
-  let v := Φ.boundaryNormalizationComponentEquiv hΦ ρ
-  let jD := (internalBlowupTower b s c).2.boundaryι
-  have hray := Φ.range_boundaryNormalizationComponentEquiv hΦ ρ
-  have hr : Set.range (((D).blowupComponent (K := ℂ) v).ι ≫ ν ≫ jD) =
-      Set.range (ρ.boundaryComponentι hΦ ≫ jD) := by
+    (s : Fin r → Φ.Ray) (c : Fin r → kˣ) (ρ : Φ.Ray) :
+    (internalBlowupBoundaryPrimeEquiv k hΦ b s c ρ).val =
+      (internalBlowupTower k b s c).2.boundaryι
+        (ν (genericPoints.ofComponent (Φ.boundaryNormalizationComponentEquiv k hΦ ρ))) := by
+  let v := Φ.boundaryNormalizationComponentEquiv k hΦ ρ
+  let jD := (internalBlowupTower k b s c).2.boundaryι
+  have hray := Φ.range_boundaryNormalizationComponentEquiv k hΦ ρ
+  have hr : Set.range (((D).blowupComponent (K := k) v).ι ≫ ν ≫ jD) =
+      Set.range (ρ.boundaryComponentι k hΦ ≫ jD) := by
     simpa only [Scheme.Hom.comp_base, TopCat.coe_comp, Set.range_comp, Set.image_comp] using
       congrArg (fun Z ↦ jD '' Z) hray
-  rw [(D).range_blowupComponent_comp (k := ℂ) v jD jD.isClosedMap,
-    range_rayComponent_internalBlowupBoundaryPrimeEquiv] at hr
+  rw [(D).range_blowupComponent_comp (k := k) v jD jD.isClosedMap,
+    range_rayComponent_internalBlowupBoundaryPrimeEquiv k] at hr
   exact isGenericPoint_closure.eq (hr ▸ isGenericPoint_closure)
 
 end TauCeti.Toric.Fan

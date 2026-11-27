@@ -9,7 +9,6 @@ public import QPainleve.Geometry.Toric.Fan.StarSubdivision.Boundary
 public import QPainleve.Geometry.Toric.Fan.StarSubdivision.Factorization
 
 import QPainleve.Geometry.Toric.Cone.Coordinates
-import QPainleve.Geometry.Toric.Fan.Boundary.Subdivision
 import QPainleve.Geometry.Toric.Fan.Hirzebruch.Corner
 import QPainleve.Geometry.Toric.Fan.StarSubdivision.Contraction
 import QPainleve.Geometry.Toric.Fan.StarSubdivision.Generators
@@ -207,11 +206,14 @@ theorem exists_hirzebruch_toric_elementary_transformation (hΦ : Φ.IsRegular) (
 
 end Combinatorial
 
-variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
+universe u
+
+variable (k : Type u) [Field k] {N V : Type u}
+  [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {Φ : Fan i} (b : Basis (Fin 2) ℤ N)
 
-local notation "X[" Δ "]" => Fan.algebraicRealization Δ
-local notation "I[" σ "]" => Scheme.Hom.ker (Fan.distinguishedPointHom _ σ)
+local notation "X[" Δ "]" => Fan.finiteFanScheme k Δ
+local notation "I[" σ "]" => Scheme.Hom.ker (Fan.distinguishedSection (R := k) _ σ)
 local notation "rays[" Δ "]" => Set.range (Ray.primitiveGenerator (Phi := Δ))
 
 /-- A toric elementary transformation at a Hirzebruch corner is represented by
@@ -231,57 +233,57 @@ theorem exists_blowup_span_hirzebruch_toric_elementary_transformation
       σ.val = hull ℝ (Set.range (i ∘ b)) ∧ d 0 = b 0 ∧ d 1 = b 0 + b 1 ∧
       rays[Ψ] = {d 0, d 1, -d 0, (e + 1) • d 0 - d 1} ∧
       a.primitiveGenerator = b 0 + b 1 ∧ r.primitiveGenerator = b 1 ∧
-      g.hom ≫ (I[σ]).blowupToBase = s.toFanHom.algebraicMap ∧
-      g'.hom ≫ (I[τ]).blowupToBase = t.toFanHom.algebraicMap ∧
-      (I[σ]).comap s.toFanHom.algebraicMap = F.rayBoundaryIdeal hF a ∧
-      (I[τ]).comap t.toFanHom.algebraicMap = F.rayBoundaryIdeal hF (s.liftRay r) ∧
-      ((I[σ]).blowupMap (Φ.rayBoundaryIdeal hΦ r).subschemeι).ker.comap g.hom =
-        F.rayBoundaryIdeal hF (s.liftRay r) ∧
-      ((Φ.boundaryIdeal hc.nonempty_cones).comap s.toFanHom.algebraicMap).radical =
-        F.boundaryIdeal hcF.nonempty_cones ∧
-      ((Ψ.boundaryIdeal hc'.nonempty_cones).comap t.toFanHom.algebraicMap).radical =
-        F.boundaryIdeal hcF.nonempty_cones ∧
+      g.hom ≫ (I[σ]).blowupToBase = s.toFanHom.finiteFanSchemeHom k ∧
+      g'.hom ≫ (I[τ]).blowupToBase = t.toFanHom.finiteFanSchemeHom k ∧
+      (I[σ]).comap (s.toFanHom.finiteFanSchemeHom k) = F.rayDivisorIdeal k hF a ∧
+      (I[τ]).comap (t.toFanHom.finiteFanSchemeHom k) = F.rayDivisorIdeal k hF (s.liftRay r) ∧
+      ((I[σ]).blowupMap (Φ.rayDivisorIdeal k hΦ r).subschemeι).ker.comap g.hom =
+        F.rayDivisorIdeal k hF (s.liftRay r) ∧
+      ((Φ.toricBoundaryIdeal k hc.nonempty_cones).comap (s.toFanHom.finiteFanSchemeHom k)).radical =
+        F.toricBoundaryIdeal k hcF.nonempty_cones ∧
+      ((Ψ.toricBoundaryIdeal k hc'.nonempty_cones).comap
+        (t.toFanHom.finiteFanSchemeHom k)).radical = F.toricBoundaryIdeal k hcF.nonempty_cones ∧
       Φ.IsTwoRayStarSubdivision F ∧ Ψ.IsTwoRayStarSubdivision F ∧
       τ.val = hull ℝ {i (d 1), i (-d 0)} := by
   obtain ⟨Ψ, hΨ, σ, τ, hσ, hτ, d, hc', hcone, hd₀, hd₁, hrays', hstar, ha, hr, hτcone⟩ :=
     exists_hirzebruch_toric_elementary_transformation b hΦ hc e hrays
   have hN : Module.finrank ℤ N = 2 := by simpa using Module.finrank_eq_card_basis b
   let F := Φ.starSubdivisionAlong hΦ σ.property
-  obtain ⟨h₀, g, -, hg, -⟩ := Φ.exists_iso_blowup_starSubdivisionAlong hΦ σ hN hσ
+  obtain ⟨h₀, g, -, hg, -⟩ := Φ.exists_iso_blowup_starSubdivisionAlong k hΦ σ hN hσ
   let s := Φ.starSubdivisionAlong_isSubdivision hΦ σ.property h₀
   let a := Φ.starSubdivisionAlongRay hΦ σ.property h₀
   have hF := Φ.isRegular_starSubdivisionAlong hΦ σ.property
   have hcF := s.isComplete_iff.mpr hc
   let TargetComparison (G : Fan i) : Prop :=
     ∃ (hG : G.IsRegular) (t : G.IsSubdivision Ψ) (g' : X[G] ≅ (I[τ]).blowup) (r' : G.Ray),
-      r'.primitiveGenerator = b 1 ∧ g'.hom ≫ (I[τ]).blowupToBase = t.toFanHom.algebraicMap ∧
-      (I[τ]).comap t.toFanHom.algebraicMap = G.rayBoundaryIdeal hG r'
+      r'.primitiveGenerator = b 1 ∧ g'.hom ≫ (I[τ]).blowupToBase = t.toFanHom.finiteFanSchemeHom k ∧
+      (I[τ]).comap (t.toFanHom.finiteFanSchemeHom k) = G.rayDivisorIdeal k hG r'
   have htarget : TargetComparison F := by
     -- Transport the entire target-side comparison along equality of the common fans.
     rw [show F = Ψ.starSubdivisionAlong hΨ τ.property from hstar.symm]
-    obtain ⟨h₀', g', -, hg', -⟩ := Ψ.exists_iso_blowup_starSubdivisionAlong hΨ τ hN hτ
+    obtain ⟨h₀', g', -, hg', -⟩ := Ψ.exists_iso_blowup_starSubdivisionAlong k hΨ τ hN hτ
     exact ⟨_, _, g', _, hr, hg',
-      Ψ.comap_ker_distinguishedPointHom_eq_rayBoundaryIdeal hΨ τ h₀' hN hτ⟩
+      Ψ.comap_ker_distinguishedSection_eq_rayDivisorIdeal k hΨ τ h₀' hN hτ⟩
   obtain ⟨_, t, g', r', hr', hg', htarget⟩ := htarget
   obtain ⟨r, hgen⟩ : b 1 ∈ rays[Φ] := by rw [hrays]; simp
   have hLift : s.liftRay r = r' := Ray.primitiveGenerator_injective
     ((s.primitiveGenerator_liftRay r).trans (hgen.trans hr'.symm))
-  have hsource := Φ.comap_ker_distinguishedPointHom_eq_rayBoundaryIdeal hΦ σ h₀ hN hσ
-  have hnot : (Φ.rayBoundaryPoint hΦ r).val ∉ ((I[σ]).support : Set X[Φ]) := by
-    rw [← s.algebraicMap_rayBoundaryPoint_liftRay hF hΦ r, ← Set.mem_preimage,
-      ← Closeds.coe_preimage _ s.toFanHom.algebraicMap.continuous,
-      ← support_comap, hsource, F.coe_support_rayBoundaryIdeal]
+  have hsource := Φ.comap_ker_distinguishedSection_eq_rayDivisorIdeal k hΦ σ h₀ hN hσ
+  have hnot : (Φ.rayBoundaryChartPoint (R := k) hΦ r).val ∉ ((I[σ]).support : Set X[Φ]) := by
+    rw [← s.finiteFanSchemeHom_rayBoundaryChartPoint_liftRay k hF hΦ r, ← Set.mem_preimage,
+      ← Closeds.coe_preimage _ (s.toFanHom.finiteFanSchemeHom k).continuous,
+      ← support_comap, hsource, F.coe_support_rayDivisorIdeal k]
     intro hm
-    have he := F.rayBoundaryPoint_injective hF
+    have he := F.rayBoundaryChartPoint_injective (R := k) hF
       (CodimensionOnePoint.eq_of_specializes (specializes_iff_mem_closure.mpr hm))
     have hn := congrArg (b.coord 0) (ha.symm.trans
       ((congrArg Ray.primitiveGenerator he).trans (hLift ▸ hr')))
     simp at hn
   refine ⟨Ψ, F, hΨ, hF, hc', hcF, d, σ, τ, s, t, g, g', a, r,
     hcone, hd₀, hd₁, hrays', ha, hgen, hg, hg', hsource,
-    hLift.symm ▸ htarget, s.comap_ker_blowupMap_rayBoundaryIdeal hF hΦ g hg r hnot,
-    s.radical_comap_boundaryIdeal hcF.nonempty_cones hc.nonempty_cones,
-    t.radical_comap_boundaryIdeal hcF.nonempty_cones hc'.nonempty_cones,
+    hLift.symm ▸ htarget, s.comap_ker_blowupMap_rayDivisorIdeal k hF hΦ g hg r hnot,
+    s.radical_comap_toricBoundaryIdeal k hcF.nonempty_cones hc.nonempty_cones,
+    t.radical_comap_toricBoundaryIdeal k hcF.nonempty_cones hc'.nonempty_cones,
     .along hΦ σ hσ, ?_, hτcone⟩
   dsimp only [F]
   rw [← hstar]

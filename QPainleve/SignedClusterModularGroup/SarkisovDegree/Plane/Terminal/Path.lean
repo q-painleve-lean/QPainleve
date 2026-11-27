@@ -27,15 +27,17 @@ open TauCeti.Toric Fan.LogarithmicProjection Scheme.IdealSheafData
 
 namespace QPainleve.BlowupTower.IsClosedPointTower
 
+variable (k₀ : Type) [Field k₀] [IsAlgClosed k₀]
+
 attribute [local instance] MvPolynomial.gradedAlgebra
 
-local notation "S" => Spec (CommRingCat.of ℂ)
-local notation "P" => Proj (homogeneousSubmodule ℂ (Fin 3 → ℂ))
+local notation "S" => Spec (CommRingCat.of k₀)
+local notation "P" => Proj (homogeneousSubmodule k₀ (Fin 3 → k₀))
 local notation "s" => (P ↘ S)
-local notation "H" => mk (Proj.symmetricAlgebraTwistingBundle ℂ (Fin 3 → ℂ) 1)
-local notation "coords" => Pi.basisFun ℂ (Fin 3)
+local notation "H" => mk (Proj.symmetricAlgebraTwistingBundle k₀ (Fin 3 → k₀) 1)
+local notation "coords" => Pi.basisFun k₀ (Fin 3)
 local notation "planeIso[" b "," h "]" =>
-  (Fan.projectivePlaneIso b h ≪≫ Module.Basis.polynomialProjIso coords)
+  (Fan.projectivePlaneIso k₀ b h ≪≫ Module.Basis.polynomialProjIso coords)
 
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V] {i : N →+ V}
 
@@ -55,16 +57,17 @@ theorem exists_sarkisov_path_of_plane_degree_one
     let : IsIntegral Y := hT.isIntegral s
     let x := (T.picardMarking hT s).symm (Additive.ofMul (pullback g H))
     (Module.Basis.picardTwistEquiv coords) x.1 = 1 →
-    ∀ (A B : Fan.LogarithmicProjection i D),
+    ∀ (A B : Fan.LogarithmicProjection k₀ i D),
       A.fan = Fan.projectiveSpace b hi →
       B.fan = Fan.projectiveSpace b' hi →
       A.hom ≍ T.toBase ≫ (planeIso[b,hi]).inv →
       B.hom ≍ g ≫ (planeIso[b',hi]).inv →
-      ∃ (e : FanEquiv A.fan B.fan) (c : Multiplicative (N →+ ℤ) →* ℂˣ)
+      ∃ (e : FanEquiv A.fan B.fan) (c : Multiplicative (N →+ ℤ) →* k₀ˣ)
         (p : SarkisovPath A B),
         @Quiver.Path.length _ sarkisovQuiver A B p = 1 ∧
         p.rationalMap =
-          (e.toFanHom.algebraicMap ≫ (B.fan.torusTranslation c).hom).toRationalMap := by
+          ((e.toFanHom.finiteFanSchemeHom k₀) ≫ (B.fan.torusTranslationIso k₀
+            c).hom).toRationalMap := by
   intro hNoeth hY hSmooth hInt x hd A B hA hB ha hb
   let := hNoeth
   let := hY
@@ -78,33 +81,33 @@ theorem exists_sarkisov_path_of_plane_degree_one
   obtain rfl : a = T.toBase ≫ (planeIso[b,hi]).inv := eq_of_heq ha
   obtain rfl : q = g ≫ (planeIso[b',hi]).inv := eq_of_heq hb
   have hdim (d : Basis (Fin 2) ℤ N) :
-      SmoothOfRelativeDimension 2 ((Fan.projectiveSpace d hi).algebraicRealization ↘ S) := by
+      SmoothOfRelativeDimension 2 (((Fan.projectiveSpace d hi).finiteFanScheme k₀) ↘ S) := by
     let := (Fan.isComplete_projectiveSpace d hi).nonempty_cones
     have hRank := (finrank_eq_card_basis d).trans (Fintype.card_fin 2)
-    simpa only [hRank, Fan.algebraicRealization_over] using
-      (Fan.projectiveSpace d hi).smoothOfRelativeDimension_algebraicRealizationStructureMap
+    simpa only [hRank, Fan.finiteFanScheme_over k₀] using
+      (Fan.projectiveSpace d hi).smoothOfRelativeDimension_finiteFanSchemeToSpec k₀
         (Fan.isRegular_projectiveSpace d hi)
   let := hdim b
   let := hdim b'
   let : T.toBase.IsOver S := ⟨rfl⟩
-  let := Fan.projectivePlaneIso_trans_polynomialProjIso_hom_isOver b hi coords
-  let := Fan.projectivePlaneIso_trans_polynomialProjIso_hom_isOver b' hi coords
+  let := Fan.projectivePlaneIso_trans_polynomialProjIso_hom_isOver k₀ b hi coords
+  let := Fan.projectivePlaneIso_trans_polynomialProjIso_hom_isOver k₀ b' hi coords
   have ha' := haPole
   have hb' := hqPole
-  simp only [comap_comp, ramificationIdealSheaf_comp ℂ T.toBase (planeIso[b,hi]).inv 2,
+  simp only [comap_comp, ramificationIdealSheaf_comp k₀ T.toBase (planeIso[b,hi]).inv 2,
     ramificationIdealSheaf_eq_top_of_isOpenImmersion, comap_top, mul_top,
-    ← hT.ramificationIdealSheafToBase_def ℂ] at ha'
-  simp only [comap_comp, ramificationIdealSheaf_comp ℂ g (planeIso[b',hi]).inv 2,
+    ← hT.ramificationIdealSheafToBase_def k₀] at ha'
+  simp only [comap_comp, ramificationIdealSheaf_comp k₀ g (planeIso[b',hi]).inv 2,
     ramificationIdealSheaf_eq_top_of_isOpenImmersion, comap_top, mul_top] at hb'
   obtain ⟨⟨e, c⟩, hcomm, -⟩ :=
-    hT.existsUnique_toric_factorization_of_plane_degree_one b hi b' hi g hg hbir D hd ha' hb'
-  let A : Fan.LogarithmicProjection i D :=
+    hT.existsUnique_toric_factorization_of_plane_degree_one k₀ b hi b' hi g hg hbir D hd ha' hb'
+  let A : Fan.LogarithmicProjection k₀ i D :=
     ⟨_, hΦ, hcΦ, _, haOver, haDom, haPole⟩
-  let B : Fan.LogarithmicProjection i D :=
+  let B : Fan.LogarithmicProjection k₀ i D :=
     ⟨_, hΨ, hcΨ, _, hqOver, hqDom, hqPole⟩
   let : Nonempty A.fan.cones := hcΦ.nonempty_cones
   let : Nonempty B.fan.cones := hcΨ.nonempty_cones
-  let f := e.toFanHom.algebraicMap ≫ (B.fan.torusTranslation c).hom
+  let f := (e.toFanHom.finiteFanSchemeHom k₀) ≫ (B.fan.torusTranslationIso k₀ c).hom
   have hEq : A.hom ≫ f = B.hom := by
     apply (cancel_mono (planeIso[b',hi]).hom).mp
     simpa only [A, B, f, Category.assoc, Iso.inv_hom_id, Category.comp_id] using hcomm

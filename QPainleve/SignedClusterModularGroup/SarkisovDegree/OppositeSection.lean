@@ -34,6 +34,8 @@ open TauCeti.AlgebraicGeometry LineBundleClass TauCeti.Toric
 
 namespace QPainleve.BlowupTower.IsClosedPointTower
 
+variable (k₀ : Type) [Field k₀] [IsAlgClosed k₀]
+
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {Φ : Fan i} (b : Basis (Fin 2) ℤ N) (hΦ : Φ.IsRegular)
   (hc : Φ.IsComplete) (r : Fin 4 ≃ Φ.Ray)
@@ -48,27 +50,27 @@ local notation "Ψ" => Φ.mutationFan b hv hp hop
 local notation "hΨ" => Iff.mpr (Φ.isRegular_mutationFan_iff b hv hp hop) hΦ
 local notation "hcΨ" => Iff.mpr (Φ.isComplete_mutationFan_iff b hv hp hop) hc
 local notation "s" => r.trans (Φ.mutationFanRayEquiv b hv hp hop)
-local notation "S" => Spec (CommRingCat.of ℂ)
-local notation "X" => Φ.algebraicRealization
-local notation "X'" => Fan.algebraicRealization Ψ
+local notation "S" => Spec (CommRingCat.of k₀)
+local notation "X" => (Φ.finiteFanScheme k₀)
+local notation "X'" => Fan.finiteFanScheme k₀ Ψ
 local notation "fX" => (X ↘ S)
 local notation "fX'" => (X' ↘ S)
-local notation "C" => Fan.hirzebruchPicardBasis b 1 hΦ r hr
+local notation "C" => Fan.hirzebruchPicardBasis k₀ b 1 hΦ r hr
 local notation "rankTwo" => Eq.trans (finrank_eq_card_basis b) (Fintype.card_fin 2)
 local notation "pivot[" c "]" =>
-  (Fan.Ray.binomialCenter (r 2) rankTwo (b.detDualEquiv_self v)
-    (Fan.Ray.surjective_detCharacter (r 2) b) c) (IsLocalRing.closedPoint ℂ)
+  (Fan.Ray.binomialCenter (r 2) k₀ rankTwo (b.detDualEquiv_self v)
+    (Fan.Ray.surjective_detCharacter (r 2) b) c) (IsLocalRing.closedPoint k₀)
 local notation "mutation[" c "]" =>
-  Scheme.PartialMap.toRationalMap (Φ.mutationPartialMap b (c : ℂ) hv hp hop)
+  Scheme.PartialMap.toRationalMap (Φ.mutationPartialMap k₀ b (c : k₀) hv hp hop)
 
-local notation "C'[" d "," hs "]" => Fan.hirzebruchPicardBasis d 0 hΨ s hs
+local notation "C'[" d "," hs "]" => Fan.hirzebruchPicardBasis k₀ d 0 hΨ s hs
 
-variable {n : ℕ} {Y : Scheme.{0}} {T : BlowupTower Φ.algebraicRealization (n + 1) Y}
-  (hT : IsClosedPointTower Φ.algebraicRealization T)
+variable {n : ℕ} {Y : Scheme.{0}} {T : BlowupTower (Φ.finiteFanScheme k₀) (n + 1) Y}
+  (hT : IsClosedPointTower (Φ.finiteFanScheme k₀) T)
 
 local notation "first" => Fin.castAdd n (0 : Fin 1)
 local notation "τ[" d "," hs "]" =>
-  FanHom.algebraicMap (FanEquiv.toFanHom (Fan.quadricRulingExchange d hΨ hcΨ s hs))
+  FanHom.finiteFanSchemeHom k₀ (FanEquiv.toFanHom (Fan.quadricRulingExchange d hΨ hcΨ s hs))
 
 local notation "orders[" j "," x "," β "]" =>
   Function.update (Fin.addCases (fun _ : Fin 1 ↦ x j) (x ∘ Fin.succAbove j)) first (-β - x j)
@@ -86,7 +88,7 @@ private theorem quadricReturn_coordinates {d : Basis (Fin 2) ℤ N}
     C'[d,hs].repr y.1 0 = β ∧ C'[d,hs].repr y.1 1 = a + x j ∧
       y.2 first = -β - x j ∧ ∀ l : Fin n, y.2 (l.natAdd 1) = x (j.succAbove l) := by
   intro q hQ y
-  have hswap := hU.picardMarking_symm_rulingExchange d hΨ hcΨ s hs L
+  have hswap := hU.picardMarking_symm_rulingExchange k₀ d hΨ hcΨ s hs L
   simp only [hz] at hswap
   have hrepr := C'[d,hs].repr_sum_self (![a + x j, β] : Fin 2 → ℤ)
   simp only [Fin.sum_univ_two, Matrix.cons_val_zero, Matrix.cons_val_one] at hrepr
@@ -112,16 +114,16 @@ For original base coefficients a and b and pivot order m, the final base
 coefficients are b and a − m. The first exceptional coefficient is m − b.
 Every other coordinate retains its relative order, including at infinitely near centers. -/
 theorem exists_quadric_resolution_of_hirzebruchOne_mutation
-    (c : ℂˣ) (j : Fin (n + 1)) (hj : hT.baseCenter j = pivot[c])
+    (c : k₀ˣ) (j : Fin (n + 1)) (hj : hT.baseCenter j = pivot[c])
     (hfirst : ∀ l < j, hT.baseCenter l ≠ pivot[c]) :
     let : Nonempty Φ.cones := hc.nonempty_cones
     let : Nonempty (Ψ).cones := (hcΨ).nonempty_cones
     let : SmoothOfRelativeDimension 2 fX := by
-      rw [Fan.algebraicRealization_over]
-      exact rankTwo ▸ Φ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
+      rw [Fan.finiteFanScheme_over k₀]
+      exact rankTwo ▸ Φ.smoothOfRelativeDimension_finiteFanSchemeToSpec k₀ hΦ
     let : SmoothOfRelativeDimension 2 fX' := by
-      rw [Fan.algebraicRealization_over]
-      exact rankTwo ▸ (Ψ).smoothOfRelativeDimension_algebraicRealizationStructureMap hΨ
+      rw [Fan.finiteFanScheme_over k₀]
+      exact rankTwo ▸ (Ψ).smoothOfRelativeDimension_finiteFanSchemeToSpec k₀ hΨ
     let : IsIntegral Y := hT.isIntegral fX
     let : IsModification T.toBase := hT.isModification_of_smoothOfRelativeDimension_two fX
     ∃ (d : Basis (Fin 2) ℤ N)
@@ -178,17 +180,17 @@ theorem exists_quadric_resolution_of_hirzebruchOne_mutation
     apply Additive.toMul.injective
     rw [picardMarking_apply, toMul_ofMul, ← hxL]
     have h := (hcoords false a β x.2).1
-    have hF := Fan.mutationFiberClass_of_opposite_section b hΦ r 1 0
+    have hF := Fan.mutationFiberClass_of_opposite_section k₀ b hΦ r 1 0
       (by simpa only [zero_smul, sub_zero] using hr)
-    have hF' := Fan.mutationFiberClass_of_opposite_section b hΨ s 0 1
+    have hF' := Fan.mutationFiberClass_of_opposite_section k₀ b hΨ s 0 1
       (by simpa only [hd₀, hd₁, one_smul] using hs)
     simp only [Equiv.trans_apply] at hF'
     have hpair : (a • C 0 + β • C 1, x.2) = x := by rw [← hx, Prod.mk.eta]
     conv_lhs => rw [← hpair]
     simpa only [Bool.false_eq_true, ↓reduceIte, add_zero, hOppRay, hF, hF',
       Fan.hirzebruchPicardBasis_apply_zero, Fan.hirzebruchPicardBasis_apply_one,
-      Fan.rayDivisorToPicard_single, one_zsmul, Equiv.trans_apply] using h
+      Fan.rayChartDivisorToPicard_single, one_zsmul, Equiv.trans_apply] using h
   simpa only [y, Iso.trans_inv, ← pullback_comp] using
-    quadricReturn_coordinates b hΦ hc r hr hs hU j a β x.2 (pullback e.inv L) hz
+    quadricReturn_coordinates k₀ b hΦ hc r hr hs hU j a β x.2 (pullback e.inv L) hz
 
 end QPainleve.BlowupTower.IsClosedPointTower

@@ -8,6 +8,7 @@ module
 public import QPainleve.Algebra.Cluster.Word.LoopComparison.List
 public import QPainleve.SignedClusterModularGroup.Examples.FourVertex.Words
 
+import QPainleve.Algebra.Field.Reference
 import QPainleve.SignedClusterModularGroup.Examples.FourVertex.MarkedAction
 
 /-!
@@ -27,6 +28,8 @@ open CategoryTheory MulOpposite Quiver QPainleve.Cluster
 
 namespace QPainleve.FourVertex
 
+local notation "k₀" => QPainleve.ReferenceField
+
 local notation "B" => exchangeMatrix
 local notation "invariants[" w "]" =>
   Quiver.Path.signedLoopInvariants w
@@ -39,10 +42,10 @@ private theorem exchangeMatrix_ne_zero : exchangeMatrix.matrix ≠ 0 := by
   rw [exchangeMatrix_matrix_apply, Matrix.zero_apply] at hentry
   norm_num [chargeVector_eq, boundaryRay_eq, Matrix.det_fin_two_of] at hentry
 
-private theorem xPullback_eq_iff_invariants_eq_complex (w v : Word B B) :
-    w.xPullback ℂ = v.xPullback ℂ ↔ invariants[w] = invariants[v] := by
+private theorem xPullback_eq_iff_invariants_eq_reference (w v : Word B B) :
+    w.xPullback k₀ = v.xPullback k₀ ↔ invariants[w] = invariants[v] := by
   have hcompare (u : Word B B) :
-      picardInvariants (markedPicardEquiv (op (signedClusterModularGroupMap ℂ B (End.of u)))) =
+      picardInvariants (markedPicardEquiv (op (signedClusterModularGroupMap k₀ B (End.of u)))) =
         invariants[u] := by
     simpa only [exchangeKernelBasis_apply] using picardInvariants_markedPicardEquiv_loop u
   rw [← hcompare w, ← hcompare v, picardInvariants_injective.eq_iff,
@@ -57,9 +60,9 @@ vectors, and forward octagon label computed from component zero. -/
 theorem xPullback_eq_iff_signedLoopInvariants_eq (k : Type*) [Field k]
     (w v : Word B B) :
     w.xPullback k = v.xPullback k ↔ invariants[w] = invariants[v] :=
-  w.xPullback_eq_iff_signedLoopInvariants_eq_of_charZero v k ℂ
+  w.xPullback_eq_iff_signedLoopInvariants_eq_of_charZero v k k₀
     exchangeMatrix_ne_zero (fun j ↦ exchangeKernelEquiv (Pi.single j 1)) boundaryOrders
-    (boundaryOrders 0) (xPullback_eq_iff_invariants_eq_complex w v).mpr
+    (boundaryOrders 0) (xPullback_eq_iff_invariants_eq_reference w v).mpr
 
 /-- Decide equality of four-vertex X pullbacks by comparing their integer invariants. -/
 def decidableXPullbackEq (k : Type*) [Field k] (w v : Word B B) :

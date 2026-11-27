@@ -11,7 +11,6 @@ public import TauCeti.AlgebraicGeometry.Birational.Irreducible
 
 import QPainleve.AlgebraicGeometry.IdealSheaf.Restriction
 import QPainleve.AlgebraicGeometry.Scheme.FunctionField
-import QPainleve.Geometry.Toric.Fan.Smooth
 import TauCeti.AlgebraicGeometry.IdealSheaf.Reduced
 import TauCeti.AlgebraicGeometry.Morphisms.Modification.Composition
 import TauCeti.AlgebraicGeometry.Morphisms.Smooth.GeometricallyReduced
@@ -32,24 +31,28 @@ open TauCeti.AlgebraicGeometry Scheme.IdealSheafData
 
 namespace TauCeti.Toric.Fan
 
-variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
-  {i : N →+ V} {Φ : Fan i} [Nonempty Φ.cones]
-  {n : ℕ} (b : Module.Basis (Fin 2) ℤ N) (s : Fin n → Φ.Ray) (c d : Fin n → ℂˣ)
+universe u
 
-local notation "S" => Spec (CommRingCat.of ℂ)
-local notation "Y" a:arg => (Sigma.fst (internalBlowupTower b s a) : Scheme)
-local notation "T" a:arg => WithBoundary.toTower (Sigma.snd (internalBlowupTower b s a))
+variable (K : Type u) [Field K] {N : Type u} {V : Type*}
+  [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
+  {i : N →+ V} {Φ : Fan i} [Nonempty Φ.cones]
+  {n : ℕ} (b : Module.Basis (Fin 2) ℤ N) (s : Fin n → Φ.Ray) (c d : Fin n → Kˣ)
+
+local notation "S" => Spec (CommRingCat.of K)
+local notation "Y" a:arg => (Sigma.fst (internalBlowupTower K b s a) : Scheme)
+local notation "T" a:arg => WithBoundary.toTower (Sigma.snd (internalBlowupTower K b s a))
 local notation "π" a:arg => toBase (T a)
-local notation "ι" a:arg => WithBoundary.boundaryι (Sigma.snd (internalBlowupTower b s a))
-local notation "F" => Φ.algebraicRealization
+local notation "ι" a:arg => WithBoundary.boundaryι (Sigma.snd (internalBlowupTower K b s a))
+local notation "F" => Φ.finiteFanScheme K
 local notation "m" j:arg => ofAdd (LinearMap.toAddMonoidHom
   (b.detDualEquiv (Ray.primitiveGenerator (s j))))
-local notation "C" => algebraMap ℂ (Scheme.functionField F)
+local notation "χ₀" => Φ.functionFieldCharacter K
+local notation "C" => algebraMap K (Scheme.functionField F)
 
 variable {X X' : Scheme} {D : X.IdealSheafData} {D' : X'.IdealSheafData}
-  {p : (internalBlowupTower b s c).1 ⟶ X} {q : (internalBlowupTower b s d).1 ⟶ X'}
+  {p : (internalBlowupTower K b s c).1 ⟶ X} {q : (internalBlowupTower K b s d).1 ⟶ X'}
 
-local notation "base" => Φ.algebraicRealizationStructureMap
+local notation "base" => Φ.finiteFanSchemeToSpec K
 
 variable {c d} in
 /-- A torus translation lifting an isomorphism of contractions through their
@@ -57,11 +60,11 @@ ordered internal blowup models. The lift matches the centers in order. -/
 structure ContractedToricTranslation
     (p : Y c ⟶ X) (q : Y d ⟶ X') (e : X ≅ X') where
   /-- The character specifying the translation of the torus. -/
-  character : Multiplicative (N →+ ℤ) →* ℂˣ
+  character : Multiplicative (N →+ ℤ) →* Kˣ
   /-- The isomorphism of the ordered blowup models. -/
   iso : Y c ≅ Y d
   /-- The isomorphism lifts the translation through the ordered towers. -/
-  isLift : IsLift (Φ.torusTranslation character) (T c) (T d) iso
+  isLift : IsLift (Φ.torusTranslationIso K character) (T c) (T d) iso
   /-- The lift commutes with the projections to the contractions. -/
   commutes : p ≫ e.hom = iso.hom ≫ q
 
@@ -69,7 +72,7 @@ variable {b s c d} in
 /-- The translating character determines its ordered lift. -/
 @[ext]
 theorem ContractedToricTranslation.ext {e : X ≅ X'}
-    {t u : ContractedToricTranslation b s p q e} (h : t.character = u.character) :
+    {t u : ContractedToricTranslation K b s p q e} (h : t.character = u.character) :
     t = u := by
   have hi := t.isLift.unique (h.symm ▸ u.isLift)
   cases t
@@ -80,12 +83,12 @@ theorem ContractedToricTranslation.ext {e : X ≅ X'}
 
 /-- A translating lift identifies the reduced total boundary supports on the ordered models. -/
 theorem support_comap_contraction_of_translation
-    {χ : Multiplicative (N →+ ℤ) →* ℂˣ} {t : Y c ≅ Y d}
-    (ht : IsLift (Φ.torusTranslation χ) (T c) (T d) t)
+    {χ : Multiplicative (N →+ ℤ) →* Kˣ} {t : Y c ≅ Y d}
+    (ht : IsLift (Φ.torusTranslationIso K χ) (T c) (T d) t)
     (hD : (D.comap p).support = (ι c).ker.support)
     (hD' : (D'.comap q).support = (ι d).ker.support) :
     (D.comap p).support = ((D'.comap q).comap t.hom).support := by
-  have he := boundaryι_comp_of_isLift_internalBlowupTower_torusTranslation b s c d χ ht
+  have he := boundaryι_comp_of_isLift_internalBlowupTower_torusTranslation K b s c d χ ht
   have hker : (ι d).ker.comap t.hom = (ι c).ker := by
     have hk : ((ι c).ker.map t.hom) = (ι d).ker := by
       rw [map_ker, he, Scheme.Hom.ker_comp_of_isIso]
@@ -97,14 +100,14 @@ variable {b s c d} in
 their inverse images are supported on the strict toric boundaries. -/
 theorem ContractedToricTranslation.comap_boundary
     {e : X ≅ X'} [Surjective p] [IsReduced D.subscheme] [IsReduced D'.subscheme]
-    (t : ContractedToricTranslation b s p q e)
+    (t : ContractedToricTranslation K b s p q e)
     (hD : (D.comap p).support = (ι c).ker.support)
     (hD' : (D'.comap q).support = (ι d).ker.support) : D'.comap e.hom = D := by
   have hcomp : (D'.comap e.hom).comap p = (D'.comap q).comap t.iso.hom := by
     rw [← comap_comp, t.commutes, comap_comp]
   have hpre : ((D'.comap e.hom).comap p).support = (D.comap p).support :=
     (congrArg Scheme.IdealSheafData.support hcomp).trans
-      (support_comap_contraction_of_translation b s c d t.isLift hD hD').symm
+      (support_comap_contraction_of_translation K b s c d t.isLift hD hD').symm
   have hsupport : (D'.comap e.hom).support = D.support := by
     apply SetLike.coe_injective
     apply p.surjective.preimage_injective
@@ -115,24 +118,25 @@ theorem ContractedToricTranslation.comap_boundary
     D'.isReduced_subscheme_iff_radical_eq.mp ‹IsReduced D'.subscheme›] using
     congrArg (vanishingIdeal (X := X)) hsupport
 
-variable {b s c d} in
+variable {b s c d} [PerfectField K] in
 /-- When a translating lift descends to the base surfaces, its pullback identifies
 their Picard classes in the coordinates on the ordered models. -/
 theorem ContractedToricTranslation.pullback_marking {e : X ≅ X'}
-    (t : ContractedToricTranslation b s p q e) (hΦ : Φ.IsRegular) (a : LineBundleClass X') :
-    (internalBlowupPicardMarking b s c hΦ).symm
+    (t : ContractedToricTranslation K b s p q e) (hΦ : Φ.IsRegular) (a : LineBundleClass X') :
+    (internalBlowupPicardMarking K b s c hΦ).symm
         (Additive.ofMul (LineBundleClass.pullback p (LineBundleClass.pullback e.hom a))) =
-      (internalBlowupPicardMarking b s d hΦ).symm
+      (internalBlowupPicardMarking K b s d hΦ).symm
         (Additive.ofMul (LineBundleClass.pullback q a)) := by
   rw [LineBundleClass.pullback_comp, t.commutes, ← LineBundleClass.pullback_comp]
   have hmark := pullback_internalBlowupPicardMarking_of_isLift_torusTranslation
-    b s c d hΦ t.character t.isLift ((internalBlowupPicardMarking b s d hΦ).symm
+    K b s c d hΦ t.character t.isLift ((internalBlowupPicardMarking K b s d hΦ).symm
         (Additive.ofMul (LineBundleClass.pullback q a)))
   simpa only [LinearEquiv.apply_symm_apply, toMul_ofMul, ofMul_toMul,
     LinearEquiv.symm_apply_eq] using congrArg Additive.ofMul hmark
 
-variable [IsIntegral X] [IrreducibleSpace X'] [X.Over S] [X'.Over S]
-  [IsSeparated (X' ↘ S)] [IsModification p] [IsModification q]
+variable [IsAlgClosed K] [IsIntegral X] [IrreducibleSpace X']
+  [X.Over (Spec (.of K))] [X'.Over (Spec (.of K))]
+  [IsSeparated (X' ↘ Spec (.of K))] [IsModification p] [IsModification q]
 
 /-- On two isomorphic contractions of ordered models of the same fan, equality of
 the pulled-back scaled charge functions identifies the isomorphism with the descent of a
@@ -143,23 +147,23 @@ theorem existsUnique_contractedToricTranslation_of_eq_scaled_characters
     (e : X ≅ X') [e.hom.IsOver S]
     (hc : p ≫ (X ↘ S) = π c ≫ base) (hd : q ≫ (X' ↘ S) = π d ≫ base)
     (heval :
-      letI : IsModification (π c) := isModification_internalBlowupTower_toBase b s c hΦ
-      letI : IsModification (π d) := isModification_internalBlowupTower_toBase b s d hΦ
+      letI : IsModification (π c) := isModification_internalBlowupTower_toBase K b s c hΦ
+      letI : IsModification (π d) := isModification_internalBlowupTower_toBase K b s d hΦ
       letI : IrreducibleSpace (Y c) := (IsModification.birational p).irreducibleSpace
       letI : IrreducibleSpace (Y d) := (IsModification.birational q).irreducibleSpace
       letI : IsIso p.functionFieldMap := p.isIso_functionFieldMap_of_isModification
       letI : IsIso q.functionFieldMap := q.isIso_functionFieldMap_of_isModification
       let e₀ := (π c).functionFieldMap ≫ CategoryTheory.inv (p.functionFieldMap)
       let e₁ := (π d).functionFieldMap ≫ CategoryTheory.inv (q.functionFieldMap)
-      ∀ j : Fin n, (e₁ ≫ e.hom.functionFieldMap).hom (C (d j : ℂ) * Φ.character (m j)) =
-        e₀.hom (C (c j : ℂ) * Φ.character (m j))) :
-    Nonempty (Unique (ContractedToricTranslation b s p q e)) := by
-  have := isModification_internalBlowupTower_toBase b s c hΦ
-  have := isModification_internalBlowupTower_toBase b s d hΦ
+      ∀ j : Fin n, (e₁ ≫ e.hom.functionFieldMap).hom (C (d j : K) * χ₀ (m j)) =
+        e₀.hom (C (c j : K) * χ₀ (m j))) :
+    Nonempty (Unique (ContractedToricTranslation K b s p q e)) := by
+  have := isModification_internalBlowupTower_toBase K b s c hΦ
+  have := isModification_internalBlowupTower_toBase K b s d hΦ
   have := (IsModification.birational p).irreducibleSpace
   have := (IsModification.birational q).irreducibleSpace
   have : IsReduced (Y c) := by
-    have := smoothOfRelativeDimension_internalBlowupTower b s c hΦ
+    have := smoothOfRelativeDimension_internalBlowupTower K b s c hΦ
     have : Smooth (π c ≫ base) := SmoothOfRelativeDimension.smooth 2 _
     exact (π c ≫ base).isReduced_of_smooth
   have := p.isIso_functionFieldMap_of_isModification
@@ -181,21 +185,21 @@ theorem existsUnique_contractedToricTranslation_of_eq_scaled_characters
       Scheme.Hom.functionFieldMap_comp, Scheme.Hom.functionFieldMap_comp]
   have hgfield := (IsIso.inv_comp_eq q.functionFieldMap).mpr hfield.symm
   have hscaled (j : Fin n) :
-      (g ≫ π d).functionFieldMap (C (d j : ℂ) * Φ.character (m j)) =
-        (f ≫ π c).functionFieldMap (C (c j : ℂ) * Φ.character (m j)) := by
+      (g ≫ π d).functionFieldMap (C (d j : K) * χ₀ (m j)) =
+        (f ≫ π c).functionFieldMap (C (c j : K) * χ₀ (m j)) := by
     rw [Scheme.Hom.functionFieldMap_comp, Scheme.Hom.functionFieldMap_comp, ← hgfield]
     have hj := congrArg f.functionFieldMap (congrArg p.functionFieldMap (heval j))
     simpa only [CommRingCat.comp_apply, CommRingCat.hom_comp, RingHom.comp_apply,
       IsIso.inv_hom_id_apply] using hj
   obtain ⟨χ, ⟨t, ht, hfg⟩, huniq⟩ :=
-    existsUnique_isLift_of_eq_scaled_characters_of_dominant b s hΦ c d hindex hover hscaled
+    existsUnique_isLift_of_eq_scaled_characters_of_dominant K b s hΦ c d hindex hover hscaled
   have htq : p ≫ e.hom = t.hom ≫ q := by
     refine AlgebraicGeometry.ext_of_isDominant_of_isSeparated (X' ↘ S) ?_ f ?_
     · simp only [Category.assoc, he, hc, hd,
-        hom_comp_internalBlowupTower_structureMap_of_isLift_torusTranslation b s c d χ ht]
+        hom_comp_internalBlowupTower_structureMap_of_isLift_torusTranslation K b s c d χ ht]
     · rw [← Category.assoc, ← Category.assoc, hfg]
       exact hg'.symm
-  refine ⟨{ default := ⟨χ, t, ht, htq⟩, uniq := fun u ↦ ContractedToricTranslation.ext ?_ }⟩
+  refine ⟨{ default := ⟨χ, t, ht, htq⟩, uniq := fun u ↦ ContractedToricTranslation.ext K ?_ }⟩
   apply huniq u.character
   refine ⟨u.iso, u.isLift, q.eq_of_comp_eq_of_isModification ?_⟩
   rw [Category.assoc, ← u.commutes, ← Category.assoc, hg']

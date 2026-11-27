@@ -31,7 +31,9 @@ open LineBundleClass
 
 namespace QPainleve.SignedClusterModularGroup
 
-local notation "S" => Spec (CommRingCat.of ℂ)
+variable {k₀ : Type} [Field k₀] [IsAlgClosed k₀]
+
+local notation "S" => Spec (CommRingCat.of k₀)
 local notation "D[" P "]" => Scheme.Hom.ker (Over.Hom.left (Arrow.hom (MarkedSurface.pair P)))
 
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
@@ -40,41 +42,42 @@ variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {B : LinearMap.BilinForm ℤ L}
   {b : Module.Basis (Fin 2) ℤ N} {s : Fin r → Φ.Ray} {hΦ : Φ.IsRegular}
 
-local notation "Xtor[" r "]" => Spec (CommRingCat.of (LaurentRing ℂ (Fin r)))
-local notation "Dtor" => Scheme.IdealSheafData.subscheme (Fan.boundaryIdeal Φ h₀)
+local notation "Xtor[" r "]" => Spec (CommRingCat.of (LaurentRing k₀ (Fin r)))
+local notation "Dtor" => Scheme.IdealSheafData.subscheme (Fan.toricBoundaryIdeal k₀ Φ h₀)
 local notation "center" c:arg => (fun j : Fin r ↦ c (ofAdd (Pi.single j 1)))
-local notation "Model[" c "]" => Fan.internalBlowupTower b s (center c)
+local notation "Model[" c "]" => Fan.internalBlowupTower k₀ b s (center c)
 local notation "ChargeKernel" => LinearMap.ker (Fan.rayChargeMap s)
-local notation "A" => Chow.intersectionBilinForm ℂ Φ.algebraicRealization
+local notation "A" => Chow.intersectionBilinForm k₀ (Φ.finiteFanScheme k₀)
 local notation "Qform" =>
   LinearMap.BilinForm.prod A (-(dotProductBilin ℤ ℤ : LinearMap.BilinForm ℤ (Fin r → ℤ)))
 
-variable [PrestableFamily ((Φ.boundaryIdeal h₀).subscheme ↘ S)]
-  {γ : Type*} {a : γ → ((Φ.boundaryIdeal h₀).subscheme ↘ S).smoothLocus}
+variable [PrestableFamily ((Φ.toricBoundaryIdeal k₀ h₀).subscheme ↘ Spec (.of k₀))]
+  {γ : Type*} {a : γ → ((Φ.toricBoundaryIdeal k₀ h₀).subscheme ↘ Spec (.of k₀)).smoothLocus}
   {T : NodalCycleNumbering a m} {origin : ZMod m}
-  {ι : L →ₗ[ℤ] Additive (LineBundleClass Φ.algebraicRealization) × (Fin r → ℤ)}
-  [Φ.algebraicRealization.IsProjectiveOver ℂ]
-  [SmoothOfRelativeDimension 2 (Φ.algebraicRealization ↘ S)]
+  {ι : L →ₗ[ℤ] Additive (LineBundleClass (Φ.finiteFanScheme k₀)) × (Fin r → ℤ)}
+  [(Φ.finiteFanScheme k₀).IsProjectiveOver k₀]
+  [SmoothOfRelativeDimension 2 ((Φ.finiteFanScheme k₀) ↘ Spec (.of k₀))]
   [LinearMap.IsPerfPair
-    ((Chow.intersectionBilinForm ℂ Φ.algebraicRealization).prod
+    ((Chow.intersectionBilinForm k₀ (Φ.finiteFanScheme k₀)).prod
       (-(dotProductBilin ℤ ℤ : LinearMap.BilinForm ℤ (Fin r → ℤ))))]
 
-local notation "aux" => (LinearEquiv.symm (Fan.boundaryOrthogonalEquivChargeKernel hΦ s Qform))
-local notation "period[" c "]" => Fan.orderedBoundaryPeriod hΦ b s T (center c)
+local notation "aux" => (LinearEquiv.symm (Fan.boundaryOrthogonalEquivChargeKernel k₀ hΦ s Qform))
+local notation "period[" c "]" => Fan.orderedBoundaryPeriod k₀ hΦ b s T (center c)
 local notation "normKer[" C "]" =>
-  MonoidHom.ker (pullbackHom (blowupToBase (Scheme.singularLocus ℂ C)))
+  MonoidHom.ker (pullbackHom (blowupToBase (Scheme.singularLocus k₀ C)))
 
-variable {c d : Multiplicative (Fin r → ℤ) →* ℂˣ} {P Q : MarkedSurface ℂ n B Xtor[r]}
+variable {c d : Multiplicative (Fin r → ℤ) →* k₀ˣ} {P Q : MarkedSurface k₀ n B
+  (QPainleve.CharacterTorus.scheme k₀ (Fin r →₀ ℤ))}
   (p : ContractedToricFiber (h₀ := h₀) b s hΦ T origin ι c P)
   (q : ContractedToricFiber (h₀ := h₀) b s hΦ T origin ι d Q)
 
-local instance (M : MarkedSurface ℂ n B Xtor[r]) : PrestableFamily (D[M].subscheme ↘ S) :=
+local instance (M : MarkedSurface k₀ n B Xtor[r]) : PrestableFamily (D[M].subscheme ↘ S) :=
   M.prestable_boundaryImage
 
-local instance (M : MarkedSurface ℂ n B Xtor[r]) :
+local instance (M : MarkedSurface k₀ n B Xtor[r]) :
     SmoothOfRelativeDimension 2 (M.surface ↘ S) := M.smooth
 
-local instance (M : MarkedSurface ℂ n B Xtor[r]) : M.surface.IsProjectiveOver ℂ :=
+local instance (M : MarkedSurface k₀ n B Xtor[r]) : M.surface.IsProjectiveOver k₀ :=
   M.projective
 
 namespace ContractedToricFiber
@@ -83,19 +86,19 @@ include p in
 /-- The period of a marked class on the contracted surface is the ordered toric
 period of its charge vector, with the orientation induced by the subdivision. -/
 theorem orderedBoundaryPeriod_eq_boundaryPeriod (hD : D[P].IsEffectiveCartier)
-    (hgenus : ∀ v : irreducibleComponents (D[P].subscheme.singularLocus ℂ).blowup,
-      (D[P].subscheme.blowupComponent (K := ℂ) v).toScheme.genus ℂ = 0)
-    (z : L) (hz : P.picardMarking z ∈ D[P].boundaryOrthogonal ℂ)
+    (hgenus : ∀ v : irreducibleComponents (D[P].subscheme.singularLocus k₀).blowup,
+      (D[P].subscheme.blowupComponent (K := k₀) v).toScheme.genus k₀ = 0)
+    (z : L) (hz : P.picardMarking z ∈ D[P].boundaryOrthogonal k₀)
     (x : ChargeKernel) (hx : ι z = (aux x).val) :
     period[c] (ofAdd x) =
       hD.boundaryPeriod hgenus P.imageCycle.endpoint_eq (ofAdd ⟨P.picardMarking z, hz⟩) := by
   let f := p.boundaryMap ≫ P.boundaryImageIso.hom
   let u := hD.restrictBoundaryOrthogonal hgenus (ofAdd ⟨P.picardMarking z, hz⟩)
   obtain ⟨hu, hperiod⟩ := p.isOrientedCycleSubdivision_comp_boundaryImage.period_pullback u
-  have hclass : (Fan.orderedBoundaryRestriction hΦ b s (center c) (ofAdd x) : normKer[Dtor]) =
+  have hclass : (Fan.orderedBoundaryRestriction k₀ hΦ b s (center c) (ofAdd x) : normKer[Dtor]) =
       ⟨pullback f u.val, hu⟩ := by
     apply Subtype.ext
-    have hmark := congrArg (Fan.internalBlowupPicardMarking b s (center c) hΦ)
+    have hmark := congrArg (Fan.internalBlowupPicardMarking k₀ b s (center c) hΦ)
       ((p.marked_pullback z).trans hx)
     simp only [LinearEquiv.apply_symm_apply] at hmark
     have hf : f ≫ D[P].subschemeι = (Model[c]).2.boundaryι ≫ p.projection := by
@@ -112,8 +115,8 @@ include p in
 toric period is injective exactly when the period on its Picard orthogonal is. -/
 theorem orderedBoundaryPeriod_injective_iff
     (hD : D[P].IsEffectiveCartier)
-    (hgenus : ∀ v : irreducibleComponents (D[P].subscheme.singularLocus ℂ).blowup,
-      (D[P].subscheme.blowupComponent (K := ℂ) v).toScheme.genus ℂ = 0)
+    (hgenus : ∀ v : irreducibleComponents (D[P].subscheme.singularLocus k₀).blowup,
+      (D[P].subscheme.blowupComponent (K := k₀) v).toScheme.genus k₀ = 0)
     {d : ZMod n → L} (hd : P.boundaryClass hD = d)
     (e : B.orthogonal (Submodule.span ℤ (Set.range d)) ≃ₗ[ℤ] ChargeKernel)
     (he : ∀ x : ChargeKernel, ι (e.symm x).val = (aux x).val) :
@@ -125,7 +128,7 @@ theorem orderedBoundaryPeriod_injective_iff
       period[c] x =
         hD.boundaryPeriod hgenus P.imageCycle.endpoint_eq (f x) := by
     let z := e.symm x.toAdd
-    have hz : P.picardMarking z.val ∈ D[P].boundaryOrthogonal ℂ := by
+    have hz : P.picardMarking z.val ∈ D[P].boundaryOrthogonal k₀ := by
       rw [P.picardMarking_mem_boundaryOrthogonal_iff hD, hd]
       exact z.property
     have hf : f x = ofAdd ⟨P.picardMarking z.val, hz⟩ := by
@@ -144,38 +147,38 @@ variable {N' V' : Type} [AddCommGroup N'] [AddCommGroup V'] [Module ℝ V']
   {m' r' : ℕ} [NeZero m'] {L' : Type} [AddCommGroup L']
   {B' : LinearMap.BilinForm ℤ L'}
   {b' : Module.Basis (Fin 2) ℤ N'} {s' : Fin r' → Φ'.Ray} {hΦ' : Φ'.IsRegular}
-  [PrestableFamily ((Φ'.boundaryIdeal h₀').subscheme ↘ S)]
-  {γ' : Type*} {a' : γ' → ((Φ'.boundaryIdeal h₀').subscheme ↘ S).smoothLocus}
+  [PrestableFamily ((Φ'.toricBoundaryIdeal k₀ h₀').subscheme ↘ Spec (.of k₀))]
+  {γ' : Type*} {a' : γ' → ((Φ'.toricBoundaryIdeal k₀ h₀').subscheme ↘ Spec (.of k₀)).smoothLocus}
   {T' : NodalCycleNumbering a' m'} {origin' : ZMod m'}
-  {ι' : L' →ₗ[ℤ] Additive (LineBundleClass Φ'.algebraicRealization) × (Fin r' → ℤ)}
-  [Φ'.algebraicRealization.IsProjectiveOver ℂ]
-  [SmoothOfRelativeDimension 2 (Φ'.algebraicRealization ↘ S)]
-  [LinearMap.IsPerfPair ((Chow.intersectionBilinForm ℂ Φ'.algebraicRealization).prod
+  {ι' : L' →ₗ[ℤ] Additive (LineBundleClass (Φ'.finiteFanScheme k₀)) × (Fin r' → ℤ)}
+  [(Φ'.finiteFanScheme k₀).IsProjectiveOver k₀]
+  [SmoothOfRelativeDimension 2 ((Φ'.finiteFanScheme k₀) ↘ Spec (.of k₀))]
+  [LinearMap.IsPerfPair ((Chow.intersectionBilinForm k₀ (Φ'.finiteFanScheme k₀)).prod
     (-(dotProductBilin ℤ ℤ : LinearMap.BilinForm ℤ (Fin r' → ℤ))))]
 
 local notation "Aux'" => LinearMap.BilinForm.prod
-  (Chow.intersectionBilinForm ℂ Φ'.algebraicRealization)
+  (Chow.intersectionBilinForm k₀ (Φ'.finiteFanScheme k₀))
   (-(dotProductBilin ℤ ℤ : LinearMap.BilinForm ℤ (Fin r' → ℤ)))
 local notation "Charge'" => LinearMap.ker (Fan.rayChargeMap s')
-local notation "aux'" => (LinearEquiv.symm (Fan.boundaryOrthogonalEquivChargeKernel hΦ' s' Aux'))
+local notation "aux'" => (LinearEquiv.symm (Fan.boundaryOrthogonalEquivChargeKernel k₀ hΦ' s' Aux'))
 
 include p in
 /-- An isomorphism of marked fibers transports the toric period of a target charge
 class by its marked Picard pullback and its action on the actual boundary branches. -/
 theorem orderedBoundaryPeriod_apply_of_pullback
-    {Q' : MarkedSurface ℂ n B' Xtor[r']} {d' : Multiplicative (Fin r' → ℤ) →* ℂˣ}
+    {Q' : MarkedSurface k₀ n B' Xtor[r']} {d' : Multiplicative (Fin r' → ℤ) →* k₀ˣ}
     (q' : ContractedToricFiber (h₀ := h₀') b' s' hΦ' T' origin' ι' d' Q')
     (hp : D[P].IsEffectiveCartier) (hq : D[Q'].IsEffectiveCartier)
-    (gp : ∀ v : irreducibleComponents (D[P].subscheme.singularLocus ℂ).blowup,
-      (D[P].subscheme.blowupComponent (K := ℂ) v).toScheme.genus ℂ = 0)
-    (gq : ∀ v : irreducibleComponents (D[Q'].subscheme.singularLocus ℂ).blowup,
-      (D[Q'].subscheme.blowupComponent (K := ℂ) v).toScheme.genus ℂ = 0)
+    (gp : ∀ v : irreducibleComponents (D[P].subscheme.singularLocus k₀).blowup,
+      (D[P].subscheme.blowupComponent (K := k₀) v).toScheme.genus k₀ = 0)
+    (gq : ∀ v : irreducibleComponents (D[Q'].subscheme.singularLocus k₀).blowup,
+      (D[Q'].subscheme.blowupComponent (K := k₀) v).toScheme.genus k₀ = 0)
     {F : Xtor[r] ⤏ Xtor[r']} {I : B'.IsometryEquiv B} {g : DihedralGroup n}
     (R : FiberRealization P Q' F I g)
-    (z : L') (hz : Q'.picardMarking z ∈ D[Q'].boundaryOrthogonal ℂ)
+    (z : L') (hz : Q'.picardMarking z ∈ D[Q'].boundaryOrthogonal k₀)
     (x : Charge') (y : ChargeKernel) (hx : ι' z = (aux' x).val) (hy : ι (I z) = (aux y).val) :
     period[c] (ofAdd y) =
-      (Fan.orderedBoundaryPeriod hΦ' b' s' T' (fun j ↦ d' (ofAdd (Pi.single j 1))) (ofAdd x)) ^
+      (Fan.orderedBoundaryPeriod k₀ hΦ' b' s' T' (fun j ↦ d' (ofAdd (Pi.single j 1))) (ofAdd x)) ^
         (cycleOrientationSign g : ℤ) := by
   let e := MarkedSurface.imagePairIso R.iso
   let η := cycleOrientationSign g
@@ -189,11 +192,11 @@ theorem orderedBoundaryPeriod_apply_of_pullback
     (MarkedSurface.imagePairIso_hom_comp R.iso).symm swap
     (by simpa only [swap, η, decide_eq_true_eq] using horder) (ofAdd ⟨Q'.picardMarking z, hz⟩)
   simp only [toAdd_ofAdd, Subtype.coe_mk] at hs hperiod
-  have hs' : P.picardMarking (I z) ∈ D[P].boundaryOrthogonal ℂ := R.picard_eq z ▸ hs
+  have hs' : P.picardMarking (I z) ∈ D[P].boundaryOrthogonal k₀ := R.picard_eq z ▸ hs
   have hclass :
       (⟨Additive.ofMul
         (pullback (MarkedSurface.surfaceIso R.iso).hom (Q'.picardMarking z).toMul), hs⟩ :
-          D[P].boundaryOrthogonal ℂ) = ⟨P.picardMarking (I z), hs'⟩ :=
+          D[P].boundaryOrthogonal k₀) = ⟨P.picardMarking (I z), hs'⟩ :=
     Subtype.ext (R.picard_eq z).symm
   rw [hclass] at hperiod
   rw [p.orderedBoundaryPeriod_eq_boundaryPeriod hp gp (I z) hs' y hy,
@@ -214,19 +217,19 @@ boundary-orthogonal Picard groups. The prescribed Picard pullback is transported
 the two markings, and its sign is already included in the ordered charge action. -/
 theorem boundaryPeriod_eq_of_orderedBoundaryPeriod_eq
     (hp : D[P].IsEffectiveCartier) (hq : D[Q].IsEffectiveCartier)
-    (gp : ∀ v : irreducibleComponents (D[P].subscheme.singularLocus ℂ).blowup,
-      (D[P].subscheme.blowupComponent (K := ℂ) v).toScheme.genus ℂ = 0)
-    (gq : ∀ v : irreducibleComponents (D[Q].subscheme.singularLocus ℂ).blowup,
-      (D[Q].subscheme.blowupComponent (K := ℂ) v).toScheme.genus ℂ = 0)
+    (gp : ∀ v : irreducibleComponents (D[P].subscheme.singularLocus k₀).blowup,
+      (D[P].subscheme.blowupComponent (K := k₀) v).toScheme.genus k₀ = 0)
+    (gq : ∀ v : irreducibleComponents (D[Q].subscheme.singularLocus k₀).blowup,
+      (D[Q].subscheme.blowupComponent (K := k₀) v).toScheme.genus k₀ = 0)
     {D : ZMod n → L} (hP : P.boundaryClass hp = D) (hQ : Q.boundaryClass hq = D)
     (e : B.orthogonal (Submodule.span ℤ (Set.range D)) ≃ₗ[ℤ] ChargeKernel)
     (he : ∀ x, ι (e.symm x).val = (aux x).val)
     (g : signedBoundaryIsometryGroup B D)
     (h : ∀ x : ChargeKernel, period[d] (ofAdd x) =
       period[c] (ofAdd (e ((signedOrthogonalRestriction B D g).val (e.symm x)))))
-    (x : D[Q].boundaryOrthogonal ℂ) :
+    (x : D[Q].boundaryOrthogonal k₀) :
     let y := P.picardMarking ((toIsometry B D g).val (Q.picardMarking.symm x.val))
-    ∃ hy : y ∈ D[P].boundaryOrthogonal ℂ,
+    ∃ hy : y ∈ D[P].boundaryOrthogonal k₀,
       hq.boundaryPeriod gq Q.imageCycle.endpoint_eq (ofAdd x) =
         (hp.boundaryPeriod gp P.imageCycle.endpoint_eq (ofAdd ⟨y, hy⟩)) ^ (sign B D g : ℤ) := by
   let z := Q.picardMarking.symm x.val
@@ -241,11 +244,11 @@ theorem boundaryPeriod_eq_of_orderedBoundaryPeriod_eq
     simp only [v, t, η, Units.smul_def, Submodule.coe_smul,
       coe_signedOrthogonalRestriction_apply, smul_smul, ← Units.val_mul,
       Int.units_mul_self, Units.val_one, one_smul, z']
-  have hvP : P.picardMarking v.val ∈ D[P].boundaryOrthogonal ℂ := by
+  have hvP : P.picardMarking v.val ∈ D[P].boundaryOrthogonal k₀ := by
     rw [P.picardMarking_mem_boundaryOrthogonal_iff hp, hP]
     exact v.property
   have hzQ : Q.picardMarking z = x.val := Q.picardMarking.apply_symm_apply _
-  have hQz : Q.picardMarking z ∈ D[Q].boundaryOrthogonal ℂ := hzQ ▸ x.property
+  have hQz : Q.picardMarking z ∈ D[Q].boundaryOrthogonal k₀ := hzQ ▸ x.property
   have hq' := q.orderedBoundaryPeriod_eq_boundaryPeriod hq gq z hQz
     (e z') (by simpa only [LinearEquiv.symm_apply_apply] using he (e z'))
   have hp' := p.orderedBoundaryPeriod_eq_boundaryPeriod hp gp v.val hvP
@@ -255,7 +258,7 @@ theorem boundaryPeriod_eq_of_orderedBoundaryPeriod_eq
       Int.units_mul_self, Units.val_one, zpow_one]
   have heq := h (e z')
   rw [LinearEquiv.symm_apply_apply, ← hpow, hp', hq'] at heq
-  have hx : (⟨Q.picardMarking z, hQz⟩ : D[Q].boundaryOrthogonal ℂ) = x := Subtype.ext hzQ
+  have hx : (⟨Q.picardMarking z, hQz⟩ : D[Q].boundaryOrthogonal k₀) = x := Subtype.ext hzQ
   exact ⟨hv ▸ hvP, by simpa only [hx, hv] using heq⟩
 
 end ContractedToricFiber

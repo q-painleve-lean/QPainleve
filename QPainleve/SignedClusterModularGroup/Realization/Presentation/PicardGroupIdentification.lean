@@ -29,28 +29,27 @@ open Scheme Scheme.IdealSheafData TauCeti TauCeti.AlgebraicGeometry TauCeti.Tori
 
 namespace QPainleve.SignedClusterModularGroup
 
+variable {k₀ : Type} [Field k₀] [IsAlgClosed k₀]
+
 open GeometricRealization
 
-local notation "S" => Spec (CommRingCat.of ℂ)
-local notation "Centers[" r "]" => Over.mk (structureMap ℂ (Fin r → ℤ))
-local notation "χ[" c "]" => pointsEquiv ℂ _ (Subtype.mk (Over.Hom.left c) (Over.w c))
+local notation "S" => Spec (CommRingCat.of k₀)
+local notation "Centers[" r "]" => Over.mk (structureMap k₀ (Fin r → ℤ))
+local notation "χ[" c "]" => pointsEquiv k₀ _ (Subtype.mk (Over.Hom.left c) (Over.w c))
 
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
-  {X : Scheme} [X.Over S] [X.IsProjectiveOver ℂ] [IsIntegral X]
-  [SmoothOfRelativeDimension 2 (X ↘ S)]
-  {D : X.IdealSheafData} [PrestableFamily (D.subscheme ↘ S)] {n : ℕ} [NeZero n]
+  {X : Scheme} [X.Over (Spec (.of k₀))] [X.IsProjectiveOver k₀] [IsIntegral X]
+  [SmoothOfRelativeDimension 2 (X ↘ Spec (.of k₀))]
+  {D : X.IdealSheafData} [PrestableFamily (D.subscheme ↘ Spec (.of k₀))] {n : ℕ} [NeZero n]
 
-local instance instNoetherianPicardIdentification : IsNoetherian X :=
-  isNoetherian_of_finiteType (X ↘ S)
-
-local instance instFactorialPicardIdentification (x : X) :
-    UniqueFactorizationMonoid (X.presheaf.stalk x) :=
-  (X ↘ S).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two x
-
-local notation "B" => Chow.intersectionBilinForm ℂ X
+local notation "B" => Chow.intersectionBilinForm k₀ X
+local notation "noethX" => LocallyOfFiniteType.isLocallyNoetherian (X ↘ S)
 local notation "classes[" A "," hD "]" =>
-  (fun j ↦ Additive.ofMul (LineBundleClass.primeDivisorClass
-    (D.boundaryPrimeEmbedding (Scheme.NodalCycleNumbering.boundaryPrimeEquiv A hD j))))
+  (fun j ↦ Additive.ofMul
+    (@LineBundleClass.primeDivisorClass X (noethX) inferInstance
+      (Scheme.Hom.uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two (X ↘ S))
+      (D.boundaryPrimeEmbedding
+        (@Scheme.NodalCycleNumbering.boundaryPrimeEquiv k₀ _ _ X D _ _ _ _ n _ A (noethX) hD j))))
 
 /-- The Picard group equivalences of a toric seed with `r` ordered centers for a
 numbered anticanonical pair. The reference fiber uses the original surface and
@@ -62,7 +61,7 @@ structure PicardGroupIdentification {i : N →+ V} {r : ℕ}
       (Empty.elim : Empty → (D.subscheme ↘ S).smoothLocus) n}
     (R : FiniteMarkedReferenceFiber i r A) (hD : D.IsEffectiveCartier) where
   /-- The Picard identification of the family with the numbered classes in the moving marking. -/
-  nodal : CompleteToricPresentation.NodalPicardGroupIdentification R.reference.presentation ℂ
+  nodal : CompleteToricPresentation.NodalPicardGroupIdentification R.reference.presentation k₀
     R.reference.exchangeMatrix (R.marking.symm ∘ classes[A,hD])
   /-- The reference fiber is the original pair with its marking and X evaluation. -/
   family_center : nodal.family R.reference.center = R.reference.markedSurface
@@ -73,13 +72,13 @@ attribute [simp] family_center
 
 variable {i : N →+ V} {r : ℕ}
   {A : Scheme.NodalCycleNumbering (X := D.subscheme)
-    (Empty.elim : Empty → (D.subscheme ↘ S).smoothLocus) n} {hD : D.IsEffectiveCartier}
+    (Empty.elim : Empty → (D.subscheme ↘ Spec (.of k₀)).smoothLocus) n} {hD : D.IsEffectiveCartier}
   {R₀ : FiniteMarkedReferenceFiber i r A} (P : PicardGroupIdentification R₀ hD)
 
 local notation "E" => R₀.reference.exchangeMatrix
 local notation "Q" => R₀.reference.presentation
-local notation "Γs" => (SignedClusterModularGroup ℂ E)ᵐᵒᵖ
-local notation "Γ" => (ClusterModularGroup ℂ E)ᵐᵒᵖ
+local notation "Γs" => (SignedClusterModularGroup k₀ E)ᵐᵒᵖ
+local notation "Γ" => (ClusterModularGroup k₀ E)ᵐᵒᵖ
 local notation "d" => classes[A,hD]
 
 /-- Opposite signed cluster maps act on the original Picard group by the marked Picard
@@ -105,12 +104,12 @@ theorem signedEquiv_apply_word (w : Word E E) :
     letI := (Q).neZero
     ∀ {C : Centers[r].left.PartialMap Centers[r].left} [IsDominant C.hom]
       [C.IsOver Centers[r].hom Centers[r].hom]
-      (R : GeometricRealization P.nodal.family P.nodal.family C (w.xRationalMap ℂ)),
+      (R : GeometricRealization P.nodal.family P.nodal.family C (w.xRationalMap k₀)),
       HasToricTargetModels (T₀ := Centers[r]) (T₁ := Centers[r]) (b := R₀.basis)
         (s := (Q).rays) (hΦ := (Q).regular) (T := (Q).cycle)
         (origin := (Q).origin) (ι := (Q).inclusion) (P₁ := P.nodal.family)
         (fun z : Point Centers[r] ↦ χ[z]) C →
-      (P.signedEquiv (op (signedClusterModularGroupMap ℂ E (End.of w)))).val =
+      (P.signedEquiv (op (signedClusterModularGroupMap k₀ E (End.of w)))).val =
         (R₀.marking.isometryGroupCongr (R₀.form.isometryGroupEquivIsometryEquiv.symm R.picard),
           R.orientation) := by
   intro C _ _ R hR
@@ -120,7 +119,7 @@ theorem signedEquiv_apply_word (w : Word E E) :
 /-- The sign kernel on point maps is the image of the unsigned group. -/
 theorem sign_ker_unop :
     ((sign B d).comp P.signedEquiv.toMonoidHom).ker.unop =
-      (clusterModularGroupInclusion ℂ E).range := by
+      (clusterModularGroupInclusion k₀ E).range := by
   have hsign : (sign B d).comp P.signedEquiv.toMonoidHom =
       (sign R₀.form (R₀.marking.symm ∘ d)).comp P.nodal.signedEquiv.toMonoidHom :=
     MonoidHom.ext fun x ↦ by simp
@@ -135,7 +134,7 @@ def unsignedEquiv : Γ ≃* boundaryRotationGroup B d :=
 @[simp]
 theorem rotationInclusion_unsignedEquiv_apply (x : Γ) :
     rotationInclusion B d (P.unsignedEquiv x) =
-      P.signedEquiv (MonoidHom.op (clusterModularGroupInclusion ℂ E) x) :=
+      P.signedEquiv (MonoidHom.op (clusterModularGroupInclusion k₀ E) x) :=
   rotationInclusion_picardRotationEquiv_apply P.signedEquiv P.sign_ker_unop x
 
 end PicardGroupIdentification

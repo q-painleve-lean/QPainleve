@@ -34,43 +34,46 @@ open TauCeti.AlgebraicGeometry LineBundleClass TauCeti.SymmetricAlgebra Scheme.I
 
 namespace TauCeti.Toric.Fan.LogarithmicProjection
 
+variable {k₀ : Type} [Field k₀] [IsAlgClosed k₀]
+
 attribute [local instance] MvPolynomial.gradedAlgebra
 
-local notation "S" => Spec (CommRingCat.of ℂ)
-local notation "P" => Proj (homogeneousSubmodule ℂ (Fin 3 → ℂ))
+local notation "S" => Spec (CommRingCat.of k₀)
+local notation "P" => Proj (homogeneousSubmodule k₀ (Fin 3 → k₀))
 local notation "s" => (P ↘ S)
-local notation "H" => LineBundleClass.mk (Proj.symmetricAlgebraTwistingBundle ℂ (Fin 3 → ℂ) 1)
+local notation "H" => LineBundleClass.mk (Proj.symmetricAlgebraTwistingBundle k₀ (Fin 3 → k₀) 1)
 local notation "plane[" b "," hi "]" => Fan.projectiveSpace b hi
 local notation "planeIso[" b "," hi "]" =>
-  (Fan.projectivePlaneIso b hi ≪≫ Basis.polynomialProjIso (Pi.basisFun ℂ (Fin 3)))
+  (Fan.projectivePlaneIso k₀ b hi ≪≫ Basis.polynomialProjIso (Pi.basisFun k₀ (Fin 3)))
 local notation "rank[" b "]" => Eq.trans (finrank_eq_card_basis b) (Fintype.card_fin 2)
 local notation "mark[" T "," hT "," f "," g "]" =>
   LinearEquiv.symm (BlowupTower.picardMarking T hT f) (Additive.ofMul (pullback g H))
 
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
-  {i : N →+ V} {X : Scheme} [X.Over S] [SmoothOfRelativeDimension 2 (X ↘ S)]
-  {D : X.IdealSheafData} {A B : LogarithmicProjection i D}
+  {i : N →+ V} {X : Scheme} [X.Over (Spec (.of k₀))] [SmoothOfRelativeDimension 2 (X ↘ Spec
+    (.of k₀))]
+  {D : X.IdealSheafData} {A B : LogarithmicProjection k₀ i D}
 
-local notation "sourceMap[" A "]" => Fan.algebraicRealization (LogarithmicProjection.fan A) ↘ S
+local notation "sourceMap[" A "]" => Fan.finiteFanScheme k₀ (LogarithmicProjection.fan A) ↘ S
 local notation "sourceSmooth[" A "," b "]" =>
   Eq.mp (congrArg (fun d ↦ SmoothOfRelativeDimension d sourceMap[A]) rank[b])
-    (Fan.smoothOfRelativeDimension_algebraicRealizationStructureMap
-      (LogarithmicProjection.fan A) (LogarithmicProjection.isRegular A))
-local notation "center[" b "," ρ "," c "]" => Fan.Ray.binomialCenter ρ rank[b]
+    (Fan.smoothOfRelativeDimension_finiteFanSchemeToSpec
+      (LogarithmicProjection.fan A) k₀ (LogarithmicProjection.isRegular A))
+local notation "center[" b "," ρ "," c "]" => Fan.Ray.binomialCenter ρ k₀ rank[b]
   (Basis.detDualEquiv_self b (Fan.Ray.primitiveGenerator ρ))
-  (Fan.Ray.surjective_detCharacter ρ b) c (IsLocalRing.closedPoint ℂ)
+  (Fan.Ray.surjective_detCharacter ρ b) c (IsLocalRing.closedPoint k₀)
 local notation "degree[" β "," x "]" =>
   hirzebruchSarkisovBidegree (Int.toNat β)
-    (Int.toNat (sarkisovSecondaryDegree ℂ (Additive.toMul (Prod.fst x))))
+    (Int.toNat (sarkisovSecondaryDegree k₀ (Additive.toMul (Prod.fst x))))
 
 private theorem hirzebruch_marking_boundary_le_ramification
     (b : Basis (Fin 2) ℤ N) {Y : Scheme} {n : ℕ}
-    {T : BlowupTower A.fan.algebraicRealization n Y}
-    (hT : IsClosedPointTower A.fan.algebraicRealization T)
+    {T : BlowupTower (A.fan.finiteFanScheme k₀) n Y}
+    (hT : IsClosedPointTower (A.fan.finiteFanScheme k₀) T)
     (k : X ≅ Y) (hAh : A.hom = k.hom ≫ T.toBase) :
     let : SmoothOfRelativeDimension 2 sourceMap[A] := sourceSmooth[A,b]
-    (A.fan.boundaryIdeal A.isComplete.nonempty_cones).comap T.toBase ≤
-      hT.ramificationIdealSheafToBase ℂ := by
+    (A.fan.toricBoundaryIdeal k₀ A.isComplete.nonempty_cones).comap T.toBase ≤
+      hT.ramificationIdealSheafToBase k₀ := by
   intro hSmoothA
   let := hSmoothA
   let : Y.Over S := ⟨T.toBase ≫ sourceMap[A]⟩
@@ -80,7 +83,7 @@ private theorem hirzebruch_marking_boundary_le_ramification
   let : T.toBase.IsOver S := ⟨rfl⟩
   let : Smooth (Y ↘ S) := SmoothOfRelativeDimension.smooth 2 _
   rw [A.comap_boundaryIdeal_of_eq_iso_comp rank[b] k A.isComplete T.toBase rfl (heq_of_eq hAh),
-    hT.ramificationIdealSheafToBase_def ℂ]
+    hT.ramificationIdealSheafToBase_def k₀]
   exact mul_le_of_le_one_left' le_top
 
 section Steps
@@ -91,8 +94,8 @@ private theorem sarkisov_step_of_positive_index
     {Y : Scheme} {b b' : Basis (Fin 2) ℤ N} {hi : IsIntegralLattice i} {e n : ℕ}
     (he : 0 < e) (r : Fin 4 ≃ A.fan.Ray)
     (hr : (fun j ↦ (r j).primitiveGenerator) = ![b 0, b 1, -b 0, (e : ℤ) • b 0 - b 1])
-    {T : BlowupTower A.fan.algebraicRealization n Y}
-    (hT : IsClosedPointTower A.fan.algebraicRealization T) (g : Y ⟶ P)
+    {T : BlowupTower (A.fan.finiteFanScheme k₀) n Y}
+    (hT : IsClosedPointTower (A.fan.finiteFanScheme k₀) T) (g : Y ⟶ P)
     (hD : D.IsEffectiveCartier)
     (hNode : AtWorstNodalOfRelativeDimensionOne (D.subschemeι ≫ X ↘ S))
     (hB : B.fan = plane[b',hi]) (k : X ≅ Y) (hAh : A.hom = k.hom ≫ T.toBase)
@@ -100,20 +103,21 @@ private theorem sarkisov_step_of_positive_index
     (hg : g ≫ s = T.toBase ≫ sourceMap[A]) (hbir : Scheme.BirationalOver g (𝟙 P)) :
     let : SmoothOfRelativeDimension 2 sourceMap[A] := sourceSmooth[A,b]
     let x := mark[T,hT,sourceMap[A],g]
-    let β := (A.fan.hirzebruchPicardBasis b e A.isRegular r hr).repr x.1 1
+    let β := (A.fan.hirzebruchPicardBasis k₀ b e A.isRegular r hr).repr x.1 1
     HasPlaneTargetDecrease A B rank[b] hD hNode degree[β,x] := by
   intro hSmoothA x β
   let := hSmoothA
-  let : A.fan.algebraicRealization.IsProjectiveOver ℂ :=
-    A.fan.isProjectiveOver_algebraicRealization_of_isComplete A.isRegular A.isComplete b
+  let : (A.fan.finiteFanScheme k₀).IsProjectiveOver k₀ :=
+    A.fan.isProjectiveOver_finiteFanScheme_of_isComplete k₀ A.isRegular A.isComplete b
   let high := Finset.univ.filter (fun j ↦ β < 2 * (-x.2 j))
   by_cases hhigh : high.Nonempty
   · have hlog := hirzebruch_marking_boundary_le_ramification b hT k hAh
-    rcases hT.hirzebruch_high_baseCenter_cases b e A.isRegular A.isComplete r hr g hg hlog hhigh
+    rcases hT.hirzebruch_high_baseCenter_cases k₀ b e A.isRegular A.isComplete r hr g hg hlog hhigh
       with ⟨j, hj, -, hp⟩ | ⟨-, fiber, hfiber⟩
     · have hpivot : (∃ σ : A.fan.cones, Nat.card (ToricRay σ.val) = 2 ∧
-          hT.baseCenter j = A.fan.distinguishedPointHom σ (IsLocalRing.closedPoint ℂ)) ∨
-          ∃ t : Fin 2, ∃ c : ℂˣ, hT.baseCenter j = center[b,r ((![0, 2] : Fin 2 → Fin 4) t),c] := by
+          hT.baseCenter j = (A.fan.distinguishedSection (R := k₀) σ) (IsLocalRing.closedPoint k₀)) ∨
+          ∃ t : Fin 2, ∃ c : k₀ˣ, hT.baseCenter j = center[b,r ((![0, 2] : Fin 2 →
+            Fin 4) t),c] := by
         rcases hp with ⟨σ, ⟨hσ, hpoint, -⟩, -⟩ | hsection
         · exact Or.inl ⟨σ, hσ, hpoint.symm⟩
         · exact Or.inr hsection
@@ -172,8 +176,8 @@ regular rank-two toric surfaces factors into Sarkisov links. A single nodal towe
 resolves every vertex and the path ends at the pullback of the specified target. -/
 theorem exists_resolved_sarkisov_factorization
     (b : Basis (Fin 2) ℤ N) (hi : IsIntegralLattice i)
-    [IsIntegral X] [X.IsProjectiveOver ℂ]
-    (A B : LogarithmicProjection i D) [IsModification A.hom] [IsModification B.hom]
+    [IsIntegral X] [X.IsProjectiveOver k₀]
+    (A B : LogarithmicProjection k₀ i D) [IsModification A.hom] [IsModification B.hom]
     (hD : D.IsEffectiveCartier)
     (hNode : AtWorstNodalOfRelativeDimensionOne (D.subschemeι ≫ X ↘ S)) :
     letI : IsNoetherian X := isNoetherian_of_finiteType (X ↘ S)

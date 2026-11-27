@@ -199,7 +199,7 @@ theorem exists_cyclicConeNumbering (b : Module.Basis (Fin 2) ℤ N)
 
 /-- Reversing the lattice orientation reverses the cyclic numbering by `j ↦ -j`.
 The initial ray and the cones at which successive rays meet are preserved. -/
-theorem cyclicRayNumbering_neg {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
+theorem cyclicRayNumbering_neg {N V : Type*} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
     {l : N →+ V} {Φ : Fan l} (b : Module.Basis (Fin 2) ℤ N)
     {n : ℕ} (u : ZMod n → Φ.Ray)
     (hu : ∀ j, b.detDualEquiv (u j).primitiveGenerator (u (j + 1)).primitiveGenerator = 1 ∧

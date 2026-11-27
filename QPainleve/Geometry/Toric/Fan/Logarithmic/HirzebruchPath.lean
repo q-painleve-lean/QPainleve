@@ -27,16 +27,18 @@ open TauCeti.AlgebraicGeometry
 
 namespace TauCeti.Toric.Fan.HirzebruchQuadricPreparation
 
+variable {K : Type} [Field K] [PerfectField K]
+
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {Φ : Fan i} {b : Module.Basis (Fin 2) ℤ N} {a : ℕ}
   (P : HirzebruchQuadricPreparation b a Φ)
 
-local notation "S" => Spec (CommRingCat.of ℂ)
-local notation "π[" H "]" => FanHom.algebraicMap (IsSubdivision.toFanHom H)
+local notation "S" => Spec (CommRingCat.of K)
+local notation "π[" H "]" => FanHom.finiteFanSchemeHom K (IsSubdivision.toFanHom H)
 local notation "rankTwo" => Eq.trans (Module.finrank_eq_card_basis b) (Fintype.card_fin 2)
 
-variable {Z : Scheme} [Z.Over S] [SmoothOfRelativeDimension 2 (Z ↘ S)]
-  {D : Z.IdealSheafData} (C : LogarithmicProjection i D) (hC : C.fan = P.common)
+variable {Z : Scheme} [Z.Over (Spec (.of K))] [SmoothOfRelativeDimension 2 (Z ↘ Spec (.of K))]
+  {D : Z.IdealSheafData} (C : LogarithmicProjection K i D) (hC : C.fan = P.common)
 
 open LogarithmicProjection
 
@@ -44,11 +46,11 @@ open LogarithmicProjection
 elementary transformation, from the specified Hirzebruch projection to the
 projection to the quadric. Its rational map identifies the dense tori. -/
 theorem exists_sarkisov_path_of_quadric_preparation [IsIntegral Z] :
-    ∃ (A B : LogarithmicProjection i D) (p : SarkisovPath A B),
+    ∃ (A B : LogarithmicProjection K i D) (p : SarkisovPath A B),
       A.fan = Φ ∧ A.hom ≍ C.hom ≫ π[hC ▸ P.common_source] ∧
       B.fan = P.model 0 ∧ B.hom ≍ C.hom ≫ π[hC ▸ P.common_model 0] ∧
       @Quiver.Path.length _ sarkisovQuiver _ _ p = 2 * a ∧
-      p.rationalMap = (A.fan.denseTorusPartialIso B.fan).toRationalMap := by
+      p.rationalMap = (A.fan.denseTorusPartialIso K B.fan).toRationalMap := by
   let model (j : Fin (a + 1)) :=
     C.coarsen (hC ▸ P.common_model j) (P.model_regular j) rankTwo
   let link (j : Fin a) := C.coarsen (hC ▸ P.common_link j) (P.link_regular j) rankTwo

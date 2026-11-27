@@ -34,12 +34,14 @@ namespace QPainleve.SignedClusterModularGroup
 
 open GeometricRealization (Point)
 
+variable {k : Type} [Field k] [IsAlgClosed k]
+
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V] {i : N →+ V}
 
-local notation "S" => Spec (CommRingCat.of ℂ)
-local notation "Dtor[" Φ "," h "]" => Scheme.IdealSheafData.subscheme (Fan.boundaryIdeal Φ h)
+local notation "S" => Spec (CommRingCat.of k)
+local notation "Dtor[" Φ "," h "]" => Scheme.IdealSheafData.subscheme (Fan.toricBoundaryIdeal k Φ h)
 
-variable (i) in
+variable (k i) in
 /-- The data common to the fibers of an ordered toric presentation on a complete
 regular fan, with positive cyclic numbering and a fixed auxiliary Picard inclusion. -/
 structure CompleteToricPresentation (b : Basis (Fin 2) ℤ N) (r : ℕ)
@@ -65,13 +67,13 @@ structure CompleteToricPresentation (b : Basis (Fin 2) ℤ N) (r : ℕ)
   /-- The ray indexing the first component of the contracted boundary. -/
   origin : ZMod length
   /-- The fixed pullback of the Picard marking in auxiliary toric coordinates. -/
-  inclusion : L →ₗ[ℤ] Additive (LineBundleClass fan.algebraicRealization) × (Fin r → ℤ)
+  inclusion : L →ₗ[ℤ] Additive (LineBundleClass (fan.finiteFanScheme k)) × (Fin r → ℤ)
   /-- The rays in the order of the toric boundary numbering. -/
   rayOrder : ZMod length ≃ fan.Ray
   /-- The ray order agrees with the numbering of the normalized curve. -/
   component_eq (j : ZMod length) :
     letI := complete.nonempty_cones
-    cycle.component j = fan.boundaryNormalizationComponentEquiv regular (rayOrder j)
+    cycle.component j = fan.boundaryNormalizationComponentEquiv k regular (rayOrder j)
   /-- Consecutive rays in the positive order span regular two-dimensional cones. -/
   positive (j : ZMod length) :
     b.detDualEquiv (rayOrder j).primitiveGenerator (rayOrder (j + 1)).primitiveGenerator = 1 ∧
@@ -81,9 +83,9 @@ variable {b : Basis (Fin 2) ℤ N} {r n : ℕ} [NeZero n] {L : Type}
   [AddCommGroup L] {H : LinearMap.BilinForm ℤ L} {γ : Type*}
 
 local notation "A" => (Fin r → ℤ)
-local notation "Centers" => Over.mk (structureMap ℂ A)
-local notation "XTor" => scheme ℂ (Fin r →₀ ℤ)
-local notation "χ(" c ")" => pointsEquiv ℂ A
+local notation "Centers" => Over.mk (structureMap k A)
+local notation "XTor" => scheme k (Fin r →₀ ℤ)
+local notation "χ(" c ")" => pointsEquiv k A
   (Subtype.mk (CommaMorphism.left (c : Point Centers)) (Over.w (c : Point Centers)))
 local notation "centers(" a ")" => fun j : Fin r ↦ (a) (ofAdd (Pi.single j 1))
 local notation "Dₘ(" M ")" => Scheme.Hom.ker (Over.Hom.left (Arrow.hom (MarkedSurface.pair M)))
@@ -91,27 +93,27 @@ local notation "Dₘ(" M ")" => Scheme.Hom.ker (Over.Hom.left (Arrow.hom (Marked
 attribute [local instance] hasUniqueDiv_of_free_int
 
 /-- A contracted fiber whose specified projection is realized by a nodal blowup tower. -/
-def CompleteToricPresentation.HasNodalModel (Q : CompleteToricPresentation i b r L γ)
-    (c : Point Centers) (M : MarkedSurface ℂ n H XTor) : Prop :=
+def CompleteToricPresentation.HasNodalModel (Q : CompleteToricPresentation k i b r L γ)
+    (c : Point Centers) (M : MarkedSurface k n H XTor) : Prop :=
   letI := Q.complete.nonempty_cones
   letI := Q.prestable
   letI := Q.neZero
   ∃ (p : ContractedToricFiber b Q.rays Q.regular Q.cycle Q.origin Q.inclusion χ(c) M)
     (Y : Scheme) (d : ℕ) (W : BlowupTower M.surface d Y)
-    (e : Y ≅ (internalBlowupTower b Q.rays centers(χ(c))).1),
+    (e : Y ≅ (internalBlowupTower k b Q.rays centers(χ(c))).1),
     IsNodalBoundaryTower Dₘ(M) (M.surface ↘ S) (𝟙 _) W ∧ p.projection = e.inv ≫ W.toBase
 
 /-- A nodal model exposes the ordered toric contraction and a nodal tower
 whose projection agrees with that contraction. -/
-theorem CompleteToricPresentation.hasNodalModel_iff (Q : CompleteToricPresentation i b r L γ)
-    (c : Point Centers) (M : MarkedSurface ℂ n H XTor) :
+theorem CompleteToricPresentation.hasNodalModel_iff (Q : CompleteToricPresentation k i b r L γ)
+    (c : Point Centers) (M : MarkedSurface k n H XTor) :
     letI := Q.complete.nonempty_cones
     letI := Q.prestable
     letI := Q.neZero
     Q.HasNodalModel c M ↔
       ∃ (p : ContractedToricFiber b Q.rays Q.regular Q.cycle Q.origin Q.inclusion χ(c) M)
         (Y : Scheme) (d : ℕ) (W : BlowupTower M.surface d Y)
-        (e : Y ≅ (internalBlowupTower b Q.rays centers(χ(c))).1),
+        (e : Y ≅ (internalBlowupTower k b Q.rays centers(χ(c))).1),
         IsNodalBoundaryTower Dₘ(M) (M.surface ↘ S) (𝟙 _) W ∧ p.projection = e.inv ≫ W.toBase :=
   (Iff.rfl)
 
@@ -119,8 +121,8 @@ namespace CompleteToricPresentation
 
 /-- A nodal model supplies the ordered toric contraction in the specified marking. -/
 theorem HasNodalModel.nonempty_contractedToricFiber
-    {Q : CompleteToricPresentation i b r L γ}
-    {c : Point Centers} {M : MarkedSurface ℂ n H XTor} (h : Q.HasNodalModel c M) :
+    {Q : CompleteToricPresentation k i b r L γ}
+    {c : Point Centers} {M : MarkedSurface k n H XTor} (h : Q.HasNodalModel c M) :
     letI := Q.complete.nonempty_cones
     letI := Q.prestable
     letI := Q.neZero
@@ -133,40 +135,40 @@ theorem HasNodalModel.nonempty_contractedToricFiber
 
 /-- Reading rays from the numbered toric boundary gives the recorded ray order. -/
 theorem rayEquivOfNodalCycleNumbering_eq_rayOrder
-    (Q : CompleteToricPresentation i b r L γ) :
+    (Q : CompleteToricPresentation k i b r L γ) :
     letI := Q.complete.nonempty_cones
     letI := Q.prestable
     letI := Q.neZero
-    Q.fan.rayEquivOfNodalCycleNumbering Q.regular Q.cycle = Q.rayOrder := by
+    Q.fan.rayEquivOfNodalCycleNumbering k Q.regular Q.cycle = Q.rayOrder := by
   let := Q.complete.nonempty_cones
   let := Q.prestable
   let := Q.neZero
-  refine Equiv.ext fun j ↦ (Q.fan.boundaryNormalizationComponentEquiv Q.regular).injective ?_
+  refine Equiv.ext fun j ↦ (Q.fan.boundaryNormalizationComponentEquiv k Q.regular).injective ?_
   rw [Fan.boundaryNormalizationComponentEquiv_rayEquivOfNodalCycleNumbering, Q.component_eq]
 
 /-- The numbered node is the toric fixed point of the cone between its consecutive rays. -/
-theorem exists_cone_of_numbered_node (Q : CompleteToricPresentation i b r L γ)
+theorem exists_cone_of_numbered_node (Q : CompleteToricPresentation k i b r L γ)
     (j : ZMod Q.length) :
     letI := Q.prestable
     letI := Q.neZero
     ∃ σ : Q.fan.cones, (Q.rayOrder j).toCone ≤ σ ∧
       (Q.rayOrder (j + 1)).toCone ≤ σ ∧
-      (Q.fan.boundaryIdeal Q.complete.nonempty_cones).subschemeι
-        ((Q.fan.boundaryIdeal Q.complete.nonempty_cones).subscheme.dualGraphEdgeEquiv
+      (Q.fan.toricBoundaryIdeal k Q.complete.nonempty_cones).subschemeι
+        ((Q.fan.toricBoundaryIdeal k Q.complete.nonempty_cones).subscheme.dualGraphEdgeEquiv
           Q.marks (Q.cycle.edge j)).val =
-        Q.fan.distinguishedPointHom σ (IsLocalRing.closedPoint ℂ) := by
+        (Q.fan.distinguishedSection (R := k) σ) (IsLocalRing.closedPoint k) := by
   let := Q.complete.nonempty_cones
   let := Q.prestable
   let := Q.neZero
   obtain ⟨_, -, _, hnodes⟩ :=
-    Q.fan.exists_positive_ray_numbering_of_nodalCycleNumbering b Q.regular Q.complete Q.cycle
+    Q.fan.exists_positive_ray_numbering_of_nodalCycleNumbering k b Q.regular Q.complete Q.cycle
   rw [Q.rayEquivOfNodalCycleNumbering_eq_rayOrder] at hnodes
   obtain ⟨σ, h₀, h₁, hpoint⟩ := hnodes j
   exact ⟨σ.val, h₀, h₁, hpoint⟩
 
 /-- A nodal contraction of a marked toric fiber supplies a nodal model at its center. -/
-theorem hasNodalModel_of_contraction (Q : CompleteToricPresentation i b r L γ)
-    {c : Point Centers} {M : MarkedSurface ℂ n H XTor} :
+theorem hasNodalModel_of_contraction (Q : CompleteToricPresentation k i b r L γ)
+    {c : Point Centers} {M : MarkedSurface k n H XTor} :
     letI := Q.complete.nonempty_cones
     letI := Q.prestable
     letI := Q.neZero
@@ -182,7 +184,7 @@ theorem hasNodalModel_of_contraction (Q : CompleteToricPresentation i b r L γ)
 /-- A charge seed realizing the determinant pairing and rays of a presentation has a
 nonzero exchange matrix when the ray charges span a finite-index sublattice. -/
 theorem exchangeMatrix_ne_zero_of_chargeIndex_ne_zero
-    (Q : CompleteToricPresentation i b r L γ) {E : SkewExchangeMatrix (Fin r)}
+    (Q : CompleteToricPresentation k i b r L γ) {E : SkewExchangeMatrix (Fin r)}
     (P : ChargeSeed E N)
     (hform : P.form = b.detDualEquiv.toLinearMap) (hcharge : P.charge = Fan.rayChargeMap Q.rays)
     (hindex : (Fan.rayChargeMap Q.rays).range.toAddSubgroup.index ≠ 0) :
@@ -193,15 +195,15 @@ theorem exchangeMatrix_ne_zero_of_chargeIndex_ne_zero
 
 /-- The inclusion in the auxiliary Picard lattice is injective whenever the
 presentation has a nodal model. -/
-theorem inclusion_injective (Q : CompleteToricPresentation i b r L γ)
-    {c : Point Centers} {M : MarkedSurface ℂ n H XTor} (h : Q.HasNodalModel c M) :
+theorem inclusion_injective (Q : CompleteToricPresentation k i b r L γ)
+    {c : Point Centers} {M : MarkedSurface k n H XTor} (h : Q.HasNodalModel c M) :
     Function.Injective Q.inclusion := by
   let := Q.complete.nonempty_cones
   let := Q.prestable
   let := Q.neZero
   obtain ⟨p, _, _, W, e, hW, hp⟩ := (Q.hasNodalModel_iff c M).mp h
   let : IsIntegral M.surface := M.integral
-  let : M.surface.IsProjectiveOver ℂ := M.projective
+  let : M.surface.IsProjectiveOver k := M.projective
   let : SmoothOfRelativeDimension 2 (M.surface ↘ S) := M.smooth
   let : Smooth (M.surface ↘ S) := SmoothOfRelativeDimension.smooth 2 _
   let : IsNoetherian M.surface := isNoetherian_of_finiteType (M.surface ↘ S)
@@ -212,7 +214,7 @@ theorem inclusion_injective (Q : CompleteToricPresentation i b r L γ)
   apply hW.isClosedPointTower.injective_pullback_toBase (M.surface ↘ S)
   apply (LineBundleClass.pullbackEquiv e.symm).injective
   have h := Additive.ofMul.injective
-    ((Fan.internalBlowupPicardMarking b Q.rays centers(χ(c)) Q.regular).symm.injective hxy)
+    ((Fan.internalBlowupPicardMarking k b Q.rays centers(χ(c)) Q.regular).symm.injective hxy)
   simpa only [hp, LineBundleClass.pullback_comp, LineBundleClass.pullbackEquiv_apply,
     Iso.symm_hom] using h
 
@@ -220,8 +222,8 @@ theorem inclusion_injective (Q : CompleteToricPresentation i b r L γ)
 The numbered boundary is read from the same geometric origin in reverse order. -/
 -- The fan and the length reduce in the types of dependent projections of the reverse.
 @[expose]
-def invert (Q : CompleteToricPresentation i b r L γ) :
-    CompleteToricPresentation i (b.reindex (Equiv.swap 0 1)) r L γ := by
+def invert (Q : CompleteToricPresentation k i b r L γ) :
+    CompleteToricPresentation k i (b.reindex (Equiv.swap 0 1)) r L γ := by
   letI := Q.prestable
   letI := Q.neZero
   exact
@@ -244,28 +246,28 @@ def invert (Q : CompleteToricPresentation i b r L γ) :
 
 /-- The ordered centers lie on the same rays in the reversed frame. -/
 @[simp]
-theorem invert_rays (Q : CompleteToricPresentation i b r L γ) : Q.invert.rays = Q.rays := (rfl)
+theorem invert_rays (Q : CompleteToricPresentation k i b r L γ) : Q.invert.rays = Q.rays := (rfl)
 
 /-- The origin retains its geometric component under the reversed numbering. -/
 @[simp]
-theorem invert_origin (Q : CompleteToricPresentation i b r L γ) :
+theorem invert_origin (Q : CompleteToricPresentation k i b r L γ) :
     Q.invert.origin = -Q.origin := (rfl)
 
 /-- The reversal of the numbered rays acts by negation on component numbers. -/
 @[simp]
-theorem invert_rayOrder (Q : CompleteToricPresentation i b r L γ) (j : ZMod Q.length) :
+theorem invert_rayOrder (Q : CompleteToricPresentation k i b r L γ) (j : ZMod Q.length) :
     Q.invert.rayOrder j = Q.rayOrder (-j) := (rfl)
 
 /-- At the image of a center under inversion, the reversed presentation uses the
 original nodal tower and the reversed marked pair. -/
-theorem hasNodalModel_invert (Q : CompleteToricPresentation i b r L γ)
+theorem hasNodalModel_invert (Q : CompleteToricPresentation k i b r L γ)
     (E : Cluster.SkewExchangeMatrix (Fin r))
-    (M : Point Centers → MarkedSurface ℂ n H XTor) (y : Point Centers)
+    (M : Point Centers → MarkedSurface k n H XTor) (y : Point Centers)
     (h : Q.HasNodalModel
-      (y ≫ ((Cluster.Generator.invert.toStep E).toPath.centerIsoOver ℂ).inv)
-      (M (y ≫ ((Cluster.Generator.invert.toStep E).toPath.centerIsoOver ℂ).inv))) :
+      (y ≫ ((Cluster.Generator.invert.toStep E).toPath.centerIsoOver k).inv)
+      (M (y ≫ ((Cluster.Generator.invert.toStep E).toPath.centerIsoOver k).inv))) :
     Q.invert.HasNodalModel y
-      ((M (y ≫ ((Cluster.Generator.invert.toStep E).toPath.centerIsoOver ℂ).inv)).invert) := by
+      ((M (y ≫ ((Cluster.Generator.invert.toStep E).toPath.centerIsoOver k).inv)).invert) := by
   let := Q.complete.nonempty_cones
   let := Q.prestable
   let := Q.neZero

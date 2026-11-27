@@ -37,34 +37,41 @@ open AlgebraicGeometry.Scheme.IdealSheafData
 
 namespace TauCeti.Toric.Fan
 
-variable {N N' : Type} {V V' : Type*} [AddCommGroup N] [AddCommGroup N']
+universe u
+
+variable (k : Type u) [Field k]
+
+variable {N N' : Type u} {V V' : Type*} [AddCommGroup N] [AddCommGroup N']
   [AddCommGroup V] [AddCommGroup V'] [Module ℝ V] [Module ℝ V']
   {i : N →+ V} {i' : N' →+ V'} {Φ : Fan i} {Ψ : Fan i'}
 
-local notation "X[" A "]" => Fan.algebraicRealization A
-local notation "D[" A "," h "]" => Fan.boundaryIdeal A h
-local notation "p[" A "," h "," r "]" => Fan.rayBoundaryPoint A h r
-local notation "I[" A "," h "," r "]" => Fan.rayBoundaryIdeal A h r
+local notation "X[" A "]" => Fan.finiteFanScheme k A
+local notation "D[" A "," h "]" => Fan.toricBoundaryIdeal k A h
+local notation "p[" A "," h "," r "]" => Fan.rayBoundaryChartPoint (R := k) A h r
+local notation "I[" A "," h "," r "]" => Fan.rayDivisorIdeal k A h r
 
 section BoundaryRays
 
 variable [Nonempty Φ.cones] [Nonempty Ψ.cones]
-  (hΦ : Φ.IsRegular) (hΨ : Ψ.IsRegular) (e : X[Φ] ≅ X[Ψ])
-  (he : (D[Ψ,inferInstance]).comap e.hom = D[Φ,inferInstance])
+  (hΦ : Φ.IsRegular) (hΨ : Ψ.IsRegular)
+  (e : Φ.finiteFanScheme k ≅ Ψ.finiteFanScheme k)
+  (he : (Ψ.toricBoundaryIdeal k inferInstance).comap e.hom = Φ.toricBoundaryIdeal k inferInstance)
 
 include he in
 private theorem exists_rayBoundaryPoint_image (ρ : Φ.Ray) :
     ∃ τ : Ψ.Ray, e.hom (p[Φ,hΦ,ρ]).val = (p[Ψ,hΨ,τ]).val := by
-  have h := Φ.rayBoundaryPoint_notMem_range_denseTorusι hΦ ρ
+  have h := Φ.rayBoundaryChartPoint_notMem_zeroChart (R := k) hΦ ρ
+    (Φ.bot_mem (Nonempty.some (inferInstance : Nonempty Φ.cones)).property)
   have hmem : (p[Φ,hΦ,ρ]).val ∈
       (((D[Ψ,inferInstance]).comap e.hom).support : Set X[Φ]) := by
-    rwa [he, Fan.support_boundaryIdeal]
+    rwa [he, Fan.support_toricBoundaryIdeal k]
   rw [support_comap, TopologicalSpace.Closeds.coe_preimage] at hmem
   let q := CodimensionOnePoint.mapOfIsOpenImmersion e.hom p[Φ,hΦ,ρ]
-  have hq : q ∈ Set.range (Ψ.rayBoundaryPoint hΨ) := by
-    rw [Ψ.range_rayBoundaryPoint hΨ inferInstance]
+  have hq : q ∈ Set.range (Ψ.rayBoundaryChartPoint (R := k) hΨ) := by
+    rw [Ψ.range_rayBoundaryChartPoint (R := k) hΨ
+      (Ψ.bot_mem (Nonempty.some (inferInstance : Nonempty Ψ.cones)).property)]
     simpa only [q, Set.mem_ofPred_eq, CodimensionOnePoint.coe_mapOfIsOpenImmersion,
-      ← Set.mem_compl_iff, ← Fan.support_boundaryIdeal, Set.mem_preimage] using hmem
+      ← Set.mem_compl_iff, ← Fan.support_toricBoundaryIdeal k, Set.mem_preimage] using hmem
   obtain ⟨τ, hτ⟩ := hq
   exact ⟨τ, by simpa only [q, CodimensionOnePoint.coe_mapOfIsOpenImmersion] using
     (congrArg Subtype.val hτ).symm⟩
@@ -73,16 +80,16 @@ include he in
 private theorem exists_boundary_ray_equiv :
     ∃ r : Φ.Ray ≃ Ψ.Ray, ∀ ρ, e.hom (p[Φ,hΦ,ρ]).val = (p[Ψ,hΨ,r ρ]).val := by
   classical
-  choose r hr using exists_rayBoundaryPoint_image hΦ hΨ e he
+  choose r hr using exists_rayBoundaryPoint_image k hΦ hΨ e he
   have hinv : (D[Φ,inferInstance]).comap e.inv = D[Ψ,inferInstance] := by
     rw [← he, ← comap_comp, Iso.inv_hom_id, comap_id]
   refine ⟨Equiv.ofBijective r ⟨?_, ?_⟩, hr⟩
   · intro ρ τ h
-    apply Φ.rayBoundaryPoint_injective hΦ
+    apply Φ.rayBoundaryChartPoint_injective (R := k) hΦ
     exact Subtype.ext (e.hom.isOpenEmbedding.injective (by rw [hr, hr, h]))
   · intro τ
-    obtain ⟨ρ, hρ⟩ := exists_rayBoundaryPoint_image hΨ hΦ e.symm hinv τ
-    refine ⟨ρ, Ψ.rayBoundaryPoint_injective hΨ (Subtype.ext ?_)⟩
+    obtain ⟨ρ, hρ⟩ := exists_rayBoundaryPoint_image k hΨ hΦ e.symm hinv τ
+    refine ⟨ρ, Ψ.rayBoundaryChartPoint_injective (R := k) hΨ (Subtype.ext ?_)⟩
     rw [← hr, ← hρ, ← Scheme.Hom.comp_apply, Iso.symm_hom, Iso.inv_hom_id]
     simp
 
@@ -91,12 +98,14 @@ end BoundaryRays
 section PicardRelations
 
 variable [Nonempty Φ.cones] [Nonempty Ψ.cones]
-  (hΦ : Φ.IsRegular) (hΨ : Ψ.IsRegular) (e : X[Φ] ≅ X[Ψ])
+  (hΦ : Φ.IsRegular) (hΨ : Ψ.IsRegular)
+  (e : Φ.finiteFanScheme k ≅ Ψ.finiteFanScheme k)
   (r : Φ.Ray ≃ Ψ.Ray)
-  (hr : ∀ ρ, e.hom (p[Φ,hΦ,ρ]).val = (p[Ψ,hΨ,r ρ]).val)
+  (hr : ∀ ρ, e.hom (Φ.rayBoundaryChartPoint (R := k) hΦ ρ).val =
+    (Ψ.rayBoundaryChartPoint (R := k) hΨ (r ρ)).val)
 
 local notation "C[" F "]" => AddMonoidHom.toIntLinearMap (Fan.characterToRayDivisor F)
-local notation "P[" F "," h "]" => AddMonoidHom.toIntLinearMap (Fan.rayDivisorToPicard F h)
+local notation "P[" F "," h "]" => AddMonoidHom.toIntLinearMap (Fan.rayChartDivisorToPicard k F h)
 local notation "pull" => LinearEquiv.funCongrLeft ℤ ℤ r
 
 include hr in
@@ -105,8 +114,8 @@ private theorem pullback_rayDivisorToPicard (x : Ψ.Ray → ℤ) :
       P[Φ,hΦ] (pull x) := by
   let := Fintype.ofFinite Φ.Ray
   let := Fintype.ofFinite Ψ.Ray
-  let := Φ.uniqueFactorizationMonoid_stalk_algebraicRealization hΦ
-  let := Ψ.uniqueFactorizationMonoid_stalk_algebraicRealization hΨ
+  let := Φ.uniqueFactorizationMonoid_stalk_finiteFanScheme (R := k) hΦ
+  let := Ψ.uniqueFactorizationMonoid_stalk_finiteFanScheme (R := k) hΨ
   have hprime (ρ : Φ.Ray) :
       CodimensionOnePoint.mapOfIsOpenImmersion e.hom p[Φ,hΦ,ρ] = p[Ψ,hΨ,r ρ] :=
     Subtype.ext (by simpa only [CodimensionOnePoint.coe_mapOfIsOpenImmersion] using hr ρ)
@@ -117,7 +126,7 @@ private theorem pullback_rayDivisorToPicard (x : Ψ.Ray → ℤ) :
   have hsum := r.sum_comp
     (fun τ ↦ x τ • Additive.ofMul (LineBundleClass.primeDivisorClass p[Ψ,hΨ,τ]))
   rw [AddMonoidHom.coe_toIntLinearMap, AddMonoidHom.coe_toIntLinearMap,
-    Fan.rayDivisorToPicard_apply, Fan.rayDivisorToPicard_apply, ← hsum]
+    Fan.rayChartDivisorToPicard_apply, Fan.rayChartDivisorToPicard_apply, ← hsum]
   rw [← LineBundleClass.pullbackHom_apply, ← MonoidHom.toAdditive_apply_apply, map_sum]
   apply Finset.sum_congr rfl
   intro ρ _
@@ -133,13 +142,13 @@ private theorem exists_latticeEquiv_of_boundary_image (hc : Φ.IsComplete) (hc' 
   let := Φ.lattice.finite
   let := Ψ.lattice.finite
   have exactΦ : Function.Exact C[Φ] P[Φ,hΦ] :=
-    Φ.exact_characterToRayDivisor_rayDivisorToPicard hΦ
+    Φ.exact_characterToRayDivisor_rayChartDivisorToPicard k hΦ
   have exactΨ : Function.Exact C[Ψ] P[Ψ,hΨ] :=
-    Ψ.exact_characterToRayDivisor_rayDivisorToPicard hΨ
+    Ψ.exact_characterToRayDivisor_rayChartDivisorToPicard k hΨ
   have hker : (P[Ψ,hΨ]).ker.map (pull).toLinearMap = (P[Φ,hΦ]).ker := by
     ext x
     rw [Submodule.mem_map_equiv]
-    have hx := pullback_rayDivisorToPicard hΦ hΨ e r hr ((pull).symm x)
+    have hx := pullback_rayDivisorToPicard k hΦ hΨ e r hr ((pull).symm x)
     simp only [LinearEquiv.apply_symm_apply] at hx
     rw [LinearMap.mem_ker, LinearMap.mem_ker, ← hx]
     let pb := (LineBundleClass.pullbackEquiv e).toAdditive
@@ -177,7 +186,7 @@ private theorem exists_fanEquiv_of_boundary_image [Nonempty Φ.cones] [Nonempty 
     (e : X[Φ] ≅ X[Ψ]) (r : Φ.Ray ≃ Ψ.Ray)
     (hr : ∀ ρ, e.hom (p[Φ,hΦ,ρ]).val = (p[Ψ,hΨ,r ρ]).val) :
     ∃ f : FanEquiv Φ Ψ, f.rayEquiv = r := by
-  obtain ⟨l, hl⟩ := exists_latticeEquiv_of_boundary_image hΦ hΨ e r hr hc hc'
+  obtain ⟨l, hl⟩ := exists_latticeEquiv_of_boundary_image k hΦ hΨ e r hr hc hc'
   let Ω := Φ.mapEquiv Ψ.lattice l
   let g : FanEquiv Φ Ω := Φ.mapEquivIso Ψ.lattice l
   have hgl : g.latticeEquiv = l := Φ.mapEquivIso_latticeEquiv Ψ.lattice l
@@ -198,39 +207,39 @@ private theorem exists_fanEquiv_of_boundary_image [Nonempty Φ.cones] [Nonempty 
   refine ⟨f, Equiv.ext fun ρ ↦ Ray.primitiveGenerator_injective ?_⟩
   simpa only [FanEquiv.primitiveGenerator_rayEquiv, hfl] using hl ρ
 
-/-- An isomorphism of complete regular toric surfaces over `ℂ` preserving the
+/-- An isomorphism of complete regular toric surfaces over the coefficient field preserving the
 reduced boundaries is the composite of a unique fan isomorphism followed by a
 unique torus translation on the target. -/
 theorem existsUnique_toric_factorization_of_boundary_iso
     (hΦ : Φ.IsRegular) (hΨ : Ψ.IsRegular) (hc : Φ.IsComplete) (hc' : Ψ.IsComplete)
     (_hN : Module.finrank ℤ N = 2) (hN' : Module.finrank ℤ N' = 2)
-    (e : X[Φ] ≅ X[Ψ]) [e.hom.IsOver (Spec (.of ℂ))]
+    (e : X[Φ] ≅ X[Ψ]) [e.hom.IsOver (Spec (.of k))]
     (he : (D[Ψ,hc'.nonempty_cones]).comap e.hom = D[Φ,hc.nonempty_cones]) :
     letI := hc'.nonempty_cones
-    ∃! q : FanEquiv Φ Ψ × (Multiplicative (N' →+ ℤ) →* ℂˣ),
-      q.1.toFanHom.algebraicMap ≫ (Ψ.torusTranslation q.2).hom = e.hom := by
+    ∃! q : FanEquiv Φ Ψ × (Multiplicative (N' →+ ℤ) →* kˣ),
+      q.1.toFanHom.finiteFanSchemeHom k ≫ (Ψ.torusTranslationIso k q.2).hom = e.hom := by
   let := hc.nonempty_cones
   let := hc'.nonempty_cones
-  obtain ⟨r, hr⟩ := exists_boundary_ray_equiv hΦ hΨ e he
-  obtain ⟨f, hfr⟩ := exists_fanEquiv_of_boundary_image hΦ hΨ hc hc' hN' e r hr
-  let a := asIso f.toFanHom.algebraicMap
+  obtain ⟨r, hr⟩ := exists_boundary_ray_equiv k hΦ hΨ e he
+  obtain ⟨f, hfr⟩ := exists_fanEquiv_of_boundary_image k hΦ hΨ hc hc' hN' e r hr
+  let a := asIso (f.toFanHom.finiteFanSchemeHom k)
   let t := a.symm ≪≫ e
-  have : a.hom.IsOver (Spec (.of ℂ)) :=
-    inferInstanceAs (f.toFanHom.algebraicMap.IsOver (Spec (.of ℂ)))
-  have : t.hom.IsOver (Spec (.of ℂ)) :=
-    inferInstanceAs ((a.inv ≫ e.hom).IsOver (Spec (.of ℂ)))
+  have : a.hom.IsOver (Spec (.of k)) :=
+    inferInstanceAs ((f.toFanHom.finiteFanSchemeHom k).IsOver (Spec (.of k)))
+  have : t.hom.IsOver (Spec (.of k)) :=
+    inferInstanceAs ((a.inv ≫ e.hom).IsOver (Spec (.of k)))
   have hfix (ρ : Ψ.Ray) : (I[Ψ,hΨ,ρ]).comap t.hom = I[Ψ,hΨ,ρ] := by
-    apply (Ψ.comap_rayBoundaryIdeal_eq_iff hΨ t ρ).mpr
+    apply (Ψ.comap_rayDivisorIdeal_eq_iff k hΨ t ρ).mpr
     obtain ⟨τ, rfl⟩ := f.rayEquiv.surjective ρ
     have hτ : a.hom (p[Φ,hΦ,τ]).val = (p[Ψ,hΨ,f.rayEquiv τ]).val :=
-      f.algebraicMap_rayBoundaryPoint hΦ hΨ τ
+      f.finiteFanSchemeHom_rayBoundaryChartPoint k hΦ hΨ τ
     dsimp only [t]
     rw [Iso.trans_hom, Iso.symm_hom, Scheme.Hom.comp_apply, ← hτ,
       ← Scheme.Hom.comp_apply a.hom a.inv, a.hom_inv_id]
     rw [hτ, hfr]
     simpa using hr τ
   obtain ⟨χ, hχ, huniq⟩ :=
-    Ψ.existsUnique_torusTranslation_of_comap_rayBoundaryIdeal_eq hΨ hc' t hfix
+    Ψ.existsUnique_torusTranslation_of_comap_rayBoundaryIdeal_eq k hΨ hc' t hfix
   refine ⟨⟨f, χ⟩, ?_, ?_⟩
   · dsimp only
     rw [hχ, Iso.trans_hom, Iso.symm_hom]
@@ -239,13 +248,13 @@ theorem existsUnique_toric_factorization_of_boundary_iso
     have hg : g.rayEquiv = r := by
       apply Equiv.ext
       intro ρ
-      apply Ψ.rayBoundaryPoint_injective hΨ
+      apply Ψ.rayBoundaryChartPoint_injective (R := k) hΨ
       apply Subtype.ext
       have hp := congrArg (fun (m : X[Φ] ⟶ X[Ψ]) ↦ m (p[Φ,hΦ,ρ]).val) hψ
-      rw [Scheme.Hom.comp_apply, g.algebraicMap_rayBoundaryPoint hΦ hΨ, hr] at hp
+      rw [Scheme.Hom.comp_apply, g.finiteFanSchemeHom_rayBoundaryChartPoint k hΦ hΨ, hr] at hp
       rw [← hp]
-      exact ((Ψ.comap_rayBoundaryIdeal_eq_iff hΨ (Ψ.torusTranslation ψ) (g.rayEquiv ρ)).mp
-        (Ψ.comap_rayBoundaryIdeal_torusTranslation_hom hΨ ψ (g.rayEquiv ρ))).symm
+      exact ((Ψ.comap_rayDivisorIdeal_eq_iff k hΨ (Ψ.torusTranslationIso k ψ) (g.rayEquiv ρ)).mp
+        (Ψ.comap_rayBoundaryIdeal_torusTranslation_hom k hΨ ψ (g.rayEquiv ρ))).symm
     have hgf := FanEquiv.eq_of_rayEquiv_eq hc (hg.trans hfr.symm)
     subst g
     congr 1

@@ -30,30 +30,33 @@ open Fan Fan.LogarithmicProjection
 
 namespace QPainleve.SignedClusterModularGroup.GeometricRealization
 
+variable {k₀ : Type} [Field k₀] [IsAlgClosed k₀]
+
 open MarkedSurface (surfaceIso)
 
-local notation "S" => Spec (CommRingCat.of ℂ)
-local notation "Centers[" r "]" => Over.mk (structureMap ℂ (Fin r → ℤ))
-local notation "XTor[" r "]" => scheme ℂ (Fin r →₀ ℤ)
+local notation "S" => Spec (CommRingCat.of k₀)
+local notation "Centers[" r "]" => Over.mk (structureMap k₀ (Fin r → ℤ))
+local notation "XTor[" r "]" => scheme k₀ (Fin r →₀ ℤ)
 local notation "D[" M "]" => Scheme.Hom.ker (Over.Hom.left (Arrow.hom (MarkedSurface.pair M)))
 local notation "classOf(" h ")" =>
   (LineBundleClass.mk (Scheme.IdealSheafData.IsEffectiveCartier.toInvertibleSheaf h))⁻¹
-local notation "χ[" c "]" => pointsEquiv ℂ _
+local notation "χ[" c "]" => pointsEquiv k₀ _
   (Subtype.mk (Over.Hom.left c) (Over.w c))
-local notation "eval[" E "," w "]" => op (signedClusterModularGroupMap ℂ E (End.of w))
-local notation "Cw[" w "," P "]" => Quiver.Path.centerPartialMap ℂ w P
+local notation "eval[" E "," w "]" => op (signedClusterModularGroupMap k₀ E (End.of w))
+local notation "Cw[" w "," P "]" => Quiver.Path.centerPartialMap k₀ w P
 
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {b : Module.Basis (Fin 2) ℤ N} {r n : ℕ} [NeZero n]
   {L γ : Type} [AddCommGroup L] {B : LinearMap.BilinForm ℤ L}
-  {E : SkewExchangeMatrix (Fin r)} {Q : CompleteToricPresentation i b r L γ}
-  {M : Point Centers[r] → MarkedSurface ℂ n B XTor[r]}
+  {E : SkewExchangeMatrix (Fin r)} {Q : CompleteToricPresentation k₀ i b r L γ}
+  {M : Point (Over.mk (QPainleve.CharacterTorus.structureMap k₀ (Fin r → ℤ))) →
+    MarkedSurface k₀ n B (QPainleve.CharacterTorus.scheme k₀ (Fin r →₀ ℤ))}
   {d : ZMod n → L} {hD : ∀ c, D[M c].IsEffectiveCartier}
   {hmark : ∀ c j, (M c).boundaryClass (hD c) j = d j}
 
 local instance instNonemptyCones : Nonempty Q.fan.cones := Q.complete.nonempty_cones
 local instance instPrestableBoundary :
-    PrestableFamily ((Q.fan.boundaryIdeal Q.complete.nonempty_cones).subscheme ↘ S) :=
+    PrestableFamily ((Q.fan.toricBoundaryIdeal k₀ Q.complete.nonempty_cones).subscheme ↘ S) :=
   Q.prestable
 local instance instNeZeroBoundaryLength : NeZero Q.length := Q.neZero
 
@@ -68,15 +71,15 @@ If the specified action preserves orientation, the loop uses no inversions. -/
 theorem nonempty_picardLoopRealization_of_pair_iso
     (P : ChargeSeed E N) (hform : P.form = b.detDualEquiv.toLinearMap)
     (hcharge : P.charge = Fan.rayChargeMap Q.rays)
-    (models : ∀ c : Point Centers[r], c.left (default : S) ∈ Quiver.Path.nil.centerOpen ℂ P →
+    (models : ∀ c : Point Centers[r], c.left (default : S) ∈ Quiver.Path.nil.centerOpen k₀ P →
       Q.HasNodalModel c (M c))
     {c₀ c₁ : Point Centers[r]} (hP : Q.HasNodalModel c₁ (M c₁))
-    (hnef : (classOf(hD c₀)).IsNef ℂ ((M c₀).surface ↘ S))
-    (hsq : Chow.classIntersectionNumber ℂ (M c₀).surface classOf(hD c₀) classOf(hD c₀) = 0)
+    (hnef : (classOf(hD c₀)).IsNef k₀ ((M c₀).surface ↘ S))
+    (hsq : Chow.classIntersectionNumber k₀ (M c₀).surface classOf(hD c₀) classOf(hD c₀) = 0)
     (hprim : IsPrimitive (Additive.ofMul classOf(hD c₀)))
-    (hgeneric : ∀ w : Word E E, c₀.left (default : S) ∈ w.centerOpen ℂ P)
-    (ρ : (SignedClusterModularGroup ℂ E)ᵐᵒᵖ →* signedBoundaryIsometryGroup B d)
-    (hρ : ∀ (w : Word E E) (R : GeometricRealization M M Cw[w,P] (w.xRationalMap ℂ)),
+    (hgeneric : ∀ w : Word E E, c₀.left (default : S) ∈ w.centerOpen k₀ P)
+    (ρ : (SignedClusterModularGroup k₀ E)ᵐᵒᵖ →* signedBoundaryIsometryGroup B d)
+    (hρ : ∀ (w : Word E E) (R : GeometricRealization M M Cw[w,P] (w.xRationalMap k₀)),
       Models[Cw[w,P]] → ρ eval[E,w] = R.toSignedBoundaryIsometry d hD hmark)
     {g : signedBoundaryIsometryGroup B d} (e : SignedPicardPairIso (M c₀) (M c₁) g) :
     letI : IsIntegral (M c₀).surface := (M c₀).integral

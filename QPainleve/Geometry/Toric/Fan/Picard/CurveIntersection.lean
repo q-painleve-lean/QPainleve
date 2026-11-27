@@ -8,10 +8,9 @@ module
 public import QPainleve.AlgebraicGeometry.Blowup.Tower.CurveIntersection
 public import QPainleve.AlgebraicGeometry.Chow.SurfaceIntersection
 public import QPainleve.Geometry.Toric.Fan.Boundary.Ideal
-public import QPainleve.Geometry.Toric.Fan.Picard.Presentation
-public import QPainleve.Geometry.Toric.Fan.Smooth
+public import QPainleve.Geometry.Toric.Fan.Picard.FiniteFanScheme
+public import QPainleve.Geometry.Toric.BaseChange.Fan
 
-import Mathlib.Analysis.Complex.Polynomial.Basic
 import QPainleve.Geometry.Toric.Fan.Boundary.InternalCenter
 import QPainleve.Geometry.Toric.Fan.Boundary.ProjectiveLine
 
@@ -31,13 +30,17 @@ open Scheme.IdealSheafData
 
 namespace TauCeti.Toric.Fan.Ray
 
-variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
-  {i : N →+ V} {Φ : Fan i} [Nonempty Φ.cones] [Φ.algebraicRealization.IsProjectiveOver ℂ]
+universe u
+
+variable (K : Type u) [Field K] [IsAlgClosed K]
+
+variable {N V : Type u} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
+  {i : N →+ V} {Φ : Fan i} [Nonempty Φ.cones] [(Φ.finiteFanScheme K).IsProjectiveOver K]
   (ρ : Φ.Ray) (b : Basis (Fin 2) ℤ N) (hΦ : Φ.IsRegular)
 
-local notation "X" => Φ.algebraicRealization
-local notation "S" => Spec (CommRingCat.of ℂ)
-local notation "C" => Φ.rayBoundaryIdeal hΦ ρ
+local notation "X" => (Φ.finiteFanScheme K)
+local notation "S" => Spec (CommRingCat.of K)
+local notation "C" => Φ.rayDivisorIdeal K hΦ ρ
 local notation "d₂" => Eq.trans (finrank_eq_card_basis b) (Fintype.card_fin 2)
 
 open Classical in
@@ -45,30 +48,31 @@ open Classical in
 intersection with the base part of the nef class. The orders are the negatives
 of the total exceptional coordinates. Centers at either endpoint of the ray's
 open orbit are included. -/
-theorem sum_first_base_orders_le_ray_degree {Y : Scheme} {n : ℕ} {T : BlowupTower X n Y}
+theorem sum_first_base_orders_le_ray_degree {Y : Scheme.{u}} {n : ℕ} {T : BlowupTower X n Y}
     (hT : IsClosedPointTower X T) (a : Additive (LineBundleClass X)) (m : Fin n → ℕ)
     (s : Finset (Fin n))
     (hs : ∀ j ∈ s, hT.baseCenter j ∈ (C).support ∧
       ∀ l < j, hT.baseCenter l ≠ hT.baseCenter j)
-    (hnef : (T.picardHom (a, fun j ↦ -(m j : ℤ))).toMul.IsNef ℂ (T.toBase ≫ (X ↘ S))) :
+    (hnef : (T.picardHom (a, fun j ↦ -(m j : ℤ))).toMul.IsNef K (T.toBase ≫ (X ↘ S))) :
     let : SmoothOfRelativeDimension 2 (X ↘ S) := by
-      rw [Fan.algebraicRealization_over]
-      exact d₂ ▸ Φ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
+      rw [Fan.finiteFanScheme_over K]
+      exact d₂ ▸ Φ.smoothOfRelativeDimension_finiteFanSchemeToSpec K hΦ
     ∑ j ∈ s, (m j : ℤ) ≤
-      intersectionBilinForm ℂ X a ((Φ.rayDivisorToPicard hΦ) (Pi.single ρ 1)) := by
+      intersectionBilinForm K X a ((Φ.rayChartDivisorToPicard K hΦ) (Pi.single ρ 1)) := by
   intro hdim
   let := hdim
-  let : TauCeti.AlgebraicGeometry.IsRegular (C).subscheme := Φ.isRegular_rayBoundary hΦ ρ
-  let : (C).subscheme.IsCurveOver ℂ := ρ.isCurveOver_boundaryComponent hΦ d₂
+  have : IsProper (Φ.finiteFanSchemeToSpec K) := inferInstanceAs (IsProper (X ↘ S))
+  let : TauCeti.AlgebraicGeometry.IsRegular (C).subscheme := Φ.isRegular_rayBoundary K hΦ ρ
+  let : (C).subscheme.IsCurveOver K := ρ.isCurveOver_boundaryComponent K hΦ d₂
     (b.detDualEquiv_self ρ.primitiveGenerator) (ρ.surjective_detCharacter b)
-  have hC := Φ.isEffectiveCartier_rayBoundaryIdeal hΦ ρ
-  let := Φ.uniqueFactorizationMonoid_stalk_algebraicRealization hΦ
+  have hC := Φ.isEffectiveCartier_rayDivisorIdeal K hΦ ρ
+  let := Φ.uniqueFactorizationMonoid_stalk_finiteFanScheme (R := K) hΦ
   have hdimX := topologicalKrullDim_eq_of_smoothOfRelativeDimension (X ↘ S) (n := 2)
   have hpair := classIntersectionNumber_eq_intersectionNumber_subschemeι
-    ℂ hdimX.le hC (Scheme.IsCurveOver.topologicalKrullDim_eq_one ℂ) a.toMul
-  rw [intersectionBilinForm_apply, Fan.rayDivisorToPicard_single, one_zsmul, toMul_ofMul,
+    K hdimX.le hC (Scheme.IsCurveOver.topologicalKrullDim_eq_one K) a.toMul
+  rw [intersectionBilinForm_apply, Fan.rayChartDivisorToPicard_single, one_zsmul, toMul_ofMul,
     primeDivisorClass_def,
-    mk_toInvertibleSheaf_congr _ hC (Φ.rayBoundaryIdeal_def hΦ ρ).symm, hpair]
+    mk_toInvertibleSheaf_congr _ hC (Φ.rayDivisorIdeal_def K hΦ ρ).symm, hpair]
   exact hT.sum_first_base_orders_le_curve_intersection (C).subschemeι (X ↘ S) rfl
     a.toMul m s (fun j hj ↦ ⟨(C).range_subschemeι.symm ▸ (hs j hj).1, (hs j hj).2⟩)
     (by simpa only [ofMul_toMul] using hnef)

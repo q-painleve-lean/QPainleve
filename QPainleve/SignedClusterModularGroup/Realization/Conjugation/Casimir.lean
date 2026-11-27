@@ -37,9 +37,11 @@ open QPainleve.CharacterTorus QPainleve.Cluster
 
 namespace QPainleve.SignedClusterModularGroup
 
-local notation "S" => Spec (CommRingCat.of ℂ)
-local notation "Centers[" r "]" => Over.mk (structureMap ℂ (Fin r → ℤ))
-local notation "XTor[" r "]" => scheme ℂ (Fin r →₀ ℤ)
+variable {k₀ : Type} [Field k₀] [IsAlgClosed k₀]
+
+local notation "S" => Spec (CommRingCat.of k₀)
+local notation "Centers[" r "]" => Over.mk (structureMap k₀ (Fin r → ℤ))
+local notation "XTor[" r "]" => scheme k₀ (Fin r →₀ ℤ)
 local notation "Orth[" H "," d "]" =>
   LinearMap.BilinForm.orthogonal H (Submodule.span ℤ (Set.range d))
 local notation "K[" E "]" => LinearMap.ker (Matrix.mulVecLin (SkewExchangeMatrix.matrix E))
@@ -48,26 +50,26 @@ variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {b : Basis (Fin 2) ℤ N} {L γ : Type} [AddCommGroup L]
   {r n : ℕ} [NeZero n]
 
-local instance instNonemptyCasimirCones (Q : CompleteToricPresentation i b r L γ) :
+local instance instNonemptyCasimirCones (Q : CompleteToricPresentation k₀ i b r L γ) :
     Nonempty Q.fan.cones := Q.complete.nonempty_cones
 
-local instance instNeZeroCasimirBoundaryLength (Q : CompleteToricPresentation i b r L γ) :
+local instance instNeZeroCasimirBoundaryLength (Q : CompleteToricPresentation k₀ i b r L γ) :
     NeZero Q.length := Q.neZero
 
-local instance instPrestableCasimirToricBoundary (Q : CompleteToricPresentation i b r L γ) :
-    PrestableFamily ((Q.fan.boundaryIdeal Q.complete.nonempty_cones).subscheme ↘ S) :=
+local instance instPrestableCasimirToricBoundary (Q : CompleteToricPresentation k₀ i b r L γ) :
+    PrestableFamily ((Q.fan.toricBoundaryIdeal k₀ Q.complete.nonempty_cones).subscheme ↘ S) :=
   Q.prestable
 
-local instance (Q : CompleteToricPresentation i b r L γ) :
-    Q.fan.algebraicRealization.IsProjectiveOver ℂ :=
-  Q.fan.isProjectiveOver_algebraicRealization_of_isComplete Q.regular Q.complete b
+local instance (Q : CompleteToricPresentation k₀ i b r L γ) :
+    (Q.fan.finiteFanScheme k₀).IsProjectiveOver k₀ :=
+  Q.fan.isProjectiveOver_finiteFanScheme_of_isComplete k₀ Q.regular Q.complete b
 
-local instance (Q : CompleteToricPresentation i b r L γ) :
-    SmoothOfRelativeDimension 2 (Q.fan.algebraicRealization ↘ S) :=
+local instance (Q : CompleteToricPresentation k₀ i b r L γ) :
+    SmoothOfRelativeDimension 2 ((Q.fan.finiteFanScheme k₀) ↘ S) :=
   Q.smoothOfRelativeDimension_fan
 
-local instance (Q : CompleteToricPresentation i b r L γ) :
-    (LinearMap.BilinForm.prod (Chow.intersectionBilinForm ℂ Q.fan.algebraicRealization)
+local instance (Q : CompleteToricPresentation k₀ i b r L γ) :
+    (LinearMap.BilinForm.prod (Chow.intersectionBilinForm k₀ (Q.fan.finiteFanScheme k₀))
       (-(dotProductBilin ℤ ℤ : LinearMap.BilinForm ℤ (Fin r → ℤ)))).IsPerfPair :=
   Q.isPerfPair_auxiliaryPicardForm
 
@@ -79,24 +81,34 @@ variable {N₀ N₁ V₀ V₁ : Type} [AddCommGroup N₀] [AddCommGroup N₁]
   {L₀ L₁ γ₀ γ₁ : Type} [AddCommGroup L₀] [AddCommGroup L₁]
   {B₀ : LinearMap.BilinForm ℤ L₀} {B₁ : LinearMap.BilinForm ℤ L₁}
   {E₀ E₁ : SkewExchangeMatrix (Fin r)} {w : Word E₀ E₁}
-  {M₀ : Point Centers[r] → MarkedSurface ℂ n B₀ XTor[r]}
-  {M₁ : Point Centers[r] → MarkedSurface ℂ n B₁ XTor[r]}
-  {C : Centers[r].left.PartialMap Centers[r].left}
-  [IsDominant C.hom] [C.IsOver Centers[r].hom Centers[r].hom]
-  (R : GeometricRealization (T₀ := Centers[r]) (T₁ := Centers[r]) M₀ M₁ C (w.xRationalMap ℂ))
+  {M₀ : Point (Over.mk (QPainleve.CharacterTorus.structureMap k₀ (Fin r → ℤ))) →
+    MarkedSurface k₀ n B₀ (QPainleve.CharacterTorus.scheme k₀ (Fin r →₀ ℤ))}
+  {M₁ : Point (Over.mk (QPainleve.CharacterTorus.structureMap k₀ (Fin r → ℤ))) →
+    MarkedSurface k₀ n B₁ (QPainleve.CharacterTorus.scheme k₀ (Fin r →₀ ℤ))}
+  {C : (Over.mk (QPainleve.CharacterTorus.structureMap k₀ (Fin r → ℤ))).left.PartialMap (Over.mk
+    (QPainleve.CharacterTorus.structureMap k₀ (Fin r → ℤ))).left}
+  [IsDominant C.hom] [C.IsOver (Over.mk (QPainleve.CharacterTorus.structureMap k₀ (Fin r →
+    ℤ))).hom (Over.mk (QPainleve.CharacterTorus.structureMap k₀ (Fin r → ℤ))).hom]
+  (R : GeometricRealization (T₀ := (Over.mk (QPainleve.CharacterTorus.structureMap k₀ (Fin r →
+    ℤ)))) (T₁ := (Over.mk (QPainleve.CharacterTorus.structureMap k₀ (Fin r → ℤ)))) M₀ M₁ C
+      (w.xRationalMap k₀))
   {d₀ : ZMod n → L₀} {d₁ : ZMod n → L₁}
   (hmark₀ : ∀ c j, (M₀ c).boundaryClass (M₀ c).isEffectiveCartier_boundaryIdeal j = d₀ j)
   (hmark₁ : ∀ c j, (M₁ c).boundaryClass (M₁ c).isEffectiveCartier_boundaryIdeal j = d₁ j)
 
-variable (Q₀ : CompleteToricPresentation i₀ b₀ r L₀ γ₀)
-  (Q₁ : CompleteToricPresentation i₁ b₁ r L₁ γ₁)
-  (models₀ : ∀ p : CenterPoint (U := Centers[r]) (V := Centers[r]) C,
-    let c := p ≫ PartialMap.domainSource (X := Centers[r]) (Y := Centers[r]) C
+variable (Q₀ : CompleteToricPresentation k₀ i₀ b₀ r L₀ γ₀)
+  (Q₁ : CompleteToricPresentation k₀ i₁ b₁ r L₁ γ₁)
+  (models₀ : ∀ p : CenterPoint (U := (Over.mk (QPainleve.CharacterTorus.structureMap k₀ (Fin r →
+    ℤ)))) (V := (Over.mk (QPainleve.CharacterTorus.structureMap k₀ (Fin r → ℤ)))) C,
+    let c := p ≫ PartialMap.domainSource (X := (Over.mk (QPainleve.CharacterTorus.structureMap k₀
+      (Fin r → ℤ)))) (Y := (Over.mk (QPainleve.CharacterTorus.structureMap k₀ (Fin r → ℤ)))) C
     Q₀.HasNodalModel c (M₀ c))
-  (models₁ : ∀ p : CenterPoint (U := Centers[r]) (V := Centers[r]) C,
-    let c := p ≫ PartialMap.domainTarget (X := Centers[r]) (Y := Centers[r]) C
+  (models₁ : ∀ p : CenterPoint (U := (Over.mk (QPainleve.CharacterTorus.structureMap k₀ (Fin r →
+    ℤ)))) (V := (Over.mk (QPainleve.CharacterTorus.structureMap k₀ (Fin r → ℤ)))) C,
+    let c := p ≫ PartialMap.domainTarget (X := (Over.mk (QPainleve.CharacterTorus.structureMap k₀
+      (Fin r → ℤ)))) (Y := (Over.mk (QPainleve.CharacterTorus.structureMap k₀ (Fin r → ℤ)))) C
     Q₁.HasNodalModel c (M₁ c))
-  (hC : C.hom = C.domain.ι ≫ (w.centerIso ℂ).hom)
+  (hC : C.hom = C.domain.ι ≫ (w.centerIso k₀).hom)
 
 include models₀ models₁ hC
 

@@ -23,10 +23,13 @@ public section
 
 open AlgebraicGeometry CategoryTheory QPainleve QPainleve.BlowupTower TauCeti.Toric
 
-variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
-  {i : N →+ V} {X Y : Scheme} (b : Module.Basis (Fin 2) ℤ N)
+universe u
 
-local notation "S" => Spec (CommRingCat.of ℂ)
+variable {K : Type u} [Field K] {N : Type u} {V : Type*}
+  [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
+  {i : N →+ V} {X Y : Scheme.{u}} (b : Module.Basis (Fin 2) ℤ N)
+
+local notation "S" => Spec (CommRingCat.of K)
 
 namespace AlgebraicGeometry.Scheme.IdealSheafData
 
@@ -42,21 +45,21 @@ structure ToricPresentation (D : X.IdealSheafData) (s : X ⟶ S)
   /-- The boundary ray carrying each ordered internal center. -/
   rays : Fin r → fan.Ray
   /-- The binomial parameter of each center in the frame `b`. -/
-  parameters : Fin r → ℂˣ
+  parameters : Fin r → Kˣ
   /-- The number of nodal blowups. -/
   nodalLength : ℕ
   /-- The surface at the top of the nodal tower. -/
-  surface : Scheme
+  surface : Scheme.{u}
   /-- The blowup tower from the original surface to the nodal model. -/
   tower : BlowupTower X nodalLength surface
   isNodal : IsNodalBoundaryTower D s (𝟙 X) tower
   /-- The isomorphism from the internal model to the nodal model. -/
-  iso : (Fan.internalBlowupTower (h₀ := complete.nonempty_cones) b rays parameters).1 ≅ surface
+  iso : (Fan.internalBlowupTower K (h₀ := complete.nonempty_cones) b rays parameters).1 ≅ surface
   iso_over :
-    let A := Fan.internalBlowupTower (h₀ := complete.nonempty_cones) b rays parameters
-    iso.hom ≫ tower.toBase ≫ s = A.2.toTower.toBase ≫ fan.algebraicRealizationStructureMap
+    let A := Fan.internalBlowupTower K (h₀ := complete.nonempty_cones) b rays parameters
+    iso.hom ≫ tower.toBase ≫ s = A.2.toTower.toBase ≫ fan.finiteFanSchemeToSpec K
   iso_boundary :
-    let A := Fan.internalBlowupTower (h₀ := complete.nonempty_cones) b rays parameters
+    let A := Fan.internalBlowupTower K (h₀ := complete.nonempty_cones) b rays parameters
     ((D.comap tower.toBase).radical).comap iso.hom = A.2.boundaryι.ker
 
 /-- The pair admits a toric presentation in the frame `b`. -/
@@ -80,12 +83,12 @@ theorem ToricPresentation.hasToricPresentation {D : X.IdealSheafData} {s : X ⟶
 and its toric boundary has a toric presentation with empty blowup towers. -/
 theorem hasToricPresentation_of_toric_boundary {D : X.IdealSheafData}
     {s : X ⟶ S} {Φ : Fan i} (hΦ : Φ.IsRegular) (hc : Φ.IsComplete)
-    (e : Φ.algebraicRealization ≅ X) (he : e.hom ≫ s = Φ.algebraicRealizationStructureMap)
-    (hD : D.comap e.hom = Φ.boundaryIdeal hc.nonempty_cones) :
+    (e : Φ.finiteFanScheme K ≅ X) (he : e.hom ≫ s = Φ.finiteFanSchemeToSpec K)
+    (hD : D.comap e.hom = Φ.toricBoundaryIdeal K hc.nonempty_cones) :
     D.HasToricPresentation s b i := by
   let : Nonempty Φ.cones := hc.nonempty_cones
-  let A := Fan.internalBlowupTower b (Fin.elim0 : Fin 0 → Φ.Ray) Fin.elim0
-  suffices ∃ a : A.1 ≅ X, a.hom ≫ s = A.2.toTower.toBase ≫ Φ.algebraicRealizationStructureMap ∧
+  let A := Fan.internalBlowupTower K b (Fin.elim0 : Fin 0 → Φ.Ray) Fin.elim0
+  suffices ∃ a : A.1 ≅ X, a.hom ≫ s = A.2.toTower.toBase ≫ Φ.finiteFanSchemeToSpec K ∧
       D.radical.comap a.hom = A.2.boundaryι.ker by
     obtain ⟨a, ha, hB⟩ := this
     exact ToricPresentation.hasToricPresentation
@@ -95,7 +98,7 @@ theorem hasToricPresentation_of_toric_boundary {D : X.IdealSheafData}
   rw [Fan.internalBlowupTower_zero]
   refine ⟨e, by simpa using he, ?_⟩
   simp only [← radical_comap_of_isOpenImmersion, WithBoundary.boundaryι_nil, ker_subschemeι,
-    hD, Φ.boundaryIdeal_def]
+    hD]
   exact (isReduced_subscheme_iff_radical_eq _).mp inferInstance
 
 variable {b}

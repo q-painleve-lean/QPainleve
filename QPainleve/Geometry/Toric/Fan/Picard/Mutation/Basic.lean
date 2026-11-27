@@ -28,10 +28,15 @@ open TauCeti.AlgebraicGeometry (LineBundleClass)
 
 namespace TauCeti.Toric.Fan
 
-variable {N : Type} {V ι : Type*} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
+universe u
+
+variable {N : Type u} {V ι : Type*} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {Φ : Fan i}
 
-local notation "Pic" Ψ:arg => Additive (LineBundleClass (Fan.algebraicRealization Ψ))
+variable (R : Type u) [CommRing R] [IsDomain R] [IsNoetherianRing R]
+  [UniqueFactorizationMonoid R]
+
+local notation "Pic" Ψ:arg => Additive (LineBundleClass (Fan.finiteFanScheme R Ψ))
 local notation "mark" Ψ:arg => (Pic Ψ × (ι → ℤ))
 local notation "coeffs" Ψ:arg => ((Fan.Ray Ψ → ℤ) × (ι → ℤ))
 
@@ -46,13 +51,13 @@ positive part of the character divisor with ray orders `det(u, v)` for the pivot
 generator `v`. -/
 def mutationFiberClass (ρ₀ : Φ.Ray) (hΦ : Φ.IsRegular) : Pic Φ :=
   letI : Nonempty Φ.cones := ⟨ρ₀.toCone⟩
-  Φ.rayDivisorToPicard hΦ (fiberCoeffs b ρ₀)
+  Φ.rayChartDivisorToPicard R hΦ (fiberCoeffs b ρ₀)
 
 /-- Compute the fiber class in the toric divisor presentation. -/
 theorem mutationFiberClass_eq (ρ₀ : Φ.Ray) (hΦ : Φ.IsRegular) :
     letI : Nonempty Φ.cones := ⟨ρ₀.toCone⟩
-    mutationFiberClass b ρ₀ hΦ =
-      Φ.rayDivisorToPicard hΦ
+    mutationFiberClass R b ρ₀ hΦ =
+      Φ.rayChartDivisorToPicard R hΦ
         (fun ρ ↦ max (b.det ![ρ.primitiveGenerator, ρ₀.primitiveGenerator]) 0) :=
   (rfl)
 
@@ -62,7 +67,7 @@ theorem mutationFiberClass_of_opposite_section [Nonempty Φ.cones]
     (hΦ : Φ.IsRegular) (r : Fin 4 ≃ Φ.Ray)
     (e t : ℤ) (hr : (fun j ↦ Fan.Ray.primitiveGenerator (r j)) =
       ![b 0, b 1 - t • b 0, -b 0, e • b 0 - (b 1 - t • b 0)]) :
-    mutationFiberClass b (r 2) hΦ = Φ.rayDivisorToPicard hΦ (Pi.single (r 1) 1) := by
+    mutationFiberClass R b (r 2) hΦ = Φ.rayChartDivisorToPicard R hΦ (Pi.single (r 1) 1) := by
   classical
   rw [mutationFiberClass_eq]
   congr 1
@@ -131,23 +136,23 @@ private theorem mutationCoefficients_apply (a : (Φ').Ray → ℤ) (e : ι → �
 /-- The quotient of the free ray and exceptional coordinates giving the marked Picard group. -/
 private def markedPicardProjection (Ψ : Fan i) [Nonempty Ψ.cones] (hΨ : Ψ.IsRegular) :
     coeffs Ψ →ₗ[ℤ] mark Ψ :=
-  (Ψ.rayDivisorToPicard hΨ).toIntLinearMap.prodMap (LinearMap.id : (ι → ℤ) →ₗ[ℤ] (ι → ℤ))
+  (Ψ.rayChartDivisorToPicard R hΨ).toIntLinearMap.prodMap (LinearMap.id : (ι → ℤ) →ₗ[ℤ] (ι → ℤ))
 
 omit [DecidableEq ι] in
 private theorem markedPicardProjection_surjective (Ψ : Fan i) [Nonempty Ψ.cones]
     (hΨ : Ψ.IsRegular) :
-    Function.Surjective (markedPicardProjection (ι := ι) Ψ hΨ) :=
-  (Ψ.rayDivisorToPicard_surjective hΨ).prodMap Function.surjective_id
+    Function.Surjective (markedPicardProjection R (ι := ι) Ψ hΨ) :=
+  (Ψ.rayChartDivisorToPicard_surjective R hΨ).prodMap Function.surjective_id
 
 omit [DecidableEq ι] in
 private theorem mem_ker_markedPicardProjection (Ψ : Fan i) [Nonempty Ψ.cones]
     (hΨ : Ψ.IsRegular) (z : coeffs Ψ) :
-    z ∈ ker (markedPicardProjection Ψ hΨ) ↔
+    z ∈ ker (markedPicardProjection R Ψ hΨ) ↔
       ∃ m : N →+ ℤ, z = (Ψ.characterToRayDivisor m, 0) := by
   rcases z with ⟨a, e⟩
   simp only [markedPicardProjection, LinearMap.ker_prodMap, Submodule.mem_prod,
     LinearMap.mem_ker, AddMonoidHom.coe_toIntLinearMap, LinearMap.id_apply, Prod.mk.injEq,
-    Ψ.exact_characterToRayDivisor_rayDivisorToPicard hΨ a, Set.mem_range]
+    Ψ.exact_characterToRayDivisor_rayChartDivisorToPicard R hΨ a, Set.mem_range]
   exact ⟨fun ⟨⟨m, hm⟩, he⟩ ↦ ⟨m, hm.symm, he⟩,
     fun ⟨m, hm, he⟩ ↦ ⟨⟨m, hm.symm⟩, he⟩⟩
 
@@ -179,19 +184,19 @@ local notation "hΦ'" => Iff.mpr (Φ.isRegular_mutationFan_iff b hv hpos hOpposi
 private theorem map_ker_mutationCoefficients :
     letI : Nonempty Φ.cones := ⟨(s k).toCone⟩
     letI : Nonempty (Φ').cones := ⟨(r (s k)).toCone⟩
-    (ker (markedPicardProjection (ι := ι) Φ' hΦ')).map
+    (ker (markedPicardProjection R (ι := ι) Φ' hΦ')).map
       (mutationCoefficients b s k hOpposite).toLinearMap =
-        ker (markedPicardProjection Φ hΦ) := by
+        ker (markedPicardProjection R Φ hΦ) := by
   let : Nonempty Φ.cones := ⟨(s k).toCone⟩
   let : Nonempty (Φ').cones := ⟨(r (s k)).toCone⟩
   ext z
   rw [Submodule.mem_map, mem_ker_markedPicardProjection]
   constructor
   · rintro ⟨z', hz', rfl⟩
-    obtain ⟨m, rfl⟩ := (mem_ker_markedPicardProjection _ _ _).mp hz'
+    obtain ⟨m, rfl⟩ := (mem_ker_markedPicardProjection R _ _ _).mp hz'
     exact ⟨m, mutationCoefficients_character b s k hOpposite m⟩
   · rintro ⟨m, rfl⟩
-    exact ⟨_, (mem_ker_markedPicardProjection _ _ _).mpr ⟨m, rfl⟩,
+    exact ⟨_, (mem_ker_markedPicardProjection R _ _ _).mpr ⟨m, rfl⟩,
       mutationCoefficients_character b s k hOpposite m⟩
 
 /-- The integral change of marking from the mutated toric Picard group and its exceptional
@@ -199,12 +204,12 @@ coordinates to the original ones. The formula allows multiple center labels on t
 def mutationPicardEquiv : mark Φ' ≃ₗ[ℤ] mark Φ :=
   letI : Nonempty Φ.cones := ⟨(s k).toCone⟩
   letI : Nonempty (Φ').cones := ⟨(r (s k)).toCone⟩
-  ((markedPicardProjection Φ' hΦ').quotKerEquivOfSurjective
-    (markedPicardProjection_surjective Φ' hΦ')).symm.trans
+  ((markedPicardProjection R Φ' hΦ').quotKerEquivOfSurjective
+    (markedPicardProjection_surjective R Φ' hΦ')).symm.trans
       ((Submodule.Quotient.equiv _ _ (mutationCoefficients b s k hOpposite)
-        (map_ker_mutationCoefficients b s k hOpposite hΦ)).trans
-          ((markedPicardProjection Φ hΦ).quotKerEquivOfSurjective
-            (markedPicardProjection_surjective Φ hΦ)))
+        (map_ker_mutationCoefficients R b s k hOpposite hΦ)).trans
+          ((markedPicardProjection R Φ hΦ).quotKerEquivOfSurjective
+            (markedPicardProjection_surjective R Φ hΦ)))
 
 /-- Evaluate the Picard change of marking on any ray divisor and family of exceptional
 coefficients. The correction is supported on the fiber class and the selected exceptional
@@ -212,13 +217,13 @@ class. -/
 theorem mutationPicardEquiv_apply_rayDivisor (a : (Φ').Ray → ℤ) (e : ι → ℤ) :
     letI : Nonempty Φ.cones := ⟨(s k).toCone⟩
     letI : Nonempty (Φ').cones := ⟨(r (s k)).toCone⟩
-    mutationPicardEquiv b s k hOpposite hΦ ((Φ').rayDivisorToPicard hΦ' a, e) =
-      (Φ.rayDivisorToPicard hΦ (a ∘ r) + (e k + a (r q)) • mutationFiberClass b (s k) hΦ,
+    mutationPicardEquiv R b s k hOpposite hΦ ((Φ').rayChartDivisorToPicard R hΦ' a, e) =
+      (Φ.rayChartDivisorToPicard R hΦ (a ∘ r) + (e k + a (r q)) • mutationFiberClass R b (s k) hΦ,
         e - (2 * e k + a (r (s k)) + a (r q)) • E) := by
   let : Nonempty Φ.cones := ⟨(s k).toCone⟩
   let : Nonempty (Φ').cones := ⟨(r (s k)).toCone⟩
   -- Write the input as the image of the quotient representative `(a, e)`.
-  change mutationPicardEquiv b s k hOpposite hΦ (markedPicardProjection Φ' hΦ' (a, e)) = _
+  change mutationPicardEquiv R b s k hOpposite hΦ (markedPicardProjection R Φ' hΦ' (a, e)) = _
   simp only [mutationPicardEquiv, LinearEquiv.trans_apply,
     LinearMap.quotKerEquivOfSurjective_symm_apply, Submodule.Quotient.equiv_apply,
     Submodule.mapQ_apply, LinearMap.quotKerEquivOfSurjective_apply_mk, LinearEquiv.coe_coe,
@@ -229,21 +234,21 @@ theorem mutationPicardEquiv_apply_rayDivisor (a : (Φ').Ray → ℤ) (e : ι →
 /-- The selected exceptional class maps to the fiber class minus the original exceptional class. -/
 @[simp]
 theorem mutationPicardEquiv_exceptional_pivot :
-    mutationPicardEquiv b s k hOpposite hΦ (0, E) =
-      (mutationFiberClass b (s k) hΦ, -E) := by
+    mutationPicardEquiv R b s k hOpposite hΦ (0, E) =
+      (mutationFiberClass R b (s k) hΦ, -E) := by
   let : Nonempty Φ.cones := ⟨(s k).toCone⟩
   let : Nonempty (Φ').cones := ⟨(r (s k)).toCone⟩
   simpa [sub_eq_add_neg, two_smul] using
-    mutationPicardEquiv_apply_rayDivisor b s k hOpposite hΦ 0 E
+    mutationPicardEquiv_apply_rayDivisor R b s k hOpposite hΦ 0 E
 
 /-- The exceptional class at every other label is unchanged in the marked coordinates. -/
 @[simp]
 theorem mutationPicardEquiv_exceptional_of_ne {j : ι} (hj : j ≠ k) :
-    mutationPicardEquiv b s k hOpposite hΦ (0, Pi.single j 1) = (0, Pi.single j 1) := by
+    mutationPicardEquiv R b s k hOpposite hΦ (0, Pi.single j 1) = (0, Pi.single j 1) := by
   let : Nonempty Φ.cones := ⟨(s k).toCone⟩
   let : Nonempty (Φ').cones := ⟨(r (s k)).toCone⟩
   simpa [Pi.single_apply, Ne.symm hj] using
-    mutationPicardEquiv_apply_rayDivisor b s k hOpposite hΦ 0 (Pi.single j 1)
+    mutationPicardEquiv_apply_rayDivisor R b s k hOpposite hΦ 0 (Pi.single j 1)
 
 /-- The toric boundary generators change only at the two rays on the mutation line.
 At the pivot one subtracts the selected exceptional class, and at the opposite ray
@@ -252,9 +257,10 @@ theorem mutationPicardEquiv_toric_single [DecidableEq Φ.Ray] (ρ : Φ.Ray) :
     letI : Nonempty Φ.cones := ⟨(s k).toCone⟩
     letI : Nonempty (Φ').cones := ⟨(r (s k)).toCone⟩
     letI : DecidableEq (Φ').Ray := Equiv.decidableEq (Equiv.symm r)
-    mutationPicardEquiv b s k hOpposite hΦ ((Φ').rayDivisorToPicard hΦ' (Pi.single (r ρ) 1), 0) =
-      (Φ.rayDivisorToPicard hΦ (Pi.single ρ 1) +
-        (if q = ρ then mutationFiberClass b (s k) hΦ else 0),
+    mutationPicardEquiv R b s k hOpposite hΦ
+        ((Φ').rayChartDivisorToPicard R hΦ' (Pi.single (r ρ) 1), 0) =
+      (Φ.rayChartDivisorToPicard R hΦ (Pi.single ρ 1) +
+        (if q = ρ then mutationFiberClass R b (s k) hΦ else 0),
         -((if s k = ρ then E else 0) + (if q = ρ then E else 0))) := by
   let : Nonempty Φ.cones := ⟨(s k).toCone⟩
   let : Nonempty (Φ').cones := ⟨(r (s k)).toCone⟩
@@ -273,9 +279,9 @@ under the ray bijection, including the rays gaining or losing the selected cente
 theorem mutationPicardEquiv_markedBoundaryMap (a : (Φ').Ray → ℤ) :
     letI : Nonempty Φ.cones := ⟨(s k).toCone⟩
     letI : Nonempty (Φ').cones := ⟨(r (s k)).toCone⟩
-    mutationPicardEquiv b s k hOpposite hΦ
-        (markedBoundaryMap hΦ' (Φ.mutationFanCenterRays b s k hOpposite) a) =
-      markedBoundaryMap hΦ s (a ∘ r) := by
+    mutationPicardEquiv R b s k hOpposite hΦ
+        (markedBoundaryMap R hΦ' (Φ.mutationFanCenterRays b s k hOpposite) a) =
+      markedBoundaryMap R hΦ s (a ∘ r) := by
   let : Nonempty Φ.cones := ⟨(s k).toCone⟩
   let : Nonempty (Φ').cones := ⟨(r (s k)).toCone⟩
   rw [markedBoundaryMap_apply, mutationPicardEquiv_apply_rayDivisor, markedBoundaryMap_apply]
@@ -293,16 +299,17 @@ Picard change of marking. This lets a geometric pullback be compared on these ge
 theorem eq_mutationPicardEquiv_of_eq_on_generators [Finite ι] [DecidableEq (Φ').Ray]
     (f : mark Φ' →ₗ[ℤ] mark Φ) :
     letI : Nonempty (Φ').cones := ⟨(r (s k)).toCone⟩
-    (∀ ρ : (Φ').Ray, f ((Φ').rayDivisorToPicard hΦ' (Pi.single ρ 1), 0) =
-      mutationPicardEquiv b s k hOpposite hΦ ((Φ').rayDivisorToPicard hΦ' (Pi.single ρ 1), 0)) →
-    (∀ j : ι, f (0, Pi.single j 1) = mutationPicardEquiv b s k hOpposite hΦ (0, Pi.single j 1)) →
-    f = (mutationPicardEquiv b s k hOpposite hΦ).toLinearMap := by
+    (∀ ρ : (Φ').Ray, f ((Φ').rayChartDivisorToPicard R hΦ' (Pi.single ρ 1), 0) =
+      mutationPicardEquiv R b s k hOpposite hΦ
+        ((Φ').rayChartDivisorToPicard R hΦ' (Pi.single ρ 1), 0)) →
+    (∀ j : ι, f (0, Pi.single j 1) = mutationPicardEquiv R b s k hOpposite hΦ (0, Pi.single j 1)) →
+    f = (mutationPicardEquiv R b s k hOpposite hΦ).toLinearMap := by
   let : Nonempty (Φ').cones := ⟨(r (s k)).toCone⟩
-  let g := (mutationPicardEquiv b s k hOpposite hΦ).toLinearMap
+  let g := (mutationPicardEquiv R b s k hOpposite hΦ).toLinearMap
   intro htoric hex
   apply LinearMap.prod_ext
-  · let π := ((Φ').rayDivisorToPicard hΦ').toIntLinearMap
-    have hπ : Function.Surjective π := (Φ').rayDivisorToPicard_surjective hΦ'
+  · let π := ((Φ').rayChartDivisorToPicard R hΦ').toIntLinearMap
+    have hπ : Function.Surjective π := (Φ').rayChartDivisorToPicard_surjective R hΦ'
     have hcomp : (f.comp (LinearMap.inl ℤ _ _)).comp π =
         (g.comp (LinearMap.inl ℤ _ _)).comp π := by
       apply (Pi.basisFun ℤ (Φ').Ray).ext
@@ -317,13 +324,13 @@ theorem eq_mutationPicardEquiv_of_eq_on_generators [Finite ι] [DecidableEq (Φ'
 on the toric Picard component and the pivot coordinate. The other coordinates are
 unchanged, independently of the order of the labels. -/
 theorem mutationPicardEquiv_pivot_split (a : mark Φ') :
-    (((mutationPicardEquiv b s k hOpposite hΦ a).1,
-      fun _ : Fin 1 ↦ (mutationPicardEquiv b s k hOpposite hΦ a).2 k) =
-        mutationPicardEquiv b (fun _ : Fin 1 ↦ s k) 0 hOpposite hΦ
+    (((mutationPicardEquiv R b s k hOpposite hΦ a).1,
+      fun _ : Fin 1 ↦ (mutationPicardEquiv R b s k hOpposite hΦ a).2 k) =
+        mutationPicardEquiv R b (fun _ : Fin 1 ↦ s k) 0 hOpposite hΦ
           (a.1, fun _ ↦ a.2 k)) ∧
-    (∀ j, j ≠ k → (mutationPicardEquiv b s k hOpposite hΦ a).2 j = a.2 j) := by
+    (∀ j, j ≠ k → (mutationPicardEquiv R b s k hOpposite hΦ a).2 j = a.2 j) := by
   let : Nonempty (Φ').cones := ⟨(r (s k)).toCone⟩
-  obtain ⟨A, hA⟩ := (Φ').rayDivisorToPicard_surjective hΦ' a.1
+  obtain ⟨A, hA⟩ := (Φ').rayChartDivisorToPicard_surjective R hΦ' a.1
   obtain ⟨_, z⟩ := a
   dsimp only at hA ⊢
   rw [← hA, mutationPicardEquiv_apply_rayDivisor, mutationPicardEquiv_apply_rayDivisor]

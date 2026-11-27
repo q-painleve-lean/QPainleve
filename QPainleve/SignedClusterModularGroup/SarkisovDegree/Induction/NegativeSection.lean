@@ -8,7 +8,6 @@ module
 public import QPainleve.Geometry.Toric.Fan.Logarithmic.Factorization
 public import QPainleve.SignedClusterModularGroup.SarkisovDegree.Induction.Marking
 
-import Mathlib.Analysis.Complex.Polynomial.Basic
 import QPainleve.SignedClusterModularGroup.SarkisovDegree.NoHighMultiplicity.Path
 
 /-!
@@ -32,16 +31,18 @@ open Scheme.IdealSheafData
 
 namespace TauCeti.Toric.Fan.LogarithmicProjection
 
+variable {k₀ : Type} [Field k₀] [IsAlgClosed k₀]
+
 attribute [local instance] MvPolynomial.gradedAlgebra
 
-local notation "S" => Spec (CommRingCat.of ℂ)
-local notation "P" => Proj (homogeneousSubmodule ℂ (Fin 3 → ℂ))
+local notation "S" => Spec (CommRingCat.of k₀)
+local notation "P" => Proj (homogeneousSubmodule k₀ (Fin 3 → k₀))
 local notation "s" => (P ↘ S)
-local notation "coords" => Pi.basisFun ℂ (Fin 3)
-local notation "H" => LineBundleClass.mk (Proj.symmetricAlgebraTwistingBundle ℂ (Fin 3 → ℂ) 1)
+local notation "coords" => Pi.basisFun k₀ (Fin 3)
+local notation "H" => LineBundleClass.mk (Proj.symmetricAlgebraTwistingBundle k₀ (Fin 3 → k₀) 1)
 local notation "plane[" b "," hi "]" => Fan.projectiveSpace b hi
 local notation "planeIso[" b "," hi "]" =>
-  (Fan.projectivePlaneIso b hi ≪≫ Basis.polynomialProjIso coords)
+  (Fan.projectivePlaneIso k₀ b hi ≪≫ Basis.polynomialProjIso coords)
 local notation "mark[" T "," hT "," f "," g "]" =>
   LinearEquiv.symm (BlowupTower.picardMarking T hT f) (Additive.ofMul (pullback g H))
 
@@ -50,19 +51,21 @@ variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {hi : IsIntegralLattice i}
   (a : ℕ) (hΦ : Φ.IsRegular) (hc : Φ.IsComplete) (r : Fin 4 ≃ Φ.Ray)
   (hr : (fun j ↦ (r j).primitiveGenerator) = ![b 0, b 1, -b 0, (a : ℤ) • b 0 - b 1])
-  {n : ℕ} {T : BlowupTower Φ.algebraicRealization n Y}
-  (hT : IsClosedPointTower Φ.algebraicRealization T) (g : Y ⟶ P)
+  {n : ℕ} {T : BlowupTower (Φ.finiteFanScheme k₀) n Y}
+  (hT : IsClosedPointTower (Φ.finiteFanScheme k₀) T) (g : Y ⟶ (Proj (homogeneousSubmodule k₀
+    (Fin 3 → k₀))))
 
-local notation "f" => (Φ.algebraicRealization ↘ S)
+local notation "f" => ((Φ.finiteFanScheme k₀) ↘ S)
 local notation "x" => mark[T,hT,f,g]
-local notation "β" => Basis.repr (Fan.hirzebruchPicardBasis b a hΦ r hr) (Prod.fst x) 1
+local notation "β" => Basis.repr (Fan.hirzebruchPicardBasis k₀ b a hΦ r hr) (Prod.fst x) 1
 local notation "order[" j "]" => -(Prod.snd x) j
 local notation "measure" =>
   hirzebruchSarkisovBidegree (Int.toNat β)
-    (Int.toNat (sarkisovSecondaryDegree ℂ (Additive.toMul (Prod.fst x))))
+    (Int.toNat (sarkisovSecondaryDegree k₀ (Additive.toMul (Prod.fst x))))
 
-variable [Φ.algebraicRealization.IsProjectiveOver ℂ] [Nonempty Φ.cones]
-  [SmoothOfRelativeDimension 2 (Φ.algebraicRealization ↘ S)] [IsNoetherian Φ.algebraicRealization]
+variable [(Φ.finiteFanScheme k₀).IsProjectiveOver k₀] [Nonempty Φ.cones]
+  [SmoothOfRelativeDimension 2 ((Φ.finiteFanScheme k₀) ↘ Spec (.of k₀))] [IsNoetherian
+    (Φ.finiteFanScheme k₀)]
   {J : Y.IdealSheafData}
 
 include hc in
@@ -75,17 +78,17 @@ theorem exists_sarkisov_path_with_smaller_plane_marking_of_no_high_order
     let : Y.Over S := ⟨T.toBase ≫ f⟩
     let : SmoothOfRelativeDimension 2 (Y ↘ S) := hT.smoothOfRelativeDimension f
     let : IsIntegral Y := hT.isIntegral f
-    ∀ {L R : LogarithmicProjection i J}, L.fan = Φ → L.hom ≍ T.toBase →
+    ∀ {L R : LogarithmicProjection k₀ i J}, L.fan = Φ → L.hom ≍ T.toBase →
       R.fan = plane[b',hi] → R.hom ≍ g ≫ (planeIso[b',hi]).inv →
       ∃ next, next < measure ∧
-        ∃ (C : LogarithmicProjection i J) (d : Basis (Fin 2) ℤ N),
+        ∃ (C : LogarithmicProjection k₀ i J) (d : Basis (Fin 2) ℤ N),
           C.fan = plane[d,hi] ∧ Nonempty (SarkisovPath L C) ∧
           HasPlaneTargetMarking C R next := by
   intro hOver hSmooth hInt L R hL hhL hR hhR
   let := hOver
   let := hSmooth
   let := hInt
-  rcases hT.exists_sarkisov_path_decrease_of_no_high_multiplicity
+  rcases hT.exists_sarkisov_path_decrease_of_no_high_multiplicity k₀
     b a hΦ hc r hr g hg hbir L hL hhL hlow with ⟨C, p, hzero | hplane⟩
   · obtain ⟨_, _, _, _, _, he, _⟩ := hzero
     omega
@@ -93,7 +96,7 @@ theorem exists_sarkisov_path_with_smaller_plane_marking_of_no_high_order
     let : IsNoetherian P := isNoetherian_of_finiteType s
     let y := mark[U,hU,s,k.inv ≫ g]
     let degree := (Basis.picardTwistEquiv coords y.1).toNat
-    refine ⟨planeSarkisovBidegree degree (sarkisovSecondaryDegree ℂ y.1.toMul).toNat, ?_,
+    refine ⟨planeSarkisovBidegree degree (sarkisovSecondaryDegree k₀ y.1.toMul).toNat, ?_,
       C, d, hC, ⟨p⟩, .plane d b' hi hC hR U hU k (k.inv ≫ g) hhC ?_ hg' hb'⟩
     · rw [hT.sarkisovSecondaryDegree_eq_sum g hg hbir]
       exact hlt _

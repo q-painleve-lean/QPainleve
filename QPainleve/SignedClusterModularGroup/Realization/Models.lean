@@ -24,8 +24,10 @@ open TauCeti TauCeti.AlgebraicGeometry TauCeti.Toric Scheme
 
 namespace QPainleve.SignedClusterModularGroup
 
-local notation "S" => Spec (CommRingCat.of ℂ)
-local notation "Xtor[" r "]" => Spec (CommRingCat.of (LaurentRing ℂ (Fin r)))
+variable {k : Type} [Field k] [IsAlgClosed k]
+
+local notation "S" => Spec (CommRingCat.of k)
+local notation "Xtor[" r "]" => Spec (CommRingCat.of (LaurentRing k (Fin r)))
 local notation "D[" P "]" => Scheme.Hom.ker (Over.Hom.left (Arrow.hom (MarkedSurface.pair P)))
 local notation "center" c:arg => (fun j : Fin _ ↦ c (ofAdd (Pi.single j 1)))
 
@@ -34,17 +36,18 @@ variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {r m n : ℕ} [NeZero m] [NeZero n]
   {L : Type} [AddCommGroup L] {B : LinearMap.BilinForm ℤ L}
   {b : Module.Basis (Fin 2) ℤ N} {s : Fin r → Φ.Ray} {hΦ : Φ.IsRegular}
-  [PrestableFamily ((Φ.boundaryIdeal h₀).subscheme ↘ S)]
-  {γ : Type*} {a : γ → ((Φ.boundaryIdeal h₀).subscheme ↘ S).smoothLocus}
+  [PrestableFamily ((Φ.toricBoundaryIdeal k h₀).subscheme ↘ Spec (.of k))]
+  {γ : Type*} {a : γ → ((Φ.toricBoundaryIdeal k h₀).subscheme ↘ Spec (.of k)).smoothLocus}
   {toricCycle : NodalCycleNumbering a m} {origin : ZMod m}
-  {ι : L →ₗ[ℤ] Additive (LineBundleClass Φ.algebraicRealization) × (Fin r → ℤ)}
+  {ι : L →ₗ[ℤ] Additive (LineBundleClass (Φ.finiteFanScheme k)) × (Fin r → ℤ)}
 
 namespace ContractedToricFiber
 
-variable {c : Multiplicative (Fin r → ℤ) →* ℂˣ} {P : MarkedSurface ℂ n B Xtor[r]}
+variable {c : Multiplicative (Fin r → ℤ) →* kˣ}
+  {P : MarkedSurface k n B (Spec (.of (LaurentRing k (Fin r))))}
   (p : ContractedToricFiber b s hΦ toricCycle origin ι c P)
 
-local notation "Model[" b "," s "," c "]" => Fan.internalBlowupTower b s (center c)
+local notation "Model[" b "," s "," c "]" => Fan.internalBlowupTower k b s (center c)
 
 /-- The marked boundary is a Cartier cycle of rational curves and the specified
 projection reverses a tower of blowups at boundary nodes. -/
@@ -54,8 +57,8 @@ structure IsNodalContraction : Prop where
   /-- The boundary normalization has genus zero on every component. -/
   genus_zero :
     letI := P.prestable_boundaryImage
-    ∀ v : irreducibleComponents (D[P].subscheme.singularLocus ℂ).blowup,
-      (D[P].subscheme.blowupComponent (K := ℂ) v).toScheme.genus ℂ = 0
+    ∀ v : irreducibleComponents (D[P].subscheme.singularLocus k).blowup,
+      (D[P].subscheme.blowupComponent (K := k) v).toScheme.genus k = 0
   /-- The nodal tower gives the specified projection from the ordered model. -/
   exists_tower : ∃ (l : ℕ) (W : Scheme) (A : BlowupTower P.surface l W)
     (_ : IsNodalBoundaryTower D[P] (P.surface ↘ S) (𝟙 P.surface) A)
@@ -64,12 +67,12 @@ structure IsNodalContraction : Prop where
 /-- The ray of a boundary prime of the marked surface, read from its strict transform
 on the ordered model. -/
 noncomputable def boundaryRayEmbedding : D[P].boundaryPrimes ↪ Φ.Ray :=
-  Fan.contractedBoundaryRayEmbedding hΦ b s (center c) p.projection p.support_comap
+  Fan.contractedBoundaryRayEmbedding k hΦ b s (center c) p.projection p.support_comap
 
 /-- The marked embedding is the toric contraction embedding for the model's projection. -/
 theorem boundaryRayEmbedding_def :
     p.boundaryRayEmbedding =
-      Fan.contractedBoundaryRayEmbedding hΦ b s (center c) p.projection p.support_comap :=
+      Fan.contractedBoundaryRayEmbedding k hΦ b s (center c) p.projection p.support_comap :=
   (rfl)
 
 end ContractedToricFiber
@@ -79,8 +82,8 @@ namespace GeometricRealization
 /-- Every center reached by `C` admits a contracted toric model with a rational nodal
 boundary and the specified set of surviving rays. -/
 abbrev HasNodalToricTargetModels
-    {T₀ T₁ : Over S} {P : Point T₁ → MarkedSurface ℂ n B Xtor[r]}
-    (centers : Point T₁ → Multiplicative (Fin r → ℤ) →* ℂˣ) (survives : Set Φ.Ray)
+    {T₀ T₁ : Over S} {P : Point T₁ → MarkedSurface k n B Xtor[r]}
+    (centers : Point T₁ → Multiplicative (Fin r → ℤ) →* kˣ) (survives : Set Φ.Ray)
     (C : T₀.left.PartialMap T₁.left) [C.IsOver T₀.hom T₁.hom] : Prop :=
   ∀ x : CenterPoint C,
     let t := x ≫ C.domainTarget
@@ -89,8 +92,9 @@ abbrev HasNodalToricTargetModels
 
 namespace HasNodalToricTargetModels
 
-variable {T₀ T₁ T₂ : Over S} {P : Point T₂ → MarkedSurface ℂ n B Xtor[r]}
-  {centers : Point T₂ → Multiplicative (Fin r → ℤ) →* ℂˣ} {survives : Set Φ.Ray}
+variable {T₀ T₁ T₂ : Over (Spec (.of k))}
+  {P : Point T₂ → MarkedSurface k n B (Spec (.of (LaurentRing k (Fin r))))}
+  {centers : Point T₂ → Multiplicative (Fin r → ℤ) →* kˣ} {survives : Set Φ.Ray}
   {D : T₁.left.PartialMap T₂.left} [D.IsOver T₁.hom T₂.hom]
 
 /-- Models at every target center supply models for a partial center map. -/

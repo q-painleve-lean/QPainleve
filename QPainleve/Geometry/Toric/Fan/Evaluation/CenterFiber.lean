@@ -27,15 +27,17 @@ open QPainleve.CharacterTorus
 
 namespace TauCeti.Toric.Fan
 
+variable (K : Type) [Field K] [PerfectField K]
+
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {Φ : Fan i} [Nonempty Φ.cones] {r : ℕ}
   (b : Module.Basis (Fin 2) ℤ N) (s : Fin r → Φ.Ray)
 
-local notation "S" => Spec (CommRingCat.of ℂ)
+local notation "S" => Spec (CommRingCat.of K)
 local notation "Cent" => (Fin r → ℤ)
 local notation "G[" U "]" => FGCommGrpCat.of (Multiplicative U)
-local notation "Tor[" U "]" => groupScheme ℂ G[U]
-local notation "τ[" U "]" => diagonalizableGroupSchemeIso ℂ G[U]
+local notation "Tor[" U "]" => groupScheme K G[U]
+local notation "τ[" U "]" => diagonalizableGroupSchemeIso K G[U]
 local notation "repr" => Finsupp.linearEquivFunOnFinite ℤ ℤ (Fin r)
 
 /-- On the dominant chart of a contracted toric model, fixed-center X evaluation
@@ -46,50 +48,50 @@ theorem exists_dominant_chart_comp_evaluationAtCenter
     (c : S ⟶ Tor[Cent].X.left) (hc : c ≫ Tor[Cent].X.hom = 𝟙 S) (hΦ : Φ.IsRegular)
     {Z : Scheme} [IsIntegral Z]
     (p : let pt : (S).asOver S ⟶ Tor[Cent].X :=
-          Over.homMk c (hc.trans (Spec.map_id (CommRingCat.of ℂ)).symm)
-        let χ : Multiplicative Cent →* ℂˣ :=
-      schemePointsMulEquiv (R := ℂ) (A := ℂ) G[Cent] pt
-        (internalBlowupTower b s (fun j ↦ χ (ofAdd (Pi.single j 1)))).1 ⟶ Z)
+          Over.homMk c (hc.trans (Spec.map_id (CommRingCat.of K)).symm)
+        let χ : Multiplicative Cent →* Kˣ :=
+      schemePointsMulEquiv (R := K) (A := K) G[Cent] pt
+        (internalBlowupTower K b s (fun j ↦ χ (ofAdd (Pi.single j 1)))).1 ⟶ Z)
     [IsModification p] :
     letI : Module.Free ℤ N := .of_basis b
     letI : IsAddFG N := Module.Finite.iff_addGroup_fg.mp (.of_basis b)
     let pt : (S).asOver S ⟶ Tor[Cent].X :=
-      Over.homMk c (hc.trans (Spec.map_id (CommRingCat.of ℂ)).symm)
-    let χ : Multiplicative Cent →* ℂˣ :=
-      schemePointsMulEquiv (R := ℂ) (A := ℂ) G[Cent] pt
+      Over.homMk c (hc.trans (Spec.map_id (CommRingCat.of K)).symm)
+    let χ : Multiplicative Cent →* Kˣ :=
+      schemePointsMulEquiv (R := K) (A := K) G[Cent] pt
     ∃ (j : Tor[N].X.left ⤏ Z) (_ : j.IsDominant),
-      j.comp (contractedXEvaluation b s χ hΦ p) =
-        (evaluationAtCenter ℂ (rayChargeMap s).toAddMonoidHom c hc ≫
-          (τ[Cent]).hom ≫ map ℂ (repr).toAddEquiv.toAddMonoidHom).toRationalMap := by
+      j.comp (contractedXEvaluation K b s χ hΦ p) =
+        (evaluationAtCenter K (rayChargeMap s).toAddMonoidHom c hc ≫
+          (τ[Cent]).hom ≫ map K (repr).toAddEquiv.toAddMonoidHom).toRationalMap := by
   dsimp only
   let : Module.Free ℤ N := .of_basis b
   let : IsAddFG N := Module.Finite.iff_addGroup_fg.mp (.of_basis b)
   let pt : (S).asOver S ⟶ Tor[Cent].X :=
-    Over.homMk c (hc.trans (Spec.map_id (CommRingCat.of ℂ)).symm)
-  let χ : Multiplicative Cent →* ℂˣ :=
-    schemePointsMulEquiv (R := ℂ) (A := ℂ) G[Cent] pt
-  obtain ⟨j, hj, hchart⟩ := exists_dominant_chart_comp_contractedXEvaluation b s χ hΦ p
+    Over.homMk c (hc.trans (Spec.map_id (CommRingCat.of K)).symm)
+  let χ : Multiplicative Cent →* Kˣ :=
+    schemePointsMulEquiv (R := K) (A := K) G[Cent] pt
+  obtain ⟨j, hj, hchart⟩ := exists_dominant_chart_comp_contractedXEvaluation K b s χ hΦ p
   let : j.IsDominant := hj
-  let e : Tor[N].X.left ≅ scheme ℂ N := τ[N]
+  let e : Tor[N].X.left ≅ scheme K N := τ[N]
   let a := e.hom.toRationalMap
   let : a.IsDominant := inferInstanceAs (e.hom.toRationalMap.IsDominant)
   refine ⟨a.comp j, inferInstance, ?_⟩
   rw [Scheme.RationalMap.comp_assoc, hchart, Scheme.RationalMap.comp_toRationalMap,
     Scheme.Hom.toRationalMap_compHom]
-  let t : Tor[Cent].X.left ≅ scheme ℂ Cent := τ[Cent]
+  let t : Tor[Cent].X.left ≅ scheme K Cent := τ[Cent]
   let v := (rayChargeMap s).toAddMonoidHom
   let f := (repr).toAddEquiv.toAddMonoidHom
-  let m := map ℂ f
-  have heval : evaluationAtCenter ℂ v c hc ≫ t.hom =
-      e.hom ≫ affineCenterSlice χ ≫ affineEvaluation ℂ v :=
+  let m := map K f
+  have heval : evaluationAtCenter K v c hc ≫ t.hom =
+      e.hom ≫ affineCenterSlice χ ≫ affineEvaluation K v :=
     evaluationAtCenter_comp_diagonalizableGroupSchemeIso v c hc
   apply congrArg Scheme.Hom.toRationalMap
   calc
-    _ = e.hom ≫ affineCenterSlice χ ≫ affineEvaluation ℂ v ≫ m :=
+    _ = e.hom ≫ affineCenterSlice χ ≫ affineEvaluation K v ≫ m :=
       congrArg (e.hom ≫ ·) (affineCenterSlice_comp_affineEvaluation_naturality χ v f).symm
-    _ = (e.hom ≫ affineCenterSlice χ ≫ affineEvaluation ℂ v) ≫ m := by
+    _ = (e.hom ≫ affineCenterSlice χ ≫ affineEvaluation K v) ≫ m := by
       simp only [Category.assoc]
-    _ = (evaluationAtCenter ℂ v c hc ≫ t.hom) ≫ m := congrArg (· ≫ m) heval.symm
-    _ = _ := Category.assoc (evaluationAtCenter ℂ v c hc) t.hom m
+    _ = (evaluationAtCenter K v c hc ≫ t.hom) ≫ m := congrArg (· ≫ m) heval.symm
+    _ = _ := Category.assoc (evaluationAtCenter K v c hc) t.hom m
 
 end TauCeti.Toric.Fan

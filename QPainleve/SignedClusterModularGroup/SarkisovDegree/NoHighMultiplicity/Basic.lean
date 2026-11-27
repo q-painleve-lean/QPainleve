@@ -36,34 +36,38 @@ open TauCeti.Toric
 
 namespace QPainleve.BlowupTower.IsClosedPointTower
 
+variable (k₀ : Type) [Field k₀] [IsAlgClosed k₀]
+
 attribute [local instance] MvPolynomial.gradedAlgebra
 
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
-  {i : N →+ V} {Φ : Fan i} [Φ.algebraicRealization.IsProjectiveOver ℂ]
+  {i : N →+ V} {Φ : Fan i} [(Φ.finiteFanScheme k₀).IsProjectiveOver k₀]
   (b : Basis (Fin 2) ℤ N) (e : ℕ) (hΦ : Φ.IsRegular) (hc : Φ.IsComplete)
   (r : Fin 4 ≃ Φ.Ray)
   (hr : (fun j ↦ (r j).primitiveGenerator) = ![b 0, b 1, -b 0, (e : ℤ) • b 0 - b 1])
 
-local notation "S" => Spec (CommRingCat.of ℂ)
-local notation "X[" A "]" => Fan.algebraicRealization A
-local notation "f[" A "]" => (X[A] ↘ S)
-local notation "B[" A "," h "]" => Fan.boundaryIdeal A (Fan.IsComplete.nonempty_cones h)
-local notation "P" => Proj (homogeneousSubmodule ℂ (Fin 3 → ℂ))
+local notation "S" => Spec (CommRingCat.of k₀)
+local notation "X[" coeff "," A "]" => Fan.finiteFanScheme coeff A
+local notation "f[" A "]" => (X[k₀,A] ↘ S)
+local notation "B[" A "," h "]" => Fan.toricBoundaryIdeal k₀ A (Fan.IsComplete.nonempty_cones h)
+local notation "P" => Proj (homogeneousSubmodule k₀ (Fin 3 → k₀))
 local notation "fP" => (P ↘ S)
-local notation "H" => mk (Proj.symmetricAlgebraTwistingBundle ℂ (Fin 3 → ℂ) 1)
-local notation "degree" => Module.Basis.picardTwistEquiv (Pi.basisFun ℂ (Fin 3))
-local notation "C" => Fan.hirzebruchPicardBasis b e hΦ r hr
+local notation "H" => mk (Proj.symmetricAlgebraTwistingBundle k₀ (Fin 3 → k₀) 1)
+local notation "degree" => Module.Basis.picardTwistEquiv (Pi.basisFun k₀ (Fin 3))
+local notation "C" => Fan.hirzebruchPicardBasis k₀ b e hΦ r hr
 local notation "rankTwo" => Eq.trans (finrank_eq_card_basis b) (Fintype.card_fin 2)
-local notation "π[" s "]" => FanHom.algebraicMap (Fan.IsSubdivision.toFanHom s)
+local notation "π[" s "]" => FanHom.finiteFanSchemeHom k₀ (Fan.IsSubdivision.toFanHom s)
 local notation "τ[" h "]" =>
-  FanHom.algebraicMap (FanEquiv.toFanHom (Fan.quadricRulingExchange b hΦ hc r h))
+  FanHom.finiteFanSchemeHom k₀ (FanEquiv.toFanHom (Fan.quadricRulingExchange b hΦ hc r h))
 local notation "Plane[" d "]" => Fan.projectiveSpace d Φ.lattice
 local notation "planeIso[" d "]" =>
-  (Fan.projectivePlaneIso d Φ.lattice ≪≫ Module.Basis.polynomialProjIso (Pi.basisFun ℂ (Fin 3)))
+  (Fan.projectivePlaneIso k₀ d Φ.lattice ≪≫ Module.Basis.polynomialProjIso (Pi.basisFun k₀ (Fin 3)))
 
-variable {n : ℕ} {Y : Scheme} {T : BlowupTower X[Φ] n Y}
-  (hT : IsClosedPointTower X[Φ] T) (g : Y ⟶ P)
-  (hg : g ≫ fP = T.toBase ≫ f[Φ]) (hbir : Scheme.BirationalOver g (𝟙 P))
+variable {n : ℕ} {Y : Scheme} {T : BlowupTower X[k₀,Φ] n Y}
+  (hT : IsClosedPointTower X[k₀,Φ] T) (g : Y ⟶ (Proj (homogeneousSubmodule k₀ (Fin 3 → k₀))))
+  (hg : g ≫ ((Proj (homogeneousSubmodule k₀ (Fin 3 → k₀))) ↘ Spec (.of k₀)) = T.toBase ≫
+    (Φ.finiteFanSchemeToSpec k₀)) (hbir : Scheme.BirationalOver g (𝟙 (Proj
+    (homogeneousSubmodule k₀ (Fin 3 → k₀)))))
 
 include hg hbir in
 /-- If every base order is at most half the fiber degree, the given Hirzebruch
@@ -76,7 +80,7 @@ the Sarkisov bidegree decreases, independently of the resulting total base order
 theorem exists_sarkisov_decrease_of_no_high_multiplicity (D : Y.IdealSheafData) :
     let : Nonempty Φ.cones := hc.nonempty_cones
     let : SmoothOfRelativeDimension 2 f[Φ] :=
-      rankTwo ▸ Φ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
+      rankTwo ▸ Φ.smoothOfRelativeDimension_finiteFanSchemeToSpec k₀ hΦ
     let : Y.Over S := ⟨T.toBase ≫ f[Φ]⟩
     let : T.toBase.IsOver S := ⟨rfl⟩
     let : SmoothOfRelativeDimension 2 (Y ↘ S) := hT.smoothOfRelativeDimension f[Φ]
@@ -84,17 +88,17 @@ theorem exists_sarkisov_decrease_of_no_high_multiplicity (D : Y.IdealSheafData) 
     let x := (T.picardMarking hT f[Φ]).symm (Additive.ofMul (pullback g H))
     let M := (∑ j, -x.2 j).toNat
     let β := (C).repr x.1 1
-    B[Φ,hc].comap T.toBase = D * ramificationIdealSheaf ℂ T.toBase →
+    B[Φ,hc].comap T.toBase = D * ramificationIdealSheaf k₀ T.toBase →
     (∀ j, 2 * (-x.2 j) ≤ β) →
     (∃ (hr₀ : (fun j ↦ (r j).primitiveGenerator) = ![b 0, b 1, -b 0, (0 : ℤ) • b 0 - b 1])
-      (Z : Scheme) (U : BlowupTower X[Φ] n Z) (hU : IsClosedPointTower X[Φ] U) (k : Y ≅ Z),
+      (Z : Scheme) (U : BlowupTower X[k₀,Φ] n Z) (hU : IsClosedPointTower X[k₀,Φ] U) (k : Y ≅ Z),
       e = 0 ∧
       k.hom ≫ U.toBase = T.toBase ≫ τ[hr₀] ∧
       (k.inv ≫ g) ≫ fP = U.toBase ≫ f[Φ] ∧
       Scheme.BirationalOver (k.inv ≫ g) (𝟙 P) ∧
-      B[Φ,hc].comap (T.toBase ≫ τ[hr₀]) = D * ramificationIdealSheaf ℂ (T.toBase ≫ τ[hr₀]) ∧
+      B[Φ,hc].comap (T.toBase ≫ τ[hr₀]) = D * ramificationIdealSheaf k₀ (T.toBase ≫ τ[hr₀]) ∧
       let y := (U.picardMarking hU f[Φ]).symm (Additive.ofMul (pullback (k.inv ≫ g) H))
-      let β' := (Fan.hirzebruchPicardBasis b 0 hΦ r hr₀).repr y.1 1
+      let β' := (Fan.hirzebruchPicardBasis k₀ b 0 hΦ r hr₀).repr y.1 1
       0 < β' ∧ ∀ M', hirzebruchSarkisovBidegree β'.toNat M' <
         hirzebruchSarkisovBidegree β.toNat M) ∨
     (∃ (d : Basis (Fin 2) ℤ N) (s : Φ.IsSubdivision Plane[d])
@@ -105,7 +109,7 @@ theorem exists_sarkisov_decrease_of_no_high_multiplicity (D : Y.IdealSheafData) 
       (k.inv ≫ g) ≫ fP = U.toBase ≫ fP ∧
       Scheme.BirationalOver (k.inv ≫ g) (𝟙 P) ∧
       B[Plane[d],Fan.isComplete_projectiveSpace d Φ.lattice].comap (T.toBase ≫ π[s]) =
-        D * ramificationIdealSheaf ℂ (T.toBase ≫ π[s]) ∧
+        D * ramificationIdealSheaf k₀ (T.toBase ≫ π[s]) ∧
       let y := (U.picardMarking hU fP).symm (Additive.ofMul (pullback (k.inv ≫ g) H))
       0 < degree y.1 ∧ ∀ M', planeSarkisovBidegree (degree y.1).toNat M' <
         hirzebruchSarkisovBidegree β.toNat M) := by
@@ -117,8 +121,9 @@ theorem exists_sarkisov_decrease_of_no_high_multiplicity (D : Y.IdealSheafData) 
   let := hdimY
   let := hSmooth
   let : Smooth f[Φ] := hdim.smooth
-  have ⟨hβ, ha, hm⟩ := hirzebruch_resolution_degree_bounds b e hΦ hc r hr hT g hg hbir
-  rcases hT.exists_fiber_degree_lt_two_mul_or_of_hirzebruch_resolution b e hΦ hc r hr g hg hbir with
+  have ⟨hβ, ha, hm⟩ := hirzebruch_resolution_degree_bounds k₀ b e hΦ hc r hr hT g hg hbir
+  rcases hT.exists_fiber_degree_lt_two_mul_or_of_hirzebruch_resolution k₀ b e hΦ hc r hr g hg
+    hbir with
     ⟨j, hj⟩ | ⟨-, he⟩
   · exact (not_lt_of_ge (hlow j) hj).elim
   rcases he with ⟨rfl, haβ⟩ | ⟨rfl, haβ⟩
@@ -126,28 +131,29 @@ theorem exists_sarkisov_decrease_of_no_high_multiplicity (D : Y.IdealSheafData) 
     let q := T.transport (asIso τ)
     let hQ := q.isLift.isClosedPointTower hT
     obtain ⟨-, hproj, hg', hbir', hpos, -⟩ :=
-      hT.rulingExchange_bidegree_lt_of_no_high_multiplicity b hΦ hc r hr g hg hbir
+      hT.rulingExchange_bidegree_lt_of_no_high_multiplicity k₀ b hΦ hc r hr g hg hbir
         hβ (fun j ↦ ⟨hm j, hlow j⟩)
     refine Or.inl ⟨hr, _, q.tower, hQ, q.iso, rfl, hproj, hg', hbir', ?_, hpos, fun M' ↦ ?_⟩
-    · apply comap_eq_mul_ramificationIdealSheaf_comp ℂ T.toBase τ 2 _ hpole
+    · apply comap_eq_mul_ramificationIdealSheaf_comp k₀ T.toBase τ 2 _ hpole
       rw [ramificationIdealSheaf_eq_top_of_isOpenImmersion, mul_top]
-      exact (Fan.quadricRulingExchange b hΦ hc r hr).comap_boundaryIdeal_algebraicMap _ _
-    · have hswap := (hT.picardMarking_symm_rulingExchange b hΦ hc r hr (pullback g H)).1 1
+      exact (Fan.quadricRulingExchange b hΦ hc r hr).comap_toricBoundaryIdeal_finiteFanSchemeHom
+        k₀ _ _
+    · have hswap := (hT.picardMarking_symm_rulingExchange k₀ b hΦ hc r hr (pullback g H)).1 1
       rw [pullback_comp, Equiv.swap_apply_right] at hswap
       rw [hswap, Prod.Lex.lt_iff, ofLex_hirzebruchSarkisovBidegree,
         ofLex_hirzebruchSarkisovBidegree]
       simp only [β, x, Nat.cast_zero] at haβ ⊢
       exact Or.inl (by omega)
   · obtain ⟨d, s, Z, U, hU, k, hproj, hg', hbir', hdegree, -, -, -⟩ :=
-      hT.exists_plane_resolution_of_hirzebruchOne b hΦ hc r hr g hg hbir
+      hT.exists_plane_resolution_of_hirzebruchOne k₀ b hΦ hc r hr g hg hbir
     have hReg := Fan.isRegular_projectiveSpace d Φ.lattice
     refine Or.inr ⟨d, s, Z, U, hU, k, rfl, s.exists_starSubdivision_factorization hReg hΦ rankTwo,
       hproj, hg', hbir', ?_, ?_, fun M' ↦ ?_⟩
     · let : SmoothOfRelativeDimension 2 f[Plane[d]] := by
-        simpa only [Fan.algebraicRealization_over, rankTwo] using
-          (Plane[d]).smoothOfRelativeDimension_algebraicRealizationStructureMap hReg
-      exact comap_eq_mul_ramificationIdealSheaf_comp ℂ T.toBase π[s] 2
-        (s.comap_boundaryIdeal_eq_mul_ramificationIdealSheaf hReg hΦ
+        simpa only [Fan.finiteFanScheme_over k₀, rankTwo] using
+          (Plane[d]).smoothOfRelativeDimension_finiteFanSchemeToSpec k₀ hReg
+      exact comap_eq_mul_ramificationIdealSheaf_comp k₀ T.toBase π[s] 2
+        (s.comap_boundaryIdeal_eq_mul_ramificationIdealSheaf k₀ hReg hΦ
           (Fan.isComplete_projectiveSpace d Φ.lattice) rankTwo) hpole
     · rw [hdegree]
       simp only [Nat.cast_one, one_mul] at hβ ha

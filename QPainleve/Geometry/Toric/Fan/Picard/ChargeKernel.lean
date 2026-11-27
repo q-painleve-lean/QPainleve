@@ -31,7 +31,9 @@ open TauCeti.AlgebraicGeometry
 
 namespace TauCeti.Toric.Fan
 
-variable {N : Type} {V ι : Type*} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
+universe u
+
+variable {N : Type u} {V ι : Type*} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V}
 
 private theorem charge_dual_eval_injective (Φ : Fan i) : Function.Injective (Dual.eval ℤ N) := by
@@ -39,12 +41,13 @@ private theorem charge_dual_eval_injective (Φ : Fan i) : Function.Injective (Du
   have := Φ.lattice.finite
   exact (bijective_dual_eval ℤ N).injective
 
-variable {Φ : Fan i} [Nonempty Φ.cones] [Finite ι]
+variable (R : Type u) [CommRing R] [IsDomain R] [IsNoetherianRing R]
+  [UniqueFactorizationMonoid R] {Φ : Fan i} [Nonempty Φ.cones] [Finite ι]
   (hΦ : Φ.IsRegular) (s : ι → Φ.Ray)
 
-local notation "Pic" => Additive (LineBundleClass Φ.algebraicRealization)
+local notation "Pic" => Additive (LineBundleClass (Φ.finiteFanScheme R))
 local notation "Mark" => (Pic × (ι → ℤ))
-local notation "M" => LinearMap.range (markedBoundaryMap hΦ s)
+local notation "M" => LinearMap.range (markedBoundaryMap R hΦ s)
 
 /-- The orthogonal complement of the marked boundary identifies with the kernel of the charge map.
 The pairing on the whole marking is perfect, and the restriction to the complement may be
@@ -52,7 +55,7 @@ degenerate. The charge map can have any rank. -/
 def boundaryOrthogonalEquivChargeKernel (B : LinearMap.BilinForm ℤ Mark)
     [LinearMap.IsPerfPair B] : B.orthogonal M ≃ₗ[ℤ] (rayChargeMap s).ker :=
   (B.orthogonalEquivDualQuotient M).trans
-    ((boundaryQuotientEquivDualChargeCokernel hΦ s).symm.dualMap.trans
+    ((boundaryQuotientEquivDualChargeCokernel R hΦ s).symm.dualMap.trans
       ((rayChargeMap s).kerEquivDualCokerDualMap (charge_dual_eval_injective Φ)).symm)
 
 /-- A dual charge representative evaluates on a charge relation by pairing the corresponding
@@ -60,12 +63,12 @@ boundary quotient class with the inverse image of that relation in the marked Pi
 theorem boundaryOrthogonalEquivChargeKernel_symm_pairing
     (B : LinearMap.BilinForm ℤ Mark) [LinearMap.IsPerfPair B]
     (x : (rayChargeMap s).ker) (φ : Dual ℤ (ι → ℤ)) (z : Mark)
-    (hz : (boundaryQuotientEquivDualChargeCokernel hΦ s) (Submodule.Quotient.mk z) =
+    (hz : (boundaryQuotientEquivDualChargeCokernel R hΦ s) (Submodule.Quotient.mk z) =
       Submodule.Quotient.mk φ) :
-    B z ((boundaryOrthogonalEquivChargeKernel hΦ s B).symm x : Mark) = φ x := by
+    B z ((boundaryOrthogonalEquivChargeKernel R hΦ s B).symm x : Mark) = φ x := by
   let e := (rayChargeMap s).kerEquivDualCokerDualMap (charge_dual_eval_injective Φ)
   have h := congrArg (fun y ↦ e y (Submodule.Quotient.mk φ))
-    ((boundaryOrthogonalEquivChargeKernel hΦ s B).apply_symm_apply x)
+    ((boundaryOrthogonalEquivChargeKernel R hΦ s B).apply_symm_apply x)
   simp only [boundaryOrthogonalEquivChargeKernel, LinearEquiv.trans_apply, e.apply_symm_apply,
     LinearEquiv.dualMap_apply, LinearMap.kerEquivDualCokerDualMap_apply_mk, e] at h
   rw [← hz, LinearEquiv.symm_apply_apply, LinearMap.BilinForm.orthogonalEquivDualQuotient_apply_mk]
@@ -77,9 +80,9 @@ class in the first argument. For symmetric intersection pairings this is the int
 of the orthogonal class with the exceptional class. -/
 @[simp] theorem boundaryOrthogonalEquivChargeKernel_apply [DecidableEq ι]
     (B : LinearMap.BilinForm ℤ Mark) [LinearMap.IsPerfPair B] (x : B.orthogonal M) (j : ι) :
-    (boundaryOrthogonalEquivChargeKernel hΦ s B x : ι → ℤ) j =
+    (boundaryOrthogonalEquivChargeKernel R hΦ s B x : ι → ℤ) j =
       B (0, Pi.single j 1) x := by
-  let q := boundaryQuotientEquivDualChargeCokernel hΦ s
+  let q := boundaryQuotientEquivDualChargeCokernel R hΦ s
   let φ : Dual ℤ (ι → ℤ) := LinearMap.proj j
   have hφ : (fun k ↦ φ (Pi.single k 1)) = Pi.single j 1 := by
     funext k
@@ -91,11 +94,11 @@ of the orthogonal class with the exceptional class. -/
     apply q.symm.injective
     rw [LinearEquiv.symm_apply_apply, boundaryQuotientEquivDualChargeCokernel_symm_apply_mk, hφ]
   simpa only [LinearEquiv.symm_apply_apply, LinearMap.proj_apply, φ] using
-    (boundaryOrthogonalEquivChargeKernel_symm_pairing hΦ s B
-      (boundaryOrthogonalEquivChargeKernel hΦ s B x) φ (0, Pi.single j 1) hz).symm
+    (boundaryOrthogonalEquivChargeKernel_symm_pairing R hΦ s B
+      (boundaryOrthogonalEquivChargeKernel R hΦ s B x) φ (0, Pi.single j 1) hz).symm
 
 variable [Fintype ι]
-  (A : LinearMap.BilinForm ℤ (Additive (LineBundleClass (Fan.algebraicRealization Φ))))
+  (A : LinearMap.BilinForm ℤ (Additive (LineBundleClass (Fan.finiteFanScheme R Φ))))
 
 local notation "negDot" => (-(dotProductBilin ℤ ℤ : LinearMap.BilinForm ℤ (ι → ℤ)))
 
@@ -104,12 +107,12 @@ has exceptional coefficients equal to the negatives of the kernel coordinates. -
 @[simp] theorem boundaryOrthogonalEquivChargeKernel_symm_snd
     [LinearMap.IsPerfPair (A.prod negDot)]
     (x : (rayChargeMap s).ker) :
-    ((boundaryOrthogonalEquivChargeKernel hΦ s (A.prod negDot)).symm x : Mark).2 =
+    ((boundaryOrthogonalEquivChargeKernel R hΦ s (A.prod negDot)).symm x : Mark).2 =
       -(x : ι → ℤ) := by
   classical
-  let e := boundaryOrthogonalEquivChargeKernel hΦ s (A.prod negDot)
+  let e := boundaryOrthogonalEquivChargeKernel R hΦ s (A.prod negDot)
   funext j
-  have h := boundaryOrthogonalEquivChargeKernel_apply hΦ s (A.prod negDot) (e.symm x) j
+  have h := boundaryOrthogonalEquivChargeKernel_apply R hΦ s (A.prod negDot) (e.symm x) j
   rw [e.apply_symm_apply] at h
   simpa [LinearMap.BilinForm.prod_apply, dotProductBilin_apply_apply, single_dotProduct, e]
     using (congrArg Neg.neg h).symm
@@ -119,8 +122,8 @@ omit [Finite ι] in
 negatives of its exceptional coefficients over the corresponding rays. -/
 theorem markedBoundary_orthogonal_fst_pairing
     (y : (A.prod negDot).orthogonal M) (a : Φ.Ray → ℤ) :
-    A (Φ.rayDivisorToPicard hΦ a) y.val.1 = ∑ j, a (s j) * (-y.val.2 j) := by
-  have hz := LinearMap.BilinForm.mem_orthogonal_iff.mp y.property (markedBoundaryMap hΦ s a)
+    A (Φ.rayChartDivisorToPicard R hΦ a) y.val.1 = ∑ j, a (s j) * (-y.val.2 j) := by
+  have hz := LinearMap.BilinForm.mem_orthogonal_iff.mp y.property (markedBoundaryMap R hΦ s a)
     (LinearMap.mem_range_self _ a)
   simp only [markedBoundaryMap_apply, LinearMap.BilinForm.prod_apply, LinearMap.neg_apply,
     dotProductBilin_apply_apply, dotProduct, neg_mul, Finset.sum_neg_distrib, neg_neg] at hz
@@ -132,26 +135,26 @@ theorem boundaryOrthogonalEquivChargeKernel_symm_fst_pairing
     [LinearMap.IsPerfPair (A.prod negDot)]
     (x : (rayChargeMap s).ker)
     (a : Φ.Ray → ℤ) :
-    A (Φ.rayDivisorToPicard hΦ a)
-        ((boundaryOrthogonalEquivChargeKernel hΦ s (A.prod negDot)).symm x : Mark).1 =
+    A (Φ.rayChartDivisorToPicard R hΦ a)
+        ((boundaryOrthogonalEquivChargeKernel R hΦ s (A.prod negDot)).symm x : Mark).1 =
       ∑ j, a (s j) * (x : ι → ℤ) j := by
   simpa only [boundaryOrthogonalEquivChargeKernel_symm_snd, Pi.neg_apply, neg_neg] using
-    markedBoundary_orthogonal_fst_pairing hΦ s A
-      ((boundaryOrthogonalEquivChargeKernel hΦ s (A.prod negDot)).symm x) a
+    markedBoundary_orthogonal_fst_pairing R hΦ s A
+      ((boundaryOrthogonalEquivChargeKernel R hΦ s (A.prod negDot)).symm x) a
 
 /-- The prescribed boundary degrees of a kernel vector determine a unique toric class. -/
 theorem existsUnique_rayDivisorToPicard_pairing_eq_charge
     [LinearMap.IsPerfPair (A.prod negDot)] (x : (rayChargeMap s).ker) :
     ∃! H : Pic, ∀ a : Φ.Ray → ℤ,
-      A (Φ.rayDivisorToPicard hΦ a) H = ∑ j, a (s j) * (x : ι → ℤ) j := by
-  let y := (boundaryOrthogonalEquivChargeKernel hΦ s (A.prod negDot)).symm x
-  have hy := boundaryOrthogonalEquivChargeKernel_symm_fst_pairing hΦ s A x
+      A (Φ.rayChartDivisorToPicard R hΦ a) H = ∑ j, a (s j) * (x : ι → ℤ) j := by
+  let y := (boundaryOrthogonalEquivChargeKernel R hΦ s (A.prod negDot)).symm x
+  have hy := boundaryOrthogonalEquivChargeKernel_symm_fst_pairing R hΦ s A x
   refine ⟨(y : Mark).1, hy, fun H hH ↦ ?_⟩
   have hA := (LinearMap.BilinForm.isPerfPair_prod_iff.mp
     (inferInstance : LinearMap.IsPerfPair (A.prod negDot))).1
   apply (LinearMap.IsPerfPair.bijective_right A).injective
   ext z
-  obtain ⟨a, rfl⟩ := Φ.rayDivisorToPicard_surjective hΦ z
+  obtain ⟨a, rfl⟩ := Φ.rayChartDivisorToPicard_surjective R hΦ z
   exact (hH a).trans (hy a).symm
 
 end TauCeti.Toric.Fan

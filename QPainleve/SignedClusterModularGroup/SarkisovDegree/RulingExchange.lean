@@ -5,12 +5,11 @@ Authors: The QPainleve contributors
 -/
 module
 
-public import QPainleve.Geometry.Toric.Fan.FunctionField
+public import QPainleve.Geometry.Toric.BaseChange.FunctionField
 public import QPainleve.Geometry.Toric.Fan.Picard.Homaloidal
 public import QPainleve.Geometry.Toric.Fan.Picard.Quadric
 public import QPainleve.SignedClusterModularGroup.SarkisovDegree.ElementaryTransform
 
-import Mathlib.Analysis.Complex.Polynomial.Basic
 import QPainleve.SignedClusterModularGroup.SarkisovDegree.Multiplicity
 
 /-!
@@ -34,28 +33,30 @@ open TauCeti.Toric
 
 namespace QPainleve.BlowupTower.IsClosedPointTower
 
+variable (K : Type) [Field K] [IsAlgClosed K]
+
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {Φ : Fan i} [Nonempty Φ.cones]
   (b : Basis (Fin 2) ℤ N) (hΦ : Φ.IsRegular) (hc : Φ.IsComplete)
   (r : Fin 4 ≃ Φ.Ray)
   (hr : (fun j ↦ (r j).primitiveGenerator) = ![b 0, b 1, -b 0, (0 : ℤ) • b 0 - b 1])
 
-local notation "S" => Spec (CommRingCat.of ℂ)
-local notation "X" => Φ.algebraicRealization
+local notation "S" => Spec (CommRingCat.of K)
+local notation "X" => (Φ.finiteFanScheme K)
 local notation "f" => (X ↘ S)
-local notation "P" => Proj (homogeneousSubmodule ℂ (Fin 3 → ℂ))
-local notation "H" => mk (Proj.symmetricAlgebraTwistingBundle ℂ (Fin 3 → ℂ) 1)
+local notation "P" => Proj (homogeneousSubmodule K (Fin 3 → K))
+local notation "H" => mk (Proj.symmetricAlgebraTwistingBundle K (Fin 3 → K) 1)
 local notation "Pic" => Additive (LineBundleClass X)
-local notation "C" => Fan.hirzebruchPicardBasis b 0 hΦ r hr
+local notation "C" => Fan.hirzebruchPicardBasis K b 0 hΦ r hr
 local notation "E" => Fan.quadricRulingExchange b hΦ hc r hr
-local notation "τ" => FanHom.algebraicMap (FanEquiv.toFanHom (E))
+local notation "τ" => FanHom.finiteFanSchemeHom K (FanEquiv.toFanHom (E))
 local notation "Q(" T ")" => BlowupTower.transport T (asIso τ)
 local notation "rankTwo" => Eq.trans (Module.finrank_eq_card_basis b) (Fintype.card_fin 2)
 
-variable {Y : Scheme.{0}} {n : ℕ} {T : BlowupTower Φ.algebraicRealization n Y}
-  (hT : IsClosedPointTower Φ.algebraicRealization T)
+variable {Y : Scheme.{0}} {n : ℕ} {T : BlowupTower (Φ.finiteFanScheme K) n Y}
+  (hT : IsClosedPointTower (Φ.finiteFanScheme K) T)
 
-variable [Φ.algebraicRealization.IsProjectiveOver ℂ]
+variable [(Φ.finiteFanScheme K).IsProjectiveOver K]
 
 /-- If all base multiplicities of a resolved quadric-to-plane map are at most half
 the positive fiber degree, transport by the ruling exchange strictly decreases the
@@ -66,8 +67,8 @@ theorem rulingExchange_bidegree_lt_of_no_high_multiplicity
     (g : Y ⟶ P) (hg : g ≫ (P ↘ S) = T.toBase ≫ f)
     (hbir : Scheme.BirationalOver g (𝟙 P)) :
     let : SmoothOfRelativeDimension 2 f := by
-      rw [Fan.algebraicRealization_over]
-      exact rankTwo ▸ Φ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
+      rw [Fan.finiteFanScheme_over K]
+      exact rankTwo ▸ Φ.smoothOfRelativeDimension_finiteFanSchemeToSpec K hΦ
     let q := Q(T)
     let hQ := q.isLift.isClosedPointTower hT
     let g' := q.iso.inv ≫ g
@@ -93,11 +94,12 @@ theorem rulingExchange_bidegree_lt_of_no_high_multiplicity
       ⟨Scheme.PartialIso.ofIso q.iso.symm, by
         simp [Scheme.PartialIso.IsOver, Scheme.PartialIso.ofIso, ← Scheme.topIso_hom]⟩
     exact he.trans hbir
-  · have ⟨hsq, hsum⟩ := hT.homaloidal_intersection_identities_of_hirzebruch b 0 hΦ hc r hr g hg hbir
+  · have ⟨hsq, hsum⟩ :=
+      hT.homaloidal_intersection_identities_of_hirzebruch K b 0 hΦ hc r hr g hg hbir
     simp only [Nat.cast_zero, zero_mul, sub_zero] at hsq hsum
     have hlt := two_mul_lt_of_hirzebruch_homaloidal (e := 0) (a := (C).repr v.1 0) hd hm
       (by simpa only [neg_sq, zero_mul, sub_zero] using hsq) (by simpa only [sub_zero] using hsum)
-    have hbase := (hT.picardMarking_symm_rulingExchange b hΦ hc r hr (pullback g H)).1
+    have hbase := (hT.picardMarking_symm_rulingExchange K b hΦ hc r hr (pullback g H)).1
     have hW : w = (q.tower.picardMarking hQ f).symm
         (Additive.ofMul (pullback q.iso.inv (pullback g H))) := by
       simp only [w, g', pullback_comp]

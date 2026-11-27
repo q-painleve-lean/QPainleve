@@ -25,27 +25,33 @@ open TauCeti.AlgebraicGeometry Scheme.IdealSheafData
 
 namespace TauCeti.Toric.Fan
 
-variable {N V N' V' : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
+universe u
+
+variable (K : Type u) [Field K] [PerfectField K]
+
+variable {N N' : Type u} {V V' : Type*} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   [AddCommGroup N'] [AddCommGroup V'] [Module ℝ V']
   {i : N →+ V} {i' : N' →+ V'} {Φ : Fan i} {Ψ : Fan i'}
   [Nonempty Φ.cones] [Nonempty Ψ.cones] (hΦ : Φ.IsRegular) (hΨ : Ψ.IsRegular)
   {n n' : ℕ} (b : Module.Basis (Fin 2) ℤ N) (b' : Module.Basis (Fin 2) ℤ N')
-  (s : Fin n → Φ.Ray) (s' : Fin n' → Ψ.Ray) (c : Fin n → ℂˣ) (d : Fin n' → ℂˣ)
+  (s : Fin n → Φ.Ray) (s' : Fin n' → Ψ.Ray) (c : Fin n → Kˣ) (d : Fin n' → Kˣ)
 
-local notation "S" => Spec (CommRingCat.of ℂ)
-local notation "M" => internalBlowupTower b s c
-local notation "M'" => internalBlowupTower b' s' d
+local notation "S" => Spec (CommRingCat.of K)
+local notation "M" => internalBlowupTower K b s c
+local notation "M'" => internalBlowupTower K b' s' d
 local notation "B" => Scheme.Hom.ker (WithBoundary.boundaryι (Sigma.snd M))
 local notation "B'" => Scheme.Hom.ker (WithBoundary.boundaryι (Sigma.snd M'))
-local notation "R" => internalBlowupBoundaryPrimeEquiv hΦ b s c
-local notation "R'" => internalBlowupBoundaryPrimeEquiv hΨ b' s' d
+local notation "R" => internalBlowupBoundaryPrimeEquiv K hΦ b s c
+local notation "R'" => internalBlowupBoundaryPrimeEquiv K hΨ b' s' d
 
-variable {X X' Y Y' : Scheme} [IsIntegral X] [IsIntegral X']
-  {f : X ⟶ S} {g : X' ⟶ S} [SmoothOfRelativeDimension 2 f] [SmoothOfRelativeDimension 2 g]
+variable {X X' Y Y' : Scheme.{u}} [IsIntegral X] [IsIntegral X']
+  {f : X ⟶ Spec (.of K)} {g : X' ⟶ Spec (.of K)}
+  [SmoothOfRelativeDimension 2 f] [SmoothOfRelativeDimension 2 g]
   [QuasiCompact f] [QuasiCompact g]
   {D : X.IdealSheafData} {D' : X'.IdealSheafData} [IsReduced D.subscheme] [IsReduced D'.subscheme]
   {m m' : ℕ} {T : BlowupTower X m Y} {U : BlowupTower X' m' Y'}
-  {p : (internalBlowupTower b s c).1 ⟶ X} {q : (internalBlowupTower b' s' d).1 ⟶ X'}
+  {p : (internalBlowupTower K b s c).1 ⟶ X}
+  {q : (internalBlowupTower K b' s' d).1 ⟶ X'}
 
 /-- An isomorphism of ordered toric models carrying the strict primes according to a
 ray equivalence descends if and only if that equivalence matches the surviving rays.
@@ -74,8 +80,8 @@ theorem existsUnique_iso_iff_eq_contractedBoundaryRays
       apply SetLike.coe_injective
       apply (Set.image_injective.mpr t.hom.injective)
       rw [support_comap, Closeds.coe_preimage, Set.image_preimage_eq _ t.hom.surjective,
-        coe_support_ker_boundaryι_eq_iUnion_closure hΦ b s c,
-        coe_support_ker_boundaryι_eq_iUnion_closure hΨ b' s' d,
+        coe_support_ker_boundaryι_eq_iUnion_closure K hΦ b s c,
+        coe_support_ker_boundaryι_eq_iUnion_closure K hΨ b' s' d,
         Set.image_iUnion]
       simpa only [← t.hom.isClosedEmbedding.closure_image_eq, Set.image_singleton, hτ] using
         τ.surjective.iUnion_comp (fun ρ ↦ closure {(R' ρ).val})

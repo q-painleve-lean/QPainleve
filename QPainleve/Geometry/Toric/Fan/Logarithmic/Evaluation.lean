@@ -29,11 +29,14 @@ namespace TauCeti.Toric.FanEquiv
 
 open Fan Scheme.RationalMap
 
-variable {N N' V V' : Type} [AddCommGroup N] [AddCommGroup N']
+universe u
+
+variable (K : Type u) [Field K] {N N' : Type u} {V V' : Type*}
+  [AddCommGroup N] [AddCommGroup N']
   [AddCommGroup V] [AddCommGroup V'] [Module ℝ V] [Module ℝ V']
   {i : N →+ V} {i' : N' →+ V'} {Φ : Fan i} {Ψ : Fan i'}
   [hΦ₀ : Nonempty Φ.cones] [hΨ₀ : Nonempty Ψ.cones]
-  {ι : Type} [Fintype ι] [DecidableEq ι]
+  {ι : Type u} [Fintype ι] [DecidableEq ι]
 
 /-- For a resolved toric isomorphism with a translation, matching the center
 rays and the binomial center ideals gives the exchange matrix of the
@@ -43,29 +46,30 @@ theorem comp_xEvaluation_of_resolved_toric_iso (e : FanEquiv Φ Ψ)
     (hΦ : Φ.IsRegular)
     (b : Basis (Fin 2) ℤ N) (b' : Basis (Fin 2) ℤ N')
     (s : ι → Φ.Ray) (t : ι → Ψ.Ray) (σ : Equiv.Perm ι)
-    (c d : Multiplicative (ι → ℤ) →* ℂˣ)
-    (χ : Multiplicative (N' →+ ℤ) →* ℂˣ)
+    (c d : Multiplicative (ι → ℤ) →* Kˣ)
+    (χ : Multiplicative (N' →+ ℤ) →* Kˣ)
     (hray : ∀ j, e.rayEquiv (s (σ j)) = t j)
     (hdet : ∀ x y, b'.detDualEquiv (e.latticeEquiv x) (e.latticeEquiv y) = b.detDualEquiv x y)
-    (hc : ∀ j, ((t j).internalCenter b' (d (ofAdd (Pi.single j 1)))).val.comap
-      ((e.boundaryIso hΦ₀ hΨ₀).hom ≫ (Ψ.boundaryTranslation χ).hom) =
-        ((s (σ j)).internalCenter b (c (ofAdd (Pi.single (σ j) 1)))).val)
+    (hc : ∀ j, ((t j).internalCenter K b' (d (ofAdd (Pi.single j 1)))).val.comap
+      ((e.boundaryIso K hΦ₀ hΨ₀).hom ≫ (Ψ.boundaryTranslation K χ).hom) =
+        ((s (σ j)).internalCenter K b (c (ofAdd (Pi.single (σ j) 1)))).val)
     {Z : Scheme} [IsIntegral Z]
-    (p : Z ⟶ Φ.algebraicRealization) [IsDominant p]
-    (q : Z ⟶ Ψ.algebraicRealization)
+    (p : Z ⟶ Φ.finiteFanScheme K) [IsDominant p]
+    (q : Z ⟶ Ψ.finiteFanScheme K)
     (hpq : p.toRationalMap.comp
-      (e.toFanHom.algebraicMap ≫ (Ψ.torusTranslation χ).hom).toRationalMap = q.toRationalMap)
+      (e.toFanHom.finiteFanSchemeHom K ≫ (Ψ.torusTranslationIso K χ).hom).toRationalMap =
+        q.toRationalMap)
     (B : SkewExchangeMatrix ι)
     (hB : B.matrix = chargeExchangeMatrix b.detDualEquiv.toLinearMap (rayChargeMap s)) :
     letI : q.toRationalMap.IsDominant := hpq ▸ inferInstance
     let w := ((Generator.permute σ).toStep B).toPath
-    let a := p.toRationalMap.comp (Φ.xEvaluation b s c)
+    let a := p.toRationalMap.comp (Φ.xEvaluation K b s c)
     ((Generator.permute σ).target B).matrix =
       chargeExchangeMatrix b'.detDualEquiv.toLinearMap (rayChargeMap t) ∧
     ∃ hdom : a.fromFunctionField (IsLocalRing.closedPoint Z.functionField) ∈
-        (w.xRationalMap ℂ).domain,
-      a.compOfDefined (w.xRationalMap ℂ) hdom =
-        q.toRationalMap.comp (Ψ.xEvaluation b' t d) := by
+        (w.xRationalMap K).domain,
+      a.compOfDefined (w.xRationalMap K) hdom =
+        q.toRationalMap.comp (Ψ.xEvaluation K b' t d) := by
   intro w a
   refine ⟨?_, ?_⟩
   · ext j k
@@ -73,8 +77,8 @@ theorem comp_xEvaluation_of_resolved_toric_iso (e : FanEquiv Φ Ψ)
       Matrix.submatrix_apply, hB, chargeExchangeMatrix_apply, rayChargeMap_single,
       ← hray j, ← hray k, primitiveGenerator_rayEquiv]
     exact (hdet _ _).symm
-  let ρ := Spec.map (CommRingCat.ofHom (rename (R := ℂ) σ).toRingHom)
-  have hw : w.xRationalMap ℂ = ρ.toRationalMap := Quiver.Path.xRationalMap_permute ℂ B σ
+  let ρ := Spec.map (CommRingCat.ofHom (rename (R := K) σ).toRingHom)
+  have hw : w.xRationalMap K = ρ.toRationalMap := Quiver.Path.xRationalMap_permute K B σ
   obtain ⟨hdom, heval⟩ := a.compOfDefined_toRationalMap ρ
   refine ⟨hw.symm ▸ hdom, ?_⟩
   simp only [hw, heval, a, ← comp_compHom]
@@ -84,8 +88,8 @@ theorem comp_xEvaluation_of_resolved_toric_iso (e : FanEquiv Φ Ψ)
         c (ofAdd (Pi.single (σ j) 1)) := by
     have hj := hc j
     rw [← hray j] at hj ⊢
-    exact (e.comap_internalCenter_toricIso_eq_iff b b' hdet hΦ (s (σ j)) χ _ _).mp hj
-  rw [← e.comp_xEvaluation_of_toric_iso b b' s t σ c d χ hray hdet hparam]
+    exact (e.comap_internalCenter_toricIso_eq_iff K b b' hdet hΦ (s (σ j)) χ _ _).mp hj
+  rw [← e.comp_xEvaluation_of_toric_iso K b b' s t σ c d χ hray hdet hparam]
   simp only [← comp_assoc, hpq]
 
 end TauCeti.Toric.FanEquiv

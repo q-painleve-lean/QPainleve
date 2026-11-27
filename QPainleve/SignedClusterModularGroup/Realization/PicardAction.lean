@@ -31,6 +31,8 @@ open AlgebraicGeometry.Scheme
 
 namespace QPainleve.SignedClusterModularGroup.GeometricRealization
 
+variable {k₀ : Type} [Field k₀] [IsAlgClosed k₀]
+
 section Rotation
 
 open SignedBoundaryIsometryGroup
@@ -116,32 +118,34 @@ variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {r m n : ℕ} [NeZero m] [NeZero n] {L : Type} [AddCommGroup L]
   {B : LinearMap.BilinForm ℤ L} {E : SkewExchangeMatrix (Fin r)}
 
-local notation "S" => Spec (CommRingCat.of ℂ)
-local notation "X[" r "]" => scheme ℂ (Fin r →₀ ℤ)
-local notation "Dtor[" Φ "," h "]" => Scheme.IdealSheafData.subscheme (Fan.boundaryIdeal Φ h)
+local notation "S" => Spec (CommRingCat.of k₀)
+local notation "X[" coeff "," r "]" => scheme coeff (Fin r →₀ ℤ)
+local notation "Dtor[" coeff "," Φ "," h "]" => Scheme.IdealSheafData.subscheme
+  (Fan.toricBoundaryIdeal coeff Φ h)
 local notation "Loops[" E "]" => End (Prefunctor.obj (Paths.of (SkewExchangeMatrix (Fin r))) E)
 local notation "word(" w ")" => End.asHom w
 local notation "xMap[" E "," w "]" =>
-  Quiver.Path.xRationalMap (B := E) (C := E) ℂ (word(w))
-local notation "PointMaps[" E "]" => ClusterModularGroup ℂ E
-local notation "evalLoop[" E "]" => clusterModularGroupMap ℂ E
-local notation "evalSignedLoop[" E "]" => signedClusterModularGroupMap ℂ E
+  Quiver.Path.xRationalMap (B := E) (C := E) k₀ (word(w))
+local notation "PointMaps[" E "]" => ClusterModularGroup k₀ E
+local notation "evalLoop[" E "]" => clusterModularGroupMap k₀ E
+local notation "evalSignedLoop[" E "]" => signedClusterModularGroupMap k₀ E
 
 -- The endomorphism projection has the path-category hom type. State the instance
 -- at that type so typeclass search can use dominance of the underlying word map.
 local instance (w : Loops[E]) : xMap[E,w].IsDominant :=
-  Quiver.Path.instIsDominantXRationalMap ℂ (word(w))
+  Quiver.Path.instIsDominantXRationalMap k₀ (word(w))
 
-variable {T₀ : Over S} [Nonempty T₀.left] [Smooth T₀.hom]
-  {P : Point T₀ → MarkedSurface ℂ n B X[r]}
+variable {T₀ : Over (Spec (.of k₀))} [Nonempty T₀.left] [Smooth T₀.hom]
+  {P : Point T₀ → MarkedSurface k₀ n B X[k₀,r]}
   (D : ZMod n → L) (hD : ∀ c, (P c).pair.hom.left.ker.IsEffectiveCartier)
   (hmark : ∀ c j, (P c).boundaryClass (hD c) j = D j)
 
 variable {b : Module.Basis (Fin 2) ℤ N} {s : Fin r → Φ.Ray} {hΦ : Φ.IsRegular}
-  [PrestableFamily (Dtor[Φ,hΦ₀] ↘ S)] {γ : Type*} {a : γ → (Dtor[Φ,hΦ₀] ↘ S).smoothLocus}
+  [PrestableFamily (Dtor[k₀,Φ,hΦ₀] ↘ Spec (.of k₀))] {γ : Type*} {a : γ →
+    (Dtor[k₀,Φ,hΦ₀] ↘ Spec (.of k₀)).smoothLocus}
   {T : NodalCycleNumbering a m} {origin : ZMod m}
-  {ι : L →ₗ[ℤ] Additive (LineBundleClass Φ.algebraicRealization) × (Fin r → ℤ)}
-  {centers : Point T₀ → Multiplicative (Fin r → ℤ) →* ℂˣ}
+  {ι : L →ₗ[ℤ] Additive (LineBundleClass (Φ.finiteFanScheme k₀)) × (Fin r → ℤ)}
+  {centers : Point T₀ → Multiplicative (Fin r → ℤ) →* k₀ˣ}
   (hc : Φ.IsComplete) (hι : Function.Injective ι)
   (hindex : (Fan.rayChargeMap s).range.toAddSubgroup.index ≠ 0)
   (hmodels : ∀ c, Nonempty (ContractedToricFiber b s hΦ T origin ι (centers c) (P c)))
@@ -160,7 +164,7 @@ include hmark hc hι hindex in
 private theorem signedAction_eq_of_xMap_eq
     {C C' : T₀.left.PartialMap T₀.left} [IsDominant C.hom] [IsDominant C'.hom]
     [C.IsOver T₀.hom T₀.hom] [C'.IsOver T₀.hom T₀.hom]
-    {F F' : X[r] ⤏ X[r]} [F.IsDominant] [F'.IsDominant]
+    {F F' : X[k₀,r] ⤏ X[k₀,r]} [F.IsDominant] [F'.IsDominant]
     (R : GeometricRealization P P C F) (R' : GeometricRealization P P C' F') (h : F = F')
     (hC : Models[C]) (hC' : Models[C']) :
     R.toSignedBoundaryIsometry D hD hmark = R'.toSignedBoundaryIsometry D hD hmark := by
@@ -185,7 +189,7 @@ private noncomputable def loopSignedAction
     have h : xMap[E,toLoop (v.unop * w.unop)] =
         (xMap[E,toLoop w.unop]).comp (xMap[E,toLoop v.unop]) := by
       rw [map_mul toLoop]
-      exact Quiver.Path.xRationalMap_comp ℂ _ _
+      exact Quiver.Path.xRationalMap_comp k₀ _ _
     exact (signedAction_eq_of_xMap_eq D hD hmark hc hι hindex
       (R (v.unop * w.unop)) ((R w.unop).comp (R v.unop)) h
         (hC (v.unop * w.unop)) ((hC v.unop).comp (C w.unop))).trans
@@ -241,9 +245,9 @@ theorem existsUnique_picardHom
   let : ∀ w : inversionFreeLoops E, (C w).IsOver T₀.hom T₀.hom := hCO
   obtain ⟨ρ, hρ⟩ := exists_signedAction_of_loopMap D hD hmark hc hι hindex
     (inversionFreeLoops E).subtype C R (fun _ ↦ HasToricTargetModels.of_forall hmodels)
-    evalLoop[E] (clusterModularGroupMap_surjective ℂ E)
-    (fun w v h ↦ (Quiver.Path.xRationalMap_eq_iff ℂ word(w.val) word(v.val)).mpr
-      ((clusterModularGroupMap_eq_iff ℂ E w v).mp h))
+    evalLoop[E] (clusterModularGroupMap_surjective k₀ E)
+    (fun w v h ↦ (Quiver.Path.xRationalMap_eq_iff k₀ word(w.val) word(v.val)).mpr
+      ((clusterModularGroupMap_eq_iff k₀ E w v).mp h))
   have happly (w : inversionFreeLoops E) {C' : T₀.left.PartialMap T₀.left}
       [IsDominant C'.hom] [C'.IsOver T₀.hom T₀.hom]
       (R' : GeometricRealization P P C' xMap[E,w.val]) :
@@ -254,7 +258,7 @@ theorem existsUnique_picardHom
       _ = _ := (toIsometry_apply B D _).trans
         (congrArg Prod.fst (coe_toSignedBoundaryIsometry R' D hD hmark))
   have hmem (g : (PointMaps[E])ᵐᵒᵖ) : toIsometry B D (ρ g) ∈ PicardRotations[B,D] := by
-    obtain ⟨w, hw⟩ := clusterModularGroupMap_surjective ℂ E g.unop
+    obtain ⟨w, hw⟩ := clusterModularGroupMap_surjective k₀ E g.unop
     rw [← op_unop g, ← hw, happly w (R w)]
     exact (R w).picard_mem_boundaryRotationGroup D hD hmark (horient w)
   refine ⟨((toIsometry B D).comp ρ).codRestrict _ hmem, ?_, ?_⟩
@@ -262,7 +266,7 @@ theorem existsUnique_picardHom
     simpa only [MonoidHom.codRestrict_apply, MonoidHom.comp_apply] using happly w R'
   · intro ρ' hρ'
     ext g : 1
-    obtain ⟨w, hw⟩ := clusterModularGroupMap_surjective ℂ E g.unop
+    obtain ⟨w, hw⟩ := clusterModularGroupMap_surjective k₀ E g.unop
     rw [← op_unop g, ← hw]
     apply Subtype.ext
     simpa only [MonoidHom.codRestrict_apply, MonoidHom.comp_apply] using
@@ -280,7 +284,7 @@ theorem existsUnique_signedPicardHom_of_realizations
       letI := hCO
       ∃ R : GeometricRealization P P C xMap[E,w],
         R.orientation = (-1 : ℤˣ) ^ (word(w)).inversionCount ∧ Models[C]) :
-    ∃! ρ : (SignedClusterModularGroup ℂ E)ᵐᵒᵖ →* signedBoundaryIsometryGroup B D, ∀ (w : Loops[E]),
+    ∃! ρ : (SignedClusterModularGroup k₀ E)ᵐᵒᵖ →* signedBoundaryIsometryGroup B D, ∀ (w : Loops[E]),
       sign B D (ρ (op (evalSignedLoop[E] w))) = (-1 : ℤˣ) ^ (word(w)).inversionCount ∧
       ∀ {C' : T₀.left.PartialMap T₀.left} [IsDominant C'.hom] [C'.IsOver T₀.hom T₀.hom]
         (R' : GeometricRealization P P C' xMap[E,w]), Models[C'] →
@@ -290,9 +294,9 @@ theorem existsUnique_signedPicardHom_of_realizations
   let : ∀ w : Loops[E], IsDominant (C w).hom := hC
   let : ∀ w : Loops[E], (C w).IsOver T₀.hom T₀.hom := hCO
   obtain ⟨ρ, hρ⟩ := exists_signedAction_of_loopMap D hD hmark hc hι hindex
-    (MonoidHom.id _) C R htarget evalSignedLoop[E] (signedClusterModularGroupMap_surjective ℂ E)
-    (fun w v h ↦ (Quiver.Path.xRationalMap_eq_iff ℂ word(w) word(v)).mpr
-      ((signedClusterModularGroupMap_eq_iff ℂ E w v).mp h))
+    (MonoidHom.id _) C R htarget evalSignedLoop[E] (signedClusterModularGroupMap_surjective k₀ E)
+    (fun w v h ↦ (Quiver.Path.xRationalMap_eq_iff k₀ word(w) word(v)).mpr
+      ((signedClusterModularGroupMap_eq_iff k₀ E w v).mp h))
   refine ⟨ρ, fun w ↦ ⟨?_, hρ w⟩, fun ρ' hρ' ↦ MonoidHom.ext fun g ↦ ?_⟩
   · calc
       _ = sign B D ((R w).toSignedBoundaryIsometry D hD hmark) :=
@@ -300,7 +304,7 @@ theorem existsUnique_signedPicardHom_of_realizations
       _ = (R w).orientation := (sign_apply B D _).trans
         (congrArg Prod.snd (coe_toSignedBoundaryIsometry (R w) D hD hmark))
       _ = _ := horient w
-  · obtain ⟨w, hw⟩ := signedClusterModularGroupMap_surjective ℂ E g.unop
+  · obtain ⟨w, hw⟩ := signedClusterModularGroupMap_surjective k₀ E g.unop
     rw [← op_unop g, ← hw, (hρ' w).2 (R w) (htarget w), hρ w (R w) (htarget w)]
 
 include hmark hc hι hindex hmodels in
@@ -317,8 +321,8 @@ theorem existsUnique_signedPicardHom
       ∃ R : GeometricRealization P P C xMap[E,w.val], R.orientation = 1)
     (o : Word E E) (ho : Odd o.inversionCount)
     {Codd : T₀.left.PartialMap T₀.left} [IsDominant Codd.hom] [Codd.IsOver T₀.hom T₀.hom]
-    (O : GeometricRealization P P Codd (o.xRationalMap ℂ)) (hO : O.orientation = -1) :
-    ∃! ρ : (SignedClusterModularGroup ℂ E)ᵐᵒᵖ →* signedBoundaryIsometryGroup B D, ∀ (w : Loops[E]),
+    (O : GeometricRealization P P Codd (o.xRationalMap k₀)) (hO : O.orientation = -1) :
+    ∃! ρ : (SignedClusterModularGroup k₀ E)ᵐᵒᵖ →* signedBoundaryIsometryGroup B D, ∀ (w : Loops[E]),
       sign B D (ρ (op (evalSignedLoop[E] w))) = (-1 : ℤˣ) ^ (word(w)).inversionCount ∧
       ∀ {C' : T₀.left.PartialMap T₀.left} [IsDominant C'.hom] [C'.IsOver T₀.hom T₀.hom]
         (R' : GeometricRealization P P C' xMap[E,w]),

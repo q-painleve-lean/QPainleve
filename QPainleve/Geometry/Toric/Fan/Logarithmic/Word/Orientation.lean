@@ -25,12 +25,15 @@ open scoped Sarkisov
 
 namespace TauCeti.Toric.Fan.LogarithmicProjection
 
+variable {k₀ : Type} [Field k₀] [IsAlgClosed k₀]
+
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V] {i : N →+ V}
 
-local notation "S" => Spec (CommRingCat.of ℂ)
+local notation "S" => Spec (CommRingCat.of k₀)
 
-variable {Z : Scheme} [Z.Over S] [SmoothOfRelativeDimension 2 (Z ↘ S)] [IsIntegral Z]
-  {D : Z.IdealSheafData} {A B : LogarithmicProjection i D} {m : ℕ}
+variable {Z : Scheme} [Z.Over (Spec (.of k₀))] [SmoothOfRelativeDimension 2 (Z ↘ Spec (.of k₀))]
+  [IsIntegral Z]
+  {D : Z.IdealSheafData} {A B : LogarithmicProjection k₀ i D} {m : ℕ}
 
 /-- A word whose inversion sign agrees with the sign between equally oriented
 models can be replaced by an inversion-free word in their evaluation comparison. -/
@@ -39,25 +42,25 @@ theorem OrderedToricModel.exists_inversionFree_word_of_boundarySign_eq_one
     (w : Word U.exchangeMatrix T.exchangeMatrix)
     (hsign : U.HasBoundarySign T ((-1 : ℤˣ) ^ w.inversionCount))
     (hOrientation : U.HasBoundarySign T 1)
-    (heval : ∃ h, U.xEvaluation.compOfDefined (w.xRationalMap ℂ) h = T.xEvaluation) :
+    (heval : ∃ h, U.xEvaluation.compOfDefined (w.xRationalMap k₀) h = T.xEvaluation) :
     ∃ v : Word U.exchangeMatrix T.exchangeMatrix, v.inversionCount = 0 ∧
-      ∃ h, U.xEvaluation.compOfDefined (v.xRationalMap ℂ) h = T.xEvaluation := by
+      ∃ h, U.xEvaluation.compOfDefined (v.xRationalMap k₀) h = T.xEvaluation := by
   have heven : Even w.inversionCount :=
     (neg_one_pow_eq_one_iff_even (by decide : (-1 : ℤˣ) ≠ 1)).mp (hsign.unique hOrientation)
-  obtain ⟨v, hv, hpull⟩ := w.exists_xPullback_eq_of_even_inversionCount ℂ heven
+  obtain ⟨v, hv, hpull⟩ := w.exists_xPullback_eq_of_even_inversionCount k₀ heven
   refine ⟨v, hv, ?_⟩
-  rw [← (Quiver.Path.xRationalMap_eq_iff ℂ w v).mpr hpull]
+  rw [← (Quiver.Path.xRationalMap_eq_iff k₀ w v).mpr hpull]
   exact heval
 
 /-- A resolved Sarkisov path between prescribed models with the same boundary
 orientation induces an inversion-free word in the prescribed frames and labels.
 The word carries the source X evaluation to the target evaluation at the generic
 point of the common resolving surface. -/
-theorem exists_inversionFree_word_of_resolved_sarkisov_path_to_model [Z.IsProjectiveOver ℂ]
+theorem exists_inversionFree_word_of_resolved_sarkisov_path_to_model [Z.IsProjectiveOver k₀]
     (p : SarkisovPath A B) (U : OrderedToricModel A m) (T : OrderedToricModel B m)
     (hOrientation : U.HasBoundarySign T 1) :
     ∃ v : Word U.exchangeMatrix T.exchangeMatrix, v.inversionCount = 0 ∧
-      ∃ h, U.xEvaluation.compOfDefined (v.xRationalMap ℂ) h = T.xEvaluation := by
+      ∃ h, U.xEvaluation.compOfDefined (v.xRationalMap k₀) h = T.xEvaluation := by
   obtain ⟨_, _, _, w, _, _, -, -, -, -, -, -, -, -, -, hsign, -, heval⟩ :=
     exists_word_of_resolved_sarkisov_path_to_model p U T
   exact U.exists_inversionFree_word_of_boundarySign_eq_one T w hsign hOrientation heval

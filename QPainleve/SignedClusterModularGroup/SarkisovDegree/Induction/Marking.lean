@@ -9,7 +9,6 @@ public import QPainleve.Geometry.Toric.Fan.Logarithmic.StarFactorization
 public import QPainleve.SignedClusterModularGroup.SarkisovDegree.Plane.Step
 public import QPainleve.SignedClusterModularGroup.SarkisovDegree.SecondaryDegree
 
-import Mathlib.Analysis.Complex.Polynomial.Basic
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Factorization
 import TauCeti.AlgebraicGeometry.Morphisms.Modification.Composition
 
@@ -36,28 +35,31 @@ open Scheme.IdealSheafData
 
 namespace TauCeti.Toric.Fan.LogarithmicProjection
 
+variable {k₀ : Type} [Field k₀] [IsAlgClosed k₀]
+
 attribute [local instance] MvPolynomial.gradedAlgebra
 
-local notation "S" => Spec (CommRingCat.of ℂ)
-local notation "P" => Proj (homogeneousSubmodule ℂ (Fin 3 → ℂ))
+local notation "S" => Spec (CommRingCat.of k₀)
+local notation "P" => Proj (homogeneousSubmodule k₀ (Fin 3 → k₀))
 local notation "s" => (P ↘ S)
-local notation "coords" => Pi.basisFun ℂ (Fin 3)
-local notation "H" => LineBundleClass.mk (Proj.symmetricAlgebraTwistingBundle ℂ (Fin 3 → ℂ) 1)
+local notation "coords" => Pi.basisFun k₀ (Fin 3)
+local notation "H" => LineBundleClass.mk (Proj.symmetricAlgebraTwistingBundle k₀ (Fin 3 → k₀) 1)
 local notation "plane[" b "," hi "]" => Fan.projectiveSpace b hi
 local notation "planeIso[" b "," hi "]" =>
-  (Fan.projectivePlaneIso b hi ≪≫ Basis.polynomialProjIso coords)
+  (Fan.projectivePlaneIso k₀ b hi ≪≫ Basis.polynomialProjIso coords)
 local notation "mark[" T "," hT "," f "," g "]" =>
   LinearEquiv.symm (BlowupTower.picardMarking T hT f) (Additive.ofMul (pullback g H))
 
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
-  {i : N →+ V} {X : Scheme} [X.Over S] [SmoothOfRelativeDimension 2 (X ↘ S)]
+  {i : N →+ V} {X : Scheme} [X.Over (Spec (.of k₀))] [SmoothOfRelativeDimension 2 (X ↘ Spec
+    (.of k₀))]
   {D : X.IdealSheafData}
 
 /-- The prescribed projections admit a marked plane-target resolution of the
 given Sarkisov bidegree. The source marking is either a plane frame or a
 Hirzebruch frame. Its tower and top isomorphism represent the exact source
 projection, and the target plane map in the tower coordinates is birational. -/
-inductive HasPlaneTargetMarking (A B : LogarithmicProjection i D) : ℕ ×ₗ ℕ → Prop
+inductive HasPlaneTargetMarking (A B : LogarithmicProjection k₀ i D) : ℕ ×ₗ ℕ → Prop
   /-- A resolution whose source is a plane. -/
   | plane (b b' : Basis (Fin 2) ℤ N) (hi : IsIntegralLattice i)
       (hA : A.fan = plane[b,hi]) (hB : B.fan = plane[b',hi])
@@ -69,35 +71,35 @@ inductive HasPlaneTargetMarking (A B : LogarithmicProjection i D) : ℕ ×ₗ �
       HasPlaneTargetMarking A B (let : IsNoetherian P := isNoetherian_of_finiteType s
         let x := mark[T,hT,s,g]
         planeSarkisovBidegree ((Basis.picardTwistEquiv coords) x.1).toNat
-          (sarkisovSecondaryDegree ℂ x.1.toMul).toNat)
+          (sarkisovSecondaryDegree k₀ x.1.toMul).toNat)
   /-- A resolution whose source carries a Hirzebruch marking. The second
   Picard coordinate gives the degree on the chosen ruling fiber. -/
   | hirzebruch (b b' : Basis (Fin 2) ℤ N) (e : ℕ) (hi : IsIntegralLattice i)
       (r : Fin 4 ≃ A.fan.Ray)
       (hr : (fun j ↦ (r j).primitiveGenerator) = ![b 0, b 1, -b 0, (e : ℤ) • b 0 - b 1])
       (hB : B.fan = plane[b',hi])
-      {Y : Scheme} {n : ℕ} (T : BlowupTower A.fan.algebraicRealization n Y)
-      (hT : IsClosedPointTower A.fan.algebraicRealization T)
+      {Y : Scheme} {n : ℕ} (T : BlowupTower (A.fan.finiteFanScheme k₀) n Y)
+      (hT : IsClosedPointTower (A.fan.finiteFanScheme k₀) T)
       (k : X ≅ Y) (g : Y ⟶ P)
       (hAh : A.hom = k.hom ≫ T.toBase)
       (hBh : B.hom ≍ k.hom ≫ g ≫ (planeIso[b',hi]).inv)
-      (hg : g ≫ s = T.toBase ≫ (A.fan.algebraicRealization ↘ S))
+      (hg : g ≫ s = T.toBase ≫ ((A.fan.finiteFanScheme k₀) ↘ S))
       (hbir : Scheme.BirationalOver g (𝟙 P)) :
-      HasPlaneTargetMarking A B (let f := (A.fan.algebraicRealization ↘ S)
+      HasPlaneTargetMarking A B (let f := ((A.fan.finiteFanScheme k₀) ↘ S)
         let : SmoothOfRelativeDimension 2 f :=
           (Eq.trans (finrank_eq_card_basis b) (Fintype.card_fin 2)) ▸
-            A.fan.smoothOfRelativeDimension_algebraicRealizationStructureMap A.isRegular
+            A.fan.smoothOfRelativeDimension_finiteFanSchemeToSpec k₀ A.isRegular
         let x := mark[T,hT,f,g]
         hirzebruchSarkisovBidegree
-          ((A.fan.hirzebruchPicardBasis b e A.isRegular r hr).repr x.1 1).toNat
-          (sarkisovSecondaryDegree ℂ x.1.toMul).toNat)
+          ((A.fan.hirzebruchPicardBasis k₀ b e A.isRegular r hr).repr x.1 1).toNat
+          (sarkisovSecondaryDegree k₀ x.1.toMul).toNat)
 
 /-- Two specified logarithmic plane projections which are modifications admit
 a plane-target marking. The marked source tower factors the given projection
 in plane coordinates, and the map to the target plane is transported by the
 same top isomorphism. -/
-theorem exists_hasPlaneTargetMarking_of_plane [IsIntegral X] [X.IsProjectiveOver ℂ]
-    (A B : LogarithmicProjection i D) [IsModification A.hom] [IsModification B.hom]
+theorem exists_hasPlaneTargetMarking_of_plane [IsIntegral X] [X.IsProjectiveOver k₀]
+    (A B : LogarithmicProjection k₀ i D) [IsModification A.hom] [IsModification B.hom]
     (b b' : Basis (Fin 2) ℤ N) (hi : IsIntegralLattice i)
     (hA : A.fan = plane[b,hi]) (hB : B.fan = plane[b',hi]) :
     ∃ d, HasPlaneTargetMarking A B d := by
@@ -107,15 +109,15 @@ theorem exists_hasPlaneTargetMarking_of_plane [IsIntegral X] [X.IsProjectiveOver
   subst Φ Ψ
   let := ha
   let := hq
-  let := Fan.projectivePlaneIso_trans_polynomialProjIso_hom_isOver b hi coords
-  let := Fan.projectivePlaneIso_trans_polynomialProjIso_hom_isOver b' hi coords
+  let := Fan.projectivePlaneIso_trans_polynomialProjIso_hom_isOver k₀ b hi coords
+  let := Fan.projectivePlaneIso_trans_polynomialProjIso_hom_isOver k₀ b' hi coords
   let a' := a ≫ (planeIso[b,hi]).hom
   let q' := q ≫ (planeIso[b',hi]).hom
   let : a'.IsOver S := inferInstanceAs ((a ≫ (planeIso[b,hi]).hom).IsOver S)
   let : IsModification a' := inferInstanceAs (IsModification (a ≫ (planeIso[b,hi]).hom))
   let : IsModification q' := inferInstanceAs (IsModification (q ≫ (planeIso[b',hi]).hom))
   obtain ⟨n, Y, T, k, hT, hk⟩ :=
-    a'.exists_isClosedPointTower_factorization (k := ℂ) (IsModification.birationalOver a')
+    a'.exists_isClosedPointTower_factorization (k := k₀) (IsModification.birationalOver a')
   let g := k.inv ≫ q'
   let : IsModification g := inferInstanceAs (IsModification (k.inv ≫ q'))
   have ha' : a = k.hom ≫ T.toBase ≫ (planeIso[b,hi]).inv := by
@@ -132,23 +134,23 @@ theorem exists_hasPlaneTargetMarking_of_plane [IsIntegral X] [X.IsProjectiveOver
 
 section Precompose
 
-variable {W : Scheme} [W.Over S] [SmoothOfRelativeDimension 2 (W ↘ S)]
+variable {W : Scheme} [W.Over (Spec (.of k₀))] [SmoothOfRelativeDimension 2 (W ↘ Spec (.of k₀))]
   {E : W.IdealSheafData}
 
 /-- An isomorphism identifying the two projections transports a marking with
 the same bidegree. The source tower and the map in its model coordinates are shared. -/
 theorem HasPlaneTargetMarking.of_iso
-    {A B : LogarithmicProjection i D} {d : ℕ ×ₗ ℕ} (h : HasPlaneTargetMarking A B d)
-    (k : W ≅ X) {A' B' : LogarithmicProjection i E}
+    {A B : LogarithmicProjection k₀ i D} {d : ℕ ×ₗ ℕ} (h : HasPlaneTargetMarking A B d)
+    (k : W ≅ X) {A' B' : LogarithmicProjection k₀ i E}
     (hA' : A'.fan = A.fan) (hB' : B'.fan = B.fan)
     (hhA : A'.hom ≍ k.hom ≫ A.hom) (hhB : B'.hom ≍ k.hom ≫ B.hom) :
     HasPlaneTargetMarking A' B' d := by
-  have hh {C : LogarithmicProjection i D} {C' : LogarithmicProjection i E}
-      {Φ : Fan i} {Y : Scheme} {q : X ⟶ Y} {p : Y ⟶ Φ.algebraicRealization}
+  have hh {C : LogarithmicProjection k₀ i D} {C' : LogarithmicProjection k₀ i E}
+      {Φ : Fan i} {Y : Scheme} {q : X ⟶ Y} {p : Y ⟶ (Φ.finiteFanScheme k₀)}
       (hC : C.fan = Φ) (he : C'.hom ≍ k.hom ≫ C.hom)
       (h : C.hom ≍ q ≫ p) : C'.hom ≍ (k.hom ≫ q) ≫ p := by
     rw [Category.assoc]
-    exact he.trans (heq_comp rfl rfl (congrArg Fan.algebraicRealization hC) HEq.rfl h)
+    exact he.trans (heq_comp rfl rfl (congrArg (Fan.finiteFanScheme k₀) hC) HEq.rfl h)
   cases h with
   | plane b b' hi hA hB T hT e g hAh hBh hg hbir =>
     exact .plane b b' hi (hA'.trans hA) (hB'.trans hB) T hT (k ≪≫ e) g

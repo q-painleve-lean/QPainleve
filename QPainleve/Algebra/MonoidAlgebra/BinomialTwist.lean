@@ -23,7 +23,7 @@ open Multiplicative
 
 namespace AddMonoidAlgebra
 
-variable {R B : Type*} [CommRing R] [AddCommMonoid B]
+variable {R B : Type*} [CommSemiring R] [AddCommMonoid B]
 
 local notation "A" => AddMonoidAlgebra R B
 local notation "q(" a "," c "," b ")" => (single (0 : B) a + single b c)

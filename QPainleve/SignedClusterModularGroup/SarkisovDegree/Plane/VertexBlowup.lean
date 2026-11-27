@@ -13,7 +13,7 @@ public import QPainleve.SignedClusterModularGroup.SarkisovDegree.SectionContract
 import QPainleve.AlgebraicGeometry.Blowup.Projective.Global
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Reorder
 import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
-import Mathlib.Analysis.Complex.Polynomial.Basic
+
 
 /-!
 # Sarkisov degree under a plane vertex blowup
@@ -40,12 +40,14 @@ open TauCeti.Toric Scheme.IdealSheafData
 
 namespace QPainleve.BlowupTower.IsClosedPointTower
 
+variable (k₀ : Type) [Field k₀] [IsAlgClosed k₀]
+
 attribute [local instance] MvPolynomial.gradedAlgebra
 
-local notation "S" => Spec (CommRingCat.of ℂ)
-local notation "P" => Proj (homogeneousSubmodule ℂ (Fin 3 → ℂ))
-local notation "H" => mk (Proj.symmetricAlgebraTwistingBundle ℂ (Fin 3 → ℂ) 1)
-local notation "degree" => Module.Basis.picardTwistEquiv (Pi.basisFun ℂ (Fin 3))
+local notation "S" => Spec (CommRingCat.of k₀)
+local notation "P" => Proj (homogeneousSubmodule k₀ (Fin 3 → k₀))
+local notation "H" => mk (Proj.symmetricAlgebraTwistingBundle k₀ (Fin 3 → k₀) 1)
+local notation "degree" => Module.Basis.picardTwistEquiv (Pi.basisFun k₀ (Fin 3))
 local notation "fP" => (P ↘ S)
 
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
@@ -55,47 +57,50 @@ local notation "Ψ" => Fan.projectiveSpace d hi
 local notation "hΨ" => Fan.isRegular_projectiveSpace d hi
 local notation "σ" => Fan.projectiveSpaceMaximalCone d hi a
 local notation "Φ" => Fan.starSubdivisionAlong Ψ hΨ (Subtype.property σ)
-local notation "z" => Fan.distinguishedPointHom Ψ σ
-local notation "D" => Fan.projectivePlaneIso d hi ≪≫
-  Module.Basis.polynomialProjIso (Pi.basisFun ℂ (Fin 3))
-local notation "p" => (z ≫ Iso.hom D) (IsLocalRing.closedPoint ℂ)
+local notation "z" => Fan.distinguishedSection (R := k₀) Ψ σ
+local notation "D" => Fan.projectivePlaneIso k₀ d hi ≪≫
+  Module.Basis.polynomialProjIso (Pi.basisFun k₀ (Fin 3))
+local notation "p" => (z ≫ Iso.hom D) (IsLocalRing.closedPoint k₀)
 local notation "J" => Scheme.Hom.ker (Scheme.fromSpecResidueField P p)
 local notation "W" => Scheme.IdealSheafData.blowup J
 local notation "U₀" => BlowupTower.snoc BlowupTower.nil J
-local notation "X" => Fan.algebraicRealization Φ
+local notation "X" => Fan.finiteFanScheme k₀ Φ
 local notation "fX" => (X ↘ S)
 local notation "hΦ" => Fan.isRegular_starSubdivisionAlong Ψ hΨ (Subtype.property σ)
 
+omit [IsAlgClosed k₀] in
 /-- The distinguished toric vertex is a closed point of the symmetric-algebra plane. -/
 theorem isClosed_projectivePlane_vertex : IsClosed ({p} : Set P) := by
-  have : IsClosedImmersion z := Fan.isClosedImmersion_distinguishedPointHom _ _
+  have : IsClosedImmersion z := Fan.isClosedImmersion_distinguishedSection (R := k₀) _ _
   have : IsClosedImmersion (z ≫ (D).hom) := inferInstance
   exact (Set.range_eq_singleton (f := fun x : S ↦ (z ≫ (D).hom) x)
     (fun x ↦ congrArg (fun y : S ↦ (z ≫ (D).hom) y) (Subsingleton.elim x _))) ▸
       (z ≫ (D).hom).isClosedEmbedding.isClosed_range
 
+omit [IsAlgClosed k₀] in
 /-- The specified star subdivision realizes the blowup of the corresponding vertex
 of the symmetric-algebra plane. Its new ray is the negative section. -/
 theorem exists_vertex_blowup_comparison :
     ∃ (hσ : (σ).val ≠ ⊥) (b : Basis (Fin 2) ℤ N) (r : Fin 4 ≃ (Φ).Ray) (e : X ≅ W),
       (fun j ↦ (r j).primitiveGenerator) = ![b 0, b 1, -b 0, ((1 : ℕ) : ℤ) • b 0 - b 1] ∧
       e.hom ≫ (J).blowupToBase =
-        ((Ψ).starSubdivisionAlong_isSubdivision hΨ (σ).property hσ).toFanHom.algebraicMap ≫
+        (((Ψ).starSubdivisionAlong_isSubdivision hΨ (σ).property
+          hσ).toFanHom.finiteFanSchemeHom k₀) ≫
         (D).hom ∧
       e.hom ≫ (J).blowupToBase ≫ fP = fX ∧
-      (J).comap (e.hom ≫ (J).blowupToBase) = (Φ).rayBoundaryIdeal hΦ (r 0) ∧
+      (J).comap (e.hom ≫ (J).blowupToBase) = (Φ).rayDivisorIdeal k₀ hΦ (r 0) ∧
       (Ψ).starSubdivisionAlongRay hΨ (σ).property hσ = r 0 := by
   obtain ⟨hσ, b, e₀, hrays, hgen, he₀, hE, -⟩ :=
-    Fan.exists_blowup_projectivePlane_vertex_hirzebruchOne d hi a
+    Fan.exists_blowup_projectivePlane_vertex_hirzebruchOne k₀ d hi a
   obtain ⟨r, hr⟩ := Fan.exists_rayEquiv_of_hirzebruch_ray_generators b 1
     (by simpa only [Nat.cast_one, one_smul] using hrays)
-  have : IsClosedImmersion z := Fan.isClosedImmersion_distinguishedPointHom _ _
+  have : IsClosedImmersion z := Fan.isClosedImmersion_distinguishedSection (R := k₀) _ _
   have : IsClosedImmersion (z ≫ (D).hom) := inferInstance
   have hJ : (J).comap (D).hom = (z).ker := by
     rw [← (z ≫ (D).hom).ker_eq_ker_fromSpecResidueField, (z).comap_ker_comp_of_isClosedImmersion]
   let e := e₀ ≪≫ blowupIso D hJ.symm
   have he : e.hom ≫ (J).blowupToBase =
-      ((Ψ).starSubdivisionAlong_isSubdivision hΨ (σ).property hσ).toFanHom.algebraicMap ≫
+      (((Ψ).starSubdivisionAlong_isSubdivision hΨ (σ).property hσ).toFanHom.finiteFanSchemeHom k₀) ≫
         (D).hom := by
     calc
       _ = (e₀.hom ≫ (z).ker.blowupToBase) ≫ (D).hom := by
@@ -107,7 +112,7 @@ theorem exists_vertex_blowup_comparison :
   · rw [← Category.assoc, he]
     simp only [Iso.trans_hom, Category.assoc, over_eq_projToSpec,
       Module.Basis.polynomialProjIso_hom_over, Fan.projectivePlaneIso_hom_toSpecCoeff,
-      FanHom.algebraicMap_comp_algebraicRealizationStructureMap, Fan.algebraicRealization_over]
+      FanHom.finiteFanSchemeHom_comp_finiteFanSchemeToSpec, Fan.finiteFanScheme_over k₀]
   · rw [he, comap_comp, hJ, ← he₀]
     exact hr₀ ▸ hE
 
@@ -132,10 +137,12 @@ theorem exists_hirzebruch_resolution_of_plane_vertex {Y : Scheme} {n : ℕ}
       (e : X ≅ W) (k : Y ≅ Z),
       IsLift e.symm U T k ∧
       e.hom ≫ (J).blowupToBase =
-        ((Ψ).starSubdivisionAlong_isSubdivision hΨ (σ).property hσ).toFanHom.algebraicMap ≫
+        (((Ψ).starSubdivisionAlong_isSubdivision hΨ (σ).property
+          hσ).toFanHom.finiteFanSchemeHom k₀) ≫
         (D).hom ∧
       k.hom ≫ T.toBase ≫
-          ((Ψ).starSubdivisionAlong_isSubdivision hΨ (σ).property hσ).toFanHom.algebraicMap ≫
+          (((Ψ).starSubdivisionAlong_isSubdivision hΨ (σ).property hσ).toFanHom.finiteFanSchemeHom
+            k₀) ≫
           (D).hom = ((U₀).append U).toBase ∧
       (k.inv ≫ g) ≫ fP = T.toBase ≫ fX ∧
       Scheme.BirationalOver (k.inv ≫ g) (𝟙 P) ∧
@@ -145,12 +152,12 @@ theorem exists_hirzebruch_resolution_of_plane_vertex {Y : Scheme} {n : ℕ}
       let : Nonempty (Φ).cones := hc.nonempty_cones
       let : SmoothOfRelativeDimension 2 fX := by
         have hdim : Module.finrank ℤ N = 2 := by simpa using Module.finrank_eq_card_basis b
-        simpa only [hdim, Fan.algebraicRealization_over] using
-          (Φ).smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
-      let : Smooth fX := (Φ).smooth_algebraicRealizationStructureMap hΦ
+        simpa only [hdim, Fan.finiteFanScheme_over k₀] using
+          (Φ).smoothOfRelativeDimension_finiteFanSchemeToSpec k₀ hΦ
+      let : Smooth fX := (Φ).smooth_finiteFanSchemeToSpec k₀ hΦ
       let : IsNoetherian X := isNoetherian_of_finiteType fX
       let v := (T.picardMarking hT fX).symm (Additive.ofMul (pullback (k.inv ≫ g) H))
-      let C := (Φ).hirzebruchPicardBasis b 1 hΦ r hr
+      let C := (Φ).hirzebruchPicardBasis k₀ b 1 hΦ r hr
       C.repr v.1 0 = δ ∧
       C.repr v.1 1 = δ - m (Fin.castAdd n (0 : Fin 1)) ∧
       (∀ j : Fin n, -v.2 j = m (j.natAdd 1)) ∧
@@ -160,19 +167,19 @@ theorem exists_hirzebruch_resolution_of_plane_vertex {Y : Scheme} {n : ℕ}
           planeSarkisovBidegree δ.toNat (∑ j, (m j).toNat)) := by
   intro w δ m
   have hU := (IsClosedPointTower.append_iff.mp hP).2
-  obtain ⟨hσ, b, r, e, hr, he, hover, hE, -⟩ := exists_vertex_blowup_comparison d hi a
+  obtain ⟨hσ, b, r, e, hr, he, hover, hE, -⟩ := exists_vertex_blowup_comparison k₀ d hi a
   let s := (Ψ).starSubdivisionAlong_isSubdivision hΨ (σ).property hσ
   have hc : (Φ).IsComplete := s.isComplete_iff.mpr (Fan.isComplete_projectiveSpace d hi)
   let : Nonempty (Φ).cones := hc.nonempty_cones
   let : SmoothOfRelativeDimension 2 fX := by
     have hdim : Module.finrank ℤ N = 2 := by simpa using Module.finrank_eq_card_basis b
-    simpa only [hdim, Fan.algebraicRealization_over] using
-      (Φ).smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
-  let : Smooth fX := (Φ).smooth_algebraicRealizationStructureMap hΦ
+    simpa only [hdim, Fan.finiteFanScheme_over k₀] using
+      (Φ).smoothOfRelativeDimension_finiteFanSchemeToSpec k₀ hΦ
+  let : Smooth fX := (Φ).smooth_finiteFanSchemeToSpec k₀ hΦ
   let : (W).Over S := ⟨(J).blowupToBase ≫ fP⟩
   let : e.hom.IsOver S := ⟨hover⟩
-  let : (W).IsProjectiveOver ℂ := (J).isProjectiveOver_blowup_of_isNoetherianRing ℂ
-  let : (X).IsProjectiveOver ℂ := Scheme.IsProjectiveOver.of_isClosedImmersion ℂ e.hom
+  let : (W).IsProjectiveOver k₀ := (J).isProjectiveOver_blowup_of_isNoetherianRing k₀
+  let : (X).IsProjectiveOver k₀ := Scheme.IsProjectiveOver.of_isClosedImmersion k₀ e.hom
   let : IsNoetherian X := isNoetherian_of_finiteType fX
   let R := U.transport e.symm
   have hT : IsClosedPointTower X R.tower := R.isLift.isClosedPointTower hU
@@ -190,8 +197,8 @@ theorem exists_hirzebruch_resolution_of_plane_vertex {Y : Scheme} {n : ℕ}
   refine ⟨hσ, b, r, hr, _, R.tower, hT, e, R.iso, R.isLift, he, ?_, hf, hb, ?_⟩
   · simpa only [← he] using hπ
   · intro _ _ _ _ _ v C
-    obtain ⟨hd, hm, ht⟩ := hirzebruchOne_resolution_coordinates b hΦ hc r hr hT
-      (isClosed_projectivePlane_vertex d hi a) e hover hE R.isLift.symm
+    obtain ⟨hd, hm, ht⟩ := hirzebruchOne_resolution_coordinates k₀ b hΦ hc r hr hT
+      (isClosed_projectivePlane_vertex k₀ d hi a) e hover hE R.isLift.symm
       (R.iso.inv ≫ g) hf hb hP (by simpa only [Iso.symm_inv, Iso.hom_inv_id_assoc] using hg)
       (by simpa only [Iso.symm_inv, Iso.hom_inv_id_assoc] using hbir)
     simp only [Iso.symm_inv, Iso.hom_inv_id_assoc] at hd hm ht
@@ -209,29 +216,33 @@ theorem exists_hirzebruch_resolution_of_plane_vertex {Y : Scheme} {n : ℕ}
       simpa only [δ, m, w, neg_sq, toMul_ofMul, ofMul_toMul, ← pow_two] using hsq
     simpa only [hβ] using hirzebruchSarkisovBidegree_lt_plane_of_high_order hδ _ hsq' hhigh _ _
 
+omit [IsAlgClosed k₀] in
 private theorem comp_vertexLink_eq {Y : Scheme} [PreirreducibleSpace Y]
     (hσ : (σ).val ≠ ⊥) (q : Y ⟶ X) [IsDominant q] {f : Y ⟶ P} [IsDominant f]
-    (hf : q ≫ ((Ψ).starSubdivisionAlong_isSubdivision hΨ (σ).property hσ).toFanHom.algebraicMap ≫
+    (hf : q ≫ (((Ψ).starSubdivisionAlong_isSubdivision hΨ (σ).property
+      hσ).toFanHom.finiteFanSchemeHom k₀) ≫
       (D).hom = f) :
     let : Nonempty (Ψ).cones := (Fan.isComplete_projectiveSpace d hi).nonempty_cones
     let : Nonempty (Φ).cones :=
       (((Ψ).starSubdivisionAlong_isSubdivision hΨ (σ).property hσ).isComplete_iff.mpr
         (Fan.isComplete_projectiveSpace d hi)).nonempty_cones
-    f.toRationalMap.comp ((D).inv.toRationalMap.comp ((Ψ).denseTorusPartialIso Φ).toRationalMap) =
+    f.toRationalMap.comp ((D).inv.toRationalMap.comp ((Ψ).denseTorusPartialIso k₀
+      Φ).toRationalMap) =
       q.toRationalMap := by
   intro hΨ₀ hΦ₀
   let := hΨ₀
   let := hΦ₀
   let s := (Ψ).starSubdivisionAlong_isSubdivision hΨ (σ).property hσ
-  have hf' : f ≫ (D).inv = q ≫ s.toFanHom.algebraicMap := by
+  have hf' : f ≫ (D).inv = q ≫ (s.toFanHom.finiteFanSchemeHom k₀) := by
     simp only [← hf, Category.assoc, Iso.hom_inv_id, Category.comp_id]
   calc
-    _ = (f ≫ (D).inv).toRationalMap.comp ((Ψ).denseTorusPartialIso Φ).toRationalMap := by
+    _ = (f ≫ (D).inv).toRationalMap.comp ((Ψ).denseTorusPartialIso k₀ Φ).toRationalMap := by
       simp only [← Scheme.RationalMap.comp_assoc, Scheme.RationalMap.comp_toRationalMap,
         Scheme.Hom.toRationalMap_compHom]
     _ = q.toRationalMap := ?_
-  have h := s.comp_denseTorusPartialIso (Fan.IsSubdivision.refl Φ) q
-  simpa only [← hf', Fan.IsSubdivision.toFanHom_refl, FanHom.algebraicMap_id, Category.comp_id]
+  have h := s.comp_denseTorusPartialIso k₀ (Fan.IsSubdivision.refl Φ) q
+  simpa only [← hf', Fan.IsSubdivision.toFanHom_refl, FanHom.finiteFanSchemeHom_id,
+    Category.comp_id]
     using h
 
 /-- Perform the toric link at the first center over the specified plane vertex.
@@ -259,20 +270,20 @@ theorem exists_sarkisov_decrease_of_plane_vertex {Y : Scheme} {n : ℕ}
       let : Nonempty (Ψ).cones := (Fan.isComplete_projectiveSpace d hi).nonempty_cones
       let hc := s.isComplete_iff.mpr (Fan.isComplete_projectiveSpace d hi)
       let : Nonempty (Φ).cones := hc.nonempty_cones
-      q ≫ s.toFanHom.algebraicMap ≫ (D).hom = T.toBase ∧
+      q ≫ (s.toFanHom.finiteFanSchemeHom k₀) ≫ (D).hom = T.toBase ∧
       T.toBase.toRationalMap.comp
-        ((D).inv.toRationalMap.comp ((Ψ).denseTorusPartialIso Φ).toRationalMap) =
+        ((D).inv.toRationalMap.comp ((Ψ).denseTorusPartialIso k₀ Φ).toRationalMap) =
         q.toRationalMap ∧
       (k.inv ≫ g) ≫ fP = U.toBase ≫ fX ∧
       Scheme.BirationalOver (k.inv ≫ g) (𝟙 P) ∧
       let : SmoothOfRelativeDimension 2 fX := by
         have hdim := (Module.finrank_eq_card_basis b).trans (Fintype.card_fin 2)
-        simpa only [hdim, Fan.algebraicRealization_over] using
-          (Φ).smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
-      let : Smooth fX := (Φ).smooth_algebraicRealizationStructureMap hΦ
+        simpa only [hdim, Fan.finiteFanScheme_over k₀] using
+          (Φ).smoothOfRelativeDimension_finiteFanSchemeToSpec k₀ hΦ
+      let : Smooth fX := (Φ).smooth_finiteFanSchemeToSpec k₀ hΦ
       let : IsNoetherian X := isNoetherian_of_finiteType fX
       let v := (U.picardMarking hU fX).symm (Additive.ofMul (pullback (k.inv ≫ g) H))
-      let C := (Φ).hirzebruchPicardBasis b 1 hΦ r hr
+      let C := (Φ).hirzebruchPicardBasis k₀ b 1 hΦ r hr
       C.repr v.1 0 = δ ∧ C.repr v.1 1 = δ - m j ∧
       (∀ l : Fin n, -v.2 l = m (j.succAbove l)) ∧
       (0 < δ → δ < 3 * m j →
@@ -283,10 +294,11 @@ theorem exists_sarkisov_decrease_of_plane_vertex {Y : Scheme} {n : ℕ}
   let := hY
   let := hmod
   obtain ⟨W', A, e, hA, hbase, hE, -, htail⟩ :=
-    hT.exists_move_closed_point_blowup_to_front j (isClosed_projectivePlane_vertex d hi a) hj hfirst
+    hT.exists_move_closed_point_blowup_to_front j (isClosed_projectivePlane_vertex k₀ d hi a)
+      hj hfirst
   let T' := (U₀).append A
   have hT' : IsClosedPointTower P T' :=
-    (IsClosedPointTower.nil.snoc p (isClosed_projectivePlane_vertex d hi a) rfl).append hA
+    (IsClosedPointTower.nil.snoc p (isClosed_projectivePlane_vertex k₀ d hi a) rfl).append hA
   have he : e.hom ≫ T'.toBase = T.toBase := by
     simpa only [T', toBase_append, toBase_snoc, toBase_nil, Category.comp_id, Category.assoc]
       using hbase
@@ -296,7 +308,7 @@ theorem exists_sarkisov_decrease_of_plane_vertex {Y : Scheme} {n : ℕ}
     refine Scheme.BirationalOver.trans (sY := g) ⟨.ofIso e.symm, ?_⟩ hbir
     simp [Scheme.PartialIso.IsOver, Scheme.PartialIso.ofIso]
   obtain ⟨hσ, b, r, hr, Z, U, hU, _, k, _, _, hk, hkg, hkb, hcoords⟩ :=
-    exists_hirzebruch_resolution_of_plane_vertex d hi a hT' (e.inv ≫ g) hg' hbir'
+    exists_hirzebruch_resolution_of_plane_vertex k₀ d hi a hT' (e.inv ≫ g) hg' hbir'
   let x : Fin (1 + n) → ℤ := Fin.addCases (fun _ : Fin 1 ↦ w.2 j) (w.2 ∘ j.succAbove)
   have hw : (T'.picardMarking hT' fP).symm (Additive.ofMul (pullback (e.inv ≫ g) H)) =
       (w.1, x) := by
@@ -307,18 +319,18 @@ theorem exists_sarkisov_decrease_of_plane_vertex {Y : Scheme} {n : ℕ}
     simp only [toMul_ofMul, pullback_comp]
   let s := (Ψ).starSubdivisionAlong_isSubdivision hΨ (σ).property hσ
   let q := (e ≪≫ k).hom ≫ U.toBase
-  have hq : q ≫ s.toFanHom.algebraicMap ≫ (D).hom = T.toBase := by
+  have hq : q ≫ (s.toFanHom.finiteFanSchemeHom k₀) ≫ (D).hom = T.toBase := by
     simpa only [q, Iso.trans_hom, Category.assoc] using
       (congrArg (e.hom ≫ ·) hk).trans he
   have : IsDominant q := by
     let := (s.isComplete_iff.mpr (Fan.isComplete_projectiveSpace d hi)).nonempty_cones
     have hdim := (Module.finrank_eq_card_basis b).trans (Fintype.card_fin 2)
     let : SmoothOfRelativeDimension 2 fX := by
-      simpa only [hdim, Fan.algebraicRealization_over] using
-        (Φ).smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
+      simpa only [hdim, Fan.finiteFanScheme_over k₀] using
+        (Φ).smoothOfRelativeDimension_finiteFanSchemeToSpec k₀ hΦ
     let : IsModification U.toBase := hU.isModification_of_smoothOfRelativeDimension_two fX
     infer_instance
-  refine ⟨hσ, b, r, hr, Z, U, hU, e ≪≫ k, hq, comp_vertexLink_eq d hi a hσ q hq, ?_, ?_, ?_⟩
+  refine ⟨hσ, b, r, hr, Z, U, hU, e ≪≫ k, hq, comp_vertexLink_eq k₀ d hi a hσ q hq, ?_, ?_, ?_⟩
   · simpa only [Iso.trans_inv, Category.assoc] using hkg
   · simpa only [Iso.trans_inv, Category.assoc] using hkb
   · rw [hw] at hcoords
@@ -345,7 +357,8 @@ theorem exists_prepend_plane_vertex_blowup {Y : Scheme} {n : ℕ}
     ∃ (q : Y) (hσ : (σ).val ≠ ⊥) (b : Basis (Fin 2) ℤ N) (r : Fin 4 ≃ (Φ).Ray)
       (hr : (fun j ↦ (r j).primitiveGenerator) = ![b 0, b 1, -b 0, ((1 : ℕ) : ℤ) • b 0 - b 1])
       (Z : Scheme) (U : BlowupTower X n Z) (hU : IsClosedPointTower X U) (k : A.blowup ≅ Z),
-      let π := ((Ψ).starSubdivisionAlong_isSubdivision hΨ (σ).property hσ).toFanHom.algebraicMap ≫
+      let π := (((Ψ).starSubdivisionAlong_isSubdivision hΨ (σ).property
+        hσ).toFanHom.finiteFanSchemeHom k₀) ≫
         (D).hom
       let g' := k.inv ≫ A.blowupToBase ≫ g
       IsClosed ({q} : Set Y) ∧ T.toBase q = p ∧ A = (Y.fromSpecResidueField q).ker ∧
@@ -358,18 +371,18 @@ theorem exists_prepend_plane_vertex_blowup {Y : Scheme} {n : ℕ}
       let : Nonempty (Φ).cones := hc.nonempty_cones
       let : SmoothOfRelativeDimension 2 fX := by
         have hdim : Module.finrank ℤ N = 2 := by simpa using Module.finrank_eq_card_basis b
-        simpa only [hdim, Fan.algebraicRealization_over] using
-          (Φ).smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
-      let : Smooth fX := (Φ).smooth_algebraicRealizationStructureMap hΦ
+        simpa only [hdim, Fan.finiteFanScheme_over k₀] using
+          (Φ).smoothOfRelativeDimension_finiteFanSchemeToSpec k₀ hΦ
+      let : Smooth fX := (Φ).smooth_finiteFanSchemeToSpec k₀ hΦ
       let : IsNoetherian X := isNoetherian_of_finiteType fX
       let w := (U.picardMarking hU fX).symm (Additive.ofMul (pullback g' H))
-      let C := (Φ).hirzebruchPicardBasis b 1 hΦ r hr
+      let C := (Φ).hirzebruchPicardBasis k₀ b 1 hΦ r hr
       C.repr w.1 0 = degree v.1 ∧ C.repr w.1 1 = degree v.1 ∧ w.2 = v.2 := by
   intro A v
   obtain ⟨q, _, tail, e, hTail, hq, hqp, hA, he, hcenters, -, -, hmark⟩ :=
-    hT.exists_prepend_closed_point_blowup (isClosed_projectivePlane_vertex d hi a) hp
+    hT.exists_prepend_closed_point_blowup (isClosed_projectivePlane_vertex k₀ d hi a) hp
   have hV : IsClosedPointTower P ((U₀).append tail) :=
-    (IsClosedPointTower.nil.snoc p (isClosed_projectivePlane_vertex d hi a) rfl).append hTail
+    (IsClosedPointTower.nil.snoc p (isClosed_projectivePlane_vertex k₀ d hi a) rfl).append hTail
   have he' : e.hom ≫ tail.toBase ≫ (J).blowupToBase = A.blowupToBase ≫ T.toBase := he
   let g₁ := e.inv ≫ A.blowupToBase ≫ g
   have hg₁ : g₁ ≫ fP = ((U₀).append tail).toBase ≫ fP := by
@@ -380,8 +393,9 @@ theorem exists_prepend_plane_vertex_blowup {Y : Scheme} {n : ℕ}
     (e.inv.birationalOver (A.blowupToBase ≫ g) g₁ rfl).trans
       (hT.birationalOver_blowupToBase_comp fP hq hA hbir)
   obtain ⟨hσ, b, r, hr, Z, U, hU, f, k, hLift, hf, hproj, hover, hb, hcoord⟩ :=
-    exists_hirzebruch_resolution_of_plane_vertex d hi a hV g₁ hg₁ hb₁
-  let π := ((Ψ).starSubdivisionAlong_isSubdivision hΨ (σ).property hσ).toFanHom.algebraicMap ≫
+    exists_hirzebruch_resolution_of_plane_vertex k₀ d hi a hV g₁ hg₁ hb₁
+  let π := (((Ψ).starSubdivisionAlong_isSubdivision hΨ (σ).property
+    hσ).toFanHom.finiteFanSchemeHom k₀) ≫
     (D).hom
   have hπ : k.hom ≫ U.toBase ≫ π = tail.toBase ≫ (J).blowupToBase := by
     simpa only [π, Category.assoc, toBase_append, toBase_snoc, toBase_nil, Category.comp_id]

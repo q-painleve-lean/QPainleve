@@ -28,26 +28,32 @@ open Scheme.IdealSheafData
 
 namespace TauCeti.Toric.Fan.LogarithmicProjection.OrderedToricModel
 
-local notation "S" => Spec (CommRingCat.of ℂ)
+variable {k₀ : Type} [Field k₀] [IsAlgClosed k₀]
+
+local notation "S" => Spec (CommRingCat.of k₀)
 
 variable {N V N' V' : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   [AddCommGroup N'] [AddCommGroup V'] [Module ℝ V'] {i : N →+ V} {i' : N' →+ V'}
-  {Z : Scheme} [Z.Over S] [SmoothOfRelativeDimension 2 (Z ↘ S)] [IsIntegral Z]
-  {D : Z.IdealSheafData} {A : LogarithmicProjection i D} {B : LogarithmicProjection i' D} {m : ℕ}
+  {Z : Scheme} [Z.Over (Spec (.of k₀))] [SmoothOfRelativeDimension 2 (Z ↘ Spec (.of k₀))]
+    [IsIntegral Z]
+  {D : Z.IdealSheafData} {A : LogarithmicProjection k₀ i D} {B : LogarithmicProjection k₀ i' D}
+    {m : ℕ}
 
+omit [IsAlgClosed k₀] in
 private theorem xEvaluation_eq_of_reframed_hom (U : OrderedToricModel A m)
     (W : OrderedToricModel B m) (f : FanEquiv U.fan W.fan)
     (hb : W.basis = U.basis.map f.latticeEquiv.toIntLinearEquiv)
     (ht : W.rays = f.rayEquiv ∘ U.rays) (hc : W.parameters = U.parameters)
-    (hhom : U.hom ≫ f.toFanHom.algebraicMap = W.hom) :
+    (hhom : U.hom ≫ (f.toFanHom.finiteFanSchemeHom k₀) = W.hom) :
     W.xEvaluation = U.xEvaluation := by
   let c := centerCharacter U.parameters
-  have h : f.toFanHom.algebraicMap.toRationalMap.comp (W.fan.xEvaluation W.basis W.rays c) =
-      U.fan.xEvaluation U.basis U.rays c := by
+  have h : (f.toFanHom.finiteFanSchemeHom k₀).toRationalMap.comp
+    (W.fan.xEvaluation k₀ W.basis W.rays c) =
+      U.fan.xEvaluation k₀ U.basis U.rays c := by
     rw [hb, ht]
     simpa only [Equiv.coe_refl, Function.comp_id, rename_id, AlgHom.toRingHom_eq_coe,
       AlgHom.id_toRingHom, CommRingCat.ofHom_id, Spec.map_id, Scheme.RationalMap.compHom_id] using!
-      f.comp_xEvaluation U.basis U.rays (Equiv.refl _) c
+      f.comp_xEvaluation k₀ U.basis U.rays (Equiv.refl _) c
   simpa only [W.xEvaluation_def, U.xEvaluation_def, hc, c, ← Scheme.RationalMap.comp_assoc,
     Scheme.RationalMap.comp_toRationalMap, Scheme.Hom.toRationalMap_compHom, hhom] using
     congrArg (U.hom.toRationalMap.comp ·) h
@@ -57,11 +63,11 @@ The comparison commutes with the refined projections and preserves both seed
 data and evaluation in the original order of labels. -/
 theorem exists_reframe_of_latticeEquiv (U : OrderedToricModel A m)
     (hi' : IsIntegralLattice i') (e : N ≃+ N') :
-    ∃ (B : LogarithmicProjection i' D) (W : OrderedToricModel B m)
+    ∃ (B : LogarithmicProjection k₀ i' D) (W : OrderedToricModel B m)
       (f : FanEquiv U.fan W.fan),
       f.latticeEquiv = e ∧ W.basis = U.basis.map f.latticeEquiv.toIntLinearEquiv ∧
       W.rays = f.rayEquiv ∘ U.rays ∧ W.parameters = U.parameters ∧
-      U.hom ≫ f.toFanHom.algebraicMap = W.hom ∧ IsModification B.hom ∧
+      U.hom ≫ (f.toFanHom.finiteFanSchemeHom k₀) = W.hom ∧ IsModification B.hom ∧
       W.exchangeMatrix = U.exchangeMatrix ∧ W.xEvaluation = U.xEvaluation := by
   let f := U.fan.mapEquivIso hi' e
   have rank := (finrank_eq_card_basis U.basis).trans (Fintype.card_fin 2)
@@ -72,33 +78,34 @@ theorem exists_reframe_of_latticeEquiv (U : OrderedToricModel A m)
   obtain ⟨Ψ, hΨ, hc, p, hp, hd, hPole⟩ := B
   dsimp only at hF hB
   subst Ψ
-  let B : LogarithmicProjection i' D := ⟨_, hΨ, hc, p, hp, hd, hPole⟩
+  let B : LogarithmicProjection k₀ i' D := ⟨_, hΨ, hc, p, hp, hd, hPole⟩
   let b := U.basis.map f.latticeEquiv.toIntLinearEquiv
   let t := f.rayEquiv ∘ U.rays
   let : Nonempty B.fan.cones := B.isComplete.nonempty_cones
-  let T := B.fan.internalBlowupTower b t U.parameters
-  obtain ⟨g, ⟨hg, hgB⟩, -⟩ := f.existsUnique_isLift_internalBlowupTower U.basis b
+  let T := B.fan.internalBlowupTower k₀ b t U.parameters
+  obtain ⟨g, ⟨hg, hgB⟩, -⟩ := f.existsUnique_isLift_internalBlowupTower k₀ U.basis b
     (U.basis.detDualEquiv_map f.latticeEquiv.toIntLinearEquiv) U.rays U.parameters U.regular
   let w : T.1 ≅ Z := g.symm ≪≫ U.iso
-  have hB : B.hom = U.hom ≫ f.toFanHom.algebraicMap := eq_of_heq hB
+  have hB : B.hom = U.hom ≫ (f.toFanHom.finiteFanSchemeHom k₀) := eq_of_heq hB
   have hbase : g.hom ≫ T.2.toTower.toBase =
-      U.tower.2.toTower.toBase ≫ f.toFanHom.algebraicMap := hg.hom_toBase
+      U.tower.2.toTower.toBase ≫ (f.toFanHom.finiteFanSchemeHom k₀) := by
+    simpa only [FanEquiv.finiteFanSchemeIso_hom] using hg.hom_toBase
   have hw : w.hom ≫ B.hom = T.2.toTower.toBase := by
     exact (cancel_epi g.hom).mp (by
       simpa only [w, Iso.trans_hom, Iso.symm_hom, Iso.hom_inv_id_assoc, hB, U.hom_def,
         Category.assoc] using hbase.symm)
   have pole : D.comap w.hom = T.2.boundaryι.ker := by
     have hker : T.2.boundaryι.ker.comap g.hom = U.tower.2.boundaryι.ker := by
-      rw [← Scheme.Hom.ker_comp_of_isIso (f := (f.boundaryIso _ _).hom) (g := T.2.boundaryι),
+      rw [← Scheme.Hom.ker_comp_of_isIso (f := (f.boundaryIso k₀ _ _).hom) (g := T.2.boundaryι),
         ← hgB, Scheme.Hom.comap_ker_comp_of_isClosedImmersion]
     simp only [w, Iso.trans_hom, Iso.symm_hom]
     rw [comap_comp, U.pole_eq, ← hker, ← comap_comp, Iso.inv_hom_id, comap_id]
   let W : OrderedToricModel B m :=
     ⟨B.fan, B.isRegular, IsSubdivision.refl B.fan, b, t, U.parameters, w,
-      by simpa only [IsSubdivision.toFanHom_refl, FanHom.algebraicMap_id, Category.comp_id]
+      by simpa only [IsSubdivision.toFanHom_refl, FanHom.finiteFanSchemeHom_id, Category.comp_id]
         using hw, pole⟩
-  have hhom : U.hom ≫ f.toFanHom.algebraicMap = W.hom := by
-    simpa only [W, IsSubdivision.toFanHom_refl, FanHom.algebraicMap_id, Category.comp_id]
+  have hhom : U.hom ≫ (f.toFanHom.finiteFanSchemeHom k₀) = W.hom := by
+    simpa only [W, IsSubdivision.toFanHom_refl, FanHom.finiteFanSchemeHom_id, Category.comp_id]
       using (hB.symm.trans W.hom_comp_subdivision.symm)
   refine ⟨B, W, f, Fan.mapEquivIso_latticeEquiv _ _ _, rfl, rfl, rfl, hhom, hmod, ?_,
     U.xEvaluation_eq_of_reframed_hom W f rfl rfl rfl hhom⟩

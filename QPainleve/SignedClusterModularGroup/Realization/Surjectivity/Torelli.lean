@@ -34,44 +34,47 @@ open Scheme Scheme.IdealSheafData
 
 namespace QPainleve.SignedClusterModularGroup.CompleteToricPresentation
 
+variable {k₀ : Type} [Field k₀] [IsAlgClosed k₀] [Uncountable k₀] [NeZero (2 : k₀)]
+
 open GeometricRealization (Point)
 open MarkedSurface (boundaryIso surfaceIso)
 open SignedBoundaryIsometryGroup
 
-local notation "S" => Spec (CommRingCat.of ℂ)
-local notation "Centers[" r "]" => Over.mk (structureMap ℂ (Fin r → ℤ))
-local notation "XTor[" r "]" => scheme ℂ (Fin r →₀ ℤ)
+local notation "S" => Spec (CommRingCat.of k₀)
+local notation "Centers[" r "]" => Over.mk (structureMap k₀ (Fin r → ℤ))
+local notation "XTor[" r "]" => scheme k₀ (Fin r →₀ ℤ)
 local notation "D[" M "]" => Scheme.Hom.ker (Over.Hom.left (Arrow.hom (MarkedSurface.pair M)))
 local notation "classOf(" h ")" => (LineBundleClass.mk (IsEffectiveCartier.toInvertibleSheaf h))⁻¹
 
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {b : Module.Basis (Fin 2) ℤ N} {r n : ℕ} [NeZero n]
   {L γ : Type} [AddCommGroup L] {B : LinearMap.BilinForm ℤ L}
-  {M : Point Centers[r] → MarkedSurface ℂ n B XTor[r]}
+  {M : Point (Over.mk (QPainleve.CharacterTorus.structureMap k₀ (Fin r → ℤ))) →
+    MarkedSurface k₀ n B (QPainleve.CharacterTorus.scheme k₀ (Fin r →₀ ℤ))}
 
 /-- Every signed boundary isometry of a marked toric presentation with primitive nef
 square-zero boundary is the Picard pullback of a pair isomorphism between two root-free
 fibers. Both centers lie in every word's noncollision open. The isomorphism induces the
 forward boundary action on ordered branches, including for one and two components. -/
 theorem exists_root_free_pair_iso_of_signed_boundary_isometry
-    (Q : CompleteToricPresentation i b r L γ) {E : SkewExchangeMatrix (Fin r)}
+    (Q : CompleteToricPresentation k₀ i b r L γ) {E : SkewExchangeMatrix (Fin r)}
     (P : ChargeSeed E N) (hcharge : P.charge.ker ≤ (Fan.rayChargeMap Q.rays).ker)
     (hD : ∀ c, D[M c].IsEffectiveCartier)
     {d : ZMod n → L} (hmark : ∀ c, (M c).boundaryClass (hD c) = d)
     {c : Point Centers[r]} (href : Q.HasNodalModel c (M c))
     (hprim : IsPrimitive (Additive.ofMul classOf(hD c)))
-    (hnef : (classOf(hD c)).IsNef ℂ ((M c).surface ↘ S))
-    (hsq : Chow.classIntersectionNumber ℂ (M c).surface classOf(hD c) classOf(hD c) = 0)
+    (hnef : (classOf(hD c)).IsNef k₀ ((M c).surface ↘ S))
+    (hsq : Chow.classIntersectionNumber k₀ (M c).surface classOf(hD c) classOf(hD c) = 0)
     (hmodels : ∀ c' : Point Centers[r],
-      c'.left (default : S) ∈ (Path.nil : Word E E).centerOpen ℂ P → Q.HasNodalModel c' (M c'))
+      c'.left (default : S) ∈ (Path.nil : Word E E).centerOpen k₀ P → Q.HasNodalModel c' (M c'))
     (g : signedBoundaryIsometryGroup B d) :
     let hd := hmark c ▸ (M c).boundaryClass_injective_of_nef_square_zero (hD c) hnef hsq
     ∃ c₀ c₁ : Point Centers[r], Q.HasNodalModel c₀ (M c₀) ∧ Q.HasNodalModel c₁ (M c₁) ∧
       (∀ ⦃C : SkewExchangeMatrix (Fin r)⦄ (w : Word E C),
-        c₀.left (default : S) ∈ w.centerOpen ℂ P ∧ c₁.left (default : S) ∈ w.centerOpen ℂ P) ∧
+        c₀.left (default : S) ∈ w.centerOpen k₀ P ∧ c₁.left (default : S) ∈ w.centerOpen k₀ P) ∧
       IsPrimitive (Additive.ofMul classOf(hD c₀)) ∧
-      (classOf(hD c₀)).IsNef ℂ ((M c₀).surface ↘ S) ∧
-      Chow.classIntersectionNumber ℂ (M c₀).surface classOf(hD c₀) classOf(hD c₀) = 0 ∧
+      (classOf(hD c₀)).IsNef k₀ ((M c₀).surface ↘ S) ∧
+      Chow.classIntersectionNumber k₀ (M c₀).surface classOf(hD c₀) classOf(hD c₀) = 0 ∧
       (∀ z : CodimensionOnePoint (M c₀).surface,
         ¬Disjoint (closure {(z : (M c₀).surface)}) (D[M c₀].support : Set (M c₀).surface)) ∧
       (∀ z : CodimensionOnePoint (M c₁).surface,

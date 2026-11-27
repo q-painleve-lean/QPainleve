@@ -39,55 +39,60 @@ open Scheme Scheme.IdealSheafData LinearMap.BilinForm
 
 namespace QPainleve.SignedClusterModularGroup.CompleteToricPresentation
 
+variable {k₀ : Type} [Field k₀] [IsAlgClosed k₀]
+
 open GeometricRealization (Point)
 
-local notation "SpecC" => Spec (CommRingCat.of ℂ)
-local notation "Centers[" r "]" => Over.mk (structureMap ℂ (Fin r → ℤ))
-local notation "XTor[" r "]" => scheme ℂ (Fin r →₀ ℤ)
+local notation "SpecC" => Spec (CommRingCat.of k₀)
+local notation "Centers[" r "]" => Over.mk (structureMap k₀ (Fin r → ℤ))
+local notation "XTor[" r "]" => scheme k₀ (Fin r →₀ ℤ)
 local notation "D[" M "]" => Scheme.Hom.ker (Over.Hom.left (Arrow.hom (MarkedSurface.pair M)))
-local notation "χ[" c "]" => pointsEquiv ℂ _ (Subtype.mk (Over.Hom.left c) (Over.w c))
-local notation "centers[" c "]" => (fun j ↦ χ[c] (ofAdd (Pi.single j 1)))
+local notation "χ[" k "," c "]" => pointsEquiv k _ (Subtype.mk (Over.Hom.left c) (Over.w c))
+local notation "centers[" k "," c "]" => (fun j ↦ χ[k,c] (ofAdd (Pi.single j 1)))
 
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {b : Module.Basis (Fin 2) ℤ N} {r n : ℕ} [NeZero n]
   {L γ : Type} [AddCommGroup L] {H : LinearMap.BilinForm ℤ L}
-  (Q : CompleteToricPresentation i b r L γ)
-  {c d : Point Centers[r]} {M : MarkedSurface ℂ n H XTor[r]}
+  (Q : CompleteToricPresentation k₀ i b r L γ)
+  {c d : Point (Over.mk (QPainleve.CharacterTorus.structureMap k₀ (Fin r →
+    ℤ)))} {M : MarkedSurface k₀ n H (QPainleve.CharacterTorus.scheme k₀ (Fin r →₀ ℤ))}
 
 local instance instNonemptyMovingCentersCones : Nonempty Q.fan.cones := Q.complete.nonempty_cones
 local instance instNeZeroMovingCentersLength : NeZero Q.length := Q.neZero
 local instance instPrestableMovingCentersBoundary :
-    PrestableFamily ((Q.fan.boundaryIdeal Q.complete.nonempty_cones).subscheme ↘ SpecC) :=
+    PrestableFamily ((Q.fan.toricBoundaryIdeal k₀ Q.complete.nonempty_cones).subscheme ↘ SpecC) :=
   Q.prestable
 
-local notation "ToricBoundary" => subscheme (Fan.boundaryIdeal Q.fan Q.complete.nonempty_cones)
-local notation "A[" c "]" => Fan.internalBlowupTower b Q.rays centers[c]
+local notation "ToricBoundary" => subscheme (Fan.toricBoundaryIdeal k₀ Q.fan
+  Q.complete.nonempty_cones)
+local notation "A[" c "]" => Fan.internalBlowupTower k₀ b Q.rays centers[k₀,c]
 local notation "R[" c "]" => Scheme.Hom.ker (WithBoundary.boundaryι (Sigma.snd (A[c])))
 
-variable {X Y : Scheme} [X.Over SpecC] [IsIntegral X] [X.IsProjectiveOver ℂ]
-  [SmoothOfRelativeDimension 2 (X ↘ SpecC)] {E : X.IdealSheafData}
+variable {X Y : Scheme} [X.Over (Spec (.of k₀))] [IsIntegral X] [X.IsProjectiveOver k₀]
+  [SmoothOfRelativeDimension 2 (X ↘ Spec (.of k₀))] {E : X.IdealSheafData}
   {l : ℕ} {U : BlowupTower X l Y}
-  (hU : IsNodalBoundaryTower E (X ↘ SpecC) (𝟙 X) U)
-  (e : (Fan.internalBlowupTower b Q.rays centers[d]).1 ≅ Y)
-  (he : e.hom ≫ U.toBase ≫ (X ↘ SpecC) =
-    (Fan.internalBlowupTower b Q.rays centers[d]).2.toTower.toBase ≫
-      Q.fan.algebraicRealizationStructureMap)
+  (hU : IsNodalBoundaryTower E (X ↘ Spec (.of k₀)) (𝟙 X) U)
+  (e : (Fan.internalBlowupTower k₀ b Q.rays centers[k₀,d]).1 ≅ Y)
+  (he : e.hom ≫ U.toBase ≫ (X ↘ Spec (.of k₀)) =
+    (Fan.internalBlowupTower k₀ b Q.rays centers[k₀,d]).2.toTower.toBase ≫
+      (Q.fan.finiteFanSchemeToSpec k₀))
   (hE : (E.comap (e.hom ≫ U.toBase)).support =
-    (Fan.internalBlowupTower b Q.rays centers[d]).2.boundaryι.ker.support)
+    (Fan.internalBlowupTower k₀ b Q.rays centers[k₀,d]).2.boundaryι.ker.support)
 
 local notation "proj" => (e.hom ≫ U.toBase)
 local notation "Pair" =>
   Arrow.mk (Over.homMk (U := Over.mk (E.subscheme ↘ SpecC)) (V := Over.mk (X ↘ SpecC))
     E.subschemeι (Eq.symm (Scheme.IdealSheafData.over_eq_subschemeι_comp (S := SpecC) E)))
-local notation "μ[" c "]" => Fan.internalBlowupPicardMarking b Q.rays centers[c] Q.regular
+local notation "μ[" c "]" => Fan.internalBlowupPicardMarking k₀ b Q.rays centers[k₀,c] Q.regular
 
-variable (p : ContractedToricFiber b Q.rays Q.regular Q.cycle Q.origin Q.inclusion χ[c] M)
+variable (p : ContractedToricFiber b Q.rays Q.regular Q.cycle Q.origin Q.inclusion χ[k₀,c] M)
   {W : Scheme} {m : ℕ} {T : BlowupTower M.surface m W}
-  (hT : IsNodalBoundaryTower D[M] (M.surface ↘ SpecC) (𝟙 M.surface) T)
-  (a : W ≅ (Fan.internalBlowupTower b Q.rays centers[c]).1) (hp : p.projection = a.inv ≫ T.toBase)
+  (hT : IsNodalBoundaryTower D[M] (M.surface ↘ Spec (.of k₀)) (𝟙 M.surface) T)
+  (a : W ≅ (Fan.internalBlowupTower k₀ b Q.rays centers[k₀,c]).1) (hp : p.projection = a.inv ≫
+    T.toBase)
 
 local notation "prime[" c "," ρ "]" =>
-  Fan.internalBlowupBoundaryPrimeEquiv Q.regular b Q.rays centers[c] ρ
+  Fan.internalBlowupBoundaryPrimeEquiv k₀ Q.regular b Q.rays centers[k₀,c] ρ
 
 include hU he hE hT a hp in
 /-- The fixed auxiliary Picard inclusion is realized by an isometry on a second
@@ -96,33 +101,33 @@ private theorem exists_marking_of_same_contracted_rays
     (hrays : ∀ ρ : Q.fan.Ray,
       proj (prime[d,ρ]).val ∈ E.boundaryPrimes ↔
         p.projection (prime[c,ρ]).val ∈ D[M].boundaryPrimes) :
-    ∃ g : H.IsometryEquiv (Chow.intersectionBilinForm ℂ X),
+    ∃ g : H.IsometryEquiv (Chow.intersectionBilinForm k₀ X),
       ∀ a : L, (μ[d]).symm (Additive.ofMul (LineBundleClass.pullback proj (g a).toMul)) =
         Q.inclusion a := by
-  let : Q.fan.algebraicRealization.IsProjectiveOver ℂ :=
-    Q.fan.isProjectiveOver_algebraicRealization_of_isComplete Q.regular Q.complete b
+  let : (Q.fan.finiteFanScheme k₀).IsProjectiveOver k₀ :=
+    Q.fan.isProjectiveOver_finiteFanScheme_of_isComplete k₀ Q.regular Q.complete b
   let : SmoothOfRelativeDimension 2 (M.surface ↘ SpecC) := M.smooth
-  let : M.surface.IsProjectiveOver ℂ := M.projective
+  let : M.surface.IsProjectiveOver k₀ := M.projective
   have hc : a.symm.hom ≫ T.toBase ≫ (M.surface ↘ SpecC) =
-      toBase (WithBoundary.toTower (Sigma.snd (A[c]))) ≫ Q.fan.algebraicRealizationStructureMap :=
+      toBase (WithBoundary.toTower (Sigma.snd (A[c]))) ≫ (Q.fan.finiteFanSchemeToSpec k₀) :=
     calc
       _ = p.projection ≫ (M.surface ↘ SpecC) := congrArg (· ≫ (M.surface ↘ SpecC)) hp.symm
       _ = _ := p.projection_over
   have hD : (D[M].comap (a.symm.hom ≫ T.toBase)).support = R[c].support :=
     hp.symm ▸ p.support_comap
-  let K := Fan.contractedRaySet Q.regular b Q.rays centers[c] hT a.symm hD
-  have hK : K = Fan.contractedRaySet Q.regular b Q.rays centers[d] hU e hE := by
+  let K := Fan.contractedRaySet k₀ Q.regular b Q.rays centers[k₀,c] hT a.symm hD
+  have hK : K = Fan.contractedRaySet k₀ Q.regular b Q.rays centers[k₀,d] hU e hE := by
     ext ρ
     rw [Fan.mem_contractedRaySet_iff, Fan.mem_contractedRaySet_iff, hrays, Iso.symm_hom, ← hp]
-  let g₀ := Fan.contractedPicardMarkingOfRaySet Q.regular b Q.rays centers[c] hT
+  let g₀ := Fan.contractedPicardMarkingOfRaySet k₀ Q.regular b Q.rays centers[k₀,c] hT
     a.symm hc hD K rfl
-  let g₁ := Fan.contractedPicardMarkingOfRaySet Q.regular b Q.rays centers[d] hU
+  let g₁ := Fan.contractedPicardMarkingOfRaySet k₀ Q.regular b Q.rays centers[k₀,d] hU
     e he hE K hK
-  let gM : H.IsometryEquiv (Chow.intersectionBilinForm ℂ M.surface) := M.marking
+  let gM : H.IsometryEquiv (Chow.intersectionBilinForm k₀ M.surface) := M.marking
   refine ⟨(gM.trans g₀.symm).trans g₁, fun x ↦ ?_⟩
-  have hx := Fan.coe_contractedPicardMarkingOfRaySet_symm_apply Q.regular b Q.rays centers[d]
+  have hx := Fan.coe_contractedPicardMarkingOfRaySet_symm_apply k₀ Q.regular b Q.rays centers[k₀,d]
     hU e he hE K hK (g₁ (g₀.symm (gM x))).toMul
-  have hx' := Fan.coe_contractedPicardMarkingOfRaySet_symm_apply Q.regular b Q.rays centers[c]
+  have hx' := Fan.coe_contractedPicardMarkingOfRaySet_symm_apply k₀ Q.regular b Q.rays centers[k₀,c]
     hT a.symm hc hD K rfl (M.picardMarking x).toMul
   rw [ofMul_toMul, Iso.symm_hom, ← hp, p.marked_pullback] at hx'
   rw [ofMul_toMul] at hx
@@ -147,20 +152,20 @@ private theorem exists_nodal_model_of_numbered_contraction
     (hrays : ∀ ρ : Q.fan.Ray,
       proj (prime[d,ρ]).val ∈ E.boundaryPrimes ↔
         p.projection (prime[c,ρ]).val ∈ D[M].boundaryPrimes) :
-    ∃ (P : MarkedSurface ℂ n H XTor[r])
-      (q : ContractedToricFiber b Q.rays Q.regular Q.cycle Q.origin Q.inclusion χ[d] P),
+    ∃ (P : MarkedSurface k₀ n H XTor[r])
+      (q : ContractedToricFiber b Q.rays Q.regular Q.cycle Q.origin Q.inclusion χ[k₀,d] P),
       D[P].IsEffectiveCartier ∧ Q.HasNodalModel d P ∧
         ∃ j : P.pair ≅ Pair, q.projection ≫ j.hom.right.left = proj := by
-  let : IsModification proj := Fan.isModification_orderedContraction Q.regular b Q.rays
-    centers[d] hU e
+  let : IsModification proj := Fan.isModification_orderedContraction k₀ Q.regular b Q.rays
+    centers[k₀,d] hU e
   obtain ⟨g, hg⟩ := exists_marking_of_same_contracted_rays Q hU e he hE p hT a hp hrays
-  let F : X ⤏ XTor[r] := Fan.contractedXEvaluation b Q.rays χ[d] Q.regular proj
-  let P : MarkedSurface ℂ n H XTor[r] :=
+  let F : X ⤏ XTor[r] := Fan.contractedXEvaluation k₀ b Q.rays χ[k₀,d] Q.regular proj
+  let P : MarkedSurface k₀ n H XTor[r] :=
     { pair := Pair
       closedImmersion := inferInstanceAs (IsClosedImmersion E.subschemeι)
       integral := by exact ‹IsIntegral X›
       smooth := inferInstanceAs (SmoothOfRelativeDimension 2 (X ↘ SpecC))
-      projective := inferInstanceAs (X.IsProjectiveOver ℂ)
+      projective := inferInstanceAs (X.IsProjectiveOver k₀)
       prestable := inferInstanceAs (PrestableFamily (E.subscheme ↘ SpecC))
       cycle := C
       marking := g
@@ -168,9 +173,9 @@ private theorem exists_nodal_model_of_numbered_contraction
   have hker : D[P] = E := ker_subschemeι E
   have hvOver : v.IsOver SpecC := ⟨by
     rw [E.over_eq_subschemeι_comp, reassoc_of% hv, he, WithBoundary.boundaryι_toBase_assoc,
-      (Fan.boundaryIdeal Q.fan Q.complete.nonempty_cones).over_eq_subschemeι_comp,
-      Fan.algebraicRealization_over]⟩
-  let q : ContractedToricFiber b Q.rays Q.regular Q.cycle Q.origin Q.inclusion χ[d] P :=
+      (Fan.toricBoundaryIdeal k₀ Q.fan Q.complete.nonempty_cones).over_eq_subschemeι_comp,
+      Fan.finiteFanScheme_over k₀]⟩
+  let q : ContractedToricFiber b Q.rays Q.regular Q.cycle Q.origin Q.inclusion χ[k₀,d] P :=
     { projection := proj
       modification := inferInstance
       projection_over := he
@@ -192,6 +197,7 @@ local notation "Z" => Sigma.fst (A[d])
 local notation "ιd" => WithBoundary.boundaryι (Sigma.snd (A[d]))
 local notation "πd" => toBase (WithBoundary.toTower (Sigma.snd (A[d])))
 
+variable [NeZero (2 : k₀)] in
 include hU he hE in
 private theorem exists_descended_numbering [PrestableFamily (E.subscheme ↘ SpecC)]
     (hCart : E.IsEffectiveCartier) :
@@ -199,21 +205,22 @@ private theorem exists_descended_numbering [PrestableFamily (E.subscheme ↘ Spe
       (C : NodalCycleNumbering (Empty.elim : Empty → (E.subscheme ↘ SpecC).smoothLocus) k)
       (v : ToricBoundary ⟶ E.subscheme),
       v ≫ E.subschemeι = ιd ≫ proj ∧ v.IsOrientedCycleSubdivision Q.cycle C := by
-  let : IsModification proj := Fan.isModification_orderedContraction Q.regular b Q.rays
-    centers[d] hU e
-  let : (Z).Over SpecC := ⟨πd ≫ (Q.fan.algebraicRealization ↘ SpecC)⟩
+  let : IsModification proj := Fan.isModification_orderedContraction k₀ Q.regular b Q.rays
+    centers[k₀,d] hU e
+  let : (Z).Over SpecC := ⟨πd ≫ ((Q.fan.finiteFanScheme k₀) ↘ SpecC)⟩
   let hrank := (Module.finrank_eq_card_basis b).trans (Fintype.card_fin 2)
-  let : SmoothOfRelativeDimension 2 (Q.fan.algebraicRealization ↘ SpecC) :=
-    (Fan.algebraicRealization_over Q.fan).symm ▸
-      (hrank ▸ Q.fan.smoothOfRelativeDimension_algebraicRealizationStructureMap Q.regular)
+  let : SmoothOfRelativeDimension 2 ((Q.fan.finiteFanScheme k₀) ↘ SpecC) :=
+    (Fan.finiteFanScheme_over k₀ Q.fan).symm ▸
+      (hrank ▸ Q.fan.smoothOfRelativeDimension_finiteFanSchemeToSpec k₀ Q.regular)
   let : SmoothOfRelativeDimension 2 ((Z) ↘ SpecC) :=
-    (Fan.isClosedPointTower_internalBlowupTower b Q.rays centers[d]).smoothOfRelativeDimension _
+    (Fan.isClosedPointTower_internalBlowupTower k₀ b Q.rays
+      centers[k₀,d]).smoothOfRelativeDimension _
   let : (proj).IsOver SpecC := ⟨he.trans
-    (congrArg (πd ≫ ·) (Fan.algebraicRealization_over Q.fan).symm)⟩
+    (congrArg (πd ≫ ·) (Fan.finiteFanScheme_over k₀ Q.fan).symm)⟩
   let : (ιd).IsOver SpecC := ⟨by
-    change ιd ≫ πd ≫ (Q.fan.algebraicRealization ↘ SpecC) = ToricBoundary ↘ SpecC
+    change ιd ≫ πd ≫ ((Q.fan.finiteFanScheme k₀) ↘ SpecC) = ToricBoundary ↘ SpecC
     rw [WithBoundary.boundaryι_toBase_assoc,
-      (Fan.boundaryIdeal Q.fan Q.complete.nonempty_cones).over_eq_subschemeι_comp]⟩
+      (Fan.toricBoundaryIdeal k₀ Q.fan Q.complete.nonempty_cones).over_eq_subschemeι_comp]⟩
   let isoB : ToricBoundary ≅ R[d].subscheme := asIso (ιd).toImage
   have hBcomp : isoB.hom ≫ R[d].subschemeι = ιd := (ιd).toImage_imageι
   let hB : isoB.hom.IsOver SpecC := inferInstanceAs ((ιd).toImage.IsOver SpecC)
@@ -230,9 +237,9 @@ private theorem exists_descended_numbering [PrestableFamily (E.subscheme ↘ Spe
     rw [← radical_comap_of_isOpenImmersion (E.comap U.toBase) e.hom, ← comap_comp, hrad]
   let : IsNoetherian X := isNoetherian_of_finiteType (X ↘ SpecC)
   let hF : R[d].IsEffectiveCartier := hR ▸ (hU.radical_comap_toBase hCart hN).1.comap e.hom
-  let hI := Q.fan.isEffectiveCartier_boundaryIdeal Q.regular Q.complete hrank
-  have hK := Fan.canonicalClass_internalBlowupTower b Q.rays centers[d] Q.regular hI hF
-    (Q.fan.canonicalClass_boundaryIdeal Q.regular Q.complete b hI)
+  let hI := Q.fan.isEffectiveCartier_boundaryIdeal k₀ Q.regular Q.complete hrank
+  have hK := Fan.canonicalClass_internalBlowupTower k₀ b Q.rays centers[k₀,d] Q.regular hI hF
+    (Q.fan.canonicalClass_boundaryIdeal k₀ Q.regular Q.complete b hI)
   let C₀ := isoB.mapNodalCycleNumbering Q.cycle
     (q := (Empty.elim : Empty → (R[d].subscheme ↘ SpecC).smoothLocus))
   have hsub := isoB.isOrientedCycleSubdivision_of_cycleOrientationSign_eq_one Q.cycle C₀
@@ -270,16 +277,16 @@ private theorem exists_anchored_numbering [PrestableFamily (E.subscheme ↘ Spec
   let : Smooth (X ↘ SpecC) := SmoothOfRelativeDimension.smooth 2 _
   let : IsRegular X := IsRegular.of_smooth (X ↘ SpecC)
   let : IsNormalScheme X := IsRegular.isNormal
-  let : IsModification proj := Fan.isModification_orderedContraction Q.regular b Q.rays
-    centers[d] hU e
-  let re := Fan.contractedBoundaryRayEmbedding Q.regular b Q.rays centers[d] proj hE
-  let rd := Fan.contractedBoundaryRayEmbedding Q.regular b Q.rays centers[c]
+  let : IsModification proj := Fan.isModification_orderedContraction k₀ Q.regular b Q.rays
+    centers[k₀,d] hU e
+  let re := Fan.contractedBoundaryRayEmbedding k₀ Q.regular b Q.rays centers[k₀,d] proj hE
+  let rd := Fan.contractedBoundaryRayEmbedding k₀ Q.regular b Q.rays centers[k₀,c]
     p.projection p.support_comap
   have hrange : Set.range re = Set.range rd := by
     ext ρ
-    exact (Fan.mem_range_contractedBoundaryRayEmbedding_iff Q.regular b Q.rays centers[d]
+    exact (Fan.mem_range_contractedBoundaryRayEmbedding_iff k₀ Q.regular b Q.rays centers[k₀,d]
       proj hE ρ).trans ((hrays ρ).trans
-        (Fan.mem_range_contractedBoundaryRayEmbedding_iff Q.regular b Q.rays centers[c]
+        (Fan.mem_range_contractedBoundaryRayEmbedding_iff k₀ Q.regular b Q.rays centers[k₀,c]
           p.projection p.support_comap ρ).symm)
   let er := (Equiv.ofInjective re re.injective).trans
     ((Set.equivOfEq hrange).trans (Equiv.ofInjective rd rd.injective).symm)
@@ -313,6 +320,7 @@ private theorem exists_anchored_numbering [PrestableFamily (E.subscheme ↘ Spec
       using hC)
 
 include hU he hE hT a hp in
+variable [NeZero (2 : k₀)] in
 /-- A specified nodal contraction of a moved-center model with the same surviving
 rays as the reference contraction gives a fiber of the original presentation.
 The new boundary has the same number of components, starts at the prescribed
@@ -324,8 +332,8 @@ theorem exists_nodal_model_of_same_contracted_rays
     (hrays : ∀ ρ : Q.fan.Ray,
       proj (prime[d,ρ]).val ∈ E.boundaryPrimes ↔
         p.projection (prime[c,ρ]).val ∈ D[M].boundaryPrimes) :
-    ∃ (P : MarkedSurface ℂ n H XTor[r])
-      (q : ContractedToricFiber b Q.rays Q.regular Q.cycle Q.origin Q.inclusion χ[d] P),
+    ∃ (P : MarkedSurface k₀ n H XTor[r])
+      (q : ContractedToricFiber b Q.rays Q.regular Q.cycle Q.origin Q.inclusion χ[k₀,d] P),
       D[P].IsEffectiveCartier ∧ Q.HasNodalModel d P ∧
         ∃ j : P.pair ≅ Pair, q.projection ≫ j.hom.right.left = proj := by
   obtain ⟨k, hk, C, v, hv, hC⟩ := exists_descended_numbering Q hU e he hE hCart

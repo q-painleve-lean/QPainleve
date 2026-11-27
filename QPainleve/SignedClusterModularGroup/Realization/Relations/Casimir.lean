@@ -39,23 +39,26 @@ open Scheme Scheme.IdealSheafData
 
 namespace QPainleve.SignedClusterModularGroup.CompleteToricPresentation
 
+variable {k₀ : Type} [Field k₀] [IsAlgClosed k₀] [Uncountable k₀] [CharZero k₀]
+
 open GeometricRealization (Point)
 
-local notation "S" => Spec (CommRingCat.of ℂ)
-local notation "Centers[" r "]" => Over.mk (structureMap ℂ (Fin r → ℤ))
-local notation "XTor[" r "]" => scheme ℂ (Fin r →₀ ℤ)
+local notation "S" => Spec (CommRingCat.of k₀)
+local notation "Centers[" r "]" => Over.mk (structureMap k₀ (Fin r → ℤ))
+local notation "XTor[" r "]" => scheme k₀ (Fin r →₀ ℤ)
 local notation "classOf(" h ")" => (LineBundleClass.mk (IsEffectiveCartier.toInvertibleSheaf h))⁻¹
 
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {b : Module.Basis (Fin 2) ℤ N} {r n : ℕ} [NeZero n]
   {L γ : Type} [AddCommGroup L] {B : LinearMap.BilinForm ℤ L}
-  {E : SkewExchangeMatrix (Fin r)} (Q : CompleteToricPresentation i b r L γ)
-  {c : Point Centers[r]} {M : MarkedSurface ℂ n B XTor[r]}
+  {E : SkewExchangeMatrix (Fin r)} (Q : CompleteToricPresentation k₀ i b r L γ)
+  {c : Point (Over.mk (QPainleve.CharacterTorus.structureMap k₀ (Fin r →
+    ℤ)))} {M : MarkedSurface k₀ n B (QPainleve.CharacterTorus.scheme k₀ (Fin r →₀ ℤ))}
   (href : Q.HasNodalModel c M)
   (hE : E.matrix = chargeExchangeMatrix b.detDualEquiv.toLinearMap (Fan.rayChargeMap Q.rays))
   (hprim : IsPrimitive (Additive.ofMul classOf(M.isEffectiveCartier_boundaryIdeal)))
-  (hnef : (classOf(M.isEffectiveCartier_boundaryIdeal)).IsNef ℂ (M.surface ↘ S))
-  (hsq : Chow.classIntersectionNumber ℂ M.surface classOf(M.isEffectiveCartier_boundaryIdeal)
+  (hnef : (classOf(M.isEffectiveCartier_boundaryIdeal)).IsNef k₀ (M.surface ↘ Spec (.of k₀)))
+  (hsq : Chow.classIntersectionNumber k₀ M.surface classOf(M.isEffectiveCartier_boundaryIdeal)
     classOf(M.isEffectiveCartier_boundaryIdeal) = 0)
 
 local notation "D" => M.boundaryClass M.isEffectiveCartier_boundaryIdeal
@@ -66,24 +69,24 @@ saturation index of the marked boundary lattice. -/
 theorem card_ker_exchangeKernelAction_dvd_boundaryTorsion (k : Type*) [Field k] :
     Nat.card (exchangeKernelAction k E).ker ∣
       Nat.card (AddCommGroup.torsion (L ⧸ Submodule.span ℤ (Set.range D))) := by
-  let specialization := MulEquiv.op (Q.signedSpecializationEquiv ℂ k href hE hprim hnef hsq)
+  let specialization := MulEquiv.op (Q.signedSpecializationEquiv k₀ k href hE hprim hnef hsq)
   have he : (exchangeKernelAction k E).comp specialization.toMonoidHom =
-      exchangeKernelAction ℂ E := by
+      exchangeKernelAction k₀ E := by
     apply MonoidHom.ext
     intro g
     rw [← op_unop g]
     simp [specialization]
   have hcard :
-      Nat.card (exchangeKernelAction k E).ker = Nat.card (exchangeKernelAction ℂ E).ker := by
+      Nat.card (exchangeKernelAction k E).ker = Nat.card (exchangeKernelAction k₀ E).ker := by
     rw [← he, MulEquiv.toMonoidHom_eq_coe, MonoidHom.ker_comp_mulEquiv,
       Subgroup.card_map_of_injective specialization.symm.injective]
   obtain ⟨A⟩ := Q.nonempty_casimirActionComparison_of_nodal_model href hE hprim hnef hsq
   let : Scheme.IsRationalOver (M.surface ↘ S) := href.isRationalOver
-  let : M.surface.IsProjectiveOver ℂ := M.projective
+  let : M.surface.IsProjectiveOver k₀ := M.projective
   let : SmoothOfRelativeDimension 2 (M.surface ↘ S) := M.smooth
   let : LinearMap.IsPerfPair B := M.isPerfPair_of_isRationalOver
   let : Module.Finite ℤ (Additive (LineBundleClass M.surface)) :=
-    M.surface.finite_picard_of_isRationalOver ℂ
+    M.surface.finite_picard_of_isRationalOver k₀
   let : Module.Finite ℤ L := Module.Finite.of_surjective _ M.picardMarking.symm.surjective
   have hδ : IsPrimitive (∑ j, D j) :=
     M.picardMarking.isPrimitive_iff.mp (by rwa [M.picardMarking_sum_boundaryClass])
@@ -119,10 +122,11 @@ theorem xPullback_eq_iff_exponentEquiv_eq_on_basis_of_saturated_boundary
     (Q.exchangeKernelAction_injective_of_saturated_boundary href hE hprim hnef hsq ht k) w v β
 
 include href hprim hnef hsq in
+omit [Uncountable k₀] [CharZero k₀] in
 private theorem card_boundaryTorsion_eq_one_of_squarefree (hn : Squarefree n) :
     Nat.card (AddCommGroup.torsion (L ⧸ Submodule.span ℤ (Set.range D))) = 1 := by
   let : Scheme.IsRationalOver (M.surface ↘ S) := href.isRationalOver
-  let : M.surface.IsProjectiveOver ℂ := M.projective
+  let : M.surface.IsProjectiveOver k₀ := M.projective
   let : SmoothOfRelativeDimension 2 (M.surface ↘ S) := M.smooth
   have hp := M.isPerfPair_of_isRationalOver
   let : Module.IsTorsionFree ℤ L := hp.nondegenerate.1.isTorsionFree

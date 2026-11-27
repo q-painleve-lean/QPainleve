@@ -17,6 +17,7 @@ import QPainleve.Geometry.Toric.Fan.TorusAction.ContractedEvaluation
 import TauCeti.AlgebraicGeometry.Curves.Node.Reduced
 import TauCeti.AlgebraicGeometry.Noetherian
 import TauCeti.AlgebraicGeometry.Scheme.Regular.Scheme
+import TauCeti.FieldTheory.IsAlgClosed.Units
 
 /-!
 # Comparing marked pullbacks of contracted X evaluation
@@ -36,29 +37,32 @@ open Scheme (NodalCycleNumbering)
 
 namespace TauCeti.Toric.Fan
 
+variable (K : Type) [Field K] [IsAlgClosed K]
+
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {Φ : Fan i} [h₀ : Nonempty Φ.cones] {r : ℕ}
   (b : Module.Basis (Fin 2) ℤ N) (s : Fin r → Φ.Ray) (hΦ : Φ.IsRegular)
 
-local notation "S" => Spec (CommRingCat.of ℂ)
+local notation "S" => Spec (CommRingCat.of K)
 local notation "center" c:arg => (fun j : Fin r ↦ c (ofAdd (Pi.single j 1)))
-local notation "M" c:arg => internalBlowupTower b s (center c)
+local notation "M" c:arg => internalBlowupTower K b s (center c)
 local notation "π" c:arg => toBase (WithBoundary.toTower (Sigma.snd (M c)))
 local notation "ι" c:arg => WithBoundary.boundaryι (Sigma.snd (M c))
-local notation "mark" c:arg => internalBlowupPicardMarking b s (center c) hΦ
-local notation "prime" c:arg => internalBlowupBoundaryPrimeEquiv hΦ b s (center c)
-local notation "Dtor" => Φ.boundaryIdeal h₀
+local notation "mark" c:arg => internalBlowupPicardMarking K b s (center c) hΦ
+local notation "prime" c:arg => internalBlowupBoundaryPrimeEquiv K hΦ b s (center c)
+local notation "Dtor" => Φ.toricBoundaryIdeal K h₀
 
 section SameCenter
 
-variable (c : Multiplicative (Fin r → ℤ) →* ℂˣ)
+variable (c : Multiplicative (Fin r → ℤ) →* Kˣ)
 
-variable {W X Y : Scheme} [W.Over S] [X.Over S] [IsIntegral X]
-  [SmoothOfRelativeDimension 2 (X ↘ S)] [QuasiCompact (X ↘ S)]
+variable {W X Y : Scheme} [W.Over (Spec (.of K))] [X.Over (Spec (.of K))] [IsIntegral X]
+  [SmoothOfRelativeDimension 2 (X ↘ Spec (.of K))] [QuasiCompact (X ↘ Spec (.of K))]
   {D : X.IdealSheafData} {E : W.IdealSheafData}
-  [PrestableFamily (D.subscheme ↘ S)] [PrestableFamily (E.subscheme ↘ S)]
+  [PrestableFamily (D.subscheme ↘ Spec (.of K))] [PrestableFamily (E.subscheme ↘ Spec (.of K))]
   {n : ℕ} [NeZero n] {α β : Type*}
-  {a : α → (D.subscheme ↘ S).smoothLocus} {d : β → (E.subscheme ↘ S).smoothLocus}
+  {a : α → (D.subscheme ↘ Spec (.of K)).smoothLocus}
+  {d : β → (E.subscheme ↘ Spec (.of K)).smoothLocus}
 
 open Scheme.RationalMap in
 /-- Two isomorphisms to the same contracted toric presentation give equal
@@ -66,12 +70,13 @@ pullbacks of X evaluation if they induce the same Picard pullback and the same
 action on the numbered branches. The charge lattice may have any rank. -/
 theorem comp_contractedXEvaluation_eq_of_matching_actions
     (hc : Φ.IsComplete) (hD : D.IsEffectiveCartier)
-    {m : ℕ} {T : BlowupTower X m Y} (hT : IsNodalBoundaryTower D (X ↘ S) (𝟙 X) T)
+    {m : ℕ} {T : BlowupTower X m Y} (hT : IsNodalBoundaryTower D (X ↘ Spec (.of K)) (𝟙 X) T)
     (e : Y ≅ (M c).1)
-    (he : e.hom ≫ π c ≫ Φ.algebraicRealizationStructureMap = T.toBase ≫ X ↘ S)
+    (he : e.hom ≫ π c ≫ (Φ.finiteFanSchemeToSpec K) = T.toBase ≫ X ↘ Spec (.of K))
     (hB : (D.comap T.toBase).support = ((ι c).ker.comap e.hom).support)
-    (u v : W ≅ X) [u.hom.IsOver S] [v.hom.IsOver S]
-    (uB vB : E.subscheme ≅ D.subscheme) [uB.hom.IsOver S] [vB.hom.IsOver S]
+    (u v : W ≅ X) [u.hom.IsOver (Spec (.of K))] [v.hom.IsOver (Spec (.of K))]
+    (uB vB : E.subscheme ≅ D.subscheme)
+    [uB.hom.IsOver (Spec (.of K))] [vB.hom.IsOver (Spec (.of K))]
     (hu : uB.hom ≫ D.subschemeι = E.subschemeι ≫ u.hom)
     (hv : vB.hom ≫ D.subschemeι = E.subschemeι ≫ v.hom)
     (A : NodalCycleNumbering a n) (B : NodalCycleNumbering d n)
@@ -79,14 +84,14 @@ theorem comp_contractedXEvaluation_eq_of_matching_actions
     (hact : uB.boundaryCycleAction B A = vB.boundaryCycleAction B A) :
     let : IsIntegral W := IsIntegral.of_isIso u.inv
     let : IsModification T.toBase :=
-      hT.isClosedPointTower.isModification_of_smoothOfRelativeDimension_two (X ↘ S)
-    u.hom.toRationalMap.comp (contractedXEvaluation b s c hΦ (e.inv ≫ T.toBase)) =
-      v.hom.toRationalMap.comp (contractedXEvaluation b s c hΦ (e.inv ≫ T.toBase)) := by
+      hT.isClosedPointTower.isModification_of_smoothOfRelativeDimension_two (X ↘ Spec (.of K))
+    u.hom.toRationalMap.comp (contractedXEvaluation K b s c hΦ (e.inv ≫ T.toBase)) =
+      v.hom.toRationalMap.comp (contractedXEvaluation K b s c hΦ (e.inv ≫ T.toBase)) := by
   let : IsIntegral W := IsIntegral.of_isIso u.inv
   let : IsModification T.toBase :=
-    hT.isClosedPointTower.isModification_of_smoothOfRelativeDimension_two (X ↘ S)
-  have : Smooth (X ↘ S) := SmoothOfRelativeDimension.smooth 2 _
-  have : IsNoetherian X := isNoetherian_of_finiteType (X ↘ S)
+    hT.isClosedPointTower.isModification_of_smoothOfRelativeDimension_two (X ↘ Spec (.of K))
+  have : Smooth (X ↘ Spec (.of K)) := SmoothOfRelativeDimension.smooth 2 _
+  have : IsNoetherian X := isNoetherian_of_finiteType (X ↘ Spec (.of K))
   let w := u.symm ≪≫ v
   let wB := uB.symm ≪≫ vB
   let : uB.symm.hom.IsOver S := inferInstanceAs (uB.inv.IsOver S)
@@ -103,14 +108,14 @@ theorem comp_contractedXEvaluation_eq_of_matching_actions
   have hp (L : LineBundleClass X) : pullback w.hom L = L := by
     apply (pullbackEquiv u).injective
     simpa only [pullbackEquiv_apply, pullback_comp, huw] using (hPic L).symm
-  have hN : AtWorstNodalOfRelativeDimensionOne (D.subschemeι ≫ X ↘ S) := by
+  have hN : AtWorstNodalOfRelativeDimensionOne (D.subschemeι ≫ X ↘ Spec (.of K)) := by
     rw [← D.over_eq_subschemeι_comp]
     exact PrestableFamily.atWorstNodalOfRelativeDimensionOne
   have hfix := hD.fixes_components_of_boundaryCycleAction_eq_one w wB hw A ha
   have hb := (wB.fixesNodalBranches_iff_boundaryCycleAction_eq_one A).mpr ha
-  have hwOver : wB.hom ≫ D.subschemeι ≫ (X ↘ S) = D.subschemeι ≫ (X ↘ S) := by
+  have hwOver : wB.hom ≫ D.subschemeι ≫ (X ↘ Spec (.of K)) = D.subschemeι ≫ (X ↘ Spec (.of K)) := by
     rw [reassoc_of% hw, HomIsOver.comp_over]
-  have heval := comp_contractedXEvaluation_eq_of_fixes_nodal_branches b s hΦ hD hN
+  have heval := comp_contractedXEvaluation_eq_of_fixes_nodal_branches K b s hΦ hD hN
     hT e hc he hB (Aut.of w) (HomIsOver.comp_over (f := w.hom)) hp hfix wB hw
     (by
       apply (wB.fixesNodalBranches_iff _ hN hwOver).mp
@@ -124,17 +129,19 @@ end SameCenter
 
 section AlignedCenters
 
-variable (c d : Multiplicative (Fin r → ℤ) →* ℂˣ)
-  {X X' Y Y' : Scheme} [X.Over S] [X'.Over S] [IsIntegral X] [IsIntegral X']
-  [SmoothOfRelativeDimension 2 (X ↘ S)] [SmoothOfRelativeDimension 2 (X' ↘ S)]
-  [QuasiCompact (X ↘ S)] [QuasiCompact (X' ↘ S)]
+variable (c d : Multiplicative (Fin r → ℤ) →* Kˣ)
+  {X X' Y Y' : Scheme} [X.Over (Spec (.of K))] [X'.Over (Spec (.of K))]
+  [IsIntegral X] [IsIntegral X']
+  [SmoothOfRelativeDimension 2 (X ↘ Spec (.of K))] [SmoothOfRelativeDimension 2 (X' ↘ Spec (.of K))]
+  [QuasiCompact (X ↘ Spec (.of K))] [QuasiCompact (X' ↘ Spec (.of K))]
   {D : X.IdealSheafData} {D' : X'.IdealSheafData}
-  [PrestableFamily (D.subscheme ↘ S)] [PrestableFamily (D'.subscheme ↘ S)]
-  [PrestableFamily ((Φ.boundaryIdeal h₀).subscheme ↘ Spec (.of ℂ))]
+  [PrestableFamily (D.subscheme ↘ Spec (.of K))] [PrestableFamily (D'.subscheme ↘ Spec (.of K))]
+  [PrestableFamily ((Φ.toricBoundaryIdeal K h₀).subscheme ↘ Spec (.of K))]
   {m m' : ℕ} {T : BlowupTower X m Y} {U : BlowupTower X' m' Y'}
   {n a : ℕ} [NeZero n] [NeZero a] {α β γ : Type*}
-  {p₀ : α → (D.subscheme ↘ S).smoothLocus} {p₁ : β → (D'.subscheme ↘ S).smoothLocus}
-  {pT : γ → ((Φ.boundaryIdeal h₀).subscheme ↘ Spec (.of ℂ)).smoothLocus}
+  {p₀ : α → (D.subscheme ↘ Spec (.of K)).smoothLocus}
+  {p₁ : β → (D'.subscheme ↘ Spec (.of K)).smoothLocus}
+  {pT : γ → ((Φ.toricBoundaryIdeal K h₀).subscheme ↘ Spec (.of K)).smoothLocus}
 
 local notation "p[" e "]" => (Iso.inv e ≫ toBase T)
 local notation "q[" e "]" => (Iso.inv e ≫ toBase U)
@@ -145,11 +152,11 @@ intertwines the two fixed-center rational evaluations. The subdivisions refer to
 the actual ordered branches, even on cycles with one or two components. -/
 theorem comp_contractedXEvaluation_eq_of_eq_center_character
     (hc : Φ.IsComplete) (hCartier : D'.IsEffectiveCartier)
-    (hT : IsNodalBoundaryTower D (X ↘ S) (𝟙 X) T)
-    (hU : IsNodalBoundaryTower D' (X' ↘ S) (𝟙 X') U)
+    (hT : IsNodalBoundaryTower D (X ↘ Spec (.of K)) (𝟙 X) T)
+    (hU : IsNodalBoundaryTower D' (X' ↘ Spec (.of K)) (𝟙 X') U)
     (e : Y ≅ (M c).1) (e' : Y' ≅ (M d).1)
-    (hp : p[e] ≫ (X ↘ S) = π c ≫ Φ.algebraicRealizationStructureMap)
-    (hq : q[e'] ≫ (X' ↘ S) = π d ≫ Φ.algebraicRealizationStructureMap)
+    (hp : p[e] ≫ (X ↘ Spec (.of K)) = π c ≫ (Φ.finiteFanSchemeToSpec K))
+    (hq : q[e'] ≫ (X' ↘ Spec (.of K)) = π d ≫ (Φ.finiteFanSchemeToSpec K))
     (hD : (D.comap p[e]).support = (ι c).ker.support)
     (hD' : (D'.comap q[e']).support = (ι d).ker.support)
     (hkeep : ∀ ρ : Φ.Ray, p[e] ((prime c) ρ).val ∈ D.boundaryPrimes ↔
@@ -158,10 +165,11 @@ theorem comp_contractedXEvaluation_eq_of_eq_center_character
       (∏ j, (center c) j ^ x j) = ∏ j, (center d) j ^ x j)
     (A : NodalCycleNumbering p₀ n) (B : NodalCycleNumbering p₁ n) (C : NodalCycleNumbering pT a)
     (f : (Dtor).subscheme ⟶ D.subscheme) (g : (Dtor).subscheme ⟶ D'.subscheme)
-    [f.IsOver S] [g.IsOver S]
+    [f.IsOver (Spec (.of K))] [g.IsOver (Spec (.of K))]
     (hf : f ≫ D.subschemeι = ι c ≫ p[e]) (hg : g ≫ D'.subschemeι = ι d ≫ q[e'])
     (hfs : f.IsOrientedCycleSubdivision C A) (hgs : g.IsOrientedCycleSubdivision C B)
-    (v : X ≅ X') [v.hom.IsOver S] (vB : D.subscheme ≅ D'.subscheme) [vB.hom.IsOver S]
+    (v : X ≅ X') [v.hom.IsOver (Spec (.of K))] (vB : D.subscheme ≅ D'.subscheme)
+    [vB.hom.IsOver (Spec (.of K))]
     (hv : vB.hom ≫ D'.subschemeι = D.subschemeι ≫ v.hom)
     (hPic : ∀ L : LineBundleClass X',
       (mark c).symm (Additive.ofMul (pullback p[e] (pullback v.hom L))) =
@@ -172,50 +180,53 @@ theorem comp_contractedXEvaluation_eq_of_eq_center_character
     (hy : y.val = D'.subschemeι (B.componentGenericPoint j))
     (ρ : Φ.Ray) (hxρ : p[e] ((prime c) ρ).val = x.val) (hyρ : q[e'] ((prime d) ρ).val = y.val) :
     let : IsModification T.toBase :=
-      hT.isClosedPointTower.isModification_of_smoothOfRelativeDimension_two (X ↘ S)
+      hT.isClosedPointTower.isModification_of_smoothOfRelativeDimension_two (X ↘ Spec (.of K))
     let : IsModification U.toBase :=
-      hU.isClosedPointTower.isModification_of_smoothOfRelativeDimension_two (X' ↘ S)
-    v.hom.toRationalMap.comp (contractedXEvaluation b s d hΦ q[e']) =
-      contractedXEvaluation b s c hΦ p[e] := by
+      hU.isClosedPointTower.isModification_of_smoothOfRelativeDimension_two (X' ↘ Spec (.of K))
+    v.hom.toRationalMap.comp (contractedXEvaluation K b s d hΦ q[e']) =
+      contractedXEvaluation K b s c hΦ p[e] := by
   let : IsModification T.toBase :=
-    hT.isClosedPointTower.isModification_of_smoothOfRelativeDimension_two (X ↘ S)
+    hT.isClosedPointTower.isModification_of_smoothOfRelativeDimension_two (X ↘ Spec (.of K))
   let : IsModification U.toBase :=
-    hU.isClosedPointTower.isModification_of_smoothOfRelativeDimension_two (X' ↘ S)
+    hU.isClosedPointTower.isModification_of_smoothOfRelativeDimension_two (X' ↘ Spec (.of K))
   have : IsReduced D.subscheme :=
-    (PrestableFamily.atWorstNodalOfRelativeDimensionOne (f := D.subscheme ↘ S)).isReduced
+    (PrestableFamily.atWorstNodalOfRelativeDimensionOne (f := D.subscheme ↘ Spec (.of K))).isReduced
   have : IsReduced D'.subscheme :=
-    (PrestableFamily.atWorstNodalOfRelativeDimensionOne (f := D'.subscheme ↘ S)).isReduced
-  have : Smooth (X ↘ S) := SmoothOfRelativeDimension.smooth 2 _
-  have : Smooth (X' ↘ S) := SmoothOfRelativeDimension.smooth 2 _
-  have : IsNoetherian X := isNoetherian_of_finiteType (X ↘ S)
-  have : IsNoetherian X' := isNoetherian_of_finiteType (X' ↘ S)
-  have : AlgebraicGeometry.IsRegular X := AlgebraicGeometry.IsRegular.of_smooth (X ↘ S)
-  have : AlgebraicGeometry.IsRegular X' := AlgebraicGeometry.IsRegular.of_smooth (X' ↘ S)
+    (PrestableFamily.atWorstNodalOfRelativeDimensionOne
+      (f := D'.subscheme ↘ Spec (.of K))).isReduced
+  have : Smooth (X ↘ Spec (.of K)) := SmoothOfRelativeDimension.smooth 2 _
+  have : Smooth (X' ↘ Spec (.of K)) := SmoothOfRelativeDimension.smooth 2 _
+  have : IsNoetherian X := isNoetherian_of_finiteType (X ↘ Spec (.of K))
+  have : IsNoetherian X' := isNoetherian_of_finiteType (X' ↘ Spec (.of K))
+  have : AlgebraicGeometry.IsRegular X := AlgebraicGeometry.IsRegular.of_smooth (X ↘ Spec (.of K))
+  have : AlgebraicGeometry.IsRegular X' := AlgebraicGeometry.IsRegular.of_smooth (X' ↘ Spec (.of K))
   obtain ⟨u, hover, hcomap, ⟨t⟩⟩ :=
-    exists_iso_of_eq_center_character hΦ b s c d hT hU e e' hp hq hD hD' hkeep hcenters
+    exists_iso_of_eq_center_character K hΦ b s c d hT hU e e' hp hq hD hD' hkeep hcenters
   obtain ⟨uB, hu⟩ := D'.exists_iso_of_comap_eq_ker u D.subschemeι
     (hcomap.trans D.ker_subschemeι.symm)
   let : u.hom.IsOver S := ⟨hover⟩
   let : uB.hom.IsOver S := ⟨by
     rw [D'.over_eq_subschemeι_comp, reassoc_of% hu, hover, D.over_eq_subschemeι_comp]⟩
-  have hray := ((contractedBoundaryRayEmbedding_eq_iff hΦ b s (center c) p[e] hD x ρ).mpr hxρ).trans
-    (((contractedBoundaryRayEmbedding_eq_iff hΦ b s (center d) q[e'] hD' y ρ).mpr hyρ).symm)
-  have huact := (boundaryCycleAction_eq_r_iff_of_isLift_torusTranslation b s c d hΦ A B C
+  have hxRay := (contractedBoundaryRayEmbedding_eq_iff K hΦ b s (center c) p[e] hD x ρ).mpr hxρ
+  have hray := hxRay.trans
+    (((contractedBoundaryRayEmbedding_eq_iff K hΦ b s (center d) q[e'] hD' y ρ).mpr hyρ).symm)
+  have huact := (boundaryCycleAction_eq_r_iff_of_isLift_torusTranslation K b s c d hΦ A B C
     hf hg hfs hgs hu hc t.isLift t.commutes hD hD' j x y hx hy).mpr hray
   have hPic' (L : LineBundleClass X') : pullback v.hom L = pullback u.hom L := by
-    apply hT.isClosedPointTower.injective_pullback_toBase (X ↘ S)
+    apply hT.isClosedPointTower.injective_pullback_toBase (X ↘ Spec (.of K))
     apply (pullbackEquiv e.symm).injective
-    have hmark := (hPic L).trans (t.pullback_marking hΦ L).symm
+    have hmark := (hPic L).trans (t.pullback_marking K hΦ L).symm
     simpa only [pullbackEquiv_apply, Iso.symm_hom, pullback_comp, Category.assoc] using
       Additive.ofMul.injective ((mark c).symm.injective hmark)
-  have he' : e'.hom ≫ π d ≫ Φ.algebraicRealizationStructureMap = U.toBase ≫ (X' ↘ S) := by
+  have he' : e'.hom ≫ π d ≫ (Φ.finiteFanSchemeToSpec K) = U.toBase ≫ (X' ↘ Spec (.of K)) := by
     rw [← hq, Category.assoc, Iso.hom_inv_id_assoc]
   have hD'' : (D'.comap U.toBase).support = ((ι d).ker.comap e'.hom).support := calc
     _ = ((D'.comap q[e']).comap e'.hom).support := by
       rw [← comap_comp, Iso.hom_inv_id_assoc]
     _ = _ := by rw [support_comap (D'.comap q[e']), support_comap ((ι d).ker), hD']
-  exact (comp_contractedXEvaluation_eq_of_matching_actions b s hΦ d hc hCartier hU e' he' hD''
-    v u vB uB hv hu B A hPic' (hact.trans huact.symm)).trans (t.comp_contractedXEvaluation hΦ)
+  exact (comp_contractedXEvaluation_eq_of_matching_actions K b s hΦ d hc hCartier hU e' he' hD''
+    v u vB uB hv hu B A hPic' (hact.trans huact.symm)).trans
+      (t.comp_contractedXEvaluation K hΦ)
 
 end AlignedCenters
 

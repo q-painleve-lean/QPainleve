@@ -32,20 +32,23 @@ open Scheme.IdealSheafData LineBundleClass
 
 namespace TauCeti.Toric.Fan
 
-variable {N V : Type} {ι : Type*} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
+universe u
+
+variable (k : Type u) [Field k] [IsAlgClosed k] {N V : Type u} {ι : Type*}
+  [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {Φ : Fan i} [Nonempty Φ.cones] {m n : ℕ} [NeZero m] [Fintype ι]
   (b : Basis (Fin 2) ℤ N) (hΦ : Φ.IsRegular) (hc : Φ.IsComplete)
-  (v : ZMod m ≃ Φ.Ray) (o : Fin n ≃ ι) (ρ : ι → ZMod m) (c : Fin n → ℂˣ)
+  (v : ZMod m ≃ Φ.Ray) (o : Fin n ≃ ι) (ρ : ι → ZMod m) (c : Fin n → kˣ)
 
-local notation "S" => Spec (CommRingCat.of ℂ)
-local notation "Z" => Φ.algebraicRealization
+local notation "S" => Spec (CommRingCat.of k)
+local notation "Z" => (Φ.finiteFanScheme k)
 local notation "s" => (v ∘ ρ ∘ o)
 local notation "A" => (ZMod m ⊕ ι → ℤ)
-local notation "F" => numberedInternalBlowupPicardMap b hΦ v o ρ c
-local notation "Aux" => (LinearMap.BilinForm.prod (Chow.intersectionBilinForm ℂ Z)
+local notation "F" => numberedInternalBlowupPicardMap k b hΦ v o ρ c
+local notation "Aux" => (LinearMap.BilinForm.prod (Chow.intersectionBilinForm k Z)
   (-(dotProductBilin ℤ ℤ : LinearMap.BilinForm ℤ (Fin n → ℤ))))
 local notation "strict" j:arg => numberedStrictBoundaryCoefficients ρ j
-local notation "rayClass" j:arg => markedBoundaryMap hΦ s (Pi.single (v j) 1)
+local notation "rayClass" j:arg => markedBoundaryMap k hΦ s (Pi.single (v j) 1)
 local notation "Gram" =>
   numberedInternalBlowupGram ι (fun j ↦ Basis.repr b (Ray.primitiveGenerator (v j)))
 
@@ -58,42 +61,33 @@ private theorem exists_numberedAuxIsometry (hv : (∀ j,
     (hR : R = Submodule.span ℤ (Set.range fun a : Fin 2 ↦
       Sum.elim (fun j ↦ b.repr (v j).primitiveGenerator a) 0))
     (hB : B.compl₁₂ R.mkQ R.mkQ = Matrix.toBilin' Gram) :
-    let : (Z).IsProjectiveOver ℂ := Φ.isProjectiveOver_algebraicRealization_of_isComplete hΦ hc b
+    let : (Z).IsProjectiveOver k := Φ.isProjectiveOver_finiteFanScheme_of_isComplete k hΦ hc b
     let : SmoothOfRelativeDimension 2 (Z ↘ S) :=
-      (algebraicRealization_over Φ).symm ▸
+      (Φ.finiteFanScheme_over k).symm ▸
         (((finrank_eq_card_basis b).trans (Fintype.card_fin 2)) ▸
-          Φ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ)
+          Φ.smoothOfRelativeDimension_finiteFanSchemeToSpec k hΦ)
     ∃ g : B.IsometryEquiv Aux, ∀ j, g (R.mkQ (strict j)) = rayClass j := by
   intro _ _
-  obtain ⟨q, hq⟩ := numberedInternalBlowupPicardIsometry b hΦ v o ρ c hc hv B hR hB
-  let f := (isClosedPointTower_internalBlowupTower b s c).picardMarkingIsometry ℂ
+  obtain ⟨q, hq⟩ := numberedInternalBlowupPicardIsometry k b hΦ v o ρ c hc hv B hR hB
+  let f := (isClosedPointTower_internalBlowupTower k b s c).picardMarkingIsometry k
   refine ⟨q.trans f.symm, fun j ↦ f.injective ?_⟩
   simp only [BilinForm.IsometryEquiv.trans_apply, BilinForm.IsometryEquiv.coe_toLinearEquiv,
     f.apply_symm_apply, hq, numberedInternalBlowupPicardMap_strictBoundary]
   rw [IsClosedPointTower.picardMarkingIsometry_apply,
     picardHom_markedBoundaryMap_single_eq_primeDivisorClass]
 
-variable {X W : Scheme} [X.Over S] [X.IsProjectiveOver ℂ] [IsIntegral X]
-  [SmoothOfRelativeDimension 2 (X ↘ S)] {D : X.IdealSheafData} {d : ℕ}
+variable {X W : Scheme} [X.Over (Spec (.of k))] [X.IsProjectiveOver k] [IsIntegral X]
+  [SmoothOfRelativeDimension 2 (X ↘ Spec (.of k))] {D : X.IdealSheafData} {d : ℕ}
   {T : BlowupTower X d W}
-  (hT : IsNodalBoundaryTower D (X ↘ S) (𝟙 X) T) (e : (internalBlowupTower b (v ∘ ρ ∘ o) c).1 ≅ W)
-  (he : e.hom ≫ T.toBase ≫ (X ↘ S) =
-    (internalBlowupTower b (v ∘ ρ ∘ o) c).2.toTower.toBase ≫ Φ.algebraicRealizationStructureMap)
+  (hT : IsNodalBoundaryTower D (X ↘ Spec (.of k)) (𝟙 X) T)
+  (e : (internalBlowupTower k b (v ∘ ρ ∘ o) c).1 ≅ W)
+  (he : e.hom ≫ T.toBase ≫ (X ↘ Spec (.of k)) =
+    (internalBlowupTower k b (v ∘ ρ ∘ o) c).2.toTower.toBase ≫ (Φ.finiteFanScheme k ↘ Spec (.of k)))
   (hD : (D.comap (e.hom ≫ T.toBase)).support =
-    (internalBlowupTower b (v ∘ ρ ∘ o) c).2.boundaryι.ker.support)
+    (internalBlowupTower k b (v ∘ ρ ∘ o) c).2.boundaryι.ker.support)
 
 local notation "p" => (e.hom ≫ T.toBase)
 local notation "Span" a:arg => Submodule.span ℤ (Set.ofPred fun x ↦ x ∈ a)
-
-local instance numberedContraction_noetherian : IsNoetherian X :=
-  isNoetherian_of_finiteType (X ↘ S)
-
-local instance numberedContraction_factorial (x : X) :
-    UniqueFactorizationMonoid (X.presheaf.stalk x) :=
-  (X ↘ S).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two x
-
-local instance numberedContraction_normal : IsNormalScheme X :=
-  IsNormalScheme.of_uniqueFactorizationMonoid_stalk
 
 include he in
 open Classical in
@@ -109,28 +103,32 @@ theorem exists_numberedContractedPicardIsometry (hv : (∀ j,
       Sum.elim (fun j ↦ b.repr (v j).primitiveGenerator a) 0))
     (hB : B.compl₁₂ R.mkQ R.mkQ = Matrix.toBilin' Gram)
     (l : List (ZMod m)) :
-    let : (Z).IsProjectiveOver ℂ := Φ.isProjectiveOver_algebraicRealization_of_isComplete hΦ hc b
-    let : IsModification p := isModification_orderedContraction hΦ b s c hT e
-    let a := contractedBoundaryRayEmbedding hΦ b s c p hD
+    let : IsNoetherian X := isNoetherian_of_finiteType (X ↘ S)
+    let := (X ↘ S).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two
+    let : IsNormalScheme X := (X ↘ S).isNormalScheme_of_smoothOfRelativeDimension_two
+    let : (Z).IsProjectiveOver k := Φ.isProjectiveOver_finiteFanScheme_of_isComplete k hΦ hc b
+    let : IsModification p := isModification_orderedContraction k hΦ b s c hT e
+    let a := contractedBoundaryRayEmbedding k hΦ b s c p hD
     let C := l.map fun j ↦ R.mkQ (strict j)
     let P := B.orthogonal (Span C)
     (∀ j, j ∈ l ↔ v j ∉ Set.range a) →
     (∀ x ∈ B.orthogonalizeNegOnes C, B x x = -1) →
-    ∃ g : (B.restrict P).IsometryEquiv (Chow.intersectionBilinForm ℂ X),
+    ∃ g : (B.restrict P).IsometryEquiv (Chow.intersectionBilinForm k X),
       ∀ x : D.boundaryPrimes,
         (g.symm (Additive.ofMul (primeDivisorClass (D.boundaryPrimeEmbedding x)))).val =
           B.projectOffNegOnes C (R.mkQ (strict (v.symm (a x)))) := by
-  intro _ _ a C P hl hsq
+  intro _ _ _ _ _ a C P hl hsq
   let : SmoothOfRelativeDimension 2 (Z ↘ S) :=
-    ((finrank_eq_card_basis b).trans (Fintype.card_fin 2)) ▸
-      Φ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
+    (Φ.finiteFanScheme_over k).symm ▸
+      (((finrank_eq_card_basis b).trans (Fintype.card_fin 2)) ▸
+        Φ.smoothOfRelativeDimension_finiteFanSchemeToSpec k hΦ)
   let : IsNoetherian Z := isNoetherian_of_finiteType (Z ↘ S)
-  let hU := isClosedPointTower_internalBlowupTower b s c
-  let E := markedExceptionalSpan ℂ hU T e
-  let g₀ := contractedPicardMarking ℂ hT.isClosedPointTower hU e he
-  obtain ⟨q, hq⟩ := exists_numberedAuxIsometry b hΦ hc v o ρ c hv B hR hB
+  let hU := isClosedPointTower_internalBlowupTower k b s c
+  let E := markedExceptionalSpan k hU T e
+  let g₀ := contractedPicardMarking k hT.isClosedPointTower hU e he
+  obtain ⟨q, hq⟩ := exists_numberedAuxIsometry k b hΦ hc v o ρ c hv B hR hB
   let l' := l.map v
-  let C' := l'.map fun r ↦ markedBoundaryMap hΦ s (Pi.single r 1)
+  let C' := l'.map fun r ↦ markedBoundaryMap k hΦ s (Pi.single r 1)
   have hlist : C.map q.toLinearMap = C' := by
     simp only [C, C', l', List.map_map]
     exact congrArg (fun f ↦ l.map f) (funext hq)
@@ -141,7 +139,7 @@ theorem exists_numberedContractedPicardIsometry (hv : (∀ j,
       fun hj ↦ ⟨j, (hl j).mpr hj, rfl⟩⟩
   have hspan : (Span C).map q.toLinearMap = E := by
     dsimp only [E]
-    rw [markedExceptionalSpan_eq_span_compl_survivingRays hΦ b s c hT e hD, Submodule.map_span]
+    rw [markedExceptionalSpan_eq_span_compl_survivingRays k hΦ b s c hT e hD, Submodule.map_span]
     congr 1
     ext x
     simp only [Set.mem_image, Set.mem_ofPred_eq, ← List.mem_map, hlist]
@@ -156,14 +154,14 @@ theorem exists_numberedContractedPicardIsometry (hv : (∀ j,
     simpa only [List.forall_mem_map, hpair] using hsq
   refine ⟨g.trans g₀, fun x ↦ q.injective ?_⟩
   have hx := contractedPicardMarking_symm_boundaryPrime_eq_projectOffNegOnes
-    hΦ b s c hT e he hD l' x hl' hsq'
+    k hΦ b s c hT e he hD l' x hl' hsq'
   rw [BilinForm.IsometryEquiv.symm_trans_apply]
   have hleft := BilinForm.IsometryEquiv.coe_ofSubmodules_symm_apply q hmap
     (g₀.symm (Additive.ofMul (primeDivisorClass (D.boundaryPrimeEmbedding x))))
   have hproj := B.map_projectOffNegOnes q.toLinearMap hpair C (R.mkQ (strict (v.symm (a x))))
   rw [hlist] at hproj
   have hinput : q.toLinearMap (R.mkQ (strict (v.symm (a x)))) =
-      markedBoundaryMap hΦ s (Pi.single (a x) 1) := by
+      markedBoundaryMap k hΦ s (Pi.single (a x) 1) := by
     simpa only [LinearEquiv.coe_coe, BilinForm.IsometryEquiv.coe_toLinearEquiv,
       Equiv.apply_symm_apply] using hq (v.symm (a x))
   rw [hinput] at hproj

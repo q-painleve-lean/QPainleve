@@ -37,51 +37,54 @@ open Scheme.IdealSheafData
 
 namespace TauCeti.Toric.Fan
 
-variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V] {i : N →+ V}
-  (Φ : Fan i) (b : Module.Basis (Fin 2) ℤ N) {v : N} (c : ℂ)
+section
+
+variable (K : Type) [CommRing K] [IsDomain K] {N V : Type}
+  [AddCommGroup N] [AddCommGroup V] [Module ℝ V] {i : N →+ V}
+  (Φ : Fan i) (b : Module.Basis (Fin 2) ℤ N) {v : N} (c : K)
   (hv : v ≠ 0) (hpos : PointedCone.hull ℝ {i v} ∈ Φ.cones)
   (hneg : PointedCone.hull ℝ {i (-v)} ∈ Φ.cones)
 
 local notation "Ψ" => Φ.mutationFan b hv hpos hneg
 local notation "h₀" => Φ.detCharacter_nonneg_or_nonpos b hv hpos hneg
 local notation "h₁" => Φ.mutationDetCharacter_nonneg_or_nonpos b hv hpos hneg
-local notation "U₀" => Φ.mutationComplement b h₀ c
-local notation "U₁" => mutationComplement (Ψ) b h₁ c
-local notation "E" => Φ.mutationComplementIso b c hv hpos hneg
+local notation "U₀" => Φ.mutationComplement (K := K) b h₀ c
+local notation "U₁" => mutationComplement (K := K) (Ψ) b h₁ c
+local notation "E" => Φ.mutationComplementIso (K := K) b c hv hpos hneg
 local notation "hΦ" => Nonempty.intro (Subtype.mk _ hpos : Φ.cones)
 local notation "hΨ" => Nonempty.intro (Φ.mutationFanConeEquiv b hv hpos hneg (Subtype.mk _ hpos))
 
-private theorem dense_mutationComplement : Dense (U₀ : Set Φ.algebraicRealization) := by
+private theorem dense_mutationComplement : Dense (U₀ : Set (Φ.finiteFanScheme K)) := by
   let : Nonempty Φ.cones := hΦ
-  have := Φ.isIntegral_mutationComplement_source b c hv hpos hneg
+  have := Φ.isIntegral_mutationComplement_source (K := K) b c hv hpos hneg
   exact (U₀).isOpen.dense (Set.nonempty_coe_sort.mp (inferInstance : Nonempty (U₀).toScheme))
 
 /-- The elementary transformation on the complement of the pivot fiber, viewed as a
 partial map from the original toric surface to the mutated one. -/
-def mutationPartialMap : Φ.algebraicRealization.PartialMap (Ψ).algebraicRealization where
+def mutationPartialMap : (Φ.finiteFanScheme K).PartialMap (Fan.finiteFanScheme K (Ψ)) where
   domain := U₀
-  dense_domain := Φ.dense_mutationComplement b c hv hpos hneg
+  dense_domain := Φ.dense_mutationComplement (K := K) b c hv hpos hneg
   hom := (E).hom ≫ (U₁).ι
 
 @[simp]
-theorem mutationPartialMap_domain : (Φ.mutationPartialMap b c hv hpos hneg).domain = U₀ := (rfl)
+theorem mutationPartialMap_domain : (Φ.mutationPartialMap K b c hv hpos hneg).domain = U₀ := (rfl)
 
 @[simp]
 theorem mutationPartialMap_hom :
-    (Φ.mutationPartialMap b c hv hpos hneg).hom =
-      (Φ.algebraicRealization.isoOfEq (Φ.mutationPartialMap_domain b c hv hpos hneg)).hom ≫
+    (Φ.mutationPartialMap K b c hv hpos hneg).hom =
+      ((Φ.finiteFanScheme K).isoOfEq (Φ.mutationPartialMap_domain K b c hv hpos hneg)).hom ≫
         (E).hom ≫ (U₁).ι := by
   unfold mutationPartialMap
   simp
 
-instance : IsDominant (Φ.mutationPartialMap b c hv hpos hneg).hom := by
+instance : IsDominant (Φ.mutationPartialMap K b c hv hpos hneg).hom := by
   let : Nonempty (Ψ).cones := hΨ
-  have := Φ.isIntegral_mutationComplement_target b c hv hpos hneg
+  have := Φ.isIntegral_mutationComplement_target (K := K) b c hv hpos hneg
   unfold mutationPartialMap
   infer_instance
 
-instance : (Φ.mutationPartialMap b c hv hpos hneg).toRationalMap.IsDominant :=
-  (Φ.mutationPartialMap b c hv hpos hneg).isDominant_toRationalMap_iff.mpr inferInstance
+instance : (Φ.mutationPartialMap K b c hv hpos hneg).toRationalMap.IsDominant :=
+  (Φ.mutationPartialMap K b c hv hpos hneg).isDominant_toRationalMap_iff.mpr inferInstance
 
 /-- The dominant rational map of the elementary transformation induces the same function field
 pullback as the isomorphism on the complements of its pivot fiber. -/
@@ -89,16 +92,16 @@ pullback as the isomorphism on the complements of its pivot fiber. -/
 theorem functionFieldMap_mutationPartialMap_toRationalMap :
     letI : Nonempty Φ.cones := hΦ
     letI : Nonempty (Ψ).cones := hΨ
-    (Φ.mutationPartialMap b c hv hpos hneg).toRationalMap.functionFieldMap =
-      Φ.mutationComplementPullback b c hv hpos hneg := by
+    (Φ.mutationPartialMap K b c hv hpos hneg).toRationalMap.functionFieldMap =
+      Φ.mutationComplementPullback (K := K) b c hv hpos hneg := by
   let : Nonempty Φ.cones := hΦ
   let : Nonempty (Ψ).cones := hΨ
-  have := Φ.isIntegral_mutationComplement_source b c hv hpos hneg
-  have := Φ.isIntegral_mutationComplement_target b c hv hpos hneg
-  let p := Φ.mutationPartialMap b c hv hpos hneg
+  have := Φ.isIntegral_mutationComplement_source (K := K) b c hv hpos hneg
+  have := Φ.isIntegral_mutationComplement_target (K := K) b c hv hpos hneg
+  let p := Φ.mutationPartialMap K b c hv hpos hneg
   have : IsIntegral p.domain.toScheme := by
     simpa only [p, mutationPartialMap_domain] using
-      Φ.isIntegral_mutationComplement_source b c hv hpos hneg
+      Φ.isIntegral_mutationComplement_source (K := K) b c hv hpos hneg
   have := Opens.isDominant_ι p.dense_domain
   have heq := (Scheme.RationalMap.functionFieldMap_eq_iff _ _).mpr
     p.hom_toRationalMap_eq_comp
@@ -108,10 +111,14 @@ theorem functionFieldMap_mutationPartialMap_toRationalMap :
   rw [← heq]
   simp only [p, mutationPartialMap, mutationComplementPullback_comp_functionFieldMap]
 
+end
+
 section Pivot
 
-variable {Φ} (ρ : Φ.Ray)
-  (hOpp : PointedCone.hull ℝ {i (-ρ.primitiveGenerator)} ∈ Φ.cones) (a : ℂˣ)
+variable (K : Type) [Field K] {N V : Type}
+  [AddCommGroup N] [AddCommGroup V] [Module ℝ V] {i : N →+ V}
+  {Φ : Fan i} (b : Module.Basis (Fin 2) ℤ N) (ρ : Φ.Ray)
+  (hOpp : PointedCone.hull ℝ {i (-ρ.primitiveGenerator)} ∈ Φ.cones) (a : Kˣ)
 
 local notation "vp" => Ray.primitiveGenerator ρ
 local notation "hp" => Ray.hull_primitiveGenerator_mem ρ
@@ -120,86 +127,86 @@ local notation "Φ'" => Φ.mutationFan b hnz hp hOpp
 local notation "hs" => Nonempty.intro (Ray.toCone Φ ρ)
 local notation "ht" => Nonempty.intro (Φ.mutationFanConeEquiv b hnz hp hOpp (Ray.toCone Φ ρ))
 local notation "Us" =>
-  Φ.mutationComplement b (Φ.detCharacter_nonneg_or_nonpos b hnz hp hOpp) (a : ℂ)
+  Φ.mutationComplement (K := K) b (Φ.detCharacter_nonneg_or_nonpos b hnz hp hOpp) (a : K)
 local notation "Ut" =>
-  mutationComplement (Φ') b (Φ.mutationDetCharacter_nonneg_or_nonpos b hnz hp hOpp) (a : ℂ)
-local notation "C" => Φ.mutationComplementIso b (a : ℂ) hnz hp hOpp
-local notation "I₀" => Ray.mutationSourceCenterIdeal b ρ a
-local notation "I₁" => Ray.mutationTargetCenterIdeal b ρ hOpp a
-local notation "e" => Ray.mutationBlowupIso b ρ hOpp a
-local notation "q" => Scheme.PartialMap.toRationalMap (Φ.mutationPartialMap b (a : ℂ) hnz hp hOpp)
+  mutationComplement (K := K) (Φ') b (Φ.mutationDetCharacter_nonneg_or_nonpos b hnz hp hOpp) (a : K)
+local notation "C" => Φ.mutationComplementIso (K := K) b (a : K) hnz hp hOpp
+local notation "I₀" => ρ.mutationSourceCenterIdeal (K := K) b a
+local notation "I₁" => ρ.mutationTargetCenterIdeal (K := K) b hOpp a
+local notation "e" => ρ.mutationBlowupIso (K := K) b hOpp a
+local notation "q" => Scheme.PartialMap.toRationalMap (Φ.mutationPartialMap K b (a : K) hnz hp hOpp)
 
 include hOpp in
 private theorem dense_source_pivot_compl :
-    Dense ((I₀).support.compl : Set Φ.algebraicRealization) := by
+    Dense ((I₀).support.compl : Set (Φ.finiteFanScheme K)) := by
   let : Nonempty Φ.cones := hs
-  have := Φ.isIntegral_mutationComplement_source b (a : ℂ) hnz hp hOpp
+  have := Φ.isIntegral_mutationComplement_source (K := K) b (a : K) hnz hp hOpp
   exact (I₀).dense_compl_support_of_comap_eq_top (Us).ι
-    (ρ.mutationSourceCenterIdeal_comap_complement b hOpp a)
+    (ρ.mutationSourceCenterIdeal_comap_complement (K := K) b hOpp a)
 
 private theorem dense_target_pivot_compl :
-    Dense ((I₁).support.compl : Set (Φ').algebraicRealization) := by
+    Dense ((I₁).support.compl : Set (Fan.finiteFanScheme K (Φ'))) := by
   let : Nonempty (Φ').cones := ht
-  have := Φ.isIntegral_mutationComplement_target b (a : ℂ) hnz hp hOpp
+  have := Φ.isIntegral_mutationComplement_target (K := K) b (a : K) hnz hp hOpp
   exact (I₁).dense_compl_support_of_comap_eq_top (Ut).ι
-    (ρ.mutationTargetCenterIdeal_comap_complement b hOpp a)
+    (ρ.mutationTargetCenterIdeal_comap_complement (K := K) b hOpp a)
 
 include hOpp in
 /-- The blowup at the original pivot center is integral. -/
 theorem Ray.isIntegral_mutationSourceBlowup : IsIntegral (I₀).blowup := by
   let : Nonempty Φ.cones := hs
   exact (I₀).isIntegral_blowup_of_nonempty_compl_support
-    (Set.nonempty_coe_sort.mpr (dense_source_pivot_compl b ρ hOpp a).nonempty)
+    (Set.nonempty_coe_sort.mpr (dense_source_pivot_compl K b ρ hOpp a).nonempty)
 
 /-- The blowup at the opposite pivot center is integral. -/
 theorem Ray.isIntegral_mutationTargetBlowup : IsIntegral (I₁).blowup := by
-  have := ρ.isIntegral_mutationSourceBlowup b hOpp a
+  have := ρ.isIntegral_mutationSourceBlowup K b hOpp a
   exact IsIntegral.of_isIso (e).hom
 
 include hOpp in
 /-- The projection of the original pivot blowup is a modification. -/
 theorem Ray.isModification_mutationSourceBlowupToBase : IsModification (I₀).blowupToBase :=
-  (I₀).isModification_blowupToBase (dense_source_pivot_compl b ρ hOpp a)
+  (I₀).isModification_blowupToBase (dense_source_pivot_compl K b ρ hOpp a)
 
 /-- The projection of the opposite pivot blowup is a modification. -/
 theorem Ray.isModification_mutationTargetBlowupToBase : IsModification (I₁).blowupToBase :=
-  (I₁).isModification_blowupToBase (dense_target_pivot_compl b ρ hOpp a)
+  (I₁).isModification_blowupToBase (dense_target_pivot_compl K b ρ hOpp a)
 
 /-- The global pivot blowup isomorphism resolves the elementary transformation as an
 equality of rational maps on the source blowup. -/
 theorem Ray.mutationPartialMap_resolved :
     letI : Nonempty Φ.cones := hs
-    letI := ρ.isIntegral_mutationSourceBlowup b hOpp a
-    letI := ρ.isModification_mutationSourceBlowupToBase b hOpp a
+    letI := ρ.isIntegral_mutationSourceBlowup K b hOpp a
+    letI := ρ.isModification_mutationSourceBlowupToBase K b hOpp a
     (I₀).blowupToBase.toRationalMap.comp (q) =
       ((e).hom ≫ (I₁).blowupToBase).toRationalMap := by
   let : Nonempty Φ.cones := hs
   let : Nonempty (Φ').cones := ht
-  have := ρ.isIntegral_mutationSourceBlowup b hOpp a
-  have := ρ.isModification_mutationSourceBlowupToBase b hOpp a
-  have := Φ.isIntegral_mutationComplement_source b (a : ℂ) hnz hp hOpp
+  have := ρ.isIntegral_mutationSourceBlowup K b hOpp a
+  have := ρ.isModification_mutationSourceBlowupToBase K b hOpp a
+  have := Φ.isIntegral_mutationComplement_source (K := K) b (a : K) hnz hp hOpp
   let hI : ((I₀).comap (Us).ι).IsEffectiveCartier :=
-    (ρ.mutationSourceCenterIdeal_comap_complement b hOpp a) ▸ isEffectiveCartier_top _
+    (ρ.mutationSourceCenterIdeal_comap_complement (K := K) b hOpp a) ▸ isEffectiveCartier_top _
   let j := (I₀).blowupLift (Us).ι hI
   have hj : j ≫ (I₀).blowupToBase = (Us).ι := (I₀).blowupLift_blowupToBase _ _
   have : IsOpenImmersion j :=
     MorphismProperty.of_isPullback ((I₀).isPullback_blowupLift _ hI) inferInstance
   have : IsDominant j := inferInstance
   have hcomp : j ≫ (e).hom ≫ (I₁).blowupToBase = (C).hom ≫ (Ut).ι := by
-    rw [← Category.assoc, ρ.mutationComplementBlowupι_comp_mutationBlowupIso_hom b hOpp a,
+    rw [← Category.assoc, ρ.mutationComplementBlowupι_comp_mutationBlowupIso_hom (K := K) b hOpp a,
       Category.assoc, blowupLift_blowupToBase]
   apply Scheme.RationalMap.comp_left_injective j.toRationalMap
   dsimp only
   simp only [← Scheme.RationalMap.comp_assoc, Scheme.RationalMap.comp_toRationalMap,
     Scheme.Hom.toRationalMap_compHom, hj, hcomp]
-  let p := Φ.mutationPartialMap b (a : ℂ) hnz hp hOpp
+  let p := Φ.mutationPartialMap K b (a : K) hnz hp hOpp
   simpa only [p, mutationPartialMap] using
     p.hom_toRationalMap_eq_comp.symm
 
 /-- On a dominant refinement of the pivot blowup, the mutated rational map
 is represented by the refined projection to the opposite pivot blowup. -/
 theorem Ray.mutationPartialMap_resolved_of_comp_eq {W : Scheme} [IsIntegral W]
-    (f : W ⟶ (I₀).blowup) (g : W ⟶ Φ.algebraicRealization) [IsDominant g]
+    (f : W ⟶ (I₀).blowup) (g : W ⟶ Φ.finiteFanScheme K) [IsDominant g]
     (hg : f ≫ (I₀).blowupToBase = g) :
     let : Nonempty Φ.cones := hs
     g.toRationalMap.comp q =
@@ -207,8 +214,8 @@ theorem Ray.mutationPartialMap_resolved_of_comp_eq {W : Scheme} [IsIntegral W]
   subst g
   intro hcones
   let := hcones
-  have := ρ.isIntegral_mutationSourceBlowup b hOpp a
-  have := ρ.isModification_mutationSourceBlowupToBase b hOpp a
+  have := ρ.isIntegral_mutationSourceBlowup K b hOpp a
+  have := ρ.isModification_mutationSourceBlowupToBase K b hOpp a
   have : IsDominant f := IsModification.isDominant_of_comp f (I₀).blowupToBase
   calc
     _ = (f.toRationalMap.comp (I₀).blowupToBase.toRationalMap).comp q := by
@@ -216,7 +223,7 @@ theorem Ray.mutationPartialMap_resolved_of_comp_eq {W : Scheme} [IsIntegral W]
     _ = f.toRationalMap.comp ((I₀).blowupToBase.toRationalMap.comp q) :=
       Scheme.RationalMap.comp_assoc _ _ _
     _ = _ := by
-      rw [ρ.mutationPartialMap_resolved b hOpp a, Scheme.RationalMap.comp_toRationalMap,
+      rw [ρ.mutationPartialMap_resolved K b hOpp a, Scheme.RationalMap.comp_toRationalMap,
         Scheme.Hom.toRationalMap_compHom]
 
 /-- The regular morphism from the pivot blowup to the mutated fan pulls back rational
@@ -224,21 +231,22 @@ functions by the toric mutation followed by the original blowup pullback. -/
 theorem Ray.functionFieldMap_mutationBlowupIso :
     letI : Nonempty Φ.cones := hs
     letI : Nonempty (Φ').cones := ht
-    letI := ρ.isIntegral_mutationSourceBlowup b hOpp a
-    letI := ρ.isIntegral_mutationTargetBlowup b hOpp a
-    letI := ρ.isModification_mutationSourceBlowupToBase b hOpp a
-    letI := ρ.isModification_mutationTargetBlowupToBase b hOpp a
+    letI := ρ.isIntegral_mutationSourceBlowup K b hOpp a
+    letI := ρ.isIntegral_mutationTargetBlowup K b hOpp a
+    letI := ρ.isModification_mutationSourceBlowupToBase K b hOpp a
+    letI := ρ.isModification_mutationTargetBlowupToBase K b hOpp a
     (I₁).blowupToBase.functionFieldMap ≫ (e).hom.functionFieldMap =
-      Φ.mutationComplementPullback b (a : ℂ) hnz hp hOpp ≫ (I₀).blowupToBase.functionFieldMap := by
+      Φ.mutationComplementPullback (K := K) b (a : K) hnz hp hOpp ≫
+        (I₀).blowupToBase.functionFieldMap := by
   let : Nonempty Φ.cones := hs
   let : Nonempty (Φ').cones := ht
-  have := ρ.isIntegral_mutationSourceBlowup b hOpp a
-  have := ρ.isIntegral_mutationTargetBlowup b hOpp a
-  have := ρ.isModification_mutationSourceBlowupToBase b hOpp a
-  have := ρ.isModification_mutationTargetBlowupToBase b hOpp a
+  have := ρ.isIntegral_mutationSourceBlowup K b hOpp a
+  have := ρ.isIntegral_mutationTargetBlowup K b hOpp a
+  have := ρ.isModification_mutationSourceBlowupToBase K b hOpp a
+  have := ρ.isModification_mutationTargetBlowupToBase K b hOpp a
   rw [← Scheme.Hom.functionFieldMap_comp]
   have heq := (Scheme.RationalMap.functionFieldMap_eq_iff _ _).mpr
-    (ρ.mutationPartialMap_resolved b hOpp a).symm
+    (ρ.mutationPartialMap_resolved K b hOpp a).symm
   simpa only [Scheme.RationalMap.functionFieldMap_comp, Scheme.Hom.functionFieldMap_toRationalMap,
     functionFieldMap_mutationPartialMap_toRationalMap] using heq
 
@@ -248,47 +256,49 @@ theorem Ray.functionFieldMap_comp_mutationBlowupIso {W : Scheme} [IrreducibleSpa
     (p : W ⟶ (I₀).blowup) [IsDominant p] :
     letI : Nonempty Φ.cones := hs
     letI : Nonempty (Φ').cones := ht
-    letI := ρ.isIntegral_mutationSourceBlowup b hOpp a
-    letI := ρ.isModification_mutationSourceBlowupToBase b hOpp a
-    letI := ρ.isModification_mutationTargetBlowupToBase b hOpp a
+    letI := ρ.isIntegral_mutationSourceBlowup K b hOpp a
+    letI := ρ.isModification_mutationSourceBlowupToBase K b hOpp a
+    letI := ρ.isModification_mutationTargetBlowupToBase K b hOpp a
     (p ≫ (e).hom ≫ (I₁).blowupToBase).functionFieldMap =
-      Φ.mutationComplementPullback b (a : ℂ) hnz hp hOpp ≫
+      Φ.mutationComplementPullback (K := K) b (a : K) hnz hp hOpp ≫
         (p ≫ (I₀).blowupToBase).functionFieldMap := by
   let : Nonempty Φ.cones := hs
   let : Nonempty (Φ').cones := ht
-  have := ρ.isIntegral_mutationSourceBlowup b hOpp a
-  have := ρ.isIntegral_mutationTargetBlowup b hOpp a
-  have := ρ.isModification_mutationSourceBlowupToBase b hOpp a
-  have := ρ.isModification_mutationTargetBlowupToBase b hOpp a
+  have := ρ.isIntegral_mutationSourceBlowup K b hOpp a
+  have := ρ.isIntegral_mutationTargetBlowup K b hOpp a
+  have := ρ.isModification_mutationSourceBlowupToBase K b hOpp a
+  have := ρ.isModification_mutationTargetBlowupToBase K b hOpp a
   rw [Scheme.Hom.functionFieldMap_comp p, Scheme.Hom.functionFieldMap_comp (e).hom,
-    ρ.functionFieldMap_mutationBlowupIso b hOpp a,
+    ρ.functionFieldMap_mutationBlowupIso K b hOpp a,
     Scheme.Hom.functionFieldMap_comp p, Category.assoc]
 
 /-- A character of the mutated model pulls back on a refined pivot blowup by the
 binomial twist. All characters and the coefficient on the right are interpreted in
 the function field of the refinement. -/
 theorem Ray.functionFieldMap_comp_mutationBlowupIso_character {W : Scheme}
-    [IsIntegral W] [W.Over (Spec (.of ℂ))]
+    [IsIntegral W] [W.Over (Spec (.of K))]
     (p : W ⟶ (I₀).blowup) [IsDominant p]
-    [(p ≫ (I₀).blowupToBase).IsOver (Spec (.of ℂ))] (m : N →+ ℤ) :
+    [(p ≫ (I₀).blowupToBase).IsOver (Spec (.of K))] (m : N →+ ℤ) :
     letI : Nonempty Φ.cones := hs
     letI : Nonempty (Φ').cones := ht
-    letI := ρ.isIntegral_mutationSourceBlowup b hOpp a
-    letI := ρ.isModification_mutationSourceBlowupToBase b hOpp a
-    letI := ρ.isModification_mutationTargetBlowupToBase b hOpp a
-    let z (u : N →+ ℤ) := (p ≫ (I₀).blowupToBase).functionFieldMap (Φ.character (ofAdd u))
-    (p ≫ (e).hom ≫ (I₁).blowupToBase).functionFieldMap ((Φ').character (ofAdd m)) =
-      z m * (1 + algebraMap ℂ W.functionField (a : ℂ) * z (b.detDualEquiv vp).toAddMonoidHom) ^
+    letI := ρ.isIntegral_mutationSourceBlowup K b hOpp a
+    letI := ρ.isModification_mutationSourceBlowupToBase K b hOpp a
+    letI := ρ.isModification_mutationTargetBlowupToBase K b hOpp a
+    let z (u : N →+ ℤ) :=
+      (p ≫ (I₀).blowupToBase).functionFieldMap (Φ.functionFieldCharacter K (ofAdd u))
+    (p ≫ (e).hom ≫ (I₁).blowupToBase).functionFieldMap
+        (Fan.functionFieldCharacter K (Φ') (ofAdd m)) =
+      z m * (1 + algebraMap K W.functionField (a : K) * z (b.detDualEquiv vp).toAddMonoidHom) ^
         (-m vp) := by
   let : Nonempty Φ.cones := hs
   let : Nonempty (Φ').cones := ht
-  have := ρ.isIntegral_mutationSourceBlowup b hOpp a
-  have := ρ.isModification_mutationSourceBlowupToBase b hOpp a
-  have := ρ.isModification_mutationTargetBlowupToBase b hOpp a
+  have := ρ.isIntegral_mutationSourceBlowup K b hOpp a
+  have := ρ.isModification_mutationSourceBlowupToBase K b hOpp a
+  have := ρ.isModification_mutationTargetBlowupToBase K b hOpp a
   dsimp only
-  rw [ρ.functionFieldMap_comp_mutationBlowupIso b hOpp a]
+  rw [ρ.functionFieldMap_comp_mutationBlowupIso K b hOpp a]
   simp only [CommRingCat.comp_apply, mutationComplementPullback_character,
-    map_mul, map_one, map_add, map_zpow₀, Scheme.Hom.functionFieldMap_algebraMap ℂ]
+    map_mul, map_one, map_add, map_zpow₀, Scheme.Hom.functionFieldMap_algebraMap K]
 
 end Pivot
 

@@ -46,8 +46,8 @@ theorem exists_projectivePlane_starSubdivision_opposite_ray (ρ : (Φ).Ray) :
       (subdiv(k,hσ)).liftRay ρ = r 2 ∧
       (Φ).starSubdivisionAlongRay reg (Subtype.property (σ(k))) hσ = r 0 := by
   obtain ⟨k, hk⟩ := (range_primitiveGenerator_projectiveSpace d hi ▸ Set.mem_range_self ρ)
-  obtain ⟨hσ, b, _, hrays, hnew, -, -, hb₀⟩ :=
-    exists_blowup_projectivePlane_vertex_hirzebruchOne d hi k
+  obtain ⟨hcard, b, hnew, hrays, hb₀⟩ := projectivePlane_vertex_starSubdivision_rays d hi k
+  let hσ := ne_bot_of_card_toricRay_eq_two hcard
   obtain ⟨r, hr⟩ := exists_rayEquiv_of_hirzebruch_ray_generators b 1
     (by simpa only [Nat.cast_one, one_smul] using hrays)
   refine ⟨k, hσ, b, r, by simpa only [Nat.cast_one] using hr, ?_, ?_⟩

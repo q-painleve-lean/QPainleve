@@ -12,12 +12,11 @@ public import TauCeti.Geometry.Toric.Algebraic.Fan.Product.Basic
 
 import QPainleve.Geometry.Toric.Fan.Hirzebruch.Corner
 import QPainleve.Geometry.Toric.Fan.Ruling.ChartProduct
-import QPainleve.Geometry.Toric.Fan.Scheme
+import QPainleve.Geometry.Toric.BaseChange.Product
+import QPainleve.Geometry.Toric.BaseChange.Subfan
 import QPainleve.Geometry.Toric.Lattice
 import Mathlib.LinearAlgebra.Transvection.Basic
 import TauCeti.Data.Fin.Rev
-import TauCeti.Geometry.Toric.Algebraic.Fan.Product.Isomorphism
-import TauCeti.Geometry.Toric.Algebraic.Fan.SubfanScheme
 
 /-!
 # Affine trivializations of Hirzebruch rulings
@@ -29,13 +28,13 @@ ray to the axis, keeping the base character unchanged. This determines the monom
 coordinates used to compare Hirzebruch surfaces with split projective bundles.
 
 The scheme comparisons use Tau Ceti's
-`FanHom.isPullback_preimageSubfan_algebraicMap` and
-`Fan.isPullback_fst_snd_algebraicMap`.
+`FanHom.isPullback_preimageSubfan_finiteFanSchemeHom` and
+`Fan.isPullback_fst_snd_finiteFanSchemeHom`.
 -/
 
 public noncomputable section
 
-open AlgebraicGeometry CategoryTheory Limits Module Multiplicative PointedCone
+open AlgebraicGeometry CategoryTheory Limits Module PointedCone
 open TauCeti.AlgebraicGeometry (projectiveLine)
 
 namespace TauCeti.Toric.Fan
@@ -45,7 +44,9 @@ local notation "P₁" => Fan.projectiveSpace (Pi.basisFun ℤ (Fin 1)) (isIntegr
 local notation "Z₁" => Fin 1 → ℤ
 local notation "W" => Fin 1 → ℝ
 local notation "i₁" => AddMonoidHom.compLeft (Int.castAddHom ℝ) (Fin 1)
-local notation "S" => Spec (CommRingCat.of ℂ)
+variable (K : Type) [CommRing K]
+
+local notation "S" => Spec (CommRingCat.of K)
 
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {Φ : Fan i} (b : Basis (Fin 2) ℤ N) (e : ℤ)
@@ -105,12 +106,12 @@ of the ambient Hirzebruch fan. -/
 @[reassoc]
 theorem affineToricChartι_comp_hirzebruchRulingAffineFanInclusion (k : Fin 2)
     (σ : (hirzebruchRulingAffineFan b e r hr k).cones) :
-    (hirzebruchRulingAffineFan b e r hr k).affineToricChartι σ ≫
-      (hirzebruchRulingAffineFanInclusion b e r hr k).algebraicMap =
-      Φ.affineToricChartι ⟨σ.val, by
+    (hirzebruchRulingAffineFan b e r hr k).affineChartι K σ ≫
+      ((hirzebruchRulingAffineFanInclusion b e r hr k).finiteFanSchemeHom K) =
+      Φ.affineChartι K ⟨σ.val, by
         exact (rulingFanHom b e r hr).preimageCones_subset
           (projectiveLineAffineFan k).cones σ.property⟩ :=
-  affineToricChartι_comp_subfanInclusion_algebraicMap _ _ _ _ σ
+  affineChartι_comp_subfanInclusion_finiteFanSchemeHom K _ _ _ _ σ
 
 private abbrev productFan (k : Fin 2) := (P₁).prod (projectiveLineAffineFan k)
 
@@ -365,78 +366,78 @@ theorem hirzebruchRulingAffineFanEquiv_latticeEquiv_transition
       (x₀.1 + e • x₀.2, x₀.2) := by
   ext j <;> simp [hirzebruchRulingAffineFanEquiv_latticeEquiv_apply]
 
-local notation "g" => Fan.characterRuling Φ (LinearMap.toAddMonoidHom (Basis.coord b 1))
+local notation "g" => Fan.characterRuling K Φ (LinearMap.toAddMonoidHom (Basis.coord b 1))
   (nonneg_or_nonpos_hirzebruch_ruling_character b e r hr)
 
 include hr in
 /-- The toric scheme of an affine ruling subfan is the scheme-theoretic
 preimage of the corresponding affine chart. -/
 theorem isPullback_hirzebruchRulingAffineFan (k : Fin 2) :
-    IsPullback (hirzebruchRulingAffineFanInclusion b e r hr k).algebraicMap
-      (hirzebruchRulingAffineFanProjection b e r hr k).algebraicMap
-      g (projectiveLineAffineFanι k) := by
-  have hbase : IsPullback (projectiveLineAffineFanInclusion k).algebraicMap (𝟙 _)
-      projectiveLineToricIso.hom (projectiveLineAffineFanι k) :=
+    IsPullback ((hirzebruchRulingAffineFanInclusion b e r hr k).finiteFanSchemeHom K)
+      ((hirzebruchRulingAffineFanProjection b e r hr k).finiteFanSchemeHom K)
+      g (projectiveLineAffineFanι K k) := by
+  have hbase : IsPullback ((projectiveLineAffineFanInclusion k).finiteFanSchemeHom K) (𝟙 _)
+      (projectiveLineToricIso K).hom (projectiveLineAffineFanι K k) :=
     IsPullback.of_vert_isIso ⟨by rw [Category.id_comp, projectiveLineAffineFanι_def]⟩
-  have hpre : IsPullback (hirzebruchRulingAffineFanInclusion b e r hr k).algebraicMap
-      (hirzebruchRulingAffineFanProjection b e r hr k).algebraicMap
-      (rulingFanHom b e r hr).algebraicMap
-      (projectiveLineAffineFanInclusion k).algebraicMap :=
-    (rulingFanHom b e r hr).isPullback_preimageSubfan_algebraicMap
+  have hpre : IsPullback ((hirzebruchRulingAffineFanInclusion b e r hr k).finiteFanSchemeHom K)
+      ((hirzebruchRulingAffineFanProjection b e r hr k).finiteFanSchemeHom K)
+      ((rulingFanHom b e r hr).finiteFanSchemeHom K)
+      ((projectiveLineAffineFanInclusion k).finiteFanSchemeHom K) :=
+    (rulingFanHom b e r hr).isPullback_preimageSubfan_finiteFanSchemeHom K
       (projectiveLineAffineFan k).cones (projectiveLineAffineFan_cones_subset k)
       (projectiveLineAffineFan k).mem_of_isFaceOf
-  simpa only [Category.comp_id, characterRuling_def] using hpre.paste_vert hbase
+  simpa only [Category.comp_id, characterRuling_def K] using hpre.paste_vert hbase
 
 include hr in
 private theorem isPullback_rulingProduct (hΦ : Φ.IsRegular) (hc : Φ.IsComplete) (k : Fin 2) :
     IsPullback
-      ((hirzebruchRulingAffineFanEquiv b e r hr hΦ hc k).toFanHom.algebraicMap ≫
-        (FanHom.fst P₁ (projectiveLineAffineFan k)).algebraicMap ≫
-        projectiveLineToricIso.hom)
-      (hirzebruchRulingAffineFanProjection b e r hr k).algebraicMap
-      (projectiveLine ℂ ↘ S) (projectiveLineAffineFan k).algebraicRealizationStructureMap := by
-  refine ((P₁).isPullback_fst_snd_algebraicMap (projectiveLineAffineFan k)).of_iso'
-    (asIso (hirzebruchRulingAffineFanEquiv b e r hr hΦ hc k).toFanHom.algebraicMap)
-    projectiveLineToricIso.symm (Iso.refl _) (Iso.refl _) ?_ ?_ ?_ ?_
+      ((hirzebruchRulingAffineFanEquiv b e r hr hΦ hc k).toFanHom.finiteFanSchemeHom K ≫
+        (FanHom.fst P₁ (projectiveLineAffineFan k)).finiteFanSchemeHom K ≫
+        (projectiveLineToricIso K).hom)
+      ((hirzebruchRulingAffineFanProjection b e r hr k).finiteFanSchemeHom K)
+      (projectiveLine K ↘ S) ((projectiveLineAffineFan k).finiteFanSchemeToSpec K) := by
+  refine ((P₁).isPullback_fst_snd_finiteFanSchemeHom K (projectiveLineAffineFan k)).of_iso'
+    (asIso ((hirzebruchRulingAffineFanEquiv b e r hr hΦ hc k).toFanHom.finiteFanSchemeHom K))
+    (projectiveLineToricIso K).symm (Iso.refl _) (Iso.refl _) ?_ ?_ ?_ ?_
   · simp [Category.assoc]
-  · simpa only [asIso_hom, Iso.refl_hom, Category.comp_id, ← FanHom.algebraicMap_comp]
-      using congrArg FanHom.algebraicMap (snd_comp_hirzebruchRulingAffineFanEquiv
+  · simpa only [asIso_hom, Iso.refl_hom, Category.comp_id, ← FanHom.finiteFanSchemeHom_comp K]
+      using congrArg (FanHom.finiteFanSchemeHom K) (snd_comp_hirzebruchRulingAffineFanEquiv
         b e r hr hΦ hc k)
   · rw [Iso.refl_hom, Category.comp_id, Iso.symm_hom,
-      ← cancel_epi projectiveLineToricIso.hom, Iso.hom_inv_id_assoc,
-      ← Fan.algebraicRealization_over, CategoryTheory.comp_over]
+      ← cancel_epi (projectiveLineToricIso K).hom, Iso.hom_inv_id_assoc,
+      ← Fan.finiteFanScheme_over K, CategoryTheory.comp_over]
   · simp
 
 include hr in
 /-- Over either affine toric chart of the base, a complete regular Hirzebruch
 surface is the product of that chart with the projective line. -/
 def hirzebruchRulingAffineIso (hΦ : Φ.IsRegular) (hc : Φ.IsComplete) (k : Fin 2) :
-    pullback g (projectiveLineAffineFanι k) ≅
-      pullback (projectiveLine ℂ ↘ S)
-        (projectiveLineAffineFan k).algebraicRealizationStructureMap :=
-  (isPullback_hirzebruchRulingAffineFan b e r hr k).isoPullback.symm ≪≫
-    (isPullback_rulingProduct b e r hr hΦ hc k).isoPullback
+    pullback g (projectiveLineAffineFanι K k) ≅
+      pullback (projectiveLine K ↘ S)
+        ((projectiveLineAffineFan k).finiteFanSchemeToSpec K) :=
+  (isPullback_hirzebruchRulingAffineFan K b e r hr k).isoPullback.symm ≪≫
+    (isPullback_rulingProduct K b e r hr hΦ hc k).isoPullback
 
 include hr in
 /-- The product trivialization is an isomorphism over the given affine base chart. -/
 @[reassoc (attr := simp)]
 theorem hirzebruchRulingAffineIso_hom_snd (hΦ : Φ.IsRegular) (hc : Φ.IsComplete) (k : Fin 2) :
-    (hirzebruchRulingAffineIso b e r hr hΦ hc k).hom ≫ pullback.snd _ _ =
+    (hirzebruchRulingAffineIso K b e r hr hΦ hc k).hom ≫ pullback.snd _ _ =
       pullback.snd _ _ := by
   simp only [hirzebruchRulingAffineIso, Iso.trans_hom, Iso.symm_hom, Category.assoc,
     IsPullback.isoPullback_hom_snd]
-  exact (isPullback_hirzebruchRulingAffineFan b e r hr k).isoPullback_inv_snd
+  exact (isPullback_hirzebruchRulingAffineFan K b e r hr k).isoPullback_inv_snd
 
 include hr in
 /-- The fiber projection of the scheme trivialization is induced by the
 first coordinate of the affine fan equivalence. -/
 @[reassoc]
 theorem hirzebruchRulingAffineIso_hom_fst (hΦ : Φ.IsRegular) (hc : Φ.IsComplete) (k : Fin 2) :
-    (isPullback_hirzebruchRulingAffineFan b e r hr k).isoPullback.hom ≫
-      (hirzebruchRulingAffineIso b e r hr hΦ hc k).hom ≫ pullback.fst _ _ =
-      (hirzebruchRulingAffineFanEquiv b e r hr hΦ hc k).toFanHom.algebraicMap ≫
+    (isPullback_hirzebruchRulingAffineFan K b e r hr k).isoPullback.hom ≫
+      (hirzebruchRulingAffineIso K b e r hr hΦ hc k).hom ≫ pullback.fst _ _ =
+      (hirzebruchRulingAffineFanEquiv b e r hr hΦ hc k).toFanHom.finiteFanSchemeHom K ≫
         (FanHom.fst (Fan.projectiveSpace (Pi.basisFun ℤ (Fin 1)) (isIntegralLattice_intCast 1))
-          (projectiveLineAffineFan k)).algebraicMap ≫ projectiveLineToricIso.hom := by
+          (projectiveLineAffineFan k)).finiteFanSchemeHom K ≫ (projectiveLineToricIso K).hom := by
   simp only [hirzebruchRulingAffineIso, Iso.trans_hom, Iso.symm_hom, Category.assoc,
     Iso.hom_inv_id_assoc, IsPullback.isoPullback_hom_fst]
 
@@ -448,20 +449,20 @@ fiber coordinate is the monomial of the first dual basis vector. In the
 second chart its exponent gains `e` times the second dual basis vector. -/
 theorem exists_hirzebruch_characterRuling_affine_chart_product
     (hΦ : Φ.IsRegular) (hc : Φ.IsComplete) (k : Fin 2) :
-    let f := Φ.characterRuling (b.coord 1).toAddMonoidHom
+    let f := Φ.characterRuling K (b.coord 1).toAddMonoidHom
       (nonneg_or_nonpos_hirzebruch_ruling_character b e r hr)
-    let c := projectiveLine.polynomialChartι ℂ k
+    let c := projectiveLine.polynomialChartι K k
     let n := (b.coord 0 + (if k = 0 then 0 else e) • b.coord 1).toAddMonoidHom
-    ∃ (u : pullback f c ⟶ projectiveLine ℂ) (t : Φ.denseTorus ⟶ pullback f c),
-      IsPullback u (pullback.snd f c) (projectiveLine ℂ ↘ S)
-        (Spec.map (CommRingCat.ofHom (algebraMap ℂ (Polynomial ℂ)))) ∧
-      t ≫ pullback.fst f c = Φ.denseTorusι hc.nonempty_cones ∧
-      t ≫ u = projectiveLine.polynomialPoint ℂ (algebraMap ℂ _) 0
-        (MonoidAlgebra.of ℂ _ (ofAdd ((denseTorusDualEquiv Φ.lattice).symm n))) := by
+    ∃ (u : pullback f c ⟶ projectiveLine K) (t : affineChart K Φ.lattice ⊥ ⟶ pullback f c),
+      IsPullback u (pullback.snd f c) (projectiveLine K ↘ S)
+        (Spec.map (CommRingCat.ofHom (algebraMap K (Polynomial K)))) ∧
+      t ≫ pullback.fst f c = Φ.affineChartι K ⟨⊥, Φ.bot_mem hc.nonempty_cones.some.property⟩ ∧
+      t ≫ u = projectiveLine.polynomialPoint K (algebraMap K _) 0
+        (AddMonoidAlgebra.single ⟨n, by simp⟩ 1) := by
   intro f c n
   let h := nonneg_or_nonpos_hirzebruch_ruling_character b e r hr
   rcases eq_or_ne k 0 with rfl | hk
-  · simpa [f, c, n] using Φ.exists_characterRuling_affine_chart_product _ h b rfl 0
+  · simpa [f, c, n] using Φ.exists_characterRuling_affine_chart_product K _ h b rfl 0
       (by simpa using fun j ↦ Φ.hirzebruch_chart_corners b e r hr hΦ hc j 0)
   · let shear := LinearEquiv.transvection (f := (-e) • b.coord 1) (v := b 0)
         (by simp [Basis.coord_apply])
@@ -493,6 +494,6 @@ theorem exists_hirzebruch_characterRuling_affine_chart_product
       simpa only [hd₀, ite_eq_right hk, hd₁, neg_sub] using
         Φ.hirzebruch_chart_corners b e r hr hΦ hc j k
     simpa only [f, c, hfirst] using
-      Φ.exists_characterRuling_affine_chart_product _ h d hcoord k hcorners
+      Φ.exists_characterRuling_affine_chart_product K _ h d hcoord k hcorners
 
 end TauCeti.Toric.Fan

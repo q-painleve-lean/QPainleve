@@ -32,40 +32,44 @@ open TauCeti TauCeti.AlgebraicGeometry TauCeti.Toric Scheme Scheme.IdealSheafDat
 
 namespace QPainleve.SignedClusterModularGroup
 
+variable {k₀ : Type} [Field k₀] [IsAlgClosed k₀]
+
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {Φ : Fan i} [h₀ : Nonempty Φ.cones] {r m n : ℕ} [NeZero m] [NeZero n]
   {L : Type} [AddCommGroup L] {B : LinearMap.BilinForm ℤ L}
   {b : Module.Basis (Fin 2) ℤ N} {s : Fin r → Φ.Ray} {hΦ : Φ.IsRegular}
 
-local notation "S" => Spec (CommRingCat.of ℂ)
-local notation "XTor[" l "]" => Spec (CommRingCat.of (LaurentRing ℂ (Fin l)))
+local notation "S" => Spec (CommRingCat.of k₀)
+local notation "XTor[" l "]" => Spec (CommRingCat.of (LaurentRing k₀ (Fin l)))
 local notation "D[" M "]" => Scheme.Hom.ker (Over.Hom.left (Arrow.hom (MarkedSurface.pair M)))
 local notation "center" c:arg => (fun j : Fin _ ↦ c (ofAdd (Pi.single j 1)))
 
-variable [PrestableFamily ((Φ.boundaryIdeal h₀).subscheme ↘ S)]
-  {γ : Type*} {a : γ → ((Φ.boundaryIdeal h₀).subscheme ↘ S).smoothLocus}
+variable [PrestableFamily ((Φ.toricBoundaryIdeal k₀ h₀).subscheme ↘ Spec (.of k₀))]
+  {γ : Type*} {a : γ → ((Φ.toricBoundaryIdeal k₀ h₀).subscheme ↘ Spec (.of k₀)).smoothLocus}
   {T : NodalCycleNumbering a m} {origin : ZMod m}
-  {ι : L →ₗ[ℤ] Additive (LineBundleClass Φ.algebraicRealization) × (Fin r → ℤ)}
+  {ι : L →ₗ[ℤ] Additive (LineBundleClass (Φ.finiteFanScheme k₀)) × (Fin r → ℤ)}
 
-local notation "F" => LinearMap.BilinForm.prod (Chow.intersectionBilinForm ℂ Φ.algebraicRealization)
+local notation "F" => LinearMap.BilinForm.prod (Chow.intersectionBilinForm k₀
+  (Φ.finiteFanScheme k₀))
   (-(dotProductBilin ℤ ℤ : LinearMap.BilinForm ℤ (Fin r → ℤ)))
 
 namespace ContractedToricFiber
 
-variable {c d : Multiplicative (Fin r → ℤ) →* ℂˣ} {P Q : MarkedSurface ℂ n B XTor[r]}
+variable {c d : Multiplicative (Fin r → ℤ) →* k₀ˣ} {P Q : MarkedSurface k₀ n B
+  (QPainleve.CharacterTorus.scheme k₀ (Fin r →₀ ℤ))}
   (p : ContractedToricFiber b s hΦ T origin ι c P)
   (q : ContractedToricFiber b s hΦ T origin ι d Q)
 
-local notation "rayAt" => Φ.rayFinEquivOfNodalCycleNumbering hΦ T origin
+local notation "rayAt" => Φ.rayFinEquivOfNodalCycleNumbering k₀ hΦ T origin
 
 private theorem strictMono_boundaryRayOffset (hP : D[P].IsEffectiveCartier) :
     StrictMono fun j : Fin n ↦ (rayAt).symm (p.numberedBoundaryRays hP (ZMod.finEquiv n j)) := by
   let : PrestableFamily (P.boundary ↘ S) := P.prestable
-  let e := Φ.rayEquivOfNodalCycleNumbering hΦ T
-  have he (j : ZMod m) : (Φ.boundaryNormalizationComponentEquiv hΦ).symm (T.component j) =
+  let e := Φ.rayEquivOfNodalCycleNumbering k₀ hΦ T
+  have he (j : ZMod m) : (Φ.boundaryNormalizationComponentEquiv k₀ hΦ).symm (T.component j) =
       e j :=
-    (Equiv.symm_apply_eq _).mpr (Φ.boundaryNormalizationComponentEquiv_rayEquivOfNodalCycleNumbering
-      hΦ T j).symm
+    (Equiv.symm_apply_eq _).mpr
+      (Φ.boundaryNormalizationComponentEquiv_rayEquivOfNodalCycleNumbering k₀ hΦ T j).symm
   let u := (p.numberedBoundaryRays hP).trans e.symm.toEmbedding
   have hzero : u 0 = origin := by
     simp only [u, Function.Embedding.trans_apply, Equiv.toEmbedding_apply,
@@ -156,18 +160,18 @@ theorem numberedBoundaryRays_eq_of_range_eq
   exact (rayAt).symm.injective (by
     simpa only [numberedBoundaryRayOffsets_apply] using DFunLike.congr_fun h k)
 
-variable [Φ.algebraicRealization.IsProjectiveOver ℂ]
+variable [(Φ.finiteFanScheme k₀).IsProjectiveOver k₀]
 
 /-- Two nodal contractions of one marked toric presentation have the same numbered
 rays. The common Picard pullback determines the set of surviving rays. -/
 theorem numberedBoundaryRays_eq_of_nodalContractions
-    [SmoothOfRelativeDimension 2 (Φ.algebraicRealization ↘ S)]
+    [SmoothOfRelativeDimension 2 ((Φ.finiteFanScheme k₀) ↘ S)]
     (hp : p.IsNodalContraction) (hq : q.IsNodalContraction) (hsep : (F).SeparatingRight) :
     p.numberedBoundaryRays hp.cartier = q.numberedBoundaryRays hq.cartier := by
   let : SmoothOfRelativeDimension 2 (P.surface ↘ S) := P.smooth
   let : SmoothOfRelativeDimension 2 (Q.surface ↘ S) := Q.smooth
-  let : P.surface.IsProjectiveOver ℂ := P.projective
-  let : Q.surface.IsProjectiveOver ℂ := Q.projective
+  let : P.surface.IsProjectiveOver k₀ := P.projective
+  let : Q.surface.IsProjectiveOver k₀ := Q.projective
   obtain ⟨_, _, A, hA, e, he⟩ := hp.exists_tower
   obtain ⟨_, _, U, hU, f, hf⟩ := hq.exists_tower
   let G (x : LineBundleClass Q.surface) :=
@@ -184,7 +188,7 @@ theorem numberedBoundaryRays_eq_of_nodalContractions
   have hover' := hf.symm ▸ q.projection_over
   have hD := he.symm ▸ p.support_comap
   have hD' := hf.symm ▸ q.support_comap
-  have hkeep := Fan.mem_boundaryPrimes_iff_of_matching_picard_markings hΦ b s
+  have hkeep := Fan.mem_boundaryPrimes_iff_of_matching_picard_markings k₀ hΦ b s
     (center c) hA e.symm hover hD (center d) hU f.symm hover' hD' hsep G hG hPic
   apply p.numberedBoundaryRays_eq_of_range_eq q hp.cartier hq.cartier
   ext ρ
@@ -201,8 +205,8 @@ theorem boundaryClass_eq_of_range_numberedBoundaryRays_eq
   classical
   let : SmoothOfRelativeDimension 2 (P.surface ↘ S) := P.smooth
   let : SmoothOfRelativeDimension 2 (Q.surface ↘ S) := Q.smooth
-  let : P.surface.IsProjectiveOver ℂ := P.projective
-  let : Q.surface.IsProjectiveOver ℂ := Q.projective
+  let : P.surface.IsProjectiveOver k₀ := P.projective
+  let : Q.surface.IsProjectiveOver k₀ := Q.projective
   let := (P.surface ↘ S).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two
   let := (Q.surface ↘ S).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two
   obtain ⟨_, _, A, hA, e, he⟩ := hp.exists_tower
@@ -212,26 +216,26 @@ theorem boundaryClass_eq_of_range_numberedBoundaryRays_eq
   have hD := he.symm ▸ p.support_comap
   have hD' := hf.symm ▸ q.support_comap
   have hN : Module.finrank ℤ N = 2 := by simpa using Module.finrank_eq_card_basis b
-  let : SmoothOfRelativeDimension 2 (Φ.algebraicRealization ↘ S) := by
-    rw [← hN, Φ.algebraicRealization_over]
-    exact Φ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
+  let : SmoothOfRelativeDimension 2 ((Φ.finiteFanScheme k₀) ↘ S) := by
+    rw [← hN, Φ.finiteFanScheme_over k₀]
+    exact Φ.smoothOfRelativeDimension_finiteFanSchemeToSpec k₀ hΦ
   let : IsModification (e.inv ≫ A.toBase) := he.symm ▸ p.modification
   let : IsModification (f.inv ≫ U.toBase) := hf.symm ▸ q.modification
   have hsurvives :
-      Set.range (Fan.contractedBoundaryRayEmbedding hΦ b s (center c)
+      Set.range (Fan.contractedBoundaryRayEmbedding k₀ hΦ b s (center c)
         (e.inv ≫ A.toBase) hD) =
-      Set.range (Fan.contractedBoundaryRayEmbedding hΦ b s (center d)
+      Set.range (Fan.contractedBoundaryRayEmbedding k₀ hΦ b s (center d)
         (f.inv ≫ U.toBase) hD') := by
     simpa only [he, hf, p.range_numberedBoundaryRays, q.range_numberedBoundaryRays,
       boundaryRayEmbedding_def] using hrange
-  have hspan := (Fan.markedExceptionalSpan_eq_span_compl_survivingRays hΦ b s
+  have hspan := (Fan.markedExceptionalSpan_eq_span_compl_survivingRays k₀ hΦ b s
       (center c) hA e.symm hD).trans
-    (hsurvives ▸ (Fan.markedExceptionalSpan_eq_span_compl_survivingRays hΦ b s
+    (hsurvives ▸ (Fan.markedExceptionalSpan_eq_span_compl_survivingRays k₀ hΦ b s
       (center d) hU f.symm hD').symm)
   have hrays := p.numberedBoundaryRays_eq_of_range_eq q hp.cartier hq.cartier hrange
   funext j
   apply hι
-  have hclass := Fan.marked_pullback_prime_eq_of_contractedBoundaryRayEmbedding_eq hΦ b s
+  have hclass := Fan.marked_pullback_prime_eq_of_contractedBoundaryRayEmbedding_eq k₀ hΦ b s
     (center c) hA e.symm hover hD (center d) hU f.symm hover' hD' hspan
     (P.numberedBoundaryPrimes hp.cartier j) (Q.numberedBoundaryPrimes hq.cartier j)
     (by simpa only [Iso.symm_hom, he, hf, numberedBoundaryRays_apply,
@@ -250,14 +254,15 @@ end ContractedToricFiber
 
 namespace GeometricRealization.HasNodalToricTargetModels
 
-variable {T₀ T₁ : Over S} {M : Point T₁ → MarkedSurface ℂ n B XTor[r]}
-  {centers : Point T₁ → Multiplicative (Fin r → ℤ) →* ℂˣ}
+variable {T₀ T₁ : Over (Spec (.of k₀))} {M : Point T₁ → MarkedSurface k₀ n B
+  (QPainleve.CharacterTorus.scheme k₀ (Fin r →₀ ℤ))}
+  {centers : Point T₁ → Multiplicative (Fin r → ℤ) →* k₀ˣ}
   {C : T₀.left.PartialMap T₁.left} [C.IsOver T₀.hom T₁.hom]
 
 /-- Nodal models with a common Picard marking have the surviving rays of the reference
 contraction at every reached target center. -/
-theorem of_nodalContractions [Φ.algebraicRealization.IsProjectiveOver ℂ]
-    [SmoothOfRelativeDimension 2 (Φ.algebraicRealization ↘ S)]
+theorem of_nodalContractions [(Φ.finiteFanScheme k₀).IsProjectiveOver k₀]
+    [SmoothOfRelativeDimension 2 ((Φ.finiteFanScheme k₀) ↘ S)]
     (hsep : (F).SeparatingRight)
     {c₀ : Point T₁}
     (p₀ : ContractedToricFiber b s hΦ T origin ι (centers c₀) (M c₀))

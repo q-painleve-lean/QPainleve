@@ -11,8 +11,7 @@ public import QPainleve.SignedClusterModularGroup.SarkisovDegree.Plane.Isomorphi
 
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Modification
 import QPainleve.AlgebraicGeometry.IdealSheaf.Restriction
-import QPainleve.Geometry.Toric.Fan.Separated
-import Mathlib.Analysis.Complex.Polynomial.Basic
+import QPainleve.Geometry.Toric.BaseChange.Fan
 import TauCeti.AlgebraicGeometry.IdealSheaf.Reduced
 
 /-!
@@ -35,21 +34,25 @@ namespace QPainleve.BlowupTower.IsClosedPointTower
 
 attribute [local instance] MvPolynomial.gradedAlgebra
 
-local notation "S" => Spec (CommRingCat.of ℂ)
-local notation "P" => Proj (homogeneousSubmodule ℂ (Fin 3 → ℂ))
-local notation "H" => mk (Proj.symmetricAlgebraTwistingBundle ℂ (Fin 3 → ℂ) 1)
+universe u
+
+variable (k : Type u) [Field k] [IsAlgClosed k]
+
+local notation "S" => Spec (CommRingCat.of k)
+local notation "P" => Proj (homogeneousSubmodule k (Fin 3 → k))
+local notation "H" => mk (Proj.symmetricAlgebraTwistingBundle k (Fin 3 → k) 1)
 local notation "s" => (P ↘ S)
-local notation "coords" => Pi.basisFun ℂ (Fin 3)
+local notation "coords" => Pi.basisFun k (Fin 3)
 local notation "degree" => Module.Basis.picardTwistEquiv coords
 local notation "planeIso(" b "," h ")" =>
-  Fan.projectivePlaneIso b h ≪≫ Module.Basis.polynomialProjIso coords
+  Fan.projectivePlaneIso k b h ≪≫ Module.Basis.polynomialProjIso coords
 
-variable {N V N' V' : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
+variable {N N' : Type u} {V V' : Type*} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   [AddCommGroup N'] [AddCommGroup V'] [Module ℝ V']
   {i : N →+ V} {i' : N' →+ V'}
 
 local notation "D(" b "," h ")" =>
-  Fan.boundaryIdeal (Fan.projectiveSpace b h)
+  Fan.toricBoundaryIdeal k (Fan.projectiveSpace b h)
     (Fan.IsComplete.nonempty_cones (Fan.isComplete_projectiveSpace b h))
 
 /-- The terminal map of a specified degree-one resolution with a common pole ideal
@@ -69,14 +72,14 @@ theorem existsUnique_toric_factorization_of_plane_degree_one
     let v := (T.picardMarking hT s).symm (Additive.ofMul (pullback g H))
     degree v.1 = 1 →
     (D(b,hi).comap (planeIso(b,hi)).inv).comap T.toBase =
-      J * hT.ramificationIdealSheafToBase ℂ →
+      J * hT.ramificationIdealSheafToBase k →
     (D(b',hi').comap (planeIso(b',hi')).inv).comap g =
-      J * ramificationIdealSheaf ℂ g →
+      J * ramificationIdealSheaf k g →
     let Ψ := Fan.projectiveSpace b' hi'
     letI : Nonempty Ψ.cones := (Fan.isComplete_projectiveSpace b' hi').nonempty_cones
-    ∃! q : FanEquiv (Fan.projectiveSpace b hi) Ψ × (Multiplicative (N' →+ ℤ) →* ℂˣ),
-      T.toBase ≫ (planeIso(b,hi)).inv ≫ q.1.toFanHom.algebraicMap ≫
-        (Ψ.torusTranslation q.2).hom ≫ (planeIso(b',hi')).hom = g := by
+    ∃! q : FanEquiv (Fan.projectiveSpace b hi) Ψ × (Multiplicative (N' →+ ℤ) →* kˣ),
+      T.toBase ≫ (planeIso(b,hi)).inv ≫ q.1.toFanHom.finiteFanSchemeHom k ≫
+        (Ψ.torusTranslationIso k q.2).hom ≫ (planeIso(b',hi')).hom = g := by
   intro _ _ _ hd hD hE Ψ
   let := (Fan.isComplete_projectiveSpace b hi).nonempty_cones
   let := (Fan.isComplete_projectiveSpace b' hi').nonempty_cones
@@ -86,21 +89,21 @@ theorem existsUnique_toric_factorization_of_plane_degree_one
     hT.existsUnique_iso_of_plane_degree_one_of_eq_poleIdeal g hg hbir
       (D(b,hi).comap e₀.inv) (D(b',hi').comap e₁.inv) J hd hD hE
   let e := e₀ ≪≫ f ≪≫ e₁.symm
-  let : e₀.hom.IsOver S := Fan.projectivePlaneIso_trans_polynomialProjIso_hom_isOver b hi coords
-  let : e₁.hom.IsOver S := Fan.projectivePlaneIso_trans_polynomialProjIso_hom_isOver b' hi' coords
+  let : e₀.hom.IsOver S := Fan.projectivePlaneIso_trans_polynomialProjIso_hom_isOver k b hi coords
+  let : e₁.hom.IsOver S := Fan.projectivePlaneIso_trans_polynomialProjIso_hom_isOver k b' hi' coords
   have : f.hom.IsOver S := ⟨hfs⟩
   have : e.hom.IsOver S := by
     simpa only [e, Iso.trans_hom, Iso.symm_hom, Category.assoc] using
       (inferInstanceAs ((e₀.hom ≫ f.hom ≫ e₁.inv).IsOver S))
   have ⟨hrad₀, hrad₁⟩ : D(b,hi).radical = D(b,hi) ∧ D(b',hi').radical = D(b',hi') := by
     constructor <;> apply (isReduced_subscheme_iff_radical_eq _).mp <;>
-      rw [Fan.boundaryIdeal_def] <;> infer_instance
+      rw [Fan.toricBoundaryIdeal_def k] <;> infer_instance
   have he : D(b',hi').comap e.hom = D(b,hi) := by
     have h := congrArg (fun I : (P).IdealSheafData ↦ I.comap e₀.hom) hboundary
     simpa only [e, Iso.trans_hom, Iso.symm_hom, radical_comap_of_isOpenImmersion,
       ← comap_comp, ← Category.assoc, Iso.hom_inv_id_assoc, Iso.hom_inv_id, comap_id,
       hrad₀, hrad₁] using h
-  obtain ⟨q, hq, huniq⟩ := Fan.existsUnique_toric_factorization_of_boundary_iso
+  obtain ⟨q, hq, huniq⟩ := Fan.existsUnique_toric_factorization_of_boundary_iso k
     (Fan.isRegular_projectiveSpace b hi) (Fan.isRegular_projectiveSpace b' hi')
     (Fan.isComplete_projectiveSpace b hi) (Fan.isComplete_projectiveSpace b' hi')
     ((Module.finrank_eq_card_basis b).trans (Fintype.card_fin 2))
@@ -112,7 +115,7 @@ theorem existsUnique_toric_factorization_of_plane_degree_one
   · simpa only [Ψ, Category.assoc, reassoc_of% hq] using hproj
   · have := hT.isModification_of_smoothOfRelativeDimension_two s
     have : IsDominant (T.toBase ≫ e₀.inv) := inferInstance
-    have := Ψ.isSeparated_algebraicRealization
+    have := Ψ.isSeparated_finiteFanScheme k
     apply ext_of_isDominant (T.toBase ≫ e₀.inv)
     apply (cancel_mono e₁.hom).mp
     simpa only [Category.assoc] using hr.trans hproj.symm

@@ -10,7 +10,7 @@ public import QPainleve.Geometry.Toric.Fan.StarSubdivision.Boundary
 
 import Mathlib.LinearAlgebra.Transvection.Basic
 import QPainleve.Geometry.Toric.Cone.Coordinates
-import QPainleve.Geometry.Toric.Fan.Boundary.Subdivision
+import QPainleve.AlgebraicGeometry.IdealSheaf.Restriction
 import QPainleve.Geometry.Toric.Fan.StarSubdivision.TwoDimensional
 import QPainleve.Geometry.Toric.Fan.TwoDimensional
 
@@ -30,6 +30,7 @@ public noncomputable section
 
 open PointedCone Module
 open AlgebraicGeometry CategoryTheory TauCeti.AlgebraicGeometry
+open AlgebraicGeometry.Scheme.IdealSheafData
 
 namespace TauCeti.Toric.Fan
 
@@ -278,24 +279,27 @@ theorem exists_star_subdivision_of_ray_eq_sum
 
 end Combinatorial
 
-variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
+universe u
+
+variable (k : Type u) [Field k] [Infinite k] {N V : Type u}
+  [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {Φ : Fan i}
 
 /-- A ray of boundary self-intersection `-1` in a complete regular toric surface
 is the inserted ray of a star subdivision of a complete regular fan. The
 subdivision is along a two-ray cone, and recovers the given fan on its lattice. -/
 theorem exists_star_subdivision_of_ray_self_intersection_neg_one
-    [Φ.algebraicRealization.IsProjectiveOver ℂ]
+    [(Φ.finiteFanScheme k).IsProjectiveOver k]
     (b : Basis (Fin 2) ℤ N) (hΦ : Φ.IsRegular) (hc : Φ.IsComplete) (r : Φ.Ray)
-    (hself : Φ.rayBoundarySelfIntersection hΦ r = -1) :
+    (hself : Φ.rayBoundarySelfIntersection k hΦ r = -1) :
     ∃ (Ψ : Fan i) (hΨ : Ψ.IsRegular) (σ : Ψ.cones)
       (hσ : Nat.card (ToricRay σ.val) = 2),
       Ψ.IsComplete ∧ Ψ.starSubdivisionAlong hΨ σ.property = Φ ∧
         (Ψ.starSubdivisionAlongRay hΨ σ.property (ne_bot_of_card_toricRay_eq_two hσ)).toCone.val =
           r.toCone.val := by
   obtain ⟨p, q, hpDet, hqDet, hn, hsum⟩ :=
-    exists_rayBoundaryPoint_selfIntersection_relation b hΦ hc r
-  rw [← rayBoundarySelfIntersection_def, hself, neg_one_zsmul] at hsum
+    exists_rayBoundaryPoint_selfIntersection_relation k b hΦ hc r
+  rw [← rayBoundarySelfIntersection_def k, hself, neg_one_zsmul] at hsum
   have hsum' : p.primitiveGenerator + q.primitiveGenerator = r.primitiveGenerator := by
     calc
       _ = (p.primitiveGenerator + -r.primitiveGenerator + q.primitiveGenerator) +
@@ -315,28 +319,31 @@ theorem exists_star_subdivision_of_ray_self_intersection_neg_one
 blowup of a distinguished point of another smooth complete toric surface. The
 blowup identification matches the reduced total transform of the toric boundary. -/
 theorem exists_iso_blowup_of_ray_self_intersection_neg_one
-    [Φ.algebraicRealization.IsProjectiveOver ℂ]
+    [(Φ.finiteFanScheme k).IsProjectiveOver k]
     (b : Basis (Fin 2) ℤ N) (hΦ : Φ.IsRegular) (hc : Φ.IsComplete) (r : Φ.Ray)
-    (hself : Φ.rayBoundarySelfIntersection hΦ r = -1) :
+    (hself : Φ.rayBoundarySelfIntersection k hΦ r = -1) :
     ∃ (Ψ : Fan i) (_ : Ψ.IsRegular) (hΨc : Ψ.IsComplete) (σ : Ψ.cones)
       (_ : Nat.card (ToricRay σ.val) = 2) (h : Φ.IsSubdivision Ψ)
-      (e : Φ.algebraicRealization ≅ (Ψ.distinguishedPointHom σ).ker.blowup),
-      e.hom ≫ (Ψ.distinguishedPointHom σ).ker.blowupToBase = h.toFanHom.algebraicMap ∧
-      (((Ψ.distinguishedPointHom σ).ker).comap
-        (Ψ.distinguishedPointHom σ).ker.blowupToBase).comap e.hom = Φ.rayBoundaryIdeal hΦ r ∧
-      (((Ψ.boundaryIdeal hΨc.nonempty_cones).comap
-        (Ψ.distinguishedPointHom σ).ker.blowupToBase).radical).comap e.hom =
-          Φ.boundaryIdeal hc.nonempty_cones := by
+      (e : (Φ.finiteFanScheme k) ≅ (Ψ.distinguishedSection (R := k) σ).ker.blowup),
+      e.hom ≫ (Ψ.distinguishedSection (R := k) σ).ker.blowupToBase =
+        h.toFanHom.finiteFanSchemeHom k ∧
+      (((Ψ.distinguishedSection (R := k) σ).ker).comap
+        (Ψ.distinguishedSection (R := k) σ).ker.blowupToBase).comap e.hom =
+          Φ.rayDivisorIdeal k hΦ r ∧
+      (((Ψ.toricBoundaryIdeal k hΨc.nonempty_cones).comap
+        (Ψ.distinguishedSection (R := k) σ).ker.blowupToBase).radical).comap e.hom =
+          Φ.toricBoundaryIdeal k hc.nonempty_cones := by
   obtain ⟨Ψ, hΨ, σ, hσ, hΨc, h, hr⟩ :=
-    exists_star_subdivision_of_ray_self_intersection_neg_one b hΦ hc r hself
+    exists_star_subdivision_of_ray_self_intersection_neg_one k b hΦ hc r hself
   subst Φ
   have hN : Module.finrank ℤ N = 2 := by simpa using Module.finrank_eq_card_basis b
-  obtain ⟨h₀, e, -, he, -⟩ := exists_iso_blowup_starSubdivisionAlong hΨ σ hN hσ
+  obtain ⟨h₀, e, -, he, -⟩ := exists_iso_blowup_starSubdivisionAlong k hΨ σ hN hσ
   let hsub := Ψ.starSubdivisionAlong_isSubdivision hΨ σ.property h₀
   have hr' : Ψ.starSubdivisionAlongRay hΨ σ.property h₀ = r := Subtype.ext (Subtype.ext hr)
-  refine ⟨Ψ, hΨ, hΨc, σ, hσ, hsub, e, he, ?_,
-    hsub.radical_comap_boundaryIdeal_of_iso hc.nonempty_cones hΨc.nonempty_cones _ e he⟩
-  rw [← Scheme.IdealSheafData.comap_comp, he, ← hr']
-  exact comap_ker_distinguishedPointHom_eq_rayBoundaryIdeal hΨ σ h₀ hN hσ
+  refine ⟨Ψ, hΨ, hΨc, σ, hσ, hsub, e, he, ?_, ?_⟩
+  · rw [← comap_comp, he, ← hr']
+    exact comap_ker_distinguishedSection_eq_rayDivisorIdeal k hΨ σ h₀ hN hσ
+  · rw [← radical_comap_of_isOpenImmersion, ← comap_comp, he]
+    exact hsub.radical_comap_toricBoundaryIdeal k hc.nonempty_cones hΨc.nonempty_cones
 
 end TauCeti.Toric.Fan

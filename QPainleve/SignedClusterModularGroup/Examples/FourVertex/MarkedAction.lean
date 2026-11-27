@@ -5,7 +5,6 @@ Authors: The QPainleve contributors
 -/
 module
 
-public import Mathlib.Basic.Complex.Basic
 public import QPainleve.SignedClusterModularGroup.Boundary.Restriction
 public import QPainleve.SignedClusterModularGroup.Examples.FourVertex.PicardAction
 
@@ -37,9 +36,11 @@ open Scheme Scheme.IdealSheafData TauCeti TauCeti.AlgebraicGeometry TauCeti.Tori
 
 namespace QPainleve.FourVertex
 
+variable {k₀ : Type} [Field k₀] [IsAlgClosed k₀]
+
 open GeometricRealization
 
-local notation "S" => Spec (CommRingCat.of ℂ)
+local notation "S" => Spec (CommRingCat.of k₀)
 local notation "Exponents" => (Fin 4 → ℤ)
 local notation "i₂" => AddMonoidHom.compLeft (Int.castAddHom ℝ) (Fin 2)
 local notation "b₂" => Pi.basisFun ℤ (Fin 2)
@@ -49,24 +50,24 @@ local notation "B" => exchangeMatrix
 local notation "Orth" =>
   LinearMap.BilinForm.orthogonal H (Submodule.span ℤ (Set.range boundaryClass))
 local notation "G" => signedBoundaryIsometryGroup H boundaryClass
-local notation "Γ" => (SignedClusterModularGroup ℂ B)ᵐᵒᵖ
-local notation "Γ₀" => (ClusterModularGroup ℂ B)ᵐᵒᵖ
+local notation "Γ" => (SignedClusterModularGroup k₀ B)ᵐᵒᵖ
+local notation "Γ₀" => (ClusterModularGroup k₀ B)ᵐᵒᵖ
 local notation "η" => sign H boundaryClass
 local notation "act[" g "]" => Subtype.val (signedOrthogonalRestriction H boundaryClass g)
-local notation "eval[" w "]" => op (signedClusterModularGroupMap ℂ B (End.of w))
+local notation "eval[" w "]" => op (signedClusterModularGroupMap k₀ B (End.of w))
 local notation "trop[" w "]" =>
   Equiv.toFun (CategoryTheory.Functor.map (Paths.lift (tropicalPrefunctor (A := ℤ) (Fin 4))) w)
-local notation "Centers" => Over.mk (structureMap ℂ Exponents)
-local notation "XTor" => scheme ℂ (Fin 4 →₀ ℤ)
+local notation "Centers" => Over.mk (structureMap k₀ Exponents)
+local notation "XTor" => scheme k₀ (Fin 4 →₀ ℤ)
 local notation "D[" M "]" => Scheme.Hom.ker (Over.Hom.left (Arrow.hom (MarkedSurface.pair M)))
 local notation "classOf(" h ")" => (LineBundleClass.mk (IsEffectiveCartier.toInvertibleSheaf h))⁻¹
 local notation "δ" => ∑ j : ZMod 8, boundaryClass j
 local notation "eK" => boundaryOrthogonalEquivExchangeKernel
 
-private theorem markedBoundaryNumerics (M : MarkedSurface ℂ 8 H XTor)
+private theorem markedBoundaryNumerics (M : MarkedSurface k₀ 8 H XTor)
     (hD : D[M].IsEffectiveCartier) (hmark : ∀ j, M.boundaryClass hD j = boundaryClass j) :
-    IsPrimitive (Additive.ofMul classOf(hD)) ∧ classOf(hD).IsNef ℂ (M.surface ↘ S) ∧
-      Chow.classIntersectionNumber ℂ M.surface classOf(hD) classOf(hD) = 0 := by
+    IsPrimitive (Additive.ofMul classOf(hD)) ∧ classOf(hD).IsNef k₀ (M.surface ↘ S) ∧
+      Chow.classIntersectionNumber k₀ M.surface classOf(hD) classOf(hD) = 0 := by
   rw [M.primitive_nef_square_zero_iff hD, funext hmark]
   have horth (j : ZMod 8) : H δ (boundaryClass j) = 0 :=
     (intersectionForm_isSymm.eq _ _).trans
@@ -78,27 +79,27 @@ private theorem markedBoundaryNumerics (M : MarkedSurface ℂ 8 H XTor)
   rw [map_sum]
   exact Finset.sum_eq_zero fun j _ ↦ horth j
 
-variable (Q : CompleteToricPresentation i₂ b₂ 4 L Empty)
+variable (Q : CompleteToricPresentation k₀ i₂ b₂ 4 L Empty)
 
-local instance (Q : CompleteToricPresentation i₂ b₂ 4 L Empty) : Nonempty Q.fan.cones :=
+local instance (Q : CompleteToricPresentation k₀ i₂ b₂ 4 L Empty) : Nonempty Q.fan.cones :=
   Q.complete.nonempty_cones
-local instance (Q : CompleteToricPresentation i₂ b₂ 4 L Empty) :
+local instance (Q : CompleteToricPresentation k₀ i₂ b₂ 4 L Empty) :
     NeZero (CompleteToricPresentation.length Q) := Q.neZero
-local instance (Q : CompleteToricPresentation i₂ b₂ 4 L Empty) :
-    PrestableFamily ((Q.fan.boundaryIdeal Q.complete.nonempty_cones).subscheme ↘ S) :=
+local instance (Q : CompleteToricPresentation k₀ i₂ b₂ 4 L Empty) :
+    PrestableFamily ((Q.fan.toricBoundaryIdeal k₀ Q.complete.nonempty_cones).subscheme ↘ S) :=
   Q.prestable
 
-local instance (Q : CompleteToricPresentation i₂ b₂ 4 L Empty) :
-    Q.fan.algebraicRealization.IsProjectiveOver ℂ :=
-  Q.fan.isProjectiveOver_algebraicRealization_of_isComplete Q.regular Q.complete b₂
+local instance (Q : CompleteToricPresentation k₀ i₂ b₂ 4 L Empty) :
+    (Q.fan.finiteFanScheme k₀).IsProjectiveOver k₀ :=
+  Q.fan.isProjectiveOver_finiteFanScheme_of_isComplete k₀ Q.regular Q.complete b₂
 
-local instance (Q : CompleteToricPresentation i₂ b₂ 4 L Empty) :
-    SmoothOfRelativeDimension 2 (Q.fan.algebraicRealization ↘ S) := by
-  rw [Fan.algebraicRealization_over]
+local instance (Q : CompleteToricPresentation k₀ i₂ b₂ 4 L Empty) :
+    SmoothOfRelativeDimension 2 ((Q.fan.finiteFanScheme k₀) ↘ S) := by
+  rw [Fan.finiteFanScheme_over k₀]
   simpa only [Module.finrank_pi, Fintype.card_fin] using
-    Q.fan.smoothOfRelativeDimension_algebraicRealizationStructureMap Q.regular
+    Q.fan.smoothOfRelativeDimension_finiteFanSchemeToSpec k₀ Q.regular
 
-local notation "χ[" c "]" => pointsEquiv ℂ _ (Subtype.mk (Over.Hom.left c) (Over.w c))
+local notation "χ[" c "]" => pointsEquiv k₀ _ (Subtype.mk (Over.Hom.left c) (Over.w c))
 local notation "fiber[" M "," c "]" => ContractedToricFiber b₂ Q.rays Q.regular Q.cycle
   Q.origin Q.inclusion χ[c] (M c)
 local notation "Charge[" q "]" =>
@@ -111,7 +112,7 @@ private theorem exchangeKernel_action
     (g : G) (w : Word B B)
     (h : LinearEquiv.autCongr
         (LinearEquiv.ofEq P.charge.ker Charge[Q] (congrArg LinearMap.ker hcharge))
-        (chargeKernelAction ℂ P hker eval[w]) =
+        (chargeKernelAction k₀ P hker eval[w]) =
       LinearEquiv.autCongr ((eK).trans (LinearEquiv.ofEq _ _ hker')) act[g]) :
     LinearEquiv.autCongr eK act[g] = w.exchangeKernelEquiv := by
   ext x : 1
@@ -124,7 +125,7 @@ private theorem exchangeKernel_action
     Path.coe_exchangeKernelEquiv_apply] using hx.symm
 
 private theorem boundary_pullback
-    (M : Point Centers → MarkedSurface ℂ 8 H XTor) (hD : ∀ c, D[M c].IsEffectiveCartier)
+    (M : Point Centers → MarkedSurface k₀ 8 H XTor) (hD : ∀ c, D[M c].IsEffectiveCartier)
     (hmark : ∀ c j, (M c).boundaryClass (hD c) j = boundaryClass j)
     (p : ∀ c, fiber[M,c])
     (horders : ∀ c (j : Fin 8), Fan.rayBoundaryOrders b₂ Q.rays
@@ -132,14 +133,14 @@ private theorem boundary_pullback
     {P : ChargeSeed B (Fin 2 → ℤ)}
     (hE : (B).matrix = chargeExchangeMatrix (b₂).detDualEquiv.toLinearMap (Fan.rayChargeMap Q.rays))
     (w : Word B B)
-    (R : GeometricRealization M M (Path.centerPartialMap ℂ w P) (w.xRationalMap ℂ))
+    (R : GeometricRealization M M (Path.centerPartialMap k₀ w P) (w.xRationalMap k₀))
     (hR : R.picard (boundaryClass (R.boundaryPerm 0)) = boundaryClass 0) :
     ∃ j : Fin 8, boundaryOrders j = trop[w] (boundaryOrders 0) ∧
       (toIsometry H boundaryClass (R.toSignedBoundaryIsometry boundaryClass hD hmark)).val
         (boundaryClass (ZMod.finEquiv 8 j)) = boundaryClass 0 := by
-  obtain ⟨x⟩ := nonempty_centerPoint (T₀ := Centers) (T₁ := Centers) (Path.centerPartialMap ℂ w P)
-  let c₀ := x ≫ (Path.centerPartialMap ℂ w P).domainSource (X := Centers) (Y := Centers)
-  let c₁ := x ≫ (Path.centerPartialMap ℂ w P).domainTarget (X := Centers) (Y := Centers)
+  obtain ⟨x⟩ := nonempty_centerPoint (T₀ := Centers) (T₁ := Centers) (Path.centerPartialMap k₀ w P)
+  let c₀ := x ≫ (Path.centerPartialMap k₀ w P).domainSource (X := Centers) (Y := Centers)
+  let c₁ := x ≫ (Path.centerPartialMap k₀ w P).domainTarget (X := Centers) (Y := Centers)
   let j : Fin 8 := (ZMod.finEquiv 8).symm (R.boundaryPerm 0)
   have hj : ZMod.finEquiv 8 j = R.boundaryPerm 0 := (ZMod.finEquiv 8).apply_symm_apply _
   have hz : ZMod.finEquiv 8 0 = 0 := (ZMod.finEquiv 8).map_zero
@@ -150,9 +151,11 @@ private theorem boundary_pullback
   simpa only [hj, toIsometry_apply, coe_toSignedBoundaryIsometry,
     LinearMap.BilinForm.coe_isometryGroupEquivIsometryEquiv_symm] using hR
 
+variable [Uncountable k₀] [NeZero (2 : k₀)]
+
 private theorem exists_markedPicardEquiv :
     ∃ ρ : Γ ≃* G,
-      ((η).comp ρ.toMonoidHom).ker.unop = (clusterModularGroupInclusion ℂ B).range ∧
+      ((η).comp ρ.toMonoidHom).ker.unop = (clusterModularGroupInclusion k₀ B).range ∧
       ∀ w : Word B B, η (ρ eval[w]) = (-1 : ℤˣ) ^ w.inversionCount ∧
         LinearEquiv.autCongr eK act[ρ eval[w]] = w.exchangeKernelEquiv ∧
         ∃ j : Fin 8, boundaryOrders j = trop[w] (boundaryOrders 0) ∧
@@ -160,23 +163,23 @@ private theorem exists_markedPicardEquiv :
             boundaryClass 0 := by
   -- Mark the octagon in the lattice with two ruling classes and eight exceptional classes.
   obtain ⟨_, _, _, _, _, Φ, hΦ, hc, v, _, _, _, _, _, _, _, hv, hnext, _⟩ :=
-    exists_four_vertex_octagon_blowup
+    exists_four_vertex_octagon_blowup k₀
   let : Nonempty Φ.cones := hc.nonempty_cones
-  let : Φ.algebraicRealization.IsProjectiveOver ℂ :=
-    Φ.isProjectiveOver_algebraicRealization_of_isComplete hΦ hc b₂
-  let : SmoothOfRelativeDimension 2 (Φ.algebraicRealization ↘ S) := by
-    rw [Fan.algebraicRealization_over]
+  let : (Φ.finiteFanScheme k₀).IsProjectiveOver k₀ :=
+    Φ.isProjectiveOver_finiteFanScheme_of_isComplete k₀ hΦ hc b₂
+  let : SmoothOfRelativeDimension 2 ((Φ.finiteFanScheme k₀) ↘ S) := by
+    rw [Fan.finiteFanScheme_over k₀]
     simpa only [Module.finrank_pi, Fintype.card_fin] using
-      Φ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
-  let I := picardCoordinateIsometry hΦ v hv hc hnext
+      Φ.smoothOfRelativeDimension_finiteFanSchemeToSpec k₀ hΦ
+  let I := picardCoordinateIsometry k₀ hΦ v hv hc hnext
   obtain ⟨Q, P, M, hD, _, _, _, _, hι, hform, hcharge, hindex, horders, hnodes, hfiber⟩ :=
     exists_four_vertex_marked_presentation hΦ hc v hv hnext I
   have hmark c j : (M c).boundaryClass (hD c) j = boundaryClass j := by
-    rw [(hfiber c).2.2 j, ← picardCoordinateIsometry_boundaryClass hΦ v hv hc hnext,
+    rw [(hfiber c).2.2 j, ← picardCoordinateIsometry_boundaryClass k₀ hΦ v hv hc hnext,
       LinearMap.BilinForm.IsometryEquiv.symm_apply_apply]
   have hcoords (x : Orth) : -(Q.inclusion x.val).2 = (eK x : Exponents) := by
     rw [hι, boundaryOrthogonalEquivExchangeKernel_apply]
-    exact neg_snd_picardCoordinateIsometry hΦ v hv hc hnext x
+    exact neg_snd_picardCoordinateIsometry k₀ hΦ v hv hc hnext x
   choose p hnodal hrays using fun c ↦ (hfiber c).2.1
   have horders' (c : Point Centers) (j : Fin 8) : Fan.rayBoundaryOrders b₂ Q.rays
       ((p c).numberedBoundaryRays (hD c) (ZMod.finEquiv 8 j)) = boundaryOrders j :=
@@ -206,7 +209,7 @@ private theorem exists_markedPicardEquiv :
   · have h := chargeKernelAction_eq_signedOrthogonalRestriction Q.rayOrder
       (fun j ↦ (Q.cycle.component_apply j).symm.trans (Q.component_eq j))
       (fun j ↦ (Q.positive j).1) hnodes boundaryClass hD hmark w R
-      (w.centerPartialMap_hom (K := ℂ) P) P hcharge hker e he
+      (w.centerPartialMap_hom (K := k₀) P) P hcharge hker e he
       (U := Set.univ) (fun _ ↦ ⟨Set.mem_univ _, Set.mem_univ _⟩)
       (fun c _ ↦ (hnodal c).genus_zero) (fun c _ ↦ ⟨p c⟩)
     have heK : e = (eK).trans (LinearEquiv.ofEq _ _ hker') := by
@@ -229,7 +232,7 @@ noncomputable def markedPicardEquiv : Γ ≃* G :=
 /-- In point-map order, the sign kernel of the marked Picard action is the unsigned subgroup. -/
 theorem ker_sign_comp_markedPicardEquiv :
     ((η).comp markedPicardEquiv.toMonoidHom).ker.unop =
-      (clusterModularGroupInclusion ℂ B).range :=
+      (clusterModularGroupInclusion k₀ B).range :=
   exists_markedPicardEquiv.choose_spec.1
 
 /-- The sign of a loop's marked Picard action is its inversion parity. -/
@@ -256,7 +259,7 @@ theorem exists_boundary_pullback_markedPicardEquiv_loop (w : Word B B) :
 /-- The marked Picard action of an unsigned cluster map has positive sign. -/
 @[simp]
 theorem sign_markedPicardEquiv_inclusion (g : Γ₀) :
-    (markedPicardEquiv (op (clusterModularGroupInclusion ℂ B g.unop))).val.2 = 1 := by
+    (markedPicardEquiv (op (clusterModularGroupInclusion k₀ B g.unop))).val.2 = 1 := by
   have h := congrArg (fun p : G ↦ p.val.2) (rotationInclusion_picardRotationEquiv_apply
     markedPicardEquiv ker_sign_comp_markedPicardEquiv g)
   simpa only [MonoidHom.op_apply_apply, Function.comp_apply, coe_rotationInclusion] using h.symm
@@ -268,7 +271,7 @@ theorem picardInvariants_markedPicardEquiv_loop (w : Word B B) :
     picardInvariants (markedPicardEquiv eval[w]) =
       w.signedLoopInvariants (fun j ↦ (exchangeKernelBasis j : Fin 4 → ℤ))
         boundaryOrders (boundaryOrders 0) := by
-  obtain ⟨j, htrop, hpullback⟩ := exists_boundary_pullback_markedPicardEquiv_loop w
+  obtain ⟨j, htrop, hpullback⟩ := exists_boundary_pullback_markedPicardEquiv_loop (k₀ := k₀) w
   refine (picardInvariants_eq_signedLoopInvariants_iff _ w).mpr
     ⟨?_, signedOrthogonalRestriction_markedPicardEquiv_loop w, j, hpullback, htrop.symm⟩
   rw [SignedBoundaryIsometryGroup.sign_apply]

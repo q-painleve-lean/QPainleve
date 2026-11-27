@@ -25,6 +25,8 @@ open Scheme Scheme.IdealSheafData
 
 namespace QPainleve.SignedClusterModularGroup
 
+variable {k₀ : Type} [Field k₀] [IsAlgClosed k₀]
+
 /-- Compute the boundary order table from integer charge coordinates and a subset of
 toric ray indices. The ray indices are cyclic offsets from the initial boundary ray. -/
 def boundaryOrderTable {ι : Type*} {m n : ℕ} (charge : ι → Fin 2 → ℤ)
@@ -46,21 +48,21 @@ theorem boundaryOrderTable_apply {ι : Type*} {m n : ℕ} (charge : ι → Fin 2
 
 namespace ContractedToricFiber
 
-local notation "S" => Spec (CommRingCat.of ℂ)
+local notation "S" => Spec (CommRingCat.of k₀)
 local notation "D[" M "]" => Scheme.Hom.ker (Over.Hom.left (Arrow.hom (MarkedSurface.pair M)))
 
 variable {N V L : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V] [AddCommGroup L]
   {i : N →+ V} {Φ : Fan i} [h₀ : Nonempty Φ.cones] {r m n : ℕ} [NeZero m] [NeZero n]
   {B : LinearMap.BilinForm ℤ L} {b : Basis (Fin 2) ℤ N} {s : Fin r → Φ.Ray} {hΦ : Φ.IsRegular}
-  [PrestableFamily ((Φ.boundaryIdeal h₀).subscheme ↘ S)]
-  {γ : Type*} {a : γ → ((Φ.boundaryIdeal h₀).subscheme ↘ S).smoothLocus}
+  [PrestableFamily ((Φ.toricBoundaryIdeal k₀ h₀).subscheme ↘ Spec (.of k₀))]
+  {γ : Type*} {a : γ → ((Φ.toricBoundaryIdeal k₀ h₀).subscheme ↘ Spec (.of k₀)).smoothLocus}
   {T : NodalCycleNumbering a m} {origin : ZMod m}
-  {μ : L →ₗ[ℤ] Additive (LineBundleClass Φ.algebraicRealization) × (Fin r → ℤ)}
-  {c : Multiplicative (Fin r → ℤ) →* ℂˣ}
-  {M : MarkedSurface ℂ n B (Spec (CommRingCat.of (LaurentRing ℂ (Fin r))))}
+  {μ : L →ₗ[ℤ] Additive (LineBundleClass (Φ.finiteFanScheme k₀)) × (Fin r → ℤ)}
+  {c : Multiplicative (Fin r → ℤ) →* k₀ˣ}
+  {M : MarkedSurface k₀ n B (Spec (CommRingCat.of (LaurentRing k₀ (Fin r))))}
   (p : ContractedToricFiber b s hΦ T origin μ c M) (hD : D[M].IsEffectiveCartier)
 
-local notation "rayAt" => Φ.rayFinEquivOfNodalCycleNumbering hΦ T origin
+local notation "rayAt" => Φ.rayFinEquivOfNodalCycleNumbering k₀ hΦ T origin
 
 /-- The determinant table computed from the surviving offsets and integer coordinates
 is the order table of the numbered components of the marked surface. -/

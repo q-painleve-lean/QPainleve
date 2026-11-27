@@ -5,7 +5,6 @@ Authors: The QPainleve contributors
 -/
 module
 
-public import Mathlib.Analysis.Complex.Polynomial.Basic
 public import QPainleve.AlgebraicGeometry.Curves.Node.NumberedPrime
 public import QPainleve.AlgebraicGeometry.IdealSheaf.Boundary.Complexity
 public import QPainleve.AlgebraicGeometry.Modules.Differentials.Canonical
@@ -42,24 +41,29 @@ open Scheme.IdealSheafData TauCeti.AlgebraicGeometry LineBundleClass
 
 namespace TauCeti.Toric.Fan
 
-local notation "S" => Spec (CommRingCat.of ℂ)
-local notation "V₃" => (Fin 3 → ℂ)
-local notation "𝒜" => TauCeti.SymmetricAlgebra.homogeneousSubmodule ℂ V₃
+variable (k : Type) [Field k] [IsSepClosed k] [Infinite k]
+
+local notation "S" => Spec (CommRingCat.of k)
+local notation "V₃" => (Fin 3 → k)
+local notation "𝒜" => TauCeti.SymmetricAlgebra.homogeneousSubmodule k V₃
 local notation "P" => Proj 𝒜
-local notation "std" => Pi.basisFun ℂ (Fin 3)
+local notation "std" => Pi.basisFun k (Fin 3)
 local notation "degree" => Module.Basis.picardTwistEquiv std
-local notation "L" => Proj.symmetricAlgebraTwistingBundle ℂ V₃ 1
-local notation "linearForm" => SymmetricAlgebra.ι ℂ V₃
+local notation "L" => Proj.symmetricAlgebraTwistingBundle k V₃ 1
+local notation "linearForm" => SymmetricAlgebra.ι k V₃
 
 attribute [local instance] MvPolynomial.gradedAlgebra
 
 private instance : ∀ x : P, UniqueFactorizationMonoid ((P).presheaf.stalk x) :=
   (P ↘ S).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two
 
-variable {D : (P).IdealSheafData} [D.subscheme.Over S] [PrestableFamily (D.subscheme ↘ S)]
-  {α : Type*} {a : α → (D.subscheme ↘ S).smoothLocus}
+variable {D : (Proj (TauCeti.SymmetricAlgebra.homogeneousSubmodule k (Fin 3 → k))).IdealSheafData}
+  [Scheme.Over D.subscheme (Spec (.of k))] [PrestableFamily (D.subscheme ↘ Spec (.of k))]
+  {α : Type*} {a : α → (D.subscheme ↘ Spec (.of k)).smoothLocus}
 
-private theorem planeCycle_length {n : ℕ} [NeZero n] (A : Scheme.NodalCycleNumbering a n)
+omit [Infinite k] in
+private theorem planeCycle_length {n : ℕ} [NeZero n]
+    (A : Scheme.NodalCycleNumbering (k := k) (X := D.subscheme) a n)
     (hD : D.IsEffectiveCartier) (hzero : D.boundaryComplexity = 0) : n = 3 := by
   have hn := (Nat.card_congr (A.boundaryPrimeEquiv hD)).symm
   rw [Nat.card_zmod] at hn
@@ -67,9 +71,10 @@ private theorem planeCycle_length {n : ℕ} [NeZero n] (A : Scheme.NodalCycleNum
   rw [boundaryComplexity_def, finrank_projectivePlane, hn'] at hzero
   omega
 
-private theorem planeCycle_primeDegree (A : Scheme.NodalCycleNumbering a 3)
+private theorem planeCycle_primeDegree
+    (A : Scheme.NodalCycleNumbering (k := k) (X := D.subscheme) a 3)
     (hD : D.IsEffectiveCartier)
-    (hcan : LineBundleClass.mk hD.toInvertibleSheaf = LineBundleClass.mk (canonicalBundle ℂ P 2)) :
+    (hcan : LineBundleClass.mk hD.toInvertibleSheaf = LineBundleClass.mk (canonicalBundle k P 2)) :
     ∀ j : ZMod 3, degree (Additive.ofMul
       (primeDivisorClass (D.boundaryPrimeEmbedding (A.boundaryPrimeEquiv hD j)))) = 1 := by
   classical
@@ -89,11 +94,11 @@ private theorem planeCycle_primeDegree (A : Scheme.NodalCycleNumbering a 3)
       degree (Additive.ofMul (primeDivisorClass (p 1))) +
       degree (Additive.ofMul (primeDivisorClass (p 2))) = 3 := hs.symm
   have hpos (j : ZMod 3) : 0 < degree (Additive.ofMul (primeDivisorClass (p j))) := by
-    have h : 0 < Chow.classIntersectionNumber ℂ P (LineBundleClass.mk L)
+    have h : 0 < Chow.classIntersectionNumber k P (LineBundleClass.mk L)
         (primeDivisorClass (p j)) :=
-      Chow.classIntersectionNumber_primeDivisorClass_pos_of_isAmple ℂ
+      Chow.classIntersectionNumber_primeDivisorClass_pos_of_isAmple k
         (topologicalKrullDim_eq_of_smoothOfRelativeDimension (P ↘ S))
-        (TauCeti.SymmetricAlgebra.isAmple_twistingSheaf ℂ V₃ Nat.one_pos) (p j)
+        (TauCeti.SymmetricAlgebra.isAmple_twistingSheaf k V₃ Nat.one_pos) (p j)
     rwa [Chow.classIntersectionNumber_projectivePlane, (std).picardTwistEquiv_apply_twist,
       one_mul] at h
   intro j
@@ -108,10 +113,12 @@ private theorem planeCycle_primeDegree (A : Scheme.NodalCycleNumbering a 3)
   · exact h1
   · exact h2
 
-private theorem planeCycle_linearIndependent (A : Scheme.NodalCycleNumbering a 3)
+omit [Infinite k] in
+private theorem planeCycle_linearIndependent
+    (A : Scheme.NodalCycleNumbering (k := k) (X := D.subscheme) a 3)
     (hD : D.IsEffectiveCartier) (v : ZMod 3 → V₃)
     (hv : ∀ (j : ZMod 3) (x : P), x ∈ Proj.basicOpen 𝒜 (linearForm (v j)) ↔
-      x ∉ closure {(A.boundaryPrimeEquiv hD j).val}) : LinearIndependent ℂ v := by
+      x ∉ closure {(A.boundaryPrimeEquiv hD j).val}) : LinearIndependent k v := by
   rw [linearIndependent_iff_notMem_span]
   intro j
   let x := A.ambientNode (j + 1)
@@ -123,19 +130,21 @@ private theorem planeCycle_linearIndependent (A : Scheme.NodalCycleNumbering a 3
     have hj := ZMod.val_lt j
     have hl := ZMod.val_lt l
     omega
-  let J := (x.asHomogeneousIdeal.toIdeal.restrictScalars ℂ).comap linearForm
+  let J := (x.asHomogeneousIdeal.toIdeal.restrictScalars k).comap linearForm
   have hJ (l : ZMod 3) : v l ∈ J ↔ l ≠ j := by
     have h := hv l x
     rw [Proj.mem_basicOpen] at h
     have hl : v l ∈ J ↔ linearForm (v l) ∈ x.asHomogeneousIdeal := Iff.rfl
     exact hl.trans ((not_iff_not.mp h).trans (hx l))
-  have hspan : Submodule.span ℂ (v '' (Set.univ \ {j})) ≤ J := by
+  have hspan : Submodule.span k (v '' (Set.univ \ {j})) ≤ J := by
     apply Submodule.span_le.mpr
     rintro _ ⟨l, hl, rfl⟩
     exact (hJ l).mpr hl.2
   exact fun h ↦ (hJ j).mp (hspan h) rfl
 
-private theorem planeCycle_support (A : Scheme.NodalCycleNumbering a 3)
+omit [Infinite k] in
+private theorem planeCycle_support
+    (A : Scheme.NodalCycleNumbering (k := k) (X := D.subscheme) a 3)
     (hD : D.IsEffectiveCartier) :
     (D.support : Set P) = ⋃ j : ZMod 3, closure {(A.boundaryPrimeEquiv hD j).val} := by
   classical
@@ -158,38 +167,38 @@ private theorem planeCycle_support (A : Scheme.NodalCycleNumbering a 3)
 private theorem exists_toric_of_standardPlane_boundaryComplexity_zero
     {N W : Type} [AddCommGroup N] [AddCommGroup W] [Module ℝ W]
     {i : N →+ W} (b : Basis (Fin 2) ℤ N) (hi : IsIntegralLattice i)
-    {n : ℕ} [NeZero n] (A : Scheme.NodalCycleNumbering a n)
+    {n : ℕ} [NeZero n] (A : Scheme.NodalCycleNumbering (k := k) (X := D.subscheme) a n)
     (hD : D.IsEffectiveCartier)
-    (hcan : LineBundleClass.mk hD.toInvertibleSheaf = LineBundleClass.mk (canonicalBundle ℂ P 2))
+    (hcan : LineBundleClass.mk hD.toInvertibleSheaf = LineBundleClass.mk (canonicalBundle k P 2))
     (hzero : D.boundaryComplexity = 0) :
-    ∃ e : (projectiveSpace b hi).algebraicRealization ≅ P,
-      e.hom ≫ P ↘ S = (projectiveSpace b hi).algebraicRealizationStructureMap ∧
-      D.comap e.hom = (projectiveSpace b hi).boundaryIdeal
+    ∃ e : (projectiveSpace b hi).finiteFanScheme k ≅ P,
+      e.hom ≫ P ↘ S = (projectiveSpace b hi).finiteFanSchemeToSpec k ∧
+      D.comap e.hom = (projectiveSpace b hi).toricBoundaryIdeal k
         (isComplete_projectiveSpace b hi).nonempty_cones := by
-  have hn := planeCycle_length A hD hzero
+  have hn := planeCycle_length k A hD hzero
   subst n
   choose v hv using fun j ↦ (D.boundaryPrimeEmbedding (A.boundaryPrimeEquiv hD j))
-    |>.exists_linearForm_of_projectivePlane_degree_eq_one (planeCycle_primeDegree A hD hcan j)
+    |>.exists_linearForm_of_projectivePlane_degree_eq_one (planeCycle_primeDegree k A hD hcan j)
   simp only [coe_boundaryPrimeEmbedding] at hv
   let a := (ZMod.finEquiv 3).toEquiv
-  let c := basisOfLinearIndependentOfCardEqFinrank ((planeCycle_linearIndependent A hD v hv).comp
-    a a.injective) (Module.finrank_fintype_fun_eq_card ℂ).symm
-  let e := projectivePlaneIso b hi ≪≫ c.polynomialProjIso
+  let c := basisOfLinearIndependentOfCardEqFinrank ((planeCycle_linearIndependent k A hD v hv).comp
+    a a.injective) (Module.finrank_fintype_fun_eq_card k).symm
+  let e := projectivePlaneIso k b hi ≪≫ c.polynomialProjIso
   refine ⟨e, ?_, ?_⟩
-  · let := projectivePlaneIso_trans_polynomialProjIso_hom_isOver b hi c
-    rw [← algebraicRealization_over]
+  · let := projectivePlaneIso_trans_polynomialProjIso_hom_isOver k b hi c
+    rw [← finiteFanScheme_over k]
     exact CategoryTheory.comp_over e.hom S
   let : IsReduced D.subscheme := (PrestableFamily.atWorstNodalOfRelativeDimensionOne
     (f := D.subscheme ↘ S)).isReduced
   let h₀ := (isComplete_projectiveSpace b hi).nonempty_cones
-  let H (j : Fin 3) := Proj.coordinateHyperplaneIdeal (k := ℂ) (n := 2) j
+  let H (j : Fin 3) := Proj.coordinateHyperplaneIdeal (k := k) (n := 2) j
   have hrad := (D.isReduced_subscheme_iff_radical_eq).mp ‹IsReduced D.subscheme›
   have htriangle : D.comap c.polynomialProjIso.hom = (∏ j, H j).radical := by
     rw [← hrad, ← radical_comap_of_isOpenImmersion,
       ← vanishingIdeal_support, ← vanishingIdeal_support]
     congr 1
     apply SetLike.coe_injective
-    rw [support_comap, Closeds.coe_preimage, planeCycle_support A hD, coe_support_prod]
+    rw [support_comap, Closeds.coe_preimage, planeCycle_support k A hD, coe_support_prod]
     ext x
     simp only [Set.mem_preimage, Set.mem_iUnion]
     have hc (j : Fin 3) : c j = v (a j) :=
@@ -199,7 +208,7 @@ private theorem exists_toric_of_standardPlane_boundaryComplexity_zero
           x ∈ ((H j).support : Set _) := by
       have hopen :
           c.polynomialProjIso.hom x ∈ Proj.basicOpen 𝒜 (linearForm (c j)) ↔
-            x ∈ (Proj.basicOpen (MvPolynomial.homogeneousSubmodule (Fin 3) ℂ)
+            x ∈ (Proj.basicOpen (MvPolynomial.homogeneousSubmodule (Fin 3) k)
               (MvPolynomial.X j) : Set _) := by
         have hr := c.polynomialProjIso_hom_preimage_basicOpen_ι j
         exact (Scheme.Hom.mem_preimage (f := c.polynomialProjIso.hom)).symm.trans
@@ -211,9 +220,9 @@ private theorem exists_toric_of_standardPlane_boundaryComplexity_zero
       fun ⟨j, hj⟩ ↦ ⟨a j, (hmem j).mpr hj⟩⟩
   dsimp only [e]
   rw [Iso.trans_hom, comap_comp, htriangle]
-  exact projectivePlaneIso_comap_coordinateTriangle b hi h₀
+  exact projectivePlaneIso_comap_coordinateTriangle k b hi h₀
 
-/-- A complexity-zero anticanonical cycle on a surface isomorphic to the complex
+/-- A complexity-zero anticanonical cycle on a surface isomorphic to the
 projective plane is the boundary of the projective-space fan. The returned
 isomorphism is over the ground field and identifies the boundary ideals. -/
 theorem exists_toric_of_projectivePlane_boundaryComplexity_zero
@@ -221,16 +230,16 @@ theorem exists_toric_of_projectivePlane_boundaryComplexity_zero
     {i : N →+ W} (b : Basis (Fin 2) ℤ N) (hi : IsIntegralLattice i)
     {X : Scheme} [X.Over S] [SmoothOfRelativeDimension 2 (X ↘ S)]
     (e : P ≅ X) [e.hom.IsOver S] {E : X.IdealSheafData}
-    [E.subscheme.Over S] [PrestableFamily (E.subscheme ↘ S)]
+    [Scheme.Over E.subscheme S] [PrestableFamily (E.subscheme ↘ S)]
     (hOver : E.subscheme ↘ S = E.subschemeι ≫ X ↘ S)
     {β : Type*} {p : β → (E.subscheme ↘ S).smoothLocus}
-    {n : ℕ} [NeZero n] (A : Scheme.NodalCycleNumbering p n)
+    {n : ℕ} [NeZero n] (A : Scheme.NodalCycleNumbering (k := k) (X := E.subscheme) p n)
     (hE : E.IsEffectiveCartier)
-    (hcan : LineBundleClass.mk hE.toInvertibleSheaf = LineBundleClass.mk (canonicalBundle ℂ X 2))
+    (hcan : LineBundleClass.mk hE.toInvertibleSheaf = LineBundleClass.mk (canonicalBundle k X 2))
     (hzero : E.boundaryComplexity = 0) :
-    ∃ f : (projectiveSpace b hi).algebraicRealization ≅ X,
-      f.hom ≫ X ↘ S = (projectiveSpace b hi).algebraicRealizationStructureMap ∧
-      E.comap f.hom = (projectiveSpace b hi).boundaryIdeal
+    ∃ f : (projectiveSpace b hi).finiteFanScheme k ≅ X,
+      f.hom ≫ X ↘ S = (projectiveSpace b hi).finiteFanSchemeToSpec k ∧
+      E.comap f.hom = (projectiveSpace b hi).toricBoundaryIdeal k
         (isComplete_projectiveSpace b hi).nonempty_cones := by
   let F := E.comap e.hom
   let d : F.subscheme ≅ E.subscheme := E.comapIso e.hom ≪≫ asIso (pullback.snd e.hom E.subschemeι)
@@ -249,11 +258,11 @@ theorem exists_toric_of_projectivePlane_boundaryComplexity_zero
   let B := d.symm.mapNodalCycleNumbering A (q := q)
   have hF : F.IsEffectiveCartier := hE.comap e.hom
   have hcanF :
-      LineBundleClass.mk hF.toInvertibleSheaf = LineBundleClass.mk (canonicalBundle ℂ P 2) := by
+      LineBundleClass.mk hF.toInvertibleSheaf = LineBundleClass.mk (canonicalBundle k P 2) := by
     rw [← hE.pullback_mk_toInvertibleSheaf hF, hcan, pullback_mk, mk_pullback_canonicalBundle]
   have hzeroF : F.boundaryComplexity = 0 := (boundaryComplexity_comap_iso e E).trans hzero
   obtain ⟨f, hf, hFf⟩ :=
-    exists_toric_of_standardPlane_boundaryComplexity_zero b hi B hF hcanF hzeroF
+    exists_toric_of_standardPlane_boundaryComplexity_zero k b hi B hF hcanF hzeroF
   refine ⟨f ≪≫ e, ?_, ?_⟩
   · rw [Iso.trans_hom, Category.assoc, CategoryTheory.comp_over e.hom S, hf]
   · rw [Iso.trans_hom, comap_comp]

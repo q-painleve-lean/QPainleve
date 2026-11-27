@@ -37,6 +37,8 @@ open Scheme.IdealSheafData
 
 namespace QPainleve.BlowupTower.IsClosedPointTower
 
+variable (k₀ : Type) [Field k₀] [IsAlgClosed k₀]
+
 attribute [local instance] MvPolynomial.gradedAlgebra
 
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
@@ -55,29 +57,30 @@ local notation "hcΨ" => Iff.mpr (Φ.isComplete_mutationFan_iff b hv hp hop) hc
 local notation "s" => r.trans (Φ.mutationFanRayEquiv b hv hp hop)
 local notation "hs" => Fan.Ray.mutationFan_hirzebruch_ray_generators_of_section_zero
   (r 0) b hop 0 r hr rfl
-local notation "S" => Spec (CommRingCat.of ℂ)
-local notation "P" => Proj (homogeneousSubmodule ℂ (Fin 3 → ℂ))
-local notation "H" => mk (Proj.symmetricAlgebraTwistingBundle ℂ (Fin 3 → ℂ) 1)
-local notation "degree" => Basis.picardTwistEquiv (Pi.basisFun ℂ (Fin 3))
-local notation "X" => Φ.algebraicRealization
-local notation "X'" => Fan.algebraicRealization Ψ
+local notation "S" => Spec (CommRingCat.of k₀)
+local notation "P" => Proj (homogeneousSubmodule k₀ (Fin 3 → k₀))
+local notation "H" => mk (Proj.symmetricAlgebraTwistingBundle k₀ (Fin 3 → k₀) 1)
+local notation "degree" => Basis.picardTwistEquiv (Pi.basisFun k₀ (Fin 3))
+local notation "X" => (Φ.finiteFanScheme k₀)
+local notation "X'" => Fan.finiteFanScheme k₀ Ψ
 local notation "fX" => (X ↘ S)
 local notation "fX'" => (X' ↘ S)
 local notation "fP" => (P ↘ S)
-local notation "C" => Fan.hirzebruchPicardBasis b 0 hΦ r hr
-local notation "B[" A "," h "]" => Fan.boundaryIdeal A (Fan.IsComplete.nonempty_cones h)
+local notation "C" => Fan.hirzebruchPicardBasis k₀ b 0 hΦ r hr
+local notation "B[" A "," h "]" => Fan.toricBoundaryIdeal k₀ A (Fan.IsComplete.nonempty_cones h)
 local notation "Plane[" d "]" => Fan.projectiveSpace d (Fan.lattice Ψ)
 local notation "hcPlane[" d "]" => Fan.isComplete_projectiveSpace d (Fan.lattice Ψ)
 local notation "planeIso[" d "]" =>
-  Fan.projectivePlaneIso d (Fan.lattice Ψ) ≪≫ Basis.polynomialProjIso (Pi.basisFun ℂ (Fin 3))
+  Fan.projectivePlaneIso k₀ d (Fan.lattice Ψ) ≪≫ Basis.polynomialProjIso (Pi.basisFun k₀ (Fin 3))
 local notation "rankTwo" => Eq.trans (finrank_eq_card_basis b) (Fintype.card_fin 2)
 local notation "pivotPoint[" c "]" =>
-  (Fan.Ray.binomialCenter (r 0) rankTwo (b.detDualEquiv_self v)
-    (Fan.Ray.surjective_detCharacter (r 0) b) c) (IsLocalRing.closedPoint ℂ)
+  (Fan.Ray.binomialCenter (r 0) k₀ rankTwo (b.detDualEquiv_self v)
+    (Fan.Ray.surjective_detCharacter (r 0) b) c) (IsLocalRing.closedPoint k₀)
 local notation "mutationMap[" c "]" =>
-  Scheme.PartialMap.toRationalMap (Φ.mutationPartialMap b (c : ℂ) hv hp hop)
-variable {n : ℕ} {Y : Scheme.{0}} {T : BlowupTower Φ.algebraicRealization (n + 1) Y}
-  (hT : IsClosedPointTower Φ.algebraicRealization T) (g : Y ⟶ P)
+  Scheme.PartialMap.toRationalMap (Φ.mutationPartialMap k₀ b (c : k₀) hv hp hop)
+variable {n : ℕ} {Y : Scheme.{0}} {T : BlowupTower (Φ.finiteFanScheme k₀) (n + 1) Y}
+  (hT : IsClosedPointTower (Φ.finiteFanScheme k₀) T) (g : Y ⟶ (Proj (homogeneousSubmodule k₀
+    (Fin 3 → k₀))))
 
 local notation "firstIndex" => Fin.castAdd n (0 : Fin 1)
 
@@ -86,70 +89,70 @@ section PoleIdeal
 variable [Nonempty Φ.cones] [IsIntegral Y] [IsDominant T.toBase]
 
 include hΦ in
-private theorem quadric_mutation_poleIdeal (c : ℂˣ)
+private theorem quadric_mutation_poleIdeal (c : k₀ˣ)
     {Z W : Scheme} {U : BlowupTower X' (1 + n) Z} (e : Y ≅ Z)
     (d : Basis (Fin 2) ℤ N) (s₀ : (Ψ).IsSubdivision Plane[d])
     {V₀ : BlowupTower P (1 + (1 + n)) W} (hV : IsClosedPointTower P V₀) (k : Z ≅ W)
     (hmap : T.toBase.toRationalMap.comp mutationMap[c] = (e.hom ≫ U.toBase).toRationalMap)
-    (hproj : k.hom ≫ V₀.toBase = U.toBase ≫ s₀.toFanHom.algebraicMap ≫ planeIso[d].hom)
+    (hproj : k.hom ≫ V₀.toBase = U.toBase ≫ (s₀.toFanHom.finiteFanSchemeHom k₀) ≫ planeIso[d].hom)
     (D : Y.IdealSheafData) :
     letI : SmoothOfRelativeDimension 2 fX := by
-      rw [Fan.algebraicRealization_over]
-      exact rankTwo ▸ Φ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
+      rw [Fan.finiteFanScheme_over k₀]
+      exact rankTwo ▸ Φ.smoothOfRelativeDimension_finiteFanSchemeToSpec k₀ hΦ
     letI : Y.Over S := ⟨T.toBase ≫ fX⟩
     letI : Smooth (Y ↘ S) := (hT.smoothOfRelativeDimension fX).smooth
     let p₁ := e.hom ≫ U.toBase
-    let p₂ := p₁ ≫ s₀.toFanHom.algebraicMap
+    let p₂ := p₁ ≫ (s₀.toFanHom.finiteFanSchemeHom k₀)
     ∃ (hp₁ : p₁.IsOver S) (hp₂ : p₂.IsOver S),
       letI := hp₁
       letI := hp₂
-      B[Φ,hc].comap T.toBase = D * hT.ramificationIdealSheafToBase ℂ →
-        B[Ψ,hcΨ].comap p₁ = D * ramificationIdealSheaf ℂ p₁ ∧
-        B[Plane[d],hcPlane[d]].comap p₂ = D * ramificationIdealSheaf ℂ p₂ ∧
+      B[Φ,hc].comap T.toBase = D * hT.ramificationIdealSheafToBase k₀ →
+        B[Ψ,hcΨ].comap p₁ = D * ramificationIdealSheaf k₀ p₁ ∧
+        B[Plane[d],hcPlane[d]].comap p₂ = D * ramificationIdealSheaf k₀ p₂ ∧
         (B[Plane[d],hcPlane[d]].comap planeIso[d].inv).comap V₀.toBase =
-          D.comap (e ≪≫ k).inv * hV.ramificationIdealSheafToBase ℂ := by
+          D.comap (e ≪≫ k).inv * hV.ramificationIdealSheafToBase k₀ := by
   intro p₁ p₂
   let : Nonempty (Ψ).cones := (hcΨ).nonempty_cones
   let : SmoothOfRelativeDimension 2 fX := by
-    rw [Fan.algebraicRealization_over]
-    exact rankTwo ▸ Φ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
+    rw [Fan.finiteFanScheme_over k₀]
+    exact rankTwo ▸ Φ.smoothOfRelativeDimension_finiteFanSchemeToSpec k₀ hΦ
   let : Y.Over S := ⟨T.toBase ≫ fX⟩
   let : SmoothOfRelativeDimension 2 (Y ↘ S) := hT.smoothOfRelativeDimension fX
   let : Smooth (Y ↘ S) := SmoothOfRelativeDimension.smooth 2 _
   let hReg := Fan.isRegular_projectiveSpace d (Ψ).lattice
   let : SmoothOfRelativeDimension 2 fX' := by
-    rw [Fan.algebraicRealization_over]
-    exact rankTwo ▸ (Ψ).smoothOfRelativeDimension_algebraicRealizationStructureMap hΨ
-  let : SmoothOfRelativeDimension 2 (Plane[d].algebraicRealization ↘ S) := by
-    simpa only [Fan.algebraicRealization_over, rankTwo] using
-      (Plane[d]).smoothOfRelativeDimension_algebraicRealizationStructureMap hReg
-  obtain ⟨hp₁, hpole⟩ := (r 0).mutation_resolution_poleIdeal_iff b hop c hT hΦ hc p₁ D hmap
+    rw [Fan.finiteFanScheme_over k₀]
+    exact rankTwo ▸ (Ψ).smoothOfRelativeDimension_finiteFanSchemeToSpec k₀ hΨ
+  let : SmoothOfRelativeDimension 2 ((Plane[d].finiteFanScheme k₀) ↘ S) := by
+    simpa only [Fan.finiteFanScheme_over k₀, rankTwo] using
+      (Plane[d]).smoothOfRelativeDimension_finiteFanSchemeToSpec k₀ hReg
+  obtain ⟨hp₁, hpole⟩ := (r 0).mutation_resolution_poleIdeal_iff k₀ b hop c hT hΦ hc p₁ D hmap
   let : p₁.IsOver S := hp₁
-  let : p₂.IsOver S := inferInstanceAs ((p₁ ≫ s₀.toFanHom.algebraicMap).IsOver S)
+  let : p₂.IsOver S := inferInstanceAs ((p₁ ≫ (s₀.toFanHom.finiteFanSchemeHom k₀)).IsOver S)
   refine ⟨hp₁, ‹_›, fun hD ↦ ?_⟩
-  have h₁ := hpole.mp (by simpa only [hT.ramificationIdealSheafToBase_def ℂ] using hD)
-  have h₂ := comap_eq_mul_ramificationIdealSheaf_comp ℂ p₁ s₀.toFanHom.algebraicMap 2
-    (s₀.comap_boundaryIdeal_eq_mul_ramificationIdealSheaf hReg hΨ hcPlane[d] rankTwo) h₁
+  have h₁ := hpole.mp (by simpa only [hT.ramificationIdealSheafToBase_def k₀] using hD)
+  have h₂ := comap_eq_mul_ramificationIdealSheaf_comp k₀ p₁ (s₀.toFanHom.finiteFanSchemeHom k₀) 2
+    (s₀.comap_boundaryIdeal_eq_mul_ramificationIdealSheaf k₀ hReg hΨ hcPlane[d] rankTwo) h₁
   refine ⟨h₁, h₂, ?_⟩
   let a := planeIso[d]
   let t := e ≪≫ k
   have ha : a.hom.IsOver S := ⟨by
     simp only [a, Iso.trans_hom, Category.assoc, over_eq_projToSpec,
       Basis.polynomialProjIso_hom_over, Fan.projectivePlaneIso_hom_toSpecCoeff,
-      Fan.algebraicRealization_over]⟩
+      Fan.finiteFanScheme_over k₀]⟩
   let : (p₂ ≫ a.hom).IsOver S := inferInstance
   have ht : t.hom ≫ V₀.toBase = p₂ ≫ a.hom := by
     simpa only [t, p₁, p₂, a, Iso.trans_hom, Category.assoc] using
       congrArg (fun f ↦ e.hom ≫ f) hproj
-  let : Smooth (Plane[d].algebraicRealization ↘ S) := SmoothOfRelativeDimension.smooth 2 _
+  let : Smooth ((Plane[d].finiteFanScheme k₀) ↘ S) := SmoothOfRelativeDimension.smooth 2 _
   -- The plane coordinate isomorphism has unit ramification ideal.
   have hPole : (B[Plane[d],hcPlane[d]].comap a.inv).comap (p₂ ≫ a.hom) =
-      D * ramificationIdealSheaf ℂ (p₂ ≫ a.hom) := by
+      D * ramificationIdealSheaf k₀ (p₂ ≫ a.hom) := by
     rw [← comap_comp, Category.assoc, Iso.hom_inv_id, Category.comp_id,
-      ramificationIdealSheaf_comp ℂ p₂ a.hom 2,
-      ramificationIdealSheaf_eq_top_of_isOpenImmersion ℂ a.hom, comap_top, mul_top]
+      ramificationIdealSheaf_comp k₀ p₂ a.hom 2,
+      ramificationIdealSheaf_eq_top_of_isOpenImmersion k₀ a.hom, comap_top, mul_top]
     exact h₂
-  rw [← hV.comap_ramificationIdealSheafToBase ℂ t ht, ← ht] at hPole
+  rw [← hV.comap_ramificationIdealSheafToBase k₀ t ht, ← ht] at hPole
   simpa only [comap_mul, ← comap_comp, Iso.inv_hom_id_assoc, Iso.inv_hom_id,
     Scheme.IdealSheafData.comap_id, Category.assoc] using
     congrArg (fun I : Y.IdealSheafData ↦ I.comap t.inv) hPole
@@ -172,17 +175,17 @@ coordinate retains its original relative order. The contraction is a single
 toric star blowdown. -/
 theorem exists_plane_resolution_of_quadric_mutation
     (hg : g ≫ fP = T.toBase ≫ fX) (hbir : Scheme.BirationalOver g (𝟙 P))
-    (c : ℂˣ) (j : Fin (n + 1)) (hj : hT.baseCenter j = pivotPoint[c])
+    (c : k₀ˣ) (j : Fin (n + 1)) (hj : hT.baseCenter j = pivotPoint[c])
     (hfirst : ∀ l < j, hT.baseCenter l ≠ pivotPoint[c]) :
     let : Nonempty Φ.cones := hc.nonempty_cones
     let : Nonempty (Ψ).cones := (hcΨ).nonempty_cones
     let : SmoothOfRelativeDimension 2 fX := by
-      rw [Fan.algebraicRealization_over]
-      exact rankTwo ▸ Φ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
+      rw [Fan.finiteFanScheme_over k₀]
+      exact rankTwo ▸ Φ.smoothOfRelativeDimension_finiteFanSchemeToSpec k₀ hΦ
     let : IsNoetherian X := by
-      let : Smooth Φ.algebraicRealizationStructureMap :=
-        Φ.smooth_algebraicRealizationStructureMap hΦ
-      exact isNoetherian_of_finiteType Φ.algebraicRealizationStructureMap
+      let : Smooth (Φ.finiteFanSchemeToSpec k₀) :=
+        Φ.smooth_finiteFanSchemeToSpec k₀ hΦ
+      exact isNoetherian_of_finiteType (Φ.finiteFanSchemeToSpec k₀)
     let : IsIntegral Y := hT.isIntegral fX
     let : IsModification T.toBase := hT.isModification_of_smoothOfRelativeDimension_two fX
     let x : Additive (LineBundleClass X) × (Fin (n + 1) → ℤ) :=
@@ -197,22 +200,22 @@ theorem exists_plane_resolution_of_quadric_mutation
       (k : Z ≅ W),
       let s₀ := hstar.isSubdivision
       T.toBase.toRationalMap.comp mutationMap[c] = (e.hom ≫ U.toBase).toRationalMap ∧
-      k.hom ≫ V₀.toBase = U.toBase ≫ s₀.toFanHom.algebraicMap ≫ planeIso[d].hom ∧
+      k.hom ≫ V₀.toBase = U.toBase ≫ (s₀.toFanHom.finiteFanSchemeHom k₀) ≫ planeIso[d].hom ∧
       (k.inv ≫ e.inv ≫ g) ≫ fP = V₀.toBase ≫ fP ∧
       Scheme.BirationalOver (k.inv ≫ e.inv ≫ g) (𝟙 P) ∧
       (letI : Y.Over S := ⟨T.toBase ≫ fX⟩
        letI : Smooth (Y ↘ S) := (hT.smoothOfRelativeDimension fX).smooth
        let p₁ := e.hom ≫ U.toBase
-       let p₂ := p₁ ≫ s₀.toFanHom.algebraicMap
+       let p₂ := p₁ ≫ (s₀.toFanHom.finiteFanSchemeHom k₀)
        ∀ D : Y.IdealSheafData,
          ∃ (hp₁ : p₁.IsOver S) (hp₂ : p₂.IsOver S),
            letI := hp₁
            letI := hp₂
-           B[Φ,hc].comap T.toBase = D * hT.ramificationIdealSheafToBase ℂ →
-             B[Ψ,hcΨ].comap p₁ = D * ramificationIdealSheaf ℂ p₁ ∧
-             B[Plane[d],hcPlane[d]].comap p₂ = D * ramificationIdealSheaf ℂ p₂ ∧
+           B[Φ,hc].comap T.toBase = D * hT.ramificationIdealSheafToBase k₀ →
+             B[Ψ,hcΨ].comap p₁ = D * ramificationIdealSheaf k₀ p₁ ∧
+             B[Plane[d],hcPlane[d]].comap p₂ = D * ramificationIdealSheaf k₀ p₂ ∧
              (B[Plane[d],hcPlane[d]].comap planeIso[d].inv).comap V₀.toBase =
-               D.comap (e ≪≫ k).inv * hV.ramificationIdealSheafToBase ℂ) ∧
+               D.comap (e ≪≫ k).inv * hV.ramificationIdealSheafToBase k₀) ∧
       let y := (V₀.picardMarking hV fP).symm (Additive.ofMul (pullback (k.inv ≫ e.inv ≫ g) H))
       degree y.1 = b₀ + a₀ - m j ∧
       y.2 (Fin.castAdd (1 + n) (0 : Fin 1)) = m j - b₀ ∧
@@ -226,14 +229,14 @@ theorem exists_plane_resolution_of_quadric_mutation
   let := hnoeth
   let := hY
   let := hmod
-  let : (X).IsProjectiveOver ℂ := Φ.isProjectiveOver_algebraicRealization_of_isComplete hΦ hc b
+  let : (X).IsProjectiveOver k₀ := Φ.isProjectiveOver_finiteFanScheme_of_isComplete k₀ hΦ hc b
   obtain ⟨Z, U, hU, e, hmap, hg', hbir', _, _, hα, hβ, hfirst', htail⟩ :=
-    hT.exists_hirzebruchOne_resolution_of_quadric_mutation b hΦ hc r hr g hg hbir c j hj hfirst
+    hT.exists_hirzebruchOne_resolution_of_quadric_mutation k₀ b hΦ hc r hr g hg hbir c j hj hfirst
   obtain ⟨d, _, W, V₀, hV, k, hproj, hg'', hbir'', hdegree, hvertex, hrem, -, hstar⟩ :=
-    hU.exists_plane_resolution_of_hirzebruchOne b hΨ hcΨ s hs (e.inv ≫ g) hg' hbir'
+    hU.exists_plane_resolution_of_hirzebruchOne k₀ b hΨ hcΨ s hs (e.inv ≫ g) hg' hbir'
   refine ⟨Z, U, hU, e, d, hstar, W, V₀, hV, k, hmap, hproj,
     by simpa only [Category.assoc] using hg'', by simpa only [Category.assoc] using hbir'',
-    quadric_mutation_poleIdeal b hΦ hc r hr hT c e d hstar.isSubdivision hV k hmap hproj, ?_⟩
+    quadric_mutation_poleIdeal k₀ b hΦ hc r hr hT c e d hstar.isSubdivision hV k hmap hproj, ?_⟩
   intro y
   have hy : degree y.1 = b₀ + a₀ - m j := by
     simpa only [y, Category.assoc, hα, b₀, a₀, m, sub_neg_eq_add] using hdegree
@@ -243,10 +246,10 @@ theorem exists_plane_resolution_of_quadric_mutation
     omega
   have hpos : 0 < degree y.1 := by
     rw [hdegree]
-    let : (X').IsProjectiveOver ℂ :=
-      (Ψ).isProjectiveOver_algebraicRealization_of_isComplete hΨ hcΨ b
+    let : (X').IsProjectiveOver k₀ :=
+      (Ψ).isProjectiveOver_finiteFanScheme_of_isComplete k₀ hΨ hcΨ b
     obtain ⟨hFiber, hSection, -⟩ :=
-      hU.hirzebruch_resolution_degree_bounds b 1 hΨ hcΨ s hs (e.inv ≫ g) hg' hbir'
+      hU.hirzebruch_resolution_degree_bounds k₀ b 1 hΨ hcΨ s hs (e.inv ≫ g) hg' hbir'
     exact hFiber.trans_le (by simpa only [Nat.cast_one, one_mul] using hSection)
   refine ⟨hy, hf, ?_, ?_, hpos⟩
   · have h : y.2 (Fin.natAdd 1 firstIndex) = -a₀ - x.2 j := by

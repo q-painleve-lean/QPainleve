@@ -27,6 +27,8 @@ open Scheme
 
 namespace QPainleve.SignedClusterModularGroup.GeometricRealization
 
+variable {k₀ : Type} [Field k₀] [IsAlgClosed k₀]
+
 variable {n : ℕ} [NeZero n] {L₀ L₁ : Type} [AddCommGroup L₀] [AddCommGroup L₁]
   {B₀ : BilinForm ℤ L₀} {B₁ : BilinForm ℤ L₁} {d₀ : ZMod n → L₀} {d₁ : ZMod n → L₁}
 
@@ -95,20 +97,20 @@ end BoundaryMarking
 
 section Words
 
-local notation "S" => Spec (CommRingCat.of ℂ)
-local notation "X[" r "]" => scheme ℂ (Fin r →₀ ℤ)
-local notation "Maps[" E "]" => (ClusterModularGroup ℂ E)ᵐᵒᵖ
-local notation "eval[" E "," v "]" => op (clusterModularGroupMap ℂ E v)
+local notation "S" => Spec (CommRingCat.of k₀)
+local notation "X[" coeff "," r "]" => scheme coeff (Fin r →₀ ℤ)
+local notation "Maps[" E "]" => (ClusterModularGroup k₀ E)ᵐᵒᵖ
+local notation "eval[" E "," v "]" => op (clusterModularGroupMap k₀ E v)
 local notation "asIsometry[" B "]" => Equiv.symm (BilinForm.isometryGroupEquivIsometryEquiv B)
 local notation "xmap[" E "," v "]" =>
-  Quiver.Path.xRationalMap (B := E) (C := E) ℂ (End.asHom (Subtype.val v))
+  Quiver.Path.xRationalMap (B := E) (C := E) k₀ (End.asHom (Subtype.val v))
 
 variable {r : ℕ} {E₀ E₁ : SkewExchangeMatrix (Fin r)}
-  {T₀ T₁ : Over S} [Nonempty T₀.left] [Smooth T₀.hom] [PreirreducibleSpace T₀.left]
+  {T₀ T₁ : Over (Spec (.of k₀))} [Nonempty T₀.left] [Smooth T₀.hom] [PreirreducibleSpace T₀.left]
   [Nonempty T₁.left] [Smooth T₁.hom]
-  {P₀ : Point T₀ → MarkedSurface ℂ n B₀ X[r]} {P₁ : Point T₁ → MarkedSurface ℂ n B₁ X[r]}
+  {P₀ : Point T₀ → MarkedSurface k₀ n B₀ X[k₀,r]} {P₁ : Point T₁ → MarkedSurface k₀ n B₁ X[k₀,r]}
   {C : T₀.left.PartialMap T₁.left} [IsDominant C.hom] [C.IsOver T₀.hom T₁.hom]
-  {w : Word E₀ E₁} (R : GeometricRealization P₀ P₁ C (w.xRationalMap ℂ))
+  {w : Word E₀ E₁} (R : GeometricRealization P₀ P₁ C (w.xRationalMap k₀))
   {h₀ : ∀ c, (P₀ c).pair.hom.left.ker.IsEffectiveCartier}
   {h₁ : ∀ c, (P₁ c).pair.hom.left.ker.IsEffectiveCartier}
   (hd₀ : ∀ c j, (P₀ c).boundaryClass (h₀ c) j = d₀ j)
@@ -117,11 +119,11 @@ variable {r : ℕ} {E₀ E₁ : SkewExchangeMatrix (Fin r)}
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {Φ : Fan i} [hΦ₀ : Nonempty Φ.cones]
   {b : Module.Basis (Fin 2) ℤ N} {s : Fin r → Φ.Ray} {hΦ : Φ.IsRegular}
-  {m : ℕ} [NeZero m] [PrestableFamily ((Φ.boundaryIdeal hΦ₀).subscheme ↘ S)]
-  {γ : Type*} {p : γ → ((Φ.boundaryIdeal hΦ₀).subscheme ↘ S).smoothLocus}
+  {m : ℕ} [NeZero m] [PrestableFamily ((Φ.toricBoundaryIdeal k₀ hΦ₀).subscheme ↘ Spec (.of k₀))]
+  {γ : Type*} {p : γ → ((Φ.toricBoundaryIdeal k₀ hΦ₀).subscheme ↘ Spec (.of k₀)).smoothLocus}
   {T : NodalCycleNumbering p m} {origin : ZMod m}
-  {ι : L₁ →ₗ[ℤ] Additive (LineBundleClass Φ.algebraicRealization) × (Fin r → ℤ)}
-  {centers : Point T₁ → Multiplicative (Fin r → ℤ) →* ℂˣ}
+  {ι : L₁ →ₗ[ℤ] Additive (LineBundleClass (Φ.finiteFanScheme k₀)) × (Fin r → ℤ)}
+  {centers : Point T₁ → Multiplicative (Fin r → ℤ) →* k₀ˣ}
 
 local notation "Models[" D "]" =>
   HasToricTargetModels (b := b) (s := s) (hΦ := hΦ) (T := T) (origin := origin)
@@ -132,15 +134,15 @@ X map, the loop pullbacks are conjugate and the two loop orientations agree. -/
 theorem picard_conjugation_of_comp_xMap_eq
     {D : T₀.left.PartialMap T₀.left} [IsDominant D.hom] [D.IsOver T₀.hom T₀.hom]
     {J : T₁.left.PartialMap T₁.left} [IsDominant J.hom] [J.IsOver T₁.hom T₁.hom]
-    {F G : X[r] ⤏ X[r]} [F.IsDominant] [G.IsDominant]
+    {F G : X[k₀,r] ⤏ X[k₀,r]} [F.IsDominant] [G.IsDominant]
     (A : GeometricRealization P₀ P₀ D F) (B : GeometricRealization P₁ P₁ J G)
-    (hcomp : (w.xRationalMap ℂ).comp G = F.comp (w.xRationalMap ℂ))
+    (hcomp : (w.xRationalMap k₀).comp G = F.comp (w.xRationalMap k₀))
     (hc : Φ.IsComplete) (hι : Function.Injective ι)
     (hindex : (Fan.rayChargeMap s).range.toAddSubgroup.index ≠ 0)
     (hC : Models[C]) (hJ : Models[J]) :
     asIsometry[B₁] B.picard = R.picard.symm.isometryGroupCongr (asIsometry[B₀] A.picard) ∧
       B.orientation = A.orientation := by
-  let : (F.comp (w.xRationalMap ℂ)).IsDominant := RationalMap.instIsDominantComp _ _
+  let : (F.comp (w.xRationalMap k₀)).IsDominant := RationalMap.instIsDominantComp _ _
   obtain ⟨hpic, hact⟩ := (R.comp B).marked_actions_eq_of_xMap_eq (A.comp R)
     hcomp hc hι hindex centers (hJ.comp C) (hC.comp D)
   refine ⟨?_, ?_⟩
@@ -170,41 +172,41 @@ theorem picardHom_base_change
       (hD : IsDominant D.hom) (hDO : D.IsOver T₀.hom T₀.hom),
       letI := hD
       letI := hDO
-      letI : xmap[E₀,v].IsDominant := Quiver.Path.instIsDominantXRationalMap ℂ (End.asHom v.val)
+      letI : xmap[E₀,v].IsDominant := Quiver.Path.instIsDominantXRationalMap k₀ (End.asHom v.val)
       ∃ A : GeometricRealization P₀ P₀ D xmap[E₀,v],
         (ρ₀ eval[E₀,v]).val = asIsometry[B₀] A.picard)
     (hreal₁ : ∀ v : inversionFreeLoops E₁, ∃ (D : T₁.left.PartialMap T₁.left)
       (hD : IsDominant D.hom) (hDO : D.IsOver T₁.hom T₁.hom),
       letI := hD
       letI := hDO
-      letI : xmap[E₁,v].IsDominant := Quiver.Path.instIsDominantXRationalMap ℂ (End.asHom v.val)
+      letI : xmap[E₁,v].IsDominant := Quiver.Path.instIsDominantXRationalMap k₀ (End.asHom v.val)
       ∃ A : GeometricRealization P₁ P₁ D xmap[E₁,v],
         Models[D] ∧ (ρ₁ eval[E₁,v]).val = asIsometry[B₁] A.picard) :
-    ρ₁.comp (MulEquiv.op (clusterModularGroupCongr ℂ w)).toMonoidHom =
+    ρ₁.comp (MulEquiv.op (clusterModularGroupCongr k₀ w)).toMonoidHom =
       (R.boundaryRotationGroupCongr hd₀ hd₁).toMonoidHom.comp ρ₀ := by
   apply MonoidHom.ext
   intro g
-  obtain ⟨u, hu⟩ := clusterModularGroupMap_surjective ℂ E₀ g.unop
-  obtain ⟨v, hv⟩ := clusterModularGroupMap_surjective ℂ E₁ (clusterModularGroupCongr ℂ w g.unop)
+  obtain ⟨u, hu⟩ := clusterModularGroupMap_surjective k₀ E₀ g.unop
+  obtain ⟨v, hv⟩ := clusterModularGroupMap_surjective k₀ E₁ (clusterModularGroupCongr k₀ w g.unop)
   obtain ⟨D, hD, hDO, A, hA⟩ := hreal₀ u
   obtain ⟨J, hJ, hJO, B, hmodel, hB⟩ := hreal₁ v
   let := hD
   let := hDO
   let := hJ
   let := hJO
-  let : xmap[E₀,u].IsDominant := Quiver.Path.instIsDominantXRationalMap ℂ (End.asHom u.val)
-  let : xmap[E₁,v].IsDominant := Quiver.Path.instIsDominantXRationalMap ℂ (End.asHom v.val)
+  let : xmap[E₀,u].IsDominant := Quiver.Path.instIsDominantXRationalMap k₀ (End.asHom u.val)
+  let : xmap[E₁,v].IsDominant := Quiver.Path.instIsDominantXRationalMap k₀ (End.asHom v.val)
   -- The two composites act alike on independent X coordinates.
   let u' : Word E₀ E₀ := u.val.asHom
   let v' : Word E₁ E₁ := v.val.asHom
-  have hx : v'.xPullback ℂ = ((w.reverse.comp u').comp w).xPullback ℂ :=
-    (clusterModularGroupMap_eq_congr_iff ℂ w u'
+  have hx : v'.xPullback k₀ = ((w.reverse.comp u').comp w).xPullback k₀ :=
+    (clusterModularGroupMap_eq_congr_iff k₀ w u'
       ((mem_inversionFreeLoops_iff E₀ _).mp u.property) v'
       ((mem_inversionFreeLoops_iff E₁ _).mp v.property)).mp (hu.symm ▸ hv)
-  have hcomp := w.xRationalMap_comp_eq_of_xPullback_eq_conj ℂ hx
+  have hcomp := w.xRationalMap_comp_eq_of_xPullback_eq_conj k₀ hx
   have hpic := (R.picard_conjugation_of_comp_xMap_eq A B hcomp hc hι hindex hC hmodel).1
   have hg : g = eval[E₀,u] := op_unop g ▸ congrArg op hu.symm
-  have hv' : MulEquiv.op (clusterModularGroupCongr ℂ w) g = eval[E₁,v] := congrArg op hv.symm
+  have hv' : MulEquiv.op (clusterModularGroupCongr k₀ w) g = eval[E₁,v] := congrArg op hv.symm
   simp only [MonoidHom.comp_apply, MulEquiv.coe_toMonoidHom, hv']
   rw [hg]
   apply Subtype.ext

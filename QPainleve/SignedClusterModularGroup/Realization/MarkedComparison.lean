@@ -36,8 +36,10 @@ namespace QPainleve.SignedClusterModularGroup
 open MarkedSurface (surfaceIso boundaryIso boundaryImageIso_hom_comp imagePairIso
   imagePairIso_hom_comp imagePairIso_boundaryAction)
 
-local notation "S" => Spec (CommRingCat.of ℂ)
-local notation "Xtor[" r "]" => Spec (CommRingCat.of (LaurentRing ℂ (Fin r)))
+variable {k : Type} [Field k] [IsAlgClosed k]
+
+local notation "S" => Spec (CommRingCat.of k)
+local notation "Xtor[" r "]" => Spec (CommRingCat.of (LaurentRing k (Fin r)))
 
 local notation "D[" P "]" => Scheme.Hom.ker (Over.Hom.left (Arrow.hom (MarkedSurface.pair P)))
 section Toric
@@ -48,17 +50,21 @@ variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {B₁ : LinearMap.BilinForm ℤ L₁}
   {b : Module.Basis (Fin 2) ℤ N} {s : Fin r → Φ.Ray} {hΦ : Φ.IsRegular}
 
-local notation "Dtor[" Φ "," h₀ "]" => Scheme.IdealSheafData.subscheme (Fan.boundaryIdeal Φ h₀)
+local notation "Dtor[" Φ "," h₀ "]" =>
+  Scheme.IdealSheafData.subscheme (Fan.toricBoundaryIdeal k Φ h₀)
 local notation "center" c:arg => (fun j : Fin r ↦ c (ofAdd (Pi.single j 1)))
-local notation "Model[" b "," s "," c "]" => Fan.internalBlowupTower b s (center c)
+local notation "Model[" b "," s "," c "]" => Fan.internalBlowupTower k b s (center c)
 local notation "prime[" b "," s "," hΦ "," c "]" =>
-  Fan.internalBlowupBoundaryPrimeEquiv hΦ b s (center c)
+  Fan.internalBlowupBoundaryPrimeEquiv k hΦ b s (center c)
 local notation "Pic[" Φ "," r "]" =>
-  (Additive (LineBundleClass (Fan.algebraicRealization Φ)) × (Fin r → ℤ))
+  (Additive (LineBundleClass (Fan.finiteFanScheme k Φ)) × (Fin r → ℤ))
 
-variable [PrestableFamily (Dtor[Φ,h₀] ↘ S)] {γ : Type*} {a : γ → (Dtor[Φ,h₀] ↘ S).smoothLocus}
-  {T : NodalCycleNumbering a m} {origin : ZMod m} {ι : L₁ →ₗ[ℤ] Pic[Φ,r]}
-  {c d : Multiplicative (Fin r → ℤ) →* ℂˣ} {P Q : MarkedSurface ℂ n B₁ Xtor[r]}
+variable [PrestableFamily ((Φ.toricBoundaryIdeal k h₀).subscheme ↘ Spec (.of k))]
+  {γ : Type*} {a : γ → ((Φ.toricBoundaryIdeal k h₀).subscheme ↘ Spec (.of k)).smoothLocus}
+  {T : NodalCycleNumbering a m} {origin : ZMod m}
+  {ι : L₁ →ₗ[ℤ] Additive (LineBundleClass (Φ.finiteFanScheme k)) × (Fin r → ℤ)}
+  {c d : Multiplicative (Fin r → ℤ) →* kˣ}
+  {P Q : MarkedSurface k n B₁ (Spec (.of (LaurentRing k (Fin r))))}
   (p : ContractedToricFiber b s hΦ T origin ι c P)
   (q : ContractedToricFiber b s hΦ T origin ι d Q)
 
@@ -77,8 +83,9 @@ theorem isOrientedCycleSubdivision_comp_boundaryImage :
       (by rw [P.boundaryCycleAction_boundaryImageIso, map_one]))
 
 variable (u : ZMod m ≃ Φ.Ray)
-  (hvertices : ∀ j, Dtor[Φ,h₀].dualGraphVertexEquiv a (T.vertex j) =
-    Φ.boundaryNormalizationComponentEquiv hΦ (u j))
+  (hvertices : ∀ j,
+    (Φ.toricBoundaryIdeal k h₀).subscheme.dualGraphVertexEquiv a (T.vertex j) =
+    Φ.boundaryNormalizationComponentEquiv k hΦ (u j))
 
 include p hvertices in
 private theorem projection_prime_origin :
@@ -86,15 +93,16 @@ private theorem projection_prime_origin :
     p.projection (prime[b,s,hΦ,c] (u origin)).val =
       P.pair.hom.left (P.cycle.componentGenericPoint 0) := by
   let : PrestableFamily (P.boundary ↘ S) := P.prestable
-  have hprime := Fan.internalBlowupBoundaryPrime_val hΦ b s (center c) (u origin)
+  have hprime := Fan.internalBlowupBoundaryPrime_val k hΦ b s (center c) (u origin)
   rw [← hvertices origin, ← T.component_apply origin, ← T.componentGenericPoint_def] at hprime
   rw [hprime, ← Hom.comp_apply, ← p.boundary_comp, Hom.comp_apply, p.component_zero]
 
-variable [Φ.algebraicRealization.IsProjectiveOver ℂ] [B₁.IsPerfPair]
+variable [(Φ.finiteFanScheme k).IsProjectiveOver k] [B₁.IsPerfPair]
   (hdet : ∀ j, b.detDualEquiv (u j).primitiveGenerator (u (j + 1)).primitiveGenerator = 1)
   (hnodes : ∀ j, ∃ σ : Φ.cones, (u j).toCone ≤ σ ∧ (u (j + 1)).toCone ≤ σ ∧
-    (Φ.boundaryIdeal h₀).subschemeι (Dtor[Φ,h₀].dualGraphEdgeEquiv a (T.edge j)).val =
-      Φ.distinguishedPointHom σ (IsLocalRing.closedPoint ℂ))
+    (Φ.toricBoundaryIdeal k h₀).subschemeι
+      ((Φ.toricBoundaryIdeal k h₀).subscheme.dualGraphEdgeEquiv a (T.edge j)).val =
+      (Φ.distinguishedSection (R := k) σ) (IsLocalRing.closedPoint k))
 
 include hvertices hdet hnodes in
 /-- A pair isomorphism preserving both markings and the numbered branches intertwines
@@ -114,8 +122,8 @@ theorem comp_evaluation_eq_of_marked_actions
   let : PrestableFamily (Q.boundary ↘ S) := Q.prestable
   let : SmoothOfRelativeDimension 2 (P.surface ↘ S) := P.smooth
   let : SmoothOfRelativeDimension 2 (Q.surface ↘ S) := Q.smooth
-  let : P.surface.IsProjectiveOver ℂ := P.projective
-  let : Q.surface.IsProjectiveOver ℂ := Q.projective
+  let : P.surface.IsProjectiveOver k := P.projective
+  let : Q.surface.IsProjectiveOver k := Q.projective
   let := P.isPerfPair_intersectionForm
   let := Q.isPerfPair_intersectionForm
   let vB := imagePairIso e
@@ -136,7 +144,7 @@ theorem comp_evaluation_eq_of_marked_actions
     ⟨Q.boundaryPrime hq.cartier 0, Q.boundaryPrime_mem_boundaryPrimes hq.cartier 0⟩
   rw [p.evaluation_eq, q.evaluation_eq]
   simpa only [heP, heQ] using
-    (Fan.comp_contractedXEvaluation_eq_of_matching_markings b s hΦ c d hA hB' eP eQ
+    (Fan.comp_contractedXEvaluation_eq_of_matching_markings k b s hΦ c d hA hB' eP eQ
         P.imageCycle Q.imageCycle T hc
         (by rw [heP]; exact p.projection_over) (by rw [heQ]; exact q.projection_over)
         (by rw [← comap_comp, heP]; exact p.support_comap)
@@ -171,15 +179,21 @@ variable {A N₀ : Type} [AddCommGroup A] [AddCommGroup N₀] [IsAddFG A] [IsAdd
   [Module.Free ℤ A] [Module.Free ℤ N₀]
   {L₀ : Type} [AddCommGroup L₀] {B₀ : LinearMap.BilinForm ℤ L₀}
 
-local notation "Torus[" B "]" => groupScheme ℂ (FGCommGrpCat.of (Multiplicative B))
+local notation "Torus[" B "]" => groupScheme k (FGCommGrpCat.of (Multiplicative B))
 
-variable [Φ.algebraicRealization.IsProjectiveOver ℂ] [B₁.IsPerfPair]
-  [Smooth (Torus[A]).X.hom] {T₁ : Over S}
-  {P₀ : Point (Torus[A]).X → MarkedSurface ℂ n B₀ (Torus[A]).X.left}
-  {P₁ : Point T₁ → MarkedSurface ℂ n B₁ Xtor[r]}
-  {C C' : (Torus[A]).X.left.PartialMap T₁.left} [IsDominant C.hom] [IsDominant C'.hom]
-  [C.IsOver (Torus[A]).X.hom T₁.hom] [C'.IsOver (Torus[A]).X.hom T₁.hom]
-  {F G : (Torus[A]).X.left ⤏ Xtor[r]} [F.IsDominant] [G.IsDominant]
+variable [(Φ.finiteFanScheme k).IsProjectiveOver k] [B₁.IsPerfPair]
+  {T₁ : Over (Spec (.of k))}
+  [Smooth (groupScheme k (FGCommGrpCat.of (Multiplicative A))).X.hom]
+  {P₀ : Point (groupScheme k (FGCommGrpCat.of (Multiplicative A))).X →
+    MarkedSurface k n B₀ (groupScheme k (FGCommGrpCat.of (Multiplicative A))).X.left}
+  {P₁ : Point T₁ → MarkedSurface k n B₁ (Spec (.of (LaurentRing k (Fin r))))}
+  {C C' : (groupScheme k (FGCommGrpCat.of (Multiplicative A))).X.left.PartialMap T₁.left}
+  [IsDominant C.hom] [IsDominant C'.hom]
+  [C.IsOver (groupScheme k (FGCommGrpCat.of (Multiplicative A))).X.hom T₁.hom]
+  [C'.IsOver (groupScheme k (FGCommGrpCat.of (Multiplicative A))).X.hom T₁.hom]
+  {F G : (groupScheme k (FGCommGrpCat.of (Multiplicative A))).X.left ⤏
+    Spec (.of (LaurentRing k (Fin r)))}
+  [F.IsDominant] [G.IsDominant]
 
 /-- Equality of the constant Picard pullback and the full ordered boundary action
 implies equality of the independent rational X maps. The source evaluation
@@ -195,15 +209,17 @@ theorem GeometricRealization.xMap_eq_of_marked_actions_eq
     (hchart : ∀ t : Point (Torus[A]).X, (∃ x : S ⟶ U.toScheme, x ≫ U.ι = t.left) →
       ∃ (j : (Torus[N₀]).X.left ⤏ (P₀ t).surface) (_ : j.IsDominant),
         j.comp (P₀ t).evaluation =
-          (QPainleve.CharacterTorus.evaluationAtCenter ℂ v t.left (Over.w t)).toRationalMap)
+          (QPainleve.CharacterTorus.evaluationAtCenter k v t.left (Over.w t)).toRationalMap)
     (hc : Φ.IsComplete) (u : ZMod m ≃ Φ.Ray)
-    (hvertices : ∀ j, Dtor[Φ,h₀].dualGraphVertexEquiv a (T.vertex j) =
-      Φ.boundaryNormalizationComponentEquiv hΦ (u j))
+    (hvertices : ∀ j,
+    (Φ.toricBoundaryIdeal k h₀).subscheme.dualGraphVertexEquiv a (T.vertex j) =
+      Φ.boundaryNormalizationComponentEquiv k hΦ (u j))
     (hdet : ∀ j, b.detDualEquiv (u j).primitiveGenerator (u (j + 1)).primitiveGenerator = 1)
     (hnodes : ∀ j, ∃ σ : Φ.cones, (u j).toCone ≤ σ ∧ (u (j + 1)).toCone ≤ σ ∧
-      (Φ.boundaryIdeal h₀).subschemeι (Dtor[Φ,h₀].dualGraphEdgeEquiv a (T.edge j)).val =
-        Φ.distinguishedPointHom σ (IsLocalRing.closedPoint ℂ))
-    (centers : Point T₁ → (Multiplicative (Fin r → ℤ) →* ℂˣ)) (survives : Set Φ.Ray)
+      (Φ.toricBoundaryIdeal k h₀).subschemeι
+      ((Φ.toricBoundaryIdeal k h₀).subscheme.dualGraphEdgeEquiv a (T.edge j)).val =
+        (Φ.distinguishedSection (R := k) σ) (IsLocalRing.closedPoint k))
+    (centers : Point T₁ → (Multiplicative (Fin r → ℤ) →* kˣ)) (survives : Set Φ.Ray)
     (hC : GeometricRealization.HasNodalToricTargetModels (T₀ := (Torus[A]).X) (T₁ := T₁)
       (b := b) (s := s) (hΦ := hΦ) (toricCycle := T) (origin := origin) (ι := ι)
       (P := P₁) centers survives C)
@@ -239,12 +255,12 @@ variable {l n : ℕ} [NeZero n] {L : Type} [AddCommGroup L]
   {B : LinearMap.BilinForm ℤ L}
 
 local notation "Cent" => (Fin l → ℤ)
-local notation "T" => Over.mk (structureMap ℂ Cent)
-local notation "Xtor" => scheme ℂ (Fin l →₀ ℤ)
-local notation "Torus[" U "]" => Grp.X (groupScheme ℂ (FGCommGrpCat.of (Multiplicative U)))
+local notation "T" => Over.mk (structureMap k Cent)
+local notation "Xtor" => scheme k (Fin l →₀ ℤ)
+local notation "Torus[" U "]" => Grp.X (groupScheme k (FGCommGrpCat.of (Multiplicative U)))
 local notation "centerCoordinates" =>
-  diagonalizableGroupSchemeIso ℂ (FGCommGrpCat.of (Multiplicative Cent))
-local notation "χ[" p "]" => pointsEquiv ℂ Cent
+  diagonalizableGroupSchemeIso k (FGCommGrpCat.of (Multiplicative Cent))
+local notation "χ[" p "]" => pointsEquiv k Cent
   (Subtype.mk (Over.Hom.left (p : Point T)) (Over.w (p : Point T)))
 local notation "src[" C "," x "]" =>
   x ≫ PartialMap.domainSource (X := T) (Y := T) C
@@ -252,32 +268,32 @@ local notation "src[" C "," x "]" =>
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {Φ : Fan i} [hΦ₀ : Nonempty Φ.cones] {m : ℕ} [NeZero m]
   {b : Module.Basis (Fin 2) ℤ N} {s : Fin l → Φ.Ray} {hΦ : Φ.IsRegular}
-  [PrestableFamily ((Φ.boundaryIdeal hΦ₀).subscheme ↘ S)]
-  {γ : Type*} {a : γ → ((Φ.boundaryIdeal hΦ₀).subscheme ↘ S).smoothLocus}
+  [PrestableFamily ((Φ.toricBoundaryIdeal k hΦ₀).subscheme ↘ Spec (.of k))]
+  {γ : Type*} {a : γ → ((Φ.toricBoundaryIdeal k hΦ₀).subscheme ↘ Spec (.of k)).smoothLocus}
   {τ : NodalCycleNumbering a m} {origin : ZMod m}
-  {ι : L →ₗ[ℤ] Additive (LineBundleClass Φ.algebraicRealization) × (Fin l → ℤ)}
-  {P : Point (Over.mk (structureMap ℂ (Fin l → ℤ))) →
-    MarkedSurface ℂ n B (scheme ℂ (Fin l →₀ ℤ))}
-  {C C' : (scheme ℂ (Fin l → ℤ)).PartialMap (scheme ℂ (Fin l → ℤ))}
+  {ι : L →ₗ[ℤ] Additive (LineBundleClass (Φ.finiteFanScheme k)) × (Fin l → ℤ)}
+  {P : Point (Over.mk (structureMap k (Fin l → ℤ))) →
+    MarkedSurface k n B (scheme k (Fin l →₀ ℤ))}
+  {C C' : (scheme k (Fin l → ℤ)).PartialMap (scheme k (Fin l → ℤ))}
   [IsDominant C.hom] [IsDominant C'.hom]
-  [C.IsOver (Over.mk (structureMap ℂ (Fin l → ℤ))).hom
-    (Over.mk (structureMap ℂ (Fin l → ℤ))).hom]
-  [C'.IsOver (Over.mk (structureMap ℂ (Fin l → ℤ))).hom
-    (Over.mk (structureMap ℂ (Fin l → ℤ))).hom]
-  {F G : scheme ℂ (Fin l →₀ ℤ) ⤏ scheme ℂ (Fin l →₀ ℤ)} [F.IsDominant] [G.IsDominant]
-  [F.IsOver (structureMap ℂ (Fin l →₀ ℤ)) (structureMap ℂ (Fin l →₀ ℤ))]
-  [G.IsOver (structureMap ℂ (Fin l →₀ ℤ)) (structureMap ℂ (Fin l →₀ ℤ))]
+  [C.IsOver (Over.mk (structureMap k (Fin l → ℤ))).hom
+    (Over.mk (structureMap k (Fin l → ℤ))).hom]
+  [C'.IsOver (Over.mk (structureMap k (Fin l → ℤ))).hom
+    (Over.mk (structureMap k (Fin l → ℤ))).hom]
+  {F G : scheme k (Fin l →₀ ℤ) ⤏ scheme k (Fin l →₀ ℤ)} [F.IsDominant] [G.IsDominant]
+  [F.IsOver (structureMap k (Fin l →₀ ℤ)) (structureMap k (Fin l →₀ ℤ))]
+  [G.IsOver (structureMap k (Fin l →₀ ℤ)) (structureMap k (Fin l →₀ ℤ))]
 
 local notation "fiberAt" c:arg => ContractedToricFiber b s hΦ τ origin ι (χ[c]) (P c)
 
 omit [IsDominant C.hom]
-  [C.IsOver (Over.mk (structureMap ℂ (Fin l → ℤ))).hom
-    (Over.mk (structureMap ℂ (Fin l → ℤ))).hom] in
+  [C.IsOver (Over.mk (structureMap k (Fin l → ℤ))).hom
+    (Over.mk (structureMap k (Fin l → ℤ))).hom] in
 private theorem exists_precompCenter_chart
     [Module.Free ℤ N] [IsAddFG N] [IsIntegral Torus[Cent].left]
     (eOver : Torus[Cent] ⟶ T) (eX : Torus[Cent].left ≅ Xtor)
     (he : eOver.left = (centerCoordinates).hom)
-    (hcoords : eX.hom = (centerCoordinates).hom ≫ CharacterTorus.map ℂ
+    (hcoords : eX.hom = (centerCoordinates).hom ≫ CharacterTorus.map k
       (Finsupp.linearEquivFunOnFinite ℤ ℤ (Fin l)).toAddEquiv.toAddMonoidHom)
     [IsDominant eOver.left]
     (pSource : ∀ x : CenterPoint (U := T) (V := T) C, fiberAt (src[C,x]))
@@ -286,7 +302,7 @@ private theorem exists_precompCenter_chart
     (hleft : z ≫ (eOver.left.toPartialMap.comp C).domain.ι = c.left) :
     ∃ (j : Torus[N].left ⤏ ((P (c ≫ eOver)).compEvaluation eX.inv).surface)
       (_ : j.IsDominant), j.comp ((P (c ≫ eOver)).compEvaluation eX.inv).evaluation =
-        (evaluationAtCenter ℂ (Fan.rayChargeMap s).toAddMonoidHom c.left
+        (evaluationAtCenter k (Fan.rayChargeMap s).toAddMonoidHom c.left
           (Over.w c)).toRationalMap := by
   let f := eOver.left.toPartialMap
   let : f.IsOver Torus[Cent].hom (T).hom := Hom.isOver_toPartialMap (Over.w eOver)
@@ -304,24 +320,24 @@ private theorem exists_precompCenter_chart
       ← Category.assoc (f.compDomainLeft (Z := T) C), f.compDomainLeft_source (Z := T),
       ← Category.assoc, ht]
   let c' : (S).asOver S ⟶ Torus[Cent] :=
-    Over.homMk c.left ((Over.w c).trans (Spec.map_id (CommRingCat.of ℂ)).symm)
-  let χ' := schemePointsMulEquiv (R := ℂ) (A := ℂ) (FGCommGrpCat.of (Multiplicative Cent)) c'
+    Over.homMk c.left ((Over.w c).trans (Spec.map_id (CommRingCat.of k)).symm)
+  let χ' := schemePointsMulEquiv (R := k) (A := k) (FGCommGrpCat.of (Multiplicative Cent)) c'
   have hχ : χ' = χ[c ≫ eOver] := by
-    apply (pointsEquiv ℂ Cent).symm.injective
+    apply (pointsEquiv k Cent).symm.injective
     apply Subtype.ext
     rw [Equiv.symm_apply_apply]
     -- Expose the underlying scheme map to use the point comparison.
-    change ((pointsEquiv ℂ Cent).symm χ').val = c'.left ≫ eOver.left
+    change ((pointsEquiv k Cent).symm χ').val = c'.left ≫ eOver.left
     rw [he]
     simpa only [χ', MulEquiv.symm_apply_apply] using!
-      (schemePointsMulEquiv_symm_comp_diagonalizableGroupSchemeIso ℂ (B := Cent) χ').symm
+      (schemePointsMulEquiv_symm_comp_diagonalizableGroupSchemeIso k (B := Cent) χ').symm
   let q : ContractedToricFiber b s hΦ τ origin ι χ' (P (c ≫ eOver)) :=
     hχ.symm ▸ hx ▸ pSource x
   obtain ⟨j, hj, hchart⟩ := @Fan.exists_dominant_chart_comp_evaluationAtCenter
-    N V _ _ _ i Φ hΦ₀ l b s c.left (Over.w c) hΦ
+    k _ _ N V _ _ _ i Φ hΦ₀ l b s c.left (Over.w c) hΦ
     (P (c ≫ eOver)).surface (P (c ≫ eOver)).integral q.projection q.modification
   refine ⟨j, hj, ?_⟩
-  let ev := evaluationAtCenter ℂ (Fan.rayChargeMap s).toAddMonoidHom c.left (Over.w c)
+  let ev := evaluationAtCenter k (Fan.rayChargeMap s).toAddMonoidHom c.left (Over.w c)
   have hchart' : j.comp (P (c ≫ eOver)).evaluation = (ev ≫ eX.hom).toRationalMap := by
     rw [q.evaluation_eq, hcoords]
     exact hchart
@@ -335,15 +351,15 @@ independent rational X maps. The source toric models are needed only on the firs
 center domain, and the target models need only agree on which boundary rays survive. -/
 theorem xMap_eq_of_marked_actions_on_center_domains
     (R : GeometricRealization P P C F) (R' : GeometricRealization P P C' G)
-    [Φ.algebraicRealization.IsProjectiveOver ℂ] [B.IsPerfPair]
+    [(Φ.finiteFanScheme k).IsProjectiveOver k] [B.IsPerfPair]
     (hcΦ : Φ.IsComplete) (u : ZMod m ≃ Φ.Ray)
-    (hvertices : ∀ j, (Φ.boundaryIdeal hΦ₀).subscheme.dualGraphVertexEquiv a (τ.vertex j) =
-      Φ.boundaryNormalizationComponentEquiv hΦ (u j))
+    (hvertices : ∀ j, (Φ.toricBoundaryIdeal k hΦ₀).subscheme.dualGraphVertexEquiv a (τ.vertex j) =
+      Φ.boundaryNormalizationComponentEquiv k hΦ (u j))
     (hdet : ∀ j, b.detDualEquiv (u j).primitiveGenerator (u (j + 1)).primitiveGenerator = 1)
     (hnodes : ∀ j, ∃ σ : Φ.cones, (u j).toCone ≤ σ ∧ (u (j + 1)).toCone ≤ σ ∧
-      (Φ.boundaryIdeal hΦ₀).subschemeι
-        ((Φ.boundaryIdeal hΦ₀).subscheme.dualGraphEdgeEquiv a (τ.edge j)).val =
-        Φ.distinguishedPointHom σ (IsLocalRing.closedPoint ℂ))
+      (Φ.toricBoundaryIdeal k hΦ₀).subschemeι
+        ((Φ.toricBoundaryIdeal k hΦ₀).subscheme.dualGraphEdgeEquiv a (τ.edge j)).val =
+        (Φ.distinguishedSection (R := k) σ) (IsLocalRing.closedPoint k))
     (pSource : ∀ x : CenterPoint (U := T) (V := T) C, fiberAt (src[C,x]))
     (survives : Set Φ.Ray)
     (pTarget : HasNodalToricTargetModels (T₀ := T) (T₁ := T) (b := b) (s := s) (hΦ := hΦ)
@@ -358,16 +374,16 @@ theorem xMap_eq_of_marked_actions_on_center_domains
   let e := centerCoordinates
   let coord : (Fin l →₀ ℤ) ≃+ Additive (FGCommGrpCat.of (Multiplicative Cent)) :=
     (Finsupp.linearEquivFunOnFinite ℤ ℤ (Fin l)).toAddEquiv
-  let eX : Torus[Cent].left ≅ Xtor := e ≪≫ CharacterTorus.mapIso ℂ coord
-  have he : e.hom ≫ (T).hom = Torus[Cent].hom := diagonalizableGroupSchemeIso_hom_structureMap ℂ _
-  have hcoords : eX.hom = e.hom ≫ CharacterTorus.map ℂ coord.toAddMonoidHom := by
+  let eX : Torus[Cent].left ≅ Xtor := e ≪≫ CharacterTorus.mapIso k coord
+  have he : e.hom ≫ (T).hom = Torus[Cent].hom := diagonalizableGroupSchemeIso_hom_structureMap k _
+  have hcoords : eX.hom = e.hom ≫ CharacterTorus.map k coord.toAddMonoidHom := by
     simp only [eX, Iso.trans_hom, CharacterTorus.mapIso_hom]
-  have heX : eX.hom ≫ structureMap ℂ (Fin l →₀ ℤ) = Torus[Cent].hom := by
+  have heX : eX.hom ≫ structureMap k (Fin l →₀ ℤ) = Torus[Cent].hom := by
     rw [hcoords, Category.assoc, map_structureMap]
     exact he
   let : Nonempty Torus[Cent].left := ⟨e.inv (Classical.choice (inferInstance : Nonempty (T).left))⟩
   let : IsIntegral Torus[Cent].left := IsIntegral.of_isIso e.inv
-  let : Smooth Torus[Cent].hom := smooth_groupScheme_of_free ℂ Cent
+  let : Smooth Torus[Cent].hom := smooth_groupScheme_of_free k Cent
   let eOver : Torus[Cent] ⟶ T := Over.homMk e.hom he
   let : IsDominant eOver.left := by
     -- The underlying arrow of this over-morphism is the center-coordinate isomorphism.
@@ -382,12 +398,12 @@ theorem xMap_eq_of_marked_actions_on_center_domains
     PartialMap.instIsOverCompHom_qPainleve (X := Torus[Cent]) (Y := T) (Z := T) f C'
   let R₀ := (R.precompCenter eOver).precompEvaluation eX
   let R₁ := (R'.precompCenter eOver).precompEvaluation eX
-  have hover : eX.hom.toRationalMap.IsOver Torus[Cent].hom (structureMap ℂ (Fin l →₀ ℤ)) := by
+  have hover : eX.hom.toRationalMap.IsOver Torus[Cent].hom (structureMap k (Fin l →₀ ℤ)) := by
     rw [RationalMap.isOver_iff, Hom.toRationalMap_compHom, heX]
   let : (eX.hom.toRationalMap.comp F).IsOver Torus[Cent].hom
-      (structureMap ℂ (Fin l →₀ ℤ)) := RationalMap.isOver_comp _ hover _ inferInstance
+      (structureMap k (Fin l →₀ ℤ)) := RationalMap.isOver_comp _ hover _ inferInstance
   let : (eX.hom.toRationalMap.comp G).IsOver Torus[Cent].hom
-      (structureMap ℂ (Fin l →₀ ℤ)) := RationalMap.isOver_comp _ hover _ inferInstance
+      (structureMap k (Fin l →₀ ℤ)) := RationalMap.isOver_comp _ hover _ inferInstance
   let U := (f.comp C).domain ⊓ (f.comp C').domain
   let : Nonempty U := ((f.comp C).dense_domain.inter_of_isOpen_left
     (f.comp C').dense_domain (f.comp C).domain.is_open').nonempty.to_subtype
@@ -396,7 +412,7 @@ theorem xMap_eq_of_marked_actions_on_center_domains
     (by simpa only [R₀, R₁, precompEvaluation_picard, precompCenter_picard] using hpic)
     (by simpa only [R₀, R₁, precompEvaluation_boundaryAction, precompCenter_boundaryAction]
       using hact)
-    (Fan.rayChargeMap s).toAddMonoidHom (structureMap ℂ (Fin l →₀ ℤ)) U inf_le_left inf_le_right
+    (Fan.rayChargeMap s).toAddMonoidHom (structureMap k (Fin l →₀ ℤ)) U inf_le_left inf_le_right
     ?_ hcΦ u hvertices hdet hnodes (fun c ↦ χ[c]) survives (pTarget.comp f) (qTarget.comp f)
   rintro c ⟨z, hz⟩
   exact exists_precompCenter_chart eOver eX (by rfl) hcoords pSource c

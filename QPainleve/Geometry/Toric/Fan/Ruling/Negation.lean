@@ -24,7 +24,8 @@ open AlgebraicGeometry CategoryTheory TauCeti.AlgebraicGeometry
 
 namespace TauCeti.Toric.Fan
 
-variable {N : Type} {V : Type*} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
+variable (K : Type) [CommRing K] {N : Type} {V : Type*}
+  [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} (Φ : Fan i) (m : N →+ ℤ)
 
 /-- The ruling for the negative character is the original ruling followed by the
@@ -34,9 +35,9 @@ theorem characterRuling_neg
       ∀ x ∈ σ.val, Φ.lattice.realCharacter m x ≤ 0)
     (hneg : ∀ σ : Φ.cones, (∀ x ∈ σ.val, 0 ≤ Φ.lattice.realCharacter (-m) x) ∨
       ∀ x ∈ σ.val, Φ.lattice.realCharacter (-m) x ≤ 0) :
-    Φ.characterRuling (-m) hneg =
-      Φ.characterRuling m h ≫ (projectiveLine.coordinateSwap ℂ).hom := by
-  apply Φ.algebraicRealization_hom_ext
+    Φ.characterRuling K (-m) hneg =
+      Φ.characterRuling K m h ≫ (projectiveLine.coordinateSwap K).hom := by
+  apply Φ.finiteFanScheme_hom_ext K
   intro σ
   obtain ⟨k, hm⟩ : ∃ k : Fin 2, (if k = 0 then m else -m) ∈ dualSemigroup Φ.lattice σ.val := by
     rcases h σ with hp | hn
@@ -45,8 +46,8 @@ theorem characterRuling_neg
   have hk : (if k.rev = 0 then -m else - -m) = (if k = 0 then m else -m) := by
     fin_cases k <;> simp
   have hm' : (if k.rev = 0 then -m else - -m) ∈ dualSemigroup Φ.lattice σ.val := hk.symm ▸ hm
-  rw [Φ.affineToricChartι_comp_characterRuling (-m) hneg σ k.rev hm', ← Category.assoc,
-    Φ.affineToricChartι_comp_characterRuling m h σ k hm, Category.assoc,
+  rw [Φ.affineToricChartι_comp_characterRuling K (-m) hneg σ k.rev hm', ← Category.assoc,
+    Φ.affineToricChartι_comp_characterRuling K m h σ k hm, Category.assoc,
     projectiveLine.polynomialChartι_comp_coordinateSwap]
   have hchars : (⟨_, hm'⟩ : dualSemigroup Φ.lattice σ.val) = ⟨_, hm⟩ := Subtype.ext hk
   rw [hchars]
@@ -58,14 +59,14 @@ theorem comap_ker_coordinatePoint_characterRuling_neg
     (hneg : ∀ σ : Φ.cones, (∀ x ∈ σ.val, 0 ≤ Φ.lattice.realCharacter (-m) x) ∨
       ∀ x ∈ σ.val, Φ.lattice.realCharacter (-m) x ≤ 0)
     (j : Fin 2) :
-    (projectiveLine.polynomialPoint ℂ (RingHom.id ℂ) j 0).ker.comap
-        (Φ.characterRuling (-m) hneg) =
-      (projectiveLine.polynomialPoint ℂ (RingHom.id ℂ) j.rev 0).ker.comap
-        (Φ.characterRuling m h) := by
-  rw [Φ.characterRuling_neg m h hneg, Scheme.IdealSheafData.comap_comp]
-  have he : projectiveLine.polynomialPoint ℂ (RingHom.id ℂ) j.rev 0 ≫
-      (projectiveLine.coordinateSwap ℂ).hom =
-      projectiveLine.polynomialPoint ℂ (RingHom.id ℂ) j 0 := by simp
+    (projectiveLine.polynomialPoint K (RingHom.id K) j 0).ker.comap
+        (Φ.characterRuling K (-m) hneg) =
+      (projectiveLine.polynomialPoint K (RingHom.id K) j.rev 0).ker.comap
+        (Φ.characterRuling K m h) := by
+  rw [Φ.characterRuling_neg K m h hneg, Scheme.IdealSheafData.comap_comp]
+  have he : projectiveLine.polynomialPoint K (RingHom.id K) j.rev 0 ≫
+      (projectiveLine.coordinateSwap K).hom =
+      projectiveLine.polynomialPoint K (RingHom.id K) j 0 := by simp
   rw [← he, Scheme.Hom.comap_ker_comp_of_isClosedImmersion]
 
 end TauCeti.Toric.Fan

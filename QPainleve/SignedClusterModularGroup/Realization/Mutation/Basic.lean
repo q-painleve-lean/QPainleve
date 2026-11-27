@@ -33,10 +33,12 @@ open LineBundleClass (IsNef pullback)
 
 namespace QPainleve.SignedClusterModularGroup
 
+variable {k₀ : Type} [Field k₀] [IsAlgClosed k₀]
+
 open MarkedSurface (surfaceIso boundaryIso)
 
-local notation "S" => Spec (CommRingCat.of ℂ)
-local notation "Xtor[" r "]" => Spec (CommRingCat.of (LaurentRing ℂ (Fin r)))
+local notation "S" => Spec (CommRingCat.of k₀)
+local notation "Xtor[" coeff "," r "]" => Spec (CommRingCat.of (LaurentRing coeff (Fin r)))
 
 section Mutation
 
@@ -58,7 +60,7 @@ variable [hΦ₀ : Nonempty Φ.cones]
     (s k).hull_primitiveGenerator_mem hOpp).cones]
 local notation "ε" => chargeExchangeMatrix b.detDualEquiv.toLinearMap (rayChargeMap s)
 
-variable (χ : Multiplicative (Fin (n + 1) → ℤ) →* ℂˣ)
+variable (χ : Multiplicative (Fin (n + 1) → ℤ) →* k₀ˣ)
 
 local notation "center" a:arg => (fun j : Fin (n + 1) ↦ a (ofAdd (Pi.single j 1)))
 local notation "χ′" => MonoidHom.comp χ (AddMonoidHom.toMultiplicative
@@ -66,8 +68,8 @@ local notation "χ′" => MonoidHom.comp χ (AddMonoidHom.toMultiplicative
 local notation "d" => center χ
 local notation "c" => (d) k
 local notation "d′" => center χ′
-local notation "A" => internalBlowupTower (h₀ := hΦ₀) b s (d)
-local notation "B" => internalBlowupTower (h₀ := hΨ₀) b (t) (d′)
+local notation "A" => internalBlowupTower k₀ (h₀ := hΦ₀) b s (d)
+local notation "B" => internalBlowupTower k₀ (h₀ := hΨ₀) b (t) (d′)
 local notation "ιA" => WithBoundary.boundaryι (Sigma.snd A)
 local notation "ιB" => WithBoundary.boundaryι (Sigma.snd B)
 local notation "u" => Ray.mutationBoundaryIso b ρ hOpp c hΦ
@@ -77,19 +79,20 @@ local notation "classOf(" h ")" =>
 variable {m l : ℕ} [NeZero m] [NeZero l]
   {L₀ L₁ : Type} [AddCommGroup L₀] [AddCommGroup L₁]
   {B₀ : LinearMap.BilinForm ℤ L₀} {B₁ : LinearMap.BilinForm ℤ L₁}
-  {M : MarkedSurface ℂ m B₀ Xtor[n + 1]} {N' : MarkedSurface ℂ m B₁ Xtor[n + 1]}
-  [PrestableFamily ((Φ.boundaryIdeal hΦ₀).subscheme ↘ S)]
+  {M : MarkedSurface k₀ m B₀ Xtor[k₀,n + 1]} {N' : MarkedSurface k₀ m B₁ Xtor[k₀,n + 1]}
+  [PrestableFamily ((Φ.toricBoundaryIdeal k₀ hΦ₀).subscheme ↘ Spec (.of k₀))]
   [PrestableFamily (((Φ.mutationFan b (s k).primitiveGenerator_ne_zero
-    (s k).hull_primitiveGenerator_mem hOpp).boundaryIdeal hΨ₀).subscheme ↘ S)]
-  {γ₀ γ₁ : Type*} {a₀ : γ₀ → ((Φ.boundaryIdeal hΦ₀).subscheme ↘ S).smoothLocus}
+    (s k).hull_primitiveGenerator_mem hOpp).toricBoundaryIdeal k₀ hΨ₀).subscheme ↘ Spec (.of k₀))]
+  {γ₀ γ₁ : Type*} {a₀ : γ₀ → ((Φ.toricBoundaryIdeal k₀ hΦ₀).subscheme ↘ Spec (.of k₀)).smoothLocus}
   {a₁ : γ₁ → (((Φ.mutationFan b (s k).primitiveGenerator_ne_zero
-    (s k).hull_primitiveGenerator_mem hOpp).boundaryIdeal hΨ₀).subscheme ↘ S).smoothLocus}
+    (s k).hull_primitiveGenerator_mem hOpp).toricBoundaryIdeal k₀ hΨ₀).subscheme ↘ Spec
+      (.of k₀)).smoothLocus}
   {T₀ : Scheme.NodalCycleNumbering a₀ l} {T₁ : Scheme.NodalCycleNumbering a₁ l}
   {o₀ o₁ : ZMod l}
-  {J₀ : L₀ →ₗ[ℤ] Additive (LineBundleClass Φ.algebraicRealization) × (Fin (n + 1) → ℤ)}
+  {J₀ : L₀ →ₗ[ℤ] Additive (LineBundleClass (Φ.finiteFanScheme k₀)) × (Fin (n + 1) → ℤ)}
   {J₁ : L₁ →ₗ[ℤ] Additive (LineBundleClass
-    (Φ.mutationFan b (s k).primitiveGenerator_ne_zero
-      (s k).hull_primitiveGenerator_mem hOpp).algebraicRealization) × (Fin (n + 1) → ℤ)}
+    ((Φ.mutationFan b (s k).primitiveGenerator_ne_zero
+      (s k).hull_primitiveGenerator_mem hOpp).finiteFanScheme k₀)) × (Fin (n + 1) → ℤ)}
   (p : ContractedToricFiber (h₀ := hΦ₀) b s hΦ T₀ o₀ J₀ χ M)
   (q : ContractedToricFiber (h₀ := hΨ₀) b
     (Φ.mutationFanCenterRays b s k hOpp)
@@ -101,9 +104,9 @@ variable {m l : ℕ} [NeZero m] [NeZero l]
 variable {r₀ : ZMod l ≃ Φ.Ray}
   {r₁ : ZMod l ≃ (Φ.mutationFan b (s k).primitiveGenerator_ne_zero
     (s k).hull_primitiveGenerator_mem hOpp).Ray}
-  (hr₀ : ∀ j, T₀.component j = Φ.boundaryNormalizationComponentEquiv hΦ (r₀ j))
+  (hr₀ : ∀ j, T₀.component j = Φ.boundaryNormalizationComponentEquiv k₀ hΦ (r₀ j))
   (hr₁ : ∀ j, T₁.component j = (Φ.mutationFan b (s k).primitiveGenerator_ne_zero
-    (s k).hull_primitiveGenerator_mem hOpp).boundaryNormalizationComponentEquiv
+    (s k).hull_primitiveGenerator_mem hOpp).boundaryNormalizationComponentEquiv k₀
       ((Φ.isRegular_mutationFan_iff b (s k).primitiveGenerator_ne_zero
         (s k).hull_primitiveGenerator_mem hOpp).mpr hΦ) (r₁ j))
   (hAdjacent : b.detDualEquiv (r₀ 0).primitiveGenerator (r₀ 1).primitiveGenerator = 1 ∧
@@ -127,11 +130,11 @@ private theorem mutation_boundaryAction (e : (A).1 ≅ (B).1) (g : M.pair ≅ N'
     apply (cancel_mono N'.pair.hom.left).mp
     simp only [Category.assoc, q.boundary_comp, MarkedSurface.boundaryIso_hom_comp,
       reassoc_of% p.boundary_comp, ← Category.assoc (u).hom, ← he, Category.assoc, hg]
-  have hsign := (ρ).cycleOrientationSign_of_mutationBoundaryIso_descends b hOpp c hΦ
+  have hsign := (ρ).cycleOrientationSign_of_mutationBoundaryIso_descends k₀ b hOpp c hΦ
     T₀ T₁ hr₀ hr₁ hAdjacent hPositive M.cycle N'.cycle (boundaryIso g)
     p.orientedSubdivision q.orientedSubdivision hsquare
   refine ⟨_, (eq_r_iff_cycleVertexPerm_zero_eq hsign).mpr rfl, ?_⟩
-  have hray := (ρ).mutationBoundaryIso_cycleVertexPerm b hOpp c hΦ T₀ T₁ hr₀ hr₁ o₀
+  have hray := (ρ).mutationBoundaryIso_cycleVertexPerm k₀ b hOpp c hΦ T₀ T₁ hr₀ hr₁ o₀
   have hlabel := congrArg r₁.symm hray
   rw [Equiv.symm_apply_apply] at hlabel
   rw [← (boundaryIso g).apply_componentGenericPoint M.cycle N'.cycle, ← p.component_zero,
@@ -141,13 +144,13 @@ private theorem mutation_boundaryAction (e : (A).1 ≅ (B).1) (g : M.pair ≅ N'
 omit hr₀ hr₁ hAdjacent hPositive
 private theorem mutation_picard_eq (I : B₁.IsometryEquiv B₀)
     (hPull : Function.Injective (pullback p.projection))
-    (hI : ∀ x, J₀ (I x) = mutationPicardEquiv b s k hOpp hΦ (J₁ x))
+    (hI : ∀ x, J₀ (I x) = mutationPicardEquiv k₀ b s k hOpp hΦ (J₁ x))
     (g : M.pair ≅ N'.pair)
     (hmark : ∀ L : LineBundleClass N'.surface,
-      (internalBlowupPicardMarking (h₀ := hΦ₀) b s (d) hΦ).symm
+      (internalBlowupPicardMarking k₀ (h₀ := hΦ₀) b s (d) hΦ).symm
           (Additive.ofMul (pullback p.projection (pullback (surfaceIso g).hom L))) =
-        mutationPicardEquiv b s k hOpp hΦ
-          ((internalBlowupPicardMarking (h₀ := hΨ₀) b (t) (d′) hΨ).symm
+        mutationPicardEquiv k₀ b s k hOpp hΦ
+          ((internalBlowupPicardMarking k₀ (h₀ := hΨ₀) b (t) (d′) hΨ).symm
             (Additive.ofMul (pullback q.projection L))))
     (x : L₁) :
     M.picardMarking (I x) =
@@ -155,7 +158,7 @@ private theorem mutation_picard_eq (I : B₁.IsometryEquiv B₀)
   apply Additive.toMul.injective
   apply hPull
   apply Additive.ofMul.injective
-  apply (internalBlowupPicardMarking b s (d) hΦ).symm.injective
+  apply (internalBlowupPicardMarking k₀ b s (d) hΦ).symm.injective
   rw [p.marked_pullback, toMul_ofMul, hmark, q.marked_pullback]
   exact hI x
 
@@ -167,7 +170,7 @@ label of the component corresponding to the sheared source ray above component z
 The two projection squares describe the upper isomorphism giving the realization. -/
 theorem FiberRealization.exists_mutate
     (I : B₁.IsometryEquiv B₀)
-    (hI : ∀ x, J₀ (I x) = mutationPicardEquiv b s k hOpp hΦ (J₁ x))
+    (hI : ∀ x, J₀ (I x) = mutationPicardEquiv k₀ b s k hOpp hΦ (J₁ x))
     (hsame : ∀ j, j ≠ k → (s j).primitiveGenerator = Ray.primitiveGenerator ρ → (d) j ≠ c)
     (hopp : ∀ j, j ≠ k → (s j).primitiveGenerator = -Ray.primitiveGenerator ρ → (d) j * c ≠ 1)
     {Y Y' : Scheme} {a a' : ℕ}
@@ -177,20 +180,20 @@ theorem FiberRealization.exists_mutate
     (e₀ : Y ≅ (A).1) (e₁ : Y' ≅ (B).1)
     (hp₀ : p.projection = e₀.inv ≫ P.toBase) (hq₁ : q.projection = e₁.inv ≫ Q.toBase)
     (hD : M.pair.hom.left.ker.IsEffectiveCartier) (hD' : N'.pair.hom.left.ker.IsEffectiveCartier)
-    (hnef : IsNef ℂ (M.surface ↘ S) classOf(hD))
-    (hnef' : IsNef ℂ (N'.surface ↘ S) classOf(hD'))
-    (hsq : Chow.classIntersectionNumber ℂ M.surface classOf(hD) classOf(hD) = 0)
-    (hsq' : Chow.classIntersectionNumber ℂ N'.surface classOf(hD') classOf(hD') = 0)
+    (hnef : IsNef k₀ (M.surface ↘ S) classOf(hD))
+    (hnef' : IsNef k₀ (N'.surface ↘ S) classOf(hD'))
+    (hsq : Chow.classIntersectionNumber k₀ M.surface classOf(hD) classOf(hD) = 0)
+    (hsq' : Chow.classIntersectionNumber k₀ N'.surface classOf(hD') classOf(hD') = 0)
     (E : SkewExchangeMatrix (Fin (n + 1))) (hE : ∀ j, E.matrix j k = ε j k) :
-    let F := ((Generator.mutate k).toStep E).toPath.xRationalMap ℂ
+    let F := ((Generator.mutate k).toStep E).toPath.xRationalMap k₀
     letI : PrestableFamily (N'.boundary ↘ S) := N'.prestable
     ∃ (j : ZMod m) (R : FiberRealization M N' F I (DihedralGroup.r j)) (e : (A).1 ≅ (B).1),
       (ιA) ≫ e.hom = (u).hom ≫ (ιB) ∧
       p.projection ≫ (surfaceIso R.iso).hom = e.hom ≫ q.projection ∧
       q.boundaryMap (T₁.componentGenericPoint (r₁.symm (shear (r₀ o₀)))) =
         N'.cycle.componentGenericPoint j := by
-  let : M.surface.IsProjectiveOver ℂ := M.projective
-  let : N'.surface.IsProjectiveOver ℂ := N'.projective
+  let : M.surface.IsProjectiveOver k₀ := M.projective
+  let : N'.surface.IsProjectiveOver k₀ := N'.projective
   let : SmoothOfRelativeDimension 2 (M.surface ↘ S) := M.smooth
   let : SmoothOfRelativeDimension 2 (N'.surface ↘ S) := N'.smooth
   have : PrestableFamily M.pair.left.hom := M.prestable
@@ -204,7 +207,7 @@ theorem FiberRealization.exists_mutate
   have hqOver := congrArg (e₁.hom ≫ ·) q.projection_over.symm
   simp only [hp₀, hq₁, Category.assoc, Iso.hom_inv_id_assoc] at hpOver hqOver
   obtain ⟨e, g, he, hg, hover, hker, hmark, heval⟩ :=
-    exists_iso_ordered_nodal_mutation b s k χ hOpp hΦ hsame hopp hP hQ e₀ e₁ hpOver hqOver
+    exists_iso_ordered_nodal_mutation k₀ b s k χ hOpp hΦ hsame hopp hP hQ e₀ e₁ hpOver hqOver
       (by simpa only [← support_comap, ← comap_comp, hp₀, Iso.hom_inv_id_assoc] using
         congrArg (·.preimage e₀.hom.continuous) p.support_comap.symm)
       (by simpa only [← support_comap, ← comap_comp, hq₁, Iso.hom_inv_id_assoc] using
