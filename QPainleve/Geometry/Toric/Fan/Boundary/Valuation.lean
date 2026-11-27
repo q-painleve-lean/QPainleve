@@ -5,7 +5,7 @@ Authors: The QPainleve contributors
 -/
 module
 
-public import QPainleve.Geometry.Toric.Fan.Boundary.Basic
+public import QPainleve.Geometry.Toric.Fan.Boundary.Character
 public import QPainleve.Geometry.Toric.Fan.Charge
 
 import QPainleve.Data.Fin.Find
@@ -25,7 +25,9 @@ open AlgebraicGeometry Module Multiplicative
 
 namespace TauCeti.Toric.Fan
 
-variable {N : Type} {V ι : Type*} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
+universe u
+
+variable {N : Type u} {V ι : Type*} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {Φ : Fan i} (b : Basis (Fin 2) ℤ N) (s : ι → Φ.Ray)
 
 /-- The order vector of the determinant characters of the labeled rays along the ray `ρ`. -/
@@ -63,15 +65,16 @@ theorem rayBoundaryOrders_apply_eq_repr (ρ : Φ.Ray) (j : ι) :
   simp [rayBoundaryOrders_apply, Basis.det_apply, Basis.toMatrix_apply, Matrix.det_fin_two,
     mul_comm]
 
+variable (R : Type u) [CommRing R] [IsDomain R] [IsNoetherianRing R] in
 /-- Multiplying the character of a labeled ray by a nonzero constant preserves its order
 along each boundary divisor. -/
-theorem ord_rayBoundaryPoint_chargeCharacter [Nonempty Φ.cones]
-    (hΦ : Φ.IsRegular) (ρ : Φ.Ray) (c : ℂˣ) (j : ι) :
-    Φ.algebraicRealization.ord
-      (algebraMap ℂ Φ.algebraicRealization.functionField (c : ℂ) *
-        Φ.character (ofAdd (b.detDualEquiv (s j).primitiveGenerator).toAddMonoidHom))
-      (Φ.rayBoundaryPoint hΦ ρ).val = rayBoundaryOrders b s ρ j := by
-  simp only [ord_rayBoundaryPoint_mul_character, rayBoundaryOrders_apply,
+theorem ord_rayBoundaryChartPoint_chargeCharacter [Nonempty Φ.cones]
+    (hΦ : Φ.IsRegular) (ρ : Φ.Ray) (c : Rˣ) (j : ι) :
+    (Φ.finiteFanScheme R).ord
+      (algebraMap R (Φ.finiteFanScheme R).functionField (c : R) *
+        Φ.functionFieldCharacter R (ofAdd (b.detDualEquiv (s j).primitiveGenerator).toAddMonoidHom))
+      (Φ.rayBoundaryChartPoint (R := R) hΦ ρ).val = rayBoundaryOrders b s ρ j := by
+  simp only [ord_rayBoundaryChartPoint_mul_character, rayBoundaryOrders_apply,
     LinearMap.toAddMonoidHom_coe, Basis.detDualEquiv_apply]
 
 /-- When the charges generate a finite-index sublattice, their order vector determines
@@ -142,18 +145,20 @@ theorem boundaryRayOfOrders_eq_some_iff (hindex : (rayChargeMap s).range.toAddSu
   Fin.find?_decide_eq_some_iff_of_injective
     ((rayBoundaryOrders_injective b s hindex).comp boundary.injective) orders j
 
+variable (R : Type u) [CommRing R] [IsDomain R] [IsNoetherianRing R] in
 /-- Reconstruct a boundary label from the actual vanishing orders of its scaled torus
 characters. The nonzero center parameters can be chosen independently of the input vector. -/
 theorem boundaryRayOfOrders_eq_some_iff_ord
     (hindex : (rayChargeMap s).range.toAddSubgroup.index ≠ 0)
-    (j : Fin n) (hΦ : Φ.IsRegular) (c : ι → ℂˣ) :
+    (j : Fin n) (hΦ : Φ.IsRegular) (c : ι → Rˣ) :
     letI : Nonempty Φ.cones := ⟨(boundary j).toCone⟩
     boundaryRayOfOrders b s boundary orders = some j ↔
-      ∀ k, Φ.algebraicRealization.ord
-        (algebraMap ℂ Φ.algebraicRealization.functionField (c k : ℂ) *
-          Φ.character (ofAdd (b.detDualEquiv (s k).primitiveGenerator).toAddMonoidHom))
-        (Φ.rayBoundaryPoint hΦ (boundary j)).val = orders k := by
-  simp only [ord_rayBoundaryPoint_chargeCharacter]
+      ∀ k, (Φ.finiteFanScheme R).ord
+        (algebraMap R (Φ.finiteFanScheme R).functionField (c k : R) *
+          Φ.functionFieldCharacter R
+            (ofAdd (b.detDualEquiv (s k).primitiveGenerator).toAddMonoidHom))
+        (Φ.rayBoundaryChartPoint (R := R) hΦ (boundary j)).val = orders k := by
+  simp only [ord_rayBoundaryChartPoint_chargeCharacter]
   rw [boundaryRayOfOrders_eq_some_iff b s boundary orders hindex j]
   exact funext_iff
 
