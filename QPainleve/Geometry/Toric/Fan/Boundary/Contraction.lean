@@ -149,7 +149,9 @@ theorem ord_contracted_toric_boundary_chargeCharacter (x : D.boundaryPrimes) (l 
     X.ord (CategoryTheory.inv p.functionFieldMap ((π).functionFieldMap (Xchar l))) x.val =
       rayBoundaryOrders b s (ρₓ x) l := by
   intro _ _ _
-  rw [ord_contracted_toric_boundary hΦ b s c p hD, ord_rayBoundaryPoint_chargeCharacter]
+  rw [ord_contracted_toric_boundary hΦ b s c p hD]
+  simp only [ord_rayBoundaryPoint_mul_character, rayBoundaryOrders_apply,
+    LinearMap.toAddMonoidHom_coe, Module.Basis.detDualEquiv_apply]
 
 /-- Searching the rays of a numbered contracted boundary recovers the index of a prime
 exactly when its scaled charge functions have the specified orders. The finite-index

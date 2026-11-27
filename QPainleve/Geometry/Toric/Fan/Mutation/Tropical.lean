@@ -149,7 +149,10 @@ theorem rayBoundaryOrders_eq_tropical_of_comp_contractedXEvaluation
   rw [functionFieldMap_contracted_coordinate b b' s t hΦ hΨ c d p q w e heval bΩ _ _ (g c)
       l hl hl' j,
     ord_contracted_toric_boundary hΦ b s (center c) p hp, hg,
-    xEval_X, ord_rayBoundaryPoint_chargeCharacter]
+    xEval_X]
+  simp only [ord_rayBoundaryPoint_mul_character, rayBoundaryOrders_apply,
+    LinearMap.toAddMonoidHom_coe, Module.Basis.detDualEquiv_apply]
+  rfl
 
 include hcΦ hB hp hq in
 /-- For finite-index target charges, searching the numbered target boundary with
