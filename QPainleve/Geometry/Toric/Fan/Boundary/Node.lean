@@ -17,6 +17,7 @@ import QPainleve.Geometry.Toric.Cone.TwoDimensional
 import QPainleve.Geometry.Toric.Fan.Boundary.Ideal
 import QPainleve.Geometry.Toric.Fan.Boundary.Intersection
 import QPainleve.Geometry.Toric.Fan.TwoDimensional
+import QPainleve.RingTheory.Node.Basic
 import TauCeti.AlgebraicGeometry.IdealSheaf.Reduced
 import TauCeti.AlgebraicGeometry.Pullback.Carrier
 import TauCeti.RingTheory.Node.Reduced
@@ -144,17 +145,6 @@ private theorem mem_boundaryIdeal_comap_chart_iff (hΦ : Φ.IsRegular) (σ : Φ.
   · rintro ⟨r, hr⟩
     exact ⟨Ray.ofToricRay Φ σ r, (hcomap _).mp ((hlocal r).mpr hr)⟩
 
-private theorem ker_nodeChart {R : Type} [CommRing R] [Algebra ℂ R]
-    (e : R ≃ₐ[ℂ] MvPolynomial (Fin 2) ℂ) :
-    RingHom.ker ((NodeAlgebra.mk 0).comp e.toAlgHom).toRingHom =
-      Ideal.span {e.symm (MvPolynomial.X 0) * e.symm (MvPolynomial.X 1)} := by
-  refine (AlgHom.comap_ker (NodeAlgebra.mk (0 : ℂ)) e.toAlgHom).symm.trans ?_
-  have hker : RingHom.ker (NodeAlgebra.mk (0 : ℂ) :
-      MvPolynomial (Fin 2) ℂ →+* NodeAlgebra ℂ 0) =
-      Ideal.span {MvPolynomial.X 0 * MvPolynomial.X 1} := by simp
-  refine (congrArg (Ideal.comap (e.toAlgHom : R →+* MvPolynomial (Fin 2) ℂ)) hker).trans ?_
-  exact (Ideal.map_symm e.toRingEquiv).symm.trans (by simp [Ideal.map_span])
-
 private theorem comap_boundaryIdeal_eq_ker_nodeChart (hΦ : Φ.IsRegular) (σ : Φ.cones)
     (r : Fin 2 ≃ ToricRay σ.val)
     (e : affineCoordinateRing Φ.lattice σ.val ≃ₐ[ℂ] MvPolynomial (Fin 2) ℂ)
@@ -191,7 +181,7 @@ private theorem comap_boundaryIdeal_eq_ker_nodeChart (hΦ : Φ.IsRegular) (σ : 
     p ∈ PrimeSpectrum.zeroLocus _
   rw [PrimeSpectrum.mem_zeroLocus, r.symm.exists_congr_left, Equiv.symm_symm,
     Fin.exists_fin_two, hr, hr]
-  rw [ker_nodeChart e]
+  rw [NodeAlgebra.ker_mk_zero_comp_algEquiv e]
   simp only [SetLike.coe_subset_coe, Ideal.span_singleton_le_iff_mem,
     p.isPrime.mul_mem_iff_mem_or_mem]
 
@@ -382,7 +372,8 @@ theorem isEffectiveCartier_boundaryIdeal (hΦ : Φ.IsRegular) (hc : Φ.IsComplet
   refine ⟨Φ.affineToricChart σ, inferInstance, Φ.affineToricChartι σ, inferInstance, ⟨y, hy⟩,
     E.inv a, IsSMulRegular.of_ne_zero (E.symm.commRingCatIsoToRingEquiv.map_ne_zero_iff.mpr ha), ?_⟩
   rw [comap_boundaryIdeal_eq_ker_nodeChart hΦ σ r e hr, Scheme.Hom.ker_Spec_map,
-    CommRingCat.hom_ofHom, ker_nodeChart, Ideal.map_span, Set.image_singleton]
+    CommRingCat.hom_ofHom, NodeAlgebra.ker_mk_zero_comp_algEquiv, Ideal.map_span,
+    Set.image_singleton]
 
 /-- The reduced boundary of a complete regular rank-two fan is nodal over `ℂ`. -/
 theorem atWorstNodalOfRelativeDimensionOne_boundary (hΦ : Φ.IsRegular) (hc : Φ.IsComplete)
