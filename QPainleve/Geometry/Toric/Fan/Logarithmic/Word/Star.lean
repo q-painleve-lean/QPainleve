@@ -37,7 +37,9 @@ variable {Z : Scheme} [Z.Over S] [SmoothOfRelativeDimension 2 (Z ↘ S)] [IsInte
   {D : Z.IdealSheafData} {A B : LogarithmicProjection i D} {m : ℕ}
 
 private theorem comp_xEvaluation_denseTorusPartialIso (U : OrderedToricModel A m) :
-    A.hom.toRationalMap.comp ((A.fan.denseTorusPartialIso U.fan).toRationalMap.comp
+    A.hom.toRationalMap.comp ((Scheme.PartialIso.ofDenseOpenImmersions
+      (Fan.denseTorusι A.fan inferInstance)
+      (Fan.denseTorusι U.fan inferInstance)).toRationalMap.comp
       (U.fan.xEvaluation U.basis U.rays (centerCharacter U.parameters))) =
     U.xEvaluation := by
   have h := U.subdivision.comp_denseTorusPartialIso (.refl U.fan) U.hom
@@ -58,8 +60,12 @@ theorem exists_word_of_resolved_star_path [Z.IsProjectiveOver ℂ]
         ⟨U.fan, U.regular, K, U.basis, U.rays, U.parameters, U.iso, hK, U.pole_eq⟩
       let x := U.fan.xEvaluation U.basis U.rays (centerCharacter U.parameters)
       let x' := W.fan.xEvaluation W.basis W.rays (centerCharacter W.parameters)
-      let xA := (A.fan.denseTorusPartialIso U.fan).toRationalMap.comp x
-      let xB := (B.fan.denseTorusPartialIso W.fan).toRationalMap.comp x'
+      let xA := (Scheme.PartialIso.ofDenseOpenImmersions
+        (Fan.denseTorusι A.fan inferInstance)
+        (Fan.denseTorusι U.fan inferInstance)).toRationalMap.comp x
+      let xB := (Scheme.PartialIso.ofDenseOpenImmersions
+        (Fan.denseTorusι B.fan inferInstance)
+        (Fan.denseTorusι W.fan inferInstance)).toRationalMap.comp x'
       let w : Word U.exchangeMatrix W.exchangeMatrix := Quiver.Path.nil
       π[U.subdivision].toRationalMap.comp (pathRationalMap p) =
           π[W.subdivision].toRationalMap ∧
@@ -77,14 +83,15 @@ theorem exists_word_of_resolved_star_path [Z.IsProjectiveOver ℂ]
   intro W x x' xA xB w
   have hpath : (pathRationalMap p).comp xB = xA := by
     simp only [xA, xB, x', W, x, ← Scheme.RationalMap.comp_assoc,
-      pathRationalMap_eq_denseTorusPartialIso, denseTorusPartialIso_toRationalMap_comp]
+      pathRationalMap_eq_denseTorusPartialIso,
+        Scheme.PartialIso.ofDenseOpenImmersions_toRationalMap_comp]
   have hA : A.hom.toRationalMap.comp xA = U.xEvaluation :=
     comp_xEvaluation_denseTorusPartialIso U
   have hB : B.hom.toRationalMap.comp xB = W.xEvaluation :=
     comp_xEvaluation_denseTorusPartialIso W
   refine ⟨?_, hpath, hA, hB, ?_⟩
   · simp only [IsSubdivision.toRationalMap_algebraicMap, pathRationalMap_eq_denseTorusPartialIso,
-      denseTorusPartialIso_toRationalMap_comp, W]
+      Scheme.PartialIso.ofDenseOpenImmersions_toRationalMap_comp, W]
   have hEval : U.xEvaluation = W.xEvaluation := by
     calc
       _ = A.hom.toRationalMap.comp xA := hA.symm

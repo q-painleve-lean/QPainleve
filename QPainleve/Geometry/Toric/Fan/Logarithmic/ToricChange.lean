@@ -77,7 +77,8 @@ theorem exists_nodal_resolution_of_toric_change
           IsNodalBoundaryTower D (f ≫ s[Φ]) (𝟙 X) T ∧
           g ≫ π[J] = T.toBase ≫ f ∧
           ∀ (Δ : Fan i) [Nonempty Δ.cones] (L : Ω.IsSubdivision Δ),
-            (T.toBase ≫ f).toRationalMap.comp (Φ.denseTorusPartialIso Δ).toRationalMap =
+            (T.toBase ≫ f).toRationalMap.comp (Scheme.PartialIso.ofDenseOpenImmersions
+              (Fan.denseTorusι Φ inferInstance) (Fan.denseTorusι Δ inferInstance)).toRationalMap =
               (g ≫ π[L]).toRationalMap ∧
             g ≫ π[L] ≫ s[Δ] = T.toBase ≫ f ≫ s[Φ] := by
   intro A e he hD
@@ -157,7 +158,8 @@ theorem exists_nodal_resolution_of_toric_change_of_boundary_comap_eq
           (hT : IsNodalBoundaryTower D s(X) (𝟙 X) T),
           g ≫ π[J] = T.toBase ≫ f ∧
           ∀ (Δ : Fan i) [Nonempty Δ.cones] (L : Ω.IsSubdivision Δ),
-            (T.toBase ≫ f).toRationalMap.comp (Φ.denseTorusPartialIso Δ).toRationalMap =
+            (T.toBase ≫ f).toRationalMap.comp (Scheme.PartialIso.ofDenseOpenImmersions
+              (Fan.denseTorusι Φ inferInstance) (Fan.denseTorusι Δ inferInstance)).toRationalMap =
               (g ≫ π[L]).toRationalMap ∧
             ∃ hOver : g ≫ π[L] ≫ s[Δ] = T.toBase ≫ s(X),
               let : Z.Over S := ⟨T.toBase ≫ s(X)⟩

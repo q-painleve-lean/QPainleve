@@ -17,6 +17,7 @@ import QPainleve.Geometry.Toric.Fan.Logarithmic.InternalBlowup
 import QPainleve.Geometry.Toric.Fan.Picard.StrictTransform
 import QPainleve.Geometry.Toric.Fan.Rationality
 import QPainleve.Geometry.Toric.Fan.Subdivision.Projective
+import TauCeti.Geometry.Toric.Algebraic.BaseChange.Complex
 
 /-!
 # Nodal contractions after moving internal centers
@@ -77,7 +78,11 @@ theorem isExceptionalCurveOfFirstKind_internalBlowupRay_iff
   let : IsIntegral Y[d] := isIntegral_internalBlowupTower b s d hΦ
   let : Y[c].IsProjectiveOver ℂ := (T[c]).isProjectiveOver ℂ
   let : Y[d].IsProjectiveOver ℂ := (T[d]).isProjectiveOver ℂ
-  let : Scheme.IsRationalOver (Z ↘ S) := Φ.isRationalOver_of_isComplete hΦ hc b
+  let : Scheme.IsRationalOver (Z ↘ S) := by
+    let := Φ.isRationalOver_of_isComplete ℂ hΦ hc b
+    rw [Φ.algebraicRealization_over]
+    exact (Φ.finiteFanSchemeComplexIso.hom.birationalOver _ _
+      Φ.finiteFanSchemeComplexIso_hom_comp_algebraicRealizationStructureMap).symm.isRationalOver _ _
   let : Scheme.IsRationalOver (Y[c] ↘ S) := (hT[c]).isRationalOver (Z ↘ S)
   let : Scheme.IsRationalOver (Y[d] ↘ S) := (hT[d]).isRationalOver (Z ↘ S)
   let e := picardIsometryCongr ℂ (hT[c]) (hT[d])

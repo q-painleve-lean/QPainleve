@@ -337,8 +337,9 @@ theorem SarkisovStep.exists_ordered_toric_model [Z.IsProjectiveOver ℂ] (e : Sa
     apply Scheme.Hom.toRationalMap_injective
     have hh := congrArg (fun f ↦ f.compHom π[H.isSubdivision]) h
     rw [← Scheme.RationalMap.comp_toRationalMap, Scheme.RationalMap.comp_assoc,
-      H.isSubdivision.toRationalMap_algebraicMap, denseTorusPartialIso_toRationalMap_comp,
-      denseTorusPartialIso_self_toRationalMap, Scheme.RationalMap.comp_id,
+      H.isSubdivision.toRationalMap_algebraicMap,
+        Scheme.PartialIso.ofDenseOpenImmersions_toRationalMap_comp,
+      Scheme.PartialIso.ofDenseOpenImmersions_toRationalMap_self, Scheme.RationalMap.comp_id,
       Scheme.Hom.toRationalMap_compHom] at hh
     exact hh.symm
   | blowdown H =>

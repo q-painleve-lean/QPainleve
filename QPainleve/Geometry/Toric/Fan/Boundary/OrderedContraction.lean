@@ -14,6 +14,7 @@ import QPainleve.Geometry.Toric.Fan.Boundary.Canonical
 import QPainleve.Geometry.Toric.Fan.Boundary.InternalBlowup
 import QPainleve.Geometry.Toric.Fan.Logarithmic.InternalBlowup
 import QPainleve.Geometry.Toric.Fan.Rationality
+import TauCeti.Geometry.Toric.Algebraic.BaseChange.Complex
 
 /-!
 # Ordered contractions from numbered toric intersection data
@@ -81,7 +82,11 @@ theorem exists_numbered_contraction_of_square_neg_one
   have hdim : finrank ℤ N = 2 := (finrank_eq_card_basis b).trans (Fintype.card_fin 2)
   let : SmoothOfRelativeDimension 2 (Z ↘ S) := (Φ.algebraicRealization_over).symm ▸
     (hdim ▸ Φ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ)
-  let : Scheme.IsRationalOver (Z ↘ S) := Φ.isRationalOver_of_isComplete hΦ hc b
+  let : Scheme.IsRationalOver (Z ↘ S) := by
+    let := Φ.isRationalOver_of_isComplete ℂ hΦ hc b
+    rw [Φ.algebraicRealization_over]
+    exact (Φ.finiteFanSchemeComplexIso.hom.birationalOver _ _
+      Φ.finiteFanSchemeComplexIso_hom_comp_algebraicRealizationStructureMap).symm.isRationalOver _ _
   let hU := Fan.isClosedPointTower_internalBlowupTower b s c
   let : (Y).Over S := ⟨(T₀).toBase ≫ (Z ↘ S)⟩
   let : IsIntegral Y := Fan.isIntegral_internalBlowupTower b s c hΦ

@@ -212,8 +212,11 @@ theorem exists_sarkisov_decrease_of_toric_corner
       IsModification q ∧
       let : Nonempty F.cones := hcF.nonempty_cones
       let : Nonempty Ψ.cones := hc'.nonempty_cones
-      T.toBase.toRationalMap.comp (Φ.denseTorusPartialIso F).toRationalMap = q.toRationalMap ∧
-      T.toBase.toRationalMap.comp (Φ.denseTorusPartialIso Ψ).toRationalMap =
+      T.toBase.toRationalMap.comp (Scheme.PartialIso.ofDenseOpenImmersions
+        (Fan.denseTorusι Φ inferInstance)
+        (Fan.denseTorusι F inferInstance)).toRationalMap = q.toRationalMap ∧
+      T.toBase.toRationalMap.comp (Scheme.PartialIso.ofDenseOpenImmersions
+        (Fan.denseTorusι Φ inferInstance) (Fan.denseTorusι Ψ inferInstance)).toRationalMap =
         (k.hom ≫ U.toBase).toRationalMap ∧
       (∃! φ : X[Φ] ⤏ X[Ψ], (π[s]).toRationalMap.comp φ = (π[t]).toRationalMap ∧
         T.toBase.toRationalMap.comp φ = (k.hom ≫ U.toBase).toRationalMap) ∧
@@ -318,10 +321,12 @@ theorem exists_sarkisov_decrease_of_toric_corner
   have : IsModification (q ≫ π[s]) := hq ▸ inferInstance
   have hmodq : IsModification q := IsModification.of_comp_right q π[s]
   have hmiddle := s.comp_denseTorusPartialIso (Fan.IsSubdivision.refl F) q
-  have hlink : T.toBase.toRationalMap.comp (Φ.denseTorusPartialIso Ψ).toRationalMap =
+  have hlink : T.toBase.toRationalMap.comp (Scheme.PartialIso.ofDenseOpenImmersions
+    (Fan.denseTorusι Φ inferInstance) (Fan.denseTorusι Ψ inferInstance)).toRationalMap =
       (k'.hom ≫ U.toBase).toRationalMap := by
     simpa only [hq, hq'] using s.comp_denseTorusPartialIso t q
-  have htoric : (π[s]).toRationalMap.comp (Φ.denseTorusPartialIso Ψ).toRationalMap =
+  have htoric : (π[s]).toRationalMap.comp (Scheme.PartialIso.ofDenseOpenImmersions
+    (Fan.denseTorusι Φ inferInstance) (Fan.denseTorusι Ψ inferInstance)).toRationalMap =
       (π[t]).toRationalMap := by
     simpa only [Category.id_comp] using s.comp_denseTorusPartialIso t (𝟙 X[F])
   refine ⟨hmodq, ?_, hlink, ⟨_, ⟨htoric, hlink⟩, fun φ hφ ↦

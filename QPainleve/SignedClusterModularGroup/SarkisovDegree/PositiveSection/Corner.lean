@@ -99,7 +99,8 @@ theorem exists_sarkisov_path_of_positive_corner [X[Φ].IsProjectiveOver ℂ]
       (Z : Scheme) (U : BlowupTower X[B.fan] (1 + n) Z)
       (hU : IsClosedPointTower X[B.fan] U) (k : Y ≅ Z),
       @Quiver.Path.length _ Fan.LogarithmicProjection.sarkisovQuiver A B path = 2 ∧
-      path.rationalMap = (A.fan.denseTorusPartialIso B.fan).toRationalMap ∧
+      path.rationalMap = (Scheme.PartialIso.ofDenseOpenImmersions
+        (Fan.denseTorusι A.fan inferInstance) (Fan.denseTorusι B.fan inferInstance)).toRationalMap ∧
       B.hom = k.hom ≫ U.toBase ∧ X[B.fan].IsProjectiveOver ℂ ∧
       (k.inv ≫ g) ≫ (P ↘ S) = U.toBase ≫ f[B.fan] ∧
       Scheme.BirationalOver (k.inv ≫ g) (𝟙 P) ∧

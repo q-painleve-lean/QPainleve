@@ -81,7 +81,9 @@ theorem exists_sarkisov_path_of_quadric_corner
         B.fan = plane[d,Φ.lattice] ∧
         B.hom ≍ k.hom ≫ U.toBase ≫ (planeIso[d,Φ.lattice]).inv ∧
         @Quiver.Path.length _ sarkisovQuiver _ _ p = 3 ∧
-        p.rationalMap = (A.fan.denseTorusPartialIso B.fan).toRationalMap ∧
+        p.rationalMap = (Scheme.PartialIso.ofDenseOpenImmersions
+          (Fan.denseTorusι A.fan inferInstance)
+          (Fan.denseTorusι B.fan inferInstance)).toRationalMap ∧
         (k.inv ≫ g) ≫ fP = U.toBase ≫ fP ∧ Scheme.BirationalOver (k.inv ≫ g) (𝟙 P) ∧
         let y := mark[U,hU,fP,k.inv ≫ g]
         let degree := Basis.picardTwistEquiv coords y.1
@@ -139,7 +141,8 @@ theorem exists_sarkisov_path_of_quadric_corner
   · have h := @Quiver.Path.length_comp _ sarkisovQuiver _ _ q _ (SarkisovPath.ofStar down)
     exact h.trans (by rw [hlen, SarkisovPath.length_ofStar down]; rfl)
   · simp only [p, SarkisovPath.rationalMap_comp, SarkisovPath.rationalMap_ofStar,
-      pathRationalMap_eq_denseTorusPartialIso, hmap, denseTorusPartialIso_toRationalMap_comp]
+      pathRationalMap_eq_denseTorusPartialIso, hmap,
+        Scheme.PartialIso.ofDenseOpenImmersions_toRationalMap_comp]
   · simpa only [Iso.trans_inv, Category.assoc] using hg''
   · simpa only [Iso.trans_inv, Category.assoc] using hbir''
   · simp only [Iso.trans_inv, Category.assoc]
