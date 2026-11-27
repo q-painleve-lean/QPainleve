@@ -11,8 +11,12 @@ public import QPainleve.Geometry.Toric.Fan.Point
 public import TauCeti.AlgebraicGeometry.Blowup.UniversalProperty
 public import TauCeti.AlgebraicGeometry.Morphisms.IsoLocus
 
+import QPainleve.Geometry.Toric.BaseChange.Subfan
+import QPainleve.Geometry.Toric.Fan.Chart
 import QPainleve.Geometry.Toric.Fan.DenseTorus
 import QPainleve.Geometry.Toric.Fan.TwoDimensional
+import TauCeti.Algebra.Bialgebra.MonoidAlgebra.Equiv
+import TauCeti.Geometry.Toric.Algebraic.BaseChange.Complex
 import TauCeti.Geometry.Toric.Algebraic.Fan.SubfanScheme
 import QPainleve.AlgebraicGeometry.Blowup.Affine
 import QPainleve.AlgebraicGeometry.Blowup.Point.Fiber
@@ -35,7 +39,7 @@ universal property.
 
 public noncomputable section
 
-open AlgebraicGeometry CategoryTheory CategoryTheory.Limits
+open AlgebraicGeometry CategoryTheory CategoryTheory.Limits Multiplicative
 open AlgebraicGeometry.Scheme.IdealSheafData
 open TauCeti.AlgebraicGeometry
 
@@ -43,6 +47,39 @@ namespace TauCeti.Toric.Fan
 
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} (Φ : Fan i)
+
+private theorem complexIso_inv_comp_subdivisionMap {A B : Fan i} (f : FanHom A B) :
+    A.finiteFanSchemeComplexIso.inv ≫ f.finiteFanSchemeHom ℂ =
+      f.algebraicMap ≫ B.finiteFanSchemeComplexIso.inv := by
+  apply A.algebraicRealization_hom_ext
+  intro σ
+  let τ : B.cones := ⟨f.leastCone σ.property, f.leastCone_mem σ.property⟩
+  have hm : Set.MapsTo f.realMap (σ.val : Set V) (τ.val : Set V) :=
+    fun x hx ↦ f.map_le_leastCone σ.property ⟨x, hx, rfl⟩
+  rw [Fan.affineToricChartι_finiteFanSchemeComplexIso_inv_assoc,
+    f.affineChartι_comp_finiteFanSchemeHom ℂ σ τ hm, ← Category.assoc _ f.algebraicMap,
+    f.affineToricChartι_comp_algebraicMap_of_mapsTo σ τ hm, Category.assoc,
+    Fan.affineToricChartι_finiteFanSchemeComplexIso_inv]
+  simp only [← Category.assoc, affineToricSchemeIsoAddMonoidAlgebraSpec_hom_left,
+    affineChartMap_def, affineToricSchemeMap_def, ← Spec.map_comp, ← CommRingCat.ofHom_comp]
+  congr 2
+  apply CommRingCat.hom_ext
+  let eσ := AddMonoidAlgebra.toMultiplicativeAlgEquiv ℂ ℂ (dualSemigroup A.lattice σ.val)
+  let eτ := AddMonoidAlgebra.toMultiplicativeAlgEquiv ℂ ℂ (dualSemigroup B.lattice τ.val)
+  have h :
+      eσ.toAlgHom.comp
+          (AddMonoidAlgebra.mapDomainAlgHom ℂ ℂ
+            (dualSemigroupMap A.lattice B.lattice f.latticeMap f.realMap f.map_lattice hm)) =
+        (affineCoordinateRingMap A.lattice B.lattice f.latticeMap f.realMap f.map_lattice hm).comp
+          eτ.toAlgHom := by
+    apply AddMonoidAlgebra.algHom_ext
+    · intro m
+      simp only [AlgHom.coe_comp, AlgEquiv.coe_toAlgHom, Function.comp_apply, eσ, eτ,
+        AddMonoidAlgebra.mapDomainAlgHom_apply, AddMonoidAlgebra.mapDomain_single,
+        AddMonoidAlgebra.toMultiplicativeAlgEquiv_single,
+        affineCoordinateRingMap_single]
+    · exact Subsingleton.elim _ _
+  exact congrArg AlgHom.toRingHom h
 
 variable {Φ} (hΦ : Φ.IsRegular) (σ : Φ.cones)
   (hN : Module.finrank ℤ N = 2) (hc : Nat.card (ToricRay σ.val) = 2)
@@ -143,7 +180,7 @@ local notation "F" => (Φ.starSubdivisionAlong_isSubdivision hΦ σ.property h�
 local notation "π" => FanHom.algebraicMap (IsSubdivision.toFanHom F)
 local notation "I" => Scheme.Hom.ker (Φ.distinguishedPointHom σ)
 local notation "J" => RingHom.ker
-  (AlgHom.toRingHom (distinguishedPoint Φ.lattice (⊤ : σ.val.Face)))
+  (AlgHom.toRingHom (facePointAlgebraHom Φ.lattice (⊤ : σ.val.Face) ℂ))
 
 private def facesInclusion (τ : Φ.cones) :
     FanHom (Fan.ofCone Φ.lattice (Φ.isToricCone τ.property)) Φ :=
@@ -167,12 +204,12 @@ private theorem chartι_comp_facesInclusion (τ : Φ.cones) :
 include hΦ hN hc in
 private theorem exists_isPullback_starSubdivisionAlong_rees :
     ∃ j : Proj (reesAlgebra.grade J) ⟶ (Fan.algebraicRealization Ψ),
-      IsPullback j (Proj.toSpecCoeff (reesAlgebra.grade J)) π (Φ.affineToricChartι σ) := by
+      IsPullback j (Proj.toSpecCoeff (reesAlgebra.grade J)) π (Φ.additiveAffineToricChartι σ) := by
   let hσ := isRegular_iff.1 hΦ _ σ.property
   let A := ToricRay.faceFinset (PointedCone.IsFaceOf.refl σ.val) hσ.fg
   let P := Fan.starSubdivision Φ.lattice A hσ
   let Q := Fan.ofCone Φ.lattice hσ.toIsToricCone
-  obtain ⟨hA, e, he⟩ := exists_iso_reesBlowup_starSubdivision Φ.lattice hσ hN hc
+  obtain ⟨hA, e, he⟩ := exists_iso_reesBlowup_starSubdivision Φ.lattice ℂ hσ hN hc
   let q : Q.cones := ⟨σ.val, (Fan.mem_ofCone_cones _ _).2 (.refl _)⟩
   let a : FanHom P Ψ := FanHom.ofLatticeMap _ _ (AddMonoidHom.id N) fun κ hκ ↦ by
     rw [IsIntegralLattice.extend_id, PointedCone.map_id]
@@ -185,20 +222,38 @@ private theorem exists_isPullback_starSubdivisionAlong_rees :
     (preimageCones_starSubdivisionAlong_faces hΦ σ hN hc).symm
     (Set.ext fun _ ↦ Fan.mem_ofCone_cones ..) a b
     (FanHom.ofLatticeMap_latticeMap ..) (FanHom.ofLatticeMap_latticeMap ..)
-  have he' : e.hom ≫ Proj.toSpecCoeff (reesAlgebra.grade J) ≫ Q.affineToricChartι q =
-      (Fan.starSubdivision_isSubdivision Φ.lattice A hσ hA).toFanHom.algebraicMap := by
-    simpa only [toSpecCoeff_reesAlgebra, Category.assoc] using he
-  have hq : IsIso (Q.affineToricChartι q) := isIso_affineToricChartι_ofCone _ _
-  refine ⟨e.inv ≫ a.algebraicMap, hp.of_iso e (Iso.refl _) (asIso (Q.affineToricChartι q)).symm
+  let η := Q.affineChartι ℂ q ≫ Q.finiteFanSchemeComplexIso.hom
+  have : IsIso (Q.affineChartι ℂ q) :=
+    Fan.isIso_affineChartι_ofCone ℂ Φ.lattice hσ.toIsToricCone
+  have : IsIso η := inferInstanceAs (IsIso (Q.affineChartι ℂ q ≫ Q.finiteFanSchemeComplexIso.hom))
+  let v := (Fan.starSubdivision_isSubdivision Φ.lattice A hσ hA).toFanHom
+  let d := P.finiteFanSchemeComplexIso.symm ≪≫ e
+  have he' : e.hom ≫ Proj.toSpecCoeff (reesAlgebra.grade J) ≫ Q.affineChartι ℂ q =
+      v.finiteFanSchemeHom ℂ := by
+    simpa only [toSpecCoeff_reesAlgebra, Category.assoc, v] using he
+  have hd : d.hom ≫ Proj.toSpecCoeff (reesAlgebra.grade J) ≫ η = v.algebraicMap := by
+    calc
+      _ = P.finiteFanSchemeComplexIso.inv ≫
+          (e.hom ≫ Proj.toSpecCoeff (reesAlgebra.grade J) ≫ Q.affineChartι ℂ q) ≫
+          Q.finiteFanSchemeComplexIso.hom := by
+          simp only [d, Iso.trans_hom, Iso.symm_hom, η, Category.assoc]
+      _ = _ := by
+        rw [he', ← Category.assoc, complexIso_inv_comp_subdivisionMap, Category.assoc,
+          Iso.inv_hom_id, Category.comp_id]
+  refine ⟨d.inv ≫ a.algebraicMap, hp.of_iso d (Iso.refl _) (asIso η).symm
     (Iso.refl _) (by simp only [Iso.refl_hom, Category.comp_id, Iso.hom_inv_id_assoc]) ?_
-    (by simp) ?_⟩
-  · apply (cancel_mono (Q.affineToricChartι q)).mp
+    (by simp only [Iso.refl_hom, Category.comp_id, Category.id_comp]) ?_⟩
+  · apply (cancel_mono η).mp
     simpa only [Category.assoc, Iso.symm_hom, asIso_inv, IsIso.inv_hom_id, Category.comp_id]
-      using he'.symm
-  · have hb := chartι_comp_facesInclusion σ
-    apply (cancel_epi (Q.affineToricChartι q)).mp
-    simpa only [Category.comp_id, Iso.refl_hom, Category.assoc, Iso.symm_hom, asIso_inv,
-      IsIso.hom_inv_id_assoc, b, Q, q] using hb
+      using hd.symm
+  · apply (cancel_epi η).mp
+    rw [Category.assoc, Iso.symm_hom, asIso_inv, IsIso.hom_inv_id_assoc]
+    rw [Iso.refl_hom, Category.comp_id]
+    change (Q.affineChartι ℂ q ≫ Q.finiteFanSchemeComplexIso.hom) ≫
+      (facesInclusion σ).algebraicMap = Φ.additiveAffineToricChartι σ
+    rw [Category.assoc, Q.affineChartι_finiteFanSchemeComplexIso_hom_assoc,
+      affineToricSchemeIsoAddMonoidAlgebraSpec_inv_left, chartι_comp_facesInclusion,
+      Φ.additiveAffineToricChartι_def]
 
 private theorem exists_isPullback_starSubdivisionAlong_otherChart
     (τ : Φ.cones) (hστ : ¬ σ ≤ τ) :
@@ -209,14 +264,36 @@ private theorem exists_isPullback_starSubdivisionAlong_otherChart
   exact ⟨_, (F).isPullback_affineToricChartι hτ τ.property⟩
 
 private theorem comap_ker_distinguishedPointHom :
-    (I).comap (Φ.affineToricChartι σ) =
+    (I).comap (Φ.additiveAffineToricChartι σ) =
       ofIdealTop ((J).map
-        (Scheme.ΓSpecIso (.of (affineCoordinateRing Φ.lattice σ.val))).inv.hom) := by
+        (Scheme.ΓSpecIso (.of (affineChartRing ℂ Φ.lattice σ.val))).inv.hom) := by
   let p := Spec.map
-    (CommRingCat.ofHom (distinguishedPoint Φ.lattice (⊤ : σ.val.Face)).toRingHom)
+    (CommRingCat.ofHom (facePointAlgebraHom Φ.lattice (⊤ : σ.val.Face) ℂ).toRingHom)
+  let j := Φ.additiveAffineToricChartι σ
+  have hcomp : p ≫ j = Φ.distinguishedPointHom σ := by
+    dsimp only [p, j]
+    rw [Φ.additiveAffineToricChartι_def, ← Spec.map_comp_assoc, Φ.distinguishedPointHom_def,
+      ← CommRingCat.ofHom_comp]
+    congr 2
+    apply CommRingCat.hom_ext
+    let e := AddMonoidAlgebra.toMultiplicativeAlgEquiv ℂ ℂ (dualSemigroup Φ.lattice σ.val)
+    change ((facePointAlgebraHom Φ.lattice (⊤ : σ.val.Face) ℂ).comp e.symm.toAlgHom).toRingHom =
+      (distinguishedPoint Φ.lattice (⊤ : σ.val.Face)).toRingHom
+    apply congrArg AlgHom.toRingHom
+    apply MonoidAlgebra.algHom_ext
+    · intro m
+      obtain ⟨m, rfl⟩ := Multiplicative.ofAdd.surjective m
+      simp only [AlgHom.coe_comp, AlgEquiv.coe_toAlgHom, Function.comp_apply, e,
+        AddMonoidAlgebra.toMultiplicativeAlgEquiv_symm_single, toAdd_ofAdd,
+        facePointAlgebraHom_single, distinguishedPoint_apply_single]
+    · exact Subsingleton.elim _ _
+  have hrange : Set.range (Φ.distinguishedPointHom σ) ⊆ Set.range j := by
+    rw [← hcomp, Scheme.Hom.comp_base, TopCat.coe_comp]
+    exact Set.range_comp_subset_range _ _
+  have hp : IsPullback p (𝟙 _) j (Φ.distinguishedPointHom σ) := by
+    rw [IsOpenImmersion.lift_uniq j _ hrange p hcomp]
+    exact IsOpenImmersion.isPullback_lift_id _ j hrange
   have hclosed := Φ.isClosedImmersion_distinguishedPointHom σ
-  have hp : IsPullback p (𝟙 _) (Φ.affineToricChartι σ) (Φ.distinguishedPointHom σ) :=
-    IsPullback.of_vert_isIso_mono ⟨by simp [p, distinguishedPointHom_def]⟩
   rw [← ker_eq_comap_of_isPullback _ hp, Scheme.Hom.ker_Spec_map]
   rfl
 
@@ -241,8 +318,22 @@ private theorem exists_starSubdivisionAlong_localComparison (τ : Φ.cones) :
   · subst τ
     obtain ⟨a, ha⟩ := exists_isPullback_starSubdivisionAlong_rees hΦ σ hN hc h₀
     obtain ⟨b, hb⟩ := (I).exists_isPullback_toSpecCoeff_reesAlgebra
-      (Φ.affineToricChartι σ) (J) (comap_ker_distinguishedPointHom σ)
-    exact ⟨_, a, b, _, ha, hb⟩
+      (Φ.additiveAffineToricChartι σ) (J) (comap_ker_distinguishedPointHom σ)
+    let η : affineChart ℂ Φ.lattice σ.val ≅ Φ.affineToricChart σ :=
+      Scheme.Spec.mapIso
+        (AddMonoidAlgebra.toMultiplicativeAlgEquiv ℂ ℂ
+          (dualSemigroup Φ.lattice σ.val)).symm.toRingEquiv.toCommRingCatIso.op
+    let f := Proj.toSpecCoeff (reesAlgebra.grade J) ≫ η.hom
+    have hj : Φ.additiveAffineToricChartι σ = η.hom ≫ Φ.affineToricChartι σ := by
+      rw [Φ.additiveAffineToricChartι_def]
+      rfl
+    refine ⟨_, a, b, f, ?_, ?_⟩
+    · exact ha.of_iso (Iso.refl _) (Iso.refl _) η (Iso.refl _)
+        (by simp only [Iso.refl_hom, Category.id_comp, Category.comp_id]) (by simp [f])
+        (by simp) (by simp [hj])
+    · exact hb.of_iso (Iso.refl _) (Iso.refl _) η (Iso.refl _)
+        (by simp only [Iso.refl_hom, Category.id_comp, Category.comp_id]) (by simp [f])
+        (by simp) (by simp [hj])
   · have hστ : ¬ σ ≤ τ := fun h ↦ ht (eq_of_le_fullCone hΦ hN hc h)
     obtain ⟨a, ha⟩ := exists_isPullback_starSubdivisionAlong_otherChart hΦ σ h₀ τ hστ
     let j := Φ.affineToricChartι τ
