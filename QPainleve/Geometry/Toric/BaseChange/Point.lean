@@ -5,8 +5,8 @@ Authors: The QPainleve contributors
 -/
 module
 
-public import QPainleve.Geometry.Toric.BaseChange.Fan
-public import QPainleve.Geometry.Toric.BaseChange.FanMap
+public import QPainleve.Geometry.Toric.BaseChange.Fan.Basic
+public import QPainleve.Geometry.Toric.BaseChange.Fan.Map
 public import QPainleve.Geometry.Toric.Fan.Equiv
 
 import TauCeti.AlgebraicGeometry.IdealSheaf.Section

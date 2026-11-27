@@ -6,7 +6,7 @@ Authors: The QPainleve contributors
 module
 
 public import Mathlib.AlgebraicGeometry.Morphisms.UnderlyingMap
-public import QPainleve.Geometry.Toric.BaseChange.FanMap
+public import QPainleve.Geometry.Toric.BaseChange.Fan.Map
 
 import TauCeti.RingTheory.Spectrum.Prime.Topology
 
