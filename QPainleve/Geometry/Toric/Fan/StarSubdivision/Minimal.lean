@@ -8,7 +8,6 @@ module
 public import QPainleve.Geometry.Toric.Fan.Minimal
 public import QPainleve.Geometry.Toric.Fan.StarSubdivision.Factorization
 
-import QPainleve.Geometry.Toric.Fan.StarSubdivision.Contraction
 
 /-!
 # Reduction to a minimal complete regular fan

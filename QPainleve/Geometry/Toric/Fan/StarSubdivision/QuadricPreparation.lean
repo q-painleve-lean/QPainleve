@@ -10,7 +10,7 @@ public import QPainleve.Geometry.Toric.Fan.StarSubdivision.Factorization
 import Mathlib.LinearAlgebra.Basis.SMul
 import Mathlib.LinearAlgebra.Transvection.Basic
 import QPainleve.Geometry.Toric.Fan.CommonRefinement
-import QPainleve.Geometry.Toric.Fan.StarSubdivision.Hirzebruch
+import QPainleve.Geometry.Toric.Fan.Hirzebruch.Corner
 
 /-!
 # Toric preparation of a Hirzebruch surface

@@ -6,7 +6,7 @@ Authors: The QPainleve contributors
 module
 
 public import QPainleve.Geometry.Toric.Fan.Boundary.SelfIntersection
-public import QPainleve.Geometry.Toric.Fan.ProjectiveSpace.Plane
+public import QPainleve.Geometry.Toric.Fan.ProjectiveSpace.Ray
 
 import QPainleve.Geometry.Toric.Fan.Subdivision.Projective
 
