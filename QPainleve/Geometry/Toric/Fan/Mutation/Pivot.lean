@@ -575,7 +575,7 @@ local notation "zu(" n ")" =>
   MonoidHom.toHomUnits (MonoidHom.comp (RingHom.toMonoidHom (algebraMap G S))
     (AddMonoidAlgebra.of ℂ (N →+ ℤ))) (ofAdd n)
 local notation "k" => (laurentEval zu(m) : L →ₐ[ℂ] S)
-local notation "A" => @mutationTorusChartAlgEquiv N _ b v (c : ℂ)
+local notation "A" => @mutationTorusChartAlgEquiv N _ b v ℂ (c : ℂ) _
 local notation "t" => Spec.map (CommRingCat.ofHom (AlgHom.toRingHom (AlgEquiv.toAlgHom A)))
 local notation "eG(" F ")" => AlgEquiv.trans (denseTorusCoordinateRingEquiv (lattice F))
   (AlgEquiv.symm (AddMonoidAlgebra.toMultiplicativeAlgEquiv ℂ ℂ (N →+ ℤ)))
