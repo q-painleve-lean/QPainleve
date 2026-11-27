@@ -5,7 +5,7 @@ Authors: The Tau Ceti contributors
 -/
 module
 
-public import QPainleve.Geometry.Toric.BaseChange.FanMap
+public import QPainleve.Geometry.Toric.BaseChange.Fan.Map
 public import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.Basic
 public import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.SymmetricAlgebra
 public import TauCeti.Geometry.Toric.Algebraic.Fan.ProjectiveSpace.Coordinates

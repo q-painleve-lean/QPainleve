@@ -7,7 +7,7 @@ module
 
 public import Mathlib.AlgebraicGeometry.Morphisms.IsIso
 public import Mathlib.AlgebraicGeometry.PullbackCarrier
-public import QPainleve.Geometry.Toric.BaseChange.FanMap
+public import QPainleve.Geometry.Toric.BaseChange.Fan.Map
 public import TauCeti.Geometry.Toric.Algebraic.Fan.Product.Basic
 
 import QPainleve.Geometry.Toric.BaseChange.Subfan

@@ -14,7 +14,7 @@ public import TauCeti.AlgebraicGeometry.Scheme.Normal
 
 import QPainleve.AlgebraicGeometry.Scheme.Factorial
 import QPainleve.AlgebraicGeometry.Scheme.FunctionField
-import QPainleve.Geometry.Toric.BaseChange.Fan
+import QPainleve.Geometry.Toric.BaseChange.Fan.Basic
 import QPainleve.Geometry.Toric.RegularChart
 import QPainleve.LinearAlgebra.Determinant.Dual
 import TauCeti.Algebra.Group.UniqueProds.Submonoid
