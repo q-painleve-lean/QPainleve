@@ -8,7 +8,8 @@ module
 public import Mathlib.Data.ZMod.Basic
 public import QPainleve.Geometry.Toric.Fan.Ray
 
-import Mathlib.Analysis.SpecialFunctions.Complex.Arg
+import Mathlib.Analysis.InnerProductSpace.PiL2
+import Mathlib.Analysis.SpecialFunctions.Trigonometric.Inverse
 import Mathlib.Order.Fin.Basic
 import QPainleve.Analysis.SpecialFunctions.Trigonometric.Basic
 import QPainleve.Geometry.Toric.Cone.TwoDimensional
@@ -28,67 +29,110 @@ open Module PointedCone
 
 namespace TauCeti.Toric.Fan
 
-private noncomputable def asComplex : (Fin 2 → ℝ) ≃ₗ[ℝ] ℂ :=
-  (LinearEquiv.finTwoArrow ℝ ℝ).trans Complex.equivRealProdLm.symm
+private noncomputable def planeNorm (x : Fin 2 → ℝ) : ℝ :=
+  ‖WithLp.toLp 2 x‖
 
-private theorem asComplex_ne_zero {x : Fin 2 → ℝ} (hx : x ≠ 0) : asComplex x ≠ 0 :=
-  (map_ne_zero_iff _ asComplex.injective).mpr hx
+private theorem planeNorm_nonneg (x : Fin 2 → ℝ) : 0 ≤ planeNorm x := norm_nonneg _
+
+private theorem planeNorm_pos {x : Fin 2 → ℝ} (hx : x ≠ 0) : 0 < planeNorm x :=
+  norm_pos_iff.mpr fun h ↦ hx (by
+    simpa using congrArg (WithLp.ofLp : EuclideanSpace ℝ (Fin 2) → (Fin 2 → ℝ)) h)
+
+private theorem planeNorm_sq (x : Fin 2 → ℝ) : planeNorm x ^ 2 = x 0 ^ 2 + x 1 ^ 2 := by
+  rw [planeNorm, EuclideanSpace.real_norm_sq_eq, Fin.sum_univ_two]
+
+private noncomputable def upperAngle (x : Fin 2 → ℝ) : ℝ :=
+  Real.arccos (x 0 / planeNorm x)
+
+private theorem norm_mul_cos_upperAngle (x : Fin 2 → ℝ) :
+    planeNorm x * Real.cos (upperAngle x) = x 0 := by
+  by_cases hx : x = 0
+  · simp [hx, planeNorm]
+  have hn := planeNorm_pos hx
+  have hsq : x 0 ^ 2 ≤ planeNorm x ^ 2 := by
+    rw [planeNorm_sq]
+    exact le_add_of_nonneg_right (sq_nonneg _)
+  have habs : |x 0| ≤ planeNorm x :=
+    (sq_le_sq₀ (abs_nonneg _) hn.le).mp (by simpa only [sq_abs] using hsq)
+  rw [upperAngle, Real.cos_arccos ((le_div_iff₀ hn).mpr (by linarith [(abs_le.mp habs).1]))
+    ((div_le_iff₀ hn).mpr (by linarith [(abs_le.mp habs).2]))]
+  field_simp
+
+private theorem norm_mul_sin_upperAngle (x : Fin 2 → ℝ) :
+    planeNorm x * Real.sin (upperAngle x) = |x 1| := by
+  have hs := Real.sin_sq_add_cos_sq (upperAngle x)
+  have hc := norm_mul_cos_upperAngle x
+  have h := congrArg (fun z : ℝ ↦ planeNorm x ^ 2 * z) hs
+  rw [mul_add, ← mul_pow, ← mul_pow, hc, mul_one, planeNorm_sq] at h
+  have hsin : 0 ≤ Real.sin (upperAngle x) :=
+    Real.sin_nonneg_of_nonneg_of_le_pi (Real.arccos_nonneg _) (Real.arccos_le_pi _)
+  apply (sq_eq_sq₀ (mul_nonneg (planeNorm_nonneg x) hsin) (abs_nonneg _)).mp
+  rw [sq_abs]
+  linarith only [h]
+
+private theorem upperAngle_bounds_of_negative {x : Fin 2 → ℝ} (hx : x 1 < 0) :
+    0 < upperAngle x ∧ upperAngle x < Real.pi := by
+  have hs : 0 < Real.sin (upperAngle x) :=
+    pos_of_mul_pos_right (by rw [norm_mul_sin_upperAngle, abs_of_neg hx]; linarith)
+      (planeNorm_nonneg x)
+  have hn : 0 ≤ upperAngle x := Real.arccos_nonneg _
+  have hπ : upperAngle x ≤ Real.pi := Real.arccos_le_pi _
+  refine ⟨hn.lt_of_ne fun h ↦ ?_, hπ.lt_of_ne fun h ↦ ?_⟩
+  · rw [← h, Real.sin_zero] at hs
+    exact lt_irrefl 0 hs
+  · rw [h, Real.sin_pi] at hs
+    exact lt_irrefl 0 hs
 
 private noncomputable def polarAngle (x : Fin 2 → ℝ) : ℝ :=
-  (asComplex x).arg + if x 1 < 0 then 2 * Real.pi else 0
+  if x 1 < 0 then 2 * Real.pi - upperAngle x else upperAngle x
 
 private theorem polarAngle_bounds (x : Fin 2 → ℝ) :
     0 ≤ polarAngle x ∧ polarAngle x < 2 * Real.pi := by
   by_cases h : x 1 < 0
-  · have ha : (asComplex x).arg < 0 := Complex.arg_neg_iff.mpr h
-    simp only [polarAngle, ite_eq_left h]
-    constructor <;> linarith [Complex.neg_pi_lt_arg (asComplex x), Real.pi_pos]
-  · have ha : 0 ≤ (asComplex x).arg := Complex.arg_nonneg_iff.mpr (le_of_not_gt h)
-    simp only [polarAngle, ite_eq_right h, add_zero]
-    exact ⟨ha, by linarith [Complex.arg_le_pi (asComplex x), Real.pi_pos]⟩
+  · rw [polarAngle, ite_eq_left h]
+    obtain ⟨h₀, hπ⟩ := upperAngle_bounds_of_negative h
+    constructor <;> linarith [Real.pi_pos]
+  · rw [polarAngle, ite_eq_right h]
+    have hπ : upperAngle x ≤ Real.pi := Real.arccos_le_pi _
+    exact ⟨Real.arccos_nonneg _, by linarith [Real.pi_pos]⟩
 
 private theorem polarAngle_le_pi_iff (x : Fin 2 → ℝ) : polarAngle x ≤ Real.pi ↔ 0 ≤ x 1 := by
   by_cases h : x 1 < 0
-  · have harg := Complex.neg_pi_lt_arg (asComplex x)
-    simp only [polarAngle, ite_eq_left h, not_le.mpr h, iff_false, not_le]
-    linarith
-  · simp [polarAngle, h, le_of_not_gt h, Complex.arg_le_pi]
+  · rw [polarAngle, ite_eq_left h]
+    have hπ := (upperAngle_bounds_of_negative h).2
+    exact iff_of_false (by linarith) h.not_ge
+  · rw [polarAngle, ite_eq_right h]
+    exact iff_of_true (Real.arccos_le_pi _) (le_of_not_gt h)
 
 private theorem norm_mul_cos_polarAngle (x : Fin 2 → ℝ) :
-    ‖asComplex x‖ * Real.cos (polarAngle x) = x 0 := by
-  have hre : (asComplex x).re = x 0 := rfl
+    planeNorm x * Real.cos (polarAngle x) = x 0 := by
   unfold polarAngle
-  split <;> simpa only [hre, Real.cos_add_two_pi, add_zero] using
-    (Complex.norm_mul_cos_arg (asComplex x) : _ = (asComplex x).re)
+  split <;> simp only [Real.cos_two_pi_sub, norm_mul_cos_upperAngle]
 
 private theorem norm_mul_sin_polarAngle (x : Fin 2 → ℝ) :
-    ‖asComplex x‖ * Real.sin (polarAngle x) = x 1 := by
-  have him : (asComplex x).im = x 1 := rfl
+    planeNorm x * Real.sin (polarAngle x) = x 1 := by
   unfold polarAngle
-  split <;> simpa only [him, Real.sin_add_two_pi, add_zero] using
-    (Complex.norm_mul_sin_arg (asComplex x) : _ = (asComplex x).im)
+  split
+  · rw [Real.sin_two_pi_sub, mul_neg, norm_mul_sin_upperAngle, abs_of_neg ‹_›, neg_neg]
+  · rw [norm_mul_sin_upperAngle, abs_of_nonneg (le_of_not_gt ‹_›)]
 
 private theorem eq_pos_smul_of_polarAngle_eq {x y : Fin 2 → ℝ} (hy : y ≠ 0)
     (hx : x ≠ 0) (h : polarAngle x = polarAngle y) :
     ∃ c : ℝ, 0 < c ∧ x = c • y := by
-  have hhalf : x 1 < 0 ↔ y 1 < 0 := by
-    apply lt_iff_lt_of_le_iff_le
-    rw [← polarAngle_le_pi_iff, ← polarAngle_le_pi_iff, h]
-  have harg : (asComplex y).arg = (asComplex x).arg := by
-    symm
-    by_cases hx' : x 1 < 0
-    · simpa [polarAngle, hx', hhalf.mp hx'] using h
-    · have hy' : ¬ y 1 < 0 := fun hy' ↦ hx' (hhalf.mpr hy')
-      simpa [polarAngle, hx', hy'] using h
-  refine ⟨_, div_pos (norm_pos_iff.mpr (asComplex_ne_zero hx))
-    (norm_pos_iff.mpr (asComplex_ne_zero hy)), asComplex.injective ?_⟩
-  rw [map_smul, Complex.real_smul, Complex.ofReal_div, eq_comm]
-  exact (Complex.arg_eq_arg_iff (asComplex_ne_zero hy) (asComplex_ne_zero hx)).mp harg
+  refine ⟨_, div_pos (planeNorm_pos hx) (planeNorm_pos hy), ?_⟩
+  funext j
+  fin_cases j
+  · change x 0 = (planeNorm x / planeNorm y) * y 0
+    rw [← norm_mul_cos_polarAngle x, ← norm_mul_cos_polarAngle y, h]
+    field_simp [(planeNorm_pos hy).ne']
+  · change x 1 = (planeNorm x / planeNorm y) * y 1
+    rw [← norm_mul_sin_polarAngle x, ← norm_mul_sin_polarAngle y, h]
+    field_simp [(planeNorm_pos hy).ne']
 
 local notation "det₂" => Module.Basis.detDualEquiv (Pi.basisFun _ (Fin 2))
 
 private theorem det₂_eq_sin (x y : Fin 2 → ℝ) :
-    det₂ x y = (‖asComplex x‖ * ‖asComplex y‖) *
+    det₂ x y = (planeNorm x * planeNorm y) *
       Real.sin (polarAngle y - polarAngle x) := by
   rw [Real.sin_sub]
   simp only [Basis.detDualEquiv_pi_basisFun]
@@ -103,7 +147,7 @@ private theorem polarAngle_step {x y : Fin 2 → ℝ} (hxy : 0 < det₂ x y) :
     else
       0 < polarAngle y - polarAngle x ∧ polarAngle y - polarAngle x < Real.pi := by
   rw [det₂_eq_sin] at hxy
-  have hs := pos_of_mul_pos_right hxy (mul_nonneg (norm_nonneg _) (norm_nonneg _))
+  have hs := pos_of_mul_pos_right hxy (mul_nonneg (planeNorm_nonneg _) (planeNorm_nonneg _))
   have hx := polarAngle_bounds x
   have hy := polarAngle_bounds y
   by_cases hyx : polarAngle y < polarAngle x
@@ -128,8 +172,8 @@ private theorem det₂_nonneg_iff_mem_angleInterval {x y v : Fin 2 → ℝ}
     (hab : 0 < b - a ∧ b - a < Real.pi) :
     0 ≤ det₂ x v ∧ 0 ≤ det₂ v y ↔
       ∃ t : ℝ, (t = polarAngle v ∨ t = polarAngle v + 2 * Real.pi) ∧ a ≤ t ∧ t ≤ b := by
-  have hn : ∀ w : Fin 2 → ℝ, w ≠ 0 → 0 < ‖asComplex w‖ :=
-    fun w hn ↦ norm_pos_iff.mpr (asComplex_ne_zero hn)
+  have hn : ∀ w : Fin 2 → ℝ, w ≠ 0 → 0 < planeNorm w :=
+    fun _ ↦ planeNorm_pos
   -- Lift the direction into the full turn starting at the first ray.
   let t := if polarAngle v < a then polarAngle v + 2 * Real.pi else polarAngle v
   have ht : t = polarAngle v ∨ t = polarAngle v + 2 * Real.pi := by
