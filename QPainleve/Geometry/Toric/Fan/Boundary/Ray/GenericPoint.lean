@@ -5,7 +5,7 @@ Authors: The QPainleve contributors
 -/
 module
 
-public import QPainleve.Geometry.Toric.Fan.Boundary.RayIdeal
+public import QPainleve.Geometry.Toric.Fan.Boundary.Ray.Ideal
 public import QPainleve.Geometry.Toric.Fan.Ray
 public import TauCeti.AlgebraicGeometry.Scheme.CodimensionOnePoint
 public import TauCeti.Geometry.Toric.Algebraic.BaseChange.Fan

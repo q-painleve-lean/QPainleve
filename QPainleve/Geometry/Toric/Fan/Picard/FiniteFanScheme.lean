@@ -8,7 +8,7 @@ module
 public import Mathlib.Algebra.Exact.Basic
 public import Mathlib.LinearAlgebra.Quotient.Basic
 public import QPainleve.AlgebraicGeometry.CartierDivisor.Excision
-public import QPainleve.Geometry.Toric.BaseChange.Fan
+public import QPainleve.Geometry.Toric.BaseChange.Fan.Basic
 public import QPainleve.Geometry.Toric.Fan.Boundary.Character
 public import QPainleve.Geometry.Toric.Fan.Picard.Basic
 

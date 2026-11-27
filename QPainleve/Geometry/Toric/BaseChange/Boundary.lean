@@ -8,7 +8,7 @@ module
 public import Mathlib.AlgebraicGeometry.IdealSheaf.Functorial
 public import QPainleve.Geometry.Toric.BaseChange.FunctionField
 public import QPainleve.Geometry.Toric.BaseChange.Point
-public import QPainleve.Geometry.Toric.Fan.Boundary.RayGenericPoint
+public import QPainleve.Geometry.Toric.Fan.Boundary.Ray.GenericPoint
 public import TauCeti.AlgebraicGeometry.Blowup.StrictTransform
 public import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.Factorial
 public import TauCeti.AlgebraicGeometry.IdealSheaf.VanishingIdeal
@@ -18,7 +18,7 @@ import QPainleve.AlgebraicGeometry.CartierDivisor.Support
 import QPainleve.AlgebraicGeometry.EffectiveCartierDivisor.Stalk
 import QPainleve.Geometry.Toric.BaseChange.Subfan
 import QPainleve.Geometry.Toric.Cone.Regularity
-import QPainleve.Geometry.Toric.BaseChange.Fan
+import QPainleve.Geometry.Toric.BaseChange.Fan.Basic
 
 /-!
 # Boundary ideals of toric schemes

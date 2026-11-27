@@ -6,7 +6,7 @@ Authors: The QPainleve contributors
 module
 
 public import QPainleve.Geometry.Toric.BaseChange.FunctionField
-public import QPainleve.Geometry.Toric.Fan.Boundary.RayGenericPoint
+public import QPainleve.Geometry.Toric.Fan.Boundary.Ray.GenericPoint
 public import Mathlib.AlgebraicGeometry.OrderOfVanishing.Basic
 
 import QPainleve.Geometry.Toric.RegularChart
