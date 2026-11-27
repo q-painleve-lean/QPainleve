@@ -8,6 +8,7 @@ module
 public import QPainleve.Geometry.Toric.Fan.Boundary.Center
 public import QPainleve.Geometry.Toric.Fan.Boundary.Ideal
 public import TauCeti.AlgebraicGeometry.IdealSheaf.Colon
+public import TauCeti.Geometry.Toric.Algebraic.IntegralModel
 
 import TauCeti.Algebra.Bialgebra.MonoidAlgebra.Equiv
 import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.Section
@@ -90,18 +91,49 @@ theorem iUnion_range_boundaryComponentι :
 variable (hdim : Module.finrank ℤ N = 2) {m : N →+ ℤ}
   (hm : m ρ.primitiveGenerator = 0) (hprim : Function.Surjective m)
 
+local notation "chartIso" =>
+  (Functor.mapIso (Over.forget (Spec (CommRingCat.of ℂ)))
+    (Iso.symm (affineToricSchemeIsoAddMonoidAlgebraSpec (Fan.lattice Φ)
+      (Subtype.val (Fan.Ray.toCone Φ ρ)))))
+
+local notation "rayOrbit" =>
+  (CategoryTheory.CategoryStruct.comp (Fan.Ray.orbitToRayChart (k := ℂ) ρ hdim hm hprim)
+    (Iso.hom chartIso))
+
 omit [Nonempty Φ.cones] in
 private theorem comap_rayBoundaryIdeal_eq_ker_orbitToRayChart :
     (Φ.rayBoundaryIdeal hΦ ρ).comap (Φ.affineToricChartι ρ.toCone) =
-      (ρ.orbitToRayChart hdim hm hprim).ker := by
+      (rayOrbit).ker := by
+  let σ := ρ.toCone
+  let hσ := Φ.isToricCone σ.property
+  let r := ρ.toToricRay Φ σ le_rfl
+  let e := AddMonoidAlgebra.toMultiplicativeAlgEquiv ℂ ℂ (dualSemigroup Φ.lattice σ.val)
+  have hmap : (rayChartIdeal Φ.lattice hσ r ℂ).map e.toRingEquiv =
+      rayIdeal Φ.lattice hσ r := by
+    obtain ⟨l, b, hb⟩ := (Fan.isRegular_iff.1 hΦ _ σ.property).exists_basis_sum
+    rw [rayChartIdeal_eq_span_rayCoordinate _ _ _ _ hb, rayIdeal_eq_span _ _ hb,
+      Ideal.map_span, Set.image_singleton]
+    simp [e, MonoidAlgebra.of_apply]
+  let t := chartIso
+  let f := ρ.orbitToRayChart (k := ℂ) hdim hm hprim
+  have hpb : IsPullback (f ≫ t.hom) (𝟙 _) t.inv f :=
+    IsPullback.of_vert_isIso ⟨by simp⟩
   rw [Φ.comap_rayBoundaryIdeal_eq_ofIdealTop hΦ ρ ρ.toCone le_rfl,
-    ρ.ker_orbitToRayChart hdim hm hprim]
+    ker_eq_comap_of_isPullback_of_isOpenImmersion t.inv hpb]
+  change _ = (ρ.orbitToRayChart (k := ℂ) hdim hm hprim).ker.comap (chartIso).inv
+  rw [Ray.ker_orbitToRayChart, Functor.mapIso_inv, Over.forget_map, Iso.symm_inv,
+    affineToricSchemeIsoAddMonoidAlgebraSpec_hom_left, comap_ofIdealTop_map_ΓSpecIso_inv]
+  change ofIdealTop ((rayIdeal Φ.lattice hσ r).map
+      (Scheme.ΓSpecIso (.of (affineCoordinateRing Φ.lattice σ.val))).inv.hom) =
+    ofIdealTop (((rayChartIdeal Φ.lattice hσ r ℂ).map e.toRingEquiv).map
+      (Scheme.ΓSpecIso (.of (affineCoordinateRing Φ.lattice σ.val))).inv.hom)
+  rw [hmap]
 
 /-- The ray orbit as an open subscheme of its reduced ray divisor. -/
 def Ray.orbitToComponent :
     Spec (.of (LaurentPolynomial ℂ)) ⟶ (Φ.rayBoundaryIdeal hΦ ρ).subscheme :=
   IsClosedImmersion.lift (Φ.rayBoundaryIdeal hΦ ρ).subschemeι
-    (ρ.orbitToRayChart hdim hm hprim ≫ Φ.affineToricChartι ρ.toCone) (by
+    (rayOrbit ≫ Φ.affineToricChartι ρ.toCone) (by
       rw [ker_subschemeι, Scheme.Hom.ker_comp,
         ← comap_rayBoundaryIdeal_eq_ker_orbitToRayChart ρ hΦ hdim hm hprim]
       exact le_map_comap _ _)
@@ -111,13 +143,13 @@ omit [Nonempty Φ.cones] in
 @[reassoc (attr := simp)]
 theorem Ray.orbitToComponent_subschemeι :
     ρ.orbitToComponent hΦ hdim hm hprim ≫ (Φ.rayBoundaryIdeal hΦ ρ).subschemeι =
-      ρ.orbitToRayChart hdim hm hprim ≫ Φ.affineToricChartι ρ.toCone :=
+      rayOrbit ≫ Φ.affineToricChartι ρ.toCone :=
   IsClosedImmersion.lift_fac _ _ _
 
 instance Ray.isOpenImmersion_orbitToComponent :
     IsOpenImmersion (ρ.orbitToComponent hΦ hdim hm hprim) :=
   MorphismProperty.of_isPullback
-    (isPullback_of_isClosedImmersion (ρ.orbitToRayChart hdim hm hprim)
+    (isPullback_of_isClosedImmersion (rayOrbit)
       (Φ.rayBoundaryIdeal hΦ ρ).subschemeι _ (Φ.affineToricChartι ρ.toCone)
       (ρ.orbitToComponent_subschemeι hΦ hdim hm hprim).symm
       (by rw [ker_subschemeι, comap_rayBoundaryIdeal_eq_ker_orbitToRayChart ρ hΦ hdim hm hprim]))
@@ -136,11 +168,10 @@ instance Ray.isOver_orbitToComponent :
     (ρ.orbitToComponent hΦ hdim hm hprim).IsOver (Spec (.of ℂ)) where
   comp_over := by
     rw [over_eq_subschemeι_comp, ← Category.assoc, ρ.orbitToComponent_subschemeι,
-      Category.assoc, comp_over, Ray.orbitToRayChart_def]
-    exact comp_over (Spec.map (CommRingCat.ofHom
-      ((ρ.orbitCoordinateMap ℂ hdim hm hprim).comp
-        (AddMonoidAlgebra.toMultiplicativeAlgEquiv ℂ ℂ
-          (dualSemigroup Φ.lattice ρ.toCone.val)).symm.toAlgHom).toRingHom)) (Spec (.of ℂ))
+      Category.assoc, Fan.algebraicRealization_over]
+    simpa only [ρ.orbitToBoundary_comp_subschemeι_assoc, Category.assoc, specOverSpec_over,
+      Spec.algebraMap] using
+      ρ.orbitToBoundary_comp_algebraicRealizationStructureMap hdim hm hprim
 
 /-- The binomial center on its own reduced ray divisor. -/
 def Ray.binomialCenterOnComponent (c : ℂˣ) :
@@ -165,7 +196,10 @@ theorem Ray.binomialCenterOnComponent_boundaryComponentι (c : ℂˣ) :
   apply (cancel_mono (D).subschemeι).mp
   rw [Category.assoc, Ray.orbitToBoundary_comp_subschemeι,
     Ray.binomialCenterOnBoundary_comp_subschemeι, Ray.binomialCenter_def,
-    Ray.orbitToRayChart_def, ← Spec.map_comp_assoc, Ray.binomialCenterEval_def]
+    Ray.orbitToRayChart_def, Functor.mapIso_hom, Over.forget_map, Iso.symm_hom,
+    affineToricSchemeIsoAddMonoidAlgebraSpec_inv_left, Category.assoc,
+    ← Spec.map_comp_assoc, ← Spec.map_comp_assoc,
+    Ray.binomialCenterEval_def]
   rfl
 
 private theorem boundaryComponentι_binomialCenterOnComponent_apply (c : ℂˣ) (z : Spec (.of ℂ)) :

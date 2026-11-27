@@ -9,6 +9,7 @@ public import QPainleve.Geometry.Toric.Fan.Boundary.Component
 public import QPainleve.Geometry.Toric.Fan.Point
 public import TauCeti.AlgebraicGeometry.Curves.Basic
 public import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.ProjectiveLine.Scaling
+public import TauCeti.Geometry.Toric.Algebraic.IntegralModel
 
 import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.ProjectiveLine.Basic
 import QPainleve.Geometry.Toric.Fan.Adjacency
@@ -49,6 +50,15 @@ local notation "Gm" => Spec (CommRingCat.of (LaurentPolynomial ℂ))
 
 variable (hdim : Module.finrank ℤ N = 2) {m : N →+ ℤ}
   (hm : m ρ.primitiveGenerator = 0) (hprim : Function.Surjective m)
+
+local notation "chartIso" =>
+  (Functor.mapIso (Over.forget (Spec (CommRingCat.of ℂ)))
+    (Iso.symm (affineToricSchemeIsoAddMonoidAlgebraSpec (Fan.lattice Φ)
+      (Subtype.val (Fan.Ray.toCone Φ ρ)))))
+
+local notation "rayOrbit" =>
+  (CategoryTheory.CategoryStruct.comp (Fan.Ray.orbitToRayChart (k := ℂ) ρ hdim hm hprim)
+    (Iso.hom chartIso))
 
 local notation "j" => ρ.orbitToComponent hΦ hdim hm hprim
 local notation "t" => projectiveLine.torusInclusion ℂ
@@ -133,7 +143,7 @@ variable {σ : Φ.cones} (hρ : ρ.toCone ≤ σ)
 
 local notation "A" => affineCoordinateRing Φ.lattice σ.val
 local notation "face" => Φ.isFaceOf_of_le σ.property ρ.toCone.property hρ
-local notation "q" => ρ.orbitToRayChart hdim hm hprim
+local notation "q" => rayOrbit
 
 omit hproper in
 private theorem orbitToRayChart_comp_face_comp_polynomialPoint
@@ -143,7 +153,9 @@ private theorem orbitToRayChart_comp_face_comp_polynomialPoint
       projectiveLine.polynomialPoint ℂ (algebraMap ℂ A) s (MonoidAlgebra.single (ofAdd a) 1) =
         t := by
   rw [faceAffineToricSchemeMap_def, projectiveLine.SpecMap_polynomialPoint,
-    Ray.orbitToRayChart_def, projectiveLine.SpecMap_polynomialPoint,
+    Ray.orbitToRayChart_def, Functor.mapIso_hom, Over.forget_map, Iso.symm_hom,
+    affineToricSchemeIsoAddMonoidAlgebraSpec_inv_left, ← Spec.map_comp, ← CommRingCat.ofHom_comp,
+    projectiveLine.SpecMap_polynomialPoint,
     torusInclusion_eq_polynomialPoint s]
   let e := (AddMonoidAlgebra.toMultiplicativeAlgEquiv ℂ ℂ
     (dualSemigroup Φ.lattice ρ.toCone.val)).symm.toAlgHom
@@ -154,14 +166,19 @@ private theorem orbitToRayChart_comp_face_comp_polynomialPoint
     apply RingHom.ext
     intro c
     simp only [RingHom.comp_apply, AlgHom.toRingHom_eq_coe, RingHom.coe_coe, AlgHom.commutes]
+  change projectiveLine.polynomialPoint ℂ
+    (((ρ.orbitCoordinateMap ℂ hdim hm hprim).comp e).toRingHom.comp
+      ((faceAffineCoordinateRingMap Φ.lattice face).toRingHom.comp (algebraMap ℂ A))) s
+    (((ρ.orbitCoordinateMap ℂ hdim hm hprim).comp e)
+      ((faceAffineCoordinateRingMap Φ.lattice face) (MonoidAlgebra.single (ofAdd a) 1))) = _
   rw [hcoeff]
   congr 1
-  simp only [AlgHom.toRingHom_eq_coe, RingHom.coe_coe, faceAffineCoordinateRingMap_single]
+  simp only [faceAffineCoordinateRingMap_single]
   let n : ℤ := if s = 1 then 1 else -1
   have he : (⟨a, dualSemigroup_anti Φ.lattice (face).le a.property⟩ :
       dualSemigroup Φ.lattice ρ.toCone.val) = ρ.chartCharacter (m := n • m) (by simp [hm]) :=
     Subtype.ext (by simpa only [Ray.coe_chartCharacter] using ha)
-  simpa only [AlgHom.comp_apply, AlgEquiv.coe_toAlgHom,
+  simpa only [e, n, AlgHom.comp_apply, AlgEquiv.coe_toAlgHom,
     AddMonoidAlgebra.toMultiplicativeAlgEquiv_symm_single, toAdd_ofAdd, he] using
     ρ.orbitCoordinateMap_zsmul_chartCharacter ℂ hdim hm hprim n
 
