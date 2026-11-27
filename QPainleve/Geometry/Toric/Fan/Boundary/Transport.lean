@@ -35,11 +35,11 @@ variable {N N' V V' : Type} [AddCommGroup N] [AddCommGroup N']
 include hdet in
 /-- The ideals of corresponding determinant-coordinate centers have the same parameter
 under restriction of the toric isomorphism to the boundary. -/
-theorem comap_internalCenter_boundaryIso (hΦ : Φ.IsRegular) (ρ : Φ.Ray) (c : ℂˣ) :
+theorem comap_internalCenter_boundaryIso (ρ : Φ.Ray) (c : ℂˣ) :
     ((e.rayEquiv ρ).internalCenter b' c).val.comap (e.boundaryIso h₀ h₁).hom =
       (ρ.internalCenter b c).val := by
   rw [Fan.Ray.internalCenter_val, Fan.Ray.internalCenter_val]
-  apply e.comap_ker_binomialCenterOnBoundary_boundaryIso ρ _ _ _ _ _ _ c hΦ
+  apply e.comap_ker_binomialCenterOnBoundary_boundaryIso ρ _ _ _ _ _ _ c
   ext x
   simpa only [AddMonoidHom.comp_apply, LinearMap.toAddMonoidHom_coe,
     primitiveGenerator_rayEquiv, AddMonoidHom.coe_ofClass] using hdet ρ.primitiveGenerator x
@@ -47,7 +47,7 @@ theorem comap_internalCenter_boundaryIso (hΦ : Φ.IsRegular) (ρ : Φ.Ray) (c :
 include hdet in
 /-- A fan equivalence followed by translation identifies the corresponding center ideals
 exactly when the target parameter times the translating character equals the source one. -/
-theorem comap_internalCenter_toricIso_eq_iff (hΦ : Φ.IsRegular) (ρ : Φ.Ray)
+theorem comap_internalCenter_toricIso_eq_iff (ρ : Φ.Ray)
     (χ : Multiplicative (N' →+ ℤ) →* ℂˣ) (c d : ℂˣ) :
     ((e.rayEquiv ρ).internalCenter b' d).val.comap
       ((e.boundaryIso h₀ h₁).hom ≫ (Ψ.boundaryTranslation χ).hom) =
@@ -57,7 +57,7 @@ theorem comap_internalCenter_toricIso_eq_iff (hΦ : Φ.IsRegular) (ρ : Φ.Ray)
   have ht := (e.rayEquiv ρ).comap_internalCenter_boundaryTranslation_hom b' χ (d * a)
   have ha : d * a / a = d := mul_div_cancel_right _ _
   rw [ha] at ht
-  rw [Scheme.IdealSheafData.comap_comp, ht, e.comap_internalCenter_boundaryIso b b' hdet hΦ]
+  rw [Scheme.IdealSheafData.comap_comp, ht, e.comap_internalCenter_boundaryIso b b' hdet]
   exact (ρ.internalCenter_injective b).eq_iff
 
 variable {n : ℕ} (s : Fin n → Φ.Ray) (c : Fin n → ℂˣ)
@@ -69,7 +69,7 @@ include hdet in
 /-- The unique lift of a determinant-preserving fan equivalence through the ordered
 internal blowups commutes with the blowup projections and the strict boundary embeddings,
 including when centers repeat. -/
-theorem existsUnique_isLift_internalBlowupTower (hΦ : Φ.IsRegular) :
+theorem existsUnique_isLift_internalBlowupTower :
     ∃! g : (P).1 ≅ (P').1,
       IsLift (asIso e.toFanHom.algebraicMap) (P).2.toTower (P').2.toTower g ∧
         (P).2.boundaryι ≫ g.hom = (e.boundaryIso h₀ h₁).hom ≫ (P').2.boundaryι := by
@@ -83,14 +83,14 @@ theorem existsUnique_isLift_internalBlowupTower (hΦ : Φ.IsRegular) :
     exists_isLift_alongBoundary (asIso e.toFanHom.algebraicMap) (e.boundaryIso h₀ h₁)
       (e.boundaryIso_hom_subschemeι h₀ h₁).symm
       (fun j ↦ (s j).internalCenter b (c j)) (fun j ↦ (e.rayEquiv (s j)).internalCenter b' (c j))
-      (fun j ↦ e.comap_internalCenter_boundaryIso b b' hdet hΦ (s j) (c j))
+      (fun j ↦ e.comap_internalCenter_boundaryIso b b' hdet (s j) (c j))
   exact ⟨g, ⟨hg, hb⟩, fun _ h ↦ h.1.unique hg⟩
 
 include hdet in
 /-- Transporting the internal blowups after reindexing the centers gives an isomorphism
 over the toric schemes that restricts to the fan equivalence on the strict boundaries.
 The centers may repeat. -/
-theorem exists_iso_reindex_transport_internalBlowupTower (hΦ : Φ.IsRegular)
+theorem exists_iso_reindex_transport_internalBlowupTower
     (σ : Equiv.Perm (Fin n)) :
     let A := Fan.internalBlowupTower b s c
     let B := Fan.internalBlowupTower b' (e.rayEquiv ∘ s ∘ σ) (c ∘ σ)
@@ -103,7 +103,7 @@ theorem exists_iso_reindex_transport_internalBlowupTower (hΦ : Φ.IsRegular)
   let B := Fan.internalBlowupTower b' (e.rayEquiv ∘ s ∘ σ) (c ∘ σ)
   obtain ⟨f, hf, hfB⟩ := Fan.exists_iso_internalBlowupTower_reindex b s c σ
   obtain ⟨f', ⟨hf', hf'B⟩, -⟩ :=
-    e.existsUnique_isLift_internalBlowupTower b b' hdet (s ∘ σ) (c ∘ σ) hΦ
+    e.existsUnique_isLift_internalBlowupTower b b' hdet (s ∘ σ) (c ∘ σ)
   have hstrict : A.2.boundaryι ≫ (f ≪≫ f').hom = (e.boundaryIso h₀ h₁).hom ≫ B.2.boundaryι := by
     rw [Iso.trans_hom, ← Category.assoc, hfB, hf'B]
   refine ⟨f ≪≫ f', ?_, ?_, hstrict⟩

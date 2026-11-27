@@ -7,6 +7,7 @@ module
 
 public import QPainleve.Geometry.Toric.Fan.Boundary.Center
 public import QPainleve.Geometry.Toric.Fan.Ruling.Basic
+import TauCeti.Algebra.Bialgebra.MonoidAlgebra.Equiv
 
 /-!
 # Binomial centers in ruling fibers
@@ -41,14 +42,16 @@ theorem binomialCenter_comp_characterRuling (ρ : Φ.Ray)
     simpa only [ite_true, ρ.coe_chartCharacter] using (ρ.chartCharacter hm).property
   rw [ρ.binomialCenter_def, Category.assoc, Φ.affineToricChartι_comp_characterRuling m h ρ.toCone
     0 hm', projectiveLine.polynomialPoint_def, ← Spec.map_comp_assoc, ← CommRingCat.ofHom_comp]
-  let e := ρ.binomialCenterEval hdim hm hprim c
+  let e := (ρ.binomialCenterEval ℂ hdim hm hprim c).comp
+    (AddMonoidAlgebra.toMultiplicativeAlgEquiv ℂ ℂ
+      (dualSemigroup Φ.lattice ρ.toCone.val)).symm.toAlgHom
   have hχ : (⟨_, hm'⟩ : dualSemigroup Φ.lattice ρ.toCone.val) = ρ.chartCharacter hm :=
     Subtype.ext (by simp)
   have he : e.comp (Polynomial.aeval (MonoidAlgebra.of ℂ _ (ofAdd ⟨_, hm'⟩))) =
       Polynomial.aeval (-(↑c⁻¹ : ℂ)) := by
     apply Polynomial.algHom_ext
     rw [hχ]
-    simp [e, MonoidAlgebra.of_apply]
+    simp [e, MonoidAlgebra.of_apply, AddMonoidAlgebra.toMultiplicativeAlgEquiv_symm_single]
   exact congrArg (fun φ : Polynomial ℂ →+* ℂ ↦
     Spec.map (CommRingCat.ofHom φ) ≫ projectiveLine.polynomialChartι ℂ 0)
     (congrArg AlgHom.toRingHom he)

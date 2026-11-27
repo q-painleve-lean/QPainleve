@@ -13,6 +13,7 @@ public import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.ProjectiveLine.Scalin
 import QPainleve.AlgebraicGeometry.ProjectiveSpectrum.ProjectiveLine.Basic
 import QPainleve.Geometry.Toric.Fan.Adjacency
 import QPainleve.Geometry.Toric.Fan.Boundary.Intersection
+import TauCeti.Algebra.Bialgebra.MonoidAlgebra.Equiv
 import TauCeti.AlgebraicGeometry.Curves.ProjectiveLine
 
 /-!
@@ -144,8 +145,10 @@ private theorem orbitToRayChart_comp_face_comp_polynomialPoint
   rw [faceAffineToricSchemeMap_def, projectiveLine.SpecMap_polynomialPoint,
     Ray.orbitToRayChart_def, projectiveLine.SpecMap_polynomialPoint,
     torusInclusion_eq_polynomialPoint s]
+  let e := (AddMonoidAlgebra.toMultiplicativeAlgEquiv ℂ ℂ
+    (dualSemigroup Φ.lattice ρ.toCone.val)).symm.toAlgHom
   have hcoeff :
-      ((ρ.orbitCoordinateMap hdim hm hprim).toRingHom.comp
+      (((ρ.orbitCoordinateMap ℂ hdim hm hprim).comp e).toRingHom.comp
         ((faceAffineCoordinateRingMap Φ.lattice face).toRingHom.comp (algebraMap ℂ A))) =
           algebraMap ℂ (LaurentPolynomial ℂ) := by
     apply RingHom.ext
@@ -158,7 +161,9 @@ private theorem orbitToRayChart_comp_face_comp_polynomialPoint
   have he : (⟨a, dualSemigroup_anti Φ.lattice (face).le a.property⟩ :
       dualSemigroup Φ.lattice ρ.toCone.val) = ρ.chartCharacter (m := n • m) (by simp [hm]) :=
     Subtype.ext (by simpa only [Ray.coe_chartCharacter] using ha)
-  rw [he, ρ.orbitCoordinateMap_zsmul_chartCharacter]
+  simpa only [AlgHom.comp_apply, AlgEquiv.coe_toAlgHom,
+    AddMonoidAlgebra.toMultiplicativeAlgEquiv_symm_single, toAdd_ofAdd, he] using
+    ρ.orbitCoordinateMap_zsmul_chartCharacter ℂ hdim hm hprim n
 
 include hρ
 

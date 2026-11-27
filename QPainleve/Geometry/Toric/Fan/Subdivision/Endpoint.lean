@@ -127,7 +127,7 @@ theorem exists_iso_of_matching_toric_models_of_latticeEquiv
       b'.detDualEquiv x y := by
     simpa only [g, mapEquivIso_latticeEquiv, LinearEquiv.coe_addEquiv_apply,
       LinearEquiv.apply_symm_apply] using (hdet (e.symm x) (e.symm y)).symm
-  have h := g.exists_iso_reindex_transport_internalBlowupTower b' b hdet' τ centers(d) hΨ σ
+  have h := g.exists_iso_reindex_transport_internalBlowupTower b' b hdet' τ centers(d) σ
   dsimp only at h
   rw [hc] at h
   obtain ⟨f, hf, hfB, hstrict⟩ := h

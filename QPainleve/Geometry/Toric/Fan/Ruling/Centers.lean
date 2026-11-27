@@ -11,6 +11,7 @@ public import QPainleve.Geometry.Toric.Fan.Ruling.Laurent
 
 import QPainleve.Algebra.Polynomial.Laurent
 import QPainleve.AlgebraicGeometry.Blowup.Isomorphism
+import TauCeti.Algebra.Bialgebra.MonoidAlgebra.Equiv
 import TauCeti.AlgebraicGeometry.IdealSheaf.BaseChange
 
 /-!
@@ -47,12 +48,17 @@ variable (b : Basis (Fin 2) ℤ N) (hm : m = (b.coord 1).toAddMonoidHom)
 
 local notation "e" => Φ.characterRulingTorusIso m h b hm hpos hneg
 
+local notation "chartEval(" ρ ", " hdim ", " hm ", " hp ", " c ")" =>
+  (AlgHom.comp (Ray.binomialCenterEval ρ ℂ hdim hm hp c)
+    (AlgEquiv.toAlgHom (AlgEquiv.symm (AddMonoidAlgebra.toMultiplicativeAlgEquiv ℂ ℂ
+      (dualSemigroup Φ.lattice (Subtype.val (Ray.toCone Φ ρ)))))))
+
 private theorem binomialCenter_firstCoordinate {ρ : Φ.Ray}
     (hσ : ρ.toCone.val ∈ (U).cones) (j : Fin 2)
     (hρ : ρ.primitiveGenerator = if j = 0 then b 0 else -b 0)
     (hdim : Module.finrank ℤ N = 2) (hmρ : m ρ.primitiveGenerator = 0)
     (hsurj : Function.Surjective m) (c : ℂˣ) :
-    Spec.map (CommRingCat.ofHom (ρ.binomialCenterEval hdim hmρ hsurj c).toRingHom) ≫
+    Spec.map (CommRingCat.ofHom (chartEval(ρ, hdim, hmρ, hsurj, c)).toRingHom) ≫
         (U).affineToricChartι ⟨ρ.toCone.val, hσ⟩ ≫ (p).isoPullback.hom ≫
           (e).hom ≫ pullback.fst _ _ =
       projectiveLine.polynomialPoint ℂ (RingHom.id ℂ) j 0 := by
@@ -64,14 +70,17 @@ private theorem binomialCenter_firstCoordinate {ρ : Φ.Ray}
     rw [ρ.toCone_eq_hull_primitiveGenerator, ← Set.image_singleton,
       mem_dualSemigroup_hull_image, Set.forall_mem_singleton, ha]
     omega
-  let ev := ρ.binomialCenterEval hdim hmρ hsurj c
+  let ev := chartEval(ρ, hdim, hmρ, hsurj, c)
   rw [Φ.affineToricChartι_comp_characterRulingTorusIso_fst m h b hm hpos hneg
     ⟨ρ.toCone.val, hσ⟩ j haσ, projectiveLine.SpecMap_polynomialPoint]
   refine congrArg₂ (fun k a ↦ projectiveLine.polynomialPoint ℂ k j a) ?_ ?_
   · apply RingHom.ext
     intro r
     exact ev.commutes r
-  · exact ρ.binomialCenterEval_monomial_of_pos hdim hmρ hsurj c _ (ha.symm ▸ Int.zero_lt_one)
+  · change ev (MonoidAlgebra.of ℂ _ (ofAdd ⟨a, haσ⟩)) = 0
+    simpa only [ev, AlgHom.comp_apply, AlgEquiv.coe_toAlgHom, MonoidAlgebra.of_apply,
+      AddMonoidAlgebra.toMultiplicativeAlgEquiv_symm_single, toAdd_ofAdd] using
+      ρ.binomialCenterEval_monomial_of_pos ℂ hdim hmρ hsurj c ⟨a, haσ⟩ (ha.symm ▸ Int.zero_lt_one)
 
 /-- The binomial center regarded as a point of the ruling's restriction above the base torus. -/
 def Ray.binomialCenterInRulingTorus (ρ : Φ.Ray)
@@ -120,7 +129,7 @@ theorem Ray.binomialCenterInRulingTorus_comp_characterRulingTorusIso_fst (ρ : �
     rw [map_smul, IsIntegralLattice.realCharacter_apply, hmρ, Int.cast_zero, smul_zero]
   let σ : (U).cones := ⟨ρ.toCone.val, hσ⟩
   let t : base ⟶ (U).algebraicRealization :=
-    Spec.map (CommRingCat.ofHom (ρ.binomialCenterEval hdim hmρ hsurj c).toRingHom) ≫
+    Spec.map (CommRingCat.ofHom (chartEval(ρ, hdim, hmρ, hsurj, c)).toRingHom) ≫
       (U).affineToricChartι σ
   have ht : t ≫ (p).isoPullback.hom = ρ.binomialCenterInRulingTorus h hdim hmρ hsurj c := by
     apply (cancel_mono (pullback.fst (Φ.characterRuling m h) projectiveLineTorusι)).mp

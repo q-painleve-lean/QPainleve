@@ -123,7 +123,7 @@ theorem exists_common_toric_presentation_of_picard_isometry
     (fun r ↦ by obtain ⟨j, rfl⟩ := u.surjective r; rw [hf]; exact hD j)
   have hdet := f.detDualEquiv_of_matching_adjacent_rays b b' hΦ (hf 0) (hf (0 + 1))
     (hu 0).1 (hv 0).1 (hu 0).2
-  have hlift := f.existsUnique_isLift_internalBlowupTower b b' hdet s d hΦ
+  have hlift := f.existsUnique_isLift_internalBlowupTower b b' hdet s d
   rw [hcenters] at hlift
   obtain ⟨g, ⟨hg, hboundary⟩, -⟩ := hlift
   refine ⟨f, ⟨hf, hcenters, g, hg, hboundary, ?_⟩, ?_⟩

@@ -93,7 +93,7 @@ theorem exists_iso_transport_internalBlowupPicardMarking
   obtain ⟨f, hf, hfB, hmark⟩ :=
     Fan.exists_iso_internalBlowupPicardMarking_reindex b s c hΦ σ h
   obtain ⟨f', ⟨hf', hf'B⟩, -⟩ :=
-    e.existsUnique_isLift_internalBlowupTower b b' hdet (s ∘ σ) (c ∘ σ) hΦ
+    e.existsUnique_isLift_internalBlowupTower b b' hdet (s ∘ σ) (c ∘ σ)
   refine ⟨f ≪≫ f', ?_, ?_, ?_⟩
   · rw [Iso.trans_hom, Category.assoc, hf'.hom_toBase, asIso_hom, ← Category.assoc, hf]
   · rw [Iso.trans_hom, ← Category.assoc, hfB, hf'B]

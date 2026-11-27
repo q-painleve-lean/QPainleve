@@ -9,6 +9,7 @@ public import QPainleve.Geometry.Toric.Fan.Boundary.Center
 public import QPainleve.Geometry.Toric.Fan.Boundary.Ideal
 public import TauCeti.AlgebraicGeometry.IdealSheaf.Colon
 
+import TauCeti.Algebra.Bialgebra.MonoidAlgebra.Equiv
 import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.Section
 import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.Subtraction
 import TauCeti.AlgebraicGeometry.IdealSheaf.BaseChange
@@ -93,9 +94,8 @@ omit [Nonempty Φ.cones] in
 private theorem comap_rayBoundaryIdeal_eq_ker_orbitToRayChart :
     (Φ.rayBoundaryIdeal hΦ ρ).comap (Φ.affineToricChartι ρ.toCone) =
       (ρ.orbitToRayChart hdim hm hprim).ker := by
-  rw [Φ.comap_rayBoundaryIdeal_eq_ofIdealTop hΦ ρ ρ.toCone le_rfl, Ray.orbitToRayChart_def,
-    Scheme.Hom.ker_Spec_map, CommRingCat.hom_ofHom, AlgHom.toRingHom_eq_coe,
-    ← AlgHom.ker_coe, Ray.ker_orbitCoordinateMap]
+  rw [Φ.comap_rayBoundaryIdeal_eq_ofIdealTop hΦ ρ ρ.toCone le_rfl,
+    ρ.ker_orbitToRayChart hdim hm hprim]
 
 /-- The ray orbit as an open subscheme of its reduced ray divisor. -/
 def Ray.orbitToComponent :
@@ -138,7 +138,9 @@ instance Ray.isOver_orbitToComponent :
     rw [over_eq_subschemeι_comp, ← Category.assoc, ρ.orbitToComponent_subschemeι,
       Category.assoc, comp_over, Ray.orbitToRayChart_def]
     exact comp_over (Spec.map (CommRingCat.ofHom
-      (ρ.orbitCoordinateMap hdim hm hprim).toRingHom)) (Spec (.of ℂ))
+      ((ρ.orbitCoordinateMap ℂ hdim hm hprim).comp
+        (AddMonoidAlgebra.toMultiplicativeAlgEquiv ℂ ℂ
+          (dualSemigroup Φ.lattice ρ.toCone.val)).symm.toAlgHom).toRingHom)) (Spec (.of ℂ))
 
 /-- The binomial center on its own reduced ray divisor. -/
 def Ray.binomialCenterOnComponent (c : ℂˣ) :

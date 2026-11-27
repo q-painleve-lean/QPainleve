@@ -86,7 +86,7 @@ theorem exists_ordered_toric_iso_model
   let h₁ : Nonempty Δ'.cones := K.nonempty_cones_of_nonempty B.isComplete.nonempty_cones
   have hΔ' : Δ'.IsRegular := F.isRegular_iff.mpr hΔ
   obtain ⟨u, ⟨hu, huB⟩, -⟩ := F.existsUnique_isLift_internalBlowupTower b b'
-    (b.detDualEquiv_map F.latticeEquiv.toIntLinearEquiv) r c hΔ
+    (b.detDualEquiv_map F.latticeEquiv.toIntLinearEquiv) r c
   obtain ⟨v, ⟨hv, hvB, -⟩, -⟩ :=
     exists_unique_internal_blowup_torus_translation b' r' hΔ' χ c c' (fun _ ↦ rfl)
   let g : U.1 ≅ W.1 := u ≪≫ v
