@@ -46,35 +46,38 @@ open Scheme.IdealSheafData
 
 namespace TauCeti.Toric.Fan.LogarithmicProjection
 
+variable {k₀ : Type} [Field k₀] [IsAlgClosed k₀]
+
 open scoped Sarkisov
 
 attribute [local instance] MvPolynomial.gradedAlgebra
 
-local notation "S" => Spec (CommRingCat.of ℂ)
-local notation "P" => Proj (homogeneousSubmodule ℂ (Fin 3 → ℂ))
-local notation "H" => LineBundleClass.mk (Proj.symmetricAlgebraTwistingBundle ℂ (Fin 3 → ℂ) 1)
+local notation "S" => Spec (CommRingCat.of k₀)
+local notation "P" => Proj (homogeneousSubmodule k₀ (Fin 3 → k₀))
+local notation "H" => LineBundleClass.mk (Proj.symmetricAlgebraTwistingBundle k₀ (Fin 3 → k₀) 1)
 local notation "planeIso[" b "," hi "]" =>
-  (Fan.projectivePlaneIso b hi ≪≫ Basis.polynomialProjIso (Pi.basisFun ℂ (Fin 3)))
-local notation "f[" A "]" => (Fan.algebraicRealization (LogarithmicProjection.fan A) ↘ S)
+  (Fan.projectivePlaneIso k₀ b hi ≪≫ Basis.polynomialProjIso (Pi.basisFun k₀ (Fin 3)))
+local notation "f[" A "]" => (Fan.finiteFanScheme k₀ (LogarithmicProjection.fan A) ↘ S)
 local notation "rankTwo[" b "]" => Eq.trans (finrank_eq_card_basis b) (Fintype.card_fin 2)
-local notation "pt" => (IsLocalRing.closedPoint ℂ : S)
-local notation "coordPoint[" j "]" => projectiveLine.polynomialPoint ℂ (RingHom.id ℂ) j 0
+local notation "pt" => (IsLocalRing.closedPoint k₀ : S)
+local notation "coordPoint[" j "]" => projectiveLine.polynomialPoint k₀ (RingHom.id k₀) j 0
 local notation "fiberRay[" r "," j "]" => r ((![1, 3] : Fin 2 → Fin 4) j)
 local notation "center[" b "," ρ "," c "]" =>
-  Fan.Ray.binomialCenter ρ rankTwo[b] (Basis.detDualEquiv_self b (Fan.Ray.primitiveGenerator ρ))
+  Fan.Ray.binomialCenter ρ k₀ rankTwo[b] (Basis.detDualEquiv_self b (Fan.Ray.primitiveGenerator ρ))
     (Fan.Ray.surjective_detCharacter ρ b) c pt
 local notation "obj[" F "," A "]" => @Prefunctor.obj _ sarkisovQuiver _ sarkisovQuiver F A
 local notation "mapPath[" F "," p "]" =>
   @Prefunctor.mapPath _ sarkisovQuiver _ sarkisovQuiver F _ _ p
 
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
-  {i : N →+ V} {X : Scheme} [X.Over S] [SmoothOfRelativeDimension 2 (X ↘ S)]
+  {i : N →+ V} {X : Scheme} [X.Over (Spec (.of k₀))] [SmoothOfRelativeDimension 2 (X ↘ Spec
+    (.of k₀))]
   {D : X.IdealSheafData}
 
 /-- A Hirzebruch marking on a closed-point tower resolving the two specified
 projections. The top isomorphism records how the tower realizes those projections
 on the common surface. -/
-structure HirzebruchPlaneResolution (A B : LogarithmicProjection i D)
+structure HirzebruchPlaneResolution (A B : LogarithmicProjection k₀ i D)
     (b' : Basis (Fin 2) ℤ N) (hi : IsIntegralLattice i) (e n : ℕ) where
   /-- Lattice frame of the current Hirzebruch surface. -/
   basis : Basis (Fin 2) ℤ N
@@ -88,9 +91,9 @@ structure HirzebruchPlaneResolution (A B : LogarithmicProjection i D)
   /-- Top of the tower. -/
   top : Scheme
   /-- The ordered tower over the current source fan. -/
-  tower : BlowupTower A.fan.algebraicRealization n top
+  tower : BlowupTower (A.fan.finiteFanScheme k₀) n top
   /-- Each center is a closed point. -/
-  closed : IsClosedPointTower A.fan.algebraicRealization tower
+  closed : IsClosedPointTower (A.fan.finiteFanScheme k₀) tower
   /-- Identification of the common surface with the top of the tower. -/
   iso : X ≅ top
   /-- The plane map in the tower coordinates. -/
@@ -106,54 +109,58 @@ structure HirzebruchPlaneResolution (A B : LogarithmicProjection i D)
 
 namespace HirzebruchPlaneResolution
 
-variable {A B : LogarithmicProjection i D} {b' : Basis (Fin 2) ℤ N}
+variable {A B : LogarithmicProjection k₀ i D} {b' : Basis (Fin 2) ℤ N}
   {hi : IsIntegralLattice i} {e n : ℕ} (M : HirzebruchPlaneResolution A B b' hi e n)
 
 include M in
+omit [IsAlgClosed k₀] in
 private theorem smooth : SmoothOfRelativeDimension 2 f[A] :=
-  rankTwo[M.basis] ▸ A.fan.smoothOfRelativeDimension_algebraicRealizationStructureMap A.isRegular
+  rankTwo[M.basis] ▸ A.fan.smoothOfRelativeDimension_finiteFanSchemeToSpec k₀ A.isRegular
 
 include M in
-private theorem noetherian : IsNoetherian A.fan.algebraicRealization :=
+omit [IsAlgClosed k₀] in
+private theorem noetherian : IsNoetherian (A.fan.finiteFanScheme k₀) :=
   let : SmoothOfRelativeDimension 2 f[A] := M.smooth
   let : Smooth f[A] := SmoothOfRelativeDimension.smooth 2 _
   isNoetherian_of_finiteType f[A]
 
 /-- Coordinates of the pullback of the plane line class in the tower marking. -/
 def lineClass :
-    Additive (LineBundleClass A.fan.algebraicRealization) × (Fin n → ℤ) :=
+    Additive (LineBundleClass (A.fan.finiteFanScheme k₀)) × (Fin n → ℤ) :=
   let : SmoothOfRelativeDimension 2 f[A] := M.smooth
-  let : IsNoetherian A.fan.algebraicRealization := M.noetherian
+  let : IsNoetherian (A.fan.finiteFanScheme k₀) := M.noetherian
   (M.tower.picardMarking M.closed f[A]).symm (Additive.ofMul (pullback M.planeMap H))
 
 /-- The tower coordinates are computed by the inverse Picard marking. -/
 theorem lineClass_def [SmoothOfRelativeDimension 2 f[A]]
-    [IsNoetherian A.fan.algebraicRealization] :
+    [IsNoetherian (A.fan.finiteFanScheme k₀)] :
     M.lineClass =
       (M.tower.picardMarking M.closed f[A]).symm (Additive.ofMul (pullback M.planeMap H)) := (rfl)
 
 /-- The fiber coefficient of the plane line class in the Hirzebruch basis. -/
 def fiberCoefficient : ℤ :=
   let : Nonempty A.fan.cones := A.isComplete.nonempty_cones
-  (A.fan.hirzebruchPicardBasis M.basis e A.isRegular M.rays M.rays_eq).repr M.lineClass.1 0
+  (A.fan.hirzebruchPicardBasis k₀ M.basis e A.isRegular M.rays M.rays_eq).repr M.lineClass.1 0
 
 /-- The degree of the plane line class on a ruling fiber. -/
 def fiberDegree : ℤ :=
   let : Nonempty A.fan.cones := A.isComplete.nonempty_cones
-  (A.fan.hirzebruchPicardBasis M.basis e A.isRegular M.rays M.rays_eq).repr M.lineClass.1 1
+  (A.fan.hirzebruchPicardBasis k₀ M.basis e A.isRegular M.rays M.rays_eq).repr M.lineClass.1 1
 
 /-- The fiber coefficient is the first Hirzebruch coordinate. -/
 theorem fiberCoefficient_def :
     let : Nonempty A.fan.cones := A.isComplete.nonempty_cones
     M.fiberCoefficient =
-      (A.fan.hirzebruchPicardBasis M.basis e A.isRegular M.rays M.rays_eq).repr M.lineClass.1 0 :=
+      (A.fan.hirzebruchPicardBasis k₀ M.basis e A.isRegular M.rays M.rays_eq).repr
+        M.lineClass.1 0 :=
   (rfl)
 
 /-- The fiber degree is the second Hirzebruch coordinate. -/
 theorem fiberDegree_def :
     let : Nonempty A.fan.cones := A.isComplete.nonempty_cones
     M.fiberDegree =
-      (A.fan.hirzebruchPicardBasis M.basis e A.isRegular M.rays M.rays_eq).repr M.lineClass.1 1 :=
+      (A.fan.hirzebruchPicardBasis k₀ M.basis e A.isRegular M.rays M.rays_eq).repr
+        M.lineClass.1 1 :=
   (rfl)
 
 /-- The order of the plane linear system at a stage of the resolving tower. -/
@@ -166,14 +173,15 @@ theorem order_def (j : Fin n) : M.order j = -M.lineClass.2 j := (rfl)
 section. At index zero, the marking still specifies this section by its ray. -/
 def sectionCenters : Finset (Fin n) :=
   let : Nonempty A.fan.cones := A.isComplete.nonempty_cones
-  M.closed.strictTransformCenterIndices (A.fan.rayBoundaryIdeal A.isRegular (M.rays 2))
+  M.closed.strictTransformCenterIndices (A.fan.rayDivisorIdeal k₀ A.isRegular (M.rays 2))
 
+omit [IsAlgClosed k₀] in
 /-- A stage lies on the marked section exactly when it lies on its strict
 transform at that stage of the tower. -/
 theorem sectionCenters_def :
     let : Nonempty A.fan.cones := A.isComplete.nonempty_cones
     M.sectionCenters =
-      M.closed.strictTransformCenterIndices (A.fan.rayBoundaryIdeal A.isRegular (M.rays 2)) :=
+      M.closed.strictTransformCenterIndices (A.fan.rayDivisorIdeal k₀ A.isRegular (M.rays 2)) :=
   (rfl)
 
 /-- The strictly positive orders among the stages on the marked section. -/
@@ -185,13 +193,14 @@ theorem mem_positiveCenters (j : Fin n) :
     j ∈ M.positiveCenters ↔ j ∈ M.sectionCenters ∧ 0 < M.order j := Finset.mem_filter
 
 /-- The invariant ruling of the marked Hirzebruch surface. -/
-def ruling : A.fan.algebraicRealization ⟶ projectiveLine ℂ :=
-  A.fan.characterRuling (M.basis.coord 1).toAddMonoidHom
+def ruling : (A.fan.finiteFanScheme k₀) ⟶ projectiveLine k₀ :=
+  A.fan.characterRuling k₀ (M.basis.coord 1).toAddMonoidHom
     (Fan.nonneg_or_nonpos_hirzebruch_ruling_character M.basis e M.rays M.rays_eq)
 
+omit [IsAlgClosed k₀] in
 /-- The ruling is induced by the second coordinate in the lattice frame. -/
 theorem ruling_def :
-    M.ruling = A.fan.characterRuling (M.basis.coord 1).toAddMonoidHom
+    M.ruling = A.fan.characterRuling k₀ (M.basis.coord 1).toAddMonoidHom
       (Fan.nonneg_or_nonpos_hirzebruch_ruling_character M.basis e M.rays M.rays_eq) := (rfl)
 
 /-- An earliest maximal positive order is attained at a first proper center on
@@ -205,18 +214,18 @@ theorem exists_first_max_of_positiveCenters_nonempty (h : M.positiveCenters.None
       ((∃ (σ : A.fan.cones) (t : Fin 2),
         Nat.card (ToricRay σ.val) = 2 ∧ (M.rays 2).toCone ≤ σ ∧
         σ.val = hull ℝ {i (-M.basis 0), i (fiberRay[M.rays,t]).primitiveGenerator} ∧
-        A.fan.distinguishedPointHom σ pt = M.closed.baseCenter j) ∨
-        ∃ c : ℂˣ, M.closed.baseCenter j = center[M.basis,M.rays 2,c]) := by
+        (A.fan.distinguishedSection (R := k₀) σ) pt = M.closed.baseCenter j) ∨
+        ∃ c : k₀ˣ, M.closed.baseCenter j = center[M.basis,M.rays 2,c]) := by
   let : Nonempty A.fan.cones := A.isComplete.nonempty_cones
   let : SmoothOfRelativeDimension 2 f[A] := M.smooth
-  let : IsNoetherian A.fan.algebraicRealization := M.noetherian
-  let C := A.fan.rayBoundaryIdeal A.isRegular (M.rays 2)
+  let : IsNoetherian (A.fan.finiteFanScheme k₀) := M.noetherian
+  let C := A.fan.rayDivisorIdeal k₀ A.isRegular (M.rays 2)
   have hmem (l : Fin n) : l ∈ M.positiveCenters ↔
       M.closed.strictTransformCoefficients C l ≠ 0 ∧ 0 < M.order l := by
     rw [mem_positiveCenters, sectionCenters_def, M.closed.mem_strictTransformCenterIndices]
   obtain ⟨l, hl⟩ := h
   obtain ⟨j, hj, hjpos, hmax, hearly, hfirst, hcase⟩ :=
-    A.fan.exists_first_max_base_order_on_ray M.basis A.isRegular A.isComplete
+    A.fan.exists_first_max_base_order_on_ray k₀ M.basis A.isRegular A.isComplete
       (M.rays 2) M.closed M.planeMap M.planeMap_over ⟨l, (hmem l).mp hl⟩
   refine ⟨j, (hmem j).mpr ⟨hj, hjpos⟩, fun l hl ↦ hmax l ((hmem l).mp hl).1,
     fun l hl hlj ↦ hearly l hlj ((hmem l).mp hl).1, hfirst, ?_⟩
@@ -232,7 +241,7 @@ end HirzebruchPlaneResolution
 /-- The marks carried through positive-section preparation. The selected set
 fills the remaining pivot slots, and each retained center is first over its
 point on its own invariant fiber, off the marked section. -/
-structure PositiveSectionMarking {A B : LogarithmicProjection i D} {b' : Basis (Fin 2) ℤ N}
+structure PositiveSectionMarking {A B : LogarithmicProjection k₀ i D} {b' : Basis (Fin 2) ℤ N}
     {hi : IsIntegralLattice i} {e n : ℕ}
     (M : HirzebruchPlaneResolution A B b' hi e n) (ι : Type*) where
   /-- The remaining selected positive-section stages. -/
@@ -254,7 +263,7 @@ structure PositiveSectionMarking {A B : LogarithmicProjection i D} {b' : Basis (
 
 namespace PositiveSectionMarking
 
-variable {A B : LogarithmicProjection i D} {b' : Basis (Fin 2) ℤ N}
+variable {A B : LogarithmicProjection k₀ i D} {b' : Basis (Fin 2) ℤ N}
   {hi : IsIntegralLattice i} {e n : ℕ} {ι : Type*}
   {M : HirzebruchPlaneResolution A B b' hi e n}
 
@@ -276,7 +285,7 @@ theorem remainingCoefficient_zero {M : HirzebruchPlaneResolution A B b' hi 0 n}
 contributes no positive section order, and the retained section stages
 keep their orders and incidence. The remaining coefficient is invariant, and
 the transported marking records the specified retained first centers. -/
-private theorem exists_of_pivot {C : LogarithmicProjection i D}
+private theorem exists_of_pivot {C : LogarithmicProjection k₀ i D}
     {M : HirzebruchPlaneResolution A B b' hi (e + 1) (n + 1)}
     (s : PositiveSectionMarking M ι) {M' : HirzebruchPlaneResolution C B b' hi e (1 + n)}
     (j : Fin (n + 1)) (hj : j ∈ M.positiveCenters)
@@ -317,11 +326,12 @@ end PositiveSectionMarking
 
 section Pivot
 
-variable {A B : LogarithmicProjection i D} {b' : Basis (Fin 2) ℤ N}
+variable {A B : LogarithmicProjection k₀ i D} {b' : Basis (Fin 2) ℤ N}
   {hi : IsIntegralLattice i} {e n : ℕ} {ι : Type*}
 
 local notation "head" => Fin.castAdd n (0 : Fin 1)
 
+omit [IsAlgClosed k₀] in
 private theorem HirzebruchPlaneResolution.iso_isOver
     (M : HirzebruchPlaneResolution A B b' hi e n) :
     let : M.top.Over S := ⟨M.tower.toBase ≫ f[A]⟩
@@ -334,8 +344,8 @@ private theorem HirzebruchPlaneResolution.iso_isOver
 private theorem HirzebruchPlaneResolution.source_pole
     (M : HirzebruchPlaneResolution A B b' hi e n) :
     let : SmoothOfRelativeDimension 2 f[A] := M.smooth
-    (A.fan.boundaryIdeal A.isComplete.nonempty_cones).comap M.tower.toBase =
-      (D.comap M.iso.inv) * M.closed.ramificationIdealSheafToBase ℂ := by
+    (A.fan.toricBoundaryIdeal k₀ A.isComplete.nonempty_cones).comap M.tower.toBase =
+      (D.comap M.iso.inv) * M.closed.ramificationIdealSheafToBase k₀ := by
   intro hdim
   let := hdim
   let : M.top.Over S := ⟨M.tower.toBase ≫ f[A]⟩
@@ -343,25 +353,26 @@ private theorem HirzebruchPlaneResolution.source_pole
   let : SmoothOfRelativeDimension 2 (M.top ↘ S) := M.closed.smoothOfRelativeDimension f[A]
   let : M.iso.hom.IsOver S := M.iso_isOver
   let : Smooth (X ↘ S) := SmoothOfRelativeDimension.smooth 2 _
-  have h := comap_eq_mul_ramificationIdealSheaf_comp_iff_of_isIso ℂ M.iso.hom M.tower.toBase 2
-    (D := A.fan.boundaryIdeal A.isComplete.nonempty_cones) (Q := D)
+  have h := comap_eq_mul_ramificationIdealSheaf_comp_iff_of_isIso k₀ M.iso.hom M.tower.toBase 2
+    (D := A.fan.toricBoundaryIdeal k₀ A.isComplete.nonempty_cones) (Q := D)
   rw [IsIso.inv_eq_of_hom_inv_id M.iso.hom_inv_id] at h
-  rw [M.closed.ramificationIdealSheafToBase_def ℂ]
-  have hcomap := congrArg (A.fan.boundaryIdeal A.isComplete.nonempty_cones).comap M.source_hom
+  rw [M.closed.ramificationIdealSheafToBase_def k₀]
+  have hcomap := congrArg (A.fan.toricBoundaryIdeal k₀ A.isComplete.nonempty_cones).comap
+    M.source_hom
   exact h.mp (hcomap.symm.trans (A.comap_boundaryIdeal.trans
-    (congrArg (D * ·) (ramificationIdealSheaf_congr ℂ M.source_hom))))
+    (congrArg (D * ·) (ramificationIdealSheaf_congr k₀ M.source_hom))))
 
 private theorem HirzebruchPlaneResolution.exists_lift_pivot_path [PreirreducibleSpace X]
     (M : HirzebruchPlaneResolution A B b' hi e n)
-    {Φ : Fan i} {Z : Scheme} {m : ℕ} (T : BlowupTower Φ.algebraicRealization m Z)
+    {Φ : Fan i} {Z : Scheme} {m : ℕ} (T : BlowupTower (Φ.finiteFanScheme k₀) m Z)
     (k : M.top ≅ Z) :
     let : SmoothOfRelativeDimension 2 f[A] := M.smooth
     let : M.top.Over S := ⟨M.tower.toBase ≫ f[A]⟩
     let : SmoothOfRelativeDimension 2 (M.top ↘ S) := M.closed.smoothOfRelativeDimension f[A]
     let : IsIntegral M.top := M.closed.isIntegral f[A]
-    ∀ {L R : LogarithmicProjection i (D.comap M.iso.inv)}, SarkisovPath L R →
+    ∀ {L R : LogarithmicProjection k₀ i (D.comap M.iso.inv)}, SarkisovPath L R →
       L.fan = A.fan → L.hom ≍ M.tower.toBase → R.fan = Φ → R.hom ≍ k.hom ≫ T.toBase →
-      ∃ C : LogarithmicProjection i D, C.fan = Φ ∧
+      ∃ C : LogarithmicProjection k₀ i D, C.fan = Φ ∧
         C.hom ≍ (M.iso ≪≫ k).hom ≫ T.toBase ∧ Nonempty (SarkisovPath A C) := by
   intro hdim hover hdimTop hIntegral L R p hL hLhom hR hRhom
   let := hdim
@@ -371,23 +382,23 @@ private theorem HirzebruchPlaneResolution.exists_lift_pivot_path [Preirreducible
   let : M.iso.hom.IsOver S := M.iso_isOver
   have hD : (D.comap M.iso.inv).comap M.iso.hom = D := by
     rw [← comap_comp, Iso.hom_inv_id, Scheme.IdealSheafData.comap_id]
-  let F := precomposeSarkisovOfIso (i := i) rankTwo[M.basis] M.iso hD
+  let F := precomposeSarkisovOfIso (K := k₀) (i := i) rankTwo[M.basis] M.iso hD
   have hStart : obj[F,L] = A := by
     refine LogarithmicProjection.ext ((precomposeSarkisovOfIso_obj_fan ..).trans hL) ?_
     exact (precomposeSarkisovOfIso_obj_hom ..).trans
-      ((heq_comp rfl rfl (congrArg Fan.algebraicRealization hL) HEq.rfl hLhom).trans
+      ((heq_comp rfl rfl (congrArg (Fan.finiteFanScheme k₀) hL) HEq.rfl hLhom).trans
         (heq_of_eq M.source_hom.symm))
   refine ⟨obj[F,R], (precomposeSarkisovOfIso_obj_fan ..).trans hR, ?_,
     ⟨Eq.mp (congrArg (fun L' ↦ SarkisovPath L' obj[F,R]) hStart) mapPath[F,p]⟩⟩
   simpa only [Iso.trans_hom, Category.assoc] using
     (precomposeSarkisovOfIso_obj_hom ..).trans
-      (heq_comp rfl rfl (congrArg Fan.algebraicRealization hR) HEq.rfl hRhom)
+      (heq_comp rfl rfl (congrArg (Fan.finiteFanScheme k₀) hR) HEq.rfl hRhom)
 
 private def HirzebruchPlaneResolution.afterPivot
-    (M : HirzebruchPlaneResolution A B b' hi e n) {C : LogarithmicProjection i D}
+    (M : HirzebruchPlaneResolution A B b' hi e n) {C : LogarithmicProjection k₀ i D}
     {k m : ℕ} {Z : Scheme} (d : Basis (Fin 2) ℤ N) (r : Fin 4 ≃ C.fan.Ray)
     (hr : (fun j ↦ (r j).primitiveGenerator) = ![d 0, d 1, -d 0, (k : ℤ) • d 0 - d 1])
-    {T : BlowupTower C.fan.algebraicRealization m Z} (hT : IsClosedPointTower _ T)
+    {T : BlowupTower (C.fan.finiteFanScheme k₀) m Z} (hT : IsClosedPointTower _ T)
     (u : M.top ≅ Z) (hC : C.hom = (M.iso ≪≫ u).hom ≫ T.toBase)
     (hg : (u.inv ≫ M.planeMap) ≫ (P ↘ S) = T.toBase ≫ f[C])
     (hbir : Scheme.BirationalOver (u.inv ≫ M.planeMap) (𝟙 P)) :
@@ -407,9 +418,10 @@ private def HirzebruchPlaneResolution.afterPivot
   planeMap_over := hg
   planeMap_birational := hbir
 
+omit [IsAlgClosed k₀] in
 private theorem sectionCenters_afterPivot
     {M : HirzebruchPlaneResolution A B b' hi (e + 1) (n + 1)}
-    {C : LogarithmicProjection i D} {W : HirzebruchPlaneResolution C B b' hi e (1 + n)}
+    {C : LogarithmicProjection k₀ i D} {W : HirzebruchPlaneResolution C B b' hi e (1 + n)}
     {j : Fin (n + 1)}
     (h : W.sectionCenters =
       (Finset.univ.filter fun p : Fin n ↦ j.succAbove p ∈ M.sectionCenters).map (Fin.natAddEmb 1)) :
@@ -428,7 +440,7 @@ private theorem sectionCenters_afterPivot
 private structure PositiveSectionPivot [PreirreducibleSpace X]
     (M : HirzebruchPlaneResolution A B b' hi (e + 1) (n + 1))
     (s : PositiveSectionMarking M ι) (j : Fin (n + 1)) where
-  target : LogarithmicProjection i D
+  target : LogarithmicProjection k₀ i D
   resolution : HirzebruchPlaneResolution target B b' hi e (1 + n)
   path : SarkisovPath A target
   degree : resolution.fiberDegree = M.fiberDegree
@@ -447,16 +459,16 @@ private theorem exists_positive_section_pivot_of_smooth [PreirreducibleSpace X]
     (M : HirzebruchPlaneResolution A B b' hi (e + 1) (n + 1))
     (s : PositiveSectionMarking M ι) (j : Fin (n + 1)) (hj : j ∈ M.sectionCenters)
     (hfirst : ∀ p < j, M.closed.baseCenter p ≠ M.closed.baseCenter j)
-    (c : ℂˣ) (hc : M.closed.baseCenter j = center[M.basis,M.rays 2,c]) :
+    (c : k₀ˣ) (hc : M.closed.baseCenter j = center[M.basis,M.rays 2,c]) :
     Nonempty (PositiveSectionPivot M s j) := by
   let : SmoothOfRelativeDimension 2 f[A] := M.smooth
   let : M.top.Over S := ⟨M.tower.toBase ≫ f[A]⟩
   let : SmoothOfRelativeDimension 2 (M.top ↘ S) := M.closed.smoothOfRelativeDimension f[A]
-  let : A.fan.algebraicRealization.IsProjectiveOver ℂ :=
-    A.fan.isProjectiveOver_algebraicRealization_of_isComplete A.isRegular A.isComplete M.basis
+  let : (A.fan.finiteFanScheme k₀).IsProjectiveOver k₀ :=
+    A.fan.isProjectiveOver_finiteFanScheme_of_isComplete k₀ A.isRegular A.isComplete M.basis
   obtain ⟨_, Z, T, hT, u, d, r, hr, hg, hbir, _, ⟨L, R, p, hL, hhL, hR, hhR, -, -⟩,
       hmark, -, -, hinc, hRuling, hcoef, hdeg, horders, _⟩ :=
-    M.closed.exists_sarkisov_path_of_smooth_section M.basis (e + 1) A.isRegular A.isComplete
+    M.closed.exists_sarkisov_path_of_smooth_section k₀ M.basis (e + 1) A.isRegular A.isComplete
       M.rays M.rays_eq 1 M.planeMap M.planeMap_over M.planeMap_birational c j hc hfirst
       (D.comap M.iso.inv) M.source_pole
   have hsign : decide ((1 : Fin 2) = 0) ≠ true := by decide
@@ -474,7 +486,7 @@ private theorem exists_positive_section_pivot_of_smooth [PreirreducibleSpace X]
   rcases C with ⟨Φ, hreg, hcomplete, g, hOver, hDom, hPole⟩
   dsimp only at hC hhC
   subst Φ
-  let C : LogarithmicProjection i D := ⟨_, hreg, hcomplete, g, hOver, hDom, hPole⟩
+  let C : LogarithmicProjection k₀ i D := ⟨_, hreg, hcomplete, g, hOver, hDom, hPole⟩
   let : Nonempty C.fan.cones := C.isComplete.nonempty_cones
   let W := M.afterPivot (C := C) (k := e) d r hr hT u (eq_of_heq hhC) hg hbir
   have he : 0 ≤ ((e + 1 : ℕ) : ℤ) - 1 := by omega
@@ -500,53 +512,54 @@ private theorem exists_positive_section_pivot_of_smooth [PreirreducibleSpace X]
 
 private theorem ruling_coordinate_of_reframing
     {M : HirzebruchPlaneResolution A B b' hi e n} (s : PositiveSectionMarking M ι)
-    (q : A.fan.algebraicRealization ⟶ projectiveLine ℂ) (t : Fin 2)
-    (h : q ≫ ite (t = 0) (𝟙 _) (projectiveLine.coordinateSwap ℂ).hom = M.ruling) :
+    (q : (A.fan.finiteFanScheme k₀) ⟶ projectiveLine k₀) (t : Fin 2)
+    (h : q ≫ ite (t = 0) (𝟙 _) (projectiveLine.coordinateSwap k₀).hom = M.ruling) :
     let flip : Fin 2 ≃ Fin 2 := if t = 0 then Equiv.refl _ else Fin.revPerm
     ∀ a, q (M.closed.baseCenter (s.index a)) = coordPoint[flip (s.fiber a)] pt := by
   intro flip a
   by_cases ht : t = 0
   · rw [ite_eq_left ht, Category.comp_id] at h
     simpa only [flip, ht, ite_true, Equiv.refl_apply] using
-      (congrArg (fun q' : A.fan.algebraicRealization ⟶ projectiveLine ℂ ↦
+      (congrArg (fun q' : (A.fan.finiteFanScheme k₀) ⟶ projectiveLine k₀ ↦
         q' (M.closed.baseCenter (s.index a))) h).trans (s.ruling_eq a)
-  have hv := congrArg (fun q' : A.fan.algebraicRealization ⟶ projectiveLine ℂ ↦
+  have hv := congrArg (fun q' : (A.fan.finiteFanScheme k₀) ⟶ projectiveLine k₀ ↦
     q' (M.closed.baseCenter (s.index a))) h
   rw [Scheme.Hom.comp_apply, ite_eq_right ht, s.ruling_eq] at hv
   have hswap := (Scheme.Hom.comp_apply (coordPoint[(s.fiber a).rev])
-      (projectiveLine.coordinateSwap ℂ).hom pt).symm.trans
-    (congrArg (fun g : S ⟶ projectiveLine ℂ ↦ g pt)
-      (projectiveLine.polynomialPoint_comp_coordinateSwap ℂ (RingHom.id ℂ) (s.fiber a).rev 0))
+      (projectiveLine.coordinateSwap k₀).hom pt).symm.trans
+    (congrArg (fun g : S ⟶ projectiveLine k₀ ↦ g pt)
+      (projectiveLine.polynomialPoint_comp_coordinateSwap k₀ (RingHom.id k₀) (s.fiber a).rev 0))
   rw [Fin.rev_rev] at hswap
   simpa only [flip, ite_eq_right ht, Fin.revPerm_apply] using
-    (projectiveLine.coordinateSwap ℂ).hom.injective (hv.trans hswap.symm)
+    (projectiveLine.coordinateSwap k₀).hom.injective (hv.trans hswap.symm)
 
 private theorem exists_positive_section_pivot_of_corner [PreirreducibleSpace X]
     (M : HirzebruchPlaneResolution A B b' hi (e + 1) (n + 1))
     (s : PositiveSectionMarking M ι) (j : Fin (n + 1)) (hj : j ∈ M.sectionCenters)
     (hfirst : ∀ p < j, M.closed.baseCenter p ≠ M.closed.baseCenter j)
     (σ : A.fan.cones) (hσ : Nat.card (ToricRay σ.val) = 2) (hsec : (M.rays 2).toCone ≤ σ)
-    (hc : M.closed.baseCenter j = A.fan.distinguishedPointHom σ pt) :
+    (hc : M.closed.baseCenter j = (A.fan.distinguishedSection (R := k₀) σ) pt) :
     Nonempty (PositiveSectionPivot M s j) := by
   let : SmoothOfRelativeDimension 2 f[A] := M.smooth
   let : M.top.Over S := ⟨M.tower.toBase ≫ f[A]⟩
   let : SmoothOfRelativeDimension 2 (M.top ↘ S) := M.closed.smoothOfRelativeDimension f[A]
   let : Smooth (M.top ↘ S) := SmoothOfRelativeDimension.smooth 2 _
-  let : A.fan.algebraicRealization.IsProjectiveOver ℂ :=
-    A.fan.isProjectiveOver_algebraicRealization_of_isComplete A.isRegular A.isComplete M.basis
+  let : (A.fan.finiteFanScheme k₀).IsProjectiveOver k₀ :=
+    A.fan.isProjectiveOver_finiteFanScheme_of_isComplete k₀ A.isRegular A.isComplete M.basis
   obtain ⟨t, b, r, hr, hcone, _, _, hpos, hpic, hruling⟩ :=
-    A.fan.exists_hirzebruch_section_corner_picardBasis_ruling M.basis (e + 1 : ℕ) M.rays M.rays_eq
+    A.fan.exists_hirzebruch_section_corner_picardBasis_ruling k₀ M.basis
+      (e + 1 : ℕ) M.rays M.rays_eq
       A.isRegular A.isComplete σ hσ hsec
   obtain ⟨R, p, d, r', hr', Z, T, hT, u, _, _, hhR, _, hg, hbir, _, hcoef, hdeg, horders,
       _, _, _, hinc, hretained⟩ :=
-    M.closed.exists_sarkisov_path_of_positive_corner b (e + 1) (Nat.succ_pos e) A.isRegular
+    M.closed.exists_sarkisov_path_of_positive_corner k₀ b (e + 1) (Nat.succ_pos e) A.isRegular
       A.isComplete r hr M.planeMap M.planeMap_over M.planeMap_birational σ hcone j hc hfirst
-      (D.comap M.iso.inv) ((M.closed.ramificationIdealSheafToBase_def ℂ) ▸ M.source_pole)
+      (D.comap M.iso.inv) ((M.closed.ramificationIdealSheafToBase_def k₀) ▸ M.source_pole)
   obtain ⟨C, hC, hhC, ⟨q⟩⟩ := M.exists_lift_pivot_path T u p rfl HEq.rfl rfl (heq_of_eq hhR)
   rcases C with ⟨Φ, hreg, hcomplete, g, hOver, hDom, hPole⟩
   dsimp only at hC hhC
   subst Φ
-  let C : LogarithmicProjection i D := ⟨_, hreg, hcomplete, g, hOver, hDom, hPole⟩
+  let C : LogarithmicProjection k₀ i D := ⟨_, hreg, hcomplete, g, hOver, hDom, hPole⟩
   let W := M.afterPivot (C := C) (k := e) d r' hr' hT u (eq_of_heq hhC) hg hbir
   have hsection : W.sectionCenters =
       (Finset.univ.filter fun p : Fin n ↦ j.succAbove p ∈ M.sectionCenters).map
@@ -578,7 +591,7 @@ private theorem exists_positive_section_pivot_of_corner [PreirreducibleSpace X]
   obtain ⟨v, hfirst', hval, hle, hreverse, hstay⟩ :=
     hretained l (hl.symm ▸ hne') (hl.symm ▸ s.first a)
   refine ⟨v, hfirst', hval.trans (hl.symm ▸ ruling_coordinate_of_reframing s _ t hruling a), ?_, ?_⟩
-  · let ruling := A.fan.characterRuling (b.coord 1).toAddMonoidHom
+  · let ruling := A.fan.characterRuling k₀ (b.coord 1).toAddMonoidHom
       (Fan.nonneg_or_nonpos_hirzebruch_ruling_character b (e + 1 : ℕ) r hr)
     by_cases h : ruling (M.closed.baseCenter (j.succAbove l)) = ruling (M.closed.baseCenter j)
     · exact hreverse h ▸ hhead
@@ -593,10 +606,10 @@ resulting quadric keeps the ruling degree and reaches the prepared fiber
 coefficient. Each original mark is still first over its point and has at
 least its initial order. -/
 theorem exists_marked_quadric_of_positive_section_pivots [PreirreducibleSpace X]
-    {A B : LogarithmicProjection i D} {b' : Basis (Fin 2) ℤ N}
+    {A B : LogarithmicProjection k₀ i D} {b' : Basis (Fin 2) ℤ N}
     {hi : IsIntegralLattice i} {e n : ℕ} {ι : Type*}
     (M : HirzebruchPlaneResolution A B b' hi e n) (s : PositiveSectionMarking M ι) :
-    ∃ (C : LogarithmicProjection i D) (m : ℕ) (W : HirzebruchPlaneResolution C B b' hi 0 m)
+    ∃ (C : LogarithmicProjection k₀ i D) (m : ℕ) (W : HirzebruchPlaneResolution C B b' hi 0 m)
       (u : PositiveSectionMarking W ι), Nonempty (SarkisovPath A C) ∧ m = n ∧
       W.fiberDegree = M.fiberDegree ∧ W.fiberCoefficient = s.remainingCoefficient ∧
       ∀ a, M.order (s.index a) ≤ W.order (u.index a) := by

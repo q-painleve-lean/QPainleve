@@ -34,12 +34,15 @@ open Scheme Scheme.IdealSheafData
 
 namespace QPainleve.SignedClusterModularGroup
 
+variable {k₀ : Type} [Field k₀] [IsAlgClosed k₀]
+
 open GeometricRealization (Point CenterPoint)
 
-local notation "S" => Spec (CommRingCat.of ℂ)
-local notation "Centers[" r "]" => Over.mk (structureMap ℂ (Fin r → ℤ))
-local notation "XTor[" r "]" => scheme ℂ (Fin r →₀ ℤ)
-local notation "Dtor[" Φ "," h "]" => Scheme.IdealSheafData.subscheme (Fan.boundaryIdeal Φ h)
+local notation "S" => Spec (CommRingCat.of k₀)
+local notation "Centers[" r "]" => Over.mk (structureMap k₀ (Fin r → ℤ))
+local notation "XTor[" r "]" => scheme k₀ (Fin r →₀ ℤ)
+local notation "Dtor[" Φ "," h "]" => Scheme.IdealSheafData.subscheme
+  (Fan.toricBoundaryIdeal k₀ Φ h)
 local notation "D[" M "]" => Scheme.Hom.ker (Over.Hom.left (Arrow.hom (MarkedSurface.pair M)))
 local notation "classOf(" h ")" => (LineBundleClass.mk (IsEffectiveCartier.toInvertibleSheaf h))⁻¹
 
@@ -50,8 +53,8 @@ variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
 namespace GeometricRealization
 
 local notation "frameSwap" => (Equiv.swap 0 1 : Equiv.Perm (Fin 2))
-local notation "Cw[" w "," P "]" => Quiver.Path.centerPartialMap ℂ w P
-local notation "Cnil[" P "]" => Quiver.Path.centerPartialMap ℂ Quiver.Path.nil P
+local notation "Cw[" w "," P "]" => Quiver.Path.centerPartialMap k₀ w P
+local notation "Cnil[" P "]" => Quiver.Path.centerPartialMap k₀ Quiver.Path.nil P
 local notation "dst(" C "," c ")" =>
   c ≫ Scheme.PartialMap.domainTarget (X := Centers[r]) (Y := Centers[r]) C
 
@@ -61,8 +64,8 @@ variable {N₁ V₁ : Type} [AddCommGroup N₁] [AddCommGroup V₁] [Module ℝ 
 
 private theorem hasNodalModel_at_word_target
     (w : Word B E) (P : ChargeSeed B N) (P₁ : ChargeSeed E N₁)
-    (Q : CompleteToricPresentation i₁ b₁ r L₁ γ₁)
-    (M : Point Centers[r] → MarkedSurface ℂ n H₁ XTor[r])
+    (Q : CompleteToricPresentation k₀ i₁ b₁ r L₁ γ₁)
+    (M : Point Centers[r] → MarkedSurface k₀ n H₁ XTor[r])
     (models : ∀ c : CenterPoint (U := Centers[r]) (V := Centers[r]) Cnil[P₁],
       Q.HasNodalModel (dst(Cnil[P₁],c)) (M (dst(Cnil[P₁],c))))
     (e : N ≃ₗ[ℤ] N₁)
@@ -71,8 +74,8 @@ private theorem hasNodalModel_at_word_target
     Q.HasNodalModel (dst(Cw[w,P],c)) (M (dst(Cw[w,P],c))) := by
   have he' : e ∘ (fun j ↦ (w.chargeTarget P).charge (Pi.single j 1)) =
       fun j ↦ P₁.charge (Pi.single j 1) := funext he
-  have hU := w.centerPartialMap_opensRange_le_distinctCentersOpen (K := ℂ) P
-  rw [← distinctCentersOpen_comp_of_injective ℂ _ e.injective, he',
+  have hU := w.centerPartialMap_opensRange_le_distinctCentersOpen (K := k₀) P
+  rw [← distinctCentersOpen_comp_of_injective k₀ _ e.injective, he',
     ← Path.centerOpen_nil] at hU
   have hr : Set.range (Cw[w,P]).hom ⊆ Set.range (Cnil[P₁]).hom := by
     rw [← Scheme.Hom.coe_opensRange, ← Scheme.Hom.coe_opensRange,
@@ -101,28 +104,28 @@ Both presentations have nodal models at every reached center. Their charge equiv
 is unique and a common subdivision preserves both boundary orders. -/
 theorem exists_realize_signed_word_with_oriented_refinement
     (w : Word B E) (P : ChargeSeed B N) (P₁ : ChargeSeed E N₁)
-    (Q : CompleteToricPresentation i b r L γ)
-    (Q₁ : CompleteToricPresentation i₁ b₁ r L₁ γ₁)
+    (Q : CompleteToricPresentation k₀ i b r L γ)
+    (Q₁ : CompleteToricPresentation k₀ i₁ b₁ r L₁ γ₁)
     (hform : P.form = b.detDualEquiv.toLinearMap)
     (hcharge : P.charge = Fan.rayChargeMap Q.rays)
     (hform₁ : P₁.form = b₁.detDualEquiv.toLinearMap)
     (hcharge₁ : P₁.charge = Fan.rayChargeMap Q₁.rays)
-    (M : Point Centers[r] → MarkedSurface ℂ n H XTor[r])
-    (M₁ : Point Centers[r] → MarkedSurface ℂ n H₁ XTor[r])
+    (M : Point Centers[r] → MarkedSurface k₀ n H XTor[r])
+    (M₁ : Point Centers[r] → MarkedSurface k₀ n H₁ XTor[r])
     (models : ∀ c : CenterPoint (U := Centers[r]) (V := Centers[r]) Cnil[P],
       Q.HasNodalModel (dst(Cnil[P],c)) (M (dst(Cnil[P],c))))
     (models₁ : ∀ c : CenterPoint (U := Centers[r]) (V := Centers[r]) Cnil[P₁],
       Q₁.HasNodalModel (dst(Cnil[P₁],c)) (M₁ (dst(Cnil[P₁],c))))
     {a₁ : Point Centers[r]} (hmodel : Q₁.HasNodalModel a₁ (M₁ a₁))
     (hD : D[M₁ a₁].IsEffectiveCartier)
-    (hnef : (classOf(hD)).IsNef ℂ ((M₁ a₁).surface ↘ S))
-    (hsq : Chow.classIntersectionNumber ℂ (M₁ a₁).surface classOf(hD) classOf(hD) = 0)
+    (hnef : (classOf(hD)).IsNef k₀ ((M₁ a₁).surface ↘ S))
+    (hsq : Chow.classIntersectionNumber k₀ (M₁ a₁).surface classOf(hD) classOf(hD) = 0)
     (hprim : IsPrimitive (Additive.ofMul classOf(hD))) :
     let b' := b.reindex (frameSwap ^ w.inversionCount)
-    ∃ (γ' : Type) (Q' : CompleteToricPresentation i b' r L γ')
-      (M' : Point Centers[r] → MarkedSurface ℂ n H XTor[r])
+    ∃ (γ' : Type) (Q' : CompleteToricPresentation k₀ i b' r L γ')
+      (M' : Point Centers[r] → MarkedSurface k₀ n H XTor[r])
       (R : GeometricRealization (T₀ := Centers[r]) (T₁ := Centers[r])
-        M M' Cw[w,P] (w.xRationalMap ℂ)),
+        M M' Cw[w,P] (w.xRationalMap k₀)),
       R.picard = .refl H ∧ R.boundaryAction = DihedralGroup.sr 0 ^ w.inversionCount ∧
       (∀ c : CenterPoint (U := Centers[r]) (V := Centers[r]) Cw[w,P],
         Q'.HasNodalModel (dst(Cw[w,P],c)) (M' (dst(Cw[w,P],c))) ∧
@@ -148,8 +151,8 @@ theorem exists_realize_signed_word_with_oriented_refinement
             (l : ℕ) (_ : NeZero l),
             letI := hpre
             ∃ U : NodalCycleNumbering (Empty.elim : Empty → (Dtor[Δ,hΔ₀] ↘ S).smoothLocus) l,
-              (hΔQ'.boundaryMap hΔ₀ hQ').IsOrientedCycleSubdivision U Q'.cycle ∧
-              (hΔΩ.boundaryMap hΔ₀ hΩ ≫ (g.boundaryIso hQ hΩ).inv).IsOrientedCycleSubdivision
+              (hΔQ'.boundaryMap k₀ hΔ₀ hQ').IsOrientedCycleSubdivision U Q'.cycle ∧
+              (hΔΩ.boundaryMap k₀ hΔ₀ hΩ ≫ (g.boundaryIso k₀ hQ hΩ).inv).IsOrientedCycleSubdivision
                 U Q₁.cycle := by
   obtain ⟨γ', Q', M', R, hform', hc', hpic, hact, hmodels⟩ :=
     exists_realize_signed_word w P Q hform hcharge M models
@@ -188,7 +191,7 @@ theorem exists_realize_signed_word_with_oriented_refinement
         (g.latticeEquiv x) (g.latticeEquiv y) = b₁.detDualEquiv x y := by
       simpa only [g, Fan.mapEquivIso_latticeEquiv, LinearEquiv.coe_addEquiv_apply] using hdet x y
     simpa only [LinearEquiv.symm_symm] using
-      g.exists_oriented_common_boundary_subdivision Q'.cycle Q₁.cycle Q'.regular Q₁.regular
+      g.exists_oriented_common_boundary_subdivision k₀ Q'.cycle Q₁.cycle Q'.regular Q₁.regular
         Q'.complete Q₁.complete Q'.component_eq Q₁.component_eq _ b₁ hg Q'.positive Q₁.positive
 
 end GeometricRealization

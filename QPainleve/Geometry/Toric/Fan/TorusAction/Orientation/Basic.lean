@@ -33,84 +33,90 @@ open Scheme (NodalCycleNumbering)
 
 namespace TauCeti.Toric.Fan
 
+variable (k : Type) [Field k] [IsAlgClosed k]
+
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {Φ : Fan i} [h₀ : Nonempty Φ.cones]
   {r : ℕ} (b : Module.Basis (Fin 2) ℤ N) (s : Fin r → Φ.Ray)
-  (c d : Multiplicative (Fin r → ℤ) →* ℂˣ) (hΦ : Φ.IsRegular)
+  (c d : Multiplicative (Fin r → ℤ) →* kˣ) (hΦ : Φ.IsRegular)
 
-local notation "S" => Spec (CommRingCat.of ℂ)
+local notation "S" => Spec (CommRingCat.of k)
 local notation "center" a:arg => (fun j : Fin r ↦ a (ofAdd (Pi.single j 1)))
-local notation "M" a:arg => internalBlowupTower b s (center a)
+local notation "M" a:arg => internalBlowupTower k b s (center a)
 local notation "π" a:arg => toBase (WithBoundary.toTower (Sigma.snd (M a)))
 local notation "ι" a:arg => WithBoundary.boundaryι (Sigma.snd (M a))
-local notation "prime[" a "]" => internalBlowupBoundaryPrimeEquiv hΦ b s (center a)
+local notation "prime[" a "]" => internalBlowupBoundaryPrimeEquiv k hΦ b s (center a)
 
+omit [IsAlgClosed k] in
 /-- A lift of a torus translation that descends to the two surfaces induces
 a commuting square on their specified boundary restrictions. -/
 theorem commSq_boundaryTranslation_of_isLift
     {X Y U V : Scheme} {iU : U ⟶ X} {iV : V ⟶ Y} [Mono iV]
     {p : (M c).1 ⟶ X} {q : (M d).1 ⟶ Y}
-    {f : (Φ.boundaryIdeal h₀).subscheme ⟶ U} {g : (Φ.boundaryIdeal h₀).subscheme ⟶ V}
+    {f : (Φ.toricBoundaryIdeal k h₀).subscheme ⟶ U} {g : (Φ.toricBoundaryIdeal k h₀).subscheme ⟶ V}
     {e : X ⟶ Y} {eB : U ⟶ V}
     (hf : f ≫ iU = ι c ≫ p) (hg : g ≫ iV = ι d ≫ q)
     (heB : eB ≫ iV = iU ≫ e)
-    {χ : Multiplicative (N →+ ℤ) →* ℂˣ} {t : (M c).1 ≅ (M d).1}
-    (ht : IsLift (Φ.torusTranslation χ) (M c).2.toTower (M d).2.toTower t)
+    {χ : Multiplicative (N →+ ℤ) →* kˣ} {t : (M c).1 ≅ (M d).1}
+    (ht : IsLift (Φ.torusTranslationIso k χ) (M c).2.toTower (M d).2.toTower t)
     (htq : p ≫ e = t.hom ≫ q) :
-    CommSq (boundaryTranslation (Φ := Φ) χ).hom f g eB := by
+    CommSq (boundaryTranslation k (Φ := Φ) χ).hom f g eB := by
   constructor
   apply (cancel_mono iV).mp
   simp only [Category.assoc, hg, heB, reassoc_of% hf]
   rw [← Category.assoc, ←
-    boundaryι_comp_of_isLift_internalBlowupTower_torusTranslation b s (center c) (center d) χ ht,
+    boundaryι_comp_of_isLift_internalBlowupTower_torusTranslation k b s (center c) (center d) χ ht,
     Category.assoc, htq]
 
-variable {X Y : Scheme} [X.Over S] [Y.Over S] {D : X.IdealSheafData} {E : Y.IdealSheafData}
-  {p : (internalBlowupTower b s (fun j : Fin r ↦ c (ofAdd (Pi.single j 1)))).1 ⟶ X}
-  {q : (internalBlowupTower b s (fun j : Fin r ↦ d (ofAdd (Pi.single j 1)))).1 ⟶ Y}
+variable {X Y : Scheme} [X.Over (Spec (.of k))] [Y.Over (Spec (.of k))]
+  {D : X.IdealSheafData} {E : Y.IdealSheafData}
+  {p : (internalBlowupTower k b s (fun j : Fin r ↦ c (ofAdd (Pi.single j 1)))).1 ⟶ X}
+  {q : (internalBlowupTower k b s (fun j : Fin r ↦ d (ofAdd (Pi.single j 1)))).1 ⟶ Y}
 
-variable [PrestableFamily ((Φ.boundaryIdeal h₀).subscheme ↘ S)]
-  [PrestableFamily (D.subscheme ↘ S)] [PrestableFamily (E.subscheme ↘ S)]
+variable [PrestableFamily ((Φ.toricBoundaryIdeal k h₀).subscheme ↘ Spec (.of k))]
+  [PrestableFamily (D.subscheme ↘ Spec (.of k))] [PrestableFamily (E.subscheme ↘ Spec (.of k))]
   {n m : ℕ} [NeZero n] [NeZero m] {α β γ : Type*}
-  {a₀ : α → (D.subscheme ↘ S).smoothLocus} {a₁ : β → (E.subscheme ↘ S).smoothLocus}
-  {aT : γ → ((Φ.boundaryIdeal h₀).subscheme ↘ S).smoothLocus}
+  {a₀ : α → (D.subscheme ↘ Spec (.of k)).smoothLocus}
+  {a₁ : β → (E.subscheme ↘ Spec (.of k)).smoothLocus}
+  {aT : γ → ((Φ.toricBoundaryIdeal k h₀).subscheme ↘ Spec (.of k)).smoothLocus}
   (A : NodalCycleNumbering a₀ n) (B : NodalCycleNumbering a₁ n) (T : NodalCycleNumbering aT m)
 
-variable {f : (Φ.boundaryIdeal h₀).subscheme ⟶ D.subscheme}
-  {g : (Φ.boundaryIdeal h₀).subscheme ⟶ E.subscheme} [f.IsOver S] [g.IsOver S]
+variable {f : (Φ.toricBoundaryIdeal k h₀).subscheme ⟶ D.subscheme}
+  {g : (Φ.toricBoundaryIdeal k h₀).subscheme ⟶ E.subscheme}
+  [f.IsOver (Spec (.of k))] [g.IsOver (Spec (.of k))]
   (hf : f ≫ D.subschemeι =
-    (internalBlowupTower b s (fun j : Fin r ↦ c (ofAdd (Pi.single j 1)))).2.boundaryι ≫ p)
+    (internalBlowupTower k b s (fun j : Fin r ↦ c (ofAdd (Pi.single j 1)))).2.boundaryι ≫ p)
   (hg : g ≫ E.subschemeι =
-    (internalBlowupTower b s (fun j : Fin r ↦ d (ofAdd (Pi.single j 1)))).2.boundaryι ≫ q)
+    (internalBlowupTower k b s (fun j : Fin r ↦ d (ofAdd (Pi.single j 1)))).2.boundaryι ≫ q)
   (hfs : f.IsOrientedCycleSubdivision T A) (hgs : g.IsOrientedCycleSubdivision T B)
-  {e : X ≅ Y} {eB : D.subscheme ≅ E.subscheme} [eB.hom.IsOver S]
+  {e : X ≅ Y} {eB : D.subscheme ≅ E.subscheme} [eB.hom.IsOver (Spec (.of k))]
   (heB : eB.hom ≫ E.subschemeι = D.subschemeι ≫ e.hom)
 
 include hΦ hf hg hfs hgs heB in
 /-- If an isomorphism of contractions lifts to a torus translation, its boundary
 action preserves the orientation induced by the common numbered toric boundary. -/
 theorem cycleOrientationSign_eq_one_of_isLift_torusTranslation
-    (hc : Φ.IsComplete) {χ : Multiplicative (N →+ ℤ) →* ℂˣ} {t : (M c).1 ≅ (M d).1}
-    (ht : IsLift (Φ.torusTranslation χ) ((M c).2.toTower) ((M d).2.toTower) t)
+    (hc : Φ.IsComplete) {χ : Multiplicative (N →+ ℤ) →* kˣ} {t : (M c).1 ≅ (M d).1}
+    (ht : IsLift (Φ.torusTranslationIso k χ) ((M c).2.toTower) ((M d).2.toTower) t)
     (htq : p ≫ e.hom = t.hom ≫ q) :
     cycleOrientationSign (eB.boundaryCycleAction A B) = 1 := by
-  let τ := boundaryTranslation (Φ := Φ) χ
-  have hτ := commSq_boundaryTranslation_of_isLift b s c d hf hg heB ht htq
+  let τ := boundaryTranslation k (Φ := Φ) χ
+  have hτ := commSq_boundaryTranslation_of_isLift k b s c d hf hg heB ht htq
   have hsign := eB.cycleOrientationSign_eq_of_orientedCycleSubdivisions A B T T τ hfs hgs hτ
-  rw [hsign, boundaryCycleAction_boundaryTranslation hΦ hc
+  rw [hsign, boundaryCycleAction_boundaryTranslation k hΦ hc
     ((Module.finrank_eq_card_basis b).trans (Fintype.card_fin 2)), map_one]
 
 include hΦ hf hg hfs hgs heB in
 /-- A translating lift acts by rotation by `j` if a common ray maps to component
 zero of the source and component `j` of the target under the boundary projections. -/
 theorem boundaryCycleAction_of_translation_of_common_ray
-    (hc : Φ.IsComplete) {χ : Multiplicative (N →+ ℤ) →* ℂˣ} {t : (M c).1 ≅ (M d).1}
-    (ht : IsLift (Φ.torusTranslation χ) (M c).2.toTower (M d).2.toTower t)
+    (hc : Φ.IsComplete) {χ : Multiplicative (N →+ ℤ) →* kˣ} {t : (M c).1 ≅ (M d).1}
+    (ht : IsLift (Φ.torusTranslationIso k χ) (M c).2.toTower (M d).2.toTower t)
     (htq : p ≫ e.hom = t.hom ≫ q) (j : ZMod n) (ρ : Φ.Ray)
     (hρ : p (prime[c] ρ).val = D.subschemeι (A.componentGenericPoint 0))
     (hρ' : q (prime[d] ρ).val = E.subschemeι (B.componentGenericPoint j)) :
     eB.boundaryCycleAction A B = DihedralGroup.r j := by
-  have hsign := cycleOrientationSign_eq_one_of_isLift_torusTranslation b s c d hΦ A B T
+  have hsign := cycleOrientationSign_eq_one_of_isLift_torusTranslation k b s c d hΦ A B T
     hf hg hfs hgs heB hc ht htq
   apply (DihedralGroup.eq_r_iff_cycleVertexPerm_zero_eq hsign).mpr
   apply (E.subschemeι.injective.comp B.componentGenericPoint_injective)
@@ -118,7 +124,7 @@ theorem boundaryCycleAction_of_translation_of_common_ray
   simp only [Function.comp_apply]
   rw [← eB.apply_componentGenericPoint, ← Scheme.Hom.comp_apply, heB, Scheme.Hom.comp_apply]
   simpa only [Scheme.Hom.comp_apply, hρ, hρ',
-    apply_internalBlowupBoundaryPrimeEquiv_of_isLift_torusTranslation b s hΦ
+    apply_internalBlowupBoundaryPrimeEquiv_of_isLift_torusTranslation k b s hΦ
       (center c) (center d) ht] using hpoint
 
 variable [IsIntegral X] [IsIntegral Y] [IsNormalScheme X] [IsNormalScheme Y]
@@ -128,8 +134,8 @@ include hΦ hf hg hfs hgs heB in
 /-- A translating lift acts by rotation by `j` exactly when component zero
 of the source and component `j` of the target represent the same surviving ray. -/
 theorem boundaryCycleAction_eq_r_iff_of_isLift_torusTranslation
-    (hc : Φ.IsComplete) {χ : Multiplicative (N →+ ℤ) →* ℂˣ} {t : (M c).1 ≅ (M d).1}
-    (ht : IsLift (Φ.torusTranslation χ) ((M c).2.toTower) ((M d).2.toTower) t)
+    (hc : Φ.IsComplete) {χ : Multiplicative (N →+ ℤ) →* kˣ} {t : (M c).1 ≅ (M d).1}
+    (ht : IsLift (Φ.torusTranslationIso k χ) ((M c).2.toTower) ((M d).2.toTower) t)
     (htq : p ≫ e.hom = t.hom ≫ q)
     (hD : (D.comap p).support = (ι c).ker.support)
     (hE : (E.comap q).support = (ι d).ker.support)
@@ -137,9 +143,9 @@ theorem boundaryCycleAction_eq_r_iff_of_isLift_torusTranslation
     (hx : x.val = D.subschemeι (A.componentGenericPoint 0))
     (hy : y.val = E.subschemeι (B.componentGenericPoint j)) :
     eB.boundaryCycleAction A B = DihedralGroup.r j ↔
-      contractedBoundaryRayEmbedding hΦ b s (center c) p hD x =
-        contractedBoundaryRayEmbedding hΦ b s (center d) q hE y := by
-  have hsign := cycleOrientationSign_eq_one_of_isLift_torusTranslation b s c d hΦ A B T
+      contractedBoundaryRayEmbedding k hΦ b s (center c) p hD x =
+        contractedBoundaryRayEmbedding k hΦ b s (center d) q hE y := by
+  have hsign := cycleOrientationSign_eq_one_of_isLift_torusTranslation k b s c d hΦ A B T
     hf hg hfs hgs heB hc ht htq
   let a := eB.boundaryCycleAction A B
   have hxy : e.hom x.val = E.subschemeι (B.componentGenericPoint (cycleVertexPerm a 0)) := by
@@ -149,10 +155,10 @@ theorem boundaryCycleAction_eq_r_iff_of_isLift_torusTranslation
     rw [hxy, hy]
     exact (E.subschemeι.injective.comp B.componentGenericPoint_injective).eq_iff
   exact (eq_r_iff_cycleVertexPerm_zero_eq hsign).trans (hvertex.symm.trans
-    (apply_contractedBoundaryPrime_eq_iff_of_isLift_torusTranslation b s hΦ
+    (apply_contractedBoundaryPrime_eq_iff_of_isLift_torusTranslation k b s hΦ
       (center c) (center d) p q e hD hE ht htq x y))
 
-variable [IsSeparated (Y ↘ S)] [e.hom.IsOver S]
+variable [IsSeparated (Y ↘ Spec (.of k))] [e.hom.IsOver (Spec (.of k))]
 
 include hf hg hfs hgs heB in
 /-- Equality of the rational X evaluations determines the entire boundary action.
@@ -161,23 +167,23 @@ component `j` of the target label the same surviving ray. The subdivisions use t
 common toric orientation, and the charge index is finite. -/
 theorem boundaryCycleAction_eq_r_iff_of_comp_contractedXEvaluation_eq
     (hc : Φ.IsComplete) (hindex : (rayChargeMap s).range.toAddSubgroup.index ≠ 0)
-    (hp : p ≫ (X ↘ S) = π c ≫ Φ.algebraicRealizationStructureMap)
-    (hq : q ≫ (Y ↘ S) = π d ≫ Φ.algebraicRealizationStructureMap)
+    (hp : p ≫ (X ↘ S) = π c ≫ Φ.finiteFanSchemeToSpec k)
+    (hq : q ≫ (Y ↘ S) = π d ≫ Φ.finiteFanSchemeToSpec k)
     (hD : (D.comap p).support = (ι c).ker.support)
     (hE : (E.comap q).support = (ι d).ker.support)
-    (heval : e.hom.toRationalMap.comp (contractedXEvaluation b s d hΦ q) =
-      contractedXEvaluation b s c hΦ p)
+    (heval : e.hom.toRationalMap.comp (contractedXEvaluation k b s d hΦ q) =
+      contractedXEvaluation k b s c hΦ p)
     (j : ZMod n) (x : D.boundaryPrimes) (y : E.boundaryPrimes)
     (hx : x.val = D.subschemeι (A.componentGenericPoint 0))
     (hy : y.val = E.subschemeι (B.componentGenericPoint j)) :
     eB.boundaryCycleAction A B = DihedralGroup.r j ↔
-      contractedBoundaryRayEmbedding hΦ b s (center c) p hD x =
-        contractedBoundaryRayEmbedding hΦ b s (center d) q hE y := by
+      contractedBoundaryRayEmbedding k hΦ b s (center c) p hD x =
+        contractedBoundaryRayEmbedding k hΦ b s (center d) q hE y := by
   obtain ⟨lift⟩ :=
-    existsUnique_contractedToricTranslation_of_comp_contractedXEvaluation_eq
+    existsUnique_contractedToricTranslation_of_comp_contractedXEvaluation_eq k
       b s c d hΦ p q e hindex hp hq heval
   let t := lift.default
-  exact boundaryCycleAction_eq_r_iff_of_isLift_torusTranslation b s c d hΦ A B T
+  exact boundaryCycleAction_eq_r_iff_of_isLift_torusTranslation k b s c d hΦ A B T
     hf hg hfs hgs heB hc t.isLift t.commutes hD hE j x y hx hy
 
 end TauCeti.Toric.Fan

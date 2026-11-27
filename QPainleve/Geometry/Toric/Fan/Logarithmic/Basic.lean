@@ -7,7 +7,7 @@ module
 
 public import QPainleve.AlgebraicGeometry.Blowup.Tower.Logarithmic.Factorization
 public import QPainleve.Geometry.Toric.Fan.InternalBlowup
-public import QPainleve.Geometry.Toric.Fan.Subdivision
+public import TauCeti.Geometry.Toric.Algebraic.Fan.Subdivision
 
 import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
 import QPainleve.Geometry.Toric.Fan.Boundary.SmoothPoint
@@ -37,28 +37,31 @@ open Scheme.IdealSheafData
 
 namespace TauCeti.Toric.Fan
 
-variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
-  {i : N →+ V} {Φ Ψ : Fan i} {S Y : Scheme} {n m : ℕ}
+universe u
 
-local notation "X[" Δ "]" => algebraicRealization Δ
-local notation "s[" Δ "]" => algebraicRealizationStructureMap Δ
+variable (K : Type u) [Field K] [IsAlgClosed K] {N V : Type u}
+  [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
+  {i : N →+ V} {Φ Ψ : Fan i} {S Y : Scheme.{u}} {n m : ℕ}
+
+local notation "X[" Δ "]" => finiteFanScheme K Δ
+local notation "s[" Δ "]" => finiteFanSchemeToSpec K Δ
 local notation "rankTwo(" b ")" => (Eq.trans (Module.finrank_eq_card_basis b) (Fintype.card_fin 2))
 
 private theorem exists_coordinates_of_orderedFactorization (b : Module.Basis (Fin 2) ℤ N)
     (hΨ : Ψ.IsRegular) (hc : Ψ.IsComplete)
-    {X : Scheme} {D : X.IdealSheafData} {s : X ⟶ Spec (.of ℂ)}
+    {X : Scheme.{u}} {D : X.IdealSheafData} {s : X ⟶ Spec (.of K)}
     {T : BlowupTower X n Y} {P : Y.IdealSheafData} {c : Fin m → Over X}
     (h : IsLogarithmicBoundaryTower D s T P c)
     (F : IsLogarithmicBoundaryTower.OrderedFactorization D s T P c)
-    (d : (Ψ.boundaryIdeal hc.nonempty_cones).subscheme ≅ F.boundary.subscheme)
+    (d : (Ψ.toricBoundaryIdeal K hc.nonempty_cones).subscheme ≅ F.boundary.subscheme)
     (hd : d.hom ≫ F.boundary.subschemeι ≫ F.tower.toBase ≫ s =
-      (Ψ.boundaryIdeal hc.nonempty_cones).subschemeι ≫ s[Ψ]) :
+      (Ψ.toricBoundaryIdeal K hc.nonempty_cones).subschemeι ≫ s[Ψ]) :
     let := hc.nonempty_cones
-    ∃ (ρ : Fin m → Ψ.Ray) (u : Fin m → ℂˣ),
-      ∀ j, ((ρ j).internalCenter b (u j)).val = (F.center j ≫ d.inv).ker := by
+    ∃ (ρ : Fin m → Ψ.Ray) (u : Fin m → Kˣ),
+      ∀ j, ((ρ j).internalCenter K b (u j)).val = (F.center j ≫ d.inv).ker := by
   let := hc.nonempty_cones
   let a (j : Fin m) := F.center j ≫ d.inv
-  have H (j : Fin m) : ∃ (ρ : Ψ.Ray) (u : ℂˣ), (ρ.internalCenter b u).val = (a j).ker := by
+  have H (j : Fin m) : ∃ (ρ : Ψ.Ray) (u : Kˣ), (ρ.internalCenter K b u).val = (a j).ker := by
     obtain ⟨hred, ⟨y⟩, hsingle⟩ := h.center_is_reduced_point j
     have := F.isClosedImmersion_center j
     have : IsClosedImmersion (a j) := inferInstanceAs (IsClosedImmersion (F.center j ≫ d.inv))
@@ -68,7 +71,7 @@ private theorem exists_coordinates_of_orderedFactorization (b : Module.Basis (Fi
       have he := congrArg (fun f : (c j).left ⟶ F.boundary.subscheme ↦ f y)
         (by simp [a] : a j ≫ d.hom = F.center j)
       exact (Scheme.Hom.comp_apply _ _ _).symm.trans he
-    have hs : (((Ψ.boundaryIdeal hc.nonempty_cones).subschemeι ≫ s[Ψ]).stalkMap
+    have hs : (((Ψ.toricBoundaryIdeal K hc.nonempty_cones).subschemeι ≫ s[Ψ]).stalkMap
         p).hom.FormallySmooth := by
       rw [← hd]
       exact (RingHom.FormallySmooth.respectsIso.stalkMap_comp_isOpenImmersion_iff _ _ _).mpr
@@ -77,7 +80,7 @@ private theorem exists_coordinates_of_orderedFactorization (b : Module.Basis (Fi
       Set.range_eq_singleton fun x ↦ congrArg (a j) (hsingle.elim x y)
     have hp : IsClosed ({p} : Set _) := hrange ▸ (a j).isClosedEmbedding.isClosed_range
     obtain ⟨ρ, u, hu⟩ :=
-      Ψ.exists_internalCenter_eq_ker_fromSpecResidueField b hΨ hc p hp hs
+      Ψ.exists_internalCenter_eq_ker_fromSpecResidueField K b hΨ hc p hp hs
     refine ⟨ρ, u, hu.trans ?_⟩
     rw [(a j).ker_eq_vanishingIdeal_support, Scheme.ker_fromSpecResidueField_eq_vanishingIdeal]
     apply congrArg vanishingIdeal
@@ -95,28 +98,26 @@ base. Repeated centers keep their indices and so retain the infinitely near blow
 theorem exists_toric_internal_factorization (b : Module.Basis (Fin 2) ℤ N)
     (hΦ : Φ.IsRegular) (hc : Φ.IsComplete) {T : BlowupTower X[Φ] n Y}
     {P : Y.IdealSheafData} {c : Fin m → Over X[Φ]}
-    (h : IsLogarithmicBoundaryTower (Φ.boundaryIdeal hc.nonempty_cones) s[Φ] T P c) :
+    (h : IsLogarithmicBoundaryTower (Φ.toricBoundaryIdeal K hc.nonempty_cones) s[Φ] T P c) :
     ∃ (Ψ : Fan i) (_ : Ψ.IsRegular) (H : Ψ.IsSubdivision Φ),
-      let := H.nonempty_cones_of_nonempty hc.nonempty_cones
-      ∃ (ρ : Fin m → Ψ.Ray) (u : Fin m → ℂˣ),
-        let A := Ψ.internalBlowupTower b ρ u
+      let := (H.isComplete_iff.mpr hc).nonempty_cones
+      ∃ (ρ : Fin m → Ψ.Ray) (u : Fin m → Kˣ),
+        let A := Ψ.internalBlowupTower K b ρ u
         ∃ (e : A.1 ≅ Y)
-          (a : ∀ j, (c j).left ⟶ (Ψ.boundaryIdeal inferInstance).subscheme),
-          e.hom ≫ T.toBase = A.2.toTower.toBase ≫ H.toFanHom.algebraicMap ∧
+          (a : ∀ j, (c j).left ⟶ (Ψ.toricBoundaryIdeal K inferInstance).subscheme),
+          e.hom ≫ T.toBase = A.2.toTower.toBase ≫ H.toFanHom.finiteFanSchemeHom K ∧
           P.comap e.hom = A.2.boundaryι.ker ∧
           (∀ j, IsClosedImmersion (a j)) ∧
-          ∀ j, (a j).ker = ((ρ j).internalCenter b (u j)).val ∧
-            a j ≫ (Ψ.boundaryIdeal inferInstance).subschemeι ≫ H.toFanHom.algebraicMap =
-              (c j).hom := by
-  have : IsReduced (Φ.boundaryIdeal hc.nonempty_cones).subscheme := by
-    rw [Φ.boundaryIdeal_def]
-    infer_instance
+          ∀ j, (a j).ker = ((ρ j).internalCenter K b (u j)).val ∧
+            a j ≫ (Ψ.toricBoundaryIdeal K inferInstance).subschemeι ≫
+              H.toFanHom.finiteFanSchemeHom K = (c j).hom := by
+  have : IsReduced (Φ.toricBoundaryIdeal K hc.nonempty_cones).subscheme := inferInstance
   obtain ⟨F⟩ := h.nonempty_orderedFactorization
-  obtain ⟨Ψ, hΨ, H, g, hg, hB, -⟩ := Φ.exists_toric_subdivision_of_nodal_boundary_tower hΦ hc
+  obtain ⟨Ψ, hΨ, H, g, hg, hB, -⟩ := Φ.exists_toric_subdivision_of_nodal_boundary_tower K hΦ hc
     ((Module.finrank_eq_card_basis b).trans (Fintype.card_fin 2)) F.isNodal
   have hc' := H.isComplete_iff.mpr hc
   let := hc'.nonempty_cones
-  let B := Ψ.boundaryIdeal hc'.nonempty_cones
+  let B := Ψ.toricBoundaryIdeal K hc'.nonempty_cones
   have hB' : F.boundary.comap g.hom = B := F.boundary_eq ▸ hB
   let fD := subschemeMap B F.boundary g.hom (le_map_iff_comap_le.mpr hB'.le)
   have hd : fD ≫ F.boundary.subschemeι = B.subschemeι ≫ g.hom :=
@@ -126,20 +127,20 @@ theorem exists_toric_internal_factorization (b : Module.Basis (Fin 2) ℤ N)
   have := hpb.isIso_snd_of_isIso
   let d := asIso fD
   have hdBase : d.hom ≫ F.boundary.subschemeι ≫ F.tower.toBase =
-      B.subschemeι ≫ H.toFanHom.algebraicMap := by
+      B.subschemeι ≫ H.toFanHom.finiteFanSchemeHom K := by
     have hd' : d.hom ≫ F.boundary.subschemeι = B.subschemeι ≫ g.hom := hd
     rw [← Category.assoc, hd', Category.assoc, hg]
   let a (j : Fin m) := F.center j ≫ d.inv
   have ha (j : Fin m) : IsClosedImmersion (a j) := by
     have := F.isClosedImmersion_center j
     exact inferInstanceAs (IsClosedImmersion (F.center j ≫ d.inv))
-  obtain ⟨ρ, u, hu⟩ := exists_coordinates_of_orderedFactorization b hΨ hc' h F d (by
-    rw [reassoc_of% hdBase, FanHom.algebraicMap_comp_algebraicRealizationStructureMap])
+  obtain ⟨ρ, u, hu⟩ := exists_coordinates_of_orderedFactorization K b hΨ hc' h F d (by
+    rw [reassoc_of% hdBase, FanHom.finiteFanSchemeHom_comp_finiteFanSchemeToSpec K])
   let Matches (L : Σ W, WithBoundary B.subschemeι m W) :=
     ∃ f : L.1 ≅ F.internalTower.1, IsLift g L.2.toTower F.internalTower.2.toTower f ∧
       L.2.boundaryι ≫ f.hom = d.hom ≫ F.internalTower.2.boundaryι
-  have hlift : Matches (Ψ.internalBlowupTower b ρ u) := by
-    rw [Ψ.internalBlowupTower_eq_alongBoundary]
+  have hlift : Matches (Ψ.internalBlowupTower K b ρ u) := by
+    rw [Ψ.internalBlowupTower_eq_alongBoundary K]
     exact exists_isLift_alongBoundary g d hd.symm _ _ (by
       intro j
       rw [hu, ← Scheme.Hom.comap_ker_comp_of_isClosedImmersion (a j) d.hom]
@@ -150,7 +151,7 @@ theorem exists_toric_internal_factorization (b : Module.Basis (Fin 2) ℤ N)
       ← Category.assoc f.hom, hf.hom_toBase, Category.assoc, hg]
   · rw [Iso.trans_hom, comap_comp, F.comap_boundary_iso_hom,
       ← Scheme.Hom.comap_ker_comp_of_isClosedImmersion
-        (Ψ.internalBlowupTower b ρ u).2.boundaryι f.hom,
+        (Ψ.internalBlowupTower K b ρ u).2.boundaryι f.hom,
       hbound, Scheme.Hom.ker_comp_of_isIso]
   · rw [← hdBase]
     simpa only [a, Category.assoc, Iso.inv_hom_id_assoc] using F.center_toBase j
@@ -164,27 +165,27 @@ theorem exists_toric_internal_factorization_with_binomial_centers
     (b : Module.Basis (Fin 2) ℤ N) (hΦ : Φ.IsRegular) (hc : Φ.IsComplete)
     {T : BlowupTower X[Φ] n Y}
     {P : Y.IdealSheafData} {c : Fin m → Over X[Φ]}
-    (hT : IsLogarithmicBoundaryTower (Φ.boundaryIdeal hc.nonempty_cones) s[Φ] T P c) :
+    (hT : IsLogarithmicBoundaryTower (Φ.toricBoundaryIdeal K hc.nonempty_cones) s[Φ] T P c) :
     ∃ (Ψ : Fan i) (_ : Ψ.IsRegular) (u : Ψ.IsSubdivision Φ)
-      (ρ : Fin m → Ψ.Ray) (z : Fin m → ℂˣ),
-      let : Nonempty Ψ.cones := u.nonempty_cones_of_nonempty hc.nonempty_cones
-      let A := Ψ.internalBlowupTower b ρ z
-      ∃ e : A.1 ≅ Y, e.hom ≫ T.toBase = A.2.toTower.toBase ≫ u.toFanHom.algebraicMap ∧
+      (ρ : Fin m → Ψ.Ray) (z : Fin m → Kˣ),
+      let : Nonempty Ψ.cones := (u.isComplete_iff.mpr hc).nonempty_cones
+      let A := Ψ.internalBlowupTower K b ρ z
+      ∃ e : A.1 ≅ Y, e.hom ≫ T.toBase = A.2.toTower.toBase ≫ u.toFanHom.finiteFanSchemeHom K ∧
         P.comap e.hom = A.2.boundaryι.ker ∧
-        ∀ j, ∃ a : Spec (.of ℂ) ≅ (c j).left,
-          (ρ j).binomialCenterOnBoundary rankTwo(b) (b.detDualEquiv_self _)
+        ∀ j, ∃ a : Spec (.of K) ≅ (c j).left,
+          (ρ j).binomialCenterOnBoundary K rankTwo(b) (b.detDualEquiv_self _)
               ((ρ j).surjective_detCharacter b) (z j) ≫
-              (Ψ.boundaryIdeal inferInstance).subschemeι ≫ u.toFanHom.algebraicMap =
+              (Ψ.toricBoundaryIdeal K inferInstance).subschemeι ≫ u.toFanHom.finiteFanSchemeHom K =
             a.hom ≫ (c j).hom := by
   obtain ⟨Ψ, hΨ, u, ρ, z, e, a, he, hP, ha, hcenter⟩ :=
-    Φ.exists_toric_internal_factorization b hΦ hc hT
-  let : Nonempty Ψ.cones := u.nonempty_cones_of_nonempty hc.nonempty_cones
+    Φ.exists_toric_internal_factorization K b hΦ hc hT
+  let : Nonempty Ψ.cones := (u.isComplete_iff.mpr hc).nonempty_cones
   refine ⟨Ψ, hΨ, u, ρ, z, e, he, hP, fun j ↦ ?_⟩
-  let p := (ρ j).binomialCenterOnBoundary rankTwo(b) (b.detDualEquiv_self _)
+  let p := (ρ j).binomialCenterOnBoundary K rankTwo(b) (b.detDualEquiv_self _)
     ((ρ j).surjective_detCharacter b) (z j)
   have : IsClosedImmersion (a j) := ha j
   have : IsClosedImmersion p := (ρ j).isClosedImmersion_binomialCenterOnBoundary
-    rankTwo(b) (b.detDualEquiv_self _) ((ρ j).surjective_detCharacter b) (z j)
+    K rankTwo(b) (b.detDualEquiv_self _) ((ρ j).surjective_detCharacter b) (z j)
   have hk : (a j).ker = p.ker := (hcenter j).1.trans (Ray.internalCenter_val ..)
   have := IsClosedImmersion.isIso_lift (a j) p hk
   let d := asIso (IsClosedImmersion.lift (a j) p hk.le)

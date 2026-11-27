@@ -8,7 +8,6 @@ module
 public import QPainleve.AlgebraicGeometry.Blowup.Tower.Homaloidal
 public import QPainleve.Geometry.Toric.Fan.Picard.Hirzebruch
 
-import Mathlib.Analysis.Complex.Polynomial.Basic
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Nef
 import QPainleve.AlgebraicGeometry.Chow.Nef.Basic
 import QPainleve.AlgebraicGeometry.Curves.Degree.Ample
@@ -33,19 +32,21 @@ open TauCeti.Toric
 
 namespace QPainleve.BlowupTower.IsClosedPointTower
 
+variable (k₀ : Type) [Field k₀] [IsAlgClosed k₀]
+
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
-  {i : N →+ V} {Φ : Fan i} [Nonempty Φ.cones] [Φ.algebraicRealization.IsProjectiveOver ℂ]
+  {i : N →+ V} {Φ : Fan i} [Nonempty Φ.cones] [(Φ.finiteFanScheme k₀).IsProjectiveOver k₀]
   (b : Basis (Fin 2) ℤ N) (e : ℕ) (hΦ : Φ.IsRegular) (hc : Φ.IsComplete)
   (r : Fin 4 ≃ Φ.Ray)
   (hr : (fun j ↦ (r j).primitiveGenerator) = ![b 0, b 1, -b 0, (e : ℤ) • b 0 - b 1])
 
-local notation "S" => Spec (CommRingCat.of ℂ)
-local notation "X" => Φ.algebraicRealization
+local notation "S" => Spec (CommRingCat.of k₀)
+local notation "X" => (Φ.finiteFanScheme k₀)
 local notation "f" => (X ↘ S)
-local notation "P" => Proj (homogeneousSubmodule ℂ (Fin 3 → ℂ))
-local notation "H" => mk (Proj.symmetricAlgebraTwistingBundle ℂ (Fin 3 → ℂ) 1)
-local notation "C" => Fan.hirzebruchPicardBasis b e hΦ r hr
-local notation "B" => intersectionBilinForm ℂ X
+local notation "P" => Proj (homogeneousSubmodule k₀ (Fin 3 → k₀))
+local notation "H" => mk (Proj.symmetricAlgebraTwistingBundle k₀ (Fin 3 → k₀) 1)
+local notation "C" => Fan.hirzebruchPicardBasis k₀ b e hΦ r hr
+local notation "B" => intersectionBilinForm k₀ X
 
 include hc in
 /-- On a point-blowup resolution from the Hirzebruch fan of index `e` to the plane,
@@ -56,9 +57,10 @@ theorem homaloidal_intersection_identities_of_hirzebruch {Y : Scheme} {n : ℕ}
     {T : BlowupTower X n Y} (hT : IsClosedPointTower X T)
     (g : Y ⟶ P) (hg : g ≫ (P ↘ S) = T.toBase ≫ f)
     (hbir : Scheme.BirationalOver g (𝟙 P)) :
-    let : SmoothOfRelativeDimension 2 f :=
-      (by simpa using Module.finrank_eq_card_basis b : Module.finrank ℤ N = 2) ▸
-        Φ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
+    let : SmoothOfRelativeDimension 2 f := by
+      rw [Φ.finiteFanScheme_over k₀]
+      exact (by simpa using Module.finrank_eq_card_basis b : Module.finrank ℤ N = 2) ▸
+        Φ.smoothOfRelativeDimension_finiteFanSchemeToSpec k₀ hΦ
     let : IsNoetherian X := isNoetherian_of_finiteType f
     let v := (T.picardMarking hT f).symm (Additive.ofMul (pullback g H))
     let a := (C).repr v.1 0
@@ -66,25 +68,26 @@ theorem homaloidal_intersection_identities_of_hirzebruch {Y : Scheme} {n : ℕ}
     (∑ j, (v.2 j) ^ 2) = 2 * a * d - (e : ℤ) * d ^ 2 - 1 ∧
       (∑ j, -v.2 j) = 2 * a + (2 - (e : ℤ)) * d - 3 := by
   have hN : Module.finrank ℤ N = 2 := by simpa using Module.finrank_eq_card_basis b
-  let : SmoothOfRelativeDimension 2 f :=
-    hN ▸ Φ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
+  let : SmoothOfRelativeDimension 2 f := by
+    rw [Φ.finiteFanScheme_over k₀]
+    exact hN ▸ Φ.smoothOfRelativeDimension_finiteFanSchemeToSpec k₀ hΦ
   let : IsNoetherian X := isNoetherian_of_finiteType f
   let v := (T.picardMarking hT f).symm (Additive.ofMul (pullback g H))
   let a := (C).repr v.1 0
   let d := (C).repr v.1 1
-  let K := Additive.ofMul (mk (canonicalBundle ℂ X 2))
+  let K := Additive.ofMul (mk (canonicalBundle k₀ X 2))
   have hv : v.1 = a • C 0 + d • C 1 := by
     simpa only [a, d, Fin.sum_univ_two] using ((C).sum_repr v.1).symm
   have hsq : B v.1 v.1 = 2 * a * d - (e : ℤ) * d ^ 2 := by
     rw [hv]
     simp only [map_add, map_zsmul, LinearMap.add_apply, LinearMap.smul_apply,
-      Int.zsmul_eq_mul, Fan.hirzebruchPicardBasis_intersection b e hΦ r hr hc]
+      Int.zsmul_eq_mul, Fan.hirzebruchPicardBasis_intersection k₀ b e hΦ r hr hc]
     norm_num
     ring
   have hK : B v.1 K = -(2 * a + (2 - (e : ℤ)) * d) := by
     rw [hv]
     simp only [map_add, map_zsmul, LinearMap.add_apply, LinearMap.smul_apply,
-      Int.zsmul_eq_mul, K, Fan.hirzebruchPicardBasis_intersection_canonical b e hΦ r hr hc]
+      Int.zsmul_eq_mul, K, Fan.hirzebruchPicardBasis_intersection_canonical k₀ b e hΦ r hr hc]
     norm_num
     ring
   have h := hT.homaloidal_intersection_identities g hg hbir
@@ -94,7 +97,7 @@ theorem homaloidal_intersection_identities_of_hirzebruch {Y : Scheme} {n : ℕ}
   rw [hsq, hK, neg_neg] at h
   exact h
 
-variable {Y : Scheme.{0}} {n : ℕ} {T : BlowupTower Φ.algebraicRealization n Y}
+variable {Y : Scheme.{0}} {n : ℕ} {T : BlowupTower (Φ.finiteFanScheme k₀) n Y}
 
 omit [Nonempty Φ.cones] in
 /-- The resolved line class of a birational map to the plane has positive fiber
@@ -105,12 +108,13 @@ theorem hirzebruch_resolution_degree_bounds (hT : IsClosedPointTower X T)
     (g : Y ⟶ P) (hg : g ≫ (P ↘ S) = T.toBase ≫ f)
     (hbir : Scheme.BirationalOver g (𝟙 P)) :
     let : Nonempty Φ.cones := hc.nonempty_cones
-    let : SmoothOfRelativeDimension 2 f :=
-      (by simpa using Module.finrank_eq_card_basis b : Module.finrank ℤ N = 2) ▸
-        Φ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
+    let : SmoothOfRelativeDimension 2 f := by
+      rw [Φ.finiteFanScheme_over k₀]
+      exact (by simpa using Module.finrank_eq_card_basis b : Module.finrank ℤ N = 2) ▸
+        Φ.smoothOfRelativeDimension_finiteFanSchemeToSpec k₀ hΦ
     let : IsNoetherian X := isNoetherian_of_finiteType f
     let v : Additive (LineBundleClass X) × (Fin n → ℤ) :=
-      (T.picardMarking (k := ℂ) hT f).symm (Additive.ofMul (pullback g H))
+      (T.picardMarking (k := k₀) hT f).symm (Additive.ofMul (pullback g H))
     let a := (C).repr v.1 0
     let d := (C).repr v.1 1
     0 < d ∧ (e : ℤ) * d ≤ a ∧ ∀ j, 0 ≤ -v.2 j := by
@@ -121,30 +125,30 @@ theorem hirzebruch_resolution_degree_bounds (hT : IsClosedPointTower X T)
   let := hnoeth
   let : Y.Over S := ⟨T.toBase ≫ f⟩
   have : g.IsOver S := ⟨hg⟩
-  have hH : (H).IsAmple := isAmple_twistingSheaf ℂ (Fin 3 → ℂ) Nat.one_pos
+  have hH : (H).IsAmple := isAmple_twistingSheaf k₀ (Fin 3 → k₀) Nat.one_pos
   have hv : (T.picardHom v).toMul = pullback g H := by
     rw [← picardMarking_apply _ hT f, LinearEquiv.apply_symm_apply, toMul_ofMul]
-  have hnef : (T.picardHom v).toMul.IsNef ℂ (T.toBase ≫ f) :=
+  have hnef : (T.picardHom v).toMul.IsNef k₀ (T.toBase ≫ f) :=
     hv.symm ▸ hH.isNef.pullback g
   have hbase := hT.isNef_fst_of_isNef_picardHom hnef
   have hX := topologicalKrullDim_eq_of_smoothOfRelativeDimension f (n := 2)
-  have := Φ.uniqueFactorizationMonoid_stalk_algebraicRealization hΦ
-  have hnonneg := (isNef_iff_classIntersectionNumber_nonneg ℂ hX _).mp hbase
+  have := Φ.uniqueFactorizationMonoid_stalk_finiteFanScheme (R := k₀) hΦ
+  have hnonneg := (isNef_iff_classIntersectionNumber_nonneg k₀ hX _).mp hbase
   have hF : 0 ≤ B v.1 (C 0) := by
-    simpa only [Fan.hirzebruchPicardBasis_apply_zero, Fan.rayDivisorToPicard_single,
+    simpa only [Fan.hirzebruchPicardBasis_apply_zero, Fan.rayChartDivisorToPicard_single,
       one_zsmul, intersectionBilinForm_apply, toMul_ofMul] using
-      hnonneg (Φ.rayBoundaryPoint hΦ (r 1))
+      hnonneg (Φ.rayBoundaryChartPoint (R := k₀) hΦ (r 1))
   have hB : 0 ≤ B v.1 (C 1) := by
-    simpa only [Fan.hirzebruchPicardBasis_apply_one, Fan.rayDivisorToPicard_single,
+    simpa only [Fan.hirzebruchPicardBasis_apply_one, Fan.rayChartDivisorToPicard_single,
       one_zsmul, intersectionBilinForm_apply, toMul_ofMul] using
-      hnonneg (Φ.rayBoundaryPoint hΦ (r 0))
-  obtain ⟨hd, ha⟩ := Fan.hirzebruchPicardBasis_intersection_repr b e hΦ r hr hc v.1
+      hnonneg (Φ.rayBoundaryChartPoint (R := k₀) hΦ (r 0))
+  obtain ⟨hd, ha⟩ := Fan.hirzebruchPicardBasis_intersection_repr k₀ b e hΦ r hr hc v.1
   rw [hd] at hF
   rw [ha] at hB
   have hd₀ : d ≠ 0 := by
     intro hzero
     have hsq : (∑ j, (v.2 j) ^ 2) = 2 * a * d - (e : ℤ) * d ^ 2 - 1 :=
-      (hT.homaloidal_intersection_identities_of_hirzebruch b e hΦ hc r hr g hg hbir).1
+      (hT.homaloidal_intersection_identities_of_hirzebruch k₀ b e hΦ hc r hr g hg hbir).1
     simp only [hzero, mul_zero, zero_pow (by decide : 2 ≠ 0), sub_zero, zero_sub] at hsq
     have hsum : 0 ≤ ∑ j, (v.2 j) ^ 2 := Finset.sum_nonneg fun j _ ↦ sq_nonneg (v.2 j)
     omega

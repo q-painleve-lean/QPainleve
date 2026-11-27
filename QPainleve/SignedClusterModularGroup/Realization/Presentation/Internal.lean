@@ -41,59 +41,63 @@ open Scheme Scheme.IdealSheafData
 
 namespace QPainleve.SignedClusterModularGroup.CompleteToricPresentation
 
-local notation "S" => Spec (CommRingCat.of ℂ)
-local notation "Centers[" r "]" => Over.mk (structureMap ℂ (Fin r → ℤ))
-local notation "XTor[" r "]" => scheme ℂ (Fin r →₀ ℤ)
-local notation "χ[" c "]" => pointsEquiv ℂ _ (Subtype.mk (Over.Hom.left c) (Over.w c))
+variable {k₀ : Type} [Field k₀] [IsAlgClosed k₀]
+
+local notation "S" => Spec (CommRingCat.of k₀)
+local notation "Centers[" r "]" => Over.mk (structureMap k₀ (Fin r → ℤ))
+local notation "XTor[" r "]" => scheme k₀ (Fin r →₀ ℤ)
+local notation "χ[" c "]" => pointsEquiv k₀ _ (Subtype.mk (Over.Hom.left c) (Over.w c))
 local notation "param[" c "]" => (fun j ↦ χ[c] (ofAdd (Pi.single j 1)))
 local notation "D[" M "]" => Scheme.Hom.ker (Over.Hom.left (Arrow.hom (MarkedSurface.pair M)))
 
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V] {i : N →+ V}
   {b : Basis (Fin 2) ℤ N} {r : ℕ} {L γ : Type} [AddCommGroup L] {H : LinearMap.BilinForm ℤ L}
-  (Q : CompleteToricPresentation i b r L γ)
+  (Q : CompleteToricPresentation k₀ i b r L γ)
 
 local instance instNonemptyInternalModelCones : Nonempty Q.fan.cones := Q.complete.nonempty_cones
 local instance instNeZeroInternalModelBoundaryLength : NeZero Q.length := Q.neZero
 local instance instPrestableInternalModelToricBoundary :
-    PrestableFamily ((Q.fan.boundaryIdeal Q.complete.nonempty_cones).subscheme ↘ S) :=
+    PrestableFamily ((Q.fan.toricBoundaryIdeal k₀ Q.complete.nonempty_cones).subscheme ↘ S) :=
   Q.prestable
 
-local notation "X" => Q.fan.algebraicRealization
-local instance : (X).IsProjectiveOver ℂ :=
-  Q.fan.isProjectiveOver_algebraicRealization_of_isComplete Q.regular Q.complete b
+local notation "X" => (Q.fan.finiteFanScheme k₀)
+local instance : (X).IsProjectiveOver k₀ :=
+  Q.fan.isProjectiveOver_finiteFanScheme_of_isComplete k₀ Q.regular Q.complete b
 
 local instance : SmoothOfRelativeDimension 2 (X ↘ S) :=
-  (Fan.algebraicRealization_over Q.fan).symm ▸
+  (Fan.finiteFanScheme_over k₀ Q.fan).symm ▸
     ((finrank_eq_card_basis b).trans (Fintype.card_fin 2) ▸
-      Q.fan.smoothOfRelativeDimension_algebraicRealizationStructureMap Q.regular)
+      Q.fan.smoothOfRelativeDimension_finiteFanSchemeToSpec k₀ Q.regular)
 
-local notation "Dtor" => Q.fan.boundaryIdeal Q.complete.nonempty_cones
-local notation "Aux" => LinearMap.BilinForm.prod (Chow.intersectionBilinForm ℂ X)
+local notation "Dtor" => Q.fan.toricBoundaryIdeal k₀ Q.complete.nonempty_cones
+local notation "Aux" => LinearMap.BilinForm.prod (Chow.intersectionBilinForm k₀ X)
   (-(dotProductBilin ℤ ℤ : LinearMap.BilinForm ℤ (Fin r → ℤ)))
 
-variable (c : GeometricRealization.Point Centers[r])
+variable (c : GeometricRealization.Point (Over.mk (structureMap k₀ (Fin r → ℤ))))
 
-local notation "U" => Fan.internalBlowupTower b Q.rays param[c]
+local notation "U" => Fan.internalBlowupTower k₀ b Q.rays param[c]
 local notation "Y" => (U).1
 local notation "T" => WithBoundary.toTower (Sigma.snd U)
 local notation "D" => Scheme.Hom.ker (WithBoundary.boundaryι (Sigma.snd U))
-local notation "μ" => Fan.internalBlowupPicardMarking b Q.rays param[c] Q.regular
+local notation "μ" => Fan.internalBlowupPicardMarking k₀ b Q.rays param[c] Q.regular
 local notation "modelStructure" => toBase T ≫ (X ↘ S)
 
 /-- The internal blowup model uses the composite of the ordered blowdown and the
-toric surface's structure map to the complex base. -/
+toric surface's structure map to the base field. -/
 local instance : (Y).Over S := ⟨modelStructure⟩
 
-local instance : IsIntegral Y := Fan.isIntegral_internalBlowupTower b Q.rays param[c] Q.regular
+local instance : IsIntegral Y := Fan.isIntegral_internalBlowupTower k₀ b Q.rays param[c] Q.regular
 
-local instance : (Y).IsProjectiveOver ℂ := (T).isProjectiveOver ℂ
+local instance : (Y).IsProjectiveOver k₀ := (T).isProjectiveOver k₀
 
 local instance : SmoothOfRelativeDimension 2 (Y ↘ S) :=
-  (Fan.isClosedPointTower_internalBlowupTower b Q.rays param[c]).smoothOfRelativeDimension (X ↘ S)
+  (Fan.isClosedPointTower_internalBlowupTower k₀ b Q.rays param[c]).smoothOfRelativeDimension
+    (X ↘ S)
 
 private def internalModelMarking (e : H.IsometryEquiv (Aux)) :
-    H.IsometryEquiv (Chow.intersectionBilinForm ℂ Y) :=
-  e.trans ((Fan.isClosedPointTower_internalBlowupTower b Q.rays param[c]).picardMarkingIsometry ℂ)
+    H.IsometryEquiv (Chow.intersectionBilinForm k₀ Y) :=
+  let hT := Fan.isClosedPointTower_internalBlowupTower k₀ b Q.rays param[c]
+  e.trans (hT.picardMarkingIsometry k₀)
 
 private theorem internalModelMarking_apply (e : H.IsometryEquiv (Aux)) (x : L) :
     Q.internalModelMarking c e x = μ (e x) := by
@@ -112,13 +116,13 @@ projection is a nodal contraction with empty tower. Its numbered boundary rays
 and classes are the strict rays in order from the presentation origin. -/
 theorem exists_nodal_model_of_internalBlowup
     (e : H.IsometryEquiv (Aux)) (he : e.toLinearEquiv.toLinearMap = Q.inclusion) :
-    ∃ (M : MarkedSurface ℂ Q.length H XTor[r])
+    ∃ (M : MarkedSurface k₀ Q.length H XTor[r])
       (p : ContractedToricFiber b Q.rays Q.regular Q.cycle Q.origin Q.inclusion χ[c] M),
       Q.HasNodalModel c M ∧ IsIso p.projection ∧ p.IsNodalContraction ∧
         ∃ hD : D[M].IsEffectiveCartier, ∀ j,
           p.numberedBoundaryRays hD j = Q.rayOrder (j + Q.origin) ∧
             M.boundaryClass hD j =
-              e.symm (Q.fan.markedBoundaryMap Q.regular Q.rays
+              e.symm (Q.fan.markedBoundaryMap k₀ Q.regular Q.rays
                 (Pi.single (Q.rayOrder (j + Q.origin)) 1)) := by
   classical
   -- Identify the schematic image with the toric boundary and rotate its numbering.
@@ -134,7 +138,7 @@ theorem exists_nodal_model_of_internalBlowup
       (by rw [comp_over]; exact Q.prestable)
   let marks : Empty → ((D).subscheme ↘ S).smoothLocus := Empty.elim
   let C := a.mapNodalCycleNumbering (Q.cycle.rotate Q.origin) (q := marks)
-  let f := Fan.contractedXEvaluation b Q.rays χ[c] Q.regular (𝟙 Y)
+  let f := Fan.contractedXEvaluation k₀ b Q.rays χ[c] Q.regular (𝟙 Y)
   let M := MarkedSurface.ofBoundary D C (Q.internalModelMarking c e) f
   let : (Iso.refl (Dtor).subscheme).hom.IsOver S := by
     rw [Iso.refl_hom]
@@ -160,7 +164,7 @@ theorem exists_nodal_model_of_internalBlowup
     projection_over := by
       -- Unfold the packaged surface to recover its chosen structure map.
       change 𝟙 Y ≫ modelStructure = _
-      rw [Category.id_comp, Fan.algebraicRealization_over]
+      rw [Category.id_comp, Fan.finiteFanScheme_over]
     support_comap := by
       have hker : D[M] = D := MarkedSurface.ofBoundary_ker ..
       -- Unfold the target surface for the identity pullback.
@@ -192,8 +196,8 @@ theorem exists_nodal_model_of_internalBlowup
     evaluation_eq := MarkedSurface.ofBoundary_evaluation .. }
   have hN : Module.finrank ℤ N = 2 := (finrank_eq_card_basis b).trans (Fintype.card_fin 2)
   have hD : (D).IsEffectiveCartier :=
-    Fan.isEffectiveCartier_internalBlowupBoundary b Q.rays Q.regular param[c]
-      (Q.fan.isEffectiveCartier_boundaryIdeal Q.regular Q.complete hN)
+    Fan.isEffectiveCartier_internalBlowupBoundary k₀ b Q.rays Q.regular param[c]
+      (Q.fan.isEffectiveCartier_boundaryIdeal k₀ Q.regular Q.complete hN)
   have hker : D[M] = D := MarkedSurface.ofBoundary_ker ..
   have hM : D[M].IsEffectiveCartier := hker.symm ▸ hD
   have htower : IsNodalBoundaryTower D[M] (M.surface ↘ S) (𝟙 M.surface)
@@ -206,20 +210,20 @@ theorem exists_nodal_model_of_internalBlowup
     (Q.hasNodalModel_iff c M).mpr ⟨p, Y, 0, .nil, Iso.refl _, htower, hprojection⟩
   have hnodal : p.IsNodalContraction := by
     let : IsIntegral M.surface := M.integral
-    let : M.surface.IsProjectiveOver ℂ := M.projective
+    let : M.surface.IsProjectiveOver k₀ := M.projective
     let : SmoothOfRelativeDimension 2 (M.surface ↘ S) := M.smooth
     let : PrestableFamily (D[M].subscheme ↘ S) := M.prestable_boundaryImage
     exact ⟨hM, hmodel.hasToricPresentation.genus_blowupComponent_eq_zero hM,
       0, Y, .nil, htower, Iso.refl _, hprojection.symm⟩
   refine ⟨M, p, hmodel, inferInstanceAs (IsIso (𝟙 Y)), hnodal, hM, fun j ↦ ⟨?_, ?_⟩⟩
-  · rw [← Equiv.symm_apply_apply (Q.fan.boundaryNormalizationComponentEquiv Q.regular)
+  · rw [← Equiv.symm_apply_apply (Q.fan.boundaryNormalizationComponentEquiv k₀ Q.regular)
       (Q.rayOrder (j + Q.origin)), ← Q.component_eq]
     exact (p.numberedBoundaryRays_eq_iff hM j (j + Q.origin)).mpr (hgen j)
   · -- Compare the marked class with the strict ray prime on the same surface.
     apply M.picardMarking.injective
     rw [M.picardMarking_boundaryClass]
     have hprime : M.boundaryPrime hM j =
-        (D).boundaryPrimeEmbedding (Fan.internalBlowupBoundaryPrimeEquiv Q.regular b
+        (D).boundaryPrimeEmbedding (Fan.internalBlowupBoundaryPrimeEquiv k₀ Q.regular b
           Q.rays param[c] (Q.rayOrder (j + Q.origin))) := by
       apply Subtype.ext
       rw [M.coe_boundaryPrime, (D).coe_boundaryPrimeEmbedding,
@@ -229,7 +233,7 @@ theorem exists_nodal_model_of_internalBlowup
       rw [← hgen j, ← Scheme.Hom.comp_apply, hboundary]
     rw [hprime, MarkedSurface.ofBoundary_picardMarking]
     rw [internalModelMarking_apply, LinearMap.BilinForm.IsometryEquiv.apply_symm_apply]
-    let z := Fan.internalBlowupBoundaryPrimeEquiv Q.regular b Q.rays param[c]
+    let z := Fan.internalBlowupBoundaryPrimeEquiv k₀ Q.regular b Q.rays param[c]
       (Q.rayOrder (j + Q.origin))
     have hz : (D).boundaryPrimeEmbedding z = ⟨z.val, (mem_boundaryPrimes.mp z.property).2⟩ :=
       Subtype.ext ((D).coe_boundaryPrimeEmbedding z)
@@ -237,6 +241,6 @@ theorem exists_nodal_model_of_internalBlowup
       (LineBundleClass.primeDivisorClass x)) hz).trans (by
         rw [Fan.internalBlowupPicardMarking_apply]
         exact (Fan.picardHom_markedBoundaryMap_single_eq_primeDivisorClass
-          Q.regular b Q.rays param[c] _).symm)
+          k₀ Q.regular b Q.rays param[c] _).symm)
 
 end QPainleve.SignedClusterModularGroup.CompleteToricPresentation

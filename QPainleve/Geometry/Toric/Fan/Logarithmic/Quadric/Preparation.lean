@@ -31,24 +31,27 @@ open TauCeti.AlgebraicGeometry Scheme.IdealSheafData
 
 namespace TauCeti.Toric.Fan
 
+variable {k₀ : Type} [Field k₀] [IsAlgClosed k₀]
+
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {Φ : Fan i}
 
-local notation "X[" A "]" => Fan.algebraicRealization A
-local notation "s[" A "]" => Fan.algebraicRealizationStructureMap A
-local notation "π[" H "]" => FanHom.algebraicMap (IsSubdivision.toFanHom H)
-local notation "S" => Spec (CommRingCat.of ℂ)
+local notation "X[" A "]" => Fan.finiteFanScheme k₀ A
+local notation "s[" A "]" => Fan.finiteFanSchemeToSpec k₀ A
+local notation "π[" H "]" => FanHom.finiteFanSchemeHom k₀ (IsSubdivision.toFanHom H)
+local notation "S" => Spec (CommRingCat.of k₀)
 local notation "s(" X ")" => (X ↘ S)
 
+omit [IsAlgClosed k₀] in
 /-- A binomial center in the interior of the retained fiber has a common lift to the
 preparation fan. This lift is the scheme-theoretic inverse image of the binomial
 center with the same parameter on every intermediate Hirzebruch surface. -/
 theorem HirzebruchQuadricPreparation.exists_binomialCenter_on_retained_fiber
-    {b : Module.Basis (Fin 2) ℤ N} {e : ℕ} (P : HirzebruchQuadricPreparation b e Φ) (c : ℂˣ) :
+    {b : Module.Basis (Fin 2) ℤ N} {e : ℕ} (P : HirzebruchQuadricPreparation b e Φ) (c : k₀ˣ) :
     ∃ (ρ : ∀ j, (P.model j).Ray) (x : S ⟶ X[P.common]),
       (∀ j, (ρ j).primitiveGenerator = b 1) ∧
       ∀ j, IsPullback x (𝟙 S) π[P.common_model j]
-        ((ρ j).binomialCenter ((Module.finrank_eq_card_basis b).trans (Fintype.card_fin 2))
+        ((ρ j).binomialCenter k₀ ((Module.finrank_eq_card_basis b).trans (Fintype.card_fin 2))
           (b.detDualEquiv_self _) ((ρ j).surjective_detCharacter b) c) := by
   classical
   have hr (j : Fin (e + 1)) :
@@ -58,21 +61,22 @@ theorem HirzebruchQuadricPreparation.exists_binomialCenter_on_retained_fiber
   choose ρ hρ using hr
   let τ := (P.common_model 0).liftRay (ρ 0)
   let hdim := (Module.finrank_eq_card_basis b).trans (Fintype.card_fin 2)
-  refine ⟨ρ, τ.binomialCenter hdim (b.detDualEquiv_self _) (τ.surjective_detCharacter b) c,
+  refine ⟨ρ, τ.binomialCenter k₀ hdim (b.detDualEquiv_self _) (τ.surjective_detCharacter b) c,
     hρ, fun j ↦ ?_⟩
   have hτ : τ = (P.common_model j).liftRay (ρ j) := by
     apply Ray.primitiveGenerator_injective
     rw [(P.common_model 0).primitiveGenerator_liftRay,
       (P.common_model j).primitiveGenerator_liftRay, hρ 0, hρ j]
   rw [hτ]
-  convert (P.common_model j).isPullback_binomialCenter (ρ j)
+  convert (P.common_model j).isPullback_binomialCenter k₀ (ρ j)
     (m := (b.detDualEquiv (ρ j).primitiveGenerator).toAddMonoidHom)
     hdim (b.detDualEquiv_self _) ((ρ j).surjective_detCharacter b) c using 2
   congr 1
   rw [(P.common_model j).primitiveGenerator_liftRay]
 
-variable {X : Scheme} [X.Over S] [IsIntegral X] [X.IsProjectiveOver ℂ]
-  [SmoothOfRelativeDimension 2 s(X)] {f : X ⟶ X[Φ]} [f.IsOver S]
+variable {X : Scheme} [X.Over (Spec (.of k₀))] [IsIntegral X] [X.IsProjectiveOver k₀]
+  [SmoothOfRelativeDimension 2 (X ↘ Spec (.of k₀))] {f : X ⟶ Φ.finiteFanScheme k₀} [f.IsOver (Spec
+    (.of k₀))]
   {D : X.IdealSheafData}
 
 open LogarithmicProjection
@@ -92,19 +96,19 @@ theorem exists_nodal_resolution_of_hirzebruch_quadric_preparation
       {b 0, b 1, -b 0, (e : ℤ) • b 0 - b 1})
     (hf : Scheme.BirationalOver f (𝟙 X[Φ])) (hD : D.IsEffectiveCartier) :
     let _ : Nonempty Φ.cones := hc.nonempty_cones
-    let B := Φ.boundaryIdeal hc.nonempty_cones
+    let B := Φ.toricBoundaryIdeal k₀ hc.nonempty_cones
     (B.comap f).IsEffectiveCartier →
       (let _ := SmoothOfRelativeDimension.smooth 2 s(X)
-       (ramificationIdealSheaf ℂ f).IsEffectiveCartier) →
+       (ramificationIdealSheaf k₀ f).IsEffectiveCartier) →
       (let _ := SmoothOfRelativeDimension.smooth 2 s(X)
-       B.comap f = D * ramificationIdealSheaf ℂ f) →
+       B.comap f = D * ramificationIdealSheaf k₀ f) →
       ∃ (P : HirzebruchQuadricPreparation b e Φ) (m : ℕ) (Z : Scheme)
         (T : BlowupTower X m Z) (g : Z ⟶ X[P.common])
         (_ : IsIntegral Z) (_ : IsDominant g) (_ : IsDominant (T.toBase ≫ f))
         (hT : IsNodalBoundaryTower D s(X) (𝟙 X) T),
         g ≫ π[P.common_source] = T.toBase ≫ f ∧
         (∀ (Δ : Fan i) [Nonempty Δ.cones] (L : P.common.IsSubdivision Δ),
-          (T.toBase ≫ f).toRationalMap.comp (Φ.denseTorusPartialIso Δ).toRationalMap =
+          (T.toBase ≫ f).toRationalMap.comp (Φ.denseTorusPartialIso k₀ Δ).toRationalMap =
             (g ≫ π[L]).toRationalMap ∧
           ∃ hOver : g ≫ π[L] ≫ s[Δ] = T.toBase ≫ s(X),
             let : Z.Over S := ⟨T.toBase ≫ s(X)⟩
@@ -112,21 +116,21 @@ theorem exists_nodal_resolution_of_hirzebruch_quadric_preparation
             let : Smooth s(Z) :=
               (hT.isClosedPointTower.smoothOfRelativeDimension s(X)).smooth
             Δ.IsRegular →
-              (Δ.boundaryIdeal inferInstance).comap (g ≫ π[L]) =
-                (D.comap T.toBase).radical * ramificationIdealSheaf ℂ (g ≫ π[L])) ∧
+              (Δ.toricBoundaryIdeal k₀ inferInstance).comap (g ≫ π[L]) =
+                (D.comap T.toBase).radical * ramificationIdealSheaf k₀ (g ≫ π[L])) ∧
         letI : Z.Over S := ⟨T.toBase ≫ s(X)⟩
         letI : SmoothOfRelativeDimension 2 s(Z) :=
           hT.isClosedPointTower.smoothOfRelativeDimension s(X)
-        ∃ (A B : LogarithmicProjection i (D.comap T.toBase).radical) (p : SarkisovPath A B),
+        ∃ (A B : LogarithmicProjection k₀ i (D.comap T.toBase).radical) (p : SarkisovPath A B),
           A.fan = Φ ∧ A.hom ≍ T.toBase ≫ f ∧
           B.fan = P.model 0 ∧ B.hom ≍ g ≫ π[P.common_model 0] ∧
           p.length = 2 * e ∧
-            p.rationalMap = (A.fan.denseTorusPartialIso B.fan).toRationalMap := by
+            p.rationalMap = (A.fan.denseTorusPartialIso k₀ B.fan).toRationalMap := by
   intro _ B hTotal hRam hpole
   obtain ⟨P⟩ := Φ.exists_hirzebruch_quadric_preparation b e hΦ hc hrays
   have hcP : P.common.IsComplete := P.common_source.isComplete_iff.mpr hc
   obtain ⟨Ω, u, v, _, _, _, m, Z, T, q, hZ, hq, hdom, hT, hproj, hregular⟩ :=
-    Φ.exists_nodal_resolution_of_toric_change_of_boundary_comap_eq
+    Φ.exists_nodal_resolution_of_toric_change_of_boundary_comap_eq k₀
       b hΦ hc P.common_regular hcP hf hD hTotal hRam hpole
   let g := q ≫ π[v]
   let : Nonempty P.common.cones := hcP.nonempty_cones
@@ -135,7 +139,7 @@ theorem exists_nodal_resolution_of_hirzebruch_quadric_preparation
   have hcomp {Δ : Fan i} (L : P.common.IsSubdivision Δ) :
       g ≫ π[L] = q ≫ π[v.trans L] := by
     dsimp only [g]
-    rw [Category.assoc, IsSubdivision.toFanHom_trans v L, FanHom.algebraicMap_comp]
+    rw [Category.assoc, IsSubdivision.toFanHom_trans v L, FanHom.finiteFanSchemeHom_comp]
   have hsource : g ≫ π[P.common_source] = T.toBase ≫ f :=
     (hcomp P.common_source).trans hproj
   refine ⟨P, m, Z, T, g, hZ, hg, hdom, hT, hsource, ?_, ?_⟩
@@ -147,12 +151,12 @@ theorem exists_nodal_resolution_of_hirzebruch_quadric_preparation
     let : Z.Over S := ⟨T.toBase ≫ s(X)⟩
     let : SmoothOfRelativeDimension 2 s(Z) :=
       hT.isClosedPointTower.smoothOfRelativeDimension s(X)
-    let C : LogarithmicProjection i (D.comap T.toBase).radical :=
+    let C : LogarithmicProjection k₀ i (D.comap T.toBase).radical :=
       { fan := P.common
         isRegular := P.common_regular
         isComplete := hcP
         hom := g
-        isOver := ⟨by rwa [P.common.algebraicRealization_over]⟩
+        isOver := ⟨by rwa [P.common.finiteFanScheme_over k₀]⟩
         isDominant := hg
         comap_boundaryIdeal := hpole P.common_regular }
     obtain ⟨A, B, p, hA, hAh, hB, hBh, hlen, hmap⟩ :=

@@ -31,14 +31,17 @@ open scoped Sarkisov
 
 namespace TauCeti.Toric.Fan.LogarithmicProjection
 
+variable {k₀ : Type} [Field k₀] [IsAlgClosed k₀]
+
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V] {i : N →+ V}
 
-local notation "S" => Spec (CommRingCat.of ℂ)
-local notation "X[" Φ "]" => Fan.algebraicRealization Φ
-local notation "π[" H "]" => FanHom.algebraicMap (IsSubdivision.toFanHom H)
+local notation "S" => Spec (CommRingCat.of k₀)
+local notation "X[" Φ "]" => Fan.finiteFanScheme k₀ Φ
+local notation "π[" H "]" => FanHom.finiteFanSchemeHom k₀ (IsSubdivision.toFanHom H)
 
-variable {Z : Scheme} [Z.Over S] [SmoothOfRelativeDimension 2 (Z ↘ S)] [IsIntegral Z]
-  {D : Z.IdealSheafData} {A B : LogarithmicProjection i D} {m : ℕ}
+variable {Z : Scheme} [Z.Over (Spec (.of k₀))] [SmoothOfRelativeDimension 2 (Z ↘ Spec (.of k₀))]
+  [IsIntegral Z]
+  {D : Z.IdealSheafData} {A B : LogarithmicProjection k₀ i D} {m : ℕ}
 
 namespace OrderedToricModel
 
@@ -49,7 +52,7 @@ private theorem compare_relabel {U T : OrderedToricModel B m}
     T.exchangeMatrix = (Generator.permute σ).target U.exchangeMatrix ∧
       U.HasBoundarySign T 1 ∧
       let w := ((Generator.permute σ).toStep U.exchangeMatrix).toPath
-      ∃ h, U.xEvaluation.compOfDefined (w.xRationalMap ℂ) h = T.xEvaluation := by
+      ∃ h, U.xEvaluation.compOfDefined (w.xRationalMap k₀) h = T.xEvaluation := by
   cases U with
   | mk Φ hΦ J b r c e he hp =>
     cases T with
@@ -67,18 +70,20 @@ private theorem compare_relabel {U T : OrderedToricModel B m}
           b.detDualEquiv x y := by
         simp only [F, FanEquiv.refl_latticeEquiv, AddEquiv.refl_apply]
       have hh : T.hom = U.hom := eq_of_heq (LogarithmicProjection.ext_iff.mp href).2
-      have hf : U.hom ≫ F.toFanHom.algebraicMap ≫ (Φ.torusTranslation 1).hom = T.hom := by
-        simp only [F, FanEquiv.toFanHom_refl, FanHom.algebraicMap_id, Fan.torusTranslation_one,
+      have hf : U.hom ≫ (F.toFanHom.finiteFanSchemeHom k₀) ≫
+        (Φ.torusTranslationIso k₀ 1).hom = T.hom := by
+        simp only [F, FanEquiv.toFanHom_refl, FanHom.finiteFanSchemeHom_id,
+          Fan.torusTranslationIso_one,
           Iso.refl_hom]
         exact (Category.comp_id U.hom).trans hh.symm
       have hcomp : U.hom.toRationalMap.comp
-          (F.toFanHom.algebraicMap ≫ (Φ.torusTranslation 1).hom).toRationalMap =
+          ((F.toFanHom.finiteFanSchemeHom k₀) ≫ (Φ.torusTranslationIso k₀ 1).hom).toRationalMap =
             T.hom.toRationalMap := by
         rw [Scheme.RationalMap.comp_toRationalMap, Scheme.Hom.toRationalMap_compHom, hf]
-      obtain ⟨hm, hx⟩ := F.comp_xEvaluation_of_resolved_toric_iso hΦ b b r s σ
+      obtain ⟨hm, hx⟩ := F.comp_xEvaluation_of_resolved_toric_iso k₀ hΦ b b r s σ
         (centerCharacter c) (centerCharacter d) 1 hray hdet (fun j ↦ by
           rw [← hray j]
-          apply (F.comap_internalCenter_toricIso_eq_iff b b hdet hΦ (r (σ j)) 1 _ _).mpr
+          apply (F.comap_internalCenter_toricIso_eq_iff k₀ b b hdet hΦ (r (σ j)) 1 _ _).mpr
           simpa [centerCharacter, Finsupp.linearEquivFunOnFinite_symm_single] using
             congrArg Prod.snd (hσ j)) U.hom T.hom hcomp U.exchangeMatrix U.exchangeMatrix_matrix
       refine ⟨SkewExchangeMatrix.ext (T.exchangeMatrix_matrix.trans hm.symm), ?_, ?_⟩
@@ -100,11 +105,11 @@ theorem exists_relabel (U T : OrderedToricModel B m) (hb : T.basis = U.basis) :
       U.HasBoundarySign T 1 ∧
       (∀ (a : Additive (LineBundleClass X[U.fan])) (x : Fin m → ℤ),
         T.picardMarking (Additive.ofMul (LineBundleClass.pullback
-          (eqToHom (congrArg Fan.algebraicRealization hfan)) a.toMul), x ∘ σ) =
+          (eqToHom (congrArg (Fan.finiteFanScheme k₀) hfan)) a.toMul), x ∘ σ) =
           U.picardMarking (a, x)) ∧
       let w : Word U.exchangeMatrix T.exchangeMatrix :=
         hmat.symm ▸ ((Generator.permute σ).toStep U.exchangeMatrix).toPath
-      ∃ h, U.xEvaluation.compOfDefined (w.xRationalMap ℂ) h = T.xEvaluation := by
+      ∃ h, U.xEvaluation.compOfDefined (w.xRationalMap k₀) h = T.xEvaluation := by
   let : Smooth (Z ↘ S) := SmoothOfRelativeDimension.smooth 2 (Z ↘ S)
   let : IsLocallyNoetherian Z := LocallyOfFiniteType.isLocallyNoetherian (Z ↘ S)
   cases U with
@@ -113,13 +118,13 @@ theorem exists_relabel (U T : OrderedToricModel B m) (hb : T.basis = U.basis) :
     | mk Ψ hΨ K b' s d e' he' hp' =>
       cases hb
       obtain ⟨hfan, σ, hσ, horder, hboundary, hmark⟩ :=
-        Fan.exists_reindex_of_toric_internal_factorizations b B.isComplete hΦ hΨ J K
+        Fan.exists_reindex_of_toric_internal_factorizations k₀ b B.isComplete hΦ hΨ J K
           r s c d e e' he he' hp hp'
       subst Ψ
       let U : OrderedToricModel B m := ⟨Φ, hΦ, J, b, r, c, e, he, hp⟩
       let T : OrderedToricModel B m := ⟨Φ, hΨ, K, b, s, d, e', he', hp'⟩
       have hN := (Module.finrank_eq_card_basis b).trans (Fintype.card_fin 2)
-      let : IsModification π[J] := J.isModification_algebraicMap
+      let : IsModification π[J] := J.isModification_finiteFanSchemeHom k₀
         B.isRegular hΦ B.isComplete.nonempty_cones hN
       have hh : T.hom = U.hom := π[J].eq_of_comp_eq_of_isModification
         (T.hom_comp_subdivision.trans U.hom_comp_subdivision.symm)
@@ -142,7 +147,7 @@ reframed and relabeled to match the prescribed target, including the strict boun
 and the pullback of every marked Picard class. The resulting typed word carries the
 source X evaluation to the prescribed target evaluation at the generic point.
 Its inversion sign compares the branch orientations of the prescribed models. -/
-theorem exists_word_of_resolved_sarkisov_path_to_model [Z.IsProjectiveOver ℂ]
+theorem exists_word_of_resolved_sarkisov_path_to_model [Z.IsProjectiveOver k₀]
     (p : SarkisovPath A B) (U : OrderedToricModel A m) (T : OrderedToricModel B m) :
     ∃ (W R : OrderedToricModel B m)
       (q : @Quiver.Path _ (presentationQuiver m) ⟨A, U⟩ ⟨B, W⟩)
@@ -160,9 +165,9 @@ theorem exists_word_of_resolved_sarkisov_path_to_model [Z.IsProjectiveOver ℂ]
       U.HasBoundarySign T ((-1 : ℤˣ) ^ w.inversionCount) ∧
       (∀ (a : Additive (LineBundleClass X[R.fan])) (x : Fin m → ℤ),
         T.picardMarking (Additive.ofMul (LineBundleClass.pullback
-          (eqToHom (congrArg Fan.algebraicRealization hfan)) a.toMul), x ∘ σ) =
+          (eqToHom (congrArg (Fan.finiteFanScheme k₀) hfan)) a.toMul), x ∘ σ) =
           R.picardMarking (a, x)) ∧
-      ∃ h, U.xEvaluation.compOfDefined (w.xRationalMap ℂ) h = T.xEvaluation := by
+      ∃ h, U.xEvaluation.compOfDefined (w.xRationalMap k₀) h = T.xEvaluation := by
   obtain ⟨W, u, q, hq, hcomm, huSign, hu⟩ := exists_word_of_resolved_sarkisov_path p U
   obtain ⟨R, v, hb, href, hm, hvSign, hv⟩ := W.exists_word_reframe T.basis
   obtain ⟨hfan, σ, hmat, href', hσ, horder, hboundary, htSign, hmark, ht⟩ :=

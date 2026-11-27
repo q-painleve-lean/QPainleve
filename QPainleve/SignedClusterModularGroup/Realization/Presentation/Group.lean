@@ -34,19 +34,22 @@ open Scheme Scheme.IdealSheafData
 
 namespace QPainleve.SignedClusterModularGroup.CompleteToricPresentation
 
+variable {k₀ : Type} [Field k₀] [IsAlgClosed k₀] [Uncountable k₀] [NeZero (2 : k₀)]
+
 open GeometricRealization
 
-local notation "S" => Spec (CommRingCat.of ℂ)
-local notation "Centers[" r "]" => Over.mk (structureMap ℂ (Fin r → ℤ))
-local notation "XTor[" r "]" => scheme ℂ (Fin r →₀ ℤ)
+local notation "S" => Spec (CommRingCat.of k₀)
+local notation "Centers[" r "]" => Over.mk (structureMap k₀ (Fin r → ℤ))
+local notation "XTor[" r "]" => scheme k₀ (Fin r →₀ ℤ)
 local notation "classOf(" h ")" => (LineBundleClass.mk (IsEffectiveCartier.toInvertibleSheaf h))⁻¹
 
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {b : Module.Basis (Fin 2) ℤ N} {r n : ℕ} [NeZero n]
   {L γ : Type} [AddCommGroup L] {B : LinearMap.BilinForm ℤ L}
   {E : SkewExchangeMatrix (Fin r)}
-  (Q : CompleteToricPresentation i b r L γ)
-  {c : Point Centers[r]} {M₀ : MarkedSurface ℂ n B XTor[r]}
+  (Q : CompleteToricPresentation k₀ i b r L γ)
+  {c : Point (Over.mk (QPainleve.CharacterTorus.structureMap k₀ (Fin r →
+    ℤ)))} {M₀ : MarkedSurface k₀ n B (QPainleve.CharacterTorus.scheme k₀ (Fin r →₀ ℤ))}
 
 /-- The signed and unsigned opposite cluster modular groups of a complete toric
 presentation of a primitive nef square-zero anticanonical cycle are the signed
@@ -58,10 +61,10 @@ theorem exists_picardGroupEquivs_of_nodal_model
     (href : Q.HasNodalModel c M₀)
     (hE : E.matrix = chargeExchangeMatrix b.detDualEquiv.toLinearMap (Fan.rayChargeMap Q.rays))
     (hprim : IsPrimitive (Additive.ofMul classOf(M₀.isEffectiveCartier_boundaryIdeal)))
-    (hnef : (classOf(M₀.isEffectiveCartier_boundaryIdeal)).IsNef ℂ (M₀.surface ↘ S))
-    (hsq : Chow.classIntersectionNumber ℂ M₀.surface classOf(M₀.isEffectiveCartier_boundaryIdeal)
+    (hnef : (classOf(M₀.isEffectiveCartier_boundaryIdeal)).IsNef k₀ (M₀.surface ↘ S))
+    (hsq : Chow.classIntersectionNumber k₀ M₀.surface classOf(M₀.isEffectiveCartier_boundaryIdeal)
       classOf(M₀.isEffectiveCartier_boundaryIdeal) = 0) :
-    ∃ P : NodalPicardGroupIdentification (B := B) Q ℂ E
+    ∃ P : NodalPicardGroupIdentification (B := B) Q k₀ E
         (M₀.boundaryClass M₀.isEffectiveCartier_boundaryIdeal),
       P.family c = M₀ := by
   obtain ⟨M, hD, hM, hfamily⟩ :=

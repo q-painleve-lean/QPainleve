@@ -8,7 +8,6 @@ module
 public import QPainleve.Geometry.Toric.Fan.Logarithmic.Subdivision
 public import QPainleve.SignedClusterModularGroup.SarkisovDegree.Plane.VertexBlowup
 
-import Mathlib.Analysis.Complex.Polynomial.Basic
 import QPainleve.AlgebraicGeometry.Modules.Differentials.PoleIdeal
 import QPainleve.SignedClusterModularGroup.SarkisovDegree.Plane.Multiplicity
 
@@ -35,15 +34,17 @@ open TauCeti.Toric
 
 namespace QPainleve.BlowupTower.IsClosedPointTower
 
+variable (k₀ : Type) [Field k₀] [IsAlgClosed k₀]
+
 attribute [local instance] MvPolynomial.gradedAlgebra
 
-local notation "S" => Spec (CommRingCat.of ℂ)
-local notation "Plane" => Proj (homogeneousSubmodule ℂ (Fin 3 → ℂ))
-local notation "H" => mk (Proj.symmetricAlgebraTwistingBundle ℂ (Fin 3 → ℂ) 1)
-local notation "degree" => Module.Basis.picardTwistEquiv (Pi.basisFun ℂ (Fin 3))
+local notation "S" => Spec (CommRingCat.of k₀)
+local notation "Plane" => Proj (homogeneousSubmodule k₀ (Fin 3 → k₀))
+local notation "H" => mk (Proj.symmetricAlgebraTwistingBundle k₀ (Fin 3 → k₀) 1)
+local notation "degree" => Module.Basis.picardTwistEquiv (Pi.basisFun k₀ (Fin 3))
 local notation "s" => (Plane ↘ S)
-local notation "X[" A "]" => Fan.algebraicRealization A
-local notation "B[" A "," h "]" => Fan.boundaryIdeal A (Fan.IsComplete.nonempty_cones h)
+local notation "X[" A "]" => Fan.finiteFanScheme k₀ A
+local notation "B[" A "," h "]" => Fan.toricBoundaryIdeal k₀ A (Fan.IsComplete.nonempty_cones h)
 
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} (d : Basis (Fin 2) ℤ N) (hi : IsIntegralLattice i) (a : Option (Fin 2))
@@ -55,49 +56,52 @@ local notation "σ" => Fan.projectiveSpaceMaximalCone d hi a
 local notation "Φ" => Fan.starSubdivisionAlong Π hΠ (Subtype.property σ)
 local notation "hΦ" => Fan.isRegular_starSubdivisionAlong Π hΠ (Subtype.property σ)
 local notation "π[" h "]" =>
-  FanHom.algebraicMap (Fan.IsSubdivision.toFanHom
+  FanHom.finiteFanSchemeHom k₀ (Fan.IsSubdivision.toFanHom
     (Fan.starSubdivisionAlong_isSubdivision Π hΠ (Subtype.property σ) h))
 local notation "hcΦ[" h "]" =>
   Iff.mpr (Fan.IsSubdivision.isComplete_iff
     (Fan.starSubdivisionAlong_isSubdivision Π hΠ (Subtype.property σ) h)) hcΠ
 local notation "eP" =>
-  Fan.projectivePlaneIso d hi ≪≫ Module.Basis.polynomialProjIso (Pi.basisFun ℂ (Fin 3))
-local notation "p" => (Fan.distinguishedPointHom Π σ ≫ Iso.hom eP) (IsLocalRing.closedPoint ℂ)
+  Fan.projectivePlaneIso k₀ d hi ≪≫ Module.Basis.polynomialProjIso (Pi.basisFun k₀ (Fin 3))
+local notation "p" => (Fan.distinguishedSection (R := k₀) Π σ ≫
+  Iso.hom eP) (IsLocalRing.closedPoint k₀)
 local notation "rankTwo" => Eq.trans (finrank_eq_card_basis d) (Fintype.card_fin 2)
 
+variable [PerfectField k₀] in
+omit [IsAlgClosed k₀] in
 private theorem poleIdeal_of_vertex_projection {Y : Scheme} [IsIntegral Y] [Y.Over S]
     [SmoothOfRelativeDimension 2 (Y ↘ S)] (hσ : (σ).val ≠ ⊥)
     (q : Y ⟶ X[Φ]) (f : Y ⟶ Plane) [q.IsOver S] [f.IsOver S] [IsDominant q]
     (hq : q ≫ π[hσ] ≫ (eP).hom = f) (D : Y.IdealSheafData) :
     letI : Smooth (Y ↘ S) := SmoothOfRelativeDimension.smooth 2 _
-    ((B[Π,hcΠ]).comap (eP).inv).comap f = D * ramificationIdealSheaf ℂ f →
-      (B[Φ,hcΦ[hσ]]).comap q = D * ramificationIdealSheaf ℂ q := by
+    ((B[Π,hcΠ]).comap (eP).inv).comap f = D * ramificationIdealSheaf k₀ f →
+      (B[Φ,hcΦ[hσ]]).comap q = D * ramificationIdealSheaf k₀ q := by
   dsimp only
   intro hf
   let : Smooth (Y ↘ S) := SmoothOfRelativeDimension.smooth 2 _
   let : Nonempty (Π).cones := hcΠ.nonempty_cones
   let : Nonempty (Φ).cones := Fan.IsComplete.nonempty_cones hcΦ[hσ]
   let : SmoothOfRelativeDimension 2 (X[Π] ↘ S) := by
-    simpa only [Fan.algebraicRealization_over, rankTwo] using
-      (Π).smoothOfRelativeDimension_algebraicRealizationStructureMap hΠ
+    simpa only [Fan.finiteFanScheme_over k₀, rankTwo] using
+      (Π).smoothOfRelativeDimension_finiteFanSchemeToSpec k₀ hΠ
   let : SmoothOfRelativeDimension 2 (X[Φ] ↘ S) := by
-    simpa only [Fan.algebraicRealization_over, rankTwo] using
-      (Φ).smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
-  let := Fan.projectivePlaneIso_trans_polynomialProjIso_hom_isOver d hi (Pi.basisFun ℂ (Fin 3))
+    simpa only [Fan.finiteFanScheme_over k₀, rankTwo] using
+      (Φ).smoothOfRelativeDimension_finiteFanSchemeToSpec k₀ hΦ
+  let := Fan.projectivePlaneIso_trans_polynomialProjIso_hom_isOver k₀ d hi (Pi.basisFun k₀ (Fin 3))
   let : (eP).inv.IsOver S := inferInstance
-  have h := comap_eq_mul_ramificationIdealSheaf_comp ℂ f (eP).inv 2
+  have h := comap_eq_mul_ramificationIdealSheaf_comp k₀ f (eP).inv 2
     (D := B[Π,hcΠ]) (P := (B[Π,hcΠ]).comap (eP).inv) (by simp only [
       ramificationIdealSheaf_eq_top_of_isOpenImmersion, mul_top]) hf
   have he : f ≫ (eP).inv = q ≫ π[hσ] := by
     rw [← hq, Category.assoc, Category.assoc, Iso.hom_inv_id, Category.comp_id]
-  have h' : (B[Π,hcΠ]).comap (q ≫ π[hσ]) = D * ramificationIdealSheaf ℂ (q ≫ π[hσ]) :=
+  have h' : (B[Π,hcΠ]).comap (q ≫ π[hσ]) = D * ramificationIdealSheaf k₀ (q ≫ π[hσ]) :=
     (congrArg (B[Π,hcΠ]).comap he.symm).trans
-      (h.trans (congrArg (D * ·) (ramificationIdealSheaf_congr ℂ he)))
+      (h.trans (congrArg (D * ·) (ramificationIdealSheaf_congr k₀ he)))
   let J := (Π).starSubdivisionAlong_isSubdivision hΠ (σ).property hσ
-  have hB := J.comap_boundaryIdeal_eq_mul_ramificationIdealSheaf hΠ hΦ hcΠ rankTwo
+  have hB := J.comap_boundaryIdeal_eq_mul_ramificationIdealSheaf k₀ hΠ hΦ hcΠ rankTwo
   have hCartier :=
-    (J.isEffectiveCartier_ramificationIdealSheaf hΠ hΦ hcΠ rankTwo).comap_of_isDominant q
-  exact (comap_eq_mul_ramificationIdealSheaf_comp_iff ℂ q π[hσ] 2 hCartier hB).mp h'
+    (J.isEffectiveCartier_ramificationIdealSheaf k₀ hΠ hΦ hcΠ rankTwo).comap_of_isDominant q
+  exact (comap_eq_mul_ramificationIdealSheaf_comp_iff k₀ q π[hσ] 2 hCartier hB).mp h'
 
 /-- A first center of order greater than one third of the plane degree over a specified
 toric vertex gives a logarithmic Sarkisov decrease. The regular representative of the
@@ -120,7 +124,7 @@ theorem exists_sarkisov_decrease_of_logarithmic_plane_vertex
     let w := (T.picardMarking hT s).symm (Additive.ofMul (pullback g H))
     let δ := degree w.1
     let m := fun l ↦ -w.2 l
-    ((B[Π,hcΠ]).comap (eP).inv).comap T.toBase = D * ramificationIdealSheaf ℂ T.toBase →
+    ((B[Π,hcΠ]).comap (eP).inv).comap T.toBase = D * ramificationIdealSheaf k₀ T.toBase →
     δ < 3 * m j →
     ∃ (hσ : (σ).val ≠ ⊥) (b : Basis (Fin 2) ℤ N) (r : Fin 4 ≃ (Φ).Ray)
       (hr : (fun l ↦ (r l).primitiveGenerator) = ![b 0, b 1, -b 0, (1 : ℤ) • b 0 - b 1])
@@ -129,8 +133,8 @@ theorem exists_sarkisov_decrease_of_logarithmic_plane_vertex
       letI : Nonempty (Π).cones := hcΠ.nonempty_cones
       letI : Nonempty (Φ).cones := Fan.IsComplete.nonempty_cones hcΦ[hσ]
       letI : SmoothOfRelativeDimension 2 (X[Φ] ↘ S) := by
-        simpa only [rankTwo, Fan.algebraicRealization_over] using
-          (Φ).smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
+        simpa only [rankTwo, Fan.finiteFanScheme_over k₀] using
+          (Φ).smoothOfRelativeDimension_finiteFanSchemeToSpec k₀ hΦ
       letI : Smooth (X[Φ] ↘ S) := SmoothOfRelativeDimension.smooth 2 _
       letI : IsNoetherian X[Φ] := isNoetherian_of_finiteType (X[Φ] ↘ S)
       letI : Z.Over S := ⟨U.toBase ≫ X[Φ] ↘ S⟩
@@ -139,17 +143,17 @@ theorem exists_sarkisov_decrease_of_logarithmic_plane_vertex
       letI : Smooth (Z ↘ S) := SmoothOfRelativeDimension.smooth 2 _
       ∃ hqOver : q.IsOver S,
         letI := hqOver
-        (X[Φ]).IsProjectiveOver ℂ ∧
+        (X[Φ]).IsProjectiveOver k₀ ∧
         q ≫ π[hσ] ≫ (eP).hom = T.toBase ∧
         T.toBase.toRationalMap.comp
-          ((eP).inv.toRationalMap.comp ((Π).denseTorusPartialIso Φ).toRationalMap) =
+          ((eP).inv.toRationalMap.comp ((Π).denseTorusPartialIso k₀ Φ).toRationalMap) =
           q.toRationalMap ∧
-        (B[Φ,hcΦ[hσ]]).comap q = D * ramificationIdealSheaf ℂ q ∧
-        (B[Φ,hcΦ[hσ]]).comap U.toBase = D.comap k.inv * ramificationIdealSheaf ℂ U.toBase ∧
+        (B[Φ,hcΦ[hσ]]).comap q = D * ramificationIdealSheaf k₀ q ∧
+        (B[Φ,hcΦ[hσ]]).comap U.toBase = D.comap k.inv * ramificationIdealSheaf k₀ U.toBase ∧
         (k.inv ≫ g) ≫ s = U.toBase ≫ X[Φ] ↘ S ∧
         Scheme.BirationalOver (k.inv ≫ g) (𝟙 Plane) ∧
         let v := (U.picardMarking hU (X[Φ] ↘ S)).symm (Additive.ofMul (pullback (k.inv ≫ g) H))
-        let C := (Φ).hirzebruchPicardBasis b 1 hΦ r hr
+        let C := (Φ).hirzebruchPicardBasis k₀ b 1 hΦ r hr
         C.repr v.1 0 = δ ∧ C.repr v.1 1 = δ - m j ∧
         (∀ l : Fin n, -v.2 l = m (j.succAbove l)) ∧
         0 < C.repr v.1 1 ∧
@@ -164,13 +168,13 @@ theorem exists_sarkisov_decrease_of_logarithmic_plane_vertex
   let : SmoothOfRelativeDimension 2 (Y ↘ S) := hT.smoothOfRelativeDimension s
   let : Smooth (Y ↘ S) := SmoothOfRelativeDimension.smooth 2 _
   obtain ⟨hσ, b, r, hr, Z, U, hU, k, hq, hrat, hg', hbir', hcoords⟩ :=
-    hT.exists_sarkisov_decrease_of_plane_vertex d hi a j hj hfirst g hg hbir
+    hT.exists_sarkisov_decrease_of_plane_vertex k₀ d hi a j hj hfirst g hg hbir
   let := hcΠ.nonempty_cones
   let := Fan.IsComplete.nonempty_cones hcΦ[hσ]
-  let := Fan.projectivePlaneIso_trans_polynomialProjIso_hom_isOver d hi (Pi.basisFun ℂ (Fin 3))
+  let := Fan.projectivePlaneIso_trans_polynomialProjIso_hom_isOver k₀ d hi (Pi.basisFun k₀ (Fin 3))
   let : SmoothOfRelativeDimension 2 (X[Φ] ↘ S) := by
-    simpa only [rankTwo, Fan.algebraicRealization_over] using
-      (Φ).smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
+    simpa only [rankTwo, Fan.finiteFanScheme_over k₀] using
+      (Φ).smoothOfRelativeDimension_finiteFanSchemeToSpec k₀ hΦ
   let : Smooth (X[Φ] ↘ S) := SmoothOfRelativeDimension.smooth 2 _
   let : IsNoetherian X[Φ] := isNoetherian_of_finiteType (X[Φ] ↘ S)
   let : Z.Over S := ⟨U.toBase ≫ X[Φ] ↘ S⟩
@@ -186,22 +190,22 @@ theorem exists_sarkisov_decrease_of_logarithmic_plane_vertex
     simpa only [q, Category.assoc, comp_over (eP).hom S, comp_over π[hσ] S,
       comp_over T.toBase S] using he⟩
   let := hqOver
-  have hqPole := poleIdeal_of_vertex_projection d hi a hσ q T.toBase hq D hpole
+  have hqPole := poleIdeal_of_vertex_projection k₀ d hi a hσ q T.toBase hq D hpole
   let : k.hom.IsOver S := ⟨(Category.assoc _ _ _).symm.trans (comp_over q S)⟩
   let : k.inv.IsOver S := inferInstance
-  have htransport := comap_eq_mul_ramificationIdealSheaf_comp ℂ k.inv q 2
+  have htransport := comap_eq_mul_ramificationIdealSheaf_comp k₀ k.inv q 2
     (Q := D.comap k.inv) hqPole
     (by simp only [ramificationIdealSheaf_eq_top_of_isOpenImmersion, mul_top])
   have he : k.inv ≫ q = U.toBase := by
     simp only [q, Iso.inv_hom_id_assoc]
   have hUPole : (B[Φ,hcΦ[hσ]]).comap U.toBase =
-      D.comap k.inv * ramificationIdealSheaf ℂ U.toBase :=
+      D.comap k.inv * ramificationIdealSheaf k₀ U.toBase :=
     (congrArg (B[Φ,hcΦ[hσ]]).comap he.symm).trans
-      (htransport.trans (congrArg (D.comap k.inv * ·) (ramificationIdealSheaf_congr ℂ he)))
+      (htransport.trans (congrArg (D.comap k.inv * ·) (ramificationIdealSheaf_congr k₀ he)))
   obtain ⟨hδ, -, -⟩ := hT.plane_degree_eq_one_or_exists_high_baseCenter g hg hbir
   obtain ⟨h₁, h₂, h₃, hlt⟩ := hcoords
   exact ⟨hσ, b, r, hr, Z, U, hU, k, hqOver,
-    Fan.isProjectiveOver_projectivePlane_vertex_starSubdivision d hi a,
+    Fan.isProjectiveOver_projectivePlane_vertex_starSubdivision k₀ d hi a,
     hq, hrat, hqPole, hUPole, hg', hbir', h₁, h₂, h₃, hlt hδ hhigh⟩
 
 end QPainleve.BlowupTower.IsClosedPointTower

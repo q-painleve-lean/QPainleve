@@ -33,25 +33,27 @@ open QPainleve.CharacterTorus QPainleve.Cluster
 
 namespace QPainleve.SignedClusterModularGroup.GeometricRealization
 
+variable {k₀ : Type} [Field k₀] [IsAlgClosed k₀]
+
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {b : Module.Basis (Fin 2) ℤ N}
   {r n : ℕ} [NeZero n] {L γ : Type} [AddCommGroup L]
   {H : LinearMap.BilinForm ℤ L} {E : SkewExchangeMatrix (Fin r)}
 
-local notation "Centers[" r "]" => Over.mk (structureMap ℂ (Fin r → ℤ))
-local notation "XTor[" r "]" => scheme ℂ (Fin r →₀ ℤ)
-local notation "Cnil[" P "]" => Path.centerPartialMap ℂ Path.nil P
-local notation "S" => Spec (CommRingCat.of ℂ)
-local notation "U₀[" P "]" => Path.centerOpen ℂ Path.nil P
+local notation "Centers[" r "]" => Over.mk (structureMap k₀ (Fin r → ℤ))
+local notation "XTor[" r "]" => scheme k₀ (Fin r →₀ ℤ)
+local notation "Cnil[" P "]" => Path.centerPartialMap k₀ Path.nil P
+local notation "S" => Spec (CommRingCat.of k₀)
+local notation "U₀[" P "]" => Path.centerOpen k₀ Path.nil P
 
-local instance (Q : CompleteToricPresentation i b r L γ) : Nonempty Q.fan.cones :=
+local instance (Q : CompleteToricPresentation k₀ i b r L γ) : Nonempty Q.fan.cones :=
   Q.complete.nonempty_cones
-local instance (Q : CompleteToricPresentation i b r L γ) : NeZero Q.length := Q.neZero
-local instance (Q : CompleteToricPresentation i b r L γ) :
-    PrestableFamily ((Q.fan.boundaryIdeal Q.complete.nonempty_cones).subscheme ↘ S) :=
+local instance (Q : CompleteToricPresentation k₀ i b r L γ) : NeZero Q.length := Q.neZero
+local instance (Q : CompleteToricPresentation k₀ i b r L γ) :
+    PrestableFamily ((Q.fan.toricBoundaryIdeal k₀ Q.complete.nonempty_cones).subscheme ↘ S) :=
   Q.prestable
 
-local notation "pointChar(" c ")" => pointsEquiv ℂ _
+local notation "pointChar(" c ")" => pointsEquiv k₀ _
   (Subtype.mk (Over.Hom.left c) (Over.w c))
 local notation "classOf(" h ")" =>
   (LineBundleClass.mk (Scheme.IdealSheafData.IsEffectiveCartier.toInvertibleSheaf h))⁻¹
@@ -70,23 +72,23 @@ label `j`, the marked Picard pullback sends `D l` to `D (η • (l - j))`, where
 `η` is the inversion sign. The reference contraction supplies the order table,
 and the reached models allow this realization to compute the descended Picard action. -/
 theorem exists_realize_signed_loop_with_boundary_label
-    (Q : CompleteToricPresentation i b r L γ) (P : ChargeSeed E N)
+    (Q : CompleteToricPresentation k₀ i b r L γ) (P : ChargeSeed E N)
     (hform : P.form = b.detDualEquiv.toLinearMap) (hcharge : P.charge = Fan.rayChargeMap Q.rays)
-    (M : Point Centers[r] → MarkedSurface ℂ n H XTor[r]) {c₀ : Point Centers[r]}
+    (M : Point Centers[r] → MarkedSurface k₀ n H XTor[r]) {c₀ : Point Centers[r]}
     (p₀ : fiber[Q,M,c₀]) (hnodal₀ : p₀.IsNodalContraction)
     (p : ∀ (c : Point Centers[r]) (_ : c.left (default : S) ∈ U₀[P]), fiber[Q,M,c])
     (hnodal : ∀ c hc, (p c hc).IsNodalContraction)
-    (hnef : classOf(cartier(M c₀)).IsNef ℂ ((M c₀).surface ↘ S))
-    (hsq : Chow.classIntersectionNumber ℂ (M c₀).surface
+    (hnef : classOf(cartier(M c₀)).IsNef k₀ ((M c₀).surface ↘ S))
+    (hsq : Chow.classIntersectionNumber k₀ (M c₀).surface
       classOf(cartier(M c₀)) classOf(cartier(M c₀)) = 0)
     (hprim : IsPrimitive (Additive.ofMul classOf(cartier(M c₀))))
     (hmark : ∀ c j, (M c).boundaryClass (cartier(M c)) j = boundaryClasses[M,c₀] j)
     (w : Word E E) :
-    let C := w.centerPartialMap ℂ P
+    let C := w.centerPartialMap k₀ P
     let orders := p₀.numberedBoundaryOrders (cartier(M c₀))
     let d := boundaryClasses[M,c₀]
     let η := (-1 : ℤˣ) ^ w.inversionCount
-    ∃ R : GeometricRealization (T₀ := Centers[r]) (T₁ := Centers[r]) M M C (w.xRationalMap ℂ),
+    ∃ R : GeometricRealization (T₀ := Centers[r]) (T₁ := Centers[r]) M M C (w.xRationalMap k₀),
       R.orientation = η ∧
       (∀ x : CenterPoint (U := Centers[r]) (V := Centers[r]) C,
         let c := x ≫ PartialMap.domainTarget (X := Centers[r]) (Y := Centers[r]) C
@@ -98,7 +100,7 @@ theorem exists_realize_signed_loop_with_boundary_label
             d (η • (l - (ZMod.finEquiv n).toEquiv j)) := by
   dsimp only
   have hreference := Q.hasNodalModel_of_contraction hnodal₀
-  let : (M c₀).surface.IsProjectiveOver ℂ := (M c₀).projective
+  let : (M c₀).surface.IsProjectiveOver k₀ := (M c₀).projective
   let : SmoothOfRelativeDimension 2 ((M c₀).surface ↘ S) := (M c₀).smooth
   have hindex := hreference.chargeIndex_ne_zero (cartier(M c₀)) hnef hsq hprim
   have hE := P.matrix_eq.symm.trans (congrArg₂ chargeExchangeMatrix hform hcharge)
@@ -110,11 +112,11 @@ theorem exists_realize_signed_loop_with_boundary_label
     Q.hasNodalModel_of_contraction (hnodal _ hx)
   obtain ⟨R, hη, -, hmodels⟩ := exists_realize_signed_loop w P Q hform hcharge M models hreference
     (fun c ↦ cartier(M c)) hnef hsq hprim boundaryClasses[M,c₀] hmark
-  let : Q.fan.algebraicRealization.IsProjectiveOver ℂ :=
-    Q.fan.isProjectiveOver_algebraicRealization_of_isComplete Q.regular Q.complete b
+  let : (Q.fan.finiteFanScheme k₀).IsProjectiveOver k₀ :=
+    Q.fan.isProjectiveOver_finiteFanScheme_of_isComplete k₀ Q.regular Q.complete b
   let := Q.smoothOfRelativeDimension_fan
   let := Q.isPerfPair_auxiliaryPicardForm
-  obtain ⟨x⟩ := nonempty_centerPoint (T₀ := Centers[r]) (T₁ := Centers[r]) (w.centerPartialMap ℂ P)
+  obtain ⟨x⟩ := nonempty_centerPoint (T₀ := Centers[r]) (T₁ := Centers[r]) (w.centerPartialMap k₀ P)
   obtain ⟨hx₀, hx₁⟩ := w.centerPoint_endpoints_mem_noncollision P hker x
   have hfind := R.tropicalBoundaryLabel_eq_some
     (LinearMap.IsPerfPair.separatingRight inferInstance) x Q.complete hE hindex

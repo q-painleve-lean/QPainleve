@@ -6,7 +6,6 @@ Authors: The QPainleve contributors
 module
 
 public import QPainleve.Algebra.Cluster.Tropical.Basic
-public import QPainleve.Geometry.Toric.Fan.Boundary.Basic
 public import QPainleve.Geometry.Toric.Fan.Mutation.Pullback
 import QPainleve.Geometry.Toric.Fan.Boundary.Binomial
 import TauCeti.AlgebraicGeometry.WeilDivisor.Scheme.Order
@@ -33,8 +32,9 @@ open TauCeti.AlgebraicGeometry.Scheme (ord_functionFieldMap)
 
 namespace TauCeti.Toric.Fan
 
-variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V] {i : N →+ V}
-  (Φ : Fan i) (b : Module.Basis (Fin 2) ℤ N) {v : N} (c : ℂˣ)
+variable {K : Type} [CommRing K] [IsDomain K] [IsNoetherianRing K]
+  {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V] {i : N →+ V}
+  (Φ : Fan i) (b : Module.Basis (Fin 2) ℤ N) {v : N} (c : Kˣ)
 
 /-- Every toric boundary prime lies in the open complement of the pivot fiber. -/
 theorem rayBoundaryPoint_mem_mutationComplement (hv : v ≠ 0)
@@ -42,33 +42,23 @@ theorem rayBoundaryPoint_mem_mutationComplement (hv : v ≠ 0)
       (∀ x ∈ σ.val, 0 ≤ Φ.lattice.realCharacter (b.detDualEquiv v).toAddMonoidHom x) ∨
         ∀ x ∈ σ.val, Φ.lattice.realCharacter (b.detDualEquiv v).toAddMonoidHom x ≤ 0)
     (hΦ : Φ.IsRegular) (ρ : Φ.Ray) :
-    (Φ.rayBoundaryPoint hΦ ρ).val ∈ Φ.mutationComplement b h (c : ℂ) := by
+    (Φ.rayBoundaryChartPoint (R := K) hΦ ρ).val ∈ Φ.mutationComplement b h (c : K) := by
   let σ := ρ.toCone
   let hσ := Φ.isToricCone σ.property
   let hreg := (isRegular_iff.1 hΦ) _ σ.property
   let r := ρ.toToricRay Φ σ le_rfl
   obtain ⟨side, hs⟩ := Φ.exists_mutationChartCharacter_mem_dualSemigroup b σ (h σ)
   let q : dualSemigroup Φ.lattice σ.val := ⟨mutationChartCharacter b side, hs⟩
-  let p := hreg.rayPoint Φ.lattice hσ r
-  let A := toMultiplicativeAlgEquiv ℂ ℂ (dualSemigroup Φ.lattice σ.val)
   have hq : q ≠ 0 := fun h ↦
     hv ((mutationChartCharacter_eq_zero_iff b side).mp (congrArg Subtype.val h))
-  have ha : (cond side (c : ℂ) 1) ≠ 0 := by cases side <;> simp
-  have hbin : A (Φ.mutationChartBinomial side (c : ℂ) q) =
-      MonoidAlgebra.single 1 (cond side (c : ℂ) 1) +
-        MonoidAlgebra.single (ofAdd q) (cond side 1 (c : ℂ)) := by
-    simp only [A, mutationChartBinomial, map_add, toMultiplicativeAlgEquiv_single]
-    rfl
-  have hp := hreg.rayPoint_mem_basicOpen_binomial Φ.lattice hσ r hq ha
-    (cond side 1 (c : ℂ))
-  rw [← hbin] at hp
-  let y := Spec.map (CommRingCat.ofHom A.toAlgHom.toRingHom) p.val
-  have hy : y ∈ PrimeSpectrum.basicOpen (Φ.mutationChartBinomial side (c : ℂ) q) := hp
-  rw [← Φ.additiveAffineToricChartι_preimage_mutationComplement b σ side hs (c : ℂ) h]
-    at hy
-  rw [coe_rayBoundaryPoint, ← Φ.specMap_toMultiplicativeAlgEquiv_comp_additiveAffineToricChartι σ,
-    Scheme.Hom.comp_apply]
-  exact (Scheme.Hom.mem_preimage _).mp hy
+  have ha : (cond side (c : K) 1) ≠ 0 := by cases side <;> simp
+  have hp := hreg.rayChartPoint_mem_basicOpen_binomial K Φ.lattice hσ r hq ha
+    (cond side 1 (c : K))
+  change (hreg.rayChartPoint Φ.lattice hσ r K).val ∈
+    PrimeSpectrum.basicOpen (Φ.mutationChartBinomial side (c : K) q) at hp
+  rw [← Φ.affineChartι_preimage_mutationComplement b σ side hs (c : K) h] at hp
+  rw [coe_rayBoundaryChartPoint]
+  exact (Scheme.Hom.mem_preimage _).mp hp
 
 variable (hv : v ≠ 0) (hpos : PointedCone.hull ℝ {i v} ∈ Φ.cones)
   (hneg : PointedCone.hull ℝ {i (-v)} ∈ Φ.cones)
@@ -76,46 +66,47 @@ variable (hv : v ≠ 0) (hpos : PointedCone.hull ℝ {i v} ∈ Φ.cones)
 local notation "Ψ" => Φ.mutationFan b hv hpos hneg
 local notation "h₀" => Φ.detCharacter_nonneg_or_nonpos b hv hpos hneg
 local notation "h₁" => Φ.mutationDetCharacter_nonneg_or_nonpos b hv hpos hneg
-local notation "U₀" => Φ.mutationComplement b h₀ (c : ℂ)
-local notation "U₁" => mutationComplement (Ψ) b h₁ (c : ℂ)
-local notation "e" => Φ.mutationComplementIso b (c : ℂ) hv hpos hneg
-local notation "pb" => Φ.mutationComplementPullback b (c : ℂ) hv hpos hneg
+local notation "U₀" => Φ.mutationComplement b h₀ (c : K)
+local notation "U₁" => mutationComplement (Ψ) b h₁ (c : K)
+local notation "e" => Φ.mutationComplementIso b (c : K) hv hpos hneg
+local notation "pb" => Φ.mutationComplementPullback b (c : K) hv hpos hneg
 
 include hv hpos hneg in
 private theorem ord_mutationComplementPullback (x : (U₀).toScheme) :
     letI : Nonempty Φ.cones := ⟨⟨_, hpos⟩⟩
     letI : Nonempty (Ψ).cones := ⟨Φ.mutationFanConeEquiv b hv hpos hneg ⟨_, hpos⟩⟩
-    ∀ f : (Ψ).algebraicRealization.functionField,
-      Φ.algebraicRealization.ord (pb f) ((U₀).ι x) =
-        (Ψ).algebraicRealization.ord f (((e).hom ≫ (U₁).ι) x) := by
+    ∀ f : ((Ψ).finiteFanScheme K).functionField,
+      (Φ.finiteFanScheme K).ord (pb f) ((U₀).ι x) =
+        ((Ψ).finiteFanScheme K).ord f (((e).hom ≫ (U₁).ι) x) := by
   let : Nonempty Φ.cones := ⟨⟨_, hpos⟩⟩
   let : Nonempty (Ψ).cones := ⟨Φ.mutationFanConeEquiv b hv hpos hneg ⟨_, hpos⟩⟩
   intro f
-  let := Φ.isIntegral_mutationComplement_source b (c : ℂ) hv hpos hneg
-  let := Φ.isIntegral_mutationComplement_target b (c : ℂ) hv hpos hneg
+  let := Φ.isIntegral_mutationComplement_source b (c : K) hv hpos hneg
+  let := Φ.isIntegral_mutationComplement_target b (c : K) hv hpos hneg
   have := isLocallyNoetherian_of_isOpenImmersion (U₀).ι
   rw [← ord_functionFieldMap (U₀).ι, ← ord_functionFieldMap ((e).hom ≫ (U₁).ι)]
   exact congrArg (fun g ↦ (U₀).toScheme.ord g x) (by
     simpa only [CommRingCat.comp_apply] using ConcreteCategory.congr_hom
-      (Φ.mutationComplementPullback_comp_functionFieldMap b (c : ℂ) hv hpos hneg) f)
+      (Φ.mutationComplementPullback_comp_functionFieldMap b (c : K) hv hpos hneg) f)
 
 include hv hpos hneg in
 private theorem ord_mutationComplementPullback_character (hΦ : Φ.IsRegular) (ρ : Φ.Ray)
     (a : N →+ ℤ) :
     letI : Nonempty Φ.cones := ⟨⟨_, hpos⟩⟩
     letI : Nonempty (Ψ).cones := ⟨Φ.mutationFanConeEquiv b hv hpos hneg ⟨_, hpos⟩⟩
-    Φ.algebraicRealization.ord (pb ((Ψ).character (ofAdd a))) (Φ.rayBoundaryPoint hΦ ρ).val =
+    (Φ.finiteFanScheme K).ord (pb ((Ψ).functionFieldCharacter K (ofAdd a)))
+        (Φ.rayBoundaryChartPoint (R := K) hΦ ρ).val =
       a (Φ.mutationFanRayEquiv b hv hpos hneg ρ).primitiveGenerator := by
   let : Nonempty Φ.cones := ⟨⟨_, hpos⟩⟩
   let : Nonempty (Ψ).cones := ⟨Φ.mutationFanConeEquiv b hv hpos hneg ⟨_, hpos⟩⟩
   have hm : mutationChartCharacter b (v := v) false ≠ 0 := by simpa only
     [ne_eq, mutationChartCharacter_eq_zero_iff] using hv
-  obtain ⟨hne, ho⟩ := Φ.ord_rayBoundaryPoint_one_add_mul_character hΦ ρ c
+  obtain ⟨hne, ho⟩ := Φ.ord_rayBoundaryChartPoint_one_add_mul_character K hΦ ρ c
     (by simpa only [mutationChartCharacter_false] using hm)
-  rw [mutationComplementPullback_character,
-    Scheme.ord_mul ((Group.isUnit (ofAdd a)).map Φ.character).ne_zero (zpow_ne_zero _ hne),
-    Scheme.ord_zpow, ord_rayBoundaryPoint_character, ho, mutationFanRayEquiv_primitiveGenerator,
-    map_add, map_zsmul]
+  have ha := ((Group.isUnit (ofAdd a)).map (Φ.functionFieldCharacter K)).ne_zero
+  rw [mutationComplementPullback_character, Scheme.ord_mul ha (zpow_ne_zero _ hne),
+    Scheme.ord_zpow, ord_rayBoundaryChartPoint_character K, ho,
+    mutationFanRayEquiv_primitiveGenerator, map_add, map_zsmul]
   have h := b.detDualEquiv_swap v ρ.primitiveGenerator
   simp only [LinearMap.toAddMonoidHom_coe, Module.Basis.detDualEquiv_apply] at h ⊢
   have hmin : min 0 (-b.det ![ρ.primitiveGenerator, v]) =
@@ -129,34 +120,36 @@ include hv hpos hneg in
 point of the sheared ray divisor. -/
 theorem mutationComplementIso_hom_rayBoundaryPoint (hΦ : Φ.IsRegular) (ρ : Φ.Ray) :
     ((e).hom ≫ (U₁).ι)
-        ⟨(Φ.rayBoundaryPoint hΦ ρ).val,
+        ⟨(Φ.rayBoundaryChartPoint (R := K) hΦ ρ).val,
           Φ.rayBoundaryPoint_mem_mutationComplement b c hv h₀ hΦ ρ⟩ =
-      ((Ψ).rayBoundaryPoint ((Φ.isRegular_mutationFan_iff b hv hpos hneg).mpr hΦ)
+      ((Ψ).rayBoundaryChartPoint (R := K) ((Φ.isRegular_mutationFan_iff b hv hpos hneg).mpr hΦ)
         (Φ.mutationFanRayEquiv b hv hpos hneg ρ)).val := by
   let j := (e).hom ≫ (U₁).ι
   let x : (U₀).toScheme := ⟨_, Φ.rayBoundaryPoint_mem_mutationComplement b c hv h₀ hΦ ρ⟩
-  have hx : (U₀).ι x = (Φ.rayBoundaryPoint hΦ ρ).val := Scheme.Opens.ι_apply _ _
+  have hx : (U₀).ι x = (Φ.rayBoundaryChartPoint (R := K) hΦ ρ).val := Scheme.Opens.ι_apply _ _
   let hΨ := (Φ.isRegular_mutationFan_iff b hv hpos hneg).mpr hΦ
   let τ := Φ.mutationFanRayEquiv b hv hpos hneg ρ
   let hΦ₀ : Nonempty Φ.cones := ⟨ρ.toCone⟩
   let hΨ₀ : Nonempty (Ψ).cones := ⟨τ.toCone⟩
   have hx' : Order.coheight x = 1 := by
     rw [← coheight_eq_of_isOpenImmersion (U₀).ι, hx]
-    exact (Φ.rayBoundaryPoint hΦ ρ).property
+    exact (Φ.rayBoundaryChartPoint (R := K) hΦ ρ).property
   let y := CodimensionOnePoint.mapOfIsOpenImmersion j ⟨x, hx'⟩
-  have hy : y.val ∉ Set.range ((Ψ).denseTorusι hΨ₀) := by
-    have ht := Φ.mutationComplementIso_preimage_range_denseTorusι b (c : ℂ)
+  let hbot := (Ψ).bot_mem hΨ₀.some.property
+  have hy : y.val ∉ Set.range ((Ψ).affineChartι K ⟨⊥, hbot⟩) := by
+    have ht := Φ.mutationComplementIso_preimage_range_denseTorusι b (c : K)
       hv hpos hneg hΦ₀ hΨ₀
     rw [CodimensionOnePoint.coe_mapOfIsOpenImmersion]
-    exact fun h ↦ Φ.rayBoundaryPoint_notMem_range_denseTorusι hΦ ρ
+    exact fun h ↦ Φ.rayBoundaryChartPoint_notMem_zeroChart (R := K) hΦ ρ
+      (Φ.bot_mem hΦ₀.some.property)
       (hx ▸ (Set.ext_iff.mp ht x).mp h)
-  obtain ⟨σ, hσ⟩ : y ∈ Set.range ((Ψ).rayBoundaryPoint hΨ) :=
-    ((Ψ).range_rayBoundaryPoint hΨ hΨ₀).symm ▸ hy
-  have hpoint : ((Ψ).rayBoundaryPoint hΨ σ).val = j x :=
+  obtain ⟨σ, hσ⟩ : y ∈ Set.range ((Ψ).rayBoundaryChartPoint (R := K) hΨ) :=
+    ((Ψ).range_rayBoundaryChartPoint (R := K) hΨ hbot).symm ▸ hy
+  have hpoint : ((Ψ).rayBoundaryChartPoint (R := K) hΨ σ).val = j x :=
     (congrArg Subtype.val hσ).trans (CodimensionOnePoint.coe_mapOfIsOpenImmersion j _)
   have hgen (a : N →+ ℤ) : a σ.primitiveGenerator = a τ.primitiveGenerator := by
     let := hΨ₀
-    rw [← (Ψ).ord_rayBoundaryPoint_character hΨ σ, hpoint,
+    rw [← (Ψ).ord_rayBoundaryChartPoint_character K hΨ σ, hpoint,
       ← ord_mutationComplementPullback Φ b c hv hpos hneg x, hx]
     exact Φ.ord_mutationComplementPullback_character b c hv hpos hneg hΦ ρ a
   have hστ : σ = τ := Ray.primitiveGenerator_injective <|
@@ -169,14 +162,14 @@ mutation isomorphism, with ray labels given by the integral shear. -/
 theorem ord_mutationComplementPullback_rayBoundaryPoint (hΦ : Φ.IsRegular) (ρ : Φ.Ray) :
     letI : Nonempty Φ.cones := ⟨⟨_, hpos⟩⟩
     letI : Nonempty (Ψ).cones := ⟨Φ.mutationFanConeEquiv b hv hpos hneg ⟨_, hpos⟩⟩
-    ∀ f : (Ψ).algebraicRealization.functionField,
-      Φ.algebraicRealization.ord (pb f) (Φ.rayBoundaryPoint hΦ ρ).val =
-        (Ψ).algebraicRealization.ord f
-          ((Ψ).rayBoundaryPoint ((Φ.isRegular_mutationFan_iff b hv hpos hneg).mpr hΦ)
+    ∀ f : ((Ψ).finiteFanScheme K).functionField,
+      (Φ.finiteFanScheme K).ord (pb f) (Φ.rayBoundaryChartPoint (R := K) hΦ ρ).val =
+        ((Ψ).finiteFanScheme K).ord f
+          ((Ψ).rayBoundaryChartPoint (R := K) ((Φ.isRegular_mutationFan_iff b hv hpos hneg).mpr hΦ)
             (Φ.mutationFanRayEquiv b hv hpos hneg ρ)).val := by
   intro f
   let x : (U₀).toScheme := ⟨_, Φ.rayBoundaryPoint_mem_mutationComplement b c hv h₀ hΦ ρ⟩
-  have hx : (U₀).ι x = (Φ.rayBoundaryPoint hΦ ρ).val := Scheme.Opens.ι_apply _ _
+  have hx : (U₀).ι x = (Φ.rayBoundaryChartPoint (R := K) hΦ ρ).val := Scheme.Opens.ι_apply _ _
   rw [← hx, ord_mutationComplementPullback, mutationComplementIso_hom_rayBoundaryPoint]
 
 section CenterRays
@@ -224,19 +217,19 @@ source boundary valuation row. The target center parameters can be any nonzero
 scalars, since constants have order zero along every boundary ray. -/
 theorem ord_mutationComplementPullback_centerCharacter (B : SkewExchangeMatrix ι)
     (hB : ∀ j, B.matrix j k = d v(j) v(k)) (hΦ : Φ.IsRegular) (ρ : Φ.Ray)
-    (cₖ : ℂˣ) (a : ι → ℂˣ) :
+    (cₖ : Kˣ) (a : ι → Kˣ) :
     letI : Nonempty Φ.cones := ⟨(s k).toCone⟩
     letI : Nonempty (Φ').cones := ⟨(ρ'(ρ)).toCone⟩
-    ∀ j, Φ.algebraicRealization.ord
-      (Φ.mutationComplementPullback b (cₖ : ℂ) hvₖ h₊ hOpp
-        (algebraMap ℂ (Φ').algebraicRealization.functionField (a j : ℂ) *
-          (Φ').character (ofAdd (d ((s') j).primitiveGenerator).toAddMonoidHom)))
-      (Φ.rayBoundaryPoint hΦ ρ).val =
+    ∀ j, (Φ.finiteFanScheme K).ord
+      (Φ.mutationComplementPullback b (cₖ : K) hvₖ h₊ hOpp
+        (algebraMap K ((Φ').finiteFanScheme K).functionField (a j : K) *
+          (Φ').functionFieldCharacter K (ofAdd (d ((s') j).primitiveGenerator).toAddMonoidHom)))
+      (Φ.rayBoundaryChartPoint (R := K) hΦ ρ).val =
       (Generator.mutate k).tropical B (fun l ↦ d v(l) ρ.primitiveGenerator) j := by
   let : Nonempty Φ.cones := ⟨(s k).toCone⟩
   let : Nonempty (Φ').cones := ⟨(ρ'(ρ)).toCone⟩
   intro j
-  rw [ord_mutationComplementPullback_rayBoundaryPoint, ord_rayBoundaryPoint_mul_character,
+  rw [ord_mutationComplementPullback_rayBoundaryPoint, ord_rayBoundaryChartPoint_mul_character K,
     tropical_mutate_eq_rayPairing_mutationFanRayEquiv Φ b s k hOpp B hB ρ]
   rfl
 

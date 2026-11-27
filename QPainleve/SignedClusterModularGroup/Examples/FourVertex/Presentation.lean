@@ -28,18 +28,20 @@ open TauCeti TauCeti.AlgebraicGeometry TauCeti.Toric
 
 namespace QPainleve.FourVertex
 
+variable {k₀ : Type} [Field k₀] [IsAlgClosed k₀]
+
 local notation "N" => (Fin 2 → ℤ)
 local notation "i₂" => AddMonoidHom.compLeft (Int.castAddHom ℝ) (Fin 2)
 local notation "b₂" => Pi.basisFun ℤ (Fin 2)
-local notation "S" => Spec (CommRingCat.of ℂ)
-local notation "Centers" => Over.mk (structureMap ℂ (Fin 4 → ℤ))
-local notation "XTor" => scheme ℂ (Fin 4 →₀ ℤ)
+local notation "S" => Spec (CommRingCat.of k₀)
+local notation "Centers" => Over.mk (structureMap k₀ (Fin 4 → ℤ))
+local notation "XTor" => scheme k₀ (Fin 4 →₀ ℤ)
 local notation "D[" M "]" => Scheme.Hom.ker (Over.Hom.left (Arrow.hom (MarkedSurface.pair M)))
 
 variable {Φ : Fan i₂} (hΦ : Φ.IsRegular) (hc : Φ.IsComplete)
 
 local notation "Aux" => LinearMap.BilinForm.prod
-  (Chow.intersectionBilinForm ℂ Φ.algebraicRealization)
+  (Chow.intersectionBilinForm k₀ (Φ.finiteFanScheme k₀))
   (-(dotProductBilin ℤ ℤ : LinearMap.BilinForm ℤ (Fin 4 → ℤ)))
 
 /-- The positively numbered octagon gives a complete marked presentation with the
@@ -54,17 +56,17 @@ theorem exists_four_vertex_marked_presentation
     (hnext : ∀ j, (b₂).detDualEquiv (v j).primitiveGenerator (v (j + 1)).primitiveGenerator = 1 ∧
       ∃ σ : Φ.cones, (v j).toCone ≤ σ ∧ (v (j + 1)).toCone ≤ σ) :
     letI : Nonempty Φ.cones := hc.nonempty_cones
-    letI : Φ.algebraicRealization.IsProjectiveOver ℂ :=
-      Φ.isProjectiveOver_algebraicRealization_of_isComplete hΦ hc b₂
-    letI : SmoothOfRelativeDimension 2 (Φ.algebraicRealization ↘ S) := by
-      rw [Fan.algebraicRealization_over]
+    letI : (Φ.finiteFanScheme k₀).IsProjectiveOver k₀ :=
+      Φ.isProjectiveOver_finiteFanScheme_of_isComplete k₀ hΦ hc b₂
+    letI : SmoothOfRelativeDimension 2 ((Φ.finiteFanScheme k₀) ↘ S) := by
+      rw [Fan.finiteFanScheme_over k₀]
       simpa only [finrank_pi, Fintype.card_fin] using
-        Φ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
+        Φ.smoothOfRelativeDimension_finiteFanSchemeToSpec k₀ hΦ
     ∀ {L : Type} [AddCommGroup L] {H : LinearMap.BilinForm ℤ L}
       (e : H.IsometryEquiv (Aux)),
-    ∃ (Q : CompleteToricPresentation i₂ b₂ 4 L Empty)
+    ∃ (Q : CompleteToricPresentation k₀ i₂ b₂ 4 L Empty)
       (P : ChargeSeed exchangeMatrix N)
-      (M : GeometricRealization.Point Centers → MarkedSurface ℂ 8 H XTor)
+      (M : GeometricRealization.Point Centers → MarkedSurface k₀ 8 H XTor)
       (hD : ∀ c, D[M c].IsEffectiveCartier),
       Q.length = 8 ∧ Q.origin = 0 ∧
       (∀ j : ZMod Q.length, (Q.rayOrder j).primitiveGenerator = octagonGenerator (j.val : ZMod 8)) ∧
@@ -77,37 +79,37 @@ theorem exists_four_vertex_marked_presentation
       (letI := Q.prestable
        letI := Q.neZero
        ∀ j, ∃ σ : Q.fan.cones, (Q.rayOrder j).toCone ≤ σ ∧ (Q.rayOrder (j + 1)).toCone ≤ σ ∧
-         (Q.fan.boundaryIdeal Q.complete.nonempty_cones).subschemeι
-           ((Q.fan.boundaryIdeal Q.complete.nonempty_cones).subscheme.dualGraphEdgeEquiv
+         (Q.fan.toricBoundaryIdeal k₀ Q.complete.nonempty_cones).subschemeι
+           ((Q.fan.toricBoundaryIdeal k₀ Q.complete.nonempty_cones).subscheme.dualGraphEdgeEquiv
              Q.marks (Q.cycle.edge j)).val =
-           Q.fan.distinguishedPointHom σ (IsLocalRing.closedPoint ℂ)) ∧
+           (Q.fan.distinguishedSection (R := k₀) σ) (IsLocalRing.closedPoint k₀)) ∧
       (letI := Q.complete.nonempty_cones
        letI := Q.prestable
        letI := Q.neZero
        ∀ c, Q.HasNodalModel c (M c) ∧
          (∃ p : ContractedToricFiber b₂ Q.rays Q.regular Q.cycle Q.origin Q.inclusion
-           (pointsEquiv ℂ _ ⟨Over.Hom.left c, Over.w c⟩) (M c),
+           (pointsEquiv k₀ _ ⟨Over.Hom.left c, Over.w c⟩) (M c),
            p.IsNodalContraction ∧ ∀ j : Fin 8,
              p.numberedBoundaryRays (hD c) (ZMod.finEquiv 8 j) =
                Q.rayOrder (j.val : ZMod Q.length)) ∧
          ∀ j : ZMod 8, (M c).boundaryClass (hD c) j =
-           e.symm (Φ.markedBoundaryMap hΦ (diagonalRay v) (Pi.single (v j) 1))) := by
+           e.symm (Φ.markedBoundaryMap k₀ hΦ (diagonalRay v) (Pi.single (v j) 1))) := by
   intro L _ H e
   classical
   have hN : Module.finrank ℤ N = 2 := by simp
   let : Nonempty Φ.cones := hc.nonempty_cones
-  let : Φ.algebraicRealization.IsProjectiveOver ℂ :=
-    Φ.isProjectiveOver_algebraicRealization_of_isComplete hΦ hc b₂
-  let : IsProper Φ.algebraicRealizationStructureMap := by
-    rw [← Fan.algebraicRealization_over]
+  let : (Φ.finiteFanScheme k₀).IsProjectiveOver k₀ :=
+    Φ.isProjectiveOver_finiteFanScheme_of_isComplete k₀ hΦ hc b₂
+  let : IsProper (Φ.finiteFanSchemeToSpec k₀) := by
+    rw [← Fan.finiteFanScheme_over k₀]
     infer_instance
-  let D := Φ.boundaryIdeal hc.nonempty_cones
-  let : PrestableFamily (D.subscheme ↘ S) := Φ.prestableFamily_boundary hΦ hc hN
+  let D := Φ.toricBoundaryIdeal k₀ hc.nonempty_cones
+  let : PrestableFamily (D.subscheme ↘ S) := Φ.prestableFamily_boundary k₀ hΦ hc hN
   let marks : Empty → (D.subscheme ↘ S).smoothLocus := Empty.elim
   obtain ⟨edges, order, vertices, hend, hcomponent, hnodes⟩ :=
-    Φ.exists_toric_boundary_dualGraph_cycle hΦ hc marks b₂ v hnext
+    Φ.exists_toric_boundary_dualGraph_cycle k₀ hΦ hc marks b₂ v hnext
   let C : Scheme.NodalCycleNumbering marks 8 := ⟨vertices, edges, order, hend⟩
-  let Q : CompleteToricPresentation i₂ b₂ 4 L Empty :=
+  let Q : CompleteToricPresentation k₀ i₂ b₂ 4 L Empty :=
     { fan := Φ
       complete := hc
       regular := hΦ

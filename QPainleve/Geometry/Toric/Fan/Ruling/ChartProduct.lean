@@ -8,9 +8,8 @@ module
 public import QPainleve.Geometry.Toric.Fan.Ruling.AffineChart
 
 import QPainleve.Geometry.Toric.Fan.Equiv
-import QPainleve.Geometry.Toric.Fan.Scheme
-import TauCeti.Geometry.Toric.Algebraic.Fan.Product.Isomorphism
-import TauCeti.Geometry.Toric.Algebraic.Fan.SubfanScheme
+import QPainleve.Geometry.Toric.BaseChange.Product
+import QPainleve.Geometry.Toric.BaseChange.Subfan
 
 /-!
 # Product charts of a toric character ruling
@@ -25,13 +24,15 @@ open subfan. See Fulton, *Introduction to Toric Varieties*, §1.4 and §2.1.
 
 public noncomputable section
 
-open AlgebraicGeometry CategoryTheory Limits Module Multiplicative PointedCone
+open AlgebraicGeometry CategoryTheory Limits Module PointedCone
 open TauCeti.AlgebraicGeometry (projectiveLine)
 
 namespace TauCeti.Toric.Fan
 
-local notation "S" => Spec (CommRingCat.of ℂ)
-local notation "L" => projectiveLine ℂ
+variable (K : Type) [CommRing K]
+
+local notation "S" => Spec (CommRingCat.of K)
+local notation "L" => projectiveLine K
 local notation "P" => Fan.projectiveSpace (Pi.basisFun ℤ (Fin 1)) (isIntegralLattice_intCast 1)
 local notation "A[" k "]" => projectiveLineAffineFan k
 local notation "F[" k "]" => Fan.cones (A[k])
@@ -55,6 +56,9 @@ local notation "g" =>
     (Fan.mem_of_isFaceOf (A[k]))
 local notation "Q" => Fan.prod P A[k]
 local notation "W" => (Fin 1 → ℝ)
+local notation "torusChart(" G "," h₀ ")" =>
+  Fan.affineChartι K G (Subtype.mk ⊥ (Fan.bot_mem G (Subtype.property (Nonempty.some h₀))))
+local notation "toricLine" => (projectiveLineToricIso K)
 
 local notation "coordZ" =>
   LinearEquiv.toAddEquiv (LinearEquiv.trans (Basis.equivFun b)
@@ -198,20 +202,20 @@ include hm in
 private theorem denseTorusι_comp_chart_firstProjection
     (hcorners : ∀ j : Fin 2, hull ℝ {i (if j = 0 then b 0 else -b 0),
       i (if k = 0 then b 1 else -b 1)} ∈ Φ.cones) (hU : Nonempty (U).cones) :
-    (U).denseTorusι hU ≫ (chartFanEquiv Φ m h b hm k hcorners).toFanHom.algebraicMap ≫
-      (FanHom.fst P A[k]).algebraicMap ≫ projectiveLineToricIso.hom =
-        projectiveLine.polynomialPoint ℂ (algebraMap ℂ _) 0
-          (MonoidAlgebra.of ℂ _ (ofAdd ((denseTorusDualEquiv Φ.lattice).symm
-            (b.coord 0).toAddMonoidHom))) := by
+    torusChart(U,hU) ≫
+      (chartFanEquiv Φ m h b hm k hcorners).toFanHom.finiteFanSchemeHom K ≫
+      (FanHom.fst P A[k]).finiteFanSchemeHom K ≫ (toricLine).hom =
+        projectiveLine.polynomialPoint K (algebraMap K _) 0
+          (AddMonoidAlgebra.single ⟨(b.coord 0).toAddMonoidHom, by simp⟩ 1) := by
   let e := chartFanEquiv Φ m h b hm k hcorners
   let q := (FanHom.fst P A[k]).comp e.toFanHom
   obtain ⟨hn, hq⟩ := q.exists_eq_characterFanHom
     (b.coord 0).toAddMonoidHom (fun x j ↦ by simp [q, e, chartFanEquiv])
-  rw [← Category.assoc (chartFanEquiv Φ m h b hm k hcorners).toFanHom.algebraicMap,
-    ← FanHom.algebraicMap_comp]
+  rw [← Category.assoc ((chartFanEquiv Φ m h b hm k hcorners).toFanHom.finiteFanSchemeHom K),
+    ← FanHom.finiteFanSchemeHom_comp K]
   -- The first projection uses the character of the first dual vector of the chosen basis.
-  change (U).denseTorusι hU ≫ q.algebraicMap ≫ projectiveLineToricIso.hom = _
-  rw [hq, ← characterRuling_def, denseTorusι_comp_characterRuling]
+  change torusChart(U,hU) ≫ q.finiteFanSchemeHom K ≫ (toricLine).hom = _
+  rw [hq, ← characterRuling_def K, denseTorusι_comp_characterRuling K _ _ _ hU]
 
 include hm in
 /-- Over the polynomial chart `k`, the ruling of the second coordinate of `b`
@@ -222,57 +226,58 @@ theorem exists_characterRuling_affine_chart_product
     (hcorners : ∀ j : Fin 2, hull ℝ {i (if j = 0 then b 0 else -b 0),
       i (if k = 0 then b 1 else -b 1)} ∈ Φ.cones) :
     let h₀ : Nonempty Φ.cones := ⟨⟨_, hcorners 0⟩⟩
-    let f := Φ.characterRuling m h
-    let c := projectiveLine.polynomialChartι ℂ k
-    ∃ (u : pullback f c ⟶ L) (t : Φ.denseTorus ⟶ pullback f c),
+    let f := Φ.characterRuling K m h
+    let c := projectiveLine.polynomialChartι K k
+    ∃ (u : pullback f c ⟶ L) (t : affineChart K Φ.lattice ⊥ ⟶ pullback f c),
       IsPullback u (pullback.snd f c) (L ↘ S)
-        (Spec.map (CommRingCat.ofHom (algebraMap ℂ (Polynomial ℂ)))) ∧
-      t ≫ pullback.fst f c = Φ.denseTorusι h₀ ∧
-      t ≫ u = projectiveLine.polynomialPoint ℂ (algebraMap ℂ _) 0
-        (MonoidAlgebra.of ℂ _ (ofAdd ((denseTorusDualEquiv Φ.lattice).symm
-          (b.coord 0).toAddMonoidHom))) := by
+        (Spec.map (CommRingCat.ofHom (algebraMap K (Polynomial K)))) ∧
+      t ≫ pullback.fst f c = torusChart(Φ,h₀) ∧
+      t ≫ u = projectiveLine.polynomialPoint K (algebraMap K _) 0
+        (AddMonoidAlgebra.single ⟨(b.coord 0).toAddMonoidHom, by simp⟩ 1) := by
   intro h₀
   dsimp only
   let F := chartFanEquiv Φ m h b hm k hcorners
   let ιU := Φ.subfanInclusion _ ((charMap).preimageCones_subset F[k])
     ((charMap).preimageCones_closedUnderFaces F[k] (A[k]).mem_of_isFaceOf)
-  have hpre := (charMap).isPullback_preimageSubfan_algebraicMap F[k]
+  have hpre := (charMap).isPullback_preimageSubfan_finiteFanSchemeHom K F[k]
     (projectiveLineAffineFan_cones_subset k) (A[k]).mem_of_isFaceOf
-  have hbase : IsPullback (ι[k]).algebraicMap (projectiveLineAffineFanIso k).hom
-      projectiveLineToricIso.hom (projectiveLine.polynomialChartι ℂ k) :=
+  have hbase : IsPullback ((ι[k]).finiteFanSchemeHom K) (projectiveLineAffineFanIso K k).hom
+      (toricLine).hom (projectiveLine.polynomialChartι K k) :=
     IsPullback.of_vert_isIso ⟨by
       rw [projectiveLineAffineFanIso_hom_comp_polynomialChartι, projectiveLineAffineFanι_def]⟩
-  have hchart : IsPullback ιU.algebraicMap ((g).algebraicMap ≫ (projectiveLineAffineFanIso k).hom)
-      (Φ.characterRuling m h) (projectiveLine.polynomialChartι ℂ k) := by
-    simpa only [characterRuling_def] using hpre.paste_vert hbase
-  let e := hchart.isoPullback.symm ≪≫ asIso F.toFanHom.algebraicMap
-  let u := e.hom ≫ (FanHom.fst P A[k]).algebraicMap ≫ projectiveLineToricIso.hom
+  have hchart : IsPullback (ιU.finiteFanSchemeHom K)
+      ((g).finiteFanSchemeHom K ≫ (projectiveLineAffineFanIso K k).hom)
+      (Φ.characterRuling K m h) (projectiveLine.polynomialChartι K k) := by
+    simpa only [characterRuling_def K] using hpre.paste_vert hbase
+  let e := hchart.isoPullback.symm ≪≫ asIso (F.toFanHom.finiteFanSchemeHom K)
+  let u := e.hom ≫ ((FanHom.fst P A[k]).finiteFanSchemeHom K) ≫ (toricLine).hom
   have hbot : (⊥ : PointedCone ℝ V) ∈ (U).cones :=
     (mem_chart_preimage_iff Φ m h b hm k).2 ⟨Φ.bot_mem h₀.some.property, by
       intro x hx
       rw [(Submodule.mem_bot (Nonneg ℝ)).mp hx, map_zero]
       exact zero_mem _⟩
   let hU : Nonempty (U).cones := ⟨⟨⊥, hbot⟩⟩
-  refine ⟨u, (U).denseTorusι hU ≫ hchart.isoPullback.hom, ?_, ?_, ?_⟩
-  · refine ((P).isPullback_fst_snd_algebraicMap A[k]).of_iso' e projectiveLineToricIso.symm
-      (projectiveLineAffineFanIso k).symm (Iso.refl _) ?_ ?_ ?_ ?_
+  refine ⟨u, torusChart(U,hU) ≫ hchart.isoPullback.hom, ?_, ?_, ?_⟩
+  · refine ((P).isPullback_fst_snd_finiteFanSchemeHom K A[k]).of_iso' e (toricLine).symm
+      (projectiveLineAffineFanIso K k).symm (Iso.refl _) ?_ ?_ ?_ ?_
     · simp [u]
-    · rw [Iso.trans_hom, Iso.symm_hom, asIso_hom, Category.assoc, ← FanHom.algebraicMap_comp,
-        snd_comp_chartFanEquiv, ← cancel_mono (projectiveLineAffineFanIso k).hom]
+    · rw [Iso.trans_hom, Iso.symm_hom, asIso_hom, Category.assoc,
+        ← FanHom.finiteFanSchemeHom_comp K, snd_comp_chartFanEquiv,
+        ← cancel_mono (projectiveLineAffineFanIso K k).hom]
       simp only [Category.assoc, Iso.symm_hom, Iso.inv_hom_id, Category.comp_id]
       exact hchart.isoPullback_inv_snd
     · rw [Iso.refl_hom, Category.comp_id, Iso.symm_hom,
-        ← cancel_epi projectiveLineToricIso.hom, Iso.hom_inv_id_assoc,
-        ← Fan.algebraicRealization_over, CategoryTheory.comp_over]
+        ← cancel_epi (toricLine).hom, Iso.hom_inv_id_assoc,
+        ← Fan.finiteFanScheme_over K, CategoryTheory.comp_over]
     · rw [Iso.refl_hom, Category.comp_id, Iso.symm_hom,
-        ← cancel_epi (projectiveLineAffineFanIso k).hom, Iso.hom_inv_id_assoc,
-        ← projectiveLine.polynomialChartι_over ℂ k,
+        ← cancel_epi (projectiveLineAffineFanIso K k).hom, Iso.hom_inv_id_assoc,
+        ← projectiveLine.polynomialChartι_over K k,
         projectiveLineAffineFanIso_hom_comp_polynomialChartι_assoc, projectiveLineAffineFanι_def,
-        Category.assoc, ← Fan.algebraicRealization_over,
+        Category.assoc, ← Fan.finiteFanScheme_over K,
         CategoryTheory.comp_over, CategoryTheory.comp_over]
-  · rw [Category.assoc, hchart.isoPullback_hom_fst, denseTorusι_eq_affineToricChartι _ _ hbot,
-      affineToricChartι_comp_subfanInclusion_algebraicMap, ← denseTorusι_eq_affineToricChartι]
+  · rw [Category.assoc, hchart.isoPullback_hom_fst,
+      affineChartι_comp_subfanInclusion_finiteFanSchemeHom]
   · simp only [u, e, Iso.trans_hom, Iso.symm_hom, asIso_hom, Category.assoc, Iso.hom_inv_id_assoc]
-    exact denseTorusι_comp_chart_firstProjection Φ m h b hm k hcorners hU
+    exact denseTorusι_comp_chart_firstProjection K Φ m h b hm k hcorners hU
 
 end TauCeti.Toric.Fan

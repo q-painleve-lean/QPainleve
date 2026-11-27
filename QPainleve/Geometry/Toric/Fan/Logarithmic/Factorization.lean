@@ -7,12 +7,11 @@ module
 
 public import QPainleve.Geometry.Toric.Fan.Logarithmic.StarFactorization
 public import QPainleve.Geometry.Toric.Fan.Mutation.Resolution
-public import QPainleve.Geometry.Toric.Fan.TorusAction.Translation
+public import QPainleve.Geometry.Toric.BaseChange.Translation
 
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Modification
 import QPainleve.AlgebraicGeometry.IdealSheaf.VanishingIdeal
 import QPainleve.AlgebraicGeometry.RationalMap.Composition.Basic
-import QPainleve.Geometry.Toric.Fan.Scheme
 import TauCeti.Combinatorics.Quiver.Prefunctor
 
 /-!
@@ -37,15 +36,16 @@ open TauCeti.AlgebraicGeometry Scheme.IdealSheafData
 
 namespace TauCeti.Toric.Fan
 
-variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V] {i : N →+ V}
+variable (k : Type) [Field k] {N V : Type}
+  [AddCommGroup N] [AddCommGroup V] [Module ℝ V] {i : N →+ V}
 
-local notation "S" => Spec (CommRingCat.of ℂ)
-local notation "X[" Φ "]" => Fan.algebraicRealization Φ
+local notation "S" => Spec (CommRingCat.of k)
+local notation "X[" Φ "]" => Fan.finiteFanScheme k Φ
 local notation "toricMap[" Φ "," Ψ "]" =>
-  Scheme.PartialIso.toRationalMap (Fan.denseTorusPartialIso Φ Ψ)
+  Scheme.PartialIso.toRationalMap (Fan.denseTorusPartialIso k Φ Ψ)
 local notation "isoMap[" e "," c "]" =>
-  Scheme.Hom.toRationalMap (FanHom.algebraicMap (FanEquiv.toFanHom e) ≫
-    Iso.hom (Fan.torusTranslation _ c))
+  Scheme.Hom.toRationalMap (FanHom.finiteFanSchemeHom k (FanEquiv.toFanHom e) ≫
+    Iso.hom (Fan.torusTranslationIso k _ c))
 
 /-- A single allowed link of the toric Sarkisov factorization on a fixed lattice. -/
 inductive IsSarkisovLink : {Φ Ψ : Fan i} → (X[Φ] ⤏ X[Ψ]) → Prop
@@ -56,36 +56,38 @@ inductive IsSarkisovLink : {Φ Ψ : Fan i} → (X[Φ] ⤏ X[Ψ]) → Prop
   | blowdown {Φ Ψ : Fan i} [Nonempty Φ.cones] [Nonempty Ψ.cones]
       (h : Ψ.IsTwoRayStarSubdivision Φ) : IsSarkisovLink toricMap[Φ,Ψ]
   /-- An elementary transformation at a nonzero binomial center on a pivot ray. -/
-  | mutation {Φ : Fan i} (b : Module.Basis (Fin 2) ℤ N) (ρ : Φ.Ray) (c : ℂˣ)
+  | mutation {Φ : Fan i} (b : Module.Basis (Fin 2) ℤ N) (ρ : Φ.Ray) (c : kˣ)
       (hneg : hull ℝ {i (-ρ.primitiveGenerator)} ∈ Φ.cones) :
-      IsSarkisovLink (Φ.mutationPartialMap b (c : ℂ) ρ.primitiveGenerator_ne_zero
+      IsSarkisovLink (Φ.mutationPartialMap k b (c : k) ρ.primitiveGenerator_ne_zero
         ρ.hull_primitiveGenerator_mem hneg).toRationalMap
   /-- A fan equivalence followed by a torus translation. -/
   | toricIso {Φ Ψ : Fan i} [Nonempty Ψ.cones]
-      (e : FanEquiv Φ Ψ) (c : Multiplicative (N →+ ℤ) →* ℂˣ) :
+      (e : FanEquiv Φ Ψ) (c : Multiplicative (N →+ ℤ) →* kˣ) :
       IsSarkisovLink isoMap[e,c]
 
 /-- Every allowed link has dense image. -/
 theorem IsSarkisovLink.isDominant {Φ Ψ : Fan i} {f : X[Φ] ⤏ X[Ψ]}
-    (hf : IsSarkisovLink f) : f.IsDominant := by
+    (hf : IsSarkisovLink k f) : f.IsDominant := by
   cases hf <;> infer_instance
 
 namespace LogarithmicProjection
 
+variable {k}
+
 section
 
-variable {Z : Scheme} [Z.Over S] [SmoothOfRelativeDimension 2 (Z ↘ S)]
+variable {Z : Scheme} [Z.Over (Spec (.of k))] [SmoothOfRelativeDimension 2 (Z ↘ Spec (.of k))]
   [PreirreducibleSpace Z]
-  {D : Z.IdealSheafData} {A B C : LogarithmicProjection i D}
+  {D : Z.IdealSheafData} {A B C : LogarithmicProjection k i D}
 
 /-- An allowed link whose composite with the specified source projection has the
 specified target projection as a regular representative. -/
 @[ext]
-structure SarkisovStep (A B : LogarithmicProjection i D) where
+structure SarkisovStep (A B : LogarithmicProjection k i D) where
   /-- The rational map between the toric targets. -/
   rationalMap : X[A.fan] ⤏ X[B.fan]
   /-- The rational map is an allowed link. -/
-  isSarkisovLink : IsSarkisovLink rationalMap
+  isSarkisovLink : IsSarkisovLink k rationalMap
   /-- The link is resolved by the two given projections. -/
   comp_rationalMap : A.hom.toRationalMap.comp rationalMap = B.hom.toRationalMap
 
@@ -93,11 +95,11 @@ instance (e : SarkisovStep A B) : e.rationalMap.IsDominant :=
   e.isSarkisovLink.isDominant
 
 /-- The quiver of resolved Sarkisov steps. -/
-abbrev sarkisovQuiver : Quiver (LogarithmicProjection i D) where
+abbrev sarkisovQuiver : Quiver (LogarithmicProjection k i D) where
   Hom := SarkisovStep
 
 /-- A finite path of resolved Sarkisov steps. -/
-abbrev SarkisovPath (A B : LogarithmicProjection i D) := @Quiver.Path _ sarkisovQuiver A B
+abbrev SarkisovPath (A B : LogarithmicProjection k i D) := @Quiver.Path _ sarkisovQuiver A B
 
 /-- Regard a resolved toric star step as a Sarkisov step. -/
 def StarStep.toSarkisovStep (e : StarStep A B) :
@@ -117,8 +119,8 @@ namespace SarkisovPath
 
 /-- Regard a resolved toric star path as a path of Sarkisov steps. -/
 def ofStar (p : @Quiver.Path _ instQuiver A B) : SarkisovPath A B :=
-  let F := @Prefunctor.mk (LogarithmicProjection i D) instQuiver
-    (LogarithmicProjection i D) sarkisovQuiver id (fun e ↦ StarStep.toSarkisovStep e)
+  let F := @Prefunctor.mk (LogarithmicProjection k i D) instQuiver
+    (LogarithmicProjection k i D) sarkisovQuiver id (fun e ↦ StarStep.toSarkisovStep e)
   @Prefunctor.mapPath _ instQuiver _ sarkisovQuiver F _ _ p
 
 /-- Including a toric star path preserves its number of edges. -/
@@ -175,6 +177,7 @@ theorem rationalMap_ofStar [IsIntegral Z] (p : @Quiver.Path _ instQuiver A B) :
 
 end SarkisovPath
 
+variable [PerfectField k] in
 /-- A common two-ray star subdivision gives a resolved Sarkisov path consisting of
 a blowup followed by a blowdown. Its composite is the dense torus identification. -/
 theorem exists_sarkisovPath_of_twoRayStarSubdivisions {Φ Ψ F : Fan i}
@@ -182,37 +185,38 @@ theorem exists_sarkisovPath_of_twoRayStarSubdivisions {Φ Ψ F : Fan i}
     (hΦ : Φ.IsRegular) (hc : Φ.IsComplete) (hΨ : Ψ.IsRegular) (hF : F.IsRegular)
     (s : F.IsSubdivision Φ) (t : F.IsSubdivision Ψ)
     (hs : Φ.IsTwoRayStarSubdivision F) (ht : Ψ.IsTwoRayStarSubdivision F)
-    {W : Scheme} [W.Over S] [IsIntegral W] [SmoothOfRelativeDimension 2 (W ↘ S)]
-    {D : W.IdealSheafData} (a : W ⟶ X[F]) [a.IsOver S] [IsDominant a]
+    {W : Scheme} [W.Over (Spec (.of k))] [IsIntegral W]
+    [SmoothOfRelativeDimension 2 (W ↘ Spec (.of k))]
+    {D : W.IdealSheafData} (a : W ⟶ X[F]) [a.IsOver (Spec (.of k))] [IsDominant a]
     (hpole : letI : Smooth (W ↘ S) := SmoothOfRelativeDimension.smooth 2 _
-      (Φ.boundaryIdeal hc.nonempty_cones).comap (a ≫ s.toFanHom.algebraicMap) =
-        D * ramificationIdealSheaf ℂ (a ≫ s.toFanHom.algebraicMap)) :
-    ∃ (A B : LogarithmicProjection i D) (path : SarkisovPath A B),
-      A.fan = Φ ∧ A.hom ≍ a ≫ s.toFanHom.algebraicMap ∧
-      B.fan = Ψ ∧ B.hom ≍ a ≫ t.toFanHom.algebraicMap ∧
+      (Φ.toricBoundaryIdeal k hc.nonempty_cones).comap (a ≫ s.toFanHom.finiteFanSchemeHom k) =
+        D * ramificationIdealSheaf k (a ≫ s.toFanHom.finiteFanSchemeHom k)) :
+    ∃ (A B : LogarithmicProjection k i D) (path : SarkisovPath A B),
+      A.fan = Φ ∧ A.hom ≍ a ≫ s.toFanHom.finiteFanSchemeHom k ∧
+      B.fan = Ψ ∧ B.hom ≍ a ≫ t.toFanHom.finiteFanSchemeHom k ∧
       path.length = 2 ∧ path.rationalMap = toricMap[A.fan,B.fan] := by
   let hcF := s.isComplete_iff.mpr hc
   let : Smooth (W ↘ S) := SmoothOfRelativeDimension.smooth 2 _
   have ha := (s.comap_boundaryIdeal_eq_mul_ramificationIdealSheaf_comp_iff
-    hΦ hF hc hRank a D).mp hpole
-  let M : LogarithmicProjection i D :=
+    k hΦ hF hc hRank a D).mp hpole
+  let M : LogarithmicProjection k i D :=
     ⟨F, hF, hcF, a, inferInstance, inferInstance, ha⟩
   let K := Fan.IsSubdivision.refl M.fan
   let A := M.coarsen (K.trans hs.isSubdivision) hΦ hRank
   let B := M.coarsen (K.trans ht.isSubdivision) hΨ hRank
-  let : Quiver (LogarithmicProjection i D) := instQuiver
+  let : Quiver (LogarithmicProjection k i D) := instQuiver
   let up := M.coarsenBlowup hRank hΦ hF hs K
   let down := Quiver.reverse (a := B) (b := M.coarsen K hF hRank)
     (M.coarsenBlowup hRank hΨ hF ht K)
   let p : @Quiver.Path _ instQuiver A B :=
     (Quiver.Path.nil.cons up).cons down
-  have hA : A.hom ≍ a ≫ s.toFanHom.algebraicMap := by
-    simpa only [K, Fan.IsSubdivision.toFanHom_trans, FanHom.algebraicMap_comp,
-      Fan.IsSubdivision.toFanHom_refl, FanHom.algebraicMap_id, Category.id_comp] using
+  have hA : A.hom ≍ a ≫ s.toFanHom.finiteFanSchemeHom k := by
+    simpa only [K, Fan.IsSubdivision.toFanHom_trans, FanHom.finiteFanSchemeHom_comp,
+      Fan.IsSubdivision.toFanHom_refl, FanHom.finiteFanSchemeHom_id, Category.id_comp] using
       M.coarsen_hom (K.trans hs.isSubdivision) hΦ hRank
-  have hB : B.hom ≍ a ≫ t.toFanHom.algebraicMap := by
-    simpa only [K, Fan.IsSubdivision.toFanHom_trans, FanHom.algebraicMap_comp,
-      Fan.IsSubdivision.toFanHom_refl, FanHom.algebraicMap_id, Category.id_comp] using
+  have hB : B.hom ≍ a ≫ t.toFanHom.finiteFanSchemeHom k := by
+    simpa only [K, Fan.IsSubdivision.toFanHom_trans, FanHom.finiteFanSchemeHom_comp,
+      Fan.IsSubdivision.toFanHom_refl, FanHom.finiteFanSchemeHom_id, Category.id_comp] using
       M.coarsen_hom (K.trans ht.isSubdivision) hΨ hRank
   let path := SarkisovPath.ofStar p
   refine ⟨A, B, path, M.coarsen_fan .., hA, M.coarsen_fan .., hB, ?_, ?_⟩
@@ -222,18 +226,18 @@ theorem exists_sarkisovPath_of_twoRayStarSubdivisions {Φ Ψ F : Fan i}
 
 section Refinement
 
-variable {W : Scheme} [W.Over S] [SmoothOfRelativeDimension 2 (W ↘ S)]
-  [PreirreducibleSpace W] {E : W.IdealSheafData}
-  (hN : Module.finrank ℤ N = 2) (f : W ⟶ Z) [f.IsOver S] [IsDominant f]
-  (hf : letI : Smooth (W ↘ S) := SmoothOfRelativeDimension.smooth 2 _
-    D.comap f = E * ramificationIdealSheaf ℂ f)
+variable {W : Scheme} [W.Over (Spec (.of k))]
+  [SmoothOfRelativeDimension 2 (W ↘ Spec (.of k))] [PreirreducibleSpace W] {E : W.IdealSheafData}
+  (hN : Module.finrank ℤ N = 2) (f : W ⟶ Z) [f.IsOver (Spec (.of k))] [IsDominant f]
+  (hf : letI : Smooth (W ↘ Spec (.of k)) := SmoothOfRelativeDimension.smooth 2 _
+    D.comap f = E * ramificationIdealSheaf k f)
 
 /-- Precompose the regular representatives of a Sarkisov factorization with a
 dominant morphism carrying the pole ideal. The toric targets and links are preserved. -/
 def precomposeSarkisov :
-    @Prefunctor (LogarithmicProjection i D) sarkisovQuiver
-      (LogarithmicProjection i E) sarkisovQuiver where
-  obj := precomposeProjection hN f hf
+    @Prefunctor (LogarithmicProjection k i D) sarkisovQuiver
+      (LogarithmicProjection k i E) sarkisovQuiver where
+  obj := fun A ↦ precomposeProjection (k := k) (i := i) hN f hf A
   map {A B} e :=
     { rationalMap := e.rationalMap
       isSarkisovLink := e.isSarkisovLink
@@ -249,11 +253,11 @@ def precomposeSarkisov :
           using hc }
 
 @[simp]
-theorem precomposeSarkisov_obj_fan (A : LogarithmicProjection i D) :
+theorem precomposeSarkisov_obj_fan (A : LogarithmicProjection k i D) :
     ((precomposeSarkisov hN f hf).obj A).fan = A.fan := (rfl)
 
 /-- The projection to a toric target after refining the resolving surface. -/
-theorem precomposeSarkisov_obj_hom (A : LogarithmicProjection i D) :
+theorem precomposeSarkisov_obj_hom (A : LogarithmicProjection k i D) :
     ((precomposeSarkisov hN f hf).obj A).hom ≍ f ≫ A.hom :=
   (HEq.rfl)
 
@@ -276,6 +280,7 @@ theorem SarkisovPath.rationalMap_mapPath_precompose (p : SarkisovPath A B) :
 
 end Refinement
 
+variable [PerfectField k] in
 open QPainleve.BlowupTower in
 /-- Lift an entire Sarkisov path through a nodal extension of its resolving surface.
 If the last projection on that extension is already specified, it serves as the endpoint
@@ -284,15 +289,15 @@ appended with `Quiver.Path.comp`. The pole divisor on the extension is the reduc
 transform and the rational map between toric targets is preserved. -/
 theorem SarkisovPath.exists_precompose_of_nodalTower [IsIntegral Z] [IsNoetherian Z]
     (p : SarkisovPath A B) {n : ℕ} {Y W : Scheme} {T : QPainleve.BlowupTower Z n Y}
-    [W.Over S] [SmoothOfRelativeDimension 2 (W ↘ S)] [PreirreducibleSpace W]
+    [W.Over (Spec (.of k))] [SmoothOfRelativeDimension 2 (W ↘ Spec (.of k))] [PreirreducibleSpace W]
     (hRank : Module.finrank ℤ N = 2) (hT : IsNodalBoundaryTower D (Z ↘ S) (𝟙 Z) T)
     (hD : D.IsEffectiveCartier)
     (hNode : AtWorstNodalOfRelativeDimensionOne (D.subschemeι ≫ Z ↘ S))
-    (e : W ≅ Y) (q : W ⟶ Z) [q.IsOver S] (hq : e.hom ≫ T.toBase = q)
-    (C : LogarithmicProjection i (D.comap q).radical)
+    (e : W ≅ Y) (q : W ⟶ Z) [q.IsOver (Spec (.of k))] (hq : e.hom ≫ T.toBase = q)
+    (C : LogarithmicProjection k i (D.comap q).radical)
     (hFan : C.fan = B.fan) (hHom : C.hom ≍ q ≫ B.hom) :
-    ∃ (F : @Prefunctor (LogarithmicProjection i D) sarkisovQuiver
-        (LogarithmicProjection i (D.comap q).radical) sarkisovQuiver)
+    ∃ (F : @Prefunctor (LogarithmicProjection k i D) sarkisovQuiver
+        (LogarithmicProjection k i (D.comap q).radical) sarkisovQuiver)
       (hEnd : F.obj B = C),
       (∀ L, (F.obj L).fan = L.fan ∧ (F.obj L).hom ≍ q ≫ L.hom) ∧
       (∀ {L M} (a : SarkisovStep L M), (F.map a).rationalMap ≍ a.rationalMap) ∧
@@ -316,24 +321,25 @@ section ResolvedFactorization
 
 open QPainleve QPainleve.BlowupTower
 
-variable {Z : Scheme} [Z.Over S] [IsIntegral Z] [SmoothOfRelativeDimension 2 (Z ↘ S)]
+variable [PerfectField k] {Z : Scheme} [Z.Over (Spec (.of k))] [IsIntegral Z]
+  [SmoothOfRelativeDimension 2 (Z ↘ Spec (.of k))]
   {D : Z.IdealSheafData}
 
 /-- The two specified projections admit a Sarkisov path on a nodal blowup
 tower of their common source. The endpoints are the pullbacks of the specified
 projections and all vertices share the reduced total boundary as pole ideal. -/
-def HasResolvedSarkisovFactorization [IsNoetherian Z] (A B : LogarithmicProjection i D) : Prop :=
+def HasResolvedSarkisovFactorization [IsNoetherian Z] (A B : LogarithmicProjection k i D) : Prop :=
   ∃ (n : ℕ) (W : Scheme) (T : BlowupTower Z n W)
     (hT : IsNodalBoundaryTower D (Z ↘ S) (𝟙 Z) T),
     letI : W.Over S := ⟨T.toBase ≫ Z ↘ S⟩
     letI : IsIntegral W := hT.isClosedPointTower.isIntegral (Z ↘ S)
     letI : SmoothOfRelativeDimension 2 (W ↘ S) :=
       hT.isClosedPointTower.smoothOfRelativeDimension (Z ↘ S)
-    ∃ A' B' : LogarithmicProjection i (D.comap T.toBase).radical,
+    ∃ A' B' : LogarithmicProjection k i (D.comap T.toBase).radical,
       A'.fan = A.fan ∧ A'.hom ≍ T.toBase ≫ A.hom ∧
       B'.fan = B.fan ∧ B'.hom ≍ T.toBase ≫ B.hom ∧ Nonempty (SarkisovPath A' B')
 
-variable {A B : LogarithmicProjection i D}
+variable {A B : LogarithmicProjection k i D}
 
 /-- A resolved Sarkisov factorization is witnessed by one nodal tower and a path
 between the two lifted projections. -/
@@ -345,7 +351,7 @@ theorem hasResolvedSarkisovFactorization_iff [IsNoetherian Z] :
         letI : IsIntegral W := hT.isClosedPointTower.isIntegral (Z ↘ S)
         letI : SmoothOfRelativeDimension 2 (W ↘ S) :=
           hT.isClosedPointTower.smoothOfRelativeDimension (Z ↘ S)
-        ∃ A' B' : LogarithmicProjection i (D.comap T.toBase).radical,
+        ∃ A' B' : LogarithmicProjection k i (D.comap T.toBase).radical,
           A'.fan = A.fan ∧ A'.hom ≍ T.toBase ≫ A.hom ∧
           B'.fan = B.fan ∧ B'.hom ≍ T.toBase ≫ B.hom ∧ Nonempty (SarkisovPath A' B') := Iff.rfl
 
@@ -361,7 +367,7 @@ theorem HasResolvedSarkisovFactorization.exists_path_of_comp_eq [IsNoetherian Z]
       letI : IsIntegral W := hT.isClosedPointTower.isIntegral (Z ↘ S)
       letI : SmoothOfRelativeDimension 2 (W ↘ S) :=
         hT.isClosedPointTower.smoothOfRelativeDimension (Z ↘ S)
-      ∃ (A' B' : LogarithmicProjection i (D.comap T.toBase).radical)
+      ∃ (A' B' : LogarithmicProjection k i (D.comap T.toBase).radical)
         (p : SarkisovPath A' B'),
         A'.fan = A.fan ∧ A'.hom ≍ T.toBase ≫ A.hom ∧
         B'.fan = B.fan ∧ B'.hom ≍ T.toBase ≫ B.hom ∧ p.rationalMap ≍ f := by
@@ -390,7 +396,7 @@ theorem HasResolvedSarkisovFactorization.exists_path_of_comp_eq [IsNoetherian Z]
   exact lift_eq a b (eq_of_heq hAcomp) (eq_of_heq hBcomp)
 
 private theorem hasResolvedSarkisovFactorization_of_append [IsNoetherian Z]
-    (A B : LogarithmicProjection i D) {m n : ℕ} {Y W : Scheme}
+    (A B : LogarithmicProjection k i D) {m n : ℕ} {Y W : Scheme}
     {T : BlowupTower Z m Y} {U : BlowupTower Y n W}
     (hT : IsNodalBoundaryTower D (Z ↘ S) (𝟙 Z) T)
     (hU : IsNodalBoundaryTower (D.comap T.toBase).radical (T.toBase ≫ Z ↘ S) (𝟙 Y) U) :
@@ -403,7 +409,7 @@ private theorem hasResolvedSarkisovFactorization_of_append [IsNoetherian Z]
     letI : SmoothOfRelativeDimension 2 (W ↘ S) :=
       hU.isClosedPointTower.smoothOfRelativeDimension (Y ↘ S)
     letI : IsIntegral W := hU.isClosedPointTower.isIntegral (Y ↘ S)
-    ∀ (A' B' : LogarithmicProjection i (((D.comap T.toBase).radical).comap U.toBase).radical),
+    ∀ (A' B' : LogarithmicProjection k i (((D.comap T.toBase).radical).comap U.toBase).radical),
       A'.fan = A.fan → A'.hom ≍ U.toBase ≫ T.toBase ≫ A.hom →
       B'.fan = B.fan → B'.hom ≍ U.toBase ≫ T.toBase ≫ B.hom →
       SarkisovPath A' B' → HasResolvedSarkisovFactorization A B := by
@@ -420,7 +426,7 @@ private theorem hasResolvedSarkisovFactorization_of_append [IsNoetherian Z]
       (R : W.IdealSheafData) : Prop :=
     letI : W.Over S := ⟨s⟩
     letI : SmoothOfRelativeDimension 2 (W ↘ S) := hs
-    ∃ A' B' : LogarithmicProjection i R,
+    ∃ A' B' : LogarithmicProjection k i R,
       A'.fan = A.fan ∧ A'.hom ≍ f ≫ A.hom ∧
       B'.fan = B.fan ∧ B'.hom ≍ f ≫ B.hom ∧ Nonempty (SarkisovPath A' B')
   have hTransport {f g : W ⟶ Z} {s t : W ⟶ S} {hs : SmoothOfRelativeDimension 2 s}
@@ -442,7 +448,7 @@ private theorem hasResolvedSarkisovFactorization_of_append [IsNoetherian Z]
 /-- Extend a resolved middle factorization along toric star paths from the two
 specified endpoint projections on a common nodal tower. -/
 theorem hasResolvedSarkisovFactorization_of_star_paths
-    (A B : LogarithmicProjection i D) (hRank : Module.finrank ℤ N = 2)
+    (A B : LogarithmicProjection k i D) (hRank : Module.finrank ℤ N = 2)
     (hD : D.IsEffectiveCartier)
     (hNode : AtWorstNodalOfRelativeDimensionOne (D.subschemeι ≫ Z ↘ S))
     [IsNoetherian Z] {m : ℕ} {Y : Scheme} {T : BlowupTower Z m Y}
@@ -452,7 +458,7 @@ theorem hasResolvedSarkisovFactorization_of_star_paths
     letI : SmoothOfRelativeDimension 2 (Y ↘ S) :=
       hT.isClosedPointTower.smoothOfRelativeDimension (Z ↘ S)
     letI : IsNoetherian Y := T.isNoetherian
-    ∀ {A₀ B₀ A₁ B₁ : LogarithmicProjection i (D.comap T.toBase).radical},
+    ∀ {A₀ B₀ A₁ B₁ : LogarithmicProjection k i (D.comap T.toBase).radical},
       A₀.fan = A.fan → A₀.hom ≍ T.toBase ≫ A.hom →
       B₀.fan = B.fan → B₀.hom ≍ T.toBase ≫ B.hom →
       @Quiver.Path _ instQuiver A₀ A₁ → @Quiver.Path _ instQuiver B₀ B₁ →
@@ -473,21 +479,21 @@ theorem hasResolvedSarkisovFactorization_of_star_paths
   obtain ⟨hR, hNodeR⟩ := hT.radical_comap_toBase hD hNode
   obtain ⟨F, hAEnd, hObj, -, -⟩ := (SarkisovPath.ofStar p).exists_precompose_of_nodalTower
     hRank hU hR hNodeR (Iso.refl W) U.toBase (Category.id_comp _) A₂ hA₂ hAcomp
-  let : Quiver (LogarithmicProjection i (D.comap T.toBase).radical) := sarkisovQuiver
-  let : Quiver (LogarithmicProjection i ((D.comap T.toBase).radical.comap U.toBase).radical) :=
+  let : Quiver (LogarithmicProjection k i (D.comap T.toBase).radical) := sarkisovQuiver
+  let : Quiver (LogarithmicProjection k i ((D.comap T.toBase).radical.comap U.toBase).radical) :=
     sarkisovQuiver
   have hBEnd : F.obj B₁ = B₂ :=
     LogarithmicProjection.ext ((hObj B₁).1.trans hB₂.symm) ((hObj B₁).2.trans hBcomp.symm)
   let p' : SarkisovPath (F.obj A₀) A₂ := hAEnd ▸ F.mapPath (SarkisovPath.ofStar p)
   let qRev : @Quiver.Path _ instQuiver B₁ B₀ := @Quiver.Path.reverse _ instQuiver _ _ _ q
   let q' : SarkisovPath B₂ (F.obj B₀) := hBEnd ▸ F.mapPath (SarkisovPath.ofStar qRev)
-  have hEnds (L : LogarithmicProjection i (D.comap T.toBase).radical)
-      (M : LogarithmicProjection i D) (hFan : L.fan = M.fan)
+  have hEnds (L : LogarithmicProjection k i (D.comap T.toBase).radical)
+      (M : LogarithmicProjection k i D) (hFan : L.fan = M.fan)
       (h : L.hom ≍ T.toBase ≫ M.hom) :
       (F.obj L).hom ≍ U.toBase ≫ T.toBase ≫ M.hom := by
     apply (hObj L).2.trans
     congr 1
-    exact congrArg Fan.algebraicRealization hFan
+    exact congrArg (Fan.finiteFanScheme k) hFan
   let path : SarkisovPath (F.obj A₀) (F.obj B₀) :=
     @Quiver.Path.comp _ sarkisovQuiver _ _ _ p'
       (@Quiver.Path.comp _ sarkisovQuiver _ _ _ r q')

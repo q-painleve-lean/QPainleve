@@ -40,6 +40,8 @@ open TauCeti.Toric
 
 namespace QPainleve.BlowupTower.IsClosedPointTower
 
+variable (k₀ : Type) [Field k₀] [IsAlgClosed k₀]
+
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {Φ : Fan i}
   (b : Basis (Fin 2) ℤ N) (e : ℕ) (hΦ : Φ.IsRegular) (hc : Φ.IsComplete)
@@ -47,21 +49,21 @@ variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   (hr : (fun l ↦ (r l).primitiveGenerator) = ![b 0, b 1, -b 0, (e : ℤ) • b 0 - b 1])
   (onSection : Bool)
 
-local notation "S" => Spec (CommRingCat.of ℂ)
-local notation "X[" A "]" => Fan.algebraicRealization A
-local notation "f[" A "]" => (X[A] ↘ S)
-local notation "B[" A "," h "]" => Fan.boundaryIdeal A (Fan.IsComplete.nonempty_cones h)
-local notation "P" => Proj (homogeneousSubmodule ℂ (Fin 3 → ℂ))
-local notation "H" => mk (Proj.symmetricAlgebraTwistingBundle ℂ (Fin 3 → ℂ) 1)
+local notation "S" => Spec (CommRingCat.of k₀)
+local notation "X[" coeff "," A "]" => Fan.finiteFanScheme coeff A
+local notation "f[" A "]" => (X[k₀,A] ↘ S)
+local notation "B[" A "," h "]" => Fan.toricBoundaryIdeal k₀ A (Fan.IsComplete.nonempty_cones h)
+local notation "P" => Proj (homogeneousSubmodule k₀ (Fin 3 → k₀))
+local notation "H" => mk (Proj.symmetricAlgebraTwistingBundle k₀ (Fin 3 → k₀) 1)
 local notation "rankTwo" => Eq.trans (finrank_eq_card_basis b) (Fintype.card_fin 2)
-local notation "C" => Fan.hirzebruchPicardBasis b e hΦ r hr
+local notation "C" => Fan.hirzebruchPicardBasis k₀ b e hΦ r hr
 local notation "pivotIndex" => (ite (onSection = true) (0 : Fin 4) 2)
 variable (ρ : Φ.Ray)
 local notation "hv" => Fan.Ray.primitiveGenerator_ne_zero ρ
 local notation "hp" => Fan.Ray.hull_primitiveGenerator_mem ρ
 local notation "pivot" => Fan.Ray.primitiveGenerator ρ
 
-variable (hOpp : hull ℝ {i (-ρ.primitiveGenerator)} ∈ Φ.cones) (c : ℂˣ)
+variable (hOpp : hull ℝ {i (-ρ.primitiveGenerator)} ∈ Φ.cones) (c : k₀ˣ)
 
 local notation "Ψ" => Φ.mutationFan b (v := pivot) hv hp hOpp
 local notation "hΨ" => Iff.mpr (Φ.isRegular_mutationFan_iff b (v := pivot) hv hp hOpp) hΦ
@@ -70,22 +72,22 @@ local notation "rayEquiv" => Fan.mutationFanRayEquiv Φ b (v := pivot) hv hp hOp
 local notation "r'" => r.trans rayEquiv
 local notation "e'" => (ite (onSection = true) ((e : ℤ) + 1) ((e : ℤ) - 1))
 local notation "center" =>
-  Fan.Ray.binomialCenter ρ rankTwo (b.detDualEquiv_self pivot)
+  Fan.Ray.binomialCenter ρ k₀ rankTwo (b.detDualEquiv_self pivot)
     (Fan.Ray.surjective_detCharacter ρ b) c
 local notation "sourceOpen" => Φ.mutationComplement b
-  (Φ.detCharacter_nonneg_or_nonpos b hv hp hOpp) (c : ℂ)
+  (Φ.detCharacter_nonneg_or_nonpos b hv hp hOpp) (c : k₀)
 local notation "targetOpen" => Fan.mutationComplement Ψ b
-  (Φ.mutationDetCharacter_nonneg_or_nonpos b hv hp hOpp) (c : ℂ)
-local notation "complementIso" => Φ.mutationComplementIso b (c : ℂ) hv hp hOpp
+  (Φ.mutationDetCharacter_nonneg_or_nonpos b hv hp hOpp) (c : k₀)
+local notation "complementIso" => Φ.mutationComplementIso b (c : k₀) hv hp hOpp
 local notation "μ" =>
-  Scheme.PartialMap.toRationalMap (Φ.mutationPartialMap b (c : ℂ) (v := pivot) hv hp hOpp)
+  Scheme.PartialMap.toRationalMap (Φ.mutationPartialMap k₀ b (c : k₀) (v := pivot) hv hp hOpp)
 
 local notation "coordinatePoint[" t "]" =>
-  TauCeti.AlgebraicGeometry.projectiveLine.polynomialPoint ℂ (RingHom.id ℂ) t 0
-    (IsLocalRing.closedPoint ℂ : S)
+  TauCeti.AlgebraicGeometry.projectiveLine.polynomialPoint k₀ (RingHom.id k₀) t 0
+    (IsLocalRing.closedPoint k₀ : S)
 
 local notation "ruling[" Δ "," b "," a "," r "," hr "]" =>
-  Fan.characterRuling Δ (LinearMap.toAddMonoidHom (Basis.coord b 1))
+  Fan.characterRuling k₀ Δ (LinearMap.toAddMonoidHom (Basis.coord b 1))
     (Fan.nonneg_or_nonpos_hirzebruch_ruling_character b a r hr)
 
 include hr in
@@ -111,8 +113,8 @@ private theorem rulingCharacter_eq_or_eq_neg (hρ : ρ = r (pivotIndex)) :
     left
     simp [hpivot, he]
 
-variable {n : ℕ} {Y : Scheme} {T : BlowupTower X[Φ] (n + 1) Y}
-  (hT : IsClosedPointTower X[Φ] T)
+variable {n : ℕ} {Y : Scheme} {T : BlowupTower X[k₀,Φ] (n + 1) Y}
+  (hT : IsClosedPointTower X[k₀,Φ] T)
 
 private theorem section_baseOrder_sum_and_bidegree (j : Fin (n + 1)) (x : Fin (n + 1) → ℤ)
     (β : ℤ) (hβ : 0 < β) (hm : ∀ l, 0 ≤ -x l) :
@@ -132,9 +134,11 @@ private theorem section_baseOrder_sum_and_bidegree (j : Fin (n + 1)) (x : Fin (n
   rw [hsum, Prod.Lex.lt_iff, ofLex_hirzebruchSarkisovBidegree, ofLex_hirzebruchSarkisovBidegree]
   exact Or.inr ⟨rfl, by omega⟩
 
-variable [Φ.algebraicRealization.IsProjectiveOver ℂ]
-  (g : Y ⟶ P) (hg : g ≫ (P ↘ S) = T.toBase ≫ f[Φ])
-  (hbir : Scheme.BirationalOver g (𝟙 P))
+variable [(Φ.finiteFanScheme k₀).IsProjectiveOver k₀]
+  (g : Y ⟶ (Proj (homogeneousSubmodule k₀ (Fin 3 → k₀)))) (hg : g ≫
+    ((Proj (homogeneousSubmodule k₀ (Fin 3 → k₀))) ↘ Spec (.of k₀)) = T.toBase ≫
+      (Φ.finiteFanSchemeToSpec k₀))
+  (hbir : Scheme.BirationalOver g (𝟙 (Proj (homogeneousSubmodule k₀ (Fin 3 → k₀)))))
 
 include hg hbir in
 /-- A proper smooth section pivot transports a logarithmic Hirzebruch-to-plane resolution.
@@ -152,40 +156,41 @@ its first occurrence.
 The bidegree decreases when the pivot order exceeds half the fiber degree. -/
 theorem exists_sarkisov_link_of_logarithmic_smooth_section
     (hρ : ρ = r (pivotIndex)) (j : Fin (n + 1))
-    (hj : hT.baseCenter j = center (IsLocalRing.closedPoint ℂ))
-    (hfirst : ∀ l < j, hT.baseCenter l ≠ center (IsLocalRing.closedPoint ℂ))
+    (hj : hT.baseCenter j = center (IsLocalRing.closedPoint k₀))
+    (hfirst : ∀ l < j, hT.baseCenter l ≠ center (IsLocalRing.closedPoint k₀))
     (D : Y.IdealSheafData) :
     let : Nonempty Φ.cones := hc.nonempty_cones
     let : SmoothOfRelativeDimension 2 f[Φ] :=
-      rankTwo ▸ Φ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
-    let : IsNoetherian X[Φ] := inferInstance
+      rankTwo ▸ Φ.smoothOfRelativeDimension_finiteFanSchemeToSpec k₀ hΦ
+    let : IsNoetherian X[k₀,Φ] := inferInstance
     let : IsIntegral Y := hT.isIntegral f[Φ]
     let : IsModification T.toBase := hT.isModification_of_smoothOfRelativeDimension_two f[Φ]
     let x := (T.picardMarking hT f[Φ]).symm (Additive.ofMul (pullback g H))
     let a := (C).repr x.1 0
     let β := (C).repr x.1 1
-    B[Φ,hc].comap T.toBase = D * hT.ramificationIdealSheafToBase ℂ →
+    B[Φ,hc].comap T.toBase = D * hT.ramificationIdealSheafToBase k₀ →
     let : Nonempty (Ψ).cones := (hcΨ).nonempty_cones
     let : SmoothOfRelativeDimension 2 f[Ψ] :=
-      rankTwo ▸ (Ψ).smoothOfRelativeDimension_algebraicRealizationStructureMap hΨ
-    let : IsNoetherian X[Ψ] := inferInstance
-    X[Ψ].IsProjectiveOver ℂ ∧
+      rankTwo ▸ (Ψ).smoothOfRelativeDimension_finiteFanSchemeToSpec k₀ hΨ
+    let : IsNoetherian X[k₀,Ψ] := inferInstance
+    X[k₀,Ψ].IsProjectiveOver k₀ ∧
     ∃ (d : Basis (Fin 2) ℤ N)
       (hr' : (fun l ↦ (r' l).primitiveGenerator) = ![d 0, d 1, -d 0, e' • d 0 - d 1])
-      (Z : Scheme) (U : BlowupTower X[Ψ] (1 + n) Z) (hU : IsClosedPointTower X[Ψ] U) (k : Y ≅ Z),
+      (Z : Scheme) (U : BlowupTower X[k₀,Ψ] (1 + n) Z) (hU : IsClosedPointTower X[k₀,Ψ] U)
+        (k : Y ≅ Z),
       T.toBase.toRationalMap.comp μ = (k.hom ≫ U.toBase).toRationalMap ∧
       k.hom ≫ U.toBase ≫ f[Ψ] = T.toBase ≫ f[Φ] ∧
       (k.inv ≫ g) ≫ (P ↘ S) = U.toBase ≫ f[Ψ] ∧
       Scheme.BirationalOver (k.inv ≫ g) (𝟙 P) ∧
-      B[Ψ,hcΨ].comap U.toBase = D.comap k.inv * hU.ramificationIdealSheafToBase ℂ ∧
+      B[Ψ,hcΨ].comap U.toBase = D.comap k.inv * hU.ramificationIdealSheafToBase k₀ ∧
       (∀ (l : Fin n) (hl : hT.baseCenter (j.succAbove l) ∈ sourceOpen),
         let z : (sourceOpen).toScheme := ⟨hT.baseCenter (j.succAbove l), hl⟩
         hU.baseCenter (l.natAdd 1) = (targetOpen).ι ((complementIso).hom z) ∧
           ((∀ a < j.succAbove l, hT.baseCenter a ≠ hT.baseCenter (j.succAbove l)) →
             ∀ a < l.natAdd 1, hU.baseCenter a ≠ hU.baseCenter (l.natAdd 1))) ∧
-      hU.strictTransformCenterIndices ((Ψ).rayBoundaryIdeal hΨ (rayEquiv ρ)) =
+      hU.strictTransformCenterIndices ((Ψ).rayDivisorIdeal k₀ hΨ (rayEquiv ρ)) =
         (Finset.univ.filter fun l : Fin n ↦
-          j.succAbove l ∈ hT.strictTransformCenterIndices (Φ.rayBoundaryIdeal hΦ ρ)).map
+          j.succAbove l ∈ hT.strictTransformCenterIndices (Φ.rayDivisorIdeal k₀ hΦ ρ)).map
             (Fin.natAddEmb 1) ∧
       (let q := ruling[Φ,b,e,r,hr]
        let q' := ruling[Ψ,d,e',r',hr']
@@ -193,7 +198,7 @@ theorem exists_sarkisov_link_of_logarithmic_smooth_section
          q' (hU.baseCenter (l.natAdd 1)) = coordinatePoint[t] ∧
            ((∀ a < j.succAbove l, hT.baseCenter a ≠ hT.baseCenter (j.succAbove l)) →
              ∀ a < l.natAdd 1, hU.baseCenter a ≠ hU.baseCenter (l.natAdd 1))) ∧
-      let C' := Fan.hirzebruchPicardBasis d e' hΨ r' hr'
+      let C' := Fan.hirzebruchPicardBasis k₀ d e' hΨ r' hr'
       let y := (U.picardMarking hU f[Ψ]).symm (Additive.ofMul (pullback (k.inv ≫ g) H))
       (C').repr y.1 0 = a + x.2 j + (if onSection then β else 0) ∧
       (C').repr y.1 1 = β ∧
@@ -211,19 +216,21 @@ theorem exists_sarkisov_link_of_logarithmic_smooth_section
   let := hcones'
   let := hdim'
   let := hnoeth'
-  refine ⟨Fan.Ray.isProjectiveOver_mutationFan ρ b hOpp hΦ, ?_⟩
+  refine ⟨Fan.Ray.isProjectiveOver_mutationFan k₀ ρ b hOpp hΦ, ?_⟩
   obtain ⟨d, hd₀, hd₁, hr'⟩ :=
     Fan.Ray.mutationFan_hirzebruch_ray_generators ρ b hOpp e r hr onSection hρ
   obtain ⟨Z, U, k, hU, hk, hlink, hreverse, hcenters, hsection, hpic⟩ :=
     Fan.Ray.exists_sarkisov_decrease_of_smooth_section_center ρ b hOpp c hΦ hT j hj hfirst
   have hg' : (k.inv ≫ g) ≫ (P ↘ S) = U.toBase ≫ f[Ψ] := by
-    rw [Category.assoc, hg, ← hk, k.inv_hom_id_assoc]
+    rw [Category.assoc, hg]
+    change k.inv ≫ T.toBase ≫ (X[k₀,Φ] ↘ S) = U.toBase ≫ f[Ψ]
+    rw [← hk, k.inv_hom_id_assoc]
   have hbir' : Scheme.BirationalOver (k.inv ≫ g) (𝟙 P) :=
     Scheme.BirationalOver.trans (sY := g)
       ⟨.ofIso k.symm, by simp [Scheme.PartialIso.IsOver, Scheme.PartialIso.ofIso]⟩ hbir
   refine ⟨d, hr', Z, U, hU, k, hlink, hk, hg', hbir',
-    ρ.mutation_projection_poleIdeal b hOpp c hT hΦ hc hU k hlink D hD,
-    fun l ↦ ρ.baseCenter_of_mutation_of_mem_complement b hOpp c hT hU j l hreverse hcenters,
+    ρ.mutation_projection_poleIdeal k₀ b hOpp c hT hΦ hc hU k hlink D hD,
+    fun l ↦ ρ.baseCenter_of_mutation_of_mem_complement k₀ b hOpp c hT hU j l hreverse hcenters,
     hsection, ?ruling, ?_⟩
   case ruling =>
     intro q q' l t ht
@@ -235,26 +242,28 @@ theorem exists_sarkisov_link_of_logarithmic_smooth_section
     let hq := Fan.nonneg_or_nonpos_hirzebruch_ruling_character b e r hr
     let hq' := Fan.nonneg_or_nonpos_hirzebruch_ruling_character d e' r' hr'
     obtain ⟨z, hz, hz'⟩ := hcenters l
-    have hval := ρ.mutationBlowupIso_apply_ruling_eq_coordinatePoint b hOpp c
+    have hval := ρ.mutationBlowupIso_apply_ruling_eq_coordinatePoint k₀ b hOpp c
       (b.coord 1).toAddMonoidHom hm hq (hd ▸ hq') z t (by simpa only [hz, q] using ht)
-    refine ⟨?_, (ρ.baseCenter_of_mutation_of_mem_complement b hOpp c
+    refine ⟨?_, (ρ.baseCenter_of_mutation_of_mem_complement k₀ b hOpp c
       hT hU j l hreverse hcenters (hz ▸ hval.2)).2⟩
     simpa only [q', hd, hz'] using hval.1
   intro C' y
   obtain ⟨hF, hF'⟩ :=
-    ρ.mutationFiberClasses_eq_hirzebruchPicardBasis_zero b hOpp e hΦ r hr
+    ρ.mutationFiberClasses_eq_hirzebruchPicardBasis_zero k₀ b hOpp e hΦ r hr
       onSection hρ d hd₀ hd₁ hr'
   obtain ⟨hL, -⟩ := hpic onSection a β x.2
   -- Read the pullback in the transported marking, using the two Hirzebruch basis vectors.
-  let := Φ.uniqueFactorizationMonoid_stalk_algebraicRealization hΦ
-  let := (Ψ).uniqueFactorizationMonoid_stalk_algebraicRealization hΨ
-  have hS : (C) 1 = Additive.ofMul (primeDivisorClass (Φ.rayBoundaryPoint hΦ (r 0))) := by
+  let := Φ.uniqueFactorizationMonoid_stalk_finiteFanScheme (R := k₀) hΦ
+  let := (Ψ).uniqueFactorizationMonoid_stalk_finiteFanScheme (R := k₀) hΨ
+  have hS : (C) 1 = Additive.ofMul (primeDivisorClass (Φ.rayBoundaryChartPoint (R := k₀) hΦ
+    (r 0))) := by
     classical
-    rw [Fan.hirzebruchPicardBasis_apply_one, Fan.rayDivisorToPicard_single, one_zsmul]
+    rw [Fan.hirzebruchPicardBasis_apply_one, Fan.rayChartDivisorToPicard_single, one_zsmul]
   have hS' : C' 1 =
-      Additive.ofMul (primeDivisorClass ((Ψ).rayBoundaryPoint hΨ (rayEquiv (r 0)))) := by
+      Additive.ofMul (primeDivisorClass ((Ψ).rayBoundaryChartPoint (R := k₀) hΨ (rayEquiv
+        (r 0)))) := by
     classical
-    simp only [C', Fan.hirzebruchPicardBasis_apply_one, Fan.rayDivisorToPicard_single,
+    simp only [C', Fan.hirzebruchPicardBasis_apply_one, Fan.rayChartDivisorToPicard_single,
       one_zsmul, Equiv.trans_apply]
   simp only [ρ.hirzebruch_section_ray_eq_zero b hOpp e r hr onSection hρ,
     hF, hF', ← hS, ← hS'] at hL
@@ -279,7 +288,7 @@ theorem exists_sarkisov_link_of_logarithmic_smooth_section
     rw [hy']
     simp [-Fan.hirzebruchPicardBasis_apply_zero, -Fan.hirzebruchPicardBasis_apply_one]
   obtain ⟨ha', hβ', horders'⟩ := hcoeff
-  obtain ⟨hβpos, -, hm⟩ := hT.hirzebruch_resolution_degree_bounds b e hΦ hc r hr g hg hbir
+  obtain ⟨hβpos, -, hm⟩ := hT.hirzebruch_resolution_degree_bounds k₀ b e hΦ hc r hr g hg hbir
   refine ⟨ha', hβ', horders', ?_⟩
   rw [hβ', horders']
   exact section_baseOrder_sum_and_bidegree j x.2 β hβpos hm

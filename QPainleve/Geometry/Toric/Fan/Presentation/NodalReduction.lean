@@ -34,19 +34,22 @@ open QPainleve QPainleve.BlowupTower TauCeti.AlgebraicGeometry Scheme.IdealSheaf
 
 namespace TauCeti.Toric.Fan
 
+variable (F : Type) [Field F] [IsAlgClosed F]
+
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {Φ : Fan i} [Nonempty Φ.cones]
   (b : Module.Basis (Fin 2) ℤ N) (hΦ : Φ.IsRegular) (hc : Φ.IsComplete)
-  {m : ℕ} (ρ : Fin m → Φ.Ray) (c : Fin m → ℂˣ)
+  {m : ℕ} (ρ : Fin m → Φ.Ray) (c : Fin m → Fˣ)
 
-local notation "S" => Spec (CommRingCat.of ℂ)
-local notation "K[" Y "]" => LineBundleClass.mk (canonicalBundle ℂ Y 2)
-local notation "P" => internalBlowupTower b ρ c
+local notation "S" => Spec (CommRingCat.of F)
+local notation "K[" Y "]" => LineBundleClass.mk (canonicalBundle F Y 2)
+local notation "P" => internalBlowupTower F b ρ c
 local notation "J[" q "]" => Scheme.Hom.ker (Scheme.fromSpecResidueField _ q)
 
-variable {X Y Z : Scheme} [X.Over S] [Y.Over S]
+variable {X Y Z : Scheme} [X.Over (Spec (.of F))] [Y.Over (Spec (.of F))]
   [IsIntegral X] [IsIntegral Y] [IsNoetherian X] [IsNoetherian Y]
-  [SmoothOfRelativeDimension 2 (X ↘ S)] [SmoothOfRelativeDimension 2 (Y ↘ S)]
+  [SmoothOfRelativeDimension 2 (X ↘ Spec (.of F))]
+  [SmoothOfRelativeDimension 2 (Y ↘ Spec (.of F))]
   {D : X.IdealSheafData}
 
 include hΦ hc in
@@ -67,14 +70,14 @@ theorem exists_toric_presentation_of_internal_contraction_after_nodal_tower
     {n : ℕ} {W : Scheme} {T : BlowupTower Y n W}
     (hT : IsNodalBoundaryTower ((D.comap U.toBase).radical.map g) (Y ↘ S) (𝟙 Y) T)
     (e : (P).1 ≅ W)
-    (he : e.hom ≫ T.toBase ≫ Y ↘ S = (P).2.toTower.toBase ≫ Φ.algebraicRealizationStructureMap)
+    (he : e.hom ≫ T.toBase ≫ Y ↘ S = (P).2.toTower.toBase ≫ (Φ.finiteFanSchemeToSpec F))
     (hB : ((((D.comap U.toBase).radical.map g).comap T.toBase).comap e.hom).radical =
         (P).2.boundaryι.ker) :
-    ∃ (r : Φ.Ray) (a : ℂˣ) (W' : Scheme) (T' : BlowupTower X (k + n) W'),
+    ∃ (r : Φ.Ray) (a : Fˣ) (W' : Scheme) (T' : BlowupTower X (k + n) W'),
       IsNodalBoundaryTower D (X ↘ S) (𝟙 X) T' ∧
-      let P' := internalBlowupTower b (Fin.snoc ρ r) (Fin.snoc c a)
+      let P' := internalBlowupTower F b (Fin.snoc ρ r) (Fin.snoc c a)
       ∃ d : P'.1 ≅ W',
-        d.hom ≫ T'.toBase ≫ X ↘ S = P'.2.toTower.toBase ≫ Φ.algebraicRealizationStructureMap ∧
+        d.hom ≫ T'.toBase ≫ X ↘ S = P'.2.toTower.toBase ≫ (Φ.finiteFanSchemeToSpec F) ∧
         ((D.comap T'.toBase).comap d.hom).radical = P'.2.boundaryι.ker := by
   let R := (D.comap U.toBase).radical
   let D' := R.map g
@@ -91,7 +94,7 @@ theorem exists_toric_presentation_of_internal_contraction_after_nodal_tower
   have hOmit : ¬ (I.comap g).support ≤ R.support := by
     simpa only [← hI, R, support_radical] using homit
   obtain ⟨hD', -, hN', -, -, hCartier, hPoint, d, hd⟩ :=
-    hR.internalBlowdown_of_anticanonical_of_blowupIso ℂ hq g v.symm hv'
+    hR.internalBlowdown_of_anticanonical_of_blowupIso F hq g v.symm hv'
       hOmit hRN hRK
   let := hN'.syntomic.locallyOfFinitePresentation
   obtain ⟨p, hpq, hs⟩ := hPoint
@@ -118,7 +121,7 @@ theorem exists_toric_presentation_of_internal_contraction_after_nodal_tower
       rw [← hd, Iso.inv_hom_id_assoc]
     rw [← ha, Scheme.Hom.ker_comp_of_isIso a.hom,
       Scheme.Hom.comap_ker_comp_of_isClosedImmersion R.subschemeι hLift.hom, ker_subschemeι]
-  exact exists_toric_presentation_of_nodalTower_and_internal_blowdown b hΦ hc ρ c
+  exact exists_toric_presentation_of_nodalTower_and_internal_blowdown F b hΦ hc ρ c
     hT e he hB hN' hp (Scheme.Hom.mem_smoothLocus.mp hs) hU hLift
     (by rw [reassoc_of% hLiftBase, hg])
     (by rw [hStrict, support_radical])
@@ -139,21 +142,21 @@ theorem exists_toric_presentation_of_nodal_blowup_and_strict_transform_contracti
     (hN : AtWorstNodalOfRelativeDimensionOne (D.subschemeι ≫ X ↘ S))
     (hK : LineBundleClass.mk hD.toInvertibleSheaf = K[X])
     {p : X} (hp : IsClosed ({p} : Set X)) (hn : D.IsNodeOfReducedBoundary (X ↘ S) p)
-    (F : X.IdealSheafData) (hF : ¬ F.support ≤ D.support)
+    (E : X.IdealSheafData) (hF : ¬ E.support ≤ D.support)
     (g : (I[p]).blowup ⟶ Y) (hg : g ≫ Y ↘ S = π[p] ≫ X ↘ S)
     {q : Y} (hq : IsClosed ({q} : Set Y))
     (u : (I[p]).blowup ≅ (J[q]).blowup) (hu : u.hom ≫ (J[q]).blowupToBase = g)
-    (hqF : (J[q]).comap g = ((I[p]).blowupMap F.subschemeι).ker)
+    (hqF : (J[q]).comap g = ((I[p]).blowupMap E.subschemeι).ker)
     {n : ℕ} {W : Scheme} {T : BlowupTower Y n W}
     (hT : IsNodalBoundaryTower ((R[p]).map g) (Y ↘ S) (𝟙 Y) T)
     (e : (P).1 ≅ W)
-    (he : e.hom ≫ T.toBase ≫ Y ↘ S = (P).2.toTower.toBase ≫ Φ.algebraicRealizationStructureMap)
+    (he : e.hom ≫ T.toBase ≫ Y ↘ S = (P).2.toTower.toBase ≫ (Φ.finiteFanSchemeToSpec F))
     (hB : ((((R[p]).map g).comap T.toBase).comap e.hom).radical = (P).2.boundaryι.ker) :
-    ∃ (r : Φ.Ray) (a : ℂˣ) (W' : Scheme) (T' : BlowupTower X (1 + n) W'),
+    ∃ (r : Φ.Ray) (a : Fˣ) (W' : Scheme) (T' : BlowupTower X (1 + n) W'),
       IsNodalBoundaryTower D (X ↘ S) (𝟙 X) T' ∧
-      let P' := internalBlowupTower b (Fin.snoc ρ r) (Fin.snoc c a)
+      let P' := internalBlowupTower F b (Fin.snoc ρ r) (Fin.snoc c a)
       ∃ d : P'.1 ≅ W',
-        d.hom ≫ T'.toBase ≫ X ↘ S = P'.2.toTower.toBase ≫ Φ.algebraicRealizationStructureMap ∧
+        d.hom ≫ T'.toBase ≫ X ↘ S = P'.2.toTower.toBase ≫ (Φ.finiteFanSchemeToSpec F) ∧
         ((D.comap T'.toBase).comap d.hom).radical = P'.2.boundaryι.ker := by
   let U : BlowupTower X 1 (I[p]).blowup := .snoc .nil (I[p])
   have hU : IsNodalBoundaryTower D (X ↘ S) (𝟙 X) U :=
@@ -167,7 +170,7 @@ theorem exists_toric_presentation_of_nodal_blowup_and_strict_transform_contracti
   have hG : ¬ ((J[q]).comap g).support ≤ (D.comap U.toBase).support := by
     simpa only [hπ, hqF, support_ker_blowupMap_subschemeι_le_comap_iff, Set.sdiff_subset_iff,
       Set.union_eq_right.mpr (SetLike.coe_subset_coe.mpr hI), SetLike.coe_subset_coe] using hF
-  exact exists_toric_presentation_of_internal_contraction_after_nodal_tower b hΦ hc ρ c
+  exact exists_toric_presentation_of_internal_contraction_after_nodal_tower F b hΦ hc ρ c
     hD hN hK hU g (hπ.symm ▸ hg) hq u hu hG (by rwa [hπ]) e he (by rwa [hπ])
 
 end TauCeti.Toric.Fan
@@ -176,11 +179,13 @@ open TauCeti.Toric
 
 namespace AlgebraicGeometry.Scheme.IdealSheafData
 
+variable (F : Type) [Field F] [IsAlgClosed F]
+
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V] {i : N →+ V}
   (b : Module.Basis (Fin 2) ℤ N)
 
-local notation "S" => Spec (CommRingCat.of ℂ)
-local notation "K[" X "]" => LineBundleClass.mk (canonicalBundle ℂ X 2)
+local notation "S" => Spec (CommRingCat.of F)
+local notation "K[" X "]" => LineBundleClass.mk (canonicalBundle F X 2)
 local notation "J[" x "]" => Scheme.Hom.ker (Scheme.fromSpecResidueField _ x)
 local notation "T[" x "]" => BlowupTower.nil.snoc J[x]
 
@@ -188,10 +193,12 @@ local notation "T[" x "]" => BlowupTower.nil.snoc J[x]
 presentation of the schematic image of the reduced total boundary gives
 a toric presentation of the original pair. -/
 theorem hasToricPresentation_of_nodal_blowup_and_internal_contraction
-    {X Y : Scheme} [X.Over S] [Y.Over S] [IsIntegral X] [IsIntegral Y]
-    [X.IsProjectiveOver ℂ] [Y.IsProjectiveOver ℂ]
-    [SmoothOfRelativeDimension 2 (X ↘ S)] [SmoothOfRelativeDimension 2 (Y ↘ S)]
-    {D : X.IdealSheafData} [PrestableFamily (D.subscheme ↘ S)] (hD : D.IsEffectiveCartier)
+    {X Y : Scheme} [X.Over (Spec (.of F))] [Y.Over (Spec (.of F))] [IsIntegral X] [IsIntegral Y]
+    [X.IsProjectiveOver F] [Y.IsProjectiveOver F]
+    [SmoothOfRelativeDimension 2 (X ↘ Spec (.of F))]
+    [SmoothOfRelativeDimension 2 (Y ↘ Spec (.of F))]
+    {D : X.IdealSheafData} [PrestableFamily (D.subscheme ↘ Spec (.of F))]
+    (hD : D.IsEffectiveCartier)
     (hK : LineBundleClass.mk hD.toInvertibleSheaf = K[X])
     {x : X} (hT : IsNodalBoundaryTower D (X ↘ S) (𝟙 X) T[x])
     {y : Y} (hy : IsClosed ({y} : Set Y)) (u : J[x].blowup ≅ J[y].blowup) :
@@ -211,7 +218,7 @@ theorem hasToricPresentation_of_nodal_blowup_and_internal_contraction
   obtain ⟨n, ⟨Φ, hΦ, hc, r, c, l, W, U, hU, e, he, hB⟩⟩ := (hasToricPresentation_iff ..).mp h
   let : Nonempty Φ.cones := hc.nonempty_cones
   obtain ⟨r', c', Z', T', hT', d, hd, hD'⟩ :=
-    Fan.exists_toric_presentation_of_internal_contraction_after_nodal_tower b hΦ hc r c hD hN hK
+    Fan.exists_toric_presentation_of_internal_contraction_after_nodal_tower F b hΦ hc r c hD hN hK
       hT g (by rwa [hπ]) hy u rfl (by simpa only [hπ, R, support_radical] using hOmit)
       (by rwa [hπ]) e he (by rwa [hπ, radical_comap_of_isOpenImmersion])
   exact ToricPresentation.hasToricPresentation (r := n + 1)

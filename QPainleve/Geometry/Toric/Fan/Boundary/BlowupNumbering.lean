@@ -29,51 +29,57 @@ open TauCeti TauCeti.AlgebraicGeometry
 
 namespace TauCeti.Toric.Fan
 
-variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
+universe u
+
+variable (K : Type u) [Field K] [IsAlgClosed K]
+
+variable {N V : Type u} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {Φ : Fan i} [h₀ : Nonempty Φ.cones]
 
-local notation "D" => Scheme.IdealSheafData.subscheme (Fan.boundaryIdeal Φ h₀)
+local notation "D" => Scheme.IdealSheafData.subscheme (Fan.toricBoundaryIdeal K Φ h₀)
 
 variable {r : ℕ}
 
-local notation "S" => Spec (CommRingCat.of ℂ)
+local notation "S" => Spec (CommRingCat.of K)
 
 /-- Number the toric boundary by the given positive ray order, and transport this
 numbering to the strict boundary of an ordered internal blowup. The intervening
 boundary isomorphism preserves the numbered nodes and branches. -/
 theorem exists_numbering_internalBlowup_of_cyclicRays
     (hΦ : Φ.IsRegular) (hc : Φ.IsComplete) (b : Module.Basis (Fin 2) ℤ N)
-    (s : Fin r → Φ.Ray) (c : Fin r → ℂˣ) {m : ℕ} [NeZero m]
+    (s : Fin r → Φ.Ray) (c : Fin r → Kˣ) {m : ℕ} [NeZero m]
     (v : ZMod m ≃ Φ.Ray)
     (hv : ∀ j, b.detDualEquiv (v j).primitiveGenerator (v (j + 1)).primitiveGenerator = 1 ∧
       ∃ σ : Φ.cones, (v j).toCone ≤ σ ∧ (v (j + 1)).toCone ≤ σ) :
-    let U := internalBlowupTower b s c
+    let U := internalBlowupTower K b s c
     let E := U.2.boundaryι.ker
-    letI : U.1.Over S := ⟨U.2.toTower.toBase ≫ (Φ.algebraicRealization ↘ S)⟩
-    letI := Φ.isProjectiveOver_algebraicRealization_of_isComplete hΦ hc b
+    letI : U.1.Over S := ⟨U.2.toTower.toBase ≫ ((Φ.finiteFanScheme K) ↘ S)⟩
+    letI := Φ.isProjectiveOver_finiteFanScheme_of_isComplete K hΦ hc b
     letI := U.2.toTower.isNoetherian
     ∀ (hE : E.IsEffectiveCartier),
       ∃ (_ : PrestableFamily (D ↘ S)) (_ : PrestableFamily (E.subscheme ↘ S))
-        (C : Scheme.NodalCycleNumbering (Empty.elim : Empty → (D ↘ S).smoothLocus) m)
-        (A : Scheme.NodalCycleNumbering (Empty.elim : Empty → (E.subscheme ↘ S).smoothLocus) m),
+        (C : Scheme.NodalCycleNumbering (k := K) (X := D)
+          (Empty.elim : Empty → (D ↘ S).smoothLocus) m)
+        (A : Scheme.NodalCycleNumbering (k := K) (X := E.subscheme)
+          (Empty.elim : Empty → (E.subscheme ↘ S).smoothLocus) m),
         let e : D ≅ E.subscheme := asIso U.2.boundaryι.toImage
-        Φ.rayEquivOfNodalCycleNumbering hΦ C = v ∧
+        Φ.rayEquivOfNodalCycleNumbering K hΦ C = v ∧
         ∃ (_ : e.hom.IsOver S), e.boundaryCycleAction C A = 1 ∧
-          ∀ j, A.boundaryPrimeEquiv hE j = internalBlowupBoundaryPrimeEquiv hΦ b s c (v j) := by
+          ∀ j, A.boundaryPrimeEquiv hE j = internalBlowupBoundaryPrimeEquiv K hΦ b s c (v j) := by
   intro U E hE
-  let : Φ.algebraicRealization.IsProjectiveOver ℂ :=
-    Φ.isProjectiveOver_algebraicRealization_of_isComplete hΦ hc b
+  let : (Φ.finiteFanScheme K).IsProjectiveOver K :=
+    Φ.isProjectiveOver_finiteFanScheme_of_isComplete K hΦ hc b
   let : IsNoetherian U.1 := U.2.toTower.isNoetherian
-  let : IsProper Φ.algebraicRealizationStructureMap := by
-    rw [← Φ.algebraicRealization_over]
+  let : IsProper (Φ.finiteFanSchemeToSpec K) := by
+    rw [← Φ.finiteFanScheme_over K]
     infer_instance
   have hdim : Module.finrank ℤ N = 2 := by simpa using Module.finrank_eq_card_basis b
-  let : PrestableFamily (D ↘ S) := Φ.prestableFamily_boundary hΦ hc hdim
-  let : U.1.Over S := ⟨U.2.toTower.toBase ≫ (Φ.algebraicRealization ↘ S)⟩
+  let : PrestableFamily (D ↘ S) := Φ.prestableFamily_boundary K hΦ hc hdim
+  let : U.1.Over S := ⟨U.2.toTower.toBase ≫ ((Φ.finiteFanScheme K) ↘ S)⟩
   let j := U.2.boundaryι
   let : j.IsOver S := ⟨by
-    rw [(Φ.boundaryIdeal h₀).over_eq_subschemeι_comp]
-    exact U.2.boundaryι_toBase_assoc (Φ.algebraicRealization ↘ S)⟩
+    rw [(Φ.toricBoundaryIdeal K h₀).over_eq_subschemeι_comp]
+    exact U.2.boundaryι_toBase_assoc ((Φ.finiteFanScheme K) ↘ S)⟩
   let e : D ≅ E.subscheme := asIso j.toImage
   let : e.hom.IsOver S := inferInstanceAs (j.toImage.IsOver S)
   let : PrestableFamily (E.subscheme ↘ S) :=
@@ -81,22 +87,22 @@ theorem exists_numbering_internalBlowup_of_cyclicRays
       (by rw [comp_over]; infer_instance)
   let marks : Empty → (D ↘ S).smoothLocus := Empty.elim
   obtain ⟨edge, order, vertex, hend, hcomp, -⟩ :=
-    Φ.exists_toric_boundary_dualGraph_cycle hΦ hc marks b v hv
-  let P : Scheme.NodalCycleNumbering marks m := ⟨vertex, edge, order, hend⟩
+    Φ.exists_toric_boundary_dualGraph_cycle K hΦ hc marks b v hv
+  let P : Scheme.NodalCycleNumbering (k := K) (X := D) marks m := ⟨vertex, edge, order, hend⟩
   let A := e.mapNodalCycleNumbering P (q := fun x : Empty ↦ x.elim)
   have hcomponent (i : ZMod m) :
-      P.component i = Φ.boundaryNormalizationComponentEquiv hΦ (v i) :=
+      P.component i = Φ.boundaryNormalizationComponentEquiv K hΦ (v i) :=
     (P.component_apply i).trans (hcomp i)
   have hact : e.boundaryCycleAction P A = 1 := e.boundaryCycleAction_mapNodalCycleNumbering P
   refine ⟨inferInstance, inferInstance, P, A, ?_, inferInstance, hact, fun i ↦ Subtype.ext ?_⟩
   · apply Equiv.ext
     intro i
-    apply (Φ.boundaryNormalizationComponentEquiv hΦ).injective
-    rw [boundaryNormalizationComponentEquiv_rayEquivOfNodalCycleNumbering, hcomponent]
+    apply (Φ.boundaryNormalizationComponentEquiv K hΦ).injective
+    rw [boundaryNormalizationComponentEquiv_rayEquivOfNodalCycleNumbering K, hcomponent]
   · have hgen := e.apply_componentGenericPoint P A i
     rw [hact, map_one, Equiv.Perm.one_apply] at hgen
     rw [Scheme.NodalCycleNumbering.boundaryPrimeEquiv_apply_val, ← hgen, ← Scheme.Hom.comp_apply,
       asIso_hom, Scheme.Hom.toImage_imageι, Scheme.NodalCycleNumbering.componentGenericPoint_def,
-      hcomponent, internalBlowupBoundaryPrime_val]
+      hcomponent, internalBlowupBoundaryPrime_val K]
 
 end TauCeti.Toric.Fan

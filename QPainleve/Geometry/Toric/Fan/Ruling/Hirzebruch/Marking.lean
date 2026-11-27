@@ -26,6 +26,8 @@ open CategoryTheory Module PointedCone TauCeti.AlgebraicGeometry
 
 namespace TauCeti.Toric.Fan
 
+variable (k₀ : Type) [Field k₀]
+
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {Φ : Fan i} (b : Basis (Fin 2) ℤ N) (e : ℤ)
   (r : Fin 4 ≃ Φ.Ray)
@@ -33,10 +35,10 @@ variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
 
 local notation "fiber[" t "]" => (![1, 3] : Fin 2 → Fin 4) t
 local notation "ruling[" b "," r "," h "]" =>
-  Φ.characterRuling (LinearMap.toAddMonoidHom (Basis.coord b 1))
+  Φ.characterRuling k₀ (LinearMap.toAddMonoidHom (Basis.coord b 1))
     (nonneg_or_nonpos_hirzebruch_ruling_character b e r h)
 local notation "baseMap[" t "]" =>
-  ite (t = (0 : Fin 2)) (𝟙 (projectiveLine ℂ)) (Iso.hom (projectiveLine.coordinateSwap ℂ))
+  ite (t = (0 : Fin 2)) (𝟙 (projectiveLine k₀)) (Iso.hom (projectiveLine.coordinateSwap k₀))
 
 include hr in
 /-- Either invariant fiber can be placed first while keeping the section rays and
@@ -47,11 +49,11 @@ theorem exists_hirzebruch_picardBasis_ruling_of_fiber [Nonempty Φ.cones]
     ∃ (d : Basis (Fin 2) ℤ N) (s : Fin 4 ≃ Φ.Ray)
       (hs : (fun j ↦ (s j).primitiveGenerator) = ![d 0, d 1, -d 0, e • d 0 - d 1]),
       s 0 = r 0 ∧ s 1 = r fiber[t] ∧ s 2 = r 2 ∧
-        hirzebruchPicardBasis d e hΦ s hs = hirzebruchPicardBasis b e hΦ r hr ∧
+        hirzebruchPicardBasis k₀ d e hΦ s hs = hirzebruchPicardBasis k₀ b e hΦ r hr ∧
         ruling[d,s,hs] ≫ baseMap[t] = ruling[b,r,hr] := by
   fin_cases t
   · exact ⟨b, r, hr, rfl, rfl, rfl, rfl, by simp⟩
-  obtain ⟨d, s, hs, h₀, h₁, hPic⟩ := exists_hirzebruch_picardBasis_of_fiber b e r hr hΦ 1
+  obtain ⟨d, s, hs, h₀, h₁, hPic⟩ := exists_hirzebruch_picardBasis_of_fiber k₀ b e r hr hΦ 1
   have hd₀ : d 0 = b 0 := (congrFun hs 0).symm.trans ((congrArg Ray.primitiveGenerator h₀).trans
     (congrFun hr 0))
   have hd₁ : d 1 = e • b 0 - b 1 :=
@@ -69,9 +71,9 @@ theorem exists_hirzebruch_picardBasis_ruling_of_fiber [Nonempty Φ.cones]
     ext x
     simp [hcoord]
   have hsign := hneg ▸ nonneg_or_nonpos_hirzebruch_ruling_character d e s hs
-  have heq : ruling[d,s,hs] = Φ.characterRuling (-(b.coord 1).toAddMonoidHom) hsign := by
+  have heq : ruling[d,s,hs] = Φ.characterRuling k₀ (-(b.coord 1).toAddMonoidHom) hsign := by
     congr 1
-  rw [heq, Φ.characterRuling_neg _ (nonneg_or_nonpos_hirzebruch_ruling_character b e r hr) hsign]
+  rw [heq, Φ.characterRuling_neg k₀ _ (nonneg_or_nonpos_hirzebruch_ruling_character b e r hr) hsign]
   simp
 
 include hr in
@@ -85,12 +87,12 @@ theorem exists_hirzebruch_section_corner_picardBasis_ruling
     ∃ (t : Fin 2) (d : Basis (Fin 2) ℤ N) (s : Fin 4 ≃ Φ.Ray)
       (hs : (fun j ↦ (s j).primitiveGenerator) = ![d 0, d 1, -d 0, e • d 0 - d 1]),
       σ.val = hull ℝ {i (-d 0), i (d 1)} ∧ s 0 = r 0 ∧ s 1 = r fiber[t] ∧ s 2 = r 2 ∧
-        hirzebruchPicardBasis d e hΦ s hs = hirzebruchPicardBasis b e hΦ r hr ∧
+        hirzebruchPicardBasis k₀ d e hΦ s hs = hirzebruchPicardBasis k₀ b e hΦ r hr ∧
         ruling[d,s,hs] ≫ baseMap[t] = ruling[b,r,hr] := by
   let : Nonempty Φ.cones := hc.nonempty_cones
   obtain ⟨t, hcorner⟩ := exists_hirzebruch_corner_eq_hull_of_section_le b e r hr hΦ hc σ hσ 1 hsec
   obtain ⟨d, s, hs, h₀, h₁, h₂, hPic, hRuling⟩ :=
-    exists_hirzebruch_picardBasis_ruling_of_fiber b e r hr hΦ t
+    exists_hirzebruch_picardBasis_ruling_of_fiber k₀ b e r hr hΦ t
   refine ⟨t, d, s, hs, ?_, h₀, h₁, h₂, hPic, hRuling⟩
   have hsecGen : (s 2).primitiveGenerator = -d 0 := congrFun hs 2
   have hfibGen : (s 1).primitiveGenerator = d 1 := congrFun hs 1

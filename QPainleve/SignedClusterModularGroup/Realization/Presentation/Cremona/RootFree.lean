@@ -38,11 +38,13 @@ open Scheme Scheme.IdealSheafData
 
 namespace QPainleve.SignedClusterModularGroup.CompleteToricPresentation
 
+variable {k₀ : Type} [Field k₀] [IsAlgClosed k₀] [Uncountable k₀] [NeZero (2 : k₀)]
+
 open GeometricRealization
 
-local notation "S" => Spec (CommRingCat.of ℂ)
-local notation "Centers[" r "]" => Over.mk (structureMap ℂ (Fin r → ℤ))
-local notation "XTor[" r "]" => scheme ℂ (Fin r →₀ ℤ)
+local notation "S" => Spec (CommRingCat.of k₀)
+local notation "Centers[" r "]" => Over.mk (structureMap k₀ (Fin r → ℤ))
+local notation "XTor[" r "]" => scheme k₀ (Fin r →₀ ℤ)
 local notation "δ[" M "]" =>
   (LineBundleClass.mk (IsEffectiveCartier.toInvertibleSheaf
     (MarkedSurface.isEffectiveCartier_boundaryIdeal M)))⁻¹
@@ -50,8 +52,9 @@ local notation "δ[" M "]" =>
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {b : Module.Basis (Fin 2) ℤ N} {r n : ℕ} [NeZero n]
   {L γ : Type} [AddCommGroup L] {B : LinearMap.BilinForm ℤ L}
-  {Q : CompleteToricPresentation i b r L γ} {E : SkewExchangeMatrix (Fin r)}
+  {Q : CompleteToricPresentation k₀ i b r L γ} {E : SkewExchangeMatrix (Fin r)}
 
+omit [NeZero (2 : k₀)] in
 /-- In a marked toric family with one primitive nef square-zero reference fiber,
 there is a fiber without any prime curve disjoint from its boundary. Its center
 lies in the noncollision open of every word starting at the seed. The same
@@ -62,19 +65,19 @@ theorem NodalPicardGroupIdentification.exists_root_free_cremonaComparison
     (G : NodalPicardGroupIdentification (B := B) Q k E d) {c : Point Centers[r]}
     (hE : E.matrix = chargeExchangeMatrix b.detDualEquiv.toLinearMap (Fan.rayChargeMap Q.rays))
     (hprim : IsPrimitive (Additive.ofMul δ[G.family c]))
-    (hnef : δ[G.family c].IsNef ℂ ((G.family c).surface ↘ S))
-    (hsq : Chow.classIntersectionNumber ℂ (G.family c).surface δ[G.family c] δ[G.family c] = 0) :
+    (hnef : δ[G.family c].IsNef k₀ ((G.family c).surface ↘ S))
+    (hsq : Chow.classIntersectionNumber k₀ (G.family c).surface δ[G.family c] δ[G.family c] = 0) :
     ∃ a : Point Centers[r],
       let M := G.family a
       letI : SmoothOfRelativeDimension 2 (M.surface ↘ S) := M.smooth
-      letI : M.surface.IsProjectiveOver ℂ := M.projective
+      letI : M.surface.IsProjectiveOver k₀ := M.projective
       (∀ ⦃F : SkewExchangeMatrix (Fin r)⦄ (w : Word E F),
-        a.left (default : S) ∈ w.centerOpen ℂ (Fan.rayChargeSeed b Q.rays hE)) ∧
+        a.left (default : S) ∈ w.centerOpen k₀ (Fan.rayChargeSeed b Q.rays hE)) ∧
       (∀ p : CodimensionOnePoint M.surface,
         ¬Disjoint (closure {(p : M.surface)}) (M.pair.hom.left.ker.support : Set M.surface)) ∧
-      IsPrimitive (Additive.ofMul δ[M]) ∧ δ[M].IsNef ℂ (M.surface ↘ S) ∧
-      Chow.classIntersectionNumber ℂ M.surface δ[M] δ[M] = 0 ∧
-      ∃ P : ClusterCremonaComparison (k := k) E n (Chow.cremonaIsometryGroup ℂ M.surface),
+      IsPrimitive (Additive.ofMul δ[M]) ∧ δ[M].IsNef k₀ (M.surface ↘ S) ∧
+      Chow.classIntersectionNumber k₀ M.surface δ[M] δ[M] = 0 ∧
+      ∃ P : ClusterCremonaComparison (k := k) E n (Chow.cremonaIsometryGroup k₀ M.surface),
         ∀ x : (SignedClusterModularGroup k E)ᵐᵒᵖ,
           (P.projection x).val = M.marking.isometryGroupCongr (toIsometry B d (G.signedEquiv x)) ∧
           P.sign x = (G.signedEquiv x).val.2 := by
@@ -89,7 +92,7 @@ theorem NodalPicardGroupIdentification.exists_root_free_cremonaComparison
       (1 : signedBoundaryIsometryGroup B d) (fun z _ ↦ G.hasNodalModel z)
   let M := G.family a
   let : SmoothOfRelativeDimension 2 (M.surface ↘ S) := M.smooth
-  let : M.surface.IsProjectiveOver ℂ := M.projective
+  let : M.surface.IsProjectiveOver k₀ := M.projective
   let : IsRationalOver (M.surface ↘ S) := ha.isRationalOver
   obtain ⟨hprim', hnef', hsq'⟩ :=
     ((G.family c).primitive_nef_square_zero_iff_of_boundaryClass_eq M (hD c) (hD a)
@@ -106,27 +109,27 @@ theorem NodalPicardGroupIdentification.exists_root_free_cremonaComparison
 root-free fiber of its marked toric family, while retaining the given reference
 model. The projection and sign use the family's geometric Picard identification. -/
 theorem exists_cluster_cremona_comparison_of_root_free_fiber
-    {c : Point Centers[r]} {M₀ : MarkedSurface ℂ n B XTor[r]}
+    {c : Point Centers[r]} {M₀ : MarkedSurface k₀ n B XTor[r]}
     (href : Q.HasNodalModel c M₀)
     (hE : E.matrix = chargeExchangeMatrix b.detDualEquiv.toLinearMap (Fan.rayChargeMap Q.rays))
     (hprim : IsPrimitive (Additive.ofMul δ[M₀]))
-    (hnef : δ[M₀].IsNef ℂ (M₀.surface ↘ S))
-    (hsq : Chow.classIntersectionNumber ℂ M₀.surface δ[M₀] δ[M₀] = 0) :
-    ∃ G : NodalPicardGroupIdentification (B := B) Q ℂ E
+    (hnef : δ[M₀].IsNef k₀ (M₀.surface ↘ S))
+    (hsq : Chow.classIntersectionNumber k₀ M₀.surface δ[M₀] δ[M₀] = 0) :
+    ∃ G : NodalPicardGroupIdentification (B := B) Q k₀ E
         (M₀.boundaryClass M₀.isEffectiveCartier_boundaryIdeal),
       G.family c = M₀ ∧
       ∃ a : Point Centers[r],
         let M := G.family a
         letI : SmoothOfRelativeDimension 2 (M.surface ↘ S) := M.smooth
-        letI : M.surface.IsProjectiveOver ℂ := M.projective
+        letI : M.surface.IsProjectiveOver k₀ := M.projective
         (∀ ⦃F : SkewExchangeMatrix (Fin r)⦄ (w : Word E F),
-          a.left (default : S) ∈ w.centerOpen ℂ (Fan.rayChargeSeed b Q.rays hE)) ∧
+          a.left (default : S) ∈ w.centerOpen k₀ (Fan.rayChargeSeed b Q.rays hE)) ∧
         (∀ p : CodimensionOnePoint M.surface,
           ¬Disjoint (closure {(p : M.surface)}) (M.pair.hom.left.ker.support : Set M.surface)) ∧
-        IsPrimitive (Additive.ofMul δ[M]) ∧ δ[M].IsNef ℂ (M.surface ↘ S) ∧
-        Chow.classIntersectionNumber ℂ M.surface δ[M] δ[M] = 0 ∧
-        ∃ P : ClusterCremonaComparison (k := ℂ) E n (Chow.cremonaIsometryGroup ℂ M.surface),
-          ∀ x : (SignedClusterModularGroup ℂ E)ᵐᵒᵖ,
+        IsPrimitive (Additive.ofMul δ[M]) ∧ δ[M].IsNef k₀ (M.surface ↘ S) ∧
+        Chow.classIntersectionNumber k₀ M.surface δ[M] δ[M] = 0 ∧
+        ∃ P : ClusterCremonaComparison (k := k₀) E n (Chow.cremonaIsometryGroup k₀ M.surface),
+          ∀ x : (SignedClusterModularGroup k₀ E)ᵐᵒᵖ,
             (P.projection x).val = M.marking.isometryGroupCongr
               (toIsometry B _ (G.signedEquiv x)) ∧ P.sign x = (G.signedEquiv x).val.2 := by
   obtain ⟨G, hG⟩ := Q.exists_picardGroupEquivs_of_nodal_model href hE hprim hnef hsq

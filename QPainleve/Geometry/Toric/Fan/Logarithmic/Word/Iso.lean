@@ -24,27 +24,31 @@ open Scheme.IdealSheafData
 
 namespace TauCeti.Toric.Fan.LogarithmicProjection.OrderedToricModel
 
-local notation "S" => Spec (CommRingCat.of ℂ)
+variable {k₀ : Type} [Field k₀] [IsAlgClosed k₀]
+
+local notation "S" => Spec (CommRingCat.of k₀)
 
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V] {i : N →+ V}
-  {Z W : Scheme} [Z.Over S] [W.Over S] [IsIntegral Z] [IsIntegral W]
-  [SmoothOfRelativeDimension 2 (Z ↘ S)] [SmoothOfRelativeDimension 2 (W ↘ S)]
-  {D : Z.IdealSheafData} {E : W.IdealSheafData} {A : LogarithmicProjection i D} {m : ℕ}
+  {Z W : Scheme} [Z.Over (Spec (.of k₀))] [W.Over (Spec (.of k₀))] [IsIntegral Z] [IsIntegral W]
+  [SmoothOfRelativeDimension 2 (Z ↘ Spec (.of k₀))] [SmoothOfRelativeDimension 2 (W ↘ Spec
+    (.of k₀))]
+  {D : Z.IdealSheafData} {E : W.IdealSheafData} {A : LogarithmicProjection k₀ i D} {m : ℕ}
 
+omit [IsAlgClosed k₀] in
 /-- An isomorphism over the base identifies the resolving surfaces of two ordered
 models of the same toric projection. The transported model uses the original
 exchange matrix, and its X evaluation is pulled back along the isomorphism. -/
 theorem exists_precomposeIso (U : OrderedToricModel A m) [IsModification A.hom]
     (e : W ≅ Z) [e.hom.IsOver S] (hE : D.comap e.hom = E) :
-    ∃ (B : LogarithmicProjection i E) (T : OrderedToricModel B m),
+    ∃ (B : LogarithmicProjection k₀ i E) (T : OrderedToricModel B m),
       B.fan = A.fan ∧ B.hom ≍ e.hom ≫ A.hom ∧ IsModification B.hom ∧
       T.exchangeMatrix = U.exchangeMatrix ∧
       T.xEvaluation = e.hom.toRationalMap.comp U.xEvaluation := by
   have hN := (Module.finrank_eq_card_basis U.basis).trans (Fintype.card_fin 2)
   have hPole : letI : Smooth (W ↘ S) := SmoothOfRelativeDimension.smooth 2 _
-      D.comap e.hom = E * ramificationIdealSheaf ℂ e.hom := by
+      D.comap e.hom = E * ramificationIdealSheaf k₀ e.hom := by
     let : Smooth (W ↘ S) := SmoothOfRelativeDimension.smooth 2 _
-    rw [ramificationIdealSheaf_eq_top_of_isOpenImmersion ℂ e.hom, mul_top, hE]
+    rw [ramificationIdealSheaf_eq_top_of_isOpenImmersion k₀ e.hom, mul_top, hE]
   let B := precomposeProjection hN e.hom hPole A
   have hB : B.hom = e.hom ≫ A.hom := (rfl)
   have hcancel : (U.iso ≪≫ e.symm).hom ≫ B.hom = U.iso.hom ≫ A.hom := by

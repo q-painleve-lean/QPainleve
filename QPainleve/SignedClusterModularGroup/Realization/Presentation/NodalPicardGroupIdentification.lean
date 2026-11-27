@@ -25,24 +25,26 @@ open Scheme TauCeti TauCeti.AlgebraicGeometry
 
 namespace QPainleve.SignedClusterModularGroup.CompleteToricPresentation
 
+variable {k₀ : Type} [Field k₀] [IsAlgClosed k₀]
+
 open GeometricRealization
 
-local notation "Centers[" r "]" => Over.mk (structureMap ℂ (Fin r → ℤ))
-local notation "XTor[" r "]" => scheme ℂ (Fin r →₀ ℤ)
-local notation "χ[" c "]" => pointsEquiv ℂ _ (Subtype.mk (Over.Hom.left c) (Over.w c))
+local notation "Centers[" r "]" => Over.mk (structureMap k₀ (Fin r → ℤ))
+local notation "XTor[" r "]" => scheme k₀ (Fin r →₀ ℤ)
+local notation "χ[" c "]" => pointsEquiv k₀ _ (Subtype.mk (Over.Hom.left c) (Over.w c))
 
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {b : Module.Basis (Fin 2) ℤ N} {r n : ℕ} [NeZero n]
   {L γ : Type} [AddCommGroup L] {B : LinearMap.BilinForm ℤ L}
 
 /-- The Picard group identification of a complete toric presentation with fixed numbered
-boundary classes. The geometry is over ℂ, and `k` is the coefficient field for the
+boundary classes. The geometry is over k₀, and `k` is the coefficient field for the
 independent X maps of the seed `E`. -/
 @[ext]
-structure NodalPicardGroupIdentification (Q : CompleteToricPresentation i b r L γ)
+structure NodalPicardGroupIdentification (Q : CompleteToricPresentation k₀ i b r L γ)
     (k : Type*) [Field k] (E : SkewExchangeMatrix (Fin r)) (d : ZMod n → L) where
   /-- The marked surface at each choice of ordered centers. -/
-  family : Point Centers[r] → MarkedSurface ℂ n B XTor[r]
+  family : Point Centers[r] → MarkedSurface k₀ n B XTor[r]
   /-- Every fiber has a nodal model in the given presentation. -/
   hasNodalModel (z : Point Centers[r]) : Q.HasNodalModel z (family z)
   /-- The numbered boundary classes are constant in the moving marking. -/
@@ -55,14 +57,14 @@ structure NodalPicardGroupIdentification (Q : CompleteToricPresentation i b r L 
     (signedEquiv (op (signedClusterModularGroupMap k E (End.of w)))).val.2 =
       (-1 : ℤˣ) ^ w.inversionCount
   /-- The signed action on a loop gives the marked pullback and ordered branch sign
-  of every compatible geometric realization over ℂ. -/
+  of every compatible geometric realization over k₀. -/
   signedEquiv_apply_word (w : Word E E) :
     letI := Q.complete.nonempty_cones
     letI := Q.prestable
     letI := Q.neZero
     ∀ {C : Centers[r].left.PartialMap Centers[r].left} [IsDominant C.hom]
       [C.IsOver Centers[r].hom Centers[r].hom]
-      (R : GeometricRealization family family C (w.xRationalMap ℂ)),
+      (R : GeometricRealization family family C (w.xRationalMap k₀)),
       HasToricTargetModels (T₀ := Centers[r]) (T₁ := Centers[r]) (b := b) (s := Q.rays)
         (hΦ := Q.regular) (T := Q.cycle) (origin := Q.origin) (ι := Q.inclusion) (P₁ := family)
         (fun z : Point Centers[r] ↦ χ[z]) C →
@@ -77,7 +79,7 @@ namespace NodalPicardGroupIdentification
 
 attribute [simp] boundaryClass_eq sign_signedEquiv_apply_word
 
-variable {Q : CompleteToricPresentation i b r L γ} {k : Type*} [Field k]
+variable {Q : CompleteToricPresentation k₀ i b r L γ} {k : Type*} [Field k]
   {E : SkewExchangeMatrix (Fin r)} {d : ZMod n → L}
   (P : NodalPicardGroupIdentification (B := B) Q k E d)
 

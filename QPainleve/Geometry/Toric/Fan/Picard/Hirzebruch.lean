@@ -9,9 +9,8 @@ public import Mathlib.AlgebraicGeometry.Birational.Birational
 public import QPainleve.AlgebraicGeometry.Modules.Differentials.Canonical
 public import QPainleve.Geometry.Toric.Fan.Boundary.SelfIntersection
 public import QPainleve.Geometry.Toric.Fan.Hirzebruch.Corner
-public import QPainleve.Geometry.Toric.Fan.Smooth
+public import QPainleve.Geometry.Toric.Fan.Picard.FiniteFanScheme
 
-import Mathlib.Analysis.Complex.Polynomial.Basic
 import QPainleve.AlgebraicGeometry.Chow.Ample
 import QPainleve.AlgebraicGeometry.Chow.ProperIntersection
 import QPainleve.AlgebraicGeometry.Chow.RationalSurface.Basic
@@ -41,16 +40,23 @@ open TauCeti.AlgebraicGeometry.Chow
 
 namespace TauCeti.Toric.Fan
 
-variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
+universe u
+
+variable (K : Type u) {N : Type u} {V : Type*}
+  [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {Φ : Fan i} (b : Basis (Fin 2) ℤ N) (e : ℤ)
 
 variable [Nonempty Φ.cones] (hΦ : Φ.IsRegular) (r : Fin 4 ≃ Φ.Ray)
   (hr : (fun j ↦ (r j).primitiveGenerator) = ![b 0, b 1, -b 0, e • b 0 - b 1])
 
-local notation "X" => Φ.algebraicRealization
+local notation "X" => Φ.finiteFanScheme K
 local notation "Pic" => Additive (LineBundleClass X)
-local notation "R" => Φ.rayDivisorToPicard hΦ
-local notation "D" j:arg => R (Pi.single (r j) 1)
+local notation "rayClass" => Φ.rayChartDivisorToPicard K hΦ
+local notation "D" j:arg => rayClass (Pi.single (r j) 1)
+
+section Basis
+
+variable [CommRing K] [IsDomain K] [IsNoetherianRing K] [UniqueFactorizationMonoid K]
 
 include hr in
 open Classical in
@@ -58,25 +64,25 @@ private theorem hirzebruch_character_relation (m : N →+ ℤ) :
     m (b 0) • D 0 + m (b 1) • D 1 + (-m (b 0)) • D 2 +
       (e * m (b 0) - m (b 1)) • D 3 = 0 := by
   let := Fintype.ofFinite Φ.Ray
-  have h := (Φ.exact_characterToRayDivisor_rayDivisorToPicard hΦ _).mpr ⟨m, rfl⟩
-  have hsum (a : Φ.Ray → ℤ) : R a = ∑ j : Fin 4, a (r j) • D j := by
-    rw [Φ.rayDivisorToPicard_apply hΦ a, ← r.sum_comp]
-    simp only [rayDivisorToPicard_single, one_zsmul]
+  have h := (Φ.exact_characterToRayDivisor_rayChartDivisorToPicard K hΦ _).mpr ⟨m, rfl⟩
+  have hsum (a : Φ.Ray → ℤ) : rayClass a = ∑ j : Fin 4, a (r j) • D j := by
+    rw [Φ.rayChartDivisorToPicard_apply K hΦ a, ← r.sum_comp]
+    simp only [rayChartDivisorToPicard_single, one_zsmul]
   rw [hsum, Fin.sum_univ_four] at h
-  simpa [congrFun hr, ← rayDivisorToPicard_single] using h
+  simpa [congrFun hr, ← rayChartDivisorToPicard_single] using h
 
 include hr in
 open Classical in
 private theorem hirzebruch_ray_classes :
     D 2 = D 0 + e • D 1 ∧ D 3 = D 1 := by
-  have h₀ := hirzebruch_character_relation b e hΦ r hr (b.coord 0).toAddMonoidHom
-  have h₁ := hirzebruch_character_relation b e hΦ r hr (b.coord 1).toAddMonoidHom
+  have h₀ := hirzebruch_character_relation K b e hΦ r hr (b.coord 0).toAddMonoidHom
+  have h₁ := hirzebruch_character_relation K b e hΦ r hr (b.coord 1).toAddMonoidHom
   have h₃ : D 3 = D 1 := by
     apply (sub_eq_zero.mp _).symm
-    simpa [Basis.coord_apply, sub_eq_add_neg, ← rayDivisorToPicard_single] using h₁
+    simpa [Basis.coord_apply, sub_eq_add_neg, ← rayChartDivisorToPicard_single] using h₁
   rw [h₃] at h₀
   have h : D 0 + (-1 : ℤ) • D 2 + e • D 1 = 0 := by
-    simpa [Basis.coord_apply, ← rayDivisorToPicard_single] using h₀
+    simpa [Basis.coord_apply, ← rayChartDivisorToPicard_single] using h₀
   refine ⟨(sub_eq_zero.mp ?_).symm, h₃⟩
   rw [← h]
   simp only [neg_one_zsmul]
@@ -91,9 +97,9 @@ def hirzebruchPicardBasis : Basis (Fin 2) ℤ Pic := by
   · rw [Fintype.linearIndependent_iff]
     intro a ha j
     let q : Φ.Ray → ℤ := Pi.single (r 1) (a 0) + Pi.single (r 0) (a 1)
-    have hq : R q = 0 := by
-      simpa [q, v, Fin.sum_univ_two, rayDivisorToPicard_single] using ha
-    obtain ⟨m, hm⟩ := (Φ.exact_characterToRayDivisor_rayDivisorToPicard hΦ _).mp hq
+    have hq : rayClass q = 0 := by
+      simpa [q, v, Fin.sum_univ_two, rayChartDivisorToPicard_single] using ha
+    obtain ⟨m, hm⟩ := (Φ.exact_characterToRayDivisor_rayChartDivisorToPicard K hΦ _).mp hq
     have he (k : Fin 4) : m ((r k).primitiveGenerator) = q (r k) := by
       simpa only [characterToRayDivisor_apply] using congrFun hm (r k)
     have h₂ : m (b 0) = 0 := by
@@ -103,7 +109,7 @@ def hirzebruchPicardBasis : Basis (Fin 2) ℤ Pic := by
     fin_cases j
     · simpa [q, congrFun hr, Equiv.apply_eq_iff_eq, h₃] using (he 1).symm
     · simpa [q, congrFun hr, Equiv.apply_eq_iff_eq, h₂] using (he 0).symm
-  · obtain ⟨h₂, h₃⟩ := hirzebruch_ray_classes b e hΦ r hr
+  · obtain ⟨h₂, h₃⟩ := hirzebruch_ray_classes K b e hΦ r hr
     let W := Submodule.span ℤ (Set.range v)
     have hF : D 1 ∈ W := Submodule.subset_span ⟨0, rfl⟩
     have hB : D 0 ∈ W := Submodule.subset_span ⟨1, rfl⟩
@@ -114,17 +120,18 @@ def hirzebruchPicardBasis : Basis (Fin 2) ℤ Pic := by
       · exact h₂ ▸ W.add_mem hB (W.smul_mem _ hF)
       · exact h₃ ▸ hF
     intro x _
-    obtain ⟨a, rfl⟩ := Φ.rayDivisorToPicard_surjective hΦ x
+    obtain ⟨a, rfl⟩ := Φ.rayChartDivisorToPicard_surjective K hΦ x
     let := Fintype.ofFinite Φ.Ray
-    rw [Φ.rayDivisorToPicard_apply hΦ]
+    rw [Φ.rayChartDivisorToPicard_apply K hΦ]
     refine W.sum_mem fun ρ _ ↦ W.smul_mem _ ?_
-    simpa only [rayDivisorToPicard_single, one_smul, Equiv.apply_symm_apply] using hall (r.symm ρ)
+    simpa only [rayChartDivisorToPicard_single, one_smul, Equiv.apply_symm_apply]
+      using hall (r.symm ρ)
 
 open Classical in
 /-- The first Hirzebruch Picard basis vector is the fiber ray class. -/
 @[simp]
 theorem hirzebruchPicardBasis_apply_zero :
-    hirzebruchPicardBasis b e hΦ r hr 0 = D 1 := by
+    hirzebruchPicardBasis K b e hΦ r hr 0 = D 1 := by
   rw [hirzebruchPicardBasis, Basis.mk_apply]
   rfl
 
@@ -132,7 +139,7 @@ open Classical in
 /-- The second Hirzebruch Picard basis vector is the section ray class. -/
 @[simp]
 theorem hirzebruchPicardBasis_apply_one :
-    hirzebruchPicardBasis b e hΦ r hr 1 = D 0 := by
+    hirzebruchPicardBasis K b e hΦ r hr 1 = D 0 := by
   rw [hirzebruchPicardBasis, Basis.mk_apply]
   rfl
 
@@ -140,8 +147,8 @@ open Classical in
 /-- The other invariant fiber of a Hirzebruch surface also represents its first
 Picard basis vector. -/
 theorem hirzebruchPicardBasis_apply_zero_eq_ray_three :
-    hirzebruchPicardBasis b e hΦ r hr 0 = D 3 := by
-  rw [hirzebruchPicardBasis_apply_zero, (hirzebruch_ray_classes b e hΦ r hr).2]
+    hirzebruchPicardBasis K b e hΦ r hr 0 = D 3 := by
+  rw [hirzebruchPicardBasis_apply_zero, (hirzebruch_ray_classes K b e hΦ r hr).2]
 
 include hr in
 /-- Either invariant fiber can be placed first among the fiber rays in a
@@ -151,7 +158,7 @@ theorem exists_hirzebruch_picardBasis_of_fiber (hΦ : Φ.IsRegular) (t : Fin 2) 
     ∃ (d : Basis (Fin 2) ℤ N) (s : Fin 4 ≃ Φ.Ray)
       (hs : (fun j ↦ (s j).primitiveGenerator) = ![d 0, d 1, -d 0, e • d 0 - d 1]),
       s 0 = r 0 ∧ s 1 = r ((![1, 3] : Fin 2 → Fin 4) t) ∧
-      hirzebruchPicardBasis d e hΦ s hs = hirzebruchPicardBasis b e hΦ r hr := by
+      hirzebruchPicardBasis K d e hΦ s hs = hirzebruchPicardBasis K b e hΦ r hr := by
   classical
   fin_cases t
   · exact ⟨b, r, hr, rfl, rfl, rfl⟩
@@ -161,13 +168,13 @@ theorem exists_hirzebruch_picardBasis_of_fiber (hΦ : Φ.IsRegular) (t : Fin 2) 
   have h₀ : s 0 = r 0 := by simp [s, Equiv.swap_apply_def]
   have h₁ : s 1 = r 3 := by simp [s]
   refine ⟨d, s, hs, h₀, h₁, DFunLike.ext _ _ (Fin.forall_fin_two.mpr ⟨?_, ?_⟩)⟩
-  · simp only [hirzebruchPicardBasis_apply_zero d, h₁,
-      hirzebruchPicardBasis_apply_zero_eq_ray_three b]
+  · simp only [hirzebruchPicardBasis_apply_zero K d, h₁,
+      hirzebruchPicardBasis_apply_zero_eq_ray_three K b]
   · simp only [hirzebruchPicardBasis_apply_one, h₀]
 
-local notation "C" => hirzebruchPicardBasis b e hΦ r hr
+local notation "C" => hirzebruchPicardBasis K b e hΦ r hr
 
-omit [Nonempty Φ.cones] in
+omit [Nonempty Φ.cones] [IsDomain K] [IsNoetherianRing K] [UniqueFactorizationMonoid K] in
 private theorem repr_change_section (C₀ C' : Basis (Fin 2) ℤ Pic) (shift : ℤ)
     (hfiber : C' 0 = C₀ 0) (hsection : C' 1 = C₀ 1 + shift • C₀ 0) (L : Pic) :
     C'.repr L 0 = C₀.repr L 0 - shift * C₀.repr L 1 ∧ C'.repr L 1 = C₀.repr L 1 := by
@@ -192,15 +199,15 @@ theorem exists_hirzebruchPicardBasis_opposite_section :
       (ht : (fun j ↦ (t j).primitiveGenerator) = ![d 0, d 1, -d 0, (-e) • d 0 - d 1]),
       d 0 = -b 0 ∧ d 1 = b 1 ∧
       t 0 = r 2 ∧ t 1 = r 1 ∧ t 2 = r 0 ∧ t 3 = r 3 ∧
-      let C' := hirzebruchPicardBasis d (-e) hΦ t ht
+      let C' := hirzebruchPicardBasis K d (-e) hΦ t ht
       C' 0 = (C) 0 ∧ ∀ L : Pic,
         C'.repr L 0 = (C).repr L 0 - e * (C).repr L 1 ∧ C'.repr L 1 = (C).repr L 1 := by
   obtain ⟨d, t, ht, hf, hs⟩ := exists_hirzebruch_opposite_section_basis b e r hr
-  let C' := hirzebruchPicardBasis d (-e) hΦ t ht
+  let C' := hirzebruchPicardBasis K d (-e) hΦ t ht
   have h₀ : C' 0 = (C) 0 := by simp only [C', hirzebruchPicardBasis_apply_zero, hf]
   have h₁ : C' 1 = (C) 1 + e • (C) 0 := by
     simp only [C', hirzebruchPicardBasis_apply_one, hirzebruchPicardBasis_apply_zero, hs]
-    exact (hirzebruch_ray_classes b e hΦ r hr).1
+    exact (hirzebruch_ray_classes K b e hΦ r hr).1
   have hd₀ : d 0 = -b 0 := by
     simpa [hs, congrFun hr 2] using (congrFun ht 0).symm
   have hd₁ : d 1 = b 1 := by
@@ -209,7 +216,7 @@ theorem exists_hirzebruchPicardBasis_opposite_section :
     simp [congrFun ht 2, congrFun hr 0, hd₀])
   have hf' : t 3 = r 3 := Ray.primitiveGenerator_injective (by
     simp [congrFun ht 3, congrFun hr 3, hd₀, hd₁])
-  exact ⟨d, t, ht, hd₀, hd₁, hs, hf, hs', hf', h₀, repr_change_section (C) C' e h₀ h₁⟩
+  exact ⟨d, t, ht, hd₀, hd₁, hs, hf, hs', hf', h₀, repr_change_section K (C) C' e h₀ h₁⟩
 
 include hr in
 /-- A signed Hirzebruch marking can be replaced by one of index `e.natAbs`,
@@ -220,17 +227,17 @@ theorem exists_hirzebruchPicardBasis_natAbs :
     ∃ (d : Basis (Fin 2) ℤ N) (t : Fin 4 ≃ Φ.Ray)
       (ht : (fun j ↦ (t j).primitiveGenerator) =
         ![d 0, d 1, -d 0, (e.natAbs : ℤ) • d 0 - d 1]),
-      hirzebruchPicardBasis d (e.natAbs : ℤ) hΦ t ht 0 = (C) 0 ∧
-      (0 ≤ e → t = r ∧ hirzebruchPicardBasis d (e.natAbs : ℤ) hΦ t ht = (C)) ∧
+      hirzebruchPicardBasis K d (e.natAbs : ℤ) hΦ t ht 0 = (C) 0 ∧
+      (0 ≤ e → t = r ∧ hirzebruchPicardBasis K d (e.natAbs : ℤ) hΦ t ht = (C)) ∧
       d.coord 1 = b.coord 1 ∧
-      ∀ x : Pic, (hirzebruchPicardBasis d (e.natAbs : ℤ) hΦ t ht).repr x 1 = (C).repr x 1 := by
+      ∀ x : Pic, (hirzebruchPicardBasis K d (e.natAbs : ℤ) hΦ t ht).repr x 1 = (C).repr x 1 := by
   by_cases he : 0 ≤ e
   · have h : (e.natAbs : ℤ) = e := by omega
     simp only [h]
     exact ⟨b, r, hr, rfl, fun _ ↦ ⟨rfl, rfl⟩, rfl, fun _ ↦ rfl⟩
   have hs : (e.natAbs : ℤ) = -e := by omega
   obtain ⟨d, t, ht, hd₀, hd₁, -, -, -, -, h₀, hrepr⟩ :=
-    exists_hirzebruchPicardBasis_opposite_section b e hΦ r hr
+    exists_hirzebruchPicardBasis_opposite_section K b e hΦ r hr
   have hcoord : d.coord 1 = b.coord 1 := d.ext fun l ↦ by
     simp only [Basis.coord_apply, Basis.repr_self]
     fin_cases l <;> simp [hd₀, hd₁]
@@ -249,11 +256,11 @@ theorem exists_hirzebruch_corner_picardBasis (hc : Φ.IsComplete)
       (shift : ℤ),
       σ.val = PointedCone.hull ℝ (Set.range (i ∘ d)) ∧
       (shift = 0 ∨ shift = e) ∧ a = e - 2 * shift ∧
-      ∀ L : Pic, (hirzebruchPicardBasis d a hΦ t ht).repr L 0 =
+      ∀ L : Pic, (hirzebruchPicardBasis K d a hΦ t ht).repr L 0 =
         (C).repr L 0 - shift * (C).repr L 1 ∧
-        (hirzebruchPicardBasis d a hΦ t ht).repr L 1 = (C).repr L 1 := by
+        (hirzebruchPicardBasis K d a hΦ t ht).repr L 1 = (C).repr L 1 := by
   obtain ⟨d, a, t, hcone, ht, hf, hs⟩ := exists_hirzebruch_corner_basis b e r hr hΦ hc σ hσ
-  let C' := hirzebruchPicardBasis d a hΦ t ht
+  let C' := hirzebruchPicardBasis K d a hΦ t ht
   have hfiber : C' 0 = (C) 0 := by
     rw [hirzebruchPicardBasis_apply_zero]
     rcases hf with h | h
@@ -266,51 +273,75 @@ theorem exists_hirzebruch_corner_picardBasis (hc : Φ.IsComplete)
     rcases hs with ⟨h, rfl⟩ | ⟨h, rfl⟩
     · exact ⟨0, Or.inl rfl, by simp, by simp [h]⟩
     · exact ⟨e, Or.inr rfl, by omega, by
-        rw [h, (hirzebruch_ray_classes b e hΦ r hr).1]⟩
+        rw [h, (hirzebruch_ray_classes K b e hΦ r hr).1]⟩
   obtain ⟨shift, hshift, ha, hsection⟩ := hsection
   exact ⟨d, a, t, ht, shift, hcone, hshift, ha,
-    repr_change_section (C) C' shift hfiber hsection⟩
+    repr_change_section K (C) C' shift hfiber hsection⟩
 
 local notation "P" p:arg =>
   Additive.ofMul
-    (@primeDivisorClass X _ _ (Φ.uniqueFactorizationMonoid_stalk_algebraicRealization hΦ) p)
-local notation "S₀" => Φ.rayBoundaryPoint hΦ (r 0)
+    (@primeDivisorClass X _ _ (Φ.uniqueFactorizationMonoid_stalk_finiteFanScheme (R := K) hΦ) p)
+local notation "S₀" => Φ.rayBoundaryChartPoint (R := K) hΦ (r 0)
 
 /-- The distinguished invariant section has Hirzebruch Picard coordinates `(0, 1)`. -/
 theorem hirzebruch_section_coordinates :
     (C).repr (P S₀) 0 = 0 ∧ (C).repr (P S₀) 1 = 1 := by
   classical
-  let := Φ.uniqueFactorizationMonoid_stalk_algebraicRealization hΦ
+  let := Φ.uniqueFactorizationMonoid_stalk_finiteFanScheme (R := K) hΦ
   have h : C 1 = P S₀ := by
-    rw [hirzebruchPicardBasis_apply_one, rayDivisorToPicard_single, one_zsmul]
+    rw [hirzebruchPicardBasis_apply_one, rayChartDivisorToPicard_single, one_zsmul]
   rw [← h, Basis.repr_self]
   simp
 
 /-- The opposite invariant section has Hirzebruch Picard coordinates `(e, 1)`. -/
 theorem hirzebruch_opposite_section_coordinates :
-    (C).repr (P (Φ.rayBoundaryPoint hΦ (r 2))) 0 = e ∧
-      (C).repr (P (Φ.rayBoundaryPoint hΦ (r 2))) 1 = 1 := by
+    (C).repr (P (Φ.rayBoundaryChartPoint (R := K) hΦ (r 2))) 0 = e ∧
+      (C).repr (P (Φ.rayBoundaryChartPoint (R := K) hΦ (r 2))) 1 = 1 := by
   classical
-  let := Φ.uniqueFactorizationMonoid_stalk_algebraicRealization hΦ
-  have h : P (Φ.rayBoundaryPoint hΦ (r 2)) = C 1 + e • C 0 := by
+  let := Φ.uniqueFactorizationMonoid_stalk_finiteFanScheme (R := K) hΦ
+  have h : P (Φ.rayBoundaryChartPoint (R := K) hΦ (r 2)) = C 1 + e • C 0 := by
     rw [hirzebruchPicardBasis_apply_one, hirzebruchPicardBasis_apply_zero,
-      ← (hirzebruch_ray_classes b e hΦ r hr).1, rayDivisorToPicard_single, one_zsmul]
+      ← (hirzebruch_ray_classes K b e hΦ r hr).1, rayChartDivisorToPicard_single, one_zsmul]
   simp [h, Basis.repr_self, -hirzebruchPicardBasis_apply_one, -hirzebruchPicardBasis_apply_zero]
+
+end Basis
+
+section Rationality
+
+variable [CommRing K] [IsDomain K]
+
+omit [Nonempty Φ.cones] in
+include hΦ hr in
+/-- The realization of a complete regular Hirzebruch fan is rational over the coefficient ring. -/
+theorem isRationalOver_of_hirzebruch (hc : Φ.IsComplete) :
+    Scheme.IsRationalOver (X ↘ Spec (.of K)) := by
+  obtain ⟨σ, h₀, h₁⟩ := exists_cone_of_hirzebruch_section_fiber b e r hr hΦ hc 0 0
+  have hN : Module.finrank ℤ N = 2 := by simpa using Module.finrank_eq_card_basis b
+  rw [Φ.finiteFanScheme_over K]
+  exact Φ.isRationalOver_of_ray_ne_of_le K hΦ hN
+    (r.injective.ne (by decide : (0 : Fin 4) ≠ 1)) h₀ h₁
+
+end Rationality
 
 section Intersection
 
-variable [Φ.algebraicRealization.IsProjectiveOver ℂ]
+variable [Field K] [Infinite K] [(Φ.finiteFanScheme K).IsProjectiveOver K]
 variable (hc : Φ.IsComplete)
 
-local notation "S" => Spec (CommRingCat.of ℂ)
-local notation "B" => intersectionBilinForm ℂ X
-local notation "K" => Additive.ofMul (LineBundleClass.mk (QPainleve.canonicalBundle ℂ X 2))
+local notation "S" => Spec (CommRingCat.of K)
+local notation "C" => hirzebruchPicardBasis K b e hΦ r hr
+local notation "P" p:arg =>
+  Additive.ofMul
+    (@primeDivisorClass X _ _ (Φ.uniqueFactorizationMonoid_stalk_finiteFanScheme (R := K) hΦ) p)
+local notation "S₀" => Φ.rayBoundaryChartPoint (R := K) hΦ (r 0)
+local notation "B" => intersectionBilinForm K X
+local notation "can" => Additive.ofMul (LineBundleClass.mk (QPainleve.canonicalBundle K X 2))
 
 omit [Nonempty Φ.cones] in
 include hc hr in
 private theorem hirzebruch_selfIntersection :
-    Φ.rayBoundarySelfIntersection hΦ (r 0) = -e ∧
-      Φ.rayBoundarySelfIntersection hΦ (r 1) = 0 := by
+    Φ.rayBoundarySelfIntersection K hΦ (r 0) = -e ∧
+      Φ.rayBoundarySelfIntersection K hΦ (r 1) = 0 := by
   have h₀₁ := exists_cone_of_hirzebruch_section_fiber b e r hr hΦ hc 0 0
   have h₀₃ := exists_cone_of_hirzebruch_section_fiber b e r hr hΦ hc 0 1
   have h₂₁ := exists_cone_of_hirzebruch_section_fiber b e r hr hΦ hc 1 0
@@ -324,13 +355,13 @@ private theorem hirzebruch_selfIntersection :
   have hd₁₂ : b.detDualEquiv (r 1).primitiveGenerator (r 2).primitiveGenerator = 1 := by
     simp [hcoord, -Module.Basis.detDualEquiv_apply, Module.Basis.detDualEquiv_apply_basis_zero_one,
       Module.Basis.detDualEquiv_swap (b := b) (b 1) (b 0)]
-  have h₀ := primitiveGenerator_add_selfIntersection_smul_add_eq_zero b hΦ hc
+  have h₀ := primitiveGenerator_add_selfIntersection_smul_add_eq_zero K b hΦ hc
     ⟨hd₃₀, h₀₃.imp (fun _ h ↦ h.symm)⟩ ⟨hd₀₁, h₀₁⟩
-  have h₁ := primitiveGenerator_add_selfIntersection_smul_add_eq_zero b hΦ hc
+  have h₁ := primitiveGenerator_add_selfIntersection_smul_add_eq_zero K b hΦ hc
     ⟨hd₀₁, h₀₁⟩ ⟨hd₁₂, h₂₁.imp (fun _ h ↦ h.symm)⟩
   have hsec := congrArg (b.coord 0) h₀
   have hfib := congrArg (b.coord 1) h₁
-  have hsec' : (e : ℤ) + Φ.rayBoundarySelfIntersection hΦ (r 0) = 0 := by
+  have hsec' : (e : ℤ) + Φ.rayBoundarySelfIntersection K hΦ (r 0) = 0 := by
     simpa [hcoord, Basis.coord_apply] using hsec
   refine ⟨by omega, ?_⟩
   simpa [hcoord, Basis.coord_apply] using hfib
@@ -340,21 +371,24 @@ open Classical in
 /-- The Hirzebruch Picard intersection matrix in the ordered fiber and section basis.
 The fiber has square zero, the section has square `-e`, and they intersect once. -/
 theorem hirzebruchPicardBasis_intersection (j k : Fin 2) :
-    letI : SmoothOfRelativeDimension 2 (X ↘ Spec (CommRingCat.of ℂ)) :=
-      (by simpa using Module.finrank_eq_card_basis b : Module.finrank ℤ N = 2) ▸
-        Φ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
+    letI : SmoothOfRelativeDimension 2 (X ↘ S) := by
+      rw [Φ.finiteFanScheme_over K]
+      exact (by simpa using Module.finrank_eq_card_basis b : Module.finrank ℤ N = 2) ▸
+        Φ.smoothOfRelativeDimension_finiteFanSchemeToSpec K hΦ
     B (C j) (C k) = (!![0, 1; 1, -e] : Matrix (Fin 2) (Fin 2) ℤ) j k := by
   have hN : Module.finrank ℤ N = 2 := by simpa using Module.finrank_eq_card_basis b
-  let : SmoothOfRelativeDimension 2 (X ↘ Spec (CommRingCat.of ℂ)) :=
-    hN ▸ Φ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
-  obtain ⟨hB, hF⟩ := hirzebruch_selfIntersection b e hΦ r hr hc
+  let : SmoothOfRelativeDimension 2 (X ↘ S) := by
+    rw [Φ.finiteFanScheme_over K]
+    exact hN ▸ Φ.smoothOfRelativeDimension_finiteFanSchemeToSpec K hΦ
+  obtain ⟨hB, hF⟩ := hirzebruch_selfIntersection K b e hΦ r hr hc
   have h₀₁ : ∃ σ : Φ.cones, (r 0).toCone ≤ σ ∧ (r 1).toCone ≤ σ :=
     exists_cone_of_hirzebruch_section_fiber b e r hr hΦ hc 0 0
   have h₁₀ : ∃ σ : Φ.cones, (r 1).toCone ≤ σ ∧ (r 0).toCone ≤ σ := h₀₁.imp (fun _ h ↦ h.symm)
   fin_cases j <;> fin_cases k <;>
     simp only [Fin.zero_eta, Fin.mk_one, hirzebruchPicardBasis_apply_zero,
       hirzebruchPicardBasis_apply_one, Equiv.apply_eq_iff_eq,
-      Φ.intersectionBilinForm_rayDivisorToPicard_single_single hΦ hN] <;> simp [hF, hB, h₀₁, h₁₀]
+      Φ.intersectionBilinForm_rayChartDivisorToPicard_single_single K hΦ hN] <;>
+    simp [hF, hB, h₀₁, h₁₀]
 
 include hc in
 /-- A class with Hirzebruch Picard coordinates `(a, d)` intersects the fiber
@@ -371,100 +405,95 @@ theorem hirzebruchPicardBasis_intersection_repr [SmoothOfRelativeDimension 2 (X 
         d * (!![0, 1; 1, -e] : Matrix (Fin 2) (Fin 2) ℤ) 1 j := by
     conv_lhs => rw [hx]
     simp only [map_add, map_zsmul, LinearMap.add_apply, LinearMap.smul_apply, Int.zsmul_eq_mul,
-      hirzebruchPicardBasis_intersection b e hΦ r hr hc]
+      hirzebruchPicardBasis_intersection K b e hΦ r hr hc]
   exact ⟨by simpa using h 0, by simpa [sub_eq_add_neg, mul_comm d] using h 1⟩
-
-omit [Nonempty Φ.cones] [Φ.algebraicRealization.IsProjectiveOver ℂ] in
-include hΦ hc hr in
-/-- The algebraic realization of a complete regular Hirzebruch fan is rational over `ℂ`. -/
-theorem isRationalOver_of_hirzebruch :
-    Scheme.IsRationalOver (X ↘ S) := by
-  obtain ⟨σ, h₀, h₁⟩ := exists_cone_of_hirzebruch_section_fiber b e r hr hΦ hc 0 0
-  have hN : Module.finrank ℤ N = 2 := by simpa using Module.finrank_eq_card_basis b
-  exact Φ.isRationalOver_of_ray_ne_of_le hΦ hN
-    (r.injective.ne (by decide : (0 : Fin 4) ≠ 1)) h₀ h₁
 
 include hc in
 open Classical in
 /-- The canonical class pairs to `-2` with the fiber and to `e - 2` with the section. -/
-theorem hirzebruchPicardBasis_intersection_canonical (j : Fin 2) :
-    letI : SmoothOfRelativeDimension 2 (X ↘ S) :=
-      (by simpa using Module.finrank_eq_card_basis b : Module.finrank ℤ N = 2) ▸
-        Φ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
-    B (C j) K = ![-2, e - 2] j := by
+theorem hirzebruchPicardBasis_intersection_canonical [IsAlgClosed K] (j : Fin 2) :
+    letI : SmoothOfRelativeDimension 2 (X ↘ S) := by
+      rw [Φ.finiteFanScheme_over K]
+      exact (by simpa using Module.finrank_eq_card_basis b : Module.finrank ℤ N = 2) ▸
+        Φ.smoothOfRelativeDimension_finiteFanSchemeToSpec K hΦ
+    B (C j) can = ![-2, e - 2] j := by
   have hN : Module.finrank ℤ N = 2 := by simpa using Module.finrank_eq_card_basis b
-  let : SmoothOfRelativeDimension 2 (X ↘ S) :=
-    hN ▸ Φ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
-  let := isRationalOver_of_hirzebruch b e hΦ r hr hc
+  let : SmoothOfRelativeDimension 2 (X ↘ S) := by
+    rw [Φ.finiteFanScheme_over K]
+    exact hN ▸ Φ.smoothOfRelativeDimension_finiteFanSchemeToSpec K hΦ
+  let := isRationalOver_of_hirzebruch K b e hΦ r hr hc
   have hadj (ρ : Φ.Ray) :
-      B (R (Pi.single ρ 1)) K = -2 - Φ.rayBoundarySelfIntersection hΦ ρ := by
-    let Dρ := Φ.rayBoundaryIdeal hΦ ρ
+      B (rayClass (Pi.single ρ 1)) can = -2 - Φ.rayBoundarySelfIntersection K hΦ ρ := by
+    let Dρ := Φ.rayDivisorIdeal K hΦ ρ
     let m := b.detDualEquiv ρ.primitiveGenerator
     have hm : m ρ.primitiveGenerator = 0 := b.detDualEquiv_self _
     have hprim : Function.Surjective m :=
       b.surjective_detDualEquiv_of_isPrimitive ρ.isPrimitiveGenerator.isPrimitive
-    let a := ρ.boundaryIsoProjectiveLine hΦ hN (m := m.toAddMonoidHom) hm hprim
-    have : a.hom.IsOver S := ρ.isOver_boundaryIsoProjectiveLine_hom hΦ hN hm hprim
-    have : Dρ.subscheme.IsProjectiveOver ℂ :=
-      Scheme.IsProjectiveOver.of_isClosedImmersion ℂ Dρ.subschemeι
-    have := Scheme.Modules.moduleFinite_cohomology_of_isProjectiveOver ℂ
+    have : Dρ.subscheme.IsProjectiveOver K :=
+      Scheme.IsProjectiveOver.of_isClosedImmersion K Dρ.subschemeι
+    let a := ρ.boundaryIsoProjectiveLine K hΦ hN (m := m.toAddMonoidHom) hm hprim
+    have : a.hom.IsOver S := ρ.isOver_boundaryIsoProjectiveLine_hom K hΦ hN
+      (m := m.toAddMonoidHom) hm hprim
+    have := Scheme.Modules.moduleFinite_cohomology_of_isProjectiveOver K
       (InvertibleSheaf.trivial Dρ.subscheme).obj 1
-    have hg : Dρ.subscheme.genus ℂ = (projectiveLine ℂ).genus ℂ := by
-      simpa only [Scheme.genus_def] using a.hom.finrank_cohomology_trivial_of_isIso ℂ 1
-    have h := two_mul_genus_sub_two_eq_intersection_primeDivisorClass ℂ (Φ.rayBoundaryPoint hΦ ρ)
+    have hg : Dρ.subscheme.genus K = (projectiveLine K).genus K := by
+      simpa only [Scheme.genus_def] using a.hom.finrank_cohomology_trivial_of_isIso K 1
+    have h := two_mul_genus_sub_two_eq_intersection_primeDivisorClass K
+      (Φ.rayBoundaryChartPoint (R := K) hΦ ρ)
     dsimp only at h
-    rw [← Φ.rayBoundaryIdeal_def hΦ ρ] at h
+    rw [← Φ.rayDivisorIdeal_def K hΦ ρ] at h
     rw [hg, TauCeti.AlgebraicGeometry.projectiveLine.genus_eq_zero] at h
-    rw [intersectionBilinForm_apply, rayDivisorToPicard_single, one_smul, toMul_ofMul,
-      rayBoundarySelfIntersection_def, toMul_ofMul]
+    rw [intersectionBilinForm_apply, rayChartDivisorToPicard_single, one_smul, toMul_ofMul,
+      rayBoundarySelfIntersection_def K, toMul_ofMul]
     omega
-  obtain ⟨hsec, hfib⟩ := hirzebruch_selfIntersection b e hΦ r hr hc
+  obtain ⟨hsec, hfib⟩ := hirzebruch_selfIntersection K b e hΦ r hr hc
   fin_cases j
   · simpa only [Fin.zero_eta, hirzebruchPicardBasis_apply_zero, hfib, sub_zero,
       Matrix.cons_val_zero] using hadj (r 1)
   · simpa [hirzebruchPicardBasis_apply_one, hsec, sub_neg_eq_add, add_comm, sub_eq_add_neg]
       using hadj (r 0)
 
-variable [SmoothOfRelativeDimension 2 (Φ.algebraicRealization ↘ Spec (CommRingCat.of ℂ))]
+variable [SmoothOfRelativeDimension 2 (Φ.finiteFanScheme K ↘ Spec (.of K))]
 
-local notation "F₁" => Φ.rayBoundaryPoint hΦ (r 1)
-local notation "F₃" => Φ.rayBoundaryPoint hΦ (r 3)
+local notation "F₁" => Φ.rayBoundaryChartPoint (R := K) hΦ (r 1)
+local notation "F₃" => Φ.rayBoundaryChartPoint (R := K) hΦ (r 3)
 
 include hc in
 /-- A prime curve has nonnegative degree against the Hirzebruch fiber class. -/
 theorem hirzebruch_fiber_degree_nonneg (p : CodimensionOnePoint X) :
     0 ≤ (C).repr (P p) 1 := by
   classical
-  let := Φ.uniqueFactorizationMonoid_stalk_algebraicRealization hΦ
+  let := Φ.uniqueFactorizationMonoid_stalk_finiteFanScheme (R := K) hΦ
   have hdim := topologicalKrullDim_eq_of_smoothOfRelativeDimension (X ↘ S) (n := 2)
-  rw [← (Φ.hirzebruchPicardBasis_intersection_repr b e hΦ r hr hc (P p)).1]
+  rw [← (Φ.hirzebruchPicardBasis_intersection_repr K b e hΦ r hr hc (P p)).1]
   by_cases hp : p = F₁
   · have hne : F₁ ≠ F₃ :=
-      (Φ.rayBoundaryPoint_injective hΦ).ne (r.injective.ne (by decide))
-    rw [hp, hirzebruchPicardBasis_apply_zero_eq_ray_three, rayDivisorToPicard_single, one_zsmul]
+      (Φ.rayBoundaryChartPoint_injective (R := K) hΦ).ne (r.injective.ne (by decide))
+    rw [hp, hirzebruchPicardBasis_apply_zero_eq_ray_three, rayChartDivisorToPicard_single,
+      one_zsmul]
     simpa only [Chow.intersectionBilinForm_apply, toMul_ofMul] using
-      Chow.classIntersectionNumber_primeDivisorClass_nonneg_of_ne ℂ hdim hne
-  · rw [hirzebruchPicardBasis_apply_zero, rayDivisorToPicard_single, one_zsmul]
+      Chow.classIntersectionNumber_primeDivisorClass_nonneg_of_ne K hdim hne
+  · rw [hirzebruchPicardBasis_apply_zero, rayChartDivisorToPicard_single, one_zsmul]
     simpa only [Chow.intersectionBilinForm_apply, toMul_ofMul] using
-      Chow.classIntersectionNumber_primeDivisorClass_nonneg_of_ne ℂ hdim hp
+      Chow.classIntersectionNumber_primeDivisorClass_nonneg_of_ne K hdim hp
 
 include hc in
 /-- Distinct prime curves of fiber degree zero have disjoint supports. -/
 theorem disjoint_of_hirzebruch_fiber_degree_eq_zero {p q : CodimensionOnePoint X}
     (hpq : p ≠ q) (hp : (C).repr (P p) 1 = 0) (hq : (C).repr (P q) 1 = 0) :
     Disjoint (closure {(p : X)}) (closure {(q : X)}) := by
-  let := Φ.uniqueFactorizationMonoid_stalk_algebraicRealization hΦ
+  let := Φ.uniqueFactorizationMonoid_stalk_finiteFanScheme (R := K) hΦ
   have hq' : P q = (C).repr (P q) 0 • C 0 := by
     simpa only [Fin.sum_univ_two, hq, zero_smul, add_zero] using ((C).sum_repr (P q)).symm
   have hz : B (P p) (P q) = 0 := by
     calc
       B (P p) (P q) = B (P p) ((C).repr (P q) 0 • C 0) := congrArg (B (P p)) hq'
-      _ = 0 := by rw [map_smul, (Φ.hirzebruchPicardBasis_intersection_repr b e hΦ r hr hc _).1,
+      _ = 0 := by rw [map_smul, (Φ.hirzebruchPicardBasis_intersection_repr K b e hΦ r hr hc _).1,
         hp, smul_zero]
   have hdim := topologicalKrullDim_eq_of_smoothOfRelativeDimension (X ↘ S) (n := 2)
   rw [Chow.intersectionBilinForm_apply, toMul_ofMul, toMul_ofMul] at hz
   refine Set.disjoint_left.mpr fun x hx hy ↦ ?_
-  exact ((Chow.classIntersectionNumber_primeDivisorClass_pos_iff ℂ hdim.le hpq).mpr
+  exact ((Chow.classIntersectionNumber_primeDivisorClass_pos_iff K hdim.le hpq).mpr
     ⟨x, hx, hy⟩).ne' hz
 
 include hc in
@@ -473,12 +502,12 @@ is the distinguished invariant section. -/
 theorem eq_section_of_hirzebruch_fiber_coeff_lt (p : CodimensionOnePoint X)
     (hp : (C).repr (P p) 0 < e * (C).repr (P p) 1) : p = S₀ := by
   classical
-  let := Φ.uniqueFactorizationMonoid_stalk_algebraicRealization hΦ
+  let := Φ.uniqueFactorizationMonoid_stalk_finiteFanScheme (R := K) hΦ
   have hdim := topologicalKrullDim_eq_of_smoothOfRelativeDimension (X ↘ S) (n := 2)
   by_contra hn
-  have hnonneg := Chow.classIntersectionNumber_primeDivisorClass_nonneg_of_ne ℂ hdim hn
-  have h := (Φ.hirzebruchPicardBasis_intersection_repr b e hΦ r hr hc (P p)).2
-  rw [hirzebruchPicardBasis_apply_one, rayDivisorToPicard_single, one_zsmul,
+  have hnonneg := Chow.classIntersectionNumber_primeDivisorClass_nonneg_of_ne K hdim hn
+  have h := (Φ.hirzebruchPicardBasis_intersection_repr K b e hΦ r hr hc (P p)).2
+  rw [hirzebruchPicardBasis_apply_one, rayChartDivisorToPicard_single, one_zsmul,
     Chow.intersectionBilinForm_apply, toMul_ofMul, toMul_ofMul] at h
   omega
 
@@ -487,16 +516,17 @@ include hc in
 theorem hirzebruch_fiber_coeff_nonneg (he : 0 ≤ e) (p : CodimensionOnePoint X) :
     0 ≤ (C).repr (P p) 0 := by
   by_cases hp : (C).repr (P p) 0 < e * (C).repr (P p) 1
-  · rw [eq_section_of_hirzebruch_fiber_coeff_lt b e hΦ r hr hc p hp,
-      (hirzebruch_section_coordinates b e hΦ r hr).1]
-  · exact (mul_nonneg he (hirzebruch_fiber_degree_nonneg b e hΦ r hr hc p)).trans (le_of_not_gt hp)
+  · rw [eq_section_of_hirzebruch_fiber_coeff_lt K b e hΦ r hr hc p hp,
+      (hirzebruch_section_coordinates K b e hΦ r hr).1]
+  · exact (mul_nonneg he (hirzebruch_fiber_degree_nonneg K b e hΦ r hr hc p)).trans
+      (le_of_not_gt hp)
 
 include hc in
 /-- A prime curve of fiber degree zero has fiber coefficient at least one. -/
 theorem hirzebruch_fiber_coeff_pos_of_degree_zero (he : 0 ≤ e) (p : CodimensionOnePoint X)
     (hp : (C).repr (P p) 1 = 0) : 1 ≤ (C).repr (P p) 0 := by
-  let := Φ.uniqueFactorizationMonoid_stalk_algebraicRealization hΦ
-  have hn := hirzebruch_fiber_coeff_nonneg b e hΦ r hr hc he p
+  let := Φ.uniqueFactorizationMonoid_stalk_finiteFanScheme (R := K) hΦ
+  have hn := hirzebruch_fiber_coeff_nonneg K b e hΦ r hr hc he p
   by_contra! h
   have hz : (C).repr (P p) 0 = 0 := by omega
   have hzero : P p = 0 := by
@@ -504,25 +534,25 @@ theorem hirzebruch_fiber_coeff_pos_of_degree_zero (he : 0 ≤ e) (p : Codimensio
     apply Finsupp.ext
     intro j
     fin_cases j <;> simp [hz, hp]
-  obtain ⟨L, hL⟩ := (X).exists_isAmple_of_isProjectiveOver ℂ
+  obtain ⟨L, hL⟩ := (X).exists_isAmple_of_isProjectiveOver K
   have hdim := topologicalKrullDim_eq_of_smoothOfRelativeDimension (X ↘ S) (n := 2)
-  have hpos := Chow.classIntersectionNumber_primeDivisorClass_pos_of_isAmple ℂ hdim hL p
+  have hpos := Chow.classIntersectionNumber_primeDivisorClass_pos_of_isAmple K hdim hL p
   have hvanish : primeDivisorClass p = 1 := Additive.ofMul.injective hzero
   simp [hvanish, Chow.classIntersectionNumber_one_right] at hpos
 
 include hc in
 /-- The anticanonical class has Hirzebruch Picard coordinates `(e + 2, 2)`. -/
-theorem hirzebruch_anticanonical_coordinates :
-    (C).repr (-K) 0 = e + 2 ∧ (C).repr (-K) 1 = 2 := by
-  have hflip (j : Fin 2) : B K (C j) = B (C j) K := by
+theorem hirzebruch_anticanonical_coordinates [IsAlgClosed K] :
+    (C).repr (-can) 0 = e + 2 ∧ (C).repr (-can) 1 = 2 := by
+  have hflip (j : Fin 2) : B can (C j) = B (C j) can := by
     simpa only [Chow.intersectionBilinForm_apply] using
-      Chow.classIntersectionNumber_comm (k := ℂ) (K).toMul (Additive.toMul (C j))
-  have hcanon (j : Fin 2) := Φ.hirzebruchPicardBasis_intersection_canonical b e hΦ r hr hc j
-  have hd := (Φ.hirzebruchPicardBasis_intersection_repr b e hΦ r hr hc K).1
-  have ha := (Φ.hirzebruchPicardBasis_intersection_repr b e hΦ r hr hc K).2
+      Chow.classIntersectionNumber_comm (k := K) (can).toMul (Additive.toMul (C j))
+  have hcanon (j : Fin 2) := Φ.hirzebruchPicardBasis_intersection_canonical K b e hΦ r hr hc j
+  have hd := (Φ.hirzebruchPicardBasis_intersection_repr K b e hΦ r hr hc can).1
+  have ha := (Φ.hirzebruchPicardBasis_intersection_repr K b e hΦ r hr hc can).2
   rw [hflip, hcanon] at hd ha
-  have h₁ : (C).repr K 1 = -2 := by simpa using hd.symm
-  have h₀ : (C).repr K 0 = -e - 2 := by rw [h₁] at ha; simp at ha; linarith
+  have h₁ : (C).repr can 1 = -2 := by simpa using hd.symm
+  have h₀ : (C).repr can 0 = -e - 2 := by rw [h₁] at ha; simp at ha; linarith
   simp [h₀, h₁, add_comm]
 
 include hc in
@@ -530,13 +560,13 @@ include hc in
 theorem disjoint_of_hirzebruch_section_classes (s t : CodimensionOnePoint X)
     (hne : s ≠ t) (hs : P s = C 1) (ht : P t = e • C 0 + C 1) :
     Disjoint (closure {(s : X)}) (closure {(t : X)}) := by
-  let := Φ.uniqueFactorizationMonoid_stalk_algebraicRealization hΦ
+  let := Φ.uniqueFactorizationMonoid_stalk_finiteFanScheme (R := K) hΦ
   have hdim := topologicalKrullDim_eq_of_smoothOfRelativeDimension (X ↘ S) (n := 2)
   have hzero : B (P t) (P s) = 0 := by
-    rw [hs, (Φ.hirzebruchPicardBasis_intersection_repr b e hΦ r hr hc _).2, ht, map_add, map_smul]
+    rw [hs, (Φ.hirzebruchPicardBasis_intersection_repr K b e hΦ r hr hc _).2, ht, map_add, map_smul]
     simp only [Finsupp.add_apply, Finsupp.smul_apply, Basis.repr_self]
     simp
-  have hpos := Chow.classIntersectionNumber_primeDivisorClass_pos_iff ℂ hdim.le hne.symm
+  have hpos := Chow.classIntersectionNumber_primeDivisorClass_pos_iff K hdim.le hne.symm
   rw [Chow.intersectionBilinForm_apply, toMul_ofMul, toMul_ofMul] at hzero
   exact Set.disjoint_left.mpr fun x hx hy ↦
     (lt_irrefl (0 : ℤ)) (hzero ▸ hpos.mpr ⟨x, hy, hx⟩)

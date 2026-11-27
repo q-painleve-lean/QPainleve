@@ -9,7 +9,6 @@ public import QPainleve.Geometry.Toric.Fan.Logarithmic.Factorization.Iso
 public import QPainleve.Geometry.Toric.Fan.Logarithmic.Induction
 public import QPainleve.SignedClusterModularGroup.SarkisovDegree.Induction.Marking
 
-import Mathlib.Analysis.Complex.Polynomial.Basic
 import QPainleve.AlgebraicGeometry.Curves.Node.Comap
 import QPainleve.Geometry.Toric.Fan.Ruling.Quadric
 import QPainleve.SignedClusterModularGroup.SarkisovDegree.Induction.NegativeSection
@@ -40,16 +39,18 @@ open Scheme.IdealSheafData
 
 namespace TauCeti.Toric.Fan.LogarithmicProjection
 
+variable {k₀ : Type} [Field k₀] [IsAlgClosed k₀]
+
 attribute [local instance] MvPolynomial.gradedAlgebra
 
-local notation "S" => Spec (CommRingCat.of ℂ)
-local notation "P" => Proj (homogeneousSubmodule ℂ (Fin 3 → ℂ))
+local notation "S" => Spec (CommRingCat.of k₀)
+local notation "P" => Proj (homogeneousSubmodule k₀ (Fin 3 → k₀))
 local notation "s" => (P ↘ S)
-local notation "coords" => Pi.basisFun ℂ (Fin 3)
-local notation "H" => LineBundleClass.mk (Proj.symmetricAlgebraTwistingBundle ℂ (Fin 3 → ℂ) 1)
+local notation "coords" => Pi.basisFun k₀ (Fin 3)
+local notation "H" => LineBundleClass.mk (Proj.symmetricAlgebraTwistingBundle k₀ (Fin 3 → k₀) 1)
 local notation "plane[" b "," hi "]" => Fan.projectiveSpace b hi
 local notation "planeIso[" b "," hi "]" =>
-  (Fan.projectivePlaneIso b hi ≪≫ Basis.polynomialProjIso coords)
+  (Fan.projectivePlaneIso k₀ b hi ≪≫ Basis.polynomialProjIso coords)
 local notation "mark[" T "," hT "," f "," g "]" =>
   LinearEquiv.symm (BlowupTower.picardMarking T hT f) (Additive.ofMul (pullback g H))
 local notation "obj[" F "," A "]" => @Prefunctor.obj _ sarkisovQuiver _ sarkisovQuiver F A
@@ -57,9 +58,10 @@ local notation "mapPath[" F "," p "]" =>
   @Prefunctor.mapPath _ sarkisovQuiver _ sarkisovQuiver F _ _ p
 
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
-  {i : N →+ V} {X : Scheme} [X.Over S] [SmoothOfRelativeDimension 2 (X ↘ S)]
+  {i : N →+ V} {X : Scheme} [X.Over (Spec (.of k₀))] [SmoothOfRelativeDimension 2 (X ↘ Spec
+    (.of k₀))]
   [IsIntegral X] [IsNoetherian X] {D : X.IdealSheafData}
-  {A B : LogarithmicProjection i D}
+  {A B : LogarithmicProjection k₀ i D}
 
 local notation "over[" U "]" => OverClass.ofHom ((BlowupTower.toBase U) ≫ _ ↘ S)
 local notation "smooth[" h "]" =>
@@ -72,7 +74,7 @@ local notation "total[" D "," U "]" =>
 /-- The decreasing alternative of plane-target Sarkisov induction. The path
 starts at the pullback of the specified first projection. Its last vertex has a
 strictly smaller marking with the pullback of the same target projection. -/
-abbrev HasPlaneTargetDecrease (A B : LogarithmicProjection i D)
+abbrev HasPlaneTargetDecrease (A B : LogarithmicProjection k₀ i D)
     (hRank : finrank ℤ N = 2) (hD : D.IsEffectiveCartier)
     (hNode : AtWorstNodalOfRelativeDimensionOne (D.subschemeι ≫ X ↘ S))
     (d : ℕ ×ₗ ℕ) : Prop :=
@@ -83,16 +85,16 @@ abbrev HasPlaneTargetDecrease (A B : LogarithmicProjection i D)
     letI : SmoothOfRelativeDimension 2 (Y ↘ S) := smooth[hU]
     letI : IsIntegral Y := integral[hU]
     let F := precomposeSarkisovOfNodalTower (i := i) hRank hD hNode hU
-    ∃ C : LogarithmicProjection i total[D,U],
+    ∃ C : LogarithmicProjection k₀ i total[D,U],
       Nonempty (SarkisovPath (obj[F,A]) C) ∧ HasPlaneTargetMarking C (obj[F,B]) next
 
 section Transport
 
-variable {Y : Scheme} [Y.Over S] [SmoothOfRelativeDimension 2 (Y ↘ S)]
+variable {Y : Scheme} [Y.Over (Spec (.of k₀))] [SmoothOfRelativeDimension 2 (Y ↘ Spec (.of k₀))]
   [IsIntegral Y] [IsNoetherian Y]
   (hRank : finrank ℤ N = 2) (hD : D.IsEffectiveCartier)
-  (hNode : AtWorstNodalOfRelativeDimensionOne (D.subschemeι ≫ X ↘ S))
-  (k : X ≅ Y) [k.hom.IsOver S]
+  (hNode : AtWorstNodalOfRelativeDimensionOne (D.subschemeι ≫ X ↘ Spec (.of k₀)))
+  (k : X ≅ Y) [k.hom.IsOver (Spec (.of k₀))]
 
 local notation "D₁" => Scheme.IdealSheafData.comap D (Iso.inv k)
 
@@ -103,7 +105,7 @@ private theorem HasPlaneTargetDecrease.of_iso {m : ℕ} {W : Scheme} {U : Blowup
     let : W.Over S := over[U]
     let : SmoothOfRelativeDimension 2 (W ↘ S) := smooth[hU]
     let : IsIntegral W := integral[hU]
-    ∀ {A' C B' : LogarithmicProjection i total[D₁,U]} (_ : SarkisovPath A' C),
+    ∀ {A' C B' : LogarithmicProjection k₀ i total[D₁,U]} (_ : SarkisovPath A' C),
       A'.fan = A.fan → A'.hom ≍ U.toBase ≫ k.inv ≫ A.hom →
       B'.fan = B.fan → B'.hom ≍ U.toBase ≫ k.inv ≫ B.hom →
       HasPlaneTargetMarking C B' next → HasPlaneTargetDecrease A B hRank hD hNode d := by
@@ -116,16 +118,16 @@ private theorem HasPlaneTargetDecrease.of_iso {m : ℕ} {W : Scheme} {U : Blowup
   let : SmoothOfRelativeDimension 2 (Z ↘ S) := smooth[hT]
   let : IsIntegral Z := integral[hT]
   let : e.hom.IsOver S := ⟨transported_tower_hom_comp k e hbase⟩
-  let F := precomposeSarkisovOfIso (i := i) hRank e hE.symm
+  let F := precomposeSarkisovOfIso (K := k₀) (i := i) hRank e hE.symm
   let G := precomposeSarkisovOfNodalTower (i := i) hRank hD hNode hT
-  have identify {L : LogarithmicProjection i D} {L' : LogarithmicProjection i total[D₁,U]}
+  have identify {L : LogarithmicProjection k₀ i D} {L' : LogarithmicProjection k₀ i total[D₁,U]}
       (hfan : L'.fan = L.fan) (hhom : L'.hom ≍ U.toBase ≫ k.inv ≫ L.hom) :
       obj[F,L'] = obj[G,L] := by
     refine LogarithmicProjection.ext
       (((precomposeSarkisovOfIso_obj_fan ..).trans hfan).trans
         (precomposeSarkisovOfNodalTower_obj_fan ..).symm) ?_
     have h := (precomposeSarkisovOfIso_obj_hom hRank e hE.symm L').trans
-      (heq_comp rfl rfl (congrArg Fan.algebraicRealization hfan) HEq.rfl hhom)
+      (heq_comp rfl rfl (congrArg (Fan.finiteFanScheme k₀) hfan) HEq.rfl hhom)
     rw [← Category.assoc e.hom, ← Category.assoc (e.hom ≫ U.toBase),
       Category.assoc e.hom U.toBase k.inv, ← hbase] at h
     exact h.trans (precomposeSarkisovOfNodalTower_obj_hom ..).symm
@@ -138,7 +140,7 @@ include hD hNode in
 /-- Transport a decreasing marked path on an isomorphic resolving surface
 to the specified source and target projections. -/
 theorem HasPlaneTargetDecrease.of_path_on_iso
-    {d next : ℕ ×ₗ ℕ} (hlt : next < d) {A' C B' : LogarithmicProjection i D₁}
+    {d next : ℕ ×ₗ ℕ} (hlt : next < d) {A' C B' : LogarithmicProjection k₀ i D₁}
     (p : SarkisovPath A' C) (hA' : A'.fan = A.fan) (hhA : A'.hom ≍ k.inv ≫ A.hom)
     (hB' : B'.fan = B.fan) (hhB : B'.hom ≍ k.inv ≫ B.hom)
     (hm : HasPlaneTargetMarking C B' next) : HasPlaneTargetDecrease A B hRank hD hNode d := by
@@ -156,7 +158,7 @@ theorem HasPlaneTargetDecrease.of_path_on_iso
       {J : Y.IdealSheafData} (hJ : J = D₁) :
       let : Y.Over S := ⟨s'⟩
       let : SmoothOfRelativeDimension 2 (Y ↘ S) := hSm
-      ∃ L M R : LogarithmicProjection i J, Nonempty (SarkisovPath L M) ∧
+      ∃ L M R : LogarithmicProjection k₀ i J, Nonempty (SarkisovPath L M) ∧
         L.fan = A.fan ∧ L.hom ≍ k.inv ≫ A.hom ∧
         R.fan = B.fan ∧ R.hom ≍ k.inv ≫ B.hom ∧ HasPlaneTargetMarking M R next := by
     subst s' J
@@ -170,8 +172,9 @@ end Transport
 
 section Plane
 
-variable {Y : Scheme} {n : ℕ} {T : BlowupTower P n Y} {hT : IsClosedPointTower P T}
-  {g : Y ⟶ P} {b b' : Basis (Fin 2) ℤ N}
+variable {Y : Scheme} {n : ℕ} {T : BlowupTower (Proj (homogeneousSubmodule k₀ (Fin 3 → k₀))) n Y}
+  {hT : IsClosedPointTower (Proj (homogeneousSubmodule k₀ (Fin 3 → k₀))) T}
+  {g : Y ⟶ (Proj (homogeneousSubmodule k₀ (Fin 3 → k₀)))} {b b' : Basis (Fin 2) ℤ N}
   {hi : IsIntegralLattice i} {J : Y.IdealSheafData}
 
 local notation "rankTwo" => Eq.trans (finrank_eq_card_basis b) (Fintype.card_fin 2)
@@ -179,17 +182,17 @@ local macro "planeMeasure[" T:term "," hT:term "," g:term "]" : term =>
   `(let : AlgebraicGeometry.IsNoetherian P := isNoetherian_of_finiteType s
     let x := mark[$T,$hT,s,$g]
     planeSarkisovBidegree ((Basis.picardTwistEquiv coords) x.1).toNat
-      (sarkisovSecondaryDegree ℂ x.1.toMul).toNat)
+      (sarkisovSecondaryDegree k₀ x.1.toMul).toNat)
 
 private theorem model_marking_of_plane_decrease
     (hg : g ≫ s = T.toBase ≫ s) (hbir : Scheme.BirationalOver g (𝟙 P))
-    (R : IsClosedPointTower.PlaneSarkisovDecrease b hi hT g J) :
+    (R : IsClosedPointTower.PlaneSarkisovDecrease k₀ b hi hT g J) :
     let : Y.Over S := ⟨T.toBase ≫ s⟩
     let : SmoothOfRelativeDimension 2 (Y ↘ S) := hT.smoothOfRelativeDimension s
     let : R.top.Over S := over[R.tower]
     let : SmoothOfRelativeDimension 2 (R.top ↘ S) := smooth[R.nodal]
     let E := total[J,R.tower]
-    ∀ {C B' : LogarithmicProjection i E},
+    ∀ {C B' : LogarithmicProjection k₀ i E},
       C.fan = R.fan → C.hom ≍ R.refinementIso.inv ≫ R.modelIso.hom ≫ R.modelTower.toBase →
       B'.fan = plane[b',hi] → B'.hom ≍ R.tower.toBase ≫ g ≫ (planeIso[b',hi]).inv →
       ∃ next, next < planeMeasure[T,hT,g] ∧ HasPlaneTargetMarking C B' next := by
@@ -198,11 +201,11 @@ private theorem model_marking_of_plane_decrease
   let := hSmoothY
   let := hTop
   let := hSmooth
-  let : R.fan.algebraicRealization.IsProjectiveOver ℂ := R.projective
+  let : (R.fan.finiteFanScheme k₀).IsProjectiveOver k₀ := R.projective
   let : Nonempty R.fan.cones := R.complete.nonempty_cones
-  let f := (R.fan.algebraicRealization ↘ S)
+  let f := ((R.fan.finiteFanScheme k₀) ↘ S)
   let : SmoothOfRelativeDimension 2 f :=
-    rankTwo ▸ R.fan.smoothOfRelativeDimension_algebraicRealizationStructureMap R.regular
+    rankTwo ▸ R.fan.smoothOfRelativeDimension_finiteFanSchemeToSpec k₀ R.regular
   let e := R.refinementIso.symm ≪≫ R.modelIso
   let g' := R.modelIso.inv ≫ R.refinement ≫ g
   let x := mark[R.modelTower,R.closedPoint,f,g']
@@ -222,8 +225,8 @@ private theorem model_marking_of_plane_decrease
     e g' hC' hB'' R.target_over R.target_birational⟩
   -- Reduce the fan projection of the reconstructed vertex before rewriting the degree.
   change hirzebruchSarkisovBidegree
-    ((R.fan.hirzebruchPicardBasis R.basis R.index R.regular R.rays R.rayGenerators).repr
-      x.1 1).toNat (sarkisovSecondaryDegree ℂ x.1.toMul).toNat < _
+    ((R.fan.hirzebruchPicardBasis k₀ R.basis R.index R.regular R.rays R.rayGenerators).repr
+      x.1 1).toNat (sarkisovSecondaryDegree k₀ x.1.toMul).toNat < _
   dsimp only
   rw [R.closedPoint.toNat_sarkisovSecondaryDegree_eq_sum g' R.target_over R.target_birational,
     hT.toNat_sarkisovSecondaryDegree_eq_sum g hg hbir]
@@ -246,7 +249,7 @@ theorem exists_sarkisov_step_of_plane_marking
   let : SmoothOfRelativeDimension 2 (Y ↘ S) := hT.smoothOfRelativeDimension s
   let : IsIntegral Y := hT.isIntegral s
   let : IsNoetherian Y := T.isNoetherian
-  let := Fan.projectivePlaneIso_trans_polynomialProjIso_hom_isOver b hi coords
+  let := Fan.projectivePlaneIso_trans_polynomialProjIso_hom_isOver k₀ b hi coords
   have ha : k.hom ≫ T.toBase ≫ s = X ↘ S := by
     rcases A with ⟨Φ, hreg, hc, a, ha, hdom, hpole⟩
     dsimp only at hA hAh
@@ -259,36 +262,37 @@ theorem exists_sarkisov_step_of_plane_marking
   let : k.hom.IsOver S := ⟨ha⟩
   let : k.inv.IsOver S := inferInstance
   let : k.symm.hom.IsOver S := inferInstanceAs (k.inv.IsOver S)
-  let F := precomposeSarkisovOfIso (i := i) rankTwo k.symm (rfl : D.comap k.inv = D.comap k.inv)
-  have hh {L : LogarithmicProjection i D} {Φ : Fan i} {p : Y ⟶ Φ.algebraicRealization}
+  let F := precomposeSarkisovOfIso (K := k₀) (i := i) rankTwo k.symm (rfl : D.comap k.inv =
+    D.comap k.inv)
+  have hh {L : LogarithmicProjection k₀ i D} {Φ : Fan i} {p : Y ⟶ (Φ.finiteFanScheme k₀)}
       (hL : L.fan = Φ) (h : L.hom ≍ k.hom ≫ p) : (obj[F,L]).hom ≍ p :=
-    precomposeSarkisovOfIso_obj_hom_of_comp rankTwo k.symm rfl L hL h
+    precomposeSarkisovOfIso_obj_hom_of_comp (K := k₀) rankTwo k.symm rfl L hL h
   have hn : AtWorstNodalOfRelativeDimensionOne ((D.comap k.inv).subschemeι ≫ Y ↘ S) := by
     simpa only [comp_over k.inv S] using hNode.comap_of_etale k.inv
-  rcases hT.exists_sarkisov_path_or_decrease_of_logarithmic_plane b b' hi g hg hbir
+  rcases hT.exists_sarkisov_path_or_decrease_of_logarithmic_plane k₀ b b' hi g hg hbir
       (hD.comap k.inv) hn (obj[F,A]) (obj[F,B])
       ((precomposeSarkisovOfIso_obj_fan ..).trans hA)
       ((precomposeSarkisovOfIso_obj_fan ..).trans hB) (hh hA hAh) (hh hB hBh) with
     ⟨p, -⟩ | ⟨R, A', C, B', p, hA', hhA, hC, hhC, hB', hhB, -⟩
   · have hD' : (D.comap k.inv).comap k.hom = D := by simp [← comap_comp]
-    let G := precomposeSarkisovOfIso (i := i) rankTwo k hD'
+    let G := precomposeSarkisovOfIso (K := k₀) (i := i) rankTwo k hD'
     let : k.symm.symm.hom.IsOver S := inferInstanceAs (k.hom.IsOver S)
-    have h (L : LogarithmicProjection i D) : obj[G,obj[F,L]] = L :=
-      precomposeSarkisovOfIso_obj_symm rankTwo k.symm rfl hD' L
+    have h (L : LogarithmicProjection k₀ i D) : obj[G,obj[F,L]] = L :=
+      precomposeSarkisovOfIso_obj_symm (K := k₀) rankTwo k.symm rfl hD' L
     exact Or.inl ⟨h A ▸ h B ▸ mapPath[G,p]⟩
   · let : R.top.Over S := over[R.tower]
     let : SmoothOfRelativeDimension 2 (R.top ↘ S) := smooth[R.nodal]
     let : IsIntegral R.top := integral[R.nodal]
-    have refineHom {L : LogarithmicProjection i D}
-        {L' : LogarithmicProjection i total[D.comap k.inv,R.tower]}
+    have refineHom {L : LogarithmicProjection k₀ i D}
+        {L' : LogarithmicProjection k₀ i total[D.comap k.inv,R.tower]}
         (hhL : L'.hom ≍ R.tower.toBase ≫ (obj[F,L]).hom) :
         L'.hom ≍ R.tower.toBase ≫ k.inv ≫ L.hom :=
       hhL.trans (heq_comp rfl rfl
-        (congrArg Fan.algebraicRealization (precomposeSarkisovOfIso_obj_fan ..))
-        HEq.rfl (precomposeSarkisovOfIso_obj_hom rankTwo k.symm rfl L))
+        (congrArg (Fan.finiteFanScheme k₀) (precomposeSarkisovOfIso_obj_fan ..))
+        HEq.rfl (precomposeSarkisovOfIso_obj_hom (K := k₀) rankTwo k.symm rfl L))
     have hB'fan := (hB'.trans (precomposeSarkisovOfIso_obj_fan ..)).trans hB
     have hB'plane := hhB.trans (heq_comp rfl rfl
-      (congrArg Fan.algebraicRealization ((precomposeSarkisovOfIso_obj_fan ..).trans hB))
+      (congrArg (Fan.finiteFanScheme k₀) ((precomposeSarkisovOfIso_obj_fan ..).trans hB))
       HEq.rfl (hh hB hBh))
     obtain ⟨next, hlt, hmark⟩ := model_marking_of_plane_decrease hg hbir R hC hhC hB'fan hB'plane
     exact Or.inr (HasPlaneTargetDecrease.of_iso rankTwo hD hNode k R.nodal hlt p
@@ -302,14 +306,15 @@ section Quadric
 variable {Y : Scheme} {b b' : Basis (Fin 2) ℤ N} {hi : IsIntegralLattice i}
   (r : Fin 4 ≃ A.fan.Ray)
   (hr : (fun j ↦ (r j).primitiveGenerator) = ![b 0, b 1, -b 0, (0 : ℤ) • b 0 - b 1])
-  {n : ℕ} {T : BlowupTower A.fan.algebraicRealization n Y}
-  (hT : IsClosedPointTower A.fan.algebraicRealization T) (g : Y ⟶ P)
+  {n : ℕ} {T : BlowupTower (A.fan.finiteFanScheme k₀) n Y}
+  (hT : IsClosedPointTower (A.fan.finiteFanScheme k₀) T) (g : Y ⟶ (Proj (homogeneousSubmodule k₀
+    (Fin 3 → k₀))))
 
 local notation "rankTwo" => Eq.trans (finrank_eq_card_basis b) (Fintype.card_fin 2)
-local notation "fA" => (A.fan.algebraicRealization ↘ S)
+local notation "fA" => ((A.fan.finiteFanScheme k₀) ↘ S)
 local notation "quadricSmooth" =>
   Eq.mp (congrArg (fun n ↦ SmoothOfRelativeDimension n fA) rankTwo)
-    (A.fan.smoothOfRelativeDimension_algebraicRealizationStructureMap A.isRegular)
+    (A.fan.smoothOfRelativeDimension_finiteFanSchemeToSpec k₀ A.isRegular)
 
 omit [IsIntegral X] [AlgebraicGeometry.IsNoetherian X] in
 private theorem exists_path_with_smaller_marking_of_quadric
@@ -319,23 +324,23 @@ private theorem exists_path_with_smaller_marking_of_quadric
     let : SmoothOfRelativeDimension 2 (Y ↘ S) := hT.smoothOfRelativeDimension fA
     let : IsIntegral Y := hT.isIntegral fA
     let x := mark[T,hT,fA,g]
-    let β := (A.fan.hirzebruchPicardBasis b 0 A.isRegular r hr).repr x.1 1
-    let d := hirzebruchSarkisovBidegree β.toNat (sarkisovSecondaryDegree ℂ x.1.toMul).toNat
-    ∀ (L R : LogarithmicProjection i J),
+    let β := (A.fan.hirzebruchPicardBasis k₀ b 0 A.isRegular r hr).repr x.1 1
+    let d := hirzebruchSarkisovBidegree β.toNat (sarkisovSecondaryDegree k₀ x.1.toMul).toNat
+    ∀ (L R : LogarithmicProjection k₀ i J),
       L.fan = A.fan → L.hom ≍ T.toBase →
       R.fan = plane[b',hi] → R.hom ≍ g ≫ (planeIso[b',hi]).inv →
       ∃ next, next < d ∧
-        ∃ C : LogarithmicProjection i J, Nonempty (SarkisovPath L C) ∧
+        ∃ C : LogarithmicProjection k₀ i J, Nonempty (SarkisovPath L C) ∧
           HasPlaneTargetMarking C R next := by
   intro hSmoothA hY hSmooth hInt x β d L R hL hhL hR hhR
   let := hSmoothA
   let := hY
   let := hSmooth
   let := hInt
-  let : A.fan.algebraicRealization.IsProjectiveOver ℂ :=
-    A.fan.isProjectiveOver_quadric b A.isRegular A.isComplete r hr
-  have hpole : (A.fan.boundaryIdeal A.isComplete.nonempty_cones).comap T.toBase =
-      J * hT.ramificationIdealSheafToBase ℂ := by
+  let : (A.fan.finiteFanScheme k₀).IsProjectiveOver k₀ :=
+    A.fan.isProjectiveOver_quadric k₀ b A.isRegular A.isComplete r hr
+  have hpole : (A.fan.toricBoundaryIdeal k₀ A.isComplete.nonempty_cones).comap T.toBase =
+      J * hT.ramificationIdealSheafToBase k₀ := by
     rcases L with ⟨Φ, hreg, hc, l, hl, hdom, hpole⟩
     dsimp only at hL hhL
     subst Φ
@@ -343,7 +348,7 @@ private theorem exists_path_with_smaller_marking_of_quadric
     let : T.toBase.IsOver S := ⟨rfl⟩
     rw [IsClosedPointTower.ramificationIdealSheafToBase_def]
     exact hpole
-  obtain ⟨L', C, p, hL', hhL', hresult⟩ := hT.exists_sarkisov_path_decrease_of_quadric
+  obtain ⟨L', C, p, hL', hhL', hresult⟩ := hT.exists_sarkisov_path_decrease_of_quadric k₀
     b A.isRegular A.isComplete r hr g hg hbir (D := J) hpole
   have hStart : L' = L := LogarithmicProjection.ext (hL'.trans hL.symm) (hhL'.trans hhL.symm)
   have targetHom {Z : Scheme} (e : Y ≅ Z) :
@@ -360,9 +365,9 @@ private theorem exists_path_with_smaller_marking_of_quadric
     exact hlt
   · let := hproj
     let : Nonempty C.fan.cones := C.isComplete.nonempty_cones
-    let : SmoothOfRelativeDimension 2 (C.fan.algebraicRealization ↘ S) := by
-      simpa only [← Fan.algebraicRealization_over, rankTwo] using
-        C.fan.smoothOfRelativeDimension_algebraicRealizationStructureMap C.isRegular
+    let : SmoothOfRelativeDimension 2 ((C.fan.finiteFanScheme k₀) ↘ S) := by
+      simpa only [← Fan.finiteFanScheme_over k₀, rankTwo] using
+        C.fan.smoothOfRelativeDimension_finiteFanSchemeToSpec k₀ C.isRegular
     refine ⟨_, ?_, C, ⟨hStart ▸ p⟩,
       .hirzebruch c b' a hi t ht hR U hU e (e.inv ≫ g) hhC (targetHom e) hgo hgb⟩
     dsimp only [d]
@@ -380,9 +385,9 @@ theorem exists_sarkisov_step_of_quadric_marking
     (hg : g ≫ s = T.toBase ≫ fA) (hbir : Scheme.BirationalOver g (𝟙 P)) :
     let : SmoothOfRelativeDimension 2 fA := quadricSmooth
     let x := mark[T,hT,fA,g]
-    let β := (A.fan.hirzebruchPicardBasis b 0 A.isRegular r hr).repr x.1 1
+    let β := (A.fan.hirzebruchPicardBasis k₀ b 0 A.isRegular r hr).repr x.1 1
     HasPlaneTargetDecrease A B rankTwo hD hNode
-      (hirzebruchSarkisovBidegree β.toNat (sarkisovSecondaryDegree ℂ x.1.toMul).toNat) := by
+      (hirzebruchSarkisovBidegree β.toNat (sarkisovSecondaryDegree k₀ x.1.toMul).toNat) := by
   intro hSmoothA x β
   let := hSmoothA
   let : Y.Over S := ⟨T.toBase ≫ fA⟩
@@ -393,11 +398,12 @@ theorem exists_sarkisov_step_of_quadric_marking
     (hAh ▸ comp_over A.hom S)⟩
   let : k.inv.IsOver S := inferInstance
   let : k.symm.hom.IsOver S := inferInstanceAs (k.inv.IsOver S)
-  let F := precomposeSarkisovOfIso (i := i) rankTwo k.symm (rfl : D.comap k.inv = D.comap k.inv)
+  let F := precomposeSarkisovOfIso (K := k₀) (i := i) rankTwo k.symm (rfl : D.comap k.inv =
+    D.comap k.inv)
   have hL : (obj[F,A]).hom ≍ T.toBase :=
-    precomposeSarkisovOfIso_obj_hom_of_comp rankTwo k.symm rfl A rfl (heq_of_eq hAh)
+    precomposeSarkisovOfIso_obj_hom_of_comp (K := k₀) rankTwo k.symm rfl A rfl (heq_of_eq hAh)
   have hR : (obj[F,B]).hom ≍ g ≫ (planeIso[b',hi]).inv :=
-    precomposeSarkisovOfIso_obj_hom_of_comp rankTwo k.symm rfl B hB hBh
+    precomposeSarkisovOfIso_obj_hom_of_comp (K := k₀) rankTwo k.symm rfl B hB hBh
   obtain ⟨next, hlt, C, ⟨p⟩, hm⟩ :=
     exists_path_with_smaller_marking_of_quadric r hr hT g hg hbir (D.comap k.inv)
       (obj[F,A]) (obj[F,B]) (precomposeSarkisovOfIso_obj_fan ..) hL
@@ -410,18 +416,19 @@ end Quadric
 
 section NegativeSection
 
-variable [A.fan.algebraicRealization.IsProjectiveOver ℂ]
+variable [(A.fan.finiteFanScheme k₀).IsProjectiveOver k₀]
   {Y : Scheme} {b b' : Basis (Fin 2) ℤ N} {hi : IsIntegralLattice i}
   {a : ℕ} (r : Fin 4 ≃ A.fan.Ray)
   (hr : (fun j ↦ (r j).primitiveGenerator) = ![b 0, b 1, -b 0, (a : ℤ) • b 0 - b 1])
-  {n : ℕ} {T : BlowupTower A.fan.algebraicRealization n Y}
-  (hT : IsClosedPointTower A.fan.algebraicRealization T) (g : Y ⟶ P)
+  {n : ℕ} {T : BlowupTower (A.fan.finiteFanScheme k₀) n Y}
+  (hT : IsClosedPointTower (A.fan.finiteFanScheme k₀) T) (g : Y ⟶ (Proj (homogeneousSubmodule k₀
+    (Fin 3 → k₀))))
 
 local notation "rankTwo" => Eq.trans (finrank_eq_card_basis b) (Fintype.card_fin 2)
-local notation "fA" => (A.fan.algebraicRealization ↘ S)
+local notation "fA" => ((A.fan.finiteFanScheme k₀) ↘ S)
 local notation "sourceSmooth" =>
   Eq.mp (congrArg (fun n ↦ SmoothOfRelativeDimension n fA) rankTwo)
-    (A.fan.smoothOfRelativeDimension_algebraicRealizationStructureMap A.isRegular)
+    (A.fan.smoothOfRelativeDimension_finiteFanSchemeToSpec k₀ A.isRegular)
 
 /-- A marked positive-index Hirzebruch-to-plane resolution with all orders at most
 half the ruling degree gives a strictly decreasing plane-target induction step.
@@ -434,14 +441,14 @@ theorem exists_sarkisov_step_of_hirzebruch_marking_of_no_high_order
     (hg : g ≫ s = T.toBase ≫ fA) (hbir : Scheme.BirationalOver g (𝟙 P)) :
     let : SmoothOfRelativeDimension 2 fA := sourceSmooth
     let x := mark[T,hT,fA,g]
-    let β := (A.fan.hirzebruchPicardBasis b a A.isRegular r hr).repr x.1 1
+    let β := (A.fan.hirzebruchPicardBasis k₀ b a A.isRegular r hr).repr x.1 1
     (∀ j, 2 * (-x.2 j) ≤ β) →
       HasPlaneTargetDecrease A B rankTwo hD hNode
-        (hirzebruchSarkisovBidegree β.toNat (sarkisovSecondaryDegree ℂ x.1.toMul).toNat) := by
+        (hirzebruchSarkisovBidegree β.toNat (sarkisovSecondaryDegree k₀ x.1.toMul).toNat) := by
   intro hSmoothA x β hlow
   let := hSmoothA
   let : Smooth fA := hSmoothA.smooth
-  let : IsNoetherian A.fan.algebraicRealization := isNoetherian_of_finiteType fA
+  let : IsNoetherian (A.fan.finiteFanScheme k₀) := isNoetherian_of_finiteType fA
   let : Y.Over S := ⟨T.toBase ≫ fA⟩
   let : SmoothOfRelativeDimension 2 (Y ↘ S) := hT.smoothOfRelativeDimension fA
   let : IsIntegral Y := hT.isIntegral fA
@@ -451,9 +458,10 @@ theorem exists_sarkisov_step_of_hirzebruch_marking_of_no_high_order
   let : k.inv.IsOver S := inferInstance
   let : k.symm.hom.IsOver S := inferInstanceAs (k.inv.IsOver S)
   have hL := precomposeSarkisovOfIso_obj_fan rankTwo k.symm rfl A
-  have hhL := precomposeSarkisovOfIso_obj_hom_of_comp rankTwo k.symm rfl A rfl (heq_of_eq hAh)
+  have hhL := precomposeSarkisovOfIso_obj_hom_of_comp (K := k₀) rankTwo k.symm rfl A rfl
+    (heq_of_eq hAh)
   have hR := (precomposeSarkisovOfIso_obj_fan rankTwo k.symm rfl B).trans hB
-  have hhR := precomposeSarkisovOfIso_obj_hom_of_comp rankTwo k.symm rfl B hB hBh
+  have hhR := precomposeSarkisovOfIso_obj_hom_of_comp (K := k₀) rankTwo k.symm rfl B hB hBh
   obtain ⟨next, hlt, C, _, _, ⟨p⟩, hm⟩ :=
     exists_sarkisov_path_with_smaller_plane_marking_of_no_high_order a A.isRegular A.isComplete
       r hr hT g ha hg hbir hlow hL hhL hR hhR

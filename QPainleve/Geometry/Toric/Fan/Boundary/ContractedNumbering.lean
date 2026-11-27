@@ -34,31 +34,31 @@ open TauCeti.AlgebraicGeometry Scheme.IdealSheafData
 
 namespace TauCeti.Toric.Fan
 
-variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
+universe u
+
+variable (k : Type u) [Field k] [IsAlgClosed k] [NeZero (2 : k)] {N V : Type u}
+  [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {Φ : Fan i} [h₀ : Nonempty Φ.cones] {r m n d : ℕ}
   [NeZero m] [NeZero n]
   (hΦ : Φ.IsRegular) (hc : Φ.IsComplete) (b : Module.Basis (Fin 2) ℤ N)
-  (s : Fin r → Φ.Ray) (c : Fin r → ℂˣ) (v : ZMod m ≃ Φ.Ray)
+  (s : Fin r → Φ.Ray) (c : Fin r → kˣ) (v : ZMod m ≃ Φ.Ray)
 
-local notation "S" => Spec (CommRingCat.of ℂ)
-local notation "Z" => Φ.algebraicRealization
-local notation "C₀" => Scheme.IdealSheafData.subscheme (Φ.boundaryIdeal h₀)
-local notation "U" => internalBlowupTower b s c
+local notation "S" => Spec (CommRingCat.of k)
+local notation "Z" => Φ.finiteFanScheme k
+local notation "C₀" => Scheme.IdealSheafData.subscheme (Φ.toricBoundaryIdeal k h₀)
+local notation "U" => internalBlowupTower k b s c
 local notation "J" => WithBoundary.boundaryι (Sigma.snd U)
 local notation "B" => Scheme.Hom.ker J
 local notation "z" => BlowupTower.toBase (WithBoundary.toTower (Sigma.snd U)) ≫ (Z ↘ S)
 
-variable {X W : Scheme} [X.Over S] [X.IsProjectiveOver ℂ] [IsIntegral X]
-  [SmoothOfRelativeDimension 2 (X ↘ S)] {D : X.IdealSheafData}
-  [PrestableFamily (D.subscheme ↘ S)] {T : BlowupTower X d W}
-  (hT : IsClosedPointTower X T) (e : (internalBlowupTower b s c).1 ≅ W)
-
-local instance contractedNumbering_noetherian : IsNoetherian X :=
-  isNoetherian_of_finiteType (X ↘ S)
+variable {X W : Scheme.{u}} [X.Over (Spec (.of k))] [X.IsProjectiveOver k] [IsIntegral X]
+  [SmoothOfRelativeDimension 2 (X ↘ Spec (.of k))] {D : X.IdealSheafData}
+  [PrestableFamily (D.subscheme ↘ Spec (.of k))] {T : BlowupTower X d W}
+  (hT : IsClosedPointTower X T) (e : (internalBlowupTower k b s c).1 ≅ W)
 
 local notation "π" => (Iso.hom e ≫ BlowupTower.toBase T)
 local notation "prime[" j "]" =>
-  internalBlowupBoundaryPrimeEquiv hΦ b s c (v (ZMod.finEquiv m j))
+  internalBlowupBoundaryPrimeEquiv k hΦ b s c (v (ZMod.finEquiv m j))
 
 include hT hc in
 /-- For a contraction of an ordered internal blowup, simultaneously number
@@ -73,29 +73,32 @@ theorem exists_oriented_numbering_of_contracted_toric_boundary
     (hsupp : (D.comap π).support = (B).support) (hD : D.IsEffectiveCartier)
     (a : Fin n ↪o Fin m)
     (ha : ∀ j : Fin m, π ((prime[j]).val) ∈ D.boundaryPrimes ↔ j ∈ Set.range a) :
+    letI : IsNoetherian X := isNoetherian_of_finiteType (X ↘ S)
     ∃ (_ : PrestableFamily (C₀ ↘ S))
-      (C : Scheme.NodalCycleNumbering (Empty.elim : Empty → (C₀ ↘ S).smoothLocus) m)
-      (A : Scheme.NodalCycleNumbering (Empty.elim : Empty → (D.subscheme ↘ S).smoothLocus) n)
+      (C : Scheme.NodalCycleNumbering (k := k) (X := C₀) (Empty.elim : Empty → _) m)
+      (A : Scheme.NodalCycleNumbering (k := k) (X := D.subscheme) (Empty.elim : Empty → _) n)
       (g : C₀ ⟶ D.subscheme),
-      Φ.rayEquivOfNodalCycleNumbering hΦ C = v ∧
+      Φ.rayEquivOfNodalCycleNumbering k hΦ C = v ∧
       ((D.comap T.toBase).radical).comap e.hom = B ∧
       g ≫ D.subschemeι = J ≫ π ∧ g.IsOver S ∧ g.IsOrientedCycleSubdivision C A ∧
       ∀ j : Fin n, π ((prime[a j]).val) = (A.boundaryPrimeEquiv hD (ZMod.finEquiv n j)).val := by
+  let : IsNoetherian X := isNoetherian_of_finiteType (X ↘ S)
   let : (U).1.Over S := ⟨z⟩
   let : (π).IsOver S := ⟨he⟩
-  let : (Z).IsProjectiveOver ℂ := Φ.isProjectiveOver_algebraicRealization_of_isComplete hΦ hc b
+  let : (Z).IsProjectiveOver k := Φ.isProjectiveOver_finiteFanScheme_of_isComplete k hΦ hc b
   let : IsNoetherian (U).1 := (U).2.toTower.isNoetherian
   have hdim : Module.finrank ℤ N = 2 := by simpa using Module.finrank_eq_card_basis b
-  let : SmoothOfRelativeDimension 2 (Z ↘ S) := (algebraicRealization_over Φ).symm ▸
-    (hdim ▸ Φ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ)
-  let hU := isClosedPointTower_internalBlowupTower b s c
+  let : SmoothOfRelativeDimension 2 (Z ↘ S) := by
+    rw [Φ.finiteFanScheme_over k]
+    exact hdim ▸ Φ.smoothOfRelativeDimension_finiteFanSchemeToSpec k hΦ
+  let hU := isClosedPointTower_internalBlowupTower k b s c
   let : SmoothOfRelativeDimension 2 ((U).1 ↘ S) := hU.smoothOfRelativeDimension (Z ↘ S)
-  let hBase := Φ.isEffectiveCartier_boundaryIdeal hΦ hc hdim
-  let hB := isEffectiveCartier_internalBlowupBoundary b s hΦ c hBase
-  have hcan := canonicalClass_internalBlowupTower b s c hΦ hBase hB
-    (Φ.canonicalClass_boundaryIdeal hΦ hc b hBase)
+  let hBase := Φ.isEffectiveCartier_boundaryIdeal k hΦ hc hdim
+  let hB := isEffectiveCartier_internalBlowupBoundary k b s hΦ c hBase
+  have hcan := canonicalClass_internalBlowupTower k b s c hΦ hBase hB
+    (Φ.canonicalClass_boundaryIdeal k hΦ hc b hBase)
   obtain ⟨hpreC, hpreB, C, C', hvC, htOver, ht, hprime⟩ :=
-    exists_numbering_internalBlowup_of_cyclicRays hΦ hc b s c v hv hB
+    exists_numbering_internalBlowup_of_cyclicRays k hΦ hc b s c v hv hB
   let : PrestableFamily (C₀ ↘ S) := hpreC
   let : PrestableFamily ((B).subscheme ↘ S) := hpreB
   let t : C₀ ≅ (B).subscheme := asIso (J).toImage

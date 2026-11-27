@@ -28,15 +28,18 @@ open scoped Sarkisov
 
 namespace TauCeti.Toric.Fan.LogarithmicProjection
 
+variable {k₀ : Type} [Field k₀] [IsAlgClosed k₀]
+
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V] {i : N →+ V}
 
-local notation "S" => Spec (CommRingCat.of ℂ)
+local notation "S" => Spec (CommRingCat.of k₀)
 
-variable {Z X Y : Scheme} [Z.Over S] [SmoothOfRelativeDimension 2 (Z ↘ S)]
-  [IsIntegral Z] [Z.IsProjectiveOver ℂ] [X.Over S] [Y.Over S]
-  [PrestableFamily (X ↘ S)] [PrestableFamily (Y ↘ S)]
-  {D : Z.IdealSheafData} {A B : LogarithmicProjection i D} {m : ℕ}
-  {ι₀ ι₁ : Type*} {pX : ι₀ → (X ↘ S).smoothLocus} {pY : ι₁ → (Y ↘ S).smoothLocus}
+variable {Z X Y : Scheme} [Z.Over (Spec (.of k₀))] [SmoothOfRelativeDimension 2 (Z ↘ Spec (.of k₀))]
+  [IsIntegral Z] [Z.IsProjectiveOver k₀] [X.Over (Spec (.of k₀))] [Y.Over (Spec (.of k₀))]
+  [PrestableFamily (X ↘ Spec (.of k₀))] [PrestableFamily (Y ↘ Spec (.of k₀))]
+  {D : Z.IdealSheafData} {A B : LogarithmicProjection k₀ i D} {m : ℕ}
+  {ι₀ ι₁ : Type*} {pX : ι₀ → (X ↘ Spec (.of k₀)).smoothLocus} {pY : ι₁ →
+    (Y ↘ Spec (.of k₀)).smoothLocus}
 
 /-- Read a resolved Sarkisov path in the prescribed endpoint frames and labels.
 If the two oriented subdivision maps from the resolving boundary commute with
@@ -56,7 +59,7 @@ theorem exists_word_of_resolved_sarkisov_path_to_model_of_orientedCycleSubdivisi
       U.IsPositiveBoundaryNumbering R₀ → T.IsPositiveBoundaryNumbering R₁ →
       f.IsOrientedCycleSubdivision R₀ C₀ → g.IsOrientedCycleSubdivision R₁ C₁ →
       ∃ w : Word U.exchangeMatrix T.exchangeMatrix,
-        (∃ hd, U.xEvaluation.compOfDefined (w.xRationalMap ℂ) hd = T.xEvaluation) ∧
+        (∃ hd, U.xEvaluation.compOfDefined (w.xRationalMap k₀) hd = T.xEvaluation) ∧
         cycleOrientationSign (e.boundaryCycleAction C₀ C₁) = (-1 : ℤˣ) ^ w.inversionCount ∧
         ∀ {x₀ x : D.subscheme} {j j₀ : ZMod n},
           f x₀ = C₀.componentGenericPoint 0 → g x₀ = C₁.componentGenericPoint j₀ →

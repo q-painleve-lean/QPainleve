@@ -13,7 +13,6 @@ public import QPainleve.Geometry.Toric.Fan.Picard.StrictTransform
 import QPainleve.AlgebraicGeometry.EffectiveCartierDivisor.Integral
 import QPainleve.AlgebraicGeometry.IdealSheaf.Integral
 import QPainleve.AlgebraicGeometry.Morphisms.Smooth.Factorial
-import QPainleve.Geometry.Toric.Fan.Smooth
 import QPainleve.LinearAlgebra.Dual.Cokernel
 
 /-!
@@ -35,35 +34,39 @@ open Scheme.IdealSheafData
 
 namespace TauCeti.Toric.Fan
 
-variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
+universe u
+
+variable (k : Type u) [Field k] [PerfectField k] {N : Type u} {V : Type*}
+  [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {Φ : Fan i} [Nonempty Φ.cones] {n : ℕ}
   (hΦ : Φ.IsRegular) (hdim : Module.finrank ℤ N = 2)
   (s : Fin n → Φ.Ray) (m : Fin n → N →+ ℤ)
   (hm : ∀ j, m j (s j).primitiveGenerator = 0) (hprim : ∀ j, Function.Surjective (m j))
-  (c : Fin n → ℂˣ)
+  (c : Fin n → kˣ)
 
-local notation "toricBoundary" => Φ.boundaryIdeal inferInstance
+local notation "toricBoundary" => Φ.toricBoundaryIdeal k inferInstance
 
 variable (J : Fin n →
-  {K : (Φ.boundaryIdeal inferInstance).subscheme.IdealSheafData // K.IsEffectiveCartier})
-  (hJ : ∀ j, (J j).val = ((s j).binomialCenterOnBoundary hdim (hm j) (hprim j) (c j)).ker)
+  {K : (Φ.toricBoundaryIdeal k inferInstance).subscheme.IdealSheafData // K.IsEffectiveCartier})
+  (hJ : ∀ j, (J j).val = ((s j).binomialCenterOnBoundary k hdim (hm j) (hprim j) (c j)).ker)
 
 local notation "model" => alongBoundary (subschemeι toricBoundary) J
 local notation "internalTower" => WithBoundary.toTower (Sigma.snd model)
 local notation "internalBoundary" => Scheme.Hom.ker (WithBoundary.boundaryι (Sigma.snd model))
-local notation "toricMap" => Φ.algebraicRealizationStructureMap
-local notation "strictIdeal" ρ:arg => strictTransform (Φ.rayBoundaryIdeal hΦ ρ) internalTower
+local notation "toricMap" => Φ.finiteFanSchemeToSpec k
+local notation "strictIdeal" ρ:arg => strictTransform (Φ.rayDivisorIdeal k hΦ ρ) internalTower
 
 local notation "internalPoints" =>
-  isClosedPointTower_alongBoundary_binomialCenters hdim s m hm hprim c J hJ
+  isClosedPointTower_alongBoundary_binomialCenters k hdim s m hm hprim c J hJ
 
-local notation "strictClass" => strictRayBoundaryClass hΦ hdim internalTower internalPoints
+local notation "strictClass" => strictRayBoundaryClass k hΦ hdim internalTower internalPoints
 
 include hJ in
+omit [PerfectField k] in
 private theorem isEffectiveCartier_comap_center (j : Fin n) (ρ : Φ.Ray) :
-    ((J j).val.comap (ρ.boundaryComponentι hΦ)).IsEffectiveCartier := by
+    ((J j).val.comap (ρ.boundaryComponentι k hΦ)).IsEffectiveCartier := by
   rw [hJ j]
-  exact (s j).isEffectiveCartier_comap_ker_binomialCenterOnBoundary hΦ
+  exact (s j).isEffectiveCartier_comap_ker_binomialCenterOnBoundary k hΦ
     hdim (hm j) (hprim j) (c j) ρ
 
 include hJ in
@@ -76,13 +79,13 @@ theorem primeDivisorSpanCompl_eq_span_strictRayBoundaryClass
     V.primeDivisorSpanCompl = Submodule.span ℤ
       (strictClass '' {ρ : Φ.Ray | Disjoint ((strictIdeal ρ).support : Set (model).1) V}) := by
   let : SmoothOfRelativeDimension 2 toricMap :=
-    hdim ▸ Φ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
-  have hcenters := isEffectiveCartier_comap_center hΦ hdim s m hm hprim c J hJ
+    hdim ▸ Φ.smoothOfRelativeDimension_finiteFanSchemeToSpec k hΦ
+  have hcenters := isEffectiveCartier_comap_center k hΦ hdim s m hm hprim c J hJ
   let (ρ : Φ.Ray) : IsIntegral (strictIdeal ρ).subscheme :=
-    isIntegral_strictTransform_rayBoundaryIdeal hΦ J ρ (fun j ↦ hcenters j ρ)
+    isIntegral_strictTransform_rayBoundaryIdeal k hΦ J ρ (fun j ↦ hcenters j ρ)
   let hCartier (ρ : Φ.Ray) : (strictIdeal ρ).IsEffectiveCartier :=
     (internalPoints).isEffectiveCartier_strictTransform toricMap
-      (Φ.isEffectiveCartier_rayBoundaryIdeal hΦ ρ)
+      (Φ.isEffectiveCartier_rayDivisorIdeal k hΦ ρ)
   let η (ρ : Φ.Ray) : CodimensionOnePoint (model).1 :=
     ⟨(strictIdeal ρ).subschemeι (genericPoint (strictIdeal ρ).subscheme),
       (hCartier ρ).coheight_subschemeι_genericPoint⟩
@@ -100,7 +103,7 @@ theorem primeDivisorSpanCompl_eq_span_strictRayBoundaryClass
         by_contra hn
         apply hx (hV ?_)
         simpa only [← SetLike.mem_coe, Closeds.coe_compl, Set.mem_compl_iff] using hn
-      rw [support_ker_alongBoundary_boundaryι hΦ J hcenters, Set.mem_iUnion] at hb
+      rw [support_ker_alongBoundary_boundaryι k hΦ J hcenters, Set.mem_iUnion] at hb
       obtain ⟨ρ, hρ⟩ := hb
       rw [(strictIdeal ρ).support_eq_closure_subschemeι_genericPoint] at hρ
       have hxρ : η ρ = x :=
@@ -111,7 +114,7 @@ theorem primeDivisorSpanCompl_eq_span_strictRayBoundaryClass
   rw [V.primeDivisorSpanCompl_eq_span_of_mem_iff _ hprimes, Set.image_eq_range]
   congr 2
   funext ρ
-  rw [strictRayBoundaryClass_eq hΦ hdim internalTower internalPoints ρ (hCartier ρ),
+  rw [strictRayBoundaryClass_eq k hΦ hdim internalTower internalPoints ρ (hCartier ρ),
     LineBundleClass.primeDivisorClass_def, LineBundleClass.mk_toInvertibleSheaf_congr _ _
       (strictIdeal ρ).vanishingIdeal_closure_subschemeι_genericPoint]
 
@@ -123,29 +126,29 @@ theorem primeDivisorSpanCompl_internalBlowup
     [∀ x : (model).1, UniqueFactorizationMonoid ((model).1.presheaf.stalk x)] :
     Scheme.Opens.primeDivisorSpanCompl (X := (model).1) (Closeds.compl (internalBoundary).support) =
       Submodule.span ℤ (Set.range strictClass) := by
-  rw [primeDivisorSpanCompl_eq_span_strictRayBoundaryClass hΦ hdim s m hm hprim c J hJ _ le_rfl]
-  have hcenters := isEffectiveCartier_comap_center hΦ hdim s m hm hprim c J hJ
+  rw [primeDivisorSpanCompl_eq_span_strictRayBoundaryClass k hΦ hdim s m hm hprim c J hJ _ le_rfl]
+  have hcenters := isEffectiveCartier_comap_center k hΦ hdim s m hm hprim c J hJ
   have h : {ρ : Φ.Ray | Disjoint ((strictIdeal ρ).support : Set (model).1)
       (↑(Closeds.compl (internalBoundary).support) : Set (model).1)} = Set.univ := by
     rw [Set.eq_univ_iff_forall]
     intro ρ
     rw [Set.mem_ofPred_eq, Closeds.coe_compl, Set.disjoint_compl_right_iff_subset,
-      support_ker_alongBoundary_boundaryι hΦ J hcenters]
+      support_ker_alongBoundary_boundaryι k hΦ J hcenters]
     exact Set.subset_iUnion (fun r : Φ.Ray ↦ ((strictIdeal r).support : Set (model).1)) ρ
   rw [h, Set.image_univ]
 
 variable {X Y : Scheme} [IsIntegral X] [IsNoetherian X]
   [∀ x : X, UniqueFactorizationMonoid (X.presheaf.stalk x)]
-  {D : X.IdealSheafData} {f : X ⟶ Spec (.of ℂ)} {d : ℕ} {T : QPainleve.BlowupTower X d Y}
+  {D : X.IdealSheafData} {f : X ⟶ Spec (.of k)} {d : ℕ} {T : QPainleve.BlowupTower X d Y}
   (hT : IsNodalBoundaryTower D f (𝟙 X) T)
-  (e : Y ≅ (alongBoundary (Φ.boundaryIdeal inferInstance).subschemeι J).1)
+  (e : Y ≅ (alongBoundary (Φ.toricBoundaryIdeal k inferInstance).subschemeι J).1)
   (hD : ((D.comap T.toBase).comap e.inv).support =
-    (alongBoundary (Φ.boundaryIdeal inferInstance).subschemeι J).2.boundaryι.ker.support)
+    (alongBoundary (Φ.toricBoundaryIdeal k inferInstance).subschemeι J).2.boundaryι.ker.support)
 
 local notation "boundaryCompl" => (Closeds.compl (Scheme.IdealSheafData.support D) : Scheme.Opens X)
 local notation "modelToBase" => (Iso.inv e ≫ QPainleve.BlowupTower.toBase T)
 local notation "binomialEquiv" =>
-  binomialBoundaryQuotientEquivDualChargeCokernel hΦ hdim s m hm hprim c J hJ internalPoints
+  binomialBoundaryQuotientEquivDualChargeCokernel k hΦ hdim s m hm hprim c J hJ internalPoints
 
 include hJ hT hD in
 /-- In a toric presentation the Picard group of the original surface modulo its boundary
@@ -155,7 +158,7 @@ def picardBoundaryQuotientEquivDualChargeCokernel :
     (Additive (LineBundleClass X) ⧸ Scheme.Opens.primeDivisorSpanCompl (X := X) boundaryCompl) ≃ₗ[ℤ]
       (Module.Dual ℤ (Fin n → ℤ) ⧸ (rayChargeMap s).dualMap.range) := by
   letI : SmoothOfRelativeDimension 2 toricMap :=
-    hdim ▸ Φ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
+    hdim ▸ Φ.smoothOfRelativeDimension_finiteFanSchemeToSpec k hΦ
   letI : IsIntegral (model).1 := (internalPoints).isIntegral toricMap
   letI : IsNoetherian (model).1 := (internalTower).isNoetherian
   let fModel := (internalTower).toBase ≫ toricMap
@@ -171,14 +174,14 @@ def picardBoundaryQuotientEquivDualChargeCokernel :
     rw [← compl_support_comap, Scheme.IdealSheafData.comap_comp, hD]
   have hspan : (modelToBase ⁻¹ᵁ boundaryCompl).primeDivisorSpanCompl =
       Submodule.span ℤ (Set.range strictClass) := by
-    rw [hU, primeDivisorSpanCompl_internalBlowup hΦ hdim s m hm hprim c J hJ]
+    rw [hU, primeDivisorSpanCompl_internalBlowup k hΦ hdim s m hm hprim c J hJ]
   exact (Scheme.Hom.quotientPrimeDivisorSpanComplEquiv modelToBase boundaryCompl).trans
     ((Submodule.quotEquivOfEq _ _ hspan).trans binomialEquiv)
 
 /-- The comparison evaluates a representative by pulling it back to the toric blowup
 model and applying the comparison in the ordered marking. -/
 @[simp] theorem picardBoundaryQuotientEquivDualChargeCokernel_apply_mk (a : LineBundleClass X) :
-    picardBoundaryQuotientEquivDualChargeCokernel hΦ hdim s m hm hprim c J hJ hT e hD
+    picardBoundaryQuotientEquivDualChargeCokernel k hΦ hdim s m hm hprim c J hJ hT e hD
       (Submodule.Quotient.mk (Additive.ofMul a)) =
     binomialEquiv
       (Submodule.Quotient.mk (Additive.ofMul (LineBundleClass.pullback modelToBase a))) := by
@@ -195,7 +198,7 @@ theorem natCard_torsion_picardBoundaryQuotient_eq_chargeIndex
         (rayChargeMap s).range.toAddSubgroup.index := by
   have := Φ.lattice.free
   have := Φ.lattice.finite
-  let q := picardBoundaryQuotientEquivDualChargeCokernel hΦ hdim s m hm hprim c J hJ hT e hD
+  let q := picardBoundaryQuotientEquivDualChargeCokernel k hΦ hdim s m hm hprim c J hJ hT e hD
   let eqv := q.toAddEquiv
   let torsionEquiv := (eqv.addSubgroupMap (AddCommGroup.torsion _)).trans
     (AddEquiv.addSubgroupCongr eqv.map_torsion)

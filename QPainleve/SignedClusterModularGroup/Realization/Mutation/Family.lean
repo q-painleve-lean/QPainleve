@@ -34,6 +34,8 @@ open LineBundleClass (IsNef)
 
 namespace QPainleve.SignedClusterModularGroup.GeometricRealization
 
+variable {k₀ : Type} [Field k₀] [IsAlgClosed k₀]
+
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {Φ : Fan i} (b : Basis (Fin 2) ℤ N) {n : ℕ}
   (s : Fin (n + 1) → Φ.Ray) (k : Fin (n + 1))
@@ -50,12 +52,12 @@ local notation "Ψ" => MutFan[b,s,k,hOpp]
 local notation "t" => Φ.mutationFanCenterRays b s k hOpp
 local notation "hΨ" => Iff.mpr (Φ.isRegular_mutationFan_iff b hv hp hOpp) hΦ
 
-local notation "S" => Spec (CommRingCat.of ℂ)
+local notation "S" => Spec (CommRingCat.of k₀)
 local notation "A" => (Fin (n + 1) → ℤ)
-local notation "Centers" => Over.mk (structureMap ℂ A)
-local notation "XTor" => scheme ℂ (Fin (n + 1) →₀ ℤ)
+local notation "Centers" => Over.mk (structureMap k₀ A)
+local notation "XTor" => scheme k₀ (Fin (n + 1) →₀ ℤ)
 local notation "ε" => chargeExchangeMatrix b.detDualEquiv.toLinearMap (rayChargeMap s)
-local notation "χ(" c ")" => pointsEquiv ℂ A
+local notation "χ(" c ")" => pointsEquiv k₀ A
   (Subtype.mk (CommaMorphism.left (c : Point Centers)) (Over.w (c : Point Centers)))
 local notation "χ′(" c ")" => MonoidHom.comp χ(c) (AddMonoidHom.toMultiplicative
   (AddEquiv.toAddMonoidHom (LinearEquiv.toAddEquiv (chargeMutationEquiv ε k))))
@@ -67,27 +69,29 @@ variable {E : SkewExchangeMatrix (Fin (n + 1))} (P : ChargeSeed E N)
   (hform : P.form = b.detDualEquiv.toLinearMap) (hcharge : P.charge = rayChargeMap s)
 
 local notation "w" => Quiver.Hom.toPath (Generator.toStep (Generator.mutate k) E)
-local notation "C" => Quiver.Path.centerPartialMap ℂ w P
+local notation "C" => Quiver.Path.centerPartialMap k₀ w P
 local notation "DomainPoint" => CenterPoint (U := Centers) (V := Centers) C
-local notation "F" => Quiver.Path.xRationalMap ℂ w
+local notation "F" => Quiver.Path.xRationalMap k₀ w
 local notation "src(" c ")" => (c) ≫ Scheme.PartialMap.domainSource (X := Centers) (Y := Centers) C
 local notation "dst(" c ")" => (c) ≫ Scheme.PartialMap.domainTarget (X := Centers) (Y := Centers) C
 
 include hform hcharge in
+omit [IsAlgClosed k₀] in
 /-- At a center in the domain of a mutation, the target character is the source
 character precomposed with the integral exponent mutation. -/
 theorem mutation_target_character (c : DomainPoint) :
     χ(dst(c)) = χ′(src(c)) := by
   have hE : E.matrix = ε := by rw [← P.matrix_eq, hform, hcharge]
-  apply (pointsEquiv ℂ A).symm.injective
+  apply (pointsEquiv k₀ A).symm.injective
   apply Subtype.ext
   simp only [Equiv.symm_apply_apply, Over.comp_left, Scheme.PartialMap.domainTarget_left,
     Scheme.PartialMap.domainSource_left, Quiver.Path.centerPartialMap_hom, ← Category.assoc]
-  have h := Quiver.Path.pointsEquiv_symm_comp_centerIso_hom ℂ w χ(src(c))
+  have h := Quiver.Path.pointsEquiv_symm_comp_centerIso_hom k₀ w χ(src(c))
   rw [Quiver.Path.exponentEquiv_toPath, Step.exponentEquiv_mutate, hE] at h
   simpa only [Equiv.symm_apply_apply, Over.comp_left, Scheme.PartialMap.domainSource_left] using h
 
 include hOpp hform hcharge in
+omit [IsAlgClosed k₀] in
 /-- The center open separates the pivot from every other center on the pivot ray
 and from the inverse of each center on the opposite ray. -/
 theorem mutation_center_conditions (c : DomainPoint) :
@@ -96,12 +100,12 @@ theorem mutation_center_conditions (c : DomainPoint) :
     (∀ j, j ≠ k → (s j).primitiveGenerator = -(ρ).primitiveGenerator →
       center(χ(src(c))) j * center(χ(src(c))) k ≠ 1) := by
   let x : S := default
-  have hmem : (src(c)).left x ∈ mutationCenterOpen b s k hOpp ℂ := by
-    rw [mutationCenterOpen_eq_centerOpen b s k hOpp ℂ P hform hcharge,
+  have hmem : (src(c)).left x ∈ mutationCenterOpen b s k hOpp k₀ := by
+    rw [mutationCenterOpen_eq_centerOpen b s k hOpp k₀ P hform hcharge,
       ← Quiver.Path.centerPartialMap_domain, Over.comp_left, Scheme.PartialMap.domainSource_left,
       Scheme.Hom.comp_apply]
     exact (c.left x).property
-  have h := (point_mem_mutationCenterOpen_iff b s k hOpp ℂ χ(src(c)) x).mp
+  have h := (point_mem_mutationCenterOpen_iff b s k hOpp k₀ χ(src(c)) x).mp
     (by simpa only [Equiv.symm_apply_apply] using hmem)
   exact ⟨fun j hj he ↦ h.1 j k hj (Ray.primitiveGenerator_injective he), fun j _ ↦ h.2 j⟩
 
@@ -111,28 +115,29 @@ variable [hΦ₀ : Nonempty Φ.cones] [hΨ₀ : Nonempty (Φ.mutationFan b
 variable {m l : ℕ} [NeZero m] [NeZero l]
   {L₀ L₁ : Type} [AddCommGroup L₀] [AddCommGroup L₁]
   {B₀ : LinearMap.BilinForm ℤ L₀} {B₁ : LinearMap.BilinForm ℤ L₁}
-  {P₀ : Point (Over.mk (structureMap ℂ (Fin (n + 1) → ℤ))) →
-    MarkedSurface ℂ m B₀ (scheme ℂ (Fin (n + 1) →₀ ℤ))}
-  {P₁ : Point (Over.mk (structureMap ℂ (Fin (n + 1) → ℤ))) →
-    MarkedSurface ℂ m B₁ (scheme ℂ (Fin (n + 1) →₀ ℤ))}
+  {P₀ : Point (Over.mk (structureMap k₀ (Fin (n + 1) → ℤ))) →
+    MarkedSurface k₀ m B₀ (scheme k₀ (Fin (n + 1) →₀ ℤ))}
+  {P₁ : Point (Over.mk (structureMap k₀ (Fin (n + 1) → ℤ))) →
+    MarkedSurface k₀ m B₁ (scheme k₀ (Fin (n + 1) →₀ ℤ))}
 
-local notation "Dtor[" Φ "," h "]" => Scheme.IdealSheafData.subscheme (Fan.boundaryIdeal Φ h)
-local notation "Pic[" Φ "," n "]" =>
-  Additive (LineBundleClass (Fan.algebraicRealization Φ)) × (Fin (n + 1) → ℤ)
+local notation "Dtor[" coeff "," Φ "," h "]" => Scheme.IdealSheafData.subscheme
+  (Fan.toricBoundaryIdeal coeff Φ h)
+local notation "Pic[" coeff "," Φ "," n "]" =>
+  Additive (LineBundleClass (Fan.finiteFanScheme coeff Φ)) × (Fin (n + 1) → ℤ)
 
-variable [PrestableFamily (Dtor[Φ,hΦ₀] ↘ Spec (CommRingCat.of ℂ))]
-  [PrestableFamily (Dtor[MutFan[b,s,k,hOpp],hΨ₀] ↘ Spec (CommRingCat.of ℂ))]
-  {γ₀ γ₁ : Type*} {a₀ : γ₀ → (Dtor[Φ,hΦ₀] ↘ Spec (CommRingCat.of ℂ)).smoothLocus}
-  {a₁ : γ₁ → (Dtor[MutFan[b,s,k,hOpp],hΨ₀] ↘ Spec (CommRingCat.of ℂ)).smoothLocus}
+variable [PrestableFamily (Dtor[k₀,Φ,hΦ₀] ↘ Spec (CommRingCat.of k₀))]
+  [PrestableFamily (Dtor[k₀,MutFan[b,s,k,hOpp],hΨ₀] ↘ Spec (CommRingCat.of k₀))]
+  {γ₀ γ₁ : Type*} {a₀ : γ₀ → (Dtor[k₀,Φ,hΦ₀] ↘ Spec (CommRingCat.of k₀)).smoothLocus}
+  {a₁ : γ₁ → (Dtor[k₀,MutFan[b,s,k,hOpp],hΨ₀] ↘ Spec (CommRingCat.of k₀)).smoothLocus}
   {T₀ : Scheme.NodalCycleNumbering a₀ l} {T₁ : Scheme.NodalCycleNumbering a₁ l}
-  {o₀ o₁ : ZMod l} {J₀ : L₀ →ₗ[ℤ] Pic[Φ,n]} {J₁ : L₁ →ₗ[ℤ] Pic[MutFan[b,s,k,hOpp],n]}
+  {o₀ o₁ : ZMod l} {J₀ : L₀ →ₗ[ℤ] Pic[k₀,Φ,n]} {J₁ : L₁ →ₗ[ℤ] Pic[k₀,MutFan[b,s,k,hOpp],n]}
   {r₀ : ZMod l ≃ Φ.Ray} {r₁ : ZMod l ≃ (MutFan[b,s,k,hOpp]).Ray}
 
 local notation "M(" c ")" => P₀ (src(c))
 local notation "M′(" c ")" => P₁ (dst(c))
-local notation "Aux₀(" c ")" => Sigma.fst (internalBlowupTower (h₀ := hΦ₀) b s
+local notation "Aux₀(" c ")" => Sigma.fst (internalBlowupTower k₀ (h₀ := hΦ₀) b s
   center(χ(src(c))))
-local notation "Aux₁(" c ")" => Sigma.fst (internalBlowupTower (h₀ := hΨ₀) b (t)
+local notation "Aux₁(" c ")" => Sigma.fst (internalBlowupTower k₀ (h₀ := hΨ₀) b (t)
   center(χ(dst(c))))
 local notation "Models₀(" c ")" => ContractedToricFiber (h₀ := hΦ₀)
   b s hΦ T₀ o₀ J₀ χ(src(c)) (M(c))
@@ -145,21 +150,21 @@ geometric realization of the typed mutation step. The Picard pullback is the int
 mutation isometry. The action on numbered branches is rotation by the unique index
 whose boundary class pulls back to the class of source component zero. -/
 theorem exists_mutate
-    (hr₀ : ∀ j, T₀.component j = Φ.boundaryNormalizationComponentEquiv hΦ (r₀ j))
-    (hr₁ : ∀ j, T₁.component j = (Ψ).boundaryNormalizationComponentEquiv (hΨ) (r₁ j))
+    (hr₀ : ∀ j, T₀.component j = Φ.boundaryNormalizationComponentEquiv k₀ hΦ (r₀ j))
+    (hr₁ : ∀ j, T₁.component j = (Ψ).boundaryNormalizationComponentEquiv k₀ (hΨ) (r₁ j))
     (hAdjacent : b.detDualEquiv (r₀ 0).primitiveGenerator (r₀ 1).primitiveGenerator = 1 ∧
       ∃ σ : Φ.cones, (r₀ 0).toCone ≤ σ ∧ (r₀ 1).toCone ≤ σ)
     (hPositive : ∀ j, b.detDualEquiv (r₁ j).primitiveGenerator
       (r₁ (j + 1)).primitiveGenerator = 1)
     (I : B₁.IsometryEquiv B₀)
-    (hI : ∀ x, J₀ (I x) = mutationPicardEquiv b s k hOpp hΦ (J₁ x))
+    (hI : ∀ x, J₀ (I x) = mutationPicardEquiv k₀ b s k hOpp hΦ (J₁ x))
     (hD₀ : ∀ c : DomainPoint, (M(c)).pair.hom.left.ker.IsEffectiveCartier)
     (hD₁ : ∀ c : DomainPoint, (M′(c)).pair.hom.left.ker.IsEffectiveCartier)
-    (hnef₀ : ∀ c, IsNef ℂ ((M(c)).surface ↘ S) classOf(hD₀ c))
-    (hnef₁ : ∀ c, IsNef ℂ ((M′(c)).surface ↘ S) classOf(hD₁ c))
-    (hsq₀ : ∀ c, Chow.classIntersectionNumber ℂ (M(c)).surface
+    (hnef₀ : ∀ c, IsNef k₀ ((M(c)).surface ↘ S) classOf(hD₀ c))
+    (hnef₁ : ∀ c, IsNef k₀ ((M′(c)).surface ↘ S) classOf(hD₁ c))
+    (hsq₀ : ∀ c, Chow.classIntersectionNumber k₀ (M(c)).surface
       classOf(hD₀ c) classOf(hD₀ c) = 0)
-    (hsq₁ : ∀ c, Chow.classIntersectionNumber ℂ (M′(c)).surface
+    (hsq₁ : ∀ c, Chow.classIntersectionNumber k₀ (M′(c)).surface
       classOf(hD₁ c) classOf(hD₁ c) = 0)
     (hmodel₀ : ∀ c : DomainPoint, ∃ p : Models₀(c), ∃ (Y : Scheme) (a : ℕ)
         (T : BlowupTower (M(c)).surface a Y) (e : Y ≅ Aux₀(c)),

@@ -21,6 +21,8 @@ open Module PointedCone
 
 namespace TauCeti.Toric.Fan
 
+variable (k₀ : Type) [Field k₀]
+
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {Φ : Fan i}
 
@@ -30,7 +32,7 @@ theorem mutationFiberClass_eq_hirzebruchPicardBasis_zero (b : Basis (Fin 2) ℤ 
     (e : ℤ) (hΦ : Φ.IsRegular) (r : Fin 4 ≃ Φ.Ray)
     (hr : (fun j ↦ (r j).primitiveGenerator) = ![b 0, b 1, -b 0, e • b 0 - b 1]) :
     letI : Nonempty Φ.cones := ⟨(r 0).toCone⟩
-    mutationFiberClass b (r 0) hΦ = Φ.hirzebruchPicardBasis b e hΦ r hr 0 := by
+    mutationFiberClass k₀ b (r 0) hΦ = Φ.hirzebruchPicardBasis k₀ b e hΦ r hr 0 := by
   classical
   let : Nonempty Φ.cones := ⟨(r 0).toCone⟩
   let m := (b.detDualEquiv (b 0)).toAddMonoidHom
@@ -51,7 +53,7 @@ theorem mutationFiberClass_eq_hirzebruchPicardBasis_zero (b : Basis (Fin 2) ℤ 
     rw [hj]
     fin_cases j <;> norm_num [b.detDualEquiv_self, b.detDualEquiv_apply_basis_zero_one,
       -Basis.detDualEquiv_apply]
-  have hpri := (Φ.exact_characterToRayDivisor_rayDivisorToPicard hΦ _).mpr ⟨m, rfl⟩
+  have hpri := (Φ.exact_characterToRayDivisor_rayChartDivisorToPicard k₀ hΦ _).mpr ⟨m, rfl⟩
   rw [mutationFiberClass_eq, hirzebruchPicardBasis_apply_zero, ← hadd, map_add, hpri, add_zero]
 
 section
@@ -77,16 +79,16 @@ theorem Ray.mutationFiberClasses_eq_hirzebruchPicardBasis_zero
     (hd₁ : d 1 = b 1 - (if onSection then 0 else b 0))
     (hr' : (fun l ↦ ((r.trans rayEquiv) l).primitiveGenerator) =
       ![d 0, d 1, -d 0, (if onSection then e + 1 else e - 1) • d 0 - d 1]) :
-    mutationFiberClass b ρ hΦ = hirzebruchPicardBasis b e hΦ r hr 0 ∧
-    mutationFiberClass b (rayEquiv ρ) hΨ[hΦ] =
-      hirzebruchPicardBasis d (if onSection then e + 1 else e - 1) hΨ[hΦ]
+    mutationFiberClass k₀ b ρ hΦ = hirzebruchPicardBasis k₀ b e hΦ r hr 0 ∧
+    mutationFiberClass k₀ b (rayEquiv ρ) hΨ[hΦ] =
+      hirzebruchPicardBasis k₀ d (if onSection then e + 1 else e - 1) hΨ[hΦ]
         (r.trans rayEquiv) hr' 0 := by
   cases onSection
   · have hρ₂ : ρ = r 2 := hρ
     have hρ₂' : rayEquiv ρ = (r.trans rayEquiv) 2 := congrArg rayEquiv hρ₂
     rw [hρ₂', hirzebruchPicardBasis_apply_zero, hirzebruchPicardBasis_apply_zero]
-    exact ⟨hρ₂.symm ▸ mutationFiberClass_of_opposite_section b hΦ r e 0 (by simpa using hr),
-      mutationFiberClass_of_opposite_section b hΨ[hΦ] (r.trans rayEquiv) (e - 1) 1
+    exact ⟨hρ₂.symm ▸ mutationFiberClass_of_opposite_section k₀ b hΦ r e 0 (by simpa using hr),
+      mutationFiberClass_of_opposite_section k₀ b hΨ[hΦ] (r.trans rayEquiv) (e - 1) 1
         (by simpa only [hd₀, hd₁, Bool.false_eq_true, ite_false, one_zsmul] using hr')⟩
   · have hρ₀ : ρ = r 0 := hρ
     have hρ₀' : rayEquiv ρ = (r.trans rayEquiv) 0 := congrArg rayEquiv hρ₀
@@ -98,9 +100,9 @@ theorem Ray.mutationFiberClasses_eq_hirzebruchPicardBasis_zero
       · exact hd₀
       · exact hd₁'
     subst d
-    exact ⟨hρ₀.symm ▸ mutationFiberClass_eq_hirzebruchPicardBasis_zero b e hΦ r hr,
+    exact ⟨hρ₀.symm ▸ mutationFiberClass_eq_hirzebruchPicardBasis_zero k₀ b e hΦ r hr,
       hρ₀'.symm ▸
-        mutationFiberClass_eq_hirzebruchPicardBasis_zero b (e + 1) hΨ[hΦ] (r.trans rayEquiv) hr'⟩
+        mutationFiberClass_eq_hirzebruchPicardBasis_zero k₀ b (e + 1) hΨ[hΦ] (r.trans rayEquiv) hr'⟩
 
 end
 

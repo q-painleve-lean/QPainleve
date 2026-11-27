@@ -29,7 +29,7 @@ open AddMonoidAlgebra
 
 namespace TauCeti.Toric.Fan
 
-variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
+variable {K : Type} [Field K] {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {Φ : Fan i} (b : Module.Basis (Fin 2) ℤ N) (ρ : Φ.Ray)
 
 local notation "u" => ρ.primitiveGenerator
@@ -37,63 +37,51 @@ local notation "rankTwo" => (Eq.trans (Module.finrank_eq_card_basis b) (Fintype.
 local notation "χ(" x ")" => LinearMap.toAddMonoidHom (b.detDualEquiv x)
 
 local notation "S(" σ ")" => dualSemigroup Φ.lattice (Subtype.val σ)
-local notation "R(" σ ")" => AddMonoidAlgebra ℂ (S(σ))
+local notation "R(" σ ")" => AddMonoidAlgebra K (S(σ))
 
-private abbrev centerEval (d : ℂˣ) : R(ρ.toCone) →ₐ[ℂ] ℂ :=
-  (ρ.binomialCenterEval rankTwo (m := χ(u)) (b.detDualEquiv_self u)
-    (ρ.surjective_detCharacter b) d).comp
-      (toMultiplicativeAlgEquiv ℂ ℂ (S(ρ.toCone))).toAlgHom
+private abbrev centerEval (d : Kˣ) : R(ρ.toCone) →ₐ[K] K :=
+  ρ.binomialCenterEval K rankTwo (m := χ(u)) (b.detDualEquiv_self u)
+    (ρ.surjective_detCharacter b) d
 
-private theorem centerEval_single_eq_zero (d : ℂˣ) (a : S(ρ.toCone)) (r : ℂ)
+private theorem centerEval_single_eq_zero (d : Kˣ) (a : S(ρ.toCone)) (r : K)
     (ha : (a : N →+ ℤ) u ≠ 0) :
     centerEval b ρ d (single a r) = 0 := by
-  simpa only [centerEval, AlgHom.comp_apply, AlgEquiv.coe_toAlgHom,
-    toMultiplicativeAlgEquiv_single] using
-    ρ.binomialCenterEval_single_eq_zero rankTwo (b.detDualEquiv_self u)
+  exact ρ.binomialCenterEval_single_eq_zero K rankTwo (b.detDualEquiv_self u)
       (ρ.surjective_detCharacter b) d a r ha
 
-private theorem centerEval_single_zsmul (d : ℂˣ) (a : S(ρ.toCone)) (r : ℂ) (n : ℤ)
+private theorem centerEval_single_zsmul (d : Kˣ) (a : S(ρ.toCone)) (r : K) (n : ℤ)
     (ha : (a : N →+ ℤ) = n • χ(u)) :
-    centerEval b ρ d (single a r) = r * (-(↑d⁻¹ : ℂ)) ^ n := by
+    centerEval b ρ d (single a r) = r * (-(↑d⁻¹ : K)) ^ n := by
   have hz : (n • χ(u)) u = 0 := by
     simp only [AddMonoidHom.zsmul_apply, LinearMap.toAddMonoidHom_coe, b.detDualEquiv_self,
       smul_zero]
   have he : a = ρ.chartCharacter hz := Subtype.ext (by simpa only [Ray.coe_chartCharacter] using ha)
   rw [he]
-  simpa only [centerEval, AlgHom.comp_apply, AlgEquiv.coe_toAlgHom,
-    toMultiplicativeAlgEquiv_single] using
-    ρ.binomialCenterEval_single_zsmul rankTwo (b.detDualEquiv_self u)
+  exact ρ.binomialCenterEval_single_zsmul K rankTwo (b.detDualEquiv_self u)
       (ρ.surjective_detCharacter b) d n r
 
-private theorem centerEval_toPoint (d : ℂˣ) :
+private theorem centerEval_toPoint (d : Kˣ) :
     Spec.map (CommRingCat.ofHom (centerEval b ρ d).toRingHom) ≫
-        Φ.additiveAffineToricChartι ρ.toCone =
-      ρ.binomialCenter rankTwo (m := χ(u))
-        (by simpa only [LinearMap.toAddMonoidHom_coe] using b.detDualEquiv_self u)
-        (ρ.surjective_detCharacter b) d := by
-  rw [additiveAffineToricChartι_def, Ray.binomialCenter_def, ← Spec.map_comp_assoc,
-    ← CommRingCat.ofHom_comp]
-  congr 2
-  apply CommRingCat.hom_ext
-  apply RingHom.ext
-  intro x
-  simp [centerEval]
+        Φ.affineChartι K ρ.toCone =
+      ρ.binomialCenter K rankTwo (m := χ(u))
+        (b.detDualEquiv_self u) (ρ.surjective_detCharacter b) d :=
+  (ρ.binomialCenter_def K rankTwo (b.detDualEquiv_self u) (ρ.surjective_detCharacter b) d).symm
 
-private def centerEvalOnCone (d : ℂˣ) (σ : Φ.cones) (hσ : σ = ρ.toCone) :
-    R(σ) →ₐ[ℂ] ℂ :=
+private def centerEvalOnCone (d : Kˣ) (σ : Φ.cones) (hσ : σ = ρ.toCone) :
+    R(σ) →ₐ[K] K :=
   hσ.symm ▸ centerEval b ρ d
 
-private theorem centerEvalOnCone_single (d : ℂˣ) (σ : Φ.cones) (hσ : σ = ρ.toCone)
+private theorem centerEvalOnCone_single (d : Kˣ) (σ : Φ.cones) (hσ : σ = ρ.toCone)
     (a : S(σ)) (a' : S(ρ.toCone)) (ha : a.val = a'.val) :
     centerEvalOnCone b ρ d σ hσ (single a 1) = centerEval b ρ d (single a' 1) := by
   subst σ
   obtain rfl := Subtype.ext ha
   rfl
 
-private theorem centerEvalOnCone_toPoint (d : ℂˣ) (σ : Φ.cones) (hσ : σ = ρ.toCone) :
+private theorem centerEvalOnCone_toPoint (d : Kˣ) (σ : Φ.cones) (hσ : σ = ρ.toCone) :
     Spec.map (CommRingCat.ofHom (centerEvalOnCone b ρ d σ hσ).toRingHom) ≫
-        Φ.additiveAffineToricChartι σ =
-      ρ.binomialCenter rankTwo (b.detDualEquiv_self u)
+        Φ.affineChartι K σ =
+      ρ.binomialCenter K rankTwo (b.detDualEquiv_self u)
         (ρ.surjective_detCharacter b) d := by
   subst σ
   exact centerEval_toPoint b ρ d
@@ -170,12 +158,12 @@ private theorem exponentEquiv_char
       AddMonoidHom.zsmul_apply, hx, max_eq_right (neg_nonpos.mpr (not_lt.mp h)), zero_mul,
       add_zero]
 
-variable (c d : ℂˣ)
+variable (c d : Kˣ)
 
 local notation "B" => Φ.mutationChartBinomial s (Units.val c) q
 
 private theorem centerEval_pivotBinomial_of_ne_zero (h : pivotChar u ≠ 0) :
-    centerEval b ρ d B = if pivotChar u < 0 then (c : ℂ) else 1 := by
+    centerEval b ρ d B = if pivotChar u < 0 then (c : K) else 1 := by
   have hq : Subtype.val q u ≠ 0 := by
     by_cases hn : pivotChar u < 0
     · simpa only [raySide, hn, decide_true, mutationChartCharacter_true,
@@ -188,7 +176,7 @@ private theorem centerEval_pivotBinomial_of_ne_zero (h : pivotChar u ≠ 0) :
 
 private theorem centerEval_pivotBinomial_of_zsmul (j : ℤ)
     (hj : pivotChar = j • χ(u)) :
-    centerEval b ρ d B = 1 + (c : ℂ) * (-(↑d⁻¹ : ℂ)) ^ j := by
+    centerEval b ρ d B = 1 + (c : K) * (-(↑d⁻¹ : K)) ^ j := by
   have h : pivotChar u = 0 := by
     rw [hj, AddMonoidHom.zsmul_apply, LinearMap.toAddMonoidHom_coe, b.detDualEquiv_self, smul_zero]
   have hq : Subtype.val q = j • χ(u) := by
@@ -206,7 +194,7 @@ private theorem centerEval_pivotBinomial_ne_zero (hprim : IsPrimitive v)
       intro he
       apply hsame hvu.symm
       apply Units.ext
-      have he' := congrArg (fun z : ℂ ↦ z * (d : ℂ)) he
+      have he' := congrArg (fun z : K ↦ z * (d : K)) he
       simp only [zpow_one, add_mul, one_mul, zero_mul] at he'
       rw [mul_assoc, neg_mul, Units.inv_mul, mul_neg_one] at he'
       exact (add_eq_zero_iff_eq_neg.mp he').trans (neg_neg _)
@@ -232,7 +220,7 @@ local notation "U₀" => (Φ.mutationComplement b hRuling₀ (Units.val c))
 local notation "U₁" => (mutationComplement Ψ b hRuling₁ (Units.val c))
 local notation "E" => (Φ.mutationComplementIso b (Units.val c) hv hpos hneg)
 
-private abbrev localizedCenterEval (hf : centerEval b ρ d B ≠ 0) : L →ₐ[ℂ] ℂ :=
+private abbrev localizedCenterEval (hf : centerEval b ρ d B ≠ 0) : L →ₐ[K] K :=
   IsLocalization.Away.liftAlgHom B (isUnit_iff_ne_zero.mpr hf)
 
 private theorem localizedCenterEval_algebraMap (hf : centerEval b ρ d B ≠ 0) (x : R(ρ.toCone)) :
@@ -241,19 +229,19 @@ private theorem localizedCenterEval_algebraMap (hf : centerEval b ρ d B ≠ 0) 
 
 private theorem localizedCenterEval_binomial_zpow (hf : centerEval b ρ d B ≠ 0) (n : ℤ) :
     localizedCenterEval b ρ c d hf
-      (↑(awayBinomialUnit (cond s (c : ℂ) 1) (cond s 1 (c : ℂ)) q ^ n) : L) =
+      (↑(awayBinomialUnit (cond s (c : K) 1) (cond s 1 (c : K)) q ^ n) : L) =
       (centerEval b ρ d B) ^ n := by
   let g := (localizedCenterEval b ρ c d hf).toMonoidHom
   have hbase : (Units.map g (awayBinomialUnit
-      (cond s (c : ℂ) 1) (cond s 1 (c : ℂ)) q) : ℂ) = centerEval b ρ d B := by
+      (cond s (c : K) 1) (cond s 1 (c : K)) q) : K) = centerEval b ρ d B := by
     rw [Units.coe_map, coe_awayBinomialUnit]
     exact localizedCenterEval_algebraMap b ρ c d hf B
   rw [← hbase, ← Units.val_zpow_eq_zpow_val, ← map_zpow, Units.coe_map]
   rfl
 
 private theorem centerEval_movedParameter_zpow (n : ℤ) :
-    (-(↑d⁻¹ : ℂ)) ^ n * (centerEval b ρ d B) ^ (-(n * δ)) =
-      (-(↑(movedParameter)⁻¹ : ℂ)) ^ n := by
+    (-(↑d⁻¹ : K)) ^ n * (centerEval b ρ d B) ^ (-(n * δ)) =
+      (-(↑(movedParameter)⁻¹ : K)) ^ n := by
   have hdet : δ = -pivotChar u := by
     rw [← b.detDualEquiv_apply, b.detDualEquiv_swap u v]
     rfl
@@ -276,7 +264,7 @@ include hv hpos hneg in
 private theorem mutationChartAlgEquiv_eval (hf : centerEval b ρ d B ≠ 0)
     (a : S(C₁)) :
     localizedCenterEval b ρ c d hf
-      (Φ.mutationChartAlgEquiv b hv hpos hneg ρ.toCone s hs (c : ℂ)
+      (Φ.mutationChartAlgEquiv b hv hpos hneg ρ.toCone s hs (c : K)
         (algebraMap (R(C₁)) _ (single a 1))) =
       centerEvalOnCone b τ movedParameter C₁ hCone (single a 1) := by
   let a' : S(Ray.toCone Ψ τ) := ⟨a.val, by rw [← hCone]; exact a.property⟩
@@ -300,8 +288,8 @@ private theorem mutationChartAlgEquiv_eval (hf : centerEval b ρ d B ≠ 0)
 include hv hpos hneg in
 private theorem mutationChartAlgEquiv_eval_comp (hf : centerEval b ρ d B ≠ 0) :
     ((localizedCenterEval b ρ c d hf).comp
-      (Φ.mutationChartAlgEquiv b hv hpos hneg ρ.toCone s hs (c : ℂ)).toAlgHom).comp
-        (Algebra.algHom ℂ (R(C₁)) _) =
+      (Φ.mutationChartAlgEquiv b hv hpos hneg ρ.toCone s hs (c : K)).toAlgHom).comp
+        (Algebra.algHom K (R(C₁)) _) =
       centerEvalOnCone b τ movedParameter C₁ hCone := by
   apply AddMonoidAlgebra.algHom_ext
   · intro a
@@ -313,15 +301,15 @@ include hv hpos hneg in
 the mutation isomorphism is the center on the sheared ray with the mutated parameter. -/
 theorem exists_binomialCenter_mutationComplementIso (hprim : IsPrimitive v)
     (hsame : u = v → d ≠ c) (hopp : u = -v → d * c ≠ 1) :
-    ∃ p : Spec (.of ℂ) ⟶ (U₀).toScheme,
-      p ≫ (U₀).ι = ρ.binomialCenter rankTwo (m := χ(u)) (b.detDualEquiv_self u)
+    ∃ p : Spec (.of K) ⟶ (U₀).toScheme,
+      p ≫ (U₀).ι = ρ.binomialCenter K rankTwo (m := χ(u)) (b.detDualEquiv_self u)
         (ρ.surjective_detCharacter b) d ∧
-      p ≫ (E).hom ≫ (U₁).ι = (τ).binomialCenter rankTwo (m := χ(u')) (b.detDualEquiv_self u')
+      p ≫ (E).hom ≫ (U₁).ι = (τ).binomialCenter K rankTwo (m := χ(u')) (b.detDualEquiv_self u')
         ((τ).surjective_detCharacter b) movedParameter := by
   have hf := centerEval_pivotBinomial_ne_zero b ρ c d hprim hsame hopp
   let f := localizedCenterEval b ρ c d hf
   refine ⟨Spec.map (CommRingCat.ofHom f.toRingHom) ≫
-    Φ.mutationComplementChartι b ρ.toCone s hs (c : ℂ) hRuling₀, ?_, ?_⟩
+    Φ.mutationComplementChartι b ρ.toCone s hs (c : K) hRuling₀, ?_, ?_⟩
   · rw [Category.assoc, mutationComplementChartι_comp_ι, ← Spec.map_comp_assoc,
       ← CommRingCat.ofHom_comp]
     have hf' : f.toRingHom.comp (algebraMap (R(ρ.toCone)) L) =
@@ -332,11 +320,12 @@ theorem exists_binomialCenter_mutationComplementIso (hprim : IsPrimitive v)
   · rw [Category.assoc, mutationComplementChartι_comp_mutationComplementIso_hom_assoc,
       mutationComplementChartι_comp_ι, ← Spec.map_comp_assoc,
       ← Spec.map_comp_assoc, ← CommRingCat.ofHom_comp, ← CommRingCat.ofHom_comp]
-    have he := congrArg (fun g : R(C₁) →ₐ[ℂ] ℂ ↦ g.toRingHom)
+    have he := congrArg (fun g : R(C₁) →ₐ[K] K ↦ g.toRingHom)
       (mutationChartAlgEquiv_eval_comp b ρ hv hpos hneg c d hf)
     -- Read the composite of affine scheme maps as the composite of their algebra maps.
-    exact (congrArg (fun g : R(C₁) →+* ℂ ↦
-      Spec.map (CommRingCat.ofHom g) ≫ (Ψ).additiveAffineToricChartι C₁) he).trans
+    exact (congrArg (fun g : R(C₁) →+* K ↦
+      Spec.map (CommRingCat.ofHom g) ≫
+        (Ψ).affineChartι K C₁) he).trans
       (centerEvalOnCone_toPoint b τ movedParameter C₁ hCone)
 
 local notation "hΦ" => Nonempty.intro (Ray.toCone Φ ρ)
@@ -348,16 +337,17 @@ the points with ruling coordinate `-c⁻¹`. The formula applies to every other 
 noncollision assumption. -/
 theorem mutationComplementIso_transports_internal_centers (hprim : IsPrimitive v)
     (hsame : u = v → d ≠ c) (hopp : u = -v → d * c ≠ 1) :
-    (((τ).internalCenter (h₀ := hΨ) b movedParameter).val.map
-        ((Ψ).boundaryIdeal hΨ).subschemeι).comap ((E).hom ≫ (U₁).ι) =
-      ((ρ.internalCenter (h₀ := hΦ) b d).val.map (Φ.boundaryIdeal hΦ).subschemeι).comap (U₀).ι := by
+    (((τ).internalCenter K (h₀ := hΨ) b movedParameter).val.map
+        ((Ψ).toricBoundaryIdeal K hΨ).subschemeι).comap ((E).hom ≫ (U₁).ι) =
+      ((ρ.internalCenter K (h₀ := hΦ) b d).val.map
+        (Φ.toricBoundaryIdeal K hΦ).subschemeι).comap (U₀).ι := by
   obtain ⟨p, hp, hp'⟩ :=
     exists_binomialCenter_mutationComplementIso b ρ hv hpos hneg c d hprim hsame hopp
   let : Nonempty Φ.cones := hΦ
   let : Nonempty (Ψ).cones := hΨ
-  have := ρ.isClosedImmersion_binomialCenter rankTwo (b.detDualEquiv_self u)
+  have := ρ.isClosedImmersion_binomialCenter K rankTwo (b.detDualEquiv_self u)
     (ρ.surjective_detCharacter b) d
-  have := (τ).isClosedImmersion_binomialCenter rankTwo (b.detDualEquiv_self u')
+  have := (τ).isClosedImmersion_binomialCenter K rankTwo (b.detDualEquiv_self u')
     ((τ).surjective_detCharacter b) movedParameter
   rw [Ray.map_internalCenter_subschemeι, Ray.map_internalCenter_subschemeι]
   have sourceSquare := IsPullback.of_vert_isIso_mono

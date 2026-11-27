@@ -33,16 +33,18 @@ open Scheme Scheme.IdealSheafData TauCeti TauCeti.AlgebraicGeometry TauCeti.Tori
 
 namespace QPainleve.SignedClusterModularGroup
 
-local notation "S" => Spec (CommRingCat.of ℂ)
-local notation "χ[" c "]" => pointsEquiv ℂ _ (Subtype.mk (Over.Hom.left c) (Over.w c))
+variable {k₀ : Type} [Field k₀] [IsAlgClosed k₀]
+
+local notation "S" => Spec (CommRingCat.of k₀)
+local notation "χ[" c "]" => pointsEquiv k₀ _ (Subtype.mk (Over.Hom.left c) (Over.w c))
 local notation "classOf(" h ")" => (LineBundleClass.mk (IsEffectiveCartier.toInvertibleSheaf h))⁻¹
 
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {n : ℕ} [NeZero n]
 
-variable {X : Scheme} [X.Over S] [X.IsProjectiveOver ℂ]
-  [SmoothOfRelativeDimension 2 (X ↘ S)]
-  {D : X.IdealSheafData} [PrestableFamily (D.subscheme ↘ S)]
+variable {X : Scheme} [X.Over (Spec (.of k₀))] [X.IsProjectiveOver k₀]
+  [SmoothOfRelativeDimension 2 (X ↘ Spec (.of k₀))]
+  {D : X.IdealSheafData} [PrestableFamily (D.subscheme ↘ Spec (.of k₀))]
 
 local notation "Pic" => Additive (LineBundleClass X)
 
@@ -74,23 +76,23 @@ structure OrderedToricRelationCriterion [IsIntegral X] {i : N →+ V} {r : ℕ}
   /-- The total boundary class is primitive. -/
   boundary_primitive : IsPrimitive (Additive.ofMul classOf(cartier[R.reference.markedSurface]))
   /-- The total boundary class is nef. -/
-  boundary_nef : (classOf(cartier[R.reference.markedSurface])).IsNef ℂ (X ↘ S)
+  boundary_nef : (classOf(cartier[R.reference.markedSurface])).IsNef k₀ (X ↘ S)
   /-- The total boundary class has self-intersection zero. -/
   boundary_square_zero :
     let δ := classOf(cartier[R.reference.markedSurface])
-    Chow.classIntersectionNumber ℂ X δ δ = 0
+    Chow.classIntersectionNumber k₀ X δ δ = 0
 
 namespace OrderedToricRelationCriterion
 
 variable [IsIntegral X] {i : N →+ V} {r : ℕ}
   {A : Scheme.NodalCycleNumbering (X := D.subscheme)
-    (Empty.elim : Empty → (D.subscheme ↘ S).smoothLocus) n}
+    (Empty.elim : Empty → (D.subscheme ↘ Spec (.of k₀)).smoothLocus) n}
   {R : FiniteMarkedReferenceFiber i r A} (C : OrderedToricRelationCriterion R)
 
 local notation "Q" => R.reference.presentation
 
 local instance : Nonempty (Q).fan.cones := (Q).complete.nonempty_cones
-local instance : PrestableFamily (((Q).fan.boundaryIdeal
+local instance : PrestableFamily (((Q).fan.toricBoundaryIdeal k₀
     (Q).complete.nonempty_cones).subscheme ↘ S) := (Q).prestable
 local instance : NeZero (Q).length := (Q).neZero
 
@@ -103,8 +105,8 @@ theorem comparisonInput : (Q).IsSignedLoopComparisonInput C.contraction R.refere
     C.boundaryOrders :=
   ⟨Fan.rayExchangeMatrix_matrix R.basis (Q).rays, rfl⟩
 
-local notation "rayAt" => Fan.rayFinEquivOfNodalCycleNumbering
-  (CompleteToricPresentation.fan Q) (CompleteToricPresentation.regular Q)
+local notation "rayAt" => Fan.rayFinEquivOfNodalCycleNumbering k₀
+  (Φ := CompleteToricPresentation.fan Q) (CompleteToricPresentation.regular Q)
   (CompleteToricPresentation.cycle Q) (CompleteToricPresentation.origin Q)
 
 include C in
@@ -112,6 +114,7 @@ include C in
 loops and is true exactly when they act identically on independent X coordinates over
 the given field. The ordered center labels may have the same ray or center parameter. -/
 theorem compareSignedLoopListsFromRays_eq_some_iff_xPullback_eq
+    [Uncountable k₀] [CharZero k₀]
     (ray : Fin (Q).length → Fin 2 → ℤ) (centerRay : Fin r → Fin (Q).length)
     (hray : ∀ j, ray j = R.basis.repr (rayAt j).primitiveGenerator)
     (hcenter : ∀ j, rayAt (centerRay j) = (Q).rays j)
@@ -132,6 +135,7 @@ include C in
 /-- A Boolean result for generator lists in any labeling certifies two closed
 words and compares their independent X pullbacks over the chosen field. -/
 theorem compareSignedLoopListsFromRays_reindex_eq_some_iff_xPullback_eq
+    [Uncountable k₀] [CharZero k₀]
     {ι : Type*} [DecidableEq ι] (E : SkewExchangeMatrix ι) (e : ι ≃ Fin r)
     (hE : E.reindex e = R.reference.exchangeMatrix)
     (ray : Fin (Q).length → Fin 2 → ℤ) (centerRay : Fin r → Fin (Q).length)
@@ -173,6 +177,7 @@ include C in
 returns a Boolean exactly when both relabeled native matrices close. The Boolean
 is true exactly when the two substitutions on the universal semifield agree. -/
 theorem compareSignedLoopListsFromRays_reindex_eq_some_iff_qsf_eval_eq
+    [Uncountable k₀] [CharZero k₀]
     {ι : Type*} [DecidableEq ι] (E : SkewExchangeMatrix ι) (e : ι ≃ Fin r)
     (hE : E.reindex e = R.reference.exchangeMatrix)
     (ray : Fin (Q).length → Fin 2 → ℤ) (centerRay : Fin r → Fin (Q).length)
@@ -220,8 +225,8 @@ theorem FiniteMarkedReferenceFiber.nonempty_orderedToricRelationCriterion [IsInt
     {A : Scheme.NodalCycleNumbering (X := D.subscheme)
       (Empty.elim : Empty → (D.subscheme ↘ S).smoothLocus) n}
     (R : FiniteMarkedReferenceFiber i r A) (hD : D.IsEffectiveCartier)
-    (hprim : IsPrimitive (Additive.ofMul classOf(hD))) (hnef : classOf(hD).IsNef ℂ (X ↘ S))
-    (hsq : Chow.classIntersectionNumber ℂ X classOf(hD) classOf(hD) = 0) :
+    (hprim : IsPrimitive (Additive.ofMul classOf(hD))) (hnef : classOf(hD).IsNef k₀ (X ↘ S))
+    (hsq : Chow.classIntersectionNumber k₀ X classOf(hD) classOf(hD) = 0) :
     Nonempty (OrderedToricRelationCriterion R) := by
   let hD' := cartier[R.reference.markedSurface]
   obtain ⟨p₀, hnodal₀⟩ := R.reference.hasNodalModel.exists_isNodalContraction hD'
@@ -229,11 +234,7 @@ theorem FiniteMarkedReferenceFiber.nonempty_orderedToricRelationCriterion [IsInt
     MarkedSurface.ofBoundary_boundaryIdeal_class D A R.marking R.reference.evaluation hD' hD
   exact ⟨⟨p₀, hnodal₀, by rwa [hδ], by rwa [hδ], by rwa [hδ]⟩⟩
 
-variable [Scheme.IsRationalOver (X ↘ S)]
-
-local instance instIsIntegralOrderedTowersSurface : IsIntegral X := by
-  let : Smooth (X ↘ S) := SmoothOfRelativeDimension.smooth 2 _
-  exact Scheme.IsRationalOver.isIntegral_of_smooth (f := X ↘ S) inferInstance
+variable [Scheme.IsRationalOver (X ↘ Spec (.of k₀))]
 
 /-- A specified toric presentation supplies a reference contraction and the certified
 input to the complete integer criterion over every field. The original numbering, fan,
@@ -244,12 +245,16 @@ theorem exists_ordered_toric_relation_criterion
     (A : Scheme.NodalCycleNumbering (X := D.subscheme)
       (Empty.elim : Empty → (D.subscheme ↘ S).smoothLocus) n)
     (hD : D.IsEffectiveCartier)
-    (hprim : IsPrimitive (Additive.ofMul classOf(hD))) (hnef : classOf(hD).IsNef ℂ (X ↘ S))
-    (hsq : Chow.classIntersectionNumber ℂ X classOf(hD) classOf(hD) = 0) :
+    (hprim : IsPrimitive (Additive.ofMul classOf(hD))) (hnef : classOf(hD).IsNef k₀ (X ↘ S))
+    (hsq : Chow.classIntersectionNumber k₀ X classOf(hD) classOf(hD) = 0) :
+    letI : Smooth (X ↘ S) := SmoothOfRelativeDimension.smooth 2 _
+    letI : IsIntegral X := (inferInstance : Scheme.IsRationalOver (X ↘ S)).isIntegral_of_smooth
     ∃ R : FiniteMarkedReferenceFiber i r A,
       R.reference.HasToricData P ∧ Nonempty (OrderedToricRelationCriterion R) := by
-  let : Module.Free ℤ Pic := X.free_picard_of_isRationalOver ℂ
-  let : Module.Finite ℤ Pic := X.finite_picard_of_isRationalOver ℂ
+  let : Smooth (X ↘ S) := SmoothOfRelativeDimension.smooth 2 _
+  let : IsIntegral X := (inferInstance : Scheme.IsRationalOver (X ↘ S)).isIntegral_of_smooth
+  let : Module.Free ℤ Pic := X.free_picard_of_isRationalOver k₀
+  let : Module.Finite ℤ Pic := X.finite_picard_of_isRationalOver k₀
   obtain ⟨R, hR⟩ := exists_fin_marked_reference_fiber_of_toric_presentation P hD A
   exact ⟨R, hR, R.nonempty_orderedToricRelationCriterion hD hprim hnef hsq⟩
 
@@ -258,19 +263,22 @@ supplies cyclic integer ray coordinates and ordered center offsets for the execu
 comparison. The ray of the original component zero starts the table, and the frame
 and center parameters obey the reference orientation convention. -/
 theorem exists_ordered_toric_relation_comparison_from_rays
+    [Uncountable k₀] [CharZero k₀]
     (P : D.ToricPresentation (X ↘ S) b i r)
     (A : Scheme.NodalCycleNumbering (X := D.subscheme)
       (Empty.elim : Empty → (D.subscheme ↘ S).smoothLocus) n)
     (hD : D.IsEffectiveCartier)
-    (hprim : IsPrimitive (Additive.ofMul classOf(hD))) (hnef : classOf(hD).IsNef ℂ (X ↘ S))
-    (hsq : Chow.classIntersectionNumber ℂ X classOf(hD) classOf(hD) = 0) :
+    (hprim : IsPrimitive (Additive.ofMul classOf(hD))) (hnef : classOf(hD).IsNef k₀ (X ↘ S))
+    (hsq : Chow.classIntersectionNumber k₀ X classOf(hD) classOf(hD) = 0) :
+    letI : Smooth (X ↘ S) := SmoothOfRelativeDimension.smooth 2 _
+    letI : IsIntegral X := (inferInstance : Scheme.IsRationalOver (X ↘ S)).isIntegral_of_smooth
     ∃ R : FiniteMarkedReferenceFiber i r A,
       R.reference.HasToricData P ∧
       let Q := R.reference.presentation
       letI := Q.complete.nonempty_cones
       letI := Q.prestable
       letI := Q.neZero
-      let rayAt := Q.fan.rayFinEquivOfNodalCycleNumbering Q.regular Q.cycle Q.origin
+      let rayAt := Q.fan.rayFinEquivOfNodalCycleNumbering k₀ Q.regular Q.cycle Q.origin
       ∃ (ray : Fin Q.length → Fin 2 → ℤ) (centerRay : Fin r → Fin Q.length),
         (∀ j, ray j = R.basis.repr (rayAt j).primitiveGenerator) ∧
         (∀ j, rayAt (centerRay j) = Q.rays j) ∧
@@ -279,12 +287,14 @@ theorem exists_ordered_toric_relation_comparison_from_rays
             ∃ w v : Word R.reference.exchangeMatrix R.reference.exchangeMatrix,
               w.generators = gs ∧ v.generators = hs ∧
                 (result = true ↔ w.xPullback k = v.xPullback k) := by
+  let : Smooth (X ↘ S) := SmoothOfRelativeDimension.smooth 2 _
+  let : IsIntegral X := (inferInstance : Scheme.IsRationalOver (X ↘ S)).isIntegral_of_smooth
   obtain ⟨R, hR, ⟨C⟩⟩ := exists_ordered_toric_relation_criterion P A hD hprim hnef hsq
   let Q := R.reference.presentation
   let := Q.complete.nonempty_cones
   let := Q.prestable
   let := Q.neZero
-  let rayAt := Q.fan.rayFinEquivOfNodalCycleNumbering Q.regular Q.cycle Q.origin
+  let rayAt := Q.fan.rayFinEquivOfNodalCycleNumbering k₀ Q.regular Q.cycle Q.origin
   let ray (j : Fin Q.length) (k : Fin 2) := R.basis.repr (rayAt j).primitiveGenerator k
   let centerRay := rayAt.symm ∘ Q.rays
   have hcenter (j : Fin r) : rayAt (centerRay j) = Q.rays j :=

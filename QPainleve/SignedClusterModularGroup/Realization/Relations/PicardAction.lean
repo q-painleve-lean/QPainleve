@@ -33,27 +33,30 @@ open Scheme Scheme.IdealSheafData TauCeti TauCeti.AlgebraicGeometry TauCeti.Tori
 
 namespace QPainleve.SignedClusterModularGroup.CompleteToricPresentation
 
+variable {k₀ : Type} [Field k₀] [IsAlgClosed k₀]
+
 open GeometricRealization
 
-local notation "S" => Spec (CommRingCat.of ℂ)
-local notation "Centers[" r "]" => Over.mk (structureMap ℂ (Fin r → ℤ))
-local notation "XTor[" r "]" => scheme ℂ (Fin r →₀ ℤ)
-local notation "χ[" c "]" => pointsEquiv ℂ _ (Subtype.mk (Over.Hom.left c) (Over.w c))
+local notation "S" => Spec (CommRingCat.of k₀)
+local notation "Centers[" r "]" => Over.mk (structureMap k₀ (Fin r → ℤ))
+local notation "XTor[" r "]" => scheme k₀ (Fin r →₀ ℤ)
+local notation "χ[" c "]" => pointsEquiv k₀ _ (Subtype.mk (Over.Hom.left c) (Over.w c))
 local notation "cartier[" M "]" => MarkedSurface.isEffectiveCartier_boundaryIdeal M
 local notation "classOf(" h ")" => (LineBundleClass.mk (IsEffectiveCartier.toInvertibleSheaf h))⁻¹
-local notation "eval[" w "]" => op (signedClusterModularGroupMap ℂ _ (End.of w))
+local notation "eval[" w "]" => op (signedClusterModularGroupMap k₀ _ (End.of w))
 
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {b : Module.Basis (Fin 2) ℤ N} {r n : ℕ} [NeZero n]
   {L γ : Type} [AddCommGroup L] {B : LinearMap.BilinForm ℤ L}
   {E : SkewExchangeMatrix (Fin r)}
-  (Q : CompleteToricPresentation i b r L γ)
-  {c₀ : Point Centers[r]} {M₀ : MarkedSurface ℂ n B XTor[r]}
+  (Q : CompleteToricPresentation k₀ i b r L γ)
+  {c₀ : Point (Over.mk (QPainleve.CharacterTorus.structureMap k₀ (Fin r →
+    ℤ)))} {M₀ : MarkedSurface k₀ n B (QPainleve.CharacterTorus.scheme k₀ (Fin r →₀ ℤ))}
 
 local instance instNonemptyPicardActionCones : Nonempty Q.fan.cones := Q.complete.nonempty_cones
 local instance instNeZeroPicardActionBoundaryLength : NeZero Q.length := Q.neZero
 local instance instPrestablePicardActionToricBoundary :
-    PrestableFamily ((Q.fan.boundaryIdeal Q.complete.nonempty_cones).subscheme ↘ S) :=
+    PrestableFamily ((Q.fan.toricBoundaryIdeal k₀ Q.complete.nonempty_cones).subscheme ↘ S) :=
   Q.prestable
 
 local notation "fiber[" M "," c "]" =>
@@ -67,7 +70,7 @@ together with the forward tropical boundary search and its Picard pullback formu
 structure SignedLoopPicardComparison (p₀ : fiber[M₀,c₀])
     (E : SkewExchangeMatrix (Fin r)) where
   /-- The marked family and signed Picard equivalence. -/
-  identification : Q.NodalPicardGroupIdentification (B := B) ℂ E classes[M₀]
+  identification : Q.NodalPicardGroupIdentification (B := B) k₀ E classes[M₀]
   /-- The marked family has the specified reference fiber. -/
   family_center : identification.family c₀ = M₀
   /-- The signed comparison with exchange-kernel transport. -/
@@ -162,11 +165,12 @@ end SignedLoopPicardComparison
 supplies the Picard and Casimir identifications and the complete integer invariant formula.
 The reference center may lie outside the noncollision open. -/
 theorem nonempty_signedLoopPicardComparison_of_nodal_contraction
+    [Uncountable k₀] [NeZero (2 : k₀)]
     (p₀ : fiber[M₀,c₀]) (hnodal₀ : p₀.IsNodalContraction)
     (hE : E.matrix = chargeExchangeMatrix b.detDualEquiv.toLinearMap (Fan.rayChargeMap Q.rays))
     (hprim : IsPrimitive (Additive.ofMul classOf(cartier[M₀])))
-    (hnef : (classOf(cartier[M₀])).IsNef ℂ (M₀.surface ↘ S))
-    (hsq : Chow.classIntersectionNumber ℂ M₀.surface classOf(cartier[M₀])
+    (hnef : (classOf(cartier[M₀])).IsNef k₀ (M₀.surface ↘ S))
+    (hsq : Chow.classIntersectionNumber k₀ M₀.surface classOf(cartier[M₀])
       classOf(cartier[M₀]) = 0) :
     Nonempty (Q.SignedLoopPicardComparison p₀ E) := by
   obtain ⟨⟨M, hmodels, hmark, Θ, hsign, happly, hker⟩, hM⟩ :=
@@ -176,7 +180,7 @@ theorem nonempty_signedLoopPicardComparison_of_nodal_contraction
   -- Substitute the fiber before reassembling the identification at those classes.
   dsimp only at hM
   subst M₀
-  let G : Q.NodalPicardGroupIdentification (B := B) ℂ E classes[M c₀] :=
+  let G : Q.NodalPicardGroupIdentification (B := B) k₀ E classes[M c₀] :=
     ⟨M, hmodels, hmark, Θ, hsign, happly, hker⟩
   obtain ⟨A, hA⟩ := G.exists_casimirActionComparison (c := c₀) hE hprim hnef hsq
   choose p hp using fun c ↦ (hmodels c).exists_isNodalContraction cartier[M c]

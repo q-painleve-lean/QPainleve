@@ -8,6 +8,7 @@ module
 public import QPainleve.Geometry.Toric.Fan.CyclicOrder.Survivors
 public import QPainleve.SignedClusterModularGroup.Realization.Presentation.Numbered
 
+import QPainleve.Algebra.Field.Reference
 import QPainleve.Geometry.Toric.Fan.Boundary.ContractedNumbering
 import QPainleve.Geometry.Toric.Fan.Boundary.OrderedContraction
 import QPainleve.Geometry.Toric.Fan.CyclicOrder.Construction
@@ -33,7 +34,9 @@ open TauCeti TauCeti.AlgebraicGeometry TauCeti.Toric TauCeti.Toric.Fan Module
 
 namespace QPainleve.SignedClusterModularGroup
 
-local notation "S" => Spec (CommRingCat.of ℂ)
+local notation "k₀" => QPainleve.ReferenceField
+
+local notation "S" => Spec (CommRingCat.of k₀)
 local notation "b₂" => Pi.basisFun ℤ (Fin 2)
 
 section Comparison
@@ -78,12 +81,12 @@ private theorem exists_signed_comparison_with_survivors
       ⟨⟨_, hcone k⟩, Subtype.coe_le_coe.mp le_sup_left, Subtype.coe_le_coe.mp le_sup_right⟩⟩
   let o := Fintype.equivFin ι |>.symm
   -- The ordered internal tower allows repeated centers on the same ray.
-  let c : Fin (Fintype.card ι) → ℂˣ := fun _ ↦ 1
+  let c : Fin (Fintype.card ι) → k₀ˣ := fun _ ↦ 1
   have hcoord (k : ZMod (q + d)) : (b₂).repr (v k).primitiveGenerator = u k := by
     funext t
     simp [hv]
   obtain ⟨X, z, hi, hP, hS, hrat, D, hD, hpreD, _, W, T, e, hT, he, hsupp, hsurv, _⟩ :=
-    Fan.exists_numbered_contraction_of_square_neg_one b₂ hΦ hc v o ρ c hv' l hl hlen
+    Fan.exists_numbered_contraction_of_square_neg_one k₀ b₂ hΦ hc v o ρ c hv' l hl hlen
       (by simpa only [hcoord] using hs)
   -- Identify the tower length with the difference of the two boundary lengths.
   revert hsurv hsupp he hT e T
@@ -91,15 +94,16 @@ private theorem exists_signed_comparison_with_survivors
   intro T e hT he hsupp hsurv _
   let : X.Over S := ⟨z⟩
   let : IsIntegral X := hi
-  let : X.IsProjectiveOver ℂ := hP
+  let : X.IsProjectiveOver k₀ := hP
   let : SmoothOfRelativeDimension 2 (X ↘ S) := hS
   let : Scheme.IsRationalOver (X ↘ S) := hrat
   let : PrestableFamily (D.subscheme ↘ S) := hpreD
   obtain ⟨htor, C, A, g, hC, hker, hg, hgOver, hsub, hj⟩ :=
-    Fan.exists_oriented_numbering_of_contracted_toric_boundary hΦ hc b₂ (v ∘ ρ ∘ o) c v
+    Fan.exists_oriented_numbering_of_contracted_toric_boundary k₀ hΦ hc b₂ (v ∘ ρ ∘ o) c v
       hT.isClosedPointTower e hv' he hsupp hD f
       (fun k ↦ (hsurv (ZMod.finEquiv _ k)).trans (hf k).symm)
-  let : PrestableFamily ((Φ.boundaryIdeal (inferInstance : Nonempty Φ.cones)).subscheme ↘ S) :=
+  let : PrestableFamily ((Φ.toricBoundaryIdeal k₀ (inferInstance : Nonempty Φ.cones)).subscheme ↘
+    S) :=
     htor
   let : g.IsOver S := hgOver
   have hrange (k : ZMod (q + d)) : k ∈ Set.range j ↔ k ∉ l := by

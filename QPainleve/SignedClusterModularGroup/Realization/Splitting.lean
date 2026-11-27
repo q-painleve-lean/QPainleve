@@ -31,11 +31,13 @@ open Scheme Scheme.IdealSheafData TauCeti TauCeti.AlgebraicGeometry TauCeti.Tori
 
 namespace QPainleve.SignedClusterModularGroup.CompleteToricPresentation
 
+variable {k₀ : Type} [Field k₀] [IsAlgClosed k₀]
+
 open GeometricRealization (Point)
 
-local notation "S" => Spec (CommRingCat.of ℂ)
-local notation "Centers[" r "]" => Over.mk (structureMap ℂ (Fin r → ℤ))
-local notation "XTor[" r "]" => scheme ℂ (Fin r →₀ ℤ)
+local notation "S" => Spec (CommRingCat.of k₀)
+local notation "Centers[" r "]" => Over.mk (structureMap k₀ (Fin r → ℤ))
+local notation "XTor[" r "]" => scheme k₀ (Fin r →₀ ℤ)
 local notation "classOf(" h ")" => (LineBundleClass.mk (IsEffectiveCartier.toInvertibleSheaf h))⁻¹
 
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
@@ -43,11 +45,11 @@ variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {L γ : Type} [AddCommGroup L] {B : LinearMap.BilinForm ℤ L}
   {E : SkewExchangeMatrix (Fin r)}
 
-/-- A marked Picard identification with a chosen boundary reversal. The geometry is over ℂ,
+/-- A marked Picard identification with a chosen boundary reversal. The geometry is over k₀,
 and `k` is the coefficient field of the signed X maps. The reflection determines the splitting
 on both the Picard lattice and the group of signed X maps. -/
 @[ext]
-structure SignedPicardSplitting (Q : CompleteToricPresentation i b r L γ)
+structure SignedPicardSplitting (Q : CompleteToricPresentation k₀ i b r L γ)
     (k : Type*) [Field k] (E : SkewExchangeMatrix (Fin r)) (d : ZMod n → L) where
   /-- The signed Picard equivalence of the marked nodal family. -/
   identification : NodalPicardGroupIdentification (B := B) Q k E d
@@ -58,7 +60,7 @@ structure SignedPicardSplitting (Q : CompleteToricPresentation i b r L γ)
 
 namespace SignedPicardSplitting
 
-variable {Q : CompleteToricPresentation i b r L γ} {k : Type*} [Field k] {d : ZMod n → L}
+variable {Q : CompleteToricPresentation k₀ i b r L γ} {k : Type*} [Field k] {d : ZMod n → L}
   (P : SignedPicardSplitting (B := B) Q k E d)
 
 local notation "Θ" => P.identification.signedEquiv
@@ -120,20 +122,22 @@ theorem signedEquiv_apply_splitting_semidirectProductMulEquiv (x : Γ₀ ⋊[P.s
 
 end SignedPicardSplitting
 
-variable (Q : CompleteToricPresentation i b r L γ)
-  {c : Point Centers[r]} {M : MarkedSurface ℂ n B XTor[r]}
+variable (Q : CompleteToricPresentation k₀ i b r L γ)
+  {c : Point (Over.mk (QPainleve.CharacterTorus.structureMap k₀ (Fin r →
+    ℤ)))} {M : MarkedSurface k₀ n B (QPainleve.CharacterTorus.scheme k₀ (Fin r →₀ ℤ))}
 
 local notation "δ" => classOf(M.isEffectiveCartier_boundaryIdeal)
 
 /-- One marked nodal model of a primitive nef square-zero anticanonical cycle supplies
 a splitting of the sign extension through the signed Picard action over any X coefficient
 field. The model at the reference center may have repeated points. -/
-theorem exists_signedPicardSplitting_of_nodal_model (k : Type*) [Field k]
+theorem exists_signedPicardSplitting_of_nodal_model
+    [Uncountable k₀] [CharZero k₀] (k : Type*) [Field k]
     (href : Q.HasNodalModel c M)
     (hE : E.matrix = chargeExchangeMatrix b.detDualEquiv.toLinearMap (Fan.rayChargeMap Q.rays))
     (hprim : IsPrimitive (Additive.ofMul δ))
-    (hnef : (δ).IsNef ℂ (M.surface ↘ S))
-    (hsq : Chow.classIntersectionNumber ℂ M.surface δ δ = 0) :
+    (hnef : (δ).IsNef k₀ (M.surface ↘ S))
+    (hsq : Chow.classIntersectionNumber k₀ M.surface δ δ = 0) :
     ∃ P : SignedPicardSplitting (B := B) Q k E (M.boundaryClass M.isEffectiveCartier_boundaryIdeal),
       P.identification.family c = M := by
   obtain ⟨G, hGc⟩ := Q.exists_picardGroupEquivs_over_field_of_nodal_model k href hE hprim hnef hsq

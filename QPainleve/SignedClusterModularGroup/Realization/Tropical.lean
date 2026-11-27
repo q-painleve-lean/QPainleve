@@ -28,11 +28,14 @@ open QPainleve.Cluster TauCeti TauCeti.AlgebraicGeometry TauCeti.Toric
 
 namespace QPainleve.SignedClusterModularGroup
 
-local notation "S" => Spec (CommRingCat.of ℂ)
-local notation "Xtor[" r "]" => Spec (CommRingCat.of (LaurentRing ℂ (Fin r)))
-local notation "Dtor[" Φ "," h "]" => Scheme.IdealSheafData.subscheme (Fan.boundaryIdeal Φ h)
+variable {k₀ : Type} [Field k₀] [IsAlgClosed k₀]
+
+local notation "S" => Spec (CommRingCat.of k₀)
+local notation "Xtor[" r "]" => Spec (CommRingCat.of (LaurentRing k₀ (Fin r)))
+local notation "Dtor[" k "," Φ "," h "]" =>
+  Scheme.IdealSheafData.subscheme (Fan.toricBoundaryIdeal k Φ h)
 local notation "Pic[" Φ "," r "]" =>
-  Additive (LineBundleClass (Fan.algebraicRealization Φ)) × (Fin r → ℤ)
+  Additive (LineBundleClass (Fan.finiteFanScheme k₀ Φ)) × (Fin r → ℤ)
 local notation "D[" P "]" => Scheme.Hom.ker (Over.Hom.left (Arrow.hom (MarkedSurface.pair P)))
 local notation "center" c:arg => (fun j : Fin _ ↦ c (ofAdd (Pi.single j 1)))
 
@@ -41,12 +44,14 @@ section Source
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {Φ : Fan i} [hΦ₀ : Nonempty Φ.cones]
   {r m n : ℕ} [NeZero m] [NeZero n] {L : Type} [AddCommGroup L]
-  {B : LinearMap.BilinForm ℤ L} {M : MarkedSurface ℂ n B Xtor[r]}
+  {B : LinearMap.BilinForm ℤ L}
+  {M : MarkedSurface k₀ n B (Spec (.of (LaurentRing k₀ (Fin r))))}
   {b : Module.Basis (Fin 2) ℤ N} {s : Fin r → Φ.Ray} {hΦ : Φ.IsRegular}
-  [PrestableFamily (Dtor[Φ,hΦ₀] ↘ S)]
-  {α : Type*} {a : α → (Dtor[Φ,hΦ₀] ↘ S).smoothLocus}
-  {T : Scheme.NodalCycleNumbering a m} {o : ZMod m} {μ : L →ₗ[ℤ] Pic[Φ,r]}
-  {c : Multiplicative (Fin r → ℤ) →* ℂˣ}
+  [PrestableFamily (Dtor[k₀,Φ,hΦ₀] ↘ Spec (.of k₀))]
+  {α : Type*} {a : α → (Dtor[k₀,Φ,hΦ₀] ↘ Spec (.of k₀)).smoothLocus}
+  {T : Scheme.NodalCycleNumbering a m} {o : ZMod m}
+  {μ : L →ₗ[ℤ] Additive (LineBundleClass (Φ.finiteFanScheme k₀)) × (Fin r → ℤ)}
+  {c : Multiplicative (Fin r → ℤ) →* k₀ˣ}
   (p : ContractedToricFiber b s hΦ T o μ c M)
 
 namespace ContractedToricFiber
@@ -73,7 +78,7 @@ theorem range_numberedBoundaryRays (hM : D[M].IsEffectiveCartier) :
 projects to a boundary prime of the contracted surface. -/
 theorem mem_range_numberedBoundaryRays_iff (hM : D[M].IsEffectiveCartier) (ρ : Φ.Ray) :
     ρ ∈ Set.range (p.numberedBoundaryRays hM) ↔
-      p.projection (Fan.internalBlowupBoundaryPrimeEquiv hΦ b s (center c) ρ).val ∈
+      p.projection (Fan.internalBlowupBoundaryPrimeEquiv k₀ hΦ b s (center c) ρ).val ∈
         D[M].boundaryPrimes := by
   rw [p.range_numberedBoundaryRays, boundaryRayEmbedding_def,
     Fan.mem_range_contractedBoundaryRayEmbedding_iff]
@@ -83,7 +88,7 @@ when its generic point maps to that contracted component's generic point. -/
 theorem numberedBoundaryRays_eq_iff (hM : D[M].IsEffectiveCartier) (j : ZMod n) (k : ZMod m) :
     letI : PrestableFamily (M.boundary ↘ S) := M.prestable
     p.numberedBoundaryRays hM j =
-        (Φ.boundaryNormalizationComponentEquiv hΦ).symm (T.component k) ↔
+        (Φ.boundaryNormalizationComponentEquiv k₀ hΦ).symm (T.component k) ↔
       p.boundaryMap (T.componentGenericPoint k) = M.cycle.componentGenericPoint j := by
   let : PrestableFamily (M.boundary ↘ S) := M.prestable
   let : IsClosedImmersion M.pair.hom.left := M.closedImmersion
@@ -99,7 +104,7 @@ independently of the center parameters. -/
 @[simp]
 theorem numberedBoundaryRays_zero (hM : D[M].IsEffectiveCartier) :
     p.numberedBoundaryRays hM 0 =
-      (Φ.boundaryNormalizationComponentEquiv hΦ).symm (T.component o) :=
+      (Φ.boundaryNormalizationComponentEquiv k₀ hΦ).symm (T.component o) :=
   (p.numberedBoundaryRays_eq_iff hM 0 o).mpr p.component_zero
 
 /-- The orders of the independent X coordinates along the numbered boundary
@@ -119,7 +124,7 @@ theorem numberedBoundaryOrders_apply (hM : D[M].IsEffectiveCartier) (j : Fin n) 
 theorem numberedBoundaryOrders_zero (hM : D[M].IsEffectiveCartier) :
     p.numberedBoundaryOrders hM 0 =
       Fan.rayBoundaryOrders b s
-        ((Φ.boundaryNormalizationComponentEquiv hΦ).symm (T.component o)) := by
+        ((Φ.boundaryNormalizationComponentEquiv k₀ hΦ).symm (T.component o)) := by
   have hz : (ZMod.finEquiv n).toEquiv 0 = 0 := (ZMod.finEquiv n).map_zero
   simp only [numberedBoundaryOrders_apply, hz, numberedBoundaryRays_zero]
 
@@ -136,12 +141,14 @@ end ContractedToricFiber
 variable {N' V' : Type} [AddCommGroup N'] [AddCommGroup V'] [Module ℝ V']
   {i' : N' →+ V'} {Ψ : Fan i'} [hΨ₀ : Nonempty Ψ.cones]
   {m' : ℕ} [NeZero m'] {L' : Type} [AddCommGroup L']
-  {B' : LinearMap.BilinForm ℤ L'} {M' : MarkedSurface ℂ n B' Xtor[r]}
+  {B' : LinearMap.BilinForm ℤ L'}
+  {M' : MarkedSurface k₀ n B' (Spec (.of (LaurentRing k₀ (Fin r))))}
   {b' : Module.Basis (Fin 2) ℤ N'} {s' : Fin r → Ψ.Ray} {hΨ : Ψ.IsRegular}
-  [PrestableFamily (Dtor[Ψ,hΨ₀] ↘ S)]
-  {α' : Type*} {a' : α' → (Dtor[Ψ,hΨ₀] ↘ S).smoothLocus}
-  {T' : Scheme.NodalCycleNumbering a' m'} {o' : ZMod m'} {μ' : L' →ₗ[ℤ] Pic[Ψ,r]}
-  {c' : Multiplicative (Fin r → ℤ) →* ℂˣ}
+  [PrestableFamily (Dtor[k₀,Ψ,hΨ₀] ↘ Spec (.of k₀))]
+  {α' : Type*} {a' : α' → (Dtor[k₀,Ψ,hΨ₀] ↘ Spec (.of k₀)).smoothLocus}
+  {T' : Scheme.NodalCycleNumbering a' m'} {o' : ZMod m'}
+  {μ' : L' →ₗ[ℤ] Additive (LineBundleClass (Ψ.finiteFanScheme k₀)) × (Fin r → ℤ)}
+  {c' : Multiplicative (Fin r → ℤ) →* k₀ˣ}
   (q : ContractedToricFiber b' s' hΨ T' o' μ' c' M')
   {E E' : SkewExchangeMatrix (Fin r)} {w : Word E E'}
 
@@ -153,8 +160,9 @@ namespace FiberRealization
 
 variable {p q}
 variable {I : B'.IsometryEquiv B} {g : DihedralGroup n}
-  (R : FiberRealization M M' (w.xRationalMap ℂ) I g)
-  (hM : D[M].IsEffectiveCartier) (hM' : D[M'].IsEffectiveCartier)
+  (R : FiberRealization M M' (w.xRationalMap k₀) I g)
+  (hM : (Scheme.Hom.ker M.pair.hom.left).IsEffectiveCartier)
+  (hM' : (Scheme.Hom.ker M'.pair.hom.left).IsEffectiveCartier)
   (hcΦ : Φ.IsComplete)
   (hE : E.matrix = chargeExchangeMatrix b.detDualEquiv.toLinearMap (Fan.rayChargeMap s))
 
@@ -178,7 +186,7 @@ theorem rayBoundaryOrders_tropical (j : ZMod n) :
   simpa only [ContractedToricFiber.numberedBoundaryRays_apply,
     ContractedToricFiber.boundaryRayEmbedding_def] using
     Fan.rayBoundaryOrders_eq_tropical_of_comp_contractedXEvaluation
-      b b' s s' hΦ hΨ c c' p.projection q.projection w (MarkedSurface.surfaceIso R.iso)
+      k₀ b b' s s' hΦ hΨ c c' p.projection q.projection w (MarkedSurface.surfaceIso R.iso)
       p.support_comap q.support_comap hcΦ hE heval _ _ himage
 
 include R hcΦ hE in
@@ -198,16 +206,16 @@ end FiberRealization
 
 namespace GeometricRealization
 
-variable {U₀ U₁ : Over S} [Nonempty U₀.left] [Smooth U₀.hom]
-  {P₀ : Point U₀ → MarkedSurface ℂ n B Xtor[r]}
-  {P₁ : Point U₁ → MarkedSurface ℂ n B' Xtor[r]}
+variable {U₀ U₁ : Over (Spec (.of k₀))} [Nonempty U₀.left] [Smooth U₀.hom]
+  {P₀ : Point U₀ → MarkedSurface k₀ n B (Spec (.of (LaurentRing k₀ (Fin r))))}
+  {P₁ : Point U₁ → MarkedSurface k₀ n B' (Spec (.of (LaurentRing k₀ (Fin r))))}
   {C : U₀.left.PartialMap U₁.left} [IsDominant C.hom] [C.IsOver U₀.hom U₁.hom]
 
 /-- Start the signed tropical word at the fixed toric origin and search the surviving
 target rays at any center in the realization domain. The result is the forward image of
 component zero in the marked boundary numbering. -/
 theorem boundaryRayOfOrders_eq_some_boundaryPerm
-    (R : GeometricRealization P₀ P₁ C (w.xRationalMap ℂ)) (x : CenterPoint C)
+    (R : GeometricRealization P₀ P₁ C (w.xRationalMap k₀)) (x : CenterPoint C)
     (p₀ : ContractedToricFiber b s hΦ T o μ c (P₀ (x ≫ C.domainSource)))
     (p₁ : ContractedToricFiber b' s' hΨ T' o' μ' c' (P₁ (x ≫ C.domainTarget)))
     (h₀ : D[P₀ (x ≫ C.domainSource)].IsEffectiveCartier)
@@ -218,7 +226,7 @@ theorem boundaryRayOfOrders_eq_some_boundaryPerm
     Fan.boundaryRayOfOrders b' s'
       ((ZMod.finEquiv n).toEquiv.toEmbedding.trans (p₁.numberedBoundaryRays h₁))
       (trop[w] (Fan.rayBoundaryOrders b s
-        ((Φ.boundaryNormalizationComponentEquiv hΦ).symm (T.component o)))) =
+        ((Φ.boundaryNormalizationComponentEquiv k₀ hΦ).symm (T.component o)))) =
       some ((ZMod.finEquiv n).toEquiv.symm (R.boundaryPerm 0)) := by
   have h := (R.fiber x).boundaryRayOfOrders_eq_some_cycleVertexPerm
     (p := p₀) (q := p₁) h₀ h₁ hcΦ hE hindex 0

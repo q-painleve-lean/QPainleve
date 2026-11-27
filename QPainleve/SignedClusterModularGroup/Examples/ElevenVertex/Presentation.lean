@@ -35,42 +35,45 @@ open TauCeti.Toric TauCeti.Toric.Fan LineBundleClass
 
 namespace QPainleve.ElevenVertex
 
+variable {k₀ : Type} [Field k₀] [IsAlgClosed k₀]
+
 local notation "b" => Pi.basisFun ℤ (Fin 2)
 local notation "hi" => isIntegralLattice_intCast 2
 local notation "Φ" => projectiveSpace b hi
 local notation "hΦ" => isRegular_projectiveSpace b hi
 local notation "hc" => isComplete_projectiveSpace b hi
-local notation "Plane" => Fan.algebraicRealization Φ
-local notation "S" => Spec (CommRingCat.of ℂ)
+local notation "Plane" => Fan.finiteFanScheme k₀ Φ
+local notation "S" => Spec (CommRingCat.of k₀)
 local instance : Nonempty (Φ).cones := Fan.IsComplete.nonempty_cones hc
 local instance : SmoothOfRelativeDimension 2 (Plane ↘ S) := by
-  rw [algebraicRealization_over]
-  simpa using (Φ).smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
+  rw [finiteFanScheme_over]
+  simpa using (Φ).smoothOfRelativeDimension_finiteFanSchemeToSpec k₀ hΦ
 
 local notation "Y[" c "]" => Sigma.fst (planeBlowup c)
 local notation "T[" c "]" => WithBoundary.toTower (Sigma.snd (planeBlowup c))
 local notation "B[" c "]" => Scheme.Hom.ker (WithBoundary.boundaryι (Sigma.snd (planeBlowup c)))
 local notation "J[" x "]" => Scheme.Hom.ker (Scheme.fromSpecResidueField _ x)
-local notation "K[" X "]" => LineBundleClass.mk (canonicalBundle ℂ X 2)
+local notation "K[" X "]" => LineBundleClass.mk (canonicalBundle k₀ X 2)
 local notation "δ[" h "]" =>
   (LineBundleClass.mk (IsEffectiveCartier.toInvertibleSheaf h))⁻¹
 
 section Tower
 
-variable (c : Fin 11 → ℂˣ)
+variable [NeZero (2 : k₀)] (c : Fin 11 → k₀ˣ)
 
 /-- The ordered plane blowup has the structure map induced from the plane. -/
 local instance planeBlowupOver : (Y[c]).Over S := ⟨(T[c]).toBase ≫ Plane ↘ S⟩
 
 local instance : SmoothOfRelativeDimension 2 (Y[c] ↘ S) :=
-  isClosedPointTower_internalBlowupTower b planeCenterRay c |>.smoothOfRelativeDimension (Plane ↘ S)
+  isClosedPointTower_internalBlowupTower k₀ b planeCenterRay c |>.smoothOfRelativeDimension
+    (Plane ↘ S)
 
 local instance : IsLocallyNoetherian (Y[c]) := by
   let : Smooth (Y[c] ↘ S) := SmoothOfRelativeDimension.smooth 2 _
   exact LocallyOfFiniteType.isLocallyNoetherian (Y[c] ↘ S)
 
 private theorem exists_nodal_tower_for_triangle {Z W : Scheme} [W.Over S]
-    [IsIntegral W] [W.IsProjectiveOver ℂ] [SmoothOfRelativeDimension 2 (W ↘ S)]
+    [IsIntegral W] [W.IsProjectiveOver k₀] [SmoothOfRelativeDimension 2 (W ↘ S)]
     [Scheme.IsRationalOver (W ↘ S)]
     {f : Y[c] ⟶ Z} {g : Z ⟶ W} [(f ≫ g).IsOver S] {p : Z} {q : W}
     (hp : IsClosed ({p} : Set Z)) (hq : IsClosed ({q} : Set W))
@@ -115,8 +118,8 @@ private theorem exists_nodal_tower_for_triangle {Z W : Scheme} [W.Over S]
   have hcan : mk hB'.toInvertibleSheaf = K[U] := by
     rw [← hB.pullback_mk_toInvertibleSheaf hB', mk_toInvertibleSheaf_planeBlowup_boundary c hB,
       pullback_mk, mk_pullback_canonicalBundle]
-  let : Module.Finite ℤ (Additive (LineBundleClass W)) := W.finite_picard_of_isRationalOver ℂ
-  obtain ⟨hN, hred⟩ := hR.isNodalBoundaryTower_of_ncard_boundaryPrimes_eq_add ℂ hB' hn
+  let : Module.Finite ℤ (Additive (LineBundleClass W)) := W.finite_picard_of_isRationalOver k₀
+  obtain ⟨hN, hred⟩ := hR.isNodalBoundaryTower_of_ncard_boundaryPrimes_eq_add k₀ hB' hn
     ((ncard_boundaryPrimes_eq_of_iso a.symm (B[c])).trans (hcard.trans (by rw [hmap]))) hcan
   refine ⟨U, R, a, hmap ▸ hN, ha, ?_⟩
   rw [← hmap, hred, ← comap_comp, Iso.hom_inv_id, comap_id]
@@ -130,7 +133,7 @@ boundary Casimir exponent in the given seed labels. -/
 theorem exists_eleven_vertex_toric_presentation :
     ∃ (W : Scheme) (s : W ⟶ S), letI : W.Over S := ⟨s⟩
       ∃ (_ : SmoothOfRelativeDimension 2 (W ↘ S)) (D : W.IdealSheafData)
-        (hD : D.IsEffectiveCartier) (_ : D.subscheme.IsCurveOver ℂ)
+        (hD : D.IsEffectiveCartier) (_ : D.subscheme.IsCurveOver k₀)
         (_ : PrestableFamily (D.subscheme ↘ S))
         (_ : PrestableFamily (B[c].subscheme ↘ S))
         (A₀ : Scheme.NodalCycleNumbering
@@ -138,19 +141,19 @@ theorem exists_eleven_vertex_toric_presentation :
         (A₁ : Scheme.NodalCycleNumbering
           (PEmpty.elim : PEmpty.{1} → (D.subscheme ↘ S).smoothLocus) 1)
         (U : Scheme) (R : BlowupTower W 2 U) (a : Y[c] ≅ U) (β : (B[c]).subscheme ⟶ D.subscheme),
-        IsIntegral W ∧ W.IsProjectiveOver ℂ ∧ Scheme.IsRationalOver s ∧ IsIntegral D.subscheme ∧
-        D.subscheme.normalizationGenus ℂ = 0 ∧
+        IsIntegral W ∧ W.IsProjectiveOver k₀ ∧ Scheme.IsRationalOver s ∧ IsIntegral D.subscheme ∧
+        D.subscheme.normalizationGenus k₀ = 0 ∧
         mk hD.toInvertibleSheaf = K[W] ∧
-        TauCeti.IsPrimitive (Additive.ofMul δ[hD]) ∧ δ[hD].IsNef ℂ s ∧
-        Chow.classIntersectionNumber ℂ W δ[hD] δ[hD] = 0 ∧
+        TauCeti.IsPrimitive (Additive.ofMul δ[hD]) ∧ δ[hD].IsNef k₀ s ∧
+        Chow.classIntersectionNumber k₀ W δ[hD] δ[hD] = 0 ∧
         IsNodalBoundaryTower D (W ↘ S) (𝟙 _) R ∧
-        a.hom ≫ R.toBase ≫ s = (T[c]).toBase ≫ Fan.algebraicRealizationStructureMap Φ ∧
+        a.hom ≫ R.toBase ≫ s = (T[c]).toBase ≫ Fan.finiteFanSchemeToSpec k₀ Φ ∧
         ((D.comap R.toBase).radical).comap a.hom = B[c] ∧
-        D = (strictTransform (Fan.rayBoundaryIdeal Φ hΦ (planeBoundaryRay 2)) (T[c])).map
+        D = (strictTransform (Fan.rayDivisorIdeal k₀ Φ hΦ (planeBoundaryRay 2)) (T[c])).map
           (a.hom ≫ R.toBase) ∧
         β ≫ D.subschemeι = (B[c]).subschemeι ≫ a.hom ≫ R.toBase ∧
         β.IsOrientedCycleSubdivision A₀ A₁ ∧
-        ((internalBlowupPicardMarking b planeCenterRay c hΦ).symm
+        ((internalBlowupPicardMarking k₀ b planeCenterRay c hΦ).symm
           (Additive.ofMul (pullback (a.hom ≫ R.toBase) δ[hD]))).2 = -boundaryExponent := by
   obtain ⟨Z, W, t, s, f, g, p, q, hWsm, hW, hproj, hrat, hf, hg, _, _, hp, hq, _, _,
     e, e', he, he', hline, hDint, hD, hpre, hpreB, hcurve, hgenus, hcan, hclass, hprim, hnef, hsq,
@@ -160,15 +163,15 @@ theorem exists_eleven_vertex_toric_presentation :
   let : SmoothOfRelativeDimension 2 (W ↘ S) := hWsm
   let : IsLocallyNoetherian W := LocallyOfFiniteType.isLocallyNoetherian (W ↘ S)
   let : IsIntegral W := hW
-  let : W.IsProjectiveOver ℂ := hproj
+  let : W.IsProjectiveOver k₀ := hproj
   let : Scheme.IsRationalOver (W ↘ S) := hrat
   let : f.IsOver S := hf
   let : g.IsOver S := hg
   let : PrestableFamily (B[c].subscheme ↘ S) := hpreB
   let : PrestableFamily ((((B[c]).map f).map g).subscheme ↘ S) := hpre
   have hB : B[c].IsEffectiveCartier :=
-    isEffectiveCartier_internalBlowupBoundary b planeCenterRay hΦ c
-      ((Φ).isEffectiveCartier_boundaryIdeal hΦ hc (by simp))
+    isEffectiveCartier_internalBlowupBoundary k₀ b planeCenterRay hΦ c
+      ((Φ).isEffectiveCartier_boundaryIdeal k₀ hΦ hc (by simp))
   have hcard := (Nat.card_congr (A.boundaryPrimeEquiv hB)).symm.trans (Nat.card_zmod 3)
   have hcard' := (Nat.card_congr (A'.boundaryPrimeEquiv hD)).symm.trans (Nat.card_zmod 1)
   rw [Nat.card_coe_set_eq] at hcard hcard'
@@ -179,7 +182,7 @@ theorem exists_eleven_vertex_toric_presentation :
   · simpa only [← map_comp] using hR
   · have hbase : (f ≫ g) ≫ s = Y[c] ↘ S := comp_over (f ≫ g) S
     have hplane : Y[c] ↘ S = (T[c]).toBase ≫ (Plane ↘ S) := rfl
-    rw [← Category.assoc, ha, hbase, hplane, algebraicRealization_over]
+    rw [← Category.assoc, ha, hbase, hplane, finiteFanScheme_over]
   · simpa only [← map_comp] using hBred
   · rw [ha]
     exact hβ

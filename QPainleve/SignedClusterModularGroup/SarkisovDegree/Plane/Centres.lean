@@ -31,12 +31,14 @@ open TauCeti.AlgebraicGeometry TauCeti.Toric
 
 namespace TauCeti.Toric.Fan
 
+variable (k₀ : Type) [Field k₀] [IsAlgClosed k₀]
+
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V] {i : N →+ V}
   (d : Basis (Fin 2) ℤ N) (hi : IsIntegralLattice i)
 
-local notation "S" => Spec (CommRingCat.of ℂ)
+local notation "S" => Spec (CommRingCat.of k₀)
 local notation "Φ" => projectiveSpace d hi
-local notation "X" => Fan.algebraicRealization Φ
+local notation "X" => Fan.finiteFanScheme k₀ Φ
 local notation "hc" => isComplete_projectiveSpace d hi
 local notation "reg" => isRegular_projectiveSpace d hi
 local notation "σ(" k ")" => projectiveSpaceMaximalCone d hi k
@@ -44,7 +46,7 @@ local notation "Ψ(" k ")" => Fan.starSubdivisionAlong Φ reg (Subtype.property 
 local notation "subdiv(" k "," h ")" =>
   Fan.starSubdivisionAlong_isSubdivision Φ reg (Subtype.property (σ(k))) h
 local notation "rankTwo" => (Eq.trans (Module.finrank_eq_card_basis d) (Fintype.card_fin 2))
-local notation "point" => IsLocalRing.closedPoint ℂ
+local notation "point" => IsLocalRing.closedPoint k₀
 
 /-- Each projected center of a logarithmic point tower over the toric plane is one of
 the specified coordinate vertices, or lifts through the opposite-vertex subdivision to
@@ -56,17 +58,17 @@ theorem projectivePlane_baseCenter_cases_of_totalTransform_le_ramification
     letI : SmoothOfRelativeDimension 2 (X ↘ S) :=
       by
         have hdim : finrank ℤ N = 2 := rankTwo
-        simpa only [hdim, Fan.algebraicRealization_over] using
-          (Φ).smoothOfRelativeDimension_algebraicRealizationStructureMap reg
-    let D := (Φ).boundaryIdeal (IsComplete.nonempty_cones hc)
-    D.comap T.toBase ≤ hT.ramificationIdealSheafToBase ℂ →
+        simpa only [hdim, Fan.finiteFanScheme_over k₀] using
+          (Φ).smoothOfRelativeDimension_finiteFanSchemeToSpec k₀ reg
+    let D := (Φ).toricBoundaryIdeal k₀ (IsComplete.nonempty_cones hc)
+    D.comap T.toBase ≤ hT.ramificationIdealSheafToBase k₀ →
     ∀ j : Fin n, let p := hT.baseCenter j
-      (∃ k : Option (Fin 2), (Φ).distinguishedPointHom (σ(k)) point = p) ∨
+      (∃ k : Option (Fin 2), (Φ).distinguishedSection (R := k₀) (σ(k)) point = p) ∨
       (∃ (k : Option (Fin 2)) (hσ : (σ(k)).val ≠ ⊥) (b : Basis (Fin 2) ℤ N)
-          (r : Fin 4 ≃ (Ψ(k)).Ray) (c : ℂˣ),
+          (r : Fin 4 ≃ (Ψ(k)).Ray) (c : k₀ˣ),
         let ρ := r 2
-        let π := (subdiv(k,hσ)).toFanHom.algebraicMap
-        let q := ρ.binomialCenter rankTwo (b.detDualEquiv_self ρ.primitiveGenerator)
+        let π := ((subdiv(k,hσ)).toFanHom.finiteFanSchemeHom k₀)
+        let q := ρ.binomialCenter k₀ rankTwo (b.detDualEquiv_self ρ.primitiveGenerator)
           (ρ.surjective_detCharacter b) c
         (fun l ↦ (r l).primitiveGenerator) = ![b 0, b 1, -b 0, (1 : ℤ) • b 0 - b 1] ∧
         (Φ).starSubdivisionAlongRay reg (Subtype.property (σ(k))) hσ = r 0 ∧
@@ -76,36 +78,36 @@ theorem projectivePlane_baseCenter_cases_of_totalTransform_le_ramification
   let : Nonempty (Φ).cones := IsComplete.nonempty_cones hc
   have hdim : finrank ℤ N = 2 := rankTwo
   let : SmoothOfRelativeDimension 2 (X ↘ S) := by
-    simpa only [hdim, Fan.algebraicRealization_over] using
-      (Φ).smoothOfRelativeDimension_algebraicRealizationStructureMap reg
-  rcases (Φ).baseCenter_cases_of_totalTransform_le_ramification d reg hc hT h j with
+    simpa only [hdim, Fan.finiteFanScheme_over k₀] using
+      (Φ).smoothOfRelativeDimension_finiteFanSchemeToSpec k₀ reg
+  rcases (Φ).baseCenter_cases_of_totalTransform_le_ramification k₀ d reg hc hT h j with
     ⟨σ, ⟨hσ, hp⟩, -⟩ | ⟨-, ⟨⟨ρ, c⟩, hI, -⟩⟩
   · obtain ⟨k, rfl⟩ := exists_eq_projectiveSpaceMaximalCone_of_card_toricRay_eq_two d hi σ hσ
     exact Or.inl ⟨k, hp⟩
   obtain ⟨k, hσ, b, r, hr, hρ, hnew⟩ :=
     exists_projectivePlane_starSubdivision_opposite_ray d hi ρ
-  let u := ρ.binomialCenter rankTwo (d.detDualEquiv_self ρ.primitiveGenerator)
+  let u := ρ.binomialCenter k₀ rankTwo (d.detDualEquiv_self ρ.primitiveGenerator)
     (ρ.surjective_detCharacter d) c
   let x : S := point
   have hu : u x = p := by
     apply Scheme.ker_fromSpecResidueField_inj.mp
-    rw [← u.ker_eq_ker_fromSpecResidueField, ← ρ.map_internalCenter_subschemeι d c]
+    rw [← u.ker_eq_ker_fromSpecResidueField, ← ρ.map_internalCenter_subschemeι k₀ d c]
     exact hI
-  obtain ⟨a, ha⟩ := ρ.exists_binomialCenter_eq_of_basis b d c
-  let π := (subdiv(k,hσ)).toFanHom.algebraicMap
-  let v := (r 2).binomialCenter rankTwo (b.detDualEquiv_self (r 2).primitiveGenerator)
+  obtain ⟨a, ha⟩ := ρ.exists_binomialCenter_eq_of_basis k₀ b d c
+  let π := ((subdiv(k,hσ)).toFanHom.finiteFanSchemeHom k₀)
+  let v := (r 2).binomialCenter k₀ rankTwo (b.detDualEquiv_self (r 2).primitiveGenerator)
     ((r 2).surjective_detCharacter b) a
   have hcomp : v ≫ π = u := by
     refine Eq.trans ?_ ha
     dsimp only [v, π]
     rw [← hρ]
-    exact (subdiv(k,hσ)).binomialCenter_liftRay_comp_algebraicMap ρ b a
+    exact (subdiv(k,hσ)).binomialCenter_liftRay_comp_finiteFanSchemeHom k₀ ρ b a
   have hloc : p ∈ π.isoLocus := by
-    have hp : (ρ.binomialCenter rankTwo (b.detDualEquiv_self ρ.primitiveGenerator)
+    have hp : (ρ.binomialCenter k₀ rankTwo (b.detDualEquiv_self ρ.primitiveGenerator)
         (ρ.surjective_detCharacter b) a) x = p :=
       (congrArg (fun g : S ⟶ X ↦ g x) ha).trans hu
     rw [← hp]
-    exact (subdiv(k,hσ)).range_binomialCenter_subset_isoLocus ρ rankTwo
+    exact (subdiv(k,hσ)).range_binomialCenter_subset_isoLocus k₀ ρ rankTwo
       (b.detDualEquiv_self ρ.primitiveGenerator) (ρ.surjective_detCharacter b) a
       (Set.mem_range_self x)
   have hpt : π (v x) = p := (congrArg (fun g : S ⟶ X ↦ g x) hcomp).trans hu

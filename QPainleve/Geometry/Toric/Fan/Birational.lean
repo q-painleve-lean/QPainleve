@@ -27,13 +27,16 @@ namespace TauCeti.Toric.Fan
 
 universe u
 
-variable {N V : Type u} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
+variable (R : Type u) [CommRing R] {N : Type u} {V : Type*}
+  [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V}
   (Φ Ψ : Fan i) [Nonempty Φ.cones] [Nonempty Ψ.cones]
 
-local notation "j[" A "]" => Fan.denseTorusι A inferInstance
-local notation "X[" A "]" => Fan.algebraicRealization A
-local notation "s[" A "]" => Fan.algebraicRealizationStructureMap A
+local notation "zeroCone[" A "]" =>
+  Subtype.mk ⊥ (Fan.bot_mem A (Subtype.property (Nonempty.some (α := (Fan.cones A)) inferInstance)))
+local notation "j[" A "]" => Fan.affineChartι R A zeroCone[A]
+local notation "X[" A "]" => Fan.finiteFanScheme R A
+local notation "s[" A "]" => Fan.finiteFanSchemeToSpec R A
 
 /-- The partial isomorphism identifying the dense torus in the realizations of two
 nonempty fans in the same lattice. -/
@@ -47,27 +50,32 @@ def denseTorusPartialIso : X[Φ].PartialIso X[Ψ] where
 /-- The source open of the toric change is the dense torus. -/
 @[simp]
 theorem denseTorusPartialIso_source :
-    (Φ.denseTorusPartialIso Ψ).source = j[Φ].opensRange := (rfl)
+    (Φ.denseTorusPartialIso R Ψ).source = j[Φ].opensRange := (rfl)
 
 /-- The target open of the toric change is the dense torus. -/
 @[simp]
 theorem denseTorusPartialIso_target :
-    (Φ.denseTorusPartialIso Ψ).target = j[Ψ].opensRange := (rfl)
+    (Φ.denseTorusPartialIso R Ψ).target = j[Ψ].opensRange := (rfl)
 
 /-- Reversing the toric change interchanges the two open tori. -/
 @[simp]
 theorem denseTorusPartialIso_symm :
-    (Φ.denseTorusPartialIso Ψ).symm = Ψ.denseTorusPartialIso Φ := by
+    (Φ.denseTorusPartialIso R Ψ).symm = Ψ.denseTorusPartialIso R Φ := by
   apply Scheme.PartialIso.ext _ _ rfl rfl
   simp only [Scheme.isoOfEq_rfl, Iso.refl_trans, Iso.trans_refl]
+
+section RationalMap
+
+variable [IsDomain R]
 
 /-- Precomposing the toric birational map with the source torus inclusion gives the
 target torus inclusion. -/
 @[simp]
-theorem denseTorusι_comp_denseTorusPartialIso :
-    j[Φ].toRationalMap.comp (Φ.denseTorusPartialIso Ψ).toRationalMap = j[Ψ].toRationalMap := by
-  let p := (Φ.denseTorusPartialIso Ψ).toPartialMap
-  let e : Φ.denseTorus ≅ p.domain.toScheme := j[Φ].isoOpensRange
+theorem affineChartι_bot_comp_denseTorusPartialIso :
+    j[Φ].toRationalMap.comp (Φ.denseTorusPartialIso R Ψ).toRationalMap =
+      j[Ψ].toRationalMap := by
+  let p := (Φ.denseTorusPartialIso R Ψ).toPartialMap
+  let e : affineChart R Φ.lattice (⊥ : PointedCone ℝ V) ≅ p.domain.toScheme := j[Φ].isoOpensRange
   let : Nonempty p.domain := Set.nonempty_coe_sort.mpr p.dense_domain.nonempty
   let : IsIntegral p.domain.toScheme := isIntegral_of_isOpenImmersion p.domain.ι
   let : IsDominant p.domain.ι := Opens.isDominant_ι p.dense_domain
@@ -89,31 +97,33 @@ variable {Φ Ψ}
 /-- The identity on the common torus determines a rational map between the two fan schemes. -/
 theorem eq_denseTorusPartialIso_toRationalMap {f : X[Φ] ⤏ X[Ψ]}
     (hf : j[Φ].toRationalMap.comp f = j[Ψ].toRationalMap) :
-    f = (Φ.denseTorusPartialIso Ψ).toRationalMap :=
-  j[Φ].toRationalMap.comp_left_injective (hf.trans (Φ.denseTorusι_comp_denseTorusPartialIso Ψ).symm)
+    f = (Φ.denseTorusPartialIso R Ψ).toRationalMap :=
+  j[Φ].toRationalMap.comp_left_injective
+    (hf.trans (Φ.affineChartι_bot_comp_denseTorusPartialIso R Ψ).symm)
 
 /-- A toric subdivision realizes the same-lattice birational change by a morphism. -/
 @[simp]
-theorem IsSubdivision.toRationalMap_algebraicMap (h : Φ.IsSubdivision Ψ) :
-    h.toFanHom.algebraicMap.toRationalMap = (Φ.denseTorusPartialIso Ψ).toRationalMap := by
+theorem IsSubdivision.toRationalMap_finiteFanSchemeHom (h : Φ.IsSubdivision Ψ) :
+    (h.toFanHom.finiteFanSchemeHom R).toRationalMap =
+      (Φ.denseTorusPartialIso R Ψ).toRationalMap := by
   apply eq_denseTorusPartialIso_toRationalMap
   rw [Scheme.RationalMap.comp_toRationalMap, Scheme.Hom.toRationalMap_compHom,
-    h.denseTorusι_comp_algebraicMap]
+    h.affineChartι_comp_finiteFanSchemeHom R]
 
 /-- The composite of two toric changes is the toric change between their outer endpoints. -/
 @[simp]
 theorem denseTorusPartialIso_toRationalMap_comp {Ω : Fan i} [Nonempty Ω.cones] :
-    (Φ.denseTorusPartialIso Ψ).toRationalMap.comp (Ψ.denseTorusPartialIso Ω).toRationalMap =
-      (Φ.denseTorusPartialIso Ω).toRationalMap := by
+    (Φ.denseTorusPartialIso R Ψ).toRationalMap.comp (Ψ.denseTorusPartialIso R Ω).toRationalMap =
+      (Φ.denseTorusPartialIso R Ω).toRationalMap := by
   apply eq_denseTorusPartialIso_toRationalMap
   rw [← Scheme.RationalMap.comp_assoc]
-  simp only [denseTorusι_comp_denseTorusPartialIso]
+  simp only [affineChartι_bot_comp_denseTorusPartialIso]
 
 /-- Changing a fan to itself induces the identity rational map. -/
 @[simp]
 theorem denseTorusPartialIso_self_toRationalMap :
-    (Φ.denseTorusPartialIso Φ).toRationalMap = Scheme.RationalMap.id X[Φ] := by
-  simpa using (IsSubdivision.refl Φ).toRationalMap_algebraicMap.symm
+    (Φ.denseTorusPartialIso R Φ).toRationalMap = Scheme.RationalMap.id X[Φ] := by
+  simpa using ((IsSubdivision.refl Φ).toRationalMap_finiteFanSchemeHom R).symm
 
 /-- On a common subdivision, postcomposing either projection with the corresponding
 toric change gives the other projection. This holds after any dominant morphism
@@ -121,36 +131,33 @@ from a preirreducible source to the common subdivision. -/
 theorem IsSubdivision.comp_denseTorusPartialIso {Ω : Fan i} [Nonempty Ω.cones]
     (h : Ω.IsSubdivision Φ) (k : Ω.IsSubdivision Ψ) {Z : Scheme.{u}}
     [PreirreducibleSpace Z] (g : Z ⟶ X[Ω]) [IsDominant g] :
-    (g ≫ h.toFanHom.algebraicMap).toRationalMap.comp (Φ.denseTorusPartialIso Ψ).toRationalMap =
-      (g ≫ k.toFanHom.algebraicMap).toRationalMap := by
+    (g ≫ h.toFanHom.finiteFanSchemeHom R).toRationalMap.comp
+        (Φ.denseTorusPartialIso R Ψ).toRationalMap =
+      (g ≫ k.toFanHom.finiteFanSchemeHom R).toRationalMap := by
   calc
     _ = g.toRationalMap.comp
-        (h.toFanHom.algebraicMap.toRationalMap.comp (Φ.denseTorusPartialIso Ψ).toRationalMap) := by
+        ((h.toFanHom.finiteFanSchemeHom R).toRationalMap.comp
+          (Φ.denseTorusPartialIso R Ψ).toRationalMap) := by
       rw [← Scheme.RationalMap.comp_assoc]
       simp only [Scheme.RationalMap.comp_toRationalMap, Scheme.Hom.toRationalMap_compHom]
-    _ = g.toRationalMap.comp (Ω.denseTorusPartialIso Ψ).toRationalMap := by
-      simp only [h.toRationalMap_algebraicMap, denseTorusPartialIso_toRationalMap_comp]
+    _ = g.toRationalMap.comp (Ω.denseTorusPartialIso R Ψ).toRationalMap := by
+      simp only [h.toRationalMap_finiteFanSchemeHom R, denseTorusPartialIso_toRationalMap_comp]
     _ = _ := by
-      rw [← k.toRationalMap_algebraicMap, Scheme.RationalMap.comp_toRationalMap,
+      rw [← k.toRationalMap_finiteFanSchemeHom R, Scheme.RationalMap.comp_toRationalMap,
         Scheme.Hom.toRationalMap_compHom]
 
-section Over
+end RationalMap
 
-variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
-  {i : N →+ V} (Φ Ψ : Fan i) [Nonempty Φ.cones] [Nonempty Ψ.cones]
-
-/-- The toric change is defined over the complex base. -/
+/-- The toric change is defined over the coefficient ring. -/
 theorem denseTorusPartialIso_isOver :
-    (Φ.denseTorusPartialIso Ψ).IsOver s[Φ] s[Ψ] := by
+    (Φ.denseTorusPartialIso R Ψ).IsOver s[Φ] s[Ψ] := by
   apply (cancel_epi j[Φ].isoOpensRange.hom).mp
   simp only [denseTorusPartialIso, Iso.trans_hom, Iso.symm_hom,
     Iso.hom_inv_id_assoc, Scheme.Hom.isoOpensRange_hom_ι_assoc, Category.assoc]
-  rw [Φ.denseTorusι_comp_structureMap, Ψ.denseTorusι_comp_structureMap]
+  rw [Φ.affineChartι_finiteFanSchemeToSpec R, Ψ.affineChartι_finiteFanSchemeToSpec R]
 
-/-- The partial map of the toric change is defined over the complex base. -/
-instance : (Φ.denseTorusPartialIso Ψ).toPartialMap.IsOver s[Φ] s[Ψ] :=
-  ⟨Φ.denseTorusPartialIso_isOver Ψ⟩
-
-end Over
+/-- The partial map of the toric change is defined over the coefficient ring. -/
+instance : (Φ.denseTorusPartialIso R Ψ).toPartialMap.IsOver s[Φ] s[Ψ] :=
+  ⟨Φ.denseTorusPartialIso_isOver R Ψ⟩
 
 end TauCeti.Toric.Fan

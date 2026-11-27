@@ -32,6 +32,8 @@ open MarkedSurface (surfaceIso boundaryIso)
 
 section ContractedToric
 
+variable {k : Type} [Field k] [IsAlgClosed k]
+
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {Φ : Fan i} [h₀ : Nonempty Φ.cones]
   {r m n : ℕ} [NeZero m] [NeZero n] {L₀ L₁ : Type}
@@ -39,25 +41,26 @@ variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {B₀ : LinearMap.BilinForm ℤ L₀} {B₁ : LinearMap.BilinForm ℤ L₁}
   (b : Module.Basis (Fin 2) ℤ N) (s : Fin r → Φ.Ray) (hΦ : Φ.IsRegular)
 
-local notation "S" => Spec (CommRingCat.of ℂ)
-local notation "Xtor[" r "]" => Spec (CommRingCat.of (LaurentRing ℂ (Fin r)))
-local notation "Dtor[" Φ "," h "]" => Scheme.IdealSheafData.subscheme (Fan.boundaryIdeal Φ h)
+local notation "S" => Spec (CommRingCat.of k)
+local notation "Xtor[" r "]" => Spec (CommRingCat.of (LaurentRing k (Fin r)))
+local notation "Dtor[" Φ "," h "]" => Scheme.IdealSheafData.subscheme (Fan.toricBoundaryIdeal k Φ h)
 local notation "center" c:arg => (fun j ↦ c (ofAdd (Pi.single j 1)))
-local notation "Model[" b "," s "," c "]" => Fan.internalBlowupTower b s (center c)
+local notation "Model[" b "," s "," c "]" => Fan.internalBlowupTower k b s (center c)
 local notation "Pic[" Φ "," r "]" =>
-  Additive (LineBundleClass (Fan.algebraicRealization Φ)) × (Fin r → ℤ)
+  Additive (LineBundleClass (Fan.finiteFanScheme k Φ)) × (Fin r → ℤ)
 
-variable [toricPrestable : PrestableFamily (Dtor[Φ,h₀] ↘ S)]
-  {γ : Type*} {a : γ → (Dtor[Φ,h₀] ↘ S).smoothLocus}
-  (T : Scheme.NodalCycleNumbering a m) (origin : ZMod m) (ι : L₁ →ₗ[ℤ] Pic[Φ,r])
+variable [toricPrestable : PrestableFamily ((Φ.toricBoundaryIdeal k h₀).subscheme ↘ Spec (.of k))]
+  {γ : Type*} {a : γ → ((Φ.toricBoundaryIdeal k h₀).subscheme ↘ Spec (.of k)).smoothLocus}
+  (T : Scheme.NodalCycleNumbering a m) (origin : ZMod m)
+  (ι : L₁ →ₗ[ℤ] Additive (LineBundleClass (Φ.finiteFanScheme k)) × (Fin r → ℤ))
 
 /-- The projections from an ordered toric model associated to a marked surface at a given
 center. The class inclusion and the marked initial component are fixed in the auxiliary
 toric coordinates. The conductor subdivision records the orientation of the actual
 boundary branches. -/
 @[ext]
-structure ContractedToricFiber (c : Multiplicative (Fin r → ℤ) →* ℂˣ)
-    (P : MarkedSurface ℂ n B₁ Xtor[r]) where
+structure ContractedToricFiber (c : Multiplicative (Fin r → ℤ) →* kˣ)
+    (P : MarkedSurface k n B₁ Xtor[r]) where
   /-- The contraction from the ordered internal blowup model. -/
   projection : (Model[b,s,c]).1 ⟶ P.surface
   /-- The projection is a modification. -/
@@ -65,7 +68,7 @@ structure ContractedToricFiber (c : Multiplicative (Fin r → ℤ) →* ℂˣ)
   /-- The two projections from the ordered model are over the same field. -/
   projection_over :
     projection ≫ (P.surface ↘ S) =
-      (Model[b,s,c]).2.toTower.toBase ≫ Φ.algebraicRealizationStructureMap
+      (Model[b,s,c]).2.toTower.toBase ≫ Φ.finiteFanSchemeToSpec k
   /-- The inverse image of the boundary has the support of the strict toric boundary. -/
   support_comap :
     (P.pair.hom.left.ker.comap projection).support = (Model[b,s,c]).2.boundaryι.ker.support
@@ -85,36 +88,36 @@ structure ContractedToricFiber (c : Multiplicative (Fin r → ℤ) →* ℂˣ)
     boundaryMap (T.componentGenericPoint origin) = P.cycle.componentGenericPoint 0
   /-- The contracted marking pulls back to the fixed inclusion in the auxiliary lattice. -/
   marked_pullback (a : L₁) :
-    (Fan.internalBlowupPicardMarking b s (center c) hΦ).symm
+    (Fan.internalBlowupPicardMarking k b s (center c) hΦ).symm
       (Additive.ofMul (LineBundleClass.pullback projection (P.picardMarking a).toMul)) = ι a
   /-- The surface evaluation is the fixed-center evaluation descended along the projection. -/
-  evaluation_eq : P.evaluation = Fan.contractedXEvaluation b s c hΦ projection
+  evaluation_eq : P.evaluation = Fan.contractedXEvaluation k b s c hΦ projection
 
 attribute [instance] ContractedToricFiber.modification ContractedToricFiber.boundary_over
 
 variable {b s hΦ T origin ι}
-  {c d : Multiplicative (Fin r → ℤ) →* ℂˣ}
-  {P Q : MarkedSurface ℂ n B₁ Xtor[r]}
+  {c d : Multiplicative (Fin r → ℤ) →* kˣ}
+  {P Q : MarkedSurface k n B₁ (Spec (.of (LaurentRing k (Fin r))))}
   (p : ContractedToricFiber b s hΦ T origin ι c P)
   (q : ContractedToricFiber b s hΦ T origin ι d Q)
 
 include p q in
 private theorem boundaryCycleAction_eq_one_of_translation
     (e : P.pair ≅ Q.pair) (hc : Φ.IsComplete)
-    {χ : Multiplicative (N →+ ℤ) →* ℂˣ} {t : (Model[b,s,c]).1 ≅ (Model[b,s,d]).1}
-    (ht : IsLift (Φ.torusTranslation χ) (Model[b,s,c]).2.toTower (Model[b,s,d]).2.toTower t)
+    {χ : Multiplicative (N →+ ℤ) →* kˣ} {t : (Model[b,s,c]).1 ≅ (Model[b,s,d]).1}
+    (ht : IsLift (Φ.torusTranslationIso k χ) (Model[b,s,c]).2.toTower (Model[b,s,d]).2.toTower t)
     (he : p.projection ≫ (surfaceIso e).hom = t.hom ≫ q.projection) :
     letI : PrestableFamily (P.boundary ↘ S) := P.prestable
     letI : PrestableFamily (Q.boundary ↘ S) := Q.prestable
     (boundaryIso e).boundaryCycleAction P.cycle Q.cycle = 1 := by
   let : PrestableFamily (P.boundary ↘ S) := P.prestable
   let : PrestableFamily (Q.boundary ↘ S) := Q.prestable
-  let τ := Fan.boundaryTranslation (Φ := Φ) χ
+  let τ := Fan.boundaryTranslation k (Φ := Φ) χ
   have : IsClosedImmersion Q.pair.hom.left := Q.closedImmersion
-  have hτ := Fan.commSq_boundaryTranslation_of_isLift b s c d p.boundary_comp q.boundary_comp
+  have hτ := Fan.commSq_boundaryTranslation_of_isLift k b s c d p.boundary_comp q.boundary_comp
     (MarkedSurface.boundaryIso_hom_comp e) ht he
   have hτaction : τ.boundaryCycleAction T T = 1 :=
-    Fan.boundaryCycleAction_boundaryTranslation hΦ hc
+    Fan.boundaryCycleAction_boundaryTranslation k hΦ hc
       ((Module.finrank_eq_card_basis b).trans (Fintype.card_fin 2)) T χ
   have hsign := (boundaryIso e).cycleOrientationSign_eq_of_orientedCycleSubdivisions
     P.cycle Q.cycle T T τ p.orientedSubdivision q.orientedSubdivision hτ
@@ -143,14 +146,14 @@ theorem ContractedToricFiber.marked_actions_of_comp_evaluation_eq
     (let : PrestableFamily (P.boundary ↘ S) := P.prestable
      letI : PrestableFamily (Q.boundary ↘ S) := Q.prestable
      (boundaryIso e).boundaryCycleAction P.cycle Q.cycle = 1) := by
-  have : Q.surface.IsProjectiveOver ℂ := Q.projective
+  have : Q.surface.IsProjectiveOver k := Q.projective
   rw [p.evaluation_eq, q.evaluation_eq] at heval
   obtain ⟨lift⟩ :=
-    Fan.existsUnique_contractedToricTranslation_of_comp_contractedXEvaluation_eq b s c d hΦ
+    Fan.existsUnique_contractedToricTranslation_of_comp_contractedXEvaluation_eq k b s c d hΦ
       p.projection q.projection (surfaceIso e) hindex p.projection_over q.projection_over heval
   let t := lift.default
   refine ⟨fun a ↦ ?_, boundaryCycleAction_eq_one_of_translation p q e hc t.isLift t.commutes⟩
-  have h := (t.pullback_marking hΦ (Q.picardMarking a).toMul).trans (q.marked_pullback a)
+  have h := (t.pullback_marking k hΦ (Q.picardMarking a).toMul).trans (q.marked_pullback a)
   obtain ⟨a', ha'⟩ := P.picardMarking.surjective
     (Additive.ofMul (LineBundleClass.pullback (surfaceIso e).hom (Q.picardMarking a).toMul))
   have hcoord := p.marked_pullback a'
@@ -164,7 +167,7 @@ realization has the same marked Picard pullback and ordered boundary action when
 targets belong to one ordered toric presentation with finite-index charges. -/
 theorem FiberRealization.marked_actions_eq_of_compOfDefined
     {X₀ : Scheme} [IsIntegral X₀] [X₀.IsSeparated]
-    {M : MarkedSurface ℂ n B₀ X₀} {F : X₀ ⤏ Xtor[r]}
+    {M : MarkedSurface k n B₀ X₀} {F : X₀ ⤏ Xtor[r]}
     {I : B₁.IsometryEquiv B₀} {g : DihedralGroup n}
     (R : FiberRealization M P F I g)
     (p : ContractedToricFiber b s hΦ T origin ι c P)
@@ -187,7 +190,7 @@ theorem FiberRealization.marked_actions_eq_of_compOfDefined
 coincide if their targets come from the same ordered toric presentation. -/
 theorem FiberRealization.marked_actions_eq_of_contractedToricFiber
     {X₀ : Scheme} [IsIntegral X₀] [X₀.IsSeparated]
-    {M : MarkedSurface ℂ n B₀ X₀} {F : X₀ ⤏ Xtor[r]}
+    {M : MarkedSurface k n B₀ X₀} {F : X₀ ⤏ Xtor[r]}
     {I J : B₁.IsometryEquiv B₀} {g h : DihedralGroup n}
     (R : FiberRealization M P F I g) (R' : FiberRealization M Q F J h)
     (p : ContractedToricFiber b s hΦ T origin ι c P)
@@ -206,8 +209,8 @@ open GeometricRealization (CenterPoint Point)
 /-- Every center reached by a partial center map admits a contracted fiber
 in the given ordered toric presentation of the target family. -/
 abbrev GeometricRealization.HasToricTargetModels
-    {T₀ T₁ : Over S} {P₁ : Point T₁ → MarkedSurface ℂ n B₁ Xtor[r]}
-    (centers : Point T₁ → Multiplicative (Fin r → ℤ) →* ℂˣ)
+    {T₀ T₁ : Over S} {P₁ : Point T₁ → MarkedSurface k n B₁ Xtor[r]}
+    (centers : Point T₁ → Multiplicative (Fin r → ℤ) →* kˣ)
     (C : T₀.left.PartialMap T₁.left) [C.IsOver T₀.hom T₁.hom] : Prop :=
   ∀ c : CenterPoint C, Nonempty
     (ContractedToricFiber b s hΦ T origin ι (centers (c ≫ C.domainTarget))
@@ -215,9 +218,9 @@ abbrev GeometricRealization.HasToricTargetModels
 
 namespace GeometricRealization.HasToricTargetModels
 
-variable {T₀ T₁ T₂ : Over S}
-  {P₂ : Point T₂ → MarkedSurface ℂ n B₁ Xtor[r]}
-  {centers : Point T₂ → Multiplicative (Fin r → ℤ) →* ℂˣ}
+variable {T₀ T₁ T₂ : Over (Spec (.of k))}
+  {P₂ : Point T₂ → MarkedSurface k n B₁ (Spec (.of (LaurentRing k (Fin r))))}
+  {centers : Point T₂ → Multiplicative (Fin r → ℤ) →* kˣ}
   {D : T₁.left.PartialMap T₂.left} [D.IsOver T₁.hom T₂.hom]
 
 /-- A toric model at every target center supplies models for any partial center map. -/
@@ -240,12 +243,13 @@ theorem comp [PreirreducibleSpace T₀.left] [Nonempty T₁.left]
 end GeometricRealization.HasToricTargetModels
 
 variable
-  {T₀ T₁ : Over S} [Nonempty T₀.left] [Smooth T₀.hom]
+  {T₀ T₁ : Over (Spec (.of k))} [Nonempty T₀.left] [Smooth T₀.hom]
   {X₀ : Scheme} [IsIntegral X₀] [X₀.IsSeparated]
-  {P₀ : Point T₀ → MarkedSurface ℂ n B₀ X₀} {P₁ : Point T₁ → MarkedSurface ℂ n B₁ Xtor[r]}
+  {P₀ : Point T₀ → MarkedSurface k n B₀ X₀}
+  {P₁ : Point T₁ → MarkedSurface k n B₁ (Spec (.of (LaurentRing k (Fin r))))}
   {C D : T₀.left.PartialMap T₁.left} [IsDominant C.hom] [IsDominant D.hom]
   [C.IsOver T₀.hom T₁.hom] [D.IsOver T₀.hom T₁.hom]
-  {F G : X₀ ⤏ Xtor[r]} [F.IsDominant] [G.IsDominant]
+  {F G : X₀ ⤏ (Spec (.of (LaurentRing k (Fin r))))} [F.IsDominant] [G.IsDominant]
 
 /-- Two geometric realizations of the same X map have the same marked Picard pullback and
 ordered boundary action when their target fibers are contracted models of a fixed ordered
@@ -255,7 +259,7 @@ theorem GeometricRealization.marked_actions_eq_of_xMap_eq
     (R : GeometricRealization P₀ P₁ C F) (R' : GeometricRealization P₀ P₁ D G)
     (hFG : F = G) (hc : Φ.IsComplete) (hι : Function.Injective ι)
     (hindex : (Fan.rayChargeMap s).range.toAddSubgroup.index ≠ 0)
-    (centers : Point T₁ → (Multiplicative (Fin r → ℤ) →* ℂˣ))
+    (centers : Point T₁ → (Multiplicative (Fin r → ℤ) →* kˣ))
     (hC : HasToricTargetModels (b := b) (s := s) (hΦ := hΦ) (T := T)
       (origin := origin) (ι := ι) (P₁ := P₁) centers C)
     (hD : HasToricTargetModels (b := b) (s := s) (hΦ := hΦ) (T := T)

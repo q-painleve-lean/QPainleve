@@ -639,37 +639,37 @@ namespace QPainleve.SignedClusterModularGroup.ContractedToricFiber
 
 open Multiplicative QPainleve.CharacterTorus TauCeti TauCeti.Toric LineBundleClass
 
+variable {k : Type} [Field k] [IsAlgClosed k]
+
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {Φ : Fan i} [h₀ : Nonempty Φ.cones]
   {r m n : ℕ} [NeZero m] [NeZero n] {L : Type} [AddCommGroup L]
   {B : LinearMap.BilinForm ℤ L} {b : Module.Basis (Fin 2) ℤ N}
   {s : Fin r → Φ.Ray} {hΦ : Φ.IsRegular}
 
-local notation "S" => Spec (CommRingCat.of ℂ)
-local notation "Dtor[" Φ "," h "]" => Scheme.IdealSheafData.subscheme (Fan.boundaryIdeal Φ h)
 local notation "D[" M "]" => Scheme.Hom.ker (Over.Hom.left (Arrow.hom (MarkedSurface.pair M)))
 
-variable [PrestableFamily (Dtor[Φ,h₀] ↘ S)] {γ : Type*}
-  {a : γ → (Dtor[Φ,h₀] ↘ S).smoothLocus}
+variable [PrestableFamily ((Φ.toricBoundaryIdeal k h₀).subscheme ↘ Spec (.of k))] {γ : Type*}
+  {a : γ → ((Φ.toricBoundaryIdeal k h₀).subscheme ↘ Spec (.of k)).smoothLocus}
   {T : NodalCycleNumbering a m} {origin : ZMod m}
-  {ι : L →ₗ[ℤ] (Additive (LineBundleClass Φ.algebraicRealization) × (Fin r → ℤ))}
-  {c : Multiplicative (Fin r → ℤ) →* ℂˣ} {M : MarkedSurface ℂ n B (scheme ℂ (Fin r →₀ ℤ))}
+  {ι : L →ₗ[ℤ] (Additive (LineBundleClass (Φ.finiteFanScheme k)) × (Fin r → ℤ))}
+  {c : Multiplicative (Fin r → ℤ) →* kˣ} {M : MarkedSurface k n B (scheme k (Fin r →₀ ℤ))}
   (p : ContractedToricFiber b s hΦ T origin ι c M)
 
 local notation "center" => (fun j : Fin r ↦ c (ofAdd (Pi.single j 1)))
 
 /-- The Weil multiplicity of the total transform of the boundary along a strict toric ray. -/
 def totalBoundaryRayMultiplicity (hD : D[M].IsEffectiveCartier) (ρ : Φ.Ray) : ℤ :=
-  letI := Fan.isIntegral_internalBlowupTower b s center hΦ
+  letI := Fan.isIntegral_internalBlowupTower k b s center hΦ
   letI := M.integral
-  Fan.internalBlowupRayMultiplicity hΦ b s center (hD.comap_of_isDominant p.projection) ρ
+  Fan.internalBlowupRayMultiplicity k hΦ b s center (hD.comap_of_isDominant p.projection) ρ
 
 /-- The contracted boundary multiplicity is the ray coefficient of the pulled-back divisor. -/
 theorem totalBoundaryRayMultiplicity_def (hD : D[M].IsEffectiveCartier) (ρ : Φ.Ray) :
-    letI := Fan.isIntegral_internalBlowupTower b s center hΦ
+    letI := Fan.isIntegral_internalBlowupTower k b s center hΦ
     letI := M.integral
     p.totalBoundaryRayMultiplicity hD ρ =
-      Fan.internalBlowupRayMultiplicity hΦ b s center (hD.comap_of_isDominant p.projection) ρ :=
+      Fan.internalBlowupRayMultiplicity k hΦ b s center (hD.comap_of_isDominant p.projection) ρ :=
   (rfl)
 
 /-- Every ray of the strict toric boundary occurs in the total transform. -/
@@ -678,14 +678,14 @@ theorem totalBoundaryRayMultiplicity_pos (hD : D[M].IsEffectiveCartier) (ρ : Φ
   rw [p.totalBoundaryRayMultiplicity_def, Fan.internalBlowupRayMultiplicity_pos_iff,
     p.support_comap]
   exact (mem_boundaryPrimes.mp
-    (Fan.internalBlowupBoundaryPrimeEquiv hΦ b s center ρ).property).1
+    (Fan.internalBlowupBoundaryPrimeEquiv k hΦ b s center ρ).property).1
 
 /-- The marked inclusion sends the total boundary class to the weighted strict boundary
 class with its actual pullback multiplicities. -/
 theorem inclusion_sum_boundaryClass (hD : D[M].IsEffectiveCartier) :
     ι (∑ j, M.boundaryClass hD j) =
-      Fan.markedBoundaryMap hΦ s (p.totalBoundaryRayMultiplicity hD) := by
-  let := Fan.isIntegral_internalBlowupTower b s center hΦ
+      Fan.markedBoundaryMap k hΦ s (p.totalBoundaryRayMultiplicity hD) := by
+  let := Fan.isIntegral_internalBlowupTower k b s center hΦ
   let := M.integral
   have hPullback := hD.comap_of_isDominant p.projection
   have hclass : pullback p.projection (LineBundleClass.mk hD.toInvertibleSheaf)⁻¹ =
@@ -693,6 +693,6 @@ theorem inclusion_sum_boundaryClass (hD : D[M].IsEffectiveCartier) :
     rw [pullback_inv, hD.pullback_mk_toInvertibleSheaf hPullback]
   rw [← p.marked_pullback, M.picardMarking_sum_boundaryClass, toMul_ofMul, hclass]
   exact Fan.internalBlowupPicardMarking_symm_ofMul_inv_toInvertibleSheaf
-    hΦ b s center hPullback p.support_comap.le
+    k hΦ b s center hPullback p.support_comap.le
 
 end QPainleve.SignedClusterModularGroup.ContractedToricFiber

@@ -28,11 +28,13 @@ open LineBundleClass
 
 namespace TauCeti.Toric.Fan.LogarithmicProjection
 
+variable {k₀ : Type} [Field k₀] [IsAlgClosed k₀]
+
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V] {i : N →+ V}
 
-local notation "S" => Spec (CommRingCat.of ℂ)
-local notation "X[" Φ "]" => Fan.algebraicRealization Φ
-local notation "π[" H "]" => FanHom.algebraicMap (IsSubdivision.toFanHom H)
+local notation "S" => Spec (CommRingCat.of k₀)
+local notation "X[" Φ "]" => Fan.finiteFanScheme k₀ Φ
+local notation "π[" H "]" => FanHom.finiteFanSchemeHom k₀ (IsSubdivision.toFanHom H)
 local notation "base[" T "]" => QPainleve.BlowupTower.toBase (WithBoundary.toTower (Sigma.snd T))
 local notation "χ[" u "]" => MonoidHom.comp (freeAbelianCharEquiv.symm u)
   (MulEquiv.toMonoidHom (AddEquiv.toMultiplicative (LinearEquiv.toAddEquiv
@@ -50,7 +52,7 @@ local notation "rays[" Ω "," b "," τ "," opp "," a "," k "]" => Fin.cons
   (Fan.mutationFanCenterRays Ω b (fun _ : Unit ↦ τ) () opp ())
   (fun l ↦ Fan.mutationFanRayEquiv Ω b (Ray.primitiveGenerator_ne_zero τ)
     (Ray.hull_primitiveGenerator_mem τ) opp (a (Fin.succAbove k l)))
-local notation "params[" b "," τ "," c "," a "," u "," k "]" => Fin.cons (α := fun _ ↦ ℂˣ) c⁻¹
+local notation "params[" b "," τ "," c "," a "," u "," k "]" => Fin.cons (α := fun _ ↦ k₀ˣ) c⁻¹
   (fun l ↦ u (Fin.succAbove k l) * c ^ max (Module.Basis.det b
     ![Ray.primitiveGenerator (a (Fin.succAbove k l)), Ray.primitiveGenerator τ]) 0)
 
@@ -59,12 +61,13 @@ variable {Z : Scheme} [IsIntegral Z]
 local notation "M[" Δ "," b "," r "," h "]" =>
   Fan.mutationFan Δ b (Ray.primitiveGenerator_ne_zero r) (Ray.hull_primitiveGenerator_mem r) h
 
-variable [Z.Over S] [SmoothOfRelativeDimension 2 (Z ↘ S)] {P : Z.IdealSheafData}
-  (A : LogarithmicProjection i P) (b : Module.Basis (Fin 2) ℤ N) (ρ : A.fan.Ray)
-  (hOpp : hull ℝ {i (-ρ.primitiveGenerator)} ∈ A.fan.cones) (c : ℂˣ)
+variable [Z.Over (Spec (.of k₀))] [SmoothOfRelativeDimension 2 (Z ↘ Spec (.of k₀))]
+  {P : Z.IdealSheafData}
+  (A : LogarithmicProjection k₀ i P) (b : Module.Basis (Fin 2) ℤ N) (ρ : A.fan.Ray)
+  (hOpp : hull ℝ {i (-ρ.primitiveGenerator)} ∈ A.fan.cones) (c : k₀ˣ)
 
 local notation "μ[" Δ "," r "," h "]" =>
-  Scheme.PartialMap.toRationalMap (Fan.mutationPartialMap Δ b (c : ℂ)
+  Scheme.PartialMap.toRationalMap (Fan.mutationPartialMap k₀ Δ b (c : k₀)
     (Ray.primitiveGenerator_ne_zero r) (Ray.hull_primitiveGenerator_mem r) h)
 local notation "liftRay(" H ")" => IsSubdivision.liftRay H ρ
 local notation "oppositeRayMem(" H ")" =>
@@ -83,11 +86,11 @@ pullback in the ordered markings. The first occurrence of the pivot determines t
 label even when centers are repeated. -/
 theorem exists_word_of_resolved_mutation
     {Ω : Fan i} (hΩ : Ω.IsRegular) (H : Ω.IsSubdivision A.fan)
-    {m : ℕ} (a : Fin m → Ω.Ray) (u : Fin m → ℂˣ)
+    {m : ℕ} (a : Fin m → Ω.Ray) (u : Fin m → k₀ˣ)
     (r : Z ⟶ X[M[A.fan,b,ρ,hOpp]])
     (hr : A.hom.toRationalMap.comp μ[A.fan,ρ,hOpp] = r.toRationalMap) :
     letI : Nonempty Ω.cones := H.nonempty_cones_of_nonempty A.isComplete.nonempty_cones
-    let U := Ω.internalBlowupTower b a u
+    let U := Ω.internalBlowupTower k₀ b a u
     ∀ (e : U.1 ≅ Z), e.hom ≫ A.hom = base[U] ≫ π[H] →
       P.comap e.hom = U.2.boundaryι.ker →
       let σ := liftRay(H)
@@ -95,8 +98,8 @@ theorem exists_word_of_resolved_mutation
       let Ψ := M[Ω,b,σ,opp]
       letI : Nonempty Ψ.cones := ⟨Ω.mutationFanConeEquiv b σ.primitiveGenerator_ne_zero
         σ.hull_primitiveGenerator_mem opp σ.toCone⟩
-      letI : IsIntegral U.1 := isIntegral_internalBlowupTower b a u hΩ
-      letI : IsModification base[U] := isModification_internalBlowupTower_toBase b a u hΩ
+      letI : IsIntegral U.1 := isIntegral_internalBlowupTower k₀ b a u hΩ
+      letI : IsModification base[U] := isModification_internalBlowupTower_toBase k₀ b a u hΩ
       ∃ (n : ℕ) (hm : n + 1 = m) (k : Fin (n + 1)),
         let ι := finCongr hm
         let a₀ := a ∘ ι
@@ -104,8 +107,8 @@ theorem exists_word_of_resolved_mutation
         a₀ k = σ ∧ u (ι k) = c ∧ (∀ l < k, (a₀ l, u (ι l)) ≠ (σ, c)) ∧
         let a₁ := rays[Ω,b,σ,opp,a₀,k]
         let u₁ := params[b,σ,c,a₀,u ∘ ι,k]
-        let W := Ψ.internalBlowupTower b a₁ u₁
-        letI : IsDominant base[W] := (isModification_internalBlowupTower_toBase b a₁ u₁
+        let W := Ψ.internalBlowupTower k₀ b a₁ u₁
+        letI : IsDominant base[W] := (isModification_internalBlowupTower_toBase k₀ b a₁ u₁
           ((Ω.isRegular_mutationFan_iff b σ.primitiveGenerator_ne_zero
             σ.hull_primitiveGenerator_mem opp).mpr hΩ)).isDominant
         let B := B[b,a₀]
@@ -117,22 +120,22 @@ theorem exists_word_of_resolved_mutation
           (base[U]).toRationalMap.comp μ[Ω,σ,opp] = (g.hom ≫ base[W]).toRationalMap ∧
           U.2.boundaryι ≫ g.hom = (σ.mutationBoundaryIso b opp c hΩ).hom ≫ W.2.boundaryι ∧
           (∀ d z x,
-            let y := mutationPicardEquiv b (fun _ : Fin 1 ↦ σ) 0 opp hΩ (d, fun _ ↦ z)
+            let y := mutationPicardEquiv k₀ b (fun _ : Fin 1 ↦ σ) 0 opp hΩ (d, fun _ ↦ z)
             pullback g.hom (W.2.toTower.picardHom (d, Fin.cons z x)).toMul =
               (U.2.toTower.picardHom (y.1, k.insertNth (y.2 0) x ∘ ι.symm)).toMul) ∧
           B[b,a₁] = (Generator.permute σ[k]).target ((Generator.mutate k).target B) ∧
           c₁ = χ[u₁] ∧
-          let ev := (e.inv ≫ base[U]).toRationalMap.comp (Ω.xEvaluation b a₀ c₀)
+          let ev := (e.inv ≫ base[U]).toRationalMap.comp (Ω.xEvaluation k₀ b a₀ c₀)
           ∃ hdom : ev.fromFunctionField (IsLocalRing.closedPoint Z.functionField) ∈
-              (w.xRationalMap ℂ).domain,
-            ev.compOfDefined (w.xRationalMap ℂ) hdom =
-              (e.inv ≫ g.hom ≫ base[W]).toRationalMap.comp (Ψ.xEvaluation b a₁ χ[u₁]) := by
+              (w.xRationalMap k₀).domain,
+            ev.compOfDefined (w.xRationalMap k₀) hdom =
+              (e.inv ≫ g.hom ≫ base[W]).toRationalMap.comp (Ψ.xEvaluation k₀ b a₁ χ[u₁]) := by
   let : Nonempty Ω.cones := H.nonempty_cones_of_nonempty A.isComplete.nonempty_cones
   intro U e he hP σ opp Ψ
   let : Nonempty Ψ.cones := ⟨Ω.mutationFanConeEquiv b σ.primitiveGenerator_ne_zero
     σ.hull_primitiveGenerator_mem opp σ.toCone⟩
-  let : IsIntegral U.1 := isIntegral_internalBlowupTower b a u hΩ
-  let : IsModification base[U] := isModification_internalBlowupTower_toBase b a u hΩ
+  let : IsIntegral U.1 := isIntegral_internalBlowupTower k₀ b a u hΩ
+  let : IsModification base[U] := isModification_internalBlowupTower_toBase k₀ b a u hΩ
   obtain ⟨n, hm, k, hk, hc, hfirst, g, hg, hPole, hrat, hboundary, hPicard⟩ :=
     A.exists_ordered_toric_mutation_model_of_factorization b ρ hOpp c hΩ H a u r hr e he hP
   refine ⟨n, hm, k, hk, hc, hfirst, g, hg, hPole, hrat, hboundary, hPicard, ?_⟩
@@ -140,7 +143,7 @@ theorem exists_word_of_resolved_mutation
   let a₀ := a ∘ ι
   let a₁ := rays[Ω,b,σ,opp,a₀,k]
   let u₁ := params[b,σ,c,a₀,u ∘ ι,k]
-  let W := Ψ.internalBlowupTower b a₁ u₁
+  let W := Ψ.internalBlowupTower k₀ b a₁ u₁
   have hrat' : (e.inv ≫ base[U]).toRationalMap.comp μ[Ω,σ,opp] =
       (e.inv ≫ g.hom ≫ base[W]).toRationalMap := by
     calc
@@ -150,6 +153,6 @@ theorem exists_word_of_resolved_mutation
         rw [Scheme.RationalMap.comp_assoc, hrat, Scheme.RationalMap.comp_toRationalMap,
           Scheme.Hom.toRationalMap_compHom]
         rfl
-  exact Ω.compare_ordered_mutation b a₀ (u ∘ ι) k σ opp c hk.symm hc.symm _ _ hrat'
+  exact Ω.compare_ordered_mutation k₀ b a₀ (u ∘ ι) k σ opp c hk.symm hc.symm _ _ hrat'
 
 end TauCeti.Toric.Fan.LogarithmicProjection

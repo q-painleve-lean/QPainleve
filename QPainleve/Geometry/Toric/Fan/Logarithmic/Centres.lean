@@ -7,7 +7,7 @@ module
 
 public import QPainleve.AlgebraicGeometry.Blowup.Tower.Logarithmic.Centres
 public import QPainleve.Geometry.Toric.Fan.Boundary.SmoothPoint
-public import QPainleve.Geometry.Toric.Fan.Smooth
+public import QPainleve.Geometry.Toric.BaseChange.Fan
 
 import QPainleve.Geometry.Toric.Fan.Boundary.Node
 
@@ -30,13 +30,16 @@ open TauCeti.AlgebraicGeometry Scheme.IdealSheafData
 
 namespace TauCeti.Toric.Fan
 
-variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
+universe u
+
+variable (K : Type u) [Field K] [IsAlgClosed K] {N V : Type u}
+  [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {Φ : Fan i} (b : Basis (Fin 2) ℤ N)
 
 local notation "rankTwo" => (Eq.trans (Module.finrank_eq_card_basis b) (Fintype.card_fin 2))
-local notation "X" => Φ.algebraicRealization
-local notation "S" => Spec (CommRingCat.of ℂ)
-local notation "f" => Φ.algebraicRealizationStructureMap
+local notation "X" => Φ.finiteFanScheme K
+local notation "S" => Spec (CommRingCat.of K)
+local notation "f" => Φ.finiteFanSchemeToSpec K
 
 /-- A projected center of a specified logarithmic point tower on a complete regular
 toric surface is either a toric node or a smooth binomial center. The node determines
@@ -44,30 +47,30 @@ a unique two-ray cone, and the smooth center determines a unique ray and paramet
 The assertion concerns the reduced ideal on the original surface and allows projected
 images of infinitely near centers. -/
 theorem baseCenter_cases_of_totalTransform_le_ramification
-    (hΦ : Φ.IsRegular) (hc : Φ.IsComplete) {Y : Scheme} {n : ℕ}
+    (hΦ : Φ.IsRegular) (hc : Φ.IsComplete) {Y : Scheme.{u}} {n : ℕ}
     {T : QPainleve.BlowupTower X n Y} (hT : QPainleve.BlowupTower.IsClosedPointTower X T) :
     letI := hc.nonempty_cones
     letI : SmoothOfRelativeDimension 2 (X ↘ S) :=
-      rankTwo ▸ Φ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
-    let D := Φ.boundaryIdeal hc.nonempty_cones
-    D.comap T.toBase ≤ hT.ramificationIdealSheafToBase ℂ →
+      rankTwo ▸ Φ.smoothOfRelativeDimension_finiteFanSchemeToSpec K hΦ
+    let D := Φ.toricBoundaryIdeal K hc.nonempty_cones
+    D.comap T.toBase ≤ hT.ramificationIdealSheafToBase K →
     ∀ j : Fin n, let p := hT.baseCenter j
       (∃! σ : Φ.cones, Nat.card (ToricRay σ.val) = 2 ∧
-        Φ.distinguishedPointHom σ (IsLocalRing.closedPoint ℂ) = p) ∨
+        Φ.distinguishedSection (R := K) σ (IsLocalRing.closedPoint K) = p) ∨
       (¬ D.IsNodeOfReducedBoundary f p ∧
-        ∃! a : Φ.Ray × ℂˣ, (a.1.internalCenter b a.2).val.map D.subschemeι =
+        ∃! a : Φ.Ray × Kˣ, (a.1.internalCenter K b a.2).val.map D.subschemeι =
           (Scheme.fromSpecResidueField X p).ker) := by
   intro D h j p
   let : Nonempty Φ.cones := hc.nonempty_cones
   let : SmoothOfRelativeDimension 2 (X ↘ S) :=
-    rankTwo ▸ Φ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
+    rankTwo ▸ Φ.smoothOfRelativeDimension_finiteFanSchemeToSpec K hΦ
   have hp : IsClosed ({p} : Set X) := hT.isClosed_baseCenter j
-  have hD := Φ.isEffectiveCartier_boundaryIdeal hΦ hc rankTwo
+  have hD := Φ.isEffectiveCartier_boundaryIdeal K hΦ hc rankTwo
   have hmem : p ∈ D.support :=
-    hT.range_baseCenter_subset_support_of_totalTransform_le_ramification ℂ hD h ⟨j, rfl⟩
+    hT.range_baseCenter_subset_support_of_totalTransform_le_ramification K hD h ⟨j, rfl⟩
   by_cases hn : D.IsNodeOfReducedBoundary f p
-  · exact Or.inl ((Φ.isNodeOfReducedBoundary_iff_existsUnique_twoRayCone hΦ hc rankTwo).mp hn)
+  · exact Or.inl ((Φ.isNodeOfReducedBoundary_iff_existsUnique_twoRayCone K hΦ hc rankTwo).mp hn)
   · exact Or.inr
-      ⟨hn, Φ.existsUnique_internalCenter_of_mem_boundary_of_not_isNode b hΦ hc hp hmem hn⟩
+      ⟨hn, Φ.existsUnique_internalCenter_of_mem_boundary_of_not_isNode K b hΦ hc hp hmem hn⟩
 
 end TauCeti.Toric.Fan

@@ -16,7 +16,6 @@ import QPainleve.Geometry.Toric.Cone.Coordinates
 import QPainleve.Geometry.Toric.Fan.Hirzebruch.Construction
 import QPainleve.Geometry.Toric.Fan.Hirzebruch.Corner
 import QPainleve.Geometry.Toric.Fan.Picard.Rank
-import QPainleve.Geometry.Toric.Fan.Smooth
 import QPainleve.Geometry.Toric.Fan.StarSubdivision.FullCones
 import QPainleve.Geometry.Toric.Fan.Subdivision.Projective
 
@@ -199,6 +198,8 @@ private theorem octagonGenerator_relation (j : ZMod 8) :
   revert j
   decide
 
+variable (K : Type) [Field K] [IsAlgClosed K]
+
 /-- The coordinate rays of the octagon have self-intersection `-2` and its
 diagonal rays have self-intersection `-1`. -/
 theorem rayBoundarySelfIntersection_eq_of_octagon (hΦ : Φ.IsRegular) (hc : Φ.IsComplete)
@@ -206,21 +207,21 @@ theorem rayBoundarySelfIntersection_eq_of_octagon (hΦ : Φ.IsRegular) (hc : Φ.
     (hnext : ∀ j, ∃ σ : Φ.cones, (v j).toCone ≤ σ ∧ (v (j + 1)).toCone ≤ σ)
     (j : ZMod 8) :
     letI : Nonempty Φ.cones := hc.nonempty_cones
-    Φ.rayBoundarySelfIntersection hΦ (v j) = if j.val % 2 = 0 then -2 else -1 := by
-  let : Φ.algebraicRealization.IsProjectiveOver ℂ :=
-    Φ.isProjectiveOver_algebraicRealization_of_isComplete hΦ hc b₂
+    Φ.rayBoundarySelfIntersection K hΦ (v j) = if j.val % 2 = 0 then -2 else -1 := by
+  let : (Φ.finiteFanScheme K).IsProjectiveOver K :=
+    Φ.isProjectiveOver_finiteFanScheme_of_isComplete K hΦ hc b₂
   have hpair (a : ZMod 8) :
       Basis.detDualEquiv b₂ (v a).primitiveGenerator (v (a + 1)).primitiveGenerator = 1 ∧
         ∃ σ : Φ.cones, (v a).toCone ≤ σ ∧ (v (a + 1)).toCone ≤ σ :=
     ⟨by simpa only [hv] using octagonGenerator_det a, hnext a⟩
   have hprev := hpair (j - 1)
   rw [sub_add_cancel] at hprev
-  have h := Φ.primitiveGenerator_add_selfIntersection_smul_add_eq_zero b₂ hΦ hc hprev (hpair j)
+  have h := Φ.primitiveGenerator_add_selfIntersection_smul_add_eq_zero K b₂ hΦ hc hprev (hpair j)
   simp only [hv] at h
   exact (smul_left_injective ℤ (octagonGenerator_ne_zero j))
     (add_left_cancel (add_right_cancel (h.trans (octagonGenerator_relation j).symm)))
 
-local notation "S" => Spec (CommRingCat.of ℂ)
+local notation "S" => Spec (CommRingCat.of K)
 local notation "Pic[" X "]" => Additive (LineBundleClass X)
 
 section Intersection
@@ -230,11 +231,11 @@ variable {Φ : Fan i₂} [Nonempty Φ.cones]
   (hv : ∀ j, (v j).primitiveGenerator = octagonGenerator j)
   (hnext : ∀ j, (b₂).detDualEquiv (v j).primitiveGenerator (v (j + 1)).primitiveGenerator = 1 ∧
     ∃ σ : Φ.cones, (v j).toCone ≤ σ ∧ (v (j + 1)).toCone ≤ σ)
-  [Φ.algebraicRealization.IsProjectiveOver ℂ]
-  [SmoothOfRelativeDimension 2 (Φ.algebraicRealization ↘ Spec (CommRingCat.of ℂ))]
+  [(Φ.finiteFanScheme K).IsProjectiveOver K]
+  [SmoothOfRelativeDimension 2 ((Φ.finiteFanScheme K) ↘ Spec (CommRingCat.of K))]
 
-local notation "B" => TauCeti.AlgebraicGeometry.Chow.intersectionBilinForm ℂ Φ.algebraicRealization
-local notation "R" j:arg => Φ.rayDivisorToPicard hΦ (Pi.single (v j) 1)
+local notation "B" => TauCeti.AlgebraicGeometry.Chow.intersectionBilinForm K (Φ.finiteFanScheme K)
+local notation "R" j:arg => Φ.rayChartDivisorToPicard K hΦ (Pi.single (v j) 1)
 
 include hv hΦ hc hnext in
 open Classical in
@@ -245,14 +246,14 @@ theorem intersectionBilinForm_octagon_rayClasses (j k : ZMod 8) :
     B (R j) (R k) = (if j = k then if j.val % 2 = 0 then -2 else -1 else 0) +
       (if k = j - 1 ∨ k = j + 1 then 1 else 0) := by
   have h₂ : Module.finrank ℤ L = 2 := by simp
-  rw [Φ.intersectionBilinForm_rayDivisorToPicard_single_single hΦ h₂]
+  rw [Φ.intersectionBilinForm_rayChartDivisorToPicard_single_single K hΦ h₂]
   by_cases hjk : j = k
   · subst k
     have hne : ¬ (j = j - 1 ∨ j = j + 1) := by
       revert j
       decide
     simp only [ite_eq_right hne, add_zero]
-    exact rayBoundarySelfIntersection_eq_of_octagon hΦ hc v hv (fun l ↦ (hnext l).2) j
+    exact rayBoundarySelfIntersection_eq_of_octagon K hΦ hc v hv (fun l ↦ (hnext l).2) j
   · have hprev := hnext (j - 1)
     rw [sub_add_cancel] at hprev
     have h := Φ.ray_neighbors_iff_of_det b₂ hΦ hc hprev (hnext j) (v k)
@@ -271,24 +272,25 @@ end Intersection
 private theorem octagon_tower_length {Ψ : Fan i₂}
     (hΦ : Φ.IsRegular) (hc : Φ.IsComplete) (r : Fin 4 ≃ Φ.Ray)
     (hΨ : Ψ.IsRegular) (hcΨ : Ψ.IsComplete) (v : ZMod 8 ≃ Ψ.Ray)
-    {n : ℕ} {Y : Scheme} {T : BlowupTower Φ.algebraicRealization n Y}
-    (hT : IsClosedPointTower Φ.algebraicRealization T) (e : Ψ.algebraicRealization ≅ Y) :
+    {n : ℕ} {Y : Scheme} {T : BlowupTower (Φ.finiteFanScheme K) n Y}
+    (hT : IsClosedPointTower (Φ.finiteFanScheme K) T) (e : (Ψ.finiteFanScheme K) ≅ Y) :
     n = 4 := by
   let : Nonempty Φ.cones := hc.nonempty_cones
-  let : IsIntegral Φ.algebraicRealization := inferInstance
-  let : IsNoetherian Φ.algebraicRealization := inferInstance
+  let : IsIntegral (Φ.finiteFanScheme K) := inferInstance
+  let : IsNoetherian (Φ.finiteFanScheme K) :=
+    isNoetherian_of_finiteType (Φ.finiteFanSchemeToSpec K)
   have h₂ : finrank ℤ L = 2 := (finrank_eq_card_basis b₂).trans (Fintype.card_fin 2)
-  let : SmoothOfRelativeDimension 2 (Φ.algebraicRealization ↘ S) := by
-    rw [Fan.algebraicRealization_over]
-    simpa only [h₂] using Φ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
-  let : Module.Finite ℤ Pic[Φ.algebraicRealization] :=
-    Module.Finite.of_surjective (Φ.rayDivisorToPicard hΦ).toIntLinearMap
-      (Φ.rayDivisorToPicard_surjective hΦ)
-  have h₄ := Φ.finrank_picard_add_finrank_eq_natCard_ray hΦ hc
-  have h₈ := Ψ.finrank_picard_add_finrank_eq_natCard_ray hΨ hcΨ
+  let : SmoothOfRelativeDimension 2 ((Φ.finiteFanScheme K) ↘ S) := by
+    rw [Fan.finiteFanScheme_over]
+    simpa only [h₂] using Φ.smoothOfRelativeDimension_finiteFanSchemeToSpec K hΦ
+  let : Module.Finite ℤ Pic[(Φ.finiteFanScheme K)] :=
+    Module.Finite.of_surjective (Φ.rayChartDivisorToPicard K hΦ).toIntLinearMap
+      (Φ.rayChartDivisorToPicard_surjective K hΦ)
+  have h₄ := Φ.finrank_picard_add_finrank_eq_natCard_ray K hΦ hc
+  have h₈ := Ψ.finrank_picard_add_finrank_eq_natCard_ray K hΨ hcΨ
   rw [h₂, ← Nat.card_congr r, Nat.card_fin] at h₄
   rw [h₂, ← Nat.card_congr v, Nat.card_zmod] at h₈
-  have hY := finrank_picard ℂ hT
+  have hY := finrank_picard K hT
   have he := (LineBundleClass.pullbackEquiv e).toAdditive.toIntLinearEquiv.finrank_eq
   omega
 
@@ -299,18 +301,18 @@ theorem exists_four_vertex_octagon_blowup :
     ∃ (Φ : Fan i₂) (_ : Φ.IsRegular) (hc : Φ.IsComplete) (r : Fin 4 ≃ Φ.Ray),
       (fun j ↦ (r j).primitiveGenerator) = ![b₂ 0, b₂ 1, -b₂ 0, (0 : ℤ) • b₂ 0 - b₂ 1] ∧
       ∃ (Ψ : Fan i₂) (hΨ : Ψ.IsRegular) (hcΨ : Ψ.IsComplete) (v : ZMod 8 ≃ Ψ.Ray)
-        (h : Ψ.IsSubdivision Φ) (Y : Scheme) (T : BlowupTower Φ.algebraicRealization 4 Y)
-        (e : Ψ.algebraicRealization ≅ Y),
-        IsNodalBoundaryTower (Φ.boundaryIdeal hc.nonempty_cones) Φ.algebraicRealizationStructureMap
+        (h : Ψ.IsSubdivision Φ) (Y : Scheme) (T : BlowupTower (Φ.finiteFanScheme K) 4 Y)
+        (e : (Ψ.finiteFanScheme K) ≅ Y),
+        IsNodalBoundaryTower (Φ.toricBoundaryIdeal K hc.nonempty_cones) (Φ.finiteFanSchemeToSpec K)
           (𝟙 _) T ∧
-        e.hom ≫ T.toBase = h.toFanHom.algebraicMap ∧
-        ((Φ.boundaryIdeal hc.nonempty_cones).comap T.toBase).radical.comap e.hom =
-          Ψ.boundaryIdeal hcΨ.nonempty_cones ∧
+        e.hom ≫ T.toBase = (h.toFanHom.finiteFanSchemeHom K) ∧
+        ((Φ.toricBoundaryIdeal K hc.nonempty_cones).comap T.toBase).radical.comap e.hom =
+          Ψ.toricBoundaryIdeal K hcΨ.nonempty_cones ∧
         (∀ j, (v j).primitiveGenerator = octagonGenerator j) ∧
         (∀ j, Basis.detDualEquiv b₂ (v j).primitiveGenerator (v (j + 1)).primitiveGenerator = 1 ∧
           ∃ σ : Ψ.cones, (v j).toCone ≤ σ ∧ (v (j + 1)).toCone ≤ σ) ∧
         ∀ j, letI : Nonempty Ψ.cones := hcΨ.nonempty_cones
-          Ψ.rayBoundarySelfIntersection hΨ (v j) = if j.val % 2 = 0 then -2 else -1 := by
+          Ψ.rayBoundarySelfIntersection K hΨ (v j) = if j.val % 2 = 0 then -2 else -1 := by
   obtain ⟨Φ, ⟨hΦ, hc, hrays⟩, -⟩ :=
     Fan.existsUnique_hirzebruch_fan b₂ (isIntegralLattice_intCast 2) 0
   obtain ⟨r, hr⟩ := Fan.exists_rayEquiv_of_hirzebruch_ray_generators b₂ 0 hrays
@@ -318,10 +320,10 @@ theorem exists_four_vertex_octagon_blowup :
   let h := Fan.isSubdivision_of_starSubdivision_chain hpath
   have h₂ : finrank ℤ L = 2 := (finrank_eq_card_basis b₂).trans (Fintype.card_fin 2)
   obtain ⟨n, Y, T, e, hT, he, hboundary, -⟩ :=
-    h.exists_toric_subdivision_blowup_tower hΦ hΨ hc.nonempty_cones h₂
-  have hn := octagon_tower_length hΦ hc r hΨ hcΨ v hT.isClosedPointTower e
+    h.exists_toric_subdivision_blowup_tower K hΦ hΨ hc.nonempty_cones h₂
+  have hn := octagon_tower_length K hΦ hc r hΨ hcΨ v hT.isClosedPointTower e
   subst n
   refine ⟨Φ, hΦ, hc, r, hr, Ψ, hΨ, hcΨ, v, h, Y, T, e, hT, he, hboundary, hv, hnext, ?_⟩
-  exact rayBoundarySelfIntersection_eq_of_octagon hΨ hcΨ v hv (fun j ↦ (hnext j).2)
+  exact rayBoundarySelfIntersection_eq_of_octagon K hΨ hcΨ v hv (fun j ↦ (hnext j).2)
 
 end QPainleve.FourVertex

@@ -9,7 +9,6 @@ public import QPainleve.Geometry.Toric.Fan.Mutation.Hirzebruch
 public import QPainleve.Geometry.Toric.Fan.Picard.Homaloidal
 public import QPainleve.SignedClusterModularGroup.SarkisovDegree.SmoothSection
 
-import Mathlib.Analysis.Complex.Polynomial.Basic
 import QPainleve.Geometry.Toric.Fan.Picard.Mutation.Hirzebruch
 
 /-!
@@ -33,6 +32,8 @@ open Scheme.IdealSheafData
 
 namespace QPainleve.BlowupTower.IsClosedPointTower
 
+variable (k₀ : Type) [Field k₀] [IsAlgClosed k₀]
+
 attribute [local instance] MvPolynomial.gradedAlgebra
 
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
@@ -51,32 +52,33 @@ local notation "hcΨ" => Iff.mpr (Φ.isComplete_mutationFan_iff b hv hp hop) hc
 local notation "s" => r.trans (Φ.mutationFanRayEquiv b hv hp hop)
 local notation "hs" => Fan.Ray.mutationFan_hirzebruch_ray_generators_of_section_zero
   (r 0) b hop 0 r hr rfl
-local notation "S" => Spec (CommRingCat.of ℂ)
-local notation "P" => Proj (homogeneousSubmodule ℂ (Fin 3 → ℂ))
-local notation "H" => mk (Proj.symmetricAlgebraTwistingBundle ℂ (Fin 3 → ℂ) 1)
-local notation "X" => Φ.algebraicRealization
-local notation "X'" => Fan.algebraicRealization Ψ
+local notation "S" => Spec (CommRingCat.of k₀)
+local notation "P" => Proj (homogeneousSubmodule k₀ (Fin 3 → k₀))
+local notation "H" => mk (Proj.symmetricAlgebraTwistingBundle k₀ (Fin 3 → k₀) 1)
+local notation "X" => (Φ.finiteFanScheme k₀)
+local notation "X'" => Fan.finiteFanScheme k₀ Ψ
 local notation "fX" => (X ↘ S)
 local notation "fX'" => (X' ↘ S)
 local notation "fP" => (P ↘ S)
-local notation "C" => Fan.hirzebruchPicardBasis b 0 hΦ r hr
-local notation "C'" => Fan.hirzebruchPicardBasis b 1 hΨ s hs
+local notation "C" => Fan.hirzebruchPicardBasis k₀ b 0 hΦ r hr
+local notation "C'" => Fan.hirzebruchPicardBasis k₀ b 1 hΨ s hs
 local notation "rankTwo" => Eq.trans (finrank_eq_card_basis b) (Fintype.card_fin 2)
 local notation "pivotPoint[" c "]" =>
-  (Fan.Ray.binomialCenter (r 0) rankTwo (b.detDualEquiv_self v)
-    (Fan.Ray.surjective_detCharacter (r 0) b) c) (IsLocalRing.closedPoint ℂ)
+  (Fan.Ray.binomialCenter (r 0) k₀ rankTwo (b.detDualEquiv_self v)
+    (Fan.Ray.surjective_detCharacter (r 0) b) c) (IsLocalRing.closedPoint k₀)
 local notation "mutationMap[" c "]" =>
-  Scheme.PartialMap.toRationalMap (Φ.mutationPartialMap b (c : ℂ) hv hp hop)
+  Scheme.PartialMap.toRationalMap (Φ.mutationPartialMap k₀ b (c : k₀) hv hp hop)
 local notation "sourceCenter[" c "]" => Fan.Ray.mutationSourceCenterIdeal b (r 0) c
 local notation "targetCenter[" c "]" => Fan.Ray.mutationTargetCenterIdeal b (r 0) hop c
 local notation "reverseRay" => Φ.mutationFanCenterRays b (fun _ : Unit ↦ r 0) () hop ()
 local notation "reversePoint[" c "]" =>
-  (Fan.Ray.binomialCenter (reverseRay) rankTwo
+  (Fan.Ray.binomialCenter (reverseRay) k₀ rankTwo
     (b.detDualEquiv_self (Fan.Ray.primitiveGenerator (reverseRay)))
-    (Fan.Ray.surjective_detCharacter (reverseRay) b) c⁻¹) (IsLocalRing.closedPoint ℂ)
+    (Fan.Ray.surjective_detCharacter (reverseRay) b) c⁻¹) (IsLocalRing.closedPoint k₀)
 
-variable {n : ℕ} {Y : Scheme.{0}} {T : BlowupTower Φ.algebraicRealization (n + 1) Y}
-  (hT : IsClosedPointTower Φ.algebraicRealization T) (g : Y ⟶ P)
+variable {n : ℕ} {Y : Scheme.{0}} {T : BlowupTower (Φ.finiteFanScheme k₀) (n + 1) Y}
+  (hT : IsClosedPointTower (Φ.finiteFanScheme k₀) T) (g : Y ⟶ (Proj (homogeneousSubmodule k₀
+    (Fin 3 → k₀))))
 
 local notation "firstIndex" => Fin.castAdd n (0 : Fin 1)
 
@@ -90,24 +92,24 @@ reverse pivot, and the remaining projected centers correspond through the
 common pivot blowup, including for infinitely near centers. -/
 theorem exists_hirzebruchOne_resolution_of_quadric_mutation
     (hg : g ≫ fP = T.toBase ≫ fX) (hbir : Scheme.BirationalOver g (𝟙 P))
-    (c : ℂˣ) (j : Fin (n + 1)) (hj : hT.baseCenter j = pivotPoint[c])
+    (c : k₀ˣ) (j : Fin (n + 1)) (hj : hT.baseCenter j = pivotPoint[c])
     (hfirst : ∀ l < j, hT.baseCenter l ≠ pivotPoint[c]) :
     let : Nonempty Φ.cones := hc.nonempty_cones
     let : Nonempty (Ψ).cones := (hcΨ).nonempty_cones
     let : SmoothOfRelativeDimension 2 fX := by
-      rw [Fan.algebraicRealization_over]
-      exact rankTwo ▸ Φ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
+      rw [Fan.finiteFanScheme_over k₀]
+      exact rankTwo ▸ Φ.smoothOfRelativeDimension_finiteFanSchemeToSpec k₀ hΦ
     let : SmoothOfRelativeDimension 2 fX' := by
-      rw [Fan.algebraicRealization_over]
-      exact rankTwo ▸ (Ψ).smoothOfRelativeDimension_algebraicRealizationStructureMap hΨ
+      rw [Fan.finiteFanScheme_over k₀]
+      exact rankTwo ▸ (Ψ).smoothOfRelativeDimension_finiteFanSchemeToSpec k₀ hΨ
     let : IsNoetherian X := by
-      let : Smooth Φ.algebraicRealizationStructureMap :=
-        Φ.smooth_algebraicRealizationStructureMap hΦ
-      exact isNoetherian_of_finiteType Φ.algebraicRealizationStructureMap
+      let : Smooth (Φ.finiteFanSchemeToSpec k₀) :=
+        Φ.smooth_finiteFanSchemeToSpec k₀ hΦ
+      exact isNoetherian_of_finiteType (Φ.finiteFanSchemeToSpec k₀)
     let : IsNoetherian X' := by
-      let : Smooth (Ψ).algebraicRealizationStructureMap :=
-        (Ψ).smooth_algebraicRealizationStructureMap hΨ
-      exact isNoetherian_of_finiteType (Ψ).algebraicRealizationStructureMap
+      let : Smooth (Fan.finiteFanSchemeToSpec k₀ (Ψ)) :=
+        (Ψ).smooth_finiteFanSchemeToSpec k₀ hΨ
+      exact isNoetherian_of_finiteType (Fan.finiteFanSchemeToSpec k₀ (Ψ))
     let : IsIntegral Y := hT.isIntegral fX
     let : IsModification T.toBase := hT.isModification_of_smoothOfRelativeDimension_two fX
     let x : Additive (LineBundleClass X) × (Fin (n + 1) → ℤ) :=
@@ -158,12 +160,13 @@ theorem exists_hirzebruchOne_resolution_of_quadric_mutation
     apply Additive.toMul.injective
     rw [picardMarking_apply, toMul_ofMul, ← pullback_comp, ← hxH]
     have h := (hcoords true a d x.2).1
-    have hF' := Fan.mutationFiberClass_eq_hirzebruchPicardBasis_zero b 1 hΨ s hs
+    have hF' := Fan.mutationFiberClass_eq_hirzebruchPicardBasis_zero k₀ b 1 hΨ s hs
     simp only [Equiv.trans_apply] at hF'
-    simp only [↓reduceIte, Fan.mutationFiberClass_eq_hirzebruchPicardBasis_zero b 0 hΦ r hr,
-      hF', Fan.hirzebruchPicardBasis_apply_one, Fan.rayDivisorToPicard_single, one_zsmul] at hx h
+    simp only [↓reduceIte, Fan.mutationFiberClass_eq_hirzebruchPicardBasis_zero k₀ b 0 hΦ r hr,
+      hF', Fan.hirzebruchPicardBasis_apply_one, Fan.rayChartDivisorToPicard_single,
+        one_zsmul] at hx h
     rw [← hx, Prod.mk.eta] at h
-    simpa only [Fan.hirzebruchPicardBasis_apply_one, Fan.rayDivisorToPicard_single, one_zsmul,
+    simpa only [Fan.hirzebruchPicardBasis_apply_one, Fan.rayChartDivisorToPicard_single, one_zsmul,
       Equiv.trans_apply] using h
   rw [hw]
   have hrepr := (C').equivFun.apply_symm_apply (![a + x.2 j + d, d] : Fin 2 → ℤ)

@@ -5,6 +5,7 @@ Authors: The QPainleve contributors
 -/
 module
 
+public import TauCeti.AlgebraicGeometry.Scheme.Normal
 public import TauCeti.AlgebraicGeometry.Morphisms.Smooth.RelativeDimension
 import TauCeti.AlgebraicGeometry.Scheme.Regular.Scheme
 import TauCeti.AlgebraicGeometry.Scheme.LocalDimension
@@ -34,5 +35,12 @@ public theorem uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two
   have hdim := topologicalKrullDim_eq_of_smoothOfRelativeDimension f (n := 2)
   exact IsRegular.uniqueFactorizationMonoid_stalk x
     (WithBot.coe_le_coe.mp ((TauCeti.coheight_le_topologicalKrullDim x).trans hdim.le))
+
+/-- An integral smooth surface over a field is normal by local factoriality. -/
+public theorem isNormalScheme_of_smoothOfRelativeDimension_two
+    {k : Type u} [Field k] {X : Scheme.{u}} (f : X ⟶ Spec (.of k))
+    [IsIntegral X] [SmoothOfRelativeDimension 2 f] : IsNormalScheme X := by
+  let := f.uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two
+  exact IsNormalScheme.of_uniqueFactorizationMonoid_stalk
 
 end AlgebraicGeometry.Scheme.Hom

@@ -28,24 +28,19 @@ open Scheme Scheme.IdealSheafData TauCeti.AlgebraicGeometry
 
 namespace QPainleve.SignedClusterModularGroup
 
-local notation "S" => Spec (CommRingCat.of ℂ)
-local notation "Centers[" r "]" => Over.mk (structureMap ℂ (Fin r → ℤ))
+variable {k₀ : Type} [Field k₀] [IsAlgClosed k₀]
+
+local notation "S" => Spec (CommRingCat.of k₀)
+local notation "Centers[" r "]" => Over.mk (structureMap k₀ (Fin r → ℤ))
 local notation "δ[" h "]" => (LineBundleClass.mk (IsEffectiveCartier.toInvertibleSheaf h))⁻¹
-local notation "χ[" c "]" => pointsEquiv ℂ _ (Subtype.mk (Over.Hom.left c) (Over.w c))
+local notation "χ[" c "]" => pointsEquiv k₀ _ (Subtype.mk (Over.Hom.left c) (Over.w c))
 
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
-  {X : Scheme} [X.Over S] [X.IsProjectiveOver ℂ] [IsIntegral X]
-  [SmoothOfRelativeDimension 2 (X ↘ S)] [Scheme.IsRationalOver (X ↘ S)]
-  {D : X.IdealSheafData} [PrestableFamily (D.subscheme ↘ S)] {n : ℕ} [NeZero n]
+  {X : Scheme} [X.Over (Spec (.of k₀))] [X.IsProjectiveOver k₀] [IsIntegral X]
+  [SmoothOfRelativeDimension 2 (X ↘ Spec (.of k₀))] [Scheme.IsRationalOver (X ↘ Spec (.of k₀))]
+  {D : X.IdealSheafData} [PrestableFamily (D.subscheme ↘ Spec (.of k₀))] {n : ℕ} [NeZero n]
 
-local instance instNoetherianCremonaIdentification : IsNoetherian X :=
-  isNoetherian_of_finiteType (X ↘ S)
-
-local instance instFactorialCremonaIdentification (x : X) :
-    UniqueFactorizationMonoid (X.presheaf.stalk x) :=
-  (X ↘ S).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two x
-
-local notation "Cr" => Chow.cremonaIsometryGroup ℂ X
+local notation "Cr" => Chow.cremonaIsometryGroup k₀ X
 
 /-- A Picard group identification of a nef square-zero anticanonical cycle
 without internal `(-2)` curves. The Cremona maps are determined by the Picard
@@ -59,15 +54,17 @@ structure CremonaGroupIdentification {i : N →+ V} {r : ℕ}
   picard : PicardGroupIdentification R hD
   /-- The boundary ideal represents the canonical class. -/
   canonicalClass_eq : LineBundleClass.mk hD.toInvertibleSheaf =
-    LineBundleClass.mk (QPainleve.canonicalBundle ℂ X 2)
+    LineBundleClass.mk (QPainleve.canonicalBundle k₀ X 2)
   /-- The anticanonical boundary class is nef. -/
-  nef : δ[hD].IsNef ℂ (X ↘ S)
+  nef : δ[hD].IsNef k₀ (X ↘ S)
   /-- The total boundary class has self-intersection zero. -/
-  selfIntersection_eq_zero : Chow.classIntersectionNumber ℂ X δ[hD] δ[hD] = 0
+  selfIntersection_eq_zero : Chow.classIntersectionNumber k₀ X δ[hD] δ[hD] = 0
   /-- Every prime divisor disjoint from the boundary has self-intersection different from `-2`. -/
   noInternalRoots (p : CodimensionOnePoint X) (hp : Disjoint (closure {(p : X)}) D.support) :
+    let : IsLocallyNoetherian X := LocallyOfFiniteType.isLocallyNoetherian (X ↘ S)
+    let := (X ↘ S).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two
     let a := LineBundleClass.primeDivisorClass p
-    Chow.classIntersectionNumber ℂ X a a ≠ -2
+    Chow.classIntersectionNumber k₀ X a a ≠ -2
 
 namespace CremonaGroupIdentification
 
@@ -75,19 +72,21 @@ open GeometricRealization
 
 variable {i : N →+ V} {r : ℕ}
   {A : Scheme.NodalCycleNumbering (X := D.subscheme)
-    (Empty.elim : Empty → (D.subscheme ↘ S).smoothLocus) n} {hD : D.IsEffectiveCartier}
+    (Empty.elim : Empty → (D.subscheme ↘ Spec (.of k₀)).smoothLocus) n} {hD : D.IsEffectiveCartier}
   {R₀ : FiniteMarkedReferenceFiber i r A} (P : CremonaGroupIdentification R₀ hD)
 
 local notation "E" => R₀.reference.exchangeMatrix
-local notation "Γs" => (SignedClusterModularGroup ℂ E)ᵐᵒᵖ
+local notation "Γs" => (SignedClusterModularGroup k₀ E)ᵐᵒᵖ
 local notation "Q" => R₀.reference.presentation
 local notation "M" => P.picard.nodal.family
 local notation "π" =>
   A.cremonaProjection hD P.canonicalClass_eq P.nef P.selfIntersection_eq_zero P.noInternalRoots
 
 /-- The Cremona projection and branch sign of the ordered toric seed. -/
-def comparison : ClusterCremonaComparison (k := ℂ) E n Cr :=
-  ClusterCremonaComparison.ofPicardEquiv P.picard.signedEquiv P.picard.sign_ker_unop π
+def comparison : ClusterCremonaComparison (k := k₀) E n Cr := by
+  let : IsNoetherian X := isNoetherian_of_finiteType (X ↘ S)
+  let := (X ↘ S).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two
+  exact ClusterCremonaComparison.ofPicardEquiv P.picard.signedEquiv P.picard.sign_ker_unop π
     (A.cremonaProjection_surjective hD P.canonicalClass_eq P.nef P.selfIntersection_eq_zero
       P.noInternalRoots)
     (A.cremonaProjection_injective hD P.canonicalClass_eq P.nef P.selfIntersection_eq_zero
@@ -101,6 +100,8 @@ def comparison : ClusterCremonaComparison (k := ℂ) E n Cr :=
 @[simp]
 theorem val_projection_apply (x : Γs) :
     (P.comparison.projection x).val = (P.picard.signedEquiv x).val.1 := by
+  let : IsNoetherian X := isNoetherian_of_finiteType (X ↘ S)
+  let := (X ↘ S).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two
   simpa only [comparison, ClusterCremonaComparison.ofPicardEquiv_projection_apply,
     toIsometry_apply] using
     A.val_cremonaProjection_apply hD P.canonicalClass_eq P.nef P.selfIntersection_eq_zero
@@ -120,12 +121,12 @@ theorem val_projection_apply_word (w : Word E E) :
     letI := (Q).neZero
     ∀ {C : Centers[r].left.PartialMap Centers[r].left} [IsDominant C.hom]
       [C.IsOver Centers[r].hom Centers[r].hom]
-      (R : GeometricRealization M M C (w.xRationalMap ℂ)),
+      (R : GeometricRealization M M C (w.xRationalMap k₀)),
       HasToricTargetModels (T₀ := Centers[r]) (T₁ := Centers[r]) (b := R₀.basis)
         (s := (Q).rays) (hΦ := (Q).regular) (T := (Q).cycle) (origin := (Q).origin)
         (ι := (Q).inclusion) (P₁ := M)
         (fun z : Point Centers[r] ↦ χ[z]) C →
-      (P.comparison.projection (op (signedClusterModularGroupMap ℂ E (End.of w)))).val =
+      (P.comparison.projection (op (signedClusterModularGroupMap k₀ E (End.of w)))).val =
         R₀.marking.isometryGroupCongr (R₀.form.isometryGroupEquivIsometryEquiv.symm R.picard) := by
   intro C _ _ R hR
   rw [val_projection_apply]

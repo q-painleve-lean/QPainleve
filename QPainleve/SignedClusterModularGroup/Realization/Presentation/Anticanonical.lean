@@ -14,7 +14,7 @@ import QPainleve.Geometry.Toric.Fan.Presentation.Induction
 # Cluster modular groups of anticanonical pairs
 
 A numbered primitive nef square-zero anticanonical cycle on a smooth projective
-rational complex surface determines a seed with one label for each internal center
+rational surface determines a seed with one label for each internal center
 of a toric presentation. The number of labels is twelve minus the number of
 boundary components. The opposite cluster modular groups of the resulting seed
 act by signed boundary isometries and boundary rotations on the original Picard
@@ -31,23 +31,21 @@ open Scheme Scheme.IdealSheafData TauCeti TauCeti.AlgebraicGeometry TauCeti.Tori
 
 namespace QPainleve.SignedClusterModularGroup
 
-local notation "S" => Spec (CommRingCat.of ℂ)
+variable {k₀ : Type} [Field k₀] [IsAlgClosed k₀] [Uncountable k₀] [NeZero (2 : k₀)]
+
+local notation "S" => Spec (CommRingCat.of k₀)
 local notation "δ[" h "]" => (LineBundleClass.mk (IsEffectiveCartier.toInvertibleSheaf h))⁻¹
 
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {b : Basis (Fin 2) ℤ N}
-  {X : Scheme} [X.Over S] [X.IsProjectiveOver ℂ]
-  [SmoothOfRelativeDimension 2 (X ↘ S)] [Scheme.IsRationalOver (X ↘ S)]
-  {D : X.IdealSheafData} [PrestableFamily (D.subscheme ↘ S)]
+  {X : Scheme} [X.Over (Spec (.of k₀))] [X.IsProjectiveOver k₀]
+  [SmoothOfRelativeDimension 2 (X ↘ Spec (.of k₀))] [Scheme.IsRationalOver (X ↘ Spec (.of k₀))]
+  {D : X.IdealSheafData} [PrestableFamily (D.subscheme ↘ Spec (.of k₀))]
   {n : ℕ} [NeZero n]
 
-local instance : IsIntegral X :=
-  letI : Smooth (X ↘ S) := SmoothOfRelativeDimension.smooth 2 _
-  Scheme.IsRationalOver.isIntegral_of_smooth (f := X ↘ S) inferInstance
-
-local notation "K" => LineBundleClass.mk (canonicalBundle ℂ X 2)
+local notation "K" => LineBundleClass.mk (canonicalBundle k₀ X 2)
 /-- A numbered primitive nef square-zero anticanonical cycle on a smooth projective
-rational complex surface admits a toric seed on `Fin (12 - n)`. Its signed and
+rational surface admits a toric seed on `Fin (12 - n)`. Its signed and
 unsigned opposite cluster modular groups identify with the signed boundary
 isometries and rotations of the original Picard lattice. The
 `PicardGroupIdentification` records the original numbered fiber and the nodal
@@ -57,14 +55,18 @@ theorem exists_picardGroupEquivs_of_anticanonical_cycle
     (hi : IsIntegralLattice i)
     (A : Scheme.NodalCycleNumbering (Empty.elim : Empty → (D.subscheme ↘ S).smoothLocus) n)
     (hD : D.IsEffectiveCartier) (hcan : LineBundleClass.mk hD.toInvertibleSheaf = K)
-    (hprim : IsPrimitive (Additive.ofMul δ[hD])) (hnef : δ[hD].IsNef ℂ (X ↘ S))
-    (hsq : Chow.classIntersectionNumber ℂ X δ[hD] δ[hD] = 0) :
+    (hprim : IsPrimitive (Additive.ofMul δ[hD])) (hnef : δ[hD].IsNef k₀ (X ↘ S))
+    (hsq : Chow.classIntersectionNumber k₀ X δ[hD] δ[hD] = 0) :
+    letI : Smooth (X ↘ S) := SmoothOfRelativeDimension.smooth 2 _
+    letI : IsIntegral X := (inferInstance : Scheme.IsRationalOver (X ↘ S)).isIntegral_of_smooth
     ∃ R : FiniteMarkedReferenceFiber i (12 - n) A,
       (R.basis = b ∨ R.basis = b.reindex (Equiv.swap 0 1)) ∧
         Nonempty (PicardGroupIdentification R hD) := by
+  let : Smooth (X ↘ S) := SmoothOfRelativeDimension.smooth 2 _
+  let : IsIntegral X := (inferInstance : Scheme.IsRationalOver (X ↘ S)).isIntegral_of_smooth
   obtain ⟨r, ⟨P⟩⟩ := (hasToricPresentation_iff ..).mp
-    (D.hasToricPresentation_of_anticanonical_cycle b hi A hD hcan)
-  have hr := Fan.centerCount_eq_of_square_zero P.regular P.complete P.rays P.parameters
+    (D.hasToricPresentation_of_anticanonical_cycle k₀ b hi A hD hcan)
+  have hr := Fan.centerCount_eq_of_square_zero k₀ P.regular P.complete P.rays P.parameters
     P.isNodal P.iso P.iso_boundary A hD hcan hsq
   subst r
   obtain ⟨R, hR, hQ⟩ := exists_picardGroupEquivs_of_toric_presentation P A hD hprim hnef hsq

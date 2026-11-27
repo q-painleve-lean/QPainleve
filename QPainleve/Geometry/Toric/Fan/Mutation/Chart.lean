@@ -170,9 +170,9 @@ private theorem mutationChartExponentEquiv_pivot :
   rw [mutationChartExponentEquiv_apply]
   split_ifs <;> simp only [mutationChartCharacter_at_pivot, zero_mul, sub_zero]
 
-variable (c : ℂ)
+variable {k : Type*} (c : k)
 
-local notation "R(" κ ")" => AddMonoidAlgebra ℂ (dualSemigroup (lattice Φ) κ)
+local notation "R(" κ ")" => AddMonoidAlgebra k (dualSemigroup (lattice Φ) κ)
 local notation "constant" => (cond side c 1)
 local notation "coefficient" => (cond side 1 c)
 local notation "q" => (Subtype.mk (mutationChartCharacter b (v := v) side) hs :
@@ -181,6 +181,10 @@ local notation "q'" => (Subtype.mk (mutationChartCharacter b (v := v) side)
   (mutationChartCharacter_mem_dualSemigroup_target Φ b hv hpos hneg σ side hs) :
   dualSemigroup (lattice Φ) τ(σ))
 
+section Binomial
+
+variable [CommSemiring k]
+
 /-- The regular binomial on the side of a cone is either one plus the pivot monomial
 times the center, or the center plus the inverse pivot monomial. -/
 abbrev mutationChartBinomial {κ : PointedCone ℝ V} (a : dualSemigroup Φ.lattice κ) : R(κ) :=
@@ -188,14 +192,20 @@ abbrev mutationChartBinomial {κ : PointedCone ℝ V} (a : dualSemigroup Φ.latt
 
 /-- The two terms of the regular binomial on the chosen half-plane. -/
 theorem mutationChartBinomial_eq {κ : PointedCone ℝ V} (a : dualSemigroup Φ.lattice κ) :
-    mutationChartBinomial Φ side c a = algebraMap ℂ (R(κ)) constant + single a coefficient :=
+    mutationChartBinomial Φ side c a = algebraMap k (R(κ)) constant + single a coefficient :=
   (rfl)
+
+end Binomial
 
 local notation "L" => Localization.Away (mutationChartBinomial Φ side c q)
 local notation "L'" => Localization.Away (mutationChartBinomial Φ side c q')
 
-private def chartMonomialAlgEquiv : R(τ(σ)) ≃ₐ[ℂ] R(σ.val) :=
-  AddMonoidAlgebra.domCongr ℂ ℂ (Φ.mutationChartExponentEquiv b hv hpos hneg σ side hs)
+section ChartAlgebra
+
+variable [CommSemiring k]
+
+private def chartMonomialAlgEquiv : R(τ(σ)) ≃ₐ[k] R(σ.val) :=
+  AddMonoidAlgebra.domCongr k k (Φ.mutationChartExponentEquiv b hv hpos hneg σ side hs)
 
 private theorem chartMonomialAlgEquiv_binomial :
     chartMonomialAlgEquiv Φ b hv hpos hneg σ side hs (mutationChartBinomial Φ side c q') =
@@ -203,7 +213,7 @@ private theorem chartMonomialAlgEquiv_binomial :
   simp only [chartMonomialAlgEquiv, mutationChartBinomial_eq, map_add, AlgEquiv.commutes,
     domCongr_single, mutationChartExponentEquiv_pivot]
 
-private def chartMonomialLocalizationEquiv : L' ≃ₐ[ℂ] L :=
+private def chartMonomialLocalizationEquiv : L' ≃ₐ[k] L :=
   IsLocalization.algEquivOfAlgEquiv (M := Submonoid.powers (mutationChartBinomial Φ side c q'))
     (T := Submonoid.powers (mutationChartBinomial Φ side c q)) L' L
     (chartMonomialAlgEquiv Φ b hv hpos hneg σ side hs)
@@ -220,14 +230,14 @@ private theorem chartDegree_pivot : chartDegree Φ (v := v) σ q = 0 := by
 
 /-- The pullback by toric mutation is an algebra isomorphism between the localizations at
 the regular pivot binomial on corresponding affine charts. -/
-def mutationChartAlgEquiv : L' ≃ₐ[ℂ] L :=
+def mutationChartAlgEquiv : L' ≃ₐ[k] L :=
   (chartMonomialLocalizationEquiv Φ b hv hpos hneg σ side hs c).trans
     (binomialTwist constant coefficient q (chartDegree Φ σ) (chartDegree_pivot Φ b σ side hs))
 
 /-- The pullback multiplies the transported monomial by the regular binomial to the
 power given by the negative of the original exponent's value at the pivot. -/
 @[simp]
-theorem mutationChartAlgEquiv_single (a : dualSemigroup Φ.lattice τ(σ)) (r : ℂ) :
+theorem mutationChartAlgEquiv_single (a : dualSemigroup Φ.lattice τ(σ)) (r : k) :
     Φ.mutationChartAlgEquiv b hv hpos hneg σ side hs c (algebraMap _ L' (single a r)) =
       algebraMap _ L (single (Φ.mutationChartExponentEquiv b hv hpos hneg σ side hs a) r) *
         ↑(awayBinomialUnit constant coefficient q ^ (-a.val v)) := by
@@ -239,6 +249,12 @@ theorem mutationChartAlgEquiv_single (a : dualSemigroup Φ.lattice τ(σ)) (r : 
   simp only [mutationChartAlgEquiv, AlgEquiv.trans_apply, chartMonomialLocalizationEquiv,
     IsLocalization.algEquivOfAlgEquiv_eq, chartMonomialAlgEquiv, domCongr_single,
     binomialTwist_single, hdeg]
+
+end ChartAlgebra
+
+section Scheme
+
+variable [CommRing k]
 
 /-- The mutation isomorphism of the indicated affine opens in additive semigroup
 coordinates, with source the original cone and target the mutated cone. -/
@@ -252,16 +268,16 @@ def mutationChartIso :
       (Φ.mutationChartAlgEquiv b hv hpos hneg σ side hs c).toRingEquiv.toCommRingCatIso.op ≪≫
     (basicOpenIsoSpecAway (R := .of (R(τ(σ)))) _).symm
 
-/-- The mutation isomorphism of the affine opens commutes with their complex structure
-morphisms. -/
+/-- The mutation isomorphism of the affine opens commutes with their structure
+morphisms to the spectrum of the coefficient ring. -/
 theorem mutationChartIso_hom_comp_toBase :
     (Φ.mutationChartIso b hv hpos hneg σ side hs c).hom ≫
       Scheme.Opens.ι (X := Spec (.of (R(τ(σ)))))
         (PrimeSpectrum.basicOpen (mutationChartBinomial Φ side c q')) ≫
-      Spec.algebraMap ℂ (R(τ(σ))) =
+      Spec.algebraMap k (R(τ(σ))) =
     Scheme.Opens.ι (X := Spec (.of (R(σ.val))))
         (PrimeSpectrum.basicOpen (mutationChartBinomial Φ side c q)) ≫
-      Spec.algebraMap ℂ (R(σ.val)) := by
+      Spec.algebraMap k (R(σ.val)) := by
   let f := Φ.mutationChartAlgEquiv b hv hpos hneg σ side hs c
   let e := basicOpenIsoSpecAway (R := .of (R(σ.val))) (mutationChartBinomial Φ side c q)
   let e' := basicOpenIsoSpecAway (R := .of (R(τ(σ)))) (mutationChartBinomial Φ side c q')
@@ -276,20 +292,24 @@ theorem mutationChartIso_hom_comp_toBase :
   congr 1
   simp only [Spec.algebraMap, ← Spec.map_comp, ← CommRingCat.ofHom_comp]
   congr 1
-  rw [← IsScalarTower.algebraMap_eq ℂ (R(τ(σ))) L',
-    ← IsScalarTower.algebraMap_eq ℂ (R(σ.val)) L]
+  rw [← IsScalarTower.algebraMap_eq k (R(τ(σ))) L',
+    ← IsScalarTower.algebraMap_eq k (R(σ.val)) L]
   apply CommRingCat.hom_ext
   exact f.toAlgHom.comp_algebraMap
 
+end Scheme
+
 section Torus
 
-local notation "G" => AddMonoidAlgebra ℂ (N →+ ℤ)
-local notation "P" => (AddMonoidAlgebra.single (0 : N →+ ℤ) (1 : ℂ) +
+variable [CommSemiring k]
+
+local notation "G" => AddMonoidAlgebra k (N →+ ℤ)
+local notation "P" => (AddMonoidAlgebra.single (0 : N →+ ℤ) (1 : k) +
   AddMonoidAlgebra.single m c)
 local notation "T" => Localization.Away P
 
 private def torusChartMonomial : Multiplicative (N →+ ℤ) →* Tˣ :=
-  ((algebraMap G T).toMonoidHom.comp (AddMonoidAlgebra.of ℂ _)).toHomUnits
+  ((algebraMap G T).toMonoidHom.comp (AddMonoidAlgebra.of k _)).toHomUnits
 
 private theorem coe_torusChartMonomial (a : N →+ ℤ) :
     (torusChartMonomial b (v := v) c (ofAdd a) : T) =
@@ -298,12 +318,12 @@ private theorem coe_torusChartMonomial (a : N →+ ℤ) :
     toAdd_ofAdd]
   rfl
 
-private def chartToTorusOnAlgebra (κ : PointedCone ℝ V) : R(κ) →ₐ[ℂ] T :=
-  (Algebra.algHom ℂ G T).comp
-    (AddMonoidAlgebra.mapDomainAlgHom ℂ ℂ (dualSemigroup Φ.lattice κ).subtype)
+private def chartToTorusOnAlgebra (κ : PointedCone ℝ V) : R(κ) →ₐ[k] T :=
+  (Algebra.algHom k G T).comp
+    (AddMonoidAlgebra.mapDomainAlgHom k k (dualSemigroup Φ.lattice κ).subtype)
 
 private theorem chartToTorusOnAlgebra_single {κ : PointedCone ℝ V}
-    (a : dualSemigroup Φ.lattice κ) (r : ℂ) :
+    (a : dualSemigroup Φ.lattice κ) (r : k) :
     chartToTorusOnAlgebra Φ b (v := v) c κ (single a r) =
       algebraMap G T (single a.val r) := by
   -- Evaluate the domain map on the underlying monoid-algebra single.
@@ -321,19 +341,19 @@ private theorem chartToTorusOnAlgebra_binomial {κ : PointedCone ℝ V}
   · simp only [mutationChartBinomial, Bool.cond_false, map_add,
       chartToTorusOnAlgebra_single, hp, mutationChartCharacter_false, Bool.false_eq_true,
       ↓reduceIte, coe_awayBinomialUnit, AddSubmonoid.coe_zero]
-  · have h : (single (-m) 1 : G) * P = algebraMap ℂ G c + single (-m) 1 := by
+  · have h : (single (-m) 1 : G) * P = algebraMap k G c + single (-m) 1 := by
       rw [mul_add, AddMonoidAlgebra.single_mul_single]
-      simp [add_comm, mul_comm (single (-m) (1 : ℂ))]
+      simp [add_comm, mul_comm (single (-m) (1 : k))]
     simpa only [mutationChartBinomial_eq, Bool.cond_true, map_add, map_mul, AlgHom.commutes,
       chartToTorusOnAlgebra_single, hp, mutationChartCharacter_true, ite_true, Units.val_mul,
-      coe_torusChartMonomial, coe_awayBinomialUnit, IsScalarTower.algebraMap_apply ℂ G T]
+      coe_torusChartMonomial, coe_awayBinomialUnit, IsScalarTower.algebraMap_apply k G T]
       using congrArg (algebraMap G T) h.symm
 
 /-- The coordinate-ring map of the common open torus into a chart of either fan.
 The two chart denominators differ on the torus by an invertible character. -/
 def mutationChartToTorus {κ : PointedCone ℝ V} (p : dualSemigroup Φ.lattice κ)
     (hp : p.val = mutationChartCharacter b (v := v) side) :
-    Localization.Away (mutationChartBinomial Φ side c p) →ₐ[ℂ] T :=
+    Localization.Away (mutationChartBinomial Φ side c p) →ₐ[k] T :=
   IsLocalization.Away.liftAlgHom _ (f := chartToTorusOnAlgebra Φ b c κ) (by
     rw [chartToTorusOnAlgebra_binomial Φ b side c p hp]
     exact Units.isUnit _)
@@ -341,7 +361,7 @@ def mutationChartToTorus {κ : PointedCone ℝ V} (p : dualSemigroup Φ.lattice 
 /-- On the common torus, a chart monomial becomes the corresponding Laurent monomial. -/
 @[simp]
 theorem mutationChartToTorus_single {κ : PointedCone ℝ V} (p a : dualSemigroup Φ.lattice κ)
-    (hp : p.val = mutationChartCharacter b (v := v) side) (r : ℂ) :
+    (hp : p.val = mutationChartCharacter b (v := v) side) (r : k) :
     mutationChartToTorus Φ b side c p hp (algebraMap _ _ (single a r)) =
       algebraMap G T (single a.val r) := by
   rw [mutationChartToTorus, IsLocalization.Away.liftAlgHom_apply, IsLocalization.Away.lift_eq]
@@ -384,14 +404,14 @@ private theorem torusChartMonomial_mul_neg_zpow (a : N →+ ℤ) (n : ℤ) :
 private theorem torusDegree_apply (a : N →+ ℤ) : (-(AddMonoidHom.eval v)) a = -a v := (rfl)
 
 /-- The binomial twist on the common open torus, independent of the fan and the side. -/
-def mutationTorusChartAlgEquiv : T ≃ₐ[ℂ] T :=
+def mutationTorusChartAlgEquiv : T ≃ₐ[k] T :=
   binomialTwist 1 c m (-(AddMonoidHom.eval v)) (by
     rw [torusDegree_apply, LinearMap.toAddMonoidHom_coe, Module.Basis.detDualEquiv_self, neg_zero])
 
 /-- On the common open torus, mutation multiplies a character by a power of the pivot
 binomial. -/
 @[simp]
-theorem mutationTorusChartAlgEquiv_single (a : N →+ ℤ) (r : ℂ) :
+theorem mutationTorusChartAlgEquiv_single (a : N →+ ℤ) (r : k) :
     mutationTorusChartAlgEquiv b (v := v) c (algebraMap G T (single a r)) =
       algebraMap G T (single a r) * ↑(awayBinomialUnit 1 c m ^ (-a v)) := by
   simp only [mutationTorusChartAlgEquiv, binomialTwist_single, torusDegree_apply]
@@ -405,7 +425,7 @@ theorem mutationChartToTorus_comp_mutationChartAlgEquiv :
       (mutationTorusChartAlgEquiv b (v := v) c).toAlgHom.comp
         (mutationChartToTorus Φ b side c q' rfl) := by
   apply Localization.algHom_ext
-  apply (AddMonoidAlgebra.lift ℂ T (dualSemigroup Φ.lattice τ(σ))).symm.injective
+  apply (AddMonoidAlgebra.lift k T (dualSemigroup Φ.lattice τ(σ))).symm.injective
   apply MonoidHom.ext
   intro a
   -- Extensionality has restricted both maps to the chart's unlocalized algebra.

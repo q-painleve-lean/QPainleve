@@ -14,7 +14,7 @@ import QPainleve.AlgebraicGeometry.Blowup.Intersection
 import QPainleve.AlgebraicGeometry.Blowup.Projective.Global
 import QPainleve.AlgebraicGeometry.Chow.Isomorphism
 import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
-import Mathlib.Analysis.Complex.Polynomial.Basic
+
 
 /-!
 # Sarkisov degree under contraction of the negative section
@@ -39,13 +39,15 @@ open Scheme.IdealSheafData
 
 namespace QPainleve.BlowupTower.IsClosedPointTower
 
+variable (k₀ : Type) [Field k₀] [IsAlgClosed k₀]
+
 attribute [local instance] MvPolynomial.gradedAlgebra
 
-local notation "S" => Spec (CommRingCat.of ℂ)
-local notation "P" => Proj (homogeneousSubmodule ℂ (Fin 3 → ℂ))
-local notation "Ppol" => Proj (MvPolynomial.homogeneousSubmodule (Fin 3) ℂ)
-local notation "H" => mk (Proj.symmetricAlgebraTwistingBundle ℂ (Fin 3 → ℂ) 1)
-local notation "degree" => Module.Basis.picardTwistEquiv (Pi.basisFun ℂ (Fin 3))
+local notation "S" => Spec (CommRingCat.of k₀)
+local notation "P" => Proj (homogeneousSubmodule k₀ (Fin 3 → k₀))
+local notation "Ppol" => Proj (MvPolynomial.homogeneousSubmodule (Fin 3) k₀)
+local notation "H" => mk (Proj.symmetricAlgebraTwistingBundle k₀ (Fin 3 → k₀) 1)
+local notation "degree" => Module.Basis.picardTwistEquiv (Pi.basisFun k₀ (Fin 3))
 
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {Φ : Fan i}
@@ -53,28 +55,29 @@ variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   (r : Fin 4 ≃ Φ.Ray)
   (hr : (fun j ↦ (r j).primitiveGenerator) = ![b 0, b 1, -b 0, ((1 : ℕ) : ℤ) • b 0 - b 1])
 
-local notation "X" => Φ.algebraicRealization
-local notation "C" => Fan.hirzebruchPicardBasis b 1 hΦ r hr
+local notation "X" => (Φ.finiteFanScheme k₀)
+local notation "C" => Fan.hirzebruchPicardBasis k₀ b 1 hΦ r hr
 local notation "fX" => (X ↘ S)
 local notation "fP" => (P ↘ S)
 
 section
 
-variable [Nonempty Φ.cones] [Φ.algebraicRealization.IsProjectiveOver ℂ]
+variable [Nonempty Φ.cones] [(Φ.finiteFanScheme k₀).IsProjectiveOver k₀]
 
-omit [Nonempty Φ.cones] [Φ.algebraicRealization.IsProjectiveOver ℂ] in
+omit [Nonempty Φ.cones] [(Φ.finiteFanScheme k₀).IsProjectiveOver k₀] in
 include b hc hr in
+omit [IsAlgClosed k₀] in
 private theorem hirzebruchOne_plane_blowup :
     ∃ (d : Basis (Fin 2) ℤ N) (s : Φ.IsSubdivision (Fan.projectiveSpace d Φ.lattice))
       (p : P) (_ : IsClosed ({p} : Set P))
       (e : X ≅ (Scheme.fromSpecResidueField P p).ker.blowup),
       e.hom ≫ (Scheme.fromSpecResidueField P p).ker.blowupToBase =
-        s.toFanHom.algebraicMap ≫ (Fan.projectivePlaneIso d Φ.lattice).hom ≫
-          (Pi.basisFun ℂ (Fin 3)).polynomialProjIso.hom ∧
+        (s.toFanHom.finiteFanSchemeHom k₀) ≫ (Fan.projectivePlaneIso k₀ d Φ.lattice).hom ≫
+          (Pi.basisFun k₀ (Fin 3)).polynomialProjIso.hom ∧
       e.hom ≫ (Scheme.fromSpecResidueField P p).ker.blowupToBase ≫ fP = fX ∧
       ((Scheme.fromSpecResidueField P p).ker.comap
         (e.hom ≫ (Scheme.fromSpecResidueField P p).ker.blowupToBase)) =
-        Φ.rayBoundaryIdeal hΦ (r 0) ∧
+        Φ.rayDivisorIdeal k₀ hΦ (r 0) ∧
       (Fan.projectiveSpace d Φ.lattice).IsTwoRayStarSubdivision Φ := by
   have hrays : Set.range (Fan.Ray.primitiveGenerator (Phi := Φ)) =
       {b 0, b 1, -b 0, b 0 - b 1} := by
@@ -83,14 +86,14 @@ private theorem hirzebruchOne_plane_blowup :
     simp
     tauto
   obtain ⟨d, s, ρ, e, -, -, hρ, -, -, he, hE, -, hstar⟩ :=
-    Fan.exists_iso_blowup_projectivePlane_of_hirzebruchOne b hΦ hc hrays
-  let q := (Fan.projectiveSpace d Φ.lattice).distinguishedPointHom
+    Fan.exists_iso_blowup_projectivePlane_of_hirzebruchOne k₀ b hΦ hc hrays
+  let q := (Fan.projectiveSpace d Φ.lattice).distinguishedSection (R := k₀)
     (Fan.projectiveSpaceMaximalCone d Φ.lattice none)
-  let v := q ≫ (Fan.projectivePlaneIso d Φ.lattice).hom
-  let a : Ppol ≅ P := (Pi.basisFun ℂ (Fin 3)).polynomialProjIso
-  let p := (v ≫ a.hom) (IsLocalRing.closedPoint ℂ)
+  let v := q ≫ (Fan.projectivePlaneIso k₀ d Φ.lattice).hom
+  let a : Ppol ≅ P := (Pi.basisFun k₀ (Fin 3)).polynomialProjIso
+  let p := (v ≫ a.hom) (IsLocalRing.closedPoint k₀)
   let J := (Scheme.fromSpecResidueField P p).ker
-  have : IsClosedImmersion q := Fan.isClosedImmersion_distinguishedPointHom _ _
+  have : IsClosedImmersion q := Fan.isClosedImmersion_distinguishedSection (R := k₀) _ _
   have : IsClosedImmersion (v ≫ a.hom) := by dsimp [v]; infer_instance
   have hp : IsClosed ({p} : Set P) := by
     exact (Set.range_eq_singleton (f := fun x : S ↦ (v ≫ a.hom) x)
@@ -101,7 +104,7 @@ private theorem hirzebruchOne_plane_blowup :
     rw [← (v ≫ a.hom).ker_eq_ker_fromSpecResidueField, v.comap_ker_comp_of_isClosedImmersion]
   let e' := e ≪≫ blowupIso a hJ.symm
   have he' : e'.hom ≫ J.blowupToBase =
-      s.toFanHom.algebraicMap ≫ (Fan.projectivePlaneIso d Φ.lattice).hom ≫ a.hom := by
+      (s.toFanHom.finiteFanSchemeHom k₀) ≫ (Fan.projectivePlaneIso k₀ d Φ.lattice).hom ≫ a.hom := by
     rw [Iso.trans_hom, Category.assoc, blowupIso_hom_blowupToBase, ← Category.assoc, he,
       Category.assoc]
   have hρ' : ρ = r 0 := by
@@ -111,7 +114,7 @@ private theorem hirzebruchOne_plane_blowup :
   · rw [← Category.assoc, he']
     simp only [Category.assoc, a, over_eq_projToSpec,
       Module.Basis.polynomialProjIso_hom_over, Fan.projectivePlaneIso_hom_toSpecCoeff,
-      FanHom.algebraicMap_comp_algebraicRealizationStructureMap, Fan.algebraicRealization_over]
+      FanHom.finiteFanSchemeHom_comp_finiteFanSchemeToSpec, Fan.finiteFanScheme_over k₀]
   · rw [he', ← Category.assoc, ← he]
     rw [comap_comp, comap_comp, ← hρ']
     have hJ' : (Scheme.fromSpecResidueField P p).ker.comap a.hom = v.ker := hJ
@@ -121,45 +124,46 @@ private theorem hirzebruchOne_plane_blowup :
 
 section Marking
 
-variable {p : P}
+variable {p : (Proj (homogeneousSubmodule k₀ (Fin 3 → k₀)))}
 local notation "J" => Scheme.Hom.ker (Scheme.fromSpecResidueField P p)
 local notation "W" => blowup J
 local notation "π" => blowupToBase J
 local notation "U₀" => BlowupTower.snoc BlowupTower.nil J
 
-omit [Φ.algebraicRealization.IsProjectiveOver ℂ] in
+omit [(Φ.finiteFanScheme k₀).IsProjectiveOver k₀] in
+omit [IsAlgClosed k₀] in
 private theorem hirzebruchOne_section_class (e : X ≅ W)
-    (hE : (J).comap (e.hom ≫ π) = Φ.rayBoundaryIdeal hΦ (r 0)) :
+    (hE : (J).comap (e.hom ≫ π) = Φ.rayDivisorIdeal k₀ hΦ (r 0)) :
     pullback e.hom (J).blowupExceptionalClass = (C 1).toMul := by
   classical
-  let := Φ.uniqueFactorizationMonoid_stalk_algebraicRealization hΦ
-  let hD := Φ.isEffectiveCartier_rayBoundaryIdeal hΦ (r 0)
+  let := Φ.uniqueFactorizationMonoid_stalk_finiteFanScheme (R := k₀) hΦ
+  let hD := Φ.isEffectiveCartier_rayDivisorIdeal k₀ hΦ (r 0)
   rw [blowupExceptionalClass_def, pullback_inv,
     (J).isEffectiveCartier_comap_blowupToBase.pullback_mk_toInvertibleSheaf (by
       rwa [← comap_comp, hE])]
   rw [mk_toInvertibleSheaf_congr _ hD (by rw [← comap_comp, hE]),
-    Fan.hirzebruchPicardBasis_apply_one, Fan.rayDivisorToPicard_single, one_smul]
+    Fan.hirzebruchPicardBasis_apply_one, Fan.rayChartDivisorToPicard_single, one_smul]
   rw [toMul_ofMul, primeDivisorClass_def,
-    mk_toInvertibleSheaf_congr _ _ (Φ.rayBoundaryIdeal_def hΦ (r 0))]
+    mk_toInvertibleSheaf_congr _ _ (Φ.rayDivisorIdeal_def k₀ hΦ (r 0))]
 
 include hc in
 private theorem hirzebruchOne_section_coefficient [SmoothOfRelativeDimension 2 fX]
     (hp : IsClosed ({p} : Set P))
     (e : X ≅ W) (he : e.hom ≫ π ≫ fP = fX)
-    (hE : (J).comap (e.hom ≫ π) = Φ.rayBoundaryIdeal hΦ (r 0))
+    (hE : (J).comap (e.hom ≫ π) = Φ.rayDivisorIdeal k₀ hΦ (r 0))
     (L : Additive (LineBundleClass P)) (c : Fin 1 → ℤ) :
     let M := Additive.ofMul (pullback e.hom ((U₀).picardHom (L, c)).toMul)
     c 0 = (C).repr M 1 - (C).repr M 0 := by
   dsimp only
   let : (W).Over S := ⟨π ≫ fP⟩
   let : e.hom.IsOver S := ⟨he⟩
-  have hW : (W).IsProjectiveOver ℂ := (J).isProjectiveOver_blowup_of_isNoetherianRing ℂ
-  have h := (Fan.hirzebruchPicardBasis_intersection_repr b 1 hΦ r hr hc
+  have hW : (W).IsProjectiveOver k₀ := (J).isProjectiveOver_blowup_of_isNoetherianRing k₀
+  have h := (Fan.hirzebruchPicardBasis_intersection_repr k₀ b 1 hΦ r hr hc
     (Additive.ofMul (pullback e.hom ((U₀).picardHom (L, c)).toMul))).2
   simp only [intersectionBilinForm_apply, toMul_ofMul, one_mul] at h
-  rw [← hirzebruchOne_section_class b hΦ r hr e hE,
-    classIntersectionNumber_pullback_of_isIso ℂ e.hom] at h
-  have hpull := classIntersectionNumber_pointBlowup p ℂ hp L.toMul 1 (c 0) 1 hW
+  rw [← hirzebruchOne_section_class k₀ b hΦ r hr e hE,
+    classIntersectionNumber_pullback_of_isIso k₀ e.hom] at h
+  have hpull := classIntersectionNumber_pointBlowup p k₀ hp L.toMul 1 (c 0) 1 hW
   rw [classIntersectionNumber_one_right] at hpull
   simp only [picardHom_snoc_apply_toMul, picardHom_nil, Fin.last_zero] at h ⊢
   simp only [pullback_one, one_mul, zpow_one, mul_one, zero_sub,
@@ -172,7 +176,7 @@ private theorem prepend_picard_coordinates {Y Z : Scheme} {n : ℕ}
     (g : Y ⟶ P) (hU : IsClosedPointTower P ((U₀).append U)) :
     let : SmoothOfRelativeDimension 2 fX :=
       (by simpa using Module.finrank_eq_card_basis b : Module.finrank ℤ N = 2) ▸
-        Φ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
+        Φ.smoothOfRelativeDimension_finiteFanSchemeToSpec k₀ hΦ
     let : IsNoetherian X := isNoetherian_of_finiteType fX
     let v : Additive (LineBundleClass X) × (Fin n → ℤ) :=
       (T.picardMarking hT fX).symm (Additive.ofMul (pullback g H))
@@ -195,7 +199,7 @@ theorem hirzebruchOne_resolution_coordinates {Y Z : Scheme} {n : ℕ}
     {T : BlowupTower X n Y} {U : BlowupTower W n Z}
     (hT : IsClosedPointTower X T) (hp : IsClosed ({p} : Set P))
     (e : X ≅ W) (he : e.hom ≫ π ≫ fP = fX)
-    (hE : (J).comap (e.hom ≫ π) = Φ.rayBoundaryIdeal hΦ (r 0))
+    (hE : (J).comap (e.hom ≫ π) = Φ.rayDivisorIdeal k₀ hΦ (r 0))
     {k : Y ≅ Z} (hk : IsLift e T U k)
     (g : Y ⟶ P) (hg : g ≫ fP = T.toBase ≫ fX)
     (hbir : Scheme.BirationalOver g (𝟙 P))
@@ -204,7 +208,7 @@ theorem hirzebruchOne_resolution_coordinates {Y Z : Scheme} {n : ℕ}
     (hbir' : Scheme.BirationalOver (k.inv ≫ g) (𝟙 P)) :
     let : SmoothOfRelativeDimension 2 fX :=
       (by simpa using Module.finrank_eq_card_basis b : Module.finrank ℤ N = 2) ▸
-        Φ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
+        Φ.smoothOfRelativeDimension_finiteFanSchemeToSpec k₀ hΦ
     let : IsNoetherian X := isNoetherian_of_finiteType fX
     let v : Additive (LineBundleClass X) × (Fin n → ℤ) :=
       (T.picardMarking hT fX).symm (Additive.ofMul (pullback g H))
@@ -218,13 +222,13 @@ theorem hirzebruchOne_resolution_coordinates {Y Z : Scheme} {n : ℕ}
   let := hnoeth
   have hv : v = (Additive.ofMul (pullback e.hom
       ((U₀).picardHom (w.1, fun j ↦ w.2 (j.castAdd n))).toMul), fun j ↦ w.2 (j.natAdd 1)) :=
-    prepend_picard_coordinates b hΦ hT e hk g hU
+    prepend_picard_coordinates k₀ b hΦ hT e hk g hU
   have hfirst : w.2 (Fin.castAdd n (0 : Fin 1)) = (C).repr v.1 1 - (C).repr v.1 0 := by
     rw [hv]
-    exact hirzebruchOne_section_coefficient b hΦ hc r hr hp e he hE w.1
+    exact hirzebruchOne_section_coefficient k₀ b hΦ hc r hr hp e he hE w.1
       (fun j ↦ w.2 (j.castAdd n))
   have hrest (j : Fin n) : w.2 (j.natAdd 1) = v.2 j := (congrArg (fun z ↦ z.2 j) hv).symm
-  have hH := (hT.homaloidal_intersection_identities_of_hirzebruch b 1 hΦ hc r hr g hg hbir).2
+  have hH := (hT.homaloidal_intersection_identities_of_hirzebruch k₀ b 1 hΦ hc r hr g hg hbir).2
   have hP := (hU.homaloidal_intersection_identities (k.inv ≫ g) hg' hbir').2
   have hsum : (∑ j, -w.2 j) = -w.2 (Fin.castAdd n (0 : Fin 1)) + ∑ j, -v.2 j := by
     rw [Fin.sum_univ_add (a := 1) (b := n), Fin.sum_univ_one]
@@ -258,8 +262,8 @@ theorem exists_plane_resolution_of_hirzebruchOne {Y : Scheme} {n : ℕ}
     let : Nonempty Φ.cones := hc.nonempty_cones
     let : SmoothOfRelativeDimension 2 fX :=
       (by simpa using Module.finrank_eq_card_basis b : Module.finrank ℤ N = 2) ▸
-        Φ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
-    let : Smooth fX := Φ.smooth_algebraicRealizationStructureMap hΦ
+        Φ.smoothOfRelativeDimension_finiteFanSchemeToSpec k₀ hΦ
+    let : Smooth fX := Φ.smooth_finiteFanSchemeToSpec k₀ hΦ
     let : IsNoetherian X := isNoetherian_of_finiteType fX
     let v : Additive (LineBundleClass X) × (Fin n → ℤ) :=
       (T.picardMarking hT fX).symm (Additive.ofMul (pullback g H))
@@ -268,8 +272,9 @@ theorem exists_plane_resolution_of_hirzebruchOne {Y : Scheme} {n : ℕ}
     ∃ (d : Basis (Fin 2) ℤ N) (s : Φ.IsSubdivision (Fan.projectiveSpace d Φ.lattice))
       (Z : Scheme) (U : BlowupTower P (1 + n) Z) (hU : IsClosedPointTower P U)
       (k : Y ≅ Z),
-      k.hom ≫ U.toBase = T.toBase ≫ s.toFanHom.algebraicMap ≫
-        (Fan.projectivePlaneIso d Φ.lattice).hom ≫ (Pi.basisFun ℂ (Fin 3)).polynomialProjIso.hom ∧
+      k.hom ≫ U.toBase = T.toBase ≫ (s.toFanHom.finiteFanSchemeHom k₀) ≫
+        (Fan.projectivePlaneIso k₀ d Φ.lattice).hom ≫ (Pi.basisFun k₀
+          (Fin 3)).polynomialProjIso.hom ∧
       (k.inv ≫ g) ≫ fP = U.toBase ≫ fP ∧
       Scheme.BirationalOver (k.inv ≫ g) (𝟙 P) ∧
       let w : Additive (LineBundleClass P) × (Fin (1 + n) → ℤ) :=
@@ -286,12 +291,12 @@ theorem exists_plane_resolution_of_hirzebruchOne {Y : Scheme} {n : ℕ}
   let := hdim
   let := hsmooth
   let := hnoeth
-  obtain ⟨d, s, p, hp, e, he, hover, hE, hstar⟩ := hirzebruchOne_plane_blowup b hΦ hc r hr
+  obtain ⟨d, s, p, hp, e, he, hover, hE, hstar⟩ := hirzebruchOne_plane_blowup k₀ b hΦ hc r hr
   let J := (Scheme.fromSpecResidueField P p).ker
   let : J.blowup.Over S := ⟨J.blowupToBase ≫ fP⟩
   let : e.hom.IsOver S := ⟨hover⟩
-  let : J.blowup.IsProjectiveOver ℂ := J.isProjectiveOver_blowup_of_isNoetherianRing ℂ
-  let : (X).IsProjectiveOver ℂ := Scheme.IsProjectiveOver.of_isClosedImmersion ℂ e.hom
+  let : J.blowup.IsProjectiveOver k₀ := J.isProjectiveOver_blowup_of_isNoetherianRing k₀
+  let : (X).IsProjectiveOver k₀ := Scheme.IsProjectiveOver.of_isClosedImmersion k₀ e.hom
   let U₀ := BlowupTower.snoc BlowupTower.nil J
   let R := T.transport e
   let U := U₀.append R.tower
@@ -310,10 +315,10 @@ theorem exists_plane_resolution_of_hirzebruchOne {Y : Scheme} {n : ℕ}
   refine ⟨d, s, _, U, hU, R.iso, hproj.trans (by rw [he]), hf, hbir', ?_⟩
   dsimp only
   obtain ⟨hdegree, hfirst, hrest⟩ :=
-    hirzebruchOne_resolution_coordinates b hΦ hc r hr hT hp e hover hE
+    hirzebruchOne_resolution_coordinates k₀ b hΦ hc r hr hT hp e hover hE
       R.isLift g hg hbir hU hf hbir'
   refine ⟨hdegree, hfirst, hrest, fun hβ hm ↦ ?_, hstar⟩
-  have hH := hT.homaloidal_intersection_identities_of_hirzebruch b 1 hΦ hc r hr g hg hbir
+  have hH := hT.homaloidal_intersection_identities_of_hirzebruch k₀ b 1 hΦ hc r hr g hg hbir
   have hsq : (∑ j, (-v.2 j) ^ 2) = 2 * α * β - (1 : ℤ) * β ^ 2 - 1 := by
     simpa only [neg_sq, Nat.cast_one] using hH.1
   have hsumH : (∑ j, -v.2 j) = 2 * α + (2 - (1 : ℤ)) * β - 3 := by

@@ -8,12 +8,12 @@ module
 public import QPainleve.AlgebraicGeometry.Modules.Differentials.Canonical
 public import QPainleve.Geometry.Toric.Fan.Boundary.Node
 
-import Mathlib.Analysis.Complex.Polynomial.Basic
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Nodal.Canonical
 import QPainleve.Geometry.Toric.Fan.CommonRefinement
 import QPainleve.Geometry.Toric.Fan.ProjectiveSpace.Canonical
-import QPainleve.Geometry.Toric.Fan.Smooth
+import QPainleve.Geometry.Toric.BaseChange.Fan
 import QPainleve.Geometry.Toric.Fan.StarSubdivision.Tower
+import QPainleve.Geometry.Toric.BaseChange.FiniteType
 import TauCeti.AlgebraicGeometry.Noetherian
 
 /-!
@@ -32,14 +32,17 @@ open TauCeti.AlgebraicGeometry Scheme.IdealSheafData
 
 namespace TauCeti.Toric.Fan
 
-variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
+universe u
+
+variable (F : Type u) [Field F] [PerfectField F] {N V : Type u}
+  [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {Φ Ψ : Fan i}
 
-local notation "S" => Spec (CommRingCat.of ℂ)
-local notation "X[" Φ "]" => Fan.algebraicRealization Φ
+local notation "S" => Spec (CommRingCat.of F)
+local notation "X[" Φ "]" => Fan.finiteFanScheme F Φ
 local notation "s[" Φ "]" => (X[Φ] ↘ S)
-local notation "D[" Φ "," h "]" => Fan.boundaryIdeal Φ (Fan.IsComplete.nonempty_cones h)
-local notation "K[" X "]" => LineBundleClass.mk (canonicalBundle ℂ X 2)
+local notation "D[" Φ "," h "]" => Fan.toricBoundaryIdeal F Φ (Fan.IsComplete.nonempty_cones h)
+local notation "K[" X "]" => LineBundleClass.mk (canonicalBundle F X 2)
 
 /-- The reduced toric boundary is anticanonical before a regular subdivision
 of a complete rank-two fan exactly when it is anticanonical after it. -/
@@ -55,14 +58,14 @@ theorem IsSubdivision.canonicalClass_boundaryIdeal_iff (H : Ψ.IsSubdivision Φ)
   let : Smooth s[Φ] := SmoothOfRelativeDimension.smooth 2 _
   let : IsNoetherian X[Φ] := isNoetherian_of_finiteType s[Φ]
   obtain ⟨_, _, T, e, hT, he, hB, -⟩ :=
-    H.exists_toric_subdivision_blowup_tower hΦ hΨ hc.nonempty_cones hN
+    H.exists_toric_subdivision_blowup_tower F hΦ hΨ hc.nonempty_cones hN
   have ht : e.hom ≫ T.toBase ≫ s[Φ] = s[Ψ] := by
-    rw [← Category.assoc, he, algebraicRealization_over, algebraicRealization_over,
-      FanHom.algebraicMap_comp_algebraicRealizationStructureMap]
+    rw [← Category.assoc, he, finiteFanScheme_over F, finiteFanScheme_over F,
+      FanHom.finiteFanSchemeHom_comp_finiteFanSchemeToSpec F]
   have hNodal : AtWorstNodalOfRelativeDimensionOne ((D[Φ,hc]).subschemeι ≫ s[Φ]) := by
-    rw [algebraicRealization_over]
-    exact Φ.atWorstNodalOfRelativeDimensionOne_boundary hΦ hc hN
-  have hT' := Φ.algebraicRealization_over.symm ▸ hT
+    rw [finiteFanScheme_over F]
+    exact Φ.atWorstNodalOfRelativeDimensionOne_boundary F hΦ hc hN
+  have hT' := (Φ.finiteFanScheme_over F).symm ▸ hT
   exact hT'.canonicalClass_radical_comap_toBase_iff_of_iso hD hNodal e ht hE hB
 
 /-- The Cartier ideal of the reduced boundary on a complete regular toric
@@ -81,15 +84,15 @@ theorem canonicalClass_boundaryIdeal (hΦ : Φ.IsRegular) (hc : Φ.IsComplete)
   let := cp.nonempty_cones
   let := co.nonempty_cones
   let : SmoothOfRelativeDimension 2 s[P] := by
-    rw [algebraicRealization_over]
-    exact rankTwo ▸ P.smoothOfRelativeDimension_algebraicRealizationStructureMap hp
+    rw [finiteFanScheme_over F]
+    exact rankTwo ▸ P.smoothOfRelativeDimension_finiteFanSchemeToSpec F hp
   let : SmoothOfRelativeDimension 2 s[Ω] := by
-    rw [algebraicRealization_over]
-    exact rankTwo ▸ Ω.smoothOfRelativeDimension_algebraicRealizationStructureMap hΩ
-  let hP := P.isEffectiveCartier_boundaryIdeal hp cp rankTwo
-  let hO := Ω.isEffectiveCartier_boundaryIdeal hΩ co rankTwo
-  exact (H.canonicalClass_boundaryIdeal_iff hΦ hΩ hc rankTwo hD hO).mp
-    ((J.canonicalClass_boundaryIdeal_iff hp hΩ cp rankTwo hP hO).mpr
-      (mk_toInvertibleSheaf_boundaryIdeal_projectivePlane b Φ.lattice hP))
+    rw [finiteFanScheme_over F]
+    exact rankTwo ▸ Ω.smoothOfRelativeDimension_finiteFanSchemeToSpec F hΩ
+  let hP := P.isEffectiveCartier_boundaryIdeal F hp cp rankTwo
+  let hO := Ω.isEffectiveCartier_boundaryIdeal F hΩ co rankTwo
+  exact (H.canonicalClass_boundaryIdeal_iff F hΦ hΩ hc rankTwo hD hO).mp
+    ((J.canonicalClass_boundaryIdeal_iff F hp hΩ cp rankTwo hP hO).mpr
+      (mk_toInvertibleSheaf_boundaryIdeal_projectivePlane F b Φ.lattice hP))
 
 end TauCeti.Toric.Fan

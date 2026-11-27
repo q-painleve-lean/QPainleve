@@ -30,52 +30,57 @@ open TauCeti.AlgebraicGeometry LineBundleClass TauCeti.SymmetricAlgebra
 
 namespace TauCeti.Toric.Fan.LogarithmicProjection
 
+variable {k₀ : Type} [Field k₀] [IsAlgClosed k₀]
+
 attribute [local instance] MvPolynomial.gradedAlgebra
 
-local notation "S" => Spec (CommRingCat.of ℂ)
-local notation "P" => Proj (homogeneousSubmodule ℂ (Fin 3 → ℂ))
-local notation "H" => LineBundleClass.mk (Proj.symmetricAlgebraTwistingBundle ℂ (Fin 3 → ℂ) 1)
+local notation "S" => Spec (CommRingCat.of k₀)
+local notation "P" => Proj (homogeneousSubmodule k₀ (Fin 3 → k₀))
+local notation "H" => LineBundleClass.mk (Proj.symmetricAlgebraTwistingBundle k₀ (Fin 3 → k₀) 1)
 local notation "plane[" b "," hi "]" => Fan.projectiveSpace b hi
-local notation "planeIso[" b "," hi "]" =>
-  (Fan.projectivePlaneIso b hi ≪≫ Basis.polynomialProjIso (Pi.basisFun ℂ (Fin 3)))
+local notation "planeIso[" coeff "," b "," hi "]" =>
+  (Fan.projectivePlaneIso coeff b hi ≪≫ Basis.polynomialProjIso (Pi.basisFun coeff (Fin 3)))
 local notation "rankTwo[" b "]" => Eq.trans (finrank_eq_card_basis b) (Fintype.card_fin 2)
-local notation "pt" => IsLocalRing.closedPoint ℂ
+local notation "pt" => IsLocalRing.closedPoint k₀
 local notation "center[" b "," ρ "," c "]" =>
-  Fan.Ray.binomialCenter ρ rankTwo[b] (Basis.detDualEquiv_self b (Fan.Ray.primitiveGenerator ρ))
+  Fan.Ray.binomialCenter ρ k₀ rankTwo[b] (Basis.detDualEquiv_self b (Fan.Ray.primitiveGenerator ρ))
     (Fan.Ray.surjective_detCharacter ρ b) c pt
 
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
-  {i : N →+ V} {X : Scheme} [X.Over S] [SmoothOfRelativeDimension 2 (X ↘ S)]
-  [IsIntegral X] [IsNoetherian X] {D : X.IdealSheafData} {A B : LogarithmicProjection i D}
+  {i : N →+ V} {X : Scheme} [X.Over (Spec (.of k₀))] [SmoothOfRelativeDimension 2 (X ↘ Spec
+    (.of k₀))]
+  [IsIntegral X] [IsNoetherian X] {D : X.IdealSheafData} {A B : LogarithmicProjection k₀ i D}
   {Y : Scheme} {b b' : Basis (Fin 2) ℤ N} {hi : IsIntegralLattice i}
   (r : Fin 4 ≃ A.fan.Ray)
   (hr : (fun t ↦ (r t).primitiveGenerator) = ![b 0, b 1, -b 0, (0 : ℤ) • b 0 - b 1])
-  {n : ℕ} {T : BlowupTower A.fan.algebraicRealization n Y}
-  (hT : IsClosedPointTower A.fan.algebraicRealization T) (g : Y ⟶ P)
+  {n : ℕ} {T : BlowupTower (A.fan.finiteFanScheme k₀) n Y}
+  (hT : IsClosedPointTower (A.fan.finiteFanScheme k₀) T) (g : Y ⟶ (Proj (homogeneousSubmodule k₀
+    (Fin 3 → k₀))))
 
-local notation "fA" => (A.fan.algebraicRealization ↘ S)
+local notation "fA" => ((A.fan.finiteFanScheme k₀) ↘ S)
 local notation "smooth[" b "]" =>
   (Eq.mp (congrArg (fun m ↦ SmoothOfRelativeDimension m fA) rankTwo[b])
-    (A.fan.smoothOfRelativeDimension_algebraicRealizationStructureMap A.isRegular))
+    (A.fan.smoothOfRelativeDimension_finiteFanSchemeToSpec k₀ A.isRegular))
 local notation "x" =>
   (LinearEquiv.symm (BlowupTower.picardMarking T hT fA) (Additive.ofMul (pullback g H)))
-local notation "C" => A.fan.hirzebruchPicardBasis b 0 A.isRegular r hr
+local notation "C" => A.fan.hirzebruchPicardBasis k₀ b 0 A.isRegular r hr
 local notation "α" => Basis.repr (C) (Prod.fst x) 0
 local notation "β" => Basis.repr (C) (Prod.fst x) 1
 local notation "order[" j "]" => -(Prod.snd x) j
 local notation "fiber[" t "]" => r ((![1, 3] : Fin 2 → Fin 4) t)
 local notation "onFiber[" t "," j "]" =>
-  (∃ c : ℂˣ, hT.baseCenter j = center[b,fiber[t],c])
+  (∃ c : k₀ˣ, hT.baseCenter j = center[b,fiber[t],c])
 local notation "atCorner[" t "," j "]" =>
   (∃ σ : A.fan.cones, Nat.card (ToricRay σ.val) = 2 ∧ Fan.Ray.toCone A.fan (fiber[t]) ≤ σ ∧
-    Fan.Ray.toCone A.fan (r 0) ≤ σ ∧ hT.baseCenter j = A.fan.distinguishedPointHom σ pt)
+    Fan.Ray.toCone A.fan (r 0) ≤ σ ∧ hT.baseCenter j = (A.fan.distinguishedSection (R := k₀) σ) pt)
 
 variable (hD : D.IsEffectiveCartier)
-  (hNode : AtWorstNodalOfRelativeDimensionOne (D.subschemeι ≫ X ↘ S))
+  (hNode : AtWorstNodalOfRelativeDimensionOne (D.subschemeι ≫ X ↘ Spec (.of k₀)))
   (hB : B.fan = plane[b',hi]) (k : X ≅ Y)
-  (hAh : A.hom = k.hom ≫ T.toBase) (hBh : B.hom ≍ k.hom ≫ g ≫ (planeIso[b',hi]).inv)
-  (hg : g ≫ (P ↘ S) = T.toBase ≫ (A.fan.algebraicRealization ↘ S))
-  (hbir : Scheme.BirationalOver g (𝟙 P))
+  (hAh : A.hom = k.hom ≫ T.toBase) (hBh : B.hom ≍ k.hom ≫ g ≫ (planeIso[k₀,b',hi]).inv)
+  (hg : g ≫ ((Proj (homogeneousSubmodule k₀ (Fin 3 → k₀))) ↘ Spec (.of k₀)) = T.toBase ≫
+    ((A.fan.finiteFanScheme k₀) ↘ Spec (.of k₀)))
+  (hbir : Scheme.BirationalOver g (𝟙 (Proj (homogeneousSubmodule k₀ (Fin 3 → k₀)))))
 
 include hB k hAh hBh hg hbir
 
@@ -95,7 +100,7 @@ private theorem decrease_of_one_prepared_quadric_center
   · refine exists_sarkisov_step_of_quadric_smooth_center r hr hT g hD hNode
       hB k hAh hBh hg hbir t c j hj hjfirst d ?_ hd
     omega
-  · refine exists_sarkisov_step_of_quadric_corner r hr hT g hD hNode
+  · refine exists_sarkisov_step_of_quadric_corner k₀ r hr hT g hD hNode
       hB k hAh hBh hg hbir σ hσ j hj hjfirst d ?_ hd
     omega
 

@@ -26,26 +26,28 @@ open Scheme
 
 namespace QPainleve.SignedClusterModularGroup.GeometricRealization
 
-local notation "Centers[" r "]" => Over.mk (structureMap ℂ (Fin r → ℤ))
-local notation "XTor[" r "]" => scheme ℂ (Fin r →₀ ℤ)
+variable {k₀ : Type} [Field k₀] [IsAlgClosed k₀]
+
+local notation "Centers[" r "]" => Over.mk (structureMap k₀ (Fin r → ℤ))
+local notation "XTor[" r "]" => scheme k₀ (Fin r →₀ ℤ)
 local notation "D[" M "]" => Scheme.Hom.ker (Over.Hom.left (Arrow.hom (MarkedSurface.pair M)))
-local notation "χ[" c "]" => pointsEquiv ℂ _ (Subtype.mk (Over.Hom.left c) (Over.w c))
-local notation "eval[" E "," w "]" => op (signedClusterModularGroupMap ℂ E (End.of w))
+local notation "χ[" c "]" => pointsEquiv k₀ _ (Subtype.mk (Over.Hom.left c) (Over.w c))
+local notation "eval[" E "," w "]" => op (signedClusterModularGroupMap k₀ E (End.of w))
 
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {b : Basis (Fin 2) ℤ N} {r n : ℕ} [NeZero n]
   {L γ : Type} [AddCommGroup L] {H : LinearMap.BilinForm ℤ L} {E : SkewExchangeMatrix (Fin r)}
 
-variable (Q : CompleteToricPresentation i b r L γ)
+variable (Q : CompleteToricPresentation k₀ i b r L γ)
 
 /-- A signed Picard action agrees with marked geometric pullback on compatible
 realizations, has the inversion sign of each representative, and has the unsigned
 group as its sign kernel on point maps. -/
 structure IsSignedPicardAction
-    (M : Point Centers[r] → MarkedSurface ℂ n H XTor[r])
+    (M : Point Centers[r] → MarkedSurface k₀ n H XTor[r])
     {d : ZMod n → L} (hD : ∀ c, D[M c].IsEffectiveCartier)
     (hmark : ∀ c j, (M c).boundaryClass (hD c) j = d j)
-    (ρ : (SignedClusterModularGroup ℂ E)ᵐᵒᵖ →* signedBoundaryIsometryGroup H d) : Prop where
+    (ρ : (SignedClusterModularGroup k₀ E)ᵐᵒᵖ →* signedBoundaryIsometryGroup H d) : Prop where
   /-- The sign of the Picard action is the inversion parity of the representing word. -/
   sign_apply_word (w : Word E E) :
     sign H d (ρ eval[E,w]) = (-1 : ℤˣ) ^ w.inversionCount
@@ -54,7 +56,7 @@ structure IsSignedPicardAction
   apply_of_realization (w : Word E E)
       {C : Centers[r].left.PartialMap Centers[r].left} [IsDominant C.hom]
       [C.IsOver Centers[r].hom Centers[r].hom]
-      (R : GeometricRealization M M C (w.xRationalMap ℂ))
+      (R : GeometricRealization M M C (w.xRationalMap k₀))
       (hC :
         letI := Q.complete.nonempty_cones
         letI := Q.prestable
@@ -64,6 +66,6 @@ structure IsSignedPicardAction
           (fun z : Point Centers[r] ↦ χ[z]) C) :
     ρ eval[E,w] = R.toSignedBoundaryIsometry d hD hmark
   /-- On point maps, the sign kernel is the image of the unsigned group. -/
-  sign_ker_unop : ((sign H d).comp ρ).ker.unop = (clusterModularGroupInclusion ℂ E).range
+  sign_ker_unop : ((sign H d).comp ρ).ker.unop = (clusterModularGroupInclusion k₀ E).range
 
 end QPainleve.SignedClusterModularGroup.GeometricRealization

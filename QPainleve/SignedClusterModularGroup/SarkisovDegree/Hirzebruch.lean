@@ -33,20 +33,22 @@ open TauCeti.Toric
 
 namespace QPainleve.BlowupTower.IsClosedPointTower
 
+variable (k₀ : Type) [Field k₀] [IsAlgClosed k₀]
+
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
-  {i : N →+ V} {Φ : Fan i} [Φ.algebraicRealization.IsProjectiveOver ℂ]
+  {i : N →+ V} {Φ : Fan i} [(Φ.finiteFanScheme k₀).IsProjectiveOver k₀]
   (b : Basis (Fin 2) ℤ N) (e : ℕ) (hΦ : Φ.IsRegular) (hc : Φ.IsComplete)
   (r : Fin 4 ≃ Φ.Ray)
   (hr : (fun j ↦ (r j).primitiveGenerator) = ![b 0, b 1, -b 0, (e : ℤ) • b 0 - b 1])
 
-local notation "S" => Spec (CommRingCat.of ℂ)
-local notation "X" => Φ.algebraicRealization
+local notation "S" => Spec (CommRingCat.of k₀)
+local notation "X" => (Φ.finiteFanScheme k₀)
 local notation "f" => (X ↘ S)
-local notation "P" => Proj (homogeneousSubmodule ℂ (Fin 3 → ℂ))
-local notation "H" => mk (Proj.symmetricAlgebraTwistingBundle ℂ (Fin 3 → ℂ) 1)
-local notation "C" => Fan.hirzebruchPicardBasis b e hΦ r hr
+local notation "P" => Proj (homogeneousSubmodule k₀ (Fin 3 → k₀))
+local notation "H" => mk (Proj.symmetricAlgebraTwistingBundle k₀ (Fin 3 → k₀) 1)
+local notation "C" => Fan.hirzebruchPicardBasis k₀ b e hΦ r hr
 
-variable {Y : Scheme.{0}} {n : ℕ} {T : BlowupTower Φ.algebraicRealization n Y}
+variable {Y : Scheme.{0}} {n : ℕ} {T : BlowupTower (Φ.finiteFanScheme k₀) n Y}
 
 /-- Every specified Hirzebruch resolution of a birational map to the plane either
 has a base order greater than half the fiber degree or falls into one of the two
@@ -60,10 +62,10 @@ theorem exists_fiber_degree_lt_two_mul_or_of_hirzebruch_resolution
     let : Nonempty Φ.cones := hc.nonempty_cones
     let : SmoothOfRelativeDimension 2 f :=
       (by simpa using Module.finrank_eq_card_basis b : Module.finrank ℤ N = 2) ▸
-        Φ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
+        Φ.smoothOfRelativeDimension_finiteFanSchemeToSpec k₀ hΦ
     let : IsNoetherian X := isNoetherian_of_finiteType f
     let v : Additive (LineBundleClass X) × (Fin n → ℤ) :=
-      (T.picardMarking (k := ℂ) hT f).symm (Additive.ofMul (pullback g H))
+      (T.picardMarking (k := k₀) hT f).symm (Additive.ofMul (pullback g H))
     let a := (C).repr v.1 0
     let d := (C).repr v.1 1
     (∃ j, d < 2 * (-v.2 j)) ∨
@@ -76,9 +78,9 @@ theorem exists_fiber_degree_lt_two_mul_or_of_hirzebruch_resolution
   · exact Or.inl hhigh
   push Not at hhigh
   refine Or.inr ⟨hhigh, ?_⟩
-  obtain ⟨hd, ha, hm⟩ := hirzebruch_resolution_degree_bounds b e hΦ hc r hr hT g hg hbir
+  obtain ⟨hd, ha, hm⟩ := hirzebruch_resolution_degree_bounds k₀ b e hΦ hc r hr hT g hg hbir
   obtain ⟨hsq, hsum⟩ :=
-    hT.homaloidal_intersection_identities_of_hirzebruch b e hΦ hc r hr g hg hbir
+    hT.homaloidal_intersection_identities_of_hirzebruch k₀ b e hΦ hc r hr g hg hbir
   have h := exists_fiber_degree_lt_two_mul_or_of_hirzebruch_homaloidal (Int.natCast_nonneg e)
     hd ha hm (by simpa only [neg_sq] using hsq) hsum
   rcases h with ⟨j, hj⟩ | ⟨he, hlt⟩ | ⟨he, hlt⟩

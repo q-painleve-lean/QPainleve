@@ -29,26 +29,29 @@ open Scheme Scheme.IdealSheafData
 
 namespace QPainleve.SignedClusterModularGroup.CompleteToricPresentation
 
+variable {k₀ : Type} [Field k₀] [IsAlgClosed k₀] [Uncountable k₀] [NeZero (2 : k₀)]
+
 open GeometricRealization
 
-local notation "S" => Spec (CommRingCat.of ℂ)
-local notation "Centers[" r "]" => Over.mk (structureMap ℂ (Fin r → ℤ))
-local notation "XTor[" r "]" => scheme ℂ (Fin r →₀ ℤ)
+local notation "S" => Spec (CommRingCat.of k₀)
+local notation "Centers[" r "]" => Over.mk (structureMap k₀ (Fin r → ℤ))
+local notation "XTor[" r "]" => scheme k₀ (Fin r →₀ ℤ)
 local notation "D[" M "]" => Scheme.Hom.ker (Over.Hom.left (Arrow.hom (MarkedSurface.pair M)))
 local notation "classOf(" h ")" => (LineBundleClass.mk (IsEffectiveCartier.toInvertibleSheaf h))⁻¹
-local notation "χ[" c "]" => pointsEquiv ℂ _ (Subtype.mk (Over.Hom.left c) (Over.w c))
+local notation "χ[" c "]" => pointsEquiv k₀ _ (Subtype.mk (Over.Hom.left c) (Over.w c))
 
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {b : Module.Basis (Fin 2) ℤ N} {r n : ℕ} [NeZero n]
   {L γ : Type} [AddCommGroup L] {B : LinearMap.BilinForm ℤ L}
   {E : SkewExchangeMatrix (Fin r)}
-  (Q : CompleteToricPresentation i b r L γ)
-  {c : Point Centers[r]} {M₀ : MarkedSurface ℂ n B XTor[r]}
+  (Q : CompleteToricPresentation k₀ i b r L γ)
+  {c : Point (Over.mk (QPainleve.CharacterTorus.structureMap k₀ (Fin r →
+    ℤ)))} {M₀ : MarkedSurface k₀ n B (QPainleve.CharacterTorus.scheme k₀ (Fin r →₀ ℤ))}
 
 local instance instDihedralNonemptyCones : Nonempty Q.fan.cones := Q.complete.nonempty_cones
 local instance instDihedralNeZeroLength : NeZero Q.length := Q.neZero
 local instance instDihedralPrestableBoundary :
-    PrestableFamily ((Q.fan.boundaryIdeal Q.complete.nonempty_cones).subscheme ↘ S) :=
+    PrestableFamily ((Q.fan.toricBoundaryIdeal k₀ Q.complete.nonempty_cones).subscheme ↘ S) :=
   Q.prestable
 
 local notation "Models[" M "," C "]" =>
@@ -66,21 +69,21 @@ theorem exists_picardIsometryEquiv_of_nodal_model
     (href : Q.HasNodalModel c M₀)
     (hE : E.matrix = chargeExchangeMatrix b.detDualEquiv.toLinearMap (Fan.rayChargeMap Q.rays))
     (hprim : IsPrimitive (Additive.ofMul classOf(M₀.isEffectiveCartier_boundaryIdeal)))
-    (hnef : (classOf(M₀.isEffectiveCartier_boundaryIdeal)).IsNef ℂ (M₀.surface ↘ S))
-    (hsq : Chow.classIntersectionNumber ℂ M₀.surface classOf(M₀.isEffectiveCartier_boundaryIdeal)
+    (hnef : (classOf(M₀.isEffectiveCartier_boundaryIdeal)).IsNef k₀ (M₀.surface ↘ S))
+    (hsq : Chow.classIntersectionNumber k₀ M₀.surface classOf(M₀.isEffectiveCartier_boundaryIdeal)
       classOf(M₀.isEffectiveCartier_boundaryIdeal) = 0)
     (hn : 3 ≤ n) :
     let d := M₀.boundaryClass M₀.isEffectiveCartier_boundaryIdeal
-    ∃ (M : Point Centers[r] → MarkedSurface ℂ n B XTor[r])
+    ∃ (M : Point Centers[r] → MarkedSurface k₀ n B XTor[r])
       (hD : ∀ z, D[M z].IsEffectiveCartier)
       (hmark : ∀ z j, (M z).boundaryClass (hD z) j = d j)
-      (Ψ : (SignedClusterModularGroup ℂ E)ᵐᵒᵖ ≃* (toIsometry B d).range),
+      (Ψ : (SignedClusterModularGroup k₀ E)ᵐᵒᵖ ≃* (toIsometry B d).range),
       M c = M₀ ∧ (∀ z, Q.HasNodalModel z (M z)) ∧
       ∀ w : Word E E,
-        let x := op (signedClusterModularGroupMap ℂ E (End.of w))
+        let x := op (signedClusterModularGroupMap k₀ E (End.of w))
         (∀ {C : Centers[r].left.PartialMap Centers[r].left} [IsDominant C.hom]
           [C.IsOver Centers[r].hom Centers[r].hom]
-          (R : GeometricRealization M M C (w.xRationalMap ℂ)),
+          (R : GeometricRealization M M C (w.xRationalMap k₀)),
           Models[M,C] → (Ψ x).val = toIsometry B d (R.toSignedBoundaryIsometry d hD hmark)) ∧
         ∃ a : DihedralGroup n, DihedralGroup.cycleOrientationSign a =
           (-1 : ℤˣ) ^ w.inversionCount ∧
@@ -93,7 +96,7 @@ theorem exists_picardIsometryEquiv_of_nodal_model
     P.hasNodalModel, fun w ↦ ?_⟩
   simp only [MulEquiv.trans_apply, MonoidHom.ofInjective_apply]
   refine ⟨fun R hR ↦ congrArg (toIsometry B _) (P.signedEquiv_apply_word w R hR), ?_⟩
-  let g := P.signedEquiv (op (signedClusterModularGroupMap ℂ E (End.of w)))
+  let g := P.signedEquiv (op (signedClusterModularGroupMap k₀ E (End.of w)))
   obtain ⟨a, ha, hpb⟩ := exists_cycleAction_pullback B _ g
   have hsign := (sign_apply B _ g).trans (P.sign_signedEquiv_apply_word w)
   refine ⟨a, ha.trans hsign, fun a' ↦ ⟨fun hpb' ↦ ?_, fun h ↦ h ▸ hpb⟩⟩

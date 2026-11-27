@@ -8,11 +8,10 @@ module
 public import QPainleve.AlgebraicGeometry.Morphisms.Modification.IsoLocus
 public import QPainleve.Geometry.Toric.Fan.Boundary.Prime
 public import QPainleve.Geometry.Toric.Fan.Boundary.Valuation
-public import QPainleve.Geometry.Toric.Fan.TorusAction.Translation
+public import QPainleve.Geometry.Toric.BaseChange.Translation
 
 import QPainleve.AlgebraicGeometry.OrderOfVanishing.IsoLocus
 import QPainleve.Geometry.Toric.Fan.Boundary.Automorphism
-import TauCeti.Geometry.Toric.Algebraic.Fan.Normal
 
 /-!
 # Boundary orders on contracted toric models
@@ -31,34 +30,37 @@ open TauCeti.AlgebraicGeometry Scheme.IdealSheafData
 
 namespace TauCeti.Toric.Fan
 
+universe u
+
 section
 
-variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
+variable (K : Type u) [Field K] [PerfectField K] {N : Type u} {V : Type*}
+  [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {Φ : Fan i} [Nonempty Φ.cones] (hΦ : Φ.IsRegular)
-  (b : Module.Basis (Fin 2) ℤ N) {n : ℕ} (s : Fin n → Φ.Ray) (c : Fin n → ℂˣ)
+  (b : Module.Basis (Fin 2) ℤ N) {n : ℕ} (s : Fin n → Φ.Ray) (c : Fin n → Kˣ)
 
-local notation "P" => internalBlowupTower b s c
+local notation "P" => internalBlowupTower K b s c
 local notation "B" => Scheme.Hom.ker (WithBoundary.boundaryι (Sigma.snd P))
 local notation "π" => toBase (WithBoundary.toTower (Sigma.snd P))
-local notation "F" => Φ.algebraicRealization
+local notation "F" => Φ.finiteFanScheme K
 
-variable {X : Scheme} [IsIntegral X] [IsNormalScheme X] [IsLocallyNoetherian X]
-  {D : X.IdealSheafData} (p : (internalBlowupTower b s c).1 ⟶ X) [IsModification p]
+variable {X : Scheme.{u}} [IsIntegral X] [IsNormalScheme X] [IsLocallyNoetherian X]
+  {D : X.IdealSheafData} (p : (internalBlowupTower K b s c).1 ⟶ X) [IsModification p]
   (hD : (D.comap p).support =
-    (Scheme.Hom.ker (WithBoundary.boundaryι (internalBlowupTower b s c).2)).support)
+    (Scheme.Hom.ker (WithBoundary.boundaryι (internalBlowupTower K b s c).2)).support)
 
 include hΦ hD in
 private theorem bijOn_contractedBoundaryPrimes :
     Set.BijOn p ((B).boundaryPrimes ∩ p ⁻¹' (p.isoLocus : Set X)) D.boundaryPrimes := by
-  have := isIntegral_internalBlowupTower b s c hΦ
+  have := isIntegral_internalBlowupTower K b s c hΦ
   have hsub : D.boundaryPrimes ⊆ (p.isoLocus : Set X) :=
     fun _ hx ↦ p.mem_isoLocus_of_coheight_eq_one (mem_boundaryPrimes.mp hx).2
   rw [← boundaryPrimes_eq_of_support_eq hD]
   simpa only [Set.inter_eq_left.mpr hsub] using
     D.bijOn_boundaryPrimes_comap_of_subset_isoLocus p (U := p.isoLocus) Set.Subset.rfl
 
-local notation "E" => Set.BijOn.equiv p (bijOn_contractedBoundaryPrimes hΦ b s c p hD)
-local notation "R" => internalBlowupBoundaryPrimeEquiv hΦ b s c
+local notation "E" => Set.BijOn.equiv p (bijOn_contractedBoundaryPrimes K hΦ b s c p hD)
+local notation "primeEquiv" => internalBlowupBoundaryPrimeEquiv K hΦ b s c
 
 /-- The boundary primes on a contraction of an ordered toric model embed into the rays of
 the presenting fan by taking strict transforms. The omitted rays have image outside the
@@ -66,13 +68,13 @@ isomorphism locus of the contraction. -/
 def contractedBoundaryRayEmbedding : D.boundaryPrimes ↪ Φ.Ray :=
   ((E).symm.toEmbedding.trans
     ⟨Set.inclusion Set.inter_subset_left, Set.inclusion_injective Set.inter_subset_left⟩).trans
-    (R).symm.toEmbedding
+    (primeEquiv).symm.toEmbedding
 
 /-- The ray assigned to a contracted boundary prime projects to that prime from the
 ordered model. -/
 @[simp]
 theorem contraction_internalBlowupBoundaryPrimeEquiv (x : D.boundaryPrimes) :
-    p ((R) (contractedBoundaryRayEmbedding hΦ b s c p hD x)).val = x.val := by
+    p ((primeEquiv) (contractedBoundaryRayEmbedding K hΦ b s c p hD x)).val = x.val := by
   have h : p ((E).symm x).val = x.val := congrArg Subtype.val ((E).apply_symm_apply x)
   simpa only [contractedBoundaryRayEmbedding, Function.Embedding.trans_apply,
     Equiv.toEmbedding_apply, Equiv.apply_symm_apply, Function.Embedding.coeFn_mk,
@@ -81,15 +83,15 @@ theorem contraction_internalBlowupBoundaryPrimeEquiv (x : D.boundaryPrimes) :
 /-- A ray represents a boundary prime of the contraction exactly when its strict prime
 on the ordered model maps to that prime. -/
 theorem contractedBoundaryRayEmbedding_eq_iff (x : D.boundaryPrimes) (ρ : Φ.Ray) :
-    contractedBoundaryRayEmbedding hΦ b s c p hD x = ρ ↔ p ((R) ρ).val = x.val := by
+    contractedBoundaryRayEmbedding K hΦ b s c p hD x = ρ ↔ p ((primeEquiv) ρ).val = x.val := by
   constructor
   · rintro rfl
-    exact contraction_internalBlowupBoundaryPrimeEquiv hΦ b s c p hD x
+    exact contraction_internalBlowupBoundaryPrimeEquiv K hΦ b s c p hD x
   · intro h
-    have := isIntegral_internalBlowupTower b s c hΦ
+    have := isIntegral_internalBlowupTower K b s c hΦ
     have hx := p.mem_isoLocus_of_coheight_eq_one (mem_boundaryPrimes.mp x.property).2
-    have h' := contraction_internalBlowupBoundaryPrimeEquiv hΦ b s c p hD x
-    apply (R).injective
+    have h' := contraction_internalBlowupBoundaryPrimeEquiv K hΦ b s c p hD x
+    apply (primeEquiv).injective
     apply Subtype.ext
     exact p.injOn_preimage_isoLocus (Set.mem_preimage.mpr (h'.symm ▸ hx))
       (Set.mem_preimage.mpr (h.symm ▸ hx)) (h'.trans h.symm)
@@ -97,59 +99,63 @@ theorem contractedBoundaryRayEmbedding_eq_iff (x : D.boundaryPrimes) (ρ : Φ.Ra
 /-- A ray survives the contraction exactly when its strict prime projects to a
 boundary prime downstairs. -/
 theorem mem_range_contractedBoundaryRayEmbedding_iff (ρ : Φ.Ray) :
-    ρ ∈ Set.range (contractedBoundaryRayEmbedding hΦ b s c p hD) ↔
-      p ((R) ρ).val ∈ D.boundaryPrimes := by
+    ρ ∈ Set.range (contractedBoundaryRayEmbedding K hΦ b s c p hD) ↔
+      p ((primeEquiv) ρ).val ∈ D.boundaryPrimes := by
   constructor
   · rintro ⟨x, rfl⟩
     simpa only [contraction_internalBlowupBoundaryPrimeEquiv] using x.property
   · intro h
-    exact ⟨⟨_, h⟩, (contractedBoundaryRayEmbedding_eq_iff hΦ b s c p hD ⟨_, h⟩ ρ).mpr rfl⟩
+    exact ⟨⟨_, h⟩, (contractedBoundaryRayEmbedding_eq_iff K hΦ b s c p hD ⟨_, h⟩ ρ).mpr rfl⟩
 
 /-- The uncontracted rays are exactly the strict primes over the isomorphism locus. -/
 theorem mem_range_contractedBoundaryRayEmbedding_iff_mem_isoLocus (ρ : Φ.Ray) :
-    ρ ∈ Set.range (contractedBoundaryRayEmbedding hΦ b s c p hD) ↔
-      p ((R) ρ).val ∈ p.isoLocus := by
-  have := isIntegral_internalBlowupTower b s c hΦ
+    ρ ∈ Set.range (contractedBoundaryRayEmbedding K hΦ b s c p hD) ↔
+      p ((primeEquiv) ρ).val ∈ p.isoLocus := by
+  have := isIntegral_internalBlowupTower K b s c hΦ
   rw [mem_range_contractedBoundaryRayEmbedding_iff]
   apply D.mem_boundaryPrimes_iff_mem_isoLocus_of_mem_boundaryPrimes_comap
   rw [boundaryPrimes_eq_of_support_eq hD]
-  exact ((R) ρ).property
+  exact ((primeEquiv) ρ).property
 
-local notation "ρₓ" x:arg => contractedBoundaryRayEmbedding hΦ b s c p hD x
+local notation "ρₓ" x:arg => contractedBoundaryRayEmbedding K hΦ b s c p hD x
 
 /-- A function on the toric surface, transported to the contraction via the ordered
 model, has the same order along a contracted boundary prime as along its presenting ray. -/
 theorem ord_contracted_toric_boundary (x : D.boundaryPrimes) (a : (F).functionField) :
-    let := isIntegral_internalBlowupTower b s c hΦ
-    let := isModification_internalBlowupTower_toBase b s c hΦ
+    let := isIntegral_internalBlowupTower K b s c hΦ
+    let := isModification_internalBlowupTower_toBase K b s c hΦ
     let := p.isIso_functionFieldMap_of_isModification
     X.ord (CategoryTheory.inv p.functionFieldMap ((π).functionFieldMap a)) x.val =
-      (F).ord a (Φ.rayBoundaryPoint hΦ (ρₓ x)).val := by
+      (F).ord a (Φ.rayBoundaryChartPoint (R := K) hΦ (ρₓ x)).val := by
   intro _ _ _
+  have := Φ.isNormalScheme_finiteFanScheme (R := K) hΦ
   have : IsNoetherian (P).1 := (WithBoundary.toTower (Sigma.snd P)).isNoetherian
-  let y := ((R) (ρₓ x)).val
-  have hpy : p y = x.val := contraction_internalBlowupBoundaryPrimeEquiv hΦ b s c p hD x
-  have hπy : π y = (Φ.rayBoundaryPoint hΦ (ρₓ x)).val :=
-    toBase_internalBlowupBoundaryPrimeEquiv hΦ b s c _
+  let y := ((primeEquiv) (ρₓ x)).val
+  have hpy : p y = x.val := contraction_internalBlowupBoundaryPrimeEquiv K hΦ b s c p hD x
+  have hπy : π y = (Φ.rayBoundaryChartPoint (R := K) hΦ (ρₓ x)).val :=
+    toBase_internalBlowupBoundaryPrimeEquiv K hΦ b s c _
   have hp := p.mem_isoLocus_of_coheight_eq_one (mem_boundaryPrimes.mp x.property).2
-  have hπ := (π).mem_isoLocus_of_coheight_eq_one (Φ.rayBoundaryPoint hΦ (ρₓ x)).property
+  have hπ := (π).mem_isoLocus_of_coheight_eq_one
+    (Φ.rayBoundaryChartPoint (R := K) hΦ (ρₓ x)).property
   rw [← hpy, ← p.ord_functionFieldMap_of_mem_isoLocus (hpy.symm ▸ hp), IsIso.inv_hom_id_apply]
   rw [(π).ord_functionFieldMap_of_mem_isoLocus (hπy.symm ▸ hπ), hπy]
 
 local notation "Xchar" l:arg =>
-  algebraMap ℂ (Scheme.functionField F) (c l : ℂ) *
-    Φ.character (ofAdd (LinearMap.toAddMonoidHom (b.detDualEquiv (Ray.primitiveGenerator (s l)))))
+  algebraMap K (Scheme.functionField F) (c l : K) *
+    Φ.functionFieldCharacter K
+      (ofAdd (LinearMap.toAddMonoidHom (b.detDualEquiv (Ray.primitiveGenerator (s l)))))
 
 /-- The orders of the scaled charge functions on the contraction are the determinant
 order vector of the corresponding ray. -/
 theorem ord_contracted_toric_boundary_chargeCharacter (x : D.boundaryPrimes) (l : Fin n) :
-    let := isIntegral_internalBlowupTower b s c hΦ
-    let := isModification_internalBlowupTower_toBase b s c hΦ
+    let := isIntegral_internalBlowupTower K b s c hΦ
+    let := isModification_internalBlowupTower_toBase K b s c hΦ
     let := p.isIso_functionFieldMap_of_isModification
     X.ord (CategoryTheory.inv p.functionFieldMap ((π).functionFieldMap (Xchar l))) x.val =
       rayBoundaryOrders b s (ρₓ x) l := by
   intro _ _ _
-  rw [ord_contracted_toric_boundary hΦ b s c p hD, ord_rayBoundaryPoint_chargeCharacter]
+  rw [ord_contracted_toric_boundary K hΦ b s c p hD,
+    ord_rayBoundaryChartPoint_chargeCharacter b s K]
 
 /-- Searching the rays of a numbered contracted boundary recovers the index of a prime
 exactly when its scaled charge functions have the specified orders. The finite-index
@@ -157,80 +163,82 @@ condition makes that index unique. -/
 theorem boundaryRayOfOrders_eq_some_iff_ord_contracted
     {m : ℕ} (boundary : Fin m ↪ D.boundaryPrimes) (orders : Fin n → ℤ)
     (hindex : (rayChargeMap s).range.toAddSubgroup.index ≠ 0) (j : Fin m) :
-    let := isIntegral_internalBlowupTower b s c hΦ
-    let := isModification_internalBlowupTower_toBase b s c hΦ
+    let := isIntegral_internalBlowupTower K b s c hΦ
+    let := isModification_internalBlowupTower_toBase K b s c hΦ
     let := p.isIso_functionFieldMap_of_isModification
-    boundaryRayOfOrders b s (boundary.trans (contractedBoundaryRayEmbedding hΦ b s c p hD))
+    boundaryRayOfOrders b s (boundary.trans (contractedBoundaryRayEmbedding K hΦ b s c p hD))
       orders = some j ↔ ∀ l,
       X.ord (CategoryTheory.inv p.functionFieldMap ((π).functionFieldMap (Xchar l)))
         (boundary j).val = orders l := by
   intro _ _ _
   rw [boundaryRayOfOrders_eq_some_iff _ _ _ _ hindex]
-  simp only [ord_contracted_toric_boundary_chargeCharacter hΦ b s c p hD,
+  simp only [ord_contracted_toric_boundary_chargeCharacter K hΦ b s c p hD,
     Function.Embedding.trans_apply, funext_iff]
 
 end
 
 section BoundaryPrimes
 
-variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
+variable (K : Type u) [Field K] [PerfectField K] {N : Type u} {V : Type*}
+  [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {Φ : Fan i} [Nonempty Φ.cones]
   {n : ℕ} (b : Module.Basis (Fin 2) ℤ N) (s : Fin n → Φ.Ray)
-  {X : Scheme} [IsIntegral X] (hΦ : Φ.IsRegular) {X' : Scheme} [IsIntegral X']
-  (a a' : Fin n → ℂˣ)
+  {X : Scheme.{u}} [IsIntegral X] (hΦ : Φ.IsRegular) {X' : Scheme.{u}} [IsIntegral X']
+  (a a' : Fin n → Kˣ)
 
-local notation "F" => Φ.algebraicRealization
+local notation "F" => Φ.finiteFanScheme K
 
-local notation "M" a:arg => internalBlowupTower b s a
+local notation "M" a:arg => internalBlowupTower K b s a
 local notation "π₁" => toBase (WithBoundary.toTower (Sigma.snd (M a')))
 
 /-- A translating lift on ordered internal blowups sends the strict prime indexed
 by a ray to the strict prime indexed by that same ray. -/
 theorem apply_internalBlowupBoundaryPrimeEquiv_of_isLift_torusTranslation
-    {χ : Multiplicative (N →+ ℤ) →* ℂˣ} {t : (M a).1 ≅ (M a').1}
-    (ht : IsLift (Φ.torusTranslation χ) ((M a).2.toTower) ((M a').2.toTower) t) (ρ : Φ.Ray) :
-    t.hom (internalBlowupBoundaryPrimeEquiv hΦ b s a ρ).val =
-      (internalBlowupBoundaryPrimeEquiv hΦ b s a' ρ).val := by
-  have := isIntegral_internalBlowupTower b s a' hΦ
-  have := isModification_internalBlowupTower_toBase b s a' hΦ
-  let x := (internalBlowupBoundaryPrimeEquiv hΦ b s a ρ).val
-  let y := (internalBlowupBoundaryPrimeEquiv hΦ b s a' ρ).val
-  have hfix := (Φ.comap_rayBoundaryIdeal_eq_iff hΦ (Φ.torusTranslation χ) ρ).mp
-    (Φ.comap_rayBoundaryIdeal_torusTranslation_hom hΦ χ ρ)
-  have hx : (π₁) (t.hom x) = (Φ.rayBoundaryPoint hΦ ρ).val := by
+    {χ : Multiplicative (N →+ ℤ) →* Kˣ} {t : (M a).1 ≅ (M a').1}
+    (ht : IsLift (Φ.torusTranslationIso K χ) ((M a).2.toTower) ((M a').2.toTower) t) (ρ : Φ.Ray) :
+    t.hom (internalBlowupBoundaryPrimeEquiv K hΦ b s a ρ).val =
+      (internalBlowupBoundaryPrimeEquiv K hΦ b s a' ρ).val := by
+  have := isIntegral_internalBlowupTower K b s a' hΦ
+  have := isModification_internalBlowupTower_toBase K b s a' hΦ
+  have := Φ.isNormalScheme_finiteFanScheme (R := K) hΦ
+  let x := (internalBlowupBoundaryPrimeEquiv K hΦ b s a ρ).val
+  let y := (internalBlowupBoundaryPrimeEquiv K hΦ b s a' ρ).val
+  have hfix := (Φ.comap_rayDivisorIdeal_eq_iff K hΦ (Φ.torusTranslationIso K χ) ρ).mp
+    (Φ.comap_rayBoundaryIdeal_torusTranslation_hom K hΦ χ ρ)
+  have hx : (π₁) (t.hom x) = (Φ.rayBoundaryChartPoint (R := K) hΦ ρ).val := by
     have h := congrArg (fun f : (M a).1 ⟶ F ↦ f x) ht.hom_toBase
     simpa only [x, Scheme.Hom.comp_apply, toBase_internalBlowupBoundaryPrimeEquiv, hfix]
       using h
-  have hy : (π₁) y = (Φ.rayBoundaryPoint hΦ ρ).val :=
-    toBase_internalBlowupBoundaryPrimeEquiv hΦ b s a' ρ
-  have hρ := (π₁).mem_isoLocus_of_coheight_eq_one (Φ.rayBoundaryPoint hΦ ρ).property
+  have hy : (π₁) y = (Φ.rayBoundaryChartPoint (R := K) hΦ ρ).val :=
+    toBase_internalBlowupBoundaryPrimeEquiv K hΦ b s a' ρ
+  have hρ := (π₁).mem_isoLocus_of_coheight_eq_one (Φ.rayBoundaryChartPoint (R := K) hΦ ρ).property
   exact (π₁).injOn_preimage_isoLocus (Set.mem_preimage.mpr (hx.symm ▸ hρ))
     (Set.mem_preimage.mpr (hy.symm ▸ hρ)) (hx.trans hy.symm)
 
 variable {D : X.IdealSheafData} {D' : X'.IdealSheafData}
   [IsNormalScheme X] [IsNormalScheme X'] [IsLocallyNoetherian X] [IsLocallyNoetherian X']
-variable (p₀ : (internalBlowupTower b s a).1 ⟶ X) [IsModification p₀]
-  (q₀ : (internalBlowupTower b s a').1 ⟶ X') [IsModification q₀]
+variable (p₀ : (internalBlowupTower K b s a).1 ⟶ X) [IsModification p₀]
+  (q₀ : (internalBlowupTower K b s a').1 ⟶ X') [IsModification q₀]
 
 /-- If an isomorphism of contractions lifts to a translation, the image of a boundary
 prime is characterized by its ray in the common fan. -/
 theorem apply_contractedBoundaryPrime_eq_iff_of_isLift_torusTranslation (e : X ≅ X')
     (hD : (D.comap p₀).support = (M a).2.boundaryι.ker.support)
     (hD' : (D'.comap q₀).support = (M a').2.boundaryι.ker.support)
-    {χ : Multiplicative (N →+ ℤ) →* ℂˣ} {t : (M a).1 ≅ (M a').1}
-    (ht : IsLift (Φ.torusTranslation χ) ((M a).2.toTower) ((M a').2.toTower) t)
+    {χ : Multiplicative (N →+ ℤ) →* Kˣ} {t : (M a).1 ≅ (M a').1}
+    (ht : IsLift (Φ.torusTranslationIso K χ) ((M a).2.toTower) ((M a').2.toTower) t)
     (htq : p₀ ≫ e.hom = t.hom ≫ q₀) (x : D.boundaryPrimes) (y : D'.boundaryPrimes) :
-    e.hom x.val = y.val ↔ contractedBoundaryRayEmbedding hΦ b s a p₀ hD x =
-      contractedBoundaryRayEmbedding hΦ b s a' q₀ hD' y := by
-  let ρ := contractedBoundaryRayEmbedding hΦ b s a p₀ hD x
-  let z := (internalBlowupBoundaryPrimeEquiv hΦ b s a ρ).val
-  have hx : p₀ z = x.val := contraction_internalBlowupBoundaryPrimeEquiv hΦ b s a p₀ hD x
-  have h : e.hom x.val = q₀ (internalBlowupBoundaryPrimeEquiv hΦ b s a' ρ).val := by
+    e.hom x.val = y.val ↔ contractedBoundaryRayEmbedding K hΦ b s a p₀ hD x =
+      contractedBoundaryRayEmbedding K hΦ b s a' q₀ hD' y := by
+  let ρ := contractedBoundaryRayEmbedding K hΦ b s a p₀ hD x
+  let z := (internalBlowupBoundaryPrimeEquiv K hΦ b s a ρ).val
+  have hx : p₀ z = x.val := contraction_internalBlowupBoundaryPrimeEquiv K hΦ b s a p₀ hD x
+  have h : e.hom x.val = q₀ (internalBlowupBoundaryPrimeEquiv K hΦ b s a' ρ).val := by
     rw [← hx, ← Scheme.Hom.comp_apply, htq, Scheme.Hom.comp_apply]
     exact congrArg q₀
-      (apply_internalBlowupBoundaryPrimeEquiv_of_isLift_torusTranslation b s hΦ a a' ht ρ)
+      (apply_internalBlowupBoundaryPrimeEquiv_of_isLift_torusTranslation K b s hΦ a a' ht ρ)
   rw [h]
-  exact (contractedBoundaryRayEmbedding_eq_iff hΦ b s a' q₀ hD' y ρ).symm.trans eq_comm
+  exact (contractedBoundaryRayEmbedding_eq_iff K hΦ b s a' q₀ hD' y ρ).symm.trans eq_comm
 
 end BoundaryPrimes
 

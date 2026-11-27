@@ -10,14 +10,12 @@ public import QPainleve.AlgebraicGeometry.Blowup.Tower.Nodal.InternalCurve
 public import QPainleve.Geometry.Toric.Fan.Boundary.Node
 public import QPainleve.Geometry.Toric.Fan.Presentation.Basic
 
-import Mathlib.Analysis.Complex.Polynomial.Basic
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Boundary.ExceptionalConfiguration
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Boundary.Recovery
 import QPainleve.AlgebraicGeometry.Chow.NegativeCurve
 import QPainleve.AlgebraicGeometry.IdealSheaf.BaseChange
 import QPainleve.AlgebraicGeometry.IdealSheaf.ClosedImmersion
 import QPainleve.AlgebraicGeometry.IdealSheaf.ResidueField
-import QPainleve.Geometry.Toric.Fan.Smooth
 import QPainleve.Geometry.Toric.Fan.Subdivision.Projective
 
 /-!
@@ -39,44 +37,47 @@ open TauCeti.AlgebraicGeometry TauCeti.Toric Scheme.IdealSheafData
 
 namespace AlgebraicGeometry.Scheme.IdealSheafData
 
-variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
+universe u
+
+variable {k : Type u} [Field k] [IsAlgClosed k] {N V : Type u}
+  [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {Φ : Fan i} {b : Module.Basis (Fin 2) ℤ N}
 
-local notation "SpecC" => Spec (CommRingCat.of ℂ)
+local notation "SpecC" => Spec (CommRingCat.of k)
 local notation "g(" X ")" => (X ↘ SpecC)
-local notation "K(" X ")" => LineBundleClass.mk (canonicalBundle ℂ X 2)
+local notation "K(" X ")" => LineBundleClass.mk (canonicalBundle k X 2)
 local notation "rankTwo" => (Eq.trans (Module.finrank_eq_card_basis b) (Fintype.card_fin 2))
 local notation "RootFree(" Y ", " B ")" =>
   (¬ ∃ (C : Scheme) (j : C ⟶ Y) (_ : IsClosedImmersion j) (_ : IsIntegral C)
     (hj : j.ker.IsEffectiveCartier), topologicalKrullDim C = 1 ∧
     Disjoint (Set.range j) (support B) ∧
-    Chow.classIntersectionNumber ℂ Y (LineBundleClass.mk hj.toInvertibleSheaf)⁻¹
+    Chow.classIntersectionNumber k Y (LineBundleClass.mk hj.toInvertibleSheaf)⁻¹
       (LineBundleClass.mk hj.toInvertibleSheaf)⁻¹ = -2)
 
 open Fan in
 private theorem contraction_baseCenters_of_root_free (hΦ : Φ.IsRegular) (hc : Φ.IsComplete)
-    {r : ℕ} (s : Fin r → Φ.Ray) (c : Fin r → ℂˣ)
-    {Y : Scheme} [Y.Over SpecC] (B : Y.IdealSheafData) (hroot : RootFree(Y, B)) :
+    {r : ℕ} (s : Fin r → Φ.Ray) (c : Fin r → kˣ)
+    {Y : Scheme} [Y.Over (Spec (.of k))] (B : Y.IdealSheafData) (hroot : RootFree(Y, B)) :
     let : Nonempty Φ.cones := hc.nonempty_cones
-    let D := Φ.boundaryIdeal hc.nonempty_cones
-    let M := internalBlowupTower b s c
+    let D := Φ.toricBoundaryIdeal k hc.nonempty_cones
+    let M := internalBlowupTower k b s c
     ∀ (a : Y ≅ M.1),
-      a.hom ≫ M.2.toTower.toBase ≫ Φ.algebraicRealizationStructureMap = g(Y) →
+      a.hom ≫ M.2.toTower.toBase ≫ Φ.finiteFanSchemeToSpec k = g(Y) →
       (B.comap a.inv).support = M.2.boundaryι.ker.support →
-      let H := isClosedPointTower_internalBlowupTower b s c
+      let H := isClosedPointTower_internalBlowupTower k b s c
       Function.Injective H.baseCenter ∧
         ∀ j, ∃ p : D.subscheme, D.subschemeι p = H.baseCenter j ∧
-          ((D.subschemeι ≫ Φ.algebraicRealizationStructureMap).stalkMap p).hom.FormallySmooth := by
+          ((D.subschemeι ≫ Φ.finiteFanSchemeToSpec k).stalkMap p).hom.FormallySmooth := by
   intro nΦ D M
   let := nΦ
-  let : Φ.algebraicRealization.IsProjectiveOver ℂ :=
-    Φ.isProjectiveOver_algebraicRealization_of_isComplete hΦ hc b
-  let : SmoothOfRelativeDimension 2 g(Φ.algebraicRealization) := by
-    rw [algebraicRealization_over]
+  let : (Φ.finiteFanScheme k).IsProjectiveOver k :=
+    Φ.isProjectiveOver_finiteFanScheme_of_isComplete k hΦ hc b
+  let : SmoothOfRelativeDimension 2 g((Φ.finiteFanScheme k)) := by
+    rw [Φ.finiteFanScheme_over k]
     exact ((Module.finrank_eq_card_basis b).trans (Fintype.card_fin 2)) ▸
-      Φ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
-  let J (j : Fin r) := (s j).internalCenter b (c j)
-  choose p hp hsm hpJ using fun j ↦ (s j).exists_closedPoint_formallySmooth_internalCenter b (c j)
+      Φ.smoothOfRelativeDimension_finiteFanSchemeToSpec k hΦ
+  let J (j : Fin r) := (s j).internalCenter k b (c j)
+  choose p hp hsm hpJ using fun j ↦ (s j).exists_closedPoint_formallySmooth_internalCenter k b (c j)
   have hJ (j : Fin r) : ∃ q : D.subscheme, IsClosed ({q} : Set D.subscheme) ∧
       (J j).val = (D.subscheme.fromSpecResidueField q).ker := ⟨p j, hp j, hpJ j⟩
   -- The ambient comparison and projected centers depend on the tower.
@@ -84,17 +85,17 @@ private theorem contraction_baseCenters_of_root_free (hΦ : Φ.IsRegular) (hc : 
   suffices ∀ (U : Σ Z, WithBoundary D.subschemeι r Z),
       U = alongBoundary D.subschemeι J →
       ∀ (a : Y ≅ U.1),
-        a.hom ≫ U.2.toTower.toBase ≫ Φ.algebraicRealizationStructureMap = g(Y) →
+        a.hom ≫ U.2.toTower.toBase ≫ Φ.finiteFanSchemeToSpec k = g(Y) →
         (B.comap a.inv).support = U.2.boundaryι.ker.support →
-        ∀ H : IsClosedPointTower Φ.algebraicRealization U.2.toTower,
+        ∀ H : IsClosedPointTower (Φ.finiteFanScheme k) U.2.toTower,
           Function.Injective H.baseCenter ∧
             ∀ j, ∃ q : D.subscheme, D.subschemeι q = H.baseCenter j ∧
-              ((D.subschemeι ≫ Φ.algebraicRealizationStructureMap).stalkMap q).hom.FormallySmooth
+              ((D.subschemeι ≫ Φ.finiteFanSchemeToSpec k).stalkMap q).hom.FormallySmooth
     from
-    fun a ha hBa ↦ this _ (internalBlowupTower_eq_alongBoundary b s c) a ha hBa _
+    fun a ha hBa ↦ this _ (internalBlowupTower_eq_alongBoundary k b s c) a ha hBa _
   rintro _ rfl a ha hBa H
-  obtain ⟨hdis, -, -⟩ := exceptional_configuration_alongBoundary_of_iso D.subschemeι J ℂ B a
-    (by rwa [algebraicRealization_over]) hBa hJ hroot
+  obtain ⟨hdis, -, -⟩ := exceptional_configuration_alongBoundary_of_iso D.subschemeι J k B a
+    (by rwa [Φ.finiteFanScheme_over k]) hBa hJ hroot
   refine ⟨?_, fun j ↦ ⟨p j, (H.baseCenter_alongBoundary p hpJ j).symm, hsm j⟩⟩
   intro j l h
   have he : p j = p l := D.subschemeι.injective
@@ -118,8 +119,9 @@ private theorem contraction_baseCenters_of_root_free (hΦ : Φ.IsRegular) (hc : 
     rw [Scheme.support_ker_fromSpecResidueField_of_isClosed (hp l)]
     exact Set.mem_singleton _
 
-variable {X : Scheme} [X.Over SpecC] [X.IsProjectiveOver ℂ]
-  [SmoothOfRelativeDimension 2 g(X)] [hRat : Scheme.IsRationalOver g(X)]
+variable {X : Scheme} [X.Over (Spec (.of k))] [X.IsProjectiveOver k]
+  [SmoothOfRelativeDimension 2 (X ↘ Spec (.of k))]
+  [hRat : Scheme.IsRationalOver (X ↘ Spec (.of k))]
   {D : X.IdealSheafData}
 
 include hRat in
@@ -133,45 +135,45 @@ theorem exists_toric_contraction_of_root_free_presentation
     (hroot : let : Smooth g(X) := SmoothOfRelativeDimension.smooth 2 _
       let : IsIntegral X := hRat.isIntegral_of_smooth
       ∀ p : CodimensionOnePoint X, (p : X) ∉ D.support →
-        Chow.realIntersectionBilinForm ℂ X (Chow.realPrimeDivisorClass ℂ p)
-          (Chow.realPrimeDivisorClass ℂ p) ≠ -2) :
+        Chow.realIntersectionBilinForm k X (Chow.realPrimeDivisorClass k p)
+          (Chow.realPrimeDivisorClass k p) ≠ -2) :
     ∃ (Φ : Fan i) (hΦ : Φ.IsRegular) (hc : Φ.IsComplete)
-      (r : ℕ) (s : Fin r → Φ.Ray) (c : Fin r → ℂˣ)
+      (r : ℕ) (s : Fin r → Φ.Ray) (c : Fin r → kˣ)
       (m : ℕ) (Y : Scheme) (T : BlowupTower X m Y),
       IsNodalBoundaryTower D g(X) (𝟙 X) T ∧
       let : Nonempty Φ.cones := hc.nonempty_cones
-      let I := Φ.boundaryIdeal hc.nonempty_cones
+      let I := Φ.toricBoundaryIdeal k hc.nonempty_cones
       let E := (D.comap T.toBase).radical
-      let M := Fan.internalBlowupTower b s c
-      let H := Fan.isClosedPointTower_internalBlowupTower b s c
-      let : LocallyOfFinitePresentation (I.subschemeι ≫ Φ.algebraicRealizationStructureMap) :=
-        (Φ.atWorstNodalOfRelativeDimensionOne_boundary hΦ hc rankTwo).syntomic
+      let M := Fan.internalBlowupTower k b s c
+      let H := Fan.isClosedPointTower_internalBlowupTower k b s c
+      let : LocallyOfFinitePresentation (I.subschemeι ≫ Φ.finiteFanSchemeToSpec k) :=
+        (Φ.atWorstNodalOfRelativeDimensionOne_boundary k hΦ hc rankTwo).syntomic
           |>.locallyOfFinitePresentation
       ∃ a : Y ≅ M.1,
-        a.hom ≫ M.2.toTower.toBase ≫ Φ.algebraicRealizationStructureMap = T.toBase ≫ g(X) ∧
+        a.hom ≫ M.2.toTower.toBase ≫ Φ.finiteFanSchemeToSpec k = T.toBase ≫ g(X) ∧
         E.comap a.inv = M.2.boundaryι.ker ∧ Function.Injective H.baseCenter ∧
         (∀ j, ∃ p : I.subscheme, I.subschemeι p = H.baseCenter j ∧
-          p ∈ (I.subschemeι ≫ Φ.algebraicRealizationStructureMap).smoothLocus) ∧
+          p ∈ (I.subschemeι ≫ Φ.finiteFanSchemeToSpec k).smoothLocus) ∧
         ∃ v : E.subscheme ≅ I.subscheme,
           v.hom ≫ I.subschemeι = E.subschemeι ≫ a.hom ≫ M.2.toTower.toBase := by
   obtain ⟨r, ⟨Φ, hΦ, hc, s, c, m, Y, T, hT, e, he, hB⟩⟩ := (hasToricPresentation_iff ..).mp h
   let : Nonempty Φ.cones := hc.nonempty_cones
-  let I := Φ.boundaryIdeal hc.nonempty_cones
+  let I := Φ.toricBoundaryIdeal k hc.nonempty_cones
   let E := (D.comap T.toBase).radical
-  let M := Fan.internalBlowupTower b s c
+  let M := Fan.internalBlowupTower k b s c
   let : Y.Over SpecC := ⟨T.toBase ≫ g(X)⟩
   let : Smooth g(X) := SmoothOfRelativeDimension.smooth 2 _
   let : IsIntegral X := hRat.isIntegral_of_smooth
-  let : LocallyOfFinitePresentation (I.subschemeι ≫ Φ.algebraicRealizationStructureMap) :=
-    (Φ.atWorstNodalOfRelativeDimensionOne_boundary hΦ hc rankTwo).syntomic
+  let : LocallyOfFinitePresentation (I.subschemeι ≫ Φ.finiteFanSchemeToSpec k) :=
+    (Φ.atWorstNodalOfRelativeDimensionOne_boundary k hΦ hc rankTwo).syntomic
       |>.locallyOfFinitePresentation
   have hrootX : RootFree(X, D) := by
-    rw [← Chow.exists_realPrimeDivisorClass_self_eq_neg_two_iff ℂ hD hcan]
+    rw [← Chow.exists_realPrimeDivisorClass_self_eq_neg_two_iff k hD hcan]
     rintro ⟨p, hp, hsq⟩
     exact hroot p hp hsq
   have hrootY : RootFree(Y, E) := by
-    simpa only [E, support_radical] using (hT.exists_internal_minus_two_curve_iff ℂ).not.mpr hrootX
-  have ha : e.inv ≫ M.2.toTower.toBase ≫ Φ.algebraicRealizationStructureMap = g(Y) := by
+    simpa only [E, support_radical] using (hT.exists_internal_minus_two_curve_iff k).not.mpr hrootX
+  have ha : e.inv ≫ M.2.toTower.toBase ≫ Φ.finiteFanSchemeToSpec k = g(Y) := by
     rw [← he, Iso.inv_hom_id_assoc]
     rfl
   obtain ⟨hinj, hcenters⟩ := contraction_baseCenters_of_root_free (b := b) hΦ hc s c E hrootY

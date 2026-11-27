@@ -29,16 +29,21 @@ open TauCeti.AlgebraicGeometry Scheme.IdealSheafData
 
 namespace TauCeti.Toric.Fan
 
-local notation "S" => Spec (CommRingCat.of ℂ)
+universe u
+
+variable {K : Type u} [Field K] [PerfectField K]
+
+local notation "S" => Spec (CommRingCat.of K)
 local notation "Total[" D "," T "]" =>
   Scheme.IdealSheafData.radical (Scheme.IdealSheafData.comap D (BlowupTower.toBase T))
 
-variable {N V N' V' : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
+variable {N V N' V' : Type u}
+  [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   [AddCommGroup N'] [AddCommGroup V'] [Module ℝ V']
   {i : N →+ V} {i' : N' →+ V'}
-  {X Y X' Y' : Scheme} [X.Over S] [Y.Over S]
+  {X Y X' Y' : Scheme} [X.Over (Spec (.of K))] [Y.Over (Spec (.of K))]
   [IsIntegral X] [IsIntegral Y] [IsNoetherian X] [IsNoetherian Y]
-  [SmoothOfRelativeDimension 2 (X ↘ S)] [SmoothOfRelativeDimension 2 (Y ↘ S)]
+  [SmoothOfRelativeDimension 2 (X ↘ Spec (.of K))] [SmoothOfRelativeDimension 2 (Y ↘ Spec (.of K))]
   {D : X.IdealSheafData} {E : Y.IdealSheafData}
   {m n : ℕ} {T : BlowupTower X m X'} {U : BlowupTower Y n Y'}
 
@@ -61,7 +66,7 @@ theorem exists_common_logarithmic_projections_of_pair_iso
       hT.isClosedPointTower.smoothOfRelativeDimension (X ↘ S)
     letI : SmoothOfRelativeDimension 2 (Y' ↘ S) :=
       hU.isClosedPointTower.smoothOfRelativeDimension (Y ↘ S)
-    ∀ (A : LogarithmicProjection i Total[D,T]) (B : LogarithmicProjection i' Total[E,U]),
+    ∀ (A : LogarithmicProjection K i Total[D,T]) (B : LogarithmicProjection K i' Total[E,U]),
       IsModification A.hom → IsModification B.hom →
       ∃ (a b : ℕ) (W Z : Scheme) (L : BlowupTower X' a W) (R : BlowupTower Y' b Z) (f : W ≅ Z)
         (hTL : IsNodalBoundaryTower D (X ↘ S) (𝟙 X) (T.append L))
@@ -70,8 +75,8 @@ theorem exists_common_logarithmic_projections_of_pair_iso
         letI : W.Over S := ⟨(T.append L).toBase ≫ X ↘ S⟩
         letI : SmoothOfRelativeDimension 2 (W ↘ S) :=
           hTL.isClosedPointTower.smoothOfRelativeDimension (X ↘ S)
-        ∃ (A' : LogarithmicProjection i Total[D,T.append L])
-          (B' : LogarithmicProjection i' Total[D,T.append L]),
+        ∃ (A' : LogarithmicProjection K i Total[D,T.append L])
+          (B' : LogarithmicProjection K i' Total[D,T.append L]),
           A'.fan = A.fan ∧ A'.hom ≍ L.toBase ≫ A.hom ∧ IsModification A'.hom ∧
           B'.fan = B.fan ∧ B'.hom ≍ f.hom ≫ R.toBase ≫ B.hom ∧ IsModification B'.hom := by
   intro A B hA hB

@@ -5,7 +5,6 @@ Authors: The QPainleve contributors
 -/
 module
 
-public import Mathlib.Analysis.Complex.Polynomial.Basic
 public import QPainleve.AlgebraicGeometry.Curves.Node.CycleAction
 public import QPainleve.AlgebraicGeometry.Modules.Differentials.Divisor
 public import QPainleve.Geometry.Toric.Fan.Logarithmic.Morphism
@@ -31,26 +30,29 @@ open TauCeti.AlgebraicGeometry Scheme.IdealSheafData
 
 namespace TauCeti.Toric.Fan
 
+variable (K : Type) [Field K] [IsAlgClosed K]
+
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {Φ Ψ : Fan i} [Nonempty Ψ.cones] {X : Scheme}
 
-local notation "S" => Spec (CommRingCat.of ℂ)
-local notation "B" => (Ψ.boundaryIdeal inferInstance)
+local notation "S" => Spec (CommRingCat.of K)
+local notation "B" => (Ψ.toricBoundaryIdeal K inferInstance)
 local notation "C" => Scheme.IdealSheafData.subscheme B
-local notation "ν[" Y "]" => Scheme.IdealSheafData.blowupToBase (Scheme.singularLocus ℂ Y)
+local notation "ν[" Y "]" => Scheme.IdealSheafData.blowupToBase (Scheme.singularLocus K Y)
 
-variable [X.Over S] {P : X.IdealSheafData} [PrestableFamily (P.subscheme ↘ S)]
-  {ι : Type*} (p : ι → (P.subscheme ↘ S).smoothLocus)
+variable [X.Over (Spec (.of K))] {P : X.IdealSheafData}
+  [PrestableFamily (P.subscheme ↘ Spec (.of K))]
+  {ι : Type*} (p : ι → (P.subscheme ↘ Spec (.of K)).smoothLocus)
 
 private theorem range_numberedComponent_of_boundaryIso
     [PrestableFamily (C ↘ S)] (hΨ : Ψ.IsRegular) (d : C ≅ P.subscheme) [d.hom.IsOver S]
     {n : ℕ} [NeZero n] {ι' : Type*} {q : ι' → (C ↘ S).smoothLocus}
     (W : Scheme.NodalCycleNumbering q n) (j : ZMod n) (r : Ψ.Ray)
-    (hw : W.component j = Ψ.boundaryNormalizationComponentEquiv hΨ r) :
+    (hw : W.component j = Ψ.boundaryNormalizationComponentEquiv K hΨ r) :
     Set.range ((P.subscheme.blowupComponent ((d.mapNodalCycleNumbering W (q := p)).component j)).ι
       ≫ ν[P.subscheme] ≫ P.subschemeι) =
-      Set.range (r.boundaryComponentι hΨ ≫ d.hom ≫ P.subschemeι) := by
-  let g := (d.singularLocusBlowupIso (R := ℂ)).hom
+      Set.range (r.boundaryComponentι K hΨ ≫ d.hom ≫ P.subschemeι) := by
+  let g := (d.singularLocusBlowupIso (R := K)).hom
   let g' := ν[P.subscheme] ≫ P.subschemeι
   have hg : g ≫ g' = ν[C] ≫ d.hom ≫ P.subschemeι := by simp [g, g']
   calc
@@ -66,14 +68,14 @@ private theorem range_numberedComponent_of_boundaryIso
       simp only [Scheme.Hom.comp_base, TopCat.coe_comp, Set.range_comp,
         Set.image_comp, Scheme.Opens.range_ι, Scheme.coe_blowupComponent]
       rw [congrArg Subtype.val hw]
-      have hr := Ψ.range_boundaryNormalizationComponentEquiv hΨ r
+      have hr := Ψ.range_boundaryNormalizationComponentEquiv K hΨ r
       simpa only [Scheme.Hom.comp_base, TopCat.coe_comp, Set.range_comp, Scheme.Opens.range_ι,
         Scheme.coe_blowupComponent] using
         congrArg (fun s : Set C ↦ P.subschemeι '' (d.hom '' s)) hr
 
 variable (b : Module.Basis (Fin 2) ℤ N) (hΨ : Ψ.IsRegular) (hc : Φ.IsComplete)
-  (H : Ψ.IsSubdivision Φ) {m : ℕ} (ρ : Fin m → Ψ.Ray) (u : Fin m → ℂˣ)
-  {f : X ⟶ Φ.algebraicRealization} [f.IsOver S]
+  (H : Ψ.IsSubdivision Φ) {m : ℕ} (ρ : Fin m → Ψ.Ray) (u : Fin m → Kˣ)
+  {f : X ⟶ Φ.finiteFanScheme K} [f.IsOver (Spec (.of K))]
 
 include hΨ hc in
 /-- A specified logarithmic factorization numbers the actual boundary cycle of the source
@@ -81,18 +83,19 @@ starting at any chosen boundary prime. The first branch at node `j` is on the pr
 ray `j` and the second is on the prime for ray `j` + 1. Their primitive ray generators
 have positive determinant one. -/
 theorem exists_oriented_boundary_of_logarithmic_factorization
-    (e : (Ψ.internalBlowupTower b ρ u).1 ≅ X)
-    (he : e.hom ≫ f = (Ψ.internalBlowupTower b ρ u).2.toTower.toBase ≫ H.toFanHom.algebraicMap)
-    (hP : P.comap e.hom = (Ψ.internalBlowupTower b ρ u).2.boundaryι.ker)
+    (e : (Ψ.internalBlowupTower K b ρ u).1 ≅ X)
+    (he : e.hom ≫ f =
+      (Ψ.internalBlowupTower K b ρ u).2.toTower.toBase ≫ H.toFanHom.finiteFanSchemeHom K)
+    (hP : P.comap e.hom = (Ψ.internalBlowupTower K b ρ u).2.boundaryι.ker)
     (p₀ : P.boundaryPrimes) :
     let hs := congrArg Scheme.IdealSheafData.support hP
-    let R := internalBlowupBoundaryPrimeEquivOfIso hΨ b ρ u e hs
+    let R := internalBlowupBoundaryPrimeEquivOfIso K hΨ b ρ u e hs
     ∃ (n : ℕ) (_ : NeZero n) (W : Scheme.NodalCycleNumbering p n) (v : ZMod n ≃ Ψ.Ray),
       R (v 0) = p₀ ∧
       ∀ j, b.detDualEquiv (v j).primitiveGenerator (v (j + 1)).primitiveGenerator = 1 ∧
         Set.range ((P.subscheme.blowupComponent (W.component j)).ι ≫
           ν[P.subscheme] ≫ P.subschemeι) = closure {((R (v j)).val : X)} := by
-  let A := Ψ.internalBlowupTower b ρ u
+  let A := Ψ.internalBlowupTower K b ρ u
   intro hs R
   obtain ⟨d, hd⟩ := P.exists_iso_of_comap_eq_ker e A.2.boundaryι hP
   have hdOver : d.hom.IsOver S := ⟨by
@@ -108,65 +111,67 @@ theorem exists_oriented_boundary_of_logarithmic_factorization
   have hc' := H.isComplete_iff.mpr hc
   obtain ⟨v, ⟨hv₀, hv⟩, -⟩ := existsUnique_cyclicRayNumbering b hΨ hc' r₀
   let q : Empty → (C ↘ S).smoothLocus := Empty.elim
-  obtain ⟨E, o, w, hw, hw', -⟩ := exists_toric_boundary_dualGraph_cycle hΨ hc' q b v hv
+  obtain ⟨E, o, w, hw, hw', -⟩ := exists_toric_boundary_dualGraph_cycle K hΨ hc' q b v hv
   let W : Scheme.NodalCycleNumbering q (Nat.card Ψ.Ray) := ⟨w, E, o, hw⟩
   refine ⟨_, inferInstance, d.mapNodalCycleNumbering W, v, ?_, fun j ↦ ⟨(hv j).1, ?_⟩⟩
   · exact (congrArg R hv₀).trans (R.apply_symm_apply p₀)
-  · have hW : W.component j = Ψ.boundaryNormalizationComponentEquiv hΨ (v j) := by
+  · have hW : W.component j = Ψ.boundaryNormalizationComponentEquiv K hΨ (v j) := by
       simpa only [Scheme.NodalCycleNumbering.component_apply, W] using hw' j
-    rw [range_numberedComponent_of_boundaryIso p hΨ d W j (v j) hW, hd]
+    rw [range_numberedComponent_of_boundaryIso K p hΨ d W j (v j) hW, hd]
     simpa only [Category.assoc] using
-      range_rayComponent_internalBlowupBoundaryPrimeEquivOfIso hΨ b ρ u e hs (v j)
+      range_rayComponent_internalBlowupBoundaryPrimeEquivOfIso K hΨ b ρ u e hs (v j)
 
-variable (hΦ : Φ.IsRegular) [IsIntegral X] [X.IsProjectiveOver ℂ]
-  [SmoothOfRelativeDimension 2 (X ↘ S)]
+variable (hΦ : Φ.IsRegular) [IsIntegral X] [X.IsProjectiveOver K]
+  [SmoothOfRelativeDimension 2 (X ↘ Spec (.of K))]
 
 /-- Recover the positive cycle on the source boundary directly from the pole-divisor
 hypothesis. The orders of the two pulled-back coordinate characters on consecutive
 components have determinant one in the order of the actual branches. -/
 theorem exists_oriented_boundary_of_pullbackTopFormDivisor
-    (hf : Scheme.BirationalOver f (𝟙 Φ.algebraicRealization))
+    (hf : Scheme.BirationalOver f (𝟙 (Φ.finiteFanScheme K)))
     (hP : P.IsEffectiveCartier) (p₀ : P.boundaryPrimes) :
     let _ : Nonempty Φ.cones := hc.nonempty_cones
-    let _ : SmoothOfRelativeDimension 2 (Φ.algebraicRealization ↘ S) :=
-      ((Module.finrank_eq_card_basis b).trans (Fintype.card_fin 2)) ▸
-        Φ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
+    let _ : SmoothOfRelativeDimension 2 ((Φ.finiteFanScheme K) ↘ S) :=
+      (Φ.finiteFanScheme_over K).symm ▸
+        (((Module.finrank_eq_card_basis b).trans (Fintype.card_fin 2)) ▸
+          Φ.smoothOfRelativeDimension_finiteFanSchemeToSpec K hΦ)
     let _ : IsLocallyNoetherian X := LocallyOfFiniteType.isLocallyNoetherian (X ↘ S)
-    let hD := Φ.isEffectiveCartier_boundaryIdeal hΦ hc
+    let hD := Φ.isEffectiveCartier_boundaryIdeal K hΦ hc
       ((Module.finrank_eq_card_basis b).trans (Fintype.card_fin 2))
-    ∀ (ω : hD.toInvertibleSheaf ≅ canonicalBundle ℂ Φ.algebraicRealization 2)
-      (hTotal : ((Φ.boundaryIdeal inferInstance).comap f).IsEffectiveCartier)
+    ∀ (ω : hD.toInvertibleSheaf ≅ canonicalBundle K (Φ.finiteFanScheme K) 2)
+      (hTotal : ((Φ.toricBoundaryIdeal K inferInstance).comap f).IsEffectiveCartier)
       (hRam : let _ := SmoothOfRelativeDimension.smooth 2 (X ↘ S)
-        (ramificationIdealSheaf ℂ f).IsEffectiveCartier),
-      pullbackTopFormDivisor ℂ f 2 hD ω hTotal hRam = -hP.toCartierDivisor →
+        (ramificationIdealSheaf K f).IsEffectiveCartier),
+      pullbackTopFormDivisor K f 2 hD ω hTotal hRam = -hP.toCartierDivisor →
     ∃ hDom : IsDominant f,
       let _ : IsDominant f := hDom
       ∃ (n : ℕ) (_ : NeZero n) (W : Scheme.NodalCycleNumbering p n)
         (R : ZMod n ≃ P.boundaryPrimes),
         let order (q : P.boundaryPrimes) (a : Fin 2) :=
-          X.ord (f.functionFieldMap (Φ.character (ofAdd (b.coord a).toAddMonoidHom))) q.val
+          X.ord (f.functionFieldMap
+            (Φ.functionFieldCharacter K (ofAdd (b.coord a).toAddMonoidHom))) q.val
         R 0 = p₀ ∧
         ∀ j, order (R j) 0 * order (R (j + 1)) 1 - order (R j) 1 * order (R (j + 1)) 0 = 1 ∧
           Set.range ((P.subscheme.blowupComponent (W.component j)).ι ≫
             ν[P.subscheme] ≫ P.subschemeι) = closure {((R j).val : X)} := by
   intro _ _ _ hD ω hTotal hRam hdiv
   obtain ⟨Ψ, hΨ, H, m, ρ, u, e, he, hboundary⟩ :=
-    exists_toric_internal_factorization_of_pullbackTopFormDivisor b hΦ hc hf hP ω hTotal hRam hdiv
+    exists_toric_internal_factorization_of_pullbackTopFormDivisor K b hΦ hc hf hP ω hTotal hRam hdiv
   have : Nonempty Ψ.cones := H.nonempty_cones_of_nonempty hc.nonempty_cones
-  have := isModification_internalBlowupTower_toBase b ρ u hΨ
+  have := isModification_internalBlowupTower_toBase K b ρ u hΨ
   have : IsDominant (e.hom ≫ f) := by
     rw [he]
     infer_instance
   have hDom : IsDominant f := IsDominant.of_comp e.hom f
   have hs := congrArg Scheme.IdealSheafData.support hboundary
-  let R := internalBlowupBoundaryPrimeEquivOfIso hΨ b ρ u e hs
+  let R := internalBlowupBoundaryPrimeEquivOfIso K hΨ b ρ u e hs
   obtain ⟨n, hn, W, v, h₀, hcycle⟩ :=
-    exists_oriented_boundary_of_logarithmic_factorization p b hΨ hc H ρ u e he hboundary p₀
+    exists_oriented_boundary_of_logarithmic_factorization K p b hΨ hc H ρ u e he hboundary p₀
   refine ⟨hDom, n, hn, W, v.trans R, h₀, fun j ↦ ⟨?_, (hcycle j).2⟩⟩
   let x := (v j).primitiveGenerator
   let y := (v (j + 1)).primitiveGenerator
   simp only [R, Equiv.trans_apply,
-    ord_internalBlowupBoundaryPrimeEquivOfIso_character b hΨ H ρ u e he hs,
+    ord_internalBlowupBoundaryPrimeEquivOfIso_character K b hΨ H ρ u e he hs,
     LinearMap.toAddMonoidHom_coe, Module.Basis.coord_apply]
   have hdet : b.det ![x, y] = 1 := (b.detDualEquiv_apply x y).symm.trans (hcycle j).1
   rw [mul_comm (b.repr x 1) (b.repr y 0)]

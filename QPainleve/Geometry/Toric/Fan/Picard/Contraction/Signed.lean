@@ -31,31 +31,36 @@ universe v w
 
 namespace TauCeti.Toric.Fan
 
-variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
-  {i : N →+ V} {Φ : Fan i} [Φ.algebraicRealization.IsProjectiveOver ℂ]
-  (hΦ : Φ.IsRegular) (hc : Φ.IsComplete) (b : Module.Basis (Fin 2) ℤ N)
-  {r : ℕ} (s : Fin r → Φ.Ray) (c : Fin r → ℂˣ)
+variable (k₀ : Type) [Field k₀] [IsAlgClosed k₀]
 
-local notation "SpecC" => Spec (CommRingCat.of ℂ)
+variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
+  {i : N →+ V} {Φ : Fan i} [(Φ.finiteFanScheme k₀).IsProjectiveOver k₀]
+  (hΦ : Φ.IsRegular) (hc : Φ.IsComplete) (b : Module.Basis (Fin 2) ℤ N)
+  {r : ℕ} (s : Fin r → Φ.Ray) (c : Fin r → k₀ˣ)
+
+local notation "SpecC" => Spec (CommRingCat.of k₀)
 local notation "g(" X ")" => (X ↘ SpecC)
-local notation "K(" X ")" => LineBundleClass.mk (canonicalBundle ℂ X 2)
-local notation "B(" X ")" => Chow.intersectionBilinForm ℂ X
+local notation "K(" X ")" => LineBundleClass.mk (canonicalBundle k₀ X 2)
+local notation "B(" X ")" => Chow.intersectionBilinForm k₀ X
 local notation "P(" D ", " p ")" => Additive.ofMul (primeDivisorClass (boundaryPrimeEmbedding D p))
 local notation "R(" D ", " T ")" => radical (comap D (BlowupTower.toBase T))
 local notation "β(" E ", " D ", " T ")" =>
   subschemeMap E D (BlowupTower.toBase T) (le_map_iff_comap_le.mpr (le_radical _))
-local notation "M" => internalBlowupTower b s c
+local notation "M" => internalBlowupTower k₀ b s c
 local notation "J" => WithBoundary.toTower (Sigma.snd M)
 local notation "ιM" => WithBoundary.boundaryι (Sigma.snd M)
 
-variable {X Z Y : Scheme} [X.Over SpecC] [Z.Over SpecC]
-  [X.IsProjectiveOver ℂ] [Z.IsProjectiveOver ℂ]
-  [SmoothOfRelativeDimension 2 g(X)] [SmoothOfRelativeDimension 2 g(Z)]
-  [hRatX : Scheme.IsRationalOver g(X)] [hRatZ : Scheme.IsRationalOver g(Z)]
+variable {X Z Y : Scheme} [X.Over (Spec (.of k₀))] [Z.Over (Spec (.of k₀))]
+  [X.IsProjectiveOver k₀] [Z.IsProjectiveOver k₀]
+  [SmoothOfRelativeDimension 2 (X ↘ Spec (.of k₀))]
+  [SmoothOfRelativeDimension 2 (Z ↘ Spec (.of k₀))]
+  [hRatX : Scheme.IsRationalOver (X ↘ Spec (.of k₀))]
+  [hRatZ : Scheme.IsRationalOver (Z ↘ Spec (.of k₀))]
   {D : X.IdealSheafData} {F : Z.IdealSheafData}
-  [PrestableFamily g(D.subscheme)] [PrestableFamily g(F.subscheme)]
+  [PrestableFamily (D.subscheme ↘ Spec (.of k₀))] [PrestableFamily (F.subscheme ↘ Spec (.of k₀))]
   {n : ℕ} [NeZero n] {ι : Type v} {κ : Type w}
-  {p : ι → g(D.subscheme).smoothLocus} {q : κ → g(F.subscheme).smoothLocus}
+  {p : ι → (D.subscheme ↘ Spec (.of k₀)).smoothLocus}
+  {q : κ → (F.subscheme ↘ Spec (.of k₀)).smoothLocus}
   (A : Scheme.NodalCycleNumbering p n) (C : Scheme.NodalCycleNumbering q n)
   {m : ℕ} {T : BlowupTower X m Y}
 
@@ -76,7 +81,7 @@ theorem exists_transported_toric_contraction_of_signed_boundary_isometry
     (hcanF : LineBundleClass.mk hF.toInvertibleSheaf = K(Z)) :
     let : Nonempty Φ.cones := hc.nonempty_cones
     ∀ (a : Y ≅ (M).1),
-    a.hom ≫ (J).toBase ≫ Φ.algebraicRealizationStructureMap = T.toBase ≫ g(X) →
+    a.hom ≫ (J).toBase ≫ (Φ.finiteFanSchemeToSpec k₀) = T.toBase ≫ g(X) →
     (R(D, T).comap a.inv).support = (ιM).ker.support →
     let : Smooth g(X) := SmoothOfRelativeDimension.smooth 2 _
     let : Smooth g(Z) := SmoothOfRelativeDimension.smooth 2 _
@@ -85,11 +90,11 @@ theorem exists_transported_toric_contraction_of_signed_boundary_isometry
     ∀ (e : B(X).IsometryEquiv B(Z)) {H : LineBundleClass X},
       H.IsAmple → (e (Additive.ofMul H)).toMul.IsAmple →
     (∀ p : CodimensionOnePoint X, (p : X) ∉ D.support →
-      Chow.realIntersectionBilinForm ℂ X (Chow.realPrimeDivisorClass ℂ p)
-        (Chow.realPrimeDivisorClass ℂ p) ≠ -2) →
+      Chow.realIntersectionBilinForm k₀ X (Chow.realPrimeDivisorClass k₀ p)
+        (Chow.realPrimeDivisorClass k₀ p) ≠ -2) →
     (∀ p : CodimensionOnePoint Z, (p : Z) ∉ F.support →
-      Chow.realIntersectionBilinForm ℂ Z (Chow.realPrimeDivisorClass ℂ p)
-        (Chow.realPrimeDivisorClass ℂ p) ≠ -2) →
+      Chow.realIntersectionBilinForm k₀ Z (Chow.realPrimeDivisorClass k₀ p)
+        (Chow.realPrimeDivisorClass k₀ p) ≠ -2) →
     (let := LocallyOfFiniteType.isLocallyNoetherian g(X)
      let := LocallyOfFiniteType.isLocallyNoetherian g(Z)
      let := g(X).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two
@@ -113,8 +118,8 @@ theorem exists_transported_toric_contraction_of_signed_boundary_isometry
         PrestableFamily.atWorstNodalOfRelativeDimensionOne
       let hE := (hT.radical_comap_toBase hD nd).1
       let hG := (hU.radical_comap_toBase hF nf).1
-      let : Y.IsProjectiveOver ℂ := T.isProjectiveOver ℂ
-      let : W.IsProjectiveOver ℂ := U.isProjectiveOver ℂ
+      let : Y.IsProjectiveOver k₀ := T.isProjectiveOver k₀
+      let : W.IsProjectiveOver k₀ := U.isProjectiveOver k₀
       let : IsIntegral Y := hT.isClosedPointTower.isIntegral g(X)
       let : IsIntegral W := hU.isClosedPointTower.isIntegral g(Z)
       let : SmoothOfRelativeDimension 2 g(Y) := hT.isClosedPointTower.smoothOfRelativeDimension _
@@ -125,7 +130,7 @@ theorem exists_transported_toric_contraction_of_signed_boundary_isometry
       let := LocallyOfFiniteType.isLocallyNoetherian g(W)
       let := g(Y).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two
       let := g(W).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two
-      let e' := picardIsometryCongr ℂ hT.isClosedPointTower hU.isClosedPointTower e
+      let e' := picardIsometryCongr k₀ hT.isClosedPointTower hU.isClosedPointTower e
       ∃ (ι' : Type v) (κ' : Type w)
         (p' : ι' → g(E.subscheme).smoothLocus) (q' : κ' → g(G.subscheme).smoothLocus)
         (A' : Scheme.NodalCycleNumbering p' (n + m)) (C' : Scheme.NodalCycleNumbering q' (n + m)),
@@ -141,7 +146,7 @@ theorem exists_transported_toric_contraction_of_signed_boundary_isometry
           let : Z₀.Over SpecC := ⟨t⟩
           let f := d.hom ≫ L.toBase
           let G₀ := G.map f
-          ∃ (_ : IsIntegral Z₀) (_ : Z₀.IsProjectiveOver ℂ) (hsm : SmoothOfRelativeDimension 2 t),
+          ∃ (_ : IsIntegral Z₀) (_ : Z₀.IsProjectiveOver k₀) (hsm : SmoothOfRelativeDimension 2 t),
             ∃ (_ : Scheme.IsRationalOver t) (hG₀ : G₀.IsEffectiveCartier)
               (hN : AtWorstNodalOfRelativeDimensionOne (G₀.subschemeι ≫ t)),
             let : SmoothOfRelativeDimension 2 g(Z₀) := hsm
@@ -149,14 +154,14 @@ theorem exists_transported_toric_contraction_of_signed_boundary_isometry
               hN.syntomic.locallyOfFinitePresentation
             f.IsOver SpecC ∧ IsModification f ∧ Function.Injective hL.baseCenter ∧
             LineBundleClass.mk hG₀.toInvertibleSheaf = K(Z₀) ∧ G₀.boundaryComplexity = 0 ∧
-            G₀.comap f = G * (hL.ramificationIdealSheafToBase ℂ).comap d.hom ∧
+            G₀.comap f = G * (hL.ramificationIdealSheafToBase k₀).comap d.hom ∧
             (∀ j, ∃ x : G₀.subscheme, G₀.subschemeι x = hL.baseCenter j ∧
               x ∈ (G₀.subschemeι ≫ t).smoothLocus) ∧
             (∃ v : G.subscheme ≅ G₀.subscheme, v.hom ≫ G₀.subschemeι = G.subschemeι ≫ f) ∧
             ∀ j, Additive.ofMul (pullback d.hom (L.exceptionalClass j)) =
               e' (Additive.ofMul (pullback a.hom ((J).exceptionalClass j))) := by
   intro _ a ha hbound _ _ _ _ e H hH hHe hrootD hrootF he
-  obtain ⟨W, U, hU, h⟩ := exists_transported_toric_contraction_of_numbered_nodal_tower
+  obtain ⟨W, U, hU, h⟩ := exists_transported_toric_contraction_of_numbered_nodal_tower k₀
     hΦ hc b s c A (C.reindex act) hT hD hF hcanD hcanF a ha hbound e hH hHe hrootD hrootF
     (by simpa only [Scheme.NodalCycleNumbering.reindex_boundaryPrimeEquiv] using he)
   refine ⟨W, U, hU, ?_⟩

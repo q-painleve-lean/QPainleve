@@ -158,3 +158,17 @@ theorem detDualEquiv_of_matching_adjacent_rays (f : FanEquiv Φ Ψ)
   exact b.detDualEquiv_map E x y
 
 end TauCeti.Toric.FanEquiv
+
+namespace TauCeti.Toric.FanEquiv
+
+variable {N N' V V' : Type*} [AddCommGroup N] [AddCommGroup N']
+  [AddCommGroup V] [AddCommGroup V'] [Module ℝ V] [Module ℝ V']
+  {i : N →+ V} {i' : N' →+ V'} {Φ : Fan i} {Ψ : Fan i'} (e : FanEquiv Φ Ψ)
+
+/-- The real map of a fan equivalence sends a cone into its image cone. -/
+theorem mapsTo_coneEquiv (σ : Φ.cones) :
+    Set.MapsTo e.toFanHom.realMap (σ.val : Set V) (e.coneEquiv σ).val := by
+  rw [coneEquiv_apply_coe, toFanHom_realMap]
+  exact fun x hx ↦ PointedCone.mem_map.mpr ⟨x, hx, rfl⟩
+
+end TauCeti.Toric.FanEquiv

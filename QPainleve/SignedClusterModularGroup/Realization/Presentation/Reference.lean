@@ -36,28 +36,31 @@ open Scheme Scheme.IdealSheafData
 
 namespace QPainleve.SignedClusterModularGroup
 
-local notation "S" => Spec (CommRingCat.of ℂ)
+variable {k₀ : Type} [Field k₀] [IsAlgClosed k₀]
 
-local notation "Centers[" r "]" => Over.mk (structureMap ℂ (Fin r → ℤ))
-local notation "XTor[" r "]" => scheme ℂ (Fin r →₀ ℤ)
-local notation "χ[" c "]" => pointsEquiv ℂ _ (Subtype.mk (Over.Hom.left c) (Over.w c))
+local notation "S" => Spec (CommRingCat.of k₀)
+
+local notation "Centers[" r "]" => Over.mk (structureMap k₀ (Fin r → ℤ))
+local notation "XTor[" r "]" => scheme k₀ (Fin r →₀ ℤ)
+local notation "χ[" c "]" => pointsEquiv k₀ _ (Subtype.mk (Over.Hom.left c) (Over.w c))
 local notation "param[" c "]" => (fun j ↦ χ[c] (ofAdd (Pi.single j 1)))
 
+variable (k₀) in
 /-- A reference fiber on the original surface of a numbered nodal pair.
 The chosen toric presentation and center give a nodal model with the supplied
 Picard marking and the recorded rational X evaluation. -/
 @[ext]
 structure MarkedReferenceFiber {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
     (i : N →+ V) (b : Module.Basis (Fin 2) ℤ N) (r : ℕ)
-    {X : Scheme} [X.Over S] [IsIntegral X] [X.IsProjectiveOver ℂ]
-    [SmoothOfRelativeDimension 2 (X ↘ S)] {D : X.IdealSheafData}
-    [PrestableFamily (D.subscheme ↘ S)] {n : ℕ} [NeZero n]
+    {X : Scheme} [X.Over (Spec (.of k₀))] [IsIntegral X] [X.IsProjectiveOver k₀]
+    [SmoothOfRelativeDimension 2 (X ↘ Spec (.of k₀))] {D : X.IdealSheafData}
+    [PrestableFamily (D.subscheme ↘ Spec (.of k₀))] {n : ℕ} [NeZero n]
     {L : Type} [AddCommGroup L] {B : LinearMap.BilinForm ℤ L}
     (A : Scheme.NodalCycleNumbering (X := D.subscheme)
-      (Empty.elim : Empty → (D.subscheme ↘ S).smoothLocus) n)
-    (μ : B.IsometryEquiv (Chow.intersectionBilinForm ℂ X)) where
+      (Empty.elim : Empty → (D.subscheme ↘ Spec (.of k₀)).smoothLocus) n)
+    (μ : B.IsometryEquiv (Chow.intersectionBilinForm k₀ X)) where
   /-- The complete presentation in the frame `b`. -/
-  presentation : CompleteToricPresentation i b r L Empty
+  presentation : CompleteToricPresentation k₀ i b r L Empty
   /-- The point of the center torus representing the original pair. -/
   center : GeometricRealization.Point Centers[r]
   /-- The rational X evaluation on the original surface. -/
@@ -69,21 +72,22 @@ namespace MarkedReferenceFiber
 
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {b b' : Module.Basis (Fin 2) ℤ N} {r n : ℕ} [NeZero n]
-  {X : Scheme} [X.Over S] [IsIntegral X] [X.IsProjectiveOver ℂ]
-  [SmoothOfRelativeDimension 2 (X ↘ S)] {D : X.IdealSheafData}
-  [PrestableFamily (D.subscheme ↘ S)] {L : Type} [AddCommGroup L] {B : LinearMap.BilinForm ℤ L}
+  {X : Scheme} [X.Over (Spec (.of k₀))] [IsIntegral X] [X.IsProjectiveOver k₀]
+  [SmoothOfRelativeDimension 2 (X ↘ Spec (.of k₀))] {D : X.IdealSheafData}
+  [PrestableFamily (D.subscheme ↘ Spec (.of k₀))]
+  {L : Type} [AddCommGroup L] {B : LinearMap.BilinForm ℤ L}
   {A : Scheme.NodalCycleNumbering (X := D.subscheme)
-    (Empty.elim : Empty → (D.subscheme ↘ S).smoothLocus) n}
-  {μ : B.IsometryEquiv (Chow.intersectionBilinForm ℂ X)}
-  (R : MarkedReferenceFiber i b' r A μ)
+    (Empty.elim : Empty → (D.subscheme ↘ Spec (.of k₀)).smoothLocus) n}
+  {μ : B.IsometryEquiv (Chow.intersectionBilinForm k₀ X)}
+  (R : MarkedReferenceFiber k₀ i b' r A μ)
 
 /-- The original numbered surface with its marked rational X evaluation. -/
 -- The underlying schemes must reduce to the original surface and boundary.
-abbrev markedSurface : MarkedSurface ℂ n B XTor[r] :=
+abbrev markedSurface : MarkedSurface k₀ n B XTor[r] :=
   MarkedSurface.ofBoundary D A μ R.evaluation
 
 /-- The coordinate units of the center in the oriented frame. -/
-abbrev parameters : Fin r → ℂˣ :=
+abbrev parameters : Fin r → k₀ˣ :=
   param[R.center]
 
 /-- The seed matrix given by the labeled ray charges in the oriented frame. -/
@@ -107,26 +111,26 @@ end MarkedReferenceFiber
 section Reference
 
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V] {i : N →+ V}
-  {X W : Scheme} [X.Over S] [IsIntegral X] [X.IsProjectiveOver ℂ]
-  [SmoothOfRelativeDimension 2 (X ↘ S)] {D : X.IdealSheafData}
-  [PrestableFamily (D.subscheme ↘ S)] {n r k : ℕ} [NeZero n]
+  {X W : Scheme} [X.Over (Spec (.of k₀))] [IsIntegral X] [X.IsProjectiveOver k₀]
+  [SmoothOfRelativeDimension 2 (X ↘ Spec (.of k₀))] {D : X.IdealSheafData}
+  [PrestableFamily (D.subscheme ↘ Spec (.of k₀))] {n r k : ℕ} [NeZero n]
   {L : Type} [AddCommGroup L] {B : LinearMap.BilinForm ℤ L}
   {Φ : Fan i} [h₀ : Nonempty Φ.cones] {b : Module.Basis (Fin 2) ℤ N} {T : BlowupTower X k W}
   (A : Scheme.NodalCycleNumbering (X := D.subscheme)
-    (Empty.elim : Empty → (D.subscheme ↘ S).smoothLocus) n)
-  (μ : B.IsometryEquiv (Chow.intersectionBilinForm ℂ X))
+    (Empty.elim : Empty → (D.subscheme ↘ Spec (.of k₀)).smoothLocus) n)
+  (μ : B.IsometryEquiv (Chow.intersectionBilinForm k₀ X))
   (hΦ : Φ.IsRegular) (s : Fin r → Φ.Ray)
-  (c : GeometricRealization.Point Centers[r])
+  (c : GeometricRealization.Point (Over.mk (structureMap k₀ (Fin r → ℤ))))
 
-local notation "TorBoundary" => IdealSheafData.subscheme (Φ.boundaryIdeal h₀)
-local notation "U" => Fan.internalBlowupTower b s param[c]
+local notation "TorBoundary" => IdealSheafData.subscheme (Φ.toricBoundaryIdeal k₀ h₀)
+local notation "U" => Fan.internalBlowupTower k₀ b s param[c]
 
 private theorem exists_boundary_subdivision (hD : D.IsEffectiveCartier)
     (hT : IsNodalBoundaryTower D (X ↘ S) (𝟙 X) T)
     (e : U.1 ≅ W) (hbase : e.hom ≫ T.toBase ≫ (X ↘ S) =
-      U.2.toTower.toBase ≫ Φ.algebraicRealizationStructureMap)
+      U.2.toTower.toBase ≫ (Φ.finiteFanSchemeToSpec k₀))
     (hker : ((D.comap T.toBase).radical).comap e.hom = U.2.boundaryι.ker)
-    [PrestableFamily (TorBoundary ↘ S)] :
+    [PrestableFamily ((Φ.toricBoundaryIdeal k₀ h₀).subscheme ↘ S)] :
     letI : NeZero (n + k) := ⟨by have := NeZero.ne n; omega⟩
     ∃ (C : Scheme.NodalCycleNumbering (X := TorBoundary)
         (Empty.elim : Empty → (TorBoundary ↘ S).smoothLocus) (n + k))
@@ -135,7 +139,7 @@ private theorem exists_boundary_subdivision (hD : D.IsEffectiveCartier)
       g.IsOver S ∧ g.IsOrientedCycleSubdivision C A := by
   let π := e.hom ≫ T.toBase
   let E := (D.comap π).radical
-  let : U.1.Over S := ⟨U.2.toTower.toBase ≫ Φ.algebraicRealizationStructureMap⟩
+  let : U.1.Over S := ⟨U.2.toTower.toBase ≫ (Φ.finiteFanSchemeToSpec k₀)⟩
   have hπ : π.IsOver S := ⟨(Category.assoc _ _ _).trans hbase⟩
   have hE : E = U.2.boundaryι.ker := by
     dsimp only [E, π]
@@ -146,8 +150,8 @@ private theorem exists_boundary_subdivision (hD : D.IsEffectiveCartier)
   let : a.hom.IsOver S := ⟨by
     rw [E.over_eq_subschemeι_comp, ← Category.assoc, ha]
     exact ((U.2.boundaryι_toBase_assoc _).trans
-      ((Φ.boundaryIdeal h₀).over_eq_subschemeι_comp.trans
-        (by rw [Φ.algebraicRealization_over])).symm)⟩
+      ((Φ.toricBoundaryIdeal k₀ h₀).over_eq_subschemeι_comp.trans
+        (by rw [Φ.finiteFanScheme_over k₀])).symm)⟩
   obtain ⟨hpre, hnumber⟩ :=
     hT.exists_isOrientedCycleSubdivision_nodalBoundaryTower_of_iso hD A e rfl hπ
   let := hpre
@@ -171,25 +175,27 @@ private theorem exists_boundary_subdivision (hD : D.IsEffectiveCartier)
 private theorem exists_positive_boundary_subdivision (hD : D.IsEffectiveCartier)
     (hT : IsNodalBoundaryTower D (X ↘ S) (𝟙 X) T)
     (e : U.1 ≅ W) (hbase : e.hom ≫ T.toBase ≫ (X ↘ S) =
-      U.2.toTower.toBase ≫ Φ.algebraicRealizationStructureMap)
+      U.2.toTower.toBase ≫ (Φ.finiteFanSchemeToSpec k₀))
     (hker : ((D.comap T.toBase).radical).comap e.hom = U.2.boundaryι.ker)
-    (hc : Φ.IsComplete) [PrestableFamily (TorBoundary ↘ S)] [NeZero (n + k)] :
+    (hc : Φ.IsComplete)
+    [PrestableFamily (TorBoundary ↘ S)] [NeZero (n + k)] :
     ∃ (C : Scheme.NodalCycleNumbering (X := TorBoundary)
         (Empty.elim : Empty → (TorBoundary ↘ S).smoothLocus) (n + k))
       (g : TorBoundary ⟶ D.subscheme) (a : Module.Basis (Fin 2) ℤ N),
       g ≫ D.subschemeι = U.2.boundaryι ≫ e.hom ≫ T.toBase ∧
         g.IsOver S ∧ g.IsOrientedCycleSubdivision C A ∧
         (a = b ∨ a = b.reindex (Equiv.swap 0 1)) ∧
-        ∀ j, let v := Φ.rayEquivOfNodalCycleNumbering hΦ C
+        ∀ j, let v := Φ.rayEquivOfNodalCycleNumbering k₀ hΦ C
           a.detDualEquiv (v j).primitiveGenerator (v (j + 1)).primitiveGenerator = 1 ∧
             ∃ σ : Φ.cones, (v j).toCone ≤ σ ∧ (v (j + 1)).toCone ≤ σ := by
   obtain ⟨C, g, hg, hgOver, hsub⟩ := exists_boundary_subdivision A s c hD hT e hbase hker
-  obtain ⟨a, ha, hpos, hnodes⟩ := Φ.exists_positive_ray_numbering_of_nodalCycleNumbering b hΦ hc C
+  obtain ⟨a, ha, hpos, hnodes⟩ :=
+    Φ.exists_positive_ray_numbering_of_nodalCycleNumbering k₀ b hΦ hc C
   refine ⟨C, g, a, hg, hgOver, hsub, ha, fun j ↦ ?_⟩
   obtain ⟨σ, h₀, h₁, _⟩ := hnodes j
   exact ⟨hpos j, σ.val, h₀, h₁⟩
 
-omit [IsIntegral X] [X.IsProjectiveOver ℂ] [SmoothOfRelativeDimension 2 (X ↘ S)] in
+omit [IsIntegral X] [X.IsProjectiveOver k₀] [SmoothOfRelativeDimension 2 (X ↘ Spec (.of k₀))] in
 private theorem exists_boundary_origin [PrestableFamily (TorBoundary ↘ S)] [NeZero (n + k)]
     (C : Scheme.NodalCycleNumbering (X := TorBoundary)
       (Empty.elim : Empty → (TorBoundary ↘ S).smoothLocus) (n + k))
@@ -215,18 +221,18 @@ given oriented subdivision already has positive cyclic ray order in that frame. 
 theorem exists_marked_reference_fiber_of_numbered_model
     (hc : Φ.IsComplete) (hT : IsNodalBoundaryTower D (X ↘ S) (𝟙 X) T)
     (e : U.1 ≅ W) (hbase : e.hom ≫ T.toBase ≫ (X ↘ S) =
-      U.2.toTower.toBase ≫ Φ.algebraicRealizationStructureMap)
+      U.2.toTower.toBase ≫ (Φ.finiteFanSchemeToSpec k₀))
     (hker : ((D.comap T.toBase).radical).comap e.hom = U.2.boundaryι.ker)
-    [PrestableFamily (TorBoundary ↘ S)] [NeZero (n + k)]
+    [PrestableFamily ((Φ.toricBoundaryIdeal k₀ h₀).subscheme ↘ S)] [NeZero (n + k)]
     (C : Scheme.NodalCycleNumbering (X := TorBoundary)
       (Empty.elim : Empty → (TorBoundary ↘ S).smoothLocus) (n + k))
     (g : TorBoundary ⟶ D.subscheme) [g.IsOver S]
     (hg : g ≫ D.subschemeι = U.2.boundaryι ≫ e.hom ≫ T.toBase)
     (hsub : g.IsOrientedCycleSubdivision C A)
-    (hpos : ∀ j, let u := Φ.rayEquivOfNodalCycleNumbering hΦ C
+    (hpos : ∀ j, let u := Φ.rayEquivOfNodalCycleNumbering k₀ hΦ C
       b.detDualEquiv (u j).primitiveGenerator (u (j + 1)).primitiveGenerator = 1 ∧
         ∃ σ : Φ.cones, (u j).toCone ≤ σ ∧ (u (j + 1)).toCone ≤ σ) :
-    ∃ R : MarkedReferenceFiber i b r A μ,
+    ∃ R : MarkedReferenceFiber k₀ i b r A μ,
       R.center = c ∧ ∃ hfan : R.presentation.fan = Φ, hfan ▸ R.presentation.rays = s := by
   let π := e.hom ≫ T.toBase
   have : IsModification T.toBase :=
@@ -238,9 +244,9 @@ theorem exists_marked_reference_fiber_of_numbered_model
   obtain ⟨o, ho⟩ := exists_boundary_origin A s c C g hsupp
     (hg.trans (Category.assoc _ _ _).symm)
   -- The reference inclusion is the actual pullback in the ordered blowup coordinates.
-  let ι := (Fan.internalBlowupPicardMarking b s param[c] hΦ).symm.toLinearMap.comp
+  let ι := (Fan.internalBlowupPicardMarking k₀ b s param[c] hΦ).symm.toLinearMap.comp
     (((LineBundleClass.pullbackHom π).toAdditive.toIntLinearMap).comp μ.toLinearEquiv.toLinearMap)
-  let Q : CompleteToricPresentation i b r L Empty := {
+  let Q : CompleteToricPresentation k₀ i b r L Empty := {
     fan := Φ, complete := hc, regular := hΦ, rays := s
     prestable := inferInstance
     length := n + k
@@ -249,11 +255,11 @@ theorem exists_marked_reference_fiber_of_numbered_model
     cycle := C
     origin := o
     inclusion := ι
-    rayOrder := Φ.rayEquivOfNodalCycleNumbering hΦ C
+    rayOrder := Φ.rayEquivOfNodalCycleNumbering k₀ hΦ C
     component_eq := fun j ↦
-      (Fan.boundaryNormalizationComponentEquiv_rayEquivOfNodalCycleNumbering hΦ C j).symm
+      (Fan.boundaryNormalizationComponentEquiv_rayEquivOfNodalCycleNumbering k₀ hΦ C j).symm
     positive := hpos }
-  let f := Fan.contractedXEvaluation b s χ[c] hΦ π
+  let f := Fan.contractedXEvaluation k₀ b s χ[c] hΦ π
   let M := MarkedSurface.ofBoundary D A μ f
   let p : ContractedToricFiber b s hΦ C o ι χ[c] M := {
     projection := π
@@ -283,37 +289,38 @@ theorem exists_marked_reference_fiber_of_numbered_model
 private theorem exists_reference_with_swapped_basis
     (hc : Φ.IsComplete) (hT : IsNodalBoundaryTower D (X ↘ S) (𝟙 X) T)
     (e : U.1 ≅ W) (hbase : e.hom ≫ T.toBase ≫ (X ↘ S) =
-      U.2.toTower.toBase ≫ Φ.algebraicRealizationStructureMap)
+      U.2.toTower.toBase ≫ (Φ.finiteFanSchemeToSpec k₀))
     (hker : ((D.comap T.toBase).radical).comap e.hom = U.2.boundaryι.ker)
-    [PrestableFamily (TorBoundary ↘ S)] [NeZero (n + k)]
+    [PrestableFamily ((Φ.toricBoundaryIdeal k₀ h₀).subscheme ↘ S)] [NeZero (n + k)]
     (C : Scheme.NodalCycleNumbering (X := TorBoundary)
       (Empty.elim : Empty → (TorBoundary ↘ S).smoothLocus) (n + k))
     (g : TorBoundary ⟶ D.subscheme) [g.IsOver S]
     (hg : g ≫ D.subschemeι = U.2.boundaryι ≫ e.hom ≫ T.toBase)
     (hsub : g.IsOrientedCycleSubdivision C A)
-    (hpositive : ∀ j, let v := Φ.rayEquivOfNodalCycleNumbering hΦ C
+    (hpositive : ∀ j, let v := Φ.rayEquivOfNodalCycleNumbering k₀ hΦ C
       (b.reindex (Equiv.swap 0 1)).detDualEquiv (v j).primitiveGenerator
         (v (j + 1)).primitiveGenerator = 1 ∧
           ∃ σ : Φ.cones, (v j).toCone ≤ σ ∧ (v (j + 1)).toCone ≤ σ) :
-    ∃ R : MarkedReferenceFiber i (b.reindex (Equiv.swap 0 1)) r A μ,
+    ∃ R : MarkedReferenceFiber k₀ i (b.reindex (Equiv.swap 0 1)) r A μ,
       param[R.center] = param[c]⁻¹ ∧
         (∃ hfan : R.presentation.fan = Φ, hfan ▸ R.presentation.rays = s) := by
   let c' := centerPoint param[c]⁻¹
   have hc' := centerPoint_parameters param[c]⁻¹
-  let U' := Fan.internalBlowupTower (b.reindex (Equiv.swap 0 1)) s param[c']
+  let U' := Fan.internalBlowupTower k₀ (b.reindex (Equiv.swap 0 1)) s param[c']
   -- The frame change preserves the two maps from the ordered blowup model.
   have hcompare : ∃ v : U'.1 ≅ U.1, v.hom ≫ U.2.toTower.toBase = U'.2.toTower.toBase ∧
       U'.2.boundaryι ≫ v.hom = U.2.boundaryι := by
     dsimp only [U']
     rw [hc']
-    let w := eqToIso (congrArg Sigma.fst (Fan.internalBlowupTower_reindex_swap b s param[c]).symm)
-    obtain ⟨hproj, hboundary, _⟩ := Fan.internalBlowupTower_reindex_swap_iso b s param[c] hΦ
+    let w := eqToIso (congrArg Sigma.fst
+      (Fan.internalBlowupTower_reindex_swap k₀ b s param[c]).symm)
+    obtain ⟨hproj, hboundary, _⟩ := Fan.internalBlowupTower_reindex_swap_iso k₀ b s param[c] hΦ
     refine ⟨w.symm, ?_, ?_⟩
     · rw [Iso.symm_hom, ← hproj, Iso.inv_hom_id_assoc]
     · rw [Iso.symm_hom, ← hboundary, Category.assoc, Iso.hom_inv_id, Category.comp_id]
   obtain ⟨v, hproj, hboundary⟩ := hcompare
   have hb' : (v ≪≫ e).hom ≫ T.toBase ≫ (X ↘ S) =
-      U'.2.toTower.toBase ≫ Φ.algebraicRealizationStructureMap := by
+      U'.2.toTower.toBase ≫ (Φ.finiteFanSchemeToSpec k₀) := by
     simp only [Iso.trans_hom, Category.assoc, hbase]
     exact (reassoc_of% hproj) _
   have hker' : ((D.comap T.toBase).radical).comap (v ≪≫ e).hom = U'.2.boundaryι.ker := by
@@ -332,48 +339,48 @@ end Reference
 section FromToricPresentation
 
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V] {i : N →+ V}
-  {X : Scheme} [X.Over S] [IsIntegral X] [X.IsProjectiveOver ℂ]
-  [SmoothOfRelativeDimension 2 (X ↘ S)] {D : X.IdealSheafData}
-  [PrestableFamily (D.subscheme ↘ S)] {n : ℕ} [NeZero n]
+  {X : Scheme} [X.Over (Spec (.of k₀))] [IsIntegral X] [X.IsProjectiveOver k₀]
+  [SmoothOfRelativeDimension 2 (X ↘ Spec (.of k₀))] {D : X.IdealSheafData}
+  [PrestableFamily (D.subscheme ↘ Spec (.of k₀))] {n : ℕ} [NeZero n]
   {L : Type} [AddCommGroup L] {B : LinearMap.BilinForm ℤ L}
   {b : Module.Basis (Fin 2) ℤ N}
 
 section OrderedTowers
 
 variable {Φ : Fan i} (hΦ : Φ.IsRegular) (hc : Φ.IsComplete)
-    {r k : ℕ} (s : Fin r → Φ.Ray) (u : Fin r → ℂˣ)
+    {r k : ℕ} (s : Fin r → Φ.Ray) (u : Fin r → k₀ˣ)
     {W : Scheme} {T : BlowupTower X k W}
-    (hT : IsNodalBoundaryTower D (X ↘ S) (𝟙 X) T)
-    (e : (Fan.internalBlowupTower (h₀ := hc.nonempty_cones) b s u).1 ≅ W)
-    (hbase : e.hom ≫ T.toBase ≫ (X ↘ S) =
-      (Fan.internalBlowupTower (h₀ := hc.nonempty_cones) b s u).2.toTower.toBase ≫
-        Φ.algebraicRealizationStructureMap)
+    (hT : IsNodalBoundaryTower D (X ↘ Spec (.of k₀)) (𝟙 X) T)
+    (e : (Fan.internalBlowupTower k₀ (h₀ := hc.nonempty_cones) b s u).1 ≅ W)
+    (hbase : e.hom ≫ T.toBase ≫ (X ↘ Spec (.of k₀)) =
+      (Fan.internalBlowupTower k₀ (h₀ := hc.nonempty_cones) b s u).2.toTower.toBase ≫
+        (Φ.finiteFanSchemeToSpec k₀))
     (hker : ((D.comap T.toBase).radical).comap e.hom =
-      (Fan.internalBlowupTower (h₀ := hc.nonempty_cones) b s u).2.boundaryι.ker)
+      (Fan.internalBlowupTower k₀ (h₀ := hc.nonempty_cones) b s u).2.boundaryι.ker)
     (hD : D.IsEffectiveCartier)
     (A : Scheme.NodalCycleNumbering (X := D.subscheme)
-      (Empty.elim : Empty → (D.subscheme ↘ S).smoothLocus) n)
-    (μ : B.IsometryEquiv (Chow.intersectionBilinForm ℂ X))
+      (Empty.elim : Empty → (D.subscheme ↘ Spec (.of k₀)).smoothLocus) n)
+    (μ : B.IsometryEquiv (Chow.intersectionBilinForm k₀ X))
 
 include hΦ hc hT e hbase hker hD
 
 private theorem exists_marked_reference_fibers :
-    (∃ (b' : Module.Basis (Fin 2) ℤ N) (R : MarkedReferenceFiber i b' r A μ),
+    (∃ (b' : Module.Basis (Fin 2) ℤ N) (R : MarkedReferenceFiber k₀ i b' r A μ),
       ((b' = b ∧ param[R.center] = u) ∨
         (b' = b.reindex (Equiv.swap 0 1) ∧ param[R.center] = u⁻¹)) ∧
         (∃ hfan : R.presentation.fan = Φ, hfan ▸ R.presentation.rays = s)) ∧
     (∃ (A' : Scheme.NodalCycleNumbering (X := D.subscheme)
-        (Empty.elim : Empty → (D.subscheme ↘ S).smoothLocus) n)
-      (R : MarkedReferenceFiber i b r A' μ),
+        (Empty.elim : Empty → (D.subscheme ↘ Spec (.of k₀)).smoothLocus) n)
+      (R : MarkedReferenceFiber k₀ i b r A' μ),
       (A' = A ∨ A' = A.reverse) ∧ param[R.center] = u ∧
         (∃ hfan : R.presentation.fan = Φ, hfan ▸ R.presentation.rays = s)) := by
   let := hc.nonempty_cones
   have hdim : Module.finrank ℤ N = 2 := (Module.finrank_eq_card_basis b).trans (Fintype.card_fin 2)
-  let : IsProper Φ.algebraicRealizationStructureMap := by
-    have := Φ.isProjectiveOver_algebraicRealization_of_isComplete hΦ hc b
-    rw [← Φ.algebraicRealization_over]
+  let : IsProper (Φ.finiteFanSchemeToSpec k₀) := by
+    have := Φ.isProjectiveOver_finiteFanScheme_of_isComplete k₀ hΦ hc b
+    rw [← Φ.finiteFanScheme_over k₀]
     infer_instance
-  let := Φ.prestableFamily_boundary hΦ hc hdim
+  let := Φ.prestableFamily_boundary k₀ hΦ hc hdim
   obtain ⟨c, hcparam⟩ : ∃ c : GeometricRealization.Point Centers[r], param[c] = u :=
     ⟨centerPoint u, centerPoint_parameters u⟩
   subst u
@@ -390,9 +397,9 @@ private theorem exists_marked_reference_fibers :
       rw [hcenter]
   · subst a
     have hray (j : ZMod (n + k)) :
-        Φ.rayEquivOfNodalCycleNumbering hΦ C.reverse j =
-          Φ.rayEquivOfNodalCycleNumbering hΦ C (-j) := by
-      apply (Φ.boundaryNormalizationComponentEquiv hΦ).injective
+        Φ.rayEquivOfNodalCycleNumbering k₀ hΦ C.reverse j =
+          Φ.rayEquivOfNodalCycleNumbering k₀ hΦ C (-j) := by
+      apply (Φ.boundaryNormalizationComponentEquiv k₀ hΦ).injective
       simp only [Fan.boundaryNormalizationComponentEquiv_rayEquivOfNodalCycleNumbering,
         NodalCycleNumbering.reverse_component]
     have hswap : (b.reindex (Equiv.swap 0 1)).reindex (Equiv.swap 0 1) = b := by
@@ -400,7 +407,7 @@ private theorem exists_marked_reference_fibers :
       intro j
       simp only [Module.Basis.reindex_apply, Equiv.symm_swap, Equiv.swap_apply_self]
     have hpositive' (j : ZMod (n + k)) :
-        let u := Φ.rayEquivOfNodalCycleNumbering hΦ C.reverse
+        let u := Φ.rayEquivOfNodalCycleNumbering k₀ hΦ C.reverse
         b.detDualEquiv (u j).primitiveGenerator (u (j + 1)).primitiveGenerator = 1 ∧
           ∃ σ : Φ.cones, (u j).toCone ≤ σ ∧ (u (j + 1)).toCone ≤ σ := by
       simpa only [hray, hswap] using
@@ -418,8 +425,8 @@ The boundary numbering downstairs is chosen from the supplied numbering and its
 reverse, so that the fan has positive cyclic order in that basis. -/
 theorem exists_marked_reference_fiber_of_ordered_towers_fixed_basis :
     ∃ (A' : Scheme.NodalCycleNumbering (X := D.subscheme)
-        (Empty.elim : Empty → (D.subscheme ↘ S).smoothLocus) n)
-      (R : MarkedReferenceFiber i b r A' μ),
+        (Empty.elim : Empty → (D.subscheme ↘ Spec (.of k₀)).smoothLocus) n)
+      (R : MarkedReferenceFiber k₀ i b r A' μ),
       (A' = A ∨ A' = A.reverse) ∧ param[R.center] = u ∧
         (∃ hfan : R.presentation.fan = Φ, hfan ▸ R.presentation.rays = s) :=
   (exists_marked_reference_fibers hΦ hc s u hT e hbase hker hD A μ).2
@@ -433,9 +440,9 @@ theorem
     _root_.AlgebraicGeometry.Scheme.IdealSheafData.ToricPresentation.exists_marked_reference_fiber
     {r : ℕ} (P : D.ToricPresentation (X ↘ S) b i r) (hD : D.IsEffectiveCartier)
     (A : Scheme.NodalCycleNumbering (X := D.subscheme)
-      (Empty.elim : Empty → (D.subscheme ↘ S).smoothLocus) n)
-    (μ : B.IsometryEquiv (Chow.intersectionBilinForm ℂ X)) :
-    ∃ (b' : Module.Basis (Fin 2) ℤ N) (R : MarkedReferenceFiber i b' r A μ),
+      (Empty.elim : Empty → (D.subscheme ↘ Spec (.of k₀)).smoothLocus) n)
+    (μ : B.IsometryEquiv (Chow.intersectionBilinForm k₀ X)) :
+    ∃ (b' : Module.Basis (Fin 2) ℤ N) (R : MarkedReferenceFiber k₀ i b' r A μ),
       R.HasToricData P := by
   obtain ⟨b', R, hframe, hfan, hrays⟩ :=
     (exists_marked_reference_fibers P.regular P.complete P.rays P.parameters
@@ -449,9 +456,9 @@ and their corresponding infinitely near blowups. -/
 theorem exists_marked_reference_fiber_of_toric_presentation
     (hP : D.HasToricPresentation (X ↘ S) b i) (hD : D.IsEffectiveCartier)
     (A : Scheme.NodalCycleNumbering (X := D.subscheme)
-      (Empty.elim : Empty → (D.subscheme ↘ S).smoothLocus) n)
-    (μ : B.IsometryEquiv (Chow.intersectionBilinForm ℂ X)) :
-    ∃ (b' : Module.Basis (Fin 2) ℤ N) (r : ℕ) (_ : MarkedReferenceFiber i b' r A μ),
+      (Empty.elim : Empty → (D.subscheme ↘ Spec (.of k₀)).smoothLocus) n)
+    (μ : B.IsometryEquiv (Chow.intersectionBilinForm k₀ X)) :
+    ∃ (b' : Module.Basis (Fin 2) ℤ N) (r : ℕ) (_ : MarkedReferenceFiber k₀ i b' r A μ),
       b' = b ∨ b' = b.reindex (Equiv.swap 0 1) := by
   obtain ⟨r, ⟨P⟩⟩ := (hasToricPresentation_iff ..).mp hP
   obtain ⟨b', R, hR⟩ := P.exists_marked_reference_fiber hD A μ

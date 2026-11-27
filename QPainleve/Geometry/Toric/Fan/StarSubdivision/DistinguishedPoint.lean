@@ -5,7 +5,7 @@ Authors: The QPainleve contributors
 -/
 module
 
-public import QPainleve.Geometry.Toric.Fan.Point
+public import QPainleve.Geometry.Toric.BaseChange.Point
 public import QPainleve.Geometry.Toric.Fan.StarSubdivision.Factorization
 
 import QPainleve.Geometry.Toric.Cone.TwoDimensional
@@ -26,19 +26,23 @@ open AlgebraicGeometry CategoryTheory Module PointedCone
 
 namespace TauCeti.Toric.Fan
 
-variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
+universe u
+
+variable (R : Type u) [CommRing R] {N : Type u} {V : Type*}
+  [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {Φ Ψ : Fan i}
 
 /-- The subdivision projection takes the distinguished point of a two-ray
 regular cone to the distinguished point of the cone containing it. -/
 @[reassoc]
-theorem IsSubdivision.distinguishedPointHom_comp_algebraicMap_of_le_of_card_toricRay_eq_two
+theorem IsSubdivision.distinguishedSection_comp_finiteFanSchemeHom_of_le_of_card_toricRay_eq_two
     (h : Φ.IsSubdivision Ψ) (hΦ : Φ.IsRegular) (hN : finrank ℤ N = 2)
     {σ : Φ.cones} {τ : Ψ.cones} (hσ : Nat.card (ToricRay σ.val) = 2) (hle : σ.val ≤ τ.val) :
-    Φ.distinguishedPointHom σ ≫ h.toFanHom.algebraicMap = Ψ.distinguishedPointHom τ := by
+    Φ.distinguishedSection (R := R) σ ≫ h.toFanHom.finiteFanSchemeHom R =
+      Ψ.distinguishedSection (R := R) τ := by
   have hspan := ((isRegular_iff.mp hΦ) _ σ.property).span_eq_top_of_card_toricRay_eq_two
     Φ.lattice hN hσ
-  apply h.toFanHom.distinguishedPointHom_comp_algebraicMap_of_span_eq σ τ
+  apply h.toFanHom.distinguishedSection_comp_finiteFanSchemeHom_of_span_eq R σ τ
   · rw [h.toFanHom_realMap, LinearMap.id_coe]
     exact fun _ hx ↦ hle hx
   · rw [h.toFanHom_realMap, LinearMap.id_coe, Set.image_id, hspan]
@@ -46,12 +50,12 @@ theorem IsSubdivision.distinguishedPointHom_comp_algebraicMap_of_le_of_card_tori
 
 /-- A two-ray star subdivision lifts every original corner to a corner in the
 subdividing fan, including the corner at the center of the subdivision. -/
-theorem IsTwoRayStarSubdivision.exists_lift_distinguishedPointHom
+theorem IsTwoRayStarSubdivision.exists_lift_distinguishedSection
     (h : Φ.IsTwoRayStarSubdivision Ψ) (hN : finrank ℤ N = 2)
     (τ : Φ.cones) (hτ : Nat.card (ToricRay τ.val) = 2) :
     ∃ υ : Ψ.cones, Nat.card (ToricRay υ.val) = 2 ∧
-      Ψ.distinguishedPointHom υ ≫ h.isSubdivision.toFanHom.algebraicMap =
-        Φ.distinguishedPointHom τ := by
+      Ψ.distinguishedSection (R := R) υ ≫ h.isSubdivision.toFanHom.finiteFanSchemeHom R =
+        Φ.distinguishedSection (R := R) τ := by
   cases h with
   | along hΦ σ hσ =>
     have hΨ := Φ.isRegular_starSubdivisionAlong hΦ σ.property
@@ -84,7 +88,7 @@ theorem IsTwoRayStarSubdivision.exists_lift_distinguishedPointHom
           hτ, le_rfl⟩
     obtain ⟨υ, hυ, hle⟩ := hex
     have hsub := (IsTwoRayStarSubdivision.along hΦ σ hσ).isSubdivision
-    exact ⟨υ, hυ, hsub.distinguishedPointHom_comp_algebraicMap_of_le_of_card_toricRay_eq_two
-      hΨ hN hυ hle⟩
+    exact ⟨υ, hυ, hsub.distinguishedSection_comp_finiteFanSchemeHom_of_le_of_card_toricRay_eq_two
+      R hΨ hN hυ hle⟩
 
 end TauCeti.Toric.Fan

@@ -28,13 +28,15 @@ open Scheme Scheme.IdealSheafData
 
 namespace QPainleve.SignedClusterModularGroup.GeometricRealization
 
-local notation "S" => Spec (CommRingCat.of ℂ)
-local notation "Centers[" r "]" => Over.mk (structureMap ℂ (Fin r → ℤ))
-local notation "XTor[" r "]" => scheme ℂ (Fin r →₀ ℤ)
+variable {k₀ : Type} [Field k₀] [IsAlgClosed k₀]
+
+local notation "S" => Spec (CommRingCat.of k₀)
+local notation "Centers[" r "]" => Over.mk (structureMap k₀ (Fin r → ℤ))
+local notation "XTor[" r "]" => scheme k₀ (Fin r →₀ ℤ)
 local notation "D[" M "]" => Scheme.Hom.ker (Over.Hom.left (Arrow.hom (MarkedSurface.pair M)))
 local notation "classOf(" h ")" => (LineBundleClass.mk (IsEffectiveCartier.toInvertibleSheaf h))⁻¹
-local notation "Cw[" w "," P "]" => Path.centerPartialMap ℂ w P
-local notation "Cnil[" P "]" => Path.centerPartialMap ℂ Path.nil P
+local notation "Cw[" w "," P "]" => Path.centerPartialMap k₀ w P
+local notation "Cnil[" P "]" => Path.centerPartialMap k₀ Path.nil P
 local notation "src(" C "," c ")" =>
   c ≫ Scheme.PartialMap.domainSource (X := Centers[_]) (Y := Centers[_]) C
 local notation "dst(" C "," c ")" =>
@@ -55,31 +57,31 @@ the inversion parity, and the pullback takes the image of boundary component zer
 back to its source class. The reference centers can lie outside the open. -/
 theorem exists_realize_signed_word_to_presentation
     (w : Word B E) (P₀ : ChargeSeed B N₀) (P₁ : ChargeSeed E N₁)
-    (Q₀ : CompleteToricPresentation i₀ b₀ r L₀ γ₀)
-    (Q₁ : CompleteToricPresentation i₁ b₁ r L₁ γ₁)
+    (Q₀ : CompleteToricPresentation k₀ i₀ b₀ r L₀ γ₀)
+    (Q₁ : CompleteToricPresentation k₀ i₁ b₁ r L₁ γ₁)
     (hform₀ : P₀.form = b₀.detDualEquiv.toLinearMap)
     (hcharge₀ : P₀.charge = Fan.rayChargeMap Q₀.rays)
     (hform₁ : P₁.form = b₁.detDualEquiv.toLinearMap)
     (hcharge₁ : P₁.charge = Fan.rayChargeMap Q₁.rays)
-    (M₀ : Point Centers[r] → MarkedSurface ℂ n H₀ XTor[r])
-    (M₁ : Point Centers[r] → MarkedSurface ℂ n H₁ XTor[r])
+    (M₀ : Point Centers[r] → MarkedSurface k₀ n H₀ XTor[r])
+    (M₁ : Point Centers[r] → MarkedSurface k₀ n H₁ XTor[r])
     (models₀ : ∀ c : CenterPoint (U := Centers[r]) (V := Centers[r]) Cnil[P₀],
       Q₀.HasNodalModel (dst(Cnil[P₀],c)) (M₀ (dst(Cnil[P₀],c))))
     (models₁ : ∀ c : CenterPoint (U := Centers[r]) (V := Centers[r]) Cnil[P₁],
       Q₁.HasNodalModel (dst(Cnil[P₁],c)) (M₁ (dst(Cnil[P₁],c))))
     {a₀ a₁ : Point Centers[r]} (href₁ : Q₁.HasNodalModel a₁ (M₁ a₁))
     (hD₀ : ∀ c, D[M₀ c].IsEffectiveCartier) (hD₁ : ∀ c, D[M₁ c].IsEffectiveCartier)
-    (hnef₀ : (classOf(hD₀ a₀)).IsNef ℂ ((M₀ a₀).surface ↘ S))
-    (hnef₁ : (classOf(hD₁ a₁)).IsNef ℂ ((M₁ a₁).surface ↘ S))
-    (hsq₀ : Chow.classIntersectionNumber ℂ (M₀ a₀).surface classOf(hD₀ a₀) classOf(hD₀ a₀) = 0)
-    (hsq₁ : Chow.classIntersectionNumber ℂ (M₁ a₁).surface classOf(hD₁ a₁) classOf(hD₁ a₁) = 0)
+    (hnef₀ : (classOf(hD₀ a₀)).IsNef k₀ ((M₀ a₀).surface ↘ S))
+    (hnef₁ : (classOf(hD₁ a₁)).IsNef k₀ ((M₁ a₁).surface ↘ S))
+    (hsq₀ : Chow.classIntersectionNumber k₀ (M₀ a₀).surface classOf(hD₀ a₀) classOf(hD₀ a₀) = 0)
+    (hsq₁ : Chow.classIntersectionNumber k₀ (M₁ a₁).surface classOf(hD₁ a₁) classOf(hD₁ a₁) = 0)
     (hprim₀ : IsPrimitive (Additive.ofMul classOf(hD₀ a₀)))
     (hprim₁ : IsPrimitive (Additive.ofMul classOf(hD₁ a₁)))
     (d₀ : ZMod n → L₀) (d₁ : ZMod n → L₁)
     (hmark₀ : ∀ c j, (M₀ c).boundaryClass (hD₀ c) j = d₀ j)
     (hmark₁ : ∀ c j, (M₁ c).boundaryClass (hD₁ c) j = d₁ j) :
     ∃ R : GeometricRealization (T₀ := Centers[r]) (T₁ := Centers[r])
-        M₀ M₁ Cw[w,P₀] (w.xRationalMap ℂ),
+        M₀ M₁ Cw[w,P₀] (w.xRationalMap k₀),
       R.orientation = (-1 : ℤˣ) ^ w.inversionCount ∧ R.picard (d₁ (R.boundaryPerm 0)) = d₀ 0 ∧
       ∀ c : CenterPoint (U := Centers[r]) (V := Centers[r]) Cw[w,P₀],
         Q₁.HasNodalModel (dst(Cw[w,P₀],c)) (M₁ (dst(Cw[w,P₀],c))) := by

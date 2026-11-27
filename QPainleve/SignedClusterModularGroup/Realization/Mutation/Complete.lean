@@ -33,39 +33,42 @@ open Scheme
 
 namespace QPainleve.SignedClusterModularGroup.CompleteToricPresentation
 
+variable {k₀ : Type} [Field k₀] [IsAlgClosed k₀]
+
 open GeometricRealization (CenterPoint Point)
 
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {b : Basis (Fin 2) ℤ N} {n : ℕ}
   {L : Type} [AddCommGroup L] {γ : Type*}
-  (Q : CompleteToricPresentation i b (n + 1) L γ) (k : Fin (n + 1))
+  (Q : CompleteToricPresentation k₀ i b (n + 1) L γ) (k : Fin (n + 1))
 
-local notation "S" => Spec (CommRingCat.of ℂ)
+local notation "S" => Spec (CommRingCat.of k₀)
 local notation "A" => (Fin (n + 1) → ℤ)
-local notation "Centers" => Over.mk (structureMap ℂ A)
-local notation "XTor" => scheme ℂ (Fin (n + 1) →₀ ℤ)
-local notation "χ(" c ")" => pointsEquiv ℂ A
+local notation "Centers" => Over.mk (structureMap k₀ A)
+local notation "XTor" => scheme k₀ (Fin (n + 1) →₀ ℤ)
+local notation "χ(" c ")" => pointsEquiv k₀ A
   (Subtype.mk (CommaMorphism.left (c : Point Centers)) (Over.w (c : Point Centers)))
-local notation "Dtor[" Φ "," h "]" => Scheme.IdealSheafData.subscheme (Fan.boundaryIdeal Φ h)
+local notation "Dtor[" Φ "," h "]" => Scheme.IdealSheafData.subscheme
+  (Fan.toricBoundaryIdeal k₀ Φ h)
 
 variable {E : SkewExchangeMatrix (Fin (n + 1))} (P : ChargeSeed E N)
   (hform : P.form = b.detDualEquiv.toLinearMap) (hcharge : P.charge = rayChargeMap Q.rays)
 
 local notation "w" => Quiver.Hom.toPath (Generator.toStep (Generator.mutate k) E)
-local notation "C" => Quiver.Path.centerPartialMap ℂ w P
-local notation "F" => Quiver.Path.xRationalMap ℂ w
+local notation "C" => Quiver.Path.centerPartialMap k₀ w P
+local notation "F" => Quiver.Path.xRationalMap k₀ w
 
-variable (U : (scheme ℂ (Fin (n + 1) → ℤ)).Opens)
-  (hU : Dense (U : Set (scheme ℂ (Fin (n + 1) → ℤ))))
-  (hle : U ≤ (Quiver.Path.centerPartialMap ℂ ((Generator.mutate k).toStep E).toPath P).domain)
+variable (U : (scheme k₀ (Fin (n + 1) → ℤ)).Opens)
+  (hU : Dense (U : Set (scheme k₀ (Fin (n + 1) → ℤ))))
+  (hle : U ≤ (Quiver.Path.centerPartialMap k₀ ((Generator.mutate k).toStep E).toPath P).domain)
 
 local notation "C'" => Scheme.PartialMap.restrict C U hU hle
 local notation "src(" c ")" => (c) ≫ Scheme.PartialMap.domainSource (X := Centers) (Y := Centers) C'
 local notation "dst(" c ")" => (c) ≫ Scheme.PartialMap.domainTarget (X := Centers) (Y := Centers) C'
 
 variable {m : ℕ} [NeZero m] {H : LinearMap.BilinForm ℤ L}
-  (M : Point (Over.mk (structureMap ℂ (Fin (n + 1) → ℤ))) →
-    MarkedSurface ℂ m H (scheme ℂ (Fin (n + 1) →₀ ℤ)))
+  (M : Point (Over.mk (structureMap k₀ (Fin (n + 1) → ℤ))) →
+    MarkedSurface k₀ m H (scheme k₀ (Fin (n + 1) →₀ ℤ)))
 
 include hform hcharge in
 /-- A mutation of a complete marked toric presentation gives a target presentation and
@@ -77,8 +80,8 @@ inclusion come from mutation after lifting to that subdivision. -/
 theorem exists_mutated_presentation
     (hmodel : ∀ c : CenterPoint (U := Centers) (V := Centers) C',
       Q.HasNodalModel (src(c)) (M (src(c)))) :
-    ∃ (Q' : CompleteToricPresentation i b (n + 1) L Empty)
-      (M' : Point Centers → MarkedSurface ℂ m H XTor)
+    ∃ (Q' : CompleteToricPresentation k₀ i b (n + 1) L Empty)
+      (M' : Point Centers → MarkedSurface k₀ m H XTor)
       (R : GeometricRealization (T₀ := Centers) (T₁ := Centers) M M' C' F),
       (Quiver.Path.chargeTarget w P).charge = rayChargeMap Q'.rays ∧
       R.picard = .refl H ∧ R.boundaryAction = 1 ∧
@@ -96,9 +99,9 @@ theorem exists_mutated_presentation
         ∃ hfan : Q'.fan = Ψ,
           (hfan ▸ Q'.rays : Fin (n + 1) → Ψ.Ray) = Ω.mutationFanCenterRays b s₀ k hopp ∧
           (hfan ▸ Q'.inclusion :
-            L →ₗ[ℤ] Additive (LineBundleClass Ψ.algebraicRealization) × (Fin (n + 1) → ℤ)) =
-            (mutationPicardEquiv b s₀ k hopp hΩ).symm.toLinearMap.comp
-              (h.internalBlowupPicardPullback.comp Q.inclusion) := by
+            L →ₗ[ℤ] Additive (LineBundleClass (Ψ.finiteFanScheme k₀)) × (Fin (n + 1) → ℤ)) =
+            (mutationPicardEquiv k₀ b s₀ k hopp hΩ).symm.toLinearMap.comp
+              ((h.internalBlowupPicardPullback k₀).comp Q.inclusion) := by
   let := Q.complete.nonempty_cones
   let := Q.prestable
   let := Q.neZero
@@ -125,10 +128,10 @@ theorem exists_mutated_presentation
   obtain ⟨hpre', T', M', R, hv', hpos', hcharge', hpic, hact, hmodels'⟩ :=
     GeometricRealization.exists_mutate_contracted b s₀ k hopp hΩ P hform hcharge₀ U hU hle M
       v₀ hcΩ hv₀ hpos₀ (T := T₀) (o := o₀)
-      (J := h.internalBlowupPicardPullback.comp Q.inclusion) (fun c ↦ by
+      (J := (h.internalBlowupPicardPullback k₀).comp Q.inclusion) (fun c ↦ by
         obtain ⟨q, Y, d, W, e, hW, he, -⟩ := hmodels₀ c
         exact ⟨q, Y, d, W, e, hW, he⟩)
-  let Q' : CompleteToricPresentation i b (n + 1) L Empty :=
+  let Q' : CompleteToricPresentation k₀ i b (n + 1) L Empty :=
     { fan := Ψ
       complete := hcΨ
       regular := (Ω.isRegular_mutationFan_iff b hv hp hopp).mpr hΩ
@@ -139,8 +142,8 @@ theorem exists_mutated_presentation
       marks := Empty.elim
       cycle := T'
       origin := o₀
-      inclusion := (mutationPicardEquiv b s₀ k hopp hΩ).symm.toLinearMap.comp
-        (h.internalBlowupPicardPullback.comp Q.inclusion)
+      inclusion := (mutationPicardEquiv k₀ b s₀ k hopp hΩ).symm.toLinearMap.comp
+        ((h.internalBlowupPicardPullback k₀).comp Q.inclusion)
       rayOrder := v₀.trans (Ω.mutationFanRayEquiv b hv hp hopp)
       component_eq := hv'
       positive := hpos' }

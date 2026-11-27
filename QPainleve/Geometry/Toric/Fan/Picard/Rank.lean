@@ -5,7 +5,8 @@ Authors: The QPainleve contributors
 -/
 module
 
-public import QPainleve.Geometry.Toric.Fan.Picard.Presentation
+public import QPainleve.Geometry.Toric.Fan.Picard.FiniteFanScheme
+public import QPainleve.Geometry.Toric.Fan.Equiv
 
 import Mathlib.LinearAlgebra.Dimension.RankNullity
 import TauCeti.LinearAlgebra.Dual.Basis
@@ -24,7 +25,9 @@ open TauCeti.AlgebraicGeometry
 
 namespace TauCeti.Toric.Fan
 
-variable {N : Type} {V : Type*} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
+universe u
+
+variable {N : Type u} {V : Type*} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {Φ : Fan i}
 
 /-- On a complete fan, the coefficients of a character's divisor determine the character. -/
@@ -36,18 +39,20 @@ theorem characterToRayDivisor_injective (hc : Φ.IsComplete) :
   intro ρ
   exact le_of_eq (by simpa using (congrFun hm ρ).symm)
 
+variable (R : Type u) [CommRing R] [IsDomain R] [IsNoetherianRing R]
+  [UniqueFactorizationMonoid R] in
 /-- For a complete regular fan, Picard rank plus lattice rank is the number of rays. -/
 theorem finrank_picard_add_finrank_eq_natCard_ray (hΦ : Φ.IsRegular) (hc : Φ.IsComplete) :
-    Module.finrank ℤ (Additive (LineBundleClass Φ.algebraicRealization)) +
+    Module.finrank ℤ (Additive (LineBundleClass (Φ.finiteFanScheme R))) +
       Module.finrank ℤ N = Nat.card Φ.Ray := by
   let := hc.nonempty_cones
   let := Φ.lattice.free
   let := Fintype.ofFinite Φ.Ray
   let f := Φ.characterToRayDivisor.toIntLinearMap
-  let g := (Φ.rayDivisorToPicard hΦ).toIntLinearMap
+  let g := (Φ.rayChartDivisorToPicard R hΦ).toIntLinearMap
   have hf : Function.Injective f := characterToRayDivisor_injective hc
-  have hg : Function.Surjective g := Φ.rayDivisorToPicard_surjective hΦ
-  have hex : Function.Exact f g := Φ.exact_characterToRayDivisor_rayDivisorToPicard hΦ
+  have hg : Function.Surjective g := Φ.rayChartDivisorToPicard_surjective R hΦ
+  have hex : Function.Exact f g := Φ.exact_characterToRayDivisor_rayChartDivisorToPicard R hΦ
   have h := g.ker.finrank_quotient_add_finrank
   rw [(g.quotKerEquivOfSurjective hg).finrank_eq, LinearMap.exact_iff.mp hex,
     ← (LinearEquiv.ofInjective f hf).finrank_eq,
@@ -59,7 +64,7 @@ end TauCeti.Toric.Fan
 
 namespace TauCeti.Toric.FanEquiv
 
-variable {N : Type} {N' V V' : Type*} [AddCommGroup N] [AddCommGroup N']
+variable {N N' V V' : Type*} [AddCommGroup N] [AddCommGroup N']
   [AddCommGroup V] [AddCommGroup V'] [Module ℝ V] [Module ℝ V']
   {i : N →+ V} {i' : N' →+ V'} {Φ : Fan i} {Ψ : Fan i'}
 

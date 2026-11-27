@@ -32,9 +32,12 @@ open LineBundleClass (IsNef pullback)
 
 namespace QPainleve.SignedClusterModularGroup.GeometricRealization
 
-local notation "S" => Spec (CommRingCat.of ℂ)
+variable {k₀ : Type} [Field k₀] [IsAlgClosed k₀]
+
+local notation "S" => Spec (CommRingCat.of k₀)
 local notation "D[" M "]" => Scheme.Hom.ker (Over.Hom.left (Arrow.hom (MarkedSurface.pair M)))
-local notation "Dtor[" Φ "," h "]" => Scheme.IdealSheafData.subscheme (Fan.boundaryIdeal Φ h)
+local notation "Dtor[" Φ "," h "]" => Scheme.IdealSheafData.subscheme
+  (Fan.toricBoundaryIdeal k₀ Φ h)
 local notation "classOf(" h ")" => (LineBundleClass.mk (IsEffectiveCartier.toInvertibleSheaf h))⁻¹
 
 variable {m n : ℕ} [NeZero n]
@@ -42,15 +45,19 @@ variable {m n : ℕ} [NeZero n]
   {B₀ : LinearMap.BilinForm ℤ L₀} {B₁ : LinearMap.BilinForm ℤ L₁}
   {B₂ : LinearMap.BilinForm ℤ L₂}
 
-local notation "Centers[" j "]" => Over.mk (structureMap ℂ (Fin j → ℤ))
-local notation "XTor" => scheme ℂ (Fin m →₀ ℤ)
+local notation "Centers[" j "]" => Over.mk (structureMap k₀ (Fin j → ℤ))
+local notation "XTor" => scheme k₀ (Fin m →₀ ℤ)
 
-variable {P₀ : Point Centers[m] → MarkedSurface ℂ n B₀ (scheme ℂ (Fin m →₀ ℤ))}
-  {P₁ : Point Centers[m] → MarkedSurface ℂ n B₁ (scheme ℂ (Fin m →₀ ℤ))}
-  {P₂ : Point Centers[m] → MarkedSurface ℂ n B₂ (scheme ℂ (Fin m →₀ ℤ))}
-  {C : (scheme ℂ (Fin m → ℤ)).PartialMap (scheme ℂ (Fin m → ℤ))}
-  [IsDominant C.hom] [C.IsOver (Centers[m]).hom (Centers[m]).hom]
-  {F : scheme ℂ (Fin m →₀ ℤ) ⤏ scheme ℂ (Fin m →₀ ℤ)} [F.IsDominant]
+variable {P₀ : Point (Over.mk (QPainleve.CharacterTorus.structureMap k₀ (Fin m → ℤ))) →
+  MarkedSurface k₀ n B₀ (scheme k₀ (Fin m →₀ ℤ))}
+  {P₁ : Point (Over.mk (QPainleve.CharacterTorus.structureMap k₀ (Fin m → ℤ))) →
+    MarkedSurface k₀ n B₁ (scheme k₀ (Fin m →₀ ℤ))}
+  {P₂ : Point (Over.mk (QPainleve.CharacterTorus.structureMap k₀ (Fin m → ℤ))) →
+    MarkedSurface k₀ n B₂ (scheme k₀ (Fin m →₀ ℤ))}
+  {C : (scheme k₀ (Fin m → ℤ)).PartialMap (scheme k₀ (Fin m → ℤ))}
+  [IsDominant C.hom] [C.IsOver ((Over.mk (QPainleve.CharacterTorus.structureMap k₀ (Fin m →
+    ℤ)))).hom ((Over.mk (QPainleve.CharacterTorus.structureMap k₀ (Fin m → ℤ)))).hom]
+  {F : scheme k₀ (Fin m →₀ ℤ) ⤏ scheme k₀ (Fin m →₀ ℤ)} [F.IsDominant]
 
 local notation "PointC" => CenterPoint (U := Centers[m]) (V := Centers[m]) C
 local notation "src(" c ")" => (c) ≫ domainSource (X := Centers[m]) (Y := Centers[m]) C
@@ -91,7 +98,7 @@ variable {N N' V V' : Type} [AddCommGroup N] [AddCommGroup N']
   [AddCommGroup V] [AddCommGroup V'] [Module ℝ V] [Module ℝ V']
   {i : N →+ V} {i' : N' →+ V'} {b : Basis (Fin 2) ℤ N} {b' : Basis (Fin 2) ℤ N'}
   {α α' : Type}
-  (Q : CompleteToricPresentation i b m L₁ α) (Q' : CompleteToricPresentation i' b' m L₂ α')
+  (Q : CompleteToricPresentation k₀ i b m L₁ α) (Q' : CompleteToricPresentation k₀ i' b' m L₂ α')
 
 local notation "Q₀" => Q.complete.nonempty_cones
 local notation "Q₀'" => Q'.complete.nonempty_cones
@@ -102,12 +109,13 @@ variable (e : N ≃ₗ[ℤ] N') {Δ : Fan i}
 local notation "g" => Fan.mapEquivIso Q'.fan Q.fan.lattice e.symm
 local notation "hΩ" => Nonempty.map (FanEquiv.coneEquiv g) Q₀'
 local notation "hΔ₀" => Fan.IsSubdivision.nonempty_cones_of_nonempty hΔQ Q₀
-local notation "leftBoundary" => Fan.IsSubdivision.boundaryMap hΔQ hΔ₀ Q₀
+local notation "leftBoundary" => Fan.IsSubdivision.boundaryMap k₀ hΔQ hΔ₀ Q₀
 local notation "rightBoundary" =>
-  Fan.IsSubdivision.boundaryMap hΔQ' hΔ₀ hΩ ≫ Iso.inv (FanEquiv.boundaryIso g Q₀' hΩ)
+  Fan.IsSubdivision.boundaryMap k₀ hΔQ' hΔ₀ hΩ ≫ Iso.inv (FanEquiv.boundaryIso k₀ g Q₀' hΩ)
 
+omit [IsAlgClosed k₀] in
 private theorem rename_refl_toRationalMap :
-    (Spec.map (CommRingCat.ofHom (LaurentRing.rename (R := ℂ)
+    (Spec.map (CommRingCat.ofHom (LaurentRing.rename (R := k₀)
       (Equiv.refl (Fin m)).toFun).toRingHom)).toRationalMap = RationalMap.id XTor := by
   have he : (Equiv.refl (Fin m)).toFun = id := rfl
   rw [he, LaurentRing.rename_id]
@@ -134,11 +142,11 @@ theorem exists_comp_marked_toric_endpoint_comparison
     (hmodel₂ : ∀ c : PointC, Q'.HasNodalModel (dst(c)) (P₂ (dst(c))))
     (hcart₀ : ∀ c : PointC, D[P₀ (src(c))].IsEffectiveCartier)
     (hcart₂ : ∀ c : PointC, D[P₂ (dst(c))].IsEffectiveCartier)
-    (hnef₀ : ∀ c : PointC, IsNef ℂ ((P₀ (src(c))).surface ↘ S) classOf(hcart₀ c))
-    (hnef₂ : ∀ c : PointC, IsNef ℂ ((P₂ (dst(c))).surface ↘ S) classOf(hcart₂ c))
-    (hsq₀ : ∀ c : PointC, Chow.classIntersectionNumber ℂ (P₀ (src(c))).surface
+    (hnef₀ : ∀ c : PointC, IsNef k₀ ((P₀ (src(c))).surface ↘ S) classOf(hcart₀ c))
+    (hnef₂ : ∀ c : PointC, IsNef k₀ ((P₂ (dst(c))).surface ↘ S) classOf(hcart₂ c))
+    (hsq₀ : ∀ c : PointC, Chow.classIntersectionNumber k₀ (P₀ (src(c))).surface
       classOf(hcart₀ c) classOf(hcart₀ c) = 0)
-    (hsq₂ : ∀ c : PointC, Chow.classIntersectionNumber ℂ (P₂ (dst(c))).surface
+    (hsq₂ : ∀ c : PointC, Chow.classIntersectionNumber k₀ (P₂ (dst(c))).surface
       classOf(hcart₂ c) classOf(hcart₂ c) = 0)
     (d₀ : L₀) (d : ZMod n → L₂) (hd : Function.Injective d)
     (hmark₀ : ∀ c : PointC, (P₀ (src(c))).boundaryClass (hcart₀ c) 0 = d₀)
@@ -146,9 +154,10 @@ theorem exists_comp_marked_toric_endpoint_comparison
     ∃ (I : B₂.IsometryEquiv B₁) (T : GeometricRealization P₀ P₂ C F),
       T.picard = I.trans R.picard ∧ T.orientation = R.orientation ∧
       (∀ (x : L₁) (y : L₂), I y = x ↔
-        (Additive.ofMul (pullback hΔQ.toFanHom.algebraicMap (Q.inclusion x).1.toMul),
+        (Additive.ofMul (pullback (hΔQ.toFanHom.finiteFanSchemeHom k₀) (Q.inclusion x).1.toMul),
           (Q.inclusion x).2) =
-        (Additive.ofMul (pullback (hΔQ'.toFanHom.algebraicMap ≫ (g).symm.toFanHom.algebraicMap)
+        (Additive.ofMul (pullback ((hΔQ'.toFanHom.finiteFanSchemeHom k₀) ≫
+          ((g).symm.toFanHom.finiteFanSchemeHom k₀))
             (Q'.inclusion y).1.toMul), (Q'.inclusion y).2)) ∧
       T.picard (d (T.boundaryPerm 0)) = d₀ := by
   let : Nonempty Q.fan.cones := Q₀

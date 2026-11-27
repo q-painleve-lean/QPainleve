@@ -8,7 +8,8 @@ module
 public import QPainleve.Geometry.Toric.Fan.Boundary.SelfIntersection
 public import QPainleve.Geometry.Toric.Fan.ProjectiveSpace.Plane
 
-import QPainleve.Geometry.Toric.Fan.Subdivision.Projective
+import QPainleve.Geometry.Toric.BaseChange.ProjectiveSpace
+import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.ProjectiveOver
 
 /-!
 # Intersections of boundary rays of the projective plane
@@ -26,7 +27,10 @@ open TauCeti.AlgebraicGeometry TauCeti.AlgebraicGeometry.Chow LineBundleClass
 
 namespace TauCeti.Toric.Fan
 
-variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
+universe u
+
+variable (k : Type u) [Field k] [Infinite k] {N : Type u} {V : Type*}
+  [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} (b : Basis (Fin 2) ℤ N) (hi : IsIntegralLattice i)
 
 local notation "Φ" => projectiveSpace b hi
@@ -36,14 +40,14 @@ local notation "hc" => isComplete_projectiveSpace b hi
 /-- Each ray divisor on the toric projective plane has self-intersection one. -/
 @[simp]
 theorem rayBoundarySelfIntersection_projectivePlane (ρ : (Φ).Ray) :
-    (Φ).rayBoundarySelfIntersection hΦ ρ = 1 := by
+    (Φ).rayBoundarySelfIntersection k hΦ ρ = 1 := by
   classical
   let e := projectivePlaneRayEquiv b hi
   let : Fintype (Φ).Ray := Fintype.ofEquiv _ e
-  let : (Φ).algebraicRealization.IsProjectiveOver ℂ :=
-    (Φ).isProjectiveOver_algebraicRealization_of_isComplete hΦ hc b
+  let : ((Φ).finiteFanScheme k).IsProjectiveOver k :=
+    Scheme.IsProjectiveOver.of_isClosedImmersion k (finiteFanSchemeToProjectiveSpace k b hi)
   have hdim : Module.finrank ℤ N = 2 := by simpa using Module.finrank_eq_card_basis b
-  have h := (Φ).rayBoundaryPoint_selfIntersection_smul_add_sum_eq_zero hΦ hdim ρ
+  have h := (Φ).rayBoundaryPoint_selfIntersection_smul_add_sum_eq_zero k hΦ hdim ρ
   have hall : ∑ τ : (Φ).Ray, τ.primitiveGenerator = 0 := by
     rw [← Equiv.sum_comp e]
     simpa only [e, primitiveGenerator_projectivePlaneRayEquiv] using sum_projectiveSpaceGenerator b
@@ -54,26 +58,26 @@ theorem rayBoundarySelfIntersection_projectivePlane (ρ : (Φ).Ray) :
     exact ⟨fun h ↦ h.1.symm, fun h ↦ ⟨h.symm, exists_cone_projectivePlane_of_ray_ne b hi h.symm⟩⟩
   dsimp only at h
   rw [hfilter, Finset.sum_erase_eq_sub (Finset.mem_univ ρ), hall, zero_sub,
-    ← rayBoundarySelfIntersection_def, ← sub_eq_add_neg, sub_eq_zero] at h
+    ← rayBoundarySelfIntersection_def k, ← sub_eq_add_neg, sub_eq_zero] at h
   exact ρ.isPrimitiveGenerator.isPrimitive.zsmul_left_injective (h.trans (one_zsmul _).symm)
 
 /-- Any two ray divisor classes on the toric projective plane have intersection one. -/
 @[simp]
 theorem classIntersectionNumber_projectivePlane_rayBoundaryPoint (ρ τ : (Φ).Ray) :
     let : Nonempty (Φ).cones := ⟨ρ.toCone⟩
-    let := (Φ).uniqueFactorizationMonoid_stalk_algebraicRealization hΦ
-    classIntersectionNumber ℂ (Φ).algebraicRealization
-      (primeDivisorClass ((Φ).rayBoundaryPoint hΦ ρ))
-      (primeDivisorClass ((Φ).rayBoundaryPoint hΦ τ)) = 1 := by
+    let := (Φ).uniqueFactorizationMonoid_stalk_finiteFanScheme (R := k) hΦ
+    classIntersectionNumber k ((Φ).finiteFanScheme k)
+      (primeDivisorClass ((Φ).rayBoundaryChartPoint (R := k) hΦ ρ))
+      (primeDivisorClass ((Φ).rayBoundaryChartPoint (R := k) hΦ τ)) = 1 := by
   intro _ _
   classical
-  let : (Φ).algebraicRealization.IsProjectiveOver ℂ :=
-    (Φ).isProjectiveOver_algebraicRealization_of_isComplete hΦ hc b
+  let : ((Φ).finiteFanScheme k).IsProjectiveOver k :=
+    Scheme.IsProjectiveOver.of_isClosedImmersion k (finiteFanSchemeToProjectiveSpace k b hi)
   by_cases h : ρ = τ
   · subst τ
-    rw [← rayBoundarySelfIntersection_def, rayBoundarySelfIntersection_projectivePlane]
+    rw [← rayBoundarySelfIntersection_def k, rayBoundarySelfIntersection_projectivePlane]
   · have hdim : Module.finrank ℤ N = 2 := by simpa using Module.finrank_eq_card_basis b
-    rw [(Φ).classIntersectionNumber_rayBoundaryPoint hΦ hdim h,
+    rw [(Φ).classIntersectionNumber_rayBoundaryPoint k hΦ hdim h,
       ite_eq_left (exists_cone_projectivePlane_of_ray_ne b hi h)]
 
 end TauCeti.Toric.Fan

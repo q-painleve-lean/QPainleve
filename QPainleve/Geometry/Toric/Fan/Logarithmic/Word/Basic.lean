@@ -26,12 +26,13 @@ open QPainleve.CharacterTorus (centerCharacter)
 
 namespace TauCeti.Toric.Fan.LogarithmicProjection
 
+variable {K : Type} [Field K]
+
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V] {i : N →+ V}
 
-local notation "S" => Spec (CommRingCat.of ℂ)
-
-variable {Z : Scheme} [Z.Over S] [SmoothOfRelativeDimension 2 (Z ↘ S)] [IsIntegral Z]
-  {D : Z.IdealSheafData} {A B : LogarithmicProjection i D} {m : ℕ}
+variable {Z : Scheme} [Z.Over (Spec (.of K))]
+  [SmoothOfRelativeDimension 2 (Z ↘ Spec (.of K))] [IsIntegral Z]
+  {D : Z.IdealSheafData} {A B : LogarithmicProjection K i D} {m : ℕ}
 
 namespace OrderedToricModel
 
@@ -50,28 +51,29 @@ theorem exchangeMatrix_matrix (U : OrderedToricModel A m) :
 
 /-- The fixed-center rational evaluation on the common resolving surface. -/
 def xEvaluation (U : OrderedToricModel A m) :
-    Z ⤏ Spec (.of (LaurentRing ℂ (Fin m))) :=
-  U.hom.toRationalMap.comp (U.fan.xEvaluation U.basis U.rays (centerCharacter U.parameters))
+    Z ⤏ Spec (.of (LaurentRing K (Fin m))) :=
+  U.hom.toRationalMap.comp (U.fan.xEvaluation K U.basis U.rays (centerCharacter U.parameters))
 
 /-- Evaluation pulls the scaled torus characters back along the ordered projection. -/
 theorem xEvaluation_def (U : OrderedToricModel A m) :
     U.xEvaluation =
-      U.hom.toRationalMap.comp (U.fan.xEvaluation U.basis U.rays (centerCharacter U.parameters)) :=
+      U.hom.toRationalMap.comp
+        (U.fan.xEvaluation K U.basis U.rays (centerCharacter U.parameters)) :=
   (rfl)
 
 /-- Successive words carrying one fixed-center evaluation to the next compose
 at the generic point of the same resolving surface. -/
-theorem exists_compOfDefined_word_comp {C : LogarithmicProjection i D}
+theorem exists_compOfDefined_word_comp {C : LogarithmicProjection K i D}
     (U : OrderedToricModel A m) (M : OrderedToricModel B m) (W : OrderedToricModel C m)
     (u : Word U.exchangeMatrix M.exchangeMatrix) (v : Word M.exchangeMatrix W.exchangeMatrix)
-    (h₀ : ∃ h, U.xEvaluation.compOfDefined (u.xRationalMap ℂ) h = M.xEvaluation)
-    (h₁ : ∃ h, M.xEvaluation.compOfDefined (v.xRationalMap ℂ) h = W.xEvaluation) :
-    ∃ h, U.xEvaluation.compOfDefined ((u.comp v).xRationalMap ℂ) h = W.xEvaluation := by
+    (h₀ : ∃ h, U.xEvaluation.compOfDefined (u.xRationalMap K) h = M.xEvaluation)
+    (h₁ : ∃ h, M.xEvaluation.compOfDefined (v.xRationalMap K) h = W.xEvaluation) :
+    ∃ h, U.xEvaluation.compOfDefined ((u.comp v).xRationalMap K) h = W.xEvaluation := by
   obtain ⟨hu, h₀⟩ := h₀
   obtain ⟨hv, h₁⟩ := h₁
-  obtain ⟨h, he⟩ := U.xEvaluation.compOfDefined_comp (u.xRationalMap ℂ) (v.xRationalMap ℂ)
+  obtain ⟨h, he⟩ := U.xEvaluation.compOfDefined_comp (u.xRationalMap K) (v.xRationalMap K)
     hu (h₀.symm ▸ hv)
-  refine ⟨(Quiver.Path.xRationalMap_comp ℂ u v).symm ▸ h, ?_⟩
+  refine ⟨(Quiver.Path.xRationalMap_comp K u v).symm ▸ h, ?_⟩
   simpa only [Quiver.Path.xRationalMap_comp, ← he, h₀] using h₁
 
 end OrderedToricModel

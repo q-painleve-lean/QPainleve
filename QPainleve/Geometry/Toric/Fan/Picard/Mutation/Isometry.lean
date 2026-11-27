@@ -8,7 +8,7 @@ module
 public import Mathlib.LinearAlgebra.BilinearForm.IsometryEquiv
 public import QPainleve.Geometry.Toric.Fan.Boundary.SelfIntersection
 public import QPainleve.Geometry.Toric.Fan.Picard.Mutation.Basic
-public import QPainleve.Geometry.Toric.Fan.Smooth
+public import QPainleve.Geometry.Toric.BaseChange.Fan
 public import TauCeti.LinearAlgebra.BilinearForm.Prod
 
 import Mathlib.LinearAlgebra.Basis.Prod
@@ -39,7 +39,7 @@ namespace TauCeti.Toric.Fan
 
 universe u
 
-variable {N : Type} {V : Type u} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
+variable {N : Type u} {V : Type*} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {Φ : Fan i} (b : Module.Basis (Fin 2) ℤ N)
   (p : Φ.Ray) (hop : hull ℝ {i (-p.primitiveGenerator)} ∈ Φ.cones)
 
@@ -119,18 +119,20 @@ private theorem detCharacter_same_sign_of_commonCone {ρ τ : Φ.Ray}
   · exact Or.inl ⟨by exact_mod_cast (castEval _ ▸ hs _ hp'),
       by exact_mod_cast (castEval _ ▸ hs _ hq')⟩
 
+variable (K : Type u) [Field K] [Infinite K]
+
 variable (hΦ : Φ.IsRegular) (hc : Φ.IsComplete)
-  [hproj : Φ.algebraicRealization.IsProjectiveOver ℂ]
+  [hproj : (Φ.finiteFanScheme K).IsProjectiveOver K]
 
 local notation "hΨ" => Iff.mpr (Φ.isRegular_mutationFan_iff b hv hp hop) hΦ
-local notation "d" => Φ.rayBoundarySelfIntersection hΦ
-local notation "d'" => (Fan.rayBoundarySelfIntersection hΨ)
+local notation "d" => Φ.rayBoundarySelfIntersection K hΦ
+local notation "d'" => (Fan.rayBoundarySelfIntersection K hΨ)
 
 omit hproj in
 private theorem mutationWallRelation (hc : Φ.IsComplete)
-    [Φ.algebraicRealization.IsProjectiveOver ℂ]
-    [hTarget : @Scheme.IsProjectiveOver ℂ _ (Fan.algebraicRealization Ψ)
-      (Fan.algebraicRealizationOver Ψ)] (ρ : Φ.Ray) :
+    [(Φ.finiteFanScheme K).IsProjectiveOver K]
+    [hTarget : @Scheme.IsProjectiveOver K _ (Fan.finiteFanScheme K Ψ)
+      (Fan.finiteFanSchemeOver K Ψ)] (ρ : Φ.Ray) :
     ∃ prev next : Φ.Ray,
       b.detDualEquiv ρ.primitiveGenerator prev.primitiveGenerator = -1 ∧
       b.detDualEquiv ρ.primitiveGenerator next.primitiveGenerator = 1 ∧
@@ -142,7 +144,7 @@ private theorem mutationWallRelation (hc : Φ.IsComplete)
   classical
   let := Fintype.ofFinite (Ψ).Ray
   obtain ⟨prev, next, hprev, hnext, hneigh, hwall⟩ :=
-    Φ.exists_rayBoundaryPoint_selfIntersection_relation b hΦ hc ρ
+    Φ.exists_rayBoundaryPoint_selfIntersection_relation K b hΦ hc ρ
   have hne : prev ≠ next := by
     intro h
     rw [h, hnext] at hprev
@@ -156,8 +158,8 @@ private theorem mutationWallRelation (hc : Φ.IsComplete)
       Finset.mem_singleton, Equiv.apply_eq_iff_eq, ne_eq, mutationRayEquiv_commonCone]
       using hneigh τ
   have hdim : Module.finrank ℤ N = 2 := by simpa using Module.finrank_eq_card_basis b
-  have hwall' := @rayBoundaryPoint_selfIntersection_smul_add_sum_eq_zero _ _ _ _ _ _
-    Ψ hΨ hdim hTarget _ (r ρ)
+  let : ((Ψ).finiteFanScheme K).IsProjectiveOver K := hTarget
+  have hwall' := (Ψ).rayBoundaryPoint_selfIntersection_smul_add_sum_eq_zero K hΨ hdim (r ρ)
   rw [hfilter, Finset.sum_pair ((r).injective.ne hne)] at hwall'
   simp only [← rayBoundarySelfIntersection_def] at hwall'
   rw [← rayBoundarySelfIntersection_def] at hwall
@@ -174,7 +176,7 @@ private theorem mutationWallRelation (hc : Φ.IsComplete)
 
 local notation "δ[" ρ "," τ "]" => (ite (ρ = τ) (1 : ℤ) 0)
 
-omit hproj in
+omit hproj [Infinite K] in
 open Classical in
 private theorem positiveCharacter_wall {prev ρ next : Φ.Ray}
     (hprev : b.detDualEquiv ρ.primitiveGenerator prev.primitiveGenerator = -1)
@@ -210,12 +212,12 @@ private theorem positiveCharacter_wall {prev ρ next : Φ.Ray}
 include hproj in
 open Classical in
 private theorem rayBoundarySelfIntersection_mutation (hc : Φ.IsComplete)
-    [hTarget : @Scheme.IsProjectiveOver ℂ _ (Fan.algebraicRealization Ψ)
-      (Fan.algebraicRealizationOver Ψ)] (ρ : Φ.Ray) :
+    [hTarget : @Scheme.IsProjectiveOver K _ (Fan.finiteFanScheme K Ψ)
+      (Fan.finiteFanSchemeOver K Ψ)] (ρ : Φ.Ray) :
     d' (r ρ) = d ρ - δ[ρ,p] + δ[ρ,q] := by
   obtain ⟨prev, next, hprev, hnext, hneigh, hwall, hshift⟩ :=
-    mutationWallRelation b p hop hΦ hc (hTarget := hTarget) ρ
-  have hsum := positiveCharacter_wall b p hop hΦ hprev hnext
+    mutationWallRelation (K := K) b p hop hΦ hc (hTarget := hTarget) ρ
+  have hsum := positiveCharacter_wall (K := K) b p hop hΦ hprev hnext
     ((hneigh prev).mpr (Or.inl rfl)).2 ((hneigh next).mpr (Or.inr rfl)).2 hwall
   have hz : m v = 0 := by simp only [LinearMap.neg_apply, b.detDualEquiv_self, neg_zero]
   have inject (τ : Φ.Ray) := τ.isPrimitiveGenerator.isPrimitive.zsmul_left_injective
@@ -240,22 +242,22 @@ private theorem rayBoundarySelfIntersection_mutation (hc : Φ.IsComplete)
   · simpa only [ite_eq_right hρ, ite_eq_right hτ, sub_zero, add_zero] using sub_eq_zero.mp h
   · exact (hm h).elim
 
-local notation "Pic[" Ξ "]" => Additive (LineBundleClass (Fan.algebraicRealization Ξ))
+local notation "Pic[" Ξ "]" => Additive (LineBundleClass (Fan.finiteFanScheme K Ξ))
 local notation "A[" Ξ "," hΞ "," hProjective "]" =>
-  (@intersectionBilinForm ℂ _ _ (Fan.algebraicRealization Ξ)
-    (Fan.algebraicRealizationOver Ξ) hProjective _
-    (Eq.mpr (congrArg (SmoothOfRelativeDimension 2) (Fan.algebraicRealization_over Ξ))
+  (@intersectionBilinForm K _ _ (Fan.finiteFanScheme K Ξ)
+    (Fan.finiteFanSchemeOver K Ξ) hProjective _
+    (Eq.mpr (congrArg (SmoothOfRelativeDimension 2) (Fan.finiteFanScheme_over K Ξ))
       (Eq.mp (congrArg
-        (fun n ↦ SmoothOfRelativeDimension n (Fan.algebraicRealizationStructureMap Ξ))
+        (fun n ↦ SmoothOfRelativeDimension n (Fan.finiteFanSchemeToSpec K Ξ))
         (Eq.trans (Module.finrank_eq_card_basis b) (Fintype.card_fin 2)))
-        (Fan.smoothOfRelativeDimension_algebraicRealizationStructureMap Ξ hΞ))))
+        (Fan.smoothOfRelativeDimension_finiteFanSchemeToSpec Ξ K hΞ))))
 local notation "D[" hΞ "," ρ "]" =>
-  (Fan.rayDivisorToPicard _ hΞ (@Pi.single _ (fun _ ↦ ℤ) _ (Classical.decEq _) ρ 1))
-local notation "F" => mutationFiberClass b p hΦ
+  (Fan.rayChartDivisorToPicard K _ hΞ (@Pi.single _ (fun _ ↦ ℤ) _ (Classical.decEq _) ρ 1))
+local notation "F" => mutationFiberClass K b p hΦ
 
-omit hproj in
+omit hproj [Infinite K] in
 private theorem mutationFiberClass_eq_positiveCharacter [Nonempty Φ.cones] :
-    F = Φ.rayDivisorToPicard hΦ f := by
+    F = Φ.rayChartDivisorToPicard K hΦ f := by
   have he (x : N) : m x = b.det ![x, v] := by
     rw [LinearMap.neg_apply, ← b.detDualEquiv_swap x v, Module.Basis.detDualEquiv_apply]
   simp only [mutationFiberClass_eq, ← he]
@@ -267,21 +269,21 @@ private theorem intersection_mutationFiberClass_ray (ρ : Φ.Ray) :
     A[Φ,hΦ,hproj] D[hΦ,ρ] F = δ[ρ,p] + δ[ρ,q] := by
   let : Nonempty Φ.cones := ⟨p.toCone⟩
   obtain ⟨prev, next, hprev, hnext, hneigh, hwall⟩ :=
-    Φ.exists_rayBoundaryPoint_selfIntersection_relation b hΦ hc ρ
+    Φ.exists_rayBoundaryPoint_selfIntersection_relation K b hΦ hc ρ
   rw [← rayBoundarySelfIntersection_def] at hwall
   have hconePrev := ((hneigh prev).mpr (Or.inl rfl)).2
   have hconeNext := ((hneigh next).mpr (Or.inr rfl)).2
   have hprev' : b.detDualEquiv prev.primitiveGenerator ρ.primitiveGenerator = 1 := by
     rw [b.detDualEquiv_swap, hprev, neg_neg]
-  let : SmoothOfRelativeDimension 2 (Φ.algebraicRealization ↘ Spec (CommRingCat.of ℂ)) := by
-    rw [Φ.algebraicRealization_over]
+  let : SmoothOfRelativeDimension 2 (Φ.finiteFanScheme K ↘ Spec (CommRingCat.of K)) := by
+    rw [Φ.finiteFanScheme_over K]
     simpa only [Module.finrank_eq_card_basis b, Fintype.card_fin] using
-      Φ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
+      Φ.smoothOfRelativeDimension_finiteFanSchemeToSpec K hΦ
   dsimp only
   rw [mutationFiberClass_eq_positiveCharacter,
-    Φ.intersectionBilinForm_rayDivisorToPicard_single (decEq := Classical.decEq _) hΦ b hc f
+    Φ.intersectionBilinForm_rayChartDivisorToPicard_single K (decEq := Classical.decEq _) hΦ b hc f
       ⟨hprev', hconePrev.imp fun _ h ↦ h.symm⟩ ⟨hnext, hconeNext⟩]
-  exact positiveCharacter_wall b p hop hΦ hprev hnext hconePrev hconeNext hwall
+  exact positiveCharacter_wall (K := K) b p hop hΦ hprev hnext hconePrev hconeNext hwall
 
 include hop hc hproj in
 open Classical in
@@ -291,15 +293,15 @@ private theorem intersection_mutationFiberClass_self :
   let : Nonempty Φ.cones := ⟨p.toCone⟩
   let := Fintype.ofFinite Φ.Ray
   have hsum : F = ∑ τ, f τ • D[hΦ,τ] := by
-    rw [mutationFiberClass_eq_positiveCharacter, rayDivisorToPicard_apply]
-    simp only [rayDivisorToPicard_single, one_smul]
+    rw [mutationFiberClass_eq_positiveCharacter, rayChartDivisorToPicard_apply]
+    simp only [rayChartDivisorToPicard_single, one_smul]
   dsimp only
   -- Expand the first copy to pair each ray divisor with the unchanged fiber class.
   conv_lhs => arg 1; rw [hsum]
   rw [BilinForm.sum_left]
   apply Finset.sum_eq_zero
   intro τ _
-  rw [BilinForm.smul_left, intersection_mutationFiberClass_ray b p hop hΦ hc]
+  rw [BilinForm.smul_left, intersection_mutationFiberClass_ray (K := K) b p hop hΦ hc]
   by_cases hp' : τ = p
   · subst τ
     simp [LinearMap.neg_apply, b.detDualEquiv_self]
@@ -311,8 +313,8 @@ private theorem intersection_mutationFiberClass_self :
 
 open Classical in
 private theorem intersection_rayDivisor_mutation (hc : Φ.IsComplete)
-    [hTarget : @Scheme.IsProjectiveOver ℂ _ (Fan.algebraicRealization Ψ)
-      (Fan.algebraicRealizationOver Ψ)] (ρ τ : Φ.Ray) :
+    [hTarget : @Scheme.IsProjectiveOver K _ (Fan.finiteFanScheme K Ψ)
+      (Fan.finiteFanSchemeOver K Ψ)] (ρ τ : Φ.Ray) :
     let : Nonempty Φ.cones := ⟨p.toCone⟩
     let : Nonempty (Ψ).cones := ⟨(r p).toCone⟩
     A[Ψ,hΨ,hTarget] D[hΨ,r ρ] D[hΨ,r τ] =
@@ -320,20 +322,21 @@ private theorem intersection_rayDivisor_mutation (hc : Φ.IsComplete)
   let : Nonempty Φ.cones := ⟨p.toCone⟩
   let : Nonempty (Ψ).cones := ⟨(r p).toCone⟩
   have hN : Module.finrank ℤ N = 2 := by simpa using Module.finrank_eq_card_basis b
-  let : SmoothOfRelativeDimension 2 (Φ.algebraicRealization ↘ Spec (CommRingCat.of ℂ)) := by
-    rw [Φ.algebraicRealization_over]
-    exact hN ▸ Φ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
-  let : SmoothOfRelativeDimension 2 ((Ψ).algebraicRealization ↘ Spec (CommRingCat.of ℂ)) := by
-    rw [(Ψ).algebraicRealization_over]
-    exact hN ▸ (Ψ).smoothOfRelativeDimension_algebraicRealizationStructureMap hΨ
+  let : SmoothOfRelativeDimension 2 (Φ.finiteFanScheme K ↘ Spec (CommRingCat.of K)) := by
+    rw [Φ.finiteFanScheme_over K]
+    exact hN ▸ Φ.smoothOfRelativeDimension_finiteFanSchemeToSpec K hΦ
+  let : SmoothOfRelativeDimension 2 ((Ψ).finiteFanScheme K ↘ Spec (CommRingCat.of K)) := by
+    rw [(Ψ).finiteFanScheme_over K]
+    exact hN ▸ (Ψ).smoothOfRelativeDimension_finiteFanSchemeToSpec K hΨ
   dsimp only
-  rw [(Ψ).intersectionBilinForm_rayDivisorToPicard_single_single
+  rw [(Ψ).intersectionBilinForm_rayChartDivisorToPicard_single_single K
       (decEq := Classical.decEq _) hΨ hN (r ρ) (r τ),
-    Φ.intersectionBilinForm_rayDivisorToPicard_single_single (decEq := Classical.decEq _) hΦ hN ρ τ]
+    Φ.intersectionBilinForm_rayChartDivisorToPicard_single_single K
+      (decEq := Classical.decEq _) hΦ hN ρ τ]
   by_cases h : ρ = τ
   · subst τ
     rw [ite_eq_left (rfl : (r ρ) = (r ρ)), ite_eq_left (rfl : ρ = ρ),
-      rayBoundarySelfIntersection_mutation (hTarget := hTarget) b p hop hΦ hc]
+      rayBoundarySelfIntersection_mutation (K := K) (hTarget := hTarget) b p hop hΦ hc]
     split_ifs <;> ring
   · rw [ite_eq_right ((r).injective.ne h), ite_eq_right h, mutationRayEquiv_commonCone]
     have hp' : δ[ρ,p] * δ[τ,p] = 0 := by split_ifs <;> simp_all
@@ -354,14 +357,14 @@ local notation "hp₀" => Ray.hull_primitiveGenerator_mem (s k)
 local notation "Φ₁" => Φ.mutationFan b hv₀ hp₀ hOpposite
 local notation "r₁" => Φ.mutationFanRayEquiv b hv₀ hp₀ hOpposite
 local notation "h₁" => Iff.mpr (Φ.isRegular_mutationFan_iff b hv₀ hp₀ hOpposite) hΦ
-local notation "F₀" => mutationFiberClass b (s k) hΦ
+local notation "F₀" => mutationFiberClass K b (s k) hΦ
 local notation "E(" j ")" => (@Pi.single ι (fun _ ↦ ℤ) _ _ j 1)
-local notation "I" => mutationPicardEquiv b s k hOpposite hΦ
+local notation "I" => mutationPicardEquiv K b s k hOpposite hΦ
 local notation "B[" Ξ "," hΞ "," hProjective "]" =>
   (LinearMap.BilinForm.prod A[Ξ,hΞ,hProjective]
     (-(dotProductBilin ℤ ℤ : LinearMap.BilinForm ℤ (ι → ℤ))))
 
-omit hproj [Fintype ι] in
+omit hproj [Fintype ι] [Infinite K] in
 open Classical in
 private theorem mutationPicardEquiv_ray (ρ : Φ.Ray) :
     let : Nonempty Φ.cones := ⟨(s k).toCone⟩
@@ -371,7 +374,7 @@ private theorem mutationPicardEquiv_ray (ρ : Φ.Ray) :
   let : Nonempty Φ.cones := ⟨(s k).toCone⟩
   let : Nonempty (Φ₁).cones := ⟨(r₁ (s k)).toCone⟩
   let := Classical.decEq Φ.Ray
-  have h := mutationPicardEquiv_toric_single b s k hOpposite hΦ ρ
+  have h := mutationPicardEquiv_toric_single K b s k hOpposite hΦ ρ
   have he : Equiv.decidableEq (Equiv.symm r₁) = Classical.decEq (Φ₁).Ray :=
     Subsingleton.elim _ _
   rw [he] at h
@@ -387,24 +390,24 @@ private theorem mutationPicardEquiv_ray (ρ : Φ.Ray) :
 
 omit [DecidableEq ι] in
 private theorem markedForm_apply {Ξ : Fan i} [Nonempty Ξ.cones]
-    [hProjective : Ξ.algebraicRealization.IsProjectiveOver ℂ] (hΞ : Ξ.IsRegular)
+    [hProjective : (Ξ.finiteFanScheme K).IsProjectiveOver K] (hΞ : Ξ.IsRegular)
     (x y : Pic[Ξ] × (ι → ℤ)) :
     B[Ξ,hΞ,hProjective] x y = A[Ξ,hΞ,hProjective] x.1 y.1 - x.2 ⬝ᵥ y.2 := by
   simp [BilinForm.prod_apply, dotProductBilin_apply_apply, sub_eq_add_neg]
 
 omit [DecidableEq ι] in
 private theorem markedForm_comm {Ξ : Fan i} [Nonempty Ξ.cones]
-    [hProjective : Ξ.algebraicRealization.IsProjectiveOver ℂ] (hΞ : Ξ.IsRegular)
+    [hProjective : (Ξ.finiteFanScheme K).IsProjectiveOver K] (hΞ : Ξ.IsRegular)
     (x y : Pic[Ξ] × (ι → ℤ)) :
     B[Ξ,hΞ,hProjective] x y = B[Ξ,hΞ,hProjective] y x := by
-  rw [markedForm_apply b hΞ x y, markedForm_apply b hΞ y x]
+  rw [markedForm_apply (K := K) b hΞ x y, markedForm_apply (K := K) b hΞ y x]
   simp only [intersectionBilinForm_apply]
   rw [classIntersectionNumber_comm x.1.toMul y.1.toMul, dotProduct_comm x.2 y.2]
 
 open Classical in
 private theorem mutationPicardEquiv_map_ray_pair (hc : Φ.IsComplete)
-    [hTarget : @Scheme.IsProjectiveOver ℂ _ (Fan.algebraicRealization Φ₁)
-      (Fan.algebraicRealizationOver Φ₁)] (ρ τ : Φ.Ray) :
+    [hTarget : @Scheme.IsProjectiveOver K _ (Fan.finiteFanScheme K Φ₁)
+      (Fan.finiteFanSchemeOver K Φ₁)] (ρ τ : Φ.Ray) :
     let : Nonempty Φ.cones := ⟨(s k).toCone⟩
     let : Nonempty (Φ₁).cones := ⟨(r₁ (s k)).toCone⟩
     B[Φ,hΦ,hproj] (I (D[h₁,r₁ ρ], 0)) (I (D[h₁,r₁ τ], 0)) =
@@ -414,20 +417,20 @@ private theorem mutationPicardEquiv_map_ray_pair (hc : Φ.IsComplete)
   dsimp only
   have hF (x : Φ.Ray) : A[Φ,hΦ,hproj] F₀ D[hΦ,x] = δ[x,pivot] + δ[x,opp] := by
     simpa only [intersectionBilinForm_apply, classIntersectionNumber_comm] using
-      intersection_mutationFiberClass_ray b (s k) hOpposite hΦ hc x
+      intersection_mutationFiberClass_ray (K := K) b (s k) hOpposite hΦ hc x
   simp only [mutationPicardEquiv_ray,
     BilinForm.prod_apply, BilinForm.neg_apply, dotProductBilin_apply_apply,
     zero_dotProduct, neg_zero, add_zero, BilinForm.add_left, BilinForm.add_right,
     BilinForm.smul_left, BilinForm.smul_right, single_dotProduct, Pi.single_eq_same, mul_one, hF,
-    intersection_mutationFiberClass_ray b (s k) hOpposite hΦ hc,
-    intersection_mutationFiberClass_self b (s k) hOpposite hΦ hc,
-    intersection_rayDivisor_mutation (hTarget := hTarget) b (s k) hOpposite hΦ hc]
+    intersection_mutationFiberClass_ray (K := K) b (s k) hOpposite hΦ hc,
+    intersection_mutationFiberClass_self (K := K) b (s k) hOpposite hΦ hc,
+    intersection_rayDivisor_mutation (K := K) (hTarget := hTarget) b (s k) hOpposite hΦ hc]
   ring
 
 open Classical in
 private theorem mutationPicardEquiv_map_ray_exceptional (hc : Φ.IsComplete)
-    [hTarget : @Scheme.IsProjectiveOver ℂ _ (Fan.algebraicRealization Φ₁)
-      (Fan.algebraicRealizationOver Φ₁)] (ρ : Φ.Ray) (j : ι) :
+    [hTarget : @Scheme.IsProjectiveOver K _ (Fan.finiteFanScheme K Φ₁)
+      (Fan.finiteFanSchemeOver K Φ₁)] (ρ : Φ.Ray) (j : ι) :
     let : Nonempty Φ.cones := ⟨(s k).toCone⟩
     let : Nonempty (Φ₁).cones := ⟨(r₁ (s k)).toCone⟩
     B[Φ,hΦ,hproj] (I (D[h₁,r₁ ρ], 0)) (I (0, E(j))) =
@@ -441,19 +444,19 @@ private theorem mutationPicardEquiv_map_ray_exceptional (hc : Φ.IsComplete)
     rw [mutationPicardEquiv_exceptional_pivot]
     simp only [BilinForm.prod_apply, BilinForm.neg_apply, dotProductBilin_apply_apply,
       BilinForm.add_left, BilinForm.smul_left, BilinForm.zero_right, zero_dotProduct,
-      intersection_mutationFiberClass_ray b (s k) hOpposite hΦ hc,
-      intersection_mutationFiberClass_self b (s k) hOpposite hΦ hc, dotProduct_neg,
+      intersection_mutationFiberClass_ray (K := K) b (s k) hOpposite hΦ hc,
+      intersection_mutationFiberClass_self (K := K) b (s k) hOpposite hΦ hc, dotProduct_neg,
       single_dotProduct, Pi.single_eq_same, mul_one]
     ring
-  · rw [mutationPicardEquiv_exceptional_of_ne _ _ _ _ _ hj]
+  · rw [mutationPicardEquiv_exceptional_of_ne K _ _ _ _ _ hj]
     simp only [BilinForm.prod_apply, BilinForm.neg_apply, dotProductBilin_apply_apply,
       BilinForm.zero_right, zero_dotProduct, smul_dotProduct, single_dotProduct,
       Pi.single_eq_of_ne (Ne.symm hj), one_mul, smul_zero, neg_zero, add_zero]
 
 open Classical in
 private theorem mutationPicardEquiv_map_exceptional_pair (hc : Φ.IsComplete)
-    [hTarget : @Scheme.IsProjectiveOver ℂ _ (Fan.algebraicRealization Φ₁)
-      (Fan.algebraicRealizationOver Φ₁)] (j l : ι) :
+    [hTarget : @Scheme.IsProjectiveOver K _ (Fan.finiteFanScheme K Φ₁)
+      (Fan.finiteFanSchemeOver K Φ₁)] (j l : ι) :
     let : Nonempty Φ.cones := ⟨(s k).toCone⟩
     let : Nonempty (Φ₁).cones := ⟨(r₁ (s k)).toCone⟩
     B[Φ,hΦ,hproj] (I (0, E(j))) (I (0, E(l))) = B[Φ₁,h₁,hTarget] (0, E(j)) (0, E(l)) := by
@@ -461,16 +464,16 @@ private theorem mutationPicardEquiv_map_exceptional_pair (hc : Φ.IsComplete)
   let : Nonempty (Φ₁).cones := ⟨(r₁ (s k)).toCone⟩
   dsimp only
   by_cases hj : j = k <;> by_cases hl : l = k <;>
-    simp [hj, hl, Ne.symm, markedForm_apply b hΦ,
-      markedForm_apply (hProjective := hTarget) b h₁, dotProduct_single,
-      intersection_mutationFiberClass_self b (s k) hOpposite hΦ hc, Pi.single_eq_of_ne]
+    simp [hj, hl, Ne.symm, markedForm_apply (K := K) b hΦ,
+      markedForm_apply (K := K) (hProjective := hTarget) b h₁, dotProduct_single,
+      intersection_mutationFiberClass_self (K := K) b (s k) hOpposite hΦ hc, Pi.single_eq_of_ne]
 
 /-- Toric mutation preserves the marked intersection form, the orthogonal sum of the toric
 Picard pairing and the negative dot product on total exceptional coordinates. This includes
 arbitrary repeated center labels on a ray. -/
 def mutationPicardIsometry (hc : Φ.IsComplete)
-    [hTarget : @Scheme.IsProjectiveOver ℂ _ (Fan.algebraicRealization Φ₁)
-      (Fan.algebraicRealizationOver Φ₁)] :
+    [hTarget : @Scheme.IsProjectiveOver K _ (Fan.finiteFanScheme K Φ₁)
+      (Fan.finiteFanSchemeOver K Φ₁)] :
     letI : Nonempty Φ.cones := ⟨(s k).toCone⟩
     letI : Nonempty (Φ₁).cones := ⟨(r₁ (s k)).toCone⟩
     B[Φ₁,h₁,hTarget].IsometryEquiv B[Φ,hΦ,hproj] := by
@@ -479,11 +482,11 @@ def mutationPicardIsometry (hc : Φ.IsComplete)
   letI := Fintype.ofFinite (Φ₁).Ray
   letI := Classical.decEq (Φ₁).Ray
   refine { I with map_app' := ?_ }
-  let π := ((Φ₁).rayDivisorToPicard h₁).toIntLinearMap.prodMap
+  let π := ((Φ₁).rayChartDivisorToPicard K h₁).toIntLinearMap.prodMap
     (LinearMap.id : (ι → ℤ) →ₗ[ℤ] (ι → ℤ))
   let β := (Pi.basisFun ℤ (Φ₁).Ray).prod (Pi.basisFun ℤ ι)
   have hπ : Function.Surjective π :=
-    ((Φ₁).rayDivisorToPicard_surjective h₁).prodMap Function.surjective_id
+    ((Φ₁).rayChartDivisorToPicard_surjective K h₁).prodMap Function.surjective_id
   have hform : (B[Φ,hΦ,hproj]).comp ((I).toLinearMap.comp π) ((I).toLinearMap.comp π) =
       (B[Φ₁,h₁,hTarget]).comp π π := by
     apply BilinForm.ext_basis β
@@ -495,13 +498,16 @@ def mutationPicardIsometry (hc : Φ.IsComplete)
         AddMonoidHom.coe_toIntLinearMap, LinearMap.id_apply, map_zero]
     · obtain ⟨ρ, rfl⟩ := (r₁).surjective ρ
       obtain ⟨τ, rfl⟩ := (r₁).surjective τ
-      exact mutationPicardEquiv_map_ray_pair b hΦ s k hOpposite hc (hTarget := hTarget) ρ τ
+      exact mutationPicardEquiv_map_ray_pair (K := K) b hΦ s k hOpposite hc (hTarget := hTarget) ρ τ
     · obtain ⟨ρ, rfl⟩ := (r₁).surjective ρ
-      exact mutationPicardEquiv_map_ray_exceptional b hΦ s k hOpposite hc (hTarget := hTarget) ρ l
+      exact mutationPicardEquiv_map_ray_exceptional (K := K) b hΦ s k hOpposite hc
+        (hTarget := hTarget) ρ l
     · obtain ⟨τ, rfl⟩ := (r₁).surjective τ
-      rw [markedForm_comm b hΦ, markedForm_comm (hProjective := hTarget) b h₁]
-      exact mutationPicardEquiv_map_ray_exceptional b hΦ s k hOpposite hc (hTarget := hTarget) τ j
-    · exact mutationPicardEquiv_map_exceptional_pair b hΦ s k hOpposite hc (hTarget := hTarget) j l
+      rw [markedForm_comm (K := K) b hΦ, markedForm_comm (K := K) (hProjective := hTarget) b h₁]
+      exact mutationPicardEquiv_map_ray_exceptional (K := K) b hΦ s k hOpposite hc
+        (hTarget := hTarget) τ j
+    · exact mutationPicardEquiv_map_exceptional_pair (K := K) b hΦ s k hOpposite hc
+        (hTarget := hTarget) j l
   intro x y
   obtain ⟨x, rfl⟩ := hπ x
   obtain ⟨y, rfl⟩ := hπ y
@@ -510,17 +516,18 @@ def mutationPicardIsometry (hc : Φ.IsComplete)
 /-- The intersection isometry has the original marked Picard mutation as its linear map. -/
 @[simp]
 theorem mutationPicardIsometry_toLinearEquiv (hc : Φ.IsComplete)
-    [hTarget : @Scheme.IsProjectiveOver ℂ _ (Fan.algebraicRealization Φ₁)
-      (Fan.algebraicRealizationOver Φ₁)] :
-    (mutationPicardIsometry b hΦ s k hOpposite hc (hTarget := hTarget)).toLinearEquiv = I :=
+    [hTarget : @Scheme.IsProjectiveOver K _ (Fan.finiteFanScheme K Φ₁)
+      (Fan.finiteFanSchemeOver K Φ₁)] :
+    (mutationPicardIsometry (K := K) b hΦ s k hOpposite hc
+      (hTarget := hTarget)).toLinearEquiv = I :=
   (rfl)
 
 /-- On each marked class, the intersection isometry applies the Picard change of marking. -/
 @[simp]
 theorem mutationPicardIsometry_apply (hc : Φ.IsComplete)
-    [hTarget : @Scheme.IsProjectiveOver ℂ _ (Fan.algebraicRealization Φ₁)
-      (Fan.algebraicRealizationOver Φ₁)] (x : Pic[Φ₁] × (ι → ℤ)) :
-    mutationPicardIsometry b hΦ s k hOpposite hc (hTarget := hTarget) x = I x :=
+    [hTarget : @Scheme.IsProjectiveOver K _ (Fan.finiteFanScheme K Φ₁)
+      (Fan.finiteFanSchemeOver K Φ₁)] (x : Pic[Φ₁] × (ι → ℤ)) :
+    mutationPicardIsometry (K := K) b hΦ s k hOpposite hc (hTarget := hTarget) x = I x :=
   (rfl)
 
 end Marking

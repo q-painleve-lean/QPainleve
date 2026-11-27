@@ -7,7 +7,7 @@ module
 
 public import QPainleve.Geometry.Toric.Fan.Ruling.Basic
 
-import TauCeti.Geometry.Toric.Algebraic.Fan.SubfanScheme
+import QPainleve.Geometry.Toric.BaseChange.Subfan
 
 /-!
 # Affine toric charts of the projective line
@@ -60,88 +60,91 @@ abbrev projectiveLineAffineFanInclusion (k : Fin 2) : FanHom (projectiveLineAffi
   (P₁).subfanInclusion (projectiveLineAffineFan k).cones (projectiveLineAffineFan_cones_subset k)
     (projectiveLineAffineFan k).mem_of_isFaceOf
 
+variable (K : Type) [CommRing K]
+
 /-- The inclusion of the affine toric chart into the projective line. -/
 def projectiveLineAffineFanι (k : Fin 2) :
-    (projectiveLineAffineFan k).algebraicRealization ⟶ projectiveLine ℂ :=
-  (projectiveLineAffineFanInclusion k).algebraicMap ≫ projectiveLineToricIso.hom
+    ((projectiveLineAffineFan k).finiteFanScheme K) ⟶ projectiveLine K :=
+  (projectiveLineAffineFanInclusion k).finiteFanSchemeHom K ≫ (projectiveLineToricIso K).hom
 
 /-- The chart immersion is induced by the fan inclusion and the toric comparison. -/
 theorem projectiveLineAffineFanι_def (k : Fin 2) :
-    projectiveLineAffineFanι k =
-      (projectiveLineAffineFanInclusion k).algebraicMap ≫ projectiveLineToricIso.hom :=
+    projectiveLineAffineFanι K k =
+      (projectiveLineAffineFanInclusion k).finiteFanSchemeHom K ≫ (projectiveLineToricIso K).hom :=
   (rfl)
 
-instance (k : Fin 2) : IsOpenImmersion (projectiveLineAffineFanι k) := by
+instance (k : Fin 2) : IsOpenImmersion (projectiveLineAffineFanι K k) := by
   rw [projectiveLineAffineFanι]
-  let : IsOpenImmersion (projectiveLineAffineFanInclusion k).algebraicMap :=
-    (P₁).isOpenImmersion_subfanInclusion_algebraicMap
+  let : IsOpenImmersion ((projectiveLineAffineFanInclusion k).finiteFanSchemeHom K) :=
+    (P₁).isOpenImmersion_subfanInclusion_finiteFanSchemeHom K
       (projectiveLineAffineFan k).cones (projectiveLineAffineFan_cones_subset k)
       (projectiveLineAffineFan k).mem_of_isFaceOf
   infer_instance
 
-instance (k : Fin 2) : IsAffine (projectiveLineAffineFan k).algebraicRealization := by
+instance (k : Fin 2) : IsAffine ((projectiveLineAffineFan k).finiteFanScheme K) := by
   let U := projectiveLineAffineFan k
   let σ : U.cones := ⟨projectiveLineAffineRay k, mem_projectiveLineAffineFan_cones.mpr (.refl _)⟩
-  have : IsIso (U.affineToricChartι σ) :=
-    U.isIso_affineToricChartι_of_forall_le (σ := σ) fun τ ↦
+  have : IsIso (U.affineChartι K σ) :=
+    U.isIso_affineChartι_of_forall_le K σ fun τ ↦
       (mem_projectiveLineAffineFan_cones.mp τ.property).le
-  exact IsAffine.of_isIso (inv (U.affineToricChartι σ))
+  exact IsAffine.of_isIso (inv (U.affineChartι K σ))
 
 /-- The toric affine chart corresponds to the polynomial chart at the same coordinate. -/
 def projectiveLineAffineFanIso (k : Fin 2) :
-    (projectiveLineAffineFan k).algebraicRealization ≅ Spec (.of (Polynomial ℂ)) := by
+    ((projectiveLineAffineFan k).finiteFanScheme K) ≅ Spec (.of (Polynomial K)) := by
   let U := projectiveLineAffineFan k
   let σ : U.cones := ⟨projectiveLineAffineRay k, mem_projectiveLineAffineFan_cones.mpr (.refl _)⟩
-  let j := U.affineToricChartι σ
+  let j := U.affineChartι K σ
   let : IsIso j :=
-    U.isIso_affineToricChartι_of_forall_le fun τ ↦
+    U.isIso_affineChartι_of_forall_le K σ fun τ ↦
       (mem_projectiveLineAffineFan_cones.mp τ.property).le
-  let f := j ≫ projectiveLineAffineFanι k
+  let f := j ≫ projectiveLineAffineFanι K k
   let τ := projectiveSpaceMaximalCone (Pi.basisFun ℤ (Fin 1)) (isIntegralLattice_intCast 1)
     (finSuccEquiv 1 k)
   let σ' : (P₁).cones := ⟨σ.val, projectiveLineAffineFan_cones_subset k σ.property⟩
   have hτ : σ' = τ :=
     Subtype.ext (projectiveSpaceMaximalCone_finOne_val k).symm
-  have hj : j ≫ (projectiveLineAffineFanInclusion k).algebraicMap = (P₁).affineToricChartι σ' :=
-    affineToricChartι_comp_subfanInclusion_algebraicMap P₁ U.cones
+  have hj : j ≫ (projectiveLineAffineFanInclusion k).finiteFanSchemeHom K =
+      (P₁).affineChartι K σ' :=
+    affineChartι_comp_subfanInclusion_finiteFanSchemeHom K P₁ U.cones
       (projectiveLineAffineFan_cones_subset k) U.mem_of_isFaceOf σ
-  have hf : Set.range f = Set.range (projectiveLine.polynomialChartι ℂ k) := by
+  have hf : Set.range f = Set.range (projectiveLine.polynomialChartι K k) := by
     dsimp only [f]
     rw [projectiveLineAffineFanι_def, ← Category.assoc, hj]
     exact (congrArg (fun σ : (P₁).cones ↦
-      Set.range ((P₁).affineToricChartι σ ≫ projectiveLineToricIso.hom)) hτ).trans
-      (range_affineToricChartι_comp_projectiveLineToricIso k)
-  exact (asIso j).symm ≪≫ IsOpenImmersion.isoOfRangeEq f (projectiveLine.polynomialChartι ℂ k) hf
+      Set.range ((P₁).affineChartι K σ ≫ (projectiveLineToricIso K).hom)) hτ).trans
+      (range_affineToricChartι_comp_projectiveLineToricIso K k)
+  exact (asIso j).symm ≪≫ IsOpenImmersion.isoOfRangeEq f (projectiveLine.polynomialChartι K k) hf
 
 /-- The polynomial chart comparison commutes with the two open immersions. -/
 @[reassoc]
 theorem projectiveLineAffineFanIso_hom_comp_polynomialChartι (k : Fin 2) :
-    (projectiveLineAffineFanIso k).hom ≫ projectiveLine.polynomialChartι ℂ k =
-      projectiveLineAffineFanι k := by
+    (projectiveLineAffineFanIso K k).hom ≫ projectiveLine.polynomialChartι K k =
+      projectiveLineAffineFanι K k := by
   simp [projectiveLineAffineFanIso, IsOpenImmersion.isoOfRangeEq_hom_fac]
 
-/-- The polynomial chart comparison respects the structure morphism over `ℂ`. -/
+/-- The polynomial chart comparison respects the structure morphism over the coefficient ring. -/
 @[reassoc (attr := simp)]
 theorem projectiveLineAffineFanIso_hom_comp_toBase (k : Fin 2) :
-    (projectiveLineAffineFanIso k).hom ≫ Spec.algebraMap ℂ (Polynomial ℂ) =
-      Fan.algebraicRealizationStructureMap (projectiveLineAffineFan k) := by
-  rw [Spec.algebraMap, ← projectiveLine.polynomialChartι_over ℂ k,
+    (projectiveLineAffineFanIso K k).hom ≫ Spec.algebraMap K (Polynomial K) =
+      (projectiveLineAffineFan k).finiteFanSchemeToSpec K := by
+  rw [Spec.algebraMap, ← projectiveLine.polynomialChartι_over K k,
     projectiveLineAffineFanIso_hom_comp_polynomialChartι_assoc,
     projectiveLineAffineFanι_def, Category.assoc, CategoryTheory.comp_over,
-    Fan.algebraicRealization_over, FanHom.algebraicMap_comp_algebraicRealizationStructureMap]
+    Fan.finiteFanScheme_over K, FanHom.finiteFanSchemeHom_comp_finiteFanSchemeToSpec K]
 
 /-- The affine toric chart and the corresponding polynomial chart have the same image. -/
 theorem range_projectiveLineAffineFanι (k : Fin 2) :
-    Set.range (projectiveLineAffineFanι k) = Set.range (projectiveLine.polynomialChartι ℂ k) := by
+    Set.range (projectiveLineAffineFanι K k) = Set.range (projectiveLine.polynomialChartι K k) := by
   rw [← projectiveLineAffineFanIso_hom_comp_polynomialChartι]
-  exact (Scheme.homeoOfIso (projectiveLineAffineFanIso k)).surjective.range_comp _
+  exact (Scheme.homeoOfIso (projectiveLineAffineFanIso K k)).surjective.range_comp _
 
 /-- Each point of the projective line belongs to one of the two affine toric charts. -/
-theorem exists_projectiveLineAffineFanι_apply_eq (x : projectiveLine ℂ) :
-    ∃ (k : Fin 2) (y : (projectiveLineAffineFan k).algebraicRealization),
-      projectiveLineAffineFanι k y = x := by
+theorem exists_projectiveLineAffineFanι_apply_eq (x : projectiveLine K) :
+    ∃ (k : Fin 2) (y : ((projectiveLineAffineFan k).finiteFanScheme K)),
+      projectiveLineAffineFanι K k y = x := by
   obtain ⟨σ, y, hy⟩ :=
-    (P₁).exists_affineToricChartι_apply_eq (projectiveLineToricIso.inv x)
+    (P₁).exists_affineChartι_apply_eq K ((projectiveLineToricIso K).inv x)
   have hσ : ∃ k : Fin 2, σ.val ∈ (projectiveLineAffineFan k).cones := by
     have hs := σ.property
     simp only [projectiveSpace_finOne_eq_projectiveLineFan,
@@ -153,12 +156,12 @@ theorem exists_projectiveLineAffineFanι_apply_eq (x : projectiveLine ℂ) :
     · exact ⟨1, mem_projectiveLineAffineFan_cones.mpr (h ▸ .refl _)⟩
   obtain ⟨k, hk⟩ := hσ
   let τ : (projectiveLineAffineFan k).cones := ⟨σ.val, hk⟩
-  have hτ : (projectiveLineAffineFan k).affineToricChartι τ ≫
-      (projectiveLineAffineFanInclusion k).algebraicMap = (P₁).affineToricChartι σ :=
-    affineToricChartι_comp_subfanInclusion_algebraicMap P₁
+  have hτ : (projectiveLineAffineFan k).affineChartι K τ ≫
+      (projectiveLineAffineFanInclusion k).finiteFanSchemeHom K = (P₁).affineChartι K σ :=
+    affineChartι_comp_subfanInclusion_finiteFanSchemeHom K P₁
       (projectiveLineAffineFan k).cones (projectiveLineAffineFan_cones_subset k)
       (projectiveLineAffineFan k).mem_of_isFaceOf τ
-  refine ⟨k, (projectiveLineAffineFan k).affineToricChartι τ y, ?_⟩
+  refine ⟨k, (projectiveLineAffineFan k).affineChartι K τ y, ?_⟩
   rw [← Scheme.Hom.comp_apply, projectiveLineAffineFanι, ← Category.assoc, hτ,
     Scheme.Hom.comp_apply, hy, ← Scheme.Hom.comp_apply, Iso.inv_hom_id]
   rfl

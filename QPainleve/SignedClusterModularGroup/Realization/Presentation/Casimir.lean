@@ -41,19 +41,21 @@ open scoped Pointwise RightActions
 
 namespace QPainleve.SignedClusterModularGroup
 
+variable {k₀ : Type} [Field k₀] [IsAlgClosed k₀]
+
 open GeometricRealization
 
-local notation "S" => Spec (CommRingCat.of ℂ)
-local notation "Centers[" r "]" => Over.mk (structureMap ℂ (Fin r → ℤ))
-local notation "XTor[" r "]" => scheme ℂ (Fin r →₀ ℤ)
+local notation "S" => Spec (CommRingCat.of k₀)
+local notation "Centers[" r "]" => Over.mk (structureMap k₀ (Fin r → ℤ))
+local notation "XTor[" r "]" => scheme k₀ (Fin r →₀ ℤ)
 local notation "classOf(" h ")" => (LineBundleClass.mk (IsEffectiveCartier.toInvertibleSheaf h))⁻¹
 local notation "orth[" B "," D "]" => LinearMap.BilinForm.orthogonal B
   (Submodule.span ℤ (Set.range D))
 local notation "exch[" E "]" => LinearMap.ker (Matrix.mulVecLin (SkewExchangeMatrix.matrix E))
 local notation "total[" D "]" => ∑ j, D j
-local notation "act[" E "]" => exchangeKernelAction ℂ E
+local notation "act[" E "]" => exchangeKernelAction k₀ E
 local notation "unsignedImage[" E "]" =>
-  MonoidHom.range (MonoidHom.comp act[E] (MonoidHom.op (clusterModularGroupInclusion ℂ E)))
+  MonoidHom.range (MonoidHom.comp act[E] (MonoidHom.op (clusterModularGroupInclusion k₀ E)))
 local notation "coords[" B "," D "," e "]" =>
   MonoidHom.comp (MulEquiv.toMonoidHom (LinearEquiv.autCongr e))
     (Subgroup.subtype (LinearMap.BilinForm.isometryGroup
@@ -70,10 +72,10 @@ namespace CompleteToricPresentation
 toric presentation. The exchange-kernel coordinates are the negatives of the
 total exceptional coefficients. -/
 @[ext]
-structure CasimirActionComparison (Q : CompleteToricPresentation i b r L γ)
+structure CasimirActionComparison (Q : CompleteToricPresentation k₀ i b r L γ)
     (E : SkewExchangeMatrix (Fin r)) (B : LinearMap.BilinForm ℤ L) (D : ZMod n → L) where
   /-- Picard pullback with its ordered branch sign. -/
-  picardEquiv : (SignedClusterModularGroup ℂ E)ᵐᵒᵖ ≃* signedBoundaryIsometryGroup B D
+  picardEquiv : (SignedClusterModularGroup k₀ E)ᵐᵒᵖ ≃* signedBoundaryIsometryGroup B D
   /-- The exchange-kernel coordinates of boundary-orthogonal Picard classes. -/
   exchangeKernelEquiv : orth[B,D] ≃ₗ[ℤ] exch[E]
   /-- The coordinates are the negatives of the total exceptional coefficients. -/
@@ -85,17 +87,17 @@ structure CasimirActionComparison (Q : CompleteToricPresentation i b r L γ)
       ((signedOrthogonalRestriction B D).comp picardEquiv.toMonoidHom)
   /-- The Picard sign has the unsigned point maps as its kernel. -/
   ker_sign : ((sign B D).comp picardEquiv.toMonoidHom).ker.unop =
-    (clusterModularGroupInclusion ℂ E).range
+    (clusterModularGroupInclusion k₀ E).range
   /-- A signed point map acting trivially on Casimirs is unsigned. -/
   ker_exchangeKernelAction_le :
-    act[E].ker.unop ≤ (clusterModularGroupInclusion ℂ E).range
+    act[E].ker.unop ≤ (clusterModularGroupInclusion k₀ E).range
 
 attribute [simp] CasimirActionComparison.coe_exchangeKernelEquiv_apply
 
 /-- The intertwining formula evaluated on a signed point map, in pullback order. -/
 theorem CasimirActionComparison.exchangeKernelAction_apply
-    {Q : CompleteToricPresentation i b r L γ} {D : ZMod n → L}
-    (A : Q.CasimirActionComparison E B D) (g : (SignedClusterModularGroup ℂ E)ᵐᵒᵖ) :
+    {Q : CompleteToricPresentation k₀ i b r L γ} {D : ZMod n → L}
+    (A : Q.CasimirActionComparison E B D) (g : (SignedClusterModularGroup k₀ E)ᵐᵒᵖ) :
     act[E] g = LinearEquiv.autCongr A.exchangeKernelEquiv
       (signedOrthogonalRestriction B D (A.picardEquiv g)).val := by
   simpa only [MonoidHom.comp_apply, MulEquiv.coe_toMonoidHom, Subgroup.subtype_apply] using
@@ -104,25 +106,25 @@ theorem CasimirActionComparison.exchangeKernelAction_apply
 /-- On a loop representative, the signed Picard restriction gives the word's
 integral exchange-kernel transport in the marked coordinates. -/
 theorem CasimirActionComparison.exchangeKernelEquiv_eq_autCongr
-    {Q : CompleteToricPresentation i b r L γ} {D : ZMod n → L}
+    {Q : CompleteToricPresentation k₀ i b r L γ} {D : ZMod n → L}
     (A : Q.CasimirActionComparison E B D) (w : Word E E) :
     w.exchangeKernelEquiv =
       LinearEquiv.autCongr A.exchangeKernelEquiv
         (signedOrthogonalRestriction B D
-          (A.picardEquiv (op (signedClusterModularGroupMap ℂ E (End.of w))))).val := by
+          (A.picardEquiv (op (signedClusterModularGroupMap k₀ E (End.of w))))).val := by
   simpa only [exchangeKernelAction_op_loop] using
-    A.exchangeKernelAction_apply (op (signedClusterModularGroupMap ℂ E (End.of w)))
+    A.exchangeKernelAction_apply (op (signedClusterModularGroupMap k₀ E (End.of w)))
 
 /-- Extend a specified Picard identification by the Casimir comparison, keeping its
 signed equivalence. The boundary conditions are needed at only one center. -/
 theorem NodalPicardGroupIdentification.exists_casimirActionComparison [NeZero n]
-    {Q : CompleteToricPresentation i b r L γ} {D : ZMod n → L}
-    (G : Q.NodalPicardGroupIdentification (B := B) ℂ E D) {c : Point Centers[r]}
+    {Q : CompleteToricPresentation k₀ i b r L γ} {D : ZMod n → L}
+    (G : Q.NodalPicardGroupIdentification (B := B) k₀ E D) {c : Point Centers[r]}
     (hE : E.matrix = chargeExchangeMatrix b.detDualEquiv.toLinearMap (Fan.rayChargeMap Q.rays))
     (hprim : IsPrimitive (Additive.ofMul classOf((G.family c).isEffectiveCartier_boundaryIdeal)))
-    (hnef : (classOf((G.family c).isEffectiveCartier_boundaryIdeal)).IsNef ℂ
+    (hnef : (classOf((G.family c).isEffectiveCartier_boundaryIdeal)).IsNef k₀
       ((G.family c).surface ↘ S))
-    (hsq : Chow.classIntersectionNumber ℂ (G.family c).surface
+    (hsq : Chow.classIntersectionNumber k₀ (G.family c).surface
       classOf((G.family c).isEffectiveCartier_boundaryIdeal)
       classOf((G.family c).isEffectiveCartier_boundaryIdeal) = 0) :
     ∃ A : Q.CasimirActionComparison E B D, A.picardEquiv = G.signedEquiv := by
@@ -139,13 +141,14 @@ theorem NodalPicardGroupIdentification.exists_casimirActionComparison [NeZero n]
 /-- One marked nodal model of a primitive nef square-zero anticanonical cycle supplies
 the signed Picard equivalence and its Casimir comparison in the specified presentation. -/
 theorem nonempty_casimirActionComparison_of_nodal_model [NeZero n]
-    (Q : CompleteToricPresentation i b r L γ)
-    {c : Point Centers[r]} {M : MarkedSurface ℂ n B XTor[r]}
+    [Uncountable k₀] [NeZero (2 : k₀)]
+    (Q : CompleteToricPresentation k₀ i b r L γ)
+    {c : Point Centers[r]} {M : MarkedSurface k₀ n B XTor[r]}
     (href : Q.HasNodalModel c M)
     (hE : E.matrix = chargeExchangeMatrix b.detDualEquiv.toLinearMap (Fan.rayChargeMap Q.rays))
     (hprim : IsPrimitive (Additive.ofMul classOf(M.isEffectiveCartier_boundaryIdeal)))
-    (hnef : (classOf(M.isEffectiveCartier_boundaryIdeal)).IsNef ℂ (M.surface ↘ S))
-    (hsq : Chow.classIntersectionNumber ℂ M.surface classOf(M.isEffectiveCartier_boundaryIdeal)
+    (hnef : (classOf(M.isEffectiveCartier_boundaryIdeal)).IsNef k₀ (M.surface ↘ S))
+    (hsq : Chow.classIntersectionNumber k₀ M.surface classOf(M.isEffectiveCartier_boundaryIdeal)
       classOf(M.isEffectiveCartier_boundaryIdeal) = 0) :
     Nonempty (Q.CasimirActionComparison E B
       (M.boundaryClass M.isEffectiveCartier_boundaryIdeal)) := by
@@ -157,7 +160,7 @@ theorem nonempty_casimirActionComparison_of_nodal_model [NeZero n]
 /-- A boundary-reversing Picard involution and the exchange-kernel comparison
 for a marked presentation with primitive total boundary class. -/
 @[ext]
-structure CasimirReflection [NeZero n] (Q : CompleteToricPresentation i b r L γ)
+structure CasimirReflection [NeZero n] (Q : CompleteToricPresentation k₀ i b r L γ)
     (E : SkewExchangeMatrix (Fin r)) (B : LinearMap.BilinForm ℤ L) (D : ZMod n → L) where
   /-- The Picard and exchange-kernel identifications. -/
   comparison : Q.CasimirActionComparison E B D
@@ -170,7 +173,7 @@ structure CasimirReflection [NeZero n] (Q : CompleteToricPresentation i b r L γ
 
 namespace CasimirReflection
 
-variable [NeZero n] {Q : CompleteToricPresentation i b r L γ} {D : ZMod n → L}
+variable [NeZero n] {Q : CompleteToricPresentation k₀ i b r L γ} {D : ZMod n → L}
   (R : Q.CasimirReflection E B D)
 
 /-- The primitive total boundary exponent in the exchange kernel. -/
@@ -275,21 +278,22 @@ end CasimirReflection
 a Casimir reflection along its total boundary exponent. Its involution lifts to the
 signed cluster modular group and supplies the odd coset of the Casimir image. -/
 theorem nonempty_casimirReflection_of_nodal_model [NeZero n]
-    (Q : CompleteToricPresentation i b r L γ)
-    {c : Point Centers[r]} {M : MarkedSurface ℂ n B XTor[r]}
+    [Uncountable k₀] [NeZero (2 : k₀)]
+    (Q : CompleteToricPresentation k₀ i b r L γ)
+    {c : Point Centers[r]} {M : MarkedSurface k₀ n B XTor[r]}
     (href : Q.HasNodalModel c M)
     (hE : E.matrix = chargeExchangeMatrix b.detDualEquiv.toLinearMap (Fan.rayChargeMap Q.rays))
     (hprim : IsPrimitive (Additive.ofMul classOf(M.isEffectiveCartier_boundaryIdeal)))
-    (hnef : (classOf(M.isEffectiveCartier_boundaryIdeal)).IsNef ℂ (M.surface ↘ S))
-    (hsq : Chow.classIntersectionNumber ℂ M.surface classOf(M.isEffectiveCartier_boundaryIdeal)
+    (hnef : (classOf(M.isEffectiveCartier_boundaryIdeal)).IsNef k₀ (M.surface ↘ S))
+    (hsq : Chow.classIntersectionNumber k₀ M.surface classOf(M.isEffectiveCartier_boundaryIdeal)
       classOf(M.isEffectiveCartier_boundaryIdeal) = 0) :
     Nonempty (Q.CasimirReflection E B (M.boundaryClass M.isEffectiveCartier_boundaryIdeal)) := by
   obtain ⟨A⟩ := Q.nonempty_casimirActionComparison_of_nodal_model href hE hprim hnef hsq
   let : Scheme.IsRationalOver (M.surface ↘ S) := href.isRationalOver
-  let : M.surface.IsProjectiveOver ℂ := M.projective
+  let : M.surface.IsProjectiveOver k₀ := M.projective
   let : SmoothOfRelativeDimension 2 (M.surface ↘ S) := M.smooth
   let : Module.Free ℤ (Additive (LineBundleClass M.surface)) :=
-    M.surface.free_picard_of_isRationalOver ℂ
+    M.surface.free_picard_of_isRationalOver k₀
   let : Module.Free ℤ L := Module.Free.of_equiv M.picardMarking.symm
   let : HasUniqueDiv L := HasUniqueDiv.of_isTorsionFree ℤ L
   let hD := M.isEffectiveCartier_boundaryIdeal

@@ -34,58 +34,60 @@ open TauCeti.AlgebraicGeometry (projectiveLine)
 
 namespace TauCeti.Toric.Fan
 
-private abbrev RulingBase := projectiveLine ℂ
+variable {K : Type} [Field K]
 
-private abbrev rulingOpen (c : ℂ) : Bool → Scheme
-  | false => projectiveLineTorusFan.algebraicRealization
+local notation "RulingBase" => projectiveLine K
+
+private abbrev rulingOpen (c : K) : Bool → Scheme
+  | false => projectiveLineTorusFan.finiteFanScheme K
   | true => (mutationRulingComplement c).toScheme
 
-private abbrev rulingOpenι (c : ℂ) : (j : Bool) → rulingOpen c j ⟶ RulingBase
-  | false => projectiveLineTorusι
+private abbrev rulingOpenι (c : K) : (j : Bool) → rulingOpen c j ⟶ RulingBase
+  | false => (projectiveLineTorusι K)
   | true => (mutationRulingComplement c).ι
 
-private theorem rulingOpen_covers (c : ℂˣ) (x : RulingBase) :
-    ∃ j y, rulingOpenι (c : ℂ) j y = x := by
-  by_cases hx : x ∈ mutationRulingComplement (c : ℂ)
+private theorem rulingOpen_covers (c : Kˣ) (x : RulingBase) :
+    ∃ j y, rulingOpenι (c : K) j y = x := by
+  by_cases hx : x ∈ mutationRulingComplement (c : K)
   · exact ⟨true, ⟨x, hx⟩, rfl⟩
-  · let p := projectiveLine.polynomialPoint ℂ (RingHom.id ℂ) 0 (-(↑c⁻¹ : ℂ))
+  · let p := projectiveLine.polynomialPoint K (RingHom.id K) 0 (-(↑c⁻¹ : K))
     have hp : x ∈ (p.ker.support : Set RulingBase) := by
       rw [mutationRulingComplement_eq_compl_support] at hx
       by_contra hn
       exact hx hn
     have : IsClosedImmersion p := isClosedImmersion_of_comp_eq_id
-      (projectiveLine ℂ ↘ Spec (.of ℂ)) p (by simp [p, projectiveLine.polynomialPoint_over])
+      (projectiveLine K ↘ Spec (.of K)) p (by simp [p, projectiveLine.polynomialPoint_over])
     have hsupport : (p.ker.support : Set RulingBase) = Set.range p :=
       p.support_ker.trans p.isClosedEmbedding.isClosed_range.closure_eq
     rw [hsupport] at hp
     obtain ⟨y, rfl⟩ := hp
-    have hpoint : projectiveLineTorusPoint (-c⁻¹) ≫ projectiveLineTorusι = p := by
+    have hpoint : projectiveLineTorusPoint K (-c⁻¹) ≫ (projectiveLineTorusι K) = p := by
       rw [projectiveLineTorusPoint_comp_projectiveLineTorusι, Units.val_neg]
-    exact ⟨false, projectiveLineTorusPoint (-c⁻¹) y, by
+    exact ⟨false, projectiveLineTorusPoint K (-c⁻¹) y, by
       simpa only [rulingOpenι, Scheme.Hom.comp_apply] using
-        congrArg (fun (g : Spec (CommRingCat.of ℂ) ⟶ RulingBase) ↦ g y) hpoint⟩
+        congrArg (fun (g : Spec (CommRingCat.of K) ⟶ RulingBase) ↦ g y) hpoint⟩
 
-private instance (c : ℂ) (j : Bool) : IsOpenImmersion (rulingOpenι c j) := by
+private instance (c : K) (j : Bool) : IsOpenImmersion (rulingOpenι c j) := by
   cases j
-  · exact inferInstanceAs (IsOpenImmersion projectiveLineTorusι)
+  · exact inferInstanceAs (IsOpenImmersion (projectiveLineTorusι K))
   · exact inferInstanceAs (IsOpenImmersion (mutationRulingComplement c).ι)
 
-private structure RulingChart {X : Scheme} (r : X ⟶ RulingBase) (c : ℂ) (j : Bool) where
+private structure RulingChart {X : Scheme} (r : X ⟶ RulingBase) (c : K) (j : Bool) where
   scheme : Scheme
   ι : scheme ⟶ X
   toRuling : scheme ⟶ rulingOpen c j
   isPullback : IsPullback ι toRuling r (rulingOpenι c j)
 
-private instance rulingChart_isOpenImmersion {X : Scheme} {r : X ⟶ RulingBase} {c : ℂ} {j : Bool}
+private instance rulingChart_isOpenImmersion {X : Scheme} {r : X ⟶ RulingBase} {c : K} {j : Bool}
     (chart : RulingChart r c j) : IsOpenImmersion chart.ι :=
   MorphismProperty.of_isPullback chart.isPullback.flip inferInstance
 
-private abbrev rulingChartCover {X : Scheme} {r : X ⟶ RulingBase} (c : ℂˣ)
-    (chart : (j : Bool) → RulingChart r (c : ℂ) j) : X.OpenCover :=
+private abbrev rulingChartCover {X : Scheme} {r : X ⟶ RulingBase} (c : Kˣ)
+    (chart : (j : Bool) → RulingChart r (c : K) j) : X.OpenCover :=
   Scheme.Cover.mkOfCovers Bool (fun j ↦ (chart j).scheme) (fun j ↦ (chart j).ι)
     (fun x ↦ by
       obtain ⟨j, y, hy⟩ := rulingOpen_covers c (r x)
-      have hx : x ∈ Set.range (pullback.fst r (rulingOpenι (c : ℂ) j)) := by
+      have hx : x ∈ Set.range (pullback.fst r (rulingOpenι (c : K) j)) := by
         rw [Scheme.Pullback.range_fst]
         exact ⟨y, hy⟩
       obtain ⟨z, hz⟩ := hx
@@ -96,7 +98,7 @@ private abbrev rulingChartCover {X : Scheme} {r : X ⟶ RulingBase} (c : ℂˣ)
 
 section BlowupCharts
 
-variable {X : Scheme} (I : X.IdealSheafData) {c : ℂ}
+variable {X : Scheme} (I : X.IdealSheafData) {c : K}
 
 private abbrev complementBlowupChart {r : X ⟶ RulingBase} {U : X.Opens}
     {p : U.toScheme ⟶ (mutationRulingComplement c).toScheme}
@@ -109,8 +111,8 @@ private abbrev complementBlowupChart {r : X ⟶ RulingBase} {U : X.Opens}
 
 private abbrev torusBlowupChart {r : X ⟶ RulingBase} {T Y : Scheme} {g : T ⟶ X}
     {a : Y ⟶ T} {ι : Y ⟶ I.blowup} (h : IsPullback a ι g I.blowupToBase)
-    {t : T ⟶ projectiveLineTorusFan.algebraicRealization}
-    (ht : IsPullback t g projectiveLineTorusι r) :
+    {t : T ⟶ projectiveLineTorusFan.finiteFanScheme K}
+    (ht : IsPullback t g (projectiveLineTorusι K) r) :
     RulingChart (I.blowupToBase ≫ r) c false :=
   ⟨Y, ι, a ≫ t, (h.paste_horiz ht).flip⟩
 
@@ -118,7 +120,7 @@ end BlowupCharts
 
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V] {i : N →+ V}
   {Φ : Fan i} (b : Basis (Fin 2) ℤ N) (ρ : Φ.Ray)
-  (hOpp : hull ℝ {i (-ρ.primitiveGenerator)} ∈ Φ.cones) (c : ℂˣ)
+  (hOpp : hull ℝ {i (-ρ.primitiveGenerator)} ∈ Φ.cones) (c : Kˣ)
 
 local notation "v" => ρ.primitiveGenerator
 local notation "hv" => Ray.primitiveGenerator_ne_zero ρ
@@ -127,20 +129,22 @@ local notation "Ψ" => Φ.mutationFan b hv hp hOpp
 local notation "m" => LinearMap.toAddMonoidHom (Basis.detDualEquiv b v)
 local notation "h₀" => detCharacter_nonneg_or_nonpos Φ b hv hp hOpp
 local notation "h₁" => mutationDetCharacter_nonneg_or_nonpos Φ b hv hp hOpp
-local notation "r₀" => Φ.characterRuling m h₀
-local notation "r₁" => characterRuling Ψ m h₁
+local notation "r₀" => Φ.characterRuling K m h₀
+local notation "r₁" => characterRuling K Ψ m h₁
 local notation "J₀" => Ray.mutationSourceCenterIdeal b ρ c
 local notation "J₁" => Ray.mutationTargetCenterIdeal b ρ hOpp c
 local notation "I₀" => Ray.mutationPivotSourceIdeal b ρ hOpp c
 local notation "I₁" => Ray.mutationPivotTargetIdeal b ρ hOpp c
-local notation "P₀" => Scheme.IdealSheafData.blowupToBase I₀ ≫ pullback.fst r₀ projectiveLineTorusι
-local notation "P₁" => Scheme.IdealSheafData.blowupToBase I₁ ≫ pullback.fst r₁ projectiveLineTorusι
-local notation "U₀" => mutationComplement Φ b h₀ (c : ℂ)
-local notation "U₁" => mutationComplement Ψ b h₁ (c : ℂ)
+local notation "P₀" =>
+  Scheme.IdealSheafData.blowupToBase I₀ ≫ pullback.fst r₀ (projectiveLineTorusι K)
+local notation "P₁" =>
+  Scheme.IdealSheafData.blowupToBase I₁ ≫ pullback.fst r₁ (projectiveLineTorusι K)
+local notation "U₀" => mutationComplement Φ b h₀ (c : K)
+local notation "U₁" => mutationComplement Ψ b h₁ (c : K)
 local notation "R₀" => Scheme.IdealSheafData.blowupToBase J₀ ≫ r₀
 local notation "R₁" => Scheme.IdealSheafData.blowupToBase J₁ ≫ r₁
 local notation "eT" => Ray.mutationPivotIso b ρ hOpp c
-local notation "eC" => Φ.mutationComplementIso b (c : ℂ) hv hp hOpp
+local notation "eC" => Φ.mutationComplementIso b (c : K) hv hp hOpp
 
 private theorem sourceCenter_comap_complement_isEffectiveCartier :
     ((J₀).comap (U₀).ι).IsEffectiveCartier := by
@@ -152,16 +156,16 @@ private theorem targetCenter_comap_complement_isEffectiveCartier :
   rw [ρ.mutationTargetCenterIdeal_comap_complement b hOpp c]
   exact Scheme.IdealSheafData.isEffectiveCartier_top _
 
-private abbrev mutationSourceChart : (j : Bool) → RulingChart R₀ (c : ℂ) j
+private abbrev mutationSourceChart : (j : Bool) → RulingChart R₀ (c : K) j
   | false => torusBlowupChart J₀ (ρ.isPullback_mutationPivotSourceBlowupι b hOpp c)
-      ((IsPullback.of_hasPullback r₀ projectiveLineTorusι).flip)
-  | true => complementBlowupChart J₀ (Φ.isPullback_mutationComplementToRuling b h₀ (c : ℂ))
+      ((IsPullback.of_hasPullback r₀ (projectiveLineTorusι K)).flip)
+  | true => complementBlowupChart J₀ (Φ.isPullback_mutationComplementToRuling b h₀ (c : K))
       (sourceCenter_comap_complement_isEffectiveCartier b ρ hOpp c)
 
-private abbrev mutationTargetChart : (j : Bool) → RulingChart R₁ (c : ℂ) j
+private abbrev mutationTargetChart : (j : Bool) → RulingChart R₁ (c : K) j
   | false => torusBlowupChart J₁ (ρ.isPullback_mutationPivotTargetBlowupι b hOpp c)
-      ((IsPullback.of_hasPullback r₁ projectiveLineTorusι).flip)
-  | true => complementBlowupChart J₁ ((Ψ).isPullback_mutationComplementToRuling b h₁ (c : ℂ))
+      ((IsPullback.of_hasPullback r₁ (projectiveLineTorusι K)).flip)
+  | true => complementBlowupChart J₁ ((Ψ).isPullback_mutationComplementToRuling b h₁ (c : K))
       (targetCenter_comap_complement_isEffectiveCartier b ρ hOpp c)
 
 local notation "S" => mutationSourceChart b ρ hOpp c
@@ -177,7 +181,7 @@ local notation "E" => mutationBlowupChartIso b ρ hOpp c
 
 private theorem mutationBlowupChartIso_hom_toRuling (j : Bool) :
     (E j).hom ≫ (T j).toRuling = (S j).toRuling := by
-  apply (cancel_mono (rulingOpenι (c : ℂ) j)).mp
+  apply (cancel_mono (rulingOpenι (c : K) j)).mp
   simp only [Category.assoc, (T j).isPullback.w.symm, (S j).isPullback.w.symm]
   cases j
   · simpa only [mutationBlowupChartIso, mutationTargetChart, mutationSourceChart,
@@ -318,12 +322,12 @@ theorem Ray.mutationBlowupIso_hom_comp_ruling :
 /-- If the reference point projects off the pivot fiber, another point projects to the
 same point on the source exactly when it projects to the same point on the target. -/
 theorem Ray.mutationBlowupIso_projected_eq_iff (ρ : Φ.Ray) (b : Basis (Fin 2) ℤ N)
-    (hOpp : hull ℝ {i (-ρ.primitiveGenerator)} ∈ Φ.cones) (c : ℂˣ)
+    (hOpp : hull ℝ {i (-ρ.primitiveGenerator)} ∈ Φ.cones) (c : Kˣ)
     {p q : (ρ.mutationSourceCenterIdeal b c).blowup}
     (hq : (ρ.mutationSourceCenterIdeal b c).blowupToBase q ∈
       Φ.mutationComplement b
         (Φ.detCharacter_nonneg_or_nonpos b ρ.primitiveGenerator_ne_zero
-          ρ.hull_primitiveGenerator_mem hOpp) (c : ℂ)) :
+          ρ.hull_primitiveGenerator_mem hOpp) (c : K)) :
     (ρ.mutationTargetCenterIdeal b hOpp c).blowupToBase ((ρ.mutationBlowupIso b hOpp c).hom p) =
       (ρ.mutationTargetCenterIdeal b hOpp c).blowupToBase ((ρ.mutationBlowupIso b hOpp c).hom q) ↔
         (ρ.mutationSourceCenterIdeal b c).blowupToBase p =
@@ -336,12 +340,12 @@ theorem Ray.mutationBlowupIso_projected_eq_iff (ρ : Φ.Ray) (b : Basis (Fin 2) 
   let hSource := Φ.detCharacter_nonneg_or_nonpos b nonzero memCone hOpp
   let hTarget := Φ.mutationDetCharacter_nonneg_or_nonpos b nonzero memCone hOpp
   let targetFan := Φ.mutationFan b nonzero memCone hOpp
-  let U := Φ.mutationComplement b hSource (c : ℂ)
-  let W := mutationComplement targetFan b hTarget (c : ℂ)
-  let complementIso := Φ.mutationComplementIso b (c : ℂ) nonzero memCone hOpp
+  let U := Φ.mutationComplement b hSource (c : K)
+  let W := mutationComplement targetFan b hTarget (c : K)
+  let complementIso := Φ.mutationComplementIso b (c : K) nonzero memCone hOpp
   let character := LinearMap.toAddMonoidHom (b.detDualEquiv ρ.primitiveGenerator)
-  let f := Φ.characterRuling character hSource
-  let g := characterRuling targetFan character hTarget
+  let f := Φ.characterRuling K character hSource
+  let g := targetFan.characterRuling K character hTarget
   let y : U.toScheme := ⟨I.blowupToBase q, hq⟩
   have hqy := ρ.mutationBlowupIso_apply_over_complement b hOpp c q y rfl
   have hr (z : I.blowup) : g (J.blowupToBase (G.hom z)) = f (I.blowupToBase z) :=
@@ -365,7 +369,7 @@ section ExceptionalDivisor
 open Scheme.IdealSheafData
 
 local notation "p" =>
-  projectiveLine.polynomialPoint ℂ (RingHom.id ℂ) 0 (-(Units.val c⁻¹))
+  projectiveLine.polynomialPoint K (RingHom.id K) 0 (-(Units.val c⁻¹))
 local notation "G" => Ray.mutationBlowupIso b ρ hOpp c
 local notation "ex" I:arg => comap I (blowupToBase I)
 
@@ -385,7 +389,7 @@ private theorem comap_pivotFiber_exceptional_at_torus :
 private theorem comap_pivotFiber_exceptional_at_complement :
     ((p).ker.comap R₀).comap (S true).ι =
       (ex(J₀) * (ex(J₁)).comap (G).hom).comap (S true).ι := by
-  have hF : (p).ker.comap (rulingOpenι (c : ℂ) true) = ⊤ := by
+  have hF : (p).ker.comap (rulingOpenι (c : K) true) = ⊤ := by
     apply (comap_eq_top_iff _ _).mpr
     rw [← mutationRulingComplement_eq_compl_support c]
     exact Scheme.Opens.ι_preimage_self _
@@ -411,16 +415,16 @@ theorem Ray.comap_pivotFiber_mutationBlowupIso :
 
 end ExceptionalDivisor
 
-/-- The global mutation blowup isomorphism is over the complex field. -/
+/-- The global mutation blowup isomorphism is over the coefficient field. -/
 @[reassoc]
 theorem Ray.mutationBlowupIso_hom_comp_toBase :
     (ρ.mutationBlowupIso b hOpp c).hom ≫ (J₁).blowupToBase ≫
-        (Ψ).algebraicRealizationStructureMap =
-      (J₀).blowupToBase ≫ Φ.algebraicRealizationStructureMap := by
-  have h := congrArg (· ≫ (projectiveLine ℂ ↘ Spec (CommRingCat.of ℂ)))
+        (Ψ).finiteFanSchemeToSpec K =
+      (J₀).blowupToBase ≫ Φ.finiteFanSchemeToSpec K := by
+  have h := congrArg (· ≫ (projectiveLine K ↘ Spec (CommRingCat.of K)))
     (ρ.mutationBlowupIso_hom_comp_ruling b hOpp c)
   simpa only [Category.assoc, CategoryTheory.comp_over r₀, CategoryTheory.comp_over r₁,
-    algebraicRealization_over] using h
+    finiteFanScheme_over K] using h
 
 section Boundary
 
@@ -429,8 +433,8 @@ open Scheme.IdealSheafData
 local notation "F₀" => Nonempty.intro (Ray.toCone Φ ρ)
 local notation "F₁" =>
   Nonempty.intro (Ray.toCone (Ψ) (Φ.mutationFanRayEquiv b hv hp hOpp ρ))
-local notation "D₀" => Φ.boundaryIdeal F₀
-local notation "D₁" => boundaryIdeal (Ψ) F₁
+local notation "D₀" => Φ.toricBoundaryIdeal K F₀
+local notation "D₁" => toricBoundaryIdeal K (Ψ) F₁
 local notation "B₀" => Scheme.Hom.ker (Scheme.IdealSheafData.blowupMap (J₀) (subschemeι (D₀)))
 local notation "B₁" => Scheme.Hom.ker (Scheme.IdealSheafData.blowupMap (J₁) (subschemeι (D₁)))
 

@@ -24,7 +24,9 @@ open QPainleve.Cluster QPainleve.CharacterTorus QPainleve.SignedBoundaryIsometry
 
 namespace QPainleve.SignedClusterModularGroup.GeometricRealization
 
-local notation "S" => Spec (CommRingCat.of ℂ)
+variable {k₀ : Type} [Field k₀] [IsAlgClosed k₀]
+
+local notation "S" => Spec (CommRingCat.of k₀)
 local notation "D[" M "]" => Scheme.Hom.ker (Over.Hom.left (Arrow.hom (MarkedSurface.pair M)))
 
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
@@ -34,47 +36,48 @@ variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {b : Module.Basis (Fin 2) ℤ N} {s : Fin r → Φ.Ray} {hΦ : Φ.IsRegular}
 
 local notation "A" => (Fin r → ℤ)
-local notation "Tcent" => Over.mk (structureMap ℂ A)
+local notation "Tcent" => Over.mk (structureMap k₀ A)
 local notation "ChargeKernel" => LinearMap.ker (Fan.rayChargeMap s)
 local notation "Ex" => LinearMap.ker (Matrix.mulVecLin (SkewExchangeMatrix.matrix E))
 local notation "Qform" => LinearMap.BilinForm.prod
-  (Chow.intersectionBilinForm ℂ Φ.algebraicRealization)
+  (Chow.intersectionBilinForm k₀ (Φ.finiteFanScheme k₀))
   (-(dotProductBilin ℤ ℤ : LinearMap.BilinForm ℤ A))
 
-local notation "χ[" p "]" => pointsEquiv ℂ A
+local notation "χ[" p "]" => pointsEquiv k₀ A
   (Subtype.mk (Over.Hom.left (p : Point Tcent)) (Over.w (p : Point Tcent)))
 
-variable {C : (scheme ℂ (Fin r → ℤ)).PartialMap (scheme ℂ (Fin r → ℤ))}
+variable {C : (scheme k₀ (Fin r → ℤ)).PartialMap (scheme k₀ (Fin r → ℤ))}
   [IsDominant C.hom]
-  [C.IsOver (Over.mk (structureMap ℂ (Fin r → ℤ))).hom
-    (Over.mk (structureMap ℂ (Fin r → ℤ))).hom]
+  [C.IsOver (Over.mk (structureMap k₀ (Fin r → ℤ))).hom
+    (Over.mk (structureMap k₀ (Fin r → ℤ))).hom]
 
 local notation "src[" p "]" => p ≫ PartialMap.domainSource (X := Tcent) (Y := Tcent) C
 local notation "dst[" p "]" => p ≫ PartialMap.domainTarget (X := Tcent) (Y := Tcent) C
 
-variable [PrestableFamily ((Φ.boundaryIdeal h₀).subscheme ↘ S)]
-  {γ : Type*} {a : γ → ((Φ.boundaryIdeal h₀).subscheme ↘ S).smoothLocus}
+variable [PrestableFamily ((Φ.toricBoundaryIdeal k₀ h₀).subscheme ↘ Spec (.of k₀))]
+  {γ : Type*} {a : γ → ((Φ.toricBoundaryIdeal k₀ h₀).subscheme ↘ Spec (.of k₀)).smoothLocus}
   {T : NodalCycleNumbering a m} {origin : ZMod m}
-  {ι : L →ₗ[ℤ] Additive (LineBundleClass Φ.algebraicRealization) × (Fin r → ℤ)}
-  [Φ.algebraicRealization.IsProjectiveOver ℂ]
-  [SmoothOfRelativeDimension 2 (Φ.algebraicRealization ↘ S)]
+  {ι : L →ₗ[ℤ] Additive (LineBundleClass (Φ.finiteFanScheme k₀)) × (Fin r → ℤ)}
+  [(Φ.finiteFanScheme k₀).IsProjectiveOver k₀]
+  [SmoothOfRelativeDimension 2 ((Φ.finiteFanScheme k₀) ↘ Spec (.of k₀))]
   [LinearMap.IsPerfPair
-    ((Chow.intersectionBilinForm ℂ Φ.algebraicRealization).prod
+    ((Chow.intersectionBilinForm k₀ (Φ.finiteFanScheme k₀)).prod
       (-(dotProductBilin ℤ ℤ : LinearMap.BilinForm ℤ (Fin r → ℤ))))]
 
-local notation "aux" => (LinearEquiv.symm (Fan.boundaryOrthogonalEquivChargeKernel hΦ s Qform))
+local notation "aux" => (LinearEquiv.symm (Fan.boundaryOrthogonalEquivChargeKernel k₀ hΦ s Qform))
 
 variable (u : ZMod m ≃ Φ.Ray)
-  (hvertices : ∀ j, Scheme.dualGraphVertexEquiv (Φ.boundaryIdeal h₀).subscheme a (T.vertex j) =
-    Φ.boundaryNormalizationComponentEquiv hΦ (u j))
+  (hvertices : ∀ j, Scheme.dualGraphVertexEquiv (Φ.toricBoundaryIdeal k₀ h₀).subscheme a
+    (T.vertex j) =
+    Φ.boundaryNormalizationComponentEquiv k₀ hΦ (u j))
   (hdet : ∀ j, b.detDualEquiv (u j).primitiveGenerator (u (j + 1)).primitiveGenerator = 1)
   (hnodes : ∀ j, ∃ σ : Φ.cones, (u j).toCone ≤ σ ∧ (u (j + 1)).toCone ≤ σ ∧
-    (Φ.boundaryIdeal h₀).subschemeι
-      (Scheme.dualGraphEdgeEquiv (Φ.boundaryIdeal h₀).subscheme a (T.edge j)).val =
-      Φ.distinguishedPointHom σ (IsLocalRing.closedPoint ℂ))
+    (Φ.toricBoundaryIdeal k₀ h₀).subschemeι
+      (Scheme.dualGraphEdgeEquiv (Φ.toricBoundaryIdeal k₀ h₀).subscheme a (T.edge j)).val =
+      (Φ.distinguishedSection (R := k₀) σ) (IsLocalRing.closedPoint k₀))
 
-variable {P : Point (Over.mk (structureMap ℂ (Fin r → ℤ))) →
-  MarkedSurface ℂ n B (Spec (CommRingCat.of (LaurentRing ℂ (Fin r))))}
+variable {P : Point (Over.mk (structureMap k₀ (Fin r → ℤ))) →
+  MarkedSurface k₀ n B (Spec (CommRingCat.of (LaurentRing k₀ (Fin r))))}
   (D : ZMod n → L) (hD : ∀ c, D[P c].IsEffectiveCartier)
   (hmark : ∀ c j, (P c).boundaryClass (hD c) j = D j)
 
@@ -88,8 +91,8 @@ its branch sign. The center map is the loop's monomial center map restricted to
 the realization domain. The coordinate identification is characterized by the
 toric and total exceptional classes of each charge relation. -/
 theorem chargeKernelAction_eq_signedOrthogonalRestriction
-    (w : Word E E) (R : GeometricRealization P P C (w.xRationalMap ℂ))
-    (hC : C.hom = C.domain.ι ≫ (w.centerIso ℂ).hom)
+    (w : Word E E) (R : GeometricRealization P P C (w.xRationalMap k₀))
+    (hC : C.hom = C.domain.ι ≫ (w.centerIso k₀).hom)
     (Q : ChargeSeed E N) (hcharge : Q.charge = Fan.rayChargeMap s)
     (hker : Ex = Q.charge.ker) (e : Orth ≃ₗ[ℤ] ChargeKernel)
     (he : ∀ x : ChargeKernel, ι (e.symm x).val = (aux x).val)
@@ -97,13 +100,13 @@ theorem chargeKernelAction_eq_signedOrthogonalRestriction
     (hends : ∀ c : CenterPoint (U := Tcent) (V := Tcent) C, src[c] ∈ U ∧ dst[c] ∈ U)
     (hgenus : ∀ t ∈ U,
       letI := (P t).prestable_boundaryImage
-      ∀ v : irreducibleComponents (D[P t].subscheme.singularLocus ℂ).blowup,
-        (D[P t].subscheme.blowupComponent (K := ℂ) v).toScheme.genus ℂ = 0)
+      ∀ v : irreducibleComponents (D[P t].subscheme.singularLocus k₀).blowup,
+        (D[P t].subscheme.blowupComponent (K := k₀) v).toScheme.genus k₀ = 0)
     (hmodel : ∀ t ∈ U,
       Nonempty (ContractedToricFiber (h₀ := h₀) b s hΦ T origin ι (χ[t]) (P t))) :
     LinearEquiv.autCongr
       (LinearEquiv.ofEq Q.charge.ker ChargeKernel (congrArg LinearMap.ker hcharge))
-      (chargeKernelAction ℂ Q hker (op (signedClusterModularGroupMap ℂ E (End.of w)))) =
+      (chargeKernelAction k₀ Q hker (op (signedClusterModularGroupMap k₀ E (End.of w)))) =
       LinearEquiv.autCongr e (ρ (R.toSignedBoundaryIsometry D hD hmark)).val := by
   let v := (ρ (R.toSignedBoundaryIsometry D hD hmark)).val
   apply LinearEquiv.ext

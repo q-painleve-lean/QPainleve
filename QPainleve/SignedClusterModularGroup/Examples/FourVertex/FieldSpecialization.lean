@@ -15,7 +15,8 @@ import QPainleve.SignedClusterModularGroup.Examples.FourVertex.Relations
 
 The octagon's integer relation criterion shows that specialization preserves the signed
 and unsigned point-map groups over any coefficient field. The isomorphisms evaluate
-the same word over the target field, so the complex Picard calculation determines the
+the same word over the target field, so the Picard calculation over an algebraically closed field
+  of characteristic zero determines the
 group of point maps in positive characteristic as well.
 -/
 

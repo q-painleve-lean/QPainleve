@@ -35,16 +35,18 @@ namespace TauCeti.Toric.Fan.LogarithmicProjection
 
 open scoped Sarkisov
 
+variable {K : Type} [Field K] [PerfectField K]
+
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V] {i : N →+ V}
 
-local notation "S" => Spec (CommRingCat.of ℂ)
+local notation "S" => Spec (CommRingCat.of K)
 local notation "over[" T "]" => OverClass.ofHom ((BlowupTower.toBase T) ≫ _ ↘ S)
 local notation "smooth[" hT "]" =>
   IsClosedPointTower.smoothOfRelativeDimension (IsPointTowerWith.isClosedPointTower hT) (_ ↘ S)
 local notation "integral[" hT "]" =>
   IsClosedPointTower.isIntegral (IsPointTowerWith.isClosedPointTower hT) (_ ↘ S)
 
-variable {Z : Scheme} [Z.Over S] [SmoothOfRelativeDimension 2 (Z ↘ S)]
+variable {Z : Scheme} [Z.Over (Spec (.of K))] [SmoothOfRelativeDimension 2 (Z ↘ Spec (.of K))]
   [IsIntegral Z] [IsNoetherian Z] {D : Z.IdealSheafData}
 
 local notation "Total[" D "," T "]" =>
@@ -55,30 +57,30 @@ reduced total boundary as the pole ideal. The fan and rational map of each
 link are unchanged. -/
 def precomposeSarkisovOfNodalTower (hRank : Module.finrank ℤ N = 2)
     (hD : D.IsEffectiveCartier)
-    (hNode : AtWorstNodalOfRelativeDimensionOne (D.subschemeι ≫ Z ↘ S))
+    (hNode : AtWorstNodalOfRelativeDimensionOne (D.subschemeι ≫ Z ↘ Spec (.of K)))
     {n : ℕ} {W : Scheme} {T : BlowupTower Z n W}
-    (hT : IsNodalBoundaryTower D (Z ↘ S) (𝟙 Z) T) :
+    (hT : IsNodalBoundaryTower D (Z ↘ Spec (.of K)) (𝟙 Z) T) :
     letI : W.Over S := over[T]
     letI : SmoothOfRelativeDimension 2 (W ↘ S) := smooth[hT]
     letI : IsIntegral W := integral[hT]
-    @Prefunctor (LogarithmicProjection i D) sarkisovQuiver
-      (LogarithmicProjection i Total[D,T]) sarkisovQuiver := by
+    @Prefunctor (LogarithmicProjection K i D) sarkisovQuiver
+      (LogarithmicProjection K i Total[D,T]) sarkisovQuiver := by
   let : W.Over S := over[T]
   let : SmoothOfRelativeDimension 2 (W ↘ S) := smooth[hT]
   let : IsIntegral W := integral[hT]
   let : T.toBase.IsOver S := ⟨rfl⟩
   let : IsModification T.toBase :=
     hT.isClosedPointTower.isModification_of_smoothOfRelativeDimension_two (Z ↘ S)
-  exact precomposeSarkisov hRank T.toBase
+  exact precomposeSarkisov (k := K) hRank T.toBase
     (hT.comap_eq_radical_mul_ramificationIdealSheaf_of_iso hD hNode (Iso.refl W) T.toBase
       (Category.id_comp _))
 
 variable (hRank : Module.finrank ℤ N = 2) (hD : D.IsEffectiveCartier)
-  (hNode : AtWorstNodalOfRelativeDimensionOne (D.subschemeι ≫ Z ↘ S))
+  (hNode : AtWorstNodalOfRelativeDimensionOne (D.subschemeι ≫ Z ↘ Spec (.of K)))
   {n : ℕ} {W : Scheme} {T : BlowupTower Z n W}
-  (hT : IsNodalBoundaryTower D (Z ↘ S) (𝟙 Z) T)
+  (hT : IsNodalBoundaryTower D (Z ↘ Spec (.of K)) (𝟙 Z) T)
 
-local notation "lift[" h "]" => precomposeSarkisovOfNodalTower (i := i) hRank hD hNode h
+local notation "lift[" h "]" => precomposeSarkisovOfNodalTower (K := K) (i := i) hRank hD hNode h
 -- The same vertices carry both the star and the Sarkisov quivers.
 local notation "obj[" F "," A "]" => @Prefunctor.obj _ sarkisovQuiver _ sarkisovQuiver F A
 local notation "mapPath[" F "," p "]" =>
@@ -86,7 +88,7 @@ local notation "mapPath[" F "," p "]" =>
 
 /-- Refining the resolving surface preserves the target fan. -/
 @[simp]
-theorem precomposeSarkisovOfNodalTower_obj_fan (A : LogarithmicProjection i D) :
+theorem precomposeSarkisovOfNodalTower_obj_fan (A : LogarithmicProjection K i D) :
     letI : W.Over S := over[T]
     letI : SmoothOfRelativeDimension 2 (W ↘ S) := smooth[hT]
     letI : IsIntegral W := integral[hT]
@@ -102,7 +104,7 @@ theorem precomposeSarkisovOfNodalTower_obj_fan (A : LogarithmicProjection i D) :
 
 /-- A vertex on the refined resolution is the original projection precomposed
 with the tower morphism. -/
-theorem precomposeSarkisovOfNodalTower_obj_hom (A : LogarithmicProjection i D) :
+theorem precomposeSarkisovOfNodalTower_obj_hom (A : LogarithmicProjection K i D) :
     letI : W.Over S := over[T]
     letI : SmoothOfRelativeDimension 2 (W ↘ S) := smooth[hT]
     letI : IsIntegral W := integral[hT]
@@ -120,7 +122,7 @@ theorem precomposeSarkisovOfNodalTower_obj_hom (A : LogarithmicProjection i D) :
 original projection with the composite tower morphism. -/
 theorem precomposeSarkisovOfNodalTower_obj_comp {m : ℕ} {Y : Scheme} {U : BlowupTower W m Y}
     (hU : IsNodalBoundaryTower Total[D,T] (T.toBase ≫ Z ↘ S) (𝟙 W) U)
-    (A : LogarithmicProjection i D) :
+    (A : LogarithmicProjection K i D) :
     letI : W.Over S := over[T]
     letI : SmoothOfRelativeDimension 2 (W ↘ S) := smooth[hT]
     letI : IsIntegral W := integral[hT]
@@ -129,7 +131,7 @@ theorem precomposeSarkisovOfNodalTower_obj_comp {m : ℕ} {Y : Scheme} {U : Blow
     letI : SmoothOfRelativeDimension 2 (Y ↘ S) := smooth[hU]
     letI : IsIntegral Y := integral[hU]
     let hE := hT.radical_comap_toBase hD hNode
-    let F := precomposeSarkisovOfNodalTower (i := i) hRank hE.1 hE.2 hU
+    let F := precomposeSarkisovOfNodalTower (K := K) (i := i) hRank hE.1 hE.2 hU
     (obj[F,obj[lift[hT],A]]).fan = A.fan ∧
       (obj[F,obj[lift[hT],A]]).hom ≍ (U.toBase ≫ T.toBase) ≫ A.hom := by
   let : W.Over S := over[T]
@@ -144,9 +146,9 @@ theorem precomposeSarkisovOfNodalTower_obj_comp {m : ℕ} {Y : Scheme} {U : Blow
   refine ⟨(precomposeSarkisovOfNodalTower_obj_fan ..).trans hfan, ?_⟩
   rw [Category.assoc]
   exact (precomposeSarkisovOfNodalTower_obj_hom ..).trans
-    (heq_comp rfl rfl (congrArg Fan.algebraicRealization hfan) HEq.rfl hhom)
+    (heq_comp rfl rfl (congrArg (Fan.finiteFanScheme K) hfan) HEq.rfl hhom)
 
-variable {A B : LogarithmicProjection i D}
+variable {A B : LogarithmicProjection K i D}
 
 /-- Transport two lifted projections and a predicate on them from successive
 nodal refinements to their appended tower. The predicate can record a path
@@ -155,7 +157,7 @@ theorem exists_pullback_projections_on_nodalTower_append
     {m : ℕ} {Y : Scheme} {U : BlowupTower W m Y}
     (hU : IsNodalBoundaryTower Total[D,T] (T.toBase ≫ Z ↘ S) (𝟙 W) U)
     (P : ∀ [Y.Over S] [SmoothOfRelativeDimension 2 (Y ↘ S)] [PreirreducibleSpace Y]
-      {J : Y.IdealSheafData}, LogarithmicProjection i J → LogarithmicProjection i J → Prop) :
+      {J : Y.IdealSheafData}, LogarithmicProjection K i J → LogarithmicProjection K i J → Prop) :
     letI : W.Over S := over[T]
     letI : SmoothOfRelativeDimension 2 (W ↘ S) := smooth[hT]
     letI : IsIntegral W := integral[hT]
@@ -163,14 +165,14 @@ theorem exists_pullback_projections_on_nodalTower_append
     letI : Y.Over S := over[U]
     letI : SmoothOfRelativeDimension 2 (Y ↘ S) := smooth[hU]
     letI : IsIntegral Y := integral[hU]
-    (∃ A' B' : LogarithmicProjection i Total[Total[D,T],U],
+    (∃ A' B' : LogarithmicProjection K i Total[Total[D,T],U],
       A'.fan = A.fan ∧ A'.hom ≍ (U.toBase ≫ T.toBase) ≫ A.hom ∧
       B'.fan = B.fan ∧ B'.hom ≍ (U.toBase ≫ T.toBase) ≫ B.hom ∧ P A' B') →
     ∃ hTU : IsNodalBoundaryTower D (Z ↘ S) (𝟙 Z) (T.append U),
       letI : Y.Over S := over[T.append U]
       letI : SmoothOfRelativeDimension 2 (Y ↘ S) := smooth[hTU]
       letI : IsIntegral Y := integral[hTU]
-      ∃ A' B' : LogarithmicProjection i Total[D,T.append U],
+      ∃ A' B' : LogarithmicProjection K i Total[D,T.append U],
         A'.fan = A.fan ∧ A'.hom ≍ (T.append U).toBase ≫ A.hom ∧
         B'.fan = B.fan ∧ B'.hom ≍ (T.append U).toBase ≫ B.hom ∧ P A' B' := by
   intro h
@@ -190,7 +192,7 @@ theorem exists_pullback_projections_on_nodalTower_append
       (J : Y.IdealSheafData) : Prop :=
     letI : Y.Over S := ⟨s⟩
     letI : SmoothOfRelativeDimension 2 (Y ↘ S) := hs
-    ∃ A' B' : LogarithmicProjection i J,
+    ∃ A' B' : LogarithmicProjection K i J,
       A'.fan = A.fan ∧ A'.hom ≍ f ≫ A.hom ∧ B'.fan = B.fan ∧ B'.hom ≍ f ≫ B.hom ∧ P A' B'
   refine ⟨hTU, ?_⟩
   have transport {f g : Y ⟶ Z} {s t : Y ⟶ S}
@@ -213,9 +215,9 @@ theorem exists_comp_sarkisovPath_on_nodalTower {m : ℕ} {Y : Scheme} {U : Blowu
     letI : Y.Over S := over[U]
     letI : SmoothOfRelativeDimension 2 (Y ↘ S) := smooth[hU]
     letI : IsIntegral Y := integral[hU]
-    ∀ {C : LogarithmicProjection i Total[D,T]}
+    ∀ {C : LogarithmicProjection K i Total[D,T]}
       (_ : SarkisovPath (obj[lift[hT],A]) C)
-      {A' B' : LogarithmicProjection i Total[Total[D,T],U]}
+      {A' B' : LogarithmicProjection K i Total[Total[D,T],U]}
       (_ : SarkisovPath A' B'),
       A'.fan = C.fan → A'.hom ≍ U.toBase ≫ C.hom →
       B'.fan = B.fan → B'.hom ≍ U.toBase ≫ T.toBase ≫ B.hom →
@@ -223,7 +225,7 @@ theorem exists_comp_sarkisovPath_on_nodalTower {m : ℕ} {Y : Scheme} {U : Blowu
         letI : Y.Over S := over[T.append U]
         letI : SmoothOfRelativeDimension 2 (Y ↘ S) := smooth[hTU]
         letI : IsIntegral Y := integral[hTU]
-        ∃ A'' B'' : LogarithmicProjection i Total[D,T.append U],
+        ∃ A'' B'' : LogarithmicProjection K i Total[D,T.append U],
           A''.fan = A.fan ∧ A''.hom ≍ (T.append U).toBase ≫ A.hom ∧
           B''.fan = B.fan ∧ B''.hom ≍ (T.append U).toBase ≫ B.hom ∧
           Nonempty (SarkisovPath A'' B'') := by
@@ -236,7 +238,7 @@ theorem exists_comp_sarkisovPath_on_nodalTower {m : ℕ} {Y : Scheme} {U : Blowu
   let : SmoothOfRelativeDimension 2 (Y ↘ S) := smooth[hU]
   let : IsIntegral Y := integral[hU]
   obtain ⟨hE, hENode⟩ := hT.radical_comap_toBase hD hNode
-  let F := precomposeSarkisovOfNodalTower (i := i) hRank hE hENode hU
+  let F := precomposeSarkisovOfNodalTower (K := K) (i := i) hRank hE hENode hU
   have hC : obj[F,C] = A' :=
     LogarithmicProjection.ext
       ((precomposeSarkisovOfNodalTower_obj_fan ..).trans hA'.symm)
@@ -252,15 +254,15 @@ private theorem hasPathOver_of_path (p : SarkisovPath A B) :
     letI : W.Over S := over[T]
     letI : SmoothOfRelativeDimension 2 (W ↘ S) := smooth[hT]
     letI : IsIntegral W := integral[hT]
-    ∃ A' B' : LogarithmicProjection i Total[D,T],
+    ∃ A' B' : LogarithmicProjection K i Total[D,T],
       A'.fan = A.fan ∧ A'.hom ≍ T.toBase ≫ A.hom ∧
       B'.fan = B.fan ∧ B'.hom ≍ T.toBase ≫ B.hom ∧ Nonempty (SarkisovPath A' B') := by
   let : W.Over S := over[T]
   let : SmoothOfRelativeDimension 2 (W ↘ S) := smooth[hT]
   let : IsIntegral W := integral[hT]
   let F := lift[hT]
-  let A' : LogarithmicProjection i Total[D,T] := obj[F,A]
-  let B' : LogarithmicProjection i Total[D,T] := obj[F,B]
+  let A' : LogarithmicProjection K i Total[D,T] := obj[F,A]
+  let B' : LogarithmicProjection K i Total[D,T] := obj[F,B]
   exact ⟨A', B',
     precomposeSarkisovOfNodalTower_obj_fan hRank hD hNode hT A,
     precomposeSarkisovOfNodalTower_obj_hom hRank hD hNode hT A,
@@ -277,10 +279,10 @@ new resolving surface, so the induction continues toward the same target. -/
 theorem exists_sarkisov_path_of_bidegree_decrease
     (P : ∀ {X : Scheme} [X.Over S] [SmoothOfRelativeDimension 2 (X ↘ S)]
       {E : X.IdealSheafData},
-      LogarithmicProjection i E → LogarithmicProjection i E → ℕ ×ₗ ℕ → Prop)
+      LogarithmicProjection K i E → LogarithmicProjection K i E → ℕ ×ₗ ℕ → Prop)
     (step : ∀ {X : Scheme} [X.Over S] [SmoothOfRelativeDimension 2 (X ↘ S)]
       [IsIntegral X] [IsNoetherian X] {E : X.IdealSheafData}
-      (C F : LogarithmicProjection i E) (bidegree : ℕ ×ₗ ℕ)
+      (C F : LogarithmicProjection K i E) (bidegree : ℕ ×ₗ ℕ)
       (hE : E.IsEffectiveCartier)
       (hENode : AtWorstNodalOfRelativeDimensionOne (E.subschemeι ≫ X ↘ S)),
       P C F bidegree →
@@ -291,8 +293,8 @@ theorem exists_sarkisov_path_of_bidegree_decrease
           letI : Y.Over S := over[U]
           letI : SmoothOfRelativeDimension 2 (Y ↘ S) := smooth[hU]
           letI : IsIntegral Y := integral[hU]
-          let lift := precomposeSarkisovOfNodalTower (i := i) hRank hE hENode hU
-          ∃ C' : LogarithmicProjection i Total[E,U],
+          let lift := precomposeSarkisovOfNodalTower (K := K) (i := i) hRank hE hENode hU
+          ∃ C' : LogarithmicProjection K i Total[E,U],
             Nonempty (SarkisovPath (obj[lift,C]) C') ∧ P C' (obj[lift,F]) next)
     (bidegree : ℕ ×ₗ ℕ) (hP : P A B bidegree) :
     ∃ (k : ℕ) (Y : Scheme) (U : BlowupTower Z k Y)
@@ -300,7 +302,7 @@ theorem exists_sarkisov_path_of_bidegree_decrease
       letI : Y.Over S := over[U]
       letI : SmoothOfRelativeDimension 2 (Y ↘ S) := smooth[hU]
       letI : IsIntegral Y := integral[hU]
-      ∃ A' B' : LogarithmicProjection i Total[D,U],
+      ∃ A' B' : LogarithmicProjection K i Total[D,U],
         A'.fan = A.fan ∧ A'.hom ≍ U.toBase ≫ A.hom ∧
         B'.fan = B.fan ∧ B'.hom ≍ U.toBase ≫ B.hom ∧ Nonempty (SarkisovPath A' B') := by
   induction bidegree using (wellFounded_lt (α := ℕ ×ₗ ℕ)).induction generalizing Z with
@@ -323,7 +325,7 @@ theorem exists_sarkisov_path_of_bidegree_decrease
       have hBhom : B'.hom ≍ T.toBase ≫ U.toBase ≫ B.hom := by
         have h := precomposeSarkisovOfNodalTower_obj_hom hRank hD hNode hU B
         have hf := precomposeSarkisovOfNodalTower_obj_fan hRank hD hNode hU B
-        exact hBh.trans (heq_comp rfl rfl (congrArg Fan.algebraicRealization hf) HEq.rfl h)
+        exact hBh.trans (heq_comp rfl rfl (congrArg (Fan.finiteFanScheme K) hf) HEq.rfl h)
       obtain ⟨hUT, hpath⟩ := exists_comp_sarkisovPath_on_nodalTower hRank hD hNode hU hT p q
         hA' hAh (hB'.trans (precomposeSarkisovOfNodalTower_obj_fan ..)) hBhom
       exact ⟨k + l, W, U.append T, hUT, hpath⟩

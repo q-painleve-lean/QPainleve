@@ -16,7 +16,7 @@ its degree on a strict boundary ray. The toric divisor contributes its
 coefficients at the ray and its two neighbors. Each total exceptional
 coordinate contributes on the ray of its center. The comparison uses
 `Fan.markedBoundaryMap_single_pairing` and the toric boundary pairing in
-`Fan.intersectionBilinForm_rayDivisorToPicard_single`.
+`Fan.intersectionBilinForm_rayChartDivisorToPicard_single`.
 -/
 
 public section
@@ -53,10 +53,13 @@ namespace TauCeti.Toric.Fan
 
 open QPainleve
 
-variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
+universe u
+
+variable (K : Type u) [Field K] [Infinite K] {N : Type u} {V : Type*}
+  [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {Φ : Fan i}
-  [Φ.algebraicRealization.IsProjectiveOver ℂ] [Nonempty Φ.cones]
-  [SmoothOfRelativeDimension 2 (Φ.algebraicRealization ↘ Spec (CommRingCat.of ℂ))]
+  [(Φ.finiteFanScheme K).IsProjectiveOver K] [Nonempty Φ.cones]
+  [SmoothOfRelativeDimension 2 (Φ.finiteFanScheme K ↘ Spec (CommRingCat.of K))]
 
 /-- In a cyclic ray numbering, the marked pairing with a strict boundary component
 is the integer degree of the toric divisor and exceptional coefficients. -/
@@ -68,18 +71,19 @@ theorem markedBoundaryMap_single_pairing_eq_strictBoundaryRayDegree
     (he : ∀ j, b.detDualEquiv (e j).primitiveGenerator (e (j + 1)).primitiveGenerator = 1 ∧
       ∃ σ : Φ.cones, (e j).toCone ≤ σ ∧ (e (j + 1)).toCone ≤ σ)
     (toricCoeff : ZMod m → ℤ) (exceptionalCoeff : ι → ℤ) (k : Fin m) :
-    LinearMap.BilinForm.prod (Chow.intersectionBilinForm ℂ Φ.algebraicRealization)
+    LinearMap.BilinForm.prod (Chow.intersectionBilinForm K (Φ.finiteFanScheme K))
         (-(dotProductBilin ℤ ℤ : LinearMap.BilinForm ℤ (ι → ℤ)))
-        (markedBoundaryMap hΦ s (Pi.single (e (ZMod.finEquiv m k)) 1))
-        (Φ.rayDivisorToPicard hΦ (toricCoeff ∘ e.symm), exceptionalCoeff) =
-      strictBoundaryRayDegree (fun j ↦ Φ.rayBoundarySelfIntersection hΦ (e j))
+        (markedBoundaryMap K hΦ s (Pi.single (e (ZMod.finEquiv m k)) 1))
+        (Φ.rayChartDivisorToPicard K hΦ (toricCoeff ∘ e.symm), exceptionalCoeff) =
+      strictBoundaryRayDegree (fun j ↦ Φ.rayBoundarySelfIntersection K hΦ (e j))
         toricCoeff centerRay exceptionalCoeff k := by
+  classical
   let j := ZMod.finEquiv m k
-  have htoric := Φ.intersectionBilinForm_rayDivisorToPicard_single hΦ b hc
+  have htoric := Φ.intersectionBilinForm_rayChartDivisorToPicard_single K hΦ b hc
     (toricCoeff ∘ e.symm) (by simpa only [sub_add_cancel] using he (j - 1)) (he j)
   have hsum (t : ι) : (s t = e j) ↔ centerRay t = k := by
     rw [← hcenter t, e.injective.eq_iff, (ZMod.finEquiv m).injective.eq_iff]
-  rw [markedBoundaryMap_single_pairing, htoric, strictBoundaryRayDegree_apply]
+  rw [markedBoundaryMap_single_pairing K, htoric, strictBoundaryRayDegree_apply]
   simp only [Function.comp_apply, Equiv.symm_apply_apply, hsum, j]
 
 end TauCeti.Toric.Fan

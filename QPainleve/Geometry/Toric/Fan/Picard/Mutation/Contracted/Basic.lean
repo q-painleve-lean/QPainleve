@@ -12,7 +12,6 @@ public import QPainleve.Geometry.Toric.Fan.Picard.Mutation.Descent
 public import QPainleve.Geometry.Toric.Fan.Picard.Mutation.Ordered
 public import TauCeti.AlgebraicGeometry.Morphisms.Modification.Composition
 
-import Mathlib.Analysis.Complex.Polynomial.Basic
 
 /-!
 # The marked elementary transformation on contracted toric pairs
@@ -36,10 +35,12 @@ open QPainleve QPainleve.BlowupTower QPainleve.Cluster
 
 namespace TauCeti.Toric.Fan
 
+variable (k₀ : Type) [Field k₀] [IsAlgClosed k₀]
+
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {Φ : Fan i} (b : Basis (Fin 2) ℤ N) {n : ℕ}
   (s : Fin (n + 1) → Φ.Ray) (k : Fin (n + 1))
-  (χ : Multiplicative (Fin (n + 1) → ℤ) →* ℂˣ)
+  (χ : Multiplicative (Fin (n + 1) → ℤ) →* k₀ˣ)
   (hOpp : hull ℝ {i (-(s k).primitiveGenerator)} ∈ Φ.cones)
   (hΦ : Φ.IsRegular)
 
@@ -58,26 +59,26 @@ local notation "ε" => chargeExchangeMatrix b.detDualEquiv.toLinearMap (rayCharg
 local notation "χ′" => MonoidHom.comp χ (AddMonoidHom.toMultiplicative
   (AddEquiv.toAddMonoidHom (LinearEquiv.toAddEquiv (chargeMutationEquiv ε k))))
 local notation "d′" => center χ′
-local notation "A" => internalBlowupTower (h₀ := hΦ₀) b s (d)
-local notation "B" => internalBlowupTower (h₀ := hΨ₀) b (t) (d′)
+local notation "A" => internalBlowupTower k₀ (h₀ := hΦ₀) b s (d)
+local notation "B" => internalBlowupTower k₀ (h₀ := hΨ₀) b (t) (d′)
 local notation "πA" => toBase (WithBoundary.toTower (Sigma.snd A))
 local notation "πB" => toBase (WithBoundary.toTower (Sigma.snd B))
 local notation "ιA" => WithBoundary.boundaryι (Sigma.snd A)
 local notation "ιB" => WithBoundary.boundaryι (Sigma.snd B)
-local notation "μA" => internalBlowupPicardMarking (h₀ := hΦ₀) b s (d) hΦ
-local notation "μB" => internalBlowupPicardMarking (h₀ := hΨ₀) b (t) (d′) (hΨ)
-local notation "I" => mutationPicardEquiv b s k hOpp hΦ
+local notation "μA" => internalBlowupPicardMarking k₀ (h₀ := hΦ₀) b s (d) hΦ
+local notation "μB" => internalBlowupPicardMarking k₀ (h₀ := hΨ₀) b (t) (d′) (hΨ)
+local notation "I" => mutationPicardEquiv k₀ b s k hOpp hΦ
 local notation "u" => Ray.mutationBoundaryIso b ρ hOpp c hΦ
 
 variable {X X' Y Y' : Scheme} [IsIntegral X] [IsIntegral X']
-  [X.Over (Spec (.of ℂ))] [X'.Over (Spec (.of ℂ))]
-  [X.IsProjectiveOver ℂ] [X'.IsProjectiveOver ℂ]
-  [SmoothOfRelativeDimension 2 (X ↘ Spec (.of ℂ))]
-  [SmoothOfRelativeDimension 2 (X' ↘ Spec (.of ℂ))]
+  [X.Over (Spec (.of k₀))] [X'.Over (Spec (.of k₀))]
+  [X.IsProjectiveOver k₀] [X'.IsProjectiveOver k₀]
+  [SmoothOfRelativeDimension 2 (X ↘ Spec (.of k₀))]
+  [SmoothOfRelativeDimension 2 (X' ↘ Spec (.of k₀))]
   {D : X.IdealSheafData} {D' : X'.IdealSheafData} {m l : ℕ}
   {P : BlowupTower X m Y} {Q : BlowupTower X' l Y'}
 
-local notation "S" => Spec (CommRingCat.of ℂ)
+local notation "S" => Spec (CommRingCat.of k₀)
 local notation "s₀" => (X ↘ S)
 local notation "s₁" => (X' ↘ S)
 local notation "classOf(" h ")" =>
@@ -95,17 +96,17 @@ theorem exists_iso_ordered_nodal_mutation
     (hP : IsNodalBoundaryTower D s₀ (𝟙 X) P)
     (hQ : IsNodalBoundaryTower D' s₁ (𝟙 X') Q)
     (a : Y ≅ (A).1) (a' : Y' ≅ (B).1)
-    (ha : a.hom ≫ πA ≫ Φ.algebraicRealizationStructureMap = P.toBase ≫ s₀)
-    (ha' : a'.hom ≫ πB ≫ (Ψ).algebraicRealizationStructureMap = Q.toBase ≫ s₁)
+    (ha : a.hom ≫ πA ≫ (Φ.finiteFanSchemeToSpec k₀) = P.toBase ≫ s₀)
+    (ha' : a'.hom ≫ πB ≫ (Fan.finiteFanSchemeToSpec k₀ (Ψ)) = Q.toBase ≫ s₁)
     (hb : ((ιA).ker.comap a.hom).support = (D.comap P.toBase).support)
     (hb' : ((ιB).ker.comap a'.hom).support = (D'.comap Q.toBase).support)
     (hD : D.IsEffectiveCartier) (hD' : D'.IsEffectiveCartier)
     (hnodal : AtWorstNodalOfRelativeDimensionOne (D.subschemeι ≫ s₀))
     (hnodal' : AtWorstNodalOfRelativeDimensionOne (D'.subschemeι ≫ s₁))
     (hconn : _root_.IsConnected (D.support : Set X))
-    (hnef : IsNef ℂ s₀ classOf(hD)) (hnef' : IsNef ℂ s₁ classOf(hD'))
-    (hsq : Chow.classIntersectionNumber ℂ X classOf(hD) classOf(hD) = 0)
-    (hsq' : Chow.classIntersectionNumber ℂ X' classOf(hD') classOf(hD') = 0)
+    (hnef : IsNef k₀ s₀ classOf(hD)) (hnef' : IsNef k₀ s₁ classOf(hD'))
+    (hsq : Chow.classIntersectionNumber k₀ X classOf(hD) classOf(hD) = 0)
+    (hsq' : Chow.classIntersectionNumber k₀ X' classOf(hD') classOf(hD') = 0)
     (E : SkewExchangeMatrix (Fin (n + 1))) (hE : ∀ j, E.matrix j k = ε j k) :
     let : IsNoetherian X := isNoetherian_of_finiteType s₀
     let : IsNoetherian X' := isNoetherian_of_finiteType s₁
@@ -117,11 +118,11 @@ theorem exists_iso_ordered_nodal_mutation
     let q := a'.inv ≫ Q.toBase
     letI : IsModification p := inferInstanceAs (IsModification (a.inv ≫ P.toBase))
     letI : IsModification q := inferInstanceAs (IsModification (a'.inv ≫ Q.toBase))
-    let F := ((Generator.mutate k).toStep E).toPath.xRationalMap ℂ
+    let F := ((Generator.mutate k).toStep E).toPath.xRationalMap k₀
     letI : Nonempty Φ.cones := hΦ₀
     letI : Nonempty (Ψ).cones := hΨ₀
-    let a₀ := contractedXEvaluation b s χ hΦ p
-    let a₁ := contractedXEvaluation b (t) χ′ (hΨ) q
+    let a₀ := contractedXEvaluation k₀ b s χ hΦ p
+    let a₁ := contractedXEvaluation k₀ b (t) χ′ (hΨ) q
     ∃ (e : (A).1 ≅ (B).1) (g : X ≅ X'),
       (ιA) ≫ e.hom = (u).hom ≫ (ιB) ∧
       p ≫ g.hom = e.hom ≫ q ∧ g.hom ≫ s₁ = s₀ ∧ D'.comap g.hom = D ∧
@@ -134,9 +135,9 @@ theorem exists_iso_ordered_nodal_mutation
   let : IsModification p := inferInstanceAs (IsModification (a.inv ≫ P.toBase))
   let : IsModification q := inferInstanceAs (IsModification (a'.inv ≫ Q.toBase))
   obtain ⟨e, f, hf, he, hover, hmark, -⟩ :=
-    exists_iso_ordered_mutation_picard_marking b hΦ s χ k hOpp hsame hopp
+    exists_iso_ordered_mutation_picard_marking k₀ b hΦ s χ k hOpp hsame hopp
   have hbdy : (ιA) ≫ e.hom = (u).hom ≫ (ιB) :=
-    boundaryι_comp_of_ordered_mutation b ρ hOpp c s (d) (t) (d′) hΦ hf he
+    boundaryι_comp_of_ordered_mutation k₀ b ρ hOpp c s (d) (t) (d′) hΦ hf he
   have hstrict : (ιB).ker.comap e.hom = (ιA).ker := by
     rw [← (ιA).comap_ker_comp_of_isClosedImmersion e.hom, hbdy, Scheme.Hom.ker_comp_of_isIso]
   let e' := a ≪≫ e ≪≫ a'.symm
@@ -148,13 +149,13 @@ theorem exists_iso_ordered_nodal_mutation
     simp only [e', Iso.trans_hom, Iso.symm_hom, Iso.inv_hom_id,
       Category.assoc, Category.comp_id, comap_comp, hstrict]
   obtain ⟨g, ⟨hg, hgOver, hpair⟩, -⟩ := hP.existsUnique_iso_of_nef_square_zero_boundary
-    ℂ hQ e' hstructure hD hD' hnodal hnodal' hconn hsupport hnef hnef' hsq hsq'
+    k₀ hQ e' hstructure hD hD' hnodal hnodal' hconn hsupport hnef hnef' hsq hsq'
   have hsquare : p ≫ g.hom = e.hom ≫ q := by
     simpa only [p, q, e', Iso.trans_hom, Iso.symm_hom, Category.assoc, Iso.inv_hom_id_assoc]
       using congrArg (a.inv ≫ ·) hg
   refine ⟨e, g, hbdy, hsquare, hgOver, hpair, ?_, ?_⟩
-  · apply pullback_nodal_mutation_picard_marking b s k hOpp hΦ (d) (d′) hsquare.symm
+  · apply pullback_nodal_mutation_picard_marking k₀ b s k hOpp hΦ (d) (d′) hsquare.symm
     simpa only [internalBlowupPicardMarking_apply] using hmark
-  · exact compOfDefined_contractedXEvaluation_mutate b s k χ hOpp hΦ f hf he hsquare E hE
+  · exact compOfDefined_contractedXEvaluation_mutate k₀ b s k χ hOpp hΦ f hf he hsquare E hE
 
 end TauCeti.Toric.Fan

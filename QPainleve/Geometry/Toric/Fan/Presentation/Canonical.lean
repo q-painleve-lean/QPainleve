@@ -29,35 +29,38 @@ open TauCeti.AlgebraicGeometry TauCeti.Toric Scheme.IdealSheafData
 
 namespace AlgebraicGeometry.Scheme.IdealSheafData
 
-local notation "S" => Spec (CommRingCat.of ℂ)
+universe u
 
-variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
+variable {K : Type u} [Field K] [PerfectField K]
+  {N V : Type u} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {b : Basis (Fin 2) ℤ N}
-  {X : Scheme} [X.Over S] [IsIntegral X] [IsNoetherian X]
-  [SmoothOfRelativeDimension 2 (X ↘ S)] {D : X.IdealSheafData}
+  {X : Scheme} [X.Over (Spec (.of K))] [IsIntegral X] [IsNoetherian X]
+  [SmoothOfRelativeDimension 2 (X ↘ Spec (.of K))] {D : X.IdealSheafData}
+
+local notation "S" => Spec (CommRingCat.of K)
 
 /-- A nodal Cartier boundary with a toric presentation is anticanonical. -/
 theorem HasToricPresentation.canonicalClass (h : D.HasToricPresentation (X ↘ S) b i)
     (hD : D.IsEffectiveCartier) (hN : AtWorstNodalOfRelativeDimensionOne (D.subschemeι ≫ X ↘ S)) :
-    LineBundleClass.mk hD.toInvertibleSheaf = LineBundleClass.mk (canonicalBundle ℂ X 2) := by
+    LineBundleClass.mk hD.toInvertibleSheaf = LineBundleClass.mk (canonicalBundle K X 2) := by
   obtain ⟨n, ⟨Φ, hΦ, hc, rays, c, m, Y, T, hT, e, he, hB⟩⟩ := (hasToricPresentation_iff ..).mp h
   let := hc.nonempty_cones
   let rankTwo := (finrank_eq_card_basis b).trans (Fintype.card_fin 2)
-  let A := Fan.internalBlowupTower b rays c
-  let : A.1.Over S := ⟨A.2.toTower.toBase ≫ Φ.algebraicRealization ↘ S⟩
-  let : SmoothOfRelativeDimension 2 (Φ.algebraicRealization ↘ S) := by
-    rw [Fan.algebraicRealization_over]
-    exact rankTwo ▸ Φ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
+  let A := Fan.internalBlowupTower K b rays c
+  let : A.1.Over S := ⟨A.2.toTower.toBase ≫ (Φ.finiteFanScheme K) ↘ S⟩
+  let : SmoothOfRelativeDimension 2 ((Φ.finiteFanScheme K) ↘ S) := by
+    rw [Fan.finiteFanScheme_over K]
+    exact rankTwo ▸ Φ.smoothOfRelativeDimension_finiteFanSchemeToSpec K hΦ
   let : SmoothOfRelativeDimension 2 (A.1 ↘ S) := by
-    exact (Fan.isClosedPointTower_internalBlowupTower b rays c).smoothOfRelativeDimension _
-  have hStructure : A.1 ↘ S = A.2.toTower.toBase ≫ Φ.algebraicRealizationStructureMap :=
-    congrArg (A.2.toTower.toBase ≫ ·) Φ.algebraicRealization_over
+    exact (Fan.isClosedPointTower_internalBlowupTower K b rays c).smoothOfRelativeDimension _
+  have hStructure : A.1 ↘ S = A.2.toTower.toBase ≫ (Φ.finiteFanSchemeToSpec K) :=
+    congrArg (A.2.toTower.toBase ≫ ·) (Φ.finiteFanScheme_over K)
   have he' : e.hom ≫ T.toBase ≫ X ↘ S = A.1 ↘ S := he.trans hStructure.symm
   let hF : A.2.boundaryι.ker.IsEffectiveCartier :=
     hB ▸ (hT.radical_comap_toBase hD hN).1.comap e.hom
-  let hBase := Φ.isEffectiveCartier_boundaryIdeal hΦ hc rankTwo
+  let hBase := Φ.isEffectiveCartier_boundaryIdeal K hΦ hc rankTwo
   exact (hT.canonicalClass_radical_comap_toBase_iff_of_iso hD hN e he' hF hB).mp
-    (Fan.canonicalClass_internalBlowupTower b rays c hΦ hBase hF
-      (Φ.canonicalClass_boundaryIdeal hΦ hc b hBase))
+    (Fan.canonicalClass_internalBlowupTower K b rays c hΦ hBase hF
+      (Φ.canonicalClass_boundaryIdeal K hΦ hc b hBase))
 
 end AlgebraicGeometry.Scheme.IdealSheafData

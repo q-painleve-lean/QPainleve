@@ -10,7 +10,6 @@ public import QPainleve.Geometry.Toric.Fan.Ruling.Hirzebruch.InvariantFiber
 public import QPainleve.SignedClusterModularGroup.SarkisovDegree.Quadric.PreparedExit
 
 import QPainleve.AlgebraicGeometry.Blowup.Tower.StrictTransform.BaseMultiplicity
-import QPainleve.Geometry.Toric.Fan.Smooth
 
 /-!
 # Exiting positive-section preparation
@@ -34,30 +33,33 @@ namespace TauCeti.Toric.Fan.LogarithmicProjection
 
 attribute [local instance] MvPolynomial.gradedAlgebra
 
-local notation "S" => Spec (CommRingCat.of ℂ)
-local notation "P" => Proj (homogeneousSubmodule ℂ (Fin 3 → ℂ))
-local notation "H" => LineBundleClass.mk (Proj.symmetricAlgebraTwistingBundle ℂ (Fin 3 → ℂ) 1)
+variable {K : Type} [Field K] [IsAlgClosed K]
+
+local notation "S" => Spec (CommRingCat.of K)
+local notation "P" => Proj (homogeneousSubmodule K (Fin 3 → K))
+local notation "H" => LineBundleClass.mk (Proj.symmetricAlgebraTwistingBundle K (Fin 3 → K) 1)
 local notation "planeIso[" b "," hi "]" =>
-  (Fan.projectivePlaneIso b hi ≪≫ Basis.polynomialProjIso (Pi.basisFun ℂ (Fin 3)))
-local notation "pt" => (IsLocalRing.closedPoint ℂ : S)
-local notation "p[" j "]" => projectiveLine.polynomialPoint ℂ (RingHom.id ℂ) j 0
+  (Fan.projectivePlaneIso K b hi ≪≫ Basis.polynomialProjIso (Pi.basisFun K (Fin 3)))
+local notation "pt" => (IsLocalRing.closedPoint K : S)
+local notation "p[" j "]" => projectiveLine.polynomialPoint K (RingHom.id K) j 0
 
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
-  {i : N →+ V} {X : Scheme} [X.Over S] [SmoothOfRelativeDimension 2 (X ↘ S)]
-  [IsIntegral X] [IsNoetherian X] {D : X.IdealSheafData} {A B : LogarithmicProjection i D}
+  {i : N →+ V} {X : Scheme} [X.Over (Spec (.of K))] [SmoothOfRelativeDimension 2 (X ↘ Spec (.of K))]
+  [IsIntegral X] [IsNoetherian X] {D : X.IdealSheafData} {A B : LogarithmicProjection K i D}
   {Y : Scheme} {b b' : Basis (Fin 2) ℤ N} {hi : IsIntegralLattice i}
   (r : Fin 4 ≃ A.fan.Ray)
   (hr : (fun t ↦ (r t).primitiveGenerator) = ![b 0, b 1, -b 0, (0 : ℤ) • b 0 - b 1])
-  {n : ℕ} {T : BlowupTower A.fan.algebraicRealization n Y}
-  (hT : IsClosedPointTower A.fan.algebraicRealization T) (g : Y ⟶ P)
+  {n : ℕ} {T : BlowupTower (A.fan.finiteFanScheme K) n Y}
+  (hT : IsClosedPointTower (A.fan.finiteFanScheme K) T) (g : Y ⟶ (Proj (homogeneousSubmodule K
+    (Fin 3 → K))))
 
-local notation "fA" => (A.fan.algebraicRealization ↘ S)
+local notation "fA" => ((A.fan.finiteFanScheme K) ↘ S)
 local notation "rankTwo" => Eq.trans (finrank_eq_card_basis b) (Fintype.card_fin 2)
 local notation "q" =>
-  Fan.characterRuling A.fan (LinearMap.toAddMonoidHom (b.coord 1))
+  Fan.characterRuling K A.fan (LinearMap.toAddMonoidHom (b.coord 1))
     (Fan.nonneg_or_nonpos_hirzebruch_ruling_character b 0 r hr)
-local notation "C" => A.fan.hirzebruchPicardBasis b 0 A.isRegular r hr
-local notation "Jsec" => A.fan.rayBoundaryIdeal A.isRegular (r 2)
+local notation "C" => A.fan.hirzebruchPicardBasis K b 0 A.isRegular r hr
+local notation "Jsec" => A.fan.rayDivisorIdeal K A.isRegular (r 2)
 
 /-- A prepared quadric has a decreasing block for the original plane map
 when the retained first centers have distinct invariant ruling values and
@@ -66,7 +68,7 @@ Their absence from the strict transforms of section `r 2` allows a mark at
 the corresponding corner on `r 0`, as well as on the open invariant fiber. -/
 theorem exists_sarkisov_step_of_prepared_quadric_ruling_values
     (hD : D.IsEffectiveCartier)
-    (hNode : AtWorstNodalOfRelativeDimensionOne (D.subschemeι ≫ X ↘ S))
+    (hNode : AtWorstNodalOfRelativeDimensionOne (D.subschemeι ≫ X ↘ Spec (.of K)))
     (hB : B.fan = Fan.projectiveSpace b' hi) (k : X ≅ Y)
     (hAh : A.hom = k.hom ≫ T.toBase) (hBh : B.hom ≍ k.hom ≫ g ≫ (planeIso[b',hi]).inv)
     (hg : g ≫ (P ↘ S) = T.toBase ≫ fA) (hbir : Scheme.BirationalOver g (𝟙 P))
@@ -75,8 +77,8 @@ theorem exists_sarkisov_step_of_prepared_quadric_ruling_values
     (hvalue : ∀ a, q (hT.baseCenter (index a)) = p[fiber a] pt) (m : ℕ) :
     let : Nonempty A.fan.cones := A.isComplete.nonempty_cones
     let : SmoothOfRelativeDimension 2 fA :=
-      rankTwo ▸ A.fan.smoothOfRelativeDimension_algebraicRealizationStructureMap A.isRegular
-    let : IsNoetherian A.fan.algebraicRealization := by
+      rankTwo ▸ A.fan.smoothOfRelativeDimension_finiteFanSchemeToSpec K A.isRegular
+    let : IsNoetherian (A.fan.finiteFanScheme K) := by
       let : Smooth fA := SmoothOfRelativeDimension.smooth 2 fA
       exact isNoetherian_of_finiteType fA
     let x := (T.picardMarking hT fA).symm (Additive.ofMul (pullback g H))
@@ -91,11 +93,11 @@ theorem exists_sarkisov_step_of_prepared_quadric_ruling_values
   let := hdim
   let := hnoeth
   have hcoord : Function.Injective (fun j : Fin 2 ↦ p[j] pt) := by
-    have hzero : p[0] pt ∈ Set.range (projectiveLine.polynomialChartι ℂ 0) := by
+    have hzero : p[0] pt ∈ Set.range (projectiveLine.polynomialChartι K 0) := by
       rw [projectiveLine.polynomialPoint_def]
       exact ⟨_, (rfl)⟩
     have hne : p[0] pt ≠ p[1] pt := fun h ↦
-      projectiveLine.infinitySection_notMem_range_polynomialChartι ℂ pt
+      projectiveLine.infinitySection_notMem_range_polynomialChartι K pt
         (by rwa [← projectiveLine.polynomialPoint_zero, ← h])
     intro a c hac
     fin_cases a <;> fin_cases c <;> first | rfl | exact (hne hac).elim | exact (hne hac.symm).elim
@@ -124,8 +126,8 @@ theorem exists_sarkisov_step_of_prepared_quadric_ruling_values
       apply hoff a
       exact (hT.mem_strictTransformCenterIndices _ _).mpr
         ((hT.strictTransformCoefficients_ne_zero_iff_of_first fA
-          (A.fan.isEffectiveCartier_rayBoundaryIdeal A.isRegular (r 2)) (hfirst a)).mpr hmem)
-    have h := (A.fan.hirzebruch_ruling_eq_coordinatePoint_and_notMem_section_iff
+          (A.fan.isEffectiveCartier_rayDivisorIdeal K A.isRegular (r 2)) (hfirst a)).mpr hmem)
+    have h := (A.fan.hirzebruch_ruling_eq_coordinatePoint_and_notMem_section_iff K
       b 0 A.isRegular A.isComplete r hr (fiber a) 0 (hT.isClosed_baseCenter (index a))).mp
       ⟨hvalue a, hnot⟩
     simpa only [a, hindex, targetFiber, Function.Embedding.trans_apply,

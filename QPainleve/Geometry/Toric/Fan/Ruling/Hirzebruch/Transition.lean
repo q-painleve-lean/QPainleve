@@ -9,8 +9,6 @@ public import QPainleve.Geometry.Toric.Fan.Ruling.Hirzebruch.Trivialization
 public import QPainleve.Geometry.Toric.Fan.Ruling.Torus
 
 import Mathlib.LinearAlgebra.Transvection.Basic
-import QPainleve.Geometry.Toric.Fan.Scheme
-import TauCeti.Geometry.Toric.Algebraic.Fan.Product.Isomorphism
 
 /-!
 # The transition of a Hirzebruch ruling over the base torus
@@ -29,7 +27,9 @@ open TauCeti.AlgebraicGeometry (projectiveLine)
 namespace TauCeti.Toric.Fan
 
 local notation "P₁" => Fan.projectiveSpace (Pi.basisFun ℤ (Fin 1)) (isIntegralLattice_intCast 1)
-local notation "S" => Spec (CommRingCat.of ℂ)
+variable (K : Type) [CommRing K]
+
+local notation "S" => Spec (CommRingCat.of K)
 local notation "Z₁" => Fin 1 → ℤ
 local notation "W" => Fin 1 → ℝ
 local notation "F" => Fan.prod P₁ projectiveLineTorusFan
@@ -102,7 +102,7 @@ local notation "m" => (LinearMap.toAddMonoidHom (Basis.coord b 1))
 local notation "h" => nonneg_or_nonpos_hirzebruch_ruling_character b e r hr
 local notation "U" => Φ.characterRulingTorusSubfan m h
 local notation "A[" k "]" => hirzebruchRulingAffineFan b e r hr k
-local notation "g" => Φ.characterRuling m h
+local notation "g" => Φ.characterRuling K m h
 
 private theorem torusSubfan_cones_subset_affine (k : Fin 2) :
     (U).cones ⊆ (A[k]).cones := by
@@ -208,43 +208,43 @@ private theorem fst_comp_overlapChartFanEquiv (k : Fin 2) :
   ext x j
   simp [FanHom.fst_latticeMap, overlapChartFanEquiv_latticeEquiv, torusSubfanToAffine]
 
-local notation "q" => (projectiveLineTorusFan.algebraicRealization ↘ S)
-local notation "p" => (projectiveLine ℂ ↘ S)
-local notation "ι[" k "]" => (FanHom.algebraicMap (projectiveLineTorusToAffineFan k))
+local notation "q" => ((projectiveLineTorusFan.finiteFanScheme K) ↘ S)
+local notation "p" => (projectiveLine K ↘ S)
+local notation "ι[" k "]" => (FanHom.finiteFanSchemeHom K (projectiveLineTorusToAffineFan k))
 local notation "Pₜ" => pullback p q
 
-local notation "J" => isPullback_projectiveLineTorusProduct.isoPullback
-local notation "I" => IsPullback.isoPullback (Fan.isPullback_characterRulingTorusSubfan Φ m h)
+local notation "J" => IsPullback.isoPullback (isPullback_projectiveLineTorusProduct K)
+local notation "I" => IsPullback.isoPullback (Fan.isPullback_characterRulingTorusSubfan K Φ m h)
 
 /-- The restriction of the indicated affine ruling chart over the base torus,
 expressed as the product of the projective line and that torus. -/
 def hirzebruchRulingTorusChartIso (k : Fin 2) :
-    pullback g projectiveLineTorusι ≅ Pₜ :=
-  (I).symm ≪≫ asIso (overlapChartFanEquiv b e r hr hΦ hc k).toFanHom.algebraicMap ≪≫ J
+    pullback g (projectiveLineTorusι K) ≅ Pₜ :=
+  (I).symm ≪≫ asIso ((overlapChartFanEquiv b e r hr hΦ hc k).toFanHom.finiteFanSchemeHom K) ≪≫ J
 
-local notation "C[" k "]" => hirzebruchRulingTorusChartIso b e r hr hΦ hc k
+local notation "C[" k "]" => hirzebruchRulingTorusChartIso K b e r hr hΦ hc k
 
 /-- The restricted product chart is over the base torus. -/
 @[reassoc (attr := simp)]
 theorem hirzebruchRulingTorusChartIso_hom_snd (k : Fin 2) :
-    (C[k]).hom ≫ pullback.snd p q = pullback.snd g projectiveLineTorusι := by
+    (C[k]).hom ≫ pullback.snd p q = pullback.snd g (projectiveLineTorusι K) := by
   simp only [hirzebruchRulingTorusChartIso, Iso.trans_hom, Iso.symm_hom, Category.assoc,
-    IsPullback.isoPullback_hom_snd, asIso_hom, ← FanHom.algebraicMap_comp,
+    IsPullback.isoPullback_hom_snd, asIso_hom, ← FanHom.finiteFanSchemeHom_comp K,
     snd_comp_overlapChartFanEquiv]
-  exact (Φ.isPullback_characterRulingTorusSubfan m h).isoPullback_inv_snd
+  exact (Φ.isPullback_characterRulingTorusSubfan K m h).isoPullback_inv_snd
 
 private theorem torusSubfanToAffine_comp_pullback (k : Fin 2) :
-    (I).hom ≫ pullback.lift (pullback.fst g projectiveLineTorusι)
-        (pullback.snd g projectiveLineTorusι ≫ ι[k])
+    (I).hom ≫ pullback.lift (pullback.fst g (projectiveLineTorusι K))
+        (pullback.snd g (projectiveLineTorusι K) ≫ ι[k])
         (by rw [Category.assoc, projectiveLineTorusToAffineFan_algebraicMap_comp_ι,
           pullback.condition]) =
-      (torusSubfanToAffine b e r hr k).algebraicMap ≫
-        (isPullback_hirzebruchRulingAffineFan b e r hr k).isoPullback.hom := by
+      (torusSubfanToAffine b e r hr k).finiteFanSchemeHom K ≫
+        (isPullback_hirzebruchRulingAffineFan K b e r hr k).isoPullback.hom := by
   apply pullback.hom_ext
   · simp only [Category.assoc, pullback.lift_fst, IsPullback.isoPullback_hom_fst,
-      ← FanHom.algebraicMap_comp, affineInclusion_comp_torusSubfanToAffine]
+      ← FanHom.finiteFanSchemeHom_comp K, affineInclusion_comp_torusSubfanToAffine]
   · simp only [Category.assoc, pullback.lift_snd, IsPullback.isoPullback_hom_snd_assoc,
-      IsPullback.isoPullback_hom_snd, ← FanHom.algebraicMap_comp,
+      IsPullback.isoPullback_hom_snd, ← FanHom.finiteFanSchemeHom_comp K,
       affineProjection_comp_torusSubfanToAffine]
 
 /-- Pulling the affine ruling trivialization back to the base torus gives
@@ -252,22 +252,22 @@ private theorem torusSubfanToAffine_comp_pullback (k : Fin 2) :
 on the base. -/
 theorem hirzebruchRulingTorusChartIso_comp_pullback (k : Fin 2) :
     (C[k]).hom ≫ pullback.lift (pullback.fst p q) (pullback.snd p q ≫ ι[k])
-        (by rw [Category.assoc, FanHom.algebraicMap_comp_algebraicRealizationStructureMap,
-          ← Fan.algebraicRealization_over, pullback.condition]) =
-      pullback.lift (pullback.fst g projectiveLineTorusι)
-          (pullback.snd g projectiveLineTorusι ≫ ι[k])
+        (by rw [Category.assoc, FanHom.finiteFanSchemeHom_comp_finiteFanSchemeToSpec K,
+          ← Fan.finiteFanScheme_over K, pullback.condition]) =
+      pullback.lift (pullback.fst g (projectiveLineTorusι K))
+          (pullback.snd g (projectiveLineTorusι K) ≫ ι[k])
           (by rw [Category.assoc, projectiveLineTorusToAffineFan_algebraicMap_comp_ι,
             pullback.condition]) ≫
-        (hirzebruchRulingAffineIso b e r hr hΦ hc k).hom := by
+        (hirzebruchRulingAffineIso K b e r hr hΦ hc k).hom := by
   apply pullback.hom_ext
   · apply (cancel_epi (I).hom).mp
     simp only [Category.assoc, pullback.lift_fst, hirzebruchRulingTorusChartIso,
       Iso.trans_hom, Iso.symm_hom, Iso.hom_inv_id_assoc, IsPullback.isoPullback_hom_fst,
       asIso_hom]
     rw [← Category.assoc (I).hom, torusSubfanToAffine_comp_pullback, Category.assoc,
-      hirzebruchRulingAffineIso_hom_fst, ← reassoc_of% FanHom.algebraicMap_comp,
-      fst_comp_overlapChartFanEquiv, reassoc_of% FanHom.algebraicMap_comp,
-      reassoc_of% FanHom.algebraicMap_comp]
+      hirzebruchRulingAffineIso_hom_fst, ← reassoc_of% FanHom.finiteFanSchemeHom_comp K,
+      fst_comp_overlapChartFanEquiv, reassoc_of% FanHom.finiteFanSchemeHom_comp K,
+      reassoc_of% FanHom.finiteFanSchemeHom_comp K]
   · simp
 
 private theorem overlapChartFanEquiv_symm_trans :
@@ -292,33 +292,33 @@ private theorem snd_comp_projectiveLineTorusShear (e : ℤ) :
 /-- The automorphism changing from the first affine product to the second on the
 overlap, as an isomorphism of schemes over the base torus. -/
 def hirzebruchRulingOverlapTransition (e : ℤ) : Pₜ ≅ Pₜ :=
-  (J).symm ≪≫ asIso (projectiveLineTorusShear e).toFanHom.algebraicMap ≪≫ J
+  (J).symm ≪≫ asIso ((projectiveLineTorusShear e).toFanHom.finiteFanSchemeHom K) ≪≫ J
 
 /-- In the product fan coordinates the overlap map is the algebraic realization
 of the toric shear. -/
 @[reassoc]
 theorem isoPullback_hom_comp_hirzebruchRulingOverlapTransition_hom (e : ℤ) :
-    (J).hom ≫ (hirzebruchRulingOverlapTransition e).hom =
-      (projectiveLineTorusShear e).toFanHom.algebraicMap ≫ (J).hom := by
+    (J).hom ≫ (hirzebruchRulingOverlapTransition K e).hom =
+      (projectiveLineTorusShear e).toFanHom.finiteFanSchemeHom K ≫ (J).hom := by
   simp only [hirzebruchRulingOverlapTransition, Iso.trans_hom, Iso.symm_hom,
     Iso.hom_inv_id_assoc, asIso_hom]
 
 /-- The overlap automorphism fixes the base torus. -/
 @[reassoc (attr := simp)]
 theorem hirzebruchRulingOverlapTransition_hom_snd (e : ℤ) :
-    (hirzebruchRulingOverlapTransition e).hom ≫ pullback.snd p q = pullback.snd p q := by
+    (hirzebruchRulingOverlapTransition K e).hom ≫ pullback.snd p q = pullback.snd p q := by
   simp only [hirzebruchRulingOverlapTransition, Iso.trans_hom, Iso.symm_hom, Category.assoc,
-    IsPullback.isoPullback_hom_snd, asIso_hom, ← FanHom.algebraicMap_comp,
+    IsPullback.isoPullback_hom_snd, asIso_hom, ← FanHom.finiteFanSchemeHom_comp K,
     snd_comp_projectiveLineTorusShear]
-  exact isPullback_projectiveLineTorusProduct.isoPullback_inv_snd
+  exact (isPullback_projectiveLineTorusProduct K).isoPullback_inv_snd
 
 /-- The restriction of chart one is chart zero followed by the toric shear. -/
 @[reassoc]
 theorem hirzebruchRulingTorusChartIso_hom_comp_overlapTransition :
-    (C[0]).hom ≫ (hirzebruchRulingOverlapTransition e).hom = (C[1]).hom := by
+    (C[0]).hom ≫ (hirzebruchRulingOverlapTransition K e).hom = (C[1]).hom := by
   simp only [hirzebruchRulingTorusChartIso, hirzebruchRulingOverlapTransition,
     ← overlapChartFanEquiv_symm_trans b e r hr hΦ hc, Iso.trans_hom, Iso.symm_hom,
     asIso_hom, Category.assoc, Iso.hom_inv_id_assoc, FanEquiv.toFanHom_trans,
-    FanHom.algebraicMap_comp, FanEquiv.algebraicMap_comp_symm_assoc]
+    FanHom.finiteFanSchemeHom_comp K, FanEquiv.finiteFanSchemeHom_comp_symm_assoc K]
 
 end TauCeti.Toric.Fan

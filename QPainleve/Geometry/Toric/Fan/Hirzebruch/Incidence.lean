@@ -11,7 +11,7 @@ public import QPainleve.Geometry.Toric.Fan.Subdivision.StrictTransform
 
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Multiplicity
 import QPainleve.AlgebraicGeometry.Blowup.Tower.StrictTransform.BaseMultiplicity
-import QPainleve.Geometry.Toric.Fan.Smooth
+import QPainleve.Geometry.Toric.BaseChange.Fan
 import TauCeti.AlgebraicGeometry.EffectiveCartierDivisor.Pullback
 
 /-!
@@ -34,19 +34,21 @@ open Scheme.IdealSheafData.IsEffectiveCartier (toInvertibleSheaf)
 
 namespace QPainleve.BlowupTower.IsClosedPointTower
 
+variable (K : Type) [Field K] [PerfectField K]
+
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {Φ Ψ Ω : Fan i} [Nonempty Φ.cones] [Nonempty Ψ.cones]
 
-local notation "X[" Δ "]" => Fan.algebraicRealization Δ
-local notation "π[" s "]" => FanHom.algebraicMap (Fan.IsSubdivision.toFanHom s)
-local notation "f[" Δ "]" => Fan.algebraicRealizationStructureMap Δ
-local notation "D[" h "," r "]" => Fan.rayBoundaryIdeal _ h (r 0)
+local notation "X[" Δ "]" => Fan.finiteFanScheme K Δ
+local notation "f[" Δ "]" => Fan.finiteFanSchemeToSpec K Δ
+local notation "D[" h "," r "]" => Fan.rayDivisorIdeal K _ h (r 0)
 local notation "H[" b "," a "," h "," r "," hr "]" =>
-  Fan.hirzebruchPicardBasis b a h r hr
+  Fan.hirzebruchPicardBasis K b a h r hr
 
-variable {Y Z : Scheme} {n : ℕ} {T : BlowupTower X[Φ] (n + 1) Y}
-  {U : BlowupTower X[Ψ] (1 + n) Z}
-  (hT : IsClosedPointTower X[Φ] T) (hU : IsClosedPointTower X[Ψ] U)
+variable {Y Z : Scheme} {n : ℕ} {T : BlowupTower (Φ.finiteFanScheme K) (n + 1) Y}
+  {U : BlowupTower (Ψ.finiteFanScheme K) (1 + n) Z}
+  (hT : IsClosedPointTower (Φ.finiteFanScheme K) T)
+  (hU : IsClosedPointTower (Ψ.finiteFanScheme K) U)
   (b d : Basis (Fin 2) ℤ N) (a : ℤ) (hΦ : Φ.IsRegular) (hΨ : Ψ.IsRegular)
   (r : Fin 4 ≃ Φ.Ray) (r' : Fin 4 ≃ Ψ.Ray)
   (hr : (fun j ↦ (r j).primitiveGenerator) = ![b 0, b 1, -b 0, a • b 0 - b 1])
@@ -58,26 +60,27 @@ local notation "classOf(" h ")" => Additive.ofMul (LineBundleClass.mk (toInverti
 
 private theorem strictTransformCoefficients_section_of_corner
     (σ : Φ.cones) (hσ : (r 0).toCone ≤ σ) (j : Fin (n + 1))
-    (hj : hT.baseCenter j = Φ.distinguishedPointHom σ (IsLocalRing.closedPoint ℂ))
+    (hj : hT.baseCenter j = (Φ.distinguishedSection (R := K) σ) (IsLocalRing.closedPoint K))
     (hfirst : ∀ l < j, hT.baseCenter l ≠ hT.baseCenter j)
     [SmoothOfRelativeDimension 2 f[Φ]] [IsNoetherian X[Φ]] :
     hT.strictTransformCoefficients (D[hΦ,r]) j = -1 := by
   rw [hT.strictTransformCoefficients_eq_neg_baseMultiplicities f[Φ]
-    (Φ.isEffectiveCartier_rayBoundaryIdeal hΦ (r 0)),
+    (Φ.isEffectiveCartier_rayDivisorIdeal K hΦ (r 0)),
     hT.baseMultiplicities_eq_stalkOrder_toNat_of_first (D[hΦ,r]) j hfirst, hj,
-    Φ.stalkOrder_rayBoundaryIdeal_distinguishedPoint hΦ, ite_eq_left hσ]
+    Φ.stalkOrder_rayBoundaryIdeal_distinguishedPoint K hΦ, ite_eq_left hσ]
   rfl
 
 variable
     (hΩ : Ω.IsRegular) (s : Ω.IsSubdivision Φ) (t : Ω.IsSubdivision Ψ)
-    (g : Y ⟶ X[Ω]) [Surjective g] (e : Y ≅ Z)
-    (hg : g ≫ π[s] = T.toBase) (hg' : g ≫ π[t] = e.hom ≫ U.toBase)
+    (g : Y ⟶ Ω.finiteFanScheme K) [Surjective g] (e : Y ≅ Z)
+    (hg : g ≫ s.toFanHom.finiteFanSchemeHom K = T.toBase)
+    (hg' : g ≫ t.toFanHom.finiteFanSchemeHom K = e.hom ≫ U.toBase)
     (hd : d 0 = b 0) (σ : Φ.cones) (hσ : (r 0).toCone ≤ σ) (j : Fin (n + 1))
-    (hj : hT.baseCenter j = Φ.distinguishedPointHom σ (IsLocalRing.closedPoint ℂ))
+    (hj : hT.baseCenter j = (Φ.distinguishedSection (R := K) σ) (IsLocalRing.closedPoint K))
     (hfirst : ∀ l < j, hT.baseCenter l ≠ hT.baseCenter j)
     (hmark : ∀ x : Fin (n + 1) → ℤ,
-      let source := Fan.hirzebruchPicardBasis b a hΦ r hr
-      let target := Fan.hirzebruchPicardBasis d (a + 1) hΨ r' hr'
+      let source := Fan.hirzebruchPicardBasis K b a hΦ r hr
+      let target := Fan.hirzebruchPicardBasis K d (a + 1) hΨ r' hr'
       pullback e.hom (U.picardHom ((1 + x j) • target 0 + target 1,
         Fin.append (fun _ : Fin 1 ↦ -1 - x j) (x ∘ j.succAbove))).toMul =
         (T.picardHom (source 1, x)).toMul)
@@ -93,27 +96,28 @@ theorem strictTransformCoefficients_toric_corner :
       Fin.append (0 : Fin 1 → ℤ) (hT.strictTransformCoefficients (D[hΦ,r]) ∘ j.succAbove) := by
   have hN : finrank ℤ N = 2 := (finrank_eq_card_basis b).trans (Fintype.card_fin 2)
   let : SmoothOfRelativeDimension 2 f[Φ] := hN ▸
-    Φ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
+    Φ.smoothOfRelativeDimension_finiteFanSchemeToSpec K hΦ
   let : SmoothOfRelativeDimension 2 f[Ψ] := hN ▸
-    Ψ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΨ
+    Ψ.smoothOfRelativeDimension_finiteFanSchemeToSpec K hΨ
   let : Smooth f[Φ] := SmoothOfRelativeDimension.smooth 2 f[Φ]
   let : Smooth f[Ψ] := SmoothOfRelativeDimension.smooth 2 f[Ψ]
   let : IsNoetherian X[Φ] := isNoetherian_of_finiteType f[Φ]
   let : IsNoetherian X[Ψ] := isNoetherian_of_finiteType f[Ψ]
   let x := hT.strictTransformCoefficients (D[hΦ,r])
-  have hx : x j = -1 := strictTransformCoefficients_section_of_corner hT hΦ r σ hσ j hj hfirst
+  have hx : x j = -1 :=
+    strictTransformCoefficients_section_of_corner K hT hΦ r σ hσ j hj hfirst
   have hgen : (r 0).primitiveGenerator = (r' 0).primitiveGenerator :=
     (congrFun hr 0).trans (hd.symm.trans (congrFun hr' 0).symm)
-  have hstrict := s.comap_strictTransform_rayBoundaryIdeal t hΦ hΨ hΩ hN hT hU g e hg hg'
+  have hstrict := s.comap_strictTransform_rayBoundaryIdeal K t hΦ hΨ hΩ hN hT hU g e hg hg'
     (r 0) (r' 0) hgen
-  let hD := Φ.isEffectiveCartier_rayBoundaryIdeal hΦ (r 0)
-  let hD' := Ψ.isEffectiveCartier_rayBoundaryIdeal hΨ (r' 0)
+  let hD := Φ.isEffectiveCartier_rayDivisorIdeal K hΦ (r 0)
+  let hD' := Ψ.isEffectiveCartier_rayDivisorIdeal K hΨ (r' 0)
   have hsrc : C 1 = classOf(hD) := by
-    simp only [Fan.hirzebruchPicardBasis_apply_one, Fan.rayDivisorToPicard_single, one_smul,
-      primeDivisorClass_def, ← Φ.rayBoundaryIdeal_def hΦ]
+    simp only [Fan.hirzebruchPicardBasis_apply_one, Fan.rayChartDivisorToPicard_single, one_smul,
+      primeDivisorClass_def, ← Φ.rayDivisorIdeal_def K hΦ]
   have htgt : C' 1 = classOf(hD') := by
-    simp only [Fan.hirzebruchPicardBasis_apply_one, Fan.rayDivisorToPicard_single, one_smul,
-      primeDivisorClass_def, ← Ψ.rayBoundaryIdeal_def hΨ]
+    simp only [Fan.hirzebruchPicardBasis_apply_one, Fan.rayChartDivisorToPicard_single, one_smul,
+      primeDivisorClass_def, ← Ψ.rayDivisorIdeal_def K hΨ]
   have hclass := hmark x
   dsimp only at hclass
   rw [hx, add_neg_cancel, zero_smul, zero_add, sub_self, hsrc, htgt] at hclass
@@ -141,7 +145,7 @@ theorem strictTransformCenterIndices_toric_corner :
       (Finset.univ.filter fun l : Fin n ↦
         j.succAbove l ∈ hT.strictTransformCenterIndices (D[hΦ,r])).map (Fin.natAddEmb 1) := by
   exact hT.strictTransformCenterIndices_eq_map_of_coefficients_eq_append_zero hU j.succAbove
-    (hT.strictTransformCoefficients_toric_corner hU b d a hΦ hΨ r r' hr hr'
+    (hT.strictTransformCoefficients_toric_corner K hU b d a hΦ hΨ r r' hr hr'
       hΩ s t g e hg hg' hd σ hσ j hj hfirst hmark)
 
 end QPainleve.BlowupTower.IsClosedPointTower

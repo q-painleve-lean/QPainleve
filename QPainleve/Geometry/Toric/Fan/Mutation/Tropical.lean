@@ -33,29 +33,31 @@ open QPainleve.BlowupTower QPainleve.Cluster TauCeti.AlgebraicGeometry TauCeti.L
 
 namespace TauCeti.Toric.Fan
 
+variable (k₀ : Type) [Field k₀] [PerfectField k₀]
+
 variable {N V N' V' : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   [AddCommGroup N'] [AddCommGroup V'] [Module ℝ V']
   {i : N →+ V} {i' : N' →+ V'} {Φ : Fan i} {Ψ : Fan i'}
   [Nonempty Φ.cones] [Nonempty Ψ.cones] {r : ℕ}
   (b : Basis (Fin 2) ℤ N) (b' : Basis (Fin 2) ℤ N')
   (s : Fin r → Φ.Ray) (t : Fin r → Ψ.Ray) (hΦ : Φ.IsRegular) (hΨ : Ψ.IsRegular)
-  (c d : Multiplicative (Fin r → ℤ) →* ℂˣ)
+  (c d : Multiplicative (Fin r → ℤ) →* k₀ˣ)
 
 local notation "center" a:arg => (fun j : Fin r ↦ a (ofAdd (Pi.single j 1)))
 local notation "π[" a "," s "," c "]" =>
-  toBase (WithBoundary.toTower (Sigma.snd (internalBlowupTower a s (center c))))
-local notation "K(" Φ ")" => Scheme.functionField (Fan.algebraicRealization Φ)
+  toBase (WithBoundary.toTower (Sigma.snd (internalBlowupTower k₀ a s (center c))))
+local notation "K(" Φ ")" => Scheme.functionField (Fan.finiteFanScheme k₀ Φ)
 local notation "trop" => Paths.lift (tropicalPrefunctor (A := ℤ) (Fin r))
 
 variable {X Y : Scheme} [IsIntegral X] [IsIntegral Y]
-  (p : (internalBlowupTower b s (fun j : Fin r ↦ c (ofAdd (Pi.single j 1)))).1 ⟶ X)
-  (q : (internalBlowupTower b' t (fun j : Fin r ↦ d (ofAdd (Pi.single j 1)))).1 ⟶ Y)
+  (p : (internalBlowupTower k₀ b s (fun j : Fin r ↦ c (ofAdd (Pi.single j 1)))).1 ⟶ X)
+  (q : (internalBlowupTower k₀ b' t (fun j : Fin r ↦ d (ofAdd (Pi.single j 1)))).1 ⟶ Y)
   [IsModification p] [IsModification q]
   {B C : SkewExchangeMatrix (Fin r)} (w : Word B C) (e : X ≅ Y)
 
-local notation "E₀" => contractedXEvaluation b s c hΦ p
-local notation "E₁" => contractedXEvaluation b' t d hΨ q
-local notation "wordMap" => Path.xRationalMap ℂ w
+local notation "E₀" => contractedXEvaluation k₀ b s c hΦ p
+local notation "E₁" => contractedXEvaluation k₀ b' t d hΨ q
+local notation "wordMap" => Path.xRationalMap k₀ w
 
 local notation "evaluationSquare" =>
   (∃ h : Scheme.RationalMap.fromFunctionField E₀
@@ -66,26 +68,26 @@ local notation "evaluationSquare" =>
 /-- Compare the coordinate pullbacks through a generic lift of the word's source evaluation. -/
 private theorem functionFieldMap_contracted_coordinate {Ω : Fan i} [Nonempty Ω.cones]
     (heval : evaluationSquare) (bΩ : Basis (Fin 2) ℤ N)
-    (u : Fin r → Ω.Ray) (a : Multiplicative (Fin r → ℤ) →* ℂˣ)
-    (g : K(Ω) ≃ₐ[ℂ] K(Φ)) (l : Spec K(Φ) ⟶ (wordMap).toPartialMap.domain)
-    (hl : l ≫ (wordMap).toPartialMap.domain.ι = (Φ.xEvaluation b s c).fromFunctionField)
+    (u : Fin r → Ω.Ray) (a : Multiplicative (Fin r → ℤ) →* k₀ˣ)
+    (g : K(Ω) ≃ₐ[k₀] K(Φ)) (l : Spec K(Φ) ⟶ (wordMap).toPartialMap.domain)
+    (hl : l ≫ (wordMap).toPartialMap.domain.ι = (Φ.xEvaluation k₀ b s c).fromFunctionField)
     (hl' : l ≫ (wordMap).toPartialMap.hom =
       Spec.map (CommRingCat.ofHom g.toRingEquiv.toRingHom) ≫
-        (Ω.xEvaluation bΩ u a).fromFunctionField) (j : Fin r) :
-    let := isIntegral_internalBlowupTower b s (center c) hΦ
-    let := isIntegral_internalBlowupTower b' t (center d) hΨ
-    let := isModification_internalBlowupTower_toBase b s (center c) hΦ
-    let := isModification_internalBlowupTower_toBase b' t (center d) hΨ
+        (Ω.xEvaluation k₀ bΩ u a).fromFunctionField) (j : Fin r) :
+    let := isIntegral_internalBlowupTower k₀ b s (center c) hΦ
+    let := isIntegral_internalBlowupTower k₀ b' t (center d) hΨ
+    let := isModification_internalBlowupTower_toBase k₀ b s (center c) hΦ
+    let := isModification_internalBlowupTower_toBase k₀ b' t (center d) hΨ
     let := p.isIso_functionFieldMap_of_isModification
     let := q.isIso_functionFieldMap_of_isModification
     e.hom.functionFieldMap (inv q.functionFieldMap
-      ((π[b',t,d]).functionFieldMap (Ψ.xEval b' t d (LaurentRing.X j)))) =
+      ((π[b',t,d]).functionFieldMap (Ψ.xEval k₀ b' t d (LaurentRing.X j)))) =
       inv p.functionFieldMap
-        ((π[b,s,c]).functionFieldMap (g (Ω.xEval bΩ u a (LaurentRing.X j)))) := by
-  have := isIntegral_internalBlowupTower b s (center c) hΦ
-  have := isIntegral_internalBlowupTower b' t (center d) hΨ
-  have := isModification_internalBlowupTower_toBase b s (center c) hΦ
-  have := isModification_internalBlowupTower_toBase b' t (center d) hΨ
+        ((π[b,s,c]).functionFieldMap (g (Ω.xEval k₀ bΩ u a (LaurentRing.X j)))) := by
+  have := isIntegral_internalBlowupTower k₀ b s (center c) hΦ
+  have := isIntegral_internalBlowupTower k₀ b' t (center d) hΨ
+  have := isModification_internalBlowupTower_toBase k₀ b s (center c) hΦ
+  have := isModification_internalBlowupTower_toBase k₀ b' t (center d) hΨ
   have := p.isIso_functionFieldMap_of_isModification
   have := q.isIso_functionFieldMap_of_isModification
   -- Transport the toric generic lift to the function field of the contracted source.
@@ -104,19 +106,21 @@ private theorem functionFieldMap_contracted_coordinate {Ω : Fan i} [Nonempty Ω
   simpa only [CommRingCat.hom_comp, RingHom.comp_apply, CommRingCat.hom_ofHom,
     AlgHom.toRingHom_eq_coe, AlgHom.coe_toRingHom, RingEquiv.toRingHom_eq_coe,
     RingEquiv.coe_toRingHom, AlgEquiv.coe_toRingEquiv, m] using
-    ConcreteCategory.congr_hom hgeneric.symm (LaurentRing.X j : LaurentRing ℂ (Fin r))
+    ConcreteCategory.congr_hom hgeneric.symm (LaurentRing.X j : LaurentRing k₀ (Fin r))
 
 variable [IsNormalScheme X] [IsNormalScheme Y] [IsLocallyNoetherian X] [IsLocallyNoetherian Y]
   {D : X.IdealSheafData} {E : Y.IdealSheafData}
   (hp : (D.comap p).support =
-    (internalBlowupTower b s (fun j : Fin r ↦ c (ofAdd (Pi.single j 1)))).2.boundaryι.ker.support)
+    (internalBlowupTower k₀ b s
+      (fun j : Fin r ↦ c (ofAdd (Pi.single j 1)))).2.boundaryι.ker.support)
   (hq : (E.comap q).support =
-    (internalBlowupTower b' t (fun j : Fin r ↦ d (ofAdd (Pi.single j 1)))).2.boundaryι.ker.support)
+    (internalBlowupTower k₀ b' t
+      (fun j : Fin r ↦ d (ofAdd (Pi.single j 1)))).2.boundaryι.ker.support)
   (hcΦ : Φ.IsComplete)
   (hB : B.matrix = chargeExchangeMatrix b.detDualEquiv.toLinearMap (rayChargeMap s))
 
-local notation "ρ" => contractedBoundaryRayEmbedding hΦ b s (center c) p hp
-local notation "τ" => contractedBoundaryRayEmbedding hΨ b' t (center d) q hq
+local notation "ρ" => contractedBoundaryRayEmbedding k₀ hΦ b s (center c) p hp
+local notation "τ" => contractedBoundaryRayEmbedding k₀ hΨ b' t (center d) q hq
 
 include hcΦ hB hp hq in
 /-- Under the fixed-center evaluation square for a signed word, the orders
@@ -130,26 +134,26 @@ theorem rayBoundaryOrders_eq_tropical_of_comp_contractedXEvaluation
   let P := rayChargeSeed b s hB
   let bΩ := if Even w.inversionCount then b else b.reindex (Equiv.swap 0 1)
   obtain ⟨Ω, hΩ, hΩc, u, f, -, -, horders, hfield⟩ :=
-    exists_toric_boundary_valuation_transport b w P hΦ hcΦ s
+    exists_toric_boundary_valuation_transport k₀ b w P hΦ hcΦ s
       (rayChargeSeed_form _ _ _) (rayChargeSeed_charge _ _ _)
   let : Nonempty Ω.cones := hΩc.nonempty_cones
   obtain ⟨g, hg, he⟩ := hfield
   obtain ⟨l, hl, hl'⟩ := he c
-  have := isIntegral_internalBlowupTower b s (center c) hΦ
-  have := isIntegral_internalBlowupTower b' t (center d) hΨ
-  have := isModification_internalBlowupTower_toBase b s (center c) hΦ
-  have := isModification_internalBlowupTower_toBase b' t (center d) hΨ
+  have := isIntegral_internalBlowupTower k₀ b s (center c) hΦ
+  have := isIntegral_internalBlowupTower k₀ b' t (center d) hΨ
+  have := isModification_internalBlowupTower_toBase k₀ b s (center c) hΦ
+  have := isModification_internalBlowupTower_toBase k₀ b' t (center d) hΨ
   have := p.isIso_functionFieldMap_of_isModification
   have := q.isIso_functionFieldMap_of_isModification
   rw [← horders]
   ext j
-  rw [← ord_contracted_toric_boundary_chargeCharacter hΨ b' t (center d) q hq,
+  rw [← ord_contracted_toric_boundary_chargeCharacter k₀ hΨ b' t (center d) q hq,
     ← hy, ← TauCeti.AlgebraicGeometry.Scheme.ord_functionFieldMap e.hom]
   simp only [← xEval_X]
-  rw [functionFieldMap_contracted_coordinate b b' s t hΦ hΨ c d p q w e heval bΩ _ _ (g c)
+  rw [functionFieldMap_contracted_coordinate k₀ b b' s t hΦ hΨ c d p q w e heval bΩ _ _ (g c)
       l hl hl' j,
-    ord_contracted_toric_boundary hΦ b s (center c) p hp, hg,
-    xEval_X, ord_rayBoundaryPoint_chargeCharacter]
+    ord_contracted_toric_boundary k₀ hΦ b s (center c) p hp, hg,
+    xEval_X, ord_rayBoundaryChartPoint_chargeCharacter]
 
 include hcΦ hB hp hq in
 /-- For finite-index target charges, searching the numbered target boundary with
@@ -167,7 +171,7 @@ theorem boundaryRayOfOrders_tropical_word (heval : evaluationSquare)
   let y := E.boundaryPrimesEquivOfIso e ⟨x.val, hx⟩
   have hy : y.val = e.hom x.val := E.boundaryPrimesEquivOfIso_apply_val e _
   rw [boundaryRayOfOrders_eq_some_iff _ _ _ _ hindex, Function.Embedding.trans_apply,
-    ← rayBoundaryOrders_eq_tropical_of_comp_contractedXEvaluation b b' s t hΦ hΨ c d p q w e
+    ← rayBoundaryOrders_eq_tropical_of_comp_contractedXEvaluation k₀ b b' s t hΦ hΨ c d p q w e
       hp hq hcΦ hB heval x y hy.symm, ← hy]
   exact ⟨fun h ↦ congrArg Subtype.val
     ((τ).injective (rayBoundaryOrders_injective b' t hindex h)).symm,

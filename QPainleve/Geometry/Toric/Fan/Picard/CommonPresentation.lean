@@ -32,23 +32,25 @@ open QPainleve.BlowupTower TauCeti.AlgebraicGeometry LineBundleClass
 
 namespace TauCeti.Toric.Fan
 
+variable (k₀ : Type) [Field k₀] [IsAlgClosed k₀]
+
 variable {N N' V V' : Type} [AddCommGroup N] [AddCommGroup N']
   [AddCommGroup V] [AddCommGroup V'] [Module ℝ V] [Module ℝ V']
   {i : N →+ V} {i' : N' →+ V'} {Φ : Fan i} {Ψ : Fan i'}
 
-local notation "S" => Spec (CommRingCat.of ℂ)
+local notation "S" => Spec (CommRingCat.of k₀)
 local notation "rankTwo(" b ")" => Eq.trans (Module.finrank_eq_card_basis b) (Fintype.card_fin 2)
-local notation "model[" b ", " s ", " c "]" => internalBlowupTower b s c
+local notation "model[" b ", " s ", " c "]" => internalBlowupTower k₀ b s c
 local notation "tower[" b ", " s ", " c "]" =>
   WithBoundary.toTower (Sigma.snd (model[b, s, c]))
-local notation "mark[" b ", " s ", " c ", " h "]" => internalBlowupPicardMarking b s c h
+local notation "mark[" b ", " s ", " c ", " h "]" => internalBlowupPicardMarking k₀ b s c h
 local notation "strict[" h ", " b ", " s ", " c "]" =>
-  strictRayBoundaryClass h rankTwo(b) (tower[b, s, c])
-    (isClosedPointTower_internalBlowupTower b s c)
+  strictRayBoundaryClass k₀ h rankTwo(b) (tower[b, s, c])
+    (isClosedPointTower_internalBlowupTower k₀ b s c)
 
 variable [h₀ : Nonempty Φ.cones] [h₁ : Nonempty Ψ.cones]
   {n : ℕ} (b : Module.Basis (Fin 2) ℤ N) (b' : Module.Basis (Fin 2) ℤ N')
-  (s : Fin n → Φ.Ray) (s' : Fin n → Ψ.Ray) (c d : Fin n → ℂˣ)
+  (s : Fin n → Φ.Ray) (s' : Fin n → Ψ.Ray) (c d : Fin n → k₀ˣ)
   (hΦ : Φ.IsRegular) (hΨ : Ψ.IsRegular)
 
 private theorem centerRays_of_matching_strictRayClasses
@@ -56,7 +58,7 @@ private theorem centerRays_of_matching_strictRayClasses
       Additive (LineBundleClass (model[b, s, c]).1))
     (hcoord : ∀ a t, e (tower[b', s', d].picardHom (a, t)) =
       tower[b, s, c].picardHom
-        (Additive.ofMul (pullback f.toFanHom.algebraicMap a.toMul), t))
+        (Additive.ofMul (pullback (f.toFanHom.finiteFanSchemeHom k₀) a.toMul), t))
     (hboundary : ∀ r, e (strict[hΨ, b', s', d] (f.rayEquiv r)) = strict[hΦ, b, s, c] r) :
     f.rayEquiv ∘ s = s' := by
   classical
@@ -64,18 +66,18 @@ private theorem centerRays_of_matching_strictRayClasses
   -- The coefficient at center j is minus one precisely for the ray carrying that center.
   let r := s j
   have h := hboundary r
-  simp only [← picardHom_markedBoundaryMap_single_internalBlowupTower hΨ b' s' d,
-    ← picardHom_markedBoundaryMap_single_internalBlowupTower hΦ b s c,
-    markedBoundaryMap_apply, hcoord, ← internalBlowupPicardMarking_apply b s c hΦ] at h
+  simp only [← picardHom_markedBoundaryMap_single_internalBlowupTower k₀ hΨ b' s' d,
+    ← picardHom_markedBoundaryMap_single_internalBlowupTower k₀ hΦ b s c,
+    markedBoundaryMap_apply, hcoord, ← internalBlowupPicardMarking_apply k₀ b s c hΦ] at h
   have hcoeff := congrArg
-    (fun a : Additive (LineBundleClass Φ.algebraicRealization) × (Fin n → ℤ) ↦ a.2 j)
+    (fun a : Additive (LineBundleClass (Φ.finiteFanScheme k₀)) × (Fin n → ℤ) ↦ a.2 j)
     ((mark[b, s, c, hΦ]).injective h)
   have : s' j = f.rayEquiv (s j) := by
     by_contra hn
     simp [r, hn] at hcoeff
   exact this.symm
 
-variable [Φ.algebraicRealization.IsProjectiveOver ℂ] [Ψ.algebraicRealization.IsProjectiveOver ℂ]
+variable [(Φ.finiteFanScheme k₀).IsProjectiveOver k₀] [(Ψ.finiteFanScheme k₀).IsProjectiveOver k₀]
 
 local notation "X" => Sigma.fst (model[b, s, c])
 local notation "Y" => Sigma.fst (model[b', s', d])
@@ -93,37 +95,37 @@ theorem exists_common_toric_presentation_of_picard_isometry
     (hv : ∀ j, b'.detDualEquiv (v j).primitiveGenerator (v (j + 1)).primitiveGenerator = 1 ∧
       ∃ σ : Ψ.cones, (v j).toCone ≤ σ ∧ (v (j + 1)).toCone ≤ σ)
     (e :
-      letI : (X).Over S := ⟨(tower[b, s, c]).toBase ≫ (Φ.algebraicRealization ↘ S)⟩
-      letI : (Y).Over S := ⟨(tower[b', s', d]).toBase ≫ (Ψ.algebraicRealization ↘ S)⟩
-      letI : (X).IsProjectiveOver ℂ := (tower[b, s, c]).isProjectiveOver ℂ
-      letI : (Y).IsProjectiveOver ℂ := (tower[b', s', d]).isProjectiveOver ℂ
-      letI := isIntegral_internalBlowupTower b s c hΦ
-      letI := isIntegral_internalBlowupTower b' s' d hΨ
+      letI : (X).Over S := ⟨(tower[b, s, c]).toBase ≫ ((Φ.finiteFanScheme k₀) ↘ S)⟩
+      letI : (Y).Over S := ⟨(tower[b', s', d]).toBase ≫ ((Ψ.finiteFanScheme k₀) ↘ S)⟩
+      letI : (X).IsProjectiveOver k₀ := (tower[b, s, c]).isProjectiveOver k₀
+      letI : (Y).IsProjectiveOver k₀ := (tower[b', s', d]).isProjectiveOver k₀
+      letI := isIntegral_internalBlowupTower k₀ b s c hΦ
+      letI := isIntegral_internalBlowupTower k₀ b' s' d hΨ
       letI : SmoothOfRelativeDimension 2 (X ↘ S) :=
-        smoothOfRelativeDimension_internalBlowupTower b s c hΦ
+        smoothOfRelativeDimension_internalBlowupTower k₀ b s c hΦ
       letI : SmoothOfRelativeDimension 2 (Y ↘ S) :=
-        smoothOfRelativeDimension_internalBlowupTower b' s' d hΨ
-      (Chow.intersectionBilinForm ℂ Y).IsometryEquiv (Chow.intersectionBilinForm ℂ X))
+        smoothOfRelativeDimension_internalBlowupTower k₀ b' s' d hΨ
+      (Chow.intersectionBilinForm k₀ Y).IsometryEquiv (Chow.intersectionBilinForm k₀ X))
     (he : ∀ j, e (Additive.ofMul (tower[b', s', d].exceptionalClass j)) =
       Additive.ofMul (tower[b, s, c].exceptionalClass j))
     (hD : ∀ j, e (strict[hΨ, b', s', d] (v j)) = strict[hΦ, b, s, c] (u j)) :
     ∃! f : FanEquiv Φ Ψ, (∀ j, f.rayEquiv (u j) = v j) ∧ f.rayEquiv ∘ s = s' ∧
       ∃ g : (model[b, s, d]).1 ≅ (model[b', s', d]).1,
-        IsLift (asIso f.toFanHom.algebraicMap) (tower[b, s, d]) (tower[b', s', d]) g ∧
+        IsLift (f.finiteFanSchemeIso k₀) (tower[b, s, d]) (tower[b', s', d]) g ∧
         (model[b, s, d]).2.boundaryι ≫ g.hom =
-          (f.boundaryIso h₀ h₁).hom ≫ (model[b', s', d]).2.boundaryι ∧
+          (f.boundaryIso k₀ h₀ h₁).hom ≫ (model[b', s', d]).2.boundaryι ∧
         ∀ L : LineBundleClass (model[b', s', d]).1,
           (mark[b, s, c, hΦ]).symm (e (Additive.ofMul L)) =
           (mark[b, s, d, hΦ]).symm (Additive.ofMul (pullback g.hom L)) := by
   obtain ⟨f, ⟨hf, hcoord⟩, huniq⟩ :=
-    existsUnique_fanEquiv_of_strictRayBoundaryClasses b b' hΦ hΨ hc hd u v hu hv
-      (isClosedPointTower_internalBlowupTower b s c)
-      (isClosedPointTower_internalBlowupTower b' s' d) e he hD
-  have hcenters := centerRays_of_matching_strictRayClasses b b' s s' c d hΦ hΨ f e hcoord
+    existsUnique_fanEquiv_of_strictRayBoundaryClasses k₀ b b' hΦ hΨ hc hd u v hu hv
+      (isClosedPointTower_internalBlowupTower k₀ b s c)
+      (isClosedPointTower_internalBlowupTower k₀ b' s' d) e he hD
+  have hcenters := centerRays_of_matching_strictRayClasses k₀ b b' s s' c d hΦ hΨ f e hcoord
     (fun r ↦ by obtain ⟨j, rfl⟩ := u.surjective r; rw [hf]; exact hD j)
   have hdet := f.detDualEquiv_of_matching_adjacent_rays b b' hΦ (hf 0) (hf (0 + 1))
     (hu 0).1 (hv 0).1 (hu 0).2
-  have hlift := f.existsUnique_isLift_internalBlowupTower b b' hdet s d hΦ
+  have hlift := f.existsUnique_isLift_internalBlowupTower k₀ b b' hdet s d hΦ
   rw [hcenters] at hlift
   obtain ⟨g, ⟨hg, hboundary⟩, -⟩ := hlift
   refine ⟨f, ⟨hf, hcenters, g, hg, hboundary, ?_⟩, ?_⟩
@@ -133,16 +135,16 @@ theorem exists_common_toric_presentation_of_picard_isometry
     have hL : (tower[b', s', d].picardHom (a, t)).toMul = L :=
       congrArg Additive.toMul h
     rw [← h, hcoord, ← hL, hg.pullback_picardHom, ofMul_toMul,
-      ← internalBlowupPicardMarking_apply b s c hΦ,
-      ← internalBlowupPicardMarking_apply b s d hΦ]
-    simp only [LinearEquiv.symm_apply_apply, asIso_hom]
+      ← internalBlowupPicardMarking_apply k₀ b s c hΦ,
+      ← internalBlowupPicardMarking_apply k₀ b s d hΦ]
+    simp only [LinearEquiv.symm_apply_apply, FanEquiv.finiteFanSchemeIso_hom]
   · intro f' hf'
     obtain ⟨hray, -, g', hg', -, hmark⟩ := hf'
     refine huniq f' ⟨hray, fun a t ↦ ?_⟩
     apply (mark[b, s, c, hΦ]).symm.injective
     have h := hmark (tower[b', s', d].picardHom (a, t)).toMul
-    rw [ofMul_toMul, hg'.pullback_picardHom, ofMul_toMul, asIso_hom,
-      ← internalBlowupPicardMarking_apply b s d hΦ, LinearEquiv.symm_apply_apply] at h
-    rwa [← internalBlowupPicardMarking_apply b s c hΦ, LinearEquiv.symm_apply_apply]
+    rw [ofMul_toMul, hg'.pullback_picardHom, ofMul_toMul, FanEquiv.finiteFanSchemeIso_hom,
+      ← internalBlowupPicardMarking_apply k₀ b s d hΦ, LinearEquiv.symm_apply_apply] at h
+    rwa [← internalBlowupPicardMarking_apply k₀ b s c hΦ, LinearEquiv.symm_apply_apply]
 
 end TauCeti.Toric.Fan

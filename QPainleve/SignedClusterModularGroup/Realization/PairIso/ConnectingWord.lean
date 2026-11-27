@@ -32,9 +32,11 @@ open QPainleve.BlowupTower Scheme Scheme.IdealSheafData Fan.LogarithmicProjectio
 
 namespace QPainleve.SignedClusterModularGroup.CompleteToricPresentation
 
-local notation "S" => Spec (CommRingCat.of ℂ)
-local notation "Centers[" r "]" => Over.mk (structureMap ℂ (Fin r → ℤ))
-local notation "XTor[" r "]" => scheme ℂ (Fin r →₀ ℤ)
+variable {k₀ : Type} [Field k₀] [IsAlgClosed k₀]
+
+local notation "S" => Spec (CommRingCat.of k₀)
+local notation "Centers[" r "]" => Over.mk (structureMap k₀ (Fin r → ℤ))
+local notation "XTor[" r "]" => scheme k₀ (Fin r →₀ ℤ)
 local notation "D[" M "]" => Scheme.Hom.ker (Over.Hom.left (Arrow.hom (MarkedSurface.pair M)))
 
 variable {N₀ V₀ N₁ V₁ : Type} [AddCommGroup N₀] [AddCommGroup V₀] [Module ℝ V₀]
@@ -48,30 +50,30 @@ on their fixed-center X evaluations by a word in their original seed frames and
 labelings. The evaluation lies in the domain of the word at the generic point
 of the source surface. -/
 theorem exists_connecting_word_of_pair_iso
-    (Q₀ : CompleteToricPresentation i₀ b₀ r L₀ γ₀)
-    (Q₁ : CompleteToricPresentation i₁ b₁ r L₁ γ₁)
+    (Q₀ : CompleteToricPresentation k₀ i₀ b₀ r L₀ γ₀)
+    (Q₁ : CompleteToricPresentation k₀ i₁ b₁ r L₁ γ₁)
     {c₀ c₁ : GeometricRealization.Point Centers[r]}
-    {M₀ : MarkedSurface ℂ n H₀ XTor[r]} {M₁ : MarkedSurface ℂ n H₁ XTor[r]}
+    {M₀ : MarkedSurface k₀ n H₀ XTor[r]} {M₁ : MarkedSurface k₀ n H₁ XTor[r]}
     (h₀ : Q₀.HasNodalModel c₀ M₀) (h₁ : Q₁.HasNodalModel c₁ M₁)
     (e : M₀.pair ≅ M₁.pair) (hD₀ : D[M₀].IsEffectiveCartier) (hD₁ : D[M₁].IsEffectiveCartier) :
     letI : IsIntegral M₀.surface := M₀.integral
     ∃ w : Word (Fan.rayExchangeMatrix b₀ Q₀.rays) (Fan.rayExchangeMatrix b₁ Q₁.rays),
-      ∃ h, M₀.evaluation.compOfDefined (w.xRationalMap ℂ) h =
+      ∃ h, M₀.evaluation.compOfDefined (w.xRationalMap k₀) h =
         (MarkedSurface.surfaceIso e).hom.toRationalMap.comp M₁.evaluation := by
   let : IsIntegral M₀.surface := M₀.integral
   let : IsIntegral M₁.surface := M₁.integral
-  let : M₀.surface.IsProjectiveOver ℂ := M₀.projective
+  let : M₀.surface.IsProjectiveOver k₀ := M₀.projective
   let : SmoothOfRelativeDimension 2 (M₀.surface ↘ S) := M₀.smooth
   let : Smooth (M₀.surface ↘ S) := SmoothOfRelativeDimension.smooth 2 _
   let : IsNoetherian M₀.surface := isNoetherian_of_finiteType (M₀.surface ↘ S)
   obtain ⟨R⟩ := Q₀.nonempty_commonOrderedModels_of_pair_iso Q₁ h₀ h₁ e hD₀ hD₁
   let : R.surface.Over S := R.over
   let : SmoothOfRelativeDimension 2 (R.surface ↘ S) := R.smooth
-  let : R.surface.IsProjectiveOver ℂ := by
+  let : R.surface.IsProjectiveOver k₀ := by
     have h := R.structureMap_eq.trans (congrArg (· ≫ M₀.surface ↘ S) R.projection_eq_toBase)
     have hover := congrArg (fun f ↦ (⟨f⟩ : R.surface.Over S)) h
-    exact Eq.mp (congrArg (fun o ↦ @Scheme.IsProjectiveOver ℂ _ R.surface o) hover.symm)
-      (R.tower.isProjectiveOver ℂ)
+    exact Eq.mp (congrArg (fun o ↦ @Scheme.IsProjectiveOver k₀ _ R.surface o) hover.symm)
+      (R.tower.isProjectiveOver k₀)
   let : IsIntegral R.surface := R.integral
   let : IsNoetherian R.surface := R.tower.isNoetherian
   let : IsModification R.projection := R.isModification_projection

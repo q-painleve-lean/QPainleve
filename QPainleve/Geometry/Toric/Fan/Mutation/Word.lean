@@ -45,6 +45,8 @@ open QPainleve.Cluster TauCeti.LaurentRing
 
 namespace TauCeti.Toric.Fan
 
+variable (k₀ : Type) [Field k₀]
+
 variable {N V ι : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {Φ : Fan i} [Fintype ι] [DecidableEq ι]
   (b : Basis (Fin 2) ℤ N)
@@ -52,8 +54,8 @@ variable {N V ι : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
 local notation "d" => b.detDualEquiv
 local notation "trop" => Paths.lift (tropicalPrefunctor (A := ℤ) ι)
 
-local notation "K(" Φ ")" => Scheme.functionField (Fan.algebraicRealization Φ)
-local notation "χ" => Multiplicative (ι → ℤ) →* ℂˣ
+local notation "K(" Φ ")" => Scheme.functionField (Fan.finiteFanScheme k₀ Φ)
+local notation "χ" => Multiplicative (ι → ℤ) →* k₀ˣ
 local notation "swapBasis" a:arg => Basis.reindex a (Equiv.swap 0 1)
 
 local notation "center(" c "," w ")" =>
@@ -63,10 +65,10 @@ local notation "fieldPoint(" Φ "," Ψ "," q ")" =>
   Spec.map (ConcreteCategory.ofHom (X := K(Ψ)) (Y := K(Φ))
     (RingEquiv.toRingHom (AlgEquiv.toRingEquiv q)))
 local notation "eval(" Φ "," a "," s "," c ")" =>
-  Scheme.RationalMap.fromFunctionField (Fan.xEvaluation Φ a s c)
+  Scheme.RationalMap.fromFunctionField (Fan.xEvaluation k₀ Φ a s c)
 
 private theorem fieldPoint_refl (Φ : Fan i) [Nonempty Φ.cones] :
-    fieldPoint(Φ,Φ,(AlgEquiv.refl : K(Φ) ≃ₐ[ℂ] K(Φ))) = 𝟙 (Spec K(Φ)) :=
+    fieldPoint(Φ,Φ,(AlgEquiv.refl : K(Φ) ≃ₐ[k₀] K(Φ))) = 𝟙 (Spec K(Φ)) :=
   Spec.map_id _
 
 private theorem exists_lift_xRationalMap_mutate_of_subdivision {Ω : Fan i} [Nonempty Φ.cones]
@@ -80,11 +82,11 @@ private theorem exists_lift_xRationalMap_mutate_of_subdivision {Ω : Fan i} [Non
     let t' := Ω.mutationFanCenterRays b t p hop
     letI : Nonempty Ω.cones := ⟨(t p).toCone⟩
     letI : Nonempty Ψ.cones := ⟨(t' p).toCone⟩
-    let q₀ := Ω.mutationComplementPullbackAlgHom b (c (ofAdd (Pi.single p 1)) : ℂ) hv hp hop
+    let q₀ := Ω.mutationComplementPullbackAlgHom b (c (ofAdd (Pi.single p 1)) : k₀) hv hp hop
     let w := ((Generator.mutate p).toStep B).toPath
-    let f := w.xRationalMap ℂ
-    ∀ q : K(Ψ) ≃ₐ[ℂ] K(Φ),
-      (∀ a, h.toFanHom.algebraicMap.functionFieldMap (q a) = q₀ a) →
+    let f := w.xRationalMap k₀
+    ∀ q : K(Ψ) ≃ₐ[k₀] K(Φ),
+      (∀ a, (h.toFanHom.finiteFanSchemeHom k₀).functionFieldMap (q a) = q₀ a) →
       ∃ l : Spec K(Φ) ⟶ f.toPartialMap.domain,
         l ≫ f.toPartialMap.domain.ι = eval(Φ,b,s,c) ∧
         l ≫ f.toPartialMap.hom = fieldPoint(Φ,Ψ,q) ≫ eval(Ψ,b,t',center(c,w)) := by
@@ -97,12 +99,13 @@ private theorem exists_lift_xRationalMap_mutate_of_subdivision {Ω : Fan i} [Non
       (chargeExchangeMatrix b.detDualEquiv.toLinearMap (rayChargeMap t)) p
       ).toAddEquiv.toAddMonoidHom.toMultiplicative := by
     simp only [w, Path.exponentEquiv_toPath, Step.exponentEquiv_mutate, hmat]
-  obtain ⟨l, hl, hl'⟩ := Ω.exists_lift_xRationalMap_mutate b t p c hop B
+  obtain ⟨l, hl, hl'⟩ := Ω.exists_lift_xRationalMap_mutate k₀ b t p c hop B
     (fun j ↦ congrArg (fun M : Matrix ι ι ℤ ↦ M j p) hmat)
-  let u := Spec.map h.toFanHom.algebraicMap.functionFieldMap
-  have : IsIso u := inferInstanceAs (IsIso (Spec.map h.toFanHom.algebraicMap.functionFieldMap))
+  let u := Spec.map (h.toFanHom.finiteFanSchemeHom k₀).functionFieldMap
+  have : IsIso u := inferInstanceAs
+    (IsIso (Spec.map (h.toFanHom.finiteFanSchemeHom k₀).functionFieldMap))
   have hsource : u ≫ eval(Φ,b,s,c) = eval(Ω,b,t,c) := by
-    have he := congrArg Scheme.RationalMap.fromFunctionField (h.comp_xEvaluation b s c)
+    have he := congrArg Scheme.RationalMap.fromFunctionField (h.comp_xEvaluation k₀ b s c)
     rw [Scheme.RationalMap.fromFunctionField_comp, Scheme.Hom.functionFieldMap_toRationalMap] at he
     exact he
   have htarget : u ≫ fieldPoint(Φ,Ψ,q) = Spec.map (CommRingCat.ofHom q₀.toRingHom) := by
@@ -115,46 +118,47 @@ private theorem exists_lift_xRationalMap_mutate_of_subdivision {Ω : Fan i} [Non
 
 private theorem ord_mutation_of_subdivision {Ω : Fan i} (h : Ω.IsSubdivision Φ)
     (hΦ : Φ.IsRegular) (hΩ : Ω.IsRegular) [Nonempty Φ.cones] (pivot : Ω.Ray)
-    (hopp : hull ℝ {i (-pivot.primitiveGenerator)} ∈ Ω.cones) (c : ℂˣ) :
+    (hopp : hull ℝ {i (-pivot.primitiveGenerator)} ∈ Ω.cones) (c : k₀ˣ) :
     let hv := pivot.isPrimitiveGenerator.ne_zero
     let hpos := pivot.hull_primitiveGenerator_mem
     let Ψ := Ω.mutationFan b hv hpos hopp
     let hΨ := (Ω.isRegular_mutationFan_iff b hv hpos hopp).2 hΩ
     letI : Nonempty Ω.cones := ⟨pivot.toCone⟩
     letI : Nonempty Ψ.cones := ⟨((Ω.mutationFanRayEquiv b hv hpos hopp) pivot).toCone⟩
-    ∃ q : K(Ψ) ≃ₐ[ℂ] K(Φ),
-      (∀ a, h.toFanHom.algebraicMap.functionFieldMap (q a) =
-        Ω.mutationComplementPullback b (c : ℂ) hv hpos hopp a) ∧
+    ∃ q : K(Ψ) ≃ₐ[k₀] K(Φ),
+      (∀ a, (h.toFanHom.finiteFanSchemeHom k₀).functionFieldMap (q a) =
+        Ω.mutationComplementPullback b (c : k₀) hv hpos hopp a) ∧
       ∀ (ρ : Φ.Ray) (a : K(Ψ)),
-      Φ.algebraicRealization.ord (q a) (Φ.rayBoundaryPoint hΦ ρ).val =
-        Ψ.algebraicRealization.ord a
-          (Ψ.rayBoundaryPoint hΨ (Ω.mutationFanRayEquiv b hv hpos hopp (h.liftRay ρ))).val := by
+      (Φ.finiteFanScheme k₀).ord (q a) (Φ.rayBoundaryChartPoint (R := k₀) hΦ ρ).val =
+        (Ψ.finiteFanScheme k₀).ord a
+          (Ψ.rayBoundaryChartPoint (R := k₀) hΨ
+            (Ω.mutationFanRayEquiv b hv hpos hopp (h.liftRay ρ))).val := by
   dsimp only
   let hv := pivot.isPrimitiveGenerator.ne_zero
   let hpos := pivot.hull_primitiveGenerator_mem
   have : Nonempty Ω.cones := ⟨pivot.toCone⟩
   have : Nonempty (Ω.mutationFan b hv hpos hopp).cones :=
     ⟨((Ω.mutationFanRayEquiv b hv hpos hopp) pivot).toCone⟩
-  have := Ω.isIso_mutationComplementPullback b (c : ℂ) hv hpos hopp
-  let m := Ω.mutationComplementPullback b (c : ℂ) hv hpos hopp
-  let sub := h.toFanHom.algebraicMap
+  have := Ω.isIso_mutationComplementPullback b (c : k₀) hv hpos hopp
+  let m := Ω.mutationComplementPullback b (c : k₀) hv hpos hopp
+  let sub := (h.toFanHom.finiteFanSchemeHom k₀)
   let e := asIso m ≪≫ (asIso sub.functionFieldMap).symm
   have he (a : K(Ω.mutationFan b hv hpos hopp)) :
       sub.functionFieldMap (e.hom a) = m a := by
     simp [e]
-  let q : K(Ω.mutationFan b hv hpos hopp) ≃ₐ[ℂ] K(Φ) :=
+  let q : K(Ω.mutationFan b hv hpos hopp) ≃ₐ[k₀] K(Φ) :=
     AlgEquiv.ofRingEquiv (f := e.commRingCatIsoToRingEquiv) fun z ↦
       sub.functionFieldMap.hom.injective <| by
         calc
-          sub.functionFieldMap (e.hom (algebraMap ℂ _ z)) =
-              m (algebraMap ℂ _ z) := he _
-          _ = algebraMap ℂ K(Ω) z :=
-            Ω.mutationComplementPullback_algebraMap b (c : ℂ) hv hpos hopp z
-          _ = sub.functionFieldMap (algebraMap ℂ _ z) :=
-            (sub.functionFieldMap_algebraMap ℂ z).symm
+          sub.functionFieldMap (e.hom (algebraMap k₀ _ z)) =
+              m (algebraMap k₀ _ z) := he _
+          _ = algebraMap k₀ K(Ω) z :=
+            Ω.mutationComplementPullback_algebraMap b (c : k₀) hv hpos hopp z
+          _ = sub.functionFieldMap (algebraMap k₀ _ z) :=
+            (sub.functionFieldMap_algebraMap k₀ z).symm
   refine ⟨q, he, fun ρ a ↦ ?_⟩
   have hs : sub.functionFieldMap (q a) = m a := he _
-  rw [← h.ord_functionFieldMap_liftRay hΩ hΦ, hs]
+  rw [← h.ord_functionFieldMap_liftRay k₀ hΩ hΦ, hs]
   exact Ω.ord_mutationComplementPullback_rayBoundaryPoint b c hv hpos hopp hΩ (h.liftRay ρ) a
 
 private theorem exists_toric_boundary_valuation_transport_mutate {B : SkewExchangeMatrix ι}
@@ -166,11 +170,11 @@ private theorem exists_toric_boundary_valuation_transport_mutate {B : SkewExchan
         (Generator.mutate p).tropical B (rayBoundaryOrders b s ρ)) ∧
       letI : Nonempty Φ.cones := hc.nonempty_cones
       letI : Nonempty Ψ.cones := hΨc.nonempty_cones
-      ∃ q : χ → (K(Ψ) ≃ₐ[ℂ] K(Φ)),
+      ∃ q : χ → (K(Ψ) ≃ₐ[k₀] K(Φ)),
         (∀ (c : χ) (ρ : Φ.Ray) (a : K(Ψ)),
-          Φ.algebraicRealization.ord (q c a) (Φ.rayBoundaryPoint hΦ ρ).val =
-            Ψ.algebraicRealization.ord a (Ψ.rayBoundaryPoint hΨ (f ρ)).val) ∧
-        ∀ c : χ, let F := ((Generator.mutate p).toStep B).toPath.xRationalMap ℂ
+          (Φ.finiteFanScheme k₀).ord (q c a) (Φ.rayBoundaryChartPoint (R := k₀) hΦ ρ).val =
+            (Ψ.finiteFanScheme k₀).ord a (Ψ.rayBoundaryChartPoint (R := k₀) hΨ (f ρ)).val) ∧
+        ∀ c : χ, let F := ((Generator.mutate p).toStep B).toPath.xRationalMap k₀
           ∃ l : Spec K(Φ) ⟶ F.toPartialMap.domain,
             l ≫ F.toPartialMap.domain.ι = eval(Φ,b,s,c) ∧
             l ≫ F.toPartialMap.hom = fieldPoint(Φ,Ψ,q c) ≫
@@ -207,13 +211,13 @@ private theorem exists_toric_boundary_valuation_transport_mutate {B : SkewExchan
     funext j
     simpa only [rayBoundaryOrders_apply, Basis.detDualEquiv_apply, t, hf] using congrFun h.symm j
   · have := hc.nonempty_cones
-    have h (c : χ) := ord_mutation_of_subdivision b hΩ hΦ hreg (s₀ p) hopp₀
+    have h (c : χ) := ord_mutation_of_subdivision k₀ b hΩ hΦ hreg (s₀ p) hopp₀
       (c (ofAdd (Pi.single p 1)))
     choose q hq hval using h
     refine ⟨q, fun c ρ a ↦ by simpa only [hf, Ψ] using hval c ρ a, fun c ↦ ?_⟩
     have he : B.matrix = chargeExchangeMatrix b.detDualEquiv.toLinearMap (rayChargeMap s) := by
       rw [← P.matrix_eq, hform, hcharge]
-    refine exists_lift_xRationalMap_mutate_of_subdivision b hΩ s p c hopp₀ he (q c) ?_
+    refine exists_lift_xRationalMap_mutate_of_subdivision k₀ b hΩ s p c hopp₀ he (q c) ?_
     intro a
     rw [mutationComplementPullbackAlgHom_apply]
     exact hq c a
@@ -221,7 +225,7 @@ private theorem exists_toric_boundary_valuation_transport_mutate {B : SkewExchan
 private theorem exists_lift_xRationalMap_inversion [Nonempty Φ.cones] (B : SkewExchangeMatrix ι)
     (s : ι → Φ.Ray) (c : χ) :
     let w := (Generator.invert.toStep B).toPath
-    let F := w.xRationalMap ℂ
+    let F := w.xRationalMap k₀
     ∃ l : Spec K(Φ) ⟶ F.toPartialMap.domain,
       l ≫ F.toPartialMap.domain.ι = eval(Φ,b,s,c) ∧
       l ≫ F.toPartialMap.hom = eval(Φ,swapBasis b,s,center(c,w)) := by
@@ -233,7 +237,7 @@ private theorem exists_lift_xRationalMap_inversion [Nonempty Φ.cones] (B : Skew
   dsimp only [F, w]
   rw [hc, Path.xRationalMap_invert, xEvaluation_reindex_swap,
     Scheme.RationalMap.fromFunctionField_compHom]
-  let f := QPainleve.CharacterTorus.map ℂ (AddEquiv.neg (ι →₀ ℤ)).toAddMonoidHom
+  let f := QPainleve.CharacterTorus.map k₀ (AddEquiv.neg (ι →₀ ℤ)).toAddMonoidHom
   exact f.exists_lift_toRationalMap (eval(Φ,b,s,c))
 
 private theorem exists_lift_xRationalMap_permutation [Nonempty Φ.cones] (B : SkewExchangeMatrix ι)
@@ -241,15 +245,15 @@ private theorem exists_lift_xRationalMap_permutation [Nonempty Φ.cones] (B : Sk
     (hsingle : ∀ j, LinearEquiv.funCongrLeft ℤ ℤ σ.symm (Pi.single j 1) = Pi.single (σ j) 1)
     (c : χ) :
     let w := ((Generator.permute σ).toStep B).toPath
-    let F := w.xRationalMap ℂ
+    let F := w.xRationalMap k₀
     ∃ l : Spec K(Φ) ⟶ F.toPartialMap.domain,
       l ≫ F.toPartialMap.domain.ι = eval(Φ,b,s,c) ∧
       l ≫ F.toPartialMap.hom = eval(Φ,b,s ∘ σ,center(c,w)) := by
   intro w F
-  obtain ⟨l, hl, hl'⟩ := Quiver.Path.exists_lift_xRationalMap_permute ℂ B σ
+  obtain ⟨l, hl, hl'⟩ := Quiver.Path.exists_lift_xRationalMap_permute k₀ B σ
   refine ⟨eval(Φ,b,s,c) ≫ l, by simp only [F, w, Category.assoc, hl, Category.comp_id], ?_⟩
-  have heval : (Φ.xEval b s c).comp (rename σ) =
-      Φ.xEval b (s ∘ σ) center(c,w) := by
+  have heval : (Φ.xEval k₀ b s c).comp (rename σ) =
+      Φ.xEval k₀ b (s ∘ σ) center(c,w) := by
     apply algHom_ext
     intro j
     simp only [AlgHom.comp_apply, rename_X, xEval_X, MonoidHom.comp_apply,
@@ -277,11 +281,11 @@ private theorem exists_toric_boundary_valuation_transport_step {B C : SkewExchan
       (∀ ρ, rayBoundaryOrders b' t (f ρ) = Step.tropical e (rayBoundaryOrders b s ρ)) ∧
       letI : Nonempty Φ.cones := hc.nonempty_cones
       letI : Nonempty Ψ.cones := hΨc.nonempty_cones
-      ∃ q : χ → (K(Ψ) ≃ₐ[ℂ] K(Φ)),
+      ∃ q : χ → (K(Ψ) ≃ₐ[k₀] K(Φ)),
         (∀ (c : χ) (ρ : Φ.Ray) (a : K(Ψ)),
-          Φ.algebraicRealization.ord (q c a) (Φ.rayBoundaryPoint hΦ ρ).val =
-            Ψ.algebraicRealization.ord a (Ψ.rayBoundaryPoint hΨ (f ρ)).val) ∧
-        ∀ c : χ, let F := e.toPath.xRationalMap ℂ
+          (Φ.finiteFanScheme k₀).ord (q c a) (Φ.rayBoundaryChartPoint (R := k₀) hΦ ρ).val =
+            (Ψ.finiteFanScheme k₀).ord a (Ψ.rayBoundaryChartPoint (R := k₀) hΨ (f ρ)).val) ∧
+        ∀ c : χ, let F := e.toPath.xRationalMap k₀
           ∃ l : Spec K(Φ) ⟶ F.toPartialMap.domain,
             l ≫ F.toPartialMap.domain.ι = eval(Φ,b,s,c) ∧
             l ≫ F.toPartialMap.hom = fieldPoint(Φ,Ψ,q c) ≫ eval(Ψ,b',t,center(c,e.toPath)) := by
@@ -303,11 +307,11 @@ private theorem exists_toric_boundary_valuation_transport_step {B C : SkewExchan
       simp [Step.tropical_apply]
     · refine ⟨fun _ ↦ AlgEquiv.refl, by simp, fun c ↦ ?_⟩
       simpa only [fieldPoint_refl, Category.id_comp] using
-        exists_lift_xRationalMap_inversion b B s c
+        exists_lift_xRationalMap_inversion k₀ b B s c
   | mutate p =>
     simp only [Generator.toStep_generator, Generator.inversionCount_mutate, ite_true]
     obtain ⟨Ψ, hreg, hcomp, t, f, hq, ho, hfield⟩ :=
-      exists_toric_boundary_valuation_transport_mutate b P hΦ hc s hform hcharge p
+      exists_toric_boundary_valuation_transport_mutate k₀ b P hΦ hc s hform hcharge p
     exact ⟨Ψ, hreg, hcomp, t, f, by simpa using hform, hq, by simpa using ho, hfield⟩
   | permute σ =>
     simp only [Generator.toStep_generator, Generator.inversionCount_permute, ite_true]
@@ -327,7 +331,7 @@ private theorem exists_toric_boundary_valuation_transport_step {B C : SkewExchan
       simp [rayBoundaryOrders_apply]
     · refine ⟨fun _ ↦ AlgEquiv.refl, by simp, fun c ↦ ?_⟩
       simpa only [fieldPoint_refl, Category.id_comp] using
-        exists_lift_xRationalMap_permutation b B s σ hsingle c
+        exists_lift_xRationalMap_permutation k₀ b B s σ hsingle c
 
 omit [Fintype ι] in
 private theorem terminal_basis_cons {B C D : SkewExchangeMatrix ι} (w : Word B C) (e : C ⟶ D) :
@@ -362,11 +366,11 @@ theorem exists_toric_boundary_valuation_transport {B C : SkewExchangeMatrix ι}
         DFunLike.coe (F := Equiv.Perm (ι → ℤ)) ((trop).map w) (rayBoundaryOrders b s ρ)) ∧
       letI : Nonempty Φ.cones := hc.nonempty_cones
       letI : Nonempty Ψ.cones := hΨc.nonempty_cones
-      ∃ q : χ → (K(Ψ) ≃ₐ[ℂ] K(Φ)),
+      ∃ q : χ → (K(Ψ) ≃ₐ[k₀] K(Φ)),
         (∀ (c : χ) (ρ : Φ.Ray) (a : K(Ψ)),
-          Φ.algebraicRealization.ord (q c a) (Φ.rayBoundaryPoint hΦ ρ).val =
-            Ψ.algebraicRealization.ord a (Ψ.rayBoundaryPoint hΨ (f ρ)).val) ∧
-        ∀ c : χ, let F := w.xRationalMap ℂ
+          (Φ.finiteFanScheme k₀).ord (q c a) (Φ.rayBoundaryChartPoint (R := k₀) hΦ ρ).val =
+            (Ψ.finiteFanScheme k₀).ord a (Ψ.rayBoundaryChartPoint (R := k₀) hΨ (f ρ)).val) ∧
+        ∀ c : χ, let F := w.xRationalMap k₀
           ∃ l : Spec K(Φ) ⟶ F.toPartialMap.domain,
             l ≫ F.toPartialMap.domain.ι = eval(Φ,b,s,c) ∧
             l ≫ F.toPartialMap.hom = fieldPoint(Φ,Ψ,q c) ≫ eval(Ψ,b',t,center(c,w)) := by
@@ -383,7 +387,7 @@ theorem exists_toric_boundary_valuation_transport {B C : SkewExchangeMatrix ι}
       have he : center(c,(Path.nil : Word B B)) = c :=
         MonoidHom.ext fun a ↦ by simp [Path.exponentEquiv_nil, AddMonoidHom.coe_toMultiplicative]
       rw [Path.xRationalMap_nil, he, fieldPoint_refl, Category.id_comp]
-      let T := QPainleve.CharacterTorus.scheme ℂ (ι →₀ ℤ)
+      let T := QPainleve.CharacterTorus.scheme k₀ (ι →₀ ℤ)
       simpa only [Category.comp_id] using (𝟙 T : T ⟶ T).exists_lift_toRationalMap (eval(Φ,b,s,c))
   | cons w e ih =>
     dsimp only at ih ⊢
@@ -391,7 +395,7 @@ theorem exists_toric_boundary_valuation_transport {B C : SkewExchangeMatrix ι}
     let b₀ := if Even w.inversionCount then b else swapBasis b
     obtain ⟨Ω, hΩ, hΩc, t, f, hp, hq, ho, hfield⟩ := ih
     obtain ⟨Ψ, hΨ, hΨc, t', g, hp', hq', ho', hfield'⟩ :=
-      exists_toric_boundary_valuation_transport_step b₀ e _ hΩ hΩc t hp hq
+      exists_toric_boundary_valuation_transport_step k₀ b₀ e _ hΩ hΩc t hp hq
     refine ⟨Ψ, hΨ, hΨc, t', f.trans g, ?_, ?_, ?_, ?_⟩
     · simpa using hp'
     · simpa using hq'
@@ -407,13 +411,13 @@ theorem exists_toric_boundary_valuation_transport {B C : SkewExchangeMatrix ι}
       let : Nonempty Ψ.cones := hΨc.nonempty_cones
       obtain ⟨l, hl, hl'⟩ := hqeval c
       obtain ⟨m, hm, hm'⟩ := hreval center(c,w)
-      have hmatch : l ≫ (w.xRationalMap ℂ).toPartialMap.hom =
-          (fieldPoint(Φ,Ω,q c) ≫ m) ≫ (e.toPath.xRationalMap ℂ).toPartialMap.domain.ι := by
+      have hmatch : l ≫ (w.xRationalMap k₀).toPartialMap.hom =
+          (fieldPoint(Φ,Ω,q c) ≫ m) ≫ (e.toPath.xRationalMap k₀).toPartialMap.domain.ι := by
         rw [Category.assoc, hm, hl']
-      obtain ⟨a, ha, ha'⟩ := (w.xRationalMap ℂ).exists_lift_comp
-        (e.toPath.xRationalMap ℂ) l (fieldPoint(Φ,Ω,q c) ≫ m) hmatch
-      have hx : (w.cons e).xRationalMap ℂ =
-          (w.xRationalMap ℂ).comp (e.toPath.xRationalMap ℂ) := by
+      obtain ⟨a, ha, ha'⟩ := (w.xRationalMap k₀).exists_lift_comp
+        (e.toPath.xRationalMap k₀) l (fieldPoint(Φ,Ω,q c) ≫ m) hmatch
+      have hx : (w.cons e).xRationalMap k₀ =
+          (w.xRationalMap k₀).comp (e.toPath.xRationalMap k₀) := by
         rw [← Path.comp_toPath_eq_cons, Path.xRationalMap_comp]
       have hc : center(center(c,w),e.toPath) = center(c,w.cons e) := by
         ext x

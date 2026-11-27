@@ -31,34 +31,38 @@ open scoped Sarkisov
 
 namespace TauCeti.Toric.Fan.LogarithmicProjection
 
+variable {k₀ : Type} [Field k₀] [IsAlgClosed k₀]
+
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V] {i : N →+ V}
 
-local notation "S" => Spec (CommRingCat.of ℂ)
-local notation "X[" Φ "]" => Fan.algebraicRealization Φ
-local notation "π[" H "]" => FanHom.algebraicMap (IsSubdivision.toFanHom H)
+local notation "S" => Spec (CommRingCat.of k₀)
+local notation "X[" Φ "]" => Fan.finiteFanScheme k₀ Φ
+local notation "π[" H "]" => FanHom.finiteFanSchemeHom k₀ (IsSubdivision.toFanHom H)
 local notation "base[" T "]" => QPainleve.BlowupTower.toBase (WithBoundary.toTower (Sigma.snd T))
 
-variable {Z : Scheme} [Z.Over S] [SmoothOfRelativeDimension 2 (Z ↘ S)] [IsIntegral Z]
-  {D : Z.IdealSheafData} {A B : LogarithmicProjection i D} {m : ℕ}
+variable {Z : Scheme} [Z.Over (Spec (.of k₀))] [SmoothOfRelativeDimension 2 (Z ↘ Spec (.of k₀))]
+  [IsIntegral Z]
+  {D : Z.IdealSheafData} {A B : LogarithmicProjection k₀ i D} {m : ℕ}
 
 namespace OrderedToricModel
 
+omit [IsAlgClosed k₀] in
 private theorem exists_compOfDefined_nil (U : OrderedToricModel A m) :
     let w : Word U.exchangeMatrix U.exchangeMatrix := .nil
-    ∃ h, U.xEvaluation.compOfDefined (w.xRationalMap ℂ) h = U.xEvaluation := by
+    ∃ h, U.xEvaluation.compOfDefined (w.xRationalMap k₀) h = U.xEvaluation := by
   simpa only [Quiver.Path.xRationalMap_nil, Scheme.RationalMap.compHom_id] using
     U.xEvaluation.compOfDefined_toRationalMap (𝟙 _)
 
 omit [IsIntegral Z] in
 private theorem exists_iso_of_tower_eq (U : OrderedToricModel A m)
-    (b : Basis (Fin 2) ℤ N) (c : Fin m → ℂˣ)
-    (h : U.fan.internalBlowupTower b U.rays c = U.tower) :
-    ∃ e : (U.fan.internalBlowupTower b U.rays c).1 ≅ Z,
-      e.hom ≫ A.hom = base[U.fan.internalBlowupTower b U.rays c] ≫ π[U.subdivision] ∧
-        D.comap e.hom = (U.fan.internalBlowupTower b U.rays c).2.boundaryι.ker ∧
-        e.inv ≫ base[U.fan.internalBlowupTower b U.rays c] = U.hom ∧
+    (b : Basis (Fin 2) ℤ N) (c : Fin m → k₀ˣ)
+    (h : U.fan.internalBlowupTower k₀ b U.rays c = U.tower) :
+    ∃ e : (U.fan.internalBlowupTower k₀ b U.rays c).1 ≅ Z,
+      e.hom ≫ A.hom = base[U.fan.internalBlowupTower k₀ b U.rays c] ≫ π[U.subdivision] ∧
+        D.comap e.hom = (U.fan.internalBlowupTower k₀ b U.rays c).2.boundaryι.ker ∧
+        e.inv ≫ base[U.fan.internalBlowupTower k₀ b U.rays c] = U.hom ∧
         ∀ a, Additive.ofMul (LineBundleClass.pullback e.inv
-          ((U.fan.internalBlowupTower b U.rays c).2.toTower.picardHom a).toMul) =
+          ((U.fan.internalBlowupTower k₀ b U.rays c).2.toTower.picardHom a).toMul) =
           U.picardMarking a := by
   simp only [picardMarking_apply, Fan.internalBlowupPicardMarking_apply]
   exact h.symm ▸ Exists.intro U.iso ⟨U.hom_eq, U.pole_eq, U.hom_def.symm, fun _ ↦ rfl⟩
@@ -71,7 +75,7 @@ private theorem exists_reframe_of_det_eq (U : OrderedToricModel A m) (b : Basis 
   have hdet (v : N) : b.detDualEquiv v = U.basis.detDualEquiv v := by
     ext y
     simp only [Basis.detDualEquiv_apply, hb]
-  have hTower : U.fan.internalBlowupTower b U.rays U.parameters = U.tower := by
+  have hTower : U.fan.internalBlowupTower k₀ b U.rays U.parameters = U.tower := by
     simp only [Fan.internalBlowupTower_eq_alongBoundary]
     congr 1
     funext j
@@ -100,7 +104,7 @@ private theorem exists_reframe_of_det_eq (U : OrderedToricModel A m) (b : Basis 
     intro j
     simp only [Fan.xEval_X, W, hdet]
   · refine U.hasBoundarySign_of_toricIso W (FanEquiv.refl U.fan) 1 ?_ 1 ?_
-    · simpa only [FanEquiv.toFanHom_refl, FanHom.algebraicMap_id, Fan.torusTranslation_one,
+    · simpa only [FanEquiv.toFanHom_refl, FanHom.finiteFanSchemeHom_id, Fan.torusTranslationIso_one,
         Iso.refl_hom, Category.comp_id] using hhom.symm
     · intro x y
       simp only [FanEquiv.refl_latticeEquiv, AddEquiv.refl_apply, Units.val_one, one_mul, W, hdet]
@@ -110,11 +114,11 @@ private theorem exists_reframe_swap (U : OrderedToricModel A m) :
       W.refinedProjection = U.refinedProjection ∧ W.picardMarking ≍ U.picardMarking ∧
       W.exchangeMatrix = -U.exchangeMatrix ∧
       W.xEvaluation = U.xEvaluation.compHom
-        (CharacterTorus.map ℂ (AddEquiv.neg (Fin m →₀ ℤ)).toAddMonoidHom) ∧
+        (CharacterTorus.map k₀ (AddEquiv.neg (Fin m →₀ ℤ)).toAddMonoidHom) ∧
       U.HasBoundarySign W (-1) := by
   let b := U.basis.reindex (Equiv.swap 0 1)
-  have hTower : U.fan.internalBlowupTower b U.rays U.parameters⁻¹ = U.tower :=
-    Fan.internalBlowupTower_reindex_swap _ _ _
+  have hTower : U.fan.internalBlowupTower k₀ b U.rays U.parameters⁻¹ = U.tower :=
+    Fan.internalBlowupTower_reindex_swap k₀ _ _ _
   obtain ⟨e, he, hP, hh, hm⟩ := U.exists_iso_of_tower_eq b U.parameters⁻¹ hTower
   let W : OrderedToricModel A m :=
     ⟨U.fan, U.regular, U.subdivision, b, U.rays, U.parameters⁻¹, e, he, hP⟩
@@ -131,7 +135,7 @@ private theorem exists_reframe_swap (U : OrderedToricModel A m) :
     simp only [xEvaluation_def, hhom, W, b, hc, Fan.xEvaluation_reindex_swap,
       Scheme.RationalMap.comp_compHom]
   · refine U.hasBoundarySign_of_toricIso W (FanEquiv.refl U.fan) 1 ?_ (-1) ?_
-    · simpa only [FanEquiv.toFanHom_refl, FanHom.algebraicMap_id, Fan.torusTranslation_one,
+    · simpa only [FanEquiv.toFanHom_refl, FanHom.finiteFanSchemeHom_id, Fan.torusTranslationIso_one,
         Iso.refl_hom, Category.comp_id] using hhom.symm
     · intro x y
       simp only [FanEquiv.refl_latticeEquiv, AddEquiv.refl_apply, Units.val_neg,
@@ -144,7 +148,7 @@ theorem exists_word_reframe (U : OrderedToricModel A m) (b : Basis (Fin 2) ℤ N
     ∃ (W : OrderedToricModel A m) (w : Word U.exchangeMatrix W.exchangeMatrix),
       W.basis = b ∧ W.refinedProjection = U.refinedProjection ∧ W.picardMarking ≍ U.picardMarking ∧
         U.HasBoundarySign W ((-1 : ℤˣ) ^ w.inversionCount) ∧
-        ∃ h, U.xEvaluation.compOfDefined (w.xRationalMap ℂ) h = W.xEvaluation := by
+        ∃ h, U.xEvaluation.compOfDefined (w.xRationalMap k₀) h = W.xEvaluation := by
   have hb := b.det.eq_smul_basis_det U.basis
   rcases Int.isUnit_iff.mp (b.isUnit_det U.basis) with h | h
   · rw [h, one_smul] at hb
@@ -162,10 +166,10 @@ theorem exists_word_reframe (U : OrderedToricModel A m) (b : Basis (Fin 2) ℤ N
         (U.basis.det.map_swap x (by decide : (0 : Fin 2) ≠ 1)).symm
     obtain ⟨W, hW, href, hm, hB', hEval', hWsign⟩ := M.exists_reframe_of_det_eq b hb'
     have hEnd := hB'.trans (hB.trans (Generator.target_invert U.exchangeMatrix).symm)
-    let f := CharacterTorus.map ℂ (AddEquiv.neg (Fin m →₀ ℤ)).toAddMonoidHom
+    let f := CharacterTorus.map k₀ (AddEquiv.neg (Fin m →₀ ℤ)).toAddMonoidHom
     let w := (Generator.invert.toStep U.exchangeMatrix).toPath
-    have hw : w.xRationalMap ℂ = f.toRationalMap :=
-      Quiver.Path.xRationalMap_invert ℂ U.exchangeMatrix
+    have hw : w.xRationalMap k₀ = f.toRationalMap :=
+      Quiver.Path.xRationalMap_invert k₀ U.exchangeMatrix
     obtain ⟨hd, he⟩ := U.xEvaluation.compOfDefined_toRationalMap f
     refine ⟨W, hEnd.symm ▸ w, hW, href.trans hMref, hm.trans hMm, ?_⟩
     -- Only the target exchange matrix is transported.
@@ -180,7 +184,7 @@ theorem exists_word_reframe (U : OrderedToricModel A m) (b : Basis (Fin 2) ℤ N
 end OrderedToricModel
 
 local notation "μ[" Δ "," b "," ρ "," c "," h "]" =>
-  Scheme.PartialMap.toRationalMap (Fan.mutationPartialMap Δ b (c : ℂ)
+  Scheme.PartialMap.toRationalMap (Fan.mutationPartialMap k₀ Δ b (c : k₀)
     (Fan.Ray.primitiveGenerator_ne_zero ρ) (Fan.Ray.hull_primitiveGenerator_mem ρ) h)
 local notation "M[" Δ "," b "," ρ "," h "]" =>
   Fan.mutationFan Δ b (Fan.Ray.primitiveGenerator_ne_zero ρ)
@@ -188,14 +192,14 @@ local notation "M[" Δ "," b "," ρ "," h "]" =>
 
 private theorem exists_word_of_mutation_in_frame (U : OrderedToricModel A m)
     (b : Basis (Fin 2) ℤ N) (hb : U.basis = b)
-    (ρ : A.fan.Ray) (c : ℂˣ) (opp : hull ℝ {i (-ρ.primitiveGenerator)} ∈ A.fan.cones)
+    (ρ : A.fan.Ray) (c : k₀ˣ) (opp : hull ℝ {i (-ρ.primitiveGenerator)} ∈ A.fan.cones)
     (hFan : B.fan = M[A.fan,b,ρ,opp])
     (hMap : A.hom.toRationalMap.comp μ[A.fan,b,ρ,c,opp] =
       (cast (congrArg (fun Φ : Fan i ↦ Z ⟶ X[Φ]) hFan) B.hom).toRationalMap) :
     ∃ (W : OrderedToricModel B m) (w : Word U.exchangeMatrix W.exchangeMatrix),
       Nonempty (SarkisovStep U.refinedProjection W.refinedProjection) ∧
         U.HasBoundarySign W ((-1 : ℤˣ) ^ w.inversionCount) ∧
-        ∃ h, U.xEvaluation.compOfDefined (w.xRationalMap ℂ) h = W.xEvaluation := by
+        ∃ h, U.xEvaluation.compOfDefined (w.xRationalMap k₀) h = W.xEvaluation := by
   subst b
   have hModel := U.exists_model_of_mutation_in_basis ρ opp c hFan hMap
   extract_lets at hModel
@@ -207,7 +211,7 @@ private theorem exists_word_of_mutation_in_frame (U : OrderedToricModel A m)
   subst m
   have hrat := step.comp_rationalMap
   rw [hStep] at hrat
-  obtain ⟨hMatrix, -, hEval⟩ := U.fan.compare_ordered_mutation U.basis
+  obtain ⟨hMatrix, -, hEval⟩ := U.fan.compare_ordered_mutation k₀ U.basis
     (U.rays ∘ finCongr rfl) (U.parameters ∘ finCongr rfl) k _ _ c hk.symm hc.symm
     U.hom W.hom hrat
   let w := (((Generator.mutate k).toStep U.exchangeMatrix).toPath).comp
@@ -227,26 +231,27 @@ private theorem exists_word_of_mutation_in_frame (U : OrderedToricModel A m)
     let boundaryIso := Ray.mutationBoundaryIso U.basis pivot pivotOpp c U.regular
     apply U.hasBoundarySign_of_boundaryIso W boundaryIso hBranch 1
     intro _ _ _ n hn P Q u v hP hQ hu hv
-    exact Ray.cycleOrientationSign_mutationBoundaryIso
+    exact Ray.cycleOrientationSign_mutationBoundaryIso k₀
       (hΨ₀ := W.subdivision.nonempty_cones_of_nonempty B.isComplete.nonempty_cones)
       U.basis pivot pivotOpp c U.regular
       P Q hP hQ (by simpa only [zero_add] using hu 0) hv
   · simp only [OrderedToricModel.xEvaluation_def]
     exact hEval
 
-private theorem exists_word_of_star_step [Z.IsProjectiveOver ℂ]
+private theorem exists_word_of_star_step [Z.IsProjectiveOver k₀]
     (U : OrderedToricModel A m) (e : StarStep A B) :
     ∃ (W : OrderedToricModel B m) (w : Word U.exchangeMatrix W.exchangeMatrix),
       Nonempty (SarkisovStep U.refinedProjection W.refinedProjection) ∧
         U.HasBoundarySign W ((-1 : ℤˣ) ^ w.inversionCount) ∧
-        ∃ h, U.xEvaluation.compOfDefined (w.xRationalMap ℂ) h = W.xEvaluation := by
+        ∃ h, U.xEvaluation.compOfDefined (w.xRationalMap k₀) h = W.xEvaluation := by
   let p := @Quiver.Hom.toPath _ instQuiver A B e
   obtain ⟨K, hK, hp⟩ := exists_word_of_resolved_star_path p U
   let W : OrderedToricModel B m :=
     ⟨U.fan, U.regular, K, U.basis, U.rays, U.parameters, U.iso, hK, U.pole_eq⟩
   let f : X[U.fan] ⟶ X[U.fan] := 𝟙 _
   refine ⟨W, .nil, ⟨⟨f.toRationalMap, ?_, ?_⟩⟩, ?_, hp.2.2.2.2⟩
-  · simpa only [f, FanEquiv.toFanHom_refl, FanHom.algebraicMap_id, Fan.torusTranslation_one,
+  · simpa only [f, FanEquiv.toFanHom_refl, FanHom.finiteFanSchemeHom_id,
+    Fan.torusTranslationIso_one,
       Iso.refl_hom, Category.id_comp] using
         IsSarkisovLink.toricIso (FanEquiv.refl U.fan) 1
   · simp only [f, Scheme.RationalMap.comp_toRationalMap, Scheme.RationalMap.compHom_id,
@@ -257,20 +262,20 @@ private theorem exists_word_of_star_step [Z.IsProjectiveOver ℂ]
     refine (congrArg (fun k : ℕ ↦ (-1 : ℤˣ) ^ k) hInv).symm ▸ ?_
     rw [pow_zero]
     refine U.hasBoundarySign_of_toricIso W (FanEquiv.refl U.fan) 1 ?_ 1 ?_
-    · simp only [FanEquiv.toFanHom_refl, FanHom.algebraicMap_id, Fan.torusTranslation_one,
+    · simp only [FanEquiv.toFanHom_refl, FanHom.finiteFanSchemeHom_id, Fan.torusTranslationIso_one,
         Iso.refl_hom, Category.comp_id, U.hom_def, W.hom_def]
       rfl
     · simp [W]
 
 private theorem exists_word_of_toric_iso (U : OrderedToricModel A m)
-    (f : FanEquiv A.fan B.fan) (χ : Multiplicative (N →+ ℤ) →* ℂˣ)
+    (f : FanEquiv A.fan B.fan) (χ : Multiplicative (N →+ ℤ) →* k₀ˣ)
     (hf : A.hom.toRationalMap.comp
-      (f.toFanHom.algebraicMap ≫ (B.fan.torusTranslation χ).hom).toRationalMap =
+      ((f.toFanHom.finiteFanSchemeHom k₀) ≫ (B.fan.torusTranslationIso k₀ χ).hom).toRationalMap =
         B.hom.toRationalMap) :
     ∃ (W : OrderedToricModel B m) (w : Word U.exchangeMatrix W.exchangeMatrix),
       Nonempty (SarkisovStep U.refinedProjection W.refinedProjection) ∧
         U.HasBoundarySign W ((-1 : ℤˣ) ^ w.inversionCount) ∧
-        ∃ h, U.xEvaluation.compOfDefined (w.xRationalMap ℂ) h = W.xEvaluation := by
+        ∃ h, U.xEvaluation.compOfDefined (w.xRationalMap k₀) h = W.xEvaluation := by
   have hModel := U.exists_model_of_iso f χ hf
   extract_lets Θ F K b s c at hModel
   obtain ⟨e, he, hPole, hModel⟩ := hModel
@@ -278,7 +283,7 @@ private theorem exists_word_of_toric_iso (U : OrderedToricModel A m)
   obtain ⟨hmap, hStep⟩ := hModel
   let : Nonempty Θ.cones := K.nonempty_cones_of_nonempty B.isComplete.nonempty_cones
   have hdet := U.basis.detDualEquiv_map F.latticeEquiv.toIntLinearEquiv
-  have hEval := F.comp_xEvaluation_of_toric_iso U.basis b U.rays s id
+  have hEval := F.comp_xEvaluation_of_toric_iso k₀ U.basis b U.rays s id
     (centerCharacter U.parameters) (centerCharacter c) χ (fun _ ↦ rfl) hdet
     (fun j ↦ by simp [c, centerCharacter, Finsupp.linearEquivFunOnFinite_symm_single])
   have hEq : W.xEvaluation = U.xEvaluation := by
@@ -310,35 +315,36 @@ a typed X word in the source and terminal labelings. The induced link on the
 refined fans is resolved on the same surface, and the word carries the source
 X evaluation to the target evaluation at the generic point. Its inversion sign
 compares the two branch orientations on the common boundary. -/
-theorem SarkisovStep.exists_word [Z.IsProjectiveOver ℂ] (e : SarkisovStep A B)
+theorem SarkisovStep.exists_word [Z.IsProjectiveOver k₀] (e : SarkisovStep A B)
     (U : OrderedToricModel A m) :
     ∃ (W : OrderedToricModel B m) (w : Word U.exchangeMatrix W.exchangeMatrix),
       Nonempty (SarkisovStep U.refinedProjection W.refinedProjection) ∧
         U.HasBoundarySign W ((-1 : ℤˣ) ^ w.inversionCount) ∧
-        ∃ h, U.xEvaluation.compOfDefined (w.xRationalMap ℂ) h = W.xEvaluation := by
+        ∃ h, U.xEvaluation.compOfDefined (w.xRationalMap k₀) h = W.xEvaluation := by
   rcases e with ⟨f, hf, he⟩
   cases A
   cases B
   cases hf with
   | blowup H =>
     apply exists_word_of_star_step U (.blowup H ?_)
-    let (F : Fan i) : X[F].IsSeparated := F.isSeparated_algebraicRealization
+    let (F : Fan i) : X[F].IsSeparated := F.isSeparated_finiteFanScheme k₀
     apply Scheme.Hom.toRationalMap_injective
     have hh := congrArg (fun g ↦ g.compHom π[H.isSubdivision]) he
     rw [← Scheme.RationalMap.comp_toRationalMap, Scheme.RationalMap.comp_assoc,
-      H.isSubdivision.toRationalMap_algebraicMap, denseTorusPartialIso_toRationalMap_comp,
+      H.isSubdivision.toRationalMap_finiteFanSchemeHom k₀, denseTorusPartialIso_toRationalMap_comp,
       denseTorusPartialIso_self_toRationalMap, Scheme.RationalMap.comp_id,
       Scheme.Hom.toRationalMap_compHom] at hh
     exact hh.symm
   | blowdown H =>
     apply exists_word_of_star_step U (.blowdown H ?_)
-    let (F : Fan i) : X[F].IsSeparated := F.isSeparated_algebraicRealization
+    let (F : Fan i) : X[F].IsSeparated := F.isSeparated_finiteFanScheme k₀
     apply Scheme.Hom.toRationalMap_injective
-    rwa [← H.isSubdivision.toRationalMap_algebraicMap, Scheme.RationalMap.comp_toRationalMap,
+    rwa [← H.isSubdivision.toRationalMap_finiteFanSchemeHom k₀,
+      Scheme.RationalMap.comp_toRationalMap,
       Scheme.Hom.toRationalMap_compHom] at he
   | mutation b ρ c hOpp =>
     rename_i hReg hComplete r hOver hDom hPole
-    let C : LogarithmicProjection i D := ⟨_, hReg, hComplete, r, hOver, hDom, hPole⟩
+    let C : LogarithmicProjection k₀ i D := ⟨_, hReg, hComplete, r, hOver, hDom, hPole⟩
     obtain ⟨U', u, hb, hRef, -, huSign, hu⟩ := U.exists_word_reframe b
     obtain ⟨W, w, hStep, hwSign, hw⟩ :=
       exists_word_of_mutation_in_frame (B := C) U' b hb ρ c hOpp rfl he
@@ -353,7 +359,7 @@ on the common resolving surface and equals the evaluation of the transported
 terminal model. The path on the refined fans forgets to the specified path,
 and its composite commutes with the endpoint subdivisions. The word's inversion
 sign compares the branch orders of the two models on the resolving boundary. -/
-theorem exists_word_of_resolved_sarkisov_path [Z.IsProjectiveOver ℂ] (p : SarkisovPath A B)
+theorem exists_word_of_resolved_sarkisov_path [Z.IsProjectiveOver k₀] (p : SarkisovPath A B)
     (U : OrderedToricModel A m) :
     ∃ (W : OrderedToricModel B m) (w : Word U.exchangeMatrix W.exchangeMatrix)
       (q : @Quiver.Path _ (presentationQuiver m) ⟨A, U⟩ ⟨B, W⟩),
@@ -362,12 +368,12 @@ theorem exists_word_of_resolved_sarkisov_path [Z.IsProjectiveOver ℂ] (p : Sark
           (SarkisovPath.rationalMap ((refinePresentation m).mapPath q)).comp
             π[W.subdivision].toRationalMap ∧
         U.HasBoundarySign W ((-1 : ℤˣ) ^ w.inversionCount) ∧
-        ∃ h, U.xEvaluation.compOfDefined (w.xRationalMap ℂ) h = W.xEvaluation := by
+        ∃ h, U.xEvaluation.compOfDefined (w.xRationalMap k₀) h = W.xEvaluation := by
   have hLift : ∃ (W : OrderedToricModel B m) (w : Word U.exchangeMatrix W.exchangeMatrix)
       (q : @Quiver.Path _ (presentationQuiver m) ⟨A, U⟩ ⟨B, W⟩),
       (forgetPresentation m).mapPath q = p ∧
         U.HasBoundarySign W ((-1 : ℤˣ) ^ w.inversionCount) ∧
-        ∃ h, U.xEvaluation.compOfDefined (w.xRationalMap ℂ) h = W.xEvaluation := by
+        ∃ h, U.xEvaluation.compOfDefined (w.xRationalMap k₀) h = W.xEvaluation := by
     induction p with
     | nil =>
       exact ⟨U, .nil, .nil, rfl, by simpa using OrderedToricModel.HasBoundarySign.refl U,

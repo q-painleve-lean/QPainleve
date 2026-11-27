@@ -34,6 +34,8 @@ open Scheme Scheme.IdealSheafData TauCeti TauCeti.AlgebraicGeometry TauCeti.Tori
 
 namespace QPainleve.SignedClusterModularGroup
 
+variable {k₀ : Type} [Field k₀] [IsAlgClosed k₀]
+
 /-- The weight-one offsets of the integral kernel generator, with sign normalized at
 offset zero. Return `none` unless the kernel has rank one and the filter has cardinality `n`. -/
 def survivingRayOffsetsOfIntersectionMatrix {m n : ℕ} [NeZero m]
@@ -155,10 +157,10 @@ namespace CompleteToricPresentation
 
 open GeometricRealization (Point)
 
-local notation "S" => Spec (CommRingCat.of ℂ)
-local notation "Centers[" r "]" => Over.mk (structureMap ℂ (Fin r → ℤ))
-local notation "XTor[" r "]" => scheme ℂ (Fin r →₀ ℤ)
-local notation "χ[" c "]" => pointsEquiv ℂ _ (Subtype.mk (Over.Hom.left c) (Over.w c))
+local notation "S" => Spec (CommRingCat.of k₀)
+local notation "Centers[" r "]" => Over.mk (structureMap k₀ (Fin r → ℤ))
+local notation "XTor[" r "]" => scheme k₀ (Fin r →₀ ℤ)
+local notation "χ[" c "]" => pointsEquiv k₀ _ (Subtype.mk (Over.Hom.left c) (Over.w c))
 local notation "D[" M "]" => Scheme.Hom.ker (Over.Hom.left (Arrow.hom (MarkedSurface.pair M)))
 local notation "cartier[" M "]" => MarkedSurface.isEffectiveCartier_boundaryIdeal M
 local notation "classOf(" h ")" => (LineBundleClass.mk (IsEffectiveCartier.toInvertibleSheaf h))⁻¹
@@ -166,19 +168,20 @@ local notation "classOf(" h ")" => (LineBundleClass.mk (IsEffectiveCartier.toInv
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {b : Basis (Fin 2) ℤ N} {r n : ℕ} [NeZero n]
   {L γ : Type} [AddCommGroup L] {B : LinearMap.BilinForm ℤ L}
-  (Q : CompleteToricPresentation i b r L γ)
-  {c₀ : Point Centers[r]} {M₀ : MarkedSurface ℂ n B XTor[r]}
+  (Q : CompleteToricPresentation k₀ i b r L γ)
+  {c₀ : Point (Over.mk (QPainleve.CharacterTorus.structureMap k₀ (Fin r →
+    ℤ)))} {M₀ : MarkedSurface k₀ n B (QPainleve.CharacterTorus.scheme k₀ (Fin r →₀ ℤ))}
 
 local instance instNonemptyIntersectionKernelCones : Nonempty Q.fan.cones :=
   Q.complete.nonempty_cones
 local instance instNeZeroIntersectionKernelBoundaryLength : NeZero Q.length := Q.neZero
 local instance instPrestableIntersectionKernelBoundary :
-    PrestableFamily ((Q.fan.boundaryIdeal Q.complete.nonempty_cones).subscheme ↘ S) :=
+    PrestableFamily ((Q.fan.toricBoundaryIdeal k₀ Q.complete.nonempty_cones).subscheme ↘ S) :=
   Q.prestable
 
 local notation "eFin" => ZMod.finEquiv Q.length
-local notation "u" => Q.fan.rayEquivOfNodalCycleNumbering Q.regular (Q.cycle.rotate Q.origin)
-local notation "rayAt" => Q.fan.rayFinEquivOfNodalCycleNumbering Q.regular Q.cycle Q.origin
+local notation "u" => Q.fan.rayEquivOfNodalCycleNumbering k₀ Q.regular (Q.cycle.rotate Q.origin)
+local notation "rayAt" => Q.fan.rayFinEquivOfNodalCycleNumbering k₀ Q.regular Q.cycle Q.origin
 local notation "fiber[" M "," c "]" =>
   ContractedToricFiber b Q.rays Q.regular Q.cycle Q.origin Q.inclusion χ[c] M
 
@@ -190,7 +193,7 @@ private theorem rotatedRayOrder_positive (j : ZMod Q.length) :
   simpa only [add_right_comm j 1 Q.origin] using Q.positive (j + Q.origin)
 
 local notation "center[" c "]" => (fun j : Fin r ↦ χ[c] (ofAdd (Pi.single j 1)))
-local notation "Model[" c "]" => Fan.internalBlowupTower b Q.rays center[c]
+local notation "Model[" c "]" => Fan.internalBlowupTower k₀ b Q.rays center[c]
 local notation "J[" c "]" => Scheme.Hom.ker (WithBoundary.boundaryι (Sigma.snd Model[c]))
 local notation "canonicalMatrix" => internalBlowupBoundaryIntersectionMatrix
   (fun j ↦ b.repr (Fan.Ray.primitiveGenerator (u j))) (Equiv.symm u ∘ Q.rays)
@@ -199,43 +202,43 @@ private theorem transportedBoundaryMatrix_eq {Y : Scheme} [Y.Over S] [IsIntegral
     [IsNoetherian Y] [∀ y : Y, UniqueFactorizationMonoid (Y.presheaf.stalk y)]
     {E : Y.IdealSheafData} (e : (Model[c₀]).1 ≅ Y)
     (he : e.hom ≫ (Y ↘ S) = (WithBoundary.toTower (Model[c₀]).2).toBase ≫
-      (Q.fan.algebraicRealization ↘ S))
+      ((Q.fan.finiteFanScheme k₀) ↘ S))
     (hE : (E.comap e.hom).support = (J[c₀]).support) :
-    Chow.primeIntersectionMatrix ℂ (fun j : Fin Q.length ↦ E.boundaryPrimeEmbedding
-      (Fan.internalBlowupBoundaryPrimeEquivOfIso Q.regular b Q.rays center[c₀] e hE
+    Chow.primeIntersectionMatrix k₀ (fun j : Fin Q.length ↦ E.boundaryPrimeEmbedding
+      (Fan.internalBlowupBoundaryPrimeEquivOfIso k₀ Q.regular b Q.rays center[c₀] e hE
         (u (eFin j)))) = canonicalMatrix := by
   let : (Model[c₀]).1.Over S := ⟨(WithBoundary.toTower (Model[c₀]).2).toBase ≫
-    (Q.fan.algebraicRealization ↘ S)⟩
+    ((Q.fan.finiteFanScheme k₀) ↘ S)⟩
   let : e.hom.IsOver S := ⟨he⟩
   let : IsIntegral (Model[c₀]).1 :=
-    Fan.isIntegral_internalBlowupTower b Q.rays center[c₀] Q.regular
+    Fan.isIntegral_internalBlowupTower k₀ b Q.rays center[c₀] Q.regular
   let : IsNoetherian (Model[c₀]).1 := (WithBoundary.toTower (Model[c₀]).2).isNoetherian
   let : SmoothOfRelativeDimension 2 ((Model[c₀]).1 ↘ S) :=
-    Fan.smoothOfRelativeDimension_internalBlowupTower b Q.rays center[c₀] Q.regular
+    Fan.smoothOfRelativeDimension_internalBlowupTower k₀ b Q.rays center[c₀] Q.regular
   let (y : (Model[c₀]).1) : UniqueFactorizationMonoid ((Model[c₀]).1.presheaf.stalk y) :=
     ((Model[c₀]).1 ↘ S).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two y
   let p (j : Fin Q.length) := (J[c₀]).boundaryPrimeEmbedding
-    (Fan.internalBlowupBoundaryPrimeEquiv Q.regular b Q.rays center[c₀] (u (eFin j)))
+    (Fan.internalBlowupBoundaryPrimeEquiv k₀ Q.regular b Q.rays center[c₀] (u (eFin j)))
   have hp (j : Fin Q.length) : CodimensionOnePoint.mapOfIsOpenImmersion e.hom (p j) =
       E.boundaryPrimeEmbedding
-        (Fan.internalBlowupBoundaryPrimeEquivOfIso Q.regular b Q.rays center[c₀] e hE
+        (Fan.internalBlowupBoundaryPrimeEquivOfIso k₀ Q.regular b Q.rays center[c₀] e hE
           (u (eFin j))) := by
     apply Subtype.ext
     simp [p, Fan.internalBlowupBoundaryPrimeEquivOfIso_apply_val]
-  rw [← Fan.primeIntersectionMatrix_internalBlowupBoundaryPrime_eq b Q.regular Q.complete
+  rw [← Fan.primeIntersectionMatrix_internalBlowupBoundaryPrime_eq k₀ b Q.regular Q.complete
     u Q.rays center[c₀] Q.rotatedRayOrder_positive]
   ext j k
   rw [Chow.primeIntersectionMatrix_apply, Chow.primeIntersectionMatrix_apply, ← hp, ← hp]
   symm
   simpa only [LineBundleClass.pullback_primeDivisorClass_mapOfIsOpenImmersion] using
-    Chow.classIntersectionNumber_pullback_of_isIso ℂ e.hom
+    Chow.classIntersectionNumber_pullback_of_isIso k₀ e.hom
       (LineBundleClass.primeDivisorClass (CodimensionOnePoint.mapOfIsOpenImmersion e.hom (p j)))
       (LineBundleClass.primeDivisorClass (CodimensionOnePoint.mapOfIsOpenImmersion e.hom (p k)))
 
 private theorem survivingRayOffsetsOfIntersectionMatrix_eq
     (p₀ : fiber[M₀,c₀]) (hnodal₀ : p₀.IsNodalContraction)
-    (hnef : (classOf(cartier[M₀])).IsNef ℂ (M₀.surface ↘ S))
-    (hsq : Chow.classIntersectionNumber ℂ M₀.surface classOf(cartier[M₀])
+    (hnef : (classOf(cartier[M₀])).IsNef k₀ (M₀.surface ↘ S))
+    (hsq : Chow.classIntersectionNumber k₀ M₀.surface classOf(cartier[M₀])
       classOf(cartier[M₀]) = 0) :
     survivingRayOffsetsOfIntersectionMatrix canonicalMatrix =
       some (p₀.survivingBoundaryRayOffsets cartier[M₀]) := by
@@ -245,8 +248,8 @@ private theorem survivingRayOffsetsOfIntersectionMatrix_eq
     dsimp only [E]
     rw [← comap_comp, he, p₀.support_comap]
   let enum := (eFin).toEquiv.trans ((u).trans
-    (Fan.internalBlowupBoundaryPrimeEquivOfIso Q.regular b Q.rays center[c₀] e.symm hE))
-  let : M₀.surface.IsProjectiveOver ℂ := M₀.projective
+    (Fan.internalBlowupBoundaryPrimeEquivOfIso k₀ Q.regular b Q.rays center[c₀] e.symm hE))
+  let : M₀.surface.IsProjectiveOver k₀ := M₀.projective
   let : SmoothOfRelativeDimension 2 (M₀.surface ↘ S) := M₀.smooth
   let : PrestableFamily (D[M₀].subscheme ↘ S) := M₀.prestable_boundaryImage
   let : ConnectedSpace D[M₀].subscheme :=
@@ -262,12 +265,12 @@ private theorem survivingRayOffsetsOfIntersectionMatrix_eq
   let (y : Y) : UniqueFactorizationMonoid (Y.presheaf.stalk y) :=
     (Y ↘ S).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two y
   have hover : e.inv ≫ (Y ↘ S) = (WithBoundary.toTower (Model[c₀]).2).toBase ≫
-      (Q.fan.algebraicRealization ↘ S) := by
+      ((Q.fan.finiteFanScheme k₀) ↘ S) := by
     exact (Category.assoc _ _ _).symm.trans
       (((reassoc_of% he) (M₀.surface ↘ S)).trans p₀.projection_over)
-  have hmatrix : Chow.primeIntersectionMatrix ℂ (E.boundaryPrimeEmbedding ∘ enum) =
+  have hmatrix : Chow.primeIntersectionMatrix k₀ (E.boundaryPrimeEmbedding ∘ enum) =
       canonicalMatrix := Q.transportedBoundaryMatrix_eq e.symm hover hE
-  have h := hT.intKernelGenerator_eq_totalTransform_and_surviving ℂ
+  have h := hT.intKernelGenerator_eq_totalTransform_and_surviving k₀
     cartier[M₀] M₀.boundaryIdeal_nodal hconn hnef hsq enum 0
   dsimp only at h
   obtain ⟨hkernel, hsurvives⟩ := h
@@ -283,8 +286,8 @@ private theorem survivingRayOffsetsOfIntersectionMatrix_eq
 those of the numbered boundary of the nef square-zero pair. -/
 theorem survivingRayOffsetsOfIntersectionMatrix_eq_some
     (p₀ : fiber[M₀,c₀]) (hnodal₀ : p₀.IsNodalContraction)
-    (hnef : (classOf(cartier[M₀])).IsNef ℂ (M₀.surface ↘ S))
-    (hsq : Chow.classIntersectionNumber ℂ M₀.surface classOf(cartier[M₀])
+    (hnef : (classOf(cartier[M₀])).IsNef k₀ (M₀.surface ↘ S))
+    (hsq : Chow.classIntersectionNumber k₀ M₀.surface classOf(cartier[M₀])
       classOf(cartier[M₀]) = 0)
     (ray : Fin Q.length → Fin 2 → ℤ) (centerRay : Fin r → Fin Q.length)
     (hray : ∀ j, ray j = b.repr (rayAt j).primitiveGenerator)
@@ -307,8 +310,8 @@ theorem survivingRayOffsetsOfIntersectionMatrix_eq_some
 comparison uses exactly the seed and numbered order table of the reference fiber. -/
 theorem compareSignedLoopListsFromRays_eq_compareSignedLoopLists
     (p₀ : fiber[M₀,c₀]) (hnodal₀ : p₀.IsNodalContraction)
-    (hnef : (classOf(cartier[M₀])).IsNef ℂ (M₀.surface ↘ S))
-    (hsq : Chow.classIntersectionNumber ℂ M₀.surface classOf(cartier[M₀])
+    (hnef : (classOf(cartier[M₀])).IsNef k₀ (M₀.surface ↘ S))
+    (hsq : Chow.classIntersectionNumber k₀ M₀.surface classOf(cartier[M₀])
       classOf(cartier[M₀]) = 0)
     (ray : Fin Q.length → Fin 2 → ℤ) (centerRay : Fin r → Fin Q.length)
     (hray : ∀ j, ray j = b.repr (rayAt j).primitiveGenerator)

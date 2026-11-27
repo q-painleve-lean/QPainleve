@@ -33,12 +33,14 @@ open Scheme Scheme.IdealSheafData TauCeti TauCeti.AlgebraicGeometry TauCeti.Tori
 
 namespace QPainleve.SignedClusterModularGroup.CompleteToricPresentation
 
+variable {k₀ : Type} [Field k₀] [IsAlgClosed k₀] [Uncountable k₀] [CharZero k₀]
+
 open GeometricRealization (Point)
 
-local notation "S" => Spec (CommRingCat.of ℂ)
-local notation "Centers[" r "]" => Over.mk (structureMap ℂ (Fin r → ℤ))
-local notation "XTor[" r "]" => scheme ℂ (Fin r →₀ ℤ)
-local notation "χ[" c "]" => pointsEquiv ℂ _ (Subtype.mk (Over.Hom.left c) (Over.w c))
+local notation "S" => Spec (CommRingCat.of k₀)
+local notation "Centers[" r "]" => Over.mk (structureMap k₀ (Fin r → ℤ))
+local notation "XTor[" r "]" => scheme k₀ (Fin r →₀ ℤ)
+local notation "χ[" c "]" => pointsEquiv k₀ _ (Subtype.mk (Over.Hom.left c) (Over.w c))
 local notation "cartier[" M "]" => MarkedSurface.isEffectiveCartier_boundaryIdeal M
 local notation "classOf(" h ")" => (LineBundleClass.mk (IsEffectiveCartier.toInvertibleSheaf h))⁻¹
 
@@ -46,14 +48,15 @@ variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {b : Module.Basis (Fin 2) ℤ N} {r n : ℕ} [NeZero n]
   {L γ : Type} [AddCommGroup L] {B : LinearMap.BilinForm ℤ L}
   {E : SkewExchangeMatrix (Fin r)}
-  (Q : CompleteToricPresentation i b r L γ)
-  {c₀ : Point Centers[r]} {M₀ : MarkedSurface ℂ n B XTor[r]}
+  (Q : CompleteToricPresentation k₀ i b r L γ)
+  {c₀ : Point (Over.mk (QPainleve.CharacterTorus.structureMap k₀ (Fin r →
+    ℤ)))} {M₀ : MarkedSurface k₀ n B (QPainleve.CharacterTorus.scheme k₀ (Fin r →₀ ℤ))}
 
 local instance instNonemptyReferenceRelationCones : Nonempty Q.fan.cones :=
   Q.complete.nonempty_cones
 local instance instNeZeroReferenceRelationLength : NeZero Q.length := Q.neZero
 local instance instPrestableReferenceRelationBoundary :
-    PrestableFamily ((Q.fan.boundaryIdeal Q.complete.nonempty_cones).subscheme ↘ S) :=
+    PrestableFamily ((Q.fan.toricBoundaryIdeal k₀ Q.complete.nonempty_cones).subscheme ↘ S) :=
   Q.prestable
 
 local notation "fiber[" M "," c "]" =>
@@ -82,8 +85,8 @@ theorem xPullback_eq_iff_signedLoopInvariants_eq {p₀ : fiber[M₀,c₀]}
     (h : Q.IsSignedLoopComparisonInput p₀ E orders) (k : Type*) [Field k]
     (hnodal₀ : p₀.IsNodalContraction)
     (hprim : IsPrimitive (Additive.ofMul classOf(cartier[M₀])))
-    (hnef : (classOf(cartier[M₀])).IsNef ℂ (M₀.surface ↘ S))
-    (hsq : Chow.classIntersectionNumber ℂ M₀.surface classOf(cartier[M₀])
+    (hnef : (classOf(cartier[M₀])).IsNef k₀ (M₀.surface ↘ S))
+    (hsq : Chow.classIntersectionNumber k₀ M₀.surface classOf(cartier[M₀])
       classOf(cartier[M₀]) = 0)
     (w v : Word E E) {κ : Type*} (β : Module.Basis κ ℤ E.matrix.mulVecLin.ker) :
     w.xPullback k = v.xPullback k ↔
@@ -92,24 +95,24 @@ theorem xPullback_eq_iff_signedLoopInvariants_eq {p₀ : fiber[M₀,c₀]}
   rw [h.orders_eq]
   have href := Q.hasNodalModel_of_contraction hnodal₀
   have hne := href.exchangeMatrix_ne_zero h.matrix_eq hprim hnef hsq
-  refine w.xPullback_eq_iff_signedLoopInvariants_eq_of_charZero v k ℂ hne β _ _ ?_
+  refine w.xPullback_eq_iff_signedLoopInvariants_eq_of_charZero v k k₀ hne β _ _ ?_
   intro hinvariants
   obtain ⟨A⟩ := Q.nonempty_signedLoopPicardComparison_of_nodal_contraction
     p₀ hnodal₀ h.matrix_eq hprim hnef hsq
-  let : M₀.surface.IsProjectiveOver ℂ := M₀.projective
+  let : M₀.surface.IsProjectiveOver k₀ := M₀.projective
   let : SmoothOfRelativeDimension 2 (M₀.surface ↘ S) := M₀.smooth
   let : IsRationalOver (M₀.surface ↘ S) := href.isRationalOver
   let : Module.Free ℤ (Additive (LineBundleClass M₀.surface)) :=
-    M₀.surface.free_picard_of_isRationalOver ℂ
+    M₀.surface.free_picard_of_isRationalOver k₀
   let : Module.Finite ℤ (Additive (LineBundleClass M₀.surface)) :=
-    M₀.surface.finite_picard_of_isRationalOver ℂ
+    M₀.surface.finite_picard_of_isRationalOver k₀
   let : Module.Free ℤ L := Module.Free.of_equiv M₀.picardMarking.symm
   let : Module.Finite ℤ L := Module.Finite.of_surjective _ M₀.picardMarking.symm.surjective
   have heq := (A.signedEquiv_apply_word_eq_iff_signedLoopInvariants_eq M₀.isSymm
     M₀.isPerfPair_of_isRationalOver.nondegenerate
     (M₀.intersectionForm_boundaryClass cartier[M₀] hnef hsq)
     (M₀.boundaryClass_injective_of_nef_square_zero cartier[M₀] hnef hsq) w v β).mpr hinvariants
-  exact (signedClusterModularGroupMap_eq_iff ℂ E (End.of w) (End.of v)).mp
+  exact (signedClusterModularGroupMap_eq_iff k₀ E (End.of w) (End.of v)).mp
     (op_injective (A.identification.signedEquiv.injective heq))
 
 /-- A certified exchange matrix and order table for a nodal contraction make the typed
@@ -118,8 +121,8 @@ theorem compareSignedLoops_eq_true_iff_xPullback_eq {p₀ : fiber[M₀,c₀]}
     (h : Q.IsSignedLoopComparisonInput p₀ E orders) (k : Type*) [Field k]
     (hnodal₀ : p₀.IsNodalContraction)
     (hprim : IsPrimitive (Additive.ofMul classOf(cartier[M₀])))
-    (hnef : (classOf(cartier[M₀])).IsNef ℂ (M₀.surface ↘ S))
-    (hsq : Chow.classIntersectionNumber ℂ M₀.surface classOf(cartier[M₀])
+    (hnef : (classOf(cartier[M₀])).IsNef k₀ (M₀.surface ↘ S))
+    (hsq : Chow.classIntersectionNumber k₀ M₀.surface classOf(cartier[M₀])
       classOf(cartier[M₀]) = 0)
     (w v : Word E E) :
     E.compareSignedLoops orders w v = true ↔ w.xPullback k = v.xPullback k := by
@@ -132,8 +135,8 @@ theorem xPullback_eq_iff_xPullback_eq {p₀ : fiber[M₀,c₀]}
     (h : Q.IsSignedLoopComparisonInput p₀ E orders) (k k' : Type*) [Field k] [Field k']
     (hnodal₀ : p₀.IsNodalContraction)
     (hprim : IsPrimitive (Additive.ofMul classOf(cartier[M₀])))
-    (hnef : (classOf(cartier[M₀])).IsNef ℂ (M₀.surface ↘ S))
-    (hsq : Chow.classIntersectionNumber ℂ M₀.surface classOf(cartier[M₀])
+    (hnef : (classOf(cartier[M₀])).IsNef k₀ (M₀.surface ↘ S))
+    (hsq : Chow.classIntersectionNumber k₀ M₀.surface classOf(cartier[M₀])
       classOf(cartier[M₀]) = 0)
     (w v : Word E E) :
     w.xPullback k = v.xPullback k ↔ w.xPullback k' = v.xPullback k' :=
@@ -145,8 +148,8 @@ def decidableXPullbackEq {p₀ : fiber[M₀,c₀]}
     (h : Q.IsSignedLoopComparisonInput p₀ E orders) (k : Type*) [Field k]
     (hnodal₀ : p₀.IsNodalContraction)
     (hprim : IsPrimitive (Additive.ofMul classOf(cartier[M₀])))
-    (hnef : (classOf(cartier[M₀])).IsNef ℂ (M₀.surface ↘ S))
-    (hsq : Chow.classIntersectionNumber ℂ M₀.surface classOf(cartier[M₀])
+    (hnef : (classOf(cartier[M₀])).IsNef k₀ (M₀.surface ↘ S))
+    (hsq : Chow.classIntersectionNumber k₀ M₀.surface classOf(cartier[M₀])
       classOf(cartier[M₀]) = 0)
     (w v : Word E E) : Decidable (w.xPullback k = v.xPullback k) :=
   decidable_of_iff (E.compareSignedLoops orders w v = true)
@@ -158,8 +161,8 @@ theorem compareSignedLoopLists_eq_some_iff_xPullback_eq {p₀ : fiber[M₀,c₀]
     (h : Q.IsSignedLoopComparisonInput p₀ E orders) (k : Type*) [Field k]
     (hnodal₀ : p₀.IsNodalContraction)
     (hprim : IsPrimitive (Additive.ofMul classOf(cartier[M₀])))
-    (hnef : (classOf(cartier[M₀])).IsNef ℂ (M₀.surface ↘ S))
-    (hsq : Chow.classIntersectionNumber ℂ M₀.surface classOf(cartier[M₀])
+    (hnef : (classOf(cartier[M₀])).IsNef k₀ (M₀.surface ↘ S))
+    (hsq : Chow.classIntersectionNumber k₀ M₀.surface classOf(cartier[M₀])
       classOf(cartier[M₀]) = 0)
     (gs hs : List (Generator (Fin r))) (result : Bool) :
     E.compareSignedLoopLists orders gs hs = some result ↔

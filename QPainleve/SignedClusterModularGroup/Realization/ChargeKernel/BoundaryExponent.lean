@@ -40,15 +40,17 @@ open TauCeti TauCeti.AlgebraicGeometry TauCeti.Toric
 
 namespace QPainleve.SignedClusterModularGroup
 
-local notation "S" => Spec (CommRingCat.of ℂ)
-local notation "Centers[" r "]" => Over.mk (structureMap ℂ (Fin r → ℤ))
-local notation "XTor[" r "]" => scheme ℂ (Fin r →₀ ℤ)
+variable {k₀ : Type} [Field k₀] [IsAlgClosed k₀]
+
+local notation "S" => Spec (CommRingCat.of k₀)
+local notation "Centers[" r "]" => Over.mk (structureMap k₀ (Fin r → ℤ))
+local notation "XTor[" r "]" => scheme k₀ (Fin r →₀ ℤ)
 local notation "D[" M "]" => Scheme.Hom.ker (Over.Hom.left (Arrow.hom (MarkedSurface.pair M)))
 local notation "cartier(" M ")" => MarkedSurface.isEffectiveCartier_boundaryIdeal M
 local notation "classOf(" h ")" => (LineBundleClass.mk (IsEffectiveCartier.toInvertibleSheaf h))⁻¹
 local notation "orth[" H "," d "]" =>
   LinearMap.BilinForm.orthogonal H (Submodule.span ℤ (Set.range d))
-local notation "χ[" c "]" => pointsEquiv ℂ _ (Subtype.mk (Over.Hom.left c) (Over.w c))
+local notation "χ[" c "]" => pointsEquiv k₀ _ (Subtype.mk (Over.Hom.left c) (Over.w c))
 local notation "total[" d "]" => ∑ j, d j
 
 namespace CompleteToricPresentation
@@ -56,7 +58,7 @@ namespace CompleteToricPresentation
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {b : Module.Basis (Fin 2) ℤ N} {r n : ℕ} [NeZero n]
   {L γ : Type} [AddCommGroup L] {H : LinearMap.BilinForm ℤ L}
-  (Q : CompleteToricPresentation i b r L γ)
+  (Q : CompleteToricPresentation k₀ i b r L γ)
 
 /-- The exponent of the total boundary, in the ordered center coordinates of the
 presentation. Its entries are the negatives of the exceptional coordinates of the
@@ -75,7 +77,7 @@ private local instance : Nonempty Q.fan.cones := Q.complete.nonempty_cones
 /-- In a contracted fiber the exponent at a center is the multiplicity of its ray
 in the actual total boundary transform. -/
 theorem totalBoundaryExponent_eq_totalBoundaryRayMultiplicity
-    {c : GeometricRealization.Point Centers[r]} {M : MarkedSurface ℂ n H XTor[r]}
+    {c : GeometricRealization.Point Centers[r]} {M : MarkedSurface k₀ n H XTor[r]}
     (p : ContractedToricFiber (h₀ := Q.complete.nonempty_cones)
       b Q.rays Q.regular Q.cycle Q.origin Q.inclusion χ[c] M)
     (d : ZMod n → L) (hd : M.boundaryClass (cartier(M)) = d) :
@@ -87,20 +89,20 @@ theorem totalBoundaryExponent_eq_totalBoundaryRayMultiplicity
   simp only [Pi.neg_apply, neg_neg]
 
 private theorem HasNodalModel.coe_chargeKernelEquiv_apply_eq_totalBoundaryExponent
-    {c : GeometricRealization.Point Centers[r]} {M : MarkedSurface ℂ n H XTor[r]}
+    {c : GeometricRealization.Point Centers[r]} {M : MarkedSurface k₀ n H XTor[r]}
     (h : Q.HasNodalModel c M) {d : ZMod n → L}
     (hd : M.boundaryClass (cartier(M)) = d) (x : orth[H,d]) (hx : x.val = total[d]) :
     (h.chargeKernelEquiv (cartier(M)) hd x : Fin r → ℤ) = Q.totalBoundaryExponent d := by
   rw [h.coe_chargeKernelEquiv_apply, hx, Q.totalBoundaryExponent_def]
 
 private theorem HasNodalModel.genus_eq_zero_at_boundary_normalization
-    {c : GeometricRealization.Point Centers[r]} {M : MarkedSurface ℂ n H XTor[r]}
+    {c : GeometricRealization.Point Centers[r]} {M : MarkedSurface k₀ n H XTor[r]}
     (h : Q.HasNodalModel c M) :
     letI := M.prestable_boundaryImage
-    ∀ v : irreducibleComponents (D[M].subscheme.singularLocus ℂ).blowup,
-      (D[M].subscheme.blowupComponent (K := ℂ) v).toScheme.genus ℂ = 0 := by
+    ∀ v : irreducibleComponents (D[M].subscheme.singularLocus k₀).blowup,
+      (D[M].subscheme.blowupComponent (K := k₀) v).toScheme.genus k₀ = 0 := by
   let : IsIntegral M.surface := M.integral
-  let : M.surface.IsProjectiveOver ℂ := M.projective
+  let : M.surface.IsProjectiveOver k₀ := M.projective
   let : SmoothOfRelativeDimension 2 (M.surface ↘ S) := M.smooth
   let : PrestableFamily (D[M].subscheme ↘ S) := M.prestable_boundaryImage
   exact h.hasToricPresentation.genus_blowupComponent_eq_zero (cartier(M))
@@ -108,7 +110,7 @@ private theorem HasNodalModel.genus_eq_zero_at_boundary_normalization
 /-- The total boundary exponent is a charge relation whenever the total class is
 orthogonal to the boundary. -/
 theorem HasNodalModel.totalBoundaryExponent_mem_chargeKernel
-    {c : GeometricRealization.Point Centers[r]} {M : MarkedSurface ℂ n H XTor[r]}
+    {c : GeometricRealization.Point Centers[r]} {M : MarkedSurface k₀ n H XTor[r]}
     (h : Q.HasNodalModel c M) {d : ZMod n → L}
     (hd : M.boundaryClass (cartier(M)) = d) (hδ : total[d] ∈ orth[H,d]) :
     Q.totalBoundaryExponent d ∈ (Fan.rayChargeMap Q.rays).ker := by
@@ -119,12 +121,12 @@ end CompleteToricPresentation
 
 private theorem mem_orthogonal_total_boundary
     {r n : ℕ} [NeZero n] {L : Type} [AddCommGroup L] {H : LinearMap.BilinForm ℤ L} {d : ZMod n → L}
-    (M : MarkedSurface ℂ n H XTor[r]) (hd : M.boundaryClass (cartier(M)) = d)
-    (hnef : classOf(cartier(M)).IsNef ℂ (M.surface ↘ S))
-    (hsq : Chow.classIntersectionNumber ℂ M.surface classOf(cartier(M)) classOf(cartier(M)) = 0) :
+    (M : MarkedSurface k₀ n H XTor[r]) (hd : M.boundaryClass (cartier(M)) = d)
+    (hnef : classOf(cartier(M)).IsNef k₀ (M.surface ↘ S))
+    (hsq : Chow.classIntersectionNumber k₀ M.surface classOf(cartier(M)) classOf(cartier(M)) = 0) :
     total[d] ∈ orth[H,d] := by
   let : IsIntegral M.surface := M.integral
-  let : M.surface.IsProjectiveOver ℂ := M.projective
+  let : M.surface.IsProjectiveOver k₀ := M.projective
   let : SmoothOfRelativeDimension 2 (M.surface ↘ S) := M.smooth
   rw [← hd, ← M.picardMarking_mem_boundaryOrthogonal_iff (cartier(M)),
     M.picardMarking_sum_boundaryClass (cartier(M))]
@@ -135,8 +137,8 @@ namespace GeometricRealization
 private theorem picard_total_boundary
     {n r : ℕ} [NeZero n] {L₀ L₁ : Type} [AddCommGroup L₀] [AddCommGroup L₁]
     {H₀ : LinearMap.BilinForm ℤ L₀} {H₁ : LinearMap.BilinForm ℤ L₁}
-    {M₀ : Point Centers[r] → MarkedSurface ℂ n H₀ XTor[r]}
-    {M₁ : Point Centers[r] → MarkedSurface ℂ n H₁ XTor[r]}
+    {M₀ : Point Centers[r] → MarkedSurface k₀ n H₀ XTor[r]}
+    {M₁ : Point Centers[r] → MarkedSurface k₀ n H₁ XTor[r]}
     {d₀ : ZMod n → L₀} {d₁ : ZMod n → L₁}
     {C : Centers[r].left.PartialMap Centers[r].left} [IsDominant C.hom]
     [C.IsOver Centers[r].hom Centers[r].hom] {F : XTor[r] ⤏ XTor[r]} [F.IsDominant]
@@ -158,10 +160,13 @@ variable {r n : ℕ} [NeZero n]
   {b₁ : Module.Basis (Fin 2) ℤ N₁}
   {L₀ L₁ γ₀ γ₁ : Type} [AddCommGroup L₀] [AddCommGroup L₁]
   {H₀ : LinearMap.BilinForm ℤ L₀} {H₁ : LinearMap.BilinForm ℤ L₁}
-  {M₀ : Point Centers[r] → MarkedSurface ℂ n H₀ XTor[r]}
-  {M₁ : Point Centers[r] → MarkedSurface ℂ n H₁ XTor[r]}
+  {M₀ : Point (Over.mk (QPainleve.CharacterTorus.structureMap k₀ (Fin r → ℤ))) →
+    MarkedSurface k₀ n H₀ (QPainleve.CharacterTorus.scheme k₀ (Fin r →₀ ℤ))}
+  {M₁ : Point (Over.mk (QPainleve.CharacterTorus.structureMap k₀ (Fin r → ℤ))) →
+    MarkedSurface k₀ n H₁ (QPainleve.CharacterTorus.scheme k₀ (Fin r →₀ ℤ))}
   {d₀ : ZMod n → L₀} {d₁ : ZMod n → L₁}
-  {Q₀ : CompleteToricPresentation i₀ b₀ r L₀ γ₀} {Q₁ : CompleteToricPresentation i₁ b₁ r L₁ γ₁}
+  {Q₀ : CompleteToricPresentation k₀ i₀ b₀ r L₀ γ₀} {Q₁ : CompleteToricPresentation k₀ i₁ b₁
+    r L₁ γ₁}
   {E₀ E₁ : SkewExchangeMatrix (Fin r)} {w : Word E₀ E₁}
 
 local notation "src[" C "," c "]" =>
@@ -175,8 +180,8 @@ ordered branch sign. The target total class is assumed to be orthogonal to the b
 theorem exponentEquiv_totalBoundaryExponent
     {C : Centers[r].left.PartialMap Centers[r].left} [IsDominant C.hom]
     [C.IsOver Centers[r].hom Centers[r].hom]
-    (R : GeometricRealization M₀ M₁ C (w.xRationalMap ℂ))
-    (hC : C.hom = C.domain.ι ≫ (w.centerIso ℂ).hom)
+    (R : GeometricRealization M₀ M₁ C (w.xRationalMap k₀))
+    (hC : C.hom = C.domain.ι ≫ (w.centerIso k₀).hom)
     (hmark₀ : ∀ c j, (M₀ c).boundaryClass (cartier(M₀ c)) j = d₀ j)
     (hmark₁ : ∀ c j, (M₁ c).boundaryClass (cartier(M₁ c)) j = d₁ j)
     (models₀ : ∀ c : CenterPoint (U := Centers[r]) (V := Centers[r]) C,
@@ -192,8 +197,8 @@ theorem exponentEquiv_totalBoundaryExponent
   let := Q₁.prestable
   let := Q₀.neZero
   let := Q₁.neZero
-  let := Q₀.fan.isProjectiveOver_algebraicRealization_of_isComplete Q₀.regular Q₀.complete b₀
-  let := Q₁.fan.isProjectiveOver_algebraicRealization_of_isComplete Q₁.regular Q₁.complete b₁
+  let := Q₀.fan.isProjectiveOver_finiteFanScheme_of_isComplete k₀ Q₀.regular Q₀.complete b₀
+  let := Q₁.fan.isProjectiveOver_finiteFanScheme_of_isComplete k₀ Q₁.regular Q₁.complete b₁
   let := Q₀.smoothOfRelativeDimension_fan
   let := Q₁.smoothOfRelativeDimension_fan
   obtain ⟨c⟩ := nonempty_centerPoint C
@@ -226,8 +231,8 @@ theorem exponentEquiv_totalBoundaryExponent
       (models₁ c).genus_eq_zero_at_boundary_normalization Q₁⟩) t₁
   simpa only [t₀, Units.smul_def, map_smul, Submodule.coe_smul] using h
 
-local notation "Cw[" w "," P "]" => Path.centerPartialMap ℂ w P
-local notation "Cnil[" P "]" => Path.centerPartialMap ℂ Path.nil P
+local notation "Cw[" w "," P "]" => Path.centerPartialMap k₀ w P
+local notation "Cnil[" P "]" => Path.centerPartialMap k₀ Path.nil P
 local notation "mon[" k "," v "]" =>
   CharacterTorus.monomial k (ofAdd (Finsupp.equivFunOnFinite.symm v))
 
@@ -252,11 +257,11 @@ theorem xPullback_totalBoundaryExponent_of_presentations
     (hmark₁ : ∀ c j, (M₁ c).boundaryClass (cartier(M₁ c)) j = d₁ j)
     (hprim₀ : IsPrimitive (Additive.ofMul classOf(cartier(M₀ a₀))))
     (hprim₁ : IsPrimitive (Additive.ofMul classOf(cartier(M₁ a₁))))
-    (hnef₀ : classOf(cartier(M₀ a₀)).IsNef ℂ ((M₀ a₀).surface ↘ S))
-    (hnef₁ : classOf(cartier(M₁ a₁)).IsNef ℂ ((M₁ a₁).surface ↘ S))
-    (hsq₀ : Chow.classIntersectionNumber ℂ (M₀ a₀).surface
+    (hnef₀ : classOf(cartier(M₀ a₀)).IsNef k₀ ((M₀ a₀).surface ↘ S))
+    (hnef₁ : classOf(cartier(M₁ a₁)).IsNef k₀ ((M₁ a₁).surface ↘ S))
+    (hsq₀ : Chow.classIntersectionNumber k₀ (M₀ a₀).surface
       classOf(cartier(M₀ a₀)) classOf(cartier(M₀ a₀)) = 0)
-    (hsq₁ : Chow.classIntersectionNumber ℂ (M₁ a₁).surface
+    (hsq₁ : Chow.classIntersectionNumber k₀ (M₁ a₁).surface
       classOf(cartier(M₁ a₁)) classOf(cartier(M₁ a₁)) = 0) :
     w.xPullback k (mon[k,Q₁.totalBoundaryExponent d₁]) =
       (mon[k,Q₀.totalBoundaryExponent d₀]) ^ ((-1 : ℤˣ) ^ w.inversionCount : ℤ) := by
@@ -267,7 +272,7 @@ theorem xPullback_totalBoundaryExponent_of_presentations
   have hmodels₀ (c : CenterPoint (U := Centers[r]) (V := Centers[r]) Cw[w,P₀]) :
       Q₀.HasNodalModel (src[Cw[w,P₀],c]) (M₀ (src[Cw[w,P₀],c])) := by
     have hU : (Cw[w,P₀]).domain ≤ (Cnil[P₀]).domain := by
-      simpa only [Path.centerPartialMap_domain] using w.centerOpen_le_centerOpen_nil ℂ P₀
+      simpa only [Path.centerPartialMap_domain] using w.centerOpen_le_centerOpen_nil k₀ P₀
     have hc := ((Cw[w,P₀]).exists_section_comp_domainSource_eq_iff
       (Y := Centers[r]) (src[Cw[w,P₀],c]) (default : S)).mp ⟨c, rfl⟩
     obtain ⟨v, hv⟩ := ((Cnil[P₀]).exists_section_comp_domainSource_eq_iff
@@ -279,7 +284,7 @@ theorem xPullback_totalBoundaryExponent_of_presentations
         Path.centerPartialMap_hom, Path.centerIso_nil, Iso.refl_hom, Category.comp_id]
     simpa only [hn, hv] using models₀ v
   have hδ₁ := mem_orthogonal_total_boundary (M₁ a₁) (funext (hmark₁ a₁)) hnef₁ hsq₁
-  have h := R.exponentEquiv_totalBoundaryExponent (w.centerPartialMap_hom (K := ℂ) P₀)
+  have h := R.exponentEquiv_totalBoundaryExponent (w.centerPartialMap_hom (K := k₀) P₀)
     hmark₀ hmark₁ hmodels₀ hmodels₁ hδ₁
   have hx := ref₁.totalBoundaryExponent_mem_chargeKernel Q₁ (funext (hmark₁ a₁)) hδ₁
   have hE := P₁.matrix_eq.symm.trans (congrArg₂ chargeExchangeMatrix hform₁ hcharge₁)

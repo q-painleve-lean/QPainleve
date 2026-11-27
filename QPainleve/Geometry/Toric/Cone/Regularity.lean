@@ -189,4 +189,32 @@ theorem IsToricCone.isRegularCone_of_finrank_span_le_one (hσ : IsToricCone i σ
     (primitiveGenerator_mem hi hσ ρ) hne]
   exact isRegularCone_hull_singleton hi (primitiveGenerator_isPrimitive hi hσ ρ)
 
+/-- A nonzero character of a full-rank regular cone is positive on some primitive ray. -/
+theorem exists_pos_primitiveGenerator_of_ne_zero
+    (hi : IsIntegralLattice i) (hσ : IsToricCone i σ) (hreg : IsRegularCone i σ)
+    (hfull : Nat.card (ToricRay σ) = Module.finrank ℤ N)
+    {m : dualSemigroup hi σ} (hm : m ≠ 0) :
+    ∃ r : ToricRay σ, 0 < (m : N →+ ℤ) (primitiveGenerator hi hσ r) := by
+  classical
+  obtain ⟨l, b, hb⟩ := hreg.exists_basis_sum
+  have := ToricRay.finite_of_fg hσ.fg
+  have hl : l = 0 := by
+    rw [Module.finrank_eq_nat_card_basis b, Nat.card_sum, Nat.card_fin] at hfull
+    omega
+  by_contra! h
+  have hzero : ∀ r : ToricRay σ, (m : N →+ ℤ) (primitiveGenerator hi hσ r) = 0 := by
+    intro r
+    refine le_antisymm (h r) ?_
+    have hnonneg := (mem_dualSemigroup hi _).mp m.property
+      (r.val.isFaceOf.le (primitiveGenerator_mem hi hσ r))
+    exact_mod_cast (hi.realCharacter_apply _ _ ▸ hnonneg)
+  apply hm
+  apply Subtype.ext
+  apply AddMonoidHom.toIntLinearMap_injective
+  apply b.ext
+  rintro (r | j)
+  · simpa only [AddMonoidHom.coe_toIntLinearMap, AddSubmonoid.coe_zero,
+      AddMonoidHom.zero_apply, (hb r).eq_primitiveGenerator hi hσ] using hzero r
+  · exact (Nat.not_lt_zero j.val (hl ▸ j.isLt)).elim
+
 end TauCeti.Toric

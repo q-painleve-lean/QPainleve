@@ -12,7 +12,6 @@ public import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.ProjectiveOver
 
 import QPainleve.AlgebraicGeometry.Blowup.Isomorphism
 import QPainleve.AlgebraicGeometry.Blowup.Projective.Global
-import QPainleve.Geometry.Toric.Fan.Boundary.Subdivision
 import QPainleve.Geometry.Toric.Fan.StarSubdivision.Generators
 import QPainleve.Geometry.Toric.Cone.TwoDimensional
 import QPainleve.Geometry.Toric.Fan.TwoDimensional
@@ -38,7 +37,9 @@ open Scheme.IdealSheafData
 
 namespace TauCeti.Toric.Fan
 
-variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
+universe u
+
+variable {N V : Type u} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {Φ : Fan i}
 
 local notation "plane[" d "]" => projectiveSpace d Φ.lattice
@@ -86,14 +87,17 @@ theorem exists_eq_starSubdivision_projectivePlane_of_hirzebruchOne
   simp only [Set.mem_insert_iff, Set.mem_singleton_iff]
   grind
 
+variable (K : Type u) [Field K]
+
 attribute [local instance] MvPolynomial.gradedAlgebra
 
-local notation "𝒫" => MvPolynomial.homogeneousSubmodule (Fin 3) ℂ
-local notation "S" => Spec (CommRingCat.of ℂ)
+local notation "𝒫" => MvPolynomial.homogeneousSubmodule (Fin 3) K
+local notation "S" => Spec (CommRingCat.of K)
 local notation "vertex[" d "]" =>
-  Fan.distinguishedPointHom plane[d] centerCone[d] ≫ Iso.hom (projectivePlaneIso d Φ.lattice)
+  Fan.distinguishedSection (R := K) plane[d] centerCone[d] ≫
+    Iso.hom (projectivePlaneIso K d Φ.lattice)
 local notation "triangle" =>
-  Scheme.IdealSheafData.radical (∏ j : Fin 3, coordinateHyperplaneIdeal (k := ℂ) (n := 2) j)
+  Scheme.IdealSheafData.radical (∏ j : Fin 3, coordinateHyperplaneIdeal (k := K) (n := 2) j)
 
 /-- The complete regular fan of `𝔽₁` realizes the blowup of the polynomial projective
 plane at its vertex `[1 : 0 : 0]`. The projection is the toric contraction followed
@@ -106,15 +110,15 @@ theorem exists_iso_blowup_projectivePlane_of_hirzebruchOne
     (hrays : Set.range (Fan.Ray.primitiveGenerator (Phi := Φ)) =
       {b 0, b 1, -b 0, b 0 - b 1}) :
     ∃ (d : Basis (Fin 2) ℤ N) (h : Φ.IsSubdivision (plane[d])) (r : Φ.Ray)
-      (e : Φ.algebraicRealization ≅ (vertex[d]).ker.blowup),
+      (e : (Φ.finiteFanScheme K) ≅ (vertex[d]).ker.blowup),
       d 0 = b 0 - b 1 ∧ d 1 = b 1 ∧ r.primitiveGenerator = b 0 ∧
       (vertex[d]) ≫ toSpecCoeff 𝒫 = 𝟙 S ∧
       (∀ (j : Fin 3) (x : S), (vertex[d]) x ∈ basicOpen 𝒫 (MvPolynomial.X j) ↔ j = 0) ∧
       e.hom ≫ (vertex[d]).ker.blowupToBase =
-        h.toFanHom.algebraicMap ≫ (projectivePlaneIso d Φ.lattice).hom ∧
-      (vertex[d]).ker.comap (e.hom ≫ (vertex[d]).ker.blowupToBase) = Φ.rayBoundaryIdeal hΦ r ∧
+        h.toFanHom.finiteFanSchemeHom K ≫ (projectivePlaneIso K d Φ.lattice).hom ∧
+      (vertex[d]).ker.comap (e.hom ≫ (vertex[d]).ker.blowupToBase) = Φ.rayDivisorIdeal K hΦ r ∧
       ((triangle).comap (e.hom ≫ (vertex[d]).ker.blowupToBase)).radical =
-        Φ.boundaryIdeal hc.nonempty_cones ∧ (plane[d]).IsTwoRayStarSubdivision Φ := by
+        Φ.toricBoundaryIdeal K hc.nonempty_cones ∧ (plane[d]).IsTwoRayStarSubdivision Φ := by
   obtain ⟨d, hσ, hd₀, hd₁, heq, hnew⟩ :=
     exists_eq_starSubdivision_projectivePlane_of_hirzebruchOne b hΦ hc hrays
   -- Keep the lattice frame of the plane fixed while replacing the source fan.
@@ -124,28 +128,30 @@ theorem exists_iso_blowup_projectivePlane_of_hirzebruchOne
   let Ψ := projectiveSpace d hi
   let hΨ := isRegular_projectiveSpace d hi
   let σ := projectiveSpaceMaximalCone d hi none
-  let g := projectivePlaneIso d hi
-  let z := Ψ.distinguishedPointHom σ
+  let g := projectivePlaneIso K d hi
+  let z := Ψ.distinguishedSection (R := K) σ
   let p := z ≫ g.hom
   have hcenter : p.ker.comap g.hom = z.ker := z.comap_ker_comp_of_isClosedImmersion g.hom
-  obtain ⟨h₀, f, -, hf, -⟩ := Ψ.exists_iso_blowup_starSubdivisionAlong hΨ σ hN hσ
+  obtain ⟨h₀, f, -, hf, -⟩ := Ψ.exists_iso_blowup_starSubdivisionAlong K hΨ σ hN hσ
   let hstar := Ψ.starSubdivisionAlong_isSubdivision hΨ σ.property h₀
   let u := Ψ.starSubdivisionAlongRay hΨ σ.property h₀
   let e := f ≪≫ blowupIso g hcenter.symm
-  have hproj : e.hom ≫ p.ker.blowupToBase = hstar.toFanHom.algebraicMap ≫ g.hom := by
+  have hproj : e.hom ≫ p.ker.blowupToBase = hstar.toFanHom.finiteFanSchemeHom K ≫ g.hom := by
     rw [Iso.trans_hom, Category.assoc, blowupIso_hom_blowupToBase, ← Category.assoc, hf]
   refine ⟨d, hstar, u, e, hd₀, hd₁, hnew, ?_, ?_, hproj, ?_, ?_, .along hΨ σ hσ⟩
-  · simp only [Category.assoc, projectivePlaneIso_hom_toSpecCoeff,
-      distinguishedPointHom_comp_algebraicRealizationStructureMap]
+  · simp only [Category.assoc, projectivePlaneIso_hom_toSpecCoeff K,
+      distinguishedSection_comp_finiteFanSchemeToSpec]
   · intro j x
     simpa only [Scheme.Hom.comp_apply, finSuccEquiv_zero, eq_comm] using
-      projectivePlaneIso_distinguishedPointHom_mem_basicOpen_iff d hi 0 j x
+      projectivePlaneIso_distinguishedSection_mem_basicOpen_iff K d hi 0 j x
   · rw [hproj, comap_comp, hcenter]
-    exact Ψ.comap_ker_distinguishedPointHom_eq_rayBoundaryIdeal hΨ σ h₀ hN hσ
-  · rw [hproj, comap_comp, projectivePlaneIso_comap_coordinateTriangle d hi ⟨σ⟩]
-    exact hstar.radical_comap_boundaryIdeal hc.nonempty_cones ⟨σ⟩
+    exact Ψ.comap_ker_distinguishedSection_eq_rayDivisorIdeal K hΨ σ h₀ hN hσ
+  · rw [hproj, comap_comp, projectivePlaneIso_comap_coordinateTriangle K d hi ⟨σ⟩]
+    exact hstar.radical_comap_toricBoundaryIdeal K hc.nonempty_cones ⟨σ⟩
 
-private theorem projectivePlane_vertex_starSubdivision_rays
+/-- Subdivision at a plane vertex gives the Hirzebruch-one ray generators.
+The inserted ray is opposite the ray omitted by the vertex cone. -/
+theorem projectivePlane_vertex_starSubdivision_rays
     (d : Basis (Fin 2) ℤ N) (hi : IsIntegralLattice i) (k : Option (Fin 2)) :
     let Ψ := projectiveSpace d hi
     let hΨ := isRegular_projectiveSpace d hi
@@ -187,41 +193,41 @@ theorem exists_blowup_projectivePlane_vertex_hirzebruchOne
     let hΨ := isRegular_projectiveSpace d hi
     let σ := projectiveSpaceMaximalCone d hi k
     let Γ := Ψ.starSubdivisionAlong hΨ σ.property
-    let J := (Ψ.distinguishedPointHom σ).ker
-    ∃ (hσ : σ.val ≠ ⊥) (b : Basis (Fin 2) ℤ N) (e : Γ.algebraicRealization ≅ J.blowup),
+    let J := (Ψ.distinguishedSection (R := K) σ).ker
+    ∃ (hσ : σ.val ≠ ⊥) (b : Basis (Fin 2) ℤ N) (e : (Γ.finiteFanScheme K) ≅ J.blowup),
       Set.range (Ray.primitiveGenerator (Phi := Γ)) = {b 0, b 1, -b 0, b 0 - b 1} ∧
       (Ψ.starSubdivisionAlongRay hΨ σ.property hσ).primitiveGenerator = b 0 ∧
       e.hom ≫ J.blowupToBase =
-        (Ψ.starSubdivisionAlong_isSubdivision hΨ σ.property hσ).toFanHom.algebraicMap ∧
+        (Ψ.starSubdivisionAlong_isSubdivision hΨ σ.property hσ).toFanHom.finiteFanSchemeHom K ∧
       J.comap (e.hom ≫ J.blowupToBase) =
-        Γ.rayBoundaryIdeal (Ψ.isRegular_starSubdivisionAlong hΨ σ.property)
+        Γ.rayDivisorIdeal K (Ψ.isRegular_starSubdivisionAlong hΨ σ.property)
           (Ψ.starSubdivisionAlongRay hΨ σ.property hσ) ∧
       b 0 = -projectiveSpaceGenerator d k := by
   intro Ψ hΨ σ Γ J
   have hdim : Module.finrank ℤ N = 2 := by simpa using Module.finrank_eq_card_basis d
   obtain ⟨hcard, b, hnew, hrays, hb⟩ := projectivePlane_vertex_starSubdivision_rays d hi k
-  obtain ⟨hσ, e, -, he, -⟩ := Ψ.exists_iso_blowup_starSubdivisionAlong hΨ σ hdim hcard
+  obtain ⟨hσ, e, -, he, -⟩ := Ψ.exists_iso_blowup_starSubdivisionAlong K hΨ σ hdim hcard
   exact ⟨hσ, b, e, hrays, hnew, he,
-    he ▸ Ψ.comap_ker_distinguishedPointHom_eq_rayBoundaryIdeal hΨ σ hσ hdim hcard, hb⟩
+    he ▸ Ψ.comap_ker_distinguishedSection_eq_rayDivisorIdeal K hΨ σ hσ hdim hcard, hb⟩
 
 /-- The star subdivision of the plane fan at any specified torus-fixed vertex
-has projective algebraic realization over `ℂ`. -/
+is projective over the coefficient field. -/
 theorem isProjectiveOver_projectivePlane_vertex_starSubdivision
     (d : Basis (Fin 2) ℤ N) (hi : IsIntegralLattice i) (k : Option (Fin 2)) :
     let Ψ := projectiveSpace d hi
     let hΨ := isRegular_projectiveSpace d hi
     let σ := projectiveSpaceMaximalCone d hi k
-    (Ψ.starSubdivisionAlong hΨ σ.property).algebraicRealization.IsProjectiveOver ℂ := by
+    ((Ψ.starSubdivisionAlong hΨ σ.property).finiteFanScheme K).IsProjectiveOver K := by
   intro Ψ hΨ σ
-  obtain ⟨hσ, _, e, -, -, he, -, -⟩ := exists_blowup_projectivePlane_vertex_hirzebruchOne d hi k
-  let J := (Ψ.distinguishedPointHom σ).ker
-  let : J.blowup.Over S := ⟨J.blowupToBase ≫ Ψ.algebraicRealization ↘ S⟩
-  let : Ψ.algebraicRealization.IsProjectiveOver ℂ :=
-    Scheme.IsProjectiveOver.of_isClosedImmersion ℂ (projectiveSpaceToProj d hi)
-  let : J.blowup.IsProjectiveOver ℂ := J.isProjectiveOver_blowup_of_isNoetherianRing ℂ
-  let π := (Ψ.starSubdivisionAlong_isSubdivision hΨ σ.property hσ).toFanHom.algebraicMap
+  obtain ⟨hσ, _, e, -, -, he, -, -⟩ := exists_blowup_projectivePlane_vertex_hirzebruchOne K d hi k
+  let J := (Ψ.distinguishedSection (R := K) σ).ker
+  let : J.blowup.Over S := ⟨J.blowupToBase ≫ (Ψ.finiteFanScheme K) ↘ S⟩
+  let : (Ψ.finiteFanScheme K).IsProjectiveOver K :=
+    Scheme.IsProjectiveOver.of_isClosedImmersion K (finiteFanSchemeToProjectiveSpace K d hi)
+  let : J.blowup.IsProjectiveOver K := J.isProjectiveOver_blowup_of_isNoetherianRing K
+  let π := (Ψ.starSubdivisionAlong_isSubdivision hΨ σ.property hσ).toFanHom.finiteFanSchemeHom K
   let : e.hom.IsOver S :=
-    ⟨((reassoc_of% he) (Ψ.algebraicRealization ↘ S)).trans (comp_over π S)⟩
-  exact Scheme.IsProjectiveOver.of_isClosedImmersion ℂ e.hom
+    ⟨((reassoc_of% he) ((Ψ.finiteFanScheme K) ↘ S)).trans (comp_over π S)⟩
+  exact Scheme.IsProjectiveOver.of_isClosedImmersion K e.hom
 
 end TauCeti.Toric.Fan

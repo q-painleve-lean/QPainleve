@@ -10,6 +10,7 @@ public import QPainleve.Geometry.Toric.Fan.Picard.StrictTransform
 public import QPainleve.AlgebraicGeometry.Chow.SurfaceIntersection
 
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Intersection
+import QPainleve.Geometry.Toric.BaseChange.FiniteType
 import QPainleve.Geometry.Toric.Fan.Subdivision.Projective
 
 /-!
@@ -95,29 +96,33 @@ end QPainleve
 
 namespace TauCeti.Toric.Fan
 
-variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
+universe u
+
+variable (K : Type u) [Field K] [IsAlgClosed K]
+
+variable {N V : Type u} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {Φ : Fan i} {m r : ℕ}
 
-local notation "S" => Spec (CommRingCat.of ℂ)
+local notation "S" => Spec (CommRingCat.of K)
 
 section Geometry
 
 variable [NeZero m] (b : Basis (Fin 2) ℤ N) (hΦ : Φ.IsRegular) (hc : Φ.IsComplete)
-  (e : ZMod m ≃ Φ.Ray) (s : Fin r → Φ.Ray) (c : Fin r → ℂˣ)
+  (e : ZMod m ≃ Φ.Ray) (s : Fin r → Φ.Ray) (c : Fin r → Kˣ)
 
-local notation "Base" => Φ.algebraicRealization
-local notation "P" => internalBlowupTower (h₀ := Fan.IsComplete.nonempty_cones hc) b s c
+local notation "Base" => (Φ.finiteFanScheme K)
+local notation "P" => internalBlowupTower K (h₀ := Fan.IsComplete.nonempty_cones hc) b s c
 local notation "Y" => Sigma.fst P
 local notation "T" => WithBoundary.toTower (Sigma.snd P)
-local notation "hT" => isClosedPointTower_internalBlowupTower
+local notation "hT" => isClosedPointTower_internalBlowupTower K
   (h₀ := Fan.IsComplete.nonempty_cones hc) b s c
 local notation "f" => (Base ↘ S)
 local notation "J" => Scheme.Hom.ker (WithBoundary.boundaryι (Sigma.snd P))
 local notation "prime[" ρ "]" => boundaryPrimeEmbedding J
-  (internalBlowupBoundaryPrimeEquiv hΦ b s c ρ)
+  (internalBlowupBoundaryPrimeEquiv K hΦ b s c ρ)
 local notation "A" => internalBlowupBoundaryIntersectionMatrix
   (fun j ↦ b.repr (Ray.primitiveGenerator (e j))) (e.symm ∘ s)
-local notation "C[" j "]" => markedBoundaryMap hΦ s (Pi.single (e j) 1)
+local notation "C[" j "]" => markedBoundaryMap K hΦ s (Pi.single (e j) 1)
 
 open Classical in
 private theorem classIntersectionNumber_markedBoundaryMap_single_single
@@ -126,25 +131,25 @@ private theorem classIntersectionNumber_markedBoundaryMap_single_single
         ∃ σ : Φ.cones, (e j).toCone ≤ σ ∧ (e (j + 1)).toCone ≤ σ) (a d : Fin m) :
     letI : Nonempty Φ.cones := hc.nonempty_cones
     letI : Scheme.Over Y S := ⟨BlowupTower.toBase T ≫ f⟩
-    classIntersectionNumber ℂ Y (BlowupTower.picardHom T C[ZMod.finEquiv m a]).toMul
+    classIntersectionNumber K Y (BlowupTower.picardHom T C[ZMod.finEquiv m a]).toMul
       (BlowupTower.picardHom T C[ZMod.finEquiv m d]).toMul = A a d := by
   let : Nonempty Φ.cones := hc.nonempty_cones
   let : Scheme.Over Y S := ⟨BlowupTower.toBase T ≫ f⟩
-  let : Scheme.IsProjectiveOver (X := Base) ℂ :=
-    Φ.isProjectiveOver_algebraicRealization_of_isComplete hΦ hc b
+  let : Scheme.IsProjectiveOver (X := Base) K :=
+    Φ.isProjectiveOver_finiteFanScheme_of_isComplete K hΦ hc b
   let : IsIntegral Base := inferInstance
   let : IsNoetherian Base := isNoetherian_of_finiteType f
   let : SmoothOfRelativeDimension 2 f := by
     have hdim := (Module.finrank_eq_card_basis b).trans (Fintype.card_fin 2)
-    rw [algebraicRealization_over, ← hdim]
-    exact Φ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
+    rw [finiteFanScheme_over K, ← hdim]
+    exact Φ.smoothOfRelativeDimension_finiteFanSchemeToSpec K hΦ
   let l := ZMod.finEquiv m d
-  have hself := Φ.rayBoundarySelfIntersection_eq_of_positiveRayCoordinates hΦ hc b e he
-  have hpair := Φ.markedBoundaryMap_single_pairing_eq_strictBoundaryRayDegree
+  have hself := Φ.rayBoundarySelfIntersection_eq_of_positiveRayCoordinates K hΦ hc b e he
+  have hpair := Φ.markedBoundaryMap_single_pairing_eq_strictBoundaryRayDegree K
     hΦ hc b e s ((ZMod.finEquiv m).symm ∘ e.symm ∘ s) (by simp) he
     (Pi.single l 1) (fun k ↦ -((Pi.single l 1 : ZMod m → ℤ) (e.symm (s k)))) a
   rw [← picardMarking_apply T (hT) f, ← picardMarking_apply T (hT) f,
-    classIntersectionNumber_picardMarking ℂ (hT)]
+    classIntersectionNumber_picardMarking K (hT)]
   have hsingle : Pi.single (e l) (1 : ℤ) = Pi.single l 1 ∘ e.symm := by
     rw [Pi.single_comp_equiv, Equiv.symm_symm]
   rw [internalBlowupBoundaryIntersectionMatrix_apply_eq_degree]
@@ -163,30 +168,30 @@ theorem primeIntersectionMatrix_internalBlowupBoundaryPrime_eq
         ∃ σ : Φ.cones, (e j).toCone ≤ σ ∧ (e (j + 1)).toCone ≤ σ) :
     letI : Nonempty Φ.cones := hc.nonempty_cones
     letI : Scheme.Over Y S := ⟨BlowupTower.toBase T ≫ f⟩
-    letI : IsIntegral Y := isIntegral_internalBlowupTower (h₀ := hc.nonempty_cones) b s c hΦ
+    letI : IsIntegral Y := isIntegral_internalBlowupTower K (h₀ := hc.nonempty_cones) b s c hΦ
     letI : IsNoetherian Y := BlowupTower.isNoetherian T
     letI : SmoothOfRelativeDimension 2 (BlowupTower.toBase T ≫ f) :=
-      smoothOfRelativeDimension_internalBlowupTower (h₀ := hc.nonempty_cones) b s c hΦ
+      smoothOfRelativeDimension_internalBlowupTower K (h₀ := hc.nonempty_cones) b s c hΦ
     letI := (BlowupTower.toBase T ≫ f)
       |>.uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two
-    primeIntersectionMatrix ℂ (fun a : Fin m ↦ prime[e (ZMod.finEquiv m a)]) = A := by
+    primeIntersectionMatrix K (fun a : Fin m ↦ prime[e (ZMod.finEquiv m a)]) = A := by
   classical
   let : Nonempty Φ.cones := hc.nonempty_cones
-  let : IsIntegral Y := isIntegral_internalBlowupTower b s c hΦ
+  let : IsIntegral Y := isIntegral_internalBlowupTower K b s c hΦ
   let : IsNoetherian Y := BlowupTower.isNoetherian T
   let : SmoothOfRelativeDimension 2 (BlowupTower.toBase T ≫ f) :=
-    smoothOfRelativeDimension_internalBlowupTower b s c hΦ
+    smoothOfRelativeDimension_internalBlowupTower K b s c hΦ
   let := (BlowupTower.toBase T ≫ f).uniqueFactorizationMonoid_stalk_of_smoothOfRelativeDimension_two
   have h (j : ZMod m) : (BlowupTower.picardHom T C[j]).toMul =
       LineBundleClass.primeDivisorClass prime[e j] := by
     have hmark := congrArg Additive.toMul
-      (picardHom_markedBoundaryMap_single_eq_primeDivisorClass hΦ b s c (e j))
+      (picardHom_markedBoundaryMap_single_eq_primeDivisorClass K hΦ b s c (e j))
     rw [hmark, toMul_ofMul]
     congr 1
     exact Subtype.ext (coe_boundaryPrimeEmbedding _ _).symm
   ext a d
   rw [primeIntersectionMatrix_apply, ← h, ← h]
-  exact classIntersectionNumber_markedBoundaryMap_single_single b hΦ hc e s c he a d
+  exact classIntersectionNumber_markedBoundaryMap_single_single K b hΦ hc e s c he a d
 
 end Geometry
 

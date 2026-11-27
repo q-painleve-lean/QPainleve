@@ -28,60 +28,71 @@ open Module (Basis)
 
 namespace TauCeti.Toric.Fan
 
-variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
+universe u
+
+variable (k : Type u) [Field k] [IsSepClosed k] {N : Type u} {V : Type*}
+  [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {Φ : Fan i} [Nonempty Φ.cones]
 
-local notation "D[" Φ "]" => Fan.boundaryIdeal Φ inferInstance
+local notation "D[" Φ "]" => Fan.toricBoundaryIdeal k Φ inferInstance
 local notation "C[" Φ "]" => Scheme.IdealSheafData.subscheme D[Φ]
-local notation "S" => Spec (CommRingCat.of ℂ)
+local notation "S" => Spec (CommRingCat.of k)
 
-variable [PrestableFamily (C[Φ] ↘ S)]
-  {ι : Type*} {p : ι → (C[Φ] ↘ S).smoothLocus} {n : ℕ} [NeZero n]
+variable [PrestableFamily ((Φ.toricBoundaryIdeal k inferInstance).subscheme ↘ Spec (.of k))]
+  {ι : Type*}
+  {p : ι → ((Φ.toricBoundaryIdeal k inferInstance).subscheme ↘ Spec (.of k)).smoothLocus}
+  {n : ℕ} [NeZero n]
 
 variable (Φ) in
 /-- Read each numbered normalized component of the toric boundary as a ray. -/
-def rayEquivOfNodalCycleNumbering (hΦ : Φ.IsRegular) (A : NodalCycleNumbering p n) :
+def rayEquivOfNodalCycleNumbering (hΦ : Φ.IsRegular)
+    (A : NodalCycleNumbering (k := k) (X := C[Φ]) p n) :
     ZMod n ≃ Φ.Ray :=
-  A.component.trans (Φ.boundaryNormalizationComponentEquiv hΦ).symm
+  A.component.trans (Φ.boundaryNormalizationComponentEquiv k hΦ).symm
 
 /-- The ray read from a numbered component has that component as its normalization. -/
 @[simp]
 theorem boundaryNormalizationComponentEquiv_rayEquivOfNodalCycleNumbering
-    (hΦ : Φ.IsRegular) (A : NodalCycleNumbering p n) (j : ZMod n) :
-    Φ.boundaryNormalizationComponentEquiv hΦ (Φ.rayEquivOfNodalCycleNumbering hΦ A j) =
+    (hΦ : Φ.IsRegular) (A : NodalCycleNumbering (k := k) (X := C[Φ]) p n)
+    (j : ZMod n) :
+    Φ.boundaryNormalizationComponentEquiv k hΦ (Φ.rayEquivOfNodalCycleNumbering k hΦ A j) =
       A.component j :=
   Equiv.apply_symm_apply _ _
 
 /-- Rotating the boundary numbering translates the ray labels by the same offset. -/
 @[simp]
 theorem rayEquivOfNodalCycleNumbering_rotate_apply
-    (hΦ : Φ.IsRegular) (A : NodalCycleNumbering p n) (origin j : ZMod n) :
-    Φ.rayEquivOfNodalCycleNumbering hΦ (A.rotate origin) j =
-      Φ.rayEquivOfNodalCycleNumbering hΦ A (j + origin) := by
-  apply (Φ.boundaryNormalizationComponentEquiv hΦ).injective
+    (hΦ : Φ.IsRegular) (A : NodalCycleNumbering (k := k) (X := C[Φ]) p n)
+    (origin j : ZMod n) :
+    Φ.rayEquivOfNodalCycleNumbering k hΦ (A.rotate origin) j =
+      Φ.rayEquivOfNodalCycleNumbering k hΦ A (j + origin) := by
+  apply (Φ.boundaryNormalizationComponentEquiv k hΦ).injective
   simp
 
 variable (Φ) in
 /-- Enumerate the rays in boundary order by finite offsets from the component at `origin`. -/
-def rayFinEquivOfNodalCycleNumbering (hΦ : Φ.IsRegular) (A : NodalCycleNumbering p n)
+def rayFinEquivOfNodalCycleNumbering (hΦ : Φ.IsRegular)
+    (A : NodalCycleNumbering (k := k) (X := C[Φ]) p n)
     (origin : ZMod n) : Fin n ≃ Φ.Ray :=
-  (ZMod.finEquiv n).toEquiv.trans (Φ.rayEquivOfNodalCycleNumbering hΦ (A.rotate origin))
+  (ZMod.finEquiv n).toEquiv.trans (Φ.rayEquivOfNodalCycleNumbering k hΦ (A.rotate origin))
 
 /-- A finite offset reads the ray of the rotated cycle at the corresponding cyclic index. -/
 @[simp]
 theorem rayFinEquivOfNodalCycleNumbering_apply
-    (hΦ : Φ.IsRegular) (A : NodalCycleNumbering p n) (origin : ZMod n) (j : Fin n) :
-    Φ.rayFinEquivOfNodalCycleNumbering hΦ A origin j =
-      Φ.rayEquivOfNodalCycleNumbering hΦ (A.rotate origin) (ZMod.finEquiv n j) :=
+    (hΦ : Φ.IsRegular) (A : NodalCycleNumbering (k := k) (X := C[Φ]) p n)
+    (origin : ZMod n) (j : Fin n) :
+    Φ.rayFinEquivOfNodalCycleNumbering k hΦ A origin j =
+      Φ.rayEquivOfNodalCycleNumbering k hΦ (A.rotate origin) (ZMod.finEquiv n j) :=
   (rfl)
 
 /-- The offset of a ray is the finite representative of its cyclic index minus the origin. -/
 @[simp]
 theorem rayFinEquivOfNodalCycleNumbering_symm_apply
-    (hΦ : Φ.IsRegular) (A : NodalCycleNumbering p n) (origin : ZMod n) (ρ : Φ.Ray) :
-    (Φ.rayFinEquivOfNodalCycleNumbering hΦ A origin).symm ρ =
-      (ZMod.finEquiv n).symm ((Φ.rayEquivOfNodalCycleNumbering hΦ A).symm ρ - origin) := by
-  apply (Φ.rayFinEquivOfNodalCycleNumbering hΦ A origin).injective
+    (hΦ : Φ.IsRegular) (A : NodalCycleNumbering (k := k) (X := C[Φ]) p n)
+    (origin : ZMod n) (ρ : Φ.Ray) :
+    (Φ.rayFinEquivOfNodalCycleNumbering k hΦ A origin).symm ρ =
+      (ZMod.finEquiv n).symm ((Φ.rayEquivOfNodalCycleNumbering k hΦ A).symm ρ - origin) := by
+  apply (Φ.rayFinEquivOfNodalCycleNumbering k hΦ A origin).injective
   simp
 
 variable (Φ) in
@@ -91,19 +102,19 @@ successive rays have determinant one. The common two-ray cone represents the
 actual numbered node, and the ray order agrees with the numbered branch endpoints. -/
 theorem exists_positive_ray_numbering_of_nodalCycleNumbering
     (b : Basis (Fin 2) ℤ N) (hΦ : Φ.IsRegular) (hc : Φ.IsComplete)
-    (A : NodalCycleNumbering p n) :
-    let u := Φ.rayEquivOfNodalCycleNumbering hΦ A
+    (A : NodalCycleNumbering (k := k) (X := C[Φ]) p n) :
+    let u := Φ.rayEquivOfNodalCycleNumbering k hΦ A
     ∃ b' : Basis (Fin 2) ℤ N,
       (b' = b ∨ b' = b.reindex (Equiv.swap 0 1)) ∧
       (∀ j, b'.detDualEquiv (u j).primitiveGenerator (u (j + 1)).primitiveGenerator = 1) ∧
       ∀ j, ∃ σ : {σ : Φ.cones // Nat.card (ToricRay σ.val) = 2},
         (u j).toCone ≤ σ.val ∧ (u (j + 1)).toCone ≤ σ.val ∧
         (D[Φ]).subschemeι ((C[Φ]).dualGraphEdgeEquiv p (A.edge j)).val =
-          Φ.distinguishedPointHom σ.val (IsLocalRing.closedPoint ℂ) := by
+          Φ.distinguishedSection (R := k) σ.val (IsLocalRing.closedPoint k) := by
   intro u
-  let v := Φ.boundaryNormalizationComponentEquiv hΦ
+  let v := Φ.boundaryNormalizationComponentEquiv k hΦ
   have hu (j : ZMod n) : A.component j = v (u j) :=
-    (boundaryNormalizationComponentEquiv_rayEquivOfNodalCycleNumbering hΦ A j).symm
+    (boundaryNormalizationComponentEquiv_rayEquivOfNodalCycleNumbering k hΦ A j).symm
   have hn : n = Nat.card Φ.Ray := (Nat.card_zmod n).symm.trans (Nat.card_congr u)
   have hnumbering :
       ∃ r : ZMod n ≃ Φ.Ray, r 0 = u 0 ∧
@@ -114,8 +125,8 @@ theorem exists_positive_ray_numbering_of_nodalCycleNumbering
     exact (Φ.existsUnique_cyclicRayNumbering b hΦ hc ρ).exists
   obtain ⟨r, hr₀, hr⟩ := hnumbering
   obtain ⟨e, o, w, hw, hcomp, hnode⟩ :=
-    Φ.exists_toric_boundary_dualGraph_cycle hΦ hc p b r hr
-  let B : NodalCycleNumbering p n := ⟨w, e, o, hw⟩
+    Φ.exists_toric_boundary_dualGraph_cycle k hΦ hc p b r hr
+  let B : NodalCycleNumbering (k := k) (X := C[Φ]) p n := ⟨w, e, o, hw⟩
   have hB (j : ZMod n) : B.component j = v (r j) := by
     rw [B.component_apply]
     exact hcomp j

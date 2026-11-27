@@ -8,6 +8,7 @@ module
 public import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.ProjectiveLine
 import Mathlib.RingTheory.Polynomial.Ideal
 import Mathlib.RingTheory.Spectrum.Prime.RingHom
+import TauCeti.AlgebraicGeometry.IdealSheaf.Section
 import TauCeti.AlgebraicGeometry.ProjectiveSpectrum.ChartEquality
 import TauCeti.AlgebraicGeometry.Restrict
 
@@ -224,6 +225,12 @@ theorem exists_eq_polynomialPoint (p : Spec (.of K) ⟶ projectiveLine K)
       eval₂_C] using h
   · simp [f]
 
+end Field
+
+section UnitCoordinate
+
+variable {K : Type u} [CommRing K]
+
 local notation "𝒜K" => TauCeti.SymmetricAlgebra.homogeneousSubmodule K (Fin 2 → K)
 
 private theorem dehomogenize_coord_zero_add_smul_unit (c : Kˣ) :
@@ -262,8 +269,8 @@ theorem basicOpen_coord_add_smul_eq_compl_support (c : Kˣ) :
   have hs : s ∈ 𝒜K 1 :=
     (𝒜K 1).add_mem (coord_mem K 0) ((𝒜K 1).smul_mem _ (coord_mem K 1))
   have hp : p = f ≫ polynomialChartι K 0 := polynomialPoint_def K (RingHom.id K) 0 a
-  have : IsClosedImmersion p := isClosedImmersion_of_comp_eq_id
-    (projectiveLine K ↘ Spec (.of K)) p (by simp [p, polynomialPoint_over])
+  have : IsClosedImmersion p := p.isClosedImmersion_of_comp_eq_id
+    ((polynomialPoint_over K (RingHom.id K) 0 a).trans (Spec.map_id (CommRingCat.of K)))
   have hpr : (p.ker.support : Set (projectiveLine K)) = Set.range p :=
     p.support_ker.trans p.isClosedEmbedding.isClosed_range.closure_eq
   have hfr : Set.range f = PrimeSpectrum.zeroLocus {X - C a} := by
@@ -298,6 +305,6 @@ theorem basicOpen_coord_add_smul_eq_compl_support (c : Kˣ) :
       exact hx (Set.image_subset_range _ _ hx')
     exact iff_of_true (mem_basicOpen_coord_add_smul_of_notMem_chart_zero c hx) hp'
 
-end Field
+end UnitCoordinate
 
 end TauCeti.AlgebraicGeometry.projectiveLine

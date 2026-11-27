@@ -39,22 +39,25 @@ open QPainleve QPainleve.BlowupTower TauCeti.AlgebraicGeometry Scheme.IdealSheaf
 
 namespace TauCeti.Toric.Fan
 
-variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
+universe u
+
+variable (K : Type u) [Field K] [IsAlgClosed K]
+  {N V : Type u} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {Φ : Fan i} [h₀ : Nonempty Φ.cones]
   (b : Module.Basis (Fin 2) ℤ N) (hΦ : Φ.IsRegular) (hc : Φ.IsComplete)
-  {m : ℕ} (ρ : Fin m → Φ.Ray) (c : Fin m → ℂˣ)
-  {X : Scheme} {s : X ⟶ Spec (.of ℂ)} {D : X.IdealSheafData}
+  {m : ℕ} (ρ : Fin m → Φ.Ray) (c : Fin m → Kˣ)
+  {X : Scheme} {s : X ⟶ Spec (.of K)} {D : X.IdealSheafData}
   {p : D.subscheme}
 
-local notation "A" => internalBlowupTower b ρ c
-local notation "B" => Φ.boundaryIdeal h₀
+local notation "A" => internalBlowupTower K b ρ c
+local notation "B" => Φ.toricBoundaryIdeal K h₀
 local notation "j" => WithBoundary.boundaryι (Sigma.snd A)
 local notation "J" =>
   Scheme.Hom.ker (Scheme.fromSpecResidueField (Scheme.IdealSheafData.subscheme D) p)
 local notation "I" => Scheme.IdealSheafData.map J (Scheme.IdealSheafData.subschemeι D)
 local notation "E" =>
   Scheme.Hom.ker (Scheme.IdealSheafData.blowupMap I (Scheme.IdealSheafData.subschemeι D))
-local notation "sΦ" => Φ.algebraicRealizationStructureMap
+local notation "sΦ" => (Φ.finiteFanSchemeToSpec K)
 
 include hΦ hc in
 private theorem exists_center_of_internalBlowup
@@ -64,9 +67,9 @@ private theorem exists_center_of_internalBlowup
     (hp : IsClosed ({p} : Set D.subscheme))
     (hs : ((D.subschemeι ≫ s).stalkMap p).hom.FormallySmooth)
     (hiso : D.subschemeι p ∈ f.isoLocus) :
-    ∃ (r : Φ.Ray) (a : ℂˣ) (d : (B).subscheme ⟶ D.subscheme),
+    ∃ (r : Φ.Ray) (a : Kˣ) (d : (B).subscheme ⟶ D.subscheme),
       d ≫ D.subschemeι = (j) ≫ f ∧
-      (r.internalCenter b a).val.map (j) = (I).comap f := by
+      (r.internalCenter K b a).val.map (j) = (I).comap f := by
   let P := (D.comap f).radical
   let g := subschemeMap P D f (le_map_iff_comap_le.mpr (le_radical _))
   obtain ⟨e, he⟩ := P.exists_iso_of_comap_eq_ker (Iso.refl _) (j) (by simpa using hD)
@@ -94,7 +97,7 @@ private theorem exists_center_of_internalBlowup
   have hzs : (((B).subschemeι ≫ sΦ).stalkMap z).hom.FormallySmooth := by
     rw [← hstruct, Scheme.Hom.stalkMap_comp]
     exact (RingHom.FormallySmooth.respectsIso.cancel_right_isIso _ _).mpr (hz.symm ▸ hs)
-  obtain ⟨r, a, ha⟩ := exists_internalCenter_eq_ker_fromSpecResidueField b hΦ hc z hzclosed hzs
+  obtain ⟨r, a, ha⟩ := exists_internalCenter_eq_ker_fromSpecResidueField K b hΦ hc z hzclosed hzs
   have hclosed : IsClosed ({D.subschemeι p} : Set X) := by
     simpa only [Set.image_singleton] using D.subschemeι.isClosedEmbedding.isClosedMap _ hp
   refine ⟨r, a, d, hd, ?_⟩
@@ -112,19 +115,19 @@ private theorem exists_isPullback_snoc_internalBlowupTower [IsReduced D.subschem
     (hp : IsClosed ({p} : Set D.subscheme))
     (hs : ((D.subschemeι ≫ s).stalkMap p).hom.FormallySmooth)
     (hJ : (J).IsEffectiveCartier) (hiso : D.subschemeι p ∈ f.isoLocus) :
-    ∃ (r : Φ.Ray) (a : ℂˣ),
-      let A' := internalBlowupTower b (Fin.snoc ρ r) (Fin.snoc c a)
+    ∃ (r : Φ.Ray) (a : Kˣ),
+      let A' := internalBlowupTower K b (Fin.snoc ρ r) (Fin.snoc c a)
       ∃ (l : A'.1 ⟶ (A).1) (g : A'.1 ⟶ (I).blowup),
         IsPullback l g f (I).blowupToBase ∧
         l ≫ (A).2.toTower.toBase = A'.2.toTower.toBase ∧
         ((E).comap g).radical = A'.2.boundaryι.ker := by
-  obtain ⟨r, a, d, hd, hcenter⟩ := exists_center_of_internalBlowup b hΦ hc ρ c f hf hD hp hs hiso
+  obtain ⟨r, a, d, hd, hcenter⟩ := exists_center_of_internalBlowup K b hΦ hc ρ c f hf hD hp hs hiso
   refine ⟨r, a, ?_⟩
   have hρ : Fin.snoc ρ r ∘ Fin.castSucc = ρ := by funext k; simp
   have hc' : Fin.snoc c a ∘ Fin.castSucc = c := by funext k; simp
-  rw [internalBlowupTower_succ b, Fin.snoc_last, Fin.snoc_last, hρ, hc']
-  let C := (r.internalCenter b a).val
-  let U := (A).2.snoc C (r.internalCenter b a).property
+  rw [internalBlowupTower_succ K b, Fin.snoc_last, Fin.snoc_last, hρ, hc']
+  let C := (r.internalCenter K b a).val
+  let U := (A).2.snoc C (r.internalCenter K b a).property
   let e : (C.map (j)).blowup ≅ ((I).comap f).blowup :=
     blowupIso (Iso.refl _) (hcenter.trans (comap_id _).symm)
   let l := (C.map (j)).blowupToBase
@@ -149,13 +152,13 @@ private theorem exists_isPullback_snoc_internalBlowupTower [IsReduced D.subschem
     · rw [Category.assoc, hpb.w.symm, ← Category.assoc, hj'l, ← hd, Category.assoc, hj']
     · rw [Category.assoc, hpb.w.symm, ← Category.assoc, hj'l, comap_comp, ← hcenter,
         comap_map_of_isClosedImmersion]
-      exact (r.internalCenter b a).property
+      exact (r.internalCenter K b a).property
   have hker : j'.ker = (E) := by
     rw [ker_blowupLift, ker_blowupMap]
   have : IsClosedImmersion (j' ≫ (I).blowupToBase) := hj'.symm ▸ inferInstance
   have : IsClosedImmersion (U.boundaryι ≫ l) := hj'l.symm ▸ inferInstance
   have : IsReduced (B).subscheme := by
-    rw [Φ.boundaryIdeal_def]
+    rw [Φ.toricBoundaryIdeal_def K]
     infer_instance
   refine ⟨l, g, hpb, ?_, ?_⟩
   · rw [WithBoundary.toTower_snoc, toBase_snoc]
@@ -179,11 +182,11 @@ theorem exists_toric_presentation_of_internal_blowup
     (hN : AtWorstNodalOfRelativeDimensionOne (D.subschemeι ≫ s))
     (hp : IsClosed ({p} : Set D.subscheme))
     (hs : ((D.subschemeι ≫ s).stalkMap p).hom.FormallySmooth) :
-    ∃ (r : Φ.Ray) (a : ℂˣ) (Z : Scheme) (R : BlowupTower (I).blowup n Z)
+    ∃ (r : Φ.Ray) (a : Kˣ) (Z : Scheme) (R : BlowupTower (I).blowup n Z)
       (g : Z ⟶ Y),
       IsNodalBoundaryTower E ((I).blowupToBase ≫ s) (𝟙 (I).blowup) R ∧
       IsPullback g R.toBase T.toBase (I).blowupToBase ∧
-      let A' := internalBlowupTower b (Fin.snoc ρ r) (Fin.snoc c a)
+      let A' := internalBlowupTower K b (Fin.snoc ρ r) (Fin.snoc c a)
       ∃ d : A'.1 ≅ Z,
         d.hom ≫ g ≫ e.inv ≫ (A).2.toTower.toBase = A'.2.toTower.toBase ∧
         d.hom ≫ R.toBase ≫ (I).blowupToBase ≫ s = A'.2.toTower.toBase ≫ sΦ ∧
@@ -211,7 +214,7 @@ theorem exists_toric_presentation_of_internal_blowup
   let f := e.hom ≫ T.toBase
   have hfiso : D.subschemeι p ∈ f.isoLocus := by
     simpa only [f, Scheme.Hom.isoLocus_comp_of_isIso] using hpiso
-  obtain ⟨r, a, l, v, hv, hl, hvB⟩ := exists_isPullback_snoc_internalBlowupTower b hΦ hc ρ c f
+  obtain ⟨r, a, l, v, hv, hl, hvB⟩ := exists_isPullback_snoc_internalBlowupTower K b hΦ hc ρ c f
     (by simpa only [Category.assoc, f] using he) (by simpa only [f, comap_comp] using hD)
     hp hs hJ hfiso
   obtain ⟨Z, R, g, hR, hg⟩ := hT.exists_isPullback_blowup_of_avoids_nodes I hI E
@@ -245,20 +248,20 @@ theorem exists_toric_presentation_of_nodalTower_and_internal_blowdown
     (hN : AtWorstNodalOfRelativeDimensionOne (D.subschemeι ≫ s))
     (hp : IsClosed ({p} : Set D.subscheme))
     (hs : ((D.subschemeι ≫ s).stalkMap p).hom.FormallySmooth)
-    {X₀ Y₀ : Scheme} {s₀ : X₀ ⟶ Spec (.of ℂ)} {D₀ : X₀.IdealSheafData}
+    {X₀ Y₀ : Scheme} {s₀ : X₀ ⟶ Spec (.of K)} {D₀ : X₀.IdealSheafData}
     {k : ℕ} {U : BlowupTower X₀ k Y₀}
     (hU : IsNodalBoundaryTower D₀ s₀ (𝟙 X₀) U)
     (u : Y₀ ≅ (I).blowup)
     (hu : u.hom ≫ (I).blowupToBase ≫ s = U.toBase ≫ s₀)
     (hD₀ : ((E).comap u.hom).support = (D₀.comap U.toBase).support) :
-    ∃ (r : Φ.Ray) (a : ℂˣ) (W : Scheme) (V : BlowupTower X₀ (k + n) W),
+    ∃ (r : Φ.Ray) (a : Kˣ) (W : Scheme) (V : BlowupTower X₀ (k + n) W),
       IsNodalBoundaryTower D₀ s₀ (𝟙 X₀) V ∧
-      let A' := internalBlowupTower b (Fin.snoc ρ r) (Fin.snoc c a)
+      let A' := internalBlowupTower K b (Fin.snoc ρ r) (Fin.snoc c a)
       ∃ d : A'.1 ≅ W,
         d.hom ≫ V.toBase ≫ s₀ = A'.2.toTower.toBase ≫ sΦ ∧
         ((D₀.comap V.toBase).comap d.hom).radical = A'.2.boundaryι.ker := by
   obtain ⟨r, a, Z, R, _, hR, _, d, _, hd, hdB⟩ :=
-    exists_toric_presentation_of_internal_blowup b hΦ hc ρ c hT e he hD hN hp hs
+    exists_toric_presentation_of_internal_blowup K b hΦ hc ρ c hT e he hD hN hp hs
   obtain ⟨W, V, v, hV, hv, hvB⟩ := hU.exists_append_of_iso hR u hu hD₀
   have hu' : u.inv ≫ U.toBase ≫ s₀ = (I).blowupToBase ≫ s := by
     rw [← hu, Iso.inv_hom_id_assoc]
@@ -275,9 +278,10 @@ open TopologicalSpace TauCeti.Toric
 
 namespace AlgebraicGeometry.Scheme.IdealSheafData
 
-variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
+variable {K : Type u} [Field K] [IsAlgClosed K]
+  {N V : Type u} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {X : Scheme} {b : Module.Basis (Fin 2) ℤ N}
-  {D : X.IdealSheafData} {s : X ⟶ Spec (CommRingCat.of ℂ)} {p : X}
+  {D : X.IdealSheafData} {s : X ⟶ Spec (CommRingCat.of K)} {p : X}
 
 local notation "I" => vanishingIdeal (Closeds.mk (closure (Singleton.singleton p)) isClosed_closure)
 local notation "π" => blowupToBase I
@@ -299,7 +303,7 @@ theorem HasToricPresentation.internalBlowup [IsLocallyNoetherian X]
   obtain ⟨m, ⟨Φ, hΦ, hc, r, c, n, Z, T, hT, e, he, hD⟩⟩ := (hasToricPresentation_iff ..).mp h
   let := hc.nonempty_cones
   obtain ⟨r', a, W, U, _, hU, _, d, _, hd, hB⟩ :=
-    Fan.exists_toric_presentation_of_internal_blowup b hΦ hc r c hT e he
+    Fan.exists_toric_presentation_of_internal_blowup K b hΦ hc r c hT e he
       ((radical_comap_of_isOpenImmersion _ _).trans hD) hN hqclosed hs
   rw [← hI]
   exact ToricPresentation.hasToricPresentation (r := m + 1)

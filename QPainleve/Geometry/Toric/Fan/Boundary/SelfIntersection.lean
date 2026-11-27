@@ -7,7 +7,6 @@ module
 
 public import QPainleve.Geometry.Toric.Fan.Adjacency
 public import QPainleve.Geometry.Toric.Fan.Boundary.Intersection
-public import QPainleve.Geometry.Toric.Fan.Picard.Presentation
 
 /-!
 # Boundary intersections and the self-intersection recurrence of a toric surface
@@ -51,61 +50,66 @@ end QPainleve
 
 namespace TauCeti.Toric.Fan
 
-variable {N : Type} {V : Type*} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
+universe u
+
+variable (k : Type u) [Field k] {N : Type u} {V : Type*}
+  [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {Φ : Fan i}
 
 /-- The self-intersection of the prime boundary divisor associated to a ray. -/
 noncomputable def rayBoundarySelfIntersection (hΦ : Φ.IsRegular) (ρ : Φ.Ray) : ℤ :=
   letI : Nonempty Φ.cones := ⟨ρ.toCone⟩
-  letI := Φ.uniqueFactorizationMonoid_stalk_algebraicRealization hΦ
-  let D := LineBundleClass.primeDivisorClass (Φ.rayBoundaryPoint hΦ ρ)
-  classIntersectionNumber ℂ Φ.algebraicRealization D D
+  letI := Φ.uniqueFactorizationMonoid_stalk_finiteFanScheme (R := k) hΦ
+  let D := LineBundleClass.primeDivisorClass (Φ.rayBoundaryChartPoint (R := k) hΦ ρ)
+  classIntersectionNumber k (Φ.finiteFanScheme k) D D
 
 /-- The boundary self-intersection is computed in the native Picard intersection pairing. -/
 theorem rayBoundarySelfIntersection_def (hΦ : Φ.IsRegular) (ρ : Φ.Ray) :
     letI : Nonempty Φ.cones := ⟨ρ.toCone⟩
-    letI := Φ.uniqueFactorizationMonoid_stalk_algebraicRealization hΦ
-    let D := LineBundleClass.primeDivisorClass (Φ.rayBoundaryPoint hΦ ρ)
-    Φ.rayBoundarySelfIntersection hΦ ρ = classIntersectionNumber ℂ Φ.algebraicRealization D D :=
+    letI := Φ.uniqueFactorizationMonoid_stalk_finiteFanScheme (R := k) hΦ
+    let D := LineBundleClass.primeDivisorClass (Φ.rayBoundaryChartPoint (R := k) hΦ ρ)
+    Φ.rayBoundarySelfIntersection k hΦ ρ = classIntersectionNumber k (Φ.finiteFanScheme k) D D :=
   (rfl)
+
+variable [Infinite k]
 
 section Pairing
 
 variable (Φ) [Nonempty Φ.cones] [decEq : DecidableEq Φ.Ray]
-  [Φ.algebraicRealization.IsProjectiveOver ℂ]
-  [SmoothOfRelativeDimension 2 (Φ.algebraicRealization ↘ Spec (CommRingCat.of ℂ))]
+  [(Φ.finiteFanScheme k).IsProjectiveOver k]
+  [SmoothOfRelativeDimension 2 ((Φ.finiteFanScheme k) ↘ Spec (CommRingCat.of k))]
   (hΦ : Φ.IsRegular)
 
-local notation "B" => intersectionBilinForm ℂ Φ.algebraicRealization
-local notation "R" => Φ.rayDivisorToPicard hΦ
+local notation "B" => intersectionBilinForm k (Φ.finiteFanScheme k)
+local notation "R" => Φ.rayChartDivisorToPicard k hΦ
 
 open Classical in
 /-- The Picard pairing of two prime ray classes is the boundary self-intersection on the
 diagonal, and the indicator of a common cone off the diagonal. -/
-theorem intersectionBilinForm_rayDivisorToPicard_single_single
+theorem intersectionBilinForm_rayChartDivisorToPicard_single_single
     (hN : Module.finrank ℤ N = 2) (ρ τ : Φ.Ray) :
     B (R (Pi.single ρ 1)) (R (Pi.single τ 1)) =
-      if ρ = τ then Φ.rayBoundarySelfIntersection hΦ ρ else
+      if ρ = τ then Φ.rayBoundarySelfIntersection k hΦ ρ else
         if ∃ σ : Φ.cones, ρ.toCone ≤ σ ∧ τ.toCone ≤ σ then 1 else 0 := by
-  simp only [intersectionBilinForm_apply, rayDivisorToPicard_single, one_smul, toMul_ofMul]
+  simp only [intersectionBilinForm_apply, rayChartDivisorToPicard_single, one_smul, toMul_ofMul]
   by_cases h : ρ = τ
   · subst τ
-    simp only [rayBoundarySelfIntersection_def, ite_true]
+    simp only [rayBoundarySelfIntersection_def k, ite_true]
   · rw [ite_eq_right h]
-    exact Φ.classIntersectionNumber_rayBoundaryPoint hΦ hN h
+    exact Φ.classIntersectionNumber_rayBoundaryPoint k hΦ hN h
 
 open Classical in
 /-- The degree of a ray divisor along a prime boundary component is the sum of its
 coefficients at the two oriented neighbours plus its coefficient at the component
 times the boundary self-intersection. -/
-theorem intersectionBilinForm_rayDivisorToPicard_single
+theorem intersectionBilinForm_rayChartDivisorToPicard_single
     (b : Module.Basis (Fin 2) ℤ N) (hc : Φ.IsComplete) (a : Φ.Ray → ℤ) {prev ρ next : Φ.Ray}
     (hprev : b.detDualEquiv prev.primitiveGenerator ρ.primitiveGenerator = 1 ∧
       ∃ σ : Φ.cones, prev.toCone ≤ σ ∧ ρ.toCone ≤ σ)
     (hnext : b.detDualEquiv ρ.primitiveGenerator next.primitiveGenerator = 1 ∧
       ∃ σ : Φ.cones, ρ.toCone ≤ σ ∧ next.toCone ≤ σ) :
     B (R (Pi.single ρ 1)) (R a) =
-      a prev + Φ.rayBoundarySelfIntersection hΦ ρ * a ρ + a next := by
+      a prev + Φ.rayBoundarySelfIntersection k hΦ ρ * a ρ + a next := by
   let := Fintype.ofFinite Φ.Ray
   have hN : Module.finrank ℤ N = 2 := by simpa using Module.finrank_eq_card_basis b
   have hne : prev ≠ next := by
@@ -128,48 +132,48 @@ theorem intersectionBilinForm_rayDivisorToPicard_single
     rw [← Finset.sum_pair hne, ← hfilter, Finset.sum_filter]
     apply Finset.sum_congr rfl
     intro τ hτ
-    rw [map_zsmul, Φ.intersectionBilinForm_rayDivisorToPicard_single_single hΦ hN,
+    rw [map_zsmul, Φ.intersectionBilinForm_rayChartDivisorToPicard_single_single k hΦ hN,
       ite_eq_right (Finset.ne_of_mem_erase hτ).symm]
     by_cases h : adjacent τ <;> simp [adjacent] at h ⊢
-  rw [hoff, map_zsmul, Φ.intersectionBilinForm_rayDivisorToPicard_single_single hΦ hN,
+  rw [hoff, map_zsmul, Φ.intersectionBilinForm_rayChartDivisorToPicard_single_single k hΦ hN,
     ite_eq_left rfl, Int.zsmul_eq_mul, mul_comm (a ρ)]
   abel
 
 end Pairing
 
-private theorem relation_of_neighbors [Φ.algebraicRealization.IsProjectiveOver ℂ]
+private theorem relation_of_neighbors [(Φ.finiteFanScheme k).IsProjectiveOver k]
     (hΦ : Φ.IsRegular) (hN : Module.finrank ℤ N = 2) {prev ρ next : Φ.Ray}
     (hne : prev ≠ next)
     (hneighbors : ∀ τ : Φ.Ray, (ρ ≠ τ ∧ ∃ σ : Φ.cones, ρ.toCone ≤ σ ∧ τ.toCone ≤ σ) ↔
       τ = prev ∨ τ = next) :
-    prev.primitiveGenerator + Φ.rayBoundarySelfIntersection hΦ ρ • ρ.primitiveGenerator +
+    prev.primitiveGenerator + Φ.rayBoundarySelfIntersection k hΦ ρ • ρ.primitiveGenerator +
       next.primitiveGenerator = 0 := by
   classical
   let := Fintype.ofFinite Φ.Ray
-  have hsum := Φ.rayBoundaryPoint_selfIntersection_smul_add_sum_eq_zero hΦ hN ρ
+  have hsum := Φ.rayBoundaryPoint_selfIntersection_smul_add_sum_eq_zero k hΦ hN ρ
   have hfilter : Finset.univ.filter (fun τ : Φ.Ray ↦
       ρ ≠ τ ∧ ∃ σ : Φ.cones, ρ.toCone ≤ σ ∧ τ.toCone ≤ σ) = {prev, next} := by
     ext τ
     simpa only [Finset.mem_filter, Finset.mem_univ, true_and, Finset.mem_insert,
       Finset.mem_singleton] using hneighbors τ
   rw [hfilter, Finset.sum_pair hne] at hsum
-  simpa only [rayBoundarySelfIntersection_def, add_left_comm, add_assoc] using hsum
+  simpa only [rayBoundarySelfIntersection_def k, add_left_comm, add_assoc] using hsum
 
 /-- In a projective regular complete toric surface, the two oriented neighbours of a ray
 satisfy the boundary self-intersection recurrence with its primitive generator. -/
 theorem exists_rayBoundaryPoint_selfIntersection_relation
-    [Φ.algebraicRealization.IsProjectiveOver ℂ]
+    [(Φ.finiteFanScheme k).IsProjectiveOver k]
     (b : Module.Basis (Fin 2) ℤ N) (hΦ : Φ.IsRegular) (hc : Φ.IsComplete) (ρ : Φ.Ray) :
     letI : Nonempty Φ.cones := ⟨ρ.toCone⟩
-    letI := Φ.uniqueFactorizationMonoid_stalk_algebraicRealization hΦ
-    let D := LineBundleClass.primeDivisorClass (Φ.rayBoundaryPoint hΦ ρ)
+    letI := Φ.uniqueFactorizationMonoid_stalk_finiteFanScheme (R := k) hΦ
+    let D := LineBundleClass.primeDivisorClass (Φ.rayBoundaryChartPoint (R := k) hΦ ρ)
     ∃ prev next : Φ.Ray,
       b.detDualEquiv ρ.primitiveGenerator prev.primitiveGenerator = -1 ∧
       b.detDualEquiv ρ.primitiveGenerator next.primitiveGenerator = 1 ∧
       (∀ τ : Φ.Ray, (ρ ≠ τ ∧ ∃ σ : Φ.cones, ρ.toCone ≤ σ ∧ τ.toCone ≤ σ) ↔
         τ = prev ∨ τ = next) ∧
       prev.primitiveGenerator +
-        classIntersectionNumber ℂ Φ.algebraicRealization D D • ρ.primitiveGenerator +
+        classIntersectionNumber k (Φ.finiteFanScheme k) D D • ρ.primitiveGenerator +
         next.primitiveGenerator = 0 := by
   intro D
   obtain ⟨prev, next, hprev, hnext, hneighbors⟩ := exists_ray_neighbors b hΦ hc ρ
@@ -179,19 +183,19 @@ theorem exists_rayBoundaryPoint_selfIntersection_relation
     omega
   have hN : Module.finrank ℤ N = 2 := by simpa using Module.finrank_eq_card_basis b
   refine ⟨prev, next, hprev, hnext, hneighbors, ?_⟩
-  simpa only [rayBoundarySelfIntersection_def] using relation_of_neighbors hΦ hN hne hneighbors
+  simpa only [rayBoundarySelfIntersection_def k] using relation_of_neighbors k hΦ hN hne hneighbors
 
 /-- For a specified oriented pair of neighbours, the boundary self-intersection
 determines the next primitive generator from the preceding two. -/
 theorem primitiveGenerator_add_selfIntersection_smul_add_eq_zero
-    [Φ.algebraicRealization.IsProjectiveOver ℂ]
+    [(Φ.finiteFanScheme k).IsProjectiveOver k]
     (b : Module.Basis (Fin 2) ℤ N) (hΦ : Φ.IsRegular) (hc : Φ.IsComplete)
     {prev ρ next : Φ.Ray}
     (hprev : b.detDualEquiv prev.primitiveGenerator ρ.primitiveGenerator = 1 ∧
       ∃ σ : Φ.cones, prev.toCone ≤ σ ∧ ρ.toCone ≤ σ)
     (hnext : b.detDualEquiv ρ.primitiveGenerator next.primitiveGenerator = 1 ∧
       ∃ σ : Φ.cones, ρ.toCone ≤ σ ∧ next.toCone ≤ σ) :
-    prev.primitiveGenerator + Φ.rayBoundarySelfIntersection hΦ ρ • ρ.primitiveGenerator +
+    prev.primitiveGenerator + Φ.rayBoundarySelfIntersection k hΦ ρ • ρ.primitiveGenerator +
       next.primitiveGenerator = 0 := by
   have hN : Module.finrank ℤ N = 2 := by simpa using Module.finrank_eq_card_basis b
   have hprevDet : b.detDualEquiv ρ.primitiveGenerator prev.primitiveGenerator = -1 := by
@@ -200,22 +204,22 @@ theorem primitiveGenerator_add_selfIntersection_smul_add_eq_zero
     intro h
     rw [h, hnext.1] at hprevDet
     omega
-  exact relation_of_neighbors hΦ hN hne (ray_neighbors_iff_of_det b hΦ hc hprev hnext)
+  exact relation_of_neighbors k hΦ hN hne (ray_neighbors_iff_of_det b hΦ hc hprev hnext)
 
 /-- The self-intersection of a toric boundary ray in positive cyclic order is the
 negative determinant of its predecessor and successor. -/
 theorem rayBoundarySelfIntersection_eq_neg_det_of_neighbors
-    [Φ.algebraicRealization.IsProjectiveOver ℂ]
+    [(Φ.finiteFanScheme k).IsProjectiveOver k]
     (b : Module.Basis (Fin 2) ℤ N) (hΦ : Φ.IsRegular) (hc : Φ.IsComplete)
     {prev ρ next : Φ.Ray}
     (hprev : b.detDualEquiv prev.primitiveGenerator ρ.primitiveGenerator = 1 ∧
       ∃ σ : Φ.cones, prev.toCone ≤ σ ∧ ρ.toCone ≤ σ)
     (hnext : b.detDualEquiv ρ.primitiveGenerator next.primitiveGenerator = 1 ∧
       ∃ σ : Φ.cones, ρ.toCone ≤ σ ∧ next.toCone ≤ σ) :
-    Φ.rayBoundarySelfIntersection hΦ ρ =
+    Φ.rayBoundarySelfIntersection k hΦ ρ =
       -b.detDualEquiv prev.primitiveGenerator next.primitiveGenerator := by
   have h := congrArg (b.detDualEquiv prev.primitiveGenerator)
-    (primitiveGenerator_add_selfIntersection_smul_add_eq_zero b hΦ hc hprev hnext)
+    (primitiveGenerator_add_selfIntersection_smul_add_eq_zero k b hΦ hc hprev hnext)
   simpa only [map_add, map_smul, map_zero, b.detDualEquiv_self, hprev.1,
     zero_add, smul_eq_mul, mul_one, eq_neg_iff_add_eq_zero] using h
 
@@ -223,19 +227,19 @@ open _root_.Module QPainleve in
 /-- In positive cyclic coordinates, each ray's self-intersection equals the integer
 self-intersection computed from its neighboring rays. -/
 theorem rayBoundarySelfIntersection_eq_of_positiveRayCoordinates
-    {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V] {i : N →+ V} {Φ : Fan i}
-    [Φ.algebraicRealization.IsProjectiveOver ℂ]
+    {N : Type u} {V : Type*} [AddCommGroup N] [AddCommGroup V] [Module ℝ V] {i : N →+ V} {Φ : Fan i}
+    [(Φ.finiteFanScheme k).IsProjectiveOver k]
     (hΦ : Φ.IsRegular) (hc : Φ.IsComplete) (b : Basis (Fin 2) ℤ N)
     {m : ℕ} (e : ZMod m ≃ Φ.Ray)
     (he : ∀ j, b.detDualEquiv (e j).primitiveGenerator (e (j + 1)).primitiveGenerator = 1 ∧
       ∃ σ : Φ.cones, (e j).toCone ≤ σ ∧ (e (j + 1)).toCone ≤ σ) :
-    (fun j ↦ Φ.rayBoundarySelfIntersection hΦ (e j)) =
+    (fun j ↦ Φ.rayBoundarySelfIntersection k hΦ (e j)) =
       toricBoundarySelfIntersection (fun j ↦ b.repr (e j).primitiveGenerator) := by
   funext j
   have hp := he (j - 1)
   rw [sub_add_cancel] at hp
   rw [toricBoundarySelfIntersection_apply, Matrix.det_fin_two_of,
-    rayBoundarySelfIntersection_eq_neg_det_of_neighbors b hΦ hc hp (he j),
+    rayBoundarySelfIntersection_eq_neg_det_of_neighbors k b hΦ hc hp (he j),
     Basis.detDualEquiv_apply, Basis.det_apply]
   simp only [Matrix.det_fin_two, Basis.toMatrix_apply,
     Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val_fin_one]

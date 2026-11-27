@@ -294,6 +294,16 @@ theorem hull_basis_ray_mem (Φ : Fan i) {κ : Type*} (b : Module.Basis κ ℤ N)
   simpa only [Set.image_singleton, Function.comp_def] using
     isFaceOf_hull_image (Φ.lattice.linearIndependent_basis b) rfl {j}
 
+variable (Φ) in
+/-- The coefficients of the divisor of a character at the rays of the fan. -/
+def characterToRayDivisor : (N →+ ℤ) →+ (Φ.Ray → ℤ) :=
+  AddMonoidHom.pi fun ρ ↦ AddMonoidHom.eval ρ.primitiveGenerator
+
+variable (Φ) in
+@[simp]
+theorem characterToRayDivisor_apply (m : N →+ ℤ) (ρ : Φ.Ray) :
+    Φ.characterToRayDivisor m ρ = m ρ.primitiveGenerator := (rfl)
+
 end TauCeti.Toric.Fan
 
 namespace TauCeti.Toric.FanEquiv

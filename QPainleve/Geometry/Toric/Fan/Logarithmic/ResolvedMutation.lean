@@ -5,6 +5,8 @@ Authors: The QPainleve contributors
 -/
 module
 
+public import QPainleve.Geometry.Toric.Fan.Subdivision
+
 public import QPainleve.Geometry.Toric.Fan.Logarithmic.StarFactorization
 public import QPainleve.Geometry.Toric.Fan.Mutation.Subdivision
 public import QPainleve.Geometry.Toric.Fan.Mutation.TargetModel
@@ -32,23 +34,25 @@ open Scheme.IdealSheafData LineBundleClass
 
 namespace TauCeti.Toric.Fan.LogarithmicProjection
 
+variable {K : Type} [Field K] [PerfectField K]
+
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V}
 
-local notation "S" => Spec (CommRingCat.of ℂ)
-local notation "X[" Φ "]" => Fan.algebraicRealization Φ
-local notation "π[" H "]" => FanHom.algebraicMap (IsSubdivision.toFanHom H)
+local notation "S" => Spec (CommRingCat.of K)
+local notation "X[" Φ "]" => Fan.finiteFanScheme K Φ
+local notation "π[" H "]" => FanHom.finiteFanSchemeHom K (IsSubdivision.toFanHom H)
 local notation "base[" A "]" => QPainleve.BlowupTower.toBase (WithBoundary.toTower (Sigma.snd A))
 
-variable {Z : Scheme} [Z.Over S] [PreirreducibleSpace Z]
-  [SmoothOfRelativeDimension 2 (Z ↘ S)] {P : Z.IdealSheafData}
-  (A : LogarithmicProjection i P) (b : Module.Basis (Fin 2) ℤ N)
-  (ρ : A.fan.Ray) (hOpp : hull ℝ {i (-ρ.primitiveGenerator)} ∈ A.fan.cones) (c : ℂˣ)
+variable {Z : Scheme} [Z.Over (Spec (.of K))] [PreirreducibleSpace Z]
+  [SmoothOfRelativeDimension 2 (Z ↘ Spec (.of K))] {P : Z.IdealSheafData}
+  (A : LogarithmicProjection K i P) (b : Module.Basis (Fin 2) ℤ N)
+  (ρ : A.fan.Ray) (hOpp : hull ℝ {i (-ρ.primitiveGenerator)} ∈ A.fan.cones) (c : Kˣ)
 
 local notation "M[" Δ "," r "," h "]" =>
   Fan.mutationFan Δ b (Ray.primitiveGenerator_ne_zero r) (Ray.hull_primitiveGenerator_mem r) h
 local notation "μ[" Δ "," r "," h "]" =>
-  Scheme.PartialMap.toRationalMap (Fan.mutationPartialMap Δ b (c : ℂ)
+  Scheme.PartialMap.toRationalMap (Fan.mutationPartialMap K Δ b (c : K)
     (Ray.primitiveGenerator_ne_zero r) (Ray.hull_primitiveGenerator_mem r) h)
 
 local notation "liftRay(" H ")" => IsSubdivision.liftRay H ρ
@@ -70,11 +74,11 @@ The comparison identifies the strict boundaries by the elementary transformation
 and computes the Picard pullback in the given source marking. -/
 theorem exists_ordered_toric_mutation_model_of_factorization
     {Ω : Fan i} (hΩ : Ω.IsRegular) (H : Ω.IsSubdivision A.fan)
-    {m : ℕ} (a : Fin m → Ω.Ray) (u : Fin m → ℂˣ)
+    {m : ℕ} (a : Fin m → Ω.Ray) (u : Fin m → Kˣ)
     (r : Z ⟶ X[M[A.fan,ρ,hOpp]])
     (hr : A.hom.toRationalMap.comp μ[A.fan,ρ,hOpp] = r.toRationalMap) :
     letI : Nonempty Ω.cones := H.nonempty_cones_of_nonempty A.isComplete.nonempty_cones
-    let U := Ω.internalBlowupTower b a u
+    let U := Ω.internalBlowupTower K b a u
     ∀ (e : U.1 ≅ Z), e.hom ≫ A.hom = base[U] ≫ π[H] →
       P.comap e.hom = U.2.boundaryι.ker →
       let σ := liftRay(H)
@@ -82,9 +86,9 @@ theorem exists_ordered_toric_mutation_model_of_factorization
       let Ψ := M[Ω,σ,opp]
       letI : Nonempty Ψ.cones := ⟨Ω.mutationFanConeEquiv b σ.primitiveGenerator_ne_zero
         σ.hull_primitiveGenerator_mem opp σ.toCone⟩
-      letI : IsIntegral U.1 := isIntegral_internalBlowupTower b a u hΩ
+      letI : IsIntegral U.1 := isIntegral_internalBlowupTower K b a u hΩ
       letI : IsModification U.2.toTower.toBase :=
-        isModification_internalBlowupTower_toBase b a u hΩ
+        isModification_internalBlowupTower_toBase K b a u hΩ
       ∃ (n : ℕ) (hm : n + 1 = m) (k : Fin (n + 1)),
         let ι := finCongr hm
         a (ι k) = σ ∧ u (ι k) = c ∧ (∀ l < k, (a (ι l), u (ι l)) ≠ (σ, c)) ∧
@@ -93,20 +97,20 @@ theorem exists_ordered_toric_mutation_model_of_factorization
           σ.hull_primitiveGenerator_mem opp (a (ι (k.succAbove l)))
         let tailParam := fun l : Fin n ↦ u (ι (k.succAbove l)) *
           c ^ max (b.det ![(a (ι (k.succAbove l))).primitiveGenerator, σ.primitiveGenerator]) 0
-        let W := Ψ.internalBlowupTower b (Fin.cons reverseRay tailRay) (Fin.cons c⁻¹ tailParam)
+        let W := Ψ.internalBlowupTower K b (Fin.cons reverseRay tailRay) (Fin.cons c⁻¹ tailParam)
         ∃ g : U.1 ≅ W.1,
           g.inv ≫ e.hom ≫ r = base[W] ≫ π[mutationSubdivision(H)] ∧
           P.comap (g.inv ≫ e.hom) = W.2.boundaryι.ker ∧
           (base[U]).toRationalMap.comp μ[Ω,σ,opp] = (g.hom ≫ base[W]).toRationalMap ∧
           U.2.boundaryι ≫ g.hom = (σ.mutationBoundaryIso b opp c hΩ).hom ≫ W.2.boundaryι ∧
           ∀ d z x,
-            let y := mutationPicardEquiv b (fun _ : Fin 1 ↦ σ) 0 opp hΩ (d, fun _ ↦ z)
+            let y := mutationPicardEquiv K b (fun _ : Fin 1 ↦ σ) 0 opp hΩ (d, fun _ ↦ z)
             pullback g.hom (W.2.toTower.picardHom (d, Fin.cons z x)).toMul =
               (U.2.toTower.picardHom (y.1, k.insertNth (y.2 0) x ∘ ι.symm)).toMul := by
   let : Nonempty Ω.cones := H.nonempty_cones_of_nonempty A.isComplete.nonempty_cones
   intro U e he hP
-  let := isIntegral_internalBlowupTower b a u hΩ
-  let := isModification_internalBlowupTower_toBase b a u hΩ
+  let := isIntegral_internalBlowupTower K b a u hΩ
+  let := isModification_internalBlowupTower_toBase K b a u hΩ
   let : IrreducibleSpace Z :=
     { isPreirreducible_univ := PreirreducibleSpace.isPreirreducible_univ
       toNonempty := A.hom.denseRange.nonempty }
@@ -114,16 +118,16 @@ theorem exists_ordered_toric_mutation_model_of_factorization
       (e.hom ≫ r).toRationalMap := by
     simp only [← he, ← Scheme.RationalMap.comp_toRationalMap,
       ← Scheme.Hom.toRationalMap_compHom, Scheme.RationalMap.comp_assoc, hr]
-  obtain ⟨q, ⟨hq, hproj⟩, -⟩ := H.existsUnique_mutation_resolution b ρ hOpp c
-    (isClosedPointTower_internalBlowupTower b a u) A.isRegular hΩ (e.hom ≫ r) hres
+  obtain ⟨q, ⟨hq, hproj⟩, -⟩ := H.existsUnique_mutation_resolution K b ρ hOpp c
+    (isClosedPointTower_internalBlowupTower K b a u) A.isRegular hΩ (e.hom ≫ r) hres
   cases m with
   | zero =>
-    obtain ⟨k, -⟩ := (liftRay(H)).exists_first_internalBlowupTower_center_of_resolves
+    obtain ⟨k, -⟩ := (liftRay(H)).exists_first_internalBlowupTower_center_of_resolves K
       b (oppositeRayMem(H)) c a u q hq
     exact Fin.elim0 k
   | succ n =>
     obtain ⟨k, hk, hu, hfirst, g, hg, hb, hpic⟩ :=
-      (liftRay(H)).exists_ordered_target_model_of_resolves b (oppositeRayMem(H)) c a u hΩ q hq
+      (liftRay(H)).exists_ordered_target_model_of_resolves K b (oppositeRayMem(H)) c a u hΩ q hq
     have htarget := hproj.symm.trans (by rw [← hg, Category.assoc])
     refine ⟨n, rfl, k, hk, hu, hfirst, g, ?_, ?_, hq.trans ?_, hb, hpic⟩
     · rw [htarget]

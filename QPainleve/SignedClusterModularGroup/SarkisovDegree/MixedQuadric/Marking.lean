@@ -24,33 +24,37 @@ open TauCeti.AlgebraicGeometry LineBundleClass TauCeti.SymmetricAlgebra
 
 namespace TauCeti.Toric.Fan.LogarithmicProjection
 
+variable {k₀ : Type} [Field k₀] [IsAlgClosed k₀]
+
 attribute [local instance] MvPolynomial.gradedAlgebra
 
-local notation "S" => Spec (CommRingCat.of ℂ)
-local notation "P" => Proj (homogeneousSubmodule ℂ (Fin 3 → ℂ))
-local notation "H" => LineBundleClass.mk (Proj.symmetricAlgebraTwistingBundle ℂ (Fin 3 → ℂ) 1)
-local notation "coords" => Pi.basisFun ℂ (Fin 3)
+local notation "S" => Spec (CommRingCat.of k₀)
+local notation "P" => Proj (homogeneousSubmodule k₀ (Fin 3 → k₀))
+local notation "H" => LineBundleClass.mk (Proj.symmetricAlgebraTwistingBundle k₀ (Fin 3 → k₀) 1)
+local notation "coords" => Pi.basisFun k₀ (Fin 3)
 local notation "plane[" b "," hi "]" => Fan.projectiveSpace b hi
 local notation "planeIso[" b "," hi "]" =>
-  (Fan.projectivePlaneIso b hi ≪≫ Basis.polynomialProjIso coords)
+  (Fan.projectivePlaneIso k₀ b hi ≪≫ Basis.polynomialProjIso coords)
 local notation "mark[" U "," hU "," f "," g "]" =>
   LinearEquiv.symm (BlowupTower.picardMarking U hU f) (Additive.ofMul (pullback g H))
 local notation "obj[" F "," A "]" => @Prefunctor.obj _ sarkisovQuiver _ sarkisovQuiver F A
 
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
-  {i : N →+ V} {X : Scheme} [X.Over S] [SmoothOfRelativeDimension 2 (X ↘ S)]
-  [IsIntegral X] [IsNoetherian X] {D : X.IdealSheafData} {A B : LogarithmicProjection i D}
+  {i : N →+ V} {X : Scheme} [X.Over (Spec (.of k₀))] [SmoothOfRelativeDimension 2 (X ↘ Spec
+    (.of k₀))]
+  [IsIntegral X] [IsNoetherian X] {D : X.IdealSheafData} {A B : LogarithmicProjection k₀ i D}
   {Y : Scheme} {b b' : Basis (Fin 2) ℤ N} {hi : IsIntegralLattice i}
   (r : Fin 4 ≃ A.fan.Ray)
   (hr : (fun t ↦ (r t).primitiveGenerator) = ![b 0, b 1, -b 0, (0 : ℤ) • b 0 - b 1])
-  {n : ℕ} {T : BlowupTower A.fan.algebraicRealization (n + 2) Y}
-  (hT : IsClosedPointTower A.fan.algebraicRealization T) (g : Y ⟶ P)
+  {n : ℕ} {T : BlowupTower (A.fan.finiteFanScheme k₀) (n + 2) Y}
+  (hT : IsClosedPointTower (A.fan.finiteFanScheme k₀) T) (g : Y ⟶ (Proj (homogeneousSubmodule k₀
+    (Fin 3 → k₀))))
 
 local notation "rankTwo" => Eq.trans (finrank_eq_card_basis b) (Fintype.card_fin 2)
-local notation "fA" => (A.fan.algebraicRealization ↘ S)
-local notation "pt" => IsLocalRing.closedPoint ℂ
+local notation "fA" => ((A.fan.finiteFanScheme k₀) ↘ S)
+local notation "pt" => IsLocalRing.closedPoint k₀
 local notation "center[" ρ "," c "]" =>
-  Fan.Ray.binomialCenter ρ rankTwo (Basis.detDualEquiv_self b (Fan.Ray.primitiveGenerator ρ))
+  Fan.Ray.binomialCenter ρ k₀ rankTwo (Basis.detDualEquiv_self b (Fan.Ray.primitiveGenerator ρ))
     (Fan.Ray.surjective_detCharacter ρ b) c pt
 
 /-- The first centers at a corner of one invariant fiber and a smooth point of the
@@ -64,18 +68,18 @@ theorem exists_sarkisov_step_of_quadric_corner_and_smooth_centers
     (hB : B.fan = plane[b',hi]) (k : X ≅ Y)
     (hAh : A.hom = k.hom ≫ T.toBase) (hBh : B.hom ≍ k.hom ≫ g ≫ (planeIso[b',hi]).inv)
     (hg : g ≫ (P ↘ S) = T.toBase ≫ fA) (hbir : Scheme.BirationalOver g (𝟙 P))
-    (j l : Fin (n + 2)) (c : ℂˣ)
+    (j l : Fin (n + 2)) (c : k₀ˣ)
     (hl : hT.baseCenter l = center[r 1,c])
     (hlfirst : ∀ t < l, hT.baseCenter t ≠ hT.baseCenter l)
     (σ : A.fan.cones) (hσ : Nat.card (ToricRay σ.val) = 2) (hopp : (r 3).toCone ≤ σ)
-    (hj : hT.baseCenter j = A.fan.distinguishedPointHom σ pt)
+    (hj : hT.baseCenter j = (A.fan.distinguishedSection (R := k₀) σ) pt)
     (hjfirst : ∀ t < j, hT.baseCenter t ≠ hT.baseCenter j) (d : ℕ ×ₗ ℕ) :
     let : Nonempty A.fan.cones := A.isComplete.nonempty_cones
     let : SmoothOfRelativeDimension 2 fA := by
-      rw [Fan.algebraicRealization_over, ← rankTwo]
-      exact A.fan.smoothOfRelativeDimension_algebraicRealizationStructureMap A.isRegular
+      rw [Fan.finiteFanScheme_over k₀, ← rankTwo]
+      exact A.fan.smoothOfRelativeDimension_finiteFanSchemeToSpec k₀ A.isRegular
     let x := mark[T,hT,fA,g]
-    let C := A.fan.hirzebruchPicardBasis b 0 A.isRegular r hr
+    let C := A.fan.hirzebruchPicardBasis k₀ b 0 A.isRegular r hr
     C.repr x.1 0 < -x.2 j + -x.2 l →
     3 * (C.repr x.1 1).toNat ≤ (ofLex d).1 →
     HasPlaneTargetDecrease A B rankTwo hD hNode d := by
@@ -89,11 +93,14 @@ theorem exists_sarkisov_step_of_quadric_corner_and_smooth_centers
   let : k.hom.IsOver S := ⟨(Category.assoc k.hom T.toBase fA).symm.trans
     (hAh ▸ comp_over A.hom S)⟩
   let : k.symm.hom.IsOver S := inferInstanceAs (k.inv.IsOver S)
-  let F := precomposeSarkisovOfIso (i := i) rankTwo k.symm (rfl : D.comap k.inv = D.comap k.inv)
-  have hL := precomposeSarkisovOfIso_obj_hom_of_comp rankTwo k.symm rfl A rfl (heq_of_eq hAh)
-  have hR := precomposeSarkisovOfIso_obj_hom_of_comp rankTwo k.symm rfl B hB hBh
+  let F := precomposeSarkisovOfIso (K := k₀) (i := i) rankTwo k.symm (rfl : D.comap k.inv =
+    D.comap k.inv)
+  have hL := precomposeSarkisovOfIso_obj_hom_of_comp (K := k₀) rankTwo k.symm rfl A rfl
+    (heq_of_eq hAh)
+  have hR := precomposeSarkisovOfIso_obj_hom_of_comp (K := k₀) rankTwo k.symm rfl B hB hBh
   obtain ⟨Q, path, a, t, ht, Z, U, hU, e, hQ, _, hg', hbir', _, hpos, hdegree⟩ :=
-    hT.exists_sarkisov_path_of_quadric_opposite_corner_and_smooth_center b A.isRegular A.isComplete
+    hT.exists_sarkisov_path_of_quadric_opposite_corner_and_smooth_center k₀ b A.isRegular
+      A.isComplete
       r hr g hg hbir j l c hl hlfirst σ hσ hopp hj hjfirst (obj[F,A])
       (precomposeSarkisovOfIso_obj_fan ..) hL
   have htarget : (obj[F,B]).hom ≍ e.hom ≫ (e.inv ≫ g) ≫ (planeIso[b',hi]).inv := by

@@ -13,7 +13,7 @@ import QPainleve.AlgebraicGeometry.Blowup.Tower.Nodal.PoleIdeal
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Projective
 import QPainleve.AlgebraicGeometry.Morphisms.Modification.Birational
 import QPainleve.Geometry.Toric.Fan.Logarithmic.Subdivision
-import QPainleve.Geometry.Toric.Fan.Separated
+import QPainleve.Geometry.Toric.BaseChange.Fan
 import TauCeti.AlgebraicGeometry.Morphisms.Modification.Composition
 
 /-!
@@ -39,14 +39,16 @@ open TauCeti.AlgebraicGeometry Scheme.IdealSheafData
 
 namespace TauCeti.Toric.Fan
 
-local notation "S" => Spec (CommRingCat.of ℂ)
-local notation "X[" Δ "]" => Fan.algebraicRealization Δ
-local notation "s[" Δ "]" => Fan.algebraicRealizationStructureMap Δ
-local notation "π[" H "]" => FanHom.algebraicMap (IsSubdivision.toFanHom H)
-local notation "B[" Δ "," h "]" => Fan.boundaryIdeal Δ (IsComplete.nonempty_cones h)
+variable (k₀ : Type) [Field k₀] [IsAlgClosed k₀]
 
-variable {X : Scheme} [X.Over S] [IsIntegral X] [X.IsProjectiveOver ℂ]
-  [SmoothOfRelativeDimension 2 (X ↘ S)] {D : X.IdealSheafData}
+local notation "S" => Spec (CommRingCat.of k₀)
+local notation "X[" Δ "]" => Fan.finiteFanScheme k₀ Δ
+local notation "s[" Δ "]" => Fan.finiteFanSchemeToSpec k₀ Δ
+local notation "π[" H "]" => FanHom.finiteFanSchemeHom k₀ (IsSubdivision.toFanHom H)
+local notation "B[" Δ "," h "]" => Fan.toricBoundaryIdeal k₀ Δ (IsComplete.nonempty_cones h)
+
+variable {X : Scheme} [X.Over (Spec (.of k₀))] [IsIntegral X] [X.IsProjectiveOver k₀]
+  [SmoothOfRelativeDimension 2 (X ↘ Spec (.of k₀))] {D : X.IdealSheafData}
 
 private theorem resolved_toric_projection
     {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V] {i : N →+ V}
@@ -54,33 +56,33 @@ private theorem resolved_toric_projection
     (J : Ω.IsSubdivision Φ) (L : Ω.IsSubdivision Δ)
     (hΦ : Φ.IsRegular) (hΩ : Ω.IsRegular) (hc : Φ.IsComplete)
     (hRank : Module.finrank ℤ N = 2)
-    {Z : Scheme} [IsIntegral Z] [Z.Over S] [Z.IsProjectiveOver ℂ]
+    {Z : Scheme} [IsIntegral Z] [Z.Over S] [Z.IsProjectiveOver k₀]
     [SmoothOfRelativeDimension 2 (Z ↘ S)]
     (g : Z ⟶ X[Ω]) [IsDominant g] (p : Z ⟶ X[Φ]) [IsModification p] [p.IsOver S]
     (he : g ≫ π[J] = p) (P : Z.IdealSheafData)
     (hPole : letI : Smooth (Z ↘ S) := SmoothOfRelativeDimension.smooth 2 _
-      (B[Φ,hc]).comap p = P * ramificationIdealSheaf ℂ p) :
+      (B[Φ,hc]).comap p = P * ramificationIdealSheaf k₀ p) :
     let q := g ≫ π[L]
-    p.toRationalMap.comp (Φ.denseTorusPartialIso Δ).toRationalMap = q.toRationalMap ∧
+    p.toRationalMap.comp (Φ.denseTorusPartialIso k₀ Δ).toRationalMap = q.toRationalMap ∧
     ∃ hOver : q ≫ s[Δ] = Z ↘ S,
       letI : q.IsOver S := ⟨hOver⟩
       letI : Smooth (Z ↘ S) := SmoothOfRelativeDimension.smooth 2 (Z ↘ S)
-      Δ.IsRegular → IsModification q ∧ (Δ.boundaryIdeal inferInstance).comap q =
-        P * ramificationIdealSheaf ℂ q := by
+      Δ.IsRegular → IsModification q ∧ (Δ.toricBoundaryIdeal k₀ inferInstance).comap q =
+        P * ramificationIdealSheaf k₀ q := by
   subst p
   have hg : g ≫ s[Ω] = Z ↘ S := by
-    rw [← J.toFanHom.algebraicMap_comp_algebraicRealizationStructureMap, ← Category.assoc,
-      ← Φ.algebraicRealization_over, comp_over]
+    rw [← J.toFanHom.finiteFanSchemeHom_comp_finiteFanSchemeToSpec k₀, ← Category.assoc,
+      ← Φ.finiteFanScheme_over k₀, comp_over]
   let : g.IsOver S := ⟨hg⟩
   have hOver : (g ≫ π[L]) ≫ s[Δ] = Z ↘ S := by
-    rw [Category.assoc, L.toFanHom.algebraicMap_comp_algebraicRealizationStructureMap, hg]
-  have hrat := J.comp_denseTorusPartialIso L g
+    rw [Category.assoc, L.toFanHom.finiteFanSchemeHom_comp_finiteFanSchemeToSpec k₀, hg]
+  have hrat := J.comp_denseTorusPartialIso k₀ L g
   let q := g ≫ π[L]
   have : IsProper (q ≫ s[Δ]) := hOver.symm ▸ inferInstanceAs (IsProper (Z ↘ S))
   let : IsProper q := IsProper.of_comp q s[Δ]
   refine ⟨hrat, hOver, fun hΔ ↦ ⟨?_, ?_⟩⟩
-  · exact IsModification.of_resolved_partialIso (g ≫ π[J]) (Φ.denseTorusPartialIso Δ) q hrat
-  · exact (comap_boundaryIdeal_eq_mul_ramificationIdealSheaf_iff_of_common_subdivision
+  · exact IsModification.of_resolved_partialIso (g ≫ π[J]) (Φ.denseTorusPartialIso k₀ Δ) q hrat
+  · exact (comap_boundaryIdeal_eq_mul_ramificationIdealSheaf_iff_of_common_subdivision k₀
       J L hΦ hΔ hΩ hc hRank g P).mp hPole
 
 /-- A finite family of specified birational morphisms to complete regular toric
@@ -99,7 +101,7 @@ theorem exists_common_nodal_resolution_of_toric_changes
     (hD : D.IsEffectiveCartier)
     (hN : AtWorstNodalOfRelativeDimensionOne (D.subschemeι ≫ X ↘ S))
     (hPole : letI : Smooth (X ↘ S) := SmoothOfRelativeDimension.smooth 2 _
-      ∀ j, (B[Φ j,hcΦ j]).comap (f j) = D * ramificationIdealSheaf ℂ (f j)) :
+      ∀ j, (B[Φ j,hcΦ j]).comap (f j) = D * ramificationIdealSheaf k₀ (f j)) :
     letI : IsNoetherian X := isNoetherian_of_finiteType (X ↘ S)
     ∃ (n : ℕ) (Z : Scheme) (T : BlowupTower X n Z)
       (hT : IsNodalBoundaryTower D (X ↘ S) (𝟙 X) T),
@@ -118,30 +120,30 @@ theorem exists_common_nodal_resolution_of_toric_changes
         ∀ (Δ : Fan (i j)) [Nonempty Δ.cones] (L : Ω.IsSubdivision Δ),
           letI : Nonempty (Φ j).cones := (hcΦ j).nonempty_cones
           let q := g ≫ π[L]
-          (T.toBase ≫ f j).toRationalMap.comp ((Φ j).denseTorusPartialIso Δ).toRationalMap =
+          (T.toBase ≫ f j).toRationalMap.comp ((Φ j).denseTorusPartialIso k₀ Δ).toRationalMap =
             q.toRationalMap ∧
           ∃ hOver : q ≫ s[Δ] = Z ↘ S,
             letI : q.IsOver S := ⟨hOver⟩
             letI : Smooth (Z ↘ S) := SmoothOfRelativeDimension.smooth 2 (Z ↘ S)
             Δ.IsRegular → IsModification q ∧
-              (Δ.boundaryIdeal inferInstance).comap q =
-                (D.comap T.toBase).radical * ramificationIdealSheaf ℂ q := by
+              (Δ.toricBoundaryIdeal k₀ inferInstance).comap q =
+                (D.comap T.toBase).radical * ramificationIdealSheaf k₀ q := by
   classical
   let := Fintype.ofFinite ι
   let : IsNoetherian X := isNoetherian_of_finiteType (X ↘ S)
   choose Ξ hΞ H m ρ c e he hboundary using fun j ↦
-    (Φ j).exists_toric_internal_factorization_of_boundary_comap_eq (b j) (hΦ j) (hcΦ j)
+    (Φ j).exists_toric_internal_factorization_of_boundary_comap_eq k₀ (b j) (hΦ j) (hcΦ j)
       (IsModification.birationalOver (f j)) (hPole j)
   have hs (j : ι) : (Φ j).support = (Ψ j).support := by
     ext x
     simp only [mem_support, (Φ j).isComplete_iff.mp (hcΦ j) x, (Ψ j).isComplete_iff.mp (hcΨ j) x]
   let : ∀ j, Nonempty (Φ j).cones := fun j ↦ (hcΦ j).nonempty_cones
   have hone j :=
-    exists_nodal_resolution_of_toric_change (b j) (hΦ j) (hΨ j) (hs j) (hΞ j) (H j) (ρ j) (c j)
+    exists_nodal_resolution_of_toric_change k₀ (b j) (hΦ j) (hΨ j) (hs j) (hΞ j) (H j) (ρ j) (c j)
       (f j) D (e j) (he j) (hboundary j)
   choose Ω J K hΩ hchain hchain' n Y T g _ hg _ hT hproj _ using hone
   have hOver j : f j ≫ s[Φ j] = X ↘ S := by
-    rw [← (Φ j).algebraicRealization_over, comp_over]
+    rw [← (Φ j).finiteFanScheme_over k₀, comp_over]
   obtain ⟨m, Z, U, hU, hRef⟩ := exists_common_nodal_boundary_tower_refinement_finset
     D (X ↘ S) (𝟙 X) Finset.univ T (fun j _ ↦ hOver j ▸ hT j)
   refine ⟨m, Z, U, hU, fun j ↦ ?_⟩
@@ -159,7 +161,7 @@ theorem exists_common_nodal_resolution_of_toric_changes
   let : IsModification U.toBase :=
     hU.isClosedPointTower.isModification_of_smoothOfRelativeDimension_two (X ↘ S)
   let : U.toBase.IsOver S := ⟨rfl⟩
-  let : Z.IsProjectiveOver ℂ := U.isProjectiveOver ℂ
+  let : Z.IsProjectiveOver k₀ := U.isProjectiveOver k₀
   let : Nonempty (Ω j).cones := (J j).nonempty_cones_of_nonempty inferInstance
   let g' := (e.hom ≫ L.toBase) ≫ g j
   let : IsDominant (g j) := hg j
@@ -169,12 +171,13 @@ theorem exists_common_nodal_resolution_of_toric_changes
   have hRank : Module.finrank ℤ (N j) = 2 :=
     (Module.finrank_eq_card_basis (b j)).trans (Fintype.card_fin 2)
   let : SmoothOfRelativeDimension 2 (X[Φ j] ↘ S) :=
-    hRank ▸ (Φ j).smoothOfRelativeDimension_algebraicRealizationStructureMap (hΦ j)
+    Eq.mpr (congrArg (SmoothOfRelativeDimension 2) ((Φ j).finiteFanScheme_over k₀))
+          (hRank ▸ (Φ j).smoothOfRelativeDimension_finiteFanSchemeToSpec k₀ (hΦ j))
   have hRefined := hU.comap_eq_radical_mul_ramificationIdealSheaf_of_iso hD hN
     (Iso.refl Z) U.toBase (Category.id_comp _)
-  have hPull := comap_eq_mul_ramificationIdealSheaf_comp ℂ U.toBase (f j) 2 (hPole j) hRefined
+  have hPull := comap_eq_mul_ramificationIdealSheaf_comp k₀ U.toBase (f j) 2 (hPole j) hRefined
   refine ⟨Ω j, J j, K j, g', hΩ j, hchain j, hchain' j, he, fun Δ _ M ↦ ?_⟩
-  exact resolved_toric_projection (J j) M (hΦ j) (hΩ j) (hcΦ j) hRank
+  exact resolved_toric_projection k₀ (J j) M (hΦ j) (hΩ j) (hcΦ j) hRank
     g' (U.toBase ≫ f j) he _ hPull
 
 end TauCeti.Toric.Fan

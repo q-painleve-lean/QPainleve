@@ -40,6 +40,8 @@ open Scheme.IdealSheafData
 
 namespace QPainleve.BlowupTower.IsClosedPointTower
 
+variable (k₀ : Type) [Field k₀] [IsAlgClosed k₀]
+
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {Φ : Fan i} (b : Basis (Fin 2) ℤ N) (hΦ : Φ.IsRegular)
   (hc : Φ.IsComplete) (r : Fin 4 ≃ Φ.Ray)
@@ -57,40 +59,41 @@ local notation "rayEquiv" => Φ.mutationFanRayEquiv b hv hp hop
 local notation "s" => r.trans (rayEquiv)
 local notation "hs" => Fan.Ray.mutationFan_hirzebruch_ray_generators_of_section_zero
   (ρ) b hop 0 r hr rfl
-local notation "S" => Spec (CommRingCat.of ℂ)
-local notation "X" => Φ.algebraicRealization
-local notation "X'" => Fan.algebraicRealization Ψ
+local notation "S" => Spec (CommRingCat.of k₀)
+local notation "X" => (Φ.finiteFanScheme k₀)
+local notation "X'" => Fan.finiteFanScheme k₀ Ψ
 local notation "fX" => (X ↘ S)
 local notation "fX'" => (X' ↘ S)
-local notation "P" => Proj (homogeneousSubmodule ℂ (Fin 3 → ℂ))
-local notation "H" => mk (Proj.symmetricAlgebraTwistingBundle ℂ (Fin 3 → ℂ) 1)
+local notation "P" => Proj (homogeneousSubmodule k₀ (Fin 3 → k₀))
+local notation "H" => mk (Proj.symmetricAlgebraTwistingBundle k₀ (Fin 3 → k₀) 1)
 local notation "fP" => (P ↘ S)
-local notation "C" => Fan.hirzebruchPicardBasis b 0 hΦ r hr
-local notation "C'" => Fan.hirzebruchPicardBasis b 1 hΨ s hs
+local notation "C" => Fan.hirzebruchPicardBasis k₀ b 0 hΦ r hr
+local notation "C'" => Fan.hirzebruchPicardBasis k₀ b 1 hΨ s hs
 local notation "rankTwo" => Eq.trans (finrank_eq_card_basis b) (Fintype.card_fin 2)
-local notation "B[" Δ "," hcΔ "]" => Fan.boundaryIdeal Δ (Fan.IsComplete.nonempty_cones hcΔ)
+local notation "B[" Δ "," hcΔ "]" => Fan.toricBoundaryIdeal k₀ Δ (Fan.IsComplete.nonempty_cones hcΔ)
 local notation "center[" u "," c "]" =>
-  (Fan.Ray.binomialCenter u rankTwo (b.detDualEquiv_self (Fan.Ray.primitiveGenerator u))
+  (Fan.Ray.binomialCenter u k₀ rankTwo (b.detDualEquiv_self (Fan.Ray.primitiveGenerator u))
     (Fan.Ray.surjective_detCharacter u b) c)
-local notation "pt" => IsLocalRing.closedPoint ℂ
+local notation "pt" => IsLocalRing.closedPoint k₀
 local notation "I[" c "]" => Fan.Ray.mutationSourceCenterIdeal b (ρ) c
 local notation "J[" c "]" => Fan.Ray.mutationTargetCenterIdeal b (ρ) hop c
 local notation "G[" c "]" => Fan.Ray.mutationBlowupIso b (ρ) hop c
 local notation "reverseRay" => Φ.mutationFanCenterRays b (fun _ : Unit ↦ r 0) () hop ()
 local notation "compOpen[" c "]" => Φ.mutationComplement b
-  (Φ.detCharacter_nonneg_or_nonpos b hv hp hop) (c : ℂ)
+  (Φ.detCharacter_nonneg_or_nonpos b hv hp hop) (c : k₀)
 
 variable {n : ℕ} {Y : Scheme}
 
 local notation "first" => Fin.castAdd n (0 : Fin 1)
 
 local notation "targetOpen[" c "]" => Fan.mutationComplement (Ψ) b
-  (Φ.mutationDetCharacter_nonneg_or_nonpos b hv hp hop) (c : ℂ)
+  (Φ.mutationDetCharacter_nonneg_or_nonpos b hv hp hop) (c : k₀)
 
-private theorem oppositeCenter_mutationComplement (c d : ℂˣ) (hcd : d * c ≠ 1) :
+omit [IsAlgClosed k₀] in
+private theorem oppositeCenter_mutationComplement (c d : k₀ˣ) (hcd : d * c ≠ 1) :
     ∃ x : (compOpen[c]).toScheme,
       (compOpen[c]).ι x = center[r 2,d] pt ∧
-      (targetOpen[c]).ι ((Φ.mutationComplementIso b (c : ℂ) hv hp hop).hom x) =
+      (targetOpen[c]).ι ((Φ.mutationComplementIso b (c : k₀) hv hp hop).hom x) =
         center[s 2,d] pt := by
   have hv₀ : v = b 0 := congrFun hr 0
   have hzero : (r 2).primitiveGenerator = -v := hv₀ ▸ congrFun hr 2
@@ -104,15 +107,16 @@ private theorem oppositeCenter_mutationComplement (c d : ℂˣ) (hcd : d * c ≠
   obtain ⟨p, hp₀, hp₁⟩ := Fan.exists_binomialCenter_mutationComplementIso b (r 2)
     hv hp hop c d (r 0).isPrimitiveGenerator.isPrimitive
     (fun h ↦ (hne h).elim) (fun _ ↦ hcd)
-  refine ⟨p pt, congrArg (fun f : Spec (.of ℂ) ⟶ X ↦ f pt) hp₀, ?_⟩
-  have heq := congrArg (fun f : Spec (.of ℂ) ⟶ X' ↦ f pt) hp₁
+  refine ⟨p pt, congrArg (fun f : Spec (.of k₀) ⟶ X ↦ f pt) hp₀, ?_⟩
+  have heq := congrArg (fun f : Spec (.of k₀) ⟶ X' ↦ f pt) hp₁
   simp only [hdet, max_self, zpow_zero, mul_one] at heq
   exact heq
 
+omit [IsAlgClosed k₀] in
 private theorem first_oppositeCenter_of_mutation
     {T : BlowupTower X (n + 1) Y} (hT : IsClosedPointTower X T)
     {Z : Scheme} {U : BlowupTower X' (1 + n) Z} (hU : IsClosedPointTower X' U)
-    (c d : ℂˣ) {j : Fin (n + 1)} {l : Fin n} (hcd : d * c ≠ 1)
+    (c d : k₀ˣ) {j : Fin (n + 1)} {l : Fin n} (hcd : d * c ≠ 1)
     (hl : hT.baseCenter (j.succAbove l) = center[r 2,d] pt)
     (hlfirst : ∀ k < j.succAbove l, hT.baseCenter k ≠ center[r 2,d] pt)
     (hreverse : hU.baseCenter first = center[reverseRay,c⁻¹] pt)
@@ -121,12 +125,12 @@ private theorem first_oppositeCenter_of_mutation
       (J[c]).blowupToBase ((G[c]).hom p) = hU.baseCenter (k.natAdd 1)) :
     hU.baseCenter (l.natAdd 1) = center[s 2,d] pt ∧
       ∀ k < l.natAdd 1, hU.baseCenter k ≠ center[s 2,d] pt := by
-  obtain ⟨x, hx, hx'⟩ := oppositeCenter_mutationComplement b r hr c d hcd
+  obtain ⟨x, hx, hx'⟩ := oppositeCenter_mutationComplement k₀ b r hr c d hcd
   have hmem : hT.baseCenter (j.succAbove l) ∈ compOpen[c] := by
     rw [hl, ← hx]
     exact x.property
   obtain ⟨htarget, hfirst⟩ :=
-    (r 0).baseCenter_of_mutation_of_mem_complement b hop c hT hU j l hreverse hcenters hmem
+    (r 0).baseCenter_of_mutation_of_mem_complement k₀ b hop c hT hU j l hreverse hcenters hmem
   have heq : (⟨hT.baseCenter (j.succAbove l), hmem⟩ : (compOpen[c]).toScheme) = x :=
     Subtype.ext (hl.trans hx.symm)
   have hImage := htarget.trans (heq.symm ▸ hx')
@@ -135,12 +139,13 @@ private theorem first_oppositeCenter_of_mutation
 
 local notation "m" => LinearMap.toAddMonoidHom (b.detDualEquiv v)
 local notation "hru" => Φ.detCharacter_nonneg_or_nonpos b hv hp hop
-local notation "f" => Φ.characterRuling m hru
+local notation "f" => Φ.characterRuling k₀ m hru
 local notation "rulingPoint[" c "]" =>
-  projectiveLine.polynomialPoint ℂ (RingHom.id ℂ) 0 (-(↑c⁻¹ : ℂ))
+  projectiveLine.polynomialPoint k₀ (RingHom.id k₀) 0 (-(↑c⁻¹ : k₀))
 
 include hr in
-private theorem quadric_opposite_center_on_pivot_fiber (c : ℂˣ) :
+omit [IsAlgClosed k₀] in
+private theorem quadric_opposite_center_on_pivot_fiber (c : k₀ˣ) :
     center[r 2,c⁻¹] ≫ f = rulingPoint[c] := by
   have hv₀ : v = b 0 := congrFun hr 0
   have hv₂ : (r 2).primitiveGenerator = -v := hv₀ ▸ congrFun hr 2
@@ -149,13 +154,13 @@ private theorem quadric_opposite_center_on_pivot_fiber (c : ℂˣ) :
     rfl
   have hz : m (r 2).primitiveGenerator = 0 := by
     simp [hv₂, -Basis.detDualEquiv_apply, Basis.detDualEquiv_self]
-  have hneg := (r 2).binomialCenter_neg_inv rankTwo hz ((r 0).surjective_detCharacter b) c
-  have he : center[r 2,c⁻¹] = (r 2).binomialCenter rankTwo hz
+  have hneg := (r 2).binomialCenter_neg_inv k₀ rankTwo hz ((r 0).surjective_detCharacter b) c
+  have he : center[r 2,c⁻¹] = (r 2).binomialCenter k₀ rankTwo hz
       ((r 0).surjective_detCharacter b) c := by
     convert hneg using 1
     congr 1
   rw [he]
-  exact (r 2).binomialCenter_comp_characterRuling hru rankTwo hz
+  exact (r 2).binomialCenter_comp_characterRuling k₀ hru rankTwo hz
     ((r 0).surjective_detCharacter b) c
 
 local notation "swappedBasis" => b.reindex (Equiv.swap 0 1)
@@ -163,17 +168,17 @@ local notation "swappedRays" =>
   Equiv.trans (Equiv.trans (Equiv.swap (0 : Fin 4) 1) (Equiv.swap 2 3)) r
 
 private theorem quadric_mutationRuling_ne_of_lt_sum_first_base_orders
-    [Φ.algebraicRealization.IsProjectiveOver ℂ]
+    [(Φ.finiteFanScheme k₀).IsProjectiveOver k₀]
     {T : BlowupTower X (n + 1) Y} (hT : IsClosedPointTower X T)
     (g : Y ⟶ P) (hg : g ≫ fP = T.toBase ≫ fX)
-    {j l : Fin (n + 1)} (hjl : j ≠ l) (c : ℂˣ)
+    {j l : Fin (n + 1)} (hjl : j ≠ l) (c : k₀ˣ)
     (hj : hT.baseCenter j = center[r 0,c] pt)
     (hjfirst : ∀ k < j, hT.baseCenter k ≠ hT.baseCenter j)
     (hlfirst : ∀ k < l, hT.baseCenter k ≠ hT.baseCenter l) :
     let : Nonempty Φ.cones := hc.nonempty_cones
     let : SmoothOfRelativeDimension 2 fX := by
-      rw [Fan.algebraicRealization_over]
-      exact rankTwo ▸ Φ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
+      rw [Fan.finiteFanScheme_over k₀]
+      exact rankTwo ▸ Φ.smoothOfRelativeDimension_finiteFanSchemeToSpec k₀ hΦ
     let x : Additive (LineBundleClass X) × (Fin (n + 1) → ℤ) :=
       (T.picardMarking hT fX).symm (Additive.ofMul (pullback g H))
     let α := (C).repr x.1 1
@@ -186,8 +191,8 @@ private theorem quadric_mutationRuling_ne_of_lt_sum_first_base_orders
   let bs := (swappedBasis)
   let rs := (swappedRays)
   have hrs := Fan.quadric_swapped_generators b r hr
-  have hα : (Fan.hirzebruchPicardBasis bs 0 hΦ rs hrs).repr x.1 0 = α := by
-    rw [Fan.hirzebruchPicardBasis_quadric_swap b hΦ r hr, Basis.repr_reindex_apply]
+  have hα : (Fan.hirzebruchPicardBasis k₀ bs 0 hΦ rs hrs).repr x.1 0 = α := by
+    rw [Fan.hirzebruchPicardBasis_quadric_swap k₀ b hΦ r hr, Basis.repr_reindex_apply]
     rfl
   have hv₀ : v = b 0 := congrFun hr 0
   have hm : (bs.coord 0).toAddMonoidHom = m := by
@@ -197,16 +202,16 @@ private theorem quadric_mutationRuling_ne_of_lt_sum_first_base_orders
     fin_cases k <;>
       simp [bs, hv₀, Basis.coord_apply,
         -Basis.detDualEquiv_apply, Basis.detDualEquiv_self, Basis.detDualEquiv_apply_basis_zero_one]
-  have hf : Φ.characterRuling (bs.coord 0).toAddMonoidHom
+  have hf : Φ.characterRuling k₀ (bs.coord 0).toAddMonoidHom
       (Φ.nonneg_or_nonpos_quadric_transverse_character bs rs hrs) = f := by congr
-  have ht : Φ.characterRuling (bs.coord 0).toAddMonoidHom
+  have ht : Φ.characterRuling k₀ (bs.coord 0).toAddMonoidHom
       (Φ.nonneg_or_nonpos_quadric_transverse_character bs rs hrs) (hT.baseCenter j) ∈
         Set.range (rulingPoint[c]) := by
     rw [hf, hj]
-    exact ⟨pt, (congrArg (fun k : Spec (.of ℂ) ⟶ projectiveLine ℂ ↦ k pt)
-      ((r 0).binomialCenter_comp_characterRuling hru rankTwo
+    exact ⟨pt, (congrArg (fun k : Spec (.of k₀) ⟶ projectiveLine k₀ ↦ k pt)
+      ((r 0).binomialCenter_comp_characterRuling k₀ hru rankTwo
         (b.detDualEquiv_self v) ((r 0).surjective_detCharacter b) c)).symm⟩
-  have hne := hT.ne_quadric_transverse_ruling_of_lt_sum_first_base_orders
+  have hne := hT.ne_quadric_transverse_ruling_of_lt_sum_first_base_orders k₀
     bs hΦ hc rs hrs g hg hjl hjfirst hlfirst (-c⁻¹)
       (by simpa only [Units.val_neg] using ht)
   dsimp only at hne
@@ -222,15 +227,15 @@ local notation "Ω" => Fan.mutationFan (Ψ) b hw hwPos hwOpp
 local notation "hΩ" => Iff.mpr (Fan.isRegular_mutationFan_iff (Ψ) b hw hwPos hwOpp) hΨ
 local notation "hcΩ" => Iff.mpr (Fan.isComplete_mutationFan_iff (Ψ) b hw hwPos hwOpp) hcΨ
 local notation "t" => Equiv.trans s (Fan.mutationFanRayEquiv (Ψ) b hw hwPos hwOpp)
-local notation "X''" => Fan.algebraicRealization Ω
+local notation "X''" => Fan.finiteFanScheme k₀ Ω
 local notation "fX''" => (X'' ↘ S)
 
 local notation "mut₀[" c "]" =>
-  Scheme.PartialMap.toRationalMap (Φ.mutationPartialMap b (c : ℂ) hv hp hop)
+  Scheme.PartialMap.toRationalMap (Φ.mutationPartialMap k₀ b (c : k₀) hv hp hop)
 local notation "mut₁[" d "]" =>
-  Scheme.PartialMap.toRationalMap (Fan.mutationPartialMap (Ψ) b (d : ℂ) hw hwPos hwOpp)
+  Scheme.PartialMap.toRationalMap (Fan.mutationPartialMap k₀ (Ψ) b (d : k₀) hw hwPos hwOpp)
 local notation "τ[" a "," ht "]" =>
-  FanHom.algebraicMap (FanEquiv.toFanHom (Fan.quadricRulingExchange a hΩ hcΩ t ht))
+  FanHom.finiteFanSchemeHom k₀ (FanEquiv.toFanHom (Fan.quadricRulingExchange a hΩ hcΩ t ht))
 
 /-- Two first centers on opposite smooth sections of a quadric give a resolved
 block when their combined order exceeds the degree on a fiber of the mutation
@@ -246,10 +251,10 @@ rulings are `(α, β + α - m₁ - m₂)`. The exceptional coordinates of the ne
 reverse pivots are `m₂ - α` followed by `m₁ - α`. The other exceptional
 coordinates retain their original relative order. -/
 theorem exists_quadric_resolution_of_two_smooth_centers
-    [Φ.algebraicRealization.IsProjectiveOver ℂ]
+    [(Φ.finiteFanScheme k₀).IsProjectiveOver k₀]
     {T : BlowupTower X (n + 2) Y} (hT : IsClosedPointTower X T)
     (g : Y ⟶ P) (hg : g ≫ fP = T.toBase ≫ fX) (hbir : Scheme.BirationalOver g (𝟙 P))
-    (c d : ℂˣ) (j : Fin (n + 2)) (l : Fin (n + 1))
+    (c d : k₀ˣ) (j : Fin (n + 2)) (l : Fin (n + 1))
     (hj : hT.baseCenter j = center[r 0,c] pt)
     (hl : hT.baseCenter (j.succAbove l) = center[r 2,d] pt)
     (hjfirst : ∀ k < j, hT.baseCenter k ≠ center[r 0,c] pt)
@@ -258,14 +263,14 @@ theorem exists_quadric_resolution_of_two_smooth_centers
     let : Nonempty (Ψ).cones := (hcΨ).nonempty_cones
     let : Nonempty (Ω).cones := (hcΩ).nonempty_cones
     let : SmoothOfRelativeDimension 2 fX := by
-      rw [Fan.algebraicRealization_over]
-      exact rankTwo ▸ Φ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
+      rw [Fan.finiteFanScheme_over k₀]
+      exact rankTwo ▸ Φ.smoothOfRelativeDimension_finiteFanSchemeToSpec k₀ hΦ
     let : SmoothOfRelativeDimension 2 fX' := by
-      rw [Fan.algebraicRealization_over]
-      exact rankTwo ▸ (Ψ).smoothOfRelativeDimension_algebraicRealizationStructureMap hΨ
+      rw [Fan.finiteFanScheme_over k₀]
+      exact rankTwo ▸ (Ψ).smoothOfRelativeDimension_finiteFanSchemeToSpec k₀ hΨ
     let : SmoothOfRelativeDimension 2 fX'' := by
-      rw [Fan.algebraicRealization_over]
-      exact rankTwo ▸ (Ω).smoothOfRelativeDimension_algebraicRealizationStructureMap hΩ
+      rw [Fan.finiteFanScheme_over k₀]
+      exact rankTwo ▸ (Ω).smoothOfRelativeDimension_finiteFanSchemeToSpec k₀ hΩ
     let : IsIntegral Y := hT.isIntegral fX
     let : IsModification T.toBase := hT.isModification_of_smoothOfRelativeDimension_two fX
     let x : Additive (LineBundleClass X) × (Fin (n + 2) → ℤ) :=
@@ -301,14 +306,14 @@ theorem exists_quadric_resolution_of_two_smooth_centers
            letI := hp₁
            letI := hp₂
            letI := hp₃
-           B[Φ,hc].comap T.toBase = D * ramificationIdealSheaf ℂ T.toBase →
-             B[Ψ,hcΨ].comap p₁ = D * ramificationIdealSheaf ℂ p₁ ∧
-             B[Ω,hcΩ].comap p₂ = D * ramificationIdealSheaf ℂ p₂ ∧
-             B[Ω,hcΩ].comap p₃ = D * ramificationIdealSheaf ℂ p₃ ∧
+           B[Φ,hc].comap T.toBase = D * ramificationIdealSheaf k₀ T.toBase →
+             B[Ψ,hcΨ].comap p₁ = D * ramificationIdealSheaf k₀ p₁ ∧
+             B[Ω,hcΩ].comap p₂ = D * ramificationIdealSheaf k₀ p₂ ∧
+             B[Ω,hcΩ].comap p₃ = D * ramificationIdealSheaf k₀ p₃ ∧
              B[Ω,hcΩ].comap q.tower.toBase =
-               D.comap (e ≪≫ k ≪≫ q.iso).inv * hQ.ramificationIdealSheafToBase ℂ) ∧
+               D.comap (e ≪≫ k ≪≫ q.iso).inv * hQ.ramificationIdealSheafToBase k₀) ∧
       let y := (q.tower.picardMarking hQ fX'').symm (Additive.ofMul (pullback g' H))
-      let C'' := Fan.hirzebruchPicardBasis a 0 hΩ t ht
+      let C'' := Fan.hirzebruchPicardBasis k₀ a 0 hΩ t ht
       C''.repr y.1 0 = α ∧
       C''.repr y.1 1 = β + α - orders j - orders (j.succAbove l) ∧
       y.2 (Fin.castAdd (1 + n) (0 : Fin 1)) = orders (j.succAbove l) - α ∧
@@ -326,23 +331,23 @@ theorem exists_quadric_resolution_of_two_smooth_centers
   let := hmod
   -- Separate the two fibers before transporting the second pivot.
   have hjl := (Fin.succAbove_ne j l).symm
-  have hne := quadric_mutationRuling_ne_of_lt_sum_first_base_orders b hΦ hc r hr hT g hg
+  have hne := quadric_mutationRuling_ne_of_lt_sum_first_base_orders k₀ b hΦ hc r hr hT g hg
     hjl c hj (by simpa only [hj] using hjfirst) (by simpa only [hl] using hlfirst) hsum
   have hdc : d * c ≠ 1 := by
     intro hdc
     have hd := mul_eq_one_iff_eq_inv.mp hdc
     apply hne
     rw [hj, hl, hd]
-    exact congrArg (fun a : Spec (.of ℂ) ⟶ projectiveLine ℂ ↦ a pt)
-      (((r 0).binomialCenter_comp_characterRuling hru rankTwo
+    exact congrArg (fun a : Spec (.of k₀) ⟶ projectiveLine k₀ ↦ a pt)
+      (((r 0).binomialCenter_comp_characterRuling k₀ hru rankTwo
         (b.detDualEquiv_self v) ((r 0).surjective_detCharacter b) c).trans
-        (quadric_opposite_center_on_pivot_fiber b r hr c).symm)
+        (quadric_opposite_center_on_pivot_fiber k₀ b r hr c).symm)
   obtain ⟨Z, U, hU, e, hmap, hg₁, hbir₁, hrev, hcenters, ha, hb, hm, hmrest⟩ :=
-    hT.exists_hirzebruchOne_resolution_of_quadric_mutation b hΦ hc r hr g hg hbir c j hj hjfirst
+    hT.exists_hirzebruchOne_resolution_of_quadric_mutation k₀ b hΦ hc r hr g hg hbir c j hj hjfirst
   obtain ⟨hL, hLfirst⟩ :=
-    first_oppositeCenter_of_mutation b r hr hT hU c d hdc hl hlfirst hrev hcenters
+    first_oppositeCenter_of_mutation k₀ b r hr hT hU c d hdc hl hlfirst hrev hcenters
   obtain ⟨a, ht, W, V₀, hV, k, hnext, _, hover, hcoord⟩ :=
-    hU.exists_quadric_resolution_of_hirzebruchOne_mutation b hΨ hcΨ s hs d
+    hU.exists_quadric_resolution_of_hirzebruchOne_mutation k₀ b hΨ hcΨ s hs d
       (l.natAdd 1) hL hLfirst
   -- Pull the two link projections and the plane resolution back to the original surface.
   refine ⟨a, ht, Z, U, hU, e, W, V₀, hV, k, ?_⟩
@@ -375,27 +380,28 @@ theorem exists_quadric_resolution_of_two_smooth_centers
     let : T.toBase.IsOver S := ⟨rfl⟩
     let : SmoothOfRelativeDimension 2 (Y ↘ S) := hT.smoothOfRelativeDimension fX
     let : Smooth (Y ↘ S) := SmoothOfRelativeDimension.smooth 2 _
-    obtain ⟨hp₁, hpole₁⟩ := (r 0).mutation_resolution_poleIdeal_iff b hop c hT hΦ hc p₁ D hmap
+    obtain ⟨hp₁, hpole₁⟩ := (r 0).mutation_resolution_poleIdeal_iff k₀ b hop c hT hΦ hc p₁ D hmap
     let : p₁.IsOver S := hp₁
     have he : e.hom ≫ U.toBase ≫ fX' = Y ↘ S :=
       (Category.assoc _ _ _).symm.trans (comp_over p₁ S)
-    obtain ⟨hp₂, hpole₂⟩ := (s 2).mutation_resolution_poleIdeal_iff_of_iso
+    obtain ⟨hp₂, hpole₂⟩ := (s 2).mutation_resolution_poleIdeal_iff_of_iso k₀
       b hwOpp d hΨ hcΨ hU e he (k.hom ≫ V₀.toBase) D hnext
     let : p₂.IsOver S := hp₂
     let : p₃.IsOver S := ⟨hthird ▸ comp_over (p₂ ≫ τ[a,ht]) S⟩
     refine ⟨hp₁, hp₂, ‹_›, fun hpole ↦ ?_⟩
-    have h₁ := hpole₁.mp (by simpa only [hT.ramificationIdealSheafToBase_def ℂ] using hpole)
+    have h₁ := hpole₁.mp (by simpa only [hT.ramificationIdealSheafToBase_def k₀] using hpole)
     have h₂ := hpole₂.mp h₁
     let : Smooth fX'' := hdim''.smooth
-    have hτ : B[Ω,hcΩ].comap τ[a,ht] = B[Ω,hcΩ] * ramificationIdealSheaf ℂ τ[a,ht] := by
-      rw [ramificationIdealSheaf_eq_top_of_isOpenImmersion ℂ (τ[a,ht]), mul_top]
-      exact (Fan.quadricRulingExchange a hΩ hcΩ t ht).comap_boundaryIdeal_algebraicMap _ _
-    have hram : ramificationIdealSheaf ℂ p₃ = ramificationIdealSheaf ℂ (p₂ ≫ τ[a,ht]) :=
-      ramificationIdealSheaf_congr ℂ hthird
-    have h₃ : B[Ω,hcΩ].comap p₃ = D * ramificationIdealSheaf ℂ p₃ := by
+    have hτ : B[Ω,hcΩ].comap τ[a,ht] = B[Ω,hcΩ] * ramificationIdealSheaf k₀ τ[a,ht] := by
+      rw [ramificationIdealSheaf_eq_top_of_isOpenImmersion k₀ (τ[a,ht]), mul_top]
+      exact (Fan.quadricRulingExchange a hΩ hcΩ t ht).comap_toricBoundaryIdeal_finiteFanSchemeHom
+        k₀ _ _
+    have hram : ramificationIdealSheaf k₀ p₃ = ramificationIdealSheaf k₀ (p₂ ≫ τ[a,ht]) :=
+      ramificationIdealSheaf_congr k₀ hthird
+    have h₃ : B[Ω,hcΩ].comap p₃ = D * ramificationIdealSheaf k₀ p₃ := by
       rw [hram]
       exact (congrArg (Scheme.IdealSheafData.comap B[Ω,hcΩ]) hthird).trans
-        (comap_eq_mul_ramificationIdealSheaf_comp ℂ p₂ τ[a,ht] 2 hτ h₂)
+        (comap_eq_mul_ramificationIdealSheaf_comp k₀ p₂ τ[a,ht] 2 hτ h₂)
     refine ⟨h₁, h₂, h₃, ?_⟩
     -- The next block uses the pole ideal on the top of the returned point tower.
     let k₂ := e ≪≫ k ≪≫ q.iso
@@ -403,8 +409,8 @@ theorem exists_quadric_resolution_of_two_smooth_centers
     let : q.tower.toBase.IsOver S := ⟨rfl⟩
     let : SmoothOfRelativeDimension 2 (q.top ↘ S) := hQ.smoothOfRelativeDimension fX''
     let : k₂.hom.IsOver S := ⟨(Category.assoc _ _ _).symm.trans (comp_over p₃ S)⟩
-    simpa only [IsIso.inv_eq_of_hom_inv_id k₂.hom_inv_id, hQ.ramificationIdealSheafToBase_def ℂ]
-      using (comap_eq_mul_ramificationIdealSheaf_comp_iff_of_isIso ℂ k₂.hom q.tower.toBase 2).mp h₃
+    simpa only [IsIso.inv_eq_of_hom_inv_id k₂.hom_inv_id, hQ.ramificationIdealSheafToBase_def k₀]
+      using (comap_eq_mul_ramificationIdealSheaf_comp_iff_of_isIso k₀ k₂.hom q.tower.toBase 2).mp h₃
   -- Read the marked line class through both links in the order of the retained centers.
   intro y C''
   have h₂ := hcoord (pullback (e.inv ≫ g) H)

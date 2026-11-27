@@ -32,17 +32,20 @@ open Scheme.IdealSheafData LineBundleClass
 
 namespace QPainleve.SignedClusterModularGroup.ContractedToricFiber
 
-local notation "S" => Spec (CommRingCat.of ℂ)
-local notation "Xtor[" r "]" => Spec (CommRingCat.of (LaurentRing ℂ (Fin r)))
-local notation "Dtor[" Φ "," h "]" => Scheme.IdealSheafData.subscheme (Fan.boundaryIdeal Φ h)
+variable {k₀ : Type} [Field k₀] [IsAlgClosed k₀]
+
+local notation "S" => Spec (CommRingCat.of k₀)
+local notation "Xtor[" r "]" => Spec (CommRingCat.of (LaurentRing k₀ (Fin r)))
+local notation "Dtor[" coeff "," Φ "," h "]" => Scheme.IdealSheafData.subscheme
+  (Fan.toricBoundaryIdeal coeff Φ h)
 local notation "D[" M "]" => Scheme.Hom.ker (Over.Hom.left (Arrow.hom (MarkedSurface.pair M)))
-local notation "Pic[" Φ "," r "]" =>
-  Additive (LineBundleClass (Fan.algebraicRealization Φ)) × (Fin r → ℤ)
+local notation "Pic[" coeff "," Φ "," r "]" =>
+  Additive (LineBundleClass (Fan.finiteFanScheme coeff Φ)) × (Fin r → ℤ)
 local notation "centers(" c ")" => (fun j ↦ c (ofAdd (Pi.single j 1)))
-local notation "model[" b "," s "," c "]" => Fan.internalBlowupTower b s centers(c)
+local notation "model[" b "," s "," c "]" => Fan.internalBlowupTower k₀ b s centers(c)
 local notation "classOf(" h ")" => (LineBundleClass.mk (IsEffectiveCartier.toInvertibleSheaf h))⁻¹
 local notation "renameX(" σ ")" => Spec.map
-  (CommRingCat.ofHom (AlgHom.toRingHom (LaurentRing.rename (R := ℂ) (Equiv.toFun σ))))
+  (CommRingCat.ofHom (AlgHom.toRingHom (LaurentRing.rename (R := k₀) (Equiv.toFun σ))))
 
 variable {N N' V V' : Type} [AddCommGroup N] [AddCommGroup N']
   [AddCommGroup V] [AddCommGroup V'] [Module ℝ V] [Module ℝ V']
@@ -51,15 +54,17 @@ variable {N N' V V' : Type} [AddCommGroup N] [AddCommGroup N']
   {r n m m' : ℕ} [NeZero n] [NeZero m] [NeZero m']
   {L L' : Type} [AddCommGroup L] [AddCommGroup L']
   {B : LinearMap.BilinForm ℤ L} {B' : LinearMap.BilinForm ℤ L'}
-  {M : MarkedSurface ℂ n B Xtor[r]} {M' : MarkedSurface ℂ n B' Xtor[r]}
+  {M : MarkedSurface k₀ n B (QPainleve.CharacterTorus.scheme k₀ (Fin r →₀ ℤ))}
+    {M' : MarkedSurface k₀ n B' (QPainleve.CharacterTorus.scheme k₀ (Fin r →₀ ℤ))}
   {b : Module.Basis (Fin 2) ℤ N} {b' : Module.Basis (Fin 2) ℤ N'}
   {s : Fin r → Φ.Ray} {s' : Fin r → Ψ.Ray} {hΦ : Φ.IsRegular} {hΨ : Ψ.IsRegular}
-  [PrestableFamily (Dtor[Φ,hΦ₀] ↘ S)] [PrestableFamily (Dtor[Ψ,hΨ₀] ↘ S)]
-  {α α' : Type*} {a : α → (Dtor[Φ,hΦ₀] ↘ S).smoothLocus}
-  {a' : α' → (Dtor[Ψ,hΨ₀] ↘ S).smoothLocus}
+  [PrestableFamily (Dtor[k₀,Φ,hΦ₀] ↘ Spec (.of k₀))] [PrestableFamily (Dtor[k₀,Ψ,hΨ₀] ↘ Spec
+    (.of k₀))]
+  {α α' : Type*} {a : α → (Dtor[k₀,Φ,hΦ₀] ↘ Spec (.of k₀)).smoothLocus}
+  {a' : α' → (Dtor[k₀,Ψ,hΨ₀] ↘ Spec (.of k₀)).smoothLocus}
   {T : Scheme.NodalCycleNumbering a m} {T' : Scheme.NodalCycleNumbering a' m'}
-  {o : ZMod m} {o' : ZMod m'} {J : L →ₗ[ℤ] Pic[Φ,r]} {J' : L' →ₗ[ℤ] Pic[Ψ,r]}
-  {c d : Multiplicative (Fin r → ℤ) →* ℂˣ}
+  {o : ZMod m} {o' : ZMod m'} {J : L →ₗ[ℤ] Pic[k₀,Φ,r]} {J' : L' →ₗ[ℤ] Pic[k₀,Ψ,r]}
+  {c d : Multiplicative (Fin r → ℤ) →* k₀ˣ}
   (p : ContractedToricFiber b s hΦ T o J c M)
   (q : ContractedToricFiber b' s' hΨ T' o' J' d M')
 
@@ -69,9 +74,9 @@ variable (e : N ≃ₗ[ℤ] N') (hΔΦ : Δ.IsSubdivision Φ)
 local notation "g" => Fan.mapEquivIso Ψ (Fan.lattice Φ) (LinearEquiv.symm e)
 local notation "hΩ₀" => Nonempty.map (FanEquiv.coneEquiv g) hΨ₀
 local notation "hΔ₀" => Fan.IsSubdivision.nonempty_cones_of_nonempty hΔΦ hΦ₀
-local notation "leftBoundary" => Fan.IsSubdivision.boundaryMap hΔΦ hΔ₀ hΦ₀
+local notation "leftBoundary" => Fan.IsSubdivision.boundaryMap k₀ hΔΦ hΔ₀ hΦ₀
 local notation "rightBoundary" =>
-  Fan.IsSubdivision.boundaryMap hΔΩ hΔ₀ hΩ₀ ≫ Iso.inv (FanEquiv.boundaryIso g hΨ₀ hΩ₀)
+  Fan.IsSubdivision.boundaryMap k₀ hΔΩ hΔ₀ hΩ₀ ≫ Iso.inv (FanEquiv.boundaryIso k₀ g hΨ₀ hΩ₀)
 
 /-- A comparison of two marked endpoints on a specified common toric subdivision.
 The pair isomorphism realizes the coordinate relabeling. Its Picard pullback is
@@ -89,15 +94,16 @@ structure MarkedToricEndpointComparison (σ : Equiv.Perm (Fin r)) where
     rightBoundary ≫ q.boundaryMap
   /-- Pullback matches the toric and ordered exceptional coordinates on the subdivision. -/
   picard_apply_eq_iff (x : L) (y : L') : picard y = x ↔
-    (Additive.ofMul (pullback hΔΦ.toFanHom.algebraicMap (J x).1.toMul), (J x).2) =
+    (Additive.ofMul (pullback (hΔΦ.toFanHom.finiteFanSchemeHom k₀) (J x).1.toMul), (J x).2) =
     (Additive.ofMul (pullback
-      (hΔΩ.toFanHom.algebraicMap ≫ (g).symm.toFanHom.algebraicMap) (J' y).1.toMul),
+      ((hΔΩ.toFanHom.finiteFanSchemeHom k₀) ≫ ((g).symm.toFanHom.finiteFanSchemeHom k₀))
+        (J' y).1.toMul),
       (J' y).2 ∘ σ)
   /-- A point over the initial surviving component maps to its forward boundary label. -/
   componentGenericPoint_eq :
     letI : PrestableFamily (M.boundary ↘ S) := M.prestable
     letI : PrestableFamily (M'.boundary ↘ S) := M'.prestable
-    ∀ x : Dtor[Δ,hΔ₀], leftBoundary x = T.componentGenericPoint o →
+    ∀ x : Dtor[k₀,Δ,hΔ₀], leftBoundary x = T.componentGenericPoint o →
       (rightBoundary ≫ q.boundaryMap) x = M'.cycle.componentGenericPoint rotation
 
 variable {p q e hΔΦ hΔΩ} in
@@ -124,8 +130,8 @@ theorem MarkedToricEndpointComparison.ext {σ : Equiv.Perm (Fin r)}
   rfl
 
 private theorem exists_endpoint_rotation (hΔ : Δ.IsRegular)
-    [PrestableFamily (Dtor[Δ,hΔ₀] ↘ S)] {k : ℕ} [NeZero k] {β : Type*}
-    {w : β → (Dtor[Δ,hΔ₀] ↘ S).smoothLocus} (U : Scheme.NodalCycleNumbering w k)
+    [PrestableFamily (Dtor[k₀,Δ,hΔ₀] ↘ S)] {k : ℕ} [NeZero k] {β : Type*}
+    {w : β → (Dtor[k₀,Δ,hΔ₀] ↘ S).smoothLocus} (U : Scheme.NodalCycleNumbering w k)
     (hleft : (leftBoundary).IsOrientedCycleSubdivision U T)
     (hright : (rightBoundary).IsOrientedCycleSubdivision U T')
     (f : M.pair ≅ M'.pair)
@@ -135,19 +141,19 @@ private theorem exists_endpoint_rotation (hΔ : Δ.IsRegular)
     letI : PrestableFamily (M'.boundary ↘ S) := M'.prestable
     ∃ j : ZMod n,
       (MarkedSurface.boundaryIso f).boundaryCycleAction M.cycle M'.cycle = DihedralGroup.r j ∧
-      ∀ x : Dtor[Δ,hΔ₀], leftBoundary x = T.componentGenericPoint o →
+      ∀ x : Dtor[k₀,Δ,hΔ₀], leftBoundary x = T.componentGenericPoint o →
         (rightBoundary ≫ q.boundaryMap) x = M'.cycle.componentGenericPoint j := by
   let : PrestableFamily (M.boundary ↘ S) := M.prestable
   let : PrestableFamily (M'.boundary ↘ S) := M'.prestable
   let : Nonempty Δ.cones := hΔ₀
   let E := MarkedSurface.boundaryIso f
   let j := cycleVertexPerm (E.boundaryCycleAction M.cycle M'.cycle) 0
-  have hpoint (x : Dtor[Δ,hΔ₀]) (hx : leftBoundary x = T.componentGenericPoint o) :
+  have hpoint (x : Dtor[k₀,Δ,hΔ₀]) (hx : leftBoundary x = T.componentGenericPoint o) :
       (rightBoundary ≫ q.boundaryMap) x = M'.cycle.componentGenericPoint j := by
-    have h := congrArg (fun f : Dtor[Δ,hΔ₀] ⟶ M'.boundary ↦ f x) hcomm
+    have h := congrArg (fun f : Dtor[k₀,Δ,hΔ₀] ⟶ M'.boundary ↦ f x) hcomm
     rw [Scheme.Hom.comp_apply, Scheme.Hom.comp_apply, hx, p.component_zero] at h
     exact h.symm.trans (E.apply_componentGenericPoint M.cycle M'.cycle 0)
-  obtain ⟨l, hl⟩ := hΔΦ.exists_componentGenericPoint_lift T hΦ hΔ U o
+  obtain ⟨l, hl⟩ := hΔΦ.exists_componentGenericPoint_lift k₀ T hΦ hΔ U o
   have hzero : (leftBoundary ≫ p.boundaryMap) (U.componentGenericPoint l) =
       M.cycle.componentGenericPoint 0 := by
     rw [Scheme.Hom.comp_apply, hl, p.component_zero]
@@ -175,19 +181,19 @@ theorem nonempty_markedToricEndpointComparison
     (u : Y ≅ (model[b,s,c]).1) (u' : Y' ≅ (model[b',s',d]).1)
     (hu : u.inv ≫ A.toBase = p.projection) (hu' : u'.inv ≫ A'.toBase = q.projection)
     (hD : D[M].IsEffectiveCartier) (hE : D[M'].IsEffectiveCartier)
-    (hnefD : IsNef ℂ (M.surface ↘ S) classOf(hD))
-    (hnefE : IsNef ℂ (M'.surface ↘ S) classOf(hE))
-    (hsqD : Chow.classIntersectionNumber ℂ M.surface classOf(hD) classOf(hD) = 0)
-    (hsqE : Chow.classIntersectionNumber ℂ M'.surface classOf(hE) classOf(hE) = 0)
-    [PrestableFamily (Dtor[Δ,hΔ₀] ↘ S)] {k : ℕ} [NeZero k] {β : Type*}
-    {w : β → (Dtor[Δ,hΔ₀] ↘ S).smoothLocus} (U : Scheme.NodalCycleNumbering w k)
+    (hnefD : IsNef k₀ (M.surface ↘ S) classOf(hD))
+    (hnefE : IsNef k₀ (M'.surface ↘ S) classOf(hE))
+    (hsqD : Chow.classIntersectionNumber k₀ M.surface classOf(hD) classOf(hD) = 0)
+    (hsqE : Chow.classIntersectionNumber k₀ M'.surface classOf(hE) classOf(hE) = 0)
+    [PrestableFamily (Dtor[k₀,Δ,hΔ₀] ↘ S)] {k : ℕ} [NeZero k] {β : Type*}
+    {w : β → (Dtor[k₀,Δ,hΔ₀] ↘ S).smoothLocus} (U : Scheme.NodalCycleNumbering w k)
     (hleft : (leftBoundary).IsOrientedCycleSubdivision U T)
     (hright : (rightBoundary).IsOrientedCycleSubdivision U T') :
     Nonempty (MarkedToricEndpointComparison p q e hΔΦ hΔΩ σ) := by
   let : SmoothOfRelativeDimension 2 (M.surface ↘ S) := M.smooth
   let : SmoothOfRelativeDimension 2 (M'.surface ↘ S) := M'.smooth
-  let : M.surface.IsProjectiveOver ℂ := M.projective
-  let : M'.surface.IsProjectiveOver ℂ := M'.projective
+  let : M.surface.IsProjectiveOver k₀ := M.projective
+  let : M'.surface.IsProjectiveOver k₀ := M'.projective
   let : PrestableFamily (D[M].subscheme ↘ S) := M.prestable_boundaryImage
   let : ConnectedSpace D[M].subscheme :=
     GeometricallyConnected.connectedSpace_of_subsingleton (D[M].subscheme ↘ S)
@@ -196,7 +202,7 @@ theorem nonempty_markedToricEndpointComparison
   have hp : u.hom ≫ p.projection = A.toBase := by rw [← hu, Iso.hom_inv_id_assoc]
   have hq : u'.hom ≫ q.projection = A'.toBase := by rw [← hu', Iso.hom_inv_id_assoc]
   obtain ⟨f, hf, hideal, hboundary, heval, hpic⟩ :=
-    Fan.exists_iso_of_matching_toric_models_of_latticeEquiv
+    Fan.exists_iso_of_matching_toric_models_of_latticeEquiv k₀
       b b' hΦ hΨ s s' c d σ hc e hss' hdet hΔΦ hΔΩ hΔ hA hA' u u'
       (by rw [← p.projection_over, ← Category.assoc, hp])
       (by rw [← q.projection_over, ← Category.assoc, hq])
@@ -216,7 +222,7 @@ theorem nonempty_markedToricEndpointComparison
       reassoc_of% p.boundary_comp, q.boundary_comp] using hboundary
   obtain ⟨j, hrotation, hpoint⟩ := exists_endpoint_rotation p q e hΔΦ hΔΩ hΔ U hleft hright f' hcomm
   let I := M'.marking.trans
-    ((Chow.picardPullbackIsometry ℂ (MarkedSurface.surfaceIso f')).trans M.marking.symm)
+    ((Chow.picardPullbackIsometry k₀ (MarkedSurface.surfaceIso f')).trans M.marking.symm)
   have hI (y : L') : M.picardMarking (I y) =
       Additive.ofMul (pullback (MarkedSurface.surfaceIso f').hom (M'.picardMarking y).toMul) := by
     simp only [MarkedSurface.picardMarking_apply, I, LinearMap.BilinForm.IsometryEquiv.trans_apply,

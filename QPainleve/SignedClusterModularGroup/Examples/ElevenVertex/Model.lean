@@ -10,7 +10,6 @@ public import QPainleve.Geometry.Toric.Fan.ProjectiveSpace.Intersection
 public import QPainleve.SignedClusterModularGroup.Examples.ElevenVertex
 public import TauCeti.AlgebraicGeometry.IntersectionNumber.ExceptionalCurve.Basic
 
-import Mathlib.Analysis.Complex.Polynomial.Basic
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Intersection
 import QPainleve.AlgebraicGeometry.Blowup.Tower.Projective
 import QPainleve.AlgebraicGeometry.IntersectionNumber.ExceptionalCurve.Numerical
@@ -37,13 +36,15 @@ open TauCeti.Toric TauCeti.Toric.Fan
 
 namespace QPainleve.ElevenVertex
 
+variable {k₀ : Type} [Field k₀] [IsAlgClosed k₀]
+
 local notation "b" => Pi.basisFun ℤ (Fin 2)
 local notation "hi" => isIntegralLattice_intCast 2
 local notation "Φ" => projectiveSpace b hi
 local notation "hΦ" => isRegular_projectiveSpace b hi
 local notation "hc" => isComplete_projectiveSpace b hi
-local notation "P" => Fan.algebraicRealization Φ
-local notation "S" => Spec (CommRingCat.of ℂ)
+local notation "P" => Fan.finiteFanScheme k₀ Φ
+local notation "S" => Spec (CommRingCat.of k₀)
 
 local instance : Nonempty (Φ).cones := Fan.IsComplete.nonempty_cones hc
 
@@ -83,51 +84,49 @@ theorem rayChargeMap_planeCenterRay : Fan.rayChargeMap planeCenterRay = chargeMa
     planeCenterRay_apply, primitiveGenerator_planeBoundaryRay, rayIndex_eq_ite]
 
 /-- The internal blowups of the plane in seed-label order, with the strict boundary. -/
-abbrev planeBlowup (c : Fin 11 → ℂˣ) :
-    Σ Y, WithBoundary ((Φ).boundaryIdeal inferInstance).subschemeι 11 Y :=
-  internalBlowupTower b planeCenterRay c
+abbrev planeBlowup (c : Fin 11 → k₀ˣ) :
+    Σ Y, WithBoundary ((Φ).toricBoundaryIdeal k₀ inferInstance).subschemeι 11 Y :=
+  internalBlowupTower k₀ b planeCenterRay c
 
 local notation "T(" c ")" => WithBoundary.toTower (Sigma.snd (planeBlowup c))
 local notation "Y(" c ")" => Sigma.fst (planeBlowup c)
-local notation "hT(" c ")" => isClosedPointTower_internalBlowupTower b planeCenterRay c
-local notation "f" => Fan.algebraicRealizationStructureMap Φ
+local notation "hT(" c ")" => isClosedPointTower_internalBlowupTower k₀ b planeCenterRay c
+local notation "f" => Fan.finiteFanSchemeToSpec k₀ Φ
 
-private theorem projective_planeBlowup (c : Fin 11 → ℂˣ) :
+private theorem projective_planeBlowup (c : Fin 11 → k₀ˣ) :
     let : Y(c).Over S := ⟨T(c).toBase ≫ (P ↘ S)⟩
-    Scheme.IsProjectiveOver (X := Y(c)) ℂ := by
+    Scheme.IsProjectiveOver (X := Y(c)) k₀ := by
   intro _
-  let : Scheme.IsProjectiveOver (X := P) ℂ :=
-    (Φ).isProjectiveOver_algebraicRealization_of_isComplete hΦ hc b
-  exact (T(c)).isProjectiveOver ℂ
+  let : Scheme.IsProjectiveOver (X := P) k₀ :=
+    (Φ).isProjectiveOver_finiteFanScheme_of_isComplete k₀ hΦ hc b
+  exact (T(c)).isProjectiveOver k₀
 
-private theorem smooth_planeBlowup (c : Fin 11 → ℂˣ) :
+variable [PerfectField k₀] in
+omit [IsAlgClosed k₀] in
+private theorem smooth_planeBlowup (c : Fin 11 → k₀ˣ) :
     let : Y(c).Over S := ⟨T(c).toBase ≫ (P ↘ S)⟩
     SmoothOfRelativeDimension 2 (Y(c) ↘ S) := by
   intro _
   have hover : (Y(c) ↘ S) = T(c).toBase ≫ (P ↘ S) := rfl
-  rw [hover, algebraicRealization_over]
-  exact smoothOfRelativeDimension_internalBlowupTower b planeCenterRay c hΦ
+  rw [hover, finiteFanScheme_over]
+  exact smoothOfRelativeDimension_internalBlowupTower k₀ b planeCenterRay c hΦ
 
+variable [Infinite k₀] in
+omit [IsAlgClosed k₀] in
 /-- There are parameters for which all eleven binomial centers have disjoint supports. -/
 theorem exists_disjoint_planeBlowup_centers :
-    ∃ c : Fin 11 → ℂˣ, Pairwise fun j k ↦
-      Disjoint ((((planeCenterRay j).internalCenter b (c j)).val.map
-        ((Φ).boundaryIdeal inferInstance).subschemeι).support : Set P)
-        (((planeCenterRay k).internalCenter b (c k)).val.map
-          ((Φ).boundaryIdeal inferInstance).subschemeι).support := by
-  let c (j : Fin 11) : ℂˣ :=
-    Units.mk0 (↑(j.val + 1) : ℂ) (by exact_mod_cast Nat.succ_ne_zero j.val)
-  have h : Function.Injective c := by
-    intro j k he
-    have he' := congrArg (fun u : ℂˣ ↦ (u : ℂ)) he
-    dsimp only [c, Units.val_mk0] at he'
-    have hn : j.val + 1 = k.val + 1 := by exact_mod_cast he'
-    exact Fin.ext (Nat.add_right_cancel hn)
+    ∃ c : Fin 11 → k₀ˣ, Pairwise fun j k ↦
+      Disjoint ((((planeCenterRay j).internalCenter k₀ b (c j)).val.map
+        ((Φ).toricBoundaryIdeal k₀ inferInstance).subschemeι).support : Set P)
+        (((planeCenterRay k).internalCenter k₀ b (c k)).val.map
+          ((Φ).toricBoundaryIdeal k₀ inferInstance).subschemeι).support := by
+  let e : ℕ ↪ {x : k₀ // x ≠ 0} := (Set.finite_singleton (0 : k₀)).infinite_compl.natEmbedding
+  let c : Fin 11 ↪ k₀ˣ := (Fin.valEmbedding.trans e).trans unitsEquivNeZero.symm.toEmbedding
   refine ⟨c, fun j k hjk ↦ ?_⟩
-  exact (disjoint_support_map_internalCenter_iff b _ _ _ _ _).mpr
-    fun he ↦ hjk (h (congrArg Prod.snd he))
+  exact (disjoint_support_map_internalCenter_iff k₀ b _ _ _ _ _).mpr
+    fun he ↦ hjk (c.injective (congrArg Prod.snd he))
 
-local notation "L(" c ", " j ")" => strictRayBoundaryClass hΦ (by simp)
+local notation "L(" c ", " j ")" => strictRayBoundaryClass k₀ hΦ (by simp)
   (T(c)) (hT(c)) (planeBoundaryRay j)
 
 private theorem strictClass_dot (j k : Fin 3) :
@@ -141,51 +140,51 @@ private theorem strictClass_dot (j k : Fin 3) :
 
 /-- The strict lines form a triangle with self-intersections `-1, -2, -5`.
 Their intersection matrix is independent of the center parameters. -/
-theorem classIntersectionNumber_planeBlowup_boundary (c : Fin 11 → ℂˣ) (j k : Fin 3) :
+theorem classIntersectionNumber_planeBlowup_boundary (c : Fin 11 → k₀ˣ) (j k : Fin 3) :
     let : Y(c).Over S := ⟨T(c).toBase ≫ (P ↘ S)⟩
-    Chow.classIntersectionNumber ℂ Y(c) (L(c, j)).toMul (L(c, k)).toMul =
+    Chow.classIntersectionNumber k₀ Y(c) (L(c, j)).toMul (L(c, k)).toMul =
       if j = k then (![(-1 : ℤ), -2, -5] : Fin 3 → ℤ) j else 1 := by
   classical
   intro _
-  let : Scheme.IsProjectiveOver (X := P) ℂ :=
-    (Φ).isProjectiveOver_algebraicRealization_of_isComplete hΦ hc b
+  let : Scheme.IsProjectiveOver (X := P) k₀ :=
+    (Φ).isProjectiveOver_finiteFanScheme_of_isComplete k₀ hΦ hc b
   let : SmoothOfRelativeDimension 2 (P ↘ S) := by
-    rw [algebraicRealization_over]
-    simpa using (Φ).smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
+    rw [finiteFanScheme_over]
+    simpa using (Φ).smoothOfRelativeDimension_finiteFanSchemeToSpec k₀ hΦ
   let : IsNoetherian P := isNoetherian_of_finiteType (P ↘ S)
-  let a (l : Fin 3) := markedBoundaryMap hΦ planeCenterRay (Pi.single (planeBoundaryRay l) 1)
-  have hmk (l : Fin 3) : (internalBlowupTower b planeCenterRay c).2.toTower.picardHom (a l) =
-      L(c, l) := picardHom_markedBoundaryMap_single_internalBlowupTower hΦ b planeCenterRay c
+  let a (l : Fin 3) := markedBoundaryMap k₀ hΦ planeCenterRay (Pi.single (planeBoundaryRay l) 1)
+  have hmk (l : Fin 3) : (internalBlowupTower k₀ b planeCenterRay c).2.toTower.picardHom (a l) =
+      L(c, l) := picardHom_markedBoundaryMap_single_internalBlowupTower k₀ hΦ b planeCenterRay c
         (planeBoundaryRay l)
   rw [← hmk j, ← hmk k, ← picardMarking_apply (T(c)) (hT(c)) (P ↘ S),
-    ← picardMarking_apply (T(c)) (hT(c)) (P ↘ S), classIntersectionNumber_picardMarking ℂ (hT(c))]
+    ← picardMarking_apply (T(c)) (hT(c)) (P ↘ S), classIntersectionNumber_picardMarking k₀ (hT(c))]
   have ha (q : Fin 3) (l : Fin 11) :
       (a q).2 l = if (if l.val < 2 then 0 else if l.val < 5 then 1 else 2) = q
         then -1 else 0 := by
     simp only [a, markedBoundaryMap_apply, Pi.single_apply, planeCenterRay_apply,
       planeBoundaryRay.injective.eq_iff]
     rw [apply_ite (fun a : ℤ ↦ -a), neg_zero]
-  have hp : Chow.classIntersectionNumber ℂ P (a j).1.toMul (a k).1.toMul = 1 := by
-    simpa only [a, markedBoundaryMap_apply, rayDivisorToPicard_single, one_smul, toMul_ofMul]
-      using classIntersectionNumber_projectivePlane_rayBoundaryPoint b hi
+  have hp : Chow.classIntersectionNumber k₀ P (a j).1.toMul (a k).1.toMul = 1 := by
+    simpa only [a, markedBoundaryMap_apply, rayChartDivisorToPicard_single, one_smul, toMul_ofMul]
+      using classIntersectionNumber_projectivePlane_rayBoundaryPoint k₀ b hi
         (planeBoundaryRay j) (planeBoundaryRay k)
   simp only [hp, ha, strictClass_dot]
   fin_cases j <;> fin_cases k <;> decide
 
 local notation "ι(" c ")" => WithBoundary.boundaryι (Sigma.snd (planeBlowup c))
 local notation "D(" c ", " j ")" =>
-  BlowupTower.strictTransform (Fan.rayBoundaryIdeal Φ hΦ (planeBoundaryRay j)) (T(c))
+  BlowupTower.strictTransform (Fan.rayDivisorIdeal k₀ Φ hΦ (planeBoundaryRay j)) (T(c))
 
-/-- Each strict boundary component is a projective line over `ℂ`. -/
-theorem exists_iso_projectiveLine_planeBlowup_boundary (c : Fin 11 → ℂˣ) (j : Fin 3) :
+/-- Each strict boundary component is a projective line over the coefficient field. -/
+theorem exists_iso_projectiveLine_planeBlowup_boundary (c : Fin 11 → k₀ˣ) (j : Fin 3) :
     let : Y(c).Over S := ⟨T(c).toBase ≫ (P ↘ S)⟩
-    ∃ e : (D(c, j)).subscheme ≅ projectiveLine ℂ, e.hom.IsOver S := by
+    ∃ e : (D(c, j)).subscheme ≅ projectiveLine k₀, e.hom.IsOver S := by
   intro _
   let ρ := planeBoundaryRay j
-  let B := (Φ).rayBoundaryIdeal hΦ ρ
-  let g := ρ.boundaryComponentι hΦ ≫ ι(c)
+  let B := (Φ).rayDivisorIdeal k₀ hΦ ρ
+  let g := ρ.boundaryComponentι k₀ hΦ ≫ ι(c)
   have hg : g.ker = D(c, j) :=
-    ker_boundaryComponentι_internalBlowupTower b planeCenterRay c hΦ ρ
+    ker_boundaryComponentι_internalBlowupTower k₀ b planeCenterRay c hΦ ρ
   obtain ⟨e, he⟩ := (D(c, j)).exists_iso_of_comap_eq_ker (Iso.refl _) g
     (by simpa only [Iso.refl_hom, Scheme.IdealSheafData.comap_id] using hg.symm)
   rw [Iso.refl_hom, Category.comp_id] at he
@@ -197,12 +196,13 @@ theorem exists_iso_projectiveLine_planeBlowup_boundary (c : Fin 11 → ℂˣ) (j
   have : e.hom.IsOver S := ⟨by
     rw [Scheme.IdealSheafData.over_eq_subschemeι_comp, ← Category.assoc, he, hπ,
       ← Scheme.IdealSheafData.over_eq_subschemeι_comp]⟩
-  let : Scheme.IsProjectiveOver (X := P) ℂ :=
-    (Φ).isProjectiveOver_algebraicRealization_of_isComplete hΦ hc b
+  let : Scheme.IsProjectiveOver (X := P) k₀ :=
+    (Φ).isProjectiveOver_finiteFanScheme_of_isComplete k₀ hΦ hc b
   let : IsProper (B.subscheme ↘ S) := by
     rw [Scheme.IdealSheafData.over_eq_subschemeι_comp]
     infer_instance
-  let p := ρ.boundaryIsoProjectiveLine hΦ (by simp) (Basis.detDualEquiv_self b ρ.primitiveGenerator)
+  let p := ρ.boundaryIsoProjectiveLine k₀ hΦ (by simp) (Basis.detDualEquiv_self b
+    ρ.primitiveGenerator)
     (ρ.surjective_detCharacter b)
   have : p.hom.IsOver S := by
     dsimp only [p]
@@ -212,59 +212,59 @@ theorem exists_iso_projectiveLine_planeBlowup_boundary (c : Fin 11 → ℂˣ) (j
 
 /-- The strict transform of the line carrying two internal centers is an
 exceptional curve of the first kind, so it admits a smooth projective contraction. -/
-theorem isExceptionalCurveOfFirstKind_planeBlowup_first (c : Fin 11 → ℂˣ) :
+theorem isExceptionalCurveOfFirstKind_planeBlowup_first (c : Fin 11 → k₀ˣ) :
     (D(c, 0)).IsExceptionalCurveOfFirstKind := by
   let : Y(c).Over S := ⟨T(c).toBase ≫ (P ↘ S)⟩
-  let : Scheme.IsProjectiveOver (X := Y(c)) ℂ := projective_planeBlowup c
+  let : Scheme.IsProjectiveOver (X := Y(c)) k₀ := projective_planeBlowup c
   let : SmoothOfRelativeDimension 2 (Y(c) ↘ S) := smooth_planeBlowup c
   let C := D(c, 0)
   obtain ⟨e, he⟩ := exists_iso_projectiveLine_planeBlowup_boundary c 0
   let : e.hom.IsOver S := he
-  let : C.subscheme.IsCurveOver ℂ := Scheme.isCurveOver_iff.mpr
+  let : C.subscheme.IsCurveOver k₀ := Scheme.isCurveOver_iff.mpr
     ⟨IsIntegral.of_isIso e.inv, by rw [← comp_over e.hom S]; infer_instance,
       e.hom.homeomorph.isHomeomorph.topologicalKrullDim_eq.trans
-        (Scheme.IsCurveOver.topologicalKrullDim_eq_one ℂ)⟩
+        (Scheme.IsCurveOver.topologicalKrullDim_eq_one k₀)⟩
   have hf : SmoothOfRelativeDimension 2 f := by
-    simpa using (Φ).smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
+    simpa using (Φ).smoothOfRelativeDimension_finiteFanSchemeToSpec k₀ hΦ
   have hC : C.IsEffectiveCartier := (hT(c)).isEffectiveCartier_strictTransform f
-    ((Φ).isEffectiveCartier_rayBoundaryIdeal hΦ (planeBoundaryRay 0))
-  let : IsIntegral (Y(c)) := isIntegral_internalBlowupTower b planeCenterRay c hΦ
+    ((Φ).isEffectiveCartier_rayDivisorIdeal k₀ hΦ (planeBoundaryRay 0))
+  let : IsIntegral (Y(c)) := isIntegral_internalBlowupTower k₀ b planeCenterRay c hΦ
   have hdim := topologicalKrullDim_eq_of_smoothOfRelativeDimension (Y(c) ↘ S) (n := 2)
   apply (hC.isExceptionalCurveOfFirstKind_iff_genus_eq_zero_and_classIntersectionNumber
-    (k := ℂ) hdim.le).mpr
+    (k := k₀) hdim.le).mpr
   refine ⟨Scheme.genus_eq_zero_iff_exists_iso_projectiveLine.mpr ⟨e, he⟩, ?_⟩
   have h := classIntersectionNumber_planeBlowup_boundary c 0 0
   dsimp only at h
-  rw [strictRayBoundaryClass_eq _ _ _ _ _ hC] at h
+  rw [strictRayBoundaryClass_eq k₀ _ _ _ _ _ hC] at h
   simpa using h
 
 /-- The strict-boundary class with weights `3, 2, 1`, which make it orthogonal
 to the three strict boundary components. -/
-def weightedBoundaryClass (c : Fin 11 → ℂˣ) : Additive (LineBundleClass Y(c)) :=
+def weightedBoundaryClass (c : Fin 11 → k₀ˣ) : Additive (LineBundleClass Y(c)) :=
   3 • L(c, 0) + 2 • L(c, 1) + L(c, 2)
 
 /-- The weighted boundary class is the indicated combination of the three strict lines. -/
-theorem weightedBoundaryClass_def (c : Fin 11 → ℂˣ) :
+theorem weightedBoundaryClass_def (c : Fin 11 → k₀ˣ) :
     weightedBoundaryClass c = 3 • L(c, 0) + 2 • L(c, 1) + L(c, 2) := (rfl)
 
 /-- The degree of the weighted boundary class on the total exceptional class
 reads the weight of the ray carrying that center. -/
 theorem classIntersectionNumber_weightedBoundaryClass_exceptionalClass
-    (c : Fin 11 → ℂˣ) (j : Fin 11) :
+    (c : Fin 11 → k₀ˣ) (j : Fin 11) :
     let : Y(c).Over S := ⟨T(c).toBase ≫ (P ↘ S)⟩
-    Chow.classIntersectionNumber ℂ Y(c) (weightedBoundaryClass c).toMul
+    Chow.classIntersectionNumber k₀ Y(c) (weightedBoundaryClass c).toMul
       (T(c).exceptionalClass j) =
         if j.val < 2 then 3 else if j.val < 5 then 2 else 1 := by
   classical
   intro _
-  let : Scheme.IsProjectiveOver (X := P) ℂ :=
-    (Φ).isProjectiveOver_algebraicRealization_of_isComplete hΦ hc b
+  let : Scheme.IsProjectiveOver (X := P) k₀ :=
+    (Φ).isProjectiveOver_finiteFanScheme_of_isComplete k₀ hΦ hc b
   let : SmoothOfRelativeDimension 2 (P ↘ S) := by
-    rw [algebraicRealization_over]
-    simpa using (Φ).smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
-  let a (l : Fin 3) := markedBoundaryMap hΦ planeCenterRay (Pi.single (planeBoundaryRay l) 1)
+    rw [finiteFanScheme_over]
+    simpa using (Φ).smoothOfRelativeDimension_finiteFanSchemeToSpec k₀ hΦ
+  let a (l : Fin 3) := markedBoundaryMap k₀ hΦ planeCenterRay (Pi.single (planeBoundaryRay l) 1)
   have hmk (l : Fin 3) : (T(c)).picardHom (a l) = L(c, l) :=
-    picardHom_markedBoundaryMap_single_internalBlowupTower
+    picardHom_markedBoundaryMap_single_internalBlowupTower k₀
       hΦ b planeCenterRay c (planeBoundaryRay l)
   have hweight : weightedBoundaryClass c = (T(c)).picardHom (3 • a 0 + 2 • a 1 + a 2) := by
     simp only [weightedBoundaryClass_def, map_add, map_nsmul, hmk]
@@ -275,20 +275,20 @@ theorem classIntersectionNumber_weightedBoundaryClass_exceptionalClass
 
 /-- In the plane marking, the total exceptional coefficients of the weighted
 strict triangle are the negatives of the boundary Casimir exponent. -/
-theorem internalBlowupPicardMarking_symm_weightedBoundaryClass_snd (c : Fin 11 → ℂˣ) :
-    ((internalBlowupPicardMarking b planeCenterRay c hΦ).symm (weightedBoundaryClass c)).2 =
+theorem internalBlowupPicardMarking_symm_weightedBoundaryClass_snd (c : Fin 11 → k₀ˣ) :
+    ((internalBlowupPicardMarking k₀ b planeCenterRay c hΦ).symm (weightedBoundaryClass c)).2 =
       -boundaryExponent := by
-  let : Scheme.IsProjectiveOver (X := P) ℂ :=
-    (Φ).isProjectiveOver_algebraicRealization_of_isComplete hΦ hc b
+  let : Scheme.IsProjectiveOver (X := P) k₀ :=
+    (Φ).isProjectiveOver_finiteFanScheme_of_isComplete k₀ hΦ hc b
   let : SmoothOfRelativeDimension 2 (P ↘ S) := by
-    rw [algebraicRealization_over]
-    simpa using (Φ).smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
+    rw [finiteFanScheme_over]
+    simpa using (Φ).smoothOfRelativeDimension_finiteFanSchemeToSpec k₀ hΦ
   funext j
-  have h := classIntersectionNumber_picardHom_exceptionalClass (k := ℂ)
-    (isClosedPointTower_internalBlowupTower b planeCenterRay c)
-    ((internalBlowupPicardMarking b planeCenterRay c hΦ).symm (weightedBoundaryClass c)) j
+  have h := classIntersectionNumber_picardHom_exceptionalClass (k := k₀)
+    (isClosedPointTower_internalBlowupTower k₀ b planeCenterRay c)
+    ((internalBlowupPicardMarking k₀ b planeCenterRay c hΦ).symm (weightedBoundaryClass c)) j
   dsimp only at h
-  rw [← internalBlowupPicardMarking_apply b planeCenterRay c hΦ, LinearEquiv.apply_symm_apply,
+  rw [← internalBlowupPicardMarking_apply k₀ b planeCenterRay c hΦ, LinearEquiv.apply_symm_apply,
     classIntersectionNumber_weightedBoundaryClass_exceptionalClass] at h
   have hexp : (if j.val < 2 then (3 : ℤ) else if j.val < 5 then 2 else 1) = boundaryExponent j := by
     simp only [boundaryExponent_apply, rayIndex_eq_ite]
@@ -296,14 +296,14 @@ theorem internalBlowupPicardMarking_symm_weightedBoundaryClass_snd (c : Fin 11 �
   exact (neg_eq_iff_eq_neg.mp (h.symm.trans hexp))
 
 /-- The weighted class pairs to zero with each strict line. -/
-theorem classIntersectionNumber_weightedBoundaryClass_boundary (c : Fin 11 → ℂˣ) (j : Fin 3) :
+theorem classIntersectionNumber_weightedBoundaryClass_boundary (c : Fin 11 → k₀ˣ) (j : Fin 3) :
     let : Y(c).Over S := ⟨T(c).toBase ≫ (P ↘ S)⟩
-    Chow.classIntersectionNumber ℂ Y(c) (weightedBoundaryClass c).toMul (L(c, j)).toMul = 0 := by
+    Chow.classIntersectionNumber k₀ Y(c) (weightedBoundaryClass c).toMul (L(c, j)).toMul = 0 := by
   intro _
-  let : IsIntegral (Y(c)) := isIntegral_internalBlowupTower b planeCenterRay c hΦ
-  let : Scheme.IsProjectiveOver (X := Y(c)) ℂ := projective_planeBlowup c
+  let : IsIntegral (Y(c)) := isIntegral_internalBlowupTower k₀ b planeCenterRay c hΦ
+  let : Scheme.IsProjectiveOver (X := Y(c)) k₀ := projective_planeBlowup c
   let : SmoothOfRelativeDimension 2 (Y(c) ↘ S) := smooth_planeBlowup c
-  let B := Chow.intersectionBilinForm ℂ Y(c)
+  let B := Chow.intersectionBilinForm k₀ Y(c)
   have h (i : Fin 3) :
       B (L(c, i)) (L(c, j)) = if i = j then (![(-1 : ℤ), -2, -5] : Fin 3 → ℤ) i else 1 := by
     rw [Chow.intersectionBilinForm_apply]
@@ -315,29 +315,29 @@ theorem classIntersectionNumber_weightedBoundaryClass_boundary (c : Fin 11 → �
 
 /-- The weighted boundary class is primitive, as its pairing with the
 exceptional class over label five is one. -/
-theorem isPrimitive_weightedBoundaryClass (c : Fin 11 → ℂˣ) :
+theorem isPrimitive_weightedBoundaryClass (c : Fin 11 → k₀ˣ) :
     TauCeti.IsPrimitive (weightedBoundaryClass c) := by
   let : Y(c).Over S := ⟨T(c).toBase ≫ (P ↘ S)⟩
-  let : IsIntegral (Y(c)) := isIntegral_internalBlowupTower b planeCenterRay c hΦ
-  let : Scheme.IsProjectiveOver (X := Y(c)) ℂ := projective_planeBlowup c
+  let : IsIntegral (Y(c)) := isIntegral_internalBlowupTower k₀ b planeCenterRay c hΦ
+  let : Scheme.IsProjectiveOver (X := Y(c)) k₀ := projective_planeBlowup c
   let : SmoothOfRelativeDimension 2 (Y(c) ↘ S) := smooth_planeBlowup c
   refine TauCeti.isPrimitive_def.mpr
-    ⟨(Chow.intersectionBilinForm ℂ Y(c)).flip (Additive.ofMul ((T(c)).exceptionalClass 5)), ?_⟩
+    ⟨(Chow.intersectionBilinForm k₀ Y(c)).flip (Additive.ofMul ((T(c)).exceptionalClass 5)), ?_⟩
   have h := classIntersectionNumber_weightedBoundaryClass_exceptionalClass c 5
   dsimp only at h
   rw [LinearMap.BilinForm.flip_apply, Chow.intersectionBilinForm_apply]
   exact h.trans (by decide)
 
 /-- The weighted boundary class has square zero on the auxiliary surface. -/
-theorem classIntersectionNumber_weightedBoundaryClass_self (c : Fin 11 → ℂˣ) :
+theorem classIntersectionNumber_weightedBoundaryClass_self (c : Fin 11 → k₀ˣ) :
     let : Y(c).Over S := ⟨T(c).toBase ≫ (P ↘ S)⟩
-    Chow.classIntersectionNumber ℂ Y(c) (weightedBoundaryClass c).toMul
+    Chow.classIntersectionNumber k₀ Y(c) (weightedBoundaryClass c).toMul
       (weightedBoundaryClass c).toMul = 0 := by
   intro _
-  let : IsIntegral (Y(c)) := isIntegral_internalBlowupTower b planeCenterRay c hΦ
-  let : Scheme.IsProjectiveOver (X := Y(c)) ℂ := projective_planeBlowup c
+  let : IsIntegral (Y(c)) := isIntegral_internalBlowupTower k₀ b planeCenterRay c hΦ
+  let : Scheme.IsProjectiveOver (X := Y(c)) k₀ := projective_planeBlowup c
   let : SmoothOfRelativeDimension 2 (Y(c) ↘ S) := smooth_planeBlowup c
-  let B := Chow.intersectionBilinForm ℂ Y(c)
+  let B := Chow.intersectionBilinForm k₀ Y(c)
   have h (j : Fin 3) : B (weightedBoundaryClass c) (L(c, j)) = 0 :=
     (Chow.intersectionBilinForm_apply _ _ _ _).trans
       (classIntersectionNumber_weightedBoundaryClass_boundary c j)

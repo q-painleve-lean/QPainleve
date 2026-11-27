@@ -31,6 +31,8 @@ open TauCeti.AlgebraicGeometry (LineBundleClass)
 
 namespace TauCeti.Toric.Fan
 
+variable (K : Type) [Field K]
+
 variable {N : Type} {V ι : Type*} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {Φ : Fan i} (b : Module.Basis (Fin 2) ℤ N)
   (s : ι → Φ.Ray) (k : ι)
@@ -44,9 +46,9 @@ local notation "hp" => Ray.hull_primitiveGenerator_mem (s k)
 local notation "Ψ" => Φ.mutationFan b hv hp hOpp
 local notation "r" => Φ.mutationFanRayEquiv b hv hp hOpp
 local notation "hΨ" => Iff.mpr (Φ.isRegular_mutationFan_iff b hv hp hOpp) hΦ
-local notation "I" => mutationPicardEquiv b s k hOpp hΦ
-local notation "F" => mutationFiberClass b (s k) hΦ
-local notation "F'" => mutationFiberClass b (r (s k)) hΨ
+local notation "I" => mutationPicardEquiv K b s k hOpp hΦ
+local notation "F" => mutationFiberClass K b (s k) hΦ
+local notation "F'" => mutationFiberClass K b (r (s k)) hΨ
 
 private theorem det_mutationFanRayEquiv (ρ : Φ.Ray) :
     b.det ![(r ρ).primitiveGenerator, v] = b.det ![ρ.primitiveGenerator, v] := by
@@ -79,7 +81,7 @@ theorem mutationPicardEquiv_fiber :
     rw [ha, Ray.primitiveGenerator_ofPrimitiveGenerator, ← b.detDualEquiv_apply]
     simp only [map_neg, LinearMap.neg_apply, b.detDualEquiv_self, neg_zero, max_self]
   have hcomp : a ∘ r = fun ρ ↦ max (b.det ![ρ.primitiveGenerator, v]) 0 := funext ha
-  rw [mutationFiberClass_eq, mutationPicardEquiv_apply_rayDivisor _ _ _ _ _ a 0,
+  rw [mutationFiberClass_eq, mutationPicardEquiv_apply_rayDivisor K _ _ _ _ _ a 0,
     hcomp, hpiv, hopp, mutationFiberClass_eq]
   simp
 
@@ -87,17 +89,18 @@ private theorem mutationPicardEquiv_section (onSection : Bool) :
     let ρ := if onSection then s k else q
     letI : Nonempty Φ.cones := ⟨(s k).toCone⟩
     letI : Nonempty (Ψ).cones := ⟨(r (s k)).toCone⟩
-    letI := Φ.uniqueFactorizationMonoid_stalk_algebraicRealization hΦ
-    letI := (Ψ).uniqueFactorizationMonoid_stalk_algebraicRealization hΨ
-    I (Additive.ofMul (LineBundleClass.primeDivisorClass ((Ψ).rayBoundaryPoint hΨ (r ρ))), 0) =
-      (Additive.ofMul (LineBundleClass.primeDivisorClass (Φ.rayBoundaryPoint hΦ ρ)) +
+    letI := Φ.uniqueFactorizationMonoid_stalk_finiteFanScheme (R := K) hΦ
+    letI := (Ψ).uniqueFactorizationMonoid_stalk_finiteFanScheme (R := K) hΨ
+    I (Additive.ofMul (LineBundleClass.primeDivisorClass
+        ((Ψ).rayBoundaryChartPoint (R := K) hΨ (r ρ))), 0) =
+      (Additive.ofMul (LineBundleClass.primeDivisorClass (Φ.rayBoundaryChartPoint (R := K) hΦ ρ)) +
         (if onSection then 0 else F), -(Pi.single k (1 : ℤ))) := by
   classical
   intro ρ
   let : Nonempty Φ.cones := ⟨(s k).toCone⟩
   let : Nonempty (Ψ).cones := ⟨(r (s k)).toCone⟩
-  let := Φ.uniqueFactorizationMonoid_stalk_algebraicRealization hΦ
-  let := (Ψ).uniqueFactorizationMonoid_stalk_algebraicRealization hΨ
+  let := Φ.uniqueFactorizationMonoid_stalk_finiteFanScheme (R := K) hΦ
+  let := (Ψ).uniqueFactorizationMonoid_stalk_finiteFanScheme (R := K) hΨ
   have hn : q ≠ s k := by
     intro h
     have hg := congrArg Ray.primitiveGenerator h
@@ -105,8 +108,8 @@ private theorem mutationPicardEquiv_section (onSection : Bool) :
     have hinj := (s k).isPrimitiveGenerator.isPrimitive.zsmul_left_injective
     have he : (-1 : ℤ) • v = (1 : ℤ) • v := by simpa using hg
     exact (by decide : (-1 : ℤ) ≠ 1) (hinj he)
-  have h := mutationPicardEquiv_toric_single b s k hOpp hΦ ρ
-  simp only [rayDivisorToPicard_single, one_smul] at h
+  have h := mutationPicardEquiv_toric_single K b s k hOpp hΦ ρ
+  simp only [rayChartDivisorToPicard_single, one_smul] at h
   cases onSection <;> simpa [ρ, hn, Ne.symm hn] using h
 
 /-- Computing the inverse Picard marking on a fiber and one of the two ruling
@@ -117,25 +120,27 @@ theorem mutationPicardEquiv_symm_apply_ruling (onSection : Bool) (a d : ℤ) (e 
     let ρ := if onSection then s k else q
     letI : Nonempty Φ.cones := ⟨(s k).toCone⟩
     letI : Nonempty (Ψ).cones := ⟨(r (s k)).toCone⟩
-    letI := Φ.uniqueFactorizationMonoid_stalk_algebraicRealization hΦ
-    letI := (Ψ).uniqueFactorizationMonoid_stalk_algebraicRealization hΨ
-    let S := Additive.ofMul (LineBundleClass.primeDivisorClass (Φ.rayBoundaryPoint hΦ ρ))
-    let S' := Additive.ofMul (LineBundleClass.primeDivisorClass ((Ψ).rayBoundaryPoint hΨ (r ρ)))
+    letI := Φ.uniqueFactorizationMonoid_stalk_finiteFanScheme (R := K) hΦ
+    letI := (Ψ).uniqueFactorizationMonoid_stalk_finiteFanScheme (R := K) hΨ
+    let S := Additive.ofMul (LineBundleClass.primeDivisorClass
+      (Φ.rayBoundaryChartPoint (R := K) hΦ ρ))
+    let S' := Additive.ofMul (LineBundleClass.primeDivisorClass
+      ((Ψ).rayBoundaryChartPoint (R := K) hΨ (r ρ)))
     (I).symm (a • F + d • S, e) =
       ((a + e k + (if onSection then d else 0)) • F' + d • S',
         Function.update e k (-d - e k)) := by
   intro ρ S S'
   have hsection :
       I (S', 0) = (S + (if onSection then 0 else F), -Pi.single k (1 : ℤ)) :=
-    mutationPicardEquiv_section b s k hOpp hΦ onSection
+    mutationPicardEquiv_section K b s k hOpp hΦ onSection
   have hexc (c : ι → ℤ) :
       I (0, c) = (c k • F, c - (2 * c k) • Pi.single k 1) := by
-    simpa using mutationPicardEquiv_apply_rayDivisor b s k hOpp hΦ 0 c
+    simpa using mutationPicardEquiv_apply_rayDivisor K b s k hOpp hΦ 0 c
   apply (I).injective
   rw [LinearEquiv.apply_symm_apply]
   let c := Function.update e k (-d - e k)
   let a' := a + e k + (if onSection then d else 0)
-  have hsplit : ((a' • F' + d • S', c) : Additive (LineBundleClass (Ψ).algebraicRealization) ×
+  have hsplit : ((a' • F' + d • S', c) : Additive (LineBundleClass ((Ψ).finiteFanScheme K)) ×
       (ι → ℤ)) = a' • (F', 0) + d • (S', 0) + (0, c) := by
     simp
   rw [hsplit, map_add, map_add, map_zsmul, map_zsmul, mutationPicardEquiv_fiber, hsection, hexc]

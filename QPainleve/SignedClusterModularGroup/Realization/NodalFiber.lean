@@ -34,14 +34,16 @@ open TauCeti TauCeti.AlgebraicGeometry TauCeti.Toric
 
 namespace QPainleve.SignedClusterModularGroup
 
-local notation "S" => Spec (CommRingCat.of ℂ)
+variable {k : Type} [Field k] [IsAlgClosed k]
+
+local notation "S" => Spec (CommRingCat.of k)
 
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {b : Basis (Fin 2) ℤ N} {r : ℕ} {L γ : Type} [AddCommGroup L]
 
 /-- The toric base of a complete marked presentation is rational over the ground field. -/
-theorem CompleteToricPresentation.isRationalOver_fan (Q : CompleteToricPresentation i b r L γ) :
-    IsRationalOver (Q.fan.algebraicRealization ↘ S) := by
+theorem CompleteToricPresentation.isRationalOver_fan (Q : CompleteToricPresentation k i b r L γ) :
+    IsRationalOver ((Q.fan.finiteFanScheme k) ↘ S) := by
   let : NeZero Q.length := Q.neZero
   obtain ⟨hdet, σ, h₀, h₁⟩ := Q.positive 0
   have hne : Q.rayOrder 0 ≠ Q.rayOrder (0 + 1) := by
@@ -49,41 +51,43 @@ theorem CompleteToricPresentation.isRationalOver_fan (Q : CompleteToricPresentat
     rw [← h, b.detDualEquiv_self] at hdet
     exact zero_ne_one hdet
   have hN : Module.finrank ℤ N = 2 := by simpa using Module.finrank_eq_card_basis b
-  exact Q.fan.isRationalOver_of_ray_ne_of_le Q.regular hN hne h₀ h₁
+  rw [Q.fan.finiteFanScheme_over k]
+  exact Q.fan.isRationalOver_of_ray_ne_of_le k Q.regular hN hne h₀ h₁
 
-/-- The complete regular toric model is a smooth surface over ℂ. -/
+/-- The complete regular toric model is a smooth surface over the coefficient field. -/
 theorem CompleteToricPresentation.smoothOfRelativeDimension_fan
-    (Q : CompleteToricPresentation i b r L γ) :
-    SmoothOfRelativeDimension 2 (Q.fan.algebraicRealization ↘ S) := by
+    (Q : CompleteToricPresentation k i b r L γ) :
+    SmoothOfRelativeDimension 2 ((Q.fan.finiteFanScheme k) ↘ S) := by
   have hN : Module.finrank ℤ N = 2 := by simpa using Module.finrank_eq_card_basis b
-  rw [← hN, Q.fan.algebraicRealization_over]
-  exact Q.fan.smoothOfRelativeDimension_algebraicRealizationStructureMap Q.regular
+  rw [← hN, Q.fan.finiteFanScheme_over k]
+  exact Q.fan.smoothOfRelativeDimension_finiteFanSchemeToSpec k Q.regular
 
 namespace CompleteToricPresentation
 
-variable (Q : CompleteToricPresentation i b r L γ)
+variable (Q : CompleteToricPresentation k i b r L γ)
   {n : ℕ} [NeZero n] {H : LinearMap.BilinForm ℤ L}
-  {c : GeometricRealization.Point (Over.mk (structureMap ℂ (Fin r → ℤ)))}
-  {M : MarkedSurface ℂ n H (scheme ℂ (Fin r →₀ ℤ))}
+  {c : GeometricRealization.Point (Over.mk (structureMap k (Fin r → ℤ)))}
+  {M : MarkedSurface k n H (scheme k (Fin r →₀ ℤ))}
 
 local instance : Nonempty Q.fan.cones := Q.complete.nonempty_cones
 local instance : NeZero Q.length := Q.neZero
-local instance : PrestableFamily ((Q.fan.boundaryIdeal Q.complete.nonempty_cones).subscheme ↘ S) :=
+local instance :
+    PrestableFamily ((Q.fan.toricBoundaryIdeal k Q.complete.nonempty_cones).subscheme ↘ S) :=
   Q.prestable
 
 local notation "Fiber" => ContractedToricFiber
   b Q.rays Q.regular Q.cycle Q.origin Q.inclusion
-  (pointsEquiv ℂ (Fin r → ℤ) (Subtype.mk (Over.Hom.left c) (Over.w c))) M
+  (pointsEquiv k (Fin r → ℤ) (Subtype.mk (Over.Hom.left c) (Over.w c))) M
 
 private theorem isRationalOver_fiber (p : Fiber) : IsRationalOver (M.surface ↘ S) := by
-  let : IsRationalOver Q.fan.algebraicRealizationStructureMap :=
-    Q.fan.algebraicRealization_over ▸ Q.isRationalOver_fan
-  let : SmoothOfRelativeDimension 2 Q.fan.algebraicRealizationStructureMap :=
-    Q.fan.algebraicRealization_over ▸ Q.smoothOfRelativeDimension_fan
+  let : IsRationalOver (Q.fan.finiteFanSchemeToSpec k) :=
+    (Q.fan.finiteFanScheme_over k) ▸ Q.isRationalOver_fan
+  let : SmoothOfRelativeDimension 2 (Q.fan.finiteFanSchemeToSpec k) :=
+    (Q.fan.finiteFanScheme_over k) ▸ Q.smoothOfRelativeDimension_fan
   let : IsModification p.projection := p.modification
-  let c₀ := pointsEquiv ℂ (Fin r → ℤ) ⟨Over.Hom.left c, Over.w c⟩
-  have hrat := (Fan.isClosedPointTower_internalBlowupTower b Q.rays
-    (fun j ↦ c₀ (ofAdd (Pi.single j 1)))).isRationalOver Q.fan.algebraicRealizationStructureMap
+  let c₀ := pointsEquiv k (Fin r → ℤ) ⟨Over.Hom.left c, Over.w c⟩
+  have hrat := (Fan.isClosedPointTower_internalBlowupTower k b Q.rays
+    (fun j ↦ c₀ (ofAdd (Pi.single j 1)))).isRationalOver (Q.fan.finiteFanSchemeToSpec k)
   let : IsRationalOver (p.projection ≫ M.surface ↘ S) := p.projection_over.symm ▸ hrat
   obtain ⟨e, he⟩ := IsModification.birationalOver p.projection
   have hbir : BirationalOver (p.projection ≫ M.surface ↘ S) (M.surface ↘ S) :=
@@ -105,8 +109,8 @@ span a finite-index sublattice. The model supplies rationality and the anticanon
 boundary identity at the given center. -/
 theorem HasNodalModel.chargeIndex_ne_zero (h : Q.HasNodalModel c M)
     (hD : (Scheme.Hom.ker (Over.Hom.left (Arrow.hom M.pair))).IsEffectiveCartier)
-    (hnef : (classOf(hD)).IsNef ℂ (M.surface ↘ S))
-    (hsq : Chow.classIntersectionNumber ℂ M.surface classOf(hD) classOf(hD) = 0)
+    (hnef : (classOf(hD)).IsNef k (M.surface ↘ S))
+    (hsq : Chow.classIntersectionNumber k M.surface classOf(hD) classOf(hD) = 0)
     (hprim : IsPrimitive (Additive.ofMul classOf(hD))) :
     (Fan.rayChargeMap Q.rays).range.toAddSubgroup.index ≠ 0 := by
   let : SmoothOfRelativeDimension 2 (M.surface ↘ S) := M.smooth
@@ -127,8 +131,8 @@ theorem HasNodalModel.exchangeMatrix_ne_zero (h : Q.HasNodalModel c M)
     {E : SkewExchangeMatrix (Fin r)}
     (hE : E.matrix = chargeExchangeMatrix b.detDualEquiv.toLinearMap (Fan.rayChargeMap Q.rays))
     (hprim : IsPrimitive (Additive.ofMul δ))
-    (hnef : LineBundleClass.IsNef ℂ (M.surface ↘ S) δ)
-    (hsq : Chow.classIntersectionNumber ℂ M.surface δ δ = 0) :
+    (hnef : LineBundleClass.IsNef k (M.surface ↘ S) δ)
+    (hsq : Chow.classIntersectionNumber k M.surface δ δ = 0) :
     E.matrix ≠ 0 := by
   let P := Fan.rayChargeSeed b Q.rays hE
   exact Q.exchangeMatrix_ne_zero_of_chargeIndex_ne_zero P
@@ -145,7 +149,7 @@ theorem HasNodalModel.exists_isNodalContraction (h : Q.HasNodalModel c M)
     letI := Q.neZero
     ∃ p : Fiber, p.IsNodalContraction := by
   let : IsIntegral M.surface := M.integral
-  let : M.surface.IsProjectiveOver ℂ := M.projective
+  let : M.surface.IsProjectiveOver k := M.projective
   let : SmoothOfRelativeDimension 2 (M.surface ↘ S) := M.smooth
   let : PrestableFamily ((Scheme.Hom.ker (Over.Hom.left (Arrow.hom M.pair))).subscheme ↘ S) :=
     M.prestable_boundaryImage

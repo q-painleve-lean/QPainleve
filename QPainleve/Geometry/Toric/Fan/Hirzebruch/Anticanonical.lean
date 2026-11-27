@@ -9,7 +9,6 @@ public import QPainleve.AlgebraicGeometry.IdealSheaf.Boundary.Complexity
 public import QPainleve.Geometry.Toric.Fan.Ruling.Hirzebruch.Prime
 
 import Mathlib.AlgebraicGeometry.AlgClosed.Basic
-import Mathlib.Analysis.Complex.Polynomial.Basic
 import QPainleve.AlgebraicGeometry.EffectiveCartierDivisor.BoundaryPrimes
 import TauCeti.AlgebraicGeometry.RationalPoint.IdealSheaf
 
@@ -122,21 +121,25 @@ private theorem exists_anticanonical_coordinate_split
 
 end Coordinates
 
+variable (K : Type) [Field K] [IsAlgClosed K]
+
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {Φ : Fan i} [Nonempty Φ.cones]
   (b : Basis (Fin 2) ℤ N) (e : ℤ) (hΦ : Φ.IsRegular) (hc : Φ.IsComplete)
   (r : Fin 4 ≃ Φ.Ray)
   (hr : (fun j ↦ (r j).primitiveGenerator) = ![b 0, b 1, -b 0, e • b 0 - b 1])
 
-local notation "X" => Φ.algebraicRealization
-local notation "S" => Spec (CommRingCat.of ℂ)
-local notation "C" => Φ.hirzebruchPicardBasis b e hΦ r hr
+local notation "X" => (Φ.finiteFanScheme K)
+local notation "S" => Spec (CommRingCat.of K)
+local notation "C" => Φ.hirzebruchPicardBasis K b e hΦ r hr
 local notation "P" p:arg =>
   Additive.ofMul
-    (@primeDivisorClass X _ _ (Φ.uniqueFactorizationMonoid_stalk_algebraicRealization hΦ) p)
-local notation "S₀" => Φ.rayBoundaryPoint hΦ (r 0)
-local notation "K" => Additive.ofMul (LineBundleClass.mk (QPainleve.canonicalBundle ℂ X 2))
+    (@primeDivisorClass X _ _ (Φ.uniqueFactorizationMonoid_stalk_finiteFanScheme (R := K) hΦ) p)
+local notation "S₀" => Φ.rayBoundaryChartPoint (R := K) hΦ (r 0)
+local notation "canonicalClass" =>
+  Additive.ofMul (LineBundleClass.mk (QPainleve.canonicalBundle K X 2))
 
+omit [IsAlgClosed K] in
 include b e hΦ r hr in
 private theorem card_boundaryPrimes_of_hirzebruch_boundaryComplexity_zero
     {D : (X).IdealSheafData} [Fintype D.boundaryPrimes] (hzero : D.boundaryComplexity = 0) :
@@ -145,8 +148,8 @@ private theorem card_boundaryPrimes_of_hirzebruch_boundaryComplexity_zero
     Set.ncard_eq_toFinset_card', Set.toFinset_card] at hzero
   omega
 
-variable [(Φ.algebraicRealization).IsProjectiveOver ℂ]
-  [SmoothOfRelativeDimension 2 (Φ.algebraicRealization ↘ Spec (CommRingCat.of ℂ))]
+variable [((Φ.finiteFanScheme K)).IsProjectiveOver K]
+  [SmoothOfRelativeDimension 2 ((Φ.finiteFanScheme K) ↘ Spec (CommRingCat.of K))]
 
 include hc in
 /-- The prime coordinates of a reduced anticanonical divisor sum to the
@@ -155,21 +158,21 @@ theorem sum_hirzebruch_boundary_prime_coordinates
     {D : (X).IdealSheafData} [IsReduced D.subscheme] [Fintype D.boundaryPrimes]
     (hD : D.IsEffectiveCartier)
     (hK : LineBundleClass.mk hD.toInvertibleSheaf =
-      LineBundleClass.mk (QPainleve.canonicalBundle ℂ X 2)) (j : Fin 2) :
+      LineBundleClass.mk (QPainleve.canonicalBundle K X 2)) (j : Fin 2) :
     ∑ k : D.boundaryPrimes, (C).repr (P (D.boundaryPrimeEmbedding k)) j =
       (![e + 2, 2] : Fin 2 → ℤ) j := by
-  let := Φ.uniqueFactorizationMonoid_stalk_algebraicRealization hΦ
-  have hsum : ∑ k : D.boundaryPrimes, P (D.boundaryPrimeEmbedding k) = -K := by
+  let := Φ.uniqueFactorizationMonoid_stalk_finiteFanScheme (R := K) hΦ
+  have hsum : ∑ k : D.boundaryPrimes, P (D.boundaryPrimeEmbedding k) = -canonicalClass := by
     rw [← hD.ofMul_inv_toInvertibleSheaf_eq_sum_primeDivisorClass D.boundaryPrimeEmbedding
       (fun q ↦ D.range_boundaryPrimeEmbedding.symm ▸ Iff.rfl), hK]
     rfl
   rw [← Finsupp.finsetSum_apply, ← map_sum, hsum]
-  obtain ⟨h₀, h₁⟩ := hirzebruch_anticanonical_coordinates b e hΦ r hr hc
+  obtain ⟨h₀, h₁⟩ := hirzebruch_anticanonical_coordinates K b e hΦ r hr hc
   fin_cases j
   · simpa using h₀
   · simpa using h₁
 
-omit [SmoothOfRelativeDimension 2 (Φ.algebraicRealization ↘ Spec (CommRingCat.of ℂ))] in
+omit [SmoothOfRelativeDimension 2 ((Φ.finiteFanScheme K) ↘ Spec (CommRingCat.of K))] in
 include hc in
 /-- A reduced anticanonical divisor of complexity zero on a Hirzebruch surface
 has two components of fiber class and two of classes S and S + eF, where S
@@ -180,17 +183,17 @@ theorem exists_boundaryPrimes_of_hirzebruch_boundaryComplexity_zero (he : 0 ≤ 
     {D : (X).IdealSheafData} [IsReduced D.subscheme] (hD : D.IsEffectiveCartier)
     (hzero : D.boundaryComplexity = 0) :
     let : SmoothOfRelativeDimension 2 (X ↘ S) := by
-      rw [algebraicRealization_over]
+      rw [finiteFanScheme_over K]
       exact ((finrank_eq_card_basis b).trans (Fintype.card_fin 2)) ▸
-        Φ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
-    LineBundleClass.mk hD.toInvertibleSheaf = LineBundleClass.mk (QPainleve.canonicalBundle ℂ X 2) →
+        Φ.smoothOfRelativeDimension_finiteFanSchemeToSpec K hΦ
+    LineBundleClass.mk hD.toInvertibleSheaf = LineBundleClass.mk (QPainleve.canonicalBundle K X 2) →
     ∃ s t : D.boundaryPrimes, s ≠ t ∧
       P (D.boundaryPrimeEmbedding s) = C 1 ∧
       P (D.boundaryPrimeEmbedding t) = e • C 0 + C 1 ∧
       (∀ p : D.boundaryPrimes, p ≠ s → p ≠ t → P (D.boundaryPrimeEmbedding p) = C 0) ∧
       Disjoint (closure {(s : X)}) (closure {(t : X)}) ∧
       (0 < e → D.boundaryPrimeEmbedding s = S₀) := by
-  let := Φ.uniqueFactorizationMonoid_stalk_algebraicRealization hΦ
+  let := Φ.uniqueFactorizationMonoid_stalk_finiteFanScheme (R := K) hΦ
   intro hSmooth hK
   let := hSmooth
   classical
@@ -198,17 +201,17 @@ theorem exists_boundaryPrimes_of_hirzebruch_boundaryComplexity_zero (he : 0 ≤ 
   let p := D.boundaryPrimeEmbedding
   let a (j : D.boundaryPrimes) := (C).repr (P (p j)) 0
   let d (j : D.boundaryPrimes) := (C).repr (P (p j)) 1
-  have hcard := card_boundaryPrimes_of_hirzebruch_boundaryComplexity_zero b e hΦ r hr hzero
-  have hsums (j : Fin 2) := sum_hirzebruch_boundary_prime_coordinates b e hΦ hc r hr hD hK j
+  have hcard := card_boundaryPrimes_of_hirzebruch_boundaryComplexity_zero K b e hΦ r hr hzero
+  have hsums (j : Fin 2) := sum_hirzebruch_boundary_prime_coordinates K b e hΦ hc r hr hD hK j
   have hsection (j : D.boundaryPrimes) (hj : a j < e * d j) : p j = S₀ :=
-    eq_section_of_hirzebruch_fiber_coeff_lt b e hΦ r hr hc (p j) hj
+    eq_section_of_hirzebruch_fiber_coeff_lt K b e hΦ r hr hc (p j) hj
   obtain ⟨s, t, hst, hs, ht, hsa, hta, hf⟩ :=
     exists_anticanonical_coordinate_split (a := a) (d := d) hcard he (hsums 0) (hsums 1)
-      (fun j ↦ hirzebruch_fiber_coeff_nonneg b e hΦ r hr hc he (p j))
-      (fun j ↦ hirzebruch_fiber_degree_nonneg b e hΦ r hr hc (p j))
-      (fun j ↦ hirzebruch_fiber_coeff_pos_of_degree_zero b e hΦ r hr hc he (p j))
+      (fun j ↦ hirzebruch_fiber_coeff_nonneg K b e hΦ r hr hc he (p j))
+      (fun j ↦ hirzebruch_fiber_degree_nonneg K b e hΦ r hr hc (p j))
+      (fun j ↦ hirzebruch_fiber_coeff_pos_of_degree_zero K b e hΦ r hr hc he (p j))
       (fun j hj ↦ by
-        have h := hirzebruch_section_coordinates b e hΦ r hr
+        have h := hirzebruch_section_coordinates K b e hΦ r hr
         exact ⟨by simpa only [d, hsection j hj] using h.2,
           by simpa only [a, hsection j hj] using h.1⟩)
       (fun j k hj hk ↦ p.injective ((hsection j hj).trans (hsection k hk).symm))
@@ -224,12 +227,12 @@ theorem exists_boundaryPrimes_of_hirzebruch_boundaryComplexity_zero (he : 0 ≤ 
     obtain ⟨hj, hj'⟩ := hf j hjs hjt
     simpa only [a, d, hj, hj', zero_smul, one_smul, add_zero] using hrepr j
   · simpa only [p, D.coe_boundaryPrimeEmbedding] using
-      disjoint_of_hirzebruch_section_classes b e hΦ r hr hc (p s) (p t)
+      disjoint_of_hirzebruch_section_classes K b e hΦ r hr hc (p s) (p t)
         (p.injective.ne hst) hsClass htClass
 
 local notation "m" => LinearMap.toAddMonoidHom (b.coord 1)
 local notation "q" =>
-  Φ.characterRuling m (nonneg_or_nonpos_hirzebruch_ruling_character b e r hr)
+  Φ.characterRuling K m (nonneg_or_nonpos_hirzebruch_ruling_character b e r hr)
 local notation "I[" p "]" => vanishingIdeal (Closeds.mk (closure {(p : X)}) isClosed_closure)
 local notation "g[" p "]" => Scheme.IdealSheafData.subschemeι (I[p]) ≫ q
 
@@ -240,16 +243,16 @@ theorem exists_ruling_fiber_pair_of_hirzebruch_boundary
     {D : (X).IdealSheafData} [IsReduced D.subscheme] (hD : D.IsEffectiveCartier)
     (hzero : D.boundaryComplexity = 0) {s t : D.boundaryPrimes} (hst : s ≠ t)
     (hf : ∀ j : D.boundaryPrimes, j ≠ s → j ≠ t → P (D.boundaryPrimeEmbedding j) = C 0) :
-    ∃ y z : Spec (CommRingCat.of ℂ) ⟶ projectiveLine ℂ,
-      y (IsLocalRing.closedPoint ℂ) ≠ z (IsLocalRing.closedPoint ℂ) ∧
-      y ≫ (projectiveLine ℂ ↘ S) = 𝟙 S ∧ z ≫ (projectiveLine ℂ ↘ S) = 𝟙 S ∧
+    ∃ y z : Spec (CommRingCat.of K) ⟶ projectiveLine K,
+      y (IsLocalRing.closedPoint K) ≠ z (IsLocalRing.closedPoint K) ∧
+      y ≫ (projectiveLine K ↘ S) = 𝟙 S ∧ z ≫ (projectiveLine K ↘ S) = 𝟙 S ∧
       D = I[D.boundaryPrimeEmbedding s] * I[D.boundaryPrimeEmbedding t] *
         (y.ker.comap q) * (z.ker.comap q) := by
   classical
-  let := Φ.uniqueFactorizationMonoid_stalk_algebraicRealization hΦ
+  let := Φ.uniqueFactorizationMonoid_stalk_finiteFanScheme (R := K) hΦ
   let : Fintype D.boundaryPrimes := hD.finite_boundaryPrimes.fintype
   let p := D.boundaryPrimeEmbedding
-  have hcard := card_boundaryPrimes_of_hirzebruch_boundaryComplexity_zero b e hΦ r hr hzero
+  have hcard := card_boundaryPrimes_of_hirzebruch_boundaryComplexity_zero K b e hΦ r hr hzero
   let V : Finset D.boundaryPrimes := (Finset.univ.erase s).erase t
   have htV : t ∈ (Finset.univ.erase s : Finset D.boundaryPrimes) := by simp [hst.symm]
   have hV : V.card = 2 := by simp [V, Finset.card_erase_of_mem, htV, hcard]
@@ -259,16 +262,16 @@ theorem exists_ruling_fiber_pair_of_hirzebruch_boundary
   have hu := (hmem u).mp (by simp [huvV])
   have hv := (hmem v).mp (by simp [huvV])
   obtain ⟨y, hy, -, hY⟩ :=
-    exists_hirzebruch_ruling_fiber_of_degree_zero b e hΦ hc r hr (p u) (by
+    exists_hirzebruch_ruling_fiber_of_degree_zero K b e hΦ hc r hr (p u) (by
       rw [hf u hu.1 hu.2, Basis.repr_self]
       simp)
   obtain ⟨z, hz, -, hZ⟩ :=
-    exists_hirzebruch_ruling_fiber_of_degree_zero b e hΦ hc r hr (p v) (by
+    exists_hirzebruch_ruling_fiber_of_degree_zero K b e hΦ hc r hr (p v) (by
       rw [hf v hv.1 hv.2, Basis.repr_self]
       simp)
-  have hne : y (IsLocalRing.closedPoint ℂ) ≠ z (IsLocalRing.closedPoint ℂ) := by
+  have hne : y (IsLocalRing.closedPoint K) ≠ z (IsLocalRing.closedPoint K) := by
     intro h
-    have hyz := ext_of_apply_closedPoint_eq (projectiveLine ℂ ↘ S) hy hz h
+    have hyz := ext_of_apply_closedPoint_eq (projectiveLine K ↘ S) hy hz h
     have heq := hY.trans (hyz ▸ hZ.symm)
     have hclosures := congrArg (fun J : (X).IdealSheafData ↦ (J.support : Set X)) heq
     simp only [coe_support_vanishingIdeal, Closeds.coe_mk] at hclosures
@@ -293,7 +296,7 @@ theorem exists_ruling_fiber_pair_of_hirzebruch_boundary
       dsimp only [p]
       ac_rfl
 
-omit [SmoothOfRelativeDimension 2 (Φ.algebraicRealization ↘ Spec (CommRingCat.of ℂ))] in
+omit [SmoothOfRelativeDimension 2 ((Φ.finiteFanScheme K) ↘ Spec (CommRingCat.of K))] in
 include hΦ hc in
 /-- A reduced anticanonical divisor of complexity zero on a Hirzebruch surface
 is the sum of two disjoint sections and two distinct fibers of the character
@@ -303,25 +306,25 @@ theorem exists_sections_and_fibers_of_hirzebruch_boundaryComplexity_zero (he : 0
     {D : (X).IdealSheafData} [IsReduced D.subscheme] (hD : D.IsEffectiveCartier)
     (hzero : D.boundaryComplexity = 0) :
     let : SmoothOfRelativeDimension 2 (X ↘ S) := by
-      rw [algebraicRealization_over]
+      rw [finiteFanScheme_over K]
       exact ((finrank_eq_card_basis b).trans (Fintype.card_fin 2)) ▸
-        Φ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
-    LineBundleClass.mk hD.toInvertibleSheaf = LineBundleClass.mk (QPainleve.canonicalBundle ℂ X 2) →
+        Φ.smoothOfRelativeDimension_finiteFanSchemeToSpec K hΦ
+    LineBundleClass.mk hD.toInvertibleSheaf = LineBundleClass.mk (QPainleve.canonicalBundle K X 2) →
     ∃ s t : D.boundaryPrimes, IsIso g[D.boundaryPrimeEmbedding s] ∧
       IsIso g[D.boundaryPrimeEmbedding t] ∧ Disjoint (closure {(s : X)}) (closure {(t : X)}) ∧
-      ∃ y z : Spec (CommRingCat.of ℂ) ⟶ projectiveLine ℂ,
-        y (IsLocalRing.closedPoint ℂ) ≠ z (IsLocalRing.closedPoint ℂ) ∧
-        y ≫ (projectiveLine ℂ ↘ S) = 𝟙 S ∧ z ≫ (projectiveLine ℂ ↘ S) = 𝟙 S ∧
+      ∃ y z : Spec (CommRingCat.of K) ⟶ projectiveLine K,
+        y (IsLocalRing.closedPoint K) ≠ z (IsLocalRing.closedPoint K) ∧
+        y ≫ (projectiveLine K ↘ S) = 𝟙 S ∧ z ≫ (projectiveLine K ↘ S) = 𝟙 S ∧
         D = I[D.boundaryPrimeEmbedding s] * I[D.boundaryPrimeEmbedding t] *
           (y.ker.comap q) * (z.ker.comap q) := by
   intro hSmooth hK
   let := hSmooth
   let p := D.boundaryPrimeEmbedding
   obtain ⟨s, t, hst, hs, ht, hf, hdisj, -⟩ :=
-    Φ.exists_boundaryPrimes_of_hirzebruch_boundaryComplexity_zero b e hΦ hc r hr he hD hzero hK
-  refine ⟨s, t, isIso_hirzebruch_ruling_prime_of_degree_one b e hΦ hc r hr (p s) ?_,
-    isIso_hirzebruch_ruling_prime_of_degree_one b e hΦ hc r hr (p t) ?_, hdisj,
-    exists_ruling_fiber_pair_of_hirzebruch_boundary b e hΦ hc r hr hD hzero hst hf⟩
+    Φ.exists_boundaryPrimes_of_hirzebruch_boundaryComplexity_zero K b e hΦ hc r hr he hD hzero hK
+  refine ⟨s, t, isIso_hirzebruch_ruling_prime_of_degree_one K b e hΦ hc r hr (p s) ?_,
+    isIso_hirzebruch_ruling_prime_of_degree_one K b e hΦ hc r hr (p t) ?_, hdisj,
+    exists_ruling_fiber_pair_of_hirzebruch_boundary K b e hΦ hc r hr hD hzero hst hf⟩
   · rw [hs, Basis.repr_self]
     simp
   · rw [ht, map_add, map_smul]

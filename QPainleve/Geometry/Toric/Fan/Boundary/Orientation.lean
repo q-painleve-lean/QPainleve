@@ -27,7 +27,9 @@ open TauCeti.AlgebraicGeometry
 
 namespace TauCeti.Toric.FanEquiv
 
-variable {N N' V V' : Type} [AddCommGroup N] [AddCommGroup N']
+universe u
+
+variable {N N' : Type u} {V V' : Type*} [AddCommGroup N] [AddCommGroup N']
   [AddCommGroup V] [AddCommGroup V'] [Module ℝ V] [Module ℝ V']
   {i : N →+ V} {i' : N' →+ V'} {Φ : Fan i} {Ψ : Fan i'} (e : FanEquiv Φ Ψ)
 
@@ -63,38 +65,49 @@ private theorem branchIndex_eq_of_det {m : ℕ} [NeZero m] {u' : ZMod m ≃ Ψ.R
 
 section Normalization
 
+variable (K : Type u) [Field K] [IsSepClosed K]
+
 variable [hΦ₀ : Nonempty Φ.cones] [hΨ₀ : Nonempty Ψ.cones]
   (hΦ : Φ.IsRegular) (hΨ : Ψ.IsRegular)
 
-local notation "base" => Spec (CommRingCat.of ℂ)
-local notation "D[" Φ "]" => Fan.boundaryIdeal Φ inferInstance
+local notation "base" => Spec (CommRingCat.of K)
+local notation "D[" Φ "]" => Fan.toricBoundaryIdeal K Φ inferInstance
 local notation "C[" Φ "]" => Scheme.IdealSheafData.subscheme (D[Φ])
-local notation "ν[" Φ "]" => Scheme.IdealSheafData.blowupToBase (Scheme.singularLocus ℂ (C[Φ]))
-local notation "g" => e.boundaryIso hΦ₀ hΨ₀
-local notation "gν" => Iso.hom (Iso.singularLocusBlowupIso (R := ℂ) g)
+local notation "ν[" Φ "]" => Scheme.IdealSheafData.blowupToBase (Scheme.singularLocus K (C[Φ]))
+local notation "g" => e.boundaryIso K hΦ₀ hΨ₀
+local notation "gν" => Iso.hom (Iso.singularLocusBlowupIso (R := K) g)
 
-variable [PrestableFamily (C[Φ] ↘ base)] [PrestableFamily (C[Ψ] ↘ base)]
+variable [PrestableFamily ((Φ.toricBoundaryIdeal K hΦ₀).subscheme ↘ Spec (.of K))]
+  [PrestableFamily ((Ψ.toricBoundaryIdeal K hΨ₀).subscheme ↘ Spec (.of K))]
 
 local notation "U[" Φ "," h "," ρ "]" =>
-  Fan.boundaryNormalizationComponentEquiv Φ h ρ
+  Fan.boundaryNormalizationComponentEquiv K Φ h ρ
 
 section Orders
 
 variable {n m : ℕ} [NeZero n] [NeZero m]
-  {α β : Type*} {p : α → (C[Φ] ↘ base).smoothLocus}
-  {p' : β → (C[Ψ] ↘ base).smoothLocus}
+  {α β : Type*} {p : α → ((Φ.toricBoundaryIdeal K hΦ₀).subscheme ↘ Spec (.of K)).smoothLocus}
+  {p' : β → ((Ψ.toricBoundaryIdeal K hΨ₀).subscheme ↘ Spec (.of K)).smoothLocus}
 
-local notation "G[" p "]" => Scheme.dualGraph (K := ℂ) _ p
+local notation "G[" p "]" => Scheme.dualGraph (K := K) _ p
 
 variable
-  {a : ZMod n ≃ (G[p]).Edge} {a' : ZMod m ≃ (G[p']).Edge}
-  {o : (G[p]).Edge → Equiv.Perm (Fin 2)} {o' : (G[p']).Edge → Equiv.Perm (Fin 2)}
-  {w : ZMod n ≃ (G[p]).Vertex} {w' : ZMod m ≃ (G[p']).Vertex}
-  (hw : ∀ j b, (G[p]).endpoint (a j) (o (a j) b) = w ((DualGraph.cycle n).endpoint j b))
-  (hw' : ∀ j b, (G[p']).endpoint (a' j) (o' (a' j) b) = w' ((DualGraph.cycle m).endpoint j b))
+  {a : ZMod n ≃ ((Φ.toricBoundaryIdeal K hΦ₀).subscheme.dualGraph p).Edge}
+  {a' : ZMod m ≃ ((Ψ.toricBoundaryIdeal K hΨ₀).subscheme.dualGraph p').Edge}
+  {o : ((Φ.toricBoundaryIdeal K hΦ₀).subscheme.dualGraph p).Edge → Equiv.Perm (Fin 2)}
+  {o' : ((Ψ.toricBoundaryIdeal K hΨ₀).subscheme.dualGraph p').Edge → Equiv.Perm (Fin 2)}
+  {w : ZMod n ≃ ((Φ.toricBoundaryIdeal K hΦ₀).subscheme.dualGraph p).Vertex}
+  {w' : ZMod m ≃ ((Ψ.toricBoundaryIdeal K hΨ₀).subscheme.dualGraph p').Vertex}
+  (hw : ∀ j b, ((Φ.toricBoundaryIdeal K hΦ₀).subscheme.dualGraph p).endpoint (a j) (o (a j) b) =
+    w ((DualGraph.cycle n).endpoint j b))
+  (hw' : ∀ j b,
+    ((Ψ.toricBoundaryIdeal K hΨ₀).subscheme.dualGraph p').endpoint (a' j) (o' (a' j) b) =
+    w' ((DualGraph.cycle m).endpoint j b))
   {u : ZMod n ≃ Φ.Ray} {u' : ZMod m ≃ Ψ.Ray}
-  (hu : ∀ j, (C[Φ]).dualGraphVertexEquiv p (w j) = U[Φ,hΦ,u j])
-  (hu' : ∀ j, (C[Ψ]).dualGraphVertexEquiv p' (w' j) = U[Ψ,hΨ,u' j])
+  (hu : ∀ j, (Φ.toricBoundaryIdeal K hΦ₀).subscheme.dualGraphVertexEquiv p (w j) =
+    Φ.boundaryNormalizationComponentEquiv K hΦ (u j))
+  (hu' : ∀ j, (Ψ.toricBoundaryIdeal K hΨ₀).subscheme.dualGraphVertexEquiv p' (w' j) =
+    Ψ.boundaryNormalizationComponentEquiv K hΨ (u' j))
   (b : Module.Basis (Fin 2) ℤ N) (b' : Module.Basis (Fin 2) ℤ N')
   (hpos : ∀ j, b.detDualEquiv (u j).primitiveGenerator (u (j + 1)).primitiveGenerator = 1)
   (hpos' : ∀ j, b'.detDualEquiv (u' j).primitiveGenerator (u' (j + 1)).primitiveGenerator = 1)
@@ -102,22 +115,22 @@ variable
 include hw hw' hu hu' in
 private theorem branchOrder_preserves_ray
     (j : ZMod n) (l : ZMod m) (v v' : Fin 2)
-    (he : (Iso.branchSchemeIso (R := ℂ) g).hom
+    (he : (Iso.branchSchemeIso (R := K) g).hom
         ((C[Φ]).branchOrderOfDualGraph p o ((C[Φ]).dualGraphNodeEquiv p (a j)) v).val =
       ((C[Ψ]).branchOrderOfDualGraph p' o' ((C[Ψ]).dualGraphNodeEquiv p' (a' l)) v').val) :
     e.rayEquiv (u ((DualGraph.cycle n).endpoint j v)) = u' ((DualGraph.cycle m).endpoint l v') := by
   have hs := (C[Φ]).branchPointEquiv_mem_dualGraph_endpoint p (a j) (o (a j) v)
   rw [hw, hu] at hs
   have hm := Set.mem_image_of_mem gν hs
-  rw [image_singularLocusBlowupIso_boundaryNormalizationComponent e hΦ hΨ] at hm
-  have hh := congrArg ((C[Ψ]).branchSchemeToBlowup ℂ) he
+  rw [image_singularLocusBlowupIso_boundaryNormalizationComponent K e hΦ hΨ] at hm
+  have hh := congrArg ((C[Ψ]).branchSchemeToBlowup K) he
   rw [← Scheme.Hom.comp_apply, Iso.branchSchemeIso_hom_branchSchemeToBlowup] at hh
   simp only [Scheme.Hom.comp_apply, Scheme.branchOrderOfDualGraph_apply_val,
     Scheme.branchSchemeToBlowup_dualGraphBranchEquiv] at hh
   rw [hh] at hm
   have heq := ((C[Ψ]).dualGraphVertexEquiv_endpoint_eq_iff p' (a' l) (o' (a' l) v') _).mpr hm
   rw [hw', hu'] at heq
-  exact (Ψ.boundaryNormalizationComponentEquiv hΨ).injective heq.symm
+  exact (Ψ.boundaryNormalizationComponentEquiv K hΨ).injective heq.symm
 
 include hw hw' hu hu' hpos hpos' in
 /-- Relative to positive cyclic numberings on the source and target, a fan
@@ -126,15 +139,15 @@ preserves the determinant and to the opposite index when it negates it. -/
 theorem branchSchemeIso_branchOrderOfDualGraph (swap : Bool)
     (hdet : ∀ x y, b'.detDualEquiv (e.latticeEquiv x) (e.latticeEquiv y) =
       if swap then -b.detDualEquiv x y else b.detDualEquiv x y)
-    (z : (Scheme.singularLocus ℂ (C[Φ])).subscheme) (v : Fin 2) :
-    (Iso.branchSchemeIso (R := ℂ) g).hom ((C[Φ]).branchOrderOfDualGraph p o z v).val =
-      ((C[Ψ]).branchOrderOfDualGraph p' o' ((Iso.singularLocusIso (R := ℂ) g).hom z)
+    (z : (Scheme.singularLocus K (C[Φ])).subscheme) (v : Fin 2) :
+    (Iso.branchSchemeIso (R := K) g).hom ((C[Φ]).branchOrderOfDualGraph p o z v).val =
+      ((C[Ψ]).branchOrderOfDualGraph p' o' ((Iso.singularLocusIso (R := K) g).hom z)
         (if swap then v.rev else v)).val := by
-  let z' := (Iso.singularLocusIso (R := ℂ) g).hom z
+  let z' := (Iso.singularLocusIso (R := K) g).hom z
   let T := (C[Ψ]).branchOrderOfDualGraph p' o' z'
   let S := (C[Φ]).branchOrderOfDualGraph p o z
-  let q := (Iso.branchSchemeIso (R := ℂ) g).hom
-  let t (v : Fin 2) : {y : (C[Ψ]).branchScheme ℂ // (C[Ψ]).branchSchemeToSingularLocus ℂ y = z'} :=
+  let q := (Iso.branchSchemeIso (R := K) g).hom
+  let t (v : Fin 2) : {y : (C[Ψ]).branchScheme K // (C[Ψ]).branchSchemeToSingularLocus K y = z'} :=
     ⟨q (S v).val, by
       rw [← Scheme.Hom.comp_apply, Iso.branchSchemeIso_hom_branchSchemeToSingularLocus,
         Scheme.Hom.comp_apply, (S v).property]⟩
@@ -151,7 +164,7 @@ theorem branchSchemeIso_branchOrderOfDualGraph (swap : Bool)
   have hr (v : Fin 2) :
       e.rayEquiv (u ((DualGraph.cycle n).endpoint j v)) =
         u' ((DualGraph.cycle m).endpoint l (f v)) := by
-    apply branchOrder_preserves_ray e hΦ hΨ hw hw' hu hu'
+    apply branchOrder_preserves_ray e K hΦ hΨ hw hw' hu hu'
     rw [hj, hl]
     exact hf v
   have hd := hdet (u j).primitiveGenerator (u (j + 1)).primitiveGenerator
@@ -166,6 +179,7 @@ theorem branchSchemeIso_branchOrderOfDualGraph (swap : Bool)
   rw [← hfv]
   exact hf v
 
+variable [IsAlgClosed K] in
 include hu hu' hpos hpos' in
 /-- Pullback along a fan equivalence preserves the period in positive cyclic
 orientations when the lattice map preserves determinants. It inverts the
@@ -180,7 +194,7 @@ theorem nodalPicardCycleMulEquiv_pullback (swap : Bool)
       if swap then (Scheme.nodalPicardCycleMulEquiv hw' L)⁻¹
       else Scheme.nodalPicardCycleMulEquiv hw' L := by
   exact Iso.nodalPicardCycleMulEquiv_pullback g hw hw' swap
-    (e.branchSchemeIso_branchOrderOfDualGraph hΦ hΨ hw hw' hu hu' b b' hpos hpos' swap hdet) L
+    (e.branchSchemeIso_branchOrderOfDualGraph K hΦ hΨ hw hw' hu hu' b b' hpos hpos' swap hdet) L
 
 end Orders
 

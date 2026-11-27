@@ -38,47 +38,50 @@ open scoped Sarkisov
 
 namespace QPainleve.BlowupTower.IsClosedPointTower
 
+variable (k₀ : Type) [Field k₀] [IsAlgClosed k₀]
+
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V] {i : N →+ V}
 
-local notation "S" => Spec (CommRingCat.of ℂ)
-local notation "X[" Φ "]" => Fan.algebraicRealization Φ
-local notation "f[" Φ "]" => (X[Φ] ↘ S)
-local notation "B[" Φ "," hc "]" => Fan.boundaryIdeal Φ (Fan.IsComplete.nonempty_cones hc)
-local notation "R[" p "]" => ramificationIdealSheaf ℂ p
-local notation "π[" s "]" => FanHom.algebraicMap (Fan.IsSubdivision.toFanHom s)
-local notation "P" => Proj (homogeneousSubmodule ℂ (Fin 3 → ℂ))
-local notation "H" => mk (Proj.symmetricAlgebraTwistingBundle ℂ (Fin 3 → ℂ) 1)
-local notation "pt" => IsLocalRing.closedPoint ℂ
+local notation "S" => Spec (CommRingCat.of k₀)
+local notation "X[" coeff "," Φ "]" => Fan.finiteFanScheme coeff Φ
+local notation "f[" Φ "]" => (X[k₀,Φ] ↘ S)
+local notation "B[" Φ "," hc "]" => Fan.toricBoundaryIdeal k₀ Φ (Fan.IsComplete.nonempty_cones hc)
+local notation "R[" p "]" => ramificationIdealSheaf k₀ p
+local notation "π[" s "]" => FanHom.finiteFanSchemeHom k₀ (Fan.IsSubdivision.toFanHom s)
+local notation "P" => Proj (homogeneousSubmodule k₀ (Fin 3 → k₀))
+local notation "H" => mk (Proj.symmetricAlgebraTwistingBundle k₀ (Fin 3 → k₀) 1)
+local notation "pt" => IsLocalRing.closedPoint k₀
 local notation "dim(" b ")" =>
   Eq.trans (finrank_eq_card_basis b) (Fintype.card_fin 2)
 local notation "center[" b "," ρ "," c "]" =>
-  Fan.Ray.binomialCenter ρ dim(b)
+  Fan.Ray.binomialCenter ρ k₀ dim(b)
     (Basis.detDualEquiv_self b (Fan.Ray.primitiveGenerator ρ))
     (Fan.Ray.surjective_detCharacter ρ b) c pt
-local notation "C[" b "," e "," h "," r "," hr "]" => Fan.hirzebruchPicardBasis b e h r hr
+local notation "C[" b "," e "," h "," r "," hr "]" => Fan.hirzebruchPicardBasis k₀ b e h r hr
 
 section Path
 
-variable {Y : Scheme} [Y.Over S] [SmoothOfRelativeDimension 2 (Y ↘ S)] [IsIntegral Y]
-  {D : Y.IdealSheafData} (A : LogarithmicProjection i D)
+variable {Y : Scheme} [Y.Over (Spec (.of k₀))] [SmoothOfRelativeDimension 2 (Y ↘ Spec (.of k₀))]
+  [IsIntegral Y]
+  {D : Y.IdealSheafData} (A : LogarithmicProjection k₀ i D)
 
 private theorem exists_mixed_quadric_path {F Ψ : Fan i} (hF : F.IsRegular)
     (s : F.IsSubdivision A.fan) (t : F.IsSubdivision Ψ)
-    (q : Y ⟶ X[F]) [IsDominant q] (hs : q ≫ π[s] = A.hom)
-    (d : Basis (Fin 2) ℤ N) (ρ : Ψ.Ray) (c : ℂˣ)
+    (q : Y ⟶ X[k₀,F]) [IsDominant q] (hs : q ≫ π[s] = A.hom)
+    (d : Basis (Fin 2) ℤ N) (ρ : Ψ.Ray) (c : k₀ˣ)
     (hOpp : hull ℝ {i (-ρ.primitiveGenerator)} ∈ Ψ.cones)
     (hcΨ : Ψ.IsComplete)
-    (L : LogarithmicProjection i D) (hL : L.fan = Ψ) (hLt : L.hom ≍ q ≫ π[t])
-    (M B : LogarithmicProjection i D) :
+    (L : LogarithmicProjection k₀ i D) (hL : L.fan = Ψ) (hLt : L.hom ≍ q ≫ π[t])
+    (M B : LogarithmicProjection k₀ i D) :
     let : Nonempty Ψ.cones := hcΨ.nonempty_cones
     let : Nonempty F.cones := (t.isComplete_iff.mpr hcΨ).nonempty_cones
     let Θ := Ψ.mutationFan d ρ.primitiveGenerator_ne_zero ρ.hull_primitiveGenerator_mem hOpp
     M.fan = Θ → B.fan = Θ →
-    ∀ (τ : FanEquiv Θ Θ) (p : Y ⟶ X[Θ]), M.hom ≍ p →
+    ∀ (τ : FanEquiv Θ Θ) (p : Y ⟶ X[k₀,Θ]), M.hom ≍ p →
       (q ≫ π[t]).toRationalMap.comp
-        ((Ψ.mutationPartialMap d (c : ℂ) ρ.primitiveGenerator_ne_zero
+        ((Ψ.mutationPartialMap k₀ d (c : k₀) ρ.primitiveGenerator_ne_zero
           ρ.hull_primitiveGenerator_mem hOpp).toRationalMap) ≍ M.hom.toRationalMap →
-      p ≫ τ.toFanHom.algebraicMap ≍ B.hom →
+      p ≫ (τ.toFanHom.finiteFanSchemeHom k₀) ≍ B.hom →
       Nonempty (SarkisovPath A B) := by
   intro hconesΨ hconesF Θ hM hB τ p hMp hμ hτ
   let := hconesΨ
@@ -90,16 +93,16 @@ private theorem exists_mixed_quadric_path {F Ψ : Fan i} (hF : F.IsRegular)
   subst Λ Ω Ω'
   obtain rfl : f = q ≫ π[t] := eq_of_heq hLt
   obtain rfl : g = p := eq_of_heq hMp
-  let L : LogarithmicProjection i D := ⟨Ψ, hΛreg, hΛcomp, _, hfOver, hfDom, hfPole⟩
-  let M : LogarithmicProjection i D := ⟨Θ, hΩreg, hΩcomp, g, hgOver, hgDom, hgPole⟩
-  let B : LogarithmicProjection i D := ⟨Θ, hΩ'reg, hΩ'comp, g', hg'Over, hg'Dom, hg'Pole⟩
+  let L : LogarithmicProjection k₀ i D := ⟨Ψ, hΛreg, hΛcomp, _, hfOver, hfDom, hfPole⟩
+  let M : LogarithmicProjection k₀ i D := ⟨Θ, hΩreg, hΩcomp, g, hgOver, hgDom, hgPole⟩
+  let B : LogarithmicProjection k₀ i D := ⟨Θ, hΩ'reg, hΩ'comp, g', hg'Over, hg'Dom, hg'Pole⟩
   let : Nonempty Θ.cones := hΩcomp.nonempty_cones
   let : Nonempty M.fan.cones := hΩcomp.nonempty_cones
   obtain ⟨path, -, -⟩ := A.exists_resolved_toric_star_factorization L dim(d) hF s t q hs rfl
   let mutation : SarkisovStep L M :=
     ⟨_, .mutation d ρ c hOpp, eq_of_heq hμ⟩
-  have hIso : Fan.IsSarkisovLink τ.toFanHom.algebraicMap.toRationalMap := by
-    simpa only [Fan.torusTranslation_one, Iso.refl_hom, Category.comp_id] using
+  have hIso : Fan.IsSarkisovLink k₀ (τ.toFanHom.finiteFanSchemeHom k₀).toRationalMap := by
+    simpa only [Fan.torusTranslationIso_one, Iso.refl_hom, Category.comp_id] using
       (Fan.IsSarkisovLink.toricIso τ 1)
   let exchange : SarkisovStep M B :=
     ⟨_, hIso, by
@@ -114,8 +117,8 @@ variable {Φ : Fan i}
   (r : Fin 4 ≃ Φ.Ray)
   (hr : (fun k ↦ (r k).primitiveGenerator) = ![b 0, b 1, -b 0, (0 : ℤ) • b 0 - b 1])
   (σ : Φ.cones) (hσ : σ.val = hull ℝ (Set.range (i ∘ b)))
-  {n : ℕ} {Y : Scheme} {T : BlowupTower X[Φ] (n + 2) Y} (hT : IsClosedPointTower X[Φ] T)
-  (g : Y ⟶ P)
+  {n : ℕ} {Y : Scheme} {T : BlowupTower X[k₀,Φ] (n + 2) Y} (hT : IsClosedPointTower X[k₀,Φ] T)
+  (g : Y ⟶ (Proj (homogeneousSubmodule k₀ (Fin 3 → k₀))))
 
 local notation "C₀" => C[b,0,hΦ,r,hr]
 
@@ -130,14 +133,14 @@ the original two ruling coefficients minus the two selected orders. -/
 theorem exists_sarkisov_path_of_quadric_corner_and_smooth_centers
     (hg : g ≫ (P ↘ S) = T.toBase ≫ f[Φ]) (hbir : Scheme.BirationalOver g (𝟙 P))
     (j l : Fin (n + 2))
-    (hj : hT.baseCenter j = Φ.distinguishedPointHom σ pt)
-    (hjfirst : ∀ k < j, hT.baseCenter k ≠ Φ.distinguishedPointHom σ pt)
-    (c : ℂˣ) (hl : hT.baseCenter l = center[b,r 2,c])
+    (hj : hT.baseCenter j = (Φ.distinguishedSection (R := k₀) σ) pt)
+    (hjfirst : ∀ k < j, hT.baseCenter k ≠ (Φ.distinguishedSection (R := k₀) σ) pt)
+    (c : k₀ˣ) (hl : hT.baseCenter l = center[b,r 2,c])
     (hlfirst : ∀ k < l, hT.baseCenter k ≠ center[b,r 2,c]) {D : Y.IdealSheafData} :
     let : Nonempty Φ.cones := hc.nonempty_cones
     let : SmoothOfRelativeDimension 2 f[Φ] := by
-      rw [Φ.algebraicRealization_over, ← dim(b)]
-      exact Φ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
+      rw [Φ.finiteFanScheme_over k₀, ← dim(b)]
+      exact Φ.smoothOfRelativeDimension_finiteFanSchemeToSpec k₀ hΦ
     let : Y.Over S := ⟨T.toBase ≫ f[Φ]⟩
     let : SmoothOfRelativeDimension 2 (Y ↘ S) := hT.smoothOfRelativeDimension f[Φ]
     let : IsIntegral Y := hT.isIntegral f[Φ]
@@ -145,19 +148,19 @@ theorem exists_sarkisov_path_of_quadric_corner_and_smooth_centers
     let β := (C₀).repr x.1 0
     let a := (C₀).repr x.1 1
     let m := fun k ↦ -x.2 k
-    ∀ (A : LogarithmicProjection i D), A.fan = Φ → A.hom ≍ T.toBase →
-    ∃ (B : LogarithmicProjection i D) (_ : SarkisovPath A B)
+    ∀ (A : LogarithmicProjection k₀ i D), A.fan = Φ → A.hom ≍ T.toBase →
+    ∃ (B : LogarithmicProjection k₀ i D) (_ : SarkisovPath A B)
       (b' : Basis (Fin 2) ℤ N) (r' : Fin 4 ≃ B.fan.Ray)
       (hr' : (fun k ↦ (r' k).primitiveGenerator) = ![b' 0, b' 1, -b' 0, (0 : ℤ) • b' 0 - b' 1])
-      (W : Scheme) (U : BlowupTower X[B.fan] (1 + (1 + n)) W)
-      (hU : IsClosedPointTower X[B.fan] U) (e : Y ≅ W) (l' : Fin (n + 1)),
-      j.succAbove l' = l ∧ B.hom = e.hom ≫ U.toBase ∧ X[B.fan].IsProjectiveOver ℂ ∧
+      (W : Scheme) (U : BlowupTower X[k₀,B.fan] (1 + (1 + n)) W)
+      (hU : IsClosedPointTower X[k₀,B.fan] U) (e : Y ≅ W) (l' : Fin (n + 1)),
+      j.succAbove l' = l ∧ B.hom = e.hom ≫ U.toBase ∧ X[k₀,B.fan].IsProjectiveOver k₀ ∧
       let g' := e.inv ≫ g
       g' ≫ (P ↘ S) = U.toBase ≫ f[B.fan] ∧ Scheme.BirationalOver g' (𝟙 P) ∧
       let : SmoothOfRelativeDimension 2 f[B.fan] := by
-        rw [B.fan.algebraicRealization_over, ← dim(b)]
-        exact B.fan.smoothOfRelativeDimension_algebraicRealizationStructureMap B.isRegular
-      B[B.fan,B.isComplete].comap U.toBase = D.comap e.inv * hU.ramificationIdealSheafToBase ℂ ∧
+        rw [B.fan.finiteFanScheme_over k₀, ← dim(b)]
+        exact B.fan.smoothOfRelativeDimension_finiteFanSchemeToSpec k₀ B.isRegular
+      B[B.fan,B.isComplete].comap U.toBase = D.comap e.inv * hU.ramificationIdealSheafToBase k₀ ∧
       let y := (U.picardMarking hU f[B.fan]).symm (Additive.ofMul (pullback g' H))
       let C' := C[b',0,B.isRegular,r',hr']
       let β' := C'.repr y.1 1
@@ -179,10 +182,10 @@ theorem exists_sarkisov_path_of_quadric_corner_and_smooth_centers
   dsimp only at hA hAt
   subst Δ
   obtain rfl : f = T.toBase := eq_of_heq hAt
-  let A : LogarithmicProjection i D := ⟨Φ, hΔreg, hΔcomp, _, hfOver, hfDom, hfPole⟩
+  let A : LogarithmicProjection k₀ i D := ⟨Φ, hΔreg, hΔcomp, _, hfOver, hfDom, hfPole⟩
   obtain ⟨Ψ, F, hΨ, hcΨ, hF, s, t, _, _, _, d, r₁, hr₁, q, Z, U, hU, e, c', l',
       _, _, hq, hq', hidx, _, _, hreturn⟩ :=
-    hT.exists_quadric_resolution_of_corner_and_smooth_centers b hΦ hc r hr σ hσ
+    hT.exists_quadric_resolution_of_corner_and_smooth_centers k₀ b hΦ hc r hr σ hσ
       g hg hbir j l hj hjfirst c hl hlfirst
   let ρ := r₁ (2 : Fin 4)
   let hOpp := Fan.hull_neg_primitiveGenerator_mem_of_hirzebruch_section_two d 1 r₁ hr₁
@@ -196,51 +199,52 @@ theorem exists_sarkisov_path_of_quadric_corner_and_smooth_centers
   let : Nonempty Ψ.cones := hcΨ.nonempty_cones
   let : Nonempty Θ.cones := hcΘ.nonempty_cones
   let : SmoothOfRelativeDimension 2 f[Ψ] := by
-    rw [Ψ.algebraicRealization_over, ← dim(d)]
-    exact Ψ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΨ
+    rw [Ψ.finiteFanScheme_over k₀, ← dim(d)]
+    exact Ψ.smoothOfRelativeDimension_finiteFanSchemeToSpec k₀ hΨ
   let : SmoothOfRelativeDimension 2 f[Θ] := by
-    rw [Θ.algebraicRealization_over, ← dim(d)]
-    exact Θ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΘ
+    rw [Θ.finiteFanScheme_over k₀, ← dim(d)]
+    exact Θ.smoothOfRelativeDimension_finiteFanSchemeToSpec k₀ hΘ
   let : IsIntegral Z := hU.isIntegral f[Ψ]
   let : IsModification U.toBase := hU.isModification_of_smoothOfRelativeDimension_two f[Ψ]
-  obtain ⟨b', hr₂, _, U₀, k₀, W, U', hU', k₁, hμ, hτ, hg', hbir', ha', hβ', horders, hpos,
+  obtain ⟨b', hr₂, _, U₀, u₀, W, U', hU', k₁, hμ, hτ, hg', hbir', ha', hβ', horders, hpos,
       _, hLOver, hMOver, hBOver, hpole⟩ := hreturn
   obtain ⟨_, hLpole, hMpole, hBpole, hUpole⟩ := hpole D hfPole
   -- Read the mutation and the ruling exchange on the original resolving surface.
   let τ := Θ.quadricRulingExchange b' hΘ hcΘ r₂ hr₂
-  let p := e.hom ≫ k₀.hom ≫ U₀.toBase
+  let p := e.hom ≫ u₀.hom ≫ U₀.toBase
   let e' := e ≪≫ k₁
   let p' := e'.hom ≫ U'.toBase
-  have hp' : p ≫ τ.toFanHom.algebraicMap = p' := by
+  have hp' : p ≫ (τ.toFanHom.finiteFanSchemeHom k₀) = p' := by
     simpa only [p, p', e', Iso.trans_hom, Category.assoc] using congrArg (e.hom ≫ ·) hτ
   let : IsModification U'.toBase := hU'.isModification_of_smoothOfRelativeDimension_two f[Θ]
-  let : IsDominant (p ≫ τ.toFanHom.algebraicMap) :=
+  let : IsDominant (p ≫ (τ.toFanHom.finiteFanSchemeHom k₀)) :=
     hp'.symm ▸ inferInstanceAs (IsDominant p')
-  have hpDom : IsDominant p := IsModification.isDominant_of_comp p τ.toFanHom.algebraicMap
-  let L : LogarithmicProjection i D :=
+  have hpDom : IsDominant p := IsModification.isDominant_of_comp p
+    (τ.toFanHom.finiteFanSchemeHom k₀)
+  let L : LogarithmicProjection k₀ i D :=
     ⟨Ψ, hΨ, hcΨ, e.hom ≫ U.toBase, hLOver, inferInstance, hLpole⟩
-  let M : LogarithmicProjection i D := ⟨Θ, hΘ, hcΘ, p, hMOver, hpDom, hMpole⟩
-  let B : LogarithmicProjection i D :=
+  let M : LogarithmicProjection k₀ i D := ⟨Θ, hΘ, hcΘ, p, hMOver, hpDom, hMpole⟩
+  let B : LogarithmicProjection k₀ i D :=
     ⟨Θ, hΘ, hcΘ, p', by simpa only [p', e', Iso.trans_hom, Category.assoc] using hBOver,
       inferInstance, by simpa only [p', e', Iso.trans_hom, Category.assoc] using hBpole⟩
   let : Nonempty F.cones := (s.isComplete_iff.mpr hc).nonempty_cones
-  let : IsModification π[s] := s.isModification_algebraicMap hΦ hF hc.nonempty_cones dim(b)
+  let : IsModification π[s] := s.isModification_finiteFanSchemeHom k₀ hΦ hF hc.nonempty_cones dim(b)
   let : IsDominant (q ≫ π[s]) := hq.symm ▸ hfDom
   let : IsDominant q := IsModification.isDominant_of_comp q π[s]
   have hμ' : (q ≫ π[t]).toRationalMap.comp
-      (Ψ.mutationPartialMap d (c' : ℂ) ρ.primitiveGenerator_ne_zero
+      (Ψ.mutationPartialMap k₀ d (c' : k₀) ρ.primitiveGenerator_ne_zero
         ρ.hull_primitiveGenerator_mem hOpp).toRationalMap ≍ M.hom.toRationalMap := by
     apply heq_of_eq
     have h := congrArg (fun f ↦ e.hom.toRationalMap.comp f) hμ
     rw [← Scheme.RationalMap.comp_assoc] at h
     simpa only [hq', Scheme.RationalMap.comp_toRationalMap, Scheme.Hom.toRationalMap_compHom]
       using h
-  obtain ⟨path⟩ := exists_mixed_quadric_path A hF s t q hq d ρ c' hOpp hcΨ L rfl
+  obtain ⟨path⟩ := exists_mixed_quadric_path k₀ A hF s t q hq d ρ c' hOpp hcΨ L rfl
     (heq_of_eq hq'.symm) M B rfl rfl τ p HEq.rfl hμ' (heq_of_eq hp')
   -- The transported marking computes the degree at exactly the last vertex.
   refine ⟨B, path, b', r₂, hr₂, W, U', hU', e', l', hidx, rfl,
-    Θ.isProjectiveOver_quadric b' hΘ hcΘ r₂ hr₂, ?_⟩
-  simpa only [e', Iso.trans_inv, Category.assoc, Fan.algebraicRealization_over] using
+    Θ.isProjectiveOver_quadric k₀ b' hΘ hcΘ r₂ hr₂, ?_⟩
+  simpa only [e', Iso.trans_inv, Category.assoc, Fan.finiteFanScheme_over k₀] using
     And.intro hg' (And.intro hbir' (And.intro hUpole ⟨ha', hβ', horders, hpos⟩))
 
 end QPainleve.BlowupTower.IsClosedPointTower

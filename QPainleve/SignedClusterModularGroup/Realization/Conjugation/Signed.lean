@@ -27,20 +27,22 @@ open Scheme
 
 namespace QPainleve.SignedClusterModularGroup.GeometricRealization
 
+variable {k₀ : Type} [Field k₀] [IsAlgClosed k₀]
+
 variable {n : ℕ} [NeZero n] {L₀ L₁ : Type} [AddCommGroup L₀] [AddCommGroup L₁]
   {B₀ : BilinForm ℤ L₀} {B₁ : BilinForm ℤ L₁} {d₀ : ZMod n → L₀} {d₁ : ZMod n → L₁}
 
-local notation "S" => Spec (CommRingCat.of ℂ)
-local notation "X[" r "]" => scheme ℂ (Fin r →₀ ℤ)
-local notation "Maps[" E "]" => (SignedClusterModularGroup ℂ E)ᵐᵒᵖ
-local notation "eval[" E "," v "]" => op (signedClusterModularGroupMap ℂ E (End.of v))
+local notation "S" => Spec (CommRingCat.of k₀)
+local notation "X[" coeff "," r "]" => scheme coeff (Fin r →₀ ℤ)
+local notation "Maps[" E "]" => (SignedClusterModularGroup k₀ E)ᵐᵒᵖ
+local notation "eval[" E "," v "]" => op (signedClusterModularGroupMap k₀ E (End.of v))
 
 variable {r : ℕ} {E₀ E₁ : SkewExchangeMatrix (Fin r)}
-  {T₀ T₁ : Over S} [Nonempty T₀.left] [Smooth T₀.hom] [PreirreducibleSpace T₀.left]
+  {T₀ T₁ : Over (Spec (.of k₀))} [Nonempty T₀.left] [Smooth T₀.hom] [PreirreducibleSpace T₀.left]
   [Nonempty T₁.left] [Smooth T₁.hom]
-  {P₀ : Point T₀ → MarkedSurface ℂ n B₀ X[r]} {P₁ : Point T₁ → MarkedSurface ℂ n B₁ X[r]}
+  {P₀ : Point T₀ → MarkedSurface k₀ n B₀ X[k₀,r]} {P₁ : Point T₁ → MarkedSurface k₀ n B₁ X[k₀,r]}
   {C : T₀.left.PartialMap T₁.left} [IsDominant C.hom] [C.IsOver T₀.hom T₁.hom]
-  {w : Word E₀ E₁} (R : GeometricRealization P₀ P₁ C (w.xRationalMap ℂ))
+  {w : Word E₀ E₁} (R : GeometricRealization P₀ P₁ C (w.xRationalMap k₀))
   {h₀ : ∀ c, (P₀ c).pair.hom.left.ker.IsEffectiveCartier}
   {h₁ : ∀ c, (P₁ c).pair.hom.left.ker.IsEffectiveCartier}
   (hd₀ : ∀ c j, (P₀ c).boundaryClass (h₀ c) j = d₀ j)
@@ -49,11 +51,11 @@ variable {r : ℕ} {E₀ E₁ : SkewExchangeMatrix (Fin r)}
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {Φ : Fan i} [hΦ₀ : Nonempty Φ.cones]
   {b : Module.Basis (Fin 2) ℤ N} {s : Fin r → Φ.Ray} {hΦ : Φ.IsRegular}
-  {m : ℕ} [NeZero m] [PrestableFamily ((Φ.boundaryIdeal hΦ₀).subscheme ↘ S)]
-  {γ : Type*} {p : γ → ((Φ.boundaryIdeal hΦ₀).subscheme ↘ S).smoothLocus}
+  {m : ℕ} [NeZero m] [PrestableFamily ((Φ.toricBoundaryIdeal k₀ hΦ₀).subscheme ↘ Spec (.of k₀))]
+  {γ : Type*} {p : γ → ((Φ.toricBoundaryIdeal k₀ hΦ₀).subscheme ↘ Spec (.of k₀)).smoothLocus}
   {T : NodalCycleNumbering p m} {origin : ZMod m}
-  {ι : L₁ →ₗ[ℤ] Additive (LineBundleClass Φ.algebraicRealization) × (Fin r → ℤ)}
-  {centers : Point T₁ → Multiplicative (Fin r → ℤ) →* ℂˣ}
+  {ι : L₁ →ₗ[ℤ] Additive (LineBundleClass (Φ.finiteFanScheme k₀)) × (Fin r → ℤ)}
+  {centers : Point T₁ → Multiplicative (Fin r → ℤ) →* k₀ˣ}
 
 local notation "Models[" D "]" =>
   HasToricTargetModels (b := b) (s := s) (hΦ := hΦ) (T := T) (origin := origin)
@@ -72,19 +74,19 @@ theorem signedPicardHom_base_change
       (hD : IsDominant D.hom) (hDO : D.IsOver T₀.hom T₀.hom),
       letI := hD
       letI := hDO
-      ∃ A : GeometricRealization P₀ P₀ D (v.xRationalMap ℂ),
+      ∃ A : GeometricRealization P₀ P₀ D (v.xRationalMap k₀),
         ρ₀ eval[E₀,v] = A.toSignedBoundaryIsometry d₀ h₀ hd₀)
     (hreal₁ : ∀ v : Word E₁ E₁, ∃ (J : T₁.left.PartialMap T₁.left)
       (hJ : IsDominant J.hom) (hJO : J.IsOver T₁.hom T₁.hom),
       letI := hJ
       letI := hJO
-      ∃ B : GeometricRealization P₁ P₁ J (v.xRationalMap ℂ),
+      ∃ B : GeometricRealization P₁ P₁ J (v.xRationalMap k₀),
         Models[J] ∧ ρ₁ eval[E₁,v] = B.toSignedBoundaryIsometry d₁ h₁ hd₁) :
-    ρ₁.comp (MulEquiv.op (signedClusterModularGroupCongr ℂ w)).toMonoidHom =
+    ρ₁.comp (MulEquiv.op (signedClusterModularGroupCongr k₀ w)).toMonoidHom =
       (R.signedBoundaryIsometryGroupCongr hd₀ hd₁).toMonoidHom.comp ρ₀ := by
   apply MonoidHom.ext
   intro g
-  obtain ⟨loop, hloop⟩ := signedClusterModularGroupMap_surjective ℂ E₀ g.unop
+  obtain ⟨loop, hloop⟩ := signedClusterModularGroupMap_surjective k₀ E₀ g.unop
   let v : Word E₀ E₀ := loop.asHom
   let u : Word E₁ E₁ := (w.reverse.comp v).comp w
   obtain ⟨D, hD, hDO, A, hA⟩ := hreal₀ v
@@ -93,10 +95,10 @@ theorem signedPicardHom_base_change
   let := hDO
   let := hJ
   let := hJO
-  have hcomp := w.xRationalMap_comp_eq_of_xPullback_eq_conj ℂ (v := v) (u := u) rfl
+  have hcomp := w.xRationalMap_comp_eq_of_xPullback_eq_conj k₀ (v := v) (u := u) rfl
   obtain ⟨hpic, hsign⟩ := R.picard_conjugation_of_comp_xMap_eq A B hcomp hc hι hindex hC hmodel
   have hg : g = eval[E₀,v] := op_unop g ▸ congrArg op hloop.symm
-  have hcongr : MulEquiv.op (signedClusterModularGroupCongr ℂ w) (eval[E₀,v]) = eval[E₁,u] := by
+  have hcongr : MulEquiv.op (signedClusterModularGroupCongr k₀ w) (eval[E₀,v]) = eval[E₁,u] := by
     simp only [MulEquiv.op_apply_apply, Function.comp_apply, unop_op,
       signedClusterModularGroupCongr_map]
     rfl

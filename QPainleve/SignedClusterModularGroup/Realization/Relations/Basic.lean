@@ -20,7 +20,7 @@ import QPainleve.SignedClusterModularGroup.Realization.Orthogonal
 For loops realized in a fixed marked toric presentation, inversion parity, the action on
 the charge kernel, and the forward image of component zero determine the X pullback.
 The tropical and monomial actions give necessity over any field. For sufficiency,
-the marked Picard and ordered boundary actions give equality over ℂ, which specializes
+the marked Picard and ordered boundary actions give equality over k₀, which specializes
 to any field. The kernel action is compared on a finite integral basis, and tropical
 evaluation gives the forward index by a finite search among the surviving rays.
 -/
@@ -33,18 +33,20 @@ open QPainleve.CharacterTorus QPainleve.Cluster QPainleve.SignedBoundaryIsometry
 
 namespace QPainleve.SignedClusterModularGroup.GeometricRealization
 
+variable {k₀ : Type} [Field k₀] [IsAlgClosed k₀]
+
 variable {l n : ℕ} [NeZero n] {L : Type} [AddCommGroup L]
   {B : LinearMap.BilinForm ℤ L} {E : SkewExchangeMatrix (Fin l)}
 
-local notation "S" => Spec (CommRingCat.of ℂ)
+local notation "S" => Spec (CommRingCat.of k₀)
 local notation "Cent" => (Fin l → ℤ)
-local notation "T" => Over.mk (structureMap ℂ Cent)
+local notation "T" => Over.mk (structureMap k₀ Cent)
 local notation "D[" M "]" => Scheme.Hom.ker (Over.Hom.left (Arrow.hom (MarkedSurface.pair M)))
-local notation "eval[" w "]" => op (signedClusterModularGroupMap ℂ E (End.of w))
+local notation "eval[" w "]" => op (signedClusterModularGroupMap k₀ E (End.of w))
 local notation "η[" w "]" => ((-1 : ℤˣ) ^ (Path.inversionCount w))
 
-variable {P : Point (Over.mk (structureMap ℂ (Fin l → ℤ))) →
-    MarkedSurface ℂ n B (Spec (CommRingCat.of (LaurentRing ℂ (Fin l))))}
+variable {P : Point (Over.mk (structureMap k₀ (Fin l → ℤ))) →
+    MarkedSurface k₀ n B (Spec (CommRingCat.of (LaurentRing k₀ (Fin l))))}
   (D : ZMod n → L) (hD : ∀ c, D[P c].IsEffectiveCartier)
   (hmark : ∀ c j, (P c).boundaryClass (hD c) j = D j)
 
@@ -52,15 +54,15 @@ local notation "M" => Submodule.span ℤ (Set.range D)
 local notation "Orth" => B.orthogonal M
 local notation "δ" => ∑ j : ZMod n, D j
 
-variable {C C' : (scheme ℂ (Fin l → ℤ)).PartialMap (scheme ℂ (Fin l → ℤ))}
+variable {C C' : (scheme k₀ (Fin l → ℤ)).PartialMap (scheme k₀ (Fin l → ℤ))}
   [IsDominant C.hom] [IsDominant C'.hom]
-  [C.IsOver (Over.mk (structureMap ℂ (Fin l → ℤ))).hom
-    (Over.mk (structureMap ℂ (Fin l → ℤ))).hom]
-  [C'.IsOver (Over.mk (structureMap ℂ (Fin l → ℤ))).hom
-    (Over.mk (structureMap ℂ (Fin l → ℤ))).hom]
+  [C.IsOver (Over.mk (structureMap k₀ (Fin l → ℤ))).hom
+    (Over.mk (structureMap k₀ (Fin l → ℤ))).hom]
+  [C'.IsOver (Over.mk (structureMap k₀ (Fin l → ℤ))).hom
+    (Over.mk (structureMap k₀ (Fin l → ℤ))).hom]
   {w v : Word E E}
-  (R : GeometricRealization P P C (w.xRationalMap ℂ))
-  (R' : GeometricRealization P P C' (v.xRationalMap ℂ))
+  (R : GeometricRealization P P C (w.xRationalMap k₀))
+  (R' : GeometricRealization P P C' (v.xRationalMap k₀))
 
 local notation "sPic" R:arg => (GeometricRealization.toSignedBoundaryIsometry R D hD hmark)
 local notation "res[" g "]" => Subtype.val (signedOrthogonalRestriction B D g)
@@ -97,17 +99,17 @@ private theorem marked_actions_eq_of_restriction_eq
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {Φ : Fan i} [hΦ₀ : Nonempty Φ.cones] {m : ℕ} [NeZero m]
   {b : Module.Basis (Fin 2) ℤ N} {s : Fin l → Φ.Ray} {hΦ : Φ.IsRegular}
-  [PrestableFamily ((Φ.boundaryIdeal hΦ₀).subscheme ↘ S)]
-  {γ : Type*} {a : γ → ((Φ.boundaryIdeal hΦ₀).subscheme ↘ S).smoothLocus}
+  [PrestableFamily ((Φ.toricBoundaryIdeal k₀ hΦ₀).subscheme ↘ Spec (.of k₀))]
+  {γ : Type*} {a : γ → ((Φ.toricBoundaryIdeal k₀ hΦ₀).subscheme ↘ Spec (.of k₀)).smoothLocus}
   {τ : NodalCycleNumbering a m} {origin : ZMod m}
-  {ι : L →ₗ[ℤ] Additive (LineBundleClass Φ.algebraicRealization) × (Fin l → ℤ)}
+  {ι : L →ₗ[ℤ] Additive (LineBundleClass (Φ.finiteFanScheme k₀)) × (Fin l → ℤ)}
 
 
 local notation "Charge" => LinearMap.ker (Fan.rayChargeMap s)
 local notation "Qform" => LinearMap.BilinForm.prod
-  (Chow.intersectionBilinForm ℂ Φ.algebraicRealization)
+  (Chow.intersectionBilinForm k₀ (Φ.finiteFanScheme k₀))
   (-(dotProductBilin ℤ ℤ : LinearMap.BilinForm ℤ Cent))
-local notation "χ[" p "]" => pointsEquiv ℂ Cent
+local notation "χ[" p "]" => pointsEquiv k₀ Cent
   (Subtype.mk (Over.Hom.left (p : Point T)) (Over.w (p : Point T)))
 local notation "dst[" C "," x "]" =>
   x ≫ PartialMap.domainTarget (X := T) (Y := T) C
@@ -115,9 +117,9 @@ local notation "src[" C "," x "]" =>
   x ≫ PartialMap.domainSource (X := T) (Y := T) C
 local notation "fiberAt" c:arg => ContractedToricFiber b s hΦ τ origin ι (χ[c]) (P c)
 variable
-  [Φ.algebraicRealization.IsProjectiveOver ℂ]
-  [SmoothOfRelativeDimension 2 (Φ.algebraicRealization ↘ S)]
-  [LinearMap.IsPerfPair ((Chow.intersectionBilinForm ℂ Φ.algebraicRealization).prod
+  [(Φ.finiteFanScheme k₀).IsProjectiveOver k₀]
+  [SmoothOfRelativeDimension 2 ((Φ.finiteFanScheme k₀) ↘ Spec (.of k₀))]
+  [LinearMap.IsPerfPair ((Chow.intersectionBilinForm k₀ (Φ.finiteFanScheme k₀)).prod
     (-(dotProductBilin ℤ ℤ : LinearMap.BilinForm ℤ (Fin l → ℤ))))]
 
 include hmark in
@@ -130,28 +132,28 @@ lie outside the centers reached by the two realizations. Nodal contractions at t
 reached centers identify their numbered boundary rays with that reference table.
 With the basis vectors and order table supplied as integers, `decidable_of_iff`
 transfers decidable equality of the computed invariants to equality of the X pullbacks. -/
-theorem xPullback_eq_iff_signedLoopInvariants_eq {k : Type*} [Field k]
+theorem xPullback_eq_iff_signedLoopInvariants_eq {k : Type*} [Field k] [CharZero k₀]
     [Module.Free ℤ L] [Module.Finite ℤ L] [B.IsPerfPair] (hSymm : B.IsSymm)
     (hGram : ∀ j k, B (D j) (D k) =
       (-2 : ℤ) * (if j = k then 1 else 0) + (if k = j + 1 then 1 else 0) +
         (if k = j - 1 then 1 else 0))
     (hηw : R.orientation = η[w]) (hηv : R'.orientation = η[v])
-    (hC : C.hom = C.domain.ι ≫ (w.centerIso ℂ).hom)
-    (hC' : C'.hom = C'.domain.ι ≫ (v.centerIso ℂ).hom)
+    (hC : C.hom = C.domain.ι ≫ (w.centerIso k₀).hom)
+    (hC' : C'.hom = C'.domain.ι ≫ (v.centerIso k₀).hom)
     (hcΦ : Φ.IsComplete)
     (hE : E.matrix = chargeExchangeMatrix b.detDualEquiv.toLinearMap (Fan.rayChargeMap s))
     (hindex : (Fan.rayChargeMap s).range.toAddSubgroup.index ≠ 0)
     (u : ZMod m ≃ Φ.Ray)
-    (hvertices : ∀ j, (Φ.boundaryIdeal hΦ₀).subscheme.dualGraphVertexEquiv a (τ.vertex j) =
-      Φ.boundaryNormalizationComponentEquiv hΦ (u j))
+    (hvertices : ∀ j, (Φ.toricBoundaryIdeal k₀ hΦ₀).subscheme.dualGraphVertexEquiv a (τ.vertex j) =
+      Φ.boundaryNormalizationComponentEquiv k₀ hΦ (u j))
     (hdet : ∀ j, b.detDualEquiv (u j).primitiveGenerator (u (j + 1)).primitiveGenerator = 1)
     (hnodes : ∀ j, ∃ σ : Φ.cones, (u j).toCone ≤ σ ∧ (u (j + 1)).toCone ≤ σ ∧
-      (Φ.boundaryIdeal hΦ₀).subschemeι
-        ((Φ.boundaryIdeal hΦ₀).subscheme.dualGraphEdgeEquiv a (τ.edge j)).val =
-        Φ.distinguishedPointHom σ (IsLocalRing.closedPoint ℂ))
+      (Φ.toricBoundaryIdeal k₀ hΦ₀).subschemeι
+        ((Φ.toricBoundaryIdeal k₀ hΦ₀).subscheme.dualGraphEdgeEquiv a (τ.edge j)).val =
+        (Φ.distinguishedSection (R := k₀) σ) (IsLocalRing.closedPoint k₀))
     (e : Orth ≃ₗ[ℤ] Charge)
     (he : ∀ x : Charge, ι (e.symm x).val =
-      ((Fan.boundaryOrthogonalEquivChargeKernel hΦ s Qform).symm x).val)
+      ((Fan.boundaryOrthogonalEquivChargeKernel k₀ hΦ s Qform).symm x).val)
     {c₀ : Point T} (p₀ : fiberAt c₀) (hnodal₀ : p₀.IsNodalContraction)
     {U : Set (Point T)}
     (p : ∀ c ∈ U, fiberAt c)
@@ -167,7 +169,7 @@ theorem xPullback_eq_iff_signedLoopInvariants_eq {k : Type*} [Field k]
   have hne : E.matrix ≠ 0 := hE.symm ▸
     ((Fan.rayChargeMap s).chargeExchangeMatrix_eq_zero_iff_index_range_eq_zero b
       b.detDualEquiv_self b.detDualEquiv_apply_basis_zero_one).not.mpr hindex
-  refine w.xPullback_eq_iff_signedLoopInvariants_eq_of_charZero v k ℂ hne β _ _ ?_
+  refine w.xPullback_eq_iff_signedLoopInvariants_eq_of_charZero v k k₀ hne β _ _ ?_
   intro h
   let Q := Fan.rayChargeSeed b s hE
   have hcharge : Q.charge = Fan.rayChargeMap s := Fan.rayChargeSeed_charge _ _ _
@@ -198,7 +200,7 @@ theorem xPullback_eq_iff_signedLoopInvariants_eq {k : Type*} [Field k]
   obtain ⟨hpic, hboundary⟩ := marked_actions_eq_of_restriction_eq D hD hmark R R'
     hSymm hB.1 (BoundaryCycle.span_sup_orthogonal_rat hGram hSymm hB)
     horient ((LinearEquiv.autCongr e).injective hres) hj
-  exact (Path.xRationalMap_eq_iff ℂ w v).mp
+  exact (Path.xRationalMap_eq_iff k₀ w v).mp
     (R.xMap_eq_of_marked_actions_on_center_domains R' hcΦ u hvertices hdet hnodes
       (fun x ↦ p _ (hU x).1) (Set.range p₀.boundaryRayEmbedding)
       (.of_nodalContractions hsep p₀ hnodal₀ p hnodal (fun x ↦ (hU x).2))

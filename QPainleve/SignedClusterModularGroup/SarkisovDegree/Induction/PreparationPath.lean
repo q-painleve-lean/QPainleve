@@ -25,7 +25,9 @@ open TauCeti.AlgebraicGeometry Scheme.IdealSheafData
 
 namespace TauCeti.Toric.Fan.LogarithmicProjection
 
-local notation "S" => Spec (CommRingCat.of ℂ)
+variable {k₀ : Type} [Field k₀] [IsAlgClosed k₀]
+
+local notation "S" => Spec (CommRingCat.of k₀)
 local notation "over[" T "]" => OverClass.ofHom ((BlowupTower.toBase T) ≫ _ ↘ S)
 local notation "smooth[" h "]" =>
   IsClosedPointTower.smoothOfRelativeDimension (IsPointTowerWith.isClosedPointTower h) (_ ↘ S)
@@ -38,12 +40,13 @@ local notation "mapPath[" F "," p "]" =>
   @Prefunctor.mapPath _ sarkisovQuiver _ sarkisovQuiver F _ _ p
 
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V] {i : N →+ V}
-  {X : Scheme} [X.Over S] [SmoothOfRelativeDimension 2 (X ↘ S)] [IsIntegral X] [IsNoetherian X]
-  {D : X.IdealSheafData} {A B : LogarithmicProjection i D}
+  {X : Scheme} [X.Over (Spec (.of k₀))] [SmoothOfRelativeDimension 2 (X ↘ Spec (.of k₀))]
+    [IsIntegral X] [IsNoetherian X]
+  {D : X.IdealSheafData} {A B : LogarithmicProjection k₀ i D}
   (hRank : finrank ℤ N = 2) (hD : D.IsEffectiveCartier)
-  (hNode : AtWorstNodalOfRelativeDimensionOne (D.subschemeι ≫ X ↘ S))
+  (hNode : AtWorstNodalOfRelativeDimensionOne (D.subschemeι ≫ X ↘ Spec (.of k₀)))
   {m : ℕ} {Y : Scheme} {T : BlowupTower X m Y}
-  (hT : IsNodalBoundaryTower D (X ↘ S) (𝟙 X) T)
+  (hT : IsNodalBoundaryTower D (X ↘ Spec (.of k₀)) (𝟙 X) T)
 
 local notation "F" => precomposeSarkisovOfNodalTower (i := i) hRank hD hNode hT
 
@@ -57,7 +60,7 @@ theorem HasPlaneTargetDecrease.of_prefix_on_nodalTower :
     let : IsIntegral Y := integral[hT]
     let : IsNoetherian Y := T.isNoetherian
     let hE := hT.radical_comap_toBase hD hNode
-    ∀ {M : LogarithmicProjection i total[D,T]} (_ : SarkisovPath (obj[F,A]) M) {d : ℕ ×ₗ ℕ},
+    ∀ {M : LogarithmicProjection k₀ i total[D,T]} (_ : SarkisovPath (obj[F,A]) M) {d : ℕ ×ₗ ℕ},
       HasPlaneTargetDecrease M (obj[F,B]) hRank hE.1 hE.2 d →
       HasPlaneTargetDecrease A B hRank hD hNode d := by
   intro hY hSmoothY hIntY hNoethY hE M p d h

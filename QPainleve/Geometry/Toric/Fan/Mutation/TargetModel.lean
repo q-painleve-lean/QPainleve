@@ -33,10 +33,12 @@ open LineBundleClass
 
 namespace TauCeti.Toric.Fan
 
+variable (K : Type) [Field K] [PerfectField K]
+
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {Φ : Fan i} [hΦ₀ : Nonempty Φ.cones]
   (b : Module.Basis (Fin 2) ℤ N) (ρ : Φ.Ray)
-  (hOpp : hull ℝ {i (-ρ.primitiveGenerator)} ∈ Φ.cones) (c : ℂˣ)
+  (hOpp : hull ℝ {i (-ρ.primitiveGenerator)} ∈ Φ.cones) (c : Kˣ)
 
 local notation "v" => Ray.primitiveGenerator ρ
 local notation "hv" => Ray.primitiveGenerator_ne_zero ρ
@@ -52,12 +54,13 @@ local notation "j₁" => Ray.mutationTargetBoundaryι b ρ hOpp c
 variable {n : ℕ}
 
 local notation "targetModel(" t "," d ")" =>
-  internalBlowupTower (h₀ := hΨ₀) b (Fin.cons reverseRay t) (Fin.cons c⁻¹ d)
+  internalBlowupTower K (h₀ := hΨ₀) b (Fin.cons reverseRay t) (Fin.cons c⁻¹ d)
 local notation "targetTail(" t "," d ")" =>
-  alongBoundary (j₁) (fun l ↦ Ray.internalCenter (h₀ := hΨ₀) b (t l) (d l))
+  alongBoundary (j₁) (fun l ↦ Ray.internalCenter K (h₀ := hΨ₀) b (t l) (d l))
 
 omit hΦ₀ in
-private theorem exists_iso_targetModel_targetTail (t : Fin n → (Ψ).Ray) (d : Fin n → ℂˣ) :
+omit [PerfectField K] in
+private theorem exists_iso_targetModel_targetTail (t : Fin n → (Ψ).Ray) (d : Fin n → Kˣ) :
     ∃ e : (targetModel(t,d)).1 ≅ (targetTail(t,d)).1,
       e.hom ≫ (targetTail(t,d)).2.toTower.toBase ≫ (I₁).blowupToBase =
         (targetModel(t,d)).2.toTower.toBase ∧
@@ -66,12 +69,12 @@ private theorem exists_iso_targetModel_targetTail (t : Fin n → (Ψ).Ray) (d : 
         ((P₁).picardHom (a, fun _ ↦ z), x)).toMul =
           ((targetModel(t,d)).2.toTower.picardHom (a, Fin.cons z x)).toMul := by
   let : Nonempty (Ψ).cones := hΨ₀
-  let J := Ray.internalCenter (h₀ := hΨ₀) b (reverseRay) c⁻¹
-  have hJ : J.val.map ((Ψ).boundaryIdeal hΨ₀).subschemeι = I₁ := by
+  let J := Ray.internalCenter K (h₀ := hΨ₀) b (reverseRay) c⁻¹
+  have hJ : J.val.map ((Ψ).toricBoundaryIdeal K hΨ₀).subschemeι = I₁ := by
     rw [Ray.mutationTargetCenterIdeal_eq]
-    exact Ray.map_internalCenter_subschemeι b _ _
-  let D := (Ψ).boundaryIdeal hΨ₀
-  let K := fun l : Fin n ↦ Ray.internalCenter (h₀ := hΨ₀) b (t l) (d l)
+    exact Ray.map_internalCenter_subschemeι K b _ _
+  let D := (Ψ).toricBoundaryIdeal K hΨ₀
+  let K := fun l : Fin n ↦ Ray.internalCenter K (h₀ := hΨ₀) b (t l) (d l)
   have hmodel : targetModel(t,d) = alongBoundary D.subschemeι (Fin.cons J K) := by
     rw [internalBlowupTower_eq_alongBoundary]
     congr 1
@@ -81,12 +84,12 @@ private theorem exists_iso_targetModel_targetTail (t : Fin n → (Ψ).Ray) (d : 
   rw [hmodel]
   exact ⟨e, he, hb, hpic⟩
 
-variable (s : Fin (n + 1) → Φ.Ray) (d : Fin (n + 1) → ℂˣ)
+variable (s : Fin (n + 1) → Φ.Ray) (d : Fin (n + 1) → Kˣ)
 
-local notation "A" => internalBlowupTower b s d
+local notation "A" => internalBlowupTower K b s d
 local notation "πA" => QPainleve.BlowupTower.toBase (WithBoundary.toTower (Sigma.snd A))
 local notation "q" => Scheme.PartialMap.toRationalMap
-  (Fan.mutationPartialMap Φ b (c : ℂ) hv hp hOpp)
+  (Fan.mutationPartialMap K Φ b (c : K) hv hp hOpp)
 local notation "rays(" k ")" => (fun l ↦ shear (s (Fin.succAbove k l)))
 local notation "params(" k ")" => (fun l ↦
   d (Fin.succAbove k l) * c ^ max (b.det ![Ray.primitiveGenerator (s (Fin.succAbove k l)), v]) 0)
@@ -100,9 +103,9 @@ the elementary transformation's boundary isomorphism. The pivot Picard equivalen
 computes the two pivot coordinates (toric class and pivot coefficient), and each
 other exceptional coefficient is carried back to its original label. -/
 theorem Ray.exists_ordered_target_model_of_resolves (hΦ : Φ.IsRegular)
-    (r : A.1 ⟶ (Ψ).algebraicRealization)
-    (hr : have := isIntegral_internalBlowupTower b s d hΦ
-          have := isModification_internalBlowupTower_toBase b s d hΦ
+    (r : A.1 ⟶ ((Ψ).finiteFanScheme K))
+    (hr : have := isIntegral_internalBlowupTower K b s d hΦ
+          have := isModification_internalBlowupTower_toBase K b s d hΦ
           (πA).toRationalMap.comp q = r.toRationalMap) :
     ∃ k : Fin (n + 1), s k = ρ ∧ d k = c ∧ (∀ l < k, (s l, d l) ≠ (ρ, c)) ∧
       let B := targetModel(rays(k),params(k))
@@ -110,12 +113,12 @@ theorem Ray.exists_ordered_target_model_of_resolves (hΦ : Φ.IsRegular)
         A.2.boundaryι ≫ e.hom =
           (ρ.mutationBoundaryIso b hOpp c hΦ).hom ≫ B.2.boundaryι ∧
         ∀ a z x,
-          let y := mutationPicardEquiv b (fun _ : Fin 1 ↦ ρ) 0 hOpp hΦ (a, fun _ ↦ z)
+          let y := mutationPicardEquiv K b (fun _ : Fin 1 ↦ ρ) 0 hOpp hΦ (a, fun _ ↦ z)
           pullback e.hom (B.2.toTower.picardHom (a, Fin.cons z x)).toMul =
             (A.2.toTower.picardHom (y.1, k.insertNth (y.2 0) x)).toMul := by
   obtain ⟨k, hk, hd, hfirst, f, g, hg, _, hfb, hr', hgb, hfPic⟩ :=
-    ρ.exists_ordered_mutation_factorization_of_resolves b c s d hOpp hΦ r hr
-  obtain ⟨u, hu, hub, huPic⟩ := exists_iso_targetModel_targetTail b ρ hOpp c (rays(k)) (params(k))
+    ρ.exists_ordered_mutation_factorization_of_resolves K b c s d hOpp hΦ r hr
+  obtain ⟨u, hu, hub, huPic⟩ := exists_iso_targetModel_targetTail K b ρ hOpp c (rays(k)) (params(k))
   refine ⟨k, hk, hd, hfirst, f ≪≫ g ≪≫ u.symm, ?_, ?_, ?_⟩
   · simpa only [Iso.trans_hom, Iso.symm_hom, Category.assoc, ← hu, Iso.inv_hom_id_assoc]
       using hr'
@@ -128,8 +131,8 @@ theorem Ray.exists_ordered_target_model_of_resolves (hΦ : Φ.IsRegular)
     simp only [Iso.trans_hom, Iso.symm_hom, Category.assoc, Iso.inv_hom_id,
       Category.comp_id]
     rw [← pullback_comp, hg.pullback_picardHom,
-      ρ.pullback_mutationBlowupIso_picardHom b hOpp c hΦ, ofMul_toMul]
-    let y := mutationPicardEquiv b (fun _ : Fin 1 ↦ ρ) 0 hOpp hΦ (a, fun _ ↦ z)
+      ρ.pullback_mutationBlowupIso_picardHom K b hOpp c hΦ, ofMul_toMul]
+    let y := mutationPicardEquiv K b (fun _ : Fin 1 ↦ ρ) 0 hOpp hΦ (a, fun _ ↦ z)
     let x₀ : Fin (n + 1) → ℤ := k.insertNth (y.2 0) x
     have hy : (fun _ : Fin 1 ↦ x₀ k) = y.2 := by
       funext j

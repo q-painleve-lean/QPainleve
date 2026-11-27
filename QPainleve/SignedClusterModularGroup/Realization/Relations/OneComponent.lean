@@ -31,28 +31,31 @@ open Scheme Scheme.IdealSheafData
 
 namespace QPainleve.SignedClusterModularGroup.CompleteToricPresentation
 
+variable {k₀ : Type} [Field k₀] [IsAlgClosed k₀] [Uncountable k₀] [CharZero k₀]
+
 open GeometricRealization (Point)
 
-local notation "S" => Spec (CommRingCat.of ℂ)
-local notation "Centers[" r "]" => Over.mk (structureMap ℂ (Fin r → ℤ))
-local notation "XTor[" r "]" => scheme ℂ (Fin r →₀ ℤ)
+local notation "S" => Spec (CommRingCat.of k₀)
+local notation "Centers[" r "]" => Over.mk (structureMap k₀ (Fin r → ℤ))
+local notation "XTor[" r "]" => scheme k₀ (Fin r →₀ ℤ)
 local notation "classOf(" h ")" => (LineBundleClass.mk (IsEffectiveCartier.toInvertibleSheaf h))⁻¹
 
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {b : Module.Basis (Fin 2) ℤ N} {r : ℕ}
   {L γ : Type} [AddCommGroup L] {B : LinearMap.BilinForm ℤ L}
-  {E : SkewExchangeMatrix (Fin r)} (Q : CompleteToricPresentation i b r L γ)
-  {c : Point Centers[r]} {M : MarkedSurface ℂ 1 B XTor[r]}
+  {E : SkewExchangeMatrix (Fin r)} (Q : CompleteToricPresentation k₀ i b r L γ)
+  {c : Point (Over.mk (QPainleve.CharacterTorus.structureMap k₀ (Fin r →
+    ℤ)))} {M : MarkedSurface k₀ 1 B (QPainleve.CharacterTorus.scheme k₀ (Fin r →₀ ℤ))}
   (href : Q.HasNodalModel c M)
   (hE : E.matrix = chargeExchangeMatrix b.detDualEquiv.toLinearMap (Fan.rayChargeMap Q.rays))
   (hprim : IsPrimitive (Additive.ofMul classOf(M.isEffectiveCartier_boundaryIdeal)))
-  (hnef : (classOf(M.isEffectiveCartier_boundaryIdeal)).IsNef ℂ (M.surface ↘ S))
-  (hsq : Chow.classIntersectionNumber ℂ M.surface classOf(M.isEffectiveCartier_boundaryIdeal)
+  (hnef : (classOf(M.isEffectiveCartier_boundaryIdeal)).IsNef k₀ (M.surface ↘ Spec (.of k₀)))
+  (hsq : Chow.classIntersectionNumber k₀ M.surface classOf(M.isEffectiveCartier_boundaryIdeal)
     classOf(M.isEffectiveCartier_boundaryIdeal) = 0)
 
 local notation "D" => M.boundaryClass M.isEffectiveCartier_boundaryIdeal
-local notation "Γ" => (SignedClusterModularGroup ℂ E)ᵐᵒᵖ
-local notation "act" => exchangeKernelAction ℂ E
+local notation "Γ" => (SignedClusterModularGroup k₀ E)ᵐᵒᵖ
+local notation "act" => exchangeKernelAction k₀ E
 local notation "orth" => B.orthogonal (Submodule.span ℤ (Set.range D))
 
 include href hE hprim hnef hsq in
@@ -70,7 +73,7 @@ theorem exists_picardEquiv_with_faithful_exchangeKernelAction :
   have hcentral := GeometricRealization.exchangeKernelAction_picardEquiv_symm_centralSign
     A.exchangeKernelAction_eq (by decide : 1 ≤ 2)
   have hinj := Q.exchangeKernelAction_injective_of_squarefree
-    href hE hprim hnef hsq squarefree_one ℂ
+    href hE hprim hnef hsq squarefree_one k₀
   refine ⟨A.picardEquiv, A.exchangeKernelEquiv,
     fun x ↦ neg_eq_iff_eq_neg.mp (A.coe_exchangeKernelEquiv_apply x).symm,
     A.exchangeKernelAction_apply, hinj, fun g ↦ ⟨?_, ?_⟩⟩

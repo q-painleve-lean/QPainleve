@@ -5,7 +5,7 @@ Authors: The QPainleve contributors
 -/
 module
 
-public import QPainleve.Geometry.Toric.Fan.Point
+public import QPainleve.Geometry.Toric.BaseChange.Point
 public import QPainleve.Geometry.Toric.Fan.Ruling.Basic
 
 /-!
@@ -24,7 +24,8 @@ open TauCeti.AlgebraicGeometry (projectiveLine)
 
 namespace TauCeti.Toric.Fan
 
-variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
+variable (K : Type) [CommRing K] {N : Type} {V : Type*}
+  [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {Φ Ψ : Fan i}
 
 /-- In the projective chart determined by the sign of the character, the image of a
@@ -36,26 +37,26 @@ theorem distinguishedPointHom_comp_characterRuling
     (σ : Φ.cones) (k : Fin 2)
     (hm : (if k = 0 then m else -m) ∈ dualSemigroup Φ.lattice σ.val)
     (hσ : ∃ x ∈ σ.val, Φ.lattice.realCharacter m x ≠ 0) :
-    Φ.distinguishedPointHom σ ≫ Φ.characterRuling m h =
-      projectiveLine.polynomialPoint ℂ (RingHom.id ℂ) k 0 := by
+    Φ.distinguishedSection (R := K) σ ≫ Φ.characterRuling K m h =
+      projectiveLine.polynomialPoint K (RingHom.id K) k 0 := by
   classical
   let a : dualSemigroup Φ.lattice σ.val := ⟨_, hm⟩
-  let d := distinguishedPoint Φ.lattice (⊤ : σ.val.Face)
-  have hd : d (MonoidAlgebra.of ℂ _ (ofAdd a)) = 0 := by
+  let d := facePointAlgebraHom Φ.lattice (⊤ : σ.val.Face) K
+  have hd : d (AddMonoidAlgebra.single a 1) = 0 := by
     obtain ⟨x, hx, hx₀⟩ := hσ
-    rw [MonoidAlgebra.of_apply, distinguishedPoint_apply_single, ite_eq_right]
+    rw [facePointAlgebraHom_single, ite_eq_right]
     intro hz
     have hz₀ := hz x hx
     by_cases hk : k = 0 <;> simp [a, hk, hx₀] at hz₀
-  have hev : d.comp (Polynomial.aeval (MonoidAlgebra.of ℂ _ (ofAdd a))) =
+  have hev : d.comp (Polynomial.aeval (AddMonoidAlgebra.single a 1)) =
       Polynomial.aeval 0 := by
     apply Polynomial.algHom_ext
     simpa only [AlgHom.comp_apply, Polynomial.aeval_X] using hd
-  rw [distinguishedPointHom_def, Category.assoc,
-    Φ.affineToricChartι_comp_characterRuling m h σ k hm, ← Spec.map_comp_assoc,
+  rw [distinguishedSection_def, Category.assoc,
+    Φ.affineToricChartι_comp_characterRuling K m h σ k hm, ← Spec.map_comp_assoc,
     ← CommRingCat.ofHom_comp, projectiveLine.polynomialPoint_def]
-  exact congrArg (fun f : Polynomial ℂ →+* ℂ ↦
-    Spec.map (CommRingCat.ofHom f) ≫ projectiveLine.polynomialChartι ℂ k)
+  exact congrArg (fun f : Polynomial K →+* K ↦
+    Spec.map (CommRingCat.ofHom f) ≫ projectiveLine.polynomialChartι K k)
     (congrArg AlgHom.toRingHom hev)
 
 /-- The source corner and the reverse corner of a toric Hirzebruch link have the
@@ -70,9 +71,9 @@ theorem characterRuling_distinguishedPointHom_eq_of_hirzebruch_link
         Φ.lattice.realCharacter (b.coord 1).toAddMonoidHom x ≤ 0)
     (h₁ : ∀ γ : Ψ.cones, (∀ x ∈ γ.val, 0 ≤ Ψ.lattice.realCharacter
       (b.coord 1).toAddMonoidHom x) ∨ ∀ x ∈ γ.val,
-        Ψ.lattice.realCharacter (b.coord 1).toAddMonoidHom x ≤ 0) (x : Spec (.of ℂ)) :
-    Φ.characterRuling (b.coord 1).toAddMonoidHom h₀ (Φ.distinguishedPointHom σ x) =
-      Ψ.characterRuling (b.coord 1).toAddMonoidHom h₁ (Ψ.distinguishedPointHom τ x) := by
+        Ψ.lattice.realCharacter (b.coord 1).toAddMonoidHom x ≤ 0) (x : Spec (.of K)) :
+    Φ.characterRuling K (b.coord 1).toAddMonoidHom h₀ (Φ.distinguishedSection (R := K) σ x) =
+      Ψ.characterRuling K (b.coord 1).toAddMonoidHom h₁ (Ψ.distinguishedSection (R := K) τ x) := by
   let m := (b.coord 1).toAddMonoidHom
   have hs : m ∈ dualSemigroup Φ.lattice σ.val := by
     rw [hσ, Set.range_comp, mem_dualSemigroup_hull_image, Set.forall_mem_range]
@@ -88,7 +89,7 @@ theorem characterRuling_distinguishedPointHom_eq_of_hirzebruch_link
     refine ⟨i (d 1), hτ ▸ subset_hull (Set.mem_insert _ _), ?_⟩
     simp [m, hd₁, IsIntegralLattice.realCharacter_apply]
   rw [← Scheme.Hom.comp_apply, ← Scheme.Hom.comp_apply,
-    Φ.distinguishedPointHom_comp_characterRuling m h₀ σ 0 (by simpa using hs) hsrc,
-    Ψ.distinguishedPointHom_comp_characterRuling m h₁ τ 0 (by simpa using ht) htgt]
+    Φ.distinguishedPointHom_comp_characterRuling K m h₀ σ 0 (by simpa using hs) hsrc,
+    Ψ.distinguishedPointHom_comp_characterRuling K m h₁ τ 0 (by simpa using ht) htgt]
 
 end TauCeti.Toric.Fan

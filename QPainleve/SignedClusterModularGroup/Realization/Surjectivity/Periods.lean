@@ -40,13 +40,15 @@ open Scheme Scheme.IdealSheafData
 
 namespace QPainleve.SignedClusterModularGroup
 
+variable {k₀ : Type} [Field k₀] [IsAlgClosed k₀]
+
 open SignedBoundaryIsometryGroup
 
-local notation "S" => Spec (CommRingCat.of ℂ)
-local notation "Centers[" r "]" => Over.mk (structureMap ℂ (Fin r → ℤ))
-local notation "Xtor[" r "]" => scheme ℂ (Fin r →₀ ℤ)
+local notation "S" => Spec (CommRingCat.of k₀)
+local notation "Centers[" r "]" => Over.mk (structureMap k₀ (Fin r → ℤ))
+local notation "Xtor[" r "]" => scheme k₀ (Fin r →₀ ℤ)
 local notation "D[" M "]" => Scheme.Hom.ker (Over.Hom.left (Arrow.hom (MarkedSurface.pair M)))
-local notation "χ[" c "]" => pointsEquiv ℂ _
+local notation "χ[" c "]" => pointsEquiv k₀ _
   (Subtype.mk (Over.Hom.left c) (Over.w c))
 local notation "center[" c "]" => (fun j ↦ c (ofAdd (Pi.single j 1)))
 
@@ -54,50 +56,53 @@ variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {b : Module.Basis (Fin 2) ℤ N} {r n : ℕ} [NeZero n]
   {L γ : Type} [AddCommGroup L] {B : LinearMap.BilinForm ℤ L}
 
-local instance periodFiberPrestable (M : MarkedSurface ℂ n B Xtor[r]) :
+local instance periodFiberPrestable (M : MarkedSurface k₀ n B Xtor[r]) :
     PrestableFamily (D[M].subscheme ↘ S) :=
   M.prestable_boundaryImage
 
-local instance periodFiberSmooth (M : MarkedSurface ℂ n B Xtor[r]) :
+local instance periodFiberSmooth (M : MarkedSurface k₀ n B Xtor[r]) :
     SmoothOfRelativeDimension 2 (M.surface ↘ S) :=
   M.smooth
 
-local instance periodFiberProjective (M : MarkedSurface ℂ n B Xtor[r]) :
-    M.surface.IsProjectiveOver ℂ :=
+local instance periodFiberProjective (M : MarkedSurface k₀ n B Xtor[r]) :
+    M.surface.IsProjectiveOver k₀ :=
   M.projective
 
 namespace CompleteToricPresentation
 
 open Fan
 
-variable (Q : CompleteToricPresentation i b r L γ)
-  {M : GeometricRealization.Point Centers[r] → MarkedSurface ℂ n B Xtor[r]}
+variable (Q : CompleteToricPresentation k₀ i b r L γ)
+  {M : GeometricRealization.Point (Over.mk (QPainleve.CharacterTorus.structureMap k₀ (Fin r →
+    ℤ))) → MarkedSurface k₀ n B (QPainleve.CharacterTorus.scheme k₀ (Fin r →₀ ℤ))}
 
 local instance periodFanNonempty : Nonempty Q.fan.cones := Q.complete.nonempty_cones
 local instance periodCycleNeZero : NeZero Q.length := Q.neZero
 local instance periodFanPrestable :
-    PrestableFamily ((Q.fan.boundaryIdeal Q.complete.nonempty_cones).subscheme ↘ S) :=
+    PrestableFamily ((Q.fan.toricBoundaryIdeal k₀ Q.complete.nonempty_cones).subscheme ↘ S) :=
   Q.prestable
 
 local notation "ChargeKernel" => LinearMap.ker (rayChargeMap Q.rays)
 
 local notation "Aux" => LinearMap.BilinForm.prod
-  (Chow.intersectionBilinForm ℂ Q.fan.algebraicRealization)
+  (Chow.intersectionBilinForm k₀ (Q.fan.finiteFanScheme k₀))
   (-(dotProductBilin ℤ ℤ : LinearMap.BilinForm ℤ (Fin r → ℤ)))
-local notation "period[" c "]" => orderedBoundaryPeriod Q.regular b Q.rays Q.cycle center[χ[c]]
+local notation "period[" c "]" => orderedBoundaryPeriod k₀ Q.regular b Q.rays Q.cycle center[χ[c]]
+
+variable [Uncountable k₀]
 
 private theorem exists_compatible_ordered_periods
     {E : SkewExchangeMatrix (Fin r)} (P : ChargeSeed E N) (hcharge : P.charge.ker ≤ ChargeKernel)
-    [Q.fan.algebraicRealization.IsProjectiveOver ℂ]
-    [SmoothOfRelativeDimension 2 (Q.fan.algebraicRealization ↘ S)] [(Aux).IsPerfPair]
+    [(Q.fan.finiteFanScheme k₀).IsProjectiveOver k₀]
+    [SmoothOfRelativeDimension 2 ((Q.fan.finiteFanScheme k₀) ↘ S)] [(Aux).IsPerfPair]
     (f : ChargeKernel ≃ₗ[ℤ] ChargeKernel) :
     ∃ c₀ c₁ : GeometricRealization.Point Centers[r],
       Function.Injective period[c₀] ∧ Function.Injective period[c₁] ∧
       (∀ x : ChargeKernel, period[c₁] (ofAdd x) = period[c₀] (ofAdd (f x))) ∧
       ∀ ⦃C : SkewExchangeMatrix (Fin r)⦄ (w : Word E C),
-        c₀.left (default : S) ∈ w.centerOpen ℂ P ∧ c₁.left (default : S) ∈ w.centerOpen ℂ P := by
+        c₀.left (default : S) ∈ w.centerOpen k₀ P ∧ c₁.left (default : S) ∈ w.centerOpen k₀ P := by
   obtain ⟨t₀, t₁, hi₀, hi₁, hper, hword⟩ :=
-    exists_ordered_boundary_periods_mem_all_center_opens Q.regular b Q.rays Q.cycle Q.rayOrder
+    exists_ordered_boundary_periods_mem_all_center_opens k₀ Q.regular b Q.rays Q.cycle Q.rayOrder
       (fun j ↦ (Q.cycle.component_apply j).symm.trans (Q.component_eq j))
       (fun j ↦ (Q.positive j).1)
       Q.exists_cone_of_numbered_node P hcharge f 1
@@ -118,36 +123,36 @@ theorem exists_root_free_fibers_with_compatible_periods
     {d : ZMod n → L} (hmark : ∀ c, (M c).boundaryClass (hD c) = d)
     (g : signedBoundaryIsometryGroup B d)
     (hmodels : ∀ c : GeometricRealization.Point Centers[r],
-      c.left (default : S) ∈ (Path.nil : Word E E).centerOpen ℂ P → Q.HasNodalModel c (M c)) :
+      c.left (default : S) ∈ (Path.nil : Word E E).centerOpen k₀ P → Q.HasNodalModel c (M c)) :
     ∃ c₀ c₁ : GeometricRealization.Point Centers[r],
       Q.HasNodalModel c₀ (M c₀) ∧ Q.HasNodalModel c₁ (M c₁) ∧
       (∀ ⦃C : SkewExchangeMatrix (Fin r)⦄ (w : Word E C),
-        c₀.left (default : S) ∈ w.centerOpen ℂ P ∧ c₁.left (default : S) ∈ w.centerOpen ℂ P) ∧
+        c₀.left (default : S) ∈ w.centerOpen k₀ P ∧ c₁.left (default : S) ∈ w.centerOpen k₀ P) ∧
       (∀ z : CodimensionOnePoint (M c₀).surface, ¬Disjoint (closure {(z : (M c₀).surface)})
         (D[M c₀].support : Set (M c₀).surface)) ∧
       (∀ z : CodimensionOnePoint (M c₁).surface, ¬Disjoint (closure {(z : (M c₁).surface)})
         (D[M c₁].support : Set (M c₁).surface)) ∧
-      ∃ (hg₀ : ∀ v : irreducibleComponents (D[M c₀].subscheme.singularLocus ℂ).blowup,
-          (D[M c₀].subscheme.blowupComponent v).toScheme.genus ℂ = 0)
-        (hg₁ : ∀ v : irreducibleComponents (D[M c₁].subscheme.singularLocus ℂ).blowup,
-          (D[M c₁].subscheme.blowupComponent v).toScheme.genus ℂ = 0),
-        ∀ x : D[M c₁].boundaryOrthogonal ℂ,
+      ∃ (hg₀ : ∀ v : irreducibleComponents (D[M c₀].subscheme.singularLocus k₀).blowup,
+          (D[M c₀].subscheme.blowupComponent v).toScheme.genus k₀ = 0)
+        (hg₁ : ∀ v : irreducibleComponents (D[M c₁].subscheme.singularLocus k₀).blowup,
+          (D[M c₁].subscheme.blowupComponent v).toScheme.genus k₀ = 0),
+        ∀ x : D[M c₁].boundaryOrthogonal k₀,
           let y := (M c₀).picardMarking
             ((toIsometry B d g).val ((M c₁).picardMarking.symm x.val))
-          ∃ hy : y ∈ D[M c₀].boundaryOrthogonal ℂ,
+          ∃ hy : y ∈ D[M c₀].boundaryOrthogonal k₀,
             (hD c₁).boundaryPeriod hg₁ (M c₁).imageCycle.endpoint_eq (ofAdd x) =
               ((hD c₀).boundaryPeriod hg₀ (M c₀).imageCycle.endpoint_eq
                 (ofAdd ⟨y, hy⟩)) ^ (sign B d g : ℤ) := by
   classical
-  let : Q.fan.algebraicRealization.IsProjectiveOver ℂ :=
-    Q.fan.isProjectiveOver_algebraicRealization_of_isComplete Q.regular Q.complete b
+  let : (Q.fan.finiteFanScheme k₀).IsProjectiveOver k₀ :=
+    Q.fan.isProjectiveOver_finiteFanScheme_of_isComplete k₀ Q.regular Q.complete b
   let := Q.smoothOfRelativeDimension_fan
-  let U := (Path.nil : Word E E).centerOpen ℂ P
+  let U := (Path.nil : Word E E).centerOpen k₀ P
   obtain ⟨z, hz, hzU⟩ := U.isOpen.isLocallyClosed.exists_rationalPoint_mem
-    (structureMap ℂ (Fin r → ℤ)) ((Path.nil : Word E E).nonempty_centerOpen (K := ℂ) P)
+    (structureMap k₀ (Fin r → ℤ)) ((Path.nil : Word E E).nonempty_centerOpen (K := k₀) P)
   let c : GeometricRealization.Point Centers[r] := Over.homMk z hz
   have hc : c.left (default : S) ∈ U := by
-    rw [Subsingleton.elim (default : S) (IsLocalRing.closedPoint ℂ)]
+    rw [Subsingleton.elim (default : S) (IsLocalRing.closedPoint k₀)]
     exact hzU
   let := Q.isPerfPair_auxiliaryPicardForm
   let e := (hmodels c hc).chargeKernelEquiv (hD c) (hmark c)

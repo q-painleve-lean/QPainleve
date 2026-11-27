@@ -29,32 +29,36 @@ open Scheme.IdealSheafData TauCeti.AlgebraicGeometry LineBundleClass
 
 namespace TauCeti.Toric.Fan.LogarithmicProjection.OrderedToricModel
 
+variable {k₀ : Type} [Field k₀] [IsAlgClosed k₀]
+
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V] {i : N →+ V}
 
-local notation "S" => Spec (CommRingCat.of ℂ)
-local notation "X[" Δ "]" => Fan.algebraicRealization Δ
-local notation "s[" Δ "]" => Fan.algebraicRealizationStructureMap Δ
-local notation "π[" H "]" => FanHom.algebraicMap (IsSubdivision.toFanHom H)
+local notation "S" => Spec (CommRingCat.of k₀)
+local notation "X[" Δ "]" => Fan.finiteFanScheme k₀ Δ
+local notation "s[" Δ "]" => Fan.finiteFanSchemeToSpec k₀ Δ
+local notation "π[" H "]" => FanHom.finiteFanSchemeHom k₀ (IsSubdivision.toFanHom H)
 local notation "base[" M "]" => toBase (WithBoundary.toTower (Sigma.snd M))
 local notation "boundary[" M "]" => WithBoundary.boundaryι (Sigma.snd M)
 
-variable {Z : Scheme} [Z.Over S] [SmoothOfRelativeDimension 2 (Z ↘ S)] [IsIntegral Z]
-  {D : Z.IdealSheafData} {A : LogarithmicProjection i D} {m : ℕ}
+variable {Z : Scheme} [Z.Over (Spec (.of k₀))] [SmoothOfRelativeDimension 2 (Z ↘ Spec (.of k₀))]
+  [IsIntegral Z]
+  {D : Z.IdealSheafData} {A : LogarithmicProjection k₀ i D} {m : ℕ}
   (U : OrderedToricModel A m)
   {n : ℕ} {W : Scheme} {T : QPainleve.BlowupTower Z n W}
 
-local notation "model[" H "]" => Fan.internalBlowupTower
+local notation "model[" H "]" => Fan.internalBlowupTower k₀
   (h₀ := IsSubdivision.nonempty_cones_of_nonempty H inferInstance)
   U.basis (IsSubdivision.liftRay H ∘ U.rays) U.parameters
 
 omit [IsIntegral Z] in
+omit [IsAlgClosed k₀] in
 private theorem exists_refined_tower
     (hT : IsNodalBoundaryTower D (Z ↘ S) (𝟙 _) T) :
     ∃ (Ψ : Fan i) (_ : Ψ.IsRegular) (H : Ψ.IsSubdivision U.fan) (e : (model[H]).1 ≅ W),
       e.hom ≫ T.toBase ≫ U.hom = base[model[H]] ≫ π[H] ∧
       ((D.comap T.toBase).radical).comap e.hom = (boundary[model[H]]).ker := by
   have hs : U.iso.hom ≫ Z ↘ S = base[U.tower] ≫ s[U.fan] := by
-    rw [← U.fan.algebraicRealization_over, ← comp_over U.hom S, ← Category.assoc,
+    rw [← U.fan.finiteFanScheme_over k₀, ← comp_over U.hom S, ← Category.assoc,
       U.hom_def, Iso.hom_inv_id_assoc]
   have hPole : (boundary[U.tower]).ker.comap U.iso.inv = D := by
     rw [← U.pole_eq, ← comap_comp, Iso.inv_hom_id, comap_id]
@@ -64,7 +68,7 @@ private theorem exists_refined_tower
   obtain ⟨Y, L, a, hL, ha, hD⟩ := hT'.exists_transport_of_iso (k := U.iso) hs
   rw [hPole] at hD
   obtain ⟨Ψ, hΨ, H, d, hd, hB⟩ :=
-    exists_subdivision_of_nodalBoundaryTower_internalBlowupTower U.basis U.rays U.parameters
+    exists_subdivision_of_nodalBoundaryTower_internalBlowupTower k₀ U.basis U.rays U.parameters
       U.regular (U.subdivision.isComplete_iff.mpr A.isComplete) hL
   let e := d ≪≫ a
   have hproj : e.hom ≫ T.toBase ≫ U.hom = d.hom ≫ L.toBase ≫ base[U.tower] := by
@@ -128,7 +132,7 @@ theorem exists_refinement_on_nodalTower (hD : D.IsEffectiveCartier)
       simp only [Category.assoc]
       rfl
     _ = _ := by
-      rw [hproj, IsSubdivision.toFanHom_trans H U.subdivision, FanHom.algebraicMap_comp,
+      rw [hproj, IsSubdivision.toFanHom_trans H U.subdivision, FanHom.finiteFanSchemeHom_comp,
         Category.assoc]
   let V : OrderedToricModel A' m :=
     ⟨Ψ, hΨ, H.trans U.subdivision, U.basis, H.liftRay ∘ U.rays, U.parameters, e, he, hE⟩
@@ -140,8 +144,8 @@ theorem exists_refinement_on_nodalTower (hD : D.IsEffectiveCartier)
     simp only [V, IsSubdivision.rayChargeMap_liftRay]
   have hEval : V.xEvaluation = T.toBase.toRationalMap.comp U.xEvaluation := by
     let : IsDominant V.hom := V.refinedProjection.isDominant
-    let x := U.fan.xEvaluation U.basis U.rays (centerCharacter U.parameters)
-    have hx := H.comp_xEvaluation U.basis U.rays (centerCharacter U.parameters)
+    let x := U.fan.xEvaluation k₀ U.basis U.rays (centerCharacter U.parameters)
+    have hx := H.comp_xEvaluation k₀ U.basis U.rays (centerCharacter U.parameters)
     have hmaps : T.toBase.toRationalMap.comp U.hom.toRationalMap =
         V.hom.toRationalMap.comp (π[H]).toRationalMap := by
       simp only [Scheme.RationalMap.comp_toRationalMap, Scheme.Hom.toRationalMap_compHom, hf]
@@ -157,7 +161,7 @@ theorem exists_refinement_on_nodalTower (hD : D.IsEffectiveCartier)
     have hg : (e.hom ≫ T.toBase ≫ U.iso.inv) ≫ base[U.tower] =
         base[model[H]] ≫ π[H] := by
       simpa only [Category.assoc, ← U.hom_def] using hproj
-    have hmark := H.pullback_internalBlowupPicardMarking U.basis U.rays U.parameters
+    have hmark := H.pullback_internalBlowupPicardMarking k₀ U.basis U.rays U.parameters
       hΨ U.regular _ hg L x
     rw [V.picardMarking_apply, U.picardMarking_apply]
     apply congrArg Additive.ofMul

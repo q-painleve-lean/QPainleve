@@ -37,8 +37,10 @@ open Scheme Scheme.IdealSheafData LineBundleClass
 
 namespace QPainleve.SignedClusterModularGroup
 
-local notation "S" => Spec (CommRingCat.of ℂ)
-local notation "Xtor[" r "]" => Spec (CommRingCat.of (LaurentRing ℂ (Fin r)))
+variable {k₀ : Type} [Field k₀] [IsAlgClosed k₀]
+
+local notation "S" => Spec (CommRingCat.of k₀)
+local notation "Xtor[" r "]" => Spec (CommRingCat.of (LaurentRing k₀ (Fin r)))
 local notation "D[" M "]" => Scheme.Hom.ker (Over.Hom.left (Arrow.hom (MarkedSurface.pair M)))
 
 namespace ContractedToricFiber
@@ -47,25 +49,26 @@ variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {Φ : Fan i} [h₀ : Nonempty Φ.cones]
   {r n m : ℕ} [NeZero n] [NeZero m]
   {L : Type} [AddCommGroup L] {B : LinearMap.BilinForm ℤ L}
-  {P : MarkedSurface ℂ n B Xtor[r]} {b : Module.Basis (Fin 2) ℤ N}
+  {P : MarkedSurface k₀ n B (QPainleve.CharacterTorus.scheme k₀ (Fin r →₀ ℤ))} {b : Module.Basis
+    (Fin 2) ℤ N}
   {s : Fin r → Φ.Ray} {hΦ : Φ.IsRegular}
-  [PrestableFamily ((Φ.boundaryIdeal h₀).subscheme ↘ S)]
-  {γ : Type*} {a : γ → ((Φ.boundaryIdeal h₀).subscheme ↘ S).smoothLocus}
+  [PrestableFamily ((Φ.toricBoundaryIdeal k₀ h₀).subscheme ↘ Spec (.of k₀))]
+  {γ : Type*} {a : γ → ((Φ.toricBoundaryIdeal k₀ h₀).subscheme ↘ Spec (.of k₀)).smoothLocus}
   {T : NodalCycleNumbering a m} {o : ZMod m}
-  {J : L →ₗ[ℤ] Additive (LineBundleClass Φ.algebraicRealization) × (Fin r → ℤ)}
-  {c : Multiplicative (Fin r → ℤ) →* ℂˣ}
+  {J : L →ₗ[ℤ] Additive (LineBundleClass (Φ.finiteFanScheme k₀)) × (Fin r → ℤ)}
+  {c : Multiplicative (Fin r → ℤ) →* k₀ˣ}
   (p : ContractedToricFiber b s hΦ T o J c P)
 
 local notation "K" => LinearMap.ker (Fan.rayChargeMap s)
 local notation "centers" => (fun j : Fin r ↦ c (ofAdd (Pi.single j 1)))
-local notation "Model" => Fan.internalBlowupTower b s centers
+local notation "Model" => Fan.internalBlowupTower k₀ b s centers
 local notation "Btor" => LinearMap.BilinForm.prod
-  (Chow.intersectionBilinForm ℂ Φ.algebraicRealization)
+  (Chow.intersectionBilinForm k₀ (Φ.finiteFanScheme k₀))
   (-(dotProductBilin ℤ ℤ : LinearMap.BilinForm ℤ (Fin r → ℤ)))
 
-variable [Φ.algebraicRealization.IsProjectiveOver ℂ]
-  [SmoothOfRelativeDimension 2 (Φ.algebraicRealization ↘ S)]
-variable [LinearMap.IsPerfPair ((Chow.intersectionBilinForm ℂ Φ.algebraicRealization).prod
+variable [(Φ.finiteFanScheme k₀).IsProjectiveOver k₀]
+  [SmoothOfRelativeDimension 2 ((Φ.finiteFanScheme k₀) ↘ Spec (.of k₀))]
+variable [LinearMap.IsPerfPair ((Chow.intersectionBilinForm k₀ (Φ.finiteFanScheme k₀)).prod
   (-(dotProductBilin ℤ ℤ : LinearMap.BilinForm ℤ (Fin r → ℤ))))] [B.IsPerfPair]
 
 include p in
@@ -73,34 +76,36 @@ private theorem exists_markedBoundaryOrthogonalEquivChargeKernel (hp : p.IsNodal
     (hD : D[P].IsEffectiveCartier) {d : ZMod n → L} (hd : P.boundaryClass hD = d) :
     ∃ e : B.orthogonal (Submodule.span ℤ (Set.range d)) ≃ₗ[ℤ] K,
       ∀ x : K, J (e.symm x).val =
-        ((Fan.boundaryOrthogonalEquivChargeKernel hΦ s Btor).symm x).val := by
+        ((Fan.boundaryOrthogonalEquivChargeKernel k₀ hΦ s Btor).symm x).val := by
   classical
-  let : P.surface.IsProjectiveOver ℂ := P.projective
+  let : P.surface.IsProjectiveOver k₀ := P.projective
   let : SmoothOfRelativeDimension 2 (P.surface ↘ S) := P.smooth
-  let : (Chow.intersectionBilinForm ℂ P.surface).IsPerfPair := P.isPerfPair_intersectionForm
+  let : (Chow.intersectionBilinForm k₀ P.surface).IsPerfPair := P.isPerfPair_intersectionForm
   obtain ⟨l, Y, W, hW, u, hu⟩ := hp.exists_tower
   have hproj : u.inv ≫ W.toBase ≫ (P.surface ↘ S) =
-      Model.2.toTower.toBase ≫ Φ.algebraicRealizationStructureMap := by
+      Model.2.toTower.toBase ≫ (Φ.finiteFanSchemeToSpec k₀) := by
     rw [← Category.assoc, hu, p.projection_over]
   have hsupport : (D[P].comap (u.inv ≫ W.toBase)).support =
       Model.2.boundaryι.ker.support := hu ▸ p.support_comap
-  let R := Fan.contractedRaySet hΦ b s centers hW u.symm hsupport
+  let R := Fan.contractedRaySet k₀ hΦ b s centers hW u.symm hsupport
   obtain ⟨_, q, hq, _⟩ :=
-    Fan.existsUnique_contractedPicardMarkingOfRaySet_chargeKernelEquiv hΦ b s centers
+    Fan.existsUnique_contractedPicardMarkingOfRaySet_chargeKernelEquiv k₀ hΦ b s centers
       hW u.symm hproj hsupport R rfl
-  let f := q.trans (LinearEquiv.ofEq _ _ (D[P].boundaryOrthogonal_def ℂ).symm)
+  let f := q.trans (LinearEquiv.ofEq _ _ (D[P].boundaryOrthogonal_def k₀).symm)
   let g := P.boundaryOrthogonalMarking hD
   let e := ((LinearEquiv.ofEq _ _ (by rw [hd])).trans g).trans f.symm
   have he (x : K) : J (e.symm x).val =
-      ((Fan.boundaryOrthogonalEquivChargeKernel hΦ s Btor).symm x).val := by
+      ((Fan.boundaryOrthogonalEquivChargeKernel k₀ hΦ s Btor).symm x).val := by
     have hclass : P.picardMarking (e.symm x).val = (q x).val := by
       simp only [e, g, f, LinearEquiv.trans_symm, LinearEquiv.trans_apply,
         LinearEquiv.symm_symm, LinearEquiv.ofEq_symm, LinearEquiv.coe_ofEq_apply]
       rw [← P.coe_boundaryOrthogonalMarking_apply hD, LinearEquiv.apply_symm_apply,
         LinearEquiv.coe_ofEq_apply]
     have hcoords := congrArg Subtype.val (hq x)
-    rw [← ofMul_toMul (q x).val, Fan.coe_contractedPicardMarkingOfRaySet_symm_apply,
-      Fan.coe_contractedChargeKernelHom_apply, Iso.symm_hom, hu] at hcoords
+    rw [← ofMul_toMul (q x).val,
+      Fan.coe_contractedPicardMarkingOfRaySet_symm_apply k₀ hΦ b s centers
+        hW u.symm hproj hsupport R rfl,
+      Fan.coe_contractedChargeKernelHom_apply k₀ hΦ s Btor, Iso.symm_hom, hu] at hcoords
     exact (p.marked_pullback (e.symm x).val).symm.trans
       (by simpa only [hclass, ofMul_toMul] using hcoords)
   exact ⟨e, he⟩
@@ -118,7 +123,7 @@ model. -/
 theorem markedBoundaryOrthogonalEquivChargeKernel_symm_apply (hp : p.IsNodalContraction)
     (hD : D[P].IsEffectiveCartier) {d : ZMod n → L} (hd : P.boundaryClass hD = d) (x : K) :
     J ((p.markedBoundaryOrthogonalEquivChargeKernel hp hD hd).symm x).val =
-      ((Fan.boundaryOrthogonalEquivChargeKernel hΦ s Btor).symm x).val :=
+      ((Fan.boundaryOrthogonalEquivChargeKernel k₀ hΦ s Btor).symm x).val :=
   (p.exists_markedBoundaryOrthogonalEquivChargeKernel hp hD hd).choose_spec x
 
 /-- The charge coordinates are the negatives of the total exceptional coefficients. -/
@@ -139,15 +144,15 @@ namespace CompleteToricPresentation
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {b : Module.Basis (Fin 2) ℤ N} {r n : ℕ} [NeZero n]
   {L γ : Type} [AddCommGroup L] {B : LinearMap.BilinForm ℤ L}
-  {Q : CompleteToricPresentation i b r L γ}
-  {c : GeometricRealization.Point (Over.mk (structureMap ℂ (Fin r → ℤ)))}
-  {M : MarkedSurface ℂ n B (scheme ℂ (Fin r →₀ ℤ))}
+  {Q : CompleteToricPresentation k₀ i b r L γ}
+  {c : GeometricRealization.Point (Over.mk (structureMap k₀ (Fin r → ℤ)))}
+  {M : MarkedSurface k₀ n B (scheme k₀ (Fin r →₀ ℤ))}
 
 local instance instChargeCoordinateNonemptyCones : Nonempty Q.fan.cones :=
   Q.complete.nonempty_cones
 
 local notation "Aux" => LinearMap.BilinForm.prod
-  (Chow.intersectionBilinForm ℂ Q.fan.algebraicRealization)
+  (Chow.intersectionBilinForm k₀ (Q.fan.finiteFanScheme k₀))
   (-(dotProductBilin ℤ ℤ : LinearMap.BilinForm ℤ (Fin r → ℤ)))
 
 local notation "Orth[" d "]" => B.orthogonal (Submodule.span ℤ (Set.range d))
@@ -158,9 +163,9 @@ noncomputable def HasNodalModel.chargeKernelEquiv (h : Q.HasNodalModel c M)
     Orth[d] ≃ₗ[ℤ] (Fan.rayChargeMap Q.rays).ker := by
   let := Q.prestable
   let := Q.neZero
-  let := Q.fan.isProjectiveOver_algebraicRealization_of_isComplete Q.regular Q.complete b
+  let := Q.fan.isProjectiveOver_finiteFanScheme_of_isComplete k₀ Q.regular Q.complete b
   let := Q.smoothOfRelativeDimension_fan
-  let : M.surface.IsProjectiveOver ℂ := M.projective
+  let : M.surface.IsProjectiveOver k₀ := M.projective
   let : SmoothOfRelativeDimension 2 (M.surface ↘ S) := M.smooth
   let : IsRationalOver (M.surface ↘ S) := h.isRationalOver
   let : B.IsPerfPair := M.isPerfPair_of_isRationalOver
@@ -171,12 +176,12 @@ noncomputable def HasNodalModel.chargeKernelEquiv (h : Q.HasNodalModel c M)
 /-- The marked class attached to a charge relation has the same coordinates as its class on the
 internal blowup model. -/
 @[simp]
-theorem HasNodalModel.chargeKernelEquiv_symm_apply [Q.fan.algebraicRealization.IsProjectiveOver ℂ]
-    [SmoothOfRelativeDimension 2 (Q.fan.algebraicRealization ↘ S)] [(Aux).IsPerfPair]
+theorem HasNodalModel.chargeKernelEquiv_symm_apply [(Q.fan.finiteFanScheme k₀).IsProjectiveOver k₀]
+    [SmoothOfRelativeDimension 2 ((Q.fan.finiteFanScheme k₀) ↘ S)] [(Aux).IsPerfPair]
     (h : Q.HasNodalModel c M) (hD : D[M].IsEffectiveCartier) {d : ZMod n → L}
     (hd : M.boundaryClass hD = d) (x : (Fan.rayChargeMap Q.rays).ker) :
     Q.inclusion ((h.chargeKernelEquiv hD hd).symm x).val =
-      ((Fan.boundaryOrthogonalEquivChargeKernel Q.regular Q.rays Aux).symm x).val := by
+      ((Fan.boundaryOrthogonalEquivChargeKernel k₀ Q.regular Q.rays Aux).symm x).val := by
   simp only [HasNodalModel.chargeKernelEquiv,
     ContractedToricFiber.markedBoundaryOrthogonalEquivChargeKernel_symm_apply]
 

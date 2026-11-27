@@ -30,24 +30,28 @@ open TauCeti.AlgebraicGeometry Scheme.IdealSheafData
 
 namespace TauCeti.Toric.Fan
 
+variable {K : Type} [Field K] [IsAlgClosed K]
+
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {Φ : Fan i} (b : Module.Basis (Fin 2) ℤ N)
   (hΦ : Φ.IsRegular) (hc : Φ.IsComplete) (ρ : Φ.Ray)
-  (hOpp : hull ℝ {i (-ρ.primitiveGenerator)} ∈ Φ.cones) (c : ℂˣ)
+  (hOpp : hull ℝ {i (-ρ.primitiveGenerator)} ∈ Φ.cones) (c : Kˣ)
 
-local notation "S" => Spec (CommRingCat.of ℂ)
-local notation "X[" Δ "]" => Fan.algebraicRealization Δ
-local notation "π[" H "]" => FanHom.algebraicMap (IsSubdivision.toFanHom H)
+local notation "S" => Spec (CommRingCat.of K)
+local notation "X[" Δ "]" => Fan.finiteFanScheme K Δ
+local notation "π[" H "]" => FanHom.finiteFanSchemeHom K (IsSubdivision.toFanHom H)
 local notation "rankTwo" => Eq.trans (Module.finrank_eq_card_basis b) (Fintype.card_fin 2)
-local notation "D" => Φ.boundaryIdeal hc.nonempty_cones
+local notation "D" => Φ.toricBoundaryIdeal K hc.nonempty_cones
 local notation "M[" Δ "," r "," h "]" =>
   Fan.mutationFan Δ b (Ray.primitiveGenerator_ne_zero r) (Ray.hull_primitiveGenerator_mem r) h
 local notation "μ[" Δ "," r "," h "]" =>
-  Scheme.PartialMap.toRationalMap (Fan.mutationPartialMap Δ b (c : ℂ)
+  Scheme.PartialMap.toRationalMap (Fan.mutationPartialMap K Δ b (c : K)
     (Ray.primitiveGenerator_ne_zero r) (Ray.hull_primitiveGenerator_mem r) h)
 
-variable {Z : Scheme} [Z.Over S] [IsIntegral Z] [Z.IsProjectiveOver ℂ]
-  [SmoothOfRelativeDimension 2 (Z ↘ S)] {f : Z ⟶ X[Φ]} [f.IsOver S] [IsDominant f]
+variable {Z : Scheme} [Z.Over (Spec (.of K))] [IsIntegral Z] [Z.IsProjectiveOver K]
+  [SmoothOfRelativeDimension 2 (Z ↘ Spec (.of K))]
+  {f : Z ⟶ Φ.finiteFanScheme K}
+  [f.IsOver (Spec (.of K))] [IsDominant f]
   {P : Z.IdealSheafData}
 
 /-- Suppose the specified logarithmic morphism `f` resolves a toric elementary
@@ -61,14 +65,15 @@ theorem exists_toric_internal_mutation_factorization_of_pullbackTopFormDivisor
     (hr : letI : Nonempty Φ.cones := hc.nonempty_cones
       f.toRationalMap.comp μ[Φ,ρ,hOpp] = r.toRationalMap) :
     letI : Nonempty Φ.cones := hc.nonempty_cones
-    letI : SmoothOfRelativeDimension 2 (X[Φ] ↘ S) :=
-      rankTwo ▸ Φ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
-    let hD := Φ.isEffectiveCartier_boundaryIdeal hΦ hc rankTwo
-    ∀ (ω : hD.toInvertibleSheaf ≅ canonicalBundle ℂ X[Φ] 2)
+    letI : SmoothOfRelativeDimension 2 (X[Φ] ↘ Spec (.of K)) :=
+      (Φ.finiteFanScheme_over K).symm ▸
+        (rankTwo ▸ Φ.smoothOfRelativeDimension_finiteFanSchemeToSpec K hΦ)
+    let hD := Φ.isEffectiveCartier_boundaryIdeal K hΦ hc rankTwo
+    ∀ (ω : hD.toInvertibleSheaf ≅ canonicalBundle K X[Φ] 2)
       (hTotal : ((D).comap f).IsEffectiveCartier)
-      (hRam : letI := SmoothOfRelativeDimension.smooth 2 (Z ↘ S)
-        (ramificationIdealSheaf ℂ f).IsEffectiveCartier),
-      pullbackTopFormDivisor ℂ f 2 hD ω hTotal hRam = -hP.toCartierDivisor →
+      (hRam : letI := SmoothOfRelativeDimension.smooth 2 (Z ↘ Spec (.of K))
+        (ramificationIdealSheaf K f).IsEffectiveCartier),
+      pullbackTopFormDivisor K f 2 hD ω hTotal hRam = -hP.toCartierDivisor →
     ∃ (Ω : Fan i) (hΩ : Ω.IsRegular) (H : Ω.IsSubdivision Φ),
       let σ := H.liftRay ρ
       let hOpp' := H.hull_neg_primitiveGenerator_liftRay_mem ρ hOpp
@@ -76,11 +81,11 @@ theorem exists_toric_internal_mutation_factorization_of_pullbackTopFormDivisor
         ρ.primitiveGenerator_ne_zero σ.primitiveGenerator_ne_zero
         ρ.hull_primitiveGenerator_mem hOpp σ.hull_primitiveGenerator_mem hOpp'
       letI : Nonempty Ω.cones := H.nonempty_cones_of_nonempty hc.nonempty_cones
-      ∃ (n : ℕ) (a : Fin n → Ω.Ray) (u : Fin n → ℂˣ),
-        let A := Ω.internalBlowupTower b a u
-        letI : IsIntegral A.1 := isIntegral_internalBlowupTower b a u hΩ
+      ∃ (n : ℕ) (a : Fin n → Ω.Ray) (u : Fin n → Kˣ),
+        let A := Ω.internalBlowupTower K b a u
+        letI : IsIntegral A.1 := isIntegral_internalBlowupTower K b a u hΩ
         letI : IsModification A.2.toTower.toBase :=
-          isModification_internalBlowupTower_toBase b a u hΩ
+          isModification_internalBlowupTower_toBase K b a u hΩ
         ∃ (e : A.1 ≅ Z) (q : A.1 ⟶ X[M[Ω,σ,hOpp']]),
           e.hom ≫ f = A.2.toTower.toBase ≫ π[H] ∧
           e.hom ≫ r = q ≫ π[Hμ] ∧
@@ -89,23 +94,24 @@ theorem exists_toric_internal_mutation_factorization_of_pullbackTopFormDivisor
           ∃ k : Fin n, a k = σ ∧ u k = c ∧ ∀ j < k, (a j, u j) ≠ (σ, c) := by
   intro hD ω hTotal hRam hdiv
   let : Nonempty Φ.cones := hc.nonempty_cones
-  let : SmoothOfRelativeDimension 2 (X[Φ] ↘ S) :=
-    rankTwo ▸ Φ.smoothOfRelativeDimension_algebraicRealizationStructureMap hΦ
+  let : SmoothOfRelativeDimension 2 (X[Φ] ↘ Spec (.of K)) :=
+    (Φ.finiteFanScheme_over K).symm ▸
+        (rankTwo ▸ Φ.smoothOfRelativeDimension_finiteFanSchemeToSpec K hΦ)
   obtain ⟨Ω, hΩ, H, n, a, u, e, he, hboundary⟩ :=
-    exists_toric_internal_factorization_of_pullbackTopFormDivisor b hΦ hc hf hP ω hTotal hRam hdiv
+    exists_toric_internal_factorization_of_pullbackTopFormDivisor K b hΦ hc hf hP ω hTotal hRam hdiv
   let σ := H.liftRay ρ
   let hOpp' := H.hull_neg_primitiveGenerator_liftRay_mem ρ hOpp
   let : Nonempty Ω.cones := H.nonempty_cones_of_nonempty hc.nonempty_cones
-  let A := Ω.internalBlowupTower b a u
+  let A := Ω.internalBlowupTower K b a u
   let p := A.2.toTower.toBase
-  let := isIntegral_internalBlowupTower b a u hΩ
-  let := isModification_internalBlowupTower_toBase b a u hΩ
+  let := isIntegral_internalBlowupTower K b a u hΩ
+  let := isModification_internalBlowupTower_toBase K b a u hΩ
   have hres : (p ≫ π[H]).toRationalMap.comp μ[Φ,ρ,hOpp] = (e.hom ≫ r).toRationalMap := by
     simp only [p, A, ← he, ← Scheme.RationalMap.comp_toRationalMap,
       ← Scheme.Hom.toRationalMap_compHom, Scheme.RationalMap.comp_assoc, hr]
-  obtain ⟨q, ⟨hq, hproj⟩, -⟩ := H.existsUnique_mutation_resolution b ρ hOpp c
-    (isClosedPointTower_internalBlowupTower b a u) hΦ hΩ (e.hom ≫ r) hres
+  obtain ⟨q, ⟨hq, hproj⟩, -⟩ := H.existsUnique_mutation_resolution K b ρ hOpp c
+    (isClosedPointTower_internalBlowupTower K b a u) hΦ hΩ (e.hom ≫ r) hres
   exact ⟨Ω, hΩ, H, n, a, u, e, q, he, hproj.symm, hboundary, hq,
-    σ.exists_first_internalBlowupTower_center_of_resolves b hOpp' c a u q hq⟩
+    σ.exists_first_internalBlowupTower_center_of_resolves K b hOpp' c a u q hq⟩
 
 end TauCeti.Toric.Fan

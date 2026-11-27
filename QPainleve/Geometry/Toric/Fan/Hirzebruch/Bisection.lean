@@ -40,29 +40,31 @@ open Scheme.IdealSheafData
 
 namespace TauCeti.Toric.Fan
 
+variable (K : Type) [Field K] [IsAlgClosed K]
+
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {Φ : Fan i} [Nonempty Φ.cones]
   (b : Basis (Fin 2) ℤ N) (e : ℤ) (hΦ : Φ.IsRegular) (hc : Φ.IsComplete)
   (r : Fin 4 ≃ Φ.Ray)
   (hr : (fun j ↦ (r j).primitiveGenerator) = ![b 0, b 1, -b 0, e • b 0 - b 1])
 
-local notation "X" => Fan.algebraicRealization Φ
-local notation "S" => Spec (CommRingCat.of ℂ)
-local notation "C" => Fan.hirzebruchPicardBasis b e hΦ r hr
+local notation "X" => Fan.finiteFanScheme K Φ
+local notation "S" => Spec (CommRingCat.of K)
+local notation "C" => Fan.hirzebruchPicardBasis K b e hΦ r hr
 local notation "P" p:arg =>
   Additive.ofMul
-    (@primeDivisorClass X _ _ (Fan.uniqueFactorizationMonoid_stalk_algebraicRealization Φ hΦ) p)
-local notation "S₀" => Fan.rayBoundaryPoint Φ hΦ (r 0)
+    (@primeDivisorClass X _ _ (Φ.uniqueFactorizationMonoid_stalk_finiteFanScheme (R := K) hΦ) p)
+local notation "S₀" => Φ.rayBoundaryChartPoint (R := K) hΦ (r 0)
 local notation "I[" p "]" => vanishingIdeal (Closeds.mk (closure {(p : X)}) isClosed_closure)
-local notation "q" => Fan.characterRuling Φ (LinearMap.toAddMonoidHom (Basis.coord b 1))
+local notation "q" => Fan.characterRuling K Φ (LinearMap.toAddMonoidHom (Basis.coord b 1))
   (nonneg_or_nonpos_hirzebruch_ruling_character b e r hr)
 
-variable [(Φ.algebraicRealization).IsProjectiveOver ℂ]
-  [SmoothOfRelativeDimension 2 (Φ.algebraicRealization ↘ Spec (CommRingCat.of ℂ))]
+variable [((Φ.finiteFanScheme K)).IsProjectiveOver K]
+  [SmoothOfRelativeDimension 2 ((Φ.finiteFanScheme K) ↘ Spec (CommRingCat.of K))]
 
-variable {D : Φ.algebraicRealization.IdealSheafData} [AlgebraicGeometry.IsReduced (subscheme D)]
+variable {D : (Φ.finiteFanScheme K).IdealSheafData} [AlgebraicGeometry.IsReduced (subscheme D)]
   (hD : D.IsEffectiveCartier) (hK : LineBundleClass.mk hD.toInvertibleSheaf =
-    LineBundleClass.mk (QPainleve.canonicalBundle ℂ Φ.algebraicRealization 2))
+    LineBundleClass.mk (QPainleve.canonicalBundle K (Φ.finiteFanScheme K) 2))
 
 local notation "p[" j "]" => boundaryPrimeEmbedding D j
 local notation "a[" j "]" => Basis.repr (C) (P p[j]) 0
@@ -77,12 +79,12 @@ theorem hirzebruch_boundary_prime_degree_eq_zero_of_bisection
   classical
   let : Fintype D.boundaryPrimes := hD.finite_boundaryPrimes.fintype
   have hsum : ∑ j : D.boundaryPrimes, d[j] = 2 :=
-    sum_hirzebruch_boundary_prime_coordinates b e hΦ hc r hr hD hK 1
+    sum_hirzebruch_boundary_prime_coordinates K b e hΦ hc r hr hD hK 1
   have hrest := Finset.sum_erase_add Finset.univ (fun j ↦ d[j]) (Finset.mem_univ s)
   rw [hsum, hs] at hrest
   have hzero : ∑ j ∈ Finset.univ.erase s, d[j] = 0 := by omega
   exact (Finset.sum_eq_zero_iff_of_nonneg (fun j _ ↦
-    hirzebruch_fiber_degree_nonneg b e hΦ r hr hc p[j])).mp hzero t (by simp [ht])
+    hirzebruch_fiber_degree_nonneg K b e hΦ r hr hc p[j])).mp hzero t (by simp [ht])
 
 include hc hK in
 private theorem hirzebruch_bisection_fiber_coeff_le_of_components
@@ -93,14 +95,14 @@ private theorem hirzebruch_bisection_fiber_coeff_le_of_components
   let : Fintype D.boundaryPrimes := hD.finite_boundaryPrimes.fintype
   let A : Finset D.boundaryPrimes := Finset.univ.erase s
   have hsum : ∑ j : D.boundaryPrimes, a[j] = e + 2 :=
-    sum_hirzebruch_boundary_prime_coordinates b e hΦ hc r hr hD hK 0
+    sum_hirzebruch_boundary_prime_coordinates K b e hΦ hc r hr hD hK 0
   have hrest : (∑ j ∈ A, a[j]) + a[s] = e + 2 :=
     (Finset.sum_erase_add Finset.univ (fun j ↦ a[j]) (Finset.mem_univ s)).trans hsum
   have hle : (A.card : ℤ) ≤ ∑ j ∈ A, a[j] := by
     calc
       (A.card : ℤ) = ∑ _j ∈ A, (1 : ℤ) := by simp
       _ ≤ _ := Finset.sum_le_sum fun j hj ↦
-        hirzebruch_fiber_coeff_pos_of_degree_zero b e hΦ r hr hc he p[j]
+        hirzebruch_fiber_coeff_pos_of_degree_zero K b e hΦ r hr hc he p[j]
           (hvertical j (Finset.mem_erase.mp hj).1)
   have hcard : A.card + 1 = D.boundaryPrimes.ncard := by
     rw [Set.ncard_eq_toFinset_card', Set.toFinset_card, ← Finset.card_univ]
@@ -119,15 +121,15 @@ theorem hirzebruch_anticanonical_bisection (he : 0 ≤ e)
   have hlow : 2 * e ≤ a[s] := by
     by_contra! h
     have hsec : p[s] = S₀ :=
-      eq_section_of_hirzebruch_fiber_coeff_lt b e hΦ r hr hc p[s] (by
+      eq_section_of_hirzebruch_fiber_coeff_lt K b e hΦ r hr hc p[s] (by
         simpa only [hs, mul_comm] using h)
     have hdegree : d[s] = 1 := by
       rw [hsec]
-      exact (hirzebruch_section_coordinates b e hΦ r hr).2
+      exact (hirzebruch_section_coordinates K b e hΦ r hr).2
     omega
-  have hupper := hirzebruch_bisection_fiber_coeff_le_of_components b e hΦ hc r hr hD hK
+  have hupper := hirzebruch_bisection_fiber_coeff_le_of_components K b e hΦ hc r hr hD hK
     he s (fun _ hj ↦ hirzebruch_boundary_prime_degree_eq_zero_of_bisection
-      b e hΦ hc r hr hD hK hs hj)
+      K b e hΦ hc r hr hD hK hs hj)
   omega
 
 include hc hK in
@@ -136,7 +138,7 @@ private theorem hirzebruch_one_bisection_coordinates (he : e = 1)
     (∀ j : D.boundaryPrimes, j = s ∨ j = t) ∧ a[s] = 2 := by
   classical
   let : Fintype D.boundaryPrimes := hD.finite_boundaryPrimes.fintype
-  obtain ⟨hsec, -, hbound⟩ := hirzebruch_anticanonical_bisection b e hΦ hc r hr hD hK
+  obtain ⟨hsec, -, hbound⟩ := hirzebruch_anticanonical_bisection K b e hΦ hc r hr hD hK
     (by omega) s hs
   rw [Set.ncard_eq_toFinset_card', Set.toFinset_card, ← Finset.card_univ] at hbound
   have hpair : ({s, t} : Finset D.boundaryPrimes) = Finset.univ :=
@@ -144,10 +146,11 @@ private theorem hirzebruch_one_bisection_coordinates (he : e = 1)
       rw [Finset.card_pair hst]
       omega)
   have hsum : ∑ j : D.boundaryPrimes, a[j] = e + 2 :=
-    sum_hirzebruch_boundary_prime_coordinates b e hΦ hc r hr hD hK 0
+    sum_hirzebruch_boundary_prime_coordinates K b e hΦ hc r hr hD hK 0
   rw [← hpair, Finset.sum_pair hst] at hsum
-  have hdt := hirzebruch_boundary_prime_degree_eq_zero_of_bisection b e hΦ hc r hr hD hK hs hst.symm
-  have hat := hirzebruch_fiber_coeff_pos_of_degree_zero b e hΦ r hr hc (by omega) p[t] hdt
+  have hdt :=
+    hirzebruch_boundary_prime_degree_eq_zero_of_bisection K b e hΦ hc r hr hD hK hs hst.symm
+  have hat := hirzebruch_fiber_coeff_pos_of_degree_zero K b e hΦ r hr hc (by omega) p[t] hdt
   refine ⟨fun j ↦ ?_, by omega⟩
   have hj : j ∈ ({s, t} : Finset D.boundaryPrimes) := hpair ▸ Finset.mem_univ j
   simpa only [Finset.mem_insert, Finset.mem_singleton] using hj
@@ -157,18 +160,18 @@ include hc in
 private theorem disjoint_hirzebruch_bisection_section {s : D.boundaryPrimes} (hs : d[s] = 2)
     (ha : a[s] = 2 * e) :
     Disjoint (closure {(s : X)}) (closure {(S₀ : X)}) := by
-  let := Φ.uniqueFactorizationMonoid_stalk_algebraicRealization hΦ
+  let := Φ.uniqueFactorizationMonoid_stalk_finiteFanScheme (R := K) hΦ
   have hne : p[s] ≠ S₀ := by
     intro h
-    rw [h, (hirzebruch_section_coordinates b e hΦ r hr).2] at hs
+    rw [h, (hirzebruch_section_coordinates K b e hΦ r hr).2] at hs
     omega
-  have hzero := (Φ.hirzebruchPicardBasis_intersection_repr b e hΦ r hr hc (P p[s])).2
+  have hzero := (Φ.hirzebruchPicardBasis_intersection_repr K b e hΦ r hr hc (P p[s])).2
   rw [ha, hs, mul_comm (2 : ℤ), sub_self, hirzebruchPicardBasis_apply_one,
-    rayDivisorToPicard_single, one_zsmul, Chow.intersectionBilinForm_apply, toMul_ofMul,
+    rayChartDivisorToPicard_single, one_zsmul, Chow.intersectionBilinForm_apply, toMul_ofMul,
     toMul_ofMul] at hzero
   have hdim := topologicalKrullDim_eq_of_smoothOfRelativeDimension (X ↘ S) (n := 2)
   refine Set.disjoint_left.mpr fun x hx hy ↦ ?_
-  have hpos := (Chow.classIntersectionNumber_primeDivisorClass_pos_iff ℂ hdim.le hne).mpr
+  have hpos := (Chow.classIntersectionNumber_primeDivisorClass_pos_iff K hdim.le hne).mpr
     ⟨x, by simpa only [coe_boundaryPrimeEmbedding] using hx, hy⟩
   exact (ne_of_gt hpos) hzero
 
@@ -179,15 +182,16 @@ The bisection is disjoint from the negative section. -/
 theorem exists_fiber_of_hirzebruch_one_anticanonical_bisection (he : e = 1)
     (s t : D.boundaryPrimes) (hs : d[s] = 2) (hst : s ≠ t) :
     Disjoint (closure {(s : X)}) (closure {(S₀ : X)}) ∧
-    ∃ y : S ⟶ projectiveLine ℂ,
-      y ≫ (projectiveLine ℂ ↘ S) = 𝟙 S ∧
+    ∃ y : S ⟶ projectiveLine K,
+      y ≫ (projectiveLine K ↘ S) = 𝟙 S ∧
       I[p[t]] = y.ker.comap q ∧ D = I[p[s]] * (y.ker.comap q) := by
   classical
-  let := Φ.uniqueFactorizationMonoid_stalk_algebraicRealization hΦ
-  obtain ⟨hall, ha⟩ := hirzebruch_one_bisection_coordinates b e hΦ hc r hr hD hK he s t hs hst
-  have ht := hirzebruch_boundary_prime_degree_eq_zero_of_bisection b e hΦ hc r hr hD hK hs hst.symm
-  obtain ⟨y, hy, -, hf⟩ := exists_hirzebruch_ruling_fiber_of_degree_zero b e hΦ hc r hr p[t] ht
-  refine ⟨disjoint_hirzebruch_bisection_section b e hΦ hc r hr hs (by rw [ha, he]; decide),
+  let := Φ.uniqueFactorizationMonoid_stalk_finiteFanScheme (R := K) hΦ
+  obtain ⟨hall, ha⟩ := hirzebruch_one_bisection_coordinates K b e hΦ hc r hr hD hK he s t hs hst
+  have ht :=
+    hirzebruch_boundary_prime_degree_eq_zero_of_bisection K b e hΦ hc r hr hD hK hs hst.symm
+  obtain ⟨y, hy, -, hf⟩ := exists_hirzebruch_ruling_fiber_of_degree_zero K b e hΦ hc r hr p[t] ht
+  refine ⟨disjoint_hirzebruch_bisection_section K b e hΦ hc r hr hs (by rw [ha, he]; decide),
     y, hy, hf, ?_⟩
   rw [← hf]
   simpa only [coe_boundaryPrimeEmbedding] using hD.eq_mul_vanishingIdeal_of_boundaryPrimes hst hall
@@ -202,25 +206,25 @@ theorem hirzebruch_section_notMem_boundary_support_of_bisection
   obtain ⟨j, hj⟩ := (Set.ext_iff.mp D.range_boundaryPrimeEmbedding (S₀)).mpr h
   have hdegree : d[j] = 1 := by
     rw [hj]
-    exact (hirzebruch_section_coordinates b e hΦ r hr).2
+    exact (hirzebruch_section_coordinates K b e hΦ r hr).2
   have hne : j ≠ s := by
     intro heq
     rw [heq, hs] at hdegree
     omega
-  have := hirzebruch_boundary_prime_degree_eq_zero_of_bisection b e hΦ hc r hr hD hK hs hne
+  have := hirzebruch_boundary_prime_degree_eq_zero_of_bisection K b e hΦ hc r hr hD hK hs hne
   omega
 
 open AlgebraicGeometry.Proj
 
 attribute [local instance] MvPolynomial.gradedAlgebra
 
-local notation "𝒜" => MvPolynomial.homogeneousSubmodule (Fin 3) ℂ
+local notation "𝒜" => MvPolynomial.homogeneousSubmodule (Fin 3) K
 local notation "Plane" => Proj 𝒜
 local notation "J[" p "]" => Scheme.IdealSheafData.vanishingIdeal
   (Closeds.mk (closure {(p : Plane)}) isClosed_closure)
-local notation "E" => Fan.rayBoundaryIdeal Φ hΦ (r 0)
+local notation "E" => Φ.rayDivisorIdeal K hΦ (r 0)
 local instance : SmoothOfRelativeDimension 2 (Plane ↘ S) :=
-  smoothOfRelativeDimension_toSpecCoeff ℂ 2
+  smoothOfRelativeDimension_toSpecCoeff K 2
 
 omit [AlgebraicGeometry.IsReduced D.subscheme] in
 include hc hK in
@@ -237,7 +241,7 @@ theorem exists_plane_internalBlowdown_of_hirzebruch_one_anticanonical_bisection
       IsClosed ({p} : Set Plane) ∧ f ≫ (Plane ↘ S) = (X ↘ S) ∧ (J[p]).comap f = E ∧
       ∃ hA : A.IsEffectiveCartier,
         LineBundleClass.mk hA.toInvertibleSheaf =
-          LineBundleClass.mk (QPainleve.canonicalBundle ℂ Plane 2) ∧
+          LineBundleClass.mk (QPainleve.canonicalBundle K Plane 2) ∧
         AtWorstNodalOfRelativeDimensionOne (A.subschemeι ≫ Plane ↘ S) ∧
         A.stalkOrder p = 1 ∧ A.comap f = D * E ∧
         ((J[p]).comap A.subschemeι).IsEffectiveCartier ∧
@@ -253,10 +257,10 @@ theorem exists_plane_internalBlowdown_of_hirzebruch_one_anticanonical_bisection
     simp
     tauto
   obtain ⟨d, h, ρ, a, -, -, hρ, hz, -, hf, hE, -, -⟩ :=
-    Φ.exists_iso_blowup_projectivePlane_of_hirzebruchOne b hΦ hc hrays
-  let z := (Fan.projectiveSpace d Φ.lattice).distinguishedPointHom
-    (Fan.projectiveSpaceMaximalCone d Φ.lattice none) ≫ (Fan.projectivePlaneIso d Φ.lattice).hom
-  let p := z (IsLocalRing.closedPoint ℂ)
+    Φ.exists_iso_blowup_projectivePlane_of_hirzebruchOne K b hΦ hc hrays
+  let z := (Fan.projectiveSpace d Φ.lattice).distinguishedSection (R := K)
+    (Fan.projectiveSpaceMaximalCone d Φ.lattice none) ≫ (Fan.projectivePlaneIso K d Φ.lattice).hom
+  let p := z (IsLocalRing.closedPoint K)
   have hp : IsClosed ({p} : Set Plane) :=
     isClosed_singleton_of_section (f := Plane ↘ S) hz
   have hi : z.ker = J[p] :=
@@ -270,19 +274,19 @@ theorem exists_plane_internalBlowdown_of_hirzebruch_one_anticanonical_bisection
   have hover : f ≫ (Plane ↘ S) = (X ↘ S) := by
     dsimp only [f]
     rw [hf, Category.assoc, over_polynomial, Fan.projectivePlaneIso_hom_toSpecCoeff,
-      FanHom.algebraicMap_comp_algebraicRealizationStructureMap, Fan.algebraicRealization_over]
+      FanHom.finiteFanSchemeHom_comp_finiteFanSchemeToSpec, Fan.finiteFanScheme_over]
   have : f.IsOver S := ⟨hover⟩
   have : IsIntegral Plane := Proj.isIntegral_polynomialProj
   have : IsNoetherian Plane := isNoetherian_of_finiteType (Plane ↘ S)
   have : AlgebraicGeometry.IsReduced D.subscheme := hnodal.isReduced
   have hnot : ¬ (E).support ≤ D.support := by
     intro hsub
-    apply hirzebruch_section_notMem_boundary_support_of_bisection b e hΦ hc r hr hD hK hs
+    apply hirzebruch_section_notMem_boundary_support_of_bisection K b e hΦ hc r hr hD hK hs
     apply hsub
-    rw [← SetLike.mem_coe, coe_support_rayBoundaryIdeal]
+    rw [← SetLike.mem_coe, coe_support_rayDivisorIdeal]
     exact subset_closure (Set.mem_singleton _)
   obtain ⟨hA, hcan, hnode, hm, htotal, hcenter, hsmooth, u, hu⟩ :=
-    hD.internalBlowdown_of_anticanonical_of_blowupIso ℂ hp f a.symm
+    hD.internalBlowdown_of_anticanonical_of_blowupIso K hp f a.symm
       (a.inv_hom_id_assoc _) (hE.symm ▸ hnot) hnodal hK
   exact ⟨p, a, hp, hover, hE, hA, hcan, hnode, hm, htotal.trans (congrArg (D * ·) hE),
     hcenter, hsmooth, u, hu⟩

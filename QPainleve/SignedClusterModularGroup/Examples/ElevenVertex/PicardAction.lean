@@ -30,28 +30,31 @@ open Scheme Scheme.IdealSheafData TauCeti TauCeti.AlgebraicGeometry TauCeti.Tori
 
 namespace QPainleve.ElevenVertex
 
-local notation "B" => exchangeMatrix
-local notation "Γ" => SignedClusterModularGroup ℂ B
-local notation "eval[" w "]" => op (signedClusterModularGroupMap ℂ B (End.of w))
+variable {k₀ : Type} [Field k₀] [IsAlgClosed k₀]
 
-local notation "S" => Spec (CommRingCat.of ℂ)
-local notation "Centers" => Over.mk (structureMap ℂ (Fin 11 → ℤ))
-local notation "XTor" => scheme ℂ (Fin 11 →₀ ℤ)
-local notation "χ[" c "]" => pointsEquiv ℂ _ (Subtype.mk (Over.Hom.left c) (Over.w c))
+local notation "B" => exchangeMatrix
+local notation "Γ" => SignedClusterModularGroup k₀ B
+local notation "eval[" w "]" => op (signedClusterModularGroupMap k₀ B (End.of w))
+
+local notation "S" => Spec (CommRingCat.of k₀)
+local notation "Centers" => Over.mk (structureMap k₀ (Fin 11 → ℤ))
+local notation "XTor" => scheme k₀ (Fin 11 →₀ ℤ)
+local notation "χ[" c "]" => pointsEquiv k₀ _ (Subtype.mk (Over.Hom.left c) (Over.w c))
 local notation "cartier[" M "]" => MarkedSurface.isEffectiveCartier_boundaryIdeal M
 local notation "classOf(" h ")" => (LineBundleClass.mk (IsEffectiveCartier.toInvertibleSheaf h))⁻¹
 
 variable {N V : Type} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} {b : Module.Basis (Fin 2) ℤ N}
   {L γ : Type} [AddCommGroup L] {H : LinearMap.BilinForm ℤ L}
-  {Q : CompleteToricPresentation i b 11 L γ}
-  {c₀ : Point Centers} {M₀ : MarkedSurface ℂ 1 H XTor}
+  {Q : CompleteToricPresentation k₀ i b 11 L γ}
+  {c₀ : Point (Over.mk (structureMap k₀ (Fin 11 → ℤ)))}
+  {M₀ : MarkedSurface k₀ 1 H (scheme k₀ (Fin 11 →₀ ℤ))}
 
-local instance (Q : CompleteToricPresentation i b 11 L γ) : Nonempty Q.fan.cones :=
+local instance (Q : CompleteToricPresentation k₀ i b 11 L γ) : Nonempty Q.fan.cones :=
   Q.complete.nonempty_cones
-local instance (Q : CompleteToricPresentation i b 11 L γ) : NeZero Q.length := Q.neZero
-local instance (Q : CompleteToricPresentation i b 11 L γ) :
-    PrestableFamily ((Q.fan.boundaryIdeal Q.complete.nonempty_cones).subscheme ↘ S) :=
+local instance (Q : CompleteToricPresentation k₀ i b 11 L γ) : NeZero Q.length := Q.neZero
+local instance (Q : CompleteToricPresentation k₀ i b 11 L γ) :
+    PrestableFamily ((Q.fan.toricBoundaryIdeal k₀ Q.complete.nonempty_cones).subscheme ↘ S) :=
   Q.prestable
 
 local notation "classes[" M "]" => MarkedSurface.boundaryClass M cartier[M]
@@ -59,10 +62,10 @@ local notation "classes[" M "]" => MarkedSurface.boundaryClass M cartier[M]
 /-- The signed Picard equivalence in a marked one-component model of the
 eleven-vertex seed, with its geometric loop formulas and central sign involution. -/
 @[ext]
-structure InvolutionPicardIdentification (Q : CompleteToricPresentation i b 11 L γ)
-    (c₀ : Point Centers) (M₀ : MarkedSurface ℂ 1 H XTor) where
+structure InvolutionPicardIdentification (Q : CompleteToricPresentation k₀ i b 11 L γ)
+    (c₀ : Point Centers) (M₀ : MarkedSurface k₀ 1 H XTor) where
   /-- The marked surfaces over the center torus. -/
-  family : Point Centers → MarkedSurface ℂ 1 H XTor
+  family : Point Centers → MarkedSurface k₀ 1 H XTor
   /-- The family contains the specified marked surface at the reference center. -/
   family_center : family c₀ = M₀
   /-- Each fiber has a nodal model in the same toric presentation. -/
@@ -81,7 +84,7 @@ structure InvolutionPicardIdentification (Q : CompleteToricPresentation i b 11 L
   signedEquiv_apply_of_realization (w : Word B B)
       {C : (Centers).left.PartialMap (Centers).left} [IsDominant C.hom]
       [C.IsOver (Centers).hom (Centers).hom]
-      (R : GeometricRealization family family C (w.xRationalMap ℂ)) :
+      (R : GeometricRealization family family C (w.xRationalMap k₀)) :
     signedEquiv eval[w] =
       R.toSignedBoundaryIsometry classes[M₀] (fun c ↦ cartier[family c]) boundaryClass_eq
 
@@ -94,27 +97,28 @@ attribute [simp] InvolutionPicardIdentification.family_center
 boundary gives the signed Picard equivalence carrying the specified word to the pure sign
 change. -/
 theorem nonempty_involutionPicardIdentification_of_nodal_contraction
+    [Uncountable k₀] [NeZero (2 : k₀)]
     (p₀ : ContractedToricFiber b Q.rays Q.regular Q.cycle Q.origin Q.inclusion χ[c₀] M₀)
     (hnodal₀ : p₀.IsNodalContraction)
     (hE : (B).matrix = chargeExchangeMatrix b.detDualEquiv.toLinearMap (Fan.rayChargeMap Q.rays))
     (hprim : IsPrimitive (Additive.ofMul classOf(cartier[M₀])))
-    (hnef : (classOf(cartier[M₀])).IsNef ℂ (M₀.surface ↘ S))
-    (hsq : Chow.classIntersectionNumber ℂ M₀.surface classOf(cartier[M₀])
+    (hnef : (classOf(cartier[M₀])).IsNef k₀ (M₀.surface ↘ S))
+    (hsq : Chow.classIntersectionNumber k₀ M₀.surface classOf(cartier[M₀])
       classOf(cartier[M₀]) = 0) :
     Nonempty (InvolutionPicardIdentification Q c₀ M₀) := by
   obtain ⟨A⟩ := Q.nonempty_signedLoopPicardComparison_of_nodal_contraction
     p₀ hnodal₀ hE hprim hnef hsq
   let G := A.identification
   let : IsRationalOver (M₀.surface ↘ S) := (Q.hasNodalModel_of_contraction hnodal₀).isRationalOver
-  let : M₀.surface.IsProjectiveOver ℂ := M₀.projective
+  let : M₀.surface.IsProjectiveOver k₀ := M₀.projective
   let : SmoothOfRelativeDimension 2 (M₀.surface ↘ S) := M₀.smooth
   let : Module.Free ℤ (Additive (LineBundleClass M₀.surface)) :=
-    M₀.surface.free_picard_of_isRationalOver ℂ
+    M₀.surface.free_picard_of_isRationalOver k₀
   let : Module.Finite ℤ (Additive (LineBundleClass M₀.surface)) :=
-    M₀.surface.finite_picard_of_isRationalOver ℂ
+    M₀.surface.finite_picard_of_isRationalOver k₀
   let : Module.Free ℤ L := Module.Free.of_equiv M₀.picardMarking.symm
   let : Module.Finite ℤ L := Module.Finite.of_surjective _ M₀.picardMarking.symm.surjective
-  have hpair (x y : L) : H x y = Chow.classIntersectionNumber ℂ M₀.surface
+  have hpair (x y : L) : H x y = Chow.classIntersectionNumber k₀ M₀.surface
       (M₀.picardMarking x).toMul (M₀.picardMarking y).toMul :=
     (M₀.intersectionBilinForm_picardMarking x y).symm.trans (Chow.intersectionBilinForm_apply ..)
   have hSymm : H.IsSymm :=
