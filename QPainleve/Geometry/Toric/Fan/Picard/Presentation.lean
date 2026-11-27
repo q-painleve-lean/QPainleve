@@ -8,6 +8,7 @@ module
 public import Mathlib.Algebra.Exact.Basic
 public import QPainleve.Geometry.Toric.Fan.Boundary.Basic
 public import QPainleve.Geometry.Toric.Fan.Picard.Basic
+public import QPainleve.Geometry.Toric.Fan.Ray
 public import TauCeti.AlgebraicGeometry.CartierDivisor.Excision
 
 import Mathlib.Algebra.Group.Subgroup.Finsupp
@@ -36,14 +37,6 @@ namespace TauCeti.Toric.Fan
 
 variable {N : Type} {V : Type*} [AddCommGroup N] [AddCommGroup V] [Module ℝ V]
   {i : N →+ V} (Φ : Fan i)
-
-/-- The coefficients of the divisor of a character at the rays of the fan. -/
-def characterToRayDivisor : (N →+ ℤ) →+ (Φ.Ray → ℤ) :=
-  AddMonoidHom.pi fun ρ ↦ AddMonoidHom.eval ρ.primitiveGenerator
-
-@[simp]
-theorem characterToRayDivisor_apply (m : N →+ ℤ) (ρ : Φ.Ray) :
-    Φ.characterToRayDivisor m ρ = m ρ.primitiveGenerator := (rfl)
 
 /-- Regard an integer family on the rays as a Weil divisor on the toric scheme. -/
 def rayDivisorToWeilDivisor (hΦ : Φ.IsRegular) :
@@ -182,7 +175,7 @@ theorem exact_characterToRayDivisor_rayDivisorToPicard (hΦ : Φ.IsRegular) :
     rw [WeilDivisor.OrderSystem.coeff_principalDivisor, WeilDivisor.OrderSystem.ofScheme_ord,
       orderAt_apply, Φ.coeff_rayDivisorToWeilDivisor,
       hfm, Φ.ord_rayBoundaryPoint_mul_character hΦ ρ c m] at hρ
-    exact hρ
+    simpa only [characterToRayDivisor_apply] using hρ
   · rintro ⟨m, rfl⟩
     exact ⟨Additive.ofMul (Φ.character.toHomUnits (ofAdd m)),
       (Φ.rayDivisorToWeilDivisor_characterToRayDivisor hΦ m).symm⟩

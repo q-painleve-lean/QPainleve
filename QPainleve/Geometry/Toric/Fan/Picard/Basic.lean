@@ -5,11 +5,11 @@ Authors: The QPainleve contributors
 -/
 module
 
+public import QPainleve.Geometry.Toric.RegularChart
 public import TauCeti.AlgebraicGeometry.LineBundle.Affine.Picard
 public import TauCeti.Geometry.Toric.Algebraic.Fan.DenseTorus
 
 import Mathlib.GroupTheory.MonoidLocalization.UniqueFactorization
-import QPainleve.Geometry.Toric.RegularChart
 import TauCeti.Geometry.Toric.Algebraic.Normal
 
 /-!
@@ -64,5 +64,14 @@ theorem uniqueFactorizationMonoid_stalk_algebraicRealization (Φ : Fan i) (hΦ :
     |>.uniqueFactorizationMonoid hstalk
 
 end Fan
+
+/-- A regular affine toric chart over a factorial domain has trivial Picard group. -/
+theorem IsRegularCone.subsingleton_lineBundleClass_affineChart
+    (hσ : IsRegularCone i σ) (hi : IsIntegralLattice i)
+    (R : Type*) [CommRing R] [IsDomain R] [UniqueFactorizationMonoid R] :
+    Subsingleton (LineBundleClass (Spec (.of (affineChartRing R hi σ)))) := by
+  have := hσ.uniqueFactorizationMonoid_affineChartRing R hi
+  have : IsDomain (affineChartRing R hi σ) := NoZeroDivisors.to_isDomain _
+  exact LineBundleClass.subsingleton_spec (affineChartRing R hi σ)
 
 end TauCeti.Toric
